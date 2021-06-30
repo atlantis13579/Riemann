@@ -19,7 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Image\ImageProcessing2D.cpp" />
+    <ClCompile Include="Geometry\ConvexHull2D.cpp" />
+    <ClCompile Include="Image\ImageProcessing.cpp" />
     <ClCompile Include="Maths\Bezier.cpp" />
     <ClCompile Include="Maths\Maths.cpp" />
     <ClCompile Include="Solver\ConjugateGradientSolver.cpp" />
@@ -29,7 +30,8 @@
     <ClCompile Include="Solver\Tetrahedral.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Image\ImageProcessing2D.h" />
+    <ClInclude Include="Geometry\ConvexHull2D.h" />
+    <ClInclude Include="Image\ImageProcessing.h" />
     <ClInclude Include="Image\Rasterizer.h" />
     <ClInclude Include="Maths\Array.h" />
     <ClInclude Include="Maths\Bezier.h" />

@@ -80,7 +80,7 @@ void copy_object(T* src, T* dst, int nx, int ny, int seed)
 
 
 template<typename T>
-void fill_object_4x(T* cell, int nx, int ny, int seed, T value)
+void FillObject4x(T* cell, int nx, int ny, int seed, T value)
 {
 	std::queue<int> qu;
 
@@ -105,7 +105,7 @@ void fill_object_4x(T* cell, int nx, int ny, int seed, T value)
 
 
 template<typename T>
-void edge_detection(T* cell, int nx, int ny, int seed, std::vector<Vector2i>* polygon)
+void EdgeDetection(T* cell, int nx, int ny, int seed, std::vector<Vector2i>* polygon)
 {
 	polygon->push_back(Vector2i(seed / nx, seed - (seed / nx) * nx));
 
@@ -131,7 +131,7 @@ void edge_detection(T* cell, int nx, int ny, int seed, std::vector<Vector2i>* po
 
 
 template<typename T>
-void extract_objects(T* cell, int nx, int ny, std::vector<std::vector<Vector2i>>* polygons, const int MinPolygonPoints)
+void ExtractObjects(T* cell, int nx, int ny, std::vector<std::vector<Vector2i>>* polygons, const int MinPolygonPoints)
 {
 	polygons->clear();
 
@@ -142,16 +142,16 @@ void extract_objects(T* cell, int nx, int ny, std::vector<std::vector<Vector2i>>
 		if (cell[k] == 0)
 			continue;
 		std::vector<Vector2i>	polygon;
-		edge_detection(cell, nx, ny, k, &polygon);
+		EdgeDetection(cell, nx, ny, k, &polygon);
 		if (polygon.size() > MinPolygonPoints) {
 			polygons->push_back(polygon);
 		}
-		fill_object_4x<unsigned char>(cell, nx, ny, k, 0);
+		FillObject4x<unsigned char>(cell, nx, ny, k, 0);
 	}
 }
 
-void visvalingam_whyatt_simplification(std::vector<Vector2i>& polygon, int treshold);
+void PolygonSimplification_VisvalingamWhyatt(std::vector<Vector2i>& polygon, int treshold);
 
-void douglas_peucker_simplification_segment(std::vector<Vector2i>& polygon, int treshold, std::vector<Vector2i>* filtered);
+void SegmentsSimplification_DouglasPeucker(std::vector<Vector2i>& segments, int treshold, std::vector<Vector2i>* filtered);
 
-void concave_hull_simplification(std::vector<Vector2i>& polygon, int treshold, std::vector<Vector2i>* new_polygon);
+void ConcaveHullSimplification(std::vector<Vector2i>& polygon, int treshold, std::vector<Vector2i>* new_polygon);

@@ -1,6 +1,7 @@
 
-#include <functional>
 #include "NewtonRaphsonIteration.h"
+
+#include <functional>
 
 const float kNewtonEplison = 0.001f;
 

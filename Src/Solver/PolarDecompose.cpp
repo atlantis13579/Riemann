@@ -1,5 +1,4 @@
 
-#include <functional>
 #include "PolarDecompose.h"
 
 #define TOLERANCE 0.01f

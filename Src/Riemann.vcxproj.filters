@@ -6,7 +6,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Image\ImageProcessing2D.h">
+    <ClInclude Include="Image\ImageProcessing.h">
       <Filter>Src</Filter>
     </ClInclude>
     <ClInclude Include="Maths\Vector2d.h">
@@ -31,9 +31,10 @@
     <ClInclude Include="Solver\PolarDecompose.h" />
     <ClInclude Include="Maths\Array.h" />
     <ClInclude Include="Solver\Tetrahedral.h" />
+    <ClInclude Include="Geometry\ConvexHull2D.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Image\ImageProcessing2D.cpp">
+    <ClCompile Include="Image\ImageProcessing.cpp">
       <Filter>Src</Filter>
     </ClCompile>
     <ClCompile Include="Maths\Maths.cpp" />
@@ -43,5 +44,6 @@
     <ClCompile Include="Solver\ConjugateGradientSolver.cpp" />
     <ClCompile Include="Solver\PolarDecompose.cpp" />
     <ClCompile Include="Solver\Tetrahedral.cpp" />
+    <ClCompile Include="Geometry\ConvexHull2D.cpp" />
   </ItemGroup>
 </Project>

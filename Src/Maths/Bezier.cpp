@@ -1,8 +1,10 @@
 
+#include "Bezier.h"
+
 #include "math.h"
 #include <functional>
 #include <vector>
-#include "Bezier.h"
+
 #include "../Solver/NewtonRaphsonIteration.h"
 
 static float Combination(int n, int m)

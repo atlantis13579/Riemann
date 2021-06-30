@@ -1,10 +1,11 @@
 
+#include "ImageProcessing.h"
+
 #include <vector>
 #include <queue>
 #include <map>
 
 #include "../Maths/Vector2d.h"
-#include "ImageProcessing2D.h"
 
 const int kMinPolygonPoints = 5;
 
@@ -13,7 +14,7 @@ int triangle_area(const Vector2i &p1, const Vector2i &p2, const Vector2i &p3)
 	return abs((p2 - p1).Cross(p3 - p1));
 }
 
-void visvalingam_whyatt_simplification(std::vector<Vector2i> &polygon, int treshold)
+void PolygonSimplification_VisvalingamWhyatt(std::vector<Vector2i> &polygon, int treshold)
 {
 	while (polygon.size() > kMinPolygonPoints)
 	{
@@ -83,7 +84,7 @@ static void _douglas_peucker(const std::vector<Vector2i> &points, int istart, in
 	}
 }
 
-void douglas_peucker_simplification_segment(std::vector<Vector2i> &polygon, int treshold, std::vector<Vector2i>* filtered) {
+void SegmentsSimplification_DouglasPeucker(std::vector<Vector2i> &polygon, int treshold, std::vector<Vector2i>* filtered) {
 	if (polygon.size() <= 2) {
 		return;
 	}
@@ -102,7 +103,7 @@ static float dot_product(const Vector2i&a, const Vector2i&b, const Vector2i&c)
 	return ab.Dot(cb);
 }
 
-void concave_hull_simplification(std::vector<Vector2i> &polygon, int treshold, std::vector<Vector2i>* new_polygon)
+void ConcaveHullSimplification(std::vector<Vector2i> &polygon, int treshold, std::vector<Vector2i>* new_polygon)
 {
 	int max_i = -1;
 	float max_dot = -1.0f;
@@ -138,7 +139,7 @@ void concave_hull_simplification(std::vector<Vector2i> &polygon, int treshold, s
 		temp.push_back(polygon[next]);
 		if (dot > inflection_treshold || need_break) {
 			simply.clear();
-			douglas_peucker_simplification_segment(temp, treshold, &simply);
+			SegmentsSimplification_DouglasPeucker(temp, treshold, &simply);
 			for (size_t j = 0; j < simply.size() - 1; ++j) {
 				new_polygon->push_back(simply[j]);
 			}

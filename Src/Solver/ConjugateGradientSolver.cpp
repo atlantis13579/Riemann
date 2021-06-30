@@ -6,12 +6,21 @@
 
 ConjugateGradientSolver::ConjugateGradientSolver()
 {
-
+	m_SA = nullptr;
+	r = nullptr;
+	d = nullptr;
+	q = nullptr;
+	tempo = nullptr;
 }
 
 ConjugateGradientSolver::~ConjugateGradientSolver()
 {
-	delete m_SA;
+	if (m_SA) delete m_SA;
+
+	if (r) delete []r;
+	if (d) delete []d;
+	if (q) delete []q;
+	if (tempo) delete []tempo;
 }
 
 void ConjugateGradientSolver::InitSparseSolverCompressed3x3(const float *A, int _n)
