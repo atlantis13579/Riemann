@@ -19,10 +19,29 @@
       <Filter>Src</Filter>
     </ClInclude>
     <ClInclude Include="Image\Rasterizer.h" />
+    <ClInclude Include="Maths\Maths.h" />
+    <ClInclude Include="Maths\Matrix3d.h" />
+    <ClInclude Include="Maths\Matrix4d.h" />
+    <ClInclude Include="Maths\Quaternion.h" />
+    <ClInclude Include="Maths\SparseMatrix.h" />
+    <ClInclude Include="Maths\Bezier.h" />
+    <ClInclude Include="Solver\ConjugateGradientSolver.h" />
+    <ClInclude Include="Solver\NewtonRaphsonIteration.h" />
+    <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />
+    <ClInclude Include="Solver\PolarDecompose.h" />
+    <ClInclude Include="Maths\Array.h" />
+    <ClInclude Include="Solver\Tetrahedral.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing2D.cpp">
       <Filter>Src</Filter>
     </ClCompile>
+    <ClCompile Include="Maths\Maths.cpp" />
+    <ClCompile Include="Maths\Bezier.cpp" />
+    <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
+    <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
+    <ClCompile Include="Solver\ConjugateGradientSolver.cpp" />
+    <ClCompile Include="Solver\PolarDecompose.cpp" />
+    <ClCompile Include="Solver\Tetrahedral.cpp" />
   </ItemGroup>
 </Project>
