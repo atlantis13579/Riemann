@@ -22,7 +22,7 @@
 HINSTANCE               g_hInst = nullptr;
 HWND                    g_hWnd = nullptr;
 Renderer*               g_Renderer = nullptr;
-Vector3d   g_CamParam = Vector3d(0.0f, 0.0f, 5.0f);
+Vector3d   g_CamParam = Vector3d(1.0f, 1.0f, 5.0f);
 
 LRESULT CALLBACK    WndProc( HWND, UINT, WPARAM, LPARAM );
 
@@ -76,8 +76,22 @@ void UpdateCamera()
     g_Renderer->SetCameraLookAt(Eye, Center);
 }
 
-void InitCube()
+void InitScene()
 {
+    Vertex1 Grounds_vertices[] =
+    {
+        { Vector3d(-100.0f, -5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
+        { Vector3d(100.0f, -5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
+        { Vector3d(100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
+        { Vector3d(-100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
+    };
+    WORD Grounds_indices[] =
+    {
+        2,1,0,
+        2,3,0,
+    };
+    g_Renderer->AddMesh("Ground", Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));
+
     Vertex1 vertices[] =
     {
         { Vector3d(-1.0f, 1.0f, -1.0f), Vector4d(0.0f, 0.0f, 1.0f, 1.0f) },
@@ -133,7 +147,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    InitCube();
+    InitScene();
+    UpdateCamera();
 
     // Main message loop
     MSG msg = {0};
@@ -217,10 +232,11 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
     case WM_MOUSEWHEEL:
     {
         auto zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+        float Scale = wParam & MK_CONTROL ? 10.0f : 1.0f;
+        Scale *= 1.01f;
         if (zDelta > 0)
-            g_CamParam.z *= 1.01f;
-        else
-            g_CamParam.z *= 0.99f;
+            Scale = 1.0f / Scale;
+        g_CamParam.z *= Scale;
         UpdateCamera();
     }
         break;

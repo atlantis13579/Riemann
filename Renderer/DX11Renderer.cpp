@@ -51,6 +51,11 @@ public:
     //--------------------------------------------------------------------------------------
     virtual ~DX11Renderer() override
     {
+        for (size_t i = 0; i < m_AllMesh.size(); ++i)
+        {
+            m_AllMesh[i].Release();
+        }
+
         if (m_pImmediateContext) m_pImmediateContext->ClearState();
         if (m_pVertexLayout) m_pVertexLayout->Release();
         if (m_pVertexShader) m_pVertexShader->Release();
@@ -62,11 +67,6 @@ public:
         if (m_pImmediateContext) m_pImmediateContext->Release();
         if (m_pd3dDevice1) m_pd3dDevice1->Release();
         if (m_pd3dDevice) m_pd3dDevice->Release();
-
-        for (size_t i = 0; i < m_AllMesh.size(); ++i)
-        {
-            m_AllMesh[i].Release();
-        }
     }
 
     //--------------------------------------------------------------------------------------
@@ -209,7 +209,35 @@ public:
         if (FAILED(hr))
             return hr;
 
-        m_pImmediateContext->OMSetRenderTargets(1, &m_pRenderTargetView, nullptr);
+        D3D11_TEXTURE2D_DESC depthTextureDesc;
+        ZeroMemory(&depthTextureDesc, sizeof(depthTextureDesc));
+        depthTextureDesc.Width = width;
+        depthTextureDesc.Height = height;
+        depthTextureDesc.MipLevels = 1;
+        depthTextureDesc.ArraySize = 1;
+        depthTextureDesc.SampleDesc.Count = 1;
+        depthTextureDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+
+        ID3D11Texture2D* DepthStencilTexture;
+        hr = m_pd3dDevice->CreateTexture2D(&depthTextureDesc, nullptr, &DepthStencilTexture);
+        if (FAILED(hr))
+            return hr;
+
+        D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+        ZeroMemory(&dsvDesc, sizeof(dsvDesc));
+        dsvDesc.Format = depthTextureDesc.Format;
+        dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+
+        hr = m_pd3dDevice->CreateDepthStencilView(DepthStencilTexture, &dsvDesc, &m_pDepthBuffer);
+        DepthStencilTexture->Release();
+        if (FAILED(hr))
+            return hr;
+
+        m_pImmediateContext->OMSetRenderTargets(1, &m_pRenderTargetView, m_pDepthBuffer);
+
+        SetFillMode(false);
+        SetDepthMode();
 
         // Setup the viewport
         D3D11_VIEWPORT vp;
@@ -292,6 +320,37 @@ public:
         return S_OK;
     }
 
+    virtual void SetFillMode(bool Wireframe) override
+    {
+        D3D11_RASTERIZER_DESC wfdesc;
+        ZeroMemory(&wfdesc, sizeof(D3D11_RASTERIZER_DESC));
+        wfdesc.FillMode = Wireframe ? D3D11_FILL_WIREFRAME : D3D11_FILL_SOLID;
+        wfdesc.CullMode = D3D11_CULL_NONE;
+
+        ID3D11RasterizerState* pWireFrame = nullptr;
+        HRESULT hr = m_pd3dDevice->CreateRasterizerState(&wfdesc, &pWireFrame);
+        if (FAILED(hr))
+            return;
+
+        m_pImmediateContext->RSSetState(pWireFrame);
+    }
+
+    virtual void SetDepthMode() override
+    {
+        D3D11_DEPTH_STENCIL_DESC depthstencilDesc;
+        ZeroMemory(&depthstencilDesc, sizeof(depthstencilDesc));
+        depthstencilDesc.DepthEnable = TRUE;
+        depthstencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+        depthstencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+        depthstencilDesc.StencilEnable = FALSE;
+
+        ID3D11DepthStencilState* pDepthStencilState = nullptr;
+        HRESULT hr = m_pd3dDevice->CreateDepthStencilState(&depthstencilDesc, &pDepthStencilState);
+        if (FAILED(hr))
+            return;
+        m_pImmediateContext->OMSetDepthStencilState(pDepthStencilState, 0);
+    }
+
     virtual void SetCameraLookAt(Vector3d Eye, Vector3d At) override
     {
         // Initialize the view matrix
@@ -311,7 +370,7 @@ public:
         // Create vertex buffer
         D3D11_BUFFER_DESC bd = {};
         bd.Usage = D3D11_USAGE_DEFAULT;
-        bd.ByteWidth = sizeof(Vertex1) * 8;
+        bd.ByteWidth = sizeof(Vertex1) * nVerties;
         bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
         bd.CPUAccessFlags = 0;
 
@@ -328,7 +387,7 @@ public:
 
         // Create index buffer
         bd.Usage = D3D11_USAGE_DEFAULT;
-        bd.ByteWidth = sizeof(WORD) * 36;        // 36 vertices needed for 12 triangles in a triangle list
+        bd.ByteWidth = sizeof(WORD) * nIndices;        // 36 vertices needed for 12 triangles in a triangle list
         bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
         bd.CPUAccessFlags = 0;
         InitData.pSysMem = (const void*)pIndices;
@@ -358,6 +417,35 @@ public:
         m_AllMesh.push_back(mesh);
 
         return true;
+    }
+
+    virtual bool UpdateVerties(const char* Id, const Vertex1* pVerties, int nVerties)
+    {
+        for (size_t i = 0; i < m_AllMesh.size(); ++i)
+        {
+            DX11StaticMesh& mesh = m_AllMesh[i];
+            if (strcmp(Id, mesh.Id.c_str()) == 0)
+            {
+                m_pImmediateContext->UpdateSubresource(mesh.pVertexBuffer, 0, nullptr, pVerties, 0, 0);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    virtual bool DeleteMesh(const char* Id) override
+    {
+        for (size_t i = 0; i < m_AllMesh.size(); ++i)
+        {
+            DX11StaticMesh& mesh = m_AllMesh[i];
+            if (strcmp(Id, mesh.Id.c_str()) == 0)
+            {
+                mesh.Release();
+                m_AllMesh.erase(m_AllMesh.begin() + i);
+                return true;
+            }
+        }
+        return false;
     }
 
     //--------------------------------------------------------------------------------------
@@ -404,6 +492,7 @@ public:
     {
         // Clear the back buffer
         m_pImmediateContext->ClearRenderTargetView(m_pRenderTargetView, Colors::Black);
+        m_pImmediateContext->ClearDepthStencilView(m_pDepthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
         // Set VS and PS
         m_pImmediateContext->VSSetShader(m_pVertexShader, nullptr, 0);
@@ -421,7 +510,13 @@ public:
             cb.mWorld = XMMatrixTranspose(mesh.matWorld);
             m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
             m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
-            m_pImmediateContext->DrawIndexed(mesh.IndexCount, 0, 0);        // 36 vertices needed for 12 triangles in a triangle list
+
+            UINT stride = sizeof(Vertex1);
+            UINT offset = 0;
+            m_pImmediateContext->IASetVertexBuffers(0, 1, &mesh.pVertexBuffer, &stride, &offset);
+            m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+
+            m_pImmediateContext->DrawIndexed(mesh.IndexCount, 0, 0);
         }
 
         // Present our back buffer to our front buffer
@@ -441,6 +536,7 @@ private:
     ID3D11VertexShader* m_pVertexShader = nullptr;
     ID3D11PixelShader* m_pPixelShader = nullptr;
     ID3D11InputLayout* m_pVertexLayout = nullptr;
+    ID3D11DepthStencilView* m_pDepthBuffer = nullptr;
 
     XMMATRIX                m_View;
     XMMATRIX                m_Projection;
