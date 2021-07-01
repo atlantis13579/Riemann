@@ -6,7 +6,14 @@
 #  define RENDERER_API __declspec(dllimport)
 #endif
 
-#include <string>
+#include "../Src/Maths/Vector3d.h"
+#include "../Src/Maths/Vector4d.h"
+
+struct Vertex1
+{
+	Vector3d Pos;
+	Vector4d Color;
+};
 
 class RENDERER_API Renderer
 {
@@ -16,5 +23,8 @@ public:
 
 	virtual void Render() = 0;
 
-	static Renderer* CreateDX11Renderer(void* hWnd, const std::string& shader_path);
+	virtual void SetCameraLookAt(Vector3d Eye, Vector3d At) = 0;
+	virtual bool AddMesh(const char* Id, const Vertex1* pVerties, int nVerties, const unsigned short* pIndices, int nIndices) = 0;
+
+	static Renderer* CreateDX11Renderer(void* hWnd, const char* shader_path);
 };

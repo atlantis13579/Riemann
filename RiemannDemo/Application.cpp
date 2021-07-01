@@ -22,6 +22,7 @@
 HINSTANCE               g_hInst = nullptr;
 HWND                    g_hWnd = nullptr;
 Renderer*               g_Renderer = nullptr;
+Vector3d   g_CamParam = Vector3d(0.0f, 0.0f, 5.0f);
 
 LRESULT CALLBACK    WndProc( HWND, UINT, WPARAM, LPARAM );
 
@@ -63,6 +64,56 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow)
     return S_OK;
 }
 
+Vector3d GetCameraPosition()
+{
+    return Vector3d(sinf(g_CamParam.x) * cosf(g_CamParam.y), sinf(g_CamParam.y), cosf(g_CamParam.x) * cosf(g_CamParam.y)) * g_CamParam.z;
+}
+
+void UpdateCamera()
+{
+    Vector3d Eye = GetCameraPosition();
+    Vector3d Center = Vector3d(0.0f, 0.0f, 0.0f);
+    g_Renderer->SetCameraLookAt(Eye, Center);
+}
+
+void InitCube()
+{
+    Vertex1 vertices[] =
+    {
+        { Vector3d(-1.0f, 1.0f, -1.0f), Vector4d(0.0f, 0.0f, 1.0f, 1.0f) },
+        { Vector3d(1.0f, 1.0f, -1.0f), Vector4d(0.0f, 1.0f, 0.0f, 1.0f) },
+        { Vector3d(1.0f, 1.0f, 1.0f), Vector4d(0.0f, 1.0f, 1.0f, 1.0f) },
+        { Vector3d(-1.0f, 1.0f, 1.0f), Vector4d(1.0f, 0.0f, 0.0f, 1.0f) },
+        { Vector3d(-1.0f, -1.0f, -1.0f), Vector4d(1.0f, 0.0f, 1.0f, 1.0f) },
+        { Vector3d(1.0f, -1.0f, -1.0f), Vector4d(1.0f, 1.0f, 0.0f, 1.0f) },
+        { Vector3d(1.0f, -1.0f, 1.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) },
+        { Vector3d(-1.0f, -1.0f, 1.0f), Vector4d(0.0f, 0.0f, 0.0f, 1.0f) },
+    };
+
+    // Create index buffer
+    WORD indices[] =
+    {
+        3,1,0,
+        2,1,3,
+
+        0,5,4,
+        1,5,0,
+
+        3,4,7,
+        0,4,3,
+
+        1,6,5,
+        2,6,1,
+
+        2,7,6,
+        3,7,2,
+
+        6,4,5,
+        7,4,6,
+    };
+
+    g_Renderer->AddMesh("Cube", vertices, sizeof(vertices) / sizeof(vertices[0]), indices, sizeof(indices) / sizeof(indices[0]));
+}
 
 //--------------------------------------------------------------------------------------
 // Entry point to the program. Initializes everything and goes into a message processing 
@@ -82,6 +133,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
+    InitCube();
+
     // Main message loop
     MSG msg = {0};
     while( WM_QUIT != msg.message )
@@ -99,6 +152,13 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 
     return ( int )msg.wParam;
 }
+
+#ifndef GET_X_LPARAM
+#define GET_X_LPARAM(lp)                        ((int)(short)LOWORD(lp))
+#endif
+#ifndef GET_Y_LPARAM
+#define GET_Y_LPARAM(lp)                        ((int)(short)HIWORD(lp))
+#endif
 
 //--------------------------------------------------------------------------------------
 // Called every time the application receives a message
@@ -119,6 +179,51 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
         PostQuitMessage( 0 );
         break;
 
+    case WM_LBUTTONDOWN:
+        break;
+
+    case WM_LBUTTONUP:
+        break;
+
+    case WM_MOUSEMOVE:
+    {
+        static WORD xPosPrev = 0, yPosPrev = 0;
+        bool LButtonDown = MK_LBUTTON & wParam;
+        if (LButtonDown)
+        {
+            if (xPosPrev * yPosPrev != 0)
+            {
+                WORD xPos = GET_X_LPARAM(lParam);
+                WORD yPos = GET_Y_LPARAM(lParam);
+                g_CamParam.x += (xPos - xPosPrev) * 0.01f;
+                g_CamParam.y += (yPos - yPosPrev) * 0.01f;
+                if (g_CamParam.y > 1.5)
+                    g_CamParam.y = 1.5;
+                if (g_CamParam.y < -1.5)
+                    g_CamParam.y = -1.5;
+                UpdateCamera();
+            }
+
+            xPosPrev = GET_X_LPARAM(lParam);
+            yPosPrev = GET_Y_LPARAM(lParam);
+        }
+        else
+        {
+            xPosPrev = yPosPrev = 0;
+        }
+    }
+    break;
+
+    case WM_MOUSEWHEEL:
+    {
+        auto zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+        if (zDelta > 0)
+            g_CamParam.z *= 1.01f;
+        else
+            g_CamParam.z *= 0.99f;
+        UpdateCamera();
+    }
+        break;
         // Note that this tutorial does not handle resizing (WM_SIZE) requests,
         // so we created the window without the resize border.
 

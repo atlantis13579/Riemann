@@ -43,6 +43,7 @@
     <ClInclude Include="Maths\Vector2d.h" />
     <ClInclude Include="Maths\Vector2i.h" />
     <ClInclude Include="Maths\Vector3d.h" />
+    <ClInclude Include="Maths\Vector4d.h" />
     <ClInclude Include="Solver\ConjugateGradientSolver.h" />
     <ClInclude Include="Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="Solver\PolarDecompose.h" />

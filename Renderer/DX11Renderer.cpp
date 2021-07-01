@@ -1,6 +1,8 @@
 
 #include "DX11Renderer.h"
 
+#include <string>
+#include <vector>
 #include <d3d11_1.h>
 #include <d3dcompiler.h>
 #include <directxmath.h>
@@ -11,17 +13,29 @@ using namespace DirectX;
 //--------------------------------------------------------------------------------------
 // Structures
 //--------------------------------------------------------------------------------------
-struct SimpleVertex
-{
-    XMFLOAT3 Pos;
-    XMFLOAT4 Color;
-};
 
 struct ConstantBuffer
 {
     XMMATRIX mWorld;
     XMMATRIX mView;
     XMMATRIX mProjection;
+};
+
+struct DX11StaticMesh
+{
+    std::string   Id;
+    ID3D11Buffer* pVertexBuffer = nullptr;
+    ID3D11Buffer* pIndexBuffer = nullptr;
+    ID3D11Buffer* pConstantBuffer = nullptr;
+    XMMATRIX      matWorld;
+    int           IndexCount = 0;
+
+    void Release()
+    {
+        if (pConstantBuffer) pConstantBuffer->Release();
+        if (pVertexBuffer) pVertexBuffer->Release();
+        if (pIndexBuffer) pIndexBuffer->Release();
+    }
 };
 
 class DX11Renderer : public Renderer
@@ -38,9 +52,6 @@ public:
     virtual ~DX11Renderer() override
     {
         if (m_pImmediateContext) m_pImmediateContext->ClearState();
-        if (m_pConstantBuffer) m_pConstantBuffer->Release();
-        if (m_pVertexBuffer) m_pVertexBuffer->Release();
-        if (m_pIndexBuffer) m_pIndexBuffer->Release();
         if (m_pVertexLayout) m_pVertexLayout->Release();
         if (m_pVertexShader) m_pVertexShader->Release();
         if (m_pPixelShader) m_pPixelShader->Release();
@@ -51,12 +62,17 @@ public:
         if (m_pImmediateContext) m_pImmediateContext->Release();
         if (m_pd3dDevice1) m_pd3dDevice1->Release();
         if (m_pd3dDevice) m_pd3dDevice->Release();
+
+        for (size_t i = 0; i < m_AllMesh.size(); ++i)
+        {
+            m_AllMesh[i].Release();
+        }
     }
 
     //--------------------------------------------------------------------------------------
     // Create Direct3D device and swap chain
     //--------------------------------------------------------------------------------------
-    HRESULT InitDevice(HWND hWnd, const std::string& shader_path)
+    HRESULT InitDevice(HWND hWnd, const char* shader_path)
     {
         HRESULT hr = S_OK;
 
@@ -208,7 +224,8 @@ public:
         // Compile the vertex shader
         ID3DBlob* pVSBlob = nullptr;
         std::wstring shader_file;
-        for (int i = 0; i < shader_path.length(); ++i)
+        size_t n = strlen(shader_path);
+        for (size_t i = 0; i < n; ++i)
         {
             shader_file += wchar_t(shader_path[i]);
         }
@@ -263,86 +280,9 @@ public:
         if (FAILED(hr))
             return hr;
 
-        // Create vertex buffer
-        SimpleVertex vertices[] =
-        {
-            { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) },
-            { XMFLOAT3(1.0f, 1.0f, -1.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-            { XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f) },
-            { XMFLOAT3(-1.0f, 1.0f, 1.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-            { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f) },
-            { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f) },
-            { XMFLOAT3(1.0f, -1.0f, 1.0f), XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f) },
-            { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) },
-        };
-        D3D11_BUFFER_DESC bd = {};
-        bd.Usage = D3D11_USAGE_DEFAULT;
-        bd.ByteWidth = sizeof(SimpleVertex) * 8;
-        bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-        bd.CPUAccessFlags = 0;
-
-        D3D11_SUBRESOURCE_DATA InitData = {};
-        InitData.pSysMem = vertices;
-        hr = m_pd3dDevice->CreateBuffer(&bd, &InitData, &m_pVertexBuffer);
-        if (FAILED(hr))
-            return hr;
-
-        // Set vertex buffer
-        UINT stride = sizeof(SimpleVertex);
-        UINT offset = 0;
-        m_pImmediateContext->IASetVertexBuffers(0, 1, &m_pVertexBuffer, &stride, &offset);
-
-        // Create index buffer
-        WORD indices[] =
-        {
-            3,1,0,
-            2,1,3,
-
-            0,5,4,
-            1,5,0,
-
-            3,4,7,
-            0,4,3,
-
-            1,6,5,
-            2,6,1,
-
-            2,7,6,
-            3,7,2,
-
-            6,4,5,
-            7,4,6,
-        };
-        bd.Usage = D3D11_USAGE_DEFAULT;
-        bd.ByteWidth = sizeof(WORD) * 36;        // 36 vertices needed for 12 triangles in a triangle list
-        bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-        bd.CPUAccessFlags = 0;
-        InitData.pSysMem = indices;
-        hr = m_pd3dDevice->CreateBuffer(&bd, &InitData, &m_pIndexBuffer);
-        if (FAILED(hr))
-            return hr;
-
-        // Set index buffer
-        m_pImmediateContext->IASetIndexBuffer(m_pIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
-        // Set primitive topology
-        m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        // Create the constant buffer
-        bd.Usage = D3D11_USAGE_DEFAULT;
-        bd.ByteWidth = sizeof(ConstantBuffer);
-        bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-        bd.CPUAccessFlags = 0;
-        hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &m_pConstantBuffer);
-        if (FAILED(hr))
-            return hr;
-
-        // Initialize the world matrix
-        m_World = XMMatrixIdentity();
-
         // Initialize the view matrix
-        XMVECTOR Eye = XMVectorSet(0.0f, 1.0f, -5.0f, 0.0f);
-        XMVECTOR At = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+        XMVECTOR Eye = XMVectorSet(0.0f, 0.0f, 5.0f, 0.0f);
+        XMVECTOR At = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
         XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
         m_View = XMMatrixLookAtLH(Eye, At, Up);
 
@@ -352,6 +292,73 @@ public:
         return S_OK;
     }
 
+    virtual void SetCameraLookAt(Vector3d Eye, Vector3d At) override
+    {
+        // Initialize the view matrix
+        XMVECTOR _Eye = XMVectorSet(Eye.x, Eye.y, Eye.z, 0.0f);
+        XMVECTOR _At = XMVectorSet(At.x, At.y, At.z, 0.0f);
+        XMVECTOR _Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+        m_View = XMMatrixLookAtLH(_Eye, _At, _Up);
+    }
+
+    virtual bool AddMesh(const char* Id, const Vertex1* pVerties, int nVerties, const unsigned short* pIndices, int nIndices) override
+    {
+        HRESULT hr = S_OK;
+
+        DX11StaticMesh mesh;
+        mesh.Id = std::string(Id);
+
+        // Create vertex buffer
+        D3D11_BUFFER_DESC bd = {};
+        bd.Usage = D3D11_USAGE_DEFAULT;
+        bd.ByteWidth = sizeof(Vertex1) * 8;
+        bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        bd.CPUAccessFlags = 0;
+
+        D3D11_SUBRESOURCE_DATA InitData = {};
+        InitData.pSysMem = (const void*)pVerties;
+        hr = m_pd3dDevice->CreateBuffer(&bd, &InitData, &mesh.pVertexBuffer);
+        if (FAILED(hr))
+            return false;
+
+        // Set vertex buffer
+        UINT stride = sizeof(Vertex1);
+        UINT offset = 0;
+        m_pImmediateContext->IASetVertexBuffers(0, 1, &mesh.pVertexBuffer, &stride, &offset);
+
+        // Create index buffer
+        bd.Usage = D3D11_USAGE_DEFAULT;
+        bd.ByteWidth = sizeof(WORD) * 36;        // 36 vertices needed for 12 triangles in a triangle list
+        bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+        bd.CPUAccessFlags = 0;
+        InitData.pSysMem = (const void*)pIndices;
+        hr = m_pd3dDevice->CreateBuffer(&bd, &InitData, &mesh.pIndexBuffer);
+        if (FAILED(hr))
+            return false;
+
+        // Set index buffer
+        m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+
+        // Set primitive topology
+        m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        // Create the constant buffer
+        bd.Usage = D3D11_USAGE_DEFAULT;
+        bd.ByteWidth = sizeof(ConstantBuffer);
+        bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        bd.CPUAccessFlags = 0;
+        hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &mesh.pConstantBuffer);
+        if (FAILED(hr))
+            return false;
+
+        // Initialize the world matrix
+        mesh.matWorld = XMMatrixIdentity();
+        mesh.IndexCount = nIndices;
+
+        m_AllMesh.push_back(mesh);
+
+        return true;
+    }
 
     //--------------------------------------------------------------------------------------
     // Helper for compiling shaders with D3DCompile
@@ -375,8 +382,7 @@ public:
 #endif
 
         ID3DBlob* pErrorBlob = nullptr;
-        hr = D3DCompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel,
-            dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
+        hr = D3DCompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel, dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
         if (FAILED(hr))
         {
             if (pErrorBlob)
@@ -396,51 +402,29 @@ public:
     //--------------------------------------------------------------------------------------
     virtual void Render() override
     {
-        // Update our time
-        static float t = 0.0f;
-        if (m_driverType == D3D_DRIVER_TYPE_REFERENCE)
-        {
-            t += (float)XM_PI * 0.0125f;
-        }
-        else
-        {
-            static ULONGLONG timeStart = 0;
-            ULONGLONG timeCur = GetTickCount64();
-            if (timeStart == 0)
-                timeStart = timeCur;
-            t = (timeCur - timeStart) / 1000.0f;
-        }
-
-        //
-        // Animate the cube
-        //
-        m_World = XMMatrixRotationY(t);
-
-        //
         // Clear the back buffer
-        //
         m_pImmediateContext->ClearRenderTargetView(m_pRenderTargetView, Colors::Black);
 
-        //
+        // Set VS and PS
+        m_pImmediateContext->VSSetShader(m_pVertexShader, nullptr, 0);
+        m_pImmediateContext->PSSetShader(m_pPixelShader, nullptr, 0);
+
         // Update variables
-        //
         ConstantBuffer cb;
-        cb.mWorld = XMMatrixTranspose(m_World);
         cb.mView = XMMatrixTranspose(m_View);
         cb.mProjection = XMMatrixTranspose(m_Projection);
-        m_pImmediateContext->UpdateSubresource(m_pConstantBuffer, 0, nullptr, &cb, 0, 0);
 
-        //
-        // Renders a triangle
-        //
-        m_pImmediateContext->VSSetShader(m_pVertexShader, nullptr, 0);
-        m_pImmediateContext->VSSetConstantBuffers(0, 1, &m_pConstantBuffer);
-        m_pImmediateContext->PSSetShader(m_pPixelShader, nullptr, 0);
-        m_pImmediateContext->DrawIndexed(36, 0, 0);        // 36 vertices needed for 12 triangles in a triangle list
+        for (size_t i = 0; i < m_AllMesh.size(); ++i)
+        {
+            const DX11StaticMesh& mesh = m_AllMesh[i];
 
-        //
+            cb.mWorld = XMMatrixTranspose(mesh.matWorld);
+            m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
+            m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
+            m_pImmediateContext->DrawIndexed(mesh.IndexCount, 0, 0);        // 36 vertices needed for 12 triangles in a triangle list
+        }
+
         // Present our back buffer to our front buffer
-        //
         m_pSwapChain->Present(0, 0);
     }
 
@@ -457,16 +441,15 @@ private:
     ID3D11VertexShader* m_pVertexShader = nullptr;
     ID3D11PixelShader* m_pPixelShader = nullptr;
     ID3D11InputLayout* m_pVertexLayout = nullptr;
-    ID3D11Buffer* m_pVertexBuffer = nullptr;
-    ID3D11Buffer* m_pIndexBuffer = nullptr;
-    ID3D11Buffer* m_pConstantBuffer = nullptr;
-    XMMATRIX                m_World;
+
     XMMATRIX                m_View;
     XMMATRIX                m_Projection;
+
+    std::vector<DX11StaticMesh> m_AllMesh;
 };
 
 // static
-Renderer* Renderer::CreateDX11Renderer(void* hWnd, const std::string& shader_path)
+Renderer* Renderer::CreateDX11Renderer(void* hWnd, const char* shader_path)
 {
     DX11Renderer* p = new DX11Renderer();
     if (p->InitDevice((HWND)hWnd, shader_path) == S_OK)
