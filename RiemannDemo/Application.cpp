@@ -50,7 +50,7 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow)
 
     // Create window
     g_hInst = hInstance;
-    RECT rc = { 0, 0, 800, 600 };
+    RECT rc = { 0, 0, 1024, 768 };
     AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
     g_hWnd = CreateWindow(L"DX11WindowClass", L"DX11 Renderer",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
@@ -85,7 +85,7 @@ void InitScene()
         { Vector3d(100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
         { Vector3d(-100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
     };
-    WORD Grounds_indices[] =
+    unsigned int Grounds_indices[] =
     {
         2,1,0,
         2,3,0,
@@ -105,7 +105,7 @@ void InitScene()
     };
 
     // Create index buffer
-    WORD indices[] =
+    unsigned int indices[] =
     {
         3,1,0,
         2,1,3,
@@ -127,6 +127,10 @@ void InitScene()
     };
 
     g_Renderer->AddMesh("Cube", vertices, sizeof(vertices) / sizeof(vertices[0]), indices, sizeof(indices) / sizeof(indices[0]));
+
+
+    // dungeon, fighting
+    g_Renderer->LoadObj("D:\\src\\client\\tools\\RecastEditor\\RecastDemo\\Release\\Meshes\\fighting.obj");
 }
 
 //--------------------------------------------------------------------------------------

@@ -8,6 +8,8 @@
 #include <directxmath.h>
 #include <directxcolors.h>
 
+#include "tiny_obj_loader.h"
+
 using namespace DirectX;
 
 //--------------------------------------------------------------------------------------
@@ -315,7 +317,7 @@ public:
         m_View = XMMatrixLookAtLH(Eye, At, Up);
 
         // Initialize the projection matrix
-        m_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / (FLOAT)height, 0.01f, 100.0f);
+        m_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / (FLOAT)height, 0.01f, 10000.0f);
 
         return S_OK;
     }
@@ -360,7 +362,7 @@ public:
         m_View = XMMatrixLookAtLH(_Eye, _At, _Up);
     }
 
-    virtual bool AddMesh(const char* Id, const Vertex1* pVerties, int nVerties, const unsigned short* pIndices, int nIndices) override
+    virtual bool AddMesh(const char* Id, const Vertex1* pVerties, int nVerties, const unsigned int* pIndices, int nIndices) override
     {
         HRESULT hr = S_OK;
 
@@ -387,7 +389,7 @@ public:
 
         // Create index buffer
         bd.Usage = D3D11_USAGE_DEFAULT;
-        bd.ByteWidth = sizeof(WORD) * nIndices;        // 36 vertices needed for 12 triangles in a triangle list
+        bd.ByteWidth = sizeof(pIndices[0]) * nIndices;
         bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
         bd.CPUAccessFlags = 0;
         InitData.pSysMem = (const void*)pIndices;
@@ -396,7 +398,7 @@ public:
             return false;
 
         // Set index buffer
-        m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+        m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
         // Set primitive topology
         m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -446,6 +448,55 @@ public:
             }
         }
         return false;
+    }
+
+    void LoadObj(const char* filename)
+    {
+        std::vector<tinyobj::shape_t> shapes;
+        tinyobj::attrib_t attrib;
+        tinyobj::LoadObj(&attrib, &shapes, nullptr, nullptr, nullptr, filename);
+
+        std::vector<Vertex1> vv;
+        for (size_t i = 0; i < attrib.vertices.size(); i+=3)
+        {
+            Vertex1 v;
+            v.Pos = Vector3d(attrib.vertices[i], attrib.vertices[i+1], attrib.vertices[i+2]);
+            v.Color = Vector4d(1.0, 0.0f, 1.0f, 1.0f);
+            vv.push_back(v);
+        }
+
+        for (size_t i = 0; i < shapes.size(); ++i)
+        {
+            std::vector<unsigned int> vi;
+            std::vector<tinyobj::index_t>& indices = shapes[i].mesh.indices;
+
+            for (size_t j = 0; j < indices.size(); j += 3)
+            {
+                int i0 = indices[j].vertex_index;
+                int i1 = indices[j+1].vertex_index;
+                int i2 = indices[j+2].vertex_index;
+
+                vi.push_back(i0);
+                vi.push_back(i1);
+                vi.push_back(i2);
+
+                Vector3d v0 = Vector3d(attrib.vertices[3 * i0], attrib.vertices[3 * i0 + 1], attrib.vertices[3 * i0 + 2]);
+                Vector3d v1 = Vector3d(attrib.vertices[3 * i1], attrib.vertices[3 * i1 + 1], attrib.vertices[3 * i1 + 2]);
+                Vector3d v2 = Vector3d(attrib.vertices[3 * i2], attrib.vertices[3 * i2 + 1], attrib.vertices[3 * i2 + 2]);
+            
+                Vector3d normal = (v2 - v0).Cross(v1 - v0);
+                normal.Normalize();
+                normal = Vector3d(0.5f, 0.5f, 0.5f) + normal * 0.5f;
+                vv[i0].Color = Vector4d(normal.x, normal.y, normal.z, 1.0f);
+                vv[i1].Color = Vector4d(normal.x, normal.y, normal.z, 1.0f);
+                vv[i2].Color = Vector4d(normal.x, normal.y, normal.z, 1.0f);
+            }
+
+            AddMesh(shapes[i].name.c_str(), &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
+        }
+
+        return;
+
     }
 
     //--------------------------------------------------------------------------------------
@@ -514,7 +565,7 @@ public:
             UINT stride = sizeof(Vertex1);
             UINT offset = 0;
             m_pImmediateContext->IASetVertexBuffers(0, 1, &mesh.pVertexBuffer, &stride, &offset);
-            m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+            m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
             m_pImmediateContext->DrawIndexed(mesh.IndexCount, 0, 0);
         }

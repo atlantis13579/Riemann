@@ -41,6 +41,7 @@ public:
 		z = v.z;
 		w = v.w;
 	}
+
 	Vector4d()
 	{
 	}

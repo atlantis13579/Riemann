@@ -59,6 +59,11 @@ THE SOFTWARE.
 #ifndef TINY_OBJ_LOADER_H_
 #define TINY_OBJ_LOADER_H_
 
+#define _USE_MATH_DEFINES
+
+#undef max
+#undef min 
+
 #include <map>
 #include <string>
 #include <vector>
