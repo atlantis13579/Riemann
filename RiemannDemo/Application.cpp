@@ -13,7 +13,7 @@
 #include <windows.h>
 #include "resource.h"
 
-#include "DX11Renderer.h"
+#include "../Renderer/Renderer.h"
 
 //--------------------------------------------------------------------------------------
 // Forward declarations
@@ -76,7 +76,7 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
     if( FAILED( InitWindow( hInstance, nCmdShow ) ) )
         return 0;
 
-    g_Renderer = Renderer::CreateDX11Renderer(g_hWnd);
+    g_Renderer = Renderer::CreateDX11Renderer(g_hWnd, "../Renderer/");
     if (g_Renderer == nullptr)
     {
         return 0;

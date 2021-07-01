@@ -56,7 +56,7 @@ public:
     //--------------------------------------------------------------------------------------
     // Create Direct3D device and swap chain
     //--------------------------------------------------------------------------------------
-    HRESULT InitDevice(HWND hWnd)
+    HRESULT InitDevice(HWND hWnd, const std::string& shader_path)
     {
         HRESULT hr = S_OK;
 
@@ -207,7 +207,13 @@ public:
 
         // Compile the vertex shader
         ID3DBlob* pVSBlob = nullptr;
-        hr = CompileShaderFromFile(L"simple.fxh", "VS", "vs_4_0", &pVSBlob);
+        std::wstring shader_file;
+        for (int i = 0; i < shader_path.length(); ++i)
+        {
+            shader_file += wchar_t(shader_path[i]);
+        }
+        shader_file += L"/simple.fxh";
+        hr = CompileShaderFromFile(shader_file.c_str(), "VS", "vs_4_0", &pVSBlob);
         if (FAILED(hr))
         {
             MessageBox(nullptr,
@@ -243,7 +249,7 @@ public:
 
         // Compile the pixel shader
         ID3DBlob* pPSBlob = nullptr;
-        hr = CompileShaderFromFile(L"simple.fxh", "PS", "ps_4_0", &pPSBlob);
+        hr = CompileShaderFromFile(shader_file.c_str(), "PS", "ps_4_0", &pPSBlob);
         if (FAILED(hr))
         {
             MessageBox(nullptr,
@@ -460,10 +466,10 @@ private:
 };
 
 // static
-Renderer* Renderer::CreateDX11Renderer(void* hWnd)
+Renderer* Renderer::CreateDX11Renderer(void* hWnd, const std::string& shader_path)
 {
     DX11Renderer* p = new DX11Renderer();
-    if (p->InitDevice((HWND)hWnd) == S_OK)
+    if (p->InitDevice((HWND)hWnd, shader_path) == S_OK)
     {
         return p;
     }
