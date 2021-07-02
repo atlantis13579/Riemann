@@ -1,11 +1,19 @@
 
 #include <vector>
 
+class PBDProxy;
+
 class PBDConstraint
 {
 public:
+	PBDConstraint(PBDProxy* Proxy)
+	{
+		m_Proxy = Proxy;
+	}
 	virtual ~PBDConstraint() = 0;
 	virtual void Solve() = 0;
+protected:
+	PBDProxy* m_Proxy;
 };
 
 class PBDCollision
