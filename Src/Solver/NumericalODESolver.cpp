@@ -7,19 +7,19 @@ namespace NumericalODESolver
 {
 
 // https://en.wikipedia.org/wiki/Explicit_and_implicit_methods
-ExplicitEuler::ExplicitEuler(const ODEVectorFunction& dvdt, int nDof, float t0)
+ExplicitEuler::ExplicitEuler(const ODEVectorFunction& dvdt, float t0)
 {
 	m_dvdt = dvdt;
-	m_Dof = nDof;
 	m_t = t0;
-	m_buf.resize(nDof);
 }
 
-void ExplicitEuler::Integrate(float dt, float* v)
+void ExplicitEuler::Integrate(float dt, int nDof, float* v)
 {
+	if (m_buf.size() < nDof)
+		m_buf.resize(nDof);
 	float *dv = &m_buf[0];
-	m_dvdt(v, m_Dof, m_t, dv);
-	for (int i = 0; i < m_Dof; ++i)
+	m_dvdt(v, nDof, m_t, dv);
+	for (int i = 0; i < nDof; ++i)
 	{
 		v[i] = v[i] + dv[i] * dt;
 	}
@@ -28,26 +28,26 @@ void ExplicitEuler::Integrate(float dt, float* v)
 
 
 // https://en.wikipedia.org/wiki/Midpoint_method
-MidpointRule::MidpointRule(const ODEVectorFunction& dvdt, int nDof, float t0)
+MidpointRule::MidpointRule(const ODEVectorFunction& dvdt, float t0)
 {
 	m_dvdt = dvdt;
-	m_Dof = nDof;
 	m_t = t0;
-	m_buf.resize(nDof * 2);
 }
 
-void MidpointRule::Integrate(float dt, float* v)
+void MidpointRule::Integrate(float dt, int nDof, float* v)
 {
+	if (m_buf.size() < 2 * nDof)
+		m_buf.resize(2 * nDof);
 	float* dv = &m_buf[0];
-	float* dh = dv + m_Dof;
+	float* dh = dv + nDof;
 
-	m_dvdt(v, m_Dof, m_t, dv);
-	for (int i = 0; i < m_Dof; ++i)
+	m_dvdt(v, nDof, m_t, dv);
+	for (int i = 0; i < nDof; ++i)
 	{
 		dh[i] = v[i] + dv[i] * dt * 0.5f;
 	}
-	m_dvdt(dh, m_Dof, m_t, dv);
-	for (int i = 0; i < m_Dof; ++i)
+	m_dvdt(dh, nDof, m_t, dv);
+	for (int i = 0; i < nDof; ++i)
 	{
 		v[i] = v[i] + dv[i] * dt;
 	}
@@ -56,16 +56,15 @@ void MidpointRule::Integrate(float dt, float* v)
 
 
 // https://en.wikipedia.org/wiki/Semi-implicit_Euler_method
-SymplecticEuler::SymplecticEuler(const ODEVectorFunction2& dvdt, int nDof, float t0)
+SymplecticEuler::SymplecticEuler(const ODEVectorFunction2& dvdt, float t0)
 {
 	m_dvdt = dvdt;
-	m_Dof = nDof;
 	m_t = t0;
 }
 
-void SymplecticEuler::Integrate(float dt, float* v)
+void SymplecticEuler::Integrate(float dt, int nDof, float* v)
 {
-	for (int i = 0; i < m_Dof; ++i)
+	for (int i = 0; i < nDof; ++i)
 	{
 		v[i] = v[i] + m_dvdt(v, i, m_t) * dt;
 	}
@@ -74,25 +73,26 @@ void SymplecticEuler::Integrate(float dt, float* v)
 
 
 // https://en.wikipedia.org/wiki/Backward_Euler_method
-ImplicitEuler_FixedPointIteration::ImplicitEuler_FixedPointIteration(const ODEVectorFunction& dvdt, int nDof, float t0, int MaxIter)
+ImplicitEuler_FixedPointIteration::ImplicitEuler_FixedPointIteration(const ODEVectorFunction& dvdt, float t0, int MaxIter)
 {
 	m_dvdt = dvdt;
-	m_Dof = nDof;
 	m_MaxIter = MaxIter;
 	m_t = t0;
-	m_buf.resize(nDof);
 }
 
-void ImplicitEuler_FixedPointIteration::Integrate(float dt, float* v)
+void ImplicitEuler_FixedPointIteration::Integrate(float dt, int nDof, float* v)
 {
+	if (m_buf.size() < nDof)
+		m_buf.resize(nDof);
+
 	float* dv = &m_buf[0];
 
 	int nIter = 0;
 	while (nIter++ < m_MaxIter)
 	{
-		m_dvdt(v, m_Dof, m_t, dv);
+		m_dvdt(v, nDof, m_t, dv);
 		bool converge = true;
-		for (int i = 0; i < m_Dof; ++i)
+		for (int i = 0; i < nDof; ++i)
 		{
 			float dev = fabsf(dv[i] * dt);
 			if (dev < 0.0001f)
@@ -108,30 +108,31 @@ void ImplicitEuler_FixedPointIteration::Integrate(float dt, float* v)
 
 // https://en.wikipedia.org/wiki/Backward_Euler_method
 // https://en.wikipedia.org/wiki/Stiff_equation
-ImplicitEuler_NewtonIteration::ImplicitEuler_NewtonIteration(const ODEVectorFunction& dvdt, const ODEVectorFunction& d2vdt2, int nDof, float t0, int MaxIter)
+ImplicitEuler_NewtonIteration::ImplicitEuler_NewtonIteration(const ODEVectorFunction& dvdt, const ODEVectorFunction& d2vdt2, float t0, int MaxIter)
 {
 	m_dvdt = dvdt;
 	m_d2vt2 = d2vdt2;
-	m_Dof = nDof;
 	m_MaxIter = MaxIter;
 	m_t = t0;
-	m_buf.resize(3 * nDof);
 }
 
-void ImplicitEuler_NewtonIteration::Integrate(float dt, float* v)
+void ImplicitEuler_NewtonIteration::Integrate(float dt, int nDof, float* v)
 {
+	if (m_buf.size() < 3 * nDof)
+		m_buf.resize(3 * nDof);
+
 	float* dv = &m_buf[0];
-	float* d2v = dv + m_Dof;
-	float* v0 = dv + 2 * m_Dof;
-	memcpy(v0, v, sizeof(v[0]) * m_Dof);
+	float* d2v = dv + nDof;
+	float* v0 = dv + 2 * nDof;
+	memcpy(v0, v, sizeof(v[0]) * nDof);
 
 	int nIter = 0;
 	while (nIter++ < m_MaxIter)
 	{
-		m_dvdt(v, m_Dof, m_t, dv);
-		m_d2vt2(v, m_Dof, m_t, d2v);
+		m_dvdt(v, nDof, m_t, dv);
+		m_d2vt2(v, nDof, m_t, d2v);
 		bool converge = true;
-		for (int i = 0; i < m_Dof; ++i)
+		for (int i = 0; i < nDof; ++i)
 		{
 			// https://en.wikipedia.org/wiki/Newton%27s_method
 			float F = v[i] - v0[i] - dt * dv[i];
@@ -151,31 +152,30 @@ void ImplicitEuler_NewtonIteration::Integrate(float dt, float* v)
 
 
 // https://en.wikipedia.org/wiki/Verlet_integration
-VerletIntegration::VerletIntegration(const ODEVectorFunction& d2vdt2, int nDof, float t0)
+VerletIntegration::VerletIntegration(const ODEVectorFunction& d2vdt2, float t0)
 {
 	m_d2vdt2 = d2vdt2;
-	m_Dof = nDof;
 	m_t = t0;
 }
 
-void VerletIntegration::Integrate(float dt, float* v)
+void VerletIntegration::Integrate(float dt, int nDof, float* v)
 {
-	if (m_buf.empty())
+	if (m_buf.size() != 2 * nDof)
 	{
-		m_buf.resize(2 * m_Dof);
-		memcpy(&m_buf[0], v, sizeof(v[0]) * m_Dof);
+		m_buf.resize(2 * nDof);
+		memcpy(&m_buf[0], v, sizeof(v[0]) * nDof);
 	}
 	else
 	{
 		float* v_prev = &m_buf[0];
-		float* d2v = v_prev + m_Dof;
+		float* d2v = v_prev + nDof;
 
-		m_d2vdt2(v, m_Dof, m_t, d2v);
-		for (int i = 0; i < m_Dof; ++i)
+		m_d2vdt2(v, nDof, m_t, d2v);
+		for (int i = 0; i < nDof; ++i)
 		{
 			float prev = v_prev[i];
 			v_prev[i] = v[i];
-			v[i] = 2 * v[i] - prev + d2v[i] * dt * dt;
+			v[i] += v[i] - prev + d2v[i] * dt * dt;
 		}
 	}
 
@@ -184,42 +184,43 @@ void VerletIntegration::Integrate(float dt, float* v)
 
 
 // https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
-RungeKutta4::RungeKutta4(const ODEVectorFunction& dvdt, int nDof, float t0)
+RungeKutta4::RungeKutta4(const ODEVectorFunction& dvdt, float t0)
 {
 	m_dvdt = dvdt;
-	m_Dof = nDof;
 	m_t = t0;
-	m_buf.resize(nDof * 3);
 }
 
-void RungeKutta4::Integrate(float dt, float* v)
+void RungeKutta4::Integrate(float dt, int nDof, float* v)
 {
+	if (m_buf.size() < 3 * nDof)
+		m_buf.resize(3 * nDof);
+
 	float* dv = &m_buf[0];
-	float* v0 = dv + m_Dof;
-	float* t = dv + 2 * m_Dof;
+	float* v0 = dv + nDof;
+	float* t = dv + 2 * nDof;
 
-	memcpy(v0, v, sizeof(v[0]) * m_Dof);
+	memcpy(v0, v, sizeof(v[0]) * nDof);
 
-	m_dvdt(v, m_Dof, m_t, &dv[0]);		// k1
-	for (int i = 0; i < m_Dof; ++i)
+	m_dvdt(v, nDof, m_t, &dv[0]);		// k1
+	for (int i = 0; i < nDof; ++i)
 	{
 		v[i] = v[i] + dt * dv[i] / 6.0f;
 		t[i] = v0[i] + dt * dv[i] * 0.5f;
 	}
-	m_dvdt(t, m_Dof, m_t, &dv[0]);		// k2
-	for (int i = 0; i < m_Dof; ++i)
+	m_dvdt(t, nDof, m_t, &dv[0]);		// k2
+	for (int i = 0; i < nDof; ++i)
 	{
 		v[i] = v[i] + dt * dv[i] / 3.0f;
 		t[i] = v0[i] + dt * dv[i] * 0.5f;
 	}
-	m_dvdt(t, m_Dof, m_t, &dv[0]);		// k3
-	for (int i = 0; i < m_Dof; ++i)
+	m_dvdt(t, nDof, m_t, &dv[0]);		// k3
+	for (int i = 0; i < nDof; ++i)
 	{
 		v[i] = v[i] + dt * dv[i] / 3.0f;
 		t[i] = v0[i] + dt * dv[i];
 	}
-	m_dvdt(t, m_Dof, m_t, &dv[0]);		// k4
-	for (int i = 0; i < m_Dof; ++i)
+	m_dvdt(t, nDof, m_t, &dv[0]);		// k4
+	for (int i = 0; i < nDof; ++i)
 	{
 		v[i] = v[i] + dt * dv[i] / 6.0f;
 	}
