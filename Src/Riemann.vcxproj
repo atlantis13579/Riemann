@@ -25,6 +25,7 @@
     <ClCompile Include="Maths\Maths.cpp" />
     <ClCompile Include="Solver\ConjugateGradientSolver.cpp" />
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
+    <ClCompile Include="Solver\NumericalODESolver.cpp" />
     <ClCompile Include="Solver\PolarDecompose.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
     <ClCompile Include="Solver\Tetrahedral.cpp" />
@@ -46,6 +47,7 @@
     <ClInclude Include="Maths\Vector4d.h" />
     <ClInclude Include="Solver\ConjugateGradientSolver.h" />
     <ClInclude Include="Solver\NewtonRaphsonIteration.h" />
+    <ClInclude Include="Solver\NumericalODESolver.h" />
     <ClInclude Include="Solver\PolarDecompose.h" />
     <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />
     <ClInclude Include="Solver\Tetrahedral.h" />

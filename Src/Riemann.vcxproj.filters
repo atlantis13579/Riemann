@@ -33,6 +33,7 @@
     <ClInclude Include="Solver\Tetrahedral.h" />
     <ClInclude Include="Geometry\ConvexHull2D.h" />
     <ClInclude Include="Maths\Vector4d.h" />
+    <ClInclude Include="Solver\NumericalODESolver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -46,5 +47,6 @@
     <ClCompile Include="Solver\PolarDecompose.cpp" />
     <ClCompile Include="Solver\Tetrahedral.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
+    <ClCompile Include="Solver\NumericalODESolver.cpp" />
   </ItemGroup>
 </Project>
