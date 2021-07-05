@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Vector3d.h"
+#include "Vector4d.h"
 
 class Matrix4d
 {
@@ -111,5 +112,10 @@ public:
 			for (int j = 0; j < 4; j++)
 				m[i][j] = mat[i][j] - mm.mat[i][j];
 		return Matrix4d(m);
+	}
+
+	Vector4d Row(int i) const
+	{
+		return Vector4d(mat[i][0], mat[i][1], mat[i][2], mat[i][3]);
 	}
 };

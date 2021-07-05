@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "Tetrahedral.h"
+#include "../Geometry/Tetrahedral.h"
 #include "ConjugateGradientSolver.h"
 
 #define MAX_ITERATIONS 5

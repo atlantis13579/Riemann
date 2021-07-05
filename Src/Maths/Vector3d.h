@@ -37,6 +37,14 @@ public:
 		y = v.y;
 		z = v.z;
 	}
+
+	Vector3d(float v)
+	{
+		x = v;
+		y = v;
+		z = v;
+	}
+
 	Vector3d()
 	{
 	}
@@ -49,6 +57,11 @@ public:
 	inline Vector3d Cross(const Vector3d& v) const
 	{
 		return Vector3d(y * v.z - v.y * z, z * v.x - v.z * x, x * v.y - v.x * y);
+	}
+
+	Vector3d Abs() const
+	{
+		return Vector3d(fabsf(x), fabsf(y), fabsf(z));
 	}
 
 	Vector3d Unit() const
@@ -154,6 +167,16 @@ public:
 		x /= k;
 		y /= k;
 		z /= k;
+	}
+
+	bool operator==(const Vector3d& v) const
+	{
+		return x == v.x && y == v.y && z == v.z;
+	}
+
+	bool operator!=(const Vector3d& v) const
+	{
+		return x != v.x || y != v.y || z != v.z;
 	}
 
 	static Vector3d Lerp(Vector3d& start, Vector3d& end, float t)

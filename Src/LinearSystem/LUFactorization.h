@@ -2,24 +2,25 @@
 #pragma once
 
 // https://en.wikipedia.org/wiki/LU_decomposition
+template<typename T>
 class LUFactorization
 {
 public:
-	static void Solve(const float* A, int N, float* L, float* U)
+	static void Solve(const T* A, int N, T* L, T* U)
 	{
 		memset(U, 0, sizeof(U[0]) * N * N);
 
 		memset(L, 0, sizeof(L[0]) * N * N);
 		for (int i = 0; i < N; ++i)
 		{
-			L[i*N + i] = 1.0f;
+			L[i*N + i] = (T)1;
 		}
 
 		for (int i = 0; i < N; ++i)
 		{
 			for (int j = i; j < N; ++j)
 			{
-				float s = 0.0f;
+				T s = (T)0;
 				for (int k = 0; k < i; ++k)
 				{
 					s += L[i * N + k] * U[k * N + i];
@@ -36,7 +37,7 @@ public:
 			{
 				for (int j = i + 1; j < N; ++j)
 				{
-					float s = 0.0f;
+					T s = (T)0;
 					for (int k = 0; k < i; ++k)
 					{
 						s += L[i * N + k] * U[k * N + i];

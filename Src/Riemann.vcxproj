@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
+    <ClCompile Include="Geometry\Tetrahedral.cpp" />
     <ClCompile Include="Image\ImageProcessing.cpp" />
     <ClCompile Include="LinearSystem\PolarDecomposition.cpp" />
     <ClCompile Include="LinearSystem\SVDDecomposition.cpp" />
@@ -30,10 +31,22 @@
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
-    <ClCompile Include="Solver\Tetrahedral.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Geometry\AxisAlignedBox.h" />
+    <ClInclude Include="Geometry\BoxShape.h" />
+    <ClInclude Include="Geometry\Capsule.h" />
+    <ClInclude Include="Geometry\Convex.h" />
     <ClInclude Include="Geometry\ConvexHull2D.h" />
+    <ClInclude Include="Geometry\Cylinder.h" />
+    <ClInclude Include="Geometry\GeometricObject.h" />
+    <ClInclude Include="Geometry\OrientedBox.h" />
+    <ClInclude Include="Geometry\Plane.h" />
+    <ClInclude Include="Geometry\Ray.h" />
+    <ClInclude Include="Geometry\Sphere.h" />
+    <ClInclude Include="Geometry\Tetrahedral.h" />
+    <ClInclude Include="Geometry\Triangle.h" />
+    <ClInclude Include="Geometry\TriangleMesh.h" />
     <ClInclude Include="Image\ImageProcessing.h" />
     <ClInclude Include="Image\Rasterizer.h" />
     <ClInclude Include="LinearSystem\GaussSeidelIteration_CPU.h" />
@@ -41,6 +54,7 @@
     <ClInclude Include="LinearSystem\LUFactorization.h" />
     <ClInclude Include="LinearSystem\PolarDecomposition.h" />
     <ClInclude Include="LinearSystem\SVDDecomposition.h" />
+    <ClInclude Include="Maths\BoundingBox3d.h" />
     <ClInclude Include="Maths\Array.h" />
     <ClInclude Include="Maths\Bezier.h" />
     <ClInclude Include="Maths\Maths.h" />
@@ -57,7 +71,6 @@
     <ClInclude Include="Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="Solver\NumericalODESolver.h" />
     <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />
-    <ClInclude Include="Solver\Tetrahedral.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

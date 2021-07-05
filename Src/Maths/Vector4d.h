@@ -8,6 +8,8 @@
 #include <math.h>
 #include <algorithm>
 
+#include "Vector3d.h"
+
 class Vector4d
 {
 public:
@@ -42,15 +44,27 @@ public:
 		w = v.w;
 	}
 
+	Vector4d(float v)
+	{
+		x = v;
+		y = v;
+		z = v;
+		w = v;
+	}
+
 	Vector4d()
 	{
+	}
+
+	Vector3d xyz()
+	{
+		return Vector3d(x, y, z);
 	}
 
 	inline float    Dot(const Vector4d& v) const
 	{
 		return x * v.x + y * v.y + z * v.z + w * v.w;
 	}
-
 
 	Vector4d Unit() const
 	{

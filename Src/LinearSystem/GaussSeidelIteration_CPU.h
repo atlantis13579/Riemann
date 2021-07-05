@@ -1,19 +1,20 @@
 
 #pragma once
 
-// Solve A * X = B , A, B is square Matrix of size N
+// Solve A * X = B , A is square Matrix of size N, B is Vector of size N
 // https://en.wikipedia.org/wiki/Gauss%E2%80%93Seidel_method
+template<typename T>
 class GaussSeidelIteration_CPU
 {
 public:
-	static void Solve(const float* A, const float* B, int N, int MaxIteration, float* X)
+	static void Solve(const T* A, const T* B, int N, int MaxIteration, T* X)
 	{
 		int Iter = 0;
 		while (Iter++ < MaxIteration)
 		{
 			for (int i = 0; i < N; ++i)
 			{
-				float s = 0.0f;
+				T s = (T)0;
 				for (int j = 0; j < i; ++j)
 					s += A[i * N + j] * X[j];
 
@@ -23,11 +24,11 @@ public:
 				X[i] = (B[i] - s) / A[i * N + i];
 			}
 
-			float Norm = 0.f;
+			T Norm = (T)0;
 			for (int i = 0; i < N; i++)
 				Norm += X[i] * X[i];
 
-			bool converge = Norm < 0.00001f;
+			bool converge = Norm < (T)0.00001;
 			if (converge)
 			{
 				break;

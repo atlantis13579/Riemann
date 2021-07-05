@@ -3,27 +3,28 @@
 
 #include <vector>
 
-// Solve A * X = B , A, B is square Matrix of size N
+// Solve A * X = B , A is square Matrix of size N, B is Vector of size N
 // https://en.wikipedia.org/wiki/Jacobi_method
+template<typename T>
 class JacobiIteration_CPU
 {
 public:
 	JacobiIteration_CPU() {}
 
-	void Solve(const float* A, const float* B, int N, int MaxIteration, float* X)
+	void Solve(const T* A, const T* B, int N, int MaxIteration, T* X)
 	{
 		if (m_buf.size() < N)
 		{
 			m_buf.resize(N);
 		}
-		float* DX = &m_buf[0];
+		T* DX = &m_buf[0];
 
 		int Iter = 0;
 		while (Iter++ < MaxIteration)
 		{
 			for (int i = 0; i < N; ++i)
 			{
-				float s = 0.f;
+				T s = (T)0;
 				for (int j = 0; j < i; ++j)
 					s += A[i * N + j] * X[j];
 
@@ -33,13 +34,13 @@ public:
 				DX[i] = (B[i] - s) / A[i * N + i];
 			}
 
-			memcpy(X, DX, sizeof(float) * N);
+			memcpy(X, DX, sizeof(X[0]) * N);
 
-			float Norm = 0.f;
+			T Norm = (T)0;
 			for (int i = 0; i < N; i++)
 				Norm += X[i] * X[i];
 
-			bool converge = Norm < 0.00001f;
+			bool converge = Norm < (T)0.00001;
 			if (converge)
 			{
 				break;
@@ -48,6 +49,5 @@ public:
 	}
 
 private:
-	
-	std::vector<float> m_buf;
+	std::vector<T> m_buf;
 };
