@@ -111,11 +111,6 @@ public:
 		Max = Center + Extent;
 	}
 
-	float CalcVolume() const
-	{
-		return ((Max.x - Min.x) * (Max.y - Min.y) * (Max.z - Min.z));
-	}
-
 	bool Intersect(const BoundingBox3d& rhs) const
 	{
 		if (Min.x > rhs.Max.x || rhs.Min.x > Max.x)

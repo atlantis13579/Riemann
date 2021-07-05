@@ -2,7 +2,7 @@
 
 #include <vector>
 #include "../Maths/Maths.h"
-#include "../Maths/SparseMatrix.h"
+#include "../LinearSystem/SparseMatrix.h"
 
 enum DOF
 {

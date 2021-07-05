@@ -23,7 +23,6 @@
     <ClInclude Include="Maths\Matrix3d.h" />
     <ClInclude Include="Maths\Matrix4d.h" />
     <ClInclude Include="Maths\Quaternion.h" />
-    <ClInclude Include="Maths\SparseMatrix.h" />
     <ClInclude Include="Maths\Bezier.h" />
     <ClInclude Include="Solver\ConjugateGradientSolver.h" />
     <ClInclude Include="Solver\NewtonRaphsonIteration.h" />
@@ -52,6 +51,8 @@
     <ClInclude Include="Geometry\Tetrahedral.h" />
     <ClInclude Include="Geometry\TriangleMesh.h" />
     <ClInclude Include="Geometry\GeometricObject.h" />
+    <ClInclude Include="LinearSystem\SparseMatrix.h" />
+    <ClInclude Include="LinearSystem\DenseMatrix.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">

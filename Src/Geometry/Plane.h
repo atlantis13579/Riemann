@@ -3,7 +3,7 @@
 
 #include "GeometricObject.h"
 
-class Plane : public GeometricObject
+class Plane
 {
 public:
 	Vector3d Normal;    //  P * Normal + D = 0
@@ -19,7 +19,7 @@ public:
 	}
 
 public:
-	virtual bool			IntersectPoint(const Vector3d& Point) const override
+	bool			IntersectPoint(const Vector3d& Point) const
 	{
 		const float det = Point.Dot(Normal) + D;
 
@@ -30,7 +30,7 @@ public:
 		return false;
 	}
 
-	virtual bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const override
+	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
 	{
 		const float det = Dir.Dot(Normal);
 		if (det > -kEpsilonGeometric && det < kEpsilonGeometric) {
@@ -40,7 +40,7 @@ public:
 		return *t >= 0.0;
 	}
 
-	virtual bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const override
+	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
 	{
 		Vector3d v[8];
 		BoundingBox3d::GetVertices(Bmin, Bmax, v);
@@ -69,7 +69,7 @@ public:
 		return true;
 	}
 
-	virtual BoundingBox3d	GetBoundingBox() const override
+	BoundingBox3d	GetBoundingBox() const
 	{
 		BoundingBox3d Box(Vector3d::InfMin(), Vector3d::InfMax());
 		if (ParallelToXY())

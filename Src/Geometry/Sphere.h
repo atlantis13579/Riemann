@@ -1,9 +1,10 @@
 
 #pragma once
 
-#include "GeometricObject.h"
+#include <math.h>
+#include "../Maths/Matrix3d.h"
 
-class Sphere : public GeometricObject
+class Sphere
 {
 public:
 	Vector3d Center;
@@ -19,7 +20,7 @@ public:
 	}
 
 public:
-	virtual bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const override
+	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
 	{
 		Vector3d oc = Origin - Center;
 		float a = Dir.SquareLength();
@@ -39,7 +40,7 @@ public:
 		return false;
 	}
 
-	virtual bool			IntersectPoint(const Vector3d& Point) const override
+	bool			IntersectPoint(const Vector3d& Point) const
 	{
 		float sqr_dist = (Point - Center).SquareLength();
 		if (sqr_dist <= Radius * Radius)
@@ -50,7 +51,7 @@ public:
 	}
 
 	// AABB intersects with a solid sphere or not by Jim Arvo, in "Graphics Gems":
-	virtual bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const override
+	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
 	{
 		float dmin = 0.0f;
 		for (int i = 0; i < 3; i++)
@@ -72,10 +73,32 @@ public:
 		return false;
 	}
 
-	virtual BoundingBox3d	GetBoundingBox() const override
+	BoundingBox3d	GetBoundingBox() const
 	{
 		BoundingBox3d Box;
 		Box.BuildFromCenterAndExtent(Center, Vector3d(Radius));
 		return Box;
+	}
+
+	float GetVolume() const
+	{
+		const float FourThirdsPI = (4.0f / 3.0f) * (float)M_PI;
+		return FourThirdsPI * Radius * Radius * Radius;
+	}
+
+	Vector3d GetCenterOfMass() const
+	{
+		return Center;
+	}
+
+	Matrix3d GetInertiaTensor(float Mass) const
+	{
+		return GetInertiaTensor(Mass, Radius);
+	}
+
+	static Matrix3d GetInertiaTensor(const float Mass, const float Radius)
+	{
+		const float Diagonal = 2.0f * Mass * Radius * Radius / 5.0f;
+		return Matrix3d(Diagonal, Diagonal, Diagonal);
 	}
 };

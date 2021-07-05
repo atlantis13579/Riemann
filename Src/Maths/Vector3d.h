@@ -179,6 +179,11 @@ public:
 		return x != v.x || y != v.y || z != v.z;
 	}
 
+	float operator[](int i) const
+	{
+		return coords[i];
+	}
+
 	float operator()(int i) const
 	{
 		return coords[i];
