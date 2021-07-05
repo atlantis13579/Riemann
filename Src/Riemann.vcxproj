@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Collision\AABBPruner.cpp" />
+    <ClCompile Include="Collision\AABBTree.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
     <ClCompile Include="Geometry\Tetrahedral.cpp" />
     <ClCompile Include="Image\ImageProcessing.cpp" />
@@ -33,6 +35,8 @@
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Collision\AABBPruner.h" />
+    <ClInclude Include="Collision\AABBTree.h" />
     <ClInclude Include="Geometry\AxisAlignedBox.h" />
     <ClInclude Include="Geometry\BoxShape.h" />
     <ClInclude Include="Geometry\Capsule.h" />
