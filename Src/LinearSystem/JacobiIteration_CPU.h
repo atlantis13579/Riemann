@@ -12,39 +12,39 @@ public:
 
 	void Solve(const float* A, const float* B, int N, int MaxIteration, float* X)
 	{
-        if (m_buf.size() < N)
-        {
-            m_buf.resize(N);
-        }
-        float* DX = &m_buf[0];
+		if (m_buf.size() < N)
+		{
+			m_buf.resize(N);
+		}
+		float* DX = &m_buf[0];
 
-        int Iter = 0;
-        while (Iter++ < MaxIteration)
-        {
-            for (int i = 0; i < N; ++i)
-            {
-                float s = 0.f;
-                for (int j = 0; j < i; ++j)
-                    s += A[i * N + j] * X[j];
+		int Iter = 0;
+		while (Iter++ < MaxIteration)
+		{
+			for (int i = 0; i < N; ++i)
+			{
+				float s = 0.f;
+				for (int j = 0; j < i; ++j)
+					s += A[i * N + j] * X[j];
 
-                for (int j = i + 1; j < N; ++j)
-                    s += A[i * N + j] * X[j];
+				for (int j = i + 1; j < N; ++j)
+					s += A[i * N + j] * X[j];
 
-                DX[i] = (B[i] - s) / A[i * N + i];
-            }
+				DX[i] = (B[i] - s) / A[i * N + i];
+			}
 
-            memcpy(X, DX, sizeof(float) * N);
+			memcpy(X, DX, sizeof(float) * N);
 
-            float Norm = 0.f;
-            for (int i = 0; i < N; i++)
-                Norm += X[i] * X[i];
+			float Norm = 0.f;
+			for (int i = 0; i < N; i++)
+				Norm += X[i] * X[i];
 
-            bool converge = Norm < 0.00001f;
-            if (converge)
-            {
-                break;
-            }
-        }
+			bool converge = Norm < 0.00001f;
+			if (converge)
+			{
+				break;
+			}
+		}
 	}
 
 private:
