@@ -33,12 +33,12 @@
     <ClInclude Include="Geometry\ConvexHull2D.h" />
     <ClInclude Include="Maths\Vector4d.h" />
     <ClInclude Include="Solver\NumericalODESolver.h" />
-    <ClInclude Include="LinearAlgebra\PolarDecomposition.h" />
-    <ClInclude Include="LinearAlgebra\SVDDecomposition.h" />
     <ClInclude Include="PositionBasedDynamics\PositionBasedDynamicsSolver.h" />
-    <ClInclude Include="LinearAlgebra\JacobiIteration_CPU.h" />
-    <ClInclude Include="LinearAlgebra\GaussSeidelIteration_CPU.h" />
-    <ClInclude Include="LinearAlgebra\LUFactorization.h" />
+    <ClInclude Include="LinearSystem\JacobiIteration_CPU.h" />
+    <ClInclude Include="LinearSystem\LUFactorization.h" />
+    <ClInclude Include="LinearSystem\PolarDecomposition.h" />
+    <ClInclude Include="LinearSystem\SVDDecomposition.h" />
+    <ClInclude Include="LinearSystem\GaussSeidelIteration_CPU.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -52,8 +52,8 @@
     <ClCompile Include="Solver\Tetrahedral.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
-    <ClCompile Include="LinearAlgebra\PolarDecomposition.cpp" />
-    <ClCompile Include="LinearAlgebra\SVDDecomposition.cpp" />
     <ClCompile Include="PositionBasedDynamics\PositionBasedDynamicsSolver.cpp" />
+    <ClCompile Include="LinearSystem\PolarDecomposition.cpp" />
+    <ClCompile Include="LinearSystem\SVDDecomposition.cpp" />
   </ItemGroup>
 </Project>

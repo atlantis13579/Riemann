@@ -1,6 +1,6 @@
 
 #include "Tetrahedral.h"
-#include "../LinearAlgebra/PolarDecomposition.h"
+#include "../LinearSystem/PolarDecomposition.h"
 
 TetrahedralMesh::TetrahedralMesh()
 {

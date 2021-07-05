@@ -21,8 +21,8 @@
   <ItemGroup>
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
     <ClCompile Include="Image\ImageProcessing.cpp" />
-    <ClCompile Include="LinearAlgebra\PolarDecomposition.cpp" />
-    <ClCompile Include="LinearAlgebra\SVDDecomposition.cpp" />
+    <ClCompile Include="LinearSystem\PolarDecomposition.cpp" />
+    <ClCompile Include="LinearSystem\SVDDecomposition.cpp" />
     <ClCompile Include="Maths\Bezier.cpp" />
     <ClCompile Include="Maths\Maths.cpp" />
     <ClCompile Include="PositionBasedDynamics\PositionBasedDynamicsSolver.cpp" />
@@ -36,11 +36,11 @@
     <ClInclude Include="Geometry\ConvexHull2D.h" />
     <ClInclude Include="Image\ImageProcessing.h" />
     <ClInclude Include="Image\Rasterizer.h" />
-    <ClInclude Include="LinearAlgebra\GaussSeidelIteration_CPU.h" />
-    <ClInclude Include="LinearAlgebra\JacobiIteration_CPU.h" />
-    <ClInclude Include="LinearAlgebra\LUFactorization.h" />
-    <ClInclude Include="LinearAlgebra\PolarDecomposition.h" />
-    <ClInclude Include="LinearAlgebra\SVDDecomposition.h" />
+    <ClInclude Include="LinearSystem\GaussSeidelIteration_CPU.h" />
+    <ClInclude Include="LinearSystem\JacobiIteration_CPU.h" />
+    <ClInclude Include="LinearSystem\LUFactorization.h" />
+    <ClInclude Include="LinearSystem\PolarDecomposition.h" />
+    <ClInclude Include="LinearSystem\SVDDecomposition.h" />
     <ClInclude Include="Maths\Array.h" />
     <ClInclude Include="Maths\Bezier.h" />
     <ClInclude Include="Maths\Maths.h" />
