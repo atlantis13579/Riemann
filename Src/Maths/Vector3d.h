@@ -179,6 +179,11 @@ public:
 		return x != v.x || y != v.y || z != v.z;
 	}
 
+	float operator()(int i) const
+	{
+		return coords[i];
+	}
+
 	static Vector3d Lerp(Vector3d& start, Vector3d& end, float t)
 	{
 		return (start*(1 - t) + end * t);
@@ -196,5 +201,41 @@ public:
 		float angle = acosf(innerp) * t;
 		Vector3d base = (end - start * innerp).Unit();
 		return start * cosf(angle) + base * sinf(angle);
+	}
+
+	static Vector3d InfMin()
+	{
+		static Vector3d inf(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		return inf;
+	}
+
+	static Vector3d InfMax()
+	{
+		static Vector3d inf(FLT_MAX, FLT_MAX, FLT_MAX);
+		return inf;
+	}
+
+	static Vector3d Zero()
+	{
+		static Vector3d zero(0.0f, 0.0f, 0.0f);
+		return zero;
+	}
+
+	static Vector3d UnitX()
+	{
+		static Vector3d inf(1.0f, 0.0f, 0.0f);
+		return inf;
+	}
+
+	static Vector3d UnitY()
+	{
+		static Vector3d inf(0.0f, 1.0f, 0.0f);
+		return inf;
+	}
+
+	static Vector3d UnitZ()
+	{
+		static Vector3d inf(0.0f, 0.0f, 1.0f);
+		return inf;
 	}
 };

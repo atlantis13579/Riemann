@@ -74,20 +74,41 @@ public:
 		return Vector3d((Min + Max) * 0.5f);
 	}
 
-	Vector3d GetSize() const
-	{
-		return (Max - Min);
-	}
-
 	Vector3d GetExtent() const
 	{
 		return (Max - Min) * 0.5f;
 	}
 
-	void GetCenterAndExtents(Vector3d& center, Vector3d& Extents) const
+	Vector3d GetSize() const
 	{
-		center = GetCenter();
-		Extents = GetExtent();
+		return Max - Min;
+	}
+
+	float GetSizeX() const
+	{
+		return Max.x - Min.x;
+	}
+
+	float GetSizeY() const
+	{
+		return Max.y - Min.y;
+	}
+
+	float GetSizeZ() const
+	{
+		return Max.z - Min.z;
+	}
+
+	void GetCenterAndExtent(Vector3d* center, Vector3d* Extent) const
+	{
+		*center = GetCenter();
+		*Extent = GetExtent();
+	}
+
+	void BuildFromCenterAndExtent(const Vector3d& Center, const Vector3d& Extent)
+	{
+		Min = Center - Extent;
+		Max = Center + Extent;
 	}
 
 	float CalcVolume() const
@@ -97,17 +118,17 @@ public:
 
 	bool Intersect(const BoundingBox3d& rhs) const
 	{
-		if ((Min.x > rhs.Max.x) || (rhs.Min.x > Max.x))
+		if (Min.x > rhs.Max.x || rhs.Min.x > Max.x)
 		{
 			return false;
 		}
 
-		if ((Min.y > rhs.Max.y) || (rhs.Min.y > Max.y))
+		if (Min.y > rhs.Max.y || rhs.Min.y > Max.y)
 		{
 			return false;
 		}
 
-		if ((Min.z > rhs.Max.z) || (rhs.Min.z > Max.z))
+		if (Min.z > rhs.Max.z || rhs.Min.z > Max.z)
 		{
 			return false;
 		}
@@ -157,9 +178,20 @@ public:
 		Vector3d NewCenter = m0 * Center.x + m1 * Center.y + m2 * Center.z + m3;
 		Vector3d NewExtent = (m0 * Extent.x).Abs() + (m1 * Extent.y).Abs() + (m2 * Extent.z).Abs();
 
-		Box.Min = NewCenter - NewExtent;
-		Box.Max = NewCenter - NewExtent;
+		Box.BuildFromCenterAndExtent(NewCenter, NewExtent);
 
 		return Box;
+	}
+	
+	static void GetVertices(const Vector3d& Bmin, const Vector3d& Bmax, Vector3d v[8])
+	{
+		v[0] = Vector3d(Bmin.x, Bmin.y, Bmin.z);
+		v[1] = Vector3d(Bmax.x, Bmin.y, Bmin.z);
+		v[2] = Vector3d(Bmin.x, Bmax.y, Bmin.z);
+		v[3] = Vector3d(Bmax.x, Bmax.y, Bmin.z);
+		v[4] = Vector3d(Bmin.x, Bmin.y, Bmax.z);
+		v[5] = Vector3d(Bmax.x, Bmin.y, Bmax.z);
+		v[6] = Vector3d(Bmin.x, Bmax.y, Bmax.z);
+		v[7] = Vector3d(Bmax.x, Bmax.y, Bmax.z);
 	}
 };
