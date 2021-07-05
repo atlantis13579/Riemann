@@ -34,7 +34,9 @@
     <ClInclude Include="Geometry\ConvexHull2D.h" />
     <ClInclude Include="Maths\Vector4d.h" />
     <ClInclude Include="Solver\NumericalODESolver.h" />
-    <ClInclude Include="Solver\PositionBasedDynamicsSolver.h" />
+    <ClInclude Include="LinearAlgebra\PolarDecompose.h" />
+    <ClInclude Include="LinearAlgebra\SVDDecompose.h" />
+    <ClInclude Include="PositionBasedDynamics\PositionBasedDynamicsSolver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -49,6 +51,8 @@
     <ClCompile Include="Solver\Tetrahedral.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
-    <ClCompile Include="Solver\PositionBasedDynamicsSolver.cpp" />
+    <ClCompile Include="LinearAlgebra\PolarDecompose.cpp" />
+    <ClCompile Include="LinearAlgebra\SVDDecompose.cpp" />
+    <ClCompile Include="PositionBasedDynamics\PositionBasedDynamicsSolver.cpp" />
   </ItemGroup>
 </Project>

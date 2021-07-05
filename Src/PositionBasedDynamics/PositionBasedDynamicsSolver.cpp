@@ -1,6 +1,5 @@
 
 #include "PositionBasedDynamicsSolver.h"
-#include "NumericalODESolver.h"
 
 class PBDProxy
 {
