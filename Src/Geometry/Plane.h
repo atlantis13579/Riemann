@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "GeometricObject.h"
+const float kEpsilonPlane = 0.000001f;
 
 class Plane
 {
@@ -23,7 +23,7 @@ public:
 	{
 		const float det = Point.Dot(Normal) + D;
 
-		if (fabsf(det) < kEpsilonGeometric)
+		if (fabsf(det) < kEpsilonPlane)
 		{
 			return true;
 		}
@@ -38,7 +38,7 @@ public:
 	static bool		RayIntersectPlane(const Vector3d& Origin, const Vector3d& Dir, const Vector3d & Normal, float D, float* t)
 	{
 		const float det = Dir.Dot(Normal);
-		if (det > -kEpsilonGeometric && det < kEpsilonGeometric) {
+		if (det > -kEpsilonPlane && det < kEpsilonPlane) {
 			return false;
 		}
 		*t = -(Origin.Dot(Normal) + D) / det;
@@ -53,9 +53,9 @@ public:
 		for (int i = 0; i < 8; ++i)
 		{
 			const float det = v[i].Dot(Normal) + D;
-			if (det > kEpsilonGeometric)
+			if (det > kEpsilonPlane)
 				p2++;
-			else if (det < -kEpsilonGeometric)
+			else if (det < -kEpsilonPlane)
 				p1++;
 			else
 				p0++;
@@ -98,7 +98,7 @@ public:
 	bool PerpendicularTo(const Vector3d& Axis) const
 	{
 		float det = Normal.Cross(Axis).SquareLength();
-		if (det < kEpsilonGeometric)
+		if (det < kEpsilonPlane)
 		{
 			return true;
 		}

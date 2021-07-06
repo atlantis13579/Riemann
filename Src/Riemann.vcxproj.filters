@@ -50,13 +50,17 @@
     <ClInclude Include="Geometry\BoxShape.h" />
     <ClInclude Include="Geometry\Tetrahedral.h" />
     <ClInclude Include="Geometry\TriangleMesh.h" />
-    <ClInclude Include="Geometry\GeometricObject.h" />
+    <ClInclude Include="Geometry\GeometryBase.h" />
     <ClInclude Include="LinearSystem\SparseMatrix.h" />
     <ClInclude Include="LinearSystem\DenseMatrix.h" />
     <ClInclude Include="Collision\AABBTree.h" />
     <ClInclude Include="Collision\AABBPruner.h" />
     <ClInclude Include="Collision\AABBTreeOffline.h" />
     <ClInclude Include="Collision\AABBTreeInference.h" />
+    <ClInclude Include="LinearSystem\ProjectedGaussSeidel.h" />
+    <ClInclude Include="Collision\SparseSpatialHash.h" />
+    <ClInclude Include="Collision\GeometryQuery.h" />
+    <ClInclude Include="Collision\GeometryObject.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -77,5 +81,6 @@
     <ClCompile Include="Collision\AABBPruner.cpp" />
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />
     <ClCompile Include="Collision\AABBTreeInference.cpp" />
+    <ClCompile Include="Collision\GeometryQuery.cpp" />
   </ItemGroup>
 </Project>

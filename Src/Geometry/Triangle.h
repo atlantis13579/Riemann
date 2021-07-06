@@ -2,7 +2,6 @@
 #pragma once
 
 #include "../Maths/Vector3d.h"
-#include "Plane.h"
 
 class Triangle
 {
@@ -52,6 +51,7 @@ public:
 									 const Vector3d& C,
 									 float* t)
 	{
+		const float kEpsilonTri = 0.0000001f;
 		//Find vectors for two edges sharing V1
 		const Vector3d e1 = B - A;
 		const Vector3d e2 = C - A;
@@ -60,7 +60,7 @@ public:
 		//if determinant is near zero, ray lies in plane of triangle
 		const float det = e1.Dot(P);
 		//NOT CULLING
-		if (det > -kEpsilonGeometric && det < kEpsilonGeometric) {
+		if (det > -kEpsilonTri && det < kEpsilonTri) {
 			return false;
 		}
 		const float inv_det = 1.f / det;
@@ -87,7 +87,7 @@ public:
 
 		const float out = e2.Dot(Q) * inv_det;
 
-		if (out > kEpsilonGeometric) { //ray intersection
+		if (out > kEpsilonTri) { //ray intersection
 			*t = out;
 			return true;
 		}

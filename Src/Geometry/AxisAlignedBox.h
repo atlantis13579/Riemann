@@ -1,8 +1,6 @@
 
 #pragma once
 
-#include "GeometricObject.h"
-
 #include "../Maths/Matrix3d.h"
 
 class AxisAlignedBox3
@@ -50,7 +48,7 @@ public:
 
 	static bool RayIntersectAABB_1D(float start, float dir, float min, float max, float* enter, float* exit)
 	{
-		if (fabs(dir) < kEpsilonGeometric)
+		if (fabs(dir) < 0.000001f)
 		{
 			return start >= min && start <= max;
 		}
