@@ -85,7 +85,7 @@ public:
 class AABBTreeOffline
 {
 public:
-	AABBTreeOffline() : pMem(nullptr), nCurrentBlockIndex(0), nTotalNodes(0)
+	AABBTreeOffline() : pHead(nullptr), nCurrentBlockIndex(0), nTotalNodes(0)
 	{
 
 	}
@@ -97,9 +97,9 @@ public:
 
 	void Release()
 	{
-		for (size_t i = 0; i < Blocks.size(); i++)
+		for (size_t i = 0; i < Blocks.size(); ++i)
 		{
-			Block& s = Blocks[i];
+			MemoryBlock& s = Blocks[i];
 			delete[]s.pMem;
 		}
 
@@ -112,26 +112,26 @@ public:
 	{
 		const int maxSize = nPrimitives * 2 - 1;
 		const int estimatedFinalSize = maxSize <= 1024 ? maxSize : maxSize / nPrimitivesPerNode;
-		pMem = new  AABBTreeNodeOffline[estimatedFinalSize];
-		memset(pMem, 0, sizeof(AABBTreeNodeOffline) * estimatedFinalSize);
+		pHead = new  AABBTreeNodeOffline[estimatedFinalSize];
+		memset(pHead, 0, sizeof(AABBTreeNodeOffline) * estimatedFinalSize);
 
-		pMem->IndexOffset = 0;
-		pMem->NumPrimitives = nPrimitives;
+		pHead->IndexOffset = 0;
+		pHead->NumPrimitives = nPrimitives;
 
-		Blocks.emplace_back(pMem, 1, estimatedFinalSize);
+		Blocks.emplace_back(pHead, 1, estimatedFinalSize);
 		nCurrentBlockIndex = 0;
 		nTotalNodes = 1;
 	}
 
 	void Build(AABBTreeBuildData &params)
 	{
-		pMem->BuildHierarchyRecursive(params);
+		pHead->BuildHierarchyRecursive(params);
 	}
 
 	AABBTreeNodeOffline* AllocNodes()
 	{
 		nTotalNodes += 2;
-		Block& currentBlock = Blocks[nCurrentBlockIndex];
+		MemoryBlock& currentBlock = Blocks[nCurrentBlockIndex];
 		if (currentBlock.nUsedNodes + 2 <= currentBlock.nMaxNodes)
 		{
 			AABBTreeNodeOffline* p = currentBlock.pMem + currentBlock.nUsedNodes;
@@ -154,12 +154,12 @@ public:
 	AABBTreeNodeInference* BuildCompactTree();
 
 private:
-	AABBTreeNodeOffline* pMem;
+	AABBTreeNodeOffline* pHead;
 
-	struct Block
+	struct MemoryBlock
 	{
-		Block() {}
-		Block(AABBTreeNodeOffline* p, int UsedNodes, int maxNodes) :
+		MemoryBlock() {}
+		MemoryBlock(AABBTreeNodeOffline* p, int UsedNodes, int maxNodes) :
 			pMem(p),
 			nUsedNodes(UsedNodes),
 			nMaxNodes(maxNodes) {}
@@ -167,7 +167,7 @@ private:
 		int						nUsedNodes;
 		int						nMaxNodes;
 	};
-	std::vector<Block>		Blocks;
-	int						nCurrentBlockIndex;
-	int						nTotalNodes;
+	std::vector<MemoryBlock>	Blocks;
+	int							nCurrentBlockIndex;
+	int							nTotalNodes;
 };

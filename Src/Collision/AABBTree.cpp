@@ -51,7 +51,7 @@ void AABBTree::StaticBuild(AABBTreeBuildData& params)
 int AABBTree::Traverse(const Vector3d& Point) const
 {
 	AABBTreeNodeInference* p = m_AABBTreeInference;
-	if (p == nullptr || !p->mBV.IsInside(Point))
+	if (p == nullptr || !p->BV.IsInside(Point))
 	{
 		return -1;
 	}
@@ -63,14 +63,70 @@ int AABBTree::Traverse(const Vector3d& Point) const
 			return *p->GetPrimitiveIndices(m_PrimitiveIndicesBase);
 		}
 
-		if (p->GetLeftNode(m_AABBTreeInference)->mBV.IsInside(Point))
+		if (p->GetLeftNode(m_AABBTreeInference)->BV.IsInside(Point))
 		{
 			p = p->GetLeftNode(m_AABBTreeInference);
 			continue;
 		}
-		else if (p->GetRightNode(m_AABBTreeInference)->mBV.IsInside(Point))
+		else if (p->GetRightNode(m_AABBTreeInference)->BV.IsInside(Point))
 		{
 			p = p->GetRightNode(m_AABBTreeInference);
+			continue;
+		}
+
+		return *p->GetPrimitiveIndices(m_PrimitiveIndicesBase);
+	}
+
+	return -1;
+}
+
+int  AABBTree::RayCast(const Ray& ray, float *t) const
+{
+	float t1, t2;
+	AABBTreeNodeInference* p = m_AABBTreeInference;
+	if (p == nullptr || !ray.IntersectAABB(p->BV.Min, p->BV.Max, &t1))
+	{
+		return -1;
+	}
+	*t = t1;
+
+	while (p)
+	{
+		if (p->IsLeafNode())
+		{
+			return *p->GetPrimitiveIndices(m_PrimitiveIndicesBase);
+		}
+
+		AABBTreeNodeInference* p1 = p->GetLeftNode(m_AABBTreeInference);
+		AABBTreeNodeInference* p2 = p->GetRightNode(m_AABBTreeInference);
+
+		bool hit1 = ray.IntersectAABB(p1->BV.Min, p1->BV.Max, &t1);
+		bool hit2 = ray.IntersectAABB(p2->BV.Min, p2->BV.Max, &t2);
+
+		if (hit1 && hit2)
+		{
+			if (t1 < t2)
+			{
+				*t = t1;
+				p = p1;
+			}
+			else
+			{
+				*t = t2;
+				p = p2;
+			}
+			continue;
+		}
+		else if (hit1)
+		{
+			*t = t1;
+			p = p1;
+			continue;
+		}
+		else if (hit2)
+		{
+			*t = t2;
+			p = p2;
 			continue;
 		}
 

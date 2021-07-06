@@ -2,6 +2,7 @@
 #pragma once
 
 #include "../Maths/BoundingBox3d.h"
+#include "../Geometry/Ray.h"
 #include "AABBTreeOffline.h"
 
 struct AABBTreeNodeInference;
@@ -18,6 +19,7 @@ public:
 	void StaticBuild(AABBTreeBuildData& params);
 
 	int	 Traverse(const Vector3d& Point) const;
+	int  RayCast(const Ray& ray, float *t) const;
 
 private:
 	void InitAABBTreeBuild(AABBTreeBuildData& params);

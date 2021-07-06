@@ -9,47 +9,47 @@ struct AABBTreeNodeInference
 {
 	inline const BoundingBox3d& GetBoundingBox() const
 	{
-		return mBV;
+		return BV;
 	}
 
 	inline bool			IsLeafNode() const
 	{
-		return mData & 1;
+		return Data & 1;
 	}
 
 	inline const int*	GetPrimitiveIndices(const int* Base) const
 	{
-		return Base + (mData >> 5);
+		return Base + (Data >> 5);
 	}
 
 	inline int*			GetPrimitiveIndices(int* Base) const
 	{
-		return Base + (mData >> 5);
+		return Base + (Data >> 5);
 	}
 
 	inline int			GetNumPrimitives() const
 	{
-		return (mData >> 1) & 15;
+		return (Data >> 1) & 15;
 	}
 
 	inline int			GetLeftNode() const
 	{
-		return mData >> 1;
+		return Data >> 1;
 	}
 
 	inline int			GetRightNode() const
 	{
-		return (mData >> 1) + 1;
+		return (Data >> 1) + 1;
 	}
 
 	inline const AABBTreeNodeInference* GetLeftNode(const AABBTreeNodeInference* Base)	const
 	{
-		return Base + (mData >> 1);
+		return Base + (Data >> 1);
 	}
 
 	inline AABBTreeNodeInference* GetLeftNode(AABBTreeNodeInference* Base)
 	{
-		return Base + (mData >> 1);
+		return Base + (Data >> 1);
 	}
 
 	inline const AABBTreeNodeInference* GetRightNode(const AABBTreeNodeInference* Base) const
@@ -72,8 +72,8 @@ struct AABBTreeNodeInference
 		return nullptr;
 	}
 
-	BoundingBox3d				mBV;
-	unsigned int				mData;	// 27 bits node or prim index|4 bits #prims|1 bit leaf
+	BoundingBox3d				BV;
+	unsigned int				Data;	// 27 bits node or prim index|4 bits #prims|1 bit leaf
 };
 
 static_assert(sizeof(AABBTreeNodeInference) == 28, "Size of AABBTreeNodeInference is not valid");

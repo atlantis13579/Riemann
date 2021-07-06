@@ -15,8 +15,8 @@ void AABBTreeNodeOffline::BuildHierarchyRecursive(AABBTreeBuildData& params)
 
 int AABBTreeNodeOffline::SplitAxis(const AABBTreeBuildData& params, int *pPrimitives, int numPrimitives, int axis)
 {
-	const float splitValue = (mBV.Min[axis] + mBV.Max[axis]) * 0.5f;
-	int nbPos = 0;
+	const float SplitValue = (mBV.Min[axis] + mBV.Max[axis]) * 0.5f;
+	int nSplitLeft = 0;
 
 	for (int i = 0; i < numPrimitives; ++i)
 	{
@@ -24,20 +24,20 @@ int AABBTreeNodeOffline::SplitAxis(const AABBTreeBuildData& params, int *pPrimit
 		const float primitiveValue = params.pCenterBuffer[index][axis];
 		assert(primitiveValue == params.pCenterBuffer[index][axis]);
 
-		if (primitiveValue > splitValue)
+		if (primitiveValue > SplitValue)
 		{
-			pPrimitives[i] = pPrimitives[nbPos];
-			pPrimitives[nbPos] = index;
-			nbPos++;
+			pPrimitives[i] = pPrimitives[nSplitLeft];
+			pPrimitives[nSplitLeft] = index;
+			++nSplitLeft;
 		}
 	}
-	return nbPos;
+	return nSplitLeft;
 }
 
 void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 {
 	int* primitives = params.pIndexBase + this->IndexOffset;
-	int nbPrims = NumPrimitives;
+	int nPrims = NumPrimitives;
 
 	Vector3d meansV = params.pCenterBuffer[primitives[0]];
 	const BoundingBox3d* pAABB = params.pAABBArray;
@@ -45,7 +45,7 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 	Vector3d minV = pAABB[primitives[0]].Min;
 	Vector3d maxV = pAABB[primitives[0]].Max;
 
-	for (int i = 1; i < nbPrims; i++)
+	for (int i = 1; i < nPrims; ++i)
 	{
 		int index = primitives[i];
 		const Vector3d& curMinV = pAABB[index].Min;
@@ -59,14 +59,13 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 
 	mBV = BoundingBox3d(minV, maxV);
 
-	if (nbPrims <= params.NumPrimitivesPerNode)
+	if (nPrims <= params.NumPrimitivesPerNode)
 		return;
 
-	const float coeff = 1.0f / float(nbPrims);
-	meansV *= coeff;
+	meansV *= 1.0f / float(nPrims);
 
 	Vector3d varsV = Vector3d::Zero();
-	for (int i = 0; i < nbPrims; i++)
+	for (int i = 0; i < nPrims; ++i)
 	{
 		int index = primitives[i];
 		Vector3d centerV = params.pCenterBuffer[index];
@@ -75,22 +74,21 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 		varsV = varsV + centerV;
 	}
 	
-	const float coeffNb1 = 1.0f / float(nbPrims - 1);
-	varsV *= coeffNb1;
+	varsV *= 1.0f / float(nPrims - 1);
 
 	const int axis = varsV.LargestAxis();
 
-	int	nbPos = SplitAxis(params, primitives, NumPrimitives, axis);
+	int	nSplitLeft = SplitAxis(params, primitives, NumPrimitives, axis);
 	
 	bool validSplit = true;
-	if (!nbPos || nbPos == nbPrims)
+	if (!nSplitLeft || nSplitLeft == nPrims)
 		validSplit = false;
 
 	if (!validSplit)
 	{
-		if (nbPrims > params.NumPrimitivesPerNode)
+		if (nPrims > params.NumPrimitivesPerNode)
 		{
-			nbPos = nbPrims >> 1;
+			nSplitLeft = nPrims >> 1;
 		}
 		else
 		{
@@ -104,8 +102,8 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 	// Assign children
 	assert(!IsLeafNode());
 	this->pLeftNode->IndexOffset = this->IndexOffset;
-	this->pLeftNode->NumPrimitives = nbPos;
-	this->pRightNode->IndexOffset = this->IndexOffset + nbPos;
-	this->pRightNode->NumPrimitives = NumPrimitives - nbPos;
+	this->pLeftNode->NumPrimitives = nSplitLeft;
+	this->pRightNode->IndexOffset = this->IndexOffset + nSplitLeft;
+	this->pRightNode->NumPrimitives = NumPrimitives - nSplitLeft;
 }
 
