@@ -43,6 +43,11 @@ public:
 		return true;
 	}
 
+	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+	{
+		return RayIntersectAABB(Origin, Dir, Min, Max, t);
+	}
+
 	static bool RayIntersectAABB_1D(float start, float dir, float min, float max, float* enter, float* exit)
 	{
 		if (fabs(dir) < kEpsilonGeometric)
@@ -77,13 +82,13 @@ public:
 		return true;
 	}
 
-	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+	static bool		RayIntersectAABB(const Vector3d& Origin, const Vector3d& Dir, const Vector3d& Bmin, const Vector3d& Bmax, float* t)
 	{
 		float enter = 0.0f, exit = 1.0f;
 
 		for (int i = 0; i < 3; ++i)
 		{
-			if (!RayIntersectAABB_1D(Origin(i), Dir(i), Min(i), Max(i), &enter, &exit))
+			if (!RayIntersectAABB_1D(Origin[i], Dir[i], Bmin[i], Bmax[i], &enter, &exit))
 			{
 				return false;
 			}

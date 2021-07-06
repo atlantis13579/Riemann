@@ -32,6 +32,11 @@ public:
 
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
 	{
+		return RayIntersectPlane(Origin, Dir, Normal, D, t);
+	}
+
+	static bool		RayIntersectPlane(const Vector3d& Origin, const Vector3d& Dir, const Vector3d & Normal, float D, float* t)
+	{
 		const float det = Dir.Dot(Normal);
 		if (det > -kEpsilonGeometric && det < kEpsilonGeometric) {
 			return false;

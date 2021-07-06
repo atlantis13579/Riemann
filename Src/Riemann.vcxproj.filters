@@ -55,6 +55,8 @@
     <ClInclude Include="LinearSystem\DenseMatrix.h" />
     <ClInclude Include="Collision\AABBTree.h" />
     <ClInclude Include="Collision\AABBPruner.h" />
+    <ClInclude Include="Collision\AABBTreeOffline.h" />
+    <ClInclude Include="Collision\AABBTreeInference.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -73,5 +75,7 @@
     <ClCompile Include="Geometry\Tetrahedral.cpp" />
     <ClCompile Include="Collision\AABBTree.cpp" />
     <ClCompile Include="Collision\AABBPruner.cpp" />
+    <ClCompile Include="Collision\AABBTreeOffline.cpp" />
+    <ClCompile Include="Collision\AABBTreeInference.cpp" />
   </ItemGroup>
 </Project>

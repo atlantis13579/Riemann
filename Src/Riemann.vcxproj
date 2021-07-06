@@ -21,6 +21,8 @@
   <ItemGroup>
     <ClCompile Include="Collision\AABBPruner.cpp" />
     <ClCompile Include="Collision\AABBTree.cpp" />
+    <ClCompile Include="Collision\AABBTreeInference.cpp" />
+    <ClCompile Include="Collision\AABBTreeOffline.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
     <ClCompile Include="Geometry\Tetrahedral.cpp" />
     <ClCompile Include="Image\ImageProcessing.cpp" />
@@ -37,6 +39,8 @@
   <ItemGroup>
     <ClInclude Include="Collision\AABBPruner.h" />
     <ClInclude Include="Collision\AABBTree.h" />
+    <ClInclude Include="Collision\AABBTreeInference.h" />
+    <ClInclude Include="Collision\AABBTreeOffline.h" />
     <ClInclude Include="Geometry\AxisAlignedBox.h" />
     <ClInclude Include="Geometry\BoxShape.h" />
     <ClInclude Include="Geometry\Capsule.h" />

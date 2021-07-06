@@ -22,6 +22,11 @@ public:
 public:
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
 	{
+		return RayIntersectSphere(Origin, Dir, Center, Radius, t);
+	}
+
+	static bool		RayIntersectSphere(const Vector3d& Origin, const Vector3d& Dir, const Vector3d& Center, float Radius, float* t)
+	{
 		Vector3d oc = Origin - Center;
 		float a = Dir.SquareLength();
 		float b = 2.0f * oc.Dot(Dir);
