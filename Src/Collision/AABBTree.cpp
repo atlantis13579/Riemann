@@ -5,6 +5,7 @@
 
 #include "AABBTreeOffline.h"
 #include "AABBTreeInference.h"
+#include "GeometryObject.h"
 
 AABBTree::AABBTree()
 {
@@ -80,21 +81,60 @@ int AABBTree::Traverse(const Vector3d& Point) const
 	return -1;
 }
 
-int  AABBTree::RayCast(const Ray& ray, float *t) const
+static int GeometryHit(const Ray& ray, int* prims, int numPrims, GeometryObject* ObjectCollection, RayCastResult* Result)
 {
+	assert(numPrims > 0);
+	if (ObjectCollection == nullptr)
+	{
+		return *prims;
+	}
+	int min_idx = -1;
+	float t, min_t = FLT_MAX;
+	for (int i = 0; i < numPrims; ++i)
+	{
+		const int index = prims[i];
+		GeometryObject Geom = ObjectCollection[index];
+		RayCastFunc func = GeometryObject::rasycastTable[Geom.Shape.Type];
+		assert(func);
+		bool hit = func(Geom.Shape.Object, ray.Origin, ray.Dir, &t);
+		if (hit)
+		{
+			if (t < min_t)
+			{
+				min_idx = i;
+				min_t = t;
+			}
+		}
+	}
+
+	if (min_idx != -1)
+	{
+		Result->hit = true;
+		Result->hitPos = ray.PointAt(min_t);
+		Result->Object = &ObjectCollection[min_idx];
+		Result->t = min_t;
+	}
+	return min_idx;
+}
+
+int  AABBTree::RayCast(const Ray& ray, GeometryObject *ObjectCollection, RayCastResult* Result) const
+{
+	Result->hit = false;
+
 	float t1, t2;
 	AABBTreeNodeInference* p = m_AABBTreeInference;
 	if (p == nullptr || !ray.IntersectAABB(p->BV.Min, p->BV.Max, &t1))
 	{
 		return -1;
 	}
-	*t = t1;
+	Result->hit = true;
+	Result->t = t1;
 
 	while (p)
 	{
 		if (p->IsLeafNode())
 		{
-			return *p->GetPrimitiveIndices(m_PrimitiveIndicesBase);
+			return GeometryHit(ray, p->GetPrimitiveIndices(m_PrimitiveIndicesBase), p->GetNumPrimitives(), ObjectCollection, Result);
 		}
 
 		AABBTreeNodeInference* p1 = p->GetLeftNode(m_AABBTreeInference);
@@ -107,33 +147,44 @@ int  AABBTree::RayCast(const Ray& ray, float *t) const
 		{
 			if (t1 < t2)
 			{
-				*t = t1;
+				Result->t = t1;
 				p = p1;
 			}
 			else
 			{
-				*t = t2;
+				Result->t = t2;
 				p = p2;
 			}
 			continue;
 		}
 		else if (hit1)
 		{
-			*t = t1;
+			Result->t = t1;
 			p = p1;
 			continue;
 		}
 		else if (hit2)
 		{
-			*t = t2;
+			Result->t = t2;
 			p = p2;
 			continue;
 		}
 
-		return *p->GetPrimitiveIndices(m_PrimitiveIndicesBase);
+		return GeometryHit(ray, p->GetPrimitiveIndices(m_PrimitiveIndicesBase), p->GetNumPrimitives(), ObjectCollection, Result);
 	}
 
 	return -1;
+}
+
+int  AABBTree::RayCastBoundingBox(const Ray& ray, float* t) const
+{
+	RayCastResult Result;
+	int hit_obj = RayCast(ray, nullptr, &Result);
+	if (hit_obj >= 0)
+	{
+		*t = Result.t;
+	}
+	return hit_obj;
 }
 
 void AABBTree::InitAABBTreeBuild(AABBTreeBuildData& params)

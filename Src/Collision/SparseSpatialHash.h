@@ -3,4 +3,7 @@
 
 class SparseSpatialHash
 {
+public:
+	SparseSpatialHash();
+	~SparseSpatialHash();
 };

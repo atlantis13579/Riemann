@@ -76,20 +76,24 @@ public:
 
 	BoundingBox3d	GetBoundingBox() const
 	{
-		BoundingBox3d Box(Vector3d::InfMin(), Vector3d::InfMax());
+		const float kMaxBV = 10000000.0f;
+		BoundingBox3d Box(-kMaxBV, kMaxBV);
 		if (ParallelToXY())
 		{
-			Box.Min.z = Box.Max.z = -D / Normal.z;
+			if (Normal.z > 0.0001f)
+				Box.Min.z = Box.Max.z = -D / Normal.z;
 		}
 
 		if (ParallelToYZ())
 		{
-			Box.Min.x = Box.Max.x = -D / Normal.x;
+			if (Normal.x > 0.0001f)
+				Box.Min.x = Box.Max.x = -D / Normal.x;
 		}
 
 		if (ParallelToXZ())
 		{
-			Box.Min.y = Box.Max.y = -D / Normal.y;
+			if (Normal.y > 0.0001f)
+				Box.Min.y = Box.Max.y = -D / Normal.y;
 		}
 
 		return Box;

@@ -82,5 +82,7 @@
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />
     <ClCompile Include="Collision\AABBTreeInference.cpp" />
     <ClCompile Include="Collision\GeometryQuery.cpp" />
+    <ClCompile Include="Collision\SparseSpatialHash.cpp" />
+    <ClCompile Include="Collision\GeometryObject.cpp" />
   </ItemGroup>
 </Project>

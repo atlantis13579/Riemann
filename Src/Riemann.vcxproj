@@ -23,7 +23,9 @@
     <ClCompile Include="Collision\AABBTree.cpp" />
     <ClCompile Include="Collision\AABBTreeInference.cpp" />
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />
+    <ClCompile Include="Collision\GeometryObject.cpp" />
     <ClCompile Include="Collision\GeometryQuery.cpp" />
+    <ClCompile Include="Collision\SparseSpatialHash.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
     <ClCompile Include="Geometry\Tetrahedral.cpp" />
     <ClCompile Include="Image\ImageProcessing.cpp" />

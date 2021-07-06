@@ -32,35 +32,67 @@ public:
 
 	bool  IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax, float* t) const
 	{
-		float x = 1.0f / Dir.x;
-		float y = 1.0f / Dir.y;
-		float z = 1.0f / Dir.z;
+		const Vector3d Vmin = Bmin - Origin;
+		const Vector3d Vmax = Bmax - Origin;
 
-		float t1 = (Bmin.x - Origin.x) * x;
-		float t2 = (Bmax.x - Origin.x) * x;
-		float t3 = (Bmin.y - Origin.y) * y;
-		float t4 = (Bmax.y - Origin.y) * y;
-		float t5 = (Bmin.z - Origin.z) * z;
-		float t6 = (Bmax.z - Origin.z) * z;
+		float Tmin = 0;
+		float Tmax = FLT_MAX;
+		Vector3d Normal(0.0f);
 
-		float tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6));
-		float tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6));
-
-
-		if (tmax < 0)
+		for (int i = 0; i < 3; ++i)
 		{
-			*t = tmax;
+			float Time1, Time2;
+			if (fabsf(Dir[i]) < 0.00001f)
+			{
+				if (Vmin[i] > 0 || Vmax[i] < 0)
+				{
+					return false;
+				}
+				else
+				{
+					Time1 = 0;
+					Time2 = FLT_MAX;
+				}
+			}
+			else
+			{
+				const float InvDir = 1.0f / Dir[i];
+				Time1 = Vmin[i] * InvDir;
+				Time2 = Vmax[i] * InvDir;
+			}
+
+			Vector3d CurNormal = Vector3d(0.0f);
+			CurNormal[i] = 1.0f;
+
+			if (Time1 > Time2)
+			{
+				std::swap(Time1, Time2);
+			}
+			else
+			{
+				CurNormal[i] = -1.0f;
+			}
+
+			if (Time1 > Tmin)
+			{
+				Normal = CurNormal;
+			}
+			Tmin = std::max(Tmin, Time1);
+			Tmax = std::min(Tmax, Time2);
+
+			if (Tmin > Tmax)
+			{
+				return false;
+			}
+		}
+
+		if (Tmax < 0)
+		{
 			return false;
 		}
 
-		if (tmin > tmax)
-		{
-			*t = tmax;
-			return false;
-		}
-
-		*t = tmin;
-		return tmin >= 0.0f;
+		*t = Tmin;
+		return true;
 	}
 
 	Vector3d Origin;

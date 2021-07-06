@@ -61,13 +61,13 @@ public:
 		float dmin = 0.0f;
 		for (int i = 0; i < 3; i++)
 		{
-			if (Center(i) < Bmin(i))
+			if (Center[i] < Bmin[i])
 			{
-				dmin += (Center(i) - Bmin(i)) * (Center(i) - Bmin(i));
+				dmin += (Center[i] - Bmin[i]) * (Center[i] - Bmin[i]);
 			}
-			else if (Center(i) > Bmax(i))
+			else if (Center[i] > Bmax[i])
 			{
-				dmin += (Center(i) - Bmax(i)) * (Center(i) - Bmax(i));
+				dmin += (Center[i] - Bmax[i]) * (Center[i] - Bmax[i]);
 			}
 		}
 

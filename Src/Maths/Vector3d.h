@@ -179,7 +179,7 @@ public:
 		return coords[i];
 	}
 
-	float operator()(int i) const
+	float& operator[](int i)
 	{
 		return coords[i];
 	}

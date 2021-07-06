@@ -5,7 +5,9 @@
 #include "../Geometry/Ray.h"
 #include "AABBTreeOffline.h"
 
+struct RayCastResult;
 struct AABBTreeNodeInference;
+class GeometryObject;
 
 class AABBTree
 {
@@ -19,7 +21,8 @@ public:
 	void StaticBuild(AABBTreeBuildData& params);
 
 	int	 Traverse(const Vector3d& Point) const;
-	int  RayCast(const Ray& ray, float *t) const;
+	int  RayCast(const Ray& ray, GeometryObject* ObjectCollection, RayCastResult *Result) const;
+	int  RayCastBoundingBox(const Ray& ray, float* t) const;
 
 private:
 	void InitAABBTreeBuild(AABBTreeBuildData& params);
