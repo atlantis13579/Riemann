@@ -15,6 +15,8 @@
 
 #include "../Renderer/Renderer.h"
 
+extern void TestMainEntry();
+
 //--------------------------------------------------------------------------------------
 // Forward declarations
 //--------------------------------------------------------------------------------------
@@ -127,10 +129,6 @@ void InitScene()
     };
 
     g_Renderer->AddMesh("Cube", vertices, sizeof(vertices) / sizeof(vertices[0]), indices, sizeof(indices) / sizeof(indices[0]));
-
-
-    // dungeon, fighting
-    g_Renderer->LoadObj("D:\\src\\client\\tools\\RecastEditor\\RecastDemo\\Release\\Meshes\\fighting.obj");
 }
 
 //--------------------------------------------------------------------------------------
@@ -141,6 +139,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 {
     UNREFERENCED_PARAMETER( hPrevInstance );
     UNREFERENCED_PARAMETER( lpCmdLine );
+
+    TestMainEntry();
 
     if( FAILED( InitWindow( hInstance, nCmdShow ) ) )
         return 0;

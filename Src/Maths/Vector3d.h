@@ -59,11 +59,6 @@ public:
 		return Vector3d(y * v.z - v.y * z, z * v.x - v.z * x, x * v.y - v.x * y);
 	}
 
-	Vector3d Abs() const
-	{
-		return Vector3d(fabsf(x), fabsf(y), fabsf(z));
-	}
-
 	Vector3d Unit() const
 	{
 		float m = Length();
@@ -189,6 +184,27 @@ public:
 		return coords[i];
 	}
 
+	int LargestAxis() const
+	{
+		int i = y > x ? 1 : 0;
+		return z > coords[i] ? 2 : i;
+	}
+
+	Vector3d Abs() const
+	{
+		return Vector3d(fabsf(x), fabsf(y), fabsf(z));
+	}
+
+	Vector3d Min(const Vector3d& rhs) const
+	{
+		return Vector3d(std::min(x, rhs.x), std::min(y, rhs.y), std::min(z, rhs.z));
+	}
+
+	Vector3d Max(const Vector3d& rhs) const
+	{
+		return Vector3d(std::max(x, rhs.x), std::max(y, rhs.y), std::max(z, rhs.z));
+	}
+
 	static Vector3d Lerp(Vector3d& start, Vector3d& end, float t)
 	{
 		return (start*(1 - t) + end * t);
@@ -220,25 +236,25 @@ public:
 		return inf;
 	}
 
-	static Vector3d Zero()
+	static const Vector3d& Zero()
 	{
 		static Vector3d zero(0.0f, 0.0f, 0.0f);
 		return zero;
 	}
 
-	static Vector3d UnitX()
+	static const Vector3d& UnitX()
 	{
 		static Vector3d inf(1.0f, 0.0f, 0.0f);
 		return inf;
 	}
 
-	static Vector3d UnitY()
+	static const Vector3d& UnitY()
 	{
 		static Vector3d inf(0.0f, 1.0f, 0.0f);
 		return inf;
 	}
 
-	static Vector3d UnitZ()
+	static const Vector3d& UnitZ()
 	{
 		static Vector3d inf(0.0f, 0.0f, 1.0f);
 		return inf;
