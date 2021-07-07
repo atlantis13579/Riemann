@@ -8,8 +8,8 @@ void AABBTreeNodeOffline::BuildHierarchyRecursive(AABBTreeBuildData& params)
 
 	if (!IsLeafNode())
 	{
-		this->pLeftNode->BuildHierarchyRecursive(params);
-		this->pRightNode->BuildHierarchyRecursive(params);
+		this->Children[0]->BuildHierarchyRecursive(params);
+		this->Children[1]->BuildHierarchyRecursive(params);
 	}
 }
 
@@ -96,14 +96,14 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 		}
 	}
 
-	this->pLeftNode = params.pAABBTree->AllocNodes();
-	this->pRightNode = this->pLeftNode + 1;
+	this->Children[0] = params.pAABBTree->AllocNodes();
+	this->Children[1] = this->Children[0] + 1;
 
 	// Assign children
 	assert(!IsLeafNode());
-	this->pLeftNode->IndexOffset = this->IndexOffset;
-	this->pLeftNode->NumPrimitives = nSplitLeft;
-	this->pRightNode->IndexOffset = this->IndexOffset + nSplitLeft;
-	this->pRightNode->NumPrimitives = NumPrimitives - nSplitLeft;
+	this->Children[0]->IndexOffset = this->IndexOffset;
+	this->Children[0]->NumPrimitives = nSplitLeft;
+	this->Children[1]->IndexOffset = this->IndexOffset + nSplitLeft;
+	this->Children[1]->NumPrimitives = NumPrimitives - nSplitLeft;
 }
 

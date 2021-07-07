@@ -50,6 +50,7 @@
     <ClInclude Include="Collision\GeometryObject.h" />
     <ClInclude Include="Collision\GeometryQuery.h" />
     <ClInclude Include="Collision\NarrowPhase.h" />
+    <ClInclude Include="Collision\QuadTree.h" />
     <ClInclude Include="Collision\SparseSpatialHash.h" />
     <ClInclude Include="Geometry\AxisAlignedBox.h" />
     <ClInclude Include="Geometry\BoxShape.h" />

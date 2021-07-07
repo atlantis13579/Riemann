@@ -35,14 +35,14 @@ AABBTreeNodeInference* AABBTreeOffline::BuildCompactTree()
 			}
 			else
 			{
-				assert(p[i].pLeftNode);
+				assert(p[i].Children[0]);
 				unsigned int localNodeIndex = 0xffffffff;
 				unsigned int nodeBase = 0;
 				for (size_t j = 0; j < Blocks.size(); ++j)
 				{
-					if (p[i].pLeftNode >= Blocks[j].pMem && p[i].pLeftNode < Blocks[j].pMem + Blocks[j].nUsedNodes)
+					if (p[i].Children[0] >= Blocks[j].pMem && p[i].Children[0] < Blocks[j].pMem + Blocks[j].nUsedNodes)
 					{
-						localNodeIndex = (unsigned int)(p[i].pLeftNode - Blocks[j].pMem);
+						localNodeIndex = (unsigned int)(p[i].Children[0] - Blocks[j].pMem);
 						break;
 					}
 					nodeBase += Blocks[j].nUsedNodes;

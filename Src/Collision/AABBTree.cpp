@@ -93,10 +93,8 @@ static int RayCastGeometry(const Ray& ray, int* prims, int numPrims, GeometryObj
 	for (int i = 0; i < numPrims; ++i)
 	{
 		const int index = prims[i];
-		GeometryObject Geom = ObjectCollection[index];
-		RayCastFunc func = GeometryObject::rasycastTable[Geom.Shape.Type];
-		assert(func);
-		bool hit = func(Geom.Shape.Object, ray.Origin, ray.Dir, &t);
+		GeometryObject *Geom = &ObjectCollection[index];
+		bool hit = GeometryObject::RayCast(Geom, ray.Origin, ray.Dir, &t);
 		if (hit)
 		{
 			if (t < min_t)

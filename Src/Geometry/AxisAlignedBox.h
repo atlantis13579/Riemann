@@ -126,10 +126,10 @@ public:
 
 	Matrix3d GetInertiaTensor(float Mass) const
 	{
-		return GetInertiaTensor(Mass, Min, Max);
+		return GetInertiaTensor(Min, Max, Mass);
 	}
 
-	static Matrix3d GetInertiaTensor(float Mass, const Vector3d& Bmin, const Vector3d& Bmax)
+	static Matrix3d GetInertiaTensor(const Vector3d& Bmin, const Vector3d& Bmax, float Mass)
 	{
 		Vector3d Dim = Bmax - Bmin;
 
@@ -139,5 +139,19 @@ public:
 		const float HH = Dim.y * Dim.y;
 		const float DD = Dim.z * Dim.z;
 		return Matrix3d(M * (HH + DD), M * (WW + DD), M * (WW + HH));
+	}
+
+	Vector3d GetSupport(const Vector3d& dir) const
+	{
+		return GetSupport(Min, Max, dir);
+	}
+
+	static Vector3d GetSupport(const Vector3d& Bmin, const Vector3d& Bmax, const Vector3d& dir)
+	{
+		return Vector3d(
+			dir.x > 0 ? Bmax.x : -Bmax.x,
+			dir.y > 0 ? Bmax.y : -Bmax.y,
+			dir.z > 0 ? Bmax.z : -Bmax.z
+		);
 	}
 };

@@ -65,6 +65,7 @@
     <ClInclude Include="Collision\NarrowPhase.h" />
     <ClInclude Include="Solver\ExponentialIntegrator.h" />
     <ClInclude Include="RigidBodyDynamics\RigidBody.h" />
+    <ClInclude Include="Collision\QuadTree.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">

@@ -32,10 +32,10 @@ public:
 
 	Matrix3d GetInertiaTensor(float Mass) const
 	{
-		return GetInertiaTensor(Mass, Radius, Height);
+		return GetInertiaTensor(Radius, Height, Mass);
 	}
 
-	static Matrix3d GetInertiaTensor(float Mass, float Radius, float Height)
+	static Matrix3d GetInertiaTensor(float Radius, float Height, float Mass)
 	{
 		// https://www.wolframalpha.com/input/?i=cylinder
 		float RR = Radius * Radius;

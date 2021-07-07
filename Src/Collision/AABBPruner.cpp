@@ -26,9 +26,7 @@ void AABBPruner::BuildAABB(const std::vector<GeometryObject>& Objects, int nPrim
 	boxes.resize(Objects.size());
 	for (size_t i = 0; i < Objects.size(); ++i)
 	{
-		GetBoundingBoxFunc func = GeometryObject::getboundingboxTable[Objects[i].Shape.Type];
-		assert(func);
-		boxes[i] = func(Objects[i].Shape.Object);
+		boxes[i] = GeometryObject::GetBoundingBox(&Objects[i]);
 	}
 	AABBTreeBuildData param(&boxes[0], (int)boxes.size(), nPrimitivePerNode);
 	

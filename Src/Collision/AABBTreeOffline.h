@@ -52,17 +52,17 @@ class AABBTreeNodeOffline
 public:
 	AABBTreeNodeOffline()
 	{
-		pLeftNode = pRightNode = nullptr;
+		Children[0] = Children[1] = nullptr;
 	}
 
 	~AABBTreeNodeOffline()
 	{
-		pLeftNode = pRightNode = nullptr;
+		Children[0] = Children[1] = nullptr;
 	}
 
 	bool	IsLeafNode() const
 	{
-		if (pLeftNode == nullptr)
+		if (Children[0] == nullptr)
 		{
 			return true;
 		}
@@ -75,8 +75,7 @@ public:
 
 public:
 	BoundingBox3d					mBV;
-	AABBTreeNodeOffline				*pLeftNode;
-	AABBTreeNodeOffline				*pRightNode;
+	AABBTreeNodeOffline*			Children[2];
 	int								IndexOffset;
 	int								NumPrimitives;
 };

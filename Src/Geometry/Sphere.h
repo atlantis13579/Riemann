@@ -98,10 +98,10 @@ public:
 
 	Matrix3d GetInertiaTensor(float Mass) const
 	{
-		return GetInertiaTensor(Mass, Radius);
+		return GetInertiaTensor(Radius, Mass);
 	}
 
-	static Matrix3d GetInertiaTensor(const float Mass, const float Radius)
+	static Matrix3d GetInertiaTensor(float Radius, float Mass)
 	{
 		const float Diagonal = 2.0f * Mass * Radius * Radius / 5.0f;
 		return Matrix3d(Diagonal, Diagonal, Diagonal);

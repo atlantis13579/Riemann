@@ -117,7 +117,7 @@ public:
 		return Vector3d(x - v.x, y - v.y, z - v.z);
 	}
 
-	Vector3d operator-()
+	Vector3d operator-() const
 	{
 		return Vector3d(-x, -y, -z);
 	}
