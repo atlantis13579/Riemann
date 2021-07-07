@@ -54,69 +54,54 @@ public:
 		return RayIntersectAABB(Origin, Dir, Min, Max, t);
 	}
 
+	static bool		RayIntersectAABB_1D(float start, float dir, float min, float max, float* enter, float* exit)
+	{
+		if (fabs(dir) < 0.000001f)
+		{
+			return start >= min && start <= max;
+		}
+
+		float   invDir = 1.0f / dir;
+		float   t0 = (min - start) * invDir;
+		float   t1 = (max - start) * invDir;
+
+		if (t0 > t1)
+		{
+			std::swap(t0, t1);
+		}
+
+		if (t0 > *enter)
+		{
+			*enter = t0;
+		}
+
+		if (t1 < *exit)
+		{
+			*exit = t1;
+		}
+
+		return true;
+	}
+
 	static bool		RayIntersectAABB(const Vector3d& Origin, const Vector3d& Dir, const Vector3d& Bmin, const Vector3d& Bmax, float* t)
 	{
-		const Vector3d Vmin = Bmin - Origin;
-		const Vector3d Vmax = Bmax - Origin;
-
-		float Tmin = 0;
-		float Tmax = FLT_MAX;
-		Vector3d Normal(0.0f);
+		float enter = 0.0f, exit = 1.0f;
 
 		for (int i = 0; i < 3; ++i)
 		{
-			float Time1, Time2;
-			if (fabsf(Dir[i]) < 0.00001f)
-			{
-				if (Vmin[i] > 0 || Vmax[i] < 0)
-				{
-					return false;
-				}
-				else
-				{
-					Time1 = 0;
-					Time2 = FLT_MAX;
-				}
-			}
-			else
-			{
-				const float InvDir = 1.0f / Dir[i];
-				Time1 = Vmin[i] * InvDir;
-				Time2 = Vmax[i] * InvDir;
-			}
-
-			Vector3d CurNormal = Vector3d(0.0f);
-			CurNormal[i] = 1.0f;
-
-			if (Time1 > Time2)
-			{
-				std::swap(Time1, Time2);
-			}
-			else
-			{
-				CurNormal[i] = -1.0f;
-			}
-
-			if (Time1 > Tmin)
-			{
-				Normal = CurNormal;
-			}
-			Tmin = std::max(Tmin, Time1);
-			Tmax = std::min(Tmax, Time2);
-
-			if (Tmin > Tmax)
+			if (!RayIntersectAABB_1D(Origin[i], Dir[i], Bmin[i], Bmax[i], &enter, &exit))
 			{
 				return false;
 			}
 		}
 
-		if (Tmax < 0)
+		const float h = enter > 0 ? enter : exit;
+		if (h >= 0)
 		{
-			return false;
+			*t = h;
+			return true;
 		}
-
-		*t = Tmin;
-		return true;
+		return false;
 	}
 
 	BoundingBox3d	GetBoundingBox() const

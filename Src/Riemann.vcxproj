@@ -23,8 +23,10 @@
     <ClCompile Include="Collision\AABBTree.cpp" />
     <ClCompile Include="Collision\AABBTreeInference.cpp" />
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />
+    <ClCompile Include="Collision\BroadPhase.cpp" />
     <ClCompile Include="Collision\GeometryObject.cpp" />
     <ClCompile Include="Collision\GeometryQuery.cpp" />
+    <ClCompile Include="Collision\NarrowPhase.cpp" />
     <ClCompile Include="Collision\SparseSpatialHash.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
     <ClCompile Include="Geometry\Tetrahedral.cpp" />
@@ -44,8 +46,10 @@
     <ClInclude Include="Collision\AABBTree.h" />
     <ClInclude Include="Collision\AABBTreeInference.h" />
     <ClInclude Include="Collision\AABBTreeOffline.h" />
+    <ClInclude Include="Collision\BroadPhase.h" />
     <ClInclude Include="Collision\GeometryObject.h" />
     <ClInclude Include="Collision\GeometryQuery.h" />
+    <ClInclude Include="Collision\NarrowPhase.h" />
     <ClInclude Include="Collision\SparseSpatialHash.h" />
     <ClInclude Include="Geometry\AxisAlignedBox.h" />
     <ClInclude Include="Geometry\BoxShape.h" />
@@ -83,7 +87,9 @@
     <ClInclude Include="Maths\Vector3d.h" />
     <ClInclude Include="Maths\Vector4d.h" />
     <ClInclude Include="PositionBasedDynamics\PositionBasedDynamicsSolver.h" />
+    <ClInclude Include="RigidBodyDynamics\RigidBody.h" />
     <ClInclude Include="Solver\ConjugateGradientSolver.h" />
+    <ClInclude Include="Solver\ExponentialIntegrator.h" />
     <ClInclude Include="Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="Solver\NumericalODESolver.h" />
     <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />

@@ -81,7 +81,7 @@ int AABBTree::Traverse(const Vector3d& Point) const
 	return -1;
 }
 
-static int GeometryHit(const Ray& ray, int* prims, int numPrims, GeometryObject* ObjectCollection, RayCastResult* Result)
+static int RayCastGeometry(const Ray& ray, int* prims, int numPrims, GeometryObject* ObjectCollection, RayCastResult* Result)
 {
 	assert(numPrims > 0);
 	if (ObjectCollection == nullptr)
@@ -134,7 +134,7 @@ int  AABBTree::RayCast(const Ray& ray, GeometryObject *ObjectCollection, RayCast
 	{
 		if (p->IsLeafNode())
 		{
-			return GeometryHit(ray, p->GetPrimitiveIndices(m_PrimitiveIndicesBase), p->GetNumPrimitives(), ObjectCollection, Result);
+			return RayCastGeometry(ray, p->GetPrimitiveIndices(m_PrimitiveIndicesBase), p->GetNumPrimitives(), ObjectCollection, Result);
 		}
 
 		AABBTreeNodeInference* p1 = p->GetLeftNode(m_AABBTreeInference);
@@ -170,7 +170,7 @@ int  AABBTree::RayCast(const Ray& ray, GeometryObject *ObjectCollection, RayCast
 			continue;
 		}
 
-		return GeometryHit(ray, p->GetPrimitiveIndices(m_PrimitiveIndicesBase), p->GetNumPrimitives(), ObjectCollection, Result);
+		return RayCastGeometry(ray, p->GetPrimitiveIndices(m_PrimitiveIndicesBase), p->GetNumPrimitives(), ObjectCollection, Result);
 	}
 
 	return -1;

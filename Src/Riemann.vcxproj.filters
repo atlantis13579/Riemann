@@ -61,6 +61,10 @@
     <ClInclude Include="Collision\SparseSpatialHash.h" />
     <ClInclude Include="Collision\GeometryQuery.h" />
     <ClInclude Include="Collision\GeometryObject.h" />
+    <ClInclude Include="Collision\BroadPhase.h" />
+    <ClInclude Include="Collision\NarrowPhase.h" />
+    <ClInclude Include="Solver\ExponentialIntegrator.h" />
+    <ClInclude Include="RigidBodyDynamics\RigidBody.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -84,5 +88,7 @@
     <ClCompile Include="Collision\GeometryQuery.cpp" />
     <ClCompile Include="Collision\SparseSpatialHash.cpp" />
     <ClCompile Include="Collision\GeometryObject.cpp" />
+    <ClCompile Include="Collision\BroadPhase.cpp" />
+    <ClCompile Include="Collision\NarrowPhase.cpp" />
   </ItemGroup>
 </Project>
