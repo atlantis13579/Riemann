@@ -125,26 +125,25 @@ void sweep_and_prune(const std::vector<sweep_point>& axis, std::map<sap_key, int
         const sweep_point* curr = &axis[i];
         if (curr->left())
         {
-            active.insert(curr->id());
-        }
-
-        for (auto active_id : active)
-        {
-            if (curr->id() != active_id)
+            for (auto active_id : active)
             {
-                sap_key key = sap_pack_key(curr->id(), active_id);
-                if (overlaps_count.find(key) == overlaps_count.end())
+                if (curr->id() != active_id)
                 {
-                    overlaps_count.insert(std::pair<sap_key, int>(key, mask));
-                }
-                else
-                {
-                    overlaps_count[key] |= mask;
+                    sap_key key = sap_pack_key(curr->id(), active_id);
+                    if (overlaps_count.find(key) == overlaps_count.end())
+                    {
+                        overlaps_count.insert(std::pair<sap_key, int>(key, mask));
+                    }
+                    else
+                    {
+                        overlaps_count[key] |= mask;
+                    }
                 }
             }
-        }
 
-        if (!curr->left())
+            active.insert(curr->id());
+        }
+        else
         {
             active.erase(curr->id());
         }
