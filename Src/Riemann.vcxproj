@@ -54,7 +54,7 @@
     <ClInclude Include="Collision\NarrowPhase.h" />
     <ClInclude Include="Collision\QuadTree.h" />
     <ClInclude Include="Collision\SparseSpatialHash.h" />
-    <ClInclude Include="Collision\SweepAndPrune.h" />
+    <ClInclude Include="Collision\SAP.h" />
     <ClInclude Include="Geometry\AxisAlignedBox.h" />
     <ClInclude Include="Geometry\BoxShape.h" />
     <ClInclude Include="Geometry\Capsule.h" />

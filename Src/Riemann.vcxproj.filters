@@ -65,7 +65,7 @@
     <ClInclude Include="Solver\ExponentialIntegrator.h" />
     <ClInclude Include="RigidBodyDynamics\RigidBody.h" />
     <ClInclude Include="Collision\QuadTree.h" />
-    <ClInclude Include="Collision\SweepAndPrune.h" />
+    <ClInclude Include="Collision\SAP.h" />
     <ClInclude Include="Collision\EPA.h" />
     <ClInclude Include="Collision\GJK.h" />
   </ItemGroup>
