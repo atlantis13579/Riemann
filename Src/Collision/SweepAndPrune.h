@@ -8,18 +8,19 @@
 
 struct sweep_point
 {
-    sweep_point(int idx, bool min, float _val)
+    sweep_point() {}
+    sweep_point(int id, bool left, float val)
     {
-        data = min ? ((1 << 31) | idx ) : idx;
-        value = _val;
+        data = left ? ((1 << 31) | id ) : id;
+        value = val;
     }
 
-    inline bool is_left() const
+    inline bool left() const
     {
         return data & (1 << 31);
     }
 
-    inline int index() const
+    inline int id() const
     {
         return data & 0x7FFFFFFF;
     }
@@ -54,95 +55,156 @@ void sap_swap(sweep_point* a, sweep_point* b)
     *b = t;
 }
 
-void sap_point_sort(sweep_point* point_list, int low, int high)
+void sap_axis_qsort(sweep_point* axis, int low, int high)
 {
     if (low < high)
     {
-        sweep_point* pivot = &point_list[high];
+        sweep_point* pivot = &axis[high];
         int i = low - 1;
 
         for (int j = low; j <= high - 1; ++j)
         {
-            if (point_list[j].value > pivot->value)
+            if (axis[j].value <= pivot->value)
             {
                 i++;
-                sap_swap(&point_list[i], &point_list[j]);
+                sap_swap(&axis[i], &axis[j]);
             }
         }
-        sap_swap(&point_list[i + 1], &point_list[high]);
+        sap_swap(&axis[i + 1], &axis[high]);
 
-        sap_point_sort(point_list, low, i);
-        sap_point_sort(point_list, i + 2, high);
+        sap_axis_qsort(axis, low, i);
+        sap_axis_qsort(axis, i + 2, high);
     }
 }
 
-void sweep_axis(std::vector<sweep_point>& point_list, const std::vector<BoundingBox3d>& boxes, std::set<sap_key> *overlaps)
+void sap_axis_insertion_sort(std::vector<sweep_point>& axis, const std::vector<BoundingBox3d>& boxes, std::set<sap_key> *overlaps)
 {
-    int nsize = (int)point_list.size();
+    int nsize = (int)axis.size();
     for (int j = 1; j < nsize; j++)
     {
-        sweep_point pivot = point_list[j];
+        sweep_point pivot = axis[j];
         float pivot_value = pivot.value;
 
         int i = j - 1;
 
-        while (i >= 0 && point_list[i].value > pivot_value)
+        while (i >= 0 && axis[i].value > pivot_value)
         {
-            sweep_point curr_box = point_list[i];
+            sweep_point curr = axis[i];
 
-            if (pivot.is_left() && !curr_box.is_left())
+            if (pivot.left() && !curr.left())
             {
-                int id_current = curr_box.index();
-                int id_key = pivot.index();
-                if (id_current != id_key)
+                int id_current = curr.id();
+                int id_pivot = pivot.id();
+                if (id_current != id_pivot)
                 {
-                    if (boxes[id_current].Intersect(boxes[id_key]))
+                    if (boxes[id_current].Intersect(boxes[id_pivot]))
                     {
-                        overlaps->insert(sap_pack_key(id_current, id_key));
+                        overlaps->insert(sap_pack_key(id_current, id_pivot));
                     }
                 }
             }
 
-            if (!pivot.is_left() && curr_box.is_left())
+            if (!pivot.left() && curr.left())
             {
-                overlaps->erase(sap_pack_key(curr_box.index(), pivot.index()));
+                overlaps->erase(sap_pack_key(curr.id(), pivot.id()));
             }
 
-            point_list[i + 1] = curr_box;
+            axis[i + 1] = curr;
             i = i - 1;
         }
-        point_list[i + 1] = pivot;
+        axis[i + 1] = pivot;
+    }
+}
+
+void sweep_and_prune(const std::vector<sweep_point>& axis, std::map<sap_key, int>& overlaps_count, int mask)
+{
+    std::set<int> active;
+
+    for (size_t i = 0; i < axis.size(); ++i)
+    {
+        const sweep_point* curr = &axis[i];
+        if (curr->left())
+        {
+            active.insert(curr->id());
+        }
+
+        for (auto active_id : active)
+        {
+            if (curr->id() != active_id)
+            {
+                sap_key key = sap_pack_key(curr->id(), active_id);
+                if (overlaps_count.find(key) == overlaps_count.end())
+                {
+                    overlaps_count.insert(std::pair<sap_key, int>(key, mask));
+                }
+                else
+                {
+                    overlaps_count[key] |= mask;
+                }
+            }
+        }
+
+        if (!curr->left())
+        {
+            active.erase(curr->id());
+        }
     }
 }
 
 // http://www.codercorner.com/SAP.pdf
 void sap_full(const std::vector<BoundingBox3d>& boxes, std::set<sap_key> *overlaps)
 {
-    std::vector<sweep_point> x;
-    std::vector<sweep_point> y;
-    std::vector<sweep_point> z;
+    std::map<sap_key, int> overlaps_count;
+    std::vector<sweep_point> axis;
+    axis.resize(2 * boxes.size());
 
     int nsize = (int)boxes.size();
-    for (int i = 0; i < boxes.size(); ++i)
+    for (int k = 0; k < 3; ++k)
     {
-        x.emplace_back(i, false, boxes[i].Max.x);
-        x.emplace_back(i, true, boxes[i].Min.x);
+        for (int i = 0; i < boxes.size(); ++i)
+        {
+            axis[2 * i] = sweep_point(i, true, boxes[i].Min[k]);
+            axis[2 * i + 1] = sweep_point(i, false, boxes[i].Max[k]);
+        }
+        sap_axis_qsort(&axis[0], 0, (int)axis.size() - 1);
+        sweep_and_prune(axis, overlaps_count, 1<<k);
 
-        y.emplace_back(i, false, boxes[i].Max.y);
-        y.emplace_back(i, true, boxes[i].Min.y);
-
-        z.emplace_back(i, false, boxes[i].Max.z);
-        z.emplace_back(i, true, boxes[i].Min.z);
+        continue;
     }
 
-    sap_point_sort(&x[0], 0, (int)x.size() - 1);
-    sap_point_sort(&y[0], 0, (int)y.size() - 1);
-    sap_point_sort(&z[0], 0, (int)z.size() - 1);
-
     overlaps->clear();
-    sweep_axis(x, boxes, overlaps);
-    sweep_axis(y, boxes, overlaps);
-    sweep_axis(y, boxes, overlaps);
+    for (auto it : overlaps_count)
+    {
+        if (it.second == 7)
+        {
+            overlaps->insert(it.first);
+        }
+    }
+
+    return;
+}
+
+
+void sap_incremental(const std::vector<BoundingBox3d>& boxes, std::set<sap_key>* overlaps)
+{
+    overlaps->clear();
+
+    std::vector<sweep_point> axis;
+    axis.resize(2 * boxes.size());
+
+    int nsize = (int)boxes.size();
+    for (int k = 0; k < 3; ++k)
+    {
+        for (int i = 0; i < boxes.size(); ++i)
+        {
+            axis[2*i] = sweep_point(i, false, boxes[i].Max[k]);
+            axis[2*i+1] = sweep_point(i, true, boxes[i].Min[k]);
+        }
+
+        sap_axis_insertion_sort(axis, boxes, overlaps);
+
+        continue;
+    }
 
     return;
 }
