@@ -67,7 +67,7 @@ public:
 	static Matrix3d			GetInertia(const GeometryObject* Geom, float Mass);
 
 	DECL_GEOMETRY_OBJ(AxisAlignedBox3);
-	// DECL_GEOMETRY_OBJ(Plane);
+	DECL_GEOMETRY_OBJ(Plane);
 	// DECL_GEOMETRY_OBJ(Sphere);
 
 	static GetAABBFunc		getaabbTable[GeometryShapeType::COUNT];

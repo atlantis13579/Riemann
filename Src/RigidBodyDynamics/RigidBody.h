@@ -16,4 +16,7 @@ struct RigidBody
 	Quaternion	Q;				// Rotation Quaternion
 	Vector3d	P;				// Linear Momentum
 	Vector3d	L;				// Angular Momentum
+
+	Vector3d	Force;
+	Vector3d	Torque;
 };

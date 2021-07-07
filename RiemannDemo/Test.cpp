@@ -16,6 +16,7 @@
 #include "../Src/Geometry/Capsule.h"
 #include "../Src/Collision/AABBTree.h"
 #include "../Src/Collision/GeometryQuery.h"
+#include "../Src/Collision/SweepAndPrune.h"
 
 void TestAABBTree()
 {
@@ -52,8 +53,8 @@ void TestAABBTree()
 
     for (int i = 0; i < 10000; ++i)
     {
-        Vector3d point1 = Vector3d(RandomFloat01(), RandomFloat01(), RandomFloat01()) * 100.0f;
-        Vector3d point2 = Vector3d(RandomFloat01(), RandomFloat01(), RandomFloat01()) * 100.0f;
+        Vector3d point1 = Vector3d::Random() * 100.0f;
+        Vector3d point2 = Vector3d::Random() * 100.0f;
         boxes.emplace_back(point1, point1 + point2);
     }
 
@@ -64,7 +65,7 @@ void TestAABBTree()
 
     for (int i = 0; i < 10000; ++i)
     {
-        Vector3d point = Vector3d(RandomFloat01(), RandomFloat01(), RandomFloat01()) * 100.0f;
+        Vector3d point = Vector3d::Random() * 100.0f;
         p = tree.Traverse(point);
 
         ray.Origin = point;
@@ -104,9 +105,50 @@ void TestGeometryQuery()
     return;
 }
 
+void TestSAP()
+{
+    std::set<sap_key> overlaps;
+    std::vector<BoundingBox3d> boxes;
+    boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(2, 2, 2));
+    boxes.emplace_back(Vector3d(1, 1, 1), Vector3d(3, 3, 3));
+    boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(15, 15, 15));
+    sap_full(boxes, &overlaps);
+    assert(overlaps.size() == 3);
+
+    boxes[2] = BoundingBox3d(Vector3d(10, 10, 10), Vector3d(15, 15, 15));
+    sap_full(boxes, &overlaps);
+    assert(overlaps.size() == 1);
+
+    for (int i = 0; i < 100; ++i)
+    {
+        Vector3d point1 = Vector3d::Random() * 100.0f;
+        Vector3d point2 = Vector3d::Random() * 100.0f;
+        boxes.emplace_back(point1, point1 + point2);
+    }
+    sap_full(boxes, &overlaps);
+
+    for (size_t i = 0; i < boxes.size(); ++i)
+    for (size_t j = 0; j < boxes.size(); ++j)
+    {
+        if (i == j) continue;
+        sap_key key = sap_pack_key((int)i, (int)j);
+        if (boxes[i].Intersect(boxes[j]))
+        {
+            assert(overlaps.count(key) == 1);
+        }
+        else
+        {
+            assert(overlaps.count(key) == 0);
+        }
+    }
+
+    return;
+}
+
 void TestMainEntry()
 {
     TestAABBTree();
     TestGeometryQuery();
+    TestSAP();
     return;
 }

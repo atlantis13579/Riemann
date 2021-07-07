@@ -123,4 +123,16 @@ public:
 	{
 		return PerpendicularTo(Vector3d::UnitX());
 	}
+
+	Matrix3d GetInertiaTensor(float Mass) const
+	{
+		// TODO
+		return Matrix3d();
+	}
+
+	Vector3d GetSupport(const Vector3d& dir) const
+	{
+		// TODO
+		return Vector3d();
+	}
 };

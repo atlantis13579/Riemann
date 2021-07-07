@@ -242,6 +242,12 @@ public:
 		return zero;
 	}
 
+	static const Vector3d& One()
+	{
+		static Vector3d One(1.0f, 1.0f, 1.0f);
+		return One;
+	}
+
 	static const Vector3d& UnitX()
 	{
 		static Vector3d inf(1.0f, 0.0f, 0.0f);
@@ -258,5 +264,10 @@ public:
 	{
 		static Vector3d inf(0.0f, 0.0f, 1.0f);
 		return inf;
+	}
+
+	static Vector3d Random()
+	{
+		return Vector3d((float)rand() / RAND_MAX, (float)rand() / RAND_MAX, (float)rand() / RAND_MAX);
 	}
 };

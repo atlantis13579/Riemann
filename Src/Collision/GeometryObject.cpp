@@ -107,5 +107,5 @@ InertiaFunc			GeometryObject::inertiaTable[GeometryShapeType::COUNT] = { 0 };
 	}																			\
 
 IMPL_GEOMETRY_OBJ(GeometryShapeType::AABB, AxisAlignedBox3);
-// IMPL_GEOMETRY_OBJ(GeometryShapeType::PLANE, Plane);
+IMPL_GEOMETRY_OBJ(GeometryShapeType::PLANE, Plane);
 // IMPL_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere);

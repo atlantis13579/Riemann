@@ -50,7 +50,6 @@
     <ClInclude Include="Geometry\BoxShape.h" />
     <ClInclude Include="Geometry\Tetrahedral.h" />
     <ClInclude Include="Geometry\TriangleMesh.h" />
-    <ClInclude Include="Geometry\GeometryBase.h" />
     <ClInclude Include="LinearSystem\SparseMatrix.h" />
     <ClInclude Include="LinearSystem\DenseMatrix.h" />
     <ClInclude Include="Collision\AABBTree.h" />
@@ -66,6 +65,9 @@
     <ClInclude Include="Solver\ExponentialIntegrator.h" />
     <ClInclude Include="RigidBodyDynamics\RigidBody.h" />
     <ClInclude Include="Collision\QuadTree.h" />
+    <ClInclude Include="Collision\SweepAndPrune.h" />
+    <ClInclude Include="Collision\EPA.h" />
+    <ClInclude Include="Collision\GJK.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">

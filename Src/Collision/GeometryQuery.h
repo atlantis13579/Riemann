@@ -18,7 +18,6 @@ public:
 
 	bool RayCast(const Vector3d &Origin, const Vector3d& Dir, RayCastResult *Result);
 
-
 private:
 	AABBPruner*			m_staticGeometry;
 	AABBPruner*			m_dynamicPruner;
