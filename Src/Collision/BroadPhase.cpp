@@ -22,7 +22,6 @@ class BroadPhaseSAPImplementation : public BroadPhase
 public:
 	BroadPhaseSAPImplementation()
 	{
-		axis_cache.resize(3);
 	}
 
 	virtual ~BroadPhaseSAPImplementation()
@@ -66,14 +65,12 @@ public:
 	{
 		if (bBBoxDirty)
 		{
-			overlaps_cache.clear();
-			sap_incremental_init(AllObjects, 0, axis_cache[0]);
-			sap_incremental_init(AllObjects, 1, axis_cache[1]);
-			sap_incremental_init(AllObjects, 2, axis_cache[2]);
+			sap_incremental(axis_cache, AllObjects, &overlaps_cache, true, 7);
 			bBBoxDirty = false;
+			return;
 		}
 
-		sap_incremental(axis_cache, AllObjects, &overlaps_cache);
+		sap_incremental(axis_cache, AllObjects, &overlaps_cache, false, 7);
 
 		GetOverlapPairs(AllObjects, overlaps_cache, overlaps);
 	}
@@ -90,8 +87,8 @@ public:
 	}
 
 private:
-	std::vector<std::vector<sweep_point>>	axis_cache;
-	std::set<sap_key>						overlaps_cache;
+	std::vector<sweep_point>			axis_cache[3];
+	std::set<sap_key>					overlaps_cache;
 	bool bBBoxDirty;
 };
 

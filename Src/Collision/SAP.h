@@ -37,6 +37,10 @@ sap_key sap_pack_key(int id1, int id2);
 
 void sap_unpack_key(sap_key key, int *id1, int *id2);
 
+void sap_axis_qsort(sweep_point* axis, int low, int high);
+
 // http://www.codercorner.com/SAP.pdf
+void sweep_and_prune(const std::vector<sweep_point>& axis, std::map<sap_key, int>& overlaps_count, int filter);
+
 void sap_direct(const std::vector<BoundingBox3d>& boxes, std::set<sap_key> *overlaps, int axis_filter = 7);
 

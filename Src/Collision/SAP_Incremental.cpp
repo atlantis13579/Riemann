@@ -42,7 +42,7 @@ static void sap_axis_insertion_sort(std::vector<sweep_point>& axis, std::vector<
 	}
 }
 
-void sap_incremental_init(std::vector<GeometryObject*>& objs, int k, std::vector<sweep_point>& axis)
+static void sap_init_axis(std::vector<GeometryObject*>& objs, int k, std::vector<sweep_point>& axis)
 {
 	axis.resize(2 * objs.size());
 	for (int i = 0; i < objs.size(); ++i)
@@ -54,11 +54,36 @@ void sap_incremental_init(std::vector<GeometryObject*>& objs, int k, std::vector
 	}
 }
 
-void sap_incremental(std::vector<std::vector<sweep_point>>& axis, std::vector<GeometryObject*>& objs, std::set<sap_key>* overlaps)
+void sap_incremental(std::vector<sweep_point> axis[3], std::vector<GeometryObject*>& objs, std::set<sap_key>* overlaps, bool dirty, int axis_filter)
 {
-	for (size_t k = 0; k < axis.size(); ++k)
+	if (dirty)
 	{
-		if (axis[k].empty())
+		std::map<sap_key, int> overlaps_count;
+
+		for (int k = 0; k < 3; ++k)
+		{
+			int filter = 1 << k;
+			if ((filter & axis_filter) == 0)
+				continue;
+			sap_init_axis(objs, k, axis[k]);
+			sap_axis_qsort(&axis[k][0], 0, (int)axis[k].size() - 1);
+			sweep_and_prune(axis[k], overlaps_count, filter);
+		}
+
+		overlaps->clear();
+		for (auto it : overlaps_count)
+		{
+			if (it.second == axis_filter)
+			{
+				overlaps->insert(it.first);
+			}
+		}
+		return;
+	}
+
+	for (int k = 0; k < 3; ++k)
+	{
+		if (((1 << k) & axis_filter) == 0)
 			continue;
 
 		sap_axis_insertion_sort(axis[k], objs, overlaps);

@@ -25,7 +25,7 @@ static void sap_swap(sweep_point* a, sweep_point* b)
 	*b = t;
 }
 
-static void sap_axis_qsort(sweep_point* axis, int low, int high)
+void sap_axis_qsort(sweep_point* axis, int low, int high)
 {
 	if (low < high)
 	{
@@ -47,7 +47,7 @@ static void sap_axis_qsort(sweep_point* axis, int low, int high)
 	}
 }
 
-static void sweep_and_prune(const std::vector<sweep_point>& axis, std::map<sap_key, int>& overlaps_count, int filter)
+void sweep_and_prune(const std::vector<sweep_point>& axis, std::map<sap_key, int>& overlaps_count, int filter)
 {
 	std::set<int> active;
 

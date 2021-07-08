@@ -159,25 +159,21 @@ void TestSAPInc()
     objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), Vector3d(2, 2, 2), Vector3d(3, 3, 3)));
     objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), Vector3d(10, 10, 10), Vector3d(20, 20, 20)));
 
-    std::vector<std::vector<sweep_point>> axis;
-    axis.resize(3);
-    sap_incremental_init(objs, 0, axis[0]);
-    sap_incremental_init(objs, 1, axis[1]);
-    sap_incremental_init(objs, 2, axis[2]);
+    std::vector<sweep_point> axis[3];
 
     std::set<sap_key> overlaps;
-    sap_incremental(axis, objs, &overlaps);
+    sap_incremental(axis, objs, &overlaps, true);
     assert(overlaps.size() == 0);
 
     objs[2]->SetPositionOffset(Vector3d(-10, -10, -10));
-    sap_incremental(axis, objs, &overlaps);
+    sap_incremental(axis, objs, &overlaps, false);
     assert(overlaps.size() == 2);
 
-    sap_incremental(axis, objs, &overlaps);
+    sap_incremental(axis, objs, &overlaps, false);
     assert(overlaps.size() == 2);
 
     objs[2]->SetPositionOffset(Vector3d(10, 10, 10));
-    sap_incremental(axis, objs, &overlaps);
+    sap_incremental(axis, objs, &overlaps, false);
     assert(overlaps.size() == 0);
 
     for (int i = 0; i < 100; ++i)
@@ -186,12 +182,12 @@ void TestSAPInc()
         Vector3d point2 = point1 + Vector3d::Random() * 100.0f;
         objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), point1, point2));
     }
-    sap_incremental(axis, objs, &overlaps);
-    sap_incremental(axis, objs, &overlaps);
-    sap_incremental(axis, objs, &overlaps);
-    sap_incremental(axis, objs, &overlaps);
-    sap_incremental(axis, objs, &overlaps);
-    sap_incremental(axis, objs, &overlaps);
+    sap_incremental(axis, objs, &overlaps, false);
+    sap_incremental(axis, objs, &overlaps, false);
+    sap_incremental(axis, objs, &overlaps, false);
+    sap_incremental(axis, objs, &overlaps, false);
+    sap_incremental(axis, objs, &overlaps, false);
+    sap_incremental(axis, objs, &overlaps, false);
 
     return;
 }
