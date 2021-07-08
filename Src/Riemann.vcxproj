@@ -24,6 +24,7 @@
     <ClCompile Include="Collision\AABBTreeInference.cpp" />
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />
     <ClCompile Include="Collision\BroadPhase.cpp" />
+    <ClCompile Include="Collision\GeometryCollection.cpp" />
     <ClCompile Include="Collision\GeometryObject.cpp" />
     <ClCompile Include="Collision\GeometryQuery.cpp" />
     <ClCompile Include="Collision\NarrowPhase.cpp" />
@@ -47,6 +48,7 @@
     <ClInclude Include="Collision\AABBTreeOffline.h" />
     <ClInclude Include="Collision\BroadPhase.h" />
     <ClInclude Include="Collision\EPA.h" />
+    <ClInclude Include="Collision\GeometryCollection.h" />
     <ClInclude Include="Collision\GeometryObject.h" />
     <ClInclude Include="Collision\GeometryQuery.h" />
     <ClInclude Include="Collision\GJK.h" />
@@ -84,6 +86,7 @@
     <ClInclude Include="Maths\Matrix3d.h" />
     <ClInclude Include="Maths\Matrix4d.h" />
     <ClInclude Include="Maths\Quaternion.h" />
+    <ClInclude Include="Maths\Transform.h" />
     <ClInclude Include="Maths\Vector2d.h" />
     <ClInclude Include="Maths\Vector3d.h" />
     <ClInclude Include="Maths\Vector4d.h" />

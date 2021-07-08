@@ -111,7 +111,7 @@ public:
 		return ((*this) * (1.0f - t) + end * t).Unit();
 	}
 
-	Matrix4d ToRotMatrix() const
+	Matrix4d ToRotationMatrix4d() const
 	{
 		float x2 = v.x * v.x;
 		float y2 = v.y * v.y;
@@ -129,7 +129,7 @@ public:
 			0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
-	Matrix3d ToRotMatrix3d() const
+	Matrix3d ToRotationMatrix() const
 	{
 		float x2 = v.x * v.x;
 		float y2 = v.y * v.y;

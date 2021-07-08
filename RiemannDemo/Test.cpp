@@ -7,6 +7,7 @@
 #include "../Src/LinearSystem/LUFactorization.h"
 #include "../Src/Maths/BoundingBox3d.h"
 #include "../Src/Maths/Maths.h"
+#include "../Src/Maths/Transform.h"
 #include "../Src/Geometry/AxisAlignedBox.h"
 #include "../Src/Geometry/Plane.h"
 #include "../Src/Geometry/Sphere.h"

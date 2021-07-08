@@ -39,12 +39,17 @@ public:
 		mat[3][0] = a30; mat[3][1] = a31; mat[3][2] = a32; mat[3][3] = a33;
 	}
 
-	void LoadIdentiry()
+	void LoadIdentity()
 	{
 		mat[0][0] = 1; mat[0][1] = 0; mat[0][2] = 0; mat[0][3] = 0;
 		mat[1][0] = 0; mat[1][1] = 1; mat[1][2] = 0; mat[1][3] = 0;
 		mat[2][0] = 0; mat[2][1] = 0; mat[2][2] = 1; mat[2][3] = 0;
 		mat[3][0] = 0; mat[3][1] = 0; mat[3][2] = 0; mat[3][3] = 1;
+	}
+
+	void LoadZero()
+	{
+		memset(mat, 0, sizeof(mat));
 	}
 
 	inline Matrix4d& operator=(const Matrix4d& rhs)
@@ -88,7 +93,7 @@ public:
 		return Vector4d(mat[0][i], mat[1][i], mat[2][i], mat[3][i]);
 	}
 
-	Matrix4d Transpose()
+	Matrix4d Transpose() const
 	{
 		return Matrix4d(mat[0][0], mat[1][0], mat[2][0], mat[3][0],
 						mat[0][1], mat[1][1], mat[2][1], mat[3][1],
@@ -178,6 +183,12 @@ public:
 		for (int j = 0; j < 4; j++)
 			m[i][j] = mat[i][j] - mm.mat[i][j];
 		return Matrix4d(m);
+	}
+
+	static const Matrix4d& Identity()
+	{
+		static Matrix4d Identity(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+		return Identity;
 	}
 };
 

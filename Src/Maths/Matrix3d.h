@@ -194,6 +194,12 @@ public:
 						v.z, 0, -v.x,
 						-v.y, v.x, 0);
 	}
+
+	static const Matrix3d& Identity()
+	{
+		static Matrix3d Identity(1, 0, 0, 0, 1, 0, 0, 0, 1);
+		return Identity;
+	}
 };
 
 static_assert(sizeof(Matrix3d) == 36, "sizeof Matrix3d is not valid");

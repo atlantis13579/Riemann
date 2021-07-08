@@ -66,6 +66,8 @@
     <ClInclude Include="Collision\EPA.h" />
     <ClInclude Include="Collision\GJK.h" />
     <ClInclude Include="Solver\SparseConjugateGradientSolver.h" />
+    <ClInclude Include="Maths\Transform.h" />
+    <ClInclude Include="Collision\GeometryCollection.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -90,5 +92,6 @@
     <ClCompile Include="Collision\GeometryObject.cpp" />
     <ClCompile Include="Collision\BroadPhase.cpp" />
     <ClCompile Include="Collision\NarrowPhase.cpp" />
+    <ClCompile Include="Collision\GeometryCollection.cpp" />
   </ItemGroup>
 </Project>

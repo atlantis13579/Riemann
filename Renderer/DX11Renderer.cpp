@@ -8,6 +8,7 @@
 #include <directxmath.h>
 #include <directxcolors.h>
 
+#include "../Src/Maths/Transform.h"
 #include "tiny_obj_loader.h"
 
 using namespace DirectX;
@@ -18,9 +19,9 @@ using namespace DirectX;
 
 struct ConstantBuffer
 {
-    XMMATRIX mWorld;
-    XMMATRIX mView;
-    XMMATRIX mProjection;
+    Matrix4d World;
+    Matrix4d View;
+    Matrix4d Projection;
 };
 
 struct DX11StaticMesh
@@ -29,7 +30,7 @@ struct DX11StaticMesh
     ID3D11Buffer* pVertexBuffer = nullptr;
     ID3D11Buffer* pIndexBuffer = nullptr;
     ID3D11Buffer* pConstantBuffer = nullptr;
-    XMMATRIX      matWorld;
+    Matrix4d      matWorld;
     int           IndexCount = 0;
 
     void Release()
@@ -311,14 +312,12 @@ public:
             return hr;
 
         // Initialize the view matrix
-        XMVECTOR Eye = XMVectorSet(0.0f, 0.0f, 5.0f, 0.0f);
-        XMVECTOR At = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-        XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-        m_View = XMMatrixLookAtLH(Eye, At, Up);
+        SetCameraLookAt(Vector3d(0.0f, 0.0f, 5.0f), Vector3d(0.0f, 0.0f, 0.0f));
 
         // Initialize the projection matrix
-        m_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / (FLOAT)height, 0.01f, 10000.0f);
+        // m_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / (FLOAT)height, 0.01f, 10000.0f);
 
+        m_Projection = Transform::BuildPerspectiveMatrix_LHCoordinateSystem(XM_PIDIV2, width / (FLOAT)height, 0.01f, 10000.0f);
         return S_OK;
     }
 
@@ -355,11 +354,8 @@ public:
 
     virtual void SetCameraLookAt(Vector3d Eye, Vector3d At) override
     {
-        // Initialize the view matrix
-        XMVECTOR _Eye = XMVectorSet(Eye.x, Eye.y, Eye.z, 0.0f);
-        XMVECTOR _At = XMVectorSet(At.x, At.y, At.z, 0.0f);
-        XMVECTOR _Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-        m_View = XMMatrixLookAtLH(_Eye, _At, _Up);
+        Vector3d Up = Vector3d(0.0f, 1.0f, 0.0f);
+        m_View = Transform::BuildViewMatrix_LHCoordinateSystem(Eye, At, Up);
     }
 
     virtual bool AddMesh(const char* Id, const Vertex1* pVerties, int nVerties, const unsigned int* pIndices, int nIndices) override
@@ -413,7 +409,7 @@ public:
             return false;
 
         // Initialize the world matrix
-        mesh.matWorld = XMMatrixIdentity();
+        mesh.matWorld.LoadIdentity();
         mesh.IndexCount = nIndices;
 
         m_AllMesh.push_back(mesh);
@@ -551,14 +547,14 @@ public:
 
         // Update variables
         ConstantBuffer cb;
-        cb.mView = XMMatrixTranspose(m_View);
-        cb.mProjection = XMMatrixTranspose(m_Projection);
+        cb.View = m_View;
+        cb.Projection = m_Projection;
 
         for (size_t i = 0; i < m_AllMesh.size(); ++i)
         {
             const DX11StaticMesh& mesh = m_AllMesh[i];
 
-            cb.mWorld = XMMatrixTranspose(mesh.matWorld);
+            cb.World = mesh.matWorld.Transpose();
             m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
             m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
 
@@ -589,8 +585,8 @@ private:
     ID3D11InputLayout* m_pVertexLayout = nullptr;
     ID3D11DepthStencilView* m_pDepthBuffer = nullptr;
 
-    XMMATRIX                m_View;
-    XMMATRIX                m_Projection;
+    Matrix4d                m_View;
+    Matrix4d                m_Projection;
 
     std::vector<DX11StaticMesh> m_AllMesh;
 };

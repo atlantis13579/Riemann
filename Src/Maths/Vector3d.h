@@ -107,6 +107,11 @@ public:
 		return TVector3<T>(x * v.x, y * v.y, z * v.z);
 	}
 
+	inline TVector3<T> operator/(const TVector3<T>& v) const
+	{
+		return TVector3<T>(x / v.x, y / v.y, z / v.z);
+	}
+
 	inline TVector3<T> operator*(T k) const
 	{
 		return TVector3<T>(x * k, y * k, z * k);
@@ -274,6 +279,18 @@ public:
 		return TVector3<T>((T)rand() / RAND_MAX, (T)rand() / RAND_MAX, (T)rand() / RAND_MAX);
 	}
 };
+
+template <typename T>
+inline T DotProduct(const TVector3<T> &lhs, const TVector3<T> &rhs)
+{
+	return lhs.Dot(rhs);
+}
+
+template <typename T>
+inline TVector3<T> CrossProduct(const TVector3<T>& lhs, const TVector3<T>& rhs)
+{
+	return lhs.Cross(rhs);
+}
 
 typedef TVector3<float> Vector3d;
 
