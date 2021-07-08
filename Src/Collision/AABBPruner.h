@@ -2,8 +2,9 @@
 #pragma once
 
 #include <vector>
-#include "GeometryObject.h"
+#include "../Maths/Vector3d.h"
 
+class GeometryObject;
 class AABBTree;
 struct RayCastResult;
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../Maths/Vector3d.h"
-#include "../Maths/Matrix3d.h"
 #include "../Maths/BoundingBox3d.h"
 #include "../Maths/Transform.h"
 
@@ -57,6 +55,7 @@ public:
 	const BoundingBox3d&	GetBoundingBoxWorld() const;
 
 	void					SetPosition(const Vector3d& Position);
+	void					SetRotation(const Quaternion& Rotation);
 
 	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
 	Matrix3d				GetInertia(float Mass);

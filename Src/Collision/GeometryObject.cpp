@@ -1,13 +1,12 @@
 
 #include "GeometryObject.h"
 
-#include "../Geometry/AxisAlignedBox.h"
-#include "../Geometry/Plane.h"
-#include "../Geometry/Sphere.h"
-#include "../Geometry/Triangle.h"
-#include "../Geometry/Cylinder.h"
-#include "../Geometry/Capsule.h"
-#include "../Collision/AABBTree.h"
+#include "../CollisionPrimitive/AxisAlignedBox.h"
+#include "../CollisionPrimitive/Plane.h"
+#include "../CollisionPrimitive/Sphere.h"
+#include "../CollisionPrimitive/Triangle.h"
+#include "../CollisionPrimitive/Cylinder.h"
+#include "../CollisionPrimitive/Capsule.h"
 
 GeometryObject::GeometryObject(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity /*= nullptr*/)
 {
@@ -46,6 +45,11 @@ void	GeometryObject::SetPosition(const Vector3d& Position)
 {
 	m_Transform.SetTranslation(Position);
 	m_BoxWorld = GetBoundingBoxLocal() + Position;
+}
+
+void	GeometryObject::SetRotation(const Quaternion& Rotation)
+{
+	m_Transform.SetRotation(Rotation);
 }
 
 bool	GeometryObject::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)

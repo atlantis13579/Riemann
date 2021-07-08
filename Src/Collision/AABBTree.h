@@ -2,7 +2,7 @@
 #pragma once
 
 #include "../Maths/BoundingBox3d.h"
-#include "../Geometry/Ray.h"
+#include "../CollisionPrimitive/Ray.h"
 #include "AABBTreeOffline.h"
 
 struct RayCastResult;

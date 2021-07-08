@@ -3,7 +3,7 @@
 
 #include <assert.h>
 #include "AABBTree.h"
-
+#include "GeometryObject.h"
 
 AABBPruner::AABBPruner()
 {
