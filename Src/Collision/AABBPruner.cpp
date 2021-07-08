@@ -7,16 +7,10 @@
 
 AABBPruner::AABBPruner()
 {
-	m_staticAABB = nullptr;
 }
 
 AABBPruner::~AABBPruner()
 {
-	if (m_staticAABB)
-	{
-		delete m_staticAABB;
-		m_staticAABB = nullptr;
-	}
 }
 
 void AABBPruner::BuildAABB(const std::vector<GeometryObject*>& Objects, int nPrimitivePerNode)
@@ -30,16 +24,12 @@ void AABBPruner::BuildAABB(const std::vector<GeometryObject*>& Objects, int nPri
 	}
 	AABBTreeBuildData param(&boxes[0], (int)boxes.size(), nPrimitivePerNode);
 	
-	m_staticAABB = new AABBTree();
-	m_staticAABB->StaticBuild(param);
+	StaticBuild(param);
 }
 
 bool AABBPruner::RayCast(const Vector3d& Origin, const Vector3d& Dir, RayCastResult* Result)
 {
-	if (m_staticAABB)
-	{
-		Ray ray(Origin, Dir);
-		return m_staticAABB->RayCast(ray, &m_Objects[0], Result);
-	}
-	return true;
+	Ray ray(Origin, Dir);
+	GeometryObject** pp = &m_Objects[0];
+	return AABBTree::RayCast(ray, pp, Result);
 }

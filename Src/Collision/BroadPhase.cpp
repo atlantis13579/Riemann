@@ -2,8 +2,9 @@
 #include "BroadPhase.h"
 #include "GeometryObject.h"
 #include "SAP.h"
+#include "SAP_Incremental.h"
 
-void BroadPhaseBruteforceImplementation::ProduceOverlaps(const std::vector<GeometryObject*> AllObjects, std::vector<OverlapsPair>* overlaps)
+void BroadPhaseBruteforceImplementation::ProduceOverlaps(std::vector<GeometryObject*>& AllObjects, std::vector<OverlapPair>* overlaps)
 {
 	overlaps->clear();
 
@@ -16,28 +17,83 @@ void BroadPhaseBruteforceImplementation::ProduceOverlaps(const std::vector<Geome
 }
 
 
-void BroadPhaseSAPImplementation::ProduceOverlaps(const std::vector<GeometryObject*> AllObjects, std::vector<OverlapsPair>* overlaps)
+class BroadPhaseSAPImplementation : public BroadPhase
 {
-	if (AllObjects.empty())
+public:
+	BroadPhaseSAPImplementation()
 	{
-		return;
+		axis.resize(3);
 	}
 
-	std::vector<BoundingBox3d> boxes;
-	boxes.resize(AllObjects.size());
-	for (size_t i = 0; i < AllObjects.size(); ++i)
+	virtual ~BroadPhaseSAPImplementation()
 	{
-		boxes[i] = AllObjects[i]->GetBoundingBoxWorld();
+
 	}
 
-	std::set<sap_key> m_overlaps;
-	sap_direct(boxes, &m_overlaps);
-
-	overlaps->clear();
-	for (auto it : m_overlaps)
+	void SetBBoxDirty()
 	{
-		int i, j;
-		sap_unpack_key(it, &i, &j);
-		overlaps->emplace_back(AllObjects[i], AllObjects[j]);
+		bBBoxDirty = true;
 	}
+
+public:
+
+	virtual void ProduceOverlaps(std::vector<GeometryObject*>& AllObjects, std::vector<OverlapPair>* overlaps)
+	{
+		if (AllObjects.empty())
+		{
+			return;
+		}
+
+		std::set<sap_key> m_overlaps;
+
+		SAP_Incremental(AllObjects, &m_overlaps);
+
+		GetOverlapPairs(AllObjects, m_overlaps, overlaps);
+	}
+
+	void SAP_Direct(std::vector<GeometryObject*>& AllObjects, std::set<sap_key>* overlaps)
+	{
+		std::vector<BoundingBox3d> boxes;
+		boxes.resize(AllObjects.size());
+		for (size_t i = 0; i < AllObjects.size(); ++i)
+		{
+			boxes[i] = AllObjects[i]->GetBoundingBoxWorld();
+		}
+
+		sap_direct(boxes, overlaps);
+	}
+
+	void SAP_Incremental(std::vector<GeometryObject*>& AllObjects, std::set<sap_key>* overlaps)
+	{
+		if (bBBoxDirty)
+		{
+			sap_incremental_init(AllObjects, 0, axis[0]);
+			sap_incremental_init(AllObjects, 1, axis[1]);
+			sap_incremental_init(AllObjects, 2, axis[2]);
+			bBBoxDirty = false;
+		}
+
+		sap_incremental(axis, AllObjects, overlaps);
+	}
+
+	void GetOverlapPairs(std::vector<GeometryObject*>& AllObjects, const std::set<sap_key>&m_overlaps, std::vector<OverlapPair>* overlaps)
+	{
+		overlaps->clear();
+		for (auto it : m_overlaps)
+		{
+			int i, j;
+			sap_unpack_key(it, &i, &j);
+			overlaps->emplace_back(AllObjects[i], AllObjects[j]);
+		}
+	}
+
+private:
+	std::vector<std::vector<sweep_point>> axis;
+	bool bBBoxDirty;
+};
+
+
+BroadPhase* BroadPhase::CreatSAP()
+{
+	return new BroadPhaseSAPImplementation();
 }

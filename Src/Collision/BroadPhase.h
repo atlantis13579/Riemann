@@ -6,9 +6,9 @@
 
 class GeometryObject;
 
-struct OverlapsPair
+struct OverlapPair
 {
-	OverlapsPair(GeometryObject* _Geom1, GeometryObject* _Geom2)
+	OverlapPair(GeometryObject* _Geom1, GeometryObject* _Geom2)
 	{
 		Geom1 = _Geom1;
 		Geom2 = _Geom2;
@@ -20,7 +20,10 @@ struct OverlapsPair
 class BroadPhase
 {
 public:
-	virtual void ProduceOverlaps(const std::vector<GeometryObject*> AllObjects, std::vector<OverlapsPair> *overlaps) = 0;
+	~BroadPhase() {}
+	virtual void ProduceOverlaps(std::vector<GeometryObject*>& AllObjects, std::vector<OverlapPair> *overlaps) = 0;
+
+	static BroadPhase* CreatSAP();
 };
 
 
@@ -28,16 +31,7 @@ public:
 class BroadPhaseBruteforceImplementation : public BroadPhase
 {
 public:
-	virtual void ProduceOverlaps(const std::vector<GeometryObject*> AllObjects, std::vector<OverlapsPair>* overlaps);
-};
+	~BroadPhaseBruteforceImplementation() {}
 
-
-class BroadPhaseSAPImplementation : public BroadPhase
-{
-public:
-	BroadPhaseSAPImplementation() {}
-	~BroadPhaseSAPImplementation() {}
-
-public:
-	virtual void ProduceOverlaps(const std::vector<GeometryObject*> AllObjects, std::vector<OverlapsPair>* overlaps);
+	virtual void ProduceOverlaps(std::vector<GeometryObject*>& AllObjects, std::vector<OverlapPair>* overlaps);
 };

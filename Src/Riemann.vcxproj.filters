@@ -69,6 +69,7 @@
     <ClInclude Include="Collision\GeometryCollection.h" />
     <ClInclude Include="Collision\SAP_Incremental.h" />
     <ClInclude Include="Collision\GeometryObject.h" />
+    <ClInclude Include="Collision\DynamicAABBTree.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -94,5 +95,8 @@
     <ClCompile Include="Collision\NarrowPhase.cpp" />
     <ClCompile Include="Collision\GeometryCollection.cpp" />
     <ClCompile Include="Collision\GeometryObject.cpp" />
+    <ClCompile Include="Collision\DynamicAABBTree.cpp" />
+    <ClCompile Include="Collision\SAP_Incremental.cpp" />
+    <ClCompile Include="Collision\SAP.cpp" />
   </ItemGroup>
 </Project>

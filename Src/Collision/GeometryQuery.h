@@ -6,6 +6,7 @@
 
 class AABBPruner;
 class SparseSpatialHash;
+class BroadPhase;
 
 class GeometryQuery
 {
@@ -13,13 +14,19 @@ public:
 	GeometryQuery();
 	~GeometryQuery();
 
+	void Simulate(float dt);
+
 public:
 	void BuildStaticGeometry(const std::vector<GeometryObject*>& Objects, int nPrimitivePerNode);
 
 	bool RayCast(const Vector3d &Origin, const Vector3d& Dir, RayCastResult *Result);
 
+	void CreateBroadPhaseFilter(const char* name);
+
 private:
 	AABBPruner*			m_staticGeometry;
 	AABBPruner*			m_dynamicPruner;
 	SparseSpatialHash*	m_SpatialHashPruner;
+
+	BroadPhase*			m_BPhase;
 };

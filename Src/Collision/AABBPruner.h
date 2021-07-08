@@ -3,12 +3,13 @@
 
 #include <vector>
 #include "../Maths/Vector3d.h"
+#include "AABBTree.h"
 
 class GeometryObject;
 class AABBTree;
 struct RayCastResult;
 
-class AABBPruner
+class AABBPruner : public AABBTree
 {
 public:
 	AABBPruner();
@@ -20,6 +21,4 @@ public:
 
 private:
 	std::vector<GeometryObject*> m_Objects;
-
-	AABBTree* m_staticAABB;
 };
