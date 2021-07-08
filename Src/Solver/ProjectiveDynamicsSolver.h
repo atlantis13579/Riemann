@@ -2,7 +2,7 @@
 
 #include <vector>
 #include "../Geometry/Tetrahedral.h"
-#include "ConjugateGradientSolver.h"
+#include "SparseConjugateGradientSolver.h"
 
 #define MAX_ITERATIONS 5
 #define DAMPING 0.95f
@@ -40,6 +40,6 @@ private:
 	float* m_invSys;
 	float *m_qn, *m_q, *m_sn, *m_v, *m_fext, *m_b;
 	bool *m_pinned;
-	ConjugateGradientSolver m_solver;
+	SparseConjugateGradientSolver m_solver;
 };
 

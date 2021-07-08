@@ -17,24 +17,24 @@ public:
 		{
 			m_buf.resize(N);
 		}
-		T* DX = &m_buf[0];
+		T* delta = &m_buf[0];
 
 		int Iter = 0;
 		while (Iter++ < MaxIteration)
 		{
 			for (int i = 0; i < N; ++i)
 			{
-				T s = (T)0;
+				T beta = (T)0;
 				for (int j = 0; j < i; ++j)
-					s += A[i * N + j] * X[j];
+					beta += A[i * N + j] * X[j];
 
 				for (int j = i + 1; j < N; ++j)
-					s += A[i * N + j] * X[j];
+					beta += A[i * N + j] * X[j];
 
-				DX[i] = (B[i] - s) / A[i * N + i];
+				delta[i] = (B[i] - beta) / A[i * N + i];
 			}
 
-			memcpy(X, DX, sizeof(X[0]) * N);
+			memcpy(X, delta, sizeof(X[0]) * N);
 
 			T Norm = (T)0;
 			for (int i = 0; i < N; i++)

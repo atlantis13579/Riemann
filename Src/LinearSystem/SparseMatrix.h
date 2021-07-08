@@ -8,27 +8,27 @@ class SparseMatrix
 public:
 	SparseMatrix(const float *A, int n)
 	{
-		m_nSize = n;
-		m_numEntries = 0;
+		m_Size = n;
+		m_NumEntries = 0;
 		for (int i = 0; i < n; i++)
 		for (int j = 0; j < n; j++)
 		{
 			if (fabsf(A[i * n + j]) > 1e-9)
 			{
-				++m_numEntries;
+				++m_NumEntries;
 			}
 		}
 
-		m_entries = nullptr;
-		m_indices = nullptr;
+		m_Entries = nullptr;
+		m_Indices = nullptr;
 
-		if (m_numEntries > 0)
+		if (m_NumEntries > 0)
 		{
-			m_entries = new float[m_numEntries];
-			m_indices = new int[m_numEntries];
+			m_Entries = new float[m_NumEntries];
+			m_Indices = new int[m_NumEntries];
 
-			memset(m_entries, 0, sizeof(m_entries[0])*m_numEntries);
-			memset(m_indices, 0, sizeof(m_indices[0])*m_numEntries);
+			memset(m_Entries, 0, sizeof(m_Entries[0])*m_NumEntries);
+			memset(m_Indices, 0, sizeof(m_Indices[0])*m_NumEntries);
 
 			int counter = 0;
 			for (int i = 0; i < n; i++)
@@ -36,42 +36,40 @@ public:
 			{
 				if (fabsf(A[i*n+j]) > 1e-9)
 				{
-					m_entries[counter] = A[i * n + j];
-					m_indices[counter] = i * n + j;
+					m_Entries[counter] = A[i * n + j];
+					m_Indices[counter] = i * n + j;
 					counter++;
 				}
 			}
 		}
-
-
 	}
 
 	~SparseMatrix()
 	{
-		if (m_entries)
+		if (m_Entries)
 		{
-			delete[]m_entries;
-			m_entries = nullptr;
+			delete[]m_Entries;
+			m_Entries = nullptr;
 		}
-		if (m_indices)
+		if (m_Indices)
 		{
-			delete[]m_indices;
-			m_indices = nullptr;
+			delete[]m_Indices;
+			m_Indices = nullptr;
 		}
 
 	}
 
 	void MulXCompressed3x3(const float *in, float *out)
 	{
-		for (int i = 0; i < m_nSize * 3; i++)
+		for (int i = 0; i < m_Size * 3; i++)
 			out[i] = 0;
 
-		for (int i = 0; i < m_numEntries; i++)
+		for (int i = 0; i < m_NumEntries; i++)
 		{
-			int ind = m_indices[i];
-			int x = ind / m_nSize;
-			int y = ind % m_nSize;
-			float entry = m_entries[i];
+			int ind = m_Indices[i];
+			int x = ind / m_Size;
+			int y = ind % m_Size;
+			float entry = m_Entries[i];
 
 			out[x * 3] += entry * in[y * 3];
 			out[x * 3 + 1] += entry * in[y * 3 + 1];
@@ -79,10 +77,30 @@ public:
 		}
 	}
 
+	void MulXCompressedN(const float* in, int nDof, float* out)
+	{
+		for (int i = 0; i < m_Size * nDof; i++)
+			out[i] = 0;
+
+		for (int i = 0; i < m_NumEntries; i++)
+		{
+			int ind = m_Indices[i];
+			int x = ind / m_Size;
+			int y = ind % m_Size;
+			float entry = m_Entries[i];
+
+			int kx = x * nDof, ky = y * nDof;
+			for (int j = 0; j < nDof; ++j)
+			{
+				out[kx + j] += entry * in[ky + j];
+			}
+		}
+	}
+
 private:
-	float *m_entries;
-	int *m_indices;
-	int m_numEntries;
-	int m_nSize;
+	float *m_Entries;
+	int *m_Indices;
+	int m_NumEntries;
+	int m_Size;
 };
 

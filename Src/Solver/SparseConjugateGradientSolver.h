@@ -4,39 +4,41 @@
 #include "../Maths/Maths.h"
 #include "../LinearSystem/SparseMatrix.h"
 
-class ConjugateGradientSolver
+class SparseConjugateGradientSolver
 {
 public:
-	ConjugateGradientSolver()
+	SparseConjugateGradientSolver()
 	{
+		m_SparseA = nullptr;
 		r = nullptr;
 		d = nullptr;
 		q = nullptr;
 		temp = nullptr;
-		m_A = nullptr;
 		m_MaxIterations = 100;
 		m_Epsilon = 0.0001f;
 	}
 
-	~ConjugateGradientSolver()
+	~SparseConjugateGradientSolver()
 	{
+		if (m_SparseA) delete m_SparseA;
 		if (r) delete[]r;
 		if (d) delete[]d;
 		if (q) delete[]q;
 		if (temp) delete[]temp;
 	}
 
-	void InitSolver(const float* A, int n)
+	void InitSparseSolverCompressed3x3(const float* A, int n)
 	{
 		m_Size = n * 3;
-		m_A = A;
+		m_SparseA = new SparseMatrix(A, n);
+
 		r = new float[m_Size];
 		d = new float[m_Size];
 		q = new float[m_Size];
 		temp = new float[m_Size];
 	}
 
-	void Solve(float* x, const float* b)
+	void SolveSparseCompressed3x3(float* x, const float* b)
 	{
 		for (int i = 0; i < m_Size; ++i)
 		{
@@ -45,9 +47,11 @@ public:
 			q[i] = 0;
 		}
 
+		m_SparseA->MulXCompressed3x3(x, temp);
+
 		for (int i = 0; i < m_Size; ++i)
 		{
-			d[i] = r[i] = b[i] - Dot(m_A + i * m_Size, x);
+			d[i] = r[i] = b[i] - temp[i];
 		}
 
 		int it = 0;
@@ -58,18 +62,21 @@ public:
 		while (it < m_MaxIterations && deltaNew > m_Epsilon * m_Epsilon * delta0)
 		{
 			it++;
-			for (int i = 0; i < m_Size; i++)
-				q[i] = Dot(m_A + i * m_Size, d, m_Size);
+
+			m_SparseA->MulXCompressed3x3(d, q);
 
 			alpha = deltaNew / Dot(d, q, m_Size);
 
-			for (int i = 0; i < m_Size; i++)
+			for (int i = 0; i < m_Size; ++i)
+			{
 				x[i] = x[i] + alpha * d[i];
+			}
 
 			if (it % 50 == 0)		// floating point errors ???
 			{
+				m_SparseA->MulXCompressed3x3(x, temp);
 				for (int i = 0; i < m_Size; ++i)
-					r[i] = b[i] - Dot(m_A + i * m_Size, x, m_Size);
+					r[i] = b[i] - temp[i];
 			}
 			else
 			{
@@ -96,9 +103,9 @@ public:
 
 private:
 	float *r, *x, *d, *q, *temp;
-	const float *m_A;
+	int m_Size;
 	int m_MaxIterations;
 	float m_Epsilon;
-	int m_Size;
+	SparseMatrix* m_SparseA;
 };
 

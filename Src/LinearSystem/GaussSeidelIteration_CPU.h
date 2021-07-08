@@ -14,14 +14,14 @@ public:
 		{
 			for (int i = 0; i < N; ++i)
 			{
-				T s = (T)0;
+				T beta = (T)0;
 				for (int j = 0; j < i; ++j)
-					s += A[i * N + j] * X[j];
+					beta += A[i * N + j] * X[j];
 
 				for (int j = i + 1; j < N; ++j)
-					s += A[i * N + j] * X[j];
+					beta += A[i * N + j] * X[j];
 
-				X[i] = (B[i] - s) / A[i * N + i];
+				X[i] = (B[i] - beta) / A[i * N + i];
 			}
 
 			T Norm = (T)0;

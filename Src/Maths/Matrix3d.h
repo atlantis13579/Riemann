@@ -115,6 +115,12 @@ public:
 		return Matrix3d(m);
 	}
 
+	inline Matrix3d& operator=(const Matrix3d& rhs)
+	{
+		memcpy(mat, rhs.mat, sizeof(mat));
+		return *this;
+	}
+
 	inline float operator()(int i, int j) const
 	{
 		return mat[i][j];
@@ -155,12 +161,6 @@ public:
 		return mat[0][0] + mat[1][1] + mat[2][2];
 	}
 
-	inline Matrix3d& operator=(const Matrix3d& rhs)
-	{
-		memcpy(mat, rhs.mat, sizeof(mat));
-		return *this;
-	}
-
 	bool Invertible() const
 	{
 		float d = Determinant();
@@ -170,7 +170,7 @@ public:
 	Matrix3d Inverse() const
 	{
 		float d = Determinant();
-		// Assume d != 0
+		// Warning!!! Assume d != 0
 		return Matrix3d((mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) * d, -(mat[0][1] * mat[2][2] - mat[0][2] * mat[2][1]) * d, (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) * d,
 			-(mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0]) * d, (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) * d, -(mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0]) * d,
 			(mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) * d, -(mat[0][0] * mat[2][1] - mat[0][1] * mat[2][0]) * d, (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) * d);
@@ -180,7 +180,7 @@ public:
 	Vector3d Solve(const Vector3d &b)
 	{
 		float d = Determinant();
-		// Assume d != 0
+		// Warning!!! Assume d != 0
 		Vector3d x;
 		x.x = b.Dot(row[1].Cross(row[2])) / d;
 		x.y = row[0].Dot(b.Cross(row[2])) / d;

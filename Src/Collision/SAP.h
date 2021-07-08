@@ -31,6 +31,8 @@ struct sweep_point
 
 typedef unsigned long long sap_key;
 
+static_assert(sizeof(sap_key) == 8, "sizeof sap_key is not valid");
+
 sap_key sap_pack_key(int id1, int id2)
 {
     if (id1 > id2)

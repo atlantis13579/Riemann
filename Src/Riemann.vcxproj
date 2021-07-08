@@ -36,7 +36,6 @@
     <ClCompile Include="Maths\Bezier.cpp" />
     <ClCompile Include="Maths\Maths.cpp" />
     <ClCompile Include="PositionBasedDynamics\PositionBasedDynamicsSolver.cpp" />
-    <ClCompile Include="Solver\ConjugateGradientSolver.cpp" />
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
@@ -95,6 +94,7 @@
     <ClInclude Include="Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="Solver\NumericalODESolver.h" />
     <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />
+    <ClInclude Include="Solver\SparseConjugateGradientSolver.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
