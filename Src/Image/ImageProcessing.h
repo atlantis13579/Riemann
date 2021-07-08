@@ -3,7 +3,7 @@
 #include <vector>
 #include <queue>
 
-#include "../Maths/Vector2i.h"
+#include "../Maths/Vector2d.h"
 
 // X 0 X
 // 3 X 1 

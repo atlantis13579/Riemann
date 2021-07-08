@@ -10,17 +10,18 @@
 
 #include "Vector3d.h"
 
-class Vector4d
+template <typename T>
+class TVector4
 {
 public:
 	union
 	{
-		struct { float x, y, z, w; };
-		struct { float r, g, b, a; };
-		struct { float coords[4]; };
+		struct { T x, y, z, w; };
+		struct { T r, g, b, a; };
+		struct { T coords[4]; };
 	};
 
-	Vector4d(float _x, float _y, float _z, float _w)
+	TVector4<T>(T _x, T _y, T _z, T _w)
 	{
 		x = _x;
 		y = _y;
@@ -28,7 +29,7 @@ public:
 		w = _w;
 	}
 
-	Vector4d(float v[4])
+	TVector4<T>(T v[4])
 	{
 		x = v[0];
 		y = v[1];
@@ -36,7 +37,7 @@ public:
 		w = v[3];
 	}
 
-	Vector4d(const Vector4d& v)
+	TVector4<T>(const TVector4<T>& v)
 	{
 		x = v.x;
 		y = v.y;
@@ -44,7 +45,7 @@ public:
 		w = v.w;
 	}
 
-	Vector4d(float v)
+	TVector4<T>(T v)
 	{
 		x = v;
 		y = v;
@@ -52,86 +53,85 @@ public:
 		w = v;
 	}
 
-	Vector4d()
+	TVector4<T>()
 	{
 	}
 
-	Vector3d xyz()
+	TVector3<T> xyz()
 	{
-		return Vector3d(x, y, z);
+		return TVector3<T>(x, y, z);
 	}
 
-	inline float    Dot(const Vector4d& v) const
+	inline T    Dot(const TVector4<T>& v) const
 	{
 		return x * v.x + y * v.y + z * v.z + w * v.w;
 	}
 
-	Vector4d Unit() const
+	TVector4<T> Unit() const
 	{
-		float m = Length();
-		return Vector4d(x / m, y / m, z / m, w / m);
+		T m = Length();
+		return TVector4<T>(x / m, y / m, z / m, w / m);
 	}
 
 	void Normalize()
 	{
-		float m = Length();
+		T m = Length();
 		x /= m;
 		y /= m;
 		z /= m;
 		w /= m;
 	}
 
-	float    Length() const
+	T    Length() const
 	{
 		return sqrtf(x * x + y * y + z * z + w * w);
 	}
 
-	float    SquareLength() const
+	T    SquareLength() const
 	{
 		return x * x + y * y + z * z + w * w;
 	}
 
-	Vector4d& operator=(const Vector4d& v)
+	TVector4<T>& operator=(const TVector4<T>& v)
 	{
 		x = v.x;
 		y = v.y;
 		z = v.z;
 		w = v.w;
 		return *this;
-
 	}
 
-	Vector4d operator*(float k) const
+	TVector4<T> operator+(const TVector4<T>& v) const
 	{
-		return Vector4d(x * k, y * k, z * k, w * k);
+		return TVector4<T>(x + v.x, y + v.y, z + v.z, w + v.w);
 	}
 
-	Vector4d operator*(const Vector4d& v) const
+	TVector4<T> operator-(const TVector4<T>& v) const
 	{
-		return Vector4d(x * v.x, y * v.y, z * v.z, w * v.w);
+		return TVector4<T>(x - v.x, y - v.y, z - v.z, w - v.w);
 	}
 
-	Vector4d operator/(float k) const
+	TVector4<T> operator*(const TVector4<T>& v) const
 	{
-		return Vector4d(x / k, y / k, z / k, w / k);
+		return TVector4<T>(x * v.x, y * v.y, z * v.z, w * v.w);
 	}
 
-	Vector4d operator+(const Vector4d& v) const
+	TVector4<T> operator*(T k) const
 	{
-		return Vector4d(x + v.x, y + v.y, z + v.z, w + v.w);
+		return TVector4<T>(x * k, y * k, z * k, w * k);
 	}
 
-	Vector4d operator-(const Vector4d& v) const
+	TVector4<T> operator/(T k) const
 	{
-		return Vector4d(x - v.x, y - v.y, z - v.z, w - v.w);
+		return TVector4<T>(x / k, y / k, z / k, w / k);
 	}
 
-	Vector4d operator-()
+	TVector4<T> operator-()
 	{
-		return Vector4d(-x, -y, -z, -w);
+		return TVector4<T>(-x, -y, -z, -w);
 	}
 
-	void	 operator+= (const Vector4d& v)
+	void	 operator+= (const TVector4<T>& v)
 	{
 		x += v.x;
 		y += v.y;
@@ -139,7 +139,7 @@ public:
 		w += v.w;
 	}
 
-	void	 operator-= (const Vector4d& v)
+	void	 operator-= (const TVector4<T>& v)
 	{
 		x -= v.x;
 		y -= v.y;
@@ -147,7 +147,7 @@ public:
 		w -= v.w;
 	}
 
-	void	 operator*= (const Vector4d& v)
+	void	 operator*= (const TVector4<T>& v)
 	{
 		x *= v.x;
 		y *= v.y;
@@ -155,7 +155,7 @@ public:
 		w *= v.w;
 	}
 
-	void	 operator/= (const Vector4d& v)
+	void	 operator/= (const TVector4<T>& v)
 	{
 		x /= v.x;
 		y /= v.y;
@@ -163,7 +163,7 @@ public:
 		w /= v.w;
 	}
 
-	void	 operator*= (float k)
+	void	 operator*= (T k)
 	{
 		x *= k;
 		y *= k;
@@ -171,7 +171,7 @@ public:
 		w *= k;
 	}
 
-	void	 operator/= (float k)
+	void	 operator/= (T k)
 	{
 		x /= k;
 		y /= k;
@@ -179,22 +179,40 @@ public:
 		w /= k;
 	}
 
-	static Vector4d Lerp(Vector4d& start, Vector4d& end, float t)
+	inline T operator[](int i) const
 	{
-		return (start*(1 - t) + end * t);
+		return coords[i];
 	}
 
-	static Vector4d UnitLerp(Vector4d& start, Vector4d& end, float t)
+	inline T& operator[](int i)
+	{
+		return coords[i];
+	}
+
+	static TVector4<T> Lerp(TVector4<T>& start, TVector4<T>& end, float t)
+	{
+		return TVector4<T>(
+			start.x * (1.0f - t) + end.x * t,
+			start.y * (1.0f - t) + end.y * t,
+			start.z * (1.0f - t) + end.z * t,
+			start.w * (1.0f - t) + end.z * w);
+	}
+
+	static TVector4<T> UnitLerp(TVector4<T>& start, TVector4<T>& end, float t)
 	{
 		return Lerp(start, end, t).Unit();
 	}
 
-	static Vector4d Slerp(Vector4d& start, Vector4d& end, float t)
+	static TVector4<T> Slerp(TVector4<T>& start, TVector4<T>& end, float t)
 	{
 		float innerp = start.Dot(end);
 		innerp = std::min(std::max(-1.0f, innerp), 1.0f);
 		float angle = acosf(innerp) * t;
-		Vector4d base = (end - start * innerp).Unit();
+		TVector4<T> base = (end - start * innerp).Unit();
 		return start * cosf(angle) + base * sinf(angle);
 	}
 };
+
+typedef TVector4<float> Vector4d;
+
+static_assert(sizeof(Vector4d) == 16, "sizeof Vector4d is not valid");

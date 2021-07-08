@@ -12,9 +12,6 @@
     <ClInclude Include="Maths\Vector2d.h">
       <Filter>Src</Filter>
     </ClInclude>
-    <ClInclude Include="Maths\Vector2i.h">
-      <Filter>Src</Filter>
-    </ClInclude>
     <ClInclude Include="Maths\Vector3d.h">
       <Filter>Src</Filter>
     </ClInclude>

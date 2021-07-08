@@ -2,25 +2,25 @@
 #pragma once
 
 #include <algorithm>
-#include <vector>
 
 #include "Vector3d.h"
 #include "Matrix4d.h"
 
-class BoundingBox3d
+template <typename T>
+class TBoundingBox3
 {
 public:
-	Vector3d Min;
-	Vector3d Max;
+	TVector3<T> Min;
+	TVector3<T> Max;
 
 public:
-	BoundingBox3d() { }
-	BoundingBox3d(const Vector3d& InMin, const Vector3d& InMax)
+	TBoundingBox3<T>() { }
+	TBoundingBox3<T>(const TVector3<T>& InMin, const TVector3<T>& InMax)
 		: Min(InMin)
 		, Max(InMax)
 	{ }
 
-	BoundingBox3d(const Vector3d* v, int Num)
+	TBoundingBox3<T>(const TVector3<T>* v, int Num)
 	{
 		for (int i = 0; i < Num; ++i)
 		{
@@ -28,21 +28,13 @@ public:
 		}
 	}
 
-	BoundingBox3d(const std::vector<Vector3d>& v)
-	{
-		for (size_t i = 0; i < v.size(); ++i)
-		{
-			*this += v[i];
-		}
-	}
-
 public:
-	bool operator==(const BoundingBox3d& Other) const
+	bool operator==(const TBoundingBox3<T>& Other) const
 	{
 		return (Min == Other.Min) && (Max == Other.Max);
 	}
 
-	BoundingBox3d& operator+=(const Vector3d& rhs)
+	TBoundingBox3<T>& operator+=(const TVector3<T>& rhs)
 	{
 		Min.x = std::min(Min.x, rhs.x);
 		Min.y = std::min(Min.y, rhs.y);
@@ -53,12 +45,12 @@ public:
 		Max.z = std::max(Max.z, rhs.z);
 	}
 
-	BoundingBox3d operator+(const BoundingBox3d& rhs) const
+	TBoundingBox3<T> operator+(const TBoundingBox3<T>& rhs) const
 	{
-		return BoundingBox3d(*this) += rhs;
+		return TBoundingBox3<T>(*this) += rhs;
 	}
 
-	BoundingBox3d& operator+=(const BoundingBox3d& rhs)
+	TBoundingBox3<T>& operator+=(const TBoundingBox3<T>& rhs)
 	{
 		Min.x = std::min(Min.x, rhs.Min.x);
 		Min.y = std::min(Min.y, rhs.Min.y);
@@ -69,49 +61,49 @@ public:
 		Max.z = std::max(Max.z, rhs.Max.z);
 	}
 
-	Vector3d GetCenter() const
+	TVector3<T> GetCenter() const
 	{
-		return Vector3d((Min + Max) * 0.5f);
+		return TVector3<T>((Min + Max) * 0.5f);
 	}
 
-	Vector3d GetExtent() const
+	TVector3<T> GetExtent() const
 	{
 		return (Max - Min) * 0.5f;
 	}
 
-	Vector3d GetSize() const
+	TVector3<T> GetSize() const
 	{
 		return Max - Min;
 	}
 
-	float GetSizeX() const
+	T GetSizeX() const
 	{
 		return Max.x - Min.x;
 	}
 
-	float GetSizeY() const
+	T GetSizeY() const
 	{
 		return Max.y - Min.y;
 	}
 
-	float GetSizeZ() const
+	T GetSizeZ() const
 	{
 		return Max.z - Min.z;
 	}
 
-	void GetCenterAndExtent(Vector3d* center, Vector3d* Extent) const
+	void GetCenterAndExtent(TVector3<T>* center, TVector3<T>* Extent) const
 	{
 		*center = GetCenter();
 		*Extent = GetExtent();
 	}
 
-	void BuildFromCenterAndExtent(const Vector3d& Center, const Vector3d& Extent)
+	void BuildFromCenterAndExtent(const TVector3<T>& Center, const TVector3<T>& Extent)
 	{
 		Min = Center - Extent;
 		Max = Center + Extent;
 	}
 
-	bool Intersect(const BoundingBox3d& rhs) const
+	bool Intersect(const TBoundingBox3<T>& rhs) const
 	{
 		if (Min.x > rhs.Max.x || rhs.Min.x > Max.x)
 		{
@@ -131,20 +123,20 @@ public:
 		return true;
 	}
 
-	bool IsInside(const Vector3d& rhs) const
+	bool IsInside(const TVector3<T>& rhs) const
 	{
 		return ((rhs.x > Min.x) && (rhs.x < Max.x) && (rhs.y > Min.y) && (rhs.y < Max.y) && (rhs.z > Min.z) && (rhs.z < Max.z));
 	}
 
-	BoundingBox3d Overlap(const BoundingBox3d& rhs) const
+	TBoundingBox3<T> Overlap(const TBoundingBox3<T>& rhs) const
 	{
 		if (!Intersect(rhs))
 		{
-			BoundingBox3d Zero(Vector3d(0,0,0), Vector3d(0, 0, 0));
+			TBoundingBox3<T> Zero(TVector3<T>::Zero(), TVector3<T>::Zero());
 			return Zero;
 		}
 
-		BoundingBox3d Box;
+		TBoundingBox3<T> Box;
 
 		Box.Min.x = std::max(Min.x, rhs.Min.x);
 		Box.Max.x = std::min(Max.x, rhs.Max.x);
@@ -158,35 +150,37 @@ public:
 		return Box;
 	}
 
-	BoundingBox3d Transform(const Matrix4d& M) const
+	TBoundingBox3<T> Transform(const Matrix4d& M) const
 	{
-		BoundingBox3d Box;
+		TBoundingBox3<T> Box;
 
-		Vector3d Center = GetCenter();
-		Vector3d Extent = GetExtent();
+		TVector3<T> Center = GetCenter();
+		TVector3<T> Extent = GetExtent();
 
-		Vector3d m0 = M.Row(0).xyz();
-		Vector3d m1 = M.Row(1).xyz();
-		Vector3d m2 = M.Row(2).xyz();
-		Vector3d m3 = M.Row(3).xyz();
+		TVector3<T> m0 = M.Row(0).xyz();
+		TVector3<T> m1 = M.Row(1).xyz();
+		TVector3<T> m2 = M.Row(2).xyz();
+		TVector3<T> m3 = M.Row(3).xyz();
 
-		Vector3d NewCenter = m0 * Center.x + m1 * Center.y + m2 * Center.z + m3;
-		Vector3d NewExtent = (m0 * Extent.x).Abs() + (m1 * Extent.y).Abs() + (m2 * Extent.z).Abs();
+		TVector3<T> NewCenter = m0 * Center.x + m1 * Center.y + m2 * Center.z + m3;
+		TVector3<T> NewExtent = (m0 * Extent.x).Abs() + (m1 * Extent.y).Abs() + (m2 * Extent.z).Abs();
 
 		Box.BuildFromCenterAndExtent(NewCenter, NewExtent);
 
 		return Box;
 	}
 	
-	static void GetVertices(const Vector3d& Bmin, const Vector3d& Bmax, Vector3d v[8])
+	static void GetVertices(const TVector3<T>& Bmin, const TVector3<T>& Bmax, TVector3<T> v[8])
 	{
-		v[0] = Vector3d(Bmin.x, Bmin.y, Bmin.z);
-		v[1] = Vector3d(Bmax.x, Bmin.y, Bmin.z);
-		v[2] = Vector3d(Bmin.x, Bmax.y, Bmin.z);
-		v[3] = Vector3d(Bmax.x, Bmax.y, Bmin.z);
-		v[4] = Vector3d(Bmin.x, Bmin.y, Bmax.z);
-		v[5] = Vector3d(Bmax.x, Bmin.y, Bmax.z);
-		v[6] = Vector3d(Bmin.x, Bmax.y, Bmax.z);
-		v[7] = Vector3d(Bmax.x, Bmax.y, Bmax.z);
+		v[0] = TVector3<T>(Bmin.x, Bmin.y, Bmin.z);
+		v[1] = TVector3<T>(Bmax.x, Bmin.y, Bmin.z);
+		v[2] = TVector3<T>(Bmin.x, Bmax.y, Bmin.z);
+		v[3] = TVector3<T>(Bmax.x, Bmax.y, Bmin.z);
+		v[4] = TVector3<T>(Bmin.x, Bmin.y, Bmax.z);
+		v[5] = TVector3<T>(Bmax.x, Bmin.y, Bmax.z);
+		v[6] = TVector3<T>(Bmin.x, Bmax.y, Bmax.z);
+		v[7] = TVector3<T>(Bmax.x, Bmax.y, Bmax.z);
 	}
 };
+
+typedef TBoundingBox3<float> BoundingBox3d;

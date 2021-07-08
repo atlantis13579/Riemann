@@ -8,178 +8,178 @@
 #include <math.h>
 #include <algorithm>
 
-class Vector3d
+template <typename T>
+class TVector3
 {
 public:
 	union
 	{
-		struct { float x, y, z; };
-		struct { float coords[3]; };
+		struct { T x, y, z; };
+		struct { T coords[3]; };
 	};
 
-	Vector3d(float _x, float _y, float _z)
+	TVector3<T>(T _x, T _y, T _z)
 	{
 		x = _x;
 		y = _y;
 		z = _z;
 	}
 
-	Vector3d(float v[3])
+	TVector3<T>(T v[3])
 	{
 		x = v[0];
 		y = v[1];
 		z = v[2];
 	}
 
-	Vector3d(const Vector3d& v)
+	TVector3<T>(const TVector3<T>& v)
 	{
 		x = v.x;
 		y = v.y;
 		z = v.z;
 	}
 
-	Vector3d(float v)
+	TVector3<T>(T v)
 	{
 		x = v;
 		y = v;
 		z = v;
 	}
 
-	Vector3d()
+	TVector3<T>()
 	{
 	}
 
-	inline float    Dot(const Vector3d& v) const
+	inline T	Dot(const TVector3<T>& v) const
 	{
 		return x * v.x + y * v.y + z * v.z;
 	}
 
-	inline Vector3d Cross(const Vector3d& v) const
+	inline TVector3<T> Cross(const TVector3<T>& v) const
 	{
-		return Vector3d(y * v.z - v.y * z, z * v.x - v.z * x, x * v.y - v.x * y);
+		return TVector3<T>(y * v.z - v.y * z, z * v.x - v.z * x, x * v.y - v.x * y);
 	}
 
-	Vector3d Unit() const
+	TVector3<T> Unit() const
 	{
-		float m = Length();
-		return Vector3d(x / m, y / m, z / m);
+		T m = Length();
+		return TVector3<T>(x / m, y / m, z / m);
 	}
 
 	void Normalize()
 	{
-		float m = Length();
+		T m = Length();
 		x /= m;
 		y /= m;
 		z /= m;
 	}
 
-	float    Length() const
+	inline T    Length() const
 	{
 		return sqrtf(x * x + y * y + z * z);
 	}
 
-	float    SquareLength() const
+	inline T    SquareLength() const
 	{
 		return x * x + y * y + z * z;
 	}
 
-	Vector3d& operator=(const Vector3d& v)
+	TVector3<T>& operator=(const TVector3<T>& v)
 	{
 		x = v.x;
 		y = v.y;
 		z = v.z;
 		return *this;
-
 	}
 
-	Vector3d operator*(float k) const
+	inline TVector3<T> operator+(const TVector3<T>& v) const
 	{
-		return Vector3d(x * k, y * k, z * k);
+		return TVector3<T>(x + v.x, y + v.y, z + v.z);
 	}
 
-	Vector3d operator*(const Vector3d& v) const
+	inline TVector3<T> operator-(const TVector3<T>& v) const
 	{
-		return Vector3d(x * v.x, y * v.y, z * v.z);
+		return TVector3<T>(x - v.x, y - v.y, z - v.z);
 	}
 
-	Vector3d operator/(float k) const
+	inline TVector3<T> operator*(const TVector3<T>& v) const
 	{
-		return Vector3d(x / k, y / k, z / k);
+		return TVector3<T>(x * v.x, y * v.y, z * v.z);
 	}
 
-	Vector3d operator+(const Vector3d& v) const
+	inline TVector3<T> operator*(T k) const
 	{
-		return Vector3d(x + v.x, y + v.y, z + v.z);
+		return TVector3<T>(x * k, y * k, z * k);
 	}
 
-	Vector3d operator-(const Vector3d& v) const
+	inline TVector3<T> operator/(T k) const
 	{
-		return Vector3d(x - v.x, y - v.y, z - v.z);
+		return TVector3<T>(x / k, y / k, z / k);
 	}
 
-	Vector3d operator-() const
+	inline TVector3<T> operator-() const
 	{
-		return Vector3d(-x, -y, -z);
+		return TVector3<T>(-x, -y, -z);
 	}
 
-	void	 operator+= (const Vector3d& v)
+	inline void	 operator+= (const TVector3<T>& v)
 	{
 		x += v.x;
 		y += v.y;
 		z += v.z;
 	}
 
-	void	 operator-= (const Vector3d& v)
+	inline void	 operator-= (const TVector3<T>& v)
 	{
 		x -= v.x;
 		y -= v.y;
 		z -= v.z;
 	}
 
-	void	 operator*= (const Vector3d& v)
+	inline void	 operator*= (const TVector3<T>& v)
 	{
 		x *= v.x;
 		y *= v.y;
 		z *= v.z;
 	}
 
-	void	 operator/= (const Vector3d& v)
+	inline void	 operator/= (const TVector3<T>& v)
 	{
 		x /= v.x;
 		y /= v.y;
 		z /= v.z;
 	}
 
-	void	 operator*= (float k)
+	inline void	 operator*= (T k)
 	{
 		x *= k;
 		y *= k;
 		z *= k;
 	}
 
-	void	 operator/= (float k)
+	inline void	 operator/= (T k)
 	{
 		x /= k;
 		y /= k;
 		z /= k;
 	}
 
-	bool operator==(const Vector3d& v) const
+	inline bool operator==(const TVector3<T>& v) const
 	{
 		return x == v.x && y == v.y && z == v.z;
 	}
 
-	bool operator!=(const Vector3d& v) const
+	inline bool operator!=(const TVector3<T>& v) const
 	{
 		return x != v.x || y != v.y || z != v.z;
 	}
 
-	float operator[](int i) const
+	inline T operator[](int i) const
 	{
 		return coords[i];
 	}
 
-	float& operator[](int i)
+	inline T& operator[](int i)
 	{
 		return coords[i];
 	}
@@ -190,84 +190,91 @@ public:
 		return z > coords[i] ? 2 : i;
 	}
 
-	Vector3d Abs() const
+	TVector3<T> Abs() const
 	{
-		return Vector3d(fabsf(x), fabsf(y), fabsf(z));
+		return TVector3<T>(std::abs(x), std::abs(y), std::abs(z));
 	}
 
-	Vector3d Min(const Vector3d& rhs) const
+	TVector3<T> Min(const TVector3<T>& rhs) const
 	{
-		return Vector3d(std::min(x, rhs.x), std::min(y, rhs.y), std::min(z, rhs.z));
+		return TVector3<T>(std::min(x, rhs.x), std::min(y, rhs.y), std::min(z, rhs.z));
 	}
 
-	Vector3d Max(const Vector3d& rhs) const
+	TVector3<T> Max(const TVector3<T>& rhs) const
 	{
-		return Vector3d(std::max(x, rhs.x), std::max(y, rhs.y), std::max(z, rhs.z));
+		return TVector3<T>(std::max(x, rhs.x), std::max(y, rhs.y), std::max(z, rhs.z));
 	}
 
-	static Vector3d Lerp(Vector3d& start, Vector3d& end, float t)
+	static TVector3<T> Lerp(TVector3<T>& start, TVector3<T>& end, float t)
 	{
-		return (start*(1 - t) + end * t);
+		return TVector3<T>(
+			start.x * (1.0f - t) + end.x * t,
+			start.y * (1.0f - t) + end.y * t,
+			start.z * (1.0f - t) + end.z * t);
 	}
 
-	static Vector3d UnitLerp(Vector3d& start, Vector3d& end, float t)
+	static TVector3<T> UnitLerp(TVector3<T>& start, TVector3<T>& end, float t)
 	{
 		return Lerp(start, end, t).Unit();
 	}
 
-	static Vector3d Slerp(Vector3d& start, Vector3d& end, float t)
+	static TVector3<T> Slerp(TVector3<T>& start, TVector3<T>& end, float t)
 	{
 		float innerp = start.Dot(end);
 		innerp = std::min(std::max(-1.0f, innerp), 1.0f);
 		float angle = acosf(innerp) * t;
-		Vector3d base = (end - start * innerp).Unit();
+		TVector3<T> base = (end - start * innerp).Unit();
 		return start * cosf(angle) + base * sinf(angle);
 	}
 
-	static Vector3d InfMin()
+	static TVector3<T> InfMin()
 	{
-		static Vector3d inf(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		static TVector3<T> inf(-std::numeric_limits<T>::max, -std::numeric_limits<T>::max, -std::numeric_limits<T>::max);
 		return inf;
 	}
 
-	static Vector3d InfMax()
+	static TVector3<T> InfMax()
 	{
-		static Vector3d inf(FLT_MAX, FLT_MAX, FLT_MAX);
+		static TVector3<T> inf(std::numeric_limits<T>::max, std::numeric_limits<T>::max, std::numeric_limits<T>::max);
 		return inf;
 	}
 
-	static const Vector3d& Zero()
+	static const TVector3<T>& Zero()
 	{
-		static Vector3d zero(0.0f, 0.0f, 0.0f);
+		static TVector3<T> zero(0, 0, 0);
 		return zero;
 	}
 
-	static const Vector3d& One()
+	static const TVector3<T>& One()
 	{
-		static Vector3d One(1.0f, 1.0f, 1.0f);
+		static TVector3<T> One((T)1, (T)1, (T)1);
 		return One;
 	}
 
-	static const Vector3d& UnitX()
+	static const TVector3<T>& UnitX()
 	{
-		static Vector3d inf(1.0f, 0.0f, 0.0f);
+		static TVector3<T> inf((T)1, 0, 0);
 		return inf;
 	}
 
-	static const Vector3d& UnitY()
+	static const TVector3<T>& UnitY()
 	{
-		static Vector3d inf(0.0f, 1.0f, 0.0f);
+		static TVector3<T> inf(0, (T)1, 0);
 		return inf;
 	}
 
-	static const Vector3d& UnitZ()
+	static const TVector3<T>& UnitZ()
 	{
-		static Vector3d inf(0.0f, 0.0f, 1.0f);
+		static TVector3<T> inf(0, 0, (T)1);
 		return inf;
 	}
 
-	static Vector3d Random()
+	static TVector3<T> Random()
 	{
-		return Vector3d((float)rand() / RAND_MAX, (float)rand() / RAND_MAX, (float)rand() / RAND_MAX);
+		return TVector3<T>((T)rand() / RAND_MAX, (T)rand() / RAND_MAX, (T)rand() / RAND_MAX);
 	}
 };
+
+typedef TVector3<float> Vector3d;
+
+static_assert(sizeof(Vector3d) == 12, "sizeof Vector3d is not valid");

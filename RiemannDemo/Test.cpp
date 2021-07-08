@@ -16,7 +16,7 @@
 #include "../Src/Geometry/Capsule.h"
 #include "../Src/Collision/AABBTree.h"
 #include "../Src/Collision/GeometryQuery.h"
-#include "../Src/Collision/SweepAndPrune.h"
+#include "../Src/Collision/SAP.h"
 
 void TestAABBTree()
 {

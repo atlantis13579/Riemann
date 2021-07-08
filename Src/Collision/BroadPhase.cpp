@@ -1,7 +1,7 @@
 
 #include "BroadPhase.h"
 #include "GeometryObject.h"
-#include "SweepAndPrune.h"
+#include "SAP.h"
 
 void BroadPhaseBruteforceImplementation::ProduceOverlaps(const std::vector<GeometryObject*> AllObjects, std::vector<OverlapsPair>* overlaps)
 {

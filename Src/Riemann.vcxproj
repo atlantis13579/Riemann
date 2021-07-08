@@ -86,7 +86,6 @@
     <ClInclude Include="Maths\Matrix4d.h" />
     <ClInclude Include="Maths\Quaternion.h" />
     <ClInclude Include="Maths\Vector2d.h" />
-    <ClInclude Include="Maths\Vector2i.h" />
     <ClInclude Include="Maths\Vector3d.h" />
     <ClInclude Include="Maths\Vector4d.h" />
     <ClInclude Include="PositionBasedDynamics\PositionBasedDynamicsSolver.h" />

@@ -8,159 +8,192 @@
 #include <math.h>
 #include <algorithm>
 
-class Vector2d
+template <typename T>
+class TVector2
 {
 public:
 	union
 	{
-		struct { float x, y; };
-		struct { float coords[2]; };
+		struct { T x, y; };
+		struct { T coords[2]; };
 	};
 
-	Vector2d(float _x, float _y)
+	TVector2(T _x, T _y)
 	{
 		x = _x;
 		y = _y;
 	}
 
-	Vector2d(float v[2])
+	TVector2(T v[2])
 	{
 		x = v[0];
 		y = v[1];
 	}
 
-	Vector2d(const Vector2d& v)
+	TVector2(const TVector2<T>& v)
 	{
 		x = v.x;
 		y = v.y;
 	}
 
-	Vector2d()
+	TVector2()
 	{
 	}
 
-	inline float  Dot(const Vector2d& v) const
+	inline T	Dot(const TVector2<T>& v) const
 	{
 		return x * v.x + y * v.y;
 	}
 
-	inline float Cross(const Vector2d& b) const
+	inline T	Cross(const TVector2<T>& b) const
 	{
 		return x * b.y - y * b.x;
 	}
 
-	Vector2d Unit() const
+	TVector2<T>	Unit() const
 	{
-		float m = Length();
-		return Vector2d(x / m, y / m);
+		T m = (T)Length();
+		return TVector2<T>(x / m, y / m);
 	}
 
 	void Normalize()
 	{
-		float m = Length();
+		T m = Length();
 		x /= m;
 		y /= m;
 	}
 
-	float    Length() const
+	inline T	Length() const
 	{
-		return sqrtf(x * x + y * y);
+		return (T)sqrtf(x * x + y * y);
 	}
 
-	float    SquareLength() const
+	inline T	SquareLength() const
 	{
 		return x * x + y * y;
 	}
 
-	Vector2d& operator=(const Vector2d& v)
+	TVector2<T>& operator=(const TVector2<T>& v)
 	{
 		x = v.x;
 		y = v.y;
 		return *this;
 	}
 
-	Vector2d operator*(float k) const
+	TVector2<T> operator+(const TVector2<T>& v) const
 	{
-		return Vector2d(x * k, y * k);
+		return TVector2<T>(x + v.x, y + v.y);
 	}
 
-	Vector2d operator*(const Vector2d& v) const
+	TVector2<T> operator-(const TVector2<T>& v) const
 	{
-		return Vector2d(x * v.x, y * v.y);
+		return TVector2<T>(x - v.x, y - v.y);
 	}
 
-	Vector2d operator/(const float k) const
+	TVector2<T> operator*(const TVector2<T>& v) const
 	{
-		return Vector2d(x / k, y / k);
+		return TVector2<T>(x * v.x, y * v.y);
 	}
 
-	Vector2d operator+(const Vector2d& v) const
+	TVector2<T> operator*(T k) const
 	{
-		return Vector2d(x + v.x, y + v.y);
+		return TVector2<T>(x * k, y * k);
 	}
 
-	Vector2d operator-(const Vector2d& v) const
+	TVector2<T> operator/(T k) const
 	{
-		return Vector2d(x - v.x, y - v.y);
+		return TVector2<T>(x / k, y / k);
 	}
 
-	Vector2d operator-()
+	TVector2<T> operator-()
 	{
-		return Vector2d(-x, -y);
+		return TVector2<T>(-x, -y);
 	}
 
-	void	 operator+= (const Vector2d& v)
+	void	 operator+= (const TVector2<T>& v)
 	{
 		x += v.x;
 		y += v.y;
 	}
 
-	void	 operator-= (const Vector2d& v)
+	void	 operator-= (const TVector2<T>& v)
 	{
 		x -= v.x;
 		y -= v.y;
 	}
 
-	void	 operator*= (const Vector2d& v)
+	void	 operator*= (const TVector2<T>& v)
 	{
 		x *= v.x;
 		y *= v.y;
 	}
 
-	void	 operator/= (const Vector2d& v)
+	void	 operator/= (const TVector2<T>& v)
 	{
 		x /= v.x;
 		y /= v.y;
 	}
 
-	void	 operator*= (float k)
+	void	 operator*= (T k)
 	{
 		x *= k;
 		y *= k;
 	}
 
-	void	 operator/= (float k)
+	void	 operator/= (T k)
 	{
 		x /= k;
 		y /= k;
 	}
 
-	static Vector2d Lerp(Vector2d& start, Vector2d& end, float t)
+	static TVector2<T> Lerp(TVector2<T>& start, TVector2<T>& end, float t)
 	{
-		return (start*(1 - t) + end * t);
+		return TVector2<T>(
+					start.x * (1.0f - t) + end.x * t,
+					start.y * (1.0f - t) + end.y * t);
 	}
 
-	static Vector2d UnitLerp(Vector2d& start, Vector2d& end, float t)
+	static TVector2<T> UnitLerp(TVector2<T>& start, TVector2<T>& end, float t)
 	{
 		return Lerp(start, end, t).Unit();
 	}
 
-	static Vector2d Slerp(Vector2d& start, Vector2d& end, float t)
+	static TVector2<T> Slerp(TVector2<T>& start, TVector2<T>& end, float t)
 	{
 		float innerp = start.Dot(end);
 		innerp = std::min(std::max(-1.0f, innerp), 1.0f);
 		float angle = acosf(innerp) * t;
-		Vector2d base = (end - start * innerp).Unit();
+		TVector2<T> base = (end - start * innerp).Unit();
 		return start * cosf(angle) + base * sinf(angle);
 	}
+
+	static const TVector2<T>& Zero()
+	{
+		static TVector2<T> zero(0, 0);
+		return zero;
+	}
+
+	static const TVector2<T>& One()
+	{
+		static TVector2<T> One((T)1, (T)1);
+		return One;
+	}
+
+	static const TVector2<T>& UnitX()
+	{
+		static TVector2<T> inf((T)1, 0);
+		return inf;
+	}
+
+	static const TVector2<T>& UnitY()
+	{
+		static TVector2<T> inf(0, (T)1);
+		return inf;
+	}
 };
+
+typedef TVector2<float> Vector2d;
+typedef TVector2<int>	Vector2i;
+
+static_assert(sizeof(Vector2d) == 8, "sizeof Vector2d is not valid");
+static_assert(sizeof(Vector2i) == 8, "sizeof Vector2i is not valid");
