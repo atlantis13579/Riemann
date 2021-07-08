@@ -116,7 +116,7 @@ void sap_axis_insertion_sort(std::vector<sweep_point>& axis, const std::vector<B
     }
 }
 
-void sweep_and_prune(const std::vector<sweep_point>& axis, std::map<sap_key, int>& overlaps_count, int mask)
+void sweep_and_prune(const std::vector<sweep_point>& axis, std::map<sap_key, int>& overlaps_count, int filter)
 {
     std::set<int> active;
 
@@ -132,11 +132,11 @@ void sweep_and_prune(const std::vector<sweep_point>& axis, std::map<sap_key, int
                     sap_key key = sap_pack_key(curr->id(), active_id);
                     if (overlaps_count.find(key) == overlaps_count.end())
                     {
-                        overlaps_count.insert(std::pair<sap_key, int>(key, mask));
+                        overlaps_count.insert(std::pair<sap_key, int>(key, filter));
                     }
                     else
                     {
-                        overlaps_count[key] |= mask;
+                        overlaps_count[key] |= filter;
                     }
                 }
             }
@@ -151,7 +151,7 @@ void sweep_and_prune(const std::vector<sweep_point>& axis, std::map<sap_key, int
 }
 
 // http://www.codercorner.com/SAP.pdf
-void sap_full(const std::vector<BoundingBox3d>& boxes, std::set<sap_key> *overlaps)
+void sap_full(const std::vector<BoundingBox3d>& boxes, std::set<sap_key> *overlaps, int axis_filter = 7)
 {
     std::map<sap_key, int> overlaps_count;
     std::vector<sweep_point> axis;
@@ -160,13 +160,17 @@ void sap_full(const std::vector<BoundingBox3d>& boxes, std::set<sap_key> *overla
     int nsize = (int)boxes.size();
     for (int k = 0; k < 3; ++k)
     {
+        int filter = 1 << k;
+        if ((filter & axis_filter) == 0)
+            continue;
+
         for (int i = 0; i < boxes.size(); ++i)
         {
             axis[2 * i] = sweep_point(i, true, boxes[i].Min[k]);
             axis[2 * i + 1] = sweep_point(i, false, boxes[i].Max[k]);
         }
         sap_axis_qsort(&axis[0], 0, (int)axis.size() - 1);
-        sweep_and_prune(axis, overlaps_count, 1<<k);
+        sweep_and_prune(axis, overlaps_count, filter);
 
         continue;
     }
@@ -174,7 +178,7 @@ void sap_full(const std::vector<BoundingBox3d>& boxes, std::set<sap_key> *overla
     overlaps->clear();
     for (auto it : overlaps_count)
     {
-        if (it.second == 7)
+        if (it.second == axis_filter)
         {
             overlaps->insert(it.first);
         }

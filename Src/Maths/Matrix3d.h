@@ -2,182 +2,198 @@
 
 #include "Vector3d.h"
 
-template <typename T>
-class TMatrix3
+class Matrix3d
 {
 public:
 	union
 	{
-		struct { TVector3<T> row[3]; };
-		struct { T mat[3][3]; };
+		struct { Vector3d row[3]; };
+		struct { float mat[3][3]; };
 	};
 
-	TMatrix3<T>()
+	Matrix3d()
 	{
-		mat[0][0] = 1; mat[0][1] = 0; mat[0][2] = 0;
-		mat[1][0] = 0; mat[1][1] = 1; mat[1][2] = 0;
-		mat[2][0] = 0; mat[2][1] = 0; mat[2][2] = 1;
+
 	}
 
-	TMatrix3<T>(T m[3][3])
+	Matrix3d(float m[3][3])
 	{
-		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
-				mat[i][j] = m[i][j];
+		memcpy(mat, m, sizeof(mat));
 	}
 
-	TMatrix3<T>(const TMatrix3<T>& m)
+	Matrix3d(const Matrix3d& m)
 	{
-		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
-				mat[i][j] = m.mat[i][j];
+		memcpy(mat, m.mat, sizeof(mat));
 	}
 
-	TMatrix3<T>(T a00, T a01, T a02,
-		T a10, T a11, T a12,
-		T a20, T a21, T a22)
+	Matrix3d(float a00, float a01, float a02,
+			float a10, float a11, float a12,
+			float a20, float a21, float a22)
 	{
 		mat[0][0] = a00; mat[0][1] = a01; mat[0][2] = a02;
 		mat[1][0] = a10; mat[1][1] = a11; mat[1][2] = a12;
 		mat[2][0] = a20; mat[2][1] = a21; mat[2][2] = a22;
 	}
 
-	TMatrix3<T>(T a00, T a11, T a22)
+	Matrix3d(float a00, float a11, float a22)
 	{
 		memset(mat, 0, sizeof(mat));
 		mat[0][0] = a00; mat[1][1] = a11; mat[2][2] = a22;
 	}
 
-	TMatrix3<T>(TVector3<T>& c0, TVector3<T>& c1, TVector3<T>& c2)
+	Matrix3d(const Vector3d& c0, const Vector3d& c1, const Vector3d& c2)
 	{
 		mat[0][0] = c0.x; mat[0][1] = c1.x; mat[0][2] = c2.x;
 		mat[1][0] = c0.y; mat[1][1] = c1.y; mat[1][2] = c2.y;
 		mat[2][0] = c0.z; mat[2][1] = c1.z; mat[2][2] = c2.z;
 	}
 
-	TMatrix3<T> Transpose() const
+	void LoadIdentiry()
 	{
-		return TMatrix3<T>(mat[0][0], mat[1][0], mat[2][0],
-			mat[0][1], mat[1][1], mat[2][1],
-			mat[0][2], mat[1][2], mat[2][2]);
+		mat[0][0] = 1; mat[0][1] = 0; mat[0][2] = 0;
+		mat[1][0] = 0; mat[1][1] = 1; mat[1][2] = 0;
+		mat[2][0] = 0; mat[2][1] = 0; mat[2][2] = 1;
 	}
 
-	T Determinant() const
+	Matrix3d Transpose() const
+	{
+		return Matrix3d(mat[0][0], mat[1][0], mat[2][0],
+						mat[0][1], mat[1][1], mat[2][1],
+						mat[0][2], mat[1][2], mat[2][2]);
+	}
+
+	float Determinant() const
 	{
 		return mat[0][0] * (mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1])
 			- mat[0][1] * (mat[2][2] * mat[1][0] - mat[1][2] * mat[2][0])
 			+ mat[0][2] * (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]);
 	}
 
-	TMatrix3<T> operator*(const TMatrix3<T>& mm) const
+	Matrix3d operator*(const Matrix3d& mm) const
 	{
-		T m[3][3] = { 0 };
+		float m[3][3] = { 0 };
 		for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
 		for (int k = 0; k < 3; k++)
 			m[i][j] += mat[i][k] * mm.mat[k][j];
-		return TMatrix3<T>(m);
+		return Matrix3d(m);
 	}
 
-	TMatrix3<T> operator*(T k) const
+	Matrix3d operator*(float k) const
 	{
-		T m[3][3] = { 0 };
+		float m[3][3];
 		for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
 			m[i][j] = mat[i][j] * k;
-		return TMatrix3<T>(m);
+		return Matrix3d(m);
 	}
 
-	TVector3<T> operator*(const TVector3<T>& vv) const
+	Vector3d operator*(const Vector3d& vv) const
 	{
-		T v[3] = { 0 };
+		float v[3] = { 0 };
 		for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
 			v[i] += mat[i][j] * vv.coords[j];
-		return TVector3<T>(v);
+		return Vector3d(v);
 	}
 
-	TMatrix3<T> operator+(const TMatrix3<T>& mm) const
+	Matrix3d operator+(const Matrix3d& mm) const
 	{
-		T m[3][3];
+		float m[3][3];
 		for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
 			m[i][j] = mat[i][j] + mm.mat[i][j];
-		return TMatrix3<T>(m);
+		return Matrix3d(m);
 	}
 
-	TMatrix3<T> operator-(const TMatrix3<T>& mm) const
+	Matrix3d operator-(const Matrix3d& mm) const
 	{
-		T m[3][3];
+		float m[3][3];
 		for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
 			m[i][j] = mat[i][j] - mm.mat[i][j];
-		return TMatrix3<T>(m);
+		return Matrix3d(m);
 	}
 
-	T operator()(int i, int j) const
+	inline float operator()(int i, int j) const
 	{
 		return mat[i][j];
 	}
 
-	T& operator()(int i, int j)
+	inline float& operator()(int i, int j)
 	{
 		return mat[i][j];
 	}
 
-	const TVector3<T>& operator[](int i) const
+	inline const Vector3d& operator[](int i) const
 	{
 		return row[i];
 	}
 
-	TVector3<T>& operator[](int i)
+	inline Vector3d& operator[](int i)
 	{
 		return row[i];
 	}
 
-	const TVector3<T>& Row(int i) const
+	inline const Vector3d& Row(int i) const
 	{
 		return row[i];
 	}
 
-	TVector3<T>& Row(int i)
+	inline Vector3d& Row(int i)
 	{
 		return row[i];
 	}
 
-	TVector3<T> Column(int i) const
+	inline Vector3d Column(int i) const
 	{
-		return TVector3<T>(mat[0][i], mat[1][i], mat[2][i]);
+		return Vector3d(mat[0][i], mat[1][i], mat[2][i]);
 	}
 
-	T Trace() const
+	float Trace() const
 	{
 		return mat[0][0] + mat[1][1] + mat[2][2];
 	}
 
-	inline TMatrix3<T>& operator=(const TMatrix3<T>& rhs)
+	inline Matrix3d& operator=(const Matrix3d& rhs)
 	{
 		memcpy(mat, rhs.mat, sizeof(mat));
 		return *this;
 	}
 
-	TMatrix3<T> Inverse() const
+	bool Invertible() const
 	{
-		T d = Determinant();
-
-		return TMatrix3<T>((mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) / d, -(mat[0][1] * mat[2][2] - mat[0][2] * mat[2][1]) / d, (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) / d,
-						-(mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0]) / d, (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) / d, -(mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0]) / d,
-						(mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) / d, -(mat[0][0] * mat[2][1] - mat[0][1] * mat[2][0]) / d, (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) / d);
+		float d = Determinant();
+		return fabsf(d) > 0.0000001f;
 	}
 
-	static TMatrix3<T> Skew(TVector3<T>& v)
+	Matrix3d Inverse() const
 	{
-		return TMatrix3<T>(0, -v.z, v.y,
+		float d = Determinant();
+		// Assume d != 0
+		return Matrix3d((mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) * d, -(mat[0][1] * mat[2][2] - mat[0][2] * mat[2][1]) * d, (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) * d,
+			-(mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0]) * d, (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) * d, -(mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0]) * d,
+			(mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) * d, -(mat[0][0] * mat[2][1] - mat[0][1] * mat[2][0]) * d, (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) * d);
+	}
+
+	// Solve AX = B
+	Vector3d Solve(const Vector3d &b)
+	{
+		float d = Determinant();
+		// Assume d != 0
+		Vector3d x;
+		x.x = b.Dot(row[1].Cross(row[2])) / d;
+		x.y = row[0].Dot(b.Cross(row[2])) / d;
+		x.z = row[0].Dot(row[1].Cross(b)) / d;
+		return x;
+	}
+
+	static Matrix3d Skew(Vector3d& v)
+	{
+		return Matrix3d(0, -v.z, v.y,
 						v.z, 0, -v.x,
 						-v.y, v.x, 0);
 	}
 };
-
-typedef TMatrix3<float> Matrix3d;
 
 static_assert(sizeof(Matrix3d) == 36, "sizeof Matrix3d is not valid");

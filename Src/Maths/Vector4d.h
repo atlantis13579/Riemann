@@ -195,7 +195,7 @@ public:
 			start.x * (1.0f - t) + end.x * t,
 			start.y * (1.0f - t) + end.y * t,
 			start.z * (1.0f - t) + end.z * t,
-			start.w * (1.0f - t) + end.z * w);
+			start.w * (1.0f - t) + end.w * t);
 	}
 
 	static TVector4<T> UnitLerp(TVector4<T>& start, TVector4<T>& end, float t)
