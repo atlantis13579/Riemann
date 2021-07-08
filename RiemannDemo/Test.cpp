@@ -8,16 +8,17 @@
 #include "../Src/Maths/BoundingBox3d.h"
 #include "../Src/Maths/Maths.h"
 #include "../Src/Maths/Transform.h"
-#include "../Src/Geometry/AxisAlignedBox.h"
-#include "../Src/Geometry/Plane.h"
-#include "../Src/Geometry/Sphere.h"
-#include "../Src/Geometry/Ray.h"
-#include "../Src/Geometry/Triangle.h"
-#include "../Src/Geometry/Cylinder.h"
-#include "../Src/Geometry/Capsule.h"
+#include "../Src/CollisionPrimitive/AxisAlignedBox.h"
+#include "../Src/CollisionPrimitive/Plane.h"
+#include "../Src/CollisionPrimitive/Sphere.h"
+#include "../Src/CollisionPrimitive/Ray.h"
+#include "../Src/CollisionPrimitive/Triangle.h"
+#include "../Src/CollisionPrimitive/Cylinder.h"
+#include "../Src/CollisionPrimitive/Capsule.h"
 #include "../Src/Collision/AABBTree.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Collision/SAP.h"
+#include "../Src/Collision/SAP_Incremental.h"
 
 void TestAABBTree()
 {
@@ -151,10 +152,55 @@ void TestSAP()
     return;
 }
 
+void TestSAPInc()
+{
+    std::vector<GeometryObject*> objs;
+    objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), Vector3d(0, 0, 0), Vector3d(1, 1, 1)));
+    objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), Vector3d(2, 2, 2), Vector3d(3, 3, 3)));
+    objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), Vector3d(10, 10, 10), Vector3d(20, 20, 20)));
+
+    std::vector<std::vector<sweep_point>> axis;
+    axis.resize(3);
+    sap_incremental_init(objs, 0, axis[0]);
+    sap_incremental_init(objs, 1, axis[1]);
+    sap_incremental_init(objs, 2, axis[2]);
+
+    std::set<sap_key> overlaps;
+    sap_incremental(axis, objs, &overlaps);
+    assert(overlaps.size() == 0);
+
+    objs[2]->SetPositionOffset(Vector3d(-10, -10, -10));
+    sap_incremental(axis, objs, &overlaps);
+    assert(overlaps.size() == 2);
+
+    sap_incremental(axis, objs, &overlaps);
+    assert(overlaps.size() == 2);
+
+    objs[2]->SetPositionOffset(Vector3d(10, 10, 10));
+    sap_incremental(axis, objs, &overlaps);
+    assert(overlaps.size() == 0);
+
+    for (int i = 0; i < 100; ++i)
+    {
+        Vector3d point1 = Vector3d::Random() * 100.0f;
+        Vector3d point2 = point1 + Vector3d::Random() * 100.0f;
+        objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), point1, point2));
+    }
+    sap_incremental(axis, objs, &overlaps);
+    sap_incremental(axis, objs, &overlaps);
+    sap_incremental(axis, objs, &overlaps);
+    sap_incremental(axis, objs, &overlaps);
+    sap_incremental(axis, objs, &overlaps);
+    sap_incremental(axis, objs, &overlaps);
+
+    return;
+}
+
 void TestMainEntry()
 {
     TestAABBTree();
     TestGeometryQuery();
     TestSAP();
+    TestSAPInc();
     return;
 }

@@ -22,7 +22,7 @@ class BroadPhaseSAPImplementation : public BroadPhase
 public:
 	BroadPhaseSAPImplementation()
 	{
-		axis.resize(3);
+		axis_cache.resize(3);
 	}
 
 	virtual ~BroadPhaseSAPImplementation()
@@ -44,14 +44,10 @@ public:
 			return;
 		}
 
-		std::set<sap_key> m_overlaps;
-
-		SAP_Incremental(AllObjects, &m_overlaps);
-
-		GetOverlapPairs(AllObjects, m_overlaps, overlaps);
+		SAP_Incremental(AllObjects, overlaps);
 	}
 
-	void SAP_Direct(std::vector<GeometryObject*>& AllObjects, std::set<sap_key>* overlaps)
+	void SAP_Direct(std::vector<GeometryObject*>& AllObjects, std::vector<OverlapPair>* overlaps)
 	{
 		std::vector<BoundingBox3d> boxes;
 		boxes.resize(AllObjects.size());
@@ -60,20 +56,26 @@ public:
 			boxes[i] = AllObjects[i]->GetBoundingBoxWorld();
 		}
 
-		sap_direct(boxes, overlaps);
+		std::set<sap_key> m_overlaps;
+		sap_direct(boxes, &m_overlaps);
+
+		GetOverlapPairs(AllObjects, m_overlaps, overlaps);
 	}
 
-	void SAP_Incremental(std::vector<GeometryObject*>& AllObjects, std::set<sap_key>* overlaps)
+	void SAP_Incremental(std::vector<GeometryObject*>& AllObjects, std::vector<OverlapPair>* overlaps)
 	{
 		if (bBBoxDirty)
 		{
-			sap_incremental_init(AllObjects, 0, axis[0]);
-			sap_incremental_init(AllObjects, 1, axis[1]);
-			sap_incremental_init(AllObjects, 2, axis[2]);
+			overlaps_cache.clear();
+			sap_incremental_init(AllObjects, 0, axis_cache[0]);
+			sap_incremental_init(AllObjects, 1, axis_cache[1]);
+			sap_incremental_init(AllObjects, 2, axis_cache[2]);
 			bBBoxDirty = false;
 		}
 
-		sap_incremental(axis, AllObjects, overlaps);
+		sap_incremental(axis_cache, AllObjects, &overlaps_cache);
+
+		GetOverlapPairs(AllObjects, overlaps_cache, overlaps);
 	}
 
 	void GetOverlapPairs(std::vector<GeometryObject*>& AllObjects, const std::set<sap_key>&m_overlaps, std::vector<OverlapPair>* overlaps)
@@ -88,7 +90,8 @@ public:
 	}
 
 private:
-	std::vector<std::vector<sweep_point>> axis;
+	std::vector<std::vector<sweep_point>>	axis_cache;
+	std::set<sap_key>						overlaps_cache;
 	bool bBBoxDirty;
 };
 

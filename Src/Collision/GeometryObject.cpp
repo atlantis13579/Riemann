@@ -36,23 +36,34 @@ BoundingBox3d		GeometryObject::GetBoundingBoxLocal() const
 	return func(m_Shape.Object);
 }
 
-const	BoundingBox3d& GeometryObject::GetBoundingBoxWorld() const
+const				BoundingBox3d& GeometryObject::GetBoundingBoxWorld() const
 {
 	return m_BoxWorld;
 }
 
-void	GeometryObject::SetPosition(const Vector3d& Position)
+void				GeometryObject::SetPosition(const Vector3d& Position)
 {
 	m_Transform.SetTranslation(Position);
 	m_BoxWorld = GetBoundingBoxLocal() + Position;
 }
 
-void	GeometryObject::SetRotation(const Quaternion& Rotation)
+void				GeometryObject::SetPositionOffset(const Vector3d& Offset)
+{
+	Vector3d World = m_Transform.GetTranslation() + Offset;
+	SetPosition(World);
+}
+
+Vector3d			GeometryObject::GetPosition() const
+{
+	return m_Transform.GetTranslation();
+}
+
+void				GeometryObject::SetRotation(const Quaternion& Rotation)
 {
 	m_Transform.SetRotation(Rotation);
 }
 
-bool	GeometryObject::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
+bool				GeometryObject::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
 {
 	RayCastFunc func = GeometryObject::raycastTable[m_Shape.Type];
 #ifdef DEBUG
@@ -61,7 +72,7 @@ bool	GeometryObject::RayCast(const Vector3d& Origin, const Vector3d& Dir, float*
 	return func(m_Shape.Object, Origin, Dir, t);
 }
 
-Vector3d	GeometryObject::GetSupport(const Vector3d& Dir)
+Vector3d			GeometryObject::GetSupport(const Vector3d& Dir)
 {
 	SupportFunc func = GeometryObject::supportTable[m_Shape.Type];
 #ifdef DEBUG
@@ -70,7 +81,7 @@ Vector3d	GeometryObject::GetSupport(const Vector3d& Dir)
 	return func(m_Shape.Object, Dir);
 }
 
-Vector3d	GeometryObject::GetSupport(const GeometryObject* Geom1, const GeometryObject* Geom2, const Vector3d& Dir)
+Vector3d			GeometryObject::GetSupport(const GeometryObject* Geom1, const GeometryObject* Geom2, const Vector3d& Dir)
 {
 	SupportFunc func1 = GeometryObject::supportTable[Geom1->m_Shape.Type];
 	SupportFunc func2 = GeometryObject::supportTable[Geom2->m_Shape.Type];
@@ -82,7 +93,7 @@ Vector3d	GeometryObject::GetSupport(const GeometryObject* Geom1, const GeometryO
 	return p1 - p2;
 }
 
-Matrix3d	GeometryObject::GetInertia(float Mass)
+Matrix3d			GeometryObject::GetInertia(float Mass)
 {
 	InertiaFunc func = GeometryObject::inertiaTable[m_Shape.Type];
 #ifdef DEBUG

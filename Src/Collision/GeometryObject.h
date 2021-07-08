@@ -55,6 +55,8 @@ public:
 	const BoundingBox3d&	GetBoundingBoxWorld() const;
 
 	void					SetPosition(const Vector3d& Position);
+	void					SetPositionOffset(const Vector3d& Offset);
+	Vector3d				GetPosition() const;
 	void					SetRotation(const Quaternion& Rotation);
 
 	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);

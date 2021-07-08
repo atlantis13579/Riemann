@@ -7,11 +7,11 @@ static void sap_axis_insertion_sort(std::vector<sweep_point>& axis, std::vector<
 	for (int j = 1; j < nsize; j++)
 	{
 		sweep_point pivot = axis[j];
-		float pivot_value = pivot.value;
+		float pivot_value = *pivot.value;
 
 		int i = j - 1;
 
-		while (i >= 0 && axis[i].value > pivot_value)
+		while (i >= 0 && *axis[i].value > pivot_value)
 		{
 			sweep_point curr = axis[i];
 
@@ -48,15 +48,14 @@ void sap_incremental_init(std::vector<GeometryObject*>& objs, int k, std::vector
 	for (int i = 0; i < objs.size(); ++i)
 	{
 		const BoundingBox3d& box = objs[i]->GetBoundingBoxWorld();
-		axis[2 * i] = sweep_point(i, false, box.Max[k]);
-		axis[2 * i + 1] = sweep_point(i, true, box.Min[k]);
+		float* p = (float*)&box;
+		axis[2 * i] = sweep_point(i, true, p + k);
+		axis[2 * i + 1] = sweep_point(i, false, p + 3 + k);
 	}
 }
 
 void sap_incremental(std::vector<std::vector<sweep_point>>& axis, std::vector<GeometryObject*>& objs, std::set<sap_key>* overlaps)
 {
-	overlaps->clear();
-
 	for (size_t k = 0; k < axis.size(); ++k)
 	{
 		if (axis[k].empty())

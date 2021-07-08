@@ -9,7 +9,7 @@
 struct sweep_point
 {
     sweep_point() {}
-    sweep_point(int id, bool left, float val)
+    sweep_point(int id, bool left, float *val)
     {
         data = left ? ((1 << 31) | id ) : id;
         value = val;
@@ -26,7 +26,7 @@ struct sweep_point
     }
 
     unsigned int    data;
-    float           value;
+    float*          value;
 };
 
 typedef unsigned long long sap_key;

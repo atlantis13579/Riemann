@@ -34,7 +34,7 @@ static void sap_axis_qsort(sweep_point* axis, int low, int high)
 
 		for (int j = low; j <= high - 1; ++j)
 		{
-			if (axis[j].value <= pivot->value)
+			if (*axis[j].value <= *pivot->value)
 			{
 				i++;
 				sap_swap(&axis[i], &axis[j]);
@@ -96,8 +96,9 @@ void sap_direct(const std::vector<BoundingBox3d>& boxes, std::set<sap_key>* over
 
 		for (int i = 0; i < boxes.size(); ++i)
 		{
-			axis[2 * i] = sweep_point(i, true, boxes[i].Min[k]);
-			axis[2 * i + 1] = sweep_point(i, false, boxes[i].Max[k]);
+			float* p = (float*)&boxes[i];
+			axis[2 * i] = sweep_point(i, true, p + k);
+			axis[2 * i + 1] = sweep_point(i, false, p + 3 + k);
 		}
 		sap_axis_qsort(&axis[0], 0, (int)axis.size() - 1);
 		sweep_and_prune(axis, overlaps_count, filter);
