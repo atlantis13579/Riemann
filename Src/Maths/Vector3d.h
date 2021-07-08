@@ -258,20 +258,20 @@ public:
 
 	static const TVector3<T>& UnitX()
 	{
-		static TVector3<T> inf((T)1, 0, 0);
-		return inf;
+		static TVector3<T> unitX((T)1, 0, 0);
+		return unitX;
 	}
 
 	static const TVector3<T>& UnitY()
 	{
-		static TVector3<T> inf(0, (T)1, 0);
-		return inf;
+		static TVector3<T> unitY(0, (T)1, 0);
+		return unitY;
 	}
 
 	static const TVector3<T>& UnitZ()
 	{
-		static TVector3<T> inf(0, 0, (T)1);
-		return inf;
+		static TVector3<T> unitZ(0, 0, (T)1);
+		return unitZ;
 	}
 
 	static TVector3<T> Random()

@@ -10,11 +10,19 @@ class Transform
 public:
 	Transform()
 	{
-		m_bWorldMatrixDirty = true;
-		m_bInvWorldMatrixDirty = true;
+		LoadIdentity();
 	}
 
-	const Vector3d&	GetTranslation() const
+	void				LoadIdentity()
+	{
+		m_bWorldMatrixDirty = true;
+		m_bInvWorldMatrixDirty = true;
+		m_Translation = Vector3d::Zero();
+		m_Rotation = Quaternion::Zero();
+		m_Scale = Vector3d::One();
+	}
+
+	const Vector3d&		GetTranslation() const
 	{
 		return m_Translation;
 	}

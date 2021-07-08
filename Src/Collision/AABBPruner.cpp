@@ -19,14 +19,14 @@ AABBPruner::~AABBPruner()
 	}
 }
 
-void AABBPruner::BuildAABB(const std::vector<GeometryObject>& Objects, int nPrimitivePerNode)
+void AABBPruner::BuildAABB(const std::vector<GeometryObject*>& Objects, int nPrimitivePerNode)
 {
 	m_Objects = std::move(Objects);
 	std::vector<BoundingBox3d> boxes;
 	boxes.resize(Objects.size());
 	for (size_t i = 0; i < Objects.size(); ++i)
 	{
-		boxes[i] = GeometryObject::GetBoundingBox(&Objects[i]);
+		boxes[i] = Objects[i]->GetBoundingBoxWorld();
 	}
 	AABBTreeBuildData param(&boxes[0], (int)boxes.size(), nPrimitivePerNode);
 	

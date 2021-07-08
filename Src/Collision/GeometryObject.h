@@ -3,6 +3,7 @@
 #include "../Maths/Vector3d.h"
 #include "../Maths/Matrix3d.h"
 #include "../Maths/BoundingBox3d.h"
+#include "../Maths/Transform.h"
 
 enum GeometryShapeType
 {
@@ -23,11 +24,13 @@ enum GeometryShapeType
 	static bool RayCast_##_name(void*, const Vector3d&, const Vector3d&, float*);	\
 	static Vector3d	GetSupport_##_name(void*, const Vector3d&);						\
 	static Matrix3d	GetInertia_##_name(void*, float);								\
+	static void		Destory_##_name(void*);											\
 
 typedef BoundingBox3d	(*GetAABBFunc)		(void*);
 typedef bool			(*RayCastFunc)		(void*, const Vector3d&, const Vector3d&, float*);
 typedef Vector3d		(*SupportFunc)		(void*, const Vector3d&);
 typedef Matrix3d		(*InertiaFunc)		(void*, float);
+typedef void			(*DestoryFunc)		(void*);
 
 struct GeometryShape
 {
@@ -36,36 +39,40 @@ struct GeometryShape
 		Type = GeometryShapeType::UNKNOWN;
 		Object = nullptr;
 	}
-	~GeometryShape()
-	{
-		Object = nullptr;	// Not Hold the memory
-	}
 
 	GeometryShapeType	Type;
 	void				*Object;
 };
 
+class GeometryObjectFactory;
+
 class GeometryObject
 {
-public:
-	GeometryObject(GeometryShapeType _Type, void* _ShapeObj, void *_Entity = nullptr)
-	{
-		Shape.Type = _Type;
-		Shape.Object = _ShapeObj;
-		Entity = _Entity;
-	}
-
-	GeometryShape	Shape;
-	void*			Entity;
+	friend class GeometryObjectFactory;
 
 public:
-	static GeometryObject*	CreateObject(GeometryShapeType Type, void* ShapeObj, void *Entity);
-	static BoundingBox3d	GetBoundingBox(const GeometryObject* Geom);
-	static bool				RayCast(const GeometryObject *Geom, const Vector3d& Origin, const Vector3d &Dir, float* t);
-	static Vector3d			GetSupport(const GeometryObject* Geom, const Vector3d& Dir);
+	~GeometryObject();
+
+	BoundingBox3d			GetBoundingBoxLocal() const;
+	const BoundingBox3d&	GetBoundingBoxWorld() const;
+
+	void					SetPosition(const Vector3d& Position);
+
+	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
+	Matrix3d				GetInertia(float Mass);
+	Vector3d				GetSupport(const Vector3d& Dir);
 	static Vector3d			GetSupport(const GeometryObject* Geom1, const GeometryObject* Geom2, const Vector3d& Dir);
-	static Matrix3d			GetInertia(const GeometryObject* Geom, float Mass);
 
+protected:
+	GeometryObject(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity);\
+
+private:
+	GeometryShape	m_Shape;
+	BoundingBox3d	m_BoxWorld;
+	Transform		m_Transform;
+	void*			m_Entity;
+
+public:
 	DECL_GEOMETRY_OBJ(AxisAlignedBox3);
 	DECL_GEOMETRY_OBJ(Plane);
 	// DECL_GEOMETRY_OBJ(Sphere);
@@ -74,7 +81,17 @@ public:
 	static RayCastFunc		raycastTable[GeometryShapeType::COUNT];
 	static SupportFunc		supportTable[GeometryShapeType::COUNT];
 	static InertiaFunc		inertiaTable[GeometryShapeType::COUNT];
+	static DestoryFunc		destoryTable[GeometryShapeType::COUNT];
 };
+
+
+class GeometryObjectFactory
+{
+public:
+	static GeometryObject* CreateAABB(const Vector3d& Position, const Vector3d & Bmin, const Vector3d & Bmax);
+	static GeometryObject* CreatePlane(const Vector3d& Position, const Vector3d& Normal, float D);
+};
+
 
 struct RayCastResult
 {

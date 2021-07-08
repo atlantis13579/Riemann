@@ -30,7 +30,7 @@ struct DX11StaticMesh
     ID3D11Buffer* pVertexBuffer = nullptr;
     ID3D11Buffer* pIndexBuffer = nullptr;
     ID3D11Buffer* pConstantBuffer = nullptr;
-    Matrix4d      matWorld;
+    Transform     Trans;
     int           IndexCount = 0;
 
     void Release()
@@ -409,7 +409,7 @@ public:
             return false;
 
         // Initialize the world matrix
-        mesh.matWorld.LoadIdentity();
+        mesh.Trans.LoadIdentity();
         mesh.IndexCount = nIndices;
 
         m_AllMesh.push_back(mesh);
@@ -552,9 +552,9 @@ public:
 
         for (size_t i = 0; i < m_AllMesh.size(); ++i)
         {
-            const DX11StaticMesh& mesh = m_AllMesh[i];
+            DX11StaticMesh& mesh = m_AllMesh[i];
 
-            cb.World = mesh.matWorld.Transpose();
+            cb.World = mesh.Trans.GetWorldMatrix();
             m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
             m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
 

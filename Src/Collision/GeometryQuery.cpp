@@ -33,7 +33,7 @@ GeometryQuery::~GeometryQuery()
 	}
 }
 
-void GeometryQuery::BuildStaticGeometry(const std::vector<GeometryObject>& Objects, int nPrimitivePerNode)
+void GeometryQuery::BuildStaticGeometry(const std::vector<GeometryObject*>& Objects, int nPrimitivePerNode)
 {
 	if (m_staticGeometry == nullptr)
 	{

@@ -14,7 +14,7 @@ public:
 	~GeometryQuery();
 
 public:
-	void BuildStaticGeometry(const std::vector<GeometryObject>& Objects, int nPrimitivePerNode);
+	void BuildStaticGeometry(const std::vector<GeometryObject*>& Objects, int nPrimitivePerNode);
 
 	bool RayCast(const Vector3d &Origin, const Vector3d& Dir, RayCastResult *Result);
 

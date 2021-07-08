@@ -85,10 +85,10 @@ void TestGeometryQuery()
 {
     GeometryQuery scene;
     
-    std::vector<GeometryObject> objs;
-    objs.emplace_back(GeometryShapeType::PLANE, new Plane(Vector3d::UnitZ(), 0.0f));
-    objs.emplace_back(GeometryShapeType::PLANE, new Plane(Vector3d::UnitZ(), -10.0f));
-    objs.emplace_back(GeometryShapeType::AABB, new AxisAlignedBox3(Vector3d(-1, -1, -1), Vector3d(1, 1, 1)));
+    std::vector<GeometryObject*> objs;
+    objs.emplace_back(GeometryObjectFactory::CreatePlane(Vector3d::Zero(), Vector3d::UnitZ(), 0.0f));
+    objs.emplace_back(GeometryObjectFactory::CreatePlane(Vector3d::Zero(), Vector3d::UnitZ(), -10.0f));
+    objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), Vector3d(-1, -1, -1), Vector3d(1, 1, 1)));
     scene.BuildStaticGeometry(objs, 1);
 
     RayCastResult result;
@@ -103,6 +103,11 @@ void TestGeometryQuery()
     assert(result.hit);
     assert(fabsf(result.t - 5.0f) < 0.001f);
 
+    for (auto obj : objs)
+    {
+        delete obj;
+    }
+
     return;
 }
 
@@ -113,11 +118,11 @@ void TestSAP()
     boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(2, 2, 2));
     boxes.emplace_back(Vector3d(1, 1, 1), Vector3d(3, 3, 3));
     boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(15, 15, 15));
-    sap_full(boxes, &overlaps);
+    sap_direct(boxes, &overlaps);
     assert(overlaps.size() == 3);
 
     boxes[2] = BoundingBox3d(Vector3d(10, 10, 10), Vector3d(15, 15, 15));
-    sap_full(boxes, &overlaps);
+    sap_direct(boxes, &overlaps);
     assert(overlaps.size() == 1);
 
     for (int i = 0; i < 100; ++i)
@@ -126,7 +131,7 @@ void TestSAP()
         Vector3d point2 = Vector3d::Random() * 100.0f;
         boxes.emplace_back(point1, point1 + point2);
     }
-    sap_full(boxes, &overlaps);
+    sap_direct(boxes, &overlaps);
 
     for (size_t i = 0; i < boxes.size(); ++i)
     for (size_t j = 0; j < boxes.size(); ++j)

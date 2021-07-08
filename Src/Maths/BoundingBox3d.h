@@ -36,18 +36,9 @@ public:
 
 	TBoundingBox3<T>& operator+=(const TVector3<T>& rhs)
 	{
-		Min.x = std::min(Min.x, rhs.x);
-		Min.y = std::min(Min.y, rhs.y);
-		Min.z = std::min(Min.z, rhs.z);
-
-		Max.x = std::max(Max.x, rhs.x);
-		Max.y = std::max(Max.y, rhs.y);
-		Max.z = std::max(Max.z, rhs.z);
-	}
-
-	TBoundingBox3<T> operator+(const TBoundingBox3<T>& rhs) const
-	{
-		return TBoundingBox3<T>(*this) += rhs;
+		Min += rhs;
+		Max += rhs;
+		return *this;
 	}
 
 	TBoundingBox3<T>& operator+=(const TBoundingBox3<T>& rhs)
@@ -59,6 +50,18 @@ public:
 		Max.x = std::max(Max.x, rhs.Max.x);
 		Max.y = std::max(Max.y, rhs.Max.y);
 		Max.z = std::max(Max.z, rhs.Max.z);
+
+		return *this;
+	}
+
+	TBoundingBox3<T> operator+(const TBoundingBox3<T>& rhs) const
+	{
+		return TBoundingBox3<T>(*this) += rhs;
+	}
+
+	TBoundingBox3<T> operator+(const TVector3<T>& rhs) const
+	{
+		return TBoundingBox3<T>(*this) += rhs;
 	}
 
 	TVector3<T> GetCenter() const

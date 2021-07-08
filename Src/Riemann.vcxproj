@@ -54,6 +54,7 @@
     <ClInclude Include="Collision\GJK.h" />
     <ClInclude Include="Collision\NarrowPhase.h" />
     <ClInclude Include="Collision\QuadTree.h" />
+    <ClInclude Include="Collision\SAP_Incremental.h" />
     <ClInclude Include="Collision\SparseSpatialHash.h" />
     <ClInclude Include="Collision\SAP.h" />
     <ClInclude Include="Geometry\AxisAlignedBox.h" />

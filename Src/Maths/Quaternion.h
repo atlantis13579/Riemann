@@ -9,6 +9,7 @@ class Quaternion
 public:
 	float s;
 	Vector3d v;
+
 	Quaternion()
 	{
 		s = 1;
@@ -28,7 +29,7 @@ public:
 		v.z = _z;
 	}
 
-	Quaternion(Vector3d q, float angle)
+	Quaternion(const Vector3d &q, float angle)
 	{
 		s = cosf(angle / 2);
 		v = q * sinf(angle / 2);
@@ -50,17 +51,17 @@ public:
 
 	Quaternion Inverse() const
 	{
-		float m = Mag();
+		float m = Magnitude();
 		return Quaternion(s / m, Vector3d(-v.x / m, -v.y / m, -v.z / m));
 	}
 
 	Quaternion Unit() const
 	{
-		float m = Mag();
+		float m = Magnitude();
 		return Quaternion(s / m, Vector3d(v.x / m, v.y / m, v.z / m));
 	}
 
-	float Mag() const
+	float Magnitude() const
 	{
 		return sqrtf(s*s + v.x*v.x + v.y*v.y + v.z*v.z);
 	}
@@ -96,7 +97,7 @@ public:
 
 	Quaternion operator*(float k) const
 	{
-		return Quaternion(s*k, Vector3d(v.x*k, v.y*k, v.z*k));
+		return Quaternion(s*k, v.x*k, v.y*k, v.z*k);
 	}
 
 	Quaternion& operator*=(const Quaternion& q)
@@ -145,4 +146,30 @@ public:
 			2.0f * (xy + wz), 1.0f - 2.0f * (x2 + z2), 2.0f * (yz - wx),
 			2.0f * (xz - wy), 2.0f * (yz + wx), 1.0f - 2.0f * (x2 + y2));
 	}
+
+	static const Quaternion& Zero()
+	{
+		static Quaternion zero(0, 0, 0, 0);
+		return zero;
+	}
+
+	static const Quaternion & UnitX()
+	{
+		static Quaternion unitX(0, 1, 0, 0);
+		return unitX;
+	}
+
+	static const Quaternion& UnitY()
+	{
+		static Quaternion unitY(0, 0, 1, 0);
+		return unitY;
+	}
+
+	static const Quaternion& UnitZ()
+	{
+		static Quaternion unitZ(0, 0, 0, 1);
+		return unitZ;
+	}
 };
+
+static_assert(sizeof(Quaternion) == 16, "sizeof Quaternion is not valid");

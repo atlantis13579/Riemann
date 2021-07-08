@@ -27,11 +27,11 @@ void BroadPhaseSAPImplementation::ProduceOverlaps(const std::vector<GeometryObje
 	boxes.resize(AllObjects.size());
 	for (size_t i = 0; i < AllObjects.size(); ++i)
 	{
-		boxes[i] = GeometryObject::GetBoundingBox(AllObjects[i]);
+		boxes[i] = AllObjects[i]->GetBoundingBoxWorld();
 	}
 
 	std::set<sap_key> m_overlaps;
-	sap_full(boxes, &m_overlaps);
+	sap_direct(boxes, &m_overlaps);
 
 	overlaps->clear();
 	for (auto it : m_overlaps)

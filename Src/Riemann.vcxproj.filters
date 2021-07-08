@@ -68,6 +68,7 @@
     <ClInclude Include="Solver\SparseConjugateGradientSolver.h" />
     <ClInclude Include="Maths\Transform.h" />
     <ClInclude Include="Collision\GeometryCollection.h" />
+    <ClInclude Include="Collision\SAP_Incremental.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
