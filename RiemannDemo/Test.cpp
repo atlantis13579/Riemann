@@ -152,42 +152,73 @@ void TestSAP()
     return;
 }
 
+class BVProxy : public IBoundingVolumeProxy
+{
+public:
+    BVProxy(std::vector<BoundingBox3d>* objs)
+    {
+        m_objs = objs;
+    }
+
+    virtual int     GetBoundingVolumeCount() const
+    {
+        return (int)m_objs->size();
+    }
+
+    virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const
+    {
+        const BoundingBox3d& box = m_objs->at(bv_i);
+        float* p = (float*)&box;
+        return left ? p + axis : p + 3 + axis;
+    }
+
+    virtual bool    Overlaps(int bv_i, int bv_j) const
+    {
+        const BoundingBox3d& box1 = m_objs->at(bv_i);
+        const BoundingBox3d& box2 = m_objs->at(bv_j);
+        return box1.Intersect(box2);
+    }
+
+    std::vector<BoundingBox3d>* m_objs;
+};
+
 void TestSAPInc()
 {
-    std::vector<GeometryObject*> objs;
-    objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), Vector3d(0, 0, 0), Vector3d(1, 1, 1)));
-    objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), Vector3d(2, 2, 2), Vector3d(3, 3, 3)));
-    objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), Vector3d(10, 10, 10), Vector3d(20, 20, 20)));
+    std::vector<BoundingBox3d> objs;
+    objs.emplace_back(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
+    objs.emplace_back(Vector3d(2, 2, 2), Vector3d(3, 3, 3));
+    objs.emplace_back(Vector3d(10, 10, 10), Vector3d(20, 20, 20));
 
-    std::vector<sweep_point> axis[3];
+    BVProxy P(&objs);
+    IncrementalSAP sap(&P, { 0, 1, 2 });
 
-    std::set<sap_key> overlaps;
-    sap_incremental(axis, objs, &overlaps, true);
+    std::set<OverlapKey> overlaps;
+
+    sap.IncrementalPrune(&overlaps);
     assert(overlaps.size() == 0);
 
-    objs[2]->SetPositionOffset(Vector3d(-10, -10, -10));
-    sap_incremental(axis, objs, &overlaps, false);
+    objs[2] += Vector3d(-10, -10, -10);
+    sap.IncrementalPrune(&overlaps);
     assert(overlaps.size() == 2);
 
-    sap_incremental(axis, objs, &overlaps, false);
+    sap.IncrementalPrune(&overlaps);
     assert(overlaps.size() == 2);
 
-    objs[2]->SetPositionOffset(Vector3d(10, 10, 10));
-    sap_incremental(axis, objs, &overlaps, false);
+    objs[2] += Vector3d(10, 10, -10);
+    sap.IncrementalPrune(&overlaps);
     assert(overlaps.size() == 0);
 
     for (int i = 0; i < 100; ++i)
     {
         Vector3d point1 = Vector3d::Random() * 100.0f;
         Vector3d point2 = point1 + Vector3d::Random() * 100.0f;
-        objs.emplace_back(GeometryObjectFactory::CreateAABB(Vector3d::Zero(), point1, point2));
+        objs.emplace_back(point1, point2);
     }
-    sap_incremental(axis, objs, &overlaps, false);
-    sap_incremental(axis, objs, &overlaps, false);
-    sap_incremental(axis, objs, &overlaps, false);
-    sap_incremental(axis, objs, &overlaps, false);
-    sap_incremental(axis, objs, &overlaps, false);
-    sap_incremental(axis, objs, &overlaps, false);
+    sap.SetDirty();
+    sap.IncrementalPrune(&overlaps);
+    sap.IncrementalPrune(&overlaps);
+    sap.IncrementalPrune(&overlaps);
+    sap.IncrementalPrune(&overlaps);
 
     return;
 }

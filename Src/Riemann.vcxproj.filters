@@ -96,7 +96,6 @@
     <ClCompile Include="Collision\GeometryCollection.cpp" />
     <ClCompile Include="Collision\GeometryObject.cpp" />
     <ClCompile Include="Collision\DynamicAABBTree.cpp" />
-    <ClCompile Include="Collision\SAP_Incremental.cpp" />
     <ClCompile Include="Collision\SAP.cpp" />
   </ItemGroup>
 </Project>
