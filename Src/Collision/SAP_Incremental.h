@@ -8,16 +8,11 @@
 // Incremental Sweep and Prune (SAP) algorithm
 // http://www.codercorner.com/SAP.pdf
 
-class IncrementalSAP
+class IncrementalSAP : public SAP
 {
 public:
-	IncrementalSAP(SAP::BoundingVolumeProxy* Proxy, const std::vector<int>& axis_list)
+	IncrementalSAP(SAP::BoundingVolumeProxy* Proxy, const std::vector<int>& axis_list) : SAP(Proxy, axis_list)
 	{
-		m_Proxy = Proxy;
-		for (int axis : axis_list) {
-			m_AxisList.push_back(axis);
-		}
-		m_Axis.resize(m_AxisList.size());
 		m_IsDirty = true;
 	}
 
@@ -30,11 +25,9 @@ public:
 	{
 		if (m_IsDirty)
 		{
-			SAP sap(m_Proxy, m_AxisList);
-			sap.Prune(overlaps);
-
-			m_Axis = sap.GetSweepAxis();
 			m_IsDirty = false;
+
+			SAP::Prune(overlaps);
 			return;
 		}
 
@@ -87,8 +80,5 @@ private:
 	}
 
 private:
-	SAP::BoundingVolumeProxy*				   m_Proxy;
-	bool										m_IsDirty;
-	std::vector<std::vector<SAP::SweepPoint>>   m_Axis;
-	std::vector<int>							m_AxisList;
+	bool	m_IsDirty;
 };

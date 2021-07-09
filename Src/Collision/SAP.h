@@ -16,29 +16,6 @@ static_assert(sizeof(OverlapKey) == 8, "sizeof OverlapKey2 is not valid");
 class SAP
 {
 public:
-	struct SweepPoint
-	{
-		SweepPoint() {}
-		SweepPoint(int id, bool left, float* val)
-		{
-			data = left ? ((1 << 31) | id) : id;
-			value = val;
-		}
-
-		inline bool left() const
-		{
-			return data & (1 << 31);
-		}
-
-		inline int id() const
-		{
-			return data & 0x7FFFFFFF;
-		}
-
-		unsigned int	data;
-		float* value;
-	};
-
 	class BoundingVolumeProxy
 	{
 	public:
@@ -63,7 +40,7 @@ public:
 		int axis_filter = 0;
 		for (auto k = 0; k < m_AxisList.size(); ++k)
 		{
-			InitAxis(m_Axis[k], k, m_Proxy);
+			InitAxis(k);
 			QSort(m_Axis[k], 0, (int)m_Axis[k].size() - 1);
 			PruneAxis(m_Axis[k], overlaps_count, 1 << m_AxisList[k]);
 			axis_filter |= (1 << m_AxisList[k]);
@@ -79,20 +56,59 @@ public:
 		}
 	}
 
-	std::vector<std::vector<SweepPoint>>& GetSweepAxis()
+	static OverlapKey PackOverlapKey(int id1, int id2)
 	{
-		return m_Axis;
+		if (id1 > id2)
+		{
+			int t = id1;
+			id1 = id2;
+			id2 = t;
+		}
+		return ((OverlapKey)id1 << 32) | id2;
 	}
 
-	static void InitAxis(std::vector<SweepPoint>& axis, int k, BoundingVolumeProxy* Proxy)
+	static void UnpackOverlapKey(OverlapKey key, int* id1, int* id2)
 	{
-		int nBV = Proxy->GetBoundingVolumeCount();
+		*id1 = key >> 32;
+		*id2 = key & 0xFFFFFFFF;
+	}
+
+protected:
+
+	struct SweepPoint
+	{
+		SweepPoint() {}
+		SweepPoint(int id, bool left, float* val)
+		{
+			data = left ? ((1 << 31) | id) : id;
+			value = val;
+		}
+
+		inline bool left() const
+		{
+			return data & (1 << 31);
+		}
+
+		inline int id() const
+		{
+			return data & 0x7FFFFFFF;
+		}
+
+		unsigned int	data;
+		float* value;
+	};
+
+	void InitAxis(int k)
+	{
+		std::vector<SweepPoint>& axis = m_Axis[k];
+
+		int nBV = m_Proxy->GetBoundingVolumeCount();
 		axis.resize(2 * nBV);
 
 		for (int i = 0; i < nBV; ++i)
 		{
-			float* val1 = Proxy->GetBoundingVolumeCoordinate(i, true, k);
-			float* val2 = Proxy->GetBoundingVolumeCoordinate(i, false, k);
+			float* val1 = m_Proxy->GetBoundingVolumeCoordinate(i, true, k);
+			float* val2 = m_Proxy->GetBoundingVolumeCoordinate(i, false, k);
 			axis[2 * i] = SweepPoint(i, true, val1);
 			axis[2 * i + 1] = SweepPoint(i, false, val2);
 		}
@@ -161,25 +177,8 @@ public:
 		}
 	}
 
-	static OverlapKey PackOverlapKey(int id1, int id2)
-	{
-		if (id1 > id2)
-		{
-			int t = id1;
-			id1 = id2;
-			id2 = t;
-		}
-		return ((OverlapKey)id1 << 32) | id2;
-	}
-
-	static void UnpackOverlapKey(OverlapKey key, int* id1, int* id2)
-	{
-		*id1 = key >> 32;
-		*id2 = key & 0xFFFFFFFF;
-	}
-
-private:
-	BoundingVolumeProxy* m_Proxy;
+protected:
+	BoundingVolumeProxy*					m_Proxy;
 	std::vector<std::vector<SweepPoint>>	m_Axis;
 	std::vector<int>						m_AxisList;
 };
