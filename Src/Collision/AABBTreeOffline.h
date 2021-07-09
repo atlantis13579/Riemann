@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "../Maths/BoundingBox3d.h"
+#include "../Maths/Box3d.h"
 
 #include <vector>
 
@@ -10,7 +10,7 @@ struct AABBTreeNodeInference;
 
 struct AABBTreeBuildData
 {
-	AABBTreeBuildData(const BoundingBox3d* pArray, int nPrimitives = 0, int PrimitivesPerNode = 1) :
+	AABBTreeBuildData(const Box3d* pArray, int nPrimitives = 0, int PrimitivesPerNode = 1) :
 		NumPrimitivesPerNode(PrimitivesPerNode),
 		NumPrimitives(nPrimitives),
 		pAABBArray(pArray),
@@ -41,7 +41,7 @@ struct AABBTreeBuildData
 
 	int							NumPrimitivesPerNode;	
 	int							NumPrimitives;
-	const BoundingBox3d*		pAABBArray;
+	const Box3d*		pAABBArray;
 	Vector3d*					pCenterBuffer;		// Holds the memory
 	int*						pIndexBase;
 	AABBTreeOffline*			pAABBTree;
@@ -74,7 +74,7 @@ public:
 	void	BuildHierarchyRecursive(AABBTreeBuildData& params);
 
 public:
-	BoundingBox3d					mBV;
+	Box3d					mBV;
 	AABBTreeNodeOffline*			Children[2];
 	int								IndexOffset;
 	int								NumPrimitives;

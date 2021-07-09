@@ -144,7 +144,7 @@ void InitScene()
 
     rp.mass = 1.0f;
     rp.Static = false;
-    Geometry* aabb = GeometryFactory::CreateAABB(Vector3d(0, 0, 0), Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
+    Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0, 0, 0), Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
     g_World->CreateRigidBody(aabb, rp);
 
     g_Renderer->AddMesh("Cube", aabb->GetTransform(), vertices, sizeof(vertices) / sizeof(vertices[0]), indices, sizeof(indices) / sizeof(indices[0]));

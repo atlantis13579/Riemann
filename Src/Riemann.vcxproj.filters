@@ -34,7 +34,7 @@
     <ClInclude Include="LinearSystem\PolarDecomposition.h" />
     <ClInclude Include="LinearSystem\SVDDecomposition.h" />
     <ClInclude Include="LinearSystem\GaussSeidelIteration_CPU.h" />
-    <ClInclude Include="Maths\BoundingBox3d.h" />
+    <ClInclude Include="Maths\Box3d.h" />
     <ClInclude Include="Geometry\Capsule.h" />
     <ClInclude Include="Geometry\Convex.h" />
     <ClInclude Include="Geometry\Cylinder.h" />
@@ -70,11 +70,10 @@
     <ClInclude Include="Collision\SAP_Incremental.h" />
     <ClInclude Include="Collision\GeometryObject.h" />
     <ClInclude Include="Collision\DynamicAABBTree.h" />
-    <ClInclude Include="CollisionPrimitive\AxisAlignedBox.h" />
+    <ClInclude Include="CollisionPrimitive\OrientedBox.h" />
     <ClInclude Include="CollisionPrimitive\Capsule.h" />
     <ClInclude Include="CollisionPrimitive\Convex.h" />
     <ClInclude Include="CollisionPrimitive\Cylinder.h" />
-    <ClInclude Include="CollisionPrimitive\OrientedBox.h" />
     <ClInclude Include="CollisionPrimitive\Plane.h" />
     <ClInclude Include="CollisionPrimitive\Ray.h" />
     <ClInclude Include="CollisionPrimitive\Sphere.h" />

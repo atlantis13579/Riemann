@@ -7,20 +7,20 @@
 #include "Matrix4d.h"
 
 template <typename T>
-class TBoundingBox3
+class TAABB3
 {
 public:
 	TVector3<T> Min;
 	TVector3<T> Max;
 
 public:
-	TBoundingBox3<T>() { }
-	TBoundingBox3<T>(const TVector3<T>& InMin, const TVector3<T>& InMax)
+	TAABB3<T>() { }
+	TAABB3<T>(const TVector3<T>& InMin, const TVector3<T>& InMax)
 		: Min(InMin)
 		, Max(InMax)
 	{ }
 
-	TBoundingBox3<T>(const TVector3<T>* v, int Num)
+	TAABB3<T>(const TVector3<T>* v, int Num)
 	{
 		for (int i = 0; i < Num; ++i)
 		{
@@ -29,24 +29,24 @@ public:
 	}
 
 public:
-	bool operator==(const TBoundingBox3<T>& Other) const
+	bool operator==(const TAABB3<T>& Other) const
 	{
 		return (Min == Other.Min) && (Max == Other.Max);
 	}
 
-	TBoundingBox3<T>& operator+=(const TVector3<T>& rhs)
+	TAABB3<T>& operator+=(const TVector3<T>& rhs)
 	{
 		Min += rhs;
 		Max += rhs;
 		return *this;
 	}
 
-	TBoundingBox3<T> operator+(const TVector3<T>& rhs) const
+	TAABB3<T> operator+(const TVector3<T>& rhs) const
 	{
-		return TBoundingBox3<T>(*this) += rhs;
+		return TAABB3<T>(*this) += rhs;
 	}
 	
-	TBoundingBox3<T>& Grow(const TVector3<T>& rhs)
+	TAABB3<T>& Grow(const TVector3<T>& rhs)
 	{
 		Min.x = std::min(Min.x, rhs.x);
 		Min.y = std::min(Min.y, rhs.y);
@@ -59,7 +59,7 @@ public:
 		return *this;
 	}
 
-	TBoundingBox3<T>& Thicken(float Thickness)
+	TAABB3<T>& Thicken(float Thickness)
 	{
 		Min -= Thickness;
 		Max += Thickness;
@@ -67,7 +67,7 @@ public:
 		return *this;
 	}
 
-	TBoundingBox3<T>& Grow(const TBoundingBox3<T>& rhs)
+	TAABB3<T>& Grow(const TAABB3<T>& rhs)
 	{
 		Min.x = std::min(Min.x, rhs.Min.x);
 		Min.y = std::min(Min.y, rhs.Min.y);
@@ -122,7 +122,7 @@ public:
 		Max = Center + Extent;
 	}
 
-	bool Intersect(const TBoundingBox3<T>& rhs) const
+	bool Intersect(const TAABB3<T>& rhs) const
 	{
 		if (Min.x > rhs.Max.x || rhs.Min.x > Max.x)
 		{
@@ -147,15 +147,15 @@ public:
 		return ((rhs.x > Min.x) && (rhs.x < Max.x) && (rhs.y > Min.y) && (rhs.y < Max.y) && (rhs.z > Min.z) && (rhs.z < Max.z));
 	}
 
-	TBoundingBox3<T> Overlap(const TBoundingBox3<T>& rhs) const
+	TAABB3<T> Overlap(const TAABB3<T>& rhs) const
 	{
 		if (!Intersect(rhs))
 		{
-			TBoundingBox3<T> Zero(TVector3<T>::Zero(), TVector3<T>::Zero());
+			TAABB3<T> Zero(TVector3<T>::Zero(), TVector3<T>::Zero());
 			return Zero;
 		}
 
-		TBoundingBox3<T> Box;
+		TAABB3<T> Box;
 
 		Box.Min.x = std::max(Min.x, rhs.Min.x);
 		Box.Max.x = std::min(Max.x, rhs.Max.x);
@@ -169,9 +169,9 @@ public:
 		return Box;
 	}
 
-	TBoundingBox3<T> Transform(const Matrix4d& M) const
+	TAABB3<T> Transform(const Matrix4d& M) const
 	{
-		TBoundingBox3<T> Box;
+		TAABB3<T> Box;
 
 		TVector3<T> Center = GetCenter();
 		TVector3<T> Extent = GetExtent();
@@ -202,4 +202,4 @@ public:
 	}
 };
 
-typedef TBoundingBox3<float> BoundingBox3d;
+typedef TAABB3<float> Box3d;

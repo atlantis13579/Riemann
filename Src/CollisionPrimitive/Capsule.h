@@ -36,9 +36,9 @@ public:
 		return Length;
 	}
 
-	BoundingBox3d	GetBoundingBox() const
+	Box3d	GetBoundingBox() const
 	{
-		BoundingBox3d box(X0, X0);
+		Box3d box(X0, X0);
 		box.Grow(GetX2());
 		box.Thicken(Radius);
 		return box;

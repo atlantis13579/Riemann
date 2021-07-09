@@ -1,15 +1,14 @@
 #pragma once
 
-#include "../Maths/BoundingBox3d.h"
+#include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
 
 enum GeometryShapeType
 {
 	UNKNOWN = 0,
-	AABB,
+	OBB,
 	PLANE,
 	SPHERE,
-	OBB,
 	CAPSULE,
 	CONVEX,
 	CYLINDER,
@@ -19,13 +18,13 @@ enum GeometryShapeType
 };
 
 #define	DECL_GEOMETRY_OBJ(_name)													\
-	static BoundingBox3d GetBoundingBox_##_name(void *);							\
-	static bool RayCast_##_name(void*, const Vector3d&, const Vector3d&, float*);	\
+	static Box3d	GetBoundingBox_##_name(void *);									\
+	static bool		RayCast_##_name(void*, const Vector3d&, const Vector3d&, float*);	\
 	static Vector3d	GetSupport_##_name(void*, const Vector3d&);						\
 	static Matrix3d	GetInertia_##_name(void*, float);								\
 	static void		Destory_##_name(void*);											\
 
-typedef BoundingBox3d	(*GetAABBFunc)		(void*);
+typedef Box3d			(*GetAABBFunc)		(void*);
 typedef bool			(*RayCastFunc)		(void*, const Vector3d&, const Vector3d&, float*);
 typedef Vector3d		(*SupportFunc)		(void*, const Vector3d&);
 typedef Matrix3d		(*InertiaFunc)		(void*, float);
@@ -53,7 +52,7 @@ public:
 	Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity = nullptr);
 	~Geometry();
 
-	const BoundingBox3d&	GetBoundingBoxWorld() const;
+	const Box3d&			GetBoundingBoxWorld() const;
 	Vector3d				GetSupportWorld(const Vector3d& Dir);
 
 	void					SetPositionWorld(const Vector3d& Position);
@@ -74,17 +73,17 @@ public:
 	Matrix3d				GetInverseInertia(float Mass) const;
 
 protected:
-	BoundingBox3d			GetBoundingBoxLocal() const;
+	Box3d					GetBoundingBoxLocal() const;
 	Vector3d				GetSupportLocal(const Vector3d& Dir) const;
 
 private:
 	GeometryShape	m_Shape;
-	BoundingBox3d	m_BoxWorld;
+	Box3d	m_BoxWorld;
 	Transform		m_Transform;
 	void*			m_Entity;
 
 public:
-	DECL_GEOMETRY_OBJ(AxisAlignedBox3);
+	DECL_GEOMETRY_OBJ(OrientedBox);
 	DECL_GEOMETRY_OBJ(Plane);
 	DECL_GEOMETRY_OBJ(Sphere);
 	DECL_GEOMETRY_OBJ(Triangle);
@@ -101,7 +100,7 @@ public:
 class GeometryFactory
 {
 public:
-	static Geometry* CreateAABB(const Vector3d& Position, const Vector3d & Bmin, const Vector3d & Bmax);
+	static Geometry* CreateOBB(const Vector3d& Position, const Vector3d & Bmin, const Vector3d & Bmax);
 	static Geometry* CreatePlane(const Vector3d& Position, const Vector3d& Normal, float D);
 	static Geometry* CreateSphere(const Vector3d& Position, const Vector3d& Center, float Radius);
 	static Geometry* CreateCapsule(const Vector3d& Position, const Vector3d& X1, const Vector3d& X2, float Radius);

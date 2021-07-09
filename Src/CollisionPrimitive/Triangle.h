@@ -95,9 +95,9 @@ public:
 		return false;
 	}
 
-	BoundingBox3d	GetBoundingBox() const
+	Box3d	GetBoundingBox() const
 	{
-		BoundingBox3d box(A, A);
+		Box3d box(A, A);
 		box.Grow(B);
 		box.Grow(C);
 		return box;

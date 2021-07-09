@@ -48,7 +48,7 @@ public:
 	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
 	{
 		Vector3d v[8];
-		BoundingBox3d::GetVertices(Bmin, Bmax, v);
+		Box3d::GetVertices(Bmin, Bmax, v);
 		int p0 = 0, p1 = 0, p2 = 0;
 		for (int i = 0; i < 8; ++i)
 		{
@@ -74,10 +74,10 @@ public:
 		return true;
 	}
 
-	BoundingBox3d	GetBoundingBox() const
+	Box3d	GetBoundingBox() const
 	{
 		const float kMaxBV = 10000000.0f;
-		BoundingBox3d Box(-kMaxBV, kMaxBV);
+		Box3d Box(-kMaxBV, kMaxBV);
 		if (ParallelToXY())
 		{
 			if (Normal.z > 0.0001f)
@@ -132,7 +132,7 @@ public:
 
 	Vector3d GetSupport(const Vector3d& dir) const
 	{
-		BoundingBox3d box = GetBoundingBox();
+		Box3d box = GetBoundingBox();
 		return Vector3d(
 			dir.x > 0 ? box.Max.x : box.Min.x,
 			dir.y > 0 ? box.Max.y : box.Min.y,

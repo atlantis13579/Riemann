@@ -1,13 +1,13 @@
 
 #pragma once
 
-#include "../Maths/BoundingBox3d.h"
+#include "../Maths/Box3d.h"
 
 class AABBTreeOffline;
 
 struct AABBTreeNodeInference
 {
-	inline const BoundingBox3d& GetBoundingBox() const
+	inline const Box3d& GetBoundingBox() const
 	{
 		return BV;
 	}
@@ -72,7 +72,7 @@ struct AABBTreeNodeInference
 		return nullptr;
 	}
 
-	BoundingBox3d				BV;
+	Box3d				BV;
 	unsigned int				Data;	// 27 bits node or prim index|4 bits #prims|1 bit leaf
 };
 

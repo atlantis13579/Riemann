@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "BoundingBox3d.h"
+#include "Box3d.h"
 
 class Frustum
 {
@@ -84,7 +84,7 @@ public:
 		NormalizePlane(m_Frustum, FRONT);
 	}
 
-	bool FrustumIntersectAABB(const BoundingBox3d& box) const
+	bool FrustumIntersectAABB(const Box3d& box) const
 	{
 		for (int i = 0; i < 6; i++)
 		{

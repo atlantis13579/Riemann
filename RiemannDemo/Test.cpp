@@ -5,12 +5,12 @@
 #include "../Src/LinearSystem/JacobiIteration_CPU.h"
 #include "../Src/LinearSystem/GaussSeidelIteration_CPU.h"
 #include "../Src/LinearSystem/LUFactorization.h"
-#include "../Src/Maths/BoundingBox3d.h"
+#include "../Src/Maths/Box3d.h"
 #include "../Src/Maths/Maths.h"
 #include "../Src/Maths/Matrix2d.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Frustum.h"
-#include "../Src/CollisionPrimitive/AxisAlignedBox.h"
+#include "../Src/CollisionPrimitive/OrientedBox.h"
 #include "../Src/CollisionPrimitive/Plane.h"
 #include "../Src/CollisionPrimitive/Sphere.h"
 #include "../Src/CollisionPrimitive/Ray.h"
@@ -26,7 +26,7 @@
 
 void TestAABBTree()
 {
-	std::vector<BoundingBox3d> boxes;
+	std::vector<Box3d> boxes;
 	boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 	boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(1, 1, 3));
 	boxes.emplace_back(Vector3d(1, 1, 1), Vector3d(1, 1, 2));
@@ -78,7 +78,7 @@ void TestAABBTree()
 		hit = tree.RayCastBoundingBox(ray, &t);
 		if (hit >= 0)
 		{
-			BoundingBox3d bb = boxes[hit];
+			Box3d bb = boxes[hit];
 			// assert(ray.IntersectAABB(bb.Min, bb.Max, &t));	  // TODO
 		}
 	}
@@ -93,7 +93,7 @@ void TestGeometryQuery()
 	std::vector<Geometry*> objs;
 	objs.emplace_back(GeometryFactory::CreatePlane(Vector3d::Zero(), Vector3d::UnitZ(), 0.0f));
 	objs.emplace_back(GeometryFactory::CreatePlane(Vector3d::Zero(), Vector3d::UnitZ(), -10.0f));
-	objs.emplace_back(GeometryFactory::CreateAABB(Vector3d::Zero(), Vector3d(-1, -1, -1), Vector3d(1, 1, 1)));
+	objs.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), Vector3d(-1, -1, -1), Vector3d(1, 1, 1)));
 	scene.BuildStaticGeometry(objs, 1);
 
 	RayCastResult result;
@@ -119,7 +119,7 @@ void TestGeometryQuery()
 class BVProxy2 : public SAP::BoundingVolumeProxy
 {
 public:
-	BVProxy2(std::vector<BoundingBox3d>* objs)
+	BVProxy2(std::vector<Box3d>* objs)
 	{
 		m_objs = objs;
 	}
@@ -131,25 +131,25 @@ public:
 
 	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const
 	{
-		const BoundingBox3d& box = m_objs->at(bv_i);
+		const Box3d& box = m_objs->at(bv_i);
 		float* p = (float*)&box;
 		return left ? p + axis : p + 3 + axis;
 	}
 
 	virtual bool	Overlaps(int bv_i, int bv_j) const
 	{
-		const BoundingBox3d& box1 = m_objs->at(bv_i);
-		const BoundingBox3d& box2 = m_objs->at(bv_j);
+		const Box3d& box1 = m_objs->at(bv_i);
+		const Box3d& box2 = m_objs->at(bv_j);
 		return box1.Intersect(box2);
 	}
 
-	std::vector<BoundingBox3d>* m_objs;
+	std::vector<Box3d>* m_objs;
 };
 
 void TestSAP()
 {
 	std::set<OverlapKey> overlaps;
-	std::vector<BoundingBox3d> boxes;
+	std::vector<Box3d> boxes;
 	boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(2, 2, 2));
 	boxes.emplace_back(Vector3d(1, 1, 1), Vector3d(3, 3, 3));
 	boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(15, 15, 15));
@@ -160,7 +160,7 @@ void TestSAP()
 	sap.Prune(&overlaps);
 	assert(overlaps.size() == 3);
 
-	boxes[2] = BoundingBox3d(Vector3d(10, 10, 10), Vector3d(15, 15, 15));
+	boxes[2] = Box3d(Vector3d(10, 10, 10), Vector3d(15, 15, 15));
 	sap.Prune(&overlaps);
 	assert(overlaps.size() == 1);
 
@@ -205,15 +205,15 @@ public:
 
 	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const
 	{
-		const BoundingBox3d& box = m_objs->at(bv_i)->GetBoundingBoxWorld();
+		const Box3d& box = m_objs->at(bv_i)->GetBoundingBoxWorld();
 		float* p = (float*)&box;
 		return left ? p + axis : p + 3 + axis;
 	}
 
 	virtual bool	Overlaps(int bv_i, int bv_j) const
 	{
-		const BoundingBox3d& box1 = m_objs->at(bv_i)->GetBoundingBoxWorld();
-		const BoundingBox3d& box2 = m_objs->at(bv_j)->GetBoundingBoxWorld();
+		const Box3d& box1 = m_objs->at(bv_i)->GetBoundingBoxWorld();
+		const Box3d& box2 = m_objs->at(bv_j)->GetBoundingBoxWorld();
 		return box1.Intersect(box2);
 	}
 
@@ -223,9 +223,9 @@ public:
 void TestSAPInc()
 {
 	std::vector<Geometry*> boxes;
-	boxes.emplace_back(GeometryFactory::CreateAABB(Vector3d::Zero(), Vector3d(0, 0, 0), Vector3d(1, 1, 1)));
-	boxes.emplace_back(GeometryFactory::CreateAABB(Vector3d::Zero(), Vector3d(2, 2, 2), Vector3d(3, 3, 3)));
-	boxes.emplace_back(GeometryFactory::CreateAABB(Vector3d::Zero(), Vector3d(10, 10, 10), Vector3d(20, 20, 20)));
+	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), Vector3d(0, 0, 0), Vector3d(1, 1, 1)));
+	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), Vector3d(2, 2, 2), Vector3d(3, 3, 3)));
+	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), Vector3d(10, 10, 10), Vector3d(20, 20, 20)));
 
 	BVProxy P(&boxes);
 	IncrementalSAP sap(&P, { 0, 1, 2 });
@@ -250,7 +250,7 @@ void TestSAPInc()
 	{
 		Vector3d point1 = Vector3d::Random() * 100.0f;
 		Vector3d point2 = point1 + Vector3d::Random() * 100.0f;
-		boxes.emplace_back(GeometryFactory::CreateAABB(Vector3d::Zero(), point1, point2));
+		boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), point1, point2));
 	}
 	sap.SetDirty();
 

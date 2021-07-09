@@ -40,7 +40,7 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 	int nPrims = NumPrimitives;
 
 	Vector3d meansV = params.pCenterBuffer[primitives[0]];
-	const BoundingBox3d* pAABB = params.pAABBArray;
+	const Box3d* pAABB = params.pAABBArray;
 
 	Vector3d minV = pAABB[primitives[0]].Min;
 	Vector3d maxV = pAABB[primitives[0]].Max;
@@ -57,7 +57,7 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 		maxV = maxV.Max(curMaxV);
 	}
 
-	mBV = BoundingBox3d(minV, maxV);
+	mBV = Box3d(minV, maxV);
 
 	if (nPrims <= params.NumPrimitivesPerNode)
 		return;

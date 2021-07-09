@@ -47,11 +47,10 @@
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CollisionPrimitive\AxisAlignedBox.h" />
+    <ClInclude Include="CollisionPrimitive\OrientedBox.h" />
     <ClInclude Include="CollisionPrimitive\Capsule.h" />
     <ClInclude Include="CollisionPrimitive\Convex.h" />
     <ClInclude Include="CollisionPrimitive\Cylinder.h" />
-    <ClInclude Include="CollisionPrimitive\OrientedBox.h" />
     <ClInclude Include="CollisionPrimitive\Plane.h" />
     <ClInclude Include="CollisionPrimitive\Ray.h" />
     <ClInclude Include="CollisionPrimitive\Sphere.h" />
@@ -97,7 +96,7 @@
     <ClInclude Include="LinearSystem\ProjectedGaussSeidel.h" />
     <ClInclude Include="LinearSystem\SparseMatrix.h" />
     <ClInclude Include="LinearSystem\SVDDecomposition.h" />
-    <ClInclude Include="Maths\BoundingBox3d.h" />
+    <ClInclude Include="Maths\Box3d.h" />
     <ClInclude Include="Maths\Array.h" />
     <ClInclude Include="Maths\Bezier.h" />
     <ClInclude Include="Maths\Frustum.h" />

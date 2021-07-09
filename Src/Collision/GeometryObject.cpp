@@ -1,7 +1,7 @@
 
 #include "GeometryObject.h"
 
-#include "../CollisionPrimitive/AxisAlignedBox.h"
+#include "../CollisionPrimitive/OrientedBox.h"
 #include "../CollisionPrimitive/Plane.h"
 #include "../CollisionPrimitive/Sphere.h"
 #include "../CollisionPrimitive/Triangle.h"
@@ -27,7 +27,7 @@ Geometry::~Geometry()
 	func(m_Shape.Object);
 }
 
-BoundingBox3d		Geometry::GetBoundingBoxLocal() const
+Box3d		Geometry::GetBoundingBoxLocal() const
 {
 	GetAABBFunc func = Geometry::getaabbTable[m_Shape.Type];
 #ifdef DEBUG
@@ -36,7 +36,7 @@ BoundingBox3d		Geometry::GetBoundingBoxLocal() const
 	return func(m_Shape.Object);
 }
 
-const BoundingBox3d& Geometry::GetBoundingBoxWorld() const
+const Box3d& Geometry::GetBoundingBoxWorld() const
 {
 	return m_BoxWorld;
 }
@@ -159,7 +159,7 @@ DestoryFunc			Geometry::destoryTable[GeometryShapeType::COUNT] = { 0 };
 		}																		\
 	};																			\
 	static Geom_Register_##_name s_register_##_name;							\
-	BoundingBox3d Geometry::GetBoundingBox_##_name(void *Obj)					\
+	Box3d Geometry::GetBoundingBox_##_name(void *Obj)							\
 	{																			\
 		_name* p = reinterpret_cast<_name*>(Obj);								\
 		return p->GetBoundingBox();												\
@@ -185,16 +185,16 @@ DestoryFunc			Geometry::destoryTable[GeometryShapeType::COUNT] = { 0 };
 		delete p;																\
 	}																			\
 
-IMPL_GEOMETRY_OBJ(GeometryShapeType::AABB, AxisAlignedBox3);
+IMPL_GEOMETRY_OBJ(GeometryShapeType::OBB, OrientedBox);
 IMPL_GEOMETRY_OBJ(GeometryShapeType::PLANE, Plane);
 IMPL_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere);
 IMPL_GEOMETRY_OBJ(GeometryShapeType::CAPSULE, Capsule);
 IMPL_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE, Triangle);
 
-Geometry* GeometryFactory::CreateAABB(const Vector3d& Position, const Vector3d& Bmin, const Vector3d& Bmax)
+Geometry* GeometryFactory::CreateOBB(const Vector3d& Position, const Vector3d& Bmin, const Vector3d& Bmax)
 {
-	AxisAlignedBox3* shape = new AxisAlignedBox3(Bmin, Bmax);
-	return new Geometry(Position, GeometryShapeType::AABB, shape, nullptr);
+	OrientedBox* shape = new OrientedBox(Bmin, Bmax);
+	return new Geometry(Position, GeometryShapeType::OBB, shape, nullptr);
 }
 
 Geometry* GeometryFactory::CreatePlane(const Vector3d& Position, const Vector3d& Normal, float D)

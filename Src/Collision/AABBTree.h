@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "../Maths/BoundingBox3d.h"
+#include "../Maths/Box3d.h"
 #include "../CollisionPrimitive/Ray.h"
 #include "AABBTreeOffline.h"
 

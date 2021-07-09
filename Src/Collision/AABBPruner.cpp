@@ -16,7 +16,7 @@ AABBPruner::~AABBPruner()
 void AABBPruner::BuildAABB(const std::vector<Geometry*>& Objects, int nPrimitivePerNode)
 {
 	m_Objects = std::move(Objects);
-	std::vector<BoundingBox3d> boxes;
+	std::vector<Box3d> boxes;
 	boxes.resize(Objects.size());
 	for (size_t i = 0; i < Objects.size(); ++i)
 	{
