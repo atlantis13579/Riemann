@@ -149,9 +149,9 @@ public:
 	static Vector3d GetSupport(const Vector3d& Bmin, const Vector3d& Bmax, const Vector3d& dir)
 	{
 		return Vector3d(
-			dir.x > 0 ? Bmax.x : -Bmax.x,
-			dir.y > 0 ? Bmax.y : -Bmax.y,
-			dir.z > 0 ? Bmax.z : -Bmax.z
+			dir.x > 0 ? Bmax.x : Bmin.x,
+			dir.y > 0 ? Bmax.y : Bmin.y,
+			dir.z > 0 ? Bmax.z : Bmin.z
 		);
 	}
 };

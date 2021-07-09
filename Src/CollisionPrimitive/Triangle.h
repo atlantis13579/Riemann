@@ -37,7 +37,6 @@ public:
 		return cross.Unit();
 	}
 
-
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
 	{
 		return RayIntersectTriangle(Origin, Dir, A, B, C, t);
@@ -95,5 +94,44 @@ public:
 		// No hit, no win
 		return false;
 	}
+
+	BoundingBox3d	GetBoundingBox() const
+	{
+		BoundingBox3d box(A, A);
+		box.Grow(B);
+		box.Grow(C);
+		return box;
+	}
+
+	Matrix3d GetInertiaTensor(float Mass) const
+	{
+		// TODO
+		return Matrix3d(1, 1, 1);
+	}
+
+	Vector3d GetSupport(const Vector3d& dir) const
+	{
+		return GetSupport(A, B, C, dir);
+	}
+
+	static Vector3d GetSupport(const Vector3d& A, const Vector3d& B, const Vector3d& C, const Vector3d& Dir)
+	{
+		float dpa = DotProduct(A, Dir);
+		float dpb = DotProduct(B, Dir);
+		float dpc = DotProduct(C, Dir);
+
+		if (dpa >= dpb && dpa >= dpc)
+		{
+			return A;
+		}
+		else if (dpb >= dpa && dpb >= dpc)
+		{
+			return B;
+		}
+
+		return C;
+	}
+
+
 };
 

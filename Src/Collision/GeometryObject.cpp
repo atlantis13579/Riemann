@@ -187,7 +187,9 @@ DestoryFunc			Geometry::destoryTable[GeometryShapeType::COUNT] = { 0 };
 
 IMPL_GEOMETRY_OBJ(GeometryShapeType::AABB, AxisAlignedBox3);
 IMPL_GEOMETRY_OBJ(GeometryShapeType::PLANE, Plane);
-// IMPL_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere);
+IMPL_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere);
+IMPL_GEOMETRY_OBJ(GeometryShapeType::CAPSULE, Capsule);
+IMPL_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE, Triangle);
 
 Geometry* GeometryFactory::CreateAABB(const Vector3d& Position, const Vector3d& Bmin, const Vector3d& Bmax)
 {
@@ -201,3 +203,20 @@ Geometry* GeometryFactory::CreatePlane(const Vector3d& Position, const Vector3d&
 	return new Geometry(Position, GeometryShapeType::PLANE, shape, nullptr);
 }
 
+Geometry* GeometryFactory::CreateSphere(const Vector3d& Position, const Vector3d& Center, float Radius)
+{
+	Sphere* shape = new Sphere(Center, Radius);
+	return new Geometry(Position, GeometryShapeType::SPHERE, shape, nullptr);
+}
+
+Geometry* GeometryFactory::CreateCapsule(const Vector3d& Position, const Vector3d& X1, const Vector3d& X2, float Radius)
+{
+	Capsule* shape = new Capsule(X1, X2, Radius);
+	return new Geometry(Position, GeometryShapeType::CAPSULE, shape, nullptr);
+}
+
+Geometry* GeometryFactory::CreateTriangle(const Vector3d& Position, const Vector3d& A, const Vector3d& B, const Vector3d& C)
+{
+	Triangle* shape = new Triangle(A, B, C);
+	return new Geometry(Position, GeometryShapeType::TRIANGLE, shape, nullptr);
+}

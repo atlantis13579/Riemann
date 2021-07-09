@@ -134,9 +134,9 @@ public:
 	{
 		BoundingBox3d box = GetBoundingBox();
 		return Vector3d(
-			dir.x > 0 ? box.Max.x : -box.Min.x,
-			dir.y > 0 ? box.Max.y : -box.Min.y,
-			dir.z > 0 ? box.Max.z : -box.Min.z
+			dir.x > 0 ? box.Max.x : box.Min.x,
+			dir.y > 0 ? box.Max.y : box.Min.y,
+			dir.z > 0 ? box.Max.z : box.Min.z
 		);
 	}
 };

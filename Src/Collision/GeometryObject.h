@@ -13,6 +13,7 @@ enum GeometryShapeType
 	CAPSULE,
 	CONVEX,
 	CYLINDER,
+	TRIANGLE,
 	TRIANGLEMESH,
 	COUNT,
 };
@@ -85,7 +86,9 @@ private:
 public:
 	DECL_GEOMETRY_OBJ(AxisAlignedBox3);
 	DECL_GEOMETRY_OBJ(Plane);
-	// DECL_GEOMETRY_OBJ(Sphere);
+	DECL_GEOMETRY_OBJ(Sphere);
+	DECL_GEOMETRY_OBJ(Triangle);
+	DECL_GEOMETRY_OBJ(Capsule);
 
 	static GetAABBFunc		getaabbTable[GeometryShapeType::COUNT];
 	static RayCastFunc		raycastTable[GeometryShapeType::COUNT];
@@ -100,6 +103,9 @@ class GeometryFactory
 public:
 	static Geometry* CreateAABB(const Vector3d& Position, const Vector3d & Bmin, const Vector3d & Bmax);
 	static Geometry* CreatePlane(const Vector3d& Position, const Vector3d& Normal, float D);
+	static Geometry* CreateSphere(const Vector3d& Position, const Vector3d& Center, float Radius);
+	static Geometry* CreateCapsule(const Vector3d& Position, const Vector3d& X1, const Vector3d& X2, float Radius);
+	static Geometry* CreateTriangle(const Vector3d& Position, const Vector3d& A, const Vector3d& B, const Vector3d& C);
 };
 
 

@@ -106,4 +106,20 @@ public:
 		const float Diagonal = 2.0f * Mass * Radius * Radius / 5.0f;
 		return Matrix3d(Diagonal, Diagonal, Diagonal);
 	}
+
+	Vector3d GetSupport(const Vector3d& dir) const
+	{
+		return GetSupport(Center, Radius, dir);
+	}
+
+	static Vector3d GetSupport(const Vector3d& Center, float Radius, const Vector3d& dir)
+	{
+		float distSqr = dir.SquareLength();
+		if (distSqr <= 1e-6)
+		{
+			return Center;
+		}
+		Vector3d Normalized = dir / sqrtf(distSqr);
+		return Center + Normalized * Radius;
+	}
 };

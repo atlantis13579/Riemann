@@ -46,7 +46,7 @@ public:
 		return TBoundingBox3<T>(*this) += rhs;
 	}
 	
-	TBoundingBox3<T>& Extend(const TVector3<T>& rhs)
+	TBoundingBox3<T>& Grow(const TVector3<T>& rhs)
 	{
 		Min.x = std::min(Min.x, rhs.x);
 		Min.y = std::min(Min.y, rhs.y);
@@ -59,7 +59,15 @@ public:
 		return *this;
 	}
 
-	TBoundingBox3<T>& Extend(const TBoundingBox3<T>& rhs)
+	TBoundingBox3<T>& Thicken(float Thickness)
+	{
+		Min -= Thickness;
+		Max += Thickness;
+
+		return *this;
+	}
+
+	TBoundingBox3<T>& Grow(const TBoundingBox3<T>& rhs)
 	{
 		Min.x = std::min(Min.x, rhs.Min.x);
 		Min.y = std::min(Min.y, rhs.Min.y);
