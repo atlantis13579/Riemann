@@ -55,7 +55,7 @@ void GeometryQuery::CreateBroadPhaseFilter(const char* name)
 	m_BPhase = BroadPhase::CreatSAP();
 }
 
-void GeometryQuery::BuildStaticGeometry(const std::vector<GeometryObject*>& Objects, int nPrimitivePerNode)
+void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode)
 {
 	if (m_staticGeometry == nullptr)
 	{

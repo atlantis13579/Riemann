@@ -42,14 +42,14 @@ struct GeometryShape
 	void				*Object;
 };
 
-class GeometryObjectFactory;
+class GeometryFactory;
 
-class GeometryObject
+class Geometry
 {
-	friend class GeometryObjectFactory;
+	friend class GeometryFactory;
 
 public:
-	~GeometryObject();
+	~Geometry();
 
 	BoundingBox3d			GetBoundingBoxLocal() const;
 	const BoundingBox3d&	GetBoundingBoxWorld() const;
@@ -62,10 +62,10 @@ public:
 	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
 	Matrix3d				GetInertia(float Mass);
 	Vector3d				GetSupport(const Vector3d& Dir);
-	static Vector3d			GetSupport(const GeometryObject* Geom1, const GeometryObject* Geom2, const Vector3d& Dir);
+	static Vector3d			GetSupport(const Geometry* Geom1, const Geometry* Geom2, const Vector3d& Dir);
 
 protected:
-	GeometryObject(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity);\
+	Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity);\
 
 private:
 	GeometryShape	m_Shape;
@@ -86,11 +86,11 @@ public:
 };
 
 
-class GeometryObjectFactory
+class GeometryFactory
 {
 public:
-	static GeometryObject* CreateAABB(const Vector3d& Position, const Vector3d & Bmin, const Vector3d & Bmax);
-	static GeometryObject* CreatePlane(const Vector3d& Position, const Vector3d& Normal, float D);
+	static Geometry* CreateAABB(const Vector3d& Position, const Vector3d & Bmin, const Vector3d & Bmax);
+	static Geometry* CreatePlane(const Vector3d& Position, const Vector3d& Normal, float D);
 };
 
 
@@ -107,6 +107,6 @@ struct RayCastResult
 	float t;
 	Vector3d hitPos;
 	Vector3d hitNormal;
-	GeometryObject* Object;
+	Geometry* Object;
 };
 

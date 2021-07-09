@@ -81,7 +81,7 @@ int AABBTree::Traverse(const Vector3d& Point) const
 	return -1;
 }
 
-static int RayCastGeometry(const Ray& ray, int* prims, int numPrims, GeometryObject** ObjectCollection, RayCastResult* Result)
+static int RayCastGeometry(const Ray& ray, int* prims, int numPrims, Geometry** ObjectCollection, RayCastResult* Result)
 {
 	assert(numPrims > 0);
 	if (ObjectCollection == nullptr)
@@ -93,7 +93,7 @@ static int RayCastGeometry(const Ray& ray, int* prims, int numPrims, GeometryObj
 	for (int i = 0; i < numPrims; ++i)
 	{
 		const int index = prims[i];
-		GeometryObject *Geom = ObjectCollection[index];
+		Geometry *Geom = ObjectCollection[index];
 		bool hit = Geom->RayCast(ray.Origin, ray.Dir, &t);
 		if (hit)
 		{
@@ -115,7 +115,7 @@ static int RayCastGeometry(const Ray& ray, int* prims, int numPrims, GeometryObj
 	return min_idx;
 }
 
-int  AABBTree::RayCast(const Ray& ray, GeometryObject **ObjectCollection, RayCastResult* Result) const
+int  AABBTree::RayCast(const Ray& ray, Geometry **ObjectCollection, RayCastResult* Result) const
 {
 	Result->hit = false;
 

@@ -7,7 +7,7 @@
 
 struct RayCastResult;
 struct AABBTreeNodeInference;
-class GeometryObject;
+class Geometry;
 
 class AABBTree
 {
@@ -21,7 +21,7 @@ public:
 	void StaticBuild(AABBTreeBuildData& params);
 
 	int	 Traverse(const Vector3d& Point) const;
-	int  RayCast(const Ray& ray, GeometryObject** ObjectCollection, RayCastResult *Result) const;
+	int  RayCast(const Ray& ray, Geometry** ObjectCollection, RayCastResult *Result) const;
 	int  RayCastBoundingBox(const Ray& ray, float* t) const;
 
 private:

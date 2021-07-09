@@ -8,7 +8,7 @@
 #include "../CollisionPrimitive/Cylinder.h"
 #include "../CollisionPrimitive/Capsule.h"
 
-GeometryObject::GeometryObject(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity /*= nullptr*/)
+Geometry::Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity /*= nullptr*/)
 {
 	m_Shape.Type = _Type;
 	m_Shape.Object = _ShapeObj;
@@ -18,73 +18,73 @@ GeometryObject::GeometryObject(const Vector3d& Position, GeometryShapeType _Type
 	SetPosition(Position);
 }
 
-GeometryObject::~GeometryObject()
+Geometry::~Geometry()
 {
-	DestoryFunc func = GeometryObject::destoryTable[m_Shape.Type];
+	DestoryFunc func = Geometry::destoryTable[m_Shape.Type];
 #ifdef DEBUG
 	assert(func);
 #endif
 	func(m_Shape.Object);
 }
 
-BoundingBox3d		GeometryObject::GetBoundingBoxLocal() const
+BoundingBox3d		Geometry::GetBoundingBoxLocal() const
 {
-	GetAABBFunc func = GeometryObject::getaabbTable[m_Shape.Type];
+	GetAABBFunc func = Geometry::getaabbTable[m_Shape.Type];
 #ifdef DEBUG
 	assert(func);
 #endif
 	return func(m_Shape.Object);
 }
 
-const				BoundingBox3d& GeometryObject::GetBoundingBoxWorld() const
+const				BoundingBox3d& Geometry::GetBoundingBoxWorld() const
 {
 	return m_BoxWorld;
 }
 
-void				GeometryObject::SetPosition(const Vector3d& Position)
+void				Geometry::SetPosition(const Vector3d& Position)
 {
 	m_Transform.SetTranslation(Position);
 	m_BoxWorld = GetBoundingBoxLocal() + Position;
 }
 
-void				GeometryObject::SetPositionOffset(const Vector3d& Offset)
+void				Geometry::SetPositionOffset(const Vector3d& Offset)
 {
 	Vector3d World = m_Transform.GetTranslation() + Offset;
 	SetPosition(World);
 }
 
-Vector3d			GeometryObject::GetPosition() const
+Vector3d			Geometry::GetPosition() const
 {
 	return m_Transform.GetTranslation();
 }
 
-void				GeometryObject::SetRotation(const Quaternion& Rotation)
+void				Geometry::SetRotation(const Quaternion& Rotation)
 {
 	m_Transform.SetRotation(Rotation);
 }
 
-bool				GeometryObject::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
+bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
 {
-	RayCastFunc func = GeometryObject::raycastTable[m_Shape.Type];
+	RayCastFunc func = Geometry::raycastTable[m_Shape.Type];
 #ifdef DEBUG
 	assert(func);
 #endif
 	return func(m_Shape.Object, Origin, Dir, t);
 }
 
-Vector3d			GeometryObject::GetSupport(const Vector3d& Dir)
+Vector3d			Geometry::GetSupport(const Vector3d& Dir)
 {
-	SupportFunc func = GeometryObject::supportTable[m_Shape.Type];
+	SupportFunc func = Geometry::supportTable[m_Shape.Type];
 #ifdef DEBUG
 	assert(func);
 #endif
 	return func(m_Shape.Object, Dir);
 }
 
-Vector3d			GeometryObject::GetSupport(const GeometryObject* Geom1, const GeometryObject* Geom2, const Vector3d& Dir)
+Vector3d			Geometry::GetSupport(const Geometry* Geom1, const Geometry* Geom2, const Vector3d& Dir)
 {
-	SupportFunc func1 = GeometryObject::supportTable[Geom1->m_Shape.Type];
-	SupportFunc func2 = GeometryObject::supportTable[Geom2->m_Shape.Type];
+	SupportFunc func1 = Geometry::supportTable[Geom1->m_Shape.Type];
+	SupportFunc func2 = Geometry::supportTable[Geom2->m_Shape.Type];
 #ifdef DEBUG
 	assert(func1 && func2);
 #endif
@@ -93,60 +93,60 @@ Vector3d			GeometryObject::GetSupport(const GeometryObject* Geom1, const Geometr
 	return p1 - p2;
 }
 
-Matrix3d			GeometryObject::GetInertia(float Mass)
+Matrix3d			Geometry::GetInertia(float Mass)
 {
-	InertiaFunc func = GeometryObject::inertiaTable[m_Shape.Type];
+	InertiaFunc func = Geometry::inertiaTable[m_Shape.Type];
 #ifdef DEBUG
 	assert(func);
 #endif
 	return func(m_Shape.Object, Mass);
 }
 
-GetAABBFunc			GeometryObject::getaabbTable[GeometryShapeType::COUNT] = { 0 };
-RayCastFunc			GeometryObject::raycastTable[GeometryShapeType::COUNT] = { 0 };
-SupportFunc			GeometryObject::supportTable[GeometryShapeType::COUNT] = { 0 };
-InertiaFunc			GeometryObject::inertiaTable[GeometryShapeType::COUNT] = { 0 };
-DestoryFunc			GeometryObject::destoryTable[GeometryShapeType::COUNT] = { 0 };
+GetAABBFunc			Geometry::getaabbTable[GeometryShapeType::COUNT] = { 0 };
+RayCastFunc			Geometry::raycastTable[GeometryShapeType::COUNT] = { 0 };
+SupportFunc			Geometry::supportTable[GeometryShapeType::COUNT] = { 0 };
+InertiaFunc			Geometry::inertiaTable[GeometryShapeType::COUNT] = { 0 };
+DestoryFunc			Geometry::destoryTable[GeometryShapeType::COUNT] = { 0 };
 
 #define	IMPL_GEOMETRY_OBJ(_type, _name)											\
 	class Geom_Register_##_name													\
 	{																			\
 		public : Geom_Register_##_name()										\
 		{																		\
-			GeometryObject::getaabbTable[_type] =								\
-				GeometryObject::GetBoundingBox_##_name;							\
-			GeometryObject::raycastTable[_type] =								\
-				GeometryObject::RayCast_##_name;								\
-			GeometryObject::supportTable[_type] =								\
-				GeometryObject::GetSupport_##_name;								\
-			GeometryObject::inertiaTable[_type] =								\
-				GeometryObject::GetInertia_##_name;								\
-			GeometryObject::destoryTable[_type] =								\
-				GeometryObject::Destory_##_name;								\
+			Geometry::getaabbTable[_type] =										\
+				Geometry::GetBoundingBox_##_name;								\
+			Geometry::raycastTable[_type] =										\
+				Geometry::RayCast_##_name;										\
+			Geometry::supportTable[_type] =										\
+				Geometry::GetSupport_##_name;									\
+			Geometry::inertiaTable[_type] =										\
+				Geometry::GetInertia_##_name;									\
+			Geometry::destoryTable[_type] =										\
+				Geometry::Destory_##_name;										\
 		}																		\
 	};																			\
 	static Geom_Register_##_name s_register_##_name;							\
-	BoundingBox3d GeometryObject::GetBoundingBox_##_name(void *Obj)				\
+	BoundingBox3d Geometry::GetBoundingBox_##_name(void *Obj)					\
 	{																			\
 		_name* p = reinterpret_cast<_name*>(Obj);								\
 		return p->GetBoundingBox();												\
 	}																			\
-	bool GeometryObject::RayCast_##_name(void *Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)			\
+	bool Geometry::RayCast_##_name(void *Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)			\
 	{																			\
 		_name* p = reinterpret_cast<_name*>(Obj);								\
 		return p->IntersectRay(Origin, Dir, t);									\
 	}																			\
-	Vector3d GeometryObject::GetSupport_##_name(void *Obj, const Vector3d& Dir)	\
+	Vector3d Geometry::GetSupport_##_name(void *Obj, const Vector3d& Dir)		\
 	{																			\
 		_name* p = reinterpret_cast<_name*>(Obj);								\
 		return p->GetSupport(Dir);												\
 	}																			\
-	Matrix3d GeometryObject::GetInertia_##_name(void *Obj, float Mass)			\
+	Matrix3d Geometry::GetInertia_##_name(void *Obj, float Mass)				\
 	{																			\
 		_name* p = reinterpret_cast<_name*>(Obj);								\
 		return p->GetInertiaTensor(Mass);										\
 	}																			\
-	void GeometryObject::Destory_##_name(void *Obj)								\
+	void Geometry::Destory_##_name(void *Obj)									\
 	{																			\
 		_name* p = reinterpret_cast<_name*>(Obj);								\
 		delete p;																\
@@ -156,15 +156,15 @@ IMPL_GEOMETRY_OBJ(GeometryShapeType::AABB, AxisAlignedBox3);
 IMPL_GEOMETRY_OBJ(GeometryShapeType::PLANE, Plane);
 // IMPL_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere);
 
-GeometryObject* GeometryObjectFactory::CreateAABB(const Vector3d& Position, const Vector3d& Bmin, const Vector3d& Bmax)
+Geometry* GeometryFactory::CreateAABB(const Vector3d& Position, const Vector3d& Bmin, const Vector3d& Bmax)
 {
 	AxisAlignedBox3* shape = new AxisAlignedBox3(Bmin, Bmax);
-	return new GeometryObject(Position, GeometryShapeType::AABB, shape, nullptr);
+	return new Geometry(Position, GeometryShapeType::AABB, shape, nullptr);
 }
 
-GeometryObject* GeometryObjectFactory::CreatePlane(const Vector3d& Position, const Vector3d& Normal, float D)
+Geometry* GeometryFactory::CreatePlane(const Vector3d& Position, const Vector3d& Normal, float D)
 {
 	Plane* shape = new Plane(Normal, D);
-	return new GeometryObject(Position, GeometryShapeType::PLANE, shape, nullptr);
+	return new Geometry(Position, GeometryShapeType::PLANE, shape, nullptr);
 }
 

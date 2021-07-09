@@ -3,7 +3,7 @@
 #include "GeometryObject.h"
 #include "SAP_Incremental.h"
 
-void BroadPhaseBruteforceImplementation::ProduceOverlaps(std::vector<GeometryObject*>& AllObjects, std::vector<OverlapPair>* overlaps)
+void BroadPhaseBruteforceImplementation::ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps)
 {
 	overlaps->clear();
 
@@ -16,7 +16,7 @@ void BroadPhaseBruteforceImplementation::ProduceOverlaps(std::vector<GeometryObj
 }
 
 
-class BroadPhaseSAPImplementation : public BroadPhase, public IBoundingVolumeProxy
+class BroadPhaseSAPImplementation : public BroadPhase, public SAP::BoundingVolumeProxy
 {
 public:
 	BroadPhaseSAPImplementation()
@@ -36,7 +36,7 @@ public:
 
 public:
 
-	virtual void ProduceOverlaps(std::vector<GeometryObject*>& AllObjects, std::vector<OverlapPair>* overlaps)
+	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps)
 	{
 		if (AllObjects.empty())
 		{
@@ -56,7 +56,7 @@ public:
 		for (auto it : m_Overlaps)
 		{
 			int i, j;
-			IncrementalSAP::UnpackOverlapKey(it, &i, &j);
+			SAP::UnpackOverlapKey(it, &i, &j);
 			overlaps->emplace_back(AllObjects[i], AllObjects[j]);
 		}
 	}
@@ -86,7 +86,7 @@ private:
 	IncrementalSAP				*m_SAP;
 	std::set<OverlapKey>		m_Overlaps;
 
-	std::vector<GeometryObject*>* m_pObjects;
+	std::vector<Geometry*>* m_pObjects;
 };
 
 

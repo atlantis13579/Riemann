@@ -13,7 +13,7 @@ AABBPruner::~AABBPruner()
 {
 }
 
-void AABBPruner::BuildAABB(const std::vector<GeometryObject*>& Objects, int nPrimitivePerNode)
+void AABBPruner::BuildAABB(const std::vector<Geometry*>& Objects, int nPrimitivePerNode)
 {
 	m_Objects = std::move(Objects);
 	std::vector<BoundingBox3d> boxes;
@@ -30,6 +30,6 @@ void AABBPruner::BuildAABB(const std::vector<GeometryObject*>& Objects, int nPri
 bool AABBPruner::RayCast(const Vector3d& Origin, const Vector3d& Dir, RayCastResult* Result)
 {
 	Ray ray(Origin, Dir);
-	GeometryObject** pp = &m_Objects[0];
+	Geometry** pp = &m_Objects[0];
 	return AABBTree::RayCast(ray, pp, Result);
 }
