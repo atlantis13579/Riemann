@@ -97,6 +97,7 @@
     <ClInclude Include="Maths\Array.h" />
     <ClInclude Include="Maths\Bezier.h" />
     <ClInclude Include="Maths\Maths.h" />
+    <ClInclude Include="Maths\Matrix2d.h" />
     <ClInclude Include="Maths\Matrix3d.h" />
     <ClInclude Include="Maths\Matrix4d.h" />
     <ClInclude Include="Maths\Quaternion.h" />

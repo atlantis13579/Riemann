@@ -45,7 +45,7 @@ void		PhysicsWorld::Simulate(float dt)
 	}
 
 	// BroadPhase Collision Detection
-	std::vector<CollisionPair> collides;
+	std::vector<ContactPair> collides;
 	if (m_NPhase)
 	{
 		m_NPhase->ProduceCollision(overlaps, &collides);

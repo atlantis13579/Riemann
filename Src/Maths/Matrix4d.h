@@ -104,7 +104,7 @@ public:
 	bool Invertible() const
 	{
 		float d = Determinant();
-		return fabsf(d) > 0.0000001f;
+		return fabsf(d) > 1e-6;
 	}
 
 	Matrix4d Inverse()

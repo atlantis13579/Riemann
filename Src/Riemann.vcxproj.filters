@@ -82,6 +82,7 @@
     <ClInclude Include="CollisionPrimitive\TriangleMesh.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsWorld.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsEntity.h" />
+    <ClInclude Include="Maths\Matrix2d.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">

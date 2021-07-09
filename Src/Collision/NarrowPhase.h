@@ -7,9 +7,9 @@
 
 class Geometry;
 
-struct CollisionPair
+struct ContactPair
 {
-	CollisionPair(Geometry* _Geom1, Geometry* _Geom2)
+	ContactPair(Geometry* _Geom1, Geometry* _Geom2)
 	{
 		Geom1 = _Geom1;
 		Geom2 = _Geom2;
@@ -17,14 +17,14 @@ struct CollisionPair
 	Geometry* Geom1;
 	Geometry* Geom2;
 
-	// Collisiom
+	// Contact Informations
 };
 
 class NarrowPhase
 {
 public:
 	~NarrowPhase() {}
-	virtual void ProduceCollision(std::vector<OverlapPair>& overlaps, std::vector<CollisionPair>* collides) = 0;
+	virtual void ProduceCollision(std::vector<OverlapPair>& overlaps, std::vector<ContactPair>* collides) = 0;
 
 	static NarrowPhase* Create_GJK_EPA();
 };
