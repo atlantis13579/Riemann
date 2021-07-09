@@ -85,6 +85,7 @@
     <ClInclude Include="Maths\Matrix2d.h" />
     <ClInclude Include="RigidBodyDynamics\MotionIntegration.h" />
     <ClInclude Include="Maths\Frustum.h" />
+    <ClInclude Include="Collision\Minkowski.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -114,5 +115,6 @@
     <ClCompile Include="RigidBodyDynamics\PhysicsWorldRB.cpp" />
     <ClCompile Include="RigidBodyDynamics\MotionIntegration.cpp" />
     <ClCompile Include="RigidBodyDynamics\RigidBody.cpp" />
+    <ClCompile Include="Collision\Minkowski.cpp" />
   </ItemGroup>
 </Project>

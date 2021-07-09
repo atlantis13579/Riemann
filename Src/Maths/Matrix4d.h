@@ -193,7 +193,7 @@ public:
 };
 
 template <typename T>
-inline TVector4<T> operator* (const Matrix4d& mm, const TVector4<T>& vec) {
+inline TVector4<T> operator* (const TVector4<T>& vec, const Matrix4d& mm) {
 	return TVector4<T>(
 		mm.mat[0][0] * vec.x + mm.mat[1][0] * vec.y + mm.mat[2][0] * vec.z + mm.mat[3][0] * vec.w,
 		mm.mat[0][1] * vec.x + mm.mat[1][1] * vec.y + mm.mat[2][1] * vec.z + mm.mat[3][1] * vec.w,

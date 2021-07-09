@@ -79,19 +79,23 @@ public:
 		return m_InvWorldMatrix;
 	}
 
+	static Vector3d TransformPosition(const Matrix4d& mat, const Vector3d& Point)
+	{
+		Vector4d hSpace = Vector4d(Point.x, Point.y, Point.z, 1.0f);
+		Vector4d t = hSpace * mat;
+		return t.xyz();
+	}
+
 	Vector3d LocalToWorld(const Vector3d& Point)
 	{
 		const Matrix4d& mat = GetWorldMatrix();
+		return TransformPosition(mat, Point);
+	}
 
-		Vector4d hSpace = Vector4d(Point.x, Point.y, Point.z, 1.0f);
-		Vector4d t = Vector4d::Zero();
-
-		for (int r = 0; r < 4; ++r)
-		for (int c = 0; c < 4; ++c)
-		{
-			t[r] += hSpace[c] * mat[r][c];
-		}
-		return Vector3d(t.x, t.y, t.z);
+	Vector3d WorldToLocal(const Vector3d& Point)
+	{
+		const Matrix4d& mat = GetInverseWorldMatrix();
+		return TransformPosition(mat, Point);
 	}
 
 	static Matrix4d BuildViewMatrix_RHCoordinateSystem(const Vector3d& Eye, const Vector3d& LookAt, const Vector3d& Up)

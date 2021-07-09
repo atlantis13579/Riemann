@@ -127,12 +127,16 @@ public:
 	Matrix3d GetInertiaTensor(float Mass) const
 	{
 		// TODO
-		return Matrix3d();
+		return Matrix3d(1, 1, 1);
 	}
 
 	Vector3d GetSupport(const Vector3d& dir) const
 	{
-		// TODO
-		return Vector3d();
+		BoundingBox3d box = GetBoundingBox();
+		return Vector3d(
+			dir.x > 0 ? box.Max.x : -box.Min.x,
+			dir.y > 0 ? box.Max.y : -box.Min.y,
+			dir.z > 0 ? box.Max.z : -box.Min.z
+		);
 	}
 };

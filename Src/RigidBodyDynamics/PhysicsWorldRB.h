@@ -11,7 +11,7 @@ class NarrowPhase;
 
 struct PhysicsWorldRBParam
 {
-
+	Vector3d Gravity;
 };
 
 class PhysicsWorldRB

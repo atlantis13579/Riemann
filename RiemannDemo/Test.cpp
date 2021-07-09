@@ -21,6 +21,8 @@
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Collision/SAP.h"
 #include "../Src/Collision/SAP_Incremental.h"
+#include "../Src/Collision/GJK.h"
+#include "../Src/Collision/EPA.h"
 
 void TestAABBTree()
 {

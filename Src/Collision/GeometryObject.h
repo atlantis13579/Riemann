@@ -53,12 +53,15 @@ public:
 	~Geometry();
 
 	const BoundingBox3d&	GetBoundingBoxWorld() const;
+	Vector3d				GetSupportWorld(const Vector3d& Dir);
 
-	void					SetPosition(const Vector3d& Position);
+	void					SetPositionWorld(const Vector3d& Position);
 	void					SetPositionOffset(const Vector3d& Offset);
 	Vector3d				GetPositionWorld() const;
 	Quaternion				GetRotation() const;
 	void					SetRotation(const Quaternion& Rotation);
+	const Matrix4d&			GetWorldMatrix();
+	const Matrix4d&			GetInverseWorldMatrix();
 
 	void*					GetEntity();
 	void					SetEntity(void *Entity);
@@ -66,13 +69,12 @@ public:
 	Transform*				GetTransform();
 
 	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
-	Matrix3d				GetInertia(float Mass);
-	Matrix3d				GetInverseInertia(float Mass);
-	Vector3d				GetSupport(const Vector3d& Dir);
-	static Vector3d			GetSupport(const Geometry* Geom1, const Geometry* Geom2, const Vector3d& Dir);
+	Matrix3d				GetInertia(float Mass) const;
+	Matrix3d				GetInverseInertia(float Mass) const;
 
 protected:
 	BoundingBox3d			GetBoundingBoxLocal() const;
+	Vector3d				GetSupportLocal(const Vector3d& Dir) const;
 
 private:
 	GeometryShape	m_Shape;

@@ -15,7 +15,7 @@ Geometry::Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _Sha
 	m_Entity = _Entity;
 	m_BoxWorld = GetBoundingBoxLocal();
 
-	SetPosition(Position);
+	SetPositionWorld(Position);
 }
 
 Geometry::~Geometry()
@@ -49,10 +49,10 @@ Vector3d			Geometry::GetPositionWorld() const
 void				Geometry::SetPositionOffset(const Vector3d& Offset)
 {
 	Vector3d World = m_Transform.GetTranslation() + Offset;
-	SetPosition(World);
+	SetPositionWorld(World);
 }
 
-void				Geometry::SetPosition(const Vector3d& Position)
+void				Geometry::SetPositionWorld(const Vector3d& Position)
 {
 	m_Transform.SetTranslation(Position);
 	m_BoxWorld = GetBoundingBoxLocal().Transform(m_Transform.GetWorldMatrix());
@@ -68,6 +68,16 @@ void				Geometry::SetRotation(const Quaternion& Rotation)
 {
 	m_Transform.SetRotation(Rotation);
 	m_BoxWorld = GetBoundingBoxLocal().Transform(m_Transform.GetWorldMatrix());
+}
+
+const Matrix4d&		Geometry::GetWorldMatrix()
+{
+	return m_Transform.GetWorldMatrix();
+}
+
+const Matrix4d&		Geometry::GetInverseWorldMatrix()
+{
+	return m_Transform.GetInverseWorldMatrix();
 }
 
 void*				Geometry::GetEntity()
@@ -94,7 +104,15 @@ bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
 	return func(m_Shape.Object, Origin, Dir, t);
 }
 
-Vector3d			Geometry::GetSupport(const Vector3d& Dir)
+Vector3d			Geometry::GetSupportWorld(const Vector3d& Dir)
+{
+	Vector3d DirLocal = m_Transform.WorldToLocal(Dir);
+	Vector3d SupportLocal = GetSupportLocal(DirLocal);
+	Vector3d SupportWorld = m_Transform.LocalToWorld(SupportLocal);
+	return SupportWorld;
+}
+
+Vector3d			Geometry::GetSupportLocal(const Vector3d& Dir) const
 {
 	SupportFunc func = Geometry::supportTable[m_Shape.Type];
 #ifdef DEBUG
@@ -103,19 +121,7 @@ Vector3d			Geometry::GetSupport(const Vector3d& Dir)
 	return func(m_Shape.Object, Dir);
 }
 
-Vector3d			Geometry::GetSupport(const Geometry* Geom1, const Geometry* Geom2, const Vector3d& Dir)
-{
-	SupportFunc func1 = Geometry::supportTable[Geom1->m_Shape.Type];
-	SupportFunc func2 = Geometry::supportTable[Geom2->m_Shape.Type];
-#ifdef DEBUG
-	assert(func1 && func2);
-#endif
-	Vector3d p1 = func1(Geom1->m_Shape.Object, Dir);
-	Vector3d p2 = func2(Geom2->m_Shape.Object, -Dir);
-	return p1 - p2;
-}
-
-Matrix3d			Geometry::GetInertia(float Mass)
+Matrix3d			Geometry::GetInertia(float Mass) const
 {
 	InertiaFunc func = Geometry::inertiaTable[m_Shape.Type];
 #ifdef DEBUG
@@ -124,7 +130,7 @@ Matrix3d			Geometry::GetInertia(float Mass)
 	return func(m_Shape.Object, Mass);
 }
 
-Matrix3d			Geometry::GetInverseInertia(float Mass)
+Matrix3d			Geometry::GetInverseInertia(float Mass) const
 {
 	return GetInertia(Mass).Inverse();
 }
