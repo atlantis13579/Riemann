@@ -35,18 +35,7 @@
     <ClInclude Include="LinearSystem\SVDDecomposition.h" />
     <ClInclude Include="LinearSystem\GaussSeidelIteration_CPU.h" />
     <ClInclude Include="Maths\Box3d.h" />
-    <ClInclude Include="Geometry\Capsule.h" />
-    <ClInclude Include="Geometry\Convex.h" />
-    <ClInclude Include="Geometry\Cylinder.h" />
-    <ClInclude Include="Geometry\OrientedBox.h" />
-    <ClInclude Include="Geometry\Plane.h" />
-    <ClInclude Include="Geometry\Ray.h" />
-    <ClInclude Include="Geometry\Sphere.h" />
-    <ClInclude Include="Geometry\Triangle.h" />
-    <ClInclude Include="Geometry\AxisAlignedBox.h" />
-    <ClInclude Include="Geometry\BoxShape.h" />
     <ClInclude Include="Geometry\Tetrahedral.h" />
-    <ClInclude Include="Geometry\TriangleMesh.h" />
     <ClInclude Include="LinearSystem\SparseMatrix.h" />
     <ClInclude Include="LinearSystem\DenseMatrix.h" />
     <ClInclude Include="Collision\AABBTree.h" />
@@ -72,7 +61,7 @@
     <ClInclude Include="Collision\DynamicAABBTree.h" />
     <ClInclude Include="CollisionPrimitive\OrientedBox.h" />
     <ClInclude Include="CollisionPrimitive\Capsule.h" />
-    <ClInclude Include="CollisionPrimitive\Convex.h" />
+    <ClInclude Include="CollisionPrimitive\ConvexMesh.h" />
     <ClInclude Include="CollisionPrimitive\Cylinder.h" />
     <ClInclude Include="CollisionPrimitive\Plane.h" />
     <ClInclude Include="CollisionPrimitive\Ray.h" />

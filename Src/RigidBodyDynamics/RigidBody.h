@@ -32,6 +32,7 @@ public:
 
 	Vector3d	Force;
 	Vector3d	Torque;
+	bool		Sleep;
 	bool		Static;
 
 	static RigidBody* CreateRigidBody(Geometry* Geom, const RigidBodyParam &param);

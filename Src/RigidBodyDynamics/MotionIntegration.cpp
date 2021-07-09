@@ -11,7 +11,7 @@ void MotionIntegration::Integrate(std::vector<Geometry*> Entities, float dt)
 		Geometry* Geom = Entities[i];
 		RigidBody* Rigid = (RigidBody*)Geom->GetEntity();
 
-		if (Rigid == nullptr || Rigid->Static)
+		if (Rigid == nullptr || Rigid->Static || Rigid->Sleep)
 		{
 			continue;
 		}
