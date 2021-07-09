@@ -4,15 +4,12 @@
 #include <algorithm>
 #include "AABBPruner.h"
 #include "SparseSpatialHash.h"
-#include "BroadPhase.h"
-#include "NarrowPhase.h"
 
 GeometryQuery::GeometryQuery()
 {
 	m_staticGeometry = nullptr;
 	m_dynamicPruner = nullptr;
 	m_SpatialHashPruner = nullptr;
-	m_BPhase = nullptr;
 }
 
 GeometryQuery::~GeometryQuery()
@@ -35,24 +32,6 @@ GeometryQuery::~GeometryQuery()
 		m_SpatialHashPruner = nullptr;
 	}
 
-	if (m_BPhase)
-	{
-		delete m_BPhase;
-		m_BPhase = nullptr;
-	}
-}
-
-void GeometryQuery::Simulate(float dt)
-{
-	if (m_BPhase)
-	{
-
-	}
-}
-
-void GeometryQuery::CreateBroadPhaseFilter(const char* name)
-{
-	m_BPhase = BroadPhase::CreatSAP();
 }
 
 void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode)

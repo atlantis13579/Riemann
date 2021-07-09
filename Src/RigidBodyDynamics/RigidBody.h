@@ -4,8 +4,9 @@
 #include "../Maths/Vector3d.h"
 #include "../Maths/Matrix3d.h"
 #include "../Maths/Quaternion.h"
+#include "PhysicsEntity.h"
 
-struct RigidBody
+class RigidBody : public PhysicsEntity
 {
 	// Constant quantities
 	float		mass;			// Total Mass

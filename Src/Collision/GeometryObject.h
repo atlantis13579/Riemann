@@ -49,9 +49,9 @@ class Geometry
 	friend class GeometryFactory;
 
 public:
+	Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity = nullptr);
 	~Geometry();
 
-	BoundingBox3d			GetBoundingBoxLocal() const;
 	const BoundingBox3d&	GetBoundingBoxWorld() const;
 
 	void					SetPosition(const Vector3d& Position);
@@ -59,13 +59,15 @@ public:
 	Vector3d				GetPosition() const;
 	void					SetRotation(const Quaternion& Rotation);
 
+	void*					GetEntity();
+
 	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
 	Matrix3d				GetInertia(float Mass);
 	Vector3d				GetSupport(const Vector3d& Dir);
 	static Vector3d			GetSupport(const Geometry* Geom1, const Geometry* Geom2, const Vector3d& Dir);
 
 protected:
-	Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity);\
+	BoundingBox3d			GetBoundingBoxLocal() const;
 
 private:
 	GeometryShape	m_Shape;

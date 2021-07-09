@@ -13,9 +13,12 @@
 #include <windows.h>
 #include "resource.h"
 
+#include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 #include "../Renderer/Renderer.h"
 
 extern void TestMainEntry();
+
+PhysicsWorld* g_World = nullptr;
 
 //--------------------------------------------------------------------------------------
 // Forward declarations
@@ -80,6 +83,9 @@ void UpdateCamera()
 
 void InitScene()
 {
+    PhysicsWorldParam param;
+    g_World = new PhysicsWorld(param);
+
     Vertex1 Grounds_vertices[] =
     {
         { Vector3d(-100.0f, -5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
@@ -165,6 +171,7 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         }
         else
         {
+            g_World->Simulate(0.016f);
             g_Renderer->Render();
         }
     }

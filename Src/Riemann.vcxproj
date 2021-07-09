@@ -38,11 +38,22 @@
     <ClCompile Include="Maths\Bezier.cpp" />
     <ClCompile Include="Maths\Maths.cpp" />
     <ClCompile Include="PositionBasedDynamics\PositionBasedDynamicsSolver.cpp" />
+    <ClCompile Include="RigidBodyDynamics\PhysicsWorld.cpp" />
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CollisionPrimitive\AxisAlignedBox.h" />
+    <ClInclude Include="CollisionPrimitive\Capsule.h" />
+    <ClInclude Include="CollisionPrimitive\Convex.h" />
+    <ClInclude Include="CollisionPrimitive\Cylinder.h" />
+    <ClInclude Include="CollisionPrimitive\OrientedBox.h" />
+    <ClInclude Include="CollisionPrimitive\Plane.h" />
+    <ClInclude Include="CollisionPrimitive\Ray.h" />
+    <ClInclude Include="CollisionPrimitive\Sphere.h" />
+    <ClInclude Include="CollisionPrimitive\Triangle.h" />
+    <ClInclude Include="CollisionPrimitive\TriangleMesh.h" />
     <ClInclude Include="Collision\AABBPruner.h" />
     <ClInclude Include="Collision\AABBTree.h" />
     <ClInclude Include="Collision\AABBTreeInference.h" />
@@ -94,6 +105,8 @@
     <ClInclude Include="Maths\Vector3d.h" />
     <ClInclude Include="Maths\Vector4d.h" />
     <ClInclude Include="PositionBasedDynamics\PositionBasedDynamicsSolver.h" />
+    <ClInclude Include="RigidBodyDynamics\PhysicsEntity.h" />
+    <ClInclude Include="RigidBodyDynamics\PhysicsWorld.h" />
     <ClInclude Include="RigidBodyDynamics\RigidBody.h" />
     <ClInclude Include="Solver\ConjugateGradientSolver.h" />
     <ClInclude Include="Solver\ExponentialIntegrator.h" />

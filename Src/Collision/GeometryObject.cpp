@@ -36,7 +36,7 @@ BoundingBox3d		Geometry::GetBoundingBoxLocal() const
 	return func(m_Shape.Object);
 }
 
-const				BoundingBox3d& Geometry::GetBoundingBoxWorld() const
+const BoundingBox3d& Geometry::GetBoundingBoxWorld() const
 {
 	return m_BoxWorld;
 }
@@ -61,6 +61,11 @@ Vector3d			Geometry::GetPosition() const
 void				Geometry::SetRotation(const Quaternion& Rotation)
 {
 	m_Transform.SetRotation(Rotation);
+}
+
+void*				Geometry::GetEntity()
+{
+	return m_Entity;
 }
 
 bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)

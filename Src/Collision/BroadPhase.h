@@ -2,7 +2,6 @@
 #pragma once
 
 #include <vector>
-#include "../Maths/BoundingBox3d.h"
 
 class Geometry;
 
@@ -23,7 +22,7 @@ public:
 	~BroadPhase() {}
 	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair> *overlaps) = 0;
 
-	static BroadPhase* CreatSAP();
+	static BroadPhase* Create_SAP();
 };
 
 

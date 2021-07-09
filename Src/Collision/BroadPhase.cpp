@@ -26,12 +26,18 @@ public:
 
 	virtual ~BroadPhaseSAPImplementation()
 	{
-		if (m_SAP) delete m_SAP;
+		if (m_SAP)
+		{
+			delete m_SAP;
+		}
 	}
 
 	void SetDirty()
 	{
-		m_Dirty = true;
+		if (m_SAP)
+		{
+			m_SAP->SetDirty();
+		}
 	}
 
 public:
@@ -44,12 +50,6 @@ public:
 		}
 		
 		m_pObjects = &AllObjects;
-
-		if (m_Dirty)
-		{
-			m_SAP->SetDirty();
-		}
-
 		m_SAP->IncrementalPrune(&m_Overlaps);
 
 		overlaps->clear();
@@ -82,15 +82,13 @@ private:
 	}
 
 private:
-	bool						m_Dirty;
 	IncrementalSAP				*m_SAP;
 	std::set<OverlapKey>		m_Overlaps;
-
-	std::vector<Geometry*>* m_pObjects;
+	std::vector<Geometry*>*		m_pObjects;
 };
 
 
-BroadPhase* BroadPhase::CreatSAP()
+BroadPhase* BroadPhase::Create_SAP()
 {
 	return new BroadPhaseSAPImplementation();
 }
