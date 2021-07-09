@@ -9,6 +9,8 @@
 #include "../Src/Maths/Vector3d.h"
 #include "../Src/Maths/Vector4d.h"
 
+class Transform;
+
 struct Vertex1
 {
 	Vector3d Pos;
@@ -24,14 +26,14 @@ public:
 	virtual void Render() = 0;
 
 	virtual void SetCameraLookAt(Vector3d Eye, Vector3d At) = 0;
-	virtual bool AddMesh(const char* Id, const Vertex1* pVerties, int nVerties, const unsigned int* pIndices, int nIndices) = 0;
+	virtual bool AddMesh(const char* Id, Transform* pTrans, const Vertex1* pVerties, int nVerties, const unsigned int* pIndices, int nIndices) = 0;
 	virtual bool UpdateVerties(const char* Id, const Vertex1* pVerties, int nVerties) = 0;
 	virtual bool DeleteMesh(const char* Id) = 0;
 
 	virtual void SetFillMode(bool Wireframe) = 0;
 	virtual void SetDepthMode() = 0;
 
-	virtual void LoadObj(const char* filename) = 0;
+	virtual void LoadObj(const char* filename, Transform* Trans) = 0;
 
 	static Renderer* CreateDX11Renderer(void* hWnd, const char* shader_path);
 };

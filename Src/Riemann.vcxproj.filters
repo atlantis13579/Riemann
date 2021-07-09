@@ -80,9 +80,10 @@
     <ClInclude Include="CollisionPrimitive\Sphere.h" />
     <ClInclude Include="CollisionPrimitive\Triangle.h" />
     <ClInclude Include="CollisionPrimitive\TriangleMesh.h" />
-    <ClInclude Include="RigidBodyDynamics\PhysicsWorld.h" />
+    <ClInclude Include="RigidBodyDynamics\PhysicsWorldRB.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsEntity.h" />
     <ClInclude Include="Maths\Matrix2d.h" />
+    <ClInclude Include="RigidBodyDynamics\MotionIntegration.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -109,6 +110,8 @@
     <ClCompile Include="Collision\GeometryCollection.cpp" />
     <ClCompile Include="Collision\GeometryObject.cpp" />
     <ClCompile Include="Collision\DynamicAABBTree.cpp" />
-    <ClCompile Include="RigidBodyDynamics\PhysicsWorld.cpp" />
+    <ClCompile Include="RigidBodyDynamics\PhysicsWorldRB.cpp" />
+    <ClCompile Include="RigidBodyDynamics\MotionIntegration.cpp" />
+    <ClCompile Include="RigidBodyDynamics\RigidBody.cpp" />
   </ItemGroup>
 </Project>

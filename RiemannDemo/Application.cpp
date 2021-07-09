@@ -13,12 +13,13 @@
 #include <windows.h>
 #include "resource.h"
 
-#include "../Src/RigidBodyDynamics/PhysicsWorld.h"
+#include "../Src/Collision/GeometryObject.h"
+#include "../Src/RigidBodyDynamics/PhysicsWorldRB.h"
 #include "../Renderer/Renderer.h"
 
 extern void TestMainEntry();
 
-PhysicsWorld* g_World = nullptr;
+PhysicsWorldRB* g_World = nullptr;
 
 //--------------------------------------------------------------------------------------
 // Forward declarations
@@ -83,8 +84,9 @@ void UpdateCamera()
 
 void InitScene()
 {
-    PhysicsWorldParam param;
-    g_World = new PhysicsWorld(param);
+    PhysicsWorldRBParam param;
+    RigidBodyParam rp;
+    g_World = new PhysicsWorldRB(param);
 
     Vertex1 Grounds_vertices[] =
     {
@@ -98,7 +100,13 @@ void InitScene()
         2,1,0,
         2,3,0,
     };
-    g_Renderer->AddMesh("Ground", Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));
+
+    rp.mass = 1.0f;
+    rp.Static = true;
+    Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, Grounds_vertices[0].Pos.y, 0), Vector3d::UnitY(), 0);
+    g_World->CreateRigidBody(plane, rp);
+
+    g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));
 
     Vertex1 vertices[] =
     {
@@ -134,7 +142,12 @@ void InitScene()
         7,4,6,
     };
 
-    g_Renderer->AddMesh("Cube", vertices, sizeof(vertices) / sizeof(vertices[0]), indices, sizeof(indices) / sizeof(indices[0]));
+    rp.mass = 1.0f;
+    rp.Static = false;
+    Geometry* aabb = GeometryFactory::CreateAABB(Vector3d(0, 0, 0), Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
+    g_World->CreateRigidBody(aabb, rp);
+
+    g_Renderer->AddMesh("Cube", aabb->GetTransform(), vertices, sizeof(vertices) / sizeof(vertices[0]), indices, sizeof(indices) / sizeof(indices[0]));
 }
 
 //--------------------------------------------------------------------------------------
@@ -202,6 +215,8 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
         break;
 
     case WM_DESTROY:
+        delete g_Renderer;
+        delete g_World;
         PostQuitMessage( 0 );
         break;
 

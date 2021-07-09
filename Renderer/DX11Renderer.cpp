@@ -30,7 +30,7 @@ struct DX11StaticMesh
     ID3D11Buffer* pVertexBuffer = nullptr;
     ID3D11Buffer* pIndexBuffer = nullptr;
     ID3D11Buffer* pConstantBuffer = nullptr;
-    Transform     Trans;
+    Transform*    Trans;
     int           IndexCount = 0;
 
     void Release()
@@ -358,7 +358,7 @@ public:
         m_View = Transform::BuildViewMatrix_LHCoordinateSystem(Eye, At, Up);
     }
 
-    virtual bool AddMesh(const char* Id, const Vertex1* pVerties, int nVerties, const unsigned int* pIndices, int nIndices) override
+    virtual bool AddMesh(const char* Id, Transform *pTrans, const Vertex1* pVerties, int nVerties, const unsigned int* pIndices, int nIndices) override
     {
         HRESULT hr = S_OK;
 
@@ -409,7 +409,7 @@ public:
             return false;
 
         // Initialize the world matrix
-        mesh.Trans.LoadIdentity();
+        mesh.Trans = pTrans;
         mesh.IndexCount = nIndices;
 
         m_AllMesh.push_back(mesh);
@@ -446,7 +446,7 @@ public:
         return false;
     }
 
-    void LoadObj(const char* filename)
+    void LoadObj(const char* filename, Transform* Trans)
     {
         std::vector<tinyobj::shape_t> shapes;
         tinyobj::attrib_t attrib;
@@ -488,7 +488,7 @@ public:
                 vv[i2].Color = Vector4d(normal.x, normal.y, normal.z, 1.0f);
             }
 
-            AddMesh(shapes[i].name.c_str(), &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
+            AddMesh(shapes[i].name.c_str(), Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
         }
 
         return;
@@ -554,7 +554,7 @@ public:
         {
             DX11StaticMesh& mesh = m_AllMesh[i];
 
-            cb.World = mesh.Trans.GetWorldMatrix();
+            cb.World = mesh.Trans->GetWorldMatrix();
             m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
             m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
 

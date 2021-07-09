@@ -41,7 +41,25 @@ public:
 		return *this;
 	}
 
-	TBoundingBox3<T>& operator+=(const TBoundingBox3<T>& rhs)
+	TBoundingBox3<T> operator+(const TVector3<T>& rhs) const
+	{
+		return TBoundingBox3<T>(*this) += rhs;
+	}
+	
+	TBoundingBox3<T>& Extend(const TVector3<T>& rhs)
+	{
+		Min.x = std::min(Min.x, rhs.x);
+		Min.y = std::min(Min.y, rhs.y);
+		Min.z = std::min(Min.z, rhs.z);
+
+		Max.x = std::max(Max.x, rhs.x);
+		Max.y = std::max(Max.y, rhs.y);
+		Max.z = std::max(Max.z, rhs.z);
+
+		return *this;
+	}
+
+	TBoundingBox3<T>& Extend(const TBoundingBox3<T>& rhs)
 	{
 		Min.x = std::min(Min.x, rhs.Min.x);
 		Min.y = std::min(Min.y, rhs.Min.y);
@@ -52,16 +70,6 @@ public:
 		Max.z = std::max(Max.z, rhs.Max.z);
 
 		return *this;
-	}
-
-	TBoundingBox3<T> operator+(const TBoundingBox3<T>& rhs) const
-	{
-		return TBoundingBox3<T>(*this) += rhs;
-	}
-
-	TBoundingBox3<T> operator+(const TVector3<T>& rhs) const
-	{
-		return TBoundingBox3<T>(*this) += rhs;
 	}
 
 	TVector3<T> GetCenter() const
@@ -160,10 +168,10 @@ public:
 		TVector3<T> Center = GetCenter();
 		TVector3<T> Extent = GetExtent();
 
-		TVector3<T> m0 = M.Row(0).xyz();
-		TVector3<T> m1 = M.Row(1).xyz();
-		TVector3<T> m2 = M.Row(2).xyz();
-		TVector3<T> m3 = M.Row(3).xyz();
+		TVector3<T> m0 = M.Column(0).xyz();
+		TVector3<T> m1 = M.Column(1).xyz();
+		TVector3<T> m2 = M.Column(2).xyz();
+		TVector3<T> m3 = M.Column(3).xyz();
 
 		TVector3<T> NewCenter = m0 * Center.x + m1 * Center.y + m2 * Center.z + m3;
 		TVector3<T> NewExtent = (m0 * Extent.x).Abs() + (m1 * Extent.y).Abs() + (m2 * Extent.z).Abs();

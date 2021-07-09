@@ -57,7 +57,7 @@ public:
 	{
 	}
 
-	TVector3<T> xyz()
+	TVector3<T> xyz() const
 	{
 		return TVector3<T>(x, y, z);
 	}
@@ -90,6 +90,11 @@ public:
 	T    SquareLength() const
 	{
 		return x * x + y * y + z * z + w * w;
+	}
+
+	TVector4<T> Abs() const
+	{
+		return TVector4<T>(std::abs(x), std::abs(y), std::abs(z), std::abs(w));
 	}
 
 	TVector4<T>& operator=(const TVector4<T>& v)
@@ -210,6 +215,12 @@ public:
 		float angle = acosf(innerp) * t;
 		TVector4<T> base = (end - start * innerp).Unit();
 		return start * cosf(angle) + base * sinf(angle);
+	}
+
+	static const TVector4<T>& Zero()
+	{
+		static TVector4<T> zero(0, 0, 0, 0);
+		return zero;
 	}
 };
 

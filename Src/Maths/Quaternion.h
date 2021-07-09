@@ -7,26 +7,34 @@
 class Quaternion
 {
 public:
-	float s;
-	Vector3d v;
+	union
+	{
+		struct { float w, x, y, z; };
+		struct { float s; Vector3d v; };
+	};
 
 	Quaternion()
 	{
-		s = 1;
-		v.x = v.y = v.z = 0;
 	}
+
+	Quaternion(const Quaternion& q)
+	{
+		s = q.s;
+		v = q.v;
+	}
+
 	Quaternion(float _s, const Vector3d &_v)
 	{
 		s = _s;
 		v = _v;
 	}
 
-	Quaternion(float _s, float _x, float _y, float _z)
+	Quaternion(float _w, float _x, float _y, float _z)
 	{
-		s = _s;
-		v.x = _x;
-		v.y = _y;
-		v.z = _z;
+		w = _w;
+		x = _x;
+		y = _y;
+		z = _z;
 	}
 
 	Quaternion(const Vector3d &q, float angle)
@@ -42,6 +50,13 @@ public:
 		Quaternion zrot = Quaternion(Vector3d(0, 0, 1), z);
 
 		*this = zrot * yrot * xrot;
+	}
+
+	Quaternion& operator=(const Quaternion& q)
+	{
+		s = q.s;
+		v = q.v;
+		return *this;
 	}
 
 	Quaternion Conjugate() const
@@ -151,6 +166,12 @@ public:
 	{
 		static Quaternion zero(0, 0, 0, 0);
 		return zero;
+	}
+
+	static const Quaternion& UnitW()
+	{
+		static Quaternion unitW(1, 0, 0, 0);
+		return unitW;
 	}
 
 	static const Quaternion & UnitX()

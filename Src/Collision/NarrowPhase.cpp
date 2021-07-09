@@ -16,7 +16,7 @@ public:
 
 	}
 
-	virtual void ProduceCollision(std::vector<OverlapPair>& overlaps, std::vector<ContactPair>* collides) override
+	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactPair>* collides) override
 	{
 		collides->clear();
 		for (size_t i = 0; i < overlaps.size(); ++i)
@@ -43,7 +43,7 @@ private:
 
 };
 
-NarrowPhase* NarrowPhase::Create_GJK_EPA()
+NarrowPhase* NarrowPhase::Create_GJKEPA()
 {
 	return new NarrowPhase_GJK_EPA();
 }

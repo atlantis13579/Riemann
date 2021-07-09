@@ -41,10 +41,9 @@ const BoundingBox3d& Geometry::GetBoundingBoxWorld() const
 	return m_BoxWorld;
 }
 
-void				Geometry::SetPosition(const Vector3d& Position)
+Vector3d			Geometry::GetPositionWorld() const
 {
-	m_Transform.SetTranslation(Position);
-	m_BoxWorld = GetBoundingBoxLocal() + Position;
+	return m_Transform.GetTranslation();
 }
 
 void				Geometry::SetPositionOffset(const Vector3d& Offset)
@@ -53,19 +52,37 @@ void				Geometry::SetPositionOffset(const Vector3d& Offset)
 	SetPosition(World);
 }
 
-Vector3d			Geometry::GetPosition() const
+void				Geometry::SetPosition(const Vector3d& Position)
 {
-	return m_Transform.GetTranslation();
+	m_Transform.SetTranslation(Position);
+	m_BoxWorld = GetBoundingBoxLocal().Transform(m_Transform.GetWorldMatrix());
+	return;
+}
+
+Quaternion			Geometry::GetRotation() const
+{
+	return m_Transform.GetRotation();
 }
 
 void				Geometry::SetRotation(const Quaternion& Rotation)
 {
 	m_Transform.SetRotation(Rotation);
+	m_BoxWorld = GetBoundingBoxLocal().Transform(m_Transform.GetWorldMatrix());
 }
 
 void*				Geometry::GetEntity()
 {
 	return m_Entity;
+}
+
+void				Geometry::SetEntity(void* Entity)
+{
+	m_Entity = Entity;
+}
+
+Transform*			Geometry::GetTransform()
+{
+	return &m_Transform;
 }
 
 bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
@@ -105,6 +122,11 @@ Matrix3d			Geometry::GetInertia(float Mass)
 	assert(func);
 #endif
 	return func(m_Shape.Object, Mass);
+}
+
+Matrix3d			Geometry::GetInverseInertia(float Mass)
+{
+	return GetInertia(Mass).Inverse();
 }
 
 GetAABBFunc			Geometry::getaabbTable[GeometryShapeType::COUNT] = { 0 };

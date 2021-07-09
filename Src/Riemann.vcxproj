@@ -38,7 +38,9 @@
     <ClCompile Include="Maths\Bezier.cpp" />
     <ClCompile Include="Maths\Maths.cpp" />
     <ClCompile Include="PositionBasedDynamics\PositionBasedDynamicsSolver.cpp" />
-    <ClCompile Include="RigidBodyDynamics\PhysicsWorld.cpp" />
+    <ClCompile Include="RigidBodyDynamics\PhysicsWorldRB.cpp" />
+    <ClCompile Include="RigidBodyDynamics\MotionIntegration.cpp" />
+    <ClCompile Include="RigidBodyDynamics\RigidBody.cpp" />
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
@@ -106,8 +108,9 @@
     <ClInclude Include="Maths\Vector3d.h" />
     <ClInclude Include="Maths\Vector4d.h" />
     <ClInclude Include="PositionBasedDynamics\PositionBasedDynamicsSolver.h" />
+    <ClInclude Include="RigidBodyDynamics\MotionIntegration.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsEntity.h" />
-    <ClInclude Include="RigidBodyDynamics\PhysicsWorld.h" />
+    <ClInclude Include="RigidBodyDynamics\PhysicsWorldRB.h" />
     <ClInclude Include="RigidBodyDynamics\RigidBody.h" />
     <ClInclude Include="Solver\ConjugateGradientSolver.h" />
     <ClInclude Include="Solver\ExponentialIntegrator.h" />

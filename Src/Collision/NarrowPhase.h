@@ -24,7 +24,7 @@ class NarrowPhase
 {
 public:
 	~NarrowPhase() {}
-	virtual void ProduceCollision(std::vector<OverlapPair>& overlaps, std::vector<ContactPair>* collides) = 0;
+	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactPair>* collides) = 0;
 
-	static NarrowPhase* Create_GJK_EPA();
+	static NarrowPhase* Create_GJKEPA();
 };

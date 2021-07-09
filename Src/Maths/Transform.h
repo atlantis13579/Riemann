@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Vector3d.h"
+#include "Vector4d.h"
 #include "Matrix3d.h"
 #include "Matrix4d.h"
 #include "Quaternion.h"
@@ -18,25 +19,25 @@ public:
 		m_bWorldMatrixDirty = true;
 		m_bInvWorldMatrixDirty = true;
 		m_Translation = Vector3d::Zero();
-		m_Rotation = Quaternion::Zero();
+		m_Rotation = Quaternion::UnitW();
 		m_Scale = Vector3d::One();
 	}
 
-	const Vector3d&		GetTranslation() const
+	const Vector3d& GetTranslation() const
 	{
 		return m_Translation;
 	}
 
-	const Quaternion&	GetRotation() const
+	const Quaternion& GetRotation() const
 	{
 		return m_Rotation;
 	}
 
-	const Vector3d&	GetScale() const
+	const Vector3d& GetScale() const
 	{
 		return m_Scale;
 	}
-	
+
 	void		SetTranslation(const Vector3d& trans)
 	{
 		m_Translation = trans;
@@ -78,6 +79,20 @@ public:
 		return m_InvWorldMatrix;
 	}
 
+	Vector3d LocalToWorld(const Vector3d& Point)
+	{
+		const Matrix4d& mat = GetWorldMatrix();
+
+		Vector4d hSpace = Vector4d(Point.x, Point.y, Point.z, 1.0f);
+		Vector4d t = Vector4d::Zero();
+
+		for (int r = 0; r < 4; ++r)
+		for (int c = 0; c < 4; ++c)
+		{
+			t[r] += hSpace[c] * mat[r][c];
+		}
+		return Vector3d(t.x, t.y, t.z);
+	}
 
 	static Matrix4d BuildViewMatrix_RHCoordinateSystem(const Vector3d& Eye, const Vector3d& LookAt, const Vector3d& Up)
 	{
