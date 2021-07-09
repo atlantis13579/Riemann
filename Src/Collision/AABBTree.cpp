@@ -108,9 +108,9 @@ static int RayCastGeometry(const Ray& ray, int* prims, int numPrims, Geometry** 
 	if (min_idx != -1)
 	{
 		Result->hit = true;
-		Result->hitPos = ray.PointAt(min_t);
-		Result->Object = ObjectCollection[min_idx];
-		Result->t = min_t;
+		Result->hitPoint = ray.PointAt(min_t);
+		Result->hitGeom = ObjectCollection[min_idx];
+		Result->hitTime = min_t;
 	}
 	return min_idx;
 }
@@ -126,7 +126,7 @@ int  AABBTree::RayCast(const Ray& ray, Geometry **ObjectCollection, RayCastResul
 		return -1;
 	}
 	Result->hit = true;
-	Result->t = t1;
+	Result->hitTime = t1;
 
 	while (p)
 	{
@@ -145,25 +145,25 @@ int  AABBTree::RayCast(const Ray& ray, Geometry **ObjectCollection, RayCastResul
 		{
 			if (t1 < t2)
 			{
-				Result->t = t1;
+				Result->hitTime = t1;
 				p = p1;
 			}
 			else
 			{
-				Result->t = t2;
+				Result->hitTime = t2;
 				p = p2;
 			}
 			continue;
 		}
 		else if (hit1)
 		{
-			Result->t = t1;
+			Result->hitTime = t1;
 			p = p1;
 			continue;
 		}
 		else if (hit2)
 		{
-			Result->t = t2;
+			Result->hitTime = t2;
 			p = p2;
 			continue;
 		}
@@ -180,7 +180,7 @@ int  AABBTree::RayCastBoundingBox(const Ray& ray, float* t) const
 	int hit_obj = RayCast(ray, nullptr, &Result);
 	if (hit_obj >= 0)
 	{
-		*t = Result.t;
+		*t = Result.hitTime;
 	}
 	return hit_obj;
 }

@@ -99,14 +99,29 @@ struct RayCastResult
 	RayCastResult()
 	{
 		hit = false;
-		t = 0.0f;
-		Object = nullptr;
+		hitTime = 0.0f;
+		hitGeom = nullptr;
 	}
 
-	bool  hit;
-	float t;
-	Vector3d hitPos;
-	Vector3d hitNormal;
-	Geometry* Object;
+	bool		hit;
+	float		hitTime;
+	Vector3d	hitPoint;
+	Vector3d	hitNormal;
+	Geometry*	hitGeom;
 };
 
+
+struct SweepResult
+{
+	SweepResult()
+	{
+	}
+};
+
+
+struct OverlapResult
+{
+	OverlapResult()
+	{
+	}
+};
