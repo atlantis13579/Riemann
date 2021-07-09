@@ -98,6 +98,7 @@
     <ClInclude Include="Maths\BoundingBox3d.h" />
     <ClInclude Include="Maths\Array.h" />
     <ClInclude Include="Maths\Bezier.h" />
+    <ClInclude Include="Maths\Frustum.h" />
     <ClInclude Include="Maths\Maths.h" />
     <ClInclude Include="Maths\Matrix2d.h" />
     <ClInclude Include="Maths\Matrix3d.h" />

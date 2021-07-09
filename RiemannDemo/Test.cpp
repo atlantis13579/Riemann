@@ -9,6 +9,7 @@
 #include "../Src/Maths/Maths.h"
 #include "../Src/Maths/Matrix2d.h"
 #include "../Src/Maths/Transform.h"
+#include "../Src/Maths/Frustum.h"
 #include "../Src/CollisionPrimitive/AxisAlignedBox.h"
 #include "../Src/CollisionPrimitive/Plane.h"
 #include "../Src/CollisionPrimitive/Sphere.h"

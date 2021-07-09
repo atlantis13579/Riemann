@@ -84,6 +84,7 @@
     <ClInclude Include="RigidBodyDynamics\PhysicsEntity.h" />
     <ClInclude Include="Maths\Matrix2d.h" />
     <ClInclude Include="RigidBodyDynamics\MotionIntegration.h" />
+    <ClInclude Include="Maths\Frustum.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
