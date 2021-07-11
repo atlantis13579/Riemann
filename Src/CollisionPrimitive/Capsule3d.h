@@ -4,9 +4,9 @@
 #include <math.h>
 #include "../Maths/Maths.h"
 #include "../Maths/Matrix3d.h"
-#include "Sphere.h"
+#include "Sphere3d.h"
 
-class Capsule
+class Capsule3d
 {
 public:
 	Vector3d	X0;
@@ -15,9 +15,9 @@ public:
 	float		Radius;
 
 public:
-	Capsule() {}
+	Capsule3d() {}
 
-	Capsule(const Vector3d& InX1, const Vector3d& InX2, float InRadius)
+	Capsule3d(const Vector3d& InX1, const Vector3d& InX2, float InRadius)
 	{
 		X0 = InX1;
 		Axis = InX2 - InX1;
@@ -136,8 +136,8 @@ public:
 		if (bCheckCaps)
 		{
 			//can avoid some work here, but good enough for now
-			Sphere X1Sphere(X0, Radius);
-			Sphere X2Sphere(X0 + Axis * Length, Radius);
+			Sphere3d X1Sphere(X0, Radius);
+			Sphere3d X2Sphere(X0 + Axis * Length, Radius);
 
 			float Time1, Time2;
 			Vector3d Position1, Position2;

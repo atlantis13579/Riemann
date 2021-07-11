@@ -3,16 +3,16 @@
 
 const float kEpsilonPlane = 0.000001f;
 
-class Plane
+class Plane3d
 {
 public:
 	Vector3d Normal;    //  P * Normal + D = 0
 	float D;
 
 public:
-	Plane() {}
+	Plane3d() {}
 
-	Plane(const Vector3d& InNormal, float InD)
+	Plane3d(const Vector3d& InNormal, float InD)
 	{
 		Normal = InNormal;
 		D = InD;

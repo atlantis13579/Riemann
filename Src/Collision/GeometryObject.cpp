@@ -1,12 +1,12 @@
 
 #include "GeometryObject.h"
 
-#include "../CollisionPrimitive/OrientedBox.h"
-#include "../CollisionPrimitive/Plane.h"
-#include "../CollisionPrimitive/Sphere.h"
-#include "../CollisionPrimitive/Triangle.h"
-#include "../CollisionPrimitive/Cylinder.h"
-#include "../CollisionPrimitive/Capsule.h"
+#include "../CollisionPrimitive/OrientedBox3d.h"
+#include "../CollisionPrimitive/Plane3d.h"
+#include "../CollisionPrimitive/Sphere3d.h"
+#include "../CollisionPrimitive/Triangle3d.h"
+#include "../CollisionPrimitive/Cylinder3d.h"
+#include "../CollisionPrimitive/Capsule3d.h"
 
 Geometry::Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity /*= nullptr*/)
 {
@@ -185,38 +185,38 @@ DestoryFunc			Geometry::destoryTable[GeometryShapeType::COUNT] = { 0 };
 		delete p;																\
 	}																			\
 
-IMPL_GEOMETRY_OBJ(GeometryShapeType::OBB, OrientedBox);
-IMPL_GEOMETRY_OBJ(GeometryShapeType::PLANE, Plane);
-IMPL_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere);
-IMPL_GEOMETRY_OBJ(GeometryShapeType::CAPSULE, Capsule);
-IMPL_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE, Triangle);
+IMPL_GEOMETRY_OBJ(GeometryShapeType::OBB, OrientedBox3d);
+IMPL_GEOMETRY_OBJ(GeometryShapeType::PLANE, Plane3d);
+IMPL_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere3d);
+IMPL_GEOMETRY_OBJ(GeometryShapeType::CAPSULE, Capsule3d);
+IMPL_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE, Triangle3d);
 
 Geometry* GeometryFactory::CreateOBB(const Vector3d& Position, const Vector3d& Bmin, const Vector3d& Bmax)
 {
-	OrientedBox* shape = new OrientedBox(Bmin, Bmax);
+	OrientedBox3d* shape = new OrientedBox3d(Bmin, Bmax);
 	return new Geometry(Position, GeometryShapeType::OBB, shape, nullptr);
 }
 
 Geometry* GeometryFactory::CreatePlane(const Vector3d& Position, const Vector3d& Normal, float D)
 {
-	Plane* shape = new Plane(Normal, D);
+	Plane3d* shape = new Plane3d(Normal, D);
 	return new Geometry(Position, GeometryShapeType::PLANE, shape, nullptr);
 }
 
 Geometry* GeometryFactory::CreateSphere(const Vector3d& Position, const Vector3d& Center, float Radius)
 {
-	Sphere* shape = new Sphere(Center, Radius);
+	Sphere3d* shape = new Sphere3d(Center, Radius);
 	return new Geometry(Position, GeometryShapeType::SPHERE, shape, nullptr);
 }
 
 Geometry* GeometryFactory::CreateCapsule(const Vector3d& Position, const Vector3d& X1, const Vector3d& X2, float Radius)
 {
-	Capsule* shape = new Capsule(X1, X2, Radius);
+	Capsule3d* shape = new Capsule3d(X1, X2, Radius);
 	return new Geometry(Position, GeometryShapeType::CAPSULE, shape, nullptr);
 }
 
 Geometry* GeometryFactory::CreateTriangle(const Vector3d& Position, const Vector3d& A, const Vector3d& B, const Vector3d& C)
 {
-	Triangle* shape = new Triangle(A, B, C);
+	Triangle3d* shape = new Triangle3d(A, B, C);
 	return new Geometry(Position, GeometryShapeType::TRIANGLE, shape, nullptr);
 }

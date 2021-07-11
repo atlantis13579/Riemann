@@ -28,7 +28,6 @@
     <ClCompile Include="Collision\GeometryCollection.cpp" />
     <ClCompile Include="Collision\GeometryObject.cpp" />
     <ClCompile Include="Collision\GeometryQuery.cpp" />
-    <ClCompile Include="Collision\Minkowski.cpp" />
     <ClCompile Include="Collision\NarrowPhase.cpp" />
     <ClCompile Include="Collision\SparseSpatialHash.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
@@ -47,14 +46,14 @@
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CollisionPrimitive\OrientedBox.h" />
-    <ClInclude Include="CollisionPrimitive\Capsule.h" />
+    <ClInclude Include="CollisionPrimitive\OrientedBox3d.h" />
+    <ClInclude Include="CollisionPrimitive\Capsule3d.h" />
     <ClInclude Include="CollisionPrimitive\ConvexMesh.h" />
-    <ClInclude Include="CollisionPrimitive\Cylinder.h" />
-    <ClInclude Include="CollisionPrimitive\Plane.h" />
-    <ClInclude Include="CollisionPrimitive\Ray.h" />
-    <ClInclude Include="CollisionPrimitive\Sphere.h" />
-    <ClInclude Include="CollisionPrimitive\Triangle.h" />
+    <ClInclude Include="CollisionPrimitive\Cylinder3d.h" />
+    <ClInclude Include="CollisionPrimitive\Plane3d.h" />
+    <ClInclude Include="CollisionPrimitive\Ray3d.h" />
+    <ClInclude Include="CollisionPrimitive\Sphere3d.h" />
+    <ClInclude Include="CollisionPrimitive\Triangle3d.h" />
     <ClInclude Include="CollisionPrimitive\TriangleMesh.h" />
     <ClInclude Include="Collision\AABBPruner.h" />
     <ClInclude Include="Collision\AABBTree.h" />
@@ -71,6 +70,7 @@
     <ClInclude Include="Collision\NarrowPhase.h" />
     <ClInclude Include="Collision\QuadTree.h" />
     <ClInclude Include="Collision\SAP_Incremental.h" />
+    <ClInclude Include="Collision\Simplex.h" />
     <ClInclude Include="Collision\SparseSpatialHash.h" />
     <ClInclude Include="Collision\SAP.h" />
     <ClInclude Include="Geometry\ConvexHull2D.h" />

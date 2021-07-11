@@ -59,14 +59,14 @@
     <ClInclude Include="Collision\SAP_Incremental.h" />
     <ClInclude Include="Collision\GeometryObject.h" />
     <ClInclude Include="Collision\DynamicAABBTree.h" />
-    <ClInclude Include="CollisionPrimitive\OrientedBox.h" />
-    <ClInclude Include="CollisionPrimitive\Capsule.h" />
+    <ClInclude Include="CollisionPrimitive\OrientedBox3d.h" />
+    <ClInclude Include="CollisionPrimitive\Capsule3d.h" />
     <ClInclude Include="CollisionPrimitive\ConvexMesh.h" />
-    <ClInclude Include="CollisionPrimitive\Cylinder.h" />
-    <ClInclude Include="CollisionPrimitive\Plane.h" />
-    <ClInclude Include="CollisionPrimitive\Ray.h" />
-    <ClInclude Include="CollisionPrimitive\Sphere.h" />
-    <ClInclude Include="CollisionPrimitive\Triangle.h" />
+    <ClInclude Include="CollisionPrimitive\Cylinder3d.h" />
+    <ClInclude Include="CollisionPrimitive\Plane3d.h" />
+    <ClInclude Include="CollisionPrimitive\Ray3d.h" />
+    <ClInclude Include="CollisionPrimitive\Sphere3d.h" />
+    <ClInclude Include="CollisionPrimitive\Triangle3d.h" />
     <ClInclude Include="CollisionPrimitive\TriangleMesh.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsWorldRB.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsEntity.h" />
@@ -74,6 +74,7 @@
     <ClInclude Include="RigidBodyDynamics\MotionIntegration.h" />
     <ClInclude Include="Maths\Frustum.h" />
     <ClInclude Include="Collision\Minkowski.h" />
+    <ClInclude Include="Collision\Simplex.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -103,6 +104,5 @@
     <ClCompile Include="RigidBodyDynamics\PhysicsWorldRB.cpp" />
     <ClCompile Include="RigidBodyDynamics\MotionIntegration.cpp" />
     <ClCompile Include="RigidBodyDynamics\RigidBody.cpp" />
-    <ClCompile Include="Collision\Minkowski.cpp" />
   </ItemGroup>
 </Project>

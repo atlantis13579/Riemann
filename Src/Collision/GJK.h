@@ -35,7 +35,7 @@ public:
 		int			dimension;
 	};
 
-	Minkowski*		m_Shape;
+	MinkowskiSum*		m_Shape;
 	Simplex*		m_Simplex;
 	Simplex			m_Simplices[2];
 	Vertex			m_store[4];
@@ -48,7 +48,7 @@ public:
 		memset(this, 0, sizeof(GJK));
 	}
 
-	GJK_status Evaluate(Minkowski* shape, const Vector3d& Guess)
+	GJK_status Evaluate(MinkowskiSum* shape, const Vector3d& Guess)
 	{
 		m_Shape = shape;
 

@@ -3,12 +3,12 @@
 
 #include "../Maths/Vector3d.h"
 
-class Ray
+class Ray3d
 {
 public:
-	Ray() {}
+	Ray3d() {}
 
-	Ray(const Vector3d& InOrigin, const Vector3d& InDir, bool bNormalize = false)
+	Ray3d(const Vector3d& InOrigin, const Vector3d& InDir, bool bNormalize = false)
 	{
 		Origin = InOrigin;
 		Dir = InDir;

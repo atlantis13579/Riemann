@@ -2,7 +2,7 @@
 #pragma once
 
 #include "../Maths/Box3d.h"
-#include "../CollisionPrimitive/Ray.h"
+#include "../CollisionPrimitive/Ray3d.h"
 #include "AABBTreeOffline.h"
 
 struct RayCastResult;
@@ -21,8 +21,8 @@ public:
 	void StaticBuild(AABBTreeBuildData& params);
 
 	int	 Traverse(const Vector3d& Point) const;
-	int  RayCast(const Ray& ray, Geometry** ObjectCollection, RayCastResult *Result) const;
-	int  RayCastBoundingBox(const Ray& ray, float* t) const;
+	int  RayCast(const Ray3d& ray, Geometry** ObjectCollection, RayCastResult *Result) const;
+	int  RayCastBoundingBox(const Ray3d& ray, float* t) const;
 
 private:
 	void InitAABBTreeBuild(AABBTreeBuildData& params);

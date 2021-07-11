@@ -83,11 +83,11 @@ private:
 	void*			m_Entity;
 
 public:
-	DECL_GEOMETRY_OBJ(OrientedBox);
-	DECL_GEOMETRY_OBJ(Plane);
-	DECL_GEOMETRY_OBJ(Sphere);
-	DECL_GEOMETRY_OBJ(Triangle);
-	DECL_GEOMETRY_OBJ(Capsule);
+	DECL_GEOMETRY_OBJ(OrientedBox3d);
+	DECL_GEOMETRY_OBJ(Plane3d);
+	DECL_GEOMETRY_OBJ(Sphere3d);
+	DECL_GEOMETRY_OBJ(Triangle3d);
+	DECL_GEOMETRY_OBJ(Capsule3d);
 
 	static GetAABBFunc		getaabbTable[GeometryShapeType::COUNT];
 	static RayCastFunc		raycastTable[GeometryShapeType::COUNT];

@@ -3,13 +3,13 @@
 
 #include "../Maths/Vector3d.h"
 
-class Triangle
+class Triangle3d
 {
 public:
 	Vector3d A, B, C;
 
 public:
-	Triangle(const Vector3d& InA, const Vector3d& InB, const Vector3d& InC)
+	Triangle3d(const Vector3d& InA, const Vector3d& InB, const Vector3d& InC)
 	{
 		A = InA;
 		B = InB;

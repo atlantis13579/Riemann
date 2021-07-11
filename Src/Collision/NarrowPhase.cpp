@@ -21,6 +21,37 @@ struct PenetrationResults
 };
 
 
+class GeometrySum : public MinkowskiSum
+{
+public:
+	GeometrySum() {}
+	GeometrySum(Geometry* _g1, Geometry* _g2)
+	{
+		Geom1 = _g1;
+		Geom2 = _g2;
+	}
+
+	Geometry* Geom1;
+	Geometry* Geom2;
+
+	Vector3d Support1(const Vector3d& Dir)
+	{
+		return Geom1->GetSupportWorld(Dir);
+	}
+
+	Vector3d Support2(const Vector3d& Dir)
+	{
+		return Geom2->GetSupportWorld(Dir);
+	}
+
+	virtual Vector3d Support(const Vector3d& Dir) override
+	{
+		Vector3d support1 = Support1(Dir);
+		Vector3d support2 = Support2(-Dir);
+		return support1 - support2;
+	}
+};
+
 class NarrowPhase_GJKEPA : public NarrowPhase
 {
 public:
@@ -56,7 +87,7 @@ public:
 		result.witnessesInFirstLocal[0] = result.witnessesInFirstLocal[1] = result.witnessInGlobal[0] = result.witnessInGlobal[1] = Vector3d::Zero();
 		result.status = PenetrationResults::Separated;
 
-		Minkowski shape(Geom1, Geom2);
+		GeometrySum shape(Geom1, Geom2);
 
 		GJK gjk;
 		GJK_status gjk_status = gjk.Evaluate(&shape, guess * -1);

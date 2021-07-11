@@ -4,14 +4,14 @@
 #include "../Maths/Matrix3d.h"
 #include "../Maths/Box3d.h"
 
-class OrientedBox
+class OrientedBox3d
 {
 public:
 	Vector3d Min;
 	Vector3d Max;
 
 public:
-	OrientedBox(const Vector3d& Bmin, const Vector3d& Bmax)
+	OrientedBox3d(const Vector3d& Bmin, const Vector3d& Bmax)
 	{
 		Min = Bmin;
 		Max = Bmax;

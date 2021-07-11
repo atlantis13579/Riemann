@@ -29,7 +29,7 @@ void AABBPruner::BuildAABB(const std::vector<Geometry*>& Objects, int nPrimitive
 
 bool AABBPruner::RayCast(const Vector3d& Origin, const Vector3d& Dir, RayCastResult* Result)
 {
-	Ray ray(Origin, Dir);
+	Ray3d ray(Origin, Dir);
 	Geometry** pp = &m_Objects[0];
 	return AABBTree::RayCast(ray, pp, Result);
 }

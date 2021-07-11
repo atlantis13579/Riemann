@@ -4,16 +4,16 @@
 #include <math.h>
 #include "../Maths/Matrix3d.h"
 
-class Sphere
+class Sphere3d
 {
 public:
 	Vector3d Center;
 	float Radius;
 
 public:
-	Sphere() {}
+	Sphere3d() {}
 
-	Sphere(const Vector3d& InCenter, float InRadius)
+	Sphere3d(const Vector3d& InCenter, float InRadius)
 	{
 		Center = InCenter;
 		Radius = InRadius;

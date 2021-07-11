@@ -4,16 +4,16 @@
 #include <math.h>
 #include "../Maths/Matrix3d.h"
 
-class Cylinder
+class Cylinder3d
 {
 public:
 	float Radius;
 	float Height;
 
 public:
-	Cylinder() {}
+	Cylinder3d() {}
 
-	Cylinder(float InRadius, float InHeight)
+	Cylinder3d(float InRadius, float InHeight)
 	{
 		Radius = InRadius;
 		Height = InHeight;

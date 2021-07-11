@@ -10,13 +10,13 @@
 #include "../Src/Maths/Matrix2d.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Frustum.h"
-#include "../Src/CollisionPrimitive/OrientedBox.h"
-#include "../Src/CollisionPrimitive/Plane.h"
-#include "../Src/CollisionPrimitive/Sphere.h"
-#include "../Src/CollisionPrimitive/Ray.h"
-#include "../Src/CollisionPrimitive/Triangle.h"
-#include "../Src/CollisionPrimitive/Cylinder.h"
-#include "../Src/CollisionPrimitive/Capsule.h"
+#include "../Src/CollisionPrimitive/OrientedBox3d.h"
+#include "../Src/CollisionPrimitive/Plane3d.h"
+#include "../Src/CollisionPrimitive/Sphere3d.h"
+#include "../Src/CollisionPrimitive/Ray3d.h"
+#include "../Src/CollisionPrimitive/Triangle3d.h"
+#include "../Src/CollisionPrimitive/Cylinder3d.h"
+#include "../Src/CollisionPrimitive/Capsule3d.h"
 #include "../Src/Collision/AABBTree.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Collision/SAP.h"
@@ -46,7 +46,7 @@ void TestAABBTree()
 	assert(p == 1);
 
 	float t;
-	Ray ray(Vector3d(0.5f, 0.5f, 100.0f), Vector3d(0.0f, 0.0f, -1.0f));
+	Ray3d ray(Vector3d(0.5f, 0.5f, 100.0f), Vector3d(0.0f, 0.0f, -1.0f));
 	int hit = tree.RayCastBoundingBox(ray, &t);
 	assert(hit >= 0);
 	Vector3d hit_pos = ray.PointAt(t);
