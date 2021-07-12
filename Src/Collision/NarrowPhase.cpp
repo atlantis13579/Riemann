@@ -18,12 +18,12 @@ public:
 	Geometry* Geom1;
 	Geometry* Geom2;
 
-	Vector3d Support1(const Vector3d& Dir)
+	inline Vector3d Support1(const Vector3d& Dir)
 	{
 		return Geom1->GetSupportWorld(Dir);
 	}
 
-	Vector3d Support2(const Vector3d& Dir)
+	inline Vector3d Support2(const Vector3d& Dir)
 	{
 		return Geom2->GetSupportWorld(Dir);
 	}
@@ -66,8 +66,8 @@ public:
 
 	bool Penetration(Geometry* Geom1, Geometry* Geom2, ContactResult& result)
 	{
-		Vector3d position1 = Geom1->GetPositionWorld();
-		Vector3d position2 = Geom2->GetPositionWorld();
+		Vector3d position1 = Geom1->GetBoundingBoxWorld().GetCenter();
+		Vector3d position2 = Geom2->GetBoundingBoxWorld().GetCenter();
 		Vector3d guess = position1 - position2;
 
 		// result
@@ -77,7 +77,7 @@ public:
 		GeometrySum shape(Geom1, Geom2);
 
 		GJK gjk;
-		GJK_status gjk_status = gjk.Solve(&shape, guess);
+		GJK_status gjk_status = gjk.Solve(&shape, -guess);
 
 		switch (gjk_status)
 		{

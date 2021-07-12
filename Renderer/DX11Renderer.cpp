@@ -8,8 +8,8 @@
 #include <directxmath.h>
 #include <directxcolors.h>
 
+#include "../Src/CollisionPrimitive/TriangleMesh.h"
 #include "../Src/Maths/Transform.h"
-#include "tiny_obj_loader.h"
 
 using namespace DirectX;
 
@@ -448,48 +448,28 @@ public:
 
     void LoadObj(const char* filename, Transform* Trans)
     {
-        std::vector<tinyobj::shape_t> shapes;
-        tinyobj::attrib_t attrib;
-        tinyobj::LoadObj(&attrib, &shapes, nullptr, nullptr, nullptr, filename);
+        TriangleMesh mesh;
+        mesh.LoadObjfile(filename);
+        mesh.CalculateNormals();
 
         std::vector<Vertex1> vv;
-        for (size_t i = 0; i < attrib.vertices.size(); i+=3)
+        for (unsigned int i = 0; i < mesh.GetNumVerties(); ++i)
         {
             Vertex1 v;
-            v.Pos = Vector3d(attrib.vertices[i], attrib.vertices[i+1], attrib.vertices[i+2]);
+            v.Pos = Vector3d(mesh.Verties[i]);
             v.Color = Vector4d(1.0, 0.0f, 1.0f, 1.0f);
             vv.push_back(v);
         }
 
-        for (size_t i = 0; i < shapes.size(); ++i)
+        std::vector<unsigned int> vi;
+        for (unsigned int i = 0; i < mesh.GetNumTriangles(); ++i)
         {
-            std::vector<unsigned int> vi;
-            std::vector<tinyobj::index_t>& indices = shapes[i].mesh.indices;
-
-            for (size_t j = 0; j < indices.size(); j += 3)
-            {
-                int i0 = indices[j].vertex_index;
-                int i1 = indices[j+1].vertex_index;
-                int i2 = indices[j+2].vertex_index;
-
-                vi.push_back(i0);
-                vi.push_back(i1);
-                vi.push_back(i2);
-
-                Vector3d v0 = Vector3d(attrib.vertices[3 * i0], attrib.vertices[3 * i0 + 1], attrib.vertices[3 * i0 + 2]);
-                Vector3d v1 = Vector3d(attrib.vertices[3 * i1], attrib.vertices[3 * i1 + 1], attrib.vertices[3 * i1 + 2]);
-                Vector3d v2 = Vector3d(attrib.vertices[3 * i2], attrib.vertices[3 * i2 + 1], attrib.vertices[3 * i2 + 2]);
-            
-                Vector3d normal = (v2 - v0).Cross(v1 - v0);
-                normal.Normalize();
-                normal = Vector3d(0.5f, 0.5f, 0.5f) + normal * 0.5f;
-                vv[i0].Color = Vector4d(normal.x, normal.y, normal.z, 1.0f);
-                vv[i1].Color = Vector4d(normal.x, normal.y, normal.z, 1.0f);
-                vv[i2].Color = Vector4d(normal.x, normal.y, normal.z, 1.0f);
-            }
-
-            AddMesh(shapes[i].name.c_str(), Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
+            vi.push_back(mesh.Indices[3 * i + 0]);
+            vi.push_back(mesh.Indices[3 * i + 1]);
+            vi.push_back(mesh.Indices[3 * i + 2]);
         }
+
+        AddMesh(mesh.ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
 
         return;
 
