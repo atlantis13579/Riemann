@@ -31,4 +31,7 @@ private:
 	GeometryQuery*	m_GeometryQuery;
 	BroadPhase*		m_BPhase;
 	NarrowPhase*	m_NPhase;
+
+	// Global Physics parameters
+	Vector3d		m_Gravity;
 };

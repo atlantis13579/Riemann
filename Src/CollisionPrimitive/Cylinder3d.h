@@ -7,19 +7,29 @@
 class Cylinder3d
 {
 public:
-	float Radius;
-	float Height;
+	float		Radius;
+	float		Height;
+	Vector3d	X0, X1;
 
 public:
 	Cylinder3d() {}
 
-	Cylinder3d(float InRadius, float InHeight)
+	Cylinder3d(float _Radius, const Vector3d& _X0, const Vector3d& _X1)
 	{
-		Radius = InRadius;
-		Height = InHeight;
+		Radius = _Radius;
+		Height = (_X0 - _X1).Length();
+		X0 = _X0;
+		X1 = _X1;
 	}
 
 public:
+
+
+	inline float GetHeight() const
+	{
+		return Height;
+	}
+
 	float GetVolume() const
 	{
 		return GetVolume(Radius, Height);

@@ -13,6 +13,8 @@ PhysicsWorldRB::PhysicsWorldRB(const PhysicsWorldRBParam& param)
 	m_BPhase = BroadPhase::Create_SAP();
 	m_NPhase = NarrowPhase::Create_GJKEPA();
 	m_GeometryQuery = new GeometryQuery;
+
+	m_Gravity = param.Gravity;
 }
 
 PhysicsWorldRB::~PhysicsWorldRB()
@@ -52,10 +54,10 @@ void		PhysicsWorldRB::Simulate(float dt)
 		m_BPhase->ProduceOverlaps(m_Entities, &overlaps);
 	}
 
-	std::vector<ContactPair> collides;
+	std::vector<ContactManifold> contacts;
 	if (m_NPhase)
 	{
-		m_NPhase->CollisionDetection(overlaps, &collides);
+		m_NPhase->CollisionDetection(overlaps, &contacts);
 	}
 
 }

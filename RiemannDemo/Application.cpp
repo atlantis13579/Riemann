@@ -85,12 +85,13 @@ void UpdateCamera()
 void InitScene()
 {
     PhysicsWorldRBParam param;
+    param.Gravity = Vector3d(0, -0.0098f, 0);
     RigidBodyParam rp;
     g_World = new PhysicsWorldRB(param);
 
     Vertex1 Grounds_vertices[] =
     {
-        { Vector3d(-100.0f, -5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
+        { Vector3d(-100.0f,-5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
         { Vector3d(100.0f, -5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
         { Vector3d(100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
         { Vector3d(-100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
@@ -103,7 +104,7 @@ void InitScene()
 
     rp.mass = 1.0f;
     rp.Static = true;
-    Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, Grounds_vertices[0].Pos.y, 0), Vector3d::UnitY(), 0);
+    Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, 0, 0), Vector3d::UnitY(), -Grounds_vertices[0].Pos.y);
     g_World->CreateRigidBody(plane, rp);
 
     g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));

@@ -17,6 +17,5 @@ RigidBody* RigidBody::CreateRigidBody(Geometry* Geom, const RigidBodyParam& para
 
 	// TODO, Temp
 	Rigid->L = Vector3d(0.10f, 0.01f, 0.0f);
-	Rigid->Force = Vector3d(0.0f, -0.0098f, 0.0f);
 	return Rigid;
 }

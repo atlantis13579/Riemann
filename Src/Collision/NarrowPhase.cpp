@@ -1,25 +1,9 @@
 
 #include "NarrowPhase.h"
+#include "Contact.h"
 #include "GeometryObject.h"
 #include "EPA.h"
 #include "GJK.h"
-
-struct PenetrationResults
-{
-	enum eStatus
-	{
-		Separated,   // Shapes doesnt penetrate	
-		Penetrating, // Shapes are penetrating	
-		GJK_Failed,  // GJK phase fail, no big issue, shapes are probably just touching
-		EPA_Failed   // EPA phase fail, bigger problem, need to save parameters, and debug
-	} status;
-
-	Vector3d witnessInGlobal[2];
-	Vector3d witnessesInFirstLocal[2];
-	Vector3d normal;
-	float distance;
-};
-
 
 class GeometrySum : public MinkowskiSum
 {
@@ -64,12 +48,12 @@ public:
 
 	}
 
-	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactPair>* collides) override
+	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold>* contact) override
 	{
-		collides->clear();
+		contact->clear();
 		for (size_t i = 0; i < overlaps.size(); ++i)
 		{
-			PenetrationResults result;
+			ContactResult result;
 			if (Penetration(overlaps[i].Geom1, overlaps[i].Geom2, result))
 			{
 
@@ -77,20 +61,22 @@ public:
 		}
 	}
 
-	bool Penetration(Geometry* Geom1, Geometry* Geom2, PenetrationResults& result)
+	bool Penetration(Geometry* Geom1, Geometry* Geom2, ContactResult& result)
 	{
 		Vector3d position1 = Geom1->GetPositionWorld();
 		Vector3d position2 = Geom2->GetPositionWorld();
 		Vector3d guess = position1 - position2;
 
 		// result
-		result.witnessesInFirstLocal[0] = result.witnessesInFirstLocal[1] = result.witnessInGlobal[0] = result.witnessInGlobal[1] = Vector3d::Zero();
-		result.status = PenetrationResults::Separated;
+		result.Geom1 = Geom1;
+		result.Geom2 = Geom2;
+		result.WitnessLocal1 = result.WitnessLocal2 = result.WitnessWorld1 = result.WitnessWorld2 = Vector3d::Zero();
+		result.status = ContactResult::Separated;
 
 		GeometrySum shape(Geom1, Geom2);
 
 		GJK gjk;
-		GJK_status gjk_status = gjk.Evaluate(&shape, -guess);
+		GJK_status gjk_status = gjk.Solve(&shape, -guess);
 
 		switch (gjk_status)
 		{
@@ -98,7 +84,7 @@ public:
 		case GJK_status::Inside:
 		{
 			EPA epa;
-			EPA_status epa_status = epa.Evaluate(gjk.cs, &shape, -guess);
+			EPA_status epa_status = epa.Solve(gjk.cs, &shape, -guess);
 			if (epa_status != EPA_status::Failed)
 			{
 				Vector3d w0 = Vector3d(0, 0, 0);
@@ -106,26 +92,26 @@ public:
 				{
 					w0 = w0 + shape.Support1(epa.m_result.v[i].d) * epa.m_result.w[i];
 				}
-				Matrix4d wtrs1 = Geom1->GetInverseWorldMatrix();
-				result.status = PenetrationResults::Penetrating;
-				result.witnessesInFirstLocal[0] = Transform::TransformPosition(wtrs1, w0);
+				Matrix4d invWorld = Geom1->GetInverseWorldMatrix();
+				result.status = ContactResult::Penetrating;
+				result.WitnessLocal1 = Transform::TransformPosition(invWorld, w0);
 				Vector3d secondObjectPointInFirstObject = w0 - epa.m_normal * epa.m_depth;
-				result.witnessesInFirstLocal[1] = Transform::TransformPosition(wtrs1, secondObjectPointInFirstObject);
-				result.witnessInGlobal[0] = w0;
-				result.witnessInGlobal[1] = secondObjectPointInFirstObject;
-				result.normal = epa.m_normal;
-				result.distance = epa.m_depth;
+				result.WitnessLocal2 = Transform::TransformPosition(invWorld, secondObjectPointInFirstObject);
+				result.WitnessWorld1 = w0;
+				result.WitnessWorld2 = secondObjectPointInFirstObject;
+				result.Normal = epa.m_normal;
+				result.PenetrationDistance = epa.m_depth;
 				return true;
 			}
 			else
 			{
-				result.status = PenetrationResults::EPA_Failed;
+				result.status = ContactResult::EPA_Failed;
 			}
 
 		}
 		case GJK_status::Failed:
 		{
-			result.status = PenetrationResults::GJK_Failed;
+			result.status = ContactResult::GJK_Failed;
 		}
 		default:
 		{

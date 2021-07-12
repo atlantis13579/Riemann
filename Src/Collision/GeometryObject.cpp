@@ -59,6 +59,11 @@ void				Geometry::SetPositionWorld(const Vector3d& Position)
 	return;
 }
 
+Matrix3d			Geometry::GetRotationMatrix() const
+{
+	return m_Transform.GetRotationMatrix();
+}
+
 Quaternion			Geometry::GetRotation() const
 {
 	return m_Transform.GetRotation();

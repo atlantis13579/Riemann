@@ -28,6 +28,11 @@ public:
 		return m_Translation;
 	}
 
+	Matrix3d GetRotationMatrix() const
+	{
+		return m_Rotation.ToRotationMatrix();
+	}
+
 	const Quaternion& GetRotation() const
 	{
 		return m_Rotation;

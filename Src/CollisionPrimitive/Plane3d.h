@@ -79,6 +79,7 @@ public:
 		const float kMaxBV = 10000000.0f;
 		const float kVerySmallTickness = 0.00001f;
 		Box3d Box(-kMaxBV, kMaxBV);
+
 		if (ParallelToXY())
 		{
 			if (Normal.z > 0.0001f)

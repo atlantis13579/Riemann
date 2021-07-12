@@ -40,11 +40,45 @@ public:
 		int e[3];
 		int pass;
 	};
-	struct List
+	class List
 	{
+	public:
 		Face* root;
 		int count;
 		List() : root(0), count(0) {}
+
+		inline void Append(Face* face)
+		{
+			face->l[0] = 0;
+			face->l[1] = root;
+			if (root) root->l[0] = face;
+			root = face;
+			++count;
+		}
+
+		inline void Remove(Face* face)
+		{
+			if (face->l[1]) face->l[1]->l[0] = face->l[0];
+			if (face->l[0]) face->l[0]->l[1] = face->l[1];
+			if (face == root) root = face->l[1];
+			--count;
+		}
+
+		Face* FindBest()
+		{
+			Face* minf = root;
+			float mind = minf->d * minf->d;
+			for (Face* f = minf->l[1]; f; f = f->l[1])
+			{
+				const float sqd = f->d * f->d;
+				if (sqd < mind)
+				{
+					minf = f;
+					mind = sqd;
+				}
+			}
+			return minf;
+		}
 	};
 	struct sHorizon
 	{
@@ -72,19 +106,19 @@ public:
 		m_nextsv = 0;
 		for (int i = 0; i < EPA_MAX_FACES; ++i)
 		{
-			Append(m_stock, &m_fc_store[EPA_MAX_FACES - i - 1]);
+			m_stock.Append(&m_fc_store[EPA_MAX_FACES - i - 1]);
 		}
 	}
 
-	EPA_status Evaluate(Simplex& simplex, MinkowskiSum *Shape, Vector3d InitGuess)
+	EPA_status Solve(Simplex& simplex, MinkowskiSum *Shape, Vector3d InitGuess)
 	{
 		if ((simplex.dimension > 1) && simplex.EncloseOrigin())
 		{
 			while (m_hull.root)
 			{
 				Face* f = m_hull.root;
-				Remove(m_hull, f);
-				Append(m_stock, f);
+				m_hull.Remove(f);
+				m_stock.Append(f);
 			}
 			m_status = EPA_status::Valid;
 			m_nextsv = 0;
@@ -103,7 +137,7 @@ public:
 							  NewFace(&simplex.v[0], &simplex.v[2], &simplex.v[3], true) };
 			if (m_hull.count == 4)
 			{
-				Face* best = FindBest();
+				Face* best = m_hull.FindBest();
 				Face outer = *best;
 				int pass = 0;
 				int iterations = 0;
@@ -131,16 +165,14 @@ public:
 						{
 							for (int j = 0; (j < 3) && valid; ++j)
 							{
-								valid &= Expand(pass, w,
-									best->f[j], best->e[j],
-									horizon);
+								valid &= Expand(pass, w, best->f[j], best->e[j], horizon);
 							}
 							if (valid && (horizon.nf >= 3))
 							{
 								Bind(horizon.cf, 1, horizon.ff, 2);
-								Remove(m_hull, best);
-								Append(m_stock, best);
-								best = FindBest();
+								m_hull.Remove(best);
+								m_stock.Append(best);
+								best = m_hull.FindBest();
 								outer = *best;
 							}
 							else
@@ -201,23 +233,6 @@ public:
 		fb->f[eb] = fa;
 	}
 
-	static inline void Append(List& list, Face* face)
-	{
-		face->l[0] = 0;
-		face->l[1] = list.root;
-		if (list.root) list.root->l[0] = face;
-		list.root = face;
-		++list.count;
-	}
-
-	static inline void Remove(List& list, Face* face)
-	{
-		if (face->l[1]) face->l[1]->l[0] = face->l[0];
-		if (face->l[0]) face->l[0]->l[1] = face->l[1];
-		if (face == list.root) list.root = face->l[1];
-		--list.count;
-	}
-
 	bool GetEdgeDist(Face* face, Simplex::Vertex* a, Simplex::Vertex* b, float& dist)
 	{
 		Vector3d ba = b->p - a->p;
@@ -263,8 +278,8 @@ public:
 		if (m_stock.root)
 		{
 			Face* face = m_stock.root;
-			Remove(m_stock, face);
-			Append(m_hull, face);
+			m_stock.Remove(face);
+			m_hull.Append(face);
 			face->pass = 0;
 			face->c[0] = a;
 			face->c[1] = b;
@@ -295,28 +310,12 @@ public:
 			else
 				m_status = EPA_status::Degenerated;
 
-			Remove(m_hull, face);
-			Append(m_stock, face);
+			m_hull.Remove(face);
+			m_stock.Append(face);
 			return 0;
 		}
 		m_status = m_stock.root ? EPA_status::OutOfVertices : EPA_status::OutOfFaces;
 		return 0;
-	}
-
-	Face* FindBest()
-	{
-		Face* minf = m_hull.root;
-		float mind = minf->d * minf->d;
-		for (Face* f = minf->l[1]; f; f = f->l[1])
-		{
-			const float sqd = f->d * f->d;
-			if (sqd < mind)
-			{
-				minf = f;
-				mind = sqd;
-			}
-		}
-		return minf;
 	}
 
 	bool Expand(int pass, Simplex::Vertex* w, Face* f, int e, sHorizon& horizon)
@@ -345,11 +344,10 @@ public:
 			{
 				int e2 = i2m3[e];
 				f->pass = (int)pass;
-				if (Expand(pass, w, f->f[e1], f->e[e1], horizon) &&
-					Expand(pass, w, f->f[e2], f->e[e2], horizon))
+				if (Expand(pass, w, f->f[e1], f->e[e1], horizon) && Expand(pass, w, f->f[e2], f->e[e2], horizon))
 				{
-					Remove(m_hull, f);
-					Append(m_stock, f);
+					m_hull.Remove(f);
+					m_stock.Append(f);
 					return (true);
 				}
 			}

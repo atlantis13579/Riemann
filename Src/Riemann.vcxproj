@@ -24,6 +24,7 @@
     <ClCompile Include="Collision\AABBTreeInference.cpp" />
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />
     <ClCompile Include="Collision\BroadPhase.cpp" />
+    <ClCompile Include="Collision\Contact.cpp" />
     <ClCompile Include="Collision\DynamicAABBTree.cpp" />
     <ClCompile Include="Collision\GeometryCollection.cpp" />
     <ClCompile Include="Collision\GeometryObject.cpp" />
@@ -60,6 +61,7 @@
     <ClInclude Include="Collision\AABBTreeInference.h" />
     <ClInclude Include="Collision\AABBTreeOffline.h" />
     <ClInclude Include="Collision\BroadPhase.h" />
+    <ClInclude Include="Collision\Contact.h" />
     <ClInclude Include="Collision\DynamicAABBTree.h" />
     <ClInclude Include="Collision\EPA.h" />
     <ClInclude Include="Collision\GeometryCollection.h" />

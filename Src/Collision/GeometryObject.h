@@ -58,6 +58,7 @@ public:
 	void					SetPositionWorld(const Vector3d& Position);
 	void					SetPositionOffset(const Vector3d& Offset);
 	Vector3d				GetPositionWorld() const;
+	Matrix3d				GetRotationMatrix() const;
 	Quaternion				GetRotation() const;
 	void					SetRotation(const Quaternion& Rotation);
 	const Matrix4d&			GetWorldMatrix();
