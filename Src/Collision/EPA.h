@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GJK.h"
+#include "Simplex.h"
 
 // Expanding Polytope Algorithm
 // http://allenchou.net/2013/12/game-physics-contact-generation-epa/
@@ -34,7 +34,7 @@ public:
 	{
 		Vector3d n;
 		float d;
-		GJK::Vertex* c[3];
+		Simplex::Vertex* c[3];
 		Face* f[3];
 		Face* l[2];
 		int e[3];
@@ -55,10 +55,10 @@ public:
 	};
 
 	EPA_status m_status;
-	GJK::Simplex m_result;
+	Simplex m_result;
 	Vector3d m_normal;
 	float m_depth;
-	GJK::Vertex m_sv_store[EPA_MAX_VERTICES];
+	Simplex::Vertex m_sv_store[EPA_MAX_VERTICES];
 	Face m_fc_store[EPA_MAX_FACES];
 	int m_nextsv;
 	List m_hull;
@@ -76,10 +76,9 @@ public:
 		}
 	}
 
-	EPA_status Evaluate(GJK& gjk, Vector3d guess)
+	EPA_status Evaluate(Simplex& simplex, MinkowskiSum *Shape, Vector3d InitGuess)
 	{
-		GJK::Simplex& simplex = *gjk.m_Simplex;
-		if ((simplex.dimension > 1) && gjk.EncloseOrigin())
+		if ((simplex.dimension > 1) && simplex.EncloseOrigin())
 		{
 			while (m_hull.root)
 			{
@@ -90,18 +89,18 @@ public:
 			m_status = EPA_status::Valid;
 			m_nextsv = 0;
 
-			if (gjk.Determinant(simplex.c[0]->w - simplex.c[3]->w,
-				simplex.c[1]->w - simplex.c[3]->w,
-				simplex.c[2]->w - simplex.c[3]->w) < 0)
+			if (Determinant(simplex.v[0].p - simplex.v[3].p,
+							simplex.v[1].p - simplex.v[3].p,
+							simplex.v[2].p - simplex.v[3].p) < 0)
 			{
-				std::swap(simplex.c[0], simplex.c[1]);
-				std::swap(simplex.p[0], simplex.p[1]);
+				std::swap(simplex.v[0], simplex.v[1]);
+				std::swap(simplex.w[0], simplex.w[1]);
 			}
 
-			Face* tetra[] = { NewFace(simplex.c[0], simplex.c[1], simplex.c[2], true),
-							  NewFace(simplex.c[1], simplex.c[0], simplex.c[3], true),
-							  NewFace(simplex.c[2], simplex.c[1], simplex.c[3], true),
-							  NewFace(simplex.c[0], simplex.c[2], simplex.c[3], true) };
+			Face* tetra[] = { NewFace(&simplex.v[0], &simplex.v[1], &simplex.v[2], true),
+							  NewFace(&simplex.v[1], &simplex.v[0], &simplex.v[3], true),
+							  NewFace(&simplex.v[2], &simplex.v[1], &simplex.v[3], true),
+							  NewFace(&simplex.v[0], &simplex.v[2], &simplex.v[3], true) };
 			if (m_hull.count == 4)
 			{
 				Face* best = FindBest();
@@ -120,11 +119,14 @@ public:
 					if (m_nextsv < EPA_MAX_VERTICES)
 					{
 						sHorizon horizon;
-						GJK::Vertex* w = &m_sv_store[m_nextsv++];
+						Simplex::Vertex* w = &m_sv_store[m_nextsv++];
 						bool valid = true;
 						best->pass = (int)(++pass);
-						gjk.GetSupport(best->n, *w);
-						const float wdist = DotProduct(best->n, w->w) - best->d;
+
+						w->d = best->n.Unit();
+						w->p = Shape->Support(w->d);
+
+						const float wdist = DotProduct(best->n, w->p) - best->d;
 						if (wdist > EPA_ACCURACY)
 						{
 							for (int j = 0; (j < 3) && valid; ++j)
@@ -163,28 +165,22 @@ public:
 				m_normal = outer.n;
 				m_depth = outer.d;
 				m_result.dimension = 3;
-				m_result.c[0] = outer.c[0];
-				m_result.c[1] = outer.c[1];
-				m_result.c[2] = outer.c[2];
-				m_result.p[0] = CrossProduct(outer.c[1]->w - projection,
-					outer.c[2]->w - projection)
-					.Length();
-				m_result.p[1] = CrossProduct(outer.c[2]->w - projection,
-					outer.c[0]->w - projection)
-					.Length();
-				m_result.p[2] = CrossProduct(outer.c[0]->w - projection,
-					outer.c[1]->w - projection)
-					.Length();
-				const float sum = m_result.p[0] + m_result.p[1] + m_result.p[2];
-				m_result.p[0] /= sum;
-				m_result.p[1] /= sum;
-				m_result.p[2] /= sum;
+				m_result.v[0] = *outer.c[0];
+				m_result.v[1] = *outer.c[1];
+				m_result.v[2] = *outer.c[2];
+				m_result.w[0] = CrossProduct(outer.c[1]->p - projection, outer.c[2]->p - projection).Length();
+				m_result.w[1] = CrossProduct(outer.c[2]->p - projection, outer.c[0]->p - projection).Length();
+				m_result.w[2] = CrossProduct(outer.c[0]->p - projection, outer.c[1]->p - projection).Length();
+				const float sum = m_result.w[0] + m_result.w[1] + m_result.w[2];
+				m_result.w[0] /= sum;
+				m_result.w[1] /= sum;
+				m_result.w[2] /= sum;
 				return (m_status);
 			}
 		}
 
 		m_status = EPA_status::FallBack;
-		m_normal = guess * -1;
+		m_normal = -InitGuess;
 		const float nl = m_normal.Length();
 		if (nl > 0)
 			m_normal = m_normal * (1 / nl);
@@ -192,8 +188,8 @@ public:
 			m_normal = Vector3d(1, 0, 0);
 		m_depth = 0;
 		m_result.dimension = 1;
-		m_result.c[0] = simplex.c[0];
-		m_result.p[0] = 1;
+		m_result.v[0] = simplex.v[0];
+		m_result.w[0] = 1;
 		return (m_status);
 	}
 
@@ -222,36 +218,36 @@ public:
 		--list.count;
 	}
 
-	bool GetEdgeDist(Face* face, GJK::Vertex* a, GJK::Vertex* b, float& dist)
+	bool GetEdgeDist(Face* face, Simplex::Vertex* a, Simplex::Vertex* b, float& dist)
 	{
-		Vector3d ba = b->w - a->w;
+		Vector3d ba = b->p - a->p;
 		Vector3d n_ab = CrossProduct(ba, face->n);   // Outward facing edge normal direction, on triangle plane
-		float a_dot_nab = DotProduct(a->w, n_ab);  // Only care about the sign to determine inside/outside, so not normalization required
+		float a_dot_nab = DotProduct(a->p, n_ab);  // Only care about the sign to determine inside/outside, so not normalization required
 
 		if (a_dot_nab < 0)
 		{
 			// Outside of edge a->b
 
 			const float ba_l2 = ba.SquareLength();
-			const float a_dot_ba = DotProduct(a->w, ba);
-			const float b_dot_ba = DotProduct(b->w, ba);
+			const float a_dot_ba = DotProduct(a->p, ba);
+			const float b_dot_ba = DotProduct(b->p, ba);
 
 			if (a_dot_ba > 0)
 			{
-				// Pick distance vertex a
-				dist = a->w.Length();
+				// Pick distance Simplex::Vertex a
+				dist = a->p.Length();
 			}
 			else if (b_dot_ba < 0)
 			{
-				// Pick distance vertex b
-				dist = b->w.Length();
+				// Pick distance Simplex::Vertex b
+				dist = b->p.Length();
 			}
 			else
 			{
 				// Pick distance to edge a->b
-				const float a_dot_b = DotProduct(a->w, b->w);
+				const float a_dot_b = DotProduct(a->p, b->p);
 
-				float t = (a->w.SquareLength() * b->w.SquareLength() - a_dot_b * a_dot_b) / ba_l2;
+				float t = (a->p.SquareLength() * b->p.SquareLength() - a_dot_b * a_dot_b) / ba_l2;
 				float bigger = t >= 0 ? t : 0;
 				dist = sqrtf(bigger);
 			}
@@ -262,7 +258,7 @@ public:
 		return false;
 	}
 
-	Face* NewFace(GJK::Vertex* a, GJK::Vertex* b, GJK::Vertex* c, bool forced)
+	Face* NewFace(Simplex::Vertex* a, Simplex::Vertex* b, Simplex::Vertex* c, bool forced)
 	{
 		if (m_stock.root)
 		{
@@ -273,7 +269,7 @@ public:
 			face->c[0] = a;
 			face->c[1] = b;
 			face->c[2] = c;
-			face->n = CrossProduct(b->w - a->w, c->w - a->w);
+			face->n = CrossProduct(b->p - a->p, c->p - a->p);
 			const float l = face->n.Length();
 			const bool v = l > EPA_ACCURACY;
 
@@ -285,7 +281,7 @@ public:
 				{
 					// Origin projects to the interior of the triangle
 					// Use distance to triangle plane
-					face->d = DotProduct(a->w, face->n) / l;
+					face->d = DotProduct(a->p, face->n) / l;
 				}
 
 				face->n = face->n * (1 / l);
@@ -323,14 +319,14 @@ public:
 		return minf;
 	}
 
-	bool Expand(int pass, GJK::Vertex* w, Face* f, int e, sHorizon& horizon)
+	bool Expand(int pass, Simplex::Vertex* w, Face* f, int e, sHorizon& horizon)
 	{
 		const int i1m3[] = { 1, 2, 0 };
 		const int i2m3[] = { 2, 0, 1 };
 		if (f->pass != pass)
 		{
 			int e1 = i1m3[e];
-			if ((DotProduct(f->n, w->w) - f->d) < -EPA_PLANE_EPS)
+			if ((DotProduct(f->n, w->p) - f->d) < -EPA_PLANE_EPS)
 			{
 				Face* nf = NewFace(f->c[e1], f->c[e], w, false);
 				if (nf)

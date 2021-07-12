@@ -292,6 +292,15 @@ inline TVector3<T> CrossProduct(const TVector3<T>& lhs, const TVector3<T>& rhs)
 	return lhs.Cross(rhs);
 }
 
+template <typename T>
+T Determinant(const TVector3<T>& a, const TVector3<T>& b, const TVector3<T>& c)
+{
+	return (a.y * b.z * c.x + a.z * b.x * c.y -
+			a.x * b.z * c.y - a.y * b.x * c.z +
+			a.x * b.y * c.z - a.z * b.y * c.x);
+}
+
+
 typedef TVector3<float> Vector3d;
 
 static_assert(sizeof(Vector3d) == 12, "sizeof Vector3d is not valid");

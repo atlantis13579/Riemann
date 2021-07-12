@@ -90,7 +90,7 @@ public:
 		GeometrySum shape(Geom1, Geom2);
 
 		GJK gjk;
-		GJK_status gjk_status = gjk.Evaluate(&shape, guess * -1);
+		GJK_status gjk_status = gjk.Evaluate(&shape, -guess);
 
 		switch (gjk_status)
 		{
@@ -98,13 +98,13 @@ public:
 		case GJK_status::Inside:
 		{
 			EPA epa;
-			EPA_status epa_status = epa.Evaluate(gjk, guess * -1);
+			EPA_status epa_status = epa.Evaluate(gjk.cs, &shape, -guess);
 			if (epa_status != EPA_status::Failed)
 			{
 				Vector3d w0 = Vector3d(0, 0, 0);
 				for (int i = 0; i < epa.m_result.dimension; ++i)
 				{
-					w0 = w0 + shape.Support1(epa.m_result.c[i]->d) * epa.m_result.p[i];
+					w0 = w0 + shape.Support1(epa.m_result.v[i].d) * epa.m_result.w[i];
 				}
 				Matrix4d wtrs1 = Geom1->GetInverseWorldMatrix();
 				result.status = PenetrationResults::Penetrating;

@@ -78,7 +78,7 @@ protected:
 
 private:
 	GeometryShape	m_Shape;
-	Box3d	m_BoxWorld;
+	Box3d			m_BoxWorld;
 	Transform		m_Transform;
 	void*			m_Entity;
 

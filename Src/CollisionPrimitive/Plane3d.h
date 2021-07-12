@@ -77,23 +77,33 @@ public:
 	Box3d	GetBoundingBox() const
 	{
 		const float kMaxBV = 10000000.0f;
+		const float kVerySmallTickness = 0.00001f;
 		Box3d Box(-kMaxBV, kMaxBV);
 		if (ParallelToXY())
 		{
 			if (Normal.z > 0.0001f)
-				Box.Min.z = Box.Max.z = -D / Normal.z;
+			{
+				Box.Min.z = -D / Normal.z - kVerySmallTickness;
+				Box.Max.z = -D / Normal.z + kVerySmallTickness;
+			}
 		}
 
 		if (ParallelToYZ())
 		{
 			if (Normal.x > 0.0001f)
-				Box.Min.x = Box.Max.x = -D / Normal.x;
+			{
+				Box.Min.x = -D / Normal.x - kVerySmallTickness;
+				Box.Max.x = -D / Normal.x + kVerySmallTickness;
+			}
 		}
 
 		if (ParallelToXZ())
 		{
 			if (Normal.y > 0.0001f)
-				Box.Min.y = Box.Max.y = -D / Normal.y;
+			{
+				Box.Min.y = -D / Normal.y - kVerySmallTickness;
+				Box.Max.y = -D / Normal.y + kVerySmallTickness;
+			}
 		}
 
 		return Box;
