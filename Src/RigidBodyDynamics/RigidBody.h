@@ -30,6 +30,9 @@ public:
 	Vector3d	P;				// Linear Momentum
 	Vector3d	L;				// Angular Momentum
 
+	// ----
+	Vector3d	Velocity;
+	Vector3d	AngularVelocity;
 	Vector3d	Force;
 	Vector3d	Torque;
 	bool		Sleep;

@@ -2,6 +2,7 @@
 #include "PhysicsWorldRB.h"
 #include "PhysicsEntity.h"
 #include "MotionIntegration.h"
+#include "WarmStart.h"
 
 #include "../Collision/GeometryQuery.h"
 #include "../Collision/GeometryObject.h"
@@ -54,12 +55,15 @@ void		PhysicsWorldRB::Simulate(float dt)
 		m_BPhase->ProduceOverlaps(m_Entities, &overlaps);
 	}
 
-	std::vector<ContactManifold> contacts;
-	if (m_NPhase)
+	std::vector<ContactManifold> manifolds;
+	if (m_NPhase && !overlaps.empty())
 	{
-		m_NPhase->CollisionDetection(overlaps, &contacts);
+		m_NPhase->CollisionDetection(overlaps, &manifolds);
 	}
 
+	WarmStart::Manifolds(manifolds, dt);
+
+	return;
 }
 
 void		PhysicsWorldRB::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)

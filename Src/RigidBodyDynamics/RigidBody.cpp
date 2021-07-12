@@ -10,6 +10,8 @@ RigidBody* RigidBody::CreateRigidBody(Geometry* Geom, const RigidBodyParam& para
 	Rigid->Q = Geom->GetRotation();
 	Rigid->P = Vector3d::Zero();
 	Rigid->L = Vector3d::Zero();
+	Rigid->Velocity = Vector3d::Zero();
+	Rigid->AngularVelocity = Vector3d::Zero();
 	Rigid->Torque = Vector3d::Zero();
 	Rigid->Force = Vector3d::Zero();
 	Rigid->Static = param.Static;

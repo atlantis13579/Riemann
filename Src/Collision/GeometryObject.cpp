@@ -15,7 +15,7 @@ Geometry::Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _Sha
 	m_Entity = _Entity;
 	m_BoxWorld = GetBoundingBoxLocal();
 
-	SetPositionWorld(Position);
+	SetPosition(Position);
 }
 
 Geometry::~Geometry()
@@ -49,10 +49,10 @@ Vector3d			Geometry::GetPositionWorld() const
 void				Geometry::SetPositionOffset(const Vector3d& Offset)
 {
 	Vector3d World = m_Transform.GetTranslation() + Offset;
-	SetPositionWorld(World);
+	SetPosition(World);
 }
 
-void				Geometry::SetPositionWorld(const Vector3d& Position)
+void				Geometry::SetPosition(const Vector3d& Position)
 {
 	m_Transform.SetTranslation(Position);
 	m_BoxWorld = GetBoundingBoxLocal().Transform(m_Transform.GetWorldMatrix());

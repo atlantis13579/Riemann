@@ -15,14 +15,12 @@ public:
 		EPA_Failed   // EPA phase fail, bigger problem, need to save parameters, and debug
 	} status;
 
-	Geometry* Geom1 = nullptr;
-	Geometry* Geom2 = nullptr;
 	Vector3d WitnessLocal1;
 	Vector3d WitnessLocal2;
 	Vector3d WitnessWorld1;
 	Vector3d WitnessWorld2;
 	Vector3d Normal;
-	Vector3d Tangent;
+	Vector3d Tangent1;
 	Vector3d Tangent2;
 
 	float   PenetrationDistance;
@@ -42,4 +40,6 @@ public:
 
 	ContactResult ContactPoints[MAX_CONTACT_POINTS];
     int NumContactPointCount = 0;
+
+	void	AddNewContact(Geometry* _Geom1, Geometry* _Geom2, const ContactResult& result);
 };

@@ -281,6 +281,12 @@ public:
 };
 
 template <typename T>
+inline TVector3<T> operator* (float s, const TVector3<T>& vv)
+{
+	return vv * s;
+}
+
+template <typename T>
 inline T DotProduct(const TVector3<T> &lhs, const TVector3<T> &rhs)
 {
 	return lhs.Dot(rhs);

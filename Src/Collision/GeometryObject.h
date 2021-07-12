@@ -55,7 +55,7 @@ public:
 	const Box3d&			GetBoundingBoxWorld() const;
 	Vector3d				GetSupportWorld(const Vector3d& Dir);
 
-	void					SetPositionWorld(const Vector3d& Position);
+	void					SetPosition(const Vector3d& Position);
 	void					SetPositionOffset(const Vector3d& Offset);
 	Vector3d				GetPositionWorld() const;
 	Matrix3d				GetRotationMatrix() const;

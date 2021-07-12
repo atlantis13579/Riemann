@@ -32,7 +32,8 @@ public:
 	{
 		Vector3d support1 = Support1(Dir);
 		Vector3d support2 = Support2(-Dir);
-		return support1 - support2;
+		Vector3d diff = support1 - support2;
+		return diff;
 	}
 };
 
@@ -56,7 +57,9 @@ public:
 			ContactResult result;
 			if (Penetration(overlaps[i].Geom1, overlaps[i].Geom2, result))
 			{
-
+				ContactManifold manifold;
+				manifold.AddNewContact(overlaps[i].Geom1, overlaps[i].Geom2, result);
+				contact->push_back(manifold);
 			}
 		}
 	}
@@ -68,15 +71,13 @@ public:
 		Vector3d guess = position1 - position2;
 
 		// result
-		result.Geom1 = Geom1;
-		result.Geom2 = Geom2;
 		result.WitnessLocal1 = result.WitnessLocal2 = result.WitnessWorld1 = result.WitnessWorld2 = Vector3d::Zero();
 		result.status = ContactResult::Separated;
 
 		GeometrySum shape(Geom1, Geom2);
 
 		GJK gjk;
-		GJK_status gjk_status = gjk.Solve(&shape, -guess);
+		GJK_status gjk_status = gjk.Solve(&shape, guess);
 
 		switch (gjk_status)
 		{
@@ -87,6 +88,8 @@ public:
 			EPA_status epa_status = epa.Solve(gjk.cs, &shape, -guess);
 			if (epa_status != EPA_status::Failed)
 			{
+				// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
+
 				Vector3d w0 = Vector3d(0, 0, 0);
 				for (int i = 0; i < epa.m_result.dimension; ++i)
 				{
@@ -101,6 +104,20 @@ public:
 				result.WitnessWorld2 = secondObjectPointInFirstObject;
 				result.Normal = epa.m_normal;
 				result.PenetrationDistance = epa.m_depth;
+				if (result.Normal.x >= 0.57735f)
+				{
+					result.Tangent1.x = result.Normal.y;
+					result.Tangent1.y = -result.Normal.x;
+					result.Tangent1.z = 0;
+				}
+				else
+				{
+					result.Tangent1.x = 0;
+					result.Tangent1.y = result.Normal.z;
+					result.Tangent1.z = -result.Normal.y;
+				}
+				result.Tangent1;
+				result.Tangent2 = CrossProduct(result.Normal, result.Tangent1);
 				return true;
 			}
 			else

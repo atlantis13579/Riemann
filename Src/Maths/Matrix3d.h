@@ -202,4 +202,9 @@ public:
 	}
 };
 
+inline Matrix3d operator* (float v, const Matrix3d& mm)
+{
+	return mm * v;
+}
+
 static_assert(sizeof(Matrix3d) == 36, "sizeof Matrix3d is not valid");

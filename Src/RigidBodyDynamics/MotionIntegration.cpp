@@ -17,8 +17,9 @@ void MotionIntegration::Integrate(std::vector<Geometry*> Entities, float dt)
 		}
 
 		Vector3d Force = Rigid->Force + Vector3d(0, -0.0098f, 0);
-		Vector3d LinearVelocity = Force / Rigid->mass;
-		Geom->SetPositionOffset(LinearVelocity * dt);
+		Rigid->Velocity = Force / Rigid->mass;
+		Rigid->P += Rigid->Velocity * dt;
+		Geom->SetPosition(Rigid->P);
 
 		// Physically Based Modeling by David Baraff 
 		// https://www.cs.cmu.edu/~baraff/sigcourse/

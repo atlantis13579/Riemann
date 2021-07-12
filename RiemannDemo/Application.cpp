@@ -104,7 +104,8 @@ void InitScene()
 
     rp.mass = 1.0f;
     rp.Static = true;
-    Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, 0, 0), Vector3d::UnitY(), -Grounds_vertices[0].Pos.y);
+    // Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0, 0, 0), Vector3d::UnitY(), -Grounds_vertices[0].Pos.y);
+    Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, Grounds_vertices[0].Pos.y, 0), Vector3d::UnitY(), -0);
     g_World->CreateRigidBody(plane, rp);
 
     g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));

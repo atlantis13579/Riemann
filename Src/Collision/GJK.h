@@ -49,8 +49,7 @@ public:
 			bool found = false;
 			for (int i = 0; i < 4; ++i)
 			{
-				Vector3d diff;
-				diff = w - lastw[i];
+				Vector3d diff = w - lastw[i];
 				if (diff.SquareLength() < GJK_DUPLICATED_EPS)
 				{
 					found = true;
@@ -109,4 +108,3 @@ public:
 		return iter >= GJK_MAX_ITERATIONS ? GJK_status::Failed : GJK_status::Valid;
 	}
 };
-
