@@ -139,7 +139,7 @@ bool VoxelField::AddVoxel(int x, int y, unsigned short ymin, unsigned short ymax
 		{
 			break;
 		}
-		else if (p->ymax < s->ymin)
+		else if (p->ymax + 1 < s->ymin)
 		{
 			prev = p;
 			p = p->next;
@@ -220,7 +220,7 @@ void VoxelField::FreeVoxel(Voxel* p)
 
 static bool VoxelIntersects(const Voxel* v1, const Voxel *v2)
 {
-	return v2->ymin < v1->ymax && v2->ymax > v1->ymin;
+	return v2->ymin <= v1->ymax && v2->ymax >= v1->ymin;
 }
 
 static bool VoxelIntersects2(const Voxel* v1, const Voxel* v2, float Thr)
@@ -315,9 +315,11 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 				ymin = m_WorldBox.Min.y;
 			if (ymax > m_WorldBox.Max.y)
 				ymax = m_WorldBox.Max.y;
+			ymin -= m_WorldBox.Min.y;
+			ymax -= m_WorldBox.Min.y;
 
-			const unsigned short y0 = Clamp((unsigned short)((ymin - m_WorldBox.Min.y) * ich), (unsigned short)0, (unsigned short)(m_SizeY - 1));
-			const unsigned short y1 = Clamp((unsigned short)((ymax - m_WorldBox.Min.y) * ich), (unsigned short)0, (unsigned short)(m_SizeY - 1));
+			const unsigned short y0 = (unsigned short)Clamp((int)floorf(ymin * ich), 0, m_SizeY - 1);
+			const unsigned short y1 = (unsigned short)Clamp((int)ceilf(ymax * ich), 0, m_SizeY - 1);
 
 			if (!AddVoxel(x, z, y0, y1, info.YMergeThr))
 				return false;
@@ -342,7 +344,7 @@ bool VoxelField::MakeComplement()
 		{
 			auto t = p->ymin;
 			p->ymin = ylow;
-			ylow = p->ymax;
+			ylow = p->ymax + 1;
 			p->ymax = t;
 			prev = p;
 			p = p->next;

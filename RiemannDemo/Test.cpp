@@ -231,7 +231,8 @@ void TestMesh1()
 	field.InitField(1, 1, 1, 1.0f, 2.0f);
 	field.AddVoxel(0, 0, 1, 2, 0);
 	field.AddVoxel(0, 0, 3, 5, 0);
-	field.AddVoxel(0, 0, 1, 5, 0);
+	field.AddVoxel(0, 0, 7, 8, 0);
+	field.AddVoxel(0, 0, 1, 10, 0);
 
 	field.VoxelizeTriangles(info, &mesh);
 	field.MakeComplement();
@@ -255,8 +256,8 @@ void TestMesh()
 	VoxelizationInfo info;
 	info.Boundry.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
 	info.Boundry.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
-	info.VoxelHeight = 0.5f;
-	info.VoxelSize = 0.5f;
+	info.VoxelHeight = 1.5f;
+	info.VoxelSize = 1.5f;
 
 	VoxelField field;
 
