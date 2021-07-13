@@ -20,11 +20,16 @@ VoxelField::~VoxelField()
 
 }
 
-void VoxelField::InitField(int SizeX, int SizeY, int SizeZ)
+void VoxelField::InitField(int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
 {
 	m_SizeX = SizeX;
 	m_SizeY = SizeY;
 	m_SizeZ = SizeZ;
+	m_VoxelSize = VoxelSize;
+	m_VoxelHeight = VoxelHeight;
+	m_InvVoxelSize = 1.0f / VoxelSize;
+	m_InvVoxelHeight = 1.0f / VoxelHeight;
+
 	m_Fields.resize(m_SizeX * m_SizeZ);
 	memset(&m_Fields[0], 0, sizeof(m_Fields[0]) * m_SizeX * m_SizeZ);
 
@@ -40,7 +45,7 @@ bool VoxelField::VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* _
 	m_SizeY = (int)(info.Boundry.GetSizeY() / info.VoxelHeight + 0.5f);
 	m_SizeZ = (int)(info.Boundry.GetSizeZ() / info.VoxelSize + 0.5f);
 
-	InitField(m_SizeX, m_SizeY, m_SizeZ);
+	InitField(m_SizeX, m_SizeY, m_SizeZ, info.VoxelSize, info.VoxelHeight);
 
 	const TriangleMesh &mesh = *_mesh;
 	for (unsigned int i = 0; i < mesh.GetNumTriangles(); ++i)
@@ -105,7 +110,7 @@ static void dividePoly(const Vector3d* In, int nn, Vector3d* out1, int* nout1, V
 	*nout2 = n;
 }
 
-bool VoxelField::AddVoxel(int x, int y, float ymin, float ymax, float MergeThr)
+bool VoxelField::AddVoxel(int x, int y, unsigned short ymin, unsigned short ymax, float MergeThr)
 {
 	int idx = x + y * m_SizeX;
 
@@ -170,8 +175,19 @@ bool VoxelField::AddVoxel(int x, int y, float ymin, float ymax, float MergeThr)
 	return true;
 }
 
+int		VoxelField::GetVoxelIdx(const Vector3d& pos) const
+{
+	const int x = Clamp((int)((pos.x - m_WorldBox.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int z = Clamp((int)((pos.z - m_WorldBox.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	return z * m_SizeX + x;
+}
 
-Voxel* VoxelField::AllocVoxel()
+float	VoxelField::GetVoxelY(unsigned short y) const
+{
+	return m_WorldBox.Min.y + (y + 0.5f) * m_VoxelHeight;
+}
+
+Voxel*	VoxelField::AllocVoxel()
 {
 	m_NumVoxels++;
 
@@ -237,17 +253,17 @@ static int VoxelMaxData(const Voxel* v)
 
 bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info)
 {
-	const float dy = info.Boundry.Max.y - info.Boundry.Min.y;
-	const float ics = 1.0f / info.VoxelSize;
-	const float ich = 1.0f / info.VoxelHeight;
+	const float dy = m_WorldBox.Max.y - m_WorldBox.Min.y;
+	const float ics = 1.0f / m_VoxelSize;
+	const float ich = 1.0f / m_VoxelHeight;
 
 	Box3d tbox({ v0, v1, v2 });
 
-	if (!tbox.Intersect(info.Boundry))
+	if (!tbox.Intersect(m_WorldBox))
 		return true;
 
-	const int z0 = Clamp((int)((tbox.Min.z - info.Boundry.Min.z) * ics), 0, m_SizeZ - 1);
-	const int z1 = Clamp((int)((tbox.Max.z - info.Boundry.Min.z) * ics), 0, m_SizeZ - 1);
+	const int z0 = Clamp((int)((tbox.Min.z - m_WorldBox.Min.z) * ics), 0, m_SizeZ - 1);
+	const int z1 = Clamp((int)((tbox.Max.z - m_WorldBox.Min.z) * ics), 0, m_SizeZ - 1);
 
 	Vector3d buf[7 * 4];
 	Vector3d *In = buf, *inrow = buf + 7, *p1 = buf + 7 * 2, *p2 = buf + 7 * 3;
@@ -260,8 +276,8 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 
 	for (int z = z0; z <= z1; ++z)
 	{
-		const float cz = info.Boundry.Min.z + z * info.VoxelSize;
-		dividePoly(In, nvIn, inrow, &nvrow, p1, &nvIn, cz + info.VoxelSize, 2);
+		const float cz = m_WorldBox.Min.z + z * m_VoxelSize;
+		dividePoly(In, nvIn, inrow, &nvrow, p1, &nvIn, cz + m_VoxelSize, 2);
 		std::swap(In, p1);
 		if (nvrow < 3)
 			continue;
@@ -272,15 +288,15 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 			minX = std::min(minX, inrow[i].x);
 			maxX = std::max(maxX, inrow[i].x);
 		}
-		const int x0 = Clamp((int)((minX - info.Boundry.Min.x) * ics), 0, m_SizeX - 1);
-		const int x1 = Clamp((int)((maxX - info.Boundry.Min.x) * ics), 0, m_SizeX - 1);
+		const int x0 = Clamp((int)((minX - m_WorldBox.Min.x) * ics), 0, m_SizeX - 1);
+		const int x1 = Clamp((int)((maxX - m_WorldBox.Min.x) * ics), 0, m_SizeX - 1);
 
 		int nv, nv2 = nvrow;
 
 		for (int x = x0; x <= x1; ++x)
 		{
-			const float cx = info.Boundry.Min.x + x * info.VoxelSize;
-			dividePoly(inrow, nv2, p1, &nv, p2, &nv2, cx + info.VoxelSize, 0);
+			const float cx = m_WorldBox.Min.x + x * m_VoxelSize;
+			dividePoly(inrow, nv2, p1, &nv, p2, &nv2, cx + m_VoxelSize, 0);
 			std::swap(inrow, p2);
 			if (nv < 3)
 				continue;
@@ -292,20 +308,18 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 				ymax = std::max(ymax, p1[i].y);
 			}
 
-			if (ymax < info.Boundry.Min.y || ymin > info.Boundry.Max.y)
+			if (ymax < m_WorldBox.Min.y || ymin > m_WorldBox.Max.y)
 				continue;
 
-			const int y0 = (int)((ymin - info.Boundry.Min.y) * ich);
-			const int y1 = (int)((ymax - info.Boundry.Min.y) * ich);
-			ymin = info.Boundry.Min.y + y0 * info.VoxelHeight;
-			ymax = info.Boundry.Min.y + (y1 + 1) * info.VoxelHeight;
+			if (ymin < m_WorldBox.Min.y)
+				ymin = m_WorldBox.Min.y;
+			if (ymax > m_WorldBox.Max.y)
+				ymax = m_WorldBox.Max.y;
 
-			if (ymin < info.Boundry.Min.y)
-				ymin = info.Boundry.Min.y;
-			if (ymax > info.Boundry.Max.y)
-				ymax = info.Boundry.Max.y;
+			const unsigned short y0 = Clamp((unsigned short)((ymin - m_WorldBox.Min.y) * ich), (unsigned short)0, (unsigned short)(m_SizeY - 1));
+			const unsigned short y1 = Clamp((unsigned short)((ymax - m_WorldBox.Min.y) * ich), (unsigned short)0, (unsigned short)(m_SizeY - 1));
 
-			if (!AddVoxel(x, z, ymin, ymax, info.YMergeThr))
+			if (!AddVoxel(x, z, y0, y1, info.YMergeThr))
 				return false;
 		}
 	}
@@ -313,17 +327,20 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 	return true;
 }
 
-bool VoxelField::MakeComplement(float MergeThr)
+bool VoxelField::MakeComplement()
 {
+	unsigned short yhigh = m_SizeY;
+
 	for (int i = 0; i < m_SizeZ; ++i)
 	for (int j = 0; j < m_SizeX; ++j)
 	{
 		int idx = i * m_SizeX + j;
-		float ylow = m_WorldBox.Min.y;
+		// float ylow = m_WorldBox.Min.y;
+		unsigned short ylow = 0;
 		Voxel *p = m_Fields[idx], *prev = nullptr;
 		while (p)
 		{
-			float t = p->ymin;
+			auto t = p->ymin;
 			p->ymin = ylow;
 			ylow = p->ymax;
 			p->ymax = t;
@@ -331,7 +348,8 @@ bool VoxelField::MakeComplement(float MergeThr)
 			p = p->next;
 		}
 
-		if (fabsf(m_WorldBox.Max.y - ylow) > 1e-3)
+		// if (fabsf(m_WorldBox.Max.y - ylow) > 1e-3)
+		if (yhigh != ylow)
 		{
 			p = AllocVoxel();
 			if (p == nullptr)
@@ -340,32 +358,14 @@ bool VoxelField::MakeComplement(float MergeThr)
 			}
 			p->data = 0;
 			p->ymin = ylow;
-			p->ymax = m_WorldBox.Max.y;
+			p->ymax = yhigh;
 			p->next = nullptr;
-
-			if (prev)
-				prev->next = p;
-			else
-				m_Fields[idx] = p;
 		}
 
-		p = m_Fields[idx];
-		prev = nullptr;
-		while (p)
-		{
-			if (fabsf(p->ymax - p->ymin) < MergeThr)
-			{
-				Voxel* next = p->next;
-				if (prev)
-					prev->next = next;
-				else
-					m_Fields[idx] = next;
-				FreeVoxel(p);
-				p = next;
-				continue;
-			}
-			p = p->next;
-		}
+		if (prev)
+			prev->next = p;
+		else
+			m_Fields[idx] = p;
 	}
 
 	return true;
@@ -391,7 +391,7 @@ static int vx_neighbour4x_safe(int idx, int nx, int nz, int dir) {
 }
 
 
-int VoxelField::SolveSpatialTopology(float Thr)
+int VoxelField::SolveSpatialTopology()
 {
 	int SpaceFound = 0;
 
@@ -428,7 +428,7 @@ int VoxelField::SolveSpatialTopology(float Thr)
 					Voxel* nv = m_Fields[nidx];
 					while (nv)
 					{
-						if (nv->data == 0 && VoxelIntersects2(next.first, nv, Thr))
+						if (nv->data == 0 && VoxelIntersects(next.first, nv))
 						{
 							nv->data = next.first->data;
 							voxel_qu.push(std::make_pair(nv, nidx));
@@ -486,6 +486,9 @@ void	VoxelField::CalculateYLimit(float* ymin, float* ymax) const
 	*ymin = FLT_MAX;
 	*ymax = -FLT_MAX;
 
+	unsigned short smin = 0;
+	unsigned short smax = 65535;
+
 	for (int i = 0; i < m_SizeZ; ++i)
 	for (int j = 0; j < m_SizeX; ++j)
 	{
@@ -493,13 +496,13 @@ void	VoxelField::CalculateYLimit(float* ymin, float* ymax) const
 		Voxel* v = m_Fields[idx];
 		if (v == nullptr)
 			continue;
-		*ymin = std::min(*ymin, v->ymin);
+		smin = std::min(smin, v->ymin);
 
 		while (v)
 		{
 			if (v->next == nullptr)
 			{
-				*ymax = std::max(*ymax, v->ymax);
+				smax = std::max(smax, v->ymax);
 				break;
 			}
 			v = v->next;

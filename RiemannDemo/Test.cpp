@@ -228,14 +228,14 @@ void TestMesh1()
 	info.VoxelSize = 0.5f;
 
 	VoxelField field;
-	field.InitField(1, 1, 1);
-	field.AddVoxel(0, 0, 1.0f, 2.0f, 0);
-	field.AddVoxel(0, 0, 3.0f, 5.0f, 0);
-	field.AddVoxel(0, 0, 1.0f, 5.0f, 0);
+	field.InitField(1, 1, 1, 1.0f, 2.0f);
+	field.AddVoxel(0, 0, 1, 2, 0);
+	field.AddVoxel(0, 0, 3, 5, 0);
+	field.AddVoxel(0, 0, 1, 5, 0);
 
 	field.VoxelizeTriangles(info, &mesh);
-	field.MakeComplement(0.0f);
-	int space = field.SolveSpatialTopology(0.1f);
+	field.MakeComplement();
+	int space = field.SolveSpatialTopology();
 	assert(space == 2);
 	return;
 }
@@ -261,8 +261,8 @@ void TestMesh()
 	VoxelField field;
 
 	field.VoxelizeTriangles(info, &mesh);
-	field.MakeComplement(0.0f);
-	int space = field.SolveSpatialTopology(0.5f);
+	field.MakeComplement();
+	int space = field.SolveSpatialTopology();
 
 	std::vector<float> data;
 	field.GenerateHeightMap(data);
