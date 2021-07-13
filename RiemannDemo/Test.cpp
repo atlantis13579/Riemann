@@ -1,7 +1,9 @@
 
 #include <assert.h>
+#include <string>
 #include <vector>
 
+#include "simple_bmp.h"
 #include "../Src/LinearSystem/JacobiIteration_CPU.h"
 #include "../Src/LinearSystem/GaussSeidelIteration_CPU.h"
 #include "../Src/LinearSystem/LUFactorization.h"
@@ -17,12 +19,14 @@
 #include "../Src/CollisionPrimitive/Triangle3d.h"
 #include "../Src/CollisionPrimitive/Cylinder3d.h"
 #include "../Src/CollisionPrimitive/Capsule3d.h"
+#include "../Src/CollisionPrimitive/TriangleMesh.h"
 #include "../Src/Collision/AABBTree.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Collision/SAP.h"
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
+#include "../Src/Geometry/VoxelField.h"
 
 void TestAABBTree()
 {
@@ -190,6 +194,36 @@ void TestSAP()
 	return;
 }
 
+void TestMesh()
+{
+	TriangleMesh mesh;
+	// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/dungeon.obj");
+	 
+	// std::string file = "D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting.obj";
+	mesh.LoadFlat("D://home//fighting.flat");
+	// mesh.CalculateNormals();
+	mesh.CalculateBoundingBox();
+
+	VoxelizationInfo info;
+	info.Boundry = mesh.BoundingBox;
+	info.VoxelHeight = 4.0f;
+	info.VoxelSize = 4.0f;
+
+	VoxelField field;
+	field.VoxelizeTriangles(info, &mesh);
+	std::vector<int> data;
+	field.GenerateHeightMap(data);
+
+	int ymin, ymax;
+	field.CalculateYLimit(&ymin, &ymax);
+
+	BMPFile bitmap;
+	bitmap.LoadBitmap(&data[0], field.GetSizeX(), field.GetSizeZ(), 1.0f / ymax);
+	bitmap.WriteToFile("D://home//fighting.bmp");
+	
+	return;
+}
+
 class BVProxy : public SAP::BoundingVolumeProxy
 {
 public:
@@ -286,5 +320,6 @@ void TestMainEntry()
 	TestGeometryQuery();
 	TestSAP();
 	TestSAPInc();
+	TestMesh();
 	return;
 }

@@ -59,7 +59,7 @@ public:
 
 	}
 
-	void MulXCompressed3x3(const float *in, float *out)
+	void MulXCompressed3x3(const float *In, float *out)
 	{
 		for (int i = 0; i < m_Size * 3; i++)
 			out[i] = 0;
@@ -71,13 +71,13 @@ public:
 			int y = ind % m_Size;
 			float entry = m_Entries[i];
 
-			out[x * 3] += entry * in[y * 3];
-			out[x * 3 + 1] += entry * in[y * 3 + 1];
-			out[x * 3 + 2] += entry * in[y * 3 + 2];
+			out[x * 3] += entry * In[y * 3];
+			out[x * 3 + 1] += entry * In[y * 3 + 1];
+			out[x * 3 + 2] += entry * In[y * 3 + 2];
 		}
 	}
 
-	void MulXCompressedN(const float* in, int nDof, float* out)
+	void MulXCompressedN(const float* In, int nDof, float* out)
 	{
 		for (int i = 0; i < m_Size * nDof; i++)
 			out[i] = 0;
@@ -92,7 +92,7 @@ public:
 			int kx = x * nDof, ky = y * nDof;
 			for (int j = 0; j < nDof; ++j)
 			{
-				out[kx + j] += entry * in[ky + j];
+				out[kx + j] += entry * In[ky + j];
 			}
 		}
 	}

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "../Maths/Box3d.h"
 #include "../Maths/Vector3d.h"
 
 #define TRIANGLE_BATCH			(1024)
@@ -17,6 +18,7 @@ public:
 	std::vector<Vector3d>		Verties;
 	std::vector<unsigned int>	Indices;
 	std::vector<Vector3d>		Normals;
+	Box3d						BoundingBox;
 	std::string					ResourceId;
 
 	void* GetVertexBuffer()
@@ -29,12 +31,12 @@ public:
 		return &Indices[0];
 	}
 
-	unsigned int GetNumVerties() const
+	inline unsigned int GetNumVerties() const
 	{
 		return m_NumVerties;
 	}
 
-	unsigned int GetNumTriangles() const
+	inline unsigned int GetNumTriangles() const
 	{
 		return m_NumTriangles;
 	}
@@ -57,10 +59,24 @@ public:
 		Indices[3 * m_NumTriangles] = a;
 		Indices[3 * m_NumTriangles + 1] = b;
 		Indices[3 * m_NumTriangles + 2] = c;
+
+		if (m_NumTriangles == 0)
+		{
+			BoundingBox = Box3d(Verties[a], Verties[a]);
+		}
+		BoundingBox.Grow(Verties[a]);
+		BoundingBox.Grow(Verties[b]);
+		BoundingBox.Grow(Verties[c]);
+
 		m_NumTriangles++;
 	}
 
-	bool LoadObjfile(const char* name)
+	inline const Vector3d& operator ()(int i, int j) const
+	{
+		return Verties[Indices[3 * i + j]];
+	}
+
+	bool LoadObj(const char* name)
 	{
 		char* buf = 0;
 		FILE* fp = fopen(name, "rb");
@@ -102,7 +118,7 @@ public:
 			else if (row[0] == 'f')
 			{
 				unsigned int face[32];
-				int nv = ParseFace(row + 1, face, 32, m_NumVerties);
+				int nv = ParseFace(row + 1, face, 32);
 				for (int i = 2; i < nv; ++i)
 				{
 					const unsigned int a = face[0];
@@ -117,6 +133,49 @@ public:
 
 		delete[] buf;
 		ResourceId = name;
+		return true;
+	}
+
+	bool WriteFlat(const char* name)
+	{
+		FILE* fp = fopen(name, "wb");
+		if (!fp)
+		{
+			return false;
+		}
+
+		unsigned int Magic = 0xF34D9017;
+		fwrite(&Magic, sizeof(Magic), 1, fp);
+		fwrite(&m_NumVerties, sizeof(m_NumVerties), 1, fp);
+		fwrite(&m_NumTriangles, sizeof(m_NumTriangles), 1, fp);
+		fwrite(&Verties[0], sizeof(Verties[0]), m_NumVerties, fp);
+		fwrite(&Indices[0], sizeof(Indices[0]), m_NumTriangles * 3, fp);
+		fclose(fp);
+		return true;
+	}
+
+	bool LoadFlat(const char* name)
+	{
+		FILE* fp = fopen(name, "rb");
+		if (!fp)
+		{
+			return false;
+		}
+
+		unsigned int Magic;
+		fread(&Magic, sizeof(Magic), 1, fp);
+		if (Magic != 0xF34D9017)
+		{
+			return false;
+		}
+
+		fread(&m_NumVerties, sizeof(m_NumVerties), 1, fp);
+		fread(&m_NumTriangles, sizeof(m_NumTriangles), 1, fp);
+		Verties.resize(m_NumVerties);
+		Indices.resize(m_NumTriangles * 3);
+		fread(&Verties[0], sizeof(Verties[0]), m_NumVerties, fp);
+		fread(&Indices[0], sizeof(Indices[0]), m_NumTriangles * 3, fp);
+		fclose(fp);
 		return true;
 	}
 
@@ -138,6 +197,17 @@ public:
 		}
 	}
 
+	void CalculateBoundingBox()
+	{
+		if (m_NumTriangles == 0)
+		{
+			return;
+		}
+
+		BoundingBox = Box3d(&Verties[0], m_NumVerties);
+	}
+
+
 private:
 	char* ParseRow(char* buf, char* bufEnd, char* row, int len)
 	{
@@ -146,18 +216,15 @@ private:
 		int n = 0;
 		while (!done && buf < bufEnd)
 		{
-			char c = *buf;
-			buf++;
-			// multirow
+			char c = *buf++;
 			switch (c)
 			{
 			case '\\':
+			case '\r':
 				break;
 			case '\n':
 				if (start) break;
 				done = true;
-				break;
-			case '\r':
 				break;
 			case '\t':
 			case ' ':
@@ -174,7 +241,7 @@ private:
 		return buf;
 	}
 
-	int ParseFace(char* row, unsigned int* data, int n, int vcnt)
+	int ParseFace(char* row, unsigned int* data, int n)
 	{
 		int j = 0;
 		while (*row != '\0')
@@ -190,7 +257,7 @@ private:
 			if (*s == '\0')
 				continue;
 			unsigned int vi = atoi(s);
-			data[j++] = vi < 0 ? vi + vcnt : vi - 1;
+			data[j++] = vi < 0 ? vi + m_NumVerties : vi - 1;
 			if (j >= n) return j;
 		}
 		return j;

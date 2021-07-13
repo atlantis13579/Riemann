@@ -159,11 +159,11 @@ public:
 
 	Vector4d operator*(const Vector4d& vv)
 	{
-		float in[4] = { vv.x, vv.y, vv.z, 1 };
+		float In[4] = { vv.x, vv.y, vv.z, 1 };
 		float out[4] = { 0 };
 		for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
-			out[i] += mat[i][j] * in[j];
+			out[i] += mat[i][j] * In[j];
 		return Vector4d(out);
 	}
 

@@ -4,4 +4,7 @@
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="simple_bmp.h" />
+  </ItemGroup>
 </Project>

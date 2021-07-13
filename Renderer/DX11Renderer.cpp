@@ -449,7 +449,7 @@ public:
     void LoadObj(const char* filename, Transform* Trans)
     {
         TriangleMesh mesh;
-        mesh.LoadObjfile(filename);
+        mesh.LoadObj(filename);
         mesh.CalculateNormals();
 
         std::vector<Vertex1> vv;

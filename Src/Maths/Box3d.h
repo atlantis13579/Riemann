@@ -2,9 +2,15 @@
 #pragma once
 
 #include <algorithm>
+#include <vector>
 
 #include "Vector3d.h"
 #include "Matrix4d.h"
+
+#define _USE_MATH_DEFINES
+
+#undef max
+#undef min 
 
 template <typename T>
 class TAABB3
@@ -22,9 +28,20 @@ public:
 
 	TAABB3<T>(const TVector3<T>* v, int Num)
 	{
-		for (int i = 0; i < Num; ++i)
+		Min = Max = v[0];
+		for (int i = 1; i < Num; ++i)
 		{
-			*this += v[i];
+			this->Grow(v[i]);
+		}
+	}
+
+	TAABB3<T>(const std::vector<TVector3<T>> &v)
+	{
+		Min = Max = v[0];
+		for (size_t i = 1; i < v.size(); ++i)
+		{
+
+			this->Grow(v[i]);
 		}
 	}
 
@@ -147,7 +164,7 @@ public:
 		return ((rhs.x > Min.x) && (rhs.x < Max.x) && (rhs.y > Min.y) && (rhs.y < Max.y) && (rhs.z > Min.z) && (rhs.z < Max.z));
 	}
 
-	TAABB3<T> Overlap(const TAABB3<T>& rhs) const
+	TAABB3<T> GetIntersection(const TAABB3<T>& rhs) const
 	{
 		if (!Intersect(rhs))
 		{
