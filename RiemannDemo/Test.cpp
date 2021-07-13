@@ -194,36 +194,46 @@ void TestSAP()
 	return;
 }
 
+#pragma optimize("", off)
 void TestMesh()
 {
 	TriangleMesh mesh;
 	// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/dungeon.obj");
 	 
 	// std::string file = "D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting.obj";
-	mesh.LoadFlat("D://home//fighting.flat");
+	// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting_kou.obj");
+	mesh.LoadFlat("D://home//fighting_kun.flat");
 	// mesh.CalculateNormals();
 	mesh.CalculateBoundingBox();
 
+
 	VoxelizationInfo info;
 	info.Boundry = mesh.BoundingBox;
-	info.VoxelHeight = 4.0f;
-	info.VoxelSize = 4.0f;
+	info.VoxelHeight = 16.0f;
+	info.VoxelSize = 16.0f;
 
 	VoxelField field;
+	field.InitField(1, 1);
+	field.AddVoxel(0, 0, 1.0f, 2.0f, 0);
+	field.AddVoxel(0, 0, 3.0f, 5.0f, 0);
+	field.AddVoxel(0, 0, 1.0f, 5.0f, 0);
+
 	field.VoxelizeTriangles(info, &mesh);
-	std::vector<int> data;
+	std::vector<float> data;
 	field.GenerateHeightMap(data);
 
-	int ymin, ymax;
-	field.CalculateYLimit(&ymin, &ymax);
+	int ymax;
+	std::vector<int> levels;
+	field.GenerateLevels(levels, &ymax);
 
 	BMPFile bitmap;
-	bitmap.LoadBitmap(&data[0], field.GetSizeX(), field.GetSizeZ(), 1.0f / ymax);
-	bitmap.WriteToFile("D://home//fighting.bmp");
-	
+	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 1.0f - 1.0f / 10);
+	bitmap.WriteToFile("D://home//fighting2.bmp");
+
+
 	return;
 }
-
+#pragma optimize("", on)
 class BVProxy : public SAP::BoundingVolumeProxy
 {
 public:

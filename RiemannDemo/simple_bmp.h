@@ -273,6 +273,16 @@ public:
 		}
 	}
 
+	void LoadBitmap(float* pPixel, int _Width, int _Height, float scale)
+	{
+		SetSize(_Width, _Height);
+		for (int i = 0; i < _Width; ++i)
+		for (int j = 0; j < _Height; ++j)
+		{
+			SetPixel(i, j, RGBApixel(scale * pPixel[j * _Width + i]));
+		}
+	}
+
 	const RGBApixel& GetPixel(int i, int j) const
 	{
 		if (i >= Width)

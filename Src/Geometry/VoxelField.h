@@ -14,8 +14,9 @@ struct VoxelizationInfo
 
 struct Voxel
 {
-	int		low;
-	int		high;
+	int		data;
+	float	ymin;
+	float	ymax;
 	Voxel*	next;
 };
 
@@ -32,6 +33,7 @@ public:
 	~VoxelField();
 
 public:
+	void	InitField(int SizeX, int SizeZ);
 	bool	VoxelizeTriangles(const VoxelizationInfo &info, TriangleMesh *mesh);
 	bool	VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
 	
@@ -45,11 +47,12 @@ public:
 		return m_SizeZ;
 	}
 
-	void	GenerateHeightMap(std::vector<int>& heightmap);
-	void	CalculateYLimit(int *ymin, int *ymax);
+	void	GenerateHeightMap(std::vector<float>& heightmap) const;
+	void	GenerateLevels(std::vector<int>& levels, int* level_max) const;
+	void	CalculateYLimit(float *ymin, float *ymax) const;
+	bool	AddVoxel(int x, int y, float ymin, float ymax, float MergeThr);
 
 private:
-	bool	AddVoxel(int x, int y, int smin, int smax, float MergeThr);
 	Voxel*	AllocVoxel();
 	void    FreeVoxel(Voxel* p);
 

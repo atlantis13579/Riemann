@@ -19,14 +19,25 @@ VoxelField::~VoxelField()
 
 }
 
+void VoxelField::InitField(int SizeX, int SizeZ)
+{
+	m_SizeX = SizeX;
+	m_SizeZ = SizeZ;
+	m_Fields.resize(m_SizeX * m_SizeZ);
+	memset(&m_Fields[0], 0, sizeof(m_Fields[0]) * m_SizeX * m_SizeZ);
+
+	m_VoxelBatchs.clear();
+	m_FreeVoxelList = nullptr;
+}
+
 bool VoxelField::VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* _mesh)
 {
 	m_WorldBox = info.Boundry;
 
 	m_SizeX = (int)(info.Boundry.GetSizeX() / info.VoxelSize + 0.5f);
 	m_SizeZ = (int)(info.Boundry.GetSizeZ() / info.VoxelSize + 0.5f);
-	m_Fields.resize(m_SizeX * m_SizeZ);
-	memset(&m_Fields[0], 0, sizeof(m_Fields[0]) * m_SizeX * m_SizeZ);
+
+	InitField(m_SizeX, m_SizeZ);
 
 	const TriangleMesh &mesh = *_mesh;
 	for (unsigned int i = 0; i < mesh.GetNumTriangles(); ++i)
@@ -91,7 +102,7 @@ static void dividePoly(const Vector3d* In, int nn, Vector3d* out1, int* nout1, V
 	*nout2 = n;
 }
 
-bool VoxelField::AddVoxel(int x, int y, int smin, int smax, float MergeThr)
+bool VoxelField::AddVoxel(int x, int y, float ymin, float ymax, float MergeThr)
 {
 	int idx = x + y * m_SizeX;
 
@@ -100,8 +111,9 @@ bool VoxelField::AddVoxel(int x, int y, int smin, int smax, float MergeThr)
 	{
 		return false;
 	}
-	s->low = smin;
-	s->high = smax;
+	s->data = 0;
+	s->ymin = ymin;
+	s->ymax = ymax;
 	s->next = nullptr;
 
 	if (m_Fields[idx] == nullptr)
@@ -115,24 +127,21 @@ bool VoxelField::AddVoxel(int x, int y, int smin, int smax, float MergeThr)
 
 	while (p)
 	{
-		if (p->low > s->high)
+		if (p->ymin > s->ymax)
 		{
 			break;
 		}
-		else if (p->high < s->low)
+		else if (p->ymax < s->ymin)
 		{
 			prev = p;
 			p = p->next;
 		}
 		else
 		{
-			if (p->low < s->low)
-				s->low = p->low;
-			if (p->high > s->high)
-				s->high = p->high;
-
-			// if (abs(s->max - p->max) <= (int)MergeThr)
-			//	;
+			if (p->ymin < s->ymin)
+				s->ymin = p->ymin;
+			if (p->ymax > s->ymax)
+				s->ymax = p->ymax;
 
 			Voxel* next = p->next;
 			FreeVoxel(p);
@@ -170,7 +179,7 @@ Voxel* VoxelField::AllocVoxel()
 		return p;
 	}
 
-	int kVoxelBatchSize = m_SizeX * m_SizeZ / 2;
+	int kVoxelBatchSize = std::max(1024, m_SizeX * m_SizeZ / 2);
 	if (m_VoxelBatchs.empty() || m_VoxelBatchs.back().Current >= m_VoxelBatchs.back().Voxels.size())
 	{
 		m_VoxelBatchs.resize(m_VoxelBatchs.size() + 1);
@@ -240,31 +249,22 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 			if (nv < 3)
 				continue;
 
-			float smin = p1[1].y, smax = p1[1].y;
+			float ymin = p1[0].y, ymax = p1[0].y;
 			for (int i = 1; i < nv; ++i)
 			{
-				smin = std::min(smin, p1[i].y);
-				smax = std::max(smax, p1[i].y);
+				ymin = std::min(ymin, p1[i].y);
+				ymax = std::max(ymax, p1[i].y);
 			}
-			smin -= info.Boundry.Min.y;
-			smax -= info.Boundry.Min.y;
 
-			if (smax < 0.0f || smin > dy)
+			if (ymax < info.Boundry.Min.y || ymin > info.Boundry.Max.y)
 				continue;
 
-			if (smin < 0.0f)
-				smin = 0;
-			if (smax > dy)
-				smax = dy;
+			if (ymin < info.Boundry.Min.y)
+				ymin = info.Boundry.Min.y;
+			if (ymax > info.Boundry.Max.y)
+				ymax = info.Boundry.Max.y;
 
-			int ismin = (int)floorf(smin * ich);
-			int ismax = (int)ceilf(smax * ich);
-			if (ismin < 0)
-				ismin = 0;
-			if (ismax <= ismin)
-				ismax = ismin + 1;
-
-			if (!AddVoxel(x, z, ismin, ismax, info.YMergeThr))
+			if (!AddVoxel(x, z, ymin, ymax, info.YMergeThr))
 				return false;
 		}
 	}
@@ -272,7 +272,7 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 	return true;
 }
 
-void VoxelField::GenerateHeightMap(std::vector<int>& bitmap)
+void	VoxelField::GenerateHeightMap(std::vector<float>& bitmap) const
 {
 	bitmap.resize(m_SizeX * m_SizeZ);
 	memset(&bitmap[0], 0, sizeof(bitmap[0]) * m_SizeX * m_SizeZ);
@@ -286,7 +286,7 @@ void VoxelField::GenerateHeightMap(std::vector<int>& bitmap)
 		{
 			if (v->next == nullptr)
 			{
-				bitmap[idx] = v->high;
+				bitmap[idx] = v->ymax;
 				break;
 			}
 			v = v->next;
@@ -294,10 +294,35 @@ void VoxelField::GenerateHeightMap(std::vector<int>& bitmap)
 	}
 }
 
-void VoxelField::CalculateYLimit(int* ymin, int* ymax)
+static int CountVoxel(const Voxel* v)
 {
-	*ymin = INT_MAX;
-	*ymax = -INT_MAX;
+	int Count = 0;
+	while (v)
+	{
+		++Count;
+		v = v->next;
+	}
+	return Count;
+}
+
+void	VoxelField::GenerateLevels(std::vector<int>& levels, int * level_max) const
+{
+	levels.resize(m_SizeX * m_SizeZ);
+	memset(&levels[0], 0, sizeof(levels[0]) * m_SizeX * m_SizeZ);
+
+	for (int i = 0; i < m_SizeZ; ++i)
+	for (int j = 0; j < m_SizeX; ++j)
+	{
+		int idx = i * m_SizeX + j;
+		levels[idx] = CountVoxel(m_Fields[idx]);
+		*level_max = std::max(*level_max, levels[idx]);
+	}
+}
+
+void	VoxelField::CalculateYLimit(float* ymin, float* ymax) const
+{
+	*ymin = FLT_MAX;
+	*ymax = -FLT_MAX;
 
 	for (int i = 0; i < m_SizeZ; ++i)
 	for (int j = 0; j < m_SizeX; ++j)
@@ -306,13 +331,13 @@ void VoxelField::CalculateYLimit(int* ymin, int* ymax)
 		Voxel* v = m_Fields[idx];
 		if (v == nullptr)
 			continue;
-		*ymin = std::min(*ymin, v->low);
+		*ymin = std::min(*ymin, v->ymin);
 
 		while (v)
 		{
 			if (v->next == nullptr)
 			{
-				*ymax = std::max(*ymax, v->high);
+				*ymax = std::max(*ymax, v->ymax);
 				break;
 			}
 			v = v->next;

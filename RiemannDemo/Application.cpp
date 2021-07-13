@@ -10,10 +10,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License (MIT).
 //--------------------------------------------------------------------------------------
+#include <string>
 #include <windows.h>
 #include "resource.h"
 
 #include "../Src/Collision/GeometryObject.h"
+
 #include "../Src/RigidBodyDynamics/PhysicsWorldRB.h"
 #include "../Renderer/Renderer.h"
 
@@ -84,6 +86,8 @@ void UpdateCamera()
 
 void InitScene()
 {
+
+
     PhysicsWorldRBParam param;
     param.Gravity = Vector3d(0, -0.0098f, 0);
     RigidBodyParam rp;
