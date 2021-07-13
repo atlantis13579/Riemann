@@ -2,6 +2,7 @@
 #include "VoxelField.h"
 
 #include <assert.h>
+#include <queue>
 #include "../Maths/Maths.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
 
@@ -19,9 +20,10 @@ VoxelField::~VoxelField()
 
 }
 
-void VoxelField::InitField(int SizeX, int SizeZ)
+void VoxelField::InitField(int SizeX, int SizeY, int SizeZ)
 {
 	m_SizeX = SizeX;
+	m_SizeY = SizeY;
 	m_SizeZ = SizeZ;
 	m_Fields.resize(m_SizeX * m_SizeZ);
 	memset(&m_Fields[0], 0, sizeof(m_Fields[0]) * m_SizeX * m_SizeZ);
@@ -35,9 +37,10 @@ bool VoxelField::VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* _
 	m_WorldBox = info.Boundry;
 
 	m_SizeX = (int)(info.Boundry.GetSizeX() / info.VoxelSize + 0.5f);
+	m_SizeY = (int)(info.Boundry.GetSizeY() / info.VoxelHeight + 0.5f);
 	m_SizeZ = (int)(info.Boundry.GetSizeZ() / info.VoxelSize + 0.5f);
 
-	InitField(m_SizeX, m_SizeZ);
+	InitField(m_SizeX, m_SizeY, m_SizeZ);
 
 	const TriangleMesh &mesh = *_mesh;
 	for (unsigned int i = 0; i < mesh.GetNumTriangles(); ++i)
@@ -199,6 +202,39 @@ void VoxelField::FreeVoxel(Voxel* p)
 	m_FreeVoxelList = p;
 }
 
+static bool VoxelIntersects(const Voxel* v1, const Voxel *v2)
+{
+	return v2->ymin < v1->ymax && v2->ymax > v1->ymin;
+}
+
+static bool VoxelIntersects2(const Voxel* v1, const Voxel* v2, float Thr)
+{
+	return v2->ymin < v1->ymax - Thr && v2->ymax > v1->ymin + Thr;
+}
+
+static int CountVoxel(const Voxel* v)
+{
+	int Count = 0;
+	while (v)
+	{
+		++Count;
+		v = v->next;
+	}
+	return Count;
+}
+
+static int VoxelMaxData(const Voxel* v)
+{
+	int Data = -1;
+	while (v)
+	{
+		Data = std::max(Data, v->data);
+		v = v->next;
+	}
+	return Data;
+}
+
+
 bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info)
 {
 	const float dy = info.Boundry.Max.y - info.Boundry.Min.y;
@@ -233,8 +269,8 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 		float minX = inrow[0].x, maxX = inrow[0].x;
 		for (int i = 1; i < nvrow; ++i)
 		{
-			minX = std::min(minX, inrow[i * 3].x);
-			maxX = std::max(maxX, inrow[i * 3].x);
+			minX = std::min(minX, inrow[i].x);
+			maxX = std::max(maxX, inrow[i].x);
 		}
 		const int x0 = Clamp((int)((minX - info.Boundry.Min.x) * ics), 0, m_SizeX - 1);
 		const int x1 = Clamp((int)((maxX - info.Boundry.Min.x) * ics), 0, m_SizeX - 1);
@@ -259,6 +295,11 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 			if (ymax < info.Boundry.Min.y || ymin > info.Boundry.Max.y)
 				continue;
 
+			const int y0 = (int)((ymin - info.Boundry.Min.y) * ich);
+			const int y1 = (int)((ymax - info.Boundry.Min.y) * ich);
+			ymin = info.Boundry.Min.y + y0 * info.VoxelHeight;
+			ymax = info.Boundry.Min.y + (y1 + 1) * info.VoxelHeight;
+
 			if (ymin < info.Boundry.Min.y)
 				ymin = info.Boundry.Min.y;
 			if (ymax > info.Boundry.Max.y)
@@ -270,6 +311,138 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 	}
 
 	return true;
+}
+
+bool VoxelField::MakeComplement(float MergeThr)
+{
+	for (int i = 0; i < m_SizeZ; ++i)
+	for (int j = 0; j < m_SizeX; ++j)
+	{
+		int idx = i * m_SizeX + j;
+		float ylow = m_WorldBox.Min.y;
+		Voxel *p = m_Fields[idx], *prev = nullptr;
+		while (p)
+		{
+			float t = p->ymin;
+			p->ymin = ylow;
+			ylow = p->ymax;
+			p->ymax = t;
+			prev = p;
+			p = p->next;
+		}
+
+		if (fabsf(m_WorldBox.Max.y - ylow) > 1e-3)
+		{
+			p = AllocVoxel();
+			if (p == nullptr)
+			{
+				return false;
+			}
+			p->data = 0;
+			p->ymin = ylow;
+			p->ymax = m_WorldBox.Max.y;
+			p->next = nullptr;
+
+			if (prev)
+				prev->next = p;
+			else
+				m_Fields[idx] = p;
+		}
+
+		p = m_Fields[idx];
+		prev = nullptr;
+		while (p)
+		{
+			if (fabsf(p->ymax - p->ymin) < MergeThr)
+			{
+				Voxel* next = p->next;
+				if (prev)
+					prev->next = next;
+				else
+					m_Fields[idx] = next;
+				FreeVoxel(p);
+				p = next;
+				continue;
+			}
+			p = p->next;
+		}
+	}
+
+	return true;
+}
+
+// X 0 X
+// 3 X 1 
+// X 2 X
+static int vx_neighbour4x_safe(int idx, int nx, int nz, int dir) {
+	int z = idx / nx;
+	int x = idx - z * nx;
+	switch (dir) {
+	case 0:
+		return z < nz - 1 ? idx + nx : -1;
+	case 1:
+		return x < nx - 1 ? idx + 1 : -1;
+	case 2:
+		return z > 0 ? idx - nx : -1;
+	case 3:
+		return x > 0 ? idx - 1 : -1;
+	}
+	return -1;
+}
+
+
+int VoxelField::SolveSpatialTopology(float Thr)
+{
+	int SpaceFound = 0;
+
+	for (int i = 0; i < m_SizeZ; ++i)
+	for (int j = 0; j < m_SizeX; ++j)
+	{
+		int idx = i * m_SizeX + j;
+		Voxel* curr = m_Fields[idx];
+		while (curr)
+		{
+			if (curr->data != 0)
+			{
+				curr = curr->next;
+				continue;
+			}
+
+			curr->data = ++SpaceFound;
+
+			std::queue<std::pair<Voxel*, int>> voxel_qu;
+			voxel_qu.push(std::make_pair(curr, idx));
+			int count = 0;
+
+			while (!voxel_qu.empty())
+			{
+				auto next = voxel_qu.front();
+				voxel_qu.pop();
+				++count;
+
+				for (int d = 0; d < 4; ++d)
+				{
+					int nidx = vx_neighbour4x_safe(next.second, m_SizeX, m_SizeZ, d);
+					if (nidx == -1)
+						continue;
+					Voxel* nv = m_Fields[nidx];
+					while (nv)
+					{
+						if (nv->data == 0 && VoxelIntersects2(next.first, nv, Thr))
+						{
+							nv->data = next.first->data;
+							voxel_qu.push(std::make_pair(nv, nidx));
+						}
+						nv = nv->next;
+					}
+				}
+			}
+
+			curr = curr->next;
+		}
+	}
+
+	return SpaceFound;
 }
 
 void	VoxelField::GenerateHeightMap(std::vector<float>& bitmap) const
@@ -292,17 +465,6 @@ void	VoxelField::GenerateHeightMap(std::vector<float>& bitmap) const
 			v = v->next;
 		}
 	}
-}
-
-static int CountVoxel(const Voxel* v)
-{
-	int Count = 0;
-	while (v)
-	{
-		++Count;
-		v = v->next;
-	}
-	return Count;
 }
 
 void	VoxelField::GenerateLevels(std::vector<int>& levels, int * level_max) const

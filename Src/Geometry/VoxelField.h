@@ -33,10 +33,12 @@ public:
 	~VoxelField();
 
 public:
-	void	InitField(int SizeX, int SizeZ);
+	void	InitField(int SizeX, int SizeY, int SizeZ);
 	bool	VoxelizeTriangles(const VoxelizationInfo &info, TriangleMesh *mesh);
 	bool	VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
-	
+	bool	MakeComplement(float MergeThr);
+	int		SolveSpatialTopology(float Thr);
+
 	int		GetSizeX() const
 	{
 		return m_SizeX;

@@ -194,31 +194,76 @@ void TestSAP()
 	return;
 }
 
-#pragma optimize("", off)
-void TestMesh()
+void TestMesh1()
 {
 	TriangleMesh mesh;
-	// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/dungeon.obj");
-	 
-	// std::string file = "D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting.obj";
-	// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting_kou.obj");
-	mesh.LoadFlat("D://home//fighting_kun.flat");
-	// mesh.CalculateNormals();
+	mesh.AddVertex(Vector3d(-1, 1, -1));
+	mesh.AddVertex(Vector3d(1, 1, -1));
+	mesh.AddVertex(Vector3d(-1, 1, 1));
+	mesh.AddVertex(Vector3d(1, 1, 1));
+	mesh.AddVertex(Vector3d(-1, -1, -1));
+	mesh.AddVertex(Vector3d(1, -1, -1));
+	mesh.AddVertex(Vector3d(-1, -1, 1));
+	mesh.AddVertex(Vector3d(1, -1, 1));
+	mesh.AddTriangle(0, 1, 2);
+	mesh.AddTriangle(3, 1, 2);
+	mesh.AddTriangle(4, 5, 6);
+	mesh.AddTriangle(7, 5, 6);
+
+	mesh.AddTriangle(0, 1, 4);
+	mesh.AddTriangle(5, 1, 4);
+	mesh.AddTriangle(1, 3, 5);
+	mesh.AddTriangle(7, 3, 5);
+	mesh.AddTriangle(0, 2, 4);
+	mesh.AddTriangle(6, 2, 4);
+	mesh.AddTriangle(2, 3, 6);
+	mesh.AddTriangle(7, 3, 6);
+
 	mesh.CalculateBoundingBox();
 
-
 	VoxelizationInfo info;
-	info.Boundry = mesh.BoundingBox;
-	info.VoxelHeight = 16.0f;
-	info.VoxelSize = 16.0f;
+	info.Boundry.Min = Vector3d(-2, -2, -2);
+	info.Boundry.Max = Vector3d(2, 2, 2);
+	info.VoxelHeight = 0.5f;
+	info.VoxelSize = 0.5f;
 
 	VoxelField field;
-	field.InitField(1, 1);
+	field.InitField(1, 1, 1);
 	field.AddVoxel(0, 0, 1.0f, 2.0f, 0);
 	field.AddVoxel(0, 0, 3.0f, 5.0f, 0);
 	field.AddVoxel(0, 0, 1.0f, 5.0f, 0);
 
 	field.VoxelizeTriangles(info, &mesh);
+	field.MakeComplement(0.0f);
+	int space = field.SolveSpatialTopology(0.1f);
+	assert(space == 2);
+	return;
+}
+
+#pragma optimize("", off)
+void TestMesh()
+{
+	TriangleMesh mesh;
+	// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/dungeon.obj");
+
+	// std::string file = "D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting.obj";
+	// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting_kou.obj");
+	mesh.LoadFlat("D://home//fighting.flat");
+	// mesh.CalculateNormals();
+	mesh.CalculateBoundingBox();
+
+	VoxelizationInfo info;
+	info.Boundry.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
+	info.Boundry.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
+	info.VoxelHeight = 0.5f;
+	info.VoxelSize = 0.5f;
+
+	VoxelField field;
+
+	field.VoxelizeTriangles(info, &mesh);
+	field.MakeComplement(0.0f);
+	int space = field.SolveSpatialTopology(0.5f);
+
 	std::vector<float> data;
 	field.GenerateHeightMap(data);
 
@@ -227,7 +272,7 @@ void TestMesh()
 	field.GenerateLevels(levels, &ymax);
 
 	BMPFile bitmap;
-	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 1.0f - 1.0f / 10);
+	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 1.0f / 10);
 	bitmap.WriteToFile("D://home//fighting2.bmp");
 
 
@@ -330,6 +375,7 @@ void TestMainEntry()
 	TestGeometryQuery();
 	TestSAP();
 	TestSAPInc();
+	TestMesh1();
 	TestMesh();
 	return;
 }
