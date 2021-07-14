@@ -1,5 +1,6 @@
 
 #include "SparseVoxelField.h"
+#include "SparseVoxelFieldInference.h"
 
 #include <assert.h>
 #include <queue>
@@ -39,6 +40,7 @@ void SparseVoxelField::InitField(const Box3d &Bv, int SizeX, int SizeY, int Size
 	m_FreeVoxelList = nullptr;
 }
 
+
 bool SparseVoxelField::VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* _mesh)
 {
 	m_SizeX = (int)(info.BV.GetSizeX() / info.VoxelSize + 0.5f);
@@ -59,6 +61,53 @@ bool SparseVoxelField::VoxelizeTriangles(const VoxelizationInfo& info, TriangleM
 		}
 	}
 	return true;
+}
+
+
+int		SparseVoxelField::GetVoxelIdx(const Vector3d& pos) const
+{
+	const int x = Clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int z = Clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	return z * m_SizeX + x;
+}
+
+
+int		SparseVoxelField::GetVoxelY(float pos_y) const
+{
+	const int y = Clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
+	return y;
+}
+
+
+Box3d	SparseVoxelField::GetVoxelBox(const Vector3d& pos) const
+{
+	int idx = GetVoxelIdx(pos);
+	int z = idx / m_SizeX;
+	int x = idx - z * m_SizeX;
+	int y = GetVoxelY(pos.y);
+	return GetVoxelBox(x, y, z);
+}
+
+
+Box3d	SparseVoxelField::GetVoxelBox(int x, int y, int z) const
+{
+	if (x < 0 || x >= m_SizeX || z < 0 || z >= m_SizeZ || y < 0 || y >= m_SizeY)
+	{
+		// Error
+		return Box3d::Unit();
+	}
+	Box3d box;
+	box.Min.x = m_BV.Min.x + m_VoxelSize * x;
+	box.Min.y = m_BV.Min.y + m_VoxelHeight * y;
+	box.Min.z = m_BV.Min.z + m_VoxelSize * x;
+	box.Max = box.Min + Vector3d(m_VoxelSize, m_VoxelHeight, m_VoxelSize);
+	return box;
+}
+
+
+float	SparseVoxelField::GetVoxelY(unsigned short y) const
+{
+	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
 }
 
 
@@ -175,48 +224,6 @@ bool SparseVoxelField::AddVoxel(int x, int y, unsigned short ymin, unsigned shor
 	return true;
 }
 
-int		SparseVoxelField::GetVoxelIdx(const Vector3d& pos) const
-{
-	const int x = Clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
-	const int z = Clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
-	return z * m_SizeX + x;
-}
-
-int		SparseVoxelField::GetVoxelY(float pos_y) const
-{
-	const int y = Clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
-	return y;
-}
-
-Box3d	SparseVoxelField::GetVoxelBox(const Vector3d& pos) const
-{
-	int idx = GetVoxelIdx(pos);
-	int z = idx / m_SizeX;
-	int x = idx - z * m_SizeX;
-	int y = GetVoxelY(pos.y);
-	return GetVoxelBox(x, y, z);
-}
-
-Box3d	SparseVoxelField::GetVoxelBox(int x, int y, int z) const
-{
-	if (x < 0 || x >= m_SizeX || z < 0 || z >= m_SizeZ || y < 0 || y >= m_SizeY)
-	{
-		// Error
-		return Box3d::Unit();
-	}
-	Box3d box;
-	box.Min.x = m_BV.Min.x + m_VoxelSize * x;
-	box.Min.y = m_BV.Min.y + m_VoxelHeight * y;
-	box.Min.z = m_BV.Min.z + m_VoxelSize * x;
-	box.Max = box.Min + Vector3d(m_VoxelSize, m_VoxelHeight, m_VoxelSize);
-	return box;
-}
-
-float	SparseVoxelField::GetVoxelY(unsigned short y) const
-{
-	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
-}
-
 Voxel*	SparseVoxelField::AllocVoxel()
 {
 	m_NumVoxels++;
@@ -258,7 +265,7 @@ static bool VoxelIntersects2(const Voxel* v1, const Voxel* v2, float Thr)
 	return v2->ymin < v1->ymax - Thr && v2->ymax > v1->ymin + Thr;
 }
 
-static Voxel* FindVoxel(Voxel* v, int data)
+static Voxel* FindVoxel(Voxel* v, unsigned int data)
 {
 	while (v)
 	{
@@ -282,7 +289,7 @@ static int CountVoxel(const Voxel* v)
 
 static int VoxelMaxData(const Voxel* v)
 {
-	int Data = -1;
+	unsigned int Data = 0;
 	while (v)
 	{
 		Data = std::max(Data, v->data);
@@ -488,6 +495,16 @@ int SparseVoxelField::SolveSpatialTopology()
 	return SpaceFound;
 }
 
+int		SparseVoxelField::CalculateNumFields() const
+{
+	int Count = 0;
+	for (int i = 0; i < m_SizeZ * m_SizeX; ++i)
+	{
+		if (m_Fields[i] != nullptr) Count++;
+	}
+	return Count;
+}
+
 void	SparseVoxelField::GenerateHeightMap(std::vector<float>& bitmap) const
 {
 	bitmap.resize(m_SizeX * m_SizeZ);
@@ -524,7 +541,7 @@ void	SparseVoxelField::GenerateLevels(std::vector<int>& levels, int * level_max)
 	}
 }
 
-void	SparseVoxelField::GenerateData(std::vector<int>& output, int data) const
+void	SparseVoxelField::GenerateData(std::vector<int>& output, unsigned int data) const
 {
 	output.resize(m_SizeX * m_SizeZ);
 	memset(&output[0], 0, sizeof(output[0]) * m_SizeX * m_SizeZ);
@@ -540,9 +557,6 @@ void	SparseVoxelField::GenerateData(std::vector<int>& output, int data) const
 
 void	SparseVoxelField::CalculateYLimit(float* ymin, float* ymax) const
 {
-	*ymin = FLT_MAX;
-	*ymax = -FLT_MAX;
-
 	unsigned short smin = 0;
 	unsigned short smax = 65535;
 
@@ -565,4 +579,179 @@ void	SparseVoxelField::CalculateYLimit(float* ymin, float* ymax) const
 			v = v->next;
 		}
 	}
+
+	*ymin = m_BV.Min.y + smin * m_VoxelHeight;
+	*ymax = m_BV.Min.y + (smax+1) * m_VoxelHeight;
+}
+
+bool	SparseVoxelField::SerializeTo(const char* filename)
+{
+
+	VoxelFileHeader	header;
+	header.nFields = CalculateNumFields();
+	header.nVoxels = m_NumVoxels;
+	header.SizeX = m_SizeX;
+	header.SizeY = m_SizeY;
+	header.SizeZ = m_SizeZ;
+	header.VoxelSize = m_VoxelSize;
+	header.VoxelHeight = m_VoxelHeight;
+	header.BV = m_BV;
+
+	std::vector<VoxelFileField> buffer_field;
+	buffer_field.resize(header.nFields);
+
+	std::vector<VoxelFast> buffer_vx;
+	buffer_vx.resize(header.nVoxels);
+
+	VoxelFileField* pf = &buffer_field[0];
+	VoxelFast* pvx = &buffer_vx[0];
+
+	int nFields = 0;
+	int nVoxels = 0;
+	for (int i = 0; i < m_SizeZ * m_SizeX; ++i)
+	{
+		Voxel* v = m_Fields[i];
+		if (v == nullptr)
+		{
+			continue;
+		}
+
+		if (nFields == header.nFields)
+		{
+			assert(false);
+			return false;
+		}
+
+		pf->idx = i;
+		while (v)
+		{
+			if (nVoxels == m_NumVoxels)
+			{
+				assert(false);
+				return false;
+			}
+
+			pvx->data = v->data;
+			if (v->next == nullptr)
+			{
+				pvx->data |= VOXEL_TOP;
+			}
+			pvx->ymin = v->ymin;
+			pvx->ymax = v->ymax;
+			++pvx;
+			++nVoxels;
+
+			v = v->next;
+		}
+
+		++pf;
+		++nFields;
+	}
+
+	if (nFields != header.nFields)
+	{
+		assert(false);
+		return false;
+	}
+
+	if (nVoxels != header.nVoxels)
+	{
+		assert(false);
+		return false;
+	}
+
+	FILE* fp = fopen(filename, "wb");
+	if (!fp)
+	{
+		return false;
+	}
+
+	unsigned int Magic = VOXEL_FILE_MAGIC;
+	fwrite(&Magic, sizeof(Magic), 1, fp);
+	fwrite(&header, sizeof(header), 1, fp);
+	fwrite(&buffer_vx[0], sizeof(VoxelFast), buffer_vx.size(), fp);
+	fwrite(&buffer_field[0], sizeof(VoxelFileField), buffer_field.size(), fp);
+	fclose(fp);
+
+	return true;
+}
+
+bool	SparseVoxelField::SerializeFrom(const char* filename)
+{
+	FILE* fp = fopen(filename, "rb");
+	if (!fp)
+	{
+		return false;
+	}
+
+	_fseeki64(fp, 0, SEEK_END);
+	unsigned long long fileSize = _ftelli64(fp);
+	_fseeki64(fp, 0, SEEK_SET);
+
+	if (fileSize < 4 + sizeof(VoxelFileHeader))
+	{
+		return false;
+	}
+
+	unsigned int Magic;
+	fread(&Magic, sizeof(Magic), 1, fp);
+	if (Magic != VOXEL_FILE_MAGIC)
+	{
+		return false;
+	}
+
+	VoxelFileHeader	header;
+	fread(&header, sizeof(header), 1, fp);
+	unsigned long long nExpectedSize = 4 + sizeof(VoxelFileHeader);
+	nExpectedSize += sizeof(VoxelFileField) * header.nFields;
+	nExpectedSize += sizeof(VoxelFast) * header.nVoxels;
+	if (fileSize != nExpectedSize)
+	{
+		return false;
+	}
+
+	InitField(header.BV, header.SizeX, header.SizeY, header.SizeZ, header.VoxelSize, header.VoxelHeight);
+	
+	m_VoxelBatchs.resize(1);
+	m_VoxelBatchs[0].Current = header.nVoxels;
+	m_VoxelBatchs[0].Voxels.resize(header.nVoxels);
+	std::vector<Voxel>& Voxels = m_VoxelBatchs[0].Voxels;
+
+	{
+		std::vector<VoxelFast> buffer_vx;
+		buffer_vx.resize(header.nVoxels);
+		fread(&buffer_vx[0], sizeof(VoxelFast), buffer_vx.size(), fp);
+		for (int i = 0; i < header.nVoxels; ++i)
+		{
+			Voxel* vx = &Voxels[i];
+			const VoxelFast* vf = &buffer_vx[i];
+			vx->data = VOXEL_DATA(vf->data);
+			vx->ymax = vf->ymax;
+			vx->ymin = vf->ymin;
+			vx->next = (vf->data & VOXEL_TOP) ? nullptr : &Voxels[i+1];
+		}
+		buffer_vx.clear();
+	}
+
+	{
+		std::vector<VoxelFileField> buffer_field;
+		buffer_field.resize(header.nFields);
+		fread(&buffer_field[0], sizeof(VoxelFileField), buffer_field.size(), fp);
+
+		size_t curr = 0;
+		for (int i = 0; i < header.nFields; ++i)
+		{
+			if (curr >= Voxels.size())
+			{
+				assert(false);
+				return false;
+			}
+
+			int idx = buffer_field[i].idx;
+			m_Fields[idx] = &Voxels[curr];
+			curr += (size_t)CountVoxel(m_Fields[idx]);
+		}
+	}
+
+	return true;
 }

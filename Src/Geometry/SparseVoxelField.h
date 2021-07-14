@@ -14,7 +14,7 @@ struct VoxelizationInfo
 
 struct Voxel
 {
-	int				data;
+	unsigned int	data;
 	unsigned short	ymin;
 	unsigned short	ymax;
 	Voxel*			next;
@@ -45,6 +45,9 @@ public:
 	Box3d	GetVoxelBox(int x, int y, int z) const;
 	float	GetVoxelY(unsigned short y) const;
 
+	bool	SerializeTo(const char *filename);
+	bool	SerializeFrom(const char* filename);
+
 	int		GetSizeX() const
 	{
 		return m_SizeX;
@@ -57,13 +60,14 @@ public:
 
 	void	GenerateHeightMap(std::vector<float>& heightmap) const;
 	void	GenerateLevels(std::vector<int>& levels, int* level_max) const;
-	void	GenerateData(std::vector<int>& output, int data) const;
+	void	GenerateData(std::vector<int>& output, unsigned int data) const;
 	void	CalculateYLimit(float *ymin, float *ymax) const;
 	bool	AddVoxel(int x, int y, unsigned short ymin, unsigned short ymax, float MergeThr);
 
 private:
 	Voxel*	AllocVoxel();
 	void    FreeVoxel(Voxel* p);
+	int		CalculateNumFields() const;
 
 private:
 	int			m_SizeX, m_SizeZ, m_SizeY;

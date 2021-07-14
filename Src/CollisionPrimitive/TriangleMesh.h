@@ -162,6 +162,15 @@ public:
 			return false;
 		}
 
+		_fseeki64(fp, 0, SEEK_END);
+		unsigned long long fileSize = _ftelli64(fp);
+		_fseeki64(fp, 0, SEEK_SET);
+
+		if (fileSize < 12)
+		{
+			return false;
+		}
+
 		unsigned int Magic;
 		fread(&Magic, sizeof(Magic), 1, fp);
 		if (Magic != 0xF34D9017)

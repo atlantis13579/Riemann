@@ -27,6 +27,7 @@
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
 #include "../Src/Geometry/SparseVoxelField.h"
+#include "../Src/Geometry/SparseVoxelFieldInference.h"
 
 void TestAABBTree()
 {
@@ -228,11 +229,20 @@ void TestMesh1()
 	field.AddVoxel(0, 0, 7, 8, 0);
 	field.AddVoxel(0, 0, 1, 10, 0);
 
-	Box3d v = field.GetVoxelBox(Vector3d(-0.1, -0.1, -0.1));
+	assert(field.SerializeTo("D://home//test.voxel"));
+
+	SparseVoxelFieldInference inference;
+	assert(inference.SerializeFrom("D://home//test.voxel"));
+
+	Box3d v = field.GetVoxelBox(Vector3d(-0.1f, -0.1f, -0.1f));
+	assert(FloatEqual(v.Min.x, -1.0f));
+	assert(FloatEqual(v.Max.x, 0.0f));
+
+	v = inference.GetVoxelBox(Vector3d(-0.1f, -0.1f, -0.1f));
 	assert(FloatEqual(v.Min.x, -1.0f));
 	assert(FloatEqual(v.Max.x, 0.0f));
 	
-	v = field.GetVoxelBox(Vector3d(0.01, 0.01, 0.01));
+	v = field.GetVoxelBox(Vector3d(0.01f, 0.01f, 0.01f));
 	assert(FloatEqual(v.Min.x, 0.0f));
 	assert(FloatEqual(v.Max.x, 1.0f));
 
@@ -264,13 +274,17 @@ void TestMesh()
 	VoxelizationInfo info;
 	info.BV.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
 	info.BV.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
-	info.VoxelHeight = 1.5f;
-	info.VoxelSize = 1.5f;
+	info.VoxelHeight = 1.0f;
+	info.VoxelSize = 1.0f;
 
 	SparseVoxelField field;
 
 	field.VoxelizeTriangles(info, &mesh);
 	field.MakeComplement();
+
+	field.SerializeTo("D://home//fighting.voxel");
+	field.SerializeFrom("D://home//fighting.voxel");
+
 	int space = field.SolveSpatialTopology();
 
 	std::vector<float> data;
@@ -278,11 +292,11 @@ void TestMesh()
 
 	// int ymax;
 	std::vector<int> levels;
-	field.GenerateData(levels, 5);
+	field.GenerateData(levels, 4);
 
 	BMPFile bitmap;
-	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 1.0f - 1.0f / 2);
-	bitmap.WriteToFile("D://home//fighting5.bmp");
+	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 1.0f - 1.0f / 10);
+	bitmap.WriteToFile("D://home//fighting4.bmp");
 
 
 	return;

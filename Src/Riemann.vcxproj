@@ -33,6 +33,7 @@
     <ClCompile Include="Collision\SparseSpatialHash.cpp" />
     <ClCompile Include="Geometry\ConvexHull3D.cpp" />
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
+    <ClCompile Include="Geometry\SparseVoxelFieldInference.cpp" />
     <ClCompile Include="Geometry\VoxelEngine.cpp" />
     <ClCompile Include="RigidBodyDynamics\WarmStart.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
@@ -81,6 +82,7 @@
     <ClInclude Include="Collision\SAP.h" />
     <ClInclude Include="Geometry\ConvexHull3D.h" />
     <ClInclude Include="Geometry\SparseVoxelField.h" />
+    <ClInclude Include="Geometry\SparseVoxelFieldInference.h" />
     <ClInclude Include="Geometry\VoxelEngine.h" />
     <ClInclude Include="RigidBodyDynamics\WarmStart.h" />
     <ClInclude Include="Geometry\ConvexHull2D.h" />

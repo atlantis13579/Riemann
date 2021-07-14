@@ -112,17 +112,17 @@ public:
 		return Max - Min;
 	}
 
-	T GetSizeX() const
+	inline T GetSizeX() const
 	{
 		return Max.x - Min.x;
 	}
 
-	T GetSizeY() const
+	inline T GetSizeY() const
 	{
 		return Max.y - Min.y;
 	}
 
-	T GetSizeZ() const
+	inline T GetSizeZ() const
 	{
 		return Max.z - Min.z;
 	}
@@ -139,7 +139,7 @@ public:
 		Max = Center + Extent;
 	}
 
-	bool Intersect(const TAABB3<T>& rhs) const
+	inline bool Intersect(const TAABB3<T>& rhs) const
 	{
 		if (Min.x > rhs.Max.x || rhs.Min.x > Max.x)
 		{
@@ -159,7 +159,7 @@ public:
 		return true;
 	}
 
-	bool IsInside(const TVector3<T>& rhs) const
+	inline bool IsInside(const TVector3<T>& rhs) const
 	{
 		return ((rhs.x > Min.x) && (rhs.x < Max.x) && (rhs.y > Min.y) && (rhs.y < Max.y) && (rhs.z > Min.z) && (rhs.z < Max.z));
 	}
@@ -230,3 +230,5 @@ public:
 };
 
 typedef TAABB3<float> Box3d;
+
+static_assert(sizeof(Box3d) == 24, "sizeof Box3d is not valid");

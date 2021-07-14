@@ -80,6 +80,7 @@
     <ClInclude Include="Geometry\ConvexHull3D.h" />
     <ClInclude Include="Geometry\VoxelEngine.h" />
     <ClInclude Include="Geometry\SparseVoxelField.h" />
+    <ClInclude Include="Geometry\SparseVoxelFieldInference.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">
@@ -114,5 +115,6 @@
     <ClCompile Include="Geometry\ConvexHull3D.cpp" />
     <ClCompile Include="Geometry\VoxelEngine.cpp" />
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
+    <ClCompile Include="Geometry\SparseVoxelFieldInference.cpp" />
   </ItemGroup>
 </Project>
