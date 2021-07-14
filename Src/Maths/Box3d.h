@@ -217,6 +217,16 @@ public:
 		v[6] = TVector3<T>(Bmin.x, Bmax.y, Bmax.z);
 		v[7] = TVector3<T>(Bmax.x, Bmax.y, Bmax.z);
 	}
+
+	static TAABB3<T> Unit()
+	{
+		return TAABB3<T>(-TVector3<T>::One(), TVector3<T>::One());
+	}
+
+	static TAABB3<T> One()
+	{
+		return TAABB3<T>(TVector3<T>::Zero(), TVector3<T>::One());
+	}
 };
 
 typedef TAABB3<float> Box3d;

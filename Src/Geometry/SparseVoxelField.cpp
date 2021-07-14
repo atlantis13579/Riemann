@@ -1,27 +1,29 @@
 
-#include "VoxelField.h"
+#include "SparseVoxelField.h"
 
 #include <assert.h>
 #include <queue>
 #include "../Maths/Maths.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
 
-VoxelField::VoxelField()
+SparseVoxelField::SparseVoxelField()
 {
 	m_SizeX = 0;
-	m_SizeZ = 0;
 	m_SizeY = 0;
+	m_SizeZ = 0;
 	m_NumVoxels = 0;
 	m_FreeVoxelList = nullptr;
 }
 
-VoxelField::~VoxelField()
+SparseVoxelField::~SparseVoxelField()
 {
 
 }
 
-void VoxelField::InitField(int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
+void SparseVoxelField::InitField(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
 {
+	m_BV = Bv;
+
 	m_SizeX = SizeX;
 	m_SizeY = SizeY;
 	m_SizeZ = SizeZ;
@@ -37,15 +39,13 @@ void VoxelField::InitField(int SizeX, int SizeY, int SizeZ, float VoxelSize, flo
 	m_FreeVoxelList = nullptr;
 }
 
-bool VoxelField::VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* _mesh)
+bool SparseVoxelField::VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* _mesh)
 {
-	m_WorldBox = info.Boundry;
+	m_SizeX = (int)(info.BV.GetSizeX() / info.VoxelSize + 0.5f);
+	m_SizeY = (int)(info.BV.GetSizeY() / info.VoxelHeight + 0.5f);
+	m_SizeZ = (int)(info.BV.GetSizeZ() / info.VoxelSize + 0.5f);
 
-	m_SizeX = (int)(info.Boundry.GetSizeX() / info.VoxelSize + 0.5f);
-	m_SizeY = (int)(info.Boundry.GetSizeY() / info.VoxelHeight + 0.5f);
-	m_SizeZ = (int)(info.Boundry.GetSizeZ() / info.VoxelSize + 0.5f);
-
-	InitField(m_SizeX, m_SizeY, m_SizeZ, info.VoxelSize, info.VoxelHeight);
+	InitField(info.BV, m_SizeX, m_SizeY, m_SizeZ, info.VoxelSize, info.VoxelHeight);
 
 	const TriangleMesh &mesh = *_mesh;
 	for (unsigned int i = 0; i < mesh.GetNumTriangles(); ++i)
@@ -110,7 +110,7 @@ static void dividePoly(const Vector3d* In, int nn, Vector3d* out1, int* nout1, V
 	*nout2 = n;
 }
 
-bool VoxelField::AddVoxel(int x, int y, unsigned short ymin, unsigned short ymax, float MergeThr)
+bool SparseVoxelField::AddVoxel(int x, int y, unsigned short ymin, unsigned short ymax, float MergeThr)
 {
 	int idx = x + y * m_SizeX;
 
@@ -175,19 +175,49 @@ bool VoxelField::AddVoxel(int x, int y, unsigned short ymin, unsigned short ymax
 	return true;
 }
 
-int		VoxelField::GetVoxelIdx(const Vector3d& pos) const
+int		SparseVoxelField::GetVoxelIdx(const Vector3d& pos) const
 {
-	const int x = Clamp((int)((pos.x - m_WorldBox.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
-	const int z = Clamp((int)((pos.z - m_WorldBox.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int x = Clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int z = Clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
 	return z * m_SizeX + x;
 }
 
-float	VoxelField::GetVoxelY(unsigned short y) const
+int		SparseVoxelField::GetVoxelY(float pos_y) const
 {
-	return m_WorldBox.Min.y + (y + 0.5f) * m_VoxelHeight;
+	const int y = Clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
+	return y;
 }
 
-Voxel*	VoxelField::AllocVoxel()
+Box3d	SparseVoxelField::GetVoxelBox(const Vector3d& pos) const
+{
+	int idx = GetVoxelIdx(pos);
+	int z = idx / m_SizeX;
+	int x = idx - z * m_SizeX;
+	int y = GetVoxelY(pos.y);
+	return GetVoxelBox(x, y, z);
+}
+
+Box3d	SparseVoxelField::GetVoxelBox(int x, int y, int z) const
+{
+	if (x < 0 || x >= m_SizeX || z < 0 || z >= m_SizeZ || y < 0 || y >= m_SizeY)
+	{
+		// Error
+		return Box3d::Unit();
+	}
+	Box3d box;
+	box.Min.x = m_BV.Min.x + m_VoxelSize * x;
+	box.Min.y = m_BV.Min.y + m_VoxelHeight * y;
+	box.Min.z = m_BV.Min.z + m_VoxelSize * x;
+	box.Max = box.Min + Vector3d(m_VoxelSize, m_VoxelHeight, m_VoxelSize);
+	return box;
+}
+
+float	SparseVoxelField::GetVoxelY(unsigned short y) const
+{
+	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
+}
+
+Voxel*	SparseVoxelField::AllocVoxel()
 {
 	m_NumVoxels++;
 
@@ -210,7 +240,7 @@ Voxel*	VoxelField::AllocVoxel()
 	return p;
 }
 
-void VoxelField::FreeVoxel(Voxel* p)
+void SparseVoxelField::FreeVoxel(Voxel* p)
 {
 	m_NumVoxels--;
 
@@ -226,6 +256,17 @@ static bool VoxelIntersects(const Voxel* v1, const Voxel *v2)
 static bool VoxelIntersects2(const Voxel* v1, const Voxel* v2, float Thr)
 {
 	return v2->ymin < v1->ymax - Thr && v2->ymax > v1->ymin + Thr;
+}
+
+static Voxel* FindVoxel(Voxel* v, int data)
+{
+	while (v)
+	{
+		if (v->data == data)
+			return v;
+		v = v->next;
+	}
+	return nullptr;
 }
 
 static int CountVoxel(const Voxel* v)
@@ -251,19 +292,19 @@ static int VoxelMaxData(const Voxel* v)
 }
 
 
-bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info)
+bool SparseVoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info)
 {
-	const float dy = m_WorldBox.Max.y - m_WorldBox.Min.y;
+	const float dy = m_BV.Max.y - m_BV.Min.y;
 	const float ics = 1.0f / m_VoxelSize;
 	const float ich = 1.0f / m_VoxelHeight;
 
 	Box3d tbox({ v0, v1, v2 });
 
-	if (!tbox.Intersect(m_WorldBox))
+	if (!tbox.Intersect(m_BV))
 		return true;
 
-	const int z0 = Clamp((int)((tbox.Min.z - m_WorldBox.Min.z) * ics), 0, m_SizeZ - 1);
-	const int z1 = Clamp((int)((tbox.Max.z - m_WorldBox.Min.z) * ics), 0, m_SizeZ - 1);
+	const int z0 = Clamp((int)((tbox.Min.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
+	const int z1 = Clamp((int)((tbox.Max.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
 
 	Vector3d buf[7 * 4];
 	Vector3d *In = buf, *inrow = buf + 7, *p1 = buf + 7 * 2, *p2 = buf + 7 * 3;
@@ -276,7 +317,7 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 
 	for (int z = z0; z <= z1; ++z)
 	{
-		const float cz = m_WorldBox.Min.z + z * m_VoxelSize;
+		const float cz = m_BV.Min.z + z * m_VoxelSize;
 		dividePoly(In, nvIn, inrow, &nvrow, p1, &nvIn, cz + m_VoxelSize, 2);
 		std::swap(In, p1);
 		if (nvrow < 3)
@@ -288,14 +329,14 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 			minX = std::min(minX, inrow[i].x);
 			maxX = std::max(maxX, inrow[i].x);
 		}
-		const int x0 = Clamp((int)((minX - m_WorldBox.Min.x) * ics), 0, m_SizeX - 1);
-		const int x1 = Clamp((int)((maxX - m_WorldBox.Min.x) * ics), 0, m_SizeX - 1);
+		const int x0 = Clamp((int)((minX - m_BV.Min.x) * ics), 0, m_SizeX - 1);
+		const int x1 = Clamp((int)((maxX - m_BV.Min.x) * ics), 0, m_SizeX - 1);
 
 		int nv, nv2 = nvrow;
 
 		for (int x = x0; x <= x1; ++x)
 		{
-			const float cx = m_WorldBox.Min.x + x * m_VoxelSize;
+			const float cx = m_BV.Min.x + x * m_VoxelSize;
 			dividePoly(inrow, nv2, p1, &nv, p2, &nv2, cx + m_VoxelSize, 0);
 			std::swap(inrow, p2);
 			if (nv < 3)
@@ -308,15 +349,15 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 				ymax = std::max(ymax, p1[i].y);
 			}
 
-			if (ymax < m_WorldBox.Min.y || ymin > m_WorldBox.Max.y)
+			if (ymax < m_BV.Min.y || ymin > m_BV.Max.y)
 				continue;
 
-			if (ymin < m_WorldBox.Min.y)
-				ymin = m_WorldBox.Min.y;
-			if (ymax > m_WorldBox.Max.y)
-				ymax = m_WorldBox.Max.y;
-			ymin -= m_WorldBox.Min.y;
-			ymax -= m_WorldBox.Min.y;
+			if (ymin < m_BV.Min.y)
+				ymin = m_BV.Min.y;
+			if (ymax > m_BV.Max.y)
+				ymax = m_BV.Max.y;
+			ymin -= m_BV.Min.y;
+			ymax -= m_BV.Min.y;
 
 			const unsigned short y0 = (unsigned short)Clamp((int)floorf(ymin * ich), 0, m_SizeY - 1);
 			const unsigned short y1 = (unsigned short)Clamp((int)ceilf(ymax * ich), 0, m_SizeY - 1);
@@ -329,7 +370,7 @@ bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vecto
 	return true;
 }
 
-bool VoxelField::MakeComplement()
+bool SparseVoxelField::MakeComplement()
 {
 	unsigned short yhigh = m_SizeY;
 
@@ -393,7 +434,7 @@ static int vx_neighbour4x_safe(int idx, int nx, int nz, int dir) {
 }
 
 
-int VoxelField::SolveSpatialTopology()
+int SparseVoxelField::SolveSpatialTopology()
 {
 	int SpaceFound = 0;
 
@@ -447,7 +488,7 @@ int VoxelField::SolveSpatialTopology()
 	return SpaceFound;
 }
 
-void	VoxelField::GenerateHeightMap(std::vector<float>& bitmap) const
+void	SparseVoxelField::GenerateHeightMap(std::vector<float>& bitmap) const
 {
 	bitmap.resize(m_SizeX * m_SizeZ);
 	memset(&bitmap[0], 0, sizeof(bitmap[0]) * m_SizeX * m_SizeZ);
@@ -469,7 +510,7 @@ void	VoxelField::GenerateHeightMap(std::vector<float>& bitmap) const
 	}
 }
 
-void	VoxelField::GenerateLevels(std::vector<int>& levels, int * level_max) const
+void	SparseVoxelField::GenerateLevels(std::vector<int>& levels, int * level_max) const
 {
 	levels.resize(m_SizeX * m_SizeZ);
 	memset(&levels[0], 0, sizeof(levels[0]) * m_SizeX * m_SizeZ);
@@ -483,7 +524,21 @@ void	VoxelField::GenerateLevels(std::vector<int>& levels, int * level_max) const
 	}
 }
 
-void	VoxelField::CalculateYLimit(float* ymin, float* ymax) const
+void	SparseVoxelField::GenerateData(std::vector<int>& output, int data) const
+{
+	output.resize(m_SizeX * m_SizeZ);
+	memset(&output[0], 0, sizeof(output[0]) * m_SizeX * m_SizeZ);
+
+	for (int i = 0; i < m_SizeZ; ++i)
+	for (int j = 0; j < m_SizeX; ++j)
+	{
+		int idx = i * m_SizeX + j;
+		Voxel* v = FindVoxel(m_Fields[idx], data);
+		output[idx] = v ? (int)(v->ymax - v->ymin) : 0;
+	}
+}
+
+void	SparseVoxelField::CalculateYLimit(float* ymin, float* ymax) const
 {
 	*ymin = FLT_MAX;
 	*ymax = -FLT_MAX;

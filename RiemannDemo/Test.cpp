@@ -26,7 +26,7 @@
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
-#include "../Src/Geometry/VoxelField.h"
+#include "../Src/Geometry/SparseVoxelField.h"
 
 void TestAABBTree()
 {
@@ -221,18 +221,26 @@ void TestMesh1()
 
 	mesh.CalculateBoundingBox();
 
-	VoxelizationInfo info;
-	info.Boundry.Min = Vector3d(-2, -2, -2);
-	info.Boundry.Max = Vector3d(2, 2, 2);
-	info.VoxelHeight = 0.5f;
-	info.VoxelSize = 0.5f;
-
-	VoxelField field;
-	field.InitField(1, 1, 1, 1.0f, 2.0f);
+	SparseVoxelField field;
+	field.InitField(Box3d::Unit(), 2, 2, 2, 1.0f, 2.0f);
 	field.AddVoxel(0, 0, 1, 2, 0);
 	field.AddVoxel(0, 0, 3, 5, 0);
 	field.AddVoxel(0, 0, 7, 8, 0);
 	field.AddVoxel(0, 0, 1, 10, 0);
+
+	Box3d v = field.GetVoxelBox(Vector3d(-0.1, -0.1, -0.1));
+	assert(FloatEqual(v.Min.x, -1.0f));
+	assert(FloatEqual(v.Max.x, 0.0f));
+	
+	v = field.GetVoxelBox(Vector3d(0.01, 0.01, 0.01));
+	assert(FloatEqual(v.Min.x, 0.0f));
+	assert(FloatEqual(v.Max.x, 1.0f));
+
+	VoxelizationInfo info;
+	info.BV.Min = Vector3d(-2, -2, -2);
+	info.BV.Max = Vector3d(2, 2, 2);
+	info.VoxelHeight = 0.5f;
+	info.VoxelSize = 0.5f;
 
 	field.VoxelizeTriangles(info, &mesh);
 	field.MakeComplement();
@@ -254,12 +262,12 @@ void TestMesh()
 	mesh.CalculateBoundingBox();
 
 	VoxelizationInfo info;
-	info.Boundry.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
-	info.Boundry.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
+	info.BV.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
+	info.BV.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
 	info.VoxelHeight = 1.5f;
 	info.VoxelSize = 1.5f;
 
-	VoxelField field;
+	SparseVoxelField field;
 
 	field.VoxelizeTriangles(info, &mesh);
 	field.MakeComplement();
@@ -268,13 +276,13 @@ void TestMesh()
 	std::vector<float> data;
 	field.GenerateHeightMap(data);
 
-	int ymax;
+	// int ymax;
 	std::vector<int> levels;
-	field.GenerateLevels(levels, &ymax);
+	field.GenerateData(levels, 5);
 
 	BMPFile bitmap;
-	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 1.0f / 10);
-	bitmap.WriteToFile("D://home//fighting2.bmp");
+	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 1.0f - 1.0f / 2);
+	bitmap.WriteToFile("D://home//fighting5.bmp");
 
 
 	return;
