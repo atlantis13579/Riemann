@@ -39,11 +39,12 @@ public:
 	bool	MakeComplement();
 	int		SolveSpatialTopology();
 
-	int		GetVoxelIdx(const Vector3d &pos) const;
-	int		GetVoxelY(float pos_y) const;
-	Box3d	GetVoxelBox(const Vector3d& pos) const;
-	Box3d	GetVoxelBox(int x, int y, int z) const;
-	float	GetVoxelY(unsigned short y) const;
+	int				GetVoxelIdx(const Vector3d &pos) const;
+	int				GetVoxelY(float pos_y) const;
+	Box3d			GetVoxelBox(const Vector3d& pos) const;
+	Box3d			GetVoxelBox(int x, int y, int z) const;
+	float			GetVoxelY(unsigned short y) const;
+	unsigned int	GetVoxelData(const Vector3d& pos) const;
 
 	bool	SerializeTo(const char *filename);
 	bool	SerializeFrom(const char* filename);
@@ -57,6 +58,10 @@ public:
 	{
 		return m_SizeZ;
 	}
+
+	unsigned long long	EstimateMemoryUseage() const;
+
+	unsigned long long	EstimateMemoryUseageEx() const;
 
 	void	GenerateHeightMap(std::vector<float>& heightmap) const;
 	void	GenerateLevels(std::vector<int>& levels, int* level_max) const;

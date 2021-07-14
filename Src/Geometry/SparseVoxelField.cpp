@@ -3,6 +3,7 @@
 #include "SparseVoxelFieldInference.h"
 
 #include <assert.h>
+#include <map>
 #include <queue>
 #include "../Maths/Maths.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
@@ -99,7 +100,7 @@ Box3d	SparseVoxelField::GetVoxelBox(int x, int y, int z) const
 	Box3d box;
 	box.Min.x = m_BV.Min.x + m_VoxelSize * x;
 	box.Min.y = m_BV.Min.y + m_VoxelHeight * y;
-	box.Min.z = m_BV.Min.z + m_VoxelSize * x;
+	box.Min.z = m_BV.Min.z + m_VoxelSize * z;
 	box.Max = box.Min + Vector3d(m_VoxelSize, m_VoxelHeight, m_VoxelSize);
 	return box;
 }
@@ -108,6 +109,25 @@ Box3d	SparseVoxelField::GetVoxelBox(int x, int y, int z) const
 float	SparseVoxelField::GetVoxelY(unsigned short y) const
 {
 	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
+}
+
+unsigned int	SparseVoxelField::GetVoxelData(const Vector3d& pos) const
+{
+	int idx = GetVoxelIdx(pos);
+	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
+		return 0;
+	Voxel* v = m_Fields[idx];
+	while (v)
+	{
+		float ymin = m_BV.Min.y + m_VoxelHeight * v->ymin;
+		float ymax = m_BV.Min.y + m_VoxelHeight * (v->ymax + 1);
+		if (ymin <= pos.y && pos.y <= ymax)
+		{
+			return v->data;
+		}
+		v = v->next;
+	}
+	return 0;
 }
 
 
@@ -444,6 +464,7 @@ static int vx_neighbour4x_safe(int idx, int nx, int nz, int dir) {
 int SparseVoxelField::SolveSpatialTopology()
 {
 	int SpaceFound = 0;
+	// std::map<int, int> SpaceCount;
 
 	for (int i = 0; i < m_SizeZ; ++i)
 	for (int j = 0; j < m_SizeX; ++j)
@@ -488,6 +509,8 @@ int SparseVoxelField::SolveSpatialTopology()
 				}
 			}
 
+			// SpaceCount[SpaceFound] = count;
+
 			curr = curr->next;
 		}
 	}
@@ -503,6 +526,16 @@ int		SparseVoxelField::CalculateNumFields() const
 		if (m_Fields[i] != nullptr) Count++;
 	}
 	return Count;
+}
+
+unsigned long long SparseVoxelField::EstimateMemoryUseage() const
+{
+	return m_NumVoxels * sizeof(Voxel) + m_SizeX * m_SizeZ * sizeof(Voxel*);
+}
+
+unsigned long long SparseVoxelField::EstimateMemoryUseageEx() const
+{
+	return m_NumVoxels * sizeof(VoxelFast) + m_SizeX * m_SizeZ * sizeof(void*);
 }
 
 void	SparseVoxelField::GenerateHeightMap(std::vector<float>& bitmap) const
@@ -712,6 +745,8 @@ bool	SparseVoxelField::SerializeFrom(const char* filename)
 
 	InitField(header.BV, header.SizeX, header.SizeY, header.SizeZ, header.VoxelSize, header.VoxelHeight);
 	
+	m_NumVoxels = header.nVoxels;
+
 	m_VoxelBatchs.resize(1);
 	m_VoxelBatchs[0].Current = header.nVoxels;
 	m_VoxelBatchs[0].Voxels.resize(header.nVoxels);
@@ -751,6 +786,7 @@ bool	SparseVoxelField::SerializeFrom(const char* filename)
 			m_Fields[idx] = &Voxels[curr];
 			curr += (size_t)CountVoxel(m_Fields[idx]);
 		}
+		buffer_field.clear();
 	}
 
 	return true;

@@ -19,7 +19,6 @@
 #include "../Src/RigidBodyDynamics/PhysicsWorldRB.h"
 #include "../Renderer/Renderer.h"
 
-extern void TestMainEntry();
 
 PhysicsWorldRB* g_World = nullptr;
 
@@ -163,8 +162,6 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 {
     UNREFERENCED_PARAMETER( hPrevInstance );
     UNREFERENCED_PARAMETER( lpCmdLine );
-
-    TestMainEntry();
 
     if( FAILED( InitWindow( hInstance, nCmdShow ) ) )
         return 0;

@@ -229,10 +229,10 @@ void TestMesh1()
 	field.AddVoxel(0, 0, 7, 8, 0);
 	field.AddVoxel(0, 0, 1, 10, 0);
 
-	assert(field.SerializeTo("D://home//test.voxel"));
+	field.SerializeTo("D://home//test.voxel");
 
 	SparseVoxelFieldInference inference;
-	assert(inference.SerializeFrom("D://home//test.voxel"));
+	inference.SerializeFrom("D://home//test.voxel");
 
 	Box3d v = field.GetVoxelBox(Vector3d(-0.1f, -0.1f, -0.1f));
 	assert(FloatEqual(v.Min.x, -1.0f));
@@ -262,28 +262,42 @@ void TestMesh1()
 #pragma optimize("", off)
 void TestMesh()
 {
-	TriangleMesh mesh;
-	// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/dungeon.obj");
-
-	// std::string file = "D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting.obj";
-	// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting_kou.obj");
-	mesh.LoadFlat("D://home//fighting.flat");
-	// mesh.CalculateNormals();
-	mesh.CalculateBoundingBox();
-
-	VoxelizationInfo info;
-	info.BV.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
-	info.BV.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
-	info.VoxelHeight = 1.0f;
-	info.VoxelSize = 1.0f;
+	while (1)
+	{
+		int a, b, c;
+		scanf("%d %d %d\n", &a, &b, &c);
+		printf("a=%d, b=%d, c=%d\n", a, b, c);
+	}
 
 	SparseVoxelField field;
 
-	field.VoxelizeTriangles(info, &mesh);
-	field.MakeComplement();
+	const bool load_voxel = true;
+	if (load_voxel)
+	{
+		field.SerializeFrom("D://home//fighting.voxel");
+	}
+	else
+	{
+		TriangleMesh mesh;
+		// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/dungeon.obj");
+		// std::string file = "D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting.obj";
+		// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting_kou.obj");
+		mesh.LoadFlat("D://home//fighting.flat");
+		mesh.CalculateBoundingBox();
 
-	field.SerializeTo("D://home//fighting.voxel");
-	field.SerializeFrom("D://home//fighting.voxel");
+		VoxelizationInfo info;
+		info.BV.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
+		info.BV.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
+		info.VoxelHeight = 1.0f;
+		info.VoxelSize = 1.0f;
+
+
+		field.VoxelizeTriangles(info, &mesh);
+		field.MakeComplement();
+
+		field.SerializeTo("D://home//fighting.voxel");
+		field.SerializeFrom("D://home//fighting.voxel");
+	}
 
 	int space = field.SolveSpatialTopology();
 
@@ -297,6 +311,10 @@ void TestMesh()
 	BMPFile bitmap;
 	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 1.0f - 1.0f / 10);
 	bitmap.WriteToFile("D://home//fighting4.bmp");
+
+
+	unsigned long long memory1 = field.EstimateMemoryUseage();
+	unsigned long long memory2 = field.EstimateMemoryUseageEx();
 
 
 	return;

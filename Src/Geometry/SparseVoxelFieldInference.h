@@ -24,7 +24,7 @@ struct VoxelFileField
 };
 
 static_assert(sizeof(VoxelFileHeader) == 52, "sizeof VoxelFileHeader is not valid");
-static_assert(sizeof(VoxelFileField) == 4, "sizeof VoxelFileHeader is not valid");
+static_assert(sizeof(VoxelFileField) == 4, "sizeof VoxelFileField is not valid");
 
 struct VoxelFast
 {
