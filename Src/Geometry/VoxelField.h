@@ -2,6 +2,8 @@
 
 #include "../Maths/Box3d.h"
 
+#include <map>
+
 class TriangleMesh;
 
 struct VoxelizationInfo
@@ -33,19 +35,20 @@ public:
 	~VoxelField();
 
 public:
-	void	InitField(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
-	bool	VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* mesh);
-	bool	VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
-	bool	MakeComplementarySet();
-	void	FilterByData(unsigned int data);
-	int		SolveSpatialTopology();
+	void			InitField(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
+	bool			VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* mesh);
+	bool			VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
+	bool			MakeComplementarySet();
+	void			FilterByData(unsigned int data);
+	int				SolveSpatialTopology(std::map<int, unsigned long long> *volumes = nullptr);
+	bool			ExtractCutPlane(float y_value, std::vector<int>& output);
 
 	const Voxel*	GetVoxel(const Vector3d& pos) const;
 	int				GetVoxelIdx(const Vector3d& pos) const;
-	int				GetVoxelY(float pos_y) const;
+	int				GetVoxelYCoordinate(float pos_y) const;
+	float			GetVoxelY(unsigned short y) const;
 	Box3d			GetVoxelBox(const Vector3d& pos) const;
 	Box3d			GetVoxelBox(int x, int y, int z) const;
-	float			GetVoxelY(unsigned short y) const;
 	unsigned int	GetVoxelData(const Vector3d& pos) const;
 
 	bool			SerializeTo(const char* filename);
@@ -75,9 +78,10 @@ public:
 	bool		AddVoxel(int idx, unsigned short ymin, unsigned short ymax, float MergeThr);
 
 private:
-	Voxel*		AllocVoxel();
-	void		FreeVoxel(Voxel* p);
-	int			CalculateNumFields() const;
+	Voxel*			AllocVoxel();
+	void			FreeVoxel(Voxel* p);
+	int				CalculateNumFields() const;
+	unsigned int	ExtractVoxelData(const Voxel* v, float y) const;
 
 private:
 	int			m_SizeX, m_SizeZ, m_SizeY;

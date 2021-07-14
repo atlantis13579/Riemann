@@ -3,7 +3,6 @@
 #include "SparseVoxelField.h"
 
 #include <assert.h>
-#include <map>
 #include <queue>
 #include "../Maths/Maths.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
@@ -64,7 +63,6 @@ bool VoxelField::VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* _
 	return true;
 }
 
-
 const Voxel*	VoxelField::GetVoxel(const Vector3d& pos) const
 {
 	int idx = GetVoxelIdx(pos);
@@ -80,23 +78,25 @@ int		VoxelField::GetVoxelIdx(const Vector3d& pos) const
 	return z * m_SizeX + x;
 }
 
-
-int		VoxelField::GetVoxelY(float pos_y) const
+int		VoxelField::GetVoxelYCoordinate(float pos_y) const
 {
 	const int y = Clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
 	return y;
 }
 
+float	VoxelField::GetVoxelY(unsigned short y) const
+{
+	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
+}
 
 Box3d	VoxelField::GetVoxelBox(const Vector3d& pos) const
 {
 	int idx = GetVoxelIdx(pos);
 	int z = idx / m_SizeX;
 	int x = idx - z * m_SizeX;
-	int y = GetVoxelY(pos.y);
+	int y = GetVoxelYCoordinate(pos.y);
 	return GetVoxelBox(x, y, z);
 }
-
 
 Box3d	VoxelField::GetVoxelBox(int x, int y, int z) const
 {
@@ -114,10 +114,6 @@ Box3d	VoxelField::GetVoxelBox(int x, int y, int z) const
 }
 
 
-float	VoxelField::GetVoxelY(unsigned short y) const
-{
-	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
-}
 
 unsigned int	VoxelField::GetVoxelData(const Vector3d& pos) const
 {
@@ -125,17 +121,7 @@ unsigned int	VoxelField::GetVoxelData(const Vector3d& pos) const
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
 		return 0;
 	Voxel* v = m_Fields[idx];
-	while (v)
-	{
-		float ymin = m_BV.Min.y + m_VoxelHeight * v->ymin;
-		float ymax = m_BV.Min.y + m_VoxelHeight * (v->ymax + 1);
-		if (ymin <= pos.y && pos.y <= ymax)
-		{
-			return v->data;
-		}
-		v = v->next;
-	}
-	return 0;
+	return ExtractVoxelData(v, pos.y);
 }
 
 
@@ -313,7 +299,7 @@ static int CountVoxel(const Voxel* v)
 	return Count;
 }
 
-static int VoxelMaxData(const Voxel* v)
+static unsigned int VoxelMaxData(const Voxel* v)
 {
 	unsigned int Data = 0;
 	while (v)
@@ -324,6 +310,20 @@ static int VoxelMaxData(const Voxel* v)
 	return Data;
 }
 
+unsigned int VoxelField::ExtractVoxelData(const Voxel* v, float y) const
+{
+	while (v)
+	{
+		float ymin = m_BV.Min.y + m_VoxelHeight * v->ymin;
+		float ymax = m_BV.Min.y + m_VoxelHeight * (v->ymax + 1);
+		if (ymin <= y && y <= ymax)
+		{
+			return v->data;
+		}
+		v = v->next;
+	}
+	return 0;
+}
 
 bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info)
 {
@@ -494,10 +494,10 @@ static int vx_neighbour4x_safe(int idx, int nx, int nz, int dir) {
 }
 
 
-int VoxelField::SolveSpatialTopology()
+int VoxelField::SolveSpatialTopology(std::map<int, unsigned long long>* volumes)
 {
 	int SpaceFound = 0;
-	// std::map<int, int> SpaceCount;
+	if (volumes) volumes->clear();
 
 	for (int i = 0; i < m_SizeZ; ++i)
 	for (int j = 0; j < m_SizeX; ++j)
@@ -514,15 +514,15 @@ int VoxelField::SolveSpatialTopology()
 
 			curr->data = ++SpaceFound;
 
-			std::queue<std::pair<Voxel*, int>> voxel_qu;
-			voxel_qu.push(std::make_pair(curr, idx));
-			int count = 0;
+			std::queue<std::pair<Voxel*, int>> queue_vx;
+			queue_vx.emplace(curr, idx);
+			unsigned long long voxel_count = 0;
 
-			while (!voxel_qu.empty())
+			while (!queue_vx.empty())
 			{
-				auto next = voxel_qu.front();
-				voxel_qu.pop();
-				++count;
+				auto next = queue_vx.front();
+				queue_vx.pop();
+				voxel_count += next.first->ymax - next.first->ymin + 1;
 
 				for (int d = 0; d < 4; ++d)
 				{
@@ -535,20 +535,37 @@ int VoxelField::SolveSpatialTopology()
 						if (nv->data == 0 && VoxelIntersects(next.first, nv))
 						{
 							nv->data = next.first->data;
-							voxel_qu.push(std::make_pair(nv, nidx));
+							queue_vx.emplace(nv, nidx);
 						}
 						nv = nv->next;
 					}
 				}
 			}
 
-			// SpaceCount[SpaceFound] = count;
+			if (volumes) volumes->emplace(SpaceFound, voxel_count);
 
 			curr = curr->next;
 		}
 	}
 
 	return SpaceFound;
+}
+
+bool VoxelField::ExtractCutPlane(float y_value, std::vector<int>& output)
+{
+	int y = GetVoxelYCoordinate(y_value);
+	if (y < 0 || y >= m_SizeY)
+	{
+		return false;
+	}
+
+	output.resize(m_SizeX * m_SizeZ);
+	for (int i = 0; i < m_SizeZ * m_SizeX; ++i)
+	{
+		output[i] = ExtractVoxelData(m_Fields[i], y_value);
+	}
+
+	return true;
 }
 
 int		VoxelField::CalculateNumFields() const
@@ -612,6 +629,7 @@ void	VoxelField::GenerateBitmapByData(std::vector<int>& output, unsigned int dat
 	{
 		Voxel* v = FindVoxel(m_Fields[i], data);
 		output[i] = v ? (int)(v->ymax - v->ymin) : 0;
+		output[i] = v ? 1 : 0;
 	}
 }
 

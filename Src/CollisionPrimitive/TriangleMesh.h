@@ -2,6 +2,7 @@
 #pragma once
 
 #include <stdio.h>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -186,6 +187,27 @@ public:
 		fread(&Indices[0], sizeof(Indices[0]), m_NumTriangles * 3, fp);
 		fclose(fp);
 		return true;
+	}
+
+	int FilterTriangle(std::function<bool(const Vector3d&, const Vector3d&, const Vector3d&)> filter_func)
+	{
+		int j = 0;
+		for (unsigned int i = 0; i < m_NumTriangles; ++i)
+		{
+			if (!filter_func(Verties[Indices[3*i]], Verties[Indices[3*i+1]], Verties[Indices[3*i+2]] ))
+			{
+				if (i != j)
+				{
+					Indices[3 * j + 0] = Indices[3 * i  +0];
+					Indices[3 * j + 1] = Indices[3 * i + 1];
+					Indices[3 * j + 2] = Indices[3 * i + 2];
+				}
+				++j;
+			}
+		}
+		int nFiltered = m_NumTriangles - j;
+		m_NumTriangles = j;
+		return nFiltered;
 	}
 
 	void CalculateNormals()

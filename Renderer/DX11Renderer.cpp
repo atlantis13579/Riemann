@@ -446,10 +446,13 @@ public:
         return false;
     }
 
-    void LoadObj(const char* filename, Transform* Trans)
+    void LoadObj(const char* filename, Transform* Trans, bool is_flat)
     {
         TriangleMesh mesh;
-        mesh.LoadObj(filename);
+        if (is_flat)
+            mesh.LoadFlat(filename);
+        else
+            mesh.LoadObj(filename);
         mesh.CalculateNormals();
 
         std::vector<Vertex1> vv;
@@ -467,6 +470,11 @@ public:
             vi.push_back(mesh.Indices[3 * i + 0]);
             vi.push_back(mesh.Indices[3 * i + 1]);
             vi.push_back(mesh.Indices[3 * i + 2]);
+
+            Vector3d nor = mesh.Normals[i];
+            vv[mesh.Indices[3 * i + 0]].Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
+            vv[mesh.Indices[3 * i + 1]].Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
+            vv[mesh.Indices[3 * i + 2]].Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
         }
 
         AddMesh(mesh.ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());

@@ -85,8 +85,6 @@ void UpdateCamera()
 
 void InitScene()
 {
-
-
     PhysicsWorldRBParam param;
     param.Gravity = Vector3d(0, -0.0098f, 0);
     RigidBodyParam rp;
@@ -150,6 +148,10 @@ void InitScene()
     rp.Static = false;
     Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0, 0, 0), Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
     g_World->CreateRigidBody(aabb, rp);
+
+    Transform* t = new Transform;
+    t->SetScale(Vector3d(0.001f, 0.001f, 0.001f));
+    g_Renderer->LoadObj("D://home//fighting.flat", t, true);
 
     g_Renderer->AddMesh("Cube", aabb->GetTransform(), vertices, sizeof(vertices) / sizeof(vertices[0]), indices, sizeof(indices) / sizeof(indices[0]));
 }

@@ -33,7 +33,7 @@ public:
 	virtual void SetFillMode(bool Wireframe) = 0;
 	virtual void SetDepthMode() = 0;
 
-	virtual void LoadObj(const char* filename, Transform* Trans) = 0;
+	virtual void LoadObj(const char* filename, Transform* Trans, bool is_flat) = 0;
 
 	static Renderer* CreateDX11Renderer(void* hWnd, const char* shader_path);
 };

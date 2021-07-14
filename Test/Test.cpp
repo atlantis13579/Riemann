@@ -263,7 +263,7 @@ void TestMesh()
 {
 	VoxelField field;
 
-	const bool load_voxel = false;
+	const int load_voxel = 1;
 	if (load_voxel)
 	{
 		field.SerializeFrom("D://home//fighting.voxel");
@@ -277,30 +277,41 @@ void TestMesh()
 		mesh.LoadFlat("D://home//fighting.flat");
 		mesh.CalculateBoundingBox();
 
+		/*
+		int nFiltered = mesh.FilterTriangle([](const Vector3d& a, const Vector3d& b, const Vector3d& c) -> bool {
+			if (fabsf(a.y + 102.0f) < 1.0f && fabsf(b.y + 102.0f) < 1.0f && fabsf(c.y + 102.0f) < 1.0f)
+			{
+				return true;
+			}
+			return false;
+			});
+		*/
+
 		VoxelizationInfo info;
 		info.BV.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
 		info.BV.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
-		info.VoxelHeight = 0.5f;
-		info.VoxelSize = 0.5f;
+		info.VoxelHeight = 1.f;
+		info.VoxelSize = 1.f;
 
 		field.VoxelizeTriangles(info, &mesh);
 		field.MakeComplementarySet();
 
-		field.SerializeTo("D://home//fighting_50.voxel");
+		// field.SerializeTo("D://home//fighting.voxel");
 		// field.SerializeFrom("D://home//fighting.voxel");
 	}
 
-	int space = field.SolveSpatialTopology();
+	std::map<int, unsigned long long> volumes;
+	int space = field.SolveSpatialTopology(&volumes);
 	// field.FilterByData(4);
-	printf("space = %d\n", space);
+	// printf("space = %d\n", space);
 
-	printf("begin\n");
 	while (0)
 	{
+		printf("begin\n");
 		int a, b, c;
 		scanf("%d %d %d", &a, &b, &c);
 		const Voxel* v = field.GetVoxel(Vector3d(a * 1.0f, b * 1.0f, c * 1.0f));
-		printf("a=%d, b=%d, c=%d\n", a, b, c);
+		printf("x=%d, y=%d, z=%d\n", a, b, c);
 		while (v)
 		{
 			printf("[%1.f, %.1f] data=%d\n", field.GetVoxelY(v->ymin), field.GetVoxelY(v->ymax), v->data);
@@ -309,11 +320,22 @@ void TestMesh()
 	}
 
 	std::vector<int> levels;
-	field.GenerateBitmapByData(levels, 4);
+	field.ExtractCutPlane(-100, levels);
+
+	for (size_t i = 0; i < levels.size(); ++i)
+	{
+		int val = levels[i];
+		if (val == 4)
+			levels[i] = 1;
+		else if (val == 36)
+			levels[i] = 5;
+		else
+			levels[i] = 10;
+	}
 
 	BMPFile bitmap;
-	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 1.0f - 1.0f / 10);
-	bitmap.WriteToFile("D://home//fighting4.bmp");
+	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 0.1f);
+	bitmap.WriteToFile("D://home//fighting3.bmp");
 
 
 	unsigned long long memory1 = field.EstimateMemoryUseage();
