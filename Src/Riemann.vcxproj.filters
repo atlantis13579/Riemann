@@ -81,6 +81,7 @@
     <ClInclude Include="Geometry\VoxelEngine.h" />
     <ClInclude Include="Geometry\VoxelField.h" />
     <ClInclude Include="Geometry\SparseVoxelField.h" />
+    <ClInclude Include="Image\CompactBitmap.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Image\ImageProcessing.cpp">

@@ -12,6 +12,7 @@
 #include "../Src/Maths/Matrix2d.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Frustum.h"
+#include "../Src/Image/CompactBitmap.h"
 #include "../Src/CollisionPrimitive/OrientedBox3d.h"
 #include "../Src/CollisionPrimitive/Plane3d.h"
 #include "../Src/CollisionPrimitive/Sphere3d.h"
@@ -28,6 +29,23 @@
 #include "../Src/Collision/EPA.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/SparseVoxelField.h"
+
+void TestBitmap()
+{
+	int a[] = { 1, 1, 0, 0, 1, 0, 1, 0,
+				1, 1, 1, 1, 1, 1, 1, 1,
+				0, 0, 0, 0, 0, 0, 0, 0,
+				0, 1, 0, 0, 1, 0, 1, 1 };
+	CompactBitmap<unsigned short> bitmap;
+	bitmap.SerializeFromMemory<int>(a, 8, 4, -4, -4, 4, 4);
+	bitmap.SerializeToFile("d://home//cbit.map");
+	bitmap.SerializeFromFile("d://home//cbit.map");
+	assert(bitmap.QueryBitmapSpace(3, 0) == false);
+	assert(bitmap.QueryBitmapSpace(4, 0) == true);
+	assert(bitmap.QueryBitmapSpace(3, 1) == true);
+	assert(bitmap.QueryBitmapSpace(13, 1) == false);
+	assert(bitmap.QueryBitmapSpace(7, 3) == true);
+}
 
 void TestAABBTree()
 {
@@ -319,24 +337,28 @@ void TestMesh()
 		}	
 	}
 
-	std::vector<int> levels;
-	field.ExtractCutPlane(-100, levels);
+	std::vector<int> data;
+	field.ExtractCutPlane(-100, data);
 
-	for (size_t i = 0; i < levels.size(); ++i)
+	for (size_t i = 0; i < data.size(); ++i)
 	{
-		int val = levels[i];
+		int val = data[i];
 		if (val == 4)
-			levels[i] = 1;
+			data[i] = 1;
 		else if (val == 36)
-			levels[i] = 5;
+			data[i] = 1;
 		else
-			levels[i] = 10;
+			data[i] = 0;
 	}
 
 	BMPFile bitmap;
-	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 0.1f);
+	bitmap.LoadBitmap(&data[0], field.GetSizeX(), field.GetSizeZ(), 0.5f);
 	bitmap.WriteToFile("D://home//fighting3.bmp");
 
+	CompactBitmap<unsigned short> cbit;
+	const Box3d& bv = field.GetBoundingVolume();
+	cbit.SerializeFromMemory<int>(&data[0], field.GetSizeX(), field.GetSizeZ(), bv.Min.x, bv.Min.z, bv.Max.x, bv.Max.z);
+	cbit.SerializeToFile("d://home//cbit.map");
 
 	unsigned long long memory1 = field.EstimateMemoryUseage();
 	unsigned long long memory2 = field.EstimateMemoryUseageEx();
@@ -436,6 +458,7 @@ void TestSAPInc()
 
 void TestMainEntry()
 {
+	TestBitmap();
 	TestAABBTree();
 	TestGeometryQuery();
 	TestSAP();

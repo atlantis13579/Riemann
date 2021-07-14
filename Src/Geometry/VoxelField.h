@@ -54,17 +54,22 @@ public:
 	bool			SerializeTo(const char* filename);
 	bool			SerializeFrom(const char* filename);
 
-	int		GetSizeX() const
+	int				GetSizeX() const
 	{
 		return m_SizeX;
 	}
 
-	int		GetSizeZ() const
+	int				GetSizeZ() const
 	{
 		return m_SizeZ;
 	}
 
-	float	GetVoxelVolume() const
+	const Box3d&	GetBoundingVolume() const
+	{
+		return m_BV;
+	}
+
+	float			GetVoxelVolume() const
 	{
 		return m_VoxelSize * m_VoxelSize * m_VoxelHeight;
 	}
