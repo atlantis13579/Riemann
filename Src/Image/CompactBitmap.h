@@ -16,7 +16,7 @@ public:
 		m_CompactData.clear();
 	}
 
-	bool	QueryBitmapSpace(int nx, int ny) const
+	bool	QueryBitmapSpace(T nx, T ny) const
 	{
 		if (nx < 0 || nx > m_nX - 1 || ny < 0 || ny > m_nY - 1)
 		{
@@ -31,6 +31,8 @@ public:
 			T high = pX[1];
 			if (low <= nx && nx <= high)
 				return true;
+			else if (nx > high)
+				break;
 			pX = pX + 2;
 		}
 		return false;
@@ -47,8 +49,10 @@ public:
 		return QueryBitmapSpace(nx, ny);
 	}
 
-	void	SetTransform(float minX, float minY, float maxX, float maxY)
+	void	SetTransform(int nX, int nY, float minX, float minY, float maxX, float maxY)
 	{
+		m_nX = nX;
+		m_nY = nY;
 		m_minX = minX;
 		m_minY = minY;
 		m_maxX = maxX;
@@ -66,9 +70,7 @@ public:
 			m_CompactData.clear();
 		}
 
-		m_nX = nX;
-		m_nY = nY;
-		SetTransform(minX, minY, maxX, maxY);
+		SetTransform(nX, nY, minX, minY, maxX, maxY);
 
 		m_Rows.resize(m_nY);
 		int Curr = 0;
@@ -150,7 +152,7 @@ public:
 			return false;
 		}
 
-		unsigned int Magic;
+		unsigned int Magic = 0;
 		int nData = 0;
 		int nElementSize = 0;
 		int nUnuse = 0;
@@ -166,10 +168,6 @@ public:
 		fread(&nData, 4, 1, fp);
 		fread(&nElementSize, 4, 1, fp);
 		fread(&nUnuse, 4, 1, fp);
-
-		m_invX = 1.0f * m_nX / (m_maxX - m_minX);
-		m_invY = 1.0f * m_nY / (m_maxY - m_minY);
-
 		if (Magic != 0x353BA50D)
 		{
 			fclose(fp);

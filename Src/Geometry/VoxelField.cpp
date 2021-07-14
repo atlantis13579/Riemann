@@ -320,6 +320,10 @@ unsigned int VoxelField::ExtractVoxelData(const Voxel* v, float y) const
 		{
 			return v->data;
 		}
+		else if (y > ymax)
+		{
+			break;
+		}
 		v = v->next;
 	}
 	return 0;
