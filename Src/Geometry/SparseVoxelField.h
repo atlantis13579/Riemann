@@ -2,29 +2,57 @@
 
 #include "../Maths/Box3d.h"
 
-class TriangleMesh;
+#define VOXEL_TOP			(0x80000000)
+#define VOXEL_DATA(data)	((data) & ~VOXEL_TOP)
+#define VOXEL_FILE_MAGIC	(0x32F0587A)
 
-struct VoxelizationInfo
+struct VoxelFileHeader
 {
-	float	VoxelSize;
-	float	VoxelHeight;
-	float   YMergeThr;
-	Box3d	BV;
+	int				nVoxels;
+	int				nFields;
+	int				SizeX;
+	int				SizeZ;
+	int				SizeY;
+	float			VoxelSize;
+	float			VoxelHeight;
+	Box3d			BV;
 };
 
-struct Voxel
+struct VoxelFileField
+{
+	int				idx;
+};
+
+static_assert(sizeof(VoxelFileHeader) == 52, "sizeof VoxelFileHeader is not valid");
+static_assert(sizeof(VoxelFileField) == 4, "sizeof VoxelFileField is not valid");
+
+struct VoxelFast
 {
 	unsigned int	data;
 	unsigned short	ymin;
 	unsigned short	ymax;
-	Voxel*			next;
+
+	inline const VoxelFast* next() const
+	{
+		if (data & VOXEL_TOP)
+			return nullptr;
+		return this + 1;
+	}
+
+	inline VoxelFast* next()
+	{
+		if (data & VOXEL_TOP)
+			return nullptr;
+		return this + 1;
+	}
+
+	inline unsigned int	raw_data() const
+	{
+		return ((data) & ~VOXEL_TOP);
+	}
 };
 
-struct VoxelBatch
-{
-	std::vector<Voxel>	Voxels;
-	int					Current;
-};
+static_assert(sizeof(VoxelFast) == 8, "sizeof of VoxelFast is not correct");
 
 class SparseVoxelField
 {
@@ -32,56 +60,24 @@ public:
 	SparseVoxelField();
 	~SparseVoxelField();
 
-public:
-	void	InitField(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
-	bool	VoxelizeTriangles(const VoxelizationInfo &info, TriangleMesh *mesh);
-	bool	VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
-	bool	MakeComplement();
-	int		SolveSpatialTopology();
+	void			InitField(const Box3d& Bv, int nVoxels, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
 
-	int				GetVoxelIdx(const Vector3d &pos) const;
+	int				GetVoxelIdx(const Vector3d& pos) const;
 	int				GetVoxelY(float pos_y) const;
 	Box3d			GetVoxelBox(const Vector3d& pos) const;
 	Box3d			GetVoxelBox(int x, int y, int z) const;
 	float			GetVoxelY(unsigned short y) const;
 	unsigned int	GetVoxelData(const Vector3d& pos) const;
 
-	bool	SerializeTo(const char *filename);
-	bool	SerializeFrom(const char* filename);
-
-	int		GetSizeX() const
-	{
-		return m_SizeX;
-	}
-
-	int		GetSizeZ() const
-	{
-		return m_SizeZ;
-	}
-
-	unsigned long long	EstimateMemoryUseage() const;
-
-	unsigned long long	EstimateMemoryUseageEx() const;
-
-	void	GenerateHeightMap(std::vector<float>& heightmap) const;
-	void	GenerateLevels(std::vector<int>& levels, int* level_max) const;
-	void	GenerateData(std::vector<int>& output, unsigned int data) const;
-	void	CalculateYLimit(float *ymin, float *ymax) const;
-	bool	AddVoxel(int x, int y, unsigned short ymin, unsigned short ymax, float MergeThr);
+	bool			SerializeFrom(const char* filename);
 
 private:
-	Voxel*	AllocVoxel();
-	void    FreeVoxel(Voxel* p);
-	int		CalculateNumFields() const;
+	int				m_SizeX, m_SizeZ, m_SizeY;
+	float			m_VoxelSize, m_VoxelHeight;
+	float			m_InvVoxelSize, m_InvVoxelHeight;
+	Box3d			m_BV;
 
-private:
-	int			m_SizeX, m_SizeZ, m_SizeY;
-	float		m_VoxelSize, m_VoxelHeight;
-	float		m_InvVoxelSize, m_InvVoxelHeight;
-	Box3d		m_BV;
-
-	std::vector<Voxel*>			m_Fields;
-	std::vector<VoxelBatch>		m_VoxelBatchs;
-	Voxel*						m_FreeVoxelList;
+	std::vector<VoxelFast*>		m_Fields;
+	std::vector<VoxelFast>		m_VoxelPool;
 	int							m_NumVoxels;
 };

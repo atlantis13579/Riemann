@@ -26,8 +26,8 @@
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
+#include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/SparseVoxelField.h"
-#include "../Src/Geometry/SparseVoxelFieldInference.h"
 
 void TestAABBTree()
 {
@@ -222,16 +222,16 @@ void TestMesh1()
 
 	mesh.CalculateBoundingBox();
 
-	SparseVoxelField field;
+	VoxelField field;
 	field.InitField(Box3d::Unit(), 2, 2, 2, 1.0f, 2.0f);
-	field.AddVoxel(0, 0, 1, 2, 0);
-	field.AddVoxel(0, 0, 3, 5, 0);
-	field.AddVoxel(0, 0, 7, 8, 0);
-	field.AddVoxel(0, 0, 1, 10, 0);
+	field.AddVoxel(0, 1, 2, 0);
+	field.AddVoxel(0, 3, 5, 0);
+	field.AddVoxel(0, 7, 8, 0);
+	field.AddVoxel(0, 1, 10, 0);
 
 	field.SerializeTo("D://home//test.voxel");
 
-	SparseVoxelFieldInference inference;
+	SparseVoxelField inference;
 	inference.SerializeFrom("D://home//test.voxel");
 
 	Box3d v = field.GetVoxelBox(Vector3d(-0.1f, -0.1f, -0.1f));
@@ -253,25 +253,17 @@ void TestMesh1()
 	info.VoxelSize = 0.5f;
 
 	field.VoxelizeTriangles(info, &mesh);
-	field.MakeComplement();
+	field.MakeComplementarySet();
 	int space = field.SolveSpatialTopology();
 	assert(space == 2);
 	return;
 }
 
-#pragma optimize("", off)
 void TestMesh()
 {
-	while (1)
-	{
-		int a, b, c;
-		scanf("%d %d %d\n", &a, &b, &c);
-		printf("a=%d, b=%d, c=%d\n", a, b, c);
-	}
+	VoxelField field;
 
-	SparseVoxelField field;
-
-	const bool load_voxel = true;
+	const bool load_voxel = false;
 	if (load_voxel)
 	{
 		field.SerializeFrom("D://home//fighting.voxel");
@@ -288,25 +280,36 @@ void TestMesh()
 		VoxelizationInfo info;
 		info.BV.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
 		info.BV.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
-		info.VoxelHeight = 1.0f;
-		info.VoxelSize = 1.0f;
-
+		info.VoxelHeight = 0.5f;
+		info.VoxelSize = 0.5f;
 
 		field.VoxelizeTriangles(info, &mesh);
-		field.MakeComplement();
+		field.MakeComplementarySet();
 
-		field.SerializeTo("D://home//fighting.voxel");
-		field.SerializeFrom("D://home//fighting.voxel");
+		field.SerializeTo("D://home//fighting_50.voxel");
+		// field.SerializeFrom("D://home//fighting.voxel");
 	}
 
 	int space = field.SolveSpatialTopology();
+	// field.FilterByData(4);
+	printf("space = %d\n", space);
 
-	std::vector<float> data;
-	field.GenerateHeightMap(data);
+	printf("begin\n");
+	while (0)
+	{
+		int a, b, c;
+		scanf("%d %d %d", &a, &b, &c);
+		const Voxel* v = field.GetVoxel(Vector3d(a * 1.0f, b * 1.0f, c * 1.0f));
+		printf("a=%d, b=%d, c=%d\n", a, b, c);
+		while (v)
+		{
+			printf("[%1.f, %.1f] data=%d\n", field.GetVoxelY(v->ymin), field.GetVoxelY(v->ymax), v->data);
+			v = v->next;
+		}	
+	}
 
-	// int ymax;
 	std::vector<int> levels;
-	field.GenerateData(levels, 4);
+	field.GenerateBitmapByData(levels, 4);
 
 	BMPFile bitmap;
 	bitmap.LoadBitmap(&levels[0], field.GetSizeX(), field.GetSizeZ(), 1.0f - 1.0f / 10);
@@ -316,10 +319,9 @@ void TestMesh()
 	unsigned long long memory1 = field.EstimateMemoryUseage();
 	unsigned long long memory2 = field.EstimateMemoryUseageEx();
 
-
 	return;
 }
-#pragma optimize("", on)
+
 class BVProxy : public SAP::BoundingVolumeProxy
 {
 public:
