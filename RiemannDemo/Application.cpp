@@ -15,7 +15,8 @@
 #include "resource.h"
 
 #include "../Src/Collision/GeometryObject.h"
-
+#include "../Src/CollisionPrimitive/TriangleMesh.h"
+#include "../Src/Geometry/VoxelField.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorldRB.h"
 #include "../Renderer/Renderer.h"
 
@@ -29,7 +30,8 @@ PhysicsWorldRB* g_World = nullptr;
 HINSTANCE               g_hInst = nullptr;
 HWND                    g_hWnd = nullptr;
 Renderer*               g_Renderer = nullptr;
-Vector3d   g_CamParam = Vector3d(1.0f, 1.0f, 5.0f);
+Vector3d   g_CamCenter = Vector3d::Zero();
+Vector3d    g_CamParam = Vector3d(1.0f, 1.0f, 5.0f);
 
 LRESULT CALLBACK    WndProc( HWND, UINT, WPARAM, LPARAM );
 
@@ -73,13 +75,13 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow)
 
 Vector3d GetCameraPosition()
 {
-    return Vector3d(sinf(g_CamParam.x) * cosf(g_CamParam.y), sinf(g_CamParam.y), cosf(g_CamParam.x) * cosf(g_CamParam.y)) * g_CamParam.z;
+    return g_CamCenter + Vector3d(sinf(g_CamParam.x) * cosf(g_CamParam.y), sinf(g_CamParam.y), cosf(g_CamParam.x) * cosf(g_CamParam.y)) * g_CamParam.z;
 }
 
 void UpdateCamera()
 {
     Vector3d Eye = GetCameraPosition();
-    Vector3d Center = Vector3d(0.0f, 0.0f, 0.0f);
+    Vector3d Center = g_CamCenter;
     g_Renderer->SetCameraLookAt(Eye, Center);
 }
 
@@ -90,70 +92,76 @@ void InitScene()
     RigidBodyParam rp;
     g_World = new PhysicsWorldRB(param);
 
-    Vertex1 Grounds_vertices[] =
+    if (0)
     {
-        { Vector3d(-100.0f,-5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
-        { Vector3d(100.0f, -5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
-        { Vector3d(100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
-        { Vector3d(-100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
-    };
-    unsigned int Grounds_indices[] =
+        Vertex1 Grounds_vertices[] =
+        {
+            { Vector3d(-100.0f,-5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
+            { Vector3d(100.0f, -5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
+            { Vector3d(100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
+            { Vector3d(-100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
+        };
+        unsigned int Grounds_indices[] =
+        {
+            2,1,0,
+            2,3,0,
+        };
+
+        rp.mass = 1.0f;
+        rp.Static = true;
+        Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, Grounds_vertices[0].Pos.y, 0), Vector3d::UnitY(), -0);
+        g_World->CreateRigidBody(plane, rp);
+
+        g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));
+    }
+
+    Vector3d house_pos = Vector3d(-2222.0f, -81.0f, -830.0f);
+    Vector3d bridge_pos = Vector3d(737.0f, -29.0f, -1495.0f);
+    if (0)
     {
-        2,1,0,
-        2,3,0,
-    };
+        TriangleMesh mesh;
+        mesh.LoadFlat("D://home//fighting.flat");
 
-    rp.mass = 1.0f;
-    rp.Static = true;
-    Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, Grounds_vertices[0].Pos.y, 0), Vector3d::UnitY(), -0);
-    g_World->CreateRigidBody(plane, rp);
+        Transform* t = new Transform;
+        t->SetScale(Vector3d(0.01f, 0.01f, 0.01f));
 
-    g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));
+        g_CamCenter = bridge_pos * 0.01f;
+        // t->SetTranslation(-Vector3d(-1.0f, 0, 0));
+        g_Renderer->AddMesh(&mesh, t);
+    }
 
-    Vertex1 vertices[] =
+    if (1)
     {
-        { Vector3d(-1.0f, 1.0f, -1.0f), Vector4d(0.0f, 0.0f, 1.0f, 1.0f) },
-        { Vector3d(1.0f, 1.0f, -1.0f), Vector4d(0.0f, 1.0f, 0.0f, 1.0f) },
-        { Vector3d(1.0f, 1.0f, 1.0f), Vector4d(0.0f, 1.0f, 1.0f, 1.0f) },
-        { Vector3d(-1.0f, 1.0f, 1.0f), Vector4d(1.0f, 0.0f, 0.0f, 1.0f) },
-        { Vector3d(-1.0f, -1.0f, -1.0f), Vector4d(1.0f, 0.0f, 1.0f, 1.0f) },
-        { Vector3d(1.0f, -1.0f, -1.0f), Vector4d(1.0f, 1.0f, 0.0f, 1.0f) },
-        { Vector3d(1.0f, -1.0f, 1.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) },
-        { Vector3d(-1.0f, -1.0f, 1.0f), Vector4d(0.0f, 0.0f, 0.0f, 1.0f) },
-    };
+        VoxelField field;
+        field.SerializeFrom("D://home//fighting.voxel");
+        field.MakeComplementarySet();
 
-    // Create index buffer
-    unsigned int indices[] =
+        int idx = field.GetVoxelIdx(bridge_pos);
+        int cz = idx / 6000;
+        int cx = idx - 6000 * cz;
+
+        TriangleMesh* mesh = field.CreateDebugMesh(cx - 100, cx + 100, cz - 100, cz + 100);
+
+        g_CamCenter = bridge_pos * 0.01f;
+
+        Transform* t = new Transform;
+        t->SetScale(Vector3d(0.01f, 0.01f, 0.01f));
+
+        g_Renderer->AddMesh(mesh, t);
+    }
+
+    if (0)
     {
-        3,1,0,
-        2,1,3,
+        rp.mass = 1.0f;
+        rp.Static = false;
+        Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0, 0, 0), Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
+        g_World->CreateRigidBody(aabb, rp);
 
-        0,5,4,
-        1,5,0,
+        TriangleMesh cube;
+        cube.AddAABB(Vector3d(-1.0f, -1.0f, -1.0f), Vector3d(1.0f, 1.0f, 1.0f));
+        g_Renderer->AddMesh(&cube, aabb->GetTransform());
+    }
 
-        3,4,7,
-        0,4,3,
-
-        1,6,5,
-        2,6,1,
-
-        2,7,6,
-        3,7,2,
-
-        6,4,5,
-        7,4,6,
-    };
-
-    rp.mass = 1.0f;
-    rp.Static = false;
-    Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0, 0, 0), Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
-    g_World->CreateRigidBody(aabb, rp);
-
-    Transform* t = new Transform;
-    t->SetScale(Vector3d(0.001f, 0.001f, 0.001f));
-    g_Renderer->LoadObj("D://home//fighting.flat", t, true);
-
-    g_Renderer->AddMesh("Cube", aabb->GetTransform(), vertices, sizeof(vertices) / sizeof(vertices[0]), indices, sizeof(indices) / sizeof(indices[0]));
 }
 
 //--------------------------------------------------------------------------------------

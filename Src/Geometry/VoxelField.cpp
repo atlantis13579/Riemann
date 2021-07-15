@@ -21,7 +21,7 @@ VoxelField::~VoxelField()
 
 }
 
-void VoxelField::InitField(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
+void VoxelField::MakeEmptySet(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
 {
 	m_BV = Bv;
 
@@ -41,13 +41,13 @@ void VoxelField::InitField(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, flo
 }
 
 
-bool VoxelField::VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* _mesh)
+bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, TriangleMesh* _mesh)
 {
 	m_SizeX = (int)(info.BV.GetSizeX() / info.VoxelSize + 0.5f);
 	m_SizeY = (int)(info.BV.GetSizeY() / info.VoxelHeight + 0.5f);
 	m_SizeZ = (int)(info.BV.GetSizeZ() / info.VoxelSize + 0.5f);
 
-	InitField(info.BV, m_SizeX, m_SizeY, m_SizeZ, info.VoxelSize, info.VoxelHeight);
+	MakeEmptySet(info.BV, m_SizeX, m_SizeY, m_SizeZ, info.VoxelSize, info.VoxelHeight);
 
 	const TriangleMesh &mesh = *_mesh;
 	for (unsigned int i = 0; i < mesh.GetNumTriangles(); ++i)
@@ -55,7 +55,7 @@ bool VoxelField::VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* _
 		Vector3d v0 = mesh(i, 0);
 		Vector3d v1 = mesh(i, 1);
 		Vector3d v2 = mesh(i, 2);
-		if (!VoxelizeTri(v0, v1, v2, info))
+		if (!VoxelizationTri(v0, v1, v2, info))
 		{
 			return false;
 		}
@@ -121,7 +121,7 @@ unsigned int	VoxelField::GetVoxelData(const Vector3d& pos) const
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
 		return 0;
 	Voxel* v = m_Fields[idx];
-	return ExtractVoxelData(v, pos.y);
+	return ExtractVoxelData(v, pos.y, false);
 }
 
 
@@ -310,7 +310,7 @@ static unsigned int VoxelMaxData(const Voxel* v)
 	return Data;
 }
 
-unsigned int VoxelField::ExtractVoxelData(const Voxel* v, float y) const
+unsigned int VoxelField::ExtractVoxelData(const Voxel* v, float y, bool take_next) const
 {
 	while (v)
 	{
@@ -320,8 +320,12 @@ unsigned int VoxelField::ExtractVoxelData(const Voxel* v, float y) const
 		{
 			return v->data;
 		}
-		else if (y > ymax)
+		else if (y < ymin)
 		{
+			if (take_next)
+			{
+				return v->data;
+			}
 			break;
 		}
 		v = v->next;
@@ -329,7 +333,7 @@ unsigned int VoxelField::ExtractVoxelData(const Voxel* v, float y) const
 	return 0;
 }
 
-bool VoxelField::VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info)
+bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info)
 {
 	const float dy = m_BV.Max.y - m_BV.Min.y;
 	const float ics = 1.0f / m_VoxelSize;
@@ -498,7 +502,7 @@ static int vx_neighbour4x_safe(int idx, int nx, int nz, int dir) {
 }
 
 
-int VoxelField::SolveSpatialTopology(std::map<int, unsigned long long>* volumes)
+int VoxelField::Separate(std::map<int, unsigned long long>* volumes)
 {
 	int SpaceFound = 0;
 	if (volumes) volumes->clear();
@@ -555,7 +559,7 @@ int VoxelField::SolveSpatialTopology(std::map<int, unsigned long long>* volumes)
 	return SpaceFound;
 }
 
-bool VoxelField::ExtractCutPlane(float y_value, std::vector<int>& output)
+bool VoxelField::IntersectYPlane(float y_value, std::vector<int>& output, bool take_next)
 {
 	int y = GetVoxelYCoordinate(y_value);
 	if (y < 0 || y >= m_SizeY)
@@ -566,7 +570,7 @@ bool VoxelField::ExtractCutPlane(float y_value, std::vector<int>& output)
 	output.resize(m_SizeX * m_SizeZ);
 	for (int i = 0; i < m_SizeZ * m_SizeX; ++i)
 	{
-		output[i] = ExtractVoxelData(m_Fields[i], y_value);
+		output[i] = ExtractVoxelData(m_Fields[i], y_value, take_next);
 	}
 
 	return true;
@@ -635,6 +639,59 @@ void	VoxelField::GenerateBitmapByData(std::vector<int>& output, unsigned int dat
 		output[i] = v ? (int)(v->ymax - v->ymin) : 0;
 		output[i] = v ? 1 : 0;
 	}
+}
+
+TriangleMesh* VoxelField::CreateDebugMesh(int x1, int x2, int z1, int z2) const
+{
+	TriangleMesh* mesh = new TriangleMesh;
+
+	for (int i = z1; i <= z2; ++i)
+	{
+		Vector3d Bmin, Bmax;
+		Bmin.z = m_BV.Min.z + m_VoxelSize * i;
+		Bmax.z = m_BV.Min.z + m_VoxelSize * (i + 1);
+
+		for (int j = x1; j <= x2; ++j)
+		{
+			Voxel* v = m_Fields[i * m_SizeX + j];
+
+			Bmin.x = m_BV.Min.x + m_VoxelSize * j;
+			Bmax.x = m_BV.Min.x + m_VoxelSize * (j+1);
+			while (v)
+			{
+				Bmin.y = m_BV.Min.y + m_VoxelHeight * v->ymin;
+				Bmax.y = m_BV.Min.y + m_VoxelHeight * v->ymax;
+				mesh->AddAABB(Bmin, Bmax);
+
+				v = v->next;
+			}
+		}
+	}
+	return mesh;
+}
+
+bool	VoxelField::Verify() const
+{
+	for (const Voxel* v : m_Fields)
+	{
+		const Voxel* prev = nullptr;
+		while (v)
+		{
+			if (v->ymin > v->ymax)
+			{
+				return false;
+			}
+
+			if (prev && prev->ymax >= v->ymin)
+			{
+				return false;
+			}
+			
+			prev = v;
+			v = v->next;
+		}
+	}
+	return true;
 }
 
 bool	VoxelField::SerializeTo(const char* filename)
@@ -763,7 +820,7 @@ bool	VoxelField::SerializeFrom(const char* filename)
 		return false;
 	}
 
-	InitField(header.BV, header.SizeX, header.SizeY, header.SizeZ, header.VoxelSize, header.VoxelHeight);
+	MakeEmptySet(header.BV, header.SizeX, header.SizeY, header.SizeZ, header.VoxelSize, header.VoxelHeight);
 	
 	m_NumVoxels = header.nVoxels;
 

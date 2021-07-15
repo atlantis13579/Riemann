@@ -12,7 +12,7 @@
 #include "../Src/Maths/Matrix2d.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Frustum.h"
-#include "../Src/Image/CompactBitmap.h"
+#include "../Src/ImageSpace/ContinuousBitmap.h"
 #include "../Src/CollisionPrimitive/OrientedBox3d.h"
 #include "../Src/CollisionPrimitive/Plane3d.h"
 #include "../Src/CollisionPrimitive/Sphere3d.h"
@@ -36,8 +36,8 @@ void TestBitmap()
 				1, 1, 1, 1, 1, 1, 1, 1,
 				0, 0, 0, 0, 0, 0, 0, 0,
 				0, 1, 0, 0, 1, 0, 1, 1 };
-	CompactBitmap<unsigned short> bitmap;
-	bitmap.SerializeFromMemory<int>(a, 8, 4, -4, -4, 4, 4);
+	ContinuousBitmap<unsigned short> bitmap;
+	bitmap.Build<int>(a, 8, 4, -4, -4, 4, 4);
 	bitmap.SerializeToFile("d://home//cbit.map");
 	bitmap.SerializeFromFile("d://home//cbit.map");
 	assert(bitmap.QueryBitmapSpace(3, 0) == false);
@@ -216,32 +216,11 @@ void TestSAP()
 void TestMesh1()
 {
 	TriangleMesh mesh;
-	mesh.AddVertex(Vector3d(-1, 1, -1));
-	mesh.AddVertex(Vector3d(1, 1, -1));
-	mesh.AddVertex(Vector3d(-1, 1, 1));
-	mesh.AddVertex(Vector3d(1, 1, 1));
-	mesh.AddVertex(Vector3d(-1, -1, -1));
-	mesh.AddVertex(Vector3d(1, -1, -1));
-	mesh.AddVertex(Vector3d(-1, -1, 1));
-	mesh.AddVertex(Vector3d(1, -1, 1));
-	mesh.AddTriangle(0, 1, 2);
-	mesh.AddTriangle(3, 1, 2);
-	mesh.AddTriangle(4, 5, 6);
-	mesh.AddTriangle(7, 5, 6);
-
-	mesh.AddTriangle(0, 1, 4);
-	mesh.AddTriangle(5, 1, 4);
-	mesh.AddTriangle(1, 3, 5);
-	mesh.AddTriangle(7, 3, 5);
-	mesh.AddTriangle(0, 2, 4);
-	mesh.AddTriangle(6, 2, 4);
-	mesh.AddTriangle(2, 3, 6);
-	mesh.AddTriangle(7, 3, 6);
-
+	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
 	mesh.CalculateBoundingBox();
 
 	VoxelField field;
-	field.InitField(Box3d::Unit(), 2, 2, 2, 1.0f, 2.0f);
+	field.MakeEmptySet(Box3d::Unit(), 2, 2, 2, 1.0f, 2.0f);
 	field.AddVoxel(0, 1, 2, 0);
 	field.AddVoxel(0, 3, 5, 0);
 	field.AddVoxel(0, 7, 8, 0);
@@ -270,9 +249,9 @@ void TestMesh1()
 	info.VoxelHeight = 0.5f;
 	info.VoxelSize = 0.5f;
 
-	field.VoxelizeTriangles(info, &mesh);
+	field.VoxelizationTrianglesSet(info, &mesh);
 	field.MakeComplementarySet();
-	int space = field.SolveSpatialTopology();
+	int space = field.Separate();
 	assert(space == 2);
 	return;
 }
@@ -295,31 +274,23 @@ void TestMesh()
 		mesh.LoadFlat("D://home//fighting.flat");
 		mesh.CalculateBoundingBox();
 
-		/*
-		int nFiltered = mesh.FilterTriangle([](const Vector3d& a, const Vector3d& b, const Vector3d& c) -> bool {
-			if (fabsf(a.y + 102.0f) < 1.0f && fabsf(b.y + 102.0f) < 1.0f && fabsf(c.y + 102.0f) < 1.0f)
-			{
-				return true;
-			}
-			return false;
-			});
-		*/
-
 		VoxelizationInfo info;
 		info.BV.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
 		info.BV.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
 		info.VoxelHeight = 1.f;
 		info.VoxelSize = 1.f;
 
-		field.VoxelizeTriangles(info, &mesh);
+		field.VoxelizationTrianglesSet(info, &mesh);
 		field.MakeComplementarySet();
 
 		// field.SerializeTo("D://home//fighting.voxel");
 		// field.SerializeFrom("D://home//fighting.voxel");
 	}
 
+	// bool success = field.Verify();
+
 	std::map<int, unsigned long long> volumes;
-	int space = field.SolveSpatialTopology(&volumes);
+	int space = field.Separate(&volumes);
 	// field.FilterByData(4);
 	// printf("space = %d\n", space);
 
@@ -338,26 +309,22 @@ void TestMesh()
 	}
 
 	std::vector<int> data;
-	field.ExtractCutPlane(-100, data);
+	field.IntersectYPlane(-100, data, true);
 
 	for (size_t i = 0; i < data.size(); ++i)
 	{
 		int val = data[i];
-		if (val == 4)
-			data[i] = 1;
-		else if (val == 36)
-			data[i] = 1;
-		else
-			data[i] = 0;
+		// data[i] = (val == 4 || val == 36) ? 0 : 5;
+		data[i] = (val == 3) ? 0 : 5;
 	}
 
 	BMPFile bitmap;
 	bitmap.LoadBitmap(&data[0], field.GetSizeX(), field.GetSizeZ(), 0.5f);
 	bitmap.WriteToFile("D://home//fighting3.bmp");
 
-	CompactBitmap<unsigned short> cbit;
+	ContinuousBitmap<unsigned short> cbit;
 	const Box3d& bv = field.GetBoundingVolume();
-	cbit.SerializeFromMemory<int>(&data[0], field.GetSizeX(), field.GetSizeZ(), bv.Min.x, bv.Min.z, bv.Max.x, bv.Max.z);
+	cbit.Build<int>(&data[0], field.GetSizeX(), field.GetSizeZ(), bv.Min.x, bv.Min.z, bv.Max.x, bv.Max.z);
 	cbit.SerializeToFile("d://home//cbit.map");
 
 	unsigned long long memory1 = field.EstimateMemoryUseage();

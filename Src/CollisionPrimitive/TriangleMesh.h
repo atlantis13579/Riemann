@@ -42,6 +42,11 @@ public:
 		return m_NumTriangles;
 	}
 
+	inline const Vector3d& operator ()(int i, int j) const
+	{
+		return Verties[Indices[3 * i + j]];
+	}
+
 	void AddVertex(const Vector3d& v)
 	{
 		if (m_NumVerties >= Verties.size())
@@ -72,9 +77,29 @@ public:
 		m_NumTriangles++;
 	}
 
-	inline const Vector3d& operator ()(int i, int j) const
+	void AddAABB(const Vector3d& Bmin, const Vector3d& Bmax)
 	{
-		return Verties[Indices[3 * i + j]];
+		int k = m_NumVerties;
+
+		Vector3d v[8];
+		Box3d::GetVertices(Bmin, Bmax, v);
+		for (int i = 0; i < 8; ++i)
+		{
+			AddVertex(v[i]);
+		}
+
+		AddTriangle(k + 0, k + 1, k + 2);
+		AddTriangle(k + 3, k + 1, k + 2);
+		AddTriangle(k + 4, k + 5, k + 6);
+		AddTriangle(k + 7, k + 5, k + 6);
+		AddTriangle(k + 0, k + 1, k + 4);
+		AddTriangle(k + 5, k + 1, k + 4);
+		AddTriangle(k + 1, k + 3, k + 5);
+		AddTriangle(k + 7, k + 3, k + 5);
+		AddTriangle(k + 0, k + 2, k + 4);
+		AddTriangle(k + 6, k + 2, k + 4);
+		AddTriangle(k + 2, k + 3, k + 6);
+		AddTriangle(k + 7, k + 3, k + 6);
 	}
 
 	bool LoadObj(const char* name)
@@ -217,6 +242,11 @@ public:
 			return;
 		}
 
+		if (!Normals.empty())
+		{
+			return;
+		}
+
 		Normals.resize(m_NumTriangles);
 		for (unsigned int i = 0; i < m_NumTriangles; ++i)
 		{
@@ -224,7 +254,7 @@ public:
 			const Vector3d& v1 = Verties[Indices[3*i + 1]];
 			const Vector3d& v2 = Verties[Indices[3*i + 2]];
 			Vector3d Nor = (v1 - v0).Cross(v2 - v0);
-			Normals[i] = Nor;
+			Normals[i] = Nor.Unit();
 		}
 	}
 

@@ -317,7 +317,7 @@ public:
         // Initialize the projection matrix
         // m_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / (FLOAT)height, 0.01f, 10000.0f);
 
-        m_Projection = Transform::BuildPerspectiveMatrix_LHCoordinateSystem(XM_PIDIV2, width / (FLOAT)height, 0.01f, 10000.0f);
+        m_Projection = Transform::BuildPerspectiveMatrix_LHCoordinateSystem(XM_PIDIV2, width / (FLOAT)height, 0.001f, 100000.0f);
         return S_OK;
     }
 
@@ -446,38 +446,36 @@ public:
         return false;
     }
 
-    void LoadObj(const char* filename, Transform* Trans, bool is_flat)
+    void AddMesh(TriangleMesh* mesh, Transform* Trans)
     {
-        TriangleMesh mesh;
-        if (is_flat)
-            mesh.LoadFlat(filename);
-        else
-            mesh.LoadObj(filename);
-        mesh.CalculateNormals();
+        mesh->CalculateNormals();
 
         std::vector<Vertex1> vv;
-        for (unsigned int i = 0; i < mesh.GetNumVerties(); ++i)
+        for (unsigned int i = 0; i < mesh->GetNumVerties(); ++i)
         {
             Vertex1 v;
-            v.Pos = Vector3d(mesh.Verties[i]);
+            v.Pos = Vector3d(mesh->Verties[i]);
             v.Color = Vector4d(1.0, 0.0f, 1.0f, 1.0f);
             vv.push_back(v);
         }
 
         std::vector<unsigned int> vi;
-        for (unsigned int i = 0; i < mesh.GetNumTriangles(); ++i)
+        for (unsigned int i = 0; i < mesh->GetNumTriangles(); ++i)
         {
-            vi.push_back(mesh.Indices[3 * i + 0]);
-            vi.push_back(mesh.Indices[3 * i + 1]);
-            vi.push_back(mesh.Indices[3 * i + 2]);
+            vi.push_back(mesh->Indices[3 * i + 0]);
+            vi.push_back(mesh->Indices[3 * i + 1]);
+            vi.push_back(mesh->Indices[3 * i + 2]);
 
-            Vector3d nor = mesh.Normals[i];
-            vv[mesh.Indices[3 * i + 0]].Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
-            vv[mesh.Indices[3 * i + 1]].Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
-            vv[mesh.Indices[3 * i + 2]].Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
+            Vector3d nor = mesh->Normals[i];
+            float dx = nor.Dot(Vector3d::UnitX());
+            float dy = nor.Dot(Vector3d::UnitY());
+            float dz = nor.Dot(Vector3d::UnitZ());
+            vv[mesh->Indices[3 * i + 0]].Color = Vector4d(dx, dy, dz, 1.0f);
+            vv[mesh->Indices[3 * i + 1]].Color = Vector4d(dx, dy, dz, 1.0f);
+            vv[mesh->Indices[3 * i + 2]].Color = Vector4d(dx, dy, dz, 1.0f);
         }
 
-        AddMesh(mesh.ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
+        AddMesh(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
 
         return;
 

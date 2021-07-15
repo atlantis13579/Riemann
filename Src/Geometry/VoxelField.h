@@ -35,13 +35,13 @@ public:
 	~VoxelField();
 
 public:
-	void			InitField(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
-	bool			VoxelizeTriangles(const VoxelizationInfo& info, TriangleMesh* mesh);
-	bool			VoxelizeTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
+	void			MakeEmptySet(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
+	bool			VoxelizationTrianglesSet(const VoxelizationInfo& info, TriangleMesh* mesh);
+	bool			VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
 	bool			MakeComplementarySet();
+	int				Separate(std::map<int, unsigned long long> *volumes = nullptr);
+	bool			IntersectYPlane(float y_value, std::vector<int>& output, bool take_next = false);
 	void			FilterByData(unsigned int data);
-	int				SolveSpatialTopology(std::map<int, unsigned long long> *volumes = nullptr);
-	bool			ExtractCutPlane(float y_value, std::vector<int>& output);
 
 	const Voxel*	GetVoxel(const Vector3d& pos) const;
 	int				GetVoxelIdx(const Vector3d& pos) const;
@@ -77,16 +77,18 @@ public:
 	unsigned long long	EstimateMemoryUseage() const;
 	unsigned long long	EstimateMemoryUseageEx() const;
 
-	void		GenerateHeightMap(std::vector<float>& heightmap) const;
-	void		GenerateBitmapByLevel(std::vector<int>& levels, int* level_max) const;
-	void		GenerateBitmapByData(std::vector<int>& output, unsigned int data) const;
-	bool		AddVoxel(int idx, unsigned short ymin, unsigned short ymax, float MergeThr);
+	TriangleMesh*	CreateDebugMesh(int x1, int x2, int z1, int z2) const;
+	bool			Verify() const;
+	void			GenerateHeightMap(std::vector<float>& heightmap) const;
+	void			GenerateBitmapByLevel(std::vector<int>& levels, int* level_max) const;
+	void			GenerateBitmapByData(std::vector<int>& output, unsigned int data) const;
+	bool			AddVoxel(int idx, unsigned short ymin, unsigned short ymax, float MergeThr);
 
 private:
 	Voxel*			AllocVoxel();
 	void			FreeVoxel(Voxel* p);
 	int				CalculateNumFields() const;
-	unsigned int	ExtractVoxelData(const Voxel* v, float y) const;
+	unsigned int	ExtractVoxelData(const Voxel* v, float y, bool take_next = false) const;
 
 private:
 	int			m_SizeX, m_SizeZ, m_SizeY;

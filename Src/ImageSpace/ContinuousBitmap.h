@@ -31,7 +31,7 @@ public:
 			T high = pX[1];
 			if (low <= nx && nx <= high)
 				return true;
-			else if (nx > high)
+			else if (nx < low)
 				break;
 			pX = pX + 2;
 		}
