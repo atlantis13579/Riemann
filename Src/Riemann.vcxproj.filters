@@ -6,7 +6,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Image\ImageProcessing.h">
+    <ClInclude Include="ImageSpace\ImageProcessing.h">
       <Filter>Src</Filter>
     </ClInclude>
     <ClInclude Include="Maths\Vector2d.h">
@@ -15,7 +15,7 @@
     <ClInclude Include="Maths\Vector3d.h">
       <Filter>Src</Filter>
     </ClInclude>
-    <ClInclude Include="Image\Rasterizer.h" />
+    <ClInclude Include="ImageSpace\Rasterizer.h" />
     <ClInclude Include="Maths\Maths.h" />
     <ClInclude Include="Maths\Matrix3d.h" />
     <ClInclude Include="Maths\Matrix4d.h" />
@@ -81,10 +81,10 @@
     <ClInclude Include="Geometry\VoxelEngine.h" />
     <ClInclude Include="Geometry\VoxelField.h" />
     <ClInclude Include="Geometry\SparseVoxelField.h" />
-    <ClInclude Include="Image\CompactBitmap.h" />
+    <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Image\ImageProcessing.cpp">
+    <ClCompile Include="ImageSpace\ImageProcessing.cpp">
       <Filter>Src</Filter>
     </ClCompile>
     <ClCompile Include="Maths\Maths.cpp" />

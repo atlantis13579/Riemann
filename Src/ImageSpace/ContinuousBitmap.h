@@ -3,14 +3,14 @@
 #include <vector>
 
 template <typename T>
-class CompactBitmap
+class ContinuousBitmap
 {
 public:
-	CompactBitmap()
+	ContinuousBitmap()
 	{
 		m_nX = m_nY = 0;
 	}
-	~CompactBitmap()
+	~ContinuousBitmap()
 	{
 		m_Rows.clear();
 		m_CompactData.clear();
@@ -18,7 +18,7 @@ public:
 
 	bool	QueryBitmapSpace(T nx, T ny) const
 	{
-		if (nx < 0 || nx > m_nX - 1 || ny < 0 || ny > m_nY - 1)
+		if (nx < 0 || nx >= m_nX || ny < 0 || ny >= m_nY)
 		{
 			return false;
 		}
@@ -62,7 +62,7 @@ public:
 	}
 
 	template <typename TSrc>
-	void	SerializeFromMemory(TSrc* pArray, int nX, int nY, float minX, float minY, float maxX, float maxY)
+	void	Build(TSrc* pArray, int nX, int nY, float minX, float minY, float maxX, float maxY)
 	{
 		if (!m_Rows.empty())
 		{
@@ -185,18 +185,15 @@ public:
 		m_Rows.resize(m_nY);
 		memset(&m_Rows[0], 0, sizeof(T*) * m_Rows.size());
 		
-		T* curr = &m_CompactData[0];
+		T* p = &m_CompactData[0];
 		for (int i = 0; i < m_nY; ++i)
 		{
-			m_Rows[i] = curr;
-			while (curr + 1 != &m_CompactData.back() && *curr != std::numeric_limits<T>::max())
+			m_Rows[i] = p;
+			while (*p != std::numeric_limits<T>::max())
 			{
-				curr = curr + 2;
+				p = p + 2;
 			}
-			if (*curr == std::numeric_limits<T>::max())
-			{
-				curr = curr + 1;
-			}
+			p = p + 1;
 		}
 
 		return true;
