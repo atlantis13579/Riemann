@@ -305,7 +305,7 @@ void TestMesh()
 	for (size_t i = 0; i < data.size(); ++i)
 	{
 		int val = data[i];
-		data[i] = (val == data_main) ? 5 : 0;
+		data[i] = (val == data_main) ? 0 : 5;
 	}
 
 	BMPFile bitmap;

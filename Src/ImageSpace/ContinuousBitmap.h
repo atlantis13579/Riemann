@@ -40,8 +40,8 @@ public:
 
 	bool	QueryWorldSpace(float x, float y) const
 	{
-		x -= m_invX;
-		y -= m_invY;
+		x -= m_minX;
+		y -= m_minY;
 		if (x < 0 || x >= m_maxX - m_minX || y < 0 || y >= m_maxY - m_minY)
 			return false;
 		T nx = (T)(x * m_invX);
