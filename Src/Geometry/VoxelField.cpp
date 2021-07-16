@@ -419,9 +419,22 @@ bool VoxelField::MakeComplementarySet()
 	{
 		unsigned short ylow = 0;
 		Voxel *p = m_Fields[i], *prev = nullptr;
+		if (p && p->ymin == 0)
+		{
+			if (p->ymax >= m_SizeY - 1)
+			{
+				FreeVoxel(m_Fields[i]);
+				m_Fields[i] = nullptr;
+				continue;
+			}
+			ylow = p->ymax + 1;
+			p = p->next;
+			FreeVoxel(m_Fields[i]);
+		}
+
 		while (p)
 		{
-			auto t = p->ymin;
+			auto t = p->ymin - 1;
 			p->ymin = ylow;
 			ylow = p->ymax + 1;
 			p->ymax = t;
@@ -438,7 +451,7 @@ bool VoxelField::MakeComplementarySet()
 			}
 			p->data = 0;
 			p->ymin = ylow;
-			p->ymax = yhigh;
+			p->ymax = yhigh - 1;
 			p->next = nullptr;
 		}
 
@@ -452,7 +465,7 @@ bool VoxelField::MakeComplementarySet()
 }
 
 
-void VoxelField::Filter(std::function<bool(unsigned int data)> func)
+void		VoxelField::Filter(std::function<bool(unsigned int data)> func)
 {
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
@@ -478,6 +491,31 @@ void VoxelField::Filter(std::function<bool(unsigned int data)> func)
 
 end_while:
 		;
+	}
+}
+
+void		VoxelField::FilterTopNByVolume(const std::unordered_map<int, unsigned long long>& volumes, int TopN)
+{
+	if (volumes.size() > TopN)
+	{
+		std::vector<unsigned long long> volume_list;
+		for (auto it : volumes)
+		{
+			volume_list.push_back(it.second);
+		}
+		std::sort(volume_list.begin(), volume_list.end());
+
+		unsigned long long area_thr = volume_list[volume_list.size() - TopN];
+		auto filter_func = [&volumes, area_thr](unsigned int data)
+		{
+			auto it = volumes.find(data);
+			if (it != volumes.end() && it->second <= area_thr)
+			{
+				return true;
+			}
+			return false;
+		};
+		Filter(filter_func);
 	}
 }
 

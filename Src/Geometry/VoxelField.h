@@ -43,6 +43,7 @@ public:
 	int				Separate(std::unordered_map<int, unsigned long long> *volumes = nullptr);
 	bool			IntersectYPlane(float y_value, std::vector<int>& output, bool take_next = false);
 	void			Filter(std::function<bool(unsigned int data)> func);
+	void			FilterTopNByVolume(const std::unordered_map<int, unsigned long long>& volumes, int TopN);
 
 	const Voxel*	GetVoxel(const Vector3d& pos) const;
 	int				GetVoxelIdx(const Vector3d& pos) const;

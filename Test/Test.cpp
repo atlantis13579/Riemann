@@ -225,6 +225,8 @@ void TestMesh1()
 	field.AddVoxel(0, 3, 5, 0);
 	field.AddVoxel(0, 7, 8, 0);
 	field.AddVoxel(0, 1, 10, 0);
+	field.AddVoxel(1, 0, 0, 0);
+	field.AddVoxel(2, 0, 1, 0);
 
 	field.SerializeTo("D://home//test.voxel");
 
@@ -242,6 +244,8 @@ void TestMesh1()
 	v = field.GetVoxelBox(Vector3d(0.01f, 0.01f, 0.01f));
 	assert(FloatEqual(v.Min.x, 0.0f));
 	assert(FloatEqual(v.Max.x, 1.0f));
+
+	field.MakeComplementarySet();
 
 	VoxelizationInfo info;
 	info.BV.Min = Vector3d(-2, -2, -2);
@@ -290,6 +294,8 @@ void TestMesh()
 
 	std::unordered_map<int, unsigned long long> volumes;
 	int space = field.Separate(&volumes);
+
+	printf("space = %d\n", space);
 
 	std::vector<int> data;
 	field.IntersectYPlane(-102, data, true);

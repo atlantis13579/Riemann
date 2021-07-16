@@ -135,30 +135,6 @@ void InitScene()
     {
         VoxelField field;
         field.SerializeFrom("D://home//fighting.voxel");
-
-        std::unordered_map<int, unsigned long long> volumes;
-        // int space = field.Separate(&volumes);
-        if (volumes.size() > 10)
-        {
-            std::vector<unsigned long long> volume_list;
-            for (auto it : volumes)
-            {
-                volume_list.push_back(it.second);
-            }
-            std::sort(volume_list.begin(), volume_list.end());
-
-            unsigned long long area_thr = volume_list[volume_list.size() - 10];
-            auto filter_func = [&volumes, area_thr](unsigned int data)
-            {
-                if (volumes[data] <= area_thr)
-                {
-                    return true;
-                }
-                return false;
-            };
-            field.Filter(filter_func);
-        }
-
         field.MakeComplementarySet();
 
         const Voxel* p = field.GetVoxel(house_pos);
