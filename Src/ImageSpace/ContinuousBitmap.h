@@ -42,7 +42,7 @@ public:
 	{
 		x -= m_invX;
 		y -= m_invY;
-		if (x < 0 || x >= m_maxX - m_minY || y < 0 || y >= m_maxY - m_minY)
+		if (x < 0 || x >= m_maxX - m_minX || y < 0 || y >= m_maxY - m_minY)
 			return false;
 		T nx = (T)(x * m_invX);
 		T ny = (T)(y * m_invY);

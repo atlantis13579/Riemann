@@ -265,7 +265,7 @@ void TestMesh()
 {
 	VoxelField field;
 
-	const int load_voxel = 1;
+	const int load_voxel = 0;
 	if (load_voxel)
 	{
 		field.SerializeFrom("D://home//fighting.voxel");
@@ -277,13 +277,11 @@ void TestMesh()
 		// std::string file = "D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting.obj";
 		// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting_kou.obj");
 		mesh.LoadFlat("D://home//fighting.flat");
-		mesh.CalculateBoundingBox();
 
 		VoxelizationInfo info;
-		info.BV.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
-		info.BV.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
+		info.BV = Box3d(Vector3d(-3090.0f, -241.0f, -2835.0f), Vector3d(3009.0f, 1208.0f, 3160.0f));
 		info.VoxelHeight = 0.5f;
-		info.VoxelSize = 1.f;
+		info.VoxelSize = 1.0f;
 
 		field.VoxelizationTrianglesSet(info, &mesh);
 		field.MakeComplementarySet();
@@ -294,26 +292,29 @@ void TestMesh()
 
 	std::unordered_map<int, unsigned long long> volumes;
 	int space = field.Separate(&volumes);
-
 	printf("space = %d\n", space);
 
 	std::vector<int> data;
 	field.IntersectYPlane(-102, data, true);
 
+	const Box3d& bv = field.GetBoundingVolume();
+	Vector3d pos_main = bv.GetCenter();
+	pos_main.y = bv.Max.y;
+	int data_main = field.GetVoxelData(pos_main);
+
 	for (size_t i = 0; i < data.size(); ++i)
 	{
 		int val = data[i];
-		data[i] = (val == 3) ? 5 : 0;
+		data[i] = (val == data_main) ? 5 : 0;
 	}
 
 	BMPFile bitmap;
 	bitmap.LoadBitmap(&data[0], field.GetSizeX(), field.GetSizeZ(), 0.5f);
-	bitmap.WriteToFile("D://home//fighting3.bmp");
+	bitmap.WriteToFile("D://home//fighting_preview.bmp");
 
 	ContinuousBitmap<unsigned short> cbit;
-	const Box3d& bv = field.GetBoundingVolume();
 	cbit.Build<int>(&data[0], field.GetSizeX(), field.GetSizeZ(), bv.Min.x, bv.Min.z, bv.Max.x, bv.Max.z);
-	cbit.SerializeToFile("d://home//cbit.map");
+	cbit.SerializeToFile("d://home//fighting_cbmap");
 
 	unsigned long long memory1 = field.EstimateMemoryUseage();
 	unsigned long long memory2 = field.EstimateMemoryUseageEx();

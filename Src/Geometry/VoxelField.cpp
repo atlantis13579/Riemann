@@ -310,25 +310,31 @@ static unsigned int VoxelMaxData(const Voxel* v)
 	return Data;
 }
 
-unsigned int VoxelField::ExtractVoxelData(const Voxel* v, float y, bool take_next) const
+unsigned int VoxelField::ExtractVoxelData(const Voxel* p, float y, bool take_next) const
 {
-	while (v)
+	const Voxel* prev = nullptr;
+	while (p)
 	{
-		float ymin = m_BV.Min.y + m_VoxelHeight * v->ymin;
-		float ymax = m_BV.Min.y + m_VoxelHeight * (v->ymax + 1);
+		float ymin = m_BV.Min.y + m_VoxelHeight * p->ymin;
+		float ymax = m_BV.Min.y + m_VoxelHeight * (p->ymax + 1);
 		if (ymin <= y && y <= ymax)
 		{
-			return v->data;
+			return p->data;
 		}
 		else if (y < ymin)
 		{
 			if (take_next)
 			{
-				return v->data;
+				return p->data;
 			}
 			break;
 		}
-		v = v->next;
+		prev = p;
+		p = p->next;
+	}
+	if (prev)
+	{
+		return prev->data;
 	}
 	return 0;
 }

@@ -212,6 +212,8 @@ public:
 		fread(&Verties[0], sizeof(Verties[0]), m_NumVerties, fp);
 		fread(&Indices[0], sizeof(Indices[0]), m_NumTriangles * 3, fp);
 		fclose(fp);
+
+		CalculateBoundingBox();
 		return true;
 	}
 
