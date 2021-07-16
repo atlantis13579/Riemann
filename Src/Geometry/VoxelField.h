@@ -2,7 +2,8 @@
 
 #include "../Maths/Box3d.h"
 
-#include <map>
+#include <functional>
+#include <unordered_map>
 
 class TriangleMesh;
 
@@ -39,9 +40,9 @@ public:
 	bool			VoxelizationTrianglesSet(const VoxelizationInfo& info, TriangleMesh* mesh);
 	bool			VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
 	bool			MakeComplementarySet();
-	int				Separate(std::map<int, unsigned long long> *volumes = nullptr);
+	int				Separate(std::unordered_map<int, unsigned long long> *volumes = nullptr);
 	bool			IntersectYPlane(float y_value, std::vector<int>& output, bool take_next = false);
-	void			FilterByData(unsigned int data);
+	void			Filter(std::function<bool(unsigned int data)> func);
 
 	const Voxel*	GetVoxel(const Vector3d& pos) const;
 	int				GetVoxelIdx(const Vector3d& pos) const;
@@ -79,6 +80,7 @@ public:
 
 	TriangleMesh*	CreateDebugMesh(int x1, int x2, int z1, int z2) const;
 	bool			Verify() const;
+	void			ResetData();
 	void			GenerateHeightMap(std::vector<float>& heightmap) const;
 	void			GenerateBitmapByLevel(std::vector<int>& levels, int* level_max) const;
 	void			GenerateBitmapByData(std::vector<int>& output, unsigned int data) const;

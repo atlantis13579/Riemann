@@ -452,14 +452,14 @@ bool VoxelField::MakeComplementarySet()
 }
 
 
-void VoxelField::FilterByData(unsigned int data)
+void VoxelField::Filter(std::function<bool(unsigned int data)> func)
 {
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
 		Voxel* p = m_Fields[i], * prev = nullptr;
 		while (p)
 		{
-			while (p->data != data)
+			while (func(p->data))
 			{
 				if (prev)
 					prev->next = p->next;
@@ -502,7 +502,7 @@ static int vx_neighbour4x_safe(int idx, int nx, int nz, int dir) {
 }
 
 
-int VoxelField::Separate(std::map<int, unsigned long long>* volumes)
+int VoxelField::Separate(std::unordered_map<int, unsigned long long>* volumes)
 {
 	int SpaceFound = 0;
 	if (volumes) volumes->clear();
@@ -636,7 +636,7 @@ void	VoxelField::GenerateBitmapByData(std::vector<int>& output, unsigned int dat
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
 		Voxel* v = FindVoxel(m_Fields[i], data);
-		output[i] = v ? (int)(v->ymax - v->ymin) : 0;
+		// output[i] = v ? (int)(v->ymax - v->ymin) : 0;
 		output[i] = v ? 1 : 0;
 	}
 }
@@ -693,6 +693,19 @@ bool	VoxelField::Verify() const
 	}
 	return true;
 }
+
+void	VoxelField::ResetData()
+{
+	for (auto v : m_Fields)
+	{
+		while (v)
+		{
+			v->data = 0;
+			v = v->next;
+		}
+	}
+}
+
 
 bool	VoxelField::SerializeTo(const char* filename)
 {

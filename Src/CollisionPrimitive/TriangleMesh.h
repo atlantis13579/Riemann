@@ -89,17 +89,18 @@ public:
 		}
 
 		AddTriangle(k + 0, k + 1, k + 2);
-		AddTriangle(k + 3, k + 1, k + 2);
+		AddTriangle(k + 1, k + 3, k + 2);
 		AddTriangle(k + 4, k + 5, k + 6);
-		AddTriangle(k + 7, k + 5, k + 6);
+		AddTriangle(k + 5, k + 7, k + 6);
 		AddTriangle(k + 0, k + 1, k + 4);
-		AddTriangle(k + 5, k + 1, k + 4);
+		AddTriangle(k + 5, k + 4, k + 1);
 		AddTriangle(k + 1, k + 3, k + 5);
-		AddTriangle(k + 7, k + 3, k + 5);
-		AddTriangle(k + 0, k + 2, k + 4);
-		AddTriangle(k + 6, k + 2, k + 4);
-		AddTriangle(k + 2, k + 3, k + 6);
-		AddTriangle(k + 7, k + 3, k + 6);
+		AddTriangle(k + 7, k + 5, k + 3);
+		AddTriangle(k + 2, k + 4, k + 0);
+		AddTriangle(k + 6, k + 4, k + 2);
+		AddTriangle(k + 3, k + 2, k + 6);
+		AddTriangle(k + 6, k + 7, k + 3);
+
 	}
 
 	bool LoadObj(const char* name)
@@ -247,14 +248,28 @@ public:
 			return;
 		}
 
-		Normals.resize(m_NumTriangles);
+		std::vector<int> Count;
+		Count.resize(m_NumVerties, 0);
+		Normals.resize(m_NumVerties);
+		memset(&Normals[0], 0, sizeof(Normals[0]) * Normals.size());
 		for (unsigned int i = 0; i < m_NumTriangles; ++i)
 		{
-			const Vector3d& v0 = Verties[Indices[3*i + 0]];
-			const Vector3d& v1 = Verties[Indices[3*i + 1]];
-			const Vector3d& v2 = Verties[Indices[3*i + 2]];
+			const int i0 = Indices[3 * i + 0];
+			const int i1 = Indices[3 * i + 1];
+			const int i2 = Indices[3 * i + 2];
+			const Vector3d& v0 = Verties[i0];
+			const Vector3d& v1 = Verties[i1];
+			const Vector3d& v2 = Verties[i2];
 			Vector3d Nor = (v1 - v0).Cross(v2 - v0);
-			Normals[i] = Nor.Unit();
+			Normals[i0] += Nor.Unit(), Count[i0]++;
+			Normals[i1] += Nor.Unit(), Count[i1]++;
+			Normals[i2] += Nor.Unit(), Count[i2]++;
+		}
+		
+		for (unsigned int i = 0; i < m_NumVerties; ++i)
+		{
+			Normals[i] *= 1.0f / Count[i];
+			Normals[i].Normalize();
 		}
 	}
 

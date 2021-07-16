@@ -256,6 +256,7 @@ void TestMesh1()
 	return;
 }
 
+#pragma optimize("", off)
 void TestMesh()
 {
 	VoxelField field;
@@ -277,45 +278,26 @@ void TestMesh()
 		VoxelizationInfo info;
 		info.BV.Min = mesh.BoundingBox.GetCenter() - mesh.BoundingBox.GetExtent() * 0.75;
 		info.BV.Max = mesh.BoundingBox.GetCenter() + mesh.BoundingBox.GetExtent() * 0.75;
-		info.VoxelHeight = 1.f;
+		info.VoxelHeight = 0.5f;
 		info.VoxelSize = 1.f;
 
 		field.VoxelizationTrianglesSet(info, &mesh);
 		field.MakeComplementarySet();
 
-		// field.SerializeTo("D://home//fighting.voxel");
-		// field.SerializeFrom("D://home//fighting.voxel");
+		field.SerializeTo("D://home//fighting.voxel");
+		field.SerializeFrom("D://home//fighting.voxel");
 	}
 
-	// bool success = field.Verify();
-
-	std::map<int, unsigned long long> volumes;
+	std::unordered_map<int, unsigned long long> volumes;
 	int space = field.Separate(&volumes);
-	// field.FilterByData(4);
-	// printf("space = %d\n", space);
-
-	while (0)
-	{
-		printf("begin\n");
-		int a, b, c;
-		scanf("%d %d %d", &a, &b, &c);
-		const Voxel* v = field.GetVoxel(Vector3d(a * 1.0f, b * 1.0f, c * 1.0f));
-		printf("x=%d, y=%d, z=%d\n", a, b, c);
-		while (v)
-		{
-			printf("[%1.f, %.1f] data=%d\n", field.GetVoxelY(v->ymin), field.GetVoxelY(v->ymax), v->data);
-			v = v->next;
-		}	
-	}
 
 	std::vector<int> data;
-	field.IntersectYPlane(-100, data, true);
+	field.IntersectYPlane(-102, data, true);
 
 	for (size_t i = 0; i < data.size(); ++i)
 	{
 		int val = data[i];
-		// data[i] = (val == 4 || val == 36) ? 0 : 5;
-		data[i] = (val == 3) ? 0 : 5;
+		data[i] = (val == 3) ? 5 : 0;
 	}
 
 	BMPFile bitmap;
@@ -332,6 +314,7 @@ void TestMesh()
 
 	return;
 }
+#pragma optimize("", on)
 
 class BVProxy : public SAP::BoundingVolumeProxy
 {

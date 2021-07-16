@@ -30,7 +30,7 @@ PhysicsWorldRB* g_World = nullptr;
 HINSTANCE               g_hInst = nullptr;
 HWND                    g_hWnd = nullptr;
 Renderer*               g_Renderer = nullptr;
-Vector3d   g_CamCenter = Vector3d::Zero();
+Vector3d    g_CamCenter = Vector3d::Zero();
 Vector3d    g_CamParam = Vector3d(1.0f, 1.0f, 5.0f);
 
 LRESULT CALLBACK    WndProc( HWND, UINT, WPARAM, LPARAM );
@@ -115,37 +115,63 @@ void InitScene()
         g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));
     }
 
-    Vector3d house_pos = Vector3d(-2222.0f, -81.0f, -830.0f);
+    Vector3d house_pos = Vector3d(-2669.0f, -100.0f, 174.0f);
     Vector3d bridge_pos = Vector3d(737.0f, -29.0f, -1495.0f);
-    if (0)
+    if (1)
     {
         TriangleMesh mesh;
         mesh.LoadFlat("D://home//fighting.flat");
 
         Transform* t = new Transform;
         t->SetScale(Vector3d(0.01f, 0.01f, 0.01f));
+        g_CamCenter = t->LocalToWorld(bridge_pos);
 
-        g_CamCenter = bridge_pos * 0.01f;
         // t->SetTranslation(-Vector3d(-1.0f, 0, 0));
+
         g_Renderer->AddMesh(&mesh, t);
     }
 
-    if (1)
+    if (0)
     {
         VoxelField field;
         field.SerializeFrom("D://home//fighting.voxel");
+
+        std::unordered_map<int, unsigned long long> volumes;
+        // int space = field.Separate(&volumes);
+        if (volumes.size() > 10)
+        {
+            std::vector<unsigned long long> volume_list;
+            for (auto it : volumes)
+            {
+                volume_list.push_back(it.second);
+            }
+            std::sort(volume_list.begin(), volume_list.end());
+
+            unsigned long long area_thr = volume_list[volume_list.size() - 10];
+            auto filter_func = [&volumes, area_thr](unsigned int data)
+            {
+                if (volumes[data] <= area_thr)
+                {
+                    return true;
+                }
+                return false;
+            };
+            field.Filter(filter_func);
+        }
+
         field.MakeComplementarySet();
 
-        int idx = field.GetVoxelIdx(bridge_pos);
+        const Voxel* p = field.GetVoxel(house_pos);
+
+        int idx = field.GetVoxelIdx(house_pos);
         int cz = idx / 6000;
         int cx = idx - 6000 * cz;
 
         TriangleMesh* mesh = field.CreateDebugMesh(cx - 100, cx + 100, cz - 100, cz + 100);
 
-        g_CamCenter = bridge_pos * 0.01f;
-
         Transform* t = new Transform;
         t->SetScale(Vector3d(0.01f, 0.01f, 0.01f));
+        g_CamCenter = t->LocalToWorld(house_pos);
 
         g_Renderer->AddMesh(mesh, t);
     }
@@ -153,7 +179,7 @@ void InitScene()
     if (0)
     {
         rp.mass = 1.0f;
-        rp.Static = false;
+        rp.Static = true;
         Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0, 0, 0), Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
         g_World->CreateRigidBody(aabb, rp);
 
@@ -231,6 +257,21 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
         delete g_World;
         PostQuitMessage( 0 );
         break;
+
+    case WM_CHAR:
+    {
+        char c = (char)wParam;
+        if (c == 'a')
+            g_CamCenter.x -= 0.1f;
+        else if (c == 'd')
+            g_CamCenter.x += 0.1f;
+        else if (c == 'w')
+            g_CamCenter.z -= 0.1f;
+        else if (c == 's')
+            g_CamCenter.z += 0.1f;
+        UpdateCamera();
+        break;
+    }
 
     case WM_LBUTTONDOWN:
         break;

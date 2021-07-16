@@ -455,7 +455,8 @@ public:
         {
             Vertex1 v;
             v.Pos = Vector3d(mesh->Verties[i]);
-            v.Color = Vector4d(1.0, 0.0f, 1.0f, 1.0f);
+            const Vector3d& nor = mesh->Normals[i];
+            v.Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
             vv.push_back(v);
         }
 
@@ -465,14 +466,6 @@ public:
             vi.push_back(mesh->Indices[3 * i + 0]);
             vi.push_back(mesh->Indices[3 * i + 1]);
             vi.push_back(mesh->Indices[3 * i + 2]);
-
-            Vector3d nor = mesh->Normals[i];
-            float dx = nor.Dot(Vector3d::UnitX());
-            float dy = nor.Dot(Vector3d::UnitY());
-            float dz = nor.Dot(Vector3d::UnitZ());
-            vv[mesh->Indices[3 * i + 0]].Color = Vector4d(dx, dy, dz, 1.0f);
-            vv[mesh->Indices[3 * i + 1]].Color = Vector4d(dx, dy, dz, 1.0f);
-            vv[mesh->Indices[3 * i + 2]].Color = Vector4d(dx, dy, dz, 1.0f);
         }
 
         AddMesh(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
