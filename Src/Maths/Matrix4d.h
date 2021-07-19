@@ -201,4 +201,12 @@ inline TVector4<T> operator* (const TVector4<T>& vec, const Matrix4d& mm) {
 		mm.mat[0][3] * vec.x + mm.mat[1][3] * vec.y + mm.mat[2][3] * vec.z + mm.mat[3][3] * vec.w);
 }
 
+template <typename T>
+inline TVector3<T> operator *(const Matrix4d& mat, const TVector3<T>& Point)
+{
+	TVector4<T> hSpace = Vector4d(Point.x, Point.y, Point.z, (T)1);
+	TVector4<T> t = hSpace * mat;
+	return t.xyz();
+}
+
 static_assert(sizeof(Matrix4d) == 64, "sizeof Matrix4d is not valid");

@@ -146,55 +146,26 @@ SupportFunc			Geometry::supportTable[GeometryShapeType::COUNT] = { 0 };
 InertiaFunc			Geometry::inertiaTable[GeometryShapeType::COUNT] = { 0 };
 DestoryFunc			Geometry::destoryTable[GeometryShapeType::COUNT] = { 0 };
 
-#define	IMPL_GEOMETRY_OBJ(_type, _name)											\
-	class Geom_Register_##_name													\
-	{																			\
-		public : Geom_Register_##_name()										\
-		{																		\
-			Geometry::getaabbTable[_type] =										\
-				Geometry::GetBoundingBox_##_name;								\
-			Geometry::raycastTable[_type] =										\
-				Geometry::RayCast_##_name;										\
-			Geometry::supportTable[_type] =										\
-				Geometry::GetSupport_##_name;									\
-			Geometry::inertiaTable[_type] =										\
-				Geometry::GetInertia_##_name;									\
-			Geometry::destoryTable[_type] =										\
-				Geometry::Destory_##_name;										\
-		}																		\
-	};																			\
-	static Geom_Register_##_name s_register_##_name;							\
-	Box3d Geometry::GetBoundingBox_##_name(void *Obj)							\
-	{																			\
-		_name* p = reinterpret_cast<_name*>(Obj);								\
-		return p->GetBoundingBox();												\
-	}																			\
-	bool Geometry::RayCast_##_name(void *Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)			\
-	{																			\
-		_name* p = reinterpret_cast<_name*>(Obj);								\
-		return p->IntersectRay(Origin, Dir, t);									\
-	}																			\
-	Vector3d Geometry::GetSupport_##_name(void *Obj, const Vector3d& Dir)		\
-	{																			\
-		_name* p = reinterpret_cast<_name*>(Obj);								\
-		return p->GetSupport(Dir);												\
-	}																			\
-	Matrix3d Geometry::GetInertia_##_name(void *Obj, float Mass)				\
-	{																			\
-		_name* p = reinterpret_cast<_name*>(Obj);								\
-		return p->GetInertiaTensor(Mass);										\
-	}																			\
-	void Geometry::Destory_##_name(void *Obj)									\
-	{																			\
-		_name* p = reinterpret_cast<_name*>(Obj);								\
-		delete p;																\
-	}																			\
+#define	REG_GEOMETRY_OBJ(_type, _name)									\
+	Geometry::getaabbTable[_type] =	Geometry::GetBoundingBox<_name>;	\
+	Geometry::raycastTable[_type] =	Geometry::RayCast<_name>;			\
+	Geometry::supportTable[_type] =	Geometry::GetSupport<_name>;		\
+	Geometry::inertiaTable[_type] =	Geometry::GetInertia<_name>;		\
+	Geometry::destoryTable[_type] =	Geometry::Destory<_name>;			\
 
-IMPL_GEOMETRY_OBJ(GeometryShapeType::OBB, OrientedBox3d);
-IMPL_GEOMETRY_OBJ(GeometryShapeType::PLANE, Plane3d);
-IMPL_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere3d);
-IMPL_GEOMETRY_OBJ(GeometryShapeType::CAPSULE, Capsule3d);
-IMPL_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE, Triangle3d);
+class Geometry_Registration
+{
+public:
+	Geometry_Registration()
+	{
+		REG_GEOMETRY_OBJ(GeometryShapeType::OBB, OrientedBox3d)
+		REG_GEOMETRY_OBJ(GeometryShapeType::PLANE, Plane3d)
+		REG_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere3d)
+		REG_GEOMETRY_OBJ(GeometryShapeType::CAPSULE, Capsule3d)
+		REG_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE, Triangle3d)
+	}
+};
+Geometry_Registration s_geom_registration;
 
 Geometry* GeometryFactory::CreateOBB(const Vector3d& Position, const Vector3d& Bmin, const Vector3d& Bmax)
 {

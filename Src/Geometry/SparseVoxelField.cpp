@@ -55,46 +55,19 @@ int		SparseVoxelField::GetVoxelIdx(const Vector3d& pos) const
 }
 
 
-int		SparseVoxelField::GetVoxelY(float pos_y) const
+int		SparseVoxelField::VoxelSpaceToWorldSpaceY(float pos_y) const
 {
 	const int y = Clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
 	return y;
 }
 
-
-Box3d	SparseVoxelField::GetVoxelBox(const Vector3d& pos) const
-{
-	int idx = GetVoxelIdx(pos);
-	int z = idx / m_SizeX;
-	int x = idx - z * m_SizeX;
-	int y = GetVoxelY(pos.y);
-	return GetVoxelBox(x, y, z);
-}
-
-
-Box3d	SparseVoxelField::GetVoxelBox(int x, int y, int z) const
-{
-	if (x < 0 || x >= m_SizeX || z < 0 || z >= m_SizeZ || y < 0 || y >= m_SizeY)
-	{
-		// Error
-		return Box3d::Unit();
-	}
-	Box3d box;
-	box.Min.x = m_BV.Min.x + m_VoxelSize * x;
-	box.Min.y = m_BV.Min.y + m_VoxelHeight * y;
-	box.Min.z = m_BV.Min.z + m_VoxelSize * x;
-	box.Max = box.Min + Vector3d(m_VoxelSize, m_VoxelHeight, m_VoxelSize);
-	return box;
-}
-
-
-float	SparseVoxelField::GetVoxelY(unsigned short y) const
+float	SparseVoxelField::VoxelSpaceToWorldSpaceY(unsigned short y) const
 {
 	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
 }
 
 
-unsigned int	SparseVoxelField::GetVoxelData(const Vector3d& pos) const
+unsigned int	SparseVoxelField::WorldSpaceToVoxelSpaceY(const Vector3d& pos) const
 {
 	int idx = GetVoxelIdx(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)

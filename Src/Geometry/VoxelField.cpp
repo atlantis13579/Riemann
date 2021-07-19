@@ -21,7 +21,7 @@ VoxelField::~VoxelField()
 
 }
 
-void VoxelField::MakeEmptySet(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
+void VoxelField::MakeEmpty(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
 {
 	m_BV = Bv;
 
@@ -47,7 +47,7 @@ bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, Triangle
 	m_SizeY = (int)(info.BV.GetSizeY() / info.VoxelHeight + 0.5f);
 	m_SizeZ = (int)(info.BV.GetSizeZ() / info.VoxelSize + 0.5f);
 
-	MakeEmptySet(info.BV, m_SizeX, m_SizeY, m_SizeZ, info.VoxelSize, info.VoxelHeight);
+	MakeEmpty(info.BV, m_SizeX, m_SizeY, m_SizeZ, info.VoxelSize, info.VoxelHeight);
 
 	const TriangleMesh &mesh = *_mesh;
 	for (unsigned int i = 0; i < mesh.GetNumTriangles(); ++i)
@@ -63,38 +63,67 @@ bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, Triangle
 	return true;
 }
 
-const Voxel*	VoxelField::GetVoxel(const Vector3d& pos) const
+Voxel* VoxelField::GetVoxelByY(Voxel* p, float y, bool fuzzy)
 {
-	int idx = GetVoxelIdx(pos);
-	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
-		return nullptr;
-	return m_Fields[idx];
+	Voxel* prev = nullptr;
+	while (p)
+	{
+		float ymin = m_BV.Min.y + m_VoxelHeight * p->ymin;
+		float ymax = m_BV.Min.y + m_VoxelHeight * (p->ymax + 1);
+		if (ymin <= y && y <= ymax)
+		{
+			return p;
+		}
+		else if (y < ymin)
+		{
+			if (fuzzy)
+			{
+				return p;
+			}
+			break;
+		}
+		prev = p;
+		p = p->next;
+	}
+	if (fuzzy && prev)
+	{
+		return prev;
+	}
+	return p;
 }
 
-int		VoxelField::GetVoxelIdx(const Vector3d& pos) const
+Voxel*	VoxelField::GetVoxel(const Vector3d& pos)
+{
+	int idx = WorldSpaceToVoxelIndex(pos);
+	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
+		return nullptr;
+	return GetVoxelByY(m_Fields[idx], pos.y, false);
+}
+
+int		VoxelField::WorldSpaceToVoxelIndex(const Vector3d& pos) const
 {
 	const int x = Clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
 	const int z = Clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
 	return z * m_SizeX + x;
 }
 
-int		VoxelField::GetVoxelYCoordinate(float pos_y) const
+int		VoxelField::WorldSpaceToVoxelSpaceY(float pos_y) const
 {
 	const int y = Clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
 	return y;
 }
 
-float	VoxelField::GetVoxelY(unsigned short y) const
+float	VoxelField::VoxelSpaceToWorldSpaceY(unsigned short y) const
 {
 	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
 }
 
 Box3d	VoxelField::GetVoxelBox(const Vector3d& pos) const
 {
-	int idx = GetVoxelIdx(pos);
+	int idx = WorldSpaceToVoxelIndex(pos);
 	int z = idx / m_SizeX;
 	int x = idx - z * m_SizeX;
-	int y = GetVoxelYCoordinate(pos.y);
+	int y = WorldSpaceToVoxelSpaceY(pos.y);
 	return GetVoxelBox(x, y, z);
 }
 
@@ -115,9 +144,9 @@ Box3d	VoxelField::GetVoxelBox(int x, int y, int z) const
 
 
 
-unsigned int	VoxelField::GetVoxelData(const Vector3d& pos) const
+vx_uint32	VoxelField::GetVoxelData(const Vector3d& pos)
 {
-	int idx = GetVoxelIdx(pos);
+	int idx = WorldSpaceToVoxelIndex(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
 		return 0;
 	Voxel* v = m_Fields[idx];
@@ -272,12 +301,12 @@ static bool VoxelIntersects(const Voxel* v1, const Voxel *v2)
 	return v2->ymin <= v1->ymax && v2->ymax >= v1->ymin;
 }
 
-static bool VoxelIntersects2(const Voxel* v1, const Voxel* v2, float Thr)
+static bool VoxelIntersects2(const Voxel* v1, const Voxel* v2, unsigned short Thr)
 {
 	return v2->ymin < v1->ymax - Thr && v2->ymax > v1->ymin + Thr;
 }
 
-static Voxel* FindVoxel(Voxel* v, unsigned int data)
+static Voxel* FindVoxel(Voxel* v, vx_uint32 data)
 {
 	while (v)
 	{
@@ -299,42 +328,12 @@ static int CountVoxel(const Voxel* v)
 	return Count;
 }
 
-static unsigned int VoxelMaxData(const Voxel* v)
+vx_uint32 VoxelField::ExtractVoxelData(Voxel* p, float y, bool fuzzy)
 {
-	unsigned int Data = 0;
-	while (v)
+	p = GetVoxelByY(p, y, fuzzy);
+	if (p)
 	{
-		Data = std::max(Data, v->data);
-		v = v->next;
-	}
-	return Data;
-}
-
-unsigned int VoxelField::ExtractVoxelData(const Voxel* p, float y, bool take_next) const
-{
-	const Voxel* prev = nullptr;
-	while (p)
-	{
-		float ymin = m_BV.Min.y + m_VoxelHeight * p->ymin;
-		float ymax = m_BV.Min.y + m_VoxelHeight * (p->ymax + 1);
-		if (ymin <= y && y <= ymax)
-		{
-			return p->data;
-		}
-		else if (y < ymin)
-		{
-			if (take_next)
-			{
-				return p->data;
-			}
-			break;
-		}
-		prev = p;
-		p = p->next;
-	}
-	if (prev)
-	{
-		return prev->data;
+		return p->data;
 	}
 	return 0;
 }
@@ -471,7 +470,7 @@ bool VoxelField::MakeComplementarySet()
 }
 
 
-void		VoxelField::Filter(std::function<bool(unsigned int data)> func)
+void		VoxelField::Filter(std::function<bool(vx_uint32 data)> func)
 {
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
@@ -500,19 +499,19 @@ end_while:
 	}
 }
 
-void		VoxelField::FilterTopNByVolume(const std::unordered_map<int, unsigned long long>& volumes, int TopN)
+void		VoxelField::FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& volumes, int TopN)
 {
 	if (volumes.size() > TopN)
 	{
-		std::vector<unsigned long long> volume_list;
+		std::vector<vx_uint64> volume_list;
 		for (auto it : volumes)
 		{
 			volume_list.push_back(it.second);
 		}
 		std::sort(volume_list.begin(), volume_list.end());
 
-		unsigned long long area_thr = volume_list[volume_list.size() - TopN];
-		auto filter_func = [&volumes, area_thr](unsigned int data)
+		vx_uint64 area_thr = volume_list[volume_list.size() - TopN];
+		auto filter_func = [&volumes, area_thr](vx_uint32 data)
 		{
 			auto it = volumes.find(data);
 			if (it != volumes.end() && it->second <= area_thr)
@@ -545,8 +544,55 @@ static int vx_neighbour4x_safe(int idx, int nx, int nz, int dir) {
 	return -1;
 }
 
+vx_uint64	VoxelField::Separate(const Vector3d& pos, vx_uint32 data)
+{
+	int idx = WorldSpaceToVoxelIndex(pos);
+	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
+		return 0;
+	Voxel* p = GetVoxelByY(m_Fields[idx], pos.y, true);
+	if (p == nullptr)
+	{
+		return 0;
+	}
+	return Separate(idx, p, data);
+}
 
-int VoxelField::Separate(std::unordered_map<int, unsigned long long>* volumes)
+vx_uint64	VoxelField::Separate(int idx, Voxel* base, vx_uint32 data)
+{
+	base->data = data;
+
+	std::queue<std::pair<Voxel*, int>> queue_vx;
+	queue_vx.emplace(base, idx);
+	vx_uint64 voxel_count = 0;
+
+	while (!queue_vx.empty())
+	{
+		auto next = queue_vx.front();
+		queue_vx.pop();
+		voxel_count += next.first->ymax - next.first->ymin + 1;
+		
+		for (int d = 0; d < 4; ++d)
+		{
+			int nidx = vx_neighbour4x_safe(next.second, m_SizeX, m_SizeZ, d);
+			if (nidx == -1)
+				continue;
+			Voxel* nv = m_Fields[nidx];
+			while (nv)
+			{
+				if (nv->data == 0 && VoxelIntersects(next.first, nv))
+				{
+					nv->data = next.first->data;
+					queue_vx.emplace(nv, nidx);
+				}
+				nv = nv->next;
+			}
+		}
+	}
+	return voxel_count;
+}
+
+
+int		VoxelField::SolveTopology(std::unordered_map<int, vx_uint64>* volumes)
 {
 	int SpaceFound = 0;
 	if (volumes) volumes->clear();
@@ -558,43 +604,11 @@ int VoxelField::Separate(std::unordered_map<int, unsigned long long>* volumes)
 		Voxel* curr = m_Fields[idx];
 		while (curr)
 		{
-			if (curr->data != 0)
+			if (curr->data == 0)
 			{
-				curr = curr->next;
-				continue;
+				vx_uint64 voxel_count = Separate(idx, curr, ++SpaceFound);
+				if (volumes) volumes->emplace(SpaceFound, voxel_count);
 			}
-
-			curr->data = ++SpaceFound;
-
-			std::queue<std::pair<Voxel*, int>> queue_vx;
-			queue_vx.emplace(curr, idx);
-			unsigned long long voxel_count = 0;
-
-			while (!queue_vx.empty())
-			{
-				auto next = queue_vx.front();
-				queue_vx.pop();
-				voxel_count += next.first->ymax - next.first->ymin + 1;
-
-				for (int d = 0; d < 4; ++d)
-				{
-					int nidx = vx_neighbour4x_safe(next.second, m_SizeX, m_SizeZ, d);
-					if (nidx == -1)
-						continue;
-					Voxel* nv = m_Fields[nidx];
-					while (nv)
-					{
-						if (nv->data == 0 && VoxelIntersects(next.first, nv))
-						{
-							nv->data = next.first->data;
-							queue_vx.emplace(nv, nidx);
-						}
-						nv = nv->next;
-					}
-				}
-			}
-
-			if (volumes) volumes->emplace(SpaceFound, voxel_count);
 
 			curr = curr->next;
 		}
@@ -605,7 +619,7 @@ int VoxelField::Separate(std::unordered_map<int, unsigned long long>* volumes)
 
 bool VoxelField::IntersectYPlane(float y_value, std::vector<int>& output, bool take_next)
 {
-	int y = GetVoxelYCoordinate(y_value);
+	int y = WorldSpaceToVoxelSpaceY(y_value);
 	if (y < 0 || y >= m_SizeY)
 	{
 		return false;
@@ -630,12 +644,12 @@ int		VoxelField::CalculateNumFields() const
 	return Count;
 }
 
-unsigned long long VoxelField::EstimateMemoryUseage() const
+vx_uint64 VoxelField::EstimateMemoryUseage() const
 {
 	return m_NumVoxels * sizeof(Voxel) + m_SizeX * m_SizeZ * sizeof(Voxel*);
 }
 
-unsigned long long VoxelField::EstimateMemoryUseageEx() const
+vx_uint64 VoxelField::EstimateMemoryUseageEx() const
 {
 	return m_NumVoxels * sizeof(VoxelFast) + m_SizeX * m_SizeZ * sizeof(void*);
 }
@@ -672,7 +686,7 @@ void	VoxelField::GenerateBitmapByLevel(std::vector<int>& levels, int * level_max
 	}
 }
 
-void	VoxelField::GenerateBitmapByData(std::vector<int>& output, unsigned int data) const
+void	VoxelField::GenerateBitmapByData(std::vector<int>& output, vx_uint32 data) const
 {
 	output.resize(m_SizeX * m_SizeZ);
 	memset(&output[0], 0, sizeof(output[0]) * m_SizeX * m_SizeZ);
@@ -852,7 +866,7 @@ bool	VoxelField::SerializeFrom(const char* filename)
 	}
 
 	_fseeki64(fp, 0, SEEK_END);
-	unsigned long long fileSize = _ftelli64(fp);
+	vx_uint64 fileSize = _ftelli64(fp);
 	_fseeki64(fp, 0, SEEK_SET);
 
 	if (fileSize < 4 + sizeof(VoxelFileHeader))
@@ -869,7 +883,7 @@ bool	VoxelField::SerializeFrom(const char* filename)
 
 	VoxelFileHeader	header;
 	fread(&header, sizeof(header), 1, fp);
-	unsigned long long nExpectedSize = 4 + sizeof(VoxelFileHeader);
+	vx_uint64 nExpectedSize = 4 + sizeof(VoxelFileHeader);
 	nExpectedSize += sizeof(VoxelFileField) * header.nFields;
 	nExpectedSize += sizeof(VoxelFast) * header.nVoxels;
 	if (fileSize != nExpectedSize)
@@ -877,7 +891,7 @@ bool	VoxelField::SerializeFrom(const char* filename)
 		return false;
 	}
 
-	MakeEmptySet(header.BV, header.SizeX, header.SizeY, header.SizeZ, header.VoxelSize, header.VoxelHeight);
+	MakeEmpty(header.BV, header.SizeX, header.SizeY, header.SizeZ, header.VoxelSize, header.VoxelHeight);
 	
 	m_NumVoxels = header.nVoxels;
 

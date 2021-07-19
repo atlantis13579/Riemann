@@ -15,9 +15,12 @@ struct VoxelizationInfo
 	Box3d	BV;
 };
 
+typedef unsigned long long	vx_uint64;
+typedef unsigned int		vx_uint32;
+
 struct Voxel
 {
-	unsigned int	data;
+	vx_uint32		data;
 	unsigned short	ymin;
 	unsigned short	ymax;
 	Voxel*			next;
@@ -36,22 +39,23 @@ public:
 	~VoxelField();
 
 public:
-	void			MakeEmptySet(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
+	void			MakeEmpty(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
 	bool			VoxelizationTrianglesSet(const VoxelizationInfo& info, TriangleMesh* mesh);
 	bool			VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
 	bool			MakeComplementarySet();
-	int				Separate(std::unordered_map<int, unsigned long long> *volumes = nullptr);
-	bool			IntersectYPlane(float y_value, std::vector<int>& output, bool take_next = false);
-	void			Filter(std::function<bool(unsigned int data)> func);
-	void			FilterTopNByVolume(const std::unordered_map<int, unsigned long long>& volumes, int TopN);
+	vx_uint64		Separate(const Vector3d& pos, vx_uint32 data);
+	int				SolveTopology(std::unordered_map<int, vx_uint64>* volumes = nullptr);
+	bool			IntersectYPlane(float y_value, std::vector<int>& output, bool fuzzy = false);
+	void			Filter(std::function<bool(vx_uint32 data)> func);
+	void			FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& volumes, int TopN);
 
-	const Voxel*	GetVoxel(const Vector3d& pos) const;
-	int				GetVoxelIdx(const Vector3d& pos) const;
-	int				GetVoxelYCoordinate(float pos_y) const;
-	float			GetVoxelY(unsigned short y) const;
+	Voxel*			GetVoxel(const Vector3d& pos);
+	int				WorldSpaceToVoxelIndex(const Vector3d& pos) const;
+	int				WorldSpaceToVoxelSpaceY(float pos_y) const;
+	float			VoxelSpaceToWorldSpaceY(unsigned short y) const;
 	Box3d			GetVoxelBox(const Vector3d& pos) const;
 	Box3d			GetVoxelBox(int x, int y, int z) const;
-	unsigned int	GetVoxelData(const Vector3d& pos) const;
+	vx_uint32		GetVoxelData(const Vector3d& pos);
 
 	bool			SerializeTo(const char* filename);
 	bool			SerializeFrom(const char* filename);
@@ -76,22 +80,25 @@ public:
 		return m_VoxelSize * m_VoxelSize * m_VoxelHeight;
 	}
 
-	unsigned long long	EstimateMemoryUseage() const;
-	unsigned long long	EstimateMemoryUseageEx() const;
+	vx_uint64		EstimateMemoryUseage() const;
+	vx_uint64		EstimateMemoryUseageEx() const;
 
 	TriangleMesh*	CreateDebugMesh(int x1, int x2, int z1, int z2) const;
 	bool			Verify() const;
 	void			ResetData();
 	void			GenerateHeightMap(std::vector<float>& heightmap) const;
 	void			GenerateBitmapByLevel(std::vector<int>& levels, int* level_max) const;
-	void			GenerateBitmapByData(std::vector<int>& output, unsigned int data) const;
+	void			GenerateBitmapByData(std::vector<int>& output, vx_uint32 data) const;
 	bool			AddVoxel(int idx, unsigned short ymin, unsigned short ymax, float MergeThr);
 
 private:
 	Voxel*			AllocVoxel();
 	void			FreeVoxel(Voxel* p);
 	int				CalculateNumFields() const;
-	unsigned int	ExtractVoxelData(const Voxel* v, float y, bool take_next = false) const;
+
+	vx_uint64		Separate(int idx, Voxel* base, vx_uint32 data);
+	Voxel*			GetVoxelByY(Voxel* p, float y, bool fuzzy);
+	vx_uint32		ExtractVoxelData(Voxel* v, float y, bool fuzzy = false);
 
 private:
 	int			m_SizeX, m_SizeZ, m_SizeY;

@@ -63,11 +63,9 @@ public:
 	void			InitField(const Box3d& Bv, int nVoxels, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
 
 	int				GetVoxelIdx(const Vector3d& pos) const;
-	int				GetVoxelY(float pos_y) const;
-	Box3d			GetVoxelBox(const Vector3d& pos) const;
-	Box3d			GetVoxelBox(int x, int y, int z) const;
-	float			GetVoxelY(unsigned short y) const;
-	unsigned int	GetVoxelData(const Vector3d& pos) const;
+	int				VoxelSpaceToWorldSpaceY(float pos_y) const;
+	float			VoxelSpaceToWorldSpaceY(unsigned short y) const;
+	unsigned int	WorldSpaceToVoxelSpaceY(const Vector3d& pos) const;
 
 	bool			SerializeFrom(const char* filename);
 

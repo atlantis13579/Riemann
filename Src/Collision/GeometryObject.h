@@ -17,13 +17,6 @@ enum GeometryShapeType
 	COUNT,
 };
 
-#define	DECL_GEOMETRY_OBJ(_name)													\
-	static Box3d	GetBoundingBox_##_name(void *);									\
-	static bool		RayCast_##_name(void*, const Vector3d&, const Vector3d&, float*);	\
-	static Vector3d	GetSupport_##_name(void*, const Vector3d&);						\
-	static Matrix3d	GetInertia_##_name(void*, float);								\
-	static void		Destory_##_name(void*);											\
-
 typedef Box3d			(*GetAABBFunc)		(void*);
 typedef bool			(*RayCastFunc)		(void*, const Vector3d&, const Vector3d&, float*);
 typedef Vector3d		(*SupportFunc)		(void*, const Vector3d&);
@@ -84,11 +77,40 @@ private:
 	void*			m_Entity;
 
 public:
-	DECL_GEOMETRY_OBJ(OrientedBox3d);
-	DECL_GEOMETRY_OBJ(Plane3d);
-	DECL_GEOMETRY_OBJ(Sphere3d);
-	DECL_GEOMETRY_OBJ(Triangle3d);
-	DECL_GEOMETRY_OBJ(Capsule3d);
+	template <class T>
+	static Box3d	GetBoundingBox(void* Obj)
+	{
+		T* p = reinterpret_cast<T*>(Obj);
+		return p->GetBoundingBox();
+	}
+
+	template <class T>
+	static bool		RayCast(void* Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)
+	{
+		T* p = reinterpret_cast<T*>(Obj);
+		return p->IntersectRay(Origin, Dir, t);
+	}
+
+	template <class T>
+	static Vector3d GetSupport(void* Obj, const Vector3d& Dir)
+	{
+		T* p = reinterpret_cast<T*>(Obj);
+		return p->GetSupport(Dir);
+	}
+	
+	template <class T>
+	static Matrix3d GetInertia(void* Obj, float Mass)
+	{
+		T* p = reinterpret_cast<T*>(Obj);
+		return p->GetInertiaTensor(Mass);
+	}			
+
+	template <class T>
+	static void Destory(void* Obj)
+	{
+		T* p = reinterpret_cast<T*>(Obj);
+		delete p;
+	}
 
 	static GetAABBFunc		getaabbTable[GeometryShapeType::COUNT];
 	static RayCastFunc		raycastTable[GeometryShapeType::COUNT];

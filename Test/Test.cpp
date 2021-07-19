@@ -220,7 +220,7 @@ void TestMesh1()
 	mesh.CalculateBoundingBox();
 
 	VoxelField field;
-	field.MakeEmptySet(Box3d::Unit(), 2, 2, 2, 1.0f, 2.0f);
+	field.MakeEmpty(Box3d::Unit(), 2, 2, 2, 1.0f, 2.0f);
 	field.AddVoxel(0, 1, 2, 0);
 	field.AddVoxel(0, 3, 5, 0);
 	field.AddVoxel(0, 7, 8, 0);
@@ -237,10 +237,6 @@ void TestMesh1()
 	assert(FloatEqual(v.Min.x, -1.0f));
 	assert(FloatEqual(v.Max.x, 0.0f));
 
-	v = inference.GetVoxelBox(Vector3d(-0.1f, -0.1f, -0.1f));
-	assert(FloatEqual(v.Min.x, -1.0f));
-	assert(FloatEqual(v.Max.x, 0.0f));
-	
 	v = field.GetVoxelBox(Vector3d(0.01f, 0.01f, 0.01f));
 	assert(FloatEqual(v.Min.x, 0.0f));
 	assert(FloatEqual(v.Max.x, 1.0f));
@@ -255,13 +251,13 @@ void TestMesh1()
 
 	field.VoxelizationTrianglesSet(info, &mesh);
 	field.MakeComplementarySet();
-	int space = field.Separate();
+	int space = field.SolveTopology();
 	assert(space == 2);
 	return;
 }
 
 #pragma optimize("", off)
-void TestMesh()
+void TestMesh2()
 {
 	VoxelField field;
 
@@ -290,17 +286,16 @@ void TestMesh()
 		field.SerializeFrom("D://home//fighting.voxel");
 	}
 
-	std::unordered_map<int, unsigned long long> volumes;
-	int space = field.Separate(&volumes);
-	printf("space = %d\n", space);
-
-	std::vector<int> data;
-	field.IntersectYPlane(-102, data, true);
-
 	const Box3d& bv = field.GetBoundingVolume();
 	Vector3d pos_main = bv.GetCenter();
 	pos_main.y = bv.Max.y;
-	int data_main = field.GetVoxelData(pos_main);
+	int data_main = 1;
+
+	vx_uint64 vol = field.Separate(pos_main, data_main);
+	printf("vol = %llu\n", vol);
+
+	std::vector<int> data;
+	field.IntersectYPlane(-102, data, true);
 
 	for (size_t i = 0; i < data.size(); ++i)
 	{
@@ -421,6 +416,6 @@ void TestMainEntry()
 	TestSAP();
 	TestSAPInc();
 	TestMesh1();
-	TestMesh();
+	TestMesh2();
 	return;
 }

@@ -97,9 +97,9 @@ public:
 				}
 				Matrix4d invWorld = Geom1->GetInverseWorldMatrix();
 				result.status = ContactResult::Penetrating;
-				result.WitnessLocal1 = Transform::TransformPosition(invWorld, w0);
+				result.WitnessLocal1 = invWorld * w0;
 				Vector3d secondObjectPointInFirstObject = w0 - epa.m_normal * epa.m_depth;
-				result.WitnessLocal2 = Transform::TransformPosition(invWorld, secondObjectPointInFirstObject);
+				result.WitnessLocal2 = invWorld * secondObjectPointInFirstObject;
 				result.WitnessWorld1 = w0;
 				result.WitnessWorld2 = secondObjectPointInFirstObject;
 				result.Normal = epa.m_normal;

@@ -137,9 +137,7 @@ void InitScene()
         field.SerializeFrom("D://home//fighting.voxel");
         field.MakeComplementarySet();
 
-        const Voxel* p = field.GetVoxel(house_pos);
-
-        int idx = field.GetVoxelIdx(house_pos);
+        int idx = field.WorldSpaceToVoxelIndex(house_pos);
         int cz = idx / 6000;
         int cx = idx - 6000 * cz;
 
