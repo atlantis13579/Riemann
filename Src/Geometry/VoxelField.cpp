@@ -277,7 +277,7 @@ Voxel*	VoxelField::AllocVoxel()
 	}
 
 	int kVoxelBatchSize = Clamp(m_SizeX * m_SizeZ / 2, 1024, 1024 * 1024);
-	if (m_VoxelBatchs.empty() || m_VoxelBatchs.back().Current >= m_VoxelBatchs.back().Voxels.size())
+	if (m_VoxelBatchs.empty() || m_VoxelBatchs.back().Current >= (int)m_VoxelBatchs.back().Voxels.size())
 	{
 		m_VoxelBatchs.resize(m_VoxelBatchs.size() + 1);
 		m_VoxelBatchs.back().Voxels.resize(kVoxelBatchSize);
@@ -296,14 +296,9 @@ void VoxelField::FreeVoxel(Voxel* p)
 	m_FreeVoxelList = p;
 }
 
-static bool VoxelIntersects(const Voxel* v1, const Voxel *v2)
+static bool VoxelIntersects(const Voxel* v1, const Voxel* v2, unsigned short Thr)
 {
-	return v2->ymin <= v1->ymax && v2->ymax >= v1->ymin;
-}
-
-static bool VoxelIntersects2(const Voxel* v1, const Voxel* v2, unsigned short Thr)
-{
-	return v2->ymin < v1->ymax - Thr && v2->ymax > v1->ymin + Thr;
+	return v2->ymin <= v1->ymax - Thr && v2->ymax >= v1->ymin + Thr;
 }
 
 static Voxel* FindVoxel(Voxel* v, vx_uint32 data)
@@ -435,6 +430,7 @@ bool VoxelField::MakeComplementarySet()
 			ylow = p->ymax + 1;
 			p = p->next;
 			FreeVoxel(m_Fields[i]);
+			m_Fields[i] = p;
 		}
 
 		while (p)
@@ -501,7 +497,7 @@ end_while:
 
 void		VoxelField::FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& volumes, int TopN)
 {
-	if (volumes.size() > TopN)
+	if ((int)volumes.size() > TopN)
 	{
 		std::vector<vx_uint64> volume_list;
 		for (auto it : volumes)
@@ -579,7 +575,7 @@ vx_uint64	VoxelField::Separate(int idx, Voxel* base, vx_uint32 data)
 			Voxel* nv = m_Fields[nidx];
 			while (nv)
 			{
-				if (nv->data == 0 && VoxelIntersects(next.first, nv))
+				if (nv->data == 0 && VoxelIntersects(next.first, nv, 1))
 				{
 					nv->data = next.first->data;
 					queue_vx.emplace(nv, nidx);

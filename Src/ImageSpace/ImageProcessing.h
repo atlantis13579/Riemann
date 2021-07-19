@@ -1,9 +1,66 @@
 #pragma once
 
+#include <algorithm>
 #include <vector>
 #include <queue>
 
 #include "../Maths/Vector2d.h"
+
+template<typename T>
+void ZeroOneFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
+{
+	T v0 = 0, v1 = 1;
+	if (Reverse)
+	{
+		v0 = 1;
+		v1 = 0;
+	}
+
+	for (int i = 0; i < nX * nY; ++i)
+	{
+		int val = Cell[i];
+		Cell[i] = (val == Value) ? v1 : v0;
+	}
+}
+
+template<typename T, int Kernal_Size>
+void MinFilter(T* Cell, int nX, int nY)
+{
+	std::vector<T> Buffer[Kernal_Size + 1];
+	for (int i = 0; i <= Kernal_Size; ++i)
+	{
+		Buffer[i].resize(nX);
+		memcpy(&Buffer[i][0], Cell + i * nX, nX * sizeof(T));
+	}
+
+	for (int i = Kernal_Size; i < nY - Kernal_Size; ++i)
+	{
+		T* pRow = Cell + i * nX;
+		memcpy(&Buffer[(i + 1) % (Kernal_Size + 1)][0], pRow, nX * sizeof(T));
+
+		for (int j = Kernal_Size; j < nX - Kernal_Size; ++j)
+		{
+			T val = pRow[j];
+			for (int ii = i - Kernal_Size; ii <= i; ++ii)
+			{
+				T* pBuffer = &Buffer[ii % (Kernal_Size + 1)][0];
+				for (int jj = j - Kernal_Size; jj <= j + Kernal_Size; ++jj)
+				{
+					val = std::min(val, pBuffer[jj]);
+				}
+			}
+			for (int ii = i + 1; ii <= i + Kernal_Size; ++ii)
+			{
+				for (int jj = j - Kernal_Size; jj <= j + Kernal_Size; ++jj)
+				{
+					val = std::min(val, Cell[ii * nX + jj]);
+				}
+			}
+			pRow[j] = val;
+		}
+	}
+
+}
 
 // X 0 X
 // 3 X 1 

@@ -256,68 +256,6 @@ void TestMesh1()
 	return;
 }
 
-#pragma optimize("", off)
-void TestMesh2()
-{
-	VoxelField field;
-
-	const int load_voxel = 0;
-	if (load_voxel)
-	{
-		field.SerializeFrom("D://home//fighting.voxel");
-	}
-	else
-	{
-		TriangleMesh mesh;
-		// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/dungeon.obj");
-		// std::string file = "D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting.obj";
-		// mesh.LoadObj("D:/src/client/tools/RecastEditor/RecastDemo/Release/Meshes/fighting_kou.obj");
-		mesh.LoadFlat("D://home//fighting.flat");
-
-		VoxelizationInfo info;
-		info.BV = Box3d(Vector3d(-3090.0f, -241.0f, -2835.0f), Vector3d(3009.0f, 1208.0f, 3160.0f));
-		info.VoxelHeight = 0.5f;
-		info.VoxelSize = 1.0f;
-
-		field.VoxelizationTrianglesSet(info, &mesh);
-		field.MakeComplementarySet();
-
-		field.SerializeTo("D://home//fighting.voxel");
-		field.SerializeFrom("D://home//fighting.voxel");
-	}
-
-	const Box3d& bv = field.GetBoundingVolume();
-	Vector3d pos_main = bv.GetCenter();
-	pos_main.y = bv.Max.y;
-	int data_main = 1;
-
-	vx_uint64 vol = field.Separate(pos_main, data_main);
-	printf("vol = %llu\n", vol);
-
-	std::vector<int> data;
-	field.IntersectYPlane(-102, data, true);
-
-	for (size_t i = 0; i < data.size(); ++i)
-	{
-		int val = data[i];
-		data[i] = (val == data_main) ? 0 : 5;
-	}
-
-	BMPFile bitmap;
-	bitmap.LoadBitmap(&data[0], field.GetSizeX(), field.GetSizeZ(), 0.5f);
-	bitmap.WriteToFile("D://home//fighting_preview.bmp");
-
-	ContinuousBitmap<unsigned short> cbit;
-	cbit.Build<int>(&data[0], field.GetSizeX(), field.GetSizeZ(), bv.Min.x, bv.Min.z, bv.Max.x, bv.Max.z);
-	cbit.SerializeToFile("d://home//fighting_cbmap");
-
-	unsigned long long memory1 = field.EstimateMemoryUseage();
-	unsigned long long memory2 = field.EstimateMemoryUseageEx();
-
-	return;
-}
-#pragma optimize("", on)
-
 class BVProxy : public SAP::BoundingVolumeProxy
 {
 public:
@@ -416,6 +354,5 @@ void TestMainEntry()
 	TestSAP();
 	TestSAPInc();
 	TestMesh1();
-	TestMesh2();
 	return;
 }

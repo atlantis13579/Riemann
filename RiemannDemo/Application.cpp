@@ -115,12 +115,12 @@ void InitScene()
         g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));
     }
 
-    Vector3d house_pos = Vector3d(-2669.0f, -100.0f, 174.0f);
+    Vector3d house_pos = Vector3d(1483.0f, 18.0f, 999.0f);
     Vector3d bridge_pos = Vector3d(737.0f, -29.0f, -1495.0f);
-    if (1)
+    if (0)
     {
         TriangleMesh mesh;
-        mesh.LoadFlat("D://home//fighting.flat");
+        mesh.LoadFlat("E:/Temp/iceland.flat");
 
         Transform* t = new Transform;
         t->SetScale(Vector3d(0.01f, 0.01f, 0.01f));
@@ -131,15 +131,16 @@ void InitScene()
         g_Renderer->AddMesh(&mesh, t);
     }
 
-    if (0)
+    if (1)
     {
         VoxelField field;
-        field.SerializeFrom("D://home//fighting.voxel");
-        field.MakeComplementarySet();
+        field.SerializeFrom("E:/Temp/iceland.voxel");
+        // field.MakeComplementarySet();
+        // field.MakeComplementarySet();
 
         int idx = field.WorldSpaceToVoxelIndex(house_pos);
-        int cz = idx / 6000;
-        int cx = idx - 6000 * cz;
+        int cz = idx / field.GetSizeX();
+        int cx = idx - field.GetSizeX() * cz;
 
         TriangleMesh* mesh = field.CreateDebugMesh(cx - 100, cx + 100, cz - 100, cz + 100);
 

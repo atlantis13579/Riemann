@@ -22,6 +22,15 @@ public:
 	Box3d						BoundingBox;
 	std::string					ResourceId;
 
+	void Release()
+	{
+		Verties.clear();
+		Indices.clear();
+		Normals.clear();
+		m_NumTriangles = 0;
+		m_NumTriangles = 0;
+	}
+
 	void* GetVertexBuffer()
 	{
 		return &Verties[0];
@@ -112,7 +121,7 @@ public:
 			return false;
 		}
 		_fseeki64(fp, 0, SEEK_END);
-		unsigned long long bufSize = _ftelli64(fp);
+		size_t bufSize = (size_t)_ftelli64(fp);
 		_fseeki64(fp, 0, SEEK_SET);
 		buf = new char[bufSize];
 		if (!buf)
@@ -190,7 +199,7 @@ public:
 		}
 
 		_fseeki64(fp, 0, SEEK_END);
-		unsigned long long fileSize = _ftelli64(fp);
+		size_t fileSize = (size_t)_ftelli64(fp);
 		_fseeki64(fp, 0, SEEK_SET);
 
 		if (fileSize < 12)
@@ -212,6 +221,8 @@ public:
 		fread(&Verties[0], sizeof(Verties[0]), m_NumVerties, fp);
 		fread(&Indices[0], sizeof(Indices[0]), m_NumTriangles * 3, fp);
 		fclose(fp);
+
+		ResourceId = name;
 
 		CalculateBoundingBox();
 		return true;

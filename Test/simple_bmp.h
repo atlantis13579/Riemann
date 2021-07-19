@@ -263,17 +263,8 @@ public:
 		return (int)(XPelsPerMeter / (double)39.37007874015748);
 	}
 
-	void LoadBitmap(int* pPixel, int _Width, int _Height, float scale)
-	{
-		SetSize(_Width, _Height);
-		for (int i = 0; i < _Width; ++i)
-		for (int j = 0; j < _Height; ++j)
-		{
-			SetPixel(i, j, RGBApixel(scale * pPixel[j * _Width + i]));
-		}
-	}
-
-	void LoadBitmap(float* pPixel, int _Width, int _Height, float scale)
+	template<typename T>
+	void LoadBitmap(T* pPixel, int _Width, int _Height, float scale)
 	{
 		SetSize(_Width, _Height);
 		for (int i = 0; i < _Width; ++i)
