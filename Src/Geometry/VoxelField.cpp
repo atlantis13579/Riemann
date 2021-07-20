@@ -4,7 +4,6 @@
 
 #include <assert.h>
 #include <queue>
-#include "../Maths/Maths.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
 
 VoxelField::VoxelField()
@@ -18,7 +17,9 @@ VoxelField::VoxelField()
 
 VoxelField::~VoxelField()
 {
-
+	m_Fields.clear();
+	m_VoxelBatchs.clear();
+	m_FreeVoxelList = nullptr;
 }
 
 void VoxelField::MakeEmpty(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
@@ -105,16 +106,22 @@ Voxel*	VoxelField::GetVoxel(const Vector3d& pos)
 	return GetVoxelByY(m_Fields[idx], pos.y, 1e-3f);
 }
 
+template<typename T>
+T		vx_clamp(const T X, const T Min, const T Max)
+{
+	return X < Min ? Min : X < Max ? X : Max;
+}
+
 int		VoxelField::WorldSpaceToVoxelIndex(const Vector3d& pos) const
 {
-	const int x = Clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
-	const int z = Clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int x = vx_clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int z = vx_clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
 	return z * m_SizeX + x;
 }
 
 int		VoxelField::WorldSpaceToVoxelSpaceY(float pos_y) const
 {
-	const int y = Clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
+	const int y = vx_clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
 	return y;
 }
 
@@ -159,7 +166,7 @@ vx_uint32	VoxelField::GetVoxelData(const Vector3d& pos)
 }
 
 
-static void dividePoly(const Vector3d* In, int nn, Vector3d* out1, int* nout1, Vector3d* out2, int* nout2, float x, int axis)
+static void RasterTri(const Vector3d* In, int nn, Vector3d* out1, int* nout1, Vector3d* out2, int* nout2, float x, int axis)
 {
 	float d[12];
 	for (int i = 0; i < nn; ++i)
@@ -281,7 +288,7 @@ Voxel*	VoxelField::AllocVoxel()
 		return p;
 	}
 
-	int kVoxelBatchSize = Clamp(m_SizeX * m_SizeZ / 2, 1024, 1024 * 1024);
+	int kVoxelBatchSize = vx_clamp(m_SizeX * m_SizeZ / 2, 1024, 1024 * 1024);
 	if (m_VoxelBatchs.empty() || m_VoxelBatchs.back().Current >= (int)m_VoxelBatchs.back().Voxels.size())
 	{
 		m_VoxelBatchs.resize(m_VoxelBatchs.size() + 1);
@@ -339,8 +346,8 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 	if (!tbox.Intersect(m_BV))
 		return true;
 
-	const int z0 = Clamp((int)((tbox.Min.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
-	const int z1 = Clamp((int)((tbox.Max.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
+	const int z0 = vx_clamp((int)((tbox.Min.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
+	const int z1 = vx_clamp((int)((tbox.Max.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
 
 	Vector3d buf[7 * 4];
 	Vector3d *In = buf, *inrow = buf + 7, *p1 = buf + 7 * 2, *p2 = buf + 7 * 3;
@@ -354,7 +361,7 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 	for (int z = z0; z <= z1; ++z)
 	{
 		const float cz = m_BV.Min.z + z * m_VoxelSize;
-		dividePoly(In, nvIn, inrow, &nvrow, p1, &nvIn, cz + m_VoxelSize, 2);
+		RasterTri(In, nvIn, inrow, &nvrow, p1, &nvIn, cz + m_VoxelSize, 2);
 		std::swap(In, p1);
 		if (nvrow < 3)
 			continue;
@@ -365,15 +372,15 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 			minX = std::min(minX, inrow[i].x);
 			maxX = std::max(maxX, inrow[i].x);
 		}
-		const int x0 = Clamp((int)((minX - m_BV.Min.x) * ics), 0, m_SizeX - 1);
-		const int x1 = Clamp((int)((maxX - m_BV.Min.x) * ics), 0, m_SizeX - 1);
+		const int x0 = vx_clamp((int)((minX - m_BV.Min.x) * ics), 0, m_SizeX - 1);
+		const int x1 = vx_clamp((int)((maxX - m_BV.Min.x) * ics), 0, m_SizeX - 1);
 
 		int nv, nv2 = nvrow;
 
 		for (int x = x0; x <= x1; ++x)
 		{
 			const float cx = m_BV.Min.x + x * m_VoxelSize;
-			dividePoly(inrow, nv2, p1, &nv, p2, &nv2, cx + m_VoxelSize, 0);
+			RasterTri(inrow, nv2, p1, &nv, p2, &nv2, cx + m_VoxelSize, 0);
 			std::swap(inrow, p2);
 			if (nv < 3)
 				continue;
@@ -395,8 +402,8 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 			ymin -= m_BV.Min.y;
 			ymax -= m_BV.Min.y;
 
-			const unsigned short y0 = (unsigned short)Clamp((int)floorf(ymin * ich), 0, m_SizeY - 1);
-			const unsigned short y1 = (unsigned short)Clamp((int)ceilf(ymax * ich), 0, m_SizeY - 1);
+			const unsigned short y0 = (unsigned short)vx_clamp((int)floorf(ymin * ich), 0, m_SizeY - 1);
+			const unsigned short y1 = (unsigned short)vx_clamp((int)ceilf(ymax * ich), 0, m_SizeY - 1);
 
 			if (!AddVoxel(z * m_SizeX + x, y0, y1, info.YMergeThr))
 				return false;

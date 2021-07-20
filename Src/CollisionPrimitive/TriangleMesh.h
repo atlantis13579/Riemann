@@ -9,7 +9,7 @@
 #include "../Maths/Box3d.h"
 #include "../Maths/Vector3d.h"
 
-#define TRIANGLE_BATCH			(1024)
+#define TRIANGLE_BATCH			(4096)
 
 class TriangleMesh
 {
@@ -22,12 +22,17 @@ public:
 	Box3d						BoundingBox;
 	std::string					ResourceId;
 
+	TriangleMesh()
+	{
+		Release();
+	}
+
 	void Release()
 	{
 		Verties.clear();
 		Indices.clear();
 		Normals.clear();
-		m_NumTriangles = 0;
+		m_NumVerties = 0;
 		m_NumTriangles = 0;
 	}
 
@@ -67,7 +72,7 @@ public:
 
 	void AddTriangle(unsigned int a, unsigned int b, unsigned int c)
 	{
-		if (m_NumTriangles * 3 >= Indices.size())
+		if (m_NumTriangles * 3 + 2 >= Indices.size())
 		{
 			Indices.resize(Indices.size() + TRIANGLE_BATCH * 3);
 		}

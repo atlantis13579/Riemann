@@ -7,7 +7,7 @@
 #include "../Maths/Vector2d.h"
 
 template<typename T>
-void ZeroOneFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
+int EQFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
 {
 	T v0 = 0, v1 = 1;
 	if (Reverse)
@@ -16,12 +16,50 @@ void ZeroOneFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
 		v1 = 0;
 	}
 
+	int Count = 0;
 	for (int i = 0; i < nX * nY; ++i)
 	{
 		int val = Cell[i];
-		Cell[i] = (val == Value) ? v1 : v0;
+		if (val == Value)
+		{
+			Count++;
+			Cell[i] = v1;
+		}
+		else
+		{
+			Cell[i] = v0;
+		}
 	}
+	return Count;
 }
+
+template<typename T>
+int GEFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
+{
+	T v0 = 0, v1 = 1;
+	if (Reverse)
+	{
+		v0 = 1;
+		v1 = 0;
+	}
+
+	int Count = 0;
+	for (int i = 0; i < nX * nY; ++i)
+	{
+		int val = Cell[i];
+		if (val >= Value)
+		{
+			Count++;
+			Cell[i] = v1;
+		}
+		else
+		{
+			Cell[i] = v0;
+		}
+	}
+	return Count;
+}
+
 
 template<typename T, int Kernal_Size>
 void MinFilter(T* Cell, int nX, int nY)
@@ -59,7 +97,26 @@ void MinFilter(T* Cell, int nX, int nY)
 			pRow[j] = val;
 		}
 	}
+}
 
+// 	iX == floorf(nX / DownSize)  and  iY == floorf(nY / DownSize)
+template<typename T>
+void CountingPooling(T* Cell, int nX, int nY, T* CellNew, int nXNew, int nYNew, int DownSize, T Thr)
+{
+	for (int i = 0; i < nYNew; ++i)
+	for (int j = 0; j < nXNew; ++j)
+	{
+		T	Accum = (T)0;
+		for (int ii = i * DownSize; ii < (i + 1) * DownSize; ++ii)
+		for (int jj = j * DownSize; jj < (j + 1) * DownSize; ++jj)
+		{
+			if (jj >= nX || ii >= nY)
+				continue;
+
+ 			Accum += (Cell[ii * nX + jj] >= Thr ? 1 : 0);
+		}
+		CellNew[i * nXNew + j] = Accum;
+	}
 }
 
 // X 0 X
