@@ -43,9 +43,9 @@ public:
 	bool			VoxelizationTrianglesSet(const VoxelizationInfo& info, TriangleMesh* mesh);
 	bool			VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
 	bool			MakeComplementarySet();
-	vx_uint64		Separate(const Vector3d& pos, vx_uint32 data);
-	int				SolveTopology(std::unordered_map<int, vx_uint64>* volumes = nullptr);
-	bool			IntersectYPlane(float y_value, std::vector<int>& output, bool fuzzy = false);
+	vx_uint64		Separate(const Vector3d& pos, vx_uint32 data, float IntersectThr);
+	int				SolveTopology(float IntersectThr, std::unordered_map<int, vx_uint64>* volumes = nullptr);
+	bool			IntersectYPlane(float y_value, std::vector<int>& output, float Thr);
 	void			Filter(std::function<bool(vx_uint32 data)> func);
 	void			FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& volumes, int TopN);
 
@@ -96,9 +96,8 @@ private:
 	void			FreeVoxel(Voxel* p);
 	int				CalculateNumFields() const;
 
-	vx_uint64		Separate(int idx, Voxel* base, vx_uint32 data);
-	Voxel*			GetVoxelByY(Voxel* p, float y, bool fuzzy);
-	vx_uint32		ExtractVoxelData(Voxel* v, float y, bool fuzzy = false);
+	vx_uint64		SeparateImpl(int idx, Voxel* base, vx_uint32 data, unsigned short Thr);
+	Voxel*			GetVoxelByY(Voxel* Base, float y, float Thr);
 
 private:
 	int			m_SizeX, m_SizeZ, m_SizeY;

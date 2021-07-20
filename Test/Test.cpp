@@ -38,8 +38,8 @@ void TestBitmap()
 				0, 1, 0, 0, 1, 0, 1, 1 };
 	ContinuousBitmap<unsigned short> bitmap;
 	bitmap.Build<int>(a, 8, 4, -4, -4, 4, 4);
-	bitmap.SerializeToFile("d://home//cbit.map");
-	bitmap.SerializeFromFile("d://home//cbit.map");
+	bitmap.SerializeToFile("E://Temp//cbit.map");
+	bitmap.SerializeFromFile("E://Temp//cbit.map");
 	assert(bitmap.QueryBitmapSpace(3, 0) == false);
 	assert(bitmap.QueryBitmapSpace(4, 0) == true);
 	assert(bitmap.QueryBitmapSpace(3, 1) == true);
@@ -251,7 +251,7 @@ void TestMesh1()
 
 	field.VoxelizationTrianglesSet(info, &mesh);
 	field.MakeComplementarySet();
-	int space = field.SolveTopology();
+	int space = field.SolveTopology(0.01f);
 	assert(space == 2);
 	return;
 }

@@ -63,8 +63,9 @@ bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, Triangle
 	return true;
 }
 
-Voxel* VoxelField::GetVoxelByY(Voxel* p, float y, bool fuzzy)
+Voxel* VoxelField::GetVoxelByY(Voxel* Base, float y, float Thr)
 {
+	Voxel* p = Base;
 	Voxel* prev = nullptr;
 	while (p)
 	{
@@ -76,7 +77,7 @@ Voxel* VoxelField::GetVoxelByY(Voxel* p, float y, bool fuzzy)
 		}
 		else if (y < ymin)
 		{
-			if (fuzzy)
+			if (ymin - y < Thr)
 			{
 				return p;
 			}
@@ -85,11 +86,15 @@ Voxel* VoxelField::GetVoxelByY(Voxel* p, float y, bool fuzzy)
 		prev = p;
 		p = p->next;
 	}
-	if (fuzzy && prev)
+	if (prev)
 	{
-		return prev;
+		float ymax = m_BV.Min.y + m_VoxelHeight * (prev->ymax + 1);
+		if (y - ymax < Thr)
+		{
+			return prev;
+		}
 	}
-	return p;
+	return nullptr;
 }
 
 Voxel*	VoxelField::GetVoxel(const Vector3d& pos)
@@ -97,7 +102,7 @@ Voxel*	VoxelField::GetVoxel(const Vector3d& pos)
 	int idx = WorldSpaceToVoxelIndex(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
 		return nullptr;
-	return GetVoxelByY(m_Fields[idx], pos.y, false);
+	return GetVoxelByY(m_Fields[idx], pos.y, 1e-3f);
 }
 
 int		VoxelField::WorldSpaceToVoxelIndex(const Vector3d& pos) const
@@ -149,8 +154,8 @@ vx_uint32	VoxelField::GetVoxelData(const Vector3d& pos)
 	int idx = WorldSpaceToVoxelIndex(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
 		return 0;
-	Voxel* v = m_Fields[idx];
-	return ExtractVoxelData(v, pos.y, false);
+	Voxel* v = GetVoxelByY(m_Fields[idx], pos.y, 0.0f);
+	return v ? v->data : 0;
 }
 
 
@@ -321,16 +326,6 @@ static int CountVoxel(const Voxel* v)
 		v = v->next;
 	}
 	return Count;
-}
-
-vx_uint32 VoxelField::ExtractVoxelData(Voxel* p, float y, bool fuzzy)
-{
-	p = GetVoxelByY(p, y, fuzzy);
-	if (p)
-	{
-		return p->data;
-	}
-	return 0;
 }
 
 bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info)
@@ -540,20 +535,21 @@ static int vx_neighbour4x_safe(int idx, int nx, int nz, int dir) {
 	return -1;
 }
 
-vx_uint64	VoxelField::Separate(const Vector3d& pos, vx_uint32 data)
+vx_uint64	VoxelField::Separate(const Vector3d& pos, vx_uint32 data, float IntersectThr)
 {
 	int idx = WorldSpaceToVoxelIndex(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
 		return 0;
-	Voxel* p = GetVoxelByY(m_Fields[idx], pos.y, true);
+	Voxel* p = GetVoxelByY(m_Fields[idx], pos.y, 0.0f);
 	if (p == nullptr)
 	{
 		return 0;
 	}
-	return Separate(idx, p, data);
+	unsigned short Thr = (unsigned short)std::max(1, (int)floorf(IntersectThr * m_InvVoxelHeight));
+	return SeparateImpl(idx, p, data, Thr);
 }
 
-vx_uint64	VoxelField::Separate(int idx, Voxel* base, vx_uint32 data)
+vx_uint64	VoxelField::SeparateImpl(int idx, Voxel* base, vx_uint32 data, unsigned short Thr)
 {
 	base->data = data;
 
@@ -588,8 +584,9 @@ vx_uint64	VoxelField::Separate(int idx, Voxel* base, vx_uint32 data)
 }
 
 
-int		VoxelField::SolveTopology(std::unordered_map<int, vx_uint64>* volumes)
+int		VoxelField::SolveTopology(float IntersectThr, std::unordered_map<int, vx_uint64>* volumes)
 {
+	unsigned short Thr = (unsigned short)std::max(1, (int)floorf(IntersectThr * m_InvVoxelHeight));
 	int SpaceFound = 0;
 	if (volumes) volumes->clear();
 
@@ -602,7 +599,7 @@ int		VoxelField::SolveTopology(std::unordered_map<int, vx_uint64>* volumes)
 		{
 			if (curr->data == 0)
 			{
-				vx_uint64 voxel_count = Separate(idx, curr, ++SpaceFound);
+				vx_uint64 voxel_count = SeparateImpl(idx, curr, ++SpaceFound, Thr);
 				if (volumes) volumes->emplace(SpaceFound, voxel_count);
 			}
 
@@ -613,18 +610,13 @@ int		VoxelField::SolveTopology(std::unordered_map<int, vx_uint64>* volumes)
 	return SpaceFound;
 }
 
-bool VoxelField::IntersectYPlane(float y_value, std::vector<int>& output, bool take_next)
+bool VoxelField::IntersectYPlane(float y_value, std::vector<int>& output, float Thr)
 {
-	int y = WorldSpaceToVoxelSpaceY(y_value);
-	if (y < 0 || y >= m_SizeY)
-	{
-		return false;
-	}
-
 	output.resize(m_SizeX * m_SizeZ);
 	for (int i = 0; i < m_SizeZ * m_SizeX; ++i)
 	{
-		output[i] = ExtractVoxelData(m_Fields[i], y_value, take_next);
+		Voxel *v = GetVoxelByY(m_Fields[i], y_value, Thr);
+		output[i] = v ? v->data : 0;
 	}
 
 	return true;

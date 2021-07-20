@@ -85,6 +85,7 @@ void UpdateCamera()
     g_Renderer->SetCameraLookAt(Eye, Center);
 }
 
+#pragma optimize("", off)
 void InitScene()
 {
     PhysicsWorldRBParam param;
@@ -135,14 +136,30 @@ void InitScene()
     {
         VoxelField field;
         field.SerializeFrom("E:/Temp/iceland.voxel");
-        // field.MakeComplementarySet();
+        field.MakeComplementarySet();
+
+        int debug_idx2 = 22133440;          // (280.0, 0, -277.0)
+		int debug_idx = 30844619;
+
+        Vector3d bmin = Vector3d(-3268.0f, -617.0f, -3519.0f);
+        Vector3d bmax = Vector3d(3558.0f, 1000.0f, 3547.0f);
+        Vector3d pos = (bmin + bmax) * 0.5f;
+        pos.y = 900.0f;
+
+        field.Separate(pos, 1, 0.5f);
+        field.Filter([] (vx_uint32 data) { return data != 1; });
         // field.MakeComplementarySet();
 
         int idx = field.WorldSpaceToVoxelIndex(house_pos);
         int cz = idx / field.GetSizeX();
         int cx = idx - field.GetSizeX() * cz;
 
-        TriangleMesh* mesh = field.CreateDebugMesh(cx - 100, cx + 100, cz - 100, cz + 100);
+        float water_y = field.VoxelSpaceToWorldSpaceY(1274);
+
+		std::vector<int> data;
+		field.IntersectYPlane(18.0f, data, 0.5f);
+
+        TriangleMesh* mesh = field.CreateDebugMesh(cx - 200, cx + 200, cz - 200, cz + 200);
 
         Transform* t = new Transform;
         t->SetScale(Vector3d(0.01f, 0.01f, 0.01f));
@@ -164,6 +181,7 @@ void InitScene()
     }
 
 }
+#pragma optimize("", on)
 
 //--------------------------------------------------------------------------------------
 // Entry point to the program. Initializes everything and goes into a message processing 
