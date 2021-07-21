@@ -12,6 +12,7 @@
 #include "../Src/Maths/Matrix2d.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Frustum.h"
+#include "../Src/Maths/Tensor.h"
 #include "../Src/ImageSpace/ContinuousBitmap.h"
 #include "../Src/CollisionPrimitive/OrientedBox3d.h"
 #include "../Src/CollisionPrimitive/Plane3d.h"
@@ -107,6 +108,17 @@ void TestAABBTree()
 	}
 
 	return;
+}
+
+void TestTensor()
+{
+	Tensor<float, 4> t(10, 20, 30, 40);
+	t(0, 0, 0, 0) = 1.0f;
+	t(9, 19, 29, 39) = 2.0f;
+
+	auto t2 = t[9][19][29];
+
+	assert(t2[39] == 2.0f);
 }
 
 void TestGeometryQuery()
@@ -216,7 +228,7 @@ void TestSAP()
 void TestMesh1()
 {
 	TriangleMesh mesh;
-	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
+	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(0.99f, 0.99f, 0.99f));
 	mesh.CalculateBoundingBox();
 
 	VoxelField field;
@@ -228,10 +240,10 @@ void TestMesh1()
 	field.AddVoxel(1, 0, 0, 0);
 	field.AddVoxel(2, 0, 1, 0);
 
-	field.SerializeTo("D://home//test.voxel");
+	field.SerializeTo("e://temp//test.voxel");
 
 	SparseVoxelField inference;
-	inference.SerializeFrom("D://home//test.voxel");
+	inference.SerializeFrom("e://temp//test.voxel");
 
 	Box3d v = field.GetVoxelBox(Vector3d(-0.1f, -0.1f, -0.1f));
 	assert(FloatEqual(v.Min.x, -1.0f));
@@ -251,7 +263,8 @@ void TestMesh1()
 
 	field.VoxelizationTrianglesSet(info, &mesh);
 	field.MakeComplementarySet();
-	int space = field.SolveTopology(0.01f);
+	std::unordered_map<int, vx_uint64> volumes;
+	int space = field.SolveTopology(0.01f, &volumes);
 	assert(space == 2);
 	return;
 }
@@ -351,6 +364,7 @@ void TestMainEntry()
 	TestBitmap();
 	TestAABBTree();
 	TestGeometryQuery();
+	TestTensor();
 	TestSAP();
 	TestSAPInc();
 	TestMesh1();

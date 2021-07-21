@@ -165,55 +165,6 @@ vx_uint32	VoxelField::GetVoxelData(const Vector3d& pos)
 	return v ? v->data : 0;
 }
 
-
-static void RasterTri(const Vector3d* In, int nn, Vector3d* out1, int* nout1, Vector3d* out2, int* nout2, float x, int axis)
-{
-	float d[12];
-	for (int i = 0; i < nn; ++i)
-		d[i] = x - In[i][axis];
-
-	int m = 0, n = 0;
-	for (int i = 0, j = nn - 1; i < nn; j = i, ++i)
-	{
-		bool ina = d[j] >= 0;
-		bool inb = d[i] >= 0;
-		if (ina != inb)
-		{
-			float s = d[j] / (d[j] - d[i]);
-			out1[m] = In[j] + (In[i] - In[j]) * s;
-			out2[n] = out1[m];
-
-			m++;
-			n++;
-			if (d[i] > 0)
-			{
-				out1[m] = In[i];
-				m++; 
-			}
-			else if (d[i] < 0)
-			{
-				out2[n] = In[i];
-				n++;
-			}
-		}
-		else
-		{
-			if (d[i] >= 0)
-			{
-				out1[m] = In[i];
-				m++;
-				if (d[i] != 0)
-					continue;
-			}
-			out2[n] = In[i];
-			n++;
-		}
-	}
-
-	*nout1 = m;
-	*nout2 = n;
-}
-
 bool VoxelField::AddVoxel(int idx, unsigned short ymin, unsigned short ymax, float MergeThr)
 {
 	Voxel* s = AllocVoxel();
@@ -335,6 +286,55 @@ static int CountVoxel(const Voxel* v)
 	return Count;
 }
 
+
+static void InterpolateTri(const Vector3d* In, int nn, Vector3d* out1, int* nout1, Vector3d* out2, int* nout2, float x, int axis)
+{
+	float d[12];
+	for (int i = 0; i < nn; ++i)
+		d[i] = x - In[i][axis];
+
+	int m = 0, n = 0;
+	for (int i = 0, j = nn - 1; i < nn; j = i, ++i)
+	{
+		bool ina = d[j] >= 0;
+		bool inb = d[i] >= 0;
+		if (ina != inb)
+		{
+			float slope = d[j] / (d[j] - d[i]);
+			out1[m] = In[j] + (In[i] - In[j]) * slope;
+			out2[n] = out1[m];
+
+			m++;
+			n++;
+			if (d[i] > 0)
+			{
+				out1[m] = In[i];
+				m++;
+			}
+			else if (d[i] < 0)
+			{
+				out2[n] = In[i];
+				n++;
+			}
+		}
+		else
+		{
+			if (d[i] >= 0)
+			{
+				out1[m] = In[i];
+				m++;
+				if (d[i] != 0)
+					continue;
+			}
+			out2[n] = In[i];
+			n++;
+		}
+	}
+
+	*nout1 = m;
+	*nout2 = n;
+}
+
 bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info)
 {
 	const float dy = m_BV.Max.y - m_BV.Min.y;
@@ -361,7 +361,7 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 	for (int z = z0; z <= z1; ++z)
 	{
 		const float cz = m_BV.Min.z + z * m_VoxelSize;
-		RasterTri(In, nvIn, inrow, &nvrow, p1, &nvIn, cz + m_VoxelSize, 2);
+		InterpolateTri(In, nvIn, inrow, &nvrow, p1, &nvIn, cz + m_VoxelSize, 2);
 		std::swap(In, p1);
 		if (nvrow < 3)
 			continue;
@@ -380,7 +380,7 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 		for (int x = x0; x <= x1; ++x)
 		{
 			const float cx = m_BV.Min.x + x * m_VoxelSize;
-			RasterTri(inrow, nv2, p1, &nv, p2, &nv2, cx + m_VoxelSize, 0);
+			InterpolateTri(inrow, nv2, p1, &nv, p2, &nv2, cx + m_VoxelSize, 0);
 			std::swap(inrow, p2);
 			if (nv < 3)
 				continue;
@@ -402,8 +402,8 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 			ymin -= m_BV.Min.y;
 			ymax -= m_BV.Min.y;
 
-			const unsigned short y0 = (unsigned short)vx_clamp((int)floorf(ymin * ich), 0, m_SizeY - 1);
-			const unsigned short y1 = (unsigned short)vx_clamp((int)ceilf(ymax * ich), 0, m_SizeY - 1);
+			const unsigned short y0 = (unsigned short)vx_clamp((int)(ymin * ich), 0, m_SizeY - 1);
+			const unsigned short y1 = (unsigned short)vx_clamp((int)(ymax * ich), 0, m_SizeY - 1);
 
 			if (!AddVoxel(z * m_SizeX + x, y0, y1, info.YMergeThr))
 				return false;
@@ -597,16 +597,14 @@ int		VoxelField::SolveTopology(float IntersectThr, std::unordered_map<int, vx_ui
 	int SpaceFound = 0;
 	if (volumes) volumes->clear();
 
-	for (int i = 0; i < m_SizeZ; ++i)
-	for (int j = 0; j < m_SizeX; ++j)
+	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
-		int idx = i * m_SizeX + j;
-		Voxel* curr = m_Fields[idx];
+		Voxel* curr = m_Fields[i];
 		while (curr)
 		{
 			if (curr->data == 0)
 			{
-				vx_uint64 voxel_count = SeparateImpl(idx, curr, ++SpaceFound, Thr);
+				vx_uint64 voxel_count = SeparateImpl(i, curr, ++SpaceFound, Thr);
 				if (volumes) volumes->emplace(SpaceFound, voxel_count);
 			}
 
