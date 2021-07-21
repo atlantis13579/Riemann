@@ -22,6 +22,8 @@ typedef bool			(*RayCastFunc)		(void*, const Vector3d&, const Vector3d&, float*)
 typedef Vector3d		(*SupportFunc)		(void*, const Vector3d&);
 typedef Matrix3d		(*InertiaFunc)		(void*, float);
 typedef void			(*DestoryFunc)		(void*);
+typedef bool			(*OverlapFunc)		(void*, void*);
+typedef bool			(*SweepFunc)		(void*, void*, const Vector3d&, float*);
 
 struct GeometryShape
 {
@@ -62,6 +64,8 @@ public:
 	Transform*				GetTransform();
 
 	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
+	bool					Overlap(const Geometry *Geom);
+	bool					Sweep(const Geometry* Geom, const Vector3d& Dir, float* t);
 	Matrix3d				GetInertia(float Mass) const;
 	Matrix3d				GetInverseInertia(float Mass) const;
 
@@ -70,42 +74,42 @@ private:
 	Vector3d				GetSupportLocalSpace(const Vector3d& Dir) const;
 
 private:
-	GeometryShape	m_Shape;
-	Box3d			m_BoxWorld;
-	Transform		m_Transform;
-	void*			m_Entity;
+	GeometryShape			m_Shape;
+	Box3d					m_BoxWorld;
+	Transform				m_Transform;
+	void*					m_Entity;
 
 public:
 	template <class T>
-	static Box3d	GetBoundingVolume(void* Obj)
+	static Box3d			GetBoundingVolume(void* Obj)
 	{
 		T* p = reinterpret_cast<T*>(Obj);
 		return p->GetBoundingVolume();
 	}
 
 	template <class T>
-	static bool		RayCast(void* Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)
+	static bool				RayCast(void* Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)
 	{
 		T* p = reinterpret_cast<T*>(Obj);
 		return p->IntersectRay(Origin, Dir, t);
 	}
 
 	template <class T>
-	static Vector3d GetSupport(void* Obj, const Vector3d& Dir)
+	static Vector3d			GetSupport(void* Obj, const Vector3d& Dir)
 	{
 		T* p = reinterpret_cast<T*>(Obj);
 		return p->GetSupport(Dir);
 	}
 	
 	template <class T>
-	static Matrix3d GetInertia(void* Obj, float Mass)
+	static Matrix3d			GetInertia(void* Obj, float Mass)
 	{
 		T* p = reinterpret_cast<T*>(Obj);
 		return p->GetInertiaTensor(Mass);
 	}			
 
 	template <class T>
-	static void Destory(void* Obj)
+	static void				Destory(void* Obj)
 	{
 		T* p = reinterpret_cast<T*>(Obj);
 		delete p;
@@ -116,6 +120,8 @@ public:
 	static SupportFunc		supportTable[GeometryShapeType::COUNT];
 	static InertiaFunc		inertiaTable[GeometryShapeType::COUNT];
 	static DestoryFunc		destoryTable[GeometryShapeType::COUNT];
+	static SweepFunc		sweepTable[GeometryShapeType::COUNT][GeometryShapeType::COUNT];
+	static OverlapFunc		overlapTable[GeometryShapeType::COUNT][GeometryShapeType::COUNT];
 };
 
 

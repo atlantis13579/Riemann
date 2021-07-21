@@ -103,6 +103,28 @@ bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
 	return func(m_Shape.Object, Origin, Dir, t);
 }
 
+bool				Geometry::Overlap(const Geometry* Geom)
+{
+	GeometryShapeType Type1 = m_Shape.Type;
+	GeometryShapeType Type2 = Geom->m_Shape.Type;
+	OverlapFunc func = Geometry::overlapTable[Type1][Type1];
+#ifdef DEBUG
+	assert(func);
+#endif
+	return func(m_Shape.Object, Geom->m_Shape.Object);
+}
+
+bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t)
+{
+	GeometryShapeType Type1 = m_Shape.Type;
+	GeometryShapeType Type2 = Geom->m_Shape.Type;
+	SweepFunc func = Geometry::sweepTable[Type1][Type1];
+#ifdef DEBUG
+	assert(func);
+#endif
+	return func(m_Shape.Object, Geom->m_Shape.Object, Dir, t);
+}
+
 Vector3d			Geometry::GetSupportWorldSpace(const Vector3d& Dir)
 {
 	Vector3d DirLocal = m_Transform.WorldToLocal(Dir);
@@ -139,6 +161,8 @@ RayCastFunc			Geometry::raycastTable[GeometryShapeType::COUNT] = { 0 };
 SupportFunc			Geometry::supportTable[GeometryShapeType::COUNT] = { 0 };
 InertiaFunc			Geometry::inertiaTable[GeometryShapeType::COUNT] = { 0 };
 DestoryFunc			Geometry::destoryTable[GeometryShapeType::COUNT] = { 0 };
+SweepFunc			Geometry::sweepTable[GeometryShapeType::COUNT][GeometryShapeType::COUNT] = { 0 };
+OverlapFunc			Geometry::overlapTable[GeometryShapeType::COUNT][GeometryShapeType::COUNT] = {0};
 
 #define	REG_GEOMETRY_OBJ(_type, _name)									\
 	Geometry::getaabbTable[_type] =	Geometry::GetBoundingVolume<_name>;	\
