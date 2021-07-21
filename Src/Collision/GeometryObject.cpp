@@ -13,7 +13,7 @@ Geometry::Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _Sha
 	m_Shape.Type = _Type;
 	m_Shape.Object = _ShapeObj;
 	m_Entity = _Entity;
-	m_BoxWorld = GetBoundingBoxLocal();
+	m_BoxWorld = GetBoundingVolumeLocalSpace();
 
 	SetPosition(Position);
 }
@@ -27,7 +27,7 @@ Geometry::~Geometry()
 	func(m_Shape.Object);
 }
 
-Box3d		Geometry::GetBoundingBoxLocal() const
+Box3d		Geometry::GetBoundingVolumeLocalSpace() const
 {
 	GetAABBFunc func = Geometry::getaabbTable[m_Shape.Type];
 #ifdef DEBUG
@@ -36,26 +36,20 @@ Box3d		Geometry::GetBoundingBoxLocal() const
 	return func(m_Shape.Object);
 }
 
-const Box3d& Geometry::GetBoundingBoxWorld() const
+const Box3d& Geometry::GetBoundingVolumeWorldSpace() const
 {
 	return m_BoxWorld;
 }
 
-Vector3d			Geometry::GetPositionWorld() const
+Vector3d			Geometry::GetPosition() const
 {
 	return m_Transform.GetTranslation();
-}
-
-void				Geometry::SetPositionOffset(const Vector3d& Offset)
-{
-	Vector3d World = m_Transform.GetTranslation() + Offset;
-	SetPosition(World);
 }
 
 void				Geometry::SetPosition(const Vector3d& Position)
 {
 	m_Transform.SetTranslation(Position);
-	m_BoxWorld = GetBoundingBoxLocal().Transform(m_Transform.GetWorldMatrix());
+	m_BoxWorld = GetBoundingVolumeLocalSpace().Transform(m_Transform.GetWorldMatrix());
 	return;
 }
 
@@ -64,15 +58,15 @@ Matrix3d			Geometry::GetRotationMatrix() const
 	return m_Transform.GetRotationMatrix();
 }
 
-Quaternion			Geometry::GetRotation() const
+Quaternion			Geometry::GetRotationQuat() const
 {
 	return m_Transform.GetRotation();
 }
 
-void				Geometry::SetRotation(const Quaternion& Rotation)
+void				Geometry::SetRotationQuat(const Quaternion& Rotation)
 {
 	m_Transform.SetRotation(Rotation);
-	m_BoxWorld = GetBoundingBoxLocal().Transform(m_Transform.GetWorldMatrix());
+	m_BoxWorld = GetBoundingVolumeLocalSpace().Transform(m_Transform.GetWorldMatrix());
 }
 
 const Matrix4d&		Geometry::GetWorldMatrix()
@@ -109,15 +103,15 @@ bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
 	return func(m_Shape.Object, Origin, Dir, t);
 }
 
-Vector3d			Geometry::GetSupportWorld(const Vector3d& Dir)
+Vector3d			Geometry::GetSupportWorldSpace(const Vector3d& Dir)
 {
 	Vector3d DirLocal = m_Transform.WorldToLocal(Dir);
-	Vector3d SupportLocal = GetSupportLocal(DirLocal);
+	Vector3d SupportLocal = GetSupportLocalSpace(DirLocal);
 	Vector3d SupportWorld = m_Transform.LocalToWorld(SupportLocal);
 	return SupportWorld;
 }
 
-Vector3d			Geometry::GetSupportLocal(const Vector3d& Dir) const
+Vector3d			Geometry::GetSupportLocalSpace(const Vector3d& Dir) const
 {
 	SupportFunc func = Geometry::supportTable[m_Shape.Type];
 #ifdef DEBUG
@@ -147,7 +141,7 @@ InertiaFunc			Geometry::inertiaTable[GeometryShapeType::COUNT] = { 0 };
 DestoryFunc			Geometry::destoryTable[GeometryShapeType::COUNT] = { 0 };
 
 #define	REG_GEOMETRY_OBJ(_type, _name)									\
-	Geometry::getaabbTable[_type] =	Geometry::GetBoundingBox<_name>;	\
+	Geometry::getaabbTable[_type] =	Geometry::GetBoundingVolume<_name>;	\
 	Geometry::raycastTable[_type] =	Geometry::RayCast<_name>;			\
 	Geometry::supportTable[_type] =	Geometry::GetSupport<_name>;		\
 	Geometry::inertiaTable[_type] =	Geometry::GetInertia<_name>;		\

@@ -271,15 +271,15 @@ public:
 
 	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const
 	{
-		const Box3d& box = m_objs->at(bv_i)->GetBoundingBoxWorld();
+		const Box3d& box = m_objs->at(bv_i)->GetBoundingVolumeWorldSpace();
 		float* p = (float*)&box;
 		return left ? p + axis : p + 3 + axis;
 	}
 
 	virtual bool	Overlaps(int bv_i, int bv_j) const
 	{
-		const Box3d& box1 = m_objs->at(bv_i)->GetBoundingBoxWorld();
-		const Box3d& box2 = m_objs->at(bv_j)->GetBoundingBoxWorld();
+		const Box3d& box1 = m_objs->at(bv_i)->GetBoundingVolumeWorldSpace();
+		const Box3d& box2 = m_objs->at(bv_j)->GetBoundingVolumeWorldSpace();
 		return box1.Intersect(box2);
 	}
 
@@ -301,14 +301,14 @@ void TestSAPInc()
 	sap.IncrementalPrune(&overlaps);
 	assert(overlaps.size() == 0);
 
-	boxes[2]->SetPositionOffset(Vector3d(-10, -10, -10));
+	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3d(-10, -10, -10));
 	sap.IncrementalPrune(&overlaps);
 	assert(overlaps.size() == 2);
 
 	sap.IncrementalPrune(&overlaps);
 	assert(overlaps.size() == 2);
 
-	boxes[2]->SetPositionOffset(Vector3d(10, 10, 10));
+	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3d(10, 10, 10));
 	sap.IncrementalPrune(&overlaps);
 	assert(overlaps.size() == 0);
 
@@ -322,7 +322,7 @@ void TestSAPInc()
 
 	for (int k = 0; k < 10; ++k)
 	{
-		boxes[2]->SetPositionOffset(Vector3d::Random() * 20.0f);
+		boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3d::Random() * 20.0f);
 		sap.IncrementalPrune(&overlaps);
 
 		for (size_t i = 0; i < boxes.size(); ++i)
@@ -330,7 +330,7 @@ void TestSAPInc()
 		{
 			if (i == j) continue;
 			OverlapKey key = SAP::PackOverlapKey((int)i, (int)j);
-			if (boxes[i]->GetBoundingBoxWorld().Intersect(boxes[j]->GetBoundingBoxWorld()))
+			if (boxes[i]->GetBoundingVolumeWorldSpace().Intersect(boxes[j]->GetBoundingVolumeWorldSpace()))
 			{
 				assert(overlaps.count(key) == 1);
 			}

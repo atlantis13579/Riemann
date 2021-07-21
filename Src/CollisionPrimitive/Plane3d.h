@@ -74,7 +74,7 @@ public:
 		return true;
 	}
 
-	Box3d	GetBoundingBox() const
+	Box3d	GetBoundingVolume() const
 	{
 		const float kMaxBV = 10000000.0f;
 		const float kVerySmallTickness = 0.00001f;
@@ -143,7 +143,7 @@ public:
 
 	Vector3d GetSupport(const Vector3d& dir) const
 	{
-		Box3d box = GetBoundingBox();
+		Box3d box = GetBoundingVolume();
 		return Vector3d(
 			dir.x > 0 ? box.Max.x : box.Min.x,
 			dir.y > 0 ? box.Max.y : box.Min.y,

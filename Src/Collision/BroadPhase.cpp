@@ -69,15 +69,15 @@ private:
 
 	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const
 	{
-		const Box3d& box = m_pObjects->at(bv_i)->GetBoundingBoxWorld();
+		const Box3d& box = m_pObjects->at(bv_i)->GetBoundingVolumeWorldSpace();
 		float* p = (float*)&box;
 		return left ? p + axis : p + 3 + axis;
 	}
 
 	virtual bool    Overlaps(int bv_i, int bv_j) const
 	{
-		const Box3d& box1 = m_pObjects->at(bv_i)->GetBoundingBoxWorld();
-		const Box3d& box2 = m_pObjects->at(bv_j)->GetBoundingBoxWorld();
+		const Box3d& box1 = m_pObjects->at(bv_i)->GetBoundingVolumeWorldSpace();
+		const Box3d& box2 = m_pObjects->at(bv_j)->GetBoundingVolumeWorldSpace();
 		return box1.Intersect(box2);
 	}
 

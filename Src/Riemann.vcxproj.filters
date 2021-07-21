@@ -82,6 +82,7 @@
     <ClInclude Include="Geometry\VoxelField.h" />
     <ClInclude Include="Geometry\SparseVoxelField.h" />
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
+    <ClInclude Include="Collision\ProximityGrid.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -102,7 +103,6 @@
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />
     <ClCompile Include="Collision\AABBTreeInference.cpp" />
     <ClCompile Include="Collision\GeometryQuery.cpp" />
-    <ClCompile Include="Collision\SparseSpatialHash.cpp" />
     <ClCompile Include="Collision\BroadPhase.cpp" />
     <ClCompile Include="Collision\NarrowPhase.cpp" />
     <ClCompile Include="Collision\GeometryCollection.cpp" />

@@ -6,8 +6,8 @@ RigidBody* RigidBody::CreateRigidBody(Geometry* Geom, const RigidBodyParam& para
 	RigidBody* Rigid = new RigidBody;
 	Rigid->mass = param.mass;
 	Rigid->invInertia = Geom->GetInverseInertia(Rigid->mass);
-	Rigid->P = Geom->GetPositionWorld();
-	Rigid->Q = Geom->GetRotation();
+	Rigid->P = Geom->GetPosition();
+	Rigid->Q = Geom->GetRotationQuat();
 	Rigid->P = Vector3d::Zero();
 	Rigid->L = Vector3d::Zero();
 	Rigid->Velocity = Vector3d::Zero();

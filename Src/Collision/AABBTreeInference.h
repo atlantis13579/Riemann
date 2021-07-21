@@ -7,7 +7,7 @@ class AABBTreeOffline;
 
 struct AABBTreeNodeInference
 {
-	inline const Box3d& GetBoundingBox() const
+	inline const Box3d& GetBoundingVolume() const
 	{
 		return BV;
 	}

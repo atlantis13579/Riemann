@@ -45,15 +45,14 @@ public:
 	Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity = nullptr);
 	~Geometry();
 
-	const Box3d&			GetBoundingBoxWorld() const;
-	Vector3d				GetSupportWorld(const Vector3d& Dir);
+	const Box3d&			GetBoundingVolumeWorldSpace() const;
+	Vector3d				GetSupportWorldSpace(const Vector3d& Dir);
 
 	void					SetPosition(const Vector3d& Position);
-	void					SetPositionOffset(const Vector3d& Offset);
-	Vector3d				GetPositionWorld() const;
+	Vector3d				GetPosition() const;
 	Matrix3d				GetRotationMatrix() const;
-	Quaternion				GetRotation() const;
-	void					SetRotation(const Quaternion& Rotation);
+	Quaternion				GetRotationQuat() const;
+	void					SetRotationQuat(const Quaternion& Rotation);
 	const Matrix4d&			GetWorldMatrix();
 	const Matrix4d&			GetInverseWorldMatrix();
 
@@ -66,9 +65,9 @@ public:
 	Matrix3d				GetInertia(float Mass) const;
 	Matrix3d				GetInverseInertia(float Mass) const;
 
-protected:
-	Box3d					GetBoundingBoxLocal() const;
-	Vector3d				GetSupportLocal(const Vector3d& Dir) const;
+private:
+	Box3d					GetBoundingVolumeLocalSpace() const;
+	Vector3d				GetSupportLocalSpace(const Vector3d& Dir) const;
 
 private:
 	GeometryShape	m_Shape;
@@ -78,10 +77,10 @@ private:
 
 public:
 	template <class T>
-	static Box3d	GetBoundingBox(void* Obj)
+	static Box3d	GetBoundingVolume(void* Obj)
 	{
 		T* p = reinterpret_cast<T*>(Obj);
-		return p->GetBoundingBox();
+		return p->GetBoundingVolume();
 	}
 
 	template <class T>

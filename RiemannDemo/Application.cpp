@@ -93,7 +93,7 @@ void InitScene()
     RigidBodyParam rp;
     g_World = new PhysicsWorldRB(param);
 
-    if (0)
+    if (1)
     {
         Vertex1 Grounds_vertices[] =
         {
@@ -132,7 +132,7 @@ void InitScene()
         g_Renderer->AddMesh(&mesh, t);
     }
 
-    if (1)
+    if (0)
     {
         VoxelField field;
         field.SerializeFrom("E:/Temp/japan.voxel");
@@ -163,10 +163,10 @@ void InitScene()
         g_Renderer->AddMesh(mesh, t);
     }
 
-    if (0)
+    if (1)
     {
         rp.mass = 1.0f;
-        rp.Static = true;
+        rp.Static = false;
         Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0, 0, 0), Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
         g_World->CreateRigidBody(aabb, rp);
 

@@ -104,7 +104,7 @@ public:
 		return false;
 	}
 
-	Box3d	GetBoundingBox() const
+	Box3d	GetBoundingVolume() const
 	{
 		return Box3d(Min, Max);
 	}

@@ -78,7 +78,7 @@ public:
 		return false;
 	}
 
-	Box3d	GetBoundingBox() const
+	Box3d	GetBoundingVolume() const
 	{
 		Box3d Box;
 		Box.BuildFromCenterAndExtent(Center, Vector3d(Radius));

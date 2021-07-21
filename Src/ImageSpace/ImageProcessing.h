@@ -1,13 +1,14 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
 #include <vector>
 #include <queue>
 
 #include "../Maths/Vector2d.h"
 
 template<typename T>
-int EQFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
+int Filter(T* Cell, int nX, int nY, std::function<bool(T Val)> filter_func, bool Reverse)
 {
 	T v0 = 0, v1 = 1;
 	if (Reverse)
@@ -19,8 +20,7 @@ int EQFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
 	int Count = 0;
 	for (int i = 0; i < nX * nY; ++i)
 	{
-		int val = Cell[i];
-		if (val == Value)
+		if (filter_func(Cell[i]))
 		{
 			Count++;
 			Cell[i] = v1;
@@ -34,32 +34,16 @@ int EQFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
 }
 
 template<typename T>
-int GEFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
+int EQFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
 {
-	T v0 = 0, v1 = 1;
-	if (Reverse)
-	{
-		v0 = 1;
-		v1 = 0;
-	}
-
-	int Count = 0;
-	for (int i = 0; i < nX * nY; ++i)
-	{
-		int val = Cell[i];
-		if (val >= Value)
-		{
-			Count++;
-			Cell[i] = v1;
-		}
-		else
-		{
-			Cell[i] = v0;
-		}
-	}
-	return Count;
+	return Filter(Cell, nX, nY, [=](T _Val)->bool { return _Val == Value; }, Reverse);
 }
 
+template<typename T>
+int GEFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
+{
+	return Filter(Cell, nX, nY, [=](T _Val)->bool { return _Val >= Value; }, Reverse);
+}
 
 template<typename T, int Kernal_Size>
 void MinFilter(T* Cell, int nX, int nY)

@@ -36,7 +36,7 @@ public:
 		return Length;
 	}
 
-	Box3d	GetBoundingBox() const
+	Box3d	GetBoundingVolume() const
 	{
 		Box3d box(X0, X0);
 		box.Grow(GetX2());

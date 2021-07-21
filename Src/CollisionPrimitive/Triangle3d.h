@@ -95,7 +95,7 @@ public:
 		return false;
 	}
 
-	Box3d	GetBoundingBox() const
+	Box3d	GetBoundingVolume() const
 	{
 		Box3d box(A, A);
 		box.Grow(B);

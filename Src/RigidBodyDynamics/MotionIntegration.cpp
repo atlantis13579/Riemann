@@ -27,13 +27,13 @@ void MotionIntegration::Integrate(std::vector<Geometry*> Entities, float dt)
 		// https://www.ashwinnarayan.com/post/how-to-integrate-quaternions/
 		// ----------------
 
-		Quaternion quat = Geom->GetRotation();
+		Quaternion quat = Geom->GetRotationQuat();
 
 		Matrix3d mat = quat.ToRotationMatrix();
 		Matrix3d invInertia = mat * Rigid->invInertia * mat.Transpose();
 		Vector3d omega = invInertia * Rigid->L;
 		Quaternion delta(1.0f, omega.x * dt * 0.5f, omega.y * dt * 0.5f, omega.z * dt * 0.5f);
 		Quaternion target = delta * quat;
-		Geom->SetRotation(target);
+		Geom->SetRotationQuat(target);
 	}
 }
