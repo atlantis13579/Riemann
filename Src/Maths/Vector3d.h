@@ -310,3 +310,4 @@ T Determinant(const TVector3<T>& a, const TVector3<T>& b, const TVector3<T>& c)
 typedef TVector3<float> Vector3d;
 
 static_assert(sizeof(Vector3d) == 12, "sizeof Vector3d is not valid");
+

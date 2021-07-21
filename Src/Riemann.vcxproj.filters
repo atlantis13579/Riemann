@@ -84,12 +84,13 @@
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
     <ClInclude Include="Collision\ProximityGrid.h" />
     <ClInclude Include="LinearSystem\Tensor.h" />
+    <ClInclude Include="Collision\RTree.h" />
+    <ClInclude Include="Maths\SIMD.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
       <Filter>Src</Filter>
     </ClCompile>
-    <ClCompile Include="Maths\Maths.cpp" />
     <ClCompile Include="Maths\Bezier.cpp" />
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
@@ -118,5 +119,6 @@
     <ClCompile Include="Geometry\VoxelEngine.cpp" />
     <ClCompile Include="Geometry\VoxelField.cpp" />
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
+    <ClCompile Include="Collision\RTree.cpp" />
   </ItemGroup>
 </Project>

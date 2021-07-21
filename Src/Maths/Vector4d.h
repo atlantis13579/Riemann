@@ -227,3 +227,4 @@ public:
 typedef TVector4<float> Vector4d;
 
 static_assert(sizeof(Vector4d) == 16, "sizeof Vector4d is not valid");
+
