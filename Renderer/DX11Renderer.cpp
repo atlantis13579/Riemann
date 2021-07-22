@@ -8,7 +8,7 @@
 #include <directxmath.h>
 #include <directxcolors.h>
 
-#include "../Src/CollisionPrimitive/TriangleMesh.h"
+#include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/Maths/Transform.h"
 
 using namespace DirectX;
@@ -446,7 +446,7 @@ public:
         return false;
     }
 
-    void AddMesh(TriangleMesh* mesh, Transform* Trans)
+    void AddMesh(Mesh* mesh, Transform* Trans)
     {
         mesh->CalculateNormals();
 

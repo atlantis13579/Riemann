@@ -13,6 +13,7 @@
 #include "../Src/Maths/Matrix2d.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Frustum.h"
+#include "../Src/Maths/SIMD.h"
 #include "../Src/ImageSpace/ContinuousBitmap.h"
 #include "../Src/CollisionPrimitive/OrientedBox3d.h"
 #include "../Src/CollisionPrimitive/Plane3d.h"
@@ -21,15 +22,51 @@
 #include "../Src/CollisionPrimitive/Triangle3d.h"
 #include "../Src/CollisionPrimitive/Cylinder3d.h"
 #include "../Src/CollisionPrimitive/Capsule3d.h"
-#include "../Src/CollisionPrimitive/TriangleMesh.h"
+#include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/Collision/AABBTree.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Collision/SAP.h"
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
+#include "../Src/Collision/RTree.h"
+#include "../Src/Collision/TriangleMesh.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/SparseVoxelField.h"
+
+
+void TestSIMD()
+{
+	Vec4V v1 = V4Load(1.2f);
+	Vec4V v2 = V4Load(1.2f);
+	Vec4V v3 = V4Mul(v1, v2);
+	Vector3d vv = V4ReadXYZ(v3);
+	return;
+}
+
+void TestRTree()
+{
+	TriangleMesh mesh;
+	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(0.99f, 0.99f, 0.99f));
+	mesh.BuildRTree();
+	float t;
+	bool success;
+	success = mesh.IntersectRay(Vector3d(0.0f, 10.0f, 0.0f), -Vector3d::UnitY(), &t);
+
+	mesh.Release();
+	mesh.LoadObj("e:/temp/dungeon.obj");
+	mesh.BuildRTree();
+
+	Vector3d Center;
+	Center = (mesh(0, 0) + mesh(0, 1) + mesh(0, 2)) / 3.0f;
+	Center.y = 100.0f;
+	
+	success = mesh.IntersectRay(Center, -Vector3d::UnitY(), &t);
+
+	printf("hit = %d, time = %.2f", success, t);
+
+	return;
+}
 
 void TestBitmap()
 {
@@ -227,7 +264,7 @@ void TestSAP()
 
 void TestMesh1()
 {
-	TriangleMesh mesh;
+	Mesh mesh;
 	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(0.99f, 0.99f, 0.99f));
 	mesh.CalculateBoundingBox();
 
@@ -361,7 +398,9 @@ void TestSAPInc()
 
 void TestMainEntry()
 {
-	TestBitmap();
+	TestSIMD();
+	TestRTree();
+	// TestBitmap();
 	TestAABBTree();
 	TestGeometryQuery();
 	TestTensor();

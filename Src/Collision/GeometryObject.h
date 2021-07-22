@@ -141,7 +141,7 @@ struct RayCastResult
 	RayCastResult()
 	{
 		hit = false;
-		hitTime = 0.0f;
+		hitTime = FLT_MAX;
 		hitGeom = nullptr;
 	}
 

@@ -9,7 +9,7 @@
 #include "../Src/Maths/Vector3d.h"
 #include "../Src/Maths/Vector4d.h"
 
-class TriangleMesh;
+class Mesh;
 class Transform;
 
 struct Vertex1
@@ -34,7 +34,7 @@ public:
 	virtual void SetFillMode(bool Wireframe) = 0;
 	virtual void SetDepthMode() = 0;
 
-	virtual void AddMesh(TriangleMesh* mesh, Transform* Trans) = 0;
+	virtual void AddMesh(Mesh* mesh, Transform* Trans) = 0;
 
 	static Renderer* CreateDX11Renderer(void* hWnd, const char* shader_path);
 };

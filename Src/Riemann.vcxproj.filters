@@ -67,7 +67,7 @@
     <ClInclude Include="CollisionPrimitive\Ray3d.h" />
     <ClInclude Include="CollisionPrimitive\Sphere3d.h" />
     <ClInclude Include="CollisionPrimitive\Triangle3d.h" />
-    <ClInclude Include="CollisionPrimitive\TriangleMesh.h" />
+    <ClInclude Include="CollisionPrimitive\Mesh.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsWorldRB.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsEntity.h" />
     <ClInclude Include="Maths\Matrix2d.h" />
@@ -86,6 +86,7 @@
     <ClInclude Include="LinearSystem\Tensor.h" />
     <ClInclude Include="Collision\RTree.h" />
     <ClInclude Include="Maths\SIMD.h" />
+    <ClInclude Include="Collision\TriangleMesh.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -120,5 +121,6 @@
     <ClCompile Include="Geometry\VoxelField.cpp" />
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
     <ClCompile Include="Collision\RTree.cpp" />
+    <ClCompile Include="Collision\TriangleMesh.cpp" />
   </ItemGroup>
 </Project>

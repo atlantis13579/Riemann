@@ -4,7 +4,7 @@
 
 #include <assert.h>
 #include <queue>
-#include "../CollisionPrimitive/TriangleMesh.h"
+#include "../CollisionPrimitive/Mesh.h"
 
 VoxelField::VoxelField()
 {
@@ -42,7 +42,7 @@ void VoxelField::MakeEmpty(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, flo
 }
 
 
-bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, TriangleMesh* _mesh)
+bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, Mesh* _mesh)
 {
 	m_SizeX = (int)(info.BV.GetSizeX() / info.VoxelSize + 0.5f);
 	m_SizeY = (int)(info.BV.GetSizeY() / info.VoxelHeight + 0.5f);
@@ -50,7 +50,7 @@ bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, Triangle
 
 	MakeEmpty(info.BV, m_SizeX, m_SizeY, m_SizeZ, info.VoxelSize, info.VoxelHeight);
 
-	const TriangleMesh &mesh = *_mesh;
+	const Mesh &mesh = *_mesh;
 	for (unsigned int i = 0; i < mesh.GetNumTriangles(); ++i)
 	{
 		Vector3d v0 = mesh(i, 0);
@@ -692,9 +692,9 @@ void	VoxelField::GenerateBitmapByData(std::vector<int>& output, vx_uint32 data) 
 	}
 }
 
-TriangleMesh* VoxelField::CreateDebugMesh(int x1, int x2, int z1, int z2) const
+Mesh* VoxelField::CreateDebugMesh(int x1, int x2, int z1, int z2) const
 {
-	TriangleMesh* mesh = new TriangleMesh;
+	Mesh* mesh = new Mesh;
 
 	for (int i = z1; i <= z2; ++i)
 	{

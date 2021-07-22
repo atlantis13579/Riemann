@@ -35,6 +35,13 @@ public:
 		}
 	}
 
+	TAABB3<T>(const TVector3<T>& v0, const TVector3<T>& v1, const TVector3<T>& v2)
+	{
+		Min = Max = v0;
+		this->Grow(v1);
+		this->Grow(v2);
+	}
+
 	TAABB3<T>(const std::vector<TVector3<T>> &v)
 	{
 		Min = Max = v[0];
@@ -63,6 +70,11 @@ public:
 		return TAABB3<T>(*this) += rhs;
 	}
 	
+	void SetEmpty()
+	{
+		*this = TAABB3<T>::Empty();
+	}
+
 	TAABB3<T>& Grow(const TVector3<T>& rhs)
 	{
 		Min.x = std::min(Min.x, rhs.x);
@@ -164,6 +176,11 @@ public:
 		return ((rhs.x > Min.x) && (rhs.x < Max.x) && (rhs.y > Min.y) && (rhs.y < Max.y) && (rhs.z > Min.z) && (rhs.z < Max.z));
 	}
 
+	inline bool IsInside(const TAABB3<T>& rhs) const
+	{
+		return ((rhs.Min.x <= Min.x) && (rhs.Max.x >= Max.x) && (rhs.Min.y <= Min.y) && (rhs.Max.y >= Max.y) && (rhs.Min.z <= Min.z) && (rhs.Max.z >= Max.z));
+	}
+
 	TAABB3<T> GetIntersection(const TAABB3<T>& rhs) const
 	{
 		if (!Intersect(rhs))
@@ -226,6 +243,11 @@ public:
 	static TAABB3<T> One()
 	{
 		return TAABB3<T>(TVector3<T>::Zero(), TVector3<T>::One());
+	}
+
+	static TAABB3<T> Empty()
+	{
+		return TAABB3<T>(FLT_MAX * 0.25f, -FLT_MAX * 0.25f);
 	}
 };
 

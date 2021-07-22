@@ -45,6 +45,14 @@ public:
 		w = v.w;
 	}
 
+	TVector4<T>(const TVector3<T>& v, float w)
+	{
+		x = v.x;
+		y = v.y;
+		z = v.z;
+		w = w;
+	}
+
 	TVector4<T>(T v)
 	{
 		x = v;

@@ -15,7 +15,7 @@
 #include "resource.h"
 
 #include "../Src/Collision/GeometryObject.h"
-#include "../Src/CollisionPrimitive/TriangleMesh.h"
+#include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorldRB.h"
 #include "../Renderer/Renderer.h"
@@ -120,7 +120,7 @@ void InitScene()
     Vector3d bridge_pos = Vector3d(737.0f, -29.0f, -1495.0f);
     if (0)
     {
-        TriangleMesh mesh;
+        Mesh mesh;
         mesh.LoadFlat("E:/Temp/iceland.flat");
 
         Transform* t = new Transform;
@@ -154,7 +154,7 @@ void InitScene()
 		std::vector<int> data;
 		field.IntersectYPlane(18.0f, data, 0.5f);
 
-        TriangleMesh* mesh = field.CreateDebugMesh(cx - 100, cx + 100, cz - 100, cz + 100);
+        Mesh* mesh = field.CreateDebugMesh(cx - 100, cx + 100, cz - 100, cz + 100);
 
         Transform* t = new Transform;
         t->SetScale(Vector3d(0.01f, 0.01f, 0.01f));
@@ -170,7 +170,7 @@ void InitScene()
         Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0, 0, 0), Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
         g_World->CreateRigidBody(aabb, rp);
 
-        TriangleMesh cube;
+        Mesh cube;
         cube.AddAABB(Vector3d(-1.0f, -1.0f, -1.0f), Vector3d(1.0f, 1.0f, 1.0f));
         g_Renderer->AddMesh(&cube, aabb->GetTransform());
     }

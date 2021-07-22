@@ -5,7 +5,7 @@
 #include <functional>
 #include <unordered_map>
 
-class TriangleMesh;
+class Mesh;
 
 struct VoxelizationInfo
 {
@@ -40,7 +40,7 @@ public:
 
 public:
 	void			MakeEmpty(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
-	bool			VoxelizationTrianglesSet(const VoxelizationInfo& info, TriangleMesh* mesh);
+	bool			VoxelizationTrianglesSet(const VoxelizationInfo& info, Mesh* mesh);
 	bool			VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
 	bool			MakeComplementarySet();
 	vx_uint64		Separate(const Vector3d& pos, vx_uint32 data, float IntersectThr);
@@ -83,7 +83,7 @@ public:
 	vx_uint64		EstimateMemoryUseage() const;
 	vx_uint64		EstimateMemoryUseageEx() const;
 
-	TriangleMesh*	CreateDebugMesh(int x1, int x2, int z1, int z2) const;
+	Mesh*	CreateDebugMesh(int x1, int x2, int z1, int z2) const;
 	bool			Verify() const;
 	void			ResetData();
 	void			GenerateHeightMap(std::vector<float>& heightmap) const;
