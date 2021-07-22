@@ -3,6 +3,7 @@
 #include "../Maths/Box3d.h"
 
 #include <functional>
+#include <string>
 #include <unordered_map>
 
 class Mesh;
@@ -12,6 +13,7 @@ struct VoxelizationInfo
 	float	VoxelSize;
 	float	VoxelHeight;
 	float   YMergeThr;
+	int		InterpMethod;
 	Box3d	BV;
 };
 
@@ -49,7 +51,9 @@ public:
 	void			Filter(std::function<bool(vx_uint32 data)> func);
 	void			FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& volumes, int TopN);
 
+	std::string		DebugString(int idx) const;
 	Voxel*			GetVoxel(const Vector3d& pos);
+	Voxel*			GetVoxel(int idx);
 	int				WorldSpaceToVoxelIndex(const Vector3d& pos) const;
 	int				WorldSpaceToVoxelSpaceY(float pos_y) const;
 	float			VoxelSpaceToWorldSpaceY(unsigned short y) const;

@@ -64,6 +64,19 @@ bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, Mesh* _m
 	return true;
 }
 
+
+bool VoxelField::IntersectYPlane(float y_value, std::vector<int>& output, float Thr)
+{
+	output.resize(m_SizeX * m_SizeZ);
+	for (int i = 0; i < m_SizeZ * m_SizeX; ++i)
+	{
+		Voxel* v = GetVoxelByY(m_Fields[i], y_value, Thr);
+		output[i] = v ? v->data : 0;
+	}
+
+	return true;
+}
+
 Voxel* VoxelField::GetVoxelByY(Voxel* Base, float y, float Thr)
 {
 	Voxel* p = Base;
@@ -106,15 +119,35 @@ Voxel*	VoxelField::GetVoxel(const Vector3d& pos)
 	return GetVoxelByY(m_Fields[idx], pos.y, 1e-3f);
 }
 
-template<typename T>
-T		vx_clamp(const T X, const T Min, const T Max)
+Voxel*	VoxelField::GetVoxel(int idx)
+{
+	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
+		return nullptr;
+	return m_Fields[idx];
+}
+
+std::string VoxelField::DebugString(int idx) const
+{
+	std::string str = "";
+	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
+		return std::move(str);
+	Voxel* v = m_Fields[idx];
+	while (v)
+	{
+		str += "[" + std::to_string(v->ymin) + "," + std::to_string(v->ymax) + "]";
+		v = v->next;
+	}
+}
+
+template<typename T> 
+T vx_clamp(const T X, const T Min, const T Max)
 {
 	return X < Min ? Min : X < Max ? X : Max;
 }
 
 int		VoxelField::WorldSpaceToVoxelIndex(const Vector3d& pos) const
 {
-	const int x = vx_clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int x = vx_clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
 	const int z = vx_clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
 	return z * m_SizeX + x;
 }
@@ -419,54 +452,33 @@ bool VoxelField::MakeComplementarySet()
 
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
-		unsigned short ylow = 0;
-		Voxel *p = m_Fields[i], *prev = nullptr;
-		if (p && p->ymin == 0)
+		Voxel* old = m_Fields[i];
+
+		m_Fields[i] = nullptr;
+
+		Voxel* p = old;
+		if (p && p->ymin > 0)
 		{
-			if (p->ymax >= m_SizeY - 1)
-			{
-				FreeVoxel(m_Fields[i]);
-				m_Fields[i] = nullptr;
-				continue;
-			}
-			ylow = p->ymax + 1;
-			p = p->next;
-			FreeVoxel(m_Fields[i]);
-			m_Fields[i] = p;
+			AddVoxel(i, 0, p->ymin - 1, 0.0f);
 		}
 
 		while (p)
 		{
-			auto t = p->ymin - 1;
-			p->ymin = ylow;
-			ylow = p->ymax + 1;
-			p->ymax = t;
-			prev = p;
+			AddVoxel(i, p->ymax + 1, p->next ? (p->next->ymin - 1) : m_SizeY - 1, 0.0f);
 			p = p->next;
 		}
 
-		if (yhigh != ylow)
+		p = old;
+		while (p)
 		{
-			p = AllocVoxel();
-			if (p == nullptr)
-			{
-				return false;
-			}
-			p->data = 0;
-			p->ymin = ylow;
-			p->ymax = yhigh - 1;
-			p->next = nullptr;
+			Voxel* next = p->next;
+			FreeVoxel(p);
+			p = next;
 		}
-
-		if (prev)
-			prev->next = p;
-		else
-			m_Fields[i] = p;
 	}
 
 	return true;
 }
-
 
 void		VoxelField::Filter(std::function<bool(vx_uint32 data)> func)
 {
@@ -552,9 +564,10 @@ vx_uint64	VoxelField::Separate(const Vector3d& pos, vx_uint32 data, float Inters
 	{
 		return 0;
 	}
-	unsigned short Thr = (unsigned short)std::max(1, (int)floorf(IntersectThr * m_InvVoxelHeight));
+	unsigned short Thr = (unsigned short)ceilf(IntersectThr * m_InvVoxelHeight);
 	return SeparateImpl(idx, p, data, Thr);
 }
+
 
 vx_uint64	VoxelField::SeparateImpl(int idx, Voxel* base, vx_uint32 data, unsigned short Thr)
 {
@@ -578,7 +591,7 @@ vx_uint64	VoxelField::SeparateImpl(int idx, Voxel* base, vx_uint32 data, unsigne
 			Voxel* nv = m_Fields[nidx];
 			while (nv)
 			{
-				if (nv->data == 0 && VoxelIntersects(next.first, nv, 1))
+				if (nv->data == 0 && VoxelIntersects(next.first, nv, Thr))
 				{
 					nv->data = next.first->data;
 					queue_vx.emplace(nv, nidx);
@@ -589,7 +602,6 @@ vx_uint64	VoxelField::SeparateImpl(int idx, Voxel* base, vx_uint32 data, unsigne
 	}
 	return voxel_count;
 }
-
 
 int		VoxelField::SolveTopology(float IntersectThr, std::unordered_map<int, vx_uint64>* volumes)
 {
@@ -613,18 +625,6 @@ int		VoxelField::SolveTopology(float IntersectThr, std::unordered_map<int, vx_ui
 	}
 
 	return SpaceFound;
-}
-
-bool VoxelField::IntersectYPlane(float y_value, std::vector<int>& output, float Thr)
-{
-	output.resize(m_SizeX * m_SizeZ);
-	for (int i = 0; i < m_SizeZ * m_SizeX; ++i)
-	{
-		Voxel *v = GetVoxelByY(m_Fields[i], y_value, Thr);
-		output[i] = v ? v->data : 0;
-	}
-
-	return true;
 }
 
 int		VoxelField::CalculateNumFields() const
@@ -696,6 +696,11 @@ Mesh* VoxelField::CreateDebugMesh(int x1, int x2, int z1, int z2) const
 {
 	Mesh* mesh = new Mesh;
 
+	z1 = std::max(z1, 0);
+	z2 = std::min(z2, m_SizeZ - 1);
+	x1 = std::max(x1, 0);
+	x2 = std::min(x2, m_SizeX - 1);
+
 	for (int i = z1; i <= z2; ++i)
 	{
 		Vector3d Bmin, Bmax;
@@ -711,7 +716,7 @@ Mesh* VoxelField::CreateDebugMesh(int x1, int x2, int z1, int z2) const
 			while (v)
 			{
 				Bmin.y = m_BV.Min.y + m_VoxelHeight * v->ymin;
-				Bmax.y = m_BV.Min.y + m_VoxelHeight * v->ymax;
+				Bmax.y = m_BV.Min.y + m_VoxelHeight * (v->ymax + 1);
 				mesh->AddAABB(Bmin, Bmax);
 
 				v = v->next;

@@ -93,7 +93,7 @@ void InitScene()
     RigidBodyParam rp;
     g_World = new PhysicsWorldRB(param);
 
-    if (1)
+    if (0)
     {
         Vertex1 Grounds_vertices[] =
         {
@@ -116,6 +116,7 @@ void InitScene()
         g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));
     }
 
+    Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
     Vector3d house_pos = Vector3d(-2222.0f, -81.0f, -773.0f);
     Vector3d bridge_pos = Vector3d(737.0f, -29.0f, -1495.0f);
     if (0)
@@ -135,32 +136,35 @@ void InitScene()
     if (0)
     {
         VoxelField field;
-        field.SerializeFrom("E:/Temp/japan.voxel");
+
+        field.SerializeFrom("E:/Temp/iceland.voxel");
+
+        int idx = field.WorldSpaceToVoxelIndex(water_pos);
+		int cz = idx / field.GetSizeX();
+		int cx = idx - field.GetSizeX() * cz;
+		Voxel* v = field.GetVoxel(idx);
+
         field.MakeComplementarySet();
 
         Vector3d pos = field.GetBoundingVolume().GetCenter();
-        pos.y = 900.0f;
-
-        field.Separate(pos, 1, 0.5f);
+	    pos.y -= 1.0f;
+        field.Separate(pos, 1, 0.1f);
         field.Filter([] (vx_uint32 data) { return data != 1; });
-        field.MakeComplementarySet();
-
-        int idx = field.WorldSpaceToVoxelIndex(house_pos);
-        int cz = idx / field.GetSizeX();
-        int cx = idx - field.GetSizeX() * cz;
-
-        float water_y = field.VoxelSpaceToWorldSpaceY(1274);
+        // field.MakeComplementarySet();
 
 		std::vector<int> data;
-		field.IntersectYPlane(18.0f, data, 0.5f);
+		field.IntersectYPlane(18.0f, data, 4.0f);
 
-        Mesh* mesh = field.CreateDebugMesh(cx - 100, cx + 100, cz - 100, cz + 100);
+        Mesh* draw_mesh = field.CreateDebugMesh(cx - 100, cx + 100, cz - 100, cz + 100);
+
+        float water_level = 18.0f;
+        // mesh->AddAABB(Vector3d(-2000.0f, water_level - 0.01f, -2000.0f), Vector3d(2000.0f, water_level + 0.01f, 2000.0f));
 
         Transform* t = new Transform;
-        t->SetScale(Vector3d(0.01f, 0.01f, 0.01f));
-        g_CamCenter = t->LocalToWorld(house_pos);
+        t->SetScale(Vector3d(0.02f, 0.02f, 0.02f));
+        g_CamCenter = t->LocalToWorld(water_pos);
 
-        g_Renderer->AddMesh(mesh, t);
+        g_Renderer->AddMesh(draw_mesh, t);
     }
 
     if (1)
@@ -300,7 +304,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
     {
         auto zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
         float Scale = wParam & MK_CONTROL ? 10.0f : 1.0f;
-        Scale *= 1.01f;
+        Scale *= 1.1f;
         if (zDelta > 0)
             Scale = 1.0f / Scale;
         g_CamParam.z *= Scale;

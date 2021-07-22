@@ -36,13 +36,13 @@ int Filter(T* Cell, int nX, int nY, std::function<bool(T Val)> filter_func, bool
 template<typename T>
 int EQFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
 {
-	return Filter(Cell, nX, nY, [=](T _Val)->bool { return _Val == Value; }, Reverse);
+	return Filter<T>(Cell, nX, nY, [=](T _Val)->bool { return _Val == Value; }, Reverse);
 }
 
 template<typename T>
 int GEFilter(T* Cell, int nX, int nY, T Value, bool Reverse)
 {
-	return Filter(Cell, nX, nY, [=](T _Val)->bool { return _Val >= Value; }, Reverse);
+	return Filter<T>(Cell, nX, nY, [=](T _Val)->bool { return _Val >= Value; }, Reverse);
 }
 
 template<typename T, int Kernal_Size>
