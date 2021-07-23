@@ -446,10 +446,33 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 	return true;
 }
 
+bool VoxelField::VoxelizationYPlane(float world_y)
+{
+	unsigned short ymin = (unsigned short)WorldSpaceToVoxelSpaceY(world_y);
+	unsigned short ymax = (unsigned short)WorldSpaceToVoxelSpaceY(world_y);
+	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
+	{
+		AddVoxel(i, ymin, ymax, 0.0f);
+	}
+}
+
+bool VoxelField::VoxelizationCube(const Box3d& cube)
+{
+	const int x0 = vx_clamp((int)((cube.Min.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
+	const int x1 = vx_clamp((int)((cube.Max.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
+	const int z0 = vx_clamp((int)((cube.Min.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int z1 = vx_clamp((int)((cube.Max.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const unsigned short y0 = (unsigned short)WorldSpaceToVoxelSpaceY(cube.Min.y);
+	const unsigned short y1 = (unsigned short)WorldSpaceToVoxelSpaceY(cube.Max.y);
+	for (int z = z0; z <= z1; ++z)
+	for (int x = x0; x <= x1; ++x)
+	{
+		AddVoxel(z * m_SizeX + x, y0, y1, 0.0f);
+	}
+}
+
 bool VoxelField::MakeComplementarySet()
 {
-	unsigned short yhigh = m_SizeY;
-
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
 		Voxel* old = m_Fields[i];
@@ -457,9 +480,11 @@ bool VoxelField::MakeComplementarySet()
 		m_Fields[i] = nullptr;
 
 		Voxel* p = old;
-		if (p && p->ymin > 0)
+
+		unsigned short first_y = p ? p->ymin : m_SizeY;
+		if (first_y > 0)
 		{
-			AddVoxel(i, 0, p->ymin - 1, 0.0f);
+			AddVoxel(i, 0, first_y - 1, 0.0f);
 		}
 
 		while (p)

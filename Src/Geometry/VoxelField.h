@@ -44,6 +44,8 @@ public:
 	void			MakeEmpty(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
 	bool			VoxelizationTrianglesSet(const VoxelizationInfo& info, Mesh* mesh);
 	bool			VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
+	bool			VoxelizationYPlane(float world_y);
+	bool			VoxelizationCube(const Box3d& cube);
 	bool			MakeComplementarySet();
 	vx_uint64		Separate(const Vector3d& pos, vx_uint32 data, float IntersectThr);
 	int				SolveTopology(float IntersectThr, std::unordered_map<int, vx_uint64>* volumes = nullptr);
