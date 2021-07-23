@@ -50,8 +50,11 @@ public:
 	vx_uint64		Separate(const Vector3d& pos, vx_uint32 data, float IntersectThr);
 	int				SolveTopology(float IntersectThr, std::unordered_map<int, vx_uint64>* volumes = nullptr);
 	bool			IntersectYPlane(float y_value, std::vector<int>& output, float Thr);
-	void			Filter(std::function<bool(vx_uint32 data)> func);
+	void			Filter(std::function<bool(Voxel* v)> func);
+	void			FilterByY(float world_y);
+	void			FilterByData(unsigned int data);
 	void			FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& volumes, int TopN);
+	void			Traversal(std::function<bool(Voxel* v)> callback);
 
 	std::string		DebugString(int idx) const;
 	Voxel*			GetVoxel(const Vector3d& pos);
@@ -89,9 +92,8 @@ public:
 	vx_uint64		EstimateMemoryUseage() const;
 	vx_uint64		EstimateMemoryUseageEx() const;
 
-	Mesh*	CreateDebugMesh(int x1, int x2, int z1, int z2) const;
-	bool			Verify() const;
-	void			ResetData();
+	Mesh*			CreateDebugMesh(int x1, int x2, int z1, int z2) const;
+	bool			Verify();
 	void			GenerateHeightMap(std::vector<float>& heightmap) const;
 	void			GenerateBitmapByLevel(std::vector<int>& levels, int* level_max) const;
 	void			GenerateBitmapByData(std::vector<int>& output, vx_uint32 data) const;

@@ -137,6 +137,7 @@ std::string VoxelField::DebugString(int idx) const
 		str += "[" + std::to_string(v->ymin) + "," + std::to_string(v->ymax) + "]";
 		v = v->next;
 	}
+	return str;
 }
 
 template<typename T> 
@@ -454,6 +455,7 @@ bool VoxelField::VoxelizationYPlane(float world_y)
 	{
 		AddVoxel(i, ymin, ymax, 0.0f);
 	}
+	return true;
 }
 
 bool VoxelField::VoxelizationCube(const Box3d& cube)
@@ -469,6 +471,7 @@ bool VoxelField::VoxelizationCube(const Box3d& cube)
 	{
 		AddVoxel(z * m_SizeX + x, y0, y1, 0.0f);
 	}
+	return true;
 }
 
 bool VoxelField::MakeComplementarySet()
@@ -505,14 +508,14 @@ bool VoxelField::MakeComplementarySet()
 	return true;
 }
 
-void		VoxelField::Filter(std::function<bool(vx_uint32 data)> func)
+void		VoxelField::Filter(std::function<bool(Voxel* v)> func)
 {
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
 		Voxel* p = m_Fields[i], * prev = nullptr;
 		while (p)
 		{
-			while (func(p->data))
+			while (func(p))
 			{
 				if (prev)
 					prev->next = p->next;
@@ -534,6 +537,23 @@ end_while:
 	}
 }
 
+void VoxelField::FilterByY(float world_y)
+{
+	const unsigned short ny = (unsigned short)WorldSpaceToVoxelSpaceY(world_y);
+	Filter([=](Voxel* v) -> bool
+		{
+			return v->ymin <= ny;
+		});
+}
+
+void VoxelField::FilterByData(unsigned int data)
+{
+	Filter([=](Voxel* v) -> bool
+		{
+			return v->data != data;
+		});
+}
+
 void		VoxelField::FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& volumes, int TopN)
 {
 	if ((int)volumes.size() > TopN)
@@ -546,9 +566,9 @@ void		VoxelField::FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& v
 		std::sort(volume_list.begin(), volume_list.end());
 
 		vx_uint64 area_thr = volume_list[volume_list.size() - TopN];
-		auto filter_func = [&volumes, area_thr](vx_uint32 data)
+		auto filter_func = [&volumes, area_thr](Voxel *v)
 		{
-			auto it = volumes.find(data);
+			auto it = volumes.find(v->data);
 			if (it != volumes.end() && it->second <= area_thr)
 			{
 				return true;
@@ -559,6 +579,20 @@ void		VoxelField::FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& v
 	}
 }
 
+void	VoxelField::Traversal(std::function<bool(Voxel* v)> callback)
+{
+	for (auto v : m_Fields)
+	{
+		while (v)
+		{
+			if (!callback(v))
+			{
+				return;
+			}
+			v = v->next;
+		}
+	}
+}
 
 // X 0 X
 // 3 X 1 
@@ -751,42 +785,24 @@ Mesh* VoxelField::CreateDebugMesh(int x1, int x2, int z1, int z2) const
 	return mesh;
 }
 
-bool	VoxelField::Verify() const
+bool	VoxelField::Verify()
 {
-	for (const Voxel* v : m_Fields)
-	{
-		const Voxel* prev = nullptr;
-		while (v)
+	Traversal([](Voxel* v) -> bool
 		{
 			if (v->ymin > v->ymax)
 			{
 				return false;
 			}
 
-			if (prev && prev->ymax >= v->ymin)
+			if (v->next && v->ymax >= v->next->ymin)
 			{
 				return false;
 			}
-			
-			prev = v;
-			v = v->next;
-		}
-	}
+
+			return true;
+		});
 	return true;
 }
-
-void	VoxelField::ResetData()
-{
-	for (auto v : m_Fields)
-	{
-		while (v)
-		{
-			v->data = 0;
-			v = v->next;
-		}
-	}
-}
-
 
 bool	VoxelField::SerializeTo(const char* filename)
 {
