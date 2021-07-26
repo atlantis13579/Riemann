@@ -508,8 +508,9 @@ bool VoxelField::MakeComplementarySet()
 	return true;
 }
 
-void		VoxelField::Filter(std::function<bool(Voxel* v)> func)
+int			VoxelField::Filter(std::function<bool(Voxel* v)> func)
 {
+	int Count = 0;
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
 		Voxel* p = m_Fields[i], * prev = nullptr;
@@ -517,6 +518,7 @@ void		VoxelField::Filter(std::function<bool(Voxel* v)> func)
 		{
 			while (func(p))
 			{
+				++Count;
 				if (prev)
 					prev->next = p->next;
 				else
@@ -535,20 +537,21 @@ void		VoxelField::Filter(std::function<bool(Voxel* v)> func)
 end_while:
 		;
 	}
+	return Count;
 }
 
-void VoxelField::FilterByY(float world_y)
+int			VoxelField::FilterByY(float world_y)
 {
 	const unsigned short ny = (unsigned short)WorldSpaceToVoxelSpaceY(world_y);
-	Filter([=](Voxel* v) -> bool
+	return Filter([=](Voxel* v) -> bool
 		{
 			return v->ymin <= ny;
 		});
 }
 
-void VoxelField::FilterByData(unsigned int data)
+int			VoxelField::FilterByData(unsigned int data)
 {
-	Filter([=](Voxel* v) -> bool
+	return Filter([=](Voxel* v) -> bool
 		{
 			return v->data != data;
 		});
@@ -579,7 +582,7 @@ void		VoxelField::FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& v
 	}
 }
 
-void	VoxelField::Traversal(std::function<bool(Voxel* v)> callback)
+void	VoxelField::TraversalVoxel(std::function<bool(Voxel* v)> callback)
 {
 	for (auto v : m_Fields)
 	{
@@ -594,6 +597,16 @@ void	VoxelField::Traversal(std::function<bool(Voxel* v)> callback)
 	}
 }
 
+void	VoxelField::TraversalField(std::function<void(Voxel* v)> callback)
+{
+	for (auto v : m_Fields)
+	{
+		if (v)
+		{
+			callback(v);
+		}
+	}
+}
 // X 0 X
 // 3 X 1 
 // X 2 X
@@ -706,19 +719,20 @@ vx_uint64 VoxelField::EstimateMemoryUseageEx() const
 	return m_NumVoxels * sizeof(VoxelFast) + m_SizeX * m_SizeZ * sizeof(void*);
 }
 
-void	VoxelField::GenerateHeightMap(std::vector<float>& bitmap) const
+void	VoxelField::GenerateHeightMap(std::vector<float>& heightmap) const
 {
-	bitmap.resize(m_SizeX * m_SizeZ);
-	memset(&bitmap[0], 0, sizeof(bitmap[0]) * m_SizeX * m_SizeZ);
+	heightmap.resize(m_SizeX * m_SizeZ);
 
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
+		heightmap[i] = m_BV.Min.y;
+
 		Voxel* v = m_Fields[i];
 		while (v)
 		{
 			if (v->next == nullptr)
 			{
-				bitmap[i] = m_BV.Min.y + (v->ymax + 1) * m_VoxelHeight;
+				heightmap[i] = m_BV.Min.y + (v->ymax + 1) * m_VoxelHeight;
 				break;
 			}
 			v = v->next;
@@ -787,7 +801,7 @@ Mesh* VoxelField::CreateDebugMesh(int x1, int x2, int z1, int z2) const
 
 bool	VoxelField::Verify()
 {
-	Traversal([](Voxel* v) -> bool
+	TraversalVoxel([](Voxel* v) -> bool
 		{
 			if (v->ymin > v->ymax)
 			{

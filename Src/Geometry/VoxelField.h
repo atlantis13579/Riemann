@@ -50,11 +50,12 @@ public:
 	vx_uint64		Separate(const Vector3d& pos, vx_uint32 data, float IntersectThr);
 	int				SolveTopology(float IntersectThr, std::unordered_map<int, vx_uint64>* volumes = nullptr);
 	bool			IntersectYPlane(float y_value, std::vector<int>& output, float Thr);
-	void			Filter(std::function<bool(Voxel* v)> func);
-	void			FilterByY(float world_y);
-	void			FilterByData(unsigned int data);
+	int				Filter(std::function<bool(Voxel* v)> func);
+	int				FilterByY(float world_y);
+	int				FilterByData(unsigned int data);
 	void			FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& volumes, int TopN);
-	void			Traversal(std::function<bool(Voxel* v)> callback);
+	void			TraversalVoxel(std::function<bool(Voxel* v)> callback);
+	void			TraversalField(std::function<void(Voxel* v)> callback);
 
 	std::string		DebugString(int idx) const;
 	Voxel*			GetVoxel(const Vector3d& pos);
