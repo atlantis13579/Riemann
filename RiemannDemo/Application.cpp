@@ -31,7 +31,7 @@ HINSTANCE               g_hInst = nullptr;
 HWND                    g_hWnd = nullptr;
 Renderer*               g_Renderer = nullptr;
 Vector3d    g_CamCenter = Vector3d::Zero();
-Vector3d    g_CamParam = Vector3d(1.0f, 1.0f, 5.0f);
+Vector3d    g_CamParam = Vector3d(1.0f, 1.0f, 10.0f);
 
 LRESULT CALLBACK    WndProc( HWND, UINT, WPARAM, LPARAM );
 
@@ -89,7 +89,7 @@ void UpdateCamera()
 void InitScene()
 {
     PhysicsWorldRBParam param;
-    param.Gravity = Vector3d(0, -0.0098f, 0);
+    param.Gravity = Vector3d(0, -9.8f, 0);
     RigidBodyParam rp;
     g_World = new PhysicsWorldRB(param);
 
@@ -116,6 +116,7 @@ void InitScene()
         g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));
     }
 
+    // Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
     Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
     Vector3d house_pos = Vector3d(-2222.0f, -81.0f, -773.0f);
     Vector3d bridge_pos = Vector3d(737.0f, -29.0f, -1495.0f);
@@ -139,7 +140,9 @@ void InitScene()
 
         field.SerializeFrom("E:/Temp/iceland.voxel");
 
-        int idx = field.WorldSpaceToVoxelIndex(water_pos);
+        Vector3d c = Vector3d(-1676.0f, 20.0f, 1410.9f);
+
+        int idx = field.WorldSpaceToVoxelIndex(c);
 		int cz = idx / field.GetSizeX();
 		int cx = idx - field.GetSizeX() * cz;
 		Voxel* v = field.GetVoxel(idx);
@@ -149,20 +152,28 @@ void InitScene()
         Vector3d pos = field.GetBoundingVolume().GetCenter();
 	    pos.y -= 1.0f;
         field.Separate(pos, 1, 0.1f);
-        field.Filter([] (vx_uint32 data) { return data != 1; });
-        // field.MakeComplementarySet();
+        field.FilterByData(1);
+        field.MakeComplementarySet();
 
 		std::vector<int> data;
-		field.IntersectYPlane(18.0f, data, 4.0f);
+		field.IntersectYPlane(18.0f, data, 2.0f);
 
         Mesh* draw_mesh = field.CreateDebugMesh(cx - 100, cx + 100, cz - 100, cz + 100);
 
-        float water_level = 18.0f;
-        // mesh->AddAABB(Vector3d(-2000.0f, water_level - 0.01f, -2000.0f), Vector3d(2000.0f, water_level + 0.01f, 2000.0f));
+        float water_level = 19.9f;
+        float water_level2 = water_level + 1.0f;
+
+        int idx_water_level = field.WorldSpaceToVoxelSpaceY(water_level);
+        int idx_water_level2 = field.WorldSpaceToVoxelSpaceY(water_level);
+
+        Vector3d pmin = Vector3d(c.x - 200.0f, water_level, c.z - 200.0f);
+        Vector3d pmax = Vector3d(c.x + 200.0f, water_level, c.z + 200.0f);
+        draw_mesh->AddAABB(Vector3d(pmin.x, water_level - 0.01f, pmin.z), Vector3d(pmax.x, water_level + 0.01f, pmax.z));
+        draw_mesh->AddAABB(Vector3d(pmin.x, water_level2 - 0.01f, pmin.z), Vector3d(pmax.x, water_level2 + 0.01f, pmax.z));
 
         Transform* t = new Transform;
         t->SetScale(Vector3d(0.02f, 0.02f, 0.02f));
-        g_CamCenter = t->LocalToWorld(water_pos);
+        g_CamCenter = t->LocalToWorld(c);
 
         g_Renderer->AddMesh(draw_mesh, t);
     }
@@ -171,11 +182,11 @@ void InitScene()
     {
         rp.mass = 1.0f;
         rp.Static = false;
-        Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0, 0, 0), Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
+        Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 10.0f, 0.0f), Vector3d(-0.5f, -0.5f, -0.5f), Vector3d(0.5f, 0.5f, 0.5f));
         g_World->CreateRigidBody(aabb, rp);
 
         Mesh cube;
-        cube.AddAABB(Vector3d(-1.0f, -1.0f, -1.0f), Vector3d(1.0f, 1.0f, 1.0f));
+        cube.AddAABB(Vector3d(-0.5f, -0.5f, -0.5f), Vector3d(0.5f, 0.5f, 0.5f));
         g_Renderer->AddMesh(&cube, aabb->GetTransform());
     }
 

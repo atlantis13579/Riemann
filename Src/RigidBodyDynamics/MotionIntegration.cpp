@@ -16,10 +16,9 @@ void MotionIntegration::Integrate(std::vector<Geometry*> Entities, float dt)
 			continue;
 		}
 
-		Vector3d Force = Rigid->Force + Vector3d(0, -0.0098f, 0);
-		Rigid->Velocity = Force / Rigid->mass;
-		Rigid->P += Rigid->Velocity * dt;
-		Geom->SetPosition(Rigid->P);
+		Rigid->P = Rigid->Force * dt;
+		Rigid->X += (Rigid->P / Rigid->mass) * dt;
+		Geom->SetPosition(Rigid->X);
 
 		// Physically Based Modeling by David Baraff 
 		// https://www.cs.cmu.edu/~baraff/sigcourse/
@@ -27,13 +26,16 @@ void MotionIntegration::Integrate(std::vector<Geometry*> Entities, float dt)
 		// https://www.ashwinnarayan.com/post/how-to-integrate-quaternions/
 		// ----------------
 
-		Quaternion quat = Geom->GetRotationQuat();
+		Rigid->L += Rigid->Torque * dt;
+		Matrix3d R = Rigid->Q.ToRotationMatrix();
+		Matrix3d invInertiaWorld = R * Rigid->invInertia * R.Transpose();
+		Vector3d AngularVelocity = invInertiaWorld * Rigid->L;
+		Quaternion dQ = Quaternion(0.0f, AngularVelocity) * Rigid->Q * 0.5f;		// Q' = 0.5 * AngularVelocity * Q 
+		Rigid->Q += dQ * dt;
+		Geom->SetRotationQuat(Rigid->Q);
 
-		Matrix3d mat = quat.ToRotationMatrix();
-		Matrix3d invInertia = mat * Rigid->invInertia * mat.Transpose();
-		Vector3d omega = invInertia * Rigid->L;
-		Quaternion delta(1.0f, omega.x * dt * 0.5f, omega.y * dt * 0.5f, omega.z * dt * 0.5f);
-		Quaternion target = delta * quat;
-		Geom->SetRotationQuat(target);
+		Rigid->Torque = 0.0f;		// TODO
 	}
+
+
 }

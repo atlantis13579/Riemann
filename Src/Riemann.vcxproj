@@ -90,6 +90,7 @@
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
     <ClInclude Include="LinearSystem\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />
+    <ClInclude Include="Optimization\SGD.h" />
     <ClInclude Include="RigidBodyDynamics\WarmStart.h" />
     <ClInclude Include="Geometry\ConvexHull2D.h" />
     <ClInclude Include="Geometry\Tetrahedral.h" />

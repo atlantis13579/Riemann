@@ -91,17 +91,30 @@ public:
 
 	Quaternion operator+(const Quaternion& q)
 	{
-		return Quaternion(s + q.s, Vector3d(v.x + q.v.x, v.y + q.v.y, v.z + q.v.z));
+		return Quaternion(w + q.w, x + q.x, y + q.y, z + q.z);
 	}
 
-	Quaternion operator-(Quaternion& q)
+	Quaternion operator-(const Quaternion& q)
 	{
-		return Quaternion(s - q.s, Vector3d(v.x - q.v.x, v.y - q.v.y, v.z - q.v.z));
+		return Quaternion(w - q.w, x - q.x, y - q.y, z - q.z);
 	}
 
-	Quaternion operator*(Quaternion& q)
+	Quaternion operator*(float k) const
 	{
-		return Quaternion(s*q.s - v.Dot(q.v), Vector3d(q.v*s + v * q.s + v.Cross(q.v)));
+		return Quaternion(w * k, v.x * k, v.y * k, v.z * k);
+	}
+
+	Quaternion operator*(const Quaternion& q)
+	{
+		return Quaternion(w * q.w - x * q.x - y * q.y - z * q.z,
+						y * q.z - z * q.y + x * q.w + w * q.x,
+						z * q.x - x * q.z + y * q.w + w * q.y,
+						x * q.y - y * q.x + z * q.w + w * q.z);
+	}
+	
+	Quaternion operator/(const Quaternion& q)
+	{
+		return *this * q.Inverse();
 	}
 
 	Vector3d operator*(Vector3d& vec)
@@ -110,15 +123,33 @@ public:
 		return vec + t * s + v.Cross(t);
 	}
 
-	Quaternion operator*(float k) const
+	Quaternion& operator+=(const Quaternion& q)
 	{
-		return Quaternion(s*k, v.x*k, v.y*k, v.z*k);
+		w += q.w;
+		x += q.x;
+		y += q.y;
+		z += q.z;
+		return *this;
+	}
+
+	Quaternion& operator-=(const Quaternion& q)
+	{
+		w -= q.w;
+		x -= q.x;
+		y -= q.y;
+		z -= q.z;
+		return *this;
 	}
 
 	Quaternion& operator*=(const Quaternion& q)
 	{
-		s = q.s;
-		v = q.v;
+		*this = *this * q;
+		return *this;
+	}
+
+	Quaternion& operator/=(const Quaternion& q)
+	{
+		*this *= q.Inverse();
 		return *this;
 	}
 
@@ -192,5 +223,10 @@ public:
 		return unitZ;
 	}
 };
+
+inline Quaternion operator* (float v, const Quaternion& q)
+{
+	return q * v;
+}
 
 static_assert(sizeof(Quaternion) == 16, "sizeof Quaternion is not valid");

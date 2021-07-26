@@ -87,6 +87,7 @@
     <ClInclude Include="Collision\RTree.h" />
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="Collision\TriangleMesh.h" />
+    <ClInclude Include="Optimization\SGD.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">

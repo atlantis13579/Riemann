@@ -47,6 +47,7 @@ public:
 	Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity = nullptr);
 	~Geometry();
 
+	Box3d					GetBoundingVolumeLocalSpace() const;
 	const Box3d&			GetBoundingVolumeWorldSpace() const;
 	Vector3d				GetSupportWorldSpace(const Vector3d& Dir);
 
@@ -70,7 +71,6 @@ public:
 	Matrix3d				GetInverseInertia(float Mass) const;
 
 private:
-	Box3d					GetBoundingVolumeLocalSpace() const;
 	Vector3d				GetSupportLocalSpace(const Vector3d& Dir) const;
 
 private:

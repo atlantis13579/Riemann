@@ -33,14 +33,14 @@ void WarmStart::Contact(Geometry* Geom1, Geometry* Geom2, ContactResult& contact
 
     if (!rigidBody1->Static && !rigidBody1->Sleep)
     {
-        rigidBody1->Velocity = rigidBody1->Velocity - collisionImpulse / rigidBody1->mass;
-        rigidBody1->AngularVelocity = rigidBody1->AngularVelocity - collisionImpulseVal * (rigidBody1->invInertia * relativePos1.Cross(normal));
+        rigidBody1->P = rigidBody1->P - collisionImpulse;
+        rigidBody1->L = rigidBody1->L - collisionImpulseVal * relativePos1.Cross(normal);
     }
 
     if (!rigidBody2->Static && !rigidBody2->Sleep)
     {
-        rigidBody2->Velocity = rigidBody2->Velocity + collisionImpulse / rigidBody2->mass;
-        rigidBody2->AngularVelocity = rigidBody2->AngularVelocity - collisionImpulseVal * (rigidBody2->invInertia * relativePos2.Cross(normal));
+        rigidBody2->P = rigidBody2->P + collisionImpulse;
+        rigidBody2->L = rigidBody2->L - collisionImpulseVal * relativePos2.Cross(normal);
     }
 
     // friction impulse
@@ -50,14 +50,14 @@ void WarmStart::Contact(Geometry* Geom1, Geometry* Geom2, ContactResult& contact
 
     if (!rigidBody1->Static && !rigidBody1->Sleep)
     {
-        rigidBody1->Velocity = rigidBody1->Velocity - frictionImpulse / rigidBody1->mass;
-        rigidBody1->AngularVelocity = rigidBody1->AngularVelocity - frictionImpulseVal * (rigidBody1->invInertia * relativePos1.Cross(tangent));
+        rigidBody1->P = rigidBody1->P - frictionImpulse;
+        rigidBody1->L = rigidBody1->L - frictionImpulseVal * relativePos1.Cross(tangent);
     }
 
     if (!rigidBody2->Static && !rigidBody2->Sleep)
     {
-        rigidBody2->Velocity = rigidBody2->Velocity + frictionImpulse / rigidBody2->mass;
-        rigidBody2->AngularVelocity = rigidBody2->AngularVelocity - frictionImpulseVal * (rigidBody2->invInertia * relativePos2.Cross(tangent));
+        rigidBody2->P = rigidBody2->P + frictionImpulse;
+        rigidBody2->L = rigidBody2->L - frictionImpulseVal * relativePos2.Cross(tangent);
     }
 }
 
