@@ -10,7 +10,9 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License (MIT).
 //--------------------------------------------------------------------------------------
+#include <chrono>
 #include <string>
+#include <thread>
 #include <windows.h>
 #include "resource.h"
 
@@ -93,7 +95,7 @@ void InitScene()
     RigidBodyParam rp;
     g_World = new PhysicsWorldRB(param);
 
-    if (0)
+    if (1)
     {
         Vertex1 Grounds_vertices[] =
         {
@@ -214,6 +216,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
     InitScene();
     UpdateCamera();
 
+    auto last = std::chrono::steady_clock::now();
+
     // Main message loop
     MSG msg = {0};
     while( WM_QUIT != msg.message )
@@ -225,8 +229,18 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         }
         else
         {
-            g_World->Simulate(0.016f);
-            g_Renderer->Render();
+            auto curr = std::chrono::steady_clock::now();
+            std::chrono::duration<double> elapsed_seconds = curr - last;
+            if (elapsed_seconds < std::chrono::milliseconds(16))
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+            else
+            {
+				g_World->Simulate(0.016f);
+				g_Renderer->Render();
+                last = curr;
+            }
         }
     }
 

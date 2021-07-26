@@ -17,7 +17,7 @@ RigidBody* RigidBody::CreateRigidBody(Geometry* Geom, const RigidBodyParam& para
 	Rigid->Sleep = Rigid->Static;
 
 	// TODO, Temp
-	Rigid->Force = Vector3d(0, -9.8f, 0) * 0.2f;
+	Rigid->Force = Vector3d(0, -9.8f, 0);
 	Rigid->Torque = Rigid->Force.Cross(Vector3d::UnitZ()) * Geom->GetBoundingVolumeLocalSpace().GetSizeZ() * 10000.0f;
 	return Rigid;
 }
