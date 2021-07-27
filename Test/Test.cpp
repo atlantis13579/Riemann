@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "simple_bmp.h"
+#include "../Src/Tools/SimpleBmp.h"
 #include "../Src/LinearSystem/JacobiIteration_CPU.h"
 #include "../Src/LinearSystem/GaussSeidelIteration_CPU.h"
 #include "../Src/LinearSystem/LUFactorization.h"
@@ -33,7 +33,24 @@
 #include "../Src/Collision/TriangleMesh.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/SparseVoxelField.h"
+#include "../Src/Tools/PhysxBinaryParser.h"
 
+class PhysxObjectDeserializerX : public PhysxObjectDeserializer
+{
+public:
+	virtual void* CreateObject(unsigned char*& address, PxType Type) { Count++; return nullptr; }
+	virtual void  AddToCollection(void* pObject) {}
+
+private:
+	int Count = 0;
+};
+
+void TestPhysxBin()
+{
+	PhysxObjectDeserializerX p;
+	PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/sss.bin", &p);
+	return;
+}
 
 void TestSIMD()
 {
@@ -398,6 +415,7 @@ void TestSAPInc()
 
 void TestMainEntry()
 {
+	TestPhysxBin();
 	TestSIMD();
 	TestRTree();
 	// TestBitmap();

@@ -88,6 +88,9 @@
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="Collision\TriangleMesh.h" />
     <ClInclude Include="Optimization\SGD.h" />
+    <ClInclude Include="Tools\PhysxBinaryParser.h" />
+    <ClInclude Include="Tools\simple_bmp.h" />
+    <ClInclude Include="Tools\Serialization.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -123,5 +126,6 @@
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
     <ClCompile Include="Collision\RTree.cpp" />
     <ClCompile Include="Collision\TriangleMesh.cpp" />
+    <ClCompile Include="Tools\PhysxBinaryParser.cpp" />
   </ItemGroup>
 </Project>

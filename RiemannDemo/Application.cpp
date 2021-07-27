@@ -95,7 +95,7 @@ void InitScene()
     RigidBodyParam rp;
     g_World = new PhysicsWorldRB(param);
 
-    if (1)
+    if (0)
     {
         Vertex1 Grounds_vertices[] =
         {
@@ -136,13 +136,17 @@ void InitScene()
         g_Renderer->AddMesh(&mesh, t);
     }
 
-    if (0)
+    if (1)
     {
         VoxelField field;
 
-        field.SerializeFrom("E:/Temp/iceland.voxel");
+        field.SerializeFrom("E:/Temp/fighting_new.voxel");
 
-        Vector3d c = Vector3d(-1676.0f, 20.0f, 1410.9f);
+        Vector3d c = Vector3d(2556.8f, -104.0f, 1104.7f);
+
+        float water_y = -106.65f;
+		unsigned short water_low = field.WorldSpaceToVoxelSpaceY(water_y);
+		unsigned short water_high = field.WorldSpaceToVoxelSpaceY(water_y + 1.5f);
 
         int idx = field.WorldSpaceToVoxelIndex(c);
 		int cz = idx / field.GetSizeX();
@@ -151,10 +155,25 @@ void InitScene()
 
         field.MakeComplementarySet();
 
-        Vector3d pos = field.GetBoundingVolume().GetCenter();
-	    pos.y -= 1.0f;
-        field.Separate(pos, 1, 0.1f);
-        field.FilterByData(1);
+		Vector3d pos_main = field.GetBoundingVolume().GetCenter();
+        pos_main.y = field.GetBoundingVolume().Max.y - 5.0f;
+
+		const Vector3d Thr = Vector3d(0, 0.5f, 0);
+		std::vector<Vector3d> water_list;
+
+		water_list.emplace_back(-2790.0f, -106.65f, -1835.0f);
+
+        vx_uint64 vol = field.Separate(pos_main, 1, 0.1f);
+		for (size_t i = 0; i < water_list.size(); ++i)
+		{
+			vol = field.Separate(water_list[i] + Thr, (int)i + 2, 0.5f);
+		}
+
+		int Count = field.Filter(
+			[&](Voxel* v) -> bool {
+				return v->data == 0;
+			});
+
         field.MakeComplementarySet();
 
 		std::vector<int> data;
@@ -170,8 +189,8 @@ void InitScene()
 
         Vector3d pmin = Vector3d(c.x - 200.0f, water_level, c.z - 200.0f);
         Vector3d pmax = Vector3d(c.x + 200.0f, water_level, c.z + 200.0f);
-        draw_mesh->AddAABB(Vector3d(pmin.x, water_level - 0.01f, pmin.z), Vector3d(pmax.x, water_level + 0.01f, pmax.z));
-        draw_mesh->AddAABB(Vector3d(pmin.x, water_level2 - 0.01f, pmin.z), Vector3d(pmax.x, water_level2 + 0.01f, pmax.z));
+        // draw_mesh->AddAABB(Vector3d(pmin.x, water_level - 0.01f, pmin.z), Vector3d(pmax.x, water_level + 0.01f, pmax.z));
+        // draw_mesh->AddAABB(Vector3d(pmin.x, water_level2 - 0.01f, pmin.z), Vector3d(pmax.x, water_level2 + 0.01f, pmax.z));
 
         Transform* t = new Transform;
         t->SetScale(Vector3d(0.02f, 0.02f, 0.02f));
@@ -180,7 +199,7 @@ void InitScene()
         g_Renderer->AddMesh(draw_mesh, t);
     }
 
-    if (1)
+    if (0)
     {
         rp.mass = 1.0f;
         rp.Static = false;

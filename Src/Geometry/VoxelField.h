@@ -55,11 +55,12 @@ public:
 	int				FilterByData(unsigned int data);
 	void			FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& volumes, int TopN);
 	void			TraversalVoxel(std::function<bool(Voxel* v)> callback);
-	void			TraversalField(std::function<void(Voxel* v)> callback);
+	void			TraversalField(std::function<void(int idx, Voxel* v)> callback);
 
 	std::string		DebugString(int idx) const;
 	Voxel*			GetVoxel(const Vector3d& pos);
 	Voxel*			GetVoxel(int idx);
+	Voxel*			GetVoxelByY(Voxel* Base, float y, float Thr);
 	int				WorldSpaceToVoxelIndex(const Vector3d& pos) const;
 	int				WorldSpaceToVoxelSpaceY(float pos_y) const;
 	float			VoxelSpaceToWorldSpaceY(unsigned short y) const;
@@ -106,7 +107,6 @@ private:
 	int				CalculateNumFields() const;
 
 	vx_uint64		SeparateImpl(int idx, Voxel* base, vx_uint32 data, unsigned short Thr);
-	Voxel*			GetVoxelByY(Voxel* Base, float y, float Thr);
 
 private:
 	int			m_SizeX, m_SizeZ, m_SizeY;

@@ -597,13 +597,13 @@ void	VoxelField::TraversalVoxel(std::function<bool(Voxel* v)> callback)
 	}
 }
 
-void	VoxelField::TraversalField(std::function<void(Voxel* v)> callback)
+void	VoxelField::TraversalField(std::function<void(int idx, Voxel* v)> callback)
 {
-	for (auto v : m_Fields)
+	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
-		if (v)
+		if (m_Fields[i])
 		{
-			callback(v);
+			callback(i, m_Fields[i]);
 		}
 	}
 }

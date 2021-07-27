@@ -50,6 +50,7 @@
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
+    <ClCompile Include="Tools\PhysxBinaryParser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CollisionPrimitive\OrientedBox3d.h" />
@@ -128,6 +129,9 @@
     <ClInclude Include="Solver\NumericalODESolver.h" />
     <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />
     <ClInclude Include="Solver\SparseConjugateGradientSolver.h" />
+    <ClInclude Include="Tools\PhysxBinaryParser.h" />
+    <ClInclude Include="Tools\Serialization.h" />
+    <ClInclude Include="Tools\simple_bmp.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

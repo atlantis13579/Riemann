@@ -618,9 +618,9 @@ void TriangleMesh::BuildRTree()
 
 	for (unsigned int i = 0; i < NumTriangles; ++i)
 	{
-		int i0 = Indices[i*3];
-		int i1 = Indices[i*3 + 1];
-		int i2 = Indices[i*3 + 2];
+		unsigned int i0 = Indices[i*3];
+		unsigned int i1 = Indices[i*3 + 1];
+		unsigned int i2 = Indices[i*3 + 2];
 
 		allBounds.push_back(Box3d(Verties[i0], Verties[i1], Verties[i2]));
 		treeBounds.Grow(allBounds.back());
