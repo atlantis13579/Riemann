@@ -20,7 +20,7 @@ public:
 	std::vector<Vector3d>		Verties;
 	std::vector<unsigned short>	Indices;
 	std::vector<Vector3d>		Normals;
-	Box3d						BoundingBox;
+	Box3d						BoundingVolume;
 	unsigned char				Flags;
 	std::string					ResourceId;
 
@@ -154,11 +154,11 @@ public:
 
 		if (NumTriangles == 0)
 		{
-			BoundingBox = Box3d(Verties[a], Verties[a]);
+			BoundingVolume = Box3d(Verties[a], Verties[a]);
 		}
-		BoundingBox.Grow(Verties[a]);
-		BoundingBox.Grow(Verties[b]);
-		BoundingBox.Grow(Verties[c]);
+		BoundingVolume.Grow(Verties[a]);
+		BoundingVolume.Grow(Verties[b]);
+		BoundingVolume.Grow(Verties[c]);
 
 		NumTriangles++;
 	}
@@ -403,7 +403,7 @@ public:
 			return;
 		}
 
-		BoundingBox = Box3d(&Verties[0], NumVerties);
+		BoundingVolume = Box3d(&Verties[0], NumVerties);
 	}
 
 private:

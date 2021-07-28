@@ -36,7 +36,7 @@ public:
 
 	const Box3d&	GetBoundingVolume() const
 	{
-		return BoundingBox;
+		return BoundingVolume;
 	}
 
 	Matrix3d GetInertiaTensor(float Mass) const;

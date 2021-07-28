@@ -225,7 +225,7 @@ void InitPhysxScene()
     g_World = new PhysicsWorldRB(param);
 
     Collections collection;
-    PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/sss.bin", &collection);
+    PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/fighting.bin", &collection);
 
     for (auto it : collection.mObjects)
     {

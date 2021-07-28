@@ -1,7 +1,9 @@
 
 #include "PhysxBinaryParser.h"
 #include "Serialization.h"
+#include "../CollisionPrimitive/Plane3d.h"
 #include "../Collision/GeometryObject.h"
+#include "../CollisionPrimitive/ConvexMesh.h"
 #include "../Collision/TriangleMesh.h"
 #include "../Collision/RTree.h"
 #include "../Maths/Box3d.h"
@@ -302,10 +304,138 @@ public:
 		RTree				mRTree;
 	};
 
+	static_assert(sizeof(PxBase) == 16, "sizeof(PxBase) not valid");
 	static_assert(sizeof(PxRefCountable) == 16, "sizeof(PxRefCountable) not valid");
 	static_assert(sizeof(RTree) == 96, "sizeof(RTree) not valid");
 	static_assert(sizeof(PxTriangleMesh) == 160, "sizeof(PxTriangleMesh) not valid");
 	static_assert(sizeof(PxRTreeTriangleMesh) == 256, "sizeof(PxRTreeTriangleMesh) not valid");
+
+	struct PxInternalObjectsData
+	{
+		float	mRadius;
+		float	mExtents[3];
+	};
+	
+	struct PxHullPolygonData
+	{
+		Plane3d			mPlane;
+		unsigned short	mVRef8;
+		unsigned char	mNbVerts;
+		unsigned char	mMinIndex;
+	};
+
+	struct PxValency
+	{
+		unsigned short		mCount;
+		unsigned short		mOffset;
+	};
+
+	struct PxBigConvexRawData
+	{
+		unsigned short		mSubdiv;
+		unsigned short		mNbSamples;
+
+		unsigned char* mSamples;
+
+		const unsigned char* getSamples2()	const
+		{
+			return mSamples + mNbSamples;
+		}
+
+		unsigned int		mNbVerts;
+		unsigned int		mNbAdjVerts;
+		PxValency*			mValencies;
+		unsigned char*		mAdjacentVerts;
+	};
+
+	class PxBigConvexData
+	{
+	public:
+		void importExtraData(DeserializationContext& context)
+		{
+			if (mData.mSamples)
+				mData.mSamples = context.readExtraData<unsigned char, 16>(unsigned int(mData.mNbSamples * 2));
+
+			if (mData.mValencies)
+			{
+				context.alignExtraData();
+				unsigned int numVerts = (mData.mNbVerts + 3) & ~3;
+				mData.mValencies = context.readExtraData<PxValency>(numVerts);
+				mData.mAdjacentVerts = context.readExtraData<unsigned char>(mData.mNbAdjVerts);
+			}
+		}
+
+		PxBigConvexRawData	mData;
+
+	protected:
+		void* mVBuffer;
+	};
+
+	struct PxConvexHullData
+	{
+		TAABB3_CE<float>		mAABB;
+		Vector3d				mCenterOfMass;
+		unsigned short			mNbEdges;
+		unsigned char			mNbHullVertices;
+		unsigned char			mNbPolygons;
+
+		PxHullPolygonData*		mPolygons;
+		PxBigConvexRawData*		mBigConvexRawData;
+		PxInternalObjectsData	mInternal;
+	};
+
+	class PxConvexMesh : public PxBase, public PxRefCountable
+	{
+	public:
+		unsigned int computeBufferSize(const PxConvexHullData& data, unsigned int nb)
+		{
+			unsigned int bytesNeeded = sizeof(PxHullPolygonData) * data.mNbPolygons;
+			unsigned short mnbEdges = (data.mNbEdges & ~0x8000);
+			bytesNeeded += sizeof(Vector3d) * data.mNbHullVertices;
+			bytesNeeded += sizeof(unsigned char) * mnbEdges * 2;
+			bytesNeeded += sizeof(unsigned char) * data.mNbHullVertices * 3;
+			bytesNeeded += (data.mNbEdges & ~0x8000) ? (sizeof(unsigned short) * mnbEdges * 2) : 0;
+			bytesNeeded += sizeof(unsigned char) * nb;
+			const unsigned int mod = bytesNeeded % sizeof(float);
+			if (mod)
+				bytesNeeded += sizeof(float) - mod;
+			return bytesNeeded;
+		}
+
+		void importExtraData(DeserializationContext& context)
+		{
+			const unsigned int bufferSize = computeBufferSize(mHullData, GetNb());
+			mHullData.mPolygons = reinterpret_cast<PxHullPolygonData*>(context.readExtraData<unsigned char, 16>(bufferSize));
+
+			assert(mBigConvexData == nullptr);
+			if (mBigConvexData)
+			{
+				mBigConvexData = context.readExtraData<PxBigConvexData, 16>();
+				new(mBigConvexData)PxBigConvexData();
+				mBigConvexData->importExtraData(context);
+				mHullData.mBigConvexRawData = &mBigConvexData->mData;
+			}
+		}
+
+		unsigned int GetNb() const
+		{
+			return mNb & ~0x8000000;
+		}
+
+		void resolveReferences(DeserializationContext& context)
+		{
+		}
+
+		PxConvexHullData		mHullData;
+		unsigned int			mNb;
+		PxBigConvexData*		mBigConvexData;
+		float					mMass;
+		Matrix3d				mInertia;
+		void*					mMeshFactory;
+	};
+
+	static_assert(sizeof(PxConvexHullData) == 72, "sizeof(ConvexHullData) not valid");
+	static_assert(sizeof(PxConvexMesh) == 168, "sizeof(ConvexMesh) not valid");
 
 	#define SN_BINARY_VERSION_GUID_NUM_CHARS 32
 	#define PX_BINARY_SERIAL_VERSION "77E92B17A4084033A0FDB51332D5A6BB"
@@ -550,14 +680,14 @@ public:
 		assert(sizeof(PxRTreeTriangleMesh) == 256);
 
 		PxRTreeTriangleMesh pxMesh;
-		memcpy(&pxMesh, address, sizeof(PxRTreeTriangleMesh));
-		address += sizeof(PxRTreeTriangleMesh);
+		memcpy(&pxMesh, address, sizeof(pxMesh));
+		address += sizeof(pxMesh);
 		pxMesh.importExtraData(context);
 
 		Geometry* Geom = GeometryFactory::CreateTriangleMesh(pxMesh.mAABB.Center);
 		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
 		TriMesh->SetData(pxMesh.mVertices, pxMesh.mTriangles, pxMesh.mNbVertices, pxMesh.mNbTriangles, pxMesh.Is16BitIndices());
-		TriMesh->BoundingBox = pxMesh.mAABB.GetMinMax();
+		TriMesh->BoundingVolume = pxMesh.mAABB.GetMinMax();
 
 		RTree *tree = TriMesh->CreateEmptyRTree();
 		memcpy(tree, &pxMesh.mRTree, sizeof(RTree));
@@ -570,7 +700,34 @@ public:
 
 	void* DeserializeConvexMesh(unsigned char*& address, DeserializationContext& context)
 	{
-		return nullptr;
+		assert(sizeof(PxConvexHullData) == 72);
+		assert(sizeof(PxConvexMesh) == 168);
+
+		PxConvexMesh pxMesh;
+		memcpy(&pxMesh, address, sizeof(pxMesh));
+		address += sizeof(pxMesh);
+		pxMesh.importExtraData(context);
+		pxMesh.resolveReferences(context);
+
+		Geometry* Geom = GeometryFactory::CreateConvexMesh(pxMesh.mHullData.mAABB.Center);
+		ConvexMesh* ConvMesh = (ConvexMesh*)Geom->GetShapeGeometry();
+
+		for (int i = 0; i < pxMesh.mHullData.mNbPolygons; ++i)
+		{
+			ConvMesh->Faces.emplace_back(pxMesh.mHullData.mPolygons[i].mPlane, pxMesh.mHullData.mPolygons[i].mNbVerts);
+		}
+
+		ConvMesh->NumVertices = pxMesh.mHullData.mNbHullVertices;
+		ConvMesh->NumEdges = pxMesh.mHullData.mNbEdges & ~0x8000;
+		ConvMesh->NumFaces = pxMesh.mHullData.mNbPolygons;
+		ConvMesh->Inertia = pxMesh.mInertia;
+		ConvMesh->CenterOfMass = pxMesh.mHullData.mCenterOfMass;
+		ConvMesh->BoundingVolume = pxMesh.mHullData.mAABB.GetMinMax();
+
+		assert(ConvMesh->EulerNumber() == 2);
+		assert(ConvMesh->NumFaces == ConvMesh->Faces.size());
+
+		return ConvMesh;
 	}
 
 	void* DeserializeHeightField(unsigned char*& address, DeserializationContext& context)

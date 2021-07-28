@@ -7,6 +7,7 @@
 #include "../CollisionPrimitive/Triangle3d.h"
 #include "../CollisionPrimitive/Cylinder3d.h"
 #include "../CollisionPrimitive/Capsule3d.h"
+#include "../CollisionPrimitive/ConvexMesh.h"
 #include "TriangleMesh.h"
 
 Geometry::Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity /*= nullptr*/)
@@ -193,6 +194,7 @@ public:
 		REG_GEOMETRY_OBJ(GeometryShapeType::CAPSULE, Capsule3d)
 		REG_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE, Triangle3d)
 		REG_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE_MESH, TriangleMesh)
+		REG_GEOMETRY_OBJ(GeometryShapeType::CONVEX_MESH, ConvexMesh)
 	}
 };
 Geometry_Registration s_geom_registration;
@@ -231,4 +233,10 @@ Geometry* GeometryFactory::CreateTriangleMesh(const Vector3d& Position)
 {
 	TriangleMesh* shape = new TriangleMesh;
 	return new Geometry(Position, GeometryShapeType::TRIANGLE_MESH, shape, nullptr);
+}
+
+Geometry* GeometryFactory::CreateConvexMesh(const Vector3d& Position)
+{
+	ConvexMesh* shape = new ConvexMesh;
+	return new Geometry(Position, GeometryShapeType::CONVEX_MESH, shape, nullptr);
 }

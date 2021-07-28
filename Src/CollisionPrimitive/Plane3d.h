@@ -1,6 +1,10 @@
 
 #pragma once
 
+#include "../Maths/Vector3d.h"
+#include "../Maths/Matrix3d.h"
+#include "../Maths/Box3d.h"
+
 const float kEpsilonPlane = 0.000001f;
 
 class Plane3d

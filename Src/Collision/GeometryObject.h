@@ -136,6 +136,7 @@ public:
 	static Geometry* CreateCapsule(const Vector3d& Position, const Vector3d& X1, const Vector3d& X2, float Radius);
 	static Geometry* CreateTriangle(const Vector3d& Position, const Vector3d& A, const Vector3d& B, const Vector3d& C);
 	static Geometry* CreateTriangleMesh(const Vector3d& Position);
+	static Geometry* CreateConvexMesh(const Vector3d& Position);
 };
 
 
