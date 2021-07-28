@@ -605,6 +605,14 @@ static void buildFromBounds(RTree& result, const Box3d* allBounds, unsigned int 
 }
 
 
+void TriangleMesh::CreateEmptyRTree()
+{
+	if (m_Tree == nullptr)
+	{
+		m_Tree = new RTree;
+	}
+}
+
 void TriangleMesh::BuildRTree()
 {
 	if (NumTriangles == 0)
@@ -627,7 +635,7 @@ void TriangleMesh::BuildRTree()
 		treeBounds.Grow(allBounds.back());
 	}
 
-	m_Tree = new RTree;
+	CreateEmptyRTree();
 
 	std::vector<unsigned int> permute;
 	RTreeRemap rc(NumTriangles);
@@ -638,7 +646,7 @@ template<bool tRayTest>
 class RTreeCallbackRaycast : public RTree::CallbackRaycast
 {
 public:
-	const unsigned int* mTris;
+	const void* mTris;
 	const Vector3d* mVerts;
 	const Vector3d* mInflate;
 	// const SimpleRayTriOverlap rayCollider;
@@ -648,13 +656,14 @@ public:
 	unsigned int cis[3];
 	bool hadClosestHit;
 	const bool closestMode;
+	const bool IndicesBit16;
 	Vector3d inflateV, rayOriginV, rayDirV;
 
-	RTreeCallbackRaycast(const unsigned int* tris, const Vector3d* verts,
-		const Vector3d& origin, const Vector3d& dir, float maxT_)
+	RTreeCallbackRaycast(const void* tris, const Vector3d* verts,
+		const Vector3d& origin, const Vector3d& dir, float maxT_, bool bit16)
 		:
 		mTris(tris), mVerts(verts),
-		maxT(maxT_), closestMode(true)
+		maxT(maxT_), closestMode(true), IndicesBit16(bit16)
 	{
 		assert(closestHit.hitTime == FLT_MAX);
 		hadClosestHit = false;
@@ -664,8 +673,16 @@ public:
 
 	void getVertIndices(unsigned int triIndex, unsigned int& i0, unsigned int& i1, unsigned int& i2)
 	{
-		const unsigned int* p = mTris + triIndex * 3;
-		i0 = p[0]; i1 = p[1]; i2 = p[2];
+		if (IndicesBit16)
+		{
+			const unsigned short* p = (unsigned short*)mTris + triIndex * 3;
+			i0 = p[0]; i1 = p[1]; i2 = p[2];
+		}
+		else
+		{
+			const unsigned int* p = (unsigned int*)mTris + triIndex * 3;
+			i0 = p[0]; i1 = p[1]; i2 = p[2];
+		}
 	}
 
 	// result buffer should have room for at least RTREE_N items
@@ -752,7 +769,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, flo
 	{
 		return false;
 	}
-	RTreeCallbackRaycast<true> cb(&Indices[0], &Verties[0], Origin, Dir, FLT_MAX);
+	RTreeCallbackRaycast<true> cb(GetIndexBuffer(), &Verties[0], Origin, Dir, FLT_MAX, Is16bitIndices());
 	m_Tree->traverseRay(Origin, Dir, &cb);
 	if (cb.hadClosestHit)
 	{

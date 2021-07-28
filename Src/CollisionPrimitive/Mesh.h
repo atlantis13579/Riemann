@@ -10,6 +10,7 @@
 #include "../Maths/Vector3d.h"
 
 #define TRIANGLE_BATCH			(4096)
+#define	INDICES_16_BIT			(0x01)
 
 class Mesh
 {
@@ -17,9 +18,10 @@ public:
 	unsigned int				NumVerties;
 	unsigned int				NumTriangles;
 	std::vector<Vector3d>		Verties;
-	std::vector<unsigned int>	Indices;
+	std::vector<unsigned short>	Indices;
 	std::vector<Vector3d>		Normals;
 	Box3d						BoundingBox;
+	unsigned char				Flags;
 	std::string					ResourceId;
 
 	Mesh()
@@ -46,6 +48,41 @@ public:
 		return &Indices[0];
 	}
 
+	const void* GetIndexBuffer() const
+	{
+		return &Indices[0];
+	}
+
+	const unsigned short* GetIndices16() const			// (unsigned short*)&Indices[0]
+	{
+		return &Indices[0];
+	}
+
+	unsigned short* GetIndices16()
+	{
+		return &Indices[0];
+	}
+
+	const unsigned int* GetIndices32() const			// (unsigned int*)&Indices[0]
+	{
+		return (unsigned int*)GetIndexBuffer();
+	}
+
+	unsigned int* GetIndices32()
+	{
+		return (unsigned int*)GetIndexBuffer();
+	}
+
+	bool Is16bitIndices() const
+	{
+		return Flags & INDICES_16_BIT;
+	}
+
+	int GetIndicesWidth() const
+	{
+		return Is16bitIndices() ? 1 : 2;
+	}
+
 	inline unsigned int GetNumVerties() const
 	{
 		return NumVerties;
@@ -58,7 +95,31 @@ public:
 
 	inline const Vector3d& operator ()(int i, int j) const
 	{
-		return Verties[Indices[3 * i + j]];
+		if (Is16bitIndices())
+		{
+			return Verties[Indices[3 * i + j]];
+		}
+		else
+		{
+			const unsigned int* Indices32 = GetIndices32();
+			return Verties[Indices32[3 * i + j]];
+		}
+	}
+
+	void SetData(const void* Verts, const void* Tris, unsigned int Nv, unsigned int Nt, bool Is16bit)
+	{
+		Release();
+
+		if (Is16bit)
+			Flags |= INDICES_16_BIT;
+		NumVerties = Nv;
+		NumTriangles = Nt;
+
+		Verties.resize(Nv);
+		memcpy(&Verties[0], Verts, sizeof(Verties[0]) * Nv);
+
+		Indices.resize(Nt * 3 * GetIndicesWidth());
+		memcpy(&Indices[0], Tris, Indices.size() * sizeof(Indices[0]));
 	}
 
 	void AddVertex(const Vector3d& v)
@@ -72,13 +133,24 @@ public:
 
 	void AddTriangle(unsigned int a, unsigned int b, unsigned int c)
 	{
-		if (NumTriangles * 3 + 2 >= Indices.size())
+		if (NumTriangles * 3 + 2 >= Indices.size() * GetIndicesWidth())
 		{
-			Indices.resize(Indices.size() + TRIANGLE_BATCH * 3);
+			Indices.resize(Indices.size() + TRIANGLE_BATCH * 3 * GetIndicesWidth());
 		}
-		Indices[3 * NumTriangles] = a;
-		Indices[3 * NumTriangles + 1] = b;
-		Indices[3 * NumTriangles + 2] = c;
+
+		if (Is16bitIndices())
+		{
+			Indices[3 * NumTriangles] = a;
+			Indices[3 * NumTriangles + 1] = b;
+			Indices[3 * NumTriangles + 2] = c;
+		}
+		else
+		{
+			unsigned int* Indices32 = GetIndices32();
+			Indices32[3 * NumTriangles] = a;
+			Indices32[3 * NumTriangles + 1] = b;
+			Indices32[3 * NumTriangles + 2] = c;
+		}
 
 		if (NumTriangles == 0)
 		{
@@ -114,7 +186,6 @@ public:
 		AddTriangle(k + 6, k + 4, k + 2);
 		AddTriangle(k + 3, k + 2, k + 6);
 		AddTriangle(k + 6, k + 7, k + 3);
-
 	}
 
 	bool LoadObj(const char* name)
@@ -222,7 +293,7 @@ public:
 		fread(&NumVerties, sizeof(NumVerties), 1, fp);
 		fread(&NumTriangles, sizeof(NumTriangles), 1, fp);
 		Verties.resize(NumVerties);
-		Indices.resize(NumTriangles * 3);
+		Indices.resize(NumTriangles * 3 * GetIndicesWidth());
 		fread(&Verties[0], sizeof(Verties[0]), NumVerties, fp);
 		fread(&Indices[0], sizeof(Indices[0]), NumTriangles * 3, fp);
 		fclose(fp);

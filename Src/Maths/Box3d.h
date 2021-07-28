@@ -258,7 +258,7 @@ public:
 	TVector3<T> Center;
 	TVector3<T> Extent;
 
-	TAABB3<T> GetAABB() const
+	TAABB3<T> GetMinMax() const
 	{
 		return TAABB3<T>(Center - Extent, Center + Extent);
 	}

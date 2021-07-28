@@ -27,6 +27,7 @@ public:
 		}
 	}
 
+	void			CreateEmptyRTree();
 	void			BuildRTree();
 
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
@@ -40,6 +41,6 @@ public:
 
 	Vector3d GetSupport(const Vector3d& dir) const;
 
-private:
+public:
 	RTree*	m_Tree;
 };

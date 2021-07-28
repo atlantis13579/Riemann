@@ -229,6 +229,11 @@ public:
 	public:
 		virtual ~PxTriangleMesh() {}
 
+		bool Is16BitIndices() const
+		{
+			return mFlags & (1 << 1);		// PxTriangleMeshFlag::e16_BIT_INDICES
+		}
+
 		void importExtraData(DeserializationContext& context)
 		{
 			// PT: vertices are followed by indices, so it will be safe to V4Load vertices from a deserialized binary file
@@ -237,7 +242,7 @@ public:
 
 			if (mTriangles)
 			{
-				if (mFlags & (1 << 1))	// PxTriangleMeshFlag::e16_BIT_INDICES
+				if (Is16BitIndices())	
 					mTriangles = context.readExtraData<unsigned short, 16>(3 * mNbTriangles);
 				else
 					mTriangles = context.readExtraData<unsigned int, 16>(3 * mNbTriangles);
@@ -261,7 +266,6 @@ public:
 			mGRB_BV32Tree = nullptr;
 		}
 
-	private:
 		unsigned int					mNbVertices;
 		unsigned int					mNbTriangles;
 		Vector3d*						mVertices;
@@ -294,7 +298,6 @@ public:
 			PxTriangleMesh::importExtraData(context);
 		}
 
-	private:
 		RTree				mRTree;
 	};
 
@@ -466,18 +469,14 @@ public:
 			}
 		}
 
-		/*
-		SerializationRegistry& sn = static_cast<SerializationRegistry&>(sr);
-		Cm::Collection* collection = static_cast<Cm::Collection*>(PxCreateCollection());
-		PX_ASSERT(collection);
+		assert(collection);
 		collection->mObjects.reserve(nbObjectsInCollection * 2);
 		if (nbExportReferences > 0)
 			collection->mIds.reserve(nbExportReferences * 2);
-		*/
 
 		unsigned char* addressObjectData = alignPtr(address);
 		unsigned char* addressExtraData = alignPtr(addressObjectData + objectDataEndOffset);
-		unsigned int nCount = 0;
+		std::unordered_map<PxType, int> Missing;
 
 		DeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData);
 
@@ -499,22 +498,33 @@ public:
 				{
 					instance = DeserializeTriangleMeshBV33(address, context);
 				}
+				else if (classType == eCONVEX_MESH)
+				{
+					instance = DeserializeConvexMesh(address, context);
+				}
+				else if (classType == eHEIGHTFIELD)
+				{
+					instance = DeserializeHeightField(address, context);
+				}
 
 				if (!instance)
 				{
-					printf("Cannot create class instance for concrete type %d.\n", classType);
+					if (Missing.find(classType) == Missing.end())
+					{
+						printf("Cannot create class instance for concrete type %d.\n", classType);
+						Missing.emplace(classType, 0);
+					}
+					Missing[classType] += 1;
 					continue;
 				}
 
-				assert(collection);
 				collection->mObjects.emplace(instance, 0);
-				++nCount;
 			}
 		}
 
 		// TODO
-		// assert(nbObjectsInCollection == nCount);
-		assert(nCount <= nbObjectsInCollection);
+		// assert(collection->mObjects.size() == nbObjectsInCollection);
+		assert(collection->mObjects.size() <= nbObjectsInCollection);
 
 		// update new collection with export references
 		{
@@ -534,12 +544,31 @@ public:
 
 	void* DeserializeTriangleMeshBV33(unsigned char*& address, DeserializationContext &context)
 	{
+		assert(sizeof(RTree) == 96);
 		assert(sizeof(PxRTreeTriangleMesh) == 256);
 
-		PxRTreeTriangleMesh obj;
-		memcpy(&obj, address, sizeof(PxRTreeTriangleMesh));
+		PxRTreeTriangleMesh pxMesh;
+		memcpy(&pxMesh, address, sizeof(PxRTreeTriangleMesh));
 		address += sizeof(PxRTreeTriangleMesh);
-		obj.importExtraData(context);
+		pxMesh.importExtraData(context);
+
+		TriangleMesh* Mesh = new TriangleMesh;
+		Mesh->CreateEmptyRTree();
+		memcpy(Mesh->m_Tree, &pxMesh.mRTree, sizeof(RTree));
+
+		Mesh->SetData(pxMesh.mVertices, pxMesh.mTriangles, pxMesh.mNbVertices, pxMesh.mNbTriangles, pxMesh.Is16BitIndices());
+		Mesh->BoundingBox = pxMesh.mAABB.GetMinMax();
+
+		return Mesh;
+	}
+
+	void* DeserializeConvexMesh(unsigned char*& address, DeserializationContext& context)
+	{
+		return nullptr;
+	}
+
+	void* DeserializeHeightField(unsigned char*& address, DeserializationContext& context)
+	{
 		return nullptr;
 	}
 };
