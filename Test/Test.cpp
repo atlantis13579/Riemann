@@ -35,20 +35,10 @@
 #include "../Src/Geometry/SparseVoxelField.h"
 #include "../Src/Tools/PhysxBinaryParser.h"
 
-class PhysxObjectDeserializerX : public PhysxObjectDeserializer
-{
-public:
-	virtual void* CreateObject(unsigned char*& address, PxType Type) { Count++; return nullptr; }
-	virtual void  AddToCollection(void* pObject) {}
-
-private:
-	int Count = 0;
-};
-
 void TestPhysxBin()
 {
-	PhysxObjectDeserializerX p;
-	PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/sss.bin", &p);
+	Collections collection;
+	PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/sss.bin", &collection);
 	return;
 }
 

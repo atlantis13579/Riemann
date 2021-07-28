@@ -131,7 +131,7 @@
     <ClInclude Include="Solver\SparseConjugateGradientSolver.h" />
     <ClInclude Include="Tools\PhysxBinaryParser.h" />
     <ClInclude Include="Tools\Serialization.h" />
-    <ClInclude Include="Tools\simple_bmp.h" />
+    <ClInclude Include="Tools\SimpleBmp.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

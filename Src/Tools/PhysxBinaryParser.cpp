@@ -1,6 +1,9 @@
 
 #include "PhysxBinaryParser.h"
 #include "Serialization.h"
+#include "../Collision/TriangleMesh.h"
+#include "../Collision/RTree.h"
+#include "../Maths/Box3d.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -10,8 +13,6 @@
 class PhysxBinaryParser_3_4 : public PhysxBinaryParser
 {
 public:
-
-	typedef unsigned long long PxSerialObjectId;
 
 	struct ManifestEntry
 	{
@@ -139,6 +140,73 @@ public:
 		SerialObjectIndex objIndex;
 	};
 
+	class DeserializationContext
+	{
+	public:
+		DeserializationContext(const ManifestEntry* manifestTable,
+			const ImportReference* importReferences,
+			unsigned char* objectDataAddress,
+			const std::unordered_map<size_t, SerialObjectIndex>& internalPtrReferencesMap,
+			const std::unordered_map<unsigned short, SerialObjectIndex>& internalHandle16ReferencesMap,
+			// const Cm::Collection* externalRefs,
+			unsigned char* extraData)
+			: mManifestTable(manifestTable)
+			, mImportReferences(importReferences)
+			, mObjectDataAddress(objectDataAddress)
+			, mInternalPtrReferencesMap(internalPtrReferencesMap)
+			, mInternalHandle16ReferencesMap(internalHandle16ReferencesMap)
+			// , mExternalRefs(externalRefs)
+		{
+			mExtraDataAddress = extraData;
+		}
+
+		~DeserializationContext() {}
+
+		void			readName(const char*& name)
+		{
+			unsigned int len = *reinterpret_cast<unsigned int*>(mExtraDataAddress);
+			mExtraDataAddress += sizeof(len);
+			name = len ? reinterpret_cast<const char*>(mExtraDataAddress) : NULL;
+			mExtraDataAddress += len;
+		}
+
+		template<typename T>
+		T*				readExtraData(unsigned int count = 1)
+		{
+			T* data = reinterpret_cast<T*>(mExtraDataAddress);
+			mExtraDataAddress += sizeof(T) * count;
+			return data;
+		}
+
+		template<typename T, unsigned int alignment>
+		T*				readExtraData(unsigned int count = 1)
+		{
+			alignExtraData(alignment);
+			return readExtraData<T>(count);
+		}
+
+		void			alignExtraData(unsigned int alignment = 16)
+		{
+			size_t addr = reinterpret_cast<size_t>(mExtraDataAddress);
+			addr = (addr + alignment - 1) & ~size_t(alignment - 1);
+			mExtraDataAddress = reinterpret_cast<unsigned char*>(addr);
+		}
+
+	private:
+		unsigned char* mExtraDataAddress;
+
+		const ManifestEntry* mManifestTable;
+		const ImportReference* mImportReferences;
+		unsigned char* mObjectDataAddress;
+
+		//internal references maps for resolving references.
+		const std::unordered_map<size_t, SerialObjectIndex>& mInternalPtrReferencesMap;
+		const std::unordered_map<unsigned short, SerialObjectIndex>& mInternalHandle16ReferencesMap;
+
+		//external collection for resolving import references.
+		// const Cm::Collection* mExternalRefs;
+	};
+
 	class PxBase
 	{
 	public:
@@ -148,6 +216,92 @@ public:
 		unsigned short		mConcreteType;			// concrete type identifier - see PxConcreteType.
 		unsigned short		mBaseFlags;				// internal flags
 	};
+
+	class PxRefCountable
+	{
+	public:
+		virtual ~PxRefCountable() {}
+		int mRefCount;
+	};
+
+	class PxTriangleMesh : public PxBase, public PxRefCountable
+	{
+	public:
+		virtual ~PxTriangleMesh() {}
+
+		void importExtraData(DeserializationContext& context)
+		{
+			// PT: vertices are followed by indices, so it will be safe to V4Load vertices from a deserialized binary file
+			if (mVertices)
+				mVertices = context.readExtraData<Vector3d, 16>(mNbVertices);
+
+			if (mTriangles)
+			{
+				if (mFlags & (1 << 1))	// PxTriangleMeshFlag::e16_BIT_INDICES
+					mTriangles = context.readExtraData<unsigned short, 16>(3 * mNbTriangles);
+				else
+					mTriangles = context.readExtraData<unsigned int, 16>(3 * mNbTriangles);
+			}
+
+			if (mExtraTrigData)
+				mExtraTrigData = context.readExtraData<unsigned char, 16>(mNbTriangles);
+
+			if (mMaterialIndices)
+				mMaterialIndices = context.readExtraData<unsigned short, 16>(mNbTriangles);
+
+			if (mFaceRemap)
+				mFaceRemap = context.readExtraData<unsigned int, 16>(mNbTriangles);
+
+			if (mAdjacencies)
+				mAdjacencies = context.readExtraData<unsigned int, 16>(3 * mNbTriangles);
+
+			mGRB_triIndices = nullptr;
+			mGRB_triAdjacencies = nullptr;
+			mGRB_faceRemap = nullptr;
+			mGRB_BV32Tree = nullptr;
+		}
+
+	private:
+		unsigned int					mNbVertices;
+		unsigned int					mNbTriangles;
+		Vector3d*						mVertices;
+		void*							mTriangles;				
+		TAABB3_CE<float>				mAABB;
+		unsigned char*					mExtraTrigData;
+		float							mGeomEpsilon;
+		unsigned char					mFlags;
+		unsigned short*					mMaterialIndices;
+		unsigned int* mFaceRemap;
+		unsigned int* mAdjacencies;	
+		void* mMeshFactory;
+
+		void* mGRB_triIndices;
+		void* mGRB_triAdjacencies;
+		unsigned int* mGRB_faceRemap;
+		void* mGRB_BV32Tree;
+	};
+
+	class PxRTreeTriangleMesh : public PxTriangleMesh
+	{
+	public:
+		virtual ~PxRTreeTriangleMesh() { }
+
+		void importExtraData(DeserializationContext& context)
+		{
+			context.alignExtraData(128);
+			mRTree.mPages = context.readExtraData<RTreePage>(mRTree.mTotalPages);
+
+			PxTriangleMesh::importExtraData(context);
+		}
+
+	private:
+		RTree				mRTree;
+	};
+
+	static_assert(sizeof(PxRefCountable) == 16, "sizeof(PxRefCountable) not valid");
+	static_assert(sizeof(RTree) == 96, "sizeof(RTree) not valid");
+	static_assert(sizeof(PxTriangleMesh) == 160, "sizeof(PxTriangleMesh) not valid");
+	static_assert(sizeof(PxRTreeTriangleMesh) == 256, "sizeof(PxRTreeTriangleMesh) not valid");
 
 	#define SN_BINARY_VERSION_GUID_NUM_CHARS 32
 	#define PX_BINARY_SERIAL_VERSION "77E92B17A4084033A0FDB51332D5A6BB"
@@ -198,7 +352,7 @@ public:
 	}
 
 
-	bool ParseCollectionFromBinary(const char* Filename, PhysxObjectDeserializer* pDeserializer)
+	bool ParseCollectionFromBinary(const char* Filename, Collections* collection)
 	{
 		FILE* fp = fopen(Filename, "rb");
 		if (fp == nullptr)
@@ -215,12 +369,12 @@ public:
 		fread(p, 1, filesize, fp);
 		fclose(fp);
 
-		bool Ret = ParseCollectionFromBuffer(p, pDeserializer);
+		bool Ret = ParseCollectionFromBuffer(p, collection);
 		return Ret;
 	}
 
 
-	bool ParseCollectionFromBuffer(void* Buffer, PhysxObjectDeserializer* pDeserializer)
+	bool ParseCollectionFromBuffer(void* Buffer, Collections* collection)
 	{
 		if (size_t(Buffer) & (128 - 1))
 		{
@@ -292,6 +446,7 @@ public:
 			internalHandle16References = (nbInternalHandle16References > 0) ? reinterpret_cast<InternalReferenceHandle16*>(address) : NULL;
 			address += nbInternalHandle16References * sizeof(InternalReferenceHandle16);
 		}
+
 		std::unordered_map<size_t, SerialObjectIndex> internalPtrReferencesMap(nbInternalPtrReferences * 2);
 		{
 			//create hash (we should load the hashes directly from memory)
@@ -301,6 +456,7 @@ public:
 				internalPtrReferencesMap.emplace(ref.reference, SerialObjectIndex(ref.objIndex));
 			}
 		}
+
 		std::unordered_map<unsigned short, SerialObjectIndex> internalHandle16ReferencesMap(nbInternalHandle16References * 2);
 		{
 			for (unsigned int i = 0; i < nbInternalHandle16References; i++)
@@ -321,8 +477,10 @@ public:
 
 		unsigned char* addressObjectData = alignPtr(address);
 		unsigned char* addressExtraData = alignPtr(addressObjectData + objectDataEndOffset);
-
 		unsigned int nCount = 0;
+
+		DeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData);
+
 		// iterate over memory containing PxBase objects, create the instances, resolve the addresses, import the external data, add to collection.
 		{
 			unsigned int nbObjects = nbObjectsInCollection;
@@ -330,41 +488,65 @@ public:
 			while (nbObjects--)
 			{
 				address = alignPtr(address);
-				// context.alignExtraData();
+				context.alignExtraData();
 
 				// read PxBase header with type and get corresponding serializer.
-
-
 				PxBase* header = reinterpret_cast<PxBase*>(address);
 				const PxType classType = header->getConcreteType();
 
-				assert(pDeserializer);
-				void* instance = pDeserializer->CreateObject(address, classType);
+				void* instance = nullptr;
+				if (classType == eTRIANGLE_MESH_BVH33)
+				{
+					instance = DeserializeTriangleMeshBV33(address, context);
+				}
+
 				if (!instance)
 				{
-					printf("Cannot create class instance for concrete type %d.", classType);
+					printf("Cannot create class instance for concrete type %d.\n", classType);
 					continue;
 				}
 
-				pDeserializer->AddToCollection(instance);
+				assert(collection);
+				collection->mObjects.emplace(instance, 0);
 				++nCount;
 			}
 		}
 
 		// TODO
 		// assert(nbObjectsInCollection == nCount);
-
-		// TODO
 		assert(nCount <= nbObjectsInCollection);
-		// assert(nbExportReferences == 0);
 
+		// update new collection with export references
+		{
+			assert(addressObjectData != NULL);
+			for (unsigned int i = 0; i < nbExportReferences; i++)
+			{
+				bool isExternal;
+				unsigned int manifestIndex = exportReferences[i].objIndex.getIndex(isExternal);
+				assert(!isExternal);
+				PxBase* obj = reinterpret_cast<PxBase*>(addressObjectData + manifestTable[manifestIndex].offset);
+				collection->mIds.emplace(exportReferences[i].id, obj);
+				collection->mObjects[obj] = exportReferences[i].id;
+			}
+		}
 		return true;
+	}
+
+	void* DeserializeTriangleMeshBV33(unsigned char*& address, DeserializationContext &context)
+	{
+		assert(sizeof(PxRTreeTriangleMesh) == 256);
+
+		PxRTreeTriangleMesh obj;
+		memcpy(&obj, address, sizeof(PxRTreeTriangleMesh));
+		address += sizeof(PxRTreeTriangleMesh);
+		obj.importExtraData(context);
+		return nullptr;
 	}
 };
 
 // static
-bool PhysxBinaryParser::ParseCollectionFromBinary(const char* Filename, PhysxObjectDeserializer* pDeserializer)
+bool PhysxBinaryParser::ParseCollectionFromBinary(const char* Filename, Collections* collection)
 {
 	PhysxBinaryParser_3_4 parser;
-	return parser.ParseCollectionFromBinary(Filename, pDeserializer);
+	return parser.ParseCollectionFromBinary(Filename, collection);
 }

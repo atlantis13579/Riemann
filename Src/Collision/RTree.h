@@ -51,7 +51,7 @@ struct RTreePage
 
 };
 
-
+__declspec(align(16))
 class RTree
 {
 public:
@@ -59,7 +59,6 @@ public:
 	{
 		mFlags = 0;
 		mPages = nullptr;
-		mMemory = nullptr;
 		mTotalNodes = 0;
 		mNumLevels = 0;
 		mPageSize = RTREE_N;
@@ -72,10 +71,9 @@ public:
 
 	void release()
 	{
-		if ((mFlags & USER_ALLOCATED) == 0 && mMemory)
+		if ((mFlags & USER_ALLOCATED) != 0)
 		{
-			delete mMemory;
-			mMemory = nullptr;
+			delete mPages;
 			mPages = nullptr;
 		}
 	}
@@ -107,7 +105,6 @@ public:
 	unsigned int		mTotalNodes; // 16
 	unsigned int		mTotalPages;
 	unsigned int		mFlags; enum { USER_ALLOCATED = 0x1, IS_EDGE_SET = 0x2 };
-	unsigned char		*mMemory;
 	RTreePage			*mPages;
 
 protected:

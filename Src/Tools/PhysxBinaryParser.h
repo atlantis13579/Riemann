@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_map>
 #include <vector>
 
 enum PxType
@@ -31,15 +32,16 @@ enum PxType
 	eFIRST_USER_EXTENSION = 1024
 };
 
-class PhysxObjectDeserializer
+typedef unsigned long long PxSerialObjectId;
+
+struct Collections
 {
-public:
-	virtual void*	CreateObject(unsigned char*& address, PxType Type) = 0;
-	virtual void	AddToCollection(void *pObject) = 0;
+	std::unordered_map<PxSerialObjectId, void*>		mIds;
+	std::unordered_map<void*, PxSerialObjectId>		mObjects;
 };
 
 class PhysxBinaryParser
 {
 public:
-	static bool ParseCollectionFromBinary(const char* Filename, PhysxObjectDeserializer *pDeserializer);
+	static bool ParseCollectionFromBinary(const char* Filename, Collections *Collection);
 };

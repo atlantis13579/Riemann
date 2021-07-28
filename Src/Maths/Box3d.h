@@ -251,6 +251,19 @@ public:
 	}
 };
 
+template <typename T>
+class TAABB3_CE
+{
+public:
+	TVector3<T> Center;
+	TVector3<T> Extent;
+
+	TAABB3<T> GetAABB() const
+	{
+		return TAABB3<T>(Center - Extent, Center + Extent);
+	}
+};
+
 typedef TAABB3<float> Box3d;
 
 static_assert(sizeof(Box3d) == 24, "sizeof Box3d is not valid");

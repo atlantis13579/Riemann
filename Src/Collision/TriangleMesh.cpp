@@ -566,13 +566,14 @@ static void buildFromBounds(RTree& result, const Box3d* allBounds, unsigned int 
 	// build the final rtree image
 	result.mInvDiagonal = Vector4d(1.0f);
 	assert(qtreeNodes.size() % RTREE_N == 0);
+	result.mFlags |= RTree::USER_ALLOCATED;
 	result.mTotalNodes = (unsigned int)qtreeNodes.size();
 	result.mTotalPages = result.mTotalNodes / pageSize;
-	result.mMemory = new unsigned char[sizeof(RTreePage) * result.mTotalPages + 127];
+	void *mMemory = new unsigned char[sizeof(RTreePage) * result.mTotalPages + 127];		// TODO
 #if INTPTR_MAX == INT32_MAX
-	result.mPages = (RTreePage*)(((unsigned int)(result.mMemory + 127) / 128) * 128);
+	result.mPages = (RTreePage*)(((unsigned int)(mMemory + 127) / 128) * 128);
 #else
-	result.mPages = (RTreePage*)(((unsigned long long)(result.mMemory + 127) / 128) * 128);
+	result.mPages = (RTreePage*)((((unsigned long long)mMemory + 127) / 128) * 128);
 #endif
 	result.mBoundsMin = Vector4d(treeBounds.Min, 0.0f);
 	result.mBoundsMax = Vector4d(treeBounds.Max, 0.0f);
