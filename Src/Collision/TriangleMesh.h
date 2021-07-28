@@ -29,6 +29,7 @@ public:
 	}
 
 	RTree*			CreateEmptyRTree();
+	void*			AllocMemory(int Size, int Width);
 	void			BuildRTree();
 
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;

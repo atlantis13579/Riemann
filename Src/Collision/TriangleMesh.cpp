@@ -566,15 +566,10 @@ static void buildFromBounds(RTree& result, void*& Memory, const Box3d* allBounds
 	// build the final rtree image
 	result.mInvDiagonal = Vector4d(1.0f);
 	assert(qtreeNodes.size() % RTREE_N == 0);
-	// result.mFlags |= RTree::USER_ALLOCATED;
 	result.mTotalNodes = (unsigned int)qtreeNodes.size();
 	result.mTotalPages = result.mTotalNodes / pageSize;
 	Memory = new unsigned char[sizeof(RTreePage) * result.mTotalPages + 127];		// TODO
-#if INTPTR_MAX == INT32_MAX
-	result.mPages = (RTreePage*)(((unsigned int)(mMemory + 127) / 128) * 128);
-#else
-	result.mPages = (RTreePage*)((((unsigned long long)Memory + 127) / 128) * 128);
-#endif
+	result.mPages = (RTreePage*)AlignMemory(Memory, 128);
 	result.mBoundsMin = Vector4d(treeBounds.Min, 0.0f);
 	result.mBoundsMax = Vector4d(treeBounds.Max, 0.0f);
 	result.mDiagonalScaler = (result.mBoundsMax - result.mBoundsMin) / 65535.0f;
@@ -616,6 +611,16 @@ RTree* TriangleMesh::CreateEmptyRTree()
 		m_Tree->release();
 	}
 	return m_Tree;
+}
+
+void* TriangleMesh::AllocMemory(int Size, int Width)
+{
+	if (m_Memory != nullptr)
+	{
+		delete[]m_Memory;
+	}
+	m_Memory = new char[Size + Width - 1];
+	return AlignMemory(m_Memory, Width);
 }
 
 void TriangleMesh::BuildRTree()
@@ -718,8 +723,8 @@ public:
 
 				if (tRayTest)
 				{
-					bool intersect;
-					intersect = Triangle3d::RayIntersectTriangle(rayOriginV, rayDirV, v0, v1, v2, &tempHit.hitTime) && tempHit.hitTime <= maxT;
+					bool intersect = Triangle3d::RayIntersectTriangle(rayOriginV, rayDirV, v0, v1, v2, &tempHit.hitTime);
+					intersect = intersect && tempHit.hitTime <= maxT;
 					if (!intersect)
 						continue;
 				}

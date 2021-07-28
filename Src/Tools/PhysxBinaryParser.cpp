@@ -368,7 +368,7 @@ public:
 		unsigned long long filesize = (unsigned long long)ftell(fp);
 		fseek(fp, 0, 0);
 		buffer.resize(filesize + 127);
-		void* p = (void*)(((((unsigned long long) & buffer[0]) + 127) / 128) * 128);
+		void* p = AlignMemory(&buffer[0], 128);
 		fread(p, 1, filesize, fp);
 		fclose(fp);
 
@@ -552,14 +552,17 @@ public:
 		address += sizeof(PxRTreeTriangleMesh);
 		pxMesh.importExtraData(context);
 
-		TriangleMesh* Mesh = new TriangleMesh;
-		RTree *tree = Mesh->CreateEmptyRTree();
+		TriangleMesh* TriMesh = new TriangleMesh;
+		TriMesh->SetData(pxMesh.mVertices, pxMesh.mTriangles, pxMesh.mNbVertices, pxMesh.mNbTriangles, pxMesh.Is16BitIndices());
+		TriMesh->BoundingBox = pxMesh.mAABB.GetMinMax();
+
+		RTree *tree = TriMesh->CreateEmptyRTree();
 		memcpy(tree, &pxMesh.mRTree, sizeof(RTree));
+		void* pMem = TriMesh->AllocMemory(pxMesh.mRTree.mTotalPages * sizeof(RTreePage), 128);
+		memcpy(pMem, pxMesh.mRTree.mPages, pxMesh.mRTree.mTotalPages * sizeof(RTreePage));
+		tree->mPages = (RTreePage*)pMem;
 
-		Mesh->SetData(pxMesh.mVertices, pxMesh.mTriangles, pxMesh.mNbVertices, pxMesh.mNbTriangles, pxMesh.Is16BitIndices());
-		Mesh->BoundingBox = pxMesh.mAABB.GetMinMax();
-
-		return Mesh;
+		return TriMesh;
 	}
 
 	void* DeserializeConvexMesh(unsigned char*& address, DeserializationContext& context)

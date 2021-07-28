@@ -316,8 +316,6 @@ public:
         SetCameraLookAt(Vector3d(0.0f, 0.0f, 5.0f), Vector3d(0.0f, 0.0f, 0.0f));
 
         // Initialize the projection matrix
-        // m_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / (FLOAT)height, 0.01f, 10000.0f);
-
         m_Projection = Transform::BuildPerspectiveMatrix_LHCoordinateSystem(XM_PIDIV2, width / (FLOAT)height, 0.001f, 100000.0f);
         return S_OK;
     }

@@ -6,6 +6,15 @@
 #include "../Maths/Vector3d.h"
 #include "../Maths/Box3d.h"
 
+inline void* AlignMemory(void *Memory, int Width)
+{
+#if INTPTR_MAX == INT32_MAX
+	return = (void*)((((unsigned int)(Memory + Width - 1) / Width) * Width);
+#else
+	return (void*)((((unsigned long long)Memory + Width - 1) / Width) * Width);
+#endif
+}
+
 #define RTREE_N		4
 
 struct RTreePage;
