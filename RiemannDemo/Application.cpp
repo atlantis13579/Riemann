@@ -115,7 +115,7 @@ void InitScene()
         Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, Grounds_vertices[0].Pos.y, 0), Vector3d::UnitY(), -0);
         g_World->CreateRigidBody(plane, rp);
 
-        g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]), 2);
+        g_Renderer->AddTriangles("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]), 2);
     }
 
     // Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
@@ -133,7 +133,7 @@ void InitScene()
 
         // t->SetTranslation(-Vector3d(-1.0f, 0, 0));
 
-        g_Renderer->AddMesh(&mesh, t);
+        g_Renderer->AddTriMesh(&mesh, t);
     }
 
     if (0)
@@ -196,7 +196,7 @@ void InitScene()
         t->SetScale(Vector3d(0.02f, 0.02f, 0.02f));
         g_CamCenter = t->LocalToWorld(c);
 
-        g_Renderer->AddMesh(draw_mesh, t);
+        g_Renderer->AddTriMesh(draw_mesh, t);
     }
 
     if (1)
@@ -208,7 +208,7 @@ void InitScene()
 
         Mesh cube;
         cube.AddAABB(Vector3d(-0.5f, -0.5f, -0.5f), Vector3d(0.5f, 0.5f, 0.5f));
-        g_Renderer->AddMesh(&cube, aabb->GetTransform());
+        g_Renderer->AddTriMesh(&cube, aabb->GetTransform());
     }
 
 }
@@ -232,8 +232,12 @@ void InitPhysxScene()
         Geometry* Geom = (Geometry*)it.first;
         if (Geom->GetShapeType() == TRIANGLE_MESH)
         {
-            g_Renderer->AddMesh((Mesh*)Geom->GetShapeGeometry(), Geom->GetTransform());
+            g_Renderer->AddTriMesh((Mesh*)Geom->GetShapeGeometry(), Geom->GetTransform());
         }
+		else if (Geom->GetShapeType() == CONVEX_MESH)
+		{
+			g_Renderer->AddConvexMesh((ConvexMesh*)Geom->GetShapeGeometry(), Geom->GetTransform());
+		}
     }
 
 }

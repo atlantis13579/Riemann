@@ -16,7 +16,6 @@
 class PhysxBinaryParser_34 : public PhysxBinaryParser
 {
 public:
-
 	struct ManifestEntry
 	{
 		ManifestEntry(unsigned int _offset, PxType _type)
@@ -379,6 +378,27 @@ public:
 		unsigned char			mNbHullVertices;
 		unsigned char			mNbPolygons;
 
+		const Vector3d* getVerts()	const
+		{
+			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			tmp += sizeof(PxHullPolygonData) * mNbPolygons;
+			return reinterpret_cast<const Vector3d*>(tmp);
+		}
+
+		const unsigned short* getVerticesByEdges16() const
+		{
+			if (mNbEdges & 0x8000)
+			{
+				const char* tmp = reinterpret_cast<const char*>(mPolygons);
+				tmp += sizeof(PxHullPolygonData) * mNbPolygons;
+				tmp += sizeof(Vector3d) * mNbHullVertices;
+				tmp += sizeof(unsigned char) * (mNbEdges & ~0x8000) * 2;
+				tmp += sizeof(unsigned char) * mNbHullVertices * 3;
+				return reinterpret_cast<const unsigned short*>(tmp);
+			}
+			return nullptr;
+		}
+
 		PxHullPolygonData*		mPolygons;
 		PxBigConvexRawData*		mBigConvexRawData;
 		PxInternalObjectsData	mInternal;
@@ -714,20 +734,24 @@ public:
 
 		for (int i = 0; i < pxMesh.mHullData.mNbPolygons; ++i)
 		{
-			ConvMesh->Faces.emplace_back(pxMesh.mHullData.mPolygons[i].mPlane, pxMesh.mHullData.mPolygons[i].mNbVerts);
+			ConvMesh->AddFace(pxMesh.mHullData.mPolygons[i].mPlane);
 		}
+		ConvMesh->SetVerties(pxMesh.mHullData.getVerts(), pxMesh.mHullData.mNbHullVertices);
 
-		ConvMesh->NumVertices = pxMesh.mHullData.mNbHullVertices;
-		ConvMesh->NumEdges = pxMesh.mHullData.mNbEdges & ~0x8000;
-		ConvMesh->NumFaces = pxMesh.mHullData.mNbPolygons;
+		assert(pxMesh.mHullData.getVerticesByEdges16());
+		ConvMesh->SetEdges(pxMesh.mHullData.getVerticesByEdges16(), pxMesh.mHullData.mNbEdges & ~0x8000);
+		assert(ConvMesh->VerifyIndices());
+
 		ConvMesh->Inertia = pxMesh.mInertia;
 		ConvMesh->CenterOfMass = pxMesh.mHullData.mCenterOfMass;
 		ConvMesh->BoundingVolume = pxMesh.mHullData.mAABB.GetMinMax();
 
 		assert(ConvMesh->EulerNumber() == 2);
+		assert(ConvMesh->NumVertices == ConvMesh->Verties.size());
+		assert(ConvMesh->NumEdges * 2 == ConvMesh->Edges.size());
 		assert(ConvMesh->NumFaces == ConvMesh->Faces.size());
 
-		return ConvMesh;
+		return Geom;
 	}
 
 	void* DeserializeHeightField(unsigned char*& address, DeserializationContext& context)

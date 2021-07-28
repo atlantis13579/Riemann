@@ -9,6 +9,7 @@
 #include <directxcolors.h>
 
 #include "../Src/CollisionPrimitive/Mesh.h"
+#include "../Src/CollisionPrimitive/ConvexMesh.h"
 #include "../Src/Maths/Transform.h"
 
 using namespace DirectX;
@@ -357,7 +358,17 @@ public:
         m_View = Transform::BuildViewMatrix_LHCoordinateSystem(Eye, At, Up);
     }
 
-    virtual bool AddMesh(const char* Id, Transform *pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth) override
+    virtual bool AddTriangles(const char* Id, Transform* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth) override
+    {
+        return AddPrimitive(Id, pTrans, pVerties, nVerties, pIndices, nIndices, IndicesWidth, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    }
+
+	virtual bool AddLines(const char* Id, Transform* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices) override
+	{
+        return AddPrimitive(Id, pTrans, pVerties, nVerties, pIndices, nIndices, 2, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+	}
+
+    bool AddPrimitive(const char* Id, Transform *pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth, D3D11_PRIMITIVE_TOPOLOGY Topology)
     {
         HRESULT hr = S_OK;
 
@@ -397,7 +408,7 @@ public:
         m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, mesh.IndexFormat, 0);
 
         // Set primitive topology
-        m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        m_pImmediateContext->IASetPrimitiveTopology(Topology);
 
         // Create the constant buffer
         bd.Usage = D3D11_USAGE_DEFAULT;
@@ -446,7 +457,7 @@ public:
         return false;
     }
 
-    void AddMesh(Mesh* mesh, Transform* Trans)
+    void AddTriMesh(Mesh* mesh, Transform* Trans)
     {
         mesh->CalculateNormals();
 
@@ -460,10 +471,30 @@ public:
             vv.push_back(v);
         }
 
-        AddMesh(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetNumTriangles() * 3, mesh->GetIndicesWidth() * 2);
-
+        AddTriangles(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetNumTriangles() * 3, mesh->GetIndicesWidth() * 2);
         return;
+    }
 
+    void AddConvexMesh(ConvexMesh* mesh, Transform* Trans)
+    {
+		std::vector<Vertex1> vv;
+		for (unsigned int i = 0; i < mesh->GetNumVerties(); ++i)
+		{
+			Vertex1 v;
+			v.Pos = Vector3d(mesh->Verties[i]);
+            Vector3d nor = mesh->GetNormal(i);
+			v.Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
+			vv.push_back(v);
+		}
+
+        std::vector<unsigned short> vi;
+        for (unsigned int i = 0; i < mesh->GetNumEdges(); ++i)
+        {
+            vi.push_back(mesh->Edges[i * 2]);
+            vi.push_back(mesh->Edges[i * 2 + 1]);
+        }
+
+		AddLines("Convex", Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
     }
 
     //--------------------------------------------------------------------------------------

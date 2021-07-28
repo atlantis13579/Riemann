@@ -10,13 +10,11 @@
 
 struct HullFace3d
 {
-	explicit HullFace3d(const Plane3d& p, unsigned char n)
+	explicit HullFace3d(const Plane3d& p)
 	{
 		Plane = p;
-		NumVerties = n;
 	}
 	Plane3d			Plane;
-	unsigned char	NumVerties;
 };
 
 class ConvexMesh
@@ -25,15 +23,81 @@ public:
 	Vector3d						CenterOfMass;
 	Box3d							BoundingVolume;
 	Matrix3d						Inertia;
+	std::vector<Vector3d>			Verties;
+	std::vector<unsigned short>		Edges;
 	std::vector<HullFace3d>			Faces;
 	unsigned int					NumVertices;
 	unsigned int					NumEdges;
 	unsigned int					NumFaces;
+	
+	ConvexMesh()
+	{
+		Release();
+	}
+
+	void			Release()
+	{
+		NumVertices = NumFaces = NumEdges = 0;
+		Verties.clear();
+		Edges.clear();
+		Faces.clear();
+	}
 
 	int				EulerNumber() const
 	{
 		return NumVertices - NumEdges + NumFaces;
 	}
+
+	void			AddFace(const Plane3d& p)
+	{
+		Faces.emplace_back(p);
+		NumFaces++;
+	}
+
+	void			SetVerties(const Vector3d* Verts, unsigned int Nv)
+	{
+		Verties.resize(Nv);
+		memcpy(&Verties[0], Verts, sizeof(Verties[0]) * Verties.size());
+		NumVertices = Nv;
+	}
+
+	void			SetEdges(const unsigned short* Es, unsigned int Ne)
+	{
+		Edges.resize(Ne * 2);
+		memcpy(&Edges[0], Es, sizeof(Edges[0]) * Edges.size());
+		NumEdges = Ne;
+	}
+
+	unsigned int	GetNumVerties() const
+	{
+		return NumVertices;
+	}
+
+	unsigned int	GetNumEdges() const
+	{
+		return NumEdges;
+	}
+
+	unsigned int	GetNumFaces() const
+	{
+		return NumFaces;
+	}
+
+	Vector3d		GetNormal(unsigned int i) const
+	{
+		return (Verties[i] - CenterOfMass).Unit();
+	}
+
+	bool			VerifyIndices() const
+	{
+		for (unsigned int i = 0; i < NumEdges; ++i)
+		{
+			if (Edges[i] >= NumVertices)
+				return false;
+		}
+		return true;
+	}
+
 
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
 	{
