@@ -553,8 +553,8 @@ public:
 		pxMesh.importExtraData(context);
 
 		TriangleMesh* Mesh = new TriangleMesh;
-		Mesh->CreateEmptyRTree();
-		memcpy(Mesh->m_Tree, &pxMesh.mRTree, sizeof(RTree));
+		RTree *tree = Mesh->CreateEmptyRTree();
+		memcpy(tree, &pxMesh.mRTree, sizeof(RTree));
 
 		Mesh->SetData(pxMesh.mVertices, pxMesh.mTriangles, pxMesh.mNbVertices, pxMesh.mNbTriangles, pxMesh.Is16BitIndices());
 		Mesh->BoundingBox = pxMesh.mAABB.GetMinMax();

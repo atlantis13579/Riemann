@@ -95,7 +95,7 @@ void InitScene()
     RigidBodyParam rp;
     g_World = new PhysicsWorldRB(param);
 
-    if (0)
+    if (1)
     {
         Vertex1 Grounds_vertices[] =
         {
@@ -104,7 +104,7 @@ void InitScene()
             { Vector3d(100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
             { Vector3d(-100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
         };
-        unsigned int Grounds_indices[] =
+        unsigned short Grounds_indices[] =
         {
             2,1,0,
             2,3,0,
@@ -115,7 +115,7 @@ void InitScene()
         Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, Grounds_vertices[0].Pos.y, 0), Vector3d::UnitY(), -0);
         g_World->CreateRigidBody(plane, rp);
 
-        g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]));
+        g_Renderer->AddMesh("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]), 2);
     }
 
     // Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
@@ -136,7 +136,7 @@ void InitScene()
         g_Renderer->AddMesh(&mesh, t);
     }
 
-    if (1)
+    if (0)
     {
         VoxelField field;
 
@@ -199,7 +199,7 @@ void InitScene()
         g_Renderer->AddMesh(draw_mesh, t);
     }
 
-    if (0)
+    if (1)
     {
         rp.mass = 1.0f;
         rp.Static = false;

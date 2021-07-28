@@ -10,6 +10,7 @@ public:
 	TriangleMesh()
 	{
 		m_Tree = nullptr;
+		m_Memory = nullptr;
 	}
 
 	~TriangleMesh()
@@ -27,7 +28,7 @@ public:
 		}
 	}
 
-	void			CreateEmptyRTree();
+	RTree*			CreateEmptyRTree();
 	void			BuildRTree();
 
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
@@ -41,6 +42,7 @@ public:
 
 	Vector3d GetSupport(const Vector3d& dir) const;
 
-public:
+private:
 	RTree*	m_Tree;
+	void*	m_Memory;
 };

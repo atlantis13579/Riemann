@@ -456,7 +456,7 @@ struct SubSortSAH
 };
 
 
-static void buildFromBounds(RTree& result, const Box3d* allBounds, unsigned int numBounds, std::vector<unsigned int>& permute, const Box3d &treeBounds, RTreeRemap *rc)
+static void buildFromBounds(RTree& result, void*& Memory, const Box3d* allBounds, unsigned int numBounds, std::vector<unsigned int>& permute, const Box3d &treeBounds, RTreeRemap *rc)
 {
 	float sizePerfTradeOff01 = 1.0f;		// 0 - 1
 	int hint = 0;
@@ -566,14 +566,14 @@ static void buildFromBounds(RTree& result, const Box3d* allBounds, unsigned int 
 	// build the final rtree image
 	result.mInvDiagonal = Vector4d(1.0f);
 	assert(qtreeNodes.size() % RTREE_N == 0);
-	result.mFlags |= RTree::USER_ALLOCATED;
+	// result.mFlags |= RTree::USER_ALLOCATED;
 	result.mTotalNodes = (unsigned int)qtreeNodes.size();
 	result.mTotalPages = result.mTotalNodes / pageSize;
-	void *mMemory = new unsigned char[sizeof(RTreePage) * result.mTotalPages + 127];		// TODO
+	Memory = new unsigned char[sizeof(RTreePage) * result.mTotalPages + 127];		// TODO
 #if INTPTR_MAX == INT32_MAX
 	result.mPages = (RTreePage*)(((unsigned int)(mMemory + 127) / 128) * 128);
 #else
-	result.mPages = (RTreePage*)((((unsigned long long)mMemory + 127) / 128) * 128);
+	result.mPages = (RTreePage*)((((unsigned long long)Memory + 127) / 128) * 128);
 #endif
 	result.mBoundsMin = Vector4d(treeBounds.Min, 0.0f);
 	result.mBoundsMax = Vector4d(treeBounds.Max, 0.0f);
@@ -605,12 +605,17 @@ static void buildFromBounds(RTree& result, const Box3d* allBounds, unsigned int 
 }
 
 
-void TriangleMesh::CreateEmptyRTree()
+RTree* TriangleMesh::CreateEmptyRTree()
 {
 	if (m_Tree == nullptr)
 	{
 		m_Tree = new RTree;
 	}
+	else
+	{
+		m_Tree->release();
+	}
+	return m_Tree;
 }
 
 void TriangleMesh::BuildRTree()
@@ -639,7 +644,7 @@ void TriangleMesh::BuildRTree()
 
 	std::vector<unsigned int> permute;
 	RTreeRemap rc(NumTriangles);
-	buildFromBounds(*m_Tree, &allBounds[0], NumTriangles, permute, treeBounds, &rc);
+	buildFromBounds(*m_Tree, m_Memory, &allBounds[0], NumTriangles, permute, treeBounds, &rc);
 }
 
 template<bool tRayTest>

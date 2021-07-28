@@ -32,6 +32,7 @@ struct DX11StaticMesh
     ID3D11Buffer* pConstantBuffer = nullptr;
     Transform*    Trans;
     int           IndexCount = 0;
+    DXGI_FORMAT   IndexFormat = DXGI_FORMAT_R32_UINT;
 
     void Release()
     {
@@ -358,7 +359,7 @@ public:
         m_View = Transform::BuildViewMatrix_LHCoordinateSystem(Eye, At, Up);
     }
 
-    virtual bool AddMesh(const char* Id, Transform *pTrans, const Vertex1* pVerties, int nVerties, const unsigned int* pIndices, int nIndices) override
+    virtual bool AddMesh(const char* Id, Transform *pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth) override
     {
         HRESULT hr = S_OK;
 
@@ -385,16 +386,17 @@ public:
 
         // Create index buffer
         bd.Usage = D3D11_USAGE_DEFAULT;
-        bd.ByteWidth = sizeof(pIndices[0]) * nIndices;
+        bd.ByteWidth = IndicesWidth * nIndices;
         bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
         bd.CPUAccessFlags = 0;
-        InitData.pSysMem = (const void*)pIndices;
+        InitData.pSysMem = pIndices;
         hr = m_pd3dDevice->CreateBuffer(&bd, &InitData, &mesh.pIndexBuffer);
         if (FAILED(hr))
             return false;
 
         // Set index buffer
-        m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+        mesh.IndexFormat = IndicesWidth == 4 ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT;
+        m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, mesh.IndexFormat, 0);
 
         // Set primitive topology
         m_pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -460,15 +462,7 @@ public:
             vv.push_back(v);
         }
 
-        std::vector<unsigned int> vi;
-        for (unsigned int i = 0; i < mesh->GetNumTriangles(); ++i)
-        {
-            vi.push_back(mesh->Indices[3 * i + 0]);
-            vi.push_back(mesh->Indices[3 * i + 1]);
-            vi.push_back(mesh->Indices[3 * i + 2]);
-        }
-
-        AddMesh(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
+        AddMesh(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetNumTriangles() * 3, mesh->GetIndicesWidth() * 2);
 
         return;
 
@@ -540,8 +534,7 @@ public:
             UINT stride = sizeof(Vertex1);
             UINT offset = 0;
             m_pImmediateContext->IASetVertexBuffers(0, 1, &mesh.pVertexBuffer, &stride, &offset);
-            m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-
+            m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, mesh.IndexFormat, 0);
             m_pImmediateContext->DrawIndexed(mesh.IndexCount, 0, 0);
         }
 

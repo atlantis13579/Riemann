@@ -27,7 +27,7 @@ public:
 	virtual void Render() = 0;
 
 	virtual void SetCameraLookAt(Vector3d Eye, Vector3d At) = 0;
-	virtual bool AddMesh(const char* Id, Transform* pTrans, const Vertex1* pVerties, int nVerties, const unsigned int* pIndices, int nIndices) = 0;
+	virtual bool AddMesh(const char* Id, Transform* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth) = 0;
 	virtual bool UpdateVerties(const char* Id, const Vertex1* pVerties, int nVerties) = 0;
 	virtual bool DeleteMesh(const char* Id) = 0;
 

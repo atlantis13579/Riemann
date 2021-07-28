@@ -65,12 +65,12 @@ public:
 
 	const unsigned int* GetIndices32() const			// (unsigned int*)&Indices[0]
 	{
-		return (unsigned int*)GetIndexBuffer();
+		return (unsigned int*)&Indices[0];
 	}
 
 	unsigned int* GetIndices32()
 	{
-		return (unsigned int*)GetIndexBuffer();
+		return (unsigned int*)&Indices[0];
 	}
 
 	bool Is16bitIndices() const
@@ -133,9 +133,9 @@ public:
 
 	void AddTriangle(unsigned int a, unsigned int b, unsigned int c)
 	{
-		if (NumTriangles * 3 + 2 >= Indices.size() * GetIndicesWidth())
+		if ((NumTriangles * 3 + 2) * GetIndicesWidth() >= Indices.size())
 		{
-			Indices.resize(Indices.size() + TRIANGLE_BATCH * 3 * GetIndicesWidth());
+			Indices.resize((Indices.size() + TRIANGLE_BATCH * 3) * GetIndicesWidth());
 		}
 
 		if (Is16bitIndices())
@@ -258,6 +258,7 @@ public:
 
 		unsigned int Magic = 0xF34D9017;
 		fwrite(&Magic, sizeof(Magic), 1, fp);
+		fwrite(&Flags, sizeof(Flags), 1, fp);
 		fwrite(&NumVerties, sizeof(NumVerties), 1, fp);
 		fwrite(&NumTriangles, sizeof(NumTriangles), 1, fp);
 		fwrite(&Verties[0], sizeof(Verties[0]), NumVerties, fp);
@@ -289,7 +290,7 @@ public:
 		{
 			return false;
 		}
-
+		fread(&Flags, sizeof(Flags), 1, fp);
 		fread(&NumVerties, sizeof(NumVerties), 1, fp);
 		fread(&NumTriangles, sizeof(NumTriangles), 1, fp);
 		Verties.resize(NumVerties);
@@ -307,19 +308,41 @@ public:
 	int FilterTriangle(std::function<bool(const Vector3d&, const Vector3d&, const Vector3d&)> filter_func)
 	{
 		int j = 0;
-		for (unsigned int i = 0; i < NumTriangles; ++i)
+		if (Is16bitIndices())
 		{
-			if (!filter_func(Verties[Indices[3*i]], Verties[Indices[3*i+1]], Verties[Indices[3*i+2]] ))
+			for (unsigned int i = 0; i < NumTriangles; ++i)
 			{
-				if (i != j)
+				if (!filter_func(Verties[Indices[3 * i]], Verties[Indices[3 * i + 1]], Verties[Indices[3 * i + 2]]))
 				{
-					Indices[3 * j + 0] = Indices[3 * i  +0];
-					Indices[3 * j + 1] = Indices[3 * i + 1];
-					Indices[3 * j + 2] = Indices[3 * i + 2];
+					if (i != j)
+					{
+						Indices[3 * j + 0] = Indices[3 * i + 0];
+						Indices[3 * j + 1] = Indices[3 * i + 1];
+						Indices[3 * j + 2] = Indices[3 * i + 2];
+					}
+					++j;
 				}
-				++j;
 			}
 		}
+		else
+		{
+			unsigned int* Indices32 = GetIndices32();
+			for (unsigned int i = 0; i < NumTriangles; ++i)
+			{
+				if (!filter_func(Verties[Indices32[3 * i]], Verties[Indices32[3 * i + 1]], Verties[Indices32[3 * i + 2]]))
+				{
+					if (i != j)
+					{
+						Indices32[3 * j + 0] = Indices32[3 * i + 0];
+						Indices32[3 * j + 1] = Indices32[3 * i + 1];
+						Indices32[3 * j + 2] = Indices32[3 * i + 2];
+					}
+					++j;
+				}
+			}
+		}
+
+
 		int nFiltered = NumTriangles - j;
 		NumTriangles = j;
 		return nFiltered;
@@ -343,9 +366,20 @@ public:
 		memset(&Normals[0], 0, sizeof(Normals[0]) * Normals.size());
 		for (unsigned int i = 0; i < NumTriangles; ++i)
 		{
-			const int i0 = Indices[3 * i + 0];
-			const int i1 = Indices[3 * i + 1];
-			const int i2 = Indices[3 * i + 2];
+			int i0, i1, i2;
+			if (Is16bitIndices())
+			{
+				i0 = Indices[3 * i + 0];
+				i1 = Indices[3 * i + 1];
+				i2 = Indices[3 * i + 2];
+			}
+			else
+			{
+				unsigned int* Indices32 = GetIndices32();
+				i0 = Indices32[3 * i + 0];
+				i1 = Indices32[3 * i + 1];
+				i2 = Indices32[3 * i + 2];
+			}
 			const Vector3d& v0 = Verties[i0];
 			const Vector3d& v1 = Verties[i1];
 			const Vector3d& v2 = Verties[i2];
