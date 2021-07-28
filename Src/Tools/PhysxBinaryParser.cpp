@@ -1,6 +1,7 @@
 
 #include "PhysxBinaryParser.h"
 #include "Serialization.h"
+#include "../Collision/GeometryObject.h"
 #include "../Collision/TriangleMesh.h"
 #include "../Collision/RTree.h"
 #include "../Maths/Box3d.h"
@@ -534,9 +535,10 @@ public:
 				bool isExternal;
 				unsigned int manifestIndex = exportReferences[i].objIndex.getIndex(isExternal);
 				assert(!isExternal);
-				PxBase* obj = reinterpret_cast<PxBase*>(addressObjectData + manifestTable[manifestIndex].offset);
-				collection->mIds.emplace(exportReferences[i].id, obj);
-				collection->mObjects[obj] = exportReferences[i].id;
+				// TODO
+				// PxBase* obj = reinterpret_cast<PxBase*>(addressObjectData + manifestTable[manifestIndex].offset);
+				// collection->mIds.emplace(exportReferences[i].id, obj);
+				// collection->mObjects[obj] = exportReferences[i].id;
 			}
 		}
 		return true;
@@ -552,7 +554,8 @@ public:
 		address += sizeof(PxRTreeTriangleMesh);
 		pxMesh.importExtraData(context);
 
-		TriangleMesh* TriMesh = new TriangleMesh;
+		Geometry* Geom = GeometryFactory::CreateTriangleMesh(pxMesh.mAABB.Center);
+		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
 		TriMesh->SetData(pxMesh.mVertices, pxMesh.mTriangles, pxMesh.mNbVertices, pxMesh.mNbTriangles, pxMesh.Is16BitIndices());
 		TriMesh->BoundingBox = pxMesh.mAABB.GetMinMax();
 
@@ -562,7 +565,7 @@ public:
 		memcpy(pMem, pxMesh.mRTree.mPages, pxMesh.mRTree.mTotalPages * sizeof(RTreePage));
 		tree->mPages = (RTreePage*)pMem;
 
-		return TriMesh;
+		return Geom;
 	}
 
 	void* DeserializeConvexMesh(unsigned char*& address, DeserializationContext& context)

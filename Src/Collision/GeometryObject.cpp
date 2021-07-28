@@ -7,6 +7,7 @@
 #include "../CollisionPrimitive/Triangle3d.h"
 #include "../CollisionPrimitive/Cylinder3d.h"
 #include "../CollisionPrimitive/Capsule3d.h"
+#include "TriangleMesh.h"
 
 Geometry::Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity /*= nullptr*/)
 {
@@ -92,6 +93,16 @@ void				Geometry::SetEntity(void* Entity)
 Transform*			Geometry::GetTransform()
 {
 	return &m_Transform;
+}
+
+GeometryShapeType	Geometry::GetShapeType()
+{
+	return m_Shape.Type;
+}
+
+void*				Geometry::GetShapeGeometry()
+{
+	return m_Shape.Object;
 }
 
 bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
@@ -181,6 +192,7 @@ public:
 		REG_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere3d)
 		REG_GEOMETRY_OBJ(GeometryShapeType::CAPSULE, Capsule3d)
 		REG_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE, Triangle3d)
+		REG_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE_MESH, TriangleMesh)
 	}
 };
 Geometry_Registration s_geom_registration;
@@ -213,4 +225,10 @@ Geometry* GeometryFactory::CreateTriangle(const Vector3d& Position, const Vector
 {
 	Triangle3d* shape = new Triangle3d(A, B, C);
 	return new Geometry(Position, GeometryShapeType::TRIANGLE, shape, nullptr);
+}
+
+Geometry* GeometryFactory::CreateTriangleMesh(const Vector3d& Position)
+{
+	TriangleMesh* shape = new TriangleMesh;
+	return new Geometry(Position, GeometryShapeType::TRIANGLE_MESH, shape, nullptr);
 }

@@ -21,7 +21,7 @@
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorldRB.h"
 #include "../Renderer/Renderer.h"
-
+#include "../Src/Tools/PhysxBinaryParser.h"
 
 PhysicsWorldRB* g_World = nullptr;
 
@@ -214,6 +214,31 @@ void InitScene()
 }
 #pragma optimize("", on)
 
+
+
+#pragma optimize("", off)
+void InitPhysxScene()
+{
+    PhysicsWorldRBParam param;
+    param.Gravity = Vector3d(0, -9.8f, 0);
+    RigidBodyParam rp;
+    g_World = new PhysicsWorldRB(param);
+
+    Collections collection;
+    PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/sss.bin", &collection);
+
+    for (auto it : collection.mObjects)
+    {
+        Geometry* Geom = (Geometry*)it.first;
+        if (Geom->GetShapeType() == TRIANGLE_MESH)
+        {
+            g_Renderer->AddMesh((Mesh*)Geom->GetShapeGeometry(), Geom->GetTransform());
+        }
+    }
+
+}
+#pragma optimize("", on)
+
 //--------------------------------------------------------------------------------------
 // Entry point to the program. Initializes everything and goes into a message processing 
 // loop. Idle time is used to render the scene.
@@ -232,7 +257,7 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    InitScene();
+    InitPhysxScene();
     UpdateCamera();
 
     auto last = std::chrono::steady_clock::now();

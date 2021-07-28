@@ -63,6 +63,8 @@ public:
 	void					SetEntity(void *Entity);
 
 	Transform*				GetTransform();
+	GeometryShapeType		GetShapeType();
+	void*					GetShapeGeometry();
 
 	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
 	bool					Overlap(const Geometry *Geom);
@@ -133,6 +135,7 @@ public:
 	static Geometry* CreateSphere(const Vector3d& Position, const Vector3d& Center, float Radius);
 	static Geometry* CreateCapsule(const Vector3d& Position, const Vector3d& X1, const Vector3d& X2, float Radius);
 	static Geometry* CreateTriangle(const Vector3d& Position, const Vector3d& A, const Vector3d& B, const Vector3d& C);
+	static Geometry* CreateTriangleMesh(const Vector3d& Position);
 };
 
 
