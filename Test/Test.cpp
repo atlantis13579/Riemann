@@ -38,7 +38,7 @@
 void TestPhysxBin()
 {
 	Collections collection;
-	PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/sss.bin", &collection);
+	PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/fighting.bin", &collection);
 	return;
 }
 

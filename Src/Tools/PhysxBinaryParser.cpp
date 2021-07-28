@@ -7,11 +7,25 @@
 #include "../Collision/TriangleMesh.h"
 #include "../Collision/RTree.h"
 #include "../Maths/Box3d.h"
+#include "../Maths/Transform.h"
+#include "../Maths/Quaternion.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <unordered_map>
 #include <vector>
+
+typedef int64_t PxI64;
+typedef uint64_t PxU64;
+typedef int32_t PxI32;
+typedef uint32_t PxU32;
+typedef int16_t PxI16;
+typedef uint16_t PxU16;
+typedef int8_t PxI8;
+typedef uint8_t PxU8;
+typedef float PxF32;
+typedef double PxF64;
+typedef float PxReal;
 
 class PhysxBinaryParser_34 : public PhysxBinaryParser
 {
@@ -57,7 +71,7 @@ public:
 		PxType type;
 	};
 
-	#define SERIAL_OBJECT_INDEX_TYPE_BIT (1u<<31)
+#define SERIAL_OBJECT_INDEX_TYPE_BIT (1u<<31)
 	struct SerialObjectIndex
 	{
 		SerialObjectIndex(unsigned int index, bool external) { setIndex(index, external); }
@@ -142,10 +156,56 @@ public:
 		SerialObjectIndex objIndex;
 	};
 
-	class DeserializationContext
+	template<typename T> struct PxTypeInfo {};
+
+#define PX_DEFINE_TYPEINFO(_name, _fastType) \
+	class _name; \
+	template <> struct PxTypeInfo<_name>	{	static const char* name() { return #_name;	}	enum { eFastTypeId = _fastType };	};
+
+	PX_DEFINE_TYPEINFO(PxBase, eUNDEFINED)
+	PX_DEFINE_TYPEINFO(PxMaterial, eMATERIAL)
+	PX_DEFINE_TYPEINFO(PxConvexMesh, eCONVEX_MESH)
+	PX_DEFINE_TYPEINFO(PxTriangleMesh, eUNDEFINED)
+	PX_DEFINE_TYPEINFO(PxBVH33TriangleMesh, eTRIANGLE_MESH_BVH33)
+	PX_DEFINE_TYPEINFO(PxBVH34TriangleMesh, eTRIANGLE_MESH_BVH34)
+	PX_DEFINE_TYPEINFO(PxHeightField, e_HEIGHTFIELD)
+	PX_DEFINE_TYPEINFO(PxActor, eUNDEFINED)
+	PX_DEFINE_TYPEINFO(PxRigidActor, eUNDEFINED)
+	PX_DEFINE_TYPEINFO(PxRigidBody, eUNDEFINED)
+	PX_DEFINE_TYPEINFO(PxRigidDynamic, eRIGID_DYNAMIC)
+	PX_DEFINE_TYPEINFO(PxRigidStatic, eRIGID_STATIC)
+	PX_DEFINE_TYPEINFO(PxArticulationLink, eARTICULATION_LINK)
+	PX_DEFINE_TYPEINFO(PxArticulationJoint, eARTICULATION_JOINT)
+	PX_DEFINE_TYPEINFO(PxArticulationJointReducedCoordinate, eARTICULATION_JOINT_REDUCED_COORDINATE)
+	PX_DEFINE_TYPEINFO(PxArticulation, eARTICULATION)
+	PX_DEFINE_TYPEINFO(PxArticulationReducedCoordinate, eARTICULATION_REDUCED_COORDINATE)
+	PX_DEFINE_TYPEINFO(PxAggregate, eAGGREGATE)
+	PX_DEFINE_TYPEINFO(PxConstraint, eCONSTRAINT)
+	PX_DEFINE_TYPEINFO(PxShape, eSHAPE)
+	PX_DEFINE_TYPEINFO(PxPruningStructure, ePRUNING_STRUCTURE)
+
+	class PxBase
 	{
 	public:
-		DeserializationContext(const ManifestEntry* manifestTable,
+		virtual				~PxBase() {};
+		virtual				bool		isKindOf(const char* superClass) const { return !::strcmp(superClass, "PxBase"); }
+
+		PxType				getConcreteType() const { return (PxType)mConcreteType; }
+		template<class T> T* is() { return typeMatch<T>() ? static_cast<T*>(this) : NULL; }
+		template<class T>	bool	typeMatch() const
+		{
+			return PxU32(PxTypeInfo<T>::eFastTypeId) != PxU32(eUNDEFINED) ?
+				PxU32(getConcreteType()) == PxU32(PxTypeInfo<T>::eFastTypeId) : isKindOf(PxTypeInfo<T>::name());
+		}
+
+		unsigned short		mConcreteType;			// concrete type identifier - see PxConcreteType.
+		unsigned short		mBaseFlags;				// internal flags
+	};
+
+	class PxDeserializationContext
+	{
+	public:
+		PxDeserializationContext(const ManifestEntry* manifestTable,
 			const ImportReference* importReferences,
 			unsigned char* objectDataAddress,
 			const std::unordered_map<size_t, SerialObjectIndex>& internalPtrReferencesMap,
@@ -162,7 +222,7 @@ public:
 			mExtraDataAddress = extraData;
 		}
 
-		~DeserializationContext() {}
+		~PxDeserializationContext() {}
 
 		void			readName(const char*& name)
 		{
@@ -173,7 +233,7 @@ public:
 		}
 
 		template<typename T>
-		T*				readExtraData(unsigned int count = 1)
+		T* readExtraData(unsigned int count = 1)
 		{
 			T* data = reinterpret_cast<T*>(mExtraDataAddress);
 			mExtraDataAddress += sizeof(T) * count;
@@ -181,7 +241,7 @@ public:
 		}
 
 		template<typename T, unsigned int alignment>
-		T*				readExtraData(unsigned int count = 1)
+		T* readExtraData(unsigned int count = 1)
 		{
 			alignExtraData(alignment);
 			return readExtraData<T>(count);
@@ -193,6 +253,50 @@ public:
 			addr = (addr + alignment - 1) & ~size_t(alignment - 1);
 			mExtraDataAddress = reinterpret_cast<unsigned char*>(addr);
 		}
+
+		#define PX_SERIAL_REF_KIND_PTR_TYPE_BIT (1u<<31)
+		#define PX_SERIAL_REF_KIND_PXBASE		(0 | PX_SERIAL_REF_KIND_PTR_TYPE_BIT)
+		#define PX_SERIAL_REF_KIND_MATERIAL_IDX (1)
+		PxBase* resolveReference(PxU32 kind, size_t reference) const
+		{
+			SerialObjectIndex objIndex;
+			if (kind == PX_SERIAL_REF_KIND_PXBASE)
+			{
+				auto entry0 = mInternalPtrReferencesMap.find(reference);
+				assert(entry0 != mInternalPtrReferencesMap.end());
+				objIndex = entry0->second;
+			}
+			else if (kind == PX_SERIAL_REF_KIND_MATERIAL_IDX)
+			{
+				auto entry0 = mInternalHandle16ReferencesMap.find(PxU16(reference));
+				assert(entry0 != mInternalHandle16ReferencesMap.end());
+				objIndex = entry0->second;
+			}
+			else
+			{
+				return NULL;
+			}
+
+			bool isExternal;
+			PxU32 index = objIndex.getIndex(isExternal);
+			PxBase* base = NULL;
+			if (isExternal)
+			{
+				assert(false);
+				const ImportReference& entry = mImportReferences[index];
+				// base = mExternalRefs->find(entry.id);
+			}
+			else
+			{
+				const ManifestEntry& entry = mManifestTable[index];
+				base = reinterpret_cast<PxBase*>(mObjectDataAddress + entry.offset);
+			}
+			assert(base);
+			return base;
+		}
+
+		template<typename T>
+		void			translatePxBase(T*& base) { if (base) { base = static_cast<T*>(resolveReference(PX_SERIAL_REF_KIND_PXBASE, size_t(base))); } }
 
 	private:
 		unsigned char* mExtraDataAddress;
@@ -209,16 +313,6 @@ public:
 		// const Cm::Collection* mExternalRefs;
 	};
 
-	class PxBase
-	{
-	public:
-		virtual				~PxBase() {};
-		PxType				getConcreteType() const { return (PxType)mConcreteType; }
-
-		unsigned short		mConcreteType;			// concrete type identifier - see PxConcreteType.
-		unsigned short		mBaseFlags;				// internal flags
-	};
-
 	class PxRefCountable
 	{
 	public:
@@ -231,12 +325,14 @@ public:
 	public:
 		virtual ~PxTriangleMesh() {}
 
+		virtual	bool					isKindOf(const char* name) const { return !::strcmp("PxTriangleMesh", name) || PxBase::isKindOf(name); }
+
 		bool Is16BitIndices() const
 		{
 			return mFlags & (1 << 1);		// PxTriangleMeshFlag::e16_BIT_INDICES
 		}
 
-		void importExtraData(DeserializationContext& context)
+		void importExtraData(PxDeserializationContext& context)
 		{
 			// PT: vertices are followed by indices, so it will be safe to V4Load vertices from a deserialized binary file
 			if (mVertices)
@@ -244,7 +340,7 @@ public:
 
 			if (mTriangles)
 			{
-				if (Is16BitIndices())	
+				if (Is16BitIndices())
 					mTriangles = context.readExtraData<unsigned short, 16>(3 * mNbTriangles);
 				else
 					mTriangles = context.readExtraData<unsigned int, 16>(3 * mNbTriangles);
@@ -270,15 +366,15 @@ public:
 
 		unsigned int					mNbVertices;
 		unsigned int					mNbTriangles;
-		Vector3d*						mVertices;
-		void*							mTriangles;				
-		TAABB3_CE<float>				mAABB;
-		unsigned char*					mExtraTrigData;
+		Vector3d* mVertices;
+		void* mTriangles;
+		TCE3<float>				mAABB;
+		unsigned char* mExtraTrigData;
 		float							mGeomEpsilon;
 		unsigned char					mFlags;
-		unsigned short*					mMaterialIndices;
+		unsigned short* mMaterialIndices;
 		unsigned int* mFaceRemap;
-		unsigned int* mAdjacencies;	
+		unsigned int* mAdjacencies;
 		void* mMeshFactory;
 
 		void* mGRB_triIndices;
@@ -292,7 +388,7 @@ public:
 	public:
 		virtual ~PxRTreeTriangleMesh() { }
 
-		void importExtraData(DeserializationContext& context)
+		void importExtraData(PxDeserializationContext& context)
 		{
 			context.alignExtraData(128);
 			mRTree.mPages = context.readExtraData<RTreePage>(mRTree.mTotalPages);
@@ -314,7 +410,7 @@ public:
 		float	mRadius;
 		float	mExtents[3];
 	};
-	
+
 	struct PxHullPolygonData
 	{
 		Plane3d			mPlane;
@@ -343,14 +439,14 @@ public:
 
 		unsigned int		mNbVerts;
 		unsigned int		mNbAdjVerts;
-		PxValency*			mValencies;
-		unsigned char*		mAdjacentVerts;
+		PxValency* mValencies;
+		unsigned char* mAdjacentVerts;
 	};
 
 	class PxBigConvexData
 	{
 	public:
-		void importExtraData(DeserializationContext& context)
+		void importExtraData(PxDeserializationContext& context)
 		{
 			if (mData.mSamples)
 				mData.mSamples = context.readExtraData<unsigned char, 16>(unsigned int(mData.mNbSamples * 2));
@@ -370,9 +466,9 @@ public:
 		void* mVBuffer;
 	};
 
-	struct PxConvexHullData
+	struct ConvexHullData
 	{
-		TAABB3_CE<float>		mAABB;
+		TCE3<float>		mAABB;
 		Vector3d				mCenterOfMass;
 		unsigned short			mNbEdges;
 		unsigned char			mNbHullVertices;
@@ -399,15 +495,17 @@ public:
 			return nullptr;
 		}
 
-		PxHullPolygonData*		mPolygons;
-		PxBigConvexRawData*		mBigConvexRawData;
+		PxHullPolygonData* mPolygons;
+		PxBigConvexRawData* mBigConvexRawData;
 		PxInternalObjectsData	mInternal;
 	};
 
 	class PxConvexMesh : public PxBase, public PxRefCountable
 	{
 	public:
-		unsigned int computeBufferSize(const PxConvexHullData& data, unsigned int nb)
+		virtual	bool				isKindOf(const char* name) const { return !::strcmp("PxConvexMesh", name) || PxBase::isKindOf(name); }
+
+		unsigned int computeBufferSize(const ConvexHullData& data, unsigned int nb)
 		{
 			unsigned int bytesNeeded = sizeof(PxHullPolygonData) * data.mNbPolygons;
 			unsigned short mnbEdges = (data.mNbEdges & ~0x8000);
@@ -422,7 +520,7 @@ public:
 			return bytesNeeded;
 		}
 
-		void importExtraData(DeserializationContext& context)
+		void importExtraData(PxDeserializationContext& context)
 		{
 			const unsigned int bufferSize = computeBufferSize(mHullData, GetNb());
 			mHullData.mPolygons = reinterpret_cast<PxHullPolygonData*>(context.readExtraData<unsigned char, 16>(bufferSize));
@@ -442,20 +540,516 @@ public:
 			return mNb & ~0x8000000;
 		}
 
-		void resolveReferences(DeserializationContext& context)
+		void resolveReferences(PxDeserializationContext& context)
 		{
 		}
 
-		PxConvexHullData		mHullData;
+		ConvexHullData		mHullData;
 		unsigned int			mNb;
-		PxBigConvexData*		mBigConvexData;
+		PxBigConvexData* mBigConvexData;
 		float					mMass;
 		Matrix3d				mInertia;
-		void*					mMeshFactory;
+		void* mMeshFactory;
 	};
 
-	static_assert(sizeof(PxConvexHullData) == 72, "sizeof(ConvexHullData) not valid");
+	static_assert(sizeof(ConvexHullData) == 72, "sizeof(ConvexHullData) not valid");
 	static_assert(sizeof(PxConvexMesh) == 168, "sizeof(ConvexMesh) not valid");
+
+	struct PxHeightFieldSample
+	{
+		unsigned short			height;
+		unsigned char	materialIndex0;
+		unsigned char	materialIndex1;
+	};
+
+	struct HeightFieldData
+	{
+		TCE3<float>					mAABB;
+		unsigned int				rows;
+		unsigned int				columns;
+		float						rowLimit;
+		float						colLimit;
+		float						nbColumns;
+		PxHeightFieldSample* samples;
+		float						convexEdgeThreshold;
+		unsigned short				flags;
+		int							format;
+	};
+
+	class PxHeightField : public PxBase, public PxRefCountable
+	{
+	public:
+		virtual ~PxHeightField() {}
+		virtual	bool					isKindOf(const char* name) const { return !::strcmp("PxHeightField", name) || PxBase::isKindOf(name); }
+
+		void importExtraData(PxDeserializationContext& context)
+		{
+			mData.samples = context.readExtraData<PxHeightFieldSample, 16>(mData.rows * mData.columns);
+		}
+
+		void resolveReferences(PxDeserializationContext& context)
+		{
+		}
+
+		HeightFieldData			mData;
+		unsigned int				mSampleStride;
+		unsigned int				mNbSamples;
+		float						mMinHeight;
+		float						mMaxHeight;
+		unsigned int				mModifyCount;
+
+		void* mMeshFactory;
+	};
+
+	static_assert(sizeof(HeightFieldData) == 72, "sizeof(PxHeightFieldData) not valid");
+	static_assert(sizeof(PxHeightField) == 136, "sizeof(PxHeightField) not valid");
+
+	class PxMaterial : public PxBase
+	{
+	public:
+		virtual					~PxMaterial() {}
+		virtual		bool			isKindOf(const char* name) const { return !::strcmp("PxMaterial", name) || PxBase::isKindOf(name); }
+
+		void* userData;
+	};
+
+	__declspec(align(16))
+	struct PxMaterialCore
+	{
+		float					dynamicFriction;				//4
+		float					staticFriction;					//8
+		float					restitution;					//12
+		unsigned short			flags;							//14
+		unsigned char			fricRestCombineMode;			//15
+		unsigned char			padding;						//16
+		PxMaterial*				mNxMaterial;
+		unsigned short			mMaterialIndex; //handle assign by the handle manager
+		unsigned short			mPadding;
+	};
+
+	class NpMaterial : public PxMaterial, public PxRefCountable
+	{
+	public:        
+		virtual				~NpMaterial() {}
+		PxU16				getHandle()			const { return mMaterial.mMaterialIndex; }
+
+		void				importExtraData(PxDeserializationContext& context) {}
+
+		void				resolveReferences(PxDeserializationContext& context)
+		{
+			mMaterial.mNxMaterial = this;
+		}
+		PxMaterialCore			mMaterial;
+	};
+
+	static_assert(sizeof(PxMaterial) == 24, "sizeof(PxMaterial) not valid");
+	static_assert(sizeof(PxMaterialCore) == 32, "sizeof(PxMaterialCore) not valid");
+	static_assert(sizeof(NpMaterial) == 80, "sizeof(NpMaterial) not valid");
+
+	struct PxFilterData
+	{
+		PxU32 word0;
+		PxU32 word1;
+		PxU32 word2;
+		PxU32 word3;
+	};
+
+	class PxTransform
+	{
+	public:
+		Quaternion q;
+		Vector3d p;
+	};
+
+	enum Enum
+	{
+		eSPHERE,
+		ePLANE,
+		eCAPSULE,
+		eBOX,
+		eCONVEXMESH,
+		eTRIANGLEMESH,
+		eHEIGHTFIELD,
+		eGEOMETRY_COUNT,	//!< internal use only!
+		eINVALID = -1		//!< internal use only!
+	};
+
+	class PxGeometry
+	{
+	public:
+		int mType;
+	};
+
+	class PxBoxGeometry : public PxGeometry
+	{
+	public:
+		Vector3d halfExtents;
+	};
+
+	class PxSphereGeometry : public PxGeometry
+	{
+		PxReal radius;
+	};
+
+	class PxCapsuleGeometry : public PxGeometry
+	{
+	public:
+		PxReal radius;
+		PxReal halfHeight;
+	};
+
+	class PxPlaneGeometry : public PxGeometry
+	{
+	public:
+	};
+
+	class PxMeshScale
+	{
+	public:
+		Vector3d		scale;
+		Quaternion		rotation;
+	};
+
+	class PxConvexMeshGeometry : public PxGeometry
+	{
+	public:
+		PxMeshScale			scale;
+		PxConvexMesh*		convexMesh;
+		PxU8				meshFlags;
+		PxU8				paddingFromFlags[3];
+	};
+
+	struct PxConvexMeshGeometryLL : public PxConvexMeshGeometry
+	{
+		const ConvexHullData* hullData;
+		bool				 gpuCompatible;
+	};
+
+	class PxTriangleMeshGeometry : public PxGeometry
+	{
+	public:
+		PxMeshScale			scale;
+		PxU8				meshFlags;
+		PxU8				paddingFromFlags[3];
+		PxTriangleMesh*		triangleMesh;
+	};
+
+	class PxHeightFieldGeometry : public PxGeometry
+	{
+	public:
+		PxHeightField*		heightField;
+		PxReal				heightScale;
+		PxReal				rowScale;
+		PxReal				columnScale;
+		PxU8				heightFieldFlags;
+		PxU8				paddingFromFlags[3];
+	};
+
+	struct MaterialIndicesStruct
+	{
+		PxU16* indices;
+		PxU16	numIndices;
+		PxU16	pad;
+#if INTPTR_MAX != INT32_MAX
+		PxU32	pad64;
+#endif
+	};
+
+	struct PxTriangleMeshGeometryLL : public PxTriangleMeshGeometry
+	{
+		const PxTriangleMesh* meshData;
+		const PxU16* materialIndices;
+		MaterialIndicesStruct				materials;
+	};
+
+	struct PxHeightFieldGeometryLL : public PxHeightFieldGeometry
+	{
+		const HeightFieldData*		heightFieldData;
+		MaterialIndicesStruct		materials;
+	};
+
+	class InvalidGeometry : public PxGeometry
+	{
+	public:
+	};
+
+	class GeometryUnion
+	{
+	public:
+		int getType()					const { return reinterpret_cast<const PxGeometry&>(mGeometry).mType; }
+
+		template<class Geom> Geom& get()
+		{
+			return reinterpret_cast<Geom&>(mGeometry);
+		}
+
+		const PxGeometry& getGeometry()				const { return reinterpret_cast<const PxGeometry&>(mGeometry); }
+
+		union {
+			void* alignment;	// PT: Makes sure the class is at least aligned to pointer size. See DE6803. 
+			PxU8	box[sizeof(PxBoxGeometry)];
+			PxU8	sphere[sizeof(PxSphereGeometry)];
+			PxU8	capsule[sizeof(PxCapsuleGeometry)];
+			PxU8	plane[sizeof(PxPlaneGeometry)];
+			PxU8	convex[sizeof(PxConvexMeshGeometryLL)];
+			PxU8	mesh[sizeof(PxTriangleMeshGeometryLL)];
+			PxU8	heightfield[sizeof(PxHeightFieldGeometryLL)];
+			PxU8	invalid[sizeof(InvalidGeometry)];
+		} mGeometry;
+	};
+
+	struct PxsShapeCore
+	{
+		__declspec(align(16)) PxTransform			transform;
+		PxReal				contactOffset;
+		PxU8				mShapeFlags;			// !< API shape flags	// PT: TODO: use PxShapeFlags here. Needs to move flags to separate file.
+		PxU8				mOwnsMaterialIdxMemory;	// PT: for de-serialization to avoid deallocating material index list. Moved there from Sc::ShapeCore (since one byte was free).
+		PxU16				materialIndex;
+		GeometryUnion		geometry;
+	};
+
+	class ScShapeCore
+	{
+	public:
+		void importExtraData(PxDeserializationContext& context)
+		{
+			const int geomType = mCore.geometry.getType();
+
+			if (geomType == eTRIANGLEMESH)
+			{
+				MaterialIndicesStruct& materials = mCore.geometry.get<PxTriangleMeshGeometryLL>().materials;
+				materials.indices = context.readExtraData<PxU16, 16>(materials.numIndices);
+			}
+			else if (geomType == eHEIGHTFIELD)
+			{
+				MaterialIndicesStruct& materials = mCore.geometry.get<PxHeightFieldGeometryLL>().materials;
+				materials.indices = context.readExtraData<PxU16, 16>(materials.numIndices);
+			}
+		}
+
+		PxU16 getNbMaterialIndices()
+		{
+			const int geomType = mCore.geometry.getType();
+
+			if ((geomType != eTRIANGLEMESH) && (geomType != eHEIGHTFIELD))
+			{
+				return 1;
+			}
+			else if (geomType == eTRIANGLEMESH)
+			{
+				PxTriangleMeshGeometryLL& meshGeom = mCore.geometry.get<PxTriangleMeshGeometryLL>();
+				return meshGeom.materials.numIndices;
+			}
+			else
+			{
+				assert(geomType == eHEIGHTFIELD);
+				PxHeightFieldGeometryLL& hfGeom = mCore.geometry.get<PxHeightFieldGeometryLL>();
+				return hfGeom.materials.numIndices;
+			}
+		}
+
+		const PxU16*  getMaterialIndices()
+		{
+			const int geomType = mCore.geometry.getType();
+
+			if ((geomType != eTRIANGLEMESH) && (geomType != eHEIGHTFIELD))
+			{
+				return &mCore.materialIndex;
+			}
+			else if (geomType == eTRIANGLEMESH)
+			{
+				PxTriangleMeshGeometryLL& meshGeom = mCore.geometry.get<PxTriangleMeshGeometryLL>();
+				return meshGeom.materials.indices;
+			}
+			else
+			{
+				assert(geomType == eHEIGHTFIELD);
+				PxHeightFieldGeometryLL& hfGeom = mCore.geometry.get<PxHeightFieldGeometryLL>();
+				return hfGeom.materials.indices;
+			}
+		}
+
+		void resolveMaterialReference(PxU32 materialTableIndex, PxU16 materialIndex)
+		{
+			if (materialTableIndex == 0)
+			{
+				mCore.materialIndex = materialIndex;
+			}
+
+			PxGeometry& geom = const_cast<PxGeometry&>(mCore.geometry.getGeometry());
+
+			if (geom.mType == eHEIGHTFIELD)
+			{
+				PxHeightFieldGeometryLL& hfGeom = static_cast<PxHeightFieldGeometryLL&>(geom);
+				hfGeom.materials.indices[materialTableIndex] = materialIndex;
+			}
+			else if (geom.mType == eTRIANGLEMESH)
+			{
+				PxTriangleMeshGeometryLL& meshGeom = static_cast<PxTriangleMeshGeometryLL&>(geom);
+				meshGeom.materials.indices[materialTableIndex] = materialIndex;
+			}
+		}
+
+		static PxConvexMeshGeometryLL extendForLL(const PxConvexMeshGeometry& hlGeom)
+		{
+			PxConvexMeshGeometryLL llGeom;
+			static_cast<PxConvexMeshGeometry&>(llGeom) = hlGeom;
+
+			PxConvexMesh* cm = static_cast<PxConvexMesh*>(hlGeom.convexMesh);
+
+			llGeom.hullData = &cm->mHullData;
+			llGeom.gpuCompatible = false;
+
+			return llGeom;
+		}
+
+		static PxTriangleMeshGeometryLL extendForLL(const PxTriangleMeshGeometry& hlGeom)
+		{
+			PxTriangleMeshGeometryLL llGeom;
+			static_cast<PxTriangleMeshGeometry&>(llGeom) = hlGeom;
+
+			PxTriangleMesh* tm = static_cast<PxTriangleMesh*>(hlGeom.triangleMesh);
+			llGeom.meshData = tm;
+			llGeom.materialIndices = tm->mMaterialIndices;
+			llGeom.materials = static_cast<const PxTriangleMeshGeometryLL&>(hlGeom).materials;
+
+			return llGeom;
+		}
+
+		static PxHeightFieldGeometryLL extendForLL(const PxHeightFieldGeometry& hlGeom)
+		{
+			PxHeightFieldGeometryLL llGeom;
+			static_cast<PxHeightFieldGeometry&>(llGeom) = hlGeom;
+
+			PxHeightField* hf = static_cast<PxHeightField*>(hlGeom.heightField);
+
+			llGeom.heightFieldData = &hf->mData;
+
+			llGeom.materials = static_cast<const PxHeightFieldGeometryLL&>(hlGeom).materials;
+
+			return llGeom;
+		}
+
+
+		void resolveReferences(PxDeserializationContext& context)
+		{
+			// Resolve geometry pointers if needed
+			PxGeometry& geom = const_cast<PxGeometry&>(mCore.geometry.getGeometry());
+
+			switch (geom.mType)
+			{
+			case eCONVEXMESH:
+			{
+				PxConvexMeshGeometryLL& convexGeom = static_cast<PxConvexMeshGeometryLL&>(geom);
+				context.translatePxBase(convexGeom.convexMesh);
+
+				// update the hullData pointer
+				static_cast<PxConvexMeshGeometryLL&>(geom) = extendForLL(convexGeom);
+			}
+			break;
+
+			case eHEIGHTFIELD:
+			{
+				PxHeightFieldGeometryLL& hfGeom = static_cast<PxHeightFieldGeometryLL&>(geom);
+				context.translatePxBase(hfGeom.heightField);
+
+				// update hf pointers
+				static_cast<PxHeightFieldGeometryLL&>(geom) = extendForLL(hfGeom);
+			}
+			break;
+
+			case eTRIANGLEMESH:
+			{
+				PxTriangleMeshGeometryLL& meshGeom = static_cast<PxTriangleMeshGeometryLL&>(geom);
+				context.translatePxBase(meshGeom.triangleMesh);
+
+				// update mesh pointers
+				static_cast<PxTriangleMeshGeometryLL&>(geom) = extendForLL(meshGeom);
+			}
+			break;
+			case eSPHERE:
+			case ePLANE:
+			case eCAPSULE:
+			case eBOX:
+			case eGEOMETRY_COUNT:
+			case eINVALID:
+				break;
+
+			}
+		}
+
+		PxFilterData				mQueryFilterData;		// Query filter data PT: TODO: consider moving this to SceneQueryShapeData
+		PxFilterData				mSimulationFilterData;	// Simulation filter data
+		PxsShapeCore				__declspec(align(16)) mCore;
+		PxReal						mRestOffset;			// same as the API property of the same name
+		PxReal						mTorsionalRadius;
+		PxReal						mMinTorsionalPatchRadius;
+	};
+
+	class ScBase
+	{
+	public:
+		void* mScene;
+		unsigned int	mControlState;
+		unsigned char* mStreamPtr;
+	};
+
+	class ScShape : public ScBase
+	{
+	public:
+		ScShapeCore		mShape;
+	};
+
+	class PxShape : public PxBase
+	{
+	public:
+		virtual		bool					isKindOf(const char* name) const { return !::strcmp("PxShape", name) || PxBase::isKindOf(name); }
+		void* UserData;
+	};
+
+	class NpShape : public PxShape, public PxRefCountable
+	{
+	public:
+		virtual					~NpShape() {}
+
+		void importExtraData(PxDeserializationContext& context)
+		{
+			mShape.mShape.importExtraData(context);
+			context.readName(mName);
+		}
+
+		void resolveReferences(PxDeserializationContext& context)
+		{
+			{
+				PxU32 nbIndices = mShape.mShape.getNbMaterialIndices();
+				const PxU16* indices = mShape.mShape.getMaterialIndices();
+
+				for (PxU32 i = 0; i < nbIndices; i++)
+				{
+					PxBase* base = context.resolveReference(PX_SERIAL_REF_KIND_MATERIAL_IDX, size_t(indices[i]));
+					assert(base && base->is<PxMaterial>());
+
+					NpMaterial& material = *static_cast<NpMaterial*>(base);
+					mShape.mShape.resolveMaterialReference(i, material.getHandle());
+				}
+			}
+
+			context.translatePxBase(mActor);
+
+			mShape.mShape.resolveReferences(context);
+		}
+
+		void*					mActor;
+		ScShape					mShape;
+		const char*				mName;
+		volatile int			mExclusiveAndActorCount;
+	};
+
+	static_assert(sizeof(GeometryUnion) == 80, "sizeof(GeometryUnion) not valid");
+	static_assert(sizeof(PxsShapeCore) == 128, "sizeof(PxsShapeCore) not valid");
+	static_assert(sizeof(ScShapeCore) == 176, "sizeof(ScShapeCore) not valid");
+	static_assert(sizeof(ScShape) == 208, "sizeof(ScShape) not valid");
+	static_assert(sizeof(NpShape) == 272, "sizeof(NpShape) not valid");
 
 	#define SN_BINARY_VERSION_GUID_NUM_CHARS 32
 	#define PX_BINARY_SERIAL_VERSION "77E92B17A4084033A0FDB51332D5A6BB"
@@ -629,7 +1223,7 @@ public:
 		unsigned char* addressExtraData = alignPtr(addressObjectData + objectDataEndOffset);
 		std::unordered_map<PxType, int> Missing;
 
-		DeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData);
+		PxDeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData);
 
 		// iterate over memory containing PxBase objects, create the instances, resolve the addresses, import the external data, add to collection.
 		{
@@ -653,16 +1247,31 @@ public:
 				{
 					instance = DeserializeConvexMesh(address, context);
 				}
-				else if (classType == eHEIGHTFIELD)
+				else if (classType == e_HEIGHTFIELD)
 				{
 					instance = DeserializeHeightField(address, context);
+				}
+				else if (classType == eMATERIAL)
+				{
+					instance = DeserializeMaterial(address, context);
+				}
+				else if (classType == eRIGID_STATIC)
+				{
+					instance = DeserializeRigidStatic(address, context);
+				}
+				else if (classType == eRIGID_DYNAMIC)
+				{
+					instance = DeserializeRigidDynamic(address, context);
+				}
+				else if (classType == eSHAPE)
+				{
+					instance = DeserializeShape(address, context);
 				}
 
 				if (!instance)
 				{
 					if (Missing.find(classType) == Missing.end())
 					{
-						printf("Cannot create class instance for concrete type %d.\n", classType);
 						Missing.emplace(classType, 0);
 					}
 					Missing[classType] += 1;
@@ -671,6 +1280,11 @@ public:
 
 				collection->mObjects.emplace(instance, 0);
 			}
+		}
+
+		for (auto it : Missing)
+		{
+			printf("Cannot create class instance for concrete type %d (%d times).\n", it.first, it.second);
 		}
 
 		// TODO
@@ -694,7 +1308,7 @@ public:
 		return true;
 	}
 
-	void* DeserializeTriangleMeshBV33(unsigned char*& address, DeserializationContext &context)
+	void* DeserializeTriangleMeshBV33(unsigned char*& address, PxDeserializationContext &context)
 	{
 		assert(sizeof(RTree) == 96);
 		assert(sizeof(PxRTreeTriangleMesh) == 256);
@@ -707,7 +1321,7 @@ public:
 		Geometry* Geom = GeometryFactory::CreateTriangleMesh(pxMesh.mAABB.Center);
 		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
 		TriMesh->SetData(pxMesh.mVertices, pxMesh.mTriangles, pxMesh.mNbVertices, pxMesh.mNbTriangles, pxMesh.Is16BitIndices());
-		TriMesh->BoundingVolume = pxMesh.mAABB.GetMinMax();
+		TriMesh->BoundingVolume = pxMesh.mAABB.GetAABB();
 
 		RTree *tree = TriMesh->CreateEmptyRTree();
 		memcpy(tree, &pxMesh.mRTree, sizeof(RTree));
@@ -718,9 +1332,9 @@ public:
 		return Geom;
 	}
 
-	void* DeserializeConvexMesh(unsigned char*& address, DeserializationContext& context)
+	void* DeserializeConvexMesh(unsigned char*& address, PxDeserializationContext& context)
 	{
-		assert(sizeof(PxConvexHullData) == 72);
+		assert(sizeof(ConvexHullData) == 72);
 		assert(sizeof(PxConvexMesh) == 168);
 
 		PxConvexMesh pxMesh;
@@ -744,7 +1358,7 @@ public:
 
 		ConvMesh->Inertia = pxMesh.mInertia;
 		ConvMesh->CenterOfMass = pxMesh.mHullData.mCenterOfMass;
-		ConvMesh->BoundingVolume = pxMesh.mHullData.mAABB.GetMinMax();
+		ConvMesh->BoundingVolume = pxMesh.mHullData.mAABB.GetAABB();
 
 		assert(ConvMesh->EulerNumber() == 2);
 		assert(ConvMesh->NumVertices == ConvMesh->Verties.size());
@@ -754,8 +1368,59 @@ public:
 		return Geom;
 	}
 
-	void* DeserializeHeightField(unsigned char*& address, DeserializationContext& context)
+	void* DeserializeHeightField(unsigned char*& address, PxDeserializationContext& context)
 	{
+		assert(sizeof(HeightFieldData) == 72);
+		assert(sizeof(PxHeightField) == 136);
+
+		PxHeightField px;
+		memcpy(&px, address, sizeof(px));
+		address += sizeof(px);
+		px.importExtraData(context);
+		px.resolveReferences(context);
+
+		// TODO
+		const TCE3<float>& box = px.mData.mAABB;
+		Geometry* Geom = GeometryFactory::CreateTriangleMesh(box.Center);
+		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
+		TriMesh->AddAABB(box.Center - box.Extent, box.Center + box.Extent);
+		return Geom;
+	}
+
+	void* DeserializeMaterial(unsigned char*& address, PxDeserializationContext& context)
+	{
+		assert(sizeof(NpMaterial) == 80);
+		assert(sizeof(PxMaterialCore) == 32);
+
+		NpMaterial px;
+		memcpy(&px, address, sizeof(px));
+		address += sizeof(px);
+		px.importExtraData(context);
+		px.resolveReferences(context);
+		
+		// TODO
+		return nullptr;
+	}
+
+	void* DeserializeRigidStatic(unsigned char*& address, PxDeserializationContext& context)
+	{
+		return nullptr;
+	}
+
+	void* DeserializeRigidDynamic(unsigned char*& address, PxDeserializationContext& context)
+	{
+		return nullptr;
+	}
+
+	void* DeserializeShape(unsigned char*& address, PxDeserializationContext& context)
+	{
+		NpShape px;
+		memcpy(&px, address, sizeof(px));
+		address += sizeof(px);
+		px.importExtraData(context);
+		px.resolveReferences(context);
+
+		// TODO
 		return nullptr;
 	}
 };

@@ -252,13 +252,13 @@ public:
 };
 
 template <typename T>
-class TAABB3_CE
+class TCE3
 {
 public:
 	TVector3<T> Center;
 	TVector3<T> Extent;
 
-	TAABB3<T> GetMinMax() const
+	TAABB3<T> GetAABB() const
 	{
 		return TAABB3<T>(Center - Extent, Center + Extent);
 	}
