@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
-class PhysxBinaryParser_3_4 : public PhysxBinaryParser
+class PhysxBinaryParser_34 : public PhysxBinaryParser
 {
 public:
 
@@ -739,6 +739,6 @@ public:
 // static
 bool PhysxBinaryParser::ParseCollectionFromBinary(const char* Filename, Collections* collection)
 {
-	PhysxBinaryParser_3_4 parser;
+	PhysxBinaryParser_34 parser;
 	return parser.ParseCollectionFromBinary(Filename, collection);
 }
