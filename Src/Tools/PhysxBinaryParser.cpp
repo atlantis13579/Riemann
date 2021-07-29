@@ -202,6 +202,26 @@ public:
 		unsigned short		mBaseFlags;				// internal flags
 	};
 
+	class PxActor : public PxBase
+	{
+	public:
+		void* UserData;
+	};
+
+	class PxRigidActor : public PxActor
+	{
+	public:
+		virtual						~PxRigidActor() {}
+		virtual		bool			isKindOf(const char* name)	const { return !::strcmp("PxRigidActor", name) || PxActor::isKindOf(name); }
+	};
+
+	class PxRigidStatic : public PxRigidActor
+	{
+	public:
+		virtual						~PxRigidStatic() {}
+		virtual		bool			isKindOf(const char* name)	const { return !::strcmp("PxRigidStatic", name) || PxRigidActor::isKindOf(name); }
+	};
+
 	class PxDeserializationContext
 	{
 	public:
@@ -1051,6 +1071,195 @@ public:
 	static_assert(sizeof(ScShape) == 208, "sizeof(ScShape) not valid");
 	static_assert(sizeof(NpShape) == 272, "sizeof(NpShape) not valid");
 
+	class ScbBase
+	{
+	public:
+		void*		mScene;
+		PxU32		mControlState;
+		PxU8*		mStreamPtr;
+	};
+
+	class ScbActor : public ScbBase
+	{
+	public:
+	};
+
+	class ScbRigidObject : public ScbActor
+	{
+	public:
+	};
+
+	class ScActorCore
+	{
+	public:
+		void*				mSim;
+		PxU32				mAggregateIDOwnerClient;
+		PxU8				mActorFlags;	// PxActorFlags
+		PxU8				mActorType;
+		PxU8				mDominanceGroup;
+	};
+
+	class ScRigidCore : public ScActorCore
+	{
+	public:
+	};
+
+	struct PxsRigidCore
+	{
+		__declspec(align(16))
+		PxTransform			body2World;
+		PxU16				mFlags;
+		PxU16				solverIterationCounts;
+	};
+
+	class ScStaticCore : public ScRigidCore
+	{
+	public:
+		PxsRigidCore		mCore;
+	};
+
+	class RigidStatic : public ScbRigidObject
+	{
+	public:
+		ScStaticCore		mStatic;
+	};
+
+	struct PtrTable
+	{
+		void* const* getPtrs()	const { return mCount == 1 ? &mSingle : mList; }
+
+		void	importExtraData(PxDeserializationContext& context)
+		{
+			if (mCount > 1)
+				mList = context.readExtraData<void*, 16>(mCount);
+		}
+		union
+		{
+			void* mSingle;
+			void** mList;
+		};
+
+		PxU16	mCount;
+		bool	mOwnsMemory;
+		bool	mBufferUsed;
+	};
+
+	class NpShapeManager
+	{
+	public:
+		NpShape* const* getShapes()			const { return reinterpret_cast<NpShape* const*>(mShapes.getPtrs()); }
+
+		void importExtraData(PxDeserializationContext& context)
+		{
+			mShapes.importExtraData(context);
+			mSceneQueryData.importExtraData(context);
+		}
+
+		PtrTable			mShapes;
+		PtrTable			mSceneQueryData;
+		PxU32 				mSqCompoundId;
+		void*				mPruningStructure;  // Shape scene query data are pre-build in pruning structure
+
+	};
+
+	class NpActor
+	{
+	public:
+		void importExtraData(PxDeserializationContext& context)
+		{
+			if (mConnectorArray)
+			{
+				// TODO
+				assert(false);
+				/*
+				mConnectorArray = context.readExtraData<NpConnectorArray, 16>();
+				new (mConnectorArray) NpConnectorArray(PxEmpty);
+
+				if (mConnectorArray->size() == 0)
+					mConnectorArray = NULL;
+				else
+					Cm::importInlineArray(*mConnectorArray, context);
+				*/
+			}
+			context.readName(mName);
+		}
+
+		void resolveReferences(PxDeserializationContext& context)
+		{
+			// Resolve connector pointers if needed
+			if (mConnectorArray)
+			{
+				// TODO
+				assert(false);
+				/*
+				const PxU32 nbConnectors = mConnectorArray->size();
+				for (PxU32 i = 0; i < nbConnectors; i++)
+				{
+					NpConnector& c = (*mConnectorArray)[i];
+					context.translatePxBase(c.mObject);
+				}
+				*/
+			}
+		}
+
+		const char* mName;
+		void* mConnectorArray;		// NpConnectorArray
+	};
+
+	template<class APIClass>
+	class NpActorTemplate : public APIClass, public NpActor
+	{
+	public:
+		virtual	void							importExtraData(PxDeserializationContext& context) { NpActor::importExtraData(context); }
+		virtual void							resolveReferences(PxDeserializationContext& context) { NpActor::resolveReferences(context); }
+	};
+
+	template<class APIClass>
+	class NpRigidActorTemplate : public NpActorTemplate<APIClass>
+	{
+	public:
+		void importExtraData(PxDeserializationContext& context)
+		{
+			mShapeManager.importExtraData(context);
+			NpActorTemplate<APIClass>::importExtraData(context);
+		}
+
+		void resolveReferences(PxDeserializationContext& context)
+		{
+			const PxU32 nbShapes = mShapeManager.mShapes.mCount;
+			NpShape** shapes = const_cast<NpShape**>(mShapeManager.getShapes());
+			for (PxU32 j = 0; j < nbShapes; j++)
+			{
+				context.translatePxBase(shapes[j]);
+				shapes[j]->mActor = this;		// shapes[j]->onActorAttach(*this);
+			}
+
+			NpActorTemplate<APIClass>::resolveReferences(context);
+		}
+
+		NpShapeManager			mShapeManager;
+		PxU32					mIndex;    // index for the NpScene rigid actor array
+	};
+
+	class NpRigidStatic : public NpRigidActorTemplate<PxRigidStatic>
+	{
+	public:
+		RigidStatic 		mRigidStatic;
+	};
+
+	static_assert(sizeof(ScbBase) == 24, "sizeof(ScbBase) not valid");
+	static_assert(sizeof(ScbActor) == 24, "sizeof(ScbActor) not valid");
+	static_assert(sizeof(ScbRigidObject) == 24, "sizeof(ScbRigidObject) not valid");
+
+	static_assert(sizeof(ScActorCore) == 16, "sizeof(ScActorCore) not valid");
+	static_assert(sizeof(ScRigidCore) == 16, "sizeof(ScRigidCore) not valid");
+	static_assert(sizeof(PxsRigidCore) == 32, "sizeof(PxsRigidCore) not valid");
+	static_assert(sizeof(ScStaticCore) == 48, "sizeof(ScStaticCore) not valid");
+
+	static_assert(sizeof(PxRigidStatic) == 24, "sizeof(PxRigidStatic) not valid");
+	static_assert(sizeof(RigidStatic) == 80, "sizeof(RigidStatic) not valid");
+	static_assert(sizeof(NpRigidStatic) == 176, "sizeof(NpRigidStatic) not valid");
+
 	#define SN_BINARY_VERSION_GUID_NUM_CHARS 32
 	#define PX_BINARY_SERIAL_VERSION "77E92B17A4084033A0FDB51332D5A6BB"
 
@@ -1404,6 +1613,13 @@ public:
 
 	void* DeserializeRigidStatic(unsigned char*& address, PxDeserializationContext& context)
 	{
+		NpRigidStatic px;
+		memcpy(&px, address, sizeof(px));
+		address += sizeof(px);
+		px.importExtraData(context);
+		px.resolveReferences(context);
+
+		// TODO
 		return nullptr;
 	}
 
