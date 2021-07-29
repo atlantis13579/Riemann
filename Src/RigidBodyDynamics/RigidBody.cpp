@@ -1,7 +1,17 @@
 
 #include "RigidBody.h"
 
-RigidBody* RigidBody::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
+void		RigidBody::ApplyForce(const Vector3d& _Force)
+{
+	this->Force += _Force;
+}
+
+void		RigidBody::ApplyTorgue(const Vector3d& _Torque)
+{
+	this->Torque += _Torque;
+}
+
+RigidBody*	RigidBody::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
 {
 	RigidBody* Rigid = new RigidBody;
 	Rigid->mass = param.mass;

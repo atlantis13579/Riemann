@@ -50,7 +50,12 @@ public:
 	{
 	}
 
-	inline T	Dot(const TVector3<T>& v) const
+	inline void	SetEmpty()
+	{
+		x = y = z = 0.0f;
+	}
+
+	inline T Dot(const TVector3<T>& v) const
 	{
 		return x * v.x + y * v.y + z * v.z;
 	}

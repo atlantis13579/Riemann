@@ -31,14 +31,17 @@ public:
 	Vector3d	L;				// Angular Momentum
 
 	// ----
-	// Vector3d	Velocity;
-	// Vector3d	AngularVelocity;
 	Vector3d	Force;
 	Vector3d	Torque;
 
 	// ----
 	bool		Sleep;
 	bool		Static;
+
+public:
+
+	void		ApplyForce(const Vector3d& _Force);
+	void		ApplyTorgue(const Vector3d& _Torque);
 
 	static RigidBody* CreateRigidBody(Geometry* Geom, const RigidBodyParam &param);
 };

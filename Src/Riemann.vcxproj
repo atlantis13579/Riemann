@@ -33,6 +33,7 @@
     <ClCompile Include="Collision\RTree.cpp" />
     <ClCompile Include="Collision\TriangleMesh.cpp" />
     <ClCompile Include="Geometry\ConvexHull3D.cpp" />
+    <ClCompile Include="Geometry\VectorField.cpp" />
     <ClCompile Include="Geometry\VoxelField.cpp" />
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
     <ClCompile Include="Geometry\VoxelEngine.cpp" />
@@ -85,11 +86,12 @@
     <ClInclude Include="Collision\SAP.h" />
     <ClInclude Include="Collision\TriangleMesh.h" />
     <ClInclude Include="Geometry\ConvexHull3D.h" />
+    <ClInclude Include="Geometry\VectorField.h" />
     <ClInclude Include="Geometry\VoxelField.h" />
     <ClInclude Include="Geometry\SparseVoxelField.h" />
     <ClInclude Include="Geometry\VoxelEngine.h" />
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
-    <ClInclude Include="LinearSystem\Tensor.h" />
+    <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="Optimization\SGD.h" />
     <ClInclude Include="RigidBodyDynamics\WarmStart.h" />
@@ -187,19 +189,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IntDir>..\$(Configuration)\</IntDir>
+    <IntDir>..\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IntDir>..\$(Configuration)\</IntDir>
+    <IntDir>..\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IntDir>..\$(Configuration)\</IntDir>
+    <IntDir>..\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IntDir>..\$(Configuration)\</IntDir>
+    <IntDir>..\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

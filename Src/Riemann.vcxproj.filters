@@ -83,7 +83,7 @@
     <ClInclude Include="Geometry\SparseVoxelField.h" />
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
     <ClInclude Include="Collision\ProximityGrid.h" />
-    <ClInclude Include="LinearSystem\Tensor.h" />
+    <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Collision\RTree.h" />
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="Collision\TriangleMesh.h" />
@@ -91,6 +91,7 @@
     <ClInclude Include="Tools\PhysxBinaryParser.h" />
     <ClInclude Include="Tools\SimpleBmp.h" />
     <ClInclude Include="Tools\Serialization.h" />
+    <ClInclude Include="Geometry\VectorField.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -127,5 +128,6 @@
     <ClCompile Include="Collision\RTree.cpp" />
     <ClCompile Include="Collision\TriangleMesh.cpp" />
     <ClCompile Include="Tools\PhysxBinaryParser.cpp" />
+    <ClCompile Include="Geometry\VectorField.cpp" />
   </ItemGroup>
 </Project>

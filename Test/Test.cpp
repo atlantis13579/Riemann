@@ -7,7 +7,7 @@
 #include "../Src/LinearSystem/JacobiIteration_CPU.h"
 #include "../Src/LinearSystem/GaussSeidelIteration_CPU.h"
 #include "../Src/LinearSystem/LUFactorization.h"
-#include "../Src/LinearSystem/Tensor.h"
+#include "../Src/Maths/Tensor.h"
 #include "../Src/Maths/Box3d.h"
 #include "../Src/Maths/Maths.h"
 #include "../Src/Maths/Matrix2d.h"

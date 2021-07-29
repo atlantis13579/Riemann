@@ -34,8 +34,7 @@ void MotionIntegration::Integrate(std::vector<Geometry*> Entities, float dt)
 		Rigid->Q += dQ * dt;
 		Geom->SetRotationQuat(Rigid->Q);
 
-		Rigid->Torque = 0.0f;		// TODO
+		Rigid->Force.SetEmpty();
+		Rigid->Torque.SetEmpty();
 	}
-
-
 }
