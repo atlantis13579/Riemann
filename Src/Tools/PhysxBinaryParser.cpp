@@ -339,7 +339,7 @@ public:
 		template<typename T>
 		void			translatePxBase(T*& base) { if (base) { base = static_cast<T*>(resolveReference(PX_SERIAL_REF_KIND_PXBASE, size_t(base))); } }
 
-	private:
+	public:
 		unsigned char* mExtraDataAddress;
 
 		const ManifestEntry* mManifestTable;
@@ -435,6 +435,11 @@ public:
 			mRTree.mPages = context.readExtraData<RTreePage>(mRTree.mTotalPages);
 
 			PxTriangleMesh::importExtraData(context);
+		}
+
+		void resolveReferences(PxDeserializationContext& context)
+		{
+
 		}
 
 		RTree				mRTree;
@@ -1053,6 +1058,11 @@ public:
 	public:
 		virtual					~NpShape() {}
 
+		int getGeomType() const
+		{
+			return mShape.mShape.mCore.geometry.getType();
+		}
+
 		void importExtraData(PxDeserializationContext& context)
 		{
 			mShape.mShape.importExtraData(context);
@@ -1523,7 +1533,10 @@ public:
 		unsigned char* addressExtraData = alignPtr(addressObjectData + objectDataEndOffset);
 		std::unordered_map<PxType, int> Statistic;
 
+		unsigned char* addressExtraDataBase = addressExtraData;
 		PxDeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData);
+
+		FILE* fp = fopen("e://temp//offset.txt", "wb");
 
 		// iterate over memory containing PxBase objects, create the instances, resolve the addresses, import the external data, add to collection.
 		{
@@ -1534,39 +1547,15 @@ public:
 				address = alignPtr(address);
 				context.alignExtraData();
 
+				unsigned int Offset = (unsigned int)(context.mExtraDataAddress - addressExtraDataBase);
+				fprintf(fp, "%d : offset = %d\n", nbObjectsInCollection - nbObjects, Offset);
+
+
 				// read PxBase header with type and get corresponding serializer.
 				PxBase* header = reinterpret_cast<PxBase*>(address);
 				const PxType classType = header->getConcreteType();
 
-				Geometry* instance = nullptr;
-				if (classType == eTRIANGLE_MESH_BVH33)
-				{
-					instance = DeserializeTriangleMeshBV33(address, context);
-				}
-				else if (classType == eCONVEX_MESH)
-				{
-					instance = DeserializeConvexMesh(address, context);
-				}
-				else if (classType == e_HEIGHTFIELD)
-				{
-					instance = DeserializeHeightField(address, context);
-				}
-				else if (classType == eMATERIAL)
-				{
-					instance = DeserializeMaterial(address, context);
-				}
-				else if (classType == eRIGID_STATIC)
-				{
-					instance = DeserializeRigidStatic(address, context);
-				}
-				else if (classType == eRIGID_DYNAMIC)
-				{
-					instance = DeserializeRigidDynamic(address, context);
-				}
-				else if (classType == eSHAPE)
-				{
-					instance = DeserializeShape(address, context);
-				}
+				PxBase* instance = Deserialize(address, context, classType);
 
 				if (Statistic.find(classType) == Statistic.end())
 				{
@@ -1579,20 +1568,24 @@ public:
 				}
 				Statistic[classType] += 1;
 
-				GeometryList->push_back(instance);
 				collection.mObjects.emplace(instance, 0);
+
+				Geometry* Geom = CreateGeometryObject(instance, classType);
+				if (Geom) GeometryList->push_back(Geom);
 			}
 		}
+
+		fclose(fp);
 
 		for (auto it : Statistic)
 		{
 			if (it.second >= 0)
 			{
-				printf("Create class instance for type %d success (%d times).\n", it.first, it.second);
+				printf("Create class instance for type %d success (%d objs).\n", it.first, it.second);
 			}
 			else
 			{
-				printf("Create class instance for type %d failed (%d times).\n", it.first, -it.second);
+				printf("Create class instance for type %d failed (%d objs).\n", it.first, -it.second);
 			}
 		}
 
@@ -1616,133 +1609,197 @@ public:
 		return true;
 	}
 
-	Geometry* DeserializeTriangleMeshBV33(unsigned char*& address, PxDeserializationContext &context)
+	template <class T>
+	PxBase* DeserializePhysxObj(unsigned char*& address, PxDeserializationContext& context)
 	{
-		assert(sizeof(RTree) == 96);
-		assert(sizeof(PxRTreeTriangleMesh) == 256);
-
-		PxRTreeTriangleMesh pxMesh;
-		memcpy(&pxMesh, address, sizeof(pxMesh));
-		address += sizeof(pxMesh);
-		pxMesh.importExtraData(context);
-
-		Geometry* Geom = GeometryFactory::CreateTriangleMesh(pxMesh.mAABB.Center);
-		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
-		TriMesh->SetData(pxMesh.mVertices, pxMesh.mTriangles, pxMesh.mNbVertices, pxMesh.mNbTriangles, pxMesh.Is16BitIndices());
-		TriMesh->BoundingVolume = pxMesh.mAABB.GetAABB();
-
-		RTree *tree = TriMesh->CreateEmptyRTree();
-		memcpy(tree, &pxMesh.mRTree, sizeof(RTree));
-		void* pMem = TriMesh->AllocMemory(pxMesh.mRTree.mTotalPages * sizeof(RTreePage), 128);
-		memcpy(pMem, pxMesh.mRTree.mPages, pxMesh.mRTree.mTotalPages * sizeof(RTreePage));
-		tree->mPages = (RTreePage*)pMem;
-
-		return Geom;
+		T data;
+		memcpy(&data, address, sizeof(T));
+		T* px = new T;
+		*px = data;
+		address += sizeof(T);
+		px->importExtraData(context);
+		px->resolveReferences(context);
+		return px;
 	}
 
-	Geometry* DeserializeConvexMesh(unsigned char*& address, PxDeserializationContext& context)
+	PxBase* Deserialize(unsigned char*& address, PxDeserializationContext& context, int classType)
 	{
-		assert(sizeof(ConvexHullData) == 72);
-		assert(sizeof(PxConvexMesh) == 168);
-
-		PxConvexMesh pxMesh;
-		memcpy(&pxMesh, address, sizeof(pxMesh));
-		address += sizeof(pxMesh);
-		pxMesh.importExtraData(context);
-		pxMesh.resolveReferences(context);
-
-		Geometry* Geom = GeometryFactory::CreateConvexMesh(pxMesh.mHullData.mAABB.Center);
-		ConvexMesh* ConvMesh = (ConvexMesh*)Geom->GetShapeGeometry();
-
-		for (int i = 0; i < pxMesh.mHullData.mNbPolygons; ++i)
+		PxBase* instance = nullptr;
+		if (classType == eTRIANGLE_MESH_BVH33)
 		{
-			ConvMesh->AddFace(pxMesh.mHullData.mPolygons[i].mPlane);
+			instance = DeserializePhysxObj<PxRTreeTriangleMesh>(address, context);
 		}
-		ConvMesh->SetVerties(pxMesh.mHullData.getVerts(), pxMesh.mHullData.mNbHullVertices);
-
-		assert(pxMesh.mHullData.getVerticesByEdges16());
-		ConvMesh->SetEdges(pxMesh.mHullData.getVerticesByEdges16(), pxMesh.mHullData.mNbEdges & ~0x8000);
-		assert(ConvMesh->VerifyIndices());
-
-		ConvMesh->Inertia = pxMesh.mInertia;
-		ConvMesh->CenterOfMass = pxMesh.mHullData.mCenterOfMass;
-		ConvMesh->BoundingVolume = pxMesh.mHullData.mAABB.GetAABB();
-
-		assert(ConvMesh->EulerNumber() == 2);
-		assert(ConvMesh->NumVertices == ConvMesh->Verties.size());
-		assert(ConvMesh->NumEdges * 2 == ConvMesh->Edges.size());
-		assert(ConvMesh->NumFaces == ConvMesh->Faces.size());
-
-		return Geom;
+		else if (classType == eCONVEX_MESH)
+		{
+			instance = DeserializePhysxObj<PxConvexMesh>(address, context);
+		}
+		else if (classType == e_HEIGHTFIELD)
+		{
+			instance = DeserializePhysxObj<PxHeightField>(address, context);
+		}
+		else if (classType == eMATERIAL)
+		{
+			instance = DeserializePhysxObj<NpMaterial>(address, context);
+		}
+		else if (classType == eRIGID_STATIC)
+		{
+			instance = DeserializePhysxObj<NpRigidStatic>(address, context);
+		}
+		else if (classType == eRIGID_DYNAMIC)
+		{
+			instance = DeserializePhysxObj<NpRigidDynamic>(address, context);
+		}
+		else if (classType == eSHAPE)
+		{
+			instance = DeserializePhysxObj<NpShape>(address, context);
+		}
+		return instance;
 	}
 
-	Geometry* DeserializeHeightField(unsigned char*& address, PxDeserializationContext& context)
+	Geometry* CreateGeometryObject(PxBase *px, int classType)
 	{
-		assert(sizeof(HeightFieldData) == 72);
-		assert(sizeof(PxHeightField) == 136);
+		if (classType == eTRIANGLE_MESH_BVH33)
+		{
+			PxRTreeTriangleMesh *Mesh = (PxRTreeTriangleMesh*)px;
 
-		PxHeightField px;
-		memcpy(&px, address, sizeof(px));
-		address += sizeof(px);
-		px.importExtraData(context);
-		px.resolveReferences(context);
+			Geometry* Geom = GeometryFactory::CreateTriangleMesh(Mesh->mAABB.Center);
+			TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
+			TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices());
+			TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
 
-		// TODO
-		const TCE3<float>& box = px.mData.mAABB;
-		Geometry* Geom = GeometryFactory::CreateTriangleMesh(box.Center);
-		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
-		TriMesh->AddAABB(box.Center - box.Extent, box.Center + box.Extent);
-		return Geom;
-	}
+			RTree* tree = TriMesh->CreateEmptyRTree();
+			memcpy(tree, &Mesh->mRTree, sizeof(RTree));
+			void* pMem = TriMesh->AllocMemory(Mesh->mRTree.mTotalPages * sizeof(RTreePage), 128);
+			memcpy(pMem, Mesh->mRTree.mPages, Mesh->mRTree.mTotalPages * sizeof(RTreePage));
+			tree->mPages = (RTreePage*)pMem;
 
-	Geometry* DeserializeMaterial(unsigned char*& address, PxDeserializationContext& context)
-	{
-		assert(sizeof(NpMaterial) == 80);
-		assert(sizeof(PxMaterialCore) == 32);
+			return Geom;
+		}
+		else if (classType == eCONVEX_MESH)
+		{
+			PxConvexMesh* Mesh = (PxConvexMesh*)px;
 
-		NpMaterial px;
-		memcpy(&px, address, sizeof(px));
-		address += sizeof(px);
-		px.importExtraData(context);
-		px.resolveReferences(context);
-		
-		// TODO
-		return nullptr;
-	}
+			Geometry* Geom = GeometryFactory::CreateConvexMesh(Mesh->mHullData.mAABB.Center);
+			ConvexMesh* ConvMesh = (ConvexMesh*)Geom->GetShapeGeometry();
 
-	Geometry* DeserializeRigidStatic(unsigned char*& address, PxDeserializationContext& context)
-	{
-		NpRigidStatic px;
-		memcpy(&px, address, sizeof(px));
-		address += sizeof(px);
-		px.importExtraData(context);
-		px.resolveReferences(context);
+			for (int i = 0; i < Mesh->mHullData.mNbPolygons; ++i)
+			{
+				ConvMesh->AddFace(Mesh->mHullData.mPolygons[i].mPlane);
+			}
+			ConvMesh->SetVerties(Mesh->mHullData.getVerts(), Mesh->mHullData.mNbHullVertices);
 
-		// TODO
-		return nullptr;
-	}
+			assert(Mesh->mHullData.getVerticesByEdges16());
+			ConvMesh->SetEdges(Mesh->mHullData.getVerticesByEdges16(), Mesh->mHullData.mNbEdges & ~0x8000);
+			assert(ConvMesh->VerifyIndices());
 
-	Geometry* DeserializeRigidDynamic(unsigned char*& address, PxDeserializationContext& context)
-	{
-		NpRigidDynamic px;
-		memcpy(&px, address, sizeof(px));
-		address += sizeof(px);
-		px.importExtraData(context);
-		px.resolveReferences(context);
+			ConvMesh->Inertia = Mesh->mInertia;
+			ConvMesh->CenterOfMass = Mesh->mHullData.mCenterOfMass;
+			ConvMesh->BoundingVolume = Mesh->mHullData.mAABB.GetAABB();
 
-		// TODO
-		return nullptr;
-	}
+			assert(ConvMesh->EulerNumber() == 2);
+			assert(ConvMesh->NumVertices == ConvMesh->Verties.size());
+			assert(ConvMesh->NumEdges * 2 == ConvMesh->Edges.size());
+			assert(ConvMesh->NumFaces == ConvMesh->Faces.size());
 
-	Geometry* DeserializeShape(unsigned char*& address, PxDeserializationContext& context)
-	{
-		NpShape px;
-		memcpy(&px, address, sizeof(px));
-		address += sizeof(px);
-		px.importExtraData(context);
-		px.resolveReferences(context);
+			return Geom;
+		}
+		else if (classType == e_HEIGHTFIELD)
+		{
+			PxHeightField* hiehgtfield = (PxHeightField*)px;
 
-		// TODO
+			// TODO
+			const TCE3<float>& box = hiehgtfield->mData.mAABB;
+			Geometry* Geom = GeometryFactory::CreateTriangleMesh(box.Center);
+			TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
+			TriMesh->AddAABB(box.Center - box.Extent, box.Center + box.Extent);
+
+			return Geom;
+		}
+		else if (classType == eMATERIAL)
+		{
+			NpMaterial *material = (NpMaterial*)px;
+
+			return nullptr;
+		}
+		else if (classType == eRIGID_STATIC)
+		{
+			NpRigidStatic* rigid = (NpRigidStatic*)px;
+
+			return nullptr;
+		}
+		else if (classType == eRIGID_DYNAMIC)
+		{
+			NpRigidDynamic* rigid = (NpRigidDynamic*)px;
+
+			return nullptr;
+		}
+		else if (classType == eSHAPE)
+		{
+			NpShape* shape = (NpShape*)px;
+
+			Geometry* Geom = nullptr;
+			int Type = shape->getGeomType();
+			if (Type == eSPHERE)
+			{
+				PxSphereGeometry* sphere = (PxSphereGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.sphere;
+
+				Geom = nullptr;
+			}
+			else if (Type == ePLANE)
+			{
+				PxPlaneGeometry* plane = (PxPlaneGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.plane;
+
+				Geom = nullptr;
+			}
+			else if (Type == eCAPSULE)
+			{
+				PxCapsuleGeometry* capsule = (PxCapsuleGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.capsule;
+
+				Geom = nullptr;
+			}
+			else if (Type == eBOX)
+			{
+				PxBoxGeometry* box = (PxBoxGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.box;
+
+				Geom = nullptr;
+			}
+			else if (Type == eCONVEXMESH)
+			{
+				PxConvexMeshGeometry* convex = (PxConvexMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.convex;
+
+				Geom = nullptr;
+			}
+			else if (Type == eTRIANGLEMESH)
+			{
+				PxTriangleMeshGeometry* pxMesh = (PxTriangleMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.mesh;
+				const PxRTreeTriangleMesh* Mesh = (const PxRTreeTriangleMesh*)pxMesh->triangleMesh;
+
+				Geom = GeometryFactory::CreateTriangleMesh(Mesh->mAABB.Center);
+				TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
+				TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices());
+				TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
+
+				RTree* tree = TriMesh->CreateEmptyRTree();
+				memcpy(tree, &Mesh->mRTree, sizeof(RTree));
+				void* pMem = TriMesh->AllocMemory(Mesh->mRTree.mTotalPages * sizeof(RTreePage), 128);
+				memcpy(pMem, Mesh->mRTree.mPages, Mesh->mRTree.mTotalPages * sizeof(RTreePage));
+				tree->mPages = (RTreePage*)pMem;
+
+			}
+			else if (Type == eHEIGHTFIELD)
+			{
+				PxHeightFieldGeometry* hightfield = (PxHeightFieldGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.heightfield;
+
+				Geom = nullptr;
+			}
+			else
+			{
+				assert(false);
+			}
+
+			return Geom;
+		}
+
 		return nullptr;
 	}
 };
