@@ -37,6 +37,7 @@
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
     <ClCompile Include="Geometry\VoxelEngine.cpp" />
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />
+    <ClCompile Include="RigidBodyDynamics\PhysicsMaterial.cpp" />
     <ClCompile Include="RigidBodyDynamics\WarmStart.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
     <ClCompile Include="Geometry\Tetrahedral.cpp" />
@@ -95,6 +96,7 @@
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="Optimization\SGD.h" />
     <ClInclude Include="RigidBodyDynamics\ForceField.h" />
+    <ClInclude Include="RigidBodyDynamics\PhysicsMaterial.h" />
     <ClInclude Include="RigidBodyDynamics\WarmStart.h" />
     <ClInclude Include="Geometry\ConvexHull2D.h" />
     <ClInclude Include="Geometry\Tetrahedral.h" />

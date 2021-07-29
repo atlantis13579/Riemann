@@ -32,7 +32,14 @@ inline T	Clamp(const T X, const T Min, const T Max)
 	return X < Min ? Min : X < Max ? X : Max;
 }
 
+template<typename T>
+inline T	Interp(const T v1, const T v2, float mix)
+{
+	return v1 * mix + v2 * (1.0f - mix);
+}
+
 inline bool	IsFloatInf(float x)
 {
 	return false;		// TODO
 }
+

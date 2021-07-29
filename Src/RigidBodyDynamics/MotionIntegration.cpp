@@ -16,7 +16,7 @@ void MotionIntegration::Integrate(std::vector<Geometry*> Entities, float dt)
 			continue;
 		}
 
-		Rigid->P += Rigid->ExtForce * dt;					// P' = Force
+		Rigid->P += Rigid->ExtForce * dt;				// P' = Force
 		Rigid->X += (Rigid->P / Rigid->mass) * dt;		// X' = v = P / m
 		Geom->SetPosition(Rigid->X);
 

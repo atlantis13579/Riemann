@@ -16,6 +16,7 @@ RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 	m_NPhase = NarrowPhase::Create_GJKEPA();
 	m_GeometryQuery = new GeometryQuery;
 	m_GravityField = new ForceField(param.Gravity);
+	m_WindField = nullptr;
 }
 
 RigidBodySimulation::~RigidBodySimulation()
@@ -42,6 +43,12 @@ RigidBodySimulation::~RigidBodySimulation()
 	{
 		delete m_GravityField;
 		m_GravityField = nullptr;
+	}
+
+	if (m_WindField)
+	{
+		delete m_WindField;
+		m_WindField = nullptr;
 	}
 
 	for (size_t i = 0; i < m_Entities.size(); ++i)
@@ -89,6 +96,19 @@ void		RigidBodySimulation::ApplyGravity()
 	for (size_t i = 0; i < m_Entities.size(); ++i)
 	{
 		m_GravityField->ApplyForce((RigidBody*)m_Entities[i]->GetEntity());
+	}
+}
+
+void		RigidBodySimulation::ApplyWind()
+{
+	if (m_WindField == nullptr)
+	{
+		return;
+	}
+
+	for (size_t i = 0; i < m_Entities.size(); ++i)
+	{
+		m_WindField->ApplyForce((RigidBody*)m_Entities[i]->GetEntity());
 	}
 }
 

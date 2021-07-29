@@ -24,6 +24,7 @@ public:
 public:
 	void		Simulate(float dt);
 	void		ApplyGravity();
+	void		ApplyWind();
 
 	RigidBody*	CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
 
@@ -34,4 +35,5 @@ private:
 	BroadPhase*		m_BPhase;
 	NarrowPhase*	m_NPhase;
 	ForceField*		m_GravityField;
+	ForceField*		m_WindField;
 };
