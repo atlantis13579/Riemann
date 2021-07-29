@@ -1332,6 +1332,16 @@ public:
 	class NpRigidActorTemplate : public NpActorTemplate<APIClass>
 	{
 	public:
+		int GetNumShapes() const
+		{
+			return mShapeManager.mShapes.mCount;
+		}
+
+		NpShape* const* GetShapes() const
+		{
+			return mShapeManager.getShapes();
+		}
+
 		void importExtraData(PxDeserializationContext& context)
 		{
 			mShapeManager.importExtraData(context);
@@ -1602,8 +1612,7 @@ public:
 
 				collection.mObjects.emplace(instance, 0);
 
-				Geometry* Geom = CreateGeometryObject(instance, classType);
-				if (Geom) GeometryList->push_back(Geom);
+				CreateGeometryObjects(instance, classType, GeometryList);
 			}
 		}
 
@@ -1689,152 +1698,167 @@ public:
 		return instance;
 	}
 
-	Geometry* CreateGeometryObject(PxBase *px, int classType)
+	Geometry* CreateTriangleMesh(const PxRTreeTriangleMesh* Mesh)
+	{
+		Geometry *Geom = GeometryFactory::CreateTriangleMesh(Mesh->mAABB.Center);
+		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
+		TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices());
+		TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
+
+		RTree* tree = TriMesh->CreateEmptyRTree();
+		memcpy(tree, &Mesh->mRTree, sizeof(RTree));
+		void* pMem = TriMesh->AllocMemory(Mesh->mRTree.mTotalPages * sizeof(RTreePage), 128);
+		memcpy(pMem, Mesh->mRTree.mPages, Mesh->mRTree.mTotalPages * sizeof(RTreePage));
+		tree->mPages = (RTreePage*)pMem;
+		return Geom;
+	}
+
+	Geometry* CreateHeightField(const PxHeightField* hiehgtfield)
+	{
+		const TCE3<float>& box = hiehgtfield->mData.mAABB;
+		Geometry* Geom = GeometryFactory::CreateTriangleMesh(box.Center);
+		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
+		TriMesh->AddAABB(box.Center - box.Extent, box.Center + box.Extent);
+		return Geom;
+	}
+
+	Geometry* CreateConvexMesh(const PxConvexMesh* Mesh)
+	{
+		Geometry* Geom = GeometryFactory::CreateConvexMesh(Mesh->mHullData.mAABB.Center);
+		ConvexMesh* ConvMesh = (ConvexMesh*)Geom->GetShapeGeometry();
+
+		for (int i = 0; i < Mesh->mHullData.mNbPolygons; ++i)
+		{
+			ConvMesh->AddFace(Mesh->mHullData.mPolygons[i].mPlane);
+		}
+		ConvMesh->SetVerties(Mesh->mHullData.getVerts(), Mesh->mHullData.mNbHullVertices);
+
+		assert(Mesh->mHullData.getVerticesByEdges16());
+		ConvMesh->SetEdges(Mesh->mHullData.getVerticesByEdges16(), Mesh->mHullData.mNbEdges & ~0x8000);
+		assert(ConvMesh->VerifyIndices());
+
+		ConvMesh->Inertia = Mesh->mInertia;
+		ConvMesh->CenterOfMass = Mesh->mHullData.mCenterOfMass;
+		ConvMesh->BoundingVolume = Mesh->mHullData.mAABB.GetAABB();
+
+		assert(ConvMesh->EulerNumber() == 2);
+		assert(ConvMesh->NumVertices == ConvMesh->Verties.size());
+		assert(ConvMesh->NumEdges * 2 == ConvMesh->Edges.size());
+		assert(ConvMesh->NumFaces == ConvMesh->Faces.size());
+
+		return Geom;
+	}
+
+	Geometry* CreateShape(const NpShape *shape)
+	{
+
+		Geometry* Geom = nullptr;
+		int Type = shape->getGeomType();
+		if (Type == eSPHERE)
+		{
+			PxSphereGeometry* sphere = (PxSphereGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.sphere;
+
+			Geom = nullptr;
+		}
+		else if (Type == ePLANE)
+		{
+			PxPlaneGeometry* plane = (PxPlaneGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.plane;
+
+			Geom = nullptr;
+		}
+		else if (Type == eCAPSULE)
+		{
+			PxCapsuleGeometry* capsule = (PxCapsuleGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.capsule;
+
+			Geom = nullptr;
+		}
+		else if (Type == eBOX)
+		{
+			PxBoxGeometry* box = (PxBoxGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.box;
+
+			Geom = nullptr;
+		}
+		else if (Type == eCONVEXMESH)
+		{
+			PxConvexMeshGeometry* convex = (PxConvexMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.convex;
+			return CreateConvexMesh(convex->convexMesh);
+		}
+		else if (Type == eTRIANGLEMESH)
+		{
+			PxTriangleMeshGeometry* pxMesh = (PxTriangleMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.mesh;
+			const PxRTreeTriangleMesh* Mesh = (const PxRTreeTriangleMesh*)pxMesh->triangleMesh;
+			return CreateTriangleMesh(Mesh);
+		}
+		else if (Type == eHEIGHTFIELD)
+		{
+			PxHeightFieldGeometry* hightfield = (PxHeightFieldGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.heightfield;
+			return CreateHeightField(hightfield->heightField);
+		}
+		else
+		{
+			assert(false);
+		}
+
+		return Geom;
+	}
+
+	void CreateGeometryObjects(PxBase *px, int classType, std::vector<Geometry*> *objs)
 	{
 		if (classType == eTRIANGLE_MESH_BVH33)
 		{
 			PxRTreeTriangleMesh *Mesh = (PxRTreeTriangleMesh*)px;
-
-			return nullptr;
-			Geometry* Geom = GeometryFactory::CreateTriangleMesh(Mesh->mAABB.Center);
-			TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
-			TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices());
-			TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
-
-			RTree* tree = TriMesh->CreateEmptyRTree();
-			memcpy(tree, &Mesh->mRTree, sizeof(RTree));
-			void* pMem = TriMesh->AllocMemory(Mesh->mRTree.mTotalPages * sizeof(RTreePage), 128);
-			memcpy(pMem, Mesh->mRTree.mPages, Mesh->mRTree.mTotalPages * sizeof(RTreePage));
-			tree->mPages = (RTreePage*)pMem;
-
-			return Geom;
+			// return CreateTriangleMesh(Mesh);
+			return;
 		}
 		else if (classType == eCONVEX_MESH)
 		{
 			PxConvexMesh* Mesh = (PxConvexMesh*)px;
-
-			Geometry* Geom = GeometryFactory::CreateConvexMesh(Mesh->mHullData.mAABB.Center);
-			ConvexMesh* ConvMesh = (ConvexMesh*)Geom->GetShapeGeometry();
-
-			for (int i = 0; i < Mesh->mHullData.mNbPolygons; ++i)
-			{
-				ConvMesh->AddFace(Mesh->mHullData.mPolygons[i].mPlane);
-			}
-			ConvMesh->SetVerties(Mesh->mHullData.getVerts(), Mesh->mHullData.mNbHullVertices);
-
-			assert(Mesh->mHullData.getVerticesByEdges16());
-			ConvMesh->SetEdges(Mesh->mHullData.getVerticesByEdges16(), Mesh->mHullData.mNbEdges & ~0x8000);
-			assert(ConvMesh->VerifyIndices());
-
-			ConvMesh->Inertia = Mesh->mInertia;
-			ConvMesh->CenterOfMass = Mesh->mHullData.mCenterOfMass;
-			ConvMesh->BoundingVolume = Mesh->mHullData.mAABB.GetAABB();
-
-			assert(ConvMesh->EulerNumber() == 2);
-			assert(ConvMesh->NumVertices == ConvMesh->Verties.size());
-			assert(ConvMesh->NumEdges * 2 == ConvMesh->Edges.size());
-			assert(ConvMesh->NumFaces == ConvMesh->Faces.size());
-
-			return Geom;
+			// return CreateConvexMesh(Mesh);
+			return;
 		}
 		else if (classType == e_HEIGHTFIELD)
 		{
 			PxHeightField* hiehgtfield = (PxHeightField*)px;
-
-			return nullptr;
-			// TODO
-			const TCE3<float>& box = hiehgtfield->mData.mAABB;
-			Geometry* Geom = GeometryFactory::CreateTriangleMesh(box.Center);
-			TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
-			TriMesh->AddAABB(box.Center - box.Extent, box.Center + box.Extent);
-
-			return Geom;
+			// return CreateHeightField(hiehgtfield);
+			return;
 		}
 		else if (classType == eMATERIAL)
 		{
 			NpMaterial *material = (NpMaterial*)px;
 
-			return nullptr;
+			return;
 		}
 		else if (classType == eRIGID_STATIC)
 		{
 			NpRigidStatic* rigid = (NpRigidStatic*)px;
-
-			return nullptr;
+			int nShapes = rigid->GetNumShapes();
+			NpShape* const* pShades = rigid->GetShapes();
+			for (int i = 0; i < nShapes; ++i)
+			{
+				Geometry* p = CreateShape(pShades[i]);
+				if (p)
+				{
+					p->SetPosition(rigid->mRigidStatic.mStatic.mCore.body2World.p);
+					p->SetRotationQuat(rigid->mRigidStatic.mStatic.mCore.body2World.q);
+					objs->push_back(p);
+				}
+			}
+			
+			return;
 		}
 		else if (classType == eRIGID_DYNAMIC)
 		{
 			NpRigidDynamic* rigid = (NpRigidDynamic*)px;
 
-			return nullptr;
+			return;
 		}
 		else if (classType == eSHAPE)
 		{
 			NpShape* shape = (NpShape*)px;
-
-			Geometry* Geom = nullptr;
-			int Type = shape->getGeomType();
-			if (Type == eSPHERE)
-			{
-				PxSphereGeometry* sphere = (PxSphereGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.sphere;
-
-				Geom = nullptr;
-			}
-			else if (Type == ePLANE)
-			{
-				PxPlaneGeometry* plane = (PxPlaneGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.plane;
-
-				Geom = nullptr;
-			}
-			else if (Type == eCAPSULE)
-			{
-				PxCapsuleGeometry* capsule = (PxCapsuleGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.capsule;
-
-				Geom = nullptr;
-			}
-			else if (Type == eBOX)
-			{
-				PxBoxGeometry* box = (PxBoxGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.box;
-
-				Geom = nullptr;
-			}
-			else if (Type == eCONVEXMESH)
-			{
-				PxConvexMeshGeometry* convex = (PxConvexMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.convex;
-
-				Geom = nullptr;
-			}
-			else if (Type == eTRIANGLEMESH)
-			{
-				PxTriangleMeshGeometry* pxMesh = (PxTriangleMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.mesh;
-				const PxRTreeTriangleMesh* Mesh = (const PxRTreeTriangleMesh*)pxMesh->triangleMesh;
-
-				Geom = GeometryFactory::CreateTriangleMesh(Mesh->mAABB.Center);
-				TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
-				TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices());
-				TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
-
-				RTree* tree = TriMesh->CreateEmptyRTree();
-				memcpy(tree, &Mesh->mRTree, sizeof(RTree));
-				void* pMem = TriMesh->AllocMemory(Mesh->mRTree.mTotalPages * sizeof(RTreePage), 128);
-				memcpy(pMem, Mesh->mRTree.mPages, Mesh->mRTree.mTotalPages * sizeof(RTreePage));
-				tree->mPages = (RTreePage*)pMem;
-			}
-			else if (Type == eHEIGHTFIELD)
-			{
-				PxHeightFieldGeometry* hightfield = (PxHeightFieldGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.heightfield;
-
-				Geom = nullptr;
-			}
-			else
-			{
-				assert(false);
-			}
-
-			return Geom;
+			return;
 		}
 
-		return nullptr;
+		return;
 	}
 };
 
