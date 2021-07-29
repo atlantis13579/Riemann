@@ -37,7 +37,7 @@
 
 void TestPhysxBin()
 {
-	Collections collection;
+	std::vector<Geometry*> collection;
 	PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/fighting.bin", &collection);
 	return;
 }

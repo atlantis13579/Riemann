@@ -26,6 +26,13 @@ typedef uint8_t PxU8;
 typedef float PxF32;
 typedef double PxF64;
 typedef float PxReal;
+typedef Vector3d PxVec3;
+
+struct Collections
+{
+	std::unordered_map<PxSerialObjectId, void*>		mIds;
+	std::unordered_map<void*, PxSerialObjectId>		mObjects;
+};
 
 class PhysxBinaryParser_34 : public PhysxBinaryParser
 {
@@ -215,11 +222,25 @@ public:
 		virtual		bool			isKindOf(const char* name)	const { return !::strcmp("PxRigidActor", name) || PxActor::isKindOf(name); }
 	};
 
+	class PxRigidBody : public PxRigidActor
+	{
+	public:
+		virtual						~PxRigidBody() {}
+		virtual		bool			isKindOf(const char* name)const { return !::strcmp("PxRigidBody", name) || PxRigidActor::isKindOf(name); }
+	};
+
 	class PxRigidStatic : public PxRigidActor
 	{
 	public:
 		virtual						~PxRigidStatic() {}
 		virtual		bool			isKindOf(const char* name)	const { return !::strcmp("PxRigidStatic", name) || PxRigidActor::isKindOf(name); }
+	};
+
+	class PxRigidDynamic : public PxRigidBody
+	{
+	public:
+		virtual							~PxRigidDynamic() {}
+		virtual		bool				isKindOf(const char* name) const { return !::strcmp("PxRigidDynamic", name) || PxRigidBody::isKindOf(name); }
 	};
 
 	class PxDeserializationContext
@@ -1106,10 +1127,43 @@ public:
 
 	struct PxsRigidCore
 	{
-		__declspec(align(16))
-		PxTransform			body2World;
+		__declspec(align(16)) PxTransform			body2World;
 		PxU16				mFlags;
 		PxU16				solverIterationCounts;
+	};
+
+	struct PxsBodyCore : public PxsRigidCore
+	{
+	protected:
+		PxTransform				body2Actor;
+	public:
+		PxReal					ccdAdvanceCoefficient;	//64
+
+		PxVec3					linearVelocity;
+		PxReal					maxPenBias;
+
+		PxVec3					angularVelocity;
+		PxReal					contactReportThreshold;	//96
+
+		PxReal					maxAngularVelocitySq;
+		PxReal					maxLinearVelocitySq;
+		PxReal					linearDamping;
+		PxReal					angularDamping;			//112
+
+		PxVec3					inverseInertia;
+		PxReal					inverseMass;			//128
+
+		PxReal					maxContactImpulse;
+		PxReal					sleepThreshold;
+		PxReal					freezeThreshold;
+		PxReal					wakeCounter;
+		PxReal					solverWakeCounter;
+		PxU32					numCountedInteractions;
+		PxU32					numBodyInteractions;
+		PxU8					isFastMoving;
+		PxU8					disableGravity;
+		PxU8					lockFlags;
+		PxU8					kinematicLink;
 	};
 
 	class ScStaticCore : public ScRigidCore
@@ -1122,6 +1176,25 @@ public:
 	{
 	public:
 		ScStaticCore		mStatic;
+	};
+
+	class BodyCore : public ScRigidCore
+	{
+	public:
+		__declspec(align(16)) PxsBodyCore mCore;
+		void* mSimStateData;			// SimStateData
+	};
+
+	class ScbBody : public ScbRigidObject
+	{
+	public:
+		BodyCore			mBodyCore;
+		PxTransform			mBufferedBody2World;
+		Vector3d			mBufferedLinVelocity;
+		Vector3d			mBufferedAngVelocity;
+		PxReal				mBufferedWakeCounter;
+		PxU32				mBufferedIsSleeping;
+		PxU32				mBodyBufferFlags;
 	};
 
 	struct PtrTable
@@ -1247,6 +1320,20 @@ public:
 		RigidStatic 		mRigidStatic;
 	};
 
+	template<class APIClass>
+	class NpRigidBodyTemplate : public NpRigidActorTemplate<APIClass>
+	{
+	public:
+		virtual	~NpRigidBodyTemplate() {}
+		ScbBody 			mBody;
+	};
+
+	class NpRigidDynamic : public NpRigidBodyTemplate<PxRigidDynamic>
+	{
+	public:
+		virtual							~NpRigidDynamic() {}
+	};
+
 	static_assert(sizeof(ScbBase) == 24, "sizeof(ScbBase) not valid");
 	static_assert(sizeof(ScbActor) == 24, "sizeof(ScbActor) not valid");
 	static_assert(sizeof(ScbRigidObject) == 24, "sizeof(ScbRigidObject) not valid");
@@ -1259,6 +1346,9 @@ public:
 	static_assert(sizeof(PxRigidStatic) == 24, "sizeof(PxRigidStatic) not valid");
 	static_assert(sizeof(RigidStatic) == 80, "sizeof(RigidStatic) not valid");
 	static_assert(sizeof(NpRigidStatic) == 176, "sizeof(NpRigidStatic) not valid");
+
+	static_assert(sizeof(ScbBody) == 288, "sizeof(ScbBody) not valid");
+	static_assert(sizeof(NpRigidDynamic) == 384, "sizeof(NpRigidDynamic) not valid");
 
 	#define SN_BINARY_VERSION_GUID_NUM_CHARS 32
 	#define PX_BINARY_SERIAL_VERSION "77E92B17A4084033A0FDB51332D5A6BB"
@@ -1309,7 +1399,7 @@ public:
 	}
 
 
-	bool ParseCollectionFromBinary(const char* Filename, Collections* collection)
+	bool ParseCollectionFromBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 	{
 		FILE* fp = fopen(Filename, "rb");
 		if (fp == nullptr)
@@ -1326,18 +1416,20 @@ public:
 		fread(p, 1, filesize, fp);
 		fclose(fp);
 
-		bool Ret = ParseCollectionFromBuffer(p, collection);
+		bool Ret = ParseCollectionFromBuffer(p, GeometryList);
 		return Ret;
 	}
 
 
-	bool ParseCollectionFromBuffer(void* Buffer, Collections* collection)
+	bool ParseCollectionFromBuffer(void* Buffer, std::vector<Geometry*>* GeometryList)
 	{
 		if (size_t(Buffer) & (128 - 1))
 		{
 			printf("Buffer must be 128-bytes aligned.\n");
 			return false;
 		}
+
+		Collections collection;
 
 		unsigned char* address = reinterpret_cast<unsigned char*>(Buffer);
 
@@ -1423,14 +1515,13 @@ public:
 			}
 		}
 
-		assert(collection);
-		collection->mObjects.reserve(nbObjectsInCollection * 2);
+		collection.mObjects.reserve(nbObjectsInCollection * 2);
 		if (nbExportReferences > 0)
-			collection->mIds.reserve(nbExportReferences * 2);
+			collection.mIds.reserve(nbExportReferences * 2);
 
 		unsigned char* addressObjectData = alignPtr(address);
 		unsigned char* addressExtraData = alignPtr(addressObjectData + objectDataEndOffset);
-		std::unordered_map<PxType, int> Missing;
+		std::unordered_map<PxType, int> Statistic;
 
 		PxDeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData);
 
@@ -1447,7 +1538,7 @@ public:
 				PxBase* header = reinterpret_cast<PxBase*>(address);
 				const PxType classType = header->getConcreteType();
 
-				void* instance = nullptr;
+				Geometry* instance = nullptr;
 				if (classType == eTRIANGLE_MESH_BVH33)
 				{
 					instance = DeserializeTriangleMeshBV33(address, context);
@@ -1477,28 +1568,37 @@ public:
 					instance = DeserializeShape(address, context);
 				}
 
+				if (Statistic.find(classType) == Statistic.end())
+				{
+					Statistic.emplace(classType, 0);
+				}
 				if (!instance)
 				{
-					if (Missing.find(classType) == Missing.end())
-					{
-						Missing.emplace(classType, 0);
-					}
-					Missing[classType] += 1;
+					Statistic[classType] -= 1;
 					continue;
 				}
+				Statistic[classType] += 1;
 
-				collection->mObjects.emplace(instance, 0);
+				GeometryList->push_back(instance);
+				collection.mObjects.emplace(instance, 0);
 			}
 		}
 
-		for (auto it : Missing)
+		for (auto it : Statistic)
 		{
-			printf("Cannot create class instance for concrete type %d (%d times).\n", it.first, it.second);
+			if (it.second >= 0)
+			{
+				printf("Create class instance for type %d success (%d times).\n", it.first, it.second);
+			}
+			else
+			{
+				printf("Create class instance for type %d failed (%d times).\n", it.first, -it.second);
+			}
 		}
 
 		// TODO
 		// assert(collection->mObjects.size() == nbObjectsInCollection);
-		assert(collection->mObjects.size() <= nbObjectsInCollection);
+		assert(collection.mObjects.size() <= nbObjectsInCollection);
 
 		// update new collection with export references
 		{
@@ -1508,16 +1608,15 @@ public:
 				bool isExternal;
 				unsigned int manifestIndex = exportReferences[i].objIndex.getIndex(isExternal);
 				assert(!isExternal);
-				// TODO
-				// PxBase* obj = reinterpret_cast<PxBase*>(addressObjectData + manifestTable[manifestIndex].offset);
-				// collection->mIds.emplace(exportReferences[i].id, obj);
-				// collection->mObjects[obj] = exportReferences[i].id;
+				PxBase* obj = reinterpret_cast<PxBase*>(addressObjectData + manifestTable[manifestIndex].offset);
+				collection.mIds.emplace(exportReferences[i].id, obj);
+				collection.mObjects[obj] = exportReferences[i].id;
 			}
 		}
 		return true;
 	}
 
-	void* DeserializeTriangleMeshBV33(unsigned char*& address, PxDeserializationContext &context)
+	Geometry* DeserializeTriangleMeshBV33(unsigned char*& address, PxDeserializationContext &context)
 	{
 		assert(sizeof(RTree) == 96);
 		assert(sizeof(PxRTreeTriangleMesh) == 256);
@@ -1541,7 +1640,7 @@ public:
 		return Geom;
 	}
 
-	void* DeserializeConvexMesh(unsigned char*& address, PxDeserializationContext& context)
+	Geometry* DeserializeConvexMesh(unsigned char*& address, PxDeserializationContext& context)
 	{
 		assert(sizeof(ConvexHullData) == 72);
 		assert(sizeof(PxConvexMesh) == 168);
@@ -1577,7 +1676,7 @@ public:
 		return Geom;
 	}
 
-	void* DeserializeHeightField(unsigned char*& address, PxDeserializationContext& context)
+	Geometry* DeserializeHeightField(unsigned char*& address, PxDeserializationContext& context)
 	{
 		assert(sizeof(HeightFieldData) == 72);
 		assert(sizeof(PxHeightField) == 136);
@@ -1596,7 +1695,7 @@ public:
 		return Geom;
 	}
 
-	void* DeserializeMaterial(unsigned char*& address, PxDeserializationContext& context)
+	Geometry* DeserializeMaterial(unsigned char*& address, PxDeserializationContext& context)
 	{
 		assert(sizeof(NpMaterial) == 80);
 		assert(sizeof(PxMaterialCore) == 32);
@@ -1611,7 +1710,7 @@ public:
 		return nullptr;
 	}
 
-	void* DeserializeRigidStatic(unsigned char*& address, PxDeserializationContext& context)
+	Geometry* DeserializeRigidStatic(unsigned char*& address, PxDeserializationContext& context)
 	{
 		NpRigidStatic px;
 		memcpy(&px, address, sizeof(px));
@@ -1623,12 +1722,19 @@ public:
 		return nullptr;
 	}
 
-	void* DeserializeRigidDynamic(unsigned char*& address, PxDeserializationContext& context)
+	Geometry* DeserializeRigidDynamic(unsigned char*& address, PxDeserializationContext& context)
 	{
+		NpRigidDynamic px;
+		memcpy(&px, address, sizeof(px));
+		address += sizeof(px);
+		px.importExtraData(context);
+		px.resolveReferences(context);
+
+		// TODO
 		return nullptr;
 	}
 
-	void* DeserializeShape(unsigned char*& address, PxDeserializationContext& context)
+	Geometry* DeserializeShape(unsigned char*& address, PxDeserializationContext& context)
 	{
 		NpShape px;
 		memcpy(&px, address, sizeof(px));
@@ -1642,8 +1748,8 @@ public:
 };
 
 // static
-bool PhysxBinaryParser::ParseCollectionFromBinary(const char* Filename, Collections* collection)
+bool PhysxBinaryParser::ParseCollectionFromBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 {
 	PhysxBinaryParser_34 parser;
-	return parser.ParseCollectionFromBinary(Filename, collection);
+	return parser.ParseCollectionFromBinary(Filename, GeometryList);
 }

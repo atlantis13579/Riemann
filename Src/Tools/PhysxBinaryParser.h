@@ -34,14 +34,10 @@ enum PxType
 
 typedef unsigned long long PxSerialObjectId;
 
-struct Collections
-{
-	std::unordered_map<PxSerialObjectId, void*>		mIds;
-	std::unordered_map<void*, PxSerialObjectId>		mObjects;
-};
+class Geometry;
 
 class PhysxBinaryParser
 {
 public:
-	static bool ParseCollectionFromBinary(const char* Filename, Collections *Collection);
+	static bool ParseCollectionFromBinary(const char* Filename, std::vector<Geometry*> *GeometryList);
 };

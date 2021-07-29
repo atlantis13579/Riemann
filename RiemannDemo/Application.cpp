@@ -224,12 +224,11 @@ void InitPhysxScene()
     RigidBodyParam rp;
     g_World = new RigidBodySimulation(param);
 
-    Collections collection;
+    std::vector<Geometry*> collection;;
     PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/sss.bin", &collection);
 
-    for (auto it : collection.mObjects)
+    for (Geometry* Geom : collection)
     {
-        Geometry* Geom = (Geometry*)it.first;
         if (Geom->GetShapeType() == TRIANGLE_MESH)
         {
             g_Renderer->AddTriMesh((Mesh*)Geom->GetShapeGeometry(), Geom->GetTransform());
