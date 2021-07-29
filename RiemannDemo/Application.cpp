@@ -226,7 +226,7 @@ void InitPhysxScene()
     g_World = new RigidBodySimulation(param);
 
     std::vector<Geometry*> collection;;
-    PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/sss.bin", &collection);
+    PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/fighting.bin", &collection);
 
     for (Geometry* Geom : collection)
     {

@@ -28,13 +28,44 @@ typedef double PxF64;
 typedef float PxReal;
 typedef Vector3d PxVec3;
 
+enum PxType
+{
+	eUNDEFINED,
+
+	e_HEIGHTFIELD,
+	eCONVEX_MESH,
+	eTRIANGLE_MESH_BVH33,
+	eTRIANGLE_MESH_BVH34,
+
+	eRIGID_DYNAMIC,
+	eRIGID_STATIC,
+	eSHAPE,
+	eMATERIAL,
+	eCONSTRAINT,
+	eAGGREGATE,
+	eARTICULATION,
+	eARTICULATION_REDUCED_COORDINATE,
+	eARTICULATION_LINK,
+	eARTICULATION_JOINT,
+	eARTICULATION_JOINT_REDUCED_COORDINATE,
+	ePRUNING_STRUCTURE,
+	eBVH_STRUCTURE,
+
+	ePHYSX_CORE_COUNT,
+	eFIRST_PHYSX_EXTENSION = 256,
+	eFIRST_VEHICLE_EXTENSION = 512,
+	eFIRST_USER_EXTENSION = 1024
+};
+
+typedef unsigned long long PxSerialObjectId;
+
 struct Collections
 {
 	std::unordered_map<PxSerialObjectId, void*>		mIds;
 	std::unordered_map<void*, PxSerialObjectId>		mObjects;
 };
 
-class PhysxBinaryParser_34 : public PhysxBinaryParser
+class BinaryFormat_41 : public PhysxBinaryParser
 {
 public:
 	struct ManifestEntry
@@ -1327,6 +1358,7 @@ public:
 	class NpRigidStatic : public NpRigidActorTemplate<PxRigidStatic>
 	{
 	public:
+		virtual				~NpRigidStatic() {}
 		RigidStatic 		mRigidStatic;
 	};
 
@@ -1612,14 +1644,15 @@ public:
 	template <class T>
 	PxBase* DeserializePhysxObj(unsigned char*& address, PxDeserializationContext& context)
 	{
-		T data;
-		memcpy(&data, address, sizeof(T));
-		T* px = new T;
-		*px = data;
+		T src;
+		memcpy(&src, address, sizeof(T));
+		src.importExtraData(context);
+		src.resolveReferences(context);
+
+		T* dst = (T*)address;
+		*dst = src;
 		address += sizeof(T);
-		px->importExtraData(context);
-		px->resolveReferences(context);
-		return px;
+		return dst;
 	}
 
 	PxBase* Deserialize(unsigned char*& address, PxDeserializationContext& context, int classType)
@@ -1662,6 +1695,7 @@ public:
 		{
 			PxRTreeTriangleMesh *Mesh = (PxRTreeTriangleMesh*)px;
 
+			return nullptr;
 			Geometry* Geom = GeometryFactory::CreateTriangleMesh(Mesh->mAABB.Center);
 			TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
 			TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices());
@@ -1707,6 +1741,7 @@ public:
 		{
 			PxHeightField* hiehgtfield = (PxHeightField*)px;
 
+			return nullptr;
 			// TODO
 			const TCE3<float>& box = hiehgtfield->mData.mAABB;
 			Geometry* Geom = GeometryFactory::CreateTriangleMesh(box.Center);
@@ -1784,7 +1819,6 @@ public:
 				void* pMem = TriMesh->AllocMemory(Mesh->mRTree.mTotalPages * sizeof(RTreePage), 128);
 				memcpy(pMem, Mesh->mRTree.mPages, Mesh->mRTree.mTotalPages * sizeof(RTreePage));
 				tree->mPages = (RTreePage*)pMem;
-
 			}
 			else if (Type == eHEIGHTFIELD)
 			{
@@ -1807,6 +1841,6 @@ public:
 // static
 bool PhysxBinaryParser::ParseCollectionFromBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 {
-	PhysxBinaryParser_34 parser;
-	return parser.ParseCollectionFromBinary(Filename, GeometryList);
+	BinaryFormat_41 Format;
+	return Format.ParseCollectionFromBinary(Filename, GeometryList);
 }
