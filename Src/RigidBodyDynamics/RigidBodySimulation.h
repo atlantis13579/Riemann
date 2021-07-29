@@ -8,6 +8,7 @@ class Geometry;
 class GeometryQuery;
 class BroadPhase;
 class NarrowPhase;
+class ForceField;
 
 struct RigidBodySimulationParam
 {
@@ -21,9 +22,10 @@ public:
 	~RigidBodySimulation();
 
 public:
-	void Simulate(float dt);
+	void		Simulate(float dt);
+	void		ApplyGravity();
 
-	void CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
+	RigidBody*	CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
 
 private:
 	std::vector<Geometry*> m_Entities;
@@ -31,7 +33,5 @@ private:
 	GeometryQuery*	m_GeometryQuery;
 	BroadPhase*		m_BPhase;
 	NarrowPhase*	m_NPhase;
-
-	// Global Physics parameters
-	Vector3d		m_Gravity;
+	ForceField*		m_GravityField;
 };

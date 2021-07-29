@@ -50,7 +50,7 @@ public:
 		m_bInvWorldMatrixDirty = true;
 	}
 
-	void		SetRotation(const Quaternion rotation)
+	void		SetRotation(const Quaternion& rotation)
 	{
 		m_Rotation = rotation;
 		m_bWorldMatrixDirty = true;

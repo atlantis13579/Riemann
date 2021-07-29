@@ -3,6 +3,7 @@
 #include "PhysicsEntity.h"
 #include "MotionIntegration.h"
 #include "WarmStart.h"
+#include "ForceField.h"
 
 #include "../Collision/GeometryQuery.h"
 #include "../Collision/GeometryObject.h"
@@ -14,8 +15,7 @@ RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 	m_BPhase = BroadPhase::Create_SAP();
 	m_NPhase = NarrowPhase::Create_GJKEPA();
 	m_GeometryQuery = new GeometryQuery;
-
-	m_Gravity = param.Gravity;
+	m_GravityField = new ForceField(param.Gravity);
 }
 
 RigidBodySimulation::~RigidBodySimulation()
@@ -36,6 +36,12 @@ RigidBodySimulation::~RigidBodySimulation()
 	{
 		delete m_NPhase;
 		m_NPhase = nullptr;
+	}
+
+	if (m_GravityField)
+	{
+		delete m_GravityField;
+		m_GravityField = nullptr;
 	}
 
 	for (size_t i = 0; i < m_Entities.size(); ++i)
@@ -63,12 +69,33 @@ void		RigidBodySimulation::Simulate(float dt)
 
 	WarmStart::Manifolds(manifolds, dt);
 
+	if (m_GravityField)
+	{
+		ApplyGravity();
+	}
+
+
+
 	return;
 }
 
-void		RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
+void		RigidBodySimulation::ApplyGravity()
+{
+	if (m_GravityField == nullptr)
+	{
+		return;
+	}
+
+	for (size_t i = 0; i < m_Entities.size(); ++i)
+	{
+		m_GravityField->ApplyForce((RigidBody*)m_Entities[i]->GetEntity());
+	}
+}
+
+RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
 {
 	RigidBody* Rigid = RigidBody::CreateRigidBody(Geom, param);
 	Geom->SetEntity(Rigid);
 	m_Entities.push_back(Geom);
+	return Rigid;
 }

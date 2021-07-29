@@ -10,7 +10,7 @@ public:
 	union
 	{
 		struct { float x, y, z, w; };
-		struct { float s; Vector3d v; };
+		struct { Vector3d v; float s; };
 	};
 
 	Quaternion()
@@ -37,26 +37,17 @@ public:
 		w = _w;
 	}
 
-	Quaternion(const Vector3d &q, float angle)
-	{
-		s = cosf(angle / 2);
-		v = q * sinf(angle / 2);
-	}
-
-	Quaternion(float x, float y, float z)
-	{
-		Quaternion xrot = Quaternion(Vector3d(1, 0, 0), x);
-		Quaternion yrot = Quaternion(Vector3d(0, 1, 0), y);
-		Quaternion zrot = Quaternion(Vector3d(0, 0, 1), z);
-
-		*this = zrot * yrot * xrot;
-	}
-
 	Quaternion& operator=(const Quaternion& q)
 	{
 		s = q.s;
 		v = q.v;
 		return *this;
+	}
+
+	void	FromRotationAxis(const Vector3d& q, float angle)
+	{
+		s = cosf(angle / 2);
+		v = q * sinf(angle / 2);
 	}
 
 	Quaternion Conjugate() const
@@ -79,6 +70,15 @@ public:
 	float Magnitude() const
 	{
 		return sqrtf(s*s + v.x*v.x + v.y*v.y + v.z*v.z);
+	}
+
+	void FromEuler(float x, float y, float z)
+	{
+		Quaternion xrot, yrot, zrot;
+		xrot.FromRotationAxis(Vector3d(1, 0, 0), x);
+		yrot.FromRotationAxis(Vector3d(0, 1, 0), y);
+		zrot.FromRotationAxis(Vector3d(0, 0, 1), z);
+		*this = zrot * yrot * xrot;
 	}
 
 	Vector3d ToEuler() const
@@ -126,19 +126,19 @@ public:
 
 	Quaternion& operator+=(const Quaternion& q)
 	{
-		w += q.w;
 		x += q.x;
 		y += q.y;
 		z += q.z;
+		w += q.w;
 		return *this;
 	}
 
 	Quaternion& operator-=(const Quaternion& q)
 	{
-		w -= q.w;
 		x -= q.x;
 		y -= q.y;
 		z -= q.z;
+		w -= q.w;
 		return *this;
 	}
 

@@ -204,7 +204,8 @@ void InitScene()
         rp.mass = 1.0f;
         rp.Static = false;
         Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 10.0f, 0.0f), Vector3d(-0.5f, -0.5f, -0.5f), Vector3d(0.5f, 0.5f, 0.5f));
-        g_World->CreateRigidBody(aabb, rp);
+        RigidBody *p = g_World->CreateRigidBody(aabb, rp);
+        p->ApplyTorgue(Vector3d(0, -10, 0).Cross(Vector3d::UnitZ())* aabb->GetBoundingVolumeLocalSpace().GetSizeZ() * 100000.0f);
 
         Mesh cube;
         cube.AddAABB(Vector3d(-0.5f, -0.5f, -0.5f), Vector3d(0.5f, 0.5f, 0.5f));
@@ -260,7 +261,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    InitPhysxScene();
+    InitScene();
+    // InitPhysxScene();
     UpdateCamera();
 
     auto last = std::chrono::steady_clock::now();

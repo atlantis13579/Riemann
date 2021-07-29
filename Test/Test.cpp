@@ -33,6 +33,7 @@
 #include "../Src/Collision/TriangleMesh.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/SparseVoxelField.h"
+#include "../Src/Geometry/DenseTensorField3d.h"
 #include "../Src/Tools/PhysxBinaryParser.h"
 
 void TestPhysxBin()

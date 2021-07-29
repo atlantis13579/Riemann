@@ -91,7 +91,8 @@
     <ClInclude Include="Tools\PhysxBinaryParser.h" />
     <ClInclude Include="Tools\SimpleBmp.h" />
     <ClInclude Include="Tools\Serialization.h" />
-    <ClInclude Include="Geometry\VectorField.h" />
+    <ClInclude Include="Geometry\DenseTensorField3d.h" />
+    <ClInclude Include="RigidBodyDynamics\ForceField.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -128,6 +129,6 @@
     <ClCompile Include="Collision\RTree.cpp" />
     <ClCompile Include="Collision\TriangleMesh.cpp" />
     <ClCompile Include="Tools\PhysxBinaryParser.cpp" />
-    <ClCompile Include="Geometry\VectorField.cpp" />
+    <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />
   </ItemGroup>
 </Project>
