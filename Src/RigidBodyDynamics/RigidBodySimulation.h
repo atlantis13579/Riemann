@@ -9,16 +9,16 @@ class GeometryQuery;
 class BroadPhase;
 class NarrowPhase;
 
-struct PhysicsWorldRBParam
+struct RigidBodySimulationParam
 {
 	Vector3d Gravity;
 };
 
-class PhysicsWorldRB
+class RigidBodySimulation
 {
 public:
-	PhysicsWorldRB(const PhysicsWorldRBParam &param);
-	~PhysicsWorldRB();
+	RigidBodySimulation(const RigidBodySimulationParam&param);
+	~RigidBodySimulation();
 
 public:
 	void Simulate(float dt);

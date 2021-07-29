@@ -1,5 +1,5 @@
 
-#include "PhysicsWorldRB.h"
+#include "RigidBodySimulation.h"
 #include "PhysicsEntity.h"
 #include "MotionIntegration.h"
 #include "WarmStart.h"
@@ -9,7 +9,7 @@
 #include "../Collision/BroadPhase.h"
 #include "../Collision/NarrowPhase.h"
 
-PhysicsWorldRB::PhysicsWorldRB(const PhysicsWorldRBParam& param)
+RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 {
 	m_BPhase = BroadPhase::Create_SAP();
 	m_NPhase = NarrowPhase::Create_GJKEPA();
@@ -18,7 +18,7 @@ PhysicsWorldRB::PhysicsWorldRB(const PhysicsWorldRBParam& param)
 	m_Gravity = param.Gravity;
 }
 
-PhysicsWorldRB::~PhysicsWorldRB()
+RigidBodySimulation::~RigidBodySimulation()
 {
 	if (m_GeometryQuery)
 	{
@@ -45,7 +45,7 @@ PhysicsWorldRB::~PhysicsWorldRB()
 	m_Entities.clear();
 }
 
-void		PhysicsWorldRB::Simulate(float dt)
+void		RigidBodySimulation::Simulate(float dt)
 {
 	MotionIntegration::Integrate(m_Entities, dt);
 
@@ -66,7 +66,7 @@ void		PhysicsWorldRB::Simulate(float dt)
 	return;
 }
 
-void		PhysicsWorldRB::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
+void		RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
 {
 	RigidBody* Rigid = RigidBody::CreateRigidBody(Geom, param);
 	Geom->SetEntity(Rigid);

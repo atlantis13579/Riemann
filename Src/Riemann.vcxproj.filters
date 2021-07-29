@@ -68,7 +68,7 @@
     <ClInclude Include="CollisionPrimitive\Sphere3d.h" />
     <ClInclude Include="CollisionPrimitive\Triangle3d.h" />
     <ClInclude Include="CollisionPrimitive\Mesh.h" />
-    <ClInclude Include="RigidBodyDynamics\PhysicsWorldRB.h" />
+    <ClInclude Include="RigidBodyDynamics\RigidBodySimulation.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsEntity.h" />
     <ClInclude Include="Maths\Matrix2d.h" />
     <ClInclude Include="RigidBodyDynamics\MotionIntegration.h" />
@@ -115,7 +115,7 @@
     <ClCompile Include="Collision\GeometryCollection.cpp" />
     <ClCompile Include="Collision\GeometryObject.cpp" />
     <ClCompile Include="Collision\DynamicAABBTree.cpp" />
-    <ClCompile Include="RigidBodyDynamics\PhysicsWorldRB.cpp" />
+    <ClCompile Include="RigidBodyDynamics\RigidBodySimulation.cpp" />
     <ClCompile Include="RigidBodyDynamics\MotionIntegration.cpp" />
     <ClCompile Include="RigidBodyDynamics\RigidBody.cpp" />
     <ClCompile Include="Collision\Contact.cpp" />

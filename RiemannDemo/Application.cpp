@@ -19,11 +19,11 @@
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/Geometry/VoxelField.h"
-#include "../Src/RigidBodyDynamics/PhysicsWorldRB.h"
+#include "../Src/RigidBodyDynamics/RigidBodySimulation.h"
 #include "../Renderer/Renderer.h"
 #include "../Src/Tools/PhysxBinaryParser.h"
 
-PhysicsWorldRB* g_World = nullptr;
+RigidBodySimulation* g_World = nullptr;
 
 //--------------------------------------------------------------------------------------
 // Forward declarations
@@ -90,10 +90,10 @@ void UpdateCamera()
 #pragma optimize("", off)
 void InitScene()
 {
-    PhysicsWorldRBParam param;
+    RigidBodySimulationParam param;
     param.Gravity = Vector3d(0, -9.8f, 0);
     RigidBodyParam rp;
-    g_World = new PhysicsWorldRB(param);
+    g_World = new RigidBodySimulation(param);
 
     if (1)
     {
@@ -219,10 +219,10 @@ void InitScene()
 #pragma optimize("", off)
 void InitPhysxScene()
 {
-    PhysicsWorldRBParam param;
+    RigidBodySimulationParam param;
     param.Gravity = Vector3d(0, -9.8f, 0);
     RigidBodyParam rp;
-    g_World = new PhysicsWorldRB(param);
+    g_World = new RigidBodySimulation(param);
 
     Collections collection;
     PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/sss.bin", &collection);

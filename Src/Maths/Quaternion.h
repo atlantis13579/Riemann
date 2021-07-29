@@ -9,7 +9,7 @@ class Quaternion
 public:
 	union
 	{
-		struct { float w, x, y, z; };
+		struct { float x, y, z, w; };
 		struct { float s; Vector3d v; };
 	};
 
@@ -29,12 +29,12 @@ public:
 		v = _v;
 	}
 
-	Quaternion(float _w, float _x, float _y, float _z)
+	Quaternion(float _x, float _y, float _z, float _w)
 	{
-		w = _w;
 		x = _x;
 		y = _y;
 		z = _z;
+		w = _w;
 	}
 
 	Quaternion(const Vector3d &q, float angle)
@@ -61,7 +61,7 @@ public:
 
 	Quaternion Conjugate() const
 	{
-		return Quaternion(s, -v.x, -v.y, -v.z);
+		return Quaternion(-v.x, -v.y, -v.z, s);
 	}
 
 	Quaternion Inverse() const
@@ -91,25 +91,26 @@ public:
 
 	Quaternion operator+(const Quaternion& q)
 	{
-		return Quaternion(w + q.w, x + q.x, y + q.y, z + q.z);
+		return Quaternion(x + q.x, y + q.y, z + q.z, w + q.w);
 	}
 
 	Quaternion operator-(const Quaternion& q)
 	{
-		return Quaternion(w - q.w, x - q.x, y - q.y, z - q.z);
+		return Quaternion(x - q.x, y - q.y, z - q.z, w - q.w);
 	}
 
 	Quaternion operator*(float k) const
 	{
-		return Quaternion(w * k, v.x * k, v.y * k, v.z * k);
+		return Quaternion(v.x * k, v.y * k, v.z * k, w * k);
 	}
 
 	Quaternion operator*(const Quaternion& q)
 	{
-		return Quaternion(w * q.w - x * q.x - y * q.y - z * q.z,
+		return Quaternion(
 						y * q.z - z * q.y + x * q.w + w * q.x,
 						z * q.x - x * q.z + y * q.w + w * q.y,
-						x * q.y - y * q.x + z * q.w + w * q.z);
+						x * q.y - y * q.x + z * q.w + w * q.z,
+						w * q.w - x * q.x - y * q.y - z * q.z);
 	}
 	
 	Quaternion operator/(const Quaternion& q)
@@ -201,25 +202,25 @@ public:
 
 	static const Quaternion& UnitW()
 	{
-		static Quaternion unitW(1, 0, 0, 0);
+		static Quaternion unitW(0, 0, 0, 1);
 		return unitW;
 	}
 
 	static const Quaternion & UnitX()
 	{
-		static Quaternion unitX(0, 1, 0, 0);
+		static Quaternion unitX(1, 0, 0, 0);
 		return unitX;
 	}
 
 	static const Quaternion& UnitY()
 	{
-		static Quaternion unitY(0, 0, 1, 0);
+		static Quaternion unitY(0, 1, 0, 0);
 		return unitY;
 	}
 
 	static const Quaternion& UnitZ()
 	{
-		static Quaternion unitZ(0, 0, 0, 1);
+		static Quaternion unitZ(0, 0, 1, 0);
 		return unitZ;
 	}
 };
