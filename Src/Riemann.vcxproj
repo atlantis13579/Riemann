@@ -135,6 +135,7 @@
     <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />
     <ClInclude Include="Solver\SparseConjugateGradientSolver.h" />
     <ClInclude Include="Tools\PhysxBinaryParser.h" />
+    <ClInclude Include="Tools\PhysxFormat_41.hpp" />
     <ClInclude Include="Tools\Serialization.h" />
     <ClInclude Include="Tools\SimpleBmp.h" />
   </ItemGroup>

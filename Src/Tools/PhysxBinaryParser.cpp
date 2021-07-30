@@ -1,7 +1,6 @@
 
 #include "PhysxBinaryParser.h"
 #include "Serialization.h"
-#include "../CollisionPrimitive/Plane3d.h"
 #include "../Collision/GeometryObject.h"
 #include "../CollisionPrimitive/ConvexMesh.h"
 #include "../Collision/TriangleMesh.h"
@@ -43,9 +42,9 @@ struct Collections
 class PhysxBinaryParser
 {
 public:
-	static Geometry* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* PhysxObj)
+	static Geometry* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj)
 	{
-		const physx::PxRTreeTriangleMesh* Mesh = (const physx::PxRTreeTriangleMesh*)PhysxObj->triangleMesh;
+		const physx::PxRTreeTriangleMesh* Mesh = (const physx::PxRTreeTriangleMesh*)physxObj->triangleMesh;
 
 		Geometry *Geom = GeometryFactory::CreateTriangleMesh(Mesh->mAABB.Center);
 		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
@@ -60,20 +59,70 @@ public:
 		return Geom;
 	}
 
-	static Geometry* CreateHeightField(const physx::PxHeightFieldGeometry* PhysxObj)
+	static Geometry* CreateHeightField(const physx::PxHeightFieldGeometry* physxObj)
 	{
-		const physx::PxHeightField* hiehgtfield = PhysxObj->heightField;
+		const physx::HeightField* hf = physxObj->heightField;
+		const physx::PxHeightFieldSample*	samples = hf->mData.samples;
+		const unsigned int					nCols = hf->mData.columns;
+		const unsigned int					nRows = hf->mData.rows;
 
-		TCE3<float> ce = hiehgtfield->mData.mAABB;
-		Geometry* Geom = GeometryFactory::CreateTriangleMesh(ce.Center);
+		Vector3d Scale = Vector3d(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
+
+		std::vector<Vector3d>	Verties;
+		Verties.resize(nRows * nCols);
+		for (unsigned int i = 0; i < nRows; i++)
+		for (unsigned int j = 0; j < nCols; j++)
+		{
+			Verties[i * nCols + j] = Vector3d(1.0f * i, samples[j + (i * nCols)].height, 1.0f * j) * Scale;
+		}
+
+		std::vector<unsigned short>	Indices;
+		assert(Verties.size() < 65535);
+		Indices.resize((nCols - 1) * (nRows - 1) * 2 * 3);
+		int nFaces = 0;
+
+		for (unsigned int i = 0; i < (nCols - 1); ++i)
+		for (unsigned int j = 0; j < (nRows - 1); ++j)
+		{
+			PxU8 tessFlag = samples[i + j * nCols].materialIndex0 & 0x80;
+			PxU32 i0 = j * nCols + i;
+			PxU32 i1 = j * nCols + i + 1;
+			PxU32 i2 = (j + 1) * nCols + i;
+			PxU32 i3 = (j + 1) * nCols + i + 1;
+			// i2---i3
+			// |    |
+			// |    |
+			// i0---i1
+			const int PxHeightFieldMaterial_eHOLE = 127;
+			PxU32 mat0 = hf->getTriangleMaterialIndex((j * nCols + i) * 2);
+			PxU32 mat1 = hf->getTriangleMaterialIndex((j * nCols + i) * 2 + 1);
+			if (mat0 != PxHeightFieldMaterial_eHOLE)
+			{
+				Indices[3 * nFaces + 0] = i2;
+				Indices[3 * nFaces + 1] = i0;
+				Indices[3 * nFaces + 2] = tessFlag ? i3 : i1;
+				nFaces++;
+			}
+			if (mat1 != PxHeightFieldMaterial_eHOLE)
+			{
+				Indices[3 * nFaces + 0] = i3;
+				Indices[3 * nFaces + 1] = tessFlag ? i0 : i2;
+				Indices[3 * nFaces + 2] = i1;
+				nFaces++;
+			}
+		}
+
+		Geometry* Geom = GeometryFactory::CreateTriangleMesh(hf->mData.mAABB.Center * Scale);
 		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
-		TriMesh->AddAABB(ce.Center - ce.Extent, ce.Center + ce.Extent);
+		TriMesh->SetData(&Verties[0], &Indices[0], (unsigned int)Verties.size(), nFaces, true);
+		// TriMesh->AddAABB(ce.Center - ce.Extent, ce.Center + ce.Extent);
+
 		return Geom;
 	}
 
-	static Geometry* CreateConvexMesh(const physx::PxConvexMeshGeometry* PhysxObj)
+	static Geometry* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj)
 	{
-		const physx::PxConvexMesh* Mesh = PhysxObj->convexMesh;
+		const physx::PxConvexMesh* Mesh = physxObj->convexMesh;
 
 		Geometry* Geom = GeometryFactory::CreateConvexMesh(Mesh->mHullData.mAABB.Center);
 		ConvexMesh* ConvMesh = (ConvexMesh*)Geom->GetShapeGeometry();
@@ -154,22 +203,7 @@ public:
 
 	static void CreateGeometryObjects(void *px, int classType, std::vector<Geometry*> *objs)
 	{
-		if (classType == physx::eTRIANGLE_MESH_BVH33)
-		{
-			physx::PxRTreeTriangleMesh* Mesh = (physx::PxRTreeTriangleMesh*)px;
-			return;
-		}
-		else if (classType == physx::eCONVEX_MESH)
-		{
-			physx::PxConvexMesh* Mesh = (physx::PxConvexMesh*)px;
-			return;
-		}
-		else if (classType == physx::e_HEIGHTFIELD)
-		{
-			physx::PxHeightField* hiehgtfield = (physx::PxHeightField*)px;
-			return;
-		}
-		else if (classType == physx::eMATERIAL)
+		if (classType == physx::eMATERIAL)
 		{
 			physx::NpMaterial *material = (physx::NpMaterial*)px;
 
@@ -199,12 +233,6 @@ public:
 
 			return;
 		}
-		else if (classType == physx::eSHAPE)
-		{
-			physx::NpShape* shape = (physx::NpShape*)px;
-			return;
-		}
-
 		return;
 	}
 };

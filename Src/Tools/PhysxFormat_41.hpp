@@ -173,7 +173,7 @@ public:
 		PX_DEFINE_TYPEINFO(PxTriangleMesh, eUNDEFINED)
 		PX_DEFINE_TYPEINFO(PxBVH33TriangleMesh, eTRIANGLE_MESH_BVH33)
 		PX_DEFINE_TYPEINFO(PxBVH34TriangleMesh, eTRIANGLE_MESH_BVH34)
-		PX_DEFINE_TYPEINFO(PxHeightField, e_HEIGHTFIELD)
+		PX_DEFINE_TYPEINFO(HeightField, e_HEIGHTFIELD)
 		PX_DEFINE_TYPEINFO(PxActor, eUNDEFINED)
 		PX_DEFINE_TYPEINFO(PxRigidActor, eUNDEFINED)
 		PX_DEFINE_TYPEINFO(PxRigidBody, eUNDEFINED)
@@ -620,11 +620,29 @@ public:
 		int							format;
 	};
 
-	class PxHeightField : public PxBase, public PxRefCountable
+	typedef PxU16 PxMaterialTableIndex;
+	typedef PxU32 PxTriangleID;
+
+	class HeightField : public PxBase, public PxRefCountable
 	{
 	public:
-		virtual ~PxHeightField() {}
+		virtual ~HeightField() {}
 		virtual	bool					isKindOf(const char* name) const { return !::strcmp("PxHeightField", name) || PxBase::isKindOf(name); }
+
+		PxMaterialTableIndex		getTriangleMaterialIndex(PxTriangleID triangleIndex)	const
+		{
+			return getTriangleMaterial(triangleIndex);
+		}
+
+		bool	isFirstTriangle(PxU32 triangleIndex) const { return ((triangleIndex & 0x1) == 0); }
+
+		PxU16	getTriangleMaterial(PxU32 triangleIndex) const
+		{
+			return isFirstTriangle(triangleIndex) ? getMaterialIndex0(triangleIndex >> 1) : getMaterialIndex1(triangleIndex >> 1);
+		}
+
+		PxU16	getMaterialIndex0(PxU32 vertexIndex) const { return mData.samples[vertexIndex].materialIndex0; }
+		PxU16	getMaterialIndex1(PxU32 vertexIndex) const { return mData.samples[vertexIndex].materialIndex1; }
 
 		void importExtraData(PxDeserializationContext& context)
 		{
@@ -646,7 +664,7 @@ public:
 	};
 
 	static_assert(sizeof(HeightFieldData) == 72, "sizeof(PxHeightFieldData) not valid");
-	static_assert(sizeof(PxHeightField) == 136, "sizeof(PxHeightField) not valid");
+	static_assert(sizeof(HeightField) == 136, "sizeof(PxHeightField) not valid");
 
 	class PxMaterial : public PxBase
 	{
@@ -781,7 +799,7 @@ public:
 	class PxHeightFieldGeometry : public PxGeometry
 	{
 	public:
-		PxHeightField* heightField;
+		HeightField*		heightField;
 		PxReal				heightScale;
 		PxReal				rowScale;
 		PxReal				columnScale;
@@ -965,7 +983,7 @@ public:
 			PxHeightFieldGeometryLL llGeom;
 			static_cast<PxHeightFieldGeometry&>(llGeom) = hlGeom;
 
-			PxHeightField* hf = static_cast<PxHeightField*>(hlGeom.heightField);
+			HeightField* hf = static_cast<HeightField*>(hlGeom.heightField);
 
 			llGeom.heightFieldData = &hf->mData;
 
@@ -1618,7 +1636,7 @@ public:
 		}
 		else if (classType == e_HEIGHTFIELD)
 		{
-			instance = DeserializePhysxObj<PxHeightField>(address, context);
+			instance = DeserializePhysxObj<HeightField>(address, context);
 		}
 		else if (classType == eMATERIAL)
 		{

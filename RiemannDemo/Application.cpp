@@ -216,17 +216,12 @@ void InitScene()
 #pragma optimize("", on)
 
 
-
-#pragma optimize("", off)
 void InitPhysxScene()
 {
-    RigidBodySimulationParam param;
-    param.Gravity = Vector3d(0, -9.8f, 0);
-    RigidBodyParam rp;
-    g_World = new RigidBodySimulation(param);
+	g_World = new RigidBodySimulation(RigidBodySimulationParam());
 
     std::vector<Geometry*> collection;;
-    PhysxBinaryParser::ParseCollectionFromBinary("e:/temp/physx/fighting.bin", &collection);
+    LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
 
     for (Geometry* Geom : collection)
     {
@@ -239,9 +234,7 @@ void InitPhysxScene()
 			g_Renderer->AddConvexMesh((ConvexMesh*)Geom->GetShapeGeometry(), Geom->GetTransform());
 		}
     }
-
 }
-#pragma optimize("", on)
 
 //--------------------------------------------------------------------------------------
 // Entry point to the program. Initializes everything and goes into a message processing 
