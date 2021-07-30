@@ -19,7 +19,7 @@ public:
 		m_bWorldMatrixDirty = true;
 		m_bInvWorldMatrixDirty = true;
 		m_Translation = Vector3d::Zero();
-		m_Rotation = Quaternion::UnitW();
+		m_Rotation = Quaternion::One();
 		m_Scale = Vector3d::One();
 	}
 
@@ -94,6 +94,16 @@ public:
 	{
 		const Matrix4d& mat = GetInverseWorldMatrix();
 		return mat * Point;
+	}
+
+	Vector3d RotateLocalToWorld(const Vector3d& Dir)
+	{
+		return m_Rotation * Dir;
+	}
+
+	Vector3d RotateWorldToLocal(const Vector3d& Dir)
+	{
+		return m_Rotation.Conjugate() * Dir;
 	}
 
 	static Matrix4d BuildViewMatrix_RHCoordinateSystem(const Vector3d& Eye, const Vector3d& LookAt, const Vector3d& Up)

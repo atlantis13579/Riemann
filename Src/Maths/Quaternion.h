@@ -118,7 +118,7 @@ public:
 		return *this * q.Inverse();
 	}
 
-	Vector3d operator*(Vector3d& vec)
+	Vector3d operator*(const Vector3d& vec) const
 	{
 		Vector3d t = v.Cross(vec) * 2;
 		return vec + t * s + v.Cross(t);
@@ -154,7 +154,7 @@ public:
 		return *this;
 	}
 
-	Quaternion Lerp(Quaternion& end, float t) const
+	Quaternion Lerp(const Quaternion& end, float t) const
 	{
 		return ((*this) * (1.0f - t) + end * t).Unit();
 	}
@@ -200,10 +200,10 @@ public:
 		return zero;
 	}
 
-	static const Quaternion& UnitW()
+	static const Quaternion& One()
 	{
-		static Quaternion unitW(0, 0, 0, 1);
-		return unitW;
+		static Quaternion one(0, 0, 0, 1);
+		return one;
 	}
 
 	static const Quaternion & UnitX()

@@ -173,7 +173,7 @@ void TestGeometryQuery()
 	std::vector<Geometry*> objs;
 	objs.emplace_back(GeometryFactory::CreatePlane(Vector3d(0.0f, 0.0f, 0.0f), Vector3d::UnitZ()));
 	objs.emplace_back(GeometryFactory::CreatePlane(Vector3d(0.0f, 0.0f, 10.0f), Vector3d::UnitZ()));
-	objs.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), Vector3d(-1, -1, -1), Vector3d(1, 1, 1)));
+	objs.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), Vector3d(1, 1, 1)));
 	scene.BuildStaticGeometry(objs, 1);
 
 	RayCastResult result;
@@ -347,9 +347,9 @@ public:
 void TestSAPInc()
 {
 	std::vector<Geometry*> boxes;
-	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), Vector3d(0, 0, 0), Vector3d(1, 1, 1)));
-	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), Vector3d(2, 2, 2), Vector3d(3, 3, 3)));
-	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), Vector3d(10, 10, 10), Vector3d(20, 20, 20)));
+	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d(0.5f, 0.5f, 0.5f), Vector3d(0.5f, 0.5f, 0.5f)));
+	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d(2.5f, 2.5f, 2.5f), Vector3d(0.5f, 0.5f, 0.5f)));
+	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d(15, 15, 15), Vector3d(5, 5, 5)));
 
 	BVProxy P(&boxes);
 	IncrementalSAP sap(&P, { 0, 1, 2 });
@@ -373,8 +373,8 @@ void TestSAPInc()
 	for (int i = 0; i < 100; ++i)
 	{
 		Vector3d point1 = Vector3d::Random() * 100.0f;
-		Vector3d point2 = point1 + Vector3d::Random() * 100.0f;
-		boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), point1, point2));
+		Vector3d point2 = Vector3d::Random() * 100.0f;
+		boxes.emplace_back(GeometryFactory::CreateOBB(point1, point2));
 	}
 	sap.SetDirty();
 

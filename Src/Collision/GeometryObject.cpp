@@ -112,7 +112,7 @@ bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
 #ifdef DEBUG
 	assert(func);
 #endif
-	return func(m_Shape.Object, m_Transform.WorldToLocal(Origin), m_Transform.WorldToLocal(Dir).Unit(), t);
+	return func(m_Shape.Object, m_Transform.WorldToLocal(Origin), m_Transform.RotateWorldToLocal(Dir), t);
 }
 
 bool				Geometry::Overlap(const Geometry* Geom)
@@ -199,16 +199,18 @@ public:
 };
 Geometry_Registration s_geom_registration;
 
-Geometry* GeometryFactory::CreateOBB(const Vector3d& Position, const Vector3d& Bmin, const Vector3d& Bmax)
+Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& Extent, const Quaternion& Rot)
 {
-	OrientedBox3d* shape = new OrientedBox3d(Bmin, Bmax);
-	return new Geometry(Position, GeometryShapeType::OBB, shape, nullptr);
+	OrientedBox3d* shape = new OrientedBox3d(-Extent, Extent);
+	Geometry *p = new Geometry(Center, GeometryShapeType::OBB, shape, nullptr);
+	p->SetRotationQuat(Rot);
+	return p;
 }
 
-Geometry* GeometryFactory::CreatePlane(const Vector3d& Position, const Vector3d& Normal)
+Geometry* GeometryFactory::CreatePlane(const Vector3d& Center, const Vector3d& Normal)
 {
 	Plane3d* shape = new Plane3d(Normal, 0.0f);
-	return new Geometry(Position, GeometryShapeType::PLANE, shape, nullptr);
+	return new Geometry(Center, GeometryShapeType::PLANE, shape, nullptr);
 }
 
 Geometry* GeometryFactory::CreateSphere(const Vector3d& Center, float Radius)
@@ -217,26 +219,28 @@ Geometry* GeometryFactory::CreateSphere(const Vector3d& Center, float Radius)
 	return new Geometry(Center, GeometryShapeType::SPHERE, shape, nullptr);
 }
 
-Geometry* GeometryFactory::CreateCapsule(const Vector3d& Position, const Vector3d& X1, const Vector3d& X2, float Radius)
+Geometry* GeometryFactory::CreateCapsule(const Vector3d& X1, const Vector3d& X2, float Radius)
 {
-	Capsule3d* shape = new Capsule3d(X1, X2, Radius);
-	return new Geometry(Position, GeometryShapeType::CAPSULE, shape, nullptr);
+	Vector3d Center = (X1 + X2) * 0.5f;
+	Capsule3d* shape = new Capsule3d(X1 - Center, X2 - Center, Radius);
+	return new Geometry(Center, GeometryShapeType::CAPSULE, shape, nullptr);
 }
 
-Geometry* GeometryFactory::CreateTriangle(const Vector3d& Position, const Vector3d& A, const Vector3d& B, const Vector3d& C)
+Geometry* GeometryFactory::CreateTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C)
 {
-	Triangle3d* shape = new Triangle3d(A, B, C);
-	return new Geometry(Position, GeometryShapeType::TRIANGLE, shape, nullptr);
+	Vector3d Center = (A + B + C) / 3.0f;
+	Triangle3d* shape = new Triangle3d(A - Center, B - Center, C - Center);
+	return new Geometry(Center, GeometryShapeType::TRIANGLE, shape, nullptr);
 }
 
-Geometry* GeometryFactory::CreateTriangleMesh(const Vector3d& Position)
+Geometry* GeometryFactory::CreateTriangleMesh()
 {
 	TriangleMesh* shape = new TriangleMesh;
-	return new Geometry(Position, GeometryShapeType::TRIANGLE_MESH, shape, nullptr);
+	return new Geometry(Vector3d::Zero(), GeometryShapeType::TRIANGLE_MESH, shape, nullptr);
 }
 
-Geometry* GeometryFactory::CreateConvexMesh(const Vector3d& Position)
+Geometry* GeometryFactory::CreateConvexMesh()
 {
 	ConvexMesh* shape = new ConvexMesh;
-	return new Geometry(Position, GeometryShapeType::CONVEX_MESH, shape, nullptr);
+	return new Geometry(Vector3d::Zero(), GeometryShapeType::CONVEX_MESH, shape, nullptr);
 }

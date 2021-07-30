@@ -42,11 +42,31 @@ struct Collections
 class PhysxBinaryParser
 {
 public:
+	static Geometry* CreateSphere(physx::PxSphereGeometry* physxObj)
+	{
+		return GeometryFactory::CreateSphere(Vector3d::Zero(), physxObj->radius);
+	}
+
+	static Geometry* CreatePlane(physx::PxPlaneGeometry* physxObj)
+	{
+		return nullptr;
+	}
+
+	static Geometry* CreateCapsule(physx::PxCapsuleGeometry* physxObj)
+	{
+		return nullptr;
+	}
+
+	static Geometry* CreateBox(physx::PxBoxGeometry* physxObj)
+	{
+		return nullptr;
+	}
+
 	static Geometry* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj)
 	{
 		const physx::PxRTreeTriangleMesh* Mesh = (const physx::PxRTreeTriangleMesh*)physxObj->triangleMesh;
 
-		Geometry *Geom = GeometryFactory::CreateTriangleMesh(Mesh->mAABB.Center);
+		Geometry *Geom = GeometryFactory::CreateTriangleMesh();
 		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
 		TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices());
 		TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
@@ -112,11 +132,9 @@ public:
 			}
 		}
 
-		Geometry* Geom = GeometryFactory::CreateTriangleMesh(hf->mData.mAABB.Center * Scale);
+		Geometry* Geom = GeometryFactory::CreateTriangleMesh();
 		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
 		TriMesh->SetData(&Verties[0], &Indices[0], (unsigned int)Verties.size(), nFaces, true);
-		// TriMesh->AddAABB(ce.Center - ce.Extent, ce.Center + ce.Extent);
-
 		return Geom;
 	}
 
@@ -124,7 +142,7 @@ public:
 	{
 		const physx::PxConvexMesh* Mesh = physxObj->convexMesh;
 
-		Geometry* Geom = GeometryFactory::CreateConvexMesh(Mesh->mHullData.mAABB.Center);
+		Geometry* Geom = GeometryFactory::CreateConvexMesh();
 		ConvexMesh* ConvMesh = (ConvexMesh*)Geom->GetShapeGeometry();
 
 		for (int i = 0; i < Mesh->mHullData.mNbPolygons; ++i)
@@ -157,26 +175,22 @@ public:
 		if (Type == physx::eSPHERE)
 		{
 			physx::PxSphereGeometry* sphere = (physx::PxSphereGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.sphere;
-
-			Geom = nullptr;
+			return CreateSphere(sphere);
 		}
 		else if (Type == physx::ePLANE)
 		{
 			physx::PxPlaneGeometry* plane = (physx::PxPlaneGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.plane;
-
-			Geom = nullptr;
+			return CreatePlane(plane);
 		}
 		else if (Type == physx::eCAPSULE)
 		{
 			physx::PxCapsuleGeometry* capsule = (physx::PxCapsuleGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.capsule;
-
-			Geom = nullptr;
+			return CreateCapsule(capsule);
 		}
 		else if (Type == physx::eBOX)
 		{
 			physx::PxBoxGeometry* box = (physx::PxBoxGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.box;
-
-			Geom = nullptr;
+			return CreateBox(box);
 		}
 		else if (Type == physx::eCONVEXMESH)
 		{

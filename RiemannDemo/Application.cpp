@@ -203,7 +203,7 @@ void InitScene()
     {
         rp.mass = 1.0f;
         rp.Static = false;
-        Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 10.0f, 0.0f), Vector3d(-0.5f, -0.5f, -0.5f), Vector3d(0.5f, 0.5f, 0.5f));
+        Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 10.0f, 0.0f), Vector3d(0.5f, 0.5f, 0.5f));
         RigidBody *p = g_World->CreateRigidBody(aabb, rp);
         p->ApplyTorgue(Vector3d(0, -10, 0).Cross(Vector3d::UnitZ())* aabb->GetBoundingVolumeLocalSpace().GetSizeZ() * 100000.0f);
 
@@ -221,7 +221,7 @@ void InitPhysxScene()
 	g_World = new RigidBodySimulation(RigidBodySimulationParam());
 
     std::vector<Geometry*> collection;;
-    LoadPhysxBinary("e:/temp/physx/sss.bin", &collection);
+    LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
 
     for (Geometry* Geom : collection)
     {
@@ -254,8 +254,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    InitScene();
-    // InitPhysxScene();
+    // InitScene();
+    InitPhysxScene();
     UpdateCamera();
 
     auto last = std::chrono::steady_clock::now();

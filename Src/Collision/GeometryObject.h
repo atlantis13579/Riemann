@@ -130,13 +130,13 @@ public:
 class GeometryFactory
 {
 public:
-	static Geometry* CreateOBB(const Vector3d& Position, const Vector3d & Bmin, const Vector3d & Bmax);
-	static Geometry* CreatePlane(const Vector3d& Position, const Vector3d& Normal);
-	static Geometry* CreateSphere(const Vector3d& Position, float Radius);
-	static Geometry* CreateCapsule(const Vector3d& Position, const Vector3d& X1, const Vector3d& X2, float Radius);
-	static Geometry* CreateTriangle(const Vector3d& Position, const Vector3d& A, const Vector3d& B, const Vector3d& C);
-	static Geometry* CreateTriangleMesh(const Vector3d& Position);
-	static Geometry* CreateConvexMesh(const Vector3d& Position);
+	static Geometry* CreateOBB(const Vector3d& Center, const Vector3d & Extent, const Quaternion& Rot = Quaternion::One());
+	static Geometry* CreatePlane(const Vector3d& Center, const Vector3d& Normal);
+	static Geometry* CreateSphere(const Vector3d& Center, float Radius);
+	static Geometry* CreateCapsule(const Vector3d& X1, const Vector3d& X2, float Radius);
+	static Geometry* CreateTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C);
+	static Geometry* CreateTriangleMesh();
+	static Geometry* CreateConvexMesh();
 };
 
 

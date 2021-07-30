@@ -750,6 +750,7 @@ public:
 
 	class PxSphereGeometry : public PxGeometry
 	{
+	public:
 		PxReal radius;
 	};
 
