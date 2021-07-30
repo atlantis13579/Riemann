@@ -202,10 +202,19 @@ inline TVector4<T> operator* (const TVector4<T>& vec, const Matrix4d& mm) {
 }
 
 template <typename T>
+inline TVector4<T> operator* (const Matrix4d& mm, const TVector4<T>& vec) {
+	return TVector4<T>(
+		mm.mat[0][0] * vec.x + mm.mat[0][1] * vec.y + mm.mat[0][2] * vec.z + mm.mat[0][3] * vec.w,
+		mm.mat[1][0] * vec.x + mm.mat[1][1] * vec.y + mm.mat[1][2] * vec.z + mm.mat[1][3] * vec.w,
+		mm.mat[2][0] * vec.x + mm.mat[2][1] * vec.y + mm.mat[2][2] * vec.z + mm.mat[2][3] * vec.w,
+		mm.mat[3][0] * vec.x + mm.mat[3][1] * vec.y + mm.mat[3][2] * vec.z + mm.mat[3][3] * vec.w);
+}
+
+template <typename T>
 inline TVector3<T> operator *(const Matrix4d& mat, const TVector3<T>& Point)
 {
 	TVector4<T> hSpace = Vector4d(Point.x, Point.y, Point.z, (T)1);
-	TVector4<T> t = hSpace * mat;
+	TVector4<T> t = mat * hSpace;
 	return t.xyz();
 }
 

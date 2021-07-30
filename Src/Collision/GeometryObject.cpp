@@ -112,7 +112,7 @@ bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
 #ifdef DEBUG
 	assert(func);
 #endif
-	return func(m_Shape.Object, Origin, Dir, t);
+	return func(m_Shape.Object, m_Transform.WorldToLocal(Origin), m_Transform.WorldToLocal(Dir).Unit(), t);
 }
 
 bool				Geometry::Overlap(const Geometry* Geom)
@@ -205,16 +205,16 @@ Geometry* GeometryFactory::CreateOBB(const Vector3d& Position, const Vector3d& B
 	return new Geometry(Position, GeometryShapeType::OBB, shape, nullptr);
 }
 
-Geometry* GeometryFactory::CreatePlane(const Vector3d& Position, const Vector3d& Normal, float D)
+Geometry* GeometryFactory::CreatePlane(const Vector3d& Position, const Vector3d& Normal)
 {
-	Plane3d* shape = new Plane3d(Normal, D);
+	Plane3d* shape = new Plane3d(Normal, 0.0f);
 	return new Geometry(Position, GeometryShapeType::PLANE, shape, nullptr);
 }
 
-Geometry* GeometryFactory::CreateSphere(const Vector3d& Position, const Vector3d& Center, float Radius)
+Geometry* GeometryFactory::CreateSphere(const Vector3d& Center, float Radius)
 {
-	Sphere3d* shape = new Sphere3d(Center, Radius);
-	return new Geometry(Position, GeometryShapeType::SPHERE, shape, nullptr);
+	Sphere3d* shape = new Sphere3d(Vector3d::Zero(), Radius);
+	return new Geometry(Center, GeometryShapeType::SPHERE, shape, nullptr);
 }
 
 Geometry* GeometryFactory::CreateCapsule(const Vector3d& Position, const Vector3d& X1, const Vector3d& X2, float Radius)

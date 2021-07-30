@@ -112,7 +112,7 @@ void InitScene()
 
         rp.mass = 1.0f;
         rp.Static = true;
-        Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, Grounds_vertices[0].Pos.y, 0), Vector3d::UnitY(), -0);
+        Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, Grounds_vertices[0].Pos.y, 0), Vector3d::UnitY());
         g_World->CreateRigidBody(plane, rp);
 
         g_Renderer->AddTriangles("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]), 2);
@@ -221,7 +221,7 @@ void InitPhysxScene()
 	g_World = new RigidBodySimulation(RigidBodySimulationParam());
 
     std::vector<Geometry*> collection;;
-    LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
+    LoadPhysxBinary("e:/temp/physx/sss.bin", &collection);
 
     for (Geometry* Geom : collection)
     {
@@ -254,8 +254,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    // InitScene();
-    InitPhysxScene();
+    InitScene();
+    // InitPhysxScene();
     UpdateCamera();
 
     auto last = std::chrono::steady_clock::now();
@@ -319,15 +319,16 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 
     case WM_CHAR:
     {
+        float Scale = 1.0f;
         char c = (char)wParam;
         if (c == 'a')
-            g_CamCenter.x -= 0.1f;
+            g_CamCenter.x -= Scale;
         else if (c == 'd')
-            g_CamCenter.x += 0.1f;
+            g_CamCenter.x += Scale;
         else if (c == 'w')
-            g_CamCenter.z -= 0.1f;
+            g_CamCenter.z -= Scale;
         else if (c == 's')
-            g_CamCenter.z += 0.1f;
+            g_CamCenter.z += Scale;
         UpdateCamera();
         break;
     }
@@ -371,7 +372,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
     {
         auto zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
         float Scale = wParam & MK_CONTROL ? 10.0f : 1.0f;
-        Scale *= 1.1f;
+        Scale *= 1.5f;
         if (zDelta > 0)
             Scale = 1.0f / Scale;
         g_CamParam.z *= Scale;
