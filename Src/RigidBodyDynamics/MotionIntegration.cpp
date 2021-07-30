@@ -17,7 +17,7 @@ void MotionIntegration::Integrate(std::vector<Geometry*> Entities, float dt)
 		}
 
 		Rigid->P += Rigid->ExtForce * dt;				// P' = Force
-		Rigid->X += (Rigid->P / Rigid->mass) * dt;		// X' = v = P / m
+		Rigid->X += (Rigid->P / Rigid->Mass) * dt;		// X' = v = P / m
 		Geom->SetPosition(Rigid->X);
 
 		// Physically Based Modeling by David Baraff 
@@ -28,7 +28,7 @@ void MotionIntegration::Integrate(std::vector<Geometry*> Entities, float dt)
 
 		Rigid->L += Rigid->ExtTorque * dt;					// L' = Torque
 		Matrix3d R = Rigid->Q.ToRotationMatrix();
-		Matrix3d invInertiaWorld = R * Rigid->invInertia * R.Transpose();
+		Matrix3d invInertiaWorld = R * Rigid->InvInertia * R.Transpose();
 		Vector3d AngularVelocity = invInertiaWorld * Rigid->L;
 		Quaternion dQ = 0.5f * Quaternion(0.0f, AngularVelocity) * Rigid->Q;		// Q' = 0.5 * AngularVelocity * Q 
 		Rigid->Q += dQ * dt;

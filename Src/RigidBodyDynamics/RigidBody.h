@@ -11,18 +11,31 @@ struct RigidBodyParam
 	RigidBodyParam()
 	{
 		memset(this, 0, sizeof(RigidBodyParam));
+		Mass = 1.0f;
+		Static = true;
+
 	}
 
-	float	mass;
-	bool	Static;
+	float		Mass;
+	Matrix3d	Inertia;
+	Vector3d	LinearVelocity;
+	Vector3d	AngularVelocity;
+	float		LinearDamping;
+	float		AngularDamping;
+	float		ContactReportThreshold;
+	float		MaxContactImpulse;
+	float		SleepThreshold;
+	float		FreezeThreshold;
+	bool		DisableGravity;
+	bool		Static;
 };
 
 class RigidBody : public PhysicsEntity
 {
 public:
 	// Constant quantities
-	float		mass;			// Total Mass
-	Matrix3d	invInertia;		// Inverse of Inertia Tensor 
+	float		Mass;			// Total Mass
+	Matrix3d	InvInertia;		// Inverse of Inertia Tensor 
 	
 	// State variable
 	Vector3d	X;				// Position
@@ -35,6 +48,12 @@ public:
 	Vector3d	ExtTorque;
 
 	// ----
+	float		LinearDamping;
+	float		AngularDamping;
+	float		MaxContactImpulse;
+	float		SleepThreshold;
+	float		FreezeThreshold;
+	bool		DisableGravity;
 	bool		Sleep;
 	bool		Static;
 

@@ -213,20 +213,55 @@ public:
 		return Identity;
 	}
 
-	void ToAxisAngle(Vector3d& rkAxis, float& rfAngle) const;
-	void FromAxisAngle(const Vector3d& rkAxis, const float& ffloats);
-	bool ToEulerAnglesXYZ(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
-	bool ToEulerAnglesXZY(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
-	bool ToEulerAnglesYXZ(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
-	bool ToEulerAnglesYZX(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
-	bool ToEulerAnglesZXY(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
-	bool ToEulerAnglesZYX(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
-	void FromEulerAnglesXYZ(const float& fYAngle, const float& fPAngle, const float& fRAngle);
-	void FromEulerAnglesXZY(const float& fYAngle, const float& fPAngle, const float& fRAngle);
-	void FromEulerAnglesYXZ(const float& fYAngle, const float& fPAngle, const float& fRAngle);
-	void FromEulerAnglesYZX(const float& fYAngle, const float& fPAngle, const float& fRAngle);
-	void FromEulerAnglesZXY(const float& fYAngle, const float& fPAngle, const float& fRAngle);
-	void FromEulerAnglesZYX(const float& fYAngle, const float& fPAngle, const float& fRAngle);
+	void FromAxisAngle(const Vector3d& Axis, float Angle)
+	{
+		float fCos = cosf(Angle);
+		float fSin = sinf(Angle);
+		float fOneMinusCos = 1.0f - fCos;
+		float fX2 = Axis.x * Axis.x;
+		float fY2 = Axis.y * Axis.y;
+		float fZ2 = Axis.z * Axis.z;
+		float fXYM = Axis.x * Axis.y * fOneMinusCos;
+		float fXZM = Axis.x * Axis.z * fOneMinusCos;
+		float fYZM = Axis.y * Axis.z * fOneMinusCos;
+		float fXSin = Axis.x * fSin;
+		float fYSin = Axis.y * fSin;
+		float fZSin = Axis.z * fSin;
+
+		mat[0][0] = fX2 * fOneMinusCos + fCos;
+		mat[0][1] = fXYM - fZSin;
+		mat[0][2] = fXZM + fYSin;
+		mat[1][0] = fXYM + fZSin;
+		mat[1][1] = fY2 * fOneMinusCos + fCos;
+		mat[1][2] = fYZM - fXSin;
+		mat[2][0] = fXZM - fYSin;
+		mat[2][1] = fYZM + fXSin;
+		mat[2][2] = fZ2 * fOneMinusCos + fCos;
+	}
+
+	void FromTwoAxis(const Vector3d& AxisFrom, const Vector3d& AxisTo)
+	{
+		Vector3d UnitAxisFrom = AxisFrom.Unit();
+		Vector3d UnitAxisTo = AxisTo.Unit();
+		Vector3d Axis = UnitAxisFrom.Cross(UnitAxisTo);
+		float Angle = acosf(UnitAxisFrom.Dot(UnitAxisTo));
+		FromAxisAngle(Axis, Angle);
+	}
+
+	void FromEuleRollsXYZ(float Yaw, float Pitch, float Roll);
+	void FromEuleRollsXZY(float Yaw, float Pitch, float Roll);
+	void FromEuleRollsYXZ(float Yaw, float Pitch, float Roll);
+	void FromEuleRollsYZX(float Yaw, float Pitch, float Roll);
+	void FromEuleRollsZXY(float Yaw, float Pitch, float Roll);
+	void FromEuleRollsZYX(float Yaw, float Pitch, float Roll);
+
+	float ToAxisAngle(Vector3d& Axis) const;
+	bool ToEuleRollsXYZ(float& Yaw, float& Pitch, float& Roll) const;
+	bool ToEuleRollsXZY(float& Yaw, float& Pitch, float& Roll) const;
+	bool ToEuleRollsYXZ(float& Yaw, float& Pitch, float& Roll) const;
+	bool ToEuleRollsYZX(float& Yaw, float& Pitch, float& Roll) const;
+	bool ToEuleRollsZXY(float& Yaw, float& Pitch, float& Roll) const;
+	bool ToEuleRollsZYX(float& Yaw, float& Pitch, float& Roll) const;
 
 	void SingularValueDecomposition(Matrix3d& rkL, Vector3d& rkS, Matrix3d& rkR) const;
 	void SingularValueComposition(const Matrix3d& rkL, const Vector3d& rkS, const Matrix3d& rkR);

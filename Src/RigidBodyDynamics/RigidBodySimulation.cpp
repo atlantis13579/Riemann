@@ -95,7 +95,12 @@ void		RigidBodySimulation::ApplyGravity()
 
 	for (size_t i = 0; i < m_Entities.size(); ++i)
 	{
-		m_GravityField->ApplyForce((RigidBody*)m_Entities[i]->GetEntity());
+		RigidBody* Rigid = (RigidBody*)m_Entities[i]->GetEntity();
+		if (Rigid->DisableGravity)
+		{
+			continue;
+		}
+		m_GravityField->ApplyForce(Rigid);
 	}
 }
 

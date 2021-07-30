@@ -27,9 +27,20 @@ public:
 	}
 
 public:
-	inline const Vector3d& GetX1() const { return X0; }
+	inline const Vector3d& GetX1() const
+	{
+		return X0;
+	}
 
-	inline Vector3d GetX2() const { return X0 + Axis * Length; }
+	inline Vector3d GetX2() const
+	{
+		return X0 + Axis * Length;
+	}
+
+	inline Vector3d GetOrigin() const
+	{
+		return X0 + Axis * Length * 0.5f;
+	}
 
 	inline float GetHeight() const
 	{
@@ -230,18 +241,138 @@ public:
 		return FarthestCap + Normalized * Radius;
 	}
 
-	void	GetVertices(std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
+	void	GetVertices(int stackCount, int sliceCount, std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
 	{
+		const float mPI = 2.0f * asinf(1.0f);
+
+		float phiStep = mPI / stackCount;
+		float thetaStep = 2.0f * mPI / sliceCount;
+
+		Vertices->push_back(Vector3d(0, Length * 0.5f + Radius, 0));
+		if (Normals) Normals->push_back(Vector3d::UnitY());
+
+		for (int i = 1; i < stackCount; i++)
+		{
+			float phi = i * phiStep;
+			float height = i <= stackCount / 2 ? Length * 0.5f : -Length * 0.5f;
+			for (int j = 0; j <= sliceCount; j++)
+			{
+				float theta = j * thetaStep;
+				Vector3d p = Vector3d(Radius * sinf(phi) * cosf(theta), height + Radius * cosf(phi), Radius * sinf(phi) * sinf(theta));
+				Vertices->push_back(p);
+				if (Normals) Normals->push_back(p);
+			}
+		}
+		Vertices->push_back(Vector3d(0, -Length * 0.5f -Radius, 0));
+		if (Normals) Normals->push_back(-Vector3d::UnitY());
+
+		Vector3d Center = GetOrigin();
+		if (Center.SquareLength() > 0.001f)
+		{
+			if (!Axis.ParallelTo(Vector3d::UnitY()) != 0)
+			{
+				Matrix3d Rot;
+				Rot.FromTwoAxis(Vector3d::UnitY(), Axis);
+
+				Vector3d* pV = &Vertices->at(0);
+				for (size_t i = 0; i < Vertices->size(); ++i)
+				{
+					pV[i] = Rot * pV[i] + Center;
+				}
+
+				if (Normals)
+				{
+					Vector3d* pN = &Normals->at(0);
+					for (size_t i = 0; i < Normals->size(); ++i)
+					{
+						pN[i] = Rot * pN[i];
+					}
+				}
+			}
+		}
 
 	}
 
 	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices, std::vector<Vector3d>& Normals)
 	{
-		 
+		const int stackCount = 5;
+		const int sliceCount = 8;
+
+		GetVertices(stackCount, sliceCount, &Vertices, &Normals);
+
+		for (int i = 1; i <= sliceCount; i++)
+		{
+			Indices.push_back(0);
+			Indices.push_back(i + 1);
+			Indices.push_back(i);
+		}
+
+		int baseIndex = 1;
+		int Count = sliceCount + 1;
+		for (int i = 0; i < stackCount - 2; i++)
+		{
+			for (int j = 0; j < sliceCount; j++)
+			{
+				Indices.push_back(baseIndex + i * Count + j);
+				Indices.push_back(baseIndex + i * Count + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * Count + j);
+
+				Indices.push_back(baseIndex + (i + 1) * Count + j);
+				Indices.push_back(baseIndex + i * Count + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+			}
+		}
+		int PoleIndex = (int)Vertices.size() - 1;
+		baseIndex = PoleIndex - Count;
+		for (int i = 0; i < sliceCount; i++)
+		{
+			Indices.push_back(PoleIndex);
+			Indices.push_back(baseIndex + i);
+			Indices.push_back(baseIndex + i + 1);
+		}
 	}
 
 	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices)
 	{
+		const int stackCount = 5;
+		const int sliceCount = 8;
 
+		GetVertices(stackCount, sliceCount, &Vertices, nullptr);
+
+		for (int i = 1; i <= sliceCount; i++)
+		{
+			Indices.push_back(0);
+			Indices.push_back(i);
+
+			Indices.push_back(i);
+			Indices.push_back(i + 1);
+		}
+
+		int baseIndex = 1;
+		int Count = sliceCount + 1;
+		for (int i = 0; i < stackCount - 2; i++)
+		{
+			for (int j = 0; j < sliceCount; j++)
+			{
+				Indices.push_back(baseIndex + i * Count + j);
+				Indices.push_back(baseIndex + i * Count + j + 1);
+
+				Indices.push_back(baseIndex + i * Count + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+
+				Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+				Indices.push_back(baseIndex + i * Count + j + 1);
+
+				Indices.push_back(baseIndex + i * Count + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+			}
+		}
+		int PoleIndex = (int)Vertices.size() - 1;
+		baseIndex = PoleIndex - Count;
+		for (int i = 0; i < sliceCount; i++)
+		{
+			Indices.push_back(PoleIndex);
+			Indices.push_back(baseIndex + i);
+		}
 	}
 };

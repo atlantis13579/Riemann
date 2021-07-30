@@ -659,7 +659,7 @@ float Matrix3d::SpectralNorm() const
 	return fNorm;
 }
 
-void Matrix3d::ToAxisAngle(Vector3d& rkAxis, float& rffloats) const
+float Matrix3d::ToAxisAngle(Vector3d& Axis) const
 {
 	// Let (x,y,z) be the unit-length axis and let A be an angle of rotation.
 	// The rotation matrix is R = I + sin(A)*P + (1-cos(A))*P^2 where
@@ -685,16 +685,16 @@ void Matrix3d::ToAxisAngle(Vector3d& rkAxis, float& rffloats) const
 
 	float fTrace = mat[0][0] + mat[1][1] + mat[2][2];
 	float fCos = 0.5f * (fTrace - 1.0f);
-	rffloats = acosf(fCos);  // in [0,PI]
+	float Angle = acosf(fCos);  // in [0,PI]
 
-	if (rffloats > 0.0f)
+	if (Angle > 0.0f)
 	{
-		if (rffloats < PI)
+		if (Angle < PI)
 		{
-			rkAxis.x = mat[2][1] - mat[1][2];
-			rkAxis.y = mat[0][2] - mat[2][0];
-			rkAxis.z = mat[1][0] - mat[0][1];
-			rkAxis.Normalize();
+			Axis.x = mat[2][1] - mat[1][2];
+			Axis.y = mat[0][2] - mat[2][0];
+			Axis.z = mat[1][0] - mat[0][1];
+			Axis.Normalize();
 		}
 		else
 		{
@@ -706,20 +706,20 @@ void Matrix3d::ToAxisAngle(Vector3d& rkAxis, float& rffloats) const
 				if (mat[0][0] >= mat[2][2])
 				{
 					// r00 is maximum diagonal term
-					rkAxis.x = 0.5f * sqrtf(mat[0][0] -
+					Axis.x = 0.5f * sqrtf(mat[0][0] -
 						mat[1][1] - mat[2][2] + 1.0f);
-					fHalfInverse = 0.5f / rkAxis.x;
-					rkAxis.y = fHalfInverse * mat[0][1];
-					rkAxis.z = fHalfInverse * mat[0][2];
+					fHalfInverse = 0.5f / Axis.x;
+					Axis.y = fHalfInverse * mat[0][1];
+					Axis.z = fHalfInverse * mat[0][2];
 				}
 				else
 				{
 					// r22 is maximum diagonal term
-					rkAxis.z = 0.5f * sqrtf(mat[2][2] -
+					Axis.z = 0.5f * sqrtf(mat[2][2] -
 						mat[0][0] - mat[1][1] + 1.0f);
-					fHalfInverse = 0.5f / rkAxis.z;
-					rkAxis.x = fHalfInverse * mat[0][2];
-					rkAxis.y = fHalfInverse * mat[1][2];
+					fHalfInverse = 0.5f / Axis.z;
+					Axis.x = fHalfInverse * mat[0][2];
+					Axis.y = fHalfInverse * mat[1][2];
 				}
 			}
 			else
@@ -728,20 +728,20 @@ void Matrix3d::ToAxisAngle(Vector3d& rkAxis, float& rffloats) const
 				if (mat[1][1] >= mat[2][2])
 				{
 					// r11 is maximum diagonal term
-					rkAxis.y = 0.5f * sqrtf(mat[1][1] -
+					Axis.y = 0.5f * sqrtf(mat[1][1] -
 						mat[0][0] - mat[2][2] + 1.0f);
-					fHalfInverse = 0.5f / rkAxis.y;
-					rkAxis.x = fHalfInverse * mat[0][1];
-					rkAxis.z = fHalfInverse * mat[1][2];
+					fHalfInverse = 0.5f / Axis.y;
+					Axis.x = fHalfInverse * mat[0][1];
+					Axis.z = fHalfInverse * mat[1][2];
 				}
 				else
 				{
 					// r22 is maximum diagonal term
-					rkAxis.z = 0.5f * sqrtf(mat[2][2] -
+					Axis.z = 0.5f * sqrtf(mat[2][2] -
 						mat[0][0] - mat[1][1] + 1.0f);
-					fHalfInverse = 0.5f / rkAxis.z;
-					rkAxis.x = fHalfInverse * mat[0][2];
-					rkAxis.y = fHalfInverse * mat[1][2];
+					fHalfInverse = 0.5f / Axis.z;
+					Axis.x = fHalfInverse * mat[0][2];
+					Axis.y = fHalfInverse * mat[1][2];
 				}
 			}
 		}
@@ -750,60 +750,35 @@ void Matrix3d::ToAxisAngle(Vector3d& rkAxis, float& rffloats) const
 	{
 		// The angle is 0 and the matrix is the identity.  Any axis will
 		// work, so just use the x-axis.
-		rkAxis.x = 1.0f;
-		rkAxis.y = 0.0f;
-		rkAxis.z = 0.0f;
+		Axis.x = 1.0f;
+		Axis.y = 0.0f;
+		Axis.z = 0.0f;
 	}
+
+	return Angle;
 }
 
-void Matrix3d::FromAxisAngle(const Vector3d& rkAxis, const float& ffloats)
-{
-	float fCos = cosf(ffloats);
-	float fSin = sinf(ffloats);
-	float fOneMinusCos = 1.0f - fCos;
-	float fX2 = rkAxis.x * rkAxis.x;
-	float fY2 = rkAxis.y * rkAxis.y;
-	float fZ2 = rkAxis.z * rkAxis.z;
-	float fXYM = rkAxis.x * rkAxis.y * fOneMinusCos;
-	float fXZM = rkAxis.x * rkAxis.z * fOneMinusCos;
-	float fYZM = rkAxis.y * rkAxis.z * fOneMinusCos;
-	float fXSin = rkAxis.x * fSin;
-	float fYSin = rkAxis.y * fSin;
-	float fZSin = rkAxis.z * fSin;
-
-	mat[0][0] = fX2 * fOneMinusCos + fCos;
-	mat[0][1] = fXYM - fZSin;
-	mat[0][2] = fXZM + fYSin;
-	mat[1][0] = fXYM + fZSin;
-	mat[1][1] = fY2 * fOneMinusCos + fCos;
-	mat[1][2] = fYZM - fXSin;
-	mat[2][0] = fXZM - fYSin;
-	mat[2][1] = fYZM + fXSin;
-	mat[2][2] = fZ2 * fOneMinusCos + fCos;
-}
-
-bool Matrix3d::ToEulerAnglesXYZ(float& rfYAngle, float& rfPAngle,
-	float& rfRAngle) const
+bool Matrix3d::ToEuleRollsXYZ(float& Yaw, float& Pitch, float& Roll) const
 {
 	// rot =  cy*cz          -cy*sz           sy
 	//        cz*sx*sy+cx*sz  cx*cz-sx*sy*sz -cy*sx
 	//       -cx*cz*sy+sx*sz  cz*sx+cx*sy*sz  cx*cy
 
-	rfPAngle = asinf(mat[0][2]);
-	if (rfPAngle < PI_OVER_2)
+	Pitch = asinf(mat[0][2]);
+	if (Pitch < PI_OVER_2)
 	{
-		if (rfPAngle > -PI_OVER_2)
+		if (Pitch > -PI_OVER_2)
 		{
-			rfYAngle = atan2f(-mat[1][2], mat[2][2]);
-			rfRAngle = atan2f(-mat[0][1], mat[0][0]);
+			Yaw = atan2f(-mat[1][2], mat[2][2]);
+			Roll = atan2f(-mat[0][1], mat[0][0]);
 			return true;
 		}
 		else
 		{
 			// WARNING.  Not a unique solution.
 			float fRmY = atan2f(mat[1][0], mat[1][1]);
-			rfRAngle = float(0.0);  // any angle works
-			rfYAngle = rfRAngle - fRmY;
+			Roll = float(0.0);  // any angle works
+			Yaw = Roll - fRmY;
 			return false;
 		}
 	}
@@ -811,34 +786,33 @@ bool Matrix3d::ToEulerAnglesXYZ(float& rfYAngle, float& rfPAngle,
 	{
 		// WARNING.  Not a unique solution.
 		float fRpY = atan2f(mat[1][0], mat[1][1]);
-		rfRAngle = float(0.0);  // any angle works
-		rfYAngle = fRpY - rfRAngle;
+		Roll = float(0.0);  // any angle works
+		Yaw = fRpY - Roll;
 		return false;
 	}
 }
 
-bool Matrix3d::ToEulerAnglesXZY(float& rfYAngle, float& rfPAngle,
-	float& rfRAngle) const
+bool Matrix3d::ToEuleRollsXZY(float& Yaw, float& Pitch,	float& Roll) const
 {
 	// rot =  cy*cz          -sz              cz*sy
 	//        sx*sy+cx*cy*sz  cx*cz          -cy*sx+cx*sy*sz
 	//       -cx*sy+cy*sx*sz  cz*sx           cx*cy+sx*sy*sz
 
-	rfPAngle = asinf(-mat[0][1]);
-	if (rfPAngle < PI_OVER_2)
+	Pitch = asinf(-mat[0][1]);
+	if (Pitch < PI_OVER_2)
 	{
-		if (rfPAngle > -PI_OVER_2)
+		if (Pitch > -PI_OVER_2)
 		{
-			rfYAngle = atan2f(mat[2][1], mat[1][1]);
-			rfRAngle = atan2f(mat[0][2], mat[0][0]);
+			Yaw = atan2f(mat[2][1], mat[1][1]);
+			Roll = atan2f(mat[0][2], mat[0][0]);
 			return true;
 		}
 		else
 		{
 			// WARNING.  Not a unique solution.
 			float fRmY = atan2f(-mat[2][0], mat[2][2]);
-			rfRAngle = 0.0f;  // any angle works
-			rfYAngle = rfRAngle - fRmY;
+			Roll = 0.0f;  // any angle works
+			Yaw = Roll - fRmY;
 			return false;
 		}
 	}
@@ -846,34 +820,33 @@ bool Matrix3d::ToEulerAnglesXZY(float& rfYAngle, float& rfPAngle,
 	{
 		// WARNING.  Not a unique solution.
 		float fRpY = atan2f(-mat[2][0], mat[2][2]);
-		rfRAngle = 0.0f;  // any angle works
-		rfYAngle = fRpY - rfRAngle;
+		Roll = 0.0f;  // any angle works
+		Yaw = fRpY - Roll;
 		return false;
 	}
 }
 
-bool Matrix3d::ToEulerAnglesYXZ(float& rfYAngle, float& rfPAngle,
-	float& rfRAngle) const
+bool Matrix3d::ToEuleRollsYXZ(float& Yaw, float& Pitch,	float& Roll) const
 {
 	// rot =  cy*cz+sx*sy*sz  cz*sx*sy-cy*sz  cx*sy
 	//        cx*sz           cx*cz          -sx
 	//       -cz*sy+cy*sx*sz  cy*cz*sx+sy*sz  cx*cy
 
-	rfPAngle = asinf(-mat[1][2]);
-	if (rfPAngle < PI_OVER_2)
+	Pitch = asinf(-mat[1][2]);
+	if (Pitch < PI_OVER_2)
 	{
-		if (rfPAngle > -PI_OVER_2)
+		if (Pitch > -PI_OVER_2)
 		{
-			rfYAngle = atan2f(mat[0][2], mat[2][2]);
-			rfRAngle = atan2f(mat[1][0], mat[1][1]);
+			Yaw = atan2f(mat[0][2], mat[2][2]);
+			Roll = atan2f(mat[1][0], mat[1][1]);
 			return true;
 		}
 		else
 		{
 			// WARNING.  Not a unique solution.
 			float fRmY = atan2f(-mat[0][1], mat[0][0]);
-			rfRAngle = 0.0f;  // any angle works
-			rfYAngle = rfRAngle - fRmY;
+			Roll = 0.0f;  // any angle works
+			Yaw = Roll - fRmY;
 			return false;
 		}
 	}
@@ -881,34 +854,33 @@ bool Matrix3d::ToEulerAnglesYXZ(float& rfYAngle, float& rfPAngle,
 	{
 		// WARNING.  Not a unique solution.
 		float fRpY = atan2f(-mat[0][1], mat[0][0]);
-		rfRAngle = 0.0f;  // any angle works
-		rfYAngle = fRpY - rfRAngle;
+		Roll = 0.0f;  // any angle works
+		Yaw = fRpY - Roll;
 		return false;
 	}
 }
 
-bool Matrix3d::ToEulerAnglesYZX(float& rfYAngle, float& rfPAngle,
-	float& rfRAngle) const
+bool Matrix3d::ToEuleRollsYZX(float& Yaw, float& Pitch,	float& Roll) const
 {
 	// rot =  cy*cz           sx*sy-cx*cy*sz  cx*sy+cy*sx*sz
 	//        sz              cx*cz          -cz*sx
 	//       -cz*sy           cy*sx+cx*sy*sz  cx*cy-sx*sy*sz
 
-	rfPAngle = asinf(mat[1][0]);
-	if (rfPAngle < PI_OVER_2)
+	Pitch = asinf(mat[1][0]);
+	if (Pitch < PI_OVER_2)
 	{
-		if (rfPAngle > -PI_OVER_2)
+		if (Pitch > -PI_OVER_2)
 		{
-			rfYAngle = atan2f(-mat[2][0], mat[0][0]);
-			rfRAngle = atan2f(-mat[1][2], mat[1][1]);
+			Yaw = atan2f(-mat[2][0], mat[0][0]);
+			Roll = atan2f(-mat[1][2], mat[1][1]);
 			return true;
 		}
 		else
 		{
 			// WARNING.  Not a unique solution.
 			float fRmY = atan2f(mat[2][1], mat[2][2]);
-			rfRAngle = 0.0f;  // any angle works
-			rfYAngle = rfRAngle - fRmY;
+			Roll = 0.0f;  // any angle works
+			Yaw = Roll - fRmY;
 			return false;
 		}
 	}
@@ -916,34 +888,33 @@ bool Matrix3d::ToEulerAnglesYZX(float& rfYAngle, float& rfPAngle,
 	{
 		// WARNING.  Not a unique solution.
 		float fRpY = atan2f(mat[2][1], mat[2][2]);
-		rfRAngle = 0.0f;  // any angle works
-		rfYAngle = fRpY - rfRAngle;
+		Roll = 0.0f;  // any angle works
+		Yaw = fRpY - Roll;
 		return false;
 	}
 }
 
-bool Matrix3d::ToEulerAnglesZXY(float& rfYAngle, float& rfPAngle,
-	float& rfRAngle) const
+bool Matrix3d::ToEuleRollsZXY(float& Yaw, float& Pitch,	float& Roll) const
 {
 	// rot =  cy*cz-sx*sy*sz -cx*sz           cz*sy+cy*sx*sz
 	//        cz*sx*sy+cy*sz  cx*cz          -cy*cz*sx+sy*sz
 	//       -cx*sy           sx              cx*cy
 
-	rfPAngle = asinf(mat[2][1]);
-	if (rfPAngle < PI_OVER_2)
+	Pitch = asinf(mat[2][1]);
+	if (Pitch < PI_OVER_2)
 	{
-		if (rfPAngle > -PI_OVER_2)
+		if (Pitch > -PI_OVER_2)
 		{
-			rfYAngle = atan2f(-mat[0][1], mat[1][1]);
-			rfRAngle = atan2f(-mat[2][0], mat[2][2]);
+			Yaw = atan2f(-mat[0][1], mat[1][1]);
+			Roll = atan2f(-mat[2][0], mat[2][2]);
 			return true;
 		}
 		else
 		{
 			// WARNING.  Not a unique solution.
 			float fRmY = atan2f(mat[0][2], mat[0][0]);
-			rfRAngle = 0.0f;  // any angle works
-			rfYAngle = rfRAngle - fRmY;
+			Roll = 0.0f;  // any angle works
+			Yaw = Roll - fRmY;
 			return false;
 		}
 	}
@@ -951,34 +922,33 @@ bool Matrix3d::ToEulerAnglesZXY(float& rfYAngle, float& rfPAngle,
 	{
 		// WARNING.  Not a unique solution.
 		float fRpY = atan2f(mat[0][2], mat[0][0]);
-		rfRAngle = 0.0f;  // any angle works
-		rfYAngle = fRpY - rfRAngle;
+		Roll = 0.0f;  // any angle works
+		Yaw = fRpY - Roll;
 		return false;
 	}
 }
 
-bool Matrix3d::ToEulerAnglesZYX(float& rfYAngle, float& rfPAngle,
-	float& rfRAngle) const
+bool Matrix3d::ToEuleRollsZYX(float& Yaw, float& Pitch,	float& Roll) const
 {
 	// rot =  cy*cz           cz*sx*sy-cx*sz  cx*cz*sy+sx*sz
 	//        cy*sz           cx*cz+sx*sy*sz -cz*sx+cx*sy*sz
 	//       -sy              cy*sx           cx*cy
 
-	rfPAngle = asinf(-mat[2][0]);
-	if (rfPAngle < PI_OVER_2)
+	Pitch = asinf(-mat[2][0]);
+	if (Pitch < PI_OVER_2)
 	{
-		if (rfPAngle > -PI_OVER_2)
+		if (Pitch > -PI_OVER_2)
 		{
-			rfYAngle = atan2f(mat[1][0], mat[0][0]);
-			rfRAngle = atan2f(mat[2][1], mat[2][2]);
+			Yaw = atan2f(mat[1][0], mat[0][0]);
+			Roll = atan2f(mat[2][1], mat[2][2]);
 			return true;
 		}
 		else
 		{
 			// WARNING.  Not a unique solution.
 			float fRmY = atan2f(-mat[0][1], mat[0][2]);
-			rfRAngle = 0.0f;  // any angle works
-			rfYAngle = rfRAngle - fRmY;
+			Roll = 0.0f;  // any angle works
+			Yaw = Roll - fRmY;
 			return false;
 		}
 	}
@@ -986,31 +956,30 @@ bool Matrix3d::ToEulerAnglesZYX(float& rfYAngle, float& rfPAngle,
 	{
 		// WARNING.  Not a unique solution.
 		float fRpY = atan2f(-mat[0][1], mat[0][2]);
-		rfRAngle = 0.0f;  // any angle works
-		rfYAngle = fRpY - rfRAngle;
+		Roll = 0.0f;  // any angle works
+		Yaw = fRpY - Roll;
 		return false;
 	}
 }
 
-void Matrix3d::FromEulerAnglesXYZ(const float& fYAngle, const float& fPAngle,
-	const float& fRAngle)
+void Matrix3d::FromEuleRollsXYZ(float Yaw, float Pitch,	float Roll)
 {
 	float fCos, fSin;
 
-	fCos = cosf(fYAngle);
-	fSin = sinf(fYAngle);
+	fCos = cosf(Yaw);
+	fSin = sinf(Yaw);
 	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
 		0.0f, fCos, fSin,
 		0.0f, -fSin, fCos);
 
-	fCos = cosf(fPAngle);
-	fSin = sinf(fPAngle);
+	fCos = cosf(Pitch);
+	fSin = sinf(Pitch);
 	Matrix3d kYMat(fCos, 0.0f, -fSin,
 		0.0f, 1.0f, 0.0f,
 		fSin, 0.0f, fCos);
 
-	fCos = cosf(fRAngle);
-	fSin = sinf(fRAngle);
+	fCos = cosf(Roll);
+	fSin = sinf(Roll);
 	Matrix3d kZMat(fCos, fSin, 0.0f,
 		-fSin, fCos, 0.0f,
 		0.0f, 0.0f, 1.0f);
@@ -1018,25 +987,24 @@ void Matrix3d::FromEulerAnglesXYZ(const float& fYAngle, const float& fPAngle,
 	*this = kXMat * kYMat * kZMat;
 }
 
-void Matrix3d::FromEulerAnglesXZY(const float& fYAngle, const float& fPAngle,
-	const float& fRAngle)
+void Matrix3d::FromEuleRollsXZY(float Yaw, float Pitch,	float Roll)
 {
 	float fCos, fSin;
 
-	fCos = cosf(fYAngle);
-	fSin = sinf(fYAngle);
+	fCos = cosf(Yaw);
+	fSin = sinf(Yaw);
 	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
 		0.0f, fCos, fSin,
 		0.0f, -fSin, fCos);
 
-	fCos = cosf(fPAngle);
-	fSin = sinf(fPAngle);
+	fCos = cosf(Pitch);
+	fSin = sinf(Pitch);
 	Matrix3d kYMat(fCos, 0.0f, -fSin,
 		0.0f, 1.0f, 0.0f,
 		fSin, 0.0f, fCos);
 
-	fCos = cosf(fRAngle);
-	fSin = sinf(fRAngle);
+	fCos = cosf(Roll);
+	fSin = sinf(Roll);
 	Matrix3d kZMat(fCos, fSin, 0.0f,
 		-fSin, fCos, 0.0f,
 		0.0f, 0.0f, 1.0f);
@@ -1044,25 +1012,24 @@ void Matrix3d::FromEulerAnglesXZY(const float& fYAngle, const float& fPAngle,
 	*this = kXMat * kZMat * kYMat;
 }
 
-void Matrix3d::FromEulerAnglesYXZ(const float& fYAngle, const float& fPAngle,
-	const float& fRAngle)
+void Matrix3d::FromEuleRollsYXZ(float Yaw, float Pitch,	float Roll)
 {
 	float fCos, fSin;
 
-	fCos = cosf(fYAngle);
-	fSin = sinf(fYAngle);
+	fCos = cosf(Yaw);
+	fSin = sinf(Yaw);
 	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
 		0.0f, fCos, fSin,
 		0.0f, -fSin, fCos);
 
-	fCos = cosf(fPAngle);
-	fSin = sinf(fPAngle);
+	fCos = cosf(Pitch);
+	fSin = sinf(Pitch);
 	Matrix3d kYMat(fCos, 0.0f, -fSin,
 		0.0f, 1.0f, 0.0f,
 		fSin, 0.0f, fCos);
 
-	fCos = cosf(fRAngle);
-	fSin = sinf(fRAngle);
+	fCos = cosf(Roll);
+	fSin = sinf(Roll);
 	Matrix3d kZMat(fCos, fSin, 0.0f,
 		-fSin, fCos, 0.0f,
 		0.0f, 0.0f, 1.0f);
@@ -1070,25 +1037,24 @@ void Matrix3d::FromEulerAnglesYXZ(const float& fYAngle, const float& fPAngle,
 	*this = kYMat * kXMat * kZMat;
 }
 
-void Matrix3d::FromEulerAnglesYZX(const float& fYAngle, const float& fPAngle,
-	const float& fRAngle)
+void Matrix3d::FromEuleRollsYZX(float Yaw, float Pitch,	float Roll)
 {
 	float fCos, fSin;
 
-	fCos = cosf(fYAngle);
-	fSin = sinf(fYAngle);
+	fCos = cosf(Yaw);
+	fSin = sinf(Yaw);
 	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
 		0.0f, fCos, fSin,
 		0.0f, -fSin, fCos);
 
-	fCos = cosf(fPAngle);
-	fSin = sinf(fPAngle);
+	fCos = cosf(Pitch);
+	fSin = sinf(Pitch);
 	Matrix3d kYMat(fCos, 0.0f, -fSin,
 		0.0f, 1.0f, 0.0f,
 		fSin, 0.0f, fCos);
 
-	fCos = cosf(fRAngle);
-	fSin = sinf(fRAngle);
+	fCos = cosf(Roll);
+	fSin = sinf(Roll);
 	Matrix3d kZMat(fCos, fSin, 0.0f,
 		-fSin, fCos, 0.0f,
 		0.0f, 0.0f, 1.0f);
@@ -1096,25 +1062,24 @@ void Matrix3d::FromEulerAnglesYZX(const float& fYAngle, const float& fPAngle,
 	*this = kYMat * kZMat * kXMat;
 }
 
-void Matrix3d::FromEulerAnglesZXY(const float& fYAngle, const float& fPAngle,
-	const float& fRAngle)
+void Matrix3d::FromEuleRollsZXY(float Yaw, float Pitch,	float Roll)
 {
 	float fCos, fSin;
 
-	fCos = cosf(fYAngle);
-	fSin = sinf(fYAngle);
+	fCos = cosf(Yaw);
+	fSin = sinf(Yaw);
 	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
 		0.0f, fCos, fSin,
 		0.0f, -fSin, fCos);
 
-	fCos = cosf(fPAngle);
-	fSin = sinf(fPAngle);
+	fCos = cosf(Pitch);
+	fSin = sinf(Pitch);
 	Matrix3d kYMat(fCos, 0.0f, -fSin,
 		0.0f, 1.0f, 0.0f,
 		fSin, 0.0f, fCos);
 
-	fCos = cosf(fRAngle);
-	fSin = sinf(fRAngle);
+	fCos = cosf(Roll);
+	fSin = sinf(Roll);
 	Matrix3d kZMat(fCos, fSin, 0.0f,
 		-fSin, fCos, 0.0f,
 		0.0f, 0.0f, 1.0f);
@@ -1122,25 +1087,24 @@ void Matrix3d::FromEulerAnglesZXY(const float& fYAngle, const float& fPAngle,
 	*this = kZMat * kXMat * kYMat;
 }
 
-void Matrix3d::FromEulerAnglesZYX(const float& fYAngle, const float& fPAngle,
-	const float& fRAngle)
+void Matrix3d::FromEuleRollsZYX(float Yaw, float Pitch,	float Roll)
 {
 	float fCos, fSin;
 
-	fCos = cosf(fYAngle);
-	fSin = sinf(fYAngle);
+	fCos = cosf(Yaw);
+	fSin = sinf(Yaw);
 	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
 		0.0f, fCos, fSin,
 		0.0f, -fSin, fCos);
 
-	fCos = cosf(fPAngle);
-	fSin = sinf(fPAngle);
+	fCos = cosf(Pitch);
+	fSin = sinf(Pitch);
 	Matrix3d kYMat(fCos, 0.0f, -fSin,
 		0.0f, 1.0f, 0.0f,
 		fSin, 0.0f, fCos);
 
-	fCos = cosf(fRAngle);
-	fSin = sinf(fRAngle);
+	fCos = cosf(Roll);
+	fSin = sinf(Roll);
 	Matrix3d kZMat(fCos, fSin, 0.0f,
 		-fSin, fCos, 0.0f,
 		0.0f, 0.0f, 1.0f);

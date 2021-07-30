@@ -480,7 +480,7 @@ public:
 			{
 				vv.emplace_back(Vertices[i], Normals[i]);
 			}
-			AddTriangles("Geometry", geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
+			AddTriangles(geom->GetName(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
         }
         else
         {
@@ -490,7 +490,7 @@ public:
 			{
 				vv.emplace_back(Vertices[i], Vector3d(1.0f, 1.0f, 1.0f));
 			}
-			AddWireframe("Geometry", geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
+			AddWireframe(geom->GetName(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
         }
     }
 
@@ -516,11 +516,11 @@ public:
 		}
 		else if (geom->GetShapeType() == CONVEX_MESH)
 		{
-			AddConvexMesh(geom->CastGeometry<ConvexMesh>(), geom->GetTransform());
+            AddGeometry<ConvexMesh>(geom);
 		}
         else if (geom->GetShapeType() == OBB)
         {
-            AddGeometry<AxisAlignedBox3d>(geom);
+            // AddGeometry<AxisAlignedBox3d>(geom);
         }
 		else if (geom->GetShapeType() == PLANE)
 		{
@@ -539,17 +539,6 @@ public:
 			AddGeometry <Cylinder3d >(geom);
 		}
 	}
-
-    void AddConvexMesh(ConvexMesh* mesh, Transform* Trans)
-    {
-		std::vector<Vertex1> vv;
-		for (unsigned int i = 0; i < mesh->GetNumVerties(); ++i)
-		{
-			vv.emplace_back(mesh->Vertices[i], mesh->GetNormal(i));
-		}
-
-		AddWireframe("Convex", Trans, &vv[0], (int)vv.size(), &mesh->Edges[0], (int)mesh->Edges.size());
-    }
 
     //--------------------------------------------------------------------------------------
     // Helper for compiling shaders with D3DCompile

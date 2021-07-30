@@ -136,7 +136,8 @@ public:
 		for (int i = 1; i < stackCount; i++)
 		{
 			float phi = i * phiStep;
-			for (int j = 0; j <= sliceCount; j++) {
+			for (int j = 0; j <= sliceCount; j++)
+			{
 				float theta = j * thetaStep;
 				Vector3d p = Vector3d(sinf(phi) * cosf(theta), cosf(phi), sinf(phi) * sinf(theta)) * Radius;
 				Vertices->push_back(p);
@@ -162,25 +163,25 @@ public:
 		}
 
 		int baseIndex = 1;
-		int ringVertexCount = sliceCount + 1;
+		int Count = sliceCount + 1;
 		for (int i = 0; i < stackCount - 2; i++)
 		{
 			for (int j = 0; j < sliceCount; j++)
 			{
-				Indices.push_back(baseIndex + i * ringVertexCount + j);
-				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
-				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
+				Indices.push_back(baseIndex + i * Count + j);
+				Indices.push_back(baseIndex + i * Count + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * Count + j);
 
-				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
-				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
-				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * Count + j);
+				Indices.push_back(baseIndex + i * Count + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
 			}
 		}
-		int southPoleIndex = (int)Vertices.size() - 1;
-		baseIndex = southPoleIndex - ringVertexCount;
+		int PoleIndex = (int)Vertices.size() - 1;
+		baseIndex = PoleIndex - Count;
 		for (int i = 0; i < sliceCount; i++)
 		{
-			Indices.push_back(southPoleIndex);
+			Indices.push_back(PoleIndex);
 			Indices.push_back(baseIndex + i);
 			Indices.push_back(baseIndex + i + 1);
 		}
@@ -203,29 +204,29 @@ public:
 		}
 
 		int baseIndex = 1;
-		int ringVertexCount = sliceCount + 1;
+		int Count = sliceCount + 1;
 		for (int i = 0; i < stackCount - 2; i++)
 		{
 			for (int j = 0; j < sliceCount; j++)
 			{
-				Indices.push_back(baseIndex + i * ringVertexCount + j);
-				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+				Indices.push_back(baseIndex + i * Count + j);
+				Indices.push_back(baseIndex + i * Count + j + 1);
 
-				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
-				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
+				Indices.push_back(baseIndex + i * Count + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
 
-				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
-				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+				Indices.push_back(baseIndex + i * Count + j + 1);
 
-				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
-				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
+				Indices.push_back(baseIndex + i * Count + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
 			}
 		}
-		int southPoleIndex = (int)Vertices.size() - 1;
-		baseIndex = southPoleIndex - ringVertexCount;
+		int PoleIndex = (int)Vertices.size() - 1;
+		baseIndex = PoleIndex - Count;
 		for (int i = 0; i < sliceCount; i++)
 		{
-			Indices.push_back(southPoleIndex);
+			Indices.push_back(PoleIndex);
 			Indices.push_back(baseIndex + i);
 		}
 	}

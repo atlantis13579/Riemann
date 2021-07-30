@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
 
@@ -60,9 +61,9 @@ public:
 	const Matrix4d&			GetInverseWorldMatrix();
 
 	void*					GetEntity();
-	void					SetEntity(void *Entity);
+	void					SetEntity(void* Entity);
 
-	Transform* GetTransform()
+	Transform*				GetTransform()
 	{
 		return &m_Transform;
 	}
@@ -73,14 +74,27 @@ public:
 	}
 
 	template<class T>
-	T* CastGeometry()
+	T*						CastGeometry()
 	{
 		return (T*)m_Shape.Object;
 	}
 
-	void* GetShapeGeometry()
+	void*					GetShapeGeometry()
 	{
 		return m_Shape.Object;
+	}
+
+	const char*				GetName() const
+	{
+		return m_Name.c_str();
+	}
+
+	void					SetName(const char* name)
+	{
+		if (name)
+		{
+			m_Name = std::string(name);
+		}
 	}
 
 	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
@@ -96,6 +110,7 @@ private:
 	GeometryShape			m_Shape;
 	Box3d					m_BoxWorld;
 	Transform				m_Transform;
+	std::string				m_Name;
 	void*					m_Entity;
 
 public:

@@ -97,28 +97,9 @@ void InitScene()
 
     if (1)
     {
-        Vertex1 Grounds_vertices[] =
-        {
-            { Vector3d(-100.0f,-5.0f, -100.0f), Vector3d(1.0f, 1.0f, 1.0f) * 0.5f },
-            { Vector3d(100.0f, -5.0f, -100.0f), Vector3d(1.0f, 1.0f, 1.0f) * 0.5f },
-            { Vector3d(100.0f, -5.0f, 100.0f), Vector3d(1.0f, 1.0f, 1.0f) * 0.5f },
-            { Vector3d(-100.0f, -5.0f, 100.0f), Vector3d(1.0f, 1.0f, 1.0f) * 0.5f },
-        };
-        unsigned short Grounds_indices[] =
-        {
-            2,1,0,
-            2,3,0,
-        };
-
-        rp.mass = 1.0f;
-        rp.Static = true;
-        Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, Grounds_vertices[0].Pos.y, 0), Vector3d::UnitY());
+        Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d::UnitY());
         g_World->CreateRigidBody(plane, rp);
-
-        Geometry* sphere = GeometryFactory::CreateSphere(Vector3d(0, 3, 0), 5.0f);
-        g_Renderer->AddGeometry(sphere);
-
-        g_Renderer->AddGeometry(plane);
+		g_Renderer->AddGeometry(plane);
     }
 
     // Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
@@ -204,7 +185,6 @@ void InitScene()
 
     if (1)
     {
-        rp.mass = 1.0f;
         rp.Static = false;
         Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 10.0f, 0.0f), Vector3d(0.5f, 0.5f, 0.5f));
         RigidBody *p = g_World->CreateRigidBody(aabb, rp);
@@ -248,8 +228,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    InitScene();
-    // InitPhysxScene();
+    // InitScene();
+    InitPhysxScene();
     UpdateCamera();
 
     auto last = std::chrono::steady_clock::now();

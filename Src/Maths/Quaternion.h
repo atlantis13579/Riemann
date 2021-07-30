@@ -44,12 +44,6 @@ public:
 		return *this;
 	}
 
-	void	FromRotationAxis(const Vector3d& q, float angle)
-	{
-		s = cosf(angle / 2);
-		v = q * sinf(angle / 2);
-	}
-
 	Quaternion Conjugate() const
 	{
 		return Quaternion(-v.x, -v.y, -v.z, s);
@@ -72,13 +66,20 @@ public:
 		return sqrtf(s*s + v.x*v.x + v.y*v.y + v.z*v.z);
 	}
 
-	void FromEuler(float x, float y, float z)
+	static Quaternion FromRotationAxis(const Vector3d& q, float angle)
 	{
-		Quaternion xrot, yrot, zrot;
-		xrot.FromRotationAxis(Vector3d(1, 0, 0), x);
-		yrot.FromRotationAxis(Vector3d(0, 1, 0), y);
-		zrot.FromRotationAxis(Vector3d(0, 0, 1), z);
-		*this = zrot * yrot * xrot;
+		Quaternion quat;
+		quat.s = cosf(angle / 2);
+		quat.v = q * sinf(angle / 2);
+		return quat;
+	}
+
+	static Quaternion FromEuler(float x, float y, float z)
+	{
+		Quaternion xrot = FromRotationAxis(Vector3d(1, 0, 0), x);
+		Quaternion yrot = FromRotationAxis(Vector3d(0, 1, 0), y);
+		Quaternion zrot = FromRotationAxis(Vector3d(0, 0, 1), z);
+		return zrot * yrot * xrot;
 	}
 
 	Vector3d ToEuler() const

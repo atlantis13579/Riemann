@@ -121,4 +121,14 @@ public:
 		return Vector3d::Zero();
 	}
 
+	void	GetMesh(std::vector<Vector3d>& _Vertices, std::vector<unsigned short>& _Indices, std::vector<Vector3d>& _Normals)
+	{
+
+	}
+
+	void	GetWireframe(std::vector<Vector3d>& _Vertices, std::vector<unsigned short>& _Indices)
+	{
+		_Vertices = Vertices;
+		_Indices = Edges;
+	}
 };

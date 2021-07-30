@@ -5,6 +5,7 @@
 #include "../CollisionPrimitive/ConvexMesh.h"
 #include "../Collision/TriangleMesh.h"
 #include "../Collision/RTree.h"
+#include "../RigidBodyDynamics/RigidBody.h"
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
 #include "../Maths/Quaternion.h"
@@ -169,47 +170,55 @@ public:
 
 	static Geometry* CreateShape(const physx::NpShape *shape)
 	{
+		if (shape == nullptr)
+		{
+			return nullptr;
+		}
 
 		Geometry* Geom = nullptr;
 		int Type = shape->getGeomType();
 		if (Type == physx::eSPHERE)
 		{
 			physx::PxSphereGeometry* sphere = (physx::PxSphereGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.sphere;
-			return CreateSphere(sphere);
+			Geom = CreateSphere(sphere);
 		}
 		else if (Type == physx::ePLANE)
 		{
 			physx::PxPlaneGeometry* plane = (physx::PxPlaneGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.plane;
-			return CreatePlane(plane);
+			Geom = CreatePlane(plane);
 		}
 		else if (Type == physx::eCAPSULE)
 		{
 			physx::PxCapsuleGeometry* capsule = (physx::PxCapsuleGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.capsule;
-			return CreateCapsule(capsule);
+			Geom = CreateCapsule(capsule);
 		}
 		else if (Type == physx::eBOX)
 		{
 			physx::PxBoxGeometry* box = (physx::PxBoxGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.box;
-			return CreateBox(box);
+			Geom = CreateBox(box);
 		}
 		else if (Type == physx::eCONVEXMESH)
 		{
 			physx::PxConvexMeshGeometry* convex = (physx::PxConvexMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.convex;
-			return CreateConvexMesh(convex);
+			Geom = CreateConvexMesh(convex);
 		}
 		else if (Type == physx::eTRIANGLEMESH)
 		{
 			physx::PxTriangleMeshGeometry* pxMesh = (physx::PxTriangleMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.mesh;
-			return CreateTriangleMesh(pxMesh);
+			Geom = CreateTriangleMesh(pxMesh);
 		}
 		else if (Type == physx::eHEIGHTFIELD)
 		{
 			physx::PxHeightFieldGeometry* hightfield = (physx::PxHeightFieldGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.heightfield;
-			return CreateHeightField(hightfield);
+			Geom = CreateHeightField(hightfield);
 		}
 		else
 		{
 			assert(false);
+		}
+		if (Geom)
+		{
+			Geom->SetName(shape->mName);
 		}
 
 		return Geom;
@@ -244,7 +253,34 @@ public:
 		else if (classType == physx::eRIGID_DYNAMIC)
 		{
 			physx::NpRigidDynamic* rigid = (physx::NpRigidDynamic*)px;
+			const physx::PxsBodyCore& core = rigid->mBody.mBodyCore.mCore;
 
+			int nShapes = rigid->GetNumShapes();
+			physx::NpShape* const* pShades = rigid->GetShapes();
+			for (int i = 0; i < nShapes; ++i)
+			{
+				Geometry* p = CreateShape(pShades[i]);
+				if (p)
+				{
+					p->SetPosition(core.body2World.p);
+					p->SetRotationQuat(core.body2World.q);
+					objs->push_back(p);
+				}
+			}
+
+			RigidBodyParam param;
+			param.Mass = 1.0f / core.inverseMass;
+			param.Inertia = Matrix3d(core.inverseInertia.x, core.inverseInertia.y, core.inverseInertia.z).Inverse();
+			param.LinearVelocity = core.linearVelocity;
+			param.AngularVelocity = core.angularVelocity;
+			param.LinearDamping = core.linearDamping;
+			param.AngularDamping = core.angularDamping;
+			param.ContactReportThreshold = core.contactReportThreshold;
+			param.MaxContactImpulse = core.maxContactImpulse;
+			param.SleepThreshold = core.sleepThreshold;
+			param.FreezeThreshold = core.freezeThreshold;
+			param.DisableGravity = core.disableGravity;
+			param.Static = false;
 			return;
 		}
 		return;
