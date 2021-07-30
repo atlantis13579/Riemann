@@ -150,14 +150,14 @@ public:
 				if (Time1 <= Time2)
 				{
 					*t = Time1;
-				//	OutPosition = Position1;
-				//	OutNormal = Normal1;
+					//	OutPosition = Position1;
+					//	OutNormal = Normal1;
 				}
 				else
 				{
 					*t = Time2;
-				//	OutPosition = Position2;
-				//	OutNormal = Normal2;
+					//	OutPosition = Position2;
+					//	OutNormal = Normal2;
 				}
 
 				return true;
@@ -228,5 +228,20 @@ public:
 		}
 		Vector3d Normalized = dir / sqrtf(distSqr);
 		return FarthestCap + Normalized * Radius;
+	}
+
+	void	GetVertices(std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
+	{
+
+	}
+
+	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices, std::vector<Vector3d>& Normals)
+	{
+
+	}
+
+	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices)
+	{
+
 	}
 };

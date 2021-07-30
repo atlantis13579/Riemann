@@ -18,11 +18,16 @@ public:
 
 	Plane3d(const Vector3d& InNormal, float InD)
 	{
-		Normal = InNormal;
+		Normal = InNormal.Unit();
 		D = InD;
 	}
 
 public:
+	Vector3d		GetOrigin() const
+	{
+		return -Normal * D;
+	}
+
 	bool			IntersectPoint(const Vector3d& Point) const
 	{
 		const float det = Point.Dot(Normal) + D;
@@ -78,15 +83,25 @@ public:
 		return true;
 	}
 
+	static float MaxBV()
+	{
+		return 1000000.0f;
+	}
+
+	static float VerySmallTickness()
+	{
+		return 0.00001f;
+	}
+
 	Box3d	GetBoundingVolume() const
 	{
-		const float kMaxBV = 10000000.0f;
-		const float kVerySmallTickness = 0.00001f;
+		const float kMaxBV = MaxBV();
+		const float kVerySmallTickness = VerySmallTickness();
 		Box3d Box(-kMaxBV, kMaxBV);
 
 		if (ParallelToXY())
 		{
-			if (Normal.z > 0.0001f)
+			if (Normal.z > kEpsilonPlane)
 			{
 				Box.Min.z = -D / Normal.z - kVerySmallTickness;
 				Box.Max.z = -D / Normal.z + kVerySmallTickness;
@@ -95,7 +110,7 @@ public:
 
 		if (ParallelToYZ())
 		{
-			if (Normal.x > 0.0001f)
+			if (Normal.x > kEpsilonPlane)
 			{
 				Box.Min.x = -D / Normal.x - kVerySmallTickness;
 				Box.Max.x = -D / Normal.x + kVerySmallTickness;
@@ -104,7 +119,7 @@ public:
 
 		if (ParallelToXZ())
 		{
-			if (Normal.y > 0.0001f)
+			if (Normal.y > kEpsilonPlane)
 			{
 				Box.Min.y = -D / Normal.y - kVerySmallTickness;
 				Box.Max.y = -D / Normal.y + kVerySmallTickness;
@@ -153,5 +168,39 @@ public:
 			dir.y > 0 ? box.Max.y : box.Min.y,
 			dir.z > 0 ? box.Max.z : box.Min.z
 		);
+	}
+
+	void	GetVerties(Vector3d *v, float Radius)
+	{
+		Vector3d v0 = Vector3d::UnitY();
+		if (Normal.ParallelTo(v0) != 0)
+		{
+			v0 = Vector3d::UnitX();
+		}
+
+		Vector3d v1 = Normal.Cross(v0);
+		Vector3d v2 = Normal.Cross(v1);
+
+		Vector3d Origin = GetOrigin();
+		v[0] = Origin + v1 * Radius;
+		v[1] = Origin + v2 * Radius;
+		v[2] = Origin + v1 * -Radius;
+		v[3] = Origin + v2 * -Radius;
+		return;
+	}
+
+	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices, std::vector<Vector3d>& Normals)
+	{
+		Vertices.resize(4);
+		GetVerties(&Vertices[0], 100.0f);
+		Normals = { Normal , Normal , Normal , Normal };
+		Indices = { 2,1,0, 2,3,0 };
+	}
+
+	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices)
+	{
+		Vertices.resize(4);
+		GetVerties(&Vertices[0], 100.0f);
+		Indices = { 0,1, 1,2, 2,3, 3,0 };
 	}
 };

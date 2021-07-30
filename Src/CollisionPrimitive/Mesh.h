@@ -17,7 +17,7 @@ class Mesh
 public:
 	unsigned int				NumVerties;
 	unsigned int				NumTriangles;
-	std::vector<Vector3d>		Verties;
+	std::vector<Vector3d>		Vertices;
 	std::vector<unsigned short>	Indices;
 	std::vector<Vector3d>		Normals;
 	Box3d						BoundingVolume;
@@ -31,16 +31,22 @@ public:
 
 	void Release()
 	{
-		Verties.clear();
+		Vertices.clear();
 		Indices.clear();
 		Normals.clear();
 		NumVerties = 0;
 		NumTriangles = 0;
 	}
 
+	void Compact()
+	{
+		Vertices.resize(NumVerties);
+		Indices.resize(NumTriangles * GetIndicesWidth());
+	}
+
 	void* GetVertexBuffer()
 	{
-		return &Verties[0];
+		return &Vertices[0];
 	}
 
 	void* GetIndexBuffer()
@@ -97,12 +103,12 @@ public:
 	{
 		if (Is16bitIndices())
 		{
-			return Verties[Indices[3 * i + j]];
+			return Vertices[Indices[3 * i + j]];
 		}
 		else
 		{
 			const unsigned int* Indices32 = GetIndices32();
-			return Verties[Indices32[3 * i + j]];
+			return Vertices[Indices32[3 * i + j]];
 		}
 	}
 
@@ -115,8 +121,8 @@ public:
 		NumVerties = Nv;
 		NumTriangles = Nt;
 
-		Verties.resize(Nv);
-		memcpy(&Verties[0], Verts, sizeof(Verties[0]) * Nv);
+		Vertices.resize(Nv);
+		memcpy(&Vertices[0], Verts, sizeof(Vertices[0]) * Nv);
 
 		Indices.resize(Nt * 3 * GetIndicesWidth());
 		memcpy(&Indices[0], Tris, Indices.size() * sizeof(Indices[0]));
@@ -124,11 +130,11 @@ public:
 
 	void AddVertex(const Vector3d& v)
 	{
-		if (NumVerties >= Verties.size())
+		if (NumVerties >= Vertices.size())
 		{
-			Verties.resize(Verties.size() + TRIANGLE_BATCH * 3);
+			Vertices.resize(Vertices.size() + TRIANGLE_BATCH * 3);
 		}
-		Verties[NumVerties++] = v;
+		Vertices[NumVerties++] = v;
 	}
 
 	void AddTriangle(unsigned int a, unsigned int b, unsigned int c)
@@ -154,11 +160,11 @@ public:
 
 		if (NumTriangles == 0)
 		{
-			BoundingVolume = Box3d(Verties[a], Verties[a]);
+			BoundingVolume = Box3d(Vertices[a], Vertices[a]);
 		}
-		BoundingVolume.Grow(Verties[a]);
-		BoundingVolume.Grow(Verties[b]);
-		BoundingVolume.Grow(Verties[c]);
+		BoundingVolume.Grow(Vertices[a]);
+		BoundingVolume.Grow(Vertices[b]);
+		BoundingVolume.Grow(Vertices[c]);
 
 		NumTriangles++;
 	}
@@ -243,6 +249,8 @@ public:
 			}
 		}
 
+		Compact();
+
 		delete[] buf;
 		ResourceId = name;
 		return true;
@@ -261,7 +269,7 @@ public:
 		fwrite(&Flags, sizeof(Flags), 1, fp);
 		fwrite(&NumVerties, sizeof(NumVerties), 1, fp);
 		fwrite(&NumTriangles, sizeof(NumTriangles), 1, fp);
-		fwrite(&Verties[0], sizeof(Verties[0]), NumVerties, fp);
+		fwrite(&Vertices[0], sizeof(Vertices[0]), NumVerties, fp);
 		fwrite(&Indices[0], sizeof(Indices[0]), NumTriangles * 3, fp);
 		fclose(fp);
 		return true;
@@ -293,9 +301,9 @@ public:
 		fread(&Flags, sizeof(Flags), 1, fp);
 		fread(&NumVerties, sizeof(NumVerties), 1, fp);
 		fread(&NumTriangles, sizeof(NumTriangles), 1, fp);
-		Verties.resize(NumVerties);
+		Vertices.resize(NumVerties);
 		Indices.resize(NumTriangles * 3 * GetIndicesWidth());
-		fread(&Verties[0], sizeof(Verties[0]), NumVerties, fp);
+		fread(&Vertices[0], sizeof(Vertices[0]), NumVerties, fp);
 		fread(&Indices[0], sizeof(Indices[0]), NumTriangles * 3, fp);
 		fclose(fp);
 
@@ -312,7 +320,7 @@ public:
 		{
 			for (unsigned int i = 0; i < NumTriangles; ++i)
 			{
-				if (!filter_func(Verties[Indices[3 * i]], Verties[Indices[3 * i + 1]], Verties[Indices[3 * i + 2]]))
+				if (!filter_func(Vertices[Indices[3 * i]], Vertices[Indices[3 * i + 1]], Vertices[Indices[3 * i + 2]]))
 				{
 					if (i != j)
 					{
@@ -329,7 +337,7 @@ public:
 			unsigned int* Indices32 = GetIndices32();
 			for (unsigned int i = 0; i < NumTriangles; ++i)
 			{
-				if (!filter_func(Verties[Indices32[3 * i]], Verties[Indices32[3 * i + 1]], Verties[Indices32[3 * i + 2]]))
+				if (!filter_func(Vertices[Indices32[3 * i]], Vertices[Indices32[3 * i + 1]], Vertices[Indices32[3 * i + 2]]))
 				{
 					if (i != j)
 					{
@@ -380,9 +388,9 @@ public:
 				i1 = Indices32[3 * i + 1];
 				i2 = Indices32[3 * i + 2];
 			}
-			const Vector3d& v0 = Verties[i0];
-			const Vector3d& v1 = Verties[i1];
-			const Vector3d& v2 = Verties[i2];
+			const Vector3d& v0 = Vertices[i0];
+			const Vector3d& v1 = Vertices[i1];
+			const Vector3d& v2 = Vertices[i2];
 			Vector3d Nor = (v1 - v0).Cross(v2 - v0);
 			Normals[i0] += Nor.Unit(), Count[i0]++;
 			Normals[i1] += Nor.Unit(), Count[i1]++;
@@ -403,7 +411,7 @@ public:
 			return;
 		}
 
-		BoundingVolume = Box3d(&Verties[0], NumVerties);
+		BoundingVolume = Box3d(&Vertices[0], NumVerties);
 	}
 
 private:

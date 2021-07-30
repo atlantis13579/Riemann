@@ -155,21 +155,20 @@ public:
 		);
 	}
 
-	void	GetMesh(std::vector<Vector3d> &Verties, std::vector<unsigned short>& Indices, std::vector<Vector3d>& Normals)
+	void	GetMesh(std::vector<Vector3d> &Vertices, std::vector<unsigned short>& Indices, std::vector<Vector3d>& Normals)
 	{
-		Verties.resize(8);
-		Box3d::GetVertices(Min, Max, &Verties[0]);
+		Vertices.resize(8);
+		Box3d::GetVertices(Min, Max, &Vertices[0]);
 		
 		Vector3d Center = GetCenterOfMass();
 
 		Normals.resize(8);
 		for (int i = 0; i < 8; ++i)
 		{
-			Normals[i] = Verties[i] - Center;
+			Normals[i] = Vertices[i] - Center;
 		}
 
 		Indices = {
-			0, 1, 2,
 			0, 1, 2,
 			1, 3, 2,
 			4, 5, 6,
@@ -184,12 +183,12 @@ public:
 			6, 7, 3 };
 	}
 
-	void	GetWireframe(std::vector<Vector3d>& Verties, std::vector<unsigned short>& Indices)
+	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices)
 	{
-		Verties.resize(8);
-		Box3d::GetVertices(Min, Max, &Verties[0]);
+		Vertices.resize(8);
+		Box3d::GetVertices(Min, Max, &Vertices[0]);
 		Indices = {
-			0, 1, 1, 3, 4, 2, 2, 0,
+			0, 1, 1, 3, 3, 2, 2, 0,
 			0, 4, 1, 5, 3, 7, 2, 6,
 			4, 5, 5, 7, 7, 6, 6, 4 };
 	}

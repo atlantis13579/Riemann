@@ -9,6 +9,10 @@
 #include <directxcolors.h>
 
 #include "../Src/Collision/GeometryObject.h"
+#include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
+#include "../Src/CollisionPrimitive/Sphere3d.h"
+#include "../Src/CollisionPrimitive/Plane3d.h"
+#include "../Src/CollisionPrimitive/Capsule3d.h"
 #include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/CollisionPrimitive/ConvexMesh.h"
 #include "../Src/Maths/Transform.h"
@@ -459,6 +463,49 @@ public:
         return false;
     }
 
+    template <class TShape>
+    void AddGeometry(Geometry* geom, bool DrawMesh = true)
+    {
+		std::vector<Vector3d> Vertices;
+		std::vector<unsigned short> Indices;
+        std::vector<Vector3d> Normals;
+        TShape* shape = geom->CastGeometry<TShape>();
+
+        if (DrawMesh)
+        {
+			shape->GetMesh(Vertices, Indices, Normals);
+			std::vector<Vertex1> vv;
+			for (unsigned int i = 0; i < Vertices.size(); ++i)
+			{
+				vv.emplace_back(Vertices[i], Normals[i]);
+			}
+			AddTriangles("Geometry", geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
+        }
+        else
+        {
+			shape->GetWireframe(Vertices, Indices);
+			std::vector<Vertex1> vv;
+			for (unsigned int i = 0; i < Vertices.size(); ++i)
+			{
+				vv.emplace_back(Vertices[i], Vector3d(1.0f, 1.0f, 1.0f));
+			}
+			AddWireframe("Geometry", geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
+        }
+    }
+
+	virtual void AddTriMesh(Mesh* mesh, Transform* Trans) override
+	{
+		mesh->CalculateNormals();
+
+		std::vector<Vertex1> vv;
+		for (unsigned int i = 0; i < mesh->GetNumVerties(); ++i)
+		{
+			vv.emplace_back(mesh->Vertices[i], mesh->Normals[i]);
+		}
+
+		AddTriangles(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetNumTriangles() * 3, mesh->GetIndicesWidth() * 2);
+		return;
+	}
 
     virtual void AddGeometry(Geometry* geom) override
 	{
@@ -472,56 +519,31 @@ public:
 		}
         else if (geom->GetShapeType() == OBB)
         {
-            /*
-            AxisAlignedBox3d* obb = geom->CastGeometry<AxisAlignedBox3d>();
-            std::vector<Vector3d> Verties, Normals;
-            std::vector<unsigned short> Indices;
-            obb->GetMesh(Verties, Indices, Normals);
-
-			std::vector<Vertex1> vv;
-			for (unsigned int i = 0; i < mesh->GetNumVerties(); ++i)
-			{
-				Vertex1 v;
-				v.Pos = Vector3d(Verties[i]);
-				const Vector3d& nor = mesh->Normals[i];
-				v.Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
-				vv.push_back(v);
-			}
-            AddTriangles("OBB", geom->GetTransform(), )
-            */
+            AddGeometry<AxisAlignedBox3d>(geom);
         }
+		else if (geom->GetShapeType() == PLANE)
+		{
+            AddGeometry <Plane3d > (geom);
+		}
+		else if (geom->GetShapeType() == SPHERE)
+		{
+			AddGeometry <Sphere3d >(geom);
+		}
+		else if (geom->GetShapeType() == CAPSULE)
+		{
+			AddGeometry <Capsule3d >(geom);
+		}
 	}
-
-    virtual void AddTriMesh(Mesh* mesh, Transform* Trans) override
-    {
-        mesh->CalculateNormals();
-
-        std::vector<Vertex1> vv;
-        for (unsigned int i = 0; i < mesh->GetNumVerties(); ++i)
-        {
-            vv.emplace_back(mesh->Verties[i], mesh->Normals[i]);
-        }
-
-        AddTriangles(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetNumTriangles() * 3, mesh->GetIndicesWidth() * 2);
-        return;
-    }
 
     void AddConvexMesh(ConvexMesh* mesh, Transform* Trans)
     {
 		std::vector<Vertex1> vv;
 		for (unsigned int i = 0; i < mesh->GetNumVerties(); ++i)
 		{
-			vv.emplace_back(mesh->Verties[i], mesh->GetNormal(i));
+			vv.emplace_back(mesh->Vertices[i], mesh->GetNormal(i));
 		}
 
-        std::vector<unsigned short> vi;
-        for (unsigned int i = 0; i < mesh->GetNumEdges(); ++i)
-        {
-            vi.push_back(mesh->Edges[i * 2]);
-            vi.push_back(mesh->Edges[i * 2 + 1]);
-        }
-
-		AddWireframe("Convex", Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
+		AddWireframe("Convex", Trans, &vv[0], (int)vv.size(), &mesh->Edges[0], (int)mesh->Edges.size());
     }
 
     //--------------------------------------------------------------------------------------

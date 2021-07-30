@@ -194,6 +194,17 @@ public:
 		return coords[i];
 	}
 
+	int ParallelTo(const TVector3<T>&v) const
+	{
+		T dp = this->Dot(v);
+		T dp2 = SquareLength() * v.SquareLength();
+		if ((T)10000 * std::abs(dp * dp - dp2) < 1)
+		{
+			return dp > 0 ? 1 : -1;
+		}
+		return 0;
+	}
+
 	int LargestAxis() const
 	{
 		int i = y > x ? 1 : 0;

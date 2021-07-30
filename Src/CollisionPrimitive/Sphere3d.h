@@ -122,4 +122,111 @@ public:
 		Vector3d Normalized = dir / sqrtf(distSqr);
 		return Center + Normalized * Radius;
 	}
+
+	void	GetVertices(int stackCount, int sliceCount, std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
+	{
+		const float PI = 2.0f * asinf(1.0f);
+
+		float phiStep = PI / stackCount;
+		float thetaStep = 2.0f * PI / sliceCount;
+
+		Vertices->push_back(Vector3d(0, Radius, 0));
+		if (Normals) Normals->push_back(Vector3d::UnitY());
+
+		for (int i = 1; i < stackCount; i++)
+		{
+			float phi = i * phiStep;
+			for (int j = 0; j <= sliceCount; j++) {
+				float theta = j * thetaStep;
+				Vector3d p = Vector3d(sinf(phi) * cosf(theta), cosf(phi), sinf(phi) * sinf(theta)) * Radius;
+				Vertices->push_back(p);
+				if (Normals) Normals->push_back(p - Center);
+			}
+		}
+		Vertices->push_back(Vector3d(0, -Radius, 0));
+		if (Normals) Normals->push_back(-Vector3d::UnitY());
+	}
+
+	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices, std::vector<Vector3d>& Normals)
+	{
+		const int stackCount = 6;
+		const int sliceCount = 8;
+
+		GetVertices(stackCount, sliceCount, &Vertices, &Normals);
+
+		for (int i = 1; i <= sliceCount; i++)
+		{
+			Indices.push_back(0);
+			Indices.push_back(i + 1);
+			Indices.push_back(i);
+		}
+
+		int baseIndex = 1;
+		int ringVertexCount = sliceCount + 1;
+		for (int i = 0; i < stackCount - 2; i++)
+		{
+			for (int j = 0; j < sliceCount; j++)
+			{
+				Indices.push_back(baseIndex + i * ringVertexCount + j);
+				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
+
+				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
+				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
+			}
+		}
+		int southPoleIndex = (int)Vertices.size() - 1;
+		baseIndex = southPoleIndex - ringVertexCount;
+		for (int i = 0; i < sliceCount; i++)
+		{
+			Indices.push_back(southPoleIndex);
+			Indices.push_back(baseIndex + i);
+			Indices.push_back(baseIndex + i + 1);
+		}
+	}
+
+	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices)
+	{
+		const int stackCount = 6;
+		const int sliceCount = 8;
+
+		GetVertices(stackCount, sliceCount, &Vertices, nullptr);
+
+		for (int i = 1; i <= sliceCount; i++)
+		{
+			Indices.push_back(0);
+			Indices.push_back(i);
+
+			Indices.push_back(i);
+			Indices.push_back(i+1);
+		}
+
+		int baseIndex = 1;
+		int ringVertexCount = sliceCount + 1;
+		for (int i = 0; i < stackCount - 2; i++)
+		{
+			for (int j = 0; j < sliceCount; j++)
+			{
+				Indices.push_back(baseIndex + i * ringVertexCount + j);
+				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+
+				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
+
+				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
+				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+
+				Indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+				Indices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
+			}
+		}
+		int southPoleIndex = (int)Vertices.size() - 1;
+		baseIndex = southPoleIndex - ringVertexCount;
+		for (int i = 0; i < sliceCount; i++)
+		{
+			Indices.push_back(southPoleIndex);
+			Indices.push_back(baseIndex + i);
+		}
+	}
 };

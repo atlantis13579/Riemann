@@ -23,7 +23,7 @@ public:
 	Vector3d						CenterOfMass;
 	Box3d							BoundingVolume;
 	Matrix3d						Inertia;
-	std::vector<Vector3d>			Verties;
+	std::vector<Vector3d>			Vertices;
 	std::vector<unsigned short>		Edges;
 	std::vector<HullFace3d>			Faces;
 	unsigned int					NumVertices;
@@ -38,7 +38,7 @@ public:
 	void			Release()
 	{
 		NumVertices = NumFaces = NumEdges = 0;
-		Verties.clear();
+		Vertices.clear();
 		Edges.clear();
 		Faces.clear();
 	}
@@ -56,8 +56,8 @@ public:
 
 	void			SetVerties(const Vector3d* Verts, unsigned int Nv)
 	{
-		Verties.resize(Nv);
-		memcpy(&Verties[0], Verts, sizeof(Verties[0]) * Verties.size());
+		Vertices.resize(Nv);
+		memcpy(&Vertices[0], Verts, sizeof(Vertices[0]) * Vertices.size());
 		NumVertices = Nv;
 	}
 
@@ -85,7 +85,7 @@ public:
 
 	Vector3d		GetNormal(unsigned int i) const
 	{
-		return (Verties[i] - CenterOfMass).Unit();
+		return (Vertices[i] - CenterOfMass).Unit();
 	}
 
 	bool			VerifyIndices() const

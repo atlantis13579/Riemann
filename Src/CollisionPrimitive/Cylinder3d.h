@@ -24,7 +24,6 @@ public:
 
 public:
 
-
 	inline float GetHeight() const
 	{
 		return Height;

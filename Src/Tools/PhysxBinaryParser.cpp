@@ -88,16 +88,16 @@ public:
 
 		Vector3d Scale = Vector3d(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
 
-		std::vector<Vector3d>	Verties;
-		Verties.resize(nRows * nCols);
+		std::vector<Vector3d>	Vertices;
+		Vertices.resize(nRows * nCols);
 		for (unsigned int i = 0; i < nRows; i++)
 		for (unsigned int j = 0; j < nCols; j++)
 		{
-			Verties[i * nCols + j] = Vector3d(1.0f * i, samples[j + (i * nCols)].height, 1.0f * j) * Scale;
+			Vertices[i * nCols + j] = Vector3d(1.0f * i, samples[j + (i * nCols)].height, 1.0f * j) * Scale;
 		}
 
 		std::vector<unsigned short>	Indices;
-		assert(Verties.size() < 65535);
+		assert(Vertices.size() < 65535);
 		Indices.resize((nCols - 1) * (nRows - 1) * 2 * 3);
 		int nFaces = 0;
 
@@ -134,7 +134,7 @@ public:
 
 		Geometry* Geom = GeometryFactory::CreateTriangleMesh();
 		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
-		TriMesh->SetData(&Verties[0], &Indices[0], (unsigned int)Verties.size(), nFaces, true);
+		TriMesh->SetData(&Vertices[0], &Indices[0], (unsigned int)Vertices.size(), nFaces, true);
 		return Geom;
 	}
 
@@ -160,7 +160,7 @@ public:
 		ConvMesh->BoundingVolume = Mesh->mHullData.mAABB.GetAABB();
 
 		assert(ConvMesh->EulerNumber() == 2);
-		assert(ConvMesh->NumVertices == ConvMesh->Verties.size());
+		assert(ConvMesh->NumVertices == ConvMesh->Vertices.size());
 		assert(ConvMesh->NumEdges * 2 == ConvMesh->Edges.size());
 		assert(ConvMesh->NumFaces == ConvMesh->Faces.size());
 

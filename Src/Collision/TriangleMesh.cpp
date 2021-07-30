@@ -641,7 +641,7 @@ void TriangleMesh::BuildRTree()
 		unsigned int i1 = Indices[i*3 + 1];
 		unsigned int i2 = Indices[i*3 + 2];
 
-		allBounds.push_back(Box3d(Verties[i0], Verties[i1], Verties[i2]));
+		allBounds.push_back(Box3d(Vertices[i0], Vertices[i1], Vertices[i2]));
 		treeBounds.Grow(allBounds.back());
 	}
 
@@ -779,7 +779,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, flo
 	{
 		return false;
 	}
-	RTreeCallbackRaycast<true> cb(GetIndexBuffer(), &Verties[0], Origin, Dir, FLT_MAX, Is16bitIndices());
+	RTreeCallbackRaycast<true> cb(GetIndexBuffer(), &Vertices[0], Origin, Dir, FLT_MAX, Is16bitIndices());
 	m_Tree->traverseRay(Origin, Dir, &cb);
 	if (cb.hadClosestHit)
 	{

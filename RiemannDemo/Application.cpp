@@ -115,7 +115,10 @@ void InitScene()
         Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, Grounds_vertices[0].Pos.y, 0), Vector3d::UnitY());
         g_World->CreateRigidBody(plane, rp);
 
-        g_Renderer->AddTriangles("Ground", plane->GetTransform(), Grounds_vertices, sizeof(Grounds_vertices) / sizeof(Grounds_vertices[0]), Grounds_indices, sizeof(Grounds_indices) / sizeof(Grounds_indices[0]), 2);
+        Geometry* sphere = GeometryFactory::CreateSphere(Vector3d(0, 3, 0), 5.0f);
+        g_Renderer->AddGeometry(sphere);
+
+        g_Renderer->AddGeometry(plane);
     }
 
     // Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
@@ -245,8 +248,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    // InitScene();
-    InitPhysxScene();
+    InitScene();
+    // InitPhysxScene();
     UpdateCamera();
 
     auto last = std::chrono::steady_clock::now();
