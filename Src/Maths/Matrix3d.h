@@ -55,6 +55,12 @@ public:
 		mat[2][0] = 0; mat[2][1] = 0; mat[2][2] = 1;
 	}
 
+	// Generate Rotate Matrix
+	void LoadRotateX(float rfloatAngle);
+	void LoadRotateY(float rfloatAngle);
+	void LoadRotateZ(float rfloatAngle);
+	void Load2DOrthogonalTransform(float dx, float dy, float dAngle);
+
 	Matrix3d Transpose() const
 	{
 		return Matrix3d(mat[0][0], mat[1][0], mat[2][0],
@@ -206,6 +212,35 @@ public:
 		static Matrix3d Identity(1, 0, 0, 0, 1, 0, 0, 0, 1);
 		return Identity;
 	}
+
+	void ToAxisAngle(Vector3d& rkAxis, float& rfAngle) const;
+	void FromAxisAngle(const Vector3d& rkAxis, const float& ffloats);
+	bool ToEulerAnglesXYZ(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
+	bool ToEulerAnglesXZY(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
+	bool ToEulerAnglesYXZ(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
+	bool ToEulerAnglesYZX(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
+	bool ToEulerAnglesZXY(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
+	bool ToEulerAnglesZYX(float& rfYAngle, float& rfPAngle,	float& rfRAngle) const;
+	void FromEulerAnglesXYZ(const float& fYAngle, const float& fPAngle, const float& fRAngle);
+	void FromEulerAnglesXZY(const float& fYAngle, const float& fPAngle, const float& fRAngle);
+	void FromEulerAnglesYXZ(const float& fYAngle, const float& fPAngle, const float& fRAngle);
+	void FromEulerAnglesYZX(const float& fYAngle, const float& fPAngle, const float& fRAngle);
+	void FromEulerAnglesZXY(const float& fYAngle, const float& fPAngle, const float& fRAngle);
+	void FromEulerAnglesZYX(const float& fYAngle, const float& fPAngle, const float& fRAngle);
+
+	void SingularValueDecomposition(Matrix3d& rkL, Vector3d& rkS, Matrix3d& rkR) const;
+	void SingularValueComposition(const Matrix3d& rkL, const Vector3d& rkS, const Matrix3d& rkR);
+	void Orthonormalize();
+	void QDUDecomposition(Matrix3d& rkQ, Vector3d& rkD,	Vector3d& rkU) const;
+	float SpectralNorm() const;
+
+	void EigenSolveSymmetric(float afEigenvalue[3],	Vector3d akEigenvector[3]) const;
+	void Tridiagonal(float afDiag[3], float afSubDiag[3]);
+	bool QLAlgorithm(float afDiag[3], float afSubDiag[3]);
+
+	static void Bidiagonalize(Matrix3d& kA, Matrix3d& kL, Matrix3d& kR);
+	static void GolubKahanStep(Matrix3d& kA, Matrix3d& kL, Matrix3d& kR);
+	static float MaxCubicRoot(float afCoeff[3]);
 };
 
 inline Matrix3d operator* (float v, const Matrix3d& mm)

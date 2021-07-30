@@ -36,6 +36,7 @@
     <ClCompile Include="Geometry\VoxelField.cpp" />
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
     <ClCompile Include="Geometry\VoxelEngine.cpp" />
+    <ClCompile Include="Maths\Matrix3d.cpp" />
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />
     <ClCompile Include="RigidBodyDynamics\PhysicsMaterial.cpp" />
     <ClCompile Include="RigidBodyDynamics\WarmStart.cpp" />

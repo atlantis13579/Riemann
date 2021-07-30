@@ -52,4 +52,14 @@ public:
 		float Diag3 = Mass / 2.0f * RR;
 		return Matrix3d(Diag12, Diag12, Diag3);
 	}
+
+	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices, std::vector<Vector3d>& Normals)
+	{
+
+	}
+
+	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices)
+	{
+
+	}
 };

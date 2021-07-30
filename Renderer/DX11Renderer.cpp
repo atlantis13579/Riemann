@@ -12,6 +12,7 @@
 #include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
 #include "../Src/CollisionPrimitive/Sphere3d.h"
 #include "../Src/CollisionPrimitive/Plane3d.h"
+#include "../Src/CollisionPrimitive/Cylinder3d.h"
 #include "../Src/CollisionPrimitive/Capsule3d.h"
 #include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/CollisionPrimitive/ConvexMesh.h"
@@ -532,6 +533,10 @@ public:
 		else if (geom->GetShapeType() == CAPSULE)
 		{
 			AddGeometry <Capsule3d >(geom);
+		}
+		else if (geom->GetShapeType() == CYLINDER)
+		{
+			AddGeometry <Cylinder3d >(geom);
 		}
 	}
 

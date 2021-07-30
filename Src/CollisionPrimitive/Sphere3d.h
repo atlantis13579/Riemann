@@ -125,10 +125,10 @@ public:
 
 	void	GetVertices(int stackCount, int sliceCount, std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
 	{
-		const float PI = 2.0f * asinf(1.0f);
+		const float mPI = 2.0f * asinf(1.0f);
 
-		float phiStep = PI / stackCount;
-		float thetaStep = 2.0f * PI / sliceCount;
+		float phiStep = mPI / stackCount;
+		float thetaStep = 2.0f * mPI / sliceCount;
 
 		Vertices->push_back(Vector3d(0, Radius, 0));
 		if (Normals) Normals->push_back(Vector3d::UnitY());

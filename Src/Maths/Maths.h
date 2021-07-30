@@ -4,6 +4,19 @@
 #include <math.h>
 #include <stdlib.h>
 
+#ifndef PI
+#define PI          (3.1415926536f)
+#endif // !PI
+
+#define PI_2        (6.2831853072f)
+#define PI_OVER_2   (1.5707963268f)
+#define PI_OVER_3   (1.0471975512f)
+#define PI_OVER_4   (0.7853981634f)
+#define PI_OVER_6   (0.5235987756f)
+#define PI_OVER_8   (0.3926990817f)
+#define PI_OVER_180 (0.0174532925f)
+#define RAD_TO_DEG  (57.295779513f)
+
 inline float RandomFloat01()
 {
 	return (float)rand() / RAND_MAX;
@@ -43,3 +56,52 @@ inline bool	IsFloatInf(float x)
 	return false;		// TODO
 }
 
+// http://www.matrix67.com/data/InvSqrt.pdf
+inline float InvSqrt(float x) {
+	float xhalf = 0.5f * x;
+	int i = *(int*)&x;
+	i = 0x5f3759df - (i >> 1);
+	x = *(float*)&i;
+	x = x * (1.5f - xhalf * x * x);
+	return x;
+}
+
+static const float kEpsilon = 0.000001f;
+static const float kInfinite = 9999999.0f;
+
+template <typename T>
+inline T Epsilon(T a) {
+	const T aa = std::abs(a) + (T)1;
+	if (aa == std::numeric_limits<T>::infinity()) {
+		return (T)kEpsilon;
+	}
+	else {
+		return (T)kEpsilon * aa;
+	}
+}
+
+template<typename T>
+T Max(const T& p)
+{
+	return p;
+}
+
+template<typename T, typename ... Ts>
+T Max(const T& p0, Ts... args)
+{
+	T p1 = Max(args...);
+	return p0 > p1 ? p0 : p1;
+}
+
+template<typename T>
+T Min(const T& p)
+{
+	return p;
+}
+
+template<typename T, typename ... Ts>
+T Min(const T& p0, Ts... args)
+{
+	T p1 = Min(args...);
+	return p0 < p1 ? p0 : p1;
+}

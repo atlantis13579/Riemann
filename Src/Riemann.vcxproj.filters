@@ -134,5 +134,6 @@
     <ClCompile Include="Tools\PhysxBinaryParser.cpp" />
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />
     <ClCompile Include="RigidBodyDynamics\PhysicsMaterial.cpp" />
+    <ClCompile Include="Maths\Matrix3d.cpp" />
   </ItemGroup>
 </Project>

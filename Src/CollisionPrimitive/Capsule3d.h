@@ -237,7 +237,7 @@ public:
 
 	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices, std::vector<Vector3d>& Normals)
 	{
-
+		 
 	}
 
 	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices)
