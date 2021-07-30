@@ -44,7 +44,7 @@ public:
 	virtual void SetDepthMode() = 0;
 
 	virtual void AddGeometry(Geometry* geom) = 0;
-	virtual void AddTriMesh(Mesh* mesh, Transform* Trans) = 0;
+	virtual void AddTriMesh(Mesh* mesh, Transform* Trans, bool RenderBV) = 0;
 
 	static Renderer* CreateDX11Renderer(void* hWnd, const char* shader_path);
 };

@@ -40,6 +40,7 @@ struct DX11StaticMesh
     Transform*    Trans;
     int           IndexCount = 0;
     DXGI_FORMAT   IndexFormat = DXGI_FORMAT_R32_UINT;
+    D3D11_PRIMITIVE_TOPOLOGY   Topology;
 
     void Release()
     {
@@ -414,8 +415,6 @@ public:
         mesh.IndexFormat = IndicesWidth == 4 ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT;
         m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, mesh.IndexFormat, 0);
 
-        // Set primitive topology
-        m_pImmediateContext->IASetPrimitiveTopology(Topology);
 
         // Create the constant buffer
         bd.Usage = D3D11_USAGE_DEFAULT;
@@ -426,6 +425,8 @@ public:
         if (FAILED(hr))
             return false;
 
+        // Set primitive topology
+        mesh.Topology = Topology;
         // Initialize the world matrix
         mesh.Trans = pTrans;
         mesh.IndexCount = nIndices;
@@ -494,7 +495,7 @@ public:
         }
     }
 
-	virtual void AddTriMesh(Mesh* mesh, Transform* Trans) override
+	virtual void AddTriMesh(Mesh* mesh, Transform* Trans, bool RenderBV) override
 	{
 		mesh->CalculateNormals();
 
@@ -505,6 +506,21 @@ public:
 		}
 
 		AddTriangles(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetNumTriangles() * 3, mesh->GetIndicesWidth() * 2);
+
+        if (RenderBV)
+        {
+			std::vector<Vector3d> Vertices;
+			std::vector<unsigned short> Indices;
+			AxisAlignedBox3d aabb(mesh->BoundingVolume.Min, mesh->BoundingVolume.Max);
+			aabb.GetWireframe(Vertices, Indices);
+			vv.clear();
+			for (unsigned int i = 0; i < Vertices.size(); ++i)
+			{
+				vv.emplace_back(Vertices[i], Vector3d(1.0f, 1.0f, 1.0f));
+			}
+			AddWireframe(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
+        }
+
 		return;
 	}
 
@@ -512,7 +528,7 @@ public:
 	{
 		if (geom->GetShapeType() == TRIANGLE_MESH)
 		{
-			AddTriMesh(geom->CastGeometry<Mesh>(), geom->GetTransform());
+			AddTriMesh(geom->CastGeometry<Mesh>(), geom->GetTransform(), true);
 		}
 		else if (geom->GetShapeType() == CONVEX_MESH)
 		{
@@ -607,6 +623,7 @@ public:
             UINT offset = 0;
             m_pImmediateContext->IASetVertexBuffers(0, 1, &mesh.pVertexBuffer, &stride, &offset);
             m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, mesh.IndexFormat, 0);
+			m_pImmediateContext->IASetPrimitiveTopology(mesh.Topology);
             m_pImmediateContext->DrawIndexed(mesh.IndexCount, 0, 0);
         }
 

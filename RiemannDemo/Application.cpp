@@ -117,7 +117,7 @@ void InitScene()
 
         // t->SetTranslation(-Vector3d(-1.0f, 0, 0));
 
-        g_Renderer->AddTriMesh(&mesh, t);
+        g_Renderer->AddTriMesh(&mesh, t, false);
     }
 
     if (0)
@@ -180,7 +180,7 @@ void InitScene()
         t->SetScale(Vector3d(0.02f, 0.02f, 0.02f));
         g_CamCenter = t->LocalToWorld(c);
 
-        g_Renderer->AddTriMesh(draw_mesh, t);
+        g_Renderer->AddTriMesh(draw_mesh, t, false);
     }
 
     if (1)
