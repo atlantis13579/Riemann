@@ -293,16 +293,42 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 
     case WM_CHAR:
     {
-        float Scale = 1.0f;
+        float Scale = 5.0f;
+		Vector3d Dir = g_CamCenter - GetCameraPosition();
+        Dir.y = 0;
+        Dir.Normalize();
+        Dir *= Scale;
+
         char c = (char)wParam;
         if (c == 'a')
-            g_CamCenter.x -= Scale;
+        {
+			g_CamCenter.x -= Dir.z;
+			g_CamCenter.z += Dir.x;
+        }
         else if (c == 'd')
-            g_CamCenter.x += Scale;
+        {
+			g_CamCenter.x += Dir.z;
+			g_CamCenter.z -= Dir.x;
+        }
         else if (c == 'w')
-            g_CamCenter.z -= Scale;
+        {
+			g_CamCenter.x += Dir.x;
+			g_CamCenter.z += Dir.z;
+
+        }
         else if (c == 's')
-            g_CamCenter.z += Scale;
+        {
+			g_CamCenter.x -= Dir.x;
+			g_CamCenter.z -= Dir.z;
+        }
+        else if (c == 'q')
+        {
+            g_CamCenter.y -= Scale;
+        }
+		else if (c == 'e')
+		{
+			g_CamCenter.y += Scale;
+		}
         UpdateCamera();
         break;
     }
