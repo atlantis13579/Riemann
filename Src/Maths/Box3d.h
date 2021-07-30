@@ -223,8 +223,12 @@ public:
 		return Box;
 	}
 	
-	static void GetVertices(const TVector3<T>& Bmin, const TVector3<T>& Bmax, TVector3<T> v[8])
+	static void GetVertices(const TVector3<T>& Bmin, const TVector3<T>& Bmax, TVector3<T> *v)
 	{
+		//   6   7
+		// 4   5
+		// 	 2   3		
+		// 0   1
 		v[0] = TVector3<T>(Bmin.x, Bmin.y, Bmin.z);
 		v[1] = TVector3<T>(Bmax.x, Bmin.y, Bmin.z);
 		v[2] = TVector3<T>(Bmin.x, Bmax.y, Bmin.z);

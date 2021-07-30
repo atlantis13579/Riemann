@@ -1,7 +1,7 @@
 
 #include "GeometryObject.h"
 
-#include "../CollisionPrimitive/OrientedBox3d.h"
+#include "../CollisionPrimitive/AxisAlignedBox3d.h"
 #include "../CollisionPrimitive/Plane3d.h"
 #include "../CollisionPrimitive/Sphere3d.h"
 #include "../CollisionPrimitive/Triangle3d.h"
@@ -91,21 +91,6 @@ void				Geometry::SetEntity(void* Entity)
 	m_Entity = Entity;
 }
 
-Transform*			Geometry::GetTransform()
-{
-	return &m_Transform;
-}
-
-GeometryShapeType	Geometry::GetShapeType()
-{
-	return m_Shape.Type;
-}
-
-void*				Geometry::GetShapeGeometry()
-{
-	return m_Shape.Object;
-}
-
 bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
 {
 	RayCastFunc func = Geometry::raycastTable[m_Shape.Type];
@@ -188,7 +173,7 @@ class Geometry_Registration
 public:
 	Geometry_Registration()
 	{
-		REG_GEOMETRY_OBJ(GeometryShapeType::OBB, OrientedBox3d)
+		REG_GEOMETRY_OBJ(GeometryShapeType::OBB, AxisAlignedBox3d)
 		REG_GEOMETRY_OBJ(GeometryShapeType::PLANE, Plane3d)
 		REG_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere3d)
 		REG_GEOMETRY_OBJ(GeometryShapeType::CAPSULE, Capsule3d)
@@ -201,7 +186,7 @@ Geometry_Registration s_geom_registration;
 
 Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& Extent, const Quaternion& Rot)
 {
-	OrientedBox3d* shape = new OrientedBox3d(-Extent, Extent);
+	AxisAlignedBox3d* shape = new AxisAlignedBox3d(-Extent, Extent);
 	Geometry *p = new Geometry(Center, GeometryShapeType::OBB, shape, nullptr);
 	p->SetRotationQuat(Rot);
 	return p;

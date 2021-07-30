@@ -8,6 +8,7 @@
 #include <directxmath.h>
 #include <directxcolors.h>
 
+#include "../Src/Collision/GeometryObject.h"
 #include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/CollisionPrimitive/ConvexMesh.h"
 #include "../Src/Maths/Transform.h"
@@ -263,11 +264,12 @@ public:
             shader_file += wchar_t(shader_path[i]);
         }
         shader_file += L"/simple.fxh";
+
         hr = CompileShaderFromFile(shader_file.c_str(), "VS", "vs_4_0", &pVSBlob);
         if (FAILED(hr))
         {
-            MessageBox(nullptr,
-                L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
+			const char* str = pVSBlob ? (const char*)pVSBlob->GetBufferPointer() : "Compile VS Error";
+            MessageBoxA(nullptr, str, "Error", MB_OK);
             return hr;
         }
 
@@ -283,7 +285,7 @@ public:
         D3D11_INPUT_ELEMENT_DESC layout[] =
         {
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         };
         UINT numElements = ARRAYSIZE(layout);
 
@@ -302,9 +304,9 @@ public:
         hr = CompileShaderFromFile(shader_file.c_str(), "PS", "ps_4_0", &pPSBlob);
         if (FAILED(hr))
         {
-            MessageBox(nullptr,
-                L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-            return hr;
+			const char* str = pVSBlob ? (const char*)pVSBlob->GetBufferPointer() : "Compile PS Error";
+			MessageBoxA(nullptr, str, "Error", MB_OK);
+			return hr;
         }
 
         // Create the pixel shader
@@ -363,7 +365,7 @@ public:
         return AddPrimitive(Id, pTrans, pVerties, nVerties, pIndices, nIndices, IndicesWidth, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     }
 
-	virtual bool AddLines(const char* Id, Transform* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices) override
+	virtual bool AddWireframe(const char* Id, Transform* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices) override
 	{
         return AddPrimitive(Id, pTrans, pVerties, nVerties, pIndices, nIndices, 2, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 	}
@@ -457,18 +459,47 @@ public:
         return false;
     }
 
-    void AddTriMesh(Mesh* mesh, Transform* Trans)
+
+    virtual void AddGeometry(Geometry* geom) override
+	{
+		if (geom->GetShapeType() == TRIANGLE_MESH)
+		{
+			AddTriMesh(geom->CastGeometry<Mesh>(), geom->GetTransform());
+		}
+		else if (geom->GetShapeType() == CONVEX_MESH)
+		{
+			AddConvexMesh(geom->CastGeometry<ConvexMesh>(), geom->GetTransform());
+		}
+        else if (geom->GetShapeType() == OBB)
+        {
+            /*
+            AxisAlignedBox3d* obb = geom->CastGeometry<AxisAlignedBox3d>();
+            std::vector<Vector3d> Verties, Normals;
+            std::vector<unsigned short> Indices;
+            obb->GetMesh(Verties, Indices, Normals);
+
+			std::vector<Vertex1> vv;
+			for (unsigned int i = 0; i < mesh->GetNumVerties(); ++i)
+			{
+				Vertex1 v;
+				v.Pos = Vector3d(Verties[i]);
+				const Vector3d& nor = mesh->Normals[i];
+				v.Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
+				vv.push_back(v);
+			}
+            AddTriangles("OBB", geom->GetTransform(), )
+            */
+        }
+	}
+
+    virtual void AddTriMesh(Mesh* mesh, Transform* Trans) override
     {
         mesh->CalculateNormals();
 
         std::vector<Vertex1> vv;
         for (unsigned int i = 0; i < mesh->GetNumVerties(); ++i)
         {
-            Vertex1 v;
-            v.Pos = Vector3d(mesh->Verties[i]);
-            const Vector3d& nor = mesh->Normals[i];
-            v.Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
-            vv.push_back(v);
+            vv.emplace_back(mesh->Verties[i], mesh->Normals[i]);
         }
 
         AddTriangles(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetNumTriangles() * 3, mesh->GetIndicesWidth() * 2);
@@ -480,11 +511,7 @@ public:
 		std::vector<Vertex1> vv;
 		for (unsigned int i = 0; i < mesh->GetNumVerties(); ++i)
 		{
-			Vertex1 v;
-			v.Pos = Vector3d(mesh->Verties[i]);
-            Vector3d nor = mesh->GetNormal(i);
-			v.Color = Vector4d(nor.x, nor.y, nor.z, 1.0f);
-			vv.push_back(v);
+			vv.emplace_back(mesh->Verties[i], mesh->GetNormal(i));
 		}
 
         std::vector<unsigned short> vi;
@@ -494,7 +521,7 @@ public:
             vi.push_back(mesh->Edges[i * 2 + 1]);
         }
 
-		AddLines("Convex", Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
+		AddWireframe("Convex", Trans, &vv[0], (int)vv.size(), &vi[0], (int)vi.size());
     }
 
     //--------------------------------------------------------------------------------------

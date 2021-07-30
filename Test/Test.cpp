@@ -15,7 +15,7 @@
 #include "../Src/Maths/Frustum.h"
 #include "../Src/Maths/SIMD.h"
 #include "../Src/ImageSpace/ContinuousBitmap.h"
-#include "../Src/CollisionPrimitive/OrientedBox3d.h"
+#include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
 #include "../Src/CollisionPrimitive/Plane3d.h"
 #include "../Src/CollisionPrimitive/Sphere3d.h"
 #include "../Src/CollisionPrimitive/Ray3d.h"

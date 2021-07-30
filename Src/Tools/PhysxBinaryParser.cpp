@@ -49,17 +49,17 @@ public:
 
 	static Geometry* CreatePlane(physx::PxPlaneGeometry* physxObj)
 	{
-		return nullptr;
+		return GeometryFactory::CreatePlane(Vector3d::Zero(), Vector3d::UnitY());
 	}
 
 	static Geometry* CreateCapsule(physx::PxCapsuleGeometry* physxObj)
 	{
-		return nullptr;
+		return GeometryFactory::CreateCapsule(Vector3d::UnitY() * -physxObj->halfHeight, Vector3d::UnitY() * physxObj->halfHeight, physxObj->radius);
 	}
 
 	static Geometry* CreateBox(physx::PxBoxGeometry* physxObj)
 	{
-		return nullptr;
+		return GeometryFactory::CreateOBB(Vector3d::Zero(), physxObj->halfExtents);
 	}
 
 	static Geometry* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj)

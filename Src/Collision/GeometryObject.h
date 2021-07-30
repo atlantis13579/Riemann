@@ -62,9 +62,26 @@ public:
 	void*					GetEntity();
 	void					SetEntity(void *Entity);
 
-	Transform*				GetTransform();
-	GeometryShapeType		GetShapeType();
-	void*					GetShapeGeometry();
+	Transform* GetTransform()
+	{
+		return &m_Transform;
+	}
+
+	GeometryShapeType		GetShapeType()
+	{
+		return m_Shape.Type;
+	}
+
+	template<class T>
+	T* CastGeometry()
+	{
+		return (T*)m_Shape.Object;
+	}
+
+	void* GetShapeGeometry()
+	{
+		return m_Shape.Object;
+	}
 
 	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
 	bool					Overlap(const Geometry *Geom);

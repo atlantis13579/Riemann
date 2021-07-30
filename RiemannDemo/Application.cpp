@@ -99,10 +99,10 @@ void InitScene()
     {
         Vertex1 Grounds_vertices[] =
         {
-            { Vector3d(-100.0f,-5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
-            { Vector3d(100.0f, -5.0f, -100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
-            { Vector3d(100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
-            { Vector3d(-100.0f, -5.0f, 100.0f), Vector4d(1.0f, 1.0f, 1.0f, 1.0f) * 0.5f },
+            { Vector3d(-100.0f,-5.0f, -100.0f), Vector3d(1.0f, 1.0f, 1.0f) * 0.5f },
+            { Vector3d(100.0f, -5.0f, -100.0f), Vector3d(1.0f, 1.0f, 1.0f) * 0.5f },
+            { Vector3d(100.0f, -5.0f, 100.0f), Vector3d(1.0f, 1.0f, 1.0f) * 0.5f },
+            { Vector3d(-100.0f, -5.0f, 100.0f), Vector3d(1.0f, 1.0f, 1.0f) * 0.5f },
         };
         unsigned short Grounds_indices[] =
         {
@@ -207,9 +207,7 @@ void InitScene()
         RigidBody *p = g_World->CreateRigidBody(aabb, rp);
         p->ApplyTorgue(Vector3d(0, -10, 0).Cross(Vector3d::UnitZ())* aabb->GetBoundingVolumeLocalSpace().GetSizeZ() * 100000.0f);
 
-        Mesh cube;
-        cube.AddAABB(Vector3d(-0.5f, -0.5f, -0.5f), Vector3d(0.5f, 0.5f, 0.5f));
-        g_Renderer->AddTriMesh(&cube, aabb->GetTransform());
+        g_Renderer->AddGeometry(aabb);
     }
 
 }
@@ -225,14 +223,7 @@ void InitPhysxScene()
 
     for (Geometry* Geom : collection)
     {
-        if (Geom->GetShapeType() == TRIANGLE_MESH)
-        {
-            g_Renderer->AddTriMesh((Mesh*)Geom->GetShapeGeometry(), Geom->GetTransform());
-        }
-		else if (Geom->GetShapeType() == CONVEX_MESH)
-		{
-			g_Renderer->AddConvexMesh((ConvexMesh*)Geom->GetShapeGeometry(), Geom->GetTransform());
-		}
+        g_Renderer->AddGeometry(Geom);
     }
 }
 
