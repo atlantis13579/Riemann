@@ -228,7 +228,7 @@ public:
         depthTextureDesc.MipLevels = 1;
         depthTextureDesc.ArraySize = 1;
         depthTextureDesc.SampleDesc.Count = 1;
-        depthTextureDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        depthTextureDesc.Format = DXGI_FORMAT_D32_FLOAT;
         depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 
         ID3D11Texture2D* DepthStencilTexture;
@@ -536,7 +536,7 @@ public:
 		}
         else if (geom->GetShapeType() == OBB)
         {
-            // AddGeometry<AxisAlignedBox3d>(geom);
+            AddGeometry<AxisAlignedBox3d>(geom);
         }
 		else if (geom->GetShapeType() == PLANE)
 		{
