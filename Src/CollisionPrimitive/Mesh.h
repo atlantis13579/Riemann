@@ -15,7 +15,7 @@
 class Mesh
 {
 public:
-	uint32_t				NumVerties;
+	uint32_t				NumVertices;
 	uint32_t				NumTriangles;
 	std::vector<Vector3d>		Vertices;
 	std::vector<uint16_t>	Indices;
@@ -34,13 +34,13 @@ public:
 		Vertices.clear();
 		Indices.clear();
 		Normals.clear();
-		NumVerties = 0;
+		NumVertices = 0;
 		NumTriangles = 0;
 	}
 
 	void Compact()
 	{
-		Vertices.resize(NumVerties);
+		Vertices.resize(NumVertices);
 		Indices.resize(NumTriangles * GetIndicesWidth());
 	}
 
@@ -89,9 +89,9 @@ public:
 		return Is16bitIndices() ? 1 : 2;
 	}
 
-	inline uint32_t GetNumVerties() const
+	inline uint32_t GetNumVertices() const
 	{
-		return NumVerties;
+		return NumVertices;
 	}
 
 	inline uint32_t GetNumTriangles() const
@@ -118,7 +118,7 @@ public:
 
 		if (Is16bit)
 			Flags |= INDICES_16_BIT;
-		NumVerties = Nv;
+		NumVertices = Nv;
 		NumTriangles = Nt;
 
 		Vertices.resize(Nv);
@@ -130,11 +130,11 @@ public:
 
 	void AddVertex(const Vector3d& v)
 	{
-		if (NumVerties >= Vertices.size())
+		if (NumVertices >= Vertices.size())
 		{
 			Vertices.resize(Vertices.size() + TRIANGLE_BATCH * 3);
 		}
-		Vertices[NumVerties++] = v;
+		Vertices[NumVertices++] = v;
 	}
 
 	void AddTriangle(uint32_t a, uint32_t b, uint32_t c)
@@ -171,7 +171,7 @@ public:
 
 	void AddAABB(const Vector3d& Bmin, const Vector3d& Bmax)
 	{
-		int k = NumVerties;
+		int k = NumVertices;
 
 		Vector3d v[8];
 		Box3d::GetVertices(Bmin, Bmax, v);
@@ -242,7 +242,7 @@ public:
 					const uint32_t a = face[0];
 					const uint32_t b = face[i - 1];
 					const uint32_t c = face[i];
-					if (a < 0 || a >= NumVerties || b < 0 || b >= NumVerties || c < 0 || c >= NumVerties)
+					if (a < 0 || a >= NumVertices || b < 0 || b >= NumVertices || c < 0 || c >= NumVertices)
 						continue;
 					AddTriangle(a, b, c);
 				}
@@ -267,9 +267,9 @@ public:
 		uint32_t Magic = 0xF34D9017;
 		fwrite(&Magic, sizeof(Magic), 1, fp);
 		fwrite(&Flags, sizeof(Flags), 1, fp);
-		fwrite(&NumVerties, sizeof(NumVerties), 1, fp);
+		fwrite(&NumVertices, sizeof(NumVertices), 1, fp);
 		fwrite(&NumTriangles, sizeof(NumTriangles), 1, fp);
-		fwrite(&Vertices[0], sizeof(Vertices[0]), NumVerties, fp);
+		fwrite(&Vertices[0], sizeof(Vertices[0]), NumVertices, fp);
 		fwrite(&Indices[0], sizeof(Indices[0]), NumTriangles * 3, fp);
 		fclose(fp);
 		return true;
@@ -299,11 +299,11 @@ public:
 			return false;
 		}
 		fread(&Flags, sizeof(Flags), 1, fp);
-		fread(&NumVerties, sizeof(NumVerties), 1, fp);
+		fread(&NumVertices, sizeof(NumVertices), 1, fp);
 		fread(&NumTriangles, sizeof(NumTriangles), 1, fp);
-		Vertices.resize(NumVerties);
+		Vertices.resize(NumVertices);
 		Indices.resize(NumTriangles * 3 * GetIndicesWidth());
-		fread(&Vertices[0], sizeof(Vertices[0]), NumVerties, fp);
+		fread(&Vertices[0], sizeof(Vertices[0]), NumVertices, fp);
 		fread(&Indices[0], sizeof(Indices[0]), NumTriangles * 3, fp);
 		fclose(fp);
 
@@ -369,8 +369,8 @@ public:
 		}
 
 		std::vector<int> Count;
-		Count.resize(NumVerties, 0);
-		Normals.resize(NumVerties);
+		Count.resize(NumVertices, 0);
+		Normals.resize(NumVertices);
 		memset(&Normals[0], 0, sizeof(Normals[0]) * Normals.size());
 		for (uint32_t i = 0; i < NumTriangles; ++i)
 		{
@@ -397,7 +397,7 @@ public:
 			Normals[i2] += Nor.Unit(), Count[i2]++;
 		}
 		
-		for (uint32_t i = 0; i < NumVerties; ++i)
+		for (size_t i = 0; i < Normals.size(); ++i)
 		{
 			Normals[i] *= 1.0f / Count[i];
 			Normals[i].Normalize();
@@ -411,7 +411,7 @@ public:
 			return;
 		}
 
-		BoundingVolume = Box3d(&Vertices[0], NumVerties);
+		BoundingVolume = Box3d(&Vertices[0], NumVertices);
 	}
 
 private:
@@ -463,7 +463,7 @@ private:
 			if (*s == '\0')
 				continue;
 			uint32_t vi = atoi(s);
-			data[j++] = vi < 0 ? vi + NumVerties : vi - 1;
+			data[j++] = vi < 0 ? vi + NumVertices : vi - 1;
 			if (j >= n) return j;
 		}
 		return j;

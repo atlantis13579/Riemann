@@ -500,7 +500,7 @@ public:
 		mesh->CalculateNormals();
 
 		std::vector<Vertex1> vv;
-		for (uint32_t i = 0; i < mesh->GetNumVerties(); ++i)
+		for (uint32_t i = 0; i < mesh->GetNumVertices(); ++i)
 		{
 			vv.emplace_back(mesh->Vertices[i], mesh->Normals[i]);
 		}

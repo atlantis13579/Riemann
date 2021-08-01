@@ -3,6 +3,7 @@
 #include "Serialization.h"
 #include "../Collision/GeometryObject.h"
 #include "../CollisionPrimitive/ConvexMesh.h"
+#include "../CollisionPrimitive/HeightField3d.h"
 #include "../Collision/TriangleMesh.h"
 #include "../Collision/RTree.h"
 #include "../RigidBodyDynamics/RigidBody.h"
@@ -83,59 +84,21 @@ public:
 	static Geometry* CreateHeightField(const physx::PxHeightFieldGeometry* physxObj)
 	{
 		const physx::HeightField* hf = physxObj->heightField;
-		const physx::PxHeightFieldSample*	samples = hf->mData.samples;
+		const physx::PxHeightFieldSample* samples = hf->mData.samples;
 		const uint32_t					nCols = hf->mData.columns;
 		const uint32_t					nRows = hf->mData.rows;
 
-		Vector3d Scale = Vector3d(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
+		Geometry* Geom = GeometryFactory::CreateHeightField(hf->mData.mAABB.GetAABB(), nRows, nCols);
+		HeightField3d *Field = (HeightField3d*)Geom->GetShapeGeometry();
 
-		std::vector<Vector3d>	Vertices;
-		Vertices.resize(nRows * nCols);
 		for (uint32_t i = 0; i < nRows; i++)
 		for (uint32_t j = 0; j < nCols; j++)
 		{
-			Vertices[i * nCols + j] = Vector3d(1.0f * i, samples[j + (i * nCols)].height, 1.0f * j) * Scale;
+			Field->Heights[i * nCols + j] = samples[j + (i * nCols)].height * physxObj->heightScale;
+			Field->Cells[i * nCols + j].Tessellation0 = samples[i + j * nCols].materialIndex0;
+			Field->Cells[i * nCols + j].Tessellation1 = samples[i + j * nCols].materialIndex1;
 		}
 
-		std::vector<uint16_t>	Indices;
-		assert(Vertices.size() < 65535);
-		Indices.resize((nCols - 1) * (nRows - 1) * 2 * 3);
-		int nFaces = 0;
-
-		for (uint32_t i = 0; i < (nCols - 1); ++i)
-		for (uint32_t j = 0; j < (nRows - 1); ++j)
-		{
-			PxU8 tessFlag = samples[i + j * nCols].materialIndex0 & 0x80;
-			PxU32 i0 = j * nCols + i;
-			PxU32 i1 = j * nCols + i + 1;
-			PxU32 i2 = (j + 1) * nCols + i;
-			PxU32 i3 = (j + 1) * nCols + i + 1;
-			// i2---i3
-			// |    |
-			// |    |
-			// i0---i1
-			const int PxHeightFieldMaterial_eHOLE = 127;
-			PxU32 mat0 = hf->getTriangleMaterialIndex((j * nCols + i) * 2);
-			PxU32 mat1 = hf->getTriangleMaterialIndex((j * nCols + i) * 2 + 1);
-			if (mat0 != PxHeightFieldMaterial_eHOLE)
-			{
-				Indices[3 * nFaces + 0] = i2;
-				Indices[3 * nFaces + 1] = i0;
-				Indices[3 * nFaces + 2] = tessFlag ? i3 : i1;
-				nFaces++;
-			}
-			if (mat1 != PxHeightFieldMaterial_eHOLE)
-			{
-				Indices[3 * nFaces + 0] = i3;
-				Indices[3 * nFaces + 1] = tessFlag ? i0 : i2;
-				Indices[3 * nFaces + 2] = i1;
-				nFaces++;
-			}
-		}
-
-		Geometry* Geom = GeometryFactory::CreateTriangleMesh();
-		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
-		TriMesh->SetData(&Vertices[0], &Indices[0], (uint32_t)Vertices.size(), nFaces, true);
 		return Geom;
 	}
 

@@ -64,6 +64,7 @@
     <ClInclude Include="CollisionPrimitive\Capsule3d.h" />
     <ClInclude Include="CollisionPrimitive\ConvexMesh.h" />
     <ClInclude Include="CollisionPrimitive\Cylinder3d.h" />
+    <ClInclude Include="CollisionPrimitive\HeightField3d.h" />
     <ClInclude Include="CollisionPrimitive\OrientedBox3d.h" />
     <ClInclude Include="CollisionPrimitive\Plane3d.h" />
     <ClInclude Include="CollisionPrimitive\Ray3d.h" />

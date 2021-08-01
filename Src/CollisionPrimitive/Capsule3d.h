@@ -266,28 +266,34 @@ public:
 		Vertices->push_back(Vector3d(0, -Length * 0.5f -Radius, 0));
 		if (Normals) Normals->push_back(-Vector3d::UnitY());
 
+		if (!Axis.ParallelTo(Vector3d::UnitY()) != 0)
+		{
+			Matrix3d Rot;
+			Rot.FromTwoAxis(Vector3d::UnitY(), Axis);
+
+			Vector3d* pV = &Vertices->at(0);
+			for (size_t i = 0; i < Vertices->size(); ++i)
+			{
+				pV[i] = Rot * pV[i];
+			}
+
+			if (Normals)
+			{
+				Vector3d* pN = &Normals->at(0);
+				for (size_t i = 0; i < Normals->size(); ++i)
+				{
+					pN[i] = Rot * pN[i];
+				}
+			}
+		}
+
 		Vector3d Center = GetOrigin();
 		if (Center.SquareLength() > 0.001f)
 		{
-			if (!Axis.ParallelTo(Vector3d::UnitY()) != 0)
+			Vector3d* pV = &Vertices->at(0);
+			for (size_t i = 0; i < Vertices->size(); ++i)
 			{
-				Matrix3d Rot;
-				Rot.FromTwoAxis(Vector3d::UnitY(), Axis);
-
-				Vector3d* pV = &Vertices->at(0);
-				for (size_t i = 0; i < Vertices->size(); ++i)
-				{
-					pV[i] = Rot * pV[i] + Center;
-				}
-
-				if (Normals)
-				{
-					Vector3d* pN = &Normals->at(0);
-					for (size_t i = 0; i < Normals->size(); ++i)
-					{
-						pN[i] = Rot * pN[i];
-					}
-				}
+				pV[i] = pV[i] + Center;
 			}
 		}
 

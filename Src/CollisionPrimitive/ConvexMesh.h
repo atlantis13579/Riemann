@@ -68,7 +68,7 @@ public:
 		NumEdges = Ne;
 	}
 
-	uint32_t	GetNumVerties() const
+	uint32_t	GetNumVertices() const
 	{
 		return NumVertices;
 	}

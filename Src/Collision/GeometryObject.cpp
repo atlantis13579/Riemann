@@ -5,6 +5,7 @@
 #include "../CollisionPrimitive/Plane3d.h"
 #include "../CollisionPrimitive/Sphere3d.h"
 #include "../CollisionPrimitive/Triangle3d.h"
+#include "../CollisionPrimitive/HeightField3d.h"
 #include "../CollisionPrimitive/Cylinder3d.h"
 #include "../CollisionPrimitive/Capsule3d.h"
 #include "../CollisionPrimitive/ConvexMesh.h"
@@ -177,9 +178,10 @@ public:
 		REG_GEOMETRY_OBJ(GeometryShapeType::PLANE, Plane3d)
 		REG_GEOMETRY_OBJ(GeometryShapeType::SPHERE, Sphere3d)
 		REG_GEOMETRY_OBJ(GeometryShapeType::CAPSULE, Capsule3d)
+		REG_GEOMETRY_OBJ(GeometryShapeType::HEIGHTFIELD, HeightField3d)
+		REG_GEOMETRY_OBJ(GeometryShapeType::CONVEX_MESH, ConvexMesh)
 		REG_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE, Triangle3d)
 		REG_GEOMETRY_OBJ(GeometryShapeType::TRIANGLE_MESH, TriangleMesh)
-		REG_GEOMETRY_OBJ(GeometryShapeType::CONVEX_MESH, ConvexMesh)
 	}
 };
 Geometry_Registration s_geom_registration;
@@ -211,6 +213,18 @@ Geometry* GeometryFactory::CreateCapsule(const Vector3d& X1, const Vector3d& X2,
 	return new Geometry(Center, GeometryShapeType::CAPSULE, shape, nullptr);
 }
 
+Geometry* GeometryFactory::CreateHeightField(const Box3d &Bv, int nRows, int nCols)
+{
+	HeightField3d* shape = new HeightField3d(Bv, nRows, nCols);
+	return new Geometry(Vector3d::Zero(), GeometryShapeType::HEIGHTFIELD, shape, nullptr);
+}
+
+Geometry* GeometryFactory::CreateConvexMesh()
+{
+	ConvexMesh* shape = new ConvexMesh;
+	return new Geometry(Vector3d::Zero(), GeometryShapeType::CONVEX_MESH, shape, nullptr);
+}
+
 Geometry* GeometryFactory::CreateTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C)
 {
 	Vector3d Center = (A + B + C) / 3.0f;
@@ -222,10 +236,4 @@ Geometry* GeometryFactory::CreateTriangleMesh()
 {
 	TriangleMesh* shape = new TriangleMesh;
 	return new Geometry(Vector3d::Zero(), GeometryShapeType::TRIANGLE_MESH, shape, nullptr);
-}
-
-Geometry* GeometryFactory::CreateConvexMesh()
-{
-	ConvexMesh* shape = new ConvexMesh;
-	return new Geometry(Vector3d::Zero(), GeometryShapeType::CONVEX_MESH, shape, nullptr);
 }

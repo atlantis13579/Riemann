@@ -11,9 +11,10 @@ enum GeometryShapeType
 	PLANE,
 	SPHERE,
 	CAPSULE,
-	TRIANGLE,
 	CYLINDER,
+	HEIGHTFIELD,
 	CONVEX_MESH,
+	TRIANGLE,
 	TRIANGLE_MESH,
 	COUNT,
 };
@@ -166,9 +167,10 @@ public:
 	static Geometry* CreatePlane(const Vector3d& Center, const Vector3d& Normal);
 	static Geometry* CreateSphere(const Vector3d& Center, float Radius);
 	static Geometry* CreateCapsule(const Vector3d& X1, const Vector3d& X2, float Radius);
+	static Geometry* CreateHeightField(const Box3d& Bv, int nRows, int nCols);
+	static Geometry* CreateConvexMesh();
 	static Geometry* CreateTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C);
 	static Geometry* CreateTriangleMesh();
-	static Geometry* CreateConvexMesh();
 };
 
 
