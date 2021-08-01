@@ -9,7 +9,7 @@
 // Sweep and Prune (SAP) algorithm
 // http://www.codercorner.com/SAP.pdf
 
-typedef unsigned long long OverlapKey;
+typedef uint64_t OverlapKey;
 
 static_assert(sizeof(OverlapKey) == 8, "sizeof OverlapKey2 is not valid");
 
@@ -94,7 +94,7 @@ protected:
 			return data & 0x7FFFFFFF;
 		}
 
-		unsigned int	data;
+		uint32_t	data;
 		float* value;
 	};
 

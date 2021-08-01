@@ -82,7 +82,7 @@ void TestBitmap()
 				1, 1, 1, 1, 1, 1, 1, 1,
 				0, 0, 0, 0, 0, 0, 0, 0,
 				0, 1, 0, 0, 1, 0, 1, 1 };
-	ContinuousBitmap<unsigned short> bitmap;
+	ContinuousBitmap<uint16_t> bitmap;
 	bitmap.Build<int>(a, 8, 4, -4, -4, 4, 4);
 	bitmap.SerializeToFile("E://Temp//cbit.map");
 	bitmap.SerializeFromFile("E://Temp//cbit.map");
@@ -308,7 +308,7 @@ void TestMesh1()
 
 	field.VoxelizationTrianglesSet(info, &mesh);
 	field.MakeComplementarySet();
-	std::unordered_map<int, vx_uint64> volumes;
+	std::unordered_map<int, uint64_t> volumes;
 	int space = field.SolveTopology(0.01f, &volumes);
 	assert(space == 2);
 	return;

@@ -51,7 +51,7 @@ bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, Mesh* _m
 	MakeEmpty(info.BV, m_SizeX, m_SizeY, m_SizeZ, info.VoxelSize, info.VoxelHeight);
 
 	const Mesh &mesh = *_mesh;
-	for (unsigned int i = 0; i < mesh.GetNumTriangles(); ++i)
+	for (uint32_t i = 0; i < mesh.GetNumTriangles(); ++i)
 	{
 		Vector3d v0 = mesh(i, 0);
 		Vector3d v1 = mesh(i, 1);
@@ -159,7 +159,7 @@ int		VoxelField::WorldSpaceToVoxelSpaceY(float pos_y) const
 	return y;
 }
 
-float	VoxelField::VoxelSpaceToWorldSpaceY(unsigned short y) const
+float	VoxelField::VoxelSpaceToWorldSpaceY(uint16_t y) const
 {
 	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
 }
@@ -190,7 +190,7 @@ Box3d	VoxelField::GetVoxelBox(int x, int y, int z) const
 
 
 
-vx_uint32	VoxelField::GetVoxelData(const Vector3d& pos)
+uint32_t	VoxelField::GetVoxelData(const Vector3d& pos)
 {
 	int idx = WorldSpaceToVoxelIndex(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
@@ -199,7 +199,7 @@ vx_uint32	VoxelField::GetVoxelData(const Vector3d& pos)
 	return v ? v->data : 0;
 }
 
-bool VoxelField::AddVoxel(int idx, unsigned short ymin, unsigned short ymax, float MergeThr)
+bool VoxelField::AddVoxel(int idx, uint16_t ymin, uint16_t ymax, float MergeThr)
 {
 	Voxel* s = AllocVoxel();
 	if (s == nullptr)
@@ -293,12 +293,12 @@ void VoxelField::FreeVoxel(Voxel* p)
 	m_FreeVoxelList = p;
 }
 
-static bool VoxelIntersects(const Voxel* v1, const Voxel* v2, unsigned short Thr)
+static bool VoxelIntersects(const Voxel* v1, const Voxel* v2, uint16_t Thr)
 {
 	return v2->ymin <= v1->ymax - Thr && v2->ymax >= v1->ymin + Thr;
 }
 
-static Voxel* FindVoxel(Voxel* v, vx_uint32 data)
+static Voxel* FindVoxel(Voxel* v, uint32_t data)
 {
 	while (v)
 	{
@@ -436,8 +436,8 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 			ymin -= m_BV.Min.y;
 			ymax -= m_BV.Min.y;
 
-			const unsigned short y0 = (unsigned short)vx_clamp((int)(ymin * ich), 0, m_SizeY - 1);
-			const unsigned short y1 = (unsigned short)vx_clamp((int)(ymax * ich), 0, m_SizeY - 1);
+			const uint16_t y0 = (uint16_t)vx_clamp((int)(ymin * ich), 0, m_SizeY - 1);
+			const uint16_t y1 = (uint16_t)vx_clamp((int)(ymax * ich), 0, m_SizeY - 1);
 
 			if (!AddVoxel(z * m_SizeX + x, y0, y1, info.YMergeThr))
 				return false;
@@ -449,8 +449,8 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 
 bool VoxelField::VoxelizationYPlane(float world_y)
 {
-	unsigned short ymin = (unsigned short)WorldSpaceToVoxelSpaceY(world_y);
-	unsigned short ymax = (unsigned short)WorldSpaceToVoxelSpaceY(world_y);
+	uint16_t ymin = (uint16_t)WorldSpaceToVoxelSpaceY(world_y);
+	uint16_t ymax = (uint16_t)WorldSpaceToVoxelSpaceY(world_y);
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
 		AddVoxel(i, ymin, ymax, 0.0f);
@@ -464,8 +464,8 @@ bool VoxelField::VoxelizationCube(const Box3d& cube)
 	const int x1 = vx_clamp((int)((cube.Max.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
 	const int z0 = vx_clamp((int)((cube.Min.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
 	const int z1 = vx_clamp((int)((cube.Max.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
-	const unsigned short y0 = (unsigned short)WorldSpaceToVoxelSpaceY(cube.Min.y);
-	const unsigned short y1 = (unsigned short)WorldSpaceToVoxelSpaceY(cube.Max.y);
+	const uint16_t y0 = (uint16_t)WorldSpaceToVoxelSpaceY(cube.Min.y);
+	const uint16_t y1 = (uint16_t)WorldSpaceToVoxelSpaceY(cube.Max.y);
 	for (int z = z0; z <= z1; ++z)
 	for (int x = x0; x <= x1; ++x)
 	{
@@ -484,7 +484,7 @@ bool VoxelField::MakeComplementarySet()
 
 		Voxel* p = old;
 
-		unsigned short first_y = p ? p->ymin : m_SizeY;
+		uint16_t first_y = p ? p->ymin : m_SizeY;
 		if (first_y > 0)
 		{
 			AddVoxel(i, 0, first_y - 1, 0.0f);
@@ -542,14 +542,14 @@ end_while:
 
 int			VoxelField::FilterByY(float world_y)
 {
-	const unsigned short ny = (unsigned short)WorldSpaceToVoxelSpaceY(world_y);
+	const uint16_t ny = (uint16_t)WorldSpaceToVoxelSpaceY(world_y);
 	return Filter([=](Voxel* v) -> bool
 		{
 			return v->ymin <= ny;
 		});
 }
 
-int			VoxelField::FilterByData(unsigned int data)
+int			VoxelField::FilterByData(uint32_t data)
 {
 	return Filter([=](Voxel* v) -> bool
 		{
@@ -557,18 +557,18 @@ int			VoxelField::FilterByData(unsigned int data)
 		});
 }
 
-void		VoxelField::FilterTopNByVolume(const std::unordered_map<int, vx_uint64>& volumes, int TopN)
+void		VoxelField::FilterTopNByVolume(const std::unordered_map<int, uint64_t>& volumes, int TopN)
 {
 	if ((int)volumes.size() > TopN)
 	{
-		std::vector<vx_uint64> volume_list;
+		std::vector<uint64_t> volume_list;
 		for (auto it : volumes)
 		{
 			volume_list.push_back(it.second);
 		}
 		std::sort(volume_list.begin(), volume_list.end());
 
-		vx_uint64 area_thr = volume_list[volume_list.size() - TopN];
+		uint64_t area_thr = volume_list[volume_list.size() - TopN];
 		auto filter_func = [&volumes, area_thr](Voxel *v)
 		{
 			auto it = volumes.find(v->data);
@@ -626,7 +626,7 @@ static int vx_neighbour4x_safe(int idx, int nx, int nz, int dir) {
 	return -1;
 }
 
-vx_uint64	VoxelField::Separate(const Vector3d& pos, vx_uint32 data, float IntersectThr)
+uint64_t	VoxelField::Separate(const Vector3d& pos, uint32_t data, float IntersectThr)
 {
 	int idx = WorldSpaceToVoxelIndex(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
@@ -636,18 +636,18 @@ vx_uint64	VoxelField::Separate(const Vector3d& pos, vx_uint32 data, float Inters
 	{
 		return 0;
 	}
-	unsigned short Thr = (unsigned short)ceilf(IntersectThr * m_InvVoxelHeight);
+	uint16_t Thr = (uint16_t)ceilf(IntersectThr * m_InvVoxelHeight);
 	return SeparateImpl(idx, p, data, Thr);
 }
 
 
-vx_uint64	VoxelField::SeparateImpl(int idx, Voxel* base, vx_uint32 data, unsigned short Thr)
+uint64_t	VoxelField::SeparateImpl(int idx, Voxel* base, uint32_t data, uint16_t Thr)
 {
 	base->data = data;
 
 	std::queue<std::pair<Voxel*, int>> queue_vx;
 	queue_vx.emplace(base, idx);
-	vx_uint64 voxel_count = 0;
+	uint64_t voxel_count = 0;
 
 	while (!queue_vx.empty())
 	{
@@ -675,9 +675,9 @@ vx_uint64	VoxelField::SeparateImpl(int idx, Voxel* base, vx_uint32 data, unsigne
 	return voxel_count;
 }
 
-int		VoxelField::SolveTopology(float IntersectThr, std::unordered_map<int, vx_uint64>* volumes)
+int		VoxelField::SolveTopology(float IntersectThr, std::unordered_map<int, uint64_t>* volumes)
 {
-	unsigned short Thr = (unsigned short)std::max(1, (int)floorf(IntersectThr * m_InvVoxelHeight));
+	uint16_t Thr = (uint16_t)std::max(1, (int)floorf(IntersectThr * m_InvVoxelHeight));
 	int SpaceFound = 0;
 	if (volumes) volumes->clear();
 
@@ -688,7 +688,7 @@ int		VoxelField::SolveTopology(float IntersectThr, std::unordered_map<int, vx_ui
 		{
 			if (curr->data == 0)
 			{
-				vx_uint64 voxel_count = SeparateImpl(i, curr, ++SpaceFound, Thr);
+				uint64_t voxel_count = SeparateImpl(i, curr, ++SpaceFound, Thr);
 				if (volumes) volumes->emplace(SpaceFound, voxel_count);
 			}
 
@@ -709,12 +709,12 @@ int		VoxelField::CalculateNumFields() const
 	return Count;
 }
 
-vx_uint64 VoxelField::EstimateMemoryUseage() const
+uint64_t VoxelField::EstimateMemoryUseage() const
 {
 	return m_NumVoxels * sizeof(Voxel) + m_SizeX * m_SizeZ * sizeof(Voxel*);
 }
 
-vx_uint64 VoxelField::EstimateMemoryUseageEx() const
+uint64_t VoxelField::EstimateMemoryUseageEx() const
 {
 	return m_NumVoxels * sizeof(VoxelFast) + m_SizeX * m_SizeZ * sizeof(void*);
 }
@@ -752,7 +752,7 @@ void	VoxelField::GenerateBitmapByLevel(std::vector<int>& levels, int * level_max
 	}
 }
 
-void	VoxelField::GenerateBitmapByData(std::vector<int>& output, vx_uint32 data) const
+void	VoxelField::GenerateBitmapByData(std::vector<int>& output, uint32_t data) const
 {
 	output.resize(m_SizeX * m_SizeZ);
 	memset(&output[0], 0, sizeof(output[0]) * m_SizeX * m_SizeZ);
@@ -900,7 +900,7 @@ bool	VoxelField::SerializeTo(const char* filename)
 		return false;
 	}
 
-	unsigned int Magic = VOXEL_FILE_MAGIC;
+	uint32_t Magic = VOXEL_FILE_MAGIC;
 	fwrite(&Magic, sizeof(Magic), 1, fp);
 	fwrite(&header, sizeof(header), 1, fp);
 	fwrite(&buffer_vx[0], sizeof(VoxelFast), buffer_vx.size(), fp);
@@ -919,7 +919,7 @@ bool	VoxelField::SerializeFrom(const char* filename)
 	}
 
 	_fseeki64(fp, 0, SEEK_END);
-	vx_uint64 fileSize = _ftelli64(fp);
+	uint64_t fileSize = _ftelli64(fp);
 	_fseeki64(fp, 0, SEEK_SET);
 
 	if (fileSize < 4 + sizeof(VoxelFileHeader))
@@ -927,7 +927,7 @@ bool	VoxelField::SerializeFrom(const char* filename)
 		return false;
 	}
 
-	unsigned int Magic;
+	uint32_t Magic;
 	fread(&Magic, sizeof(Magic), 1, fp);
 	if (Magic != VOXEL_FILE_MAGIC)
 	{
@@ -936,7 +936,7 @@ bool	VoxelField::SerializeFrom(const char* filename)
 
 	VoxelFileHeader	header;
 	fread(&header, sizeof(header), 1, fp);
-	vx_uint64 nExpectedSize = 4 + sizeof(VoxelFileHeader);
+	uint64_t nExpectedSize = 4 + sizeof(VoxelFileHeader);
 	nExpectedSize += sizeof(VoxelFileField) * header.nFields;
 	nExpectedSize += sizeof(VoxelFast) * header.nVoxels;
 	if (fileSize != nExpectedSize)

@@ -4,7 +4,7 @@
 #include "../Maths/SIMD.h"
 
 /*
-bool RTree::load(PxInputStream& stream, unsigned int meshVersion, bool mismatch_)	// PT: 'meshVersion' is the PX_MESH_VERSION from cooked file
+bool RTree::load(PxInputStream& stream, uint32_t meshVersion, bool mismatch_)	// PT: 'meshVersion' is the PX_MESH_VERSION from cooked file
 {
 	PX_UNUSED(meshVersion);
 
@@ -16,7 +16,7 @@ bool RTree::load(PxInputStream& stream, unsigned int meshVersion, bool mismatch_
 		return false;
 
 	bool mismatch;
-	unsigned int fileVersion;
+	uint32_t fileVersion;
 	if (!readBigEndianVersionNumber(stream, mismatch_, fileVersion, mismatch))
 		return false;
 
@@ -29,10 +29,10 @@ bool RTree::load(PxInputStream& stream, unsigned int meshVersion, bool mismatch_
 	mNumLevels = readDword(mismatch, stream);
 	mTotalNodes = readDword(mismatch, stream);
 	mTotalPages = readDword(mismatch, stream);
-	unsigned int unused = readDword(mismatch, stream); PX_UNUSED(unused); // backwards compatibility
+	uint32_t unused = readDword(mismatch, stream); PX_UNUSED(unused); // backwards compatibility
 	mPages = static_cast<RTreePage*>(Ps::AlignedAllocator<128>().allocate(sizeof(RTreePage) * mTotalPages, __FILE__, __LINE__));
 	Cm::markSerializedMem(mPages, sizeof(RTreePage) * mTotalPages);
-	for (unsigned int j = 0; j < mTotalPages; j++)
+	for (uint32_t j = 0; j < mTotalPages; j++)
 	{
 		readFloatBuffer(mPages[j].minx, RTREE_N, mismatch, stream);
 		readFloatBuffer(mPages[j].miny, RTREE_N, mismatch, stream);
@@ -48,7 +48,7 @@ bool RTree::load(PxInputStream& stream, unsigned int meshVersion, bool mismatch_
 
 void		RTree::validate()
 {
-	for (unsigned int j = 0; j < mNumRootPages; j++)
+	for (uint32_t j = 0; j < mNumRootPages; j++)
 	{
 		RTreeNodeQ rootBounds;
 		mPages[j].computeBounds(rootBounds);
@@ -58,14 +58,14 @@ void		RTree::validate()
 
 #define RTREE_INFLATION_EPSILON 5e-4f
 
-void RTree::validateRecursive(unsigned int level, RTreeNodeQ parentBounds, RTreePage* page)
+void RTree::validateRecursive(uint32_t level, RTreeNodeQ parentBounds, RTreePage* page)
 {
-	static unsigned int validateCounter = 0; // this is to suppress a warning that recursive call has no side effects
+	static uint32_t validateCounter = 0; // this is to suppress a warning that recursive call has no side effects
 	validateCounter++;
 
 	RTreeNodeQ n;
-	unsigned int pageNodeCount = page->nodeCount();
-	for (unsigned int j = 0; j < pageNodeCount; j++)
+	uint32_t pageNodeCount = page->nodeCount();
+	for (uint32_t j = 0; j < pageNodeCount; j++)
 	{
 		page->getNode(j, n);
 		if (page->isEmpty(j))
@@ -98,15 +98,15 @@ const Vec4V twos = V4Load(2.0f);
 
 void		RTree::traverseRay(const Vector3d& Origin, const Vector3d& Dir, CallbackRaycast *cb, float maxT) const
 {
-	const unsigned int maxStack = 128;
-	unsigned int stack1[maxStack];
-	unsigned int* stack = stack1 + 1;
+	const uint32_t maxStack = 128;
+	uint32_t stack1[maxStack];
+	uint32_t* stack = stack1 + 1;
 
 	assert(mPages);
 	assert((uintptr_t(mPages) & 127) == 0);
 	assert((uintptr_t(this) & 15) == 0);
 
-	unsigned char* treeNodes8 = (unsigned char*)(mPages);
+	uint8_t* treeNodes8 = (uint8_t*)(mPages);
 
 	Vec4V maxT4;
 	maxT4 = V4Load(maxT);
@@ -137,15 +137,15 @@ void		RTree::traverseRay(const Vector3d& Origin, const Vector3d& Dir, CallbackRa
 	assert(RTREE_N == 4 || RTREE_N == 8);
 	assert(mNumRootPages > 0);
 
-	unsigned int stackPtr = 0;
+	uint32_t stackPtr = 0;
 	for (int j = mNumRootPages - 1; j >= 0; j--)
 		stack[stackPtr++] = j * sizeof(RTreePage);
 
-	__declspec(align(16)) unsigned int resa[4];
+	__declspec(align(16)) uint32_t resa[4];
 
 	while (stackPtr)
 	{
-		unsigned int top = stack[--stackPtr];
+		uint32_t top = stack[--stackPtr];
 		if (top & 1) // isLeaf test
 		{
 			top--;
@@ -210,7 +210,7 @@ void		RTree::traverseRay(const Vector3d& Origin, const Vector3d& Dir, CallbackRa
 		// 1i
 		V4U32StoreAligned(resa4, reinterpret_cast<VecU32V*>(resa));
 
-		unsigned int* ptrs = (reinterpret_cast<RTreePage*>(tn))->ptrs;
+		uint32_t* ptrs = (reinterpret_cast<RTreePage*>(tn))->ptrs;
 
 		stack[stackPtr] = ptrs[0]; stackPtr += (1 + resa[0]); // AP scaffold TODO: use VecU32add
 		stack[stackPtr] = ptrs[1]; stackPtr += (1 + resa[1]);
@@ -221,38 +221,38 @@ void		RTree::traverseRay(const Vector3d& Origin, const Vector3d& Dir, CallbackRa
 
 
 /////////////////////////////////////////////////////////////////////////
-unsigned int RTree::computeBottomLevelCount(unsigned int multiplier) const
+uint32_t RTree::computeBottomLevelCount(uint32_t multiplier) const
 {
-	unsigned int topCount = 0, curCount = mNumRootPages;
+	uint32_t topCount = 0, curCount = mNumRootPages;
 	const RTreePage* rightMostPage = &mPages[mNumRootPages - 1];
 	assert(rightMostPage);
-	for (unsigned int level = 0; level < mNumLevels - 1; level++)
+	for (uint32_t level = 0; level < mNumLevels - 1; level++)
 	{
 		topCount += curCount;
-		unsigned int nc = rightMostPage->nodeCount();
+		uint32_t nc = rightMostPage->nodeCount();
 		assert(nc > 0 && nc <= RTREE_N);
 		// old version pointer, up to PX_MESH_VERSION 8
-		unsigned int ptr = (rightMostPage->ptrs[nc - 1]) * multiplier;
+		uint32_t ptr = (rightMostPage->ptrs[nc - 1]) * multiplier;
 		assert(ptr % sizeof(RTreePage) == 0);
 		const RTreePage* rightMostPageNext = mPages + (ptr / sizeof(RTreePage));
-		curCount = unsigned int(rightMostPageNext - rightMostPage);
+		curCount = uint32_t(rightMostPageNext - rightMostPage);
 		rightMostPage = rightMostPageNext;
 	}
 
 	return mTotalPages - topCount;
 }
 
-unsigned int RTreePage::nodeCount() const
+uint32_t RTreePage::nodeCount() const
 {
 	for (int j = 0; j < RTREE_N; j++)
 		if (minx[j] == FLT_MAX)
-			return unsigned int(j);
+			return uint32_t(j);
 
 	return RTREE_N;
 }
 
 /////////////////////////////////////////////////////////////////////////
-void RTreePage::clearNode(unsigned int nodeIndex)
+void RTreePage::clearNode(uint32_t nodeIndex)
 {
 	assert(nodeIndex < RTREE_N);
 	minx[nodeIndex] = miny[nodeIndex] = minz[nodeIndex] = FLT_MAX; // initialize empty node with sentinels
@@ -261,7 +261,7 @@ void RTreePage::clearNode(unsigned int nodeIndex)
 }
 
 /////////////////////////////////////////////////////////////////////////
-void RTreePage::getNode(const unsigned int nodeIndex, RTreeNodeQ& r) const
+void RTreePage::getNode(const uint32_t nodeIndex, RTreeNodeQ& r) const
 {
 	assert(nodeIndex < RTREE_N);
 	r.minx = minx[nodeIndex];
@@ -274,10 +274,10 @@ void RTreePage::getNode(const unsigned int nodeIndex, RTreeNodeQ& r) const
 }
 
 /////////////////////////////////////////////////////////////////////////
-void RTreePage::setEmpty(unsigned int startIndex)
+void RTreePage::setEmpty(uint32_t startIndex)
 {
 	assert(startIndex < RTREE_N);
-	for (unsigned int j = startIndex; j < RTREE_N; j++)
+	for (uint32_t j = startIndex; j < RTREE_N; j++)
 		clearNode(j);
 }
 
@@ -285,7 +285,7 @@ void RTreePage::setEmpty(unsigned int startIndex)
 void RTreePage::computeBounds(RTreeNodeQ& newBounds)
 {
 	float _minx = FLT_MAX, _miny = FLT_MAX, _minz = FLT_MAX, _maxx = -FLT_MAX, _maxy = -FLT_MAX, _maxz = -FLT_MAX;
-	for (unsigned int j = 0; j < RTREE_N; j++)
+	for (uint32_t j = 0; j < RTREE_N; j++)
 	{
 		if (isEmpty(j))
 			continue;
@@ -305,7 +305,7 @@ void RTreePage::computeBounds(RTreeNodeQ& newBounds)
 }
 
 /////////////////////////////////////////////////////////////////////////
-void RTreePage::adjustChildBounds(unsigned int index, const RTreeNodeQ& adjChild)
+void RTreePage::adjustChildBounds(uint32_t index, const RTreeNodeQ& adjChild)
 {
 	assert(index < RTREE_N);
 	minx[index] = adjChild.minx;
@@ -317,7 +317,7 @@ void RTreePage::adjustChildBounds(unsigned int index, const RTreeNodeQ& adjChild
 }
 
 /////////////////////////////////////////////////////////////////////////
-void RTreePage::growChildBounds(unsigned int index, const RTreeNodeQ& child)
+void RTreePage::growChildBounds(uint32_t index, const RTreeNodeQ& child)
 {
 	assert(index < RTREE_N);
 	minx[index] = std::min(minx[index], child.minx);
@@ -329,7 +329,7 @@ void RTreePage::growChildBounds(unsigned int index, const RTreeNodeQ& child)
 }
 
 /////////////////////////////////////////////////////////////////////////
-void RTreePage::copyNode(unsigned int targetIndex, const RTreePage& sourcePage, unsigned int sourceIndex)
+void RTreePage::copyNode(uint32_t targetIndex, const RTreePage& sourcePage, uint32_t sourceIndex)
 {
 	assert(targetIndex < RTREE_N);
 	assert(sourceIndex < RTREE_N);
@@ -343,7 +343,7 @@ void RTreePage::copyNode(unsigned int targetIndex, const RTreePage& sourcePage, 
 }
 
 /////////////////////////////////////////////////////////////////////////
-void RTreePage::setNode(unsigned int targetIndex, const RTreeNodeQ& sourceNode)
+void RTreePage::setNode(uint32_t targetIndex, const RTreeNodeQ& sourceNode)
 {
 	assert(targetIndex < RTREE_N);
 	minx[targetIndex] = sourceNode.minx;

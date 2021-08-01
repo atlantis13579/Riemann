@@ -189,7 +189,7 @@ public:
 		return;
 	}
 
-	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices, std::vector<Vector3d>& Normals)
+	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
 		Vertices.resize(4);
 		GetVerties(&Vertices[0], 100.0f);
@@ -197,7 +197,7 @@ public:
 		Indices = { 2,1,0, 2,3,0 };
 	}
 
-	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices)
+	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		Vertices.resize(4);
 		GetVerties(&Vertices[0], 100.0f);

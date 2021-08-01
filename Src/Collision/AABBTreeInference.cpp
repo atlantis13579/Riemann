@@ -36,18 +36,18 @@ AABBTreeNodeInference* AABBTreeOffline::BuildCompactTree()
 			else
 			{
 				assert(p[i].Children[0]);
-				unsigned int localNodeIndex = 0xffffffff;
-				unsigned int nodeBase = 0;
+				uint32_t localNodeIndex = 0xffffffff;
+				uint32_t nodeBase = 0;
 				for (size_t j = 0; j < Blocks.size(); ++j)
 				{
 					if (p[i].Children[0] >= Blocks[j].pMem && p[i].Children[0] < Blocks[j].pMem + Blocks[j].nUsedNodes)
 					{
-						localNodeIndex = (unsigned int)(p[i].Children[0] - Blocks[j].pMem);
+						localNodeIndex = (uint32_t)(p[i].Children[0] - Blocks[j].pMem);
 						break;
 					}
 					nodeBase += Blocks[j].nUsedNodes;
 				}
-				const unsigned int nodeIndex = nodeBase + localNodeIndex;
+				const uint32_t nodeIndex = nodeBase + localNodeIndex;
 				Compact[offset].Data = nodeIndex << 1;
 			}
 			offset++;

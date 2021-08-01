@@ -272,7 +272,7 @@ void Matrix3d::SingularValueDecomposition(Matrix3d& kL, Vector3d& kS,
 	Matrix3d kA = *this;
 	Bidiagonalize(kA, kL, kR);
 
-	for (unsigned int i = 0; i < iSvdMaxIterations; i++)
+	for (uint32_t i = 0; i < iSvdMaxIterations; i++)
 	{
 		float fTmp, fTmp0, fTmp1;
 		float fSin0, fCos0, fTan0;
@@ -1177,8 +1177,8 @@ bool Matrix3d::QLAlgorithm(float afDiag[3], float afSubDiag[3])
 
 	for (int i0 = 0; i0 < 3; i0++)
 	{
-		const unsigned int iMaxIter = 32;
-		unsigned int iIter;
+		const uint32_t iMaxIter = 32;
+		uint32_t iIter;
 		for (iIter = 0; iIter < iMaxIter; ++iIter)
 		{
 			int i1;

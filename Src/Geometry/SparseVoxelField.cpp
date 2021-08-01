@@ -61,13 +61,13 @@ int		SparseVoxelField::VoxelSpaceToWorldSpaceY(float pos_y) const
 	return y;
 }
 
-float	SparseVoxelField::VoxelSpaceToWorldSpaceY(unsigned short y) const
+float	SparseVoxelField::VoxelSpaceToWorldSpaceY(uint16_t y) const
 {
 	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
 }
 
 
-unsigned int	SparseVoxelField::WorldSpaceToVoxelSpaceY(const Vector3d& pos) const
+uint32_t	SparseVoxelField::WorldSpaceToVoxelSpaceY(const Vector3d& pos) const
 {
 	int idx = GetVoxelIdx(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
@@ -96,7 +96,7 @@ bool	SparseVoxelField::SerializeFrom(const char* filename)
 	}
 
 	_fseeki64(fp, 0, SEEK_END);
-	unsigned long long fileSize = _ftelli64(fp);
+	uint64_t fileSize = _ftelli64(fp);
 	_fseeki64(fp, 0, SEEK_SET);
 
 	if (fileSize < 4 + sizeof(VoxelFileHeader))
@@ -104,7 +104,7 @@ bool	SparseVoxelField::SerializeFrom(const char* filename)
 		return false;
 	}
 
-	unsigned int Magic;
+	uint32_t Magic;
 	fread(&Magic, sizeof(Magic), 1, fp);
 	if (Magic != VOXEL_FILE_MAGIC)
 	{
@@ -113,7 +113,7 @@ bool	SparseVoxelField::SerializeFrom(const char* filename)
 
 	VoxelFileHeader	header;
 	fread(&header, sizeof(header), 1, fp);
-	unsigned long long nExpectedSize = 4 + sizeof(VoxelFileHeader);
+	uint64_t nExpectedSize = 4 + sizeof(VoxelFileHeader);
 	nExpectedSize += sizeof(VoxelFileField) * header.nFields;
 	nExpectedSize += sizeof(VoxelFast) * header.nVoxels;
 	if (fileSize != nExpectedSize)

@@ -15,13 +15,13 @@
 class Mesh
 {
 public:
-	unsigned int				NumVerties;
-	unsigned int				NumTriangles;
+	uint32_t				NumVerties;
+	uint32_t				NumTriangles;
 	std::vector<Vector3d>		Vertices;
-	std::vector<unsigned short>	Indices;
+	std::vector<uint16_t>	Indices;
 	std::vector<Vector3d>		Normals;
 	Box3d						BoundingVolume;
-	unsigned char				Flags;
+	uint8_t				Flags;
 	std::string					ResourceId;
 
 	Mesh()
@@ -59,24 +59,24 @@ public:
 		return &Indices[0];
 	}
 
-	const unsigned short* GetIndices16() const			// (unsigned short*)&Indices[0]
+	const uint16_t* GetIndices16() const			// (uint16_t*)&Indices[0]
 	{
 		return &Indices[0];
 	}
 
-	unsigned short* GetIndices16()
+	uint16_t* GetIndices16()
 	{
 		return &Indices[0];
 	}
 
-	const unsigned int* GetIndices32() const			// (unsigned int*)&Indices[0]
+	const uint32_t* GetIndices32() const			// (uint32_t*)&Indices[0]
 	{
-		return (unsigned int*)&Indices[0];
+		return (uint32_t*)&Indices[0];
 	}
 
-	unsigned int* GetIndices32()
+	uint32_t* GetIndices32()
 	{
-		return (unsigned int*)&Indices[0];
+		return (uint32_t*)&Indices[0];
 	}
 
 	bool Is16bitIndices() const
@@ -89,12 +89,12 @@ public:
 		return Is16bitIndices() ? 1 : 2;
 	}
 
-	inline unsigned int GetNumVerties() const
+	inline uint32_t GetNumVerties() const
 	{
 		return NumVerties;
 	}
 
-	inline unsigned int GetNumTriangles() const
+	inline uint32_t GetNumTriangles() const
 	{
 		return NumTriangles;
 	}
@@ -107,12 +107,12 @@ public:
 		}
 		else
 		{
-			const unsigned int* Indices32 = GetIndices32();
+			const uint32_t* Indices32 = GetIndices32();
 			return Vertices[Indices32[3 * i + j]];
 		}
 	}
 
-	void SetData(const void* Verts, const void* Tris, unsigned int Nv, unsigned int Nt, bool Is16bit)
+	void SetData(const void* Verts, const void* Tris, uint32_t Nv, uint32_t Nt, bool Is16bit)
 	{
 		Release();
 
@@ -137,7 +137,7 @@ public:
 		Vertices[NumVerties++] = v;
 	}
 
-	void AddTriangle(unsigned int a, unsigned int b, unsigned int c)
+	void AddTriangle(uint32_t a, uint32_t b, uint32_t c)
 	{
 		if ((NumTriangles * 3 + 2) * GetIndicesWidth() >= Indices.size())
 		{
@@ -152,7 +152,7 @@ public:
 		}
 		else
 		{
-			unsigned int* Indices32 = GetIndices32();
+			uint32_t* Indices32 = GetIndices32();
 			Indices32[3 * NumTriangles] = a;
 			Indices32[3 * NumTriangles + 1] = b;
 			Indices32[3 * NumTriangles + 2] = c;
@@ -211,7 +211,7 @@ public:
 			fclose(fp);
 			return false;
 		}
-		unsigned long long readLen = fread(buf, bufSize, 1, fp);
+		uint64_t readLen = fread(buf, bufSize, 1, fp);
 		fclose(fp);
 
 		if (readLen != 1)
@@ -235,13 +235,13 @@ public:
 			}
 			else if (row[0] == 'f')
 			{
-				unsigned int face[32];
+				uint32_t face[32];
 				int nv = ParseFace(row + 1, face, 32);
 				for (int i = 2; i < nv; ++i)
 				{
-					const unsigned int a = face[0];
-					const unsigned int b = face[i - 1];
-					const unsigned int c = face[i];
+					const uint32_t a = face[0];
+					const uint32_t b = face[i - 1];
+					const uint32_t c = face[i];
 					if (a < 0 || a >= NumVerties || b < 0 || b >= NumVerties || c < 0 || c >= NumVerties)
 						continue;
 					AddTriangle(a, b, c);
@@ -264,7 +264,7 @@ public:
 			return false;
 		}
 
-		unsigned int Magic = 0xF34D9017;
+		uint32_t Magic = 0xF34D9017;
 		fwrite(&Magic, sizeof(Magic), 1, fp);
 		fwrite(&Flags, sizeof(Flags), 1, fp);
 		fwrite(&NumVerties, sizeof(NumVerties), 1, fp);
@@ -292,7 +292,7 @@ public:
 			return false;
 		}
 
-		unsigned int Magic;
+		uint32_t Magic;
 		fread(&Magic, sizeof(Magic), 1, fp);
 		if (Magic != 0xF34D9017)
 		{
@@ -318,7 +318,7 @@ public:
 		int j = 0;
 		if (Is16bitIndices())
 		{
-			for (unsigned int i = 0; i < NumTriangles; ++i)
+			for (uint32_t i = 0; i < NumTriangles; ++i)
 			{
 				if (!filter_func(Vertices[Indices[3 * i]], Vertices[Indices[3 * i + 1]], Vertices[Indices[3 * i + 2]]))
 				{
@@ -334,8 +334,8 @@ public:
 		}
 		else
 		{
-			unsigned int* Indices32 = GetIndices32();
-			for (unsigned int i = 0; i < NumTriangles; ++i)
+			uint32_t* Indices32 = GetIndices32();
+			for (uint32_t i = 0; i < NumTriangles; ++i)
 			{
 				if (!filter_func(Vertices[Indices32[3 * i]], Vertices[Indices32[3 * i + 1]], Vertices[Indices32[3 * i + 2]]))
 				{
@@ -372,7 +372,7 @@ public:
 		Count.resize(NumVerties, 0);
 		Normals.resize(NumVerties);
 		memset(&Normals[0], 0, sizeof(Normals[0]) * Normals.size());
-		for (unsigned int i = 0; i < NumTriangles; ++i)
+		for (uint32_t i = 0; i < NumTriangles; ++i)
 		{
 			int i0, i1, i2;
 			if (Is16bitIndices())
@@ -383,7 +383,7 @@ public:
 			}
 			else
 			{
-				unsigned int* Indices32 = GetIndices32();
+				uint32_t* Indices32 = GetIndices32();
 				i0 = Indices32[3 * i + 0];
 				i1 = Indices32[3 * i + 1];
 				i2 = Indices32[3 * i + 2];
@@ -397,7 +397,7 @@ public:
 			Normals[i2] += Nor.Unit(), Count[i2]++;
 		}
 		
-		for (unsigned int i = 0; i < NumVerties; ++i)
+		for (uint32_t i = 0; i < NumVerties; ++i)
 		{
 			Normals[i] *= 1.0f / Count[i];
 			Normals[i].Normalize();
@@ -447,7 +447,7 @@ private:
 		return buf;
 	}
 
-	int ParseFace(char* row, unsigned int* data, int n)
+	int ParseFace(char* row, uint32_t* data, int n)
 	{
 		int j = 0;
 		while (*row != '\0')
@@ -462,7 +462,7 @@ private:
 			}
 			if (*s == '\0')
 				continue;
-			unsigned int vi = atoi(s);
+			uint32_t vi = atoi(s);
 			data[j++] = vi < 0 ? vi + NumVerties : vi - 1;
 			if (j >= n) return j;
 		}

@@ -1,47 +1,47 @@
 #pragma once
 
 template <typename T>
-inline T read(unsigned char*& address)
+inline T read(uint8_t*& address)
 {
 	const T value = *reinterpret_cast<T*>(address);
 	address += sizeof(value);
 	return value;
 }
 
-inline unsigned char read8(unsigned char*& address)
+inline uint8_t read8(uint8_t*& address)
 {
-	return read<unsigned int>(address);
+	return read<uint8_t>(address);
 }
 
-inline unsigned short read16(unsigned char*& address)
+inline uint16_t read16(uint8_t*& address)
 {
-	return read<unsigned int>(address);
+	return read<uint16_t>(address);
 }
 
-inline unsigned int read32(unsigned char*& address)
+inline uint32_t read32(uint8_t*& address)
 {
-	return read<unsigned int>(address);
+	return read<uint32_t>(address);
 }
 
-inline unsigned long long read64(unsigned char*& address)
+inline uint64_t read64(uint8_t*& address)
 {
-	return read<unsigned long long>(address);
+	return read<uint64_t>(address);
 }
 
-inline  unsigned int getPadding(size_t value, unsigned int alignment)
+inline  uint32_t getPadding(size_t value, uint32_t alignment)
 {
-	const unsigned int mask = alignment - 1;
-	const unsigned int overhead = unsigned int(value) & mask;
+	const uint32_t mask = alignment - 1;
+	const uint32_t overhead = uint32_t(value) & mask;
 	return (alignment - overhead) & mask;
 }
 
-inline unsigned char* alignPtr(unsigned char* ptr, unsigned int alignment = 16)
+inline uint8_t* alignPtr(uint8_t* ptr, uint32_t alignment = 16)
 {
 	if (alignment == 0)
 	{
 		return ptr;
 	}
-	const unsigned int padding = getPadding(size_t(ptr), alignment);
+	const uint32_t padding = getPadding(size_t(ptr), alignment);
 	return ptr + padding;
 }
 

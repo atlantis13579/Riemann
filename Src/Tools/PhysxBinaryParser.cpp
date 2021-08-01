@@ -28,7 +28,7 @@ typedef double PxF64;
 typedef float PxReal;
 typedef Vector3d PxVec3;
 
-typedef unsigned long long PxSerialObjectId;
+typedef uint64_t PxSerialObjectId;
 
 struct Collections
 {
@@ -84,26 +84,26 @@ public:
 	{
 		const physx::HeightField* hf = physxObj->heightField;
 		const physx::PxHeightFieldSample*	samples = hf->mData.samples;
-		const unsigned int					nCols = hf->mData.columns;
-		const unsigned int					nRows = hf->mData.rows;
+		const uint32_t					nCols = hf->mData.columns;
+		const uint32_t					nRows = hf->mData.rows;
 
 		Vector3d Scale = Vector3d(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
 
 		std::vector<Vector3d>	Vertices;
 		Vertices.resize(nRows * nCols);
-		for (unsigned int i = 0; i < nRows; i++)
-		for (unsigned int j = 0; j < nCols; j++)
+		for (uint32_t i = 0; i < nRows; i++)
+		for (uint32_t j = 0; j < nCols; j++)
 		{
 			Vertices[i * nCols + j] = Vector3d(1.0f * i, samples[j + (i * nCols)].height, 1.0f * j) * Scale;
 		}
 
-		std::vector<unsigned short>	Indices;
+		std::vector<uint16_t>	Indices;
 		assert(Vertices.size() < 65535);
 		Indices.resize((nCols - 1) * (nRows - 1) * 2 * 3);
 		int nFaces = 0;
 
-		for (unsigned int i = 0; i < (nCols - 1); ++i)
-		for (unsigned int j = 0; j < (nRows - 1); ++j)
+		for (uint32_t i = 0; i < (nCols - 1); ++i)
+		for (uint32_t j = 0; j < (nRows - 1); ++j)
 		{
 			PxU8 tessFlag = samples[i + j * nCols].materialIndex0 & 0x80;
 			PxU32 i0 = j * nCols + i;
@@ -135,7 +135,7 @@ public:
 
 		Geometry* Geom = GeometryFactory::CreateTriangleMesh();
 		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
-		TriMesh->SetData(&Vertices[0], &Indices[0], (unsigned int)Vertices.size(), nFaces, true);
+		TriMesh->SetData(&Vertices[0], &Indices[0], (uint32_t)Vertices.size(), nFaces, true);
 		return Geom;
 	}
 
@@ -297,7 +297,7 @@ bool LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 
 	std::vector<char> buffer;
 	fseek(fp, 0, SEEK_END);
-	unsigned long long filesize = (unsigned long long)ftell(fp);
+	uint64_t filesize = (uint64_t)ftell(fp);
 	fseek(fp, 0, 0);
 	buffer.resize(filesize + 127);
 	void* p = AlignMemory(&buffer[0], 128);

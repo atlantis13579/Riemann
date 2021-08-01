@@ -24,11 +24,11 @@ public:
 	Box3d							BoundingVolume;
 	Matrix3d						Inertia;
 	std::vector<Vector3d>			Vertices;
-	std::vector<unsigned short>		Edges;
+	std::vector<uint16_t>		Edges;
 	std::vector<HullFace3d>			Faces;
-	unsigned int					NumVertices;
-	unsigned int					NumEdges;
-	unsigned int					NumFaces;
+	uint32_t					NumVertices;
+	uint32_t					NumEdges;
+	uint32_t					NumFaces;
 	
 	ConvexMesh()
 	{
@@ -54,43 +54,43 @@ public:
 		NumFaces++;
 	}
 
-	void			SetVerties(const Vector3d* Verts, unsigned int Nv)
+	void			SetVerties(const Vector3d* Verts, uint32_t Nv)
 	{
 		Vertices.resize(Nv);
 		memcpy(&Vertices[0], Verts, sizeof(Vertices[0]) * Vertices.size());
 		NumVertices = Nv;
 	}
 
-	void			SetEdges(const unsigned short* Es, unsigned int Ne)
+	void			SetEdges(const uint16_t* Es, uint32_t Ne)
 	{
 		Edges.resize(Ne * 2);
 		memcpy(&Edges[0], Es, sizeof(Edges[0]) * Edges.size());
 		NumEdges = Ne;
 	}
 
-	unsigned int	GetNumVerties() const
+	uint32_t	GetNumVerties() const
 	{
 		return NumVertices;
 	}
 
-	unsigned int	GetNumEdges() const
+	uint32_t	GetNumEdges() const
 	{
 		return NumEdges;
 	}
 
-	unsigned int	GetNumFaces() const
+	uint32_t	GetNumFaces() const
 	{
 		return NumFaces;
 	}
 
-	Vector3d		GetNormal(unsigned int i) const
+	Vector3d		GetNormal(uint32_t i) const
 	{
 		return (Vertices[i] - CenterOfMass).Unit();
 	}
 
 	bool			VerifyIndices() const
 	{
-		for (unsigned int i = 0; i < NumEdges; ++i)
+		for (uint32_t i = 0; i < NumEdges; ++i)
 		{
 			if (Edges[i] >= NumVertices)
 				return false;
@@ -121,12 +121,12 @@ public:
 		return Vector3d::Zero();
 	}
 
-	void	GetMesh(std::vector<Vector3d>& _Vertices, std::vector<unsigned short>& _Indices, std::vector<Vector3d>& _Normals)
+	void	GetMesh(std::vector<Vector3d>& _Vertices, std::vector<uint16_t>& _Indices, std::vector<Vector3d>& _Normals)
 	{
 
 	}
 
-	void	GetWireframe(std::vector<Vector3d>& _Vertices, std::vector<unsigned short>& _Indices)
+	void	GetWireframe(std::vector<Vector3d>& _Vertices, std::vector<uint16_t>& _Indices)
 	{
 		_Vertices = Vertices;
 		_Indices = Edges;

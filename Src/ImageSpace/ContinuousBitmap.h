@@ -96,7 +96,7 @@ public:
 
 		for (int i = 0; i < nY; ++i)
 		{
-			m_Rows[i] = &m_CompactData[(unsigned long long)m_Rows[i]];
+			m_Rows[i] = &m_CompactData[(uint64_t)m_Rows[i]];
 		}
 	}
 
@@ -108,7 +108,7 @@ public:
 			return false;
 		}
 
-		unsigned int Magic = 0x353BA50D;
+		uint32_t Magic = 0x353BA50D;
 		int nData = (int)m_CompactData.size();
 		int nElementSize = sizeof(T);
 		int nUnuse = 0;
@@ -144,7 +144,7 @@ public:
 		}
 
 		_fseeki64(fp, 0, SEEK_END);
-		unsigned long long fileSize = _ftelli64(fp);
+		uint64_t fileSize = _ftelli64(fp);
 		_fseeki64(fp, 0, SEEK_SET);
 
 		if (fileSize < 48)
@@ -152,7 +152,7 @@ public:
 			return false;
 		}
 
-		unsigned int Magic = 0;
+		uint32_t Magic = 0;
 		int nData = 0;
 		int nElementSize = 0;
 		int nUnuse = 0;

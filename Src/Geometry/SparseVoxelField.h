@@ -28,9 +28,9 @@ static_assert(sizeof(VoxelFileField) == 4, "sizeof VoxelFileField is not valid")
 
 struct VoxelFast
 {
-	unsigned int	data;
-	unsigned short	ymin;
-	unsigned short	ymax;
+	uint32_t	data;
+	uint16_t	ymin;
+	uint16_t	ymax;
 
 	inline const VoxelFast* next() const
 	{
@@ -46,7 +46,7 @@ struct VoxelFast
 		return this + 1;
 	}
 
-	inline unsigned int	raw_data() const
+	inline uint32_t	raw_data() const
 	{
 		return ((data) & ~VOXEL_TOP);
 	}
@@ -64,8 +64,8 @@ public:
 
 	int				GetVoxelIdx(const Vector3d& pos) const;
 	int				VoxelSpaceToWorldSpaceY(float pos_y) const;
-	float			VoxelSpaceToWorldSpaceY(unsigned short y) const;
-	unsigned int	WorldSpaceToVoxelSpaceY(const Vector3d& pos) const;
+	float			VoxelSpaceToWorldSpaceY(uint16_t y) const;
+	uint32_t	WorldSpaceToVoxelSpaceY(const Vector3d& pos) const;
 
 	bool			SerializeFrom(const char* filename);
 

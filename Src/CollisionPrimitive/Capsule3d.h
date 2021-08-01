@@ -293,7 +293,7 @@ public:
 
 	}
 
-	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices, std::vector<Vector3d>& Normals)
+	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
 		const int stackCount = 5;
 		const int sliceCount = 8;
@@ -332,7 +332,7 @@ public:
 		}
 	}
 
-	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices)
+	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		const int stackCount = 5;
 		const int sliceCount = 8;

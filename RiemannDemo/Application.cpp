@@ -129,8 +129,8 @@ void InitScene()
         Vector3d c = Vector3d(2556.8f, -104.0f, 1104.7f);
 
         float water_y = -106.65f;
-		unsigned short water_low = field.WorldSpaceToVoxelSpaceY(water_y);
-		unsigned short water_high = field.WorldSpaceToVoxelSpaceY(water_y + 1.5f);
+		uint16_t water_low = field.WorldSpaceToVoxelSpaceY(water_y);
+		uint16_t water_high = field.WorldSpaceToVoxelSpaceY(water_y + 1.5f);
 
         int idx = field.WorldSpaceToVoxelIndex(c);
 		int cz = idx / field.GetSizeX();
@@ -147,7 +147,7 @@ void InitScene()
 
 		water_list.emplace_back(-2790.0f, -106.65f, -1835.0f);
 
-        vx_uint64 vol = field.Separate(pos_main, 1, 0.1f);
+        uint64_t vol = field.Separate(pos_main, 1, 0.1f);
 		for (size_t i = 0; i < water_list.size(); ++i)
 		{
 			vol = field.Separate(water_list[i] + Thr, (int)i + 2, 0.5f);

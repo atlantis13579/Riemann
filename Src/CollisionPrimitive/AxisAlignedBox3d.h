@@ -155,7 +155,7 @@ public:
 		);
 	}
 
-	void	GetMesh(std::vector<Vector3d> &Vertices, std::vector<unsigned short>& Indices, std::vector<Vector3d>& Normals)
+	void	GetMesh(std::vector<Vector3d> &Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
 		Vertices.resize(8);
 		Box3d::GetVertices(Min, Max, &Vertices[0]);
@@ -183,7 +183,7 @@ public:
 			6, 7, 3 };
 	}
 
-	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<unsigned short>& Indices)
+	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		Vertices.resize(8);
 		Box3d::GetVertices(Min, Max, &Vertices[0]);

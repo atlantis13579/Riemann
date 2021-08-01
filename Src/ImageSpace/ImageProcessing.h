@@ -244,7 +244,7 @@ void ExtractObjects(T* cell, int nx, int ny, std::vector<std::vector<Vector2i>>*
 		if (polygon.size() > MinPolygonPoints) {
 			polygons->push_back(polygon);
 		}
-		FillObject4x<unsigned char>(cell, nx, ny, k, 0);
+		FillObject4x<uint8_t>(cell, nx, ny, k, 0);
 	}
 }
 

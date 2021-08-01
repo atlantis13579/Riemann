@@ -469,7 +469,7 @@ public:
     void AddGeometry(Geometry* geom, bool DrawMesh = true)
     {
 		std::vector<Vector3d> Vertices;
-		std::vector<unsigned short> Indices;
+		std::vector<uint16_t> Indices;
         std::vector<Vector3d> Normals;
         TShape* shape = geom->CastGeometry<TShape>();
 
@@ -477,7 +477,7 @@ public:
         {
 			shape->GetMesh(Vertices, Indices, Normals);
 			std::vector<Vertex1> vv;
-			for (unsigned int i = 0; i < Vertices.size(); ++i)
+			for (size_t i = 0; i < Vertices.size(); ++i)
 			{
 				vv.emplace_back(Vertices[i], Normals[i]);
 			}
@@ -487,7 +487,7 @@ public:
         {
 			shape->GetWireframe(Vertices, Indices);
 			std::vector<Vertex1> vv;
-			for (unsigned int i = 0; i < Vertices.size(); ++i)
+			for (size_t i = 0; i < Vertices.size(); ++i)
 			{
 				vv.emplace_back(Vertices[i], Vector3d(1.0f, 1.0f, 1.0f));
 			}
@@ -500,7 +500,7 @@ public:
 		mesh->CalculateNormals();
 
 		std::vector<Vertex1> vv;
-		for (unsigned int i = 0; i < mesh->GetNumVerties(); ++i)
+		for (uint32_t i = 0; i < mesh->GetNumVerties(); ++i)
 		{
 			vv.emplace_back(mesh->Vertices[i], mesh->Normals[i]);
 		}
@@ -510,11 +510,11 @@ public:
         if (RenderBV)
         {
 			std::vector<Vector3d> Vertices;
-			std::vector<unsigned short> Indices;
+			std::vector<uint16_t> Indices;
 			AxisAlignedBox3d aabb(mesh->BoundingVolume.Min, mesh->BoundingVolume.Max);
 			aabb.GetWireframe(Vertices, Indices);
 			vv.clear();
-			for (unsigned int i = 0; i < Vertices.size(); ++i)
+			for (size_t i = 0; i < Vertices.size(); ++i)
 			{
 				vv.emplace_back(Vertices[i], Vector3d(1.0f, 1.0f, 1.0f));
 			}

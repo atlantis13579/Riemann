@@ -12,22 +12,22 @@ struct SpatialEntiry
 	SpatialEntiry* Next;
 };
 
-inline unsigned int hash_id_3d(int x, int y, int z, int bucketSize)
+inline uint32_t hash_id_3d(int x, int y, int z, int bucketSize)
 {
-	const unsigned int h1 = 0x8da6b343; // large multiplicative constants
-	const unsigned int h2 = 0xd8163841; // here arbitrarialy chosen primes
-	const unsigned int h3 = 0xcb1ab31f;
-	unsigned int n = h1 * x + h2 * y + h3 * z;
+	const uint32_t h1 = 0x8da6b343; // large multiplicative constants
+	const uint32_t h2 = 0xd8163841; // here arbitrarialy chosen primes
+	const uint32_t h3 = 0xcb1ab31f;
+	uint32_t n = h1 * x + h2 * y + h3 * z;
 	n = n % bucketSize;
 	if (n < 0) n += bucketSize;
 	return n;
 }
 
-inline unsigned int hash_id_2d(int x, int y, int bucketSize)
+inline uint32_t hash_id_2d(int x, int y, int bucketSize)
 {
-	const unsigned int h1 = 0x8da6b343; // large multiplicative constants
-	const unsigned int h2 = 0xd8163841; // here arbitrarialy chosen primes
-	unsigned int n = h1 * x + h2 * y;
+	const uint32_t h1 = 0x8da6b343; // large multiplicative constants
+	const uint32_t h2 = 0xd8163841; // here arbitrarialy chosen primes
+	uint32_t n = h1 * x + h2 * y;
 	n = n % bucketSize;
 	if (n < 0) n += bucketSize;
 	return n;
@@ -53,14 +53,14 @@ public:
 		return (int)m_Buckets.size();
 	}
 
-	unsigned int ComputeHashBucketIndex2D(const Vector3d& Pos) const
+	uint32_t ComputeHashBucketIndex2D(const Vector3d& Pos) const
 	{
 		int x = (int)(floorf((Pos.x - m_Origin.x) * m_InvCellSize.x));
 		int z = (int)(floorf((Pos.z - m_Origin.z) * m_InvCellSize.z));
 		return hash_id_2d(x, z, GetBucketSize());
 	}
 
-	unsigned int ComputeHashBucketIndex3D(const Vector3d& Pos) const
+	uint32_t ComputeHashBucketIndex3D(const Vector3d& Pos) const
 	{
 		int x = (int)(floorf((Pos.x - m_Origin.x) * m_InvCellSize.x));
 		int y = (int)(floorf((Pos.y - m_Origin.y) * m_InvCellSize.y));

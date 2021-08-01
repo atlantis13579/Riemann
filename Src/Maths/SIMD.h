@@ -137,31 +137,31 @@ inline __m128i m128_F2I(__m128 n)
 	return _mm_castps_si128(n);
 }
 
-inline unsigned int BAllTrue4_R(const BoolV a)
+inline uint32_t BAllTrue4_R(const BoolV a)
 {
 	const int moveMask = _mm_movemask_ps(a);
-	return unsigned int(moveMask == 0xf);
+	return uint32_t(moveMask == 0xf);
 }
 
-inline unsigned int BAllTrue3_R(const BoolV a)
+inline uint32_t BAllTrue3_R(const BoolV a)
 {
 	const int moveMask = _mm_movemask_ps(a);
-	return unsigned int((moveMask & 0x7) == 0x7);
+	return uint32_t((moveMask & 0x7) == 0x7);
 }
 
-inline unsigned int BAnyTrue4_R(const BoolV a)
+inline uint32_t BAnyTrue4_R(const BoolV a)
 {
 	const int moveMask = _mm_movemask_ps(a);
-	return unsigned int(moveMask != 0x0);
+	return uint32_t(moveMask != 0x0);
 }
 
-inline unsigned int BAnyTrue3_R(const BoolV a)
+inline uint32_t BAnyTrue3_R(const BoolV a)
 {
 	const int moveMask = _mm_movemask_ps(a);
-	return unsigned int(((moveMask & 0x7) != 0x0));
+	return uint32_t(((moveMask & 0x7) != 0x0));
 }
 
-const __declspec(align(16)) unsigned int gMaskXYZ[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0 };
+const __declspec(align(16)) uint32_t gMaskXYZ[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0 };
 } //internalWindowsSimd
 
 /////////////////////////////////////////////////////////////////////
@@ -211,7 +211,7 @@ inline Vec4V V4Load(const float f)
 
 inline BoolV BLoad(const bool f)
 {
-	const unsigned int i = unsigned int(-(int)f);
+	const uint32_t i = uint32_t(-(int)f);
 	return _mm_load1_ps((float*)&i);
 }
 
@@ -296,13 +296,13 @@ inline void V4StoreU(const Vec4V a, float* f)
 	_mm_storeu_ps(f, a);
 }
 
-inline void BStoreA(const BoolV a, unsigned int* f)
+inline void BStoreA(const BoolV a, uint32_t* f)
 {
 	ASSERT_ISALIGNED16(f);
 	_mm_store_ps((float*)f, a);
 }
 
-inline void U4StoreA(const VecU32V uv, unsigned int* u)
+inline void U4StoreA(const VecU32V uv, uint32_t* u)
 {
 	ASSERT_ISALIGNED16(u);
 	_mm_store_ps((float*)u, uv);
@@ -333,7 +333,7 @@ inline void V3StoreA(const Vec3V a, Vector3d& f)
 	f = Vector3d(f2[0], f2[1], f2[2]);
 }
 
-inline void Store_From_BoolV(const BoolV b, unsigned int* b2)
+inline void Store_From_BoolV(const BoolV b, uint32_t* b2)
 {
 	_mm_store_ss((float*)b2, b);
 }
@@ -386,31 +386,31 @@ inline FloatV FNegMax()
 
 inline FloatV IZero()
 {
-	const unsigned int zero = 0;
+	const uint32_t zero = 0;
 	return _mm_load1_ps((float*)&zero);
 }
 
 inline FloatV IOne()
 {
-	const unsigned int one = 1;
+	const uint32_t one = 1;
 	return _mm_load1_ps((float*)&one);
 }
 
 inline FloatV ITwo()
 {
-	const unsigned int two = 2;
+	const uint32_t two = 2;
 	return _mm_load1_ps((float*)&two);
 }
 
 inline FloatV IThree()
 {
-	const unsigned int three = 3;
+	const uint32_t three = 3;
 	return _mm_load1_ps((float*)&three);
 }
 
 inline FloatV IFour()
 {
-	const unsigned int four = 4;
+	const uint32_t four = 4;
 	return _mm_load1_ps((float*)&four);
 }
 
@@ -503,7 +503,7 @@ inline FloatV FNegScaleSub(const FloatV a, const FloatV b, const FloatV c)
 inline FloatV FAbs(const FloatV a)
 {
 	ASSERT_ISVALIDFLOATV(a);
-	__declspec(align(16)) const static unsigned int absMask[4] = { 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF };
+	__declspec(align(16)) const static uint32_t absMask[4] = { 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF };
 	return _mm_and_ps(a, _mm_load_ps((float*)absMask));
 }
 
@@ -555,25 +555,25 @@ inline FloatV FClamp(const FloatV a, const FloatV minV, const FloatV maxV)
 	return _mm_max_ps(_mm_min_ps(a, maxV), minV);
 }
 
-inline unsigned int FAllGrtr(const FloatV a, const FloatV b)
+inline uint32_t FAllGrtr(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
-	return unsigned int(_mm_comigt_ss(a, b));
+	return uint32_t(_mm_comigt_ss(a, b));
 }
 
-inline unsigned int FAllGrtrOrEq(const FloatV a, const FloatV b)
+inline uint32_t FAllGrtrOrEq(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
-	return unsigned int(_mm_comige_ss(a, b));
+	return uint32_t(_mm_comige_ss(a, b));
 }
 
-inline unsigned int FAllEq(const FloatV a, const FloatV b)
+inline uint32_t FAllEq(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
-	return unsigned int(_mm_comieq_ss(a, b));
+	return uint32_t(_mm_comieq_ss(a, b));
 }
 
 inline FloatV FRound(const FloatV a)
@@ -599,7 +599,7 @@ inline BoolV BFFFF()
 
 inline BoolV BFFFT()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0,0,0,0xFFFFFFFF};
+	/*const PX_ALIGN(16, uint32_t f[4])={0,0,0,0xFFFFFFFF};
 	const __m128 ffft=_mm_load_ps((float*)&f);
 	return ffft;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(-1, 0, 0, 0));
@@ -607,7 +607,7 @@ inline BoolV BFFFT()
 
 inline BoolV BFFTF()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0,0,0xFFFFFFFF,0};
+	/*const PX_ALIGN(16, uint32_t f[4])={0,0,0xFFFFFFFF,0};
 	const __m128 fftf=_mm_load_ps((float*)&f);
 	return fftf;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(0, -1, 0, 0));
@@ -615,7 +615,7 @@ inline BoolV BFFTF()
 
 inline BoolV BFFTT()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0,0,0xFFFFFFFF,0xFFFFFFFF};
+	/*const PX_ALIGN(16, uint32_t f[4])={0,0,0xFFFFFFFF,0xFFFFFFFF};
 	const __m128 fftt=_mm_load_ps((float*)&f);
 	return fftt;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(-1, -1, 0, 0));
@@ -623,7 +623,7 @@ inline BoolV BFFTT()
 
 inline BoolV BFTFF()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0,0xFFFFFFFF,0,0};
+	/*const PX_ALIGN(16, uint32_t f[4])={0,0xFFFFFFFF,0,0};
 	const __m128 ftff=_mm_load_ps((float*)&f);
 	return ftff;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(0, 0, -1, 0));
@@ -631,7 +631,7 @@ inline BoolV BFTFF()
 
 inline BoolV BFTFT()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0,0xFFFFFFFF,0,0xFFFFFFFF};
+	/*const PX_ALIGN(16, uint32_t f[4])={0,0xFFFFFFFF,0,0xFFFFFFFF};
 	const __m128 ftft=_mm_load_ps((float*)&f);
 	return ftft;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(-1, 0, -1, 0));
@@ -639,7 +639,7 @@ inline BoolV BFTFT()
 
 inline BoolV BFTTF()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0,0xFFFFFFFF,0xFFFFFFFF,0};
+	/*const PX_ALIGN(16, uint32_t f[4])={0,0xFFFFFFFF,0xFFFFFFFF,0};
 	const __m128 fttf=_mm_load_ps((float*)&f);
 	return fttf;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(0, -1, -1, 0));
@@ -647,7 +647,7 @@ inline BoolV BFTTF()
 
 inline BoolV BFTTT()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF};
+	/*const PX_ALIGN(16, uint32_t f[4])={0,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF};
 	const __m128 fttt=_mm_load_ps((float*)&f);
 	return fttt;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(-1, -1, -1, 0));
@@ -655,7 +655,7 @@ inline BoolV BFTTT()
 
 inline BoolV BTFFF()
 {
-	// const PX_ALIGN(16, unsigned int f[4])={0xFFFFFFFF,0,0,0};
+	// const PX_ALIGN(16, uint32_t f[4])={0xFFFFFFFF,0,0,0};
 	// const __m128 tfff=_mm_load_ps((float*)&f);
 	// return tfff;
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(0, 0, 0, -1));
@@ -663,7 +663,7 @@ inline BoolV BTFFF()
 
 inline BoolV BTFFT()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0xFFFFFFFF,0,0,0xFFFFFFFF};
+	/*const PX_ALIGN(16, uint32_t f[4])={0xFFFFFFFF,0,0,0xFFFFFFFF};
 	const __m128 tfft=_mm_load_ps((float*)&f);
 	return tfft;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(-1, 0, 0, -1));
@@ -671,7 +671,7 @@ inline BoolV BTFFT()
 
 inline BoolV BTFTF()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0xFFFFFFFF,0,0xFFFFFFFF,0};
+	/*const PX_ALIGN(16, uint32_t f[4])={0xFFFFFFFF,0,0xFFFFFFFF,0};
 	const __m128 tftf=_mm_load_ps((float*)&f);
 	return tftf;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(0, -1, 0, -1));
@@ -679,7 +679,7 @@ inline BoolV BTFTF()
 
 inline BoolV BTFTT()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0xFFFFFFFF,0,0xFFFFFFFF,0xFFFFFFFF};
+	/*const PX_ALIGN(16, uint32_t f[4])={0xFFFFFFFF,0,0xFFFFFFFF,0xFFFFFFFF};
 	const __m128 tftt=_mm_load_ps((float*)&f);
 	return tftt;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(-1, -1, 0, -1));
@@ -687,7 +687,7 @@ inline BoolV BTFTT()
 
 inline BoolV BTTFF()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0xFFFFFFFF,0xFFFFFFFF,0,0};
+	/*const PX_ALIGN(16, uint32_t f[4])={0xFFFFFFFF,0xFFFFFFFF,0,0};
 	const __m128 ttff=_mm_load_ps((float*)&f);
 	return ttff;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(0, 0, -1, -1));
@@ -695,7 +695,7 @@ inline BoolV BTTFF()
 
 inline BoolV BTTFT()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0xFFFFFFFF,0xFFFFFFFF,0,0xFFFFFFFF};
+	/*const PX_ALIGN(16, uint32_t f[4])={0xFFFFFFFF,0xFFFFFFFF,0,0xFFFFFFFF};
 	const __m128 ttft=_mm_load_ps((float*)&f);
 	return ttft;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(-1, 0, -1, -1));
@@ -703,7 +703,7 @@ inline BoolV BTTFT()
 
 inline BoolV BTTTF()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0};
+	/*const PX_ALIGN(16, uint32_t f[4])={0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0};
 	const __m128 tttf=_mm_load_ps((float*)&f);
 	return tttf;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(0, -1, -1, -1));
@@ -711,7 +711,7 @@ inline BoolV BTTTF()
 
 inline BoolV BTTTT()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF};
+	/*const PX_ALIGN(16, uint32_t f[4])={0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF};
 	const __m128 tttt=_mm_load_ps((float*)&f);
 	return tttt;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(-1, -1, -1, -1));
@@ -719,7 +719,7 @@ inline BoolV BTTTT()
 
 inline BoolV BXMask()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0xFFFFFFFF,0,0,0};
+	/*const PX_ALIGN(16, uint32_t f[4])={0xFFFFFFFF,0,0,0};
 	const __m128 tfff=_mm_load_ps((float*)&f);
 	return tfff;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(0, 0, 0, -1));
@@ -727,7 +727,7 @@ inline BoolV BXMask()
 
 inline BoolV BYMask()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0,0xFFFFFFFF,0,0};
+	/*const PX_ALIGN(16, uint32_t f[4])={0,0xFFFFFFFF,0,0};
 	const __m128 ftff=_mm_load_ps((float*)&f);
 	return ftff;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(0, 0, -1, 0));
@@ -735,7 +735,7 @@ inline BoolV BYMask()
 
 inline BoolV BZMask()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0,0,0xFFFFFFFF,0};
+	/*const PX_ALIGN(16, uint32_t f[4])={0,0,0xFFFFFFFF,0};
 	const __m128 fftf=_mm_load_ps((float*)&f);
 	return fftf;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(0, -1, 0, 0));
@@ -743,7 +743,7 @@ inline BoolV BZMask()
 
 inline BoolV BWMask()
 {
-	/*const PX_ALIGN(16, unsigned int f[4])={0,0,0,0xFFFFFFFF};
+	/*const PX_ALIGN(16, uint32_t f[4])={0,0,0,0xFFFFFFFF};
 	const __m128 ffft=_mm_load_ps((float*)&f);
 	return ffft;*/
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(-1, 0, 0, 0));
@@ -1368,21 +1368,21 @@ inline Vec3V V3Clamp(const Vec3V a, const Vec3V minV, const Vec3V maxV)
 	return V3Max(V3Min(a, maxV), minV);
 }
 
-inline unsigned int V3AllGrtr(const Vec3V a, const Vec3V b)
+inline uint32_t V3AllGrtr(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return internalWindowsSimd::BAllTrue3_R(V4IsGrtr(a, b));
 }
 
-inline unsigned int V3AllGrtrOrEq(const Vec3V a, const Vec3V b)
+inline uint32_t V3AllGrtrOrEq(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return internalWindowsSimd::BAllTrue3_R(V4IsGrtrOrEq(a, b));
 }
 
-inline unsigned int V3AllEq(const Vec3V a, const Vec3V b)
+inline uint32_t V3AllEq(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
@@ -1553,27 +1553,27 @@ inline Vec4V V4SetZ(const Vec4V v, const FloatV f)
 }
 
 
-inline unsigned int V4AllGrtr(const Vec4V a, const Vec4V b)
+inline uint32_t V4AllGrtr(const Vec4V a, const Vec4V b)
 {
 	return internalWindowsSimd::BAllTrue4_R(V4IsGrtr(a, b));
 }
 
-inline unsigned int V4AllGrtrOrEq(const Vec4V a, const Vec4V b)
+inline uint32_t V4AllGrtrOrEq(const Vec4V a, const Vec4V b)
 {
 	return internalWindowsSimd::BAllTrue4_R(V4IsGrtrOrEq(a, b));
 }
 
-inline unsigned int V4AllGrtrOrEq3(const Vec4V a, const Vec4V b)
+inline uint32_t V4AllGrtrOrEq3(const Vec4V a, const Vec4V b)
 {
 	return internalWindowsSimd::BAllTrue3_R(V4IsGrtrOrEq(a, b));
 }
 
-inline unsigned int V4AllEq(const Vec4V a, const Vec4V b)
+inline uint32_t V4AllEq(const Vec4V a, const Vec4V b)
 {
 	return internalWindowsSimd::BAllTrue4_R(V4IsEq(a, b));
 }
 
-inline unsigned int V4AnyGrtr3(const Vec4V a, const Vec4V b)
+inline uint32_t V4AnyGrtr3(const Vec4V a, const Vec4V b)
 {
 	return internalWindowsSimd::BAnyTrue3_R(V4IsGrtr(a, b));
 }
@@ -1700,26 +1700,26 @@ inline BoolV BAnyTrue3(const BoolV a)
 	                 _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
 }
 
-inline unsigned int BAllEq(const BoolV a, const BoolV b)
+inline uint32_t BAllEq(const BoolV a, const BoolV b)
 {
 	const BoolV bTest = internalWindowsSimd::m128_I2F(
 	    _mm_cmpeq_epi32(internalWindowsSimd::m128_F2I(a), internalWindowsSimd::m128_F2I(b)));
 	return internalWindowsSimd::BAllTrue4_R(bTest);
 }
 
-inline unsigned int BAllEqTTTT(const BoolV a)
+inline uint32_t BAllEqTTTT(const BoolV a)
 {
-	return unsigned int(_mm_movemask_ps(a)==15);
+	return uint32_t(_mm_movemask_ps(a)==15);
 }
 
-inline unsigned int BAllEqFFFF(const BoolV a)
+inline uint32_t BAllEqFFFF(const BoolV a)
 {
-	return unsigned int(_mm_movemask_ps(a)==0);
+	return uint32_t(_mm_movemask_ps(a)==0);
 }
 
-inline unsigned int BGetBitMask(const BoolV a)
+inline uint32_t BGetBitMask(const BoolV a)
 {
-	return unsigned int(_mm_movemask_ps(a));
+	return uint32_t(_mm_movemask_ps(a));
 }
 
 inline Vec4V V4LoadXYZW(const float& x, const float& y, const float& z, const float& w)
@@ -1757,17 +1757,17 @@ inline VecU32V V4U32Andc(VecU32V a, VecU32V b)
 		_mm_andnot_si128(internalWindowsSimd::m128_F2I(b), internalWindowsSimd::m128_F2I(a)));
 }
 
-inline VecI32V U4Load(const unsigned int i)
+inline VecI32V U4Load(const uint32_t i)
 {
 	return _mm_load1_ps((float*)&i);
 }
 
-inline VecU32V U4LoadU(const unsigned int* i)
+inline VecU32V U4LoadU(const uint32_t* i)
 {
 	return _mm_loadu_ps((float*)i);
 }
 
-inline VecU32V U4LoadA(const unsigned int* i)
+inline VecU32V U4LoadA(const uint32_t* i)
 {
 	ASSERT_ISALIGNED16(i);
 	return _mm_load_ps((float*)i);
@@ -1861,7 +1861,7 @@ inline VecI32V VecI32V_ReinterpretFrom_Vec4V(Vec4V a)
 	return VecI32V(a);
 }
 
-inline VecU32V U4LoadXYZW(unsigned int x, unsigned int y, unsigned int z, unsigned int w)
+inline VecU32V U4LoadXYZW(uint32_t x, uint32_t y, uint32_t z, uint32_t w)
 {
 	VecU32V result;
 	result.m128_u32[0] = x;

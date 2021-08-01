@@ -16,12 +16,12 @@ bool IsBigEndian()
 	return false;
 }
 
-inline unsigned short FlipWORD(unsigned short in)
+inline uint16_t FlipWORD(uint16_t in)
 {
 	return ((in >> 8) | (in << 8));
 }
 
-inline unsigned int FlipDWORD(unsigned int in)
+inline uint32_t FlipDWORD(uint32_t in)
 {
 	return (((in & 0xFF000000) >> 24) | ((in & 0x000000FF) << 24) |
 		((in & 0x00FF0000) >> 8) | ((in & 0x0000FF00) << 8));
@@ -31,31 +31,31 @@ typedef struct RGBApixel {
 	RGBApixel() {}
 	RGBApixel(float s)
 	{
-		Blue = (unsigned char)(255 * s);
-		Green = (unsigned char)(255 * s);
-		Red = (unsigned char)(255 * s);
+		Blue = (uint8_t)(255 * s);
+		Green = (uint8_t)(255 * s);
+		Red = (uint8_t)(255 * s);
 		Alpha = 255;
 	}
-	RGBApixel(unsigned char b, unsigned char g, unsigned char r)
+	RGBApixel(uint8_t b, uint8_t g, uint8_t r)
 	{
 		Blue = b;
 		Green = g;
 		Red = r;
 		Alpha = 255;
 	}
-	unsigned char Blue;
-	unsigned char Green;
-	unsigned char Red;
-	unsigned char Alpha;
+	uint8_t Blue;
+	uint8_t Green;
+	uint8_t Red;
+	uint8_t Alpha;
 } RGBApixel;
 
 class BMFH {
 public:
-	unsigned short  bfType;
-	unsigned int bfSize;
-	unsigned short  bfReserved1;
-	unsigned short  bfReserved2;
-	unsigned int bfOffBits;
+	uint16_t  bfType;
+	uint32_t bfSize;
+	uint16_t  bfReserved1;
+	uint16_t  bfReserved2;
+	uint32_t bfOffBits;
 
 	BMFH()
 	{
@@ -75,17 +75,17 @@ public:
 
 class BMIH {
 public:
-	unsigned int biSize;
-	unsigned int biWidth;
-	unsigned int biHeight;
-	unsigned short  biPlanes;
-	unsigned short  biBitCount;
-	unsigned int biCompression;
-	unsigned int biSizeImage;
-	unsigned int biXPelsPerMeter;
-	unsigned int biYPelsPerMeter;
-	unsigned int biClrUsed;
-	unsigned int biClrImportant;
+	uint32_t biSize;
+	uint32_t biWidth;
+	uint32_t biHeight;
+	uint16_t  biPlanes;
+	uint16_t  biBitCount;
+	uint32_t biCompression;
+	uint32_t biSizeImage;
+	uint32_t biXPelsPerMeter;
+	uint32_t biYPelsPerMeter;
+	uint32_t biClrUsed;
+	uint32_t biClrImportant;
 
 	BMIH()
 	{
@@ -300,7 +300,7 @@ public:
 		Pixels[i][j] = NewPixel;
 	}
 
-	void SetPixel(int i, int j, unsigned char g, unsigned char b, unsigned char r)
+	void SetPixel(int i, int j, uint8_t g, uint8_t b, uint8_t r)
 	{
 		Pixels[i][j] = RGBApixel(g, b, r);
 	}
@@ -417,21 +417,21 @@ public:
 		// write the file header 
 
 		BMFH bmfh;
-		bmfh.bfSize = (unsigned int)dTotalFileSize;
+		bmfh.bfSize = (uint32_t)dTotalFileSize;
 		bmfh.bfReserved1 = 0;
 		bmfh.bfReserved2 = 0;
-		bmfh.bfOffBits = (unsigned int)(14 + 40 + dPaletteSize);
+		bmfh.bfOffBits = (uint32_t)(14 + 40 + dPaletteSize);
 
 		if (IsBigEndian())
 		{
 			bmfh.SwitchEndianess();
 		}
 
-		fwrite((char*)&(bmfh.bfType), sizeof(unsigned short), 1, fp);
-		fwrite((char*)&(bmfh.bfSize), sizeof(unsigned int), 1, fp);
-		fwrite((char*)&(bmfh.bfReserved1), sizeof(unsigned short), 1, fp);
-		fwrite((char*)&(bmfh.bfReserved2), sizeof(unsigned short), 1, fp);
-		fwrite((char*)&(bmfh.bfOffBits), sizeof(unsigned int), 1, fp);
+		fwrite((char*)&(bmfh.bfType), sizeof(uint16_t), 1, fp);
+		fwrite((char*)&(bmfh.bfSize), sizeof(uint32_t), 1, fp);
+		fwrite((char*)&(bmfh.bfReserved1), sizeof(uint16_t), 1, fp);
+		fwrite((char*)&(bmfh.bfReserved2), sizeof(uint16_t), 1, fp);
+		fwrite((char*)&(bmfh.bfOffBits), sizeof(uint32_t), 1, fp);
 
 		// write the info header 
 
@@ -442,7 +442,7 @@ public:
 		bmih.biPlanes = 1;
 		bmih.biBitCount = BitDepth;
 		bmih.biCompression = 0;
-		bmih.biSizeImage = (unsigned int)dTotalPixelBytes;
+		bmih.biSizeImage = (uint32_t)dTotalPixelBytes;
 		if (XPelsPerMeter)
 		{
 			bmih.biXPelsPerMeter = XPelsPerMeter;
@@ -474,17 +474,17 @@ public:
 			bmih.SwitchEndianess();
 		}
 
-		fwrite((char*)&(bmih.biSize), sizeof(unsigned int), 1, fp);
-		fwrite((char*)&(bmih.biWidth), sizeof(unsigned int), 1, fp);
-		fwrite((char*)&(bmih.biHeight), sizeof(unsigned int), 1, fp);
-		fwrite((char*)&(bmih.biPlanes), sizeof(unsigned short), 1, fp);
-		fwrite((char*)&(bmih.biBitCount), sizeof(unsigned short), 1, fp);
-		fwrite((char*)&(bmih.biCompression), sizeof(unsigned int), 1, fp);
-		fwrite((char*)&(bmih.biSizeImage), sizeof(unsigned int), 1, fp);
-		fwrite((char*)&(bmih.biXPelsPerMeter), sizeof(unsigned int), 1, fp);
-		fwrite((char*)&(bmih.biYPelsPerMeter), sizeof(unsigned int), 1, fp);
-		fwrite((char*)&(bmih.biClrUsed), sizeof(unsigned int), 1, fp);
-		fwrite((char*)&(bmih.biClrImportant), sizeof(unsigned int), 1, fp);
+		fwrite((char*)&(bmih.biSize), sizeof(uint32_t), 1, fp);
+		fwrite((char*)&(bmih.biWidth), sizeof(uint32_t), 1, fp);
+		fwrite((char*)&(bmih.biHeight), sizeof(uint32_t), 1, fp);
+		fwrite((char*)&(bmih.biPlanes), sizeof(uint16_t), 1, fp);
+		fwrite((char*)&(bmih.biBitCount), sizeof(uint16_t), 1, fp);
+		fwrite((char*)&(bmih.biCompression), sizeof(uint32_t), 1, fp);
+		fwrite((char*)&(bmih.biSizeImage), sizeof(uint32_t), 1, fp);
+		fwrite((char*)&(bmih.biXPelsPerMeter), sizeof(uint32_t), 1, fp);
+		fwrite((char*)&(bmih.biYPelsPerMeter), sizeof(uint32_t), 1, fp);
+		fwrite((char*)&(bmih.biClrUsed), sizeof(uint32_t), 1, fp);
+		fwrite((char*)&(bmih.biClrImportant), sizeof(uint32_t), 1, fp);
 
 		// write the palette 
 		if (BitDepth == 1 || BitDepth == 4 || BitDepth == 8)
@@ -512,7 +512,7 @@ public:
 		int i, j;
 		if (BitDepth != 16)
 		{
-			unsigned char* Buffer;
+			uint8_t* Buffer;
 			int BufferSize = (int)((Width * BitDepth) / 8.0);
 			while (8 * BufferSize < Width * BitDepth)
 			{
@@ -523,7 +523,7 @@ public:
 				BufferSize++;
 			}
 
-			Buffer = new unsigned char[BufferSize];
+			Buffer = new uint8_t[BufferSize];
 			for (j = 0; j < BufferSize; j++)
 			{
 				Buffer[j] = 0;
@@ -576,10 +576,10 @@ public:
 		{
 			// write the bit masks
 
-			unsigned short BlueMask = 31;    // bits 12-16
-			unsigned short GreenMask = 2016; // bits 6-11
-			unsigned short RedMask = 63488;  // bits 1-5
-			unsigned short ZeroWORD;
+			uint16_t BlueMask = 31;    // bits 12-16
+			uint16_t GreenMask = 2016; // bits 6-11
+			uint16_t RedMask = 63488;  // bits 1-5
+			uint16_t ZeroWORD;
 
 			if (IsBigEndian())
 			{
@@ -614,11 +614,11 @@ public:
 				int WriteNumber = 0;
 				while (WriteNumber < DataBytes)
 				{
-					unsigned short TempWORD;
+					uint16_t TempWORD;
 
-					unsigned short RedWORD = (unsigned short)((Pixels[i][j]).Red / 8);
-					unsigned short GreenWORD = (unsigned short)((Pixels[i][j]).Green / 4);
-					unsigned short BlueWORD = (unsigned short)((Pixels[i][j]).Blue / 8);
+					uint16_t RedWORD = (uint16_t)((Pixels[i][j]).Red / 8);
+					uint16_t GreenWORD = (uint16_t)((Pixels[i][j]).Green / 4);
+					uint16_t BlueWORD = (uint16_t)((Pixels[i][j]).Blue / 8);
 
 					TempWORD = (RedWORD << 11) + (GreenWORD << 5) + BlueWORD;
 					if (IsBigEndian())
@@ -634,7 +634,7 @@ public:
 				WriteNumber = 0;
 				while (WriteNumber < PaddingBytes)
 				{
-					unsigned char TempBYTE;
+					uint8_t TempBYTE;
 					fwrite((char*)&TempBYTE, 1, 1, fp);
 					WriteNumber++;
 				}
@@ -661,7 +661,7 @@ public:
 		BMFH bmfh;
 		bool NotCorrupted = true;
 
-		NotCorrupted &= SafeFread((char*)&(bmfh.bfType), sizeof(unsigned short), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmfh.bfType), sizeof(uint16_t), 1, fp);
 
 		bool IsBitmap = false;
 
@@ -680,10 +680,10 @@ public:
 			return false;
 		}
 
-		NotCorrupted &= SafeFread((char*)&(bmfh.bfSize), sizeof(unsigned int), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmfh.bfReserved1), sizeof(unsigned short), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmfh.bfReserved2), sizeof(unsigned short), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmfh.bfOffBits), sizeof(unsigned int), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmfh.bfSize), sizeof(uint32_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmfh.bfReserved1), sizeof(uint16_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmfh.bfReserved2), sizeof(uint16_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmfh.bfOffBits), sizeof(uint32_t), 1, fp);
 
 		if (IsBigEndian())
 		{
@@ -694,18 +694,18 @@ public:
 
 		BMIH bmih;
 
-		NotCorrupted &= SafeFread((char*)&(bmih.biSize), sizeof(unsigned int), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmih.biWidth), sizeof(unsigned int), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmih.biHeight), sizeof(unsigned int), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmih.biPlanes), sizeof(unsigned short), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmih.biBitCount), sizeof(unsigned short), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmih.biSize), sizeof(uint32_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmih.biWidth), sizeof(uint32_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmih.biHeight), sizeof(uint32_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmih.biPlanes), sizeof(uint16_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmih.biBitCount), sizeof(uint16_t), 1, fp);
 
-		NotCorrupted &= SafeFread((char*)&(bmih.biCompression), sizeof(unsigned int), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmih.biSizeImage), sizeof(unsigned int), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmih.biXPelsPerMeter), sizeof(unsigned int), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmih.biYPelsPerMeter), sizeof(unsigned int), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmih.biClrUsed), sizeof(unsigned int), 1, fp);
-		NotCorrupted &= SafeFread((char*)&(bmih.biClrImportant), sizeof(unsigned int), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmih.biCompression), sizeof(uint32_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmih.biSizeImage), sizeof(uint32_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmih.biXPelsPerMeter), sizeof(uint32_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmih.biYPelsPerMeter), sizeof(uint32_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmih.biClrUsed), sizeof(uint32_t), 1, fp);
+		NotCorrupted &= SafeFread((char*)&(bmih.biClrImportant), sizeof(uint32_t), 1, fp);
 
 		if (IsBigEndian())
 		{
@@ -844,8 +844,8 @@ public:
 		}
 		if (BytesToSkip > 0 && BitDepth != 16)
 		{
-			unsigned char* TempSkipBYTE;
-			TempSkipBYTE = new unsigned char[BytesToSkip];
+			uint8_t* TempSkipBYTE;
+			TempSkipBYTE = new uint8_t[BytesToSkip];
 			SafeFread((char*)TempSkipBYTE, BytesToSkip, 1, fp);
 			delete[] TempSkipBYTE;
 		}
@@ -865,8 +865,8 @@ public:
 			{
 				BufferSize++;
 			}
-			unsigned char* Buffer;
-			Buffer = new unsigned char[BufferSize];
+			uint8_t* Buffer;
+			Buffer = new uint8_t[BufferSize];
 			j = Height - 1;
 			while (j > -1)
 			{
@@ -915,9 +915,9 @@ public:
 
 			// set the default mask
 
-			unsigned short BlueMask = 31; // bits 12-16
-			unsigned short GreenMask = 992; // bits 7-11
-			unsigned short RedMask = 31744; // bits 2-6
+			uint16_t BlueMask = 31; // bits 12-16
+			uint16_t GreenMask = 992; // bits 7-11
+			uint16_t RedMask = 31744; // bits 2-6
 
 			// read the bit fields, if necessary, to 
 			// override the default 5-5-5 mask
@@ -926,8 +926,8 @@ public:
 			{
 				// read the three bit masks
 
-				unsigned short TempMaskWORD;
-				// unsigned short ZeroWORD;
+				uint16_t TempMaskWORD;
+				// uint16_t ZeroWORD;
 
 				SafeFread((char*)&RedMask, 2, 1, fp);
 				if (IsBigEndian())
@@ -955,8 +955,8 @@ public:
 
 			if (BytesToSkip > 0)
 			{
-				unsigned char* TempSkipBYTE;
-				TempSkipBYTE = new unsigned char[BytesToSkip];
+				uint8_t* TempSkipBYTE;
+				TempSkipBYTE = new uint8_t[BytesToSkip];
 				SafeFread((char*)TempSkipBYTE, BytesToSkip, 1, fp);
 				delete[] TempSkipBYTE;
 			}
@@ -964,7 +964,7 @@ public:
 			// determine the red, green and blue shifts
 
 			int GreenShift = 0;
-			unsigned short TempShiftWORD = GreenMask;
+			uint16_t TempShiftWORD = GreenMask;
 			while (TempShiftWORD > 31)
 			{
 				TempShiftWORD = TempShiftWORD >> 1; GreenShift++;
@@ -990,7 +990,7 @@ public:
 				int ReadNumber = 0;
 				while (ReadNumber < DataBytes)
 				{
-					unsigned short TempWORD;
+					uint16_t TempWORD;
 					SafeFread((char*)&TempWORD, 2, 1, fp);
 					if (IsBigEndian())
 					{
@@ -998,13 +998,13 @@ public:
 					}
 					ReadNumber += 2;
 
-					unsigned short Red = RedMask & TempWORD;
-					unsigned short Green = GreenMask & TempWORD;
-					unsigned short Blue = BlueMask & TempWORD;
+					uint16_t Red = RedMask & TempWORD;
+					uint16_t Green = GreenMask & TempWORD;
+					uint16_t Blue = BlueMask & TempWORD;
 
-					unsigned char BlueBYTE = (unsigned char)8 * (Blue >> BlueShift);
-					unsigned char GreenBYTE = (unsigned char)8 * (Green >> GreenShift);
-					unsigned char RedBYTE = (unsigned char)8 * (Red >> RedShift);
+					uint8_t BlueBYTE = (uint8_t)8 * (Blue >> BlueShift);
+					uint8_t GreenBYTE = (uint8_t)8 * (Green >> GreenShift);
+					uint8_t RedBYTE = (uint8_t)8 * (Red >> RedShift);
 
 					(Pixels[i][j]).Red = RedBYTE;
 					(Pixels[i][j]).Green = GreenBYTE;
@@ -1015,7 +1015,7 @@ public:
 				ReadNumber = 0;
 				while (ReadNumber < PaddingBytes)
 				{
-					unsigned char TempBYTE;
+					uint8_t TempBYTE;
 					SafeFread((char*)&TempBYTE, 1, 1, fp);
 					ReadNumber++;
 				}
@@ -1079,12 +1079,12 @@ private:
 	int XPelsPerMeter;
 	int YPelsPerMeter;
 
-	unsigned char* MetaData1;
+	uint8_t* MetaData1;
 	int SizeOfMetaData1;
-	unsigned char* MetaData2;
+	uint8_t* MetaData2;
 	int SizeOfMetaData2;
 
-	bool Read32bitRow(unsigned char* Buffer, int BufferSize, int Row)
+	bool Read32bitRow(uint8_t* Buffer, int BufferSize, int Row)
 	{
 		int i;
 		if (Width * 4 > BufferSize)
@@ -1098,7 +1098,7 @@ private:
 		return true;
 	}
 
-	bool Read24bitRow(unsigned char* Buffer, int BufferSize, int Row)
+	bool Read24bitRow(uint8_t* Buffer, int BufferSize, int Row)
 	{
 		int i;
 		if (Width * 3 > BufferSize)
@@ -1112,7 +1112,7 @@ private:
 		return true;
 	}
 
-	bool Read8bitRow(unsigned char* Buffer, int BufferSize, int Row)
+	bool Read8bitRow(uint8_t* Buffer, int BufferSize, int Row)
 	{
 		int i;
 		if (Width > BufferSize)
@@ -1127,7 +1127,7 @@ private:
 		return true;
 	}
 
-	bool Read4bitRow(unsigned char* Buffer, int BufferSize, int Row)
+	bool Read4bitRow(uint8_t* Buffer, int BufferSize, int Row)
 	{
 		int Shifts[2] = { 4  ,0 };
 		int Masks[2] = { 240,15 };
@@ -1153,7 +1153,7 @@ private:
 		return true;
 	}
 
-	bool Read1bitRow(unsigned char* Buffer, int BufferSize, int Row)
+	bool Read1bitRow(uint8_t* Buffer, int BufferSize, int Row)
 	{
 		int Shifts[8] = { 7  ,6 ,5 ,4 ,3,2,1,0 };
 		int Masks[8] = { 128,64,32,16,8,4,2,1 };
@@ -1180,7 +1180,7 @@ private:
 		return true;
 	}
 
-	bool Write32bitRow(unsigned char* Buffer, int BufferSize, int Row)
+	bool Write32bitRow(uint8_t* Buffer, int BufferSize, int Row)
 	{
 		int i;
 		if (Width * 4 > BufferSize)
@@ -1194,7 +1194,7 @@ private:
 		return true;
 	}
 
-	bool Write24bitRow(unsigned char* Buffer, int BufferSize, int Row)
+	bool Write24bitRow(uint8_t* Buffer, int BufferSize, int Row)
 	{
 		int i;
 		if (Width * 3 > BufferSize)
@@ -1208,7 +1208,7 @@ private:
 		return true;
 	}
 
-	bool Write8bitRow(unsigned char* Buffer, int BufferSize, int Row)
+	bool Write8bitRow(uint8_t* Buffer, int BufferSize, int Row)
 	{
 		int i;
 		if (Width > BufferSize)
@@ -1222,7 +1222,7 @@ private:
 		return true;
 	}
 
-	bool Write4bitRow(unsigned char* Buffer, int BufferSize, int Row)
+	bool Write4bitRow(uint8_t* Buffer, int BufferSize, int Row)
 	{
 		int PositionWeights[2] = { 16,1 };
 
@@ -1242,13 +1242,13 @@ private:
 				Index += (PositionWeights[j] * (int)FindClosestColor(Pixels[i][Row]));
 				i++; j++;
 			}
-			Buffer[k] = (unsigned char)Index;
+			Buffer[k] = (uint8_t)Index;
 			k++;
 		}
 		return true;
 	}
 
-	bool Write1bitRow(unsigned char* Buffer, int BufferSize, int Row)
+	bool Write1bitRow(uint8_t* Buffer, int BufferSize, int Row)
 	{
 		int PositionWeights[8] = { 128,64,32,16,8,4,2,1 };
 
@@ -1268,17 +1268,17 @@ private:
 				Index += (PositionWeights[j] * (int)FindClosestColor(Pixels[i][Row]));
 				i++; j++;
 			}
-			Buffer[k] = (unsigned char)Index;
+			Buffer[k] = (uint8_t)Index;
 			k++;
 		}
 		return true;
 	}
 
-	unsigned char FindClosestColor(RGBApixel& input)
+	uint8_t FindClosestColor(RGBApixel& input)
 	{
 		int i = 0;
 		int NumberOfColors = GetNumberOfColors();
-		unsigned char BestI = 0;
+		uint8_t BestI = 0;
 		int BestMatch = 999999;
 
 		while (i < NumberOfColors)
@@ -1289,7 +1289,7 @@ private:
 				+ IntSquare((int)Attempt.Blue - (int)input.Blue);
 			if (TempMatch < BestMatch)
 			{
-				BestI = (unsigned char)i; BestMatch = TempMatch;
+				BestI = (uint8_t)i; BestMatch = TempMatch;
 			}
 			if (BestMatch < 1)
 			{

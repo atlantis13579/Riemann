@@ -73,7 +73,7 @@ struct AABBTreeNodeInference
 	}
 
 	Box3d				BV;
-	unsigned int				Data;	// 27 bits node or prim index|4 bits #prims|1 bit leaf
+	uint32_t				Data;	// 27 bits node or prim index|4 bits #prims|1 bit leaf
 };
 
 static_assert(sizeof(AABBTreeNodeInference) == 28, "Size of AABBTreeNodeInference is not valid");

@@ -18,28 +18,28 @@ struct RTreeNodeNQ
 	RTreeNodeNQ() : bounds(Box3d::Empty()), childPageFirstNodeIndex(-1), leafCount(0) {}
 };
 
-static const unsigned int NTRADEOFF = 15;
+static const uint32_t NTRADEOFF = 15;
 //	%  -24 -23 -17 -15 -10  -8  -5  -3   0  +3  +3  +5  +7   +8    +9  - % raycast MeshSurface*Random benchmark perf
 //  K  717 734 752 777 793 811 824 866 903 939 971 1030 1087 1139 1266 - testzone size in K
 //  #    0   1   2   3   4   5   6   7   8   9  10  11  12   13     14 - preset number
-static const unsigned int stopAtTrisPerPage[NTRADEOFF] = { 64, 60, 56, 48, 46, 44, 40, 36, 32, 28, 24, 20, 16,  12,    12 };
-static const unsigned int stopAtTrisPerLeaf[NTRADEOFF] = { 16, 14, 12, 10,  9,  8,  8,  6,  5,  5,  5,  4,  4,   4,     2 }; // capped at 2 anyway
+static const uint32_t stopAtTrisPerPage[NTRADEOFF] = { 64, 60, 56, 48, 46, 44, 40, 36, 32, 28, 24, 20, 16,  12,    12 };
+static const uint32_t stopAtTrisPerLeaf[NTRADEOFF] = { 16, 14, 12, 10,  9,  8,  8,  6,  5,  5,  5,  4,  4,   4,     2 }; // capped at 2 anyway
 
 // auxiliary class for SAH build (SAH = surface area heuristic)
 struct Interval
 {
-	unsigned int start, count;
-	Interval(unsigned int s, unsigned int c) : start(s), count(c) {}
+	uint32_t start, count;
+	Interval(uint32_t s, uint32_t c) : start(s), count(c) {}
 };
 
 struct SortBoundsPredicate
 {
-	unsigned int coordIndex;
+	uint32_t coordIndex;
 	const Box3d* allBounds;
-	SortBoundsPredicate(unsigned int coordIndex_, const Box3d* allBounds_) : coordIndex(coordIndex_), allBounds(allBounds_)
+	SortBoundsPredicate(uint32_t coordIndex_, const Box3d* allBounds_) : coordIndex(coordIndex_), allBounds(allBounds_)
 	{}
 
-	bool operator()(const unsigned int& idx1, const unsigned int& idx2) const
+	bool operator()(const uint32_t& idx1, const uint32_t& idx2) const
 	{
 		// using the bounds center for comparison
 		float center1 = allBounds[idx1].Min[coordIndex] + allBounds[idx1].Max[coordIndex];
@@ -50,12 +50,12 @@ struct SortBoundsPredicate
 
 struct RTreeRemap
 {
-	unsigned int mNbTris;
-	RTreeRemap(unsigned int numTris) : mNbTris(numTris)
+	uint32_t mNbTris;
+	RTreeRemap(uint32_t numTris) : mNbTris(numTris)
 	{
 	}
 
-	virtual void remap(unsigned int* val, unsigned int start, unsigned int leafCount)
+	virtual void remap(uint32_t* val, uint32_t start, uint32_t leafCount)
 	{
 		assert(leafCount > 0);
 		assert(leafCount <= 16); // sanity check
@@ -77,30 +77,30 @@ static float SAH(const Vector3d& v)
 
 struct SubSortSAH
 {
-	unsigned int* permuteStart, * tempPermute;
+	uint32_t* permuteStart, * tempPermute;
 	const Box3d* allBounds;
 	float* metricL;
 	float* metricR;
-	const unsigned int* xOrder, * yOrder, * zOrder;
-	const unsigned int* xRanks, * yRanks, * zRanks;
-	unsigned int* tempRanks;
-	unsigned int nbTotalBounds;
-	unsigned int iTradeOff;
+	const uint32_t* xOrder, * yOrder, * zOrder;
+	const uint32_t* xRanks, * yRanks, * zRanks;
+	uint32_t* tempRanks;
+	uint32_t nbTotalBounds;
+	uint32_t iTradeOff;
 
 	// precompute various values used during sort
 	SubSortSAH(
-		unsigned int* permute, const Box3d* allBounds_, unsigned int numBounds,
-		const unsigned int* xOrder_, const unsigned int* yOrder_, const unsigned int* zOrder_,
-		const unsigned int* xRanks_, const unsigned int* yRanks_, const unsigned int* zRanks_, float sizePerfTradeOff01)
+		uint32_t* permute, const Box3d* allBounds_, uint32_t numBounds,
+		const uint32_t* xOrder_, const uint32_t* yOrder_, const uint32_t* zOrder_,
+		const uint32_t* xRanks_, const uint32_t* yRanks_, const uint32_t* zRanks_, float sizePerfTradeOff01)
 		: permuteStart(permute), allBounds(allBounds_),
 		xOrder(xOrder_), yOrder(yOrder_), zOrder(zOrder_),
 		xRanks(xRanks_), yRanks(yRanks_), zRanks(zRanks_), nbTotalBounds(numBounds)
 	{
 		metricL = new float[numBounds];
 		metricR = new float[numBounds];
-		tempPermute = new unsigned int[numBounds * 2 + 1];
-		tempRanks = new unsigned int[numBounds];
-		iTradeOff = std::min(unsigned int(std::min<float>(0.0f, sizePerfTradeOff01) * NTRADEOFF), NTRADEOFF - 1);
+		tempPermute = new uint32_t[numBounds * 2 + 1];
+		tempRanks = new uint32_t[numBounds];
+		iTradeOff = std::min(uint32_t(std::min<float>(0.0f, sizePerfTradeOff01) * NTRADEOFF), NTRADEOFF - 1);
 	}
 
 	~SubSortSAH() // release temporarily used memory
@@ -113,7 +113,7 @@ struct SubSortSAH
 
 	////////////////////////////////////////////////////////////////////
 	// returns split position for second array start relative to permute ptr
-	unsigned int split(unsigned int* permute, unsigned int clusterSize)
+	uint32_t split(uint32_t* permute, uint32_t clusterSize)
 	{
 		if (clusterSize <= 1)
 			return 0;
@@ -134,30 +134,30 @@ struct SubSortSAH
 		// pick the best axis with some splitting metric
 		// axis index is X=0, Y=1, Z=2
 		float minMetric[3];
-		unsigned int minMetricSplit[3];
-		const unsigned int* ranks3[3] = { xRanks, yRanks, zRanks };
-		const unsigned int* orders3[3] = { xOrder, yOrder, zOrder };
-		for (unsigned int coordIndex = 0; coordIndex <= 2; coordIndex++)
+		uint32_t minMetricSplit[3];
+		const uint32_t* ranks3[3] = { xRanks, yRanks, zRanks };
+		const uint32_t* orders3[3] = { xOrder, yOrder, zOrder };
+		for (uint32_t coordIndex = 0; coordIndex <= 2; coordIndex++)
 		{
 			SortBoundsPredicate sortPredicateLR(coordIndex, allBounds);
 
-			const unsigned int* rank = ranks3[coordIndex];
-			const unsigned int* order = orders3[coordIndex];
+			const uint32_t* rank = ranks3[coordIndex];
+			const uint32_t* order = orders3[coordIndex];
 
 			// build ranks in tempPermute
 			if (clusterSize == nbTotalBounds) // AP: about 4% perf gain from this optimization
 			{
 				// if this is a full cluster sort, we already have it done
-				for (unsigned int i = 0; i < clusterSize; i++)
+				for (uint32_t i = 0; i < clusterSize; i++)
 					tempPermute[i] = order[i];
 			}
 			else
 			{
 				// sort the tempRanks
-				for (unsigned int i = 0; i < clusterSize; i++)
+				for (uint32_t i = 0; i < clusterSize; i++)
 					tempRanks[i] = rank[permute[i]];
 				std::sort(tempRanks, tempRanks + clusterSize);
-				for (unsigned int i = 0; i < clusterSize; i++) // convert back from ranks to indices
+				for (uint32_t i = 0; i < clusterSize; i++) // convert back from ranks to indices
 					tempPermute[i] = order[tempRanks[i]];
 			}
 
@@ -176,7 +176,7 @@ struct SubSortSAH
 				boundsLmx = boundsLmx.Max(allBounds[tempPermute[ii]].Max);
 			}
 
-			unsigned int countL0 = 0;
+			uint32_t countL0 = 0;
 			for (ii = splitStartL; ii <= splitEndL; ii++) // compute metric for inclusive bounds from splitStartL to splitEndL
 			{
 				boundsLmn = boundsLmn.Min(allBounds[tempPermute[ii]].Min);
@@ -194,7 +194,7 @@ struct SubSortSAH
 				boundsRmx = boundsRmx.Max(allBounds[tempPermute[ii]].Max);
 			}
 
-			unsigned int countR0 = 0;
+			uint32_t countR0 = 0;
 			for (ii = splitStartR; ii >= splitEndR; ii--) // continue sweeping left, including bounds and recomputing the metric
 			{
 				boundsRmn = boundsRmn.Min(allBounds[tempPermute[ii]].Min);
@@ -202,10 +202,10 @@ struct SubSortSAH
 				metricR[countR0++] = SAH(boundsRmx - boundsRmn);
 			}
 
-			assert((countL0 == countR0) && (countL0 == unsigned int(splitEndL - splitStartL + 1)));
+			assert((countL0 == countR0) && (countL0 == uint32_t(splitEndL - splitStartL + 1)));
 
 			// now iterate over splitRange and compute the minimum sum of SAHLeft*countLeft + SAHRight*countRight
-			unsigned int minMetricSplitPosition = 0;
+			uint32_t minMetricSplitPosition = 0;
 			float minMetricLocal = FLT_MAX;
 			const int hsI32 = int(clusterSize / 2);
 			const int splitRange = (splitEndL - splitStartL + 1);
@@ -213,10 +213,10 @@ struct SubSortSAH
 			{
 				float countL = float(ii + minCount); // need to add minCount since ii iterates over splitRange
 				float countR = float(splitRange - ii - 1 + minCount);
-				assert(unsigned int(countL + countR) == clusterSize);
+				assert(uint32_t(countL + countR) == clusterSize);
 
 				const float metric = (countL * metricL[ii] + countR * metricR[splitRange - ii - 1]);
-				const unsigned int splitPos = unsigned int(ii + splitStartL);
+				const uint32_t splitPos = uint32_t(ii + splitStartL);
 				if (metric < minMetricLocal ||
 					(metric <= minMetricLocal && // same metric but more even split
 						abs(int(splitPos) - hsI32) < abs(int(minMetricSplitPosition) - hsI32)))
@@ -232,43 +232,43 @@ struct SubSortSAH
 			// sum of axis lengths for both left and right AABBs
 		}
 
-		unsigned int winIndex = 2;
+		uint32_t winIndex = 2;
 		if (minMetric[0] <= minMetric[1] && minMetric[0] <= minMetric[2])
 			winIndex = 0;
 		else if (minMetric[1] <= minMetric[2])
 			winIndex = 1;
 
-		const unsigned int* rank = ranks3[winIndex];
-		const unsigned int* order = orders3[winIndex];
+		const uint32_t* rank = ranks3[winIndex];
+		const uint32_t* order = orders3[winIndex];
 		if (clusterSize == nbTotalBounds) // AP: about 4% gain from this special case optimization
 		{
 			// if this is a full cluster sort, we already have it done
-			for (unsigned int i = 0; i < clusterSize; i++)
+			for (uint32_t i = 0; i < clusterSize; i++)
 				permute[i] = order[i];
 		}
 		else
 		{
 			// sort the tempRanks
-			for (unsigned int i = 0; i < clusterSize; i++)
+			for (uint32_t i = 0; i < clusterSize; i++)
 				tempRanks[i] = rank[permute[i]];
 			std::sort(tempRanks, tempRanks + clusterSize);
-			for (unsigned int i = 0; i < clusterSize; i++)
+			for (uint32_t i = 0; i < clusterSize; i++)
 				permute[i] = order[tempRanks[i]];
 		}
 
-		unsigned int splitPoint = minMetricSplit[winIndex];
+		uint32_t splitPoint = minMetricSplit[winIndex];
 		if (clusterSize == 3 && splitPoint == 0)
 			splitPoint = 1; // special case due to rounding
 		return splitPoint;
 	}
 
 	// compute surface area for a given split
-	float computeSA(const unsigned int* permute, const Interval& split) // both permute and i are relative
+	float computeSA(const uint32_t* permute, const Interval& split) // both permute and i are relative
 	{
 		assert(split.count >= 1);
 		Vector3d bmn = allBounds[permute[split.start]].Min;
 		Vector3d bmx = allBounds[permute[split.start]].Max;
-		for (unsigned int i = 1; i < split.count; i++)
+		for (uint32_t i = 1; i < split.count; i++)
 		{
 			const Box3d& b1 = allBounds[permute[split.start + i]];
 			bmn = bmn.Min(b1.Min);
@@ -280,16 +280,16 @@ struct SubSortSAH
 
 	////////////////////////////////////////////////////////////////////
 	// main SAH sort routine
-	void sort4(unsigned int* permute, unsigned int clusterSize,
-		std::vector<RTreeNodeNQ>& resultTree, unsigned int& maxLevels, unsigned int level = 0, RTreeNodeNQ* parentNode = NULL)
+	void sort4(uint32_t* permute, uint32_t clusterSize,
+		std::vector<RTreeNodeNQ>& resultTree, uint32_t& maxLevels, uint32_t level = 0, RTreeNodeNQ* parentNode = NULL)
 	{
 		if (level == 0)
 			maxLevels = 1;
 		else
 			maxLevels = std::max(maxLevels, level + 1);
 
-		unsigned int splitPos[RTREE_N];
-		for (unsigned int j = 0; j < RTREE_N; j++)
+		uint32_t splitPos[RTREE_N];
+		for (uint32_t j = 0; j < RTREE_N; j++)
 			splitPos[j] = j + 1;
 
 		if (clusterSize >= RTREE_N)
@@ -301,11 +301,11 @@ struct SubSortSAH
 			// AP scaffold: possible optimization - seems like computeSA can be cached for unchanged intervals
 			std::vector<Interval> splits;
 			splits.push_back(Interval(0, clusterSize));
-			for (unsigned int iSplit = 0; iSplit < RTREE_N - 1; iSplit++)
+			for (uint32_t iSplit = 0; iSplit < RTREE_N - 1; iSplit++)
 			{
 				float maxSAH = -FLT_MAX;
-				unsigned int maxSplit = 0xFFFFffff;
-				for (unsigned int i = 0; i < splits.size(); i++)
+				uint32_t maxSplit = 0xFFFFffff;
+				for (uint32_t i = 0; i < splits.size(); i++)
 				{
 					if (splits[i].count == 1)
 						continue;
@@ -322,7 +322,7 @@ struct SubSortSAH
 				// we now split it into 2 using the split() function
 				Interval old = splits[maxSplit];
 				assert(old.count > 1);
-				unsigned int splitLocal = split(permute + old.start, old.count); // relative split pos
+				uint32_t splitLocal = split(permute + old.start, old.count); // relative split pos
 
 				assert(splitLocal >= 1);
 				assert(old.count - splitLocal >= 1);
@@ -335,15 +335,15 @@ struct SubSortSAH
 
 			// verification code, make sure split counts add up to clusterSize
 			assert(splits.size() == RTREE_N);
-			unsigned int sum = 0;
-			for (unsigned int j = 0; j < RTREE_N; j++)
+			uint32_t sum = 0;
+			for (uint32_t j = 0; j < RTREE_N; j++)
 				sum += splits[j].count;
 			assert(sum == clusterSize);
 		}
 		else // clusterSize < RTREE_N
 		{
 			// make it so splitCounts based on splitPos add up correctly for small cluster sizes
-			for (unsigned int i = clusterSize; i < RTREE_N - 1; i++)
+			for (uint32_t i = clusterSize; i < RTREE_N - 1; i++)
 				splitPos[i] = clusterSize;
 		}
 
@@ -352,12 +352,12 @@ struct SubSortSAH
 		splitPos[RTREE_N - 1] = clusterSize; // splitCount[n] is computed as splitPos[n+1]-splitPos[n], so we need to add this last value
 
 		// now compute splitStarts and splitCounts from splitPos[] array. Also perform a bunch of correctness verification
-		unsigned int splitStarts[RTREE_N];
-		unsigned int splitCounts[RTREE_N];
+		uint32_t splitStarts[RTREE_N];
+		uint32_t splitCounts[RTREE_N];
 		splitStarts[0] = 0;
 		splitCounts[0] = splitPos[0];
-		unsigned int sumCounts = splitCounts[0];
-		for (unsigned int j = 1; j < RTREE_N; j++)
+		uint32_t sumCounts = splitCounts[0];
+		for (uint32_t j = 1; j < RTREE_N; j++)
 		{
 			splitStarts[j] = splitPos[j - 1];
 			assert(splitStarts[j - 1] <= splitStarts[j]);
@@ -373,15 +373,15 @@ struct SubSortSAH
 		bool terminalClusterByTotalCount = (clusterSize <= stopAtTrisPerPage[iTradeOff]);
 		// iterate over splitCounts for the current cluster, if any of counts exceed 16 (which is the maximum supported by LeafTriangles
 		// we cannot mark this cluster as terminal (has to be split more)
-		for (unsigned int s = 0; s < RTREE_N; s++)
+		for (uint32_t s = 0; s < RTREE_N; s++)
 			if (splitCounts[s] > 16) // LeafTriangles doesn't support > 16 tris
 				terminalClusterByTotalCount = false;
 
 		// iterate over all the splits
-		for (unsigned int s = 0; s < RTREE_N; s++)
+		for (uint32_t s = 0; s < RTREE_N; s++)
 		{
 			RTreeNodeNQ rtn;
-			unsigned int splitCount = splitCounts[s];
+			uint32_t splitCount = splitCounts[s];
 			if (splitCount > 0) // splits shouldn't be empty generally
 			{
 				// sweep left to right and compute min and max SAH for each individual bound in current split
@@ -389,9 +389,9 @@ struct SubSortSAH
 				float sahMin = SAH(b.GetExtent());
 				float sahMax = sahMin;
 				// AP scaffold - looks like this could be optimized (we are recomputing bounds top down)
-				for (unsigned int i = 1; i < splitCount; i++)
+				for (uint32_t i = 1; i < splitCount; i++)
 				{
-					unsigned int localIndex = i + splitStarts[s];
+					uint32_t localIndex = i + splitStarts[s];
 					const Box3d& b1 = allBounds[permute[localIndex]];
 					float sah1 = SAH(b1.GetExtent());
 					sahMin = std::min(sahMin, sah1);
@@ -440,8 +440,8 @@ struct SubSortSAH
 			return;
 
 		// recurse on subpages
-		unsigned int parentIndex = (unsigned int)resultTree.size() - RTREE_N; // save the parentIndex as specified (array can be resized during recursion)
-		for (unsigned int s = 0; s < RTREE_N; s++)
+		uint32_t parentIndex = (uint32_t)resultTree.size() - RTREE_N; // save the parentIndex as specified (array can be resized during recursion)
+		for (uint32_t s = 0; s < RTREE_N; s++)
 		{
 			RTreeNodeNQ* sParent = &resultTree[parentIndex + s]; // array can be resized and relocated during recursion
 			if (sParent->leafCount == 0) // only split pages that were marked as non-terminal during splitting (see "label ZZZ" above)
@@ -456,7 +456,7 @@ struct SubSortSAH
 };
 
 
-static void buildFromBounds(RTree& result, void*& Memory, const Box3d* allBounds, unsigned int numBounds, std::vector<unsigned int>& permute, const Box3d &treeBounds, RTreeRemap *rc)
+static void buildFromBounds(RTree& result, void*& Memory, const Box3d* allBounds, uint32_t numBounds, std::vector<uint32_t>& permute, const Box3d &treeBounds, RTreeRemap *rc)
 {
 	float sizePerfTradeOff01 = 1.0f;		// 0 - 1
 	int hint = 0;
@@ -464,32 +464,32 @@ static void buildFromBounds(RTree& result, void*& Memory, const Box3d* allBounds
 	// start off with an identity permutation
 	permute.resize(0);
 	permute.reserve(numBounds + 1);
-	for (unsigned int j = 0; j < numBounds; j++)
+	for (uint32_t j = 0; j < numBounds; j++)
 		permute.push_back(j);
-	const unsigned int sentinel = 0xABCDEF01;
+	const uint32_t sentinel = 0xABCDEF01;
 	permute.push_back(sentinel);
 
 	// load sorted nodes into an RTreeNodeNQ tree representation
 	// build the tree structure from sorted nodes
-	const unsigned int pageSize = RTREE_N;
+	const uint32_t pageSize = RTREE_N;
 	std::vector<RTreeNodeNQ> resultTree;
 	resultTree.reserve(numBounds * 2);
 
-	unsigned int maxLevels = 0;
+	uint32_t maxLevels = 0;
 
 	if (hint == 0) // use high quality SAH build, eSIM_PERFORMANCE
 	{
-		std::vector<unsigned int> xRanks(numBounds), yRanks(numBounds), zRanks(numBounds), xOrder(numBounds), yOrder(numBounds), zOrder(numBounds);
+		std::vector<uint32_t> xRanks(numBounds), yRanks(numBounds), zRanks(numBounds), xOrder(numBounds), yOrder(numBounds), zOrder(numBounds);
 		memcpy(&xOrder[0], &permute[0], sizeof(xOrder[0]) * numBounds);
 		memcpy(&yOrder[0], &permute[0], sizeof(yOrder[0]) * numBounds);
 		memcpy(&zOrder[0], &permute[0], sizeof(zOrder[0]) * numBounds);
 		// sort by shuffling the permutation, precompute sorted ranks for x,y,z-orders
 		std::sort(xOrder.begin(), xOrder.end(), SortBoundsPredicate(0, allBounds));
-		for (unsigned int i = 0; i < numBounds; i++) xRanks[xOrder[i]] = i;
+		for (uint32_t i = 0; i < numBounds; i++) xRanks[xOrder[i]] = i;
 		std::sort(yOrder.begin(), yOrder.end(), SortBoundsPredicate(1, allBounds));
-		for (unsigned int i = 0; i < numBounds; i++) yRanks[yOrder[i]] = i;
+		for (uint32_t i = 0; i < numBounds; i++) yRanks[yOrder[i]] = i;
 		std::sort(zOrder.begin(), zOrder.end(), SortBoundsPredicate(2, allBounds));
-		for (unsigned int i = 0; i < numBounds; i++)
+		for (uint32_t i = 0; i < numBounds; i++)
 			zRanks[zOrder[i]] = i;
 
 		SubSortSAH ss(&permute[0], allBounds, numBounds, &xOrder[0], &yOrder[0], &zOrder[0], &xRanks[0], &yRanks[0], &zRanks[0], sizePerfTradeOff01);
@@ -511,19 +511,19 @@ static void buildFromBounds(RTree& result, void*& Memory, const Box3d* allBounds
 
 	// Quantize the tree. AP scaffold - might be possible to merge this phase with the page pass below this loop
 	std::vector<RTreeNodeQ> qtreeNodes;
-	unsigned int firstEmptyIndex = unsigned int(-1);
-	unsigned int resultCount = (unsigned int)resultTree.size();
+	uint32_t firstEmptyIndex = uint32_t(-1);
+	uint32_t resultCount = (uint32_t)resultTree.size();
 	qtreeNodes.reserve(resultCount);
 
-	for (unsigned int i = 0; i < resultCount; i++) // AP scaffold - eliminate this pass
+	for (uint32_t i = 0; i < resultCount; i++) // AP scaffold - eliminate this pass
 	{
 		RTreeNodeNQ& u = resultTree[i];
 		RTreeNodeQ q;
 		q.setLeaf(u.leafCount > 0); // set the leaf flag
 		if (u.childPageFirstNodeIndex == -1) // empty node?
 		{
-			if (firstEmptyIndex == unsigned int(-1))
-				firstEmptyIndex = (unsigned int)qtreeNodes.size();
+			if (firstEmptyIndex == uint32_t(-1))
+				firstEmptyIndex = (uint32_t)qtreeNodes.size();
 			q.minx = q.miny = q.minz = FLT_MAX; // AP scaffold improvement - use empty 1e30 bounds instead and reference a valid leaf
 			q.maxx = q.maxy = q.maxz = -FLT_MAX; // that will allow to remove the empty node test from the runtime
 
@@ -542,20 +542,20 @@ static void buildFromBounds(RTree& result, void*& Memory, const Box3d* allBounds
 			q.maxz = u.bounds.Max.z;
 			if (u.leafCount > 0)
 			{
-				q.ptr = unsigned int(u.childPageFirstNodeIndex);
-				rc->remap(&q.ptr, q.ptr, unsigned int(u.leafCount));
+				q.ptr = uint32_t(u.childPageFirstNodeIndex);
+				rc->remap(&q.ptr, q.ptr, uint32_t(u.leafCount));
 				assert(q.isLeaf()); // remap is expected to set the isLeaf bit
 			}
 			else
 			{
 				// verify that all children bounds are included in the parent bounds
-				for (unsigned int s = 0; s < RTREE_N; s++)
+				for (uint32_t s = 0; s < RTREE_N; s++)
 				{
 					const RTreeNodeNQ& child = resultTree[u.childPageFirstNodeIndex + s];
 					assert(child.leafCount == -1 || child.bounds.IsInside(u.bounds));
 				}
 
-				q.ptr = unsigned int(u.childPageFirstNodeIndex * nodePtrMultiplier);
+				q.ptr = uint32_t(u.childPageFirstNodeIndex * nodePtrMultiplier);
 				assert(q.ptr % RTREE_N == 0);
 				q.setLeaf(false);
 			}
@@ -566,9 +566,9 @@ static void buildFromBounds(RTree& result, void*& Memory, const Box3d* allBounds
 	// build the final rtree image
 	result.mInvDiagonal = Vector4d(1.0f);
 	assert(qtreeNodes.size() % RTREE_N == 0);
-	result.mTotalNodes = (unsigned int)qtreeNodes.size();
+	result.mTotalNodes = (uint32_t)qtreeNodes.size();
 	result.mTotalPages = result.mTotalNodes / pageSize;
-	Memory = new unsigned char[sizeof(RTreePage) * result.mTotalPages + 127];		// TODO
+	Memory = new uint8_t[sizeof(RTreePage) * result.mTotalPages + 127];		// TODO
 	result.mPages = (RTreePage*)AlignMemory(Memory, 128);
 	result.mBoundsMin = Vector4d(treeBounds.Min, 0.0f);
 	result.mBoundsMax = Vector4d(treeBounds.Max, 0.0f);
@@ -578,10 +578,10 @@ static void buildFromBounds(RTree& result, void*& Memory, const Box3d* allBounds
 	assert(result.mTotalNodes % pageSize == 0);
 	result.mNumRootPages = 1;
 
-	for (unsigned int j = 0; j < result.mTotalPages; j++)
+	for (uint32_t j = 0; j < result.mTotalPages; j++)
 	{
 		RTreePage& page = result.mPages[j];
-		for (unsigned int k = 0; k < RTREE_N; k++)
+		for (uint32_t k = 0; k < RTREE_N; k++)
 		{
 			const RTreeNodeQ& n = qtreeNodes[j * RTREE_N + k];
 			page.maxx[k] = n.maxx;
@@ -635,11 +635,11 @@ void TriangleMesh::BuildRTree()
 
 	Box3d treeBounds = Box3d::Empty();
 
-	for (unsigned int i = 0; i < NumTriangles; ++i)
+	for (uint32_t i = 0; i < NumTriangles; ++i)
 	{
-		unsigned int i0 = Indices[i*3];
-		unsigned int i1 = Indices[i*3 + 1];
-		unsigned int i2 = Indices[i*3 + 2];
+		uint32_t i0 = Indices[i*3];
+		uint32_t i1 = Indices[i*3 + 1];
+		uint32_t i2 = Indices[i*3 + 2];
 
 		allBounds.push_back(Box3d(Vertices[i0], Vertices[i1], Vertices[i2]));
 		treeBounds.Grow(allBounds.back());
@@ -647,7 +647,7 @@ void TriangleMesh::BuildRTree()
 
 	CreateEmptyRTree();
 
-	std::vector<unsigned int> permute;
+	std::vector<uint32_t> permute;
 	RTreeRemap rc(NumTriangles);
 	buildFromBounds(*m_Tree, m_Memory, &allBounds[0], NumTriangles, permute, treeBounds, &rc);
 }
@@ -663,7 +663,7 @@ public:
 	float maxT;
 	RayCastResult closestHit; // recorded closest hit over the whole traversal (only for callback mode eCLOSEST)
 	Vector3d cv0, cv1, cv2;	// PT: make sure these aren't last in the class, to safely V4Load them
-	unsigned int cis[3];
+	uint32_t cis[3];
 	bool hadClosestHit;
 	const bool closestMode;
 	const bool IndicesBit16;
@@ -681,16 +681,16 @@ public:
 		rayDirV = dir;
 	}
 
-	void getVertIndices(unsigned int triIndex, unsigned int& i0, unsigned int& i1, unsigned int& i2)
+	void getVertIndices(uint32_t triIndex, uint32_t& i0, uint32_t& i1, uint32_t& i2)
 	{
 		if (IndicesBit16)
 		{
-			const unsigned short* p = (unsigned short*)mTris + triIndex * 3;
+			const uint16_t* p = (uint16_t*)mTris + triIndex * 3;
 			i0 = p[0]; i1 = p[1]; i2 = p[2];
 		}
 		else
 		{
-			const unsigned int* p = (unsigned int*)mTris + triIndex * 3;
+			const uint32_t* p = (uint32_t*)mTris + triIndex * 3;
 			i0 = p[0]; i1 = p[1]; i2 = p[2];
 		}
 	}
@@ -699,27 +699,27 @@ public:
 	// should return true to continue traversal. If false is returned, traversal is aborted
 	// newMaxT serves as both input and output, as input it's the maxT so far
 	// set it to a new value (which should be smaller) and it will become the new far clip t
-	virtual bool processResults(unsigned int NumTouched, unsigned int* Touched, float& newMaxT) override
+	virtual bool processResults(uint32_t NumTouched, uint32_t* Touched, float& newMaxT) override
 	{
 		assert(NumTouched > 0);
 		// Loop through touched leaves
 		RayCastResult tempHit;
-		for (unsigned int leaf = 0; leaf < NumTouched; leaf++)
+		for (uint32_t leaf = 0; leaf < NumTouched; leaf++)
 		{
 			// Each leaf box has a set of triangles
 			LeafTriangles currentLeaf;
 			currentLeaf.Data = Touched[leaf];
-			unsigned int nbLeafTris = currentLeaf.GetNbTriangles();
-			unsigned int baseLeafTriIndex = currentLeaf.GetTriangleIndex();
+			uint32_t nbLeafTris = currentLeaf.GetNbTriangles();
+			uint32_t baseLeafTriIndex = currentLeaf.GetTriangleIndex();
 
-			for (unsigned int i = 0; i < nbLeafTris; i++)
+			for (uint32_t i = 0; i < nbLeafTris; i++)
 			{
-				unsigned int i0, i1, i2;
-				const unsigned int triangleIndex = baseLeafTriIndex + i;
+				uint32_t i0, i1, i2;
+				const uint32_t triangleIndex = baseLeafTriIndex + i;
 				getVertIndices(triangleIndex, i0, i1, i2);
 
 				const Vector3d& v0 = mVerts[i0], & v1 = mVerts[i1], & v2 = mVerts[i2];
-				const unsigned int vinds[3] = { i0, i1, i2 };
+				const uint32_t vinds[3] = { i0, i1, i2 };
 
 				if (tRayTest)
 				{
@@ -767,7 +767,7 @@ public:
 				//	return false;
 			}
 
-		} // for(unsigned int leaf = 0; leaf<NumTouched; leaf++)
+		} // for(uint32_t leaf = 0; leaf<NumTouched; leaf++)
 
 		return true;
 	}

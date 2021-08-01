@@ -37,7 +37,7 @@ public:
 
 	struct ManifestEntry
 	{
-		ManifestEntry(unsigned int _offset, PxType _type)
+		ManifestEntry(uint32_t _offset, PxType _type)
 		{
 			// Cm::markSerializedMem(this, sizeof(ManifestEntry));
 			offset = _offset;
@@ -52,7 +52,7 @@ public:
 			memcpy(this, &m, sizeof(ManifestEntry));
 		}
 
-		unsigned int offset;
+		uint32_t offset;
 		PxType type;
 	};
 
@@ -79,17 +79,17 @@ public:
 #define SERIAL_OBJECT_INDEX_TYPE_BIT (1u<<31)
 	struct SerialObjectIndex
 	{
-		SerialObjectIndex(unsigned int index, bool external) { setIndex(index, external); }
+		SerialObjectIndex(uint32_t index, bool external) { setIndex(index, external); }
 		SerialObjectIndex(const SerialObjectIndex& objIndex) : mObjIndex(objIndex.mObjIndex) {}
 		SerialObjectIndex() : mObjIndex(0xFFFFFFFF) {}
 
-		void setIndex(unsigned int index, bool external)
+		void setIndex(uint32_t index, bool external)
 		{
 			assert((index & SERIAL_OBJECT_INDEX_TYPE_BIT) == 0);
 			mObjIndex = index | (external ? SERIAL_OBJECT_INDEX_TYPE_BIT : 0);
 		}
 
-		unsigned int getIndex(bool& isExternal)
+		uint32_t getIndex(bool& isExternal)
 		{
 			assert(mObjIndex != 0xFFFFFFFF);
 			isExternal = (mObjIndex & SERIAL_OBJECT_INDEX_TYPE_BIT) > 0;
@@ -102,7 +102,7 @@ public:
 		}
 
 	private:
-		unsigned int mObjIndex;
+		uint32_t mObjIndex;
 	};
 
 	struct ExportReference
@@ -141,7 +141,7 @@ public:
 		size_t reference;
 		SerialObjectIndex objIndex;
 #if defined(__x86_64__) || defined(__arm64__) || defined(__aarch64__)
-		unsigned int pad;
+		uint32_t pad;
 #endif
 	};
 
@@ -149,15 +149,15 @@ public:
 	{
 		InternalReferenceHandle16() {}
 
-		InternalReferenceHandle16(unsigned short _reference, SerialObjectIndex _objIndex) :
+		InternalReferenceHandle16(uint16_t _reference, SerialObjectIndex _objIndex) :
 			reference(_reference),
 			pad(0xcdcd),
 			objIndex(_objIndex)
 		{
 		}
 
-		unsigned short reference;
-		unsigned short pad;
+		uint16_t reference;
+		uint16_t pad;
 		SerialObjectIndex objIndex;
 	};
 
@@ -203,8 +203,8 @@ public:
 				PxU32(getConcreteType()) == PxU32(PxTypeInfo<T>::eFastTypeId) : isKindOf(PxTypeInfo<T>::name());
 		}
 
-		unsigned short		mConcreteType;			// concrete type identifier - see PxConcreteType.
-		unsigned short		mBaseFlags;				// internal flags
+		uint16_t		mConcreteType;			// concrete type identifier - see PxConcreteType.
+		uint16_t		mBaseFlags;				// internal flags
 	};
 
 	class PxActor : public PxBase
@@ -246,11 +246,11 @@ public:
 	public:
 		PxDeserializationContext(const ManifestEntry* manifestTable,
 			const ImportReference* importReferences,
-			unsigned char* objectDataAddress,
+			uint8_t* objectDataAddress,
 			const std::unordered_map<size_t, SerialObjectIndex>& internalPtrReferencesMap,
-			const std::unordered_map<unsigned short, SerialObjectIndex>& internalHandle16ReferencesMap,
+			const std::unordered_map<uint16_t, SerialObjectIndex>& internalHandle16ReferencesMap,
 			// const Cm::Collection* externalRefs,
-			unsigned char* extraData)
+			uint8_t* extraData)
 			: mManifestTable(manifestTable)
 			, mImportReferences(importReferences)
 			, mObjectDataAddress(objectDataAddress)
@@ -265,32 +265,32 @@ public:
 
 		void			readName(const char*& name)
 		{
-			unsigned int len = *reinterpret_cast<unsigned int*>(mExtraDataAddress);
+			uint32_t len = *reinterpret_cast<uint32_t*>(mExtraDataAddress);
 			mExtraDataAddress += sizeof(len);
 			name = len ? reinterpret_cast<const char*>(mExtraDataAddress) : NULL;
 			mExtraDataAddress += len;
 		}
 
 		template<typename T>
-		T* readExtraData(unsigned int count = 1)
+		T* readExtraData(uint32_t count = 1)
 		{
 			T* data = reinterpret_cast<T*>(mExtraDataAddress);
 			mExtraDataAddress += sizeof(T) * count;
 			return data;
 		}
 
-		template<typename T, unsigned int alignment>
-		T* readExtraData(unsigned int count = 1)
+		template<typename T, uint32_t alignment>
+		T* readExtraData(uint32_t count = 1)
 		{
 			alignExtraData(alignment);
 			return readExtraData<T>(count);
 		}
 
-		void			alignExtraData(unsigned int alignment = 16)
+		void			alignExtraData(uint32_t alignment = 16)
 		{
 			size_t addr = reinterpret_cast<size_t>(mExtraDataAddress);
 			addr = (addr + alignment - 1) & ~size_t(alignment - 1);
-			mExtraDataAddress = reinterpret_cast<unsigned char*>(addr);
+			mExtraDataAddress = reinterpret_cast<uint8_t*>(addr);
 		}
 
 #define PX_SERIAL_REF_KIND_PTR_TYPE_BIT (1u<<31)
@@ -338,15 +338,15 @@ public:
 		void			translatePxBase(T*& base) { if (base) { base = static_cast<T*>(resolveReference(PX_SERIAL_REF_KIND_PXBASE, size_t(base))); } }
 
 	public:
-		unsigned char* mExtraDataAddress;
+		uint8_t* mExtraDataAddress;
 
 		const ManifestEntry* mManifestTable;
 		const ImportReference* mImportReferences;
-		unsigned char* mObjectDataAddress;
+		uint8_t* mObjectDataAddress;
 
 		//internal references maps for resolving references.
 		const std::unordered_map<size_t, SerialObjectIndex>& mInternalPtrReferencesMap;
-		const std::unordered_map<unsigned short, SerialObjectIndex>& mInternalHandle16ReferencesMap;
+		const std::unordered_map<uint16_t, SerialObjectIndex>& mInternalHandle16ReferencesMap;
 
 		//external collection for resolving import references.
 		// const Cm::Collection* mExternalRefs;
@@ -380,22 +380,22 @@ public:
 			if (mTriangles)
 			{
 				if (Is16BitIndices())
-					mTriangles = context.readExtraData<unsigned short, 16>(3 * mNbTriangles);
+					mTriangles = context.readExtraData<uint16_t, 16>(3 * mNbTriangles);
 				else
-					mTriangles = context.readExtraData<unsigned int, 16>(3 * mNbTriangles);
+					mTriangles = context.readExtraData<uint32_t, 16>(3 * mNbTriangles);
 			}
 
 			if (mExtraTrigData)
-				mExtraTrigData = context.readExtraData<unsigned char, 16>(mNbTriangles);
+				mExtraTrigData = context.readExtraData<uint8_t, 16>(mNbTriangles);
 
 			if (mMaterialIndices)
-				mMaterialIndices = context.readExtraData<unsigned short, 16>(mNbTriangles);
+				mMaterialIndices = context.readExtraData<uint16_t, 16>(mNbTriangles);
 
 			if (mFaceRemap)
-				mFaceRemap = context.readExtraData<unsigned int, 16>(mNbTriangles);
+				mFaceRemap = context.readExtraData<uint32_t, 16>(mNbTriangles);
 
 			if (mAdjacencies)
-				mAdjacencies = context.readExtraData<unsigned int, 16>(3 * mNbTriangles);
+				mAdjacencies = context.readExtraData<uint32_t, 16>(3 * mNbTriangles);
 
 			mGRB_triIndices = nullptr;
 			mGRB_triAdjacencies = nullptr;
@@ -403,22 +403,22 @@ public:
 			mGRB_BV32Tree = nullptr;
 		}
 
-		unsigned int					mNbVertices;
-		unsigned int					mNbTriangles;
+		uint32_t					mNbVertices;
+		uint32_t					mNbTriangles;
 		Vector3d* mVertices;
 		void* mTriangles;
 		TCE3<float>				mAABB;
-		unsigned char* mExtraTrigData;
+		uint8_t* mExtraTrigData;
 		float							mGeomEpsilon;
-		unsigned char					mFlags;
-		unsigned short* mMaterialIndices;
-		unsigned int* mFaceRemap;
-		unsigned int* mAdjacencies;
+		uint8_t					mFlags;
+		uint16_t* mMaterialIndices;
+		uint32_t* mFaceRemap;
+		uint32_t* mAdjacencies;
 		void* mMeshFactory;
 
 		void* mGRB_triIndices;
 		void* mGRB_triAdjacencies;
-		unsigned int* mGRB_faceRemap;
+		uint32_t* mGRB_faceRemap;
 		void* mGRB_BV32Tree;
 	};
 
@@ -458,33 +458,33 @@ public:
 	struct PxHullPolygonData
 	{
 		Plane3d			mPlane;
-		unsigned short	mVRef8;
-		unsigned char	mNbVerts;
-		unsigned char	mMinIndex;
+		uint16_t	mVRef8;
+		uint8_t	mNbVerts;
+		uint8_t	mMinIndex;
 	};
 
 	struct PxValency
 	{
-		unsigned short		mCount;
-		unsigned short		mOffset;
+		uint16_t		mCount;
+		uint16_t		mOffset;
 	};
 
 	struct PxBigConvexRawData
 	{
-		unsigned short		mSubdiv;
-		unsigned short		mNbSamples;
+		uint16_t		mSubdiv;
+		uint16_t		mNbSamples;
 
-		unsigned char* mSamples;
+		uint8_t* mSamples;
 
-		const unsigned char* getSamples2()	const
+		const uint8_t* getSamples2()	const
 		{
 			return mSamples + mNbSamples;
 		}
 
-		unsigned int		mNbVerts;
-		unsigned int		mNbAdjVerts;
+		uint32_t		mNbVerts;
+		uint32_t		mNbAdjVerts;
 		PxValency* mValencies;
-		unsigned char* mAdjacentVerts;
+		uint8_t* mAdjacentVerts;
 	};
 
 	class PxBigConvexData
@@ -493,14 +493,14 @@ public:
 		void importExtraData(PxDeserializationContext& context)
 		{
 			if (mData.mSamples)
-				mData.mSamples = context.readExtraData<unsigned char, 16>(unsigned int(mData.mNbSamples * 2));
+				mData.mSamples = context.readExtraData<uint8_t, 16>(uint32_t(mData.mNbSamples * 2));
 
 			if (mData.mValencies)
 			{
 				context.alignExtraData();
-				unsigned int numVerts = (mData.mNbVerts + 3) & ~3;
+				uint32_t numVerts = (mData.mNbVerts + 3) & ~3;
 				mData.mValencies = context.readExtraData<PxValency>(numVerts);
-				mData.mAdjacentVerts = context.readExtraData<unsigned char>(mData.mNbAdjVerts);
+				mData.mAdjacentVerts = context.readExtraData<uint8_t>(mData.mNbAdjVerts);
 			}
 		}
 
@@ -514,9 +514,9 @@ public:
 	{
 		TCE3<float>		mAABB;
 		Vector3d				mCenterOfMass;
-		unsigned short			mNbEdges;
-		unsigned char			mNbHullVertices;
-		unsigned char			mNbPolygons;
+		uint16_t			mNbEdges;
+		uint8_t			mNbHullVertices;
+		uint8_t			mNbPolygons;
 
 		const Vector3d* getVerts()	const
 		{
@@ -525,16 +525,16 @@ public:
 			return reinterpret_cast<const Vector3d*>(tmp);
 		}
 
-		const unsigned short* getVerticesByEdges16() const
+		const uint16_t* getVerticesByEdges16() const
 		{
 			if (mNbEdges & 0x8000)
 			{
 				const char* tmp = reinterpret_cast<const char*>(mPolygons);
 				tmp += sizeof(PxHullPolygonData) * mNbPolygons;
 				tmp += sizeof(Vector3d) * mNbHullVertices;
-				tmp += sizeof(unsigned char) * (mNbEdges & ~0x8000) * 2;
-				tmp += sizeof(unsigned char) * mNbHullVertices * 3;
-				return reinterpret_cast<const unsigned short*>(tmp);
+				tmp += sizeof(uint8_t) * (mNbEdges & ~0x8000) * 2;
+				tmp += sizeof(uint8_t) * mNbHullVertices * 3;
+				return reinterpret_cast<const uint16_t*>(tmp);
 			}
 			return nullptr;
 		}
@@ -549,16 +549,16 @@ public:
 	public:
 		virtual	bool				isKindOf(const char* name) const { return !::strcmp("PxConvexMesh", name) || PxBase::isKindOf(name); }
 
-		unsigned int computeBufferSize(const ConvexHullData& data, unsigned int nb)
+		uint32_t computeBufferSize(const ConvexHullData& data, uint32_t nb)
 		{
-			unsigned int bytesNeeded = sizeof(PxHullPolygonData) * data.mNbPolygons;
-			unsigned short mnbEdges = (data.mNbEdges & ~0x8000);
+			uint32_t bytesNeeded = sizeof(PxHullPolygonData) * data.mNbPolygons;
+			uint16_t mnbEdges = (data.mNbEdges & ~0x8000);
 			bytesNeeded += sizeof(Vector3d) * data.mNbHullVertices;
-			bytesNeeded += sizeof(unsigned char) * mnbEdges * 2;
-			bytesNeeded += sizeof(unsigned char) * data.mNbHullVertices * 3;
-			bytesNeeded += (data.mNbEdges & ~0x8000) ? (sizeof(unsigned short) * mnbEdges * 2) : 0;
-			bytesNeeded += sizeof(unsigned char) * nb;
-			const unsigned int mod = bytesNeeded % sizeof(float);
+			bytesNeeded += sizeof(uint8_t) * mnbEdges * 2;
+			bytesNeeded += sizeof(uint8_t) * data.mNbHullVertices * 3;
+			bytesNeeded += (data.mNbEdges & ~0x8000) ? (sizeof(uint16_t) * mnbEdges * 2) : 0;
+			bytesNeeded += sizeof(uint8_t) * nb;
+			const uint32_t mod = bytesNeeded % sizeof(float);
 			if (mod)
 				bytesNeeded += sizeof(float) - mod;
 			return bytesNeeded;
@@ -566,8 +566,8 @@ public:
 
 		void importExtraData(PxDeserializationContext& context)
 		{
-			const unsigned int bufferSize = computeBufferSize(mHullData, GetNb());
-			mHullData.mPolygons = reinterpret_cast<PxHullPolygonData*>(context.readExtraData<unsigned char, 16>(bufferSize));
+			const uint32_t bufferSize = computeBufferSize(mHullData, GetNb());
+			mHullData.mPolygons = reinterpret_cast<PxHullPolygonData*>(context.readExtraData<uint8_t, 16>(bufferSize));
 
 			assert(mBigConvexData == nullptr);
 			if (mBigConvexData)
@@ -579,7 +579,7 @@ public:
 			}
 		}
 
-		unsigned int GetNb() const
+		uint32_t GetNb() const
 		{
 			return mNb & ~0x8000000;
 		}
@@ -589,7 +589,7 @@ public:
 		}
 
 		ConvexHullData		mHullData;
-		unsigned int			mNb;
+		uint32_t			mNb;
 		PxBigConvexData* mBigConvexData;
 		float					mMass;
 		Matrix3d				mInertia;
@@ -601,22 +601,22 @@ public:
 
 	struct PxHeightFieldSample
 	{
-		unsigned short			height;
-		unsigned char	materialIndex0;
-		unsigned char	materialIndex1;
+		uint16_t			height;
+		uint8_t	materialIndex0;
+		uint8_t	materialIndex1;
 	};
 
 	struct HeightFieldData
 	{
 		TCE3<float>					mAABB;
-		unsigned int				rows;
-		unsigned int				columns;
+		uint32_t				rows;
+		uint32_t				columns;
 		float						rowLimit;
 		float						colLimit;
 		float						nbColumns;
 		PxHeightFieldSample* samples;
 		float						convexEdgeThreshold;
-		unsigned short				flags;
+		uint16_t				flags;
 		int							format;
 	};
 
@@ -654,11 +654,11 @@ public:
 		}
 
 		HeightFieldData			mData;
-		unsigned int				mSampleStride;
-		unsigned int				mNbSamples;
+		uint32_t				mSampleStride;
+		uint32_t				mNbSamples;
 		float						mMinHeight;
 		float						mMaxHeight;
-		unsigned int				mModifyCount;
+		uint32_t				mModifyCount;
 
 		void* mMeshFactory;
 	};
@@ -681,12 +681,12 @@ public:
 		float					dynamicFriction;				//4
 		float					staticFriction;					//8
 		float					restitution;					//12
-		unsigned short			flags;							//14
-		unsigned char			fricRestCombineMode;			//15
-		unsigned char			padding;						//16
+		uint16_t			flags;							//14
+		uint8_t			fricRestCombineMode;			//15
+		uint8_t			padding;						//16
 		PxMaterial* mNxMaterial;
-		unsigned short			mMaterialIndex; //handle assign by the handle manager
-		unsigned short			mPadding;
+		uint16_t			mMaterialIndex; //handle assign by the handle manager
+		uint16_t			mPadding;
 	};
 
 	class NpMaterial : public PxMaterial, public PxRefCountable
@@ -1053,8 +1053,8 @@ public:
 	{
 	public:
 		void* mScene;
-		unsigned int	mControlState;
-		unsigned char* mStreamPtr;
+		uint32_t	mControlState;
+		uint8_t* mStreamPtr;
 	};
 
 	class ScShape : public ScBase
@@ -1391,17 +1391,17 @@ public:
 #define SN_BINARY_VERSION_GUID_NUM_CHARS 32
 #define PX_BINARY_SERIAL_VERSION "77E92B17A4084033A0FDB51332D5A6BB"
 
-	bool readHeader(unsigned char*& address)
+	bool readHeader(uint8_t*& address)
 	{
-		const unsigned int header = read32(address);
-		const unsigned int version = read32(address);
+		const uint32_t header = read32(address);
+		const uint32_t version = read32(address);
 		char binaryVersionGuid[SN_BINARY_VERSION_GUID_NUM_CHARS + 1];
 		memcpy(binaryVersionGuid, address, SN_BINARY_VERSION_GUID_NUM_CHARS);
 		binaryVersionGuid[SN_BINARY_VERSION_GUID_NUM_CHARS] = 0;
 		address += SN_BINARY_VERSION_GUID_NUM_CHARS;
 
-		const unsigned int platformTag = read32(address);
-		const unsigned int markedPadding = read32(address);
+		const uint32_t platformTag = read32(address);
+		const uint32_t markedPadding = read32(address);
 
 		if (header != MAKE_FOURCC('S', 'E', 'B', 'D'))
 		{
@@ -1444,7 +1444,7 @@ public:
 			return false;
 		}
 
-		unsigned char* address = reinterpret_cast<unsigned char*>(Buffer);
+		uint8_t* address = reinterpret_cast<uint8_t*>(Buffer);
 
 		if (!readHeader(address))
 		{
@@ -1452,25 +1452,25 @@ public:
 		}
 
 		ManifestEntry* manifestTable;
-		unsigned int nbObjectsInCollection;
-		unsigned int objectDataEndOffset;
+		uint32_t nbObjectsInCollection;
+		uint32_t objectDataEndOffset;
 
 		// read number of objects in collection
 		address = alignPtr(address);
 		nbObjectsInCollection = read32(address);
 
-		// read manifest (unsigned int offset, PxConcreteType type)
+		// read manifest (uint32_t offset, PxConcreteType type)
 		{
 			address = alignPtr(address);
-			unsigned int nbManifestEntries = read32(address);
-			assert(*reinterpret_cast<unsigned int*>(address) == 0); //first offset is always 0
+			uint32_t nbManifestEntries = read32(address);
+			assert(*reinterpret_cast<uint32_t*>(address) == 0); //first offset is always 0
 			manifestTable = (nbManifestEntries > 0) ? reinterpret_cast<ManifestEntry*>(address) : NULL;
 			address += nbManifestEntries * sizeof(ManifestEntry);
 			objectDataEndOffset = read32(address);
 		}
 
 		ImportReference* importReferences;
-		unsigned int nbImportReferences;
+		uint32_t nbImportReferences;
 		// read import references
 		{
 			address = alignPtr(address);
@@ -1483,7 +1483,7 @@ public:
 		assert(importReferences == nullptr);
 
 		ExportReference* exportReferences;
-		unsigned int nbExportReferences;
+		uint32_t nbExportReferences;
 		// read export references
 		{
 			address = alignPtr(address);
@@ -1493,8 +1493,8 @@ public:
 		}
 
 		// read internal references arrays
-		unsigned int nbInternalPtrReferences = 0;
-		unsigned int nbInternalHandle16References = 0;
+		uint32_t nbInternalPtrReferences = 0;
+		uint32_t nbInternalHandle16References = 0;
 		InternalReferencePtr* internalPtrReferences = NULL;
 		InternalReferenceHandle16* internalHandle16References = NULL;
 		{
@@ -1512,16 +1512,16 @@ public:
 		std::unordered_map<size_t, SerialObjectIndex> internalPtrReferencesMap(nbInternalPtrReferences * 2);
 		{
 			//create hash (we should load the hashes directly from memory)
-			for (unsigned int i = 0; i < nbInternalPtrReferences; i++)
+			for (uint32_t i = 0; i < nbInternalPtrReferences; i++)
 			{
 				const InternalReferencePtr& ref = internalPtrReferences[i];
 				internalPtrReferencesMap.emplace(ref.reference, SerialObjectIndex(ref.objIndex));
 			}
 		}
 
-		std::unordered_map<unsigned short, SerialObjectIndex> internalHandle16ReferencesMap(nbInternalHandle16References * 2);
+		std::unordered_map<uint16_t, SerialObjectIndex> internalHandle16ReferencesMap(nbInternalHandle16References * 2);
 		{
-			for (unsigned int i = 0; i < nbInternalHandle16References; i++)
+			for (uint32_t i = 0; i < nbInternalHandle16References; i++)
 			{
 				const InternalReferenceHandle16& ref = internalHandle16References[i];
 				internalHandle16ReferencesMap.emplace(ref.reference, SerialObjectIndex(ref.objIndex));
@@ -1532,25 +1532,25 @@ public:
 		if (nbExportReferences > 0)
 			collection.mIds.reserve(nbExportReferences * 2);
 
-		unsigned char* addressObjectData = alignPtr(address);
-		unsigned char* addressExtraData = alignPtr(addressObjectData + objectDataEndOffset);
+		uint8_t* addressObjectData = alignPtr(address);
+		uint8_t* addressExtraData = alignPtr(addressObjectData + objectDataEndOffset);
 		std::unordered_map<PxType, int> Statistic;
 
-		unsigned char* addressExtraDataBase = addressExtraData;
+		uint8_t* addressExtraDataBase = addressExtraData;
 		PxDeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData);
 
 		FILE* fp = fopen("e://temp//offset.txt", "wb");
 
 		// iterate over memory containing PxBase objects, create the instances, resolve the addresses, import the external data, add to collection.
 		{
-			unsigned int nbObjects = nbObjectsInCollection;
+			uint32_t nbObjects = nbObjectsInCollection;
 
 			while (nbObjects--)
 			{
 				address = alignPtr(address);
 				context.alignExtraData();
 
-				unsigned int Offset = (unsigned int)(context.mExtraDataAddress - addressExtraDataBase);
+				uint32_t Offset = (uint32_t)(context.mExtraDataAddress - addressExtraDataBase);
 				fprintf(fp, "%d : offset = %d\n", nbObjectsInCollection - nbObjects, Offset);
 
 
@@ -1597,10 +1597,10 @@ public:
 		// update new collection with export references
 		{
 			assert(addressObjectData != NULL);
-			for (unsigned int i = 0; i < nbExportReferences; i++)
+			for (uint32_t i = 0; i < nbExportReferences; i++)
 			{
 				bool isExternal;
-				unsigned int manifestIndex = exportReferences[i].objIndex.getIndex(isExternal);
+				uint32_t manifestIndex = exportReferences[i].objIndex.getIndex(isExternal);
 				assert(!isExternal);
 				PxBase* obj = reinterpret_cast<PxBase*>(addressObjectData + manifestTable[manifestIndex].offset);
 				collection.mIds.emplace(exportReferences[i].id, obj);
@@ -1611,7 +1611,7 @@ public:
 	}
 
 	template <class T>
-	PxBase* DeserializePhysxObj(unsigned char*& address, PxDeserializationContext& context)
+	PxBase* DeserializePhysxObj(uint8_t*& address, PxDeserializationContext& context)
 	{
 		T src;
 		memcpy(&src, address, sizeof(T));
@@ -1624,7 +1624,7 @@ public:
 		return dst;
 	}
 
-	PxBase* Deserialize(unsigned char*& address, PxDeserializationContext& context, int classType)
+	PxBase* Deserialize(uint8_t*& address, PxDeserializationContext& context, int classType)
 	{
 		PxBase* instance = nullptr;
 		if (classType == eTRIANGLE_MESH_BVH33)
