@@ -16,6 +16,7 @@
 #include "../Src/CollisionPrimitive/Capsule3d.h"
 #include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/CollisionPrimitive/ConvexMesh.h"
+#include "../Src/CollisionPrimitive/HeightField3d.h"
 #include "../Src/Maths/Transform.h"
 
 using namespace DirectX;
@@ -536,7 +537,7 @@ public:
 		}
         else if (geom->GetShapeType() == OBB)
         {
-            AddGeometry<AxisAlignedBox3d>(geom);
+            // AddGeometry<AxisAlignedBox3d>(geom);
         }
 		else if (geom->GetShapeType() == PLANE)
 		{
@@ -553,6 +554,10 @@ public:
 		else if (geom->GetShapeType() == CYLINDER)
 		{
 			AddGeometry <Cylinder3d >(geom);
+		}
+		else if (geom->GetShapeType() == HEIGHTFIELD)
+		{
+			AddGeometry <HeightField3d >(geom);
 		}
 	}
 

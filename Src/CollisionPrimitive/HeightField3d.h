@@ -62,11 +62,14 @@ public:
 			return;
 		}
 
+		float dx = BV.GetSizeX() / (nRows - 1);
+		float dz = BV.GetSizeZ() / (nCols - 1);
+
 		Vertices.resize(nRows * nCols);
 		for (uint32_t i = 0; i < nRows; i++)
 		for (uint32_t j = 0; j < nCols; j++)
 		{
-			Vertices[i * nCols + j] = Vector3d(BV.Min.x + 1.0f * i, Heights[j + (i * nCols)], BV.Min.z + 1.0f * j);
+			Vertices[i * nCols + j] = Vector3d(BV.Min.x + dx * i, Heights[j + (i * nCols)], BV.Min.z + dz * j);
 		}
 
 		assert(Vertices.size() < 65535);

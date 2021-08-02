@@ -758,7 +758,7 @@ float Matrix3d::ToAxisAngle(Vector3d& Axis) const
 	return Angle;
 }
 
-bool Matrix3d::ToEuleRollsXYZ(float& Yaw, float& Pitch, float& Roll) const
+bool Matrix3d::ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const
 {
 	// rot =  cy*cz          -cy*sz           sy
 	//        cz*sx*sy+cx*sz  cx*cz-sx*sy*sz -cy*sx
@@ -792,177 +792,7 @@ bool Matrix3d::ToEuleRollsXYZ(float& Yaw, float& Pitch, float& Roll) const
 	}
 }
 
-bool Matrix3d::ToEuleRollsXZY(float& Yaw, float& Pitch,	float& Roll) const
-{
-	// rot =  cy*cz          -sz              cz*sy
-	//        sx*sy+cx*cy*sz  cx*cz          -cy*sx+cx*sy*sz
-	//       -cx*sy+cy*sx*sz  cz*sx           cx*cy+sx*sy*sz
-
-	Pitch = asinf(-mat[0][1]);
-	if (Pitch < PI_OVER_2)
-	{
-		if (Pitch > -PI_OVER_2)
-		{
-			Yaw = atan2f(mat[2][1], mat[1][1]);
-			Roll = atan2f(mat[0][2], mat[0][0]);
-			return true;
-		}
-		else
-		{
-			// WARNING.  Not a unique solution.
-			float fRmY = atan2f(-mat[2][0], mat[2][2]);
-			Roll = 0.0f;  // any angle works
-			Yaw = Roll - fRmY;
-			return false;
-		}
-	}
-	else
-	{
-		// WARNING.  Not a unique solution.
-		float fRpY = atan2f(-mat[2][0], mat[2][2]);
-		Roll = 0.0f;  // any angle works
-		Yaw = fRpY - Roll;
-		return false;
-	}
-}
-
-bool Matrix3d::ToEuleRollsYXZ(float& Yaw, float& Pitch,	float& Roll) const
-{
-	// rot =  cy*cz+sx*sy*sz  cz*sx*sy-cy*sz  cx*sy
-	//        cx*sz           cx*cz          -sx
-	//       -cz*sy+cy*sx*sz  cy*cz*sx+sy*sz  cx*cy
-
-	Pitch = asinf(-mat[1][2]);
-	if (Pitch < PI_OVER_2)
-	{
-		if (Pitch > -PI_OVER_2)
-		{
-			Yaw = atan2f(mat[0][2], mat[2][2]);
-			Roll = atan2f(mat[1][0], mat[1][1]);
-			return true;
-		}
-		else
-		{
-			// WARNING.  Not a unique solution.
-			float fRmY = atan2f(-mat[0][1], mat[0][0]);
-			Roll = 0.0f;  // any angle works
-			Yaw = Roll - fRmY;
-			return false;
-		}
-	}
-	else
-	{
-		// WARNING.  Not a unique solution.
-		float fRpY = atan2f(-mat[0][1], mat[0][0]);
-		Roll = 0.0f;  // any angle works
-		Yaw = fRpY - Roll;
-		return false;
-	}
-}
-
-bool Matrix3d::ToEuleRollsYZX(float& Yaw, float& Pitch,	float& Roll) const
-{
-	// rot =  cy*cz           sx*sy-cx*cy*sz  cx*sy+cy*sx*sz
-	//        sz              cx*cz          -cz*sx
-	//       -cz*sy           cy*sx+cx*sy*sz  cx*cy-sx*sy*sz
-
-	Pitch = asinf(mat[1][0]);
-	if (Pitch < PI_OVER_2)
-	{
-		if (Pitch > -PI_OVER_2)
-		{
-			Yaw = atan2f(-mat[2][0], mat[0][0]);
-			Roll = atan2f(-mat[1][2], mat[1][1]);
-			return true;
-		}
-		else
-		{
-			// WARNING.  Not a unique solution.
-			float fRmY = atan2f(mat[2][1], mat[2][2]);
-			Roll = 0.0f;  // any angle works
-			Yaw = Roll - fRmY;
-			return false;
-		}
-	}
-	else
-	{
-		// WARNING.  Not a unique solution.
-		float fRpY = atan2f(mat[2][1], mat[2][2]);
-		Roll = 0.0f;  // any angle works
-		Yaw = fRpY - Roll;
-		return false;
-	}
-}
-
-bool Matrix3d::ToEuleRollsZXY(float& Yaw, float& Pitch,	float& Roll) const
-{
-	// rot =  cy*cz-sx*sy*sz -cx*sz           cz*sy+cy*sx*sz
-	//        cz*sx*sy+cy*sz  cx*cz          -cy*cz*sx+sy*sz
-	//       -cx*sy           sx              cx*cy
-
-	Pitch = asinf(mat[2][1]);
-	if (Pitch < PI_OVER_2)
-	{
-		if (Pitch > -PI_OVER_2)
-		{
-			Yaw = atan2f(-mat[0][1], mat[1][1]);
-			Roll = atan2f(-mat[2][0], mat[2][2]);
-			return true;
-		}
-		else
-		{
-			// WARNING.  Not a unique solution.
-			float fRmY = atan2f(mat[0][2], mat[0][0]);
-			Roll = 0.0f;  // any angle works
-			Yaw = Roll - fRmY;
-			return false;
-		}
-	}
-	else
-	{
-		// WARNING.  Not a unique solution.
-		float fRpY = atan2f(mat[0][2], mat[0][0]);
-		Roll = 0.0f;  // any angle works
-		Yaw = fRpY - Roll;
-		return false;
-	}
-}
-
-bool Matrix3d::ToEuleRollsZYX(float& Yaw, float& Pitch,	float& Roll) const
-{
-	// rot =  cy*cz           cz*sx*sy-cx*sz  cx*cz*sy+sx*sz
-	//        cy*sz           cx*cz+sx*sy*sz -cz*sx+cx*sy*sz
-	//       -sy              cy*sx           cx*cy
-
-	Pitch = asinf(-mat[2][0]);
-	if (Pitch < PI_OVER_2)
-	{
-		if (Pitch > -PI_OVER_2)
-		{
-			Yaw = atan2f(mat[1][0], mat[0][0]);
-			Roll = atan2f(mat[2][1], mat[2][2]);
-			return true;
-		}
-		else
-		{
-			// WARNING.  Not a unique solution.
-			float fRmY = atan2f(-mat[0][1], mat[0][2]);
-			Roll = 0.0f;  // any angle works
-			Yaw = Roll - fRmY;
-			return false;
-		}
-	}
-	else
-	{
-		// WARNING.  Not a unique solution.
-		float fRpY = atan2f(-mat[0][1], mat[0][2]);
-		Roll = 0.0f;  // any angle works
-		Yaw = fRpY - Roll;
-		return false;
-	}
-}
-
-void Matrix3d::FromEuleRollsXYZ(float Yaw, float Pitch,	float Roll)
+void Matrix3d::FromEulerAnglesXYZ(float Yaw, float Pitch,	float Roll)
 {
 	float fCos, fSin;
 
@@ -987,132 +817,7 @@ void Matrix3d::FromEuleRollsXYZ(float Yaw, float Pitch,	float Roll)
 	*this = kXMat * kYMat * kZMat;
 }
 
-void Matrix3d::FromEuleRollsXZY(float Yaw, float Pitch,	float Roll)
-{
-	float fCos, fSin;
-
-	fCos = cosf(Yaw);
-	fSin = sinf(Yaw);
-	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
-		0.0f, fCos, fSin,
-		0.0f, -fSin, fCos);
-
-	fCos = cosf(Pitch);
-	fSin = sinf(Pitch);
-	Matrix3d kYMat(fCos, 0.0f, -fSin,
-		0.0f, 1.0f, 0.0f,
-		fSin, 0.0f, fCos);
-
-	fCos = cosf(Roll);
-	fSin = sinf(Roll);
-	Matrix3d kZMat(fCos, fSin, 0.0f,
-		-fSin, fCos, 0.0f,
-		0.0f, 0.0f, 1.0f);
-
-	*this = kXMat * kZMat * kYMat;
-}
-
-void Matrix3d::FromEuleRollsYXZ(float Yaw, float Pitch,	float Roll)
-{
-	float fCos, fSin;
-
-	fCos = cosf(Yaw);
-	fSin = sinf(Yaw);
-	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
-		0.0f, fCos, fSin,
-		0.0f, -fSin, fCos);
-
-	fCos = cosf(Pitch);
-	fSin = sinf(Pitch);
-	Matrix3d kYMat(fCos, 0.0f, -fSin,
-		0.0f, 1.0f, 0.0f,
-		fSin, 0.0f, fCos);
-
-	fCos = cosf(Roll);
-	fSin = sinf(Roll);
-	Matrix3d kZMat(fCos, fSin, 0.0f,
-		-fSin, fCos, 0.0f,
-		0.0f, 0.0f, 1.0f);
-
-	*this = kYMat * kXMat * kZMat;
-}
-
-void Matrix3d::FromEuleRollsYZX(float Yaw, float Pitch,	float Roll)
-{
-	float fCos, fSin;
-
-	fCos = cosf(Yaw);
-	fSin = sinf(Yaw);
-	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
-		0.0f, fCos, fSin,
-		0.0f, -fSin, fCos);
-
-	fCos = cosf(Pitch);
-	fSin = sinf(Pitch);
-	Matrix3d kYMat(fCos, 0.0f, -fSin,
-		0.0f, 1.0f, 0.0f,
-		fSin, 0.0f, fCos);
-
-	fCos = cosf(Roll);
-	fSin = sinf(Roll);
-	Matrix3d kZMat(fCos, fSin, 0.0f,
-		-fSin, fCos, 0.0f,
-		0.0f, 0.0f, 1.0f);
-
-	*this = kYMat * kZMat * kXMat;
-}
-
-void Matrix3d::FromEuleRollsZXY(float Yaw, float Pitch,	float Roll)
-{
-	float fCos, fSin;
-
-	fCos = cosf(Yaw);
-	fSin = sinf(Yaw);
-	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
-		0.0f, fCos, fSin,
-		0.0f, -fSin, fCos);
-
-	fCos = cosf(Pitch);
-	fSin = sinf(Pitch);
-	Matrix3d kYMat(fCos, 0.0f, -fSin,
-		0.0f, 1.0f, 0.0f,
-		fSin, 0.0f, fCos);
-
-	fCos = cosf(Roll);
-	fSin = sinf(Roll);
-	Matrix3d kZMat(fCos, fSin, 0.0f,
-		-fSin, fCos, 0.0f,
-		0.0f, 0.0f, 1.0f);
-
-	*this = kZMat * kXMat * kYMat;
-}
-
-void Matrix3d::FromEuleRollsZYX(float Yaw, float Pitch,	float Roll)
-{
-	float fCos, fSin;
-
-	fCos = cosf(Yaw);
-	fSin = sinf(Yaw);
-	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
-		0.0f, fCos, fSin,
-		0.0f, -fSin, fCos);
-
-	fCos = cosf(Pitch);
-	fSin = sinf(Pitch);
-	Matrix3d kYMat(fCos, 0.0f, -fSin,
-		0.0f, 1.0f, 0.0f,
-		fSin, 0.0f, fCos);
-
-	fCos = cosf(Roll);
-	fSin = sinf(Roll);
-	Matrix3d kZMat(fCos, fSin, 0.0f,
-		-fSin, fCos, 0.0f,
-		0.0f, 0.0f, 1.0f);
-
-	*this = kZMat * kYMat * kXMat;
-}
-
-void Matrix3d::Tridiagonal(float afDiag[3], float afSubDiag[3])
+void Matrix3d::TriDiagonal(float Diag[3], float SubDiag[3])
 {
 	// Householder reduction T = Q^t M Q
 	//   Input:
@@ -1129,8 +834,8 @@ void Matrix3d::Tridiagonal(float afDiag[3], float afSubDiag[3])
 	float fE = mat[1][2];
 	float fF = mat[2][2];
 
-	afDiag[0] = fA;
-	afSubDiag[2] = 0.0;
+	Diag[0] = fA;
+	SubDiag[2] = 0.0;
 	if (fabsf(fC) >= Epsilon(1.0f))
 	{
 		float fLength = sqrtf(fB * fB + fC * fC);
@@ -1138,10 +843,10 @@ void Matrix3d::Tridiagonal(float afDiag[3], float afSubDiag[3])
 		fB *= fInvLength;
 		fC *= fInvLength;
 		float fQ = 2.0f * fB * fE + fC * (fF - fD);
-		afDiag[1] = fD + fC * fQ;
-		afDiag[2] = fF - fC * fQ;
-		afSubDiag[0] = fLength;
-		afSubDiag[1] = fE - fB * fQ;
+		Diag[1] = fD + fC * fQ;
+		Diag[2] = fF - fC * fQ;
+		SubDiag[0] = fLength;
+		SubDiag[1] = fE - fB * fQ;
 		mat[0][0] = 1.0f;
 		mat[0][1] = 0.0f;
 		mat[0][2] = 0.0f;
@@ -1154,10 +859,10 @@ void Matrix3d::Tridiagonal(float afDiag[3], float afSubDiag[3])
 	}
 	else
 	{
-		afDiag[1] = fD;
-		afDiag[2] = fF;
-		afSubDiag[0] = fB;
-		afSubDiag[1] = fE;
+		Diag[1] = fD;
+		Diag[2] = fF;
+		SubDiag[0] = fB;
+		SubDiag[1] = fE;
 		mat[0][0] = 1.0f;
 		mat[0][1] = 0.0f;
 		mat[0][2] = 0.0f;
@@ -1170,62 +875,59 @@ void Matrix3d::Tridiagonal(float afDiag[3], float afSubDiag[3])
 	}
 }
 
-bool Matrix3d::QLAlgorithm(float afDiag[3], float afSubDiag[3])
+bool Matrix3d::QRIteration(float Diag[3], float SubDiag[3])
 {
-	// QL iteration with implicit shifting to reduce matrix from tridiagonal
-	// to diagonal
-
 	for (int i0 = 0; i0 < 3; i0++)
 	{
-		const uint32_t iMaxIter = 32;
-		uint32_t iIter;
-		for (iIter = 0; iIter < iMaxIter; ++iIter)
+		const int iMaxIter = 32;
+		int it = 0;
+		while (it++ < iMaxIter)
 		{
 			int i1;
 			for (i1 = i0; i1 <= 1; ++i1)
 			{
-				float fSum = fabsf(afDiag[i1]) +
-					fabsf(afDiag[i1 + 1]);
-				if (fabsf(afSubDiag[i1]) + fSum == fSum)
+				float sum = fabsf(Diag[i1]) +
+					fabsf(Diag[i1 + 1]);
+				if (fabsf(SubDiag[i1]) + sum == sum)
 					break;
 			}
 			if (i1 == i0)
 				break;
 
-			float fTmp0 = (afDiag[i0 + 1] - afDiag[i0]) / (2.0f * afSubDiag[i0]);
-			float fTmp1 = sqrtf(fTmp0 * fTmp0 + 1.0f);
-			if (fTmp0 < 0.0)
-				fTmp0 = afDiag[i1] - afDiag[i0] + afSubDiag[i0] / (fTmp0 - fTmp1);
+			float t0 = (Diag[i0 + 1] - Diag[i0]) / (2.0f * SubDiag[i0]);
+			float t1 = sqrtf(t0 * t0 + 1.0f);
+			if (t0 < 0.0)
+				t0 = Diag[i1] - Diag[i0] + SubDiag[i0] / (t0 - t1);
 			else
-				fTmp0 = afDiag[i1] - afDiag[i0] + afSubDiag[i0] / (fTmp0 + fTmp1);
+				t0 = Diag[i1] - Diag[i0] + SubDiag[i0] / (t0 + t1);
 			float fSin = 1.0;
 			float fCos = 1.0;
-			float fTmp2 = 0.0;
+			float t2 = 0.0;
 			for (int i2 = i1 - 1; i2 >= i0; --i2)
 			{
-				float fTmp3 = fSin * afSubDiag[i2];
-				float fTmp4 = fCos * afSubDiag[i2];
-				if (fabsf(fTmp3) >= fabsf(fTmp0))
+				float fTmp3 = fSin * SubDiag[i2];
+				float fTmp4 = fCos * SubDiag[i2];
+				if (fabsf(fTmp3) >= fabsf(t0))
 				{
-					fCos = fTmp0 / fTmp3;
-					fTmp1 = sqrtf(fCos * fCos + 1.0f);
-					afSubDiag[i2 + 1] = fTmp3 * fTmp1;
-					fSin = 1.0f / fTmp1;
+					fCos = t0 / fTmp3;
+					t1 = sqrtf(fCos * fCos + 1.0f);
+					SubDiag[i2 + 1] = fTmp3 * t1;
+					fSin = 1.0f / t1;
 					fCos *= fSin;
 				}
 				else
 				{
-					fSin = fTmp3 / fTmp0;
-					fTmp1 = sqrtf(fSin * fSin + 1.0f);
-					afSubDiag[i2 + 1] = fTmp0 * fTmp1;
-					fCos = 1.0f / fTmp1;
+					fSin = fTmp3 / t0;
+					t1 = sqrtf(fSin * fSin + 1.0f);
+					SubDiag[i2 + 1] = t0 * t1;
+					fCos = 1.0f / t1;
 					fSin *= fCos;
 				}
-				fTmp0 = afDiag[i2 + 1] - fTmp2;
-				fTmp1 = (afDiag[i2] - fTmp0) * fSin + 2.0f * fTmp4 * fCos;
-				fTmp2 = fSin * fTmp1;
-				afDiag[i2 + 1] = fTmp0 + fTmp2;
-				fTmp0 = fCos * fTmp1 - fTmp4;
+				t0 = Diag[i2 + 1] - t2;
+				t1 = (Diag[i2] - t0) * fSin + 2.0f * fTmp4 * fCos;
+				t2 = fSin * t1;
+				Diag[i2 + 1] = t0 + t2;
+				t0 = fCos * t1 - fTmp4;
 
 				for (int iRow = 0; iRow < 3; ++iRow)
 				{
@@ -1236,14 +938,14 @@ bool Matrix3d::QLAlgorithm(float afDiag[3], float afSubDiag[3])
 						fSin * fTmp3;
 				}
 			}
-			afDiag[i0] -= fTmp2;
-			afSubDiag[i0] = fTmp0;
-			afSubDiag[i1] = 0.0;
+			Diag[i0] -= t2;
+			SubDiag[i0] = t0;
+			SubDiag[i1] = 0.0;
 		}
 
-		if (iIter == iMaxIter)
+		if (it == iMaxIter)
 		{
-			// should not get here under normal circumstances
+			// should not get here
 			return false;
 		}
 	}
@@ -1251,27 +953,26 @@ bool Matrix3d::QLAlgorithm(float afDiag[3], float afSubDiag[3])
 	return true;
 }
 
-void Matrix3d::EigenSolveSymmetric(float afEigenvalue[3], Vector3d akEigenvector[3]) const
+void Matrix3d::SolveEigenSymmetric(float EigenValue[3], Vector3d EigenVector[3]) const
 {
 	Matrix3d kMatrix = *this;
-	float afSubDiag[3];
-	kMatrix.Tridiagonal(afEigenvalue, afSubDiag);
-	kMatrix.QLAlgorithm(afEigenvalue, afSubDiag);
+	float SubDiag[3];
+	kMatrix.TriDiagonal(EigenValue, SubDiag);
+	kMatrix.QRIteration(EigenValue, SubDiag);
 
 	for (int i = 0; i < 3; ++i)
 	{
-		akEigenvector[i][0] = kMatrix[0][i];
-		akEigenvector[i][1] = kMatrix[1][i];
-		akEigenvector[i][2] = kMatrix[2][i];
+		EigenVector[i][0] = kMatrix[0][i];
+		EigenVector[i][1] = kMatrix[1][i];
+		EigenVector[i][2] = kMatrix[2][i];
 	}
 
-	// make eigenvectors form a right--handed system
-	Vector3d kCross = akEigenvector[1].Cross(akEigenvector[2]);
-	float fDet = akEigenvector[0].Dot(kCross);
-	if (fDet < 0.0)
+	Vector3d kCross = EigenVector[1].Cross(EigenVector[2]);
+	float Det = EigenVector[0].Dot(kCross);
+	if (Det < 0.0)
 	{
-		akEigenvector[2][0] = -akEigenvector[2][0];
-		akEigenvector[2][1] = -akEigenvector[2][1];
-		akEigenvector[2][2] = -akEigenvector[2][2];
+		EigenVector[2][0] = -EigenVector[2][0];
+		EigenVector[2][1] = -EigenVector[2][1];
+		EigenVector[2][2] = -EigenVector[2][2];
 	}
 }

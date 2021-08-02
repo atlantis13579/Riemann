@@ -213,7 +213,7 @@ public:
 		return Identity;
 	}
 
-	void FromAxisAngle(const Vector3d& Axis, float Angle)
+	void		FromAxisAngle(const Vector3d& Axis, float Angle)
 	{
 		float fCos = cosf(Angle);
 		float fSin = sinf(Angle);
@@ -239,7 +239,7 @@ public:
 		mat[2][2] = fZ2 * fOneMinusCos + fCos;
 	}
 
-	void FromTwoAxis(const Vector3d& AxisFrom, const Vector3d& AxisTo)
+	void		FromTwoAxis(const Vector3d& AxisFrom, const Vector3d& AxisTo)
 	{
 		Vector3d UnitAxisFrom = AxisFrom.Unit();
 		Vector3d UnitAxisTo = AxisTo.Unit();
@@ -248,30 +248,20 @@ public:
 		FromAxisAngle(Axis, Angle);
 	}
 
-	void FromEuleRollsXYZ(float Yaw, float Pitch, float Roll);
-	void FromEuleRollsXZY(float Yaw, float Pitch, float Roll);
-	void FromEuleRollsYXZ(float Yaw, float Pitch, float Roll);
-	void FromEuleRollsYZX(float Yaw, float Pitch, float Roll);
-	void FromEuleRollsZXY(float Yaw, float Pitch, float Roll);
-	void FromEuleRollsZYX(float Yaw, float Pitch, float Roll);
+	void		FromEulerAnglesXYZ(float Yaw, float Pitch, float Roll);
 
-	float ToAxisAngle(Vector3d& Axis) const;
-	bool ToEuleRollsXYZ(float& Yaw, float& Pitch, float& Roll) const;
-	bool ToEuleRollsXZY(float& Yaw, float& Pitch, float& Roll) const;
-	bool ToEuleRollsYXZ(float& Yaw, float& Pitch, float& Roll) const;
-	bool ToEuleRollsYZX(float& Yaw, float& Pitch, float& Roll) const;
-	bool ToEuleRollsZXY(float& Yaw, float& Pitch, float& Roll) const;
-	bool ToEuleRollsZYX(float& Yaw, float& Pitch, float& Roll) const;
+	float		ToAxisAngle(Vector3d& Axis) const;
+	bool		ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const;
 
-	void SingularValueDecomposition(Matrix3d& rkL, Vector3d& rkS, Matrix3d& rkR) const;
-	void SingularValueComposition(const Matrix3d& rkL, const Vector3d& rkS, const Matrix3d& rkR);
-	void Orthonormalize();
-	void QDUDecomposition(Matrix3d& rkQ, Vector3d& rkD,	Vector3d& rkU) const;
-	float SpectralNorm() const;
+	void		SingularValueDecomposition(Matrix3d& rkL, Vector3d& rkS, Matrix3d& rkR) const;
+	void		SingularValueComposition(const Matrix3d& rkL, const Vector3d& rkS, const Matrix3d& rkR);
+	void		Orthonormalize();
+	void		QDUDecomposition(Matrix3d& rkQ, Vector3d& rkD,	Vector3d& rkU) const;
+	float		SpectralNorm() const;
 
-	void EigenSolveSymmetric(float afEigenvalue[3],	Vector3d akEigenvector[3]) const;
-	void Tridiagonal(float afDiag[3], float afSubDiag[3]);
-	bool QLAlgorithm(float afDiag[3], float afSubDiag[3]);
+	void		SolveEigenSymmetric(float EigenValue[3], Vector3d EigenVector[3]) const;
+	void		TriDiagonal(float Diag[3], float SubDiag[3]);
+	bool		QRIteration(float Diag[3], float SubDiag[3]);
 
 	static void Bidiagonalize(Matrix3d& kA, Matrix3d& kL, Matrix3d& kR);
 	static void GolubKahanStep(Matrix3d& kA, Matrix3d& kL, Matrix3d& kR);

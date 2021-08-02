@@ -88,7 +88,11 @@ public:
 		const uint32_t					nCols = hf->mData.columns;
 		const uint32_t					nRows = hf->mData.rows;
 
-		Geometry* Geom = GeometryFactory::CreateHeightField(hf->mData.mAABB.GetAABB(), nRows, nCols);
+		TCE3<float>	ce = hf->mData.mAABB;
+		Vector3d Scale = Vector3d(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
+		ce.Center *= Scale;
+		ce.Extent *= Scale;
+		Geometry* Geom = GeometryFactory::CreateHeightField(ce.GetAABB(), nRows, nCols);
 		HeightField3d *Field = (HeightField3d*)Geom->GetShapeGeometry();
 
 		for (uint32_t i = 0; i < nRows; i++)
