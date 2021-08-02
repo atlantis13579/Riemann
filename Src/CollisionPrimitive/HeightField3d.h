@@ -6,6 +6,7 @@
 #include "../Maths/Box3d.h"
 #include "../Maths/Vector3d.h"
 #include "../Maths/Matrix3d.h"
+#include "GeometryType.h"
 
 class HeightField3d
 {
@@ -20,9 +21,23 @@ public:
 	uint32_t 				nCols;				// Z
 	std::vector<float>		Heights;			// Y
 	std::vector<CellInfo>	Cells;
-	Box3d	BV;
+	Box3d					BV;
+
+	HeightField3d()
+	{
+	}
 
 	HeightField3d(const Box3d& _Bv, int _nRows, int _nCols)
+	{
+		Init(_Bv, _nRows, _nCols);
+	}
+
+	static constexpr GeometryType	StaticType()
+	{
+		return GeometryType::HEIGHTFIELD;
+	}
+
+	void Init(const Box3d& _Bv, int _nRows, int _nCols)
 	{
 		BV = _Bv;
 		nRows = _nRows;

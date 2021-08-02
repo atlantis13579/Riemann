@@ -8,6 +8,7 @@
 
 #include "../Maths/Box3d.h"
 #include "../Maths/Vector3d.h"
+#include "GeometryType.h"
 
 #define TRIANGLE_BATCH			(4096)
 #define	INDICES_16_BIT			(0x01)
@@ -17,16 +18,21 @@ class Mesh
 public:
 	uint32_t				NumVertices;
 	uint32_t				NumTriangles;
-	std::vector<Vector3d>		Vertices;
+	std::vector<Vector3d>	Vertices;
 	std::vector<uint16_t>	Indices;
-	std::vector<Vector3d>		Normals;
-	Box3d						BoundingVolume;
-	uint8_t				Flags;
-	std::string					ResourceId;
+	std::vector<Vector3d>	Normals;
+	Box3d					BoundingVolume;
+	uint8_t					Flags;
+	std::string				ResourceId;
 
 	Mesh()
 	{
 		Release();
+	}
+
+	static constexpr GeometryType	StaticType()
+	{
+		return GeometryType::TRIANGLE_MESH;
 	}
 
 	void Release()

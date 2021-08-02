@@ -4,6 +4,7 @@
 #include <math.h>
 #include "../Maths/Maths.h"
 #include "../Maths/Matrix3d.h"
+#include "GeometryType.h"
 #include "Sphere3d.h"
 
 class Capsule3d
@@ -18,6 +19,16 @@ public:
 	Capsule3d() {}
 
 	Capsule3d(const Vector3d& InX1, const Vector3d& InX2, float InRadius)
+	{
+		Init(InX1, InX2, InRadius);
+	}
+
+	static constexpr GeometryType	StaticType()
+	{
+		return GeometryType::CAPSULE;
+	}
+
+	void		Init(const Vector3d& InX1, const Vector3d& InX2, float InRadius)
 	{
 		X0 = InX1;
 		Axis = InX2 - InX1;

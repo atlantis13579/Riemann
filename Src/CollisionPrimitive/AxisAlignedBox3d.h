@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "GeometryType.h"
 #include "../Maths/Matrix3d.h"
 #include "../Maths/Box3d.h"
 
@@ -11,10 +12,19 @@ public:
 	Vector3d Max;
 
 public:
+	AxisAlignedBox3d()
+	{
+	}
+
 	AxisAlignedBox3d(const Vector3d& Bmin, const Vector3d& Bmax)
 	{
 		Min = Bmin;
 		Max = Bmax;
+	}
+
+	static constexpr GeometryType	StaticType()
+	{
+		return GeometryType::BOX;
 	}
 
 public:

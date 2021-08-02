@@ -6,6 +6,7 @@
 #include "../Maths/Vector3d.h"
 #include "../Maths/Box3d.h"
 #include "../Maths/Matrix3d.h"
+#include "GeometryType.h"
 #include "Plane3d.h"
 
 struct HullFace3d
@@ -20,12 +21,12 @@ struct HullFace3d
 class ConvexMesh
 {
 public:
-	Vector3d						CenterOfMass;
-	Box3d							BoundingVolume;
-	Matrix3d						Inertia;
-	std::vector<Vector3d>			Vertices;
+	Vector3d					CenterOfMass;
+	Box3d						BoundingVolume;
+	Matrix3d					Inertia;
+	std::vector<Vector3d>		Vertices;
 	std::vector<uint16_t>		Edges;
-	std::vector<HullFace3d>			Faces;
+	std::vector<HullFace3d>		Faces;
 	uint32_t					NumVertices;
 	uint32_t					NumEdges;
 	uint32_t					NumFaces;
@@ -33,6 +34,11 @@ public:
 	ConvexMesh()
 	{
 		Release();
+	}
+
+	static constexpr GeometryType	StaticType()
+	{
+		return GeometryType::CONVEX_MESH;
 	}
 
 	void			Release()

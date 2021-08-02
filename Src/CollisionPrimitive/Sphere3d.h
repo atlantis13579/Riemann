@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include "../Maths/Matrix3d.h"
+#include "GeometryType.h"
 
 class Sphere3d
 {
@@ -11,12 +12,19 @@ public:
 	float Radius;
 
 public:
-	Sphere3d() {}
+	Sphere3d() 
+	{
+	}
 
 	Sphere3d(const Vector3d& InCenter, float InRadius)
 	{
 		Center = InCenter;
 		Radius = InRadius;
+	}
+
+	static constexpr GeometryType	StaticType()
+	{
+		return GeometryType::SPHERE;
 	}
 
 public:

@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include "../Maths/Matrix3d.h"
+#include "GeometryType.h"
 
 class Cylinder3d
 {
@@ -20,6 +21,11 @@ public:
 		Height = (_X0 - _X1).Length();
 		X0 = _X0;
 		X1 = _X1;
+	}
+
+	static constexpr GeometryType	StaticType()
+	{
+		return GeometryType::CYLINDER;
 	}
 
 public:

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "../Maths/Vector3d.h"
+#include "GeometryType.h"
 
 class Triangle3d
 {
@@ -9,7 +10,21 @@ public:
 	Vector3d A, B, C;
 
 public:
+	Triangle3d()
+	{
+	}
+
 	Triangle3d(const Vector3d& InA, const Vector3d& InB, const Vector3d& InC)
+	{
+		Init(InA, InB, InC);
+	}
+
+	static constexpr GeometryType	StaticType()
+	{
+		return GeometryType::TRIANGLE;
+	}
+
+	void		Init(const Vector3d& InA, const Vector3d& InB, const Vector3d& InC)
 	{
 		A = InA;
 		B = InB;

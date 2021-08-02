@@ -69,7 +69,7 @@ public:
 		const physx::PxRTreeTriangleMesh* Mesh = (const physx::PxRTreeTriangleMesh*)physxObj->triangleMesh;
 
 		Geometry *Geom = GeometryFactory::CreateTriangleMesh();
-		TriangleMesh* TriMesh = (TriangleMesh*)Geom->GetShapeGeometry();
+		TriangleMesh* TriMesh = Geom->GetGeometry<TriangleMesh>();
 		TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices());
 		TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
 
@@ -93,7 +93,7 @@ public:
 		ce.Center *= Scale;
 		ce.Extent *= Scale;
 		Geometry* Geom = GeometryFactory::CreateHeightField(ce.GetAABB(), nRows, nCols);
-		HeightField3d *Field = (HeightField3d*)Geom->GetShapeGeometry();
+		HeightField3d* Field = Geom->GetGeometry<HeightField3d>();
 
 		for (uint32_t i = 0; i < nRows; i++)
 		for (uint32_t j = 0; j < nCols; j++)
@@ -111,7 +111,7 @@ public:
 		const physx::PxConvexMesh* Mesh = physxObj->convexMesh;
 
 		Geometry* Geom = GeometryFactory::CreateConvexMesh();
-		ConvexMesh* ConvMesh = (ConvexMesh*)Geom->GetShapeGeometry();
+		ConvexMesh* ConvMesh = Geom->GetGeometry<ConvexMesh>();
 
 		for (int i = 0; i < Mesh->mHullData.mNbPolygons; ++i)
 		{

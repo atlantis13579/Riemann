@@ -1,0 +1,16 @@
+#pragma once
+
+enum GeometryType
+{
+	UNKNOWN = 0,
+	BOX,
+	PLANE,
+	SPHERE,
+	CAPSULE,
+	CYLINDER,
+	HEIGHTFIELD,
+	CONVEX_MESH,
+	TRIANGLE,
+	TRIANGLE_MESH,
+	GEOMETRY_TYPE_COUNT,
+};

@@ -3,41 +3,10 @@
 #include <string>
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
+#include "../CollisionPrimitive/GeometryType.h"
 
-enum GeometryShapeType
-{
-	UNKNOWN = 0,
-	OBB,
-	PLANE,
-	SPHERE,
-	CAPSULE,
-	CYLINDER,
-	HEIGHTFIELD,
-	CONVEX_MESH,
-	TRIANGLE,
-	TRIANGLE_MESH,
-	COUNT,
-};
-
-typedef Box3d			(*GetAABBFunc)		(void*);
-typedef bool			(*RayCastFunc)		(void*, const Vector3d&, const Vector3d&, float*);
-typedef Vector3d		(*SupportFunc)		(void*, const Vector3d&);
-typedef Matrix3d		(*InertiaFunc)		(void*, float);
-typedef void			(*DestoryFunc)		(void*);
 typedef bool			(*OverlapFunc)		(void*, void*);
 typedef bool			(*SweepFunc)		(void*, void*, const Vector3d&, float*);
-
-struct GeometryShape
-{
-	GeometryShape()
-	{
-		Type = GeometryShapeType::UNKNOWN;
-		Object = nullptr;
-	}
-
-	GeometryShapeType	Type;
-	void				*Object;
-};
 
 class GeometryFactory;
 
@@ -46,12 +15,11 @@ class Geometry
 	friend class GeometryFactory;
 
 public:
-	Geometry(const Vector3d& Position, GeometryShapeType _Type, void* _ShapeObj, void* _Entity = nullptr);
-	~Geometry();
+	virtual ~Geometry() {}
 
-	Box3d					GetBoundingVolumeLocalSpace() const;
 	const Box3d&			GetBoundingVolumeWorldSpace() const;
 	Vector3d				GetSupportWorldSpace(const Vector3d& Dir);
+	Matrix3d				GetInverseInertia(float Mass) const;
 
 	void					SetPosition(const Vector3d& Position);
 	Vector3d				GetPosition() const;
@@ -69,20 +37,29 @@ public:
 		return &m_Transform;
 	}
 
-	GeometryShapeType		GetShapeType()
+	GeometryType			GetShapeType()
 	{
-		return m_Shape.Type;
+		return Type;
 	}
 
-	template<class T>
-	T*						CastGeometry()
+	template<class GEOM_TYPE>
+	GEOM_TYPE*				GetGeometry()
 	{
-		return (T*)m_Shape.Object;
+		if (Type == GEOM_TYPE::StaticType())
+		{
+			return static_cast<GEOM_TYPE*>(GetGeometryObj());
+		}
+		return nullptr;
 	}
 
-	void*					GetShapeGeometry()
+	template<class GEOM_TYPE>
+	const GEOM_TYPE*		GetGeometry() const
 	{
-		return m_Shape.Object;
+		if (Type == GEOM_TYPE::StaticType())
+		{
+			return static_cast<GEOM_TYPE*>(GetGeometryObj());
+		}
+		return nullptr;
 	}
 
 	const char*				GetName() const
@@ -98,67 +75,29 @@ public:
 		}
 	}
 
-	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
-	bool					Overlap(const Geometry *Geom);
-	bool					Sweep(const Geometry* Geom, const Vector3d& Dir, float* t);
-	Matrix3d				GetInertia(float Mass) const;
-	Matrix3d				GetInverseInertia(float Mass) const;
+	virtual	bool			RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t) = 0;
+	virtual bool			Overlap(const Geometry *Geom) = 0;
+	virtual bool			Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) = 0;
+	virtual Matrix3d		GetInertiaLocalSpace(float Mass) const = 0;
+	virtual Vector3d		GetSupportLocalSpace(const Vector3d& Dir) const = 0;
+	virtual Box3d			GetBoundingVolumeLocalSpace() const = 0;
 
 private:
-	Vector3d				GetSupportLocalSpace(const Vector3d& Dir) const;
 
 private:
-	GeometryShape			m_Shape;
+	virtual const void*		GetGeometryObj() const = 0;
+	virtual void*			GetGeometryObj() = 0;
+
+protected:
+	GeometryType			Type;
 	Box3d					m_BoxWorld;
 	Transform				m_Transform;
 	std::string				m_Name;
 	void*					m_Entity;
 
-public:
-	template <class T>
-	static Box3d			GetBoundingVolume(void* Obj)
-	{
-		T* p = reinterpret_cast<T*>(Obj);
-		return p->GetBoundingVolume();
-	}
-
-	template <class T>
-	static bool				RayCast(void* Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)
-	{
-		T* p = reinterpret_cast<T*>(Obj);
-		return p->IntersectRay(Origin, Dir, t);
-	}
-
-	template <class T>
-	static Vector3d			GetSupport(void* Obj, const Vector3d& Dir)
-	{
-		T* p = reinterpret_cast<T*>(Obj);
-		return p->GetSupport(Dir);
-	}
-	
-	template <class T>
-	static Matrix3d			GetInertia(void* Obj, float Mass)
-	{
-		T* p = reinterpret_cast<T*>(Obj);
-		return p->GetInertiaTensor(Mass);
-	}			
-
-	template <class T>
-	static void				Destory(void* Obj)
-	{
-		T* p = reinterpret_cast<T*>(Obj);
-		delete p;
-	}
-
-	static GetAABBFunc		getaabbTable[GeometryShapeType::COUNT];
-	static RayCastFunc		raycastTable[GeometryShapeType::COUNT];
-	static SupportFunc		supportTable[GeometryShapeType::COUNT];
-	static InertiaFunc		inertiaTable[GeometryShapeType::COUNT];
-	static DestoryFunc		destoryTable[GeometryShapeType::COUNT];
-	static SweepFunc		sweepTable[GeometryShapeType::COUNT][GeometryShapeType::COUNT];
-	static OverlapFunc		overlapTable[GeometryShapeType::COUNT][GeometryShapeType::COUNT];
+	static SweepFunc		sweepTable[GeometryType::GEOMETRY_TYPE_COUNT][GeometryType::GEOMETRY_TYPE_COUNT];
+	static OverlapFunc		overlapTable[GeometryType::GEOMETRY_TYPE_COUNT][GeometryType::GEOMETRY_TYPE_COUNT];
 };
-
 
 class GeometryFactory
 {
@@ -172,7 +111,6 @@ public:
 	static Geometry* CreateTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C);
 	static Geometry* CreateTriangleMesh();
 };
-
 
 struct RayCastResult
 {

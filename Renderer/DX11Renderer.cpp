@@ -466,13 +466,13 @@ public:
         return false;
     }
 
-    template <class TShape>
+    template <class TGeom>
     void AddGeometry(Geometry* geom, bool DrawMesh = true)
     {
 		std::vector<Vector3d> Vertices;
 		std::vector<uint16_t> Indices;
         std::vector<Vector3d> Normals;
-        TShape* shape = geom->CastGeometry<TShape>();
+        TGeom* shape = geom->GetGeometry<TGeom>();
 
         if (DrawMesh)
         {
@@ -529,13 +529,13 @@ public:
 	{
 		if (geom->GetShapeType() == TRIANGLE_MESH)
 		{
-			AddTriMesh(geom->CastGeometry<Mesh>(), geom->GetTransform(), true);
+			AddTriMesh(geom->GetGeometry<Mesh>(), geom->GetTransform(), true);
 		}
 		else if (geom->GetShapeType() == CONVEX_MESH)
 		{
             AddGeometry<ConvexMesh>(geom);
 		}
-        else if (geom->GetShapeType() == OBB)
+        else if (geom->GetShapeType() == BOX)
         {
             // AddGeometry<AxisAlignedBox3d>(geom);
         }

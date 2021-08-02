@@ -4,6 +4,7 @@
 #include "../Maths/Vector3d.h"
 #include "../Maths/Matrix3d.h"
 #include "../Maths/Box3d.h"
+#include "GeometryType.h"
 
 const float kEpsilonPlane = 0.000001f;
 
@@ -14,12 +15,19 @@ public:
 	float D;
 
 public:
-	Plane3d() {}
+	Plane3d()
+	{
+	}
 
 	Plane3d(const Vector3d& InNormal, float InD)
 	{
 		Normal = InNormal.Unit();
 		D = InD;
+	}
+
+	static constexpr GeometryType	StaticType()
+	{
+		return GeometryType::PLANE;
 	}
 
 public:

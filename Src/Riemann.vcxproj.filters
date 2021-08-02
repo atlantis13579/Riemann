@@ -97,6 +97,7 @@
     <ClInclude Include="Tools\PhysxFormat_41.hpp" />
     <ClInclude Include="CollisionPrimitive\OrientedBox3d.h" />
     <ClInclude Include="CollisionPrimitive\HeightField3d.h" />
+    <ClInclude Include="CollisionPrimitive\GeometryType.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
