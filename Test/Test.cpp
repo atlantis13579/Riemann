@@ -177,7 +177,7 @@ void TestGeometryQuery()
 	scene.BuildStaticGeometry(objs, 1);
 
 	RayCastResult result;
-	scene.RayCast(Vector3d(0.0f, 0.0f, 5.0f), Vector3d(0.0f, 0.0f, -1.0f), &result);
+	scene.RayCast(Vector3d(0.2f, 0.2f, 5.0f), Vector3d(0.2f, 0.2f, -1.0f), &result);
 	assert(result.hit);
 	assert(fabsf(result.hitTime - 4.0f) < 0.001f);
 

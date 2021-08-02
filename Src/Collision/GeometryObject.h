@@ -5,21 +5,19 @@
 #include "../Maths/Transform.h"
 #include "../CollisionPrimitive/GeometryType.h"
 
-typedef bool			(*OverlapFunc)		(void*, void*);
-typedef bool			(*SweepFunc)		(void*, void*, const Vector3d&, float*);
+typedef bool			(*RayCastFunc)		(void*, const Vector3d&, const Vector3d&, float*);
+typedef bool			(*OverlapFunc)		(const void*, const void*);
+typedef bool			(*SweepFunc)		(const void*, const void*, const Vector3d&, float*);
 
 class GeometryFactory;
+class Geometry_Registration;
 
 class Geometry
 {
 	friend class GeometryFactory;
-
+	friend class Geometry_Registration;
 public:
 	virtual ~Geometry() {}
-
-	const Box3d&			GetBoundingVolumeWorldSpace() const;
-	Vector3d				GetSupportWorldSpace(const Vector3d& Dir);
-	Matrix3d				GetInverseInertia(float Mass) const;
 
 	void					SetPosition(const Vector3d& Position);
 	Vector3d				GetPosition() const;
@@ -37,15 +35,15 @@ public:
 		return &m_Transform;
 	}
 
-	GeometryType			GetShapeType()
+	GeometryType			GetGeometryType() const
 	{
-		return Type;
+		return m_Type;
 	}
 
 	template<class GEOM_TYPE>
 	GEOM_TYPE*				GetGeometry()
 	{
-		if (Type == GEOM_TYPE::StaticType())
+		if (m_Type == GEOM_TYPE::StaticType())
 		{
 			return static_cast<GEOM_TYPE*>(GetGeometryObj());
 		}
@@ -55,7 +53,7 @@ public:
 	template<class GEOM_TYPE>
 	const GEOM_TYPE*		GetGeometry() const
 	{
-		if (Type == GEOM_TYPE::StaticType())
+		if (m_Type == GEOM_TYPE::StaticType())
 		{
 			return static_cast<GEOM_TYPE*>(GetGeometryObj());
 		}
@@ -75,28 +73,32 @@ public:
 		}
 	}
 
-	virtual	bool			RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t) = 0;
-	virtual bool			Overlap(const Geometry *Geom) = 0;
-	virtual bool			Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) = 0;
+	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
+	bool					Overlap(const Geometry* Geom) const;
+	bool					Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const;
+
+	const Box3d&			GetBoundingVolumeWorldSpace() const;
+	Vector3d				GetSupportWorldSpace(const Vector3d& Dir);
+	Matrix3d				GetInverseInertia(float Mass) const;
+
+private:
 	virtual Matrix3d		GetInertiaLocalSpace(float Mass) const = 0;
 	virtual Vector3d		GetSupportLocalSpace(const Vector3d& Dir) const = 0;
 	virtual Box3d			GetBoundingVolumeLocalSpace() const = 0;
 
-private:
-
-private:
 	virtual const void*		GetGeometryObj() const = 0;
 	virtual void*			GetGeometryObj() = 0;
 
 protected:
-	GeometryType			Type;
+	GeometryType			m_Type;
 	Box3d					m_BoxWorld;
 	Transform				m_Transform;
 	std::string				m_Name;
 	void*					m_Entity;
 
-	static SweepFunc		sweepTable[GeometryType::GEOMETRY_TYPE_COUNT][GeometryType::GEOMETRY_TYPE_COUNT];
-	static OverlapFunc		overlapTable[GeometryType::GEOMETRY_TYPE_COUNT][GeometryType::GEOMETRY_TYPE_COUNT];
+	static RayCastFunc		raycastTable[GeometryType::GEOMETRY_COUNT];
+	static SweepFunc		sweepTable[GeometryType::GEOMETRY_COUNT][GeometryType::GEOMETRY_COUNT];
+	static OverlapFunc		overlapTable[GeometryType::GEOMETRY_COUNT][GeometryType::GEOMETRY_COUNT];
 };
 
 class GeometryFactory

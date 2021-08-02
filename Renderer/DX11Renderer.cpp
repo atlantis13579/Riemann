@@ -527,35 +527,35 @@ public:
 
     virtual void AddGeometry(Geometry* geom) override
 	{
-		if (geom->GetShapeType() == TRIANGLE_MESH)
+		if (geom->GetGeometryType() == TRIANGLE_MESH)
 		{
 			AddTriMesh(geom->GetGeometry<Mesh>(), geom->GetTransform(), true);
 		}
-		else if (geom->GetShapeType() == CONVEX_MESH)
+		else if (geom->GetGeometryType() == CONVEX_MESH)
 		{
             AddGeometry<ConvexMesh>(geom);
 		}
-        else if (geom->GetShapeType() == BOX)
+        else if (geom->GetGeometryType() == BOX)
         {
             // AddGeometry<AxisAlignedBox3d>(geom);
         }
-		else if (geom->GetShapeType() == PLANE)
+		else if (geom->GetGeometryType() == PLANE)
 		{
             AddGeometry <Plane3d > (geom);
 		}
-		else if (geom->GetShapeType() == SPHERE)
+		else if (geom->GetGeometryType() == SPHERE)
 		{
 			AddGeometry <Sphere3d >(geom);
 		}
-		else if (geom->GetShapeType() == CAPSULE)
+		else if (geom->GetGeometryType() == CAPSULE)
 		{
 			AddGeometry <Capsule3d >(geom);
 		}
-		else if (geom->GetShapeType() == CYLINDER)
+		else if (geom->GetGeometryType() == CYLINDER)
 		{
 			AddGeometry <Cylinder3d >(geom);
 		}
-		else if (geom->GetShapeType() == HEIGHTFIELD)
+		else if (geom->GetGeometryType() == HEIGHTFIELD)
 		{
 			AddGeometry <HeightField3d >(geom);
 		}

@@ -47,7 +47,7 @@ public:
 	void Compact()
 	{
 		Vertices.resize(NumVertices);
-		Indices.resize(NumTriangles * GetIndicesWidth());
+		Indices.resize(3 * NumTriangles * GetIndicesWidth());
 	}
 
 	void* GetVertexBuffer()

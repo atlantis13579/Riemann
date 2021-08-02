@@ -17,36 +17,20 @@ class TGeometry : public Geometry, public GEOM_TYPE
 public:
 	TGeometry(const Vector3d& Translation, const Quaternion& Rotation)
 	{
-		Type = GEOM_TYPE::StaticType();
+		m_Type = GEOM_TYPE::StaticType();
 		SetPosition(Translation);
 		SetRotationQuat(Rotation);
 	}
 	virtual ~TGeometry() {}
 
-	virtual const void* GetGeometryObj() const override final
+	virtual const void*		GetGeometryObj() const override final
 	{
 		return static_cast<const GEOM_TYPE*>(this);
 	}
 
-	virtual void* GetGeometryObj() override final
+	virtual void*			GetGeometryObj() override final
 	{
 		return static_cast<GEOM_TYPE*>(this);
-	}
-
-	virtual	bool			RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t) override final
-	{
-		return GEOM_TYPE::IntersectRay(Origin, Dir, t);
-	}
-
-	virtual bool			Overlap(const Geometry* Geom) override final
-	{
-
-		return true;
-	}
-
-	virtual bool			Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) override final
-	{
-		return true;
 	}
 
 	virtual Matrix3d		GetInertiaLocalSpace(float Mass) const override final
@@ -63,7 +47,6 @@ public:
 	{
 		return GEOM_TYPE::GetBoundingVolume();
 	}
-
 };
 
 const Box3d& Geometry::GetBoundingVolumeWorldSpace() const
@@ -119,6 +102,40 @@ void				Geometry::SetEntity(void* Entity)
 	m_Entity = Entity;
 }
 
+bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
+{
+	RayCastFunc func = Geometry::raycastTable[m_Type];
+#ifdef DEBUG
+	assert(func);
+#endif
+	void* Obj = GetGeometryObj();
+	const Vector3d Origin_Local = m_Transform.WorldToLocal(Origin);
+	const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
+	return func(Obj, Origin_Local, Dir_Local, t);
+}
+
+bool				Geometry::Overlap(const Geometry* Geom) const
+{
+	GeometryType Type1 = GetGeometryType();
+	GeometryType Type2 = Geom->GetGeometryType();
+	OverlapFunc func = Geometry::overlapTable[Type1][Type1];
+#ifdef DEBUG
+	assert(func);
+#endif
+	return func(GetGeometryObj(), Geom->GetGeometryObj());
+}
+
+bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const
+{
+	GeometryType Type1 = GetGeometryType();
+	GeometryType Type2 = Geom->GetGeometryType();
+	SweepFunc func = Geometry::sweepTable[Type1][Type1];
+#ifdef DEBUG
+	assert(func);
+#endif
+	return func(GetGeometryObj(), Geom->GetGeometryObj(), Dir, t);
+}
+
 Vector3d			Geometry::GetSupportWorldSpace(const Vector3d& Dir)
 {
 	Vector3d DirLocal = m_Transform.WorldToLocal(Dir);
@@ -132,14 +149,33 @@ Matrix3d			Geometry::GetInverseInertia(float Mass) const
 	return GetInertiaLocalSpace(Mass).Inverse();
 }
 
-SweepFunc			Geometry::sweepTable[GeometryType::GEOMETRY_TYPE_COUNT][GeometryType::GEOMETRY_TYPE_COUNT] = { 0 };
-OverlapFunc			Geometry::overlapTable[GeometryType::GEOMETRY_TYPE_COUNT][GeometryType::GEOMETRY_TYPE_COUNT] = {0};
+template <class T>
+static bool			_RayCast(void* Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)
+{
+	T* p = reinterpret_cast<T*>(Obj);
+	return p->IntersectRay(Origin, Dir, t);
+}
+
+RayCastFunc			Geometry::raycastTable[GeometryType::GEOMETRY_COUNT] = { 0 };
+SweepFunc			Geometry::sweepTable[GeometryType::GEOMETRY_COUNT][GeometryType::GEOMETRY_COUNT] = { 0 };
+OverlapFunc			Geometry::overlapTable[GeometryType::GEOMETRY_COUNT][GeometryType::GEOMETRY_COUNT] = {0};
+
+#define	REG_GEOMETRY_OBJ(_type, _name)									\
+	Geometry::raycastTable[_type] =	_RayCast<_name>;
 
 class Geometry_Registration
 {
 public:
 	Geometry_Registration()
 	{
+		REG_GEOMETRY_OBJ(GeometryType::BOX, AxisAlignedBox3d)
+		REG_GEOMETRY_OBJ(GeometryType::PLANE, Plane3d)
+		REG_GEOMETRY_OBJ(GeometryType::SPHERE, Sphere3d)
+		REG_GEOMETRY_OBJ(GeometryType::CAPSULE, Capsule3d)
+		REG_GEOMETRY_OBJ(GeometryType::HEIGHTFIELD, HeightField3d)
+		REG_GEOMETRY_OBJ(GeometryType::CONVEX_MESH, ConvexMesh)
+		REG_GEOMETRY_OBJ(GeometryType::TRIANGLE, Triangle3d)
+		REG_GEOMETRY_OBJ(GeometryType::TRIANGLE_MESH, TriangleMesh)
 	}
 };
 Geometry_Registration s_geom_registration;
