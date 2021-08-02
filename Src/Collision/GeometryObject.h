@@ -45,7 +45,7 @@ public:
 	{
 		if (m_Type == GEOM_TYPE::StaticType())
 		{
-			return static_cast<GEOM_TYPE*>(GetGeometryObj());
+			return static_cast<GEOM_TYPE*>(GetGeometry());
 		}
 		return nullptr;
 	}
@@ -55,7 +55,7 @@ public:
 	{
 		if (m_Type == GEOM_TYPE::StaticType())
 		{
-			return static_cast<GEOM_TYPE*>(GetGeometryObj());
+			return static_cast<GEOM_TYPE*>(GetGeometry());
 		}
 		return nullptr;
 	}
@@ -77,17 +77,17 @@ public:
 	bool					Overlap(const Geometry* Geom) const;
 	bool					Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const;
 
-	const Box3d&			GetBoundingVolumeWorldSpace() const;
-	Vector3d				GetSupportWorldSpace(const Vector3d& Dir);
-	Matrix3d				GetInverseInertia(float Mass) const;
+	const Box3d&			GetBoundingVolume_WorldSpace() const;
+	Vector3d				GetSupport_WorldSpace(const Vector3d& Dir);
+	Matrix3d				GetInverseInertia_WorldSpace(float Mass) const;
 
 private:
-	virtual Matrix3d		GetInertiaLocalSpace(float Mass) const = 0;
-	virtual Vector3d		GetSupportLocalSpace(const Vector3d& Dir) const = 0;
-	virtual Box3d			GetBoundingVolumeLocalSpace() const = 0;
+	virtual Matrix3d		GetInertia_LocalSpace(float Mass) const = 0;
+	virtual Vector3d		GetSupport_LocalSpace(const Vector3d& Dir) const = 0;
+	virtual Box3d			GetBoundingVolume_LocalSpace() const = 0;
 
-	virtual const void*		GetGeometryObj() const = 0;
-	virtual void*			GetGeometryObj() = 0;
+	virtual const void*		GetGeometry() const = 0;
+	virtual void*			GetGeometry() = 0;
 
 protected:
 	GeometryType			m_Type;

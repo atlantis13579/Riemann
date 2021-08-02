@@ -20,7 +20,7 @@ void AABBPruner::BuildAABB(const std::vector<Geometry*>& Objects, int nPrimitive
 	boxes.resize(Objects.size());
 	for (size_t i = 0; i < Objects.size(); ++i)
 	{
-		boxes[i] = Objects[i]->GetBoundingVolumeWorldSpace();
+		boxes[i] = Objects[i]->GetBoundingVolume_WorldSpace();
 	}
 	AABBTreeBuildData param(&boxes[0], (int)boxes.size(), nPrimitivePerNode);
 	

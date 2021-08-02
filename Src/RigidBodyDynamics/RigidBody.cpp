@@ -15,7 +15,7 @@ RigidBody*	RigidBody::CreateRigidBody(Geometry* Geom, const RigidBodyParam& para
 {
 	RigidBody* Rigid = new RigidBody;
 	Rigid->Mass = param.Mass;
-	Rigid->InvInertia = Geom->GetInverseInertia(Rigid->Mass);
+	Rigid->InvInertia = Geom->GetInverseInertia_WorldSpace(Rigid->Mass);
 	Rigid->X = Geom->GetPosition();
 	Rigid->Q = Geom->GetRotationQuat();
 	Rigid->P = param.LinearVelocity * Rigid->Mass;

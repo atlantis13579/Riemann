@@ -20,12 +20,12 @@ public:
 
 	inline Vector3d Support1(const Vector3d& Dir)
 	{
-		return Geom1->GetSupportWorldSpace(Dir);
+		return Geom1->GetSupport_WorldSpace(Dir);
 	}
 
 	inline Vector3d Support2(const Vector3d& Dir)
 	{
-		return Geom2->GetSupportWorldSpace(Dir);
+		return Geom2->GetSupport_WorldSpace(Dir);
 	}
 
 	virtual Vector3d Support(const Vector3d& Dir) override
@@ -66,8 +66,8 @@ public:
 
 	bool Penetration(Geometry* Geom1, Geometry* Geom2, ContactResult& result)
 	{
-		Vector3d position1 = Geom1->GetBoundingVolumeWorldSpace().GetCenter();
-		Vector3d position2 = Geom2->GetBoundingVolumeWorldSpace().GetCenter();
+		Vector3d position1 = Geom1->GetBoundingVolume_WorldSpace().GetCenter();
+		Vector3d position2 = Geom2->GetBoundingVolume_WorldSpace().GetCenter();
 		Vector3d guess = position1 - position2;
 
 		// result

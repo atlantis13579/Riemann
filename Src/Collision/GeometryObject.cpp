@@ -23,33 +23,33 @@ public:
 	}
 	virtual ~TGeometry() {}
 
-	virtual const void*		GetGeometryObj() const override final
+	virtual const void*		GetGeometry() const override final
 	{
 		return static_cast<const GEOM_TYPE*>(this);
 	}
 
-	virtual void*			GetGeometryObj() override final
+	virtual void*			GetGeometry() override final
 	{
 		return static_cast<GEOM_TYPE*>(this);
 	}
 
-	virtual Matrix3d		GetInertiaLocalSpace(float Mass) const override final
+	virtual Matrix3d		GetInertia_LocalSpace(float Mass) const override final
 	{
 		return GEOM_TYPE::GetInertiaTensor(Mass);
 	}
 
-	virtual Vector3d		GetSupportLocalSpace(const Vector3d& Dir) const override final
+	virtual Vector3d		GetSupport_LocalSpace(const Vector3d& Dir) const override final
 	{
 		return GEOM_TYPE::GetSupport(Dir);
 	}
 
-	virtual Box3d			GetBoundingVolumeLocalSpace() const override final
+	virtual Box3d			GetBoundingVolume_LocalSpace() const override final
 	{
 		return GEOM_TYPE::GetBoundingVolume();
 	}
 };
 
-const Box3d& Geometry::GetBoundingVolumeWorldSpace() const
+const Box3d& Geometry::GetBoundingVolume_WorldSpace() const
 {
 	return m_BoxWorld;
 }
@@ -62,7 +62,7 @@ Vector3d			Geometry::GetPosition() const
 void				Geometry::SetPosition(const Vector3d& Position)
 {
 	m_Transform.SetTranslation(Position);
-	m_BoxWorld = GetBoundingVolumeLocalSpace().Transform(m_Transform.GetWorldMatrix());
+	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_Transform.GetWorldMatrix());
 	return;
 }
 
@@ -79,7 +79,7 @@ Quaternion			Geometry::GetRotationQuat() const
 void				Geometry::SetRotationQuat(const Quaternion& Rotation)
 {
 	m_Transform.SetRotation(Rotation);
-	m_BoxWorld = GetBoundingVolumeLocalSpace().Transform(m_Transform.GetWorldMatrix());
+	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_Transform.GetWorldMatrix());
 }
 
 const Matrix4d&		Geometry::GetWorldMatrix()
@@ -108,7 +108,7 @@ bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
 #ifdef DEBUG
 	assert(func);
 #endif
-	void* Obj = GetGeometryObj();
+	void* Obj = GetGeometry();
 	const Vector3d Origin_Local = m_Transform.WorldToLocal(Origin);
 	const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
 	return func(Obj, Origin_Local, Dir_Local, t);
@@ -122,7 +122,7 @@ bool				Geometry::Overlap(const Geometry* Geom) const
 #ifdef DEBUG
 	assert(func);
 #endif
-	return func(GetGeometryObj(), Geom->GetGeometryObj());
+	return func(GetGeometry(), Geom->GetGeometry());
 }
 
 bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const
@@ -133,20 +133,20 @@ bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) con
 #ifdef DEBUG
 	assert(func);
 #endif
-	return func(GetGeometryObj(), Geom->GetGeometryObj(), Dir, t);
+	return func(GetGeometry(), Geom->GetGeometry(), Dir, t);
 }
 
-Vector3d			Geometry::GetSupportWorldSpace(const Vector3d& Dir)
+Vector3d			Geometry::GetSupport_WorldSpace(const Vector3d& Dir)
 {
 	Vector3d DirLocal = m_Transform.WorldToLocal(Dir);
-	Vector3d SupportLocal = GetSupportLocalSpace(DirLocal);
+	Vector3d SupportLocal = GetSupport_LocalSpace(DirLocal);
 	Vector3d SupportWorld = m_Transform.LocalToWorld(SupportLocal);
 	return SupportWorld;
 }
 
-Matrix3d			Geometry::GetInverseInertia(float Mass) const
+Matrix3d			Geometry::GetInverseInertia_WorldSpace(float Mass) const
 {
-	return GetInertiaLocalSpace(Mass).Inverse();
+	return GetInertia_LocalSpace(Mass).Inverse();
 }
 
 template <class T>
