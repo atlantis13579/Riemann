@@ -3,7 +3,7 @@
 
 #include <math.h>
 #include "../Maths/Matrix3d.h"
-#include "GeometryType.h"
+#include "ShapeType.h"
 
 class Sphere3d
 {
@@ -22,9 +22,9 @@ public:
 		Radius = InRadius;
 	}
 
-	static constexpr GeometryType	StaticType()
+	static constexpr ShapeType	StaticType()
 	{
-		return GeometryType::SPHERE;
+		return ShapeType::SPHERE;
 	}
 
 public:

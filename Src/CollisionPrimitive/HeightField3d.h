@@ -6,7 +6,7 @@
 #include "../Maths/Box3d.h"
 #include "../Maths/Vector3d.h"
 #include "../Maths/Matrix3d.h"
-#include "GeometryType.h"
+#include "ShapeType.h"
 
 class HeightField3d
 {
@@ -32,9 +32,9 @@ public:
 		Init(_Bv, _nRows, _nCols);
 	}
 
-	static constexpr GeometryType	StaticType()
+	static constexpr ShapeType	StaticType()
 	{
-		return GeometryType::HEIGHTFIELD;
+		return ShapeType::HEIGHTFIELD;
 	}
 
 	void Init(const Box3d& _Bv, int _nRows, int _nCols)

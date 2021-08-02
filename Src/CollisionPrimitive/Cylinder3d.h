@@ -3,7 +3,7 @@
 
 #include <math.h>
 #include "../Maths/Matrix3d.h"
-#include "GeometryType.h"
+#include "ShapeType.h"
 
 class Cylinder3d
 {
@@ -23,9 +23,9 @@ public:
 		X1 = _X1;
 	}
 
-	static constexpr GeometryType	StaticType()
+	static constexpr ShapeType	StaticType()
 	{
-		return GeometryType::CYLINDER;
+		return ShapeType::CYLINDER;
 	}
 
 public:

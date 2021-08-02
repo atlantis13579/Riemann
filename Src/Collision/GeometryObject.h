@@ -3,19 +3,19 @@
 #include <string>
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
-#include "../CollisionPrimitive/GeometryType.h"
+#include "../CollisionPrimitive/ShapeType.h"
 
 typedef bool			(*RayCastFunc)		(void*, const Vector3d&, const Vector3d&, float*);
 typedef bool			(*OverlapFunc)		(const void*, const void*);
 typedef bool			(*SweepFunc)		(const void*, const void*, const Vector3d&, float*);
 
 class GeometryFactory;
-class Geometry_Registration;
+class GeometryRegistration;
 
 class Geometry
 {
 	friend class GeometryFactory;
-	friend class Geometry_Registration;
+	friend class GeometryRegistration;
 public:
 	virtual ~Geometry() {}
 
@@ -35,27 +35,27 @@ public:
 		return &m_Transform;
 	}
 
-	GeometryType			GetGeometryType() const
+	ShapeType				GetShapeType() const
 	{
 		return m_Type;
 	}
 
 	template<class GEOM_TYPE>
-	GEOM_TYPE*				GetGeometry()
+	GEOM_TYPE*				GetShapeObj()
 	{
 		if (m_Type == GEOM_TYPE::StaticType())
 		{
-			return static_cast<GEOM_TYPE*>(GetGeometry());
+			return static_cast<GEOM_TYPE*>(GetShapeObj());
 		}
 		return nullptr;
 	}
 
 	template<class GEOM_TYPE>
-	const GEOM_TYPE*		GetGeometry() const
+	const GEOM_TYPE*		GetShapeObj() const
 	{
 		if (m_Type == GEOM_TYPE::StaticType())
 		{
-			return static_cast<GEOM_TYPE*>(GetGeometry());
+			return static_cast<GEOM_TYPE*>(GetShapeObj());
 		}
 		return nullptr;
 	}
@@ -86,19 +86,19 @@ private:
 	virtual Vector3d		GetSupport_LocalSpace(const Vector3d& Dir) const = 0;
 	virtual Box3d			GetBoundingVolume_LocalSpace() const = 0;
 
-	virtual const void*		GetGeometry() const = 0;
-	virtual void*			GetGeometry() = 0;
+	virtual const void*		GetShapeObj() const = 0;
+	virtual void*			GetShapeObj() = 0;
 
 protected:
-	GeometryType			m_Type;
+	ShapeType			m_Type;
 	Box3d					m_BoxWorld;
 	Transform				m_Transform;
 	std::string				m_Name;
 	void*					m_Entity;
 
-	static RayCastFunc		raycastTable[GeometryType::GEOMETRY_COUNT];
-	static SweepFunc		sweepTable[GeometryType::GEOMETRY_COUNT][GeometryType::GEOMETRY_COUNT];
-	static OverlapFunc		overlapTable[GeometryType::GEOMETRY_COUNT][GeometryType::GEOMETRY_COUNT];
+	static RayCastFunc		raycastTable[ShapeType::GEOMETRY_COUNT];
+	static SweepFunc		sweepTable[ShapeType::GEOMETRY_COUNT][ShapeType::GEOMETRY_COUNT];
+	static OverlapFunc		overlapTable[ShapeType::GEOMETRY_COUNT][ShapeType::GEOMETRY_COUNT];
 };
 
 class GeometryFactory

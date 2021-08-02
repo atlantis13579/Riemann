@@ -466,13 +466,13 @@ public:
         return false;
     }
 
-    template <class TGeom>
+    template <class TShape>
     void AddGeometry(Geometry* geom, bool DrawMesh = true)
     {
 		std::vector<Vector3d> Vertices;
 		std::vector<uint16_t> Indices;
         std::vector<Vector3d> Normals;
-        TGeom* shape = geom->GetGeometry<TGeom>();
+        TShape* shape = geom->GetShapeObj<TShape>();
 
         if (DrawMesh)
         {
@@ -527,35 +527,35 @@ public:
 
     virtual void AddGeometry(Geometry* geom) override
 	{
-		if (geom->GetGeometryType() == TRIANGLE_MESH)
+		if (geom->GetShapeType() == TRIANGLE_MESH)
 		{
-			AddTriMesh(geom->GetGeometry<Mesh>(), geom->GetTransform(), true);
+			AddTriMesh(geom->GetShapeObj<Mesh>(), geom->GetTransform(), true);
 		}
-		else if (geom->GetGeometryType() == CONVEX_MESH)
+		else if (geom->GetShapeType() == CONVEX_MESH)
 		{
             AddGeometry<ConvexMesh>(geom);
 		}
-        else if (geom->GetGeometryType() == BOX)
+        else if (geom->GetShapeType() == BOX)
         {
             // AddGeometry<AxisAlignedBox3d>(geom);
         }
-		else if (geom->GetGeometryType() == PLANE)
+		else if (geom->GetShapeType() == PLANE)
 		{
             AddGeometry <Plane3d > (geom);
 		}
-		else if (geom->GetGeometryType() == SPHERE)
+		else if (geom->GetShapeType() == SPHERE)
 		{
 			AddGeometry <Sphere3d >(geom);
 		}
-		else if (geom->GetGeometryType() == CAPSULE)
+		else if (geom->GetShapeType() == CAPSULE)
 		{
 			AddGeometry <Capsule3d >(geom);
 		}
-		else if (geom->GetGeometryType() == CYLINDER)
+		else if (geom->GetShapeType() == CYLINDER)
 		{
 			AddGeometry <Cylinder3d >(geom);
 		}
-		else if (geom->GetGeometryType() == HEIGHTFIELD)
+		else if (geom->GetShapeType() == HEIGHTFIELD)
 		{
 			AddGeometry <HeightField3d >(geom);
 		}

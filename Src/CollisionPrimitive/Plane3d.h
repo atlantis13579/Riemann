@@ -4,7 +4,7 @@
 #include "../Maths/Vector3d.h"
 #include "../Maths/Matrix3d.h"
 #include "../Maths/Box3d.h"
-#include "GeometryType.h"
+#include "ShapeType.h"
 
 const float kEpsilonPlane = 0.000001f;
 
@@ -25,9 +25,9 @@ public:
 		D = InD;
 	}
 
-	static constexpr GeometryType	StaticType()
+	static constexpr ShapeType	StaticType()
 	{
-		return GeometryType::PLANE;
+		return ShapeType::PLANE;
 	}
 
 public:

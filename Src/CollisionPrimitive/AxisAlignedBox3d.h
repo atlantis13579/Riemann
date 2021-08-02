@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "GeometryType.h"
+#include "ShapeType.h"
 #include "../Maths/Matrix3d.h"
 #include "../Maths/Box3d.h"
 
@@ -22,9 +22,9 @@ public:
 		Max = Bmax;
 	}
 
-	static constexpr GeometryType	StaticType()
+	static constexpr ShapeType	StaticType()
 	{
-		return GeometryType::BOX;
+		return ShapeType::BOX;
 	}
 
 public:

@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "GeometryType.h"
+#include "ShapeType.h"
 
 class OrientedBox3d
 {

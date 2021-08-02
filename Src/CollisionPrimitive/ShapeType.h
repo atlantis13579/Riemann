@@ -1,6 +1,6 @@
 #pragma once
 
-enum GeometryType
+enum ShapeType
 {
 	UNKNOWN = 0,
 	BOX,

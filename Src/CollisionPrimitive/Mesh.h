@@ -8,7 +8,7 @@
 
 #include "../Maths/Box3d.h"
 #include "../Maths/Vector3d.h"
-#include "GeometryType.h"
+#include "ShapeType.h"
 
 #define TRIANGLE_BATCH			(4096)
 #define	INDICES_16_BIT			(0x01)
@@ -30,9 +30,9 @@ public:
 		Release();
 	}
 
-	static constexpr GeometryType	StaticType()
+	static constexpr ShapeType	StaticType()
 	{
-		return GeometryType::TRIANGLE_MESH;
+		return ShapeType::TRIANGLE_MESH;
 	}
 
 	void Release()

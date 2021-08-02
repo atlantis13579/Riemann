@@ -6,7 +6,7 @@
 #include "../Maths/Vector3d.h"
 #include "../Maths/Box3d.h"
 #include "../Maths/Matrix3d.h"
-#include "GeometryType.h"
+#include "ShapeType.h"
 #include "Plane3d.h"
 
 struct HullFace3d
@@ -36,9 +36,9 @@ public:
 		Release();
 	}
 
-	static constexpr GeometryType	StaticType()
+	static constexpr ShapeType	StaticType()
 	{
-		return GeometryType::CONVEX_MESH;
+		return ShapeType::CONVEX_MESH;
 	}
 
 	void			Release()
