@@ -54,13 +54,13 @@ void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, i
 	}
 }
 
-bool GeometryQuery::RayCast(const Vector3d& Origin, const Vector3d& Dir, RayCastResult* Result)
+bool GeometryQuery::RayCast(const Vector3d& Origin, const Vector3d& Dir, const RayCastOption& Option, RayCastResult* Result)
 {
 	if (m_staticGeometry)
 	{
 		Ray3d ray(Origin, Dir);
 		Geometry** pp = &m_Objects[0];
-		return m_staticGeometry->RayCast(ray, pp, Result);
+		return m_staticGeometry->RayCast(ray, pp, Option, Result);
 	}
 	return false;
 }

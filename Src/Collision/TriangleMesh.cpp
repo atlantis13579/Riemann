@@ -1,6 +1,6 @@
 
 #include "TriangleMesh.h"
-#include "GeometryObject.h"
+#include "GeometryQuery.h"
 #include "../CollisionPrimitive/Triangle3d.h"
 
 #include <algorithm>

@@ -4,6 +4,7 @@
 #include "../Maths/Box3d.h"
 #include "../CollisionPrimitive/Ray3d.h"
 #include "AABBTreeOffline.h"
+#include "GeometryQuery.h"
 
 struct RayCastResult;
 struct AABBTreeNodeInference;
@@ -26,9 +27,9 @@ public:
 
 	void	StaticBuild(AABBTreeBuildData& params);
 
-	int		Traverse(const Vector3d& Point) const;
-	int		RayCast(const Ray3d& ray, Geometry** ObjectCollection, RayCastResult *Result) const;
-	int		RayCastBoundingBox(const Ray3d& ray, float* t) const;
+	int		IntersectPoint(const Vector3d& Point) const;
+	bool	RayCast(const Ray3d& ray, Geometry** ObjectCollection, const RayCastOption& Option, RayCastResult *Result) const;
+	bool	RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const;
 	void	Statistic(TreeStatistics &stats);
 
 private:

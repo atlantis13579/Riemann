@@ -50,9 +50,9 @@ void AABBTree::StaticBuild(AABBTreeBuildData& params)
 	params.pAABBTree = nullptr;
 }
 
+#define	GET_INDEX(_p)	(*_p->GetPrimitiveIndices(m_PrimitiveIndicesBase))
 #define LEFT_NODE(_p)	(_p->GetLeftNode(m_AABBTreeInference))
 #define RIGHT_NODE(_p)	(_p->GetRightNode(m_AABBTreeInference))
-
 
 void AABBTree::Statistic(TreeStatistics& stat)
 {
@@ -98,7 +98,7 @@ void AABBTree::Statistic(TreeStatistics& stat)
 	}
 }
 
-int AABBTree::Traverse(const Vector3d& Point) const
+int AABBTree::IntersectPoint(const Vector3d& Point) const
 {
 	AABBTreeNodeInference* p = m_AABBTreeInference;
 	if (p == nullptr || !p->BV.IsInside(Point))
@@ -110,32 +110,46 @@ int AABBTree::Traverse(const Vector3d& Point) const
 	{
 		if (p->IsLeafNode())
 		{
-			return *p->GetPrimitiveIndices(m_PrimitiveIndicesBase);
+			return GET_INDEX(p);
 		}
 
-		if (p->GetLeftNode(m_AABBTreeInference)->BV.IsInside(Point))
+		AABBTreeNodeInference* Left = LEFT_NODE(p);
+		AABBTreeNodeInference* Right = RIGHT_NODE(p);
+		if (Left && Left->BV.IsInside(Point))
 		{
-			p = p->GetLeftNode(m_AABBTreeInference);
+			p = Left;
 			continue;
 		}
-		else if (p->GetRightNode(m_AABBTreeInference)->BV.IsInside(Point))
+		if (Right && Right->BV.IsInside(Point))
 		{
-			p = p->GetRightNode(m_AABBTreeInference);
+			p = Right;
 			continue;
 		}
 
-		return *p->GetPrimitiveIndices(m_PrimitiveIndicesBase);
+		return GET_INDEX(p);
 	}
 
 	return -1;
 }
 
-static int RayCastGeometry(const Ray3d& ray, int* prims, int numPrims, Geometry** ObjectCollection, RayCastResult* Result)
+static int IntersectGeometry(const Ray3d& ray, int* prims, int numPrims, Geometry** ObjectCollection, const Box3d& BV, const RayCastOption& Option, RayCastResult* Result)
 {
 	assert(numPrims > 0);
 	if (ObjectCollection == nullptr)
 	{
-		return *prims;
+		float t;
+		if (ray.IntersectAABB(BV.Min, BV.Max, &t))
+		{
+			Result->hit = true;
+			if (t < Result->hitTime)
+			{
+				Result->hitPoint = ray.PointAt(t);
+				Result->hitTime = t;
+			}
+			return *prims;
+		}
+
+		return -1;
 	}
 	int min_idx = -1;
 	float t, min_t = FLT_MAX;
@@ -144,8 +158,15 @@ static int RayCastGeometry(const Ray3d& ray, int* prims, int numPrims, Geometry*
 		const int index = prims[i];
 		Geometry *Geom = ObjectCollection[index];
 		bool hit = Geom->RayCast(ray.Origin, ray.Dir, &t);
-		if (hit)
+		if (hit && t < Option.MaxDist)
 		{
+			if (Option.Type == RayCastOption::RAYCAST_ANY)
+			{
+				min_idx = i;
+				min_t = t;
+				break;
+			}
+
 			if (t < min_t)
 			{
 				min_idx = i;
@@ -157,81 +178,97 @@ static int RayCastGeometry(const Ray3d& ray, int* prims, int numPrims, Geometry*
 	if (min_idx != -1)
 	{
 		Result->hit = true;
-		Result->hitPoint = ray.PointAt(min_t);
-		Result->hitGeom = ObjectCollection[min_idx];
-		Result->hitTime = min_t;
+		if (min_t < Result->hitTime)
+		{
+			Result->hitPoint = ray.PointAt(min_t);
+			Result->hitGeom = ObjectCollection[min_idx];
+			Result->hitTime = min_t;
+		}
 	}
 	return min_idx;
 }
 
-int  AABBTree::RayCast(const Ray3d& ray, Geometry **ObjectCollection, RayCastResult* Result) const
+#define SET_TIME(_t)	if (ObjectCollection == nullptr) Result->hitTime = (_t);
+
+bool  AABBTree::RayCast(const Ray3d& ray, Geometry **ObjectCollection, const RayCastOption& Option, RayCastResult* Result) const
 {
 	Result->hit = false;
+	Result->hitTime = FLT_MAX;
 
 	float t1, t2;
 	AABBTreeNodeInference* p = m_AABBTreeInference;
 	if (p == nullptr || !ray.IntersectAABB(p->BV.Min, p->BV.Max, &t1))
 	{
-		return -1;
+		return false;
 	}
-	Result->hit = true;
-	Result->hitTime = t1;
 
-	while (p)
+	FixedStack<AABBTreeNodeInference, 32> stack;
+	stack.Push(m_AABBTreeInference);
+
+	while (!stack.Empty())
 	{
-		if (p->IsLeafNode())
+		AABBTreeNodeInference* p = stack.Pop();
+
+		while (p)
 		{
-			return RayCastGeometry(ray, p->GetPrimitiveIndices(m_PrimitiveIndicesBase), p->GetNumPrimitives(), ObjectCollection, Result);
-		}
-
-		AABBTreeNodeInference* p1 = p->GetLeftNode(m_AABBTreeInference);
-		AABBTreeNodeInference* p2 = p->GetRightNode(m_AABBTreeInference);
-
-		bool hit1 = ray.IntersectAABB(p1->BV.Min, p1->BV.Max, &t1);
-		bool hit2 = ray.IntersectAABB(p2->BV.Min, p2->BV.Max, &t2);
-
-		if (hit1 && hit2)
-		{
-			if (t1 < t2)
+			if (p->IsLeafNode())
 			{
-				Result->hitTime = t1;
-				p = p1;
+				int* PrimitiveIndices = p->GetPrimitiveIndices(m_PrimitiveIndicesBase);
+				int	 nPrimitives = p->GetNumPrimitives();
+				const Box3d& Box = p->GetBoundingVolume();
+				int HitId =	IntersectGeometry(ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
+				if (HitId >= 0)
+				{
+					if (Option.Type == RayCastOption::RAYCAST_ANY)
+					{
+						return true;
+					}
+				}
+				break;
 			}
-			else
+
+			AABBTreeNodeInference* Left = LEFT_NODE(p);
+			AABBTreeNodeInference* Right = RIGHT_NODE(p);
+
+			bool hit1 = ray.IntersectAABB(Left->BV.Min, Left->BV.Max, &t1) && t1 < Result->hitTime;
+			bool hit2 = ray.IntersectAABB(Right->BV.Min, Right->BV.Max, &t2) && t2 < Result->hitTime;
+
+			if (hit1 && hit2)
 			{
-				Result->hitTime = t2;
-				p = p2;
+				if (t1 < t2)
+				{
+					p = Left;
+					stack.Push(Right);
+				}
+				else
+				{
+					p = Right;
+					stack.Push(Left);
+				}
+				continue;
 			}
-			continue;
-		}
-		else if (hit1)
-		{
-			Result->hitTime = t1;
-			p = p1;
-			continue;
-		}
-		else if (hit2)
-		{
-			Result->hitTime = t2;
-			p = p2;
-			continue;
+			else if (hit1)
+			{
+				p = Left;
+				continue;
+			}
+			else if (hit2)
+			{
+				p = Right;
+				continue;
+			}
+
+			break;
 		}
 
-		return RayCastGeometry(ray, p->GetPrimitiveIndices(m_PrimitiveIndicesBase), p->GetNumPrimitives(), ObjectCollection, Result);
 	}
 
-	return -1;
+	return Result->hit;
 }
 
-int  AABBTree::RayCastBoundingBox(const Ray3d& ray, float* t) const
+bool  AABBTree::RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const
 {
-	RayCastResult Result;
-	int hit_obj = RayCast(ray, nullptr, &Result);
-	if (hit_obj >= 0)
-	{
-		*t = Result.hitTime;
-	}
-	return hit_obj;
+	return RayCast(ray, nullptr, Option, Result);
 }
 
 

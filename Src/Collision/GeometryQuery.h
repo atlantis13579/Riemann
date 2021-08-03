@@ -8,6 +8,63 @@ class AABBTree;
 class DynamicAABBTree;
 class SparseSpatialHash;
 
+
+struct RayCastOption
+{
+	enum RayCastType
+	{
+		RAYCAST_ANY,
+		RAYCAST_NEAREST,
+	};
+	RayCastOption()
+	{
+		Type = RAYCAST_NEAREST;
+		MaxDist = FLT_MAX;
+	}
+	RayCastType Type;
+	float		MaxDist;
+};
+
+struct RayCastResult
+{
+	RayCastResult()
+	{
+		hit = false;
+		hitTime = FLT_MAX;
+		hitGeom = nullptr;
+	}
+
+	bool		hit;
+	float		hitTime;
+	Vector3d	hitPoint;
+	Vector3d	hitNormal;
+	Geometry* hitGeom;
+};
+
+struct SweepOption
+{
+
+};
+
+struct SweepResult
+{
+	SweepResult()
+	{
+	}
+};
+
+struct OverlapOption
+{
+
+};
+
+struct OverlapResult
+{
+	OverlapResult()
+	{
+	}
+};
+
 class GeometryQuery
 {
 public:
@@ -17,7 +74,7 @@ public:
 public:
 	void			BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
 	
-	bool			RayCast(const Vector3d &Origin, const Vector3d& Dir, RayCastResult *Result);
+	bool			RayCast(const Vector3d &Origin, const Vector3d& Dir, const RayCastOption& Option, RayCastResult *Result);
 
 	AABBTree*		GetStaticTree()
 	{

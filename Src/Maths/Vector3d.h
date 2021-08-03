@@ -17,35 +17,35 @@ public:
 		struct { T x, y, z; };
 	};
 
-	TVector3<T>(T _x, T _y, T _z)
+	inline TVector3<T>(T _x, T _y, T _z)
 	{
 		x = _x;
 		y = _y;
 		z = _z;
 	}
 
-	TVector3<T>(T v[3])
+	inline TVector3<T>(T v[3])
 	{
 		x = v[0];
 		y = v[1];
 		z = v[2];
 	}
 
-	TVector3<T>(const TVector3<T>& v)
+	inline TVector3<T>(const TVector3<T>& v)
 	{
 		x = v.x;
 		y = v.y;
 		z = v.z;
 	}
 
-	TVector3<T>(T v)
+	inline TVector3<T>(T v)
 	{
 		x = v;
 		y = v;
 		z = v;
 	}
 
-	TVector3<T>()
+	inline TVector3<T>()
 	{
 	}
 

@@ -39,7 +39,7 @@
 void TestPhysxBin()
 {
 	std::vector<Geometry*> collection;
-	LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
+	LoadPhysxBinary("e:/temp/physx/sss.bin", &collection);
 
 	GeometryQuery query;
 	query.BuildStaticGeometry(collection, 1);
@@ -114,24 +114,22 @@ void TestAABBTree()
 	tree.Release();
 	tree.StaticBuild(param);
 
-	int p = tree.Traverse(Vector3d(-1.0f, -1.0f, -1.0f));
+	int p = tree.IntersectPoint(Vector3d(-1.0f, -1.0f, -1.0f));
 	assert(p == -1);
-	p = tree.Traverse(Vector3d(0.5f, 0.5f, 0.5f));
+	p = tree.IntersectPoint(Vector3d(0.5f, 0.5f, 0.5f));
 	assert(p >= 0);
-	p = tree.Traverse(Vector3d(0.5f, 0.5f, 2.5f));
+	p = tree.IntersectPoint(Vector3d(0.5f, 0.5f, 2.5f));
 	assert(p == 1);
 
-	float t;
+	RayCastOption Option;
+	RayCastResult Result;
 	Ray3d ray(Vector3d(0.5f, 0.5f, 100.0f), Vector3d(0.0f, 0.0f, -1.0f));
-	int hit = tree.RayCastBoundingBox(ray, &t);
-	assert(hit >= 0);
-	Vector3d hit_pos = ray.PointAt(t);
-	
-	ray.Origin = Vector3d(0.5f, 0.5f, 0.5f);
-	hit = tree.RayCastBoundingBox(ray, &t);
-	assert(hit >= 0);
+	bool hit = tree.RayCastBoundingBox(ray, Option, &Result);
+	assert(hit);
 
-	hit_pos = ray.PointAt(t);
+	ray.Origin = Vector3d(0.5f, 0.5f, 0.5f);
+	hit = tree.RayCastBoundingBox(ray, Option, &Result);
+	assert(hit);
 
 	for (int i = 0; i < 10000; ++i)
 	{
@@ -148,11 +146,11 @@ void TestAABBTree()
 	for (int i = 0; i < 10000; ++i)
 	{
 		Vector3d point = Vector3d::Random() * 100.0f;
-		p = tree.Traverse(point);
+		p = tree.IntersectPoint(point);
 
 		ray.Origin = point;
-		hit = tree.RayCastBoundingBox(ray, &t);
-		if (hit >= 0)
+		hit = tree.RayCastBoundingBox(ray, Option, &Result);
+		if (hit)
 		{
 			Box3d bb = boxes[hit];
 			// assert(ray.IntersectAABB(bb.Min, bb.Max, &t));	  // TODO
@@ -184,14 +182,15 @@ void TestGeometryQuery()
 	scene.BuildStaticGeometry(objs, 1);
 
 	RayCastResult result;
-	scene.RayCast(Vector3d(0.2f, 0.2f, 5.0f), Vector3d(0.2f, 0.2f, -1.0f), &result);
+	RayCastOption option;
+	scene.RayCast(Vector3d(0.2f, 0.2f, 5.0f), Vector3d(0.2f, 0.2f, -1.0f), option , &result);
 	assert(result.hit);
 	assert(fabsf(result.hitTime - 4.0f) < 0.001f);
 
-	scene.RayCast(Vector3d(0.0f, 0.0f, -5.0f), Vector3d(0.0f, 0.0f, -1.0f), &result);
+	scene.RayCast(Vector3d(0.0f, 0.0f, -5.0f), Vector3d(0.0f, 0.0f, -1.0f), option, &result);
 	assert(!result.hit);
 
-	scene.RayCast(Vector3d(0.0f, 0.0f, 15.0f), Vector3d(0.0f, 0.0f, -1.0f), &result);
+	scene.RayCast(Vector3d(0.0f, 0.0f, 15.0f), Vector3d(0.0f, 0.0f, -1.0f), option, &result);
 	assert(result.hit);
 	assert(fabsf(result.hitTime - 5.0f) < 0.001f);
 

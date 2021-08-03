@@ -15,11 +15,9 @@ template<class GEOM_TYPE>
 class TGeometry : public Geometry, public GEOM_TYPE
 {
 public:
-	TGeometry(const Vector3d& Translation, const Quaternion& Rotation)
+	TGeometry()
 	{
 		m_Type = GEOM_TYPE::StaticType();
-		SetPosition(Translation);
-		SetRotationQuat(Rotation);
 	}
 	virtual ~TGeometry() {}
 
@@ -52,7 +50,7 @@ Vector3d			Geometry::GetPosition() const
 void				Geometry::SetPosition(const Vector3d& Position)
 {
 	m_Transform.SetTranslation(Position);
-	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_Transform.GetWorldMatrix());
+	UpdateBoundingVolume();
 	return;
 }
 
@@ -69,7 +67,7 @@ Quaternion			Geometry::GetRotationQuat() const
 void				Geometry::SetRotationQuat(const Quaternion& Rotation)
 {
 	m_Transform.SetRotation(Rotation);
-	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_Transform.GetWorldMatrix());
+	UpdateBoundingVolume();
 }
 
 const Matrix4d&		Geometry::GetWorldMatrix()
@@ -126,6 +124,11 @@ bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) con
 	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), Dir, t);
 }
 
+void Geometry::UpdateBoundingVolume()
+{
+	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_Transform.GetWorldMatrix());
+}
+
 Vector3d			Geometry::GetSupport_WorldSpace(const Vector3d& Dir)
 {
 	Vector3d DirLocal = m_Transform.WorldToLocal(Dir);
@@ -172,58 +175,74 @@ GeometryRegistration s_geom_registration;
 
 Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& Extent, const Quaternion& Rot)
 {
-	TGeometry<AxisAlignedBox3d>* p = new TGeometry<AxisAlignedBox3d>(Center, Rot);
+	TGeometry<AxisAlignedBox3d>* p = new TGeometry<AxisAlignedBox3d>();
 	p->Min = -Extent;
 	p->Max = Extent;
+	p->SetPosition(Center);
+	p->SetRotationQuat(Rot);
 	return (Geometry*)p;
 }
 
 Geometry* GeometryFactory::CreatePlane(const Vector3d& Center, const Vector3d& Normal)
 {
-	TGeometry<Plane3d>* p = new TGeometry<Plane3d>(Center, Quaternion::One());
+	TGeometry<Plane3d>* p = new TGeometry<Plane3d>();
 	p->Normal = Normal;
 	p->D = 0.0f;
+	p->SetPosition(Center);
+	p->SetRotationQuat(Quaternion::One());
 	return (Geometry*)p;
 }
 
 Geometry* GeometryFactory::CreateSphere(const Vector3d& Center, float Radius)
 {
-	TGeometry<Sphere3d>* p = new TGeometry<Sphere3d>(Center, Quaternion::One());
+	TGeometry<Sphere3d>* p = new TGeometry<Sphere3d>();
 	p->Radius = Radius;
+	p->SetPosition(Center);
+	p->SetRotationQuat(Quaternion::One());
 	return (Geometry*)p;
 }
 
 Geometry* GeometryFactory::CreateCapsule(const Vector3d& X1, const Vector3d& X2, float Radius)
 {
 	Vector3d Center = (X1 + X2) * 0.5f;
-	TGeometry<Capsule3d>* p = new TGeometry<Capsule3d>(Center, Quaternion::One());
+	TGeometry<Capsule3d>* p = new TGeometry<Capsule3d>();
 	p->Init(X1 - Center, X2 - Center, Radius);
+	p->SetPosition(Center);
+	p->SetRotationQuat(Quaternion::One());
 	return (Geometry*)p;
 }
 
 Geometry* GeometryFactory::CreateHeightField(const Box3d &Bv, int nRows, int nCols)
 {
-	TGeometry<HeightField3d>* p = new TGeometry<HeightField3d>(Vector3d::Zero(), Quaternion::One());
+	TGeometry<HeightField3d>* p = new TGeometry<HeightField3d>();
 	p->Init(Bv, nRows, nCols);
+	p->SetPosition(Vector3d::Zero());
+	p->SetRotationQuat(Quaternion::One());
 	return (Geometry*)p;
 }
 
 Geometry* GeometryFactory::CreateConvexMesh()
 {
-	TGeometry<ConvexMesh>* p = new TGeometry<ConvexMesh>(Vector3d::Zero(), Quaternion::One());
+	TGeometry<ConvexMesh>* p = new TGeometry<ConvexMesh>();
+	p->SetPosition(Vector3d::Zero());
+	p->SetRotationQuat(Quaternion::One());
 	return (Geometry*)p;
 }
 
 Geometry* GeometryFactory::CreateTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C)
 {
 	Vector3d Center = (A + B + C) / 3.0f;
-	TGeometry<Triangle3d>* p = new TGeometry<Triangle3d>(Center, Quaternion::One());
+	TGeometry<Triangle3d>* p = new TGeometry<Triangle3d>();
 	p->Init(A - Center, B - Center, C - Center);
+	p->SetPosition(Center);
+	p->SetRotationQuat(Quaternion::One());
 	return (Geometry*)p;
 }
 
 Geometry* GeometryFactory::CreateTriangleMesh()
 {
-	TGeometry<TriangleMesh>* p = new TGeometry<TriangleMesh>(Vector3d::Zero(), Quaternion::One());
+	TGeometry<TriangleMesh>* p = new TGeometry<TriangleMesh>();
+	p->SetPosition(Vector3d::Zero());
+	p->SetRotationQuat(Quaternion::One());
 	return (Geometry*)p;
 }

@@ -77,6 +77,7 @@ public:
 	bool					Overlap(const Geometry* Geom) const;
 	bool					Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const;
 
+	void					UpdateBoundingVolume();
 	const Box3d&			GetBoundingVolume_WorldSpace() const;
 	Vector3d				GetSupport_WorldSpace(const Vector3d& Dir);
 	Matrix3d				GetInverseInertia_WorldSpace(float Mass) const;
@@ -99,7 +100,7 @@ private:
 	}
 
 protected:
-	ShapeType			m_Type;
+	ShapeType				m_Type;
 	Box3d					m_BoxWorld;
 	Transform				m_Transform;
 	std::string				m_Name;
@@ -121,36 +122,4 @@ public:
 	static Geometry* CreateConvexMesh();
 	static Geometry* CreateTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C);
 	static Geometry* CreateTriangleMesh();
-};
-
-struct RayCastResult
-{
-	RayCastResult()
-	{
-		hit = false;
-		hitTime = FLT_MAX;
-		hitGeom = nullptr;
-	}
-
-	bool		hit;
-	float		hitTime;
-	Vector3d	hitPoint;
-	Vector3d	hitNormal;
-	Geometry*	hitGeom;
-};
-
-
-struct SweepResult
-{
-	SweepResult()
-	{
-	}
-};
-
-
-struct OverlapResult
-{
-	OverlapResult()
-	{
-	}
 };
