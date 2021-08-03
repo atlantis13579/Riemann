@@ -15,7 +15,6 @@ public:
 	union
 	{
 		struct { T x, y, z; };
-		struct { T coords[3]; };
 	};
 
 	TVector3<T>(T _x, T _y, T _z)
@@ -186,12 +185,14 @@ public:
 
 	inline T operator[](int i) const
 	{
-		return coords[i];
+		const float* p = (const float*)this;
+		return p[i];
 	}
 
 	inline T& operator[](int i)
 	{
-		return coords[i];
+		float* p = (float*)this;
+		return p[i];
 	}
 
 	int ParallelTo(const TVector3<T>&v) const
@@ -207,8 +208,11 @@ public:
 
 	int LargestAxis() const
 	{
-		int i = y > x ? 1 : 0;
-		return z > coords[i] ? 2 : i;
+		if (y > x)
+		{
+			return z > y ? 2 : 1;
+		}
+		return z > x ? 2 : 0;
 	}
 
 	TVector3<T> Abs() const

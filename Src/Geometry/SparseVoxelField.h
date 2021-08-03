@@ -2,14 +2,12 @@
 
 #include "../Maths/Box3d.h"
 
-#define VOXEL_TOP			(0x80000000)
-#define VOXEL_DATA(data)	((data) & ~VOXEL_TOP)
 #define VOXEL_FILE_MAGIC	(0x32F0587A)
 
 struct VoxelFileHeader
 {
-	int				nVoxels;
-	int				nFields;
+	uint32_t		nVoxels;
+	uint32_t		nFields;
 	int				SizeX;
 	int				SizeZ;
 	int				SizeY;
@@ -20,7 +18,7 @@ struct VoxelFileHeader
 
 struct VoxelFileField
 {
-	int				idx;
+	uint32_t		idx;
 };
 
 static_assert(sizeof(VoxelFileHeader) == 52, "sizeof VoxelFileHeader is not valid");
@@ -31,25 +29,6 @@ struct VoxelFast
 	uint32_t	data;
 	uint16_t	ymin;
 	uint16_t	ymax;
-
-	inline const VoxelFast* next() const
-	{
-		if (data & VOXEL_TOP)
-			return nullptr;
-		return this + 1;
-	}
-
-	inline VoxelFast* next()
-	{
-		if (data & VOXEL_TOP)
-			return nullptr;
-		return this + 1;
-	}
-
-	inline uint32_t	raw_data() const
-	{
-		return ((data) & ~VOXEL_TOP);
-	}
 };
 
 static_assert(sizeof(VoxelFast) == 8, "sizeof of VoxelFast is not correct");
@@ -65,9 +44,10 @@ public:
 	int				GetVoxelIdx(const Vector3d& pos) const;
 	int				VoxelSpaceToWorldSpaceY(float pos_y) const;
 	float			VoxelSpaceToWorldSpaceY(uint16_t y) const;
-	uint32_t	WorldSpaceToVoxelSpaceY(const Vector3d& pos) const;
+	uint32_t		WorldSpaceToVoxelSpaceY(const Vector3d& pos) const;
 
 	bool			SerializeFrom(const char* filename);
+	int				GetVoxelCount(uint32_t idx) const;
 
 private:
 	int				m_SizeX, m_SizeZ, m_SizeY;
@@ -75,7 +55,7 @@ private:
 	float			m_InvVoxelSize, m_InvVoxelHeight;
 	Box3d			m_BV;
 
-	std::vector<VoxelFast*>		m_Fields;
-	std::vector<VoxelFast>		m_VoxelPool;
+	std::vector<uint32_t>		m_Indices;
+	std::vector<VoxelFast>		m_Voxels;
 	int							m_NumVoxels;
 };

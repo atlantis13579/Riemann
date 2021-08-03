@@ -716,7 +716,7 @@ uint64_t VoxelField::EstimateMemoryUseage() const
 
 uint64_t VoxelField::EstimateMemoryUseageEx() const
 {
-	return m_NumVoxels * sizeof(VoxelFast) + m_SizeX * m_SizeZ * sizeof(void*);
+	return m_NumVoxels * sizeof(VoxelFast) + m_SizeX * m_SizeZ * sizeof(uint32_t);
 }
 
 void	VoxelField::GenerateHeightMap(std::vector<float>& heightmap) const
@@ -866,10 +866,6 @@ bool	VoxelField::SerializeTo(const char* filename)
 			}
 
 			pvx->data = v->data;
-			if (v->next == nullptr)
-			{
-				pvx->data |= VOXEL_TOP;
-			}
 			pvx->ymin = v->ymin;
 			pvx->ymax = v->ymax;
 			++pvx;
@@ -957,14 +953,14 @@ bool	VoxelField::SerializeFrom(const char* filename)
 		std::vector<VoxelFast> buffer_vx;
 		buffer_vx.resize(header.nVoxels);
 		fread(&buffer_vx[0], sizeof(VoxelFast), buffer_vx.size(), fp);
-		for (int i = 0; i < header.nVoxels; ++i)
+		for (uint32_t i = 0; i < header.nVoxels; ++i)
 		{
 			Voxel* vx = &Voxels[i];
 			const VoxelFast* vf = &buffer_vx[i];
-			vx->data = VOXEL_DATA(vf->data);
+			vx->data = vf->data;
 			vx->ymax = vf->ymax;
 			vx->ymin = vf->ymin;
-			vx->next = (vf->data & VOXEL_TOP) ? nullptr : &Voxels[i+1];
+			// WARNING: vx->next is junk
 		}
 		buffer_vx.clear();
 	}
@@ -975,7 +971,7 @@ bool	VoxelField::SerializeFrom(const char* filename)
 		fread(&buffer_field[0], sizeof(VoxelFileField), buffer_field.size(), fp);
 
 		size_t curr = 0;
-		for (int i = 0; i < header.nFields; ++i)
+		for (uint32_t i = 0; i < header.nFields; ++i)
 		{
 			if (curr >= Voxels.size())
 			{
@@ -985,7 +981,12 @@ bool	VoxelField::SerializeFrom(const char* filename)
 
 			int idx = buffer_field[i].idx;
 			m_Fields[idx] = &Voxels[curr];
-			curr += (size_t)CountVoxel(m_Fields[idx]);
+			int Count = (i < header.nFields - 1) ? (buffer_field[i + 1].idx - buffer_field[i].idx) : (m_NumVoxels - buffer_field[i + 1].idx);
+			for (int j = 0; j < Count - 1; ++j)
+			{
+				Voxels[curr + j].next = &Voxels[curr + j + 1];
+			}
+			Voxels[curr + Count - 1].next = nullptr;
 		}
 		buffer_field.clear();
 	}

@@ -17,18 +17,6 @@ SparseVoxelField::~SparseVoxelField()
 
 }
 
-static int CountVoxel(const VoxelFast* v)
-{
-	int Count = 0;
-	while (v)
-	{
-		++Count;
-		v = v->next();
-	}
-	return Count;
-}
-
-
 void	SparseVoxelField::InitField(const Box3d& Bv, int nVoxels, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
 {
 	m_BV = Bv;
@@ -40,10 +28,10 @@ void	SparseVoxelField::InitField(const Box3d& Bv, int nVoxels, int SizeX, int Si
 	m_InvVoxelSize = 1.0f / VoxelSize;
 	m_InvVoxelHeight = 1.0f / VoxelHeight;
 
-	m_Fields.resize(m_SizeX * m_SizeZ);
-	memset(&m_Fields[0], 0, sizeof(m_Fields[0]) * m_SizeX * m_SizeZ);
+	m_Indices.resize(m_SizeX * m_SizeZ);
+	memset(&m_Indices[0], 0, sizeof(m_Indices[0]) * m_SizeX * m_SizeZ);
 
-	m_VoxelPool.resize(nVoxels);
+	m_Voxels.resize(nVoxels);
 }
 
 
@@ -72,16 +60,17 @@ uint32_t	SparseVoxelField::WorldSpaceToVoxelSpaceY(const Vector3d& pos) const
 	int idx = GetVoxelIdx(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
 		return 0;
-	const VoxelFast* v = m_Fields[idx];
-	while (v)
+	uint32_t i0 = m_Indices[idx];
+	uint32_t i1 = i0 + GetVoxelCount(idx);
+	for (uint32_t i = i0; i < i1; ++i)
 	{
+		const VoxelFast* v = &m_Voxels[i];
 		float ymin = m_BV.Min.y + m_VoxelHeight * v->ymin;
 		float ymax = m_BV.Min.y + m_VoxelHeight * (v->ymax + 1);
 		if (ymin <= pos.y && pos.y <= ymax)
 		{
-			return v->raw_data();
+			return v->data;
 		}
-		v = v->next();
 	}
 	return 0;
 }
@@ -123,26 +112,15 @@ bool	SparseVoxelField::SerializeFrom(const char* filename)
 
 	InitField(header.BV, header.nVoxels, header.SizeX, header.SizeY, header.SizeZ, header.VoxelSize, header.VoxelHeight);
 
-	assert((size_t)header.nVoxels == m_VoxelPool.size());
-	fread(&m_VoxelPool[0], sizeof(VoxelFast), m_VoxelPool.size(), fp);
+	assert((size_t)header.nVoxels == m_Voxels.size());
+	fread(&m_Voxels[0], sizeof(VoxelFast), m_Voxels.size(), fp);
 
-	std::vector<VoxelFileField> buffer_field;
-	buffer_field.resize(header.nFields);
-	fread(&buffer_field[0], sizeof(VoxelFileField), buffer_field.size(), fp);
-
-	size_t curr = 0;
-	for (int i = 0; i < header.nFields; ++i)
-	{
-		if (curr >= m_VoxelPool.size())
-		{
-			assert(false);
-			return false;
-		}
-
-		int idx = buffer_field[i].idx;
-		m_Fields[idx] = &m_VoxelPool[curr];
-		curr += (size_t)CountVoxel(m_Fields[idx]);
-	}
-
+	m_Indices.resize(header.nFields);
+	fread(&m_Indices[0], sizeof(VoxelFileField), m_Indices.size(), fp);
 	return true;
+}
+
+int SparseVoxelField::GetVoxelCount(uint32_t idx) const
+{
+	return idx == (int)m_Indices.size() - 1 ? ((int)m_Voxels.size() - m_Indices[idx]) : (m_Indices[idx + 1] - m_Indices[idx]);
 }

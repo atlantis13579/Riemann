@@ -96,11 +96,11 @@ public:
 
 	Vector3d operator*(const Vector3d& vv) const
 	{
-		float v[3] = { 0 };
-		for (int i = 0; i < 3; i++)
-		for (int j = 0; j < 3; j++)
-			v[i] += mat[i][j] * vv.coords[j];
-		return Vector3d(v);
+		Vector3d v;
+		v.x = mat[0][0] * vv.x + mat[0][1] * vv.y + mat[0][2] * vv.z;
+		v.y = mat[1][0] * vv.x + mat[1][1] * vv.y + mat[1][2] * vv.z;
+		v.z = mat[2][0] * vv.x + mat[2][1] * vv.y + mat[2][2] * vv.z;
+		return v;
 	}
 
 	Matrix3d operator+(const Matrix3d& mm) const
