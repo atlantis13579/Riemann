@@ -2,14 +2,15 @@
 #include "GeometryQuery.h"
 
 #include <algorithm>
-#include "AABBPruner.h"
+#include "AABBTree.h"
+#include "DynamicAABBTree.h"
 #include "SparseSpatialHash.h"
 
 GeometryQuery::GeometryQuery()
 {
 	m_staticGeometry = nullptr;
 	m_dynamicPruner = nullptr;
-	m_SpatialHashPruner = nullptr;
+	m_SpatialHash = nullptr;
 }
 
 GeometryQuery::~GeometryQuery()
@@ -26,10 +27,10 @@ GeometryQuery::~GeometryQuery()
 		m_dynamicPruner = nullptr;
 	}
 
-	if (m_SpatialHashPruner)
+	if (m_SpatialHash)
 	{
-		delete m_SpatialHashPruner;
-		m_SpatialHashPruner = nullptr;
+		delete m_SpatialHash;
+		m_SpatialHash = nullptr;
 	}
 
 }
@@ -38,8 +39,18 @@ void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, i
 {
 	if (m_staticGeometry == nullptr)
 	{
-		m_staticGeometry = new AABBPruner;
-		m_staticGeometry->BuildAABB(std::move(Objects), nPrimitivePerNode);
+		m_staticGeometry = new AABBTree;
+
+		std::vector<Box3d> boxes;
+		boxes.resize(Objects.size());
+		for (size_t i = 0; i < Objects.size(); ++i)
+		{
+			boxes[i] = Objects[i]->GetBoundingVolume_WorldSpace();
+		}
+		m_Objects = Objects;
+		AABBTreeBuildData param(&boxes[0], (int)boxes.size(), nPrimitivePerNode);
+
+		m_staticGeometry->StaticBuild(param);
 	}
 }
 
@@ -47,7 +58,9 @@ bool GeometryQuery::RayCast(const Vector3d& Origin, const Vector3d& Dir, RayCast
 {
 	if (m_staticGeometry)
 	{
-		return m_staticGeometry->RayCast(Origin, Dir, Result);
+		Ray3d ray(Origin, Dir);
+		Geometry** pp = &m_Objects[0];
+		return m_staticGeometry->RayCast(ray, pp, Result);
 	}
 	return false;
 }

@@ -4,7 +4,8 @@
 #include "../Maths/Vector3d.h"
 #include "GeometryObject.h"
 
-class AABBPruner;
+class AABBTree;
+class DynamicAABBTree;
 class SparseSpatialHash;
 
 class GeometryQuery
@@ -14,12 +15,19 @@ public:
 	~GeometryQuery();
 
 public:
-	void BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
+	void			BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
+	
+	bool			RayCast(const Vector3d &Origin, const Vector3d& Dir, RayCastResult *Result);
 
-	bool RayCast(const Vector3d &Origin, const Vector3d& Dir, RayCastResult *Result);
+	AABBTree*		GetStaticTree()
+	{
+		return m_staticGeometry;
+	}
 
 private:
-	AABBPruner*			m_staticGeometry;
-	AABBPruner*			m_dynamicPruner;
-	SparseSpatialHash*	m_SpatialHashPruner;
+	std::vector<Geometry*>	m_Objects;
+
+	AABBTree*				m_staticGeometry;
+	DynamicAABBTree*		m_dynamicPruner;
+	SparseSpatialHash*		m_SpatialHash;
 };

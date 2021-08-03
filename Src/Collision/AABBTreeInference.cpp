@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <vector>
 
-AABBTreeNodeInference* AABBTreeOffline::BuildCompactTree()
+AABBTreeNodeInference* AABBTreeOffline::BuildInferenceTree()
 {
 	if (nTotalNodes <= 0)
 	{
@@ -18,7 +18,7 @@ AABBTreeNodeInference* AABBTreeOffline::BuildCompactTree()
 	int offset = 0;
 	for (size_t k = 0; k < Blocks.size(); ++k)
 	{
-		const MemoryBlock& block = Blocks[k];
+		const NodeBlock& block = Blocks[k];
 
 		AABBTreeNodeOffline* p = block.pMem;
 		for (int i = 0; i < block.nUsedNodes; ++i)
@@ -27,11 +27,10 @@ AABBTreeNodeInference* AABBTreeOffline::BuildCompactTree()
 			if (p[i].IsLeafNode())
 			{
 				const int index = p[i].IndexOffset;
+				const int nPrimitives = p[i].NumPrimitives;
+				assert(nPrimitives <= 16);
 
-				const int nbPrims = p[i].NumPrimitives;
-				assert(nbPrims <= 16);
-
-				Compact[offset].Data = (index << 5) | ((nbPrims & 15) << 1) | 1;
+				Compact[offset].Data = (index << 5) | ((nPrimitives & 15) << 1) | 1;
 			}
 			else
 			{

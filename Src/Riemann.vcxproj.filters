@@ -39,7 +39,6 @@
     <ClInclude Include="LinearSystem\SparseMatrix.h" />
     <ClInclude Include="LinearSystem\DenseMatrix.h" />
     <ClInclude Include="Collision\AABBTree.h" />
-    <ClInclude Include="Collision\AABBPruner.h" />
     <ClInclude Include="Collision\AABBTreeOffline.h" />
     <ClInclude Include="Collision\AABBTreeInference.h" />
     <ClInclude Include="LinearSystem\ProjectedGaussSeidel.h" />
@@ -98,6 +97,7 @@
     <ClInclude Include="CollisionPrimitive\OrientedBox3d.h" />
     <ClInclude Include="CollisionPrimitive\HeightField3d.h" />
     <ClInclude Include="CollisionPrimitive\ShapeType.h" />
+    <ClInclude Include="Maths\Stack.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -113,7 +113,6 @@
     <ClCompile Include="LinearSystem\SVDDecomposition.cpp" />
     <ClCompile Include="Geometry\Tetrahedral.cpp" />
     <ClCompile Include="Collision\AABBTree.cpp" />
-    <ClCompile Include="Collision\AABBPruner.cpp" />
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />
     <ClCompile Include="Collision\AABBTreeInference.cpp" />
     <ClCompile Include="Collision\GeometryQuery.cpp" />

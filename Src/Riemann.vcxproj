@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Collision\AABBPruner.cpp" />
     <ClCompile Include="Collision\AABBTree.cpp" />
     <ClCompile Include="Collision\AABBTreeInference.cpp" />
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />
@@ -54,7 +53,7 @@
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
     <ClCompile Include="Tools\PhysxBinaryParser.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
@@ -72,7 +71,6 @@
     <ClInclude Include="CollisionPrimitive\Sphere3d.h" />
     <ClInclude Include="CollisionPrimitive\Triangle3d.h" />
     <ClInclude Include="CollisionPrimitive\Mesh.h" />
-    <ClInclude Include="Collision\AABBPruner.h" />
     <ClInclude Include="Collision\AABBTree.h" />
     <ClInclude Include="Collision\AABBTreeInference.h" />
     <ClInclude Include="Collision\AABBTreeOffline.h" />
@@ -100,6 +98,7 @@
     <ClInclude Include="Geometry\SparseVoxelField.h" />
     <ClInclude Include="Geometry\VoxelEngine.h" />
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
+    <ClInclude Include="Maths\Stack.h" />
     <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="Optimization\SGD.h" />

@@ -98,7 +98,7 @@ public:
 	{
 		for (size_t i = 0; i < Blocks.size(); ++i)
 		{
-			MemoryBlock& s = Blocks[i];
+			NodeBlock& s = Blocks[i];
 			delete[]s.pMem;
 		}
 
@@ -130,7 +130,7 @@ public:
 	AABBTreeNodeOffline* AllocNodes()
 	{
 		nTotalNodes += 2;
-		MemoryBlock& currentBlock = Blocks[nCurrentBlockIndex];
+		NodeBlock& currentBlock = Blocks[nCurrentBlockIndex];
 		if (currentBlock.nUsedNodes + 2 <= currentBlock.nMaxNodes)
 		{
 			AABBTreeNodeOffline* p = currentBlock.pMem + currentBlock.nUsedNodes;
@@ -150,15 +150,15 @@ public:
 		}
 	}
 
-	AABBTreeNodeInference* BuildCompactTree();
+	AABBTreeNodeInference* BuildInferenceTree();
 
 private:
 	AABBTreeNodeOffline* pHead;
 
-	struct MemoryBlock
+	struct NodeBlock
 	{
-		MemoryBlock() {}
-		MemoryBlock(AABBTreeNodeOffline* p, int UsedNodes, int maxNodes) :
+		NodeBlock() {}
+		NodeBlock(AABBTreeNodeOffline* p, int UsedNodes, int maxNodes) :
 			pMem(p),
 			nUsedNodes(UsedNodes),
 			nMaxNodes(maxNodes) {}
@@ -166,7 +166,7 @@ private:
 		int						nUsedNodes;
 		int						nMaxNodes;
 	};
-	std::vector<MemoryBlock>	Blocks;
+	std::vector<NodeBlock>	Blocks;
 	int							nCurrentBlockIndex;
 	int							nTotalNodes;
 };

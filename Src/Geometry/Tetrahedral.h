@@ -42,8 +42,8 @@ public:
 
 	void AddNode(const Node& node)
 	{
-		m_nodes.push(node);
-		m_restpos.push(node.position);
+		m_nodes.Push(node);
+		m_restpos.Push(node.position);
 	}
 
 	Matrix3d GenerateD(Vector3d& v0, Vector3d& v1, Vector3d& v2, Vector3d& v3)
@@ -62,7 +62,7 @@ public:
 
 		float vol = 1.0f / 6.0f * fabsf(Dm.Determinant());
 
-		m_tets.push(Tetrahedral(t1, t2, t3, t4, weight,vol,Dm));
+		m_tets.Push(Tetrahedral(t1, t2, t3, t4, weight,vol,Dm));
 	}
 
 	void AddTetrahedral(int t[4], float weight)
@@ -73,7 +73,7 @@ public:
 
 		float vol = 1.0f / 6.0f * fabsf(Dm.Determinant());
 
-		m_tets.push(Tetrahedral(t[0], t[1], t[2], t[3], weight, vol, Dm));
+		m_tets.Push(Tetrahedral(t[0], t[1], t[2], t[3], weight, vol, Dm));
 	}
 
 	const Node& GetNode(int index) const
@@ -99,7 +99,7 @@ public:
 
 	const Tetrahedral* GetTetrahedral(int index) const
 	{
-		if (index >= m_tets.size())
+		if (index >= m_tets.Size())
 			return nullptr;
 		return &m_tets[index];
 	}
@@ -111,12 +111,12 @@ public:
 
 	int GetNumNodes() const
 	{
-		return m_nodes.size();
+		return m_nodes.Size();
 	}
 
 	int GetNumTetrahedrals() const
 	{
-		return m_tets.size();
+		return m_tets.Size();
 	}
 
 	void GetTransforms(int tetindex, Matrix3d& Ds, Matrix3d& F, Matrix3d& R, Matrix3d& S) const;

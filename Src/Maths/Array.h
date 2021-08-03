@@ -1,48 +1,53 @@
 
 #pragma once
 
-template<class T, int N>
+template<class T, int MaxSize>
 class Array
 {
 public:
 	Array()
 	{
-		sz = 0;
+		m_Size = 0;
 	}
 
 	~Array()
 	{
 	}
 
-	inline T& operator[](int i) {
-		return varr[i];
-	}
-
-	inline const T& operator[](int i) const {
-		return varr[i];
-	}
-
-	inline void push(T v) {
-		varr[sz++] = v;
-	}
-
-	inline T pop()
+	inline T& operator[](int i)
 	{
-		if (sz > 0)
-			return varr[--sz];
+		return m_Buf[i];
+	}
+
+	inline const T& operator[](int i) const
+	{
+		return m_Buf[i];
+	}
+
+	inline void Push(T v)
+	{
+		m_Buf[m_Size++] = v;
+	}
+
+	inline T Pop()
+	{
+		if (m_Size > 0)
+			return m_Buf[--m_Size];
 		else
 			return 0;
 	}
 
-	inline void reset() {
-		sz = 0;
+	inline void SetEmpty()
+	{
+		m_Size = 0;
 	}
 
-	inline int size() const {
-		return sz;
+	inline int Size() const
+	{
+		return m_Size;
 	}
 
 private:
-	int sz;
-	T varr[N];
+	int		m_Size;
+	T		m_Buf[MaxSize];
 };

@@ -9,6 +9,12 @@ struct RayCastResult;
 struct AABBTreeNodeInference;
 class Geometry;
 
+struct TreeStatistics
+{
+	int MaxDepth;
+	int Nodes;
+};
+
 class AABBTree
 {
 public:
@@ -16,16 +22,17 @@ public:
 	~AABBTree();
 
 public:
-	void Release();
+	void	Release();
 
-	void StaticBuild(AABBTreeBuildData& params);
+	void	StaticBuild(AABBTreeBuildData& params);
 
-	int	 Traverse(const Vector3d& Point) const;
-	int  RayCast(const Ray3d& ray, Geometry** ObjectCollection, RayCastResult *Result) const;
-	int  RayCastBoundingBox(const Ray3d& ray, float* t) const;
+	int		Traverse(const Vector3d& Point) const;
+	int		RayCast(const Ray3d& ray, Geometry** ObjectCollection, RayCastResult *Result) const;
+	int		RayCastBoundingBox(const Ray3d& ray, float* t) const;
+	void	Statistic(TreeStatistics &stats);
 
 private:
-	void InitAABBTreeBuild(AABBTreeBuildData& params);
+	void	InitAABBTreeBuild(AABBTreeBuildData& params);
 
 private:
 	int*						m_PrimitiveIndicesBase;

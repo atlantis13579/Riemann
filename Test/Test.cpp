@@ -39,7 +39,14 @@
 void TestPhysxBin()
 {
 	std::vector<Geometry*> collection;
-	LoadPhysxBinary("e:/temp/physx/sss.bin", &collection);
+	LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
+
+	GeometryQuery query;
+	query.BuildStaticGeometry(collection, 1);
+
+	TreeStatistics stat;
+	query.GetStaticTree()->Statistic(stat);
+
 	return;
 }
 

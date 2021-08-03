@@ -3,6 +3,7 @@
 
 #include <assert.h>
 
+#include "../Maths/Stack.h"
 #include "AABBTreeOffline.h"
 #include "AABBTreeInference.h"
 #include "GeometryObject.h"
@@ -43,10 +44,58 @@ void AABBTree::StaticBuild(AABBTreeBuildData& params)
 	params.Release();
 
 	assert(params.pAABBTree);
-	m_AABBTreeInference = params.pAABBTree->BuildCompactTree();
+	m_AABBTreeInference = params.pAABBTree->BuildInferenceTree();
 
 	delete params.pAABBTree;
 	params.pAABBTree = nullptr;
+}
+
+#define LEFT_NODE(_p)	(_p->GetLeftNode(m_AABBTreeInference))
+#define RIGHT_NODE(_p)	(_p->GetRightNode(m_AABBTreeInference))
+
+
+void AABBTree::Statistic(TreeStatistics& stat)
+{
+	memset(&stat, 0, sizeof(stat));
+
+	FixedStack<AABBTreeNodeInference, 32> stack;
+	stack.Push(m_AABBTreeInference);
+
+	while (!stack.Empty())
+	{
+		AABBTreeNodeInference* p = stack.Pop();
+
+		while (p)
+		{
+			if (p->IsLeafNode())
+			{
+				stat.Nodes += 1;
+				stat.MaxDepth = std::max(stat.MaxDepth, stack.Depth());
+				break;
+			}
+
+			AABBTreeNodeInference* Left = LEFT_NODE(p);
+			AABBTreeNodeInference* Right = RIGHT_NODE(p);
+			if (Left && Right)
+			{
+				p = Left;
+				stack.Push(Right);
+				continue;
+			}
+			else if (Left)
+			{
+				p = Left;
+				continue;
+			}
+			else if (Right)
+			{
+				p = Right;
+				continue;
+			}
+
+			assert(false);		// Should never goes here
+		}
+	}
 }
 
 int AABBTree::Traverse(const Vector3d& Point) const
@@ -185,11 +234,13 @@ int  AABBTree::RayCastBoundingBox(const Ray3d& ray, float* t) const
 	return hit_obj;
 }
 
+
 void AABBTree::InitAABBTreeBuild(AABBTreeBuildData& params)
 {
 	if (m_PrimitiveIndicesBase)
 		return;
 
+	m_NumPrimitives = params.NumPrimitives;
 	m_PrimitiveIndicesBase = new int[params.NumPrimitives];
 	for (int i = 0; i < params.NumPrimitives; ++i)
 		m_PrimitiveIndicesBase[i] = (int)i;
