@@ -2,10 +2,10 @@
 
 #include <vector>
 
-class Geometry;
+class RigidBody;
 
 class MotionIntegration
 {
 public:
-	static void Integrate(std::vector<Geometry*> Entities, float dt);
+	static void Integrate(std::vector<RigidBody*> Entities, float dt);
 };

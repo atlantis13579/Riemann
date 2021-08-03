@@ -11,13 +11,18 @@ void		RigidBody::ApplyTorgue(const Vector3d& _Torque)
 	this->ExtTorque += _Torque;
 }
 
-RigidBody*	RigidBody::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
+void RigidBody::AppendShapes(std::vector<Geometry*> *Shapes)
+{
+	Shapes->push_back(this->Shape);
+}
+
+RigidBody*	RigidBody::CreateRigidBody(Geometry* Shape, const RigidBodyParam& param)
 {
 	RigidBody* Rigid = new RigidBody;
 	Rigid->Mass = param.Mass;
-	Rigid->InvInertia = Geom->GetInverseInertia_WorldSpace(Rigid->Mass);
-	Rigid->X = Geom->GetPosition();
-	Rigid->Q = Geom->GetRotationQuat();
+	Rigid->InvInertia = Shape->GetInverseInertia_WorldSpace(Rigid->Mass);
+	Rigid->X = Shape->GetPosition();
+	Rigid->Q = Shape->GetRotationQuat();
 	Rigid->P = param.LinearVelocity * Rigid->Mass;
 	Rigid->L = Rigid->InvInertia.Inverse() * param.AngularVelocity;
 	Rigid->ExtForce = Vector3d::Zero();
@@ -30,5 +35,6 @@ RigidBody*	RigidBody::CreateRigidBody(Geometry* Geom, const RigidBodyParam& para
 	Rigid->DisableGravity = param.DisableGravity;
 	Rigid->Static = param.Static;
 	Rigid->Sleep = Rigid->Static;
+	Rigid->Shape = Shape;
 	return Rigid;
 }

@@ -29,7 +29,7 @@ public:
 	RigidBody*	CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
 
 private:
-	std::vector<Geometry*> m_Entities;
+	std::vector<RigidBody*> m_Entities;
 
 	GeometryQuery*	m_GeometryQuery;
 	BroadPhase*		m_BPhase;

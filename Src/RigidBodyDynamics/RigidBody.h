@@ -1,10 +1,13 @@
 
 #pragma once
 
+#include <vector>
 #include "../Maths/Vector3d.h"
 #include "../Maths/Matrix3d.h"
 #include "../Maths/Quaternion.h"
 #include "PhysicsEntity.h"
+
+class Geometry;
 
 struct RigidBodyParam
 {
@@ -57,10 +60,12 @@ public:
 	bool		Sleep;
 	bool		Static;
 
-public:
-
 	void		ApplyForce(const Vector3d& _Force);
 	void		ApplyTorgue(const Vector3d& _Torque);
 
-	static RigidBody* CreateRigidBody(Geometry* Geom, const RigidBodyParam &param);
+	void		AppendShapes(std::vector<Geometry*> *Shape);
+
+	static RigidBody* CreateRigidBody(Geometry* Shape, const RigidBodyParam &param);
+
+	Geometry*	Shape;
 };

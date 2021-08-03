@@ -1,10 +1,12 @@
 
 #include "RigidBodySimulation.h"
+
+#include <assert.h>
+
 #include "PhysicsEntity.h"
 #include "MotionIntegration.h"
 #include "WarmStart.h"
 #include "ForceField.h"
-
 #include "../Collision/GeometryQuery.h"
 #include "../Collision/GeometryObject.h"
 #include "../Collision/BroadPhase.h"
@@ -62,10 +64,16 @@ void		RigidBodySimulation::Simulate(float dt)
 {
 	MotionIntegration::Integrate(m_Entities, dt);
 
+	std::vector<Geometry*> Shapes;
+	for (size_t i = 0; i < m_Entities.size(); ++i)
+	{
+		m_Entities[i]->AppendShapes(&Shapes);
+	}
+
 	std::vector<OverlapPair> overlaps;
 	if (m_BPhase)
 	{
-		m_BPhase->ProduceOverlaps(m_Entities, &overlaps);
+		m_BPhase->ProduceOverlaps(Shapes, &overlaps);
 	}
 
 	std::vector<ContactManifold> manifolds;
@@ -95,12 +103,11 @@ void		RigidBodySimulation::ApplyGravity()
 
 	for (size_t i = 0; i < m_Entities.size(); ++i)
 	{
-		RigidBody* Rigid = (RigidBody*)m_Entities[i]->GetEntity();
-		if (Rigid->DisableGravity)
+		if (m_Entities[i]->DisableGravity)
 		{
 			continue;
 		}
-		m_GravityField->ApplyForce(Rigid);
+		m_GravityField->ApplyForce(m_Entities[i]);
 	}
 }
 
@@ -113,7 +120,7 @@ void		RigidBodySimulation::ApplyWind()
 
 	for (size_t i = 0; i < m_Entities.size(); ++i)
 	{
-		m_WindField->ApplyForce((RigidBody*)m_Entities[i]->GetEntity());
+		m_WindField->ApplyForce(m_Entities[i]);
 	}
 }
 
@@ -121,6 +128,6 @@ RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyP
 {
 	RigidBody* Rigid = RigidBody::CreateRigidBody(Geom, param);
 	Geom->SetEntity(Rigid);
-	m_Entities.push_back(Geom);
+	m_Entities.push_back(Rigid);
 	return Rigid;
 }
