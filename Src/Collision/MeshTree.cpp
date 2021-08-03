@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RTree.h"
+#include "MeshTree.h"
 #include "../Maths/SIMD.h"
 
 /*
@@ -46,7 +46,7 @@ bool RTree::load(PxInputStream& stream, uint32_t meshVersion, bool mismatch_)	//
 }
 */
 
-void		RTree::validate()
+void		MeshTree::validate()
 {
 	for (uint32_t j = 0; j < mNumRootPages; j++)
 	{
@@ -58,7 +58,7 @@ void		RTree::validate()
 
 #define RTREE_INFLATION_EPSILON 5e-4f
 
-void RTree::validateRecursive(uint32_t level, RTreeNodeQ parentBounds, RTreePage* page)
+void MeshTree::validateRecursive(uint32_t level, RTreeNodeQ parentBounds, RTreePage* page)
 {
 	static uint32_t validateCounter = 0; // this is to suppress a warning that recursive call has no side effects
 	validateCounter++;
@@ -96,7 +96,7 @@ const Vec4V epsFloat4 = V4Load(1e-9f);
 const Vec4V twos = V4Load(2.0f);
 
 
-void		RTree::traverseRay(const Vector3d& Origin, const Vector3d& Dir, CallbackRaycast *cb, float maxT) const
+void		MeshTree::traverseRay(const Vector3d& Origin, const Vector3d& Dir, CallbackRaycast *cb, float maxT) const
 {
 	const uint32_t maxStack = 128;
 	uint32_t stack1[maxStack];
@@ -221,7 +221,7 @@ void		RTree::traverseRay(const Vector3d& Origin, const Vector3d& Dir, CallbackRa
 
 
 /////////////////////////////////////////////////////////////////////////
-uint32_t RTree::computeBottomLevelCount(uint32_t multiplier) const
+uint32_t MeshTree::computeBottomLevelCount(uint32_t multiplier) const
 {
 	uint32_t topCount = 0, curCount = mNumRootPages;
 	const RTreePage* rightMostPage = &mPages[mNumRootPages - 1];

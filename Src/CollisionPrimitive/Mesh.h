@@ -47,6 +47,18 @@ public:
 	void Compact()
 	{
 		Vertices.resize(NumVertices);
+		if (0 < NumTriangles && NumTriangles <= 65535 && !Is16bitIndices())
+		{
+			uint16_t* pDst = GetIndices16();
+			uint32_t* pSrc = GetIndices32();
+			uint32_t  t = pSrc[0];
+			pDst[0] = (uint16_t)t;
+			for (uint32_t i = 1; i < 3 * NumTriangles; ++i)
+			{
+				*pDst++ = *pSrc++;
+			}
+			Flags |= INDICES_16_BIT;
+		}
 		Indices.resize(3 * NumTriangles * GetIndicesWidth());
 	}
 
@@ -105,7 +117,7 @@ public:
 		return NumTriangles;
 	}
 
-	inline const Vector3d& operator ()(int i, int j) const
+	inline const Vector3d& GetVertex(int i, int j) const
 	{
 		if (Is16bitIndices())
 		{
@@ -116,6 +128,11 @@ public:
 			const uint32_t* Indices32 = GetIndices32();
 			return Vertices[Indices32[3 * i + j]];
 		}
+	}
+
+	inline const Vector3d& operator ()(int i, int j) const
+	{
+		return GetVertex(i, j);
 	}
 
 	void SetData(const void* Verts, const void* Tris, uint32_t Nv, uint32_t Nt, bool Is16bit)

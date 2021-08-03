@@ -100,7 +100,7 @@ struct SubSortSAH
 		metricR = new float[numBounds];
 		tempPermute = new uint32_t[numBounds * 2 + 1];
 		tempRanks = new uint32_t[numBounds];
-		iTradeOff = std::min(uint32_t(std::min<float>(0.0f, sizePerfTradeOff01) * NTRADEOFF), NTRADEOFF - 1);
+		iTradeOff = std::min(uint32_t(std::max<float>(0.0f, sizePerfTradeOff01) * NTRADEOFF), NTRADEOFF - 1);
 	}
 
 	~SubSortSAH() // release temporarily used memory
@@ -456,7 +456,7 @@ struct SubSortSAH
 };
 
 
-static void buildFromBounds(RTree& result, void*& Memory, const Box3d* allBounds, uint32_t numBounds, std::vector<uint32_t>& permute, const Box3d &treeBounds, RTreeRemap *rc)
+static void buildFromBounds(MeshTree& result, void*& Memory, const Box3d* allBounds, uint32_t numBounds, std::vector<uint32_t>& permute, const Box3d &treeBounds, RTreeRemap *rc)
 {
 	float sizePerfTradeOff01 = 1.0f;		// 0 - 1
 	int hint = 0;
@@ -600,11 +600,11 @@ static void buildFromBounds(RTree& result, void*& Memory, const Box3d* allBounds
 }
 
 
-RTree* TriangleMesh::CreateEmptyRTree()
+MeshTree* TriangleMesh::CreateEmptyMeshTree()
 {
 	if (m_Tree == nullptr)
 	{
-		m_Tree = new RTree;
+		m_Tree = new MeshTree;
 	}
 	else
 	{
@@ -623,7 +623,7 @@ void* TriangleMesh::AllocMemory(int Size, int Width)
 	return AlignMemory(m_Memory, Width);
 }
 
-void TriangleMesh::BuildRTree()
+void TriangleMesh::BuildMeshTree()
 {
 	if (NumTriangles == 0)
 	{
@@ -637,15 +637,11 @@ void TriangleMesh::BuildRTree()
 
 	for (uint32_t i = 0; i < NumTriangles; ++i)
 	{
-		uint32_t i0 = Indices[i*3];
-		uint32_t i1 = Indices[i*3 + 1];
-		uint32_t i2 = Indices[i*3 + 2];
-
-		allBounds.push_back(Box3d(Vertices[i0], Vertices[i1], Vertices[i2]));
+		allBounds.push_back(Box3d(GetVertex(i, 0), GetVertex(i, 1), GetVertex(i, 2)));
 		treeBounds.Grow(allBounds.back());
 	}
 
-	CreateEmptyRTree();
+	CreateEmptyMeshTree();
 
 	std::vector<uint32_t> permute;
 	RTreeRemap rc(NumTriangles);
@@ -653,7 +649,7 @@ void TriangleMesh::BuildRTree()
 }
 
 template<bool tRayTest>
-class RTreeCallbackRaycast : public RTree::CallbackRaycast
+class RTreeCallbackRaycast : public MeshTree::CallbackRaycast
 {
 public:
 	const void* mTris;

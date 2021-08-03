@@ -29,7 +29,7 @@
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
-#include "../Src/Collision/RTree.h"
+#include "../Src/Collision/MeshTree.h"
 #include "../Src/Collision/TriangleMesh.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/SparseVoxelField.h"
@@ -59,27 +59,56 @@ void TestSIMD()
 	return;
 }
 
-void TestRTree()
+void TestRTree1()
 {
 	TriangleMesh mesh;
-	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(0.99f, 0.99f, 0.99f));
-	mesh.BuildRTree();
+	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
+	mesh.AddAABB(Vector3d(-0.5f, -0.5f, -0.5f), Vector3d(0.5f, 0.5f, 0.5f));
+	mesh.Compact();
+	mesh.BuildMeshTree();
 	float t;
 	bool success;
 	success = mesh.IntersectRay(Vector3d(0.0f, 10.0f, 0.0f), -Vector3d::UnitY(), &t);
+	assert(success);
+	assert(FloatEqual(t, 9.0f));
 
-	mesh.Release();
+	success = mesh.IntersectRay(Vector3d(2.0f, 10.0f, 0.0f), -Vector3d::UnitY(), &t);
+	assert(!success);
+
+	success = mesh.IntersectRay(Vector3d(0.0f, 0.75f, 0.0f), Vector3d::UnitY(), &t);
+	assert(success);
+	assert(FloatEqual(t, 0.25f));
+
+	success = mesh.IntersectRay(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(1, 1, 1).Unit(), &t);
+	assert(success);
+	assert(FloatEqual(t, sqrtf(3.0f) * 0.5f));
+
+	return;
+}
+
+void TestRTree2()
+{
+	TriangleMesh mesh;
+
 	mesh.LoadObj("e:/temp/dungeon.obj");
-	mesh.BuildRTree();
+	mesh.NumTriangles = 19;		// Bug 18 --> 19
+	mesh.Compact();
+	mesh.BuildMeshTree();
 
 	Vector3d Center;
 	Center = (mesh(0, 0) + mesh(0, 1) + mesh(0, 2)) / 3.0f;
-	Center.y = 100.0f;
-	
-	success = mesh.IntersectRay(Center, -Vector3d::UnitY(), &t);
+	Center.y = 0.0f;
 
-	printf("hit = %d, time = %.2f", success, t);
+	auto v0 = mesh(18, 0);
+	auto v1 = mesh(18, 1);
+	auto v2 = mesh(18, 2);
 
+	float t1, t2;
+	bool success1, success2;
+	success1 = Triangle3d::RayIntersectTriangle(Center, Vector3d::UnitY(), mesh(0, 0), mesh(0, 1), mesh(0, 2), &t1);
+	success2 = mesh.IntersectRay(Center, Vector3d::UnitY(), &t2);
+	assert(success1 == success2);
+	assert(FloatEqual(t1, t2));
 	return;
 }
 
@@ -412,9 +441,10 @@ void TestSAPInc()
 
 void TestMainEntry()
 {
-	TestPhysxBin();
-	TestSIMD();
-	TestRTree();
+	// TestPhysxBin();
+	// TestSIMD();
+	// TestRTree1();
+	TestRTree2();
 	// TestBitmap();
 	TestAABBTree();
 	TestGeometryQuery();

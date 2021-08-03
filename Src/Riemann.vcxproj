@@ -29,7 +29,7 @@
     <ClCompile Include="Collision\GeometryObject.cpp" />
     <ClCompile Include="Collision\GeometryQuery.cpp" />
     <ClCompile Include="Collision\NarrowPhase.cpp" />
-    <ClCompile Include="Collision\RTree.cpp" />
+    <ClCompile Include="Collision\MeshTree.cpp" />
     <ClCompile Include="Collision\TriangleMesh.cpp" />
     <ClCompile Include="Geometry\ConvexHull3D.cpp" />
     <ClCompile Include="Geometry\VoxelField.cpp" />
@@ -86,7 +86,7 @@
     <ClInclude Include="Collision\NarrowPhase.h" />
     <ClInclude Include="Collision\ProximityGrid.h" />
     <ClInclude Include="Collision\QuadTree.h" />
-    <ClInclude Include="Collision\RTree.h" />
+    <ClInclude Include="Collision\MeshTree.h" />
     <ClInclude Include="Collision\SAP_Incremental.h" />
     <ClInclude Include="Collision\Simplex.h" />
     <ClInclude Include="Collision\SparseSpatialHash.h" />

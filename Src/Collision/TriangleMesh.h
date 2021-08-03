@@ -2,7 +2,7 @@
 
 #include "../CollisionPrimitive/Mesh.h"
 #include "../Maths/Matrix3d.h"
-#include "RTree.h"
+#include "MeshTree.h"
 
 class TriangleMesh : public Mesh
 {
@@ -28,9 +28,9 @@ public:
 		}
 	}
 
-	RTree*			CreateEmptyRTree();
+	MeshTree*		CreateEmptyMeshTree();
 	void*			AllocMemory(int Size, int Width);
-	void			BuildRTree();
+	void			BuildMeshTree();
 
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
 
@@ -44,6 +44,6 @@ public:
 	Vector3d GetSupport(const Vector3d& dir) const;
 
 private:
-	RTree*	m_Tree;
-	void*	m_Memory;
+	MeshTree*	m_Tree;
+	void*		m_Memory;
 };

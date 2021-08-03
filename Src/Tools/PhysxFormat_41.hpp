@@ -440,12 +440,12 @@ public:
 
 		}
 
-		RTree				mRTree;
+		MeshTree				mRTree;
 	};
 
 	static_assert(sizeof(PxBase) == 16, "sizeof(PxBase) not valid");
 	static_assert(sizeof(PxRefCountable) == 16, "sizeof(PxRefCountable) not valid");
-	static_assert(sizeof(RTree) == 96, "sizeof(RTree) not valid");
+	static_assert(sizeof(MeshTree) == 96, "sizeof(PrimitiveTree) not valid");
 	static_assert(sizeof(PxTriangleMesh) == 160, "sizeof(PxTriangleMesh) not valid");
 	static_assert(sizeof(PxRTreeTriangleMesh) == 256, "sizeof(PxRTreeTriangleMesh) not valid");
 

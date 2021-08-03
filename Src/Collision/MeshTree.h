@@ -61,10 +61,10 @@ struct RTreePage
 };
 
 __declspec(align(16))
-class RTree
+class MeshTree
 {
 public:
-	RTree()
+	MeshTree()
 	{
 		mFlags = 0;
 		mPages = nullptr;
@@ -73,7 +73,7 @@ public:
 		mPageSize = RTREE_N;
 	}
 
-	~RTree()
+	~MeshTree()
 	{
 		release();
 	}
