@@ -23,11 +23,11 @@ AABBTreeNodeInference* AABBTreeOffline::BuildInferenceTree()
 		AABBTreeNodeOffline* p = block.pMem;
 		for (int i = 0; i < block.nUsedNodes; ++i)
 		{
-			Compact[offset].BV = p[i].mBV;
+			Compact[offset].BV = p[i].BV;
 			if (p[i].IsLeafNode())
 			{
 				const int index = p[i].IndexOffset;
-				const int nPrimitives = p[i].NumPrimitives;
+				const int nPrimitives = p[i].NumGeometries;
 				assert(nPrimitives <= 16);
 
 				Compact[offset].Data = (index << 5) | ((nPrimitives & 15) << 1) | 1;

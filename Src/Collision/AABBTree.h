@@ -36,8 +36,8 @@ private:
 	void	InitAABBTreeBuild(AABBTreeBuildData& params);
 
 private:
-	int*						m_PrimitiveIndicesBase;
-	int							m_NumPrimitives;
+	int*						m_GeometryIndicesBase;
+	int							m_NumGeometries;
 
 	AABBTreeNodeInference		*m_AABBTreeInference;
 };

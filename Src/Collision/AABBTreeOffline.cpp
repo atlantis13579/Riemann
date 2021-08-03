@@ -13,53 +13,53 @@ void AABBTreeNodeOffline::BuildHierarchyRecursive(AABBTreeBuildData& params)
 	}
 }
 
-int AABBTreeNodeOffline::SplitAxis(const AABBTreeBuildData& params, int *pPrimitives, int numPrimitives, int axis)
+int AABBTreeNodeOffline::SplitAxis(const AABBTreeBuildData& Params, int *pGeometries, int Num, int Axis)
 {
-	const float SplitValue = (mBV.Min[axis] + mBV.Max[axis]) * 0.5f;
+	const float SplitValue = (BV.Min[Axis] + BV.Max[Axis]) * 0.5f;
 	int nSplitLeft = 0;
 
-	for (int i = 0; i < numPrimitives; ++i)
+	for (int i = 0; i < Num; ++i)
 	{
-		const int index = pPrimitives[i];
-		const float primitiveValue = params.pCenterBuffer[index][axis];
-		assert(primitiveValue == params.pCenterBuffer[index][axis]);
+		const int Index = pGeometries[i];
+		const float Value = Params.pCenterBuffer[Index][Axis];
+		assert(Value == Params.pCenterBuffer[Index][Axis]);
 
-		if (primitiveValue > SplitValue)
+		if (Value > SplitValue)
 		{
-			pPrimitives[i] = pPrimitives[nSplitLeft];
-			pPrimitives[nSplitLeft] = index;
+			pGeometries[i] = pGeometries[nSplitLeft];
+			pGeometries[nSplitLeft] = Index;
 			++nSplitLeft;
 		}
 	}
 	return nSplitLeft;
 }
 
-void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
+void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 {
-	int* primitives = params.pIndexBase + this->IndexOffset;
-	int nPrims = NumPrimitives;
+	int* geoms = Params.pIndicesBase + this->IndexOffset;
+	int nPrims = NumGeometries;
 
-	Vector3d meansV = params.pCenterBuffer[primitives[0]];
-	const Box3d* pAABB = params.pAABBArray;
+	Vector3d meansV = Params.pCenterBuffer[geoms[0]];
+	const Box3d* pAABB = Params.pAABBArray;
 
-	Vector3d minV = pAABB[primitives[0]].Min;
-	Vector3d maxV = pAABB[primitives[0]].Max;
+	Vector3d minV = pAABB[geoms[0]].Min;
+	Vector3d maxV = pAABB[geoms[0]].Max;
 
 	for (int i = 1; i < nPrims; ++i)
 	{
-		int index = primitives[i];
+		int index = geoms[i];
 		const Vector3d& curMinV = pAABB[index].Min;
 		const Vector3d& curMaxV = pAABB[index].Max;
 
-		meansV += params.pCenterBuffer[index];
+		meansV += Params.pCenterBuffer[index];
 		
 		minV = minV.Min(curMinV);
 		maxV = maxV.Max(curMaxV);
 	}
 
-	mBV = Box3d(minV, maxV);
+	BV = Box3d(minV, maxV);
 
-	if (nPrims <= params.NumPrimitivesPerNode)
+	if (nPrims <= Params.NumGeometriesPerNode)
 		return;
 
 	meansV *= 1.0f / float(nPrims);
@@ -67,8 +67,8 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 	Vector3d varsV = Vector3d::Zero();
 	for (int i = 0; i < nPrims; ++i)
 	{
-		int index = primitives[i];
-		Vector3d centerV = params.pCenterBuffer[index];
+		int index = geoms[i];
+		Vector3d centerV = Params.pCenterBuffer[index];
 		centerV = centerV - meansV;
 		centerV = centerV * centerV;
 		varsV = varsV + centerV;
@@ -78,7 +78,7 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 
 	const int axis = varsV.LargestAxis();
 
-	int	nSplitLeft = SplitAxis(params, primitives, NumPrimitives, axis);
+	int	nSplitLeft = SplitAxis(Params, geoms, NumGeometries, axis);
 	
 	bool validSplit = true;
 	if (!nSplitLeft || nSplitLeft == nPrims)
@@ -86,7 +86,7 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 
 	if (!validSplit)
 	{
-		if (nPrims > params.NumPrimitivesPerNode)
+		if (nPrims > Params.NumGeometriesPerNode)
 		{
 			nSplitLeft = nPrims >> 1;
 		}
@@ -96,14 +96,14 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& params)
 		}
 	}
 
-	this->Children[0] = params.pAABBTree->AllocNodes();
+	this->Children[0] = Params.pAABBTree->AllocNodes();
 	this->Children[1] = this->Children[0] + 1;
 
 	// Assign children
 	assert(!IsLeafNode());
 	this->Children[0]->IndexOffset = this->IndexOffset;
-	this->Children[0]->NumPrimitives = nSplitLeft;
+	this->Children[0]->NumGeometries = nSplitLeft;
 	this->Children[1]->IndexOffset = this->IndexOffset + nSplitLeft;
-	this->Children[1]->NumPrimitives = NumPrimitives - nSplitLeft;
+	this->Children[1]->NumGeometries = NumGeometries - nSplitLeft;
 }
 

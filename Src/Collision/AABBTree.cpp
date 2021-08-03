@@ -10,8 +10,8 @@
 
 AABBTree::AABBTree()
 {
-	m_PrimitiveIndicesBase = nullptr;
-	m_NumPrimitives = 0;
+	m_GeometryIndicesBase = nullptr;
+	m_NumGeometries = 0;
 	m_AABBTreeInference = nullptr;
 }
 
@@ -22,11 +22,11 @@ AABBTree::~AABBTree()
 
 void AABBTree::Release()
 {
-	m_NumPrimitives = 0;
-	if (m_PrimitiveIndicesBase)
+	m_NumGeometries = 0;
+	if (m_GeometryIndicesBase)
 	{
-		delete[]m_PrimitiveIndicesBase;
-		m_PrimitiveIndicesBase = nullptr;
+		delete[]m_GeometryIndicesBase;
+		m_GeometryIndicesBase = nullptr;
 	}
 	if (m_AABBTreeInference)
 	{
@@ -50,7 +50,7 @@ void AABBTree::StaticBuild(AABBTreeBuildData& params)
 	params.pAABBTree = nullptr;
 }
 
-#define	GET_INDEX(_p)	(*_p->GetPrimitiveIndices(m_PrimitiveIndicesBase))
+#define	GET_INDEX(_p)	(*_p->GetGeometryIndices(m_GeometryIndicesBase))
 #define LEFT_NODE(_p)	(_p->GetLeftNode(m_AABBTreeInference))
 #define RIGHT_NODE(_p)	(_p->GetRightNode(m_AABBTreeInference))
 
@@ -132,32 +132,33 @@ int AABBTree::IntersectPoint(const Vector3d& Point) const
 	return -1;
 }
 
-static int IntersectGeometry(const Ray3d& ray, int* prims, int numPrims, Geometry** ObjectCollection, const Box3d& BV, const RayCastOption& Option, RayCastResult* Result)
+static int IntersectGeometry(const Ray3d& Ray, int* Indices, int numIndices, Geometry** GeometryCollection, const Box3d& BV, const RayCastOption& Option, RayCastResult* Result)
 {
-	assert(numPrims > 0);
-	if (ObjectCollection == nullptr)
+	assert(numIndices > 0);
+	if (GeometryCollection == nullptr)
 	{
 		float t;
-		if (ray.IntersectAABB(BV.Min, BV.Max, &t))
+		if (Ray.IntersectAABB(BV.Min, BV.Max, &t) && t < Option.MaxDist)
 		{
 			Result->hit = true;
 			if (t < Result->hitTime)
 			{
-				Result->hitPoint = ray.PointAt(t);
+				Result->hitPoint = Ray.PointAt(t);
 				Result->hitTime = t;
 			}
-			return *prims;
+			return *Indices;
 		}
 
 		return -1;
 	}
+
 	int min_idx = -1;
 	float t, min_t = FLT_MAX;
-	for (int i = 0; i < numPrims; ++i)
+	for (int i = 0; i < numIndices; ++i)
 	{
-		const int index = prims[i];
-		Geometry *Geom = ObjectCollection[index];
-		bool hit = Geom->RayCast(ray.Origin, ray.Dir, &t);
+		const int index = Indices[i];
+		Geometry *Geom = GeometryCollection[index];
+		bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, &t);
 		if (hit && t < Option.MaxDist)
 		{
 			if (Option.Type == RayCastOption::RAYCAST_ANY)
@@ -180,8 +181,8 @@ static int IntersectGeometry(const Ray3d& ray, int* prims, int numPrims, Geometr
 		Result->hit = true;
 		if (min_t < Result->hitTime)
 		{
-			Result->hitPoint = ray.PointAt(min_t);
-			Result->hitGeom = ObjectCollection[min_idx];
+			Result->hitPoint = Ray.PointAt(min_t);
+			Result->hitGeom = GeometryCollection[min_idx];
 			Result->hitTime = min_t;
 		}
 	}
@@ -213,8 +214,8 @@ bool  AABBTree::RayCast(const Ray3d& ray, Geometry **ObjectCollection, const Ray
 		{
 			if (p->IsLeafNode())
 			{
-				int* PrimitiveIndices = p->GetPrimitiveIndices(m_PrimitiveIndicesBase);
-				int	 nPrimitives = p->GetNumPrimitives();
+				int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
+				int	 nPrimitives = p->GetNumGeometries();
 				const Box3d& Box = p->GetBoundingVolume();
 				int HitId =	IntersectGeometry(ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
 				if (HitId >= 0)
@@ -228,7 +229,7 @@ bool  AABBTree::RayCast(const Ray3d& ray, Geometry **ObjectCollection, const Ray
 			}
 
 			AABBTreeNodeInference* Left = LEFT_NODE(p);
-			AABBTreeNodeInference* Right = RIGHT_NODE(p);
+			AABBTreeNodeInference* Right = Left + 1;
 
 			bool hit1 = ray.IntersectAABB(Left->BV.Min, Left->BV.Max, &t1) && t1 < Result->hitTime;
 			bool hit2 = ray.IntersectAABB(Right->BV.Min, Right->BV.Max, &t2) && t2 < Result->hitTime;
@@ -274,20 +275,20 @@ bool  AABBTree::RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option
 
 void AABBTree::InitAABBTreeBuild(AABBTreeBuildData& params)
 {
-	if (m_PrimitiveIndicesBase)
+	if (m_GeometryIndicesBase)
 		return;
 
-	m_NumPrimitives = params.NumPrimitives;
-	m_PrimitiveIndicesBase = new int[params.NumPrimitives];
-	for (int i = 0; i < params.NumPrimitives; ++i)
-		m_PrimitiveIndicesBase[i] = (int)i;
+	m_NumGeometries = params.NumGeometries;
+	m_GeometryIndicesBase = new int[params.NumGeometries];
+	for (int i = 0; i < params.NumGeometries; ++i)
+		m_GeometryIndicesBase[i] = (int)i;
 
 	params.pAABBTree = new AABBTreeOffline();
-	params.pAABBTree->Init(params.NumPrimitives, params.NumPrimitivesPerNode);
+	params.pAABBTree->Init(params.NumGeometries, params.NumGeometriesPerNode);
 
-	params.pIndexBase = m_PrimitiveIndicesBase;
-	params.pCenterBuffer = (Vector3d*) new float[(params.NumPrimitives + 1)*3];
-	for (int i = 0; i < params.NumPrimitives; i++)
+	params.pIndicesBase = m_GeometryIndicesBase;
+	params.pCenterBuffer = (Vector3d*) new float[(params.NumGeometries + 1)*3];
+	for (int i = 0; i < params.NumGeometries; i++)
 	{
 		params.pCenterBuffer[i] = params.pAABBArray[i].GetCenter();
 	}

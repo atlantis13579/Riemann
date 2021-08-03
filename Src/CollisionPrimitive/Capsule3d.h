@@ -66,6 +66,11 @@ public:
 		return box;
 	}
 
+	bool	IsYAxisAligned() const
+	{
+		return Axis.ParallelTo(Vector3d::UnitY()) == 0;
+	}
+
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
 	{
 		const Vector3d X1ToStart = Origin - X0;
@@ -277,7 +282,7 @@ public:
 		Vertices->push_back(Vector3d(0, -Length * 0.5f -Radius, 0));
 		if (Normals) Normals->push_back(-Vector3d::UnitY());
 
-		if (!Axis.ParallelTo(Vector3d::UnitY()) != 0)
+		if (!IsYAxisAligned())
 		{
 			Matrix3d Rot;
 			Rot.FromTwoAxis(Vector3d::UnitY(), Axis);

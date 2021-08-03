@@ -10,12 +10,12 @@ struct AABBTreeNodeInference;
 
 struct AABBTreeBuildData
 {
-	AABBTreeBuildData(const Box3d* pArray, int nPrimitives = 0, int PrimitivesPerNode = 1) :
-		NumPrimitivesPerNode(PrimitivesPerNode),
-		NumPrimitives(nPrimitives),
+	AABBTreeBuildData(const Box3d* pArray, int nGeometries = 0, int GeometriesPerNode = 1) :
+		NumGeometriesPerNode(GeometriesPerNode),
+		NumGeometries(nGeometries),
 		pAABBArray(pArray),
 		pCenterBuffer(nullptr),
-		pIndexBase(nullptr),
+		pIndicesBase(nullptr),
 		pAABBTree(nullptr)
 	{
 
@@ -23,8 +23,8 @@ struct AABBTreeBuildData
 
 	~AABBTreeBuildData()
 	{
-		NumPrimitivesPerNode = 0;
-		NumPrimitives = 0;
+		NumGeometriesPerNode = 0;
+		NumGeometries = 0;
 		pAABBArray = nullptr;
 		Release();
 	}
@@ -36,14 +36,14 @@ struct AABBTreeBuildData
 			delete[]pCenterBuffer;
 			pCenterBuffer = nullptr;
 		}
-		pIndexBase = nullptr;
+		pIndicesBase = nullptr;
 	}
 
-	int							NumPrimitivesPerNode;	
-	int							NumPrimitives;
-	const Box3d*		pAABBArray;
+	int							NumGeometriesPerNode;	
+	int							NumGeometries;
+	const Box3d*				pAABBArray;
 	Vector3d*					pCenterBuffer;		// Holds the memory
-	int*						pIndexBase;
+	int*						pIndicesBase;
 	AABBTreeOffline*			pAABBTree;
 };
 
@@ -69,15 +69,15 @@ public:
 		return false;
 	}
 
-	int		SplitAxis(const AABBTreeBuildData& params, int* prims, int nb, int axis);
-	void	SubDivideAABBArray(AABBTreeBuildData& params);
-	void	BuildHierarchyRecursive(AABBTreeBuildData& params);
+	int		SplitAxis(const AABBTreeBuildData& Params, int* pGeometries, int Num, int Axis);
+	void	SubDivideAABBArray(AABBTreeBuildData& Params);
+	void	BuildHierarchyRecursive(AABBTreeBuildData& Params);
 
 public:
-	Box3d					mBV;
+	Box3d							BV;
 	AABBTreeNodeOffline*			Children[2];
 	int								IndexOffset;
-	int								NumPrimitives;
+	int								NumGeometries;
 };
 
 
@@ -107,15 +107,15 @@ public:
 		nTotalNodes = 0;
 	}
 
-	void Init(int nPrimitives, int nPrimitivesPerNode)
+	void Init(int nGeometries, int nGeometriesPerNode)
 	{
-		const int maxSize = nPrimitives * 2 - 1;
-		const int estimatedFinalSize = maxSize <= 1024 ? maxSize : maxSize / nPrimitivesPerNode;
+		const int maxSize = nGeometries * 2 - 1;
+		const int estimatedFinalSize = maxSize <= 1024 ? maxSize : maxSize / nGeometriesPerNode;
 		pHead = new  AABBTreeNodeOffline[estimatedFinalSize];
 		memset(pHead, 0, sizeof(AABBTreeNodeOffline) * estimatedFinalSize);
 
 		pHead->IndexOffset = 0;
-		pHead->NumPrimitives = nPrimitives;
+		pHead->NumGeometries = nGeometries;
 
 		Blocks.emplace_back(pHead, 1, estimatedFinalSize);
 		nCurrentBlockIndex = 0;
@@ -166,7 +166,7 @@ private:
 		int						nUsedNodes;
 		int						nMaxNodes;
 	};
-	std::vector<NodeBlock>	Blocks;
+	std::vector<NodeBlock>		Blocks;
 	int							nCurrentBlockIndex;
 	int							nTotalNodes;
 };

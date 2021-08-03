@@ -17,17 +17,17 @@ struct AABBTreeNodeInference
 		return Data & 1;
 	}
 
-	inline const int*	GetPrimitiveIndices(const int* Base) const
+	inline const int*	GetGeometryIndices(const int* Base) const
 	{
 		return Base + (Data >> 5);
 	}
 
-	inline int*			GetPrimitiveIndices(int* Base) const
+	inline int*			GetGeometryIndices(int* Base) const
 	{
 		return Base + (Data >> 5);
 	}
 
-	inline int			GetNumPrimitives() const
+	inline int			GetNumGeometries() const
 	{
 		return (Data >> 1) & 15;
 	}
