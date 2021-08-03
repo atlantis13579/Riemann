@@ -91,7 +91,7 @@ void TestRTree2()
 	TriangleMesh mesh;
 
 	mesh.LoadObj("e:/temp/dungeon.obj");
-	mesh.NumTriangles = 19;		// Bug 18 --> 19
+	// mesh.NumTriangles = 19;		// Bug 18 --> 19
 	mesh.Compact();
 	mesh.BuildMeshTree();
 
@@ -99,14 +99,15 @@ void TestRTree2()
 	Center = (mesh(0, 0) + mesh(0, 1) + mesh(0, 2)) / 3.0f;
 	Center.y = 0.0f;
 
-	auto v0 = mesh(18, 0);
-	auto v1 = mesh(18, 1);
-	auto v2 = mesh(18, 2);
+	// auto v0 = mesh(18, 0);
+	// auto v1 = mesh(18, 1);
+	// auto v2 = mesh(18, 2);
 
 	float t1, t2;
 	bool success1, success2;
-	success1 = Triangle3d::RayIntersectTriangle(Center, Vector3d::UnitY(), mesh(0, 0), mesh(0, 1), mesh(0, 2), &t1);
-	success2 = mesh.IntersectRay(Center, Vector3d::UnitY(), &t2);
+	Vector3d Dir = Vector3d::UnitY();
+	success1 = Triangle3d::RayIntersectTriangle(Center, Dir, mesh(0, 0), mesh(0, 1), mesh(0, 2), &t1);
+	success2 = mesh.IntersectRay(Center, Dir, &t2);
 	assert(success1 == success2);
 	assert(FloatEqual(t1, t2));
 	return;

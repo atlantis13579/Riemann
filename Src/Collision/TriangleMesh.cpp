@@ -386,14 +386,14 @@ struct SubSortSAH
 			{
 				// sweep left to right and compute min and max SAH for each individual bound in current split
 				Box3d b = allBounds[permute[splitStarts[s]]];
-				float sahMin = SAH(b.GetExtent());
+				float sahMin = SAH(b.Max - b.Min);
 				float sahMax = sahMin;
 				// AP scaffold - looks like this could be optimized (we are recomputing bounds top down)
 				for (uint32_t i = 1; i < splitCount; i++)
 				{
 					uint32_t localIndex = i + splitStarts[s];
 					const Box3d& b1 = allBounds[permute[localIndex]];
-					float sah1 = SAH(b1.GetExtent());
+					float sah1 = SAH(b1.Max - b1.Min);
 					sahMin = std::min(sahMin, sah1);
 					sahMax = std::max(sahMax, sah1);
 					b.Grow(b1);
@@ -485,9 +485,11 @@ static void buildFromBounds(MeshTree& result, void*& Memory, const Box3d* allBou
 		memcpy(&zOrder[0], &permute[0], sizeof(zOrder[0]) * numBounds);
 		// sort by shuffling the permutation, precompute sorted ranks for x,y,z-orders
 		std::sort(xOrder.begin(), xOrder.end(), SortBoundsPredicate(0, allBounds));
-		for (uint32_t i = 0; i < numBounds; i++) xRanks[xOrder[i]] = i;
+		for (uint32_t i = 0; i < numBounds; i++)
+			xRanks[xOrder[i]] = i;
 		std::sort(yOrder.begin(), yOrder.end(), SortBoundsPredicate(1, allBounds));
-		for (uint32_t i = 0; i < numBounds; i++) yRanks[yOrder[i]] = i;
+		for (uint32_t i = 0; i < numBounds; i++)
+			yRanks[yOrder[i]] = i;
 		std::sort(zOrder.begin(), zOrder.end(), SortBoundsPredicate(2, allBounds));
 		for (uint32_t i = 0; i < numBounds; i++)
 			zRanks[zOrder[i]] = i;
@@ -506,12 +508,36 @@ static void buildFromBounds(MeshTree& result, void*& Memory, const Box3d* allBou
 	assert(permute[numBounds] == sentinel); // verify we didn't write past the array
 	permute.pop_back(); // discard the sentinel value
 
+#if 1 // stats code
+	// 
+	uint32_t totalLeafTris = 0;
+	uint32_t numLeaves = 0;
+	int maxLeafTris = 0;
+	uint32_t numEmpty = 0;
+	for (uint32_t i = 0; i < resultTree.size(); i++)
+	{
+		int leafCount = resultTree[i].leafCount;
+		// numEmpty += (resultTree[i].bounds.Empty());
+		if (leafCount > 0)
+		{
+			numLeaves++;
+			totalLeafTris += leafCount;
+			if (leafCount > maxLeafTris)
+				maxLeafTris = leafCount;
+		}
+	}
+
+	printf("AABBs total/empty=%d/%d\n", (int)resultTree.size(), numEmpty);
+	printf("numTris=%d, numLeafAABBs=%d, avgTrisPerLeaf=%.2f, maxTrisPerLeaf = %d\n",
+		numBounds, numLeaves, float(totalLeafTris) / numLeaves, maxLeafTris);
+#endif
+
 	assert(RTREE_N * sizeof(RTreeNodeQ) == sizeof(RTreePage)); // needed for nodePtrMultiplier computation to be correct
 	const int nodePtrMultiplier = sizeof(RTreeNodeQ); // convert offset as count in qnodes to page ptr
 
 	// Quantize the tree. AP scaffold - might be possible to merge this phase with the page pass below this loop
 	std::vector<RTreeNodeQ> qtreeNodes;
-	uint32_t firstEmptyIndex = uint32_t(-1);
+	uint32_t firstEmptyIndex = 0xFFFFFFFF;
 	uint32_t resultCount = (uint32_t)resultTree.size();
 	qtreeNodes.reserve(resultCount);
 
@@ -522,7 +548,7 @@ static void buildFromBounds(MeshTree& result, void*& Memory, const Box3d* allBou
 		q.setLeaf(u.leafCount > 0); // set the leaf flag
 		if (u.childPageFirstNodeIndex == -1) // empty node?
 		{
-			if (firstEmptyIndex == uint32_t(-1))
+			if (firstEmptyIndex == 0xFFFFFFFF)
 				firstEmptyIndex = (uint32_t)qtreeNodes.size();
 			q.minx = q.miny = q.minz = FLT_MAX; // AP scaffold improvement - use empty 1e30 bounds instead and reference a valid leaf
 			q.maxx = q.maxy = q.maxz = -FLT_MAX; // that will allow to remove the empty node test from the runtime
@@ -594,9 +620,6 @@ static void buildFromBounds(MeshTree& result, void*& Memory, const Box3d* allBou
 		}
 	}
 
-#if _DEBUG
-	result.validate(); // make sure the child bounds are included in the parent and other validation
-#endif
 }
 
 
@@ -646,6 +669,12 @@ void TriangleMesh::BuildMeshTree()
 	std::vector<uint32_t> permute;
 	RTreeRemap rc(NumTriangles);
 	buildFromBounds(*m_Tree, m_Memory, &allBounds[0], NumTriangles, permute, treeBounds, &rc);
+
+	Reorder(permute);
+
+#if _DEBUG
+	m_Tree->validate((Mesh*)this); // make sure the child bounds are included in the parent and other validation
+#endif
 }
 
 template<bool tRayTest>

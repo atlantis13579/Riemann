@@ -98,14 +98,10 @@ public:
 
 	void		traverseRay(const Vector3d& Origin, const Vector3d& Dir, CallbackRaycast* cb, float maxT = FLT_MAX) const;
 
-	void		openTextDump();
-	void		closeTextDump();
-	void		textDump(const char* prefix);
-	void		maxscriptExport();
-	uint32_t		computeBottomLevelCount(uint32_t storedToMemMultiplier) const;
+	uint32_t	computeBottomLevelCount(uint32_t storedToMemMultiplier) const;
 
-	void		validate();
-	void		validateRecursive(uint32_t level, RTreeNodeQ parentBounds, RTreePage* page);
+	void		validate(void* p);
+	void		validateRecursive(void* p, uint32_t level, RTreeNodeQ parentBounds, RTreePage* page);
 
 	Vector4d			mBoundsMin, mBoundsMax, mInvDiagonal, mDiagonalScaler; // 16
 	uint32_t		mPageSize;

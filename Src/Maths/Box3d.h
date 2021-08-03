@@ -77,14 +77,8 @@ public:
 
 	TAABB3<T>& Grow(const TVector3<T>& rhs)
 	{
-		Min.x = std::min(Min.x, rhs.x);
-		Min.y = std::min(Min.y, rhs.y);
-		Min.z = std::min(Min.z, rhs.z);
-
-		Max.x = std::max(Max.x, rhs.x);
-		Max.y = std::max(Max.y, rhs.y);
-		Max.z = std::max(Max.z, rhs.z);
-
+		Min = Min.Min(rhs);
+		Max = Max.Max(rhs);
 		return *this;
 	}
 
@@ -98,14 +92,8 @@ public:
 
 	TAABB3<T>& Grow(const TAABB3<T>& rhs)
 	{
-		Min.x = std::min(Min.x, rhs.Min.x);
-		Min.y = std::min(Min.y, rhs.Min.y);
-		Min.z = std::min(Min.z, rhs.Min.z);
-		
-		Max.x = std::max(Max.x, rhs.Max.x);
-		Max.y = std::max(Max.y, rhs.Max.y);
-		Max.z = std::max(Max.z, rhs.Max.z);
-
+		Min = Min.Min(rhs.Min);
+		Max = Max.Max(rhs.Max);
 		return *this;
 	}
 

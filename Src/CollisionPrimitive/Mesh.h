@@ -217,6 +217,34 @@ public:
 		AddTriangle(k + 6, k + 7, k + 3);
 	}
 
+	void Reorder(const std::vector<uint32_t> &IndicesPermute)
+	{
+		std::vector<uint16_t> newIndices(NumTriangles * 3 * GetIndicesWidth());
+		if (Is16bitIndices())
+		{
+			uint16_t* pSrc = GetIndices16();
+			uint16_t* pDst = &newIndices[0];
+			for (uint32_t i = 0; i < NumTriangles; ++i)
+			{
+				pDst[3 * i + 0] = pSrc[3 * IndicesPermute[i] + 0];
+				pDst[3 * i + 1] = pSrc[3 * IndicesPermute[i] + 1];
+				pDst[3 * i + 2] = pSrc[3 * IndicesPermute[i] + 2];
+			}
+		}
+		else
+		{
+			uint32_t* pSrc = GetIndices32();
+			uint32_t* pDst = (uint32_t*)&newIndices[0];
+			for (uint32_t i = 0; i < NumTriangles; ++i)
+			{
+				pDst[3 * i + 0] = pSrc[3 * IndicesPermute[i] + 0];
+				pDst[3 * i + 1] = pSrc[3 * IndicesPermute[i] + 1];
+				pDst[3 * i + 2] = pSrc[3 * IndicesPermute[i] + 2];
+			}
+		}
+		Indices = std::move(newIndices);
+	}
+
 	bool LoadObj(const char* name)
 	{
 		char* buf = 0;

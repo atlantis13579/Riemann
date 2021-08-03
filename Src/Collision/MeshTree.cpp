@@ -3,62 +3,11 @@
 #include "MeshTree.h"
 #include "../Maths/SIMD.h"
 
-/*
-bool RTree::load(PxInputStream& stream, uint32_t meshVersion, bool mismatch_)	// PT: 'meshVersion' is the PX_MESH_VERSION from cooked file
-{
-	PX_UNUSED(meshVersion);
-
-	release();
-
-	PxI8 a, b, c, d;
-	readChunk(a, b, c, d, stream);
-	if (a != 'R' || b != 'T' || c != 'R' || d != 'E')
-		return false;
-
-	bool mismatch;
-	uint32_t fileVersion;
-	if (!readBigEndianVersionNumber(stream, mismatch_, fileVersion, mismatch))
-		return false;
-
-	readFloatBuffer(&mBoundsMin.x, 4, mismatch, stream);
-	readFloatBuffer(&mBoundsMax.x, 4, mismatch, stream);
-	readFloatBuffer(&mInvDiagonal.x, 4, mismatch, stream);
-	readFloatBuffer(&mDiagonalScaler.x, 4, mismatch, stream);
-	mPageSize = readDword(mismatch, stream);
-	mNumRootPages = readDword(mismatch, stream);
-	mNumLevels = readDword(mismatch, stream);
-	mTotalNodes = readDword(mismatch, stream);
-	mTotalPages = readDword(mismatch, stream);
-	uint32_t unused = readDword(mismatch, stream); PX_UNUSED(unused); // backwards compatibility
-	mPages = static_cast<RTreePage*>(Ps::AlignedAllocator<128>().allocate(sizeof(RTreePage) * mTotalPages, __FILE__, __LINE__));
-	Cm::markSerializedMem(mPages, sizeof(RTreePage) * mTotalPages);
-	for (uint32_t j = 0; j < mTotalPages; j++)
-	{
-		readFloatBuffer(mPages[j].minx, RTREE_N, mismatch, stream);
-		readFloatBuffer(mPages[j].miny, RTREE_N, mismatch, stream);
-		readFloatBuffer(mPages[j].minz, RTREE_N, mismatch, stream);
-		readFloatBuffer(mPages[j].maxx, RTREE_N, mismatch, stream);
-		readFloatBuffer(mPages[j].maxy, RTREE_N, mismatch, stream);
-		readFloatBuffer(mPages[j].maxz, RTREE_N, mismatch, stream);
-		ReadDwordBuffer(mPages[j].ptrs, RTREE_N, mismatch, stream);
-	}
-	return true;
-}
-*/
-
-void		MeshTree::validate()
-{
-	for (uint32_t j = 0; j < mNumRootPages; j++)
-	{
-		RTreeNodeQ rootBounds;
-		mPages[j].computeBounds(rootBounds);
-		validateRecursive(0, rootBounds, mPages + j);
-	}
-}
+#include "../CollisionPrimitive/Mesh.h"
 
 #define RTREE_INFLATION_EPSILON 5e-4f
 
-void MeshTree::validateRecursive(uint32_t level, RTreeNodeQ parentBounds, RTreePage* page)
+void MeshTree::validateRecursive(void* p, uint32_t level, RTreeNodeQ parentBounds, RTreePage* page)
 {
 	static uint32_t validateCounter = 0; // this is to suppress a warning that recursive call has no side effects
 	validateCounter++;
@@ -76,7 +25,28 @@ void MeshTree::validateRecursive(uint32_t level, RTreeNodeQ parentBounds, RTreeP
 		{
 			assert((n.ptr & 1) == 0);
 			RTreePage* childPage = reinterpret_cast<RTreePage*>(size_t(mPages) + n.ptr);
-			validateRecursive(level + 1, n, childPage);
+			validateRecursive(p, level + 1, n, childPage);
+		}
+		
+		if (n.isLeaf())
+		{
+			LeafTriangles currentLeaf;
+			currentLeaf.Data = n.ptr;
+			uint32_t nbLeafTris = currentLeaf.GetNbTriangles();
+			uint32_t baseLeafTriIndex = currentLeaf.GetTriangleIndex();
+			for (uint32_t i = 0; i < nbLeafTris; i++)
+			{
+				const uint32_t triangleIndex = baseLeafTriIndex + i;
+				Mesh* pm = (Mesh*)p;
+				for (int i = 0; i < 3; ++i)
+				{
+					const Vector3d &vv = pm->GetVertex(triangleIndex, i);
+					assert(n.minx <= vv.x && vv.x <= n.maxx);
+					assert(n.miny <= vv.y && vv.y <= n.maxy);
+					assert(n.minz <= vv.z && vv.z <= n.maxz);
+				}
+				continue;
+			}
 		}
 	}
 
@@ -90,6 +60,15 @@ void MeshTree::validateRecursive(uint32_t level, RTreeNodeQ parentBounds, RTreeP
 	assert((recomputedBounds.maxz - parentBounds.maxz) <= RTREE_INFLATION_EPSILON);
 }
 
+void		MeshTree::validate(void *p)
+{
+	for (uint32_t j = 0; j < mNumRootPages; j++)
+	{
+		RTreeNodeQ rootBounds;
+		mPages[j].computeBounds(rootBounds);
+		validateRecursive(p, 0, rootBounds, mPages + j);
+	}
+}
 
 const VecU32V signMask = U4LoadXYZW((1 << 31), (1 << 31), (1 << 31), (1 << 31));
 const Vec4V epsFloat4 = V4Load(1e-9f);
