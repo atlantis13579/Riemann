@@ -45,7 +45,7 @@ public:
 	{
 		if (m_Type == GEOM_TYPE::StaticType())
 		{
-			return static_cast<GEOM_TYPE*>(GetShapeObj());
+			return static_cast<GEOM_TYPE*>(GetShapeObjPtr());
 		}
 		return nullptr;
 	}
@@ -55,7 +55,7 @@ public:
 	{
 		if (m_Type == GEOM_TYPE::StaticType())
 		{
-			return static_cast<GEOM_TYPE*>(GetShapeObj());
+			return static_cast<const GEOM_TYPE*>(GetShapeObjPtr());
 		}
 		return nullptr;
 	}
@@ -86,8 +86,17 @@ private:
 	virtual Vector3d		GetSupport_LocalSpace(const Vector3d& Dir) const = 0;
 	virtual Box3d			GetBoundingVolume_LocalSpace() const = 0;
 
-	virtual const void*		GetShapeObj() const = 0;
-	virtual void*			GetShapeObj() = 0;
+	const void*				GetShapeObjPtr() const
+	{
+		const unsigned char* p = reinterpret_cast<const unsigned char*>(this);
+		return static_cast<const void*>(p + sizeof(Geometry));
+	}
+
+	void*					GetShapeObjPtr()
+	{
+		unsigned char* p = reinterpret_cast<unsigned char*>(this);
+		return static_cast<void*>(p + sizeof(Geometry));
+	}
 
 protected:
 	ShapeType			m_Type;

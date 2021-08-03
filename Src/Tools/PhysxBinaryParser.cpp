@@ -183,6 +183,7 @@ public:
 		{
 			assert(false);
 		}
+
 		if (Geom)
 		{
 			Geom->SetName(shape->mName);

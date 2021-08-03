@@ -23,16 +23,6 @@ public:
 	}
 	virtual ~TGeometry() {}
 
-	virtual const void*		GetShapeObj() const override final
-	{
-		return static_cast<const GEOM_TYPE*>(this);
-	}
-
-	virtual void*			GetShapeObj() override final
-	{
-		return static_cast<GEOM_TYPE*>(this);
-	}
-
 	virtual Matrix3d		GetInertia_LocalSpace(float Mass) const override final
 	{
 		return GEOM_TYPE::GetInertiaTensor(Mass);
@@ -49,7 +39,7 @@ public:
 	}
 };
 
-const Box3d& Geometry::GetBoundingVolume_WorldSpace() const
+const Box3d&		Geometry::GetBoundingVolume_WorldSpace() const
 {
 	return m_BoxWorld;
 }
@@ -108,7 +98,7 @@ bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
 #ifdef DEBUG
 	assert(func);
 #endif
-	void* Obj = GetShapeObj();
+	void* Obj = GetShapeObjPtr();
 	const Vector3d Origin_Local = m_Transform.WorldToLocal(Origin);
 	const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
 	return func(Obj, Origin_Local, Dir_Local, t);
@@ -122,7 +112,7 @@ bool				Geometry::Overlap(const Geometry* Geom) const
 #ifdef DEBUG
 	assert(func);
 #endif
-	return func(GetShapeObj(), Geom->GetShapeObj());
+	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr());
 }
 
 bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const
@@ -133,7 +123,7 @@ bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) con
 #ifdef DEBUG
 	assert(func);
 #endif
-	return func(GetShapeObj(), Geom->GetShapeObj(), Dir, t);
+	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), Dir, t);
 }
 
 Vector3d			Geometry::GetSupport_WorldSpace(const Vector3d& Dir)
