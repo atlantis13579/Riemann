@@ -161,7 +161,7 @@ public:
 
 	inline bool IsInside(const TVector3<T>& rhs) const
 	{
-		return ((rhs.x > Min.x) && (rhs.x < Max.x) && (rhs.y > Min.y) && (rhs.y < Max.y) && (rhs.z > Min.z) && (rhs.z < Max.z));
+		return ((rhs.x >= Min.x) && (rhs.x <= Max.x) && (rhs.y >= Min.y) && (rhs.y <= Max.y) && (rhs.z >= Min.z) && (rhs.z <= Max.z));
 	}
 
 	inline bool IsInside(const TAABB3<T>& rhs) const

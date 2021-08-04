@@ -83,7 +83,7 @@
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
     <ClInclude Include="Collision\ProximityGrid.h" />
     <ClInclude Include="Maths\Tensor.h" />
-    <ClInclude Include="CollisionPrimitive\MeshBVH.h" />
+    <ClInclude Include="CollisionPrimitive\MeshBVH4.h" />
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="CollisionPrimitive\TriangleMesh.h" />
     <ClInclude Include="Optimization\SGD.h" />
@@ -130,7 +130,7 @@
     <ClCompile Include="Geometry\VoxelEngine.cpp" />
     <ClCompile Include="Geometry\VoxelField.cpp" />
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
-    <ClCompile Include="CollisionPrimitive\MeshBVH.cpp" />
+    <ClCompile Include="CollisionPrimitive\MeshBVH4.cpp" />
     <ClCompile Include="CollisionPrimitive\TriangleMesh.cpp" />
     <ClCompile Include="Tools\PhysxBinaryParser.cpp" />
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />

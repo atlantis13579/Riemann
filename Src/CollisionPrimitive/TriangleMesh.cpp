@@ -1,639 +1,25 @@
 
+
 #include "TriangleMesh.h"
-#include "../Collision/GeometryQuery.h"
 #include "Triangle3d.h"
+#include "../Maths/SIMD.h"
+#include "../Collision/GeometryQuery.h"
 
 #include <algorithm>
 #include <array>
 #include <vector>
 
-struct RTreeNodeNQ
+MeshBVH4* TriangleMesh::CreateEmptyBVH()
 {
-	Box3d	bounds;
-	int		childPageFirstNodeIndex; // relative to the beginning of all build tree nodes array
-	int		leafCount; // -1 for empty nodes, 0 for non-terminal nodes, number of enclosed tris if non-zero (LeafTriangles), also means a terminal node
-
-	struct U {}; // selector struct for uninitialized constructor
-	RTreeNodeNQ(U) {} // uninitialized constructor
-	RTreeNodeNQ() : bounds(Box3d::Empty()), childPageFirstNodeIndex(-1), leafCount(0) {}
-};
-
-static const uint32_t NTRADEOFF = 15;
-//	%  -24 -23 -17 -15 -10  -8  -5  -3   0  +3  +3  +5  +7   +8    +9  - % raycast MeshSurface*Random benchmark perf
-//  K  717 734 752 777 793 811 824 866 903 939 971 1030 1087 1139 1266 - testzone size in K
-//  #    0   1   2   3   4   5   6   7   8   9  10  11  12   13     14 - preset number
-static const uint32_t stopAtTrisPerPage[NTRADEOFF] = { 64, 60, 56, 48, 46, 44, 40, 36, 32, 28, 24, 20, 16,  12,    12 };
-static const uint32_t stopAtTrisPerLeaf[NTRADEOFF] = { 16, 14, 12, 10,  9,  8,  8,  6,  5,  5,  5,  4,  4,   4,     2 }; // capped at 2 anyway
-
-// auxiliary class for SAH build (SAH = surface area heuristic)
-struct Interval
-{
-	uint32_t start, count;
-	Interval(uint32_t s, uint32_t c) : start(s), count(c) {}
-};
-
-struct SortBoundsPredicate
-{
-	uint32_t coordIndex;
-	const Box3d* allBounds;
-	SortBoundsPredicate(uint32_t coordIndex_, const Box3d* allBounds_) : coordIndex(coordIndex_), allBounds(allBounds_)
-	{}
-
-	bool operator()(const uint32_t& idx1, const uint32_t& idx2) const
+	if (m_BVH == nullptr)
 	{
-		// using the bounds center for comparison
-		float center1 = allBounds[idx1].Min[coordIndex] + allBounds[idx1].Max[coordIndex];
-		float center2 = allBounds[idx2].Min[coordIndex] + allBounds[idx2].Max[coordIndex];
-		return (center1 < center2);
-	}
-};
-
-struct RTreeRemap
-{
-	uint32_t mNbTris;
-	RTreeRemap(uint32_t numTris) : mNbTris(numTris)
-	{
-	}
-
-	virtual void remap(uint32_t* val, uint32_t start, uint32_t leafCount)
-	{
-		assert(leafCount > 0);
-		assert(leafCount <= 16); // sanity check
-		assert(start < mNbTris);
-		assert(start + leafCount <= mNbTris);
-		assert(val);
-		LeafTriangles lt;
-		// here we remap from ordered leaf index in the rtree to index in post-remap in triangles
-		// this post-remap will happen later
-		lt.SetData(leafCount, start);
-		*val = lt.Data;
-	}
-};
-
-static float SAH(const Vector3d& v)
-{
-	return v.x*v.y + v.y*v.z + v.x*v.z;
-}
-
-struct SubSortSAH
-{
-	uint32_t* permuteStart, * tempPermute;
-	const Box3d* allBounds;
-	float* metricL;
-	float* metricR;
-	const uint32_t* xOrder, * yOrder, * zOrder;
-	const uint32_t* xRanks, * yRanks, * zRanks;
-	uint32_t* tempRanks;
-	uint32_t nbTotalBounds;
-	uint32_t iTradeOff;
-
-	// precompute various values used during sort
-	SubSortSAH(
-		uint32_t* permute, const Box3d* allBounds_, uint32_t numBounds,
-		const uint32_t* xOrder_, const uint32_t* yOrder_, const uint32_t* zOrder_,
-		const uint32_t* xRanks_, const uint32_t* yRanks_, const uint32_t* zRanks_, float sizePerfTradeOff01)
-		: permuteStart(permute), allBounds(allBounds_),
-		xOrder(xOrder_), yOrder(yOrder_), zOrder(zOrder_),
-		xRanks(xRanks_), yRanks(yRanks_), zRanks(zRanks_), nbTotalBounds(numBounds)
-	{
-		metricL = new float[numBounds];
-		metricR = new float[numBounds];
-		tempPermute = new uint32_t[numBounds * 2 + 1];
-		tempRanks = new uint32_t[numBounds];
-		iTradeOff = std::min(uint32_t(std::max<float>(0.0f, sizePerfTradeOff01) * NTRADEOFF), NTRADEOFF - 1);
-	}
-
-	~SubSortSAH() // release temporarily used memory
-	{
-		delete []metricL;
-		delete []metricR;
-		delete []tempPermute;
-		delete []tempRanks;
-	}
-
-	////////////////////////////////////////////////////////////////////
-	// returns split position for second array start relative to permute ptr
-	uint32_t split(uint32_t* permute, uint32_t clusterSize)
-	{
-		if (clusterSize <= 1)
-			return 0;
-		if (clusterSize == 2)
-			return 1;
-
-		int minCount = clusterSize >= 4 ? 2 : 1;
-		int splitStartL = minCount; // range=[startL->endL)
-		int splitEndL = int(clusterSize - minCount);
-		int splitStartR = int(clusterSize - splitStartL); // range=(endR<-startR], startR > endR
-		int splitEndR = int(clusterSize - splitEndL);
-		assert(splitEndL - splitStartL == splitStartR - splitEndR);
-		assert(splitStartL <= splitEndL);
-		assert(splitStartR >= splitEndR);
-		assert(splitEndR >= 1);
-		assert(splitEndL < int(clusterSize));
-
-		// pick the best axis with some splitting metric
-		// axis index is X=0, Y=1, Z=2
-		float minMetric[3];
-		uint32_t minMetricSplit[3];
-		const uint32_t* ranks3[3] = { xRanks, yRanks, zRanks };
-		const uint32_t* orders3[3] = { xOrder, yOrder, zOrder };
-		for (uint32_t coordIndex = 0; coordIndex <= 2; coordIndex++)
-		{
-			SortBoundsPredicate sortPredicateLR(coordIndex, allBounds);
-
-			const uint32_t* rank = ranks3[coordIndex];
-			const uint32_t* order = orders3[coordIndex];
-
-			// build ranks in tempPermute
-			if (clusterSize == nbTotalBounds) // AP: about 4% perf gain from this optimization
-			{
-				// if this is a full cluster sort, we already have it done
-				for (uint32_t i = 0; i < clusterSize; i++)
-					tempPermute[i] = order[i];
-			}
-			else
-			{
-				// sort the tempRanks
-				for (uint32_t i = 0; i < clusterSize; i++)
-					tempRanks[i] = rank[permute[i]];
-				std::sort(tempRanks, tempRanks + clusterSize);
-				for (uint32_t i = 0; i < clusterSize; i++) // convert back from ranks to indices
-					tempPermute[i] = order[tempRanks[i]];
-			}
-
-			// we consider overlapping intervals for minimum sum of metrics
-			// left interval is from splitStartL up to splitEndL
-			// right interval is from splitStartR down to splitEndR
-
-
-			// first compute the array metricL
-			Vector3d boundsLmn = allBounds[tempPermute[0]].Min; // init with 0th bound
-			Vector3d boundsLmx = allBounds[tempPermute[0]].Max; // init with 0th bound
-			int ii;
-			for (ii = 1; ii < splitStartL; ii++) // sweep right to include all bounds up to splitStartL-1
-			{
-				boundsLmn = boundsLmn.Min(allBounds[tempPermute[ii]].Min);
-				boundsLmx = boundsLmx.Max(allBounds[tempPermute[ii]].Max);
-			}
-
-			uint32_t countL0 = 0;
-			for (ii = splitStartL; ii <= splitEndL; ii++) // compute metric for inclusive bounds from splitStartL to splitEndL
-			{
-				boundsLmn = boundsLmn.Min(allBounds[tempPermute[ii]].Min);
-				boundsLmx = boundsLmx.Max(allBounds[tempPermute[ii]].Max);
-				metricL[countL0++] = SAH(boundsLmx - boundsLmn);
-			}
-			// now we have metricL
-
-			// now compute the array metricR
-			Vector3d boundsRmn = allBounds[tempPermute[clusterSize - 1]].Min; // init with last bound
-			Vector3d boundsRmx = allBounds[tempPermute[clusterSize - 1]].Max; // init with last bound
-			for (ii = int(clusterSize - 2); ii > splitStartR; ii--) // include bounds to the left of splitEndR down to splitStartR
-			{
-				boundsRmn = boundsRmn.Min(allBounds[tempPermute[ii]].Min);
-				boundsRmx = boundsRmx.Max(allBounds[tempPermute[ii]].Max);
-			}
-
-			uint32_t countR0 = 0;
-			for (ii = splitStartR; ii >= splitEndR; ii--) // continue sweeping left, including bounds and recomputing the metric
-			{
-				boundsRmn = boundsRmn.Min(allBounds[tempPermute[ii]].Min);
-				boundsRmx = boundsRmx.Max(allBounds[tempPermute[ii]].Max);
-				metricR[countR0++] = SAH(boundsRmx - boundsRmn);
-			}
-
-			assert((countL0 == countR0) && (countL0 == uint32_t(splitEndL - splitStartL + 1)));
-
-			// now iterate over splitRange and compute the minimum sum of SAHLeft*countLeft + SAHRight*countRight
-			uint32_t minMetricSplitPosition = 0;
-			float minMetricLocal = FLT_MAX;
-			const int hsI32 = int(clusterSize / 2);
-			const int splitRange = (splitEndL - splitStartL + 1);
-			for (ii = 0; ii < splitRange; ii++)
-			{
-				float countL = float(ii + minCount); // need to add minCount since ii iterates over splitRange
-				float countR = float(splitRange - ii - 1 + minCount);
-				assert(uint32_t(countL + countR) == clusterSize);
-
-				const float metric = (countL * metricL[ii] + countR * metricR[splitRange - ii - 1]);
-				const uint32_t splitPos = uint32_t(ii + splitStartL);
-				if (metric < minMetricLocal ||
-					(metric <= minMetricLocal && // same metric but more even split
-						abs(int(splitPos) - hsI32) < abs(int(minMetricSplitPosition) - hsI32)))
-				{
-					minMetricLocal = metric;
-					minMetricSplitPosition = splitPos;
-				}
-			}
-
-			minMetric[coordIndex] = minMetricLocal;
-			minMetricSplit[coordIndex] = minMetricSplitPosition;
-
-			// sum of axis lengths for both left and right AABBs
-		}
-
-		uint32_t winIndex = 2;
-		if (minMetric[0] <= minMetric[1] && minMetric[0] <= minMetric[2])
-			winIndex = 0;
-		else if (minMetric[1] <= minMetric[2])
-			winIndex = 1;
-
-		const uint32_t* rank = ranks3[winIndex];
-		const uint32_t* order = orders3[winIndex];
-		if (clusterSize == nbTotalBounds) // AP: about 4% gain from this special case optimization
-		{
-			// if this is a full cluster sort, we already have it done
-			for (uint32_t i = 0; i < clusterSize; i++)
-				permute[i] = order[i];
-		}
-		else
-		{
-			// sort the tempRanks
-			for (uint32_t i = 0; i < clusterSize; i++)
-				tempRanks[i] = rank[permute[i]];
-			std::sort(tempRanks, tempRanks + clusterSize);
-			for (uint32_t i = 0; i < clusterSize; i++)
-				permute[i] = order[tempRanks[i]];
-		}
-
-		uint32_t splitPoint = minMetricSplit[winIndex];
-		if (clusterSize == 3 && splitPoint == 0)
-			splitPoint = 1; // special case due to rounding
-		return splitPoint;
-	}
-
-	// compute surface area for a given split
-	float computeSA(const uint32_t* permute, const Interval& split) // both permute and i are relative
-	{
-		assert(split.count >= 1);
-		Vector3d bmn = allBounds[permute[split.start]].Min;
-		Vector3d bmx = allBounds[permute[split.start]].Max;
-		for (uint32_t i = 1; i < split.count; i++)
-		{
-			const Box3d& b1 = allBounds[permute[split.start + i]];
-			bmn = bmn.Min(b1.Min);
-			bmx = bmx.Max(b1.Max);
-		}
-
-		return SAH(bmx - bmn);
-	}
-
-	////////////////////////////////////////////////////////////////////
-	// main SAH sort routine
-	void sort4(uint32_t* permute, uint32_t clusterSize,
-		std::vector<RTreeNodeNQ>& resultTree, uint32_t& maxLevels, uint32_t level = 0, RTreeNodeNQ* parentNode = NULL)
-	{
-		if (level == 0)
-			maxLevels = 1;
-		else
-			maxLevels = std::max(maxLevels, level + 1);
-
-		uint32_t splitPos[RTREE_N];
-		for (uint32_t j = 0; j < RTREE_N; j++)
-			splitPos[j] = j + 1;
-
-		if (clusterSize >= RTREE_N)
-		{
-			// split into RTREE_N number of regions via RTREE_N-1 subsequent splits
-			// each split is represented as a current interval
-			// we iterate over currently active intervals and compute it's surface area
-			// then we split the interval with maximum surface area
-			// AP scaffold: possible optimization - seems like computeSA can be cached for unchanged intervals
-			std::vector<Interval> splits;
-			splits.push_back(Interval(0, clusterSize));
-			for (uint32_t iSplit = 0; iSplit < RTREE_N - 1; iSplit++)
-			{
-				float maxSAH = -FLT_MAX;
-				uint32_t maxSplit = 0xFFFFffff;
-				for (uint32_t i = 0; i < splits.size(); i++)
-				{
-					if (splits[i].count == 1)
-						continue;
-					float SAH = computeSA(permute, splits[i]) * splits[i].count;
-					if (SAH > maxSAH)
-					{
-						maxSAH = SAH;
-						maxSplit = i;
-					}
-				}
-				assert(maxSplit != 0xFFFFffff);
-
-				// maxSplit is now the index of the interval in splits array with maximum surface area
-				// we now split it into 2 using the split() function
-				Interval old = splits[maxSplit];
-				assert(old.count > 1);
-				uint32_t splitLocal = split(permute + old.start, old.count); // relative split pos
-
-				assert(splitLocal >= 1);
-				assert(old.count - splitLocal >= 1);
-				splits.push_back(Interval(old.start, splitLocal));
-				splits.push_back(Interval(old.start + splitLocal, old.count - splitLocal));
-				splits[maxSplit] =  splits.back();
-				splits.pop_back();
-				splitPos[iSplit] = old.start + splitLocal;
-			}
-
-			// verification code, make sure split counts add up to clusterSize
-			assert(splits.size() == RTREE_N);
-			uint32_t sum = 0;
-			for (uint32_t j = 0; j < RTREE_N; j++)
-				sum += splits[j].count;
-			assert(sum == clusterSize);
-		}
-		else // clusterSize < RTREE_N
-		{
-			// make it so splitCounts based on splitPos add up correctly for small cluster sizes
-			for (uint32_t i = clusterSize; i < RTREE_N - 1; i++)
-				splitPos[i] = clusterSize;
-		}
-
-		// sort splitPos index array using quicksort (just a few values)
-		std::sort(splitPos, splitPos + RTREE_N - 1);
-		splitPos[RTREE_N - 1] = clusterSize; // splitCount[n] is computed as splitPos[n+1]-splitPos[n], so we need to add this last value
-
-		// now compute splitStarts and splitCounts from splitPos[] array. Also perform a bunch of correctness verification
-		uint32_t splitStarts[RTREE_N];
-		uint32_t splitCounts[RTREE_N];
-		splitStarts[0] = 0;
-		splitCounts[0] = splitPos[0];
-		uint32_t sumCounts = splitCounts[0];
-		for (uint32_t j = 1; j < RTREE_N; j++)
-		{
-			splitStarts[j] = splitPos[j - 1];
-			assert(splitStarts[j - 1] <= splitStarts[j]);
-			splitCounts[j] = splitPos[j] - splitPos[j - 1];
-			assert(splitCounts[j] > 0 || clusterSize < RTREE_N);
-			sumCounts += splitCounts[j];
-			assert(splitStarts[j - 1] + splitCounts[j - 1] <= splitStarts[j]);
-		}
-		assert(sumCounts == clusterSize);
-		assert(splitStarts[RTREE_N - 1] + splitCounts[RTREE_N - 1] <= clusterSize);
-
-		// mark this cluster as terminal based on clusterSize <= stopAtTrisPerPage parameter for current iTradeOff user specified preset
-		bool terminalClusterByTotalCount = (clusterSize <= stopAtTrisPerPage[iTradeOff]);
-		// iterate over splitCounts for the current cluster, if any of counts exceed 16 (which is the maximum supported by LeafTriangles
-		// we cannot mark this cluster as terminal (has to be split more)
-		for (uint32_t s = 0; s < RTREE_N; s++)
-			if (splitCounts[s] > 16) // LeafTriangles doesn't support > 16 tris
-				terminalClusterByTotalCount = false;
-
-		// iterate over all the splits
-		for (uint32_t s = 0; s < RTREE_N; s++)
-		{
-			RTreeNodeNQ rtn;
-			uint32_t splitCount = splitCounts[s];
-			if (splitCount > 0) // splits shouldn't be empty generally
-			{
-				// sweep left to right and compute min and max SAH for each individual bound in current split
-				Box3d b = allBounds[permute[splitStarts[s]]];
-				float sahMin = SAH(b.Max - b.Min);
-				float sahMax = sahMin;
-				// AP scaffold - looks like this could be optimized (we are recomputing bounds top down)
-				for (uint32_t i = 1; i < splitCount; i++)
-				{
-					uint32_t localIndex = i + splitStarts[s];
-					const Box3d& b1 = allBounds[permute[localIndex]];
-					float sah1 = SAH(b1.Max - b1.Min);
-					sahMin = std::min(sahMin, sah1);
-					sahMax = std::max(sahMax, sah1);
-					b.Grow(b1);
-				}
-
-				rtn.bounds.Min = b.Min;
-				rtn.bounds.Max = b.Max;
-
-				// if bounds differ widely (according to some heuristic preset), we continue splitting
-				// this is important for a mixed cluster with large and small triangles
-				bool okSAH = (sahMax / sahMin < 40.0f);
-				if (!okSAH)
-					terminalClusterByTotalCount = false; // force splitting this cluster
-
-				bool stopSplitting = // compute the final splitting criterion
-					splitCount <= 2 || (okSAH && splitCount <= 3) // stop splitting at 2 nodes or if SAH ratio is OK and splitCount <= 3
-					|| terminalClusterByTotalCount || splitCount <= stopAtTrisPerLeaf[iTradeOff];
-				if (stopSplitting)
-				{
-					// this is a terminal page then, mark as such
-					// first node index is relative to the top level input array beginning
-					rtn.childPageFirstNodeIndex = int(splitStarts[s] + (permute - permuteStart));
-					rtn.leafCount = int(splitCount);
-					assert(splitCount <= 16); // LeafTriangles doesn't support more
-				}
-				else
-				{
-					// this is not a terminal page, we will recompute this later, after we recurse on subpages (label ZZZ)
-					rtn.childPageFirstNodeIndex = -1;
-					rtn.leafCount = 0;
-				}
-			}
-			else // splitCount == 0 at this point, this is an empty paddding node (with current presets it's very rare)
-			{
-				assert(splitCount == 0);
-				rtn.bounds.SetEmpty();
-				rtn.childPageFirstNodeIndex = -1;
-				rtn.leafCount = -1;
-			}
-			resultTree.push_back(rtn); // push the new node into the resultTree array
-		}
-
-		if (terminalClusterByTotalCount) // abort recursion if terminal cluster
-			return;
-
-		// recurse on subpages
-		uint32_t parentIndex = (uint32_t)resultTree.size() - RTREE_N; // save the parentIndex as specified (array can be resized during recursion)
-		for (uint32_t s = 0; s < RTREE_N; s++)
-		{
-			RTreeNodeNQ* sParent = &resultTree[parentIndex + s]; // array can be resized and relocated during recursion
-			if (sParent->leafCount == 0) // only split pages that were marked as non-terminal during splitting (see "label ZZZ" above)
-			{
-				// all child nodes will be pushed inside of this recursive call,
-				// so we set the child pointer for parent node to resultTree.size()
-				sParent->childPageFirstNodeIndex = int(resultTree.size());
-				sort4(permute + splitStarts[s], splitCounts[s], resultTree, maxLevels, level + 1, sParent);
-			}
-		}
-	}
-};
-
-
-static void buildFromBounds(MeshBVH& result, void*& Memory, const Box3d* allBounds, uint32_t numBounds, std::vector<uint32_t>& permute, const Box3d &treeBounds, RTreeRemap *rc)
-{
-	float sizePerfTradeOff01 = 1.0f;		// 0 - 1
-	int hint = 0;
-
-	// start off with an identity permutation
-	permute.resize(0);
-	permute.reserve(numBounds + 1);
-	for (uint32_t j = 0; j < numBounds; j++)
-		permute.push_back(j);
-	const uint32_t sentinel = 0xABCDEF01;
-	permute.push_back(sentinel);
-
-	// load sorted nodes into an RTreeNodeNQ tree representation
-	// build the tree structure from sorted nodes
-	const uint32_t pageSize = RTREE_N;
-	std::vector<RTreeNodeNQ> resultTree;
-	resultTree.reserve(numBounds * 2);
-
-	uint32_t maxLevels = 0;
-
-	if (hint == 0) // use high quality SAH build, eSIM_PERFORMANCE
-	{
-		std::vector<uint32_t> xRanks(numBounds), yRanks(numBounds), zRanks(numBounds), xOrder(numBounds), yOrder(numBounds), zOrder(numBounds);
-		memcpy(&xOrder[0], &permute[0], sizeof(xOrder[0]) * numBounds);
-		memcpy(&yOrder[0], &permute[0], sizeof(yOrder[0]) * numBounds);
-		memcpy(&zOrder[0], &permute[0], sizeof(zOrder[0]) * numBounds);
-		// sort by shuffling the permutation, precompute sorted ranks for x,y,z-orders
-		std::sort(xOrder.begin(), xOrder.end(), SortBoundsPredicate(0, allBounds));
-		for (uint32_t i = 0; i < numBounds; i++)
-			xRanks[xOrder[i]] = i;
-		std::sort(yOrder.begin(), yOrder.end(), SortBoundsPredicate(1, allBounds));
-		for (uint32_t i = 0; i < numBounds; i++)
-			yRanks[yOrder[i]] = i;
-		std::sort(zOrder.begin(), zOrder.end(), SortBoundsPredicate(2, allBounds));
-		for (uint32_t i = 0; i < numBounds; i++)
-			zRanks[zOrder[i]] = i;
-
-		SubSortSAH ss(&permute[0], allBounds, numBounds, &xOrder[0], &yOrder[0], &zOrder[0], &xRanks[0], &yRanks[0], &zRanks[0], sizePerfTradeOff01);
-		ss.sort4(&permute[0], numBounds, resultTree, maxLevels);
-	}
-	else
-	{ // use fast cooking path
-		// assert(hint == PxMeshCookingHint::eCOOKING_PERFORMANCE);
-		// SubSortQuick ss(permute.begin(), allBounds, numBounds, sizePerfTradeOff01);
-		// Box3d discard((Box3d::U()));
-		// ss.sort4(permute.begin(), permute.size() - 1, resultTree, maxLevels, discard); // AP scaffold: need to implement build speed/runtime perf slider
-	}
-
-	assert(permute[numBounds] == sentinel); // verify we didn't write past the array
-	permute.pop_back(); // discard the sentinel value
-
-#if 1 // stats code
-	// 
-	uint32_t totalLeafTris = 0;
-	uint32_t numLeaves = 0;
-	int maxLeafTris = 0;
-	uint32_t numEmpty = 0;
-	for (uint32_t i = 0; i < resultTree.size(); i++)
-	{
-		int leafCount = resultTree[i].leafCount;
-		// numEmpty += (resultTree[i].bounds.Empty());
-		if (leafCount > 0)
-		{
-			numLeaves++;
-			totalLeafTris += leafCount;
-			if (leafCount > maxLeafTris)
-				maxLeafTris = leafCount;
-		}
-	}
-
-	printf("AABBs total/empty=%d/%d\n", (int)resultTree.size(), numEmpty);
-	printf("numTris=%d, numLeafAABBs=%d, avgTrisPerLeaf=%.2f, maxTrisPerLeaf = %d\n",
-		numBounds, numLeaves, float(totalLeafTris) / numLeaves, maxLeafTris);
-#endif
-
-	assert(RTREE_N * sizeof(RTreeNodeQ) == sizeof(RTreePage)); // needed for nodePtrMultiplier computation to be correct
-	const int nodePtrMultiplier = sizeof(RTreeNodeQ); // convert offset as count in qnodes to page ptr
-
-	// Quantize the tree. AP scaffold - might be possible to merge this phase with the page pass below this loop
-	std::vector<RTreeNodeQ> qtreeNodes;
-	uint32_t firstEmptyIndex = 0xFFFFFFFF;
-	uint32_t resultCount = (uint32_t)resultTree.size();
-	qtreeNodes.reserve(resultCount);
-
-	for (uint32_t i = 0; i < resultCount; i++) // AP scaffold - eliminate this pass
-	{
-		RTreeNodeNQ& u = resultTree[i];
-		RTreeNodeQ q;
-		q.setLeaf(u.leafCount > 0); // set the leaf flag
-		if (u.childPageFirstNodeIndex == -1) // empty node?
-		{
-			if (firstEmptyIndex == 0xFFFFFFFF)
-				firstEmptyIndex = (uint32_t)qtreeNodes.size();
-			q.minx = q.miny = q.minz = FLT_MAX; // AP scaffold improvement - use empty 1e30 bounds instead and reference a valid leaf
-			q.maxx = q.maxy = q.maxz = -FLT_MAX; // that will allow to remove the empty node test from the runtime
-
-			q.ptr = firstEmptyIndex * nodePtrMultiplier;
-			assert((q.ptr & 1) == 0);
-			q.setLeaf(true); // label empty node as leaf node
-		}
-		else
-		{
-			// non-leaf node
-			q.minx = u.bounds.Min.x;
-			q.miny = u.bounds.Min.y;
-			q.minz = u.bounds.Min.z;
-			q.maxx = u.bounds.Max.x;
-			q.maxy = u.bounds.Max.y;
-			q.maxz = u.bounds.Max.z;
-			if (u.leafCount > 0)
-			{
-				q.ptr = uint32_t(u.childPageFirstNodeIndex);
-				rc->remap(&q.ptr, q.ptr, uint32_t(u.leafCount));
-				assert(q.isLeaf()); // remap is expected to set the isLeaf bit
-			}
-			else
-			{
-				// verify that all children bounds are included in the parent bounds
-				for (uint32_t s = 0; s < RTREE_N; s++)
-				{
-					const RTreeNodeNQ& child = resultTree[u.childPageFirstNodeIndex + s];
-					assert(child.leafCount == -1 || child.bounds.IsInside(u.bounds));
-				}
-
-				q.ptr = uint32_t(u.childPageFirstNodeIndex * nodePtrMultiplier);
-				assert(q.ptr % RTREE_N == 0);
-				q.setLeaf(false);
-			}
-		}
-		qtreeNodes.push_back(q);
-	}
-
-	// build the final rtree image
-	result.mInvDiagonal = Vector4d(1.0f);
-	assert(qtreeNodes.size() % RTREE_N == 0);
-	result.mTotalNodes = (uint32_t)qtreeNodes.size();
-	result.mTotalPages = result.mTotalNodes / pageSize;
-	Memory = new uint8_t[sizeof(RTreePage) * result.mTotalPages + 127];		// TODO
-	result.mPages = (RTreePage*)AlignMemory(Memory, 128);
-	result.mBoundsMin = Vector4d(treeBounds.Min, 0.0f);
-	result.mBoundsMax = Vector4d(treeBounds.Max, 0.0f);
-	result.mDiagonalScaler = (result.mBoundsMax - result.mBoundsMin) / 65535.0f;
-	result.mPageSize = pageSize;
-	result.mNumLevels = maxLevels;
-	assert(result.mTotalNodes % pageSize == 0);
-	result.mNumRootPages = 1;
-
-	for (uint32_t j = 0; j < result.mTotalPages; j++)
-	{
-		RTreePage& page = result.mPages[j];
-		for (uint32_t k = 0; k < RTREE_N; k++)
-		{
-			const RTreeNodeQ& n = qtreeNodes[j * RTREE_N + k];
-			page.maxx[k] = n.maxx;
-			page.maxy[k] = n.maxy;
-			page.maxz[k] = n.maxz;
-			page.minx[k] = n.minx;
-			page.miny[k] = n.miny;
-			page.minz[k] = n.minz;
-			page.ptrs[k] = n.ptr;
-		}
-	}
-
-}
-
-
-MeshBVH* TriangleMesh::CreateEmptyMeshTree()
-{
-	if (m_Tree == nullptr)
-	{
-		m_Tree = new MeshBVH;
+		m_BVH = new MeshBVH4;
 	}
 	else
 	{
-		m_Tree->release();
+		m_BVH->Release();
 	}
-	return m_Tree;
+	return m_BVH;
 }
 
 void* TriangleMesh::AllocMemory(int Size, int Width)
@@ -646,7 +32,7 @@ void* TriangleMesh::AllocMemory(int Size, int Width)
 	return AlignMemory(m_Memory, Width);
 }
 
-void TriangleMesh::BuildMeshTree()
+void TriangleMesh::BuildBVH()
 {
 	if (NumTriangles == 0)
 	{
@@ -656,162 +42,240 @@ void TriangleMesh::BuildMeshTree()
 	std::vector<Box3d> allBounds;
 	allBounds.reserve(NumTriangles);
 
-	Box3d treeBounds = Box3d::Empty();
+	Box3d meshBounds = Box3d::Empty();
 
 	for (uint32_t i = 0; i < NumTriangles; ++i)
 	{
 		allBounds.push_back(Box3d(GetVertex(i, 0), GetVertex(i, 1), GetVertex(i, 2)));
-		treeBounds.Grow(allBounds.back());
+		meshBounds.Grow(allBounds.back());
 	}
 
-	CreateEmptyMeshTree();
+	CreateEmptyBVH();
 
-	std::vector<uint32_t> permute;
-	RTreeRemap rc(NumTriangles);
-	buildFromBounds(*m_Tree, m_Memory, &allBounds[0], NumTriangles, permute, treeBounds, &rc);
+	std::vector<uint32_t> Permute;
+	MeshBVH4::BuildFromBounds(*m_BVH, m_Memory, allBounds, Permute, meshBounds);
 
-	Reorder(permute);
+	Reorder(Permute);
 
 #if _DEBUG
-	m_Tree->validate((Mesh*)this); // make sure the child bounds are included in the parent and other validation
+	m_BVH->Validate((Mesh*)this);
 #endif
 }
 
-template<bool tRayTest>
-class RTreeCallbackRaycast : public MeshBVH::CallbackRaycast
+void	TriangleMesh::GetVertIndices(uint32_t triIndex, uint32_t& i0, uint32_t& i1, uint32_t& i2) const
 {
-public:
-	const void* mTris;
-	const Vector3d* mVerts;
-	const Vector3d* mInflate;
-	// const SimpleRayTriOverlap rayCollider;
-	float maxT;
-	RayCastResult closestHit; // recorded closest hit over the whole traversal (only for callback mode eCLOSEST)
-	Vector3d cv0, cv1, cv2;	// PT: make sure these aren't last in the class, to safely V4Load them
-	uint32_t cis[3];
-	bool hadClosestHit;
-	const bool closestMode;
-	const bool IndicesBit16;
-	Vector3d inflateV, rayOriginV, rayDirV;
-
-	RTreeCallbackRaycast(const void* tris, const Vector3d* verts,
-		const Vector3d& origin, const Vector3d& dir, float maxT_, bool bit16)
-		:
-		mTris(tris), mVerts(verts),
-		maxT(maxT_), closestMode(true), IndicesBit16(bit16)
+	if (Is16bitIndices())
 	{
-		assert(closestHit.hitTime == FLT_MAX);
-		hadClosestHit = false;
-		rayOriginV = origin;
-		rayDirV = dir;
+		const uint16_t* p = GetIndices16() + 3 * triIndex;
+		i0 = p[0];
+		i1 = p[1];
+		i2 = p[2];
 	}
-
-	void getVertIndices(uint32_t triIndex, uint32_t& i0, uint32_t& i1, uint32_t& i2)
+	else
 	{
-		if (IndicesBit16)
-		{
-			const uint16_t* p = (uint16_t*)mTris + triIndex * 3;
-			i0 = p[0]; i1 = p[1]; i2 = p[2];
-		}
-		else
-		{
-			const uint32_t* p = (uint32_t*)mTris + triIndex * 3;
-			i0 = p[0]; i1 = p[1]; i2 = p[2];
-		}
+		const uint32_t* p = GetIndices32() + 3 * triIndex;
+		i0 = p[0];
+		i1 = p[1];
+		i2 = p[2];
 	}
+}
 
-	// result buffer should have room for at least RTREE_N items
-	// should return true to continue traversal. If false is returned, traversal is aborted
-	// newMaxT serves as both input and output, as input it's the maxT so far
-	// set it to a new value (which should be smaller) and it will become the new far clip t
-	virtual bool processResults(uint32_t NumTouched, uint32_t* Touched, float& newMaxT) override
-	{
-		assert(NumTouched > 0);
-		// Loop through touched leaves
-		RayCastResult tempHit;
-		for (uint32_t leaf = 0; leaf < NumTouched; leaf++)
-		{
-			// Each leaf box has a set of triangles
-			LeafTriangles currentLeaf;
-			currentLeaf.Data = Touched[leaf];
-			uint32_t nbLeafTris = currentLeaf.GetNbTriangles();
-			uint32_t baseLeafTriIndex = currentLeaf.GetTriangleIndex();
-
-			for (uint32_t i = 0; i < nbLeafTris; i++)
-			{
-				uint32_t i0, i1, i2;
-				const uint32_t triangleIndex = baseLeafTriIndex + i;
-				getVertIndices(triangleIndex, i0, i1, i2);
-
-				const Vector3d& v0 = mVerts[i0], & v1 = mVerts[i1], & v2 = mVerts[i2];
-				const uint32_t vinds[3] = { i0, i1, i2 };
-
-				if (tRayTest)
-				{
-					bool intersect = Triangle3d::RayIntersectTriangle(rayOriginV, rayDirV, v0, v1, v2, &tempHit.hitTime);
-					intersect = intersect && tempHit.hitTime <= maxT;
-					if (!intersect)
-						continue;
-				}
-				// TODO
-				triangleIndex;
-				// tempHit.faceIndex = triangleIndex;
-				// tempHit.flags = PxHitFlag::ePOSITION;
-
-				// Intersection point is valid if dist < segment's length
-				// We know dist>0 so we can use integers
-				if (closestMode)
-				{
-					if (tempHit.hitTime < closestHit.hitTime)
-					{
-						closestHit = tempHit;
-						newMaxT = std::min(tempHit.hitTime, newMaxT);
-						cv0 = v0;
-						cv1 = v1;
-						cv2 = v2;
-						cis[0] = vinds[0]; cis[1] = vinds[1]; cis[2] = vinds[2];
-						hadClosestHit = true;
-					}
-				}
-				else
-				{
-					/*
-					float shrunkMaxT = newMaxT;
-					PxAgain again = outerCallback.processHit(tempHit, v0, v1, v2, shrunkMaxT, vinds);
-					if (!again)
-						return false;
-					if (shrunkMaxT < newMaxT)
-					{
-						newMaxT = shrunkMaxT;
-						maxT = shrunkMaxT;
-					}
-					*/
-				}
-
-				// if (outerCallback.inAnyMode()) // early out if in ANY mode
-				//	return false;
-			}
-
-		} // for(uint32_t leaf = 0; leaf<NumTouched; leaf++)
-
-		return true;
-	}
-};
-
-bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+bool	TriangleMesh::IntersectTri(uint32_t HitNode, const Vector3d& Origin, const Vector3d& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const
 {
-	if (m_Tree == nullptr)
+	LeafNode currLeaf(HitNode);
+	uint32_t NumLeafTriangles = currLeaf.GetNumTriangles();
+	uint32_t BaseTriIndex = currLeaf.GetTriangleIndex();
+	bool hit = false;
+
+	for (uint32_t i = 0; i < NumLeafTriangles; i++)
 	{
-		return false;
+		uint32_t i0, i1, i2;
+		const uint32_t triangleIndex = BaseTriIndex + i;
+		GetVertIndices(triangleIndex, i0, i1, i2);
+		
+		const Vector3d& v0 = Vertices[i0];
+		const Vector3d& v1 = Vertices[i1];
+		const Vector3d& v2 = Vertices[i2];
+
+		float t;
+		bool intersect = Triangle3d::RayIntersectTriangle(Origin, Dir, v0, v1, v2, &t);
+		if (!intersect || t > Option.maxDist)
+		{
+			continue;
+		}
+
+		hit = true;
+
+		if (!Option.hitClosest)
+		{
+			Result->hitTime = t;
+			Result->hitIndex = triangleIndex;
+			return true;
+		}
+
+		if (t < Result->hitTime)
+		{
+			Result->hitTime = t;
+			Result->hitIndex = triangleIndex;
+		}
 	}
-	RTreeCallbackRaycast<true> cb(GetIndexBuffer(), &Vertices[0], Origin, Dir, FLT_MAX, Is16bitIndices());
-	m_Tree->traverseRay(Origin, Dir, &cb);
-	if (cb.hadClosestHit)
+
+	return hit;
+}
+
+const VecU32V signMask = U4LoadXYZW((1 << 31), (1 << 31), (1 << 31), (1 << 31));
+const Vec4V epsFloat4 = V4Load(1e-9f);
+const Vec4V twos = V4Load(2.0f);
+
+bool	TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+{
+	TriMeshHitOption Option;
+	Option.hitClosest = true;
+	Option.maxDist = FLT_MAX;
+
+	TriMeshHitResult Result;
+	if (IntersectRay(Origin, Dir, Option, &Result))
 	{
-		*t = cb.closestHit.hitTime;
+		*t = Result.hitTime;
 		return true;
 	}
 	return false;
+}
+
+bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const
+{
+	if (m_BVH == nullptr)
+	{
+		return false;
+	}
+
+	Result->hitTime = FLT_MAX;
+
+	const uint32_t maxStack = 128;
+	uint32_t stack1[maxStack];
+	uint32_t* stack = stack1 + 1;
+
+	assert(m_BVH->BatchPtr);
+	assert((uintptr_t(m_BVH->BatchPtr) & 127) == 0);
+	assert((uintptr_t(this) & 15) == 0);
+
+	float maxT = Option.maxDist;
+
+	uint8_t* batch_ptr = (uint8_t*)(m_BVH->BatchPtr);
+	Vec4V maxT4;
+	maxT4 = V4Load(maxT);
+	Vec4V rayP = Vec4V_From_PxVec3_WUndefined(Origin);
+	Vec4V rayD = Vec4V_From_PxVec3_WUndefined(Dir);
+	VecU32V raySign = V4U32and(VecU32V_ReinterpretFrom_Vec4V(rayD), signMask);
+	Vec4V rayDAbs = V4Abs(rayD); // abs value of rayD
+	Vec4V rayInvD = Vec4V_ReinterpretFrom_VecU32V(V4U32or(raySign, VecU32V_ReinterpretFrom_Vec4V(V4Max(rayDAbs, epsFloat4)))); // clamp near-zero components up to epsilon
+	rayD = rayInvD;
+
+	//rayInvD = V4Recip(rayInvD);
+	// Newton-Raphson iteration for reciprocal (see wikipedia):
+	// X[n+1] = X[n]*(2-original*X[n]), X[0] = V4RecipFast estimate
+	//rayInvD = rayInvD*(twos-rayD*rayInvD);
+	rayInvD = V4RecipFast(rayInvD); // initial estimate, not accurate enough
+	rayInvD = V4Mul(rayInvD, V4NegMulSub(rayD, rayInvD, twos));
+
+	// P+tD=a; t=(a-P)/D
+	// t=(a - p.x)*1/d.x = a/d.x +(- p.x/d.x)
+	Vec4V rayPinvD = V4NegMulSub(rayInvD, rayP, V4Zero());
+	Vec4V rayInvDsplatX = V4SplatElement<0>(rayInvD);
+	Vec4V rayInvDsplatY = V4SplatElement<1>(rayInvD);
+	Vec4V rayInvDsplatZ = V4SplatElement<2>(rayInvD);
+	Vec4V rayPinvDsplatX = V4SplatElement<0>(rayPinvD);
+	Vec4V rayPinvDsplatY = V4SplatElement<1>(rayPinvD);
+	Vec4V rayPinvDsplatZ = V4SplatElement<2>(rayPinvD);
+
+	assert(SIMD_WIDTH == 4 || SIMD_WIDTH == 8);
+	assert(m_BVH->NumRoots > 0);
+
+	uint32_t stackPtr = 0;
+	for (int j = m_BVH->NumRoots - 1; j >= 0; j--)
+		stack[stackPtr++] = j * sizeof(BVHNodeBatch);
+
+	__declspec(align(16)) uint32_t resa[4];
+
+	while (stackPtr)
+	{
+		uint32_t top = stack[--stackPtr];
+		if (top & 1)
+		{
+			top--;
+			bool intersect = IntersectTri(top, Origin, Dir, Option, Result);
+			if (intersect)
+			{
+				if (!Option.hitClosest)
+				{
+					return true;
+				}
+
+				if (Result->hitTime < maxT)
+				{
+					maxT = Result->hitTime;
+					maxT4 = V4Load(maxT);
+				}
+			}
+
+			continue;
+		}
+
+		BVHNodeBatch* tn = reinterpret_cast<BVHNodeBatch*>(batch_ptr + top);
+
+		// 6i load
+		Vec4V minx4a = V4LoadA(tn->minx), miny4a = V4LoadA(tn->miny), minz4a = V4LoadA(tn->minz);
+		Vec4V maxx4a = V4LoadA(tn->maxx), maxy4a = V4LoadA(tn->maxy), maxz4a = V4LoadA(tn->maxz);
+
+		// 1i disabled test
+		// AP scaffold - optimization opportunity - can save 2 instructions here
+		VecU32V ignore4a = V4IsGrtrV32u(minx4a, maxx4a); // 1 if degenerate box (empty slot in the page)
+
+		// P+tD=a; t=(a-P)/D
+		// t=(a - p.x)*1/d.x = a/d.x +(- p.x/d.x)
+		// 6i
+		Vec4V tminxa0 = V4MulAdd(minx4a, rayInvDsplatX, rayPinvDsplatX);
+		Vec4V tminya0 = V4MulAdd(miny4a, rayInvDsplatY, rayPinvDsplatY);
+		Vec4V tminza0 = V4MulAdd(minz4a, rayInvDsplatZ, rayPinvDsplatZ);
+		Vec4V tmaxxa0 = V4MulAdd(maxx4a, rayInvDsplatX, rayPinvDsplatX);
+		Vec4V tmaxya0 = V4MulAdd(maxy4a, rayInvDsplatY, rayPinvDsplatY);
+		Vec4V tmaxza0 = V4MulAdd(maxz4a, rayInvDsplatZ, rayPinvDsplatZ);
+
+		// test half-spaces
+		// P+tD=dN
+		// t = (d(N,D)-(P,D))/(D,D) , (D,D)=1
+
+		// compute 4x dot products (N,D) and (P,N) for each AABB in the page
+
+		// 6i
+		// now compute tnear and tfar for each pair of planes for each box
+		Vec4V tminxa = V4Min(tminxa0, tmaxxa0); Vec4V tmaxxa = V4Max(tminxa0, tmaxxa0);
+		Vec4V tminya = V4Min(tminya0, tmaxya0); Vec4V tmaxya = V4Max(tminya0, tmaxya0);
+		Vec4V tminza = V4Min(tminza0, tmaxza0); Vec4V tmaxza = V4Max(tminza0, tmaxza0);
+
+		// 8i
+		Vec4V maxOfNeasa = V4Max(V4Max(tminxa, tminya), tminza);
+		Vec4V minOfFarsa = V4Min(V4Min(tmaxxa, tmaxya), tmaxza);
+		ignore4a = V4U32or(ignore4a, V4IsGrtrV32u(epsFloat4, minOfFarsa));  // if tfar is negative, ignore since its a ray, not a line
+		// AP scaffold: update the build to eliminate 3 more instructions for ignore4a above
+		//VecU32V ignore4a = V4IsGrtrV32u(epsFloat4, minOfFarsa);  // if tfar is negative, ignore since its a ray, not a line
+		ignore4a = V4U32or(ignore4a, V4IsGrtrV32u(maxOfNeasa, maxT4));  // if tnear is over maxT, ignore this result
+
+		// 2i
+		VecU32V resa4 = V4IsGrtrV32u(maxOfNeasa, minOfFarsa); // if 1 => fail
+		resa4 = V4U32or(resa4, ignore4a);
+
+		// 1i
+		V4U32StoreAligned(resa4, reinterpret_cast<VecU32V*>(resa));
+
+		uint32_t* ptrs = (reinterpret_cast<BVHNodeBatch*>(tn))->Data;
+
+		stack[stackPtr] = ptrs[0]; stackPtr += (1 + resa[0]); // AP scaffold TODO: use VecU32add
+		stack[stackPtr] = ptrs[1]; stackPtr += (1 + resa[1]);
+		stack[stackPtr] = ptrs[2]; stackPtr += (1 + resa[2]);
+		stack[stackPtr] = ptrs[3]; stackPtr += (1 + resa[3]);
+	}
+	return Result->hitTime != FLT_MAX;
 }
 
 Matrix3d TriangleMesh::GetInertiaTensor(float Mass) const

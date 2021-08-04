@@ -23,14 +23,15 @@
 #include "../Src/CollisionPrimitive/Cylinder3d.h"
 #include "../Src/CollisionPrimitive/Capsule3d.h"
 #include "../Src/CollisionPrimitive/Mesh.h"
+#include "../Src/CollisionPrimitive/MeshBVH4.h"
+#include "../Src/CollisionPrimitive/TriangleMesh.h"
 #include "../Src/Collision/AABBTree.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Collision/SAP.h"
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
-#include "../Src/Collision/MeshTree.h"
-#include "../Src/Collision/TriangleMesh.h"
+
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/SparseVoxelField.h"
 #include "../Src/Geometry/DenseTensorField3d.h"
@@ -65,7 +66,7 @@ void TestRTree1()
 	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
 	mesh.AddAABB(Vector3d(-0.5f, -0.5f, -0.5f), Vector3d(0.5f, 0.5f, 0.5f));
 	mesh.Compact();
-	mesh.BuildMeshTree();
+	mesh.BuildBVH();
 	float t;
 	bool success;
 	success = mesh.IntersectRay(Vector3d(0.0f, 10.0f, 0.0f), -Vector3d::UnitY(), &t);
@@ -91,17 +92,12 @@ void TestRTree2()
 	TriangleMesh mesh;
 
 	mesh.LoadObj("e:/temp/dungeon.obj");
-	// mesh.NumTriangles = 19;		// Bug 18 --> 19
 	mesh.Compact();
-	mesh.BuildMeshTree();
+	mesh.BuildBVH();
 
 	Vector3d Center;
 	Center = (mesh(0, 0) + mesh(0, 1) + mesh(0, 2)) / 3.0f;
 	Center.y = 0.0f;
-
-	// auto v0 = mesh(18, 0);
-	// auto v1 = mesh(18, 1);
-	// auto v2 = mesh(18, 2);
 
 	float t1, t2;
 	bool success1, success2;

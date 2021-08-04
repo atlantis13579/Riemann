@@ -69,7 +69,8 @@ void AABBTree::Statistic(TreeStatistics& stat)
 		{
 			if (p->IsLeafNode())
 			{
-				stat.Nodes += 1;
+				stat.NumNodes += 1;
+				stat.MaxGeometriesAtLeaf = std::max(stat.MaxGeometriesAtLeaf, p->GetNumGeometries());
 				stat.MaxDepth = std::max(stat.MaxDepth, stack.Depth());
 				break;
 			}

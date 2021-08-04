@@ -13,7 +13,8 @@ class Geometry;
 struct TreeStatistics
 {
 	int MaxDepth;
-	int Nodes;
+	int MaxGeometriesAtLeaf;
+	int NumNodes;
 };
 
 class AABBTree

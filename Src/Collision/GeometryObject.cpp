@@ -9,7 +9,7 @@
 #include "../CollisionPrimitive/Cylinder3d.h"
 #include "../CollisionPrimitive/Capsule3d.h"
 #include "../CollisionPrimitive/ConvexMesh.h"
-#include "TriangleMesh.h"
+#include "../CollisionPrimitive/TriangleMesh.h"
 
 template<class GEOM_TYPE>
 class TGeometry : public Geometry, public GEOM_TYPE

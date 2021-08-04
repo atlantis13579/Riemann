@@ -422,6 +422,45 @@ public:
 		void* mGRB_BV32Tree;
 	};
 
+
+	#define RTREE_N		4
+
+	struct RTreeNodeQ
+	{
+		float		minx, miny, minz, maxx, maxy, maxz;
+		uint32_t	ptr; // lowest bit is leaf flag
+	};
+
+	struct RTreePage
+	{
+		float minx[RTREE_N];
+		float miny[RTREE_N];
+		float minz[RTREE_N];
+		float maxx[RTREE_N];
+		float maxy[RTREE_N];
+		float maxz[RTREE_N];
+		uint32_t ptrs[RTREE_N];
+	};
+
+	__declspec(align(16))
+	class RTree
+	{
+	public:
+		Vector4d		mBoundsMin, mBoundsMax, mInvDiagonal, mDiagonalScaler; // 16
+		uint32_t		mPageSize;
+		uint32_t		mNumRootPages;
+		uint32_t		mNumLevels;
+		uint32_t		mTotalNodes; // 16
+		uint32_t		mTotalPages;
+		uint32_t		mFlags; enum { USER_ALLOCATED = 0x1, IS_EDGE_SET = 0x2 };
+		RTreePage*		mPages;
+	};
+
+	struct LeafTriangles
+	{
+		uint32_t			Data;
+	};
+
 	class PxRTreeTriangleMesh : public PxTriangleMesh
 	{
 	public:
@@ -440,12 +479,12 @@ public:
 
 		}
 
-		MeshBVH				mRTree;
+		RTree			mRTree;
 	};
 
 	static_assert(sizeof(PxBase) == 16, "sizeof(PxBase) not valid");
 	static_assert(sizeof(PxRefCountable) == 16, "sizeof(PxRefCountable) not valid");
-	static_assert(sizeof(MeshBVH) == 96, "sizeof(MeshBVH) not valid");
+	static_assert(sizeof(MeshBVH4) == 96, "sizeof(MeshBVH) not valid");
 	static_assert(sizeof(PxTriangleMesh) == 160, "sizeof(PxTriangleMesh) not valid");
 	static_assert(sizeof(PxRTreeTriangleMesh) == 256, "sizeof(PxRTreeTriangleMesh) not valid");
 

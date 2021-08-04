@@ -5,7 +5,7 @@
 #include "../CollisionPrimitive/ConvexMesh.h"
 #include "../CollisionPrimitive/HeightField3d.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
-#include "../CollisionPrimitive/MeshBVH.h"
+#include "../CollisionPrimitive/MeshBVH4.h"
 #include "../RigidBodyDynamics/RigidBody.h"
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
@@ -73,11 +73,13 @@ public:
 		TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices());
 		TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
 
-		MeshBVH* tree = TriMesh->CreateEmptyMeshTree();
-		memcpy(tree, &Mesh->mRTree, sizeof(MeshBVH));
-		void* pMem = TriMesh->AllocMemory(Mesh->mRTree.mTotalPages * sizeof(RTreePage), 128);
-		memcpy(pMem, Mesh->mRTree.mPages, Mesh->mRTree.mTotalPages * sizeof(RTreePage));
-		tree->mPages = (RTreePage*)pMem;
+		MeshBVH4* tree = TriMesh->CreateEmptyBVH();
+		static_assert(sizeof(MeshBVH4) == sizeof(physx::RTree), "MeshBVH and RTree should have same size");
+		static_assert(sizeof(BVHNodeBatch) == sizeof(physx::RTreePage), "BVHNodeBatch and RTreePage should have same size");
+		memcpy(tree, &Mesh->mRTree, sizeof(MeshBVH4));
+		void* pMem = TriMesh->AllocMemory(Mesh->mRTree.mTotalPages * sizeof(physx::RTreePage), 128);
+		memcpy(pMem, Mesh->mRTree.mPages, Mesh->mRTree.mTotalPages * sizeof(physx::RTreePage));
+		tree->BatchPtr = (BVHNodeBatch*)pMem;
 		return Geom;
 	}
 
