@@ -60,8 +60,12 @@ void TestPhysxBin()
 
 	Vector3d Pos = Result.hitPoint;
 
-	OOption.maxOverlaps = 10;
-	ret = query.OverlapAABB(Pos, Vector3d::One(), OOption, &OResult);
+	ret = query.OverlapAABB(Vector3d(Pos.x, Pos.y + 15.0f, Pos.z), Vector3d::One(), OOption, &OResult);
+	assert(!ret);
+
+	ret = query.OverlapAABB(Vector3d(Pos.x, Pos.y, Pos.z), Vector3d::One(), OOption, &OResult);
+	assert(ret);
+	assert(OResult.overlapGeoms[0]->GetGuid() == 2926462965280);
 
 	ret = query.RayCast(Vector3d(Pos.x + 0.01f, Pos.y - 10.0f, Pos.z + 0.01f), -Vector3d::UnitY(), Option, &Result);
 	// assert(!ret);		// TODO filter the world box
