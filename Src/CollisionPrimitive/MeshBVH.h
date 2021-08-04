@@ -61,10 +61,10 @@ struct RTreePage
 };
 
 __declspec(align(16))
-class MeshTree
+class MeshBVH
 {
 public:
-	MeshTree()
+	MeshBVH()
 	{
 		mFlags = 0;
 		mPages = nullptr;
@@ -73,7 +73,7 @@ public:
 		mPageSize = RTREE_N;
 	}
 
-	~MeshTree()
+	~MeshBVH()
 	{
 		release();
 	}
@@ -133,9 +133,9 @@ struct LeafTriangles
 	uint32_t			Data;
 
 	// Gets number of triangles in the leaf, returns the number of triangles N, with 0 < N <= 16
-		uint32_t	GetNbTriangles()				const { return LeafGetNbTriangles(Data); }
+	uint32_t	GetNbTriangles()				const { return LeafGetNbTriangles(Data); }
 
 	// Gets triangle index for this leaf. Indexed model's array of indices retrieved with RTreeMidphase::GetIndices()
-		uint32_t	GetTriangleIndex()				const { return LeafGetTriangleIndex(Data); }
-		void	SetData(uint32_t nb, uint32_t index) { Data = LeafSetData(nb, index); }
+	uint32_t	GetTriangleIndex()				const { return LeafGetTriangleIndex(Data); }
+	void	SetData(uint32_t nb, uint32_t index) { Data = LeafSetData(nb, index); }
 };

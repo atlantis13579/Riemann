@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../CollisionPrimitive/Mesh.h"
 #include "../Maths/Matrix3d.h"
-#include "MeshTree.h"
+#include "Mesh.h"
+#include "MeshBVH.h"
 
 class TriangleMesh : public Mesh
 {
@@ -28,7 +28,7 @@ public:
 		}
 	}
 
-	MeshTree*		CreateEmptyMeshTree();
+	MeshBVH*		CreateEmptyMeshTree();
 	void*			AllocMemory(int Size, int Width);
 	void			BuildMeshTree();
 
@@ -44,6 +44,6 @@ public:
 	Vector3d GetSupport(const Vector3d& dir) const;
 
 private:
-	MeshTree*	m_Tree;
+	MeshBVH*	m_Tree;
 	void*		m_Memory;
 };

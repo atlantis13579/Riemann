@@ -1,7 +1,7 @@
 
 #include "TriangleMesh.h"
-#include "GeometryQuery.h"
-#include "../CollisionPrimitive/Triangle3d.h"
+#include "../Collision/GeometryQuery.h"
+#include "Triangle3d.h"
 
 #include <algorithm>
 #include <array>
@@ -456,7 +456,7 @@ struct SubSortSAH
 };
 
 
-static void buildFromBounds(MeshTree& result, void*& Memory, const Box3d* allBounds, uint32_t numBounds, std::vector<uint32_t>& permute, const Box3d &treeBounds, RTreeRemap *rc)
+static void buildFromBounds(MeshBVH& result, void*& Memory, const Box3d* allBounds, uint32_t numBounds, std::vector<uint32_t>& permute, const Box3d &treeBounds, RTreeRemap *rc)
 {
 	float sizePerfTradeOff01 = 1.0f;		// 0 - 1
 	int hint = 0;
@@ -623,11 +623,11 @@ static void buildFromBounds(MeshTree& result, void*& Memory, const Box3d* allBou
 }
 
 
-MeshTree* TriangleMesh::CreateEmptyMeshTree()
+MeshBVH* TriangleMesh::CreateEmptyMeshTree()
 {
 	if (m_Tree == nullptr)
 	{
-		m_Tree = new MeshTree;
+		m_Tree = new MeshBVH;
 	}
 	else
 	{
@@ -678,7 +678,7 @@ void TriangleMesh::BuildMeshTree()
 }
 
 template<bool tRayTest>
-class RTreeCallbackRaycast : public MeshTree::CallbackRaycast
+class RTreeCallbackRaycast : public MeshBVH::CallbackRaycast
 {
 public:
 	const void* mTris;

@@ -4,8 +4,8 @@
 #include "../Collision/GeometryObject.h"
 #include "../CollisionPrimitive/ConvexMesh.h"
 #include "../CollisionPrimitive/HeightField3d.h"
-#include "../Collision/TriangleMesh.h"
-#include "../Collision/MeshTree.h"
+#include "../CollisionPrimitive/TriangleMesh.h"
+#include "../CollisionPrimitive/MeshBVH.h"
 #include "../RigidBodyDynamics/RigidBody.h"
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
@@ -73,8 +73,8 @@ public:
 		TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices());
 		TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
 
-		MeshTree* tree = TriMesh->CreateEmptyMeshTree();
-		memcpy(tree, &Mesh->mRTree, sizeof(MeshTree));
+		MeshBVH* tree = TriMesh->CreateEmptyMeshTree();
+		memcpy(tree, &Mesh->mRTree, sizeof(MeshBVH));
 		void* pMem = TriMesh->AllocMemory(Mesh->mRTree.mTotalPages * sizeof(RTreePage), 128);
 		memcpy(pMem, Mesh->mRTree.mPages, Mesh->mRTree.mTotalPages * sizeof(RTreePage));
 		tree->mPages = (RTreePage*)pMem;
