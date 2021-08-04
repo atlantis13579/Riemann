@@ -1621,7 +1621,7 @@ public:
 		{
 			if (it.second >= 0)
 			{
-				printf("Create class instance for type %d success (%d objs).\n", it.first, it.second);
+				// printf("Create class instance for type %d success (%d objs).\n", it.first, it.second);
 			}
 			else
 			{

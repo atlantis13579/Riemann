@@ -34,6 +34,11 @@ inline float RandomFloat(float a, float b)
 	return p;
 }
 
+inline float FloatDiff(float v1, float v2)
+{
+	return fabsf(v1 - v2);
+}
+
 inline bool FloatEqual(float v1, float v2)
 {
 	return fabsf(v1 - v2) < 1e-6;

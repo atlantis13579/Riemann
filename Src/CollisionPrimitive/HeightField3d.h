@@ -8,6 +8,18 @@
 #include "../Maths/Matrix3d.h"
 #include "ShapeType.h"
 
+struct HeightFieldHitOption
+{
+	float	maxDist;
+};
+
+struct HeightFieldHitResult
+{
+	float		hitTime;
+	Vector3d	hitNormal;
+	uint32_t	cellIndex;
+};
+
 class HeightField3d
 {
 public:
@@ -59,7 +71,9 @@ public:
 		return BV;
 	}
 
-	bool			IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
+	bool			IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
+	bool			IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
+	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult *Result) const;
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
 
 	Vector3d		GetSupport(const Vector3d& dir) const
@@ -73,40 +87,10 @@ public:
 		return Matrix3d(Mass, Mass, Mass);
 	}
 
-	int		GetCellTriangle(int i, int j, Vector3d Tris[6]) const
-	{
-		bool tessFlag = Cells[i + j * nCols].Tessellation0 & 0x80;
-		uint16_t i0 = j * nCols + i;
-		uint16_t i1 = j * nCols + i + 1;
-		uint16_t i2 = (j + 1) * nCols + i;
-		uint16_t i3 = (j + 1) * nCols + i + 1;
-		// i2---i3
-		// |    |
-		// |    |
-		// i0---i1
-		uint8_t Hole0 = Cells[i + j * nCols].Tessellation0;
-		uint8_t Hole1 = Cells[i + j * nCols].Tessellation1;
+	Box3d	GetCellBV(int i, int j) const;
+	void	GetHeightRange(int i, int j, float &minH, float & maxH) const;
 
-		Vector3d Base = Vector3d(BV.Min.x + DX * i, 0.0f, BV.Min.z + DZ * j);
-
-		int nt = 0;
-		if (Hole0 != 0x7F)
-		{
-			Tris[0] = Base + Vector3d(0.0f, Heights[i2], DZ);
-			Tris[1] = Base + Vector3d(0.0f, Heights[i0], 0.0f);
-			Tris[2] = tessFlag ? Base + Vector3d(DX, Heights[i3], DZ) : Base + Vector3d(DX, Heights[i1], 0.0f);
-			nt += 3;
-		}
-		if (Hole1 != 0x7F)
-		{
-			Tris[nt + 0] = Base + Vector3d(DX, Heights[i3], DZ);
-			Tris[nt + 1] = tessFlag ? Base + Vector3d(0.0f, Heights[i0], 0.0f) : Base + Vector3d(0.0f, Heights[i2], DZ);
-			Tris[nt + 2] = Base + Vector3d(DX, Heights[i1], 0.0f);
-			nt += 3;
-		}
-
-		return nt;
-	}
+	int		GetCellTriangle(int i, int j, Vector3d Tris[6]) const;
 
 	int		GetCellTriangle(int i, int j, uint32_t Tris[6]) const
 	{

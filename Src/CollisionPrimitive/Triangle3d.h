@@ -74,7 +74,8 @@ public:
 		//if determinant is near zero, ray lies in plane of triangle
 		const float det = e1.Dot(P);
 		//NOT CULLING
-		if (det > -kEpsilonTri && det < kEpsilonTri) {
+		if (det > -kEpsilonTri && det < kEpsilonTri)
+		{
 			return false;
 		}
 		const float inv_det = 1.f / det;
@@ -85,7 +86,8 @@ public:
 		//Calculate u parameter and test bound
 		const float u = T.Dot(P) * inv_det;
 		//The intersection lies outside of the triangle
-		if (u < 0.f || u > 1.f) {
+		if (u < 0.f || u > 1.f)
+		{
 			return false;
 		}
 
@@ -95,7 +97,8 @@ public:
 		//Calculate V parameter and test bound
 		const float v = Dir.Dot(Q) * inv_det;
 		//The intersection lies outside of the triangle
-		if (v < 0.f || u + v  > 1.f) {
+		if (v < 0.f || u + v  > 1.f)
+		{
 			return false;
 		}
 

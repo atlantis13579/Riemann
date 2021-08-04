@@ -143,7 +143,7 @@ Matrix3d			Geometry::GetInverseInertia_WorldSpace(float Mass) const
 }
 
 template <class T>
-static bool			_RayCast(void* Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)
+static bool			RayCastT(void* Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)
 {
 	T* p = reinterpret_cast<T*>(Obj);
 	return p->IntersectRay(Origin, Dir, t);
@@ -154,7 +154,7 @@ SweepFunc			Geometry::sweepTable[ShapeType::GEOMETRY_COUNT][ShapeType::GEOMETRY_
 OverlapFunc			Geometry::overlapTable[ShapeType::GEOMETRY_COUNT][ShapeType::GEOMETRY_COUNT] = {0};
 
 #define	REG_GEOMETRY_OBJ(_type, _name)									\
-	Geometry::raycastTable[_type] =	_RayCast<_name>;
+	Geometry::raycastTable[_type] =	RayCastT<_name>;
 
 class GeometryRegistration
 {

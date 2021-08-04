@@ -13,6 +13,7 @@ struct TriMeshHitOption
 struct TriMeshHitResult
 {
 	float		hitTime;
+	Vector3d	hitNormal;
 	uint32_t	hitIndex;
 };
 

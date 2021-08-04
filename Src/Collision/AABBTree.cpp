@@ -133,9 +133,9 @@ int AABBTree::IntersectPoint(const Vector3d& Point) const
 	return -1;
 }
 
-static int IntersectGeometry(const Ray3d& Ray, int* Indices, int numIndices, Geometry** GeometryCollection, const Box3d& BV, const RayCastOption& Option, RayCastResult* Result)
+static int IntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, Geometry** GeometryCollection, const Box3d& BV, const RayCastOption& Option, RayCastResult* Result)
 {
-	assert(numIndices > 0);
+	assert(NumIndices > 0);
 	if (GeometryCollection == nullptr)
 	{
 		float t;
@@ -156,7 +156,7 @@ static int IntersectGeometry(const Ray3d& Ray, int* Indices, int numIndices, Geo
 
 	int min_idx = -1;
 	float t, min_t = FLT_MAX;
-	for (int i = 0; i < numIndices; ++i)
+	for (int i = 0; i < NumIndices; ++i)
 	{
 		const int index = Indices[i];
 		Geometry *Geom = GeometryCollection[index];
