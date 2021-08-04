@@ -144,6 +144,7 @@ static int IntersectGeometry(const Ray3d& Ray, int* Indices, int numIndices, Geo
 			Result->hit = true;
 			if (t < Result->hitTime)
 			{
+				Result->hitGeom = nullptr;
 				Result->hitPoint = Ray.PointAt(t);
 				Result->hitTime = t;
 			}
@@ -164,14 +165,14 @@ static int IntersectGeometry(const Ray3d& Ray, int* Indices, int numIndices, Geo
 		{
 			if (Option.Type == RayCastOption::RAYCAST_ANY)
 			{
-				min_idx = i;
+				min_idx = index;
 				min_t = t;
 				break;
 			}
 
 			if (t < min_t)
 			{
-				min_idx = i;
+				min_idx = index;
 				min_t = t;
 			}
 		}

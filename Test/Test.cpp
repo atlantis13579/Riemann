@@ -50,7 +50,13 @@ void TestPhysxBin()
 
 	RayCastOption Option;
 	RayCastResult Result;
-	query.RayCast(Vector3d(-2222, 0, -773), -Vector3d::UnitY(), Option, &Result);		// 2925370368528
+	query.RayCast(Vector3d(-2222, 0, -773), -Vector3d::UnitY(), Option, &Result);
+	assert(Result.hit);
+	assert(Result.hitGeom->GetGuid() == 2925373493328);
+
+	query.RayCast(Vector3d(-569, 0, 427), -Vector3d::UnitY(), Option, &Result);
+	assert(Result.hit);
+	assert(Result.hitGeom->GetGuid() == 2926462965280);
 
 	return;
 }

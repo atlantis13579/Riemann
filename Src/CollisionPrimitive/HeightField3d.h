@@ -22,6 +22,8 @@ public:
 	std::vector<float>		Heights;			// Y
 	std::vector<CellInfo>	Cells;
 	Box3d					BV;
+	float					DX, DZ;
+	float					InvDX, InvDZ;
 
 	HeightField3d()
 	{
@@ -42,6 +44,10 @@ public:
 		BV = _Bv;
 		nRows = _nRows;
 		nCols = _nCols;
+		DX = BV.GetSizeX() / (nRows - 1);
+		DZ = BV.GetSizeZ() / (nCols - 1);
+		InvDX = (nRows - 1) / BV.GetSizeX();
+		InvDZ = (nCols - 1) / BV.GetSizeZ();
 		Heights.resize(nRows * nCols);
 		memset(&Heights[0], 0, Heights.size() * sizeof(Heights[0]));
 		Cells.resize(nRows * nCols);
@@ -53,11 +59,8 @@ public:
 		return BV;
 	}
 
-	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
-	{
-		// TODO
-		return false;
-	}
+	bool			IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
+	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
 
 	Vector3d		GetSupport(const Vector3d& dir) const
 	{
@@ -70,53 +73,102 @@ public:
 		return Matrix3d(Mass, Mass, Mass);
 	}
 
-	void			GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	int		GetCellTriangle(int i, int j, Vector3d Tris[6]) const
+	{
+		bool tessFlag = Cells[i + j * nCols].Tessellation0 & 0x80;
+		uint16_t i0 = j * nCols + i;
+		uint16_t i1 = j * nCols + i + 1;
+		uint16_t i2 = (j + 1) * nCols + i;
+		uint16_t i3 = (j + 1) * nCols + i + 1;
+		// i2---i3
+		// |    |
+		// |    |
+		// i0---i1
+		uint8_t Hole0 = Cells[i + j * nCols].Tessellation0;
+		uint8_t Hole1 = Cells[i + j * nCols].Tessellation1;
+
+		Vector3d Base = Vector3d(BV.Min.x + DX * i, 0.0f, BV.Min.z + DZ * j);
+
+		int nt = 0;
+		if (Hole0 != 0x7F)
+		{
+			Tris[0] = Base + Vector3d(0.0f, Heights[i2], DZ);
+			Tris[1] = Base + Vector3d(0.0f, Heights[i0], 0.0f);
+			Tris[2] = tessFlag ? Base + Vector3d(DX, Heights[i3], DZ) : Base + Vector3d(DX, Heights[i1], 0.0f);
+			nt += 3;
+		}
+		if (Hole1 != 0x7F)
+		{
+			Tris[nt + 0] = Base + Vector3d(DX, Heights[i3], DZ);
+			Tris[nt + 1] = tessFlag ? Base + Vector3d(0.0f, Heights[i0], 0.0f) : Base + Vector3d(0.0f, Heights[i2], DZ);
+			Tris[nt + 2] = Base + Vector3d(DX, Heights[i1], 0.0f);
+			nt += 3;
+		}
+
+		return nt;
+	}
+
+	int		GetCellTriangle(int i, int j, uint32_t Tris[6]) const
+	{
+		bool tessFlag = Cells[i + j * nCols].Tessellation0 & 0x80;
+		uint16_t i0 = j * nCols + i;
+		uint16_t i1 = j * nCols + i + 1;
+		uint16_t i2 = (j + 1) * nCols + i;
+		uint16_t i3 = (j + 1) * nCols + i + 1;
+		// i2---i3
+		// |    |
+		// |    |
+		// i0---i1
+		uint8_t Hole0 = Cells[i + j * nCols].Tessellation0;
+		uint8_t Hole1 = Cells[i + j * nCols].Tessellation1;
+
+		int nt = 0;
+		if (Hole0 != 0x7F)
+		{
+			Tris[0] = i2;
+			Tris[1] = i0;
+			Tris[2] = tessFlag ? i3 : i1;
+			nt += 3;
+		}
+		if (Hole1 != 0x7F)
+		{
+			Tris[nt + 0] = i3;
+			Tris[nt + 1] = tessFlag ? i0 : i2;
+			Tris[nt + 2] = i1;
+			nt += 3;
+		}
+
+		return nt;
+	}
+
+	void GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
 		if (nCols * nCols == 0)
 		{
 			return;
 		}
 
-		float dx = BV.GetSizeX() / (nRows - 1);
-		float dz = BV.GetSizeZ() / (nCols - 1);
-
 		Vertices.resize(nRows * nCols);
 		for (uint32_t i = 0; i < nRows; i++)
 		for (uint32_t j = 0; j < nCols; j++)
 		{
-			Vertices[i * nCols + j] = Vector3d(BV.Min.x + dx * i, Heights[j + (i * nCols)], BV.Min.z + dz * j);
+			Vertices[i * nCols + j] = Vector3d(BV.Min.x + DX * i, Heights[j + (i * nCols)], BV.Min.z + DX * j);
 		}
 
 		assert(Vertices.size() < 65535);
 		Indices.resize((nCols - 1) * (nRows - 1) * 2 * 3);
 		int nTris = 0;
+		uint32_t Tris[6];
 
 		for (uint32_t i = 0; i < (nCols - 1); ++i)
 		for (uint32_t j = 0; j < (nRows - 1); ++j)
 		{
-			bool tessFlag = Cells[i + j * nCols].Tessellation0 & 0x80;
-			uint16_t i0 = j * nCols + i;
-			uint16_t i1 = j * nCols + i + 1;
-			uint16_t i2 = (j + 1) * nCols + i;
-			uint16_t i3 = (j + 1) * nCols + i + 1;
-			// i2---i3
-			// |    |
-			// |    |
-			// i0---i1
-			uint8_t Tess0 = Cells[i + j * nCols].Tessellation0;
-			uint8_t Tess1 = Cells[i + j * nCols].Tessellation1;
-			if (Tess0 != 0x7F)
+			int nT = GetCellTriangle(i, j, Tris);
+			for (int k = 0; k < nT; k += 3)
 			{
-				Indices[3 * nTris + 0] = i2;
-				Indices[3 * nTris + 1] = i0;
-				Indices[3 * nTris + 2] = tessFlag ? i3 : i1;
-				nTris++;
-			}
-			if (Tess1 != 0x7F)
-			{
-				Indices[3 * nTris + 0] = i3;
-				Indices[3 * nTris + 1] = tessFlag ? i0 : i2;
-				Indices[3 * nTris + 2] = i1;
+				Indices[3 * nTris + 0] = Tris[k + 0];
+				Indices[3 * nTris + 1] = Tris[k + 1];
+				Indices[3 * nTris + 2] = Tris[k + 2];
 				nTris++;
 			}
 		}
