@@ -133,7 +133,7 @@ int AABBTree::IntersectPoint(const Vector3d& Point) const
 	return -1;
 }
 
-static int IntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, Geometry** GeometryCollection, const Box3d& BV, const RayCastOption& Option, RayCastResult* Result)
+static int RayIntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, Geometry** GeometryCollection, const Box3d& BV, const RayCastOption& Option, RayCastResult* Result)
 {
 	assert(NumIndices > 0);
 	if (GeometryCollection == nullptr)
@@ -191,12 +191,11 @@ static int IntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, Geo
 	return min_idx;
 }
 
-#define SET_TIME(_t)	if (ObjectCollection == nullptr) Result->hitTime = (_t);
-
 bool  AABBTree::RayCast(const Ray3d& ray, Geometry **ObjectCollection, const RayCastOption& Option, RayCastResult* Result) const
 {
 	Result->hit = false;
 	Result->hitTime = FLT_MAX;
+	Result->hitGeom = nullptr;
 
 	float t1, t2;
 	AABBTreeNodeInference* p = m_AABBTreeInference;
@@ -219,7 +218,7 @@ bool  AABBTree::RayCast(const Ray3d& ray, Geometry **ObjectCollection, const Ray
 				int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 				int	 nPrimitives = p->GetNumGeometries();
 				const Box3d& Box = p->GetBoundingVolume();
-				int HitId =	IntersectGeometry(ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
+				int HitId =	RayIntersectGeometry(ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
 				if (HitId >= 0)
 				{
 					if (Option.Type == RayCastOption::RAYCAST_ANY)
@@ -274,6 +273,117 @@ bool  AABBTree::RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option
 	return RayCast(ray, nullptr, Option, Result);
 }
 
+static bool OverlapGeometry(Geometry *geometry, int* Indices, int NumIndices, Geometry** GeometryCollection, const OverlapOption& Option, OverlapResult* Result)
+{
+	assert(NumIndices > 0);
+	if (GeometryCollection == nullptr)
+	{
+		return true;
+	}
+
+	const Box3d& aabb = geometry->GetBoundingVolume_WorldSpace();
+
+	for (int i = 0; i < NumIndices; ++i)
+	{
+		const int index = Indices[i];
+		Geometry* candidate = GeometryCollection[index];
+		bool overlap = geometry->Overlap(candidate);
+		if (overlap)
+		{
+			Result->overlaps = true;
+			if (Result->overlapGeoms.size() < Option.maxOverlaps)
+			{
+				Result->overlapGeoms.push_back(candidate);
+			}
+
+			if (Result->overlapGeoms.size() >= Option.maxOverlaps)
+			{
+				return true;
+			}
+		}
+	}
+	return Result->overlaps;
+}
+
+bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const OverlapOption& Option, OverlapResult* Result)
+{
+	Result->overlaps = false;
+	Result->overlapGeoms.clear();
+
+	const Box3d &aabb = geometry->GetBoundingVolume_WorldSpace();
+
+	AABBTreeNodeInference* p = m_AABBTreeInference;
+	if (p == nullptr || !aabb.Intersect(p->BV.Min, p->BV.Max))
+	{
+		return false;
+	}
+
+	FixedStack<AABBTreeNodeInference, 32> stack;
+	stack.Push(m_AABBTreeInference);
+
+	while (!stack.Empty())
+	{
+		AABBTreeNodeInference* p = stack.Pop();
+
+		while (p)
+		{
+			if (p->IsLeafNode())
+			{
+				int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
+				int	 nPrimitives = p->GetNumGeometries();
+				const Box3d& Box = p->GetBoundingVolume();
+				bool overlap = OverlapGeometry(geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Option, Result);
+				if (overlap)
+				{
+					if (Result->overlapGeoms.size() >= Option.maxOverlaps)
+					{
+						return true;
+					}
+				}
+				break;
+			}
+
+			AABBTreeNodeInference* Left = LEFT_NODE(p);
+			AABBTreeNodeInference* Right = Left + 1;
+
+			bool intersect1 = aabb.Intersect(Left->BV.Min, Left->BV.Max);
+			bool intersect2 = aabb.Intersect(Right->BV.Min, Right->BV.Max);
+
+			if (intersect1 && intersect2)
+			{
+				float d1 = (aabb.GetCenter() - Left->BV.GetCenter()).SquareLength();
+				float d2 = (aabb.GetCenter() - Right->BV.GetCenter()).SquareLength();
+
+				if (d1 < d2)
+				{
+					p = Left;
+					stack.Push(Right);
+				}
+				else
+				{
+					p = Right;
+					stack.Push(Left);
+				}
+				continue;
+			}
+			else if (intersect1)
+			{
+				p = Left;
+				continue;
+			}
+			else if (intersect2)
+			{
+				p = Right;
+				continue;
+			}
+
+			break;
+		}
+
+	}
+
+	return Result->overlaps;
+}
 
 void AABBTree::InitAABBTreeBuild(AABBTreeBuildData& params)
 {

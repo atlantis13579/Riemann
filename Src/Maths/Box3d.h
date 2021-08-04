@@ -159,6 +159,26 @@ public:
 		return true;
 	}
 
+	inline bool Intersect(const TVector3<T>& Bmin, const TVector3<T>& Bmax) const
+	{
+		if (Min.x > Bmax.x || Bmin.x > Max.x)
+		{
+			return false;
+		}
+
+		if (Min.y > Bmax.y || Bmin.y > Max.y)
+		{
+			return false;
+		}
+
+		if (Min.z > Bmax.z || Bmin.z > Max.z)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
 	inline bool IsInside(const TVector3<T>& rhs) const
 	{
 		return ((rhs.x >= Min.x) && (rhs.x <= Max.x) && (rhs.y >= Min.y) && (rhs.y <= Max.y) && (rhs.z >= Min.z) && (rhs.z <= Max.z));

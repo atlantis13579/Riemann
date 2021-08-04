@@ -173,6 +173,11 @@ public:
 };
 GeometryRegistration s_geom_registration;
 
+void GeometryFactory::DeleteGeometry(Geometry* Geom)
+{
+	delete Geom;
+}
+
 Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& Extent, const Quaternion& Rot)
 {
 	TGeometry<AxisAlignedBox3d>* p = new TGeometry<AxisAlignedBox3d>();

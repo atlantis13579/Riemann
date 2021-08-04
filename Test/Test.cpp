@@ -50,11 +50,19 @@ void TestPhysxBin()
 
 	RayCastOption Option;
 	RayCastResult Result;
+
+	OverlapOption OOption;
+	OverlapResult OResult;
+
 	bool ret = query.RayCast(Vector3d(-569, 0, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
 	assert(ret);
 	assert(Result.hitGeom->GetGuid() == 2926462965280);
 
 	Vector3d Pos = Result.hitPoint;
+
+	OOption.maxOverlaps = 10;
+	ret = query.OverlapAABB(Pos, Vector3d::One(), OOption, &OResult);
+
 	ret = query.RayCast(Vector3d(Pos.x + 0.01f, Pos.y - 10.0f, Pos.z + 0.01f), -Vector3d::UnitY(), Option, &Result);
 	// assert(!ret);		// TODO filter the world box
 

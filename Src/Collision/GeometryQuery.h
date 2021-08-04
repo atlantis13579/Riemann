@@ -38,7 +38,7 @@ struct RayCastResult
 	float		hitTime;
 	Vector3d	hitPoint;
 	Vector3d	hitNormal;
-	Geometry* hitGeom;
+	Geometry*	hitGeom;
 };
 
 struct SweepOption
@@ -55,14 +55,22 @@ struct SweepResult
 
 struct OverlapOption
 {
-
+	OverlapOption()
+	{
+		maxOverlaps = 1;
+	}
+	unsigned int	maxOverlaps;
 };
 
 struct OverlapResult
 {
 	OverlapResult()
 	{
+		overlaps = true;
 	}
+
+	bool					overlaps;
+	std::vector<Geometry*>	overlapGeoms;
 };
 
 class GeometryQuery
@@ -75,6 +83,7 @@ public:
 	void			BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
 	
 	bool			RayCast(const Vector3d &Origin, const Vector3d& Dir, const RayCastOption& Option, RayCastResult *Result);
+	bool			OverlapAABB(const Vector3d &Center, const Vector3d& Extent, const OverlapOption& Option, OverlapResult* Result);
 
 	AABBTree*		GetStaticTree()
 	{
