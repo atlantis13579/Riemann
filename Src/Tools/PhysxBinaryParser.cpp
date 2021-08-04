@@ -31,7 +31,7 @@ typedef Vector3d PxVec3;
 
 typedef uint64_t PxSerialObjectId;
 
-struct Collections
+struct PhysxCollections
 {
 	std::unordered_map<PxSerialObjectId, void*>		mIds;
 	std::unordered_map<void*, PxSerialObjectId>		mObjects;
@@ -188,13 +188,13 @@ public:
 
 		if (Geom)
 		{
-			Geom->SetName(shape->mName);
+			// Geom->SetName(shape->mName);
 		}
 
 		return Geom;
 	}
 
-	static void CreateGeometryObjects(void *px, int classType, std::vector<Geometry*> *objs)
+	static void CreateGeometryObjects(void *px, int classType, uint64_t guid, std::vector<Geometry*> *objs)
 	{
 		if (classType == physx::eMATERIAL)
 		{
@@ -212,6 +212,7 @@ public:
 				Geometry* p = CreateShape(pShades[i]);
 				if (p)
 				{
+					p->SetGuid(guid);
 					p->SetPosition(rigid->mRigidStatic.mStatic.mCore.body2World.p);
 					p->SetRotationQuat(rigid->mRigidStatic.mStatic.mCore.body2World.q);
 					objs->push_back(p);
@@ -232,6 +233,7 @@ public:
 				Geometry* p = CreateShape(pShades[i]);
 				if (p)
 				{
+					p->SetGuid(guid);
 					p->SetPosition(core.body2World.p);
 					p->SetRotationQuat(core.body2World.q);
 					objs->push_back(p);
@@ -274,7 +276,7 @@ bool LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 	fread(p, 1, filesize, fp);
 	fclose(fp);
 
-	Collections collection;
+	PhysxCollections collection;
 	physx parser;
 	if (!parser.DeserializeFromBuffer(p, collection))
 	{
@@ -284,7 +286,7 @@ bool LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 	size_t Count = collection.mClass.size();
 	for (auto it : collection.mClass)
 	{
-		PhysxBinaryParser::CreateGeometryObjects(it.first, it.second, GeometryList);
+		PhysxBinaryParser::CreateGeometryObjects(it.first, it.second, collection.mObjects[it.first], GeometryList);
 	}
 
 	return true;

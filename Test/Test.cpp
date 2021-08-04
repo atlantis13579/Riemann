@@ -40,13 +40,17 @@
 void TestPhysxBin()
 {
 	std::vector<Geometry*> collection;
-	LoadPhysxBinary("e:/temp/physx/sss.bin", &collection);
+	LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
 
 	GeometryQuery query;
 	query.BuildStaticGeometry(collection, 1);
 
 	TreeStatistics stat;
 	query.GetStaticTree()->Statistic(stat);
+
+	RayCastOption Option;
+	RayCastResult Result;
+	query.RayCast(Vector3d(-2222, 0, -773), -Vector3d::UnitY(), Option, &Result);		// 2925370368528
 
 	return;
 }
@@ -438,7 +442,7 @@ void TestSAPInc()
 
 void TestMainEntry()
 {
-	// TestPhysxBin();
+	TestPhysxBin();
 	// TestSIMD();
 	// TestRTree1();
 	TestRTree2();

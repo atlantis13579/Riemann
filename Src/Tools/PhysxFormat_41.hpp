@@ -1475,7 +1475,7 @@ public:
 		return PX_BINARY_SERIAL_VERSION;
 	}
 
-	bool DeserializeFromBuffer(void* Buffer, Collections& collection)
+	bool DeserializeFromBuffer(void* Buffer, PhysxCollections& collection)
 	{
 		if (size_t(Buffer) & (128 - 1))
 		{

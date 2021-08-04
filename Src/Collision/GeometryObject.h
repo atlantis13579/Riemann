@@ -60,17 +60,14 @@ public:
 		return nullptr;
 	}
 
-	const char*				GetName() const
+	uint64_t				GetGuid() const
 	{
-		return m_Name.c_str();
+		return m_Guid;
 	}
 
-	void					SetName(const char* name)
+	void					SetGuid(uint64_t guid)
 	{
-		if (name)
-		{
-			m_Name = std::string(name);
-		}
+		m_Guid = guid;
 	}
 
 	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
@@ -103,7 +100,7 @@ protected:
 	ShapeType				m_Type;
 	Box3d					m_BoxWorld;
 	Transform				m_Transform;
-	std::string				m_Name;
+	uint64_t				m_Guid;
 	void*					m_Entity;
 
 	static RayCastFunc		raycastTable[ShapeType::GEOMETRY_COUNT];

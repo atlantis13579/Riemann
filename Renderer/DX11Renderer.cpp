@@ -474,6 +474,7 @@ public:
         std::vector<Vector3d> Normals;
         TShape* shape = geom->GetShapeObj<TShape>();
 
+        std::string name = std::to_string(geom->GetGuid());
         if (DrawMesh)
         {
 			shape->GetMesh(Vertices, Indices, Normals);
@@ -482,7 +483,7 @@ public:
 			{
 				vv.emplace_back(Vertices[i], Normals[i]);
 			}
-			AddTriangles(geom->GetName(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
+			AddTriangles(name.c_str(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
         }
         else
         {
@@ -492,7 +493,7 @@ public:
 			{
 				vv.emplace_back(Vertices[i], Vector3d(1.0f, 1.0f, 1.0f));
 			}
-			AddWireframe(geom->GetName(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
+			AddWireframe(name.c_str(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
         }
     }
 

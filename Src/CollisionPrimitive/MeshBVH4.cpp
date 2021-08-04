@@ -3,7 +3,7 @@
 #include "MeshBVH4.h"
 #include "Mesh.h"
 
-#define RTREE_INFLATION_EPSILON 5e-4f
+#define INFLATION_EPSILON 5e-4f
 
 void MeshBVH4::ValidateRecursive(void* p, uint32_t Depth, const Box3d& parentBounds, BVHNodeBatch* batch)
 {
@@ -45,12 +45,12 @@ void MeshBVH4::ValidateRecursive(void* p, uint32_t Depth, const Box3d& parentBou
 	}
 
 	Box3d recomputedBounds = batch->ComputeBounds();
-	assert((recomputedBounds.Min.x - parentBounds.Min.x) <= RTREE_INFLATION_EPSILON);
-	assert((recomputedBounds.Min.y - parentBounds.Min.y) <= RTREE_INFLATION_EPSILON);
-	assert((recomputedBounds.Min.z - parentBounds.Min.z) <= RTREE_INFLATION_EPSILON);
-	assert((recomputedBounds.Max.x - parentBounds.Max.x) <= RTREE_INFLATION_EPSILON);
-	assert((recomputedBounds.Max.y - parentBounds.Max.y) <= RTREE_INFLATION_EPSILON);
-	assert((recomputedBounds.Max.z - parentBounds.Max.z) <= RTREE_INFLATION_EPSILON);
+	assert((recomputedBounds.Min.x - parentBounds.Min.x) <= INFLATION_EPSILON);
+	assert((recomputedBounds.Min.y - parentBounds.Min.y) <= INFLATION_EPSILON);
+	assert((recomputedBounds.Min.z - parentBounds.Min.z) <= INFLATION_EPSILON);
+	assert((recomputedBounds.Max.x - parentBounds.Max.x) <= INFLATION_EPSILON);
+	assert((recomputedBounds.Max.y - parentBounds.Max.y) <= INFLATION_EPSILON);
+	assert((recomputedBounds.Max.z - parentBounds.Max.z) <= INFLATION_EPSILON);
 }
 
 void		MeshBVH4::Validate(void *p)
