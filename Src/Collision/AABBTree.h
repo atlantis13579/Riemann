@@ -27,11 +27,12 @@ public:
 	void	Release();
 
 	void	StaticBuild(AABBTreeBuildData& params);
+	void	Statistic(TreeStatistics &stat);
 
 	int		IntersectPoint(const Vector3d& Point) const;
 	bool	RayCast(const Ray3d& ray, Geometry** ObjectCollection, const RayCastOption& Option, RayCastResult *Result) const;
 	bool	RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const;
-	void	Statistic(TreeStatistics &stats);
+
 
 private:
 	void	InitAABBTreeBuild(AABBTreeBuildData& params);

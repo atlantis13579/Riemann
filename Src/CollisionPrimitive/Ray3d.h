@@ -18,7 +18,7 @@ public:
 		}
 	}
 
-	void Construct(const Vector3d& Src, const Vector3d& Dst)
+	void			Init(const Vector3d& Src, const Vector3d& Dst)
 	{
 		Origin = Src;
 		Dir = Dst - Src;
@@ -30,70 +30,85 @@ public:
 		return Origin + Dir * t;
 	}
 
-	bool  IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax, float* t) const
+	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax, float* t) const
 	{
-		const Vector3d Vmin = Bmin - Origin;
-		const Vector3d Vmax = Bmax - Origin;
+		return RayIntersectAABB(Origin, Dir, Bmin, Bmax, t);
+	}
 
-		float Tmin = 0;
-		float Tmax = FLT_MAX;
-		Vector3d Normal(0.0f);
+	static bool		RayIntersectAABB_1D(float start, float dir, float min, float max, float* enter, float* exit)
+	{
+		if (fabs(dir) < 0.000001f)
+		{
+			return start >= min && start <= max;
+		}
+
+		float   invDir = 1.0f / dir;
+		float   t0 = (min - start) * invDir;
+		float   t1 = (max - start) * invDir;
+
+		if (t0 > t1)
+		{
+			std::swap(t0, t1);
+		}
+
+		if (t0 > *enter)
+		{
+			*enter = t0;
+		}
+
+		if (t1 < *exit)
+		{
+			*exit = t1;
+		}
+
+		return true;
+	}
+
+	static bool		RayIntersectAABB(const Vector3d& Origin, const Vector3d& Dir, const Vector3d& Bmin, const Vector3d& Bmax, float* t)
+	{
+		float enter = 0.0f, exit = 1.0f;
 
 		for (int i = 0; i < 3; ++i)
 		{
-			float Time1, Time2;
-			if (fabsf(Dir[i]) < 0.00001f)
-			{
-				if (Vmin[i] > 0 || Vmax[i] < 0)
-				{
-					return false;
-				}
-				else
-				{
-					Time1 = 0;
-					Time2 = FLT_MAX;
-				}
-			}
-			else
-			{
-				const float InvDir = 1.0f / Dir[i];
-				Time1 = Vmin[i] * InvDir;
-				Time2 = Vmax[i] * InvDir;
-			}
-
-			Vector3d CurNormal = Vector3d(0.0f);
-			CurNormal[i] = 1.0f;
-
-			if (Time1 > Time2)
-			{
-				std::swap(Time1, Time2);
-			}
-			else
-			{
-				CurNormal[i] = -1.0f;
-			}
-
-			if (Time1 > Tmin)
-			{
-				Normal = CurNormal;
-			}
-			Tmin = std::max(Tmin, Time1);
-			Tmax = std::min(Tmax, Time2);
-
-			if (Tmin > Tmax)
+			if (!RayIntersectAABB_1D(Origin[i], Dir[i], Bmin[i], Bmax[i], &enter, &exit))
 			{
 				return false;
 			}
 		}
 
-		if (Tmax < 0)
+		const float h = enter > 0 ? enter : exit;
+		if (h >= 0)
 		{
-			return false;
+			*t = h;
+			return true;
 		}
-
-		*t = Tmin;
-		return true;
+		return false;
 	}
+
+	static bool		RayIntersectAABB2(const Vector3d& Origin, const Vector3d& Dir, const Vector3d& Bmin, const Vector3d& Bmax, float thickness, float maxDist, float* t0, float* t1)
+	{
+		const float kEpsilon = 1e-9f;
+
+		Vector3d invD;
+		invD.x = 1.0f / (std::max(fabsf(Dir.x), kEpsilon) * (Dir.x >= 0 ? 1.0f : -1.0f));
+		invD.y = 1.0f / (std::max(fabsf(Dir.y), kEpsilon) * (Dir.y >= 0 ? 1.0f : -1.0f));
+		invD.z = 1.0f / (std::max(fabsf(Dir.z), kEpsilon) * (Dir.z >= 0 ? 1.0f : -1.0f));
+
+		Vector3d b0 = (Bmin - thickness - Origin) * invD;
+		Vector3d b1 = (Bmax + thickness - Origin) * invD;
+
+		Vector3d tMin = b0.Min(b1);
+		Vector3d tMax = b0.Max(b1);
+
+		float maxIn = std::max(tMin.x, std::max(tMin.y, tMin.z));
+		float minOut = std::min(tMax.x, std::min(tMax.y, tMax.z));
+
+		*t0 = std::max(maxIn, 0.0f);
+		*t1 = std::min(minOut, maxDist);
+
+		return *t0 < *t1;
+	}
+
 
 	Vector3d Origin;
 	Vector3d Dir;

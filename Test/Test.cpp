@@ -50,22 +50,25 @@ void TestPhysxBin()
 
 	RayCastOption Option;
 	RayCastResult Result;
-	query.RayCast(Vector3d(-569, 0, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
-	assert(Result.hit);
+	bool ret = query.RayCast(Vector3d(-569, 0, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
+	assert(ret);
 	assert(Result.hitGeom->GetGuid() == 2926462965280);
 
 	Vector3d Pos = Result.hitPoint;
-	query.RayCast(Vector3d(Pos.x + 0.01f, 0, Pos.z + 0.01f), -Vector3d::UnitY(), Option, &Result);
-	assert(Result.hit);
+	ret = query.RayCast(Vector3d(Pos.x + 0.01f, Pos.y - 10.0f, Pos.z + 0.01f), -Vector3d::UnitY(), Option, &Result);
+	// assert(!ret);		// TODO filter the world box
+
+	ret = query.RayCast(Vector3d(Pos.x + 0.01f, 0, Pos.z + 0.01f), -Vector3d::UnitY(), Option, &Result);
+	assert(ret);
 	assert(FloatDiff(Result.hitPoint.y, Pos.y) < 0.01f);
 	assert(Result.hitGeom->GetGuid() == 2926462965280);
 
-	query.RayCast(Vector3d(-2222, 0, -773), -Vector3d::UnitY(), Option, &Result);
-	assert(Result.hit);
+	ret = query.RayCast(Vector3d(-2222, 0, -773), -Vector3d::UnitY(), Option, &Result);
+	assert(ret);
 	assert(Result.hitGeom->GetGuid() == 2925373493328);
 
-	query.RayCast(Vector3d(-569, 0, 427), -Vector3d::UnitY(), Option, &Result);
-	assert(Result.hit);
+	ret = query.RayCast(Vector3d(-569, 0, 427), -Vector3d::UnitY(), Option, &Result);
+	assert(ret);
 	assert(Result.hitGeom->GetGuid() == 2926462965280);
 
 	return;
@@ -151,7 +154,7 @@ void TestRayAABB()
 	Vector3d Origin(-100, 0, 50);
 	Vector3d Dir(1, 0, 0);
 	float t0, t1;
-	assert(AxisAlignedBox3d::RayIntersectAABB2(Origin, Dir, Vector3d::Zero(), Vector3d(100, 100, 100), 0.00001f, 100000.0f, &t0, &t1));
+	assert(Ray3d::RayIntersectAABB2(Origin, Dir, Vector3d::Zero(), Vector3d(100, 100, 100), 0.00001f, 100000.0f, &t0, &t1));
 
 	Vector3d InPos = Origin + Dir * t0;
 	Vector3d OutPos = Origin + Dir * t1;

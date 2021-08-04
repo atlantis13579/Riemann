@@ -61,81 +61,67 @@ public:
 
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
 	{
-		return RayIntersectAABB(Origin, Dir, Min, Max, t);
-	}
+		const Vector3d b0 = Min - Origin;
+		const Vector3d b1 = Max - Origin;
 
-	static bool		RayIntersectAABB_1D(float start, float dir, float min, float max, float* enter, float* exit)
-	{
-		if (fabs(dir) < 0.000001f)
-		{
-			return start >= min && start <= max;
-		}
-
-		float   invDir = 1.0f / dir;
-		float   t0 = (min - start) * invDir;
-		float   t1 = (max - start) * invDir;
-
-		if (t0 > t1)
-		{
-			std::swap(t0, t1);
-		}
-
-		if (t0 > *enter)
-		{
-			*enter = t0;
-		}
-
-		if (t1 < *exit)
-		{
-			*exit = t1;
-		}
-
-		return true;
-	}
-
-	static bool		RayIntersectAABB(const Vector3d& Origin, const Vector3d& Dir, const Vector3d& Bmin, const Vector3d& Bmax, float* t)
-	{
-		float enter = 0.0f, exit = 1.0f;
+		float tMin = 0;
+		float tMax = FLT_MAX;
+		Vector3d Normal(0.0f);
 
 		for (int i = 0; i < 3; ++i)
 		{
-			if (!RayIntersectAABB_1D(Origin[i], Dir[i], Bmin[i], Bmax[i], &enter, &exit))
+			float t0, t1;
+			if (fabsf(Dir[i]) < 0.00001f)
+			{
+				if (b0[i] > 0 || b1[i] < 0)
+				{
+					return false;
+				}
+				else
+				{
+					t0 = 0;
+					t1 = FLT_MAX;
+				}
+			}
+			else
+			{
+				const float InvDir = 1.0f / Dir[i];
+				t0 = b0[i] * InvDir;
+				t1 = b1[i] * InvDir;
+			}
+
+			Vector3d CurNormal = Vector3d(0.0f);
+			CurNormal[i] = 1.0f;
+
+			if (t0 > t1)
+			{
+				std::swap(t0, t1);
+			}
+			else
+			{
+				CurNormal[i] = -1.0f;
+			}
+
+			if (t0 > tMin)
+			{
+				Normal = CurNormal;
+			}
+			tMin = std::max(tMin, t0);
+			tMax = std::min(tMax, t1);
+
+			if (tMin > tMax)
 			{
 				return false;
 			}
 		}
 
-		const float h = enter > 0 ? enter : exit;
-		if (h >= 0)
+		if (tMax < 0)
 		{
-			*t = h;
-			return true;
+			return false;
 		}
-		return false;
-	}
 
-	static bool		RayIntersectAABB2(const Vector3d& Origin, const Vector3d& Dir, const Vector3d& Bmin, const Vector3d& Bmax, float thickness, float maxDist, float* t0, float *t1)
-	{
-		const float kEpsilon = 1e-9f;
-
-		Vector3d invD;
-		invD.x = 1.0f / (std::max(fabsf(Dir.x), kEpsilon) * (Dir.x >= 0 ? 1.0f : -1.0f));
-		invD.y = 1.0f / (std::max(fabsf(Dir.y), kEpsilon) * (Dir.y >= 0 ? 1.0f : -1.0f));
-		invD.z = 1.0f / (std::max(fabsf(Dir.z), kEpsilon) * (Dir.z >= 0 ? 1.0f : -1.0f));
-
-		Vector3d b0 = (Bmin - thickness - Origin) * invD;
-		Vector3d b1 = (Bmax + thickness - Origin) * invD;
-
-		Vector3d tMin = b0.Min(b1);
-		Vector3d tMax = b0.Max(b1);
-
-		float maxIn = std::max(tMin.x, std::max(tMin.y, tMin.z));
-		float minOut = std::min(tMax.x, std::min(tMax.y, tMax.z));
-
-		*t0 = std::max(maxIn, 0.0f);
-		*t1 = std::min(minOut, maxDist);
-
-		return *t0 < *t1;
+		*t = tMin;
+		return true;
 	}
 
 	Box3d			GetBoundingVolume() const
@@ -153,12 +139,12 @@ public:
 		return ((Bmax.x - Bmin.x) * (Bmax.y - Bmin.y) * (Bmax.z - Bmin.z));
 	}
 
-	Vector3d GetCenterOfMass() const
+	Vector3d		GetCenterOfMass() const
 	{
 		return (Max + Min) * 0.5f;
 	}
 
-	Matrix3d GetInertiaTensor(float Mass) const
+	Matrix3d		GetInertiaTensor(float Mass) const
 	{
 		return GetInertiaTensor(Min, Max, Mass);
 	}
@@ -175,7 +161,7 @@ public:
 		return Matrix3d(M * (HH + DD), M * (WW + DD), M * (WW + HH));
 	}
 
-	Vector3d GetSupport(const Vector3d& dir) const
+	Vector3d		GetSupport(const Vector3d& dir) const
 	{
 		return GetSupport(Min, Max, dir);
 	}
@@ -189,7 +175,7 @@ public:
 		);
 	}
 
-	void	GetMesh(std::vector<Vector3d> &Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void			GetMesh(std::vector<Vector3d> &Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
 		Vertices.resize(8);
 		Box3d::GetVertices(Min, Max, &Vertices[0]);
@@ -217,7 +203,7 @@ public:
 			6, 7, 3 };
 	}
 
-	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
+	void			GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		Vertices.resize(8);
 		Box3d::GetVertices(Min, Max, &Vertices[0]);

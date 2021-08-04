@@ -1,7 +1,7 @@
 
 #include "HeightField3d.h"
-#include "AxisAlignedBox3d.h"
 #include "Triangle3d.h"
+#include "Ray3d.h"
 #include "../Maths/Maths.h"
 
 #define X_INDEX(_x)		((int)((_x - BV.Min.x) * InvDX))
@@ -13,7 +13,7 @@ bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir
 	GetHeightRange(i, j, minH, maxH);
 
 	float t0, t1;
-	if (!AxisAlignedBox3d::RayIntersectAABB_1D(Origin.y, Dir.y, minH, maxH, &t0, &t1))
+	if (!Ray3d::RayIntersectAABB_1D(Origin.y, Dir.y, minH, maxH, &t0, &t1))
 	{
 		return false;
 	}
@@ -94,7 +94,7 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 
 	float t0, t1;
 	const float thickness = 1e-4f;
-	if (!AxisAlignedBox3d::RayIntersectAABB2(Origin, Dir, BV.Min, BV.Max, thickness, Option.maxDist, &t0, &t1))
+	if (!Ray3d::RayIntersectAABB2(Origin, Dir, BV.Min, BV.Max, thickness, Option.maxDist, &t0, &t1))
 	{
 		return false;
 	}
