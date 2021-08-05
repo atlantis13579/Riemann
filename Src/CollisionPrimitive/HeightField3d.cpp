@@ -12,12 +12,12 @@ bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir
 	float minH, maxH;
 	GetHeightRange(i, j, minH, maxH);
 
-	float t0, t1;
-	if (!Ray3d::RayIntersectAABB_1D(Origin.y, Dir.y, minH, maxH, &t0, &t1))
+	if (fabsf(Dir.y) < 0.000001f)
 	{
-		return false;
+		return Origin.y >= minH && Origin.y <= maxH;
 	}
 
+	float t0 = (minH - Origin.y) / Dir.y;
 	float x = Origin.x + Dir.x * t0 - BV.Min.x - i * DX;
 	float z = Origin.z + Dir.z * t0 - BV.Min.z - j * DZ;
 	if (x < 0.0f || x > DX || z < 0.0f || z > DZ)
