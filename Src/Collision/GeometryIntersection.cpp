@@ -72,12 +72,14 @@ GeometryIntersection::GeometryIntersection()
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::BOX,			OverlapBoxT<AxisAlignedBox3d>);
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::PLANE,			OverlapBoxT<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::SPHERE,			OverlapBoxT<Sphere3d>);
+	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::CAPSULE,		OverlapBoxT<Capsule3d>);
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::HEIGHTFIELD,	OverlapBoxT<HeightField3d>);
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::TRIANGLE,		OverlapBoxT<Triangle3d>);
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::TRIANGLE_MESH,	OverlapBoxT<TriangleMesh>);
 	REG_OVERLAP_TEST(ShapeType::PLANE, ShapeType::BOX,			OverlapTBox<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::SPHERE,		OverlapSphereT<Sphere3d>);
 	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::BOX,			OverlapTBox<Sphere3d>);
+	REG_OVERLAP_TEST(ShapeType::CAPSULE, ShapeType::BOX,		OverlapTBox<Capsule3d>);
 	REG_OVERLAP_TEST(ShapeType::HEIGHTFIELD, ShapeType::BOX,	OverlapTBox<HeightField3d>);
 	REG_OVERLAP_TEST(ShapeType::TRIANGLE, ShapeType::BOX,		OverlapTBox<Triangle3d>);
 	REG_OVERLAP_TEST(ShapeType::TRIANGLE_MESH, ShapeType::BOX,	OverlapTBox<TriangleMesh>);

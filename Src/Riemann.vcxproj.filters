@@ -139,5 +139,7 @@
     <ClCompile Include="Maths\Matrix3d.cpp" />
     <ClCompile Include="CollisionPrimitive\HeightField3d.cpp" />
     <ClCompile Include="Collision\GeometryIntersection.cpp" />
+    <ClCompile Include="CollisionPrimitive\OrientedBox3d.cpp" />
+    <ClCompile Include="CollisionPrimitive\Capsule3d.cpp" />
   </ItemGroup>
 </Project>

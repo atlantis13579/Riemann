@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include "../Maths/Matrix3d.h"
+#include "../Maths/Box3d.h"
 #include "ShapeType.h"
 
 class Sphere3d
