@@ -40,7 +40,7 @@ struct RayCastResult
 		hitNormal = Vector3d::UnitY();
 		hitGeom = nullptr;
 		#ifdef _DEBUG
-		TestCount = 0;
+		hitTestCount = 0;
 		#endif // _DEBUG
 	}
 
@@ -50,7 +50,7 @@ struct RayCastResult
 	Vector3d	hitNormal;
 	Geometry*	hitGeom;
 	#ifdef _DEBUG
-	int			TestCount;
+	int			hitTestCount;
 	#endif // _DEBUG
 };
 
@@ -90,14 +90,14 @@ struct OverlapResult
 		overlaps = true;
 		overlapGeoms.clear();
 #ifdef _DEBUG
-		TestCount = 0;
+		overlapTestCount = 0;
 #endif // _DEBUG
 	}
 
 	bool					overlaps;
 	std::vector<Geometry*>	overlapGeoms;
 #ifdef _DEBUG
-	int						TestCount;
+	int						overlapTestCount;
 #endif // _DEBUG
 };
 

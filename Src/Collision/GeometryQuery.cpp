@@ -56,6 +56,7 @@ void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, i
 
 bool GeometryQuery::RayCast(const Vector3d& Origin, const Vector3d& Dir, const RayCastOption& Option, RayCastResult* Result)
 {
+	Result->Reset();
 	if (m_staticGeometry)
 	{
 		Ray3d ray(Origin, Dir);
@@ -67,6 +68,7 @@ bool GeometryQuery::RayCast(const Vector3d& Origin, const Vector3d& Dir, const R
 
 bool GeometryQuery::OverlapBox(const Vector3d& Center, const Vector3d& Extent, const OverlapOption& Option, OverlapResult* Result)
 {
+	Result->Reset();
 	Geometry* Box = GeometryFactory::CreateOBB(Center, Extent);
 	Geometry** pp = &m_Objects[0];
 	m_staticGeometry->Overlap(Box, pp, Option, Result);

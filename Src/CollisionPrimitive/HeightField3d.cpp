@@ -85,6 +85,10 @@ bool HeightField3d::IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, c
 		}
 	}
 
+	#ifdef _DEBUG
+	Result->TestCount += nT / 3;
+	#endif // _DEBUG
+
 	return hit;
 }
 

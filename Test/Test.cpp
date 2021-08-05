@@ -60,6 +60,8 @@ void TestPhysxBin()
 
 	Vector3d Pos = Result.hitPoint;
 
+	ret = query.RayCast(Vector3d(-569, -50, 427), Vector3d(1, 0, 1).Unit(), Option, &Result);
+
 	ret = query.OverlapBox(Vector3d(Pos.x, Pos.y + 15.0f, Pos.z), Vector3d::One(), OOption, &OResult);
 	assert(!ret);
 

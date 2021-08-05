@@ -164,7 +164,7 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, 
 		bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, &Option, &TempResult);
 
 		#ifdef _DEBUG
-		Result->TestCount += TempResult.TestCount;
+		Result->hitTestCount += TempResult.hitTestCount;
 		#endif // _DEBUG
 
 		if (hit)
@@ -239,7 +239,7 @@ bool  AABBTree::RayCast(const Ray3d& ray, Geometry **ObjectCollection, const Ray
 			AABBTreeNodeInference* Right = Left + 1;
 
 			#ifdef _DEBUG
-			Result->TestCount += 2;
+			Result->hitTestCount += 2;
 			#endif // _DEBUG
 
 			bool hit1 = ray.IntersectAABB(Left->BV.Min, Left->BV.Max, &t1) && t1 < Result->hitTime;
@@ -296,7 +296,7 @@ static bool OverlapGeometry(Geometry *geometry, int* Indices, int NumIndices, Ge
 	for (int i = 0; i < NumIndices; ++i)
 	{
 		#ifdef _DEBUG
-		Result->TestCount += 1;
+		Result->overlapTestCount += 1;
 		#endif // _DEBUG
 
 		const int index = Indices[i];
@@ -359,7 +359,7 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 			}
 
 			#ifdef _DEBUG
-			Result->TestCount += 2;
+			Result->overlapTestCount += 2;
 			#endif // _DEBUG
 
 			AABBTreeNodeInference* Left = LEFT_NODE(p);

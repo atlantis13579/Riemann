@@ -46,7 +46,7 @@ public:
 	virtual bool			RayCast(const Vector3d& Origin, const Vector3d& Dir, const RayCastOption* Option, RayCastResult* Result) const override final
 	{
 		#ifdef _DEBUG
-		Result->TestCount += 1;
+		Result->hitTestCount += 1;
 		#endif // _DEBUG
 
 		const Vector3d Origin_Local = m_Transform.WorldToLocalEx(Origin);
@@ -77,7 +77,7 @@ virtual bool		TGeometry<TriangleMesh>::RayCast(const Vector3d& Origin, const Vec
 	Result->hitTime = HitResult.hitTime;
 
 	#ifdef _DEBUG
-	Result->TestCount += HitResult.TestCount;
+	Result->hitTestCount += HitResult.TestCount;
 	#endif // _DEBUG
 
 	return Ret;
@@ -97,7 +97,7 @@ virtual bool		TGeometry<HeightField3d>::RayCast(const Vector3d& Origin, const Ve
 	Result->hitTime = HitResult.hitTime;
 
 #ifdef _DEBUG
-	Result->TestCount += HitResult.TestCount;
+	Result->hitTestCount += HitResult.TestCount;
 #endif // _DEBUG
 
 	return Ret;
