@@ -1115,6 +1115,11 @@ inline Vec3V V3ScaleInv(const Vec3V a, const FloatV b)
 	return _mm_div_ps(a, b);
 }
 
+inline VecU32V VecU32V_From_BoolV(const BoolV a)
+{
+	return a;
+}
+
 inline Vec3V V3Div(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);

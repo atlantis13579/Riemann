@@ -71,6 +71,19 @@ inline float InvSqrt(float x) {
 	return x;
 }
 
+// from http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
+inline int BitCount(unsigned int v)
+{
+	unsigned int const w = v - ((v >> 1) & 0x55555555);
+	unsigned int const x = (w & 0x33333333) + ((w >> 2) & 0x33333333);
+	return (((x + (x >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
+}
+
+inline bool IsPowerOfTwo(int x)
+{
+	return x != 0 && (x & (x - 1)) == 0;
+}
+
 static const float kEpsilon = 0.000001f;
 static const float kInfinite = 9999999.0f;
 

@@ -80,7 +80,118 @@ void	TriangleMesh::GetVertIndices(uint32_t triIndex, uint32_t& i0, uint32_t& i1,
 	}
 }
 
-bool	TriangleMesh::IntersectTri(uint32_t HitNode, const Vector3d& Origin, const Vector3d& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const
+bool TriangleMesh::OverlapTri(uint32_t HitNode, const Vector3d& Bmin, const Vector3d& Bmax) const
+{
+	LeafNode currLeaf(HitNode);
+	uint32_t NumLeafTriangles = currLeaf.GetNumTriangles();
+	uint32_t BaseTriIndex = currLeaf.GetTriangleIndex();
+
+	for (uint32_t i = 0; i < NumLeafTriangles; i++)
+	{
+		uint32_t i0, i1, i2;
+		const uint32_t triangleIndex = BaseTriIndex + i;
+		GetVertIndices(triangleIndex, i0, i1, i2);
+
+		const Vector3d& v0 = Vertices[i0];
+		const Vector3d& v1 = Vertices[i1];
+		const Vector3d& v2 = Vertices[i2];
+
+		bool intersect = Triangle3d::IntersectAABB(v0, v1, v2, Bmin, Bmax);
+		if (intersect)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool TriangleMesh::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
+{
+	const uint32_t maxStack = 128;
+	uint32_t stack1[maxStack];
+	uint32_t* stack = stack1 + 1;
+
+	assert(m_BVH->BatchPtr);
+	assert((uintptr_t(m_BVH->BatchPtr) & 127) == 0);
+	assert((uintptr_t(this) & 15) == 0);
+
+	Vec4V nqMin = Vec4V_From_PxVec3_WUndefined(Bmin);
+	Vec4V nqMax = Vec4V_From_PxVec3_WUndefined(Bmax);
+
+	Vec4V nqMinx4 = V4SplatElement<0>(nqMin);
+	Vec4V nqMiny4 = V4SplatElement<1>(nqMin);
+	Vec4V nqMinz4 = V4SplatElement<2>(nqMin);
+	Vec4V nqMaxx4 = V4SplatElement<0>(nqMax);
+	Vec4V nqMaxy4 = V4SplatElement<1>(nqMax);
+	Vec4V nqMaxz4 = V4SplatElement<2>(nqMax);
+
+	uint8_t* batch_ptr = (uint8_t*)(m_BVH->BatchPtr);
+	uint32_t* stackPtr = stack;
+
+	assert(SIMD_WIDTH == 4 || SIMD_WIDTH == 8);
+	assert(IsPowerOfTwo(m_BVH->BatchSize));
+
+	for (int j = int(m_BVH->NumRoots - 1); j >= 0; j--)
+		*stackPtr++ = j * sizeof(BVHNodeBatch);
+
+	uint32_t cacheTopValid = true;
+	uint32_t cacheTop = 0;
+
+	do {
+		stackPtr--;
+		uint32_t top;
+		if (cacheTopValid) // branch is faster than lhs
+			top = cacheTop;
+		else
+			top = stackPtr[0];
+		assert(!cacheTopValid || stackPtr[0] == cacheTop);
+		BVHNodeBatch* tn = reinterpret_cast<BVHNodeBatch*>(batch_ptr + top);
+		const uint32_t* Data = (reinterpret_cast<BVHNodeBatch*>(tn))->Data;
+
+		Vec4V minx4 = V4LoadA(tn->minx);
+		Vec4V miny4 = V4LoadA(tn->miny);
+		Vec4V minz4 = V4LoadA(tn->minz);
+		Vec4V maxx4 = V4LoadA(tn->maxx);
+		Vec4V maxy4 = V4LoadA(tn->maxy);
+		Vec4V maxz4 = V4LoadA(tn->maxz);
+
+		// AABB/AABB overlap test
+		BoolV res0 = V4IsGrtr(nqMinx4, maxx4); BoolV res1 = V4IsGrtr(nqMiny4, maxy4); BoolV res2 = V4IsGrtr(nqMinz4, maxz4);
+		BoolV res3 = V4IsGrtr(minx4, nqMaxx4); BoolV res4 = V4IsGrtr(miny4, nqMaxy4); BoolV res5 = V4IsGrtr(minz4, nqMaxz4);
+		BoolV resx = BOr(BOr(BOr(res0, res1), BOr(res2, res3)), BOr(res4, res5));
+		__declspec(align(16))  uint32_t resa[SIMD_WIDTH];
+
+		VecU32V res4x = VecU32V_From_BoolV(resx);
+		U4StoreA(res4x, resa);
+
+		cacheTopValid = false;
+		for (uint32_t i = 0; i < SIMD_WIDTH; i++)
+		{
+			uint32_t ptr = Data[i] & ~1; // clear the isLeaf bit
+			if (resa[i])
+				continue;
+			if (tn->Data[i] & 1)
+			{
+				bool overlap = OverlapTri(ptr, Bmin, Bmax);
+				if (overlap)
+				{
+					return true;
+				}
+			}
+			else
+			{
+				*(stackPtr++) = ptr;
+				cacheTop = ptr;
+				cacheTopValid = true;
+			}
+		}
+	} while (stackPtr > stack);
+
+	return false;
+}
+
+bool	TriangleMesh::RayIntersectTri(uint32_t HitNode, const Vector3d& Origin, const Vector3d& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const
 {
 	LeafNode currLeaf(HitNode);
 	uint32_t NumLeafTriangles = currLeaf.GetNumTriangles();
@@ -92,7 +203,7 @@ bool	TriangleMesh::IntersectTri(uint32_t HitNode, const Vector3d& Origin, const 
 		uint32_t i0, i1, i2;
 		const uint32_t triangleIndex = BaseTriIndex + i;
 		GetVertIndices(triangleIndex, i0, i1, i2);
-		
+
 		const Vector3d& v0 = Vertices[i0];
 		const Vector3d& v1 = Vertices[i1];
 		const Vector3d& v2 = Vertices[i2];
@@ -123,31 +234,6 @@ bool	TriangleMesh::IntersectTri(uint32_t HitNode, const Vector3d& Origin, const 
 	return hit;
 }
 
-bool TriangleMesh::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
-{
-	// TODO
-	return BoundingVolume.Intersect(Bmin, Bmax);
-}
-
-const VecU32V signMask = U4LoadXYZW((1 << 31), (1 << 31), (1 << 31), (1 << 31));
-const Vec4V epsFloat4 = V4Load(1e-9f);
-const Vec4V twos = V4Load(2.0f);
-
-bool	TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
-{
-	TriMeshHitOption Option;
-	Option.hitClosest = true;
-	Option.maxDist = FLT_MAX;
-
-	TriMeshHitResult Result;
-	if (IntersectRay(Origin, Dir, Option, &Result))
-	{
-		*t = Result.hitTime;
-		return true;
-	}
-	return false;
-}
-
 bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const
 {
 	if (m_BVH == nullptr)
@@ -157,6 +243,9 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 
 	Result->hitTime = FLT_MAX;
 
+	const VecU32V signMask = U4LoadXYZW((1 << 31), (1 << 31), (1 << 31), (1 << 31));
+	const Vec4V epsFloat4 = V4Load(1e-9f);
+	const Vec4V twos = V4Load(2.0f);
 	const uint32_t maxStack = 128;
 	uint32_t stack1[maxStack];
 	uint32_t* stack = stack1 + 1;
@@ -209,7 +298,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 		if (top & 1)
 		{
 			top--;
-			bool intersect = IntersectTri(top, Origin, Dir, Option, Result);
+			bool intersect = RayIntersectTri(top, Origin, Dir, Option, Result);
 			if (intersect)
 			{
 				if (!Option.hitClosest)
@@ -282,6 +371,21 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 		stack[stackPtr] = ptrs[3]; stackPtr += (1 + resa[3]);
 	}
 	return Result->hitTime != FLT_MAX;
+}
+
+bool	TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+{
+	TriMeshHitOption Option;
+	Option.hitClosest = true;
+	Option.maxDist = FLT_MAX;
+
+	TriMeshHitResult Result;
+	if (IntersectRay(Origin, Dir, Option, &Result))
+	{
+		*t = Result.hitTime;
+		return true;
+	}
+	return false;
 }
 
 Matrix3d TriangleMesh::GetInertiaTensor(float Mass) const

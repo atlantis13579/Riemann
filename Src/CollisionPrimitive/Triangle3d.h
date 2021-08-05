@@ -57,10 +57,15 @@ public:
 		return RayIntersectTriangle(Origin, Dir, A, B, C, t);
 	}
 
+	bool		IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
+	{
+		return IntersectAABB(A, B, C, Bmin, Bmax);
+	}
+
 	// By Tomas Akenine-Moller
 	// https://fileadmin.cs.lth.se/cs/Personal/Tomas_Akenine-Moller/code/
 	// -----
-	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
+	static bool		IntersectAABB(const Vector3d& A, const Vector3d& B, const Vector3d& C, const Vector3d& Bmin, const Vector3d& Bmax)
 	{
 		Vector3d Center = (Bmax + Bmin) * 0.5f;
 		Vector3d Extent = Bmax - Center;

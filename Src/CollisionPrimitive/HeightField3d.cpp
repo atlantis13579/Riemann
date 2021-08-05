@@ -218,8 +218,8 @@ bool HeightField3d::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) co
 	const int j0 = Z_INDEX(Intersect.Min.z);
 	const int i1 = X_INDEX(Intersect.Max.x);
 	const int j1 = Z_INDEX(Intersect.Max.z);
-	for (int i = i0; i < i1; ++i)
-	for (int j = j0; j < j1; ++j)
+	for (int i = i0; i <= i1; ++i)
+	for (int j = j0; j <= j1; ++j)
 	{
 		uint16_t Index = j * nCols + i;
 		if (minH <= Heights[Index] && Heights[Index] <= maxH)
