@@ -1,5 +1,6 @@
 
 #include "GeometryObject.h"
+#include "GeometryIntersection.h"
 
 #include "../CollisionPrimitive/AxisAlignedBox3d.h"
 #include "../CollisionPrimitive/Plane3d.h"
@@ -10,6 +11,7 @@
 #include "../CollisionPrimitive/Capsule3d.h"
 #include "../CollisionPrimitive/ConvexMesh.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
+
 
 template<class GEOM_TYPE>
 class TGeometry : public Geometry, public GEOM_TYPE
@@ -34,6 +36,14 @@ public:
 	virtual Box3d			GetBoundingVolume_LocalSpace() const override final
 	{
 		return GEOM_TYPE::GetBoundingVolume();
+	}
+
+	virtual bool			RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t) override final
+	{
+		const Vector3d Origin_Local = m_Transform.WorldToLocal(Origin);
+		const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
+		const GEOM_TYPE* p = (const GEOM_TYPE*)this;
+		return p->IntersectRay(Origin_Local, Dir_Local, t);
 	}
 };
 
@@ -90,23 +100,9 @@ void				Geometry::SetEntity(void* Entity)
 	m_Entity = Entity;
 }
 
-bool				Geometry::RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t)
-{
-	RayCastFunc func = Geometry::raycastTable[m_Type];
-#ifdef DEBUG
-	assert(func);
-#endif
-	void* Obj = GetShapeObjPtr();
-	const Vector3d Origin_Local = m_Transform.WorldToLocal(Origin);
-	const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
-	return func(Obj, Origin_Local, Dir_Local, t);
-}
-
 bool				Geometry::Overlap(const Geometry* Geom) const
 {
-	ShapeType Type1 = GetShapeType();
-	ShapeType Type2 = Geom->GetShapeType();
-	OverlapFunc func = Geometry::overlapTable[Type1][Type1];
+	OverlapFunc func = GeometryIntersection::GetOverlapFunc(m_Type, Geom->GetShapeType());
 #ifdef DEBUG
 	assert(func);
 #endif
@@ -115,9 +111,7 @@ bool				Geometry::Overlap(const Geometry* Geom) const
 
 bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const
 {
-	ShapeType Type1 = GetShapeType();
-	ShapeType Type2 = Geom->GetShapeType();
-	SweepFunc func = Geometry::sweepTable[Type1][Type1];
+	SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
 #ifdef DEBUG
 	assert(func);
 #endif
@@ -141,37 +135,6 @@ Matrix3d			Geometry::GetInverseInertia_WorldSpace(float Mass) const
 {
 	return GetInertia_LocalSpace(Mass).Inverse();
 }
-
-template <class T>
-static bool			RayCastT(void* Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)
-{
-	T* p = reinterpret_cast<T*>(Obj);
-	return p->IntersectRay(Origin, Dir, t);
-}
-
-RayCastFunc			Geometry::raycastTable[ShapeType::GEOMETRY_COUNT] = { 0 };
-SweepFunc			Geometry::sweepTable[ShapeType::GEOMETRY_COUNT][ShapeType::GEOMETRY_COUNT] = { 0 };
-OverlapFunc			Geometry::overlapTable[ShapeType::GEOMETRY_COUNT][ShapeType::GEOMETRY_COUNT] = {0};
-
-#define	REG_GEOMETRY_OBJ(_type, _name)									\
-	Geometry::raycastTable[_type] =	RayCastT<_name>;
-
-class GeometryRegistration
-{
-public:
-	GeometryRegistration()
-	{
-		REG_GEOMETRY_OBJ(ShapeType::BOX, AxisAlignedBox3d)
-		REG_GEOMETRY_OBJ(ShapeType::PLANE, Plane3d)
-		REG_GEOMETRY_OBJ(ShapeType::SPHERE, Sphere3d)
-		REG_GEOMETRY_OBJ(ShapeType::CAPSULE, Capsule3d)
-		REG_GEOMETRY_OBJ(ShapeType::HEIGHTFIELD, HeightField3d)
-		REG_GEOMETRY_OBJ(ShapeType::CONVEX_MESH, ConvexMesh)
-		REG_GEOMETRY_OBJ(ShapeType::TRIANGLE, Triangle3d)
-		REG_GEOMETRY_OBJ(ShapeType::TRIANGLE_MESH, TriangleMesh)
-	}
-};
-GeometryRegistration s_geom_registration;
 
 void GeometryFactory::DeleteGeometry(Geometry* Geom)
 {

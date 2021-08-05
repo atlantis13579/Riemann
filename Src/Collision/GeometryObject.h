@@ -5,10 +5,6 @@
 #include "../Maths/Transform.h"
 #include "../CollisionPrimitive/ShapeType.h"
 
-typedef bool			(*RayCastFunc)		(void*, const Vector3d&, const Vector3d&, float*);
-typedef bool			(*OverlapFunc)		(const void*, const void*);
-typedef bool			(*SweepFunc)		(const void*, const void*, const Vector3d&, float*);
-
 class GeometryFactory;
 class GeometryRegistration;
 
@@ -70,7 +66,7 @@ public:
 		m_Guid = guid;
 	}
 
-	bool					RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t);
+	virtual bool			RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t) = 0;
 	bool					Overlap(const Geometry* Geom) const;
 	bool					Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const;
 
@@ -102,16 +98,13 @@ protected:
 	Transform				m_Transform;
 	uint64_t				m_Guid;
 	void*					m_Entity;
-
-	static RayCastFunc		raycastTable[ShapeType::GEOMETRY_COUNT];
-	static SweepFunc		sweepTable[ShapeType::GEOMETRY_COUNT][ShapeType::GEOMETRY_COUNT];
-	static OverlapFunc		overlapTable[ShapeType::GEOMETRY_COUNT][ShapeType::GEOMETRY_COUNT];
 };
 
 class GeometryFactory
 {
 public:
 	static void		 DeleteGeometry(Geometry *Geom);
+
 	static Geometry* CreateOBB(const Vector3d& Center, const Vector3d & Extent, const Quaternion& Rot = Quaternion::One());
 	static Geometry* CreatePlane(const Vector3d& Center, const Vector3d& Normal);
 	static Geometry* CreateSphere(const Vector3d& Center, float Radius);

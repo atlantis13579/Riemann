@@ -288,17 +288,7 @@ static bool OverlapGeometry(Geometry *geometry, int* Indices, int NumIndices, Ge
 		const int index = Indices[i];
 		Geometry* candidate = GeometryCollection[index];
 
-		bool overlap;
-		if (Option.testType == OverlapOption::OVERLAP_TEST_FAST)
-		{
-			const Box3d& bv = candidate->GetBoundingVolume_WorldSpace();
-			overlap = aabb.Intersect(bv);
-		}
-		else
-		{
-			overlap = geometry->Overlap(candidate);
-		}
-
+		bool overlap = geometry->Overlap(candidate);
 		if (overlap)
 		{
 			Result->overlaps = true;

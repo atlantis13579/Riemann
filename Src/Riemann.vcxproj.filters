@@ -98,6 +98,7 @@
     <ClInclude Include="CollisionPrimitive\HeightField3d.h" />
     <ClInclude Include="CollisionPrimitive\ShapeType.h" />
     <ClInclude Include="Maths\Stack.h" />
+    <ClInclude Include="Collision\GeometryIntersection.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -137,5 +138,6 @@
     <ClCompile Include="RigidBodyDynamics\PhysicsMaterial.cpp" />
     <ClCompile Include="Maths\Matrix3d.cpp" />
     <ClCompile Include="CollisionPrimitive\HeightField3d.cpp" />
+    <ClCompile Include="Collision\GeometryIntersection.cpp" />
   </ItemGroup>
 </Project>

@@ -15,7 +15,7 @@ bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir
 	if (fabsf(Dir.y) < 0.000001f)
 	{
 		return Origin.y >= minH && Origin.y <= maxH;
-	}
+	}	
 
 	float t0 = (minH - Origin.y) / Dir.y;
 	float x = Origin.x + Dir.x * t0 - BV.Min.x - i * DX;

@@ -8,7 +8,6 @@ class AABBTree;
 class DynamicAABBTree;
 class SparseSpatialHash;
 
-
 struct RayCastOption
 {
 	enum RayCastType
@@ -57,16 +56,12 @@ struct OverlapOption
 {
 	enum OverlapTestType
 	{
-		OVERLAP_TEST_FAST,
-		OVERLAP_TEST_OBJ_OBJ
 	};
 	OverlapOption()
 	{
 		maxOverlaps = 1;
-		testType = OVERLAP_TEST_FAST;
 	}
 	unsigned int		maxOverlaps;
-	OverlapTestType		testType;
 };
 
 struct OverlapResult
