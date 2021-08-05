@@ -26,6 +26,11 @@ public:
 	void*					GetEntity();
 	void					SetEntity(void* Entity);
 
+	const Transform&		GetTransform() const
+	{
+		return m_Transform;
+	}
+	
 	Transform*				GetTransform()
 	{
 		return &m_Transform;
@@ -66,7 +71,7 @@ public:
 		m_Guid = guid;
 	}
 
-	virtual bool			RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t) = 0;
+	virtual bool			RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t) const = 0;
 	bool					Overlap(const Geometry* Geom) const;
 	bool					Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const;
 

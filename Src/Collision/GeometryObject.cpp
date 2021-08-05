@@ -38,10 +38,10 @@ public:
 		return GEOM_TYPE::GetBoundingVolume();
 	}
 
-	virtual bool			RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t) override final
+	virtual bool			RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t) const override final
 	{
-		const Vector3d Origin_Local = m_Transform.WorldToLocal(Origin);
-		const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
+		const Vector3d Origin_Local = m_Transform.GetRotation().Conjugate() * (Origin - m_Transform.GetTranslation());
+		const Vector3d Dir_Local = m_Transform.GetRotation().Conjugate() * Dir;
 		const GEOM_TYPE* p = (const GEOM_TYPE*)this;
 		return p->IntersectRay(Origin_Local, Dir_Local, t);
 	}
@@ -106,7 +106,9 @@ bool				Geometry::Overlap(const Geometry* Geom) const
 #ifdef DEBUG
 	assert(func);
 #endif
-	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr());
+	Transform trans;
+	trans.LoadLocal1ToLocal2(m_Transform, Geom->GetTransform());
+	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), trans);
 }
 
 bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const

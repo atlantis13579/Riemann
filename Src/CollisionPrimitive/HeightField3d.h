@@ -75,6 +75,7 @@ public:
 	bool			IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult *Result) const;
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
+	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const;
 
 	Vector3d		GetSupport(const Vector3d& dir) const
 	{
@@ -87,8 +88,8 @@ public:
 		return Matrix3d(Mass, Mass, Mass);
 	}
 
-	Box3d	GetCellBV(int i, int j) const;
-	void	GetHeightRange(int i, int j, float &minH, float & maxH) const;
+	bool	GetCellBV(int i, int j, Box3d &box) const;
+	bool	GetHeightRange(int i, int j, float &minH, float & maxH) const;
 
 	int		GetCellTriangle(int i, int j, Vector3d Tris[6]) const;
 

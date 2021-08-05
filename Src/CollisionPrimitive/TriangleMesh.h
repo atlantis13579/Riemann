@@ -50,6 +50,7 @@ public:
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
 	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;
 	bool			IntersectTri(uint32_t HitNode, const Vector3d& Origin, const Vector3d& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;
+	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const;
 
 	const Box3d&	GetBoundingVolume() const
 	{

@@ -23,48 +23,57 @@ public:
 		m_Scale = Vector3d::One();
 	}
 
-	const Vector3d& GetTranslation() const
+	void				LoadLocal1ToLocal2(const Transform &t1, const Transform &t2)
+	{
+		m_bWorldMatrixDirty = true;
+		m_bInvWorldMatrixDirty = true;
+		m_Translation = t1.GetTranslation() - t2.GetTranslation();
+		m_Rotation = t1.GetRotation() * t2.GetRotation().Conjugate();
+		m_Scale = Vector3d::One();
+	}
+
+	const Vector3d&		GetTranslation() const
 	{
 		return m_Translation;
 	}
 
-	Matrix3d GetRotationMatrix() const
+	Matrix3d			GetRotationMatrix() const
 	{
 		return m_Rotation.ToRotationMatrix();
 	}
 
-	const Quaternion& GetRotation() const
+	const Quaternion&	GetRotation() const
 	{
 		return m_Rotation;
 	}
 
-	const Vector3d& GetScale() const
+	const Vector3d&		GetScale() const
 	{
 		return m_Scale;
 	}
 
-	void		SetTranslation(const Vector3d& trans)
+	void				SetTranslation(const Vector3d& trans)
 	{
 		m_Translation = trans;
 		m_bWorldMatrixDirty = true;
 		m_bInvWorldMatrixDirty = true;
 	}
 
-	void		SetRotation(const Quaternion& rotation)
+	void				SetRotation(const Quaternion& rotation)
 	{
 		m_Rotation = rotation;
 		m_bWorldMatrixDirty = true;
 		m_bInvWorldMatrixDirty = true;
 	}
 
-	void		SetScale(const Vector3d& scale)
+	void				SetScale(const Vector3d& scale)
 	{
 		m_Scale = scale;
 		m_bWorldMatrixDirty = true;
 		m_bInvWorldMatrixDirty = true;
 	}
 
-	const Matrix4d& GetWorldMatrix()
+	const Matrix4d&		GetWorldMatrix()
 	{
 		if (m_bWorldMatrixDirty)
 		{
@@ -74,7 +83,7 @@ public:
 		return m_WorldMatrix;
 	}
 
-	const Matrix4d& GetInverseWorldMatrix()
+	const Matrix4d&		GetInverseWorldMatrix()
 	{
 		if (m_bInvWorldMatrixDirty)
 		{
@@ -84,29 +93,29 @@ public:
 		return m_InvWorldMatrix;
 	}
 
-	Vector3d LocalToWorld(const Vector3d& Point)
+	Vector3d			LocalToWorld(const Vector3d& Point)
 	{
 		const Matrix4d& mat = GetWorldMatrix();
 		return mat * Point;
 	}
 
-	Vector3d WorldToLocal(const Vector3d& Point)
+	Vector3d			WorldToLocal(const Vector3d& Point)
 	{
 		const Matrix4d& mat = GetInverseWorldMatrix();
 		return mat * Point;
 	}
 
-	Vector3d RotateLocalToWorld(const Vector3d& Dir)
+	Vector3d			RotateLocalToWorld(const Vector3d& Dir)
 	{
 		return m_Rotation * Dir;
 	}
 
-	Vector3d RotateWorldToLocal(const Vector3d& Dir)
+	Vector3d			RotateWorldToLocal(const Vector3d& Dir)
 	{
 		return m_Rotation.Conjugate() * Dir;
 	}
 
-	static Matrix4d BuildViewMatrix_RHCoordinateSystem(const Vector3d& Eye, const Vector3d& LookAt, const Vector3d& Up)
+	static Matrix4d		BuildViewMatrix_RHCoordinateSystem(const Vector3d& Eye, const Vector3d& LookAt, const Vector3d& Up)
 	{
 		Vector3d zAxis = (Eye - LookAt).Unit();
 		Vector3d xAxis = CrossProduct(Up, zAxis).Unit();
@@ -124,7 +133,7 @@ public:
 		);
 	}
 
-	static Matrix4d BuildViewMatrix_LHCoordinateSystem(const Vector3d& Eye, const Vector3d& LookAt, const Vector3d& Up)
+	static Matrix4d		BuildViewMatrix_LHCoordinateSystem(const Vector3d& Eye, const Vector3d& LookAt, const Vector3d& Up)
 	{
 		Vector3d zAxis = (LookAt - Eye).Unit();
 		Vector3d xAxis = CrossProduct(Up, zAxis).Unit();
@@ -142,7 +151,7 @@ public:
 		);
 	}
 
-	static Matrix4d BuildPerspectiveMatrix_LHCoordinateSystem(float Fov, float Aspect, float zNear, float zFar) {
+	static Matrix4d		BuildPerspectiveMatrix_LHCoordinateSystem(float Fov, float Aspect, float zNear, float zFar) {
 		auto yscale = 1.0f / tanf(Fov * 0.5f);
 		auto xscale = yscale / Aspect;
 
@@ -154,7 +163,7 @@ public:
 		);
 	}
 
-	static Matrix4d BuildPerspectiveMatrix_RHCoordinateSystem(float Fov, float Aspect, float zNear, float zFar) {
+	static Matrix4d		BuildPerspectiveMatrix_RHCoordinateSystem(float Fov, float Aspect, float zNear, float zFar) {
 		auto yscale = 1.0f / tanf(Fov * 0.5f);
 		auto xscale = yscale / Aspect;
 
@@ -166,7 +175,7 @@ public:
 		);
 	}
 
-	static Matrix4d BuildOrthogonalMatrix_LHCoordinateSystem(float Width, float Height, float zNear, float zFar) {
+	static Matrix4d		BuildOrthogonalMatrix_LHCoordinateSystem(float Width, float Height, float zNear, float zFar) {
 		return Matrix4d(
 			2.0f / Width,	0.0f,				0.0f,					0.0f,
 			0.0f,			2.0f / Height,		0.0f,					0.0f,
@@ -175,7 +184,7 @@ public:
 		);
 	}
 
-	static Matrix4d BuildOrthogonalMatrix_RHCoordinateSystem(float Width, float Height, float zNear, float zFar) {
+	static Matrix4d		BuildOrthogonalMatrix_RHCoordinateSystem(float Width, float Height, float zNear, float zFar) {
 		return Matrix4d(
 			2.0f / Width,	0.0f,				0.0f,					0.0f,
 			0.0f,			2.0f / Height,		0.0f,					0.0f,

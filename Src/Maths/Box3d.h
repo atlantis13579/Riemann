@@ -189,29 +189,31 @@ public:
 		return ((rhs.Min.x <= Min.x) && (rhs.Max.x >= Max.x) && (rhs.Min.y <= Min.y) && (rhs.Max.y >= Max.y) && (rhs.Min.z <= Min.z) && (rhs.Max.z >= Max.z));
 	}
 
-	TAABB3<T>	GetIntersection(const TAABB3<T>& rhs) const
+	bool		GetIntersection(const TVector3<T>& Bmin, const TVector3<T>& Bmax, TAABB3<T>& OutBox) const
 	{
-		if (!Intersect(rhs))
+		if (!Intersect(Bmin, Bmax))
 		{
-			TAABB3<T> Zero(TVector3<T>::Zero(), TVector3<T>::Zero());
-			return Zero;
+			return false;
 		}
 
-		TAABB3<T> Box;
+		OutBox.Min.x = std::max(Min.x, Bmin.x);
+		OutBox.Max.x = std::min(Max.x, Bmax.x);
 
-		Box.Min.x = std::max(Min.x, rhs.Min.x);
-		Box.Max.x = std::min(Max.x, rhs.Max.x);
+		OutBox.Min.y = std::max(Min.y, Bmin.y);
+		OutBox.Max.y = std::min(Max.y, Bmax.y);
 
-		Box.Min.y = std::max(Min.y, rhs.Min.y);
-		Box.Max.y = std::min(Max.y, rhs.Max.y);
+		OutBox.Min.z = std::max(Min.z, Bmin.z);
+		OutBox.Max.z = std::min(Max.z, Bmax.z);
 
-		Box.Min.z = std::max(Min.z, rhs.Min.z);
-		Box.Max.z = std::min(Max.z, rhs.Max.z);
-
-		return Box;
+		return true;
 	}
 
-	TAABB3<T> Transform(const Matrix4d& M) const
+	bool		GetIntersection(const TAABB3<T>& Box, TAABB3<T> &OutBox) const
+	{
+		return GetIntersection(Box.Min, Box.Max, OutBox);
+	}
+
+	TAABB3<T>	Transform(const Matrix4d& M) const
 	{
 		TAABB3<T> Box;
 

@@ -123,6 +123,12 @@ bool	TriangleMesh::IntersectTri(uint32_t HitNode, const Vector3d& Origin, const 
 	return hit;
 }
 
+bool TriangleMesh::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
+{
+	// TODO
+	return BoundingVolume.Intersect(Bmin, Bmax);
+}
+
 const VecU32V signMask = U4LoadXYZW((1 << 31), (1 << 31), (1 << 31), (1 << 31));
 const Vec4V epsFloat4 = V4Load(1e-9f);
 const Vec4V twos = V4Load(2.0f);

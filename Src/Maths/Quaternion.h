@@ -90,12 +90,12 @@ public:
 			asinf(2 * v.x*v.y + 2 * v.z*s));
 	}
 
-	Quaternion operator+(const Quaternion& q)
+	Quaternion operator+(const Quaternion& q) const
 	{
 		return Quaternion(x + q.x, y + q.y, z + q.z, w + q.w);
 	}
 
-	Quaternion operator-(const Quaternion& q)
+	Quaternion operator-(const Quaternion& q) const
 	{
 		return Quaternion(x - q.x, y - q.y, z - q.z, w - q.w);
 	}
@@ -105,7 +105,7 @@ public:
 		return Quaternion(v.x * k, v.y * k, v.z * k, w * k);
 	}
 
-	Quaternion operator*(const Quaternion& q)
+	Quaternion operator*(const Quaternion& q) const
 	{
 		return Quaternion(
 						y * q.z - z * q.y + x * q.w + w * q.x,
@@ -114,7 +114,7 @@ public:
 						w * q.w - x * q.x - y * q.y - z * q.z);
 	}
 	
-	Quaternion operator/(const Quaternion& q)
+	Quaternion operator/(const Quaternion& q) const
 	{
 		return *this * q.Inverse();
 	}

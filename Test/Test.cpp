@@ -63,6 +63,7 @@ void TestPhysxBin()
 	ret = query.OverlapBox(Vector3d(Pos.x, Pos.y + 15.0f, Pos.z), Vector3d::One(), OOption, &OResult);
 	assert(!ret);
 
+	OOption.maxOverlaps = 1;
 	ret = query.OverlapBox(Vector3d(Pos.x, Pos.y, Pos.z), Vector3d::One(), OOption, &OResult);
 	assert(ret);
 	assert(OResult.overlapGeoms[0]->GetGuid() == 2926462965280);

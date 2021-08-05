@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../Maths/Vector3d.h"
+#include "../Maths/Transform.h"
 #include "../CollisionPrimitive/ShapeType.h"
 
 typedef bool			(*RayCastFunc)		(void*, const Vector3d&, const Vector3d&, float*);
-typedef bool			(*OverlapFunc)		(const void*, const void*);
+typedef bool			(*OverlapFunc)		(const void*, const void*, const Transform&);
 typedef bool			(*SweepFunc)		(const void*, const void*, const Vector3d&, float*);
 
 class GeometryIntersection
