@@ -200,6 +200,10 @@ bool	TriangleMesh::RayIntersectTri(uint32_t HitNode, const Vector3d& Origin, con
 
 	for (uint32_t i = 0; i < NumLeafTriangles; i++)
 	{
+		#ifdef _DEBUG
+		Result->TestCount += 1;
+		#endif // _DEBUG
+
 		uint32_t i0, i1, i2;
 		const uint32_t triangleIndex = BaseTriIndex + i;
 		GetVertIndices(triangleIndex, i0, i1, i2);
@@ -316,6 +320,10 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 			continue;
 		}
 
+		#ifdef _DEBUG
+		Result->TestCount += 2;
+		#endif // _DEBUG
+
 		BVHNodeBatch* tn = reinterpret_cast<BVHNodeBatch*>(batch_ptr + top);
 
 		// 6i load
@@ -370,6 +378,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 		stack[stackPtr] = ptrs[2]; stackPtr += (1 + resa[2]);
 		stack[stackPtr] = ptrs[3]; stackPtr += (1 + resa[3]);
 	}
+
 	return Result->hitTime != FLT_MAX;
 }
 
@@ -379,7 +388,7 @@ bool	TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, flo
 	Option.hitClosest = true;
 	Option.maxDist = FLT_MAX;
 
-	TriMeshHitResult Result;
+	TriMeshHitResult Result = { 0 };
 	if (IntersectRay(Origin, Dir, Option, &Result))
 	{
 		*t = Result.hitTime;

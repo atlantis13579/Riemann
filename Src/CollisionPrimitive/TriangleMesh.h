@@ -15,6 +15,9 @@ struct TriMeshHitResult
 	float		hitTime;
 	Vector3d	hitNormal;
 	uint32_t	hitIndex;
+	#ifdef _DEBUG
+	int			TestCount;
+	#endif // _DEBUG
 };
 
 class TriangleMesh : public Mesh

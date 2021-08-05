@@ -20,8 +20,12 @@ public:
 	TGeometry()
 	{
 		m_Type = GEOM_TYPE::StaticType();
+		GeometryFactory::ObjectCount[m_Type]++;
 	}
-	virtual ~TGeometry() {}
+	virtual ~TGeometry()
+	{
+		GeometryFactory::ObjectCount[m_Type]--;
+	}
 
 	virtual Matrix3d		GetInertia_LocalSpace(float Mass) const override final
 	{
@@ -103,7 +107,7 @@ void				Geometry::SetEntity(void* Entity)
 bool				Geometry::Overlap(const Geometry* Geom) const
 {
 	OverlapFunc func = GeometryIntersection::GetOverlapFunc(m_Type, Geom->GetShapeType());
-#ifdef DEBUG
+#ifdef _DEBUG
 	assert(func);
 #endif
 	Transform trans;
@@ -114,7 +118,7 @@ bool				Geometry::Overlap(const Geometry* Geom) const
 bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const
 {
 	SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
-#ifdef DEBUG
+#ifdef _DEBUG
 	assert(func);
 #endif
 	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), Dir, t);
@@ -142,6 +146,8 @@ void GeometryFactory::DeleteGeometry(Geometry* Geom)
 {
 	delete Geom;
 }
+
+std::atomic<int> GeometryFactory::ObjectCount[GEOMETRY_COUNT] = { 0 };
 
 Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& Extent, const Quaternion& Rot)
 {

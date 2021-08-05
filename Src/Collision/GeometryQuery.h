@@ -7,6 +7,7 @@
 class AABBTree;
 class DynamicAABBTree;
 class SparseSpatialHash;
+class Geometry;
 
 struct RayCastOption
 {
@@ -28,9 +29,19 @@ struct RayCastResult
 {
 	RayCastResult()
 	{
+		Reset();
+	}
+
+	void Reset()
+	{
 		hit = false;
 		hitTime = FLT_MAX;
+		hitPoint = Vector3d::Zero();
+		hitNormal = Vector3d::UnitY();
 		hitGeom = nullptr;
+		#ifdef _DEBUG
+		TestCount = 0;
+		#endif // _DEBUG
 	}
 
 	bool		hit;
@@ -38,6 +49,9 @@ struct RayCastResult
 	Vector3d	hitPoint;
 	Vector3d	hitNormal;
 	Geometry*	hitGeom;
+	#ifdef _DEBUG
+	int			TestCount;
+	#endif // _DEBUG
 };
 
 struct SweepOption
@@ -68,11 +82,23 @@ struct OverlapResult
 {
 	OverlapResult()
 	{
+		Reset();
+	}
+
+	void Reset()
+	{
 		overlaps = true;
+		overlapGeoms.clear();
+#ifdef _DEBUG
+		TestCount = 0;
+#endif // _DEBUG
 	}
 
 	bool					overlaps;
 	std::vector<Geometry*>	overlapGeoms;
+#ifdef _DEBUG
+	int						TestCount;
+#endif // _DEBUG
 };
 
 class GeometryQuery

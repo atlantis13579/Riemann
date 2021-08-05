@@ -90,7 +90,7 @@ GeometryIntersection s_geom_registration;
 RayCastFunc GeometryIntersection::GetRayCastFunc(ShapeType Type)
 {
 	RayCastFunc func = GeometryIntersection::raycastTable[Type];
-#ifdef DEBUG
+#ifdef _DEBUG
 	assert(func);
 #endif
 	return func;
@@ -99,7 +99,7 @@ RayCastFunc GeometryIntersection::GetRayCastFunc(ShapeType Type)
 OverlapFunc GeometryIntersection::GetOverlapFunc(ShapeType Type1, ShapeType Type2)
 {
 	OverlapFunc func = GeometryIntersection::overlapTable[Type1][Type2];
-#ifdef DEBUG
+#ifdef _DEBUG
 	assert(func);
 #endif
 	return func;
@@ -108,7 +108,7 @@ OverlapFunc GeometryIntersection::GetOverlapFunc(ShapeType Type1, ShapeType Type
 SweepFunc GeometryIntersection::GetSweepFunc(ShapeType Type1, ShapeType Type2)
 {
 	SweepFunc func = GeometryIntersection::sweepTable[Type1][Type2];
-#ifdef DEBUG
+#ifdef _DEBUG
 	assert(func);
 #endif
 	return func;

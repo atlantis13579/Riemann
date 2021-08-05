@@ -18,6 +18,9 @@ struct HeightFieldHitResult
 	float		hitTime;
 	Vector3d	hitNormal;
 	uint32_t	cellIndex;
+	#ifdef _DEBUG
+	int			TestCount;
+	#endif // _DEBUG
 };
 
 class HeightField3d
