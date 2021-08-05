@@ -38,27 +38,27 @@ public:
 	}
 
 public:
-	inline const Vector3d& GetX1() const
+	inline const Vector3d&	GetX1() const
 	{
 		return X0;
 	}
 
-	inline Vector3d GetX2() const
+	inline Vector3d			GetX2() const
 	{
 		return X0 + Axis * Length;
 	}
 
-	inline Vector3d GetOrigin() const
+	inline Vector3d		GetOrigin() const
 	{
 		return X0 + Axis * Length * 0.5f;
 	}
 
-	inline float GetHeight() const
+	inline float		GetHeight() const
 	{
 		return Length;
 	}
 
-	Box3d	GetBoundingVolume() const
+	Box3d				GetBoundingVolume() const
 	{
 		Box3d box(X0, X0);
 		box.Grow(GetX2());
@@ -66,12 +66,12 @@ public:
 		return box;
 	}
 
-	bool	IsYAxisAligned() const
+	bool				IsYAxisAligned() const
 	{
 		return Axis.ParallelTo(Vector3d::UnitY()) == 0;
 	}
 
-	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+	bool				IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
 	{
 		const Vector3d X1ToStart = Origin - X0;
 		const float AxisDotX1ToStart = DotProduct(X1ToStart, Axis);
@@ -208,22 +208,22 @@ public:
 		return false;
 	}
 
-	float GetVolume() const
+	float				GetVolume() const
 	{
 		return GetVolume(Radius, GetHeight());
 	}
 
-	static float GetVolume(float Radius, float Height)
+	static float		GetVolume(float Radius, float Height)
 	{
 		return (float)M_PI * Radius * Radius * (Height + 4.0f * Radius / 3.0f);
 	}
 
-	Matrix3d GetInertiaTensor(float Mass) const
+	Matrix3d			GetInertiaTensor(float Mass) const
 	{
 		return GetInertiaTensor(Radius, GetHeight(), Mass);
 	}
 
-	static Matrix3d GetInertiaTensor(float Radius, float Height, float Mass)
+	static Matrix3d		GetInertiaTensor(float Radius, float Height, float Mass)
 	{
 		// https://www.wolframalpha.com/input/?i=capsule&assumption=%7B%22C%22,+%22capsule%22%7D+-%3E+%7B%22Solid%22%7D
 		float R = Radius;
@@ -244,7 +244,7 @@ public:
 		return GetSupport(X0, Axis, Length, Radius, dir);
 	}
 
-	static Vector3d GetSupport(const Vector3d& X0, const Vector3d& Axis, float Length, float Radius, const Vector3d& dir)
+	static Vector3d		GetSupport(const Vector3d& X0, const Vector3d& Axis, float Length, float Radius, const Vector3d& dir)
 	{
 		float dp = DotProduct(dir, Axis);
 		Vector3d FarthestCap = dp >= 0 ? (X0 + Axis * Length) : X0;
@@ -257,7 +257,7 @@ public:
 		return FarthestCap + Normalized * Radius;
 	}
 
-	void	GetVertices(int stackCount, int sliceCount, std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
+	void				GetVertices(int stackCount, int sliceCount, std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
 	{
 		const float mPI = 2.0f * asinf(1.0f);
 
@@ -315,7 +315,7 @@ public:
 
 	}
 
-	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void				GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
 		const int stackCount = 5;
 		const int sliceCount = 8;
@@ -354,7 +354,7 @@ public:
 		}
 	}
 
-	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
+	void			GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		const int stackCount = 5;
 		const int sliceCount = 8;

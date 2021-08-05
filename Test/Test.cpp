@@ -60,10 +60,10 @@ void TestPhysxBin()
 
 	Vector3d Pos = Result.hitPoint;
 
-	ret = query.OverlapAABB(Vector3d(Pos.x, Pos.y + 15.0f, Pos.z), Vector3d::One(), OOption, &OResult);
+	ret = query.OverlapBox(Vector3d(Pos.x, Pos.y + 15.0f, Pos.z), Vector3d::One(), OOption, &OResult);
 	assert(!ret);
 
-	ret = query.OverlapAABB(Vector3d(Pos.x, Pos.y, Pos.z), Vector3d::One(), OOption, &OResult);
+	ret = query.OverlapBox(Vector3d(Pos.x, Pos.y, Pos.z), Vector3d::One(), OOption, &OResult);
 	assert(ret);
 	assert(OResult.overlapGeoms[0]->GetGuid() == 2926462965280);
 
@@ -166,6 +166,7 @@ void TestRayAABB()
 	Vector3d Origin(-100, 0, 50);
 	Vector3d Dir(1, 0, 0);
 	float t0, t1;
+	bool success;
 	assert(Ray3d::RayIntersectAABB2(Origin, Dir, Vector3d::Zero(), Vector3d(100, 100, 100), 0.00001f, 100000.0f, &t0, &t1));
 
 	Vector3d InPos = Origin + Dir * t0;
@@ -173,6 +174,13 @@ void TestRayAABB()
 
 	int x0 = (int)(InPos.x / 1.0f);
 	int x1 = (int)(OutPos.x / 1.0f);
+
+	Triangle3d Tri(Vector3d(0, 1, 0), Vector3d(0, 0, 0), Vector3d(1, 0, 0));
+	success = Tri.IntersectAABB(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
+	assert(success);
+
+	success = Tri.IntersectAABB(Vector3d(1, 1, 1), Vector3d(2, 2, 2));
+	assert(!success);
 
 	return;
 }

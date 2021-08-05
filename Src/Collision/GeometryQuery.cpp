@@ -65,7 +65,7 @@ bool GeometryQuery::RayCast(const Vector3d& Origin, const Vector3d& Dir, const R
 	return false;
 }
 
-bool GeometryQuery::OverlapAABB(const Vector3d& Center, const Vector3d& Extent, const OverlapOption& Option, OverlapResult* Result)
+bool GeometryQuery::OverlapBox(const Vector3d& Center, const Vector3d& Extent, const OverlapOption& Option, OverlapResult* Result)
 {
 	Geometry* Box = GeometryFactory::CreateOBB(Center, Extent);
 	Geometry** pp = &m_Objects[0];

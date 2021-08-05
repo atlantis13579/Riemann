@@ -86,25 +86,31 @@ public:
 		return false;
 	}
 
-	Box3d	GetBoundingVolume() const
+	bool			IntersectSphere(const Sphere3d &rhs) const
+	{
+		float SqrDist = (Center - rhs.Center).SquareLength();
+		return SqrDist <= (Radius + rhs.Radius) * (Radius + rhs.Radius);
+	}
+
+	Box3d			GetBoundingVolume() const
 	{
 		Box3d Box;
 		Box.BuildFromCenterAndExtent(Center, Vector3d(Radius));
 		return Box;
 	}
 
-	float GetVolume() const
+	float			GetVolume() const
 	{
 		const float FourThirdsPI = (4.0f / 3.0f) * (float)M_PI;
 		return FourThirdsPI * Radius * Radius * Radius;
 	}
 
-	Vector3d GetCenterOfMass() const
+	Vector3d		GetCenterOfMass() const
 	{
 		return Center;
 	}
 
-	Matrix3d GetInertiaTensor(float Mass) const
+	Matrix3d		GetInertiaTensor(float Mass) const
 	{
 		return GetInertiaTensor(Radius, Mass);
 	}
@@ -115,7 +121,7 @@ public:
 		return Matrix3d(Diagonal, Diagonal, Diagonal);
 	}
 
-	Vector3d GetSupport(const Vector3d& dir) const
+	Vector3d		GetSupport(const Vector3d& dir) const
 	{
 		return GetSupport(Center, Radius, dir);
 	}
@@ -131,7 +137,7 @@ public:
 		return Center + Normalized * Radius;
 	}
 
-	void	GetVertices(int stackCount, int sliceCount, std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
+	void			GetVertices(int stackCount, int sliceCount, std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
 	{
 		const float mPI = 2.0f * asinf(1.0f);
 
@@ -156,7 +162,7 @@ public:
 		if (Normals) Normals->push_back(-Vector3d::UnitY());
 	}
 
-	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void			GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
 		const int stackCount = 6;
 		const int sliceCount = 8;
@@ -195,7 +201,7 @@ public:
 		}
 	}
 
-	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
+	void			GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		const int stackCount = 6;
 		const int sliceCount = 8;

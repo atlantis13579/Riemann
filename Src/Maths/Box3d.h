@@ -189,7 +189,7 @@ public:
 		return ((rhs.Min.x <= Min.x) && (rhs.Max.x >= Max.x) && (rhs.Min.y <= Min.y) && (rhs.Max.y >= Max.y) && (rhs.Min.z <= Min.z) && (rhs.Max.z >= Max.z));
 	}
 
-	TAABB3<T> GetIntersection(const TAABB3<T>& rhs) const
+	TAABB3<T>	GetIntersection(const TAABB3<T>& rhs) const
 	{
 		if (!Intersect(rhs))
 		{

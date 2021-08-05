@@ -85,7 +85,7 @@ public:
 	void			BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
 	
 	bool			RayCast(const Vector3d &Origin, const Vector3d& Dir, const RayCastOption& Option, RayCastResult *Result);
-	bool			OverlapAABB(const Vector3d &Center, const Vector3d& Extent, const OverlapOption& Option, OverlapResult* Result);
+	bool			OverlapBox(const Vector3d &Center, const Vector3d& Extent, const OverlapOption& Option, OverlapResult* Result);
 
 	AABBTree*		GetStaticTree()
 	{
