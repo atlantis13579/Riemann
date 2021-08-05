@@ -25,8 +25,8 @@ template <class T>
 inline bool			OverlapBoxT(const void* Obj1, const void* Obj2, const Transform &transLocal1ToLocal2)
 {
 	const AxisAlignedBox3d* box = static_cast<const AxisAlignedBox3d*>(Obj1);
-	Vector3d Bmin = transLocal1ToLocal2.GetRotation() * box->Min + transLocal1ToLocal2.GetTranslation();
-	Vector3d Bmax = transLocal1ToLocal2.GetRotation() * box->Max + transLocal1ToLocal2.GetTranslation();
+	Vector3d Bmin = transLocal1ToLocal2.LocalToWorldEx(box->Min);
+	Vector3d Bmax = transLocal1ToLocal2.LocalToWorldEx(box->Max);
 	const T* p = static_cast<const T*>(Obj2);
 	return p->IntersectAABB(Bmin, Bmax);
 }
@@ -36,8 +36,8 @@ inline bool			OverlapTBox(const void* Obj1, const void* Obj2, const Transform& t
 {
 	const T* p = static_cast<const T*>(Obj1);
 	const AxisAlignedBox3d* box = static_cast<const AxisAlignedBox3d*>(Obj2);
-	Vector3d Bmin = transLocal1ToLocal2.GetRotation().Conjugate() * box->Min - transLocal1ToLocal2.GetTranslation();
-	Vector3d Bmax = transLocal1ToLocal2.GetRotation().Conjugate() * box->Max - transLocal1ToLocal2.GetTranslation();
+	Vector3d Bmin = transLocal1ToLocal2.WorldToLocalEx(box->Min);
+	Vector3d Bmax = transLocal1ToLocal2.WorldToLocalEx(box->Max);
 	return p->IntersectAABB(Bmin, Bmax);
 }
 

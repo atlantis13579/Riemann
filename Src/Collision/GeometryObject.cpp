@@ -40,8 +40,8 @@ public:
 
 	virtual bool			RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t) const override final
 	{
-		const Vector3d Origin_Local = m_Transform.GetRotation().Conjugate() * (Origin - m_Transform.GetTranslation());
-		const Vector3d Dir_Local = m_Transform.GetRotation().Conjugate() * Dir;
+		const Vector3d Origin_Local = m_Transform.WorldToLocalEx(Origin);
+		const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
 		const GEOM_TYPE* p = (const GEOM_TYPE*)this;
 		return p->IntersectRay(Origin_Local, Dir_Local, t);
 	}
