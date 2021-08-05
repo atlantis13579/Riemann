@@ -4,10 +4,15 @@
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
 #include "../CollisionPrimitive/ShapeType.h"
-#include "GeometryQuery.h"
 
 class GeometryFactory;
 class GeometryRegistration;
+struct RayCastOption;
+struct RayCastResult;
+struct OverlapOption;
+struct OverlapResult;
+struct SweepOption;
+struct SweepResult;
 
 class Geometry
 {
@@ -72,7 +77,7 @@ public:
 		m_Guid = guid;
 	}
 
-	virtual bool			RayCast(const Vector3d& Origin, const Vector3d &Dir, float* t) const = 0;
+	virtual bool			RayCast(const Vector3d& Origin, const Vector3d &Dir, const RayCastOption* Option, RayCastResult *Result) const = 0;
 	bool					Overlap(const Geometry* Geom) const;
 	bool					Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const;
 

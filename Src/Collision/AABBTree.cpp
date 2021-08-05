@@ -155,29 +155,31 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, 
 	}
 
 	int min_idx = -1;
-	float t, min_t = FLT_MAX;
+	float min_t = FLT_MAX;
 	for (int i = 0; i < NumIndices; ++i)
 	{
-		#ifdef _DEBUG
-		Result->TestCount += 1;
-		#endif // _DEBUG
-
 		const int index = Indices[i];
 		Geometry *Geom = GeometryCollection[index];
-		bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, &t);
-		if (hit && t < Option.MaxDist)
+		RayCastResult TempResult;
+		bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, &Option, &TempResult);
+
+		#ifdef _DEBUG
+		Result->TestCount += TempResult.TestCount;
+		#endif // _DEBUG
+
+		if (hit)
 		{
 			if (Option.Type == RayCastOption::RAYCAST_ANY)
 			{
 				min_idx = index;
-				min_t = t;
+				min_t = TempResult.hitTime;
 				break;
 			}
 
-			if (t < min_t)
+			if (TempResult.hitTime < min_t)
 			{
 				min_idx = index;
-				min_t = t;
+				min_t = TempResult.hitTime;
 			}
 		}
 	}

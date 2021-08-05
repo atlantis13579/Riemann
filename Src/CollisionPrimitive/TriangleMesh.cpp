@@ -221,7 +221,7 @@ bool	TriangleMesh::RayIntersectTri(uint32_t HitNode, const Vector3d& Origin, con
 
 		hit = true;
 
-		if (!Option.hitClosest)
+		if (!Option.hitNearest)
 		{
 			Result->hitTime = t;
 			Result->hitIndex = triangleIndex;
@@ -305,7 +305,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 			bool intersect = RayIntersectTri(top, Origin, Dir, Option, Result);
 			if (intersect)
 			{
-				if (!Option.hitClosest)
+				if (!Option.hitNearest)
 				{
 					return true;
 				}
@@ -385,7 +385,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 bool	TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
 {
 	TriMeshHitOption Option;
-	Option.hitClosest = true;
+	Option.hitNearest = true;
 	Option.maxDist = FLT_MAX;
 
 	TriMeshHitResult Result = { 0 };

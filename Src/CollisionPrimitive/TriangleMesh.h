@@ -6,7 +6,7 @@
 
 struct TriMeshHitOption 
 {
-	bool	hitClosest;
+	bool	hitNearest;
 	float	maxDist;
 };
 

@@ -1,5 +1,6 @@
 
 #include "GeometryObject.h"
+#include "GeometryQuery.h"
 #include "GeometryIntersection.h"
 
 #include "../CollisionPrimitive/AxisAlignedBox3d.h"
@@ -42,14 +43,65 @@ public:
 		return GEOM_TYPE::GetBoundingVolume();
 	}
 
-	virtual bool			RayCast(const Vector3d& Origin, const Vector3d& Dir, float* t) const override final
+	virtual bool			RayCast(const Vector3d& Origin, const Vector3d& Dir, const RayCastOption* Option, RayCastResult* Result) const override final
 	{
+		#ifdef _DEBUG
+		Result->TestCount += 1;
+		#endif // _DEBUG
+
 		const Vector3d Origin_Local = m_Transform.WorldToLocalEx(Origin);
 		const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
 		const GEOM_TYPE* p = (const GEOM_TYPE*)this;
-		return p->IntersectRay(Origin_Local, Dir_Local, t);
+		float t;
+		if (p->IntersectRay(Origin_Local, Dir_Local, &t) && t < Option->MaxDist)
+		{
+			Result->hitTime = t;
+			return true;
+		}
+		return false;
 	}
 };
+
+template<>
+virtual bool		TGeometry<TriangleMesh>::RayCast(const Vector3d& Origin, const Vector3d& Dir, const RayCastOption* Option, RayCastResult* Result) const override final
+{
+	TriMeshHitOption HitOption;
+	HitOption.hitNearest = Option->Type == RayCastOption::RAYCAST_NEAREST;
+	HitOption.maxDist = Option->MaxDist;
+
+	TriMeshHitResult HitResult = { 0 };
+	const Vector3d Origin_Local = m_Transform.WorldToLocalEx(Origin);
+	const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
+	const TriangleMesh* p = (const TriangleMesh*)this;
+	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
+	Result->hitTime = HitResult.hitTime;
+
+	#ifdef _DEBUG
+	Result->TestCount += HitResult.TestCount;
+	#endif // _DEBUG
+
+	return Ret;
+}
+
+template<>
+virtual bool		TGeometry<HeightField3d>::RayCast(const Vector3d& Origin, const Vector3d& Dir, const RayCastOption* Option, RayCastResult* Result) const override final
+{
+	HeightFieldHitOption HitOption;
+	HitOption.maxDist = Option->MaxDist;
+
+	HeightFieldHitResult HitResult = { 0 };
+	const Vector3d Origin_Local = m_Transform.WorldToLocalEx(Origin);
+	const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
+	const HeightField3d* p = (const HeightField3d*)this;
+	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
+	Result->hitTime = HitResult.hitTime;
+
+#ifdef _DEBUG
+	Result->TestCount += HitResult.TestCount;
+#endif // _DEBUG
+
+	return Ret;
+}
 
 const Box3d&		Geometry::GetBoundingVolume_WorldSpace() const
 {
