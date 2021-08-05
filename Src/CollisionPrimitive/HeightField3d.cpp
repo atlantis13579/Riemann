@@ -18,6 +18,13 @@ bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir
 		return false;
 	}
 
+	float x = Origin.x + Dir.x * t0 - BV.Min.x - i * DX;
+	float z = Origin.z + Dir.z * t0 - BV.Min.z - j * DZ;
+	if (x < 0.0f || x > DX || z < 0.0f || z > DZ)
+	{
+		return false;
+	}
+
 	bool hit = false;
 	float min_t = FLT_MAX;
 
