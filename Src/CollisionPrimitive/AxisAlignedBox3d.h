@@ -124,6 +124,16 @@ public:
 		return true;
 	}
 
+	Vector3d		ClosestPointTo(const Vector3d& Point) const;
+	float			SqrDistanceToPoint(const Vector3d& Point) const;
+	float			SqrDistanceToLine(const Vector3d& P0, const Vector3d& Dir, float* t) const;
+	float			SqrDistanceToSegment(const Vector3d& P0, const Vector3d& P1) const;
+
+	Vector3d		GetCenter() const
+	{
+		return (Max + Min) * 0.5f;
+	}
+
 	Box3d			GetBoundingVolume() const
 	{
 		return Box3d(Min, Max);

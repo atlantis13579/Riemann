@@ -268,9 +268,16 @@ public:
 	static float MaxCubicRoot(float afCoeff[3]);
 };
 
-inline Matrix3d operator* (float v, const Matrix3d& mm)
+inline Matrix3d operator* (float f, const Matrix3d& mm)
 {
-	return mm * v;
+	return mm * f;
+}
+
+inline Vector3d operator* (const Vector3d &v, const Matrix3d& mm)
+{
+	return Vector3d(v.x * mm[0][0] + v.y * mm[1][0] + v.z * mm[2][0],
+					v.x * mm[0][1] + v.y * mm[1][1] + v.z * mm[2][1],
+					v.x * mm[0][2] + v.y * mm[1][2] + v.z * mm[2][2]);
 }
 
 static_assert(sizeof(Matrix3d) == 36, "sizeof Matrix3d is not valid");

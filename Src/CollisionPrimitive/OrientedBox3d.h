@@ -24,6 +24,6 @@ public:
 	}
 
 	float SqrDistanceToPoint(const Vector3d& Point) const;
-	float SqrDistanceToLine(const Vector3d& Origin, const Vector3d& Dir, float* lineParam, Vector3d* boxParam) const;
+	float SqrDistanceToLine(const Vector3d& P0, const Vector3d& Dir, float* t) const;
 	float SqrDistanceToSegment(const Vector3d& P0, const Vector3d& P1) const;
 };

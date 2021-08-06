@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CollisionPrimitive\AxisAlignedBox3d.cpp" />
     <ClCompile Include="CollisionPrimitive\Capsule3d.cpp" />
     <ClCompile Include="CollisionPrimitive\HeightField3d.cpp" />
     <ClCompile Include="CollisionPrimitive\OrientedBox3d.cpp" />

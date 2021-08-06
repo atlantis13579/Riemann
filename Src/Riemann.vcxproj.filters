@@ -146,5 +146,6 @@
     <ClCompile Include="CollisionPrimitive\Capsule3d.cpp" />
     <ClCompile Include="RigidBodyDynamics\SequentialImpulseSolver.cpp" />
     <ClCompile Include="CollisionPrimitive\Segment3d.cpp" />
+    <ClCompile Include="CollisionPrimitive\AxisAlignedBox3d.cpp" />
   </ItemGroup>
 </Project>
