@@ -102,6 +102,7 @@
     <ClInclude Include="RigidBodyDynamics\SequentialImpulseSolver.h" />
     <ClInclude Include="CollisionPrimitive\Point3d.h" />
     <ClInclude Include="CollisionPrimitive\Segment3d.h" />
+    <ClInclude Include="Solver\LCPSolver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -147,5 +148,6 @@
     <ClCompile Include="RigidBodyDynamics\SequentialImpulseSolver.cpp" />
     <ClCompile Include="CollisionPrimitive\Segment3d.cpp" />
     <ClCompile Include="CollisionPrimitive\AxisAlignedBox3d.cpp" />
+    <ClCompile Include="Solver\LCPSolver.cpp" />
   </ItemGroup>
 </Project>

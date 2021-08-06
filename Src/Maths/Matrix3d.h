@@ -127,32 +127,32 @@ public:
 		return *this;
 	}
 
-	inline float operator()(int i, int j) const
+	inline constexpr float operator()(int i, int j) const
 	{
 		return mat[i][j];
 	}
 
-	inline float& operator()(int i, int j)
+	inline constexpr float& operator()(int i, int j)
 	{
 		return mat[i][j];
 	}
 
-	inline const Vector3d& operator[](int i) const
+	inline constexpr const Vector3d& operator[](int i) const
 	{
 		return row[i];
 	}
 
-	inline Vector3d& operator[](int i)
+	inline constexpr Vector3d& operator[](int i)
 	{
 		return row[i];
 	}
 
-	inline const Vector3d& Row(int i) const
+	inline constexpr const Vector3d& Row(int i) const
 	{
 		return row[i];
 	}
 
-	inline Vector3d& Row(int i)
+	inline constexpr Vector3d& Row(int i)
 	{
 		return row[i];
 	}
@@ -183,15 +183,17 @@ public:
 	}
 
 	// Solve AX = B
-	Vector3d Solve(const Vector3d &b)
+	bool Solve(const Vector3d& b, Vector3d& x)
 	{
 		float d = Determinant();
-		// Warning!!! Assume d != 0
-		Vector3d x;
+		if (fabsf(d) < 1e-6)
+		{
+			return false;
+		}
 		x.x = b.Dot(row[1].Cross(row[2])) / d;
 		x.y = row[0].Dot(b.Cross(row[2])) / d;
 		x.z = row[0].Dot(row[1].Cross(b)) / d;
-		return x;
+		return true;
 	}
 
 	static Matrix3d Skew(Vector3d& v)

@@ -56,6 +56,7 @@
     <ClCompile Include="RigidBodyDynamics\RigidBodySimulation.cpp" />
     <ClCompile Include="RigidBodyDynamics\MotionIntegration.cpp" />
     <ClCompile Include="RigidBodyDynamics\RigidBody.cpp" />
+    <ClCompile Include="Solver\LCPSolver.cpp" />
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
@@ -148,6 +149,7 @@
     <ClInclude Include="RigidBodyDynamics\RigidBody.h" />
     <ClInclude Include="Solver\ConjugateGradientSolver.h" />
     <ClInclude Include="Solver\ExponentialIntegrator.h" />
+    <ClInclude Include="Solver\LCPSolver.h" />
     <ClInclude Include="Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="Solver\NumericalODESolver.h" />
     <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />

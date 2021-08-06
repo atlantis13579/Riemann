@@ -335,7 +335,7 @@ inline TVector3<T> CrossProduct(const TVector3<T>& lhs, const TVector3<T>& rhs)
 }
 
 template <typename T>
-T Determinant(const TVector3<T>& a, const TVector3<T>& b, const TVector3<T>& c)
+inline T Determinant(const TVector3<T>& a, const TVector3<T>& b, const TVector3<T>& c)
 {
 	return (a.y * b.z * c.x + a.z * b.x * c.y -
 			a.x * b.z * c.y - a.y * b.x * c.z +
