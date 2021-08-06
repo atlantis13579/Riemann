@@ -16,7 +16,7 @@ class Capsule3d
 {
 public:
 	Vector3d	X0;
-	Vector3d	Axis;
+	Vector3d	X1;
 	float		Length;
 	float		Radius;
 
@@ -33,29 +33,28 @@ public:
 		return ShapeType::CAPSULE;
 	}
 
-	void		Init(const Vector3d& InX1, const Vector3d& InX2, float InRadius)
+	void		Init(const Vector3d& InX0, const Vector3d& InX1, float InRadius)
 	{
-		X0 = InX1;
-		Axis = InX2 - InX1;
-		Length = Axis.Length();
-		Axis /= Length;
+		X0 = InX0;
+		X1 = InX1;
+		Length = (InX1 - InX0).Length();
 		Radius = InRadius;
 	}
 
 public:
-	inline const Vector3d&	GetX1() const
+	inline Vector3d		GetAxis() const
 	{
-		return X0;
+		return X1 - X0;
 	}
 
-	inline Vector3d			GetX2() const
+	inline Vector3d		GetUnitAxis() const
 	{
-		return X0 + Axis * Length;
+		return (X1 - X0).Unit();
 	}
 
 	inline Vector3d		GetOrigin() const
 	{
-		return X0 + Axis * Length * 0.5f;
+		return (X0 + X1) * 0.5f;
 	}
 
 	inline float		GetHeight() const
@@ -66,14 +65,14 @@ public:
 	Box3d				GetBoundingVolume() const
 	{
 		Box3d box(X0, X0);
-		box.Grow(GetX2());
+		box.Grow(X1);
 		box.Thicken(Radius);
 		return box;
 	}
 
 	bool				IsYAxisAligned() const
 	{
-		return Axis.ParallelTo(Vector3d::UnitY()) == 0;
+		return (X1 - X0).ParallelTo(Vector3d::UnitY()) == 0;
 	}
 
 	bool				IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
@@ -114,13 +113,14 @@ public:
 
 	Vector3d GetSupport(const Vector3d& dir) const
 	{
-		return GetSupport(X0, Axis, Length, Radius, dir);
+		return GetSupport(X0, X1, Radius, dir);
 	}
 
-	static Vector3d		GetSupport(const Vector3d& X0, const Vector3d& Axis, float Length, float Radius, const Vector3d& dir)
+	static Vector3d		GetSupport(const Vector3d& X0, const Vector3d& X1, float Radius, const Vector3d& dir)
 	{
+		Vector3d Axis = X1 - X0;
 		float dp = DotProduct(dir, Axis);
-		Vector3d FarthestCap = dp >= 0 ? (X0 + Axis * Length) : X0;
+		Vector3d FarthestCap = dp >= 0 ? X1 : X0;
 		float distSqr = dir.SquareLength();
 		if (distSqr <= 1e-6)
 		{
@@ -136,6 +136,7 @@ public:
 
 		float phiStep = mPI / stackCount;
 		float thetaStep = 2.0f * mPI / sliceCount;
+		float Length = (X1 - X0).Length();
 
 		Vertices->push_back(Vector3d(0, Length * 0.5f + Radius, 0));
 		if (Normals) Normals->push_back(Vector3d::UnitY());
@@ -158,7 +159,7 @@ public:
 		if (!IsYAxisAligned())
 		{
 			Matrix3d Rot;
-			Rot.FromTwoAxis(Vector3d::UnitY(), Axis);
+			Rot.FromTwoAxis(Vector3d::UnitY(), X1 - X0);
 
 			Vector3d* pV = &Vertices->at(0);
 			for (size_t i = 0; i < Vertices->size(); ++i)

@@ -22,7 +22,6 @@
     <ClCompile Include="CollisionPrimitive\Capsule3d.cpp" />
     <ClCompile Include="CollisionPrimitive\HeightField3d.cpp" />
     <ClCompile Include="CollisionPrimitive\OrientedBox3d.cpp" />
-    <ClCompile Include="CollisionPrimitive\Point3d.cpp" />
     <ClCompile Include="CollisionPrimitive\Segment3d.cpp" />
     <ClCompile Include="Collision\AABBTree.cpp" />
     <ClCompile Include="Collision\AABBTreeInference.cpp" />

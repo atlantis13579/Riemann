@@ -67,8 +67,8 @@ inline bool			OverlapCapsuleT(const void* Obj1, const void* Obj2, const Transfor
 	const T* p = static_cast<const T*>(Obj1);
 	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj2);
 	float Radius = capsule->Radius;
-	Vector3d P0 = transLocal1ToLocal2.LocalToWorldEx(capsule->GetX1());
-	Vector3d P1 = transLocal1ToLocal2.LocalToWorldEx(capsule->GetX2());
+	Vector3d P0 = transLocal1ToLocal2.LocalToWorldEx(capsule->X0);
+	Vector3d P1 = transLocal1ToLocal2.LocalToWorldEx(capsule->X1);
 	return p->IntersectCapsule(P0, P1, Radius);
 }
 
@@ -77,8 +77,8 @@ inline bool			OverlapTCapsule(const void* Obj1, const void* Obj2, const Transfor
 {
 	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj1);
 	float Radius = capsule->Radius;
-	Vector3d P0 = transLocal1ToLocal2.LocalToWorldEx(capsule->GetX1());
-	Vector3d P1 = transLocal1ToLocal2.LocalToWorldEx(capsule->GetX2());
+	Vector3d P0 = transLocal1ToLocal2.LocalToWorldEx(capsule->X0);
+	Vector3d P1 = transLocal1ToLocal2.LocalToWorldEx(capsule->X1);
 	const T* p = static_cast<const T*>(Obj2);
 	return p->IntersectCapsule(P0, P1, Radius);
 }

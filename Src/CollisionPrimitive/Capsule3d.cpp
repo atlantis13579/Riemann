@@ -6,6 +6,7 @@
 bool Capsule3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
 {
 	const Vector3d X1ToStart = Origin - X0;
+	Vector3d Axis = (X1 - X0) / Length;
 	const float AxisDotX1ToStart = DotProduct(X1ToStart, Axis);
 	if (AxisDotX1ToStart >= -Radius && AxisDotX1ToStart <= Length + Radius)
 	{
@@ -96,7 +97,7 @@ bool Capsule3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float*
 	{
 		//can avoid some work here, but good enough for now
 		Sphere3d X1Sphere(X0, Radius);
-		Sphere3d X2Sphere(X0 + Axis * Length, Radius);
+		Sphere3d X2Sphere(X1, Radius);
 
 		float Time1, Time2;
 		Vector3d Position1, Position2;
@@ -145,19 +146,19 @@ bool Capsule3d::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
 	Vector3d Origin = GetOrigin();
 	Vector3d Delta = (Bmax + Bmin) * 0.5f - Origin;
 	Vector3d V0 = X0 - Origin;
-	Vector3d V1 = V0 + Axis;
+	Vector3d V1 = X1 - Origin;
 
 	OrientedBox3d obb;
 	obb.Center = Delta;
 	obb.Extent = (Bmax - Bmin) * 0.5f;
-	obb.Rot.FromTwoAxis(Axis, Vector3d::UnitY());
+	obb.Rot.FromTwoAxis(X1 - X0, Vector3d::UnitY());
 
 	return obb.SqrDistanceToSegment(V0, V1) <= Radius * Radius;
 }
 
 bool Capsule3d::IntersectSphere(const Vector3d& rCenter, float rRadius) const
 {
-	float SqrDist = Segment3d::SqrDistanceSegmentToPoint(GetX1(), GetX2(), rCenter);
+	float SqrDist = Segment3d::SqrDistanceSegmentToPoint(X0, X1, rCenter);
 	return SqrDist <= (Radius + rRadius) * (Radius + rRadius);
 }
 
@@ -168,6 +169,6 @@ bool Capsule3d::IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float r
 		return IntersectSphere(P0, rRadius);
 	}
 
-	const float SqrDist = Segment3d::SqrDistanceSegmentToSegment(P0, P1, GetX1(), GetX2());
+	const float SqrDist = Segment3d::SqrDistanceSegmentToSegment(P0, P1, X0, X1);
 	return SqrDist <= (Radius + rRadius) * (Radius + rRadius);
 }
