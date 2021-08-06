@@ -499,6 +499,18 @@ float AxisAlignedBox3d::SqrDistanceToSegment(const Vector3d& P0, const Vector3d&
 	}
 }
 
+bool AxisAlignedBox3d::IntersectSphere(const Vector3d& Center, float Radius) const
+{
+	float SqrDist = SqrDistanceToPoint(Center);
+	return SqrDist <= Radius * Radius;
+}
+
+bool AxisAlignedBox3d::IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float Radius) const
+{
+	float SqrDist = SqrDistanceToSegment(P0, P1);
+	return SqrDist <= Radius * Radius;
+}
+
 Vector3d AxisAlignedBox3d::ClosestPointTo(const Vector3d& Point) const
 {
 	Vector3d closest = GetCenter();

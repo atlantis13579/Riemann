@@ -91,26 +91,26 @@ public:
 		return true;
 	}
 
-	float DistanceTo(const Vector3d& Point) const
+	float			DistanceTo(const Vector3d& Point) const
 	{
 		float Dist = SignedDistanceTo(Point);
 		return fabsf(Dist);
 	}
 
-	float SignedDistanceTo(const Vector3d& Point) const
+	float			SignedDistanceTo(const Vector3d& Point) const
 	{
 		Vector3d Origin = GetOrigin();
 		float Dist = (Point - Origin).Dot(Normal);
 		return Dist;
 	}
 
-	Vector3d ClosestPointTo(const Vector3d& Point) const
+	Vector3d		ClosestPointTo(const Vector3d& Point) const
 	{
 		float SignedDist = SignedDistanceTo(Point);
 		return Point - SignedDist * Normal;
 	}
 
-	float DistanceToSegment(const Vector3d& P0, const Vector3d& P1) const
+	float			DistanceToSegment(const Vector3d& P0, const Vector3d& P1) const
 	{
 		float SignedDist0 = SignedDistanceTo(P0);
 		float SignedDist1 = SignedDistanceTo(P1);
@@ -121,29 +121,29 @@ public:
 		return std::min(fabsf(SignedDist0), fabsf(SignedDist1));
 	}
 
-	bool	IntersectSphere(const Vector3d& rCenter, float rRadius) const
+	bool			IntersectSphere(const Vector3d& rCenter, float rRadius) const
 	{
 		float Dist = DistanceTo(rCenter);
 		return Dist <= rRadius;
 	}
 
-	bool	IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float Radius) const
+	bool			IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float Radius) const
 	{
 		float Dist = DistanceToSegment(P0, P1);
 		return Dist <= Radius;
 	}
 
-	static float MaxBV()
+	static float	MaxBV()
 	{
 		return 1000000.0f;
 	}
 
-	static float VerySmallTickness()
+	static float	VerySmallTickness()
 	{
 		return 0.00001f;
 	}
 
-	Box3d	GetBoundingVolume() const
+	Box3d			GetBoundingVolume() const
 	{
 		const float kMaxBV = MaxBV();
 		const float kVerySmallTickness = VerySmallTickness();
@@ -179,7 +179,7 @@ public:
 		return Box;
 	}
 
-	bool PerpendicularTo(const Vector3d& Axis) const
+	bool			PerpendicularTo(const Vector3d& Axis) const
 	{
 		float det = Normal.Cross(Axis).SquareLength();
 		if (det < kEpsilonPlane)
@@ -189,28 +189,28 @@ public:
 		return false;
 	}
 
-	bool ParallelToXY() const
+	bool			ParallelToXY() const
 	{
 		return PerpendicularTo(Vector3d::UnitZ());
 	}
 
-	bool ParallelToXZ() const
+	bool			ParallelToXZ() const
 	{
 		return PerpendicularTo(Vector3d::UnitY());
 	}
 
-	bool ParallelToYZ() const
+	bool			ParallelToYZ() const
 	{
 		return PerpendicularTo(Vector3d::UnitX());
 	}
 
-	Matrix3d GetInertiaTensor(float Mass) const
+	Matrix3d		GetInertiaTensor(float Mass) const
 	{
 		// TODO
 		return Matrix3d(1, 1, 1);
 	}
 
-	Vector3d GetSupport(const Vector3d& dir) const
+	Vector3d		GetSupport(const Vector3d& dir) const
 	{
 		Box3d box = GetBoundingVolume();
 		return Vector3d(
@@ -220,7 +220,7 @@ public:
 		);
 	}
 
-	void	GetVerties(Vector3d *v, float Radius)
+	void			GetVerties(Vector3d *v, float Radius)
 	{
 		Vector3d v0 = Vector3d::UnitY();
 		if (Normal.ParallelTo(v0) != 0)
@@ -239,7 +239,7 @@ public:
 		return;
 	}
 
-	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void			GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
 		Vertices.resize(4);
 		GetVerties(&Vertices[0], 100.0f);
@@ -247,7 +247,7 @@ public:
 		Indices = { 2,1,0, 2,3,0 };
 	}
 
-	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
+	void			GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		Vertices.resize(4);
 		GetVerties(&Vertices[0], 100.0f);

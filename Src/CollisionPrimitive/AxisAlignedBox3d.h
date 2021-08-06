@@ -124,6 +124,9 @@ public:
 		return true;
 	}
 
+	bool			IntersectSphere(const Vector3d& Center, float Radius) const;
+	bool			IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float Radius) const;
+
 	Vector3d		ClosestPointTo(const Vector3d& Point) const;
 	float			SqrDistanceToPoint(const Vector3d& Point) const;
 	float			SqrDistanceToLine(const Vector3d& P0, const Vector3d& Dir, float* t) const;

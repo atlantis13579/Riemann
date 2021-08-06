@@ -111,11 +111,11 @@ GeometryIntersection::GeometryIntersection()
 	REG_OVERLAP_TEST(ShapeType::PLANE, ShapeType::BOX,			OverlapTBox<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType::PLANE, ShapeType::SPHERE,		OverlapTSphere<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType::PLANE, ShapeType::CAPSULE,		OverlapTCapsule<Plane3d>);
-	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::BOX,			OverlapTBox<Sphere3d>);
+	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::BOX,			OverlapSphereT<AxisAlignedBox3d>);
 	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::PLANE,		OverlapSphereT<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::SPHERE,		OverlapSphereT<Sphere3d>);
 	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::CAPSULE,		OverlapSphereT<Sphere3d>);
-	REG_OVERLAP_TEST(ShapeType::CAPSULE, ShapeType::BOX,		OverlapTBox<Capsule3d>);
+	REG_OVERLAP_TEST(ShapeType::CAPSULE, ShapeType::BOX,		OverlapCapsuleT<AxisAlignedBox3d>);
 	REG_OVERLAP_TEST(ShapeType::CAPSULE, ShapeType::PLANE,		OverlapCapsuleT<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType::CAPSULE, ShapeType::SPHERE,		OverlapTSphere<Capsule3d>);
 	REG_OVERLAP_TEST(ShapeType::CAPSULE, ShapeType::CAPSULE,	OverlapCapsuleT<Capsule3d>);

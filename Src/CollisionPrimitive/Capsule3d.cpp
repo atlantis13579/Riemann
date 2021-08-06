@@ -1,5 +1,5 @@
 #include "Capsule3d.h"
-#include "OrientedBox3d.h"
+#include "AxisAlignedBox3d.h"
 #include "Segment3d.h"
 #include "../Maths/Maths.h"
 
@@ -143,17 +143,8 @@ bool Capsule3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float*
 
 bool Capsule3d::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
 {
-	Vector3d Origin = GetOrigin();
-	Vector3d Delta = (Bmax + Bmin) * 0.5f - Origin;
-	Vector3d V0 = X0 - Origin;
-	Vector3d V1 = X1 - Origin;
-
-	OrientedBox3d obb;
-	obb.Center = Delta;
-	obb.Extent = (Bmax - Bmin) * 0.5f;
-	obb.Rot.FromTwoAxis(X1 - X0, Vector3d::UnitY());
-
-	return obb.SqrDistanceToSegment(V0, V1) <= Radius * Radius;
+	AxisAlignedBox3d aabb(Bmin, Bmax);
+	return aabb.SqrDistanceToSegment(X0, X1) <= Radius * Radius;
 }
 
 bool Capsule3d::IntersectSphere(const Vector3d& rCenter, float rRadius) const
