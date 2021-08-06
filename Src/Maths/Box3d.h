@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <float.h>
 #include <algorithm>
 #include <vector>
 

@@ -19,7 +19,7 @@ void PolygonSimplification_VisvalingamWhyatt(std::vector<Vector2i> &polygon, int
 	while (polygon.size() > kMinPolygonPoints)
 	{
 		int i_min = -1;
-		int area_min = INT_MAX;
+		int area_min = 0x7FFFFFFF;
 		int num = (int)polygon.size();
 		for (int i0 = 0; i0 < num; ++i0) {
 			int i1 = (i0 + num - 1) % num;

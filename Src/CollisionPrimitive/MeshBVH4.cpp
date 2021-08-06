@@ -1,4 +1,3 @@
-#pragma once
 
 #include "MeshBVH4.h"
 #include "Mesh.h"

@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <string.h>
 #include "Vector3d.h"
 #include "Vector4d.h"
 

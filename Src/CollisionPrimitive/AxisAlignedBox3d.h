@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <float.h>
 #include "ShapeType.h"
 #include "../Maths/Matrix3d.h"
 #include "../Maths/Box3d.h"
