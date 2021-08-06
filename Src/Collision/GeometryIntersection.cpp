@@ -41,6 +41,16 @@ inline bool			OverlapTBox(const void* Obj1, const void* Obj2, const Transform& t
 	return p->IntersectAABB(Bmin, Bmax);
 }
 
+bool				OverlapPlanePlane(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+{
+	const Plane3d* plane1 = static_cast<const Plane3d*>(Obj1);
+	const Plane3d* plane2 = static_cast<const Plane3d*>(Obj2);
+	Vector3d Normal = transLocal1ToLocal2.RotateLocalToWorld(plane1->Normal);
+	Vector3d Origin = transLocal1ToLocal2.LocalToWorldEx(plane1->GetOrigin());
+	Plane3d plane_new(Normal, Origin);
+	return plane2->IntersectPlane(plane2->Normal, plane2->D);
+}
+
 template <class T>
 inline bool			OverlapSphereT(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
 {
@@ -96,20 +106,21 @@ GeometryIntersection::GeometryIntersection()
 	REG_GEOMETRY_OBJ(ShapeType::PLANE,			Plane3d)
 	REG_GEOMETRY_OBJ(ShapeType::SPHERE,			Sphere3d)
 	REG_GEOMETRY_OBJ(ShapeType::CAPSULE,		Capsule3d)
+	REG_GEOMETRY_OBJ(ShapeType::TRIANGLE,		Triangle3d)
 	REG_GEOMETRY_OBJ(ShapeType::HEIGHTFIELD,	HeightField3d)
 	REG_GEOMETRY_OBJ(ShapeType::CONVEX_MESH,	ConvexMesh)
-	REG_GEOMETRY_OBJ(ShapeType::TRIANGLE,		Triangle3d)
 	REG_GEOMETRY_OBJ(ShapeType::TRIANGLE_MESH,	TriangleMesh)
 
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::BOX,			OverlapBoxT<AxisAlignedBox3d>);
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::PLANE,			OverlapBoxT<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::SPHERE,			OverlapBoxT<Sphere3d>);
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::CAPSULE,		OverlapBoxT<Capsule3d>);
-	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::HEIGHTFIELD,	OverlapBoxT<HeightField3d>);
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::TRIANGLE,		OverlapBoxT<Triangle3d>);
+	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::HEIGHTFIELD,	OverlapBoxT<HeightField3d>);
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::TRIANGLE_MESH,	OverlapBoxT<TriangleMesh>);
 	REG_OVERLAP_TEST(ShapeType::PLANE, ShapeType::BOX,			OverlapTBox<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType::PLANE, ShapeType::SPHERE,		OverlapTSphere<Plane3d>);
+	REG_OVERLAP_TEST(ShapeType::PLANE, ShapeType::PLANE,		OverlapPlanePlane);
 	REG_OVERLAP_TEST(ShapeType::PLANE, ShapeType::CAPSULE,		OverlapTCapsule<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::BOX,			OverlapSphereT<AxisAlignedBox3d>);
 	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::PLANE,		OverlapSphereT<Plane3d>);

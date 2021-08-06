@@ -19,6 +19,13 @@ public:
 	{
 	}
 
+
+	Plane3d(const Vector3d& InNormal, Vector3d& InOrigin)
+	{
+		Normal = InNormal.Unit();
+		D = -InOrigin.Dot(Normal);
+	}
+
 	Plane3d(const Vector3d& InNormal, float InD)
 	{
 		Normal = InNormal.Unit();
@@ -131,6 +138,12 @@ public:
 	{
 		float Dist = DistanceToSegment(P0, P1);
 		return Dist <= Radius;
+	}
+
+	bool			IntersectPlane(const Vector3d& Normal, float D) const
+	{
+		bool Parallel = Normal.ParallelTo(Normal);
+		return !Parallel;
 	}
 
 	static float	MaxBV()
