@@ -161,7 +161,7 @@ inline uint32_t BAnyTrue3_R(const BoolV a)
 	return uint32_t(((moveMask & 0x7) != 0x0));
 }
 
-const __declspec(align(16)) uint32_t gMaskXYZ[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0 };
+const alignas(16) uint32_t gMaskXYZ[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0 };
 } //internalWindowsSimd
 
 /////////////////////////////////////////////////////////////////////
@@ -328,7 +328,7 @@ inline void FStore(const FloatV a, float* f)
 inline void V3StoreA(const Vec3V a, Vector3d& f)
 {
 	ASSERT_ISALIGNED16(&f);
-	__declspec(align(16)) float f2[4];
+	alignas(16) float f2[4];
 	_mm_store_ps(f2, a);
 	f = Vector3d(f2[0], f2[1], f2[2]);
 }
@@ -340,7 +340,7 @@ inline void Store_From_BoolV(const BoolV b, uint32_t* b2)
 
 inline void V3StoreU(const Vec3V a, Vector3d& f)
 {
-	__declspec(align(16)) float f2[4];
+	alignas(16) float f2[4];
 	_mm_store_ps(f2, a);
 	f = Vector3d(f2[0], f2[1], f2[2]);
 }
@@ -503,7 +503,7 @@ inline FloatV FNegScaleSub(const FloatV a, const FloatV b, const FloatV c)
 inline FloatV FAbs(const FloatV a)
 {
 	ASSERT_ISVALIDFLOATV(a);
-	__declspec(align(16)) const static uint32_t absMask[4] = { 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF };
+	alignas(16) const static uint32_t absMask[4] = { 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF };
 	return _mm_and_ps(a, _mm_load_ps((float*)absMask));
 }
 
@@ -974,21 +974,21 @@ inline Vec4V V4Clamp(const Vec4V a, const Vec4V minV, const Vec4V maxV)
 
 inline Vec3V V3UnitX()
 {
-	const __declspec(align(16)) float x[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
+	const alignas(16) float x[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
 	const __m128 x128 = _mm_load_ps(x);
 	return x128;
 }
 
 inline Vec3V V3UnitY()
 {
-	const __declspec(align(16)) float y[4] = { 0.0f, 1.0f, 0.0f, 0.0f };
+	const alignas(16) float y[4] = { 0.0f, 1.0f, 0.0f, 0.0f };
 	const __m128 y128 = _mm_load_ps(y);
 	return y128;
 }
 
 inline Vec3V V3UnitZ()
 {
-	const __declspec(align(16)) float z[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+	const alignas(16) float z[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
 	const __m128 z128 = _mm_load_ps(z);
 	return z128;
 }

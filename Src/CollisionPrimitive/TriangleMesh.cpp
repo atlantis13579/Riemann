@@ -160,7 +160,7 @@ bool TriangleMesh::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) con
 		BoolV res0 = V4IsGrtr(nqMinx4, maxx4); BoolV res1 = V4IsGrtr(nqMiny4, maxy4); BoolV res2 = V4IsGrtr(nqMinz4, maxz4);
 		BoolV res3 = V4IsGrtr(minx4, nqMaxx4); BoolV res4 = V4IsGrtr(miny4, nqMaxy4); BoolV res5 = V4IsGrtr(minz4, nqMaxz4);
 		BoolV resx = BOr(BOr(BOr(res0, res1), BOr(res2, res3)), BOr(res4, res5));
-		__declspec(align(16))  uint32_t resa[SIMD_WIDTH];
+		alignas(16) uint32_t resa[SIMD_WIDTH];
 
 		VecU32V res4x = VecU32V_From_BoolV(resx);
 		U4StoreA(res4x, resa);
@@ -292,7 +292,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 	for (int j = m_BVH->NumRoots - 1; j >= 0; j--)
 		stack[stackPtr++] = j * sizeof(BVHNodeBatch);
 
-	__declspec(align(16)) uint32_t resa[4];
+	alignas(16) uint32_t resa[4];
 
 	while (stackPtr)
 	{

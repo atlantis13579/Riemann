@@ -102,8 +102,7 @@ struct BVHNodeBatch
 	}
 };
 
-__declspec(align(16))
-struct MeshBVH4
+struct alignas(16) MeshBVH4
 {
 public:
 	enum

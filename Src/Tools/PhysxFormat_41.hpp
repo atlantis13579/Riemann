@@ -442,8 +442,7 @@ public:
 		uint32_t ptrs[RTREE_N];
 	};
 
-	__declspec(align(16))
-	class RTree
+	class alignas(16) RTree
 	{
 	public:
 		Vector4d		mBoundsMin, mBoundsMax, mInvDiagonal, mDiagonalScaler; // 16
@@ -714,8 +713,7 @@ public:
 		void* userData;
 	};
 
-	__declspec(align(16))
-		struct PxMaterialCore
+	struct alignas(16) PxMaterialCore
 	{
 		float					dynamicFriction;				//4
 		float					staticFriction;					//8
@@ -902,7 +900,7 @@ public:
 
 	struct PxsShapeCore
 	{
-		__declspec(align(16)) PxTransform			transform;
+		alignas(16) PxTransform			transform;
 		PxReal				contactOffset;
 		PxU8				mShapeFlags;			// !< API shape flags	// PT: TODO: use PxShapeFlags here. Needs to move flags to separate file.
 		PxU8				mOwnsMaterialIdxMemory;	// PT: for de-serialization to avoid deallocating material index list. Moved there from Sc::ShapeCore (since one byte was free).
@@ -1082,7 +1080,7 @@ public:
 
 		PxFilterData				mQueryFilterData;		// Query filter data PT: TODO: consider moving this to SceneQueryShapeData
 		PxFilterData				mSimulationFilterData;	// Simulation filter data
-		PxsShapeCore				__declspec(align(16)) mCore;
+		alignas(16) PxsShapeCore	mCore;
 		PxReal						mRestOffset;			// same as the API property of the same name
 		PxReal						mTorsionalRadius;
 		PxReal						mMinTorsionalPatchRadius;
@@ -1193,9 +1191,9 @@ public:
 
 	struct PxsRigidCore
 	{
-		__declspec(align(16)) PxTransform			body2World;
-		PxU16				mFlags;
-		PxU16				solverIterationCounts;
+		alignas(16) PxTransform		body2World;
+		PxU16						mFlags;
+		PxU16						solverIterationCounts;
 	};
 
 	struct PxsBodyCore : public PxsRigidCore
@@ -1247,8 +1245,8 @@ public:
 	class BodyCore : public ScRigidCore
 	{
 	public:
-		__declspec(align(16)) PxsBodyCore mCore;
-		void* mSimStateData;			// SimStateData
+		alignas(16) PxsBodyCore mCore;
+		void*					mSimStateData;			// SimStateData
 	};
 
 	class ScbBody : public ScbRigidObject
