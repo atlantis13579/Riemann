@@ -44,6 +44,13 @@ struct RayCastResult
 		#endif // _DEBUG
 	}
 
+	void AddTestCount(int Count)
+	{
+		#ifdef _DEBUG
+		hitTestCount += Count;
+		#endif // _DEBUG
+	}
+
 	bool		hit;
 	float		hitTime;
 	Vector3d	hitPoint;
@@ -85,20 +92,27 @@ struct OverlapResult
 		Reset();
 	}
 
+	void AddTestCount(int Count)
+	{
+		#ifdef _DEBUG
+		overlapTestCount += Count;
+		#endif // _DEBUG
+	}
+
 	void Reset()
 	{
 		overlaps = true;
 		overlapGeoms.clear();
-#ifdef _DEBUG
+		#ifdef _DEBUG
 		overlapTestCount = 0;
-#endif // _DEBUG
+		#endif // _DEBUG
 	}
 
 	bool					overlaps;
 	std::vector<Geometry*>	overlapGeoms;
-#ifdef _DEBUG
+	#ifdef _DEBUG
 	int						overlapTestCount;
-#endif // _DEBUG
+	#endif // _DEBUG
 };
 
 class GeometryQuery

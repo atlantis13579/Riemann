@@ -19,8 +19,15 @@ struct HeightFieldHitResult
 	Vector3d	hitNormal;
 	uint32_t	cellIndex;
 	#ifdef _DEBUG
-	int			TestCount;
+	int			hitTestCount;
 	#endif // _DEBUG
+
+	void AddTestCount(int Count)
+	{
+		#ifdef _DEBUG
+		hitTestCount += Count;
+		#endif // _DEBUG
+	}
 };
 
 class HeightField3d

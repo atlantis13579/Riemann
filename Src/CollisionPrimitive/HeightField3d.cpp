@@ -12,9 +12,7 @@ bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir
 	float minH, maxH;
 	GetHeightRange(i, j, minH, maxH);
 
-	#ifdef _DEBUG
-	Result->TestCount += 1;
-	#endif // _DEBUG
+	Result->AddTestCount(1);
 
 	if (fabsf(Dir.y) < 0.000001f)
 	{
@@ -49,9 +47,7 @@ bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir
 		}
 	}
 
-	#ifdef _DEBUG
-	Result->TestCount += nT / 3;
-	#endif // _DEBUG
+	Result->AddTestCount(nT / 3);
 
 	return hit;
 }
@@ -85,9 +81,7 @@ bool HeightField3d::IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, c
 		}
 	}
 
-	#ifdef _DEBUG
-	Result->TestCount += nT / 3;
-	#endif // _DEBUG
+	Result->AddTestCount(nT / 3);
 
 	return hit;
 }
@@ -111,9 +105,7 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 		return IntersectRayY(Origin, Dir, Option, Result);
 	}
 
-	#ifdef _DEBUG
-	Result->TestCount += 1;
-	#endif // _DEBUG
+	Result->AddTestCount(1);
 
 	float t0, t1;
 	const float thickness = 1e-4f;

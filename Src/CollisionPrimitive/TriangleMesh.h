@@ -16,8 +16,15 @@ struct TriMeshHitResult
 	Vector3d	hitNormal;
 	uint32_t	hitIndex;
 	#ifdef _DEBUG
-	int			TestCount;
+	int			hitTestCount;
 	#endif // _DEBUG
+
+	void AddTestCount(int Count)
+	{
+		#ifdef _DEBUG
+		hitTestCount += Count;
+		#endif // _DEBUG
+	}
 };
 
 class TriangleMesh : public Mesh

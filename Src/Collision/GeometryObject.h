@@ -1,6 +1,5 @@
 #pragma once
 
-#include <atomic>
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
 #include "../CollisionPrimitive/ShapeType.h"
@@ -125,5 +124,5 @@ public:
 	static Geometry* CreateTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C);
 	static Geometry* CreateTriangleMesh();
 
-	static std::atomic<int> ObjectCount[GEOMETRY_COUNT];
+	static int		ObjectCount[GEOMETRY_COUNT];
 };

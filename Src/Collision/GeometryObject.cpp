@@ -45,9 +45,7 @@ public:
 
 	virtual bool			RayCast(const Vector3d& Origin, const Vector3d& Dir, const RayCastOption* Option, RayCastResult* Result) const override final
 	{
-		#ifdef _DEBUG
-		Result->hitTestCount += 1;
-		#endif // _DEBUG
+		Result->AddTestCount(1);
 
 		const Vector3d Origin_Local = m_Transform.WorldToLocalEx(Origin);
 		const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
@@ -75,11 +73,7 @@ virtual bool		TGeometry<TriangleMesh>::RayCast(const Vector3d& Origin, const Vec
 	const TriangleMesh* p = (const TriangleMesh*)this;
 	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 	Result->hitTime = HitResult.hitTime;
-
-	#ifdef _DEBUG
-	Result->hitTestCount += HitResult.TestCount;
-	#endif // _DEBUG
-
+	Result->AddTestCount(HitResult.hitTestCount);
 	return Ret;
 }
 
@@ -95,11 +89,7 @@ virtual bool		TGeometry<HeightField3d>::RayCast(const Vector3d& Origin, const Ve
 	const HeightField3d* p = (const HeightField3d*)this;
 	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 	Result->hitTime = HitResult.hitTime;
-
-#ifdef _DEBUG
-	Result->hitTestCount += HitResult.TestCount;
-#endif // _DEBUG
-
+	Result->AddTestCount(HitResult.hitTestCount);
 	return Ret;
 }
 
@@ -199,7 +189,7 @@ void GeometryFactory::DeleteGeometry(Geometry* Geom)
 	delete Geom;
 }
 
-std::atomic<int> GeometryFactory::ObjectCount[GEOMETRY_COUNT] = { 0 };
+int GeometryFactory::ObjectCount[GEOMETRY_COUNT] = { 0 };
 
 Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& Extent, const Quaternion& Rot)
 {

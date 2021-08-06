@@ -200,9 +200,7 @@ bool	TriangleMesh::RayIntersectTri(uint32_t HitNode, const Vector3d& Origin, con
 
 	for (uint32_t i = 0; i < NumLeafTriangles; i++)
 	{
-		#ifdef _DEBUG
-		Result->TestCount += 1;
-		#endif // _DEBUG
+		Result->AddTestCount(1);
 
 		uint32_t i0, i1, i2;
 		const uint32_t triangleIndex = BaseTriIndex + i;
@@ -320,9 +318,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 			continue;
 		}
 
-		#ifdef _DEBUG
-		Result->TestCount += 2;
-		#endif // _DEBUG
+		Result->AddTestCount(2);
 
 		BVHNodeBatch* tn = reinterpret_cast<BVHNodeBatch*>(batch_ptr + top);
 
