@@ -98,7 +98,7 @@ public:
 		return true;
 	}
 
-	float			DistanceTo(const Vector3d& Point) const
+	float			DistanceToPoint(const Vector3d& Point) const
 	{
 		float Dist = SignedDistanceTo(Point);
 		return fabsf(Dist);
@@ -128,9 +128,21 @@ public:
 		return std::min(fabsf(SignedDist0), fabsf(SignedDist1));
 	}
 
+	float			DistanceToTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C) const
+	{
+		float sA = SignedDistanceTo(A);
+		float sB = SignedDistanceTo(B);
+		float sC = SignedDistanceTo(C);
+		if ((sA > 0.0f && sB > 0.0f && sC > 0.0f) || (sA < 0.0f && sB < 0.0f && sC < 0.0f))
+		{
+			return std::min(fabsf(sA), std::min(fabsf(sB), fabsf(sC)));
+		}
+		return 0.0f;
+	}
+
 	bool			IntersectSphere(const Vector3d& rCenter, float rRadius) const
 	{
-		float Dist = DistanceTo(rCenter);
+		float Dist = DistanceToPoint(rCenter);
 		return Dist <= rRadius;
 	}
 
@@ -144,6 +156,12 @@ public:
 	{
 		bool Parallel = Normal.ParallelTo(Normal);
 		return !Parallel;
+	}
+
+	float			IntersectTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C) const
+	{
+		float Dist = DistanceToTriangle(A, B, C);
+		return Dist > 0.0f;
 	}
 
 	static float	MaxBV()

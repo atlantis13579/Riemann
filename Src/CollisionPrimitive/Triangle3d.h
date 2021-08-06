@@ -57,7 +57,7 @@ public:
 		return RayIntersectTriangle(Origin, Dir, A, B, C, t);
 	}
 
-	bool		IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
+	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
 	{
 		return IntersectAABB(A, B, C, Bmin, Bmax);
 	}
