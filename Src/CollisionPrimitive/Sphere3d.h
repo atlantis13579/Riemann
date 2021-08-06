@@ -87,10 +87,15 @@ public:
 		return false;
 	}
 
-	bool			IntersectSphere(const Sphere3d &rhs) const
+	bool			IntersectSphere(const Vector3d &rCenter, float rRadius) const
 	{
-		float SqrDist = (Center - rhs.Center).SquareLength();
-		return SqrDist <= (Radius + rhs.Radius) * (Radius + rhs.Radius);
+		return SphereIntersectSphere(Center, Radius, rCenter, rRadius);
+	}
+
+	static bool		SphereIntersectSphere(const Vector3d& Center, float Radius, const Vector3d& rCenter, float rRadius)
+	{
+		float SqrDist = (Center - rCenter).SquareLength();
+		return SqrDist <= (Radius + rRadius) * (Radius + rRadius);
 	}
 
 	Box3d			GetBoundingVolume() const

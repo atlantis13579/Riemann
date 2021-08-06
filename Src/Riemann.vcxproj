@@ -22,6 +22,8 @@
     <ClCompile Include="CollisionPrimitive\Capsule3d.cpp" />
     <ClCompile Include="CollisionPrimitive\HeightField3d.cpp" />
     <ClCompile Include="CollisionPrimitive\OrientedBox3d.cpp" />
+    <ClCompile Include="CollisionPrimitive\Point3d.cpp" />
+    <ClCompile Include="CollisionPrimitive\Segment3d.cpp" />
     <ClCompile Include="Collision\AABBTree.cpp" />
     <ClCompile Include="Collision\AABBTreeInference.cpp" />
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />
@@ -68,6 +70,8 @@
     <ClInclude Include="CollisionPrimitive\Capsule3d.h" />
     <ClInclude Include="CollisionPrimitive\ConvexMesh.h" />
     <ClInclude Include="CollisionPrimitive\Cylinder3d.h" />
+    <ClInclude Include="CollisionPrimitive\Point3d.h" />
+    <ClInclude Include="CollisionPrimitive\Segment3d.h" />
     <ClInclude Include="CollisionPrimitive\ShapeType.h" />
     <ClInclude Include="CollisionPrimitive\HeightField3d.h" />
     <ClInclude Include="CollisionPrimitive\OrientedBox3d.h" />

@@ -6,6 +6,9 @@
 class Ray3d
 {
 public:
+	Vector3d Origin;
+	Vector3d Dir;
+
 	Ray3d() {}
 
 	Ray3d(const Vector3d& InOrigin, const Vector3d& InDir, bool bNormalize = false)
@@ -25,7 +28,7 @@ public:
 		Dir.Normalize();
 	}
 
-	Vector3d PointAt(float t) const
+	Vector3d		PointAt(float t) const
 	{
 		return Origin + Dir * t;
 	}
@@ -109,7 +112,4 @@ public:
 		return *t0 < *t1;
 	}
 
-
-	Vector3d Origin;
-	Vector3d Dir;
 };

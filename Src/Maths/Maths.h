@@ -5,17 +5,19 @@
 #include <stdlib.h>
 
 #ifndef PI
-#define PI          (3.1415926536f)
+#define PI				(3.1415926536f)
 #endif // !PI
 
-#define PI_2        (6.2831853072f)
-#define PI_OVER_2   (1.5707963268f)
-#define PI_OVER_3   (1.0471975512f)
-#define PI_OVER_4   (0.7853981634f)
-#define PI_OVER_6   (0.5235987756f)
-#define PI_OVER_8   (0.3926990817f)
-#define PI_OVER_180 (0.0174532925f)
-#define RAD_TO_DEG  (57.295779513f)
+#define PI_2			(6.2831853072f)
+#define PI_OVER_2		(1.5707963268f)
+#define PI_OVER_3		(1.0471975512f)
+#define PI_OVER_4		(0.7853981634f)
+#define PI_OVER_6		(0.5235987756f)
+#define PI_OVER_8		(0.3926990817f)
+#define PI_OVER_180		(0.0174532925f)
+#define RAD_TO_DEG		(57.295779513f)
+#define SMALL_NUMBER	(1e-3f)
+#define TINY_NUMBER		(1e-6f)
 
 inline float RandomFloat01()
 {

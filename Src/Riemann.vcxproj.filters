@@ -100,6 +100,8 @@
     <ClInclude Include="Maths\Stack.h" />
     <ClInclude Include="Collision\GeometryIntersection.h" />
     <ClInclude Include="RigidBodyDynamics\SequentialImpulseSolver.h" />
+    <ClInclude Include="CollisionPrimitive\Point3d.h" />
+    <ClInclude Include="CollisionPrimitive\Segment3d.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -143,5 +145,7 @@
     <ClCompile Include="CollisionPrimitive\OrientedBox3d.cpp" />
     <ClCompile Include="CollisionPrimitive\Capsule3d.cpp" />
     <ClCompile Include="RigidBodyDynamics\SequentialImpulseSolver.cpp" />
+    <ClCompile Include="CollisionPrimitive\Segment3d.cpp" />
+    <ClCompile Include="CollisionPrimitive\Point3d.cpp" />
   </ItemGroup>
 </Project>

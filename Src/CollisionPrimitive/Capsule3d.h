@@ -77,8 +77,9 @@ public:
 	}
 
 	bool				IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
-
 	bool				IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const;
+	bool				IntersectSphere(const Vector3d& rCenter, float rRadius) const;
+	bool				IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float Radius) const;
 
 	float				GetVolume() const
 	{

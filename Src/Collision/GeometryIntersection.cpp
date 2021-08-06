@@ -44,13 +44,45 @@ inline bool			OverlapTBox(const void* Obj1, const void* Obj2, const Transform& t
 template <class T>
 inline bool			OverlapSphereT(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
 {
-	const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj2);
-	Sphere3d new_sphere;
-	new_sphere.Radius = sphere->Radius;
-	new_sphere.Center = transLocal1ToLocal2.GetRotation() * sphere->Center + transLocal1ToLocal2.GetTranslation();
 	const T* p = static_cast<const T*>(Obj1);
-	return p->IntersectSphere(new_sphere);
+	const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj2);
+	float Radius = sphere->Radius;
+	Vector3d Center = transLocal1ToLocal2.LocalToWorldEx(sphere->Center);
+	return p->IntersectSphere(Center, Radius);
 }
+
+template <class T>
+inline bool			OverlapTSphere(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+{
+	const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj1);
+	float Radius = sphere->Radius;
+	Vector3d Center = transLocal1ToLocal2.WorldToLocalEx(sphere->Center);
+	const T* p = static_cast<const T*>(Obj2);
+	return p->IntersectSphere(Center, Radius);
+}
+
+template <class T>
+inline bool			OverlapCapsuleT(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+{
+	const T* p = static_cast<const T*>(Obj1);
+	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj2);
+	float Radius = capsule->Radius;
+	Vector3d P0 = transLocal1ToLocal2.LocalToWorldEx(capsule->GetX1());
+	Vector3d P1 = transLocal1ToLocal2.LocalToWorldEx(capsule->GetX2());
+	return p->IntersectCapsule(P0, P1, Radius);
+}
+
+template <class T>
+inline bool			OverlapTCapsule(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+{
+	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj1);
+	float Radius = capsule->Radius;
+	Vector3d P0 = transLocal1ToLocal2.LocalToWorldEx(capsule->GetX1());
+	Vector3d P1 = transLocal1ToLocal2.LocalToWorldEx(capsule->GetX2());
+	const T* p = static_cast<const T*>(Obj2);
+	return p->IntersectCapsule(P0, P1, Radius);
+}
+
 
 #define	REG_GEOMETRY_OBJ(_type, _name)				\
 	raycastTable[_type] = RayCastT<_name>;
@@ -77,9 +109,16 @@ GeometryIntersection::GeometryIntersection()
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::TRIANGLE,		OverlapBoxT<Triangle3d>);
 	REG_OVERLAP_TEST(ShapeType::BOX, ShapeType::TRIANGLE_MESH,	OverlapBoxT<TriangleMesh>);
 	REG_OVERLAP_TEST(ShapeType::PLANE, ShapeType::BOX,			OverlapTBox<Plane3d>);
-	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::SPHERE,		OverlapSphereT<Sphere3d>);
+	REG_OVERLAP_TEST(ShapeType::PLANE, ShapeType::SPHERE,		OverlapTSphere<Plane3d>);
+	REG_OVERLAP_TEST(ShapeType::PLANE, ShapeType::CAPSULE,		OverlapTCapsule<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::BOX,			OverlapTBox<Sphere3d>);
+	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::PLANE,		OverlapSphereT<Plane3d>);
+	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::SPHERE,		OverlapSphereT<Sphere3d>);
+	REG_OVERLAP_TEST(ShapeType::SPHERE, ShapeType::CAPSULE,		OverlapSphereT<Sphere3d>);
 	REG_OVERLAP_TEST(ShapeType::CAPSULE, ShapeType::BOX,		OverlapTBox<Capsule3d>);
+	REG_OVERLAP_TEST(ShapeType::CAPSULE, ShapeType::PLANE,		OverlapCapsuleT<Plane3d>);
+	REG_OVERLAP_TEST(ShapeType::CAPSULE, ShapeType::SPHERE,		OverlapTSphere<Capsule3d>);
+	REG_OVERLAP_TEST(ShapeType::CAPSULE, ShapeType::CAPSULE,	OverlapCapsuleT<Capsule3d>);
 	REG_OVERLAP_TEST(ShapeType::HEIGHTFIELD, ShapeType::BOX,	OverlapTBox<HeightField3d>);
 	REG_OVERLAP_TEST(ShapeType::TRIANGLE, ShapeType::BOX,		OverlapTBox<Triangle3d>);
 	REG_OVERLAP_TEST(ShapeType::TRIANGLE_MESH, ShapeType::BOX,	OverlapTBox<TriangleMesh>);

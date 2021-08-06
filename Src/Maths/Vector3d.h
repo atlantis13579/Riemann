@@ -70,6 +70,17 @@ public:
 		return TVector3<T>(x / m, y / m, z / m);
 	}
 
+	TVector3<T> SafeUnit() const
+	{
+		T m = SquareLength();
+		if (m < 1e-6f)
+		{
+			return TVector3<T>::Zero();
+		}
+		m = sqrtf(m);
+		return TVector3<T>(x / m, y / m, z / m);
+	}
+
 	void Normalize()
 	{
 		T m = Length();
@@ -193,6 +204,11 @@ public:
 	{
 		float* p = (float*)this;
 		return p[i];
+	}
+
+	bool IsZero() const
+	{
+		return SquareLength() < 0.00001f;
 	}
 
 	int ParallelTo(const TVector3<T>&v) const

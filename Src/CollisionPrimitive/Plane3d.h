@@ -91,6 +91,48 @@ public:
 		return true;
 	}
 
+	float DistanceTo(const Vector3d& Point) const
+	{
+		float Dist = SignedDistanceTo(Point);
+		return fabsf(Dist);
+	}
+
+	float SignedDistanceTo(const Vector3d& Point) const
+	{
+		Vector3d Origin = GetOrigin();
+		float Dist = (Point - Origin).Dot(Normal);
+		return Dist;
+	}
+
+	Vector3d ClosestPointTo(const Vector3d& Point) const
+	{
+		float SignedDist = SignedDistanceTo(Point);
+		return Point - SignedDist * Normal;
+	}
+
+	float DistanceToSegment(const Vector3d& P0, const Vector3d& P1) const
+	{
+		float SignedDist0 = SignedDistanceTo(P0);
+		float SignedDist1 = SignedDistanceTo(P1);
+		if (SignedDist0 * SignedDist1 <= 0.0f)
+		{
+			return 0.0f;
+		}
+		return std::min(fabsf(SignedDist0), fabsf(SignedDist1));
+	}
+
+	bool	IntersectSphere(const Vector3d& rCenter, float rRadius) const
+	{
+		float Dist = DistanceTo(rCenter);
+		return Dist <= rRadius;
+	}
+
+	bool	IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float Radius) const
+	{
+		float Dist = DistanceToSegment(P0, P1);
+		return Dist <= Radius;
+	}
+
 	static float MaxBV()
 	{
 		return 1000000.0f;
