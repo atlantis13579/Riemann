@@ -39,9 +39,7 @@ struct RayCastResult
 		hitPoint = Vector3d::Zero();
 		hitNormal = Vector3d::UnitY();
 		hitGeom = nullptr;
-		#ifdef _DEBUG
 		hitTestCount = 0;
-		#endif // _DEBUG
 	}
 
 	void AddTestCount(int Count)
@@ -56,9 +54,7 @@ struct RayCastResult
 	Vector3d	hitPoint;
 	Vector3d	hitNormal;
 	Geometry*	hitGeom;
-	#ifdef _DEBUG
 	int			hitTestCount;
-	#endif // _DEBUG
 };
 
 struct SweepOption

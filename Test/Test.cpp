@@ -168,7 +168,7 @@ void TestRayAABB()
 {
 	Vector3d Origin(-100, 0, 50);
 	Vector3d Dir(1, 0, 0);
-	float t0, t1;
+	float t0 = 0, t1 = 0;
 	bool success;
 	assert(Ray3d::RayIntersectAABB2(Origin, Dir, Vector3d::Zero(), Vector3d(100, 100, 100), 0.00001f, 100000.0f, &t0, &t1));
 

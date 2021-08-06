@@ -15,9 +15,7 @@ struct TriMeshHitResult
 	float		hitTime;
 	Vector3d	hitNormal;
 	uint32_t	hitIndex;
-	#ifdef _DEBUG
-	int			hitTestCount;
-	#endif // _DEBUG
+	int		hitTestCount;
 
 	void AddTestCount(int Count)
 	{
