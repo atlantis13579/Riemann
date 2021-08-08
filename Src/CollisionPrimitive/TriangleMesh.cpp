@@ -26,9 +26,9 @@ void* TriangleMesh::AllocMemory(int Size, int Width)
 {
 	if (m_Memory != nullptr)
 	{
-		delete[]m_Memory;
+		delete[] m_Memory;
 	}
-	m_Memory = new char[Size + Width - 1];
+	m_Memory = new uint8_t[Size + Width - 1];
 	return AlignMemory(m_Memory, Width);
 }
 

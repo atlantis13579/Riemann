@@ -2,9 +2,10 @@
 #pragma once
 
 #ifdef _WIN32
-
-#include <xmmintrin.h>
-#include <emmintrin.h>
+#include <intrin.h>
+#else
+#include <x86intrin.h>
+#endif
 
 typedef __m128 FloatV;
 typedef __m128 Vec3V;
@@ -15,8 +16,6 @@ typedef __m128 VecI32V;
 typedef __m128 VecU16V;
 typedef __m128 VecI16V;
 typedef __m128 QuatV;
-
-#endif 
 
 #include "Maths.h"
 #include "Vector3d.h"
@@ -1866,14 +1865,20 @@ inline VecI32V VecI32V_ReinterpretFrom_Vec4V(Vec4V a)
 	return VecI32V(a);
 }
 
+typedef union
+{
+	__m128 v;
+	uint32_t m128_u32[4];
+} _VecU32V;
+
 inline VecU32V U4LoadXYZW(uint32_t x, uint32_t y, uint32_t z, uint32_t w)
 {
-	VecU32V result;
-	result.m128_u32[0] = x;
-	result.m128_u32[1] = y;
-	result.m128_u32[2] = z;
-	result.m128_u32[3] = w;
-	return result;
+	_VecU32V t;
+	t.m128_u32[0] = x;
+	t.m128_u32[1] = y;
+	t.m128_u32[2] = z;
+	t.m128_u32[3] = w;
+	return t.v;
 }
 
 inline VecU32V V4IsGrtrV32u(const Vec4V a, const Vec4V b)

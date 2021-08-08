@@ -434,7 +434,7 @@ struct SubSortSAH
 };
 
 
-void MeshBVH4::BuildFromBounds(MeshBVH4& bvh, void*& Memory, const std::vector<Box3d>& allBounds, std::vector<uint32_t>& Permute, const Box3d& meshBounds)
+void MeshBVH4::BuildFromBounds(MeshBVH4& bvh, uint8_t*& Memory, const std::vector<Box3d>& allBounds, std::vector<uint32_t>& Permute, const Box3d& meshBounds)
 {
 	const uint32_t numBounds = (uint32_t)allBounds.size();
 	Permute.resize(numBounds + 1);

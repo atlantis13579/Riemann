@@ -375,7 +375,9 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 	const float ics = 1.0f / m_VoxelSize;
 	const float ich = 1.0f / m_VoxelHeight;
 
-	Box3d tbox({ v0, v1, v2 });
+	Box3d tbox(v0, v0);
+	tbox.Grow(v1);
+	tbox.Grow(v2);
 
 	if (!tbox.Intersect(m_BV))
 		return true;
@@ -914,9 +916,9 @@ bool	VoxelField::SerializeFrom(const char* filename)
 		return false;
 	}
 
-	_fseeki64(fp, 0, SEEK_END);
-	uint64_t fileSize = _ftelli64(fp);
-	_fseeki64(fp, 0, SEEK_SET);
+	fseek(fp, 0, SEEK_END);
+	size_t fileSize = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
 
 	if (fileSize < 4 + sizeof(VoxelFileHeader))
 	{

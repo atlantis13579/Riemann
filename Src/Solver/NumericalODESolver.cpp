@@ -1,6 +1,8 @@
 
 #include "NumericalODESolver.h"
 
+#include <math.h>
+#include <string.h>
 #include <vector>
 
 namespace NumericalODESolver

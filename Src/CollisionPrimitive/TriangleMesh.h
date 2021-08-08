@@ -72,5 +72,5 @@ public:
 
 private:
 	MeshBVH4*	m_BVH;
-	void*		m_Memory;
+	uint8_t*	m_Memory;
 };

@@ -133,7 +133,7 @@ public:
 	void			Validate(void* p);
 	void			ValidateRecursive(void* p, uint32_t Depth, const Box3d& parentBounds, BVHNodeBatch* batch);
 
-	static void		BuildFromBounds(MeshBVH4& bvh, void*& Memory, const std::vector<Box3d>& allBounds, std::vector<uint32_t>& Permute, const Box3d& meshBounds);
+	static void		BuildFromBounds(MeshBVH4& bvh, uint8_t*& Memory, const std::vector<Box3d>& allBounds, std::vector<uint32_t>& Permute, const Box3d& meshBounds);
 
 	Vector4d		BoundsMin, BoundsMax;
 	float			____Unuse1[8];
