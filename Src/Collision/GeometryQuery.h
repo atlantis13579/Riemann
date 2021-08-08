@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "../Maths/Stack.h"
 #include "../Maths/Vector3d.h"
 #include "GeometryObject.h"
 
@@ -8,6 +9,20 @@ class AABBTree;
 class DynamicAABBTree;
 class SparseSpatialHash;
 class Geometry;
+
+#define RAYCAST_STACK_SIZE		(32)
+
+struct RayCastCache
+{
+	RayCastCache()
+	{
+		prevhitGeom = nullptr;
+		prevStack.Clear();
+	}
+
+	Geometry*									prevhitGeom;
+	FixedStack<uint32_t, RAYCAST_STACK_SIZE>	prevStack;
+};
 
 struct RayCastOption
 {
@@ -21,8 +36,9 @@ struct RayCastOption
 		Type = RAYCAST_NEAREST;
 		MaxDist = FLT_MAX;
 	}
-	RayCastType Type;
-	float		MaxDist;
+	RayCastType		Type;
+	RayCastCache	Cache;
+	float			MaxDist;
 };
 
 struct RayCastResult
@@ -36,6 +52,7 @@ struct RayCastResult
 	{
 		hit = false;
 		hitTime = FLT_MAX;
+		hitTimeMin = FLT_MAX;
 		hitPoint = Vector3d::Zero();
 		hitNormal = Vector3d::UnitY();
 		hitGeom = nullptr;
@@ -51,6 +68,7 @@ struct RayCastResult
 
 	bool		hit;
 	float		hitTime;
+	float		hitTimeMin;
 	Vector3d	hitPoint;
 	Vector3d	hitNormal;
 	Geometry*	hitGeom;

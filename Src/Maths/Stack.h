@@ -11,17 +11,23 @@ public:
 		m_Top = 0;
 	}
 
-	void Push(TNode* p)
+	void Restore(const FixedStack& rhs)
+	{
+		m_Top = rhs.m_Top;
+		memcpy(m_Stack, rhs.m_Stack, sizeof(TNode) * m_Top);
+	}
+
+	void Push(TNode p)
 	{
 		m_Stack[m_Top++] = p;
 	}
 
-	TNode* Pop()
+	TNode Pop()
 	{
 		return m_Stack[--m_Top];
 	}
 
-	TNode* Top()
+	TNode Top()
 	{
 		return m_Stack[m_Top - 1];
 	}
@@ -36,9 +42,14 @@ public:
 		return m_Top == 0;
 	}
 
+	void Clear()
+	{
+		m_Top = 0;
+	}
+
 private:
 	int		m_Top;
-	TNode* m_Stack[MaxDepth];
+	TNode	m_Stack[MaxDepth];
 };
 
 

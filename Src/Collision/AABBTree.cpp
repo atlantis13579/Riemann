@@ -58,12 +58,12 @@ void AABBTree::Statistic(TreeStatistics& stat)
 {
 	memset(&stat, 0, sizeof(stat));
 
-	FixedStack<AABBTreeNodeInference, 32> stack;
-	stack.Push(m_AABBTreeInference);
+	FixedStack<uint32_t, RAYCAST_STACK_SIZE> stack;
+	stack.Push(0);
 
 	while (!stack.Empty())
 	{
-		AABBTreeNodeInference* p = stack.Pop();
+		AABBTreeNodeInference* p = m_AABBTreeInference + stack.Pop();
 
 		while (p)
 		{
@@ -80,7 +80,7 @@ void AABBTree::Statistic(TreeStatistics& stat)
 			if (Left && Right)
 			{
 				p = Left;
-				stack.Push(Right);
+				stack.Push((uint32_t)(Right - m_AABBTreeInference));
 				continue;
 			}
 			else if (Left)
@@ -142,11 +142,11 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, 
 		if (Ray.IntersectAABB(BV.Min, BV.Max, &t) && t < Option.MaxDist)
 		{
 			Result->hit = true;
-			if (t < Result->hitTime)
+			if (t < Result->hitTimeMin)
 			{
 				Result->hitGeom = nullptr;
 				Result->hitPoint = Ray.PointAt(t);
-				Result->hitTime = t;
+				Result->hitTimeMin = t;
 			}
 			return *Indices;
 		}
@@ -160,24 +160,20 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, 
 	{
 		const int index = Indices[i];
 		Geometry *Geom = GeometryCollection[index];
-		RayCastResult TempResult;
-		bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, &Option, &TempResult);
-
-		Result->AddTestCount(TempResult.hitTestCount);
-
+		bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, &Option, Result);
 		if (hit)
 		{
 			if (Option.Type == RayCastOption::RAYCAST_ANY)
 			{
 				min_idx = index;
-				min_t = TempResult.hitTime;
+				min_t = Result->hitTime;
 				break;
 			}
 
-			if (TempResult.hitTime < min_t)
+			if (Result->hitTime < min_t)
 			{
 				min_idx = index;
-				min_t = TempResult.hitTime;
+				min_t = Result->hitTime;
 			}
 		}
 	}
@@ -185,35 +181,74 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, 
 	if (min_idx != -1)
 	{
 		Result->hit = true;
-		if (min_t < Result->hitTime)
+		if (min_t < Result->hitTimeMin)
 		{
 			Result->hitPoint = Ray.PointAt(min_t);
 			Result->hitGeom = GeometryCollection[min_idx];
-			Result->hitTime = min_t;
+			Result->hitTimeMin = min_t;
 		}
 	}
 	return min_idx;
 }
 
-bool  AABBTree::RayCast(const Ray3d& ray, Geometry **ObjectCollection, const RayCastOption& Option, RayCastResult* Result) const
+bool RayIntersectCacheObj(const Ray3d& Ray, const RayCastOption& Option, RayCastResult* Result)
 {
+	const RayCastCache& Cache = Option.Cache;
+	if (Cache.prevhitGeom)
+	{
+		bool hit = Cache.prevhitGeom->RayCast(Ray.Origin, Ray.Dir, &Option, Result);
+		if (hit)
+		{
+			Result->hitPoint = Ray.PointAt(Result->hitTime);
+			Result->hitGeom = Cache.prevhitGeom;
+			Result->hitTimeMin = Result->hitTime;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool RestoreCacheStack(const RayCastOption& Option, FixedStack<uint32_t, RAYCAST_STACK_SIZE>* Stack)
+{
+	const RayCastCache& Cache = Option.Cache;
+	if (!Cache.prevStack.Empty())
+	{
+		Stack->Restore(Option.Cache.prevStack);
+		return true;
+	}
+	return false;
+}
+
+bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const RayCastOption& Option, RayCastResult* Result) const
+{
+	if (RayIntersectCacheObj(Ray, Option, Result))
+	{
+		if (Option.Type == RayCastOption::RAYCAST_ANY)
+		{
+			return true;
+		}
+	}
+
 	Result->hit = false;
-	Result->hitTime = FLT_MAX;
+	Result->hitTimeMin = FLT_MAX;
 	Result->hitGeom = nullptr;
 
 	float t1, t2;
 	AABBTreeNodeInference* p = m_AABBTreeInference;
-	if (p == nullptr || !ray.IntersectAABB(p->BV.Min, p->BV.Max, &t1))
+	if (p == nullptr || !Ray.IntersectAABB(p->BV.Min, p->BV.Max, &t1))
 	{
 		return false;
 	}
 
-	FixedStack<AABBTreeNodeInference, 32> stack;
-	stack.Push(m_AABBTreeInference);
+	FixedStack<uint32_t, RAYCAST_STACK_SIZE> stack;
+	if (!RestoreCacheStack(Option, &stack))
+	{
+		stack.Push(0);
+	}
 
 	while (!stack.Empty())
 	{
-		AABBTreeNodeInference* p = stack.Pop();
+		AABBTreeNodeInference* p = m_AABBTreeInference + stack.Pop();
 
 		while (p)
 		{
@@ -222,7 +257,7 @@ bool  AABBTree::RayCast(const Ray3d& ray, Geometry **ObjectCollection, const Ray
 				int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 				int	 nPrimitives = p->GetNumGeometries();
 				const Box3d& Box = p->GetBoundingVolume();
-				int HitId =	RayIntersectGeometry(ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
+				int HitId =	RayIntersectGeometry(Ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
 				if (HitId >= 0)
 				{
 					if (Option.Type == RayCastOption::RAYCAST_ANY)
@@ -238,20 +273,20 @@ bool  AABBTree::RayCast(const Ray3d& ray, Geometry **ObjectCollection, const Ray
 
 			Result->AddTestCount(2);
 
-			bool hit1 = ray.IntersectAABB(Left->BV.Min, Left->BV.Max, &t1) && t1 < Result->hitTime;
-			bool hit2 = ray.IntersectAABB(Right->BV.Min, Right->BV.Max, &t2) && t2 < Result->hitTime;
+			bool hit1 = Ray.IntersectAABB(Left->BV.Min, Left->BV.Max, &t1) && t1 < Result->hitTimeMin;
+			bool hit2 = Ray.IntersectAABB(Right->BV.Min, Right->BV.Max, &t2) && t2 < Result->hitTimeMin;
 
 			if (hit1 && hit2)
 			{
 				if (t1 < t2)
 				{
 					p = Left;
-					stack.Push(Right);
+					stack.Push((uint32_t)(Right - m_AABBTreeInference));
 				}
 				else
 				{
 					p = Right;
-					stack.Push(Left);
+					stack.Push((uint32_t)(Left - m_AABBTreeInference));
 				}
 				continue;
 			}
@@ -327,12 +362,12 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 		return false;
 	}
 
-	FixedStack<AABBTreeNodeInference, 32> stack;
-	stack.Push(m_AABBTreeInference);
+	FixedStack<uint32_t, RAYCAST_STACK_SIZE> stack;
+	stack.Push(0);
 
 	while (!stack.Empty())
 	{
-		AABBTreeNodeInference* p = stack.Pop();
+		AABBTreeNodeInference* p = m_AABBTreeInference + stack.Pop();
 
 		while (p)
 		{
@@ -368,12 +403,12 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 				if (d1 < d2)
 				{
 					p = Left;
-					stack.Push(Right);
+					stack.Push((uint32_t)(Right - m_AABBTreeInference));
 				}
 				else
 				{
 					p = Right;
-					stack.Push(Left);
+					stack.Push((uint32_t)(Left - m_AABBTreeInference));
 				}
 				continue;
 			}

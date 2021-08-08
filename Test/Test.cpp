@@ -282,14 +282,14 @@ void TestGeometryQuery()
 	RayCastOption option;
 	scene.RayCast(Vector3d(0.2f, 0.2f, 5.0f), Vector3d(0.2f, 0.2f, -1.0f), option , &result);
 	assert(result.hit);
-	assert(fabsf(result.hitTime - 4.0f) < 0.001f);
+	assert(fabsf(result.hitTimeMin - 4.0f) < 0.001f);
 
 	scene.RayCast(Vector3d(0.0f, 0.0f, -5.0f), Vector3d(0.0f, 0.0f, -1.0f), option, &result);
 	assert(!result.hit);
 
 	scene.RayCast(Vector3d(0.0f, 0.0f, 15.0f), Vector3d(0.0f, 0.0f, -1.0f), option, &result);
 	assert(result.hit);
-	assert(fabsf(result.hitTime - 5.0f) < 0.001f);
+	assert(fabsf(result.hitTimeMin - 5.0f) < 0.001f);
 
 	for (auto obj : objs)
 	{
