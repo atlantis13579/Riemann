@@ -143,9 +143,9 @@ public:
 			return false;
 		}
 
-		_fseeki64(fp, 0, SEEK_END);
-		uint64_t fileSize = _ftelli64(fp);
-		_fseeki64(fp, 0, SEEK_SET);
+		fseek(fp, 0, SEEK_END);
+		size_t fileSize = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
 
 		if (fileSize < 48)
 		{

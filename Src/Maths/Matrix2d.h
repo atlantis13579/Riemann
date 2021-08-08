@@ -108,32 +108,32 @@ public:
 		return *this;
 	}
 
-	inline constexpr float operator()(int i, int j) const
+	inline float operator()(int i, int j) const
 	{
 		return mat[i][j];
 	}
 
-	inline constexpr float& operator()(int i, int j)
+	inline float& operator()(int i, int j)
 	{
 		return mat[i][j];
 	}
 
-	inline constexpr const Vector2d& operator[](int i) const
+	inline const Vector2d& operator[](int i) const
 	{
 		return row[i];
 	}
 
-	inline constexpr Vector2d& operator[](int i)
+	inline Vector2d& operator[](int i)
 	{
 		return row[i];
 	}
 
-	inline constexpr const Vector2d& Row(int i) const
+	inline const Vector2d& Row(int i) const
 	{
 		return row[i];
 	}
 
-	inline constexpr Vector2d& Row(int i)
+	inline Vector2d& Row(int i)
 	{
 		return row[i];
 	}

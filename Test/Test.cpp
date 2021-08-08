@@ -39,6 +39,7 @@
 
 void TestPhysxBin()
 {
+	printf("Running TestPhysxBin\n");
 	std::vector<Geometry*> collection;
 	LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
 
@@ -91,6 +92,7 @@ void TestPhysxBin()
 
 void TestSIMD()
 {
+	printf("Running TestSIMD\n");
 	Vec4V v1 = V4Load(1.2f);
 	Vec4V v2 = V4Load(1.2f);
 	Vec4V v3 = V4Mul(v1, v2);
@@ -100,6 +102,7 @@ void TestSIMD()
 
 void TestRTree1()
 {
+	printf("Running TestRTree1\n");
 	TriangleMesh mesh;
 	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
 	mesh.AddAABB(Vector3d(-0.5f, -0.5f, -0.5f), Vector3d(0.5f, 0.5f, 0.5f));
@@ -127,6 +130,7 @@ void TestRTree1()
 
 void TestRTree2()
 {
+	printf("Running TestRTree2\n");
 	TriangleMesh mesh;
 
 	mesh.LoadObj("e:/temp/dungeon.obj");
@@ -149,6 +153,7 @@ void TestRTree2()
 
 void TestBitmap()
 {
+	printf("Running TestBitmap\n");
 	int a[] = { 1, 1, 0, 0, 1, 0, 1, 0,
 				1, 1, 1, 1, 1, 1, 1, 1,
 				0, 0, 0, 0, 0, 0, 0, 0,
@@ -166,6 +171,7 @@ void TestBitmap()
 
 void TestRayAABB()
 {
+	printf("Running TestRayAABB\n");
 	Vector3d Origin(-100, 0, 50);
 	Vector3d Dir(1, 0, 0);
 	float t0 = 0, t1 = 0;
@@ -190,6 +196,7 @@ void TestRayAABB()
 
 void TestAABBTree()
 {
+	printf("Running TestAABBTree\n");
 	std::vector<Box3d> boxes;
 	boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
 	boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(1, 1, 3));
@@ -250,6 +257,7 @@ void TestAABBTree()
 
 void TestTensor()
 {
+	printf("Running TestTensor\n");
 	Tensor<float, 4> t(10, 20, 30, 40);
 	t(0, 0, 0, 0) = 1.0f;
 	t(9, 19, 29, 39) = 2.0f;
@@ -261,6 +269,7 @@ void TestTensor()
 
 void TestGeometryQuery()
 {
+	printf("Running TestGeometryQuery\n");
 	GeometryQuery scene;
 	
 	std::vector<Geometry*> objs;
@@ -322,6 +331,7 @@ public:
 
 void TestSAP()
 {
+	printf("Running TestSAP\n");
 	std::set<OverlapKey> overlaps;
 	std::vector<Box3d> boxes;
 	boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(2, 2, 2));
@@ -366,6 +376,7 @@ void TestSAP()
 
 void TestMesh1()
 {
+	printf("Running TestMesh1\n");
 	Mesh mesh;
 	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(0.99f, 0.99f, 0.99f));
 	mesh.CalculateBoundingBox();
@@ -440,6 +451,7 @@ public:
 
 void TestSAPInc()
 {
+	printf("Running TestSAPInc\n");
 	std::vector<Geometry*> boxes;
 	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d(0.5f, 0.5f, 0.5f), Vector3d(0.5f, 0.5f, 0.5f)));
 	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d(2.5f, 2.5f, 2.5f), Vector3d(0.5f, 0.5f, 0.5f)));
@@ -501,10 +513,10 @@ void TestSAPInc()
 void TestMainEntry()
 {
 	TestRayAABB();
-	TestPhysxBin();
-	// TestSIMD();
-	// TestRTree1();
-	TestRTree2();
+	// TestPhysxBin();
+	TestSIMD();
+	TestRTree1();
+	// TestRTree2();
 	// TestBitmap();
 	TestAABBTree();
 	TestGeometryQuery();
