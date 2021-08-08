@@ -1,12 +1,12 @@
 #pragma once
 
+#include <cstddef>
 #include <unordered_map>
 #include <vector>
 
-class PhysxFormat_41
+namespace PhysxFormat_41
 {
-public:
-	enum PxType
+	enum
 	{
 		eUNDEFINED,
 
@@ -34,6 +34,8 @@ public:
 		eFIRST_VEHICLE_EXTENSION = 512,
 		eFIRST_USER_EXTENSION = 1024
 	};
+
+	typedef int PxType;
 
 	struct ManifestEntry
 	{
@@ -189,7 +191,7 @@ public:
 		PX_DEFINE_TYPEINFO(PxShape, eSHAPE)
 		PX_DEFINE_TYPEINFO(PxPruningStructure, ePRUNING_STRUCTURE)
 
-		class PxBase
+	class PxBase
 	{
 	public:
 		virtual				~PxBase() {};
@@ -1428,6 +1430,23 @@ public:
 #define SN_BINARY_VERSION_GUID_NUM_CHARS 32
 #define PX_BINARY_SERIAL_VERSION "77E92B17A4084033A0FDB51332D5A6BB"
 
+	bool checkCompatibility(const char* binaryVersionGuidCandidate)
+	{
+		for (int i = 0; i < SN_BINARY_VERSION_GUID_NUM_CHARS; i++)
+		{
+			if (binaryVersionGuidCandidate[i] != PX_BINARY_SERIAL_VERSION[i])
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	const char* getBinaryVersionGuid()
+	{
+		return PX_BINARY_SERIAL_VERSION;
+	}
+
 	bool readHeader(uint8_t*& address)
 	{
 		const uint32_t header = read32(address);
@@ -1456,21 +1475,52 @@ public:
 		return true;
 	}
 
-	bool checkCompatibility(const char* binaryVersionGuidCandidate)
+	template <class T>
+	PxBase* DeserializePhysxObj(uint8_t*& address, PxDeserializationContext& context)
 	{
-		for (int i = 0; i < SN_BINARY_VERSION_GUID_NUM_CHARS; i++)
-		{
-			if (binaryVersionGuidCandidate[i] != PX_BINARY_SERIAL_VERSION[i])
-			{
-				return false;
-			}
-		}
-		return true;
+		T src;
+		memcpy(&src, address, sizeof(T));
+		src.importExtraData(context);
+		src.resolveReferences(context);
+
+		T* dst = (T*)address;
+		*dst = src;
+		address += sizeof(T);
+		return dst;
 	}
 
-	const char* getBinaryVersionGuid()
+	PxBase* Deserialize(uint8_t*& address, PxDeserializationContext& context, int classType)
 	{
-		return PX_BINARY_SERIAL_VERSION;
+		PxBase* instance = nullptr;
+		if (classType == eTRIANGLE_MESH_BVH33)
+		{
+			instance = DeserializePhysxObj<PxRTreeTriangleMesh>(address, context);
+		}
+		else if (classType == eCONVEX_MESH)
+		{
+			instance = DeserializePhysxObj<PxConvexMesh>(address, context);
+		}
+		else if (classType == e_HEIGHTFIELD)
+		{
+			instance = DeserializePhysxObj<HeightField>(address, context);
+		}
+		else if (classType == eMATERIAL)
+		{
+			instance = DeserializePhysxObj<NpMaterial>(address, context);
+		}
+		else if (classType == eRIGID_STATIC)
+		{
+			instance = DeserializePhysxObj<NpRigidStatic>(address, context);
+		}
+		else if (classType == eRIGID_DYNAMIC)
+		{
+			instance = DeserializePhysxObj<NpRigidDynamic>(address, context);
+		}
+		else if (classType == eSHAPE)
+		{
+			instance = DeserializePhysxObj<NpShape>(address, context);
+		}
+		return instance;
 	}
 
 	bool DeserializeFromBuffer(void* Buffer, PhysxCollections& collection)
@@ -1647,51 +1697,4 @@ public:
 		return true;
 	}
 
-	template <class T>
-	PxBase* DeserializePhysxObj(uint8_t*& address, PxDeserializationContext& context)
-	{
-		T src;
-		memcpy(&src, address, sizeof(T));
-		src.importExtraData(context);
-		src.resolveReferences(context);
-
-		T* dst = (T*)address;
-		*dst = src;
-		address += sizeof(T);
-		return dst;
-	}
-
-	PxBase* Deserialize(uint8_t*& address, PxDeserializationContext& context, int classType)
-	{
-		PxBase* instance = nullptr;
-		if (classType == eTRIANGLE_MESH_BVH33)
-		{
-			instance = DeserializePhysxObj<PxRTreeTriangleMesh>(address, context);
-		}
-		else if (classType == eCONVEX_MESH)
-		{
-			instance = DeserializePhysxObj<PxConvexMesh>(address, context);
-		}
-		else if (classType == e_HEIGHTFIELD)
-		{
-			instance = DeserializePhysxObj<HeightField>(address, context);
-		}
-		else if (classType == eMATERIAL)
-		{
-			instance = DeserializePhysxObj<NpMaterial>(address, context);
-		}
-		else if (classType == eRIGID_STATIC)
-		{
-			instance = DeserializePhysxObj<NpRigidStatic>(address, context);
-		}
-		else if (classType == eRIGID_DYNAMIC)
-		{
-			instance = DeserializePhysxObj<NpRigidDynamic>(address, context);
-		}
-		else if (classType == eSHAPE)
-		{
-			instance = DeserializePhysxObj<NpShape>(address, context);
-		}
-		return instance;
-	}
 };

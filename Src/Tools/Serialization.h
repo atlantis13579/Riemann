@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdint.h>
+#include <cstddef>
+
 template <typename T>
 inline T read(uint8_t*& address)
 {

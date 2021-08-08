@@ -1,6 +1,10 @@
 
 #include "PositionBasedDynamicsSolver.h"
 
+#include <math.h>
+#include <string.h>
+#include <cstddef>
+
 class PBDProxy
 {
 public:

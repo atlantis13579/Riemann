@@ -61,7 +61,7 @@ public:
 };
 
 template<>
-virtual bool		TGeometry<TriangleMesh>::RayCast(const Vector3d& Origin, const Vector3d& Dir, const RayCastOption* Option, RayCastResult* Result) const override final
+bool				TGeometry<TriangleMesh>::RayCast(const Vector3d& Origin, const Vector3d& Dir, const RayCastOption* Option, RayCastResult* Result) const
 {
 	TriMeshHitOption HitOption;
 	HitOption.hitNearest = Option->Type == RayCastOption::RAYCAST_NEAREST;
@@ -78,7 +78,7 @@ virtual bool		TGeometry<TriangleMesh>::RayCast(const Vector3d& Origin, const Vec
 }
 
 template<>
-virtual bool		TGeometry<HeightField3d>::RayCast(const Vector3d& Origin, const Vector3d& Dir, const RayCastOption* Option, RayCastResult* Result) const override final
+bool				TGeometry<HeightField3d>::RayCast(const Vector3d& Origin, const Vector3d& Dir, const RayCastOption* Option, RayCastResult* Result) const
 {
 	HeightFieldHitOption HitOption;
 	HitOption.maxDist = Option->MaxDist;

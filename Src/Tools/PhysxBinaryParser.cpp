@@ -13,6 +13,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <cstddef>
 #include <unordered_map>
 #include <vector>
 
@@ -277,8 +278,7 @@ bool LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 	fclose(fp);
 
 	PhysxCollections collection;
-	physx parser;
-	if (!parser.DeserializeFromBuffer(p, collection))
+	if (!physx::DeserializeFromBuffer(p, collection))
 	{
 		return false;
 	}

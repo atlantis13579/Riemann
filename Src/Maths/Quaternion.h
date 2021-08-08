@@ -7,11 +7,7 @@
 class Quaternion
 {
 public:
-	union
-	{
-		struct { float x, y, z, w; };
-		struct { Vector3d v; float s; };
-	};
+	float x, y, z, w;
 
 	Quaternion()
 	{
@@ -19,14 +15,18 @@ public:
 
 	Quaternion(const Quaternion& q)
 	{
-		s = q.s;
-		v = q.v;
+		x = q.x;
+		y = q.y;
+		z = q.z;
+		w = q.w;
 	}
 
-	Quaternion(float _s, const Vector3d &_v)
+	Quaternion(float _w, const Vector3d &_v)
 	{
-		s = _s;
-		v = _v;
+		w = _w;
+		x = _v.x;
+		y = _v.y;
+		z = _v.z;
 	}
 
 	Quaternion(float _x, float _y, float _z, float _w)
@@ -39,38 +39,38 @@ public:
 
 	Quaternion& operator=(const Quaternion& q)
 	{
-		s = q.s;
-		v = q.v;
+		x = q.x;
+		y = q.y;
+		z = q.z;
+		w = q.w;
 		return *this;
 	}
 
 	Quaternion Conjugate() const
 	{
-		return Quaternion(-v.x, -v.y, -v.z, s);
+		return Quaternion(-x, -y, -z, w);
 	}
 
 	Quaternion Inverse() const
 	{
 		float m = Magnitude();
-		return Quaternion(s / m, Vector3d(-v.x / m, -v.y / m, -v.z / m));
+		return Quaternion(w / m, Vector3d(-x / m, -y / m, -z / m));
 	}
 
 	Quaternion Unit() const
 	{
 		float m = Magnitude();
-		return Quaternion(s / m, Vector3d(v.x / m, v.y / m, v.z / m));
+		return Quaternion(w / m, Vector3d(x / m, y / m, z / m));
 	}
 
 	float Magnitude() const
 	{
-		return sqrtf(s*s + v.x*v.x + v.y*v.y + v.z*v.z);
+		return sqrtf(w*w + x*x + y*y + z*z);
 	}
 
 	static Quaternion FromRotationAxis(const Vector3d& q, float angle)
 	{
-		Quaternion quat;
-		quat.s = cosf(angle / 2);
-		quat.v = q * sinf(angle / 2);
+		Quaternion quat(cosf(angle / 2), q * sinf(angle / 2));
 		return quat;
 	}
 
@@ -85,9 +85,9 @@ public:
 	Vector3d ToEuler() const
 	{
 		return Vector3d(
-			atan2f(2 * v.x*s - 2 * v.y*v.z, 1 - 2 * v.x*v.x - 2 * v.z*v.z),
-			atan2f(2 * v.y*s - 2 * v.x*v.z, 1 - 2 * v.y*v.y - 2 * v.z*v.z),
-			asinf(2 * v.x*v.y + 2 * v.z*s));
+			atan2f(2 * x*w - 2 * y*z, 1 - 2 * x*x - 2 * z*z),
+			atan2f(2 * y*w - 2 * x*z, 1 - 2 * y*y - 2 * z*z),
+			asinf(2 * x*y + 2 * z*w));
 	}
 
 	Quaternion operator+(const Quaternion& q) const
@@ -102,7 +102,7 @@ public:
 
 	Quaternion operator*(float k) const
 	{
-		return Quaternion(v.x * k, v.y * k, v.z * k, w * k);
+		return Quaternion(x * k, y * k, z * k, w * k);
 	}
 
 	Quaternion operator*(const Quaternion& q) const
@@ -121,8 +121,9 @@ public:
 
 	Vector3d operator*(const Vector3d& vec) const
 	{
+		Vector3d v(x, y, z);
 		Vector3d t = v.Cross(vec) * 2;
-		return vec + t * s + v.Cross(t);
+		return vec + t * w + v.Cross(t);
 	}
 
 	Quaternion& operator+=(const Quaternion& q)
@@ -162,15 +163,15 @@ public:
 
 	Matrix4d ToRotationMatrix4d() const
 	{
-		float x2 = v.x * v.x;
-		float y2 = v.y * v.y;
-		float z2 = v.z * v.z;
-		float xy = v.x * v.y;
-		float xz = v.x * v.z;
-		float yz = v.y * v.z;
-		float wx = s * v.x;
-		float wy = s * v.y;
-		float wz = s * v.z;
+		float x2 = x * x;
+		float y2 = y * y;
+		float z2 = z * z;
+		float xy = x * y;
+		float xz = x * z;
+		float yz = y * z;
+		float wx = w * x;
+		float wy = w * y;
+		float wz = w * z;
 
 		return Matrix4d(1.0f - 2.0f * (y2 + z2), 2.0f * (xy - wz), 2.0f * (xz + wy), 0.0f,
 			2.0f * (xy + wz), 1.0f - 2.0f * (x2 + z2), 2.0f * (yz - wx), 0.0f,
@@ -180,15 +181,15 @@ public:
 
 	Matrix3d ToRotationMatrix() const
 	{
-		float x2 = v.x * v.x;
-		float y2 = v.y * v.y;
-		float z2 = v.z * v.z;
-		float xy = v.x * v.y;
-		float xz = v.x * v.z;
-		float yz = v.y * v.z;
-		float wx = s * v.x;
-		float wy = s * v.y;
-		float wz = s * v.z;
+		float x2 = x * x;
+		float y2 = y * y;
+		float z2 = z * z;
+		float xy = x * y;
+		float xz = x * z;
+		float yz = y * z;
+		float wx = w * x;
+		float wy = w * y;
+		float wz = w * z;
 
 		return Matrix3d(1.0f - 2.0f * (y2 + z2), 2.0f * (xy - wz), 2.0f * (xz + wy),
 			2.0f * (xy + wz), 1.0f - 2.0f * (x2 + z2), 2.0f * (yz - wx),

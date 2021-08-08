@@ -5,7 +5,6 @@
 template <typename DataType, int Rank>
 class Tensor
 {
-	friend class Tensor;
 public:
 	template<typename... IndexTypes>
 	Tensor<DataType, Rank>(IndexTypes ...Dims)
@@ -104,14 +103,14 @@ public:
 		return _At(Index * m_SubDimensions[0], Indices...);
 	}
 
-	template<typename DataType, int Rank>
+	template<typename DT, int nRank>
 	struct SubTensor
 	{
-		static Tensor<DataType, Rank - 1> View(const Tensor<DataType, Rank>& rhs, int Index)
+		static Tensor<DT, nRank - 1> View(const Tensor<DT, nRank>& rhs, int Index)
 		{
-			Tensor<DataType, Rank - 1> tensor;
+			Tensor<DT, nRank - 1> tensor;
 			tensor.m_Size = rhs.m_Size / rhs.m_Dimensions[0];
-			for (int i = 0; i < Rank - 1; ++i)
+			for (int i = 0; i < nRank - 1; ++i)
 			{
 				tensor.m_Dimensions[i] = rhs.m_Dimensions[i + 1];
 				tensor.m_SubDimensions[i] = rhs.m_SubDimensions[i + 1];
@@ -122,10 +121,10 @@ public:
 		}
 	};
 
-	template<typename DataType>
-	struct SubTensor<DataType, 1>
+	template<typename DT>
+	struct SubTensor<DT, 1>
 	{
-		static DataType View(const Tensor<DataType, Rank>& rhs, int Index)
+		static DT View(const Tensor<DT, Rank>& rhs, int Index)
 		{
 			return rhs.m_Data[Index];
 		}

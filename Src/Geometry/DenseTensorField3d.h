@@ -21,9 +21,14 @@ public:
 		m_ConstTensor = TensorType::Zero();
 
 		m_BV = BV;
-		m_Size = TVector3<int>(nX, nY, nZ);
-		m_CellSize = (BV.Max - BV.Min) / m_Size;
-		m_InvCellSize = 1.0f / m_CellSize;
+		m_nX = nX;
+		m_nY = nY;
+		m_nZ = nZ;
+		m_CellSize = (BV.Max - BV.Min);
+		m_CellSize.x /= m_nX;
+		m_CellSize.y /= m_nY;
+		m_CellSize.z /= m_nZ;
+		m_InvCellSize = Vector3d(1.0f / m_CellSize.x, 1.0f / m_CellSize.y, 1.0f / m_CellSize.z);
 		m_InterpMethod = InterpMethod::BILINEAR;
 	}
 
@@ -82,6 +87,7 @@ private:
 	bool					m_IsConstField;
 	TensorType				m_ConstTensor;
 	Box3d					m_BV;
+	int						m_nX, m_nY, m_nZ;
 	TVector3<int>			m_Size;
 	Vector3d				m_CellSize, m_InvCellSize;
 	Tensor<TensorType, 3>	m_Fields;
