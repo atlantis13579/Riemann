@@ -1,5 +1,6 @@
 
 #include <assert.h>
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -55,7 +56,7 @@ void TestPhysxBin()
 	OverlapOption OOption;
 	OverlapResult OResult;
 
-	bool ret = query.RayCast(Vector3d(-569, 0, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
+	bool ret = query.RayCast(Vector3d(-569, 50, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
 	assert(ret);
 	assert(Result.hitGeom->GetGuid() == 2926462965280);
 
@@ -86,6 +87,45 @@ void TestPhysxBin()
 	ret = query.RayCast(Vector3d(-569, 0, 427), -Vector3d::UnitY(), Option, &Result);
 	assert(ret);
 	assert(Result.hitGeom->GetGuid() == 2926462965280);
+
+	return;
+}
+
+void TestRaycastBenchmark()
+{
+	printf("Running TestRaycastBenchmark\n");
+	std::vector<Geometry*> collection;
+	LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
+
+	GeometryQuery query;
+	query.BuildStaticGeometry(collection, 1);
+
+	TreeStatistics stat;
+	query.GetStaticTree()->Statistic(stat);
+
+	RayCastOption Option;
+	RayCastResult Result;
+
+	OverlapOption OOption;
+	OverlapResult OResult;
+
+	bool ret;
+	auto t1 = std::chrono::steady_clock::now();
+	for (int i = 0; i < 10000; ++i)
+	{
+		ret = query.RayCast(Vector3d(-569, 50, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
+		assert(ret);
+		// assert(Result.hitGeom->GetGuid() == 2926462965280);
+
+		if (i == 0)
+		{
+			// Option.Cache.prevhitGeom = Result.hitGeom;
+		}
+	}
+	auto t2 = std::chrono::steady_clock::now();
+	auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+	printf("cost Raycast = %lld\n", diff);
+
 
 	return;
 }
@@ -512,8 +552,9 @@ void TestSAPInc()
 
 void TestMainEntry()
 {
-	TestRayAABB();
+	// TestRayAABB();
 	// TestPhysxBin();
+	TestRaycastBenchmark();
 	TestSIMD();
 	TestRTree1();
 	// TestRTree2();

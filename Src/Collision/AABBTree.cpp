@@ -221,6 +221,11 @@ bool RestoreCacheStack(const RayCastOption& Option, FixedStack<uint32_t, RAYCAST
 
 bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const RayCastOption& Option, RayCastResult* Result) const
 {
+	Result->hit = false;
+	Result->hitTestCount = 0;
+	Result->hitTimeMin = FLT_MAX;
+	Result->hitGeom = nullptr;
+
 	if (RayIntersectCacheObj(Ray, Option, Result))
 	{
 		if (Option.Type == RayCastOption::RAYCAST_ANY)
@@ -228,10 +233,6 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 			return true;
 		}
 	}
-
-	Result->hit = false;
-	Result->hitTimeMin = FLT_MAX;
-	Result->hitGeom = nullptr;
 
 	float t1, t2;
 	AABBTreeNodeInference* p = m_AABBTreeInference;
