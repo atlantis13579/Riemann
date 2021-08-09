@@ -1,12 +1,13 @@
 #pragma once
 
-#include "assert.h"
+#include <assert.h>
+#include <stdint.h>
 #include <vector>
 
+#include "ShapeType.h"
 #include "../Maths/Box3d.h"
 #include "../Maths/Vector3d.h"
 #include "../Maths/Matrix3d.h"
-#include "ShapeType.h"
 
 struct HeightFieldHitOption
 {

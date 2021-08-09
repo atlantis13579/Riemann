@@ -2,12 +2,14 @@
 #pragma once
 
 #include <vector>
+#include <stdint.h>
 
+#include "ShapeType.h"
+#include "Plane3d.h"
 #include "../Maths/Vector3d.h"
 #include "../Maths/Box3d.h"
 #include "../Maths/Matrix3d.h"
-#include "ShapeType.h"
-#include "Plane3d.h"
+
 
 struct HullFace3d
 {

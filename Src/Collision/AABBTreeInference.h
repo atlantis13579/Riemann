@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #include "../Maths/Box3d.h"
 
 class AABBTreeOffline;

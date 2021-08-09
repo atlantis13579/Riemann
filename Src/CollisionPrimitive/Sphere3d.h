@@ -2,9 +2,11 @@
 #pragma once
 
 #include <math.h>
+#include <stdint.h>
+
+#include "ShapeType.h"
 #include "../Maths/Matrix3d.h"
 #include "../Maths/Box3d.h"
-#include "ShapeType.h"
 
 class Sphere3d
 {

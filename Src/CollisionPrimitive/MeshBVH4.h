@@ -3,6 +3,8 @@
 
 #include <assert.h>
 #include <float.h>
+#include <stdint.h>
+
 #include "../Maths/Vector3d.h"
 #include "../Maths/Box3d.h"
 

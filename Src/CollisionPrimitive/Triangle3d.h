@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #include "../Maths/Vector3d.h"
 #include "ShapeType.h"
 
@@ -383,16 +385,16 @@ public:
 
 	void			GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
-		Vertices = { A , B, C };
+		Vertices = std::vector<Vector3d>({ A , B, C });
 		Vector3d Nor = GetNormal();
-		Normals = { Nor, Nor , Nor };
-		Indices = { 0,1,2, 2,3,0 };
+		Normals = std::vector<Vector3d>({ Nor, Nor , Nor });
+		Indices = std::vector<uint16_t>({ 0,1,2, 2,3,0 });
 	}
 
 	void			GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
 	{
-		Vertices = { A , B, C };
-		Indices = { 0,1, 1,2, 2,0 };
+		Vertices = std::vector<Vector3d>({ A , B, C });
+		Indices = std::vector<uint16_t>({ 0,1, 1,2, 2,0 });
 	}
 };
 

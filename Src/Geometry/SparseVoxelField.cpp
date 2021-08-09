@@ -1,7 +1,8 @@
 
 #include "SparseVoxelField.h"
 
-#include "assert.h"
+#include <assert.h>
+#include <stdio.h>
 #include "../Maths/Maths.h"
 
 SparseVoxelField::SparseVoxelField()

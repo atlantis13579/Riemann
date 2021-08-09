@@ -2,8 +2,10 @@
 #pragma once
 
 #include <math.h>
-#include "../Maths/Matrix3d.h"
+#include <stdint.h>
+
 #include "ShapeType.h"
+#include "../Maths/Matrix3d.h"
 
 class Cylinder3d
 {

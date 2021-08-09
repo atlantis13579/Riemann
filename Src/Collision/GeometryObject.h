@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
 #include "../CollisionPrimitive/ShapeType.h"

@@ -2,15 +2,16 @@
 #pragma once
 
 #include <math.h>
+#include <stdint.h>
 #include <vector>
 
 #undef max
 #undef min 
 
-#include "../Maths/Maths.h"
-#include "../Maths/Matrix3d.h"
 #include "ShapeType.h"
 #include "Sphere3d.h"
+#include "../Maths/Maths.h"
+#include "../Maths/Matrix3d.h"
 
 class Capsule3d
 {

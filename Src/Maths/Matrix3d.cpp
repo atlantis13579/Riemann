@@ -2,6 +2,8 @@
 #include "Matrix3d.h"
 #include "Maths.h"
 
+#include <stdint.h>
+
 void Matrix3d::LoadRotateX(float rfloatAngle)
 {
 	float fCos, fSin;
