@@ -103,6 +103,7 @@
     <ClInclude Include="CollisionPrimitive\Point3d.h" />
     <ClInclude Include="CollisionPrimitive\Segment3d.h" />
     <ClInclude Include="Solver\LCPSolver.h" />
+    <ClInclude Include="Tools\PhysxFormat_34.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">

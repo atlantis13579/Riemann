@@ -98,7 +98,7 @@ void TestRaycastBenchmark()
 	LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
 
 	GeometryQuery query;
-	query.BuildStaticGeometry(collection, 1);
+	query.BuildStaticGeometry(collection, 5);
 
 	TreeStatistics stat;
 	query.GetStaticTree()->Statistic(stat);
@@ -106,20 +106,18 @@ void TestRaycastBenchmark()
 	RayCastOption Option;
 	RayCastResult Result;
 
-	OverlapOption OOption;
-	OverlapResult OResult;
-
 	bool ret;
 	auto t1 = std::chrono::steady_clock::now();
 	for (int i = 0; i < 10000; ++i)
 	{
-		ret = query.RayCast(Vector3d(-569, 50, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
+		ret = query.RayCast(Vector3d(-569, 0, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
 		assert(ret);
-		// assert(Result.hitGeom->GetGuid() == 2926462965280);
+		assert(Result.hitGeom->GetGuid() == 2926462965280);
 
 		if (i == 0)
 		{
-			// Option.Cache.prevhitGeom = Result.hitGeom;
+		//	Option.Cache.prevhitGeom = Result.hitGeom;
+		//	Option.Cache.prevStack.Restore(Result.stack);
 		}
 	}
 	auto t2 = std::chrono::steady_clock::now();

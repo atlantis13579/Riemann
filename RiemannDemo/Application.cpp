@@ -202,7 +202,7 @@ void InitPhysxScene()
 	g_World = new RigidBodySimulation(RigidBodySimulationParam());
 
     std::vector<Geometry*> collection;;
-    LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
+    LoadPhysxBinary("e:/temp/physx/fighting.xml.bin", &collection);
 
     for (Geometry* Geom : collection)
     {

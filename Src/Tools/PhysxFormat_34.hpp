@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace PhysxFormat_41
+namespace PhysxFormat_34
 {
 	enum
 	{
@@ -1427,37 +1427,39 @@ namespace PhysxFormat_41
 	static_assert(sizeof(ScbBody) == 288, "sizeof(ScbBody) not valid");
 	static_assert(sizeof(NpRigidDynamic) == 384, "sizeof(NpRigidDynamic) not valid");
 
-#define SN_BINARY_VERSION_GUID_NUM_CHARS 32
-#define PX_BINARY_SERIAL_VERSION "77E92B17A4084033A0FDB51332D5A6BB"
+#define SN_NUM_BINARY_COMPATIBLE_VERSIONS 1
+#define PX_PHYSICS_VERSION_MAJOR 3
+#define PX_PHYSICS_VERSION_MINOR 4
+#define PX_PHYSICS_VERSION_BUGFIX 3
+#define PX_PHYSICS_VERSION ((PX_PHYSICS_VERSION_MAJOR<<24) + (PX_PHYSICS_VERSION_MINOR<<16) + (PX_PHYSICS_VERSION_BUGFIX<<8) + 0)
+#define PX_BINARY_SERIAL_VERSION 0
 
-	bool checkCompatibility(const char* binaryVersionGuidCandidate)
+	//
+	// Important: if you adjust the following structure, please adjust the comment for PX_BINARY_SERIAL_VERSION as well
+	//
+	const std::pair<PxU32, PxU32> sBinaryCompatibleVersions[SN_NUM_BINARY_COMPATIBLE_VERSIONS] =
 	{
-		for (int i = 0; i < SN_BINARY_VERSION_GUID_NUM_CHARS; i++)
+		std::pair<PxU32, PxU32>(PX_PHYSICS_VERSION, PX_BINARY_SERIAL_VERSION),
+	};
+
+	bool checkCompatibility(const PxU32 version, const PxU32 binaryVersion)
+	{
+		for (PxU32 i = 0; i < SN_NUM_BINARY_COMPATIBLE_VERSIONS; i++)
 		{
-			if (binaryVersionGuidCandidate[i] != PX_BINARY_SERIAL_VERSION[i])
-			{
-				return false;
-			}
+			if (version == sBinaryCompatibleVersions[i].first && binaryVersion == sBinaryCompatibleVersions[i].second)
+				return true;
 		}
-		return true;
-	}
-
-	const char* getBinaryVersionGuid()
-	{
-		return PX_BINARY_SERIAL_VERSION;
+		return false;
 	}
 
 	bool readHeader(uint8_t*& address)
 	{
-		const uint32_t header = read32(address);
-		const uint32_t version = read32(address);
-		char binaryVersionGuid[SN_BINARY_VERSION_GUID_NUM_CHARS + 1];
-		memcpy(binaryVersionGuid, address, SN_BINARY_VERSION_GUID_NUM_CHARS);
-		binaryVersionGuid[SN_BINARY_VERSION_GUID_NUM_CHARS] = 0;
-		address += SN_BINARY_VERSION_GUID_NUM_CHARS;
-
-		const uint32_t platformTag = read32(address);
-		const uint32_t markedPadding = read32(address);
+		const PxU32 header = read32(address);
+		PxU32 version = read32(address);
+		const PxU32 binaryVersion = read32(address);	
+		const PxU32 buildNumber = read32(address);
+		const PxU32 platformTag = read32(address);
+		const PxU32 markedPadding = read32(address);
 
 		if (header != MAKE_FOURCC('S', 'E', 'B', 'D'))
 		{
@@ -1465,10 +1467,10 @@ namespace PhysxFormat_41
 			return false;
 		}
 
-		if (!checkCompatibility(binaryVersionGuid))
+		if (!checkCompatibility(version, binaryVersion))
 		{
-			printf("Buffer contains binary data version 0x%s and is incompatible with this PhysX sdk (0x%s).\n",
-				binaryVersionGuid, getBinaryVersionGuid());
+			printf("Buffer contains binary data version 0x%d and is incompatible with this PhysX sdk (0x%d).\n",
+				version, binaryVersion);
 			return false;
 		}
 

@@ -39,8 +39,8 @@ struct PhysxCollections
 	std::unordered_map<void*, int>					mClass;
 };
 
-#include "PhysxFormat_41.hpp"
-#define physx	PhysxFormat_41
+#include "PhysxFormat_34.hpp"
+#define physx	PhysxFormat_34
 
 class PhysxBinaryParser
 {
