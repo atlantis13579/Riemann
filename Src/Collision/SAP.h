@@ -11,7 +11,7 @@
 
 typedef uint64_t OverlapKey;
 
-static_assert(sizeof(OverlapKey) == 8, "sizeof OverlapKey2 is not valid");
+static_assert(sizeof(OverlapKey) == 8, "sizeof OverlapKey is not valid");
 
 class SAP
 {
@@ -40,7 +40,7 @@ public:
 		int axis_filter = 0;
 		for (auto k = 0; k < m_AxisList.size(); ++k)
 		{
-			InitAxis(k);
+			InitAxis(k, m_AxisList[k]);
 			QSort(m_Axis[k], 0, (int)m_Axis[k].size() - 1);
 			PruneAxis(m_Axis[k], overlaps_count, 1 << m_AxisList[k]);
 			axis_filter |= (1 << m_AxisList[k]);
@@ -98,19 +98,19 @@ protected:
 		float* value;
 	};
 
-	void InitAxis(int k)
+	void InitAxis(int i, int axis)
 	{
-		std::vector<SweepPoint>& axis = m_Axis[k];
+		std::vector<SweepPoint>& Axis = m_Axis[i];
 
 		int nBV = m_Proxy->GetBoundingVolumeCount();
-		axis.resize(2 * nBV);
+		Axis.resize(2 * nBV);
 
 		for (int i = 0; i < nBV; ++i)
 		{
-			float* val1 = m_Proxy->GetBoundingVolumeCoordinate(i, true, k);
-			float* val2 = m_Proxy->GetBoundingVolumeCoordinate(i, false, k);
-			axis[2 * i] = SweepPoint(i, true, val1);
-			axis[2 * i + 1] = SweepPoint(i, false, val2);
+			float* val1 = m_Proxy->GetBoundingVolumeCoordinate(i, true, axis);
+			float* val2 = m_Proxy->GetBoundingVolumeCoordinate(i, false, axis);
+			Axis[2 * i] = SweepPoint(i, true, val1);
+			Axis[2 * i + 1] = SweepPoint(i, false, val2);
 		}
 	}
 
