@@ -171,7 +171,7 @@ namespace PhysxFormat_41
 
 	PX_DEFINE_TYPEINFO(PxBase, eUNDEFINED)
 		PX_DEFINE_TYPEINFO(PxMaterial, eMATERIAL)
-		PX_DEFINE_TYPEINFO(PxConvexMesh, eCONVEX_MESH)
+		PX_DEFINE_TYPEINFO(ConvexMesh, eCONVEX_MESH)
 		PX_DEFINE_TYPEINFO(PxTriangleMesh, eUNDEFINED)
 		PX_DEFINE_TYPEINFO(PxBVH33TriangleMesh, eTRIANGLE_MESH_BVH33)
 		PX_DEFINE_TYPEINFO(PxBVH34TriangleMesh, eTRIANGLE_MESH_BVH34)
@@ -584,7 +584,7 @@ namespace PhysxFormat_41
 		PxInternalObjectsData	mInternal;
 	};
 
-	class PxConvexMesh : public PxBase, public PxRefCountable
+	class ConvexMesh : public PxBase, public PxRefCountable
 	{
 	public:
 		virtual	bool				isKindOf(const char* name) const { return !::strcmp("PxConvexMesh", name) || PxBase::isKindOf(name); }
@@ -637,7 +637,7 @@ namespace PhysxFormat_41
 	};
 
 	static_assert(sizeof(ConvexHullData) == 72, "sizeof(ConvexHullData) not valid");
-	static_assert(sizeof(PxConvexMesh) == 168, "sizeof(ConvexMesh) not valid");
+	static_assert(sizeof(ConvexMesh) == 168, "sizeof(ConvexMesh) not valid");
 
 	struct PxHeightFieldSample
 	{
@@ -816,7 +816,7 @@ namespace PhysxFormat_41
 	{
 	public:
 		PxMeshScale			scale;
-		PxConvexMesh* convexMesh;
+		ConvexMesh* convexMesh;
 		PxU8				meshFlags;
 		PxU8				paddingFromFlags[3];
 	};
@@ -997,7 +997,7 @@ namespace PhysxFormat_41
 			PxConvexMeshGeometryLL llGeom;
 			static_cast<PxConvexMeshGeometry&>(llGeom) = hlGeom;
 
-			PxConvexMesh* cm = static_cast<PxConvexMesh*>(hlGeom.convexMesh);
+			ConvexMesh* cm = static_cast<ConvexMesh*>(hlGeom.convexMesh);
 
 			llGeom.hullData = &cm->mHullData;
 			llGeom.gpuCompatible = false;
@@ -1498,7 +1498,7 @@ namespace PhysxFormat_41
 		}
 		else if (classType == eCONVEX_MESH)
 		{
-			instance = DeserializePhysxObj<PxConvexMesh>(address, context);
+			instance = DeserializePhysxObj<ConvexMesh>(address, context);
 		}
 		else if (classType == e_HEIGHTFIELD)
 		{

@@ -111,7 +111,7 @@ public:
 
 	static Geometry* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj)
 	{
-		const physx::PxConvexMesh* Mesh = physxObj->convexMesh;
+		const physx::ConvexMesh* Mesh = physxObj->convexMesh;
 
 		Geometry* Geom = GeometryFactory::CreateConvexMesh();
 		ConvexMesh* ConvMesh = Geom->GetShapeObj<ConvexMesh>();
@@ -252,7 +252,7 @@ public:
 			param.MaxContactImpulse = core.maxContactImpulse;
 			param.SleepThreshold = core.sleepThreshold;
 			param.FreezeThreshold = core.freezeThreshold;
-			param.DisableGravity = core.disableGravity;
+			param.DisableGravity = false;
 			param.Static = false;
 			return;
 		}

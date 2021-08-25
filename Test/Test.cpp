@@ -42,7 +42,7 @@ void TestPhysxBin()
 {
 	printf("Running TestPhysxBin\n");
 	std::vector<Geometry*> collection;
-	LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
+	LoadPhysxBinary("e:/temp/physx/fighting.xml.bin", &collection);
 
 	GeometryQuery query;
 	query.BuildStaticGeometry(collection, 1);
@@ -551,17 +551,17 @@ void TestSAPInc()
 void TestMainEntry()
 {
 	// TestRayAABB();
-	// TestPhysxBin();
-	TestRaycastBenchmark();
-	TestSIMD();
-	TestRTree1();
+	 TestPhysxBin();
+	// TestRaycastBenchmark();
+	// TestSIMD();
+	// TestRTree1();
 	// TestRTree2();
 	// TestBitmap();
-	TestAABBTree();
-	TestGeometryQuery();
-	TestTensor();
-	TestSAP();
-	TestSAPInc();
-	TestMesh1();
+	// TestAABBTree();
+	// TestGeometryQuery();
+	// TestTensor();
+	// TestSAP();
+	// TestSAPInc();
+	// TestMesh1();
 	return;
 }

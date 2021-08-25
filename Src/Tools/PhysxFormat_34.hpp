@@ -171,8 +171,8 @@ namespace PhysxFormat_34
 
 	PX_DEFINE_TYPEINFO(PxBase, eUNDEFINED)
 		PX_DEFINE_TYPEINFO(PxMaterial, eMATERIAL)
-		PX_DEFINE_TYPEINFO(PxConvexMesh, eCONVEX_MESH)
-		PX_DEFINE_TYPEINFO(PxTriangleMesh, eUNDEFINED)
+		PX_DEFINE_TYPEINFO(ConvexMesh, eCONVEX_MESH)
+		PX_DEFINE_TYPEINFO(TriangleMesh, eUNDEFINED)
 		PX_DEFINE_TYPEINFO(PxBVH33TriangleMesh, eTRIANGLE_MESH_BVH33)
 		PX_DEFINE_TYPEINFO(PxBVH34TriangleMesh, eTRIANGLE_MESH_BVH34)
 		PX_DEFINE_TYPEINFO(HeightField, e_HEIGHTFIELD)
@@ -252,13 +252,15 @@ namespace PhysxFormat_34
 			const std::unordered_map<size_t, SerialObjectIndex>& internalPtrReferencesMap,
 			const std::unordered_map<uint16_t, SerialObjectIndex>& internalHandle16ReferencesMap,
 			// const Cm::Collection* externalRefs,
-			uint8_t* extraData)
+			uint8_t* extraData,
+			PxU32 physxVersion)
 			: mManifestTable(manifestTable)
 			, mImportReferences(importReferences)
 			, mObjectDataAddress(objectDataAddress)
 			, mInternalPtrReferencesMap(internalPtrReferencesMap)
 			, mInternalHandle16ReferencesMap(internalHandle16ReferencesMap)
 			// , mExternalRefs(externalRefs)
+			, mPhysXVersion(physxVersion)
 		{
 			mExtraDataAddress = extraData;
 		}
@@ -352,6 +354,8 @@ namespace PhysxFormat_34
 
 		//external collection for resolving import references.
 		// const Cm::Collection* mExternalRefs;
+
+		const PxU32 mPhysXVersion;
 	};
 
 	class PxRefCountable
@@ -361,10 +365,10 @@ namespace PhysxFormat_34
 		int mRefCount;
 	};
 
-	class PxTriangleMesh : public PxBase, public PxRefCountable
+	class TriangleMesh : public PxBase, public PxRefCountable
 	{
 	public:
-		virtual ~PxTriangleMesh() {}
+		virtual ~TriangleMesh() {}
 
 		virtual	bool					isKindOf(const char* name) const { return !::strcmp("PxTriangleMesh", name) || PxBase::isKindOf(name); }
 
@@ -381,7 +385,7 @@ namespace PhysxFormat_34
 
 			if (mTriangles)
 			{
-				if (Is16BitIndices())
+				if (mFlags & (1 << 1))
 					mTriangles = context.readExtraData<uint16_t, 16>(3 * mNbTriangles);
 				else
 					mTriangles = context.readExtraData<uint32_t, 16>(3 * mNbTriangles);
@@ -405,25 +409,31 @@ namespace PhysxFormat_34
 			mGRB_BV32Tree = nullptr;
 		}
 
-		uint32_t					mNbVertices;
-		uint32_t					mNbTriangles;
-		Vector3d* mVertices;
-		void* mTriangles;
+		PxU32					mNbVertices;
+		PxU32					mNbTriangles;
+		PxVec3*					mVertices;
+		void*					mTriangles;				//!< 16 (<= 0xffff #vertices) or 32 bit trig indices (mNbTriangles * 3)
 		TCE3<float>				mAABB;
-		uint8_t* mExtraTrigData;
-		float							mGeomEpsilon;
-		uint8_t					mFlags;
-		uint16_t* mMaterialIndices;
-		uint32_t* mFaceRemap;
-		uint32_t* mAdjacencies;
+		PxU8*					mExtraTrigData;			//one per trig
+		PxReal					mGeomEpsilon;			//!< see comments in cooking code referencing this variable
+		PxU8					mFlags;					//!< Flag whether indices are 16 or 32 bits wide
+														//!< Flag whether triangle adajacencies are build
+		PxU16* mMaterialIndices;						//!< the size of the array is numTriangles.
+		PxU32* mFaceRemap;								//!< new faces to old faces mapping (after cleaning, etc). Usage: old = faceRemap[new]
+		PxU32* mAdjacencies;							//!< Adjacency information for each face - 3 adjacent faces
+														//!< Set to 0xFFFFffff if no adjacent face
 		void* mMeshFactory;
 
-		void* mGRB_triIndices;
-		void* mGRB_triAdjacencies;
-		uint32_t* mGRB_faceRemap;
-		void* mGRB_BV32Tree;
-	};
+		// GRB data -------------------------
+		void* mGRB_triIndices;							//!< GRB: GPU-friendly tri indices [uint4]
 
+		// TODO avoroshilov: cooking - adjacency info - duplicated, remove it and use 'mAdjacencies' and 'mExtraTrigData' see GuTriangleMesh.cpp:325
+		void* mGRB_triAdjacencies;						//!< GRB: adjacency data, with BOUNDARY and NONCONVEX flags (flags replace adj indices where applicable)
+
+		PxU32* mGRB_faceRemap;							//!< GRB : gpu to cpu triangle indice remap
+		void* mGRB_BV32Tree;							//!< GRB: BV32 tree
+		// End of GRB data ------------------
+	};
 
 	#define RTREE_N		4
 
@@ -462,7 +472,7 @@ namespace PhysxFormat_34
 		uint32_t			Data;
 	};
 
-	class PxRTreeTriangleMesh : public PxTriangleMesh
+	class PxRTreeTriangleMesh : public TriangleMesh
 	{
 	public:
 		virtual ~PxRTreeTriangleMesh() { }
@@ -472,7 +482,7 @@ namespace PhysxFormat_34
 			context.alignExtraData(128);
 			mRTree.mPages = context.readExtraData<RTreePage>(mRTree.mTotalPages);
 
-			PxTriangleMesh::importExtraData(context);
+			TriangleMesh::importExtraData(context);
 		}
 
 		void resolveReferences(PxDeserializationContext& context)
@@ -483,49 +493,50 @@ namespace PhysxFormat_34
 		RTree			mRTree;
 	};
 
-	static_assert(sizeof(PxBase) == 16, "sizeof(PxBase) not valid");
-	static_assert(sizeof(PxRefCountable) == 16, "sizeof(PxRefCountable) not valid");
-	static_assert(sizeof(MeshBVH4) == 96, "sizeof(MeshBVH) not valid");
-	static_assert(sizeof(PxTriangleMesh) == 160, "sizeof(PxTriangleMesh) not valid");
-	static_assert(sizeof(PxRTreeTriangleMesh) == 256, "sizeof(PxRTreeTriangleMesh) not valid");
-
-	struct PxInternalObjectsData
+	struct InternalObjectsData
 	{
 		float	mRadius;
 		float	mExtents[3];
 	};
 
-	struct PxHullPolygonData
+	struct HullPolygonData
 	{
 		Plane3d			mPlane;
-		uint16_t	mVRef8;
-		uint8_t	mNbVerts;
-		uint8_t	mMinIndex;
+		PxU16			mVRef8;			//!< Offset of vertex references in hull vertex data (CS: can we assume indices are tightly packed and offsets are ascending?? DrawObjects makes and uses this assumption)
+		PxU8			mNbVerts;		//!< Number of vertices/edges in the polygon
+		PxU8			mMinIndex;		//!< Index of the polygon vertex that has minimal projection along this plane's normal.
 	};
 
-	struct PxValency
+	struct Valency
 	{
-		uint16_t		mCount;
-		uint16_t		mOffset;
+		PxU16		mCount;
+		PxU16		mOffset;
 	};
 
-	struct PxBigConvexRawData
+	struct BigConvexRawData
 	{
-		uint16_t		mSubdiv;
-		uint16_t		mNbSamples;
+		PxU16				mSubdiv;		// "Gaussmap" subdivision
+		PxU16				mNbSamples;		// Total #samples in gaussmap PT: this is not even needed at runtime!
 
-		uint8_t* mSamples;
-
-		const uint8_t* getSamples2()	const
+		PxU8* mSamples;
+		const PxU8* getSamples2()	const
 		{
 			return mSamples + mNbSamples;
 		}
 
-		uint32_t		mNbVerts;
-		uint32_t		mNbAdjVerts;
-		PxValency* mValencies;
-		uint8_t* mAdjacentVerts;
+		// Valencies data
+		PxU32			mNbVerts;		//!< Number of vertices
+		PxU32			mNbAdjVerts;	//!< Total number of adjacent vertices  ### PT: this is useless at runtime and should not be stored here
+		Valency* mValencies;		//!< A list of mNbVerts valencies (= number of neighbors)
+		PxU8* mAdjacentVerts;	//!< List of adjacent vertices
 	};
+
+	static_assert(sizeof(PxBase) == 16, "sizeof(PxBase) not valid");
+	static_assert(sizeof(PxRefCountable) == 16, "sizeof(PxRefCountable) not valid");
+	static_assert(sizeof(MeshBVH4) == 96, "sizeof(MeshBVH) not valid");
+	static_assert(sizeof(TriangleMesh) == 160, "sizeof(PxTriangleMesh) not valid");
+	static_assert(sizeof(PxRTreeTriangleMesh) == 256, "sizeof(PxRTreeTriangleMesh) not valid");
+	static_assert(sizeof(InternalObjectsData) == 16, "sizeof(InternalObjectsData) not valid");
 
 	class PxBigConvexData
 	{
@@ -533,18 +544,18 @@ namespace PhysxFormat_34
 		void importExtraData(PxDeserializationContext& context)
 		{
 			if (mData.mSamples)
-				mData.mSamples = context.readExtraData<uint8_t, 16>(uint32_t(mData.mNbSamples * 2));
+				mData.mSamples = context.readExtraData<PxU8, 16>(uint32_t(mData.mNbSamples * 2));
 
 			if (mData.mValencies)
 			{
 				context.alignExtraData();
-				uint32_t numVerts = (mData.mNbVerts + 3) & ~3;
-				mData.mValencies = context.readExtraData<PxValency>(numVerts);
-				mData.mAdjacentVerts = context.readExtraData<uint8_t>(mData.mNbAdjVerts);
+				PxU32 numVerts = (mData.mNbVerts + 3) & ~3;
+				mData.mValencies = context.readExtraData<Valency>(numVerts);
+				mData.mAdjacentVerts = context.readExtraData<PxU8>(mData.mNbAdjVerts);
 			}
 		}
 
-		PxBigConvexRawData	mData;
+		BigConvexRawData	mData;
 
 	protected:
 		void* mVBuffer;
@@ -553,15 +564,15 @@ namespace PhysxFormat_34
 	struct ConvexHullData
 	{
 		TCE3<float>		mAABB;
-		Vector3d				mCenterOfMass;
-		uint16_t			mNbEdges;
-		uint8_t			mNbHullVertices;
-		uint8_t			mNbPolygons;
+		Vector3d		mCenterOfMass;
+		uint16_t		mNbEdges;
+		PxU8			mNbHullVertices;
+		PxU8			mNbPolygons;
 
 		const Vector3d* getVerts()	const
 		{
 			const char* tmp = reinterpret_cast<const char*>(mPolygons);
-			tmp += sizeof(PxHullPolygonData) * mNbPolygons;
+			tmp += sizeof(HullPolygonData) * mNbPolygons;
 			return reinterpret_cast<const Vector3d*>(tmp);
 		}
 
@@ -570,7 +581,7 @@ namespace PhysxFormat_34
 			if (mNbEdges & 0x8000)
 			{
 				const char* tmp = reinterpret_cast<const char*>(mPolygons);
-				tmp += sizeof(PxHullPolygonData) * mNbPolygons;
+				tmp += sizeof(HullPolygonData) * mNbPolygons;
 				tmp += sizeof(Vector3d) * mNbHullVertices;
 				tmp += sizeof(uint8_t) * (mNbEdges & ~0x8000) * 2;
 				tmp += sizeof(uint8_t) * mNbHullVertices * 3;
@@ -579,19 +590,19 @@ namespace PhysxFormat_34
 			return nullptr;
 		}
 
-		PxHullPolygonData* mPolygons;
-		PxBigConvexRawData* mBigConvexRawData;
-		PxInternalObjectsData	mInternal;
+		HullPolygonData* mPolygons;
+		BigConvexRawData* mBigConvexRawData;
+		InternalObjectsData	mInternal;
 	};
 
-	class PxConvexMesh : public PxBase, public PxRefCountable
+	class ConvexMesh : public PxBase, public PxRefCountable
 	{
 	public:
 		virtual	bool				isKindOf(const char* name) const { return !::strcmp("PxConvexMesh", name) || PxBase::isKindOf(name); }
 
 		uint32_t computeBufferSize(const ConvexHullData& data, uint32_t nb)
 		{
-			uint32_t bytesNeeded = sizeof(PxHullPolygonData) * data.mNbPolygons;
+			uint32_t bytesNeeded = sizeof(HullPolygonData) * data.mNbPolygons;
 			uint16_t mnbEdges = (data.mNbEdges & ~0x8000);
 			bytesNeeded += sizeof(Vector3d) * data.mNbHullVertices;
 			bytesNeeded += sizeof(uint8_t) * mnbEdges * 2;
@@ -607,7 +618,7 @@ namespace PhysxFormat_34
 		void importExtraData(PxDeserializationContext& context)
 		{
 			const uint32_t bufferSize = computeBufferSize(mHullData, GetNb());
-			mHullData.mPolygons = reinterpret_cast<PxHullPolygonData*>(context.readExtraData<uint8_t, 16>(bufferSize));
+			mHullData.mPolygons = reinterpret_cast<HullPolygonData*>(context.readExtraData<uint8_t, 16>(bufferSize));
 
 			assert(mBigConvexData == nullptr);
 			if (mBigConvexData)
@@ -637,26 +648,27 @@ namespace PhysxFormat_34
 	};
 
 	static_assert(sizeof(ConvexHullData) == 72, "sizeof(ConvexHullData) not valid");
-	static_assert(sizeof(PxConvexMesh) == 168, "sizeof(ConvexMesh) not valid");
+	static_assert(sizeof(ConvexMesh) == 168, "sizeof(ConvexMesh) not valid");
 
 	struct PxHeightFieldSample
 	{
-		uint16_t			height;
-		uint8_t	materialIndex0;
-		uint8_t	materialIndex1;
+		PxI16			height;
+		PxU8			materialIndex0;
+		PxU8			materialIndex1;
 	};
 
 	struct HeightFieldData
 	{
 		TCE3<float>					mAABB;
-		uint32_t				rows;
-		uint32_t				columns;
-		float						rowLimit;
-		float						colLimit;
-		float						nbColumns;
-		PxHeightFieldSample* samples;
-		float						convexEdgeThreshold;
-		uint16_t				flags;
+		PxU32						rows;					// PT: WARNING: don't change this member's name (used in ConvX)
+		PxU32						columns;				// PT: WARNING: don't change this member's name (used in ConvX)
+		PxReal						rowLimit;				// PT: to avoid runtime int-to-float conversions on Xbox
+		PxReal						colLimit;				// PT: to avoid runtime int-to-float conversions on Xbox
+		PxReal						nbColumns;				// PT: to avoid runtime int-to-float conversions on Xbox
+		PxHeightFieldSample*		samples;				// PT: WARNING: don't change this member's name (used in ConvX)
+		PxReal						thickness;
+		PxReal						convexEdgeThreshold;
+		uint16_t					flags;
 		int							format;
 	};
 
@@ -694,11 +706,11 @@ namespace PhysxFormat_34
 		}
 
 		HeightFieldData			mData;
-		uint32_t				mSampleStride;
-		uint32_t				mNbSamples;
-		float						mMinHeight;
-		float						mMaxHeight;
-		uint32_t				mModifyCount;
+		PxU32					mSampleStride;
+		PxU32					mNbSamples;	// PT: added for platform conversion. Try to remove later.
+		PxReal					mMinHeight;
+		PxReal					mMaxHeight;
+		PxU32					mModifyCount;
 
 		void* mMeshFactory;
 	};
@@ -715,17 +727,22 @@ namespace PhysxFormat_34
 		void* userData;
 	};
 
-	struct alignas(16) PxMaterialCore
+	struct alignas(16) PxsMaterialData
 	{
-		float					dynamicFriction;				//4
-		float					staticFriction;					//8
-		float					restitution;					//12
-		uint16_t			flags;							//14
-		uint8_t			fricRestCombineMode;			//15
-		uint8_t			padding;						//16
-		PxMaterial* mNxMaterial;
-		uint16_t			mMaterialIndex; //handle assign by the handle manager
-		uint16_t			mPadding;
+		PxReal					dynamicFriction;				//4
+		PxReal					staticFriction;					//8
+		PxReal					restitution;					//12
+		PxU16					flags;							//14
+		PxU8					fricRestCombineMode;			//15
+		PxU8					padding;						//16
+	};
+
+	class PxsMaterialCore : public PxsMaterialData
+	{
+	public:
+		PxMaterial*				mNxMaterial;
+		PxU16					mMaterialIndex; //handle assign by the handle manager
+		PxU16					mPadding;
 	};
 
 	class NpMaterial : public PxMaterial, public PxRefCountable
@@ -740,11 +757,12 @@ namespace PhysxFormat_34
 		{
 			mMaterial.mNxMaterial = this;
 		}
-		PxMaterialCore			mMaterial;
+		PxsMaterialCore			mMaterial;
 	};
 
 	static_assert(sizeof(PxMaterial) == 24, "sizeof(PxMaterial) not valid");
-	static_assert(sizeof(PxMaterialCore) == 32, "sizeof(PxMaterialCore) not valid");
+	static_assert(sizeof(PxsMaterialData) == 16, "sizeof(PxsMaterialData) not valid");
+	static_assert(sizeof(PxsMaterialCore) == 32, "sizeof(PxMaterialCore) not valid");
 	static_assert(sizeof(NpMaterial) == 80, "sizeof(NpMaterial) not valid");
 
 	struct PxFilterData
@@ -816,7 +834,8 @@ namespace PhysxFormat_34
 	{
 	public:
 		PxMeshScale			scale;
-		PxConvexMesh* convexMesh;
+		ConvexMesh*			convexMesh;
+		PxReal				maxMargin;			//!< Max shrunk amount permitted by PCM contact gen
 		PxU8				meshFlags;
 		PxU8				paddingFromFlags[3];
 	};
@@ -833,7 +852,7 @@ namespace PhysxFormat_34
 		PxMeshScale			scale;
 		PxU8				meshFlags;
 		PxU8				paddingFromFlags[3];
-		PxTriangleMesh* triangleMesh;
+		TriangleMesh* triangleMesh;
 	};
 
 	class PxHeightFieldGeometry : public PxGeometry
@@ -859,7 +878,7 @@ namespace PhysxFormat_34
 
 	struct PxTriangleMeshGeometryLL : public PxTriangleMeshGeometry
 	{
-		const PxTriangleMesh* meshData;
+		const TriangleMesh* meshData;
 		const PxU16* materialIndices;
 		MaterialIndicesStruct				materials;
 	};
@@ -910,7 +929,7 @@ namespace PhysxFormat_34
 		GeometryUnion		geometry;
 	};
 
-	class ScShapeCore
+	class ShapeCore
 	{
 	public:
 		void importExtraData(PxDeserializationContext& context)
@@ -997,7 +1016,7 @@ namespace PhysxFormat_34
 			PxConvexMeshGeometryLL llGeom;
 			static_cast<PxConvexMeshGeometry&>(llGeom) = hlGeom;
 
-			PxConvexMesh* cm = static_cast<PxConvexMesh*>(hlGeom.convexMesh);
+			ConvexMesh* cm = static_cast<ConvexMesh*>(hlGeom.convexMesh);
 
 			llGeom.hullData = &cm->mHullData;
 			llGeom.gpuCompatible = false;
@@ -1010,7 +1029,7 @@ namespace PhysxFormat_34
 			PxTriangleMeshGeometryLL llGeom;
 			static_cast<PxTriangleMeshGeometry&>(llGeom) = hlGeom;
 
-			PxTriangleMesh* tm = static_cast<PxTriangleMesh*>(hlGeom.triangleMesh);
+			TriangleMesh* tm = static_cast<TriangleMesh*>(hlGeom.triangleMesh);
 			llGeom.meshData = tm;
 			llGeom.materialIndices = tm->mMaterialIndices;
 			llGeom.materials = static_cast<const PxTriangleMeshGeometryLL&>(hlGeom).materials;
@@ -1084,8 +1103,6 @@ namespace PhysxFormat_34
 		PxFilterData				mSimulationFilterData;	// Simulation filter data
 		alignas(16) PxsShapeCore	mCore;
 		PxReal						mRestOffset;			// same as the API property of the same name
-		PxReal						mTorsionalRadius;
-		PxReal						mMinTorsionalPatchRadius;
 	};
 
 	class ScBase
@@ -1099,7 +1116,7 @@ namespace PhysxFormat_34
 	class ScShape : public ScBase
 	{
 	public:
-		ScShapeCore		mShape;
+		ShapeCore		mShape;
 	};
 
 	class PxShape : public PxBase
@@ -1154,7 +1171,7 @@ namespace PhysxFormat_34
 
 	static_assert(sizeof(GeometryUnion) == 80, "sizeof(GeometryUnion) not valid");
 	static_assert(sizeof(PxsShapeCore) == 128, "sizeof(PxsShapeCore) not valid");
-	static_assert(sizeof(ScShapeCore) == 176, "sizeof(ScShapeCore) not valid");
+	static_assert(sizeof(ShapeCore) == 176, "sizeof(ScShapeCore) not valid");
 	static_assert(sizeof(ScShape) == 208, "sizeof(ScShape) not valid");
 	static_assert(sizeof(NpShape) == 272, "sizeof(NpShape) not valid");
 
@@ -1183,6 +1200,7 @@ namespace PhysxFormat_34
 		PxU32				mAggregateIDOwnerClient;
 		PxU8				mActorFlags;	// PxActorFlags
 		PxU8				mActorType;
+		PxU8				mClientBehaviorFlags;
 		PxU8				mDominanceGroup;
 	};
 
@@ -1194,8 +1212,9 @@ namespace PhysxFormat_34
 	struct PxsRigidCore
 	{
 		alignas(16) PxTransform		body2World;
-		PxU16						mFlags;
-		PxU16						solverIterationCounts;
+		PxU8						mFlags;
+		PxU8						mIdtBody2Actor;			// PT: true if PxsBodyCore::body2Actor is identity
+		PxU16						solverIterationCounts;	//vel iters are in low word and pos iters in high word.
 	};
 
 	struct PxsBodyCore : public PxsRigidCore
@@ -1222,15 +1241,16 @@ namespace PhysxFormat_34
 		PxReal					maxContactImpulse;
 		PxReal					sleepThreshold;
 		PxReal					freezeThreshold;
-		PxReal					wakeCounter;
-		PxReal					solverWakeCounter;
+		PxReal					wakeCounter;				//144 this is authoritative wakeCounter
+
+		PxReal					solverWakeCounter;			//this is calculated by the solver when it performs sleepCheck. It is committed to wakeCounter in ScAfterIntegrationTask if the body is still awake.
 		PxU32					numCountedInteractions;
-		PxU32					numBodyInteractions;
-		PxU8					isFastMoving;
-		PxU8					disableGravity;
-		PxU8					lockFlags;
-		PxU8					kinematicLink;
+		PxU32					numBodyInteractions;		//Used by adaptive force to keep track of the total number of body interactions
+		PxU16					isFastMoving;				//This could be a single bit but it's a u32 at the moment for simplicity's sake
+		PxU16					lockFlags;					//160 This could be a u8 but it is a u32 for simplicity's sake. All fits into 16 byte alignment
 	};
+
+	static_assert(sizeof(PxsBodyCore) == 160, "sizeof(PxsBodyCore) not valid");
 
 	class ScStaticCore : public ScRigidCore
 	{
@@ -1296,8 +1316,7 @@ namespace PhysxFormat_34
 
 		PtrTable			mShapes;
 		PtrTable			mSceneQueryData;
-		PxU32 				mSqCompoundId;
-		void* mPruningStructure;  // Shape scene query data are pre-build in pruning structure
+		void*				mPruningStructure;  // Shape scene query data are pre-build in pruning structure
 
 	};
 
@@ -1452,10 +1471,10 @@ namespace PhysxFormat_34
 		return false;
 	}
 
-	bool readHeader(uint8_t*& address)
+	bool readHeader(uint8_t*& address, PxU32& version)
 	{
 		const PxU32 header = read32(address);
-		PxU32 version = read32(address);
+		version = read32(address);
 		const PxU32 binaryVersion = read32(address);	
 		const PxU32 buildNumber = read32(address);
 		const PxU32 platformTag = read32(address);
@@ -1500,7 +1519,7 @@ namespace PhysxFormat_34
 		}
 		else if (classType == eCONVEX_MESH)
 		{
-			instance = DeserializePhysxObj<PxConvexMesh>(address, context);
+			instance = DeserializePhysxObj<ConvexMesh>(address, context);
 		}
 		else if (classType == e_HEIGHTFIELD)
 		{
@@ -1535,7 +1554,8 @@ namespace PhysxFormat_34
 
 		uint8_t* address = reinterpret_cast<uint8_t*>(Buffer);
 
-		if (!readHeader(address))
+		PxU32 version;
+		if (!readHeader(address, version))
 		{
 			return false;
 		}
@@ -1626,7 +1646,7 @@ namespace PhysxFormat_34
 		std::unordered_map<PxType, int> Statistic;
 
 		uint8_t* addressExtraDataBase = addressExtraData;
-		PxDeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData);
+		PxDeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData, version);
 
 		// iterate over memory containing PxBase objects, create the instances, resolve the addresses, import the external data, add to collection.
 		{
