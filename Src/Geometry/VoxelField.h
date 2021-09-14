@@ -43,6 +43,7 @@ public:
 	bool			VoxelizationTrianglesSet(const VoxelizationInfo& info, Mesh* mesh);
 	bool			VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
 	bool			VoxelizationYPlane(float world_y);
+	bool			VoxelizationYPlane(float world_y_min, float world_y_max);
 	bool			VoxelizationCube(const Box3d& cube);
 	bool			MakeComplementarySet();
 	uint64_t		Separate(const Vector3d& pos, uint32_t data, float IntersectThr);

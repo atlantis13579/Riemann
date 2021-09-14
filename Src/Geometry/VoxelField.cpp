@@ -451,8 +451,13 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 
 bool VoxelField::VoxelizationYPlane(float world_y)
 {
-	uint16_t ymin = (uint16_t)WorldSpaceToVoxelSpaceY(world_y);
-	uint16_t ymax = (uint16_t)WorldSpaceToVoxelSpaceY(world_y);
+	return VoxelizationYPlane(world_y, world_y);
+}
+
+bool VoxelField::VoxelizationYPlane(float world_y_min, float world_y_max)
+{
+	uint16_t ymin = (uint16_t)WorldSpaceToVoxelSpaceY(world_y_min);
+	uint16_t ymax = (uint16_t)WorldSpaceToVoxelSpaceY(world_y_max);
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
 		AddVoxel(i, ymin, ymax, 0.0f);
