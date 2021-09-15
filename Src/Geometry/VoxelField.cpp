@@ -499,7 +499,14 @@ bool VoxelField::MakeComplementarySet()
 
 		while (p)
 		{
-			AddVoxel(i, p->ymax + 1, p->next ? (p->next->ymin - 1) : m_SizeY - 1, 0.0f);
+			if (p->next)
+			{
+				AddVoxel(i, p->ymax + 1, p->next->ymin - 1, 0.0f);
+			}
+			else if (p->ymax < m_SizeY - 1)
+			{
+				AddVoxel(i, p->ymax + 1, m_SizeY - 1, 0.0f);
+			}
 			p = p->next;
 		}
 
