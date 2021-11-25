@@ -1,5 +1,6 @@
 #pragma once
 
+#include <math.h>
 #include "Vector3d.h"
 #include "Matrix4d.h"
 #include "Matrix3d.h"
@@ -61,6 +62,11 @@ public:
 	{
 		float m = Magnitude();
 		return Quaternion(w / m, Vector3d(x / m, y / m, z / m));
+	}
+
+	float Dot(const Quaternion& rhs)
+	{
+		return w * w + x * x + y * y + z * z;
 	}
 
 	float Magnitude() const
@@ -159,6 +165,32 @@ public:
 	Quaternion Lerp(const Quaternion& end, float t) const
 	{
 		return ((*this) * (1.0f - t) + end * t).Unit();
+	}
+
+	static Quaternion Slerp(const Quaternion& start, const Quaternion& end, float t)
+	{
+		auto sinx_over_x = [](float x)
+		{
+			if (x * x < 1e-12f)
+			{
+				return 1.0f;
+			}
+			else
+			{
+				return sinf(x) / x;
+			}
+		};
+		
+		Quaternion q1 = start - end;
+		float lengthD = sqrtf(q1.Dot(q1));
+
+		Quaternion q2 = start + end;
+		float lengthS = sqrtf(q2.Dot(q2));
+
+		float a = 2.0f * atan2f(lengthD, lengthS);
+		float s = 1.0f - t;
+		Quaternion q = start * (sinx_over_x(s * a) / sinx_over_x(a) * s) + end * (sinx_over_x(t * a) / sinx_over_x(a) * t);
+		return q.Unit();
 	}
 
 	Matrix4d ToRotationMatrix4d() const
