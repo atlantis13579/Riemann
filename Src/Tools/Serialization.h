@@ -31,6 +31,41 @@ inline uint64_t read64(uint8_t*& address)
 	return read<uint64_t>(address);
 }
 
+template <typename T>
+inline T read(uint8_t*& address, int& size)
+{
+	if (sizeof(T) > size)
+	{
+		size = -1;
+		return 0;
+	}
+	const T value = *reinterpret_cast<T*>(address);
+	address += sizeof(T);
+	size -= sizeof(T);
+	return value;
+}
+
+inline uint8_t read8(uint8_t*& address, int& size)
+{
+	return read<uint8_t>(address, size);
+}
+
+inline uint16_t read16(uint8_t*& address, int& size)
+{
+	return read<uint16_t>(address, size);
+}
+
+inline uint32_t read32(uint8_t*& address, int& size)
+{
+	return read<uint32_t>(address, size);
+}
+
+inline uint64_t read64(uint8_t*& address, int& size)
+{
+	return read<uint64_t>(address, size);
+}
+
+
 inline  uint32_t getPadding(size_t value, uint32_t alignment)
 {
 	const uint32_t mask = alignment - 1;
