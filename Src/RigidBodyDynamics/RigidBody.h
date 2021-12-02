@@ -43,17 +43,19 @@ public:
 class RigidBodyStatic : public RigidBody
 {
 public:
-	// State variable
-	Vector3d	X;				// Position
-	Quaternion	Q;				// Rotation Quaternion
+	static RigidBodyStatic* CreateRigidBody(Geometry* Shape, const RigidBodyParam& param);
 
-public:
-	const Vector3d& GetPosition() const { return X; }
-	const Quaternion& GetRotation() const { return Q; }
+	const Vector3d& GetPosition() const;
+	const Quaternion& GetRotation() const;
 
 	void SetTransform(const Vector3d& pos, const Quaternion& quat);
 	void SetPosition(const Vector3d& pos);
 	void SetRotation(const Quaternion& quat);
+
+	// State variable
+	Vector3d	X;				// Position
+	Quaternion	Q;				// Rotation Quaternion
+	Geometry* Shape;
 };
 
 

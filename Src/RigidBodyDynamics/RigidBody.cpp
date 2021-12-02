@@ -39,18 +39,41 @@ RigidBodyDynamic*	RigidBodyDynamic::CreateRigidBody(Geometry* Shape, const Rigid
 	return Rigid;
 }
 
+RigidBodyStatic* RigidBodyStatic::CreateRigidBody(Geometry* Shape, const RigidBodyParam& param)
+{
+	RigidBodyStatic* Rigid = new RigidBodyStatic;
+	Rigid->X = Shape->GetPosition();
+	Rigid->Q = Shape->GetRotationQuat();
+	Rigid->Shape = Shape;
+	return Rigid;
+}
+
+const Vector3d& RigidBodyStatic::GetPosition() const
+{
+	return X;
+}
+
+const Quaternion& RigidBodyStatic::GetRotation() const
+{
+	return Q;
+}
+
 void RigidBodyStatic::SetTransform(const Vector3d& pos, const Quaternion& quat)
 {
-	this->X = pos;
-	this->Q = quat;
+	X = pos;
+	Q = quat;
+	Shape->SetPosition(pos);
+	Shape->SetRotationQuat(quat);
 }
 
 void RigidBodyStatic::SetPosition(const Vector3d& pos)
 {
-	this->X = pos;
+	X = pos;
+	Shape->SetPosition(pos);
 }
 
 void RigidBodyStatic::SetRotation(const Quaternion& quat)
 {
-	this->Q = quat;
+	Q = quat;
+	Shape->SetRotationQuat(quat);
 }

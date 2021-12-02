@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "RigidBody.h"
@@ -9,6 +10,7 @@ class GeometryQuery;
 class BroadPhase;
 class NarrowPhase;
 class ForceField;
+class AnimationTree;
 
 struct RigidBodySimulationParam
 {
@@ -26,10 +28,18 @@ public:
 	void		ApplyGravity();
 	void		ApplyWind();
 
-	RigidBodyDynamic*	CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
+	RigidBody*	CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
+	bool		LoadAnimation(const std::string &filepath, float play_rate);
+
+	bool		BindAnimationNode(const std::string& anim, const std::string& node, RigidBodyStatic* body);
 
 private:
-	std::vector<RigidBodyDynamic*> m_Entities;
+	AnimationTree* FindAnimation(const std::string& anim);
+
+private:
+	std::vector<RigidBodyStatic*>	m_RigidStatics;
+	std::vector<RigidBodyDynamic*>	m_RigidDynamics;
+	std::vector<AnimationTree*>		m_Animations;
 
 	GeometryQuery*	m_GeometryQuery;
 	BroadPhase*		m_BPhase;

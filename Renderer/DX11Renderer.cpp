@@ -538,7 +538,7 @@ public:
 		}
         else if (geom->GetShapeType() == BOX)
         {
-            // AddGeometry<AxisAlignedBox3d>(geom);
+            AddGeometry<AxisAlignedBox3d>(geom);
         }
 		else if (geom->GetShapeType() == PLANE)
 		{

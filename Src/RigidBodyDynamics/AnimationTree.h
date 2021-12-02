@@ -16,6 +16,8 @@ struct AnimTreeNode
 	AnimTreeNode()
 	{
 		Entity = nullptr;
+		X = Vector3d::Zero();
+		Q = Quaternion::One();
 	}
 
 	std::string						Name;
@@ -29,21 +31,22 @@ struct AnimTreeNode
 class AnimationTree
 {
 public:
-	AnimationTree() {}
+	AnimationTree();
 
-	void						Tick(float elapsed);
+	void						Simulate(float elapsed);
 	bool						Deserialize(const std::string& filepath);
 	const std::string&			GetName() const { return m_ResName; }
-
-	bool						Bind(const std::string& node_name, RigidBodyStatic* actor);
+	void						SetAnimationPlayRate(float play_rate);
+	bool						Bind(const std::string& node_name, RigidBodyStatic* body);
 	void						UnBind(RigidBodyStatic* actor);
 
 private:
 	bool						Build(AnimTreeData* data);
-	void						TickDfs(float elapsed_ms, AnimTreeNode* parent, AnimTreeNode* node);
+	void						SimulateNode(float elapsed, AnimTreeNode* parent, AnimTreeNode* node);
 
 private:
 	AnimTreeNode*				m_Root;
+	float						m_PlayRate;
 	std::string					m_ResName;
 	std::vector<AnimTreeNode>	m_Nodes;
 };

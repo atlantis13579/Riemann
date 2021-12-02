@@ -97,10 +97,13 @@ void InitScene()
 
     if (1)
     {
+        rp.Static = true;
         Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d::UnitY());
         g_World->CreateRigidBody(plane, rp);
 		g_Renderer->AddGeometry(plane);
     }
+
+
 
     // Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
     Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
@@ -183,16 +186,34 @@ void InitScene()
         g_Renderer->AddTriMesh(draw_mesh, t, false);
     }
 
-    if (1)
+    if (0)
     {
         rp.Static = false;
         Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 10.0f, 0.0f), Vector3d(0.5f, 0.5f, 0.5f));
-        RigidBodyDynamic *p = g_World->CreateRigidBody(aabb, rp);
+        RigidBodyDynamic *p = (RigidBodyDynamic*)g_World->CreateRigidBody(aabb, rp);
         p->ApplyTorgue(Vector3d(0, -10, 0).Cross(Vector3d::UnitZ())* aabb->GetBoundingVolume_WorldSpace().GetSizeZ() * 100000.0f);
 
         g_Renderer->AddGeometry(aabb);
     }
 
+	if (1)
+	{
+		std::string anim_name = "E:/Temp/idle.anim";
+		g_World->LoadAnimation(anim_name, 20.0f);
+
+		rp.Static = true;
+        for (int i = 1; i <= 16; ++i)
+        {
+			Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, i, 0.0f), Vector3d(0.5f, 0.5f, 0.5f));
+			RigidBodyStatic* p = (RigidBodyStatic*)g_World->CreateRigidBody(aabb, rp);
+
+            std::string name = (i <= 9 ? "HP_guajie0" : "HP_guajie") + std::to_string(i);
+
+			g_World->BindAnimationNode(anim_name, name, p);
+			g_Renderer->AddGeometry(aabb);
+        }
+
+	}
 }
 #pragma optimize("", on)
 
@@ -203,6 +224,8 @@ void InitPhysxScene()
 
     std::vector<Geometry*> collection;;
     LoadPhysxBinary("e:/temp/physx/fighting.xml.bin", &collection);
+
+	g_World->LoadAnimation("E:/Temp/idle.anim", 1.0f);
 
     for (Geometry* Geom : collection)
     {
@@ -228,8 +251,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    // InitScene();
-    InitPhysxScene();
+    InitScene();
+    // InitPhysxScene();
     UpdateCamera();
 
     auto last = std::chrono::steady_clock::now();

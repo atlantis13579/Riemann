@@ -93,8 +93,10 @@ bool Animation::IsFinish() const
 }
 
 template <typename T>
-static bool InterpFrame(float elapsed_ms, const std::vector<Keyframe<T>>& frames, bool is_loop, float& current_ms, bool& is_finish, T* result)
+static bool InterpFrame(float elapsed, const std::vector<Keyframe<T>>& frames, bool is_loop, float& current_ms, bool& is_finish, T* result)
 {
+	float elapsed_ms = elapsed * 1000.0f;
+
 	if (elapsed_ms <= 0.0f || frames.empty() || is_finish)
 	{
 		return false;
@@ -144,8 +146,17 @@ static bool InterpFrame(float elapsed_ms, const std::vector<Keyframe<T>>& frames
 
 bool Animation::Advance(float elapsed, Vector3d* pos, Quaternion* quat)
 {
-	float elapsed_ms = elapsed * 1000.0f;
-	bool success_pos = InterpFrame(elapsed_ms, m_FramesPosition, m_IsLoop, m_CurrentPos, m_IsFinishPos, pos);
-	bool success_quat = InterpFrame(elapsed_ms, m_FramesRotation, m_IsLoop, m_CurrentQuat, m_IsFinishQuat, quat);
+	bool success_pos = InterpFrame(elapsed, m_FramesPosition, m_IsLoop, m_CurrentPos, m_IsFinishPos, pos);
+	bool success_quat = InterpFrame(elapsed, m_FramesRotation, m_IsLoop, m_CurrentQuat, m_IsFinishQuat, quat);
 	return success_pos || success_quat;
+}
+
+bool Animation::AdvancePos(float elapsed, Vector3d* pos)
+{
+	return InterpFrame(elapsed, m_FramesPosition, m_IsLoop, m_CurrentPos, m_IsFinishPos, pos);
+}
+
+bool Animation::AdvanceQuat(float elapsed, Quaternion* quat)
+{
+	return InterpFrame(elapsed, m_FramesRotation, m_IsLoop, m_CurrentQuat, m_IsFinishQuat, quat);
 }

@@ -87,50 +87,63 @@ bool AnimationTree::Build(AnimTreeData* data)
 		return false;
 	}
 
-	return 0;
+	return true;
 }
 
-void AnimationTree::Tick(float elapsed)
+AnimationTree::AnimationTree()
+{
+	m_PlayRate = 1.0f;
+}
+
+void AnimationTree::Simulate(float elapsed)
 {
 	if (m_Root == nullptr)
 	{
 		return;
 	}
 
-	float elapsed_ms = elapsed * 1000.0f;
-	TickDfs(elapsed_ms, nullptr, m_Root);
+	SimulateNode(elapsed * m_PlayRate, nullptr, m_Root);
 }
 
-void AnimationTree::TickDfs(float elapsed_ms, AnimTreeNode* parent, AnimTreeNode* node)
+void AnimationTree::SimulateNode(float elapsed, AnimTreeNode* parent, AnimTreeNode* node)
 {
 	Vector3d pos;
-	Quaternion quat;
-	if (node->Anim.Advance(elapsed_ms, &pos, &quat))
+	if (node->Anim.AdvancePos(elapsed, &pos))
 	{
-		if (parent)
-		{
-			node->X = parent->X + pos;
-			node->Q = parent->Q * quat;
-		}
-		else
-		{
-			node->X = pos;
-			node->Q = quat;
-		}
+		node->X = parent ? (parent->X + pos) : pos;
+	}
+	else if (parent)
+	{
+		node->X = parent->X;
+	}
 
-		if (node->Entity)
-		{
-			node->Entity->SetTransform(node->X, node->Q);
-		}
+	Quaternion quat;
+	if (node->Anim.AdvanceQuat(elapsed, &quat))
+	{
+		node->Q = parent ? (parent->Q * quat) : quat;
+	}
+	else if (parent)
+	{
+		node->Q = parent->Q;
+	}
+
+	if (node->Entity)
+	{
+		node->Entity->SetTransform(node->X, node->Q);
 	}
 
 	for (size_t i = 0; i < node->Childrens.size(); ++i)
 	{
-		TickDfs(elapsed_ms, node, node->Childrens[i]);
+		SimulateNode(elapsed, node, node->Childrens[i]);
 	}
 }
 
-bool AnimationTree::Bind(const std::string& node_name, RigidBodyStatic* actor)
+void AnimationTree::SetAnimationPlayRate(float play_rate)
+{
+	m_PlayRate = play_rate;
+}
+
+bool AnimationTree::Bind(const std::string& node_name, RigidBodyStatic* body)
 {
 	if (m_Root == nullptr)
 	{
@@ -141,9 +154,9 @@ bool AnimationTree::Bind(const std::string& node_name, RigidBodyStatic* actor)
 	{
 		if (m_Nodes[i].Name == node_name)
 		{
-			m_Nodes[i].Entity = actor;
-			m_Nodes[i].X = actor->GetPosition();
-			m_Nodes[i].Q = actor->GetRotation();
+			m_Nodes[i].Entity = body;
+			m_Nodes[i].X = body->GetPosition();
+			m_Nodes[i].Q = body->GetRotation();
 			return true;
 		}
 	}

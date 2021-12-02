@@ -33,6 +33,8 @@ public:
 	void Begin();
 	bool IsFinish() const;
 	bool Advance(float elapsed, Vector3d* pos, Quaternion* quat);
+	bool AdvancePos(float elapsed, Vector3d* pos);
+	bool AdvanceQuat(float elapsed, Quaternion* quat);
 
 private:
 	float						m_CurrentPos, m_CurrentQuat;
