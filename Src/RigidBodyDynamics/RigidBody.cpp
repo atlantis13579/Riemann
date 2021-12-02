@@ -48,16 +48,6 @@ RigidBodyStatic* RigidBodyStatic::CreateRigidBody(Geometry* Shape, const RigidBo
 	return Rigid;
 }
 
-const Vector3d& RigidBodyStatic::GetPosition() const
-{
-	return X;
-}
-
-const Quaternion& RigidBodyStatic::GetRotation() const
-{
-	return Q;
-}
-
 void RigidBodyStatic::SetTransform(const Vector3d& pos, const Quaternion& quat)
 {
 	X = pos;

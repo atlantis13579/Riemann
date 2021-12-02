@@ -150,13 +150,3 @@ bool Animation::Advance(float elapsed, Vector3d* pos, Quaternion* quat)
 	bool success_quat = InterpFrame(elapsed, m_FramesRotation, m_IsLoop, m_CurrentQuat, m_IsFinishQuat, quat);
 	return success_pos || success_quat;
 }
-
-bool Animation::AdvancePos(float elapsed, Vector3d* pos)
-{
-	return InterpFrame(elapsed, m_FramesPosition, m_IsLoop, m_CurrentPos, m_IsFinishPos, pos);
-}
-
-bool Animation::AdvanceQuat(float elapsed, Quaternion* quat)
-{
-	return InterpFrame(elapsed, m_FramesRotation, m_IsLoop, m_CurrentQuat, m_IsFinishQuat, quat);
-}

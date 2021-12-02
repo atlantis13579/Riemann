@@ -107,24 +107,19 @@ void AnimationTree::Simulate(float elapsed)
 
 void AnimationTree::SimulateNode(float elapsed, AnimTreeNode* parent, AnimTreeNode* node)
 {
-	Vector3d pos;
-	if (node->Anim.AdvancePos(elapsed, &pos))
-	{
-		node->X = parent ? (parent->X + pos) : pos;
-	}
-	else if (parent)
-	{
-		node->X = parent->X;
-	}
+	Vector3d pos = Vector3d::Zero();
+	Quaternion quat = Quaternion::One();
+	node->Anim.Advance(elapsed, &pos, &quat);
 
-	Quaternion quat;
-	if (node->Anim.AdvanceQuat(elapsed, &quat))
+	if (parent)
 	{
-		node->Q = parent ? (parent->Q * quat) : quat;
+		node->X = parent->X + parent->Q * pos;
+		node->Q = parent->Q * quat;
 	}
-	else if (parent)
+	else
 	{
-		node->Q = parent->Q;
+		node->X = pos;
+		node->Q = quat;
 	}
 
 	if (node->Entity)
@@ -155,8 +150,8 @@ bool AnimationTree::Bind(const std::string& node_name, RigidBodyStatic* body)
 		if (m_Nodes[i].Name == node_name)
 		{
 			m_Nodes[i].Entity = body;
-			m_Nodes[i].X = body->GetPosition();
-			m_Nodes[i].Q = body->GetRotation();
+			m_Nodes[i].X = body->X;
+			m_Nodes[i].Q = body->Q;
 			return true;
 		}
 	}

@@ -45,9 +45,6 @@ class RigidBodyStatic : public RigidBody
 public:
 	static RigidBodyStatic* CreateRigidBody(Geometry* Shape, const RigidBodyParam& param);
 
-	const Vector3d& GetPosition() const;
-	const Quaternion& GetRotation() const;
-
 	void SetTransform(const Vector3d& pos, const Quaternion& quat);
 	void SetPosition(const Vector3d& pos);
 	void SetRotation(const Quaternion& quat);
