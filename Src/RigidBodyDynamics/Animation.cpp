@@ -3,8 +3,8 @@
 
 Animation::Animation()
 {
-	m_CurrentPos = m_CurrentQuat = 0.0f;
-	m_IsFinishPos = m_IsFinishQuat = true;
+	m_TimelinePosition.Reset();
+	m_TimelineRotation.Reset();
 	m_IsLoop = false;
 }
 
@@ -13,7 +13,7 @@ void Animation::LoadKeyframes(const std::vector<KeyframePos>& frame_pos, const s
 	m_FramesPosition = frame_pos;
 	m_FramesRotation = frame_quat;
 	m_IsLoop = is_loop;
-	Begin();
+	ResetFromBegining();
 }
 
 void Animation::LoadRotationY(const Quaternion& quat, float radian, int time_ms)
@@ -27,7 +27,7 @@ void Animation::LoadRotationY(const Quaternion& quat, float radian, int time_ms)
 	m_FramesRotation[1].time = time_ms;
 	m_FramesRotation[1].key = quat * rot;
 	m_IsLoop = false;
-	Begin();
+	ResetFromBegining();
 }
 
 template<typename T>
@@ -81,23 +81,22 @@ Quaternion Lerp(const Quaternion& start, const Quaternion& end, float t)
 	return Quaternion::Slerp(start, end, t);
 }
 
-void Animation::Begin()
+void Animation::ResetFromBegining()
 {
-	m_CurrentPos = m_CurrentQuat = 0.0f;
-	m_IsFinishPos = m_IsFinishQuat = false;
+	m_TimelinePosition.Reset();
+	m_TimelineRotation.Reset();
 }
 
 bool Animation::IsFinish() const
 {
-	return m_IsFinishPos && m_IsFinishQuat;
+	return m_TimelinePosition.IsFinish && m_TimelineRotation.IsFinish;
 }
 
 template <typename T>
-static bool InterpFrame(float elapsed, const std::vector<Keyframe<T>>& frames, bool is_loop, float& current_ms, bool& is_finish, T* result)
+static bool InterpFrame(float elapsed, const std::vector<Keyframe<T>>& frames, bool is_loop, Timeline<T>& timeline, T* result)
 {
 	float elapsed_ms = elapsed * 1000.0f;
-
-	if (elapsed_ms <= 0.0f || frames.empty() || is_finish)
+	if (elapsed_ms <= 0.0f || frames.empty() || timeline.IsFinish)
 	{
 		return false;
 	}
@@ -107,28 +106,30 @@ static bool InterpFrame(float elapsed, const std::vector<Keyframe<T>>& frames, b
 		*result = frames[0].key;
 		if (!is_loop)
 		{
-			is_finish = true;
+			timeline.IsFinish = true;
 		}
 		return true;
 	}
 
-	current_ms += elapsed_ms;
-	if (current_ms >= frames.back().time)
+	timeline.TimeMS += elapsed_ms;
+	if (timeline.TimeMS >= frames.back().time)
 	{
+		timeline.Idx = 0;
 		if (!is_loop)
 		{
-			is_finish = true;
+			timeline.TimeMS = true;
 			*result = frames.back().key;
 			return true;
 		}
-		current_ms = fmodf(current_ms, (float)frames.back().time);
+		timeline.TimeMS = fmodf(timeline.TimeMS, (float)frames.back().time);
 	}
 
-	for (size_t i = 0; i < frames.size() - 1; ++i)
+	for (size_t i = timeline.Idx; i < frames.size() - 1; ++i)
 	{
-		if (frames[i].time <= current_ms && current_ms < frames[i + 1].time)
+		if (frames[i].time <= timeline.TimeMS && timeline.TimeMS < frames[i + 1].time)
 		{
-			float dt = 1.0f * (current_ms - frames[i].time) / (frames[i + 1].time - frames[i].time);
+			timeline.Idx = (int)i;
+			float dt = 1.0f * (timeline.TimeMS - frames[i].time) / (frames[i + 1].time - frames[i].time);
 			if (dt < 1e-6f)
 			{
 				*result = frames[i].key;
@@ -146,7 +147,7 @@ static bool InterpFrame(float elapsed, const std::vector<Keyframe<T>>& frames, b
 
 bool Animation::Advance(float elapsed, Vector3d* pos, Quaternion* quat)
 {
-	bool success_pos = InterpFrame(elapsed, m_FramesPosition, m_IsLoop, m_CurrentPos, m_IsFinishPos, pos);
-	bool success_quat = InterpFrame(elapsed, m_FramesRotation, m_IsLoop, m_CurrentQuat, m_IsFinishQuat, quat);
+	bool success_pos = InterpFrame(elapsed, m_FramesPosition, m_IsLoop, m_TimelinePosition, pos);
+	bool success_quat = InterpFrame(elapsed, m_FramesRotation, m_IsLoop, m_TimelineRotation, quat);
 	return success_pos || success_quat;
 }

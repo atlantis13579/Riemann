@@ -155,7 +155,7 @@ RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyP
 	return Rigid;
 }
 
-bool RigidBodySimulation::LoadAnimation(const std::string& filepath, float play_rate)
+bool RigidBodySimulation::LoadAnimation(const std::string& filepath, float play_rate, bool begin_play)
 {
 	AnimationTree* tree = new AnimationTree;
 	if (!tree->Deserialize(filepath))
@@ -164,6 +164,7 @@ bool RigidBodySimulation::LoadAnimation(const std::string& filepath, float play_
 		return false;
 	}
 	tree->SetAnimationPlayRate(play_rate);
+	tree->Pause(!begin_play);
 	m_Animations.push_back(tree);
 	return true;
 }

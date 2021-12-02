@@ -199,12 +199,12 @@ void InitScene()
 	if (1)
 	{
 		std::string anim_name = "E:/Temp/idle.anim";
-		g_World->LoadAnimation(anim_name, 10.0f);
+		g_World->LoadAnimation(anim_name, 10.0f, true);
 
 		rp.Static = true;
         for (int i = 1; i <= 16; ++i)
         {
-			Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, (f)i, 0.0f), Vector3d(0.5f, 0.5f, 0.5f));
+			Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, (float)i, 0.0f), Vector3d(0.5f, 0.5f, 0.5f));
 			RigidBodyStatic* p = (RigidBodyStatic*)g_World->CreateRigidBody(aabb, rp);
 
             std::string name = (i <= 9 ? "HP_guajie0" : "HP_guajie") + std::to_string(i);
@@ -225,7 +225,7 @@ void InitPhysxScene()
     std::vector<Geometry*> collection;;
     LoadPhysxBinary("e:/temp/physx/fighting.xml.bin", &collection);
 
-	g_World->LoadAnimation("E:/Temp/idle.anim", 1.0f);
+	g_World->LoadAnimation("E:/Temp/idle.anim", 1.0f, true);
 
     for (Geometry* Geom : collection)
     {

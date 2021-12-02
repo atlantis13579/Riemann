@@ -29,7 +29,7 @@ public:
 	void		ApplyWind();
 
 	RigidBody*	CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
-	bool		LoadAnimation(const std::string &filepath, float play_rate);
+	bool		LoadAnimation(const std::string &filepath, float play_rate, bool begin_play);
 
 	bool		BindAnimationNode(const std::string& anim, const std::string& node, RigidBodyStatic* body);
 

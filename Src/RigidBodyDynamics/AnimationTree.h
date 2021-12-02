@@ -37,6 +37,9 @@ public:
 	bool						Deserialize(const std::string& filepath);
 	const std::string&			GetName() const { return m_ResName; }
 	void						SetAnimationPlayRate(float play_rate);
+	void						Pause(bool pause);
+	bool						IsPause() const;
+
 	bool						Bind(const std::string& node_name, RigidBodyStatic* body);
 	void						UnBind(RigidBodyStatic* actor);
 
@@ -47,6 +50,7 @@ private:
 private:
 	AnimTreeNode*				m_Root;
 	float						m_PlayRate;
+	bool						m_Pause;
 	std::string					m_ResName;
 	std::vector<AnimTreeNode>	m_Nodes;
 };

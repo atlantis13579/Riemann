@@ -21,6 +21,21 @@ struct Keyframe
 typedef Keyframe<Vector3d> KeyframePos;
 typedef Keyframe<Quaternion> KeyframeQuat;
 
+template<typename T>
+struct Timeline
+{
+	void Reset()
+	{
+		TimeMS = 0.0f;
+		Idx = 0;
+		IsFinish = false;
+	}
+
+	float	TimeMS;
+	int		Idx;
+	bool	IsFinish;
+};
+
 class Animation
 {
 public:
@@ -30,14 +45,14 @@ public:
 	void LoadRotationY(const Quaternion& quat, float radian, int time_ms);
 
 	bool CheckAnimData() const;
-	void Begin();
+	void ResetFromBegining();
 	bool IsFinish() const;
 	bool Advance(float elapsed, Vector3d* pos, Quaternion* quat);
 
 private:
-	float						m_CurrentPos, m_CurrentQuat;
-	bool						m_IsFinishPos, m_IsFinishQuat;
 
+	Timeline<Vector3d>			m_TimelinePosition;
+	Timeline<Quaternion>		m_TimelineRotation;
 	std::vector<KeyframePos>	m_FramesPosition;
 	std::vector<KeyframeQuat>	m_FramesRotation;
 	bool						m_IsLoop;

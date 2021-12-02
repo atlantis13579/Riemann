@@ -92,12 +92,13 @@ bool AnimationTree::Build(AnimTreeData* data)
 
 AnimationTree::AnimationTree()
 {
+	m_Pause = true;
 	m_PlayRate = 1.0f;
 }
 
 void AnimationTree::Simulate(float elapsed)
 {
-	if (m_Root == nullptr)
+	if (m_Pause || m_Root == nullptr)
 	{
 		return;
 	}
@@ -131,6 +132,16 @@ void AnimationTree::SimulateNode(float elapsed, AnimTreeNode* parent, AnimTreeNo
 	{
 		SimulateNode(elapsed, node, node->Childrens[i]);
 	}
+}
+
+void AnimationTree::Pause(bool pause)
+{
+	m_Pause = pause;
+}
+
+bool AnimationTree::IsPause() const
+{
+	return m_Pause;
 }
 
 void AnimationTree::SetAnimationPlayRate(float play_rate)
