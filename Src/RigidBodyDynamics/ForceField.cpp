@@ -12,7 +12,7 @@ ForceField::~ForceField()
 
 }
 
-bool ForceField::ApplyForce(RigidBody* Rigid)
+bool ForceField::ApplyForce(RigidBodyDynamic* Rigid)
 {
 	Vector3d Force = DenseTensorField3d::GetTensorByPosition(Rigid->X);
 	Rigid->ApplyForce(Force);

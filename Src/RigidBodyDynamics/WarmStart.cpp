@@ -18,8 +18,8 @@ void WarmStart::Manifolds(std::vector<ContactManifold>& manifolds, float dt)
 
 void WarmStart::Contact(Geometry* Geom1, Geometry* Geom2, ContactResult& contact, float dt)
 {
-    RigidBody* rigidBody1 = (RigidBody*)Geom1->GetEntity();
-    RigidBody* rigidBody2 = (RigidBody*)Geom2->GetEntity();
+    RigidBodyDynamic* rigidBody1 = (RigidBodyDynamic*)Geom1->GetEntity();
+    RigidBodyDynamic* rigidBody2 = (RigidBodyDynamic*)Geom2->GetEntity();
 
     //let normal point from a -> b
     Vector3d normal = -contact.Normal;

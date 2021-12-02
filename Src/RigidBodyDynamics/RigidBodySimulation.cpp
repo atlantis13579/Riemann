@@ -124,9 +124,9 @@ void		RigidBodySimulation::ApplyWind()
 	}
 }
 
-RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
+RigidBodyDynamic*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
 {
-	RigidBody* Rigid = RigidBody::CreateRigidBody(Geom, param);
+	RigidBodyDynamic* Rigid = RigidBodyDynamic::CreateRigidBody(Geom, param);
 	Geom->SetEntity(Rigid);
 	m_Entities.push_back(Rigid);
 	return Rigid;

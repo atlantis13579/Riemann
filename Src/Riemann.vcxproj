@@ -42,6 +42,8 @@
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
     <ClCompile Include="Geometry\VoxelEngine.cpp" />
     <ClCompile Include="Maths\Matrix3d.cpp" />
+    <ClCompile Include="RigidBodyDynamics\Animation.cpp" />
+    <ClCompile Include="RigidBodyDynamics\AnimationTree.cpp" />
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />
     <ClCompile Include="RigidBodyDynamics\PhysicsMaterial.cpp" />
     <ClCompile Include="RigidBodyDynamics\SequentialImpulseSolver.cpp" />
@@ -60,6 +62,7 @@
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
+    <ClCompile Include="Tools\AnimBinaryParser.cpp" />
     <ClCompile Include="Tools\PhysxBinaryParser.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
@@ -113,8 +116,10 @@
     <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="Optimization\SGD.h" />
+    <ClInclude Include="RigidBodyDynamics\AnimationTree.h" />
     <ClInclude Include="RigidBodyDynamics\ForceField.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsMaterial.h" />
+    <ClInclude Include="RigidBodyDynamics\Animation.h" />
     <ClInclude Include="RigidBodyDynamics\SequentialImpulseSolver.h" />
     <ClInclude Include="RigidBodyDynamics\WarmStart.h" />
     <ClInclude Include="Geometry\ConvexHull2D.h" />
@@ -154,6 +159,7 @@
     <ClInclude Include="Solver\NumericalODESolver.h" />
     <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />
     <ClInclude Include="Solver\SparseConjugateGradientSolver.h" />
+    <ClInclude Include="Tools\AnimBinaryParser.h" />
     <ClInclude Include="Tools\PhysxBinaryParser.h" />
     <ClInclude Include="Tools\PhysxFormat_34.hpp" />
     <ClInclude Include="Tools\PhysxFormat_41.hpp" />

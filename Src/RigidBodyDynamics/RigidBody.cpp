@@ -1,24 +1,24 @@
 
 #include "RigidBody.h"
 
-void		RigidBody::ApplyForce(const Vector3d& _Force)
+void				RigidBodyDynamic::ApplyForce(const Vector3d& _Force)
 {
 	this->ExtForce += _Force;
 }
 
-void		RigidBody::ApplyTorgue(const Vector3d& _Torque)
+void				RigidBodyDynamic::ApplyTorgue(const Vector3d& _Torque)
 {
 	this->ExtTorque += _Torque;
 }
 
-void RigidBody::AppendShapes(std::vector<Geometry*> *Shapes)
+void				RigidBodyDynamic::AppendShapes(std::vector<Geometry*> *Shapes)
 {
 	Shapes->push_back(this->Shape);
 }
 
-RigidBody*	RigidBody::CreateRigidBody(Geometry* Shape, const RigidBodyParam& param)
+RigidBodyDynamic*	RigidBodyDynamic::CreateRigidBody(Geometry* Shape, const RigidBodyParam& param)
 {
-	RigidBody* Rigid = new RigidBody;
+	RigidBodyDynamic* Rigid = new RigidBodyDynamic;
 	Rigid->Mass = param.Mass;
 	Rigid->InvInertia = Shape->GetInverseInertia_WorldSpace(Rigid->Mass);
 	Rigid->X = Shape->GetPosition();
@@ -37,4 +37,20 @@ RigidBody*	RigidBody::CreateRigidBody(Geometry* Shape, const RigidBodyParam& par
 	Rigid->Sleep = Rigid->Static;
 	Rigid->Shape = Shape;
 	return Rigid;
+}
+
+void RigidBodyStatic::SetTransform(const Vector3d& pos, const Quaternion& quat)
+{
+	this->X = pos;
+	this->Q = quat;
+}
+
+void RigidBodyStatic::SetPosition(const Vector3d& pos)
+{
+	this->X = pos;
+}
+
+void RigidBodyStatic::SetRotation(const Quaternion& quat)
+{
+	this->Q = quat;
 }

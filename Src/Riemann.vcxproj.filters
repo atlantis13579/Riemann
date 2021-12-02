@@ -104,6 +104,9 @@
     <ClInclude Include="CollisionPrimitive\Segment3d.h" />
     <ClInclude Include="Solver\LCPSolver.h" />
     <ClInclude Include="Tools\PhysxFormat_34.hpp" />
+    <ClInclude Include="Tools\AnimBinaryParser.h" />
+    <ClInclude Include="RigidBodyDynamics\Animation.h" />
+    <ClInclude Include="RigidBodyDynamics\AnimationTree.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -150,5 +153,8 @@
     <ClCompile Include="CollisionPrimitive\Segment3d.cpp" />
     <ClCompile Include="CollisionPrimitive\AxisAlignedBox3d.cpp" />
     <ClCompile Include="Solver\LCPSolver.cpp" />
+    <ClCompile Include="Tools\AnimBinaryParser.cpp" />
+    <ClCompile Include="RigidBodyDynamics\Animation.cpp" />
+    <ClCompile Include="RigidBodyDynamics\AnimationTree.cpp" />
   </ItemGroup>
 </Project>

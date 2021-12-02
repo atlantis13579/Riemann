@@ -4,11 +4,11 @@
 #include "../Solver/NumericalODESolver.h"
 
 // static
-void MotionIntegration::Integrate(std::vector<RigidBody*> Entities, float dt)
+void MotionIntegration::Integrate(std::vector<RigidBodyDynamic*> Entities, float dt)
 {
 	for (size_t i = 0; i < Entities.size(); ++i)
 	{
-		RigidBody* Rigid = (RigidBody*)Entities[i];
+		RigidBodyDynamic* Rigid = (RigidBodyDynamic*)Entities[i];
 
 		if (Rigid == nullptr || Rigid->Static || Rigid->Sleep)
 		{

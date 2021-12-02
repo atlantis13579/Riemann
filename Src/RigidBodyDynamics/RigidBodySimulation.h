@@ -26,10 +26,10 @@ public:
 	void		ApplyGravity();
 	void		ApplyWind();
 
-	RigidBody*	CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
+	RigidBodyDynamic*	CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
 
 private:
-	std::vector<RigidBody*> m_Entities;
+	std::vector<RigidBodyDynamic*> m_Entities;
 
 	GeometryQuery*	m_GeometryQuery;
 	BroadPhase*		m_BPhase;

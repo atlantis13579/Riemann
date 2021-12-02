@@ -246,7 +246,7 @@ public:
 		return TVector3<T>(std::max(x, rhs.x), std::max(y, rhs.y), std::max(z, rhs.z));
 	}
 
-	static TVector3<T> Lerp(TVector3<T>& start, TVector3<T>& end, float t)
+	static TVector3<T> Lerp(const TVector3<T>& start, const TVector3<T>& end, float t)
 	{
 		return TVector3<T>(
 			start.x * (1.0f - t) + end.x * t,
@@ -254,12 +254,12 @@ public:
 			start.z * (1.0f - t) + end.z * t);
 	}
 
-	static TVector3<T> UnitLerp(TVector3<T>& start, TVector3<T>& end, float t)
+	static TVector3<T> UnitLerp(const TVector3<T>& start, const TVector3<T>& end, float t)
 	{
 		return Lerp(start, end, t).Unit();
 	}
 
-	static TVector3<T> Slerp(TVector3<T>& start, TVector3<T>& end, float t)
+	static TVector3<T> Slerp(const TVector3<T>& start, const TVector3<T>& end, float t)
 	{
 		float innerp = start.Dot(end);
 		innerp = std::min(std::max(-1.0f, innerp), 1.0f);

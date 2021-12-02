@@ -2,7 +2,7 @@
 
 #include "../Geometry/DenseTensorField3d.h"
 
-class	RigidBody;
+class	RigidBodyDynamic;
 
 class ForceField : public DenseTensorField3d<Vector3d>
 {
@@ -11,5 +11,5 @@ public:
 	~ForceField();
 
 public:
-	bool		ApplyForce(RigidBody *Rigid);
+	bool		ApplyForce(RigidBodyDynamic *Rigid);
 };

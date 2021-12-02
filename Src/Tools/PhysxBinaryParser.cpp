@@ -1,3 +1,8 @@
+#include <assert.h>
+#include <stdio.h>
+#include <cstddef>
+#include <unordered_map>
+#include <vector>
 
 #include "PhysxBinaryParser.h"
 #include "Serialization.h"
@@ -10,12 +15,6 @@
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
 #include "../Maths/Quaternion.h"
-
-#include <assert.h>
-#include <stdio.h>
-#include <cstddef>
-#include <unordered_map>
-#include <vector>
 
 typedef int64_t PxI64;
 typedef uint64_t PxU64;
