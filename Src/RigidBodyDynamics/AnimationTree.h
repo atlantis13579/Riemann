@@ -18,6 +18,7 @@ struct AnimTreeNode
 		Entity = nullptr;
 		X = Vector3d::Zero();
 		Q = Quaternion::One();
+		Parent = -1;
 	}
 
 	std::string						Name;
@@ -25,7 +26,7 @@ struct AnimTreeNode
 	Quaternion						Q;
 	Animation						Anim;
 	RigidBodyStatic*				Entity;
-	std::vector<AnimTreeNode*>		Childrens;
+	int								Parent;
 };
 
 class AnimationTree
@@ -35,22 +36,24 @@ public:
 
 	void						Simulate(float elapsed);
 	bool						Deserialize(const std::string& filepath);
+
+	void						SetRootTransform(const Vector3d& pos, const Quaternion& rot);
 	const std::string&			GetName() const { return m_ResName; }
+	void						SetName(const std::string& Name) { m_ResName = Name; }
 	void						SetAnimationPlayRate(float play_rate);
 	void						Pause(bool pause);
 	bool						IsPause() const;
 
 	bool						Bind(const std::string& node_name, RigidBodyStatic* body);
-	void						UnBind(RigidBodyStatic* actor);
+	void						UnBind(RigidBodyStatic* body);
 
 private:
-	bool						Build(AnimTreeData* data);
-	void						SimulateNode(float elapsed, AnimTreeNode* parent, AnimTreeNode* node);
+	bool						BuildFlatTree(AnimTreeData* data);
 
 private:
-	std::vector<AnimTreeNode*>	m_Roots;
 	float						m_PlayRate;
 	bool						m_Pause;
 	std::string					m_ResName;
-	std::vector<AnimTreeNode>	m_Nodes;
+	std::string					m_ResPath;
+	std::vector<AnimTreeNode>	m_FlatTree;
 };

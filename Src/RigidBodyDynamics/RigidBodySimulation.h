@@ -24,17 +24,18 @@ public:
 	~RigidBodySimulation();
 
 public:
-	void		Simulate(float dt);
-	void		ApplyGravity();
-	void		ApplyWind();
+	void			Simulate(float dt);
+	void			ApplyGravity();
+	void			ApplyWind();
 
-	RigidBody*	CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
-	bool		LoadAnimation(const std::string &filepath, float play_rate, bool begin_play);
+	RigidBody*		CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
+	bool			LoadAnimation(const std::string& resname, const std::string &filepath, float play_rate, bool begin_play);
 
-	bool		BindAnimationNode(const std::string& anim, const std::string& node, RigidBodyStatic* body);
+	bool			BindAnimationNode(const std::string& anim, const std::string& node, RigidBodyStatic* body);
+	AnimationTree*	FindAnimation(const std::string& resname);
 
 private:
-	AnimationTree* FindAnimation(const std::string& anim);
+
 
 private:
 	std::vector<RigidBodyStatic*>	m_RigidStatics;

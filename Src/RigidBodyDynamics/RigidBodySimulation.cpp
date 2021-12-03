@@ -155,7 +155,7 @@ RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyP
 	return Rigid;
 }
 
-bool RigidBodySimulation::LoadAnimation(const std::string& filepath, float play_rate, bool begin_play)
+bool RigidBodySimulation::LoadAnimation(const std::string& resname, const std::string& filepath, float play_rate, bool begin_play)
 {
 	for (size_t i = 0; i < m_Animations.size(); ++i)
 	{
@@ -173,15 +173,16 @@ bool RigidBodySimulation::LoadAnimation(const std::string& filepath, float play_
 		delete tree;
 		return false;
 	}
+	tree->SetName(resname);
 	tree->SetAnimationPlayRate(play_rate);
 	tree->Pause(!begin_play);
 	m_Animations.push_back(tree);
 	return true;
 }
 
-bool RigidBodySimulation::BindAnimationNode(const std::string& anim, const std::string& node, RigidBodyStatic *body)
+bool RigidBodySimulation::BindAnimationNode(const std::string& resname, const std::string& node, RigidBodyStatic *body)
 {
-	AnimationTree* tree = FindAnimation(anim);
+	AnimationTree* tree = FindAnimation(resname);
 	if (tree == nullptr)
 	{
 		return false;
@@ -189,11 +190,11 @@ bool RigidBodySimulation::BindAnimationNode(const std::string& anim, const std::
 	return tree->Bind(node, body);
 }
 
-AnimationTree* RigidBodySimulation::FindAnimation(const std::string& anim)
+AnimationTree* RigidBodySimulation::FindAnimation(const std::string& resname)
 {
 	for (size_t i = 0; i < m_Animations.size(); ++i)
 	{
-		if (m_Animations[i]->GetName() == anim)
+		if (m_Animations[i]->GetName() == resname)
 		{
 			return m_Animations[i];
 		}

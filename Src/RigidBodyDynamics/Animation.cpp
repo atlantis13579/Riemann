@@ -3,8 +3,8 @@
 
 Animation::Animation()
 {
-	m_TimelinePosition.Reset(0.0f);
-	m_TimelineRotation.Reset(0.0f);
+	m_TimelinePosition.SetTime(0.0f);
+	m_TimelineRotation.SetTime(0.0f);
 	m_IsLoop = false;
 }
 
@@ -13,7 +13,7 @@ void Animation::LoadKeyframes(const std::vector<KeyframePos>& frame_pos, const s
 	m_FramesPosition = frame_pos;
 	m_FramesRotation = frame_quat;
 	m_IsLoop = is_loop;
-	ResetFromBegining();
+	SetTime(0.0f);
 }
 
 void Animation::LoadRotationY(const Quaternion& quat, float radian, int time_ms)
@@ -27,7 +27,7 @@ void Animation::LoadRotationY(const Quaternion& quat, float radian, int time_ms)
 	m_FramesRotation[1].time = time_ms;
 	m_FramesRotation[1].key = quat * rot;
 	m_IsLoop = false;
-	ResetFromBegining();
+	SetTime(0.0f);
 }
 
 template<typename T>
@@ -81,10 +81,10 @@ Quaternion Lerp(const Quaternion& start, const Quaternion& end, float t)
 	return Quaternion::Slerp(start, end, t);
 }
 
-void Animation::ResetFromBegining()
+void Animation::SetTime(float time)
 {
-	m_TimelinePosition.Reset(0.0f);
-	m_TimelineRotation.Reset(0.0f);
+	m_TimelinePosition.SetTime(time);
+	m_TimelineRotation.SetTime(time);
 }
 
 bool Animation::IsFinish() const

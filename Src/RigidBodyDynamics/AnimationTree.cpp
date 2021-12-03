@@ -3,64 +3,73 @@
 #include "../Tools/AnimBinaryParser.h"
 #include "RigidBody.h"
 
-static int CalcNumNodes(AnimTreeNode* node)
+struct _Node
 {
-	int num = 1;
-	for (size_t i = 0; i < node->Childrens.size(); ++i)
-	{
-		num += CalcNumNodes(node->Childrens[i]);
-	}
-	return num;
-}
+	_Node() { Idx = -1; }
+	_Node(int _Idx) { Idx = _Idx; }
+	int	Idx;
+	std::vector<_Node*> Childrens;
+};
 
-bool AnimationTree::Build(AnimTreeData* data)
+void _Flaten(std::vector<AnimTreeNode>& FlatTree, int Parent, const _Node* Tree, const AnimTreeData* data)
 {
-	m_Roots.clear();
-	m_Nodes.clear();
-
-	if (data->channels.empty())
-	{
-		return false;
-	}
-
 	std::vector<KeyframePos> frames_pos;
 	std::vector<KeyframeQuat> frames_quat;
 
-	int nBones = (int)data->channels.size();
-	m_Nodes.resize(nBones);
-	for (int i = 0; i < nBones; ++i)
+	FlatTree.push_back(AnimTreeNode());
+	AnimTreeNode* node = &FlatTree.back();
+
+	if (Tree->Idx >= 0)
 	{
-		AnimTreeNode* node = &m_Nodes[i];
-		const BoneChannel& channel = data->channels[i];
+		const BoneChannel& channel = data->channels[Tree->Idx];
 		bool is_loop = true;
 
 		frames_pos.clear();
-		for (size_t i = 0; i < channel.positionKeys.size(); ++i)
+		for (size_t j = 0; j < channel.positionKeys.size(); ++j)
 		{
-			frames_pos.emplace_back(channel.positionKeys[i].first, channel.positionKeys[i].second);
+			frames_pos.emplace_back(channel.positionKeys[j].first, channel.positionKeys[j].second);
 		}
 
 		frames_quat.clear();
-		for (size_t i = 0; i < channel.rotationKeys.size(); ++i)
+		for (size_t j = 0; j < channel.rotationKeys.size(); ++j)
 		{
-			frames_quat.emplace_back(channel.rotationKeys[i].first, channel.rotationKeys[i].second);
+			frames_quat.emplace_back(channel.rotationKeys[j].first, channel.rotationKeys[j].second);
 		}
 
 		node->Name = channel.boneName;
 		node->Anim.LoadKeyframes(frames_pos, frames_quat, is_loop);
-
-		if (!node->Anim.CheckAnimData())
-		{
-			return false;
-		}
 	}
 
+	node->Parent = Parent;
+
+	int newParent = (int)FlatTree.size() - 1;
+	for (size_t j = 0; j < Tree->Childrens.size(); ++j)
+	{
+		_Flaten(FlatTree, newParent, Tree->Childrens[j], data);
+	}
+};
+
+
+bool AnimationTree::BuildFlatTree(AnimTreeData* data)
+{
+	m_FlatTree.clear();
+	if (data->channels.empty())
+	{
+		return false;
+	}
+	int nBones = (int)data->channels.size();
+
+	_Node Root(-1);
+	std::vector<_Node>	Nodes;
+
+	Nodes.resize(nBones);
 	for (int i = 0; i < nBones; ++i)
 	{
+		Nodes[i] = i;
 		const BoneChannel& c = data->channels[i];
 		if (c.parentPos < 0)
 		{
-			m_Roots.push_back(&m_Nodes[i]);
+			Root.Childrens.push_back(&Nodes[i]);
 		}
 		else if (c.parentPos == i || c.parentPos >= nBones)
 		{
@@ -68,20 +77,26 @@ bool AnimationTree::Build(AnimTreeData* data)
 		}
 		else
 		{
-			AnimTreeNode& parent = m_Nodes[c.parentPos];
-			parent.Childrens.push_back(&m_Nodes[i]);
+			_Node& parent = Nodes[c.parentPos];
+			parent.Childrens.push_back(&Nodes[i]);
 		}
 	}
 
-	int nTreeNodes = 0;
-	for (size_t i = 0; i < m_Roots.size(); ++i)
+	_Flaten(m_FlatTree, -1, &Root, data);
+
+	if (nBones + 1 != (int)m_FlatTree.size())
 	{
-		nTreeNodes += CalcNumNodes(m_Roots[i]);
+		m_FlatTree.clear();
+		return false;
 	}
 
-	if (nTreeNodes != (int)m_Nodes.size())
+	for (size_t i = 1; i < m_FlatTree.size(); ++i)
 	{
-		return false;
+		if (!m_FlatTree[i].Anim.CheckAnimData())
+		{
+			m_FlatTree.clear();
+			return false;
+		}
 	}
 
 	return true;
@@ -95,42 +110,28 @@ AnimationTree::AnimationTree()
 
 void AnimationTree::Simulate(float elapsed)
 {
-	if (m_Pause || m_Roots.empty())
+	if (m_Pause || m_FlatTree.empty())
 	{
 		return;
 	}
 
-	for (size_t i = 0; i < m_Roots.size(); ++i)
+	float elapsed_ms = elapsed * m_PlayRate;
+	for (size_t i = 1; i < m_FlatTree.size(); ++i)
 	{
-		SimulateNode(elapsed * m_PlayRate, nullptr, m_Roots[i]);
-	}
-}
+		AnimTreeNode* node = &m_FlatTree[i];
+		AnimTreeNode* parent = node->Parent < 0 ? nullptr : &m_FlatTree[node->Parent];
 
-void AnimationTree::SimulateNode(float elapsed, AnimTreeNode* parent, AnimTreeNode* node)
-{
-	Vector3d pos = Vector3d::Zero();
-	Quaternion quat = Quaternion::One();
-	node->Anim.Advance(elapsed, &pos, &quat);
+		Vector3d pos = Vector3d::Zero();
+		Quaternion quat = Quaternion::One();
+		node->Anim.Advance(elapsed_ms, &pos, &quat);
 
-	if (parent)
-	{
 		node->X = parent->X + parent->Q * pos;
 		node->Q = parent->Q * quat;
-	}
-	else
-	{
-		node->X = pos;
-		node->Q = quat;
-	}
 
-	if (node->Entity)
-	{
-		node->Entity->SetTransform(node->X, node->Q);
-	}
-
-	for (size_t i = 0; i < node->Childrens.size(); ++i)
-	{
-		SimulateNode(elapsed, node, node->Childrens[i]);
+		if (node->Entity)
+		{
+			node->Entity->SetTransform(node->X, node->Q);
+		}
 	}
 }
 
@@ -151,13 +152,13 @@ void AnimationTree::SetAnimationPlayRate(float play_rate)
 
 bool AnimationTree::Bind(const std::string& node_name, RigidBodyStatic* body)
 {
-	for (size_t i = 0; i < m_Nodes.size(); ++i)
+	for (size_t i = 0; i < m_FlatTree.size(); ++i)
 	{
-		if (m_Nodes[i].Name == node_name)
+		if (m_FlatTree[i].Name == node_name)
 		{
-			m_Nodes[i].Entity = body;
-			m_Nodes[i].X = body->X;
-			m_Nodes[i].Q = body->Q;
+			m_FlatTree[i].Entity = body;
+			m_FlatTree[i].X = body->X;
+			m_FlatTree[i].Q = body->Q;
 			return true;
 		}
 	}
@@ -165,20 +166,20 @@ bool AnimationTree::Bind(const std::string& node_name, RigidBodyStatic* body)
 	return false;
 }
 
-void AnimationTree::UnBind(RigidBodyStatic* actor)
+void AnimationTree::UnBind(RigidBodyStatic* body)
 {
-	for (size_t i = 0; i < m_Nodes.size(); ++i)
+	for (size_t i = 0; i < m_FlatTree.size(); ++i)
 	{
-		if (m_Nodes[i].Entity == actor)
+		if (m_FlatTree[i].Entity == body)
 		{
-			m_Nodes[i].Entity = nullptr;
+			m_FlatTree[i].Entity = nullptr;
 		}
 	}
 }
 
 bool AnimationTree::Deserialize(const std::string& filepath)
 {
-	m_ResName = filepath;
+	m_ResPath = filepath;
 
 	AnimTreeData* data = AnimTreeData::Deserialize(filepath.c_str());
 	if (data == nullptr)
@@ -186,16 +187,24 @@ bool AnimationTree::Deserialize(const std::string& filepath)
 		return false;
 	}
 
-	if (!Build(data))
+	if (!BuildFlatTree(data))
 	{
 		delete data;
 
-		m_Nodes.clear();
-		m_Roots.clear();
+		m_FlatTree.clear();
 		return false;
 	}
 
 	delete data;
 
 	return true;
+}
+
+void AnimationTree::SetRootTransform(const Vector3d& pos, const Quaternion& rot)
+{
+	if (m_FlatTree.size() > 0)
+	{
+		m_FlatTree[0].X = pos;
+		m_FlatTree[0].Q = rot;
+	}
 }

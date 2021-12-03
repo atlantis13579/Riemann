@@ -24,7 +24,7 @@ typedef Keyframe<Quaternion> KeyframeQuat;
 template<typename T>
 struct Timeline
 {
-	void Reset(float start)
+	void SetTime(float start)
 	{
 		TimeMS = start;
 		Idx = 0;
@@ -45,7 +45,7 @@ public:
 	void LoadRotationY(const Quaternion& quat, float radian, int time_ms);
 
 	bool CheckAnimData() const;
-	void ResetFromBegining();
+	void SetTime(float time);
 	bool IsFinish() const;
 	bool Advance(float elapsed, Vector3d* pos, Quaternion* quat);
 
