@@ -24,9 +24,9 @@ typedef Keyframe<Quaternion> KeyframeQuat;
 template<typename T>
 struct Timeline
 {
-	void Reset()
+	void Reset(float start)
 	{
-		TimeMS = 0.0f;
+		TimeMS = start;
 		Idx = 0;
 		IsFinish = false;
 	}

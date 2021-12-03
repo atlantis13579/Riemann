@@ -157,6 +157,16 @@ RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyP
 
 bool RigidBodySimulation::LoadAnimation(const std::string& filepath, float play_rate, bool begin_play)
 {
+	for (size_t i = 0; i < m_Animations.size(); ++i)
+	{
+		if (m_Animations[i]->GetName() == filepath)
+		{
+			delete m_Animations[i];
+			m_Animations.erase(m_Animations.begin() + i);
+			break;
+		}
+	}
+
 	AnimationTree* tree = new AnimationTree;
 	if (!tree->Deserialize(filepath))
 	{

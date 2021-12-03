@@ -3,8 +3,8 @@
 
 Animation::Animation()
 {
-	m_TimelinePosition.Reset();
-	m_TimelineRotation.Reset();
+	m_TimelinePosition.Reset(0.0f);
+	m_TimelineRotation.Reset(0.0f);
 	m_IsLoop = false;
 }
 
@@ -83,8 +83,8 @@ Quaternion Lerp(const Quaternion& start, const Quaternion& end, float t)
 
 void Animation::ResetFromBegining()
 {
-	m_TimelinePosition.Reset();
-	m_TimelineRotation.Reset();
+	m_TimelinePosition.Reset(0.0f);
+	m_TimelineRotation.Reset(0.0f);
 }
 
 bool Animation::IsFinish() const

@@ -48,7 +48,7 @@ private:
 	void						SimulateNode(float elapsed, AnimTreeNode* parent, AnimTreeNode* node);
 
 private:
-	AnimTreeNode*				m_Root;
+	std::vector<AnimTreeNode*>	m_Roots;
 	float						m_PlayRate;
 	bool						m_Pause;
 	std::string					m_ResName;

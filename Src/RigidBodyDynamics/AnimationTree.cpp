@@ -15,7 +15,7 @@ static int CalcNumNodes(AnimTreeNode* node)
 
 bool AnimationTree::Build(AnimTreeData* data)
 {
-	m_Root = nullptr;
+	m_Roots.clear();
 	m_Nodes.clear();
 
 	if (data->channels.empty())
@@ -60,11 +60,7 @@ bool AnimationTree::Build(AnimTreeData* data)
 		const BoneChannel& c = data->channels[i];
 		if (c.parentPos < 0)
 		{
-			if (m_Root != nullptr)
-			{
-				return false;
-			}
-			m_Root = &m_Nodes[i];
+			m_Roots.push_back(&m_Nodes[i]);
 		}
 		else if (c.parentPos == i || c.parentPos >= nBones)
 		{
@@ -77,12 +73,13 @@ bool AnimationTree::Build(AnimTreeData* data)
 		}
 	}
 
-	if (m_Root == nullptr)
+	int nTreeNodes = 0;
+	for (size_t i = 0; i < m_Roots.size(); ++i)
 	{
-		return false;
+		nTreeNodes += CalcNumNodes(m_Roots[i]);
 	}
 
-	if (CalcNumNodes(m_Root) != (int)m_Nodes.size())
+	if (nTreeNodes != (int)m_Nodes.size())
 	{
 		return false;
 	}
@@ -98,12 +95,15 @@ AnimationTree::AnimationTree()
 
 void AnimationTree::Simulate(float elapsed)
 {
-	if (m_Pause || m_Root == nullptr)
+	if (m_Pause || m_Roots.empty())
 	{
 		return;
 	}
 
-	SimulateNode(elapsed * m_PlayRate, nullptr, m_Root);
+	for (size_t i = 0; i < m_Roots.size(); ++i)
+	{
+		SimulateNode(elapsed * m_PlayRate, nullptr, m_Roots[i]);
+	}
 }
 
 void AnimationTree::SimulateNode(float elapsed, AnimTreeNode* parent, AnimTreeNode* node)
@@ -151,11 +151,6 @@ void AnimationTree::SetAnimationPlayRate(float play_rate)
 
 bool AnimationTree::Bind(const std::string& node_name, RigidBodyStatic* body)
 {
-	if (m_Root == nullptr)
-	{
-		return false;
-	}
-
 	for (size_t i = 0; i < m_Nodes.size(); ++i)
 	{
 		if (m_Nodes[i].Name == node_name)
@@ -172,11 +167,6 @@ bool AnimationTree::Bind(const std::string& node_name, RigidBodyStatic* body)
 
 void AnimationTree::UnBind(RigidBodyStatic* actor)
 {
-	if (m_Root == nullptr)
-	{
-		return;
-	}
-
 	for (size_t i = 0; i < m_Nodes.size(); ++i)
 	{
 		if (m_Nodes[i].Entity == actor)
@@ -201,7 +191,7 @@ bool AnimationTree::Deserialize(const std::string& filepath)
 		delete data;
 
 		m_Nodes.clear();
-		m_Root = nullptr;
+		m_Roots.clear();
 		return false;
 	}
 

@@ -198,13 +198,13 @@ void InitScene()
 
 	if (1)
 	{
-		std::string anim_name = "E:/Temp/idle.anim";
+		std::string anim_name = "E:/Temp/Env_Build_Special_FerrisWheel_01_idle.anim";
 		g_World->LoadAnimation(anim_name, 10.0f, true);
 
 		rp.Static = true;
         for (int i = 1; i <= 16; ++i)
         {
-			Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, (float)i, 0.0f), Vector3d(0.5f, 0.5f, 0.5f));
+			Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, (float)i, 0.0f), Vector3d(1.0f, 3.0f, 1.0f));
 			RigidBodyStatic* p = (RigidBodyStatic*)g_World->CreateRigidBody(aabb, rp);
 
             std::string name = (i <= 9 ? "HP_guajie0" : "HP_guajie") + std::to_string(i);
@@ -212,8 +212,20 @@ void InitScene()
 			g_World->BindAnimationNode(anim_name, name, p);
 			g_Renderer->AddGeometry(aabb);
         }
-
 	}
+
+	if (0)
+	{
+		std::string anim_name = "E:/Temp/58HY_rebuild_Special_RollerCoaster_idle.anim";
+		g_World->LoadAnimation(anim_name, 10.0f, true);
+        rp.Static = true;
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(1.0f, 3.0f, 1.0f));
+		RigidBodyStatic* p = (RigidBodyStatic*)g_World->CreateRigidBody(aabb, rp);
+		g_World->BindAnimationNode(anim_name, "HP_guajie02", p);
+		g_Renderer->AddGeometry(aabb);
+	}
+
+    return;
 }
 #pragma optimize("", on)
 
