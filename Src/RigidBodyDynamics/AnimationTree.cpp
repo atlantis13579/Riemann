@@ -3,6 +3,12 @@
 #include "../Tools/AnimBinaryParser.h"
 #include "RigidBody.h"
 
+AnimationTree::AnimationTree()
+{
+	m_Pause = true;
+	m_PlayRate = 1.0f;
+}
+
 struct _Node
 {
 	_Node() { Idx = -1; }
@@ -11,7 +17,7 @@ struct _Node
 	std::vector<_Node*> Childrens;
 };
 
-void _Flaten(std::vector<AnimTreeNode>& FlatTree, int Parent, const _Node* Tree, const AnimTreeData* data)
+void _Flatten(std::vector<AnimTreeNode>& FlatTree, int Parent, const _Node* Tree, const AnimTreeData* data)
 {
 	std::vector<KeyframePos> frames_pos;
 	std::vector<KeyframeQuat> frames_quat;
@@ -45,7 +51,7 @@ void _Flaten(std::vector<AnimTreeNode>& FlatTree, int Parent, const _Node* Tree,
 	int newParent = (int)FlatTree.size() - 1;
 	for (size_t j = 0; j < Tree->Childrens.size(); ++j)
 	{
-		_Flaten(FlatTree, newParent, Tree->Childrens[j], data);
+		_Flatten(FlatTree, newParent, Tree->Childrens[j], data);
 	}
 };
 
@@ -82,7 +88,7 @@ bool AnimationTree::BuildFlatTree(AnimTreeData* data)
 		}
 	}
 
-	_Flaten(m_FlatTree, -1, &Root, data);
+	_Flatten(m_FlatTree, -1, &Root, data);
 
 	if (nBones + 1 != (int)m_FlatTree.size())
 	{
@@ -102,12 +108,6 @@ bool AnimationTree::BuildFlatTree(AnimTreeData* data)
 	return true;
 }
 
-AnimationTree::AnimationTree()
-{
-	m_Pause = true;
-	m_PlayRate = 1.0f;
-}
-
 void AnimationTree::Simulate(float elapsed)
 {
 	if (m_Pause || m_FlatTree.empty())
@@ -115,15 +115,15 @@ void AnimationTree::Simulate(float elapsed)
 		return;
 	}
 
-	float elapsed_ms = elapsed * m_PlayRate;
+	float elapsed_rated = elapsed * m_PlayRate;
 	for (size_t i = 1; i < m_FlatTree.size(); ++i)
 	{
 		AnimTreeNode* node = &m_FlatTree[i];
-		AnimTreeNode* parent = node->Parent < 0 ? nullptr : &m_FlatTree[node->Parent];
+		AnimTreeNode* parent = &m_FlatTree[node->Parent];
 
 		Vector3d pos = Vector3d::Zero();
 		Quaternion quat = Quaternion::One();
-		node->Anim.Advance(elapsed_ms, &pos, &quat);
+		node->Anim.Advance(elapsed_rated, &pos, &quat);
 
 		node->X = parent->X + parent->Q * pos;
 		node->Q = parent->Q * quat;
