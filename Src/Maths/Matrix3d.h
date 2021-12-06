@@ -9,6 +9,7 @@ public:
 	union
 	{
 		struct { Vector3d row[3]; };
+		struct { float m00; float m01; float m02; float m10; float m11; float m12; float m20; float m21; float m22; };
 		struct { float mat[3][3]; };
 	};
 
@@ -28,8 +29,8 @@ public:
 	}
 
 	Matrix3d(float a00, float a01, float a02,
-			float a10, float a11, float a12,
-			float a20, float a21, float a22)
+		float a10, float a11, float a12,
+		float a20, float a21, float a22)
 	{
 		mat[0][0] = a00; mat[0][1] = a01; mat[0][2] = a02;
 		mat[1][0] = a10; mat[1][1] = a11; mat[1][2] = a12;
@@ -65,8 +66,8 @@ public:
 	Matrix3d Transpose() const
 	{
 		return Matrix3d(mat[0][0], mat[1][0], mat[2][0],
-						mat[0][1], mat[1][1], mat[2][1],
-						mat[0][2], mat[1][2], mat[2][2]);
+			mat[0][1], mat[1][1], mat[2][1],
+			mat[0][2], mat[1][2], mat[2][2]);
 	}
 
 	float Determinant() const
@@ -80,9 +81,9 @@ public:
 	{
 		float m[3][3] = { 0 };
 		for (int i = 0; i < 3; i++)
-		for (int j = 0; j < 3; j++)
-		for (int k = 0; k < 3; k++)
-			m[i][j] += mat[i][k] * mm.mat[k][j];
+			for (int j = 0; j < 3; j++)
+				for (int k = 0; k < 3; k++)
+					m[i][j] += mat[i][k] * mm.mat[k][j];
 		return Matrix3d(m);
 	}
 
@@ -90,8 +91,8 @@ public:
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
-		for (int j = 0; j < 3; j++)
-			m[i][j] = mat[i][j] * k;
+			for (int j = 0; j < 3; j++)
+				m[i][j] = mat[i][j] * k;
 		return Matrix3d(m);
 	}
 
@@ -108,8 +109,8 @@ public:
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
-		for (int j = 0; j < 3; j++)
-			m[i][j] = mat[i][j] + mm.mat[i][j];
+			for (int j = 0; j < 3; j++)
+				m[i][j] = mat[i][j] + mm.mat[i][j];
 		return Matrix3d(m);
 	}
 
@@ -117,8 +118,8 @@ public:
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
-		for (int j = 0; j < 3; j++)
-			m[i][j] = mat[i][j] - mm.mat[i][j];
+			for (int j = 0; j < 3; j++)
+				m[i][j] = mat[i][j] - mm.mat[i][j];
 		return Matrix3d(m);
 	}
 
@@ -166,6 +167,24 @@ public:
 	float Trace() const
 	{
 		return mat[0][0] + mat[1][1] + mat[2][2];
+	}
+
+	float L1Norm() const
+	{
+		float l1_norm = 0.0f;
+		float* p = (float *)this;
+		for (int i = 0; i < 9; ++i)
+			l1_norm += fabsf(p[i]);
+		return l1_norm;
+	}
+
+	float L2Norm() const
+	{
+		float l2_norm = 0.0f;
+		float* p = (float*)this;
+		for (int i = 0; i < 9; ++i)
+			l2_norm += p[i] * p[i];
+		return l2_norm;
 	}
 
 	bool Invertible() const
@@ -216,10 +235,10 @@ public:
 		return Identity;
 	}
 
-	void		FromAxisAngle(const Vector3d& Axis, float Angle)
+	void		FromAxisAngle(const Vector3d& Axis, float Radian)
 	{
-		float fCos = cosf(Angle);
-		float fSin = sinf(Angle);
+		float fCos = cosf(Radian);
+		float fSin = sinf(Radian);
 		float fOneMinusCos = 1.0f - fCos;
 		float fX2 = Axis.x * Axis.x;
 		float fY2 = Axis.y * Axis.y;

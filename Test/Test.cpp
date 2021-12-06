@@ -128,6 +128,28 @@ void TestRaycastBenchmark()
 	return;
 }
 
+void TestBasicMath()
+{
+	Matrix3d mat1, mat2;
+	Quaternion q;
+
+	mat1.FromAxisAngle(Vector3d::UnitX(), ToRadian(45.0f));
+	q.FromRotationAxis(Vector3d::UnitX(), ToRadian(45.0f));
+	mat2 = q.ToRotationMatrix();
+
+	float dist = (mat1 - mat2).L1Norm();
+	assert(dist < 0.0001f);
+
+	mat1.FromAxisAngle(Vector3d(1.0f, 2.0f, 3.0f).Unit(), ToRadian(30.0f));
+	q.FromRotationMatrix(mat1);
+	mat2 = q.ToRotationMatrix();
+
+	dist = (mat1 - mat2).L1Norm();
+	assert(dist < 0.0001f);
+
+	return;
+}
+
 void TestSIMD()
 {
 	printf("Running TestSIMD\n");
@@ -551,7 +573,8 @@ void TestSAPInc()
 void TestMainEntry()
 {
 	// TestRayAABB();
-	 TestPhysxBin();
+	TestBasicMath();
+	// TestPhysxBin();
 	// TestRaycastBenchmark();
 	// TestSIMD();
 	// TestRTree1();

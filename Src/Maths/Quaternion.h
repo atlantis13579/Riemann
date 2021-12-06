@@ -74,18 +74,53 @@ public:
 		return sqrtf(w*w + x*x + y*y + z*z);
 	}
 
-	static Quaternion FromRotationAxis(const Vector3d& q, float angle)
+	void FromRotationAxis(const Vector3d& axis, float radian)
 	{
-		Quaternion quat(cosf(angle / 2), q * sinf(angle / 2));
-		return quat;
+		*this = Quaternion(cosf(radian / 2), axis * sinf(radian / 2));
 	}
 
-	static Quaternion FromEuler(float x, float y, float z)
+	void FromEuler(float x, float y, float z)
 	{
-		Quaternion xrot = FromRotationAxis(Vector3d(1, 0, 0), x);
-		Quaternion yrot = FromRotationAxis(Vector3d(0, 1, 0), y);
-		Quaternion zrot = FromRotationAxis(Vector3d(0, 0, 1), z);
-		return zrot * yrot * xrot;
+		Quaternion xrot, yrot, zrot;
+		xrot.FromRotationAxis(Vector3d(1, 0, 0), x);
+		yrot.FromRotationAxis(Vector3d(0, 1, 0), y);
+		zrot.FromRotationAxis(Vector3d(0, 0, 1), z);
+		*this = zrot * yrot * xrot;
+	}
+
+	// https://d3cw3dd2w32x2b.cloudfront.net/wp-content/uploads/2015/01/matrix-to-quat.pdf
+	void FromRotationMatrix(const Matrix3d& mat)
+	{
+		float t;
+		Quaternion q;
+		if (mat.m22 < 0)
+		{
+			if (mat.m00 > mat.m11)
+			{
+				t = 1.0f + mat.m00 - mat.m11 - mat.m22;
+				q = Quaternion(t, mat.m01 + mat.m10, mat.m20 + mat.m02, mat.m21 - mat.m12);
+			}
+			else
+			{
+				t = 1.0f - mat.m00 + mat.m11 - mat.m22;
+				q = Quaternion(mat.m01 + mat.m10, t, mat.m12 + mat.m21, mat.m02 - mat.m20);
+			}
+		}
+		else
+		{
+			if (mat.m00 < -mat.m11)
+			{
+				t = 1.0f - mat.m00 - mat.m11 + mat.m22;
+				q = Quaternion(mat.m20 + mat.m02, mat.m12 + mat.m21, t, mat.m10 - mat.m01);
+			}
+			else
+			{
+				t = 1.0f + mat.m00 + mat.m11 + mat.m22;
+				q = Quaternion(mat.m21 - mat.m12, mat.m02 - mat.m20, mat.m10 - mat.m01, t);
+			}
+		}
+		q *= 0.5f / sqrtf(t);
+		*this = q;
 	}
 
 	Vector3d ToEuler() const
@@ -147,6 +182,15 @@ public:
 		y -= q.y;
 		z -= q.z;
 		w -= q.w;
+		return *this;
+	}
+
+	Quaternion& operator*=(float k)
+	{
+		x *= k;
+		y *= k;
+		z *= k;
+		w *= k;
 		return *this;
 	}
 

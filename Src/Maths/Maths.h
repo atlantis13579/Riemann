@@ -21,6 +21,16 @@
 #define SMALL_NUMBER	(1e-3f)
 #define TINY_NUMBER		(1e-6f)
 
+inline float ToRadian(float degree)
+{
+	return degree * PI_OVER_180;
+}
+
+inline float ToDegree(float radian)
+{
+	return radian * RAD_TO_DEG;
+}
+
 inline float RandomFloat01()
 {
 	return (float)rand() / RAND_MAX;

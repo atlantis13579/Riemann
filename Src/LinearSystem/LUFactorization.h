@@ -9,8 +9,8 @@ public:
 	static void Solve(const T* A, int N, T* L, T* U)
 	{
 		memset(U, 0, sizeof(U[0]) * N * N);
-
 		memset(L, 0, sizeof(L[0]) * N * N);
+
 		for (int i = 0; i < N; ++i)
 		{
 			L[i*N + i] = (T)1;
