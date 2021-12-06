@@ -20,6 +20,7 @@
 #include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/RigidBodyDynamics/RigidBodySimulation.h"
+#include "../Src/RigidBodyDynamics/AnimationTree.h"
 #include "../Renderer/Renderer.h"
 #include "../Src/Tools/PhysxBinaryParser.h"
 
@@ -199,7 +200,10 @@ void InitScene()
 	if (1)
 	{
 		std::string anim_name = "E:/Temp/Env_Build_Special_FerrisWheel_01_idle.anim";
-		g_World->LoadAnimation(anim_name, 10.0f, true);
+		g_World->LoadAnimation(anim_name, anim_name, 10.0f, true);
+
+        AnimationTree* tree = g_World->FindAnimation(anim_name);
+        tree->SetRootTransform(Vector3d(0, -10, 0), Quaternion::One());
 
 		rp.Static = true;
         for (int i = 1; i <= 16; ++i)
@@ -217,7 +221,7 @@ void InitScene()
 	if (0)
 	{
 		std::string anim_name = "E:/Temp/58HY_rebuild_Special_RollerCoaster_idle.anim";
-		g_World->LoadAnimation(anim_name, 10.0f, true);
+		g_World->LoadAnimation(anim_name, anim_name, 10.0f, true);
         rp.Static = true;
 		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(1.0f, 3.0f, 1.0f));
 		RigidBodyStatic* p = (RigidBodyStatic*)g_World->CreateRigidBody(aabb, rp);
@@ -237,7 +241,7 @@ void InitPhysxScene()
     std::vector<Geometry*> collection;;
     LoadPhysxBinary("e:/temp/physx/fighting.xml.bin", &collection);
 
-	g_World->LoadAnimation("E:/Temp/idle.anim", 1.0f, true);
+	g_World->LoadAnimation("idle", "E:/Temp/idle.anim", 1.0f, true);
 
     for (Geometry* Geom : collection)
     {
