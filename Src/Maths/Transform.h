@@ -77,7 +77,7 @@ public:
 	{
 		if (m_bWorldMatrixDirty)
 		{
-			GetWorldMatrix(m_WorldMatrix, m_Translation, m_Rotation, m_Scale);
+			TRSToWorldMatrix(m_WorldMatrix, m_Translation, m_Rotation, m_Scale);
 			m_bWorldMatrixDirty = false;
 		}
 		return m_WorldMatrix;
@@ -87,7 +87,7 @@ public:
 	{
 		if (m_bInvWorldMatrixDirty)
 		{
-			GetInverseWorldMatrix(m_InvWorldMatrix, m_Translation, m_Rotation, m_Scale);
+			TRSToInverseWorldMatrix(m_InvWorldMatrix, m_Translation, m_Rotation, m_Scale);
 			m_bInvWorldMatrixDirty = false;
 		}
 		return m_InvWorldMatrix;
@@ -131,9 +131,9 @@ public:
 		Vector3d xAxis = CrossProduct(Up, zAxis).Unit();
 		Vector3d yAxis = CrossProduct(zAxis, xAxis).Unit();
 
-		float w1 = -1 * DotProduct(xAxis, Eye);
-		float w2 = -1 * DotProduct(yAxis, Eye);
-		float w3 = -1 * DotProduct(zAxis, Eye);
+		float w1 = -1.0f * DotProduct(xAxis, Eye);
+		float w2 = -1.0f * DotProduct(yAxis, Eye);
+		float w3 = -1.0f * DotProduct(zAxis, Eye);
 
 		return Matrix4d(
 			xAxis.x,	xAxis.y,	xAxis.z,	w1,
@@ -289,22 +289,60 @@ public:
 		);
 	}
 
-	static void			GetWorldMatrix(Matrix4d& World, const Vector3d& Translation, const Quaternion& Rotation, const Vector3d&	Scale)
+	static void			TRSToWorldMatrix(Matrix4d& World, const Vector3d& Translation, const Quaternion& Rotation, const Vector3d& Scale)
 	{
 		Matrix4d matTrans = BuildTranslationMatrix(Translation);
 		Matrix4d matScale = BuildScaleMatrix(Scale);
 		Matrix4d matRot = Rotation.ToRotationMatrix4d();
-
+		
 		World = matTrans * matRot * matScale;			// make sure Translation Matrix go first.
 	}
 
-	static void			GetInverseWorldMatrix(Matrix4d& InvWorld, const Vector3d& Translation, const Quaternion& Rotation, const Vector3d& Scale)
+	static void			TRToWorldMatrix(Matrix4d& World, const Vector3d& Translation, const Quaternion& Rotation)
+	{
+		Matrix4d matTrans = BuildTranslationMatrix(Translation);
+		Matrix4d matRot = Rotation.ToRotationMatrix4d();
+
+		World = matTrans * matRot;			// make sure Translation Matrix go first.
+	}
+
+	static void			TRSToInverseWorldMatrix(Matrix4d& InvWorld, const Vector3d& Translation, const Quaternion& Rotation, const Vector3d& Scale)
 	{
 		Matrix4d matTrans = BuildTranslationMatrix(-Translation);
 		Matrix4d matScale = BuildScaleMatrix(Vector3d::One() / Scale);
 		Matrix4d matRot = Rotation.ToRotationMatrix4d().Transpose();
 
 		InvWorld = matScale * matRot * matTrans;		// make sure Scale Matrix go first.
+	}
+
+	static void			TRToInverseWorldMatrix(Matrix4d& InvWorld, const Vector3d& Translation, const Quaternion& Rotation)
+	{
+		Matrix4d matTrans = BuildTranslationMatrix(-Translation);
+		Matrix4d matRot = Rotation.ToRotationMatrix4d().Transpose();
+
+		InvWorld = matRot * matTrans;		// make sure Rotation Matrix go first.
+	}
+
+	static void			WorldMatrixToTR(const Matrix4d& World, Vector3d& Translation, Quaternion& Rotation)
+	{
+		Translation = Vector3d(World[0][3], World[1][3], World[2][3]);
+		Matrix3d mat3(World[0][0], World[0][1], World[0][2], World[1][0], World[1][1], World[1][2], World[2][0], World[2][1], World[2][2]);
+		Rotation.FromRotationMatrix(mat3);
+	}
+
+	// For only non-composite scale transform
+	static void			WorldMatrixToTRS(const Matrix4d& World, Vector3d& Translation, Quaternion& Rotation, Vector3d& Scale)
+	{
+		Translation = Vector3d(World[0][3], World[1][3], World[2][3]);
+		float sx = Vector3d(World[0][0], World[1][0], World[2][0]).Length();
+		float sy = Vector3d(World[0][1], World[1][1], World[2][1]).Length();
+		float sz = Vector3d(World[0][2], World[1][2], World[2][2]).Length();
+		Matrix3d matRot(World[0][0] / sx, World[0][1] / sy, World[0][2] / sz,
+						World[1][0] / sx, World[1][1] / sy, World[1][2] / sz,
+						World[2][0] / sx, World[2][1] / sy, World[2][2] / sz);
+		Rotation.FromRotationMatrix(matRot);
+		Scale = Vector3d(sx, sy, sz);
+		return;
 	}
 
 private:

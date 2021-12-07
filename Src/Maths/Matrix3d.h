@@ -9,7 +9,6 @@ public:
 	union
 	{
 		struct { Vector3d row[3]; };
-		struct { float m00; float m01; float m02; float m10; float m11; float m12; float m20; float m21; float m22; };
 		struct { float mat[3][3]; };
 	};
 
@@ -77,13 +76,35 @@ public:
 			+ mat[0][2] * (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]);
 	}
 
-	Matrix3d operator*(const Matrix3d& mm) const
+	Matrix3d operator+(const Matrix3d& mm) const
 	{
-		float m[3][3] = { 0 };
+		float m[3][3];
 		for (int i = 0; i < 3; i++)
 			for (int j = 0; j < 3; j++)
-				for (int k = 0; k < 3; k++)
-					m[i][j] += mat[i][k] * mm.mat[k][j];
+				m[i][j] = mat[i][j] + mm.mat[i][j];
+		return Matrix3d(m);
+	}
+
+	Matrix3d operator-(const Matrix3d& mm) const
+	{
+		float m[3][3];
+		for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			m[i][j] = mat[i][j] - mm.mat[i][j];
+		return Matrix3d(m);
+	}
+
+	Matrix3d operator-() const
+	{
+		return *this * -1.0f;
+	}
+
+	Matrix3d operator*(const Matrix3d& mm) const
+	{
+		float m[3][3];
+		for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			m[i][j] = mat[i][0] * mm.mat[0][j] + mat[i][1] * mm.mat[1][j] + mat[i][2] * mm.mat[2][j];
 		return Matrix3d(m);
 	}
 
@@ -103,24 +124,6 @@ public:
 		v.y = mat[1][0] * vv.x + mat[1][1] * vv.y + mat[1][2] * vv.z;
 		v.z = mat[2][0] * vv.x + mat[2][1] * vv.y + mat[2][2] * vv.z;
 		return v;
-	}
-
-	Matrix3d operator+(const Matrix3d& mm) const
-	{
-		float m[3][3];
-		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
-				m[i][j] = mat[i][j] + mm.mat[i][j];
-		return Matrix3d(m);
-	}
-
-	Matrix3d operator-(const Matrix3d& mm) const
-	{
-		float m[3][3];
-		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
-				m[i][j] = mat[i][j] - mm.mat[i][j];
-		return Matrix3d(m);
 	}
 
 	inline Matrix3d& operator=(const Matrix3d& rhs)
@@ -172,7 +175,7 @@ public:
 	float L1Norm() const
 	{
 		float l1_norm = 0.0f;
-		float* p = (float *)this;
+		const float* p = (const float *)this;
 		for (int i = 0; i < 9; ++i)
 			l1_norm += fabsf(p[i]);
 		return l1_norm;
@@ -181,7 +184,7 @@ public:
 	float L2Norm() const
 	{
 		float l2_norm = 0.0f;
-		float* p = (float*)this;
+		const float* p = (const float*)this;
 		for (int i = 0; i < 9; ++i)
 			l2_norm += p[i] * p[i];
 		return l2_norm;
@@ -221,18 +224,6 @@ public:
 		return Matrix3d(0, -v.z, v.y,
 						v.z, 0, -v.x,
 						-v.y, v.x, 0);
-	}
-
-	static const Matrix3d& Zero()
-	{
-		static Matrix3d Zero(0, 0, 0, 0, 0, 0, 0, 0, 0);
-		return Zero;
-	}
-
-	static const Matrix3d& Identity()
-	{
-		static Matrix3d Identity(1, 0, 0, 0, 1, 0, 0, 0, 1);
-		return Identity;
 	}
 
 	void		FromAxisAngle(const Vector3d& Axis, float Radian)
@@ -275,10 +266,11 @@ public:
 	float		ToAxisAngle(Vector3d& Axis) const;
 	bool		ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const;
 
-	void		SingularValueDecomposition(Matrix3d& rkL, Vector3d& rkS, Matrix3d& rkR) const;
-	void		SingularValueComposition(const Matrix3d& rkL, const Vector3d& rkS, const Matrix3d& rkR);
+	void		SingularValueDecomposition(Matrix3d& rL, Vector3d& rS, Matrix3d& rR) const;
+	void		SingularValueComposition(const Matrix3d& rL, const Vector3d& rS, const Matrix3d& rR);
 	void		Orthonormalize();
-	void		QDUDecomposition(Matrix3d& rkQ, Vector3d& rkD,	Vector3d& rkU) const;
+	void		PolarDecomposition(Matrix3d& rU, Matrix3d& rP) const;
+	void		QDUDecomposition(Matrix3d& rQ, Vector3d& rD, Vector3d& rU) const;
 	float		SpectralNorm() const;
 
 	void		SolveEigenSymmetric(float EigenValue[3], Vector3d EigenVector[3]) const;
@@ -288,6 +280,18 @@ public:
 	static void Bidiagonalize(Matrix3d& kA, Matrix3d& kL, Matrix3d& kR);
 	static void GolubKahanStep(Matrix3d& kA, Matrix3d& kL, Matrix3d& kR);
 	static float MaxCubicRoot(float afCoeff[3]);
+
+	static const Matrix3d& Zero()
+	{
+		static Matrix3d Zero(0, 0, 0, 0, 0, 0, 0, 0, 0);
+		return Zero;
+	}
+
+	static const Matrix3d& Identity()
+	{
+		static Matrix3d Identity(1, 0, 0, 0, 1, 0, 0, 0, 1);
+		return Identity;
+	}
 };
 
 inline Matrix3d operator* (float f, const Matrix3d& mm)

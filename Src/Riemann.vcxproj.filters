@@ -32,7 +32,7 @@
     <ClInclude Include="LinearSystem\JacobiIteration_CPU.h" />
     <ClInclude Include="LinearSystem\LUFactorization.h" />
     <ClInclude Include="LinearSystem\PolarDecomposition.h" />
-    <ClInclude Include="LinearSystem\SVDDecomposition.h" />
+    <ClInclude Include="LinearSystem\SingularValueDecomposition.h" />
     <ClInclude Include="LinearSystem\GaussSeidelIteration_CPU.h" />
     <ClInclude Include="Maths\Box3d.h" />
     <ClInclude Include="Geometry\Tetrahedral.h" />
@@ -120,7 +120,7 @@
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
     <ClCompile Include="PositionBasedDynamics\PositionBasedDynamicsSolver.cpp" />
     <ClCompile Include="LinearSystem\PolarDecomposition.cpp" />
-    <ClCompile Include="LinearSystem\SVDDecomposition.cpp" />
+    <ClCompile Include="LinearSystem\SingularValueDecomposition.cpp" />
     <ClCompile Include="Geometry\Tetrahedral.cpp" />
     <ClCompile Include="Collision\AABBTree.cpp" />
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />

@@ -54,13 +54,13 @@ public:
 
 	Quaternion Inverse() const
 	{
-		float m = Magnitude();
+		float m = Length();
 		return Quaternion(w / m, Vector3d(-x / m, -y / m, -z / m));
 	}
 
 	Quaternion Unit() const
 	{
-		float m = Magnitude();
+		float m = Length();
 		return Quaternion(w / m, Vector3d(x / m, y / m, z / m));
 	}
 
@@ -69,9 +69,14 @@ public:
 		return w * w + x * x + y * y + z * z;
 	}
 
-	float Magnitude() const
+	float Length() const
 	{
 		return sqrtf(w*w + x*x + y*y + z*z);
+	}
+
+	float SquareLength() const
+	{
+		return w * w + x * x + y * y + z * z;
 	}
 
 	void FromRotationAxis(const Vector3d& axis, float radian)
@@ -93,30 +98,30 @@ public:
 	{
 		float t;
 		Quaternion q;
-		if (mat.m22 < 0)
+		if (mat[2][2] < 0)
 		{
-			if (mat.m00 > mat.m11)
+			if (mat[0][0] > mat[1][1])
 			{
-				t = 1.0f + mat.m00 - mat.m11 - mat.m22;
-				q = Quaternion(t, mat.m01 + mat.m10, mat.m20 + mat.m02, mat.m21 - mat.m12);
+				t = 1.0f + mat[0][0] - mat[1][1] - mat[2][2];
+				q = Quaternion(t, mat[0][1] + mat[1][0], mat[2][0] + mat[0][2], mat[2][1] - mat[1][2]);
 			}
 			else
 			{
-				t = 1.0f - mat.m00 + mat.m11 - mat.m22;
-				q = Quaternion(mat.m01 + mat.m10, t, mat.m12 + mat.m21, mat.m02 - mat.m20);
+				t = 1.0f - mat[0][0] + mat[1][1] - mat[2][2];
+				q = Quaternion(mat[0][1] + mat[1][0], t, mat[1][2] + mat[2][1], mat[0][2] - mat[2][0]);
 			}
 		}
 		else
 		{
-			if (mat.m00 < -mat.m11)
+			if (mat[0][0] < -mat[1][1])
 			{
-				t = 1.0f - mat.m00 - mat.m11 + mat.m22;
-				q = Quaternion(mat.m20 + mat.m02, mat.m12 + mat.m21, t, mat.m10 - mat.m01);
+				t = 1.0f - mat[0][0] - mat[1][1] + mat[2][2];
+				q = Quaternion(mat[2][0] + mat[0][2], mat[1][2] + mat[2][1], t, mat[1][0] - mat[0][1]);
 			}
 			else
 			{
-				t = 1.0f + mat.m00 + mat.m11 + mat.m22;
-				q = Quaternion(mat.m21 - mat.m12, mat.m02 - mat.m20, mat.m10 - mat.m01, t);
+				t = 1.0f + mat[0][0] + mat[1][1] + mat[2][2];
+				q = Quaternion(mat[2][1] - mat[1][2], mat[0][2] - mat[2][0], mat[1][0] - mat[0][1], t);
 			}
 		}
 		q *= 0.5f / sqrtf(t);

@@ -131,21 +131,47 @@ void TestRaycastBenchmark()
 void TestBasicMath()
 {
 	Matrix3d mat1, mat2;
-	Quaternion q;
+	Quaternion q1, q2;
+	Vector3d v1, v2, s1, s2;
 
 	mat1.FromAxisAngle(Vector3d::UnitX(), ToRadian(45.0f));
-	q.FromRotationAxis(Vector3d::UnitX(), ToRadian(45.0f));
-	mat2 = q.ToRotationMatrix();
+	q1.FromRotationAxis(Vector3d::UnitX(), ToRadian(45.0f));
+	mat2 = q1.ToRotationMatrix();
 
 	float dist = (mat1 - mat2).L1Norm();
 	assert(dist < 0.0001f);
 
-	mat1.FromAxisAngle(Vector3d(1.0f, 2.0f, 3.0f).Unit(), ToRadian(30.0f));
-	q.FromRotationMatrix(mat1);
-	mat2 = q.ToRotationMatrix();
+	v1 = Vector3d(1.0f, 2.0f, 3.0f);
+
+	mat1.FromAxisAngle(v1.Unit(), ToRadian(30.0f));
+	q1.FromRotationMatrix(mat1);
+	mat2 = q1.ToRotationMatrix();
 
 	dist = (mat1 - mat2).L1Norm();
 	assert(dist < 0.0001f);
+
+	Transform trans;
+	trans.SetRotation(q1);
+	trans.SetTranslation(v1);
+	Transform::WorldMatrixToTR(trans.GetWorldMatrix(), v2, q2);
+
+	assert((v1 - v2).SquareLength() < 0.000001f);
+	assert((q1 - q2).SquareLength() < 0.000001f);
+
+	s1 = Vector3d(2.0f, 1.0f, 3.0f);
+	trans.SetScale(s1);
+	
+	Transform::WorldMatrixToTRS(trans.GetWorldMatrix(), v2, q2, s2);
+
+	assert((v1 - v2).SquareLength() < 0.00001f);
+	assert((q1 - q2).SquareLength() < 0.00001f);
+	assert((s1 - s2).SquareLength() < 0.0001f);
+
+	trans.SetScale(Vector3d::One());
+	Transform::WorldMatrixToTRS(trans.GetWorldMatrix() * trans.GetWorldMatrix(), v2, q2, s2);
+
+	assert((v1 + v1 - v2).SquareLength() < 0.00001f);
+	assert((q1 * q1 - q2).SquareLength() < 0.001f);
 
 	return;
 }

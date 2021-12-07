@@ -153,6 +153,24 @@ public:
 		return mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
 	}
 
+	float			L1Norm() const
+	{
+		float l1_norm = 0.0f;
+		const float* p = (const float*)this;
+		for (int i = 0; i < 4; ++i)
+			l1_norm += fabsf(p[i]);
+		return l1_norm;
+	}
+
+	float			L2Norm() const
+	{
+		float l2_norm = 0.0f;
+		const float* p = (const float*)this;
+		for (int i = 0; i < 4; ++i)
+			l2_norm += p[i] * p[i];
+		return l2_norm;
+	}
+
 	bool			Invertible() const
 	{
 		float d = Determinant();

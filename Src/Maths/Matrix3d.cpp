@@ -43,93 +43,92 @@ void Matrix3d::Load2DOrthogonalTransform(float dx, float dy, float dAngle) {
 	mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
 }
 
-void Matrix3d::Bidiagonalize(Matrix3d& kA, Matrix3d& kL,
-	Matrix3d& kR)
+void Matrix3d::Bidiagonalize(Matrix3d& rA, Matrix3d& rL, Matrix3d& rR)
 {
 	float afV[3], afW[3];
 	float fLength, fSign, fT1, fInvT1, fT2;
 	bool bIdentity;
 
 	// map first column to (*,0,0)
-	fLength = sqrtf(kA[0][0] * kA[0][0] + kA[1][0] * kA[1][0] + kA[2][0] * kA[2][0]);
+	fLength = sqrtf(rA[0][0] * rA[0][0] + rA[1][0] * rA[1][0] + rA[2][0] * rA[2][0]);
 	if (fLength > 0.0)
 	{
-		fSign = (kA[0][0] > 0.0f ? 1.0f : -1.0f);
-		fT1 = kA[0][0] + fSign * fLength;
+		fSign = (rA[0][0] > 0.0f ? 1.0f : -1.0f);
+		fT1 = rA[0][0] + fSign * fLength;
 		fInvT1 = 1.0f / fT1;
-		afV[1] = kA[1][0] * fInvT1;
-		afV[2] = kA[2][0] * fInvT1;
+		afV[1] = rA[1][0] * fInvT1;
+		afV[2] = rA[2][0] * fInvT1;
 
 		fT2 = -2.0f / (1.0f + afV[1] * afV[1] + afV[2] * afV[2]);
-		afW[0] = fT2 * (kA[0][0] + kA[1][0] * afV[1] + kA[2][0] * afV[2]);
-		afW[1] = fT2 * (kA[0][1] + kA[1][1] * afV[1] + kA[2][1] * afV[2]);
-		afW[2] = fT2 * (kA[0][2] + kA[1][2] * afV[1] + kA[2][2] * afV[2]);
-		kA[0][0] += afW[0];
-		kA[0][1] += afW[1];
-		kA[0][2] += afW[2];
-		kA[1][1] += afV[1] * afW[1];
-		kA[1][2] += afV[1] * afW[2];
-		kA[2][1] += afV[2] * afW[1];
-		kA[2][2] += afV[2] * afW[2];
+		afW[0] = fT2 * (rA[0][0] + rA[1][0] * afV[1] + rA[2][0] * afV[2]);
+		afW[1] = fT2 * (rA[0][1] + rA[1][1] * afV[1] + rA[2][1] * afV[2]);
+		afW[2] = fT2 * (rA[0][2] + rA[1][2] * afV[1] + rA[2][2] * afV[2]);
+		rA[0][0] += afW[0];
+		rA[0][1] += afW[1];
+		rA[0][2] += afW[2];
+		rA[1][1] += afV[1] * afW[1];
+		rA[1][2] += afV[1] * afW[2];
+		rA[2][1] += afV[2] * afW[1];
+		rA[2][2] += afV[2] * afW[2];
 
-		kL[0][0] = 1.0f + fT2;
-		kL[0][1] = kL[1][0] = fT2 * afV[1];
-		kL[0][2] = kL[2][0] = fT2 * afV[2];
-		kL[1][1] = 1.0f + fT2 * afV[1] * afV[1];
-		kL[1][2] = kL[2][1] = fT2 * afV[1] * afV[2];
-		kL[2][2] = 1.0f + fT2 * afV[2] * afV[2];
+		rL[0][0] = 1.0f + fT2;
+		rL[0][1] = rL[1][0] = fT2 * afV[1];
+		rL[0][2] = rL[2][0] = fT2 * afV[2];
+		rL[1][1] = 1.0f + fT2 * afV[1] * afV[1];
+		rL[1][2] = rL[2][1] = fT2 * afV[1] * afV[2];
+		rL[2][2] = 1.0f + fT2 * afV[2] * afV[2];
 		bIdentity = false;
 	}
 	else
 	{
-		kL = Matrix3d::Identity();
+		rL = Matrix3d::Identity();
 		bIdentity = true;
 	}
 
 	// map first row to (*,*,0)
-	fLength = sqrtf(kA[0][1] * kA[0][1] + kA[0][2] * kA[0][2]);
+	fLength = sqrtf(rA[0][1] * rA[0][1] + rA[0][2] * rA[0][2]);
 	if (fLength > 0.0f)
 	{
-		fSign = (kA[0][1] > 0.0f ? 1.0f : -1.0f);
-		fT1 = kA[0][1] + fSign * fLength;
-		afV[2] = kA[0][2] / fT1;
+		fSign = (rA[0][1] > 0.0f ? 1.0f : -1.0f);
+		fT1 = rA[0][1] + fSign * fLength;
+		afV[2] = rA[0][2] / fT1;
 
 		fT2 = -2.0f / (1.0f + afV[2] * afV[2]);
-		afW[0] = fT2 * (kA[0][1] + kA[0][2] * afV[2]);
-		afW[1] = fT2 * (kA[1][1] + kA[1][2] * afV[2]);
-		afW[2] = fT2 * (kA[2][1] + kA[2][2] * afV[2]);
-		kA[0][1] += afW[0];
-		kA[1][1] += afW[1];
-		kA[1][2] += afW[1] * afV[2];
-		kA[2][1] += afW[2];
-		kA[2][2] += afW[2] * afV[2];
+		afW[0] = fT2 * (rA[0][1] + rA[0][2] * afV[2]);
+		afW[1] = fT2 * (rA[1][1] + rA[1][2] * afV[2]);
+		afW[2] = fT2 * (rA[2][1] + rA[2][2] * afV[2]);
+		rA[0][1] += afW[0];
+		rA[1][1] += afW[1];
+		rA[1][2] += afW[1] * afV[2];
+		rA[2][1] += afW[2];
+		rA[2][2] += afW[2] * afV[2];
 
-		kR[0][0] = 1.0f;
-		kR[0][1] = kR[1][0] = 0.0f;
-		kR[0][2] = kR[2][0] = 0.0f;
-		kR[1][1] = 1.0f + fT2;
-		kR[1][2] = kR[2][1] = fT2 * afV[2];
-		kR[2][2] = 1.0f + fT2 * afV[2] * afV[2];
+		rR[0][0] = 1.0f;
+		rR[0][1] = rR[1][0] = 0.0f;
+		rR[0][2] = rR[2][0] = 0.0f;
+		rR[1][1] = 1.0f + fT2;
+		rR[1][2] = rR[2][1] = fT2 * afV[2];
+		rR[2][2] = 1.0f + fT2 * afV[2] * afV[2];
 	}
 	else
 	{
-		kR = Matrix3d::Identity();
+		rR = Matrix3d::Identity();
 	}
 
 	// map second column to (*,*,0)
-	fLength = sqrtf(kA[1][1] * kA[1][1] + kA[2][1] * kA[2][1]);
+	fLength = sqrtf(rA[1][1] * rA[1][1] + rA[2][1] * rA[2][1]);
 	if (fLength > 0.0f)
 	{
-		fSign = (kA[1][1] > 0.0f ? 1.0f : -1.0f);
-		fT1 = kA[1][1] + fSign * fLength;
-		afV[2] = kA[2][1] / fT1;
+		fSign = (rA[1][1] > 0.0f ? 1.0f : -1.0f);
+		fT1 = rA[1][1] + fSign * fLength;
+		afV[2] = rA[2][1] / fT1;
 
 		fT2 = -2.0f / (1.0f + afV[2] * afV[2]);
-		afW[1] = fT2 * (kA[1][1] + kA[2][1] * afV[2]);
-		afW[2] = fT2 * (kA[1][2] + kA[2][2] * afV[2]);
-		kA[1][1] += afW[1];
-		kA[1][2] += afW[2];
-		kA[2][2] += afV[2] * afW[2];
+		afW[1] = fT2 * (rA[1][1] + rA[2][1] * afV[2]);
+		afW[2] = fT2 * (rA[1][2] + rA[2][2] * afV[2]);
+		rA[1][1] += afW[1];
+		rA[1][2] += afW[2];
+		rA[2][2] += afV[2] * afW[2];
 
 		float fA = 1.0f + fT2;
 		float fB = fT2 * afV[2];
@@ -137,32 +136,31 @@ void Matrix3d::Bidiagonalize(Matrix3d& kA, Matrix3d& kL,
 
 		if (bIdentity)
 		{
-			kL[0][0] = 1.0f;
-			kL[0][1] = kL[1][0] = 0.0;
-			kL[0][2] = kL[2][0] = 0.0;
-			kL[1][1] = fA;
-			kL[1][2] = kL[2][1] = fB;
-			kL[2][2] = fC;
+			rL[0][0] = 1.0f;
+			rL[0][1] = rL[1][0] = 0.0;
+			rL[0][2] = rL[2][0] = 0.0;
+			rL[1][1] = fA;
+			rL[1][2] = rL[2][1] = fB;
+			rL[2][2] = fC;
 		}
 		else
 		{
 			for (int iRow = 0; iRow < 3; ++iRow)
 			{
-				float fTmp0 = kL[iRow][1];
-				float fTmp1 = kL[iRow][2];
-				kL[iRow][1] = fA * fTmp0 + fB * fTmp1;
-				kL[iRow][2] = fB * fTmp0 + fC * fTmp1;
+				float fTmp0 = rL[iRow][1];
+				float fTmp1 = rL[iRow][2];
+				rL[iRow][1] = fA * fTmp0 + fB * fTmp1;
+				rL[iRow][2] = fB * fTmp0 + fC * fTmp1;
 			}
 		}
 	}
 }
 
-void Matrix3d::GolubKahanStep(Matrix3d& kA, Matrix3d& kL,
-	Matrix3d& kR)
+void Matrix3d::GolubKahanStep(Matrix3d& rA, Matrix3d& rL, Matrix3d& rR)
 {
-	float fT11 = kA[0][1] * kA[0][1] + kA[1][1] * kA[1][1];
-	float fT22 = kA[1][2] * kA[1][2] + kA[2][2] * kA[2][2];
-	float fT12 = kA[1][1] * kA[1][2];
+	float fT11 = rA[0][1] * rA[0][1] + rA[1][1] * rA[1][1];
+	float fT22 = rA[1][2] * rA[1][2] + rA[2][2] * rA[2][2];
+	float fT12 = rA[1][1] * rA[1][2];
 	float fTrace = fT11 + fT22;
 	float fDiff = fT11 - fT22;
 	float fDiscr = sqrtf(fDiff * fDiff + 4.0f * fT12 * fT12);
@@ -170,100 +168,99 @@ void Matrix3d::GolubKahanStep(Matrix3d& kA, Matrix3d& kL,
 	float fRoot2 = 0.5f * (fTrace - fDiscr);
 
 	// adjust right
-	float fY = kA[0][0] - (fabsf(fRoot1 - fT22) <=
+	float fY = rA[0][0] - (fabsf(fRoot1 - fT22) <=
 		fabsf(fRoot2 - fT22) ? fRoot1 : fRoot2);
-	float fZ = kA[0][1];
+	float fZ = rA[0][1];
 	float fInvLength = InvSqrt(fY * fY + fZ * fZ);
 	float fSin = fZ * fInvLength;
 	float fCos = -fY * fInvLength;
 
-	float fTmp0 = kA[0][0];
-	float fTmp1 = kA[0][1];
-	kA[0][0] = fCos * fTmp0 - fSin * fTmp1;
-	kA[0][1] = fSin * fTmp0 + fCos * fTmp1;
-	kA[1][0] = -fSin * kA[1][1];
-	kA[1][1] *= fCos;
+	float fTmp0 = rA[0][0];
+	float fTmp1 = rA[0][1];
+	rA[0][0] = fCos * fTmp0 - fSin * fTmp1;
+	rA[0][1] = fSin * fTmp0 + fCos * fTmp1;
+	rA[1][0] = -fSin * rA[1][1];
+	rA[1][1] *= fCos;
 
 	int iRow;
 	for (iRow = 0; iRow < 3; ++iRow)
 	{
-		fTmp0 = kR[0][iRow];
-		fTmp1 = kR[1][iRow];
-		kR[0][iRow] = fCos * fTmp0 - fSin * fTmp1;
-		kR[1][iRow] = fSin * fTmp0 + fCos * fTmp1;
+		fTmp0 = rR[0][iRow];
+		fTmp1 = rR[1][iRow];
+		rR[0][iRow] = fCos * fTmp0 - fSin * fTmp1;
+		rR[1][iRow] = fSin * fTmp0 + fCos * fTmp1;
 	}
 
 	// adjust left
-	fY = kA[0][0];
-	fZ = kA[1][0];
+	fY = rA[0][0];
+	fZ = rA[1][0];
 	fInvLength = InvSqrt(fY * fY + fZ * fZ);
 	fSin = fZ * fInvLength;
 	fCos = -fY * fInvLength;
 
-	kA[0][0] = fCos * kA[0][0] - fSin * kA[1][0];
-	fTmp0 = kA[0][1];
-	fTmp1 = kA[1][1];
-	kA[0][1] = fCos * fTmp0 - fSin * fTmp1;
-	kA[1][1] = fSin * fTmp0 + fCos * fTmp1;
-	kA[0][2] = -fSin * kA[1][2];
-	kA[1][2] *= fCos;
+	rA[0][0] = fCos * rA[0][0] - fSin * rA[1][0];
+	fTmp0 = rA[0][1];
+	fTmp1 = rA[1][1];
+	rA[0][1] = fCos * fTmp0 - fSin * fTmp1;
+	rA[1][1] = fSin * fTmp0 + fCos * fTmp1;
+	rA[0][2] = -fSin * rA[1][2];
+	rA[1][2] *= fCos;
 
 	int iCol;
 	for (iCol = 0; iCol < 3; ++iCol)
 	{
-		fTmp0 = kL[iCol][0];
-		fTmp1 = kL[iCol][1];
-		kL[iCol][0] = fCos * fTmp0 - fSin * fTmp1;
-		kL[iCol][1] = fSin * fTmp0 + fCos * fTmp1;
+		fTmp0 = rL[iCol][0];
+		fTmp1 = rL[iCol][1];
+		rL[iCol][0] = fCos * fTmp0 - fSin * fTmp1;
+		rL[iCol][1] = fSin * fTmp0 + fCos * fTmp1;
 	}
 
 	// adjust right
-	fY = kA[0][1];
-	fZ = kA[0][2];
+	fY = rA[0][1];
+	fZ = rA[0][2];
 	fInvLength = InvSqrt(fY * fY + fZ * fZ);
 	fSin = fZ * fInvLength;
 	fCos = -fY * fInvLength;
 
-	kA[0][1] = fCos * kA[0][1] - fSin * kA[0][2];
-	fTmp0 = kA[1][1];
-	fTmp1 = kA[1][2];
-	kA[1][1] = fCos * fTmp0 - fSin * fTmp1;
-	kA[1][2] = fSin * fTmp0 + fCos * fTmp1;
-	kA[2][1] = -fSin * kA[2][2];
-	kA[2][2] *= fCos;
+	rA[0][1] = fCos * rA[0][1] - fSin * rA[0][2];
+	fTmp0 = rA[1][1];
+	fTmp1 = rA[1][2];
+	rA[1][1] = fCos * fTmp0 - fSin * fTmp1;
+	rA[1][2] = fSin * fTmp0 + fCos * fTmp1;
+	rA[2][1] = -fSin * rA[2][2];
+	rA[2][2] *= fCos;
 
 	for (iRow = 0; iRow < 3; ++iRow)
 	{
-		fTmp0 = kR[1][iRow];
-		fTmp1 = kR[2][iRow];
-		kR[1][iRow] = fCos * fTmp0 - fSin * fTmp1;
-		kR[2][iRow] = fSin * fTmp0 + fCos * fTmp1;
+		fTmp0 = rR[1][iRow];
+		fTmp1 = rR[2][iRow];
+		rR[1][iRow] = fCos * fTmp0 - fSin * fTmp1;
+		rR[2][iRow] = fSin * fTmp0 + fCos * fTmp1;
 	}
 
 	// adjust left
-	fY = kA[1][1];
-	fZ = kA[2][1];
+	fY = rA[1][1];
+	fZ = rA[2][1];
 	fInvLength = InvSqrt(fY * fY + fZ * fZ);
 	fSin = fZ * fInvLength;
 	fCos = -fY * fInvLength;
 
-	kA[1][1] = fCos * kA[1][1] - fSin * kA[2][1];
-	fTmp0 = kA[1][2];
-	fTmp1 = kA[2][2];
-	kA[1][2] = fCos * fTmp0 - fSin * fTmp1;
-	kA[2][2] = fSin * fTmp0 + fCos * fTmp1;
+	rA[1][1] = fCos * rA[1][1] - fSin * rA[2][1];
+	fTmp0 = rA[1][2];
+	fTmp1 = rA[2][2];
+	rA[1][2] = fCos * fTmp0 - fSin * fTmp1;
+	rA[2][2] = fSin * fTmp0 + fCos * fTmp1;
 
 	for (iCol = 0; iCol < 3; ++iCol)
 	{
-		fTmp0 = kL[iCol][1];
-		fTmp1 = kL[iCol][2];
-		kL[iCol][1] = fCos * fTmp0 - fSin * fTmp1;
-		kL[iCol][2] = fSin * fTmp0 + fCos * fTmp1;
+		fTmp0 = rL[iCol][1];
+		fTmp1 = rL[iCol][2];
+		rL[iCol][1] = fCos * fTmp0 - fSin * fTmp1;
+		rL[iCol][2] = fSin * fTmp0 + fCos * fTmp1;
 	}
 }
 
-void Matrix3d::SingularValueDecomposition(Matrix3d& kL, Vector3d& kS,
-	Matrix3d& kR) const
+void Matrix3d::SingularValueDecomposition(Matrix3d& rL, Vector3d& rS, Matrix3d& rR) const
 {
 	// temas: currently unused
 	//const int iMax = 16;
@@ -272,7 +269,7 @@ void Matrix3d::SingularValueDecomposition(Matrix3d& kL, Vector3d& kS,
 	const int   iSvdMaxIterations = 32;
 
 	Matrix3d kA = *this;
-	Bidiagonalize(kA, kL, kR);
+	Bidiagonalize(kA, rL, rR);
 
 	for (uint32_t i = 0; i < iSvdMaxIterations; i++)
 	{
@@ -288,9 +285,9 @@ void Matrix3d::SingularValueDecomposition(Matrix3d& kL, Vector3d& kS,
 		{
 			if (bTest2)
 			{
-				kS[0] = kA[0][0];
-				kS[1] = kA[1][1];
-				kS[2] = kA[2][2];
+				rS[0] = kA[0][0];
+				rS[1] = kA[1][1];
+				rS[2] = kA[2][2];
 				break;
 			}
 			else
@@ -304,10 +301,10 @@ void Matrix3d::SingularValueDecomposition(Matrix3d& kL, Vector3d& kS,
 
 				for (iCol = 0; iCol < 3; ++iCol)
 				{
-					fTmp0 = kL[iCol][1];
-					fTmp1 = kL[iCol][2];
-					kL[iCol][1] = fCos0 * fTmp0 - fSin0 * fTmp1;
-					kL[iCol][2] = fSin0 * fTmp0 + fCos0 * fTmp1;
+					fTmp0 = rL[iCol][1];
+					fTmp1 = rL[iCol][2];
+					rL[iCol][1] = fCos0 * fTmp0 - fSin0 * fTmp1;
+					rL[iCol][2] = fSin0 * fTmp0 + fCos0 * fTmp1;
 				}
 
 				fTan1 = (kA[1][2] - kA[2][2] * fTan0) / kA[1][1];
@@ -316,16 +313,16 @@ void Matrix3d::SingularValueDecomposition(Matrix3d& kL, Vector3d& kS,
 
 				for (iRow = 0; iRow < 3; ++iRow)
 				{
-					fTmp0 = kR[1][iRow];
-					fTmp1 = kR[2][iRow];
-					kR[1][iRow] = fCos1 * fTmp0 - fSin1 * fTmp1;
-					kR[2][iRow] = fSin1 * fTmp0 + fCos1 * fTmp1;
+					fTmp0 = rR[1][iRow];
+					fTmp1 = rR[2][iRow];
+					rR[1][iRow] = fCos1 * fTmp0 - fSin1 * fTmp1;
+					rR[2][iRow] = fSin1 * fTmp0 + fCos1 * fTmp1;
 				}
 
-				kS[0] = kA[0][0];
-				kS[1] = fCos0 * fCos1 * kA[1][1] -
+				rS[0] = kA[0][0];
+				rS[1] = fCos0 * fCos1 * kA[1][1] -
 					fSin1 * (fCos0 * kA[1][2] - fSin0 * kA[2][2]);
-				kS[2] = fSin0 * fSin1 * kA[1][1] +
+				rS[2] = fSin0 * fSin1 * kA[1][1] +
 					fCos1 * (fSin0 * kA[1][2] + fCos0 * kA[2][2]);
 				break;
 			}
@@ -343,10 +340,10 @@ void Matrix3d::SingularValueDecomposition(Matrix3d& kL, Vector3d& kS,
 
 				for (iCol = 0; iCol < 3; ++iCol)
 				{
-					fTmp0 = kL[iCol][0];
-					fTmp1 = kL[iCol][1];
-					kL[iCol][0] = fCos0 * fTmp0 - fSin0 * fTmp1;
-					kL[iCol][1] = fSin0 * fTmp0 + fCos0 * fTmp1;
+					fTmp0 = rL[iCol][0];
+					fTmp1 = rL[iCol][1];
+					rL[iCol][0] = fCos0 * fTmp0 - fSin0 * fTmp1;
+					rL[iCol][1] = fSin0 * fTmp0 + fCos0 * fTmp1;
 				}
 
 				fTan1 = (kA[0][1] - kA[1][1] * fTan0) / kA[0][0];
@@ -355,22 +352,22 @@ void Matrix3d::SingularValueDecomposition(Matrix3d& kL, Vector3d& kS,
 
 				for (iRow = 0; iRow < 3; ++iRow)
 				{
-					fTmp0 = kR[0][iRow];
-					fTmp1 = kR[1][iRow];
-					kR[0][iRow] = fCos1 * fTmp0 - fSin1 * fTmp1;
-					kR[1][iRow] = fSin1 * fTmp0 + fCos1 * fTmp1;
+					fTmp0 = rR[0][iRow];
+					fTmp1 = rR[1][iRow];
+					rR[0][iRow] = fCos1 * fTmp0 - fSin1 * fTmp1;
+					rR[1][iRow] = fSin1 * fTmp0 + fCos1 * fTmp1;
 				}
 
-				kS[0] = fCos0 * fCos1 * kA[0][0] -
+				rS[0] = fCos0 * fCos1 * kA[0][0] -
 					fSin1 * (fCos0 * kA[0][1] - fSin0 * kA[1][1]);
-				kS[1] = fSin0 * fSin1 * kA[0][0] +
+				rS[1] = fSin0 * fSin1 * kA[0][0] +
 					fCos1 * (fSin0 * kA[0][1] + fCos0 * kA[1][1]);
-				kS[2] = kA[2][2];
+				rS[2] = kA[2][2];
 				break;
 			}
 			else
 			{
-				GolubKahanStep(kA, kL, kR);
+				GolubKahanStep(kA, rL, rR);
 			}
 		}
 	}
@@ -378,16 +375,16 @@ void Matrix3d::SingularValueDecomposition(Matrix3d& kL, Vector3d& kS,
 	// positize diagonal
 	for (iRow = 0; iRow < 3; ++iRow)
 	{
-		if (kS[iRow] < 0.0)
+		if (rS[iRow] < 0.0)
 		{
-			kS[iRow] = -kS[iRow];
+			rS[iRow] = -rS[iRow];
 			for (iCol = 0; iCol < 3; ++iCol)
-				kR[iRow][iCol] = -kR[iRow][iCol];
+				rR[iRow][iCol] = -rR[iRow][iCol];
 		}
 	}
 }
 
-void Matrix3d::SingularValueComposition(const Matrix3d& kL,	const Vector3d& kS, const Matrix3d& kR)
+void Matrix3d::SingularValueComposition(const Matrix3d& rL,	const Vector3d& rS, const Matrix3d& rR)
 {
 	int iRow, iCol;
 	Matrix3d kTmp;
@@ -396,7 +393,7 @@ void Matrix3d::SingularValueComposition(const Matrix3d& kL,	const Vector3d& kS, 
 	for (iRow = 0; iRow < 3; ++iRow)
 	{
 		for (iCol = 0; iCol < 3; ++iCol)
-			kTmp[iRow][iCol] = kS[iRow] * kR[iRow][iCol];
+			kTmp[iRow][iCol] = rS[iRow] * rR[iRow][iCol];
 	}
 
 	// product L*S*R
@@ -406,7 +403,7 @@ void Matrix3d::SingularValueComposition(const Matrix3d& kL,	const Vector3d& kS, 
 		{
 			mat[iRow][iCol] = 0.0;
 			for (int iMid = 0; iMid < 3; iMid++)
-				mat[iRow][iCol] += kL[iRow][iMid] * kTmp[iMid][iCol];
+				mat[iRow][iCol] += rL[iRow][iMid] * kTmp[iMid][iCol];
 		}
 	}
 }
@@ -473,7 +470,16 @@ void Matrix3d::Orthonormalize()
 	mat[2][2] *= fInvLength;
 }
 
-void Matrix3d::QDUDecomposition(Matrix3d& kQ, Vector3d& kD, Vector3d& kU) const
+void Matrix3d::PolarDecomposition(Matrix3d& rU, Matrix3d& rP) const
+{
+	Matrix3d L, R;
+	Vector3d S;
+	SingularValueDecomposition(L, S, R);
+	rP = R.Transpose() * Matrix3d(S.x, S.y, S.z) * R;
+	rU = L * R;
+}
+
+void Matrix3d::QDUDecomposition(Matrix3d& rQ, Vector3d& rD, Vector3d& rU) const
 {
 	// Factor M = QR = QDU where Q is orthogonal, D is diagonal,
 	// and U is upper triangular with ones on its diagonal.  Algorithm uses
@@ -506,74 +512,74 @@ void Matrix3d::QDUDecomposition(Matrix3d& kQ, Vector3d& kD, Vector3d& kU) const
 	float fInvLength = InvSqrt(mat[0][0] * mat[0][0]
 		+ mat[1][0] * mat[1][0] +
 		mat[2][0] * mat[2][0]);
-	kQ[0][0] = mat[0][0] * fInvLength;
-	kQ[1][0] = mat[1][0] * fInvLength;
-	kQ[2][0] = mat[2][0] * fInvLength;
+	rQ[0][0] = mat[0][0] * fInvLength;
+	rQ[1][0] = mat[1][0] * fInvLength;
+	rQ[2][0] = mat[2][0] * fInvLength;
 
-	float fDot = kQ[0][0] * mat[0][1] + kQ[1][0] * mat[1][1] +
-		kQ[2][0] * mat[2][1];
-	kQ[0][1] = mat[0][1] - fDot * kQ[0][0];
-	kQ[1][1] = mat[1][1] - fDot * kQ[1][0];
-	kQ[2][1] = mat[2][1] - fDot * kQ[2][0];
-	fInvLength = InvSqrt(kQ[0][1] * kQ[0][1] + kQ[1][1] * kQ[1][1] +
-		kQ[2][1] * kQ[2][1]);
-	kQ[0][1] *= fInvLength;
-	kQ[1][1] *= fInvLength;
-	kQ[2][1] *= fInvLength;
+	float fDot = rQ[0][0] * mat[0][1] + rQ[1][0] * mat[1][1] +
+		rQ[2][0] * mat[2][1];
+	rQ[0][1] = mat[0][1] - fDot * rQ[0][0];
+	rQ[1][1] = mat[1][1] - fDot * rQ[1][0];
+	rQ[2][1] = mat[2][1] - fDot * rQ[2][0];
+	fInvLength = InvSqrt(rQ[0][1] * rQ[0][1] + rQ[1][1] * rQ[1][1] +
+		rQ[2][1] * rQ[2][1]);
+	rQ[0][1] *= fInvLength;
+	rQ[1][1] *= fInvLength;
+	rQ[2][1] *= fInvLength;
 
-	fDot = kQ[0][0] * mat[0][2] + kQ[1][0] * mat[1][2] +
-		kQ[2][0] * mat[2][2];
-	kQ[0][2] = mat[0][2] - fDot * kQ[0][0];
-	kQ[1][2] = mat[1][2] - fDot * kQ[1][0];
-	kQ[2][2] = mat[2][2] - fDot * kQ[2][0];
-	fDot = kQ[0][1] * mat[0][2] + kQ[1][1] * mat[1][2] +
-		kQ[2][1] * mat[2][2];
-	kQ[0][2] -= fDot * kQ[0][1];
-	kQ[1][2] -= fDot * kQ[1][1];
-	kQ[2][2] -= fDot * kQ[2][1];
-	fInvLength = InvSqrt(kQ[0][2] * kQ[0][2] + kQ[1][2] * kQ[1][2] +
-		kQ[2][2] * kQ[2][2]);
-	kQ[0][2] *= fInvLength;
-	kQ[1][2] *= fInvLength;
-	kQ[2][2] *= fInvLength;
+	fDot = rQ[0][0] * mat[0][2] + rQ[1][0] * mat[1][2] +
+		rQ[2][0] * mat[2][2];
+	rQ[0][2] = mat[0][2] - fDot * rQ[0][0];
+	rQ[1][2] = mat[1][2] - fDot * rQ[1][0];
+	rQ[2][2] = mat[2][2] - fDot * rQ[2][0];
+	fDot = rQ[0][1] * mat[0][2] + rQ[1][1] * mat[1][2] +
+		rQ[2][1] * mat[2][2];
+	rQ[0][2] -= fDot * rQ[0][1];
+	rQ[1][2] -= fDot * rQ[1][1];
+	rQ[2][2] -= fDot * rQ[2][1];
+	fInvLength = InvSqrt(rQ[0][2] * rQ[0][2] + rQ[1][2] * rQ[1][2] +
+		rQ[2][2] * rQ[2][2]);
+	rQ[0][2] *= fInvLength;
+	rQ[1][2] *= fInvLength;
+	rQ[2][2] *= fInvLength;
 
 	// guarantee that orthogonal matrix has determinant 1 (no reflections)
-	float fDet = kQ[0][0] * kQ[1][1] * kQ[2][2] + kQ[0][1] * kQ[1][2] * kQ[2][0] +
-		kQ[0][2] * kQ[1][0] * kQ[2][1] - kQ[0][2] * kQ[1][1] * kQ[2][0] -
-		kQ[0][1] * kQ[1][0] * kQ[2][2] - kQ[0][0] * kQ[1][2] * kQ[2][1];
+	float fDet = rQ[0][0] * rQ[1][1] * rQ[2][2] + rQ[0][1] * rQ[1][2] * rQ[2][0] +
+		rQ[0][2] * rQ[1][0] * rQ[2][1] - rQ[0][2] * rQ[1][1] * rQ[2][0] -
+		rQ[0][1] * rQ[1][0] * rQ[2][2] - rQ[0][0] * rQ[1][2] * rQ[2][1];
 
 	if (fDet < 0.0)
 	{
 		for (int iRow = 0; iRow < 3; ++iRow)
 			for (int iCol = 0; iCol < 3; ++iCol)
-				kQ[iRow][iCol] = -kQ[iRow][iCol];
+				rQ[iRow][iCol] = -rQ[iRow][iCol];
 	}
 
 	// build "right" matrix R
 	Matrix3d kR;
-	kR[0][0] = kQ[0][0] * mat[0][0] + kQ[1][0] * mat[1][0] +
-		kQ[2][0] * mat[2][0];
-	kR[0][1] = kQ[0][0] * mat[0][1] + kQ[1][0] * mat[1][1] +
-		kQ[2][0] * mat[2][1];
-	kR[1][1] = kQ[0][1] * mat[0][1] + kQ[1][1] * mat[1][1] +
-		kQ[2][1] * mat[2][1];
-	kR[0][2] = kQ[0][0] * mat[0][2] + kQ[1][0] * mat[1][2] +
-		kQ[2][0] * mat[2][2];
-	kR[1][2] = kQ[0][1] * mat[0][2] + kQ[1][1] * mat[1][2] +
-		kQ[2][1] * mat[2][2];
-	kR[2][2] = kQ[0][2] * mat[0][2] + kQ[1][2] * mat[1][2] +
-		kQ[2][2] * mat[2][2];
+	kR[0][0] = rQ[0][0] * mat[0][0] + rQ[1][0] * mat[1][0] +
+		rQ[2][0] * mat[2][0];
+	kR[0][1] = rQ[0][0] * mat[0][1] + rQ[1][0] * mat[1][1] +
+		rQ[2][0] * mat[2][1];
+	kR[1][1] = rQ[0][1] * mat[0][1] + rQ[1][1] * mat[1][1] +
+		rQ[2][1] * mat[2][1];
+	kR[0][2] = rQ[0][0] * mat[0][2] + rQ[1][0] * mat[1][2] +
+		rQ[2][0] * mat[2][2];
+	kR[1][2] = rQ[0][1] * mat[0][2] + rQ[1][1] * mat[1][2] +
+		rQ[2][1] * mat[2][2];
+	kR[2][2] = rQ[0][2] * mat[0][2] + rQ[1][2] * mat[1][2] +
+		rQ[2][2] * mat[2][2];
 
 	// the scaling component
-	kD[0] = kR[0][0];
-	kD[1] = kR[1][1];
-	kD[2] = kR[2][2];
+	rD[0] = kR[0][0];
+	rD[1] = kR[1][1];
+	rD[2] = kR[2][2];
 
 	// the shear component
-	float fInvD0 = 1.0f / kD[0];
-	kU[0] = kR[0][1] * fInvD0;
-	kU[1] = kR[0][2] * fInvD0;
-	kU[2] = kR[1][2] / kD[1];
+	float fInvD0 = 1.0f / rD[0];
+	rU[0] = kR[0][1] * fInvD0;
+	rU[1] = kR[0][2] * fInvD0;
+	rU[2] = kR[1][2] / rD[1];
 }
 //-----------------------------------------------------------------------
 float Matrix3d::MaxCubicRoot(float afCoeff[3])

@@ -148,7 +148,26 @@ public:
 
 	}
 
-	Matrix4d operator*(const Matrix4d& mm)
+	float L1Norm() const
+	{
+		float l1_norm = 0.0f;
+		const float* p = (const float*)this;
+		for (int i = 0; i < 4; ++i)
+			l1_norm += fabsf(p[i]);
+		return l1_norm;
+	}
+
+	float L2Norm() const
+	{
+		float l2_norm = 0.0f;
+		const float* p = (const float*)this;
+		for (int i = 0; i < 4; ++i)
+			l2_norm += p[i] * p[i];
+		return l2_norm;
+	}
+
+
+	Matrix4d operator*(const Matrix4d& mm) const
 	{
 		float m[4][4] = { 0 };
 		for (int i = 0; i < 4; i++)
@@ -158,7 +177,7 @@ public:
 		return Matrix4d(m);
 	}
 
-	Vector4d operator*(const Vector4d& vv)
+	Vector4d operator*(const Vector4d& vv) const
 	{
 		float In[4] = { vv.x, vv.y, vv.z, vv.w };
 		float out[4] = { 0 };
@@ -168,7 +187,7 @@ public:
 		return Vector4d(out);
 	}
 
-	Matrix4d operator+(const Matrix4d& mm)
+	Matrix4d operator+(const Matrix4d& mm) const
 	{
 		float m[4][4];
 		for (int i = 0; i < 4; i++)
@@ -177,7 +196,7 @@ public:
 		return Matrix4d(m);
 	}
 
-	Matrix4d operator-(const Matrix4d& mm)
+	Matrix4d operator-(const Matrix4d& mm) const
 	{
 		float m[4][4];
 		for (int i = 0; i < 4; i++)
