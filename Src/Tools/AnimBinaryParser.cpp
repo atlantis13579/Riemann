@@ -289,7 +289,7 @@ class AnimationSerializer : public AnimTreeData
 public:
 	AnimationSerializer()
 	{
-		memset(&header, sizeof(header), 0);
+		memset(&header, 0, sizeof(header));
 	}
 
 	virtual ~AnimationSerializer()
@@ -322,7 +322,7 @@ private:
 			return 1;
 		}
 
-		if (sections.find(ANIMATION_HEADER) == sections.end() || sections[ANIMATION_HEADER].len < sizeof(AnimationHeader))
+		if (sections.find(ANIMATION_HEADER) == sections.end() || sections[ANIMATION_HEADER].len < (int)sizeof(AnimationHeader))
 		{
 			return 2;
 		}
