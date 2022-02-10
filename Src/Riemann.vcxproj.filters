@@ -108,6 +108,7 @@
     <ClInclude Include="RigidBodyDynamics\Animation.h" />
     <ClInclude Include="RigidBodyDynamics\AnimationTree.h" />
     <ClInclude Include="LinearSystem\EigenValueDecomposition.h" />
+    <ClInclude Include="Maths\Float16.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">

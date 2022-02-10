@@ -15,6 +15,7 @@
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Frustum.h"
 #include "../Src/Maths/SIMD.h"
+#include "../Src/Maths/Float16.h"
 #include "../Src/ImageSpace/ContinuousBitmap.h"
 #include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
 #include "../Src/CollisionPrimitive/Plane3d.h"
@@ -596,6 +597,14 @@ void TestSAPInc()
 	return;
 }
 
+void TestFloat16()
+{
+	float	x1 = Float16ToFloat32(Float32ToFloat16(1.0f));
+	float	x2 = Float16ToFloat32(Float32ToFloat16(1.111111f));
+	
+	return;
+}
+
 void TestMainEntry()
 {
 	// TestRayAABB();
@@ -612,5 +621,6 @@ void TestMainEntry()
 	// TestSAP();
 	// TestSAPInc();
 	// TestMesh1();
+	TestFloat16();
 	return;
 }

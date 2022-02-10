@@ -114,6 +114,7 @@
     <ClInclude Include="Geometry\VoxelEngine.h" />
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
     <ClInclude Include="LinearSystem\EigenValueDecomposition.h" />
+    <ClInclude Include="Maths\Float16.h" />
     <ClInclude Include="Maths\Stack.h" />
     <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />
