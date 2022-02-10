@@ -2,9 +2,11 @@
 
 #include <stdint.h>
 
+// https://en.wikipedia.org/wiki/Half-precision_floating-point_format
+
 union Float16
 {
-	uint16_t bits;
+	uint16_t Bits;
 	struct
 	{
 		uint16_t Frac : 10;
@@ -15,7 +17,7 @@ union Float16
 
 union Float32
 {
-	float Float;
+	float Val;
 	struct
 	{
 		uint32_t Frac : 23;
@@ -27,7 +29,7 @@ union Float32
 inline Float16 Float32ToFloat16(float src)
 {
 	Float32 f;
-	f.Float = src;
+	f.Val = src;
 
 	Float16	dst;
 
@@ -109,7 +111,7 @@ inline float Float16ToFloat32(Float16 src)
 			const float half_denorm = (1.0f / 16384.0f);
 			float mantissa = ((float)(src.IEEE.Frac)) / 1024.0f;
 			float sgn = (src.IEEE.Sign) ? -1.0f : 1.0f;
-			dst.Float = sgn * mantissa * half_denorm;
+			dst.Val = sgn * mantissa * half_denorm;
 		}
 	}
 	else if (31 == src.IEEE.Exp)
@@ -122,5 +124,5 @@ inline float Float16ToFloat32(Float16 src)
 		dst.IEEE.Exp = src.IEEE.Exp + 112;
 		dst.IEEE.Frac = (src.IEEE.Frac << 13);
 	}
-	return dst.Float;
+	return dst.Val;
 }
