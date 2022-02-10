@@ -599,8 +599,8 @@ void TestSAPInc()
 
 void TestFloat16()
 {
-	float	x1 = Float16ToFloat32(Float32ToFloat16(1.0f));
-	float	x2 = Float16ToFloat32(Float32ToFloat16(1.111111f));
+	float	x1 = Float16::FromFloat32(1.0f).ToFloat();
+	float	x2 = Float16::FromFloat32(1.111111f).ToFloat();
 	
 	return;
 }

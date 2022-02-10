@@ -25,7 +25,7 @@ union Float16
 		uint16_t Sign : 1;
 	} IEEE;
 
-	static Float16 FromFloat(float src)
+	static Float16 FromFloat32(float src)
 	{
 		Float32 f;
 		f.Val = src;
@@ -91,6 +91,11 @@ union Float16
 		}
 
 		return dst;
+	}
+
+	void FromFloat(float src)
+	{
+		*this = Float16::FromFloat32(src);
 	}
 
 	float ToFloat() const
