@@ -8,6 +8,7 @@
 #include "../Src/LinearSystem/JacobiIteration_CPU.h"
 #include "../Src/LinearSystem/GaussSeidelIteration_CPU.h"
 #include "../Src/LinearSystem/LUFactorization.h"
+#include "../Src/Maths/Bezier.h"
 #include "../Src/Maths/Tensor.h"
 #include "../Src/Maths/Box3d.h"
 #include "../Src/Maths/Maths.h"
@@ -602,6 +603,23 @@ void TestFloat16()
 	float	x1 = Float16::FromFloat32(1.0f).ToFloat();
 	float	x2 = Float16::FromFloat32(1.111111f).ToFloat();
 	
+	std::vector<Vector3d> cc;
+	std::vector<float> dd, d2;
+	for (int i = 0; i <= 20; ++i)
+	{
+		float t = 1.0f * i / 20;
+		Vector3d p0 = Vector3d(0, 0, 0);
+		Vector3d p1 = Vector3d(1, 0, 1);
+		Vector3d t1 = CubicHermite::Calculate(p0, p1, Vector3d(1, 0, 1).Unit(), Vector3d(1, 0, 1).Unit(), t);
+		Vector3d t2 = LinearInterp(p0, p1, t);
+		cc.push_back(t1);
+		if (i != 0)
+		{
+			dd.push_back((t1 - cc[i - 1]).Length());
+			d2.push_back((t1 - t2).Length());
+		}
+	}
+
 	return;
 }
 

@@ -71,13 +71,13 @@ public:
 			const float dx = fx - nx;
 			const float dy = fy - ny;
 			const float dz = fz - nz;
-			TensorType y11 = Interp(m_Fields(nx, ny, nz), m_Fields(nx + 1, ny, nz), dx);
-			TensorType y12 = Interp(m_Fields(nx, ny, nz + 1), m_Fields(nx + 1, ny, nz + 1), dx);
-			TensorType y21 = Interp(m_Fields(nx, ny + 1, nz), m_Fields(nx + 1, ny + 1, nz), dx);
-			TensorType y22 = Interp(m_Fields(nx, ny + 1, nz + 1), m_Fields(nx + 1, ny + 1, nz + 1), dx);
-			TensorType z1 = Interp(y11, y21, dy);
-			TensorType z2 = Interp(y12, y22, dy);
-			return Interp(z1, z2, dz);
+			TensorType y11 = LinearInterp(m_Fields(nx, ny, nz), m_Fields(nx + 1, ny, nz), dx);
+			TensorType y12 = LinearInterp(m_Fields(nx, ny, nz + 1), m_Fields(nx + 1, ny, nz + 1), dx);
+			TensorType y21 = LinearInterp(m_Fields(nx, ny + 1, nz), m_Fields(nx + 1, ny + 1, nz), dx);
+			TensorType y22 = LinearInterp(m_Fields(nx, ny + 1, nz + 1), m_Fields(nx + 1, ny + 1, nz + 1), dx);
+			TensorType z1 = LinearInterp(y11, y21, dy);
+			TensorType z2 = LinearInterp(y12, y22, dy);
+			return LinearInterp(z1, z2, dz);
 		}
 
 		return m_Fields(nx, ny, nz);

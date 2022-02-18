@@ -65,9 +65,9 @@ inline T	Clamp(const T X, const T Min, const T Max)
 }
 
 template<typename T>
-inline T	Interp(const T v1, const T v2, float mix)
+inline T	LinearInterp(const T v1, const T v2, float mix)
 {
-	return v1 * mix + v2 * (1.0f - mix);
+	return v1 * (1.0f - mix) + v2 * mix;
 }
 
 inline bool	IsFloatInf(float x)

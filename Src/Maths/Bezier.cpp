@@ -139,3 +139,14 @@ float Bezier::CalculateLength(const Vector3d &p0, const Vector3d &p1, const Vect
 		(4 * C*A - B * B)*logf((2 * A_2 + BA + Sabc) / (BA + C_2))
 		) / (4 * A_32);
 };
+
+// https://en.wikipedia.org/wiki/Cubic_Hermite_spline
+Vector3d CubicHermite::Calculate(const Vector3d& p0, const Vector3d& p1, const Vector3d& t0, const Vector3d& t1, float t)
+{
+	float A = (2.0f * t * t * t - 3.0f * t * t + 1.0f);
+	float B = (t * t * t - 2.0f * t * t + t);
+	float C = (-2.0f * t * t * t + 3.0f * t * t);
+	float D = (t * t * t - t * t);
+	Vector3d Pos = A * p0 + B * t0 + C * p1 + D * t1;
+	return Pos;
+}

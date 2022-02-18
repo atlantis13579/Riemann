@@ -16,3 +16,8 @@ public:
 	static std::vector<Vector3d>    Interpolation(const std::vector<Vector3d> &points, const Vector3d &end, float delta);
 };
 
+class CubicHermite
+{
+public:
+	static Vector3d	Calculate(const Vector3d& p0, const Vector3d& p1, const Vector3d& t0, const Vector3d& t1, float t);
+};
