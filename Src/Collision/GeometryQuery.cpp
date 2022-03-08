@@ -37,7 +37,7 @@ GeometryQuery::~GeometryQuery()
 
 void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode)
 {
-	if (m_staticGeometry == nullptr)
+	if (m_staticGeometry == nullptr && Objects.size() > 0)
 	{
 		m_staticGeometry = new AABBTree;
 
