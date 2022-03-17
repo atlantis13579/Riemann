@@ -69,6 +69,9 @@
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Vehicle\AutonomousController.cpp" />
+    <ClCompile Include="Vehicle\MPC.cpp" />
+    <ClCompile Include="Vehicle\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CollisionPrimitive\AxisAlignedBox3d.h" />
@@ -168,6 +171,10 @@
     <ClInclude Include="Tools\PhysxFormat_41.hpp" />
     <ClInclude Include="Tools\Serialization.h" />
     <ClInclude Include="Tools\SimpleBmp.h" />
+    <ClInclude Include="Vehicle\AutonomousController.h" />
+    <ClInclude Include="Vehicle\MPC.h" />
+    <ClInclude Include="Vehicle\PID.h" />
+    <ClInclude Include="Vehicle\Vehicle.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

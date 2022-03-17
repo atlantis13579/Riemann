@@ -109,6 +109,10 @@
     <ClInclude Include="RigidBodyDynamics\AnimationTree.h" />
     <ClInclude Include="LinearSystem\EigenValueDecomposition.h" />
     <ClInclude Include="Maths\Float16.h" />
+    <ClInclude Include="Vehicle\Vehicle.h" />
+    <ClInclude Include="Vehicle\AutonomousController.h" />
+    <ClInclude Include="Vehicle\PID.h" />
+    <ClInclude Include="Vehicle\MPC.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -159,5 +163,8 @@
     <ClCompile Include="RigidBodyDynamics\Animation.cpp" />
     <ClCompile Include="RigidBodyDynamics\AnimationTree.cpp" />
     <ClCompile Include="LinearSystem\EigenValueDecomposition.cpp" />
+    <ClCompile Include="Vehicle\Vehicle.cpp" />
+    <ClCompile Include="Vehicle\MPC.cpp" />
+    <ClCompile Include="Vehicle\AutonomousController.cpp" />
   </ItemGroup>
 </Project>

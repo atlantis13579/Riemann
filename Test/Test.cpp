@@ -34,6 +34,7 @@
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
+#include "../Src/Vehicle/PID.h"
 
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/SparseVoxelField.h"
@@ -623,10 +624,23 @@ void TestFloat16()
 	return;
 }
 
+void TestPID()
+{
+	PID_Controller pid(1.0f, 0.1f, 0.01f);
+	float c = 0.0f, t = 1.0f;
+	for (int i = 0; i < 100; ++i)
+	{
+		float d = pid.Process(0.033f, t - c);
+		c = c + d;
+		printf("%d : c = %.2f, d = %.2f\n", i, c, fabsf(d));
+	}
+	return;
+}
+
 void TestMainEntry()
 {
 	// TestRayAABB();
-	TestBasicMath();
+	// TestBasicMath();
 	// TestPhysxBin();
 	// TestRaycastBenchmark();
 	// TestSIMD();
@@ -639,6 +653,7 @@ void TestMainEntry()
 	// TestSAP();
 	// TestSAPInc();
 	// TestMesh1();
-	TestFloat16();
+	// TestFloat16();
+	TestPID();
 	return;
 }
