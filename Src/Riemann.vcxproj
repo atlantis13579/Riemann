@@ -43,6 +43,7 @@
     <ClCompile Include="Geometry\VoxelEngine.cpp" />
     <ClCompile Include="LinearSystem\EigenValueDecomposition.cpp" />
     <ClCompile Include="Maths\Matrix3d.cpp" />
+    <ClCompile Include="Maths\MatrixN.cpp" />
     <ClCompile Include="RigidBodyDynamics\Animation.cpp" />
     <ClCompile Include="RigidBodyDynamics\AnimationTree.cpp" />
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />

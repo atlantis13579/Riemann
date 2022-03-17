@@ -2,9 +2,6 @@
 
 #include <math.h>
 #include <vector>
+#include "../Maths/MatrixN.h"
 
-class DenseMatrix
-{
-public:
-};
-
+using DenseMatrix = TMatrix<float>;

@@ -170,5 +170,6 @@
     <ClCompile Include="Vehicle\MPC.cpp" />
     <ClCompile Include="Vehicle\AutonomousController.cpp" />
     <ClCompile Include="Vehicle\LQR.cpp" />
+    <ClCompile Include="Maths\MatrixN.cpp" />
   </ItemGroup>
 </Project>
