@@ -127,6 +127,16 @@ public:
 		return TVector3<T>(x / v.x, y / v.y, z / v.z);
 	}
 
+	TVector3<T> operator+(T k) const
+	{
+		return TVector3<T>(x + k, y + k, z + k);
+	}
+
+	TVector3<T> operator-(T k) const
+	{
+		return TVector3<T>(x - k, y - k, z - k);
+	}
+
 	inline TVector3<T> operator*(T k) const
 	{
 		return TVector3<T>(x * k, y * k, z * k);
@@ -168,6 +178,20 @@ public:
 		x /= v.x;
 		y /= v.y;
 		z /= v.z;
+	}
+
+	inline void	 operator+= (T k)
+	{
+		x += k;
+		y += k;
+		z += k;
+	}
+
+	inline void	 operator-= (T k)
+	{
+		x -= k;
+		y -= k;
+		z -= k;
 	}
 
 	inline void	 operator*= (T k)

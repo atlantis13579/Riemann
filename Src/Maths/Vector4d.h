@@ -129,6 +129,16 @@ public:
 		return TVector4<T>(x * v.x, y * v.y, z * v.z, w * v.w);
 	}
 
+	TVector4<T> operator+(T k) const
+	{
+		return TVector4<T>(x + k, y + k, z + k, w + k);
+	}
+
+	TVector4<T> operator-(T k) const
+	{
+		return TVector4<T>(x - k, y - k, z - k, w - k);
+	}
+
 	TVector4<T> operator*(T k) const
 	{
 		return TVector4<T>(x * k, y * k, z * k, w * k);
@@ -174,6 +184,22 @@ public:
 		y /= v.y;
 		z /= v.z;
 		w /= v.w;
+	}
+
+	void	 operator+= (T k)
+	{
+		x += k;
+		y += k;
+		z += k;
+		w += k;
+	}
+
+	void	 operator-= (T k)
+	{
+		x -= k;
+		y -= k;
+		z -= k;
+		w -= k;
 	}
 
 	void	 operator*= (T k)

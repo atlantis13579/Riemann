@@ -70,6 +70,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Vehicle\AutonomousController.cpp" />
+    <ClCompile Include="Vehicle\LQR.cpp" />
     <ClCompile Include="Vehicle\MPC.cpp" />
     <ClCompile Include="Vehicle\Vehicle.cpp" />
   </ItemGroup>
@@ -118,9 +119,11 @@
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
     <ClInclude Include="LinearSystem\EigenValueDecomposition.h" />
     <ClInclude Include="Maths\Float16.h" />
+    <ClInclude Include="Maths\MatrixN.h" />
     <ClInclude Include="Maths\Stack.h" />
     <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />
+    <ClInclude Include="Maths\VectorN.h" />
     <ClInclude Include="Optimization\SGD.h" />
     <ClInclude Include="RigidBodyDynamics\AnimationTree.h" />
     <ClInclude Include="RigidBodyDynamics\ForceField.h" />
@@ -172,6 +175,7 @@
     <ClInclude Include="Tools\Serialization.h" />
     <ClInclude Include="Tools\SimpleBmp.h" />
     <ClInclude Include="Vehicle\AutonomousController.h" />
+    <ClInclude Include="Vehicle\LQR.h" />
     <ClInclude Include="Vehicle\MPC.h" />
     <ClInclude Include="Vehicle\PID.h" />
     <ClInclude Include="Vehicle\Vehicle.h" />

@@ -113,6 +113,9 @@
     <ClInclude Include="Vehicle\AutonomousController.h" />
     <ClInclude Include="Vehicle\PID.h" />
     <ClInclude Include="Vehicle\MPC.h" />
+    <ClInclude Include="Vehicle\LQR.h" />
+    <ClInclude Include="Maths\MatrixN.h" />
+    <ClInclude Include="Maths\VectorN.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -166,5 +169,6 @@
     <ClCompile Include="Vehicle\Vehicle.cpp" />
     <ClCompile Include="Vehicle\MPC.cpp" />
     <ClCompile Include="Vehicle\AutonomousController.cpp" />
+    <ClCompile Include="Vehicle\LQR.cpp" />
   </ItemGroup>
 </Project>

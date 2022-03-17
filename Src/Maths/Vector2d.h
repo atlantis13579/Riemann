@@ -95,6 +95,16 @@ public:
 		return TVector2<T>(x * v.x, y * v.y);
 	}
 
+	TVector2<T> operator+(T k) const
+	{
+		return TVector2<T>(x + k, y + k);
+	}
+
+	TVector2<T> operator-(T k) const
+	{
+		return TVector2<T>(x - k, y - k);
+	}
+
 	TVector2<T> operator*(T k) const
 	{
 		return TVector2<T>(x * k, y * k);
@@ -132,6 +142,18 @@ public:
 	{
 		x /= v.x;
 		y /= v.y;
+	}
+
+	void	 operator+= (T k)
+	{
+		x += k;
+		y += k;
+	}
+
+	void	 operator-= (T k)
+	{
+		x -= k;
+		y -= k;
 	}
 
 	void	 operator*= (T k)
