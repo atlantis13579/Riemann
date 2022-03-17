@@ -630,7 +630,7 @@ void TestPID()
 	float c = 0.0f, t = 1.0f;
 	for (int i = 0; i < 100; ++i)
 	{
-		float d = pid.Process(0.033f, t - c);
+		float d = pid.Compute(0.033f, c, t);
 		c = c + d;
 		printf("%d : c = %.2f, d = %.2f\n", i, c, fabsf(d));
 	}
