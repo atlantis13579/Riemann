@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <type_traits>
 #include <vector>
 #include "VectorNd.h"
@@ -239,7 +240,17 @@ public:
 		return InvM;
 	}
 
-	T					InfinityNorm() const
+	T					LpNorm(int p) const
+	{
+		T sum = (T)0;
+		for (int i = 1; i < ROWS * COLS; ++i)
+		{
+			sum += std::pow(mData[i], p);
+		}
+		return std::pow(sum, (T)1 / p);
+	}
+
+	T					LInfinityNorm() const
 	{
 		T maxVal = mData[0];
 		for (int i = 1; i < ROWS * COLS; ++i)

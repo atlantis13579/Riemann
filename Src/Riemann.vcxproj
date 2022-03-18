@@ -72,8 +72,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Vehicle\AutonomousController.cpp" />
-    <ClCompile Include="Vehicle\LQR.cpp" />
-    <ClCompile Include="Vehicle\MPC.cpp" />
     <ClCompile Include="Vehicle\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>

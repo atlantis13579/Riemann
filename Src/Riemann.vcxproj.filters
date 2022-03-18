@@ -169,9 +169,7 @@
     <ClCompile Include="RigidBodyDynamics\AnimationTree.cpp" />
     <ClCompile Include="LinearSystem\EigenValueDecomposition.cpp" />
     <ClCompile Include="Vehicle\Vehicle.cpp" />
-    <ClCompile Include="Vehicle\MPC.cpp" />
     <ClCompile Include="Vehicle\AutonomousController.cpp" />
-    <ClCompile Include="Vehicle\LQR.cpp" />
     <ClCompile Include="LinearSystem\DenseMatrix.cpp" />
     <ClCompile Include="LinearSystem\DenseVector.cpp" />
   </ItemGroup>
