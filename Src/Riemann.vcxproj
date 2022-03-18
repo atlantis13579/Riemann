@@ -41,9 +41,10 @@
     <ClCompile Include="Geometry\VoxelField.cpp" />
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
     <ClCompile Include="Geometry\VoxelEngine.cpp" />
+    <ClCompile Include="LinearSystem\DenseMatrix.cpp" />
+    <ClCompile Include="LinearSystem\DenseVector.cpp" />
     <ClCompile Include="LinearSystem\EigenValueDecomposition.cpp" />
     <ClCompile Include="Maths\Matrix3d.cpp" />
-    <ClCompile Include="Maths\MatrixNd.cpp" />
     <ClCompile Include="RigidBodyDynamics\Animation.cpp" />
     <ClCompile Include="RigidBodyDynamics\AnimationTree.cpp" />
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />
@@ -118,9 +119,11 @@
     <ClInclude Include="Geometry\SparseVoxelField.h" />
     <ClInclude Include="Geometry\VoxelEngine.h" />
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
+    <ClInclude Include="LinearSystem\DenseVector.h" />
     <ClInclude Include="LinearSystem\EigenValueDecomposition.h" />
+    <ClInclude Include="LinearSystem\GaussianElimination.h" />
     <ClInclude Include="Maths\Float16.h" />
-    <ClInclude Include="Maths\MatrixNd.h" />
+    <ClInclude Include="Maths\MatrixMxN.h" />
     <ClInclude Include="Maths\Stack.h" />
     <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "../Src/Tools/SimpleBmp.h"
+#include "../Src/LinearSystem/DenseMatrix.h"
 #include "../Src/LinearSystem/JacobiIteration_CPU.h"
 #include "../Src/LinearSystem/GaussSeidelIteration_CPU.h"
 #include "../Src/LinearSystem/LUFactorization.h"
@@ -17,7 +18,7 @@
 #include "../Src/Maths/Frustum.h"
 #include "../Src/Maths/SIMD.h"
 #include "../Src/Maths/Float16.h"
-#include "../Src/Maths/MatrixNd.h"
+#include "../Src/Maths/MatrixMxN.h"
 #include "../Src/ImageSpace/ContinuousBitmap.h"
 #include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
 #include "../Src/CollisionPrimitive/Plane3d.h"
@@ -640,7 +641,7 @@ void TestPID()
 
 void TestMatrix()
 {
-	TSquareMatrix<float> M(10);
+	TDenseSquare<float> M(10);
 	M[0][0] = 2.0f;
 	M[0][1] = 3.0f;
 	M(1, 0) = -1.5f;
@@ -649,8 +650,8 @@ void TestMatrix()
 		for (int j = 0; j < M.GetSize(); ++j)
 			M(i, j) = 1.0f * rand() / RAND_MAX;
 
-	TSquareMatrix<float> invM = (M+M).Inverse();
-	TSquareMatrix<float> Id = (M+M) * invM;
+	TDenseSquare<float> invM = (M+M).Inverse();
+	TDenseSquare<float> Id = (M+M) * invM;
 	bool IsId = Id.IsIdentity();
 	assert(IsId);
 
@@ -659,9 +660,39 @@ void TestMatrix()
 
 	assert(fabsf(det * detI - 0.9999f) < 0.001f);
 
-	TVector<float>	Vec = M * M.GetCol(0);
+	TDenseVector<float>	Vec = M * M.GetCol(0);
 	float dp = M.GetRow(0).Dot(M.GetCol(0));
-	TSquareMatrix<float>	Mat = M * M.Transpose().Transpose();
+	TDenseSquare<float>	Mat = M * M.Transpose().Transpose();
+
+	assert(dp == Vec[0]);
+	assert(dp == Mat[0][0]);
+	return;
+}
+
+void TestMatrix2()
+{
+	SquareMatrix<10> M;
+	M[0][0] = 2.0f;
+	M[0][1] = 3.0f;
+	M(1, 0) = -1.5f;
+	M(1, 1) = 9.0f;
+	for (int i = 0; i < 10; ++i)
+	for (int j = 0; j < 10; ++j)
+		M(i, j) = 1.0f * rand() / RAND_MAX;
+
+	SquareMatrix<10> invM = (M + M).Inverse();
+	SquareMatrix<10> Id = (M + M) * invM;
+	bool IsId = Id.IsIdentity();
+	assert(IsId);
+
+	float det = (2.0f * M).Determinant();
+	float detI = invM.Determinant();
+
+	assert(fabsf(det * detI - 0.9999f) < 0.001f);
+
+	VectorNd<10>	Vec = M * M.GetCol(0);
+	float dp = M.GetRow(0).Dot(M.GetCol(0));
+	SquareMatrix<10>	Mat = M * M.Transpose().Transpose();
 
 	assert(dp == Vec[0]);
 	assert(dp == Mat[0][0]);
@@ -687,5 +718,6 @@ void TestMainEntry()
 	// TestFloat16();
 	// TestPID();
 	TestMatrix();
+	TestMatrix2();
 	return;
 }

@@ -1,6 +1,6 @@
+#pragma once
 
-#include <memory>
-#include "MatrixNd.h"
+#define matInvM(i, j)		(InvM[i*nRows + j])
 
 template<typename T>
 class GaussianElimination
@@ -17,8 +17,6 @@ public:
 			InvM = localInverseM.data();
 		}
 		memcpy(InvM, M, nSize * sizeof(T));
-
-		TMatrix<float> matInvM(InvM, nRows, nRows);
 
 		std::vector<int> colIndex(nRows), rowIndex(nRows), pivoted(nRows);
 		std::fill(pivoted.begin(), pivoted.end(), 0);
@@ -122,98 +120,3 @@ public:
 		return true;
 	}
 };
-
-void gemm_slow(const float* m1, const float* m2, int r1, int c1, int c2, float* m)
-{
-	for (int i = 0; i < r1; ++i)
-	for (int j = 0; j < c2; ++j)
-	{
-		float dp = 0.0f;
-		const float* p = m1 + i * c1;
-		for (int k = 0; k < c1; ++k)
-			dp += p[k] * m2[k * c2 + j];
-		m[i * r1 + j] = dp;
-	}
-}
-
-void gemv_slow(const float* m1, const float* v1, int r1, int c1, float* v)
-{
-	for (int i = 0; i < r1; ++i)
-	{
-		float dp = 0.0f;
-		const float* p = m1 + i * c1;
-		for (int k = 0; k < c1; ++k)
-			dp += p[k] * v1[k];
-		v[i] = dp;
-	}
-}
-
-template<>
-TMatrix<float> TMatrix<float>::operator*(const TMatrix<float>& v) const
-{
-	if (GetCols() != v.GetRows())
-	{
-		return TMatrix<float>();
-	}
-
-	TMatrix<float> Ret(GetRows(), v.GetCols());
-	gemm_slow(GetData(), v.GetData(), mRows, mCols, v.GetCols(), Ret.GetData());
-	return std::move(Ret);
-}
-
-template<>
-TVector<float> TMatrix<float>::operator*(const TVector<float>& v) const
-{
-	if (GetCols() != v.GetSize())
-	{
-		return TVector<float>();
-	}
-
-	TVector<float> Ret(GetRows());
-	gemv_slow(GetData(), v.GetData(), mRows, mCols, Ret.GetData());
-	return std::move(Ret);
-}
-
-template<>
-TSquareMatrix<float> TSquareMatrix<float>::operator*(const TSquareMatrix<float>& v) const
-{
-	if (GetSize() != v.GetSize())
-	{
-		return TSquareMatrix<float>();
-	}
-
-	TSquareMatrix<float> Ret(GetSize());
-	gemm_slow(GetData(), v.GetData(), mSize, mSize, mSize, Ret.GetData());
-	return std::move(Ret);
-}
-
-template<>
-TVector<float> TSquareMatrix<float>::operator*(const TVector<float>& v) const
-{
-	if (GetSize() != v.GetSize())
-	{
-		return TVector<float>();
-	}
-
-	TVector<float> Ret(GetSize());
-	gemv_slow(GetData(), v.GetData(), GetSize(), GetSize(), Ret.GetData());
-	return std::move(Ret);
-}
-
-template<>
-bool TSquareMatrix<float>::GetInverse(TSquareMatrix<float>& InvM) const
-{
-	InvM.SetSize(mSize);
-	return GaussianElimination<float>()(GetData(), mSize, InvM.GetData(), nullptr);
-}
-
-template<>
-float TSquareMatrix<float>::Determinant() const
-{
-	float Det;
-	if (GaussianElimination<float>()(GetData(), mSize, nullptr, &Det))
-	{
-		return Det;
-	}
-	return 0.0f;
-}

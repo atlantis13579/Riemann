@@ -1,222 +1,151 @@
 #pragma once
 
-#include <vector>
-
-template<typename T>
-class TVector
+template<typename T, int SIZE>
+class TVectorNd
 {
 public:
-	TVector() : mSize(0), pData(nullptr)
+	TVectorNd()
 	{
 	}
 
-	TVector(int nSize) : mSize(nSize), mData(nSize)
+	TVectorNd(const TVectorNd<T, SIZE>& v)
 	{
-		pData = &mData[0];
+		memcpy(mData, v.mData, sizeof(T) * SIZE);
 	}
 
-	TVector(int nSize, T Val) : mSize(nSize), mData(nSize, Val)
+	inline const T* operator*() const
 	{
-		pData = &mData[0];
+		return mData;
 	}
 
-	TVector(const TVector<T>&& v) : mSize(v.mSize)
+	inline T* operator*()
 	{
-		mData = std::move(v.mData);
-		pData = mData.size() > 0 ? &mData[0] : v.pData;
-	}
-
-	TVector(T* p, int nSize) : mSize(nSize)
-	{
-		pData = p;
-	}
-
-	~TVector()
-	{
-		mData.clear();
-		pData = nullptr;
-	}
-
-	int			GetSize() const
-	{
-		return mSize;
-	}
-
-	T*			GetData()
-	{
-		return pData;
-	}
-
-	const T*	GetData() const
-	{
-		return pData;
-	}
-
-	bool		HoldsMemory() const
-	{
-		return mData.size() > 0;
+		return mData;
 	}
 
 	inline const T& operator[](int i) const
 	{
-		return pData[i];
+		return mData[i];
 	}
 
 	inline T& operator[](int i)
 	{
-		return pData[i];
+		return mData[i];
 	}
 
-	TVector<T>& operator=(const TVector<T>& v)
+	TVectorNd<T, SIZE>& operator=(const TVectorNd<T, SIZE>& v)
 	{
-		mSize = v.mSize;
-		mData = v.mData;
-		pData = mData.size() > 0 ? &mData[0] : v.pData;
+		memcpy(mData, v.mData, sizeof(T) * SIZE);
 		return *this;
 	}
 
-	TVector<T> operator+(const TVector<T>& v) const
+	TVectorNd<T, SIZE> operator+(const TVectorNd<T, SIZE>& v) const
 	{
-		if (GetSize() != v.GetSize())
-		{
-			return TVector<T>();
-		}
-
-		TVector<T> Ret(*this);
-		for (int i = 0; i < GetSize(); ++i)
+		TVectorNd<T, SIZE> Ret(*this);
+		for (int i = 0; i < SIZE; ++i)
 		{
 			Ret[i] += v[i];
 		}
-		return std::move(Ret);
+		return Ret;
 	}
 
-	TVector<T> operator-(const TVector<T>& v) const
+	TVectorNd<T, SIZE> operator-(const TVectorNd<T, SIZE>& v) const
 	{
-		if (GetSize() != v.GetSize())
-		{
-			return TVector<T>();
-		}
-
-		TVector<T> Ret(*this);
-		for (int i = 0; i < GetSize(); ++i)
+		TVectorNd<T, SIZE> Ret(*this);
+		for (int i = 0; i < SIZE; ++i)
 		{
 			Ret[i] -= v[i];
 		}
-		return std::move(Ret);
+		return Ret;
 	}
 
-	TVector<T> operator*(const TVector<T>& v) const
+	TVectorNd<T, SIZE> operator*(const TVectorNd<T, SIZE>& v) const
 	{
-		if (GetSize() != v.GetSize())
-		{
-			return TVector<T>();
-		}
-
-		TVector<T> Ret(*this);
-		for (int i = 0; i < GetSize(); ++i)
+		TVectorNd<T, SIZE> Ret(*this);
+		for (int i = 0; i < SIZE; ++i)
 		{
 			Ret[i] *= v[i];
 		}
-		return std::move(Ret);
+		return Ret;
 	}
 
-	TVector<T> operator+(T k) const
+	TVectorNd<T, SIZE> operator+(T k) const
 	{
-		TVector<T> Ret(*this);
-		for (int i = 0; i < GetSize(); ++i)
+		TVectorNd<T, SIZE> Ret(*this);
+		for (int i = 0; i < SIZE; ++i)
 		{
 			Ret[i] += k;
 		}
-		return std::move(Ret);
+		return Ret;
 	}
 
-	TVector<T> operator-(T k) const
+	TVectorNd<T, SIZE> operator-(T k) const
 	{
 		return operator+(-k);
 	}
 
-	TVector<T> operator*(T k) const
+	TVectorNd<T, SIZE> operator*(T k) const
 	{
-		TVector<T> Ret(*this);
-		for (int i = 0; i < GetSize(); ++i)
+		TVectorNd<T, SIZE> Ret(*this);
+		for (int i = 0; i < SIZE; ++i)
 		{
 			Ret[i] *= k;
 		}
-		return std::move(Ret);
+		return Ret;
 	}
 
-	TVector<T> operator/(T k) const
+	TVectorNd<T, SIZE> operator/(T k) const
 	{
 		return operator*((T)1 / k);
 	}
 
-	TVector<T> operator-()
+	TVectorNd<T, SIZE> operator-()
 	{
-		TVector<T> Ret(*this);
-		for (int i = 0; i < GetSize(); ++i)
+		TVectorNd<T, SIZE> Ret(*this);
+		for (int i = 0; i < SIZE; ++i)
 		{
 			Ret[i] = -Ret[i];
 		}
-		return std::move(Ret);
+		return Ret;
 	}
 
-	void	 operator+= (const TVector<T>& v)
+	void	 operator+= (const TVectorNd<T, SIZE>& v)
 	{
-		if (GetSize() != v.GetSize())
+		for (int i = 0; i < SIZE; ++i)
 		{
-			return;
-		}
-
-		for (int i = 0; i < GetSize(); ++i)
-		{
-			pData[i] += v[i];
+			mData[i] += v[i];
 		}
 	}
 
-	void	 operator-= (const TVector<T>& v)
+	void	 operator-= (const TVectorNd<T, SIZE>& v)
 	{
-		if (GetSize() != v.GetSize())
+		for (int i = 0; i < SIZE; ++i)
 		{
-			return;
-		}
-
-		for (int i = 0; i < GetSize(); ++i)
-		{
-			pData[i] -= v[i];
+			mData[i] -= v[i];
 		}
 	}
 
-	void	 operator*= (const TVector<T>& v)
+	void	 operator*= (const TVectorNd<T, SIZE>& v)
 	{
-		if (GetSize() != v.GetSize())
+		for (int i = 0; i < SIZE; ++i)
 		{
-			return;
-		}
-
-		for (int i = 0; i < GetSize(); ++i)
-		{
-			pData[i] *= v[i];
+			mData[i] *= v[i];
 		}
 	}
 
-	void	 operator/= (const TVector<T>& v)
+	void	 operator/= (const TVectorNd<T, SIZE>& v)
 	{
-		if (GetSize() != v.GetSize())
+		for (int i = 0; i < SIZE; ++i)
 		{
-			return;
-		}
-
-		for (int i = 0; i < GetSize(); ++i)
-		{
-			pData[i] /= v[i];
+			mData[i] /= v[i];
 		}
 	}
 
 	void	 operator+= (T k)
 	{
-		for (int i = 0; i < GetSize(); ++i)
+		for (int i = 0; i < SIZE; ++i)
 		{
-			pData[i] += k;
+			mData[i] += k;
 		}
 	}
 
@@ -227,9 +156,9 @@ public:
 
 	void	 operator*= (T k)
 	{
-		for (int i = 0; i < GetSize(); ++i)
+		for (int i = 0; i < SIZE; ++i)
 		{
-			pData[i] *= k;
+			mData[i] *= k;
 		}
 	}
 
@@ -238,17 +167,12 @@ public:
 		operator*= ((T)1 / k);
 	}
 
-	T			Dot(const TVector<T>& v) const
+	T			Dot(const TVectorNd<T, SIZE>& v) const
 	{
-		if (GetSize() != v.GetSize())
-		{
-			return (T)0;
-		}
-
 		T dp = (T)0;
-		for (int i = 0; i < mSize; ++i)
+		for (int i = 0; i < SIZE; ++i)
 		{
-			dp += pData[i] * v.pData[i];
+			dp += mData[i] * v.mData[i];
 		}
 		return dp;
 	}
@@ -260,13 +184,12 @@ public:
 
 	void		LoadZero()
 	{
-		memset(pData, 0, sizeof(T) * mSize);
+		memset(mData, 0, sizeof(T) * SIZE);
 	}
 
 private:
-	int				mSize;
-	std::vector<T>	mData;
-	T*				pData;
+	T	mData[SIZE];
 };
 
-using VectorN = TVector<float>;
+template<int SIZE>
+using VectorNd = TVectorNd<float, SIZE>;
