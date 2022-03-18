@@ -248,11 +248,6 @@ public:
 		return dp;
 	}
 
-	T			SquareNorm() const
-	{
-		return Dot(*this);
-	}
-
 	void		LoadZero()
 	{
 		memset(pData, 0, sizeof(T) * mSize);

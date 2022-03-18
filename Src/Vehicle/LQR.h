@@ -3,28 +3,26 @@
 // Linear¨Cquadratic regulator
 // https://en.wikipedia.org/wiki/Linear%E2%80%93quadratic_regulator
 
-#include "../Maths/VectorNd.h"
+#include <cmath>
+#include "../Maths/MatrixMxN.h"
 
-/*
+template<int StateSize, int InputSize>
 class LinearQuadraticRegulator
 {
 public:
-    static_assert(StateSize > 0);
-    static_assert(InputSize > 0);
-
     using VectorNx1 = VectorNd<StateSize>;
     using VectorMx1 = VectorNd<InputSize>;
 
     using MatrixNxN = SquareMatrix<StateSize>;
     using MatrixMxM = SquareMatrix<InputSize>;
-    using InputMatrix = Matrix<StateSize, InputSize>;
-    using GainMatrix = Matrix<InputSize, StateSize>;
+    using InputMatrix = MatrixMxN<StateSize, InputSize>;
+    using GainMatrix = MatrixMxN<InputSize, StateSize>;
 
     using State = VectorNx1;
 
 public:
-    LQR(MatrixNxN A, InputMatrix B, MatrixNxN Q, MatrixMxM R)
-        : A(A), B(B), Q(Q), R(R), K(ComputeGain())
+    LinearQuadraticRegulator(MatrixNxN _A, InputMatrix _B, MatrixNxN _Q, MatrixMxM _R)
+        : A(_A), B(_B), Q(_Q), R(_R), K(ComputeGain())
     {
     }
 
@@ -49,14 +47,13 @@ public:
 
             path.push_back(x + target);
 
-            if (x.squaredNorm() <= goal_dist_squared) {
+            if (x.SquaredNorm() <= goal_dist_squared) {
                 path_found = true;
                 break;
             }
         }
 
         if (!path_found) {
-            std::cerr << "Couldn't find a path\n";
             return {};
         }
 
@@ -77,18 +74,18 @@ private:
     GainMatrix ComputeGain()
     {
         MatrixNxN X = SolveDARE();
-        return (B.transpose() * X * B + R).inverse() * (B.transpose() * X * A);
+        return (B.Transpose() * X * B + R).Transpose() * (B.Transpose() * X * A);
     }
 
     MatrixNxN SolveDARE() const
     {
         MatrixNxN X = Q, Xn = Q;
         for (auto _ = 0; _ < max_iter; _++) {
-            Xn = A.transpose() * X * A
-                - A.transpose() * X * B * (R + B.transpose() * X * B).inverse() * B.transpose()
+            Xn = A.Transpose() * X * A
+                - A.Transpose() * X * B * (R + B.Transpose() * X * B).Inverse() * B.Transpose()
                 * X * A
                 + Q;
-            if ((Xn - X).template lpNorm<Eigen::Infinity>() < eps) break;
+            if ((Xn - X).InfinityNorm() < eps) break;
             X = Xn;
         }
         return Xn;
@@ -105,4 +102,3 @@ private:
     int max_iter{ 10 };
     double eps{ 0.01 };
 };
-*/

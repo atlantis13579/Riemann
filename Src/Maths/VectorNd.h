@@ -177,7 +177,7 @@ public:
 		return dp;
 	}
 
-	T			SquareNorm() const
+	T			SquaredNorm() const
 	{
 		return Dot(*this);
 	}
