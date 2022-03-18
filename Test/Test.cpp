@@ -17,6 +17,7 @@
 #include "../Src/Maths/Frustum.h"
 #include "../Src/Maths/SIMD.h"
 #include "../Src/Maths/Float16.h"
+#include "../Src/Maths/MatrixN.h"
 #include "../Src/ImageSpace/ContinuousBitmap.h"
 #include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
 #include "../Src/CollisionPrimitive/Plane3d.h"
@@ -637,6 +638,27 @@ void TestPID()
 	return;
 }
 
+void TestMatrix()
+{
+	TSquareMatrix<float> M(3);
+	M[0][0] = 2.0f;
+	M[0][1] = 3.0f;
+	M(1, 0) = -1.5f;
+	M(1, 1) = 9.0f;
+	for (int i = 0; i < M.GetSize(); ++i)
+		for (int j = 0; j < M.GetSize(); ++j)
+			M(i, j) = 1.0f * rand() / RAND_MAX;
+
+	TSquareMatrix<float> invM = (M+M).Inverse();
+	TSquareMatrix<float> Id = (M+M) * invM;
+	bool IsId = Id.IsIdentity();
+
+	float det = M.Determinant();
+	float detI = invM.Determinant();
+
+	return;
+}
+
 void TestMainEntry()
 {
 	// TestRayAABB();
@@ -654,6 +676,7 @@ void TestMainEntry()
 	// TestSAPInc();
 	// TestMesh1();
 	// TestFloat16();
-	TestPID();
+	// TestPID();
+	TestMatrix();
 	return;
 }

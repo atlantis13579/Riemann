@@ -20,8 +20,10 @@ public:
 		pData = &mData[0];
 	}
 
-	TVector(const TVector<T>& v) : mSize(v.mSize), mData(v.mData), pData(v.pData)
+	TVector(const TVector<T>&& v) : mSize(v.mSize)
 	{
+		mData = std::move(v.mData);
+		pData = v.mData.size() > 0 ? &v.mData[0] : v.pData;
 	}
 
 	TVector(const T* p, int nSize) : mSize(nSize)

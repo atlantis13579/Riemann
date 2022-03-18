@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "VectorN.h"
+#include "Maths.h"
 
 template<typename T>
 class TMatrix
@@ -12,8 +13,39 @@ public:
 
 	}
 
-	TMatrix(int nRows, int nCols) : mRows(nRows), mCols(nCols), mData(nCols * nRows)
+	TMatrix(int nRows, int nCols) : mRows(nRows), mCols(nCols), mData(nCols* nRows)
 	{
+		pData = &mData[0];
+	}
+
+	TMatrix(const TMatrix& v) : mRows(v.mRows), mCols(v.mCols), mData(mCols* mRows)
+	{
+		pData = &mData[0];
+		memcpy(pData, v.pData, sizeof(T) * mRows * mCols);
+	}
+
+	TMatrix(TMatrix&& v) : mRows(v.mRows), mCols(v.mCols)
+	{
+		mData = std::move(v.mData);
+		pData = mData.size() > 0 ? &mData[0] : v.pData;
+	}
+
+	TMatrix(T* p, int nRows, int nCols) : mRows(nRows), mCols(nCols)
+	{
+		pData = p;
+	}
+
+	void		SetSize(int nRows, int nCols)
+	{
+		mRows = nRows;
+		mCols = nCols;
+		mData.resize(nCols * nRows);
+		pData = &mData[0];
+	}
+
+	int			GetLength() const
+	{
+		return mRows * mCols;
 	}
 
 	int			GetRows() const
@@ -26,39 +58,34 @@ public:
 		return mCols;
 	}
 
-	int			GetSize() const
-	{
-		return mRows * mCols;
-	}
-
 	T*			GetData()
 	{
-		return &mData[0];
+		return pData;
 	}
 
 	const T*	GetData() const
 	{
-		return &mData[0];
+		return pData;
 	}
 
-	inline const TVector<T>& operator[](int i) const
+	inline const T* operator[](int i) const
 	{
-		return TVector<T>(mData + i * mCols, mCols);
+		return pData + i * mCols;
 	}
 
-	inline TVector<T>& operator[](int i)
+	inline T* operator[](int i)
 	{
-		return TVector<T>(mData + i * mCols, mCols);
+		return pData + i * mCols;
 	}
 
 	inline T operator()(int i, int j) const
 	{
-		return mData[i * mCols + j];
+		return pData[i * mCols + j];
 	}
 
 	inline T& operator()(int i, int j)
 	{
-		return mData[i * mCols + j];
+		return pData[i * mCols + j];
 	}
 
 	TMatrix<T>& operator=(const TMatrix<T>& v)
@@ -66,6 +93,7 @@ public:
 		mRows = v.mRows;
 		mCols = v.mCols;
 		mData = v.mData;
+		pData = mData.size() > 0 ? &mData[0] : v.pData;
 		return *this;
 	}
 
@@ -77,9 +105,9 @@ public:
 		}
 
 		TMatrix<T> Ret(*this);
-		for (int i = 0; i < GetSize(); ++i)
+		for (int i = 0; i < GetLength(); ++i)
 		{
-			Ret.mData[i] += v.mData[i];
+			Ret.pData[i] += v.pData[i];
 		}
 		return std::move(Ret);
 	}
@@ -92,9 +120,9 @@ public:
 		}
 
 		TMatrix<T> Ret(*this);
-		for (int i = 0; i < GetSize(); ++i)
+		for (int i = 0; i < GetLength(); ++i)
 		{
-			Ret.mData[i] -= v.mData[i];
+			Ret.pData[i] -= v.pData[i];
 		}
 		return std::move(Ret);
 	}
@@ -104,9 +132,9 @@ public:
 	TMatrix<T> operator*(T k) const
 	{
 		TMatrix<T> Ret(*this);
-		for (int i = 0; i < GetSize(); ++i)
+		for (int i = 0; i < GetLength(); ++i)
 		{
-			Ret.mData[i] *= k;
+			Ret.pData[i] *= k;
 		}
 		return std::move(Ret);
 	}
@@ -114,9 +142,9 @@ public:
 	TMatrix<T> operator-()
 	{
 		TMatrix<T> Ret(*this);
-		for (int i = 0; i < GetSize(); ++i)
+		for (int i = 0; i < GetLength(); ++i)
 		{
-			Ret.mData[i] = -Ret[i];
+			Ret.pData[i] = -Ret.pData[i];
 		}
 		return std::move(Ret);
 	}
@@ -128,22 +156,22 @@ public:
 			return;
 		}
 
-		for (int i = 0; i < GetSize(); ++i)
+		for (int i = 0; i < GetLength(); ++i)
 		{
-			mData[i] += v.mData[i];
+			pData[i] += v.pData[i];
 		}
 	}
 
 	void	 operator-= (const TMatrix<T>& v)
 	{
-		if (GetSize() != v.GetSize())
+		if (GetLength() != v.GetDataSize())
 		{
 			return;
 		}
 
-		for (int i = 0; i < GetSize(); ++i)
+		for (int i = 0; i < GetLength(); ++i)
 		{
-			mData[i] -= v.mData[i];
+			pData[i] -= v.pData[i];
 		}
 	}
 
@@ -154,9 +182,9 @@ public:
 		for (int i = 0; i < mRows; ++i)
 		for (int j = i + 1; i < mCols; ++j)
 		{
-			T t = mData[i * mRows + j];
-			mData[i * mRows + j] = mData[j * mCols + i];
-			mData[j * mCols + i] = t;
+			T t = pData[i * mRows + j];
+			pData[i * mRows + j] = pData[j * mCols + i];
+			pData[j * mCols + i] = t;
 		}
 		std::swap(mRows, mCols);
 	}
@@ -165,39 +193,231 @@ protected:
 	int				mRows;
 	int				mCols;
 	std::vector<T>	mData;
+	T*				pData;
 };
 
+
 template<typename T>
-class TSquareMatrix : public TMatrix<T>
+class TSquareMatrix
 {
 public:
-	TSquareMatrix(int nSize) : TMatrix(nSize, nSize)
+	TSquareMatrix() : mSize(0), pData(nullptr)
 	{
 	}
 
-	TSquareMatrix(const TSquareMatrix& m) : TMatrix(m)
+	TSquareMatrix(int nSize, bool Identity = false) : mSize(nSize), mData(nSize * nSize)
 	{
+		pData = &mData[0];
+
+		if (Identity)
+		{
+			LoadIdentity();
+		}
 	}
 
-	T					Trace() const
+	TSquareMatrix(const TSquareMatrix& v) : mSize(v.mSize), mData(mSize* mSize)
+	{
+		pData = &mData[0];
+		memcpy(pData, v.pData, sizeof(T) * mSize * mSize);
+	}
+
+	TSquareMatrix(TSquareMatrix&& v)
+	{
+		mSize = v.mSize;
+		mData = std::move(v.mData);
+		pData = mData.size() > 0 ? &mData[0] : v.pData;
+	}
+
+	inline const T* operator[](int i) const
+	{
+		return pData + i * mSize;
+	}
+
+	inline T* operator[](int i)
+	{
+		return pData + i * mSize;
+	}
+
+	inline T operator()(int i, int j) const
+	{
+		return pData[i * mSize + j];
+	}
+
+	inline T& operator()(int i, int j)
+	{
+		return pData[i * mSize + j];
+	}
+
+	TSquareMatrix<T>& operator=(const TSquareMatrix<T>& v)
+	{
+		mSize = v.mSize;
+		mData = v.mData;
+		pData = mData.size() > 0 ? &mData[0] : v.pData;
+		return *this;
+	}
+
+	void		SetSize(int nSize)
+	{
+		mSize = nSize;
+		mData.resize(nSize * nSize);
+		pData = &mData[0];
+	}
+
+	int			GetSize() const
+	{
+		return mSize;
+	}
+
+	int			GetLength() const
+	{
+		return mSize * mSize;
+	}
+
+	T*			GetData()
+	{
+		return pData;
+	}
+
+	const T*	GetData() const
+	{
+		return pData;
+	}
+
+	T			Trace() const
 	{
 		T tr = (T)0;
-		for (int i = 0; i < this->mRows; ++i)
+		for (int i = 0; i < mSize; ++i)
 		{
-			tr += this->mData[i * this->mRows + i];
+			tr += pData[i * mSize + i];
 		}
 		return tr;
 	}
 
-	T					Determinant() const
+	void		LoadIdentity()
 	{
-		// TODO
+		memset(pData, 0, sizeof(T)* mSize * mSize);
+		for (int i = 0; i < mSize; ++i)
+		{
+			pData[i * mSize + i] = (T)1;
+		}
 	}
+
+	bool		IsIdentity() const
+	{
+		int n = mSize;
+		for (int i = 0; i < n; ++i)
+		for (int j = 0; j < n; ++j)
+		{
+			T v = pData[i * n + j];
+			if (i == j)
+			{
+				if (!FuzzyEqual(v, (T)1))
+					return false;
+			}
+			else
+			{
+				if (!FuzzyEqual(v, (T)0))
+					return false;
+			}
+		}
+		return true;
+	}
+
+
+	TSquareMatrix<T> operator+(const TSquareMatrix<T>& v) const
+	{
+		if (GetSize() != v.GetSize())
+		{
+			return TSquareMatrix<T>();
+		}
+
+		TSquareMatrix<T> Ret(*this);
+		for (int i = 0; i < GetLength(); ++i)
+		{
+			Ret.pData[i] += v.pData[i];
+		}
+		return std::move(Ret);
+	}
+
+	TSquareMatrix<T> operator-(const TSquareMatrix<T>& v) const
+	{
+		if (GetSize() != v.GetSize())
+		{
+			return TSquareMatrix<T>();
+		}
+
+		TSquareMatrix<T> Ret(*this);
+		for (int i = 0; i < GetLength(); ++i)
+		{
+			Ret.pData[i] -= v.pData[i];
+		}
+		return std::move(Ret);
+	}
+
+	TSquareMatrix<T> operator*(const TSquareMatrix<T>& v) const;
+	
+	TSquareMatrix<T> operator*(T k) const
+	{
+		TSquareMatrix<T> Ret(*this);
+		for (int i = 0; i < GetLength(); ++i)
+		{
+			Ret.pData[i] *= k;
+		}
+		return std::move(Ret);
+	}
+
+	TSquareMatrix<T> operator-()
+	{
+		TSquareMatrix<T> Ret(*this);
+		for (int i = 0; i < GetLength(); ++i)
+		{
+			Ret.pData[i] = -Ret.pData[i];
+		}
+		return std::move(Ret);
+	}
+
+	void	 operator+= (const TSquareMatrix<T>& v)
+	{
+		if (GetSize() != v.GetSize())
+		{
+			return;
+		}
+
+		for (int i = 0; i < GetLength(); ++i)
+		{
+			pData[i] += v.pData[i];
+		}
+	}
+
+	void	 operator-= (const TSquareMatrix<T>& v)
+	{
+		if (GetSize() != v.GetSize())
+		{
+			return;
+		}
+
+		for (int i = 0; i < GetLength(); ++i)
+		{
+			pData[i] -= v.pData[i];
+		}
+	}
+
+	void	 operator*= (const TMatrix<T>& v);
+
+	T					Determinant() const;
 
 	TSquareMatrix<T>	Inverse() const
 	{
-		// TODO
+		TSquareMatrix<T> InvM(GetSize());
+		bool success = GetInverse(InvM);
+		if (!success)
+		{
+			InvM.LoadIdentity();
+		}
+		return std::move(InvM);
 	}
+	
+	bool				GetInverse(TSquareMatrix<T> &InvM) const;
 
 	TSquareMatrix<T>	Transpose() const
 	{
@@ -205,6 +425,9 @@ public:
 		Ret.TransposeInPlace();
 		return std::move(Ret);
 	}
-};
 
-void gemm_slow(const float *m1, const float* m2, int r1, int c1, int c2, float* m);
+protected:
+	int				mSize;
+	std::vector<T>	mData;
+	T*				pData;
+};

@@ -137,3 +137,15 @@ T Min(const T& p0, Ts... args)
 	T p1 = Min(args...);
 	return p0 < p1 ? p0 : p1;
 }
+
+template<typename T>
+inline bool FuzzyEqual(T v1, T v2)
+{
+	return v1 == v2;
+}
+
+template<>
+inline bool FuzzyEqual(float v1, float v2)
+{
+	return fabsf(v1 - v2) < 1e-6f;
+}
