@@ -27,43 +27,44 @@ void gemv_slow(const float* m1, const float* v1, int r1, int c1, float* v)
 }
 
 template<>
-TDenseSquare<float> TDenseSquare<float>::operator*(const TDenseSquare<float>& v) const
+TDenseMatrix<float> TDenseMatrix<float>::operator*(const TDenseMatrix<float>& v) const
 {
-	if (GetSize() != v.GetSize())
+	if (mCols != v.mRows)
 	{
-		return TDenseSquare<float>();
+		return TDenseMatrix<float>();
 	}
 
-	TDenseSquare<float> Ret(GetSize());
-	gemm_slow(GetData(), v.GetData(), mSize, mSize, mSize, Ret.GetData());
+	TDenseMatrix<float> Ret(mRows, v.mCols);
+	gemm_slow(GetData(), v.GetData(), mRows, mCols, v.mCols, Ret.GetData());
 	return std::move(Ret);
 }
 
 template<>
-TDenseVector<float> TDenseSquare<float>::operator*(const TDenseVector<float>& v) const
+TDenseVector<float> TDenseMatrix<float>::operator*(const TDenseVector<float>& v) const
 {
-	if (GetSize() != v.GetSize())
+	if (mCols != v.GetSize())
 	{
 		return TDenseVector<float>();
 	}
 
-	TDenseVector<float> Ret(GetSize());
-	gemv_slow(GetData(), v.GetData(), GetSize(), GetSize(), Ret.GetData());
+	TDenseVector<float> Ret(mRows);
+	gemv_slow(GetData(), v.GetData(), mRows, mCols, Ret.GetData());
 	return std::move(Ret);
 }
 
 template<>
-bool TDenseSquare<float>::GetInverse(TDenseSquare<float>& InvM) const
+bool	TDenseMatrix<float>::GetInverse(TDenseMatrix<float>& InvM) const
 {
-	InvM.SetSize(mSize);
-	return GaussianElimination<float>()(GetData(), mSize, InvM.GetData(), nullptr);
+	assert(IsSquare());
+	InvM.SetSize(mRows, mRows);
+	return GaussianElimination<float>()(GetData(), mRows, InvM.GetData(), nullptr);
 }
 
 template<>
-float TDenseSquare<float>::Determinant() const
+float	TDenseMatrix<float>::Determinant() const
 {
 	float Det;
-	if (GaussianElimination<float>()(GetData(), mSize, nullptr, &Det))
+	if (GaussianElimination<float>()(GetData(), mRows, nullptr, &Det))
 	{
 		return Det;
 	}

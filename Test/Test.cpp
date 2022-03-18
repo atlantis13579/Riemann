@@ -642,17 +642,17 @@ void TestPID()
 
 void TestMatrix()
 {
-	TDenseSquare<float> M(10);
+	TDenseMatrix<float> M(10);
 	M[0][0] = 2.0f;
 	M[0][1] = 3.0f;
 	M(1, 0) = -1.5f;
 	M(1, 1) = 9.0f;
-	for (int i = 0; i < M.GetSize(); ++i)
-		for (int j = 0; j < M.GetSize(); ++j)
-			M(i, j) = 1.0f * rand() / RAND_MAX;
+	for (int i = 0; i < M.GetRows(); ++i)
+	for (int j = 0; j < M.GetRows(); ++j)
+		M(i, j) = 1.0f * rand() / RAND_MAX;
 
-	TDenseSquare<float> invM = (M+M).Inverse();
-	TDenseSquare<float> Id = (M+M) * invM;
+	TDenseMatrix<float> invM = (M+M).Inverse();
+	TDenseMatrix<float> Id = (M+M) * invM;
 	bool IsId = Id.IsIdentity();
 	assert(IsId);
 
@@ -663,7 +663,7 @@ void TestMatrix()
 
 	TDenseVector<float>	Vec = M * M.GetCol(0);
 	float dp = M.GetRow(0).Dot(M.GetCol(0));
-	TDenseSquare<float>	Mat = M * M.Transpose().Transpose();
+	TDenseMatrix<float>	Mat = M * M.Transpose().Transpose();
 
 	assert(dp == Vec[0]);
 	assert(dp == Mat[0][0]);
