@@ -1,6 +1,6 @@
 
 #include <memory>
-#include "MatrixN.h"
+#include "MatrixNd.h"
 
 template<typename T>
 class GaussianElimination

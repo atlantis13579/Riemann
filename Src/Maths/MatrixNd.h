@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "VectorN.h"
+#include "VectorNd.h"
 #include "Maths.h"
 
 template<typename T>

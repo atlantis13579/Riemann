@@ -17,7 +17,7 @@
 #include "../Src/Maths/Frustum.h"
 #include "../Src/Maths/SIMD.h"
 #include "../Src/Maths/Float16.h"
-#include "../Src/Maths/MatrixN.h"
+#include "../Src/Maths/MatrixNd.h"
 #include "../Src/ImageSpace/ContinuousBitmap.h"
 #include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
 #include "../Src/CollisionPrimitive/Plane3d.h"

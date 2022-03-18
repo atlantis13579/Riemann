@@ -43,7 +43,7 @@
     <ClCompile Include="Geometry\VoxelEngine.cpp" />
     <ClCompile Include="LinearSystem\EigenValueDecomposition.cpp" />
     <ClCompile Include="Maths\Matrix3d.cpp" />
-    <ClCompile Include="Maths\MatrixN.cpp" />
+    <ClCompile Include="Maths\MatrixNd.cpp" />
     <ClCompile Include="RigidBodyDynamics\Animation.cpp" />
     <ClCompile Include="RigidBodyDynamics\AnimationTree.cpp" />
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />
@@ -120,11 +120,11 @@
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
     <ClInclude Include="LinearSystem\EigenValueDecomposition.h" />
     <ClInclude Include="Maths\Float16.h" />
-    <ClInclude Include="Maths\MatrixN.h" />
+    <ClInclude Include="Maths\MatrixNd.h" />
     <ClInclude Include="Maths\Stack.h" />
     <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />
-    <ClInclude Include="Maths\VectorN.h" />
+    <ClInclude Include="Maths\VectorNd.h" />
     <ClInclude Include="Optimization\SGD.h" />
     <ClInclude Include="RigidBodyDynamics\AnimationTree.h" />
     <ClInclude Include="RigidBodyDynamics\ForceField.h" />
