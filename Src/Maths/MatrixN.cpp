@@ -16,7 +16,7 @@ public:
 			localInverseM.resize(nSize);
 			InvM = localInverseM.data();
 		}
-		Set(nSize, M, InvM);
+		memcpy(InvM, M, nSize * sizeof(T));
 
 		TMatrix<float> matInvM(InvM, nRows, nRows);
 
@@ -31,7 +31,7 @@ public:
 		int i1, i2, row = 0, col = 0;
 		for (int i0 = 0; i0 < nRows; ++i0)
 		{
-			T maxValue = zero;
+			T maxVal = zero;
 			for (i1 = 0; i1 < nRows; ++i1)
 			{
 				if (!pivoted[i1])
@@ -40,11 +40,11 @@ public:
 					{
 						if (!pivoted[i2])
 						{
-							T value = matInvM(i1, i2);
-							T absValue = (value >= zero ? value : -value);
-							if (absValue > maxValue)
+							T Val = matInvM(i1, i2);
+							T absVal = (Val >= zero ? Val : -Val);
+							if (absVal > maxVal)
 							{
-								maxValue = absValue;
+								maxVal = absVal;
 								row = i1;
 								col = i2;
 							}
@@ -53,7 +53,7 @@ public:
 				}
 			}
 
-			if (FuzzyEqual(maxValue, zero))
+			if (FuzzyEqual(maxVal, zero))
 			{
 				if (NeedInverse)
 				{
@@ -114,25 +114,12 @@ public:
 			}
 		}
 
-		if (odd)
+		if (odd && Determinant)
 		{
-			if (Determinant) *Determinant = -*Determinant;
+			*Determinant = -*Determinant;
 		}
 
 		return true;
-	}
-
-private:
-	void Set(int numElements, T const* source, T* target) const
-	{
-		if (source)
-		{
-			memcpy(target, source, numElements * sizeof(T));
-		}
-		else
-		{
-			memset(target, 0, numElements * sizeof(T));
-		}
 	}
 };
 

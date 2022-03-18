@@ -341,7 +341,7 @@ public:
 };
 
 template <typename T>
-inline TVector3<T> operator* (float s, const TVector3<T>& vv)
+inline TVector3<T> operator* (T s, const TVector3<T>& vv)
 {
 	return vv * s;
 }

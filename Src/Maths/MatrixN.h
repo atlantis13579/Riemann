@@ -196,6 +196,11 @@ protected:
 	T*				pData;
 };
 
+template <typename T>
+inline TMatrix<T> operator* (T s, const TMatrix<T>& vv)
+{
+	return vv * s;
+}
 
 template<typename T>
 class TSquareMatrix
@@ -283,23 +288,28 @@ public:
 		return pData;
 	}
 
-	T			Trace() const
+	void		LoadZero()
 	{
-		T tr = (T)0;
-		for (int i = 0; i < mSize; ++i)
-		{
-			tr += pData[i * mSize + i];
-		}
-		return tr;
+		memset(pData, 0, sizeof(T)* mSize * mSize);
 	}
 
 	void		LoadIdentity()
 	{
-		memset(pData, 0, sizeof(T)* mSize * mSize);
+		LoadZero();
 		for (int i = 0; i < mSize; ++i)
 		{
 			pData[i * mSize + i] = (T)1;
 		}
+	}
+
+	bool		IsZero() const
+	{
+		for (int i = 0; i < GetLength(); ++i)
+		{
+			if (!FuzzyEqual(pData[i], (T)0))
+				return false;
+		}
+		return true;
 	}
 
 	bool		IsIdentity() const
@@ -404,6 +414,16 @@ public:
 
 	void	 operator*= (const TMatrix<T>& v);
 
+	T					Trace() const
+	{
+		T tr = (T)0;
+		for (int i = 0; i < mSize; ++i)
+		{
+			tr += pData[i * mSize + i];
+		}
+		return tr;
+	}
+
 	T					Determinant() const;
 
 	TSquareMatrix<T>	Inverse() const
@@ -431,3 +451,9 @@ protected:
 	std::vector<T>	mData;
 	T*				pData;
 };
+
+template <typename T>
+inline TSquareMatrix<T> operator* (T s, const TSquareMatrix<T>& vv)
+{
+	return vv * s;
+}

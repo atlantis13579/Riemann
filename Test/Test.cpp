@@ -72,7 +72,7 @@ void TestPhysxBin()
 	assert(!ret);
 
 	OOption.maxOverlaps = 1;
-	ret = query.OverlapBox(Vector3d(Pos.x, Pos.y, Pos.z), 1 * Vector3d::One(), OOption, &OResult);
+	ret = query.OverlapBox(Vector3d(Pos.x, Pos.y, Pos.z), 1.0f * Vector3d::One(), OOption, &OResult);
 	assert(ret);
 	assert(OResult.overlapGeoms[0]->GetGuid() == 2926462965280);
 
@@ -653,7 +653,7 @@ void TestMatrix()
 	TSquareMatrix<float> Id = (M+M) * invM;
 	bool IsId = Id.IsIdentity();
 
-	float det = M.Determinant();
+	float det = (2.0f * M).Determinant();
 	float detI = invM.Determinant();
 
 	return;
