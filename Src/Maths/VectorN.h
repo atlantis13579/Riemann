@@ -23,10 +23,10 @@ public:
 	TVector(const TVector<T>&& v) : mSize(v.mSize)
 	{
 		mData = std::move(v.mData);
-		pData = mData.size() > 0 ? &v.mData[0] : v.pData;
+		pData = mData.size() > 0 ? &mData[0] : v.pData;
 	}
 
-	TVector(const T* p, int nSize) : mSize(nSize)
+	TVector(T* p, int nSize) : mSize(nSize)
 	{
 		pData = p;
 	}
@@ -40,6 +40,16 @@ public:
 	int			GetSize() const
 	{
 		return mSize;
+	}
+
+	T*			GetData()
+	{
+		return pData;
+	}
+
+	const T*	GetData() const
+	{
+		return pData;
 	}
 
 	bool		HoldsMemory() const
@@ -236,11 +246,21 @@ public:
 		}
 
 		T dp = (T)0;
-		for (size_t i = 0; i < pData.size(); i++)
+		for (int i = 0; i < mSize; ++i)
 		{
 			dp += pData[i] * v.pData[i];
 		}
 		return dp;
+	}
+
+	T			SquareNorm() const
+	{
+		return Dot(*this);
+	}
+
+	void		LoadZero()
+	{
+		memset(pData, 0, sizeof(T) * mSize);
 	}
 
 private:
@@ -248,3 +268,5 @@ private:
 	std::vector<T>	mData;
 	T*				pData;
 };
+
+using VectorN = TVector<float>;

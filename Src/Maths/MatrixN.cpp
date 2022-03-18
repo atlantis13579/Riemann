@@ -136,6 +136,18 @@ void gemm_slow(const float* m1, const float* m2, int r1, int c1, int c2, float* 
 	}
 }
 
+void gemv_slow(const float* m1, const float* v1, int r1, int c1, float* v)
+{
+	for (int i = 0; i < r1; ++i)
+	{
+		float dp = 0.0f;
+		const float* p = m1 + i * c1;
+		for (int k = 0; k < c1; ++k)
+			dp += p[k] * v1[k];
+		v[i] = dp;
+	}
+}
+
 template<>
 TMatrix<float> TMatrix<float>::operator*(const TMatrix<float>& v) const
 {
@@ -150,6 +162,19 @@ TMatrix<float> TMatrix<float>::operator*(const TMatrix<float>& v) const
 }
 
 template<>
+TVector<float> TMatrix<float>::operator*(const TVector<float>& v) const
+{
+	if (GetCols() != v.GetSize())
+	{
+		return TVector<float>();
+	}
+
+	TVector<float> Ret(GetRows());
+	gemv_slow(GetData(), v.GetData(), mRows, mCols, Ret.GetData());
+	return std::move(Ret);
+}
+
+template<>
 TSquareMatrix<float> TSquareMatrix<float>::operator*(const TSquareMatrix<float>& v) const
 {
 	if (GetSize() != v.GetSize())
@@ -159,6 +184,19 @@ TSquareMatrix<float> TSquareMatrix<float>::operator*(const TSquareMatrix<float>&
 
 	TSquareMatrix<float> Ret(GetSize());
 	gemm_slow(GetData(), v.GetData(), mSize, mSize, mSize, Ret.GetData());
+	return std::move(Ret);
+}
+
+template<>
+TVector<float> TSquareMatrix<float>::operator*(const TVector<float>& v) const
+{
+	if (GetSize() != v.GetSize())
+	{
+		return TVector<float>();
+	}
+
+	TVector<float> Ret(GetSize());
+	gemv_slow(GetData(), v.GetData(), GetSize(), GetSize(), Ret.GetData());
 	return std::move(Ret);
 }
 

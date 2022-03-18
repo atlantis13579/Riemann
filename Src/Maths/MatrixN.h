@@ -68,6 +68,23 @@ public:
 		return pData;
 	}
 
+	TVector<T>	GetRow(int i) const
+	{
+		TVector<T> Ret(mCols);
+		memcpy(Ret.GetData(), pData + i * mCols, sizeof(T) * mCols);
+		return std::move(Ret);
+	}
+
+	TVector<T>	GetCol(int i) const
+	{
+		TVector<T> Ret(mRows);
+		for (int j = 0; j < mRows; ++j)
+		{
+			Ret[j] = pData[j * mCols + i];
+		}
+		return std::move(Ret);
+	}
+
 	inline const T* operator[](int i) const
 	{
 		return pData + i * mCols;
@@ -93,6 +110,15 @@ public:
 		mRows = v.mRows;
 		mCols = v.mCols;
 		mData = v.mData;
+		pData = mData.size() > 0 ? &mData[0] : v.pData;
+		return *this;
+	}
+
+	TMatrix<T>& operator=(TMatrix<T>&& v)
+	{
+		mRows = v.mRows;
+		mCols = v.mCols;
+		mData = std::move(v.mData);
 		pData = mData.size() > 0 ? &mData[0] : v.pData;
 		return *this;
 	}
@@ -127,8 +153,6 @@ public:
 		return std::move(Ret);
 	}
 
-	TMatrix<T> operator*(const TMatrix<T>& v) const;
-
 	TMatrix<T> operator*(T k) const
 	{
 		TMatrix<T> Ret(*this);
@@ -139,7 +163,10 @@ public:
 		return std::move(Ret);
 	}
 
-	TMatrix<T> operator-()
+	TMatrix<T>	operator*(const TMatrix<T>& v) const;
+	TVector<T>	operator*(const TVector<T>& v) const;
+
+	TMatrix<T>	operator-()
 	{
 		TMatrix<T> Ret(*this);
 		for (int i = 0; i < GetLength(); ++i)
@@ -149,7 +176,7 @@ public:
 		return std::move(Ret);
 	}
 
-	void	 operator+= (const TMatrix<T>& v)
+	void		operator+= (const TMatrix<T>& v)
 	{
 		if (GetCols() != v.GetCols() || GetRows() != v.GetRows())
 		{
@@ -162,9 +189,9 @@ public:
 		}
 	}
 
-	void	 operator-= (const TMatrix<T>& v)
+	void		operator-= (const TMatrix<T>& v)
 	{
-		if (GetLength() != v.GetDataSize())
+		if (GetLength() != v.GetSize())
 		{
 			return;
 		}
@@ -175,12 +202,23 @@ public:
 		}
 	}
 
-	void	 operator*= (const TMatrix<T>& v);
+	void		operator*= (T k)
+	{
+		for (int i = 0; i < GetLength(); ++i)
+		{
+			pData[i] *= k;
+		}
+	}
 
-	void				TransposeInPlace()
+	void		operator*= (const TMatrix<T>& v)
+	{
+		*this = *this * v;
+	}
+
+	void		TransposeInPlace()
 	{
 		for (int i = 0; i < mRows; ++i)
-		for (int j = i + 1; i < mCols; ++j)
+		for (int j = i + 1; j < mCols; ++j)
 		{
 			T t = pData[i * mRows + j];
 			pData[i * mRows + j] = pData[j * mCols + i];
@@ -261,6 +299,14 @@ public:
 		return *this;
 	}
 
+	TSquareMatrix<T>& operator=(TSquareMatrix<T>&& v)
+	{
+		mSize = v.mSize;
+		mData = std::move(v.mData);
+		pData = mData.size() > 0 ? &mData[0] : v.pData;
+		return *this;
+	}
+
 	void		SetSize(int nSize)
 	{
 		mSize = nSize;
@@ -287,6 +333,24 @@ public:
 	{
 		return pData;
 	}
+
+	TVector<T>	GetRow(int i) const
+	{
+		TVector<T> Ret(mSize);
+		memcpy(Ret.GetData(), pData + i * mSize, sizeof(T) * mSize);
+		return std::move(Ret);
+	}
+
+	TVector<T>	GetCol(int i) const
+	{
+		TVector<T> Ret(mSize);
+		for (int j = 0; j < mSize; ++j)
+		{
+			Ret[j] = pData[j * mSize + i];
+		}
+		return std::move(Ret);
+	}
+
 
 	void		LoadZero()
 	{
@@ -333,7 +397,6 @@ public:
 		return true;
 	}
 
-
 	TSquareMatrix<T> operator+(const TSquareMatrix<T>& v) const
 	{
 		if (GetSize() != v.GetSize())
@@ -364,8 +427,6 @@ public:
 		return std::move(Ret);
 	}
 
-	TSquareMatrix<T> operator*(const TSquareMatrix<T>& v) const;
-	
 	TSquareMatrix<T> operator*(T k) const
 	{
 		TSquareMatrix<T> Ret(*this);
@@ -376,7 +437,10 @@ public:
 		return std::move(Ret);
 	}
 
-	TSquareMatrix<T> operator-()
+	TSquareMatrix<T>	operator*(const TSquareMatrix<T>& v) const;
+	TVector<T>			operator*(const TVector<T>& v) const;
+
+	TSquareMatrix<T>	operator-()
 	{
 		TSquareMatrix<T> Ret(*this);
 		for (int i = 0; i < GetLength(); ++i)
@@ -412,7 +476,18 @@ public:
 		}
 	}
 
-	void	 operator*= (const TMatrix<T>& v);
+	void				operator*= (T k)
+	{
+		for (int i = 0; i < GetLength(); ++i)
+		{
+			pData[i] *= k;
+		}
+	}
+
+	void				operator*= (const TMatrix<T>& v)
+	{
+		*this = *this * v;
+	}
 
 	T					Trace() const
 	{
@@ -439,6 +514,12 @@ public:
 	
 	bool				GetInverse(TSquareMatrix<T> &InvM) const;
 
+	void				TransposeInPlace()
+	{
+		TMatrix<T> Ret(pData, mSize, mSize);
+		Ret.TransposeInPlace();
+	}
+
 	TSquareMatrix<T>	Transpose() const
 	{
 		TSquareMatrix<T> Ret(*this);
@@ -457,3 +538,5 @@ inline TSquareMatrix<T> operator* (T s, const TSquareMatrix<T>& vv)
 {
 	return vv * s;
 }
+
+using MatrixN = TSquareMatrix<float>;

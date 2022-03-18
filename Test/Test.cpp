@@ -640,7 +640,7 @@ void TestPID()
 
 void TestMatrix()
 {
-	TSquareMatrix<float> M(3);
+	TSquareMatrix<float> M(10);
 	M[0][0] = 2.0f;
 	M[0][1] = 3.0f;
 	M(1, 0) = -1.5f;
@@ -652,10 +652,19 @@ void TestMatrix()
 	TSquareMatrix<float> invM = (M+M).Inverse();
 	TSquareMatrix<float> Id = (M+M) * invM;
 	bool IsId = Id.IsIdentity();
+	assert(IsId);
 
 	float det = (2.0f * M).Determinant();
 	float detI = invM.Determinant();
 
+	assert(fabsf(det * detI - 0.9999f) < 0.001f);
+
+	TVector<float>	Vec = M * M.GetCol(0);
+	float dp = M.GetRow(0).Dot(M.GetCol(0));
+	TSquareMatrix<float>	Mat = M * M.Transpose().Transpose();
+
+	assert(dp == Vec[0]);
+	assert(dp == Mat[0][0]);
 	return;
 }
 
