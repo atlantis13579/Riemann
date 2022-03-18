@@ -12,7 +12,15 @@ class TMatrixMxN
 public:
 	TMatrixMxN()
 	{
+	}
 
+	template<typename = typename std::enable_if<ROWS == COLS>::type>
+	TMatrixMxN(bool Identity)
+	{
+		if (Identity)
+		{
+			LoadIdentity();
+		}
 	}
 
 	TMatrixMxN(const TMatrixMxN<T, ROWS, COLS>& v)
@@ -137,7 +145,7 @@ public:
 		return Ret;
 	}
 
-	TMatrixMxN<T, ROWS, COLS>	operator-()
+	TMatrixMxN<T, ROWS, COLS>	operator-() const
 	{
 		TMatrixMxN<T, ROWS, COLS> Ret(*this);
 		for (int i = 0; i < ROWS * COLS; ++i)
@@ -247,14 +255,14 @@ public:
 		return GaussianElimination<float>()(mData, ROWS, *InvM, nullptr);
 	}
 
-	TMatrixMxN<T, COLS, ROWS>	Transpose()
+	TMatrixMxN<T, COLS, ROWS>	Transpose() const
 	{
 		TMatrixMxN<T, COLS, ROWS> Ret;
 		T* p = *Ret;
 		for (int i = 0; i < ROWS; ++i)
 		for (int j = 0; j < COLS; ++j)
 		{
-			p[i * ROWS + j] = mData[j * COLS + i];
+			p[j * ROWS + i] = mData[i * COLS + j];
 		}
 		return Ret;
 	}

@@ -702,16 +702,35 @@ void TestMatrix2()
 
 void TestLqr()
 {
-	/*
-	LinearQuadraticRegulator<1, 1> lqr(1.0f, 0.1f, 0.01f);
-	float c = 0.0f, t = 1.0f;
-	for (int i = 0; i < 100; ++i)
-	{
-		float d = pid.Compute(0.033f, c, t);
-		c = c + d;
-		printf("%d : c = %.2f, d = %.2f\n", i, c, fabsf(d));
-	}
-	*/
+	static constexpr int N = 2;
+	static constexpr int M = 1;
+
+	const float dt = 0.1f;
+
+	// State matrix
+	SquareMatrix<2> A;
+	A(0, 0) = dt;
+	A(0, 1) = 1.0f;
+	A(1, 0) = 0.0f;
+	A(1, 1) = dt;
+
+	MatrixMxN<2, 1> B;
+	B(0, 0) = 0.0f;
+	B(0, 1) = 1.0f;
+
+	SquareMatrix<N> Q = SquareMatrix<N>(true);
+	SquareMatrix<M> R = SquareMatrix<M>(true);
+
+	LinearQuadraticRegulator<N, M> planner(A, B, Q, R);
+	LinearQuadraticRegulator<N, M>::State i;
+	i[0] = 0.0f;
+	i[1] = 0.0f;
+	LinearQuadraticRegulator<N, M>::State t;
+	t[0] = 1.0f;
+	t[1] = 0.5f;
+
+	planner.Solve(i, t, 0.033f);
+
 	return;
 }
 
@@ -734,7 +753,7 @@ void TestMainEntry()
 	// TestFloat16();
 	// TestPID();
 	// TestMatrix();
-	TestMatrix2();
+	// TestMatrix2();
 	TestLqr();
 	return;
 }

@@ -70,7 +70,7 @@ public:
 		return pData;
 	}
 
-	const T* GetData() const
+	const T*	GetData() const
 	{
 		return pData;
 	}
@@ -92,9 +92,19 @@ public:
 		return std::move(Ret);
 	}
 
-	bool	IsSquare() const
+	bool			IsSquare() const
 	{
 		return mCols == mRows;
+	}
+
+	bool			IsColumnVector() const
+	{
+		return mCols == 1;
+	}
+
+	bool			IsRowVector() const
+	{
+		return mRows == 1;
 	}
 
 	inline const T* operator[](int i) const
@@ -178,7 +188,7 @@ public:
 	TDenseMatrix<T>	operator*(const TDenseMatrix<T>& v) const;
 	TDenseVector<T>	operator*(const TDenseVector<T>& v) const;
 
-	TDenseMatrix<T>	operator-()
+	TDenseMatrix<T>	operator-() const
 	{
 		TDenseMatrix<T> Ret(*this);
 		for (int i = 0; i < GetLength(); ++i)

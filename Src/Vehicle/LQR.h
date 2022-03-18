@@ -29,8 +29,7 @@ public:
     std::vector<State> Solve(State initial, State target, double dt)
     {
         std::vector<State> path{ initial };
-        path.reserve((unsigned int)std::round(max_time / dt)
-            + 1);  // TODO: currently assuming the worst case
+        path.reserve((unsigned int)std::round(max_time / dt) + 1);
 
         State x = initial - target;
         VectorMx1 u;
@@ -81,10 +80,10 @@ private:
     {
         MatrixNxN X = Q, Xn = Q;
         for (auto _ = 0; _ < max_iter; _++) {
-            Xn = A.Transpose() * X * A
-                - A.Transpose() * X * B * (R + B.Transpose() * X * B).Inverse() * B.Transpose()
-                * X * A
-                + Q;
+			Xn = A.Transpose() * X * A
+				- A.Transpose() * X * B * (R + B.Transpose() * X * B).Inverse() * B.Transpose()
+				* X * A
+				+ Q;
             if ((Xn - X).InfinityNorm() < eps) break;
             X = Xn;
         }
@@ -99,6 +98,6 @@ private:
 
     double max_time{ 100.0 };
     double goal_dist{ 0.1 };
-    int max_iter{ 10 };
+    int max_iter{ 100 };
     double eps{ 0.01 };
 };
