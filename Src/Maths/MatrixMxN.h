@@ -33,7 +33,7 @@ public:
 	{
 		TVectorNd<T, COLS> Ret;
 		memcpy(*Ret, mData + i * COLS, sizeof(T) * COLS);
-		return std::move(Ret);
+		return Ret;
 	}
 
 	TVectorNd<T, ROWS>	GetCol(int i) const
@@ -43,7 +43,7 @@ public:
 		{
 			Ret[j] = mData[j * COLS + i];
 		}
-		return std::move(Ret);
+		return Ret;
 	}
 
 	inline const T* operator*() const
@@ -89,7 +89,7 @@ public:
 		{
 			Ret.mData[i] += v.mData[i];
 		}
-		return std::move(Ret);
+		return Ret;
 	}
 
 	TMatrixMxN<T, ROWS, COLS> operator-(const TMatrixMxN<T, ROWS, COLS>& v) const
@@ -99,7 +99,7 @@ public:
 		{
 			Ret.mData[i] -= v.mData[i];
 		}
-		return std::move(Ret);
+		return Ret;
 	}
 
 	TMatrixMxN<T, ROWS, COLS> operator*(T k) const
@@ -109,7 +109,7 @@ public:
 		{
 			Ret.mData[i] *= k;
 		}
-		return std::move(Ret);
+		return Ret;
 	}
 
 	template<int COLS2>
@@ -125,7 +125,7 @@ public:
 			const T* p = mData + i * COLS;
 			for (int k = 0; k < COLS; ++k)
 				dp += p[k] * pv[k * COLS2 + j];
-			pm[i * ROWS + j] = dp;
+			pm[i * COLS2 + j] = dp;
 		}
 		return Ret;
 	}
@@ -153,7 +153,7 @@ public:
 		{
 			Ret.mData[i] = -Ret.mData[i];
 		}
-		return std::move(Ret);
+		return Ret;
 	}
 
 	void		operator+= (const TMatrixMxN<T, ROWS, COLS>& v)

@@ -4,14 +4,14 @@
 void gemm_slow(const float* m1, const float* m2, int r1, int c1, int c2, float* m)
 {
 	for (int i = 0; i < r1; ++i)
-		for (int j = 0; j < c2; ++j)
-		{
-			float dp = 0.0f;
-			const float* p = m1 + i * c1;
-			for (int k = 0; k < c1; ++k)
-				dp += p[k] * m2[k * c2 + j];
-			m[i * r1 + j] = dp;
-		}
+	for (int j = 0; j < c2; ++j)
+	{
+		float dp = 0.0f;
+		const float* p = m1 + i * c1;
+		for (int k = 0; k < c1; ++k)
+			dp += p[k] * m2[k * c2 + j];
+		m[i * c2 + j] = dp;
+	}
 }
 
 void gemv_slow(const float* m1, const float* v1, int r1, int c1, float* v)

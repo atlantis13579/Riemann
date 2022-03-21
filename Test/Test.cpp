@@ -727,7 +727,7 @@ void TestLqr()
 	i[1] = 0.0f;
 	LinearQuadraticRegulator<N, M>::State t;
 	t[0] = 1.0f;
-	t[1] = 999.5f;
+	t[1] = 1.5f;
 
 	auto path = planner.Solve(i, t, 0.033f);
 

@@ -33,8 +33,7 @@ public:
         VectorMx1 u;
 
         bool path_found = false;
-        float time = 0;
-        float goal_dist_squared = std::powf(goal_dist, 2);
+		float time = 0;
 
         while (time < max_time) {
             time += dt;
@@ -44,7 +43,7 @@ public:
 
             path.push_back(x + target);
 
-            if (x.SquaredNorm() <= goal_dist_squared) {
+            if (x.SquaredNorm() <= goal_dist * goal_dist) {
                 path_found = true;
                 break;
             }
