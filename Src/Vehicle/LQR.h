@@ -53,7 +53,7 @@ public:
             return {};
         }
 
-        return path;
+        return std::move(path);
     }
 
     void SetTimeLimit(double limit) { max_time = limit; }

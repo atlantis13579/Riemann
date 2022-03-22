@@ -8,6 +8,18 @@ public:
 	{
 	}
 
+	TVectorNd(const std::initializer_list<T>& v)
+	{
+		memset(mData, 0, sizeof(T) * SIZE);
+		int i = 0;
+		for (const T &vv : v)
+		{
+			mData[i] = vv;
+			if (i++ >= SIZE)
+				break;
+		}
+	}
+
 	TVectorNd(const TVectorNd<T, SIZE>& v)
 	{
 		memcpy(mData, v.mData, sizeof(T) * SIZE);
@@ -185,6 +197,12 @@ public:
 	void		LoadZero()
 	{
 		memset(mData, 0, sizeof(T) * SIZE);
+	}
+
+	static TVectorNd<T, SIZE> Zero()
+	{
+		static TVectorNd<T, SIZE> s_Zero;
+		return s_Zero;
 	}
 
 private:

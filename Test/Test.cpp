@@ -708,26 +708,15 @@ void TestLqr()
 	const float dt = 0.1f;
 
 	// State matrix
-	SquareMatrix<2> A;
-	A(0, 0) = dt;
-	A(0, 1) = 1.0f;
-	A(1, 0) = 0.0f;
-	A(1, 1) = dt;
+	SquareMatrix<2> A = { dt, 1.0f, 0.0f, dt };
+	MatrixMxN<2, 1> B = { 0.0f, 1.0f };
 
-	MatrixMxN<2, 1> B;
-	B(0, 0) = 0.0f;
-	B(0, 1) = 1.0f;
-
-	SquareMatrix<N> Q = SquareMatrix<N>(true);
-	SquareMatrix<M> R = SquareMatrix<M>(true);
+	SquareMatrix<N> Q = SquareMatrix<N>::Identity();
+	SquareMatrix<M> R = SquareMatrix<M>::Identity();
 
 	LinearQuadraticRegulator<N, M> planner(A, B, Q, R);
-	LinearQuadraticRegulator<N, M>::State i;
-	i[0] = 0.0f;
-	i[1] = 0.0f;
-	LinearQuadraticRegulator<N, M>::State t;
-	t[0] = 1.0f;
-	t[1] = 1.5f;
+	LinearQuadraticRegulator<N, M>::State i = {0.0f, 0.0f};
+	LinearQuadraticRegulator<N, M>::State t = {1.0f, 1.5f };
 
 	auto path = planner.Solve(i, t, 0.033f);
 

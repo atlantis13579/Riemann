@@ -22,6 +22,22 @@ public:
 		{
 			LoadIdentity();
 		}
+		else
+		{
+			memset(mData, 0, sizeof(T) * ROWS * COLS);
+		}
+	}
+
+	TMatrixMxN(const std::initializer_list<T>& v)
+	{
+		memset(mData, 0, sizeof(T) * ROWS * COLS);
+		int i = 0;
+		for (const T& vv : v)
+		{
+			mData[i] = vv;
+			if (i++ >= ROWS * COLS)
+				break;
+		}
 	}
 
 	TMatrixMxN(const TMatrixMxN<T, ROWS, COLS>& v)
@@ -276,6 +292,18 @@ public:
 			p[j * ROWS + i] = mData[i * COLS + j];
 		}
 		return Ret;
+	}
+
+	static TMatrixMxN<T, ROWS, COLS> Zero()
+	{
+		static TMatrixMxN<T, ROWS, COLS> s_Zero(false);
+		return s_Zero;
+	}
+
+	static TMatrixMxN<T, ROWS, COLS> Identity()
+	{
+		static TMatrixMxN<T, ROWS, COLS> s_Identity(true);
+		return s_Identity;
 	}
 
 protected:
