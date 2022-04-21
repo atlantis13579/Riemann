@@ -1,8 +1,9 @@
 #pragma once
 
-#include <vector>
 #include "../Maths/Vector2d.h"
 
-Vector2d ClosestPointInPolygon(const Vector2d& pt, const Vector2d* polygon, int nvert, bool* inside);
+Vector2d ClosestPointInPolygon2D(const Vector2d& pt, const Vector2d* polygon, int nvert, bool* inside);
 
-bool IsPointInPolygon(const Vector2d& pt, const Vector2d* polygon, int nvert);
+bool PointInPolygon2D(const Vector2d& pt, const Vector2d* polygon, int nvert);
+
+float PolygonArea2D(const Vector2d* polygon, int nvert);

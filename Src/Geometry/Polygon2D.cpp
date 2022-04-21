@@ -1,4 +1,5 @@
 ﻿#include <float.h>
+#include <vector>
 
 #include "Polygon2D.h"
 
@@ -34,7 +35,7 @@ static bool SqrDistanceToEdges(const Vector2d& pt, const Vector2d* polygon, int 
 	return c;
 }
 
-Vector2d ClosestPointInPolygon(const Vector2d& pt, const Vector2d* polygon, int nvert, bool* inside)
+Vector2d ClosestPointInPolygon2D(const Vector2d& pt, const Vector2d* polygon, int nvert, bool* inside)
 {
 	std::vector<float>  edged;
 	std::vector<float>  edget;
@@ -62,7 +63,7 @@ Vector2d ClosestPointInPolygon(const Vector2d& pt, const Vector2d* polygon, int 
 }
 
 
-bool IsPointInPolygon(const Vector2d& pt, const Vector2d* polygon, int nvert)
+bool PointInPolygon2D(const Vector2d& pt, const Vector2d* polygon, int nvert)
 {
 	bool c = false;
 	for (int i = 0, j = nvert - 1; i < nvert; j = i++) {
@@ -74,5 +75,19 @@ bool IsPointInPolygon(const Vector2d& pt, const Vector2d* polygon, int nvert)
 			c = !c;
 	}
 	return c;
+}
+
+float PolygonArea2D(const Vector2d* polygon, int nvert)
+{
+	if (nvert < 3)
+		return 0.0f;
+
+	float area = 0.0f;
+	for (int i = 0; i < nvert; ++i)
+	{
+		int k = (i + 1) % nvert;
+		area += (polygon[i].x * polygon[k].y - polygon[i].y * polygon[k].x);
+	}
+	return 0.5f * fabsf(area);
 }
 
