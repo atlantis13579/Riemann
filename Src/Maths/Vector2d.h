@@ -168,7 +168,7 @@ public:
 		y /= k;
 	}
 
-	static TVector2<T> Lerp(TVector2<T>& start, TVector2<T>& end, float t)
+	static TVector2<T> Lerp(const TVector2<T>& start, const TVector2<T>& end, float t)
 	{
 		return TVector2<T>(
 					start.x * (1.0f - t) + end.x * t,
