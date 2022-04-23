@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <chrono>
 #include <string>
-#include <map>
 #include <vector>
 
 #include "../Src/Tools/SimpleBmp.h"
