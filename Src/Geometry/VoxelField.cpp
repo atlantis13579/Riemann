@@ -130,7 +130,7 @@ std::string VoxelField::DebugString(int idx) const
 {
 	std::string str = "";
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
-		return std::move(str);
+		return str;
 	Voxel* v = m_Fields[idx];
 	while (v)
 	{

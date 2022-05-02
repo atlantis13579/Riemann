@@ -627,7 +627,6 @@ void TestFloat16()
 	return;
 }
 
-/*
 void TestPID()
 {
 	PID_Controller pid(1.0f, 0.1f, 0.01f);
@@ -641,6 +640,8 @@ void TestPID()
 	return;
 }
 
+// TODO
+/*
 void TestMatrix()
 {
 	TDenseMatrix<float> M(10);
@@ -724,7 +725,7 @@ void TestLqr()
 
 	return;
 }
- */
+*/
 
 void TestMainEntry()
 {

@@ -114,7 +114,7 @@ std::vector<Vector3d>  Bezier::Interpolation(const std::vector<Vector3d> &points
 
 	// float newLen = ::CalculateSegmentLength(interp);
 
-	return std::move(interp);
+	return interp;
 }
 
 float Bezier::CalculateLength(const Vector3d &p0, const Vector3d &p1, const Vector3d &p2)
