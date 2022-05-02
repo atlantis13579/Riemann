@@ -19,7 +19,7 @@ struct OverlapPair
 class BroadPhase
 {
 public:
-	~BroadPhase() {}
+	virtual ~BroadPhase() {}
 	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair> *overlaps) = 0;
 
 	static BroadPhase* Create_SAP();
@@ -30,7 +30,7 @@ public:
 class BroadPhaseBruteforceImplementation : public BroadPhase
 {
 public:
-	~BroadPhaseBruteforceImplementation() {}
+	virtual ~BroadPhaseBruteforceImplementation() {}
 
 	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps);
 };
