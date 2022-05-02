@@ -371,7 +371,7 @@ static void InterpolateTri(const Vector3d* In, int nn, Vector3d* out1, int* nout
 
 bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info)
 {
-	const float dy = m_BV.Max.y - m_BV.Min.y;
+	// const float dy = m_BV.Max.y - m_BV.Min.y;
 	const float ics = 1.0f / m_VoxelSize;
 	const float ich = 1.0f / m_VoxelHeight;
 

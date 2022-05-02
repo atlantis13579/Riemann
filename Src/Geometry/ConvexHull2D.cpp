@@ -20,12 +20,12 @@ void __convex_points_sort(int* p, int low, int high, int ori, const std::vector<
 
 		while (i < j)
 		{
-			while (i < j && (points[pivot].y < points[p[j]].y - kEpilson || fabsf(points[pivot].y - points[p[j]].y) <= kEpilson && points[pivot].x <= points[p[j]].x))
+			while (i < j && (points[pivot].y < points[p[j]].y - kEpilson || (fabsf(points[pivot].y - points[p[j]].y) <= kEpilson && points[pivot].x <= points[p[j]].x)))
 				--j;
 			if (i < j)
 				p[i++] = p[j];
 
-			while (i < j && (points[pivot].y > points[p[i]].y + kEpilson || fabsf(points[pivot].y - points[p[i]].y) <= kEpilson && points[pivot].x >= points[p[i]].x))
+			while (i < j && (points[pivot].y > points[p[i]].y + kEpilson || (fabsf(points[pivot].y - points[p[i]].y) <= kEpilson && points[pivot].x >= points[p[i]].x)))
 				++i;
 			if (i < j)
 				p[j--] = p[i];

@@ -1,0 +1,723 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 55;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AD81DB24281FEE140011438E /* Tetrahedral.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB13281FEE140011438E /* Tetrahedral.cpp */; };
+		AD81DB25281FEE140011438E /* ConvexHull2D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB15281FEE140011438E /* ConvexHull2D.cpp */; };
+		AD81DB26281FEE140011438E /* ConvexHull3D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB16281FEE140011438E /* ConvexHull3D.cpp */; };
+		AD81DB27281FEE140011438E /* SparseVoxelField.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB1C281FEE140011438E /* SparseVoxelField.cpp */; };
+		AD81DB28281FEE140011438E /* VoxelField.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB1D281FEE140011438E /* VoxelField.cpp */; };
+		AD81DB29281FEE140011438E /* VoxelEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB1E281FEE140011438E /* VoxelEngine.cpp */; };
+		AD81DB2A281FEE140011438E /* Polygon3D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB22281FEE140011438E /* Polygon3D.cpp */; };
+		AD81DB2B281FEE140011438E /* Polygon2D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB23281FEE140011438E /* Polygon2D.cpp */; };
+		AD81DB3C281FEE2E0011438E /* EigenValueDecomposition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB2D281FEE2D0011438E /* EigenValueDecomposition.cpp */; };
+		AD81DB3D281FEE2E0011438E /* DenseVector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB2E281FEE2D0011438E /* DenseVector.cpp */; };
+		AD81DB3E281FEE2E0011438E /* PolarDecomposition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB31281FEE2D0011438E /* PolarDecomposition.cpp */; };
+		AD81DB3F281FEE2E0011438E /* DenseMatrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB36281FEE2D0011438E /* DenseMatrix.cpp */; };
+		AD81DB40281FEE2E0011438E /* SingularValueDecomposition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB3B281FEE2E0011438E /* SingularValueDecomposition.cpp */; };
+		AD81DB61281FF9100011438E /* NarrowPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB44281FF9100011438E /* NarrowPhase.cpp */; };
+		AD81DB62281FF9100011438E /* AABBTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB47281FF9100011438E /* AABBTree.cpp */; };
+		AD81DB63281FF9100011438E /* DynamicAABBTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB4B281FF9100011438E /* DynamicAABBTree.cpp */; };
+		AD81DB64281FF9100011438E /* GeometryCollection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB4E281FF9100011438E /* GeometryCollection.cpp */; };
+		AD81DB65281FF9100011438E /* GeometryObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB4F281FF9100011438E /* GeometryObject.cpp */; };
+		AD81DB66281FF9100011438E /* GeometryIntersection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB51281FF9100011438E /* GeometryIntersection.cpp */; };
+		AD81DB67281FF9100011438E /* GeometryQuery.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB56281FF9100011438E /* GeometryQuery.cpp */; };
+		AD81DB68281FF9100011438E /* Contact.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB57281FF9100011438E /* Contact.cpp */; };
+		AD81DB69281FF9100011438E /* BroadPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB58281FF9100011438E /* BroadPhase.cpp */; };
+		AD81DB6A281FF9100011438E /* AABBTreeInference.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB5B281FF9100011438E /* AABBTreeInference.cpp */; };
+		AD81DB6B281FF9100011438E /* AABBTreeOffline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB5E281FF9100011438E /* AABBTreeOffline.cpp */; };
+		AD81DB74281FF92E0011438E /* PhysxBinaryParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB6E281FF92E0011438E /* PhysxBinaryParser.cpp */; };
+		AD81DB75281FF92E0011438E /* AnimBinaryParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB72281FF92E0011438E /* AnimBinaryParser.cpp */; };
+		AD81DB7A281FFA3A0011438E /* ImageProcessing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD81DB78281FFA3A0011438E /* ImageProcessing.cpp */; };
+		ADD4522B281FE497007F0201 /* Test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD4522A281FE497007F0201 /* Test.cpp */; };
+		ADD4522D281FE4BE007F0201 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD4522C281FE4BE007F0201 /* main.cpp */; };
+		ADD45246281FE58D007F0201 /* Matrix3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD45232281FE58C007F0201 /* Matrix3d.cpp */; };
+		ADD45247281FE58D007F0201 /* Bezier.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD4523E281FE58D007F0201 /* Bezier.cpp */; };
+		ADD45254281FE648007F0201 /* ProjectiveDynamicsSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD45249281FE648007F0201 /* ProjectiveDynamicsSolver.cpp */; };
+		ADD45255281FE648007F0201 /* NewtonRaphsonIteration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD4524C281FE648007F0201 /* NewtonRaphsonIteration.cpp */; };
+		ADD45256281FE648007F0201 /* LCPSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD4524E281FE648007F0201 /* LCPSolver.cpp */; };
+		ADD45257281FE648007F0201 /* NumericalODESolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD45251281FE648007F0201 /* NumericalODESolver.cpp */; };
+		ADD45279281FE70D007F0201 /* TriangleMesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD45262281FE70D007F0201 /* TriangleMesh.cpp */; };
+		ADD4527A281FE70D007F0201 /* AxisAlignedBox3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD45263281FE70D007F0201 /* AxisAlignedBox3d.cpp */; };
+		ADD4527B281FE70D007F0201 /* MeshBVH4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD45264281FE70D007F0201 /* MeshBVH4.cpp */; };
+		ADD4527C281FE70D007F0201 /* HeightField3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD4526B281FE70D007F0201 /* HeightField3d.cpp */; };
+		ADD4527D281FE70D007F0201 /* Segment3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD4526D281FE70D007F0201 /* Segment3d.cpp */; };
+		ADD4527E281FE70D007F0201 /* Capsule3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD45273281FE70D007F0201 /* Capsule3d.cpp */; };
+		ADD4527F281FE70D007F0201 /* OrientedBox3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD45275281FE70D007F0201 /* OrientedBox3d.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AD459545281FDD990075BC20 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		AD459547281FDD990075BC20 /* Riemann */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Riemann; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD81DB13281FEE140011438E /* Tetrahedral.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Tetrahedral.cpp; path = Src/Geometry/Tetrahedral.cpp; sourceTree = "<group>"; };
+		AD81DB14281FEE140011438E /* Polygon3D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Polygon3D.h; path = Src/Geometry/Polygon3D.h; sourceTree = "<group>"; };
+		AD81DB15281FEE140011438E /* ConvexHull2D.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ConvexHull2D.cpp; path = Src/Geometry/ConvexHull2D.cpp; sourceTree = "<group>"; };
+		AD81DB16281FEE140011438E /* ConvexHull3D.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ConvexHull3D.cpp; path = Src/Geometry/ConvexHull3D.cpp; sourceTree = "<group>"; };
+		AD81DB17281FEE140011438E /* VoxelEngine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoxelEngine.h; path = Src/Geometry/VoxelEngine.h; sourceTree = "<group>"; };
+		AD81DB18281FEE140011438E /* SparseVoxelField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseVoxelField.h; path = Src/Geometry/SparseVoxelField.h; sourceTree = "<group>"; };
+		AD81DB19281FEE140011438E /* Tetrahedral.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Tetrahedral.h; path = Src/Geometry/Tetrahedral.h; sourceTree = "<group>"; };
+		AD81DB1A281FEE140011438E /* DenseTensorField3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DenseTensorField3d.h; path = Src/Geometry/DenseTensorField3d.h; sourceTree = "<group>"; };
+		AD81DB1B281FEE140011438E /* ConvexHull2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConvexHull2D.h; path = Src/Geometry/ConvexHull2D.h; sourceTree = "<group>"; };
+		AD81DB1C281FEE140011438E /* SparseVoxelField.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SparseVoxelField.cpp; path = Src/Geometry/SparseVoxelField.cpp; sourceTree = "<group>"; };
+		AD81DB1D281FEE140011438E /* VoxelField.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = VoxelField.cpp; path = Src/Geometry/VoxelField.cpp; sourceTree = "<group>"; };
+		AD81DB1E281FEE140011438E /* VoxelEngine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = VoxelEngine.cpp; path = Src/Geometry/VoxelEngine.cpp; sourceTree = "<group>"; };
+		AD81DB1F281FEE140011438E /* VoxelField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoxelField.h; path = Src/Geometry/VoxelField.h; sourceTree = "<group>"; };
+		AD81DB20281FEE140011438E /* Polygon2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Polygon2D.h; path = Src/Geometry/Polygon2D.h; sourceTree = "<group>"; };
+		AD81DB21281FEE140011438E /* ConvexHull3D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConvexHull3D.h; path = Src/Geometry/ConvexHull3D.h; sourceTree = "<group>"; };
+		AD81DB22281FEE140011438E /* Polygon3D.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Polygon3D.cpp; path = Src/Geometry/Polygon3D.cpp; sourceTree = "<group>"; };
+		AD81DB23281FEE140011438E /* Polygon2D.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Polygon2D.cpp; path = Src/Geometry/Polygon2D.cpp; sourceTree = "<group>"; };
+		AD81DB2C281FEE2D0011438E /* JacobiIteration_CPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = JacobiIteration_CPU.h; path = Src/LinearSystem/JacobiIteration_CPU.h; sourceTree = "<group>"; };
+		AD81DB2D281FEE2D0011438E /* EigenValueDecomposition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EigenValueDecomposition.cpp; path = Src/LinearSystem/EigenValueDecomposition.cpp; sourceTree = "<group>"; };
+		AD81DB2E281FEE2D0011438E /* DenseVector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DenseVector.cpp; path = Src/LinearSystem/DenseVector.cpp; sourceTree = "<group>"; };
+		AD81DB2F281FEE2D0011438E /* DenseVector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DenseVector.h; path = Src/LinearSystem/DenseVector.h; sourceTree = "<group>"; };
+		AD81DB30281FEE2D0011438E /* SparseMatrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseMatrix.h; path = Src/LinearSystem/SparseMatrix.h; sourceTree = "<group>"; };
+		AD81DB31281FEE2D0011438E /* PolarDecomposition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PolarDecomposition.cpp; path = Src/LinearSystem/PolarDecomposition.cpp; sourceTree = "<group>"; };
+		AD81DB32281FEE2D0011438E /* GaussSeidelIteration_CPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GaussSeidelIteration_CPU.h; path = Src/LinearSystem/GaussSeidelIteration_CPU.h; sourceTree = "<group>"; };
+		AD81DB33281FEE2D0011438E /* GaussianElimination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GaussianElimination.h; path = Src/LinearSystem/GaussianElimination.h; sourceTree = "<group>"; };
+		AD81DB34281FEE2D0011438E /* LUFactorization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LUFactorization.h; path = Src/LinearSystem/LUFactorization.h; sourceTree = "<group>"; };
+		AD81DB35281FEE2D0011438E /* PolarDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PolarDecomposition.h; path = Src/LinearSystem/PolarDecomposition.h; sourceTree = "<group>"; };
+		AD81DB36281FEE2D0011438E /* DenseMatrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DenseMatrix.cpp; path = Src/LinearSystem/DenseMatrix.cpp; sourceTree = "<group>"; };
+		AD81DB37281FEE2D0011438E /* DenseMatrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DenseMatrix.h; path = Src/LinearSystem/DenseMatrix.h; sourceTree = "<group>"; };
+		AD81DB38281FEE2D0011438E /* EigenValueDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EigenValueDecomposition.h; path = Src/LinearSystem/EigenValueDecomposition.h; sourceTree = "<group>"; };
+		AD81DB39281FEE2E0011438E /* ProjectedGaussSeidel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ProjectedGaussSeidel.h; path = Src/LinearSystem/ProjectedGaussSeidel.h; sourceTree = "<group>"; };
+		AD81DB3A281FEE2E0011438E /* SingularValueDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SingularValueDecomposition.h; path = Src/LinearSystem/SingularValueDecomposition.h; sourceTree = "<group>"; };
+		AD81DB3B281FEE2E0011438E /* SingularValueDecomposition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SingularValueDecomposition.cpp; path = Src/LinearSystem/SingularValueDecomposition.cpp; sourceTree = "<group>"; };
+		AD81DB42281FF9100011438E /* DynamicAABBTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DynamicAABBTree.h; path = Src/Collision/DynamicAABBTree.h; sourceTree = SOURCE_ROOT; };
+		AD81DB43281FF9100011438E /* AABBTreeInference.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AABBTreeInference.h; path = Src/Collision/AABBTreeInference.h; sourceTree = SOURCE_ROOT; };
+		AD81DB44281FF9100011438E /* NarrowPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NarrowPhase.cpp; path = Src/Collision/NarrowPhase.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB45281FF9100011438E /* Minkowski.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Minkowski.h; path = Src/Collision/Minkowski.h; sourceTree = SOURCE_ROOT; };
+		AD81DB46281FF9100011438E /* GeometryQuery.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GeometryQuery.h; path = Src/Collision/GeometryQuery.h; sourceTree = SOURCE_ROOT; };
+		AD81DB47281FF9100011438E /* AABBTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AABBTree.cpp; path = Src/Collision/AABBTree.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB48281FF9100011438E /* SAP_Incremental.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SAP_Incremental.h; path = Src/Collision/SAP_Incremental.h; sourceTree = SOURCE_ROOT; };
+		AD81DB49281FF9100011438E /* ProximityGrid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ProximityGrid.h; path = Src/Collision/ProximityGrid.h; sourceTree = SOURCE_ROOT; };
+		AD81DB4A281FF9100011438E /* Simplex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Simplex.h; path = Src/Collision/Simplex.h; sourceTree = SOURCE_ROOT; };
+		AD81DB4B281FF9100011438E /* DynamicAABBTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DynamicAABBTree.cpp; path = Src/Collision/DynamicAABBTree.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB4C281FF9100011438E /* AABBTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AABBTree.h; path = Src/Collision/AABBTree.h; sourceTree = SOURCE_ROOT; };
+		AD81DB4D281FF9100011438E /* Contact.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Contact.h; path = Src/Collision/Contact.h; sourceTree = SOURCE_ROOT; };
+		AD81DB4E281FF9100011438E /* GeometryCollection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GeometryCollection.cpp; path = Src/Collision/GeometryCollection.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB4F281FF9100011438E /* GeometryObject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GeometryObject.cpp; path = Src/Collision/GeometryObject.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB50281FF9100011438E /* BroadPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BroadPhase.h; path = Src/Collision/BroadPhase.h; sourceTree = SOURCE_ROOT; };
+		AD81DB51281FF9100011438E /* GeometryIntersection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GeometryIntersection.cpp; path = Src/Collision/GeometryIntersection.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB52281FF9100011438E /* SAP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SAP.h; path = Src/Collision/SAP.h; sourceTree = SOURCE_ROOT; };
+		AD81DB53281FF9100011438E /* QuadTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = QuadTree.h; path = Src/Collision/QuadTree.h; sourceTree = SOURCE_ROOT; };
+		AD81DB54281FF9100011438E /* SparseSpatialHash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseSpatialHash.h; path = Src/Collision/SparseSpatialHash.h; sourceTree = SOURCE_ROOT; };
+		AD81DB55281FF9100011438E /* NarrowPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NarrowPhase.h; path = Src/Collision/NarrowPhase.h; sourceTree = SOURCE_ROOT; };
+		AD81DB56281FF9100011438E /* GeometryQuery.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GeometryQuery.cpp; path = Src/Collision/GeometryQuery.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB57281FF9100011438E /* Contact.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Contact.cpp; path = Src/Collision/Contact.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB58281FF9100011438E /* BroadPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = BroadPhase.cpp; path = Src/Collision/BroadPhase.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB59281FF9100011438E /* GJK.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GJK.h; path = Src/Collision/GJK.h; sourceTree = SOURCE_ROOT; };
+		AD81DB5A281FF9100011438E /* GeometryCollection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GeometryCollection.h; path = Src/Collision/GeometryCollection.h; sourceTree = SOURCE_ROOT; };
+		AD81DB5B281FF9100011438E /* AABBTreeInference.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AABBTreeInference.cpp; path = Src/Collision/AABBTreeInference.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB5C281FF9100011438E /* GeometryObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GeometryObject.h; path = Src/Collision/GeometryObject.h; sourceTree = SOURCE_ROOT; };
+		AD81DB5D281FF9100011438E /* GeometryIntersection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GeometryIntersection.h; path = Src/Collision/GeometryIntersection.h; sourceTree = SOURCE_ROOT; };
+		AD81DB5E281FF9100011438E /* AABBTreeOffline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AABBTreeOffline.cpp; path = Src/Collision/AABBTreeOffline.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB5F281FF9100011438E /* EPA.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EPA.h; path = Src/Collision/EPA.h; sourceTree = SOURCE_ROOT; };
+		AD81DB60281FF9100011438E /* AABBTreeOffline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AABBTreeOffline.h; path = Src/Collision/AABBTreeOffline.h; sourceTree = SOURCE_ROOT; };
+		AD81DB6C281FF92E0011438E /* PhysxBinaryParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PhysxBinaryParser.h; path = Src/Tools/PhysxBinaryParser.h; sourceTree = "<group>"; };
+		AD81DB6D281FF92E0011438E /* AnimBinaryParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AnimBinaryParser.h; path = Src/Tools/AnimBinaryParser.h; sourceTree = "<group>"; };
+		AD81DB6E281FF92E0011438E /* PhysxBinaryParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PhysxBinaryParser.cpp; path = Src/Tools/PhysxBinaryParser.cpp; sourceTree = "<group>"; };
+		AD81DB6F281FF92E0011438E /* SimpleBmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SimpleBmp.h; path = Src/Tools/SimpleBmp.h; sourceTree = "<group>"; };
+		AD81DB70281FF92E0011438E /* Serialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Serialization.h; path = Src/Tools/Serialization.h; sourceTree = "<group>"; };
+		AD81DB71281FF92E0011438E /* PhysxFormat_41.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = PhysxFormat_41.hpp; path = Src/Tools/PhysxFormat_41.hpp; sourceTree = "<group>"; };
+		AD81DB72281FF92E0011438E /* AnimBinaryParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AnimBinaryParser.cpp; path = Src/Tools/AnimBinaryParser.cpp; sourceTree = "<group>"; };
+		AD81DB73281FF92E0011438E /* PhysxFormat_34.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = PhysxFormat_34.hpp; path = Src/Tools/PhysxFormat_34.hpp; sourceTree = "<group>"; };
+		AD81DB76281FFA3A0011438E /* ContinuousBitmap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ContinuousBitmap.h; path = Src/ImageSpace/ContinuousBitmap.h; sourceTree = SOURCE_ROOT; };
+		AD81DB77281FFA3A0011438E /* ImageProcessing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ImageProcessing.h; path = Src/ImageSpace/ImageProcessing.h; sourceTree = SOURCE_ROOT; };
+		AD81DB78281FFA3A0011438E /* ImageProcessing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ImageProcessing.cpp; path = Src/ImageSpace/ImageProcessing.cpp; sourceTree = SOURCE_ROOT; };
+		AD81DB79281FFA3A0011438E /* Rasterizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Rasterizer.h; path = Src/ImageSpace/Rasterizer.h; sourceTree = SOURCE_ROOT; };
+		AD81DB7C281FFAB60011438E /* SGD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SGD.h; path = Src/Optimization/SGD.h; sourceTree = SOURCE_ROOT; };
+		ADD4522A281FE497007F0201 /* Test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test.cpp; path = Test/Test.cpp; sourceTree = "<group>"; };
+		ADD4522C281FE4BE007F0201 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = Test/main.cpp; sourceTree = "<group>"; };
+		ADD45231281FE58C007F0201 /* Frustum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Frustum.h; path = Src/Maths/Frustum.h; sourceTree = SOURCE_ROOT; };
+		ADD45232281FE58C007F0201 /* Matrix3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Matrix3d.cpp; path = Src/Maths/Matrix3d.cpp; sourceTree = SOURCE_ROOT; };
+		ADD45233281FE58C007F0201 /* Box3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Box3d.h; path = Src/Maths/Box3d.h; sourceTree = SOURCE_ROOT; };
+		ADD45234281FE58D007F0201 /* Maths.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Maths.h; path = Src/Maths/Maths.h; sourceTree = SOURCE_ROOT; };
+		ADD45235281FE58D007F0201 /* VectorNd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VectorNd.h; path = Src/Maths/VectorNd.h; sourceTree = SOURCE_ROOT; };
+		ADD45236281FE58D007F0201 /* Tensor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Tensor.h; path = Src/Maths/Tensor.h; sourceTree = SOURCE_ROOT; };
+		ADD45237281FE58D007F0201 /* Float16.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Float16.h; path = Src/Maths/Float16.h; sourceTree = SOURCE_ROOT; };
+		ADD45238281FE58D007F0201 /* Quaternion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Quaternion.h; path = Src/Maths/Quaternion.h; sourceTree = SOURCE_ROOT; };
+		ADD45239281FE58D007F0201 /* Vector4d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Vector4d.h; path = Src/Maths/Vector4d.h; sourceTree = SOURCE_ROOT; };
+		ADD4523A281FE58D007F0201 /* Bezier.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Bezier.h; path = Src/Maths/Bezier.h; sourceTree = SOURCE_ROOT; };
+		ADD4523B281FE58D007F0201 /* Transform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Transform.h; path = Src/Maths/Transform.h; sourceTree = SOURCE_ROOT; };
+		ADD4523C281FE58D007F0201 /* SIMD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SIMD.h; path = Src/Maths/SIMD.h; sourceTree = SOURCE_ROOT; };
+		ADD4523D281FE58D007F0201 /* Stack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Stack.h; path = Src/Maths/Stack.h; sourceTree = SOURCE_ROOT; };
+		ADD4523E281FE58D007F0201 /* Bezier.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Bezier.cpp; path = Src/Maths/Bezier.cpp; sourceTree = SOURCE_ROOT; };
+		ADD4523F281FE58D007F0201 /* Array.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Array.h; path = Src/Maths/Array.h; sourceTree = SOURCE_ROOT; };
+		ADD45240281FE58D007F0201 /* Vector2d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Vector2d.h; path = Src/Maths/Vector2d.h; sourceTree = SOURCE_ROOT; };
+		ADD45241281FE58D007F0201 /* Vector3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Vector3d.h; path = Src/Maths/Vector3d.h; sourceTree = SOURCE_ROOT; };
+		ADD45242281FE58D007F0201 /* Matrix2d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Matrix2d.h; path = Src/Maths/Matrix2d.h; sourceTree = SOURCE_ROOT; };
+		ADD45243281FE58D007F0201 /* Matrix4d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Matrix4d.h; path = Src/Maths/Matrix4d.h; sourceTree = SOURCE_ROOT; };
+		ADD45244281FE58D007F0201 /* Matrix3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Matrix3d.h; path = Src/Maths/Matrix3d.h; sourceTree = SOURCE_ROOT; };
+		ADD45245281FE58D007F0201 /* MatrixMxN.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MatrixMxN.h; path = Src/Maths/MatrixMxN.h; sourceTree = SOURCE_ROOT; };
+		ADD45249281FE648007F0201 /* ProjectiveDynamicsSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ProjectiveDynamicsSolver.cpp; path = Src/Solver/ProjectiveDynamicsSolver.cpp; sourceTree = "<group>"; };
+		ADD4524A281FE648007F0201 /* NewtonRaphsonIteration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NewtonRaphsonIteration.h; path = Src/Solver/NewtonRaphsonIteration.h; sourceTree = "<group>"; };
+		ADD4524B281FE648007F0201 /* ConjugateGradientSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConjugateGradientSolver.h; path = Src/Solver/ConjugateGradientSolver.h; sourceTree = "<group>"; };
+		ADD4524C281FE648007F0201 /* NewtonRaphsonIteration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NewtonRaphsonIteration.cpp; path = Src/Solver/NewtonRaphsonIteration.cpp; sourceTree = "<group>"; };
+		ADD4524D281FE648007F0201 /* NumericalODESolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NumericalODESolver.h; path = Src/Solver/NumericalODESolver.h; sourceTree = "<group>"; };
+		ADD4524E281FE648007F0201 /* LCPSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LCPSolver.cpp; path = Src/Solver/LCPSolver.cpp; sourceTree = "<group>"; };
+		ADD4524F281FE648007F0201 /* LCPSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LCPSolver.h; path = Src/Solver/LCPSolver.h; sourceTree = "<group>"; };
+		ADD45250281FE648007F0201 /* SparseConjugateGradientSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseConjugateGradientSolver.h; path = Src/Solver/SparseConjugateGradientSolver.h; sourceTree = "<group>"; };
+		ADD45251281FE648007F0201 /* NumericalODESolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NumericalODESolver.cpp; path = Src/Solver/NumericalODESolver.cpp; sourceTree = "<group>"; };
+		ADD45252281FE648007F0201 /* ProjectiveDynamicsSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ProjectiveDynamicsSolver.h; path = Src/Solver/ProjectiveDynamicsSolver.h; sourceTree = "<group>"; };
+		ADD45253281FE648007F0201 /* ExponentialIntegrator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ExponentialIntegrator.h; path = Src/Solver/ExponentialIntegrator.h; sourceTree = "<group>"; };
+		ADD45262281FE70D007F0201 /* TriangleMesh.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = TriangleMesh.cpp; path = Src/CollisionPrimitive/TriangleMesh.cpp; sourceTree = "<group>"; };
+		ADD45263281FE70D007F0201 /* AxisAlignedBox3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AxisAlignedBox3d.cpp; path = Src/CollisionPrimitive/AxisAlignedBox3d.cpp; sourceTree = "<group>"; };
+		ADD45264281FE70D007F0201 /* MeshBVH4.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MeshBVH4.cpp; path = Src/CollisionPrimitive/MeshBVH4.cpp; sourceTree = "<group>"; };
+		ADD45265281FE70D007F0201 /* Mesh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Mesh.h; path = Src/CollisionPrimitive/Mesh.h; sourceTree = "<group>"; };
+		ADD45266281FE70D007F0201 /* Sphere3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Sphere3d.h; path = Src/CollisionPrimitive/Sphere3d.h; sourceTree = "<group>"; };
+		ADD45267281FE70D007F0201 /* Triangle3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Triangle3d.h; path = Src/CollisionPrimitive/Triangle3d.h; sourceTree = "<group>"; };
+		ADD45268281FE70D007F0201 /* Ray3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Ray3d.h; path = Src/CollisionPrimitive/Ray3d.h; sourceTree = "<group>"; };
+		ADD45269281FE70D007F0201 /* Point3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Point3d.h; path = Src/CollisionPrimitive/Point3d.h; sourceTree = "<group>"; };
+		ADD4526A281FE70D007F0201 /* HeightField3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HeightField3d.h; path = Src/CollisionPrimitive/HeightField3d.h; sourceTree = "<group>"; };
+		ADD4526B281FE70D007F0201 /* HeightField3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HeightField3d.cpp; path = Src/CollisionPrimitive/HeightField3d.cpp; sourceTree = "<group>"; };
+		ADD4526C281FE70D007F0201 /* AxisAlignedBox3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AxisAlignedBox3d.h; path = Src/CollisionPrimitive/AxisAlignedBox3d.h; sourceTree = "<group>"; };
+		ADD4526D281FE70D007F0201 /* Segment3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Segment3d.cpp; path = Src/CollisionPrimitive/Segment3d.cpp; sourceTree = "<group>"; };
+		ADD4526E281FE70D007F0201 /* TriangleMesh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TriangleMesh.h; path = Src/CollisionPrimitive/TriangleMesh.h; sourceTree = "<group>"; };
+		ADD4526F281FE70D007F0201 /* OrientedBox3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OrientedBox3d.h; path = Src/CollisionPrimitive/OrientedBox3d.h; sourceTree = "<group>"; };
+		ADD45270281FE70D007F0201 /* Cylinder3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Cylinder3d.h; path = Src/CollisionPrimitive/Cylinder3d.h; sourceTree = "<group>"; };
+		ADD45271281FE70D007F0201 /* Capsule3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Capsule3d.h; path = Src/CollisionPrimitive/Capsule3d.h; sourceTree = "<group>"; };
+		ADD45272281FE70D007F0201 /* MeshBVH4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MeshBVH4.h; path = Src/CollisionPrimitive/MeshBVH4.h; sourceTree = "<group>"; };
+		ADD45273281FE70D007F0201 /* Capsule3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Capsule3d.cpp; path = Src/CollisionPrimitive/Capsule3d.cpp; sourceTree = "<group>"; };
+		ADD45274281FE70D007F0201 /* ConvexMesh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConvexMesh.h; path = Src/CollisionPrimitive/ConvexMesh.h; sourceTree = "<group>"; };
+		ADD45275281FE70D007F0201 /* OrientedBox3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OrientedBox3d.cpp; path = Src/CollisionPrimitive/OrientedBox3d.cpp; sourceTree = "<group>"; };
+		ADD45276281FE70D007F0201 /* Plane3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Plane3d.h; path = Src/CollisionPrimitive/Plane3d.h; sourceTree = "<group>"; };
+		ADD45277281FE70D007F0201 /* Segment3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Segment3d.h; path = Src/CollisionPrimitive/Segment3d.h; sourceTree = "<group>"; };
+		ADD45278281FE70D007F0201 /* ShapeType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ShapeType.h; path = Src/CollisionPrimitive/ShapeType.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AD459544281FDD990075BC20 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AD45953E281FDD990075BC20 = {
+			isa = PBXGroup;
+			children = (
+				ADD4522E281FE4F9007F0201 /* Src */,
+				ADD45229281FE476007F0201 /* Test */,
+				AD459548281FDD990075BC20 /* Products */,
+			);
+			sourceTree = "<group>";
+			usesTabs = 1;
+		};
+		AD459548281FDD990075BC20 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AD459547281FDD990075BC20 /* Riemann */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AD81DB41281FF8FA0011438E /* Collision */ = {
+			isa = PBXGroup;
+			children = (
+				AD81DB47281FF9100011438E /* AABBTree.cpp */,
+				AD81DB4C281FF9100011438E /* AABBTree.h */,
+				AD81DB5B281FF9100011438E /* AABBTreeInference.cpp */,
+				AD81DB43281FF9100011438E /* AABBTreeInference.h */,
+				AD81DB5E281FF9100011438E /* AABBTreeOffline.cpp */,
+				AD81DB60281FF9100011438E /* AABBTreeOffline.h */,
+				AD81DB58281FF9100011438E /* BroadPhase.cpp */,
+				AD81DB50281FF9100011438E /* BroadPhase.h */,
+				AD81DB57281FF9100011438E /* Contact.cpp */,
+				AD81DB4D281FF9100011438E /* Contact.h */,
+				AD81DB4B281FF9100011438E /* DynamicAABBTree.cpp */,
+				AD81DB42281FF9100011438E /* DynamicAABBTree.h */,
+				AD81DB5F281FF9100011438E /* EPA.h */,
+				AD81DB4E281FF9100011438E /* GeometryCollection.cpp */,
+				AD81DB5A281FF9100011438E /* GeometryCollection.h */,
+				AD81DB51281FF9100011438E /* GeometryIntersection.cpp */,
+				AD81DB5D281FF9100011438E /* GeometryIntersection.h */,
+				AD81DB4F281FF9100011438E /* GeometryObject.cpp */,
+				AD81DB5C281FF9100011438E /* GeometryObject.h */,
+				AD81DB56281FF9100011438E /* GeometryQuery.cpp */,
+				AD81DB46281FF9100011438E /* GeometryQuery.h */,
+				AD81DB59281FF9100011438E /* GJK.h */,
+				AD81DB45281FF9100011438E /* Minkowski.h */,
+				AD81DB44281FF9100011438E /* NarrowPhase.cpp */,
+				AD81DB55281FF9100011438E /* NarrowPhase.h */,
+				AD81DB49281FF9100011438E /* ProximityGrid.h */,
+				AD81DB53281FF9100011438E /* QuadTree.h */,
+				AD81DB48281FF9100011438E /* SAP_Incremental.h */,
+				AD81DB52281FF9100011438E /* SAP.h */,
+				AD81DB4A281FF9100011438E /* Simplex.h */,
+				AD81DB54281FF9100011438E /* SparseSpatialHash.h */,
+			);
+			path = Collision;
+			sourceTree = "<group>";
+		};
+		ADD45229281FE476007F0201 /* Test */ = {
+			isa = PBXGroup;
+			children = (
+				ADD4522C281FE4BE007F0201 /* main.cpp */,
+				ADD4522A281FE497007F0201 /* Test.cpp */,
+			);
+			name = Test;
+			sourceTree = "<group>";
+		};
+		ADD4522E281FE4F9007F0201 /* Src */ = {
+			isa = PBXGroup;
+			children = (
+				AD81DB41281FF8FA0011438E /* Collision */,
+				ADD45258281FE67F007F0201 /* CollisionPrimitive */,
+				ADD4525A281FE694007F0201 /* Geometry */,
+				ADD4525B281FE6A1007F0201 /* ImageSpace */,
+				ADD4525C281FE6AC007F0201 /* LinearSystem */,
+				ADD45230281FE56D007F0201 /* Maths */,
+				ADD4525D281FE6B4007F0201 /* Optimization */,
+				ADD4525E281FE6BD007F0201 /* PositionBasedDynamics */,
+				ADD4525F281FE6C8007F0201 /* RigidBodyDynamics */,
+				ADD45248281FE63A007F0201 /* Solver */,
+				ADD45260281FE6D4007F0201 /* Tools */,
+			);
+			name = Src;
+			sourceTree = "<group>";
+		};
+		ADD45230281FE56D007F0201 /* Maths */ = {
+			isa = PBXGroup;
+			children = (
+				ADD4523F281FE58D007F0201 /* Array.h */,
+				ADD4523E281FE58D007F0201 /* Bezier.cpp */,
+				ADD4523A281FE58D007F0201 /* Bezier.h */,
+				ADD45233281FE58C007F0201 /* Box3d.h */,
+				ADD45237281FE58D007F0201 /* Float16.h */,
+				ADD45231281FE58C007F0201 /* Frustum.h */,
+				ADD45234281FE58D007F0201 /* Maths.h */,
+				ADD45242281FE58D007F0201 /* Matrix2d.h */,
+				ADD45232281FE58C007F0201 /* Matrix3d.cpp */,
+				ADD45244281FE58D007F0201 /* Matrix3d.h */,
+				ADD45243281FE58D007F0201 /* Matrix4d.h */,
+				ADD45245281FE58D007F0201 /* MatrixMxN.h */,
+				ADD45238281FE58D007F0201 /* Quaternion.h */,
+				ADD4523C281FE58D007F0201 /* SIMD.h */,
+				ADD4523D281FE58D007F0201 /* Stack.h */,
+				ADD45236281FE58D007F0201 /* Tensor.h */,
+				ADD4523B281FE58D007F0201 /* Transform.h */,
+				ADD45240281FE58D007F0201 /* Vector2d.h */,
+				ADD45241281FE58D007F0201 /* Vector3d.h */,
+				ADD45239281FE58D007F0201 /* Vector4d.h */,
+				ADD45235281FE58D007F0201 /* VectorNd.h */,
+			);
+			path = Maths;
+			sourceTree = "<group>";
+		};
+		ADD45248281FE63A007F0201 /* Solver */ = {
+			isa = PBXGroup;
+			children = (
+				ADD4524B281FE648007F0201 /* ConjugateGradientSolver.h */,
+				ADD45253281FE648007F0201 /* ExponentialIntegrator.h */,
+				ADD4524E281FE648007F0201 /* LCPSolver.cpp */,
+				ADD4524F281FE648007F0201 /* LCPSolver.h */,
+				ADD4524C281FE648007F0201 /* NewtonRaphsonIteration.cpp */,
+				ADD4524A281FE648007F0201 /* NewtonRaphsonIteration.h */,
+				ADD45251281FE648007F0201 /* NumericalODESolver.cpp */,
+				ADD4524D281FE648007F0201 /* NumericalODESolver.h */,
+				ADD45249281FE648007F0201 /* ProjectiveDynamicsSolver.cpp */,
+				ADD45252281FE648007F0201 /* ProjectiveDynamicsSolver.h */,
+				ADD45250281FE648007F0201 /* SparseConjugateGradientSolver.h */,
+			);
+			name = Solver;
+			sourceTree = "<group>";
+		};
+		ADD45258281FE67F007F0201 /* CollisionPrimitive */ = {
+			isa = PBXGroup;
+			children = (
+				ADD45263281FE70D007F0201 /* AxisAlignedBox3d.cpp */,
+				ADD4526C281FE70D007F0201 /* AxisAlignedBox3d.h */,
+				ADD45273281FE70D007F0201 /* Capsule3d.cpp */,
+				ADD45271281FE70D007F0201 /* Capsule3d.h */,
+				ADD45274281FE70D007F0201 /* ConvexMesh.h */,
+				ADD45270281FE70D007F0201 /* Cylinder3d.h */,
+				ADD4526B281FE70D007F0201 /* HeightField3d.cpp */,
+				ADD4526A281FE70D007F0201 /* HeightField3d.h */,
+				ADD45265281FE70D007F0201 /* Mesh.h */,
+				ADD45264281FE70D007F0201 /* MeshBVH4.cpp */,
+				ADD45272281FE70D007F0201 /* MeshBVH4.h */,
+				ADD45275281FE70D007F0201 /* OrientedBox3d.cpp */,
+				ADD4526F281FE70D007F0201 /* OrientedBox3d.h */,
+				ADD45276281FE70D007F0201 /* Plane3d.h */,
+				ADD45269281FE70D007F0201 /* Point3d.h */,
+				ADD45268281FE70D007F0201 /* Ray3d.h */,
+				ADD4526D281FE70D007F0201 /* Segment3d.cpp */,
+				ADD45277281FE70D007F0201 /* Segment3d.h */,
+				ADD45278281FE70D007F0201 /* ShapeType.h */,
+				ADD45266281FE70D007F0201 /* Sphere3d.h */,
+				ADD45267281FE70D007F0201 /* Triangle3d.h */,
+				ADD45262281FE70D007F0201 /* TriangleMesh.cpp */,
+				ADD4526E281FE70D007F0201 /* TriangleMesh.h */,
+			);
+			name = CollisionPrimitive;
+			sourceTree = "<group>";
+		};
+		ADD4525A281FE694007F0201 /* Geometry */ = {
+			isa = PBXGroup;
+			children = (
+				AD81DB15281FEE140011438E /* ConvexHull2D.cpp */,
+				AD81DB1B281FEE140011438E /* ConvexHull2D.h */,
+				AD81DB16281FEE140011438E /* ConvexHull3D.cpp */,
+				AD81DB21281FEE140011438E /* ConvexHull3D.h */,
+				AD81DB1A281FEE140011438E /* DenseTensorField3d.h */,
+				AD81DB23281FEE140011438E /* Polygon2D.cpp */,
+				AD81DB20281FEE140011438E /* Polygon2D.h */,
+				AD81DB22281FEE140011438E /* Polygon3D.cpp */,
+				AD81DB14281FEE140011438E /* Polygon3D.h */,
+				AD81DB1C281FEE140011438E /* SparseVoxelField.cpp */,
+				AD81DB18281FEE140011438E /* SparseVoxelField.h */,
+				AD81DB13281FEE140011438E /* Tetrahedral.cpp */,
+				AD81DB19281FEE140011438E /* Tetrahedral.h */,
+				AD81DB1E281FEE140011438E /* VoxelEngine.cpp */,
+				AD81DB17281FEE140011438E /* VoxelEngine.h */,
+				AD81DB1D281FEE140011438E /* VoxelField.cpp */,
+				AD81DB1F281FEE140011438E /* VoxelField.h */,
+			);
+			name = Geometry;
+			sourceTree = "<group>";
+		};
+		ADD4525B281FE6A1007F0201 /* ImageSpace */ = {
+			isa = PBXGroup;
+			children = (
+				AD81DB76281FFA3A0011438E /* ContinuousBitmap.h */,
+				AD81DB78281FFA3A0011438E /* ImageProcessing.cpp */,
+				AD81DB77281FFA3A0011438E /* ImageProcessing.h */,
+				AD81DB79281FFA3A0011438E /* Rasterizer.h */,
+			);
+			path = ImageSpace;
+			sourceTree = "<group>";
+		};
+		ADD4525C281FE6AC007F0201 /* LinearSystem */ = {
+			isa = PBXGroup;
+			children = (
+				AD81DB36281FEE2D0011438E /* DenseMatrix.cpp */,
+				AD81DB37281FEE2D0011438E /* DenseMatrix.h */,
+				AD81DB2E281FEE2D0011438E /* DenseVector.cpp */,
+				AD81DB2F281FEE2D0011438E /* DenseVector.h */,
+				AD81DB2D281FEE2D0011438E /* EigenValueDecomposition.cpp */,
+				AD81DB38281FEE2D0011438E /* EigenValueDecomposition.h */,
+				AD81DB33281FEE2D0011438E /* GaussianElimination.h */,
+				AD81DB32281FEE2D0011438E /* GaussSeidelIteration_CPU.h */,
+				AD81DB2C281FEE2D0011438E /* JacobiIteration_CPU.h */,
+				AD81DB34281FEE2D0011438E /* LUFactorization.h */,
+				AD81DB31281FEE2D0011438E /* PolarDecomposition.cpp */,
+				AD81DB35281FEE2D0011438E /* PolarDecomposition.h */,
+				AD81DB39281FEE2E0011438E /* ProjectedGaussSeidel.h */,
+				AD81DB3B281FEE2E0011438E /* SingularValueDecomposition.cpp */,
+				AD81DB3A281FEE2E0011438E /* SingularValueDecomposition.h */,
+				AD81DB30281FEE2D0011438E /* SparseMatrix.h */,
+			);
+			name = LinearSystem;
+			sourceTree = "<group>";
+		};
+		ADD4525D281FE6B4007F0201 /* Optimization */ = {
+			isa = PBXGroup;
+			children = (
+				AD81DB7C281FFAB60011438E /* SGD.h */,
+			);
+			path = Optimization;
+			sourceTree = "<group>";
+		};
+		ADD4525E281FE6BD007F0201 /* PositionBasedDynamics */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = PositionBasedDynamics;
+			sourceTree = "<group>";
+		};
+		ADD4525F281FE6C8007F0201 /* RigidBodyDynamics */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = RigidBodyDynamics;
+			sourceTree = "<group>";
+		};
+		ADD45260281FE6D4007F0201 /* Tools */ = {
+			isa = PBXGroup;
+			children = (
+				AD81DB72281FF92E0011438E /* AnimBinaryParser.cpp */,
+				AD81DB6D281FF92E0011438E /* AnimBinaryParser.h */,
+				AD81DB6E281FF92E0011438E /* PhysxBinaryParser.cpp */,
+				AD81DB6C281FF92E0011438E /* PhysxBinaryParser.h */,
+				AD81DB73281FF92E0011438E /* PhysxFormat_34.hpp */,
+				AD81DB71281FF92E0011438E /* PhysxFormat_41.hpp */,
+				AD81DB70281FF92E0011438E /* Serialization.h */,
+				AD81DB6F281FF92E0011438E /* SimpleBmp.h */,
+			);
+			name = Tools;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AD459546281FDD990075BC20 /* Riemann */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AD45954E281FDD990075BC20 /* Build configuration list for PBXNativeTarget "Riemann" */;
+			buildPhases = (
+				AD459543281FDD990075BC20 /* Sources */,
+				AD459544281FDD990075BC20 /* Frameworks */,
+				AD459545281FDD990075BC20 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Riemann;
+			productName = Riemann;
+			productReference = AD459547281FDD990075BC20 /* Riemann */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AD45953F281FDD990075BC20 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1330;
+				TargetAttributes = {
+					AD459546281FDD990075BC20 = {
+						CreatedOnToolsVersion = 13.3.1;
+					};
+				};
+			};
+			buildConfigurationList = AD459542281FDD990075BC20 /* Build configuration list for PBXProject "Riemann" */;
+			compatibilityVersion = "Xcode 13.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AD45953E281FDD990075BC20;
+			productRefGroup = AD459548281FDD990075BC20 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AD459546281FDD990075BC20 /* Riemann */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AD459543281FDD990075BC20 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AD81DB6B281FF9100011438E /* AABBTreeOffline.cpp in Sources */,
+				AD81DB24281FEE140011438E /* Tetrahedral.cpp in Sources */,
+				AD81DB2A281FEE140011438E /* Polygon3D.cpp in Sources */,
+				ADD4527D281FE70D007F0201 /* Segment3d.cpp in Sources */,
+				AD81DB7A281FFA3A0011438E /* ImageProcessing.cpp in Sources */,
+				AD81DB62281FF9100011438E /* AABBTree.cpp in Sources */,
+				AD81DB27281FEE140011438E /* SparseVoxelField.cpp in Sources */,
+				ADD4527A281FE70D007F0201 /* AxisAlignedBox3d.cpp in Sources */,
+				ADD4527B281FE70D007F0201 /* MeshBVH4.cpp in Sources */,
+				AD81DB3C281FEE2E0011438E /* EigenValueDecomposition.cpp in Sources */,
+				ADD45247281FE58D007F0201 /* Bezier.cpp in Sources */,
+				ADD45246281FE58D007F0201 /* Matrix3d.cpp in Sources */,
+				ADD45257281FE648007F0201 /* NumericalODESolver.cpp in Sources */,
+				AD81DB74281FF92E0011438E /* PhysxBinaryParser.cpp in Sources */,
+				ADD45255281FE648007F0201 /* NewtonRaphsonIteration.cpp in Sources */,
+				ADD4527C281FE70D007F0201 /* HeightField3d.cpp in Sources */,
+				ADD4522B281FE497007F0201 /* Test.cpp in Sources */,
+				AD81DB26281FEE140011438E /* ConvexHull3D.cpp in Sources */,
+				AD81DB25281FEE140011438E /* ConvexHull2D.cpp in Sources */,
+				AD81DB61281FF9100011438E /* NarrowPhase.cpp in Sources */,
+				AD81DB69281FF9100011438E /* BroadPhase.cpp in Sources */,
+				AD81DB28281FEE140011438E /* VoxelField.cpp in Sources */,
+				ADD4527F281FE70D007F0201 /* OrientedBox3d.cpp in Sources */,
+				AD81DB3D281FEE2E0011438E /* DenseVector.cpp in Sources */,
+				AD81DB6A281FF9100011438E /* AABBTreeInference.cpp in Sources */,
+				AD81DB65281FF9100011438E /* GeometryObject.cpp in Sources */,
+				AD81DB29281FEE140011438E /* VoxelEngine.cpp in Sources */,
+				ADD45279281FE70D007F0201 /* TriangleMesh.cpp in Sources */,
+				AD81DB63281FF9100011438E /* DynamicAABBTree.cpp in Sources */,
+				AD81DB68281FF9100011438E /* Contact.cpp in Sources */,
+				AD81DB3F281FEE2E0011438E /* DenseMatrix.cpp in Sources */,
+				AD81DB2B281FEE140011438E /* Polygon2D.cpp in Sources */,
+				AD81DB75281FF92E0011438E /* AnimBinaryParser.cpp in Sources */,
+				AD81DB66281FF9100011438E /* GeometryIntersection.cpp in Sources */,
+				AD81DB40281FEE2E0011438E /* SingularValueDecomposition.cpp in Sources */,
+				ADD4522D281FE4BE007F0201 /* main.cpp in Sources */,
+				AD81DB3E281FEE2E0011438E /* PolarDecomposition.cpp in Sources */,
+				AD81DB67281FF9100011438E /* GeometryQuery.cpp in Sources */,
+				ADD45254281FE648007F0201 /* ProjectiveDynamicsSolver.cpp in Sources */,
+				ADD4527E281FE70D007F0201 /* Capsule3d.cpp in Sources */,
+				ADD45256281FE648007F0201 /* LCPSolver.cpp in Sources */,
+				AD81DB64281FF9100011438E /* GeometryCollection.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AD45954C281FDD990075BC20 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		AD45954D281FDD990075BC20 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		AD45954F281FDD990075BC20 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		AD459550281FDD990075BC20 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AD459542281FDD990075BC20 /* Build configuration list for PBXProject "Riemann" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AD45954C281FDD990075BC20 /* Debug */,
+				AD45954D281FDD990075BC20 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AD45954E281FDD990075BC20 /* Build configuration list for PBXNativeTarget "Riemann" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AD45954F281FDD990075BC20 /* Debug */,
+				AD459550281FDD990075BC20 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AD45953F281FDD990075BC20 /* Project object */;
+}

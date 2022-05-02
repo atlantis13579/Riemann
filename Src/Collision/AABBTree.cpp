@@ -323,7 +323,7 @@ static bool OverlapGeometry(Geometry *geometry, int* Indices, int NumIndices, Ge
 		return true;
 	}
 
-	const Box3d& aabb = geometry->GetBoundingVolume_WorldSpace();
+	// const Box3d& aabb = geometry->GetBoundingVolume_WorldSpace();
 
 	for (int i = 0; i < NumIndices; ++i)
 	{
@@ -376,7 +376,7 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 			{
 				int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 				int	 nPrimitives = p->GetNumGeometries();
-				const Box3d& Box = p->GetBoundingVolume();
+				// const Box3d& Box = p->GetBoundingVolume();
 				bool overlap = OverlapGeometry(geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Option, Result);
 				if (overlap)
 				{

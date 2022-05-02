@@ -14,10 +14,10 @@ void TetrahedralMesh::GetTransforms(int tetindex, Matrix3d& Ds, Matrix3d& F, Mat
 {
 	const Tetrahedral& t = m_tets[tetindex];
 
-	int i0 = t.node[0];
-	int i1 = t.node[1];
-	int i2 = t.node[2];
-	int i3 = t.node[3];
+	// int i0 = t.node[0];
+	// int i1 = t.node[1];
+	// int i2 = t.node[2];
+	// int i3 = t.node[3];
 
 	const Matrix3d DmInv = t.Dm.Inverse();
 

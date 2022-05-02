@@ -270,11 +270,11 @@ void TestRayAABB()
 	bool success;
 	assert(Ray3d::RayIntersectAABB2(Origin, Dir, Vector3d::Zero(), Vector3d(100, 100, 100), 0.00001f, 100000.0f, &t0, &t1));
 
-	Vector3d InPos = Origin + Dir * t0;
-	Vector3d OutPos = Origin + Dir * t1;
+	// Vector3d InPos = Origin + Dir * t0;
+	// Vector3d OutPos = Origin + Dir * t1;
 
-	int x0 = (int)(InPos.x / 1.0f);
-	int x1 = (int)(OutPos.x / 1.0f);
+	// int x0 = (int)(InPos.x / 1.0f);
+	// int x1 = (int)(OutPos.x / 1.0f);
 
 	Triangle3d Tri(Vector3d(0, 1, 0), Vector3d(0, 0, 0), Vector3d(1, 0, 0));
 	success = Tri.IntersectAABB(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
@@ -604,8 +604,8 @@ void TestSAPInc()
 
 void TestFloat16()
 {
-	float	x1 = Float16::FromFloat32(1.0f).ToFloat();
-	float	x2 = Float16::FromFloat32(1.111111f).ToFloat();
+	// float	x1 = Float16::FromFloat32(1.0f).ToFloat();
+	// float	x2 = Float16::FromFloat32(1.111111f).ToFloat();
 	
 	std::vector<Vector3d> cc;
 	std::vector<float> dd, d2;
@@ -623,10 +623,11 @@ void TestFloat16()
 			d2.push_back((t1 - t2).Length());
 		}
 	}
-
+	dd.size();
 	return;
 }
 
+/*
 void TestPID()
 {
 	PID_Controller pid(1.0f, 0.1f, 0.01f);
@@ -700,6 +701,7 @@ void TestMatrix2()
 	return;
 }
 
+
 void TestLqr()
 {
 	static constexpr int N = 2;
@@ -722,6 +724,7 @@ void TestLqr()
 
 	return;
 }
+ */
 
 void TestMainEntry()
 {
@@ -739,10 +742,10 @@ void TestMainEntry()
 	// TestSAP();
 	// TestSAPInc();
 	// TestMesh1();
-	// TestFloat16();
+	TestFloat16();
 	// TestPID();
 	// TestMatrix();
 	// TestMatrix2();
-	TestLqr();
+	// TestLqr();
 	return;
 }

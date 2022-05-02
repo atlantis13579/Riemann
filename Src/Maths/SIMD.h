@@ -160,7 +160,7 @@ inline uint32_t BAnyTrue3_R(const BoolV a)
 	return uint32_t(((moveMask & 0x7) != 0x0));
 }
 
-const alignas(16) uint32_t gMaskXYZ[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0 };
+alignas(16) const uint32_t gMaskXYZ[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0 };
 } //internalWindowsSimd
 
 /////////////////////////////////////////////////////////////////////
@@ -973,21 +973,21 @@ inline Vec4V V4Clamp(const Vec4V a, const Vec4V minV, const Vec4V maxV)
 
 inline Vec3V V3UnitX()
 {
-	const alignas(16) float x[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
+	alignas(16) const float x[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
 	const __m128 x128 = _mm_load_ps(x);
 	return x128;
 }
 
 inline Vec3V V3UnitY()
 {
-	const alignas(16) float y[4] = { 0.0f, 1.0f, 0.0f, 0.0f };
+	alignas(16) const float y[4] = { 0.0f, 1.0f, 0.0f, 0.0f };
 	const __m128 y128 = _mm_load_ps(y);
 	return y128;
 }
 
 inline Vec3V V3UnitZ()
 {
-	const alignas(16) float z[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+	alignas(16) const float z[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
 	const __m128 z128 = _mm_load_ps(z);
 	return z128;
 }

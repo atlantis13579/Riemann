@@ -58,7 +58,7 @@ Vector3d Bezier::CalculateTangent(const Vector3d &p0, const Vector3d &p1, const 
 	return pos;
 }
 
-static float CalculateSegmentLength(const std::vector<Vector3d> &points)
+float CalculateSegmentLength(const std::vector<Vector3d> &points)
 {
 	float sum = 0.0f;
 	for (size_t i = 0; i < points.size() - 1; ++i)
@@ -79,7 +79,7 @@ std::vector<Vector3d>  Bezier::Interpolation(const std::vector<Vector3d> &points
 	if (cross.SquareLength() < 1.0f)
 		return points;
 
-	float oldLen = ::CalculateSegmentLength(points);
+	// float oldLen = ::CalculateSegmentLength(points);
 	// float curveLen = Bezier::CalculateLength(p0, p1, p2);
 	// if (curveLen < oldLen)
 	//	return points;
@@ -98,11 +98,11 @@ std::vector<Vector3d>  Bezier::Interpolation(const std::vector<Vector3d> &points
 			return dist - len;
 		};
 
-		auto df = [&](float t) {
-			Vector3d pos = Bezier::Calculate(p0, p1, p2, t);
-			Vector3d dev = Bezier::CalculateTangent(p0, p1, p2, t);
-			return 2.0f * pos.Dot(dev);
-		};
+		// auto df = [&](float t) {
+		//	Vector3d pos = Bezier::Calculate(p0, p1, p2, t);
+		//	Vector3d dev = Bezier::CalculateTangent(p0, p1, p2, t);
+		//	return 2.0f * pos.Dot(dev);
+		// };
 
 		float guess = time + 1.0f / points.size();
 		time = NewtonRaphson::FindRoot(f, guess);
@@ -112,7 +112,7 @@ std::vector<Vector3d>  Bezier::Interpolation(const std::vector<Vector3d> &points
 		interp.push_back(pos);
 	}
 
-	float newLen = ::CalculateSegmentLength(interp);
+	// float newLen = ::CalculateSegmentLength(interp);
 
 	return std::move(interp);
 }

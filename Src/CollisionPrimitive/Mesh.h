@@ -443,9 +443,9 @@ public:
 			const Vector3d& v1 = Vertices[i1];
 			const Vector3d& v2 = Vertices[i2];
 			Vector3d Nor = (v1 - v0).Cross(v2 - v0);
-			Normals[i0] += Nor.Unit(), Count[i0]++;
-			Normals[i1] += Nor.Unit(), Count[i1]++;
-			Normals[i2] += Nor.Unit(), Count[i2]++;
+			Normals[i0] += Nor.Unit(); Count[i0]++;
+			Normals[i1] += Nor.Unit(); Count[i1]++;
+			Normals[i2] += Nor.Unit(); Count[i2]++;
 		}
 		
 		for (size_t i = 0; i < Normals.size(); ++i)

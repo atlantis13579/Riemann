@@ -1,4 +1,4 @@
-﻿#include <math.h>
+#include <math.h>
 #include <memory.h>
 #include <stdio.h>
 #include <vector>
@@ -9,7 +9,7 @@
 #include "Serialization.h"
 
 const std::uint32_t BIN_SECTION_MAGIC = 0x42a14e65;
-const std::uint32_t ALIGNED_BIN_SECTION_MAGIC = 0x4142a14e;
+// const std::uint32_t ALIGNED_BIN_SECTION_MAGIC = 0x4142a14e;
 
 #define ANIMATION_MAGIC_NUM         "CHAR::ANIM"
 #define ANIMATION_HEADER            "HEADER"

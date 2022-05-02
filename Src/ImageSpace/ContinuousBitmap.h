@@ -73,7 +73,6 @@ public:
 		SetTransform(nX, nY, minX, minY, maxX, maxY);
 
 		m_Rows.resize(m_nY);
-		int Curr = 0;
 		for (int i = 0; i < nY; ++i)
 		{
 			m_Rows[i] = (T*)m_CompactData.size();

@@ -116,7 +116,7 @@ public:
 					result.Tangent1.y = result.Normal.z;
 					result.Tangent1.z = -result.Normal.y;
 				}
-				result.Tangent1;
+				// result.Tangent1;
 				result.Tangent2 = CrossProduct(result.Normal, result.Tangent1);
 				return true;
 			}

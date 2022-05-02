@@ -326,7 +326,7 @@ namespace PhysxFormat_34
 			if (isExternal)
 			{
 				assert(false);
-				const ImportReference& entry = mImportReferences[index];
+				// const ImportReference& entry = mImportReferences[index];
 				// base = mExternalRefs->find(entry.id);
 			}
 			else
@@ -1476,9 +1476,9 @@ namespace PhysxFormat_34
 		const PxU32 header = read32(address);
 		version = read32(address);
 		const PxU32 binaryVersion = read32(address);	
-		const PxU32 buildNumber = read32(address);
-		const PxU32 platformTag = read32(address);
-		const PxU32 markedPadding = read32(address);
+		// const PxU32 buildNumber = read32(address);
+		// const PxU32 platformTag = read32(address);
+		// const PxU32 markedPadding = read32(address);
 
 		if (header != MAKE_FOURCC('S', 'E', 'B', 'D'))
 		{
@@ -1500,7 +1500,7 @@ namespace PhysxFormat_34
 	PxBase* DeserializePhysxObj(uint8_t*& address, PxDeserializationContext& context)
 	{
 		T src;
-		memcpy(&src, address, sizeof(T));
+		memcpy((void*)&src, address, sizeof(T));
 		src.importExtraData(context);
 		src.resolveReferences(context);
 
@@ -1645,7 +1645,7 @@ namespace PhysxFormat_34
 		uint8_t* addressExtraData = alignPtr(addressObjectData + objectDataEndOffset);
 		std::unordered_map<PxType, int> Statistic;
 
-		uint8_t* addressExtraDataBase = addressExtraData;
+		// uint8_t* addressExtraDataBase = addressExtraData;
 		PxDeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData, version);
 
 		// iterate over memory containing PxBase objects, create the instances, resolve the addresses, import the external data, add to collection.
