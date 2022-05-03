@@ -160,6 +160,13 @@
 		ADDE14A52820AE3100809D36 /* GaussSeidelIteration_CPU.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE142A2820AE3100809D36 /* GaussSeidelIteration_CPU.h */; };
 		ADDE14A62820AE3100809D36 /* PositionBasedDynamicsSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE142C2820AE3100809D36 /* PositionBasedDynamicsSolver.h */; };
 		ADDE14A72820AE3100809D36 /* PositionBasedDynamicsSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE142D2820AE3100809D36 /* PositionBasedDynamicsSolver.cpp */; };
+		ADDE14B32820B16F00809D36 /* AutonomousController.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14AC2820B16F00809D36 /* AutonomousController.h */; };
+		ADDE14B42820B16F00809D36 /* LQR.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14AD2820B16F00809D36 /* LQR.h */; };
+		ADDE14B52820B16F00809D36 /* Vehicle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE14AE2820B16F00809D36 /* Vehicle.cpp */; };
+		ADDE14B62820B16F00809D36 /* Vehicle.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14AF2820B16F00809D36 /* Vehicle.h */; };
+		ADDE14B72820B16F00809D36 /* MPC.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14B02820B16F00809D36 /* MPC.h */; };
+		ADDE14B82820B16F00809D36 /* PID.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14B12820B16F00809D36 /* PID.h */; };
+		ADDE14B92820B16F00809D36 /* AutonomousController.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE14B22820B16F00809D36 /* AutonomousController.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -194,73 +201,6 @@
 		ADDE13152820AE0700809D36 /* DynamicAABBTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DynamicAABBTree.h; sourceTree = "<group>"; };
 		ADDE13162820AE0700809D36 /* GJK.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GJK.h; sourceTree = "<group>"; };
 		ADDE13172820AE0700809D36 /* SAP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SAP.h; sourceTree = "<group>"; };
-		ADDE133B2820AE3100809D36 /* LogStoreManifest.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = LogStoreManifest.plist; sourceTree = "<group>"; };
-		ADDE133D2820AE3100809D36 /* LogStoreManifest.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = LogStoreManifest.plist; sourceTree = "<group>"; };
-		ADDE133F2820AE3100809D36 /* LogStoreManifest.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = LogStoreManifest.plist; sourceTree = "<group>"; };
-		ADDE13412820AE3100809D36 /* LogStoreManifest.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = LogStoreManifest.plist; sourceTree = "<group>"; };
-		ADDE13432820AE3100809D36 /* LogStoreManifest.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = LogStoreManifest.plist; sourceTree = "<group>"; };
-		ADDE13452820AE3100809D36 /* LogStoreManifest.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = LogStoreManifest.plist; sourceTree = "<group>"; };
-		ADDE13472820AE3100809D36 /* LogStoreManifest.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = LogStoreManifest.plist; sourceTree = "<group>"; };
-		ADDE13492820AE3100809D36 /* LogStoreManifest.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = LogStoreManifest.plist; sourceTree = "<group>"; };
-		ADDE13522820AE3100809D36 /* lock.mdb */ = {isa = PBXFileReference; lastKnownFileType = file; path = lock.mdb; sourceTree = "<group>"; };
-		ADDE13532820AE3100809D36 /* data.mdb */ = {isa = PBXFileReference; lastKnownFileType = file; path = data.mdb; sourceTree = "<group>"; };
-		ADDE13582820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE13592820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE135A2820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE135C2820AE3100809D36 /* swift-overlay.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-overlay.plist"; sourceTree = "<group>"; };
-		ADDE135D2820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE135E2820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE135F2820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE13612820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE13622820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE13642820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE13652820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE13662820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE13682820AE3100809D36 /* swift-overlay.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-overlay.plist"; sourceTree = "<group>"; };
-		ADDE13692820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE136A2820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE136B2820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE136D2820AE3100809D36 /* swift-overlay.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-overlay.plist"; sourceTree = "<group>"; };
-		ADDE136E2820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE136F2820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE13702820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE13722820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE13732820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE13742820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE13762820AE3100809D36 /* swift-overlay.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-overlay.plist"; sourceTree = "<group>"; };
-		ADDE13772820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE13782820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE13792820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE137C2820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE137D2820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE137E2820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE13802820AE3100809D36 /* swift-overlay.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-overlay.plist"; sourceTree = "<group>"; };
-		ADDE13812820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE13822820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE13832820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE13852820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE13862820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE13872820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE13892820AE3100809D36 /* swift-overlay.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-overlay.plist"; sourceTree = "<group>"; };
-		ADDE138A2820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE138B2820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE138C2820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE138E2820AE3100809D36 /* swift-overlay.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-overlay.plist"; sourceTree = "<group>"; };
-		ADDE138F2820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE13902820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE13912820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE13932820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE13942820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE13952820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE13972820AE3100809D36 /* swift-overlay.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-overlay.plist"; sourceTree = "<group>"; };
-		ADDE13982820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE13992820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE139A2820AE3100809D36 /* swift-imported.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "swift-imported.plist"; sourceTree = "<group>"; };
-		ADDE139B2820AE3100809D36 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = Info.plist; sourceTree = "<group>"; };
-		ADDE139E2820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE139F2820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
-		ADDE13A12820AE3100809D36 /* main.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = main.plist; sourceTree = "<group>"; };
-		ADDE13A22820AE3100809D36 /* metadata.plist */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = metadata.plist; sourceTree = "<group>"; };
 		ADDE13AB2820AE3100809D36 /* ContinuousBitmap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ContinuousBitmap.h; sourceTree = "<group>"; };
 		ADDE13AC2820AE3100809D36 /* ImageProcessing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ImageProcessing.cpp; sourceTree = "<group>"; };
 		ADDE13AD2820AE3100809D36 /* Rasterizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Rasterizer.h; sourceTree = "<group>"; };
@@ -383,6 +323,13 @@
 		ADDE142A2820AE3100809D36 /* GaussSeidelIteration_CPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GaussSeidelIteration_CPU.h; sourceTree = "<group>"; };
 		ADDE142C2820AE3100809D36 /* PositionBasedDynamicsSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PositionBasedDynamicsSolver.h; sourceTree = "<group>"; };
 		ADDE142D2820AE3100809D36 /* PositionBasedDynamicsSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PositionBasedDynamicsSolver.cpp; sourceTree = "<group>"; };
+		ADDE14AC2820B16F00809D36 /* AutonomousController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AutonomousController.h; sourceTree = "<group>"; };
+		ADDE14AD2820B16F00809D36 /* LQR.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LQR.h; sourceTree = "<group>"; };
+		ADDE14AE2820B16F00809D36 /* Vehicle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Vehicle.cpp; sourceTree = "<group>"; };
+		ADDE14AF2820B16F00809D36 /* Vehicle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Vehicle.h; sourceTree = "<group>"; };
+		ADDE14B02820B16F00809D36 /* MPC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MPC.h; sourceTree = "<group>"; };
+		ADDE14B12820B16F00809D36 /* PID.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PID.h; sourceTree = "<group>"; };
+		ADDE14B22820B16F00809D36 /* AutonomousController.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AutonomousController.cpp; sourceTree = "<group>"; };
 		ADE742E12820A994007DEEB3 /* libRiemann.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRiemann.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -400,489 +347,39 @@
 		ADDE12F82820AE0700809D36 /* Collision */ = {
 			isa = PBXGroup;
 			children = (
+				ADDE13062820AE0700809D36 /* AABBTree.cpp */,
+				ADDE130D2820AE0700809D36 /* AABBTree.h */,
+				ADDE13002820AE0700809D36 /* AABBTreeInference.cpp */,
+				ADDE12FE2820AE0700809D36 /* AABBTreeInference.h */,
+				ADDE13092820AE0700809D36 /* AABBTreeOffline.cpp */,
+				ADDE12FF2820AE0700809D36 /* AABBTreeOffline.h */,
+				ADDE13072820AE0700809D36 /* BroadPhase.cpp */,
 				ADDE12F92820AE0700809D36 /* BroadPhase.h */,
+				ADDE130F2820AE0700809D36 /* Contact.cpp */,
+				ADDE130A2820AE0700809D36 /* Contact.h */,
+				ADDE130C2820AE0700809D36 /* DynamicAABBTree.cpp */,
+				ADDE13152820AE0700809D36 /* DynamicAABBTree.h */,
+				ADDE12FD2820AE0700809D36 /* EPA.h */,
+				ADDE13082820AE0700809D36 /* GeometryCollection.cpp */,
 				ADDE12FA2820AE0700809D36 /* GeometryCollection.h */,
+				ADDE13142820AE0700809D36 /* GeometryIntersection.cpp */,
+				ADDE13022820AE0700809D36 /* GeometryIntersection.h */,
+				ADDE13122820AE0700809D36 /* GeometryObject.cpp */,
+				ADDE13012820AE0700809D36 /* GeometryObject.h */,
+				ADDE130E2820AE0700809D36 /* GeometryQuery.cpp */,
+				ADDE13112820AE0700809D36 /* GeometryQuery.h */,
+				ADDE13162820AE0700809D36 /* GJK.h */,
+				ADDE13032820AE0700809D36 /* Minkowski.h */,
 				ADDE12FB2820AE0700809D36 /* NarrowPhase.cpp */,
 				ADDE12FC2820AE0700809D36 /* NarrowPhase.h */,
-				ADDE12FD2820AE0700809D36 /* EPA.h */,
-				ADDE12FE2820AE0700809D36 /* AABBTreeInference.h */,
-				ADDE12FF2820AE0700809D36 /* AABBTreeOffline.h */,
-				ADDE13002820AE0700809D36 /* AABBTreeInference.cpp */,
-				ADDE13012820AE0700809D36 /* GeometryObject.h */,
-				ADDE13022820AE0700809D36 /* GeometryIntersection.h */,
-				ADDE13032820AE0700809D36 /* Minkowski.h */,
+				ADDE130B2820AE0700809D36 /* ProximityGrid.h */,
+				ADDE13132820AE0700809D36 /* QuadTree.h */,
+				ADDE13102820AE0700809D36 /* SAP_Incremental.h */,
+				ADDE13172820AE0700809D36 /* SAP.h */,
 				ADDE13042820AE0700809D36 /* Simplex.h */,
 				ADDE13052820AE0700809D36 /* SparseSpatialHash.h */,
-				ADDE13062820AE0700809D36 /* AABBTree.cpp */,
-				ADDE13072820AE0700809D36 /* BroadPhase.cpp */,
-				ADDE13082820AE0700809D36 /* GeometryCollection.cpp */,
-				ADDE13092820AE0700809D36 /* AABBTreeOffline.cpp */,
-				ADDE130A2820AE0700809D36 /* Contact.h */,
-				ADDE130B2820AE0700809D36 /* ProximityGrid.h */,
-				ADDE130C2820AE0700809D36 /* DynamicAABBTree.cpp */,
-				ADDE130D2820AE0700809D36 /* AABBTree.h */,
-				ADDE130E2820AE0700809D36 /* GeometryQuery.cpp */,
-				ADDE130F2820AE0700809D36 /* Contact.cpp */,
-				ADDE13102820AE0700809D36 /* SAP_Incremental.h */,
-				ADDE13112820AE0700809D36 /* GeometryQuery.h */,
-				ADDE13122820AE0700809D36 /* GeometryObject.cpp */,
-				ADDE13132820AE0700809D36 /* QuadTree.h */,
-				ADDE13142820AE0700809D36 /* GeometryIntersection.cpp */,
-				ADDE13152820AE0700809D36 /* DynamicAABBTree.h */,
-				ADDE13162820AE0700809D36 /* GJK.h */,
-				ADDE13172820AE0700809D36 /* SAP.h */,
 			);
 			path = Collision;
-			sourceTree = "<group>";
-		};
-		ADDE13372820AE3100809D36 /* DerivedData */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13382820AE3100809D36 /* Riemann */,
-				ADDE13542820AE3100809D36 /* SymbolCache.noindex */,
-				ADDE13A32820AE3100809D36 /* Build */,
-			);
-			path = DerivedData;
-			sourceTree = "<group>";
-		};
-		ADDE13382820AE3100809D36 /* Riemann */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13392820AE3100809D36 /* Logs */,
-				ADDE134A2820AE3100809D36 /* Index */,
-			);
-			path = Riemann;
-			sourceTree = "<group>";
-		};
-		ADDE13392820AE3100809D36 /* Logs */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE133A2820AE3100809D36 /* Update Signing */,
-				ADDE133C2820AE3100809D36 /* Install */,
-				ADDE133E2820AE3100809D36 /* Test */,
-				ADDE13402820AE3100809D36 /* Build */,
-				ADDE13422820AE3100809D36 /* Run */,
-				ADDE13442820AE3100809D36 /* Issues */,
-				ADDE13462820AE3100809D36 /* Package */,
-				ADDE13482820AE3100809D36 /* Localization */,
-			);
-			path = Logs;
-			sourceTree = "<group>";
-		};
-		ADDE133A2820AE3100809D36 /* Update Signing */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE133B2820AE3100809D36 /* LogStoreManifest.plist */,
-			);
-			path = "Update Signing";
-			sourceTree = "<group>";
-		};
-		ADDE133C2820AE3100809D36 /* Install */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE133D2820AE3100809D36 /* LogStoreManifest.plist */,
-			);
-			path = Install;
-			sourceTree = "<group>";
-		};
-		ADDE133E2820AE3100809D36 /* Test */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE133F2820AE3100809D36 /* LogStoreManifest.plist */,
-			);
-			path = Test;
-			sourceTree = "<group>";
-		};
-		ADDE13402820AE3100809D36 /* Build */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13412820AE3100809D36 /* LogStoreManifest.plist */,
-			);
-			path = Build;
-			sourceTree = "<group>";
-		};
-		ADDE13422820AE3100809D36 /* Run */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13432820AE3100809D36 /* LogStoreManifest.plist */,
-			);
-			path = Run;
-			sourceTree = "<group>";
-		};
-		ADDE13442820AE3100809D36 /* Issues */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13452820AE3100809D36 /* LogStoreManifest.plist */,
-			);
-			path = Issues;
-			sourceTree = "<group>";
-		};
-		ADDE13462820AE3100809D36 /* Package */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13472820AE3100809D36 /* LogStoreManifest.plist */,
-			);
-			path = Package;
-			sourceTree = "<group>";
-		};
-		ADDE13482820AE3100809D36 /* Localization */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13492820AE3100809D36 /* LogStoreManifest.plist */,
-			);
-			path = Localization;
-			sourceTree = "<group>";
-		};
-		ADDE134A2820AE3100809D36 /* Index */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE134B2820AE3100809D36 /* DataStore */,
-				ADDE134E2820AE3100809D36 /* UniDB */,
-			);
-			path = Index;
-			sourceTree = "<group>";
-		};
-		ADDE134B2820AE3100809D36 /* DataStore */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE134C2820AE3100809D36 /* v5 */,
-			);
-			path = DataStore;
-			sourceTree = "<group>";
-		};
-		ADDE134C2820AE3100809D36 /* v5 */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE134D2820AE3100809D36 /* units */,
-			);
-			path = v5;
-			sourceTree = "<group>";
-		};
-		ADDE134D2820AE3100809D36 /* units */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = units;
-			sourceTree = "<group>";
-		};
-		ADDE134E2820AE3100809D36 /* UniDB */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE134F2820AE3100809D36 /* Riemann.xcindex */,
-			);
-			path = UniDB;
-			sourceTree = "<group>";
-		};
-		ADDE134F2820AE3100809D36 /* Riemann.xcindex */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13502820AE3100809D36 /* v13 */,
-			);
-			path = Riemann.xcindex;
-			sourceTree = "<group>";
-		};
-		ADDE13502820AE3100809D36 /* v13 */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13512820AE3100809D36 /* saved */,
-			);
-			path = v13;
-			sourceTree = "<group>";
-		};
-		ADDE13512820AE3100809D36 /* saved */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13522820AE3100809D36 /* lock.mdb */,
-				ADDE13532820AE3100809D36 /* data.mdb */,
-			);
-			path = saved;
-			sourceTree = "<group>";
-		};
-		ADDE13542820AE3100809D36 /* SymbolCache.noindex */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13552820AE3100809D36 /* MacOSX12.3.sdk (21E226) */,
-			);
-			path = SymbolCache.noindex;
-			sourceTree = "<group>";
-		};
-		ADDE13552820AE3100809D36 /* MacOSX12.3.sdk (21E226) */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13562820AE3100809D36 /* Frameworks */,
-				ADDE137A2820AE3100809D36 /* usr-include */,
-				ADDE139B2820AE3100809D36 /* Info.plist */,
-				ADDE139C2820AE3100809D36 /* Auxiliary */,
-			);
-			path = "MacOSX12.3.sdk (21E226)";
-			sourceTree = "<group>";
-		};
-		ADDE13562820AE3100809D36 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13572820AE3100809D36 /* CoreServices */,
-				ADDE135B2820AE3100809D36 /* CoreGraphics */,
-				ADDE13602820AE3100809D36 /* Combine */,
-				ADDE13632820AE3100809D36 /* Security */,
-				ADDE13672820AE3100809D36 /* IOKit */,
-				ADDE136C2820AE3100809D36 /* Foundation */,
-				ADDE13712820AE3100809D36 /* CFNetwork */,
-				ADDE13752820AE3100809D36 /* CoreFoundation */,
-			);
-			path = Frameworks;
-			sourceTree = "<group>";
-		};
-		ADDE13572820AE3100809D36 /* CoreServices */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13582820AE3100809D36 /* main.plist */,
-				ADDE13592820AE3100809D36 /* metadata.plist */,
-				ADDE135A2820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = CoreServices;
-			sourceTree = "<group>";
-		};
-		ADDE135B2820AE3100809D36 /* CoreGraphics */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE135C2820AE3100809D36 /* swift-overlay.plist */,
-				ADDE135D2820AE3100809D36 /* main.plist */,
-				ADDE135E2820AE3100809D36 /* metadata.plist */,
-				ADDE135F2820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = CoreGraphics;
-			sourceTree = "<group>";
-		};
-		ADDE13602820AE3100809D36 /* Combine */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13612820AE3100809D36 /* main.plist */,
-				ADDE13622820AE3100809D36 /* metadata.plist */,
-			);
-			path = Combine;
-			sourceTree = "<group>";
-		};
-		ADDE13632820AE3100809D36 /* Security */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13642820AE3100809D36 /* main.plist */,
-				ADDE13652820AE3100809D36 /* metadata.plist */,
-				ADDE13662820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = Security;
-			sourceTree = "<group>";
-		};
-		ADDE13672820AE3100809D36 /* IOKit */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13682820AE3100809D36 /* swift-overlay.plist */,
-				ADDE13692820AE3100809D36 /* main.plist */,
-				ADDE136A2820AE3100809D36 /* metadata.plist */,
-				ADDE136B2820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = IOKit;
-			sourceTree = "<group>";
-		};
-		ADDE136C2820AE3100809D36 /* Foundation */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE136D2820AE3100809D36 /* swift-overlay.plist */,
-				ADDE136E2820AE3100809D36 /* main.plist */,
-				ADDE136F2820AE3100809D36 /* metadata.plist */,
-				ADDE13702820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = Foundation;
-			sourceTree = "<group>";
-		};
-		ADDE13712820AE3100809D36 /* CFNetwork */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13722820AE3100809D36 /* main.plist */,
-				ADDE13732820AE3100809D36 /* metadata.plist */,
-				ADDE13742820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = CFNetwork;
-			sourceTree = "<group>";
-		};
-		ADDE13752820AE3100809D36 /* CoreFoundation */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13762820AE3100809D36 /* swift-overlay.plist */,
-				ADDE13772820AE3100809D36 /* main.plist */,
-				ADDE13782820AE3100809D36 /* metadata.plist */,
-				ADDE13792820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = CoreFoundation;
-			sourceTree = "<group>";
-		};
-		ADDE137A2820AE3100809D36 /* usr-include */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE137B2820AE3100809D36 /* os_workgroup */,
-				ADDE137F2820AE3100809D36 /* Dispatch */,
-				ADDE13842820AE3100809D36 /* os_object */,
-				ADDE13882820AE3100809D36 /* os */,
-				ADDE138D2820AE3100809D36 /* Darwin */,
-				ADDE13922820AE3100809D36 /* libkern */,
-				ADDE13962820AE3100809D36 /* ObjectiveC */,
-			);
-			path = "usr-include";
-			sourceTree = "<group>";
-		};
-		ADDE137B2820AE3100809D36 /* os_workgroup */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE137C2820AE3100809D36 /* main.plist */,
-				ADDE137D2820AE3100809D36 /* metadata.plist */,
-				ADDE137E2820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = os_workgroup;
-			sourceTree = "<group>";
-		};
-		ADDE137F2820AE3100809D36 /* Dispatch */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13802820AE3100809D36 /* swift-overlay.plist */,
-				ADDE13812820AE3100809D36 /* main.plist */,
-				ADDE13822820AE3100809D36 /* metadata.plist */,
-				ADDE13832820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = Dispatch;
-			sourceTree = "<group>";
-		};
-		ADDE13842820AE3100809D36 /* os_object */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13852820AE3100809D36 /* main.plist */,
-				ADDE13862820AE3100809D36 /* metadata.plist */,
-				ADDE13872820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = os_object;
-			sourceTree = "<group>";
-		};
-		ADDE13882820AE3100809D36 /* os */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13892820AE3100809D36 /* swift-overlay.plist */,
-				ADDE138A2820AE3100809D36 /* main.plist */,
-				ADDE138B2820AE3100809D36 /* metadata.plist */,
-				ADDE138C2820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = os;
-			sourceTree = "<group>";
-		};
-		ADDE138D2820AE3100809D36 /* Darwin */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE138E2820AE3100809D36 /* swift-overlay.plist */,
-				ADDE138F2820AE3100809D36 /* main.plist */,
-				ADDE13902820AE3100809D36 /* metadata.plist */,
-				ADDE13912820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = Darwin;
-			sourceTree = "<group>";
-		};
-		ADDE13922820AE3100809D36 /* libkern */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13932820AE3100809D36 /* main.plist */,
-				ADDE13942820AE3100809D36 /* metadata.plist */,
-				ADDE13952820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = libkern;
-			sourceTree = "<group>";
-		};
-		ADDE13962820AE3100809D36 /* ObjectiveC */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13972820AE3100809D36 /* swift-overlay.plist */,
-				ADDE13982820AE3100809D36 /* main.plist */,
-				ADDE13992820AE3100809D36 /* metadata.plist */,
-				ADDE139A2820AE3100809D36 /* swift-imported.plist */,
-			);
-			path = ObjectiveC;
-			sourceTree = "<group>";
-		};
-		ADDE139C2820AE3100809D36 /* Auxiliary */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE139D2820AE3100809D36 /* Swift */,
-				ADDE13A02820AE3100809D36 /* _Concurrency */,
-			);
-			path = Auxiliary;
-			sourceTree = "<group>";
-		};
-		ADDE139D2820AE3100809D36 /* Swift */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE139E2820AE3100809D36 /* main.plist */,
-				ADDE139F2820AE3100809D36 /* metadata.plist */,
-			);
-			path = Swift;
-			sourceTree = "<group>";
-		};
-		ADDE13A02820AE3100809D36 /* _Concurrency */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13A12820AE3100809D36 /* main.plist */,
-				ADDE13A22820AE3100809D36 /* metadata.plist */,
-			);
-			path = _Concurrency;
-			sourceTree = "<group>";
-		};
-		ADDE13A32820AE3100809D36 /* Build */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13A42820AE3100809D36 /* Intermediates.noindex */,
-			);
-			path = Build;
-			sourceTree = "<group>";
-		};
-		ADDE13A42820AE3100809D36 /* Intermediates.noindex */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13A52820AE3100809D36 /* XCBuildData */,
-			);
-			path = Intermediates.noindex;
-			sourceTree = "<group>";
-		};
-		ADDE13A52820AE3100809D36 /* XCBuildData */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13A62820AE3100809D36 /* PIFCache */,
-			);
-			path = XCBuildData;
-			sourceTree = "<group>";
-		};
-		ADDE13A62820AE3100809D36 /* PIFCache */ = {
-			isa = PBXGroup;
-			children = (
-				ADDE13A72820AE3100809D36 /* target */,
-				ADDE13A82820AE3100809D36 /* workspace */,
-				ADDE13A92820AE3100809D36 /* project */,
-			);
-			path = PIFCache;
-			sourceTree = "<group>";
-		};
-		ADDE13A72820AE3100809D36 /* target */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = target;
-			sourceTree = "<group>";
-		};
-		ADDE13A82820AE3100809D36 /* workspace */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = workspace;
-			sourceTree = "<group>";
-		};
-		ADDE13A92820AE3100809D36 /* project */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = project;
 			sourceTree = "<group>";
 		};
 		ADDE13AA2820AE3100809D36 /* ImageSpace */ = {
@@ -890,8 +387,8 @@
 			children = (
 				ADDE13AB2820AE3100809D36 /* ContinuousBitmap.h */,
 				ADDE13AC2820AE3100809D36 /* ImageProcessing.cpp */,
-				ADDE13AD2820AE3100809D36 /* Rasterizer.h */,
 				ADDE13AE2820AE3100809D36 /* ImageProcessing.h */,
+				ADDE13AD2820AE3100809D36 /* Rasterizer.h */,
 			);
 			path = ImageSpace;
 			sourceTree = "<group>";
@@ -899,29 +396,29 @@
 		ADDE13AF2820AE3100809D36 /* CollisionPrimitive */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE13B02820AE3100809D36 /* OrientedBox3d.h */,
-				ADDE13B12820AE3100809D36 /* Capsule3d.cpp */,
 				ADDE13B22820AE3100809D36 /* AxisAlignedBox3d.cpp */,
-				ADDE13B32820AE3100809D36 /* TriangleMesh.cpp */,
-				ADDE13B42820AE3100809D36 /* OrientedBox3d.cpp */,
-				ADDE13B52820AE3100809D36 /* Ray3d.h */,
-				ADDE13B62820AE3100809D36 /* HeightField3d.h */,
-				ADDE13B72820AE3100809D36 /* Cylinder3d.h */,
-				ADDE13B82820AE3100809D36 /* Segment3d.cpp */,
-				ADDE13B92820AE3100809D36 /* Mesh.h */,
-				ADDE13BA2820AE3100809D36 /* MeshBVH4.h */,
-				ADDE13BB2820AE3100809D36 /* Segment3d.h */,
-				ADDE13BC2820AE3100809D36 /* Sphere3d.h */,
-				ADDE13BD2820AE3100809D36 /* Plane3d.h */,
-				ADDE13BE2820AE3100809D36 /* ConvexMesh.h */,
 				ADDE13BF2820AE3100809D36 /* AxisAlignedBox3d.h */,
-				ADDE13C02820AE3100809D36 /* MeshBVH4.cpp */,
-				ADDE13C12820AE3100809D36 /* ShapeType.h */,
-				ADDE13C22820AE3100809D36 /* TriangleMesh.h */,
-				ADDE13C32820AE3100809D36 /* HeightField3d.cpp */,
-				ADDE13C42820AE3100809D36 /* Triangle3d.h */,
-				ADDE13C52820AE3100809D36 /* Point3d.h */,
+				ADDE13B12820AE3100809D36 /* Capsule3d.cpp */,
 				ADDE13C62820AE3100809D36 /* Capsule3d.h */,
+				ADDE13BE2820AE3100809D36 /* ConvexMesh.h */,
+				ADDE13B72820AE3100809D36 /* Cylinder3d.h */,
+				ADDE13C32820AE3100809D36 /* HeightField3d.cpp */,
+				ADDE13B62820AE3100809D36 /* HeightField3d.h */,
+				ADDE13B92820AE3100809D36 /* Mesh.h */,
+				ADDE13C02820AE3100809D36 /* MeshBVH4.cpp */,
+				ADDE13BA2820AE3100809D36 /* MeshBVH4.h */,
+				ADDE13B42820AE3100809D36 /* OrientedBox3d.cpp */,
+				ADDE13B02820AE3100809D36 /* OrientedBox3d.h */,
+				ADDE13BD2820AE3100809D36 /* Plane3d.h */,
+				ADDE13C52820AE3100809D36 /* Point3d.h */,
+				ADDE13B52820AE3100809D36 /* Ray3d.h */,
+				ADDE13B82820AE3100809D36 /* Segment3d.cpp */,
+				ADDE13BB2820AE3100809D36 /* Segment3d.h */,
+				ADDE13C12820AE3100809D36 /* ShapeType.h */,
+				ADDE13BC2820AE3100809D36 /* Sphere3d.h */,
+				ADDE13C42820AE3100809D36 /* Triangle3d.h */,
+				ADDE13B32820AE3100809D36 /* TriangleMesh.cpp */,
+				ADDE13C22820AE3100809D36 /* TriangleMesh.h */,
 			);
 			path = CollisionPrimitive;
 			sourceTree = "<group>";
@@ -929,17 +426,17 @@
 		ADDE13C72820AE3100809D36 /* Solver */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE13C82820AE3100809D36 /* SparseConjugateGradientSolver.h */,
+				ADDE13D22820AE3100809D36 /* ConjugateGradientSolver.h */,
+				ADDE13CC2820AE3100809D36 /* ExponentialIntegrator.h */,
 				ADDE13C92820AE3100809D36 /* LCPSolver.cpp */,
+				ADDE13CF2820AE3100809D36 /* LCPSolver.h */,
+				ADDE13CE2820AE3100809D36 /* NewtonRaphsonIteration.cpp */,
+				ADDE13D02820AE3100809D36 /* NewtonRaphsonIteration.h */,
 				ADDE13CA2820AE3100809D36 /* NumericalODESolver.cpp */,
 				ADDE13CB2820AE3100809D36 /* NumericalODESolver.h */,
-				ADDE13CC2820AE3100809D36 /* ExponentialIntegrator.h */,
 				ADDE13CD2820AE3100809D36 /* ProjectiveDynamicsSolver.cpp */,
-				ADDE13CE2820AE3100809D36 /* NewtonRaphsonIteration.cpp */,
-				ADDE13CF2820AE3100809D36 /* LCPSolver.h */,
-				ADDE13D02820AE3100809D36 /* NewtonRaphsonIteration.h */,
 				ADDE13D12820AE3100809D36 /* ProjectiveDynamicsSolver.h */,
-				ADDE13D22820AE3100809D36 /* ConjugateGradientSolver.h */,
+				ADDE13C82820AE3100809D36 /* SparseConjugateGradientSolver.h */,
 			);
 			path = Solver;
 			sourceTree = "<group>";
@@ -955,23 +452,23 @@
 		ADDE13D52820AE3100809D36 /* Geometry */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE13D62820AE3100809D36 /* ConvexHull3D.cpp */,
-				ADDE13D72820AE3100809D36 /* Tetrahedral.h */,
-				ADDE13D82820AE3100809D36 /* VoxelField.h */,
-				ADDE13D92820AE3100809D36 /* SparseVoxelField.h */,
 				ADDE13DA2820AE3100809D36 /* ConvexHull2D.cpp */,
-				ADDE13DB2820AE3100809D36 /* VoxelEngine.cpp */,
-				ADDE13DC2820AE3100809D36 /* VoxelEngine.h */,
-				ADDE13DD2820AE3100809D36 /* Tetrahedral.cpp */,
-				ADDE13DE2820AE3100809D36 /* SparseVoxelField.cpp */,
-				ADDE13DF2820AE3100809D36 /* Polygon3D.cpp */,
 				ADDE13E02820AE3100809D36 /* ConvexHull2D.h */,
-				ADDE13E12820AE3100809D36 /* Polygon2D.h */,
-				ADDE13E22820AE3100809D36 /* VoxelField.cpp */,
+				ADDE13D62820AE3100809D36 /* ConvexHull3D.cpp */,
 				ADDE13E32820AE3100809D36 /* ConvexHull3D.h */,
-				ADDE13E42820AE3100809D36 /* Polygon3D.h */,
 				ADDE13E52820AE3100809D36 /* DenseTensorField3d.h */,
 				ADDE13E62820AE3100809D36 /* Polygon2D.cpp */,
+				ADDE13E12820AE3100809D36 /* Polygon2D.h */,
+				ADDE13DF2820AE3100809D36 /* Polygon3D.cpp */,
+				ADDE13E42820AE3100809D36 /* Polygon3D.h */,
+				ADDE13DE2820AE3100809D36 /* SparseVoxelField.cpp */,
+				ADDE13D92820AE3100809D36 /* SparseVoxelField.h */,
+				ADDE13DD2820AE3100809D36 /* Tetrahedral.cpp */,
+				ADDE13D72820AE3100809D36 /* Tetrahedral.h */,
+				ADDE13DB2820AE3100809D36 /* VoxelEngine.cpp */,
+				ADDE13DC2820AE3100809D36 /* VoxelEngine.h */,
+				ADDE13E22820AE3100809D36 /* VoxelField.cpp */,
+				ADDE13D82820AE3100809D36 /* VoxelField.h */,
 			);
 			path = Geometry;
 			sourceTree = "<group>";
@@ -979,14 +476,14 @@
 		ADDE13E72820AE3100809D36 /* Tools */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE13E82820AE3100809D36 /* PhysxFormat_34.hpp */,
-				ADDE13E92820AE3100809D36 /* Serialization.h */,
-				ADDE13EA2820AE3100809D36 /* PhysxBinaryParser.h */,
 				ADDE13EB2820AE3100809D36 /* AnimBinaryParser.cpp */,
-				ADDE13EC2820AE3100809D36 /* PhysxFormat_41.hpp */,
-				ADDE13ED2820AE3100809D36 /* SimpleBmp.h */,
-				ADDE13EE2820AE3100809D36 /* PhysxBinaryParser.cpp */,
 				ADDE13EF2820AE3100809D36 /* AnimBinaryParser.h */,
+				ADDE13EE2820AE3100809D36 /* PhysxBinaryParser.cpp */,
+				ADDE13EA2820AE3100809D36 /* PhysxBinaryParser.h */,
+				ADDE13E82820AE3100809D36 /* PhysxFormat_34.hpp */,
+				ADDE13EC2820AE3100809D36 /* PhysxFormat_41.hpp */,
+				ADDE13E92820AE3100809D36 /* Serialization.h */,
+				ADDE13ED2820AE3100809D36 /* SimpleBmp.h */,
 			);
 			path = Tools;
 			sourceTree = "<group>";
@@ -994,25 +491,25 @@
 		ADDE13F02820AE3100809D36 /* RigidBodyDynamics */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE13F12820AE3100809D36 /* SequentialImpulseSolver.cpp */,
-				ADDE13F22820AE3100809D36 /* Animation.h */,
-				ADDE13F32820AE3100809D36 /* AnimationTree.h */,
-				ADDE13F42820AE3100809D36 /* WarmStart.cpp */,
-				ADDE13F52820AE3100809D36 /* MotionIntegration.h */,
-				ADDE13F62820AE3100809D36 /* WarmStart.h */,
-				ADDE13F72820AE3100809D36 /* RigidBody.cpp */,
-				ADDE13F82820AE3100809D36 /* RigidBodySimulation.h */,
-				ADDE13F92820AE3100809D36 /* SequentialImpulseSolver.h */,
-				ADDE13FA2820AE3100809D36 /* PhysicsMaterial.h */,
-				ADDE13FB2820AE3100809D36 /* MotionIntegration.cpp */,
-				ADDE13FC2820AE3100809D36 /* RigidBody.h */,
 				ADDE13FD2820AE3100809D36 /* Animation.cpp */,
+				ADDE13F22820AE3100809D36 /* Animation.h */,
 				ADDE13FE2820AE3100809D36 /* AnimationTree.cpp */,
-				ADDE13FF2820AE3100809D36 /* ForceField.h */,
-				ADDE14002820AE3100809D36 /* RigidBodySimulation.cpp */,
+				ADDE13F32820AE3100809D36 /* AnimationTree.h */,
 				ADDE14012820AE3100809D36 /* ForceField.cpp */,
+				ADDE13FF2820AE3100809D36 /* ForceField.h */,
+				ADDE13FB2820AE3100809D36 /* MotionIntegration.cpp */,
+				ADDE13F52820AE3100809D36 /* MotionIntegration.h */,
 				ADDE14022820AE3100809D36 /* PhysicsEntity.h */,
 				ADDE14032820AE3100809D36 /* PhysicsMaterial.cpp */,
+				ADDE13FA2820AE3100809D36 /* PhysicsMaterial.h */,
+				ADDE13F72820AE3100809D36 /* RigidBody.cpp */,
+				ADDE13FC2820AE3100809D36 /* RigidBody.h */,
+				ADDE14002820AE3100809D36 /* RigidBodySimulation.cpp */,
+				ADDE13F82820AE3100809D36 /* RigidBodySimulation.h */,
+				ADDE13F12820AE3100809D36 /* SequentialImpulseSolver.cpp */,
+				ADDE13F92820AE3100809D36 /* SequentialImpulseSolver.h */,
+				ADDE13F42820AE3100809D36 /* WarmStart.cpp */,
+				ADDE13F62820AE3100809D36 /* WarmStart.h */,
 			);
 			path = RigidBodyDynamics;
 			sourceTree = "<group>";
@@ -1020,27 +517,27 @@
 		ADDE14042820AE3100809D36 /* Maths */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE14052820AE3100809D36 /* Matrix4d.h */,
-				ADDE14062820AE3100809D36 /* Vector4d.h */,
-				ADDE14072820AE3100809D36 /* Frustum.h */,
+				ADDE140F2820AE3100809D36 /* Array.h */,
 				ADDE14082820AE3100809D36 /* Bezier.cpp */,
 				ADDE14092820AE3100809D36 /* Bezier.h */,
-				ADDE140A2820AE3100809D36 /* Quaternion.h */,
 				ADDE140B2820AE3100809D36 /* Box3d.h */,
-				ADDE140C2820AE3100809D36 /* Maths.h */,
-				ADDE140D2820AE3100809D36 /* VectorNd.h */,
 				ADDE140E2820AE3100809D36 /* Float16.h */,
-				ADDE140F2820AE3100809D36 /* Array.h */,
-				ADDE14102820AE3100809D36 /* SIMD.h */,
-				ADDE14112820AE3100809D36 /* Transform.h */,
-				ADDE14122820AE3100809D36 /* Stack.h */,
-				ADDE14132820AE3100809D36 /* Matrix3d.cpp */,
+				ADDE14072820AE3100809D36 /* Frustum.h */,
+				ADDE140C2820AE3100809D36 /* Maths.h */,
 				ADDE14142820AE3100809D36 /* Matrix2d.h */,
-				ADDE14152820AE3100809D36 /* Vector3d.h */,
-				ADDE14162820AE3100809D36 /* Vector2d.h */,
-				ADDE14172820AE3100809D36 /* Tensor.h */,
-				ADDE14182820AE3100809D36 /* MatrixMxN.h */,
+				ADDE14132820AE3100809D36 /* Matrix3d.cpp */,
 				ADDE14192820AE3100809D36 /* Matrix3d.h */,
+				ADDE14052820AE3100809D36 /* Matrix4d.h */,
+				ADDE14182820AE3100809D36 /* MatrixMxN.h */,
+				ADDE140A2820AE3100809D36 /* Quaternion.h */,
+				ADDE14102820AE3100809D36 /* SIMD.h */,
+				ADDE14122820AE3100809D36 /* Stack.h */,
+				ADDE14172820AE3100809D36 /* Tensor.h */,
+				ADDE14112820AE3100809D36 /* Transform.h */,
+				ADDE14162820AE3100809D36 /* Vector2d.h */,
+				ADDE14152820AE3100809D36 /* Vector3d.h */,
+				ADDE14062820AE3100809D36 /* Vector4d.h */,
+				ADDE140D2820AE3100809D36 /* VectorNd.h */,
 			);
 			path = Maths;
 			sourceTree = "<group>";
@@ -1048,22 +545,22 @@
 		ADDE141A2820AE3100809D36 /* LinearSystem */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE141B2820AE3100809D36 /* SparseMatrix.h */,
-				ADDE141C2820AE3100809D36 /* PolarDecomposition.h */,
-				ADDE141D2820AE3100809D36 /* LUFactorization.h */,
-				ADDE141E2820AE3100809D36 /* JacobiIteration_CPU.h */,
-				ADDE141F2820AE3100809D36 /* SingularValueDecomposition.h */,
-				ADDE14202820AE3100809D36 /* DenseMatrix.h */,
-				ADDE14212820AE3100809D36 /* EigenValueDecomposition.cpp */,
 				ADDE14222820AE3100809D36 /* DenseMatrix.cpp */,
-				ADDE14232820AE3100809D36 /* EigenValueDecomposition.h */,
+				ADDE14202820AE3100809D36 /* DenseMatrix.h */,
 				ADDE14242820AE3100809D36 /* DenseVector.cpp */,
+				ADDE14282820AE3100809D36 /* DenseVector.h */,
+				ADDE14212820AE3100809D36 /* EigenValueDecomposition.cpp */,
+				ADDE14232820AE3100809D36 /* EigenValueDecomposition.h */,
+				ADDE14272820AE3100809D36 /* GaussianElimination.h */,
+				ADDE142A2820AE3100809D36 /* GaussSeidelIteration_CPU.h */,
+				ADDE141E2820AE3100809D36 /* JacobiIteration_CPU.h */,
+				ADDE141D2820AE3100809D36 /* LUFactorization.h */,
+				ADDE14292820AE3100809D36 /* PolarDecomposition.cpp */,
+				ADDE141C2820AE3100809D36 /* PolarDecomposition.h */,
 				ADDE14252820AE3100809D36 /* ProjectedGaussSeidel.h */,
 				ADDE14262820AE3100809D36 /* SingularValueDecomposition.cpp */,
-				ADDE14272820AE3100809D36 /* GaussianElimination.h */,
-				ADDE14282820AE3100809D36 /* DenseVector.h */,
-				ADDE14292820AE3100809D36 /* PolarDecomposition.cpp */,
-				ADDE142A2820AE3100809D36 /* GaussSeidelIteration_CPU.h */,
+				ADDE141F2820AE3100809D36 /* SingularValueDecomposition.h */,
+				ADDE141B2820AE3100809D36 /* SparseMatrix.h */,
 			);
 			path = LinearSystem;
 			sourceTree = "<group>";
@@ -1071,17 +568,32 @@
 		ADDE142B2820AE3100809D36 /* PositionBasedDynamics */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE142C2820AE3100809D36 /* PositionBasedDynamicsSolver.h */,
 				ADDE142D2820AE3100809D36 /* PositionBasedDynamicsSolver.cpp */,
+				ADDE142C2820AE3100809D36 /* PositionBasedDynamicsSolver.h */,
 			);
 			path = PositionBasedDynamics;
+			sourceTree = "<group>";
+		};
+		ADDE14AB2820B16F00809D36 /* Vehicle */ = {
+			isa = PBXGroup;
+			children = (
+				ADDE14B22820B16F00809D36 /* AutonomousController.cpp */,
+				ADDE14AC2820B16F00809D36 /* AutonomousController.h */,
+				ADDE14AD2820B16F00809D36 /* LQR.h */,
+				ADDE14B02820B16F00809D36 /* MPC.h */,
+				ADDE14B12820B16F00809D36 /* PID.h */,
+				ADDE14AE2820B16F00809D36 /* Vehicle.cpp */,
+				ADDE14AF2820B16F00809D36 /* Vehicle.h */,
+			);
+			path = Vehicle;
 			sourceTree = "<group>";
 		};
 		ADE742D82820A994007DEEB3 = {
 			isa = PBXGroup;
 			children = (
+				ADE742E22820A994007DEEB3 /* Products */,
+				ADDE12F82820AE0700809D36 /* Collision */,
 				ADDE13AF2820AE3100809D36 /* CollisionPrimitive */,
-				ADDE13372820AE3100809D36 /* DerivedData */,
 				ADDE13D52820AE3100809D36 /* Geometry */,
 				ADDE13AA2820AE3100809D36 /* ImageSpace */,
 				ADDE141A2820AE3100809D36 /* LinearSystem */,
@@ -1091,8 +603,7 @@
 				ADDE13F02820AE3100809D36 /* RigidBodyDynamics */,
 				ADDE13C72820AE3100809D36 /* Solver */,
 				ADDE13E72820AE3100809D36 /* Tools */,
-				ADDE12F82820AE0700809D36 /* Collision */,
-				ADE742E22820A994007DEEB3 /* Products */,
+				ADDE14AB2820B16F00809D36 /* Vehicle */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1135,6 +646,7 @@
 				ADDE144C2820AE3100809D36 /* NumericalODESolver.h in Headers */,
 				ADDE14322820AE3100809D36 /* OrientedBox3d.h in Headers */,
 				ADDE14302820AE3100809D36 /* Rasterizer.h in Headers */,
+				ADDE14B82820B16F00809D36 /* PID.h in Headers */,
 				ADDE148C2820AE3100809D36 /* SIMD.h in Headers */,
 				ADDE14942820AE3100809D36 /* MatrixMxN.h in Headers */,
 				ADDE14732820AE3100809D36 /* WarmStart.h in Headers */,
@@ -1173,6 +685,7 @@
 				ADDE14382820AE3100809D36 /* HeightField3d.h in Headers */,
 				ADDE145B2820AE3100809D36 /* VoxelEngine.h in Headers */,
 				ADDE14682820AE3100809D36 /* PhysxBinaryParser.h in Headers */,
+				ADDE14B72820B16F00809D36 /* MPC.h in Headers */,
 				ADDE14A62820AE3100809D36 /* PositionBasedDynamicsSolver.h in Headers */,
 				ADDE14A32820AE3100809D36 /* DenseVector.h in Headers */,
 				ADDE144D2820AE3100809D36 /* ExponentialIntegrator.h in Headers */,
@@ -1180,11 +693,14 @@
 				ADDE14812820AE3100809D36 /* Matrix4d.h in Headers */,
 				ADDE143E2820AE3100809D36 /* Sphere3d.h in Headers */,
 				ADDE14462820AE3100809D36 /* Triangle3d.h in Headers */,
+				ADDE14B42820B16F00809D36 /* LQR.h in Headers */,
 				ADDE14502820AE3100809D36 /* LCPSolver.h in Headers */,
 				ADDE14A22820AE3100809D36 /* GaussianElimination.h in Headers */,
 				ADDE13322820AE0700809D36 /* QuadTree.h in Headers */,
 				ADDE14412820AE3100809D36 /* AxisAlignedBox3d.h in Headers */,
 				ADDE14432820AE3100809D36 /* ShapeType.h in Headers */,
+				ADDE14B62820B16F00809D36 /* Vehicle.h in Headers */,
+				ADDE14B32820B16F00809D36 /* AutonomousController.h in Headers */,
 				ADDE14372820AE3100809D36 /* Ray3d.h in Headers */,
 				ADDE14582820AE3100809D36 /* SparseVoxelField.h in Headers */,
 				ADDE14562820AE3100809D36 /* Tetrahedral.h in Headers */,
@@ -1284,6 +800,7 @@
 				ADDE14A42820AE3100809D36 /* PolarDecomposition.cpp in Sources */,
 				ADDE13312820AE0700809D36 /* GeometryObject.cpp in Sources */,
 				ADDE132B2820AE0700809D36 /* DynamicAABBTree.cpp in Sources */,
+				ADDE14B52820B16F00809D36 /* Vehicle.cpp in Sources */,
 				ADDE145D2820AE3100809D36 /* SparseVoxelField.cpp in Sources */,
 				ADDE14342820AE3100809D36 /* AxisAlignedBox3d.cpp in Sources */,
 				ADDE149C2820AE3100809D36 /* EigenValueDecomposition.cpp in Sources */,
@@ -1300,6 +817,7 @@
 				ADDE13282820AE0700809D36 /* AABBTreeOffline.cpp in Sources */,
 				ADDE144F2820AE3100809D36 /* NewtonRaphsonIteration.cpp in Sources */,
 				ADDE14452820AE3100809D36 /* HeightField3d.cpp in Sources */,
+				ADDE14B92820B16F00809D36 /* AutonomousController.cpp in Sources */,
 				ADDE132E2820AE0700809D36 /* Contact.cpp in Sources */,
 				ADDE13332820AE0700809D36 /* GeometryIntersection.cpp in Sources */,
 				ADDE14842820AE3100809D36 /* Bezier.cpp in Sources */,

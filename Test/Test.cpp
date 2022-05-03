@@ -640,8 +640,6 @@ void TestPID()
 	return;
 }
 
-// TODO
-/*
 void TestMatrix()
 {
 	TDenseMatrix<float> M(10);
@@ -702,7 +700,8 @@ void TestMatrix2()
 	return;
 }
 
-
+// TODO, enable_if
+/*
 void TestLqr()
 {
 	static constexpr int N = 2;
@@ -725,7 +724,7 @@ void TestLqr()
 
 	return;
 }
-*/
+ */
 
 void TestMainEntry()
 {
@@ -746,7 +745,7 @@ void TestMainEntry()
 	TestFloat16();
 	// TestPID();
 	// TestMatrix();
-	// TestMatrix2();
+	TestMatrix2();
 	// TestLqr();
 	return;
 }

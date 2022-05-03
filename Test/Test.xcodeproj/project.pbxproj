@@ -46,10 +46,10 @@
 		AD2C31BF2820AB10007157B6 = {
 			isa = PBXGroup;
 			children = (
-				ADDE129A2820ABEF00809D36 /* main.cpp */,
-				ADDE129B2820ABEF00809D36 /* Test.cpp */,
 				AD2C31C92820AB10007157B6 /* Products */,
 				ADDE14A82820B0EE00809D36 /* Frameworks */,
+				ADDE129A2820ABEF00809D36 /* main.cpp */,
+				ADDE129B2820ABEF00809D36 /* Test.cpp */,
 			);
 			sourceTree = "<group>";
 		};
