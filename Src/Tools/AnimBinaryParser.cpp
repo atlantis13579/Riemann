@@ -45,7 +45,7 @@ static size_t GetKeySequenceSizeBinCompress(char* buf, const Keysequence& keyseq
 
 static std::pair<uint32_t, bool> decodeLongsequenceInfo(const uint32_t val)
 {
-	if (val & 0x80000000) // ‭10000000000000000000000000000000‬
+	if (val & 0x80000000)
 	{
 		return std::make_pair(val & 0x7FFFFFFF, true);
 	}
@@ -87,7 +87,7 @@ static int bitwidth_to_charcount(int bitwidth)
 // used by version_1
 static std::pair<uint32_t, bool> decodeHighLevelQuantizeinfo(const uint32_t val)
 {
-	if (val & 0x40000000) // 0x40000000 = ‭01000000000000000000000000000000‬
+	if (val & 0x40000000) // 0x40000000 = ?01000000000000000000000000000000?
 	{
 		return std::make_pair(val & 0xBFFFFFFF, true);  //0xBFFFFFFF = 10111111111111111111111111111111
 	}

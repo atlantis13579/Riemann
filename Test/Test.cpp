@@ -623,7 +623,6 @@ void TestFloat16()
 			d2.push_back((t1 - t2).Length());
 		}
 	}
-	dd.size();
 	return;
 }
 
