@@ -198,7 +198,7 @@ public:
 	{
 		if (classType == physx::eMATERIAL)
 		{
-			// physx::NpMaterial *material = (physx::NpMaterial*)px;
+			physx::NpMaterial *material = (physx::NpMaterial*)px;
 
 			return;
 		}
@@ -282,7 +282,7 @@ bool LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 		return false;
 	}
 
-	// size_t Count = collection.mClass.size();
+	size_t Count = collection.mClass.size();
 	for (auto it : collection.mClass)
 	{
 		PhysxBinaryParser::CreateGeometryObjects(it.first, it.second, collection.mObjects[it.first], GeometryList);

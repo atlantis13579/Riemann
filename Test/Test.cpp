@@ -46,6 +46,22 @@
 
 void TestPhysxBin()
 {
+	if (1)
+	{
+		std::vector<Geometry*> collection;
+		LoadPhysxBinary("e:/temp/physx/Japan.xml.bin", &collection);
+		GeometryQuery query;
+		query.BuildStaticGeometry(collection, 1);
+		RayCastOption Option;
+		RayCastResult Result;
+
+		bool ret = query.RayCast(Vector3d(-521.23f, 55.67f, 399.15f), Vector3d(1, -1, 1).Unit(), Option, &Result);
+
+
+		return;
+	}
+
+
 	printf("Running TestPhysxBin\n");
 	std::vector<Geometry*> collection;
 	LoadPhysxBinary("e:/temp/physx/fighting.xml.bin", &collection);
@@ -729,7 +745,7 @@ void TestMainEntry()
 {
 	// TestRayAABB();
 	// TestBasicMath();
-	// TestPhysxBin();
+	TestPhysxBin();
 	// TestRaycastBenchmark();
 	// TestSIMD();
 	// TestRTree1();
@@ -741,10 +757,10 @@ void TestMainEntry()
 	// TestSAP();
 	// TestSAPInc();
 	// TestMesh1();
-	TestFloat16();
+	// TestFloat16();
 	// TestPID();
 	// TestMatrix();
-	TestMatrix2();
+	// TestMatrix2();
 	// TestLqr();
 	return;
 }
