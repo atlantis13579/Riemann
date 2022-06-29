@@ -6,36 +6,39 @@
 
 namespace PhysxFormat_41
 {
-	enum
+	struct PxConcreteType
 	{
-		eUNDEFINED,
+		enum
+		{
+			eUNDEFINED,
 
-		e_HEIGHTFIELD,
-		eCONVEX_MESH,
-		eTRIANGLE_MESH_BVH33,
-		eTRIANGLE_MESH_BVH34,
+			e_HEIGHTFIELD,
+			eCONVEX_MESH,
+			eTRIANGLE_MESH_BVH33,
+			eTRIANGLE_MESH_BVH34,
 
-		eRIGID_DYNAMIC,
-		eRIGID_STATIC,
-		eSHAPE,
-		eMATERIAL,
-		eCONSTRAINT,
-		eAGGREGATE,
-		eARTICULATION,
-		eARTICULATION_REDUCED_COORDINATE,
-		eARTICULATION_LINK,
-		eARTICULATION_JOINT,
-		eARTICULATION_JOINT_REDUCED_COORDINATE,
-		ePRUNING_STRUCTURE,
-		eBVH_STRUCTURE,
+			eRIGID_DYNAMIC,
+			eRIGID_STATIC,
+			eSHAPE,
+			eMATERIAL,
+			eCONSTRAINT,
+			eAGGREGATE,
+			eARTICULATION,
+			eARTICULATION_REDUCED_COORDINATE,
+			eARTICULATION_LINK,
+			eARTICULATION_JOINT,
+			eARTICULATION_JOINT_REDUCED_COORDINATE,
+			ePRUNING_STRUCTURE,
+			eBVH_STRUCTURE,
 
-		ePHYSX_CORE_COUNT,
-		eFIRST_PHYSX_EXTENSION = 256,
-		eFIRST_VEHICLE_EXTENSION = 512,
-		eFIRST_USER_EXTENSION = 1024
+			ePHYSX_CORE_COUNT,
+			eFIRST_PHYSX_EXTENSION = 256,
+			eFIRST_VEHICLE_EXTENSION = 512,
+			eFIRST_USER_EXTENSION = 1024
+		};
 	};
 
-	typedef int PxType;
+	typedef uint16_t PxType;
 
 	struct ManifestEntry
 	{
@@ -169,27 +172,27 @@ namespace PhysxFormat_41
 	class _name; \
 	template <> struct PxTypeInfo<_name>	{	static const char* name() { return #_name;	}	enum { eFastTypeId = _fastType };	};
 
-	PX_DEFINE_TYPEINFO(PxBase, eUNDEFINED)
-		PX_DEFINE_TYPEINFO(PxMaterial, eMATERIAL)
-		PX_DEFINE_TYPEINFO(ConvexMesh, eCONVEX_MESH)
-		PX_DEFINE_TYPEINFO(PxTriangleMesh, eUNDEFINED)
-		PX_DEFINE_TYPEINFO(PxBVH33TriangleMesh, eTRIANGLE_MESH_BVH33)
-		PX_DEFINE_TYPEINFO(PxBVH34TriangleMesh, eTRIANGLE_MESH_BVH34)
-		PX_DEFINE_TYPEINFO(HeightField, e_HEIGHTFIELD)
-		PX_DEFINE_TYPEINFO(PxActor, eUNDEFINED)
-		PX_DEFINE_TYPEINFO(PxRigidActor, eUNDEFINED)
-		PX_DEFINE_TYPEINFO(PxRigidBody, eUNDEFINED)
-		PX_DEFINE_TYPEINFO(PxRigidDynamic, eRIGID_DYNAMIC)
-		PX_DEFINE_TYPEINFO(PxRigidStatic, eRIGID_STATIC)
-		PX_DEFINE_TYPEINFO(PxArticulationLink, eARTICULATION_LINK)
-		PX_DEFINE_TYPEINFO(PxArticulationJoint, eARTICULATION_JOINT)
-		PX_DEFINE_TYPEINFO(PxArticulationJointReducedCoordinate, eARTICULATION_JOINT_REDUCED_COORDINATE)
-		PX_DEFINE_TYPEINFO(PxArticulation, eARTICULATION)
-		PX_DEFINE_TYPEINFO(PxArticulationReducedCoordinate, eARTICULATION_REDUCED_COORDINATE)
-		PX_DEFINE_TYPEINFO(PxAggregate, eAGGREGATE)
-		PX_DEFINE_TYPEINFO(PxConstraint, eCONSTRAINT)
-		PX_DEFINE_TYPEINFO(PxShape, eSHAPE)
-		PX_DEFINE_TYPEINFO(PxPruningStructure, ePRUNING_STRUCTURE)
+	PX_DEFINE_TYPEINFO(PxCPxBase, PxConcreteType::eUNDEFINED)
+	PX_DEFINE_TYPEINFO(PxMaterial, PxConcreteType::eMATERIAL)
+	PX_DEFINE_TYPEINFO(ConvexMesh, PxConcreteType::eCONVEX_MESH)
+	PX_DEFINE_TYPEINFO(PxTriangleMesh, PxConcreteType::eUNDEFINED)
+	PX_DEFINE_TYPEINFO(PxBVH33TriangleMesh, PxConcreteType::eTRIANGLE_MESH_BVH33)
+	PX_DEFINE_TYPEINFO(PxBVH34TriangleMesh, PxConcreteType::eTRIANGLE_MESH_BVH34)
+	PX_DEFINE_TYPEINFO(HeightField, PxConcreteType::e_HEIGHTFIELD)
+	PX_DEFINE_TYPEINFO(PxActor, PxConcreteType::eUNDEFINED)
+	PX_DEFINE_TYPEINFO(PxRigidActor, PxConcreteType::eUNDEFINED)
+	PX_DEFINE_TYPEINFO(PxRigidBody, PxConcreteType::eUNDEFINED)
+	PX_DEFINE_TYPEINFO(PxRigidDynamic, PxConcreteType::eRIGID_DYNAMIC)
+	PX_DEFINE_TYPEINFO(PxRigidStatic, PxConcreteType::eRIGID_STATIC)
+	PX_DEFINE_TYPEINFO(PxArticulationLink, PxConcreteType::eARTICULATION_LINK)
+	PX_DEFINE_TYPEINFO(PxArticulationJoint, PxConcreteType::eARTICULATION_JOINT)
+	PX_DEFINE_TYPEINFO(PxArticulationJointReducedCoordinate, PxConcreteType::eARTICULATION_JOINT_REDUCED_COORDINATE)
+	PX_DEFINE_TYPEINFO(PxArticulation, PxConcreteType::eARTICULATION)
+	PX_DEFINE_TYPEINFO(PxArticulationReducedCoordinate, PxConcreteType::eARTICULATION_REDUCED_COORDINATE)
+	PX_DEFINE_TYPEINFO(PxAggregate, PxConcreteType::eAGGREGATE)
+	PX_DEFINE_TYPEINFO(PxConstraint, PxConcreteType::eCONSTRAINT)
+	PX_DEFINE_TYPEINFO(PxShape, PxConcreteType::eSHAPE)
+	PX_DEFINE_TYPEINFO(PxPruningStructure, PxConcreteType::ePRUNING_STRUCTURE)
 
 	class PxBase
 	{
@@ -201,7 +204,7 @@ namespace PhysxFormat_41
 		template<class T> T* is() { return typeMatch<T>() ? static_cast<T*>(this) : NULL; }
 		template<class T>	bool	typeMatch() const
 		{
-			return PxU32(PxTypeInfo<T>::eFastTypeId) != PxU32(eUNDEFINED) ?
+			return PxU32(PxTypeInfo<T>::eFastTypeId) != PxU32(PxConcreteType::eUNDEFINED) ?
 				PxU32(getConcreteType()) == PxU32(PxTypeInfo<T>::eFastTypeId) : isKindOf(PxTypeInfo<T>::name());
 		}
 
@@ -1478,45 +1481,41 @@ namespace PhysxFormat_41
 	template <class T>
 	PxBase* DeserializePhysxObj(uint8_t*& address, PxDeserializationContext& context)
 	{
-		T src;
-		memcpy(&src, address, sizeof(T));
-		src.importExtraData(context);
-		src.resolveReferences(context);
-
-		T* dst = (T*)address;
-		*dst = src;
+		T* obj = new (address) T;
+		obj->importExtraData(context);
+		obj->resolveReferences(context);
 		address += sizeof(T);
-		return dst;
+		return obj;
 	}
 
 	PxBase* Deserialize(uint8_t*& address, PxDeserializationContext& context, int classType)
 	{
 		PxBase* instance = nullptr;
-		if (classType == eTRIANGLE_MESH_BVH33)
+		if (classType == PxConcreteType::eTRIANGLE_MESH_BVH33)
 		{
 			instance = DeserializePhysxObj<PxRTreeTriangleMesh>(address, context);
 		}
-		else if (classType == eCONVEX_MESH)
+		else if (classType == PxConcreteType::eCONVEX_MESH)
 		{
 			instance = DeserializePhysxObj<ConvexMesh>(address, context);
 		}
-		else if (classType == e_HEIGHTFIELD)
+		else if (classType == PxConcreteType::e_HEIGHTFIELD)
 		{
 			instance = DeserializePhysxObj<HeightField>(address, context);
 		}
-		else if (classType == eMATERIAL)
+		else if (classType == PxConcreteType::eMATERIAL)
 		{
 			instance = DeserializePhysxObj<NpMaterial>(address, context);
 		}
-		else if (classType == eRIGID_STATIC)
+		else if (classType == PxConcreteType::eRIGID_STATIC)
 		{
 			instance = DeserializePhysxObj<NpRigidStatic>(address, context);
 		}
-		else if (classType == eRIGID_DYNAMIC)
+		else if (classType == PxConcreteType::eRIGID_DYNAMIC)
 		{
 			instance = DeserializePhysxObj<NpRigidDynamic>(address, context);
 		}
-		else if (classType == eSHAPE)
+		else if (classType == PxConcreteType::eSHAPE)
 		{
 			instance = DeserializePhysxObj<NpShape>(address, context);
 		}

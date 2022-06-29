@@ -196,13 +196,13 @@ public:
 
 	static void CreateGeometryObjects(void *px, int classType, uint64_t guid, std::vector<Geometry*> *objs)
 	{
-		if (classType == physx::eMATERIAL)
+		if (classType == physx::PxConcreteType::eMATERIAL)
 		{
 			physx::NpMaterial *material = (physx::NpMaterial*)px;
 
 			return;
 		}
-		else if (classType == physx::eRIGID_STATIC)
+		else if (classType == physx::PxConcreteType::eRIGID_STATIC)
 		{
 			physx::NpRigidStatic* rigid = (physx::NpRigidStatic*)px;
 			int nShapes = rigid->GetNumShapes();
@@ -221,7 +221,7 @@ public:
 			
 			return;
 		}
-		else if (classType == physx::eRIGID_DYNAMIC)
+		else if (classType == physx::PxConcreteType::eRIGID_DYNAMIC)
 		{
 			physx::NpRigidDynamic* rigid = (physx::NpRigidDynamic*)px;
 			const physx::PxsBodyCore& core = rigid->mBody.mBodyCore.mCore;

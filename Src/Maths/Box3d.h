@@ -277,6 +277,14 @@ public:
 	{
 		return TAABB3<T>(Center - Extent, Center + Extent);
 	}
+
+	static TCE3<T> Empty()
+	{
+		TCE3<T> Ret;
+		Ret.Center = TVector3<T>::Zero();
+		Ret.Extent = TVector3<T>(FLT_MAX * 0.25f, FLT_MAX * 0.25f, FLT_MAX * 0.25f);
+		return Ret;
+	}
 };
 
 typedef TAABB3<float> Box3d;
