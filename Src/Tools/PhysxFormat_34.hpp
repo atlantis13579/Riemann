@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <vector>
 
+#define PHYSXBIN_LINUX_COMP
+
 namespace PhysxFormat_34
 {
 	struct PxConcreteType
@@ -372,6 +374,9 @@ namespace PhysxFormat_34
 		int mRefCount;
 	};
 
+#ifdef PHYSXBIN_LINUX_COMP
+    #pragma pack(push, 4)
+#endif // PHYSXBIN_LINUX_COMP
 	class TriangleMesh : public PxBase, public PxRefCountable
 	{
 	public:
@@ -441,6 +446,9 @@ namespace PhysxFormat_34
 		void* mGRB_BV32Tree;							//!< GRB: BV32 tree
 		// End of GRB data ------------------
 	};
+#ifdef PHYSXBIN_LINUX_COMP
+    #pragma pack(pop)
+#endif // PHYSXBIN_LINUX_COMP
 
 	#define RTREE_N		4
 
@@ -539,9 +547,13 @@ namespace PhysxFormat_34
 	};
 
 	static_assert(sizeof(PxBase) == 16, "sizeof(PxBase) not valid");
-	static_assert(sizeof(PxRefCountable) == 16, "sizeof(PxRefCountable) not valid");
-	static_assert(sizeof(MeshBVH4) == 96, "sizeof(MeshBVH) not valid");
-	static_assert(sizeof(TriangleMesh) == 160, "sizeof(PxTriangleMesh) not valid");
+    static_assert(sizeof(PxRefCountable) == 16, "sizeof(PxRefCountable) not valid");
+#ifdef PHYSXBIN_LINUX_COMP
+	static_assert(sizeof(TriangleMesh) == 152, "sizeof(PxTriangleMesh) not valid");
+#else
+    static_assert(sizeof(TriangleMesh) == 160, "sizeof(PxTriangleMesh) not valid");
+#endif // PHYSXBIN_LINUX_COMP
+    static_assert(sizeof(MeshBVH4) == 96, "sizeof(MeshBVH) not valid");
 	static_assert(sizeof(PxRTreeTriangleMesh) == 256, "sizeof(PxRTreeTriangleMesh) not valid");
 	static_assert(sizeof(InternalObjectsData) == 16, "sizeof(InternalObjectsData) not valid");
 
