@@ -36,7 +36,7 @@ TDenseMatrix<float> TDenseMatrix<float>::operator*(const TDenseMatrix<float>& v)
 
 	TDenseMatrix<float> Ret(mRows, v.mCols);
 	gemm_slow(GetData(), v.GetData(), mRows, mCols, v.mCols, Ret.GetData());
-	return std::move(Ret);
+	return Ret;
 }
 
 template<>
@@ -49,7 +49,7 @@ TDenseVector<float> TDenseMatrix<float>::operator*(const TDenseVector<float>& v)
 
 	TDenseVector<float> Ret(mRows);
 	gemv_slow(GetData(), v.GetData(), mRows, mCols, Ret.GetData());
-	return std::move(Ret);
+	return Ret;
 }
 
 template<>

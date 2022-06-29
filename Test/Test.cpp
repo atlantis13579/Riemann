@@ -55,12 +55,8 @@ void TestPhysxBin()
 		RayCastOption Option;
 		RayCastResult Result;
 
-		bool ret = query.RayCast(Vector3d(-521.23f, 55.67f, 399.15f), Vector3d(1, -1, 1).Unit(), Option, &Result);
-
-
-		return;
+		query.RayCast(Vector3d(-521.23f, 55.67f, 399.15f), Vector3d(1, -1, 1).Unit(), Option, &Result);
 	}
-
 
 	printf("Running TestPhysxBin\n");
 	std::vector<Geometry*> collection;

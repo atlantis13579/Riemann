@@ -12,6 +12,7 @@
 #include "../CollisionPrimitive/TriangleMesh.h"
 #include "../CollisionPrimitive/MeshBVH4.h"
 #include "../RigidBodyDynamics/RigidBody.h"
+#include "../Maths/Maths.h"
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
 #include "../Maths/Quaternion.h"
@@ -198,8 +199,7 @@ public:
 	{
 		if (classType == physx::PxConcreteType::eMATERIAL)
 		{
-			physx::NpMaterial *material = (physx::NpMaterial*)px;
-
+			// physx::NpMaterial *material = (physx::NpMaterial*)px;
 			return;
 		}
 		else if (classType == physx::PxConcreteType::eRIGID_STATIC)
@@ -282,7 +282,6 @@ bool LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 		return false;
 	}
 
-	size_t Count = collection.mClass.size();
 	for (auto it : collection.mClass)
 	{
 		PhysxBinaryParser::CreateGeometryObjects(it.first, it.second, collection.mObjects[it.first], GeometryList);

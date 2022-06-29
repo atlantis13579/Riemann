@@ -10,6 +10,8 @@
 #define PI				(3.1415926536f)
 #endif // !PI
 
+#define UNUSED(_x)       (void)(_x)
+
 #define PI_2			(6.2831853072f)
 #define PI_OVER_2		(1.5707963268f)
 #define PI_OVER_3		(1.0471975512f)

@@ -333,7 +333,7 @@ namespace PhysxFormat_34
 			if (isExternal)
 			{
 				assert(false);
-				const ImportReference& entry = mImportReferences[index];
+				// const ImportReference& entry = mImportReferences[index];
 				// base = mExternalRefs->find(entry.id);
 			}
 			else
@@ -1486,6 +1486,11 @@ namespace PhysxFormat_34
 		const PxU32 buildNumber = read32(address);
 		const PxU32 platformTag = read32(address);
 		const PxU32 markedPadding = read32(address);
+        
+        UNUSED(binaryVersion);
+        UNUSED(buildNumber);
+        UNUSED(platformTag);
+        UNUSED(markedPadding);
 
 		if (header != MAKE_FOURCC('S', 'E', 'B', 'D'))
 		{
@@ -1654,8 +1659,7 @@ namespace PhysxFormat_34
 		// iterate over memory containing PxBase objects, create the instances, resolve the addresses, import the external data, add to collection.
 		{
 			uint32_t nbObjects = nbObjectsInCollection;
-			// uint8_t* address_base = address;
-			// uint8_t* extradata_base = context.mExtraDataAddress;
+            uint8_t* addressBase = address;
 
 			while (nbObjects--)
 			{
@@ -1666,7 +1670,7 @@ namespace PhysxFormat_34
 				PxBase* header = reinterpret_cast<PxBase*>(address);
 				const PxType classType = header->getConcreteType();
 
-				// printf("%d\t%d\t%d\n", nbObjects, (int)(address - address_base), (int)(context.mExtraDataAddress - extradata_base));
+				// printf("%d\t%d\t%d\n", nbObjects, (int)(address - addressBase), (int)(context.mExtraDataAddress - addressExtraDataBase));
 				PxBase* instance = Deserialize(address, context, classType);
 
 				if (Statistic.find(classType) == Statistic.end())
@@ -1683,6 +1687,9 @@ namespace PhysxFormat_34
 				collection.mObjects.emplace(instance, 0);
 				collection.mClass.emplace(instance, classType);
 			}
+            
+            UNUSED(addressBase);
+            UNUSED(addressExtraDataBase);
 		}
 
 		for (auto it : Statistic)

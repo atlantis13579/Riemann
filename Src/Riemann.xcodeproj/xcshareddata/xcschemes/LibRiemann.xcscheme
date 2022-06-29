@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "ADE742E02820A994007DEEB3"
-               BuildableName = "liblibRiemann.a"
+               BuildableName = "libRiemann.a"
                BlueprintName = "Riemann"
                ReferencedContainer = "container:Riemann.xcodeproj">
             </BuildableReference>
@@ -51,7 +51,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "ADE742E02820A994007DEEB3"
-            BuildableName = "liblibRiemann.a"
+            BuildableName = "libRiemann.a"
             BlueprintName = "Riemann"
             ReferencedContainer = "container:Riemann.xcodeproj">
          </BuildableReference>
