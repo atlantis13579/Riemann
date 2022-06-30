@@ -241,7 +241,7 @@ void InitPhysxScene()
     std::vector<Geometry*> collection;;
     LoadPhysxBinary("e:/temp/physx/fighting.xml.bin", &collection);
 
-	g_World->LoadAnimation("idle", "E:/Temp/idle.anim", 1.0f, true);
+	// g_World->LoadAnimation("idle", "E:/Temp/idle.anim", 1.0f, true);
 
     for (Geometry* Geom : collection)
     {
@@ -267,8 +267,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    InitScene();
-    // InitPhysxScene();
+    // InitScene();
+    InitPhysxScene();
     UpdateCamera();
 
     auto last = std::chrono::steady_clock::now();

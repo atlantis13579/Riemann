@@ -12,7 +12,7 @@
 #include "../CollisionPrimitive/TriangleMesh.h"
 #include "../CollisionPrimitive/MeshBVH4.h"
 #include "../RigidBodyDynamics/RigidBody.h"
-#include "../Maths/Maths.h"
+#include "../Maths/Base.h"
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
 #include "../Maths/Quaternion.h"

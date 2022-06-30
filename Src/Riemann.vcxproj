@@ -124,6 +124,7 @@
     <ClInclude Include="LinearSystem\DenseVector.h" />
     <ClInclude Include="LinearSystem\EigenValueDecomposition.h" />
     <ClInclude Include="LinearSystem\GaussianElimination.h" />
+    <ClInclude Include="Maths\Base.h" />
     <ClInclude Include="Maths\Float16.h" />
     <ClInclude Include="Maths\MatrixMxN.h" />
     <ClInclude Include="Maths\Stack.h" />
