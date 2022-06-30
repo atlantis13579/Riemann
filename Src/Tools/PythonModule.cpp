@@ -1,8 +1,10 @@
 #include "PythonModule.h"
 
+#include <assert.h>
 #include "../RigidBodyDynamics/RigidBodySimulation.h"
 #include "../Collision/GeometryQuery.h"
 
+#ifdef BUILD_PYTHON_MODULE
 extern "C"
 {
 
@@ -49,3 +51,4 @@ float RayCast2(void *p, float x0, float y0, float z0, float x1, float y1, float 
 }
 
 }
+#endif // BUILD_PYTHON_MODULE

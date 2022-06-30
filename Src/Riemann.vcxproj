@@ -47,7 +47,6 @@
     <ClCompile Include="LinearSystem\DenseVector.cpp" />
     <ClCompile Include="LinearSystem\EigenValueDecomposition.cpp" />
     <ClCompile Include="Maths\Matrix3d.cpp" />
-    <ClCompile Include="Module\Riemann.cpp" />
     <ClCompile Include="RigidBodyDynamics\Animation.cpp" />
     <ClCompile Include="RigidBodyDynamics\AnimationTree.cpp" />
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />
@@ -74,6 +73,7 @@
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Tools\PythonModule.cpp" />
     <ClCompile Include="Vehicle\AutonomousController.cpp" />
     <ClCompile Include="Vehicle\Vehicle.cpp" />
   </ItemGroup>
@@ -131,7 +131,6 @@
     <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="Maths\VectorNd.h" />
-    <ClInclude Include="Module\Riemann.h" />
     <ClInclude Include="Optimization\SGD.h" />
     <ClInclude Include="RigidBodyDynamics\AnimationTree.h" />
     <ClInclude Include="RigidBodyDynamics\ForceField.h" />
@@ -180,6 +179,7 @@
     <ClInclude Include="Tools\PhysxBinaryParser.h" />
     <ClInclude Include="Tools\PhysxFormat_34.hpp" />
     <ClInclude Include="Tools\PhysxFormat_41.hpp" />
+    <ClInclude Include="Tools\PythonModule.h" />
     <ClInclude Include="Tools\Serialization.h" />
     <ClInclude Include="Tools\SimpleBmp.h" />
     <ClInclude Include="Vehicle\AutonomousController.h" />
