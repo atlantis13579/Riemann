@@ -47,6 +47,7 @@
     <ClCompile Include="LinearSystem\DenseVector.cpp" />
     <ClCompile Include="LinearSystem\EigenValueDecomposition.cpp" />
     <ClCompile Include="Maths\Matrix3d.cpp" />
+    <ClCompile Include="Module\Riemann.cpp" />
     <ClCompile Include="RigidBodyDynamics\Animation.cpp" />
     <ClCompile Include="RigidBodyDynamics\AnimationTree.cpp" />
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />
@@ -124,13 +125,13 @@
     <ClInclude Include="LinearSystem\DenseVector.h" />
     <ClInclude Include="LinearSystem\EigenValueDecomposition.h" />
     <ClInclude Include="LinearSystem\GaussianElimination.h" />
-    <ClInclude Include="Maths\Base.h" />
     <ClInclude Include="Maths\Float16.h" />
     <ClInclude Include="Maths\MatrixMxN.h" />
     <ClInclude Include="Maths\Stack.h" />
     <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="Maths\VectorNd.h" />
+    <ClInclude Include="Module\Riemann.h" />
     <ClInclude Include="Optimization\SGD.h" />
     <ClInclude Include="RigidBodyDynamics\AnimationTree.h" />
     <ClInclude Include="RigidBodyDynamics\ForceField.h" />
@@ -186,6 +187,9 @@
     <ClInclude Include="Vehicle\MPC.h" />
     <ClInclude Include="Vehicle\PID.h" />
     <ClInclude Include="Vehicle\Vehicle.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="build_so.sh" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
