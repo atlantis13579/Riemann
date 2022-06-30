@@ -26,6 +26,7 @@
 
 /* Begin PBXFileReference section */
 		AD2C31C82820AB10007157B6 /* Test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Test; sourceTree = BUILT_PRODUCTS_DIR; };
+		ADC73023286DD0AB00364E92 /* Test.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Test.h; sourceTree = "<group>"; };
 		ADDE129A2820ABEF00809D36 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		ADDE129B2820ABEF00809D36 /* Test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test.cpp; sourceTree = "<group>"; };
 		ADDE14A92820B0EE00809D36 /* libRiemann.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libRiemann.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -50,6 +51,7 @@
 				ADDE14A82820B0EE00809D36 /* Frameworks */,
 				ADDE129A2820ABEF00809D36 /* main.cpp */,
 				ADDE129B2820ABEF00809D36 /* Test.cpp */,
+				ADC73023286DD0AB00364E92 /* Test.h */,
 			);
 			sourceTree = "<group>";
 		};

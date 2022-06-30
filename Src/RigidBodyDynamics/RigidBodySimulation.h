@@ -27,6 +27,8 @@ public:
 	void			Simulate(float dt);
 	void			ApplyGravity();
 	void			ApplyWind();
+    
+    bool            LoadPhysxScene(const char *name);
 
 	RigidBody*		CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
 	bool			LoadAnimation(const std::string& resname, const std::string &filepath, float play_rate, bool begin_play);
@@ -34,6 +36,9 @@ public:
 	bool			BindAnimationNode(const std::string& anim, const std::string& node, RigidBodyStatic* body);
 	AnimationTree*	FindAnimation(const std::string& resname);
 
+    GeometryQuery*          GetGeometryQuery() { return m_GeometryQuery; }
+    const GeometryQuery*    GetGeometryQuery() const { return m_GeometryQuery; }
+    
 private:
 
 

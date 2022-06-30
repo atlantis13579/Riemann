@@ -524,10 +524,10 @@ namespace PhysxFormat_34
 				memcpy(buffer, address, sizeof(PxRTreeTriangleMesh));
 
 				unsigned char* p = (unsigned char*)obj;
-				memcpy(p + offsetof(PxRTreeTriangleMesh, mNbVertices), buffer + 28, sizeof(mNbVertices));
-				memcpy(p + offsetof(PxRTreeTriangleMesh, mNbTriangles), buffer + 32, sizeof(mNbTriangles));
-				memcpy(p + offsetof(PxRTreeTriangleMesh, mVertices), buffer + 36, sizeof(mVertices));
-				memcpy(p + offsetof(PxRTreeTriangleMesh, mTriangles), buffer + 44, sizeof(mTriangles));
+				memcpy(p + OFFSETOF(PxRTreeTriangleMesh, mNbVertices), buffer + 28, sizeof(mNbVertices));
+				memcpy(p + OFFSETOF(PxRTreeTriangleMesh, mNbTriangles), buffer + 32, sizeof(mNbTriangles));
+				memcpy(p + OFFSETOF(PxRTreeTriangleMesh, mVertices), buffer + 36, sizeof(mVertices));
+				memcpy(p + OFFSETOF(PxRTreeTriangleMesh, mTriangles), buffer + 44, sizeof(mTriangles));
 				// memcpy(p + offsetof(PxRTreeTriangleMesh, mAABB), buffer + 56, 72);
 			}
 			obj->importExtraData(context);
@@ -579,7 +579,7 @@ namespace PhysxFormat_34
 
 	static_assert(sizeof(PxBase) == 16, "sizeof(PxBase) not valid");
     static_assert(sizeof(PxRefCountable) == 16, "sizeof(PxRefCountable) not valid");
-#if defined(__linux__)
+#if defined(__linux__) || defined(__clang__)
 	static_assert(offsetof(PxRTreeTriangleMesh, mNbVertices) == 28, "offset of mNbVertices not right");
 #else
 	static_assert(offsetof(PxRTreeTriangleMesh, mNbVertices) == 32, "offset of mNbVertices not right");

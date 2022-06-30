@@ -3,6 +3,7 @@
 inline void BreakPoint()
 {
 	int __nbp = 0;
+    (void)__nbp;
 }
 
 #define EXPECT(_expr)		\

@@ -122,35 +122,39 @@ void TestRaycastBenchmark()
 {
 	printf("Running TestRaycastBenchmark\n");
 	std::vector<Geometry*> collection;
-	LoadPhysxBinary("data/fighting_new.xml.bin", &collection);
+	bool load_succ = LoadPhysxBinary("data/fighting_new.xml.bin", &collection);
+    EXPECT(load_succ);
+    
+    if (load_succ)
+    {
+        GeometryQuery query;
+        query.BuildStaticGeometry(collection, 5);
 
-	GeometryQuery query;
-	query.BuildStaticGeometry(collection, 5);
+        TreeStatistics stat;
+        query.GetStaticTree()->Statistic(stat);
 
-	TreeStatistics stat;
-	query.GetStaticTree()->Statistic(stat);
+        RayCastOption Option;
+        RayCastResult Result;
 
-	RayCastOption Option;
-	RayCastResult Result;
+        bool ret;
+        int rays = 10000;
+        auto t1 = std::chrono::steady_clock::now();
+        for (int i = 0; i < rays; ++i)
+        {
+            ret = query.RayCast(Vector3d(-569, 0, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
+            EXPECT(ret);
+            EXPECT(Result.hitGeom->GetGuid() == 2309201640896);
 
-	bool ret;
-	int rays = 10000;
-	auto t1 = std::chrono::steady_clock::now();
-	for (int i = 0; i < rays; ++i)
-	{
-		ret = query.RayCast(Vector3d(-569, 0, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
-		EXPECT(ret);
-		EXPECT(Result.hitGeom->GetGuid() == 2309201640896);
-
-		if (i == 0)
-		{
-		//	Option.Cache.prevhitGeom = Result.hitGeom;
-		//	Option.Cache.prevStack.Restore(Result.stack);
-		}
-	}
-	auto t2 = std::chrono::steady_clock::now();
-	auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-	printf("cost Raycast = %lld, rays = %d\n", diff, 10000);
+            if (i == 0)
+            {
+            //    Option.Cache.prevhitGeom = Result.hitGeom;
+            //    Option.Cache.prevStack.Restore(Result.stack);
+            }
+        }
+        auto t2 = std::chrono::steady_clock::now();
+        auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        printf("cost Raycast = %lld, rays = %d\n", diff, 10000);
+    }
 
 	return;
 }

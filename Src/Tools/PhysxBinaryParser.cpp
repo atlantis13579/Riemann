@@ -199,7 +199,8 @@ public:
 	{
 		if (classType == physx::PxConcreteType::eMATERIAL)
 		{
-			// physx::NpMaterial *material = (physx::NpMaterial*)px;
+			physx::NpMaterial *material = (physx::NpMaterial*)px;
+            UNUSED(material);
 			return;
 		}
 		else if (classType == physx::PxConcreteType::eRIGID_STATIC)

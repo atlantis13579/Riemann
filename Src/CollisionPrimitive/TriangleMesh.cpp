@@ -254,7 +254,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 
 	assert(m_BVH->BatchPtr);
 	assert((uintptr_t(m_BVH->BatchPtr) & 127) == 0);
-	assert((uintptr_t(this) & 15) == 0);
+	// assert((uintptr_t(this) & 15) == 0);
 
 	float maxT = Option.maxDist;
 

@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		ADC73022286DCF4300364E92 /* Base.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73021286DCF4300364E92 /* Base.h */; };
+		ADC73026286DD3BC00364E92 /* PythonModule.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73024286DD3BC00364E92 /* PythonModule.h */; };
+		ADC73027286DD3BC00364E92 /* PythonModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADC73025286DD3BC00364E92 /* PythonModule.cpp */; };
 		ADDE13182820AE0700809D36 /* BroadPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE12F92820AE0700809D36 /* BroadPhase.h */; };
 		ADDE13192820AE0700809D36 /* GeometryCollection.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE12FA2820AE0700809D36 /* GeometryCollection.h */; };
 		ADDE131A2820AE0700809D36 /* NarrowPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE12FB2820AE0700809D36 /* NarrowPhase.cpp */; };
@@ -170,6 +173,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		ADC73021286DCF4300364E92 /* Base.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Base.h; sourceTree = "<group>"; };
+		ADC73024286DD3BC00364E92 /* PythonModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PythonModule.h; sourceTree = "<group>"; };
+		ADC73025286DD3BC00364E92 /* PythonModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PythonModule.cpp; sourceTree = "<group>"; };
 		ADDE12F92820AE0700809D36 /* BroadPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BroadPhase.h; sourceTree = "<group>"; };
 		ADDE12FA2820AE0700809D36 /* GeometryCollection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GeometryCollection.h; sourceTree = "<group>"; };
 		ADDE12FB2820AE0700809D36 /* NarrowPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NarrowPhase.cpp; sourceTree = "<group>"; };
@@ -482,6 +488,8 @@
 				ADDE13EA2820AE3100809D36 /* PhysxBinaryParser.h */,
 				ADDE13E82820AE3100809D36 /* PhysxFormat_34.hpp */,
 				ADDE13EC2820AE3100809D36 /* PhysxFormat_41.hpp */,
+				ADC73025286DD3BC00364E92 /* PythonModule.cpp */,
+				ADC73024286DD3BC00364E92 /* PythonModule.h */,
 				ADDE13E92820AE3100809D36 /* Serialization.h */,
 				ADDE13ED2820AE3100809D36 /* SimpleBmp.h */,
 			);
@@ -518,6 +526,7 @@
 			isa = PBXGroup;
 			children = (
 				ADDE140F2820AE3100809D36 /* Array.h */,
+				ADC73021286DCF4300364E92 /* Base.h */,
 				ADDE14082820AE3100809D36 /* Bezier.cpp */,
 				ADDE14092820AE3100809D36 /* Bezier.h */,
 				ADDE140B2820AE3100809D36 /* Box3d.h */,
@@ -669,6 +678,7 @@
 				ADDE14772820AE3100809D36 /* PhysicsMaterial.h in Headers */,
 				ADDE14852820AE3100809D36 /* Bezier.h in Headers */,
 				ADDE14A52820AE3100809D36 /* GaussSeidelIteration_CPU.h in Headers */,
+				ADC73022286DCF4300364E92 /* Base.h in Headers */,
 				ADDE148E2820AE3100809D36 /* Stack.h in Headers */,
 				ADDE14892820AE3100809D36 /* VectorNd.h in Headers */,
 				ADDE13342820AE0700809D36 /* DynamicAABBTree.h in Headers */,
@@ -689,6 +699,7 @@
 				ADDE14A62820AE3100809D36 /* PositionBasedDynamicsSolver.h in Headers */,
 				ADDE14A32820AE3100809D36 /* DenseVector.h in Headers */,
 				ADDE144D2820AE3100809D36 /* ExponentialIntegrator.h in Headers */,
+				ADC73026286DD3BC00364E92 /* PythonModule.h in Headers */,
 				ADDE147F2820AE3100809D36 /* PhysicsEntity.h in Headers */,
 				ADDE14812820AE3100809D36 /* Matrix4d.h in Headers */,
 				ADDE143E2820AE3100809D36 /* Sphere3d.h in Headers */,
@@ -816,6 +827,7 @@
 				ADDE132D2820AE0700809D36 /* GeometryQuery.cpp in Sources */,
 				ADDE13282820AE0700809D36 /* AABBTreeOffline.cpp in Sources */,
 				ADDE144F2820AE3100809D36 /* NewtonRaphsonIteration.cpp in Sources */,
+				ADC73027286DD3BC00364E92 /* PythonModule.cpp in Sources */,
 				ADDE14452820AE3100809D36 /* HeightField3d.cpp in Sources */,
 				ADDE14B92820B16F00809D36 /* AutonomousController.cpp in Sources */,
 				ADDE132E2820AE0700809D36 /* Contact.cpp in Sources */,

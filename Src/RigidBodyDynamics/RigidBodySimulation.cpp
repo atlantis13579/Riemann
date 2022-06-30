@@ -12,6 +12,7 @@
 #include "../Collision/GeometryObject.h"
 #include "../Collision/BroadPhase.h"
 #include "../Collision/NarrowPhase.h"
+#include "../Tools/PhysxBinaryParser.h"
 
 RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 {
@@ -137,6 +138,19 @@ void		RigidBodySimulation::ApplyWind()
 	{
 		m_WindField->ApplyForce(m_RigidDynamics[i]);
 	}
+}
+
+bool         RigidBodySimulation::LoadPhysxScene(const char *name)
+{
+    std::vector<Geometry*> collection;
+    bool load_succ = ::LoadPhysxBinary(name, &collection);
+    if (!load_succ)
+    {
+        return false;
+    }
+    assert(m_GeometryQuery);
+    m_GeometryQuery->BuildStaticGeometry(collection, 5);
+    return true;
 }
 
 RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
