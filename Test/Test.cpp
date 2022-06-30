@@ -44,68 +44,76 @@
 #include "../Src/Geometry/DenseTensorField3d.h"
 #include "../Src/Tools/PhysxBinaryParser.h"
 
+#include "Test.h"
+
 void TestPhysxBin()
 {
-	if (1)
+	printf("Running TestPhysxBin Japan\n");
+	std::vector<Geometry*> collection;
+	bool load_succ = LoadPhysxBinary("data/Japan.xml.bin", &collection);
+	EXPECT(load_succ);
+	if (load_succ)
 	{
-		std::vector<Geometry*> collection;
-		LoadPhysxBinary("e:/temp/physx/Japan.xml.bin", &collection);
 		GeometryQuery query;
 		query.BuildStaticGeometry(collection, 1);
 		RayCastOption Option;
 		RayCastResult Result;
 
 		query.RayCast(Vector3d(-521.23f, 55.87f, 399.15f), Vector3d(1, -1, 1).Unit(), Option, &Result);
-		return;
+		EXPECT(FuzzyEqual(Result.hitPoint.y, 55.53f, 0.1f));
 	}
 
-	printf("Running TestPhysxBin\n");
-	std::vector<Geometry*> collection;
-	LoadPhysxBinary("e:/temp/physx/fighting_new.xml.bin", &collection);
+	printf("Running TestPhysxBin fighting_new\n");
 
-	GeometryQuery query;
-	query.BuildStaticGeometry(collection, 1);
+	load_succ = LoadPhysxBinary("data/fighting_new.xml.bin", &collection);
+	EXPECT(load_succ);
 
-	TreeStatistics stat;
-	query.GetStaticTree()->Statistic(stat);
+	if (load_succ)
+	{
+		GeometryQuery query;
+		query.BuildStaticGeometry(collection, 1);
 
-	RayCastOption Option;
-	RayCastResult Result;
+		TreeStatistics stat;
+		query.GetStaticTree()->Statistic(stat);
 
-	OverlapOption OOption;
-	OverlapResult OResult;
+		RayCastOption Option;
+		RayCastResult Result;
 
-	bool ret = query.RayCast(Vector3d(-569, 50, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
-	assert(ret);
-	assert(Result.hitGeom->GetGuid() == 2309201640896);
+		OverlapOption OOption;
+		OverlapResult OResult;
 
-	Vector3d Pos = Result.hitPoint;
+		bool ret = query.RayCast(Vector3d(-569, 50, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
+		EXPECT(ret);
+		EXPECT(Result.hitGeom->GetGuid() == 2759574283328);
 
-	ret = query.RayCast(Vector3d(-569, -50, 427), Vector3d(1, 0, 1).Unit(), Option, &Result);
+		Vector3d Pos = Result.hitPoint;
 
-	ret = query.OverlapBox(Vector3d(Pos.x, Pos.y + 15.0f, Pos.z), Vector3d::One(), OOption, &OResult);
-	assert(!ret);
+		ret = query.RayCast(Vector3d(-569, -50, 427), Vector3d(1, 0, 1).Unit(), Option, &Result);
 
-	OOption.maxOverlaps = 1;
-	ret = query.OverlapBox(Vector3d(Pos.x, Pos.y, Pos.z), 1.0f * Vector3d::One(), OOption, &OResult);
-	assert(ret);
-	assert(OResult.overlapGeoms[0]->GetGuid() == 2309201640896);
+		ret = query.OverlapBox(Vector3d(Pos.x, Pos.y + 15.0f, Pos.z), Vector3d::One(), OOption, &OResult);
+		EXPECT(!ret);
 
-	ret = query.RayCast(Vector3d(Pos.x + 0.01f, Pos.y - 10.0f, Pos.z + 0.01f), -Vector3d::UnitY(), Option, &Result);
-	// assert(!ret);		// TODO filter the world box
+		OOption.maxOverlaps = 1;
+		ret = query.OverlapBox(Vector3d(Pos.x, Pos.y, Pos.z), 1.0f * Vector3d::One(), OOption, &OResult);
+		EXPECT(ret);
+		EXPECT(OResult.overlapGeoms[0]->GetGuid() == 2759574283328);
 
-	ret = query.RayCast(Vector3d(Pos.x + 0.01f, 0, Pos.z + 0.01f), -Vector3d::UnitY(), Option, &Result);
-	assert(ret);
-	assert(FloatDiff(Result.hitPoint.y, Pos.y) < 0.01f);
-	assert(Result.hitGeom->GetGuid() == 2309201640896);
+		ret = query.RayCast(Vector3d(Pos.x + 0.01f, Pos.y - 10.0f, Pos.z + 0.01f), -Vector3d::UnitY(), Option, &Result);
+		// EXPECT(!ret);		// TODO filter the world box
 
-	ret = query.RayCast(Vector3d(-2222, 0, -773), -Vector3d::UnitY(), Option, &Result);
-	assert(ret);
-	assert(Result.hitGeom->GetGuid() == 2309460023584);
+		ret = query.RayCast(Vector3d(Pos.x + 0.01f, Pos.y, Pos.z + 0.01f), -Vector3d::UnitY(), Option, &Result);
+		EXPECT(ret);
+		EXPECT(FloatDiff(Result.hitPoint.y, Pos.y) < 0.2f);
+		EXPECT(Result.hitGeom->GetGuid() == 2759584952560);
 
-	ret = query.RayCast(Vector3d(-569, 0, 427), -Vector3d::UnitY(), Option, &Result);
-	assert(ret);
-	assert(Result.hitGeom->GetGuid() == 2309201640896);
+		ret = query.RayCast(Vector3d(-2222, 0, -773), -Vector3d::UnitY(), Option, &Result);
+		EXPECT(ret);
+		EXPECT(Result.hitGeom->GetGuid() == 2309460023584);
+
+		ret = query.RayCast(Vector3d(-569, 0, 427), -Vector3d::UnitY(), Option, &Result);
+		EXPECT(ret);
+		EXPECT(Result.hitGeom->GetGuid() == 2309201640896);
+	}
 
 	return;
 }
@@ -114,7 +122,7 @@ void TestRaycastBenchmark()
 {
 	printf("Running TestRaycastBenchmark\n");
 	std::vector<Geometry*> collection;
-	LoadPhysxBinary("e:/temp/physx/fighting.bin", &collection);
+	LoadPhysxBinary("data/fighting_new.xml.bin", &collection);
 
 	GeometryQuery query;
 	query.BuildStaticGeometry(collection, 5);
@@ -126,12 +134,13 @@ void TestRaycastBenchmark()
 	RayCastResult Result;
 
 	bool ret;
+	int rays = 10000;
 	auto t1 = std::chrono::steady_clock::now();
-	for (int i = 0; i < 10000; ++i)
+	for (int i = 0; i < rays; ++i)
 	{
 		ret = query.RayCast(Vector3d(-569, 0, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
-		assert(ret);
-		assert(Result.hitGeom->GetGuid() == 2926462965280);
+		EXPECT(ret);
+		EXPECT(Result.hitGeom->GetGuid() == 2309201640896);
 
 		if (i == 0)
 		{
@@ -141,14 +150,14 @@ void TestRaycastBenchmark()
 	}
 	auto t2 = std::chrono::steady_clock::now();
 	auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-	printf("cost Raycast = %lld\n", diff);
-
+	printf("cost Raycast = %lld, rays = %d\n", diff, 10000);
 
 	return;
 }
 
 void TestBasicMath()
 {
+	printf("Running TestBasicMath\n");
 	Matrix3d mat1, mat2;
 	Quaternion q1, q2;
 	Vector3d v1, v2, s1, s2;
@@ -158,7 +167,7 @@ void TestBasicMath()
 	mat2 = q1.ToRotationMatrix();
 
 	float dist = (mat1 - mat2).L1Norm();
-	assert(dist < 0.0001f);
+	EXPECT1(dist < 0.0001f, dist);
 
 	v1 = Vector3d(1.0f, 2.0f, 3.0f);
 
@@ -167,30 +176,30 @@ void TestBasicMath()
 	mat2 = q1.ToRotationMatrix();
 
 	dist = (mat1 - mat2).L1Norm();
-	assert(dist < 0.0001f);
+	EXPECT1(dist < 0.0001f, dist);
 
 	Transform trans;
 	trans.SetRotation(q1);
 	trans.SetTranslation(v1);
 	Transform::WorldMatrixToTR(trans.GetWorldMatrix(), v2, q2);
 
-	assert((v1 - v2).SquareLength() < 0.000001f);
-	assert((q1 - q2).SquareLength() < 0.000001f);
+	EXPECT1((v1 - v2).SquareLength() < 0.000001f, (v1 - v2).SquareLength());
+	EXPECT1((q1 - q2).SquareLength() < 0.000001f, (q1 - q2).SquareLength());
 
 	s1 = Vector3d(2.0f, 1.0f, 3.0f);
 	trans.SetScale(s1);
 	
 	Transform::WorldMatrixToTRS(trans.GetWorldMatrix(), v2, q2, s2);
 
-	assert((v1 - v2).SquareLength() < 0.00001f);
-	assert((q1 - q2).SquareLength() < 0.00001f);
-	assert((s1 - s2).SquareLength() < 0.0001f);
+	EXPECT((v1 - v2).SquareLength() < 0.0001f);
+	EXPECT((q1 - q2).SquareLength() < 0.0001f);
+	EXPECT((s1 - s2).SquareLength() < 0.0001f);
 
 	trans.SetScale(Vector3d::One());
 	Transform::WorldMatrixToTRS(trans.GetWorldMatrix() * trans.GetWorldMatrix(), v2, q2, s2);
 
-	assert((v1 + v1 - v2).SquareLength() < 0.00001f);
-	assert((q1 * q1 - q2).SquareLength() < 0.001f);
+	EXPECT((v1 + v1 - v2).SquareLength() < 0.00001f);
+	EXPECT((q1 * q1 - q2).SquareLength() < 0.001f);
 
 	return;
 }
@@ -216,19 +225,19 @@ void TestRTree1()
 	float t;
 	bool success;
 	success = mesh.IntersectRay(Vector3d(0.0f, 10.0f, 0.0f), -Vector3d::UnitY(), &t);
-	assert(success);
-	assert(FloatEqual(t, 9.0f));
+	EXPECT(success);
+	EXPECT(FloatEqual(t, 9.0f));
 
 	success = mesh.IntersectRay(Vector3d(2.0f, 10.0f, 0.0f), -Vector3d::UnitY(), &t);
-	assert(!success);
+	EXPECT(!success);
 
 	success = mesh.IntersectRay(Vector3d(0.0f, 0.75f, 0.0f), Vector3d::UnitY(), &t);
-	assert(success);
-	assert(FloatEqual(t, 0.25f));
+	EXPECT(success);
+	EXPECT(FloatEqual(t, 0.25f));
 
 	success = mesh.IntersectRay(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(1, 1, 1).Unit(), &t);
-	assert(success);
-	assert(FloatEqual(t, sqrtf(3.0f) * 0.5f));
+	EXPECT(success);
+	EXPECT(FloatEqual(t, sqrtf(3.0f) * 0.5f));
 
 	return;
 }
@@ -238,21 +247,25 @@ void TestRTree2()
 	printf("Running TestRTree2\n");
 	TriangleMesh mesh;
 
-	mesh.LoadObj("e:/temp/dungeon.obj");
-	mesh.Compact();
-	mesh.BuildBVH();
+	bool load_succ = mesh.LoadObj("data/dungeon.obj");
+	EXPECT(load_succ);
+	if (load_succ)
+	{
+		mesh.Compact();
+		mesh.BuildBVH();
 
-	Vector3d Center;
-	Center = (mesh(0, 0) + mesh(0, 1) + mesh(0, 2)) / 3.0f;
-	Center.y = 0.0f;
+		Vector3d Center;
+		Center = (mesh(0, 0) + mesh(0, 1) + mesh(0, 2)) / 3.0f;
+		Center.y = 0.0f;
 
-	float t1, t2;
-	bool success1, success2;
-	Vector3d Dir = Vector3d::UnitY();
-	success1 = Triangle3d::RayIntersectTriangle(Center, Dir, mesh(0, 0), mesh(0, 1), mesh(0, 2), &t1);
-	success2 = mesh.IntersectRay(Center, Dir, &t2);
-	assert(success1 == success2);
-	assert(FloatEqual(t1, t2));
+		float t1, t2;
+		bool success1, success2;
+		Vector3d Dir = Vector3d::UnitY();
+		success1 = Triangle3d::RayIntersectTriangle(Center, Dir, mesh(0, 0), mesh(0, 1), mesh(0, 2), &t1);
+		success2 = mesh.IntersectRay(Center, Dir, &t2);
+		EXPECT(success1 == success2);
+		EXPECT(FloatEqual(t1, t2));
+	}
 	return;
 }
 
@@ -265,13 +278,13 @@ void TestBitmap()
 				0, 1, 0, 0, 1, 0, 1, 1 };
 	ContinuousBitmap<uint16_t> bitmap;
 	bitmap.Build<int>(a, 8, 4, -4, -4, 4, 4);
-	bitmap.SerializeToFile("E://Temp//cbit.map");
-	bitmap.SerializeFromFile("E://Temp//cbit.map");
-	assert(bitmap.QueryBitmapSpace(3, 0) == false);
-	assert(bitmap.QueryBitmapSpace(4, 0) == true);
-	assert(bitmap.QueryBitmapSpace(3, 1) == true);
-	assert(bitmap.QueryBitmapSpace(13, 1) == false);
-	assert(bitmap.QueryBitmapSpace(7, 3) == true);
+	bitmap.SerializeToFile("data/cbit.map");
+	bitmap.SerializeFromFile("data/cbit.map");
+	EXPECT(bitmap.QueryBitmapSpace(3, 0) == false);
+	EXPECT(bitmap.QueryBitmapSpace(4, 0) == true);
+	EXPECT(bitmap.QueryBitmapSpace(3, 1) == true);
+	EXPECT(bitmap.QueryBitmapSpace(13, 1) == false);
+	EXPECT(bitmap.QueryBitmapSpace(7, 3) == true);
 }
 
 void TestRayAABB()
@@ -281,7 +294,7 @@ void TestRayAABB()
 	Vector3d Dir(1, 0, 0);
 	float t0 = 0, t1 = 0;
 	bool success;
-	assert(Ray3d::RayIntersectAABB2(Origin, Dir, Vector3d::Zero(), Vector3d(100, 100, 100), 0.00001f, 100000.0f, &t0, &t1));
+	EXPECT(Ray3d::RayIntersectAABB2(Origin, Dir, Vector3d::Zero(), Vector3d(100, 100, 100), 0.00001f, 100000.0f, &t0, &t1));
 
 	// Vector3d InPos = Origin + Dir * t0;
 	// Vector3d OutPos = Origin + Dir * t1;
@@ -291,10 +304,10 @@ void TestRayAABB()
 
 	Triangle3d Tri(Vector3d(0, 1, 0), Vector3d(0, 0, 0), Vector3d(1, 0, 0));
 	success = Tri.IntersectAABB(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
-	assert(success);
+	EXPECT(success);
 
 	success = Tri.IntersectAABB(Vector3d(1, 1, 1), Vector3d(2, 2, 2));
-	assert(!success);
+	EXPECT(!success);
 
 	return;
 }
@@ -315,21 +328,21 @@ void TestAABBTree()
 	tree.StaticBuild(param);
 
 	int p = tree.IntersectPoint(Vector3d(-1.0f, -1.0f, -1.0f));
-	assert(p == -1);
+	EXPECT(p == -1);
 	p = tree.IntersectPoint(Vector3d(0.5f, 0.5f, 0.5f));
-	assert(p >= 0);
+	EXPECT(p >= 0);
 	p = tree.IntersectPoint(Vector3d(0.5f, 0.5f, 2.5f));
-	assert(p == 1);
+	EXPECT(p == 1);
 
 	RayCastOption Option;
 	RayCastResult Result;
 	Ray3d ray(Vector3d(0.5f, 0.5f, 100.0f), Vector3d(0.0f, 0.0f, -1.0f));
 	bool hit = tree.RayCastBoundingBox(ray, Option, &Result);
-	assert(hit);
+	EXPECT(hit);
 
 	ray.Origin = Vector3d(0.5f, 0.5f, 0.5f);
 	hit = tree.RayCastBoundingBox(ray, Option, &Result);
-	assert(hit);
+	EXPECT(hit);
 
 	for (int i = 0; i < 10000; ++i)
 	{
@@ -353,7 +366,7 @@ void TestAABBTree()
 		if (hit)
 		{
 			Box3d bb = boxes[hit];
-			// assert(ray.IntersectAABB(bb.Min, bb.Max, &t));	  // TODO
+			// EXPECT(ray.IntersectAABB(bb.Min, bb.Max, &t));	  // TODO
 		}
 	}
 
@@ -369,7 +382,7 @@ void TestTensor()
 
 	auto t2 = t[9][19][29];
 
-	assert(t2[39] == 2.0f);
+	EXPECT(t2[39] == 2.0f);
 }
 
 void TestGeometryQuery()
@@ -386,15 +399,15 @@ void TestGeometryQuery()
 	RayCastResult result;
 	RayCastOption option;
 	scene.RayCast(Vector3d(0.2f, 0.2f, 5.0f), Vector3d(0.2f, 0.2f, -1.0f), option , &result);
-	assert(result.hit);
-	assert(fabsf(result.hitTimeMin - 4.0f) < 0.001f);
+	EXPECT(result.hit);
+	EXPECT(fabsf(result.hitTimeMin - 4.0f) < 0.001f);
 
 	scene.RayCast(Vector3d(0.0f, 0.0f, -5.0f), Vector3d(0.0f, 0.0f, -1.0f), option, &result);
-	assert(!result.hit);
+	EXPECT(!result.hit);
 
 	scene.RayCast(Vector3d(0.0f, 0.0f, 15.0f), Vector3d(0.0f, 0.0f, -1.0f), option, &result);
-	assert(result.hit);
-	assert(fabsf(result.hitTimeMin - 5.0f) < 0.001f);
+	EXPECT(result.hit);
+	EXPECT(fabsf(result.hitTimeMin - 5.0f) < 0.001f);
 
 	for (auto obj : objs)
 	{
@@ -447,11 +460,11 @@ void TestSAP()
 	SAP sap(&P, { 0, 1, 2 });
 
 	sap.Prune(&overlaps);
-	assert(overlaps.size() == 3);
+	EXPECT(overlaps.size() == 3);
 
 	boxes[2] = Box3d(Vector3d(10, 10, 10), Vector3d(15, 15, 15));
 	sap.Prune(&overlaps);
-	assert(overlaps.size() == 1);
+	EXPECT(overlaps.size() == 1);
 
 	for (int i = 0; i < 100; ++i)
 	{
@@ -468,11 +481,11 @@ void TestSAP()
 		OverlapKey key = SAP::PackOverlapKey((int)i, (int)j);
 		if (boxes[i].Intersect(boxes[j]))
 		{
-			assert(overlaps.count(key) == 1);
+			EXPECT(overlaps.count(key) == 1);
 		}
 		else
 		{
-			assert(overlaps.count(key) == 0);
+			EXPECT(overlaps.count(key) == 0);
 		}
 	}
 
@@ -495,18 +508,18 @@ void TestMesh1()
 	field.AddVoxel(1, 0, 0, 0);
 	field.AddVoxel(2, 0, 1, 0);
 
-	field.SerializeTo("e://temp//test.voxel");
+	field.SerializeTo("data/test.voxel");
 
 	SparseVoxelField inference;
-	inference.SerializeFrom("e://temp//test.voxel");
+	inference.SerializeFrom("data/test.voxel");
 
 	Box3d v = field.GetVoxelBox(Vector3d(-0.1f, -0.1f, -0.1f));
-	assert(FloatEqual(v.Min.x, -1.0f));
-	assert(FloatEqual(v.Max.x, 0.0f));
+	EXPECT(FloatEqual(v.Min.x, -1.0f));
+	EXPECT(FloatEqual(v.Max.x, 0.0f));
 
 	v = field.GetVoxelBox(Vector3d(0.01f, 0.01f, 0.01f));
-	assert(FloatEqual(v.Min.x, 0.0f));
-	assert(FloatEqual(v.Max.x, 1.0f));
+	EXPECT(FloatEqual(v.Min.x, 0.0f));
+	EXPECT(FloatEqual(v.Max.x, 1.0f));
 
 	field.MakeComplementarySet();
 
@@ -520,7 +533,7 @@ void TestMesh1()
 	field.MakeComplementarySet();
 	std::unordered_map<int, uint64_t> volumes;
 	int space = field.SolveTopology(0.01f, &volumes);
-	assert(space == 2);
+	EXPECT(space == 2);
 	return;
 }
 
@@ -568,18 +581,18 @@ void TestSAPInc()
 	std::set<OverlapKey> overlaps;
 
 	sap.IncrementalPrune(&overlaps);
-	assert(overlaps.size() == 0);
+	EXPECT(overlaps.size() == 0);
 
 	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3d(-10, -10, -10));
 	sap.IncrementalPrune(&overlaps);
-	assert(overlaps.size() == 2);
+	EXPECT(overlaps.size() == 2);
 
 	sap.IncrementalPrune(&overlaps);
-	assert(overlaps.size() == 2);
+	EXPECT(overlaps.size() == 2);
 
 	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3d(10, 10, 10));
 	sap.IncrementalPrune(&overlaps);
-	assert(overlaps.size() == 0);
+	EXPECT(overlaps.size() == 0);
 
 	for (int i = 0; i < 100; ++i)
 	{
@@ -601,11 +614,11 @@ void TestSAPInc()
 			OverlapKey key = SAP::PackOverlapKey((int)i, (int)j);
 			if (boxes[i]->GetBoundingVolume_WorldSpace().Intersect(boxes[j]->GetBoundingVolume_WorldSpace()))
 			{
-				assert(overlaps.count(key) == 1);
+				EXPECT(overlaps.count(key) == 1);
 			}
 			else
 			{
-				assert(overlaps.count(key) == 0);
+				EXPECT(overlaps.count(key) == 0);
 			}
 		}
 
@@ -619,7 +632,7 @@ void TestFloat16()
 {
 	// float	x1 = Float16::FromFloat32(1.0f).ToFloat();
 	// float	x2 = Float16::FromFloat32(1.111111f).ToFloat();
-	
+	printf("Running TestFloat16\n");
 	std::vector<Vector3d> cc;
 	std::vector<float> dd, d2;
 	for (int i = 0; i <= 20; ++i)
@@ -641,19 +654,22 @@ void TestFloat16()
 
 void TestPID()
 {
+	printf("Running TestPID\n");
 	PID_Controller pid(1.0f, 0.1f, 0.01f);
 	float c = 0.0f, t = 1.0f;
 	for (int i = 0; i < 100; ++i)
 	{
 		float d = pid.Compute(0.033f, c, t);
 		c = c + d;
-		printf("%d : c = %.2f, d = %.2f\n", i, c, fabsf(d));
+		// printf("%d : c = %.2f, d = %.2f\n", i, c, fabsf(d));
 	}
 	return;
 }
 
 void TestMatrix()
 {
+	printf("Running TestMatrix\n");
+
 	TDenseMatrix<float> M(10);
 	M[0][0] = 2.0f;
 	M[0][1] = 3.0f;
@@ -665,25 +681,27 @@ void TestMatrix()
 
 	TDenseMatrix<float> invM = (M+M).Inverse();
 	TDenseMatrix<float> Id = (M+M) * invM;
-	bool IsId = Id.IsIdentity();
-	assert(IsId);
+	bool IsId = Id.IsIdentity(1e-5f);
+	EXPECT(IsId);
 
 	float det = (2.0f * M).Determinant();
 	float detI = invM.Determinant();
 
-	assert(fabsf(det * detI - 0.9999f) < 0.001f);
+	EXPECT(fabsf(det * detI - 0.9999f) < 0.001f);
 
 	TDenseVector<float>	Vec = M * M.GetCol(0);
 	float dp = M.GetRow(0).Dot(M.GetCol(0));
 	TDenseMatrix<float>	Mat = M * M.Transpose().Transpose();
 
-	assert(dp == Vec[0]);
-	assert(dp == Mat[0][0]);
+	EXPECT(dp == Vec[0]);
+	EXPECT(dp == Mat[0][0]);
 	return;
 }
 
 void TestMatrix2()
 {
+	printf("Running TestMatrix2\n");
+
 	SquareMatrix<10> M;
 	M[0][0] = 2.0f;
 	M[0][1] = 3.0f;
@@ -696,19 +714,19 @@ void TestMatrix2()
 	SquareMatrix<10> invM = (M + M).Inverse();
 	SquareMatrix<10> Id = (M + M) * invM;
 	bool IsId = Id.IsIdentity();
-	assert(IsId);
+	EXPECT(IsId);
 
 	float det = (2.0f * M).Determinant();
 	float detI = invM.Determinant();
 
-	assert(fabsf(det * detI - 0.9999f) < 0.001f);
+	EXPECT(fabsf(det * detI - 0.9999f) < 0.001f);
 
 	VectorNd<10>	Vec = M * M.GetCol(0);
 	float dp = M.GetRow(0).Dot(M.GetCol(0));
 	SquareMatrix<10>	Mat = M * M.Transpose().Transpose();
 
-	assert(dp == Vec[0]);
-	assert(dp == Mat[0][0]);
+	EXPECT(dp == Vec[0]);
+	EXPECT(dp == Mat[0][0]);
 	return;
 }
 
@@ -740,24 +758,24 @@ void TestLqr()
 
 void TestMainEntry()
 {
-	// TestRayAABB();
-	// TestBasicMath();
+	TestRayAABB();
+	TestBasicMath();
 	TestPhysxBin();
-	// TestRaycastBenchmark();
-	// TestSIMD();
-	// TestRTree1();
-	// TestRTree2();
-	// TestBitmap();
-	// TestAABBTree();
-	// TestGeometryQuery();
-	// TestTensor();
-	// TestSAP();
-	// TestSAPInc();
-	// TestMesh1();
-	// TestFloat16();
-	// TestPID();
-	// TestMatrix();
-	// TestMatrix2();
+	TestRaycastBenchmark();
+	TestSIMD();
+	TestRTree1();
+	TestRTree2();
+	TestBitmap();
+	TestAABBTree();
+	TestGeometryQuery();
+	TestTensor();
+	TestSAP();
+	TestSAPInc();
+	TestMesh1();
+	TestFloat16();
+	TestPID();
+	TestMatrix();
+	TestMatrix2();
 	// TestLqr();
 	return;
 }

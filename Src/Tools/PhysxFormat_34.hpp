@@ -1775,6 +1775,7 @@ namespace PhysxFormat_34
             UNUSED(addressExtraDataBase);
 		}
 
+		bool success = true;
 		for (auto it : Statistic)
 		{
 			if (it.second >= 0)
@@ -1783,13 +1784,12 @@ namespace PhysxFormat_34
 			}
 			else
 			{
+				success = false;
 				printf("Create class instance for type %d failed (%d objs).\n", it.first, -it.second);
 			}
 		}
 
-		// TODO
-		// assert(collection->mObjects.size() == nbObjectsInCollection);
-		assert(collection.mObjects.size() <= nbObjectsInCollection);
+		assert(collection.mObjects.size() == nbObjectsInCollection);
 
 		// update new collection with export references
 		{
@@ -1804,7 +1804,7 @@ namespace PhysxFormat_34
 				collection.mObjects[obj] = exportReferences[i].id;
 			}
 		}
-		return true;
+		return success;
 	}
 
 };

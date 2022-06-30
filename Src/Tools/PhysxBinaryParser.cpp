@@ -287,5 +287,5 @@ bool LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 		PhysxBinaryParser::CreateGeometryObjects(it.first, it.second, collection.mObjects[it.first], GeometryList);
 	}
 
-	return true;
+	return collection.mObjects.size() > 0;
 }

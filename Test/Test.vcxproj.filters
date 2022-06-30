@@ -4,4 +4,10 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="build_test.sh" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Test.h" />
+  </ItemGroup>
 </Project>
