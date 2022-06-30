@@ -55,12 +55,13 @@ void TestPhysxBin()
 		RayCastOption Option;
 		RayCastResult Result;
 
-		query.RayCast(Vector3d(-521.23f, 55.67f, 399.15f), Vector3d(1, -1, 1).Unit(), Option, &Result);
+		query.RayCast(Vector3d(-521.23f, 55.87f, 399.15f), Vector3d(1, -1, 1).Unit(), Option, &Result);
+		return;
 	}
 
 	printf("Running TestPhysxBin\n");
 	std::vector<Geometry*> collection;
-	LoadPhysxBinary("e:/temp/physx/fighting.xml.bin", &collection);
+	LoadPhysxBinary("e:/temp/physx/fighting_new.xml.bin", &collection);
 
 	GeometryQuery query;
 	query.BuildStaticGeometry(collection, 1);
@@ -76,7 +77,7 @@ void TestPhysxBin()
 
 	bool ret = query.RayCast(Vector3d(-569, 50, 427), Vector3d(1, -1, 1).Unit(), Option, &Result);
 	assert(ret);
-	assert(Result.hitGeom->GetGuid() == 2926462965280);
+	assert(Result.hitGeom->GetGuid() == 2309201640896);
 
 	Vector3d Pos = Result.hitPoint;
 
@@ -88,7 +89,7 @@ void TestPhysxBin()
 	OOption.maxOverlaps = 1;
 	ret = query.OverlapBox(Vector3d(Pos.x, Pos.y, Pos.z), 1.0f * Vector3d::One(), OOption, &OResult);
 	assert(ret);
-	assert(OResult.overlapGeoms[0]->GetGuid() == 2926462965280);
+	assert(OResult.overlapGeoms[0]->GetGuid() == 2309201640896);
 
 	ret = query.RayCast(Vector3d(Pos.x + 0.01f, Pos.y - 10.0f, Pos.z + 0.01f), -Vector3d::UnitY(), Option, &Result);
 	// assert(!ret);		// TODO filter the world box
@@ -96,15 +97,15 @@ void TestPhysxBin()
 	ret = query.RayCast(Vector3d(Pos.x + 0.01f, 0, Pos.z + 0.01f), -Vector3d::UnitY(), Option, &Result);
 	assert(ret);
 	assert(FloatDiff(Result.hitPoint.y, Pos.y) < 0.01f);
-	assert(Result.hitGeom->GetGuid() == 2926462965280);
+	assert(Result.hitGeom->GetGuid() == 2309201640896);
 
 	ret = query.RayCast(Vector3d(-2222, 0, -773), -Vector3d::UnitY(), Option, &Result);
 	assert(ret);
-	assert(Result.hitGeom->GetGuid() == 2925373493328);
+	assert(Result.hitGeom->GetGuid() == 2309460023584);
 
 	ret = query.RayCast(Vector3d(-569, 0, 427), -Vector3d::UnitY(), Option, &Result);
 	assert(ret);
-	assert(Result.hitGeom->GetGuid() == 2926462965280);
+	assert(Result.hitGeom->GetGuid() == 2309201640896);
 
 	return;
 }

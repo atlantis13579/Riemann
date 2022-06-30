@@ -239,7 +239,7 @@ void InitPhysxScene()
 	g_World = new RigidBodySimulation(RigidBodySimulationParam());
 
     std::vector<Geometry*> collection;;
-    LoadPhysxBinary("e:/temp/physx/fighting.xml.bin", &collection);
+    LoadPhysxBinary("e:/temp/physx/fighting_new.xml.bin", &collection);
 
 	// g_World->LoadAnimation("idle", "E:/Temp/idle.anim", 1.0f, true);
 

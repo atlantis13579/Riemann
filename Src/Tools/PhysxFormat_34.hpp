@@ -1595,33 +1595,37 @@ namespace PhysxFormat_34
 	PxBase* Deserialize(uint8_t*& address, PxDeserializationContext& context, int classType)
 	{
 		PxBase* instance = nullptr;
-		if (classType == PxConcreteType::eTRIANGLE_MESH_BVH33)
+		if (classType == PxConcreteType::eHEIGHTFIELD)
 		{
-			instance = PxRTreeTriangleMesh::Deserialize(address, context);
+			instance = DeserializePhysxObj<HeightField>(address, context);
 		}
 		else if (classType == PxConcreteType::eCONVEX_MESH)
 		{
 			instance = DeserializePhysxObj<ConvexMesh>(address, context);
 		}
-		else if (classType == PxConcreteType::eHEIGHTFIELD)
+		else if (classType == PxConcreteType::eTRIANGLE_MESH_BVH33)
 		{
-			instance = DeserializePhysxObj<HeightField>(address, context);
+			instance = PxRTreeTriangleMesh::Deserialize(address, context);
 		}
-		else if (classType == PxConcreteType::eMATERIAL)
+		else if (classType == PxConcreteType::eTRIANGLE_MESH_BVH34)
 		{
-			instance = DeserializePhysxObj<NpMaterial>(address, context);
-		}
-		else if (classType == PxConcreteType::eRIGID_STATIC)
-		{
-			instance = DeserializePhysxObj<NpRigidStatic>(address, context);
+			assert(false);
 		}
 		else if (classType == PxConcreteType::eRIGID_DYNAMIC)
 		{
 			instance = DeserializePhysxObj<NpRigidDynamic>(address, context);
 		}
+		else if (classType == PxConcreteType::eRIGID_STATIC)
+		{
+			instance = DeserializePhysxObj<NpRigidStatic>(address, context);
+		}
 		else if (classType == PxConcreteType::eSHAPE)
 		{
 			instance = DeserializePhysxObj<NpShape>(address, context);
+		}
+		else if (classType == PxConcreteType::eMATERIAL)
+		{
+			instance = DeserializePhysxObj<NpMaterial>(address, context);
 		}
 		return instance;
 	}
@@ -1728,13 +1732,13 @@ namespace PhysxFormat_34
 		uint8_t* addressExtraData = alignPtr(addressObjectData + objectDataEndOffset);
 		std::unordered_map<PxType, int> Statistic;
 
-		uint8_t* addressExtraDataBase = addressExtraData;
 		PxDeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData, version, platform);
 
 		// iterate over memory containing PxBase objects, create the instances, resolve the addresses, import the external data, add to collection.
 		{
 			uint32_t nbObjects = nbObjectsInCollection;
             uint8_t* addressBase = address;
+			uint8_t* addressExtraDataBase = addressExtraData;
 
 			while (nbObjects--)
 			{
