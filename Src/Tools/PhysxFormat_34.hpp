@@ -579,7 +579,11 @@ namespace PhysxFormat_34
 
 	static_assert(sizeof(PxBase) == 16, "sizeof(PxBase) not valid");
     static_assert(sizeof(PxRefCountable) == 16, "sizeof(PxRefCountable) not valid");
+#if defined(__linux__)
+	static_assert(offsetof(PxRTreeTriangleMesh, mNbVertices) == 28, "offset of mNbVertices not right");
+#else
 	static_assert(offsetof(PxRTreeTriangleMesh, mNbVertices) == 32, "offset of mNbVertices not right");
+#endif
     static_assert(sizeof(TriangleMesh) == 160, "sizeof(PxTriangleMesh) not valid");
     static_assert(sizeof(MeshBVH4) == 96, "sizeof(MeshBVH) not valid");
 	static_assert(sizeof(PxRTreeTriangleMesh) == 256, "sizeof(PxRTreeTriangleMesh) not valid");

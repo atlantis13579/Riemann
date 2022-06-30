@@ -273,7 +273,7 @@ public:
 		return true;
 	}
 
-	bool		IsIdentity() const
+	bool		IsIdentity(float Eplison = 1e-6f) const
 	{
 		if (!IsSquare())
 		{
@@ -287,12 +287,12 @@ public:
 				T v = pData[i * n + j];
 				if (i == j)
 				{
-					if (!FuzzyEqual(v, (T)1))
+					if (!FuzzyEqual(v, (T)1, Eplison))
 						return false;
 				}
 				else
 				{
-					if (!FuzzyEqual(v, (T)0))
+					if (!FuzzyEqual(v, (T)0, Eplison))
 						return false;
 				}
 			}

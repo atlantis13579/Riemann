@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string.h>
+
 #define matInvM(i, j)		(InvM[i*nRows + j])
 
 template<typename T>

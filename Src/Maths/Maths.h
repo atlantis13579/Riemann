@@ -150,3 +150,8 @@ inline bool FuzzyEqual(float v1, float v2)
 {
 	return fabsf(v1 - v2) < 1e-6f;
 }
+
+inline bool FuzzyEqual(float v1, float v2, float eplison)
+{
+	return fabsf(v1 - v2) < eplison;
+}
