@@ -129,6 +129,11 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 		return false;
 	}
 
+	if (istart == iend && jstart == jend)
+	{
+		return IntersectRayCell(Origin, Dir, istart, jstart, Option, Result);
+	}
+
 	int i = istart;
 	int j = jstart;
 
