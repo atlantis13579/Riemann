@@ -118,7 +118,7 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
         }
     }
 
-    LibPPM::WritePPM("data/depth.ppm", fp, width, height);
+    LibPNG::WritePNG("data/depth.png", fp, width, height);
 }
 
 }

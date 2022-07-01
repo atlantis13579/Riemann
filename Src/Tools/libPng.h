@@ -7,7 +7,7 @@
 #include <float.h>
 #include <vector>
 
-class LinPNG
+class LibPNG
 {
 private:
     static void svpng(FILE *fp, unsigned int w, unsigned int h, const unsigned char* img, int alpha) {
@@ -44,22 +44,13 @@ private:
         SVPNG_BEGIN("IEND", 0); SVPNG_END();        /* IEND chunk {} */
     }
     
-    static void _WritePPM(const char* filename, int w, int h, const unsigned char* img, int alpha)
-    {
-        FILE* fp = fopen(filename, "wb");
-        if (fp == nullptr)
-            return;
-        svpng(fp, (unsigned int)w, (unsigned int)h, img, alpha);
-        fclose(fp);
-    }
-    
     inline static int  toInt(float x)
     {
         return int(x * 255.0f + 0.5f);
     }
     
 public:
-    static void WritePPM(const char* filename, float *ptr, int w, int h)
+    static void WritePNG(const char* filename, float *ptr, int w, int h)
     {
         FILE* fp = fopen(filename, "wb");
         if (fp == nullptr)
@@ -85,7 +76,7 @@ public:
         fclose(fp);
     }
     
-    static void WritePPM(const char* filename, float *ptr, int w, int h, float fmin, float fmax)
+    static void WritePNG(const char* filename, float *ptr, int w, int h, float fmin, float fmax)
     {
         FILE* fp = fopen(filename, "wb");
         if (fp == nullptr)
