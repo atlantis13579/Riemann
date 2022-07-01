@@ -1,9 +1,10 @@
 #include "PythonModule.h"
 
-#include <omp.h> 
 #include <assert.h>
 #include "../RigidBodyDynamics/RigidBodySimulation.h"
 #include "../Collision/GeometryQuery.h"
+#include "../Tools/libPPM.h"
+#include "../Tools/libPng.h"
 
 #ifdef BUILD_PYTHON_MODULE
 extern "C"
@@ -60,41 +61,6 @@ float RayCast2(void *p, float x0, float y0, float z0, float x1, float y1, float 
     return RayCast(p, x0, y0, z0, Dir.x, Dir.y, Dir.z);
 }
 
-inline int  toInt(float x)
-{
-    return int(x * 255.0f + 0.5f);
-}
-
-static void WritePPM(const char* filename, float* p, int w, int h)
-{
-	FILE* f = fopen(filename, "w");
-	if (f)
-    {
-        float minz = FLT_MAX;
-		float maxz = -FLT_MAX;
-		for (int i = 0; i < w * h; ++i)
-		{
-            if (p[i] <= 0.0f) continue;
-			if (p[i] > maxz)
-				maxz = p[i];
-            if (p[i] < minz)
-                minz = p[i];
-		}
-		fprintf(f, "P3\n%d %d\n%d\n", w, h, 255);
-        for (int i = 0; i < w * h; ++i)
-        {
-            if (p[i] <= 0.0f)
-            {
-                fprintf(f, "255 0 0 ");
-                continue;
-            }
-            float x = (p[i] - minz) / (maxz - minz);
-            fprintf(f, "%d %d %d ", toInt(x), toInt(x), toInt(x));
-        }
-        fclose(f);
-	}
-}
-
 void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, float nearz, float farz,
                       float x0, float y0, float z0, float dx, float dy, float dz, float ux, float uy, float uz)
 {
@@ -131,8 +97,6 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
     Vector3d cameraX = cameraUp.Cross(cameraDirection) * CX;
     Vector3d cameraY = cameraX.Cross(cameraDirection).Unit() * CY;
 
-    float dt = cameraX.Dot(cameraY);
-
     #pragma omp parallel for schedule(dynamic, 1)
 	for (int y = 0; y < height; ++y)
     {
@@ -154,7 +118,7 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
         }
     }
 
-    WritePPM("data/depth.ppm", fp, width, height);
+    LibPPM::WritePPM("data/depth.ppm", fp, width, height);
 }
 
 }

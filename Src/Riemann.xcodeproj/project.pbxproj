@@ -10,6 +10,9 @@
 		ADC73022286DCF4300364E92 /* Base.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73021286DCF4300364E92 /* Base.h */; };
 		ADC73026286DD3BC00364E92 /* PythonModule.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73024286DD3BC00364E92 /* PythonModule.h */; };
 		ADC73027286DD3BC00364E92 /* PythonModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADC73025286DD3BC00364E92 /* PythonModule.cpp */; };
+		ADD2DA57286F37F400B669C9 /* libBmp.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD2DA54286F37F400B669C9 /* libBmp.h */; };
+		ADD2DA58286F37F400B669C9 /* libPng.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD2DA55286F37F400B669C9 /* libPng.h */; };
+		ADD2DA59286F37F400B669C9 /* libPPM.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD2DA56286F37F400B669C9 /* libPPM.h */; };
 		ADDE13182820AE0700809D36 /* BroadPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE12F92820AE0700809D36 /* BroadPhase.h */; };
 		ADDE13192820AE0700809D36 /* GeometryCollection.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE12FA2820AE0700809D36 /* GeometryCollection.h */; };
 		ADDE131A2820AE0700809D36 /* NarrowPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE12FB2820AE0700809D36 /* NarrowPhase.cpp */; };
@@ -102,7 +105,6 @@
 		ADDE14682820AE3100809D36 /* PhysxBinaryParser.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13EA2820AE3100809D36 /* PhysxBinaryParser.h */; };
 		ADDE14692820AE3100809D36 /* AnimBinaryParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13EB2820AE3100809D36 /* AnimBinaryParser.cpp */; };
 		ADDE146A2820AE3100809D36 /* PhysxFormat_41.hpp in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13EC2820AE3100809D36 /* PhysxFormat_41.hpp */; };
-		ADDE146B2820AE3100809D36 /* SimpleBmp.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13ED2820AE3100809D36 /* SimpleBmp.h */; };
 		ADDE146C2820AE3100809D36 /* PhysxBinaryParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13EE2820AE3100809D36 /* PhysxBinaryParser.cpp */; };
 		ADDE146D2820AE3100809D36 /* AnimBinaryParser.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13EF2820AE3100809D36 /* AnimBinaryParser.h */; };
 		ADDE146E2820AE3100809D36 /* SequentialImpulseSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13F12820AE3100809D36 /* SequentialImpulseSolver.cpp */; };
@@ -176,6 +178,9 @@
 		ADC73021286DCF4300364E92 /* Base.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Base.h; sourceTree = "<group>"; };
 		ADC73024286DD3BC00364E92 /* PythonModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PythonModule.h; sourceTree = "<group>"; };
 		ADC73025286DD3BC00364E92 /* PythonModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PythonModule.cpp; sourceTree = "<group>"; };
+		ADD2DA54286F37F400B669C9 /* libBmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libBmp.h; sourceTree = "<group>"; };
+		ADD2DA55286F37F400B669C9 /* libPng.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libPng.h; sourceTree = "<group>"; };
+		ADD2DA56286F37F400B669C9 /* libPPM.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libPPM.h; sourceTree = "<group>"; };
 		ADDE12F92820AE0700809D36 /* BroadPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BroadPhase.h; sourceTree = "<group>"; };
 		ADDE12FA2820AE0700809D36 /* GeometryCollection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GeometryCollection.h; sourceTree = "<group>"; };
 		ADDE12FB2820AE0700809D36 /* NarrowPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NarrowPhase.cpp; sourceTree = "<group>"; };
@@ -268,7 +273,6 @@
 		ADDE13EA2820AE3100809D36 /* PhysxBinaryParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PhysxBinaryParser.h; sourceTree = "<group>"; };
 		ADDE13EB2820AE3100809D36 /* AnimBinaryParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AnimBinaryParser.cpp; sourceTree = "<group>"; };
 		ADDE13EC2820AE3100809D36 /* PhysxFormat_41.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PhysxFormat_41.hpp; sourceTree = "<group>"; };
-		ADDE13ED2820AE3100809D36 /* SimpleBmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleBmp.h; sourceTree = "<group>"; };
 		ADDE13EE2820AE3100809D36 /* PhysxBinaryParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PhysxBinaryParser.cpp; sourceTree = "<group>"; };
 		ADDE13EF2820AE3100809D36 /* AnimBinaryParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnimBinaryParser.h; sourceTree = "<group>"; };
 		ADDE13F12820AE3100809D36 /* SequentialImpulseSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequentialImpulseSolver.cpp; sourceTree = "<group>"; };
@@ -484,6 +488,9 @@
 			children = (
 				ADDE13EB2820AE3100809D36 /* AnimBinaryParser.cpp */,
 				ADDE13EF2820AE3100809D36 /* AnimBinaryParser.h */,
+				ADD2DA54286F37F400B669C9 /* libBmp.h */,
+				ADD2DA55286F37F400B669C9 /* libPng.h */,
+				ADD2DA56286F37F400B669C9 /* libPPM.h */,
 				ADDE13EE2820AE3100809D36 /* PhysxBinaryParser.cpp */,
 				ADDE13EA2820AE3100809D36 /* PhysxBinaryParser.h */,
 				ADDE13E82820AE3100809D36 /* PhysxFormat_34.hpp */,
@@ -491,7 +498,6 @@
 				ADC73025286DD3BC00364E92 /* PythonModule.cpp */,
 				ADC73024286DD3BC00364E92 /* PythonModule.h */,
 				ADDE13E92820AE3100809D36 /* Serialization.h */,
-				ADDE13ED2820AE3100809D36 /* SimpleBmp.h */,
 			);
 			path = Tools;
 			sourceTree = "<group>";
@@ -651,7 +657,6 @@
 				ADDE149A2820AE3100809D36 /* SingularValueDecomposition.h in Headers */,
 				ADDE131C2820AE0700809D36 /* EPA.h in Headers */,
 				ADDE14872820AE3100809D36 /* Box3d.h in Headers */,
-				ADDE146B2820AE3100809D36 /* SimpleBmp.h in Headers */,
 				ADDE144C2820AE3100809D36 /* NumericalODESolver.h in Headers */,
 				ADDE14322820AE3100809D36 /* OrientedBox3d.h in Headers */,
 				ADDE14302820AE3100809D36 /* Rasterizer.h in Headers */,
@@ -684,6 +689,7 @@
 				ADDE13342820AE0700809D36 /* DynamicAABBTree.h in Headers */,
 				ADDE13232820AE0700809D36 /* Simplex.h in Headers */,
 				ADDE149E2820AE3100809D36 /* EigenValueDecomposition.h in Headers */,
+				ADD2DA58286F37F400B669C9 /* libPng.h in Headers */,
 				ADDE14402820AE3100809D36 /* ConvexMesh.h in Headers */,
 				ADDE14792820AE3100809D36 /* RigidBody.h in Headers */,
 				ADDE146A2820AE3100809D36 /* PhysxFormat_41.hpp in Headers */,
@@ -713,6 +719,7 @@
 				ADDE14B62820B16F00809D36 /* Vehicle.h in Headers */,
 				ADDE14B32820B16F00809D36 /* AutonomousController.h in Headers */,
 				ADDE14372820AE3100809D36 /* Ray3d.h in Headers */,
+				ADD2DA59286F37F400B669C9 /* libPPM.h in Headers */,
 				ADDE14582820AE3100809D36 /* SparseVoxelField.h in Headers */,
 				ADDE14562820AE3100809D36 /* Tetrahedral.h in Headers */,
 				ADDE14862820AE3100809D36 /* Quaternion.h in Headers */,
@@ -722,6 +729,7 @@
 				ADDE14482820AE3100809D36 /* Capsule3d.h in Headers */,
 				ADDE148A2820AE3100809D36 /* Float16.h in Headers */,
 				ADDE131E2820AE0700809D36 /* AABBTreeOffline.h in Headers */,
+				ADD2DA57286F37F400B669C9 /* libBmp.h in Headers */,
 				ADDE145F2820AE3100809D36 /* ConvexHull2D.h in Headers */,
 				ADDE14622820AE3100809D36 /* ConvexHull3D.h in Headers */,
 				ADDE143D2820AE3100809D36 /* Segment3d.h in Headers */,
