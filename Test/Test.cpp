@@ -59,7 +59,7 @@ void TestPhysxBin()
 		RayCastOption Option;
 		RayCastResult Result;
 
-		query.RayCast(Vector3d(-521.23f, 55.87f, 399.15f), Vector3d(1, -1, 1).Unit(), Option, &Result);
+		query.RayCast(Vector3d(-521.23f, 55.87f, 399.15f), Vector3d(0, -1, 0).Unit(), Option, &Result);
 		EXPECT(FuzzyEqual(Result.hitPoint.y, 55.53f, 0.1f));
 	}
 

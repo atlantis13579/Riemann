@@ -21,6 +21,15 @@ void* LoadPhysxScene(const char *filepath)
     return world;
 }
 
+void  DeletePhysxScene(void* p)
+{
+	if (p)
+	{
+        RigidBodySimulation* world = (RigidBodySimulation*)p;
+        delete world;
+	}
+}
+
 float RayCast(void *p, float x0, float y0, float z0, float dx, float dy, float dz)
 {
     if (p == nullptr)

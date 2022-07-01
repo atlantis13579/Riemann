@@ -1559,7 +1559,7 @@ namespace PhysxFormat_34
 
 		if (header != MAKE_FOURCC('S', 'E', 'B', 'D'))
 		{
-			printf("Buffer contains data with wrong header indicating invalid binary data.");
+			printf("Buffer contains data with wrong header indicating invalid binary data. header : %u\n", header);
 			return false;
 		}
 
