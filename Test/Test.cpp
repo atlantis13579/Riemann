@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "../Src/Tools/SimpleBmp.h"
 #include "../Src/LinearSystem/DenseMatrix.h"
 #include "../Src/LinearSystem/JacobiIteration_CPU.h"
 #include "../Src/LinearSystem/GaussSeidelIteration_CPU.h"

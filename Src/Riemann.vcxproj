@@ -176,12 +176,14 @@
     <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />
     <ClInclude Include="Solver\SparseConjugateGradientSolver.h" />
     <ClInclude Include="Tools\AnimBinaryParser.h" />
+    <ClInclude Include="Tools\libPng.h" />
+    <ClInclude Include="Tools\libPPM.h" />
     <ClInclude Include="Tools\PhysxBinaryParser.h" />
     <ClInclude Include="Tools\PhysxFormat_34.hpp" />
     <ClInclude Include="Tools\PhysxFormat_41.hpp" />
     <ClInclude Include="Tools\PythonModule.h" />
     <ClInclude Include="Tools\Serialization.h" />
-    <ClInclude Include="Tools\SimpleBmp.h" />
+    <ClInclude Include="Tools\libBmp.h" />
     <ClInclude Include="Vehicle\AutonomousController.h" />
     <ClInclude Include="Vehicle\LQR.h" />
     <ClInclude Include="Vehicle\MPC.h" />

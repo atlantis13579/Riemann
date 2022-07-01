@@ -88,7 +88,7 @@
     <ClInclude Include="CollisionPrimitive\TriangleMesh.h" />
     <ClInclude Include="Optimization\SGD.h" />
     <ClInclude Include="Tools\PhysxBinaryParser.h" />
-    <ClInclude Include="Tools\SimpleBmp.h" />
+    <ClInclude Include="Tools\libBmp.h" />
     <ClInclude Include="Tools\Serialization.h" />
     <ClInclude Include="Geometry\DenseTensorField3d.h" />
     <ClInclude Include="RigidBodyDynamics\ForceField.h" />
@@ -121,6 +121,8 @@
     <ClInclude Include="Geometry\Polygon2D.h" />
     <ClInclude Include="Geometry\Polygon3D.h" />
     <ClInclude Include="Tools\PythonModule.h" />
+    <ClInclude Include="Tools\libPng.h" />
+    <ClInclude Include="Tools\libPPM.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
