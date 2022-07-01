@@ -9,6 +9,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+Test/data/*
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -350,3 +351,7 @@ MigrationBackup/
 .ionide/
 DerivedData/*
 */DerivedData/*
+*.xcuserstate
+*.xcscheme
+*.xcuserstate
+*.xcbkptlist
