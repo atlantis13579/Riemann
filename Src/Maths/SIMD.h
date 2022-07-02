@@ -31,7 +31,7 @@
     typedef __m128 VecI16V;
 #endif
 
-static_assert(sizeof(FloatV) == 16, "simd size not correct!");
+static_assert(sizeof(FloatV) == 8, "simd size not correct!");
 static_assert(sizeof(Vec3V) == 16, "simd size not correct!");
 static_assert(sizeof(Vec4V) == 16, "simd size not correct!");
 static_assert(sizeof(BoolV) == 16, "simd size not correct!");
