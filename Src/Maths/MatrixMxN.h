@@ -7,6 +7,12 @@
 #include "Maths.h"
 #include "../LinearSystem/GaussianElimination.h"
 
+#ifdef __clang__
+#define DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
+#else
+#define DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX   template<typename = typename std::enable_if<ROWS == COLS>::type>
+#endif
+
 template<typename T, int ROWS, int COLS>
 class TMatrixMxN
 {
@@ -15,7 +21,7 @@ public:
 	{
 	}
 
-	template<typename = typename std::enable_if<ROWS == COLS>::type>
+	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
 	TMatrixMxN(bool Identity)
 	{
 		if (Identity)
@@ -201,7 +207,7 @@ public:
 		memset(mData, 0, sizeof(T) * ROWS * COLS);
 	}
 
-	template<typename = typename std::enable_if<ROWS == COLS>::type>
+	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
 	void		LoadIdentity()
 	{
 		LoadZero();
@@ -211,7 +217,7 @@ public:
 		}
 	}
 
-	template<typename = typename std::enable_if<ROWS == COLS>::type>
+	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
 	bool		IsIdentity() const
 	{
 		int n = ROWS;
@@ -233,7 +239,7 @@ public:
 		return true;
 	}
 
-	template<typename = typename std::enable_if<ROWS == COLS>::type>
+	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
 	T							Determinant() const
 	{
 		float Det;
@@ -244,7 +250,7 @@ public:
 		return 0.0f;
 	}
 
-	template<typename = typename std::enable_if<ROWS == COLS>::type>
+	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
 	TMatrixMxN<T, ROWS, ROWS>	Inverse() const
 	{
 		TMatrixMxN<T, ROWS, ROWS> InvM;
@@ -276,7 +282,7 @@ public:
 		return maxVal;
 	}
 
-	template<typename = typename std::enable_if<ROWS == COLS>::type>
+	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
 	bool				GetInverse(TMatrixMxN<T, ROWS, ROWS>& InvM) const
 	{
 		return GaussianElimination<float>()(mData, ROWS, *InvM, nullptr);

@@ -17,6 +17,7 @@ typedef __m128 VecU16V;
 typedef __m128 VecI16V;
 typedef __m128 QuatV;
 
+#include <float.h>
 #include "Maths.h"
 #include "Vector3d.h"
 #include "Vector4d.h"

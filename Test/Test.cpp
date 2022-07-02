@@ -15,7 +15,6 @@
 #include "../Src/Maths/Matrix2d.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Frustum.h"
-#include "../Src/Maths/SIMD.h"
 #include "../Src/Maths/Float16.h"
 #include "../Src/Maths/MatrixMxN.h"
 #include "../Src/ImageSpace/ContinuousBitmap.h"
@@ -42,7 +41,6 @@
 #include "../Src/Geometry/SparseVoxelField.h"
 #include "../Src/Geometry/DenseTensorField3d.h"
 #include "../Src/Tools/PhysxBinaryParser.h"
-#include "../Src/Tools/PythonModule.h"
 
 #include "Test.h"
 
@@ -205,16 +203,6 @@ void TestBasicMath()
 	EXPECT((v1 + v1 - v2).SquareLength() < 0.00001f);
 	EXPECT((q1 * q1 - q2).SquareLength() < 0.001f);
 
-	return;
-}
-
-void TestSIMD()
-{
-	printf("Running TestSIMD\n");
-	Vec4V v1 = V4Load(1.2f);
-	Vec4V v2 = V4Load(1.2f);
-	Vec4V v3 = V4Mul(v1, v2);
-	Vector3d vv = V4ReadXYZ(v3);
 	return;
 }
 
@@ -734,18 +722,8 @@ void TestMatrix2()
 	return;
 }
 
-void TestDepthImage()
-{
-	void* p = LoadPhysxScene("data/Japan.xml.bin");
-	std::vector<float> image;
-	image.resize(1024 * 768);
-	RenderDepthImage(p, &image[0], 200, 200, 1.570796327f, 0.1f, 50.0f,
- 					-521.23f, 56.87f, 399.15f, 0.45f, 0.0f, 0.45f, 0.0f, 1.0f, 0.0f);
-	return;
-}
 
-// TODO, enable_if
-/*
+
 void TestLqr()
 {
 	static constexpr int N = 2;
@@ -756,6 +734,7 @@ void TestLqr()
 	// State matrix
 	SquareMatrix<2> A = { dt, 1.0f, 0.0f, dt };
 	MatrixMxN<2, 1> B = { 0.0f, 1.0f };
+    
 
 	SquareMatrix<N> Q = SquareMatrix<N>::Identity();
 	SquareMatrix<M> R = SquareMatrix<M>::Identity();
@@ -768,18 +747,13 @@ void TestLqr()
 
 	return;
 }
- */
 
 void TestMainEntry()
 {
-	TestDepthImage();
-	return;
-
 	TestRayAABB();
 	TestBasicMath();
 	TestPhysxBin();
 	TestRaycastBenchmark();
-	TestSIMD();
 	TestRTree1();
 	TestRTree2();
 	TestBitmap();
@@ -793,6 +767,6 @@ void TestMainEntry()
 	TestPID();
 	TestMatrix();
 	TestMatrix2();
-	// TestLqr();
+	TestLqr();
 	return;
 }

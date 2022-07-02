@@ -3,6 +3,8 @@
 
 
 extern void TestMainEntry();
+extern void TestPython();
+extern void TestSIMD();
 
 int main()
 {
