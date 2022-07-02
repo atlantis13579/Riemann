@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AD1C0F5D287042520060A1EE /* SIMD_Intel.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5B287042520060A1EE /* SIMD_Intel.h */; };
+		AD1C0F5E287042520060A1EE /* SIMD_Neon.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5C287042520060A1EE /* SIMD_Neon.h */; };
+		AD1C0F60287046E20060A1EE /* SIMD_Ref.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5F287046E20060A1EE /* SIMD_Ref.h */; };
 		ADC73022286DCF4300364E92 /* Base.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73021286DCF4300364E92 /* Base.h */; };
 		ADC73026286DD3BC00364E92 /* PythonModule.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73024286DD3BC00364E92 /* PythonModule.h */; };
 		ADC73027286DD3BC00364E92 /* PythonModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADC73025286DD3BC00364E92 /* PythonModule.cpp */; };
@@ -175,6 +178,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AD1C0F5B287042520060A1EE /* SIMD_Intel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_Intel.h; sourceTree = "<group>"; };
+		AD1C0F5C287042520060A1EE /* SIMD_Neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_Neon.h; sourceTree = "<group>"; };
+		AD1C0F5F287046E20060A1EE /* SIMD_Ref.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_Ref.h; sourceTree = "<group>"; };
 		ADC73021286DCF4300364E92 /* Base.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Base.h; sourceTree = "<group>"; };
 		ADC73024286DD3BC00364E92 /* PythonModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PythonModule.h; sourceTree = "<group>"; };
 		ADC73025286DD3BC00364E92 /* PythonModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PythonModule.cpp; sourceTree = "<group>"; };
@@ -546,6 +552,9 @@
 				ADDE14182820AE3100809D36 /* MatrixMxN.h */,
 				ADDE140A2820AE3100809D36 /* Quaternion.h */,
 				ADDE14102820AE3100809D36 /* SIMD.h */,
+				AD1C0F5B287042520060A1EE /* SIMD_Intel.h */,
+				AD1C0F5C287042520060A1EE /* SIMD_Neon.h */,
+				AD1C0F5F287046E20060A1EE /* SIMD_Ref.h */,
 				ADDE14122820AE3100809D36 /* Stack.h */,
 				ADDE14172820AE3100809D36 /* Tensor.h */,
 				ADDE14112820AE3100809D36 /* Transform.h */,
@@ -652,6 +661,7 @@
 				ADDE13242820AE0700809D36 /* SparseSpatialHash.h in Headers */,
 				ADDE143F2820AE3100809D36 /* Plane3d.h in Headers */,
 				ADDE14632820AE3100809D36 /* Polygon3D.h in Headers */,
+				AD1C0F5D287042520060A1EE /* SIMD_Intel.h in Headers */,
 				ADDE14832820AE3100809D36 /* Frustum.h in Headers */,
 				ADDE14442820AE3100809D36 /* TriangleMesh.h in Headers */,
 				ADDE149A2820AE3100809D36 /* SingularValueDecomposition.h in Headers */,
@@ -664,6 +674,7 @@
 				ADDE148C2820AE3100809D36 /* SIMD.h in Headers */,
 				ADDE14942820AE3100809D36 /* MatrixMxN.h in Headers */,
 				ADDE14732820AE3100809D36 /* WarmStart.h in Headers */,
+				AD1C0F60287046E20060A1EE /* SIMD_Ref.h in Headers */,
 				ADDE14492820AE3100809D36 /* SparseConjugateGradientSolver.h in Headers */,
 				ADDE14762820AE3100809D36 /* SequentialImpulseSolver.h in Headers */,
 				ADDE132A2820AE0700809D36 /* ProximityGrid.h in Headers */,
@@ -729,6 +740,7 @@
 				ADDE14482820AE3100809D36 /* Capsule3d.h in Headers */,
 				ADDE148A2820AE3100809D36 /* Float16.h in Headers */,
 				ADDE131E2820AE0700809D36 /* AABBTreeOffline.h in Headers */,
+				AD1C0F5E287042520060A1EE /* SIMD_Neon.h in Headers */,
 				ADD2DA57286F37F400B669C9 /* libBmp.h in Headers */,
 				ADDE145F2820AE3100809D36 /* ConvexHull2D.h in Headers */,
 				ADDE14622820AE3100809D36 /* ConvexHull3D.h in Headers */,

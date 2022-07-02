@@ -355,3 +355,4 @@ DerivedData/*
 *.xcscheme
 *.xcuserstate
 *.xcbkptlist
+*.plist
