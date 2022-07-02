@@ -26,30 +26,30 @@ unsigned int BAnyTrue3_R(const BoolV a);
 
 struct alignas(16) VECTORF32 { float f[4]; };
 
-VECTORF32 g_PXSinCoefficients0 = {{1.0f, -0.166666667f, 8.333333333e-3f, -1.984126984e-4f}};
-VECTORF32 g_PXSinCoefficients1 = {{2.755731922e-6f, -2.505210839e-8f, 1.605904384e-10f, -7.647163732e-13f}};
-VECTORF32 g_PXSinCoefficients2 = {{2.811457254e-15f, -8.220635247e-18f, 1.957294106e-20f, -3.868170171e-23f}};
-VECTORF32 g_PXCosCoefficients0 = {{1.0f, -0.5f, 4.166666667e-2f, -1.388888889e-3f}};
-VECTORF32 g_PXCosCoefficients1 = {{2.480158730e-5f, -2.755731922e-7f, 2.087675699e-9f, -1.147074560e-11f}};
-VECTORF32 g_PXCosCoefficients2 = {{4.779477332e-14f, -1.561920697e-16f, 4.110317623e-19f, -8.896791392e-22f}};
-VECTORF32 g_PXTanCoefficients0 = {{1.0f, 0.333333333f, 0.133333333f, 5.396825397e-2f}};
-VECTORF32 g_PXTanCoefficients1 = {{2.186948854e-2f, 8.863235530e-3f, 3.592128167e-3f, 1.455834485e-3f}};
-VECTORF32 g_PXTanCoefficients2 = {{5.900274264e-4f, 2.391290764e-4f, 9.691537707e-5f, 3.927832950e-5f}};
-VECTORF32 g_PXASinCoefficients0 = {{-0.05806367563904f, -0.41861972469416f, 0.22480114791621f, 2.17337241360606f}};
-VECTORF32 g_PXASinCoefficients1 = {{0.61657275907170f, 4.29696498283455f, -1.18942822255452f, -6.53784832094831f}};
-VECTORF32 g_PXASinCoefficients2 = {{-1.36926553863413f, -4.48179294237210f, 1.41810672941833f, 5.48179257935713f}};
-VECTORF32 g_PXATanCoefficients0 = {{1.0f, 0.333333334f, 0.2f, 0.142857143f}};
-VECTORF32 g_PXATanCoefficients1 = {{1.111111111e-1f, 9.090909091e-2f, 7.692307692e-2f, 6.666666667e-2f}};
-VECTORF32 g_PXATanCoefficients2 = {{5.882352941e-2f, 5.263157895e-2f, 4.761904762e-2f, 4.347826087e-2f}};
-VECTORF32 g_PXSinEstCoefficients = {{1.0f, -1.66521856991541e-1f, 8.199913018755e-3f, -1.61475937228e-4f}};
-VECTORF32 g_PXCosEstCoefficients = {{1.0f, -4.95348008918096e-1f, 3.878259962881e-2f, -9.24587976263e-4f}};
-VECTORF32 g_PXTanEstCoefficients = {{2.484f, -1.954923183e-1f, 2.467401101f, 1.0f / 3.141592655f}};
-VECTORF32 g_PXATanEstCoefficients = {{7.689891418951e-1f, 1.104742493348f, 8.661844266006e-1f, 3.141592655f * 0.5f}};
-VECTORF32 g_PXASinEstCoefficients = {{-1.36178272886711f, 2.37949493464538f, -8.08228565650486e-1f, 2.78440142746736e-1f}};
-VECTORF32 g_PXASinEstConstants = {{1.00000011921f, 3.141592655f * 0.5f, 0.0f, 0.0f}};
-VECTORF32 g_PXPiConstants0 = {{3.141592655f, 3.141592655f * 2.0f, 1.0f / 3.141592655f, 0.5f / 3.141592655f}};
-VECTORF32 g_PXReciprocalTwoPi = {{0.5f / 3.141592655f, 0.5f / 3.141592655f, 0.5f / 3.141592655f, 0.5f / 3.141592655f}};
-VECTORF32 g_PXTwoPi = {{3.141592655f * 2.0f, 3.141592655f * 2.0f, 3.141592655f * 2.0f, 3.141592655f * 2.0f}};
+static const VECTORF32 g_PXSinCoefficients0 = {{1.0f, -0.166666667f, 8.333333333e-3f, -1.984126984e-4f}};
+static const VECTORF32 g_PXSinCoefficients1 = {{2.755731922e-6f, -2.505210839e-8f, 1.605904384e-10f, -7.647163732e-13f}};
+static const VECTORF32 g_PXSinCoefficients2 = {{2.811457254e-15f, -8.220635247e-18f, 1.957294106e-20f, -3.868170171e-23f}};
+static const VECTORF32 g_PXCosCoefficients0 = {{1.0f, -0.5f, 4.166666667e-2f, -1.388888889e-3f}};
+static const VECTORF32 g_PXCosCoefficients1 = {{2.480158730e-5f, -2.755731922e-7f, 2.087675699e-9f, -1.147074560e-11f}};
+static const VECTORF32 g_PXCosCoefficients2 = {{4.779477332e-14f, -1.561920697e-16f, 4.110317623e-19f, -8.896791392e-22f}};
+static const VECTORF32 g_PXTanCoefficients0 = {{1.0f, 0.333333333f, 0.133333333f, 5.396825397e-2f}};
+static const VECTORF32 g_PXTanCoefficients1 = {{2.186948854e-2f, 8.863235530e-3f, 3.592128167e-3f, 1.455834485e-3f}};
+static const VECTORF32 g_PXTanCoefficients2 = {{5.900274264e-4f, 2.391290764e-4f, 9.691537707e-5f, 3.927832950e-5f}};
+static const VECTORF32 g_PXASinCoefficients0 = {{-0.05806367563904f, -0.41861972469416f, 0.22480114791621f, 2.17337241360606f}};
+static const VECTORF32 g_PXASinCoefficients1 = {{0.61657275907170f, 4.29696498283455f, -1.18942822255452f, -6.53784832094831f}};
+static const VECTORF32 g_PXASinCoefficients2 = {{-1.36926553863413f, -4.48179294237210f, 1.41810672941833f, 5.48179257935713f}};
+static const VECTORF32 g_PXATanCoefficients0 = {{1.0f, 0.333333334f, 0.2f, 0.142857143f}};
+static const VECTORF32 g_PXATanCoefficients1 = {{1.111111111e-1f, 9.090909091e-2f, 7.692307692e-2f, 6.666666667e-2f}};
+static const VECTORF32 g_PXATanCoefficients2 = {{5.882352941e-2f, 5.263157895e-2f, 4.761904762e-2f, 4.347826087e-2f}};
+static const VECTORF32 g_PXSinEstCoefficients = {{1.0f, -1.66521856991541e-1f, 8.199913018755e-3f, -1.61475937228e-4f}};
+static const VECTORF32 g_PXCosEstCoefficients = {{1.0f, -4.95348008918096e-1f, 3.878259962881e-2f, -9.24587976263e-4f}};
+static const VECTORF32 g_PXTanEstCoefficients = {{2.484f, -1.954923183e-1f, 2.467401101f, 1.0f / 3.141592655f}};
+static const VECTORF32 g_PXATanEstCoefficients = {{7.689891418951e-1f, 1.104742493348f, 8.661844266006e-1f, 3.141592655f * 0.5f}};
+static const VECTORF32 g_PXASinEstCoefficients = {{-1.36178272886711f, 2.37949493464538f, -8.08228565650486e-1f, 2.78440142746736e-1f}};
+static const VECTORF32 g_PXASinEstConstants = {{1.00000011921f, 3.141592655f * 0.5f, 0.0f, 0.0f}};
+static const VECTORF32 g_PXPiConstants0 = {{3.141592655f, 3.141592655f * 2.0f, 1.0f / 3.141592655f, 0.5f / 3.141592655f}};
+static const VECTORF32 g_PXReciprocalTwoPi = {{0.5f / 3.141592655f, 0.5f / 3.141592655f, 0.5f / 3.141592655f, 0.5f / 3.141592655f}};
+static const VECTORF32 g_PXTwoPi = {{3.141592655f * 2.0f, 3.141592655f * 2.0f, 3.141592655f * 2.0f, 3.141592655f * 2.0f}};
 
 #define VRECIPEQ recipq_newton<1>
 #define VRECIPE recip_newton<1>
@@ -64,119 +64,119 @@ VECTORF32 g_PXTwoPi = {{3.141592655f * 2.0f, 3.141592655f * 2.0f, 3.141592655f *
 // FLOATV
 //////////////////////////////////
 ///
-FloatV FLoad(const float f)
+inline FloatV FLoad(const float f)
 {
 	return vdup_n_f32(reinterpret_cast<const float32_t&>(f));
 }
 
-FloatV FLoadA(const float* const f)
+inline FloatV FLoadA(const float* const f)
 {
 	ASSERT_ISALIGNED16(f);
 	return vld1_f32(reinterpret_cast<const float32_t*>(f));
 }
 
-FloatV FZero()
+inline FloatV FZero()
 {
 	return FLoad(0.0f);
 }
 
-FloatV FOne()
+inline FloatV FOne()
 {
 	return FLoad(1.0f);
 }
 
-FloatV FHalf()
+inline FloatV FHalf()
 {
 	return FLoad(0.5f);
 }
 
-FloatV FEps()
+inline FloatV FEps()
 {
 	return FLoad(1e-7f);
 }
 
-FloatV FEps6()
+inline FloatV FEps6()
 {
 	return FLoad(1e-6f);
 }
 
-FloatV FMax()
+inline FloatV FMax()
 {
 	return FLoad(FLT_MAX);
 }
 
-FloatV FNegMax()
+inline FloatV FNegMax()
 {
 	return FLoad(-FLT_MAX);
 }
 
-FloatV IZero()
+inline FloatV IZero()
 {
 	return vreinterpret_f32_u32(vdup_n_u32(0));
 }
 
-FloatV IOne()
+inline FloatV IOne()
 {
 	return vreinterpret_f32_u32(vdup_n_u32(1));
 }
 
-FloatV ITwo()
+inline FloatV ITwo()
 {
 	return vreinterpret_f32_u32(vdup_n_u32(2));
 }
 
-FloatV IThree()
+inline FloatV IThree()
 {
 	return vreinterpret_f32_u32(vdup_n_u32(3));
 }
 
-FloatV IFour()
+inline FloatV IFour()
 {
 	return vreinterpret_f32_u32(vdup_n_u32(4));
 }
 
-FloatV FNeg(const FloatV f)
+inline FloatV FNeg(const FloatV f)
 {
 	ASSERT_ISVALIDFLOATV(f);
 	return vneg_f32(f);
 }
 
-FloatV FAdd(const FloatV a, const FloatV b)
+inline FloatV FAdd(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vadd_f32(a, b);
 }
 
-FloatV FSub(const FloatV a, const FloatV b)
+inline FloatV FSub(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vsub_f32(a, b);
 }
 
-FloatV FMul(const FloatV a, const FloatV b)
+inline FloatV FMul(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vmul_f32(a, b);
 }
 
-BoolV FIsEq(const FloatV a, const FloatV b)
+inline BoolV FIsEq(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vdupq_lane_u32(vceq_f32(a, b), 0);
 }
 
-FloatV FSel(const BoolV c, const FloatV a, const FloatV b)
+inline FloatV FSel(const BoolV c, const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(vbsl_f32(vget_low_u32(c), a, b));
 	return vbsl_f32(vget_low_u32(c), a, b);
 }
 
 template <int n>
-float32x2_t recip_newton(const float32x2_t& in)
+inline float32x2_t recip_newton(const float32x2_t& in)
 {
 	float32x2_t recip = vrecpe_f32(in);
 	for(int i = 0; i < n; ++i)
@@ -185,7 +185,7 @@ float32x2_t recip_newton(const float32x2_t& in)
 }
 
 template <int n>
-float32x4_t recipq_newton(const float32x4_t& in)
+inline float32x4_t recipq_newton(const float32x4_t& in)
 {
 	float32x4_t recip = vrecpeq_f32(in);
 	for(int i = 0; i < n; ++i)
@@ -194,7 +194,7 @@ float32x4_t recipq_newton(const float32x4_t& in)
 }
 
 template <int n>
-float32x2_t rsqrt_newton(const float32x2_t& in)
+inline float32x2_t rsqrt_newton(const float32x2_t& in)
 {
 	float32x2_t rsqrt = vrsqrte_f32(in);
 	for(int i = 0; i < n; ++i)
@@ -203,7 +203,7 @@ float32x2_t rsqrt_newton(const float32x2_t& in)
 }
 
 template <int n>
-float32x4_t rsqrtq_newton(const float32x4_t& in)
+inline float32x4_t rsqrtq_newton(const float32x4_t& in)
 {
 	float32x4_t rsqrt = vrsqrteq_f32(in);
 	for(int i = 0; i < n; ++i)
@@ -211,51 +211,51 @@ float32x4_t rsqrtq_newton(const float32x4_t& in)
 	return rsqrt;
 }
 
-FloatV FDiv(const FloatV a, const FloatV b)
+inline FloatV FDiv(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vmul_f32(a, VRECIP(b));
 }
 
-FloatV FDivFast(const FloatV a, const FloatV b)
+inline FloatV FDivFast(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vmul_f32(a, VRECIPE(b));
 }
 
-FloatV FRecip(const FloatV a)
+inline FloatV FRecip(const FloatV a)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	return VRECIP(a);
 }
 
-FloatV FRecipFast(const FloatV a)
+inline FloatV FRecipFast(const FloatV a)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	return VRECIPE(a);
 }
 
-FloatV FRsqrt(const FloatV a)
+inline FloatV FRsqrt(const FloatV a)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	return VRECIPSQRT(a);
 }
 
-FloatV FSqrt(const FloatV a)
+inline FloatV FSqrt(const FloatV a)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	return FSel(FIsEq(a, FZero()), a, vmul_f32(a, VRECIPSQRT(a)));
 }
 
-FloatV FRsqrtFast(const FloatV a)
+inline FloatV FRsqrtFast(const FloatV a)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	return VRECIPSQRTE(a);
 }
 
-FloatV FScaleAdd(const FloatV a, const FloatV b, const FloatV c)
+inline FloatV FScaleAdd(const FloatV a, const FloatV b, const FloatV c)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
@@ -263,7 +263,7 @@ FloatV FScaleAdd(const FloatV a, const FloatV b, const FloatV c)
 	return vmla_f32(c, a, b);
 }
 
-FloatV FNegScaleSub(const FloatV a, const FloatV b, const FloatV c)
+inline FloatV FNegScaleSub(const FloatV a, const FloatV b, const FloatV c)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
@@ -271,69 +271,69 @@ FloatV FNegScaleSub(const FloatV a, const FloatV b, const FloatV c)
 	return vmls_f32(c, a, b);
 }
 
-FloatV FAbs(const FloatV a)
+inline FloatV FAbs(const FloatV a)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	return vabs_f32(a);
 }
 
-BoolV FIsGrtr(const FloatV a, const FloatV b)
+inline BoolV FIsGrtr(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vdupq_lane_u32(vcgt_f32(a, b), 0);
 }
 
-BoolV FIsGrtrOrEq(const FloatV a, const FloatV b)
+inline BoolV FIsGrtrOrEq(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vdupq_lane_u32(vcge_f32(a, b), 0);
 }
 
-FloatV FMax(const FloatV a, const FloatV b)
+inline FloatV FMax(const FloatV a, const FloatV b)
 {
 	//ASSERT_ISVALIDFLOATV(a);
 	//ASSERT_ISVALIDFLOATV(b);
 	return vmax_f32(a, b);
 }
 
-FloatV FMin(const FloatV a, const FloatV b)
+inline FloatV FMin(const FloatV a, const FloatV b)
 {
 	//ASSERT_ISVALIDFLOATV(a);
 	//ASSERT_ISVALIDFLOATV(b);
 	return vmin_f32(a, b);
 }
 
-FloatV FClamp(const FloatV a, const FloatV minV, const FloatV maxV)
+inline FloatV FClamp(const FloatV a, const FloatV minV, const FloatV maxV)
 {
 	ASSERT_ISVALIDFLOATV(minV);
 	ASSERT_ISVALIDFLOATV(maxV);
 	return vmax_f32(vmin_f32(a, maxV), minV);
 }
 
-unsigned int FAllGrtr(const FloatV a, const FloatV b)
+inline unsigned int FAllGrtr(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vget_lane_u32(vcgt_f32(a, b), 0);
 }
 
-unsigned int FAllGrtrOrEq(const FloatV a, const FloatV b)
+inline unsigned int FAllGrtrOrEq(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vget_lane_u32(vcge_f32(a, b), 0);
 }
 
-unsigned int FAllEq(const FloatV a, const FloatV b)
+inline unsigned int FAllEq(const FloatV a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vget_lane_u32(vceq_f32(a, b), 0);
 }
 
-FloatV FRound(const FloatV a)
+inline FloatV FRound(const FloatV a)
 {
 	ASSERT_ISVALIDFLOATV(a);
 
@@ -346,7 +346,7 @@ FloatV FRound(const FloatV a)
 	return vcvt_f32_s32(tmp);
 }
 
-FloatV FSin(const FloatV a)
+inline FloatV FSin(const FloatV a)
 {
 	ASSERT_ISVALIDFLOATV(a);
 
@@ -404,7 +404,7 @@ FloatV FSin(const FloatV a)
 	return Result;
 }
 
-FloatV FCos(const FloatV a)
+inline FloatV FCos(const FloatV a)
 {
 	ASSERT_ISVALIDFLOATV(a);
 
@@ -461,7 +461,7 @@ FloatV FCos(const FloatV a)
 	return Result;
 }
 
-unsigned int FOutOfBounds(const FloatV a, const FloatV min, const FloatV max)
+inline unsigned int FOutOfBounds(const FloatV a, const FloatV min, const FloatV max)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(min);
@@ -471,7 +471,7 @@ unsigned int FOutOfBounds(const FloatV a, const FloatV min, const FloatV max)
 	return (unsigned int)(!BAllEqFFFF(c));
 }
 
-unsigned int FInBounds(const FloatV a, const FloatV min, const FloatV max)
+inline unsigned int FInBounds(const FloatV a, const FloatV min, const FloatV max)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(min);
@@ -481,7 +481,7 @@ unsigned int FInBounds(const FloatV a, const FloatV min, const FloatV max)
 	return (unsigned int)(BAllEqTTTT(c));
 }
 
-unsigned int FOutOfBounds(const FloatV a, const FloatV bounds)
+inline unsigned int FOutOfBounds(const FloatV a, const FloatV bounds)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(bounds);
@@ -489,7 +489,7 @@ unsigned int FOutOfBounds(const FloatV a, const FloatV bounds)
 	return vget_lane_u32(greater, 0);
 }
 
-unsigned int FInBounds(const FloatV a, const FloatV bounds)
+inline unsigned int FInBounds(const FloatV a, const FloatV bounds)
 {
 	ASSERT_ISVALIDFLOATV(a);
 	ASSERT_ISVALIDFLOATV(bounds);
@@ -502,12 +502,12 @@ unsigned int FInBounds(const FloatV a, const FloatV bounds)
 // BoolV
 //////////////////////////////////
 
-BoolV BFFFF()
+inline BoolV BFFFF()
 {
 	return vmovq_n_u32(0);
 }
 
-BoolV BFFFT()
+inline BoolV BFFFT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -515,7 +515,7 @@ BoolV BFFFT()
 	return vcombine_u32(zeros, zo);
 }
 
-BoolV BFFTF()
+inline BoolV BFFTF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -523,14 +523,14 @@ BoolV BFFTF()
 	return vcombine_u32(zeros, oz);
 }
 
-BoolV BFFTT()
+inline BoolV BFFTT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
 	return vcombine_u32(zeros, ones);
 }
 
-BoolV BFTFF()
+inline BoolV BFTFF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -538,7 +538,7 @@ BoolV BFTFF()
 	return vcombine_u32(zo, zeros);
 }
 
-BoolV BFTFT()
+inline BoolV BFTFT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -546,7 +546,7 @@ BoolV BFTFT()
 	return vcombine_u32(zo, zo);
 }
 
-BoolV BFTTF()
+inline BoolV BFTTF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -555,7 +555,7 @@ BoolV BFTTF()
 	return vcombine_u32(zo, oz);
 }
 
-BoolV BFTTT()
+inline BoolV BFTTT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -563,7 +563,7 @@ BoolV BFTTT()
 	return vcombine_u32(zo, ones);
 }
 
-BoolV BTFFF()
+inline BoolV BTFFF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -572,7 +572,7 @@ BoolV BTFFF()
 	return vcombine_u32(oz, zeros);
 }
 
-BoolV BTFFT()
+inline BoolV BTFFT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -581,7 +581,7 @@ BoolV BTFFT()
 	return vcombine_u32(oz, zo);
 }
 
-BoolV BTFTF()
+inline BoolV BTFTF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -589,7 +589,7 @@ BoolV BTFTF()
 	return vcombine_u32(oz, oz);
 }
 
-BoolV BTFTT()
+inline BoolV BTFTT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -597,14 +597,14 @@ BoolV BTFTT()
 	return vcombine_u32(oz, ones);
 }
 
-BoolV BTTFF()
+inline BoolV BTTFF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
 	return vcombine_u32(ones, zeros);
 }
 
-BoolV BTTFT()
+inline BoolV BTTFT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -612,7 +612,7 @@ BoolV BTTFT()
 	return vcombine_u32(ones, zo);
 }
 
-BoolV BTTTF()
+inline BoolV BTTTF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -620,97 +620,97 @@ BoolV BTTTF()
 	return vcombine_u32(ones, oz);
 }
 
-BoolV BTTTT()
+inline BoolV BTTTT()
 {
 	return vmovq_n_u32(0xffffFFFF);
 }
 
-BoolV BXMask()
+inline BoolV BXMask()
 {
 	return BTFFF();
 }
 
-BoolV BYMask()
+inline BoolV BYMask()
 {
 	return BFTFF();
 }
 
-BoolV BZMask()
+inline BoolV BZMask()
 {
 	return BFFTF();
 }
 
-BoolV BWMask()
+inline BoolV BWMask()
 {
 	return BFFFT();
 }
 
-BoolV BGetX(const BoolV f)
+inline BoolV BGetX(const BoolV f)
 {
 	const uint32x2_t fLow = vget_low_u32(f);
 	return vdupq_lane_u32(fLow, 0);
 }
 
-BoolV BGetY(const BoolV f)
+inline BoolV BGetY(const BoolV f)
 {
 	const uint32x2_t fLow = vget_low_u32(f);
 	return vdupq_lane_u32(fLow, 1);
 }
 
-BoolV BGetZ(const BoolV f)
+inline BoolV BGetZ(const BoolV f)
 {
 	const uint32x2_t fHigh = vget_high_u32(f);
 	return vdupq_lane_u32(fHigh, 0);
 }
 
-BoolV BGetW(const BoolV f)
+inline BoolV BGetW(const BoolV f)
 {
 	const uint32x2_t fHigh = vget_high_u32(f);
 	return vdupq_lane_u32(fHigh, 1);
 }
 
-BoolV BSetX(const BoolV v, const BoolV f)
+inline BoolV BSetX(const BoolV v, const BoolV f)
 {
 	return vbslq_u32(BFTTT(), v, f);
 }
 
-BoolV BSetY(const BoolV v, const BoolV f)
+inline BoolV BSetY(const BoolV v, const BoolV f)
 {
 	return vbslq_u32(BTFTT(), v, f);
 }
 
-BoolV BSetZ(const BoolV v, const BoolV f)
+inline BoolV BSetZ(const BoolV v, const BoolV f)
 {
 	return vbslq_u32(BTTFT(), v, f);
 }
 
-BoolV BSetW(const BoolV v, const BoolV f)
+inline BoolV BSetW(const BoolV v, const BoolV f)
 {
 	return vbslq_u32(BTTTF(), v, f);
 }
 
-BoolV BAnd(const BoolV a, const BoolV b)
+inline BoolV BAnd(const BoolV a, const BoolV b)
 {
 	return vandq_u32(a, b);
 }
 
-BoolV BNot(const BoolV a)
+inline BoolV BNot(const BoolV a)
 {
 	return vmvnq_u32(a);
 }
 
-BoolV BAndNot(const BoolV a, const BoolV b)
+inline BoolV BAndNot(const BoolV a, const BoolV b)
 {
 	// return vbicq_u32(a, b);
 	return vandq_u32(a, vmvnq_u32(b));
 }
 
-BoolV BOr(const BoolV a, const BoolV b)
+inline BoolV BOr(const BoolV a, const BoolV b)
 {
 	return vorrq_u32(a, b);
 }
 
-BoolV BAllTrue4(const BoolV a)
+inline BoolV BAllTrue4(const BoolV a)
 {
 	const uint32x2_t allTrue = vmov_n_u32(0xffffFFFF);
 	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
@@ -721,7 +721,7 @@ BoolV BAllTrue4(const BoolV a)
 	return vdupq_lane_u32(result, 0);
 }
 
-BoolV BAnyTrue4(const BoolV a)
+inline BoolV BAnyTrue4(const BoolV a)
 {
 	const uint32x2_t allTrue = vmov_n_u32(0xffffFFFF);
 	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
@@ -732,7 +732,7 @@ BoolV BAnyTrue4(const BoolV a)
 	return vdupq_lane_u32(result, 0);
 }
 
-BoolV BAllTrue3(const BoolV a)
+inline BoolV BAllTrue3(const BoolV a)
 {
 	const uint32x2_t allTrue3 = vmov_n_u32(0x00ffFFFF);
 	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
@@ -743,7 +743,7 @@ BoolV BAllTrue3(const BoolV a)
 	return vdupq_lane_u32(result, 0);
 }
 
-BoolV BAnyTrue3(const BoolV a)
+inline BoolV BAnyTrue3(const BoolV a)
 {
 	const uint32x2_t allTrue3 = vmov_n_u32(0x00ffFFFF);
 	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
@@ -754,23 +754,23 @@ BoolV BAnyTrue3(const BoolV a)
 	return vdupq_lane_u32(result, 0);
 }
 
-unsigned int BAllEq(const BoolV a, const BoolV b)
+inline unsigned int BAllEq(const BoolV a, const BoolV b)
 {
 	const BoolV bTest = vceqq_u32(a, b);
 	return internalUnitNeonSimd::BAllTrue4_R(bTest);
 }
 
-unsigned int BAllEqTTTT(const BoolV a)
+inline unsigned int BAllEqTTTT(const BoolV a)
 {
 	return BAllEq(a, BTTTT());
 }
 
-unsigned int BAllEqFFFF(const BoolV a)
+inline unsigned int BAllEqFFFF(const BoolV a)
 {
 	return BAllEq(a, BFFFF());
 }
 
-unsigned int BGetBitMask(const BoolV a)
+inline unsigned int BGetBitMask(const BoolV a)
 {
 	alignas(16) static const unsigned int bitMaskData[4] = { 1, 2, 4, 8 };
 	const uint32x4_t bitMask = *(reinterpret_cast<const uint32x4_t*>(bitMaskData));
@@ -783,41 +783,41 @@ unsigned int BGetBitMask(const BoolV a)
 // Vec4V
 //////////////////////////////////
 
-Vec4V V4Load(const float f)
+inline Vec4V V4Load(const float f)
 {
 	return vdupq_n_f32(reinterpret_cast<const float32_t&>(f));
 }
 
-Vec4V V4LoadA(const float* const f)
+inline Vec4V V4LoadA(const float* const f)
 {
 	ASSERT_ISALIGNED16(f);
 	return vld1q_f32(reinterpret_cast<const float32_t*>(f));
 }
 
-void V4StoreA(Vec4V a, float* f)
+inline void V4StoreA(Vec4V a, float* f)
 {
 	ASSERT_ISALIGNED16(f);
 	vst1q_f32(reinterpret_cast<float32_t*>(f), a);
 }
 
-Vec4V Vec4V_From_FloatV(FloatV f)
+inline Vec4V Vec4V_From_FloatV(FloatV f)
 {
 	return vcombine_f32(f, f);
 }
 
-Vec4V Vec4V_From_PxVec3_WUndefined(const Vector3d& f)
+inline Vec4V Vec4V_From_PxVec3_WUndefined(const Vector3d& f)
 {
 	alignas(16) float data[4] = { f.x, f.y, f.z, 0.0f };
 	return V4LoadA(data);
 }
 
-Vec4V V4Splat(const FloatV f)
+inline Vec4V V4Splat(const FloatV f)
 {
 	ASSERT_ISVALIDFLOATV(f);
 	return vcombine_f32(f, f);
 }
 
-Vec4V V4Merge(const FloatV* const floatVArray)
+inline Vec4V V4Merge(const FloatV* const floatVArray)
 {
 	ASSERT_ISVALIDFLOATV(floatVArray[0]);
 	ASSERT_ISVALIDFLOATV(floatVArray[1]);
@@ -835,7 +835,7 @@ Vec4V V4Merge(const FloatV* const floatVArray)
 	return vreinterpretq_f32_u32(vcombine_u32(dLow, dHigh));
 }
 
-Vec4V V4Merge(const FloatV& x, const FloatV& y, const FloatV& z, const FloatV& w)
+inline Vec4V V4Merge(const FloatV& x, const FloatV& y, const FloatV& z, const FloatV& w)
 {
 	ASSERT_ISVALIDFLOATV(x);
 	ASSERT_ISVALIDFLOATV(y);
@@ -853,7 +853,7 @@ Vec4V V4Merge(const FloatV& x, const FloatV& y, const FloatV& z, const FloatV& w
 	return vreinterpretq_f32_u32(vcombine_u32(dLow, dHigh));
 }
 
-Vec4V V4MergeW(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
+inline Vec4V V4MergeW(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
 {
 	const float32x2_t xx = vget_high_f32(x);
 	const float32x2_t yy = vget_high_f32(y);
@@ -866,7 +866,7 @@ Vec4V V4MergeW(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
 	return vcombine_f32(zipL.val[1], zipH.val[1]);
 }
 
-Vec4V V4MergeZ(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
+inline Vec4V V4MergeZ(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
 {
 	const float32x2_t xx = vget_high_f32(x);
 	const float32x2_t yy = vget_high_f32(y);
@@ -879,7 +879,7 @@ Vec4V V4MergeZ(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
 	return vcombine_f32(zipL.val[0], zipH.val[0]);
 }
 
-Vec4V V4MergeY(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
+inline Vec4V V4MergeY(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
 {
 	const float32x2_t xx = vget_low_f32(x);
 	const float32x2_t yy = vget_low_f32(y);
@@ -892,7 +892,7 @@ Vec4V V4MergeY(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
 	return vcombine_f32(zipL.val[1], zipH.val[1]);
 }
 
-Vec4V V4MergeX(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
+inline Vec4V V4MergeX(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
 {
 	const float32x2_t xx = vget_low_f32(x);
 	const float32x2_t yy = vget_low_f32(y);
@@ -905,17 +905,17 @@ Vec4V V4MergeX(const Vec4V& x, const Vec4V& y, const Vec4V& z, const Vec4V& w)
 	return vcombine_f32(zipL.val[0], zipH.val[0]);
 }
 
-Vec4V V4UnpackXY(const Vec4V& a, const Vec4V& b)
+inline Vec4V V4UnpackXY(const Vec4V& a, const Vec4V& b)
 {
 	return vzipq_f32(a, b).val[0];
 }
 
-Vec4V V4UnpackZW(const Vec4V& a, const Vec4V& b)
+inline Vec4V V4UnpackZW(const Vec4V& a, const Vec4V& b)
 {
 	return vzipq_f32(a, b).val[1];
 }
 
-Vec4V V4UnitW()
+inline Vec4V V4UnitW()
 {
 	const float32x2_t zeros = vreinterpret_f32_u32(vmov_n_u32(0));
 	const float32x2_t ones = vmov_n_f32(1.0f);
@@ -923,7 +923,7 @@ Vec4V V4UnitW()
 	return vcombine_f32(zeros, zo);
 }
 
-Vec4V V4UnitX()
+inline Vec4V V4UnitX()
 {
 	const float32x2_t zeros = vreinterpret_f32_u32(vmov_n_u32(0));
 	const float32x2_t ones = vmov_n_f32(1.0f);
@@ -931,7 +931,7 @@ Vec4V V4UnitX()
 	return vcombine_f32(oz, zeros);
 }
 
-Vec4V V4UnitY()
+inline Vec4V V4UnitY()
 {
 	const float32x2_t zeros = vreinterpret_f32_u32(vmov_n_u32(0));
 	const float32x2_t ones = vmov_n_f32(1.0f);
@@ -939,7 +939,7 @@ Vec4V V4UnitY()
 	return vcombine_f32(zo, zeros);
 }
 
-Vec4V V4UnitZ()
+inline Vec4V V4UnitZ()
 {
 	const float32x2_t zeros = vreinterpret_f32_u32(vmov_n_u32(0));
 	const float32x2_t ones = vmov_n_f32(1.0f);
@@ -947,7 +947,7 @@ Vec4V V4UnitZ()
 	return vcombine_f32(zeros, oz);
 }
 
-Vec4V V4PermYXWZ(const Vec4V a)
+inline Vec4V V4PermYXWZ(const Vec4V a)
 {
 	const float32x2_t xy = vget_low_f32(a);
 	const float32x2_t zw = vget_high_f32(a);
@@ -956,7 +956,7 @@ Vec4V V4PermYXWZ(const Vec4V a)
 	return vcombine_f32(yx, wz);
 }
 
-Vec4V V4PermXZXZ(const Vec4V a)
+inline Vec4V V4PermXZXZ(const Vec4V a)
 {
 	const float32x2_t xy = vget_low_f32(a);
 	const float32x2_t zw = vget_high_f32(a);
@@ -964,7 +964,7 @@ Vec4V V4PermXZXZ(const Vec4V a)
 	return vcombine_f32(xzyw.val[0], xzyw.val[0]);
 }
 
-Vec4V V4PermYWYW(const Vec4V a)
+inline Vec4V V4PermYWYW(const Vec4V a)
 {
 	const float32x2_t xy = vget_low_f32(a);
 	const float32x2_t zw = vget_high_f32(a);
@@ -972,7 +972,7 @@ Vec4V V4PermYWYW(const Vec4V a)
 	return vcombine_f32(xzyw.val[1], xzyw.val[1]);
 }
 
-Vec4V V4PermYZXW(const Vec4V a)
+inline Vec4V V4PermYZXW(const Vec4V a)
 {
 	const uint32x2_t xy = vget_low_u32(vreinterpretq_u32_f32(a));
 	const uint32x2_t zw = vget_high_u32(vreinterpretq_u32_f32(a));
@@ -981,7 +981,7 @@ Vec4V V4PermYZXW(const Vec4V a)
 	return vreinterpretq_f32_u32(vcombine_u32(yz, xw));
 }
 
-Vec4V V4PermZWXY(const Vec4V a)
+inline Vec4V V4PermZWXY(const Vec4V a)
 {
 	const float32x2_t low = vget_low_f32(a);
 	const float32x2_t high = vget_high_f32(a);
@@ -989,7 +989,7 @@ Vec4V V4PermZWXY(const Vec4V a)
 }
 
 template <unsigned char E0, unsigned char E1, unsigned char E2, unsigned char E3>
-Vec4V V4Perm(const Vec4V V)
+inline Vec4V V4Perm(const Vec4V V)
 {
 	static const uint32_t ControlElement[4] =
 	{
@@ -1018,187 +1018,181 @@ Vec4V V4Perm(const Vec4V V)
 	return vreinterpretq_f32_u8(vcombine_u8(rL, rH));
 }
 
-// PT: this seems measurably slower than the hardcoded version
-/*Vec4V V4PermYZXW(const Vec4V a)
-{
-    return V4Perm<1, 2, 0, 3>(a);
-}*/
-
-Vec4V V4Zero()
+inline Vec4V V4Zero()
 {
 	return vreinterpretq_f32_u32(vmovq_n_u32(0));
 	//	return vmovq_n_f32(0.0f);
 }
 
-Vec4V V4One()
+inline Vec4V V4One()
 {
 	return vmovq_n_f32(1.0f);
 }
 
-Vec4V V4Eps()
+inline Vec4V V4Eps()
 {
 	//	return vmovq_n_f32(PX_EPS_REAL);
 	return V4Load(1e-7);
 }
 
-Vec4V V4Neg(const Vec4V f)
+inline Vec4V V4Neg(const Vec4V f)
 {
 	return vnegq_f32(f);
 }
 
-Vec4V V4Add(const Vec4V a, const Vec4V b)
+inline Vec4V V4Add(const Vec4V a, const Vec4V b)
 {
 	return vaddq_f32(a, b);
 }
 
-Vec4V V4Sub(const Vec4V a, const Vec4V b)
+inline Vec4V V4Sub(const Vec4V a, const Vec4V b)
 {
 	return vsubq_f32(a, b);
 }
 
-Vec4V V4Scale(const Vec4V a, const FloatV b)
+inline Vec4V V4Scale(const Vec4V a, const FloatV b)
 {
 	return vmulq_lane_f32(a, b, 0);
 }
 
-Vec4V V4Mul(const Vec4V a, const Vec4V b)
+inline Vec4V V4Mul(const Vec4V a, const Vec4V b)
 {
 	return vmulq_f32(a, b);
 }
 
-Vec4V V4ScaleInv(const Vec4V a, const FloatV b)
+inline Vec4V V4ScaleInv(const Vec4V a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(b);
 	const float32x2_t invB = VRECIP(b);
 	return vmulq_lane_f32(a, invB, 0);
 }
 
-Vec4V V4Div(const Vec4V a, const Vec4V b)
+inline Vec4V V4Div(const Vec4V a, const Vec4V b)
 {
 	const float32x4_t invB = VRECIPQ(b);
 	return vmulq_f32(a, invB);
 }
 
-Vec4V V4ScaleInvFast(const Vec4V a, const FloatV b)
+inline Vec4V V4ScaleInvFast(const Vec4V a, const FloatV b)
 {
 	ASSERT_ISVALIDFLOATV(b);
 	const float32x2_t invB = VRECIPE(b);
 	return vmulq_lane_f32(a, invB, 0);
 }
 
-Vec4V V4DivFast(const Vec4V a, const Vec4V b)
+inline Vec4V V4DivFast(const Vec4V a, const Vec4V b)
 {
 	const float32x4_t invB = VRECIPEQ(b);
 	return vmulq_f32(a, invB);
 }
 
-Vec4V V4Recip(const Vec4V a)
+inline Vec4V V4Recip(const Vec4V a)
 {
 	return VRECIPQ(a);
 }
 
-Vec4V V4RecipFast(const Vec4V a)
+inline Vec4V V4RecipFast(const Vec4V a)
 {
 	return VRECIPEQ(a);
 }
 
-Vec4V V4Rsqrt(const Vec4V a)
+inline Vec4V V4Rsqrt(const Vec4V a)
 {
 	return VRECIPSQRTQ(a);
 }
 
-Vec4V V4RsqrtFast(const Vec4V a)
+inline Vec4V V4RsqrtFast(const Vec4V a)
 {
 	return VRECIPSQRTEQ(a);
 }
 
-Vec4V V4Sqrt(const Vec4V a)
+inline Vec4V V4Sqrt(const Vec4V a)
 {
 	return V4Sel(V4IsEq(a, V4Zero()), a, V4Mul(a, VRECIPSQRTQ(a)));
 }
 
-Vec4V V4ScaleAdd(const Vec4V a, const FloatV b, const Vec4V c)
+inline Vec4V V4ScaleAdd(const Vec4V a, const FloatV b, const Vec4V c)
 {
 	ASSERT_ISVALIDFLOATV(b);
 	return vmlaq_lane_f32(c, a, b, 0);
 }
 
-Vec4V V4NegScaleSub(const Vec4V a, const FloatV b, const Vec4V c)
+inline Vec4V V4NegScaleSub(const Vec4V a, const FloatV b, const Vec4V c)
 {
 	ASSERT_ISVALIDFLOATV(b);
 	return vmlsq_lane_f32(c, a, b, 0);
 }
 
-Vec4V V4MulAdd(const Vec4V a, const Vec4V b, const Vec4V c)
+inline Vec4V V4MulAdd(const Vec4V a, const Vec4V b, const Vec4V c)
 {
 	return vmlaq_f32(c, a, b);
 }
 
-Vec4V V4NegMulSub(const Vec4V a, const Vec4V b, const Vec4V c)
+inline Vec4V V4NegMulSub(const Vec4V a, const Vec4V b, const Vec4V c)
 {
 	return vmlsq_f32(c, a, b);
 }
 
-FloatV V4GetW(const Vec4V f)
+inline FloatV V4GetW(const Vec4V f)
 {
 	const float32x2_t fhigh = vget_high_f32(f);
 	return vdup_lane_f32(fhigh, 1);
 }
 
-FloatV V4GetX(const Vec4V f)
+inline FloatV V4GetX(const Vec4V f)
 {
 	const float32x2_t fLow = vget_low_f32(f);
 	return vdup_lane_f32(fLow, 0);
 }
 
-FloatV V4GetY(const Vec4V f)
+inline FloatV V4GetY(const Vec4V f)
 {
 	const float32x2_t fLow = vget_low_f32(f);
 	return vdup_lane_f32(fLow, 1);
 }
 
-FloatV V4GetZ(const Vec4V f)
+inline FloatV V4GetZ(const Vec4V f)
 {
 	const float32x2_t fhigh = vget_high_f32(f);
 	return vdup_lane_f32(fhigh, 0);
 }
 
-Vec4V V4SetW(const Vec4V v, const FloatV f)
+inline Vec4V V4SetW(const Vec4V v, const FloatV f)
 {
 	ASSERT_ISVALIDFLOATV(f);
 	return V4Sel(BTTTF(), v, vcombine_f32(f, f));
 }
 
-Vec4V V4SetX(const Vec4V v, const FloatV f)
+inline Vec4V V4SetX(const Vec4V v, const FloatV f)
 {
 	ASSERT_ISVALIDFLOATV(f);
 	return V4Sel(BFTTT(), v, vcombine_f32(f, f));
 }
 
-Vec4V V4SetY(const Vec4V v, const FloatV f)
+inline Vec4V V4SetY(const Vec4V v, const FloatV f)
 {
 	ASSERT_ISVALIDFLOATV(f);
 	return V4Sel(BTFTT(), v, vcombine_f32(f, f));
 }
 
-Vec4V V4SetZ(const Vec4V v, const FloatV f)
+inline Vec4V V4SetZ(const Vec4V v, const FloatV f)
 {
 	ASSERT_ISVALIDFLOATV(f);
 	return V4Sel(BTTFT(), v, vcombine_f32(f, f));
 }
 
-Vec4V V4ClearW(const Vec4V v)
+inline Vec4V V4ClearW(const Vec4V v)
 {
 	return V4Sel(BTTTF(), v, V4Zero());
 }
 
 
-Vec4V V4Abs(const Vec4V a)
+inline Vec4V V4Abs(const Vec4V a)
 {
 	return vabsq_f32(a);
 }
 
-FloatV V4SumElements(const Vec4V a)
+inline FloatV V4SumElements(const Vec4V a)
 {
 	const Vec4V xy = V4UnpackXY(a, a); // x,x,y,y
 	const Vec4V zw = V4UnpackZW(a, a); // z,z,w,w
@@ -1208,7 +1202,24 @@ FloatV V4SumElements(const Vec4V a)
 	return FAdd(xz, yw);               // sum
 }
 
-FloatV V4Dot(const Vec4V a, const Vec4V b)
+template <int index>
+inline Vec4V V4SplatElement(Vec4V a)
+{
+	if (index < 2)
+	{
+		return vdupq_lane_f32(vget_low_f32(a), index & 0x01);
+	}
+	else if (index == 2)
+	{
+		return vdupq_lane_f32(vget_high_f32(a), 0);
+	}
+	else if (index == 3)
+	{
+		return vdupq_lane_f32(vget_high_f32(a), 1);
+	}
+}
+
+inline FloatV V4Dot(const Vec4V a, const Vec4V b)
 {
 	const float32x4_t tmp = vmulq_f32(a, b);
 	const float32x2_t low = vget_low_f32(tmp);
@@ -1219,7 +1230,7 @@ FloatV V4Dot(const Vec4V a, const Vec4V b)
 	return sumWZYX;
 }
 
-FloatV V4Dot3(const Vec4V aa, const Vec4V bb)
+inline FloatV V4Dot3(const Vec4V aa, const Vec4V bb)
 {
 	// PT: the V3Dot code relies on the fact that W=0 so we can't reuse it as-is, we need to clear W first.
 	// TODO: find a better implementation that does not need to clear W.
@@ -1235,7 +1246,7 @@ FloatV V4Dot3(const Vec4V aa, const Vec4V bb)
 	return sum0ZYX;
 }
 
-Vec4V V4Cross(const Vec4V a, const Vec4V b)
+inline Vec4V V4Cross(const Vec4V a, const Vec4V b)
 {
 	const uint32x2_t TF = { 0xffffFFFF, 0x0 };
 	const float32x2_t ay_ax = vget_low_f32(a);  // d2
@@ -1258,7 +1269,7 @@ Vec4V V4Cross(const Vec4V a, const Vec4V b)
 	return vcombine_f32(retLow, vreinterpret_f32_u32(retHigh));
 }
 
-FloatV V4Length(const Vec4V a)
+inline FloatV V4Length(const Vec4V a)
 {
 	const float32x4_t tmp = vmulq_f32(a, a);
 	const float32x2_t low = vget_low_f32(tmp);
@@ -1269,24 +1280,24 @@ FloatV V4Length(const Vec4V a)
 	return FSqrt(sumWZYX);
 }
 
-FloatV V4LengthSq(const Vec4V a)
+inline FloatV V4LengthSq(const Vec4V a)
 {
 	return V4Dot(a, a);
 }
 
-Vec4V V4Normalize(const Vec4V a)
+inline Vec4V V4Normalize(const Vec4V a)
 {
 	//PX_ASSERT(!FAllEq(V4LengthSq(a), FZero()));
 	return V4ScaleInv(a, V4Length(a));
 }
 
-Vec4V V4NormalizeFast(const Vec4V a)
+inline Vec4V V4NormalizeFast(const Vec4V a)
 {
 	//PX_ASSERT(!FAllEq(V4LengthSq(a), FZero()));
 	return V4Scale(a, FRsqrtFast(V4Dot(a, a)));
 }
 
-Vec4V V4NormalizeSafe(const Vec4V a, const Vec4V unsafeReturnValue)
+inline Vec4V V4NormalizeSafe(const Vec4V a, const Vec4V unsafeReturnValue)
 {
 	const FloatV zero = FZero();
 	const FloatV length = V4Length(a);
@@ -1294,42 +1305,42 @@ Vec4V V4NormalizeSafe(const Vec4V a, const Vec4V unsafeReturnValue)
 	return V4Sel(isGreaterThanZero, V4ScaleInv(a, length), unsafeReturnValue);
 }
 
-BoolV V4IsEqU32(const VecU32V a, const VecU32V b)
+inline BoolV V4IsEqU32(const VecU32V a, const VecU32V b)
 {
 	return vceqq_u32(a, b);
 }
 
-Vec4V V4Sel(const BoolV c, const Vec4V a, const Vec4V b)
+inline Vec4V V4Sel(const BoolV c, const Vec4V a, const Vec4V b)
 {
 	return vbslq_f32(c, a, b);
 }
 
-BoolV V4IsGrtr(const Vec4V a, const Vec4V b)
+inline BoolV V4IsGrtr(const Vec4V a, const Vec4V b)
 {
 	return vcgtq_f32(a, b);
 }
 
-BoolV V4IsGrtrOrEq(const Vec4V a, const Vec4V b)
+inline BoolV V4IsGrtrOrEq(const Vec4V a, const Vec4V b)
 {
 	return vcgeq_f32(a, b);
 }
 
-BoolV V4IsEq(const Vec4V a, const Vec4V b)
+inline BoolV V4IsEq(const Vec4V a, const Vec4V b)
 {
 	return vceqq_f32(a, b);
 }
 
-Vec4V V4Max(const Vec4V a, const Vec4V b)
+inline Vec4V V4Max(const Vec4V a, const Vec4V b)
 {
 	return vmaxq_f32(a, b);
 }
 
-Vec4V V4Min(const Vec4V a, const Vec4V b)
+inline Vec4V V4Min(const Vec4V a, const Vec4V b)
 {
 	return vminq_f32(a, b);
 }
 
-FloatV V4ExtractMax(const Vec4V a)
+inline FloatV V4ExtractMax(const Vec4V a)
 {
 	const float32x2_t low = vget_low_f32(a);
 	const float32x2_t high = vget_high_f32(a);
@@ -1340,7 +1351,7 @@ FloatV V4ExtractMax(const Vec4V a)
 	return max1;
 }
 
-FloatV V4ExtractMin(const Vec4V a)
+inline FloatV V4ExtractMin(const Vec4V a)
 {
 	const float32x2_t low = vget_low_f32(a);
 	const float32x2_t high = vget_high_f32(a);
@@ -1351,37 +1362,37 @@ FloatV V4ExtractMin(const Vec4V a)
 	return min1;
 }
 
-Vec4V V4Clamp(const Vec4V a, const Vec4V minV, const Vec4V maxV)
+inline Vec4V V4Clamp(const Vec4V a, const Vec4V minV, const Vec4V maxV)
 {
 	return V4Max(V4Min(a, maxV), minV);
 }
 
-unsigned int V4AllGrtr(const Vec4V a, const Vec4V b)
+inline unsigned int V4AllGrtr(const Vec4V a, const Vec4V b)
 {
 	return internalUnitNeonSimd::BAllTrue4_R(V4IsGrtr(a, b));
 }
 
-unsigned int V4AllGrtrOrEq(const Vec4V a, const Vec4V b)
+inline unsigned int V4AllGrtrOrEq(const Vec4V a, const Vec4V b)
 {
 	return internalUnitNeonSimd::BAllTrue4_R(V4IsGrtrOrEq(a, b));
 }
 
-unsigned int V4AllGrtrOrEq3(const Vec4V a, const Vec4V b)
+inline unsigned int V4AllGrtrOrEq3(const Vec4V a, const Vec4V b)
 {
 	return internalUnitNeonSimd::BAllTrue3_R(V4IsGrtrOrEq(a, b));
 }
 
-unsigned int V4AllEq(const Vec4V a, const Vec4V b)
+inline unsigned int V4AllEq(const Vec4V a, const Vec4V b)
 {
 	return internalUnitNeonSimd::BAllTrue4_R(V4IsEq(a, b));
 }
 
-unsigned int V4AnyGrtr3(const Vec4V a, const Vec4V b)
+inline unsigned int V4AnyGrtr3(const Vec4V a, const Vec4V b)
 {
 	return internalUnitNeonSimd::BAnyTrue3_R(V4IsGrtr(a, b));
 }
 
-Vec4V V4Round(const Vec4V a)
+inline Vec4V V4Round(const Vec4V a)
 {
 	// truncate(a + (0.5f - sign(a)))
 	const Vec4V half = V4Load(0.5f);
@@ -1391,7 +1402,7 @@ Vec4V V4Round(const Vec4V a)
 	return vcvtq_f32_s32(vcvtq_s32_f32(aRound));
 }
 
-Vec4V V4Sin(const Vec4V a)
+inline Vec4V V4Sin(const Vec4V a)
 {
 	const Vec4V recipTwoPi = V4LoadA(g_PXReciprocalTwoPi.f);
 	const Vec4V twoPi = V4LoadA(g_PXTwoPi.f);
@@ -1446,7 +1457,7 @@ Vec4V V4Sin(const Vec4V a)
 	return Result;
 }
 
-Vec4V V4Cos(const Vec4V a)
+inline Vec4V V4Cos(const Vec4V a)
 {
 	const Vec4V recipTwoPi = V4LoadA(g_PXReciprocalTwoPi.f);
 	const Vec4V twoPi = V4LoadA(g_PXTwoPi.f);
@@ -1500,7 +1511,7 @@ Vec4V V4Cos(const Vec4V a)
 	return Result;
 }
 
-void V4Transpose(Vec4V& col0, Vec4V& col1, Vec4V& col2, Vec4V& col3)
+inline void V4Transpose(Vec4V& col0, Vec4V& col1, Vec4V& col2, Vec4V& col3)
 {
 	const float32x4x2_t v0v1 = vzipq_f32(col0, col2);
 	const float32x4x2_t v2v3 = vzipq_f32(col1, col3);
@@ -1518,23 +1529,23 @@ void V4Transpose(Vec4V& col0, Vec4V& col1, Vec4V& col2, Vec4V& col3)
 // Vec3V
 //////////////////////////////////
 
-Vec3V V3Load(const float f)
+inline Vec3V V3Load(const float f)
 {
 	alignas(16) float data[4] = { f, f, f, 0.0f };
 	return V4LoadA(data);
 }
 
-Vec3V Vec3V_From_Vec4V(Vec4V v)
+inline Vec3V Vec3V_From_Vec4V(Vec4V v)
 {
 	return vsetq_lane_f32(0.0f, v, 3);
 }
 
-Vec3V Vec3V_From_FloatV(FloatV f)
+inline Vec3V Vec3V_From_FloatV(FloatV f)
 {
 	return Vec3V_From_Vec4V(Vec4V_From_FloatV(f));
 }
 
-Vec3V V3Splat(const FloatV f)
+inline Vec3V V3Splat(const FloatV f)
 {
 	ASSERT_ISVALIDFLOATV(f);
 
@@ -1546,7 +1557,7 @@ Vec3V V3Splat(const FloatV f)
 	return vcombine_f32(f, dHigh);
 }
 
-Vec3V V3Merge(const FloatV &x, const FloatV &y, const FloatV &z)
+inline Vec3V V3Merge(const FloatV &x, const FloatV &y, const FloatV &z)
 {
 	ASSERT_ISVALIDFLOATV(x);
 	ASSERT_ISVALIDFLOATV(y);
@@ -1559,67 +1570,67 @@ Vec3V V3Merge(const FloatV &x, const FloatV &y, const FloatV &z)
 	return vreinterpretq_f32_u32(vcombine_u32(dLow, dHigh));
 }
 
-Vec3V V3UnitX()
+inline Vec3V V3UnitX()
 {
 	const float32x4_t x = { 1.0f, 0.0f, 0.0f, 0.0f };
 	return x;
 }
 
-Vec3V V3UnitY()
+inline Vec3V V3UnitY()
 {
 	const float32x4_t y = { 0, 1.0f, 0, 0 };
 	return y;
 }
 
-Vec3V V3UnitZ()
+inline Vec3V V3UnitZ()
 {
 	const float32x4_t z = { 0, 0, 1.0f, 0 };
 	return z;
 }
 
-FloatV V3GetX(const Vec3V f)
+inline FloatV V3GetX(const Vec3V f)
 {
 	ASSERT_ISVALIDVEC3V(f);
 	const float32x2_t fLow = vget_low_f32(f);
 	return vdup_lane_f32(fLow, 0);
 }
 
-FloatV V3GetY(const Vec3V f)
+inline FloatV V3GetY(const Vec3V f)
 {
 	ASSERT_ISVALIDVEC3V(f);
 	const float32x2_t fLow = vget_low_f32(f);
 	return vdup_lane_f32(fLow, 1);
 }
 
-FloatV V3GetZ(const Vec3V f)
+inline FloatV V3GetZ(const Vec3V f)
 {
 	ASSERT_ISVALIDVEC3V(f);
 	const float32x2_t fhigh = vget_high_f32(f);
 	return vdup_lane_f32(fhigh, 0);
 }
 
-Vec3V V3SetX(const Vec3V v, const FloatV f)
+inline Vec3V V3SetX(const Vec3V v, const FloatV f)
 {
 	ASSERT_ISVALIDVEC3V(v);
 	ASSERT_ISVALIDFLOATV(f);
 	return V4Sel(BFTTT(), v, vcombine_f32(f, f));
 }
 
-Vec3V V3SetY(const Vec3V v, const FloatV f)
+inline Vec3V V3SetY(const Vec3V v, const FloatV f)
 {
 	ASSERT_ISVALIDVEC3V(v);
 	ASSERT_ISVALIDFLOATV(f);
 	return V4Sel(BTFTT(), v, vcombine_f32(f, f));
 }
 
-Vec3V V3SetZ(const Vec3V v, const FloatV f)
+inline Vec3V V3SetZ(const Vec3V v, const FloatV f)
 {
 	ASSERT_ISVALIDVEC3V(v);
 	ASSERT_ISVALIDFLOATV(f);
 	return V4Sel(BTTFT(), v, vcombine_f32(f, f));
 }
 
-Vec3V V3ColX(const Vec3V a, const Vec3V b, const Vec3V c)
+inline Vec3V V3ColX(const Vec3V a, const Vec3V b, const Vec3V c)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
@@ -1636,7 +1647,7 @@ Vec3V V3ColX(const Vec3V a, const Vec3V b, const Vec3V c)
 	return vcombine_f32(zipL.val[0], zipH.val[0]);
 }
 
-Vec3V V3ColY(const Vec3V a, const Vec3V b, const Vec3V c)
+inline Vec3V V3ColY(const Vec3V a, const Vec3V b, const Vec3V c)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
@@ -1653,7 +1664,7 @@ Vec3V V3ColY(const Vec3V a, const Vec3V b, const Vec3V c)
 	return vcombine_f32(zipL.val[1], zipH.val[1]);
 }
 
-Vec3V V3ColZ(const Vec3V a, const Vec3V b, const Vec3V c)
+inline Vec3V V3ColZ(const Vec3V a, const Vec3V b, const Vec3V c)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
@@ -1668,57 +1679,57 @@ Vec3V V3ColZ(const Vec3V a, const Vec3V b, const Vec3V c)
 	return vcombine_f32(zipL.val[0], cHi);
 }
 
-Vec3V V3Zero()
+inline Vec3V V3Zero()
 {
 	return vdupq_n_f32(0.0f);
 }
 
-Vec3V V3Eps()
+inline Vec3V V3Eps()
 {
 	return V3Load(1e-7);
 }
 
-Vec3V V3One()
+inline Vec3V V3One()
 {
 	return V3Load(1.0f);
 }
 
-Vec3V V3Neg(const Vec3V f)
+inline Vec3V V3Neg(const Vec3V f)
 {
 	ASSERT_ISVALIDVEC3V(f);
 	const float32x4_t tmp = vnegq_f32(f);
 	return vsetq_lane_f32(0.0f, tmp, 3);
 }
 
-Vec3V V3Add(const Vec3V a, const Vec3V b)
+inline Vec3V V3Add(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return vaddq_f32(a, b);
 }
 
-Vec3V V3Add(const Vec3V a, const FloatV b)
+inline Vec3V V3Add(const Vec3V a, const FloatV b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vaddq_f32(a, Vec3V_From_FloatV(b));
 }
 
-Vec3V V3Sub(const Vec3V a, const Vec3V b)
+inline Vec3V V3Sub(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return vsubq_f32(a, b);
 }
 
-Vec3V V3Sub(const Vec3V a, const FloatV b)
+inline Vec3V V3Sub(const Vec3V a, const FloatV b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDFLOATV(b);
 	return vsubq_f32(a, Vec3V_From_FloatV(b));
 }
 
-Vec3V V3Scale(const Vec3V a, const FloatV b)
+inline Vec3V V3Scale(const Vec3V a, const FloatV b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDFLOATV(b);
@@ -1726,14 +1737,14 @@ Vec3V V3Scale(const Vec3V a, const FloatV b)
 	return vsetq_lane_f32(0.0f, tmp, 3);
 }
 
-Vec3V V3Mul(const Vec3V a, const Vec3V b)
+inline Vec3V V3Mul(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return vmulq_f32(a, b);
 }
 
-Vec3V V3ScaleInv(const Vec3V a, const FloatV b)
+inline Vec3V V3ScaleInv(const Vec3V a, const FloatV b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDFLOATV(b);
@@ -1742,7 +1753,7 @@ Vec3V V3ScaleInv(const Vec3V a, const FloatV b)
 	return vsetq_lane_f32(0.0f, tmp, 3);
 }
 
-Vec3V V3Div(const Vec3V a, const Vec3V b)
+inline Vec3V V3Div(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
@@ -1751,7 +1762,7 @@ Vec3V V3Div(const Vec3V a, const Vec3V b)
 	return vmulq_f32(a, invB);
 }
 
-Vec3V V3ScaleInvFast(const Vec3V a, const FloatV b)
+inline Vec3V V3ScaleInvFast(const Vec3V a, const FloatV b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDFLOATV(b);
@@ -1760,7 +1771,7 @@ Vec3V V3ScaleInvFast(const Vec3V a, const FloatV b)
 	return vsetq_lane_f32(0.0f, tmp, 3);
 }
 
-Vec3V V3DivFast(const Vec3V a, const Vec3V b)
+inline Vec3V V3DivFast(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
@@ -1769,35 +1780,35 @@ Vec3V V3DivFast(const Vec3V a, const Vec3V b)
 	return vmulq_f32(a, invB);
 }
 
-Vec3V V3Recip(const Vec3V a)
+inline Vec3V V3Recip(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	const float32x4_t recipA = VRECIPQ(a);
 	return vsetq_lane_f32(0.0f, recipA, 3);
 }
 
-Vec3V V3RecipFast(const Vec3V a)
+inline Vec3V V3RecipFast(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	const float32x4_t recipA = VRECIPEQ(a);
 	return vsetq_lane_f32(0.0f, recipA, 3);
 }
 
-Vec3V V3Rsqrt(const Vec3V a)
+inline Vec3V V3Rsqrt(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	const float32x4_t rSqrA = VRECIPSQRTQ(a);
 	return vsetq_lane_f32(0.0f, rSqrA, 3);
 }
 
-Vec3V V3RsqrtFast(const Vec3V a)
+inline Vec3V V3RsqrtFast(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	const float32x4_t rSqrA = VRECIPSQRTEQ(a);
 	return vsetq_lane_f32(0.0f, rSqrA, 3);
 }
 
-Vec3V V3ScaleAdd(const Vec3V a, const FloatV b, const Vec3V c)
+inline Vec3V V3ScaleAdd(const Vec3V a, const FloatV b, const Vec3V c)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDFLOATV(b);
@@ -1818,7 +1829,7 @@ Vec3V V3ScaleAdd(const Vec3V a, const FloatV b, const Vec3V c)
 	return vcombine_f32(y_x, w_z);
 }
 
-Vec3V V3NegScaleSub(const Vec3V a, const FloatV b, const Vec3V c)
+inline Vec3V V3NegScaleSub(const Vec3V a, const FloatV b, const Vec3V c)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDFLOATV(b);
@@ -1839,7 +1850,7 @@ Vec3V V3NegScaleSub(const Vec3V a, const FloatV b, const Vec3V c)
 	return vcombine_f32(y_x, w_z);
 }
 
-Vec3V V3MulAdd(const Vec3V a, const Vec3V b, const Vec3V c)
+inline Vec3V V3MulAdd(const Vec3V a, const Vec3V b, const Vec3V c)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
@@ -1847,7 +1858,7 @@ Vec3V V3MulAdd(const Vec3V a, const Vec3V b, const Vec3V c)
 	return vmlaq_f32(c, a, b);
 }
 
-Vec3V V3NegMulSub(const Vec3V a, const Vec3V b, const Vec3V c)
+inline Vec3V V3NegMulSub(const Vec3V a, const Vec3V b, const Vec3V c)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
@@ -1855,13 +1866,13 @@ Vec3V V3NegMulSub(const Vec3V a, const Vec3V b, const Vec3V c)
 	return vmlsq_f32(c, a, b);
 }
 
-Vec3V V3Abs(const Vec3V a)
+inline Vec3V V3Abs(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	return vabsq_f32(a);
 }
 
-FloatV V3Dot(const Vec3V a, const Vec3V b)
+inline FloatV V3Dot(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
@@ -1879,7 +1890,7 @@ FloatV V3Dot(const Vec3V a, const Vec3V b)
 	return sum0ZYX;
 }
 
-Vec3V V3Cross(const Vec3V a, const Vec3V b)
+inline Vec3V V3Cross(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
@@ -1905,13 +1916,13 @@ Vec3V V3Cross(const Vec3V a, const Vec3V b)
 	return vcombine_f32(retLow, vreinterpret_f32_u32(retHigh));
 }
 
-Vec3V V3PrepareCross(const Vec3V a)
+inline Vec3V V3PrepareCross(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	return a;
 }
 
-FloatV V3Length(const Vec3V a)
+inline FloatV V3Length(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 
@@ -1928,27 +1939,27 @@ FloatV V3Length(const Vec3V a)
 	return FSqrt(sum0ZYX);
 }
 
-FloatV V3LengthSq(const Vec3V a)
+inline FloatV V3LengthSq(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	return V3Dot(a, a);
 }
 
-Vec3V V3Normalize(const Vec3V a)
+inline Vec3V V3Normalize(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	//PX_ASSERT(!FAllEq(V4LengthSq(a), FZero()));
 	return V3ScaleInv(a, V3Length(a));
 }
 
-Vec3V V3NormalizeFast(const Vec3V a)
+inline Vec3V V3NormalizeFast(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	//PX_ASSERT(!FAllEq(V4LengthSq(a), FZero()));
 	return V3Scale(a, VRECIPSQRTE(V3Dot(a, a)));
 }
 
-Vec3V V3NormalizeSafe(const Vec3V a, const Vec3V unsafeReturnValue)
+inline Vec3V V3NormalizeSafe(const Vec3V a, const Vec3V unsafeReturnValue)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	const FloatV zero = vdup_n_f32(0.0f);
@@ -1957,48 +1968,48 @@ Vec3V V3NormalizeSafe(const Vec3V a, const Vec3V unsafeReturnValue)
 	return V3Sel(isGreaterThanZero, V3ScaleInv(a, length), unsafeReturnValue);
 }
 
-Vec3V V3Sel(const BoolV c, const Vec3V a, const Vec3V b)
+inline Vec3V V3Sel(const BoolV c, const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V( vbslq_f32(c, a, b));
 	return vbslq_f32(c, a, b);
 }
 
-BoolV V3IsGrtr(const Vec3V a, const Vec3V b)
+inline BoolV V3IsGrtr(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return vcgtq_f32(a, b);
 }
 
-BoolV V3IsGrtrOrEq(const Vec3V a, const Vec3V b)
+inline BoolV V3IsGrtrOrEq(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return vcgeq_f32(a, b);
 }
 
-BoolV V3IsEq(const Vec3V a, const Vec3V b)
+inline BoolV V3IsEq(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return vceqq_f32(a, b);
 }
 
-Vec3V V3Max(const Vec3V a, const Vec3V b)
+inline Vec3V V3Max(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return vmaxq_f32(a, b);
 }
 
-Vec3V V3Min(const Vec3V a, const Vec3V b)
+inline Vec3V V3Min(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return vminq_f32(a, b);
 }
 
-FloatV V3ExtractMax(const Vec3V a)
+inline FloatV V3ExtractMax(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 
@@ -2012,7 +2023,7 @@ FloatV V3ExtractMax(const Vec3V a)
 	return max1;
 }
 
-FloatV V3ExtractMin(const Vec3V a)
+inline FloatV V3ExtractMin(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 
@@ -2027,7 +2038,7 @@ FloatV V3ExtractMin(const Vec3V a)
 }
 
 // return (a >= 0.0f) ? 1.0f : -1.0f;
-Vec3V V3Sign(const Vec3V a)
+inline Vec3V V3Sign(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	const Vec3V zero = V3Zero();
@@ -2036,35 +2047,35 @@ Vec3V V3Sign(const Vec3V a)
 	return V3Sel(V3IsGrtrOrEq(a, zero), one, none);
 }
 
-Vec3V V3Clamp(const Vec3V a, const Vec3V minV, const Vec3V maxV)
+inline Vec3V V3Clamp(const Vec3V a, const Vec3V minV, const Vec3V maxV)
 {
 	ASSERT_ISVALIDVEC3V(minV);
 	ASSERT_ISVALIDVEC3V(maxV);
 	return V3Max(V3Min(a, maxV), minV);
 }
 
-unsigned int V3AllGrtr(const Vec3V a, const Vec3V b)
+inline unsigned int V3AllGrtr(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return internalUnitNeonSimd::BAllTrue3_R(V4IsGrtr(a, b));
 }
 
-unsigned int V3AllGrtrOrEq(const Vec3V a, const Vec3V b)
+inline unsigned int V3AllGrtrOrEq(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return internalUnitNeonSimd::BAllTrue3_R(V4IsGrtrOrEq(a, b));
 }
 
-unsigned int V3AllEq(const Vec3V a, const Vec3V b)
+inline unsigned int V3AllEq(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
 	return internalUnitNeonSimd::BAllTrue3_R(V4IsEq(a, b));
 }
 
-Vec3V V3Round(const Vec3V a)
+inline Vec3V V3Round(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	// truncate(a + (0.5f - sign(a)))
@@ -2075,7 +2086,7 @@ Vec3V V3Round(const Vec3V a)
 	return vcvtq_f32_s32(vcvtq_s32_f32(aRound));
 }
 
-Vec3V V3Sin(const Vec3V a)
+inline Vec3V V3Sin(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 
@@ -2133,7 +2144,7 @@ Vec3V V3Sin(const Vec3V a)
 	return Result;
 }
 
-Vec3V V3Cos(const Vec3V a)
+inline Vec3V V3Cos(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	
@@ -2190,7 +2201,7 @@ Vec3V V3Cos(const Vec3V a)
 	return V4ClearW(Result);
 }
 
-Vec3V V3PermYZZ(const Vec3V a)
+inline Vec3V V3PermYZZ(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	const float32x2_t xy = vget_low_f32(a);
@@ -2199,7 +2210,7 @@ Vec3V V3PermYZZ(const Vec3V a)
 	return vcombine_f32(yz, zw);
 }
 
-Vec3V V3PermXYX(const Vec3V a)
+inline Vec3V V3PermXYX(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	const uint32x2_t mask = { 0xffffFFFF, 0x0 };
@@ -2209,7 +2220,7 @@ Vec3V V3PermXYX(const Vec3V a)
 	return vreinterpretq_f32_u32(vcombine_u32(xy, xw));
 }
 
-Vec3V V3PermYZX(const Vec3V a)
+inline Vec3V V3PermYZX(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	const uint32x2_t mask = { 0xffffFFFF, 0x0 };
@@ -2221,7 +2232,7 @@ Vec3V V3PermYZX(const Vec3V a)
 	return vreinterpretq_f32_u32(vcombine_u32(yz, xw));
 }
 
-Vec3V V3PermZXY(const Vec3V a)
+inline Vec3V V3PermZXY(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	
@@ -2235,7 +2246,7 @@ Vec3V V3PermZXY(const Vec3V a)
 	return vreinterpretq_f32_u32(vcombine_u32(zx, yw));
 }
 
-Vec3V V3PermZZY(const Vec3V a)
+inline Vec3V V3PermZZY(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 
@@ -2249,7 +2260,7 @@ Vec3V V3PermZZY(const Vec3V a)
 	return vreinterpretq_f32_u32(vcombine_u32(zz, yw));
 }
 
-Vec3V V3PermYXX(const Vec3V a)
+inline Vec3V V3PermYXX(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 
@@ -2261,7 +2272,7 @@ Vec3V V3PermYXX(const Vec3V a)
 	return vreinterpretq_f32_u32(vcombine_u32(yx, xw));
 }
 
-Vec3V V3Perm_Zero_1Z_0Y(const Vec3V v0, const Vec3V v1)
+inline Vec3V V3Perm_Zero_1Z_0Y(const Vec3V v0, const Vec3V v1)
 {
 	ASSERT_ISVALIDVEC3V(v0);
 	ASSERT_ISVALIDVEC3V(v1);
@@ -2274,7 +2285,7 @@ Vec3V V3Perm_Zero_1Z_0Y(const Vec3V v0, const Vec3V v1)
 	return vreinterpretq_f32_u32(vcombine_u32(wz, yw));
 }
 
-Vec3V V3Perm_0Z_Zero_1X(const Vec3V v0, const Vec3V v1)
+inline Vec3V V3Perm_0Z_Zero_1X(const Vec3V v0, const Vec3V v1)
 {
 	ASSERT_ISVALIDVEC3V(v0);
 	ASSERT_ISVALIDVEC3V(v1);
@@ -2288,7 +2299,7 @@ Vec3V V3Perm_0Z_Zero_1X(const Vec3V v0, const Vec3V v1)
 	return vreinterpretq_f32_u32(vcombine_u32(zw, xw));
 }
 
-Vec3V V3Perm_1Y_0X_Zero(const Vec3V v0, const Vec3V v1)
+inline Vec3V V3Perm_1Y_0X_Zero(const Vec3V v0, const Vec3V v1)
 {
 	ASSERT_ISVALIDVEC3V(v0);
 	ASSERT_ISVALIDVEC3V(v1);
@@ -2301,7 +2312,7 @@ Vec3V V3Perm_1Y_0X_Zero(const Vec3V v0, const Vec3V v1)
 	return vreinterpretq_f32_u32(vcombine_u32(byax, ww));
 }
 
-FloatV V3SumElems(const Vec3V a)
+inline FloatV V3SumElems(const Vec3V a)
 {
 	ASSERT_ISVALIDVEC3V(a);
 
@@ -2317,7 +2328,7 @@ FloatV V3SumElems(const Vec3V a)
 	return sum0ZYX;
 }
 
-unsigned int V3OutOfBounds(const Vec3V a, const Vec3V min, const Vec3V max)
+inline unsigned int V3OutOfBounds(const Vec3V a, const Vec3V min, const Vec3V max)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(min);
@@ -2327,7 +2338,7 @@ unsigned int V3OutOfBounds(const Vec3V a, const Vec3V min, const Vec3V max)
 	return internalUnitNeonSimd::BAnyTrue3_R(c);
 }
 
-unsigned int V3InBounds(const Vec3V a, const Vec3V min, const Vec3V max)
+inline unsigned int V3InBounds(const Vec3V a, const Vec3V min, const Vec3V max)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(min);
@@ -2337,7 +2348,7 @@ unsigned int V3InBounds(const Vec3V a, const Vec3V min, const Vec3V max)
 	return internalUnitNeonSimd::BAllTrue4_R(c);
 }
 
-unsigned int V3OutOfBounds(const Vec3V a, const Vec3V bounds)
+inline unsigned int V3OutOfBounds(const Vec3V a, const Vec3V bounds)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(bounds);
@@ -2346,7 +2357,7 @@ unsigned int V3OutOfBounds(const Vec3V a, const Vec3V bounds)
 	return internalUnitNeonSimd::BAnyTrue3_R(greater);
 }
 
-unsigned int V3InBounds(const Vec3V a, const Vec3V bounds)
+inline unsigned int V3InBounds(const Vec3V a, const Vec3V bounds)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(bounds);
@@ -2355,7 +2366,7 @@ unsigned int V3InBounds(const Vec3V a, const Vec3V bounds)
 	return internalUnitNeonSimd::BAllTrue4_R(greaterOrEq);
 }
 
-void V3Transpose(Vec3V& col0, Vec3V& col1, Vec3V& col2)
+inline void V3Transpose(Vec3V& col0, Vec3V& col1, Vec3V& col2)
 {
 	ASSERT_ISVALIDVEC3V(col0);
 	ASSERT_ISVALIDVEC3V(col1);
@@ -2372,9 +2383,304 @@ void V3Transpose(Vec3V& col0, Vec3V& col1, Vec3V& col2)
 	// col3 = zip1.val[1];
 }
 
+//////////////////////////////////
+// VecU32V / VecI32V
+//////////////////////////////////
+
+inline VecU32V U4LoadXYZW(unsigned int x, unsigned int y, unsigned int z, unsigned int w)
+{
+	const uint32x4_t ret = { x, y, z, w };
+	return ret;
+}
+
+inline VecU32V U4Load(const unsigned int i)
+{
+	return vdupq_n_u32(i);
+}
+
+inline VecU32V U4LoadU(const unsigned int* i)
+{
+	return vld1q_u32(i);
+}
+
+inline VecU32V U4LoadA(const unsigned int* i)
+{
+	return vld1q_u32(i);
+}
+
+inline VecU32V V4U32Sel(const BoolV c, const VecU32V a, const VecU32V b)
+{
+	return vbslq_u32(c, a, b);
+}
+
+inline VecU32V V4U32or(VecU32V a, VecU32V b)
+{
+	return vorrq_u32(a, b);
+}
+
+inline VecU32V V4U32xor(VecU32V a, VecU32V b)
+{
+	return veorq_u32(a, b);
+}
+
+inline VecU32V V4U32and(VecU32V a, VecU32V b)
+{
+	return vandq_u32(a, b);
+}
+
+inline VecU32V V4U32Andc(VecU32V a, VecU32V b)
+{
+	// return vbicq_u32(a, b); // creates gcc compiler bug in RTreeQueries.cpp
+	return vandq_u32(a, vmvnq_u32(b));
+}
+
+inline VecI32V I4Load(const int i)
+{
+	return vdupq_n_s32(i);
+}
+
+inline VecI32V I4LoadU(const int* i)
+{
+	return vld1q_s32(i);
+}
+
+inline VecI32V I4LoadA(const int* i)
+{
+	return vld1q_s32(i);
+}
+
+inline void U4StoreA(const VecU32V uv, unsigned int* u)
+{
+	ASSERT_ISALIGNED16(u);
+	vst1q_u32(reinterpret_cast<uint32_t*>(u), uv);
+}
+
+inline VecI32V VecI32V_Add(const VecI32V& a, const VecI32V& b)
+{
+	return vaddq_s32(a, b);
+}
+
+inline VecI32V VecI32V_Sub(const VecI32V& a, const VecI32V& b)
+{
+	return vsubq_s32(a, b);
+}
+
+inline BoolV VecI32V_IsGrtr(const VecI32V& a, const VecI32V& b)
+{
+	return vcgtq_s32(a, b);
+}
+
+inline BoolV VecI32V_IsEq(const VecI32V& a, const VecI32V& b)
+{
+	return vceqq_s32(a, b);
+}
+
+inline VecI32V V4I32Sel(const BoolV c, const VecI32V a, const VecI32V b)
+{
+	return vbslq_s32(c, a, b);
+}
+
+inline VecI32V VecI32V_Zero()
+{
+	return vdupq_n_s32(0);
+}
+
+inline VecI32V VecI32V_One()
+{
+	return vdupq_n_s32(1);
+}
+
+inline VecI32V VecI32V_Two()
+{
+	return vdupq_n_s32(2);
+}
+
+inline VecI32V VecI32V_MinusOne()
+{
+	return vdupq_n_s32(-1);
+}
+
+inline VecU32V U4Zero()
+{
+	return U4Load(0);
+}
+
+inline VecU32V U4One()
+{
+	return U4Load(1);
+}
+
+inline VecU32V U4Two()
+{
+	return U4Load(2);
+}
+
+inline VecI32V VecI32V_PrepareShift(const VecI32V& shift)
+{
+	return shift;
+}
+
+inline VecI32V VecI32V_LeftShift(const VecI32V& a, const VecI32V& count)
+{
+	return vshlq_s32(a, count);
+}
+
+inline VecI32V VecI32V_RightShift(const VecI32V& a, const VecI32V& count)
+{
+	return vshlq_s32(a, VecI32V_Sub(I4Load(0), count));
+}
+
+inline VecI32V VecI32V_And(const VecI32V& a, const VecI32V& b)
+{
+	return vandq_s32(a, b);
+}
+
+inline VecI32V VecI32V_Or(const VecI32V& a, const VecI32V& b)
+{
+	return vorrq_s32(a, b);
+}
+
+inline VecI32V VecI32V_GetX(const VecI32V& f)
+{
+	const int32x2_t fLow = vget_low_s32(f);
+	return vdupq_lane_s32(fLow, 0);
+}
+
+inline VecI32V VecI32V_GetY(const VecI32V& f)
+{
+	const int32x2_t fLow = vget_low_s32(f);
+	return vdupq_lane_s32(fLow, 1);
+}
+
+inline VecI32V VecI32V_GetZ(const VecI32V& f)
+{
+	const int32x2_t fHigh = vget_high_s32(f);
+	return vdupq_lane_s32(fHigh, 0);
+}
+
+inline VecI32V VecI32V_GetW(const VecI32V& f)
+{
+	const int32x2_t fHigh = vget_high_s32(f);
+	return vdupq_lane_s32(fHigh, 1);
+}
+
+inline VecI32V VecI32V_Sel(const BoolV c, const VecI32V& a, const VecI32V& b)
+{
+	return vbslq_s32(c, a, b);
+}
+
+inline void int_From_VecI32V(const VecI32V& a, int* i)
+{
+	*i = vgetq_lane_s32(a, 0);
+}
+
+inline VecI32V VecI32V_Merge(const VecI32V& a, const VecI32V& b, const VecI32V& c, const VecI32V& d)
+{
+	const int32x2_t aLow = vget_low_s32(a);
+	const int32x2_t bLow = vget_low_s32(b);
+	const int32x2_t cLow = vget_low_s32(c);
+	const int32x2_t dLow = vget_low_s32(d);
+
+	const int32x2_t low = vext_s32(aLow, bLow, 1);
+	const int32x2_t high = vext_s32(cLow, dLow, 1);
+
+	return vcombine_s32(low, high);
+}
+
+inline VecI32V VecI32V_From_BoolV(const BoolV& a)
+{
+	return vreinterpretq_s32_u32(a);
+}
+
+inline VecU32V VecU32V_From_BoolV(const BoolV& a)
+{
+	return a;
+}
+
+inline void V4U32StoreAligned(VecU32V val, VecU32V* address)
+{
+	vst1q_u32(reinterpret_cast<uint32_t*>(address), val);
+}
+
+inline Vec4V V4LoadAligned(Vec4V* addr)
+{
+	return vld1q_f32(reinterpret_cast<float32_t*>(addr));
+}
+
+inline Vec4V V4LoadUnaligned(Vec4V* addr)
+{
+	return vld1q_f32(reinterpret_cast<float32_t*>(addr));
+}
+
+inline Vec4V V4Andc(const Vec4V a, const VecU32V b)
+{
+	return vreinterpretq_f32_u32(V4U32Andc(vreinterpretq_u32_f32(a), b));
+}
+
+inline VecU32V V4IsGrtrV32u(const Vec4V a, const Vec4V b)
+{
+	return V4IsGrtr(a, b);
+}
+
+inline VecU16V V4U16LoadAligned(VecU16V* addr)
+{
+	return vld1q_u16(reinterpret_cast<uint16_t*>(addr));
+}
+
+inline VecU16V V4U16LoadUnaligned(VecU16V* addr)
+{
+	return vld1q_u16(reinterpret_cast<uint16_t*>(addr));
+}
+
+inline VecU16V V4U16CompareGt(VecU16V a, VecU16V b)
+{
+	return vcgtq_u16(a, b);
+}
+
+inline VecU16V V4I16CompareGt(VecI16V a, VecI16V b)
+{
+	return vcgtq_s16(a, b);
+}
+
+inline Vec4V Vec4V_From_VecU32V(VecU32V a)
+{
+	return vcvtq_f32_u32(a);
+}
+
+inline Vec4V Vec4V_From_VecI32V(VecI32V a)
+{
+	return vcvtq_f32_s32(a);
+}
+
+inline VecI32V VecI32V_From_Vec4V(Vec4V a)
+{
+	return vcvtq_s32_f32(a);
+}
+
+inline Vec4V Vec4V_ReinterpretFrom_VecU32V(VecU32V a)
+{
+	return vreinterpretq_f32_u32(a);
+}
+
+inline Vec4V Vec4V_ReinterpretFrom_VecI32V(VecI32V a)
+{
+	return vreinterpretq_f32_s32(a);
+}
+
+inline VecU32V VecU32V_ReinterpretFrom_Vec4V(Vec4V a)
+{
+	return vreinterpretq_u32_f32(a);
+}
+
+inline VecI32V VecI32V_ReinterpretFrom_Vec4V(Vec4V a)
+{
+	return vreinterpretq_s32_f32(a);
+}
+
+
 namespace internalUnitNeonSimd
 {
-unsigned int BAllTrue4_R(const BoolV a)
+inline unsigned int BAllTrue4_R(const BoolV a)
 {
 	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
 	const uint16x4_t dLow = vmovn_u32(a);
@@ -2383,7 +2689,7 @@ unsigned int BAllTrue4_R(const BoolV a)
 	return (unsigned int)(vget_lane_u32(finalReduce, 0) == 0xffffFFFF);
 }
 
-unsigned int BAllTrue3_R(const BoolV a)
+inline unsigned int BAllTrue3_R(const BoolV a)
 {
 	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
 	const uint16x4_t dLow = vmovn_u32(a);
@@ -2392,7 +2698,7 @@ unsigned int BAllTrue3_R(const BoolV a)
 	return (unsigned int)((vget_lane_u32(finalReduce, 0) & 0xffFFff) == 0xffFFff);
 }
 
-unsigned int BAnyTrue4_R(const BoolV a)
+inline unsigned int BAnyTrue4_R(const BoolV a)
 {
 	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
 	const uint16x4_t dLow = vmovn_u32(a);
@@ -2401,7 +2707,7 @@ unsigned int BAnyTrue4_R(const BoolV a)
 	return (unsigned int)(vget_lane_u32(finalReduce, 0) != 0x0);
 }
 
-unsigned int BAnyTrue3_R(const BoolV a)
+inline unsigned int BAnyTrue3_R(const BoolV a)
 {
 	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
 	const uint16x4_t dLow = vmovn_u32(a);

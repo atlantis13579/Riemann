@@ -1,7 +1,7 @@
 
 #pragma once
 
-// #define SIMD_REF
+// #define SIMD_SIMULATE
 
 #if defined(__arm__) || defined(__aarch64__)
     #include <arm_neon.h>
@@ -13,7 +13,7 @@
     typedef int32x4_t   VecI32V;
     typedef uint16x8_t  VecU16V;
     typedef int16x8_t   VecI16V;
-#elif defined(SIMD_REF)
+#elif defined(SIMD_SIMULATE)
 
 #else
     #ifdef _WIN32
@@ -149,8 +149,8 @@ inline const Vector3d& V4ReadXYZ(const Vec4V& v)
 
 #if defined(__arm__) || defined(__aarch64__)
 #include "SIMD_Neon.h"
-#elif defined(SIMD_REF)
-#inlcude "SIMD_Ref.h"
+#elif defined(SIMD_SIMULATE)
+#inlcude "SIMD_Simulate.h"
 #else
 #include "SIMD_Intel.h"
 #endif

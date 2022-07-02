@@ -356,3 +356,5 @@ DerivedData/*
 *.xcuserstate
 *.xcbkptlist
 *.plist
+Test/Test.xcodeproj/xcshareddata/xcschemes/Test.xcscheme
+
