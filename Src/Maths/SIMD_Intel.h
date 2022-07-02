@@ -3,195 +3,23 @@
 
 namespace internalWindowsSimd
 {
-inline __m128 m128_I2F(__m128i n)
-{
-	return _mm_castsi128_ps(n);
-}
-
-inline __m128i m128_F2I(__m128 n)
-{
-	return _mm_castps_si128(n);
-}
-
-inline uint32_t BAllTrue4_R(const BoolV a)
-{
-	const int moveMask = _mm_movemask_ps(a);
-	return uint32_t(moveMask == 0xf);
-}
-
-inline uint32_t BAllTrue3_R(const BoolV a)
-{
-	const int moveMask = _mm_movemask_ps(a);
-	return uint32_t((moveMask & 0x7) == 0x7);
-}
-
-inline uint32_t BAnyTrue4_R(const BoolV a)
-{
-	const int moveMask = _mm_movemask_ps(a);
-	return uint32_t(moveMask != 0x0);
-}
-
-inline uint32_t BAnyTrue3_R(const BoolV a)
-{
-	const int moveMask = _mm_movemask_ps(a);
-	return uint32_t(((moveMask & 0x7) != 0x0));
-}
-
+__m128 m128_I2F(__m128i n);
+__m128i m128_F2I(__m128 n);
+uint32_t BAllTrue4_R(const BoolV a);
+uint32_t BAllTrue3_R(const BoolV a);
+uint32_t BAnyTrue4_R(const BoolV a);
+uint32_t BAnyTrue3_R(const BoolV a);
 alignas(16) const uint32_t gMaskXYZ[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0 };
-} //internalWindowsSimd
-
-/////////////////////////////////////////////////////////////////////
-////VECTORISED FUNCTION IMPLEMENTATIONS
-/////////////////////////////////////////////////////////////////////
-
-inline FloatV V4GetW(const Vec4V f)
-{
-	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(3, 3, 3, 3));
 }
+Vec4V V4ClearW(const Vec4V v);
+Vec4V V4Sel(const BoolV c, const Vec4V a, const Vec4V b);
 
-inline FloatV V4GetX(const Vec4V f)
-{
-	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(0, 0, 0, 0));
-}
-
-inline FloatV V4GetY(const Vec4V f)
-{
-	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(1, 1, 1, 1));
-}
-
-inline FloatV V4GetZ(const Vec4V f)
-{
-	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(2, 2, 2, 2));
-}
-
-inline Vec4V V4ClearW(const Vec4V v)
-{
-	return _mm_and_ps(v, (VecI32V&)internalWindowsSimd::gMaskXYZ);
-}
-
+//////////////////////////////////
+// FLOATV
+//////////////////////////////////
 inline FloatV FLoad(const float f)
 {
 	return _mm_load1_ps(&f);
-}
-
-inline Vec3V V3Load(const float f)
-{
-	return _mm_set_ps(0.0f, f, f, f);
-}
-
-inline Vec4V V4Load(const float f)
-{
-	return _mm_load1_ps(&f);
-}
-
-inline BoolV BLoad(const bool f)
-{
-	const uint32_t i = uint32_t(-(int)f);
-	return _mm_load1_ps((float*)&i);
-}
-
-inline Vec3V V3LoadA(const Vector3d& f)
-{
-	ASSERT_ISALIGNED16(&f);
-	return _mm_and_ps(_mm_load_ps(&f.x), reinterpret_cast<const Vec4V&>(internalWindowsSimd::gMaskXYZ));
-}
-
-inline Vec3V V3LoadU(const Vector3d& f)
-{
-	return _mm_set_ps(0.0f, f.z, f.y, f.x);
-}
-
-// w component of result is undefined
-inline Vec3V V3LoadUnsafeA(const Vector3d& f)
-{
-	ASSERT_ISALIGNED16(&f);
-	return _mm_load_ps(&f.x);
-}
-
-inline Vec3V V3LoadA(const float* const f)
-{
-	ASSERT_ISALIGNED16(f);
-	return V4ClearW(_mm_load_ps(f));
-}
-
-inline Vec3V V3LoadU(const float* const i)
-{
-	return _mm_set_ps(0.0f, i[2], i[1], i[0]);
-}
-
-inline Vec3V Vec3V_From_Vec4V(Vec4V v)
-{
-	return V4ClearW(v);
-}
-
-inline Vec3V Vec3V_From_Vec4V_WUndefined(const Vec4V v)
-{
-	return v;
-}
-
-inline Vec4V Vec4V_From_Vec3V(Vec3V f)
-{
-	return f; // ok if it is implemented as the same type.
-}
-
-inline Vec4V Vec4V_From_FloatV(FloatV f)
-{
-	return f;
-}
-
-inline Vec3V Vec3V_From_FloatV(FloatV f)
-{
-	return Vec3V_From_Vec4V(Vec4V_From_FloatV(f));
-}
-
-inline Vec3V Vec3V_From_FloatV_WUndefined(FloatV f)
-{
-	return Vec3V_From_Vec4V_WUndefined(Vec4V_From_FloatV(f));
-}
-
-inline Vec4V Vec4V_From_Vector3d_WUndefined(const Vector3d& f)
-{
-	return _mm_set_ps(0.0f, f.z, f.y, f.x);
-}
-
-inline Vec4V V4LoadA(const float* const f)
-{
-	ASSERT_ISALIGNED16(f);
-	return _mm_load_ps(f);
-}
-
-inline void V4StoreA(const Vec4V a, float* f)
-{
-	ASSERT_ISALIGNED16(f);
-	_mm_store_ps(f, a);
-}
-
-inline void V4StoreU(const Vec4V a, float* f)
-{
-	_mm_storeu_ps(f, a);
-}
-
-inline void BStoreA(const BoolV a, uint32_t* f)
-{
-	ASSERT_ISALIGNED16(f);
-	_mm_store_ps((float*)f, a);
-}
-
-inline void U4StoreA(const VecU32V uv, uint32_t* u)
-{
-	ASSERT_ISALIGNED16(u);
-	_mm_store_ps((float*)u, uv);
-}
-
-inline void I4StoreA(const VecI32V iv, int* i)
-{
-	ASSERT_ISALIGNED16(i);
-	_mm_store_ps((float*)i, iv);
-}
-
-inline Vec4V V4LoadU(const float* const f)
-{
-	return _mm_loadu_ps(f);
 }
 
 inline void FStore(const FloatV a, float* f)
@@ -199,30 +27,6 @@ inline void FStore(const FloatV a, float* f)
 	ASSERT_ISVALIDFLOATV(a);
 	_mm_store_ss(f, a);
 }
-
-inline void V3StoreA(const Vec3V a, Vector3d& f)
-{
-	ASSERT_ISALIGNED16(&f);
-	alignas(16) float f2[4];
-	_mm_store_ps(f2, a);
-	f = Vector3d(f2[0], f2[1], f2[2]);
-}
-
-inline void Store_From_BoolV(const BoolV b, uint32_t* b2)
-{
-	_mm_store_ss((float*)b2, b);
-}
-
-inline void V3StoreU(const Vec3V a, Vector3d& f)
-{
-	alignas(16) float f2[4];
-	_mm_store_ps(f2, a);
-	f = Vector3d(f2[0], f2[1], f2[2]);
-}
-
-//////////////////////////////////
-// FLOATV
-//////////////////////////////////
 
 inline FloatV FZero()
 {
@@ -462,10 +266,26 @@ inline FloatV FRound(const FloatV a)
 	return _mm_cvtepi32_ps(tmp);
 }
 
-
 //////////////////////////////////
 // BoolV
 //////////////////////////////////
+
+inline BoolV BLoad(const bool f)
+{
+	const uint32_t i = uint32_t(-(int)f);
+	return _mm_load1_ps((float*)&i);
+}
+
+inline void BStoreA(const BoolV a, uint32_t* f)
+{
+	ASSERT_ISALIGNED16(f);
+	_mm_store_ps((float*)f, a);
+}
+
+inline void Store_From_BoolV(const BoolV b, uint32_t* b2)
+{
+	_mm_store_ss((float*)b2, b);
+}
 
 inline BoolV BFFFF()
 {
@@ -624,6 +444,294 @@ inline BoolV BWMask()
 	return internalWindowsSimd::m128_I2F(_mm_set_epi32(-1, 0, 0, 0));
 }
 
+inline BoolV BGetX(const BoolV f)
+{
+	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(0, 0, 0, 0));
+}
+
+inline BoolV BGetY(const BoolV f)
+{
+	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(1, 1, 1, 1));
+}
+
+inline BoolV BGetZ(const BoolV f)
+{
+	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(2, 2, 2, 2));
+}
+
+inline BoolV BGetW(const BoolV f)
+{
+	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(3, 3, 3, 3));
+}
+
+inline BoolV BSetX(const BoolV v, const BoolV f)
+{
+	return V4Sel(BFTTT(), v, f);
+}
+
+inline BoolV BSetY(const BoolV v, const BoolV f)
+{
+	return V4Sel(BTFTT(), v, f);
+}
+
+inline BoolV BSetZ(const BoolV v, const BoolV f)
+{
+	return V4Sel(BTTFT(), v, f);
+}
+
+inline BoolV BSetW(const BoolV v, const BoolV f)
+{
+	return V4Sel(BTTTF(), v, f);
+}
+
+template <int index>
+BoolV BSplatElement(BoolV a)
+{
+	return internalWindowsSimd::m128_I2F(
+	    _mm_shuffle_epi32(internalWindowsSimd::m128_F2I(a), _MM_SHUFFLE(index, index, index, index)));
+}
+
+inline BoolV BAnd(const BoolV a, const BoolV b)
+{
+	return _mm_and_ps(a, b);
+}
+
+inline BoolV BNot(const BoolV a)
+{
+	const BoolV bAllTrue(BTTTT());
+	return _mm_xor_ps(a, bAllTrue);
+}
+
+inline BoolV BAndNot(const BoolV a, const BoolV b)
+{
+	return _mm_andnot_ps(b, a);
+}
+
+inline BoolV BOr(const BoolV a, const BoolV b)
+{
+	return _mm_or_ps(a, b);
+}
+
+inline BoolV BAllTrue4(const BoolV a)
+{
+	const BoolV bTmp =
+	    _mm_and_ps(_mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 1, 0, 1)), _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 3, 2, 3)));
+	return _mm_and_ps(_mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(0, 0, 0, 0)),
+	                  _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
+}
+
+inline BoolV BAnyTrue4(const BoolV a)
+{
+	const BoolV bTmp =
+	    _mm_or_ps(_mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 1, 0, 1)), _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 3, 2, 3)));
+	return _mm_or_ps(_mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(0, 0, 0, 0)),
+	                 _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
+}
+
+inline BoolV BAllTrue3(const BoolV a)
+{
+	const BoolV bTmp =
+	    _mm_and_ps(_mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 1, 0, 1)), _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 2, 2, 2)));
+	return _mm_and_ps(_mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(0, 0, 0, 0)),
+	                  _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
+}
+
+inline BoolV BAnyTrue3(const BoolV a)
+{
+	const BoolV bTmp =
+	    _mm_or_ps(_mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 1, 0, 1)), _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 2, 2, 2)));
+	return _mm_or_ps(_mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(0, 0, 0, 0)),
+	                 _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
+}
+
+inline uint32_t BAllEq(const BoolV a, const BoolV b)
+{
+	const BoolV bTest = internalWindowsSimd::m128_I2F(
+	    _mm_cmpeq_epi32(internalWindowsSimd::m128_F2I(a), internalWindowsSimd::m128_F2I(b)));
+	return internalWindowsSimd::BAllTrue4_R(bTest);
+}
+
+inline uint32_t BAllEqTTTT(const BoolV a)
+{
+	return uint32_t(_mm_movemask_ps(a)==15);
+}
+
+inline uint32_t BAllEqFFFF(const BoolV a)
+{
+	return uint32_t(_mm_movemask_ps(a)==0);
+}
+
+inline uint32_t BGetBitMask(const BoolV a)
+{
+	return uint32_t(_mm_movemask_ps(a));
+}
+
+/////////////////////////////////////
+// Vec4V
+//////////////////////////////////
+
+inline Vec4V V4Load(const float f)
+{
+	return _mm_load1_ps(&f);
+}
+
+inline Vec4V V4LoadA(const float* const f)
+{
+	ASSERT_ISALIGNED16(f);
+	return _mm_load_ps(f);
+}
+
+inline Vec4V V4LoadU(const float* const f)
+{
+	return _mm_loadu_ps(f);
+}
+
+inline void V4StoreA(const Vec4V a, float* f)
+{
+	ASSERT_ISALIGNED16(f);
+	_mm_store_ps(f, a);
+}
+
+inline void V4StoreU(const Vec4V a, float* f)
+{
+	_mm_storeu_ps(f, a);
+}
+
+inline FloatV V4GetX(const Vec4V f)
+{
+	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(0, 0, 0, 0));
+}
+
+inline FloatV V4GetY(const Vec4V f)
+{
+	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(1, 1, 1, 1));
+}
+
+inline FloatV V4GetZ(const Vec4V f)
+{
+	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(2, 2, 2, 2));
+}
+
+inline FloatV V4GetW(const Vec4V f)
+{
+	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(3, 3, 3, 3));
+}
+
+inline Vec4V V4ClearW(const Vec4V v)
+{
+	return _mm_and_ps(v, (VecI32V&)internalWindowsSimd::gMaskXYZ);
+}
+
+inline Vec4V Vec4V_From_Vec3V(Vec3V f)
+{
+	return f; // ok if it is implemented as the same type.
+}
+
+inline Vec4V Vec4V_From_FloatV(FloatV f)
+{
+	return f;
+}
+
+inline Vec4V Vec4V_From_Vector3d_WUndefined(const Vector3d& f)
+{
+	return _mm_set_ps(0.0f, f.z, f.y, f.x);
+}
+
+inline Vec4V V4Splat(const FloatV f)
+{
+	ASSERT_ISVALIDFLOATV(f);
+	// return _mm_shuffle_ps(f, f, _MM_SHUFFLE(0,0,0,0));
+	return f;
+}
+
+inline Vec4V V4Merge(const FloatV* const floatVArray)
+{
+	ASSERT_ISVALIDFLOATV(floatVArray[0]);
+	ASSERT_ISVALIDFLOATV(floatVArray[1]);
+	ASSERT_ISVALIDFLOATV(floatVArray[2]);
+	ASSERT_ISVALIDFLOATV(floatVArray[3]);
+	const __m128 xw = _mm_move_ss(floatVArray[1], floatVArray[0]); // y, y, y, x
+	const __m128 yz = _mm_move_ss(floatVArray[2], floatVArray[3]); // z, z, z, w
+	return _mm_shuffle_ps(xw, yz, _MM_SHUFFLE(0, 2, 1, 0));
+}
+
+inline Vec4V V4PermYXWZ(const Vec4V a)
+{
+	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 3, 0, 1));
+}
+
+inline Vec4V V4PermXZXZ(const Vec4V a)
+{
+	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 0, 2, 0));
+}
+
+inline Vec4V V4PermYWYW(const Vec4V a)
+{
+	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(3, 1, 3, 1));
+}
+
+inline Vec4V V4PermYZXW(const Vec4V a)
+{
+	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(3, 0, 2, 1));
+}
+
+inline Vec4V V4PermZWXY(const Vec4V a)
+{
+	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(1, 0, 3, 2));
+}
+
+inline Vec4V V4SetX(const Vec4V v, const FloatV f)
+{
+	ASSERT_ISVALIDFLOATV(f);
+	return V4Sel(BFTTT(), v, f);
+}
+
+inline Vec4V V4SetY(const Vec4V v, const FloatV f)
+{
+	ASSERT_ISVALIDFLOATV(f);
+	return V4Sel(BTFTT(), v, f);
+}
+
+inline Vec4V V4SetZ(const Vec4V v, const FloatV f)
+{
+	ASSERT_ISVALIDFLOATV(f);
+	return V4Sel(BTTFT(), v, f);
+}
+
+inline Vec4V V4LoadXYZW(const float& x, const float& y, const float& z, const float& w)
+{
+	return _mm_set_ps(w, z, y, x);
+}
+
+inline VecU32V V4U32Sel(const BoolV c, const VecU32V a, const VecU32V b)
+{
+	return internalWindowsSimd::m128_I2F(
+		_mm_or_si128(_mm_andnot_si128(internalWindowsSimd::m128_F2I(c), internalWindowsSimd::m128_F2I(b)),
+			_mm_and_si128(internalWindowsSimd::m128_F2I(c), internalWindowsSimd::m128_F2I(a))));
+}
+
+inline VecU32V V4U32or(VecU32V a, VecU32V b)
+{
+	return internalWindowsSimd::m128_I2F(_mm_or_si128(internalWindowsSimd::m128_F2I(a), internalWindowsSimd::m128_F2I(b)));
+}
+
+inline VecU32V V4U32xor(VecU32V a, VecU32V b)
+{
+	return internalWindowsSimd::m128_I2F(
+		_mm_xor_si128(internalWindowsSimd::m128_F2I(a), internalWindowsSimd::m128_F2I(b)));
+}
+
+inline VecU32V V4U32and(VecU32V a, VecU32V b)
+{
+	return internalWindowsSimd::m128_I2F(
+		_mm_and_si128(internalWindowsSimd::m128_F2I(a), internalWindowsSimd::m128_F2I(b)));
+}
+
+inline VecU32V V4U32Andc(VecU32V a, VecU32V b)
+{
+	return internalWindowsSimd::m128_I2F(
+		_mm_andnot_si128(internalWindowsSimd::m128_F2I(b), internalWindowsSimd::m128_F2I(a)));
+}
 
 inline Vec4V V4Zero()
 {
@@ -744,7 +852,6 @@ inline Vec4V V4Min(const Vec4V a, const Vec4V b)
 	return _mm_min_ps(a, b);
 }
 
-
 inline Vec4V V4Abs(const Vec4V a)
 {
 	return V4Max(a, V4Neg(a));
@@ -842,10 +949,154 @@ inline Vec4V V4Clamp(const Vec4V a, const Vec4V minV, const Vec4V maxV)
 	return V4Max(V4Min(a, maxV), minV);
 }
 
+inline uint32_t V4AllGrtr(const Vec4V a, const Vec4V b)
+{
+	return internalWindowsSimd::BAllTrue4_R(V4IsGrtr(a, b));
+}
+
+inline uint32_t V4AllGrtrOrEq(const Vec4V a, const Vec4V b)
+{
+	return internalWindowsSimd::BAllTrue4_R(V4IsGrtrOrEq(a, b));
+}
+
+inline uint32_t V4AllGrtrOrEq3(const Vec4V a, const Vec4V b)
+{
+	return internalWindowsSimd::BAllTrue3_R(V4IsGrtrOrEq(a, b));
+}
+
+inline uint32_t V4AllEq(const Vec4V a, const Vec4V b)
+{
+	return internalWindowsSimd::BAllTrue4_R(V4IsEq(a, b));
+}
+
+inline uint32_t V4AnyGrtr3(const Vec4V a, const Vec4V b)
+{
+	return internalWindowsSimd::BAnyTrue3_R(V4IsGrtr(a, b));
+}
+
+inline Vec4V V4Round(const Vec4V a)
+{
+	// return _mm_round_ps(a, 0x0);
+	const Vec4V half = V4Load(0.5f);
+	const __m128 signBit = _mm_cvtepi32_ps(_mm_srli_epi32(_mm_cvtps_epi32(a), 31));
+	const Vec4V aRound = V4Sub(V4Add(a, half), signBit);
+	const __m128i tmp = _mm_cvttps_epi32(aRound);
+	return _mm_cvtepi32_ps(tmp);
+}
+
+inline void V4Transpose(Vec4V& col0, Vec4V& col1, Vec4V& col2, Vec4V& col3)
+{
+	Vec4V tmp0 = _mm_unpacklo_ps(col0, col1);
+	Vec4V tmp2 = _mm_unpacklo_ps(col2, col3);
+	Vec4V tmp1 = _mm_unpackhi_ps(col0, col1);
+	Vec4V tmp3 = _mm_unpackhi_ps(col2, col3);
+	col0 = _mm_movelh_ps(tmp0, tmp2);
+	col1 = _mm_movehl_ps(tmp2, tmp0);
+	col2 = _mm_movelh_ps(tmp1, tmp3);
+	col3 = _mm_movehl_ps(tmp3, tmp1);
+}
+
+inline VecU32V V4IsGrtrV32u(const Vec4V a, const Vec4V b)
+{
+	return V4IsGrtr(a, b);
+}
+
+inline Vec4V V4Andc(const Vec4V a, const VecU32V b)
+{
+	VecU32V result32(a);
+	result32 = V4U32Andc(result32, b);
+	return Vec4V(result32);
+}
+
+inline void V4U32StoreAligned(VecU32V val, VecU32V* address)
+{
+	*address = val;
+}
+
+template <int index>
+inline Vec4V V4SplatElement(Vec4V a)
+{
+	return internalWindowsSimd::m128_I2F(
+		_mm_shuffle_epi32(internalWindowsSimd::m128_F2I(a), _MM_SHUFFLE(index, index, index, index)));
+}
+
+inline Vec4V Vec4V_From_PxVec3_WUndefined(const Vector3d& f)
+{
+	return _mm_set_ps(0.0f, f.z, f.y, f.x);
+}
 
 //////////////////////////////////
-// VEC3V
+// Vec3V
 //////////////////////////////////
+
+inline Vec3V V3Load(const float f)
+{
+	return _mm_set_ps(0.0f, f, f, f);
+}
+
+inline Vec3V V3LoadA(const Vector3d& f)
+{
+	ASSERT_ISALIGNED16(&f);
+	return _mm_and_ps(_mm_load_ps(&f.x), reinterpret_cast<const Vec4V&>(internalWindowsSimd::gMaskXYZ));
+}
+
+inline Vec3V V3LoadU(const Vector3d& f)
+{
+	return _mm_set_ps(0.0f, f.z, f.y, f.x);
+}
+
+// w component of result is undefined
+inline Vec3V V3LoadUnsafeA(const Vector3d& f)
+{
+	ASSERT_ISALIGNED16(&f);
+	return _mm_load_ps(&f.x);
+}
+
+inline Vec3V V3LoadA(const float* const f)
+{
+	ASSERT_ISALIGNED16(f);
+	return V4ClearW(_mm_load_ps(f));
+}
+
+inline Vec3V V3LoadU(const float* const i)
+{
+	return _mm_set_ps(0.0f, i[2], i[1], i[0]);
+}
+
+inline void V3StoreA(const Vec3V a, Vector3d& f)
+{
+	ASSERT_ISALIGNED16(&f);
+	alignas(16) float f2[4];
+	_mm_store_ps(f2, a);
+	f = Vector3d(f2[0], f2[1], f2[2]);
+}
+
+inline void V3StoreU(const Vec3V a, Vector3d& f)
+{
+	alignas(16) float f2[4];
+	_mm_store_ps(f2, a);
+	f = Vector3d(f2[0], f2[1], f2[2]);
+}
+
+inline Vec3V Vec3V_From_Vec4V(Vec4V v)
+{
+	return V4ClearW(v);
+}
+
+inline Vec3V Vec3V_From_Vec4V_WUndefined(const Vec4V v)
+{
+	return v;
+}
+
+inline Vec3V Vec3V_From_FloatV(FloatV f)
+{
+	return Vec3V_From_Vec4V(Vec4V_From_FloatV(f));
+}
+
+inline Vec3V Vec3V_From_FloatV_WUndefined(FloatV f)
+{
+	return Vec3V_From_Vec4V_WUndefined(Vec4V_From_FloatV(f));
+}
 
 inline Vec3V V3UnitX()
 {
@@ -1112,7 +1363,7 @@ inline Vec3V V3Abs(const Vec3V a)
 	return V3Max(a, V3Neg(a));
 }
 
-inline FloatV V3Dot(const Vec3V a, const Vec3V b)	
+inline FloatV V3Dot(const Vec3V a, const Vec3V b)
 {
 	ASSERT_ISVALIDVEC3V(a);
 	ASSERT_ISVALIDVEC3V(b);
@@ -1121,7 +1372,7 @@ inline FloatV V3Dot(const Vec3V a, const Vec3V b)
 	const __m128 t1 = _mm_shuffle_ps(t0, t0, _MM_SHUFFLE(1,0,3,2));	//	ay*by | ax*bx | aw*bw | az*bz
 	const __m128 t2 = _mm_add_ps(t0, t1);							//	ay*by + aw*bw | ax*bx + az*bz | aw*bw + ay*by | az*bz + ax*bx
 	const __m128 t3 = _mm_shuffle_ps(t2, t2, _MM_SHUFFLE(2,3,0,1));	//	ax*bx + az*bz | ay*by + aw*bw | az*bz + ax*bx | aw*bw + ay*by
-	return _mm_add_ps(t3, t2);										//	ax*bx + az*bz + ay*by + aw*bw 
+	return _mm_add_ps(t3, t2);										//	ax*bx + az*bz + ay*by + aw*bw
 																	//	ay*by + aw*bw + ax*bx + az*bz
 																	//	az*bz + ax*bx + aw*bw + ay*by
 																	//	aw*bw + ay*by + az*bz + ax*bx
@@ -1368,275 +1619,8 @@ inline void V3Transpose(Vec3V& col0, Vec3V& col1, Vec3V& col2)
 }
 
 //////////////////////////////////
-// VEC4V
+// VecI32V / VecU32V
 //////////////////////////////////
-
-inline Vec4V V4Splat(const FloatV f)
-{
-	ASSERT_ISVALIDFLOATV(f);
-	// return _mm_shuffle_ps(f, f, _MM_SHUFFLE(0,0,0,0));
-	return f;
-}
-
-inline Vec4V V4Merge(const FloatV* const floatVArray)
-{
-	ASSERT_ISVALIDFLOATV(floatVArray[0]);
-	ASSERT_ISVALIDFLOATV(floatVArray[1]);
-	ASSERT_ISVALIDFLOATV(floatVArray[2]);
-	ASSERT_ISVALIDFLOATV(floatVArray[3]);
-	const __m128 xw = _mm_move_ss(floatVArray[1], floatVArray[0]); // y, y, y, x
-	const __m128 yz = _mm_move_ss(floatVArray[2], floatVArray[3]); // z, z, z, w
-	return _mm_shuffle_ps(xw, yz, _MM_SHUFFLE(0, 2, 1, 0));
-}
-
-inline Vec4V V4PermYXWZ(const Vec4V a)
-{
-	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 3, 0, 1));
-}
-
-inline Vec4V V4PermXZXZ(const Vec4V a)
-{
-	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 0, 2, 0));
-}
-
-inline Vec4V V4PermYWYW(const Vec4V a)
-{
-	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(3, 1, 3, 1));
-}
-
-inline Vec4V V4PermYZXW(const Vec4V a)
-{
-	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(3, 0, 2, 1));
-}
-
-inline Vec4V V4PermZWXY(const Vec4V a)
-{
-	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(1, 0, 3, 2));
-}
-
-inline Vec4V V4SetX(const Vec4V v, const FloatV f)
-{
-	ASSERT_ISVALIDFLOATV(f);
-	return V4Sel(BFTTT(), v, f);
-}
-
-inline Vec4V V4SetY(const Vec4V v, const FloatV f)
-{
-	ASSERT_ISVALIDFLOATV(f);
-	return V4Sel(BTFTT(), v, f);
-}
-
-inline Vec4V V4SetZ(const Vec4V v, const FloatV f)
-{
-	ASSERT_ISVALIDFLOATV(f);
-	return V4Sel(BTTFT(), v, f);
-}
-
-
-inline uint32_t V4AllGrtr(const Vec4V a, const Vec4V b)
-{
-	return internalWindowsSimd::BAllTrue4_R(V4IsGrtr(a, b));
-}
-
-inline uint32_t V4AllGrtrOrEq(const Vec4V a, const Vec4V b)
-{
-	return internalWindowsSimd::BAllTrue4_R(V4IsGrtrOrEq(a, b));
-}
-
-inline uint32_t V4AllGrtrOrEq3(const Vec4V a, const Vec4V b)
-{
-	return internalWindowsSimd::BAllTrue3_R(V4IsGrtrOrEq(a, b));
-}
-
-inline uint32_t V4AllEq(const Vec4V a, const Vec4V b)
-{
-	return internalWindowsSimd::BAllTrue4_R(V4IsEq(a, b));
-}
-
-inline uint32_t V4AnyGrtr3(const Vec4V a, const Vec4V b)
-{
-	return internalWindowsSimd::BAnyTrue3_R(V4IsGrtr(a, b));
-}
-
-inline Vec4V V4Round(const Vec4V a)
-{
-	// return _mm_round_ps(a, 0x0);
-	const Vec4V half = V4Load(0.5f);
-	const __m128 signBit = _mm_cvtepi32_ps(_mm_srli_epi32(_mm_cvtps_epi32(a), 31));
-	const Vec4V aRound = V4Sub(V4Add(a, half), signBit);
-	const __m128i tmp = _mm_cvttps_epi32(aRound);
-	return _mm_cvtepi32_ps(tmp);
-}
-
-inline void V4Transpose(Vec4V& col0, Vec4V& col1, Vec4V& col2, Vec4V& col3)
-{
-	Vec4V tmp0 = _mm_unpacklo_ps(col0, col1);
-	Vec4V tmp2 = _mm_unpacklo_ps(col2, col3);
-	Vec4V tmp1 = _mm_unpackhi_ps(col0, col1);
-	Vec4V tmp3 = _mm_unpackhi_ps(col2, col3);
-	col0 = _mm_movelh_ps(tmp0, tmp2);
-	col1 = _mm_movehl_ps(tmp2, tmp0);
-	col2 = _mm_movelh_ps(tmp1, tmp3);
-	col3 = _mm_movehl_ps(tmp3, tmp1);
-}
-
-inline BoolV BGetX(const BoolV f)
-{
-	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(0, 0, 0, 0));
-}
-
-inline BoolV BGetY(const BoolV f)
-{
-	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(1, 1, 1, 1));
-}
-
-inline BoolV BGetZ(const BoolV f)
-{
-	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(2, 2, 2, 2));
-}
-
-inline BoolV BGetW(const BoolV f)
-{
-	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(3, 3, 3, 3));
-}
-
-inline BoolV BSetX(const BoolV v, const BoolV f)
-{
-	return V4Sel(BFTTT(), v, f);
-}
-
-inline BoolV BSetY(const BoolV v, const BoolV f)
-{
-	return V4Sel(BTFTT(), v, f);
-}
-
-inline BoolV BSetZ(const BoolV v, const BoolV f)
-{
-	return V4Sel(BTTFT(), v, f);
-}
-
-inline BoolV BSetW(const BoolV v, const BoolV f)
-{
-	return V4Sel(BTTTF(), v, f);
-}
-
-template <int index>
-BoolV BSplatElement(BoolV a)
-{
-	return internalWindowsSimd::m128_I2F(
-	    _mm_shuffle_epi32(internalWindowsSimd::m128_F2I(a), _MM_SHUFFLE(index, index, index, index)));
-}
-
-inline BoolV BAnd(const BoolV a, const BoolV b)
-{
-	return _mm_and_ps(a, b);
-}
-
-inline BoolV BNot(const BoolV a)
-{
-	const BoolV bAllTrue(BTTTT());
-	return _mm_xor_ps(a, bAllTrue);
-}
-
-inline BoolV BAndNot(const BoolV a, const BoolV b)
-{
-	return _mm_andnot_ps(b, a);
-}
-
-inline BoolV BOr(const BoolV a, const BoolV b)
-{
-	return _mm_or_ps(a, b);
-}
-
-inline BoolV BAllTrue4(const BoolV a)
-{
-	const BoolV bTmp =
-	    _mm_and_ps(_mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 1, 0, 1)), _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 3, 2, 3)));
-	return _mm_and_ps(_mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(0, 0, 0, 0)),
-	                  _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
-}
-
-inline BoolV BAnyTrue4(const BoolV a)
-{
-	const BoolV bTmp =
-	    _mm_or_ps(_mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 1, 0, 1)), _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 3, 2, 3)));
-	return _mm_or_ps(_mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(0, 0, 0, 0)),
-	                 _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
-}
-
-inline BoolV BAllTrue3(const BoolV a)
-{
-	const BoolV bTmp =
-	    _mm_and_ps(_mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 1, 0, 1)), _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 2, 2, 2)));
-	return _mm_and_ps(_mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(0, 0, 0, 0)),
-	                  _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
-}
-
-inline BoolV BAnyTrue3(const BoolV a)
-{
-	const BoolV bTmp =
-	    _mm_or_ps(_mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 1, 0, 1)), _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 2, 2, 2)));
-	return _mm_or_ps(_mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(0, 0, 0, 0)),
-	                 _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
-}
-
-inline uint32_t BAllEq(const BoolV a, const BoolV b)
-{
-	const BoolV bTest = internalWindowsSimd::m128_I2F(
-	    _mm_cmpeq_epi32(internalWindowsSimd::m128_F2I(a), internalWindowsSimd::m128_F2I(b)));
-	return internalWindowsSimd::BAllTrue4_R(bTest);
-}
-
-inline uint32_t BAllEqTTTT(const BoolV a)
-{
-	return uint32_t(_mm_movemask_ps(a)==15);
-}
-
-inline uint32_t BAllEqFFFF(const BoolV a)
-{
-	return uint32_t(_mm_movemask_ps(a)==0);
-}
-
-inline uint32_t BGetBitMask(const BoolV a)
-{
-	return uint32_t(_mm_movemask_ps(a));
-}
-
-inline Vec4V V4LoadXYZW(const float& x, const float& y, const float& z, const float& w)
-{
-	return _mm_set_ps(w, z, y, x);
-}
-
-inline VecU32V V4U32Sel(const BoolV c, const VecU32V a, const VecU32V b)
-{
-	return internalWindowsSimd::m128_I2F(
-		_mm_or_si128(_mm_andnot_si128(internalWindowsSimd::m128_F2I(c), internalWindowsSimd::m128_F2I(b)),
-			_mm_and_si128(internalWindowsSimd::m128_F2I(c), internalWindowsSimd::m128_F2I(a))));
-}
-
-inline VecU32V V4U32or(VecU32V a, VecU32V b)
-{
-	return internalWindowsSimd::m128_I2F(_mm_or_si128(internalWindowsSimd::m128_F2I(a), internalWindowsSimd::m128_F2I(b)));
-}
-
-inline VecU32V V4U32xor(VecU32V a, VecU32V b)
-{
-	return internalWindowsSimd::m128_I2F(
-		_mm_xor_si128(internalWindowsSimd::m128_F2I(a), internalWindowsSimd::m128_F2I(b)));
-}
-
-inline VecU32V V4U32and(VecU32V a, VecU32V b)
-{
-	return internalWindowsSimd::m128_I2F(
-		_mm_and_si128(internalWindowsSimd::m128_F2I(a), internalWindowsSimd::m128_F2I(b)));
-}
-
-inline VecU32V V4U32Andc(VecU32V a, VecU32V b)
-{
-	return internalWindowsSimd::m128_I2F(
-		_mm_andnot_si128(internalWindowsSimd::m128_F2I(b), internalWindowsSimd::m128_F2I(a)));
-}
-
 inline VecI32V U4Load(const uint32_t i)
 {
 	return _mm_load1_ps((float*)&i);
@@ -1653,6 +1637,12 @@ inline VecU32V U4LoadA(const uint32_t* i)
 	return _mm_load_ps((float*)i);
 }
 
+inline void U4StoreA(const VecU32V uv, uint32_t* u)
+{
+	ASSERT_ISALIGNED16(u);
+	_mm_store_ps((float*)u, uv);
+}
+
 inline VecI32V I4Load(const int i)
 {
 	return _mm_load1_ps((float*)&i);
@@ -1667,6 +1657,12 @@ inline VecI32V I4LoadA(const int* i)
 {
 	ASSERT_ISALIGNED16(i);
 	return _mm_load_ps((float*)i);
+}
+
+inline void I4StoreA(const VecI32V iv, int* i)
+{
+	ASSERT_ISALIGNED16(i);
+	_mm_store_ps((float*)i, iv);
 }
 
 inline VecI32V V4I32Sel(const BoolV c, const VecI32V a, const VecI32V b)
@@ -1709,18 +1705,6 @@ inline VecU32V U4Two()
 	return U4Load(2);
 }
 
-template <int index>
-inline Vec4V V4SplatElement(Vec4V a)
-{
-	return internalWindowsSimd::m128_I2F(
-		_mm_shuffle_epi32(internalWindowsSimd::m128_F2I(a), _MM_SHUFFLE(index, index, index, index)));
-}
-
-inline Vec4V Vec4V_From_PxVec3_WUndefined(const Vector3d& f)
-{
-	return _mm_set_ps(0.0f, f.z, f.y, f.x);
-}
-
 inline Vec4V Vec4V_ReinterpretFrom_VecU32V(VecU32V a)
 {
 	return Vec4V(a);
@@ -1757,19 +1741,40 @@ inline VecU32V U4LoadXYZW(uint32_t x, uint32_t y, uint32_t z, uint32_t w)
 	return t.v;
 }
 
-inline VecU32V V4IsGrtrV32u(const Vec4V a, const Vec4V b)
+
+namespace internalWindowsSimd
 {
-	return V4IsGrtr(a, b);
+inline __m128 m128_I2F(__m128i n)
+{
+	return _mm_castsi128_ps(n);
 }
 
-inline Vec4V V4Andc(const Vec4V a, const VecU32V b)
+inline __m128i m128_F2I(__m128 n)
 {
-	VecU32V result32(a);
-	result32 = V4U32Andc(result32, b);
-	return Vec4V(result32);
+	return _mm_castps_si128(n);
 }
 
-inline void V4U32StoreAligned(VecU32V val, VecU32V* address)
+inline uint32_t BAllTrue4_R(const BoolV a)
 {
-	*address = val;
+	const int moveMask = _mm_movemask_ps(a);
+	return uint32_t(moveMask == 0xf);
 }
+
+inline uint32_t BAllTrue3_R(const BoolV a)
+{
+	const int moveMask = _mm_movemask_ps(a);
+	return uint32_t((moveMask & 0x7) == 0x7);
+}
+
+inline uint32_t BAnyTrue4_R(const BoolV a)
+{
+	const int moveMask = _mm_movemask_ps(a);
+	return uint32_t(moveMask != 0x0);
+}
+
+inline uint32_t BAnyTrue3_R(const BoolV a)
+{
+	const int moveMask = _mm_movemask_ps(a);
+	return uint32_t(((moveMask & 0x7) != 0x0));
+}
+} //internalWindowsSimd
