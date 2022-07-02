@@ -5,14 +5,14 @@
 
 #if defined(__arm__) || defined(__aarch64__)
     #include <arm_neon.h>
-    typedef float32x4_t float_v;
-    //typedef __m128 vec3_v;
-    //typedef __m128 vec4_v;
-    //typedef __m128 bool_v;
-    //typedef __m128 uint32_v;
-    //typedef __m128 int32_v;
-    //typedef __m128 uint16_v;
-    //typedef __m128 int16_v;
+    typedef float32x2_t FloatV;
+    typedef float32x4_t Vec3V;
+    typedef float32x4_t Vec4V;
+    typedef uint32x4_t  BoolV;
+    typedef uint32x4_t  VecU32V;
+    typedef int32x4_t   VecI32V;
+    typedef uint16x8_t  VecU16V;
+    typedef int16x8_t   VecI16V;
 #elif defined(SIMD_REF)
 
 #else
@@ -30,6 +30,7 @@
     typedef __m128 VecU16V;
     typedef __m128 VecI16V;
 #endif
+
 static_assert(sizeof(FloatV) == 16, "simd size not correct!");
 static_assert(sizeof(Vec3V) == 16, "simd size not correct!");
 static_assert(sizeof(Vec4V) == 16, "simd size not correct!");
@@ -133,7 +134,6 @@ inline const Vector3d& V4ReadXYZ(const Vec4V& v)
 {
 	return reinterpret_cast<const Vector3d&>(v);
 }
-
 
 #if _DEBUG && 0
 #define ASSERT_ISVALIDVEC3V(a) assert(isValidVec3V(a))
