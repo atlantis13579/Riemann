@@ -113,7 +113,7 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 	Result->AddTestCount(1);
 
 	float t0, t1;
-	const float thickness = 1e-4f;
+	const float thickness = 1e-3f;
 	if (!Ray3d::RayIntersectAABB2(Origin, Dir, BV.Min, BV.Max, thickness, Option.maxDist, &t0, &t1))
 	{
 		return false;
@@ -149,9 +149,9 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 
 	if (istart != iend && jstart != jend)
 	{
-		const float minx = BV.Min.x + DX * floorf((P0.x - BV.Min.x) / DX);
+		const float minx = BV.Min.x + DX * istart;
 		const float maxx = minx + DX;
-		const float minz = BV.Min.z + DZ * floorf((P0.z - BV.Min.z) / DZ);
+		const float minz = BV.Min.z + DZ * jstart;
 		const float maxz = minz + DZ;
 
 		const float dtx = DX / fabsf(P1.x - P0.x);
@@ -196,7 +196,8 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 		}
 	}
 	else
-	{    // jstart == jend
+	{
+		// jstart == jend
 		i += di;
 		while (i != iend)
 		{

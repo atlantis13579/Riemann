@@ -92,8 +92,8 @@ public:
 	
 	virtual bool IsCollidable(const CollisionData &data0, const CollisionData& data1)
 	{
-		assert(0 < data0.v0 && data0.v0 < nLayers);
-		assert(0 < data1.v0 && data1.v0 < nLayers);
+		assert(0 <= data0.v0 && data0.v0 < nLayers);
+		assert(0 <= data1.v0 && data1.v0 < nLayers);
 		return collisionTable[data0.v0 * nLayers + data1.v0] == 0;
 	}
 	
