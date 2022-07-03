@@ -44,9 +44,9 @@ void VoxelField::MakeEmpty(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, flo
 
 bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, Mesh* _mesh)
 {
-	m_SizeX = (int)(info.BV.GetSizeX() / info.VoxelSize + 0.5f);
-	m_SizeY = (int)(info.BV.GetSizeY() / info.VoxelHeight + 0.5f);
-	m_SizeZ = (int)(info.BV.GetSizeZ() / info.VoxelSize + 0.5f);
+	m_SizeX = (int)(info.BV.GetLengthX() / info.VoxelSize + 0.5f);
+	m_SizeY = (int)(info.BV.GetLengthY() / info.VoxelHeight + 0.5f);
+	m_SizeZ = (int)(info.BV.GetLengthZ() / info.VoxelSize + 0.5f);
 
 	MakeEmpty(info.BV, m_SizeX, m_SizeY, m_SizeZ, info.VoxelSize, info.VoxelHeight);
 

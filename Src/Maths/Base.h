@@ -11,3 +11,9 @@
 #else
 #define OFFSETOF(_st, _m)	((size_t)&(((_st *)0)->_m))
 #endif
+
+#ifdef _DEBUG
+#define DEBUG_CODE(_expr)       _expr;
+#else
+#define DEBUG_CODE(_expr)
+#endif //_DEBUG

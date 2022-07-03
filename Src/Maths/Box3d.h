@@ -113,17 +113,17 @@ public:
 		return Max - Min;
 	}
 
-	inline T GetSizeX() const
+	inline T GetLengthX() const
 	{
 		return Max.x - Min.x;
 	}
 
-	inline T GetSizeY() const
+	inline T GetLengthY() const
 	{
 		return Max.y - Min.y;
 	}
 
-	inline T GetSizeZ() const
+	inline T GetLengthZ() const
 	{
 		return Max.z - Min.z;
 	}

@@ -41,7 +41,7 @@ bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir
 			if (min_t < Option.maxDist)
 			{
 				Result->hitTime = min_t;
-				Result->cellIndex = j * nCols + i;
+				Result->cellIndex = j * nZ + i;
 				hit = true;
 			}
 		}
@@ -56,7 +56,7 @@ bool HeightField3d::IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, c
 {
 	const int i = X_INDEX(Origin.x);
 	const int j = Z_INDEX(Origin.z);
-	if (i < 0 || i >= (int)nRows - 1 || j <= 0 || j >= (int)nCols - 1)
+	if (i < 0 || i >= (int)nX - 1 || j < 0 || j >= (int)nZ - 1)
 	{
 		return false;
 	}
@@ -75,7 +75,7 @@ bool HeightField3d::IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, c
 			if (min_t < Option.maxDist)
 			{
 				Result->hitTime = min_t;
-				Result->cellIndex = j * nCols + i;
+				Result->cellIndex = j * nZ + i;
 				hit = true;
 			}
 		}
@@ -124,7 +124,7 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 	const int di = Dir.x > 0 ? 1 : (Dir.x < 0 ? -1 : 0);
 	const int dj = Dir.z > 0 ? 1 : (Dir.z < 0 ? -1 : 0);
 
-	if (istart < 0 || iend > (int)nRows - 1 || jstart < 0 || jend > (int)nCols - 1)
+	if (istart < 0 || iend >= (int)nX - 1 || jstart < 0 || jend >= (int)nZ - 1)
 	{
 		return false;
 	}
@@ -234,7 +234,7 @@ bool HeightField3d::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) co
 	for (int i = i0; i <= i1; ++i)
 	for (int j = j0; j <= j1; ++j)
 	{
-		uint16_t Index = j * nCols + i;
+		uint16_t Index = j * nZ + i;
 		if (minH <= Heights[Index] && Heights[Index] <= maxH)
 		{
 			return true;
@@ -258,17 +258,20 @@ bool HeightField3d::GetCellBV(int i, int j, Box3d &box) const
 
 bool HeightField3d::GetHeightRange(int i, int j, float& minH, float& maxH) const
 {
-	bool tessFlag = Cells[i + j * nCols].Tessellation0 & 0x80;
-	uint16_t i0 = j * nCols + i;
-	uint16_t i1 = j * nCols + i + 1;
-	uint16_t i2 = (j + 1) * nCols + i;
-	uint16_t i3 = (j + 1) * nCols + i + 1;
+	assert(0 <= i && i < nX - 1);
+	assert(0 <= j && j < nZ - 1);
+	
+	bool tessFlag = Cells[i + j * nX].Tessellation0 & 0x80;
+	uint16_t i0 = j * nX + i;
+	uint16_t i1 = j * nX + i + 1;
+	uint16_t i2 = (j + 1) * nX + i;
+	uint16_t i3 = (j + 1) * nX + i + 1;
 	// i2---i3
 	// |    |
 	// |    |
 	// i0---i1
-	uint8_t Hole0 = Cells[i + j * nCols].Tessellation0;
-	uint8_t Hole1 = Cells[i + j * nCols].Tessellation1;
+	uint8_t Hole0 = Cells[i + j * nX].Tessellation0;
+	uint8_t Hole1 = Cells[i + j * nX].Tessellation1;
 
 	minH = FLT_MAX;
 	maxH = -FLT_MAX;
@@ -295,17 +298,20 @@ bool HeightField3d::GetHeightRange(int i, int j, float& minH, float& maxH) const
 
 int HeightField3d::GetCellTriangle(int i, int j, Vector3d Tris[6]) const
 {
-	bool tessFlag = Cells[i + j * nCols].Tessellation0 & 0x80;
-	uint16_t i0 = j * nCols + i;
-	uint16_t i1 = j * nCols + i + 1;
-	uint16_t i2 = (j + 1) * nCols + i;
-	uint16_t i3 = (j + 1) * nCols + i + 1;
+	assert(i >= 0 && i < nX - 1);
+	assert(j >= 0 && j < nZ - 1);
+	
+	bool tessFlag = Cells[i + j * nZ].Tessellation0 & 0x80;
+	uint16_t i0 = j * nX + i;
+	uint16_t i1 = j * nX + i + 1;
+	uint16_t i2 = (j + 1) * nX + i;
+	uint16_t i3 = (j + 1) * nX + i + 1;
 	// i2---i3
 	// |    |
 	// |    |
 	// i0---i1
-	uint8_t Hole0 = Cells[i + j * nCols].Tessellation0;
-	uint8_t Hole1 = Cells[i + j * nCols].Tessellation1;
+	uint8_t Hole0 = Cells[i + j * nX].Tessellation0;
+	uint8_t Hole1 = Cells[i + j * nX].Tessellation1;
 
 	Vector3d Base = Vector3d(BV.Min.x + DX * i, 0.0f, BV.Min.z + DZ * j);
 

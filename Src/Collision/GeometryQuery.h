@@ -66,7 +66,9 @@ struct RayCastResult
 		hitNormal = Vector3d::UnitY();
 		hitGeom = nullptr;
         hitGeometries.clear();
+        #ifdef _DEBUG
 		hitTestCount = 0;
+        #endif //_DEBUG
 	}
 
 	void AddTestCount(int Count)

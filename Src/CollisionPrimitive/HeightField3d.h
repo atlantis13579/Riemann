@@ -19,8 +19,8 @@ struct HeightFieldHitResult
 	float		hitTime;
 	Vector3d	hitNormal;
 	uint32_t	cellIndex;
-	int		hitTestCount;
-
+	int		    hitTestCount;
+    
 	void AddTestCount(int Count)
 	{
 		#ifdef _DEBUG
@@ -38,9 +38,9 @@ public:
 		uint8_t	Tessellation1;
 	};
 
-	uint32_t 				nRows;				// X
-	uint32_t 				nCols;				// Z
-	std::vector<float>		Heights;			// Y
+	uint32_t 				nX;				// X
+	uint32_t 				nZ;				// Z
+	std::vector<float>		Heights;		// Y
 	std::vector<CellInfo>	Cells;
 	Box3d					BV;
 	float					DX, DZ;
@@ -50,9 +50,9 @@ public:
 	{
 	}
 
-	HeightField3d(const Box3d& _Bv, int _nRows, int _nCols)
+	HeightField3d(const Box3d& _Bv, int _nX, int _nZ)
 	{
-		Init(_Bv, _nRows, _nCols);
+		Init(_Bv, _nX, _nZ);
 	}
 
 	static constexpr ShapeType	StaticType()
@@ -60,39 +60,37 @@ public:
 		return ShapeType::HEIGHTFIELD;
 	}
 
-	void Init(const Box3d& _Bv, int _nRows, int _nCols)
+	void    Init(const Box3d& _Bv, int _nX, int _nZ)
 	{
 		BV = _Bv;
-		nRows = _nRows;
-		nCols = _nCols;
-		DX = BV.GetSizeX() / (nRows - 1);
-		DZ = BV.GetSizeZ() / (nCols - 1);
-		InvDX = (nRows - 1) / BV.GetSizeX();
-		InvDZ = (nCols - 1) / BV.GetSizeZ();
-		Heights.resize(nRows * nCols);
+		nX = _nX;
+		nZ = _nZ;
+		DX = BV.GetLengthX() / (nX - 1);
+		DZ = BV.GetLengthZ() / (nZ - 1);
+		InvDX = 1.0f / DX;
+		InvDZ = 1.0f / DZ;
+		Heights.resize(nX * nZ);
 		memset(&Heights[0], 0, Heights.size() * sizeof(Heights[0]));
-		Cells.resize(nRows * nCols);
+		Cells.resize(nX * nZ);
 		memset(&Cells[0], 0, Cells.size() * sizeof(Cells[0]));
 	}
 
-	Box3d			GetBoundingVolume() const
+	Box3d   GetBoundingVolume() const
 	{
 		return BV;
 	}
 
-	bool			IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
-	bool			IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
-	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult *Result) const;
-	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
-	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const;
+    bool    IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const;
+	bool    IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
+    bool    IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult *Result) const;
 
-	Vector3d		GetSupport(const Vector3d& dir) const
+	Vector3d    GetSupport(const Vector3d& dir) const
 	{
 		// TODO
 		return Vector3d::UnitY();
 	}
 
-	Matrix3d		GetInertiaTensor(float Mass) const
+	Matrix3d	GetInertiaTensor(float Mass) const
 	{
 		return Matrix3d(Mass, Mass, Mass);
 	}
@@ -104,17 +102,20 @@ public:
 
 	int		GetCellTriangle(int i, int j, uint32_t Tris[6]) const
 	{
-		bool tessFlag = Cells[i + j * nCols].Tessellation0 & 0x80;
-		uint16_t i0 = j * nCols + i;
-		uint16_t i1 = j * nCols + i + 1;
-		uint16_t i2 = (j + 1) * nCols + i;
-		uint16_t i3 = (j + 1) * nCols + i + 1;
+		assert(0 <= i && i < nX - 1);
+		assert(0 <= j && j < nZ - 1);
+		
+		bool tessFlag = Cells[i + j * nX].Tessellation0 & 0x80;
+		uint16_t i0 = j * nX + i;
+		uint16_t i1 = j * nX + i + 1;
+		uint16_t i2 = (j + 1) * nX + i;
+		uint16_t i3 = (j + 1) * nX + i + 1;
 		// i2---i3
 		// |    |
 		// |    |
 		// i0---i1
-		uint8_t Hole0 = Cells[i + j * nCols].Tessellation0;
-		uint8_t Hole1 = Cells[i + j * nCols].Tessellation1;
+		uint8_t Hole0 = Cells[i + j * nX].Tessellation0;
+		uint8_t Hole1 = Cells[i + j * nX].Tessellation1;
 
 		int nt = 0;
 		if (Hole0 != 0x7F)
@@ -137,25 +138,25 @@ public:
 
 	void GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
-		if (nCols * nCols == 0)
+		if (nZ * nZ == 0)
 		{
 			return;
 		}
 
-		Vertices.resize(nRows * nCols);
-		for (uint32_t i = 0; i < nRows; i++)
-		for (uint32_t j = 0; j < nCols; j++)
+		Vertices.resize(nX * nZ);
+		for (uint32_t i = 0; i < nX; i++)
+		for (uint32_t j = 0; j < nZ; j++)
 		{
-			Vertices[i * nCols + j] = Vector3d(BV.Min.x + DX * i, Heights[j + (i * nCols)], BV.Min.z + DX * j);
+			Vertices[i * nZ + j] = Vector3d(BV.Min.x + DX * i, Heights[j + (i * nZ)], BV.Min.z + DX * j);
 		}
 
 		assert(Vertices.size() < 65535);
-		Indices.resize((nCols - 1) * (nRows - 1) * 2 * 3);
+		Indices.resize((nZ - 1) * (nX - 1) * 2 * 3);
 		int nTris = 0;
 		uint32_t Tris[6];
 
-		for (uint32_t i = 0; i < (nCols - 1); ++i)
-		for (uint32_t j = 0; j < (nRows - 1); ++j)
+		for (uint32_t i = 0; i < (nZ - 1); ++i)
+		for (uint32_t j = 0; j < (nX - 1); ++j)
 		{
 			int nT = GetCellTriangle(i, j, Tris);
 			for (int k = 0; k < nT; k += 3)
@@ -192,8 +193,12 @@ public:
 		}
 	}
 
-	void			GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
+	void GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
 	{
 
 	}
+    
+private:
+    bool IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
+    bool IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
 };
