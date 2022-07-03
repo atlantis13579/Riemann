@@ -133,9 +133,9 @@ int AABBTree::IntersectPoint(const Vector3d& Point) const
 	return -1;
 }
 
-static int RayIntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, Geometry** GeometryCollection, const Box3d& BV, const RayCastOption& Option, RayCastResult* Result)
+static int RayIntersectGeometry(const Ray3d& Ray, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Box3d& BV, const RayCastOption& Option, RayCastResult* Result)
 {
-	assert(NumIndices > 0);
+	assert(NumGeoms > 0);
 	if (GeometryCollection == nullptr)
 	{
 		float t;
@@ -148,7 +148,7 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, 
 				Result->hitPoint = Ray.PointAt(t);
 				Result->hitTimeMin = t;
 			}
-			return *Indices;
+			return *Geoms;
 		}
 
 		return -1;
@@ -156,10 +156,11 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, 
 
 	int min_idx = -1;
 	float min_t = FLT_MAX;
-	for (int i = 0; i < NumIndices; ++i)
+	for (int i = 0; i < NumGeoms; ++i)
 	{
-		const int index = Indices[i];
+		const int index = Geoms[i];
 		Geometry *Geom = GeometryCollection[index];
+        assert(Geom);
 		bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, &Option, Result);
 		if (hit)
 		{
@@ -169,6 +170,10 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Indices, int NumIndices, 
 				min_t = Result->hitTime;
 				break;
 			}
+            else if (Option.Type == RayCastOption::RAYCAST_PENETRATE)
+            {
+                Result->hitGeometries.push_back(Geom);
+            }
 
 			if (Result->hitTime < min_t)
 			{
@@ -274,9 +279,15 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 			Result->AddTestCount(2);
 
-			bool hit1 = Ray.IntersectAABB(Left->BV.Min, Left->BV.Max, &t1) && t1 < Result->hitTimeMin;
-			bool hit2 = Ray.IntersectAABB(Right->BV.Min, Right->BV.Max, &t2) && t2 < Result->hitTimeMin;
+			bool hit1 = Ray.IntersectAABB(Left->BV.Min, Left->BV.Max, &t1);
+			bool hit2 = Ray.IntersectAABB(Right->BV.Min, Right->BV.Max, &t2);
 
+            if (Option.Type != RayCastOption::RAYCAST_PENETRATE)
+            {
+                hit1 = hit1 && t1 < Result->hitTimeMin;
+                hit2 = hit2 && t2 < Result->hitTimeMin;
+            }
+            
 			if (hit1 && hit2)
 			{
 				if (t1 < t2)
@@ -307,7 +318,7 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 	}
 
-	return Result->hit;
+	return Result->hit || Result->hitGeometries.size() > 0;
 }
 
 bool  AABBTree::RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const

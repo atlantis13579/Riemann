@@ -401,6 +401,11 @@ void TestGeometryQuery()
 	EXPECT(result.hit);
 	EXPECT(fabsf(result.hitTimeMin - 5.0f) < 0.001f);
 
+    option.Type = RayCastOption::RayCastType::RAYCAST_PENETRATE;
+    scene.RayCast(Vector3d(0.0f, 0.0f, 15.0f), Vector3d(0.0f, 0.0f, -1.0f), option, &result);
+    EXPECT(result.hit);
+    EXPECT(result.hitGeometries.size() == 3);
+
 	for (auto obj : objs)
 	{
 		delete obj;

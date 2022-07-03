@@ -24,21 +24,30 @@ struct RayCastCache
 	FixedStack<uint32_t, RAYCAST_STACK_SIZE>	prevStack;
 };
 
+struct CollisionFilter
+{
+    unsigned int v0;
+};
+
 struct RayCastOption
 {
 	enum RayCastType
 	{
-		RAYCAST_ANY,
-		RAYCAST_NEAREST,
+		RAYCAST_NEAREST = 0,
+        RAYCAST_ANY = 1,
+        RAYCAST_PENETRATE = 2,
 	};
 	RayCastOption()
 	{
 		Type = RAYCAST_NEAREST;
 		MaxDist = FLT_MAX;
+        MaxObjects = INT_MAX;
 	}
 	RayCastType		Type;
 	RayCastCache	Cache;
+    CollisionFilter Filter;
 	float			MaxDist;
+    int             MaxObjects;
 };
 
 struct RayCastResult
@@ -56,6 +65,7 @@ struct RayCastResult
 		hitPoint = Vector3d::Zero();
 		hitNormal = Vector3d::UnitY();
 		hitGeom = nullptr;
+        hitGeometries.clear();
 		hitTestCount = 0;
 	}
 
@@ -67,12 +77,14 @@ struct RayCastResult
 	}
 
 	bool		hit;
-	float		hitTime;
-	float		hitTimeMin;
+	float		hitTime;            // temp val
+	float		hitTimeMin;         // result
 	Vector3d	hitPoint;
 	Vector3d	hitNormal;
 	Geometry*	hitGeom;
-	int			hitTestCount;
+    std::vector<Geometry*>  hitGeometries;
+    
+	int			hitTestCount;       // debug
 };
 
 struct SweepOption
@@ -124,9 +136,8 @@ struct OverlapResult
 
 	bool					overlaps;
 	std::vector<Geometry*>	overlapGeoms;
-	#ifdef _DEBUG
-	int						overlapTestCount;
-	#endif // _DEBUG
+    
+	int						overlapTestCount;       // debug
 };
 
 class GeometryQuery
