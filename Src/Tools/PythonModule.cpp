@@ -78,7 +78,7 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
 	assert(world);
 
 	RayCastOption Option;
-    Option.MaxDist = 50.0f;
+    Option.MaxDist = farz;
 
 	GeometryQuery* query = world->GetGeometryQuery();
 	assert(query);
@@ -89,9 +89,8 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
     Vector3d cameraDirection = Vector3d(dx, dy, dz).Unit();
     Vector3d cameraUp = Vector3d(ux, uy, uz).Unit();
     float AspectRatio = 1.0f * width / height;
-    float NearZ = 0.1f;
 
-	float CX = 2.0f * NearZ * tanf(0.5f * fov);
+	float CX = 2.0f * nearz * tanf(0.5f * fov);
 	float CY = CX * AspectRatio;
 
     Vector3d cameraX = cameraUp.Cross(cameraDirection) * CX;
@@ -102,7 +101,7 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
     {
         for (int x = 0; x < width; ++x)
         {
-            Vector3d rayDirection = cameraDirection * NearZ + ((y - height * 0.5f) / height) * cameraY + ((x - width * 0.5f) / width) * cameraX;
+            Vector3d rayDirection = cameraDirection * nearz + ((y - height * 0.5f) / height) * cameraY + ((x - width * 0.5f) / width) * cameraX;
             
             RayCastResult Result;
             bool success = query->RayCast(cameraOrigin, rayDirection.Unit(), Option, &Result);
@@ -113,7 +112,7 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
 			}
             else
             {
-                fp[y * width + x] = 0.0f;
+                fp[y * width + x] = Option.MaxDist;
             }
         }
     }
