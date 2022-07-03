@@ -1,7 +1,7 @@
 
 #pragma once
 
-// #define SIMD_SIMULATE
+// #define SIMD_SIMULATOR
 
 #if defined(__arm__) || defined(__aarch64__)
     #include <arm_neon.h>
@@ -13,7 +13,7 @@
     typedef int32x4_t   VecI32V;
     typedef uint16x8_t  VecU16V;
     typedef int16x8_t   VecI16V;
-#elif defined(SIMD_SIMULATE)
+#elif defined(SIMD_SIMULATOR)
 
 #else
     #ifdef _WIN32
@@ -31,7 +31,6 @@
     typedef __m128 VecI16V;
 #endif
 
-static_assert(sizeof(FloatV) == 8, "simd size not correct!");
 static_assert(sizeof(Vec3V) == 16, "simd size not correct!");
 static_assert(sizeof(Vec4V) == 16, "simd size not correct!");
 static_assert(sizeof(BoolV) == 16, "simd size not correct!");
@@ -149,8 +148,8 @@ inline const Vector3d& V4ReadXYZ(const Vec4V& v)
 
 #if defined(__arm__) || defined(__aarch64__)
 #include "SIMD_Neon.h"
-#elif defined(SIMD_SIMULATE)
-#inlcude "SIMD_Simulate.h"
+#elif defined(SIMD_SIMULATOR)
+#inlcude "SIMD_Simulator.h"
 #else
-#include "SIMD_Intel.h"
+#include "SIMD_SSE.h"
 #endif
