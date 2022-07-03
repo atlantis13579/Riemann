@@ -64,7 +64,7 @@ public:
 		return Quaternion(w / m, Vector3d(x / m, y / m, z / m));
 	}
 
-	float Dot(const Quaternion& rhs)
+	float Dot(const Quaternion& rhs) const
 	{
 		return w * w + x * x + y * y + z * z;
 	}
@@ -211,9 +211,14 @@ public:
 		return *this;
 	}
 
-	Quaternion Lerp(const Quaternion& end, float t) const
+	static Quaternion Lerp(const Quaternion& start, const Quaternion& end, float t)
 	{
-		return ((*this) * (1.0f - t) + end * t).Unit();
+		return start * (1.0f - t) + end * t;
+	}
+ 
+	static Quaternion Nlerp(const Quaternion& start, const Quaternion& end, float t)
+	{
+		return Lerp(start, end, t).Unit();
 	}
 
 	static Quaternion Slerp(const Quaternion& start, const Quaternion& end, float t)
@@ -241,6 +246,17 @@ public:
 		Quaternion q = start * (sinx_over_x(s * a) / sinx_over_x(a) * s) + end * (sinx_over_x(t * a) / sinx_over_x(a) * t);
 		return q.Unit();
 	}
+ 
+    // Comnining the slerp and nlerp, use nlerp when the angle is small, otherwise slerp
+ 	static Quaternion NSlerp(const Quaternion& start, const Quaternion& end, float t)
+    {
+        float dp = start.Dot(end);
+        if (dp >= 0.99f)
+        {
+            return Nlerp(start, end, t);
+        }
+        return Slerp(start, end, t);
+    }
 
 	Matrix4d ToRotationMatrix4d() const
 	{
