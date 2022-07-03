@@ -124,7 +124,12 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 	const int di = Dir.x > 0 ? 1 : (Dir.x < 0 ? -1 : 0);
 	const int dj = Dir.z > 0 ? 1 : (Dir.z < 0 ? -1 : 0);
 
-	if (istart < 0 || iend >= (int)nX - 1 || jstart < 0 || jend >= (int)nZ - 1)
+	if (istart < 0 || istart >= (int)nX - 1 || jstart < 0 || jstart >= (int)nZ - 1)
+	{
+		return false;
+	}
+	
+	if (iend < 0 || iend >= (int)nX - 1 || jend < 0 || jend >= (int)nZ - 1)
 	{
 		return false;
 	}

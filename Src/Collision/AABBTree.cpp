@@ -284,8 +284,8 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
             if (Option.Type != RayCastOption::RAYCAST_PENETRATE)
             {
-                hit1 = hit1 && t1 < Result->hitTimeMin;
-                hit2 = hit2 && t2 < Result->hitTimeMin;
+                hit1 = hit1 && t1 < Result->hitTimeMin && t1 < Option.MaxDist;
+                hit2 = hit2 && t2 < Result->hitTimeMin && t2 < Option.MaxDist;
             }
             
 			if (hit1 && hit2)
