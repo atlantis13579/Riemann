@@ -161,6 +161,12 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Geoms, int NumGeoms, Geom
 		const int index = Geoms[i];
 		Geometry *Geom = GeometryCollection[index];
         assert(Geom);
+		
+		if (Option.Filter && !Option.Filter->IsCollidable(Option.FilterData, Geom->GetFilterData()))
+		{
+			continue;
+		}
+		
 		bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, &Option, Result);
 		if (hit)
 		{
@@ -334,8 +340,6 @@ static bool OverlapGeometry(Geometry *geometry, int* Indices, int NumIndices, Ge
 		return true;
 	}
 
-	// const Box3d& aabb = geometry->GetBoundingVolume_WorldSpace();
-
 	for (int i = 0; i < NumIndices; ++i)
 	{
 		Result->AddTestCount(1);
@@ -343,6 +347,11 @@ static bool OverlapGeometry(Geometry *geometry, int* Indices, int NumIndices, Ge
 		const int index = Indices[i];
 		Geometry* candidate = GeometryCollection[index];
 
+		if (Option.Filter && !Option.Filter->IsCollidable(Option.FilterData, candidate->GetFilterData()))
+		{
+			continue;
+		}
+		
 		bool overlap = geometry->Overlap(candidate);
 		if (overlap)
 		{
@@ -387,7 +396,6 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 			{
 				int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 				int	 nPrimitives = p->GetNumGeometries();
-				// const Box3d& Box = p->GetBoundingVolume();
 				bool overlap = OverlapGeometry(geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Option, Result);
 				if (overlap)
 				{

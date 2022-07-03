@@ -24,9 +24,12 @@ struct RayCastCache
 	FixedStack<uint32_t, RAYCAST_STACK_SIZE>	prevStack;
 };
 
-struct CollisionFilter
+class CollisionFilter
 {
-    unsigned int v0;
+public:
+	virtual ~CollisionFilter() {}
+	virtual bool IsCollidable(const CollisionData &data0, const CollisionData& data1) = 0;
+	static CollisionFilter* CreateDefault(int nLayers, unsigned char *LayerData);
 };
 
 struct RayCastOption
@@ -42,12 +45,14 @@ struct RayCastOption
 		Type = RAYCAST_NEAREST;
 		MaxDist = FLT_MAX;
         MaxObjects = INT_MAX;
+		Filter = nullptr;
 	}
 	RayCastType		Type;
 	RayCastCache	Cache;
-    CollisionFilter Filter;
 	float			MaxDist;
-    int             MaxObjects;
+	int             MaxObjects;
+    CollisionData 	FilterData;
+	CollisionFilter	*Filter;
 };
 
 struct RayCastResult
@@ -109,8 +114,11 @@ struct OverlapOption
 	OverlapOption()
 	{
 		maxOverlaps = 1;
+		Filter = nullptr;
 	}
-	unsigned int		maxOverlaps;
+	unsigned int	maxOverlaps;
+	CollisionData 	FilterData;
+	CollisionFilter	*Filter;
 };
 
 struct OverlapResult

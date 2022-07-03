@@ -2,6 +2,7 @@
 #include "GeometryQuery.h"
 
 #include <algorithm>
+#include <string.h>
 #include "AABBTree.h"
 #include "DynamicAABBTree.h"
 #include "SparseSpatialHash.h"
@@ -74,4 +75,34 @@ bool GeometryQuery::OverlapBox(const Vector3d& Center, const Vector3d& Extent, c
 	m_staticGeometry->Overlap(Box, pp, Option, Result);
 	GeometryFactory::DeleteGeometry(Box);
 	return Result->overlaps;
+}
+
+class DefaultCollisionFilter : public CollisionFilter
+{
+public:
+	DefaultCollisionFilter(int n, unsigned char *pLayerData)
+	{
+		collisionTable.resize(n * n);
+		memset(&collisionTable[0], 0, sizeof(collisionTable[0])*n*n);
+		if (pLayerData)
+		{
+			memcpy(&collisionTable[0], pLayerData, sizeof(collisionTable[0])*n*n);
+		}
+	}
+	
+	virtual bool IsCollidable(const CollisionData &data0, const CollisionData& data1)
+	{
+		assert(0 < data0.v0 && data0.v0 < nLayers);
+		assert(0 < data1.v0 && data1.v0 < nLayers);
+		return collisionTable[data0.v0 * nLayers + data1.v0] == 0;
+	}
+	
+private:
+	int							nLayers;
+	std::vector<unsigned char> 	collisionTable;
+};
+
+CollisionFilter *CollisionFilter::CreateDefault(int nLayers, unsigned char *pLayerData)
+{
+	return new DefaultCollisionFilter(nLayers, pLayerData);
 }

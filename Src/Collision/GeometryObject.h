@@ -15,6 +15,15 @@ struct OverlapResult;
 struct SweepOption;
 struct SweepResult;
 
+struct CollisionData
+{
+	CollisionData()
+	{
+		v0 = 0;
+	}
+	unsigned int v0;
+};
+
 class Geometry
 {
 	friend class GeometryFactory;
@@ -46,6 +55,11 @@ public:
 	ShapeType				GetShapeType() const
 	{
 		return m_Type;
+	}
+	
+	const CollisionData&	GetFilterData() const
+	{
+		return m_FilterData;
 	}
 
 	template<class GEOM_TYPE>
@@ -109,6 +123,7 @@ protected:
 	Box3d					m_BoxWorld;
 	Transform				m_Transform;
 	uint64_t				m_Guid;
+	CollisionData			m_FilterData;
 	void*					m_Entity;
 };
 
