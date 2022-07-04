@@ -48,6 +48,7 @@ public:
 	void SetTransform(const Vector3d& pos, const Quaternion& quat);
 	void SetPosition(const Vector3d& pos);
 	void SetRotation(const Quaternion& quat);
+	void AppendShapes(std::vector<Geometry*>* Shapes);
 
 	// State variable
 	Vector3d	X;				// Position

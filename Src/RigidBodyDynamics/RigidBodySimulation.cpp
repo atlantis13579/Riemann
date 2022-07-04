@@ -78,6 +78,10 @@ void		RigidBodySimulation::Simulate(float dt)
 	MotionIntegration::Integrate(m_RigidDynamics, dt);
 
 	std::vector<Geometry*> Shapes;
+	for (size_t i = 0; i < m_RigidStatics.size(); ++i)
+	{
+		m_RigidStatics[i]->AppendShapes(&Shapes);
+	}
 	for (size_t i = 0; i < m_RigidDynamics.size(); ++i)
 	{
 		m_RigidDynamics[i]->AppendShapes(&Shapes);
@@ -97,10 +101,8 @@ void		RigidBodySimulation::Simulate(float dt)
 
 	WarmStart::Manifolds(manifolds, dt);
 
-	if (m_GravityField)
-	{
-		ApplyGravity();
-	}
+	ApplyGravity();
+	ApplyWind();
 
 	for (size_t i = 0; i < m_Animations.size(); ++i)
 	{

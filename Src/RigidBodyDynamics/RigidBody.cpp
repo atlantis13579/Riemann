@@ -67,3 +67,8 @@ void RigidBodyStatic::SetRotation(const Quaternion& quat)
 	Q = quat;
 	Shape->SetRotationQuat(quat);
 }
+
+void RigidBodyStatic::AppendShapes(std::vector<Geometry*>* Shapes)
+{
+	Shapes->push_back(this->Shape);
+}

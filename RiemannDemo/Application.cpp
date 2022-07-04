@@ -92,7 +92,7 @@ void UpdateCamera()
 void InitScene()
 {
     RigidBodySimulationParam param;
-    param.Gravity = Vector3d(0, -9.8f, 0) * 0.1f;
+    param.Gravity = Vector3d(0, -9.8f, 0) * 0.5f;
     RigidBodyParam rp;
     g_World = new RigidBodySimulation(param);
 
@@ -261,8 +261,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    // InitScene();
-    InitPhysxScene();
+    InitScene();
+    // InitPhysxScene();
     UpdateCamera();
 
     auto last = std::chrono::steady_clock::now();
