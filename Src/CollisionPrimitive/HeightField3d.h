@@ -102,8 +102,8 @@ public:
 
 	int		GetCellTriangle(int i, int j, uint32_t Tris[6]) const
 	{
-		assert(0 <= i && i < nX - 1);
-		assert(0 <= j && j < nZ - 1);
+		assert(0 <= i && i < (int)nX - 1);
+		assert(0 <= j && j < (int)nZ - 1);
 		
 		bool tessFlag = Cells[i + j * nX].Tessellation0 & 0x80;
 		uint16_t i0 = j * nX + i;

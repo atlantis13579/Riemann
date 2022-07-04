@@ -92,7 +92,7 @@ void UpdateCamera()
 void InitScene()
 {
     RigidBodySimulationParam param;
-    param.Gravity = Vector3d(0, -9.8f, 0);
+    param.Gravity = Vector3d(0, -9.8f, 0) * 0.1f;
     RigidBodyParam rp;
     g_World = new RigidBodySimulation(param);
 
@@ -102,14 +102,20 @@ void InitScene()
         Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d::UnitY());
         g_World->CreateRigidBody(plane, rp);
 		g_Renderer->AddGeometry(plane);
+
+		rp.Static = false;
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 10.0f, 0.0f), Vector3d(1.0f, 1.0f, 1.0f));
+		RigidBodyDynamic* p = (RigidBodyDynamic*)g_World->CreateRigidBody(aabb, rp);
+		p->ApplyTorgue(Vector3d(0, -10, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ() * 100.0f);
+
+		g_Renderer->AddGeometry(aabb);
     }
-
-
 
     // Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
     Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
     Vector3d house_pos = Vector3d(-2222.0f, -81.0f, -773.0f);
     Vector3d bridge_pos = Vector3d(737.0f, -29.0f, -1495.0f);
+
     if (0)
     {
         Mesh mesh;
@@ -187,17 +193,7 @@ void InitScene()
         g_Renderer->AddTriMesh(draw_mesh, t, false);
     }
 
-    if (0)
-    {
-        rp.Static = false;
-        Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 10.0f, 0.0f), Vector3d(0.5f, 0.5f, 0.5f));
-        RigidBodyDynamic *p = (RigidBodyDynamic*)g_World->CreateRigidBody(aabb, rp);
-        p->ApplyTorgue(Vector3d(0, -10, 0).Cross(Vector3d::UnitZ())* aabb->GetBoundingVolume_WorldSpace().GetLengthZ() * 100000.0f);
-
-        g_Renderer->AddGeometry(aabb);
-    }
-
-	if (1)
+	if (0)
 	{
 		std::string anim_name = "E:/Temp/Env_Build_Special_FerrisWheel_01_idle.anim";
 		g_World->LoadAnimation(anim_name, anim_name, 10.0f, true);
@@ -240,8 +236,6 @@ void InitPhysxScene()
 
     std::vector<Geometry*> collection;;
     LoadPhysxBinary("../Test/data/fighting_new.xml.bin", &collection);
-
-	// g_World->LoadAnimation("idle", "E:/Temp/idle.anim", 1.0f, true);
 
     for (Geometry* Geom : collection)
     {

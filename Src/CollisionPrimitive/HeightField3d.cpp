@@ -269,8 +269,8 @@ bool HeightField3d::GetCellBV(int i, int j, Box3d &box) const
 
 bool HeightField3d::GetHeightRange(int i, int j, float& minH, float& maxH) const
 {
-	assert(0 <= i && i < nX - 1);
-	assert(0 <= j && j < nZ - 1);
+	assert(0 <= i && i < (int)nX - 1);
+	assert(0 <= j && j < (int)nZ - 1);
 	
 	bool tessFlag = Cells[i + j * nX].Tessellation0 & 0x80;
 	uint16_t i0 = j * nX + i;
@@ -309,8 +309,8 @@ bool HeightField3d::GetHeightRange(int i, int j, float& minH, float& maxH) const
 
 int HeightField3d::GetCellTriangle(int i, int j, Vector3d Tris[6]) const
 {
-	assert(i >= 0 && i < nX - 1);
-	assert(j >= 0 && j < nZ - 1);
+	assert(i >= 0 && i < (int)nX - 1);
+	assert(j >= 0 && j < (int)nZ - 1);
 	
 	bool tessFlag = Cells[i + j * nX].Tessellation0 & 0x80;
 	uint16_t i0 = j * nX + i;

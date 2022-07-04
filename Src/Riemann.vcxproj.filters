@@ -123,6 +123,10 @@
     <ClInclude Include="Tools\PythonModule.h" />
     <ClInclude Include="Tools\libPng.h" />
     <ClInclude Include="Tools\libPPM.h" />
+    <ClInclude Include="Maths\Base.h" />
+    <ClInclude Include="Maths\SIMD_Neon.h" />
+    <ClInclude Include="Maths\SIMD_Simulator.h" />
+    <ClInclude Include="Maths\SIMD_SSE.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">

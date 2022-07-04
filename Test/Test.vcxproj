@@ -150,6 +150,8 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Test.cpp" />
+    <ClCompile Include="Test_Python.cpp" />
+    <ClCompile Include="Test_SIMD.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="build_test.sh" />
