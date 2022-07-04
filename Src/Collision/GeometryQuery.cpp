@@ -1,6 +1,7 @@
 
 #include "GeometryQuery.h"
 
+#include <assert.h>
 #include <algorithm>
 #include <string.h>
 #include "AABBTree.h"
@@ -80,7 +81,19 @@ bool GeometryQuery::OverlapBox(const Vector3d& Center, const Vector3d& Extent, c
 class DefaultCollisionFilter : public CollisionFilter
 {
 public:
-	DefaultCollisionFilter(int n, unsigned char *pLayerData)
+	DefaultCollisionFilter() {}
+	virtual ~DefaultCollisionFilter() {}
+
+	virtual bool IsCollidable(const CollisionData& data0, const CollisionData& data1)
+	{
+		return data0.v0 == data1.v0;
+	}
+};
+
+class CollisionTableFilter : public CollisionFilter
+{
+public:
+	CollisionTableFilter(unsigned int n, unsigned char *pLayerData)
 	{
 		collisionTable.resize(n * n);
 		memset(&collisionTable[0], 0, sizeof(collisionTable[0])*n*n);
@@ -89,6 +102,8 @@ public:
 			memcpy(&collisionTable[0], pLayerData, sizeof(collisionTable[0])*n*n);
 		}
 	}
+
+	virtual ~CollisionTableFilter() {}
 	
 	virtual bool IsCollidable(const CollisionData &data0, const CollisionData& data1)
 	{
@@ -98,11 +113,16 @@ public:
 	}
 	
 private:
-	int							nLayers;
+	unsigned int				nLayers;
 	std::vector<unsigned char> 	collisionTable;
 };
 
-CollisionFilter *CollisionFilter::CreateDefault(int nLayers, unsigned char *pLayerData)
+CollisionFilter* CollisionFilter::CreateDefault()
 {
-	return new DefaultCollisionFilter(nLayers, pLayerData);
+	return new DefaultCollisionFilter();
+}
+
+CollisionFilter *CollisionFilter::CreateCollisionTable(unsigned int nLayers, unsigned char *pLayerData)
+{
+	return new CollisionTableFilter(nLayers, pLayerData);
 }

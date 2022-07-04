@@ -29,7 +29,8 @@ class CollisionFilter
 public:
 	virtual ~CollisionFilter() {}
 	virtual bool IsCollidable(const CollisionData &data0, const CollisionData& data1) = 0;
-	static CollisionFilter* CreateDefault(int nLayers, unsigned char *LayerData);
+	static CollisionFilter* CreateDefault();
+	static CollisionFilter* CreateCollisionTable(unsigned int nLayers, unsigned char *LayerData);
 };
 
 struct RayCastOption
