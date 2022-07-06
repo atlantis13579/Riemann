@@ -50,7 +50,7 @@ public:
 	float Compute(float dt, float Current, float Target)
 	{
 		float e = Target - Current;
-		mIntegral = e * dt;
+		mIntegral += e * dt;
 		mIntegral = std::max(std::min(mIntegral, mParam.IntegralUpper), mParam.IntegralLower);
 		float output = mParam.kP * e + mParam.kI * mIntegral + mParam.kD * (e - mPrevError) / dt;
 		mPrevError = e;
