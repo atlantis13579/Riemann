@@ -652,7 +652,15 @@ void TestFloat16()
 void TestPID()
 {
 	printf("Running TestPID\n");
-	PID_Controller pid(1.0f, 0.1f, 0.01f);
+	PID_Calibration param;
+	param.kP = 0.5f;
+	param.kD = 0.08f;
+	param.kI = 0.1f;
+	param.IntegralLower = -10.0f;
+	param.IntegralUpper = 10.0f;
+	param.Lower = -1.0f;
+	param.Upper = 1.0f;
+	PID_Controller pid(param);
 	float c = 0.0f, t = 1.0f;
 	for (int i = 0; i < 100; ++i)
 	{
@@ -739,16 +747,17 @@ void TestLqr()
 	// State matrix
 	SquareMatrix<2> A = { dt, 1.0f, 0.0f, dt };
 	MatrixMxN<2, 1> B = { 0.0f, 1.0f };
-    
 
 	SquareMatrix<N> Q = SquareMatrix<N>::Identity();
 	SquareMatrix<M> R = SquareMatrix<M>::Identity();
 
 	LinearQuadraticRegulator<N, M> planner(A, B, Q, R);
 	LinearQuadraticRegulator<N, M>::State i = {0.0f, 0.0f};
-	LinearQuadraticRegulator<N, M>::State t = {1.0f, 1.5f };
+	LinearQuadraticRegulator<N, M>::State t = {1.0f, 1.5f};
 
-	auto path = planner.Solve(i, t, 0.033f);
+	std::vector<LinearQuadraticRegulator<N, M>::State> path;
+	bool b = planner.Solve(0.033f, 1.0f, i, t, &path);
+	EXPECT(b);
 
 	return;
 }

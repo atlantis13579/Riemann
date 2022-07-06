@@ -6,62 +6,66 @@
 #include <cmath>
 #include "../Maths/MatrixMxN.h"
 
-template<int StateSize, int InputSize>
+template<int nState, int mInput>
 class LinearQuadraticRegulator
 {
 public:
-    using VectorMx1 = VectorNd<InputSize>;
-    using MatrixNxN = SquareMatrix<StateSize>;
-    using MatrixMxM = SquareMatrix<InputSize>;
-    using InputMatrix = MatrixMxN<StateSize, InputSize>;
-    using GainMatrix = MatrixMxN<InputSize, StateSize>;
-
-    using State = VectorNd<StateSize>;
+    using VectorMx1 = VectorNd<mInput>;
+    using MatrixNxN = SquareMatrix<nState>;
+    using MatrixMxM = SquareMatrix<mInput>;
+    using InputMatrix = MatrixMxN<nState, mInput>;
+    using GainMatrix = MatrixMxN<mInput, nState>;
+    using State = VectorNd<nState>;
 
 public:
     LinearQuadraticRegulator(MatrixNxN _A, InputMatrix _B, MatrixNxN _Q, MatrixMxM _R)
         : A(_A), B(_B), Q(_Q), R(_R)
     {
+        mTolerance = 0.1f;
         K = ComputeGain();
     }
 
-    std::vector<State> Solve(State initial, State target, float dt)
+    bool Solve(float dt, float max_time, State initial, State target, std::vector<State> *path)
     {
-        std::vector<State> path{ initial };
+        if (path == nullptr)
+        {
+            return false;
+        }
+        path->clear();
+        path->push_back(initial);
 
-        State x = initial - target;
-        VectorMx1 u;
+        State e = initial - target;
 
-        bool path_found = false;
-		float time = 0;
-
-        while (time < max_time) {
+		float time = 0.0f;
+        while (time < max_time)
+        {
             time += dt;
 
-            u = Input(x);
-            x = A * x + B * u;
+            VectorMx1 u = Input(e);
+            e = A * e + B * u;
 
-            path.push_back(x + target);
+            path->push_back(e + target);
 
-            if (x.SquaredNorm() <= goal_dist * goal_dist) {
-                path_found = true;
-                break;
+            if (e.SquaredNorm() <= mTolerance * mTolerance)
+            {
+                return true;
             }
         }
 
-        if (!path_found) {
-            return {};
-        }
-
-        return std::move(path);
+        path->clear();
+        return false;
     }
 
-    void SetTimeLimit(double limit) { max_time = limit; }
-
-    void SetFinalPositionTolerance(double tol) { goal_dist = tol; }
+    void SetTolerance(double tol)
+    {
+        mTolerance = tol;
+    }
 
 private:
-    VectorMx1 Input(State x) const { return -K * x; }
+    VectorMx1 Input(State x) const
+    {
+        return -K * x;
+    }
 
     GainMatrix ComputeGain()
     {
@@ -73,8 +77,8 @@ private:
     MatrixNxN SolveDARE(int max_iter, float tor) const
     {
         MatrixNxN X = Q, Xn = Q;
-        auto AT = A.Transpose();
-        auto BT = B.Transpose();
+        MatrixNxN AT = A.Transpose();
+        GainMatrix BT = B.Transpose();
         for (int i = 0; i < max_iter; ++i)
         {
 			Xn = AT * X * A - AT * X * B * (R + BT * X * B).Inverse() * BT * X * A + Q;
@@ -91,6 +95,5 @@ private:
     MatrixMxM R;
     GainMatrix K;
 
-    float max_time{ 100.0f };
-    float goal_dist{ 0.1f };
+    float mTolerance;
 };

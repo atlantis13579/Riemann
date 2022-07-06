@@ -9,8 +9,8 @@ extern void TestSIMD();
 int main()
 {
 	printf("Running ...\n");
-	// TestMainEntry();
-	TestPython();
+	TestMainEntry();
+	// TestPython();
 	printf("All Test Done\n");
 	return 0;
 }

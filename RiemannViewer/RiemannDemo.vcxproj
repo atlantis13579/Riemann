@@ -27,6 +27,7 @@
     <ProjectGuid>{ea62df3f-dac5-41d8-aec3-a13ea4b8911f}</ProjectGuid>
     <RootNamespace>RiemannDemo</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>RiemannViewer</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
