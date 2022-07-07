@@ -150,3 +150,65 @@ Vector3d CubicHermite::Calculate(const Vector3d& p0, const Vector3d& p1, const V
 	Vector3d Pos = A * p0 + B * t0 + C * p1 + D * t1;
 	return Pos;
 }
+
+// https://en.wikipedia.org/wiki/Cubic_Hermite_spline#Catmull%E2%80%93Rom_spline
+Vector3d CatmullRom::Calculate(const Vector3d& p0, const Vector3d& p1, const Vector3d& p2, const Vector3d& p3, float t)
+{
+	t = std::max(0.0f, std::min(t, 1.0f));
+	Vector3d a = 2.0f * p1;
+	Vector3d b = p2 - p0;
+	Vector3d c = 2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3;
+	Vector3d d = -p0 + 3.0f * p1 - 3.0f * p2 + p3;
+	Vector3d Pos = 0.5f * (a + (b * t) + (c * t * t) + (d * t * t * t));
+	return Pos;
+}
+
+// https://qroph.github.io/2018/07/30/smooth-paths-using-catmull-rom-splines.html
+std::vector<Vector3d> CatmullRom::Smoothing(const std::vector<Vector3d>& points, float dlen, float alpha, float tension)
+{
+	std::vector<Vector3d> smoothed;
+	if (points.size() <= 1)
+	{
+		return std::move(smoothed);
+	}
+
+	for (size_t i = 0; i < points.size() - 1; ++i)
+	{
+		Vector3d p0 = i == 0 ? 2.0f * points[0] - points[1] : points[i - 1];
+		Vector3d p1 = points[i];
+		Vector3d p2 = points[i+1];
+		Vector3d p3 = i == points.size() - 2 ? 2.0f * points[points.size() - 1] - points[points.size() - 2] : points[i + 2];
+
+		if ((p1 - p2).SquareLength() < dlen * dlen)
+		{
+			smoothed.push_back(p1);
+			continue;
+		}
+
+		float t01 = powf((p0 - p1).Length(), alpha);
+		float t12 = powf((p1 - p2).Length(), alpha);
+		float t23 = powf((p2 - p3).Length(), alpha);
+
+		Vector3d m1 = (1.0f - tension) *
+			(p2 - p1 + t12 * ((p1 - p0) / t01 - (p2 - p0) / (t01 + t12)));
+		Vector3d m2 = (1.0f - tension) *
+			(p2 - p1 + t12 * ((p3 - p2) / t23 - (p3 - p1) / (t12 + t23)));
+
+		Vector3d a = 2.0f * (p1 - p2) + m1 + m2;
+		Vector3d b = -3.0f * (p1 - p2) - m1 - m1 - m2;
+		Vector3d c = m1;
+		Vector3d d = p1;
+
+		int n = (int)((p1 - p2).Length() / dlen + 0.5f);
+		for (int i = 0; i < n; ++i)
+		{
+			float t = i * 1.0f / n;
+			Vector3d point = a * t * t * t + b * t * t + c * t + d;
+			smoothed.push_back(point);
+		}
+	}
+
+	smoothed.push_back(points.back());
+	return std::move(smoothed);
+
+}

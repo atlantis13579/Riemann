@@ -8,7 +8,6 @@
 #include "../Src/LinearSystem/JacobiIteration_CPU.h"
 #include "../Src/LinearSystem/GaussSeidelIteration_CPU.h"
 #include "../Src/LinearSystem/LUFactorization.h"
-#include "../Src/Maths/Bezier.h"
 #include "../Src/Maths/Tensor.h"
 #include "../Src/Maths/Box3d.h"
 #include "../Src/Maths/Maths.h"
@@ -34,6 +33,7 @@
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
+#include "../Src/Geometry/Bezier.h"
 #include "../Src/Vehicle/PID.h"
 #include "../Src/Vehicle/LQR.h"
 
@@ -362,6 +362,22 @@ void TestAABBTree()
 		}
 	}
 
+	return;
+}
+
+void TestCatmullRom()
+{
+	std::vector<Vector3d> paths;
+	paths.emplace_back(0.0f, 0.0f, 0.0f);
+	paths.emplace_back(0.0f, 1.0f, 0.0f);
+	paths.emplace_back(2.0f, 1.0f, 0.0f);
+
+	std::vector<Vector3d> smoothed = CatmullRom::Smoothing(paths, 0.2f);
+
+	EXPECT(smoothed.size() == 16);
+	EXPECT(smoothed[0] == paths[0]);
+	EXPECT(smoothed[5] == paths[1]);
+	EXPECT(smoothed[15] == paths[2]);
 	return;
 }
 
@@ -773,6 +789,7 @@ void TestMainEntry()
 	TestBitmap();
 	TestAABBTree();
 	TestGeometryQuery();
+	TestCatmullRom();
 	TestTensor();
 	TestSAP();
 	TestSAPInc();

@@ -58,7 +58,7 @@
     <ClCompile Include="ImageSpace\ImageProcessing.cpp" />
     <ClCompile Include="LinearSystem\PolarDecomposition.cpp" />
     <ClCompile Include="LinearSystem\SingularValueDecomposition.cpp" />
-    <ClCompile Include="Maths\Bezier.cpp" />
+    <ClCompile Include="Geometry\Bezier.cpp" />
     <ClCompile Include="PositionBasedDynamics\PositionBasedDynamicsSolver.cpp" />
     <ClCompile Include="RigidBodyDynamics\RigidBodySimulation.cpp" />
     <ClCompile Include="RigidBodyDynamics\MotionIntegration.cpp" />
@@ -156,7 +156,7 @@
     <ClInclude Include="LinearSystem\SingularValueDecomposition.h" />
     <ClInclude Include="Maths\Box3d.h" />
     <ClInclude Include="Maths\Array.h" />
-    <ClInclude Include="Maths\Bezier.h" />
+    <ClInclude Include="Geometry\Bezier.h" />
     <ClInclude Include="Maths\Frustum.h" />
     <ClInclude Include="Maths\Maths.h" />
     <ClInclude Include="Maths\Matrix2d.h" />

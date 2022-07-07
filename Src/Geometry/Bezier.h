@@ -2,7 +2,7 @@
 #pragma once
 
 #include <vector>
-#include "Vector3d.h"
+#include "../Maths/Vector3d.h"
 
 class Bezier
 {
@@ -20,4 +20,13 @@ class CubicHermite
 {
 public:
 	static Vector3d	Calculate(const Vector3d& p0, const Vector3d& p1, const Vector3d& t0, const Vector3d& t1, float t);
+};
+
+class CatmullRom
+{
+public:
+	static Vector3d	Calculate(const Vector3d& p0, const Vector3d& p1, const Vector3d& t0, const Vector3d& t1, float t);
+
+	//  A good value for alpha is 0.5 which gives us a centripetal Catmull-Rom spline, and for tension a value 0 is a good choice
+	static std::vector<Vector3d>    Smoothing(const std::vector<Vector3d>& points, float dt, float alpha = 0.5f, float tension = 0.0f);
 };

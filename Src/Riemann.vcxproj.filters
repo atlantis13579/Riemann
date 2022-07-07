@@ -20,7 +20,7 @@
     <ClInclude Include="Maths\Matrix3d.h" />
     <ClInclude Include="Maths\Matrix4d.h" />
     <ClInclude Include="Maths\Quaternion.h" />
-    <ClInclude Include="Maths\Bezier.h" />
+    <ClInclude Include="Geometry\Bezier.h" />
     <ClInclude Include="Solver\ConjugateGradientSolver.h" />
     <ClInclude Include="Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />
@@ -132,7 +132,7 @@
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
       <Filter>Src</Filter>
     </ClCompile>
-    <ClCompile Include="Maths\Bezier.cpp" />
+    <ClCompile Include="Geometry\Bezier.cpp" />
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
