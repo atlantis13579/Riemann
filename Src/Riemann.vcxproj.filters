@@ -20,7 +20,6 @@
     <ClInclude Include="Maths\Matrix3d.h" />
     <ClInclude Include="Maths\Matrix4d.h" />
     <ClInclude Include="Maths\Quaternion.h" />
-    <ClInclude Include="Geometry\Bezier.h" />
     <ClInclude Include="Solver\ConjugateGradientSolver.h" />
     <ClInclude Include="Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="Solver\ProjectiveDynamicsSolver.h" />
@@ -127,12 +126,12 @@
     <ClInclude Include="Maths\SIMD_Neon.h" />
     <ClInclude Include="Maths\SIMD_Simulator.h" />
     <ClInclude Include="Maths\SIMD_SSE.h" />
+    <ClInclude Include="Geometry\Spline.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
       <Filter>Src</Filter>
     </ClCompile>
-    <ClCompile Include="Geometry\Bezier.cpp" />
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="Solver\ProjectiveDynamicsSolver.cpp" />
     <ClCompile Include="Geometry\ConvexHull2D.cpp" />
@@ -184,6 +183,7 @@
     <ClCompile Include="Geometry\Polygon2D.cpp" />
     <ClCompile Include="Geometry\Polygon3D.cpp" />
     <ClCompile Include="Tools\PythonModule.cpp" />
+    <ClCompile Include="Geometry\Spline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="build_so.sh" />

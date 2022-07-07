@@ -1,5 +1,5 @@
 
-#include "Bezier.h"
+#include "Spline.h"
 
 #include "math.h"
 #include <functional>
