@@ -345,6 +345,16 @@ public:
 		return;
 	}
 
+	static Vector3d		ForwardVector(const Quaternion& quat)
+	{
+		return quat * Vector3d::UnitZ();
+	}
+
+	static Vector3d		UpVector(const Quaternion& quat)
+	{
+		return quat * Vector3d::UnitY();
+	}
+
 private:
 	Vector3d	m_Translation;
 	Quaternion	m_Rotation;
@@ -355,3 +365,4 @@ private:
 	Matrix4d	m_WorldMatrix;
 	Matrix4d	m_InvWorldMatrix;
 };
+

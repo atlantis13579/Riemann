@@ -25,7 +25,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{ea62df3f-dac5-41d8-aec3-a13ea4b8911f}</ProjectGuid>
-    <RootNamespace>RiemannDemo</RootNamespace>
+    <RootNamespace>RiemannViewer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>RiemannViewer</ProjectName>
   </PropertyGroup>
