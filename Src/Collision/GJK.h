@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Minkowski.h"
+#include "MinkowskiSum.h"
 #include "../Maths/Vector3d.h"
 #include "Simplex.h"
 

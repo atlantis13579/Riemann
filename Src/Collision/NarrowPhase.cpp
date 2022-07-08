@@ -2,40 +2,9 @@
 #include "NarrowPhase.h"
 #include "Contact.h"
 #include "GeometryObject.h"
+#include "GeometryDifference.h"
 #include "EPA.h"
 #include "GJK.h"
-
-class GeometrySum : public MinkowskiSum
-{
-public:
-	GeometrySum() {}
-	GeometrySum(Geometry* _g1, Geometry* _g2)
-	{
-		Geom1 = _g1;
-		Geom2 = _g2;
-	}
-
-	Geometry* Geom1;
-	Geometry* Geom2;
-
-	inline Vector3d Support1(const Vector3d& Dir)
-	{
-		return Geom1->GetSupport_WorldSpace(Dir);
-	}
-
-	inline Vector3d Support2(const Vector3d& Dir)
-	{
-		return Geom2->GetSupport_WorldSpace(Dir);
-	}
-
-	virtual Vector3d Support(const Vector3d& Dir) override
-	{
-		Vector3d support1 = Support1(Dir);
-		Vector3d support2 = Support2(-Dir);
-		Vector3d diff = support1 - support2;
-		return diff;
-	}
-};
 
 class NarrowPhase_GJKEPA : public NarrowPhase
 {
@@ -66,19 +35,16 @@ public:
 
 	bool Penetration(Geometry* Geom1, Geometry* Geom2, ContactResult& result)
 	{
-		Vector3d position1 = Geom1->GetBoundingVolume_WorldSpace().GetCenter();
-		Vector3d position2 = Geom2->GetBoundingVolume_WorldSpace().GetCenter();
-		Vector3d guess = position1 - position2;
-
-		// result
-		result.WitnessLocal1 = result.WitnessLocal2 = result.WitnessWorld1 = result.WitnessWorld2 = Vector3d::Zero();
-		result.status = ContactResult::Separated;
-
-		GeometrySum shape(Geom1, Geom2);
+		GeometryDifference shape(Geom1, Geom2);
+		Vector3d guess = shape.GetCenter();
 
 		GJK gjk;
 		GJK_status gjk_status = gjk.Solve(&shape, -guess);
-
+		
+		// result
+		result.WitnessLocal1 = result.WitnessLocal2 = result.WitnessWorld1 = result.WitnessWorld2 = Vector3d::Zero();
+		result.status = ContactResult::Separated;
+		
 		switch (gjk_status)
 		{
 

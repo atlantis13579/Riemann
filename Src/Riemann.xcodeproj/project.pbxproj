@@ -12,6 +12,7 @@
 		AD1C0F60287046E20060A1EE /* SIMD_Simulator.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5F287046E20060A1EE /* SIMD_Simulator.h */; };
 		AD9AF4E12878E5D000DD78C9 /* Spline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */; };
 		AD9AF4E22878E5D000DD78C9 /* Spline.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9AF4E02878E5D000DD78C9 /* Spline.h */; };
+		ADC0F6B52878EBC700CE5173 /* GeometryDifference.h in Sources */ = {isa = PBXBuildFile; fileRef = ADC0F6B42878EBC700CE5173 /* GeometryDifference.h */; };
 		ADC73022286DCF4300364E92 /* Base.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73021286DCF4300364E92 /* Base.h */; };
 		ADC73026286DD3BC00364E92 /* PythonModule.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73024286DD3BC00364E92 /* PythonModule.h */; };
 		ADC73027286DD3BC00364E92 /* PythonModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADC73025286DD3BC00364E92 /* PythonModule.cpp */; };
@@ -28,7 +29,7 @@
 		ADDE131F2820AE0700809D36 /* AABBTreeInference.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13002820AE0700809D36 /* AABBTreeInference.cpp */; };
 		ADDE13202820AE0700809D36 /* GeometryObject.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13012820AE0700809D36 /* GeometryObject.h */; };
 		ADDE13212820AE0700809D36 /* GeometryIntersection.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13022820AE0700809D36 /* GeometryIntersection.h */; };
-		ADDE13222820AE0700809D36 /* Minkowski.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13032820AE0700809D36 /* Minkowski.h */; };
+		ADDE13222820AE0700809D36 /* MinkowskiSum.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13032820AE0700809D36 /* MinkowskiSum.h */; };
 		ADDE13232820AE0700809D36 /* Simplex.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13042820AE0700809D36 /* Simplex.h */; };
 		ADDE13242820AE0700809D36 /* SparseSpatialHash.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13052820AE0700809D36 /* SparseSpatialHash.h */; };
 		ADDE13252820AE0700809D36 /* AABBTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13062820AE0700809D36 /* AABBTree.cpp */; };
@@ -183,6 +184,7 @@
 		AD1C0F5F287046E20060A1EE /* SIMD_Simulator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_Simulator.h; sourceTree = "<group>"; };
 		AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Spline.cpp; sourceTree = "<group>"; };
 		AD9AF4E02878E5D000DD78C9 /* Spline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Spline.h; sourceTree = "<group>"; };
+		ADC0F6B42878EBC700CE5173 /* GeometryDifference.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeometryDifference.h; sourceTree = "<group>"; };
 		ADC73021286DCF4300364E92 /* Base.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Base.h; sourceTree = "<group>"; };
 		ADC73024286DD3BC00364E92 /* PythonModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PythonModule.h; sourceTree = "<group>"; };
 		ADC73025286DD3BC00364E92 /* PythonModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PythonModule.cpp; sourceTree = "<group>"; };
@@ -199,7 +201,7 @@
 		ADDE13002820AE0700809D36 /* AABBTreeInference.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AABBTreeInference.cpp; sourceTree = "<group>"; };
 		ADDE13012820AE0700809D36 /* GeometryObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GeometryObject.h; sourceTree = "<group>"; };
 		ADDE13022820AE0700809D36 /* GeometryIntersection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GeometryIntersection.h; sourceTree = "<group>"; };
-		ADDE13032820AE0700809D36 /* Minkowski.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Minkowski.h; sourceTree = "<group>"; };
+		ADDE13032820AE0700809D36 /* MinkowskiSum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MinkowskiSum.h; sourceTree = "<group>"; };
 		ADDE13042820AE0700809D36 /* Simplex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Simplex.h; sourceTree = "<group>"; };
 		ADDE13052820AE0700809D36 /* SparseSpatialHash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SparseSpatialHash.h; sourceTree = "<group>"; };
 		ADDE13062820AE0700809D36 /* AABBTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AABBTree.cpp; sourceTree = "<group>"; };
@@ -384,8 +386,9 @@
 				ADDE13012820AE0700809D36 /* GeometryObject.h */,
 				ADDE130E2820AE0700809D36 /* GeometryQuery.cpp */,
 				ADDE13112820AE0700809D36 /* GeometryQuery.h */,
+				ADC0F6B42878EBC700CE5173 /* GeometryDifference.h */,
 				ADDE13162820AE0700809D36 /* GJK.h */,
-				ADDE13032820AE0700809D36 /* Minkowski.h */,
+				ADDE13032820AE0700809D36 /* MinkowskiSum.h */,
 				ADDE12FB2820AE0700809D36 /* NarrowPhase.cpp */,
 				ADDE12FC2820AE0700809D36 /* NarrowPhase.h */,
 				ADDE130B2820AE0700809D36 /* ProximityGrid.h */,
@@ -757,7 +760,7 @@
 				ADDE14822820AE3100809D36 /* Vector4d.h in Headers */,
 				ADDE14532820AE3100809D36 /* ConjugateGradientSolver.h in Headers */,
 				ADDE14672820AE3100809D36 /* Serialization.h in Headers */,
-				ADDE13222820AE0700809D36 /* Minkowski.h in Headers */,
+				ADDE13222820AE0700809D36 /* MinkowskiSum.h in Headers */,
 				ADDE149B2820AE3100809D36 /* DenseMatrix.h in Headers */,
 				ADDE148B2820AE3100809D36 /* Array.h in Headers */,
 				ADDE14602820AE3100809D36 /* Polygon2D.h in Headers */,
@@ -846,6 +849,7 @@
 				ADDE144B2820AE3100809D36 /* NumericalODESolver.cpp in Sources */,
 				ADDE147E2820AE3100809D36 /* ForceField.cpp in Sources */,
 				ADDE132D2820AE0700809D36 /* GeometryQuery.cpp in Sources */,
+				ADC0F6B52878EBC700CE5173 /* GeometryDifference.h in Sources */,
 				ADDE13282820AE0700809D36 /* AABBTreeOffline.cpp in Sources */,
 				ADDE144F2820AE3100809D36 /* NewtonRaphsonIteration.cpp in Sources */,
 				ADC73027286DD3BC00364E92 /* PythonModule.cpp in Sources */,

@@ -15,9 +15,52 @@
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Collision/SAP.h"
 #include "../Src/Collision/SAP_Incremental.h"
+#include "../Src/Collision/GeometryDifference.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
 
+bool GJK_Solve(Geometry *Geom1, Geometry* Geom2)
+{
+	GeometryDifference shape(Geom1, Geom2);
+	Vector3d guess = shape.GetCenter();
+
+	GJK gjk;
+	GJK_status gjk_status = gjk.Solve(&shape, -guess);
+	if (gjk_status == GJK_status::Inside)
+	{
+		return true;
+	}
+	return false;
+}
+
+void TestGJK()
+{
+	printf("Running TestGJK\n");
+	
+	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
+	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
+	EXPECT(GJK_Solve(obb1, obb2));
+	
+	obb2->SetPosition(Vector3d(0.5f, 0.0f, 0.0f));
+	EXPECT(GJK_Solve(obb1, obb2));
+	
+	obb2->SetPosition(Vector3d(2.1f, 0.0f, 0.0f));
+	EXPECT(!GJK_Solve(obb1, obb2));
+	
+	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3d(0.0f, 0.0, 0.0f), 2.0f);
+	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3d(1.0f, 0.0, 0.0f), 2.0f);
+	EXPECT(GJK_Solve(sp1, sp2));
+	
+	sp2->SetPosition(Vector3d(5.0f, 0.0f, 0.0f));
+	EXPECT(!GJK_Solve(sp1, sp2));
+	
+	return;
+}
+
+void TestEPA()
+{
+	printf("Running TestGJK\n");
+}
 
 void TestRTree1()
 {
@@ -366,6 +409,8 @@ void TestSAPInc()
 
 void TestCollision()
 {
+	TestGJK();
+	TestEPA();
 	TestRayAABB();
 	TestRTree1();
 	TestRTree2();
