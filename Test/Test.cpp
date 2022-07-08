@@ -33,7 +33,7 @@
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
-#include "../Src/Geometry/Bezier.h"
+#include "../Src/Geometry/Spline.h"
 #include "../Src/Vehicle/PID.h"
 #include "../Src/Vehicle/LQR.h"
 
@@ -668,15 +668,7 @@ void TestFloat16()
 void TestPID()
 {
 	printf("Running TestPID\n");
-	PID_Calibration param;
-	param.kP = 0.5f;
-	param.kD = 0.08f;
-	param.kI = 0.1f;
-	param.IntegralLower = -10.0f;
-	param.IntegralUpper = 10.0f;
-	param.Lower = -1.0f;
-	param.Upper = 1.0f;
-	PID_Controller pid(param);
+	PID_Controller pid(0.5f, 0.08f, 0.1f, -10.0f, 10.0f, -1.0f, 1.0f);
 	float c = 0.0f, t = 1.0f;
 	for (int i = 0; i < 100; ++i)
 	{

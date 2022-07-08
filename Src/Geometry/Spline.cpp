@@ -166,12 +166,12 @@ Vector3d CatmullRom::Calculate(const Vector3d& p0, const Vector3d& p1, const Vec
 // https://qroph.github.io/2018/07/30/smooth-paths-using-catmull-rom-splines.html
 std::vector<Vector3d> CatmullRom::Smoothing(const std::vector<Vector3d>& points, float dlen, float alpha, float tension)
 {
-	std::vector<Vector3d> smoothed;
 	if (points.size() <= 1)
 	{
-		return std::move(smoothed);
+		return points;
 	}
 
+	std::vector<Vector3d> smoothed;
 	for (size_t i = 0; i < points.size() - 1; ++i)
 	{
 		Vector3d p0 = i == 0 ? 2.0f * points[0] - points[1] : points[i - 1];
@@ -210,5 +210,4 @@ std::vector<Vector3d> CatmullRom::Smoothing(const std::vector<Vector3d>& points,
 
 	smoothed.push_back(points.back());
 	return std::move(smoothed);
-
 }
