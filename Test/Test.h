@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 inline void BreakPoint()
 {
 	int __nbp = 0;

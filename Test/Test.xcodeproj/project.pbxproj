@@ -7,8 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AD0168F12878E01200BA7921 /* Test_Physics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0168ED2878E01200BA7921 /* Test_Physics.cpp */; };
+		AD0168F22878E01200BA7921 /* Test_Maths.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0168EE2878E01200BA7921 /* Test_Maths.cpp */; };
+		AD0168F32878E01200BA7921 /* Test_Geometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0168EF2878E01200BA7921 /* Test_Geometry.cpp */; };
+		AD0168F42878E01200BA7921 /* Test_Collision.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0168F02878E01200BA7921 /* Test_Collision.cpp */; };
+		AD66E85E2878E44E004F0267 /* Test_Matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD66E85D2878E44E004F0267 /* Test_Matrix.cpp */; };
+		AD66E8602878E51F004F0267 /* Test_Vehicle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD66E85F2878E51F004F0267 /* Test_Vehicle.cpp */; };
 		ADA67B38287037D900B037DB /* Test_SIMD.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADA67B36287037D900B037DB /* Test_SIMD.cpp */; };
 		ADA67B3A287037F600B037DB /* Test_Python.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADA67B39287037F600B037DB /* Test_Python.cpp */; };
+		ADC0F6B32878E7E800CE5173 /* Test_Image.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADC0F6B22878E7E800CE5173 /* Test_Image.cpp */; };
 		ADDE129C2820ABEF00809D36 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE129A2820ABEF00809D36 /* main.cpp */; };
 		ADDE129D2820ABEF00809D36 /* Test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE129B2820ABEF00809D36 /* Test.cpp */; };
 		ADDE14AA2820B0EE00809D36 /* libRiemann.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADDE14A92820B0EE00809D36 /* libRiemann.a */; };
@@ -27,9 +34,16 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AD0168ED2878E01200BA7921 /* Test_Physics.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Physics.cpp; sourceTree = "<group>"; };
+		AD0168EE2878E01200BA7921 /* Test_Maths.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Maths.cpp; sourceTree = "<group>"; };
+		AD0168EF2878E01200BA7921 /* Test_Geometry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Geometry.cpp; sourceTree = "<group>"; };
+		AD0168F02878E01200BA7921 /* Test_Collision.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Collision.cpp; sourceTree = "<group>"; };
 		AD2C31C82820AB10007157B6 /* Test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Test; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD66E85D2878E44E004F0267 /* Test_Matrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Matrix.cpp; sourceTree = "<group>"; };
+		AD66E85F2878E51F004F0267 /* Test_Vehicle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Vehicle.cpp; sourceTree = "<group>"; };
 		ADA67B36287037D900B037DB /* Test_SIMD.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Test_SIMD.cpp; sourceTree = "<group>"; };
 		ADA67B39287037F600B037DB /* Test_Python.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Python.cpp; sourceTree = "<group>"; };
+		ADC0F6B22878E7E800CE5173 /* Test_Image.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Image.cpp; sourceTree = "<group>"; };
 		ADC73023286DD0AB00364E92 /* Test.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Test.h; sourceTree = "<group>"; };
 		ADDE129A2820ABEF00809D36 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		ADDE129B2820ABEF00809D36 /* Test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test.cpp; sourceTree = "<group>"; };
@@ -55,8 +69,15 @@
 				ADDE14A82820B0EE00809D36 /* Frameworks */,
 				ADDE129A2820ABEF00809D36 /* main.cpp */,
 				ADDE129B2820ABEF00809D36 /* Test.cpp */,
+				AD0168F02878E01200BA7921 /* Test_Collision.cpp */,
+				AD0168EF2878E01200BA7921 /* Test_Geometry.cpp */,
+				ADC0F6B22878E7E800CE5173 /* Test_Image.cpp */,
+				AD0168EE2878E01200BA7921 /* Test_Maths.cpp */,
+				AD66E85D2878E44E004F0267 /* Test_Matrix.cpp */,
+				AD0168ED2878E01200BA7921 /* Test_Physics.cpp */,
 				ADA67B39287037F600B037DB /* Test_Python.cpp */,
 				ADA67B36287037D900B037DB /* Test_SIMD.cpp */,
+				AD66E85F2878E51F004F0267 /* Test_Vehicle.cpp */,
 				ADC73023286DD0AB00364E92 /* Test.h */,
 			);
 			sourceTree = "<group>";
@@ -135,9 +156,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				ADDE129C2820ABEF00809D36 /* main.cpp in Sources */,
+				AD0168F22878E01200BA7921 /* Test_Maths.cpp in Sources */,
+				AD66E8602878E51F004F0267 /* Test_Vehicle.cpp in Sources */,
 				ADA67B3A287037F600B037DB /* Test_Python.cpp in Sources */,
 				ADDE129D2820ABEF00809D36 /* Test.cpp in Sources */,
 				ADA67B38287037D900B037DB /* Test_SIMD.cpp in Sources */,
+				ADC0F6B32878E7E800CE5173 /* Test_Image.cpp in Sources */,
+				AD0168F12878E01200BA7921 /* Test_Physics.cpp in Sources */,
+				AD66E85E2878E44E004F0267 /* Test_Matrix.cpp in Sources */,
+				AD0168F42878E01200BA7921 /* Test_Collision.cpp in Sources */,
+				AD0168F32878E01200BA7921 /* Test_Geometry.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

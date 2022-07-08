@@ -1,5 +1,6 @@
 #pragma once
 
+#include <float.h>
 #include <algorithm>
 
 // Proportional¨CIntegral¨CDerivative Controller

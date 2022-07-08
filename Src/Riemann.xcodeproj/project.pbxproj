@@ -10,6 +10,8 @@
 		AD1C0F5D287042520060A1EE /* SIMD_SSE.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5B287042520060A1EE /* SIMD_SSE.h */; };
 		AD1C0F5E287042520060A1EE /* SIMD_Neon.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5C287042520060A1EE /* SIMD_Neon.h */; };
 		AD1C0F60287046E20060A1EE /* SIMD_Simulator.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5F287046E20060A1EE /* SIMD_Simulator.h */; };
+		AD9AF4E12878E5D000DD78C9 /* Spline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */; };
+		AD9AF4E22878E5D000DD78C9 /* Spline.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9AF4E02878E5D000DD78C9 /* Spline.h */; };
 		ADC73022286DCF4300364E92 /* Base.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73021286DCF4300364E92 /* Base.h */; };
 		ADC73026286DD3BC00364E92 /* PythonModule.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73024286DD3BC00364E92 /* PythonModule.h */; };
 		ADC73027286DD3BC00364E92 /* PythonModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADC73025286DD3BC00364E92 /* PythonModule.cpp */; };
@@ -132,8 +134,6 @@
 		ADDE14812820AE3100809D36 /* Matrix4d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14052820AE3100809D36 /* Matrix4d.h */; };
 		ADDE14822820AE3100809D36 /* Vector4d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14062820AE3100809D36 /* Vector4d.h */; };
 		ADDE14832820AE3100809D36 /* Frustum.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14072820AE3100809D36 /* Frustum.h */; };
-		ADDE14842820AE3100809D36 /* Bezier.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE14082820AE3100809D36 /* Bezier.cpp */; };
-		ADDE14852820AE3100809D36 /* Bezier.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14092820AE3100809D36 /* Bezier.h */; };
 		ADDE14862820AE3100809D36 /* Quaternion.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE140A2820AE3100809D36 /* Quaternion.h */; };
 		ADDE14872820AE3100809D36 /* Box3d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE140B2820AE3100809D36 /* Box3d.h */; };
 		ADDE14882820AE3100809D36 /* Maths.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE140C2820AE3100809D36 /* Maths.h */; };
@@ -181,6 +181,8 @@
 		AD1C0F5B287042520060A1EE /* SIMD_SSE.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_SSE.h; sourceTree = "<group>"; };
 		AD1C0F5C287042520060A1EE /* SIMD_Neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_Neon.h; sourceTree = "<group>"; };
 		AD1C0F5F287046E20060A1EE /* SIMD_Simulator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_Simulator.h; sourceTree = "<group>"; };
+		AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Spline.cpp; sourceTree = "<group>"; };
+		AD9AF4E02878E5D000DD78C9 /* Spline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Spline.h; sourceTree = "<group>"; };
 		ADC73021286DCF4300364E92 /* Base.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Base.h; sourceTree = "<group>"; };
 		ADC73024286DD3BC00364E92 /* PythonModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PythonModule.h; sourceTree = "<group>"; };
 		ADC73025286DD3BC00364E92 /* PythonModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PythonModule.cpp; sourceTree = "<group>"; };
@@ -303,8 +305,6 @@
 		ADDE14052820AE3100809D36 /* Matrix4d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Matrix4d.h; sourceTree = "<group>"; };
 		ADDE14062820AE3100809D36 /* Vector4d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Vector4d.h; sourceTree = "<group>"; };
 		ADDE14072820AE3100809D36 /* Frustum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Frustum.h; sourceTree = "<group>"; };
-		ADDE14082820AE3100809D36 /* Bezier.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Bezier.cpp; sourceTree = "<group>"; };
-		ADDE14092820AE3100809D36 /* Bezier.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Bezier.h; sourceTree = "<group>"; };
 		ADDE140A2820AE3100809D36 /* Quaternion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Quaternion.h; sourceTree = "<group>"; };
 		ADDE140B2820AE3100809D36 /* Box3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Box3d.h; sourceTree = "<group>"; };
 		ADDE140C2820AE3100809D36 /* Maths.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Maths.h; sourceTree = "<group>"; };
@@ -479,6 +479,8 @@
 				ADDE13E42820AE3100809D36 /* Polygon3D.h */,
 				ADDE13DE2820AE3100809D36 /* SparseVoxelField.cpp */,
 				ADDE13D92820AE3100809D36 /* SparseVoxelField.h */,
+				AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */,
+				AD9AF4E02878E5D000DD78C9 /* Spline.h */,
 				ADDE13DD2820AE3100809D36 /* Tetrahedral.cpp */,
 				ADDE13D72820AE3100809D36 /* Tetrahedral.h */,
 				ADDE13DB2820AE3100809D36 /* VoxelEngine.cpp */,
@@ -539,8 +541,6 @@
 			children = (
 				ADDE140F2820AE3100809D36 /* Array.h */,
 				ADC73021286DCF4300364E92 /* Base.h */,
-				ADDE14082820AE3100809D36 /* Bezier.cpp */,
-				ADDE14092820AE3100809D36 /* Bezier.h */,
 				ADDE140B2820AE3100809D36 /* Box3d.h */,
 				ADDE140E2820AE3100809D36 /* Float16.h */,
 				ADDE14072820AE3100809D36 /* Frustum.h */,
@@ -692,7 +692,6 @@
 				ADDE146F2820AE3100809D36 /* Animation.h in Headers */,
 				ADDE13182820AE0700809D36 /* BroadPhase.h in Headers */,
 				ADDE14772820AE3100809D36 /* PhysicsMaterial.h in Headers */,
-				ADDE14852820AE3100809D36 /* Bezier.h in Headers */,
 				ADDE14A52820AE3100809D36 /* GaussSeidelIteration_CPU.h in Headers */,
 				ADC73022286DCF4300364E92 /* Base.h in Headers */,
 				ADDE148E2820AE3100809D36 /* Stack.h in Headers */,
@@ -741,6 +740,7 @@
 				ADDE148A2820AE3100809D36 /* Float16.h in Headers */,
 				ADDE131E2820AE0700809D36 /* AABBTreeOffline.h in Headers */,
 				AD1C0F5E287042520060A1EE /* SIMD_Neon.h in Headers */,
+				AD9AF4E22878E5D000DD78C9 /* Spline.h in Headers */,
 				ADD2DA57286F37F400B669C9 /* libBmp.h in Headers */,
 				ADDE145F2820AE3100809D36 /* ConvexHull2D.h in Headers */,
 				ADDE14622820AE3100809D36 /* ConvexHull3D.h in Headers */,
@@ -826,6 +826,7 @@
 				ADDE13272820AE0700809D36 /* GeometryCollection.cpp in Sources */,
 				ADDE14782820AE3100809D36 /* MotionIntegration.cpp in Sources */,
 				ADDE13262820AE0700809D36 /* BroadPhase.cpp in Sources */,
+				AD9AF4E12878E5D000DD78C9 /* Spline.cpp in Sources */,
 				ADDE14612820AE3100809D36 /* VoxelField.cpp in Sources */,
 				ADDE149F2820AE3100809D36 /* DenseVector.cpp in Sources */,
 				ADDE14A42820AE3100809D36 /* PolarDecomposition.cpp in Sources */,
@@ -852,7 +853,6 @@
 				ADDE14B92820B16F00809D36 /* AutonomousController.cpp in Sources */,
 				ADDE132E2820AE0700809D36 /* Contact.cpp in Sources */,
 				ADDE13332820AE0700809D36 /* GeometryIntersection.cpp in Sources */,
-				ADDE14842820AE3100809D36 /* Bezier.cpp in Sources */,
 				ADDE14332820AE3100809D36 /* Capsule3d.cpp in Sources */,
 				ADDE148F2820AE3100809D36 /* Matrix3d.cpp in Sources */,
 				ADDE14652820AE3100809D36 /* Polygon2D.cpp in Sources */,

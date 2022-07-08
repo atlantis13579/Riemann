@@ -209,5 +209,6 @@ std::vector<Vector3d> CatmullRom::Smoothing(const std::vector<Vector3d>& points,
 	}
 
 	smoothed.push_back(points.back());
-	return std::move(smoothed);
+	// return std::move(smoothed);
+	return smoothed;
 }
