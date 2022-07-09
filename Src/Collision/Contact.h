@@ -23,7 +23,7 @@ public:
 	Vector3d Tangent1;
 	Vector3d Tangent2;
 
-	float   PenetrationDistance;
+	float   PenetrationDepth;
 	float   ImpulseNormal;
 	float   ImpulseTangent1;
 	float   ImpulseTangent2;

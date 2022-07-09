@@ -1,8 +1,8 @@
 #pragma once
 
 #include <assert.h>
-#include "MinkowskiSum.h"
 #include "../Maths/Vector3d.h"
+#include "MinkowskiSum.h"
 
 #define SIMPLEX2_EPS (0.0f)
 #define SIMPLEX3_EPS (0.0f)

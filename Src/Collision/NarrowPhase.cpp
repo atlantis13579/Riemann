@@ -51,25 +51,25 @@ public:
 		case GJK_status::Inside:
 		{
 			EPA epa;
-			EPA_status epa_status = epa.Solve(gjk.cs, &shape, -guess);
+			EPA_status epa_status = epa.Solve(gjk.simplex, &shape, -guess);
 			if (epa_status != EPA_status::Failed)
 			{
 				// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
 
-				Vector3d w0 = Vector3d(0, 0, 0);
-				for (int i = 0; i < epa.m_result.dimension; ++i)
+				Vector3d w0 = Vector3d::Zero();
+				for (int i = 0; i < epa.simplex.dimension; ++i)
 				{
-					w0 = w0 + shape.Support1(epa.m_result.v[i].d) * epa.m_result.w[i];
+					w0 = w0 + shape.Support1(epa.simplex.v[i].d) * epa.simplex.w[i];
 				}
 				Matrix4d invWorld = Geom1->GetInverseWorldMatrix();
 				result.status = ContactResult::Penetrating;
 				result.WitnessLocal1 = invWorld * w0;
-				Vector3d secondObjectPointInFirstObject = w0 - epa.m_normal * epa.m_depth;
+				Vector3d secondObjectPointInFirstObject = w0 - epa.normal * epa.penetration_depth;
 				result.WitnessLocal2 = invWorld * secondObjectPointInFirstObject;
 				result.WitnessWorld1 = w0;
 				result.WitnessWorld2 = secondObjectPointInFirstObject;
-				result.Normal = epa.m_normal;
-				result.PenetrationDistance = epa.m_depth;
+				result.Normal = epa.normal;
+				result.PenetrationDepth = epa.penetration_depth;
 				if (result.Normal.x >= 0.57735f)
 				{
 					result.Tangent1.x = result.Normal.y;

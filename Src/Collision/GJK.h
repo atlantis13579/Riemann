@@ -1,7 +1,6 @@
 #pragma once
 
 #include "MinkowskiSum.h"
-#include "../Maths/Vector3d.h"
 #include "Simplex.h"
 
 // Gilbert–Johnson–Keerthi algorithm
@@ -19,16 +18,15 @@ enum class  GJK_status
 #define GJK_MIN_DISTANCE		(0.0001f)
 #define GJK_DUPLICATED_EPS		(0.0001f)
 
-
 class GJK
 {
 public:
-	Simplex			cs;
+	Simplex			simplex;
 	
 	GJK_status Solve(MinkowskiSum* Shape, Vector3d InitGuess)
 	{
-		cs.AddVertex(InitGuess.SquareLength() > 0 ? -InitGuess : Vector3d::UnitX(), 1, Shape);
-		Vector3d Dir = cs.v[0].p;
+		simplex.AddVertex(InitGuess.SquareLength() > 0 ? -InitGuess : Vector3d::UnitX(), 1.0f, Shape);
+		Vector3d Dir = simplex.v[0].p;
 
 		int clastw = 0;
 		Vector3d lastw[4] = { Dir, Dir, Dir, Dir };
@@ -44,8 +42,8 @@ public:
 				return GJK_status::Inside;
 			}
 
-			cs.AddVertex(-Dir, 0, Shape);
-			const Vector3d& w = cs.v[cs.dimension - 1].p;
+			simplex.AddVertex(-Dir, 0, Shape);
+			const Vector3d& w = simplex.v[simplex.dimension - 1].p;
 			bool found = false;
 			for (int i = 0; i < 4; ++i)
 			{
@@ -58,7 +56,7 @@ public:
 			}
 			if (found)
 			{
-				cs.RemoveVertex();
+				simplex.RemoveVertex();
 				break;
 			}
 			else
@@ -70,28 +68,28 @@ public:
 			alpha = omega > alpha ? omega : alpha;
 			if (((rl - alpha) - (GJK_ACCURACY * rl)) <= 0)
 			{
-				cs.RemoveVertex();
+				simplex.RemoveVertex();
 				break;
 			}
 
 			float weights[4];
 			int mask = 0;
-			float SqrDist = cs.ProjectOrigin(weights, mask);
+			float SqrDist = simplex.ProjectOrigin(weights, mask);
 
 			if (SqrDist >= 0)
 			{
 				Simplex ns;
 				Dir = Vector3d::Zero();
-				for (int i = 0, ni = cs.dimension; i < ni; ++i)
+				for (int i = 0, ni = simplex.dimension; i < ni; ++i)
 				{
 					if (mask & (1 << i))
 					{
-						ns.v[ns.dimension] = cs.v[i];
+						ns.v[ns.dimension] = simplex.v[i];
 						ns.w[ns.dimension++] = weights[i];
-						Dir = Dir + cs.v[i].p * weights[i];
+						Dir = Dir + simplex.v[i].p * weights[i];
 					}
 				}
-				cs = ns;
+				simplex = ns;
 
 				if (mask == 15)
 				{
@@ -100,7 +98,7 @@ public:
 			}
 			else
 			{
-				cs.RemoveVertex();
+				simplex.RemoveVertex();
 				break;
 			}
 		};

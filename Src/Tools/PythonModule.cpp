@@ -1,4 +1,7 @@
+
 #include "PythonModule.h"
+
+#ifdef BUILD_PYTHON_MODULE
 
 #include <assert.h>
 #include "../RigidBodyDynamics/RigidBodySimulation.h"
@@ -6,10 +9,8 @@
 #include "../Tools/libPPM.h"
 #include "../Tools/libPng.h"
 
-#ifdef BUILD_PYTHON_MODULE
 extern "C"
 {
-
 void* LoadPhysxScene(const char *filepath)
 {
     RigidBodySimulationParam param;

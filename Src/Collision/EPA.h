@@ -88,10 +88,10 @@ public:
 		sHorizon() : cf(0), ff(0), nf(0) {}
 	};
 
-	EPA_status m_status;
-	Simplex m_result;
-	Vector3d m_normal;
-	float m_depth;
+	EPA_status status;
+	Simplex simplex;
+	Vector3d normal;
+	float penetration_depth;
 	Simplex::Vertex m_sv_store[EPA_MAX_VERTICES];
 	Face m_fc_store[EPA_MAX_FACES];
 	int m_nextsv;
@@ -100,9 +100,9 @@ public:
 
 	EPA()
 	{
-		m_status = EPA_status::Failed;
-		m_normal = Vector3d(0, 0, 0);
-		m_depth = 0;
+		status = EPA_status::Failed;
+		normal = Vector3d(0, 0, 0);
+		penetration_depth = 0;
 		m_nextsv = 0;
 		for (int i = 0; i < EPA_MAX_FACES; ++i)
 		{
@@ -120,7 +120,7 @@ public:
 				m_hull.Remove(f);
 				m_stock.Append(f);
 			}
-			m_status = EPA_status::Valid;
+			status = EPA_status::Valid;
 			m_nextsv = 0;
 
 			if (Determinant(simplex.v[0].p - simplex.v[3].p,
@@ -147,7 +147,7 @@ public:
 				Bind(tetra[1], 1, tetra[3], 2);
 				Bind(tetra[1], 2, tetra[2], 1);
 				Bind(tetra[2], 2, tetra[3], 1);
-				m_status = EPA_status::Valid;
+				status = EPA_status::Valid;
 				for (; iterations < EPA_MAX_ITERATIONS; ++iterations)
 				{
 					if (m_nextsv < EPA_MAX_VERTICES)
@@ -177,52 +177,52 @@ public:
 							}
 							else
 							{
-								m_status = EPA_status::InvalidHull;
+								status = EPA_status::InvalidHull;
 								break;
 							}
 						}
 						else
 						{
-							m_status = EPA_status::AccuraryReached;
+							status = EPA_status::AccuraryReached;
 							break;
 						}
 					}
 					else
 					{
-						m_status = EPA_status::OutOfVertices;
+						status = EPA_status::OutOfVertices;
 						break;
 					}
 				}
 				const Vector3d projection = outer.n * outer.d;
-				m_normal = outer.n;
-				m_depth = outer.d;
-				m_result.dimension = 3;
-				m_result.v[0] = *outer.c[0];
-				m_result.v[1] = *outer.c[1];
-				m_result.v[2] = *outer.c[2];
-				m_result.w[0] = CrossProduct(outer.c[1]->p - projection, outer.c[2]->p - projection).Length();
-				m_result.w[1] = CrossProduct(outer.c[2]->p - projection, outer.c[0]->p - projection).Length();
-				m_result.w[2] = CrossProduct(outer.c[0]->p - projection, outer.c[1]->p - projection).Length();
-				const float sum = m_result.w[0] + m_result.w[1] + m_result.w[2];
-				m_result.w[0] /= sum;
-				m_result.w[1] /= sum;
-				m_result.w[2] /= sum;
-				return (m_status);
+				normal = outer.n;
+				penetration_depth = outer.d;
+				simplex.dimension = 3;
+				simplex.v[0] = *outer.c[0];
+				simplex.v[1] = *outer.c[1];
+				simplex.v[2] = *outer.c[2];
+				simplex.w[0] = CrossProduct(outer.c[1]->p - projection, outer.c[2]->p - projection).Length();
+				simplex.w[1] = CrossProduct(outer.c[2]->p - projection, outer.c[0]->p - projection).Length();
+				simplex.w[2] = CrossProduct(outer.c[0]->p - projection, outer.c[1]->p - projection).Length();
+				const float sum = simplex.w[0] + simplex.w[1] + simplex.w[2];
+				simplex.w[0] /= sum;
+				simplex.w[1] /= sum;
+				simplex.w[2] /= sum;
+				return (status);
 			}
 		}
 
-		m_status = EPA_status::FallBack;
-		m_normal = -InitGuess;
-		const float nl = m_normal.Length();
+		status = EPA_status::FallBack;
+		normal = -InitGuess;
+		const float nl = normal.Length();
 		if (nl > 0)
-			m_normal = m_normal * (1 / nl);
+			normal = normal * (1 / nl);
 		else
-			m_normal = Vector3d(1, 0, 0);
-		m_depth = 0;
-		m_result.dimension = 1;
-		m_result.v[0] = simplex.v[0];
-		m_result.w[0] = 1;
-		return (m_status);
+			normal = Vector3d(1, 0, 0);
+		penetration_depth = 0;
+		simplex.dimension = 1;
+		simplex.v[0] = simplex.v[0];
+		simplex.w[0] = 1;
+		return (status);
 	}
 
 	static inline void Bind(Face* fa, int ea, Face* fb, int eb)
@@ -305,16 +305,16 @@ public:
 					return face;
 				}
 				else
-					m_status = EPA_status::NonConvex;
+					status = EPA_status::NonConvex;
 			}
 			else
-				m_status = EPA_status::Degenerated;
+				status = EPA_status::Degenerated;
 
 			m_hull.Remove(face);
 			m_stock.Append(face);
 			return 0;
 		}
-		m_status = m_stock.root ? EPA_status::OutOfVertices : EPA_status::OutOfFaces;
+		status = m_stock.root ? EPA_status::OutOfVertices : EPA_status::OutOfFaces;
 		return 0;
 	}
 
