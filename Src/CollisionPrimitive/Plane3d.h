@@ -9,6 +9,8 @@
 #include "../Maths/Box3d.h"
 
 const float kEpsilonPlane = 0.000001f;
+const float kPlaneMaxBV = 1000000.0f;
+const float kPlaneThickness = 0.0001f;
 
 class Plane3d
 {
@@ -20,7 +22,6 @@ public:
 	Plane3d()
 	{
 	}
-
 
 	Plane3d(const Vector3d& InNormal, Vector3d& InOrigin)
 	{
@@ -168,18 +169,18 @@ public:
 
 	static float	MaxBV()
 	{
-		return 1000000.0f;
+		return kPlaneMaxBV;
 	}
 
-	static float	VerySmallTickness()
+	static float	VerySmallThickness()
 	{
-		return 0.00001f;
+		return kPlaneThickness;
 	}
 
 	Box3d			GetBoundingVolume() const
 	{
 		const float kMaxBV = MaxBV();
-		const float kVerySmallTickness = VerySmallTickness();
+		const float kVerySmallTickness = VerySmallThickness();
 		Box3d Box(-kMaxBV, kMaxBV);
 
 		if (ParallelToXY())

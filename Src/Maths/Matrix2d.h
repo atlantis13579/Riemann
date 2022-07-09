@@ -7,9 +7,9 @@ class Matrix2d
 public:
 	union
 	{
-		struct { Vector2d row[2]; };
-		struct { float arr[4]; };
-		struct { float mat[2][2]; };
+		Vector2d row[2];
+		float arr[4];
+		float mat[2][2];
 	};
 
 	Matrix2d()

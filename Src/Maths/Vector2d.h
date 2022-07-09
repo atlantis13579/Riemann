@@ -12,11 +12,7 @@ template <typename T>
 class TVector2
 {
 public:
-	union
-	{
-		struct { T x, y; };
-		struct { T coords[2]; };
-	};
+	T x, y;
 
 	TVector2(T _x, T _y)
 	{

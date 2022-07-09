@@ -10,9 +10,9 @@ class Matrix4d
 public:
 	union
 	{
-		struct { Vector4d row[4]; };
-		struct { float arr[16]; };
-		struct { float mat[4][4]; };
+		Vector4d row[4];
+		float arr[16];
+		float mat[4][4];
 	};
 
 	Matrix4d()

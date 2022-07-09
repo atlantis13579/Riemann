@@ -19,6 +19,29 @@
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPA.h"
 
+void TestSupport()
+{
+	printf("Running TestSupport\n");
+	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
+	
+	Vector3d support;
+	
+	support = obb2->GetSupport_WorldSpace(Vector3d::UnitX());
+	EXPECT(fabsf(support.x - 1.0f) < 0.1f);
+	
+	support = obb2->GetSupport_WorldSpace(-Vector3d::UnitX());
+	EXPECT(fabsf(support.x + 1.0f) < 0.1f);
+	
+	support = obb2->GetSupport_WorldSpace(Vector3d::UnitY());
+	EXPECT(fabsf(support.y - 1.0f) < 0.1f);
+	
+	obb2->SetPosition(Vector3d(5.0f, 0.0f, 0.0f));
+	support = obb2->GetSupport_WorldSpace(Vector3d::UnitX());
+	EXPECT(fabsf(support.x - 6.0f) < 0.1f);
+	
+	return;
+}
+
 bool GJK_Solve(Geometry *Geom1, Geometry* Geom2)
 {
 	GeometryDifference shape(Geom1, Geom2);
@@ -53,19 +76,31 @@ void TestGJK()
 	EXPECT(!GJK_Solve(plane1, obb2));
 	EXPECT(!GJK_Solve(obb2, plane1));
 	
+	Quaternion quat;
+	quat.FromRotationAxis(Vector3d::UnitX(), PI_OVER_4);
+	obb2->SetRotationQuat(quat);
+	EXPECT(GJK_Solve(obb2, obb1));
+	EXPECT(GJK_Solve(obb1, obb2));
+	
+	obb2->SetPosition(Vector3d(0.0f, 1.1f, 0.0f));
+	EXPECT(GJK_Solve(obb2, plane1));
+	EXPECT(GJK_Solve(plane1, obb2));
+	
 	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3d(0.0f, 0.0, 0.0f), 2.0f);
 	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3d(1.0f, 0.0, 0.0f), 2.0f);
 	EXPECT(GJK_Solve(sp1, sp2));
+	EXPECT(GJK_Solve(sp1, plane1));
 	
-	sp2->SetPosition(Vector3d(5.0f, 0.0f, 0.0f));
+	sp2->SetPosition(Vector3d(0.0f, 5.0f, 0.0f));
 	EXPECT(!GJK_Solve(sp1, sp2));
+	EXPECT(!GJK_Solve(plane1, sp2));
 	
 	return;
 }
 
 void TestEPA()
 {
-	printf("Running TestGJK\n");
+	printf("Running TestEPA\n");
 }
 
 void TestRTree1()
@@ -415,6 +450,7 @@ void TestSAPInc()
 
 void TestCollision()
 {
+	TestSupport();
 	TestGJK();
 	TestEPA();
 	TestRayAABB();

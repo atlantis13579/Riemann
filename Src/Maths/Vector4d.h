@@ -14,12 +14,7 @@ template <typename T>
 class TVector4
 {
 public:
-	union
-	{
-		struct { T x, y, z, w; };
-		struct { T r, g, b, a; };
-		struct { T coords[4]; };
-	};
+	T x, y, z, w;
 
 	TVector4<T>(T _x, T _y, T _z, T _w)
 	{
@@ -220,12 +215,12 @@ public:
 
 	inline T operator[](int i) const
 	{
-		return coords[i];
+		return reinterpret_cast<const T*>(this)[i];
 	}
 
 	inline T& operator[](int i)
 	{
-		return coords[i];
+		return reinterpret_cast<T*>(this)[i];
 	}
 
 	static TVector4<T> Lerp(TVector4<T>& start, TVector4<T>& end, float t)

@@ -45,7 +45,7 @@ bool				OverlapPlanePlane(const void* Obj1, const void* Obj2, const Transform& t
 {
 	const Plane3d* plane1 = static_cast<const Plane3d*>(Obj1);
 	const Plane3d* plane2 = static_cast<const Plane3d*>(Obj2);
-	Vector3d Normal = transLocal1ToLocal2.RotateLocalToWorld(plane1->Normal);
+	Vector3d Normal = transLocal1ToLocal2.LocalToWorldDirection(plane1->Normal);
 	Vector3d Origin = transLocal1ToLocal2.LocalToWorldEx(plane1->GetOrigin());
 	Plane3d plane_new(Normal, Origin);
 	return plane2->IntersectPlane(plane2->Normal, plane2->D);

@@ -12,10 +12,7 @@ template <typename T>
 class TVector3
 {
 public:
-	union
-	{
-		struct { T x, y, z; };
-	};
+	T x, y, z;
 
 	inline TVector3<T>(T _x, T _y, T _z)
 	{

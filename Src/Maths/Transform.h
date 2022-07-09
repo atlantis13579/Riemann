@@ -98,6 +98,16 @@ public:
 		const Matrix4d& mat = GetWorldMatrix();
 		return mat * Point;
 	}
+	
+	Vector3d			LocalToWorldEx(const Vector3d& Point) const
+	{
+		return m_Rotation * Point + m_Translation;
+	}
+	
+	Vector3d			LocalToWorldDirection(const Vector3d& Dir) const
+	{
+		return m_Rotation * Dir;
+	}
 
 	Vector3d			WorldToLocal(const Vector3d& Point)
 	{
@@ -105,22 +115,12 @@ public:
 		return mat * Point;
 	}
 
-	Vector3d			LocalToWorldEx(const Vector3d& Point) const
-	{
-		return m_Rotation * Point + m_Translation;
-	}
-
 	Vector3d			WorldToLocalEx(const Vector3d& Point) const
 	{
 		return m_Rotation.Conjugate() * (Point - m_Translation);
 	}
 
-	Vector3d			RotateLocalToWorld(const Vector3d& Dir) const
-	{
-		return m_Rotation * Dir;
-	}
-
-	Vector3d			RotateWorldToLocal(const Vector3d& Dir) const
+	Vector3d			WorldToLocalDirection(const Vector3d& Dir) const
 	{
 		return m_Rotation.Conjugate() * Dir;
 	}

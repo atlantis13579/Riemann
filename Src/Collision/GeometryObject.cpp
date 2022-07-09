@@ -48,7 +48,7 @@ public:
 		Result->AddTestCount(1);
 
 		const Vector3d Origin_Local = m_Transform.WorldToLocalEx(Origin);
-		const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
+		const Vector3d Dir_Local = m_Transform.WorldToLocalDirection(Dir);
 		const GEOM_TYPE* p = (const GEOM_TYPE*)this;
 		float t;
 		if (p->IntersectRay(Origin_Local, Dir_Local, &t) && t < Option->MaxDist)
@@ -69,7 +69,7 @@ bool				TGeometry<TriangleMesh>::RayCast(const Vector3d& Origin, const Vector3d&
 
 	TriMeshHitResult HitResult = { 0 };
 	const Vector3d Origin_Local = m_Transform.WorldToLocalEx(Origin);
-	const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
+	const Vector3d Dir_Local = m_Transform.WorldToLocalDirection(Dir);
 	const TriangleMesh* p = (const TriangleMesh*)this;
 	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 	Result->hitTime = HitResult.hitTime;
@@ -85,7 +85,7 @@ bool				TGeometry<HeightField3d>::RayCast(const Vector3d& Origin, const Vector3d
 
 	HeightFieldHitResult HitResult = { 0 };
 	const Vector3d Origin_Local = m_Transform.WorldToLocalEx(Origin);
-	const Vector3d Dir_Local = m_Transform.RotateWorldToLocal(Dir);
+	const Vector3d Dir_Local = m_Transform.WorldToLocalDirection(Dir);
 	const HeightField3d* p = (const HeightField3d*)this;
 	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 	Result->hitTime = HitResult.hitTime;
@@ -173,7 +173,7 @@ void Geometry::UpdateBoundingVolume()
 
 Vector3d			Geometry::GetSupport_WorldSpace(const Vector3d& Dir)
 {
-	Vector3d DirLocal = m_Transform.WorldToLocal(Dir);
+	Vector3d DirLocal = m_Transform.WorldToLocalDirection(Dir);
 	Vector3d SupportLocal = GetSupport_LocalSpace(DirLocal);
 	Vector3d SupportWorld = m_Transform.LocalToWorld(SupportLocal);
 	return SupportWorld;

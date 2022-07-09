@@ -8,8 +8,8 @@ class Matrix3d
 public:
 	union
 	{
-		struct { Vector3d row[3]; };
-		struct { float mat[3][3]; };
+		Vector3d row[3];
+		float mat[3][3];
 	};
 
 	Matrix3d()
