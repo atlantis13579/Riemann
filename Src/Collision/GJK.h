@@ -24,7 +24,7 @@ class GJK
 {
 public:
 	Simplex			cs;
-
+	
 	GJK_status Solve(MinkowskiSum* Shape, Vector3d InitGuess)
 	{
 		cs.AddVertex(InitGuess.SquareLength() > 0 ? -InitGuess : Vector3d::UnitX(), 1, Shape);

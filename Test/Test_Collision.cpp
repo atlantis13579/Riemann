@@ -37,15 +37,21 @@ void TestGJK()
 {
 	printf("Running TestGJK\n");
 	
+	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, 0.0f, 0.0f), Vector3d::UnitY());
 	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
 	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
 	EXPECT(GJK_Solve(obb1, obb2));
-	
+
 	obb2->SetPosition(Vector3d(0.5f, 0.0f, 0.0f));
 	EXPECT(GJK_Solve(obb1, obb2));
 	
-	obb2->SetPosition(Vector3d(2.1f, 0.0f, 0.0f));
+	obb2->SetPosition(Vector3d(0.0f, 2.1f, 0.0f));
 	EXPECT(!GJK_Solve(obb1, obb2));
+	
+	EXPECT(GJK_Solve(obb1, plane1));
+	EXPECT(GJK_Solve(plane1, obb1));
+	EXPECT(!GJK_Solve(plane1, obb2));
+	EXPECT(!GJK_Solve(obb2, plane1));
 	
 	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3d(0.0f, 0.0, 0.0f), 2.0f);
 	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3d(1.0f, 0.0, 0.0f), 2.0f);

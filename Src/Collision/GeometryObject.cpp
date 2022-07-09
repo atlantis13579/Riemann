@@ -214,6 +214,7 @@ Geometry* GeometryFactory::CreatePlane(const Vector3d& Center, const Vector3d& N
 Geometry* GeometryFactory::CreateSphere(const Vector3d& Center, float Radius)
 {
 	TGeometry<Sphere3d>* p = new TGeometry<Sphere3d>();
+	p->Center = Vector3d::Zero();
 	p->Radius = Radius;
 	p->SetPosition(Center);
 	p->SetRotationQuat(Quaternion::One());

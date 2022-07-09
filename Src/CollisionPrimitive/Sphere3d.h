@@ -15,8 +15,10 @@ public:
 	float Radius;
 
 public:
-	Sphere3d() 
+	Sphere3d()
 	{
+		Center = Vector3d::Zero();
+		Radius = 0.0f;
 	}
 
 	Sphere3d(const Vector3d& InCenter, float InRadius)

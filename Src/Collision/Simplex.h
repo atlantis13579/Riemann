@@ -39,7 +39,7 @@ public:
 	void RemoveVertex()
 	{
 		dimension--;
-		assert(dimension > 1);
+		assert(dimension >= 1);
 	}
 
 	Simplex& operator =(const Simplex& rhs)

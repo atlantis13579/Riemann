@@ -58,6 +58,13 @@ public:
 	{
 		return (Min == Other.Min) && (Max == Other.Max);
 	}
+	
+	TAABB3<T>& operator=(const TAABB3<T>& rhs)
+	{
+		Min = rhs.Min;
+		Max = rhs.Max;
+		return *this;
+	}
 
 	TAABB3<T>& operator+=(const TVector3<T>& rhs)
 	{
