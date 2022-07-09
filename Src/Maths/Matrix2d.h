@@ -5,12 +5,7 @@
 class Matrix2d
 {
 public:
-	union
-	{
-		Vector2d row[2];
-		float arr[4];
-		float mat[2][2];
-	};
+	float mat[2][2];
 
 	Matrix2d()
 	{
@@ -68,38 +63,38 @@ public:
 	Matrix2d	operator*(const Matrix2d& mm) const
 	{
 		return Matrix2d(
-			arr[0] * mm.arr[0] + arr[1] * mm.arr[2],
-			arr[0] * mm.arr[1] + arr[1] * mm.arr[3],
-			arr[2] * mm.arr[0] + arr[3] * mm.arr[2],
-			arr[2] * mm.arr[1] + arr[3] * mm.arr[3]);
+			mat[0][0] * mm.mat[0][0] + mat[0][1] * mm.mat[1][0],
+			mat[0][0] * mm.mat[0][1] + mat[0][1] * mm.mat[1][1],
+			mat[1][0] * mm.mat[0][0] + mat[1][1] * mm.mat[1][0],
+			mat[1][0] * mm.mat[0][1] + mat[1][1] * mm.mat[1][1]);
 	}
 
 	Matrix2d	operator*(float k) const
 	{
 		return Matrix2d(
-			arr[0] * k, arr[1] * k,
-			arr[2] * k, arr[3] * k);
+			mat[0][0] * k, mat[0][1] * k,
+			mat[1][0] * k, mat[1][1] * k);
 	}
 
 	Vector2d	operator*(const Vector2d& vec) const
 	{
 		return Vector2d(
-			arr[0] * vec.x + arr[1] * vec.y,
-			arr[2] * vec.x + arr[3] * vec.y);
+			mat[0][0] * vec.x + mat[0][1] * vec.y,
+			mat[1][0] * vec.x + mat[1][1] * vec.y);
 	}
 
 	Matrix2d	operator+(const Matrix2d& mm) const
 	{
 		return Matrix2d(
-			arr[0] + mm.arr[0], arr[1] + mm.arr[1],
-			arr[2] + mm.arr[2], arr[3] + mm.arr[3]);
+			mat[0][0] + mm.mat[0][0], mat[0][1] + mm.mat[0][1],
+			mat[1][0] + mm.mat[1][0], mat[1][1] + mm.mat[1][1]);
 	}
 
 	Matrix2d	operator-(const Matrix2d& mm) const
 	{
 		return Matrix2d(
-			arr[0] - mm.arr[0], arr[1] - mm.arr[1],
-			arr[2] - mm.arr[2], arr[3] - mm.arr[3]);
+			mat[0][0] - mm.mat[0][0], mat[0][1] - mm.mat[0][1],
+			mat[1][0] - mm.mat[1][0], mat[1][1] - mm.mat[1][1]);
 	}
 
 	inline		Matrix2d& operator=(const Matrix2d& rhs)
@@ -120,21 +115,25 @@ public:
 
 	inline const Vector2d& operator[](int i) const
 	{
+		const Vector2d *row = static_cast<const Vector2d*>((const void*)mat);
 		return row[i];
 	}
 
 	inline Vector2d& operator[](int i)
 	{
+		Vector2d *row = static_cast<Vector2d*>((void*)mat);
 		return row[i];
 	}
 
 	inline const Vector2d& Row(int i) const
 	{
+		const Vector2d *row = static_cast<const Vector2d*>((const void*)mat);
 		return row[i];
 	}
 
 	inline Vector2d& Row(int i)
 	{
+		Vector2d *row = static_cast<Vector2d*>((void*)mat);
 		return row[i];
 	}
 

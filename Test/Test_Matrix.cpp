@@ -54,7 +54,7 @@ void TestMatrix2()
 
 	SquareMatrix<10> invM = (M + M).Inverse();
 	SquareMatrix<10> Id = (M + M) * invM;
-	bool IsId = Id.IsIdentity();
+	bool IsId = Id.IsIdentity(1e-4f);
 	EXPECT(IsId);
 
 	float det = (2.0f * M).Determinant();

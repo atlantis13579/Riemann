@@ -8,12 +8,7 @@
 class Matrix4d
 {
 public:
-	union
-	{
-		Vector4d row[4];
-		float arr[16];
-		float mat[4][4];
-	};
+	float mat[4][4];
 
 	Matrix4d()
 	{
@@ -71,21 +66,25 @@ public:
 	
 	inline const Vector4d& operator[](int i) const
 	{
+		const Vector4d *row = static_cast<const Vector4d*>((const void*)mat);
 		return row[i];
 	}
 
 	inline Vector4d& operator[](int i)
 	{
+		Vector4d *row = static_cast<Vector4d*>((void*)mat);
 		return row[i];
 	}
 
 	inline const Vector4d& Row(int i) const
 	{
+		const Vector4d *row = static_cast<const Vector4d*>((const void*)mat);
 		return row[i];
 	}
 
 	inline Vector4d& Row(int i)
 	{
+		Vector4d *row = static_cast<Vector4d*>((void*)mat);
 		return row[i];
 	}
 	

@@ -25,7 +25,7 @@ void TestSupport()
 	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
 	
 	Vector3d support;
-	
+
 	support = obb2->GetSupport_WorldSpace(Vector3d::UnitX());
 	EXPECT(fabsf(support.x - 1.0f) < 0.1f);
 	
@@ -39,6 +39,13 @@ void TestSupport()
 	support = obb2->GetSupport_WorldSpace(Vector3d::UnitX());
 	EXPECT(fabsf(support.x - 6.0f) < 0.1f);
 	
+	Quaternion quat;
+	quat.FromRotationAxis(Vector3d::UnitZ(), PI_OVER_4);
+	obb2->SetRotationQuat(quat);
+	support = obb2->GetSupport_WorldSpace(Vector3d::UnitX());
+	EXPECT(fabsf(support.x - (5.0f + SQRT_2)) < 0.1f);
+	support = obb2->GetSupport_WorldSpace(Vector3d::UnitY());
+	EXPECT(fabsf(support.y - SQRT_2) < 0.1f);
 	return;
 }
 

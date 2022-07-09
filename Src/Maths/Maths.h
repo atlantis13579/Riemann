@@ -10,7 +10,6 @@
 #define PI				(3.1415926536f)
 #endif // !PI
 
-
 #define PI_2			(6.2831853072f)
 #define PI_OVER_2		(1.5707963268f)
 #define PI_OVER_3		(1.0471975512f)
@@ -19,6 +18,8 @@
 #define PI_OVER_8		(0.3926990817f)
 #define PI_OVER_180		(0.0174532925f)
 #define RAD_TO_DEG		(57.295779513f)
+#define SQRT_2			(1.4142135624f)
+#define SQRT_3			(1.7320508076f)
 #define SMALL_NUMBER	(1e-3f)
 #define TINY_NUMBER		(1e-6f)
 
@@ -73,7 +74,7 @@ inline T	LinearInterp(const T v1, const T v2, float mix)
 
 inline bool	IsFloatInf(float x)
 {
-	return false;		// TODO
+	return x >= std::numeric_limits<float>::max() || x == std::numeric_limits<float>::infinity();
 }
 
 // http://www.matrix67.com/data/InvSqrt.pdf
@@ -100,15 +101,29 @@ inline bool IsPowerOfTwo(int x)
 }
 
 static const float kEpsilon = 0.000001f;
-static const float kInfinite = 9999999.0f;
 
 template <typename T>
-inline T Epsilon(T a) {
+inline T Epsilon()
+{
+	return (T)0;
+}
+
+template <>
+inline float Epsilon()
+{
+	return kEpsilon;
+}
+
+template <typename T>
+inline constexpr T Epsilon(T a)
+{
 	const T aa = std::abs(a) + (T)1;
-	if (aa == std::numeric_limits<T>::infinity()) {
+	if (aa == std::numeric_limits<T>::infinity())
+	{
 		return (T)kEpsilon;
 	}
-	else {
+	else
+	{
 		return (T)kEpsilon * aa;
 	}
 }
@@ -154,4 +169,16 @@ inline bool FuzzyEqual(float v1, float v2)
 inline bool FuzzyEqual(float v1, float v2, float eplison)
 {
 	return fabsf(v1 - v2) < eplison;
+}
+
+template<typename T>
+inline bool FuzzyZero(T v1)
+{
+	return v1 == 0;
+}
+
+template<>
+inline bool FuzzyZero(float v1)
+{
+	return fabsf(v1) < 1e-6f;
 }

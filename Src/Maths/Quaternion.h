@@ -83,6 +83,15 @@ public:
 	{
 		*this = Quaternion(cosf(radian / 2), axis * sinf(radian / 2));
 	}
+	
+	void FromTwoAxis(const Vector3d& AxisFrom, const Vector3d& AxisTo)
+	{
+		Vector3d UnitAxisFrom = AxisFrom.Unit();
+		Vector3d UnitAxisTo = AxisTo.Unit();
+		Vector3d Axis = UnitAxisFrom.Cross(UnitAxisTo);
+		float Angle = acosf(UnitAxisFrom.Dot(UnitAxisTo));
+		FromRotationAxis(Axis, Angle);
+	}
 
 	void FromEuler(float x, float y, float z)
 	{

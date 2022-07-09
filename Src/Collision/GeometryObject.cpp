@@ -166,7 +166,7 @@ bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) con
 	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), Dir, t);
 }
 
-void Geometry::UpdateBoundingVolume()
+void 				Geometry::UpdateBoundingVolume()
 {
 	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_Transform.GetWorldMatrix());
 }
@@ -184,7 +184,7 @@ Matrix3d			Geometry::GetInverseInertia_WorldSpace(float Mass) const
 	return GetInertia_LocalSpace(Mass).Inverse();
 }
 
-void GeometryFactory::DeleteGeometry(Geometry* Geom)
+void 				GeometryFactory::DeleteGeometry(Geometry* Geom)
 {
 	delete Geom;
 }
@@ -204,10 +204,12 @@ Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& Ext
 Geometry* GeometryFactory::CreatePlane(const Vector3d& Center, const Vector3d& Normal)
 {
 	TGeometry<Plane3d>* p = new TGeometry<Plane3d>();
-	p->Normal = Normal;
+	p->Normal = Vector3d::UnitY();
 	p->D = 0.0f;
 	p->SetPosition(Center);
-	p->SetRotationQuat(Quaternion::One());
+	Quaternion quat;
+	quat.FromTwoAxis(p->Normal, Normal);
+	p->SetRotationQuat(quat);
 	return (Geometry*)p;
 }
 

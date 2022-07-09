@@ -218,24 +218,24 @@ public:
 	}
 
 	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
-	bool		IsIdentity() const
+	bool		IsIdentity(T eps = Epsilon<T>()) const
 	{
 		int n = ROWS;
 		for (int i = 0; i < n; ++i)
-			for (int j = 0; j < n; ++j)
+		for (int j = 0; j < n; ++j)
+		{
+			T v = mData[i * n + j];
+			if (i == j)
 			{
-				T v = mData[i * n + j];
-				if (i == j)
-				{
-					if (!FuzzyEqual(v, (T)1))
-						return false;
-				}
-				else
-				{
-					if (!FuzzyEqual(v, (T)0))
-						return false;
-				}
+				if (!FuzzyEqual(v, (T)1, eps))
+					return false;
 			}
+			else
+			{
+				if (!FuzzyEqual(v, (T)0, eps))
+					return false;
+			}
+		}
 		return true;
 	}
 

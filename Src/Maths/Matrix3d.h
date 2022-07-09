@@ -6,11 +6,7 @@
 class Matrix3d
 {
 public:
-	union
-	{
-		Vector3d row[3];
-		float mat[3][3];
-	};
+	float mat[3][3];
 
 	Matrix3d()
 	{
@@ -144,21 +140,25 @@ public:
 
 	inline const Vector3d& operator[](int i) const
 	{
+		const Vector3d *row = static_cast<const Vector3d*>((const void*)mat);
 		return row[i];
 	}
 
 	inline Vector3d& operator[](int i)
 	{
+		Vector3d *row = static_cast<Vector3d*>((void*)mat);
 		return row[i];
 	}
 
 	inline const Vector3d& Row(int i) const
 	{
+		const Vector3d *row = static_cast<const Vector3d*>((const void*)mat);
 		return row[i];
 	}
 
 	inline Vector3d& Row(int i)
 	{
+		Vector3d *row = static_cast<Vector3d*>((void*)mat);
 		return row[i];
 	}
 
@@ -213,6 +213,7 @@ public:
 		{
 			return false;
 		}
+		const Vector3d *row = static_cast<const Vector3d*>((const void*)mat);
 		x.x = b.Dot(row[1].Cross(row[2])) / d;
 		x.y = row[0].Dot(b.Cross(row[2])) / d;
 		x.z = row[0].Dot(row[1].Cross(b)) / d;
