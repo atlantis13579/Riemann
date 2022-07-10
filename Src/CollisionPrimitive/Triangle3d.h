@@ -3,7 +3,9 @@
 
 #include <stdint.h>
 
+#include "../Maths/Box3d.h"
 #include "../Maths/Vector3d.h"
+#include "../Maths/Matrix3d.h"
 #include "ShapeType.h"
 
 class Triangle3d
@@ -420,6 +422,19 @@ public:
 		float a = ((B.y - C.y) * (Point.x - C.x) + (C.x - B.x) * (Point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y));
 		float b = ((C.y - A.y) * (Point.x - C.x) + (A.x - C.x) * (Point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y));
 		return Vector3d(a, b, 1.0f - a - b);
+	}
+	
+	static float 	TriangleArea3D(const Vector3d& A, const Vector3d& B, const Vector3d& C)
+	{
+		float cx = (B.y - A.y) * (C.z - A.z) - (C.y - A.y) * (B.z - A.z);
+		float cy = (B.z - A.z) * (C.x - A.x) - (C.z - A.z) * (B.x - A.x);
+		float cz = (B.x - A.x) * (C.y - A.y) - (C.x - A.x) * (B.y - A.y);
+		return 0.5f * sqrtf(cx * cx + cy * cy + cz * cz);
+	}
+	
+	float			CalcArea() const
+	{
+		return Triangle3d::TriangleArea3D(A, B, C);
 	}
 
 	Box3d			GetBoundingVolume() const

@@ -1,7 +1,7 @@
-﻿#include <float.h>
+#include <float.h>
 #include <vector>
 
-#include "Polygon2D.h"
+#include "Polygon2d.h"
 
 static float DistancePtSegSqr(const Vector2d& pt, const Vector2d& p, const Vector2d& q, float* dt)
 {
