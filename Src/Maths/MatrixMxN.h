@@ -240,7 +240,7 @@ public:
 	}
 
 	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
-	T							Determinant() const
+	T					Determinant() const
 	{
 		float Det;
 		if (GaussianElimination<float>()(mData, ROWS, nullptr, &Det))

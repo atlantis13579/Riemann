@@ -7,6 +7,14 @@ public:
 	TVectorNd()
 	{
 	}
+	
+	TVectorNd(bool Zero)
+	{
+		if (Zero)
+		{
+			LoadZero();
+		}
+	}
 
 	TVectorNd(const std::initializer_list<T>& v)
 	{
@@ -201,7 +209,7 @@ public:
 
 	static TVectorNd<T, SIZE> Zero()
 	{
-		static TVectorNd<T, SIZE> s_Zero;
+		static TVectorNd<T, SIZE> s_Zero(true);
 		return s_Zero;
 	}
 
