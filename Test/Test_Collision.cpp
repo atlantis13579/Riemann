@@ -165,6 +165,52 @@ void TestRTree2()
 	return;
 }
 
+void TestOverlap()
+{
+	printf("Running TestOverlap\n");
+	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, 0.0f, 0.0f), Vector3d::UnitY());
+	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
+	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
+	EXPECT(obb1->Overlap(obb2));
+	EXPECT(obb2->Overlap(obb1));
+
+	obb2->SetPosition(Vector3d(0.5f, 0.0f, 0.0f));
+	EXPECT(obb1->Overlap(obb2));
+	EXPECT(obb2->Overlap(obb1));
+	
+	obb2->SetPosition(Vector3d(0.0f, 2.1f, 0.0f));
+	EXPECT(!obb1->Overlap(obb2));
+	EXPECT(!obb2->Overlap(obb1));
+	
+	EXPECT(obb1->Overlap(plane1));
+	EXPECT(plane1->Overlap(obb1));
+	EXPECT(!obb2->Overlap(plane1));
+	EXPECT(!plane1->Overlap(obb2));
+	
+	Quaternion quat;
+	quat.FromRotationAxis(Vector3d::UnitX(), PI_OVER_4);
+	obb2->SetRotationQuat(quat);
+	EXPECT(obb1->Overlap(obb2));
+	EXPECT(obb2->Overlap(obb1));
+	
+	obb2->SetPosition(Vector3d(0.0f, 1.1f, 0.0f));
+	EXPECT(plane1->Overlap(obb2));
+	EXPECT(obb2->Overlap(plane1));
+	
+	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3d(0.0f, 0.0, 0.0f), 2.0f);
+	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3d(1.0f, 0.0, 0.0f), 2.0f);
+	EXPECT(sp1->Overlap(sp2));
+	EXPECT(sp2->Overlap(sp1));
+	EXPECT(sp1->Overlap(plane1));
+	EXPECT(plane1->Overlap(sp1));
+	
+	sp2->SetPosition(Vector3d(0.0f, 5.0f, 0.0f));
+	EXPECT(!sp1->Overlap(sp2));
+	EXPECT(!sp2->Overlap(sp1));
+	EXPECT(!plane1->Overlap(sp2));
+	EXPECT(!sp2->Overlap(plane1));
+}
+
 void TestRayAABB()
 {
 	printf("Running TestRayAABB\n");
@@ -460,6 +506,7 @@ void TestCollision()
 	TestSupport();
 	TestGJK();
 	TestEPA();
+	TestOverlap();
 	TestRayAABB();
 	TestRTree1();
 	TestRTree2();
