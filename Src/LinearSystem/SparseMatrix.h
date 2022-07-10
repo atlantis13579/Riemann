@@ -3,17 +3,18 @@
 #include <math.h>
 #include <vector>
 
-class SparseMatrix
+template<typename T>
+class TSparseMatrix
 {
 public:
-	SparseMatrix(const float *A, int n)
+	TSparseMatrix(const T *A, int n)
 	{
 		m_Size = n;
 		m_NumEntries = 0;
 		for (int i = 0; i < n; i++)
 		for (int j = 0; j < n; j++)
 		{
-			if (fabsf(A[i * n + j]) > 1e-9)
+			if (!FuzzyZero(A[i * n + j]))
 			{
 				++m_NumEntries;
 			}
@@ -24,7 +25,7 @@ public:
 
 		if (m_NumEntries > 0)
 		{
-			m_Entries = new float[m_NumEntries];
+			m_Entries = new T[m_NumEntries];
 			m_Indices = new int[m_NumEntries];
 
 			memset(m_Entries, 0, sizeof(m_Entries[0])*m_NumEntries);
@@ -34,7 +35,7 @@ public:
 			for (int i = 0; i < n; i++)
 			for (int j = 0; j < n; j++)
 			{
-				if (fabsf(A[i*n+j]) > 1e-9)
+				if (!FuzzyZero(A[i*n+j]))
 				{
 					m_Entries[counter] = A[i * n + j];
 					m_Indices[counter] = i * n + j;
@@ -44,7 +45,7 @@ public:
 		}
 	}
 
-	~SparseMatrix()
+	~TSparseMatrix()
 	{
 		if (m_Entries)
 		{
@@ -59,7 +60,7 @@ public:
 
 	}
 
-	void MulXCompressed3x3(const float *In, float *out)
+	void MulXCompressed3x3(const T *In, T *out)
 	{
 		for (int i = 0; i < m_Size * 3; i++)
 			out[i] = 0;
@@ -69,7 +70,7 @@ public:
 			int ind = m_Indices[i];
 			int x = ind / m_Size;
 			int y = ind % m_Size;
-			float entry = m_Entries[i];
+			T entry = m_Entries[i];
 
 			out[x * 3] += entry * In[y * 3];
 			out[x * 3 + 1] += entry * In[y * 3 + 1];
@@ -77,7 +78,7 @@ public:
 		}
 	}
 
-	void MulXCompressedN(const float* In, int nDof, float* out)
+	void MulXCompressedN(const T* In, int nDof, T* out)
 	{
 		for (int i = 0; i < m_Size * nDof; i++)
 			out[i] = 0;
@@ -87,7 +88,7 @@ public:
 			int ind = m_Indices[i];
 			int x = ind / m_Size;
 			int y = ind % m_Size;
-			float entry = m_Entries[i];
+			T entry = m_Entries[i];
 
 			int kx = x * nDof, ky = y * nDof;
 			for (int j = 0; j < nDof; ++j)
@@ -98,9 +99,10 @@ public:
 	}
 
 private:
-	float *m_Entries;
+	T 	*m_Entries;
 	int *m_Indices;
 	int m_NumEntries;
 	int m_Size;
 };
 
+using SparseMatrix = TSparseMatrix<float>;

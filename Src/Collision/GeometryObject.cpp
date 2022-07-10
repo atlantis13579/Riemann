@@ -149,20 +149,16 @@ void				Geometry::SetEntity(void* Entity)
 bool				Geometry::Overlap(const Geometry* Geom) const
 {
 	OverlapFunc func = GeometryIntersection::GetOverlapFunc(m_Type, Geom->GetShapeType());
-#ifdef _DEBUG
 	assert(func);
-#endif
 	Transform trans;
-	trans.LoadLocal1ToLocal2(m_Transform, Geom->GetTransform());
+	trans.LoadLocal1ToLocal2(m_Transform, *Geom->GetTransform());
 	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), trans);
 }
 
 bool				Geometry::Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const
 {
 	SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
-#ifdef _DEBUG
 	assert(func);
-#endif
 	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), Dir, t);
 }
 
@@ -171,11 +167,11 @@ void 				Geometry::UpdateBoundingVolume()
 	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_Transform.GetWorldMatrix());
 }
 
-Vector3d			Geometry::GetSupport_WorldSpace(const Vector3d& Dir)
+Vector3d			Geometry::GetSupport_WorldSpace(const Vector3d& Dir) const
 {
 	Vector3d DirLocal = m_Transform.WorldToLocalDirection(Dir);
 	Vector3d SupportLocal = GetSupport_LocalSpace(DirLocal);
-	Vector3d SupportWorld = m_Transform.LocalToWorld(SupportLocal);
+	Vector3d SupportWorld = m_Transform.LocalToWorldEx(SupportLocal);
 	return SupportWorld;
 }
 

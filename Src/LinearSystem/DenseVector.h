@@ -256,7 +256,7 @@ public:
 private:
 	int				mSize;
 	std::vector<T>	mData;
-	T* pData;
+	T* 				pData;
 };
 
 using DenseVector = TDenseVector<float>;

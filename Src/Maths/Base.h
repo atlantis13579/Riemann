@@ -12,6 +12,9 @@
 #define OFFSETOF(_st, _m)	((size_t)&(((_st *)0)->_m))
 #endif
 
+#define SAFE_DELETE(_p)			if (_p) { delete _p; _p = nullptr; }
+#define SAFE_DELETE_ARRAY(_p)	if (_p) { delete []_p; _p = nullptr; }
+
 #ifdef _DEBUG
 #define DEBUG_CODE(_expr)       _expr;
 #else

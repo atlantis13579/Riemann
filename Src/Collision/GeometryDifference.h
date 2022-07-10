@@ -7,14 +7,12 @@ class GeometryDifference : public MinkowskiSum
 {
 public:
 	GeometryDifference() {}
-	GeometryDifference(Geometry* _g1, Geometry* _g2)
+	GeometryDifference(const Geometry* _g1, const Geometry* _g2) : Geom1(_g1), Geom2(_g2)
 	{
-		Geom1 = _g1;
-		Geom2 = _g2;
 	}
 
-	Geometry* Geom1;
-	Geometry* Geom2;
+	const Geometry* Geom1;
+	const Geometry* Geom2;
 
 	inline Vector3d Support1(const Vector3d& Dir) const
 	{

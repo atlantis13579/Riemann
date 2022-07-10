@@ -289,6 +289,15 @@ public:
 
 		return true;
 	}
+	
+	bool			IntersectSphere(const Vector3d& rCenter, float rRadius) const
+	{
+		const float sqrDistA = (rCenter - A).SquareLength();
+		const float sqrDistB = (rCenter - B).SquareLength();
+		const float sqrDistC = (rCenter - C).SquareLength();
+		const float sqrRadius = rRadius * rRadius;
+		return sqrDistA <= sqrRadius || sqrDistB <= sqrRadius || sqrDistC <= sqrRadius;
+	}
 
 	// Moller CTrumbore intersection algorithm
 	static bool		RayIntersectTriangle(const Vector3d& Origin,

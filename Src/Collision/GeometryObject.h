@@ -42,9 +42,9 @@ public:
 	void*					GetEntity();
 	void					SetEntity(void* Entity);
 
-	const Transform&		GetTransform() const
+	const Transform*		GetTransform() const
 	{
-		return m_Transform;
+		return &m_Transform;
 	}
 	
 	Transform*				GetTransform()
@@ -98,7 +98,7 @@ public:
 
 	void					UpdateBoundingVolume();
 	const Box3d&			GetBoundingVolume_WorldSpace() const;
-	Vector3d				GetSupport_WorldSpace(const Vector3d& Dir);
+	Vector3d				GetSupport_WorldSpace(const Vector3d& Dir) const;
 	Matrix3d				GetInverseInertia_WorldSpace(float Mass) const;
 
 private:

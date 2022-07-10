@@ -267,7 +267,7 @@ public:
 	{
 		for (int i = 0; i < GetLength(); ++i)
 		{
-			if (!FuzzyEqual(pData[i], (T)0))
+			if (!FuzzyZero(pData[i]))
 				return false;
 		}
 		return true;
@@ -282,20 +282,20 @@ public:
 
 		int n = mRows;
 		for (int i = 0; i < n; ++i)
-			for (int j = 0; j < n; ++j)
+		for (int j = 0; j < n; ++j)
+		{
+			T v = pData[i * n + j];
+			if (i == j)
 			{
-				T v = pData[i * n + j];
-				if (i == j)
-				{
-					if (!FuzzyEqual(v, (T)1, Eplison))
-						return false;
-				}
-				else
-				{
-					if (!FuzzyEqual(v, (T)0, Eplison))
-						return false;
-				}
+				if (!FuzzyEqual(v, (T)1, Eplison))
+					return false;
 			}
+			else
+			{
+				if (!FuzzyEqual(v, (T)0, Eplison))
+					return false;
+			}
+		}
 		return true;
 	}
 
@@ -337,7 +337,7 @@ protected:
 	int				mRows;
 	int				mCols;
 	std::vector<T>	mData;
-	T* pData;
+	T* 				pData;
 };
 
 template <typename T>
