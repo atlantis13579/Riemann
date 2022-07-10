@@ -100,18 +100,29 @@ public:
 
 		return true;
 	}
-
-	float			DistanceToPoint(const Vector3d& Point) const
+	
+	static float	SignedDistanceToPlane(const Vector3d& Point, const Vector3d& Normal, const Vector3d& Origin)
 	{
-		float Dist = SignedDistanceTo(Point);
-		return fabsf(Dist);
+		float signedDist = (Point - Origin).Dot(Normal);
+		return signedDist;
+	}
+	
+	static Vector3d	ProjectToPlane(const Vector3d& Point, const Vector3d& Normal, const Vector3d& Origin)
+	{
+		float signedDist = (Point - Origin).Dot(Normal);
+		return Point - signedDist * Normal;
 	}
 
 	float			SignedDistanceTo(const Vector3d& Point) const
 	{
 		Vector3d Origin = GetOrigin();
-		float Dist = (Point - Origin).Dot(Normal);
-		return Dist;
+		return SignedDistanceToPlane(Point, Normal, Origin);
+	}
+	
+	float			DistanceToPoint(const Vector3d& Point) const
+	{
+		float Dist = SignedDistanceTo(Point);
+		return fabsf(Dist);
 	}
 
 	Vector3d		ClosestPointTo(const Vector3d& Point) const

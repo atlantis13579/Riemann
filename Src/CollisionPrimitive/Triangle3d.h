@@ -289,14 +289,74 @@ public:
 
 		return true;
 	}
-	
-	bool			IntersectSphere(const Vector3d& rCenter, float rRadius) const
+
+	static Vector3d ClosestPointOnTriangle(const Vector3d &Point, const Vector3d &A, const Vector3d &B, const Vector3d &C)
 	{
-		const float sqrDistA = (rCenter - A).SquareLength();
-		const float sqrDistB = (rCenter - B).SquareLength();
-		const float sqrDistC = (rCenter - C).SquareLength();
-		const float sqrRadius = rRadius * rRadius;
-		return sqrDistA <= sqrRadius || sqrDistB <= sqrRadius || sqrDistC <= sqrRadius;
+		const Vector3d BA = A - B;
+		const Vector3d AC = C - A;
+		const Vector3d CB = B - C;
+		const Vector3d Normal = BA.Cross(CB);
+		
+		const Vector3d V[3] = {B, A, C};
+		const Vector3d N[3] = {Normal.Cross(BA), Normal.Cross(AC), Normal.Cross(CB)};
+		
+		unsigned char mask = 0;
+		for (int i = 0; i < 3; ++i)
+		{
+			if ((Point - V[i]).Dot(N[i]) > 0.0f)
+			{
+				mask += (1 << i);
+			}
+		}
+		
+		if (mask == 0)		// 000 Inside
+		{
+			float signedDist = (Point - A).Dot(Normal);
+			return Point - signedDist * Normal;
+		}
+		else if (mask == 1)	//001 Segment BA
+		{
+			return _ClosestPointOnEdge(B, A, Point);
+		}
+		else if (mask == 2)	//010 Segment AC
+		{
+			return _ClosestPointOnEdge(A, C, Point);
+		}
+		else if (mask == 3)	//011 point A
+		{
+			return A;
+		}
+		else if (mask == 4)	//100 Segment CB
+		{
+			return _ClosestPointOnEdge(C, B, Point);
+		}
+		else if (mask == 5)	//101 point B
+		{
+			return B;
+		}
+		else if (mask == 6)	//110 point C
+		{
+			return C;
+		}
+
+		assert(false);		// Should never comes here
+		return A;
+	}
+	
+	static float	SqrDistanceToTriangle(const Vector3d &Point, const Vector3d &A, const Vector3d &B, const Vector3d &C)
+	{
+		Vector3d Closest = ClosestPointOnTriangle(Point, A, B, C);
+		return (Closest - Point).SquareLength();
+	}
+	
+	float			SqrDistanceToPoint(const Vector3d &Point) const
+	{
+		return Triangle3d::SqrDistanceToTriangle(Point, A, B, C);
+	}
+	
+	bool			IntersectSphere(const Vector3d& Center, float Radius) const
+	{
+		return SqrDistanceToPoint(Center) <= Radius * Radius;
 	}
 
 	// Moller CTrumbore intersection algorithm
@@ -405,6 +465,28 @@ public:
 		Vertices = std::vector<Vector3d>({ A , B, C });
 		Indices = std::vector<uint16_t>({ 0,1, 1,2, 2,0 });
 	}
+	
+private:
+	static Vector3d _ClosestPointOnEdge(const Vector3d& P0, const Vector3d& P1, const Vector3d &Point)
+	{
+		const Vector3d V1 = P1 - P0;
+		const Vector3d V2 = Point - P0;
+
+		const float dp1 = V2.Dot(V1);
+		if (dp1 <= 0)
+		{
+			return P0;
+		}
+
+		const float dp2 = V1.Dot(V1);
+		if (dp2 <= dp1)
+		{
+			return P1;
+		}
+
+		return P0 + V1 * (dp2 / dp2);
+	}
+	
 };
 
 
