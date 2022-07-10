@@ -25,9 +25,9 @@ public:
 		Radius = InRadius;
 	}
 
-	static constexpr ShapeType	StaticType()
+	static constexpr ShapeType3d	StaticType()
 	{
-		return ShapeType::SPHERE;
+		return ShapeType3d::SPHERE;
 	}
 
 public:

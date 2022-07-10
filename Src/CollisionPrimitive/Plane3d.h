@@ -35,9 +35,9 @@ public:
 		D = InD;
 	}
 
-	static constexpr ShapeType	StaticType()
+	static constexpr ShapeType3d	StaticType()
 	{
-		return ShapeType::PLANE;
+		return ShapeType3d::PLANE;
 	}
 
 public:

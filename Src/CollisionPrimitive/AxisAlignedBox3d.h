@@ -25,9 +25,9 @@ public:
 		Max = Bmax;
 	}
 
-	static constexpr ShapeType	StaticType()
+	static constexpr ShapeType3d	StaticType()
 	{
-		return ShapeType::BOX;
+		return ShapeType3d::BOX;
 	}
 
 public:

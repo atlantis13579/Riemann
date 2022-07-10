@@ -1,5 +1,5 @@
 
-#include "Tetrahedral.h"
+#include "TetrahedralMesh.h"
 #include "../LinearSystem/PolarDecomposition.h"
 
 TetrahedralMesh::TetrahedralMesh()
@@ -12,7 +12,7 @@ TetrahedralMesh::~TetrahedralMesh()
 
 void TetrahedralMesh::GetTransforms(int tetindex, Matrix3d& Ds, Matrix3d& F, Matrix3d& R, Matrix3d& S) const
 {
-	const Tetrahedral& t = m_tets[tetindex];
+	const TetrahedralNode& t = m_tets[tetindex];
 
 	// int i0 = t.node[0];
 	// int i1 = t.node[1];
@@ -28,7 +28,7 @@ void TetrahedralMesh::GetTransforms(int tetindex, Matrix3d& Ds, Matrix3d& F, Mat
 
 Matrix3d TetrahedralMesh::GetRotationMatrix(int tetindex, Matrix3d& Ds) const
 {
-	const Tetrahedral& t = m_tets[tetindex];
+	const TetrahedralNode& t = m_tets[tetindex];
 	Matrix3d F = Ds * t.Bm;
 	Matrix3d R, S;
 
@@ -49,7 +49,7 @@ Vector3d TetrahedralMesh::GetCentroid(int index1, int index2) const
 
 	for (int i = index1; i < index2; ++i)
 	{
-		const Tetrahedral* t = GetTetrahedral(i);
+		const TetrahedralNode* t = GetTetrahedral(i);
 		if (t == nullptr)
 			continue;
 

@@ -12,11 +12,11 @@ class GeometryIntersection
 public:
 	GeometryIntersection();
 
-	static RayCastFunc		GetRayCastFunc(ShapeType Type);
-	static OverlapFunc		GetOverlapFunc(ShapeType Type1, ShapeType Type2);
-	static SweepFunc		GetSweepFunc(ShapeType Type1, ShapeType Type2);
+	static RayCastFunc		GetRayCastFunc(ShapeType3d Type);
+	static OverlapFunc		GetOverlapFunc(ShapeType3d Type1, ShapeType3d Type2);
+	static SweepFunc		GetSweepFunc(ShapeType3d Type1, ShapeType3d Type2);
 
-	static RayCastFunc		raycastTable[ShapeType::GEOMETRY_COUNT];
-	static OverlapFunc		overlapTable[ShapeType::GEOMETRY_COUNT][ShapeType::GEOMETRY_COUNT];
-	static SweepFunc		sweepTable[ShapeType::GEOMETRY_COUNT][ShapeType::GEOMETRY_COUNT];
+	static RayCastFunc		raycastTable[ShapeType3d::GEOMETRY_COUNT];
+	static OverlapFunc		overlapTable[ShapeType3d::GEOMETRY_COUNT][ShapeType3d::GEOMETRY_COUNT];
+	static SweepFunc		sweepTable[ShapeType3d::GEOMETRY_COUNT][ShapeType3d::GEOMETRY_COUNT];
 };

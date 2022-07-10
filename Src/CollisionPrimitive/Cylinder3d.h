@@ -25,9 +25,9 @@ public:
 		X1 = _X1;
 	}
 
-	static constexpr ShapeType	StaticType()
+	static constexpr ShapeType3d	StaticType()
 	{
-		return ShapeType::CYLINDER;
+		return ShapeType3d::CYLINDER;
 	}
 
 public:

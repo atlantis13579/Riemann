@@ -15,15 +15,15 @@ struct Node
 	Node(const Vector3d& _position, float _mass) : position(_position), mass(_mass) {}
 };
 
-struct Tetrahedral
+struct TetrahedralNode
 {
 	int node[4];
 	float weight;
 	float volume;
 	Matrix3d Dm;
 	Matrix3d Bm;
-	Tetrahedral() = default;
-	Tetrahedral(int _n1, int _n2, int _n3, int _n4, float _weight, float _volume, Matrix3d& _Dm) : Dm(_Dm), Bm(_Dm.Inverse())
+	TetrahedralNode() = default;
+	TetrahedralNode(int _n1, int _n2, int _n3, int _n4, float _weight, float _volume, Matrix3d& _Dm) : Dm(_Dm), Bm(_Dm.Inverse())
 	{
 		weight = _weight;
 		volume = _volume;
@@ -62,7 +62,7 @@ public:
 
 		float vol = 1.0f / 6.0f * fabsf(Dm.Determinant());
 
-		m_tets.Push(Tetrahedral(t1, t2, t3, t4, weight,vol,Dm));
+		m_tets.Push(TetrahedralNode(t1, t2, t3, t4, weight,vol,Dm));
 	}
 
 	void AddTetrahedral(int t[4], float weight)
@@ -73,7 +73,7 @@ public:
 
 		float vol = 1.0f / 6.0f * fabsf(Dm.Determinant());
 
-		m_tets.Push(Tetrahedral(t[0], t[1], t[2], t[3], weight, vol, Dm));
+		m_tets.Push(TetrahedralNode(t[0], t[1], t[2], t[3], weight, vol, Dm));
 	}
 
 	const Node& GetNode(int index) const
@@ -97,7 +97,7 @@ public:
 		return m_nodes[index].position;
 	}
 
-	const Tetrahedral* GetTetrahedral(int index) const
+	const TetrahedralNode* GetTetrahedral(int index) const
 	{
 		if (index >= m_tets.Size())
 			return nullptr;
@@ -128,6 +128,6 @@ public:
 private:
 	Array<Node, MAX_NODES> m_nodes;
 	Array<Vector3d, MAX_NODES> m_restpos;
-	Array<Tetrahedral, MAX_TETS> m_tets;
+	Array<TetrahedralNode, MAX_TETS> m_tets;
 };
 

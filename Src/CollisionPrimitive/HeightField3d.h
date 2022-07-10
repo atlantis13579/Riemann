@@ -55,9 +55,9 @@ public:
 		Init(_Bv, _nX, _nZ);
 	}
 
-	static constexpr ShapeType	StaticType()
+	static constexpr ShapeType3d	StaticType()
 	{
-		return ShapeType::HEIGHTFIELD;
+		return ShapeType3d::HEIGHTFIELD;
 	}
 
 	void    Init(const Box3d& _Bv, int _nX, int _nZ)

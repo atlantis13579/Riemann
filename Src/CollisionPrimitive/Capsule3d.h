@@ -29,9 +29,9 @@ public:
 		Init(InX1, InX2, InRadius);
 	}
 
-	static constexpr ShapeType	StaticType()
+	static constexpr ShapeType3d	StaticType()
 	{
-		return ShapeType::CAPSULE;
+		return ShapeType3d::CAPSULE;
 	}
 
 	void		Init(const Vector3d& InX0, const Vector3d& InX1, float InRadius)

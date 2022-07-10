@@ -10,6 +10,8 @@
 		AD1C0F5D287042520060A1EE /* SIMD_SSE.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5B287042520060A1EE /* SIMD_SSE.h */; };
 		AD1C0F5E287042520060A1EE /* SIMD_Neon.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5C287042520060A1EE /* SIMD_Neon.h */; };
 		AD1C0F60287046E20060A1EE /* SIMD_Simulator.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5F287046E20060A1EE /* SIMD_Simulator.h */; };
+		AD5E0C5F287A7F74005E0888 /* Tetrahedral.h in Headers */ = {isa = PBXBuildFile; fileRef = AD5E0C5D287A7F74005E0888 /* Tetrahedral.h */; };
+		AD5E0C60287A7F74005E0888 /* Tetrahedral.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD5E0C5E287A7F74005E0888 /* Tetrahedral.cpp */; };
 		AD9AF4E12878E5D000DD78C9 /* Spline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */; };
 		AD9AF4E22878E5D000DD78C9 /* Spline.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9AF4E02878E5D000DD78C9 /* Spline.h */; };
 		ADC0F6B52878EBC700CE5173 /* GeometryDifference.h in Sources */ = {isa = PBXBuildFile; fileRef = ADC0F6B42878EBC700CE5173 /* GeometryDifference.h */; };
@@ -90,13 +92,13 @@
 		ADDE14532820AE3100809D36 /* ConjugateGradientSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13D22820AE3100809D36 /* ConjugateGradientSolver.h */; };
 		ADDE14542820AE3100809D36 /* SGD.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13D42820AE3100809D36 /* SGD.h */; };
 		ADDE14552820AE3100809D36 /* ConvexHull3D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13D62820AE3100809D36 /* ConvexHull3D.cpp */; };
-		ADDE14562820AE3100809D36 /* Tetrahedral.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13D72820AE3100809D36 /* Tetrahedral.h */; };
+		ADDE14562820AE3100809D36 /* TetrahedralMesh.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13D72820AE3100809D36 /* TetrahedralMesh.h */; };
 		ADDE14572820AE3100809D36 /* VoxelField.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13D82820AE3100809D36 /* VoxelField.h */; };
 		ADDE14582820AE3100809D36 /* SparseVoxelField.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13D92820AE3100809D36 /* SparseVoxelField.h */; };
 		ADDE14592820AE3100809D36 /* ConvexHull2D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13DA2820AE3100809D36 /* ConvexHull2D.cpp */; };
 		ADDE145A2820AE3100809D36 /* VoxelEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13DB2820AE3100809D36 /* VoxelEngine.cpp */; };
 		ADDE145B2820AE3100809D36 /* VoxelEngine.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13DC2820AE3100809D36 /* VoxelEngine.h */; };
-		ADDE145C2820AE3100809D36 /* Tetrahedral.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13DD2820AE3100809D36 /* Tetrahedral.cpp */; };
+		ADDE145C2820AE3100809D36 /* TetrahedralMesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13DD2820AE3100809D36 /* TetrahedralMesh.cpp */; };
 		ADDE145D2820AE3100809D36 /* SparseVoxelField.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13DE2820AE3100809D36 /* SparseVoxelField.cpp */; };
 		ADDE145E2820AE3100809D36 /* Polygon3D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13DF2820AE3100809D36 /* Polygon3D.cpp */; };
 		ADDE145F2820AE3100809D36 /* ConvexHull2D.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13E02820AE3100809D36 /* ConvexHull2D.h */; };
@@ -182,6 +184,8 @@
 		AD1C0F5B287042520060A1EE /* SIMD_SSE.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_SSE.h; sourceTree = "<group>"; };
 		AD1C0F5C287042520060A1EE /* SIMD_Neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_Neon.h; sourceTree = "<group>"; };
 		AD1C0F5F287046E20060A1EE /* SIMD_Simulator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_Simulator.h; sourceTree = "<group>"; };
+		AD5E0C5D287A7F74005E0888 /* Tetrahedral.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tetrahedral.h; sourceTree = "<group>"; };
+		AD5E0C5E287A7F74005E0888 /* Tetrahedral.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Tetrahedral.cpp; sourceTree = "<group>"; };
 		AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Spline.cpp; sourceTree = "<group>"; };
 		AD9AF4E02878E5D000DD78C9 /* Spline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Spline.h; sourceTree = "<group>"; };
 		ADC0F6B42878EBC700CE5173 /* GeometryDifference.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeometryDifference.h; sourceTree = "<group>"; };
@@ -262,13 +266,13 @@
 		ADDE13D22820AE3100809D36 /* ConjugateGradientSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConjugateGradientSolver.h; sourceTree = "<group>"; };
 		ADDE13D42820AE3100809D36 /* SGD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SGD.h; sourceTree = "<group>"; };
 		ADDE13D62820AE3100809D36 /* ConvexHull3D.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ConvexHull3D.cpp; sourceTree = "<group>"; };
-		ADDE13D72820AE3100809D36 /* Tetrahedral.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tetrahedral.h; sourceTree = "<group>"; };
+		ADDE13D72820AE3100809D36 /* TetrahedralMesh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TetrahedralMesh.h; sourceTree = "<group>"; };
 		ADDE13D82820AE3100809D36 /* VoxelField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VoxelField.h; sourceTree = "<group>"; };
 		ADDE13D92820AE3100809D36 /* SparseVoxelField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SparseVoxelField.h; sourceTree = "<group>"; };
 		ADDE13DA2820AE3100809D36 /* ConvexHull2D.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ConvexHull2D.cpp; sourceTree = "<group>"; };
 		ADDE13DB2820AE3100809D36 /* VoxelEngine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VoxelEngine.cpp; sourceTree = "<group>"; };
 		ADDE13DC2820AE3100809D36 /* VoxelEngine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VoxelEngine.h; sourceTree = "<group>"; };
-		ADDE13DD2820AE3100809D36 /* Tetrahedral.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Tetrahedral.cpp; sourceTree = "<group>"; };
+		ADDE13DD2820AE3100809D36 /* TetrahedralMesh.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TetrahedralMesh.cpp; sourceTree = "<group>"; };
 		ADDE13DE2820AE3100809D36 /* SparseVoxelField.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SparseVoxelField.cpp; sourceTree = "<group>"; };
 		ADDE13DF2820AE3100809D36 /* Polygon3D.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Polygon3D.cpp; sourceTree = "<group>"; };
 		ADDE13E02820AE3100809D36 /* ConvexHull2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConvexHull2D.h; sourceTree = "<group>"; };
@@ -431,6 +435,8 @@
 				ADDE13BD2820AE3100809D36 /* Plane3d.h */,
 				ADDE13C52820AE3100809D36 /* Point3d.h */,
 				ADDE13B52820AE3100809D36 /* Ray3d.h */,
+				AD5E0C5E287A7F74005E0888 /* Tetrahedral.cpp */,
+				AD5E0C5D287A7F74005E0888 /* Tetrahedral.h */,
 				ADDE13B82820AE3100809D36 /* Segment3d.cpp */,
 				ADDE13BB2820AE3100809D36 /* Segment3d.h */,
 				ADDE13C12820AE3100809D36 /* ShapeType.h */,
@@ -484,8 +490,8 @@
 				ADDE13D92820AE3100809D36 /* SparseVoxelField.h */,
 				AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */,
 				AD9AF4E02878E5D000DD78C9 /* Spline.h */,
-				ADDE13DD2820AE3100809D36 /* Tetrahedral.cpp */,
-				ADDE13D72820AE3100809D36 /* Tetrahedral.h */,
+				ADDE13DD2820AE3100809D36 /* TetrahedralMesh.cpp */,
+				ADDE13D72820AE3100809D36 /* TetrahedralMesh.h */,
 				ADDE13DB2820AE3100809D36 /* VoxelEngine.cpp */,
 				ADDE13DC2820AE3100809D36 /* VoxelEngine.h */,
 				ADDE13E22820AE3100809D36 /* VoxelField.cpp */,
@@ -660,6 +666,7 @@
 				ADDE13352820AE0700809D36 /* GJK.h in Headers */,
 				ADDE14992820AE3100809D36 /* JacobiIteration_CPU.h in Headers */,
 				ADDE131D2820AE0700809D36 /* AABBTreeInference.h in Headers */,
+				AD5E0C5F287A7F74005E0888 /* Tetrahedral.h in Headers */,
 				ADDE14972820AE3100809D36 /* PolarDecomposition.h in Headers */,
 				ADDE13242820AE0700809D36 /* SparseSpatialHash.h in Headers */,
 				ADDE143F2820AE3100809D36 /* Plane3d.h in Headers */,
@@ -734,7 +741,7 @@
 				ADDE14372820AE3100809D36 /* Ray3d.h in Headers */,
 				ADD2DA59286F37F400B669C9 /* libPPM.h in Headers */,
 				ADDE14582820AE3100809D36 /* SparseVoxelField.h in Headers */,
-				ADDE14562820AE3100809D36 /* Tetrahedral.h in Headers */,
+				ADDE14562820AE3100809D36 /* TetrahedralMesh.h in Headers */,
 				ADDE14862820AE3100809D36 /* Quaternion.h in Headers */,
 				ADDE13292820AE0700809D36 /* Contact.h in Headers */,
 				ADDE14882820AE3100809D36 /* Maths.h in Headers */,
@@ -837,6 +844,7 @@
 				ADDE132B2820AE0700809D36 /* DynamicAABBTree.cpp in Sources */,
 				ADDE14B52820B16F00809D36 /* Vehicle.cpp in Sources */,
 				ADDE145D2820AE3100809D36 /* SparseVoxelField.cpp in Sources */,
+				AD5E0C60287A7F74005E0888 /* Tetrahedral.cpp in Sources */,
 				ADDE14342820AE3100809D36 /* AxisAlignedBox3d.cpp in Sources */,
 				ADDE149C2820AE3100809D36 /* EigenValueDecomposition.cpp in Sources */,
 				ADDE145E2820AE3100809D36 /* Polygon3D.cpp in Sources */,
@@ -865,7 +873,7 @@
 				ADDE14362820AE3100809D36 /* OrientedBox3d.cpp in Sources */,
 				ADDE14802820AE3100809D36 /* PhysicsMaterial.cpp in Sources */,
 				ADDE145A2820AE3100809D36 /* VoxelEngine.cpp in Sources */,
-				ADDE145C2820AE3100809D36 /* Tetrahedral.cpp in Sources */,
+				ADDE145C2820AE3100809D36 /* TetrahedralMesh.cpp in Sources */,
 				ADDE14422820AE3100809D36 /* MeshBVH4.cpp in Sources */,
 				ADDE144A2820AE3100809D36 /* LCPSolver.cpp in Sources */,
 				ADDE147B2820AE3100809D36 /* AnimationTree.cpp in Sources */,

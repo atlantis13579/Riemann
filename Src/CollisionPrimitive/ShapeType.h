@@ -1,6 +1,6 @@
 #pragma once
 
-enum ShapeType
+enum ShapeType3d
 {
 	UNKNOWN = 0,
 	BOX,
@@ -9,6 +9,7 @@ enum ShapeType
 	CAPSULE,
 	CYLINDER,
 	TRIANGLE,
+	TETRAHEDRAL,
 	HEIGHTFIELD,
 	CONVEX_MESH,
 	TRIANGLE_MESH,

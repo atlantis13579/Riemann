@@ -30,9 +30,9 @@ public:
 		Release();
 	}
 
-	static constexpr ShapeType	StaticType()
+	static constexpr ShapeType3d	StaticType()
 	{
-		return ShapeType::TRIANGLE_MESH;
+		return ShapeType3d::TRIANGLE_MESH;
 	}
 
 	void Release()

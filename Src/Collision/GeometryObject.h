@@ -52,7 +52,7 @@ public:
 		return &m_Transform;
 	}
 
-	ShapeType				GetShapeType() const
+	ShapeType3d				GetShapeType() const
 	{
 		return m_Type;
 	}
@@ -119,7 +119,7 @@ private:
 	}
 
 protected:
-	ShapeType				m_Type;
+	ShapeType3d				m_Type;
 	Box3d					m_BoxWorld;
 	Transform				m_Transform;
 	uint64_t				m_Guid;

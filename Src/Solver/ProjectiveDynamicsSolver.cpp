@@ -57,7 +57,7 @@ void ProjectiveDynamicsSolver::InitLaplacianMatrix()
 {
 	for (int i = 0; i < m_nTets; ++i)
 	{
-		const Tetrahedral* t = m_tetmesh->GetTetrahedral(i);
+		const TetrahedralNode* t = m_tetmesh->GetTetrahedral(i);
 
 		int i0 = t->node[0];
 		int i1 = t->node[1];
@@ -189,7 +189,7 @@ void ProjectiveDynamicsSolver::Simulate()
 
 		for (int i = 0; i < m_nTets; ++i)
 		{
-			const Tetrahedral* t = m_tetmesh->GetTetrahedral(i);
+			const TetrahedralNode* t = m_tetmesh->GetTetrahedral(i);
 
 			int i0 = t->node[0];
 			int i1 = t->node[1];

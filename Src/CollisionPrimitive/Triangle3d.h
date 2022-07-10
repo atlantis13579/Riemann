@@ -21,9 +21,9 @@ public:
 		Init(InA, InB, InC);
 	}
 
-	static constexpr ShapeType	StaticType()
+	static constexpr ShapeType3d	StaticType()
 	{
-		return ShapeType::TRIANGLE;
+		return ShapeType3d::TRIANGLE;
 	}
 
 	void			Init(const Vector3d& InA, const Vector3d& InB, const Vector3d& InC)
@@ -343,7 +343,7 @@ public:
 		return A;
 	}
 	
-	static float	SqrDistanceToTriangle(const Vector3d &Point, const Vector3d &A, const Vector3d &B, const Vector3d &C)
+	static float	SqrDistancePointToTriangle(const Vector3d &Point, const Vector3d &A, const Vector3d &B, const Vector3d &C)
 	{
 		Vector3d Closest = ClosestPointOnTriangle(Point, A, B, C);
 		return (Closest - Point).SquareLength();
@@ -351,7 +351,7 @@ public:
 	
 	float			SqrDistanceToPoint(const Vector3d &Point) const
 	{
-		return Triangle3d::SqrDistanceToTriangle(Point, A, B, C);
+		return Triangle3d::SqrDistancePointToTriangle(Point, A, B, C);
 	}
 	
 	bool			IntersectSphere(const Vector3d& Center, float Radius) const
@@ -413,6 +413,13 @@ public:
 
 		// No hit, no win
 		return false;
+	}
+	
+	Vector3d		BaryCentric2D(const Vector3d& Point)
+	{
+		float a = ((B.y - C.y) * (Point.x - C.x) + (C.x - B.x) * (Point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y));
+		float b = ((C.y - A.y) * (Point.x - C.x) + (A.x - C.x) * (Point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y));
+		return Vector3d(a, b, 1.0f - a - b);
 	}
 
 	Box3d			GetBoundingVolume() const
