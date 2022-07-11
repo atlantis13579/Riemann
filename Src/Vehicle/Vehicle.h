@@ -3,7 +3,7 @@
 #include "../Maths/Quaternion.h"
 #include "../Maths/Vector3d.h"
 
-class VehicleModel
+class Vehicle
 {
 public:
 	Vector3d	GetPosition() const;

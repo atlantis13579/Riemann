@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AD0A9D9A287C609F00A6CAB5 /* ConstraintSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = AD0A9D98287C609F00A6CAB5 /* ConstraintSolver.h */; };
+		AD0A9D9B287C609F00A6CAB5 /* ConstraintSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0A9D99287C609F00A6CAB5 /* ConstraintSolver.cpp */; };
+		AD0A9D9E287C60B400A6CAB5 /* SequentialImpulseSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = AD0A9D9C287C60B400A6CAB5 /* SequentialImpulseSolver.h */; };
+		AD0A9D9F287C60B400A6CAB5 /* SequentialImpulseSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0A9D9D287C60B400A6CAB5 /* SequentialImpulseSolver.cpp */; };
+		AD0A9DA1287C619700A6CAB5 /* SIMD_AVX.h in Headers */ = {isa = PBXBuildFile; fileRef = AD0A9DA0287C619700A6CAB5 /* SIMD_AVX.h */; };
+		AD0A9DA4287C624E00A6CAB5 /* Jacobian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0A9DA2287C624D00A6CAB5 /* Jacobian.cpp */; };
+		AD0A9DA5287C624E00A6CAB5 /* Jacobian.h in Headers */ = {isa = PBXBuildFile; fileRef = AD0A9DA3287C624E00A6CAB5 /* Jacobian.h */; };
 		AD1C0F5D287042520060A1EE /* SIMD_SSE.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5B287042520060A1EE /* SIMD_SSE.h */; };
 		AD1C0F5E287042520060A1EE /* SIMD_Neon.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5C287042520060A1EE /* SIMD_Neon.h */; };
 		AD1C0F60287046E20060A1EE /* SIMD_Simulator.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1C0F5F287046E20060A1EE /* SIMD_Simulator.h */; };
@@ -117,7 +124,6 @@
 		ADDE146A2820AE3100809D36 /* PhysxFormat_41.hpp in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13EC2820AE3100809D36 /* PhysxFormat_41.hpp */; };
 		ADDE146C2820AE3100809D36 /* PhysxBinaryParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13EE2820AE3100809D36 /* PhysxBinaryParser.cpp */; };
 		ADDE146D2820AE3100809D36 /* AnimBinaryParser.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13EF2820AE3100809D36 /* AnimBinaryParser.h */; };
-		ADDE146E2820AE3100809D36 /* SequentialImpulseSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13F12820AE3100809D36 /* SequentialImpulseSolver.cpp */; };
 		ADDE146F2820AE3100809D36 /* Animation.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13F22820AE3100809D36 /* Animation.h */; };
 		ADDE14702820AE3100809D36 /* AnimationTree.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13F32820AE3100809D36 /* AnimationTree.h */; };
 		ADDE14712820AE3100809D36 /* WarmStart.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13F42820AE3100809D36 /* WarmStart.cpp */; };
@@ -125,7 +131,6 @@
 		ADDE14732820AE3100809D36 /* WarmStart.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13F62820AE3100809D36 /* WarmStart.h */; };
 		ADDE14742820AE3100809D36 /* RigidBody.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13F72820AE3100809D36 /* RigidBody.cpp */; };
 		ADDE14752820AE3100809D36 /* RigidBodySimulation.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13F82820AE3100809D36 /* RigidBodySimulation.h */; };
-		ADDE14762820AE3100809D36 /* SequentialImpulseSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13F92820AE3100809D36 /* SequentialImpulseSolver.h */; };
 		ADDE14772820AE3100809D36 /* PhysicsMaterial.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13FA2820AE3100809D36 /* PhysicsMaterial.h */; };
 		ADDE14782820AE3100809D36 /* MotionIntegration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13FB2820AE3100809D36 /* MotionIntegration.cpp */; };
 		ADDE14792820AE3100809D36 /* RigidBody.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13FC2820AE3100809D36 /* RigidBody.h */; };
@@ -183,6 +188,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AD0A9D98287C609F00A6CAB5 /* ConstraintSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ConstraintSolver.h; sourceTree = "<group>"; };
+		AD0A9D99287C609F00A6CAB5 /* ConstraintSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ConstraintSolver.cpp; sourceTree = "<group>"; };
+		AD0A9D9C287C60B400A6CAB5 /* SequentialImpulseSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequentialImpulseSolver.h; sourceTree = "<group>"; };
+		AD0A9D9D287C60B400A6CAB5 /* SequentialImpulseSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequentialImpulseSolver.cpp; sourceTree = "<group>"; };
+		AD0A9DA0287C619700A6CAB5 /* SIMD_AVX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_AVX.h; sourceTree = "<group>"; };
+		AD0A9DA2287C624D00A6CAB5 /* Jacobian.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Jacobian.cpp; sourceTree = "<group>"; };
+		AD0A9DA3287C624E00A6CAB5 /* Jacobian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Jacobian.h; sourceTree = "<group>"; };
 		AD1C0F5B287042520060A1EE /* SIMD_SSE.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_SSE.h; sourceTree = "<group>"; };
 		AD1C0F5C287042520060A1EE /* SIMD_Neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_Neon.h; sourceTree = "<group>"; };
 		AD1C0F5F287046E20060A1EE /* SIMD_Simulator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD_Simulator.h; sourceTree = "<group>"; };
@@ -293,7 +305,6 @@
 		ADDE13EC2820AE3100809D36 /* PhysxFormat_41.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PhysxFormat_41.hpp; sourceTree = "<group>"; };
 		ADDE13EE2820AE3100809D36 /* PhysxBinaryParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PhysxBinaryParser.cpp; sourceTree = "<group>"; };
 		ADDE13EF2820AE3100809D36 /* AnimBinaryParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnimBinaryParser.h; sourceTree = "<group>"; };
-		ADDE13F12820AE3100809D36 /* SequentialImpulseSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequentialImpulseSolver.cpp; sourceTree = "<group>"; };
 		ADDE13F22820AE3100809D36 /* Animation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Animation.h; sourceTree = "<group>"; };
 		ADDE13F32820AE3100809D36 /* AnimationTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnimationTree.h; sourceTree = "<group>"; };
 		ADDE13F42820AE3100809D36 /* WarmStart.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WarmStart.cpp; sourceTree = "<group>"; };
@@ -301,7 +312,6 @@
 		ADDE13F62820AE3100809D36 /* WarmStart.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WarmStart.h; sourceTree = "<group>"; };
 		ADDE13F72820AE3100809D36 /* RigidBody.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RigidBody.cpp; sourceTree = "<group>"; };
 		ADDE13F82820AE3100809D36 /* RigidBodySimulation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RigidBodySimulation.h; sourceTree = "<group>"; };
-		ADDE13F92820AE3100809D36 /* SequentialImpulseSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SequentialImpulseSolver.h; sourceTree = "<group>"; };
 		ADDE13FA2820AE3100809D36 /* PhysicsMaterial.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PhysicsMaterial.h; sourceTree = "<group>"; };
 		ADDE13FB2820AE3100809D36 /* MotionIntegration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MotionIntegration.cpp; sourceTree = "<group>"; };
 		ADDE13FC2820AE3100809D36 /* RigidBody.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RigidBody.h; sourceTree = "<group>"; };
@@ -455,8 +465,12 @@
 		ADDE13C72820AE3100809D36 /* Solver */ = {
 			isa = PBXGroup;
 			children = (
+				AD0A9D99287C609F00A6CAB5 /* ConstraintSolver.cpp */,
+				AD0A9D98287C609F00A6CAB5 /* ConstraintSolver.h */,
 				ADDE13D22820AE3100809D36 /* ConjugateGradientSolver.h */,
 				ADDE13CC2820AE3100809D36 /* ExponentialIntegrator.h */,
+				AD0A9DA2287C624D00A6CAB5 /* Jacobian.cpp */,
+				AD0A9DA3287C624E00A6CAB5 /* Jacobian.h */,
 				ADDE13C92820AE3100809D36 /* LCPSolver.cpp */,
 				ADDE13CF2820AE3100809D36 /* LCPSolver.h */,
 				ADDE13CE2820AE3100809D36 /* NewtonRaphsonIteration.cpp */,
@@ -465,6 +479,8 @@
 				ADDE13CB2820AE3100809D36 /* NumericalODESolver.h */,
 				ADDE13CD2820AE3100809D36 /* ProjectiveDynamicsSolver.cpp */,
 				ADDE13D12820AE3100809D36 /* ProjectiveDynamicsSolver.h */,
+				AD0A9D9D287C60B400A6CAB5 /* SequentialImpulseSolver.cpp */,
+				AD0A9D9C287C60B400A6CAB5 /* SequentialImpulseSolver.h */,
 				ADDE13C82820AE3100809D36 /* SparseConjugateGradientSolver.h */,
 			);
 			path = Solver;
@@ -543,8 +559,6 @@
 				ADDE13FC2820AE3100809D36 /* RigidBody.h */,
 				ADDE14002820AE3100809D36 /* RigidBodySimulation.cpp */,
 				ADDE13F82820AE3100809D36 /* RigidBodySimulation.h */,
-				ADDE13F12820AE3100809D36 /* SequentialImpulseSolver.cpp */,
-				ADDE13F92820AE3100809D36 /* SequentialImpulseSolver.h */,
 				ADDE13F42820AE3100809D36 /* WarmStart.cpp */,
 				ADDE13F62820AE3100809D36 /* WarmStart.h */,
 			);
@@ -567,6 +581,7 @@
 				ADDE14182820AE3100809D36 /* MatrixMxN.h */,
 				ADDE140A2820AE3100809D36 /* Quaternion.h */,
 				ADDE14102820AE3100809D36 /* SIMD.h */,
+				AD0A9DA0287C619700A6CAB5 /* SIMD_AVX.h */,
 				AD1C0F5B287042520060A1EE /* SIMD_SSE.h */,
 				AD1C0F5C287042520060A1EE /* SIMD_Neon.h */,
 				AD1C0F5F287046E20060A1EE /* SIMD_Simulator.h */,
@@ -692,13 +707,14 @@
 				ADDE14732820AE3100809D36 /* WarmStart.h in Headers */,
 				AD1C0F60287046E20060A1EE /* SIMD_Simulator.h in Headers */,
 				ADDE14492820AE3100809D36 /* SparseConjugateGradientSolver.h in Headers */,
-				ADDE14762820AE3100809D36 /* SequentialImpulseSolver.h in Headers */,
+				AD0A9DA5287C624E00A6CAB5 /* Jacobian.h in Headers */,
 				ADDE132A2820AE0700809D36 /* ProximityGrid.h in Headers */,
 				ADDE14952820AE3100809D36 /* Matrix3d.h in Headers */,
 				ADDE13362820AE0700809D36 /* SAP.h in Headers */,
 				ADDE14702820AE3100809D36 /* AnimationTree.h in Headers */,
 				ADDE132F2820AE0700809D36 /* SAP_Incremental.h in Headers */,
 				ADDE14542820AE3100809D36 /* SGD.h in Headers */,
+				AD0A9D9A287C609F00A6CAB5 /* ConstraintSolver.h in Headers */,
 				ADDE14722820AE3100809D36 /* MotionIntegration.h in Headers */,
 				ADDE147C2820AE3100809D36 /* ForceField.h in Headers */,
 				ADDE14902820AE3100809D36 /* Matrix2d.h in Headers */,
@@ -739,6 +755,8 @@
 				ADDE14B42820B16F00809D36 /* LQR.h in Headers */,
 				ADDE14502820AE3100809D36 /* LCPSolver.h in Headers */,
 				ADDE14A22820AE3100809D36 /* GaussianElimination.h in Headers */,
+				AD0A9DA1287C619700A6CAB5 /* SIMD_AVX.h in Headers */,
+				AD0A9D9E287C60B400A6CAB5 /* SequentialImpulseSolver.h in Headers */,
 				ADDE13322820AE0700809D36 /* QuadTree.h in Headers */,
 				ADDE14412820AE3100809D36 /* AxisAlignedBox3d.h in Headers */,
 				ADDE14432820AE3100809D36 /* ShapeType.h in Headers */,
@@ -866,7 +884,9 @@
 				ADDE132D2820AE0700809D36 /* GeometryQuery.cpp in Sources */,
 				ADC0F6B52878EBC700CE5173 /* GeometryDifference.h in Sources */,
 				ADDE13282820AE0700809D36 /* AABBTreeOffline.cpp in Sources */,
+				AD0A9DA4287C624E00A6CAB5 /* Jacobian.cpp in Sources */,
 				ADDE144F2820AE3100809D36 /* NewtonRaphsonIteration.cpp in Sources */,
+				AD0A9D9B287C609F00A6CAB5 /* ConstraintSolver.cpp in Sources */,
 				ADC73027286DD3BC00364E92 /* PythonModule.cpp in Sources */,
 				ADDE14452820AE3100809D36 /* HeightField3d.cpp in Sources */,
 				ADDE14B92820B16F00809D36 /* AutonomousController.cpp in Sources */,
@@ -882,11 +902,11 @@
 				ADDE14802820AE3100809D36 /* PhysicsMaterial.cpp in Sources */,
 				ADDE145A2820AE3100809D36 /* VoxelEngine.cpp in Sources */,
 				ADDE145C2820AE3100809D36 /* TetrahedralMesh.cpp in Sources */,
+				AD0A9D9F287C60B400A6CAB5 /* SequentialImpulseSolver.cpp in Sources */,
 				ADDE14422820AE3100809D36 /* MeshBVH4.cpp in Sources */,
 				ADDE144A2820AE3100809D36 /* LCPSolver.cpp in Sources */,
 				ADDE147B2820AE3100809D36 /* AnimationTree.cpp in Sources */,
 				ADDE14712820AE3100809D36 /* WarmStart.cpp in Sources */,
-				ADDE146E2820AE3100809D36 /* SequentialImpulseSolver.cpp in Sources */,
 				ADDE14742820AE3100809D36 /* RigidBody.cpp in Sources */,
 				ADDE14692820AE3100809D36 /* AnimBinaryParser.cpp in Sources */,
 				ADDE147A2820AE3100809D36 /* Animation.cpp in Sources */,

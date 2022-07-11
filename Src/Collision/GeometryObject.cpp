@@ -106,7 +106,6 @@ Vector3d			Geometry::GetPosition() const
 void				Geometry::SetPosition(const Vector3d& Position)
 {
 	m_Transform.SetTranslation(Position);
-	UpdateBoundingVolume();
 	return;
 }
 
@@ -123,7 +122,6 @@ Quaternion			Geometry::GetRotationQuat() const
 void				Geometry::SetRotationQuat(const Quaternion& Rotation)
 {
 	m_Transform.SetRotation(Rotation);
-	UpdateBoundingVolume();
 }
 
 const Matrix4d&		Geometry::GetWorldMatrix()
@@ -194,6 +192,7 @@ Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& Ext
 	p->Max = Extent;
 	p->SetPosition(Center);
 	p->SetRotationQuat(Rot);
+	p->UpdateBoundingVolume();
 	return (Geometry*)p;
 }
 
@@ -206,6 +205,7 @@ Geometry* GeometryFactory::CreatePlane(const Vector3d& Center, const Vector3d& N
 	Quaternion quat;
 	quat.FromTwoAxis(p->Normal, Normal);
 	p->SetRotationQuat(quat);
+	p->UpdateBoundingVolume();
 	return (Geometry*)p;
 }
 
@@ -216,6 +216,7 @@ Geometry* GeometryFactory::CreateSphere(const Vector3d& Center, float Radius)
 	p->Radius = Radius;
 	p->SetPosition(Center);
 	p->SetRotationQuat(Quaternion::One());
+	p->UpdateBoundingVolume();
 	return (Geometry*)p;
 }
 
@@ -226,6 +227,7 @@ Geometry* GeometryFactory::CreateCapsule(const Vector3d& X1, const Vector3d& X2,
 	p->Init(X1 - Center, X2 - Center, Radius);
 	p->SetPosition(Center);
 	p->SetRotationQuat(Quaternion::One());
+	p->UpdateBoundingVolume();
 	return (Geometry*)p;
 }
 
@@ -235,6 +237,7 @@ Geometry* GeometryFactory::CreateHeightField(const Box3d &Bv, int nRows, int nCo
 	p->Init(Bv, nRows, nCols);
 	p->SetPosition(Vector3d::Zero());
 	p->SetRotationQuat(Quaternion::One());
+	p->UpdateBoundingVolume();
 	return (Geometry*)p;
 }
 
@@ -243,6 +246,7 @@ Geometry* GeometryFactory::CreateConvexMesh()
 	TGeometry<ConvexMesh>* p = new TGeometry<ConvexMesh>();
 	p->SetPosition(Vector3d::Zero());
 	p->SetRotationQuat(Quaternion::One());
+	p->UpdateBoundingVolume();
 	return (Geometry*)p;
 }
 
@@ -253,6 +257,7 @@ Geometry* GeometryFactory::CreateTriangle(const Vector3d& A, const Vector3d& B, 
 	p->Init(A - Center, B - Center, C - Center);
 	p->SetPosition(Center);
 	p->SetRotationQuat(Quaternion::One());
+	p->UpdateBoundingVolume();
 	return (Geometry*)p;
 }
 
@@ -261,5 +266,6 @@ Geometry* GeometryFactory::CreateTriangleMesh()
 	TGeometry<TriangleMesh>* p = new TGeometry<TriangleMesh>();
 	p->SetPosition(Vector3d::Zero());
 	p->SetRotationQuat(Quaternion::One());
+	p->UpdateBoundingVolume();
 	return (Geometry*)p;
 }
