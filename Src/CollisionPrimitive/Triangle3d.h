@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <assert.h>
 #include <stdint.h>
 
 #include "../Maths/Box3d.h"
