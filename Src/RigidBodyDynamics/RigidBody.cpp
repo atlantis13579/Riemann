@@ -45,6 +45,7 @@ RigidBodyStatic* RigidBodyStatic::CreateRigidBody(Geometry* Shape, const RigidBo
 	Rigid->X = Shape->GetPosition();
 	Rigid->Q = Shape->GetRotationQuat();
 	Rigid->Shape = Shape;
+	Rigid->Static = true;
 	return Rigid;
 }
 

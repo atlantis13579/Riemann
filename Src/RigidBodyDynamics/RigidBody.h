@@ -36,7 +36,12 @@ struct RigidBodyParam
 class RigidBody : public PhysicsEntity
 {
 public:
+	Geometry*	Shape;
+	bool		Static;
 
+	// State variable
+	Vector3d	X;				// Position
+	Quaternion	Q;				// Rotation Quaternion
 };
 
 
@@ -49,11 +54,6 @@ public:
 	void SetPosition(const Vector3d& pos);
 	void SetRotation(const Quaternion& quat);
 	void AppendShapes(std::vector<Geometry*>* Shapes);
-
-	// State variable
-	Vector3d	X;				// Position
-	Quaternion	Q;				// Rotation Quaternion
-	Geometry* Shape;
 };
 
 
@@ -61,8 +61,8 @@ class RigidBodyDynamic : public RigidBody
 {
 public:
 	// State variable
-	Vector3d	X;				// Position
-	Quaternion	Q;				// Rotation Quaternion
+	// Vector3d	X;				// Position
+	// Quaternion	Q;			// Rotation Quaternion
 	Vector3d	P;				// Linear Momentum
 	Vector3d	L;				// Angular Momentum
 

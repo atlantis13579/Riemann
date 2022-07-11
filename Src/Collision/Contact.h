@@ -15,6 +15,13 @@ public:
 		EPA_Failed   // EPA phase fail, bigger problem, need to save parameters, and debug
 	} status;
 
+	ContactResult()
+	{
+		ImpulseNormal = 0.0f;
+		ImpulseTangent1 = 0.0f;
+		ImpulseTangent2 = 0.0f;
+	}
+
 	Vector3d WitnessLocal1;
 	Vector3d WitnessLocal2;
 	Vector3d WitnessWorld1;

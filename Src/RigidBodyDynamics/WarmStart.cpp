@@ -18,29 +18,37 @@ void WarmStart::Manifolds(std::vector<ContactManifold>& manifolds, float dt)
 
 void WarmStart::Contact(Geometry* Geom1, Geometry* Geom2, ContactResult& contact, float dt)
 {
-    RigidBodyDynamic* rigidBody1 = (RigidBodyDynamic*)Geom1->GetEntity();
-    RigidBodyDynamic* rigidBody2 = (RigidBodyDynamic*)Geom2->GetEntity();
+    RigidBody* rigidBody1 = (RigidBody*)Geom1->GetEntity();
+    RigidBody* rigidBody2 = (RigidBody*)Geom2->GetEntity();
 
     //let normal point from a -> b
     Vector3d normal = -contact.Normal;
 
-    Vector3d relativePos1 = contact.WitnessWorld1 - rigidBody1->P;
-    Vector3d relativePos2 = contact.WitnessWorld2 - rigidBody2->P;
+    Vector3d relativePos1 = contact.WitnessWorld1 - rigidBody1->X;
+    Vector3d relativePos2 = contact.WitnessWorld2 - rigidBody2->X;
 
     // collision impulse
     float collisionImpulseVal = contact.ImpulseNormal;
     Vector3d collisionImpulse = normal * collisionImpulseVal;
 
-    if (!rigidBody1->Static && !rigidBody1->Sleep)
+    if (!rigidBody1->Static)
     {
-        rigidBody1->P = rigidBody1->P - collisionImpulse;
-        rigidBody1->L = rigidBody1->L - collisionImpulseVal * relativePos1.Cross(normal);
+		RigidBodyDynamic* rigidBodyDyn1 = (RigidBodyDynamic*)rigidBody1;
+		if (!rigidBodyDyn1->Sleep)
+		{
+            rigidBodyDyn1->P = rigidBodyDyn1->P - collisionImpulse;
+            rigidBodyDyn1->L = rigidBodyDyn1->L - collisionImpulseVal * relativePos1.Cross(normal);
+		}
     }
 
-    if (!rigidBody2->Static && !rigidBody2->Sleep)
-    {
-        rigidBody2->P = rigidBody2->P + collisionImpulse;
-        rigidBody2->L = rigidBody2->L - collisionImpulseVal * relativePos2.Cross(normal);
+	if (!rigidBody2->Static)
+	{
+		RigidBodyDynamic* rigidBodyDyn2 = (RigidBodyDynamic*)rigidBody2;
+        if (!rigidBodyDyn2->Sleep)
+        {
+            rigidBodyDyn2->P = rigidBodyDyn2->P + collisionImpulse;
+            rigidBodyDyn2->L = rigidBodyDyn2->L - collisionImpulseVal * relativePos2.Cross(normal);
+        }
     }
 
     // friction impulse
@@ -48,16 +56,24 @@ void WarmStart::Contact(Geometry* Geom1, Geometry* Geom2, ContactResult& contact
     float frictionImpulseVal = contact.ImpulseTangent1;
     Vector3d frictionImpulse = tangent * frictionImpulseVal;
 
-    if (!rigidBody1->Static && !rigidBody1->Sleep)
-    {
-        rigidBody1->P = rigidBody1->P - frictionImpulse;
-        rigidBody1->L = rigidBody1->L - frictionImpulseVal * relativePos1.Cross(tangent);
+	if (!rigidBody1->Static)
+	{
+		RigidBodyDynamic* rigidBodyDyn1 = (RigidBodyDynamic*)rigidBody1;
+        if (!rigidBodyDyn1->Sleep)
+        {
+            rigidBodyDyn1->P = rigidBodyDyn1->P - frictionImpulse;
+            rigidBodyDyn1->L = rigidBodyDyn1->L - frictionImpulseVal * relativePos1.Cross(tangent);
+        }
     }
 
-    if (!rigidBody2->Static && !rigidBody2->Sleep)
-    {
-        rigidBody2->P = rigidBody2->P + frictionImpulse;
-        rigidBody2->L = rigidBody2->L - frictionImpulseVal * relativePos2.Cross(tangent);
+	if (!rigidBody2->Static)
+	{
+		RigidBodyDynamic* rigidBodyDyn2 = (RigidBodyDynamic*)rigidBody2;
+        if (!rigidBodyDyn2->Sleep)
+        {
+            rigidBodyDyn2->P = rigidBodyDyn2->P + frictionImpulse;
+            rigidBodyDyn2->L = rigidBodyDyn2->L - frictionImpulseVal * relativePos2.Cross(tangent);
+        }
     }
 }
 
