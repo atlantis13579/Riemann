@@ -7,6 +7,8 @@
 #define X_INDEX(_x)		((int)((_x - BV.Min.x) * InvDX))
 #define Z_INDEX(_z)		((int)((_z - BV.Min.z) * InvDZ))
 
+static const float HfCellThickness = 0.0001f;
+
 bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
 {
 	float minH, maxH;
@@ -21,12 +23,12 @@ bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir
 			return false;
 		}
 	}
-	else
+
 	{
-		float t0 = ((Dir.y > 0 ? minH : maxH) - Origin.y) / Dir.y;
-		float x = Origin.x + Dir.x * t0 - BV.Min.x - i * DX;
-		float z = Origin.z + Dir.z * t0 - BV.Min.z - j * DZ;
-		if (x < 0.0f || x > DX || z < 0.0f || z > DZ)
+		Vector3d Bmin(BV.Min.x + i * DX, minH, BV.Min.z + j * DZ);
+		Vector3d Bmax(BV.Min.x + (i + 1) * DX, maxH, BV.Min.z + (j + 1) * DZ);
+		float t0, t1;
+		if (!Ray3d::RayIntersectAABB2(Origin, Dir, Bmin, Bmax, HfCellThickness, Option.maxDist, &t0, &t1))
 		{
 			return false;
 		}
@@ -91,14 +93,31 @@ bool HeightField3d::IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, c
 	return hit;
 }
 
+bool HeightField3d::IntersectRayBruteForce(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
+{
+	float min_dist = FLT_MAX;
+	for (uint32_t i = 0; i < nX - 1; ++i)
+	for (uint32_t j = 0; j < nZ - 1; ++j)
+	{
+		if (IntersectRayCell(Origin, Dir, i, j, Option, Result))
+		{
+			if (Result->hitTime < min_dist)
+			{
+				min_dist = Result->hitTime;
+			}
+		}
+	}
+	Result->hitTime = min_dist;
+	return min_dist != FLT_MAX;
+}
+
 bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
 {
 	if (Origin.y > BV.Max.y && Dir.y >= 0)
 	{
 		return false;
 	}
-
-	if (Origin.y < BV.Min.y && Dir.y <= 0)
+	else if (Origin.y < BV.Min.y && Dir.y <= 0)
 	{
 		return false;
 	}
@@ -113,8 +132,7 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 	Result->AddTestCount(1);
 
 	float t0, t1;
-	const float thickness = 1e-3f;
-	if (!Ray3d::RayIntersectAABB2(Origin, Dir, BV.Min, BV.Max, thickness, Option.maxDist, &t0, &t1))
+	if (!Ray3d::RayIntersectAABB2(Origin, Dir, BV.Min, BV.Max, HfCellThickness, Option.maxDist, &t0, &t1))
 	{
 		return false;
 	}
@@ -185,7 +203,6 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 	}
 	else if (istart == iend)
 	{
-		j += dj;
 		while (j != jend)
 		{
 			if (IntersectRayCell(Origin, Dir, i, j, Option, Result))
@@ -198,7 +215,6 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 	else
 	{
 		// jstart == jend
-		i += di;
 		while (i != iend)
 		{
 			if (IntersectRayCell(Origin, Dir, i, j, Option, Result))
@@ -209,7 +225,7 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 		}
 	}
 
-	return false;
+	return IntersectRayCell(Origin, Dir, iend, jend, Option, Result);
 }
 
 

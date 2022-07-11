@@ -24,6 +24,7 @@
     <ClCompile Include="CollisionPrimitive\HeightField3d.cpp" />
     <ClCompile Include="CollisionPrimitive\OrientedBox3d.cpp" />
     <ClCompile Include="CollisionPrimitive\Segment3d.cpp" />
+    <ClCompile Include="CollisionPrimitive\Tetrahedral.cpp" />
     <ClCompile Include="Collision\AABBTree.cpp" />
     <ClCompile Include="Collision\AABBTreeInference.cpp" />
     <ClCompile Include="Collision\AABBTreeOffline.cpp" />
@@ -91,6 +92,7 @@
     <ClInclude Include="CollisionPrimitive\Plane3d.h" />
     <ClInclude Include="CollisionPrimitive\Ray3d.h" />
     <ClInclude Include="CollisionPrimitive\Sphere3d.h" />
+    <ClInclude Include="CollisionPrimitive\Tetrahedral.h" />
     <ClInclude Include="CollisionPrimitive\Triangle3d.h" />
     <ClInclude Include="CollisionPrimitive\Mesh.h" />
     <ClInclude Include="Collision\AABBTree.h" />
@@ -101,11 +103,13 @@
     <ClInclude Include="Collision\DynamicAABBTree.h" />
     <ClInclude Include="Collision\EPA.h" />
     <ClInclude Include="Collision\GeometryCollection.h" />
+    <ClInclude Include="Collision\GeometryDifference.h" />
     <ClInclude Include="Collision\GeometryIntersection.h" />
     <ClInclude Include="Collision\GeometryObject.h" />
     <ClInclude Include="Collision\GeometryQuery.h" />
     <ClInclude Include="Collision\GJK.h" />
     <ClInclude Include="Collision\Minkowski.h" />
+    <ClInclude Include="Collision\MinkowskiSum.h" />
     <ClInclude Include="Collision\NarrowPhase.h" />
     <ClInclude Include="Collision\ProximityGrid.h" />
     <ClInclude Include="Collision\QuadTree.h" />

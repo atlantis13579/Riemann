@@ -100,8 +100,12 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
     #pragma omp parallel for schedule(dynamic, 1)
 	for (int y = 0; y < height; ++y)
     {
+        //if (y != height - 1) continue;
+
         for (int x = 0; x < width; ++x)
         {
+            //if (x != 50) continue;
+
             Vector3d rayDirection = cameraDirection * nearz + ((y - height * 0.5f) / height) * cameraY + ((x - width * 0.5f) / width) * cameraX;
             
             RayCastResult Result;
