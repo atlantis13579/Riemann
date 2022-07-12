@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits.h>
 #include <vector>
 #include "../Maths/Stack.h"
 #include "../Maths/Vector3d.h"

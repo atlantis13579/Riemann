@@ -131,6 +131,10 @@
     <ClInclude Include="Collision\GeometryDifference.h" />
     <ClInclude Include="Collision\MinkowskiSum.h" />
     <ClInclude Include="CollisionPrimitive\Tetrahedral.h" />
+    <ClInclude Include="Solver\ConstraintSolver.h" />
+    <ClInclude Include="Solver\Jacobian.h" />
+    <ClInclude Include="Solver\SequentialImpulseSolver.h" />
+    <ClInclude Include="Maths\SIMD_AVX.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -190,6 +194,9 @@
     <ClCompile Include="Geometry\TetrahedralMesh.cpp" />
     <ClCompile Include="Geometry\Voronoi2d.cpp" />
     <ClCompile Include="CollisionPrimitive\Tetrahedral.cpp" />
+    <ClCompile Include="Solver\ConstraintSolver.cpp" />
+    <ClCompile Include="Solver\Jacobian.cpp" />
+    <ClCompile Include="Solver\SequentialImpulseSolver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="build_so.sh" />

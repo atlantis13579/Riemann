@@ -62,11 +62,12 @@ class PhysxHelper(object):
             # print(dataptr)
             c_float = ctypes.c_float
             c_int = ctypes.c_int
+            debug_output = True
             self._libs.RenderDepthImage(ctypes.c_void_p(self._scene), dataptr, \
                                c_int(self._width), c_int(self._height), c_float(fov), c_float(0.1), c_float(50.0), \
                                c_float(pos[0]), c_float(pos[1]), c_float(pos[2]), \
                                c_float(dir[0]), c_float(dir[1]), c_float(dir[2]), 
-                               c_float(0.0), c_float(1.0), c_float(0.0))
+                               c_float(0.0), c_float(1.0), c_float(0.0), debug_output)
         
 print("test")
 
@@ -75,4 +76,4 @@ physx.load_scene("data/Japan.xml.bin")
 hitpos = physx.raycast((-521.23, 55.87, 399.15), (0, -1, 0))
 print(hitpos)
 physx.create_image(100, 100)
-physx.render_depth_image((0, 0, 0), (0.45, 0, 0.45))
+physx.render_depth_image((0, 156.8, 0), (-0.45, -0.45, 0.6))

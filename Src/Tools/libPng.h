@@ -85,14 +85,14 @@ public:
         rgb.resize(w * h * 3);
         for (int i = 0; i < w * h; ++i)
         {
-            unsigned char *p = &rgb[3*i];
-            float x = p[i];
+            float x = ptr[i];
             if (x >= fmax)
                 x = 1.0f;
             else if (x <= fmin)
                 x = 0.0f;
             else
-                x = (p[i] - fmin) / (fmax - fmin);
+                x = (x - fmin) / (fmax - fmin);
+            unsigned char* p = &rgb[3 * i];
             p[0] = p[1] = p[2] = toInt(x);
         }
         svpng(fp, w, h, &rgb[0], 0);

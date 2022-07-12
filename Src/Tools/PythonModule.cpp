@@ -63,7 +63,7 @@ float RayCast2(void *p, float x0, float y0, float z0, float x1, float y1, float 
 }
 
 void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, float nearz, float farz,
-                      float x0, float y0, float z0, float dx, float dy, float dz, float ux, float uy, float uz)
+                      float x0, float y0, float z0, float dx, float dy, float dz, float ux, float uy, float uz, bool debug_draw)
 {
     if (dataptr == nullptr || p == nullptr)
     {
@@ -91,8 +91,9 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
     Vector3d cameraUp = Vector3d(ux, uy, uz).Unit();
     float AspectRatio = 1.0f * width / height;
 
+    nearz = std::max(0.1f, nearz);
 	float CX = 2.0f * nearz * tanf(0.5f * fov);
-	float CY = CX * AspectRatio;
+	float CY = CX / AspectRatio;
 
     Vector3d cameraX = cameraUp.Cross(cameraDirection) * CX;
     Vector3d cameraY = cameraX.Cross(cameraDirection).Unit() * CY;
@@ -100,12 +101,8 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
     #pragma omp parallel for schedule(dynamic, 1)
 	for (int y = 0; y < height; ++y)
     {
-        //if (y != height - 1) continue;
-
         for (int x = 0; x < width; ++x)
         {
-            //if (x != 50) continue;
-
             Vector3d rayDirection = cameraDirection * nearz + ((y - height * 0.5f) / height) * cameraY + ((x - width * 0.5f) / width) * cameraX;
             
             RayCastResult Result;
@@ -122,7 +119,10 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
         }
     }
 
-    LibPNG::WritePNG("data/depth.png", fp, width, height);
+    if (debug_draw)
+    {
+        LibPNG::WritePNG("data/depth.png", fp, width, height);
+    }
 }
 
 }

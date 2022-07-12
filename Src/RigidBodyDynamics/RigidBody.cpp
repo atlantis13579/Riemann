@@ -55,6 +55,7 @@ void RigidBodyStatic::SetTransform(const Vector3d& pos, const Quaternion& quat)
 	Q = quat;
 	Shape->SetPosition(pos);
 	Shape->SetRotationQuat(quat);
+	Shape->UpdateBoundingVolume();
 }
 
 void RigidBodyStatic::SetPosition(const Vector3d& pos)
@@ -67,6 +68,7 @@ void RigidBodyStatic::SetRotation(const Quaternion& quat)
 {
 	Q = quat;
 	Shape->SetRotationQuat(quat);
+	Shape->UpdateBoundingVolume();
 }
 
 void RigidBodyStatic::AppendShapes(std::vector<Geometry*>* Shapes)

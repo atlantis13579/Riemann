@@ -216,6 +216,7 @@ public:
 					p->SetGuid(guid);
 					p->SetPosition(rigid->mRigidStatic.mStatic.mCore.body2World.p);
 					p->SetRotationQuat(rigid->mRigidStatic.mStatic.mCore.body2World.q);
+					p->UpdateBoundingVolume();
 					objs->push_back(p);
 				}
 			}
@@ -237,6 +238,7 @@ public:
 					p->SetGuid(guid);
 					p->SetPosition(core.body2World.p);
 					p->SetRotationQuat(core.body2World.q);
+					p->UpdateBoundingVolume();
 					objs->push_back(p);
 				}
 			}
