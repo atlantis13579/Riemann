@@ -75,6 +75,15 @@ public:
         svpng(fp, w, h, &rgb[0], 0);
         fclose(fp);
     }
+
+	static void WritePNG(const char* filename, unsigned char* rgb, int w, int h)
+	{
+		FILE* fp = fopen(filename, "wb");
+		if (fp == nullptr)
+			return;
+		svpng(fp, w, h, rgb, 0);
+		fclose(fp);
+	}
     
     static void WritePNG(const char* filename, float *ptr, int w, int h, float fmin, float fmax)
     {

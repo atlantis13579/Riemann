@@ -6,7 +6,7 @@
 #include <assert.h>
 #include "../RigidBodyDynamics/RigidBodySimulation.h"
 #include "../Collision/GeometryQuery.h"
-#include "../Tools/libPPM.h"
+#include "../ImageSpace/ImageProcessing.h"
 #include "../Tools/libPng.h"
 
 extern "C"
@@ -62,10 +62,10 @@ float RayCast2(void *p, float x0, float y0, float z0, float x1, float y1, float 
     return RayCast(p, x0, y0, z0, Dir.x, Dir.y, Dir.z);
 }
 
-void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, float nearz, float farz,
+void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float fov, float nearz, float farz,
                       float x0, float y0, float z0, float dx, float dy, float dz, float ux, float uy, float uz, bool debug_draw)
 {
-    if (dataptr == nullptr || p == nullptr)
+    if (ptr == nullptr || world_ptr == nullptr)
     {
         return;
     }
@@ -75,7 +75,22 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
 		return;
 	}
 
-	RigidBodySimulation* world = (RigidBodySimulation*)p;
+    bool downscale = true;
+    if ((width & 1) || (height & 1))
+    {
+        downscale = false;
+    }
+
+    int w2 = downscale ? width / 2 : width;
+    int h2 = downscale ? height / 2 : height;
+    std::vector<float>  buffer;
+    if (downscale)
+    {
+        buffer.resize(w2 * h2);
+    }
+    float* fp = downscale ? &buffer[0] : (float*)ptr;
+
+	RigidBodySimulation* world = (RigidBodySimulation*)world_ptr;
 	assert(world);
 
 	RayCastOption Option;
@@ -84,12 +99,10 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
 	GeometryQuery* query = world->GetGeometryQuery();
 	assert(query);
 
-    float* fp = (float*)dataptr;
-
     Vector3d cameraOrigin(x0, y0, z0);
     Vector3d cameraDirection = Vector3d(dx, dy, dz).Unit();
     Vector3d cameraUp = Vector3d(ux, uy, uz).Unit();
-    float AspectRatio = 1.0f * width / height;
+    float AspectRatio = 1.0f * w2 / h2;
 
     nearz = std::max(0.1f, nearz);
 	float CX = 2.0f * nearz * tanf(0.5f * fov);
@@ -99,24 +112,30 @@ void RenderDepthImage(void* p, void* dataptr, int width, int height, float fov, 
     Vector3d cameraY = cameraX.Cross(cameraDirection).Unit() * CY;
 
     #pragma omp parallel for schedule(dynamic, 1)
-	for (int y = 0; y < height; ++y)
+	for (int y = 0; y < h2; ++y)
     {
-        for (int x = 0; x < width; ++x)
+        for (int x = 0; x < w2; ++x)
         {
-            Vector3d rayDirection = cameraDirection * nearz + ((y - height * 0.5f) / height) * cameraY + ((x - width * 0.5f) / width) * cameraX;
+            Vector3d rayDirection = cameraDirection * nearz + ((y - h2 * 0.5f) / h2) * cameraY + ((x - w2 * 0.5f) / w2) * cameraX;
             
             RayCastResult Result;
             bool success = query->RayCast(cameraOrigin, rayDirection.Unit(), Option, &Result);
 			if (success)
 			{
 				float depth = Result.hitTimeMin;
-                fp[y * width + x] = std::min(depth, Option.MaxDist);
+                fp[y * w2 + w2 - 1 - x] = std::min(depth, Option.MaxDist);
 			}
             else
             {
-                fp[y * width + x] = Option.MaxDist;
+                fp[y * w2 + w2 - 1 - x] = Option.MaxDist;
             }
         }
+    }
+
+    if (downscale)
+    {
+        fp = (float*)ptr;
+        ImageUpscale2X<float>(&buffer[0], w2, h2, ScaleMethod::LAPLACIAN, fp);
     }
 
     if (debug_draw)

@@ -191,6 +191,7 @@
     <ClInclude Include="Solver\SequentialImpulseSolver.h" />
     <ClInclude Include="Solver\SparseConjugateGradientSolver.h" />
     <ClInclude Include="Tools\AnimBinaryParser.h" />
+    <ClInclude Include="Tools\libMat.h" />
     <ClInclude Include="Tools\libPng.h" />
     <ClInclude Include="Tools\libPPM.h" />
     <ClInclude Include="Tools\PhysxBinaryParser.h" />

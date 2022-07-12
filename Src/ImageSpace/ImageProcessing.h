@@ -106,7 +106,7 @@ void CountingPooling(T* Cell, int nX, int nY, T* CellNew, int nXNew, int nYNew, 
 // X 0 X
 // 3 X 1 
 // X 2 X
-int neighbour4x_safe(int idx, int nx, int ny, int dir) {
+inline int neighbour4x_safe(int idx, int nx, int ny, int dir) {
 	int y = idx / nx;
 	int x = idx - y * nx;
 	switch (dir) {
@@ -125,7 +125,7 @@ int neighbour4x_safe(int idx, int nx, int ny, int dir) {
 // 7 0 1
 // 6 X 2 
 // 5 4 3
-int neighbour8x_safe(int idx, int nx, int ny, int dir) {
+inline int neighbour8x_safe(int idx, int nx, int ny, int dir) {
 	int y = idx / nx;
 	int x = idx - y * nx;
 	switch (dir) {
@@ -253,3 +253,88 @@ void PolygonSimplification_VisvalingamWhyatt(std::vector<Vector2i>& polygon, int
 void SegmentsSimplification_DouglasPeucker(std::vector<Vector2i>& segments, int treshold, std::vector<Vector2i>* filtered);
 
 void ConcaveHullSimplification(std::vector<Vector2i>& polygon, int treshold, std::vector<Vector2i>* new_polygon);
+
+enum ScaleMethod
+{
+	NEAREST,
+	BILINEAR,
+	CUBIC,
+	LAPLACIAN,
+};
+template<typename T>
+void ImageUpscale2X(T* src, int w, int h, ScaleMethod method, T* dst)
+{
+	int nw = w * 2;
+	int nh = h * 2;
+
+	if (method == NEAREST)
+	{
+		for (int i = 0; i < nh; ++i)
+		for (int j = 0; j < nw; ++j)
+		{
+			dst[i * nw + j] = src[(i >> 1) * w + (j >> 1)];
+		}
+	}
+	else if (method == BILINEAR)
+	{
+		for (int i = 0; i < nh; ++i)
+		for (int j = 0; j < nw; ++j)
+		{
+			if (i <= 0 || i >= nh - 1 || j <= 0 || j >= nw - 1)
+			{
+				dst[i * nw + j] = src[(i >> 1) * w + (j >> 1)];
+				continue;
+			}
+
+			int i2 = (i - 1) >> 1;
+			int j2 = (j - 1) >> 1;
+			float fi = (i & 1) ? 0.25f : 0.75f;
+			float fj = (j & 1) ? 0.25f : 0.75f;
+			T	s00 = src[i2 * w + j2];
+			T	s01 = src[i2 * w + j2 + 1];
+			T	s10 = src[(i2 + 1) * w + j2];
+			T	s11 = src[(i2 + 1) * w + j2 + 1];
+			float	s0 = s00 + (s01 - s00) * fj;
+			float	s1 = s10 + (s11 - s10) * fj;
+			float	val = s0 + (s1 - s0) * fi;
+			dst[i * nw + j] = (T)val;
+		}
+	}
+	else if (method == LAPLACIAN)
+	{
+		for (int i = 0; i < nh; ++i)
+		for (int j = 0; j < nw; ++j)
+		{
+			if (i <= 1 || i >= nh - 2 || j <= 1 || j >= nw - 2)
+			{
+				dst[i * nw + j] = src[(i >> 1) * w + (j >> 1)];
+				continue;
+			}
+
+			int i2 = i >> 1;
+			int j2 = j >> 1;
+			T L = 4.0f * src[i2 * w + j2] - src[(i2 - 1) * w + j2] - src[(i2 + 1) * w + j2] - src[i2 * w + j2 - 1] - src[i2 * w + j2 + 1];
+			bool is_edge = L > 1.0f;
+
+			if (is_edge)
+			{
+				dst[i * nw + j] = src[(i >> 1) * w + (j >> 1)];
+			}
+			else
+			{
+				i2 = (i - 1) >> 1;
+				j2 = (j - 1) >> 1;
+				float fi = (i & 1) ? 0.25f : 0.75f;
+				float fj = (j & 1) ? 0.25f : 0.75f;
+				T	s00 = src[i2 * w + j2];
+				T	s01 = src[i2 * w + j2 + 1];
+				T	s10 = src[(i2 + 1) * w + j2];
+				T	s11 = src[(i2 + 1) * w + j2 + 1];
+				float	s0 = s00 + (s01 - s00) * fj;
+				float	s1 = s10 + (s11 - s10) * fj;
+				float	val = s0 + (s1 - s0) * fi;
+				dst[i * nw + j] = (T)val;
+			}
+		}
+	}
+}

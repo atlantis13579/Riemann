@@ -56,17 +56,19 @@ class PhysxHelper(object):
         self._height = height
         self._image = arr
 
-    def render_depth_image(self, pos, dir, fov = 1.570796327):
+    def render_depth_image(self, pos, yaw, fov = 1.0):
         if (self._image is not None) and (self._scene is not None):
             dataptr = self._image.ctypes.data_as(ctypes.c_void_p)
             # print(dataptr)
             c_float = ctypes.c_float
             c_int = ctypes.c_int
-            debug_output = True
+            debug_output = False
+            dir_x = math.sin(yaw)
+            dir_z = math.cos(yaw)
             self._libs.RenderDepthImage(ctypes.c_void_p(self._scene), dataptr, \
-                               c_int(self._width), c_int(self._height), c_float(fov), c_float(0.1), c_float(50.0), \
+                               c_int(self._width), c_int(self._height), c_float(fov), c_float(0.1), c_float(200.0), \
                                c_float(pos[0]), c_float(pos[1]), c_float(pos[2]), \
-                               c_float(dir[0]), c_float(dir[1]), c_float(dir[2]), 
+                               c_float(dir_x), c_float(0.0), c_float(dir_z), 
                                c_float(0.0), c_float(1.0), c_float(0.0), debug_output)
         
 print("test")
@@ -75,5 +77,8 @@ physx = PhysxHelper()
 physx.load_scene("data/Japan.xml.bin")
 hitpos = physx.raycast((-521.23, 55.87, 399.15), (0, -1, 0))
 print(hitpos)
-physx.create_image(100, 100)
-physx.render_depth_image((0, 156.8, 0), (-0.45, -0.45, 0.6))
+physx.create_image(200, 200)
+
+pos = (1768.8, 19.5, 1551.5)
+yaw = -0.27
+physx.render_depth_image((pos[0], pos[1] + 1.8, pos[2]), yaw)
