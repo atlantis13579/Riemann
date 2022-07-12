@@ -102,8 +102,8 @@
     <ClInclude Include="Solver\LCPSolver.h" />
     <ClInclude Include="Tools\PhysxFormat_34.hpp" />
     <ClInclude Include="Tools\AnimBinaryParser.h" />
-    <ClInclude Include="RigidBodyDynamics\Animation.h" />
-    <ClInclude Include="RigidBodyDynamics\AnimationTree.h" />
+    <ClInclude Include="RigidBodyDynamics\KeyFrameAnimation.h" />
+    <ClInclude Include="RigidBodyDynamics\KinematicsTree.h" />
     <ClInclude Include="LinearSystem\EigenValueDecomposition.h" />
     <ClInclude Include="Maths\Float16.h" />
     <ClInclude Include="Vehicle\Vehicle.h" />
@@ -179,8 +179,8 @@
     <ClCompile Include="CollisionPrimitive\AxisAlignedBox3d.cpp" />
     <ClCompile Include="Solver\LCPSolver.cpp" />
     <ClCompile Include="Tools\AnimBinaryParser.cpp" />
-    <ClCompile Include="RigidBodyDynamics\Animation.cpp" />
-    <ClCompile Include="RigidBodyDynamics\AnimationTree.cpp" />
+    <ClCompile Include="RigidBodyDynamics\KeyFrameAnimation.cpp" />
+    <ClCompile Include="RigidBodyDynamics\KinematicsTree.cpp" />
     <ClCompile Include="LinearSystem\EigenValueDecomposition.cpp" />
     <ClCompile Include="Vehicle\Vehicle.cpp" />
     <ClCompile Include="Vehicle\AutonomousController.cpp" />

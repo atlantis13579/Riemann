@@ -1,14 +1,14 @@
 
-#include "Animation.h"
+#include "KeyFrameAnimation.h"
 
-Animation::Animation()
+KeyFrameAnimation::KeyFrameAnimation()
 {
 	m_TimelinePosition.SetTime(0.0f);
 	m_TimelineRotation.SetTime(0.0f);
 	m_IsLoop = false;
 }
 
-void Animation::LoadKeyframes(const std::vector<KeyframePos>& frame_pos, const std::vector<KeyframeQuat>& frame_quat, bool is_loop)
+void KeyFrameAnimation::LoadKeyframes(const std::vector<KeyframePos>& frame_pos, const std::vector<KeyframeQuat>& frame_quat, bool is_loop)
 {
 	m_FramesPosition = frame_pos;
 	m_FramesRotation = frame_quat;
@@ -16,7 +16,7 @@ void Animation::LoadKeyframes(const std::vector<KeyframePos>& frame_pos, const s
 	SetTime(0.0f);
 }
 
-void Animation::LoadRotationY(const Quaternion& quat, float radian, int time_ms)
+void KeyFrameAnimation::LoadRotationY(const Quaternion& quat, float radian, int time_ms)
 {
 	Quaternion rot(radian, Vector3d(0.0f, 1.0f, 0.0f));
 
@@ -57,7 +57,7 @@ bool IsFramesDataValid(const std::vector<Keyframe<T>>& frames)
 	return true;
 }
 
-bool Animation::CheckAnimData() const
+bool KeyFrameAnimation::CheckAnimData() const
 {
 	bool valid_pos = IsFramesDataValid(m_FramesPosition);
 	bool valid_quat = IsFramesDataValid(m_FramesRotation);
@@ -81,13 +81,13 @@ Quaternion Lerp(const Quaternion& start, const Quaternion& end, float t)
 	return Quaternion::Slerp(start, end, t);
 }
 
-void Animation::SetTime(float time)
+void KeyFrameAnimation::SetTime(float time)
 {
 	m_TimelinePosition.SetTime(time);
 	m_TimelineRotation.SetTime(time);
 }
 
-bool Animation::IsFinish() const
+bool KeyFrameAnimation::IsFinish() const
 {
 	return m_TimelinePosition.IsFinish && m_TimelineRotation.IsFinish;
 }
@@ -145,7 +145,7 @@ static bool InterpFrame(float elapsed, const std::vector<Keyframe<T>>& frames, b
 	return false;
 }
 
-bool Animation::Advance(float elapsed, Vector3d* pos, Quaternion* quat)
+bool KeyFrameAnimation::Advance(float elapsed, Vector3d* pos, Quaternion* quat)
 {
 	bool success_pos = InterpFrame(elapsed, m_FramesPosition, m_IsLoop, m_TimelinePosition, pos);
 	bool success_quat = InterpFrame(elapsed, m_FramesRotation, m_IsLoop, m_TimelineRotation, quat);

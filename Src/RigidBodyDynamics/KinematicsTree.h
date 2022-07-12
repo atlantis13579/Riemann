@@ -6,7 +6,7 @@
 #include "../Maths/Vector3d.h"
 #include "../Maths/Quaternion.h"
 
-#include "Animation.h"
+#include "KeyFrameAnimation.h"
 
 class AnimTreeData;
 class RigidBodyStatic;
@@ -24,15 +24,15 @@ struct AnimTreeNode
 	std::string						Name;
 	Vector3d						X;
 	Quaternion						Q;
-	Animation						Anim;
+	KeyFrameAnimation						Anim;
 	RigidBodyStatic*				Entity;
 	int								Parent;
 };
 
-class AnimationTree
+class KinematicsTree
 {
 public:
-	AnimationTree();
+	KinematicsTree();
 
 	void						Simulate(float elapsed);
 	bool						Deserialize(const std::string& filepath);

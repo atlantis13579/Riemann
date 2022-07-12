@@ -1,9 +1,9 @@
 
-#include "AnimationTree.h"
+#include "KinematicsTree.h"
 #include "../Tools/AnimBinaryParser.h"
 #include "RigidBody.h"
 
-AnimationTree::AnimationTree()
+KinematicsTree::KinematicsTree()
 {
 	m_Pause = true;
 	m_PlayRate = 1.0f;
@@ -56,7 +56,7 @@ void _Flatten(std::vector<AnimTreeNode>& FlatTree, int Parent, const _Node* Tree
 };
 
 
-bool AnimationTree::BuildFlatTree(AnimTreeData* data)
+bool KinematicsTree::BuildFlatTree(AnimTreeData* data)
 {
 	m_FlatTree.clear();
 	if (data->channels.empty())
@@ -108,7 +108,7 @@ bool AnimationTree::BuildFlatTree(AnimTreeData* data)
 	return true;
 }
 
-void AnimationTree::Simulate(float elapsed)
+void KinematicsTree::Simulate(float elapsed)
 {
 	if (m_Pause || m_FlatTree.empty())
 	{
@@ -135,22 +135,22 @@ void AnimationTree::Simulate(float elapsed)
 	}
 }
 
-void AnimationTree::Pause(bool pause)
+void KinematicsTree::Pause(bool pause)
 {
 	m_Pause = pause;
 }
 
-bool AnimationTree::IsPause() const
+bool KinematicsTree::IsPause() const
 {
 	return m_Pause;
 }
 
-void AnimationTree::SetAnimationPlayRate(float play_rate)
+void KinematicsTree::SetAnimationPlayRate(float play_rate)
 {
 	m_PlayRate = play_rate;
 }
 
-bool AnimationTree::Bind(const std::string& node_name, RigidBodyStatic* body)
+bool KinematicsTree::Bind(const std::string& node_name, RigidBodyStatic* body)
 {
 	for (size_t i = 0; i < m_FlatTree.size(); ++i)
 	{
@@ -166,7 +166,7 @@ bool AnimationTree::Bind(const std::string& node_name, RigidBodyStatic* body)
 	return false;
 }
 
-void AnimationTree::UnBind(RigidBodyStatic* body)
+void KinematicsTree::UnBind(RigidBodyStatic* body)
 {
 	for (size_t i = 0; i < m_FlatTree.size(); ++i)
 	{
@@ -177,7 +177,7 @@ void AnimationTree::UnBind(RigidBodyStatic* body)
 	}
 }
 
-bool AnimationTree::Deserialize(const std::string& filepath)
+bool KinematicsTree::Deserialize(const std::string& filepath)
 {
 	m_ResPath = filepath;
 
@@ -200,7 +200,7 @@ bool AnimationTree::Deserialize(const std::string& filepath)
 	return true;
 }
 
-void AnimationTree::SetRootTransform(const Vector3d& pos, const Quaternion& rot)
+void KinematicsTree::SetRootTransform(const Vector3d& pos, const Quaternion& rot)
 {
 	if (m_FlatTree.size() > 0)
 	{

@@ -9,6 +9,7 @@
 
 void TestCatmullRom()
 {
+	printf("Running TestCatmullRom\n");
 	std::vector<Vector3d> paths;
 	paths.emplace_back(0.0f, 0.0f, 0.0f);
 	paths.emplace_back(0.0f, 1.0f, 0.0f);

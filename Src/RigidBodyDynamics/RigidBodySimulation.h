@@ -10,7 +10,7 @@ class GeometryQuery;
 class BroadPhase;
 class NarrowPhase;
 class ForceField;
-class AnimationTree;
+class KinematicsTree;
 
 struct RigidBodySimulationParam
 {
@@ -33,8 +33,8 @@ public:
 	RigidBody*		CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
 	bool			LoadAnimation(const std::string& resname, const std::string &filepath, float play_rate, bool begin_play);
 
-	bool			BindAnimationNode(const std::string& anim, const std::string& node, RigidBodyStatic* body);
-	AnimationTree*	FindAnimation(const std::string& resname);
+	bool			BindKinematicsNode(const std::string& anim, const std::string& node, RigidBodyStatic* body);
+	KinematicsTree*	FindKinematics(const std::string& resname);
 
     GeometryQuery*          GetGeometryQuery() { return m_GeometryQuery; }
     const GeometryQuery*    GetGeometryQuery() const { return m_GeometryQuery; }
@@ -45,7 +45,7 @@ private:
 private:
 	std::vector<RigidBodyStatic*>	m_RigidStatics;
 	std::vector<RigidBodyDynamic*>	m_RigidDynamics;
-	std::vector<AnimationTree*>		m_Animations;
+	std::vector<KinematicsTree*>		m_Kinematics;
 
 	GeometryQuery*	m_GeometryQuery;
 	BroadPhase*		m_BPhase;

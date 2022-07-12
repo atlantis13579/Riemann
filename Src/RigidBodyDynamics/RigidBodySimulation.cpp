@@ -7,7 +7,7 @@
 #include "MotionIntegration.h"
 #include "WarmStart.h"
 #include "ForceField.h"
-#include "AnimationTree.h"
+#include "KinematicsTree.h"
 #include "../Collision/GeometryQuery.h"
 #include "../Collision/GeometryObject.h"
 #include "../Collision/BroadPhase.h"
@@ -67,9 +67,9 @@ RigidBodySimulation::~RigidBodySimulation()
 	}
 	m_RigidDynamics.clear();
 
-	for (size_t i = 0; i < m_Animations.size(); ++i)
+	for (size_t i = 0; i < m_Kinematics.size(); ++i)
 	{
-		delete m_Animations[i];
+		delete m_Kinematics[i];
 	}
 }
 
@@ -104,9 +104,9 @@ void		RigidBodySimulation::Simulate(float dt)
 	ApplyGravity();
 	ApplyWind();
 
-	for (size_t i = 0; i < m_Animations.size(); ++i)
+	for (size_t i = 0; i < m_Kinematics.size(); ++i)
 	{
-		m_Animations[i]->Simulate(dt);
+		m_Kinematics[i]->Simulate(dt);
 	}
 
 	return;
@@ -173,17 +173,17 @@ RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyP
 
 bool RigidBodySimulation::LoadAnimation(const std::string& resname, const std::string& filepath, float play_rate, bool begin_play)
 {
-	for (size_t i = 0; i < m_Animations.size(); ++i)
+	for (size_t i = 0; i < m_Kinematics.size(); ++i)
 	{
-		if (m_Animations[i]->GetName() == filepath)
+		if (m_Kinematics[i]->GetName() == filepath)
 		{
-			delete m_Animations[i];
-			m_Animations.erase(m_Animations.begin() + i);
+			delete m_Kinematics[i];
+			m_Kinematics.erase(m_Kinematics.begin() + i);
 			break;
 		}
 	}
 
-	AnimationTree* tree = new AnimationTree;
+	KinematicsTree* tree = new KinematicsTree;
 	if (!tree->Deserialize(filepath))
 	{
 		delete tree;
@@ -192,13 +192,13 @@ bool RigidBodySimulation::LoadAnimation(const std::string& resname, const std::s
 	tree->SetName(resname);
 	tree->SetAnimationPlayRate(play_rate);
 	tree->Pause(!begin_play);
-	m_Animations.push_back(tree);
+	m_Kinematics.push_back(tree);
 	return true;
 }
 
-bool RigidBodySimulation::BindAnimationNode(const std::string& resname, const std::string& node, RigidBodyStatic *body)
+bool RigidBodySimulation::BindKinematicsNode(const std::string& resname, const std::string& node, RigidBodyStatic *body)
 {
-	AnimationTree* tree = FindAnimation(resname);
+	KinematicsTree* tree = FindKinematics(resname);
 	if (tree == nullptr)
 	{
 		return false;
@@ -206,13 +206,13 @@ bool RigidBodySimulation::BindAnimationNode(const std::string& resname, const st
 	return tree->Bind(node, body);
 }
 
-AnimationTree* RigidBodySimulation::FindAnimation(const std::string& resname)
+KinematicsTree* RigidBodySimulation::FindKinematics(const std::string& resname)
 {
-	for (size_t i = 0; i < m_Animations.size(); ++i)
+	for (size_t i = 0; i < m_Kinematics.size(); ++i)
 	{
-		if (m_Animations[i]->GetName() == resname)
+		if (m_Kinematics[i]->GetName() == resname)
 		{
-			return m_Animations[i];
+			return m_Kinematics[i];
 		}
 	}
 	return nullptr;

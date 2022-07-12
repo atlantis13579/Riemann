@@ -36,10 +36,10 @@ struct Timeline
 	bool	IsFinish;
 };
 
-class Animation
+class KeyFrameAnimation
 {
 public:
-	Animation();
+	KeyFrameAnimation();
 
 	void LoadKeyframes(const std::vector<KeyframePos>& frame_pos, const std::vector<KeyframeQuat>& frame_quat, bool is_loop);
 	void LoadRotationY(const Quaternion& quat, float radian, int time_ms);

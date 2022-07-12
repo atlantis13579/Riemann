@@ -20,7 +20,7 @@
 #include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/RigidBodyDynamics/RigidBodySimulation.h"
-#include "../Src/RigidBodyDynamics/AnimationTree.h"
+#include "../Src/RigidBodyDynamics/KinematicsTree.h"
 #include "../Renderer/Renderer.h"
 #include "../Src/Tools/PhysxBinaryParser.h"
 
@@ -198,7 +198,7 @@ void InitScene()
 		std::string anim_name = "E:/Temp/Env_Build_Special_FerrisWheel_01_idle.anim";
 		g_World->LoadAnimation(anim_name, anim_name, 10.0f, true);
 
-        AnimationTree* tree = g_World->FindAnimation(anim_name);
+        KinematicsTree* tree = g_World->FindKinematics(anim_name);
         tree->SetRootTransform(Vector3d(0, -10, 0), Quaternion::One());
 
 		rp.Static = true;
@@ -209,7 +209,7 @@ void InitScene()
 
             std::string name = (i <= 9 ? "HP_guajie0" : "HP_guajie") + std::to_string(i);
 
-			g_World->BindAnimationNode(anim_name, name, p);
+			g_World->BindKinematicsNode(anim_name, name, p);
 			g_Renderer->AddGeometry(aabb);
         }
 	}
@@ -221,7 +221,7 @@ void InitScene()
         rp.Static = true;
 		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(1.0f, 3.0f, 1.0f));
 		RigidBodyStatic* p = (RigidBodyStatic*)g_World->CreateRigidBody(aabb, rp);
-		g_World->BindAnimationNode(anim_name, "HP_guajie02", p);
+		g_World->BindKinematicsNode(anim_name, "HP_guajie02", p);
 		g_Renderer->AddGeometry(aabb);
 	}
 
