@@ -145,7 +145,6 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Geoms, int NumGeoms, Geom
 			if (t < Result->hitTimeMin)
 			{
 				Result->hitGeom = nullptr;
-				Result->hitPoint = Ray.PointAt(t);
 				Result->hitTimeMin = t;
 			}
 			return *Geoms;
@@ -161,6 +160,11 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Geoms, int NumGeoms, Geom
 		const int index = Geoms[i];
 		Geometry *Geom = GeometryCollection[index];
         assert(Geom);
+		
+		if (Geom == Result->hitGeom)
+		{
+			continue;
+		}
 		
 		if (Option.Filter && !Option.Filter->IsCollidable(Option.FilterData, Geom->GetFilterData()))
 		{
@@ -194,7 +198,6 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Geoms, int NumGeoms, Geom
 		Result->hit = true;
 		if (min_t < Result->hitTimeMin)
 		{
-			Result->hitPoint = Ray.PointAt(min_t);
 			Result->hitGeom = GeometryCollection[min_idx];
 			Result->hitTimeMin = min_t;
 		}
@@ -207,10 +210,15 @@ bool RayIntersectCacheObj(const Ray3d& Ray, const RayCastOption& Option, RayCast
 	const RayCastCache& Cache = Option.Cache;
 	if (Cache.prevhitGeom)
 	{
+		if (Option.Filter && !Option.Filter->IsCollidable(Option.FilterData, Cache.prevhitGeom->GetFilterData()))
+		{
+			return false;
+		}
+		
 		bool hit = Cache.prevhitGeom->RayCast(Ray.Origin, Ray.Dir, &Option, Result);
 		if (hit)
 		{
-			Result->hitPoint = Ray.PointAt(Result->hitTime);
+			Result->hit = true;
 			Result->hitGeom = Cache.prevhitGeom;
 			Result->hitTimeMin = Result->hitTime;
 			return true;
@@ -241,7 +249,12 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 	{
 		if (Option.Type == RayCastOption::RAYCAST_ANY)
 		{
+			Result->hitPoint = Ray.PointAt(Result->hitTimeMin);
 			return true;
+		}
+		else if (Option.Type == RayCastOption::RAYCAST_PENETRATE)
+		{
+			Result->hitGeometries.push_back(Result->hitGeom);
 		}
 	}
 
@@ -274,6 +287,7 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 				{
 					if (Option.Type == RayCastOption::RAYCAST_ANY)
 					{
+						Result->hitPoint = Ray.PointAt(Result->hitTimeMin);
 						return true;
 					}
 				}
@@ -324,7 +338,12 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 	}
 
-	return Result->hit || Result->hitGeometries.size() > 0;
+	if (Result->hit || Result->hitGeometries.size() > 0)
+	{
+		Result->hitPoint = Ray.PointAt(Result->hitTimeMin);
+		return true;
+	}
+	return false;
 }
 
 bool  AABBTree::RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const

@@ -23,6 +23,11 @@
 		AD5E0C64287A83DC005E0888 /* Voronoi2d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD5E0C62287A83DC005E0888 /* Voronoi2d.cpp */; };
 		AD9AF4E12878E5D000DD78C9 /* Spline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */; };
 		AD9AF4E22878E5D000DD78C9 /* Spline.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9AF4E02878E5D000DD78C9 /* Spline.h */; };
+		AD9FED13287DAF360078C209 /* KeyFrameAnimation.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9FED0F287DAF360078C209 /* KeyFrameAnimation.h */; };
+		AD9FED14287DAF360078C209 /* KeyFrameAnimation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD9FED10287DAF360078C209 /* KeyFrameAnimation.cpp */; };
+		AD9FED15287DAF360078C209 /* KinematicsTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD9FED11287DAF360078C209 /* KinematicsTree.cpp */; };
+		AD9FED16287DAF360078C209 /* KinematicsTree.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9FED12287DAF360078C209 /* KinematicsTree.h */; };
+		AD9FED18287DB4D80078C209 /* libMat.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9FED17287DB4D80078C209 /* libMat.h */; };
 		ADC0F6B52878EBC700CE5173 /* GeometryDifference.h in Sources */ = {isa = PBXBuildFile; fileRef = ADC0F6B42878EBC700CE5173 /* GeometryDifference.h */; };
 		ADC73022286DCF4300364E92 /* Base.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73021286DCF4300364E92 /* Base.h */; };
 		ADC73026286DD3BC00364E92 /* PythonModule.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73024286DD3BC00364E92 /* PythonModule.h */; };
@@ -124,8 +129,6 @@
 		ADDE146A2820AE3100809D36 /* PhysxFormat_41.hpp in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13EC2820AE3100809D36 /* PhysxFormat_41.hpp */; };
 		ADDE146C2820AE3100809D36 /* PhysxBinaryParser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13EE2820AE3100809D36 /* PhysxBinaryParser.cpp */; };
 		ADDE146D2820AE3100809D36 /* AnimBinaryParser.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13EF2820AE3100809D36 /* AnimBinaryParser.h */; };
-		ADDE146F2820AE3100809D36 /* Animation.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13F22820AE3100809D36 /* Animation.h */; };
-		ADDE14702820AE3100809D36 /* AnimationTree.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13F32820AE3100809D36 /* AnimationTree.h */; };
 		ADDE14712820AE3100809D36 /* WarmStart.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13F42820AE3100809D36 /* WarmStart.cpp */; };
 		ADDE14722820AE3100809D36 /* MotionIntegration.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13F52820AE3100809D36 /* MotionIntegration.h */; };
 		ADDE14732820AE3100809D36 /* WarmStart.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13F62820AE3100809D36 /* WarmStart.h */; };
@@ -134,8 +137,6 @@
 		ADDE14772820AE3100809D36 /* PhysicsMaterial.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13FA2820AE3100809D36 /* PhysicsMaterial.h */; };
 		ADDE14782820AE3100809D36 /* MotionIntegration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13FB2820AE3100809D36 /* MotionIntegration.cpp */; };
 		ADDE14792820AE3100809D36 /* RigidBody.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13FC2820AE3100809D36 /* RigidBody.h */; };
-		ADDE147A2820AE3100809D36 /* Animation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13FD2820AE3100809D36 /* Animation.cpp */; };
-		ADDE147B2820AE3100809D36 /* AnimationTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE13FE2820AE3100809D36 /* AnimationTree.cpp */; };
 		ADDE147C2820AE3100809D36 /* ForceField.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13FF2820AE3100809D36 /* ForceField.h */; };
 		ADDE147D2820AE3100809D36 /* RigidBodySimulation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE14002820AE3100809D36 /* RigidBodySimulation.cpp */; };
 		ADDE147E2820AE3100809D36 /* ForceField.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE14012820AE3100809D36 /* ForceField.cpp */; };
@@ -204,6 +205,11 @@
 		AD5E0C62287A83DC005E0888 /* Voronoi2d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Voronoi2d.cpp; sourceTree = "<group>"; };
 		AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Spline.cpp; sourceTree = "<group>"; };
 		AD9AF4E02878E5D000DD78C9 /* Spline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Spline.h; sourceTree = "<group>"; };
+		AD9FED0F287DAF360078C209 /* KeyFrameAnimation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KeyFrameAnimation.h; sourceTree = "<group>"; };
+		AD9FED10287DAF360078C209 /* KeyFrameAnimation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyFrameAnimation.cpp; sourceTree = "<group>"; };
+		AD9FED11287DAF360078C209 /* KinematicsTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KinematicsTree.cpp; sourceTree = "<group>"; };
+		AD9FED12287DAF360078C209 /* KinematicsTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KinematicsTree.h; sourceTree = "<group>"; };
+		AD9FED17287DB4D80078C209 /* libMat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libMat.h; sourceTree = "<group>"; };
 		ADC0F6B42878EBC700CE5173 /* GeometryDifference.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeometryDifference.h; sourceTree = "<group>"; };
 		ADC73021286DCF4300364E92 /* Base.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Base.h; sourceTree = "<group>"; };
 		ADC73024286DD3BC00364E92 /* PythonModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PythonModule.h; sourceTree = "<group>"; };
@@ -305,8 +311,6 @@
 		ADDE13EC2820AE3100809D36 /* PhysxFormat_41.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PhysxFormat_41.hpp; sourceTree = "<group>"; };
 		ADDE13EE2820AE3100809D36 /* PhysxBinaryParser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PhysxBinaryParser.cpp; sourceTree = "<group>"; };
 		ADDE13EF2820AE3100809D36 /* AnimBinaryParser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnimBinaryParser.h; sourceTree = "<group>"; };
-		ADDE13F22820AE3100809D36 /* Animation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Animation.h; sourceTree = "<group>"; };
-		ADDE13F32820AE3100809D36 /* AnimationTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AnimationTree.h; sourceTree = "<group>"; };
 		ADDE13F42820AE3100809D36 /* WarmStart.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WarmStart.cpp; sourceTree = "<group>"; };
 		ADDE13F52820AE3100809D36 /* MotionIntegration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MotionIntegration.h; sourceTree = "<group>"; };
 		ADDE13F62820AE3100809D36 /* WarmStart.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WarmStart.h; sourceTree = "<group>"; };
@@ -315,8 +319,6 @@
 		ADDE13FA2820AE3100809D36 /* PhysicsMaterial.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PhysicsMaterial.h; sourceTree = "<group>"; };
 		ADDE13FB2820AE3100809D36 /* MotionIntegration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MotionIntegration.cpp; sourceTree = "<group>"; };
 		ADDE13FC2820AE3100809D36 /* RigidBody.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RigidBody.h; sourceTree = "<group>"; };
-		ADDE13FD2820AE3100809D36 /* Animation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Animation.cpp; sourceTree = "<group>"; };
-		ADDE13FE2820AE3100809D36 /* AnimationTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AnimationTree.cpp; sourceTree = "<group>"; };
 		ADDE13FF2820AE3100809D36 /* ForceField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ForceField.h; sourceTree = "<group>"; };
 		ADDE14002820AE3100809D36 /* RigidBodySimulation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RigidBodySimulation.cpp; sourceTree = "<group>"; };
 		ADDE14012820AE3100809D36 /* ForceField.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ForceField.cpp; sourceTree = "<group>"; };
@@ -528,6 +530,7 @@
 				ADDE13EB2820AE3100809D36 /* AnimBinaryParser.cpp */,
 				ADDE13EF2820AE3100809D36 /* AnimBinaryParser.h */,
 				ADD2DA54286F37F400B669C9 /* libBmp.h */,
+				AD9FED17287DB4D80078C209 /* libMat.h */,
 				ADD2DA55286F37F400B669C9 /* libPng.h */,
 				ADD2DA56286F37F400B669C9 /* libPPM.h */,
 				ADDE13EE2820AE3100809D36 /* PhysxBinaryParser.cpp */,
@@ -544,12 +547,12 @@
 		ADDE13F02820AE3100809D36 /* RigidBodyDynamics */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE13FD2820AE3100809D36 /* Animation.cpp */,
-				ADDE13F22820AE3100809D36 /* Animation.h */,
-				ADDE13FE2820AE3100809D36 /* AnimationTree.cpp */,
-				ADDE13F32820AE3100809D36 /* AnimationTree.h */,
 				ADDE14012820AE3100809D36 /* ForceField.cpp */,
 				ADDE13FF2820AE3100809D36 /* ForceField.h */,
+				AD9FED10287DAF360078C209 /* KeyFrameAnimation.cpp */,
+				AD9FED0F287DAF360078C209 /* KeyFrameAnimation.h */,
+				AD9FED11287DAF360078C209 /* KinematicsTree.cpp */,
+				AD9FED12287DAF360078C209 /* KinematicsTree.h */,
 				ADDE13FB2820AE3100809D36 /* MotionIntegration.cpp */,
 				ADDE13F52820AE3100809D36 /* MotionIntegration.h */,
 				ADDE14022820AE3100809D36 /* PhysicsEntity.h */,
@@ -711,7 +714,6 @@
 				ADDE132A2820AE0700809D36 /* ProximityGrid.h in Headers */,
 				ADDE14952820AE3100809D36 /* Matrix3d.h in Headers */,
 				ADDE13362820AE0700809D36 /* SAP.h in Headers */,
-				ADDE14702820AE3100809D36 /* AnimationTree.h in Headers */,
 				ADDE132F2820AE0700809D36 /* SAP_Incremental.h in Headers */,
 				ADDE14542820AE3100809D36 /* SGD.h in Headers */,
 				AD0A9D9A287C609F00A6CAB5 /* ConstraintSolver.h in Headers */,
@@ -721,7 +723,6 @@
 				ADDE13302820AE0700809D36 /* GeometryQuery.h in Headers */,
 				ADDE132C2820AE0700809D36 /* AABBTree.h in Headers */,
 				ADDE14642820AE3100809D36 /* DenseTensorField3d.h in Headers */,
-				ADDE146F2820AE3100809D36 /* Animation.h in Headers */,
 				ADDE13182820AE0700809D36 /* BroadPhase.h in Headers */,
 				ADDE14772820AE3100809D36 /* PhysicsMaterial.h in Headers */,
 				ADDE14A52820AE3100809D36 /* GaussSeidelIteration_CPU.h in Headers */,
@@ -746,12 +747,14 @@
 				ADDE14B72820B16F00809D36 /* MPC.h in Headers */,
 				ADDE14A62820AE3100809D36 /* PositionBasedDynamicsSolver.h in Headers */,
 				ADDE14A32820AE3100809D36 /* DenseVector.h in Headers */,
+				AD9FED18287DB4D80078C209 /* libMat.h in Headers */,
 				ADDE144D2820AE3100809D36 /* ExponentialIntegrator.h in Headers */,
 				ADC73026286DD3BC00364E92 /* PythonModule.h in Headers */,
 				ADDE147F2820AE3100809D36 /* PhysicsEntity.h in Headers */,
 				ADDE14812820AE3100809D36 /* Matrix4d.h in Headers */,
 				ADDE143E2820AE3100809D36 /* Sphere3d.h in Headers */,
 				ADDE14462820AE3100809D36 /* Triangle3d.h in Headers */,
+				AD9FED13287DAF360078C209 /* KeyFrameAnimation.h in Headers */,
 				ADDE14B42820B16F00809D36 /* LQR.h in Headers */,
 				ADDE14502820AE3100809D36 /* LCPSolver.h in Headers */,
 				ADDE14A22820AE3100809D36 /* GaussianElimination.h in Headers */,
@@ -771,6 +774,7 @@
 				ADDE14882820AE3100809D36 /* Maths.h in Headers */,
 				ADDE14932820AE3100809D36 /* Tensor.h in Headers */,
 				ADDE14482820AE3100809D36 /* Capsule3d.h in Headers */,
+				AD9FED16287DAF360078C209 /* KinematicsTree.h in Headers */,
 				ADDE148A2820AE3100809D36 /* Float16.h in Headers */,
 				ADDE131E2820AE0700809D36 /* AABBTreeOffline.h in Headers */,
 				AD1C0F5E287042520060A1EE /* SIMD_Neon.h in Headers */,
@@ -889,6 +893,7 @@
 				AD0A9D9B287C609F00A6CAB5 /* ConstraintSolver.cpp in Sources */,
 				ADC73027286DD3BC00364E92 /* PythonModule.cpp in Sources */,
 				ADDE14452820AE3100809D36 /* HeightField3d.cpp in Sources */,
+				AD9FED15287DAF360078C209 /* KinematicsTree.cpp in Sources */,
 				ADDE14B92820B16F00809D36 /* AutonomousController.cpp in Sources */,
 				AD5E0C64287A83DC005E0888 /* Voronoi2d.cpp in Sources */,
 				ADDE132E2820AE0700809D36 /* Contact.cpp in Sources */,
@@ -900,16 +905,15 @@
 				ADDE144E2820AE3100809D36 /* ProjectiveDynamicsSolver.cpp in Sources */,
 				ADDE14362820AE3100809D36 /* OrientedBox3d.cpp in Sources */,
 				ADDE14802820AE3100809D36 /* PhysicsMaterial.cpp in Sources */,
+				AD9FED14287DAF360078C209 /* KeyFrameAnimation.cpp in Sources */,
 				ADDE145A2820AE3100809D36 /* VoxelEngine.cpp in Sources */,
 				ADDE145C2820AE3100809D36 /* TetrahedralMesh.cpp in Sources */,
 				AD0A9D9F287C60B400A6CAB5 /* SequentialImpulseSolver.cpp in Sources */,
 				ADDE14422820AE3100809D36 /* MeshBVH4.cpp in Sources */,
 				ADDE144A2820AE3100809D36 /* LCPSolver.cpp in Sources */,
-				ADDE147B2820AE3100809D36 /* AnimationTree.cpp in Sources */,
 				ADDE14712820AE3100809D36 /* WarmStart.cpp in Sources */,
 				ADDE14742820AE3100809D36 /* RigidBody.cpp in Sources */,
 				ADDE14692820AE3100809D36 /* AnimBinaryParser.cpp in Sources */,
-				ADDE147A2820AE3100809D36 /* Animation.cpp in Sources */,
 				ADDE131A2820AE0700809D36 /* NarrowPhase.cpp in Sources */,
 				ADDE131F2820AE0700809D36 /* AABBTreeInference.cpp in Sources */,
 				ADDE14A12820AE3100809D36 /* SingularValueDecomposition.cpp in Sources */,
@@ -1037,7 +1041,10 @@
 		ADE742E62820A994007DEEB3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILER_INDEX_STORE_ENABLE = NO;
+				"OTHER_CFLAGS[arch=*]" = "-openmp";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1046,7 +1053,10 @@
 		ADE742E72820A994007DEEB3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CODE_SIGN_STYLE = Automatic;
+				COMPILER_INDEX_STORE_ENABLE = NO;
+				"OTHER_CFLAGS[arch=*]" = "-openmp";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};

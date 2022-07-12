@@ -70,7 +70,7 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
         return;
     }
 
-	if (width <= 1 || height <= 1)
+	if (width <= 2 || height <= 2)
 	{
 		return;
 	}
@@ -93,9 +93,6 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
 	RigidBodySimulation* world = (RigidBodySimulation*)world_ptr;
 	assert(world);
 
-	RayCastOption Option;
-    Option.MaxDist = farz;
-
 	GeometryQuery* query = world->GetGeometryQuery();
 	assert(query);
 
@@ -114,11 +111,12 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
     #pragma omp parallel for schedule(dynamic, 1)
 	for (int y = 0; y < h2; ++y)
     {
+		RayCastOption Option;
+		Option.MaxDist = farz;
         for (int x = 0; x < w2; ++x)
         {
             Vector3d rayDirection = cameraDirection * nearz + ((y - h2 * 0.5f) / h2) * cameraY + ((x - w2 * 0.5f) / w2) * cameraX;
-            
-            RayCastResult Result;
+			RayCastResult Result;
             bool success = query->RayCast(cameraOrigin, rayDirection.Unit(), Option, &Result);
 			if (success)
 			{
@@ -129,6 +127,7 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
             {
                 fp[y * w2 + w2 - 1 - x] = Option.MaxDist;
             }
+			Option.Cache.prevhitGeom = Result.hitGeom;
         }
     }
 
