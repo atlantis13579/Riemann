@@ -434,7 +434,7 @@ struct SubSortSAH
 };
 
 
-void MeshBVH4::BuildFromBounds(MeshBVH4& bvh, uint8_t*& Memory, const std::vector<Box3d>& allBounds, std::vector<uint32_t>& Permute, const Box3d& meshBounds)
+void MeshBVH4::BuildFromBounds(MeshBVH4& bvh, const std::vector<Box3d>& allBounds, std::vector<uint32_t>& Permute, const Box3d& meshBounds)
 {
 	const uint32_t numBounds = (uint32_t)allBounds.size();
 	Permute.resize(numBounds + 1);
@@ -556,14 +556,15 @@ void MeshBVH4::BuildFromBounds(MeshBVH4& bvh, uint8_t*& Memory, const std::vecto
 	assert(Nodes.size() % SIMD_WIDTH == 0);
 	bvh.NumNodes = (uint32_t)Nodes.size();
 	bvh.NumBatches = bvh.NumNodes / SIMD_WIDTH;
-	Memory = new uint8_t[sizeof(BVHNodeBatch) * bvh.NumBatches + 127];
-	bvh.BatchPtr = (BVHNodeBatch*)AlignMemory(Memory, 128);
+	bvh.Memory = new uint8_t[sizeof(BVHNodeBatch) * bvh.NumBatches + 127];
+	bvh.BatchPtr = (BVHNodeBatch*)AlignMemory(bvh.Memory, 128);
 	bvh.BoundsMin = Vector4d(meshBounds.Min, 0.0f);
 	bvh.BoundsMax = Vector4d(meshBounds.Max, 0.0f);
 	bvh.BatchSize = SIMD_WIDTH;
 	bvh.MaxDepth = maxDepth;
 	assert(bvh.NumNodes % SIMD_WIDTH == 0);
 	bvh.NumRoots = 1;
+	bvh.Flags |= USER_ALLOCATED;
 
 	for (uint32_t j = 0; j < bvh.NumBatches; j++)
 	{

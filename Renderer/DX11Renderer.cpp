@@ -504,7 +504,7 @@ public:
 		std::vector<Vertex1> vv;
 		for (uint32_t i = 0; i < mesh->GetNumVertices(); ++i)
 		{
-			vv.emplace_back(mesh->Vertices[i], mesh->Normals[i]);
+			vv.emplace_back(mesh->Vertices[i], mesh->mNormals[i]);
 		}
 
 		AddTriangles(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetNumTriangles() * 3, mesh->GetIndicesWidth() * 2);
@@ -528,35 +528,35 @@ public:
 
     virtual void AddGeometry(Geometry* geom) override
 	{
-		if (geom->GetShapeType() == TRIANGLE_MESH)
+		if (geom->GetShapeType() == ShapeType3d::TRIANGLE_MESH)
 		{
 			AddTriMesh(geom->GetShapeObj<Mesh>(), geom->GetTransform(), true);
 		}
-		else if (geom->GetShapeType() == CONVEX_MESH)
+		else if (geom->GetShapeType() == ShapeType3d::CONVEX_MESH)
 		{
             AddGeometry<ConvexMesh>(geom);
 		}
-        else if (geom->GetShapeType() == BOX)
+        else if (geom->GetShapeType() == ShapeType3d::BOX)
         {
             AddGeometry<AxisAlignedBox3d>(geom);
         }
-		else if (geom->GetShapeType() == PLANE)
+		else if (geom->GetShapeType() == ShapeType3d::PLANE)
 		{
             AddGeometry <Plane3d > (geom);
 		}
-		else if (geom->GetShapeType() == SPHERE)
+		else if (geom->GetShapeType() == ShapeType3d::SPHERE)
 		{
 			AddGeometry <Sphere3d >(geom);
 		}
-		else if (geom->GetShapeType() == CAPSULE)
+		else if (geom->GetShapeType() == ShapeType3d::CAPSULE)
 		{
 			AddGeometry <Capsule3d >(geom);
 		}
-		else if (geom->GetShapeType() == CYLINDER)
+		else if (geom->GetShapeType() == ShapeType3d::CYLINDER)
 		{
 			AddGeometry <Cylinder3d >(geom);
 		}
-		else if (geom->GetShapeType() == HEIGHTFIELD)
+		else if (geom->GetShapeType() == ShapeType3d::HEIGHTFIELD)
 		{
 			AddGeometry <HeightField3d >(geom);
 		}

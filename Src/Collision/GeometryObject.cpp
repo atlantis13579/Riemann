@@ -183,7 +183,7 @@ void 				GeometryFactory::DeleteGeometry(Geometry* Geom)
 	delete Geom;
 }
 
-int GeometryFactory::ObjectCount[GEOMETRY_COUNT] = { 0 };
+int GeometryFactory::ObjectCount[ShapeType3d::GEOMETRY_COUNT] = { 0 };
 
 Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& Extent, const Quaternion& Rot)
 {

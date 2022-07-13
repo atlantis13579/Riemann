@@ -22,16 +22,6 @@ MeshBVH4* TriangleMesh::CreateEmptyBVH()
 	return m_BVH;
 }
 
-void* TriangleMesh::AllocMemory(int Size, int Width)
-{
-	if (m_Memory != nullptr)
-	{
-		delete[] m_Memory;
-	}
-	m_Memory = new uint8_t[Size + Width - 1];
-	return AlignMemory(m_Memory, Width);
-}
-
 void TriangleMesh::BuildBVH()
 {
 	if (NumTriangles == 0)
@@ -53,7 +43,7 @@ void TriangleMesh::BuildBVH()
 	CreateEmptyBVH();
 
 	std::vector<uint32_t> Permute;
-	MeshBVH4::BuildFromBounds(*m_BVH, m_Memory, allBounds, Permute, meshBounds);
+	MeshBVH4::BuildFromBounds(*m_BVH, allBounds, Permute, meshBounds);
 
 	Reorder(Permute);
 

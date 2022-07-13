@@ -39,6 +39,13 @@ struct PhysxCollections
 	std::unordered_map<void*, int>					mClass;
 };
 
+enum BinaryPlatform
+{
+	PLATFORM_UNKNOWN = 0,
+	WIN64 = 1,
+	LINUX64 = 2,
+};
+
 #include "PhysxFormat_34.hpp"
 #define physx	PhysxFormat_34
 
@@ -65,26 +72,33 @@ public:
 		return GeometryFactory::CreateOBB(Vector3d::Zero(), physxObj->halfExtents);
 	}
 
-	static Geometry* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj)
+	static Geometry* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj, bool mmap)
 	{
 		const physx::PxRTreeTriangleMesh* Mesh = (const physx::PxRTreeTriangleMesh*)physxObj->triangleMesh;
 
 		Geometry *Geom = GeometryFactory::CreateTriangleMesh();
 		TriangleMesh* TriMesh = Geom->GetShapeObj<TriangleMesh>();
-		TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices());
+		TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices(), !mmap);
 		TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
 
 		MeshBVH4* tree = TriMesh->CreateEmptyBVH();
 		static_assert(sizeof(MeshBVH4) == sizeof(physx::RTree), "MeshBVH and RTree should have same size");
 		static_assert(sizeof(BVHNodeBatch) == sizeof(physx::RTreePage), "BVHNodeBatch and RTreePage should have same size");
 		memcpy(tree, &Mesh->mRTree, sizeof(MeshBVH4));
-		void* pMem = TriMesh->AllocMemory(Mesh->mRTree.mTotalPages * sizeof(physx::RTreePage), 128);
-		memcpy(pMem, Mesh->mRTree.mPages, Mesh->mRTree.mTotalPages * sizeof(physx::RTreePage));
-		tree->BatchPtr = (BVHNodeBatch*)pMem;
+		tree->Memory = nullptr;
+		if (mmap)
+		{
+			tree->BatchPtr = (BVHNodeBatch*)Mesh->mRTree.mPages;
+		}
+		else
+		{
+			void* pMem = tree->AllocMemory(Mesh->mRTree.mTotalPages * sizeof(physx::RTreePage), 128);
+			memcpy(pMem, Mesh->mRTree.mPages, Mesh->mRTree.mTotalPages * sizeof(physx::RTreePage));
+		}
 		return Geom;
 	}
 
-	static Geometry* CreateHeightField(const physx::PxHeightFieldGeometry* physxObj)
+	static Geometry* CreateHeightField(const physx::PxHeightFieldGeometry* physxObj, bool mmap)
 	{
 		const physx::HeightField* hf = physxObj->heightField;
 		const physx::PxHeightFieldSample* samples = hf->mData.samples;
@@ -109,7 +123,7 @@ public:
 		return Geom;
 	}
 
-	static Geometry* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj)
+	static Geometry* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj, bool mmap)
 	{
 		const physx::ConvexMesh* Mesh = physxObj->convexMesh;
 
@@ -138,7 +152,7 @@ public:
 		return Geom;
 	}
 
-	static Geometry* CreateShape(const physx::NpShape *shape)
+	static Geometry* CreateShape(const physx::NpShape *shape, bool mmap)
 	{
 		if (shape == nullptr)
 		{
@@ -170,17 +184,17 @@ public:
 		else if (Type == physx::eCONVEXMESH)
 		{
 			physx::PxConvexMeshGeometry* convex = (physx::PxConvexMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.convex;
-			Geom = CreateConvexMesh(convex);
+			Geom = CreateConvexMesh(convex, mmap);
 		}
 		else if (Type == physx::eTRIANGLEMESH)
 		{
 			physx::PxTriangleMeshGeometry* pxMesh = (physx::PxTriangleMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.mesh;
-			Geom = CreateTriangleMesh(pxMesh);
+			Geom = CreateTriangleMesh(pxMesh, mmap);
 		}
 		else if (Type == physx::eHEIGHTFIELD)
 		{
 			physx::PxHeightFieldGeometry* hightfield = (physx::PxHeightFieldGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.heightfield;
-			Geom = CreateHeightField(hightfield);
+			Geom = CreateHeightField(hightfield, mmap);
 		}
 		else
 		{
@@ -195,7 +209,7 @@ public:
 		return Geom;
 	}
 
-	static void CreateGeometryObjects(void *px, int classType, uint64_t guid, std::vector<Geometry*> *objs)
+	static void CreateGeometryObjects(void *px, int classType, uint64_t guid, std::vector<Geometry*> *objs, bool mmap)
 	{
 		if (classType == physx::PxConcreteType::eMATERIAL)
 		{
@@ -210,7 +224,7 @@ public:
 			physx::NpShape* const* pShades = rigid->GetShapes();
 			for (int i = 0; i < nShapes; ++i)
 			{
-				Geometry* p = CreateShape(pShades[i]);
+				Geometry* p = CreateShape(pShades[i], mmap);
 				if (p)
 				{
 					p->SetGuid(guid);
@@ -232,7 +246,7 @@ public:
 			physx::NpShape* const* pShades = rigid->GetShapes();
 			for (int i = 0; i < nShapes; ++i)
 			{
-				Geometry* p = CreateShape(pShades[i]);
+				Geometry* p = CreateShape(pShades[i], mmap);
 				if (p)
 				{
 					p->SetGuid(guid);
@@ -262,6 +276,182 @@ public:
 	}
 };
 
+using namespace physx;
+
+bool DeserializeFromBuffer(void* Buffer, PhysxCollections& collection)
+{
+	if (size_t(Buffer) & (128 - 1))
+	{
+		printf("Buffer must be 128-bytes aligned.\n");
+		return false;
+	}
+
+	uint8_t* address = reinterpret_cast<uint8_t*>(Buffer);
+
+	PxU32 version;
+	BinaryPlatform platform;
+	if (!readHeader(address, version, platform))
+	{
+		return false;
+	}
+
+	ManifestEntry* manifestTable;
+	uint32_t nbObjectsInCollection;
+	uint32_t objectDataEndOffset;
+
+	// read number of objects in collection
+	address = alignPtr(address);
+	nbObjectsInCollection = read32(address);
+
+	// read manifest (uint32_t offset, PxConcreteType type)
+	{
+		address = alignPtr(address);
+		uint32_t nbManifestEntries = read32(address);
+		assert(*reinterpret_cast<uint32_t*>(address) == 0); //first offset is always 0
+		manifestTable = (nbManifestEntries > 0) ? reinterpret_cast<ManifestEntry*>(address) : NULL;
+		address += nbManifestEntries * sizeof(ManifestEntry);
+		objectDataEndOffset = read32(address);
+	}
+
+	ImportReference* importReferences;
+	uint32_t nbImportReferences;
+	// read import references
+	{
+		address = alignPtr(address);
+		nbImportReferences = read32(address);
+		importReferences = (nbImportReferences > 0) ? reinterpret_cast<ImportReference*>(address) : NULL;
+		address += nbImportReferences * sizeof(ImportReference);
+	}
+
+	// TODO
+	assert(importReferences == nullptr);
+
+	ExportReference* exportReferences;
+	uint32_t nbExportReferences;
+	// read export references
+	{
+		address = alignPtr(address);
+		nbExportReferences = read32(address);
+		exportReferences = (nbExportReferences > 0) ? reinterpret_cast<ExportReference*>(address) : NULL;
+		address += nbExportReferences * sizeof(ExportReference);
+	}
+
+	// read internal references arrays
+	uint32_t nbInternalPtrReferences = 0;
+	uint32_t nbInternalHandle16References = 0;
+	InternalReferencePtr* internalPtrReferences = NULL;
+	InternalReferenceHandle16* internalHandle16References = NULL;
+	{
+		address = alignPtr(address);
+
+		nbInternalPtrReferences = read32(address);
+		internalPtrReferences = (nbInternalPtrReferences > 0) ? reinterpret_cast<InternalReferencePtr*>(address) : NULL;
+		address += nbInternalPtrReferences * sizeof(InternalReferencePtr);
+
+		nbInternalHandle16References = read32(address);
+		internalHandle16References = (nbInternalHandle16References > 0) ? reinterpret_cast<InternalReferenceHandle16*>(address) : NULL;
+		address += nbInternalHandle16References * sizeof(InternalReferenceHandle16);
+	}
+
+	std::unordered_map<size_t, SerialObjectIndex> internalPtrReferencesMap(nbInternalPtrReferences * 2);
+	{
+		//create hash (we should load the hashes directly from memory)
+		for (uint32_t i = 0; i < nbInternalPtrReferences; i++)
+		{
+			const InternalReferencePtr& ref = internalPtrReferences[i];
+			internalPtrReferencesMap.emplace(ref.reference, SerialObjectIndex(ref.objIndex));
+		}
+	}
+
+	std::unordered_map<uint16_t, SerialObjectIndex> internalHandle16ReferencesMap(nbInternalHandle16References * 2);
+	{
+		for (uint32_t i = 0; i < nbInternalHandle16References; i++)
+		{
+			const InternalReferenceHandle16& ref = internalHandle16References[i];
+			internalHandle16ReferencesMap.emplace(ref.reference, SerialObjectIndex(ref.objIndex));
+		}
+	}
+
+	collection.mObjects.reserve(nbObjectsInCollection * 2);
+	if (nbExportReferences > 0)
+		collection.mIds.reserve(nbExportReferences * 2);
+
+	uint8_t* addressObjectData = alignPtr(address);
+	uint8_t* addressExtraData = alignPtr(addressObjectData + objectDataEndOffset);
+	std::unordered_map<PxType, int> Statistic;
+
+	PxDeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData, version, platform);
+
+	// iterate over memory containing PxBase objects, create the instances, resolve the addresses, import the external data, add to collection.
+	{
+		uint32_t nbObjects = nbObjectsInCollection;
+		uint8_t* addressBase = address;
+		uint8_t* addressExtraDataBase = addressExtraData;
+
+		while (nbObjects--)
+		{
+			address = alignPtr(address);
+			context.alignExtraData();
+
+			// read PxBase header with type and get corresponding serializer.
+			PxBase* header = reinterpret_cast<PxBase*>(address);
+			const PxType classType = header->getConcreteType();
+
+			// printf("%d\t%d\t%d\n", nbObjects, (int)(address - addressBase), (int)(context.mExtraDataAddress - addressExtraDataBase));
+			PxBase* instance = Deserialize(address, context, classType);
+
+			if (Statistic.find(classType) == Statistic.end())
+			{
+				Statistic.emplace(classType, 0);
+			}
+			if (!instance)
+			{
+				Statistic[classType] -= 1;
+				continue;
+			}
+			Statistic[classType] += 1;
+
+			collection.mObjects.emplace(instance, 0);
+			collection.mClass.emplace(instance, classType);
+		}
+
+		UNUSED(addressBase);
+		UNUSED(addressExtraDataBase);
+	}
+
+	bool success = true;
+	for (auto it : Statistic)
+	{
+		if (it.second >= 0)
+		{
+			// printf("Create class instance for type %d success (%d objs).\n", it.first, it.second);
+		}
+		else
+		{
+			success = false;
+			printf("Create class instance for type %d failed (%d objs).\n", it.first, -it.second);
+		}
+	}
+
+	assert(collection.mObjects.size() == nbObjectsInCollection);
+
+	// update new collection with export references
+	{
+		assert(addressObjectData != NULL);
+		for (uint32_t i = 0; i < nbExportReferences; i++)
+		{
+			bool isExternal;
+			uint32_t manifestIndex = exportReferences[i].objIndex.getIndex(isExternal);
+			assert(!isExternal);
+			PxBase* obj = reinterpret_cast<PxBase*>(addressObjectData + manifestTable[manifestIndex].offset);
+			collection.mIds.emplace(exportReferences[i].id, obj);
+			collection.mObjects[obj] = exportReferences[i].id;
+		}
+	}
+	return success;
+}
+
+
 bool LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 {
 	FILE* fp = fopen(Filename, "rb");
@@ -280,15 +470,64 @@ bool LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 	fclose(fp);
 
 	PhysxCollections collection;
-	if (!physx::DeserializeFromBuffer(p, collection))
+	if (!DeserializeFromBuffer(p, collection))
 	{
 		return false;
 	}
 
 	for (auto it : collection.mClass)
 	{
-		PhysxBinaryParser::CreateGeometryObjects(it.first, it.second, collection.mObjects[it.first], GeometryList);
+		PhysxBinaryParser::CreateGeometryObjects(it.first, it.second, collection.mObjects[it.first], GeometryList, false);
 	}
 
 	return collection.mObjects.size() > 0;
+}
+
+
+void* LoadPhysxBinaryMmap(const char* Filename, std::vector<Geometry*>* GeometryList)
+{
+#if defined(__linux__)
+	int fd = open(Filename, O_RDONLY);
+	if (fd == -1)
+	{
+		return nullptr;
+	}
+
+	struct stat st;
+	fstat(fd, &st);
+	size_t bytes = st.st_size;
+	void* addr = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+	if (addr == MAP_FAILED)
+	{
+		return nullptr;
+	}
+	void* p128 = AlignMemory(addr, 128);
+	assert(p128 == addr);
+#else
+	FILE* fp = fopen(Filename, "rb");
+	if (fp == nullptr)
+	{
+		return false;
+	}
+	fseek(fp, 0, SEEK_END);
+	size_t bytes = (size_t)ftell(fp);
+	fseek(fp, 0, 0);
+	void *addr = new char[bytes + 127];
+	void* p128 = AlignMemory(addr, 128);
+	fread(p128, 1, bytes, fp);
+	fclose(fp);
+#endif
+
+	PhysxCollections collection;
+	if (!DeserializeFromBuffer(p128, collection))
+	{
+		return false;
+	}
+
+	for (auto it : collection.mClass)
+	{
+		PhysxBinaryParser::CreateGeometryObjects(it.first, it.second, collection.mObjects[it.first], GeometryList, true);
+	}
+
+	return addr;
 }

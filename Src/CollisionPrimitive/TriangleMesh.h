@@ -31,7 +31,6 @@ public:
 	TriangleMesh()
 	{
 		m_BVH = nullptr;
-		m_Memory = nullptr;
 	}
 
 	~TriangleMesh()
@@ -50,7 +49,6 @@ public:
 	}
 
 	MeshBVH4*		CreateEmptyBVH();
-	void*			AllocMemory(int Size, int Width);
 	void			BuildBVH();
 
 	void			GetVertIndices(uint32_t triIndex, uint32_t& i0, uint32_t& i1, uint32_t& i2) const;
@@ -72,5 +70,4 @@ public:
 
 private:
 	MeshBVH4*	m_BVH;
-	uint8_t*	m_Memory;
 };

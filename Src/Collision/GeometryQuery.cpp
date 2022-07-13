@@ -35,6 +35,10 @@ GeometryQuery::~GeometryQuery()
 		m_SpatialHash = nullptr;
 	}
 
+	for (size_t i = 0; i < m_Objects.size(); ++i)
+	{
+		delete m_Objects[i];
+	}
 }
 
 void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode)

@@ -16,6 +16,7 @@
 #include <windows.h>
 #include "resource.h"
 
+#include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/Geometry/VoxelField.h"
@@ -235,12 +236,14 @@ void InitPhysxScene()
 	g_World = new RigidBodySimulation(RigidBodySimulationParam());
 
     std::vector<Geometry*> collection;;
-    LoadPhysxBinary("../Test/data/fighting_new.xml.bin", &collection);
+    LoadPhysxBinaryMmap("../Test/data/Japan.xml.bin", &collection);
 
     for (Geometry* Geom : collection)
     {
         g_Renderer->AddGeometry(Geom);
     }
+
+    g_World->GetGeometryQuery()->BuildStaticGeometry(collection, 5);
 }
 
 //--------------------------------------------------------------------------------------
@@ -261,8 +264,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    InitScene();
-    // InitPhysxScene();
+    // InitScene();
+    InitPhysxScene();
     UpdateCamera();
 
     auto last = std::chrono::steady_clock::now();
@@ -293,6 +296,7 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         }
     }
 
+
     return ( int )msg.wParam;
 }
 
@@ -321,6 +325,7 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
     case WM_DESTROY:
         delete g_Renderer;
         delete g_World;
+        g_World = nullptr;
         PostQuitMessage( 0 );
         break;
 

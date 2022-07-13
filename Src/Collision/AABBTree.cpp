@@ -161,7 +161,7 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Geoms, int NumGeoms, Geom
 		Geometry *Geom = GeometryCollection[index];
         assert(Geom);
 		
-		if (Geom == Result->hitGeom)
+		if (Geom == Option.Cache.prevhitGeom)
 		{
 			continue;
 		}

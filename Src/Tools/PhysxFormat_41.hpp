@@ -255,13 +255,17 @@ namespace PhysxFormat_41
 			const std::unordered_map<size_t, SerialObjectIndex>& internalPtrReferencesMap,
 			const std::unordered_map<uint16_t, SerialObjectIndex>& internalHandle16ReferencesMap,
 			// const Cm::Collection* externalRefs,
-			uint8_t* extraData)
+			uint8_t* extraData,
+			PxU32 physxVersion,
+			BinaryPlatform platform)
 			: mManifestTable(manifestTable)
 			, mImportReferences(importReferences)
 			, mObjectDataAddress(objectDataAddress)
 			, mInternalPtrReferencesMap(internalPtrReferencesMap)
 			, mInternalHandle16ReferencesMap(internalHandle16ReferencesMap)
 			// , mExternalRefs(externalRefs)
+			, mPhysXVersion(physxVersion)
+			, mBinaryPlatform(platform)
 		{
 			mExtraDataAddress = extraData;
 		}
@@ -355,6 +359,9 @@ namespace PhysxFormat_41
 
 		//external collection for resolving import references.
 		// const Cm::Collection* mExternalRefs;
+
+		const PxU32 mPhysXVersion;
+		const BinaryPlatform mBinaryPlatform;
 	};
 
 	class PxRefCountable
@@ -1450,10 +1457,10 @@ namespace PhysxFormat_41
 		return PX_BINARY_SERIAL_VERSION;
 	}
 
-	bool readHeader(uint8_t*& address)
+	bool readHeader(uint8_t*& address, PxU32& version, BinaryPlatform& platform)
 	{
 		const uint32_t header = read32(address);
-		const uint32_t version = read32(address);
+		version = read32(address);
 		char binaryVersionGuid[SN_BINARY_VERSION_GUID_NUM_CHARS + 1];
 		memcpy(binaryVersionGuid, address, SN_BINARY_VERSION_GUID_NUM_CHARS);
 		binaryVersionGuid[SN_BINARY_VERSION_GUID_NUM_CHARS] = 0;
@@ -1521,171 +1528,4 @@ namespace PhysxFormat_41
 		}
 		return instance;
 	}
-
-	bool DeserializeFromBuffer(void* Buffer, PhysxCollections& collection)
-	{
-		if (size_t(Buffer) & (128 - 1))
-		{
-			printf("Buffer must be 128-bytes aligned.\n");
-			return false;
-		}
-
-		uint8_t* address = reinterpret_cast<uint8_t*>(Buffer);
-
-		if (!readHeader(address))
-		{
-			return false;
-		}
-
-		ManifestEntry* manifestTable;
-		uint32_t nbObjectsInCollection;
-		uint32_t objectDataEndOffset;
-
-		// read number of objects in collection
-		address = alignPtr(address);
-		nbObjectsInCollection = read32(address);
-
-		// read manifest (uint32_t offset, PxConcreteType type)
-		{
-			address = alignPtr(address);
-			uint32_t nbManifestEntries = read32(address);
-			assert(*reinterpret_cast<uint32_t*>(address) == 0); //first offset is always 0
-			manifestTable = (nbManifestEntries > 0) ? reinterpret_cast<ManifestEntry*>(address) : NULL;
-			address += nbManifestEntries * sizeof(ManifestEntry);
-			objectDataEndOffset = read32(address);
-		}
-
-		ImportReference* importReferences;
-		uint32_t nbImportReferences;
-		// read import references
-		{
-			address = alignPtr(address);
-			nbImportReferences = read32(address);
-			importReferences = (nbImportReferences > 0) ? reinterpret_cast<ImportReference*>(address) : NULL;
-			address += nbImportReferences * sizeof(ImportReference);
-		}
-
-		// TODO
-		assert(importReferences == nullptr);
-
-		ExportReference* exportReferences;
-		uint32_t nbExportReferences;
-		// read export references
-		{
-			address = alignPtr(address);
-			nbExportReferences = read32(address);
-			exportReferences = (nbExportReferences > 0) ? reinterpret_cast<ExportReference*>(address) : NULL;
-			address += nbExportReferences * sizeof(ExportReference);
-		}
-
-		// read internal references arrays
-		uint32_t nbInternalPtrReferences = 0;
-		uint32_t nbInternalHandle16References = 0;
-		InternalReferencePtr* internalPtrReferences = NULL;
-		InternalReferenceHandle16* internalHandle16References = NULL;
-		{
-			address = alignPtr(address);
-
-			nbInternalPtrReferences = read32(address);
-			internalPtrReferences = (nbInternalPtrReferences > 0) ? reinterpret_cast<InternalReferencePtr*>(address) : NULL;
-			address += nbInternalPtrReferences * sizeof(InternalReferencePtr);
-
-			nbInternalHandle16References = read32(address);
-			internalHandle16References = (nbInternalHandle16References > 0) ? reinterpret_cast<InternalReferenceHandle16*>(address) : NULL;
-			address += nbInternalHandle16References * sizeof(InternalReferenceHandle16);
-		}
-
-		std::unordered_map<size_t, SerialObjectIndex> internalPtrReferencesMap(nbInternalPtrReferences * 2);
-		{
-			//create hash (we should load the hashes directly from memory)
-			for (uint32_t i = 0; i < nbInternalPtrReferences; i++)
-			{
-				const InternalReferencePtr& ref = internalPtrReferences[i];
-				internalPtrReferencesMap.emplace(ref.reference, SerialObjectIndex(ref.objIndex));
-			}
-		}
-
-		std::unordered_map<uint16_t, SerialObjectIndex> internalHandle16ReferencesMap(nbInternalHandle16References * 2);
-		{
-			for (uint32_t i = 0; i < nbInternalHandle16References; i++)
-			{
-				const InternalReferenceHandle16& ref = internalHandle16References[i];
-				internalHandle16ReferencesMap.emplace(ref.reference, SerialObjectIndex(ref.objIndex));
-			}
-		}
-
-		collection.mObjects.reserve(nbObjectsInCollection * 2);
-		if (nbExportReferences > 0)
-			collection.mIds.reserve(nbExportReferences * 2);
-
-		uint8_t* addressObjectData = alignPtr(address);
-		uint8_t* addressExtraData = alignPtr(addressObjectData + objectDataEndOffset);
-		std::unordered_map<PxType, int> Statistic;
-
-		uint8_t* addressExtraDataBase = addressExtraData;
-		PxDeserializationContext context(manifestTable, importReferences, addressObjectData, internalPtrReferencesMap, internalHandle16ReferencesMap, addressExtraData);
-
-		// iterate over memory containing PxBase objects, create the instances, resolve the addresses, import the external data, add to collection.
-		{
-			uint32_t nbObjects = nbObjectsInCollection;
-
-			while (nbObjects--)
-			{
-				address = alignPtr(address);
-				context.alignExtraData();
-
-				// read PxBase header with type and get corresponding serializer.
-				PxBase* header = reinterpret_cast<PxBase*>(address);
-				const PxType classType = header->getConcreteType();
-
-				PxBase* instance = Deserialize(address, context, classType);
-
-				if (Statistic.find(classType) == Statistic.end())
-				{
-					Statistic.emplace(classType, 0);
-				}
-				if (!instance)
-				{
-					Statistic[classType] -= 1;
-					continue;
-				}
-				Statistic[classType] += 1;
-
-				collection.mObjects.emplace(instance, 0);
-				collection.mClass.emplace(instance, classType);
-			}
-		}
-
-		for (auto it : Statistic)
-		{
-			if (it.second >= 0)
-			{
-				// printf("Create class instance for type %d success (%d objs).\n", it.first, it.second);
-			}
-			else
-			{
-				printf("Create class instance for type %d failed (%d objs).\n", it.first, -it.second);
-			}
-		}
-
-		// TODO
-		// assert(collection->mObjects.size() == nbObjectsInCollection);
-		assert(collection.mObjects.size() <= nbObjectsInCollection);
-
-		// update new collection with export references
-		{
-			assert(addressObjectData != NULL);
-			for (uint32_t i = 0; i < nbExportReferences; i++)
-			{
-				bool isExternal;
-				uint32_t manifestIndex = exportReferences[i].objIndex.getIndex(isExternal);
-				assert(!isExternal);
-				PxBase* obj = reinterpret_cast<PxBase*>(addressObjectData + manifestTable[manifestIndex].offset);
-				collection.mIds.emplace(exportReferences[i].id, obj);
-				collection.mObjects[obj] = exportReferences[i].id;
-			}
-		}
-		return true;
-	}
-
 };

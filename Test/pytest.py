@@ -66,7 +66,7 @@ class PhysxHelper(object):
             dir_x = math.sin(yaw)
             dir_z = math.cos(yaw)
             self._libs.RenderDepthImage(ctypes.c_void_p(self._scene), dataptr, \
-                               c_int(self._width), c_int(self._height), c_float(fov), c_float(0.1), c_float(200.0), \
+                               c_int(self._width), c_int(self._height), c_float(fov), c_float(0.1), c_float(100.0), \
                                c_float(pos[0]), c_float(pos[1]), c_float(pos[2]), \
                                c_float(dir_x), c_float(0.0), c_float(dir_z), 
                                c_float(0.0), c_float(1.0), c_float(0.0), debug_output)

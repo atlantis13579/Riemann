@@ -18,12 +18,15 @@ class Mesh
 public:
 	uint32_t				NumVertices;
 	uint32_t				NumTriangles;
-	std::vector<Vector3d>	Vertices;
-	std::vector<uint16_t>	Indices;
-	std::vector<Vector3d>	Normals;
+	std::vector<Vector3d>	mVertices;
+	std::vector<uint16_t>	mIndices;
+	std::vector<Vector3d>	mNormals;
 	Box3d					BoundingVolume;
 	uint8_t					Flags;
 	std::string				ResourceId;
+
+	Vector3d*				Vertices;
+	uint16_t*				Indices;
 
 	Mesh()
 	{
@@ -37,16 +40,18 @@ public:
 
 	void Release()
 	{
-		Vertices.clear();
-		Indices.clear();
-		Normals.clear();
+		mVertices.clear();
+		mIndices.clear();
+		mNormals.clear();
 		NumVertices = 0;
 		NumTriangles = 0;
+		Vertices = nullptr;
+		Indices = nullptr;
 	}
 
 	void Compact()
 	{
-		Vertices.resize(NumVertices);
+		mVertices.resize(NumVertices);
 		if (0 < NumTriangles && NumTriangles <= 65535 && !Is16bitIndices())
 		{
 			uint16_t* pDst = GetIndices16();
@@ -59,42 +64,43 @@ public:
 			}
 			Flags |= INDICES_16_BIT;
 		}
-		Indices.resize(3 * NumTriangles * GetIndicesWidth());
+		mIndices.resize(3 * NumTriangles * GetIndicesWidth());
+		Indices = &mIndices[0];
 	}
 
 	void* GetVertexBuffer()
 	{
-		return &Vertices[0];
+		return Vertices;
 	}
 
 	void* GetIndexBuffer()
 	{
-		return &Indices[0];
+		return Indices;
 	}
 
 	const void* GetIndexBuffer() const
 	{
-		return &Indices[0];
+		return Indices;
 	}
 
 	const uint16_t* GetIndices16() const			// (uint16_t*)&Indices[0]
 	{
-		return &Indices[0];
+		return Indices;
 	}
 
 	uint16_t* GetIndices16()
 	{
-		return &Indices[0];
+		return Indices;
 	}
 
 	const uint32_t* GetIndices32() const			// (uint32_t*)&Indices[0]
 	{
-		return (uint32_t*)&Indices[0];
+		return (uint32_t*)Indices;
 	}
 
 	uint32_t* GetIndices32()
 	{
-		return (uint32_t*)&Indices[0];
+		return (uint32_t*)Indices;
 	}
 
 	bool Is16bitIndices() const
@@ -135,7 +141,7 @@ public:
 		return GetVertex(i, j);
 	}
 
-	void SetData(const void* Verts, const void* Tris, uint32_t Nv, uint32_t Nt, bool Is16bit)
+	void SetData(void* Verts, void* Tris, uint32_t Nv, uint32_t Nt, bool Is16bit, bool OwnMemory)
 	{
 		Release();
 
@@ -144,27 +150,39 @@ public:
 		NumVertices = Nv;
 		NumTriangles = Nt;
 
-		Vertices.resize(Nv);
-		memcpy(&Vertices[0], Verts, sizeof(Vertices[0]) * Nv);
+		if (OwnMemory)
+		{
+			mVertices.resize(Nv);
+			Vertices = &mVertices[0];
+			memcpy(&Vertices[0], Verts, sizeof(Vertices[0]) * Nv);
 
-		Indices.resize(Nt * 3 * GetIndicesWidth());
-		memcpy(&Indices[0], Tris, Indices.size() * sizeof(Indices[0]));
+			mIndices.resize(Nt * 3 * GetIndicesWidth());
+			Indices = &mIndices[0];
+			memcpy(&Indices[0], Tris, mIndices.size() * sizeof(Indices[0]));
+		}
+		else
+		{
+			Vertices = (Vector3d*)Verts;
+			Indices = (uint16_t*)Tris;
+		}
 	}
 
 	void AddVertex(const Vector3d& v)
 	{
-		if (NumVertices >= Vertices.size())
+		if (NumVertices >= mVertices.size())
 		{
-			Vertices.resize(Vertices.size() + TRIANGLE_BATCH * 3);
+			mVertices.resize(mVertices.size() + TRIANGLE_BATCH * 3);
+			Vertices = &mVertices[0];
 		}
 		Vertices[NumVertices++] = v;
 	}
 
 	void AddTriangle(uint32_t a, uint32_t b, uint32_t c)
 	{
-		if ((NumTriangles * 3 + 2) * GetIndicesWidth() >= Indices.size())
+		if ((NumTriangles * 3 + 2) * GetIndicesWidth() >= mIndices.size())
 		{
-			Indices.resize((Indices.size() + TRIANGLE_BATCH * 3) * GetIndicesWidth());
+			mIndices.resize((mIndices.size() + TRIANGLE_BATCH * 3) * GetIndicesWidth());
+			Indices = &mIndices[0];
 		}
 
 		if (Is16bitIndices())
@@ -242,7 +260,7 @@ public:
 				pDst[3 * i + 2] = pSrc[3 * IndicesPermute[i] + 2];
 			}
 		}
-		Indices = std::move(newIndices);
+		mIndices = std::move(newIndices);
 	}
 
 	bool LoadObj(const char* name)
@@ -352,10 +370,12 @@ public:
 		fread(&Flags, sizeof(Flags), 1, fp);
 		fread(&NumVertices, sizeof(NumVertices), 1, fp);
 		fread(&NumTriangles, sizeof(NumTriangles), 1, fp);
-		Vertices.resize(NumVertices);
-		Indices.resize(NumTriangles * 3 * GetIndicesWidth());
-		fread(&Vertices[0], sizeof(Vertices[0]), NumVertices, fp);
-		fread(&Indices[0], sizeof(Indices[0]), NumTriangles * 3, fp);
+		mVertices.resize(NumVertices);
+		mIndices.resize(NumTriangles * 3 * GetIndicesWidth());
+		Vertices = &mVertices[0];
+		Indices = &mIndices[0];
+		fread(Vertices, sizeof(Vertices[0]), mVertices.size(), fp);
+		fread(Indices, sizeof(Indices[0]), mIndices.size(), fp);
 		fclose(fp);
 
 		ResourceId = name;
@@ -414,15 +434,15 @@ public:
 			return;
 		}
 
-		if (!Normals.empty())
+		if (!mNormals.empty())
 		{
 			return;
 		}
 
 		std::vector<int> Count;
 		Count.resize(NumVertices, 0);
-		Normals.resize(NumVertices);
-		memset(&Normals[0], 0, sizeof(Normals[0]) * Normals.size());
+		mNormals.resize(NumVertices);
+		memset(&mNormals[0], 0, sizeof(mNormals[0]) * mNormals.size());
 		for (uint32_t i = 0; i < NumTriangles; ++i)
 		{
 			int i0, i1, i2;
@@ -443,15 +463,15 @@ public:
 			const Vector3d& v1 = Vertices[i1];
 			const Vector3d& v2 = Vertices[i2];
 			Vector3d Nor = (v1 - v0).Cross(v2 - v0);
-			Normals[i0] += Nor.Unit(); Count[i0]++;
-			Normals[i1] += Nor.Unit(); Count[i1]++;
-			Normals[i2] += Nor.Unit(); Count[i2]++;
+			mNormals[i0] += Nor.Unit(); Count[i0]++;
+			mNormals[i1] += Nor.Unit(); Count[i1]++;
+			mNormals[i2] += Nor.Unit(); Count[i2]++;
 		}
 		
-		for (size_t i = 0; i < Normals.size(); ++i)
+		for (size_t i = 0; i < mNormals.size(); ++i)
 		{
-			Normals[i] *= 1.0f / Count[i];
-			Normals[i].Normalize();
+			mNormals[i] *= 1.0f / Count[i];
+			mNormals[i].Normalize();
 		}
 	}
 
