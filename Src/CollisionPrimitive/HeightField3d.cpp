@@ -261,8 +261,8 @@ bool HeightField3d::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) co
 	for (int i = i0; i <= i1; ++i)
 	for (int j = j0; j <= j1; ++j)
 	{
-		uint16_t Index = j * nX + i;
-		if (minH <= Heights[Index] && Heights[Index] <= maxH)
+		float H = GetHeight(i * nZ + j);
+		if (minH <= H && H <= maxH)
 		{
 			return true;
 		}
@@ -302,22 +302,27 @@ bool HeightField3d::GetHeightRange(int i, int j, float& minH, float& maxH) const
 
 	minH = FLT_MAX;
 	maxH = -FLT_MAX;
+	
+	float Height0 = GetHeight(i0);
+	float Height1 = GetHeight(i1);
+	float Height2 = GetHeight(i2);
+	float Height3 = GetHeight(i3);
 
 	if (Hole0 != 0x7F && Hole1 != 0x7F)
 	{
-		minH = Min(Heights[i0], Heights[i1], Heights[i2], Heights[i3]);
-		maxH = Max(Heights[i0], Heights[i1], Heights[i2], Heights[i3]);
+		minH = Min(Height0, Height1, Height2, Height3);
+		maxH = Max(Height0, Height1, Height2, Height3);
 		return true;
 	}
 	else if (Hole0 != 0x7F)
  	{
-		minH = Min(Min(Heights[i0], Heights[i2]), (tessFlag ? Heights[i3] : Heights[i1]));
-		maxH = Max(Max(Heights[i0], Heights[i2]), (tessFlag ? Heights[i3] : Heights[i1]));
+		minH = Min(Min(Height0, Height2), (tessFlag ? Height3 : Height1));
+		maxH = Max(Max(Height0, Height2), (tessFlag ? Height3 : Height1));
 	}
 	else if (Hole1 != 0x7F)
 	{
-		minH = Min(Min(Heights[i1], Heights[i3]), (tessFlag ? Heights[i0] : Heights[i2]));
-		maxH = Max(Max(Heights[i1], Heights[i3]), (tessFlag ? Heights[i0] : Heights[i2]));
+		minH = Min(Min(Height1, Height3), (tessFlag ? Height0 : Height2));
+		maxH = Max(Max(Height1, Height3), (tessFlag ? Height0 : Height2));
 	}
 
 	return false;
@@ -341,20 +346,25 @@ int HeightField3d::GetCellTriangle(int i, int j, Vector3d Tris[6]) const
 	uint8_t Hole1 = Cells[i + j * nX].Tessellation1;
 
 	Vector3d Base = Vector3d(BV.Min.x + DX * i, 0.0f, BV.Min.z + DZ * j);
-
+	
+	float Height0 = GetHeight(i0);
+	float Height1 = GetHeight(i1);
+	float Height2 = GetHeight(i2);
+	float Height3 = GetHeight(i3);
+	
 	int nt = 0;
 	if (Hole0 != 0x7F)
 	{
-		Tris[0] = Base + Vector3d(0.0f, Heights[i2], DZ);
-		Tris[1] = Base + Vector3d(0.0f, Heights[i0], 0.0f);
-		Tris[2] = tessFlag ? Base + Vector3d(DX, Heights[i3], DZ) : Base + Vector3d(DX, Heights[i1], 0.0f);
+		Tris[0] = Base + Vector3d(0.0f, Height2, DZ);
+		Tris[1] = Base + Vector3d(0.0f, Height0, 0.0f);
+		Tris[2] = tessFlag ? Base + Vector3d(DX, Height3, DZ) : Base + Vector3d(DX, Height1, 0.0f);
 		nt += 3;
 	}
 	if (Hole1 != 0x7F)
 	{
-		Tris[nt + 0] = Base + Vector3d(DX, Heights[i3], DZ);
-		Tris[nt + 1] = tessFlag ? Base + Vector3d(0.0f, Heights[i0], 0.0f) : Base + Vector3d(0.0f, Heights[i2], DZ);
-		Tris[nt + 2] = Base + Vector3d(DX, Heights[i1], 0.0f);
+		Tris[nt + 0] = Base + Vector3d(DX, Height3, DZ);
+		Tris[nt + 1] = tessFlag ? Base + Vector3d(0.0f, Height0, 0.0f) : Base + Vector3d(0.0f,Height2, DZ);
+		Tris[nt + 2] = Base + Vector3d(DX, Height1, 0.0f);
 		nt += 3;
 	}
 

@@ -34,20 +34,24 @@ class HeightField3d
 public:
 	struct CellInfo
 	{
+		int16_t	HeightSample;
 		uint8_t	Tessellation0;
 		uint8_t	Tessellation1;
 	};
 
 	uint32_t 				nX;				// X
 	uint32_t 				nZ;				// Z
-	std::vector<float>		Heights;		// Y
-	std::vector<CellInfo>	Cells;
 	Box3d					BV;
 	float					DX, DZ;
 	float					InvDX, InvDZ;
-
+	float 					HeightScale;
+	std::vector<CellInfo>	mCells;
+	CellInfo*				Cells;
+	
 	HeightField3d()
 	{
+		HeightScale = 1.0f;
+		Cells = nullptr;
 	}
 
 	HeightField3d(const Box3d& _Bv, int _nX, int _nZ)
@@ -60,7 +64,7 @@ public:
 		return ShapeType3d::HEIGHTFIELD;
 	}
 
-	void    Init(const Box3d& _Bv, int _nX, int _nZ)
+	void    	Init(const Box3d& _Bv, int _nX, int _nZ)
 	{
 		BV = _Bv;
 		nX = _nX;
@@ -69,13 +73,31 @@ public:
 		DZ = BV.GetLengthZ() / (nZ - 1);
 		InvDX = 1.0f / DX;
 		InvDZ = 1.0f / DZ;
-		Heights.resize(nX * nZ);
-		memset(&Heights[0], 0, Heights.size() * sizeof(Heights[0]));
-		Cells.resize(nX * nZ);
-		memset(&Cells[0], 0, Cells.size() * sizeof(Cells[0]));
 	}
-
-	Box3d   GetBoundingVolume() const
+	
+	void	AllocMemory()
+	{
+		mCells.resize(nX * nZ * sizeof(CellInfo));
+		Cells = &mCells[0];
+		memset(Cells, 0, mCells.size() * sizeof(mCells[0]));
+	}
+	
+	float 			GetHeight(int idx) const
+	{
+		return Cells[idx].HeightSample * HeightScale;
+	}
+	
+	uint8_t			GetTessellationFlag0(int idx) const
+	{
+		return Cells[idx].Tessellation0;
+	}
+	
+	uint8_t			GetTessellationFlag1(int idx) const
+	{
+		return Cells[idx].Tessellation1;
+	}
+	
+	Box3d   		GetBoundingVolume() const
 	{
 		return BV;
 	}
@@ -147,7 +169,7 @@ public:
 		for (uint32_t i = 0; i < nX; i++)
 		for (uint32_t j = 0; j < nZ; j++)
 		{
-			Vertices[i * nZ + j] = Vector3d(BV.Min.x + DX * i, Heights[j + (i * nZ)], BV.Min.z + DX * j);
+			Vertices[i * nZ + j] = Vector3d(BV.Min.x + DX * i, GetHeight(i * nZ + j), BV.Min.z + DX * j);
 		}
 
 		assert(Vertices.size() < 65535);

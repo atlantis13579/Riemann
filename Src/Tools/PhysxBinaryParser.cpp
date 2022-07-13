@@ -72,13 +72,13 @@ public:
 		return GeometryFactory::CreateOBB(Vector3d::Zero(), physxObj->halfExtents);
 	}
 
-	static Geometry* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj, bool mmap)
+	static Geometry* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj, bool shared_mem)
 	{
 		const physx::PxRTreeTriangleMesh* Mesh = (const physx::PxRTreeTriangleMesh*)physxObj->triangleMesh;
 
 		Geometry *Geom = GeometryFactory::CreateTriangleMesh();
 		TriangleMesh* TriMesh = Geom->GetShapeObj<TriangleMesh>();
-		TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices(), !mmap);
+		TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices(), !shared_mem);
 		TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
 
 		MeshBVH4* tree = TriMesh->CreateEmptyBVH();
@@ -86,7 +86,7 @@ public:
 		static_assert(sizeof(BVHNodeBatch) == sizeof(physx::RTreePage), "BVHNodeBatch and RTreePage should have same size");
 		memcpy(tree, &Mesh->mRTree, sizeof(MeshBVH4));
 		tree->Memory = nullptr;
-		if (mmap)
+		if (shared_mem)
 		{
 			tree->BatchPtr = (BVHNodeBatch*)Mesh->mRTree.mPages;
 		}
@@ -98,32 +98,46 @@ public:
 		return Geom;
 	}
 
-	static Geometry* CreateHeightField(const physx::PxHeightFieldGeometry* physxObj, bool mmap)
+	static Geometry* CreateHeightField(const physx::PxHeightFieldGeometry* physxObj, bool shared_mem)
 	{
-		const physx::HeightField* hf = physxObj->heightField;
-		const physx::PxHeightFieldSample* samples = hf->mData.samples;
-		const uint32_t					nCols = hf->mData.columns;
-		const uint32_t					nRows = hf->mData.rows;
+		const physx::HeightField* pxhf = physxObj->heightField;
+		physx::PxHeightFieldSample* samples = pxhf->mData.samples;
+		const uint32_t					nCols = pxhf->mData.columns;
+		const uint32_t					nRows = pxhf->mData.rows;
 
-		TCE3<float>	ce = hf->mData.mAABB;
+		TCE3<float>	ce = pxhf->mData.mAABB;
 		Vector3d Scale = Vector3d(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
 		ce.Center *= Scale;
 		ce.Extent *= Scale;
 		Geometry* Geom = GeometryFactory::CreateHeightField(ce.GetAABB(), nRows, nCols);
-		HeightField3d* Field = Geom->GetShapeObj<HeightField3d>();
+		HeightField3d* HF = Geom->GetShapeObj<HeightField3d>();
 
-		for (uint32_t i = 0; i < nRows; i++)
-		for (uint32_t j = 0; j < nCols; j++)
+		if (shared_mem)
 		{
-			Field->Heights[i * nCols + j] = samples[j + (i * nCols)].height * physxObj->heightScale;
-			Field->Cells[i * nCols + j].Tessellation0 = samples[i + j * nCols].materialIndex0;
-			Field->Cells[i * nCols + j].Tessellation1 = samples[i + j * nCols].materialIndex1;
+			HF->Cells = (HeightField3d::CellInfo*)samples;
+			HF->HeightScale = physxObj->heightScale;
+		}
+		else
+		{
+			HF->AllocMemory();
+			HF->HeightScale = physxObj->heightScale;
+			for (uint32_t i = 0; i < nRows; i++)
+			for (uint32_t j = 0; j < nCols; j++)
+			{
+				uint8_t *cell = (uint8_t*)(HF->Cells + (i * nCols + j) * sizeof(HeightField3d::CellInfo));
+				int16_t *height = (int16_t*)cell;
+				uint8_t	*Tess = cell + 2;
+				
+				height[0] = samples[i * nCols + j].height;
+				Tess[0] = samples[i * nCols + j].materialIndex0;
+				Tess[1] = samples[i * nCols + j].materialIndex1;
+			}
 		}
 
 		return Geom;
 	}
 
-	static Geometry* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj, bool mmap)
+	static Geometry* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj, bool shared_mem)
 	{
 		const physx::ConvexMesh* Mesh = physxObj->convexMesh;
 
@@ -152,7 +166,7 @@ public:
 		return Geom;
 	}
 
-	static Geometry* CreateShape(const physx::NpShape *shape, bool mmap)
+	static Geometry* CreateShape(const physx::NpShape *shape, bool shared_mem)
 	{
 		if (shape == nullptr)
 		{
@@ -184,17 +198,17 @@ public:
 		else if (Type == physx::eCONVEXMESH)
 		{
 			physx::PxConvexMeshGeometry* convex = (physx::PxConvexMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.convex;
-			Geom = CreateConvexMesh(convex, mmap);
+			Geom = CreateConvexMesh(convex, shared_mem);
 		}
 		else if (Type == physx::eTRIANGLEMESH)
 		{
 			physx::PxTriangleMeshGeometry* pxMesh = (physx::PxTriangleMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.mesh;
-			Geom = CreateTriangleMesh(pxMesh, mmap);
+			Geom = CreateTriangleMesh(pxMesh, shared_mem);
 		}
 		else if (Type == physx::eHEIGHTFIELD)
 		{
 			physx::PxHeightFieldGeometry* hightfield = (physx::PxHeightFieldGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.heightfield;
-			Geom = CreateHeightField(hightfield, mmap);
+			Geom = CreateHeightField(hightfield, shared_mem);
 		}
 		else
 		{
@@ -209,7 +223,7 @@ public:
 		return Geom;
 	}
 
-	static void CreateGeometryObjects(void *px, int classType, uint64_t guid, std::vector<Geometry*> *objs, bool mmap)
+	static void CreateGeometryObjects(void *px, int classType, uint64_t guid, std::vector<Geometry*> *objs, bool shared_mem)
 	{
 		if (classType == physx::PxConcreteType::eMATERIAL)
 		{
@@ -224,7 +238,7 @@ public:
 			physx::NpShape* const* pShades = rigid->GetShapes();
 			for (int i = 0; i < nShapes; ++i)
 			{
-				Geometry* p = CreateShape(pShades[i], mmap);
+				Geometry* p = CreateShape(pShades[i], shared_mem);
 				if (p)
 				{
 					p->SetGuid(guid);
@@ -246,7 +260,7 @@ public:
 			physx::NpShape* const* pShades = rigid->GetShapes();
 			for (int i = 0; i < nShapes; ++i)
 			{
-				Geometry* p = CreateShape(pShades[i], mmap);
+				Geometry* p = CreateShape(pShades[i], shared_mem);
 				if (p)
 				{
 					p->SetGuid(guid);
@@ -499,6 +513,7 @@ void* LoadPhysxBinaryMmap(const char* Filename, std::vector<Geometry*>* Geometry
 	void* addr = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 	if (addr == MAP_FAILED)
 	{
+		close(fd);
 		return nullptr;
 	}
 	void* p128 = AlignMemory(addr, 128);
@@ -507,7 +522,7 @@ void* LoadPhysxBinaryMmap(const char* Filename, std::vector<Geometry*>* Geometry
 	FILE* fp = fopen(Filename, "rb");
 	if (fp == nullptr)
 	{
-		return false;
+		return nullptr;
 	}
 	fseek(fp, 0, SEEK_END);
 	size_t bytes = (size_t)ftell(fp);
@@ -521,7 +536,11 @@ void* LoadPhysxBinaryMmap(const char* Filename, std::vector<Geometry*>* Geometry
 	PhysxCollections collection;
 	if (!DeserializeFromBuffer(p128, collection))
 	{
-		return false;
+		#if defined(__linux__)
+		close(fd);
+		unmap(addr);
+		#endif
+		return nullptr;
 	}
 
 	for (auto it : collection.mClass)
