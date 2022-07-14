@@ -50,6 +50,8 @@
     <ClCompile Include="LinearSystem\DenseMatrix.cpp" />
     <ClCompile Include="LinearSystem\DenseVector.cpp" />
     <ClCompile Include="LinearSystem\EigenValueDecomposition.cpp" />
+    <ClCompile Include="LinearSystem\GaussSeidelIteration.cpp" />
+    <ClCompile Include="LinearSystem\JacobiIteration.cpp" />
     <ClCompile Include="Maths\Matrix3d.cpp" />
     <ClCompile Include="RigidBodyDynamics\KeyFrameAnimation.cpp" />
     <ClCompile Include="RigidBodyDynamics\KinematicsTree.cpp" />
@@ -146,6 +148,8 @@
     <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="Maths\VectorNd.h" />
+    <ClInclude Include="Optimization\LBGFS.h" />
+    <ClInclude Include="Optimization\LR.h" />
     <ClInclude Include="Optimization\SGD.h" />
     <ClInclude Include="RigidBodyDynamics\KinematicsTree.h" />
     <ClInclude Include="RigidBodyDynamics\ForceField.h" />
@@ -156,8 +160,8 @@
     <ClInclude Include="ImageSpace\ImageProcessing.h" />
     <ClInclude Include="ImageSpace\Rasterizer.h" />
     <ClInclude Include="LinearSystem\DenseMatrix.h" />
-    <ClInclude Include="LinearSystem\GaussSeidelIteration_CPU.h" />
-    <ClInclude Include="LinearSystem\JacobiIteration_CPU.h" />
+    <ClInclude Include="LinearSystem\GaussSeidelIteration.h" />
+    <ClInclude Include="LinearSystem\JacobiIteration.h" />
     <ClInclude Include="LinearSystem\LUFactorization.h" />
     <ClInclude Include="LinearSystem\PolarDecomposition.h" />
     <ClInclude Include="LinearSystem\ProjectedGaussSeidel.h" />

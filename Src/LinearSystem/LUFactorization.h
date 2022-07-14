@@ -2,6 +2,7 @@
 #pragma once
 
 // https://en.wikipedia.org/wiki/LU_decomposition
+
 template<typename T>
 class LUFactorization
 {

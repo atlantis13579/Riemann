@@ -236,7 +236,7 @@ void InitPhysxScene()
 	g_World = new RigidBodySimulation(RigidBodySimulationParam());
 
     std::vector<Geometry*> collection;;
-    LoadPhysxBinaryMmap("../Test/data/Japan.xml.bin", &collection);
+    LoadPhysxBinary("../Test/data/Japan.xml.bin", &collection);
 
     for (Geometry* Geom : collection)
     {

@@ -28,11 +28,11 @@
     <ClInclude Include="Maths\Vector4d.h" />
     <ClInclude Include="Solver\NumericalODESolver.h" />
     <ClInclude Include="PositionBasedDynamics\PositionBasedDynamicsSolver.h" />
-    <ClInclude Include="LinearSystem\JacobiIteration_CPU.h" />
+    <ClInclude Include="LinearSystem\JacobiIteration.h" />
     <ClInclude Include="LinearSystem\LUFactorization.h" />
     <ClInclude Include="LinearSystem\PolarDecomposition.h" />
     <ClInclude Include="LinearSystem\SingularValueDecomposition.h" />
-    <ClInclude Include="LinearSystem\GaussSeidelIteration_CPU.h" />
+    <ClInclude Include="LinearSystem\GaussSeidelIteration.h" />
     <ClInclude Include="Maths\Box3d.h" />
     <ClInclude Include="LinearSystem\SparseMatrix.h" />
     <ClInclude Include="LinearSystem\DenseMatrix.h" />
@@ -135,6 +135,8 @@
     <ClInclude Include="Solver\SequentialImpulseSolver.h" />
     <ClInclude Include="Maths\SIMD_AVX.h" />
     <ClInclude Include="Tools\libMat.h" />
+    <ClInclude Include="Optimization\LBGFS.h" />
+    <ClInclude Include="Optimization\LR.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageSpace\ImageProcessing.cpp">
@@ -196,6 +198,8 @@
     <ClCompile Include="Solver\ConstraintSolver.cpp" />
     <ClCompile Include="Solver\Jacobian.cpp" />
     <ClCompile Include="Solver\SequentialImpulseSolver.cpp" />
+    <ClCompile Include="LinearSystem\JacobiIteration.cpp" />
+    <ClCompile Include="LinearSystem\GaussSeidelIteration.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="build_so.sh" />

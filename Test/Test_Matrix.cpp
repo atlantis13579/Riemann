@@ -3,8 +3,8 @@
 
 #include "../Src/Maths/MatrixMxN.h"
 #include "../Src/LinearSystem/DenseMatrix.h"
-#include "../Src/LinearSystem/JacobiIteration_CPU.h"
-#include "../Src/LinearSystem/GaussSeidelIteration_CPU.h"
+#include "../Src/LinearSystem/JacobiIteration.h"
+#include "../Src/LinearSystem/GaussSeidelIteration.h"
 #include "../Src/LinearSystem/LUFactorization.h"
 
 void TestMatrix1()
