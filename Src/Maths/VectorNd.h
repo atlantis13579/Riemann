@@ -1,5 +1,7 @@
 #pragma once
 
+#include<string.h>
+
 template<typename T, int SIZE>
 class TVectorNd
 {

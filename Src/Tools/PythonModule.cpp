@@ -16,7 +16,7 @@ void* LoadPhysxScene(const char *filepath)
     RigidBodySimulationParam param;
     RigidBodySimulation *world = new RigidBodySimulation(param);
     assert(world);
-    if (!world->LoadPhysxScene(filepath))
+    if (!world->LoadPhysxScene(filepath, true))
     {
         delete world;
         return nullptr;

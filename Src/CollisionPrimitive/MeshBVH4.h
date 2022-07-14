@@ -17,6 +17,11 @@ inline void* AlignMemory(void *Memory, int Width)
 #endif
 }
 
+inline bool IsAlign(void* Memory, int Width)
+{
+	return (((intptr_t)Memory) & (Width - 1)) == 0;
+}
+
 #define SIMD_WIDTH		4
 
 struct BVHNodeBatch;

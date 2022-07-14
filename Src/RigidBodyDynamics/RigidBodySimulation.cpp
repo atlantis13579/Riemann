@@ -21,6 +21,8 @@ RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 	m_GeometryQuery = new GeometryQuery;
 	m_GravityField = new ForceField(param.Gravity);
 	m_WindField = nullptr;
+	m_SharedMem = nullptr;
+	m_SharedMemSize = 0;
 }
 
 RigidBodySimulation::~RigidBodySimulation()
@@ -70,6 +72,11 @@ RigidBodySimulation::~RigidBodySimulation()
 	for (size_t i = 0; i < m_Kinematics.size(); ++i)
 	{
 		delete m_Kinematics[i];
+	}
+
+	if (m_SharedMem)
+	{
+		ReleaseSharedMem(m_SharedMem, m_SharedMemSize);
 	}
 }
 
@@ -142,14 +149,26 @@ void		RigidBodySimulation::ApplyWind()
 	}
 }
 
-bool         RigidBodySimulation::LoadPhysxScene(const char *name)
+bool         RigidBodySimulation::LoadPhysxScene(const char *name, bool shared_mem)
 {
     std::vector<Geometry*> collection;
-    bool load_succ = ::LoadPhysxBinary(name, &collection);
-    if (!load_succ)
-    {
-        return false;
-    }
+	if (shared_mem)
+	{
+		m_SharedMem = ::LoadPhysxBinaryMmap(name, &collection, m_SharedMemSize);
+		if (!m_SharedMem)
+		{
+			return false;
+		}
+	}
+	else
+	{
+		bool load_succ = ::LoadPhysxBinary(name, &collection);
+		if (!load_succ)
+		{
+			return false;
+		}
+	}
+
     assert(m_GeometryQuery);
     m_GeometryQuery->BuildStaticGeometry(collection, 5);
     return true;

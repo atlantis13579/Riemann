@@ -28,7 +28,7 @@ public:
 	void			ApplyGravity();
 	void			ApplyWind();
     
-    bool            LoadPhysxScene(const char *name);
+    bool            LoadPhysxScene(const char *name, bool shared_mem);
 
 	RigidBody*		CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
 	bool			LoadAnimation(const std::string& resname, const std::string &filepath, float play_rate, bool begin_play);
@@ -52,4 +52,6 @@ private:
 	NarrowPhase*	m_NPhase;
 	ForceField*		m_GravityField;
 	ForceField*		m_WindField;
+	void*			m_SharedMem;
+	size_t			m_SharedMemSize;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include<string.h>
 #include <cmath>
 #include <type_traits>
 #include <vector>
@@ -7,10 +8,10 @@
 #include "Maths.h"
 #include "../LinearSystem/GaussianElimination.h"
 
-#ifdef __clang__
-#define DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
+#ifdef _MSC_VER
+#define DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX	template<typename = typename std::enable_if<ROWS == COLS>::type>
 #else
-#define DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX   template<typename = typename std::enable_if<ROWS == COLS>::type>
+#define DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX   
 #endif
 
 template<typename T, int ROWS, int COLS>

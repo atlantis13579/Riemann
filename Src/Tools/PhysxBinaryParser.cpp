@@ -4,6 +4,13 @@
 #include <unordered_map>
 #include <vector>
 
+#ifdef __linux__
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#endif
+
 #include "PhysxBinaryParser.h"
 #include "Serialization.h"
 #include "../Collision/GeometryObject.h"
@@ -124,7 +131,7 @@ public:
 			for (uint32_t i = 0; i < nRows; i++)
 			for (uint32_t j = 0; j < nCols; j++)
 			{
-				uint8_t *cell = (uint8_t*)(HF->Cells + (i * nCols + j) * sizeof(HeightField3d::CellInfo));
+				uint8_t *cell = (uint8_t*)(HF->Cells + (i * nCols + j));
 				int16_t *height = (int16_t*)cell;
 				uint8_t	*Tess = cell + 2;
 				
@@ -465,8 +472,19 @@ bool DeserializeFromBuffer(void* Buffer, PhysxCollections& collection)
 	return success;
 }
 
+void	ReleaseSharedMem(void* addr, size_t size)
+{
+	if (addr == nullptr)
+		return;
 
-bool LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
+	#if defined(__linux__)
+	munmap(addr, size);
+	#else
+	delete []addr;
+	#endif
+}
+
+bool	LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 {
 	FILE* fp = fopen(Filename, "rb");
 	if (fp == nullptr)
@@ -497,8 +515,7 @@ bool LoadPhysxBinary(const char* Filename, std::vector<Geometry*>* GeometryList)
 	return collection.mObjects.size() > 0;
 }
 
-
-void* LoadPhysxBinaryMmap(const char* Filename, std::vector<Geometry*>* GeometryList)
+void*	LoadPhysxBinaryMmap(const char* Filename, std::vector<Geometry*>* GeometryList, size_t &mem_size)
 {
 #if defined(__linux__)
 	int fd = open(Filename, O_RDONLY);
@@ -509,8 +526,8 @@ void* LoadPhysxBinaryMmap(const char* Filename, std::vector<Geometry*>* Geometry
 
 	struct stat st;
 	fstat(fd, &st);
-	size_t bytes = st.st_size;
-	void* addr = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+	mem_size = st.st_size;
+	void* addr = mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 	if (addr == MAP_FAILED)
 	{
 		close(fd);
@@ -528,6 +545,7 @@ void* LoadPhysxBinaryMmap(const char* Filename, std::vector<Geometry*>* Geometry
 	size_t bytes = (size_t)ftell(fp);
 	fseek(fp, 0, 0);
 	void *addr = new char[bytes + 127];
+	mem_size = bytes + 127;
 	void* p128 = AlignMemory(addr, 128);
 	fread(p128, 1, bytes, fp);
 	fclose(fp);
@@ -538,8 +556,8 @@ void* LoadPhysxBinaryMmap(const char* Filename, std::vector<Geometry*>* Geometry
 	{
 		#if defined(__linux__)
 		close(fd);
-		unmap(addr);
 		#endif
+		ReleaseSharedMem(addr, mem_size);
 		return nullptr;
 	}
 

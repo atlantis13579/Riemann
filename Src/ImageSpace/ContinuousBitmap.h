@@ -1,6 +1,8 @@
 #pragma once
 
+#include <string.h>
 #include <vector>
+#include <limits>
 
 template <typename T>
 class ContinuousBitmap
