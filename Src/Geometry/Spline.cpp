@@ -163,27 +163,50 @@ Vector3d CatmullRom::Calculate(const Vector3d& p0, const Vector3d& p1, const Vec
 	return Pos;
 }
 
-// https://qroph.github.io/2018/07/30/smooth-paths-using-catmull-rom-splines.html
-std::vector<Vector3d> CatmullRom::Smoothing(const std::vector<Vector3d>& points, float dlen, float alpha, float tension)
+// https://en.wikipedia.org/wiki/Curvature#General_expressions
+static float CurvatureCatmullRom(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, float t)
 {
-	if (points.size() <= 1)
+	float tt = t * t, ttt = t * t * t;
+	// float x = a.x * ttt + b.x * tt + c.x * t + d.x;
+	// float dx = 3.0f * a.x * tt + 2.0f * b.x * t + c.x;
+	// float ddx = 6.0f * a.x * t + 2.0f * b.x;
+	// float y = a.y * ttt + b.y * tt + c.y * t + d.y;
+	// float dy = 3.0f * a.y * tt + 2.0f * b.y * t + c.y;
+	// float ddy = 6.0f * a.y * t + 2.0f * b.y;
+	// float z = a.z * ttt + b.z * tt + c.z * t + d.z;
+	// float dz = 3.0f * a.z * tt + 2.0f * b.z * t + c.z;
+	// float ddz = 6.0f * a.z * t + 2.0f * b.z;
+	// float curvature = sqrtf((ddz * dy - ddy * dz) * (ddz * dy - ddy * dz) +
+	//						(ddx * dz - ddz * dx) * (ddx * dz - ddz * dx) +
+	//						(ddy * dx - ddx * dy) * (ddy * dx - ddx * dy)) / powf(dx * dx + dy * dy + dz * dz, 1.5f);
+	Vector3d L = a * ttt + b * tt + c * t + d;
+	Vector3d DL = 3.0f * a * tt + 2.0f * b * t + c;
+	Vector3d DDL = 6.0f * a * t + 2.0f * b;
+	float curvature = (DL.Cross(DDL)).Length() / std::max(DL.Length(), 1e-6f);
+	curvature = curvature < 1e-6f ? 0.0f : curvature;
+	return curvature;
+}
+
+// https://qroph.github.io/2018/07/30/smooth-paths-using-catmull-rom-splines.html
+std::vector<SplineNode> CatmullRom::Smoothing(const std::vector<Vector3d>& points, float dlen, float alpha, float tension)
+{
+	std::vector<SplineNode> smoothed;
+	if (points.size() == 0)
 	{
-		return points;
+		return smoothed;
+	}
+	else if (points.size() == 1)
+	{
+		smoothed.emplace_back(points[0], 0.0f);
+		return smoothed;
 	}
 
-	std::vector<Vector3d> smoothed;
 	for (size_t i = 0; i < points.size() - 1; ++i)
 	{
 		Vector3d p0 = i == 0 ? 2.0f * points[0] - points[1] : points[i - 1];
 		Vector3d p1 = points[i];
 		Vector3d p2 = points[i+1];
 		Vector3d p3 = i == points.size() - 2 ? 2.0f * points[points.size() - 1] - points[points.size() - 2] : points[i + 2];
-
-		if ((p1 - p2).SquareLength() < dlen * dlen)
-		{
-			smoothed.push_back(p1);
-			continue;
-		}
 
 		float t01 = powf((p0 - p1).Length(), alpha);
 		float t12 = powf((p1 - p2).Length(), alpha);
@@ -204,11 +227,12 @@ std::vector<Vector3d> CatmullRom::Smoothing(const std::vector<Vector3d>& points,
 		{
 			float t = i * 1.0f / n;
 			Vector3d point = a * t * t * t + b * t * t + c * t + d;
-			smoothed.push_back(point);
+			float curvature = CurvatureCatmullRom(a, b, c, d, t);
+			smoothed.emplace_back(point, curvature);
 		}
 	}
 
-	smoothed.push_back(points.back());
+	smoothed.emplace_back(points.back(), 0.0f);
 	// return std::move(smoothed);
 	return smoothed;
 }

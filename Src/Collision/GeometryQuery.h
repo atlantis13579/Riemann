@@ -2,7 +2,7 @@
 
 #include <limits.h>
 #include <vector>
-#include "../Maths/Stack.h"
+#include "../Core/Stack.h"
 #include "../Maths/Vector3d.h"
 #include "GeometryObject.h"
 

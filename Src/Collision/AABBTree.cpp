@@ -3,7 +3,7 @@
 
 #include <assert.h>
 
-#include "../Maths/Stack.h"
+#include "../Core/Stack.h"
 #include "AABBTreeOffline.h"
 #include "AABBTreeInference.h"
 #include "GeometryObject.h"

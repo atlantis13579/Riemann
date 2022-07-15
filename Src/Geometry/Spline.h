@@ -4,6 +4,23 @@
 #include <vector>
 #include "../Maths/Vector3d.h"
 
+struct SplineNode
+{
+	SplineNode() {}
+	SplineNode(const SplineNode& _n)
+	{
+		point = _n.point;
+		curvature = _n.curvature;
+	}
+	SplineNode(const Vector3d &_p, float _c)
+	{
+		point = _p;
+		curvature = _c;
+	}
+	Vector3d	point;
+	float		curvature;
+};
+
 class Bezier
 {
 public:
@@ -31,5 +48,5 @@ public:
 	// alpha = 0.5 : Centripetal Catmull-Rom curve
 	// alpha = 1.0 : Chordal Catmull-Rom curves
 	// A good value for alpha is 0.5 which gives us a centripetal Catmull-Rom spline, and for tension a value 0 is a good choice
-	static std::vector<Vector3d>    Smoothing(const std::vector<Vector3d>& points, float dt, float alpha = 0.5f, float tension = 0.0f);
+	static std::vector<SplineNode>    Smoothing(const std::vector<Vector3d>& points, float dt, float alpha = 0.5f, float tension = 0.0f);
 };

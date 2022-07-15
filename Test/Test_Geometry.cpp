@@ -15,12 +15,12 @@ void TestCatmullRom()
 	paths.emplace_back(0.0f, 1.0f, 0.0f);
 	paths.emplace_back(2.0f, 1.0f, 0.0f);
 
-	std::vector<Vector3d> smoothed = CatmullRom::Smoothing(paths, 0.2f);
+	std::vector<SplineNode> smoothed = CatmullRom::Smoothing(paths, 0.2f);
 
 	EXPECT(smoothed.size() == 16);
-	EXPECT(smoothed[0] == paths[0]);
-	EXPECT(smoothed[5] == paths[1]);
-	EXPECT(smoothed[15] == paths[2]);
+	EXPECT(smoothed[0].point == paths[0]);
+	EXPECT(smoothed[5].point == paths[1]);
+	EXPECT(smoothed[15].point == paths[2]);
 	return;
 }
 

@@ -123,6 +123,9 @@
     <ClInclude Include="Collision\SparseSpatialHash.h" />
     <ClInclude Include="Collision\SAP.h" />
     <ClInclude Include="CollisionPrimitive\TriangleMesh.h" />
+    <ClInclude Include="Core\Array.h" />
+    <ClInclude Include="Core\Base.h" />
+    <ClInclude Include="Core\Stack.h" />
     <ClInclude Include="Geometry\ConvexHull3D.h" />
     <ClInclude Include="Geometry\DenseTensorField3d.h" />
     <ClInclude Include="Geometry\Polygon2D.h" />
@@ -137,14 +140,12 @@
     <ClInclude Include="LinearSystem\DenseVector.h" />
     <ClInclude Include="LinearSystem\EigenValueDecomposition.h" />
     <ClInclude Include="LinearSystem\GaussianElimination.h" />
-    <ClInclude Include="Maths\Base.h" />
     <ClInclude Include="Maths\Float16.h" />
     <ClInclude Include="Maths\MatrixMxN.h" />
     <ClInclude Include="Maths\SIMD_AVX.h" />
     <ClInclude Include="Maths\SIMD_Neon.h" />
     <ClInclude Include="Maths\SIMD_Simulator.h" />
     <ClInclude Include="Maths\SIMD_SSE.h" />
-    <ClInclude Include="Maths\Stack.h" />
     <ClInclude Include="Maths\Tensor.h" />
     <ClInclude Include="Maths\SIMD.h" />
     <ClInclude Include="Maths\VectorNd.h" />
@@ -168,7 +169,6 @@
     <ClInclude Include="LinearSystem\SparseMatrix.h" />
     <ClInclude Include="LinearSystem\SingularValueDecomposition.h" />
     <ClInclude Include="Maths\Box3d.h" />
-    <ClInclude Include="Maths\Array.h" />
     <ClInclude Include="Maths\Frustum.h" />
     <ClInclude Include="Maths\Maths.h" />
     <ClInclude Include="Maths\Matrix2d.h" />

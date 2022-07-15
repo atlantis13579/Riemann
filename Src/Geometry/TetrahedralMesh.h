@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Maths/Array.h"
+#include "../Core/Array.h"
 #include "../Maths/Vector3d.h"
 #include "../Maths/Matrix3d.h"
 
