@@ -81,6 +81,7 @@
     </ClCompile>
     <ClCompile Include="Tools\PythonModule.cpp" />
     <ClCompile Include="Vehicle\AutonomousController.cpp" />
+    <ClCompile Include="Vehicle\VehicleDynamics.cpp" />
     <ClCompile Include="Vehicle\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -205,13 +206,11 @@
     <ClInclude Include="Tools\Serialization.h" />
     <ClInclude Include="Tools\libBmp.h" />
     <ClInclude Include="Vehicle\AutonomousController.h" />
+    <ClInclude Include="Vehicle\VehicleDynamics.h" />
     <ClInclude Include="Vehicle\LQR.h" />
     <ClInclude Include="Vehicle\MPC.h" />
     <ClInclude Include="Vehicle\PID.h" />
     <ClInclude Include="Vehicle\Vehicle.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="build_so.sh" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

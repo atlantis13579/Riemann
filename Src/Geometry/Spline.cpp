@@ -164,7 +164,7 @@ Vector3d CatmullRom::Calculate(const Vector3d& p0, const Vector3d& p1, const Vec
 }
 
 // https://en.wikipedia.org/wiki/Curvature#General_expressions
-static float CurvatureCatmullRom(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, float t)
+float CatmullRom::Curvature(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, float t)
 {
 	float tt = t * t, ttt = t * t * t;
 	// float x = a.x * ttt + b.x * tt + c.x * t + d.x;
@@ -227,7 +227,7 @@ std::vector<SplineNode> CatmullRom::Smoothing(const std::vector<Vector3d>& point
 		{
 			float t = i * 1.0f / n;
 			Vector3d point = a * t * t * t + b * t * t + c * t + d;
-			float curvature = CurvatureCatmullRom(a, b, c, d, t);
+			float curvature = Curvature(a, b, c, d, t);
 			smoothed.emplace_back(point, curvature);
 		}
 	}

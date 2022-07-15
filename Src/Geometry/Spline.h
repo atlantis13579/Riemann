@@ -43,6 +43,7 @@ class CatmullRom
 {
 public:
 	static Vector3d	Calculate(const Vector3d& p0, const Vector3d& p1, const Vector3d& t0, const Vector3d& t1, float t);
+	static float	Curvature(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, float t);
 
 	// alpha = 0.0 : Uniform Catmull-Rom curve 
 	// alpha = 0.5 : Centripetal Catmull-Rom curve

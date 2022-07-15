@@ -21,5 +21,5 @@ public:
 	Vector3d	GetRearAxleCenter() const;
 	float		GetFrontAxleWidth() const;
 	float		GetReartAxleWidth() const;
-	float		GetAxleSeparation() const;
+	float		GetAxleLength() const;
 };
