@@ -2,7 +2,9 @@
 #include "GaussSeidelIteration.h"
 #include "../Maths/SIMD.h"
 
-bool GaussSeidelIteration_CPU::Solve(const float* A, const float* B, int N, float* X, const int MaxIteration, const float kEps /*= 0.00001f*/)
+// Successive Over - relaxation
+
+bool GaussSeidelIteration_CPU::Solve(const float* A, const float* B, int N, float* X, const int MaxIteration, const float kEps, const float Relaxation)
 {
 	int Iter = 0;
 	while (Iter++ < MaxIteration)
@@ -19,9 +21,9 @@ bool GaussSeidelIteration_CPU::Solve(const float* A, const float* B, int N, floa
 			{
 				beta += A[i * N + j] * X[j];
 			}
-			float X1 = (B[i] - beta) / A[i * N + i];
-			Norm += (X[i] - X1) * (X[i] - X1);
-			X[i] = X1;
+			float delta = (B[i] - beta) / A[i * N + i];
+			Norm += (X[i] - delta) * (X[i] - delta);
+			X[i] += Relaxation * (delta - X[i]);
 		}
 
 		if (Norm < kEps)

@@ -74,6 +74,8 @@ void TestMatrix2()
 
 void TestSolve()
 {
+	printf("Running TestSolve\n");
+
 	DenseMatrix A(3);
 	A[0][0] = 12.0f;
 	A[0][1] = 3.0f;
@@ -107,6 +109,8 @@ void TestSolve()
 
 void TestPGS()
 {
+	printf("Running TestPGS\n");
+
 	DenseMatrix A(3);
 	A[0][0] = 12.0f;
 	A[0][1] = 3.0f;
@@ -126,24 +130,30 @@ void TestPGS()
 	DenseVector X(3);
 
 	X.LoadZero();
-	ProjectedGaussSeidel_CPU::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 50);
+	ProjectedGaussSeidel_CPU::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 50, 1e-10f);
 	DenseVector Y = A * X + B;
 	float dp = X.Dot(Y);
-	EXPECT(X >= 0.0f);
-	EXPECT(Y >= 0.0f);
-	EXPECT(dp <= 0.0001f);
+	EXPECT(X >= -0.00001f);
+	EXPECT(Y >= -0.00001f);
+	EXPECT(dp <= 0.00001f);
 
 	DenseVector X1(3), X2(3);
-	X1[0] = X1[1] = X1[2] = 1.0f;
-	X2[0] = X2[1] = X2[2] = 2.0f;
+	X1[0] = 0.0f; X1[1] = -15.0f; X1[2] = 1.0f;
+	X2[0] = 1.0f; X2[1] = 10.0f; X2[2] = 3.0f;
 
 	X.LoadZero();
+	B[0] = 10.5f;
+	B[1] = 17.0f;
+	B[2] = 242.0f;
 	ProjectedGaussSeidel_CPU::Solve(A.GetData(), B.GetData(), X1.GetData(), X2.GetData(), X.GetSize(), X.GetData(), 50);
 	Y = A * X + B;
-	dp = X.Dot(Y);
+	dp = Y.Dot(X);
 	EXPECT(X >= X1);
 	EXPECT(X <= X2);
-	EXPECT(dp <= 0.0001f);
+	for (int i = 0; i < X.GetSize(); ++i)
+	{
+		EXPECT((X[i] == X1[i] && Y[i] > 0) || (X[i] == X2[i] && Y[i] < 0) || (X1[i] < X[i] && X[i] < X2[i] && Y[i] == 0));
+	}
 
 	return;
 }

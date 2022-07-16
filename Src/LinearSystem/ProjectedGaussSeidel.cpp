@@ -1,18 +1,15 @@
 
 #include <algorithm>
+#include <vector>
 #include "ProjectedGaussSeidel.h"
 
-bool ProjectedGaussSeidel_CPU::Solve(const float* A, const float* B, int N, float* X, const int MaxIteration, const float kEps /*= 0.00001f*/)
+bool ProjectedGaussSeidel_CPU::Solve(const float* A, const float* B, int N, float* X, const int MaxIteration, const float kEps, const float Relaxation)
 {
 	int Iter = 0;
-
-	float* old = new float[N];
-
 	while (Iter++ < MaxIteration)
 	{
-		memcpy(old, X, sizeof(float) * N);
-
 		float Norm = 0.0f;
+
 		for (int i = 0; i < N; ++i)
 		{
 			float beta = 0.0f;
@@ -24,16 +21,11 @@ bool ProjectedGaussSeidel_CPU::Solve(const float* A, const float* B, int N, floa
 			{
 				beta += A[i * N + j] * X[j];
 			}
-			float XN = (-B[i] - beta) / A[i * N + i];
-			// XN = std::max(0.0f, XN);
-			// Norm += (X[i] - XN) * (X[i] - XN);
-			X[i] = XN;
-		}
-
-		for (int i = 0; i < N; ++i)
-		{
-			Norm += (X[i] - old[i]) * (X[i] - old[i]);
-			X[i] = std::max(0.0f, X[i]);
+			float X0 = (-B[i] - beta) / A[i * N + i];
+			X0 = X[i] + Relaxation * (X0 - X[i]);
+			X0 = std::max(0.0f, X0);
+			Norm += (X[i] - X0) * (X[i] - X0);
+			X[i] = X0;
 		}
 
 		if (Norm < kEps)
@@ -44,15 +36,11 @@ bool ProjectedGaussSeidel_CPU::Solve(const float* A, const float* B, int N, floa
 	return false;
 }
 
-bool ProjectedGaussSeidel_CPU::Solve(const float* A, const float* B, const float* X1, const float* X2, int N, float* X, const int MaxIteration, const float kEps /*= 0.00001f*/)
+bool ProjectedGaussSeidel_CPU::Solve(const float* A, const float* B, const float* X1, const float* X2, int N, float* X, const int MaxIteration, const float kEps, const float Relaxation)
 {
-	float* old = new float[N];
-
 	int Iter = 0;
 	while (Iter++ < MaxIteration)
 	{
-		memcpy(old, X, sizeof(float) * N);
-
 		float Norm = 0.0f;
 		for (int i = 0; i < N; ++i)
 		{
@@ -65,16 +53,11 @@ bool ProjectedGaussSeidel_CPU::Solve(const float* A, const float* B, const float
 			{
 				beta += A[i * N + j] * X[j];
 			}
-			float XN = (-B[i] - beta) / A[i * N + i];
-			// XN = std::min(std::max(X1[i], XN), X2[i]);
-			// Norm += (X[i] - XN) * (X[i] - XN);
-			X[i] = XN;
-		}
-
-		for (int i = 0; i < N; ++i)
-		{
-			Norm += (X[i] - old[i]) * (X[i] - old[i]);
-			X[i] = std::min(std::max(X1[i], X[i]), X2[i]);
+			float X0 = (-B[i] - beta) / A[i * N + i];
+			X0 = X[i] + Relaxation * (X0 - X[i]);
+			X0 = std::min(std::max(X1[i], X0), X2[i]);
+			Norm += (X[i] - X0) * (X[i] - X0);
+			X[i] = X0;
 		}
 
 		if (Norm < kEps)
