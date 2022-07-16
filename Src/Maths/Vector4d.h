@@ -215,52 +215,52 @@ public:
 
 	bool	operator> (T k) const
 	{
-		return x > k && y > k && z > k && z > k;
+		return x > k && y > k && z > k && w > k;
 	}
 
 	bool	operator>= (T k) const
 	{
-		return x >= k && y >= k && z >= k && z >= k;
+		return x >= k && y >= k && z >= k && w >= k;
 	}
 
 	bool	operator< (T k) const
 	{
-		return x < k&& y < k&& z < k && z < k;
+		return x < k&& y < k&& z < k && w < k;
 	}
 
 	bool	operator<= (T k) const
 	{
-		return x <= k && y <= k && z <= k && z <= k;
+		return x <= k && y <= k && z <= k && w <= k;
 	}
 
 	bool	operator> (const TVector4<T>& rhs) const
 	{
-		return x > rhs.x && y > rhs.y && z > rhs.z && z > rhs.z;
+		return x > rhs.x && y > rhs.y && z > rhs.z && w > rhs.w;
 	}
 
 	bool	operator>= (const TVector4<T>& rhs) const
 	{
-		return x >= rhs.x && y >= rhs.y && z >= rhs.z && z >= rhs.z;
+		return x >= rhs.x && y >= rhs.y && z >= rhs.z && w >= rhs.w;
 	}
 
 	bool	operator< (const TVector4<T>& rhs) const
 	{
-		return x < rhs.x&& y < rhs.y&& z < rhs.z && z < rhs.z;
+		return x < rhs.x&& y < rhs.y&& z < rhs.z && w < rhs.w;
 	}
 
 	bool	operator<= (const TVector4<T>& rhs) const
 	{
-		return x <= rhs.x && y <= rhs.y && z <= rhs.z && z <= rhs.z;
+		return x <= rhs.x && y <= rhs.y && z <= rhs.z && w <= rhs.w;
 	}
 
 	bool	operator==(const TVector4<T>& rhs) const
 	{
-		return x == rhs.x && y == rhs.y && z == rhs.z && z == rhs.z;
+		return x == rhs.x && y == rhs.y && z == rhs.z && w == rhs.w;
 	}
 
 	bool	operator!=(const TVector4<T>& rhs) const
 	{
-		return x != rhs.x || y != rhs.y || z != rhs.z && z != rhs.z;
+		return x != rhs.x || y != rhs.y || z != rhs.z || w != rhs.w;
 	}
 
 	inline T operator[](int i) const

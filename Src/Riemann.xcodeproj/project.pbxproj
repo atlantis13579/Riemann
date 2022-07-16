@@ -21,6 +21,14 @@
 		AD5E0C60287A7F74005E0888 /* Tetrahedral.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD5E0C5E287A7F74005E0888 /* Tetrahedral.cpp */; };
 		AD5E0C63287A83DC005E0888 /* Voronoi2d.h in Headers */ = {isa = PBXBuildFile; fileRef = AD5E0C61287A83DC005E0888 /* Voronoi2d.h */; };
 		AD5E0C64287A83DC005E0888 /* Voronoi2d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD5E0C62287A83DC005E0888 /* Voronoi2d.cpp */; };
+		AD8F7FED2882EF7800F02C33 /* JacobiIteration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD8F7FE92882EF7800F02C33 /* JacobiIteration.cpp */; };
+		AD8F7FEE2882EF7800F02C33 /* GaussSeidelIteration.h in Headers */ = {isa = PBXBuildFile; fileRef = AD8F7FEA2882EF7800F02C33 /* GaussSeidelIteration.h */; };
+		AD8F7FEF2882EF7800F02C33 /* JacobiIteration.h in Headers */ = {isa = PBXBuildFile; fileRef = AD8F7FEB2882EF7800F02C33 /* JacobiIteration.h */; };
+		AD8F7FF02882EF7800F02C33 /* GaussSeidelIteration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD8F7FEC2882EF7800F02C33 /* GaussSeidelIteration.cpp */; };
+		AD8F7FF22882EF8200F02C33 /* ProjectedGaussSeidel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD8F7FF12882EF8200F02C33 /* ProjectedGaussSeidel.cpp */; };
+		AD8F7FF72882EFD100F02C33 /* Array.h in Headers */ = {isa = PBXBuildFile; fileRef = AD8F7FF42882EFD100F02C33 /* Array.h */; };
+		AD8F7FF82882EFD100F02C33 /* Base.h in Headers */ = {isa = PBXBuildFile; fileRef = AD8F7FF52882EFD100F02C33 /* Base.h */; };
+		AD8F7FF92882EFD100F02C33 /* Stack.h in Headers */ = {isa = PBXBuildFile; fileRef = AD8F7FF62882EFD100F02C33 /* Stack.h */; };
 		AD9AF4E12878E5D000DD78C9 /* Spline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */; };
 		AD9AF4E22878E5D000DD78C9 /* Spline.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9AF4E02878E5D000DD78C9 /* Spline.h */; };
 		AD9FED13287DAF360078C209 /* KeyFrameAnimation.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9FED0F287DAF360078C209 /* KeyFrameAnimation.h */; };
@@ -29,7 +37,6 @@
 		AD9FED16287DAF360078C209 /* KinematicsTree.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9FED12287DAF360078C209 /* KinematicsTree.h */; };
 		AD9FED18287DB4D80078C209 /* libMat.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9FED17287DB4D80078C209 /* libMat.h */; };
 		ADC0F6B52878EBC700CE5173 /* GeometryDifference.h in Sources */ = {isa = PBXBuildFile; fileRef = ADC0F6B42878EBC700CE5173 /* GeometryDifference.h */; };
-		ADC73022286DCF4300364E92 /* Base.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73021286DCF4300364E92 /* Base.h */; };
 		ADC73026286DD3BC00364E92 /* PythonModule.h in Headers */ = {isa = PBXBuildFile; fileRef = ADC73024286DD3BC00364E92 /* PythonModule.h */; };
 		ADC73027286DD3BC00364E92 /* PythonModule.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADC73025286DD3BC00364E92 /* PythonModule.cpp */; };
 		ADD2DA57286F37F400B669C9 /* libBmp.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD2DA54286F37F400B669C9 /* libBmp.h */; };
@@ -150,10 +157,8 @@
 		ADDE14882820AE3100809D36 /* Maths.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE140C2820AE3100809D36 /* Maths.h */; };
 		ADDE14892820AE3100809D36 /* VectorNd.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE140D2820AE3100809D36 /* VectorNd.h */; };
 		ADDE148A2820AE3100809D36 /* Float16.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE140E2820AE3100809D36 /* Float16.h */; };
-		ADDE148B2820AE3100809D36 /* Array.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE140F2820AE3100809D36 /* Array.h */; };
 		ADDE148C2820AE3100809D36 /* SIMD.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14102820AE3100809D36 /* SIMD.h */; };
 		ADDE148D2820AE3100809D36 /* Transform.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14112820AE3100809D36 /* Transform.h */; };
-		ADDE148E2820AE3100809D36 /* Stack.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14122820AE3100809D36 /* Stack.h */; };
 		ADDE148F2820AE3100809D36 /* Matrix3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE14132820AE3100809D36 /* Matrix3d.cpp */; };
 		ADDE14902820AE3100809D36 /* Matrix2d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14142820AE3100809D36 /* Matrix2d.h */; };
 		ADDE14912820AE3100809D36 /* Vector3d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14152820AE3100809D36 /* Vector3d.h */; };
@@ -164,7 +169,6 @@
 		ADDE14962820AE3100809D36 /* SparseMatrix.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE141B2820AE3100809D36 /* SparseMatrix.h */; };
 		ADDE14972820AE3100809D36 /* PolarDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE141C2820AE3100809D36 /* PolarDecomposition.h */; };
 		ADDE14982820AE3100809D36 /* LUFactorization.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE141D2820AE3100809D36 /* LUFactorization.h */; };
-		ADDE14992820AE3100809D36 /* JacobiIteration_CPU.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE141E2820AE3100809D36 /* JacobiIteration_CPU.h */; };
 		ADDE149A2820AE3100809D36 /* SingularValueDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE141F2820AE3100809D36 /* SingularValueDecomposition.h */; };
 		ADDE149B2820AE3100809D36 /* DenseMatrix.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14202820AE3100809D36 /* DenseMatrix.h */; };
 		ADDE149C2820AE3100809D36 /* EigenValueDecomposition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE14212820AE3100809D36 /* EigenValueDecomposition.cpp */; };
@@ -176,7 +180,6 @@
 		ADDE14A22820AE3100809D36 /* GaussianElimination.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14272820AE3100809D36 /* GaussianElimination.h */; };
 		ADDE14A32820AE3100809D36 /* DenseVector.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14282820AE3100809D36 /* DenseVector.h */; };
 		ADDE14A42820AE3100809D36 /* PolarDecomposition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE14292820AE3100809D36 /* PolarDecomposition.cpp */; };
-		ADDE14A52820AE3100809D36 /* GaussSeidelIteration_CPU.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE142A2820AE3100809D36 /* GaussSeidelIteration_CPU.h */; };
 		ADDE14A62820AE3100809D36 /* PositionBasedDynamicsSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE142C2820AE3100809D36 /* PositionBasedDynamicsSolver.h */; };
 		ADDE14A72820AE3100809D36 /* PositionBasedDynamicsSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE142D2820AE3100809D36 /* PositionBasedDynamicsSolver.cpp */; };
 		ADDE14B32820B16F00809D36 /* AutonomousController.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14AC2820B16F00809D36 /* AutonomousController.h */; };
@@ -203,6 +206,14 @@
 		AD5E0C5E287A7F74005E0888 /* Tetrahedral.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Tetrahedral.cpp; sourceTree = "<group>"; };
 		AD5E0C61287A83DC005E0888 /* Voronoi2d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Voronoi2d.h; sourceTree = "<group>"; };
 		AD5E0C62287A83DC005E0888 /* Voronoi2d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Voronoi2d.cpp; sourceTree = "<group>"; };
+		AD8F7FE92882EF7800F02C33 /* JacobiIteration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = JacobiIteration.cpp; sourceTree = "<group>"; };
+		AD8F7FEA2882EF7800F02C33 /* GaussSeidelIteration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GaussSeidelIteration.h; sourceTree = "<group>"; };
+		AD8F7FEB2882EF7800F02C33 /* JacobiIteration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JacobiIteration.h; sourceTree = "<group>"; };
+		AD8F7FEC2882EF7800F02C33 /* GaussSeidelIteration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GaussSeidelIteration.cpp; sourceTree = "<group>"; };
+		AD8F7FF12882EF8200F02C33 /* ProjectedGaussSeidel.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ProjectedGaussSeidel.cpp; sourceTree = "<group>"; };
+		AD8F7FF42882EFD100F02C33 /* Array.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Array.h; path = Core/Array.h; sourceTree = "<group>"; };
+		AD8F7FF52882EFD100F02C33 /* Base.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Base.h; path = Core/Base.h; sourceTree = "<group>"; };
+		AD8F7FF62882EFD100F02C33 /* Stack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Stack.h; path = Core/Stack.h; sourceTree = "<group>"; };
 		AD9AF4DF2878E5D000DD78C9 /* Spline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Spline.cpp; sourceTree = "<group>"; };
 		AD9AF4E02878E5D000DD78C9 /* Spline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Spline.h; sourceTree = "<group>"; };
 		AD9FED0F287DAF360078C209 /* KeyFrameAnimation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KeyFrameAnimation.h; sourceTree = "<group>"; };
@@ -211,7 +222,6 @@
 		AD9FED12287DAF360078C209 /* KinematicsTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KinematicsTree.h; sourceTree = "<group>"; };
 		AD9FED17287DB4D80078C209 /* libMat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libMat.h; sourceTree = "<group>"; };
 		ADC0F6B42878EBC700CE5173 /* GeometryDifference.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeometryDifference.h; sourceTree = "<group>"; };
-		ADC73021286DCF4300364E92 /* Base.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Base.h; sourceTree = "<group>"; };
 		ADC73024286DD3BC00364E92 /* PythonModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PythonModule.h; sourceTree = "<group>"; };
 		ADC73025286DD3BC00364E92 /* PythonModule.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PythonModule.cpp; sourceTree = "<group>"; };
 		ADD2DA54286F37F400B669C9 /* libBmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libBmp.h; sourceTree = "<group>"; };
@@ -332,10 +342,8 @@
 		ADDE140C2820AE3100809D36 /* Maths.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Maths.h; sourceTree = "<group>"; };
 		ADDE140D2820AE3100809D36 /* VectorNd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VectorNd.h; sourceTree = "<group>"; };
 		ADDE140E2820AE3100809D36 /* Float16.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Float16.h; sourceTree = "<group>"; };
-		ADDE140F2820AE3100809D36 /* Array.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Array.h; sourceTree = "<group>"; };
 		ADDE14102820AE3100809D36 /* SIMD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SIMD.h; sourceTree = "<group>"; };
 		ADDE14112820AE3100809D36 /* Transform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Transform.h; sourceTree = "<group>"; };
-		ADDE14122820AE3100809D36 /* Stack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Stack.h; sourceTree = "<group>"; };
 		ADDE14132820AE3100809D36 /* Matrix3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Matrix3d.cpp; sourceTree = "<group>"; };
 		ADDE14142820AE3100809D36 /* Matrix2d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Matrix2d.h; sourceTree = "<group>"; };
 		ADDE14152820AE3100809D36 /* Vector3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Vector3d.h; sourceTree = "<group>"; };
@@ -346,7 +354,6 @@
 		ADDE141B2820AE3100809D36 /* SparseMatrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SparseMatrix.h; sourceTree = "<group>"; };
 		ADDE141C2820AE3100809D36 /* PolarDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PolarDecomposition.h; sourceTree = "<group>"; };
 		ADDE141D2820AE3100809D36 /* LUFactorization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LUFactorization.h; sourceTree = "<group>"; };
-		ADDE141E2820AE3100809D36 /* JacobiIteration_CPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JacobiIteration_CPU.h; sourceTree = "<group>"; };
 		ADDE141F2820AE3100809D36 /* SingularValueDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SingularValueDecomposition.h; sourceTree = "<group>"; };
 		ADDE14202820AE3100809D36 /* DenseMatrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DenseMatrix.h; sourceTree = "<group>"; };
 		ADDE14212820AE3100809D36 /* EigenValueDecomposition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = EigenValueDecomposition.cpp; sourceTree = "<group>"; };
@@ -358,7 +365,6 @@
 		ADDE14272820AE3100809D36 /* GaussianElimination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GaussianElimination.h; sourceTree = "<group>"; };
 		ADDE14282820AE3100809D36 /* DenseVector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DenseVector.h; sourceTree = "<group>"; };
 		ADDE14292820AE3100809D36 /* PolarDecomposition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PolarDecomposition.cpp; sourceTree = "<group>"; };
-		ADDE142A2820AE3100809D36 /* GaussSeidelIteration_CPU.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GaussSeidelIteration_CPU.h; sourceTree = "<group>"; };
 		ADDE142C2820AE3100809D36 /* PositionBasedDynamicsSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PositionBasedDynamicsSolver.h; sourceTree = "<group>"; };
 		ADDE142D2820AE3100809D36 /* PositionBasedDynamicsSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PositionBasedDynamicsSolver.cpp; sourceTree = "<group>"; };
 		ADDE14AC2820B16F00809D36 /* AutonomousController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AutonomousController.h; sourceTree = "<group>"; };
@@ -382,6 +388,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		AD8F7FF32882EFAC00F02C33 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				AD8F7FF42882EFD100F02C33 /* Array.h */,
+				AD8F7FF52882EFD100F02C33 /* Base.h */,
+				AD8F7FF62882EFD100F02C33 /* Stack.h */,
+			);
+			name = Core;
+			sourceTree = "<group>";
+		};
 		ADDE12F82820AE0700809D36 /* Collision */ = {
 			isa = PBXGroup;
 			children = (
@@ -571,8 +587,6 @@
 		ADDE14042820AE3100809D36 /* Maths */ = {
 			isa = PBXGroup;
 			children = (
-				ADDE140F2820AE3100809D36 /* Array.h */,
-				ADC73021286DCF4300364E92 /* Base.h */,
 				ADDE140B2820AE3100809D36 /* Box3d.h */,
 				ADDE140E2820AE3100809D36 /* Float16.h */,
 				ADDE14072820AE3100809D36 /* Frustum.h */,
@@ -588,7 +602,6 @@
 				AD1C0F5B287042520060A1EE /* SIMD_SSE.h */,
 				AD1C0F5C287042520060A1EE /* SIMD_Neon.h */,
 				AD1C0F5F287046E20060A1EE /* SIMD_Simulator.h */,
-				ADDE14122820AE3100809D36 /* Stack.h */,
 				ADDE14172820AE3100809D36 /* Tensor.h */,
 				ADDE14112820AE3100809D36 /* Transform.h */,
 				ADDE14162820AE3100809D36 /* Vector2d.h */,
@@ -608,12 +621,15 @@
 				ADDE14282820AE3100809D36 /* DenseVector.h */,
 				ADDE14212820AE3100809D36 /* EigenValueDecomposition.cpp */,
 				ADDE14232820AE3100809D36 /* EigenValueDecomposition.h */,
+				AD8F7FEC2882EF7800F02C33 /* GaussSeidelIteration.cpp */,
+				AD8F7FEA2882EF7800F02C33 /* GaussSeidelIteration.h */,
 				ADDE14272820AE3100809D36 /* GaussianElimination.h */,
-				ADDE142A2820AE3100809D36 /* GaussSeidelIteration_CPU.h */,
-				ADDE141E2820AE3100809D36 /* JacobiIteration_CPU.h */,
+				AD8F7FE92882EF7800F02C33 /* JacobiIteration.cpp */,
+				AD8F7FEB2882EF7800F02C33 /* JacobiIteration.h */,
 				ADDE141D2820AE3100809D36 /* LUFactorization.h */,
 				ADDE14292820AE3100809D36 /* PolarDecomposition.cpp */,
 				ADDE141C2820AE3100809D36 /* PolarDecomposition.h */,
+				AD8F7FF12882EF8200F02C33 /* ProjectedGaussSeidel.cpp */,
 				ADDE14252820AE3100809D36 /* ProjectedGaussSeidel.h */,
 				ADDE14262820AE3100809D36 /* SingularValueDecomposition.cpp */,
 				ADDE141F2820AE3100809D36 /* SingularValueDecomposition.h */,
@@ -651,6 +667,7 @@
 				ADE742E22820A994007DEEB3 /* Products */,
 				ADDE12F82820AE0700809D36 /* Collision */,
 				ADDE13AF2820AE3100809D36 /* CollisionPrimitive */,
+				AD8F7FF32882EFAC00F02C33 /* Core */,
 				ADDE13D52820AE3100809D36 /* Geometry */,
 				ADDE13AA2820AE3100809D36 /* ImageSpace */,
 				ADDE141A2820AE3100809D36 /* LinearSystem */,
@@ -687,19 +704,22 @@
 				ADDE14572820AE3100809D36 /* VoxelField.h in Headers */,
 				ADDE13192820AE0700809D36 /* GeometryCollection.h in Headers */,
 				ADDE14982820AE3100809D36 /* LUFactorization.h in Headers */,
+				AD8F7FF72882EFD100F02C33 /* Array.h in Headers */,
 				ADDE13352820AE0700809D36 /* GJK.h in Headers */,
-				ADDE14992820AE3100809D36 /* JacobiIteration_CPU.h in Headers */,
 				ADDE131D2820AE0700809D36 /* AABBTreeInference.h in Headers */,
 				AD5E0C5F287A7F74005E0888 /* Tetrahedral.h in Headers */,
 				ADDE14972820AE3100809D36 /* PolarDecomposition.h in Headers */,
+				AD8F7FF92882EFD100F02C33 /* Stack.h in Headers */,
 				ADDE13242820AE0700809D36 /* SparseSpatialHash.h in Headers */,
 				ADDE143F2820AE3100809D36 /* Plane3d.h in Headers */,
+				AD8F7FF82882EFD100F02C33 /* Base.h in Headers */,
 				ADDE14632820AE3100809D36 /* Polygon3d.h in Headers */,
 				AD1C0F5D287042520060A1EE /* SIMD_SSE.h in Headers */,
 				ADDE14832820AE3100809D36 /* Frustum.h in Headers */,
 				ADDE14442820AE3100809D36 /* TriangleMesh.h in Headers */,
 				ADDE149A2820AE3100809D36 /* SingularValueDecomposition.h in Headers */,
 				ADDE131C2820AE0700809D36 /* EPA.h in Headers */,
+				AD8F7FEE2882EF7800F02C33 /* GaussSeidelIteration.h in Headers */,
 				ADDE14872820AE3100809D36 /* Box3d.h in Headers */,
 				ADDE144C2820AE3100809D36 /* NumericalODESolver.h in Headers */,
 				ADDE14322820AE3100809D36 /* OrientedBox3d.h in Headers */,
@@ -725,9 +745,7 @@
 				ADDE14642820AE3100809D36 /* DenseTensorField3d.h in Headers */,
 				ADDE13182820AE0700809D36 /* BroadPhase.h in Headers */,
 				ADDE14772820AE3100809D36 /* PhysicsMaterial.h in Headers */,
-				ADDE14A52820AE3100809D36 /* GaussSeidelIteration_CPU.h in Headers */,
-				ADC73022286DCF4300364E92 /* Base.h in Headers */,
-				ADDE148E2820AE3100809D36 /* Stack.h in Headers */,
+				AD8F7FEF2882EF7800F02C33 /* JacobiIteration.h in Headers */,
 				ADDE14892820AE3100809D36 /* VectorNd.h in Headers */,
 				ADDE13342820AE0700809D36 /* DynamicAABBTree.h in Headers */,
 				ADDE13232820AE0700809D36 /* Simplex.h in Headers */,
@@ -798,7 +816,6 @@
 				ADDE14672820AE3100809D36 /* Serialization.h in Headers */,
 				ADDE13222820AE0700809D36 /* MinkowskiSum.h in Headers */,
 				ADDE149B2820AE3100809D36 /* DenseMatrix.h in Headers */,
-				ADDE148B2820AE3100809D36 /* Array.h in Headers */,
 				ADDE14602820AE3100809D36 /* Polygon2d.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -896,12 +913,14 @@
 				AD9FED15287DAF360078C209 /* KinematicsTree.cpp in Sources */,
 				ADDE14B92820B16F00809D36 /* AutonomousController.cpp in Sources */,
 				AD5E0C64287A83DC005E0888 /* Voronoi2d.cpp in Sources */,
+				AD8F7FF22882EF8200F02C33 /* ProjectedGaussSeidel.cpp in Sources */,
 				ADDE132E2820AE0700809D36 /* Contact.cpp in Sources */,
 				ADDE13332820AE0700809D36 /* GeometryIntersection.cpp in Sources */,
 				ADDE14332820AE3100809D36 /* Capsule3d.cpp in Sources */,
 				ADDE148F2820AE3100809D36 /* Matrix3d.cpp in Sources */,
 				ADDE14652820AE3100809D36 /* Polygon2d.cpp in Sources */,
 				ADDE14552820AE3100809D36 /* ConvexHull3d.cpp in Sources */,
+				AD8F7FED2882EF7800F02C33 /* JacobiIteration.cpp in Sources */,
 				ADDE144E2820AE3100809D36 /* ProjectiveDynamicsSolver.cpp in Sources */,
 				ADDE14362820AE3100809D36 /* OrientedBox3d.cpp in Sources */,
 				ADDE14802820AE3100809D36 /* PhysicsMaterial.cpp in Sources */,
@@ -912,6 +931,7 @@
 				ADDE14422820AE3100809D36 /* MeshBVH4.cpp in Sources */,
 				ADDE144A2820AE3100809D36 /* LCPSolver.cpp in Sources */,
 				ADDE14712820AE3100809D36 /* WarmStart.cpp in Sources */,
+				AD8F7FF02882EF7800F02C33 /* GaussSeidelIteration.cpp in Sources */,
 				ADDE14742820AE3100809D36 /* RigidBody.cpp in Sources */,
 				ADDE14692820AE3100809D36 /* AnimBinaryParser.cpp in Sources */,
 				ADDE131A2820AE0700809D36 /* NarrowPhase.cpp in Sources */,

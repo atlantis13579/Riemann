@@ -480,7 +480,7 @@ void	ReleaseSharedMem(void* addr, size_t size)
 	#if defined(__linux__)
 	munmap(addr, size);
 	#else
-	delete []addr;
+	delete [](char*)addr;
 	#endif
 }
 

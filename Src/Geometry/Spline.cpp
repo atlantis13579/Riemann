@@ -166,20 +166,16 @@ Vector3d CatmullRom::Calculate(const Vector3d& p0, const Vector3d& p1, const Vec
 // https://en.wikipedia.org/wiki/Curvature#General_expressions
 float CatmullRom::Curvature(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, float t)
 {
-	float tt = t * t, ttt = t * t * t;
-	// float x = a.x * ttt + b.x * tt + c.x * t + d.x;
+	float tt = t * t;
 	// float dx = 3.0f * a.x * tt + 2.0f * b.x * t + c.x;
 	// float ddx = 6.0f * a.x * t + 2.0f * b.x;
-	// float y = a.y * ttt + b.y * tt + c.y * t + d.y;
 	// float dy = 3.0f * a.y * tt + 2.0f * b.y * t + c.y;
 	// float ddy = 6.0f * a.y * t + 2.0f * b.y;
-	// float z = a.z * ttt + b.z * tt + c.z * t + d.z;
 	// float dz = 3.0f * a.z * tt + 2.0f * b.z * t + c.z;
 	// float ddz = 6.0f * a.z * t + 2.0f * b.z;
 	// float curvature = sqrtf((ddz * dy - ddy * dz) * (ddz * dy - ddy * dz) +
 	//						(ddx * dz - ddz * dx) * (ddx * dz - ddz * dx) +
 	//						(ddy * dx - ddx * dy) * (ddy * dx - ddx * dy)) / powf(dx * dx + dy * dy + dz * dz, 1.5f);
-	Vector3d L = a * ttt + b * tt + c * t + d;
 	Vector3d DL = 3.0f * a * tt + 2.0f * b * t + c;
 	Vector3d DDL = 6.0f * a * t + 2.0f * b;
 	float curvature = (DL.Cross(DDL)).Length() / std::max(DL.Length(), 1e-6f);
