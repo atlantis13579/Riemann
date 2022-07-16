@@ -11,7 +11,7 @@ class JacobiIteration_CPU
 public:
 	JacobiIteration_CPU() {}
 
-	void Solve(const float* A, const float* B, int N, float* X, const int MaxIteration, const float kEps = 0.00001f);
+	bool Solve(const float* A, const float* B, int N, float* X, const int MaxIteration, const float kEps = 0.00001f);
 
 private:
 	std::vector<float> m_buf;

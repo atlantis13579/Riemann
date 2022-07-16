@@ -202,5 +202,6 @@
     <ClCompile Include="LinearSystem\JacobiIteration.cpp" />
     <ClCompile Include="LinearSystem\GaussSeidelIteration.cpp" />
     <ClCompile Include="Vehicle\AutonomousController.cpp" />
+    <ClCompile Include="LinearSystem\ProjectedGaussSeidel.cpp" />
   </ItemGroup>
 </Project>

@@ -213,6 +213,56 @@ public:
 		w /= k;
 	}
 
+	bool	operator> (T k) const
+	{
+		return x > k && y > k && z > k && z > k;
+	}
+
+	bool	operator>= (T k) const
+	{
+		return x >= k && y >= k && z >= k && z >= k;
+	}
+
+	bool	operator< (T k) const
+	{
+		return x < k&& y < k&& z < k && z < k;
+	}
+
+	bool	operator<= (T k) const
+	{
+		return x <= k && y <= k && z <= k && z <= k;
+	}
+
+	bool	operator> (const TVector4<T>& rhs) const
+	{
+		return x > rhs.x && y > rhs.y && z > rhs.z && z > rhs.z;
+	}
+
+	bool	operator>= (const TVector4<T>& rhs) const
+	{
+		return x >= rhs.x && y >= rhs.y && z >= rhs.z && z >= rhs.z;
+	}
+
+	bool	operator< (const TVector4<T>& rhs) const
+	{
+		return x < rhs.x&& y < rhs.y&& z < rhs.z && z < rhs.z;
+	}
+
+	bool	operator<= (const TVector4<T>& rhs) const
+	{
+		return x <= rhs.x && y <= rhs.y && z <= rhs.z && z <= rhs.z;
+	}
+
+	bool	operator==(const TVector4<T>& rhs) const
+	{
+		return x == rhs.x && y == rhs.y && z == rhs.z && z == rhs.z;
+	}
+
+	bool	operator!=(const TVector4<T>& rhs) const
+	{
+		return x != rhs.x || y != rhs.y || z != rhs.z && z != rhs.z;
+	}
+
 	inline T operator[](int i) const
 	{
 		return reinterpret_cast<const T*>(this)[i];
@@ -232,7 +282,7 @@ public:
 			start.w * (1.0f - t) + end.w * t);
 	}
 
-	static TVector4<T> UnitLerp(TVector4<T>& start, TVector4<T>& end, float t)
+	static TVector4<T> NLerp(TVector4<T>& start, TVector4<T>& end, float t)
 	{
 		return Lerp(start, end, t).Unit();
 	}

@@ -21,6 +21,13 @@ public:
 		pData = &mData[0];
 	}
 
+	TDenseVector(const TDenseVector<T>& v)
+	{
+		mSize = v.mSize;
+		mData = v.mData;
+		pData = &mData[0];
+	}
+
 	TDenseVector(const TDenseVector<T>&& v) : mSize(v.mSize)
 	{
 		mData = std::move(v.mData);
@@ -32,17 +39,17 @@ public:
 		pData = p;
 	}
 
-	int			GetSize() const
+	inline int		GetSize() const
 	{
 		return mSize;
 	}
 
-	T* GetData()
+	inline T*		GetData()
 	{
 		return pData;
 	}
 
-	const T* GetData() const
+	inline const T*	GetData() const
 	{
 		return pData;
 	}
@@ -57,7 +64,7 @@ public:
 		return pData[i];
 	}
 
-	inline T& operator[](int i)
+	inline T&		operator[](int i)
 	{
 		return pData[i];
 	}
@@ -80,7 +87,7 @@ public:
 		TDenseVector<T> Ret(*this);
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			Ret[i] += v[i];
+			Ret[i] += v.pData[i];
 		}
 		return std::move(Ret);
 	}
@@ -95,7 +102,7 @@ public:
 		TDenseVector<T> Ret(*this);
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			Ret[i] -= v[i];
+			Ret[i] -= v.pData[i];
 		}
 		return std::move(Ret);
 	}
@@ -110,7 +117,7 @@ public:
 		TDenseVector<T> Ret(*this);
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			Ret[i] *= v[i];
+			Ret[i] *= v.pData[i];
 		}
 		return std::move(Ret);
 	}
@@ -164,7 +171,7 @@ public:
 
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			pData[i] += v[i];
+			pData[i] += v.pData[i];
 		}
 	}
 
@@ -177,7 +184,7 @@ public:
 
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			pData[i] -= v[i];
+			pData[i] -= v.pData[i];
 		}
 	}
 
@@ -190,7 +197,7 @@ public:
 
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			pData[i] *= v[i];
+			pData[i] *= v.pData[i];
 		}
 	}
 
@@ -203,7 +210,7 @@ public:
 
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			pData[i] /= v[i];
+			pData[i] /= v.pData[i];
 		}
 	}
 
@@ -233,6 +240,131 @@ public:
 		operator*= ((T)1 / k);
 	}
 
+	bool	operator>(T val) const
+	{
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			if (!(pData[i] > val))
+				return false;
+		}
+		return true;
+	}
+
+	bool	operator>=(T val) const
+	{
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			if (!(pData[i] >= val))
+				return false;
+		}
+		return true;
+	}
+
+	bool	operator<(T val) const
+	{
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			if (!(pData[i] < val))
+				return false;
+		}
+		return true;
+	}
+
+	bool	operator<=(T val) const
+	{
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			if (!(pData[i] <= val))
+				return false;
+		}
+		return true;
+	}
+
+	bool	operator>(const TDenseVector<T>& rhs) const
+	{
+		if (GetSize() != rhs.GetSize())
+			return false;
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			if (!(pData[i] > rhs.pData[i]))
+				return false;
+		}
+		return true;
+	}
+
+	bool	operator>=(const TDenseVector<T>& rhs) const
+	{
+		if (GetSize() != rhs.GetSize())
+			return false;
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			if (!(pData[i] >= rhs.pData[i]))
+				return false;
+		}
+		return true;
+	}
+
+	bool	operator<(const TDenseVector<T>& rhs) const
+	{
+		if (GetSize() != rhs.GetSize())
+			return false;
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			if (!(pData[i] < rhs.pData[i]))
+				return false;
+		}
+		return true;
+	}
+
+	bool	operator<=(const TDenseVector<T>& rhs) const
+	{
+		if (GetSize() != rhs.GetSize())
+			return false;
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			if (!(pData[i] <= rhs.pData[i]))
+				return false;
+		}
+		return true;
+	}
+
+	bool	operator==(const TDenseVector<T>& rhs) const
+	{
+		if (GetSize() != rhs.GetSize())
+			return false;
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			if (!(pData[i] == rhs.pData[i]))
+				return false;
+		}
+		return true;
+	}
+
+	bool	operator!=(const TDenseVector<T>& rhs) const
+	{
+		if (GetSize() != rhs.GetSize())
+			return false;
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			if (!(pData[i] != rhs.pData[i]))
+				return false;
+		}
+		return true;
+	}
+
+	bool		FuzzyEqual(const TDenseVector<T>& rhs, T Eps) const
+	{
+		if (GetSize() != rhs.GetSize())
+			return false;
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			if (std::abs(pData[i] - rhs.pData[i]) > Eps)
+				return false;
+		}
+		return true;
+	}
+
+
 	T			Dot(const TDenseVector<T>& v) const
 	{
 		if (GetSize() != v.GetSize())
@@ -251,6 +383,16 @@ public:
 	void		LoadZero()
 	{
 		memset(pData, 0, sizeof(T) * mSize);
+	}
+
+	bool		IsZero(T Eps) const
+	{
+		T dp = (T)0;
+		for (int i = 0; i < mSize; ++i)
+		{
+			dp += pData[i] * pData[i];
+		}
+		return dp < Eps;
 	}
 
 private:

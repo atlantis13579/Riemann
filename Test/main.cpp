@@ -26,7 +26,7 @@ void TestAll()
 int main()
 {
 	printf("Running ...\n");
-	TestGeometry();
+	TestMatrix();
 	printf("All Test Done\n");
 	return 0;
 }

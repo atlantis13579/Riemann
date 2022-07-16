@@ -5,6 +5,7 @@
 #include "../Src/LinearSystem/DenseMatrix.h"
 #include "../Src/LinearSystem/JacobiIteration.h"
 #include "../Src/LinearSystem/GaussSeidelIteration.h"
+#include "../Src/LinearSystem/ProjectedGaussSeidel.h"
 #include "../Src/LinearSystem/LUFactorization.h"
 
 void TestMatrix1()
@@ -71,8 +72,86 @@ void TestMatrix2()
 	return;
 }
 
+void TestSolve()
+{
+	DenseMatrix A(3);
+	A[0][0] = 12.0f;
+	A[0][1] = 3.0f;
+	A[0][2] = 5.0f;
+	A(1, 0) = -1.5f;
+	A(1, 1) = 6.5f;
+	A(1, 2) = 11.5f;
+	A[2][0] = 10.0f;
+	A[2][1] = -10.0f;
+	A[2][2] = 160.1f;
+
+	DenseVector B(3);
+	B[0] = -10.0f;
+	B[1] = -7.0f;
+	B[2] = 122.0f;
+
+	DenseVector X(3);
+
+	X.LoadZero();
+	JacobiIteration_CPU J;
+	J.Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
+	DenseVector Y = A * X;
+	EXPECT(Y.FuzzyEqual(B, 1e-2f));
+
+	GaussSeidelIteration_CPU::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
+	Y = A * X;
+	EXPECT(Y.FuzzyEqual(B, 1e-2f));
+
+	return;
+}
+
+void TestPGS()
+{
+	DenseMatrix A(3);
+	A[0][0] = 12.0f;
+	A[0][1] = 3.0f;
+	A[0][2] = 5.0f;
+	A(1, 0) = -1.5f;
+	A(1, 1) = 6.5f;
+	A(1, 2) = 11.5f;
+	A[2][0] = 10.0f;
+	A[2][1] = -10.0f;
+	A[2][2] = 160.1f;
+
+	DenseVector B(3);
+	B[0] = -10.0f;
+	B[1] = -7.0f;
+	B[2] = 122.0f;
+
+	DenseVector X(3);
+
+	X.LoadZero();
+	ProjectedGaussSeidel_CPU::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 50);
+	DenseVector Y = A * X + B;
+	float dp = X.Dot(Y);
+	EXPECT(X >= 0.0f);
+	EXPECT(Y >= 0.0f);
+	EXPECT(dp <= 0.0001f);
+
+	DenseVector X1(3), X2(3);
+	X1[0] = X1[1] = X1[2] = 1.0f;
+	X2[0] = X2[1] = X2[2] = 2.0f;
+
+	X.LoadZero();
+	ProjectedGaussSeidel_CPU::Solve(A.GetData(), B.GetData(), X1.GetData(), X2.GetData(), X.GetSize(), X.GetData(), 50);
+	Y = A * X + B;
+	dp = X.Dot(Y);
+	EXPECT(X >= X1);
+	EXPECT(X <= X2);
+	EXPECT(dp <= 0.0001f);
+
+	return;
+}
+
 void TestMatrix()
 {
 	TestMatrix1();
 	TestMatrix2();
+	TestSolve();
+	TestPGS();
 }

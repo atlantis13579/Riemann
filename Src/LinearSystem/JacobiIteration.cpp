@@ -2,13 +2,13 @@
 #include "JacobiIteration.h"
 #include "../Maths/SIMD.h"
 
-void JacobiIteration_CPU::Solve(const float* A, const float* B, int N, float* X, const int MaxIteration, const float kEps)
+bool JacobiIteration_CPU::Solve(const float* A, const float* B, int N, float* X, const int MaxIteration, const float kEps)
 {
 	if (m_buf.size() < N)
 	{
 		m_buf.resize(N);
 	}
-	float* delta = &m_buf[0];
+	float* X1 = &m_buf[0];
 
 	int Iter = 0;
 	while (Iter++ < MaxIteration)
@@ -24,21 +24,21 @@ void JacobiIteration_CPU::Solve(const float* A, const float* B, int N, float* X,
 			{
 				beta += A[i * N + j] * X[j];
 			}
-			delta[i] = (B[i] - beta) / A[i * N + i];
+			X1[i] = (B[i] - beta) / A[i * N + i];
 		}
-
-		memcpy(X, delta, sizeof(X[0]) * N);
 
 		float Norm = 0.0f;
 		for (int i = 0; i < N; i++)
 		{
-			Norm += X[i] * X[i];
+			Norm += (X[i] - X1[i]) * (X[i] - X1[i]);
 		}
 
-		bool converge = Norm < kEps;
-		if (converge)
+		memcpy(X, X1, sizeof(X[0]) * N);
+
+		if (Norm < kEps)
 		{
-			break;
+			return true;
 		}
 	}
+	return false;
 }

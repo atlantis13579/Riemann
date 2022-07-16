@@ -50,27 +50,27 @@ public:
 		pData = &mData[0];
 	}
 
-	int			GetLength() const
+	inline int	GetLength() const
 	{
 		return mRows * mCols;
 	}
 
-	int			GetRows() const
+	inline int	GetRows() const
 	{
 		return mRows;
 	}
 
-	int			GetCols() const
+	inline	int	GetCols() const
 	{
 		return mCols;
 	}
 
-	T* GetData()
+	inline T*	GetData()
 	{
 		return pData;
 	}
 
-	const T*	GetData() const
+	inline const T*	GetData() const
 	{
 		return pData;
 	}

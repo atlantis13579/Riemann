@@ -4,9 +4,6 @@
 #include "Vehicle.h"
 
 // https://dingyan89.medium.com/simple-understanding-of-kinematic-bicycle-model-81cac6420357
-// dx / dt = v * cos(theta)
-// 
-// 
 class KinematicBicycleModel
 {
 public:

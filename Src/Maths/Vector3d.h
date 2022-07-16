@@ -205,25 +205,65 @@ public:
 		z /= k;
 	}
 
-	inline bool operator==(const TVector3<T>& v) const
+	bool		operator> (T k) const
 	{
-		return x == v.x && y == v.y && z == v.z;
+		return x > k && y > k && z > k;
 	}
 
-	inline bool operator!=(const TVector3<T>& v) const
+	bool		operator>= (T k) const
 	{
-		return x != v.x || y != v.y || z != v.z;
+		return x >= k && y >= k && z >= k;
 	}
 
-	inline T operator[](int i) const
+	bool		operator< (T k) const
 	{
-		const float* p = (const float*)this;
+		return x < k&& y < k&& z < k;
+	}
+
+	bool		operator<= (T k) const
+	{
+		return x <= k && y <= k && z <= k;
+	}
+
+	bool		operator> (const TVector3<T>& rhs) const
+	{
+		return x > rhs.x && y > rhs.y && z > rhs.z;
+	}
+
+	bool		operator>= (const TVector3<T>& rhs) const
+	{
+		return x >= rhs.x && y >= rhs.y && z >= rhs.z;
+	}
+
+	bool		operator< (const TVector3<T>& rhs) const
+	{
+		return x < rhs.x&& y < rhs.y && z < rhs.z;
+	}
+
+	bool		operator<= (const TVector3<T>& rhs) const
+	{
+		return x <= rhs.x && y <= rhs.y && z <= rhs.z;
+	}
+
+	bool		operator== (const TVector3<T>& rhs) const
+	{
+		return x == rhs.x && y == rhs.y && z == rhs.z;
+	}
+
+	bool		operator!= (const TVector3<T>& rhs) const
+	{
+		return x != rhs.x || y != rhs.y || z != rhs.z;
+	}
+
+	inline T	operator[] (int i) const
+	{
+		const T* p = (const T*)this;
 		return p[i];
 	}
 
-	inline T& operator[](int i)
+	inline T&	operator[] (int i)
 	{
-		float* p = (float*)this;
+		T* p = (T*)this;
 		return p[i];
 	}
 

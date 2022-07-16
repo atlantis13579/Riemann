@@ -52,6 +52,7 @@
     <ClCompile Include="LinearSystem\EigenValueDecomposition.cpp" />
     <ClCompile Include="LinearSystem\GaussSeidelIteration.cpp" />
     <ClCompile Include="LinearSystem\JacobiIteration.cpp" />
+    <ClCompile Include="LinearSystem\ProjectedGaussSeidel.cpp" />
     <ClCompile Include="Maths\Matrix3d.cpp" />
     <ClCompile Include="RigidBodyDynamics\KeyFrameAnimation.cpp" />
     <ClCompile Include="RigidBodyDynamics\KinematicsTree.cpp" />

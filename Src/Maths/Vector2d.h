@@ -69,7 +69,7 @@ public:
 		return x * x + y * y;
 	}
 
-	TVector2<T>& operator=(const TVector2<T>& v)
+	inline TVector2<T>& operator=(const TVector2<T>& v)
 	{
 		x = v.x;
 		y = v.y;
@@ -116,52 +116,114 @@ public:
 		return TVector2<T>(-x, -y);
 	}
 
-	void	 operator+= (const TVector2<T>& v)
+	void	operator+= (const TVector2<T>& v)
 	{
 		x += v.x;
 		y += v.y;
 	}
 
-	void	 operator-= (const TVector2<T>& v)
+	void	operator-= (const TVector2<T>& v)
 	{
 		x -= v.x;
 		y -= v.y;
 	}
 
-	void	 operator*= (const TVector2<T>& v)
+	void	operator*= (const TVector2<T>& v)
 	{
 		x *= v.x;
 		y *= v.y;
 	}
 
-	void	 operator/= (const TVector2<T>& v)
+	void	operator/= (const TVector2<T>& v)
 	{
 		x /= v.x;
 		y /= v.y;
 	}
 
-	void	 operator+= (T k)
+	void	operator+= (T k)
 	{
 		x += k;
 		y += k;
 	}
 
-	void	 operator-= (T k)
+	void	operator-= (T k)
 	{
 		x -= k;
 		y -= k;
 	}
 
-	void	 operator*= (T k)
+	void	operator*= (T k)
 	{
 		x *= k;
 		y *= k;
 	}
 
-	void	 operator/= (T k)
+	void	operator/= (T k)
 	{
 		x /= k;
 		y /= k;
+	}
+
+	bool	operator> (T k) const
+	{
+		return x > k && y > k;
+	}
+
+	bool	operator>= (T k) const
+	{
+		return x >= k && y >= k;
+	}
+
+	bool	operator< (T k) const
+	{
+		return x < k && y < k;
+	}
+
+	bool	operator<= (T k) const
+	{
+		return x <= k && y <= k;
+	}
+
+	bool	operator> (const TVector2<T>& rhs) const
+	{
+		return x > rhs.x && y > rhs.y;
+	}
+
+	bool	operator>= (const TVector2<T>& rhs) const
+	{
+		return x >= rhs.x && y >= rhs.y;
+	}
+
+	bool	operator< (const TVector2<T>& rhs) const
+	{
+		return x < rhs.x && y < rhs.y;
+	}
+
+	bool	operator<= (const TVector2<T>& rhs) const
+	{
+		return x <= rhs.x && y <= rhs.y;
+	}
+
+	bool	operator==(const TVector2<T>& rhs) const
+	{
+		return x == rhs.x && y == rhs.y;
+	}
+
+	bool	operator!=(const TVector2<T>& rhs) const
+	{
+		return x != rhs.x || y != rhs.y;
+	}
+
+	inline T operator[](int i) const
+	{
+		const T* p = (const T*)this;
+		return p[i];
+	}
+
+	inline T& operator[](int i)
+	{
+		T* p = (T*)this;
+		return p[i];
 	}
 
 	static TVector2<T> Lerp(const TVector2<T>& start, const TVector2<T>& end, float t)
