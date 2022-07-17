@@ -5,7 +5,6 @@
 #include "../Maths/Vector3d.h"
 #include "../Maths/Matrix3d.h"
 #include "../Maths/Quaternion.h"
-#include "PhysicsEntity.h"
 
 class Geometry;
 
@@ -14,12 +13,11 @@ struct RigidBodyParam
 	RigidBodyParam()
 	{
 		memset(this, 0, sizeof(RigidBodyParam));
-		Mass = 1.0f;
+		InvMass = 1.0f;
 		Static = true;
-
 	}
 
-	float		Mass;
+	float		InvMass;
 	Matrix3d	Inertia;
 	Vector3d	LinearVelocity;
 	Vector3d	AngularVelocity;
@@ -33,7 +31,7 @@ struct RigidBodyParam
 	bool		Static;
 };
 
-class RigidBody : public PhysicsEntity
+class RigidBody
 {
 public:
 	Geometry*	Shape;
@@ -42,6 +40,26 @@ public:
 	// State variable
 	Vector3d	X;				// Position
 	Quaternion	Q;				// Rotation Quaternion
+	Vector3d	P;				// Linear Momentum
+	Vector3d	L;				// Angular Momentum
+	
+	// Constant quantities
+	float		InvMass;		// Inverse of Total Mass
+	Matrix3d	InvInertia;		// Inverse of Inertia Tensor
+	
+public:
+	Vector3d 		GetLinearVelocity() const;
+	Vector3d		GetAngularVelocity() const;
+	const Matrix3d&	GetInverseInertia() const;
+	Matrix3d		GetInverseInertia_WorldSpace() const;
+	const float&	GetInverseMass() const;
+	
+	void			SetLinearVelocity(const Vector3d &v);
+	void			SetAngularVelocity(const Vector3d &v);
+	
+	float			GetContactBeta() const { return 0.4f; }	// TODO
+	float			GetRestitution() const { return 0.0f; }	// TODO
+	float			GetFriction() const { return 1.0f; }	// TODO
 };
 
 
@@ -56,20 +74,9 @@ public:
 	void AppendShapes(std::vector<Geometry*>* Shapes);
 };
 
-
 class RigidBodyDynamic : public RigidBody
 {
 public:
-	// State variable
-	// Vector3d	X;				// Position
-	// Quaternion	Q;			// Rotation Quaternion
-	Vector3d	P;				// Linear Momentum
-	Vector3d	L;				// Angular Momentum
-
-	// Constant quantities
-	float		Mass;			// Total Mass
-	Matrix3d	InvInertia;		// Inverse of Inertia Tensor 
-
 	// ----
 	Vector3d	ExtForce;
 	Vector3d	ExtTorque;

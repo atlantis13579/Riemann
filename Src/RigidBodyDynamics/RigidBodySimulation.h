@@ -40,12 +40,12 @@ public:
     const GeometryQuery*    GetGeometryQuery() const { return m_GeometryQuery; }
     
 private:
-
+	void			SimulateSingleThread(float dt);
 
 private:
 	std::vector<RigidBodyStatic*>	m_RigidStatics;
 	std::vector<RigidBodyDynamic*>	m_RigidDynamics;
-	std::vector<KinematicsTree*>		m_Kinematics;
+	std::vector<KinematicsTree*>	m_Kinematics;
 
 	GeometryQuery*	m_GeometryQuery;
 	BroadPhase*		m_BPhase;

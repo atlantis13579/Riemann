@@ -279,7 +279,7 @@ public:
 			}
 
 			RigidBodyParam param;
-			param.Mass = 1.0f / core.inverseMass;
+			param.InvMass = core.inverseMass;
 			param.Inertia = Matrix3d(core.inverseInertia.x, core.inverseInertia.y, core.inverseInertia.z).Inverse();
 			param.LinearVelocity = core.linearVelocity;
 			param.AngularVelocity = core.angularVelocity;

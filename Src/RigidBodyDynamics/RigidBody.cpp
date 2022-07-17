@@ -1,5 +1,45 @@
 
 #include "RigidBody.h"
+#include "../Collision/GeometryObject.h"
+
+static const float kMinimumInvMass = 1e-6f;
+
+Vector3d 			RigidBody::GetLinearVelocity() const
+{
+	return P * InvMass;
+}
+
+Vector3d			RigidBody::GetAngularVelocity() const
+{
+	return L * InvInertia;
+}
+
+const Matrix3d&	 	RigidBody::GetInverseInertia() const
+{
+	return InvInertia;
+}
+
+Matrix3d			RigidBody::GetInverseInertia_WorldSpace() const
+{
+	Matrix3d R = Q.ToRotationMatrix();
+	Matrix3d invInertiaWorld = R * InvInertia * R.Transpose();
+	return invInertiaWorld;
+}
+
+const float&		RigidBody::GetInverseMass() const
+{
+	return InvMass;
+}
+
+void				RigidBody::SetLinearVelocity(const Vector3d &v)
+{
+	P = InvMass > kMinimumInvMass ? v / InvMass : Vector3d::Zero();
+}
+
+void				RigidBody::SetAngularVelocity(const Vector3d &v)
+{
+	L = InvInertia.Invertible() ? InvInertia.Inverse() * v : Vector3d::Zero();
+}
 
 void				RigidBodyDynamic::ApplyForce(const Vector3d& _Force)
 {
@@ -19,12 +59,12 @@ void				RigidBodyDynamic::AppendShapes(std::vector<Geometry*> *Shapes)
 RigidBodyDynamic*	RigidBodyDynamic::CreateRigidBody(Geometry* Shape, const RigidBodyParam& param)
 {
 	RigidBodyDynamic* Rigid = new RigidBodyDynamic;
-	Rigid->Mass = param.Mass;
-	Rigid->InvInertia = Shape->GetInverseInertia_WorldSpace(Rigid->Mass);
+	Rigid->InvMass = param.InvMass < kMinimumInvMass ? 0.0f : param.InvMass;
+	Rigid->InvInertia = Shape->GetInverseInertia_LocalSpace(Rigid->InvMass);
 	Rigid->X = Shape->GetPosition();
 	Rigid->Q = Shape->GetRotationQuat();
-	Rigid->P = param.LinearVelocity * Rigid->Mass;
-	Rigid->L = Rigid->InvInertia.Inverse() * param.AngularVelocity;
+	Rigid->P = Rigid->InvMass > 0.0f ? param.LinearVelocity / Rigid->InvMass : Vector3d::Zero();
+	Rigid->L = Rigid->InvInertia.Invertible() ? Rigid->InvInertia.Inverse() * param.AngularVelocity : Vector3d::Zero();
 	Rigid->ExtForce = Vector3d::Zero();
 	Rigid->ExtTorque = Vector3d::Zero();
 	Rigid->LinearDamping = param.LinearDamping;
@@ -42,8 +82,12 @@ RigidBodyDynamic*	RigidBodyDynamic::CreateRigidBody(Geometry* Shape, const Rigid
 RigidBodyStatic* RigidBodyStatic::CreateRigidBody(Geometry* Shape, const RigidBodyParam& param)
 {
 	RigidBodyStatic* Rigid = new RigidBodyStatic;
+	Rigid->InvMass = 0.0f;
+	Rigid->InvInertia = Matrix3d::Zero();
 	Rigid->X = Shape->GetPosition();
 	Rigid->Q = Shape->GetRotationQuat();
+	Rigid->P = Vector3d::Zero();
+	Rigid->L = Vector3d::Zero();
 	Rigid->Shape = Shape;
 	Rigid->Static = true;
 	return Rigid;

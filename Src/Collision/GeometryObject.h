@@ -99,10 +99,10 @@ public:
 	void					UpdateBoundingVolume();
 	const Box3d&			GetBoundingVolume_WorldSpace() const;
 	Vector3d				GetSupport_WorldSpace(const Vector3d& Dir) const;
-	Matrix3d				GetInverseInertia_WorldSpace(float Mass) const;
+	Matrix3d				GetInverseInertia_LocalSpace(float InvMass) const;
 
 private:
-	virtual Matrix3d		GetInertia_LocalSpace(float Mass) const = 0;
+	virtual Matrix3d		GetInertia_LocalSpace(float InvMass) const = 0;
 	virtual Vector3d		GetSupport_LocalSpace(const Vector3d& Dir) const = 0;
 	virtual Box3d			GetBoundingVolume_LocalSpace() const = 0;
 

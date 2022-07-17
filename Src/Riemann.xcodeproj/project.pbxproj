@@ -147,7 +147,6 @@
 		ADDE147C2820AE3100809D36 /* ForceField.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE13FF2820AE3100809D36 /* ForceField.h */; };
 		ADDE147D2820AE3100809D36 /* RigidBodySimulation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE14002820AE3100809D36 /* RigidBodySimulation.cpp */; };
 		ADDE147E2820AE3100809D36 /* ForceField.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE14012820AE3100809D36 /* ForceField.cpp */; };
-		ADDE147F2820AE3100809D36 /* PhysicsEntity.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14022820AE3100809D36 /* PhysicsEntity.h */; };
 		ADDE14802820AE3100809D36 /* PhysicsMaterial.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE14032820AE3100809D36 /* PhysicsMaterial.cpp */; };
 		ADDE14812820AE3100809D36 /* Matrix4d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14052820AE3100809D36 /* Matrix4d.h */; };
 		ADDE14822820AE3100809D36 /* Vector4d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADDE14062820AE3100809D36 /* Vector4d.h */; };
@@ -332,7 +331,6 @@
 		ADDE13FF2820AE3100809D36 /* ForceField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ForceField.h; sourceTree = "<group>"; };
 		ADDE14002820AE3100809D36 /* RigidBodySimulation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RigidBodySimulation.cpp; sourceTree = "<group>"; };
 		ADDE14012820AE3100809D36 /* ForceField.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ForceField.cpp; sourceTree = "<group>"; };
-		ADDE14022820AE3100809D36 /* PhysicsEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PhysicsEntity.h; sourceTree = "<group>"; };
 		ADDE14032820AE3100809D36 /* PhysicsMaterial.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PhysicsMaterial.cpp; sourceTree = "<group>"; };
 		ADDE14052820AE3100809D36 /* Matrix4d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Matrix4d.h; sourceTree = "<group>"; };
 		ADDE14062820AE3100809D36 /* Vector4d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Vector4d.h; sourceTree = "<group>"; };
@@ -487,8 +485,6 @@
 				AD0A9D98287C609F00A6CAB5 /* ConstraintSolver.h */,
 				ADDE13D22820AE3100809D36 /* ConjugateGradientSolver.h */,
 				ADDE13CC2820AE3100809D36 /* ExponentialIntegrator.h */,
-				AD0A9DA2287C624D00A6CAB5 /* Jacobian.cpp */,
-				AD0A9DA3287C624E00A6CAB5 /* Jacobian.h */,
 				ADDE13C92820AE3100809D36 /* LCPSolver.cpp */,
 				ADDE13CF2820AE3100809D36 /* LCPSolver.h */,
 				ADDE13CE2820AE3100809D36 /* NewtonRaphsonIteration.cpp */,
@@ -565,13 +561,14 @@
 			children = (
 				ADDE14012820AE3100809D36 /* ForceField.cpp */,
 				ADDE13FF2820AE3100809D36 /* ForceField.h */,
+				AD0A9DA2287C624D00A6CAB5 /* Jacobian.cpp */,
+				AD0A9DA3287C624E00A6CAB5 /* Jacobian.h */,
 				AD9FED10287DAF360078C209 /* KeyFrameAnimation.cpp */,
 				AD9FED0F287DAF360078C209 /* KeyFrameAnimation.h */,
 				AD9FED11287DAF360078C209 /* KinematicsTree.cpp */,
 				AD9FED12287DAF360078C209 /* KinematicsTree.h */,
 				ADDE13FB2820AE3100809D36 /* MotionIntegration.cpp */,
 				ADDE13F52820AE3100809D36 /* MotionIntegration.h */,
-				ADDE14022820AE3100809D36 /* PhysicsEntity.h */,
 				ADDE14032820AE3100809D36 /* PhysicsMaterial.cpp */,
 				ADDE13FA2820AE3100809D36 /* PhysicsMaterial.h */,
 				ADDE13F72820AE3100809D36 /* RigidBody.cpp */,
@@ -768,7 +765,6 @@
 				AD9FED18287DB4D80078C209 /* libMat.h in Headers */,
 				ADDE144D2820AE3100809D36 /* ExponentialIntegrator.h in Headers */,
 				ADC73026286DD3BC00364E92 /* PythonModule.h in Headers */,
-				ADDE147F2820AE3100809D36 /* PhysicsEntity.h in Headers */,
 				ADDE14812820AE3100809D36 /* Matrix4d.h in Headers */,
 				ADDE143E2820AE3100809D36 /* Sphere3d.h in Headers */,
 				ADDE14462820AE3100809D36 /* Triangle3d.h in Headers */,

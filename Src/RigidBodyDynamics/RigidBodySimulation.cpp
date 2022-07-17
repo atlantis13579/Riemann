@@ -3,7 +3,7 @@
 
 #include <assert.h>
 
-#include "PhysicsEntity.h"
+#include "Jacobian.h"
 #include "MotionIntegration.h"
 #include "WarmStart.h"
 #include "ForceField.h"
@@ -82,6 +82,60 @@ RigidBodySimulation::~RigidBodySimulation()
 
 void		RigidBodySimulation::Simulate(float dt)
 {
+	SimulateSingleThread(dt);
+}
+
+struct ContactJacobians
+{
+	Jacobian jN;
+	Jacobian jT;
+	Jacobian jB;
+};
+
+static void	ResolutionPhase(std::vector<ContactManifold> &manifolds, float dt)
+{
+	int nJacobians = 0;
+	for (size_t i = 0; i < manifolds.size(); ++i)
+	{
+		for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
+		{
+			nJacobians++;
+		}
+	}
+	
+	std::vector<ContactJacobians> jacobians;
+	jacobians.resize(nJacobians);
+	
+	int k = 0;
+	for (size_t i = 0; i < manifolds.size(); ++i)
+	{
+		for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
+		{
+			ContactManifold *manifold = &manifolds[i];
+			jacobians[k].jN.Init(manifold, j, JacobianType::Normal,	manifold->ContactPoints[j].Normal, dt);
+			jacobians[k].jT.Init(manifold, j, JacobianType::Tangent, manifold->ContactPoints[j].Tangent1, dt);
+			jacobians[k].jB.Init(manifold, j, JacobianType::Tangent, manifold->ContactPoints[j].Tangent2, dt);
+			k++;
+		}
+	}
+	
+	k = 0;
+	for (size_t i = 0; i < manifolds.size(); ++i)
+	{
+		for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
+		{
+			ContactManifold *manifold = &manifolds[i];
+			jacobians[k].jN.Solve(manifold, jacobians[k].jN, dt);
+			jacobians[k].jT.Solve(manifold, jacobians[k].jN, dt);
+			jacobians[k].jB.Solve(manifold, jacobians[k].jN, dt);
+			k++;
+		}
+	}
+
+}
+
+void		RigidBodySimulation::SimulateSingleThread(float dt)
+{
 	MotionIntegration::Integrate(m_RigidDynamics, dt);
 
 	std::vector<Geometry*> Shapes;
@@ -107,6 +161,8 @@ void		RigidBodySimulation::Simulate(float dt)
 	}
 
 	WarmStart::Manifolds(manifolds, dt);
+	
+	ResolutionPhase(manifolds, dt);
 
 	ApplyGravity();
 	ApplyWind();

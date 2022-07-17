@@ -1,6 +1,15 @@
 
 #include "KeyFrameAnimation.h"
 
+Vector3d	ProjectiveVelocityBlending(const Vector3d& P0, const Vector3d& P1, const Vector3d& V0, const Vector3d& V1, const Vector3d& A1, float t, float blend)
+{
+	Vector3d V = V0 + (V1 - V0) * blend;
+	Vector3d _P0 = P0 + V0 * t + 0.5f * A1 * t * t;
+	Vector3d _P1 = P1 + V * t + 0.5f * A1 * t * t;
+	Vector3d Pos = _P0 + (_P1 - P0) * blend;
+	return Pos;
+}
+
 KeyFrameAnimation::KeyFrameAnimation()
 {
 	m_TimelinePosition.SetTime(0.0f);

@@ -84,6 +84,8 @@ public:
 				}
 				// result.Tangent1;
 				result.Tangent2 = CrossProduct(result.Normal, result.Tangent1);
+				result.R1 = result.WitnessWorld1 - Geom1->GetPosition();
+				result.R2 = result.WitnessWorld2 - Geom2->GetPosition();
 				return true;
 			}
 			else

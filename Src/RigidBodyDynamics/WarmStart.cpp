@@ -1,6 +1,7 @@
 
 #include "WarmStart.h"
 #include "RigidBody.h"
+#include "../Collision/GeometryObject.h"
 
 // http://allenchou.net/2014/01/game-physics-stability-warm-starting/
 

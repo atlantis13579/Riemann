@@ -13,7 +13,6 @@
 #include "../CollisionPrimitive/ConvexMesh.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
 
-
 template<class GEOM_TYPE>
 class TGeometry : public Geometry, public GEOM_TYPE
 {
@@ -173,9 +172,13 @@ Vector3d			Geometry::GetSupport_WorldSpace(const Vector3d& Dir) const
 	return SupportWorld;
 }
 
-Matrix3d			Geometry::GetInverseInertia_WorldSpace(float Mass) const
+Matrix3d			Geometry::GetInverseInertia_LocalSpace(float InvMass) const
 {
-	return GetInertia_LocalSpace(Mass).Inverse();
+	if (InvMass == 0.0f)
+	{
+		return Matrix3d::Zero();
+	}
+	return GetInertia_LocalSpace(1.0f / InvMass).Inverse();
 }
 
 void 				GeometryFactory::DeleteGeometry(Geometry* Geom)

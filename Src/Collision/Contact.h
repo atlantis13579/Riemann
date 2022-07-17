@@ -29,6 +29,8 @@ public:
 	Vector3d Normal;
 	Vector3d Tangent1;
 	Vector3d Tangent2;
+	Vector3d R1;
+	Vector3d R2;
 
 	float   PenetrationDepth;
 	float   ImpulseNormal;
