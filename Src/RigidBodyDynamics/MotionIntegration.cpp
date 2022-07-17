@@ -9,7 +9,7 @@ void MotionIntegration::Integrate(std::vector<RigidBodyDynamic*> Entities, float
 {
 	for (size_t i = 0; i < Entities.size(); ++i)
 	{
-		RigidBodyDynamic* Rigid = (RigidBodyDynamic*)Entities[i];
+		RigidBodyDynamic* Rigid = Entities[i];
 		if (Rigid == nullptr || Rigid->Static || Rigid->Sleep)
 		{
 			continue;
