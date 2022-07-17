@@ -105,11 +105,15 @@ void InitScene()
 		g_Renderer->AddGeometry(plane);
 
 		rp.Static = false;
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 10.0f, 0.0f), Vector3d(1.0f, 1.0f, 1.0f));
-		RigidBodyDynamic* p = (RigidBodyDynamic*)g_World->CreateRigidBody(aabb, rp);
-		p->ApplyTorgue(Vector3d(0, -10, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ() * 100.0f);
-
-		g_Renderer->AddGeometry(aabb);
+        for (int i = 0; i < 1; ++i)
+        for (int j = 0; j < 1; ++j)
+        for (int k = 0; k < 1; ++k)
+        {
+            Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(j * 3.0f , 10.0f + i * 5.0f, k * 3.0f), Vector3d(1.0f, 1.0f, 1.0f));
+		    RigidBodyDynamic* p = (RigidBodyDynamic*)g_World->CreateRigidBody(aabb, rp);
+		    p->ApplyTorgue(Vector3d(0, -10, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ() * 100.0f);
+            g_Renderer->AddGeometry(aabb);
+        }
     }
 
     // Vector3d water_pos = Vector3d(-710.0f, 20.1f, 1184.0f);
@@ -264,8 +268,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
-    // InitScene();
-    InitPhysxScene();
+    InitScene();
+    // InitPhysxScene();
     UpdateCamera();
 
     auto last = std::chrono::steady_clock::now();

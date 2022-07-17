@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "../Maths/Vector3d.h"
 #include "MinkowskiSum.h"
+#include "../CollisionPrimitive/Triangle3d.h"
 
 #define SIMPLEX2_EPS (0.0f)
 #define SIMPLEX3_EPS (0.0f)
@@ -175,7 +176,7 @@ private:
 	static float ProjectOrigin3(Vector3d& a, Vector3d& b, Vector3d& c, float* w, int& m)
 	{
 		const int	imd3[] = { 1, 2, 0 };
-		Vector3d*	vt[] = { &a, &b, &c };
+		Vector3d	v[] = { a, b, c };
 		Vector3d	dl[] = { a - b, b - c, c - a };
 		Vector3d	n = CrossProduct(dl[0], dl[1]);
 
@@ -187,10 +188,10 @@ private:
 			int subm(0);
 			for (int i = 0; i < 3; ++i)
 			{
-				if (DotProduct(*vt[i], CrossProduct(dl[i], n)) > 0)
+				if (DotProduct(v[i], CrossProduct(dl[i], n)) > 0)
 				{
 					int j = imd3[i];
-					float subd = ProjectOrigin2(*vt[i], *vt[j], subw, subm);
+					float subd = ProjectOrigin2(v[i], v[j], subw, subm);
 					if ((mindist < 0) || (subd < mindist))
 					{
 						mindist = subd;

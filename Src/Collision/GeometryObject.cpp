@@ -188,11 +188,11 @@ void 				GeometryFactory::DeleteGeometry(Geometry* Geom)
 
 int GeometryFactory::ObjectCount[ShapeType3d::GEOMETRY_COUNT] = { 0 };
 
-Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& Extent, const Quaternion& Rot)
+Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& HalfExtent, const Quaternion& Rot)
 {
 	TGeometry<AxisAlignedBox3d>* p = new TGeometry<AxisAlignedBox3d>();
-	p->Min = -Extent;
-	p->Max = Extent;
+	p->Min = -HalfExtent;
+	p->Max = HalfExtent;
 	p->SetPosition(Center);
 	p->SetRotationQuat(Rot);
 	p->UpdateBoundingVolume();

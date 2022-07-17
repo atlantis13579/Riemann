@@ -80,7 +80,7 @@ public:
 			{
 				Simplex ns;
 				Dir = Vector3d::Zero();
-				for (int i = 0, ni = simplex.dimension; i < ni; ++i)
+				for (int i = 0; i < simplex.dimension; ++i)
 				{
 					if (mask & (1 << i))
 					{

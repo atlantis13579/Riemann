@@ -54,6 +54,7 @@
     <ClCompile Include="LinearSystem\JacobiIteration.cpp" />
     <ClCompile Include="LinearSystem\ProjectedGaussSeidel.cpp" />
     <ClCompile Include="Maths\Matrix3d.cpp" />
+    <ClCompile Include="RigidBodyDynamics\Jacobian.cpp" />
     <ClCompile Include="RigidBodyDynamics\KeyFrameAnimation.cpp" />
     <ClCompile Include="RigidBodyDynamics\KinematicsTree.cpp" />
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />
@@ -68,7 +69,6 @@
     <ClCompile Include="RigidBodyDynamics\MotionIntegration.cpp" />
     <ClCompile Include="RigidBodyDynamics\RigidBody.cpp" />
     <ClCompile Include="Solver\ConstraintSolver.cpp" />
-    <ClCompile Include="Solver\Jacobian.cpp" />
     <ClCompile Include="Solver\LCPSolver.cpp" />
     <ClCompile Include="Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="Solver\NumericalODESolver.cpp" />
@@ -154,6 +154,7 @@
     <ClInclude Include="Optimization\LBGFS.h" />
     <ClInclude Include="Optimization\LR.h" />
     <ClInclude Include="Optimization\SGD.h" />
+    <ClInclude Include="RigidBodyDynamics\Jacobian.h" />
     <ClInclude Include="RigidBodyDynamics\KinematicsTree.h" />
     <ClInclude Include="RigidBodyDynamics\ForceField.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsMaterial.h" />
@@ -189,7 +190,6 @@
     <ClInclude Include="Solver\ConjugateGradientSolver.h" />
     <ClInclude Include="Solver\ConstraintSolver.h" />
     <ClInclude Include="Solver\ExponentialIntegrator.h" />
-    <ClInclude Include="Solver\Jacobian.h" />
     <ClInclude Include="Solver\LCPSolver.h" />
     <ClInclude Include="Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="Solver\NumericalODESolver.h" />

@@ -132,7 +132,7 @@ class GeometryFactory
 public:
 	static void		 DeleteGeometry(Geometry *Geom);
 
-	static Geometry* CreateOBB(const Vector3d& Center, const Vector3d & Extent, const Quaternion& Rot = Quaternion::One());
+	static Geometry* CreateOBB(const Vector3d& Center, const Vector3d & HalfExtent, const Quaternion& Rot = Quaternion::One());
 	static Geometry* CreatePlane(const Vector3d& Center, const Vector3d& Normal);
 	static Geometry* CreateSphere(const Vector3d& Center, float Radius);
 	static Geometry* CreateCapsule(const Vector3d& X1, const Vector3d& X2, float Radius);
