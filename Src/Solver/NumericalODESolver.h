@@ -30,11 +30,11 @@ private:
 };
 
 
-class MidpointRule
+class MidpointEuler
 {
 public:
-	MidpointRule(const ODEVectorFunction& dvdt, float t0);
-	~MidpointRule() {}
+	MidpointEuler(const ODEVectorFunction& dvdt, float t0);
+	~MidpointEuler() {}
 
 	void Integrate(float dt, int nDof, float* v);
 

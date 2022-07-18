@@ -7,5 +7,13 @@ class RigidBodyDynamic;
 class MotionIntegration
 {
 public:
-	static void Integrate(std::vector<RigidBodyDynamic*> Entities, float dt);
+	enum IntegrateMethod
+	{
+		ExplicitEuler,
+		MidpointEuler,
+		SymplecticEuler,
+		ImplicitEuler
+	};
+
+	static void Integrate(std::vector<RigidBodyDynamic*> Entities, float dt, IntegrateMethod method);
 };

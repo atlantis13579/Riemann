@@ -48,7 +48,7 @@ public:
 		return *this;
 	}
 
-	void UpdatePointSet(float* weights, int mask)
+	void UpdatePointSet(int mask)
 	{
 		int new_dimension = 0;
 		for (int i = 0; i < dimension; ++i)
@@ -56,7 +56,6 @@ public:
 			if (mask & (1 << i))
 			{
 				v[new_dimension] = v[i];
-				// w[new_dimension++] = weights[i];
 				new_dimension++;
 			}
 		}

@@ -68,7 +68,7 @@ public:
 			float SqrDist = simplex.ProjectOrigin(SearchDir, mask);
 			if (SqrDist >= 0)
 			{
-				simplex.UpdatePointSet(nullptr, mask);
+				simplex.UpdatePointSet(mask);
 
 				if (mask == 0xf)
 				{

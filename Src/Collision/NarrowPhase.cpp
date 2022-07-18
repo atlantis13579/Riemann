@@ -18,7 +18,7 @@ public:
 
 	}
 
-	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold>* contact) override
+	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold>* contact) override final
 	{
 		contact->clear();
 		for (size_t i = 0; i < overlaps.size(); ++i)
@@ -42,7 +42,6 @@ public:
 		GJK_status gjk_status = gjk.Solve(&shape, -guess);
 		if (gjk_status != GJK_status::Inside)
 		{
-			result.status = ContactResult::GJK_Failed;
 			return false;
 		}
 
@@ -50,7 +49,6 @@ public:
 		EPA_status epa_status = epa.Solve(gjk.simplex, &shape, -guess);
 		if (epa_status == EPA_status::Failed)
 		{
-			result.status = ContactResult::EPA_Failed;
 			return false;
 		}
 
@@ -61,13 +59,12 @@ public:
 			w0 = w0 + shape.Support1(epa.simplex.v[i].d) * epa.simplex.w[i];
 		}
 		const Matrix4d& invWorld = Geom1->GetInverseWorldMatrix();
-		result.status = ContactResult::Penetrating;
 		result.PositionLocal1 = invWorld * w0;
-		Vector3d p2 = w0 - epa.normal * epa.penetration_depth;
+		Vector3d p2 = w0 - epa.penetration_normal * epa.penetration_depth;
 		result.PositionLocal2 = invWorld * p2;
 		result.PositionWorld1 = w0;
 		result.PositionWorld2 = p2;
-		result.Normal = epa.normal;
+		result.Normal = epa.penetration_normal;
 		result.PenetrationDepth = epa.penetration_depth;
 		if (result.Normal.x >= 0.57735f)
 		{

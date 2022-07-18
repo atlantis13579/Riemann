@@ -7,24 +7,13 @@ class Geometry;
 class ContactResult
 {
 public:
-	enum eStatus
-	{
-		Separated,
-		Penetrating,
-		GJK_Failed,
-		EPA_Failed
-	};
-
 	ContactResult()
 	{
 		SumImpulseNormal = 0.0f;
 		SumImpulseTangent1 = 0.0f;
 		SumImpulseTangent2 = 0.0f;
 		PositionLocal1 = PositionLocal2 = PositionWorld1 = PositionWorld2 = Vector3d::Zero();
-		status = ContactResult::Separated;
 	}
-
-	eStatus		status;	
 
 	Vector3d	PositionLocal1;
 	Vector3d	PositionLocal2;

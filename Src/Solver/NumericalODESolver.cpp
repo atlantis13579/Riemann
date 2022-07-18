@@ -30,13 +30,13 @@ void ExplicitEuler::Integrate(float dt, int nDof, float* v)
 
 
 // https://en.wikipedia.org/wiki/Midpoint_method
-MidpointRule::MidpointRule(const ODEVectorFunction& dvdt, float t0)
+MidpointEuler::MidpointEuler(const ODEVectorFunction& dvdt, float t0)
 {
 	m_dvdt = dvdt;
 	m_t = t0;
 }
 
-void MidpointRule::Integrate(float dt, int nDof, float* v)
+void MidpointEuler::Integrate(float dt, int nDof, float* v)
 {
 	if (m_buf.size() < 2 * nDof)
 		m_buf.resize(2 * nDof);

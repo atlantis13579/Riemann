@@ -46,14 +46,19 @@ void				RigidBody::SetAngularVelocity(const Vector3d &v)
 	L = InvInertia.Invertible() ? InvInertia.Inverse() * v : Vector3d::Zero();
 }
 
-void				RigidBodyDynamic::ApplyForce(const Vector3d& _Force)
+void				RigidBodyDynamic::ApplyForce(const Vector3d& Force)
 {
-	this->ExtForce += _Force;
+	this->ExtForce += Force;
 }
 
-void				RigidBodyDynamic::ApplyTorgue(const Vector3d& _Torque)
+void				RigidBodyDynamic::ApplyTorgue(const Vector3d& Torque)
 {
-	this->ExtTorque += _Torque;
+	this->ExtTorque += Torque;
+}
+
+void RigidBodyDynamic::ApplyTorgue(const Vector3d& RelativePosToCenterOfMass, const Vector3d& Force)
+{
+	ApplyTorgue(RelativePosToCenterOfMass.Cross(Force));
 }
 
 void				RigidBodyDynamic::AppendShapes(std::vector<Geometry*> *Shapes)
@@ -84,7 +89,7 @@ RigidBodyDynamic*	RigidBodyDynamic::CreateRigidBody(Geometry* Shape, const Rigid
 	return Rigid;
 }
 
-RigidBodyStatic* RigidBodyStatic::CreateRigidBody(Geometry* Shape, const RigidBodyParam& param)
+RigidBodyStatic* RigidBodyStatic::CreateRigidBody(Geometry* Shape)
 {
 	RigidBodyStatic* Rigid = new RigidBodyStatic;
 	Rigid->InvMass = 0.0f;

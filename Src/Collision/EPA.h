@@ -90,18 +90,13 @@ public:
 
 	EPA_status status;
 	Simplex simplex;
-	Vector3d normal;
+	Vector3d penetration_normal;
 	float penetration_depth;
-	Simplex::Vertex m_sv_store[EPA_MAX_VERTICES];
-	Face m_fc_store[EPA_MAX_FACES];
-	int m_nextsv;
-	List m_hull;
-	List m_stock;
 
 	EPA()
 	{
 		status = EPA_status::Failed;
-		normal = Vector3d(0, 0, 0);
+		penetration_normal = Vector3d(0, 0, 0);
 		penetration_depth = 0;
 		m_nextsv = 0;
 		for (int i = 0; i < EPA_MAX_FACES; ++i)
@@ -150,53 +145,50 @@ public:
 				Bind(tetra[1], 2, tetra[2], 1);
 				Bind(tetra[2], 2, tetra[3], 1);
 				status = EPA_status::Valid;
-				for (; iterations < EPA_MAX_ITERATIONS; ++iterations)
+				while (iterations++ < EPA_MAX_ITERATIONS)
 				{
-					if (m_nextsv < EPA_MAX_VERTICES)
+					if (m_nextsv >= EPA_MAX_VERTICES)
 					{
-						sHorizon horizon;
-						Simplex::Vertex* v = &m_sv_store[m_nextsv++];
-						bool valid = true;
-						best->pass = (int)(++pass);
+						status = EPA_status::AccuraryReached;
+						break;
+					}
 
-						v->d = best->n.Unit();
-						v->p = Shape->Support(v->d);
+					sHorizon horizon;
+					Simplex::Vertex* v = &m_sv_store[m_nextsv++];
+					bool valid = true;
+					best->pass = (int)(++pass);
 
-						const float wdist = DotProduct(best->n, v->p) - best->d;
-						if (wdist > EPA_ACCURACY)
-						{
-							for (int j = 0; (j < 3) && valid; ++j)
-							{
-								valid &= Expand(pass, v, best->f[j], best->e[j], horizon);
-							}
-							if (valid && (horizon.nf >= 3))
-							{
-								Bind(horizon.cf, 1, horizon.ff, 2);
-								m_hull.Remove(best);
-								m_stock.Append(best);
-								best = m_hull.FindBest();
-								outer = *best;
-							}
-							else
-							{
-								status = EPA_status::InvalidHull;
-								break;
-							}
-						}
-						else
-						{
-							status = EPA_status::AccuraryReached;
-							break;
-						}
+					v->d = best->n.Unit();
+					v->p = Shape->Support(v->d);
+
+					const float wdist = DotProduct(best->n, v->p) - best->d;
+					if (wdist <= EPA_ACCURACY)
+					{
+						status = EPA_status::AccuraryReached;
+						break;
+					}
+
+					for (int j = 0; (j < 3) && valid; ++j)
+					{
+						valid &= Expand(pass, v, best->f[j], best->e[j], horizon);
+					}
+					
+					if (valid && (horizon.nf >= 3))
+					{
+						Bind(horizon.cf, 1, horizon.ff, 2);
+						m_hull.Remove(best);
+						m_stock.Append(best);
+						best = m_hull.FindBest();
+						outer = *best;
 					}
 					else
 					{
-						status = EPA_status::OutOfVertices;
+						status = EPA_status::InvalidHull;
 						break;
 					}
 				}
 				const Vector3d projection = outer.n * outer.d;
-				normal = outer.n;
+				penetration_normal = outer.n;
 				penetration_depth = outer.d;
 				simplex.dimension = 3;
 				simplex.v[0] = *outer.c[0];
@@ -214,17 +206,17 @@ public:
 		}
 
 		status = EPA_status::FallBack;
-		normal = -InitGuess;
-		const float nl = normal.Length();
+		penetration_normal = -InitGuess;
+		const float nl = penetration_normal.Length();
 		if (nl > 0)
-			normal = normal * (1 / nl);
+			penetration_normal = penetration_normal * (1 / nl);
 		else
-			normal = Vector3d(1, 0, 0);
+			penetration_normal = Vector3d(1, 0, 0);
 		penetration_depth = 0;
 		simplex.dimension = 1;
 		simplex.v[0] = simplex.v[0];
 		simplex.w[0] = 1;
-		return (status);
+		return status;
 	}
 
 	static inline void Bind(Face* fa, int ea, Face* fb, int eb)
@@ -356,4 +348,11 @@ public:
 		}
 		return false;
 	}
+
+private:
+	Simplex::Vertex m_sv_store[EPA_MAX_VERTICES];
+	Face m_fc_store[EPA_MAX_FACES];
+	int m_nextsv;
+	List m_hull;
+	List m_stock;
 };

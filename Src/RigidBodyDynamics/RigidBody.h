@@ -15,6 +15,13 @@ struct RigidBodyParam
 	{
 		memset(this, 0, sizeof(RigidBodyParam));
 		InvMass = 1.0f;
+		LinearDamping = 0.999f;
+		AngularDamping = 0.999f;
+		ContactReportThreshold = 0.1f;
+		MaxContactImpulse = 10.0f;
+		SleepThreshold = 0.1f;
+		FreezeThreshold = 0.1f;
+		DisableGravity = false;
 		Static = true;
 	}
 
@@ -69,22 +76,20 @@ public:
 class RigidBodyStatic : public RigidBody
 {
 public:
-	static RigidBodyStatic* CreateRigidBody(Geometry* Shape, const RigidBodyParam& param);
-
 	void SetTransform(const Vector3d& pos, const Quaternion& quat);
 	void SetPosition(const Vector3d& pos);
 	void SetRotation(const Quaternion& quat);
 	void AppendShapes(std::vector<Geometry*>* Shapes);
+
+	static RigidBodyStatic* CreateRigidBody(Geometry* Shape);
 };
 
 class RigidBodyDynamic : public RigidBody
 {
 public:
-	// ----
 	Vector3d	ExtForce;
 	Vector3d	ExtTorque;
 
-	// ----
 	float		LinearDamping;
 	float		AngularDamping;
 	float		MaxContactImpulse;
@@ -93,9 +98,9 @@ public:
 	bool		DisableGravity;
 	bool		Sleep;
 
-	void		ApplyForce(const Vector3d& _Force);
-	void		ApplyTorgue(const Vector3d& _Torque);
-
+	void		ApplyForce(const Vector3d& Force);
+	void		ApplyTorgue(const Vector3d& Torque);
+	void		ApplyTorgue(const Vector3d& RelativePosToCenterOfMass, const Vector3d& Force);
 	void		AppendShapes(std::vector<Geometry*> *Shape);
 
 	static RigidBodyDynamic* CreateRigidBody(Geometry* Shape, const RigidBodyParam &param);

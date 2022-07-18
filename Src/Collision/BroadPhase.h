@@ -23,14 +23,5 @@ public:
 	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair> *overlaps) = 0;
 
 	static BroadPhase* Create_SAP();
-};
-
-
-// Slow, Testing purpose
-class BroadPhaseBruteforceImplementation : public BroadPhase
-{
-public:
-	virtual ~BroadPhaseBruteforceImplementation() {}
-
-	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps);
+	static BroadPhase* Create_Bruteforce();		// Slow, Testing purpose
 };

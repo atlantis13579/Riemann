@@ -136,7 +136,7 @@ static void	ResolutionPhase(std::vector<ContactManifold> &manifolds, float dt)
 
 void		RigidBodySimulation::SimulateSingleThread(float dt)
 {
-	MotionIntegration::Integrate(m_RigidDynamics, dt);
+	MotionIntegration::Integrate(m_RigidDynamics, dt, MotionIntegration::IntegrateMethod::ExplicitEuler);
 
 	std::vector<Geometry*> Shapes;
 	for (size_t i = 0; i < m_RigidStatics.size(); ++i)
@@ -234,7 +234,7 @@ RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyP
 {
 	if (param.Static)
 	{
-		RigidBodyStatic* Rigid = RigidBodyStatic::CreateRigidBody(Geom, param);
+		RigidBodyStatic* Rigid = RigidBodyStatic::CreateRigidBody(Geom);
 		Geom->SetEntity(Rigid);
 		m_RigidStatics.push_back(Rigid);
 		return Rigid;
