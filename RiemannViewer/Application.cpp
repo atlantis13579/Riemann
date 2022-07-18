@@ -93,7 +93,7 @@ void UpdateCamera()
 void InitScene()
 {
     RigidBodySimulationParam param;
-    param.Gravity = Vector3d(0, -9.8f, 0) * 0.5f;
+    param.Gravity = Vector3d(0, -9.8f, 0);
     RigidBodyParam rp;
     g_World = new RigidBodySimulation(param);
 
@@ -109,9 +109,10 @@ void InitScene()
         for (int j = 0; j < 1; ++j)
         for (int k = 0; k < 1; ++k)
         {
-            Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(j * 3.0f , 10.0f + i * 5.0f, k * 3.0f), Vector3d(1.0f, 1.0f, 1.0f));
+            Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(j * 3.0f , 10.0f + i * 3.0f, k * 3.0f), Vector3d(1.0f, 1.0f, 1.0f));
+            // Geometry* aabb = GeometryFactory::CreateSphere(Vector3d(j * 3.0f, 10.0f + i * 3.0f, k * 3.0f), 1.0f);
 		    RigidBodyDynamic* p = (RigidBodyDynamic*)g_World->CreateRigidBody(aabb, rp);
-		    p->ApplyTorgue(Vector3d(0, -50, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
+		     p->ApplyTorgue(Vector3d(0, -50, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
             g_Renderer->AddGeometry(aabb);
         }
     }

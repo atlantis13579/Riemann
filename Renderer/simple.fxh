@@ -41,5 +41,5 @@ VS_OUTPUT VS(float4 Pos : POSITION, float3 Normal : NORMAL)
 //--------------------------------------------------------------------------------------
 float4 PS( VS_OUTPUT input ) : SV_Target
 {
-    return float4(input.Normal.x, input.Normal.y, input.Normal.z, 1.0);
+    return float4(0.5 + 0.5 * input.Normal.x, 0.5 + 0.5 * input.Normal.y, 0.5 + 0.5 * input.Normal.z, 1.0);
 }

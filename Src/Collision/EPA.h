@@ -110,8 +110,10 @@ public:
 		}
 	}
 
-	EPA_status Solve(Simplex& simplex, MinkowskiSum *Shape, Vector3d InitGuess)
+	EPA_status Solve(Simplex& _simplex, MinkowskiSum *Shape, Vector3d InitGuess)
 	{
+		memcpy(&simplex, &_simplex, sizeof(Simplex));
+
 		if ((simplex.dimension > 1) && simplex.EncloseOrigin())
 		{
 			while (m_hull.root)

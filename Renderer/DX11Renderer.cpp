@@ -466,6 +466,26 @@ public:
         return false;
     }
 
+    void AddPlane(Geometry* geom, bool DrawMesh = true)
+    {
+        std::vector<Vector3d> Vertices;
+        std::vector<uint16_t> Indices;
+        std::vector<Vector3d> Normals;
+        Plane3d* shape = geom->GetShapeObj<Plane3d>();
+
+        std::string name = std::to_string(geom->GetGuid());
+        if (DrawMesh)
+        {
+            shape->GetMesh(Vertices, Indices, Normals);
+            std::vector<Vertex1> vv;
+            for (size_t i = 0; i < Vertices.size(); ++i)
+            {
+                vv.emplace_back(Vertices[i], Vector3d::One());
+            }
+            AddTriangles(name.c_str(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
+        }
+    }
+
     template <class TShape>
     void AddGeometry(Geometry* geom, bool DrawMesh = true)
     {
@@ -542,7 +562,7 @@ public:
         }
 		else if (geom->GetShapeType() == ShapeType3d::PLANE)
 		{
-            AddGeometry <Plane3d > (geom);
+            AddPlane(geom);
 		}
 		else if (geom->GetShapeType() == ShapeType3d::SPHERE)
 		{

@@ -61,7 +61,7 @@ public:
 				{
 					w0 = w0 + shape.Support1(epa.simplex.v[i].d) * epa.simplex.w[i];
 				}
-				Matrix4d invWorld = Geom1->GetInverseWorldMatrix();
+				const Matrix4d& invWorld = Geom1->GetInverseWorldMatrix();
 				result.status = ContactResult::Penetrating;
 				result.WitnessLocal1 = invWorld * w0;
 				Vector3d secondObjectPointInFirstObject = w0 - epa.normal * epa.penetration_depth;

@@ -57,7 +57,7 @@ public:
 	void			SetLinearVelocity(const Vector3d &v);
 	void			SetAngularVelocity(const Vector3d &v);
 	
-	float			GetContactBeta() const { return 0.4f; }	// TODO
+	float			GetContactBeta() const { return 0.3f; }	// TODO
 	float			GetRestitution() const { return 0.0f; }	// TODO
 	float			GetFriction() const { return 1.0f; }	// TODO
 };
@@ -89,7 +89,6 @@ public:
 	float		FreezeThreshold;
 	bool		DisableGravity;
 	bool		Sleep;
-	bool		Static;
 
 	void		ApplyForce(const Vector3d& _Force);
 	void		ApplyTorgue(const Vector3d& _Torque);

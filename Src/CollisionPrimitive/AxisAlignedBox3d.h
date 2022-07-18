@@ -191,7 +191,7 @@ public:
 		);
 	}
 
-	void			GetMesh(std::vector<Vector3d> &Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void			GetMesh2(std::vector<Vector3d> &Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
 		Vertices.resize(8);
 		Box3d::GetVertices(Min, Max, &Vertices[0]);
@@ -217,6 +217,41 @@ public:
 			6, 4, 2,
 			3, 2, 6,
 			6, 7, 3 });
+	}
+
+	void			GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	{
+		Vertices.resize(36);
+		Indices.resize(36);
+		Normals.resize(36);
+
+		Vector3d BV[] = { Min, Max };
+
+#define SET_VERTICES(_idx, _x, _y, _z)	\
+		Vertices[_idx] = Vector3d(BV[_x].x, BV[_y].y, BV[_z].z);	\
+		Indices[_idx] = (_idx);	\
+		Normals[_idx] = (_z == 0) ? -Vector3d::UnitZ() : Vector3d::UnitZ();	\
+		Vertices[_idx + 12] = Vector3d(BV[_y].x, BV[_z].y, BV[_x].z);	\
+		Indices[_idx + 12] = (_idx + 12);	\
+		Normals[_idx + 12] = (_z == 0) ? -Vector3d::UnitY() : Vector3d::UnitY();	\
+		Vertices[_idx + 24] = Vector3d(BV[_z].x, BV[_x].y, BV[_y].z);	\
+		Indices[_idx + 24] = (_idx + 24);	\
+		Normals[_idx + 24] = (_z == 0) ? -Vector3d::UnitX() : Vector3d::UnitX();	\
+
+		SET_VERTICES(0, 0, 0, 0);
+		SET_VERTICES(1, 1, 0, 0);
+		SET_VERTICES(2, 0, 1, 0);
+		SET_VERTICES(3, 1, 0, 0);
+		SET_VERTICES(4, 0, 1, 0);
+		SET_VERTICES(5, 1, 1, 0);
+		SET_VERTICES(6, 0, 0, 1);
+		SET_VERTICES(7, 1, 0, 1);
+		SET_VERTICES(8, 0, 1, 1);
+		SET_VERTICES(9, 1, 0, 1);
+		SET_VERTICES(10, 0, 1, 1);
+		SET_VERTICES(11, 1, 1, 1);
+
+#undef SET_VERTICES
 	}
 
 	void			GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)

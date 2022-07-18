@@ -27,7 +27,7 @@ void MotionIntegration::Integrate(std::vector<RigidBodyDynamic*> Entities, float
 		Matrix3d invInertiaWorld = R * Rigid->InvInertia * R.Transpose();
 		Vector3d AngularVelocity = invInertiaWorld * Rigid->L;
 		Quaternion dQ = 0.5f * Quaternion(0.0f, AngularVelocity) * Rigid->Q;		// Q' = 0.5 * AngularVelocity * Q 
-		Rigid->Q += dQ * dt;
+		Rigid->Q = (Rigid->Q + dQ * dt).Unit();
 		
 		Rigid->Shape->SetPosition(Rigid->X);
 		Rigid->Shape->SetRotationQuat(Rigid->Q);

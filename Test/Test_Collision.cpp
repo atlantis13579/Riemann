@@ -102,16 +102,20 @@ void TestGJK()
 	EXPECT(!GJK_Solve(sp1, sp2));
 	EXPECT(!GJK_Solve(plane1, sp2));
 
-	plane1->SetPosition(Vector3d(0.0f, -5.0f, 0.0f));
-	obb1->SetPosition(Vector3d(0.0f, -4.5f, 0.0f));
-	EXPECT(GJK_Solve(plane1, obb1));
-
 	return;
 }
 
 void TestEPA()
 {
 	printf("Running TestEPA\n");
+
+	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, -5.0f, 0.0f), Vector3d::UnitY());
+	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
+	obb1->SetPosition(Vector3d(0.0f, -4.5f, 0.0f));
+	obb1->UpdateBoundingVolume();
+	EXPECT(GJK_Solve(plane1, obb1));
+
+	return;
 }
 
 void TestRTree1()
@@ -502,8 +506,8 @@ void TestSAPInc()
 
 void TestCollision()
 {
-	TestSupport();
-	TestGJK();
+	//TestSupport();
+	//TestGJK();
 	TestEPA();
 	TestOverlap();
 	TestRayAABB();
