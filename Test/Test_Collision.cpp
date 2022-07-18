@@ -101,7 +101,11 @@ void TestGJK()
 	sp2->SetPosition(Vector3d(0.0f, 5.0f, 0.0f));
 	EXPECT(!GJK_Solve(sp1, sp2));
 	EXPECT(!GJK_Solve(plane1, sp2));
-	
+
+	plane1->SetPosition(Vector3d(0.0f, -5.0f, 0.0f));
+	obb1->SetPosition(Vector3d(0.0f, -4.5f, 0.0f));
+	EXPECT(GJK_Solve(plane1, obb1));
+
 	return;
 }
 
@@ -325,11 +329,6 @@ void TestGeometryQuery()
 	scene.RayCast(Vector3d(0.0f, 0.0f, 15.0f), Vector3d(0.0f, 0.0f, -1.0f), option, &result);
 	EXPECT(result.hit);
 	EXPECT(result.hitGeometries.size() == 3);
-
-	for (auto obj : objs)
-	{
-		delete obj;
-	}
 
 	return;
 }

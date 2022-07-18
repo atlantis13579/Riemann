@@ -261,6 +261,7 @@ public:
 			}
 		}
 		mIndices = std::move(newIndices);
+		Indices = &mIndices[0];
 	}
 
 	bool LoadObj(const char* name)

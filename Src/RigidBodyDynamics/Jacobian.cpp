@@ -107,5 +107,7 @@ void Jacobian::Solve(ContactManifold* manifold, Jacobian& jN, float dt)
 	Vector3d wb = rigidB->GetAngularVelocity();
 	Vector3d wbdelta = (rigidB->GetInverseInertia_WorldSpace() * m_jwb) * lambda;
 	rigidB->SetAngularVelocity(wb + wbdelta);
+
+	return;
 }
 

@@ -11,7 +11,7 @@ Vector3d 			RigidBody::GetLinearVelocity() const
 
 Vector3d			RigidBody::GetAngularVelocity() const
 {
-	return L * InvInertia;
+	return InvInertia * L;
 }
 
 const Matrix3d&	 	RigidBody::GetInverseInertia() const

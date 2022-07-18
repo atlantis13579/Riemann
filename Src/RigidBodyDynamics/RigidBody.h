@@ -97,6 +97,4 @@ public:
 	void		AppendShapes(std::vector<Geometry*> *Shape);
 
 	static RigidBodyDynamic* CreateRigidBody(Geometry* Shape, const RigidBodyParam &param);
-
-	Geometry*	Shape;
 };

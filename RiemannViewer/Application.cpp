@@ -111,7 +111,7 @@ void InitScene()
         {
             Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(j * 3.0f , 10.0f + i * 5.0f, k * 3.0f), Vector3d(1.0f, 1.0f, 1.0f));
 		    RigidBodyDynamic* p = (RigidBodyDynamic*)g_World->CreateRigidBody(aabb, rp);
-		    p->ApplyTorgue(Vector3d(0, -10, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ() * 100.0f);
+		    p->ApplyTorgue(Vector3d(0, -50, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
             g_Renderer->AddGeometry(aabb);
         }
     }
