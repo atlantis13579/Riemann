@@ -312,32 +312,32 @@ public:
 			}
 		}
 		
-		if (mask == 0)		// 000 Inside
+		if (mask == 0b0000)
 		{
 			float signedDist = (Point - A).Dot(Normal);
 			return Point - signedDist * Normal;
 		}
-		else if (mask == 1)	//001 Segment BA
+		else if (mask == 0b0001)
 		{
 			return _ClosestPointOnEdge(B, A, Point);
 		}
-		else if (mask == 2)	//010 Segment AC
+		else if (mask == 0b0010)
 		{
 			return _ClosestPointOnEdge(A, C, Point);
 		}
-		else if (mask == 3)	//011 point A
+		else if (mask == 0b0011)
 		{
 			return A;
 		}
-		else if (mask == 4)	//100 Segment CB
+		else if (mask == 0b0100)
 		{
 			return _ClosestPointOnEdge(C, B, Point);
 		}
-		else if (mask == 5)	//101 point B
+		else if (mask == 0b0101)
 		{
 			return B;
 		}
-		else if (mask == 6)	//110 point C
+		else if (mask == 0b0110)
 		{
 			return C;
 		}

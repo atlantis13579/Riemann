@@ -25,7 +25,7 @@ public:
 		dimension = 0;
 	}
 
-	void AddVertex(const Vector3d& dir, float ww, MinkowskiSum* Shape)
+	void AddPoint(const Vector3d& dir, float ww, MinkowskiSum* Shape)
 	{
 		w[dimension] = ww;
 		v[dimension].d = dir.Unit();
@@ -36,7 +36,7 @@ public:
 		dimension++;
 	}
 
-	void RemoveVertex()
+	void RemovePoint()
 	{
 		dimension--;
 		assert(dimension >= 1);
@@ -48,9 +48,9 @@ public:
 		return *this;
 	}
 
-	Vector3d Shrink(float* weights, int mask)
+	Vector3d UpdatePointSet(float* weights, int mask)
 	{
-		Vector3d Dir = Vector3d::Zero();
+		Vector3d newDir = Vector3d::Zero();
 		int new_dimension = 0;
 		for (int i = 0; i < dimension; ++i)
 		{
@@ -58,11 +58,11 @@ public:
 			{
 				v[new_dimension] = v[i];
 				w[new_dimension++] = weights[i];
-				Dir = Dir + v[i].p * weights[i];
+				newDir = newDir + v[i].p * weights[i];
 			}
 		}
 		dimension = new_dimension;
-		return Dir;
+		return newDir;
 	}
 
 	float ProjectOrigin(float* coords, int& mask)
@@ -96,14 +96,14 @@ public:
 			{
 				Vector3d axis = Vector3d(0, 0, 0);
 				axis[i] = 1;
-				AddVertex(axis, 0, nullptr);
+				AddPoint(axis, 0, nullptr);
 				if (EncloseOrigin())
 					return true;
-				RemoveVertex();
-				AddVertex(-axis, 0, nullptr);
+				RemovePoint();
+				AddPoint(-axis, 0, nullptr);
 				if (EncloseOrigin())
 					return true;
-				RemoveVertex();
+				RemovePoint();
 			}
 		}
 		break;
@@ -117,14 +117,14 @@ public:
 				Vector3d p = CrossProduct(d, axis);
 				if (p.SquareLength() > 0)
 				{
-					AddVertex(p, 0, nullptr);
+					AddPoint(p, 0, nullptr);
 					if (EncloseOrigin())
 						return true;
-					RemoveVertex();
-					AddVertex(-p, 0, nullptr);
+					RemovePoint();
+					AddPoint(-p, 0, nullptr);
 					if (EncloseOrigin())
 						return true;
-					RemoveVertex();
+					RemovePoint();
 				}
 			}
 		}
@@ -134,20 +134,21 @@ public:
 			Vector3d n = CrossProduct(v[1].p - v[0].p, v[2].p - v[0].p);
 			if (n.SquareLength() > 0)
 			{
-				AddVertex(n, 0, nullptr);
+				AddPoint(n, 0, nullptr);
 				if (EncloseOrigin())
 					return true;
-				RemoveVertex();
-				AddVertex(-n, 0, nullptr);
+				RemovePoint();
+				AddPoint(-n, 0, nullptr);
 				if (EncloseOrigin())
 					return true;
-				RemoveVertex();
+				RemovePoint();
 			}
 		}
 		break;
 		case 4:
 		{
-			if (fabsf(Determinant(v[0].p - v[3].p, v[1].p - v[3].p,	v[2].p - v[3].p)) > 0)
+			const float det = Determinant(v[0].p - v[3].p, v[1].p - v[3].p, v[2].p - v[3].p);
+			if (fabsf(det) > 0)
 				return true;
 		}
 		break;

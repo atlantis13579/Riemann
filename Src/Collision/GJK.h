@@ -25,7 +25,7 @@ public:
 
 	GJK_status Solve(MinkowskiSum* Shape, Vector3d InitGuess)
 	{
-		simplex.AddVertex(InitGuess.SquareLength() > 0 ? -InitGuess : Vector3d::UnitX(), 1.0f, Shape);
+		simplex.AddPoint(InitGuess.SquareLength() > 0 ? -InitGuess : Vector3d::UnitX(), 1.0f, Shape);
 		Vector3d Dir = simplex.v[0].p;
 
 		int nlastp = 0;
@@ -42,12 +42,12 @@ public:
 				return GJK_status::Inside;
 			}
 
-			simplex.AddVertex(-Dir, 0, Shape);
+			simplex.AddPoint(-Dir, 0, Shape);
 
 			const Vector3d& p = simplex.v[simplex.dimension - 1].p;
 			if (IsDuplicated(lastp, p))
 			{
-				simplex.RemoveVertex();
+				simplex.RemovePoint();
 				break;
 			}
 			else
@@ -59,7 +59,7 @@ public:
 			alpha = omega > alpha ? omega : alpha;
 			if (((rl - alpha) - (GJK_ACCURACY * rl)) <= 0)
 			{
-				simplex.RemoveVertex();
+				simplex.RemovePoint();
 				break;
 			}
 
@@ -69,16 +69,21 @@ public:
 
 			if (SqrDist >= 0)
 			{
-				Dir = simplex.Shrink(coords, mask);
+				Dir = simplex.UpdatePointSet(coords, mask);
 
-				if (mask == 15)
+				if (mask == 0xf)
+				{
+					return GJK_status::Inside;
+				}
+
+				if (SqrDist < GJK_MIN_DISTANCE)
 				{
 					return GJK_status::Inside;
 				}
 			}
 			else
 			{
-				simplex.RemoveVertex();
+				simplex.RemovePoint();
 				break;
 			}
 		};
