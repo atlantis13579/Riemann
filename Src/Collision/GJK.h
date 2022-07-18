@@ -22,19 +22,19 @@ class GJK
 {
 public:
 	Simplex			simplex;
-	
+
 	GJK_status Solve(MinkowskiSum* Shape, Vector3d InitGuess)
 	{
 		simplex.AddVertex(InitGuess.SquareLength() > 0 ? -InitGuess : Vector3d::UnitX(), 1.0f, Shape);
 		Vector3d Dir = simplex.v[0].p;
 
-		int clastw = 0;
-		Vector3d lastw[4] = { Dir, Dir, Dir, Dir };
+		int nlastp = 0;
+		Vector3d lastp[4] = { Dir, Dir, Dir, Dir };
 
 		float alpha = 0.0f;
 
 		int iter = 0;
-		while (iter ++ < GJK_MAX_ITERATIONS)
+		while (iter++ < GJK_MAX_ITERATIONS)
 		{
 			float rl = Dir.Length();
 			if (rl < GJK_MIN_DISTANCE)
@@ -43,28 +43,19 @@ public:
 			}
 
 			simplex.AddVertex(-Dir, 0, Shape);
-			const Vector3d& w = simplex.v[simplex.dimension - 1].p;
-			bool found = false;
-			for (int i = 0; i < 4; ++i)
-			{
-				Vector3d diff = w - lastw[i];
-				if (diff.SquareLength() < GJK_DUPLICATED_EPS)
-				{
-					found = true;
-					break;
-				}
-			}
-			if (found)
+
+			const Vector3d& p = simplex.v[simplex.dimension - 1].p;
+			if (IsDuplicated(lastp, p))
 			{
 				simplex.RemoveVertex();
 				break;
 			}
 			else
 			{
-				lastw[clastw = (clastw + 1) & 3] = w;
+				lastp[nlastp = (nlastp + 1) & 3] = p;
 			}
 
-			float omega = DotProduct(Dir, w) / rl;
+			float omega = DotProduct(Dir, p) / rl;
 			alpha = omega > alpha ? omega : alpha;
 			if (((rl - alpha) - (GJK_ACCURACY * rl)) <= 0)
 			{
@@ -72,24 +63,13 @@ public:
 				break;
 			}
 
-			float weights[4];
+			float coords[4];
 			int mask = 0;
-			float SqrDist = simplex.ProjectOrigin(weights, mask);
+			float SqrDist = simplex.ProjectOrigin(coords, mask);
 
 			if (SqrDist >= 0)
 			{
-				Simplex ns;
-				Dir = Vector3d::Zero();
-				for (int i = 0; i < simplex.dimension; ++i)
-				{
-					if (mask & (1 << i))
-					{
-						ns.v[ns.dimension] = simplex.v[i];
-						ns.w[ns.dimension++] = weights[i];
-						Dir = Dir + simplex.v[i].p * weights[i];
-					}
-				}
-				simplex = ns;
+				Dir = simplex.Shrink(coords, mask);
 
 				if (mask == 15)
 				{
@@ -104,5 +84,19 @@ public:
 		};
 
 		return iter >= GJK_MAX_ITERATIONS ? GJK_status::Failed : GJK_status::Valid;
+	}
+
+private:
+	static bool IsDuplicated(Vector3d lastp[4], const Vector3d& p)
+	{
+		for (int i = 0; i < 4; ++i)
+		{
+			Vector3d diff = p - lastp[i];
+			if (diff.SquareLength() < GJK_DUPLICATED_EPS)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 };

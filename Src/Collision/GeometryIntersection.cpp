@@ -49,7 +49,7 @@ bool				OverlapPlanePlane(const void* Obj1, const void* Obj2, const Transform& t
 	const Plane3d* plane2 = static_cast<const Plane3d*>(Obj2);
 	Vector3d Normal = transLocal1ToLocal2.LocalToWorldDirection(plane1->Normal);
 	Vector3d Origin = transLocal1ToLocal2.LocalToWorldEx(plane1->GetOrigin());
-	Plane3d plane_new(Normal, Origin);
+	Plane3d plane_new(Normal, Origin, plane1->HalfThickness);
 	return plane2->IntersectPlane(plane_new.Normal, plane_new.D);
 }
 
@@ -58,7 +58,7 @@ inline bool			OverlapPlaneBox(const void* Obj1, const void* Obj2, const Transfor
 	const Plane3d* plane = static_cast<const Plane3d*>(Obj1);
 	Vector3d Normal = transLocal1ToLocal2.LocalToWorldDirection(plane->Normal);
 	Vector3d Origin = transLocal1ToLocal2.LocalToWorldEx(plane->GetOrigin());
-	Plane3d plane_new(Normal, Origin);
+	Plane3d plane_new(Normal, Origin, plane->HalfThickness);
 	const AxisAlignedBox3d* box = static_cast<const AxisAlignedBox3d*>(Obj2);
 	return plane_new.IntersectAABB(box->Min, box->Max);
 }
@@ -68,7 +68,7 @@ inline bool			OverlapBoxPlane(const void* Obj1, const void* Obj2, const Transfor
 	const Plane3d* plane = static_cast<const Plane3d*>(Obj2);
 	Vector3d Normal = transLocal1ToLocal2.WorldToLocalDirection(plane->Normal);
 	Vector3d Origin = transLocal1ToLocal2.WorldToLocalEx(plane->GetOrigin());
-	Plane3d plane_new(Normal, Origin);
+	Plane3d plane_new(Normal, Origin, plane->HalfThickness);
 	const AxisAlignedBox3d* box = static_cast<const AxisAlignedBox3d*>(Obj1);
 	return plane_new.IntersectAABB(box->Min, box->Max);
 }

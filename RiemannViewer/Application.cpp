@@ -100,7 +100,7 @@ void InitScene()
     if (1)
     {
         rp.Static = true;
-        Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d::UnitY());
+        Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d::UnitY(), 1.0f);
         g_World->CreateRigidBody(plane, rp);
 		g_Renderer->AddGeometry(plane);
 
@@ -112,7 +112,7 @@ void InitScene()
             Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(j * 3.0f , 10.0f + i * 3.0f, k * 3.0f), Vector3d(1.0f, 1.0f, 1.0f));
             // Geometry* aabb = GeometryFactory::CreateSphere(Vector3d(j * 3.0f, 10.0f + i * 3.0f, k * 3.0f), 1.0f);
 		    RigidBodyDynamic* p = (RigidBodyDynamic*)g_World->CreateRigidBody(aabb, rp);
-		     p->ApplyTorgue(Vector3d(0, -50, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
+		    // p->ApplyTorgue(Vector3d(0, -50, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
             g_Renderer->AddGeometry(aabb);
         }
     }

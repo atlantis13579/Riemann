@@ -178,11 +178,12 @@ public:
 
 	Matrix2d		Inverse() const
 	{
-		float det = Determinant();
+		float d = Determinant();
 		// Warning!!! Assume d != 0
+		d = 1.0f / d;
 		return Matrix2d(
-			mat[0][0] / det, mat[0][1] / det,
-			mat[1][0] / det, mat[1][1] / det);
+			mat[0][0] * d, mat[0][1] * d,
+			mat[1][0] * d, mat[1][1] * d);
 	}
 
 	Matrix2d		Transpose() const

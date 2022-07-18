@@ -3,7 +3,6 @@
 #include <assert.h>
 #include "../Maths/Vector3d.h"
 #include "MinkowskiSum.h"
-#include "../CollisionPrimitive/Triangle3d.h"
 
 #define SIMPLEX2_EPS (0.0f)
 #define SIMPLEX3_EPS (0.0f)
@@ -14,10 +13,10 @@ class Simplex
 public:
 	struct Vertex
 	{
-		Vector3d d, p;			// dir and position
+		Vector3d	d, p;			// dir and position
 	};
 	Vertex		v[4];
-	float		w[4];
+	float		w[4];				// arycentric coordinate
 	int			dimension;
 
 public:
@@ -26,10 +25,10 @@ public:
 		dimension = 0;
 	}
 
-	void AddVertex(const Vector3d& vv, float ww, MinkowskiSum* Shape)
+	void AddVertex(const Vector3d& dir, float ww, MinkowskiSum* Shape)
 	{
 		w[dimension] = ww;
-		v[dimension].d = vv.Unit();
+		v[dimension].d = dir.Unit();
 		if (Shape)
 		{
 			v[dimension].p = Shape->Support(v[dimension].d);
@@ -49,19 +48,36 @@ public:
 		return *this;
 	}
 
-	float ProjectOrigin(float* weights, int& mask)
+	Vector3d Shrink(float* weights, int mask)
+	{
+		Vector3d Dir = Vector3d::Zero();
+		int new_dimension = 0;
+		for (int i = 0; i < dimension; ++i)
+		{
+			if (mask & (1 << i))
+			{
+				v[new_dimension] = v[i];
+				w[new_dimension++] = weights[i];
+				Dir = Dir + v[i].p * weights[i];
+			}
+		}
+		dimension = new_dimension;
+		return Dir;
+	}
+
+	float ProjectOrigin(float* coords, int& mask)
 	{
 		float sqdist = -1.0f;
 		switch (dimension)
 		{
 		case 2:
-			sqdist = ProjectOrigin2(v[0].p, v[1].p, weights, mask);
+			sqdist = ProjectOriginSegment(v[0].p, v[1].p, coords, mask);
 			break;
 		case 3:
-			sqdist = ProjectOrigin3(v[0].p, v[1].p, v[2].p, weights, mask);
+			sqdist = ProjectOriginTriangle(v[0].p, v[1].p, v[2].p, coords, mask);
 			break;
 		case 4:
-			sqdist = ProjectOrigin4(v[0].p, v[1].p, v[2].p, v[3].p, weights, mask);
+			sqdist = ProjectOriginTetrahedral(v[0].p, v[1].p, v[2].p, v[3].p, coords, mask);
 			break;
 		default:
 			assert(false);
@@ -69,7 +85,6 @@ public:
 		}
 		return sqdist;
 	}
-
 
 	bool EncloseOrigin()
 	{
@@ -142,38 +157,39 @@ public:
 
 
 private:
-	static float ProjectOrigin2(Vector3d& a, Vector3d& b, float* w, int& m)
+	static float ProjectOriginSegment(const Vector3d& a, const Vector3d& b, float* coords, int& mask)
 	{
 		Vector3d d = b - a;
 		float l = d.SquareLength();
 		if (l > SIMPLEX2_EPS)
 		{
-			float t = l > 0 ? -DotProduct(a, d) / l : 0;
-			if (t >= 1)
+			float t = -DotProduct(a, d) / l;
+			if (t >= 1.0f)
 			{
-				w[0] = 0;
-				w[1] = 1;
-				m = 2;
+				coords[0] = 0.0f;
+				coords[1] = 1.0f;
+				mask = 2;
 				return b.SquareLength();
 			}
-			else if (t <= 0)
+			else if (t <= 0.0f)
 			{
-				w[0] = 1;
-				w[1] = 0;
-				m = 1;
+				coords[0] = 1.0f;
+				coords[1] = 0.0f;
+				mask = 1;
 				return a.SquareLength();
 			}
 			else
 			{
-				w[0] = 1 - (w[1] = t);
-				m = 3;
+				coords[1] = t;
+				coords[0] = 1.0f - t;
+				mask = 3;
 				return (a + d * t).SquareLength();
 			}
 		}
 		return -1;
 	}
 
-	static float ProjectOrigin3(Vector3d& a, Vector3d& b, Vector3d& c, float* w, int& m)
+	static float ProjectOriginTriangle(const Vector3d& a, const Vector3d& b, const Vector3d& c, float* coords, int& mask)
 	{
 		const int	imd3[] = { 1, 2, 0 };
 		Vector3d	v[] = { a, b, c };
@@ -188,18 +204,20 @@ private:
 			int subm(0);
 			for (int i = 0; i < 3; ++i)
 			{
-				if (DotProduct(v[i], CrossProduct(dl[i], n)) > 0)
+				Vector3d ns = CrossProduct(dl[i], n);
+				float dp = DotProduct(v[i], ns);
+				if (dp > 0)
 				{
 					int j = imd3[i];
-					float subd = ProjectOrigin2(v[i], v[j], subw, subm);
+					float subd = ProjectOriginSegment(v[i], v[j], subw, subm);
 					if ((mindist < 0) || (subd < mindist))
 					{
 						mindist = subd;
-						m = ((subm & 1) ? 1 << i : 0) +
+						mask = ((subm & 1) ? 1 << i : 0) +
 							((subm & 2) ? 1 << j : 0);
-						w[i] = subw[0];
-						w[j] = subw[1];
-						w[imd3[j]] = 0;
+						coords[i] = subw[0];
+						coords[j] = subw[1];
+						coords[imd3[j]] = 0;
 					}
 				}
 			}
@@ -209,20 +227,20 @@ private:
 				const float s = sqrtf(l);
 				Vector3d p = n * (d / l);
 				mindist = p.SquareLength();
-				m = 7;
-				w[0] = CrossProduct(dl[1], b - p).Length() / s;
-				w[1] = CrossProduct(dl[2], c - p).Length() / s;
-				w[2] = 1 - (w[0] + w[1]);
+				mask = 7;
+				coords[0] = CrossProduct(dl[1], b - p).Length() / s;
+				coords[1] = CrossProduct(dl[2], c - p).Length() / s;
+				coords[2] = 1 - (coords[0] + coords[1]);
 			}
 			return mindist;
 		}
 		return -1;
 	}
 
-	static float ProjectOrigin4(Vector3d& a, Vector3d& b, Vector3d& c, Vector3d& d, float* w, int& m)
+	static float ProjectOriginTetrahedral(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, float* weights, int& mask)
 	{
 		const int imd3[] = { 1, 2, 0 };
-		Vector3d* vt[] = { &a, &b, &c, &d };
+		const Vector3d* vt[] = { &a, &b, &c, &d };
 		Vector3d dl[] = { a - d, b - d, c - d };
 		float vl = Determinant(dl[0], dl[1], dl[2]);
 		bool ng = (vl * DotProduct(a, CrossProduct(b - c, a - b))) <= 0;
@@ -237,28 +255,28 @@ private:
 				float s = vl * DotProduct(d, CrossProduct(dl[i], dl[j]));
 				if (s > 0)
 				{
-					float subd = ProjectOrigin3(*vt[i], *vt[j], d, subw, subm);
+					float subd = ProjectOriginTriangle(*vt[i], *vt[j], d, subw, subm);
 					if ((mindist < 0) || (subd < mindist))
 					{
 						mindist = subd;
-						m = (subm & 1 ? 1 << i : 0) +
+						mask = (subm & 1 ? 1 << i : 0) +
 							(subm & 2 ? 1 << j : 0) +
 							(subm & 4 ? 8 : 0);
-						w[i] = subw[0];
-						w[j] = subw[1];
-						w[imd3[j]] = 0;
-						w[3] = subw[2];
+						weights[i] = subw[0];
+						weights[j] = subw[1];
+						weights[imd3[j]] = 0;
+						weights[3] = subw[2];
 					}
 				}
 			}
 			if (mindist < 0)
 			{
 				mindist = 0;
-				m = 15;
-				w[0] = Determinant(c, b, d) / vl;
-				w[1] = Determinant(a, c, d) / vl;
-				w[2] = Determinant(b, a, d) / vl;
-				w[3] = 1 - (w[0] + w[1] + w[2]);
+				mask = 15;
+				weights[0] = Determinant(c, b, d) / vl;
+				weights[1] = Determinant(a, c, d) / vl;
+				weights[2] = Determinant(b, a, d) / vl;
+				weights[3] = 1 - (weights[0] + weights[1] + weights[2]);
 			}
 			return mindist;
 		}

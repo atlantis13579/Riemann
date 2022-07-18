@@ -9,30 +9,33 @@
 #include "../Maths/Box3d.h"
 
 const float kEpsilonPlane = 0.000001f;
-const float kPlaneMaxBV = 1000000.0f;
-const float kPlaneThickness = 0.0001f;
+const float kPlaneSmallThickness = 0.0001f;
+const float kPlaneRadius = 1000.0f;
 
 class Plane3d
 {
 public:
 	Vector3d Normal;    //  P * Normal + D = 0
 	float D;
+	float HalfThickness;
 
 public:
 	Plane3d()
 	{
 	}
 
-	Plane3d(const Vector3d& InNormal, Vector3d& InOrigin)
+	Plane3d(const Vector3d& InNormal, Vector3d& InOrigin, float InHalfThickness)
 	{
 		Normal = InNormal.Unit();
 		D = -InOrigin.Dot(Normal);
+		HalfThickness = InHalfThickness;
 	}
 
-	Plane3d(const Vector3d& InNormal, float InD)
+	Plane3d(const Vector3d& InNormal, float InD, float InHalfThickness)
 	{
 		Normal = InNormal.Unit();
 		D = InD;
+		HalfThickness = InHalfThickness;
 	}
 
 	static constexpr ShapeType3d	StaticType()
@@ -178,28 +181,27 @@ public:
 		return Dist > 0.0f;
 	}
 
-	static float	MaxBV()
+	static float	PlaneRadius()
 	{
-		return kPlaneMaxBV;
+		return kPlaneRadius;
 	}
 
 	static float	VerySmallThickness()
 	{
-		return kPlaneThickness;
+		return kPlaneSmallThickness;
 	}
 
 	Box3d			GetBoundingVolume() const
 	{
-		const float kMaxBV = MaxBV();
-		const float kVerySmallTickness = VerySmallThickness();
+		const float kMaxBV = PlaneRadius();
 		Box3d Box(-kMaxBV, kMaxBV);
 
 		if (ParallelToXY())
 		{
 			if (Normal.z > kEpsilonPlane)
 			{
-				Box.Min.z = -D / Normal.z - kVerySmallTickness;
-				Box.Max.z = -D / Normal.z + kVerySmallTickness;
+				Box.Min.z = -D / Normal.z - HalfThickness;
+				Box.Max.z = -D / Normal.z + HalfThickness;
 			}
 		}
 
@@ -207,8 +209,8 @@ public:
 		{
 			if (Normal.x > kEpsilonPlane)
 			{
-				Box.Min.x = -D / Normal.x - kVerySmallTickness;
-				Box.Max.x = -D / Normal.x + kVerySmallTickness;
+				Box.Min.x = -D / Normal.x - HalfThickness;
+				Box.Max.x = -D / Normal.x + HalfThickness;
 			}
 		}
 
@@ -216,8 +218,8 @@ public:
 		{
 			if (Normal.y > kEpsilonPlane)
 			{
-				Box.Min.y = -D / Normal.y - kVerySmallTickness;
-				Box.Max.y = -D / Normal.y + kVerySmallTickness;
+				Box.Min.y = -D / Normal.y - HalfThickness;
+				Box.Max.y = -D / Normal.y + HalfThickness;
 			}
 		}
 

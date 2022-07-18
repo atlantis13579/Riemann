@@ -133,7 +133,7 @@ public:
 	static void		 DeleteGeometry(Geometry *Geom);
 
 	static Geometry* CreateOBB(const Vector3d& Center, const Vector3d & HalfExtent, const Quaternion& Rot = Quaternion::One());
-	static Geometry* CreatePlane(const Vector3d& Center, const Vector3d& Normal);
+	static Geometry* CreatePlane(const Vector3d& Center, const Vector3d& Normal, float HalfThickness = 0.0f);
 	static Geometry* CreateSphere(const Vector3d& Center, float Radius);
 	static Geometry* CreateCapsule(const Vector3d& X1, const Vector3d& X2, float Radius);
 	static Geometry* CreateHeightField(const Box3d& Bv, int nRows, int nCols);

@@ -5,11 +5,11 @@
 // Expanding Polytope Algorithm
 // http://allenchou.net/2013/12/game-physics-contact-generation-epa/
 
-#define EPA_ACCURACY ((float)0.0001)
-#define EPA_PLANE_EPS ((float)0.00001)
-#define EPA_INSIDE_EPS ((float)0.01)
-#define EPA_MAX_VERTICES 128
-#define EPA_MAX_ITERATIONS 255
+#define EPA_ACCURACY (0.0001f)
+#define EPA_PLANE_EPS (0.00001f)
+#define EPA_INSIDE_EPS (0.01f)
+#define EPA_MAX_VERTICES (128)
+#define EPA_MAX_ITERATIONS (255)
 #define EPA_FALLBACK (10 * EPA_ACCURACY)
 #define EPA_MAX_FACES (EPA_MAX_VERTICES * 2)
 

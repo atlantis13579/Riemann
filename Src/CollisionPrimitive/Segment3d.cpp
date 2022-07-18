@@ -151,6 +151,6 @@ float Segment3d::SqrDistanceSegmentToSegment(const Vector3d& A0, const Vector3d&
 
 float Segment3d::DistanceToPlane(const Vector3d& Normal, float D) const
 {
-	Plane3d plane(Normal, D);
+	Plane3d plane(Normal, D, Plane3d::VerySmallThickness());
 	return plane.DistanceToSegment(P0, P1);
 }
