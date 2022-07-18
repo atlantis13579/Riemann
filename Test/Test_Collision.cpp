@@ -94,7 +94,7 @@ void TestGJK()
 	EXPECT(GJK_Solve(plane1, obb2));
 	
 	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3d(0.0f, 0.0, 0.0f), 2.0f);
-	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3d(1.0f, 0.0, 0.0f), 2.0f);
+	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3d(0.0f, 0.0, 0.0f), 2.0f);
 	EXPECT(GJK_Solve(sp1, sp2));
 	EXPECT(GJK_Solve(sp1, plane1));
 	

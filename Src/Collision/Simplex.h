@@ -200,9 +200,9 @@ private:
 		const float l = n.SquareLength();
 		if (l > SIMPLEX3_EPS)
 		{
-			float mindist = -1;
-			float subw[2] = { 0.f, 0.f };
-			int subm(0);
+			float mindist = FLT_MAX;
+			float subw[2] = { 0.0f, 0.0f };
+			int subm = 0;
 			for (int i = 0; i < 3; ++i)
 			{
 				Vector3d ns = CrossProduct(dl[i], n);
@@ -210,19 +210,18 @@ private:
 				if (dp > 0)
 				{
 					int j = imd3[i];
-					float subd = ProjectOriginSegment(v[i], v[j], subw, subm);
-					if ((mindist < 0) || (subd < mindist))
+					float dist = ProjectOriginSegment(v[i], v[j], subw, subm);
+					if (dist < mindist)
 					{
-						mindist = subd;
-						mask = ((subm & 1) ? 1 << i : 0) +
-							((subm & 2) ? 1 << j : 0);
+						mindist = dist;
+						mask = ((subm & 1) ? 1 << i : 0) + ((subm & 2) ? 1 << j : 0);
 						coords[i] = subw[0];
 						coords[j] = subw[1];
 						coords[imd3[j]] = 0;
 					}
 				}
 			}
-			if (mindist < 0)
+			if (mindist == FLT_MAX)
 			{
 				const float d = DotProduct(a, n);
 				const float s = sqrtf(l);
@@ -247,22 +246,20 @@ private:
 		bool ng = (vl * DotProduct(a, CrossProduct(b - c, a - b))) <= 0;
 		if (ng && (fabsf(vl) > SIMPLEX4_EPS))
 		{
-			float mindist = -1;
-			float subw[3] = { 0.f, 0.f, 0.f };
-			int subm(0);
+			float mindist = FLT_MAX;
+			float subw[3] = { 0.0f, 0.0f, 0.0f };
+			int subm = 0;
 			for (int i = 0; i < 3; ++i)
 			{
 				int j = imd3[i];
 				float s = vl * DotProduct(d, CrossProduct(dl[i], dl[j]));
 				if (s > 0)
 				{
-					float subd = ProjectOriginTriangle(*vt[i], *vt[j], d, subw, subm);
-					if ((mindist < 0) || (subd < mindist))
+					float dist = ProjectOriginTriangle(*vt[i], *vt[j], d, subw, subm);
+					if (dist < mindist)
 					{
-						mindist = subd;
-						mask = (subm & 1 ? 1 << i : 0) +
-							(subm & 2 ? 1 << j : 0) +
-							(subm & 4 ? 8 : 0);
+						mindist = dist;
+						mask = (subm & 1 ? 1 << i : 0) + (subm & 2 ? 1 << j : 0) + (subm & 4 ? 8 : 0);
 						weights[i] = subw[0];
 						weights[j] = subw[1];
 						weights[imd3[j]] = 0;
@@ -270,7 +267,7 @@ private:
 					}
 				}
 			}
-			if (mindist < 0)
+			if (mindist == FLT_MAX)
 			{
 				mindist = 0;
 				mask = 15;

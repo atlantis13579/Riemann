@@ -8,8 +8,9 @@
 
 enum class  GJK_status
 {
-	Valid,
+	Separate,
 	Inside,
+	Boundary,
 	Failed
 };
 
@@ -75,11 +76,6 @@ public:
 				{
 					return GJK_status::Inside;
 				}
-
-				if (SqrDist < GJK_MIN_DISTANCE)
-				{
-					return GJK_status::Inside;
-				}
 			}
 			else
 			{
@@ -88,7 +84,7 @@ public:
 			}
 		};
 
-		return iter >= GJK_MAX_ITERATIONS ? GJK_status::Failed : GJK_status::Valid;
+		return iter >= GJK_MAX_ITERATIONS ? GJK_status::Failed : GJK_status::Separate;
 	}
 
 private:
