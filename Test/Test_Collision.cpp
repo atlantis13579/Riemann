@@ -113,7 +113,17 @@ void TestEPA()
 	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
 	obb1->SetPosition(Vector3d(0.0f, -3.7f, 0.0f));
 	obb1->UpdateBoundingVolume();
-	EXPECT(GJK_Solve(plane1, obb1));
+
+	GeometryDifference shape(plane1, obb1);
+	Vector3d guess = shape.GetCenter();
+
+	GJK gjk;
+	GJK_status gjk_status = gjk.Solve(&shape, -guess);
+	EXPECT(gjk_status == GJK_status::Inside);
+
+	EPA epa;
+	EPA_status epa_status = epa.Solve(gjk.simplex, &shape, -guess);
+	EXPECT(epa_status == EPA_status::AccuraryReached);
 
 	return;
 }
@@ -459,6 +469,7 @@ void TestSAPInc()
 	EXPECT(overlaps.size() == 0);
 
 	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3d(-10, -10, -10));
+	boxes[2]->UpdateBoundingVolume();
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 2);
 
@@ -466,6 +477,7 @@ void TestSAPInc()
 	EXPECT(overlaps.size() == 2);
 
 	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3d(10, 10, 10));
+	boxes[2]->UpdateBoundingVolume();
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 0);
 
@@ -480,6 +492,7 @@ void TestSAPInc()
 	for (int k = 0; k < 10; ++k)
 	{
 		boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3d::Random() * 20.0f);
+		boxes[2]->UpdateBoundingVolume();
 		sap.IncrementalPrune(&overlaps);
 
 		for (size_t i = 0; i < boxes.size(); ++i)
@@ -517,4 +530,5 @@ void TestCollision()
 	TestGeometryQuery();
 	TestSAP();
 	TestSAPInc();
+	return;
 }

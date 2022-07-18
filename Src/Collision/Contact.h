@@ -9,35 +9,38 @@ class ContactResult
 public:
 	enum eStatus
 	{
-		Separated,   // Shapes doesnt penetrate	
-		Penetrating, // Shapes are penetrating	
-		GJK_Failed,  // GJK phase fail, no big issue, shapes are probably just touching
-		EPA_Failed   // EPA phase fail, bigger problem, need to save parameters, and debug
-	} status;
+		Separated,
+		Penetrating,
+		GJK_Failed,
+		EPA_Failed
+	};
 
 	ContactResult()
 	{
-		ImpulseNormal = 0.0f;
-		ImpulseTangent1 = 0.0f;
-		ImpulseTangent2 = 0.0f;
+		SumImpulseNormal = 0.0f;
+		SumImpulseTangent1 = 0.0f;
+		SumImpulseTangent2 = 0.0f;
+		PositionLocal1 = PositionLocal2 = PositionWorld1 = PositionWorld2 = Vector3d::Zero();
+		status = ContactResult::Separated;
 	}
 
-	Vector3d WitnessLocal1;
-	Vector3d WitnessLocal2;
-	Vector3d WitnessWorld1;
-	Vector3d WitnessWorld2;
-	Vector3d Normal;
-	Vector3d Tangent1;
-	Vector3d Tangent2;
-	Vector3d R1;
-	Vector3d R2;
+	eStatus		status;	
 
-	float   PenetrationDepth;
-	float   ImpulseNormal;
-	float   ImpulseTangent1;
-	float   ImpulseTangent2;
+	Vector3d	PositionLocal1;
+	Vector3d	PositionLocal2;
+	Vector3d	PositionWorld1;
+	Vector3d	PositionWorld2;
+	Vector3d	Normal;
+	Vector3d	Tangent1;
+	Vector3d	Tangent2;
+	Vector3d	RelativePosition1;
+	Vector3d	RelativePosition2;
+
+	float		PenetrationDepth;
+	float		SumImpulseNormal;
+	float		SumImpulseTangent1;
+	float		SumImpulseTangent2;
 };
-
 
 #define MAX_CONTACT_POINTS 5
 

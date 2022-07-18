@@ -27,23 +27,23 @@ public:
 	GJK_status Solve(MinkowskiSum* Shape, Vector3d InitGuess)
 	{
 		simplex.AddPoint(InitGuess.SquareLength() > 0 ? -InitGuess : Vector3d::UnitX(), 1.0f, Shape);
-		Vector3d Dir = simplex.v[0].p;
+		Vector3d SearchDir = simplex.v[0].p;
 
 		int nlastp = 0;
-		Vector3d lastp[4] = { Dir, Dir, Dir, Dir };
+		Vector3d lastp[4] = { SearchDir, SearchDir, SearchDir, SearchDir };
 
 		float alpha = 0.0f;
 
 		int iter = 0;
 		while (iter++ < GJK_MAX_ITERATIONS)
 		{
-			float rl = Dir.Length();
+			float rl = SearchDir.Length();
 			if (rl < GJK_MIN_DISTANCE)
 			{
 				return GJK_status::Inside;
 			}
 
-			simplex.AddPoint(-Dir, 0, Shape);
+			simplex.AddPoint(-SearchDir, 0, Shape);
 
 			const Vector3d& p = simplex.v[simplex.dimension - 1].p;
 			if (IsDuplicated(lastp, p))
@@ -56,7 +56,7 @@ public:
 				lastp[nlastp = (nlastp + 1) & 3] = p;
 			}
 
-			float omega = DotProduct(Dir, p) / rl;
+			float omega = DotProduct(SearchDir, p) / rl;
 			alpha = omega > alpha ? omega : alpha;
 			if (((rl - alpha) - (GJK_ACCURACY * rl)) <= 0)
 			{
@@ -64,13 +64,11 @@ public:
 				break;
 			}
 
-			float coords[4];
 			int mask = 0;
-			float SqrDist = simplex.ProjectOrigin(coords, mask);
-
+			float SqrDist = simplex.ProjectOrigin(SearchDir, mask);
 			if (SqrDist >= 0)
 			{
-				Dir = simplex.UpdatePointSet(coords, mask);
+				simplex.UpdatePointSet(nullptr, mask);
 
 				if (mask == 0xf)
 				{

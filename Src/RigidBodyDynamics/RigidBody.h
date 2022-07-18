@@ -7,6 +7,7 @@
 #include "../Maths/Quaternion.h"
 
 class Geometry;
+class RigidBodyDynamic;
 
 struct RigidBodyParam
 {
@@ -53,6 +54,8 @@ public:
 	const Matrix3d&	GetInverseInertia() const;
 	Matrix3d		GetInverseInertia_WorldSpace() const;
 	const float&	GetInverseMass() const;
+
+	RigidBodyDynamic* GetDynamic();
 	
 	void			SetLinearVelocity(const Vector3d &v);
 	void			SetAngularVelocity(const Vector3d &v);

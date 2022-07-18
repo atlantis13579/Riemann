@@ -15,9 +15,9 @@ void Jacobian::Init(ContactManifold* manifold, int idx, JacobianType jt, Vector3
 	jacobinType = jt;
 
 	m_jva = dir * -1;
-	m_jwa = manifold->ContactPoints[idx].R1.Cross(dir) * -1.0f;
+	m_jwa = manifold->ContactPoints[idx].RelativePosition1.Cross(dir) * -1.0f;
 	m_jvb = dir;
-	m_jwb = manifold->ContactPoints[idx].R2.Cross(dir);
+	m_jwb = manifold->ContactPoints[idx].RelativePosition2.Cross(dir);
 
 	m_bias = 0.0f;
 	
@@ -36,11 +36,11 @@ void Jacobian::Init(ContactManifold* manifold, int idx, JacobianType jt, Vector3
 
 		Vector3d va = rigidA->GetLinearVelocity();
 		Vector3d wa = rigidA->GetAngularVelocity();
-		Vector3d ra = manifold->ContactPoints[idx].R1;
+		Vector3d ra = manifold->ContactPoints[idx].RelativePosition1;
 
 		Vector3d vb = rigidB->GetLinearVelocity();
 		Vector3d wb = rigidB->GetAngularVelocity();
-		Vector3d rb = manifold->ContactPoints[idx].R2;
+		Vector3d rb = manifold->ContactPoints[idx].RelativePosition2;
 
 		m_bias = 0;
 		if (jacobinType == JacobianType::Normal)

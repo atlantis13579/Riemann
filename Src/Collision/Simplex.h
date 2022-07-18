@@ -48,36 +48,35 @@ public:
 		return *this;
 	}
 
-	Vector3d UpdatePointSet(float* weights, int mask)
+	void UpdatePointSet(float* weights, int mask)
 	{
-		Vector3d newDir = Vector3d::Zero();
 		int new_dimension = 0;
 		for (int i = 0; i < dimension; ++i)
 		{
 			if (mask & (1 << i))
 			{
 				v[new_dimension] = v[i];
-				w[new_dimension++] = weights[i];
-				newDir = newDir + v[i].p * weights[i];
+				// w[new_dimension++] = weights[i];
+				new_dimension++;
 			}
 		}
 		dimension = new_dimension;
-		return newDir;
+		return;
 	}
 
-	float ProjectOrigin(float* coords, int& mask)
+	float ProjectOrigin(Vector3d& pos, int& mask)
 	{
 		float sqdist = -1.0f;
 		switch (dimension)
 		{
 		case 2:
-			sqdist = ProjectOriginSegment(v[0].p, v[1].p, coords, mask);
+			sqdist = ProjectOriginSegment(v[0].p, v[1].p, pos, mask);
 			break;
 		case 3:
-			sqdist = ProjectOriginTriangle(v[0].p, v[1].p, v[2].p, coords, mask);
+			sqdist = ProjectOriginTriangle(v[0].p, v[1].p, v[2].p, pos, mask);
 			break;
 		case 4:
-			sqdist = ProjectOriginTetrahedral(v[0].p, v[1].p, v[2].p, v[3].p, coords, mask);
+			sqdist = ProjectOriginTetrahedral(v[0].p, v[1].p, v[2].p, v[3].p, pos, mask);
 			break;
 		default:
 			assert(false);
@@ -158,7 +157,7 @@ public:
 
 
 private:
-	static float ProjectOriginSegment(const Vector3d& a, const Vector3d& b, float* coords, int& mask)
+	static float ProjectOriginSegment(const Vector3d& a, const Vector3d& b, Vector3d& pos, int& mask)
 	{
 		Vector3d d = b - a;
 		float l = d.SquareLength();
@@ -167,30 +166,27 @@ private:
 			float t = -DotProduct(a, d) / l;
 			if (t >= 1.0f)
 			{
-				coords[0] = 0.0f;
-				coords[1] = 1.0f;
+				pos = b;
 				mask = 2;
 				return b.SquareLength();
 			}
 			else if (t <= 0.0f)
 			{
-				coords[0] = 1.0f;
-				coords[1] = 0.0f;
+				pos = a;
 				mask = 1;
 				return a.SquareLength();
 			}
 			else
 			{
-				coords[1] = t;
-				coords[0] = 1.0f - t;
+				pos = a + d * t;
 				mask = 3;
-				return (a + d * t).SquareLength();
+				return pos.SquareLength();
 			}
 		}
 		return -1;
 	}
 
-	static float ProjectOriginTriangle(const Vector3d& a, const Vector3d& b, const Vector3d& c, float* coords, int& mask)
+	static float ProjectOriginTriangle(const Vector3d& a, const Vector3d& b, const Vector3d& c, Vector3d& pos, int& mask)
 	{
 		const int	imd3[] = { 1, 2, 0 };
 		Vector3d	v[] = { a, b, c };
@@ -201,7 +197,7 @@ private:
 		if (l > SIMPLEX3_EPS)
 		{
 			float mindist = FLT_MAX;
-			float subw[2] = { 0.0f, 0.0f };
+			Vector3d subpos;
 			int subm = 0;
 			for (int i = 0; i < 3; ++i)
 			{
@@ -210,14 +206,12 @@ private:
 				if (dp > 0)
 				{
 					int j = imd3[i];
-					float dist = ProjectOriginSegment(v[i], v[j], subw, subm);
+					float dist = ProjectOriginSegment(v[i], v[j], subpos, subm);
 					if (dist < mindist)
 					{
 						mindist = dist;
 						mask = ((subm & 1) ? 1 << i : 0) + ((subm & 2) ? 1 << j : 0);
-						coords[i] = subw[0];
-						coords[j] = subw[1];
-						coords[imd3[j]] = 0;
+						pos = subpos;
 					}
 				}
 			}
@@ -227,17 +221,15 @@ private:
 				const float s = sqrtf(l);
 				Vector3d p = n * (d / l);
 				mindist = p.SquareLength();
+				pos = sqrtf(mindist) * n;
 				mask = 7;
-				coords[0] = CrossProduct(dl[1], b - p).Length() / s;
-				coords[1] = CrossProduct(dl[2], c - p).Length() / s;
-				coords[2] = 1 - (coords[0] + coords[1]);
 			}
 			return mindist;
 		}
 		return -1;
 	}
 
-	static float ProjectOriginTetrahedral(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, float* weights, int& mask)
+	static float ProjectOriginTetrahedral(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, Vector3d& pos, int& mask)
 	{
 		const int imd3[] = { 1, 2, 0 };
 		const Vector3d* vt[] = { &a, &b, &c, &d };
@@ -247,7 +239,7 @@ private:
 		if (ng && (fabsf(vl) > SIMPLEX4_EPS))
 		{
 			float mindist = FLT_MAX;
-			float subw[3] = { 0.0f, 0.0f, 0.0f };
+			Vector3d subpos;
 			int subm = 0;
 			for (int i = 0; i < 3; ++i)
 			{
@@ -255,26 +247,20 @@ private:
 				float s = vl * DotProduct(d, CrossProduct(dl[i], dl[j]));
 				if (s > 0)
 				{
-					float dist = ProjectOriginTriangle(*vt[i], *vt[j], d, subw, subm);
+					float dist = ProjectOriginTriangle(*vt[i], *vt[j], d, subpos, subm);
 					if (dist < mindist)
 					{
 						mindist = dist;
+						pos = subpos;
 						mask = (subm & 1 ? 1 << i : 0) + (subm & 2 ? 1 << j : 0) + (subm & 4 ? 8 : 0);
-						weights[i] = subw[0];
-						weights[j] = subw[1];
-						weights[imd3[j]] = 0;
-						weights[3] = subw[2];
 					}
 				}
 			}
 			if (mindist == FLT_MAX)
 			{
 				mindist = 0;
+				pos = Vector3d::Zero();
 				mask = 15;
-				weights[0] = Determinant(c, b, d) / vl;
-				weights[1] = Determinant(a, c, d) / vl;
-				weights[2] = Determinant(b, a, d) / vl;
-				weights[3] = 1 - (weights[0] + weights[1] + weights[2]);
 			}
 			return mindist;
 		}

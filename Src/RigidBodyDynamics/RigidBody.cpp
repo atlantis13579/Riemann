@@ -31,6 +31,11 @@ const float&		RigidBody::GetInverseMass() const
 	return InvMass;
 }
 
+RigidBodyDynamic* RigidBody::GetDynamic()
+{
+	return Static ? nullptr : (RigidBodyDynamic*)this;
+}
+
 void				RigidBody::SetLinearVelocity(const Vector3d &v)
 {
 	P = InvMass > kMinimumInvMass ? v / InvMass : Vector3d::Zero();

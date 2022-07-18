@@ -155,19 +155,19 @@ public:
 					if (m_nextsv < EPA_MAX_VERTICES)
 					{
 						sHorizon horizon;
-						Simplex::Vertex* w = &m_sv_store[m_nextsv++];
+						Simplex::Vertex* v = &m_sv_store[m_nextsv++];
 						bool valid = true;
 						best->pass = (int)(++pass);
 
-						w->d = best->n.Unit();
-						w->p = Shape->Support(w->d);
+						v->d = best->n.Unit();
+						v->p = Shape->Support(v->d);
 
-						const float wdist = DotProduct(best->n, w->p) - best->d;
+						const float wdist = DotProduct(best->n, v->p) - best->d;
 						if (wdist > EPA_ACCURACY)
 						{
 							for (int j = 0; (j < 3) && valid; ++j)
 							{
-								valid &= Expand(pass, w, best->f[j], best->e[j], horizon);
+								valid &= Expand(pass, v, best->f[j], best->e[j], horizon);
 							}
 							if (valid && (horizon.nf >= 3))
 							{
