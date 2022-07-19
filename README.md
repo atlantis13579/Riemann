@@ -6,8 +6,6 @@ Riemann is a 3D Geometry / Collision Detection / Physics Engine with zero depend
 
 Rigid Body Dynamics Simulation
 
-Position Based Dynamics Simulation
-
 * Simulation and Collision Detection for various shapes
     * Sphere
     * Oriented Box
@@ -19,6 +17,27 @@ Position Based Dynamics Simulation
 * Collision detection
     * Raycast Test
     * Overlap Test
+    * Bounding Volume Hierarchy
+    * Sweep and Prune
+    * Gilbert–Johnson–Keerthi algorithm
+    * Expanding Polytope Algorithm
+    
+* Numerical Solver
+    * Explicit Euler / Symplectic Euler / Implicit Euler / Verlet Integrator
+    * Jacobian Matrix
+    * Sequential Impulse Solver
+    * Projected Gauss-Seidel
+
+Position Based Dynamics Solver
+
+Aero Dynamics Solver
+
+Fluid Dynamics Solver
+
+Continuum Media Dynamics Solver
+
+Vehicle Dynamics Solver
+
 
 ## Examples
 
