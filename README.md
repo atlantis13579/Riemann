@@ -41,4 +41,6 @@ Vehicle Dynamics Solver
 
 ## Examples
 
+#### Rigid Body Dynamics Simulation
+
 ![111](https://user-images.githubusercontent.com/29682318/179655187-90d55ee7-0847-4987-941e-c9a36b3f323c.jpg)
