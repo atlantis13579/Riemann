@@ -6,7 +6,7 @@
 // Gilbert–Johnson–Keerthi algorithm
 // http://allenchou.net/2013/12/game-physics-collision-detection-gjk/
 
-enum class  GJK_status
+enum class GJK_status
 {
 	Separate,
 	Inside,
@@ -32,7 +32,7 @@ public:
 		int nlastp = 0;
 		Vector3d lastp[4] = { SearchDir, SearchDir, SearchDir, SearchDir };
 
-		float alpha = 0.0f;
+		float max_omega = 0.0f;
 
 		int iter = 0;
 		while (iter++ < GJK_MAX_ITERATIONS)
@@ -45,7 +45,7 @@ public:
 
 			simplex.AddPoint(-SearchDir, 0, Shape);
 
-			const Vector3d& p = simplex.v[simplex.dimension - 1].p;
+			const Vector3d& p = simplex.LastPoint();
 			if (IsDuplicated(lastp, p))
 			{
 				simplex.RemovePoint();
@@ -57,8 +57,8 @@ public:
 			}
 
 			float omega = DotProduct(SearchDir, p) / rl;
-			alpha = omega > alpha ? omega : alpha;
-			if (((rl - alpha) - (GJK_ACCURACY * rl)) <= 0)
+			max_omega = omega > max_omega ? omega : max_omega;
+			if (((rl - max_omega) - (GJK_ACCURACY * rl)) <= 0)
 			{
 				simplex.RemovePoint();
 				break;

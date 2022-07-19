@@ -25,6 +25,11 @@ public:
 		dimension = 0;
 	}
 
+	const Vector3d& LastPoint() const
+	{
+		return v[dimension - 1].p;
+	}
+
 	void AddPoint(const Vector3d& dir, float ww, MinkowskiSum* Shape)
 	{
 		w[dimension] = ww;

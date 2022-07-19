@@ -1,8 +1,8 @@
 
 #include "Test.h"
 
-#include "../Src/Vehicle/PID.h"
-#include "../Src/Vehicle/LQR.h"
+#include "../Src/VehicleDynamics/PID.h"
+#include "../Src/VehicleDynamics/LQR.h"
 
 
 void TestPID()

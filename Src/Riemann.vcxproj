@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AeroDynamics\UncompressedKarmanVortex2D.cpp" />
     <ClCompile Include="CollisionPrimitive\AxisAlignedBox3d.cpp" />
     <ClCompile Include="CollisionPrimitive\Capsule3d.cpp" />
     <ClCompile Include="CollisionPrimitive\HeightField3d.cpp" />
@@ -38,9 +39,14 @@
     <ClCompile Include="Collision\NarrowPhase.cpp" />
     <ClCompile Include="CollisionPrimitive\MeshBVH4.cpp" />
     <ClCompile Include="CollisionPrimitive\TriangleMesh.cpp" />
-    <ClCompile Include="Geometry\ConvexHull3D.cpp" />
-    <ClCompile Include="Geometry\Polygon2D.cpp" />
-    <ClCompile Include="Geometry\Polygon3D.cpp" />
+    <ClCompile Include="Continuum\FEMSolver.cpp" />
+    <ClCompile Include="Continuum\MLSMPMSolver.cpp" />
+    <ClCompile Include="Destruction\Fracture.cpp" />
+    <ClCompile Include="Destruction\PlanarCut.cpp" />
+    <ClCompile Include="FluidDynamics\Laplace2DSolver.cpp" />
+    <ClCompile Include="Geometry\ConvexHull3d.cpp" />
+    <ClCompile Include="Geometry\Polygon2d.cpp" />
+    <ClCompile Include="Geometry\Polygon3d.cpp" />
     <ClCompile Include="Geometry\Spline.cpp" />
     <ClCompile Include="Geometry\TetrahedralMesh.cpp" />
     <ClCompile Include="Geometry\Voronoi2d.cpp" />
@@ -60,7 +66,7 @@
     <ClCompile Include="RigidBodyDynamics\ForceField.cpp" />
     <ClCompile Include="RigidBodyDynamics\PhysicsMaterial.cpp" />
     <ClCompile Include="RigidBodyDynamics\WarmStart.cpp" />
-    <ClCompile Include="Geometry\ConvexHull2D.cpp" />
+    <ClCompile Include="Geometry\ConvexHull2d.cpp" />
     <ClCompile Include="ImageSpace\ImageProcessing.cpp" />
     <ClCompile Include="LinearSystem\PolarDecomposition.cpp" />
     <ClCompile Include="LinearSystem\SingularValueDecomposition.cpp" />
@@ -81,11 +87,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Tools\PythonModule.cpp" />
-    <ClCompile Include="Vehicle\AutonomousController.cpp" />
-    <ClCompile Include="Vehicle\VehicleDynamics.cpp" />
-    <ClCompile Include="Vehicle\Vehicle.cpp" />
+    <ClCompile Include="VehicleDynamics\AutonomousController.cpp" />
+    <ClCompile Include="VehicleDynamics\VehicleDynamics.cpp" />
+    <ClCompile Include="VehicleDynamics\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AeroDynamics\UncompressedKarmanVortex2D.h" />
     <ClInclude Include="CollisionPrimitive\AxisAlignedBox3d.h" />
     <ClInclude Include="CollisionPrimitive\Capsule3d.h" />
     <ClInclude Include="CollisionPrimitive\ConvexMesh.h" />
@@ -125,15 +132,21 @@
     <ClInclude Include="Collision\SparseSpatialHash.h" />
     <ClInclude Include="Collision\SAP.h" />
     <ClInclude Include="CollisionPrimitive\TriangleMesh.h" />
+    <ClInclude Include="Continuum\FEMSolver.h" />
+    <ClInclude Include="Continuum\MLSMPMSolver.h" />
     <ClInclude Include="Core\Array.h" />
     <ClInclude Include="Core\Base.h" />
     <ClInclude Include="Core\Stack.h" />
-    <ClInclude Include="Geometry\ConvexHull3D.h" />
+    <ClInclude Include="Destruction\Fracture.h" />
+    <ClInclude Include="Destruction\PlanarCut.h" />
+    <ClInclude Include="FluidDynamics\Laplace2DSolver.h" />
+    <ClInclude Include="Geometry\ConvexHull3d.h" />
     <ClInclude Include="Geometry\DenseTensorField3d.h" />
-    <ClInclude Include="Geometry\Polygon2D.h" />
-    <ClInclude Include="Geometry\Polygon3D.h" />
+    <ClInclude Include="Geometry\Polygon2d.h" />
+    <ClInclude Include="Geometry\Polygon3d.h" />
     <ClInclude Include="Geometry\Spline.h" />
     <ClInclude Include="Geometry\TetrahedralMesh.h" />
+    <ClInclude Include="Geometry\VHACD.h" />
     <ClInclude Include="Geometry\Voronoi2d.h" />
     <ClInclude Include="Geometry\VoxelField.h" />
     <ClInclude Include="Geometry\SparseVoxelField.h" />
@@ -154,13 +167,19 @@
     <ClInclude Include="Optimization\LBGFS.h" />
     <ClInclude Include="Optimization\LR.h" />
     <ClInclude Include="Optimization\SGD.h" />
+    <ClInclude Include="Physics2d\Box2d.h" />
+    <ClInclude Include="Physics2d\Circle2d.h" />
+    <ClInclude Include="Physics2d\EPA2d.h" />
+    <ClInclude Include="Physics2d\GJK2d.h" />
+    <ClInclude Include="Physics2d\SAT.h" />
+    <ClInclude Include="Physics2d\Shape2d.h" />
     <ClInclude Include="RigidBodyDynamics\Jacobian.h" />
     <ClInclude Include="RigidBodyDynamics\KinematicsTree.h" />
     <ClInclude Include="RigidBodyDynamics\ForceField.h" />
     <ClInclude Include="RigidBodyDynamics\PhysicsMaterial.h" />
     <ClInclude Include="RigidBodyDynamics\KeyFrameAnimation.h" />
     <ClInclude Include="RigidBodyDynamics\WarmStart.h" />
-    <ClInclude Include="Geometry\ConvexHull2D.h" />
+    <ClInclude Include="Geometry\ConvexHull2d.h" />
     <ClInclude Include="ImageSpace\ImageProcessing.h" />
     <ClInclude Include="ImageSpace\Rasterizer.h" />
     <ClInclude Include="LinearSystem\DenseMatrix.h" />
@@ -206,12 +225,12 @@
     <ClInclude Include="Tools\PythonModule.h" />
     <ClInclude Include="Tools\Serialization.h" />
     <ClInclude Include="Tools\libBmp.h" />
-    <ClInclude Include="Vehicle\AutonomousController.h" />
-    <ClInclude Include="Vehicle\VehicleDynamics.h" />
-    <ClInclude Include="Vehicle\LQR.h" />
-    <ClInclude Include="Vehicle\MPC.h" />
-    <ClInclude Include="Vehicle\PID.h" />
-    <ClInclude Include="Vehicle\Vehicle.h" />
+    <ClInclude Include="VehicleDynamics\AutonomousController.h" />
+    <ClInclude Include="VehicleDynamics\VehicleDynamics.h" />
+    <ClInclude Include="VehicleDynamics\LQR.h" />
+    <ClInclude Include="VehicleDynamics\MPC.h" />
+    <ClInclude Include="VehicleDynamics\PID.h" />
+    <ClInclude Include="VehicleDynamics\Vehicle.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
