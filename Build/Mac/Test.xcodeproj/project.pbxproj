@@ -7,17 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AD0168F12878E01200BA7921 /* Test_Physics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0168ED2878E01200BA7921 /* Test_Physics.cpp */; };
-		AD0168F22878E01200BA7921 /* Test_Maths.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0168EE2878E01200BA7921 /* Test_Maths.cpp */; };
-		AD0168F32878E01200BA7921 /* Test_Geometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0168EF2878E01200BA7921 /* Test_Geometry.cpp */; };
-		AD0168F42878E01200BA7921 /* Test_Collision.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD0168F02878E01200BA7921 /* Test_Collision.cpp */; };
-		AD66E85E2878E44E004F0267 /* Test_Matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD66E85D2878E44E004F0267 /* Test_Matrix.cpp */; };
-		AD66E8602878E51F004F0267 /* Test_Vehicle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD66E85F2878E51F004F0267 /* Test_Vehicle.cpp */; };
-		ADA67B38287037D900B037DB /* Test_SIMD.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADA67B36287037D900B037DB /* Test_SIMD.cpp */; };
-		ADA67B3A287037F600B037DB /* Test_Python.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADA67B39287037F600B037DB /* Test_Python.cpp */; };
-		ADC0F6B32878E7E800CE5173 /* Test_Image.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADC0F6B22878E7E800CE5173 /* Test_Image.cpp */; };
-		ADDE129C2820ABEF00809D36 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE129A2820ABEF00809D36 /* main.cpp */; };
-		ADDE129D2820ABEF00809D36 /* Test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADDE129B2820ABEF00809D36 /* Test.cpp */; };
+		ADD23D3F2887634D00A849BE /* Test_Python.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D332887634C00A849BE /* Test_Python.cpp */; };
+		ADD23D402887634D00A849BE /* Test_Matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D352887634C00A849BE /* Test_Matrix.cpp */; };
+		ADD23D412887634D00A849BE /* Test_Physics2d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D362887634C00A849BE /* Test_Physics2d.cpp */; };
+		ADD23D422887634D00A849BE /* Test_Collision.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D372887634C00A849BE /* Test_Collision.cpp */; };
+		ADD23D432887634D00A849BE /* Test_Physics3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D382887634C00A849BE /* Test_Physics3d.cpp */; };
+		ADD23D442887634D00A849BE /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D392887634C00A849BE /* main.cpp */; };
+		ADD23D452887634D00A849BE /* Test_Image.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D3A2887634C00A849BE /* Test_Image.cpp */; };
+		ADD23D462887634D00A849BE /* Test_SIMD.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D3B2887634C00A849BE /* Test_SIMD.cpp */; };
+		ADD23D472887634D00A849BE /* Test_Vehicle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D3C2887634C00A849BE /* Test_Vehicle.cpp */; };
+		ADD23D482887634D00A849BE /* Test_Geometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D3D2887634C00A849BE /* Test_Geometry.cpp */; };
+		ADD23D492887634D00A849BE /* Test_Maths.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D3E2887634C00A849BE /* Test_Maths.cpp */; };
 		ADDE14AA2820B0EE00809D36 /* libRiemann.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADDE14A92820B0EE00809D36 /* libRiemann.a */; };
 /* End PBXBuildFile section */
 
@@ -34,19 +34,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		AD0168ED2878E01200BA7921 /* Test_Physics.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Physics.cpp; sourceTree = "<group>"; };
-		AD0168EE2878E01200BA7921 /* Test_Maths.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Maths.cpp; sourceTree = "<group>"; };
-		AD0168EF2878E01200BA7921 /* Test_Geometry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Geometry.cpp; sourceTree = "<group>"; };
-		AD0168F02878E01200BA7921 /* Test_Collision.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Collision.cpp; sourceTree = "<group>"; };
 		AD2C31C82820AB10007157B6 /* Test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Test; sourceTree = BUILT_PRODUCTS_DIR; };
-		AD66E85D2878E44E004F0267 /* Test_Matrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Matrix.cpp; sourceTree = "<group>"; };
-		AD66E85F2878E51F004F0267 /* Test_Vehicle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Vehicle.cpp; sourceTree = "<group>"; };
-		ADA67B36287037D900B037DB /* Test_SIMD.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Test_SIMD.cpp; sourceTree = "<group>"; };
-		ADA67B39287037F600B037DB /* Test_Python.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Python.cpp; sourceTree = "<group>"; };
-		ADC0F6B22878E7E800CE5173 /* Test_Image.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test_Image.cpp; sourceTree = "<group>"; };
-		ADC73023286DD0AB00364E92 /* Test.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Test.h; sourceTree = "<group>"; };
-		ADDE129A2820ABEF00809D36 /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		ADDE129B2820ABEF00809D36 /* Test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test.cpp; sourceTree = "<group>"; };
+		ADD23D332887634C00A849BE /* Test_Python.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Python.cpp; path = ../../Test/Test_Python.cpp; sourceTree = "<group>"; };
+		ADD23D342887634C00A849BE /* Test.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Test.h; path = ../../Test/Test.h; sourceTree = "<group>"; };
+		ADD23D352887634C00A849BE /* Test_Matrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Matrix.cpp; path = ../../Test/Test_Matrix.cpp; sourceTree = "<group>"; };
+		ADD23D362887634C00A849BE /* Test_Physics2d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Physics2d.cpp; path = ../../Test/Test_Physics2d.cpp; sourceTree = "<group>"; };
+		ADD23D372887634C00A849BE /* Test_Collision.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Collision.cpp; path = ../../Test/Test_Collision.cpp; sourceTree = "<group>"; };
+		ADD23D382887634C00A849BE /* Test_Physics3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Physics3d.cpp; path = ../../Test/Test_Physics3d.cpp; sourceTree = "<group>"; };
+		ADD23D392887634C00A849BE /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../Test/main.cpp; sourceTree = "<group>"; };
+		ADD23D3A2887634C00A849BE /* Test_Image.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Image.cpp; path = ../../Test/Test_Image.cpp; sourceTree = "<group>"; };
+		ADD23D3B2887634C00A849BE /* Test_SIMD.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_SIMD.cpp; path = ../../Test/Test_SIMD.cpp; sourceTree = "<group>"; };
+		ADD23D3C2887634C00A849BE /* Test_Vehicle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Vehicle.cpp; path = ../../Test/Test_Vehicle.cpp; sourceTree = "<group>"; };
+		ADD23D3D2887634C00A849BE /* Test_Geometry.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Geometry.cpp; path = ../../Test/Test_Geometry.cpp; sourceTree = "<group>"; };
+		ADD23D3E2887634C00A849BE /* Test_Maths.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Maths.cpp; path = ../../Test/Test_Maths.cpp; sourceTree = "<group>"; };
 		ADDE14A92820B0EE00809D36 /* libRiemann.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libRiemann.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -65,20 +65,20 @@
 		AD2C31BF2820AB10007157B6 = {
 			isa = PBXGroup;
 			children = (
+				ADD23D392887634C00A849BE /* main.cpp */,
+				ADD23D372887634C00A849BE /* Test_Collision.cpp */,
+				ADD23D3D2887634C00A849BE /* Test_Geometry.cpp */,
+				ADD23D3A2887634C00A849BE /* Test_Image.cpp */,
+				ADD23D3E2887634C00A849BE /* Test_Maths.cpp */,
+				ADD23D352887634C00A849BE /* Test_Matrix.cpp */,
+				ADD23D362887634C00A849BE /* Test_Physics2d.cpp */,
+				ADD23D382887634C00A849BE /* Test_Physics3d.cpp */,
+				ADD23D332887634C00A849BE /* Test_Python.cpp */,
+				ADD23D3B2887634C00A849BE /* Test_SIMD.cpp */,
+				ADD23D3C2887634C00A849BE /* Test_Vehicle.cpp */,
+				ADD23D342887634C00A849BE /* Test.h */,
 				AD2C31C92820AB10007157B6 /* Products */,
 				ADDE14A82820B0EE00809D36 /* Frameworks */,
-				ADDE129A2820ABEF00809D36 /* main.cpp */,
-				ADDE129B2820ABEF00809D36 /* Test.cpp */,
-				AD0168F02878E01200BA7921 /* Test_Collision.cpp */,
-				AD0168EF2878E01200BA7921 /* Test_Geometry.cpp */,
-				ADC0F6B22878E7E800CE5173 /* Test_Image.cpp */,
-				AD0168EE2878E01200BA7921 /* Test_Maths.cpp */,
-				AD66E85D2878E44E004F0267 /* Test_Matrix.cpp */,
-				AD0168ED2878E01200BA7921 /* Test_Physics.cpp */,
-				ADA67B39287037F600B037DB /* Test_Python.cpp */,
-				ADA67B36287037D900B037DB /* Test_SIMD.cpp */,
-				AD66E85F2878E51F004F0267 /* Test_Vehicle.cpp */,
-				ADC73023286DD0AB00364E92 /* Test.h */,
 			);
 			sourceTree = "<group>";
 		};
@@ -155,17 +155,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ADDE129C2820ABEF00809D36 /* main.cpp in Sources */,
-				AD0168F22878E01200BA7921 /* Test_Maths.cpp in Sources */,
-				AD66E8602878E51F004F0267 /* Test_Vehicle.cpp in Sources */,
-				ADA67B3A287037F600B037DB /* Test_Python.cpp in Sources */,
-				ADDE129D2820ABEF00809D36 /* Test.cpp in Sources */,
-				ADA67B38287037D900B037DB /* Test_SIMD.cpp in Sources */,
-				ADC0F6B32878E7E800CE5173 /* Test_Image.cpp in Sources */,
-				AD0168F12878E01200BA7921 /* Test_Physics.cpp in Sources */,
-				AD66E85E2878E44E004F0267 /* Test_Matrix.cpp in Sources */,
-				AD0168F42878E01200BA7921 /* Test_Collision.cpp in Sources */,
-				AD0168F32878E01200BA7921 /* Test_Geometry.cpp in Sources */,
+				ADD23D412887634D00A849BE /* Test_Physics2d.cpp in Sources */,
+				ADD23D472887634D00A849BE /* Test_Vehicle.cpp in Sources */,
+				ADD23D402887634D00A849BE /* Test_Matrix.cpp in Sources */,
+				ADD23D462887634D00A849BE /* Test_SIMD.cpp in Sources */,
+				ADD23D442887634D00A849BE /* main.cpp in Sources */,
+				ADD23D422887634D00A849BE /* Test_Collision.cpp in Sources */,
+				ADD23D492887634D00A849BE /* Test_Maths.cpp in Sources */,
+				ADD23D3F2887634D00A849BE /* Test_Python.cpp in Sources */,
+				ADD23D482887634D00A849BE /* Test_Geometry.cpp in Sources */,
+				ADD23D432887634D00A849BE /* Test_Physics3d.cpp in Sources */,
+				ADD23D452887634D00A849BE /* Test_Image.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

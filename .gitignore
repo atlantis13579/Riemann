@@ -10,6 +10,7 @@
 *.userosscache
 *.sln.docstates
 Test/data/*
+Build/Mac/DerivedData/*
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -358,3 +359,6 @@ DerivedData/*
 *.plist
 Test/Test.xcodeproj/xcshareddata/xcschemes/Test.xcscheme
 
+*.mdb
+*.timestamp
+*.modulevalidation

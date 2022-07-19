@@ -1,6 +1,7 @@
 #pragma once
 
 #include <assert.h>
+#include <float.h>
 #include "../Maths/Vector3d.h"
 #include "MinkowskiSum.h"
 
@@ -69,7 +70,6 @@ public:
 
 	bool ProjectOrigin(Vector3d& pos, int& mask)
 	{
-		float sqdist = -1.0f;
 		switch (dimension)
 		{
 		case 2:
@@ -215,7 +215,6 @@ private:
 			if (mindist == FLT_MAX)
 			{
 				const float d = DotProduct(a, n);
-				const float s = sqrtf(l);
 				Vector3d p = n * (d / l);
 				mindist = p.SquareLength();
 				pos = sqrtf(mindist) * n;
