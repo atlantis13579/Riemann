@@ -145,7 +145,6 @@
     <ClInclude Include="FluidDynamics\Laplace2DSolver.h" />
     <ClInclude Include="Physics2d\Box2d.h" />
     <ClInclude Include="Physics2d\Circle2d.h" />
-    <ClInclude Include="Physics2d\EPA2d.h" />
     <ClInclude Include="Physics2d\GJK2d.h" />
     <ClInclude Include="Physics2d\SAT.h" />
     <ClInclude Include="Physics2d\Shape2d.h" />

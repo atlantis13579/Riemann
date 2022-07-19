@@ -167,7 +167,6 @@
     <ClInclude Include="Optimization\SGD.h" />
     <ClInclude Include="Physics2d\Box2d.h" />
     <ClInclude Include="Physics2d\Circle2d.h" />
-    <ClInclude Include="Physics2d\EPA2d.h" />
     <ClInclude Include="Physics2d\GJK2d.h" />
     <ClInclude Include="Physics2d\Point2d.h" />
     <ClInclude Include="Physics2d\SAT.h" />

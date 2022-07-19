@@ -55,8 +55,8 @@ bool GJK_Solve(Geometry *Geom1, Geometry* Geom2)
 	Vector3d guess = shape.GetCenter();
 
 	GJKIntersection gjk;
-	GJK_status gjk_status = gjk.Solve(&shape, -guess);
-	if (gjk_status == GJK_status::Inside)
+	GJK_result gjk_status = gjk.Solve(&shape, -guess);
+	if (gjk_status == GJK_result::Inside)
 	{
 		return true;
 	}
@@ -118,12 +118,12 @@ void TestEPA()
 	Vector3d guess = shape.GetCenter();
 
 	GJKIntersection gjk;
-	GJK_status gjk_status = gjk.Solve(&shape, -guess);
-	EXPECT(gjk_status == GJK_status::Inside);
+	GJK_result gjk_status = gjk.Solve(&shape, -guess);
+	EXPECT(gjk_status == GJK_result::Inside);
 
 	EPA epa;
-	EPA_status epa_status = epa.Solve(gjk.simplex, &shape, -guess);
-	EXPECT(epa_status == EPA_status::AccuraryReached);
+	EPA_result epa_status = epa.Solve(gjk.simplex, &shape, -guess);
+	EXPECT(epa_status == EPA_result::AccuraryReached);
 
 	return;
 }

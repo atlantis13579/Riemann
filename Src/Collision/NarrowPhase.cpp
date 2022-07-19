@@ -39,15 +39,15 @@ public:
 		Vector3d guess = shape.GetCenter();
 
 		GJKIntersection gjk;
-		GJK_status gjk_status = gjk.Solve(&shape, -guess);
-		if (gjk_status != GJK_status::Inside)
+		GJK_result gjk_status = gjk.Solve(&shape, -guess);
+		if (gjk_status != GJK_result::Inside)
 		{
 			return false;
 		}
 
 		EPA epa;
-		EPA_status epa_status = epa.Solve(gjk.simplex, &shape, -guess);
-		if (epa_status == EPA_status::Failed)
+		EPA_result epa_status = epa.Solve(gjk.simplex, &shape, -guess);
+		if (epa_status == EPA_result::Failed)
 		{
 			return false;
 		}

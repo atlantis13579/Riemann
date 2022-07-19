@@ -7,7 +7,7 @@
 // http://allenchou.net/2013/12/game-physics-collision-detection-gjk/
 // https://en.wikipedia.org/wiki/Gilbert%E2%80%93Johnson%E2%80%93Keerthi_distance_algorithm
 
-enum class GJK_status
+enum class GJK_result
 {
 	Separate,
 	Inside,
@@ -25,7 +25,7 @@ class GJKIntersection
 public:
 	Simplex			simplex;
 
-	GJK_status Solve(MinkowskiSum* Shape, Vector3d InitGuess)
+	GJK_result Solve(MinkowskiSum* Shape, Vector3d InitGuess)
 	{
 		simplex.AddPoint(InitGuess.SquareLength() > 0 ? -InitGuess : Vector3d::UnitX(), 1.0f, Shape);
 		Vector3d SearchDir = simplex.v[0].p;
@@ -41,7 +41,7 @@ public:
 			float rl = SearchDir.Length();
 			if (rl < GJK_MIN_DISTANCE)
 			{
-				return GJK_status::Inside;
+				return GJK_result::Inside;
 			}
 
 			simplex.AddPoint(-SearchDir, 0, Shape);
@@ -66,14 +66,13 @@ public:
 			}
 
 			int mask = 0;
-			float SqrDist = simplex.ProjectOrigin(SearchDir, mask);
-			if (SqrDist >= 0)
+			if (simplex.ProjectOrigin(SearchDir, mask))
 			{
 				simplex.UpdatePointSet(mask);
 
 				if (mask == 0b1111)
 				{
-					return GJK_status::Inside;
+					return GJK_result::Inside;
 				}
 			}
 			else
@@ -83,7 +82,7 @@ public:
 			}
 		};
 
-		return iter >= GJK_MAX_ITERATIONS ? GJK_status::Failed : GJK_status::Separate;
+		return iter >= GJK_MAX_ITERATIONS ? GJK_result::Failed : GJK_result::Separate;
 	}
 
 private:
@@ -101,7 +100,7 @@ private:
 	}
 };
 
-class GJKClosest
+class GJKClosestDistance
 {
 public:
 	Simplex			simplex;

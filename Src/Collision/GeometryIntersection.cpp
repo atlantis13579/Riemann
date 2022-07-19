@@ -35,8 +35,8 @@ bool 				OverlapGJKSolver(const void* Obj1, const void* Obj2, const Transform &t
 	Vector3d guess = shape.GetCenter();
 
 	GJKIntersection gjk;
-	GJK_status gjk_status = gjk.Solve(&shape, -guess);
-	if (gjk_status == GJK_status::Inside)
+	GJK_result gjk_status = gjk.Solve(&shape, -guess);
+	if (gjk_status == GJK_result::Inside)
 	{
 		return true;
 	}

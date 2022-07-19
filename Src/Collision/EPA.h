@@ -13,7 +13,7 @@
 #define EPA_FALLBACK (10 * EPA_ACCURACY)
 #define EPA_MAX_FACES (EPA_MAX_VERTICES * 2)
 
-enum class EPA_status
+enum class EPA_result
 {
 	Valid,
 	Touching,
@@ -88,14 +88,14 @@ public:
 		sHorizon() : cf(0), ff(0), nf(0) {}
 	};
 
-	EPA_status status;
+	EPA_result status;
 	Simplex simplex;
 	Vector3d penetration_normal;
 	float penetration_depth;
 
 	EPA()
 	{
-		status = EPA_status::Failed;
+		status = EPA_result::Failed;
 		penetration_normal = Vector3d(0, 0, 0);
 		penetration_depth = 0;
 		m_nextsv = 0;
@@ -105,7 +105,7 @@ public:
 		}
 	}
 
-	EPA_status Solve(Simplex& _simplex, MinkowskiSum *Shape, const Vector3d& InitGuess)
+	EPA_result Solve(Simplex& _simplex, MinkowskiSum *Shape, const Vector3d& InitGuess)
 	{
 		simplex = _simplex;
 
@@ -117,7 +117,7 @@ public:
 				m_hull.Remove(f);
 				m_stock.Append(f);
 			}
-			status = EPA_status::Valid;
+			status = EPA_result::Valid;
 			m_nextsv = 0;
 
 			if (Determinant(simplex.v[0].p - simplex.v[3].p,
@@ -144,12 +144,12 @@ public:
 				Bind(tetra[1], 1, tetra[3], 2);
 				Bind(tetra[1], 2, tetra[2], 1);
 				Bind(tetra[2], 2, tetra[3], 1);
-				status = EPA_status::Valid;
+				status = EPA_result::Valid;
 				while (iterations++ < EPA_MAX_ITERATIONS)
 				{
 					if (m_nextsv >= EPA_MAX_VERTICES)
 					{
-						status = EPA_status::AccuraryReached;
+						status = EPA_result::AccuraryReached;
 						break;
 					}
 
@@ -164,7 +164,7 @@ public:
 					const float wdist = DotProduct(best->n, v->p) - best->d;
 					if (wdist <= EPA_ACCURACY)
 					{
-						status = EPA_status::AccuraryReached;
+						status = EPA_result::AccuraryReached;
 						break;
 					}
 
@@ -183,7 +183,7 @@ public:
 					}
 					else
 					{
-						status = EPA_status::InvalidHull;
+						status = EPA_result::InvalidHull;
 						break;
 					}
 				}
@@ -205,7 +205,7 @@ public:
 			}
 		}
 
-		status = EPA_status::FallBack;
+		status = EPA_result::FallBack;
 		penetration_normal = -InitGuess;
 		const float nl = penetration_normal.Length();
 		if (nl > 0)
@@ -299,16 +299,16 @@ public:
 					return face;
 				}
 				else
-					status = EPA_status::NonConvex;
+					status = EPA_result::NonConvex;
 			}
 			else
-				status = EPA_status::Degenerated;
+				status = EPA_result::Degenerated;
 
 			m_hull.Remove(face);
 			m_stock.Append(face);
 			return 0;
 		}
-		status = m_stock.root ? EPA_status::OutOfVertices : EPA_status::OutOfFaces;
+		status = m_stock.root ? EPA_result::OutOfVertices : EPA_result::OutOfFaces;
 		return 0;
 	}
 

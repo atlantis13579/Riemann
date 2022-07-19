@@ -68,25 +68,22 @@ public:
 		return;
 	}
 
-	float ProjectOrigin(Vector3d& pos, int& mask)
+	bool ProjectOrigin(Vector3d& pos, int& mask)
 	{
 		float sqdist = -1.0f;
 		switch (dimension)
 		{
 		case 2:
-			sqdist = ProjectOriginSegment(v[0].p, v[1].p, pos, mask);
-			break;
+			return ProjectOriginSegment(v[0].p, v[1].p, pos, mask);
 		case 3:
-			sqdist = ProjectOriginTriangle(v[0].p, v[1].p, v[2].p, pos, mask);
-			break;
+			return ProjectOriginTriangle(v[0].p, v[1].p, v[2].p, pos, mask);
 		case 4:
-			sqdist = ProjectOriginTetrahedral(v[0].p, v[1].p, v[2].p, v[3].p, pos, mask);
-			break;
+			return ProjectOriginTetrahedral(v[0].p, v[1].p, v[2].p, v[3].p, pos, mask);
 		default:
 			assert(false);
 			break;
 		}
-		return sqdist;
+		return false;
 	}
 
 	bool EncloseOrigin()
@@ -161,7 +158,7 @@ public:
 
 
 private:
-	static float ProjectOriginSegment(const Vector3d& a, const Vector3d& b, Vector3d& pos, int& mask)
+	static bool ProjectOriginSegment(const Vector3d& a, const Vector3d& b, Vector3d& pos, int& mask)
 	{
 		Vector3d d = b - a;
 		float l = d.SquareLength();
@@ -172,25 +169,23 @@ private:
 			{
 				pos = b;
 				mask = 0b0010;
-				return b.SquareLength();
 			}
 			else if (t <= 0.0f)
 			{
 				pos = a;
 				mask = 0b0001;
-				return a.SquareLength();
 			}
 			else
 			{
 				pos = a + d * t;
 				mask = 0b0011;
-				return pos.SquareLength();
 			}
+			return true;
 		}
-		return -1.0f;
+		return false;
 	}
 
-	static float ProjectOriginTriangle(const Vector3d& a, const Vector3d& b, const Vector3d& c, Vector3d& pos, int& mask)
+	static bool ProjectOriginTriangle(const Vector3d& a, const Vector3d& b, const Vector3d& c, Vector3d& pos, int& mask)
 	{
 		Vector3d	v[] = { a, b, c };
 		Vector3d	dl[] = { a - b, b - c, c - a };
@@ -227,12 +222,12 @@ private:
 				pos = sqrtf(mindist) * n;
 				mask = 0b0111;
 			}
-			return mindist;
+			return true;
 		}
-		return -1.0f;
+		return false;
 	}
 
-	static float ProjectOriginTetrahedral(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, Vector3d& pos, int& mask)
+	static bool ProjectOriginTetrahedral(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, Vector3d& pos, int& mask)
 	{
 		const Vector3d* vt[] = { &a, &b, &c, &d };
 		Vector3d dl[] = { a - d, b - d, c - d };
@@ -264,8 +259,8 @@ private:
 				pos = Vector3d::Zero();
 				mask = 0b1111;
 			}
-			return mindist;
+			return true;
 		}
-		return -1.0f;
+		return false;
 	}
 };
