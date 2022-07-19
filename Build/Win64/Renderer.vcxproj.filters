@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="DX11Renderer.cpp" />
+    <ClCompile Include="..\..\Renderer\DX11Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DX11Renderer.h" />
-    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="..\..\Renderer\DX11Renderer.h" />
+    <ClInclude Include="..\..\Renderer\Renderer.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="simple.fxh" />
+    <None Include="..\..\Renderer\simple.fxh" />
   </ItemGroup>
 </Project>

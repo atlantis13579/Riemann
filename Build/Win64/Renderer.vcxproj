@@ -19,14 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DX11Renderer.cpp" />
+    <ClCompile Include="..\..\Renderer\DX11Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DX11Renderer.h" />
-    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="..\..\Renderer\DX11Renderer.h" />
+    <ClInclude Include="..\..\Renderer\Renderer.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="simple.fxh" />
+    <None Include="..\..\Renderer\simple.fxh" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -90,12 +90,12 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IntDir>..\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir>$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath)</IncludePath>
-    <IntDir>..\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir>$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
