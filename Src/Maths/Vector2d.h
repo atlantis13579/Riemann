@@ -275,5 +275,12 @@ public:
 typedef TVector2<float> Vector2d;
 typedef TVector2<int>	Vector2i;
 
+inline Vector2d Rotate(const Vector2d& v, float theta)
+{
+	const float m0 = cosf(theta);
+	const float m1 = sinf(theta);
+	return Vector2d(m0 * v.x - m1 * v.y, m1 * v.x + m0 * v.y);
+}
+
 static_assert(sizeof(Vector2d) == 8, "sizeof Vector2d is not valid");
 static_assert(sizeof(Vector2i) == 8, "sizeof Vector2i is not valid");

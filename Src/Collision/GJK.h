@@ -5,6 +5,7 @@
 
 // Gilbert–Johnson–Keerthi algorithm
 // http://allenchou.net/2013/12/game-physics-collision-detection-gjk/
+// https://en.wikipedia.org/wiki/Gilbert%E2%80%93Johnson%E2%80%93Keerthi_distance_algorithm
 
 enum class GJK_status
 {
@@ -19,7 +20,7 @@ enum class GJK_status
 #define GJK_MIN_DISTANCE		(0.0001f)
 #define GJK_DUPLICATED_EPS		(0.0001f)
 
-class GJK
+class GJKIntersection
 {
 public:
 	Simplex			simplex;
@@ -97,5 +98,16 @@ private:
 			}
 		}
 		return false;
+	}
+};
+
+class GJKClosest
+{
+public:
+	Simplex			simplex;
+
+	float Solve(MinkowskiSum* Shape, Vector3d InitGuess)
+	{
+		return -1.0f;
 	}
 };

@@ -121,7 +121,7 @@ void TestRaycastBenchmark()
 
 
 
-void TestPhysics()
+void TestPhysics3d()
 {
 	TestPhysxBin();
 	TestRaycastBenchmark();

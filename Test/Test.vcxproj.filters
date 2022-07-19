@@ -9,8 +9,9 @@
     <ClCompile Include="Test_Image.cpp" />
     <ClCompile Include="Test_Maths.cpp" />
     <ClCompile Include="Test_Matrix.cpp" />
-    <ClCompile Include="Test_Physics.cpp" />
+    <ClCompile Include="Test_Physics3d.cpp" />
     <ClCompile Include="Test_Vehicle.cpp" />
+    <ClCompile Include="Test_Physics2d.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="build_test.sh" />

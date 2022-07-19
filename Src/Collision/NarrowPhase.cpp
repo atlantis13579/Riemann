@@ -38,7 +38,7 @@ public:
 		GeometryDifference shape(Geom1, Geom2);
 		Vector3d guess = shape.GetCenter();
 
-		GJK gjk;
+		GJKIntersection gjk;
 		GJK_status gjk_status = gjk.Solve(&shape, -guess);
 		if (gjk_status != GJK_status::Inside)
 		{

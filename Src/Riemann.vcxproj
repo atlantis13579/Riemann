@@ -32,7 +32,7 @@
     <ClCompile Include="Collision\BroadPhase.cpp" />
     <ClCompile Include="Collision\Contact.cpp" />
     <ClCompile Include="Collision\DynamicAABBTree.cpp" />
-    <ClCompile Include="Collision\GeometryCollection.cpp" />
+    <ClCompile Include="Destruction\GeometryCollection.cpp" />
     <ClCompile Include="Collision\GeometryIntersection.cpp" />
     <ClCompile Include="Collision\GeometryObject.cpp" />
     <ClCompile Include="Collision\GeometryQuery.cpp" />
@@ -52,7 +52,6 @@
     <ClCompile Include="Geometry\Voronoi2d.cpp" />
     <ClCompile Include="Geometry\VoxelField.cpp" />
     <ClCompile Include="Geometry\SparseVoxelField.cpp" />
-    <ClCompile Include="Geometry\VoxelEngine.cpp" />
     <ClCompile Include="LinearSystem\DenseMatrix.cpp" />
     <ClCompile Include="LinearSystem\DenseVector.cpp" />
     <ClCompile Include="LinearSystem\EigenValueDecomposition.cpp" />
@@ -115,7 +114,7 @@
     <ClInclude Include="Collision\Contact.h" />
     <ClInclude Include="Collision\DynamicAABBTree.h" />
     <ClInclude Include="Collision\EPA.h" />
-    <ClInclude Include="Collision\GeometryCollection.h" />
+    <ClInclude Include="Destruction\GeometryCollection.h" />
     <ClInclude Include="Collision\GeometryDifference.h" />
     <ClInclude Include="Collision\GeometryIntersection.h" />
     <ClInclude Include="Collision\GeometryObject.h" />
@@ -150,7 +149,6 @@
     <ClInclude Include="Geometry\Voronoi2d.h" />
     <ClInclude Include="Geometry\VoxelField.h" />
     <ClInclude Include="Geometry\SparseVoxelField.h" />
-    <ClInclude Include="Geometry\VoxelEngine.h" />
     <ClInclude Include="ImageSpace\ContinuousBitmap.h" />
     <ClInclude Include="LinearSystem\DenseVector.h" />
     <ClInclude Include="LinearSystem\EigenValueDecomposition.h" />
@@ -171,6 +169,7 @@
     <ClInclude Include="Physics2d\Circle2d.h" />
     <ClInclude Include="Physics2d\EPA2d.h" />
     <ClInclude Include="Physics2d\GJK2d.h" />
+    <ClInclude Include="Physics2d\Point2d.h" />
     <ClInclude Include="Physics2d\SAT.h" />
     <ClInclude Include="Physics2d\Shape2d.h" />
     <ClInclude Include="RigidBodyDynamics\Jacobian.h" />

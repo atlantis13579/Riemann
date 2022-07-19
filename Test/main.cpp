@@ -4,7 +4,8 @@
 extern void TestMaths();
 extern void TestCollision();
 extern void TestGeometry();
-extern void TestPhysics();
+extern void TestPhysics3d();
+extern void TestPhysics2d();
 extern void TestPython();
 extern void TestSIMD();
 extern void TestMatrix();
@@ -15,7 +16,8 @@ void TestAll()
 	TestMaths();
 	TestCollision();
 	TestGeometry();
-	TestPhysics();
+	TestPhysics3d();
+	TestPhysics2d();
 	TestSIMD();
 	TestMatrix();
 	TestVehicle();
