@@ -16,7 +16,7 @@ public:
 		Vector3d	d, p;			// dir and position
 	};
 	Vertex		v[4];
-	float		w[4];				// arycentric coordinate
+	float		w[4];				// barycentric coordinate
 	int			dimension;
 
 public:
@@ -103,8 +103,8 @@ public:
 					return true;
 				RemovePoint();
 			}
+			break;
 		}
-		break;
 		case 2:
 		{
 			const Vector3d d = v[1].p - v[0].p;
@@ -125,8 +125,8 @@ public:
 					RemovePoint();
 				}
 			}
+			break;
 		}
-		break;
 		case 3:
 		{
 			Vector3d n = CrossProduct(v[1].p - v[0].p, v[2].p - v[0].p);
@@ -141,15 +141,15 @@ public:
 					return true;
 				RemovePoint();
 			}
+			break;
 		}
-		break;
 		case 4:
 		{
 			const float det = Determinant(v[0].p - v[3].p, v[1].p - v[3].p, v[2].p - v[3].p);
 			if (fabsf(det) > 0)
 				return true;
+			break;
 		}
-		break;
 		}
 		return false;
 	}
@@ -166,28 +166,27 @@ private:
 			if (t >= 1.0f)
 			{
 				pos = b;
-				mask = 2;
+				mask = 0b0010;
 				return b.SquareLength();
 			}
 			else if (t <= 0.0f)
 			{
 				pos = a;
-				mask = 1;
+				mask = 0b0001;
 				return a.SquareLength();
 			}
 			else
 			{
 				pos = a + d * t;
-				mask = 3;
+				mask = 0b0011;
 				return pos.SquareLength();
 			}
 		}
-		return -1;
+		return -1.0f;
 	}
 
 	static float ProjectOriginTriangle(const Vector3d& a, const Vector3d& b, const Vector3d& c, Vector3d& pos, int& mask)
 	{
-		const int	imd3[] = { 1, 2, 0 };
 		Vector3d	v[] = { a, b, c };
 		Vector3d	dl[] = { a - b, b - c, c - a };
 		Vector3d	n = CrossProduct(dl[0], dl[1]);
@@ -197,19 +196,19 @@ private:
 		{
 			float mindist = FLT_MAX;
 			Vector3d subpos;
-			int subm = 0;
+			int submask = 0;
 			for (int i = 0; i < 3; ++i)
 			{
 				Vector3d ns = CrossProduct(dl[i], n);
 				float dp = DotProduct(v[i], ns);
 				if (dp > 0)
 				{
-					int j = imd3[i];
-					float dist = ProjectOriginSegment(v[i], v[j], subpos, subm);
+					int j = (i + 1) % 3;
+					float dist = ProjectOriginSegment(v[i], v[j], subpos, submask);
 					if (dist < mindist)
 					{
 						mindist = dist;
-						mask = ((subm & 1) ? 1 << i : 0) + ((subm & 2) ? 1 << j : 0);
+						mask = ((submask & 1) ? 1 << i : 0) + ((submask & 2) ? 1 << j : 0);
 						pos = subpos;
 					}
 				}
@@ -221,16 +220,15 @@ private:
 				Vector3d p = n * (d / l);
 				mindist = p.SquareLength();
 				pos = sqrtf(mindist) * n;
-				mask = 7;
+				mask = 0b0111;
 			}
 			return mindist;
 		}
-		return -1;
+		return -1.0f;
 	}
 
 	static float ProjectOriginTetrahedral(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, Vector3d& pos, int& mask)
 	{
-		const int imd3[] = { 1, 2, 0 };
 		const Vector3d* vt[] = { &a, &b, &c, &d };
 		Vector3d dl[] = { a - d, b - d, c - d };
 		float vl = Determinant(dl[0], dl[1], dl[2]);
@@ -239,19 +237,19 @@ private:
 		{
 			float mindist = FLT_MAX;
 			Vector3d subpos;
-			int subm = 0;
+			int submask = 0;
 			for (int i = 0; i < 3; ++i)
 			{
-				int j = imd3[i];
+				int j = (i + 1) % 3;
 				float s = vl * DotProduct(d, CrossProduct(dl[i], dl[j]));
 				if (s > 0)
 				{
-					float dist = ProjectOriginTriangle(*vt[i], *vt[j], d, subpos, subm);
+					float dist = ProjectOriginTriangle(*vt[i], *vt[j], d, subpos, submask);
 					if (dist < mindist)
 					{
 						mindist = dist;
 						pos = subpos;
-						mask = (subm & 1 ? 1 << i : 0) + (subm & 2 ? 1 << j : 0) + (subm & 4 ? 8 : 0);
+						mask = (submask & 1 ? 1 << i : 0) + (submask & 2 ? 1 << j : 0) + (submask & 4 ? 8 : 0);
 					}
 				}
 			}
@@ -259,10 +257,10 @@ private:
 			{
 				mindist = 0;
 				pos = Vector3d::Zero();
-				mask = 15;
+				mask = 0b1111;
 			}
 			return mindist;
 		}
-		return -1;
+		return -1.0f;
 	}
 };

@@ -70,7 +70,7 @@ public:
 			{
 				simplex.UpdatePointSet(mask);
 
-				if (mask == 0xf)
+				if (mask == 0b1111)
 				{
 					return GJK_status::Inside;
 				}
