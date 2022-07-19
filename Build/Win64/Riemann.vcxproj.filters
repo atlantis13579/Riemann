@@ -84,7 +84,7 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Physics2d\Box2d.h">
+    <ClInclude Include="..\..\Src\Physics2d\Rect.h">
       <Filter>Physics2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Maths\Box3d.h">
@@ -93,7 +93,7 @@
     <ClInclude Include="..\..\Src\Collision\BroadPhase.h">
       <Filter>Collision</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Physics2d\Circle2d.h">
+    <ClInclude Include="..\..\Src\Physics2d\Circle.h">
       <Filter>Physics2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\CollisionPrimitive\Capsule3d.h">
@@ -138,7 +138,7 @@
     <ClInclude Include="..\..\Src\LinearSystem\EigenValueDecomposition.h">
       <Filter>LinearSystem</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Collision\EPA.h">
+    <ClInclude Include="..\..\Src\Collision\EPAPenetration.h">
       <Filter>Collision</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Solver\ExponentialIntegrator.h">
@@ -661,6 +661,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\WarmStart.cpp">
       <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Collision\EPAPenetration.cpp">
+      <Filter>Collision</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -32,6 +32,7 @@
     <ClCompile Include="..\..\Src\Collision\BroadPhase.cpp" />
     <ClCompile Include="..\..\Src\Collision\Contact.cpp" />
     <ClCompile Include="..\..\Src\Collision\DynamicAABBTree.cpp" />
+    <ClCompile Include="..\..\Src\Collision\EPAPenetration.cpp" />
     <ClCompile Include="..\..\Src\Destruction\GeometryCollection.cpp" />
     <ClCompile Include="..\..\Src\Collision\GeometryIntersection.cpp" />
     <ClCompile Include="..\..\Src\Collision\GeometryObject.cpp" />
@@ -112,7 +113,7 @@
     <ClInclude Include="..\..\Src\Collision\BroadPhase.h" />
     <ClInclude Include="..\..\Src\Collision\Contact.h" />
     <ClInclude Include="..\..\Src\Collision\DynamicAABBTree.h" />
-    <ClInclude Include="..\..\Src\Collision\EPA.h" />
+    <ClInclude Include="..\..\Src\Collision\EPAPenetration.h" />
     <ClInclude Include="..\..\Src\Destruction\GeometryCollection.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryDifference.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryIntersection.h" />
@@ -163,8 +164,8 @@
     <ClInclude Include="..\..\Src\Optimization\LBGFS.h" />
     <ClInclude Include="..\..\Src\Optimization\LR.h" />
     <ClInclude Include="..\..\Src\Optimization\SGD.h" />
-    <ClInclude Include="..\..\Src\Physics2d\Box2d.h" />
-    <ClInclude Include="..\..\Src\Physics2d\Circle2d.h" />
+    <ClInclude Include="..\..\Src\Physics2d\Rect.h" />
+    <ClInclude Include="..\..\Src\Physics2d\Circle.h" />
     <ClInclude Include="..\..\Src\Physics2d\GJK2d.h" />
     <ClInclude Include="..\..\Src\Physics2d\Point2d.h" />
     <ClInclude Include="..\..\Src\Physics2d\SAT.h" />

@@ -2,14 +2,14 @@
 
 #include "Shape2d.h"
 
-class Box2d : public Shape2d
+class Rect : public Shape2d
 {
 public:
 	Point2	Center;
 	Point2	HalfExtent;
 	float	Rot;
 
-	Box2d(const Point2& _c, const Point2& _h, float _rot)
+	Rect(const Point2& _c, const Point2& _h, float _rot)
 	{
 		Center = _c;
 		HalfExtent = _h;

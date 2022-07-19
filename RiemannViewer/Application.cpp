@@ -105,9 +105,9 @@ void InitScene()
 		g_Renderer->AddGeometry(plane);
 
 		rp.Static = false;
-        for (int i = 0; i < 1; ++i)
-        for (int j = 0; j < 1; ++j)
-        for (int k = 0; k < 1; ++k)
+        for (int i = 0; i < 5; ++i)
+        for (int j = 0; j < 5; ++j)
+        for (int k = 0; k < 5; ++k)
         {
             Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(j * 2.1f , 10.0f + i * 2.1f, k * 2.1f), Vector3d(1.0f, 1.0f, 1.0f));
             // Geometry* aabb = GeometryFactory::CreateSphere(Vector3d(j * 3.0f, 10.0f + i * 3.0f, k * 3.0f), 1.0f);

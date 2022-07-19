@@ -3,7 +3,7 @@
 #include "Contact.h"
 #include "GeometryObject.h"
 #include "GeometryDifference.h"
-#include "EPA.h"
+#include "EPAPenetration.h"
 #include "GJK.h"
 
 class NarrowPhase_GJKEPA : public NarrowPhase
@@ -45,7 +45,7 @@ public:
 			return false;
 		}
 
-		EPA epa;
+		EPAPenetration epa;
 		EPA_result epa_status = epa.Solve(gjk.simplex, &shape, -guess);
 		if (epa_status == EPA_result::Failed)
 		{
@@ -54,9 +54,9 @@ public:
 
 		// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
 		Vector3d w0 = Vector3d::Zero();
-		for (int i = 0; i < epa.simplex.dimension; ++i)
+		for (int i = 0; i < gjk.simplex.dimension; ++i)
 		{
-			w0 = w0 + shape.Support1(epa.simplex.v[i].d) * epa.simplex.w[i];
+			w0 = w0 + shape.Support1(gjk.simplex.v[i].d) * gjk.simplex.w[i];
 		}
 		const Matrix4d& invWorld = Geom1->GetInverseWorldMatrix();
 		result.PositionLocal1 = invWorld * w0;

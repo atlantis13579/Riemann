@@ -1,17 +1,17 @@
 
 #include "Test.h"
 
-#include "../Src/Physics2d/Box2d.h"
-#include "../Src/Physics2d/Circle2d.h"
+#include "../Src/Physics2d/Rect.h"
+#include "../Src/Physics2d/Circle.h"
 
-void TestBox()
+void TestRect()
 {
-	Box2d b1(Point2(0, 0), Point2(1, 1), 0.0f);
-	Circle2d c1(Point2(0, 0), 1.0f);
+	Rect b1(Point2(0, 0), Point2(1, 1), 0.0f);
+	Circle c1(Point2(0, 0), 1.0f);
 }
 
 void TestPhysics2d()
 {
-	TestBox();
+	TestRect();
 	return;
 }

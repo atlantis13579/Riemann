@@ -17,7 +17,7 @@
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GeometryDifference.h"
 #include "../Src/Collision/GJK.h"
-#include "../Src/Collision/EPA.h"
+#include "../Src/Collision/EPAPenetration.h"
 
 void TestSupport()
 {
@@ -121,7 +121,7 @@ void TestEPA()
 	GJK_result gjk_status = gjk.Solve(&shape, -guess);
 	EXPECT(gjk_status == GJK_result::Inside);
 
-	EPA epa;
+	EPAPenetration epa;
 	EPA_result epa_status = epa.Solve(gjk.simplex, &shape, -guess);
 	EXPECT(epa_status == EPA_result::AccuraryReached);
 
