@@ -103,35 +103,35 @@ public:
 		return *this;
 	}
 
-	inline float operator()(int i, int j) const
+	inline constexpr float operator()(int i, int j) const
 	{
 		return mat[i][j];
 	}
 
-	inline float& operator()(int i, int j)
+	inline constexpr float& operator()(int i, int j)
 	{
 		return mat[i][j];
 	}
 
-	inline const Vector2d& operator[](int i) const
+	inline constexpr const Vector2d& operator[](int i) const
 	{
 		const Vector2d *row = static_cast<const Vector2d*>((const void*)mat);
 		return row[i];
 	}
 
-	inline Vector2d& operator[](int i)
+	inline constexpr Vector2d& operator[](int i)
 	{
 		Vector2d *row = static_cast<Vector2d*>((void*)mat);
 		return row[i];
 	}
 
-	inline const Vector2d& Row(int i) const
+	inline constexpr const Vector2d& Row(int i) const
 	{
 		const Vector2d *row = static_cast<const Vector2d*>((const void*)mat);
 		return row[i];
 	}
 
-	inline Vector2d& Row(int i)
+	inline constexpr Vector2d& Row(int i)
 	{
 		Vector2d *row = static_cast<Vector2d*>((void*)mat);
 		return row[i];

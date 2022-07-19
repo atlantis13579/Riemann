@@ -128,35 +128,35 @@ public:
 		return *this;
 	}
 
-	inline float operator()(int i, int j) const
+	inline constexpr float operator()(int i, int j) const
 	{
 		return mat[i][j];
 	}
 
-	inline float& operator()(int i, int j)
+	inline constexpr float& operator()(int i, int j)
 	{
 		return mat[i][j];
 	}
 
-	inline const Vector3d& operator[](int i) const
+	inline constexpr const Vector3d& operator[](int i) const
 	{
 		const Vector3d *row = static_cast<const Vector3d*>((const void*)mat);
 		return row[i];
 	}
 
-	inline Vector3d& operator[](int i)
+	inline constexpr Vector3d& operator[](int i)
 	{
 		Vector3d *row = static_cast<Vector3d*>((void*)mat);
 		return row[i];
 	}
 
-	inline const Vector3d& Row(int i) const
+	inline constexpr const Vector3d& Row(int i) const
 	{
 		const Vector3d *row = static_cast<const Vector3d*>((const void*)mat);
 		return row[i];
 	}
 
-	inline Vector3d& Row(int i)
+	inline constexpr Vector3d& Row(int i)
 	{
 		Vector3d *row = static_cast<Vector3d*>((void*)mat);
 		return row[i];

@@ -263,12 +263,12 @@ public:
 		return x != rhs.x || y != rhs.y || z != rhs.z || w != rhs.w;
 	}
 
-	inline T operator[](int i) const
+	inline constexpr T operator[](int i) const
 	{
 		return reinterpret_cast<const T*>(this)[i];
 	}
 
-	inline T& operator[](int i)
+	inline constexpr T& operator[](int i)
 	{
 		return reinterpret_cast<T*>(this)[i];
 	}
