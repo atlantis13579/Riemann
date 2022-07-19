@@ -1,216 +1,666 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Src">
-      <UniqueIdentifier>{71c43c1d-ce73-44d2-aa17-eaab830844c2}</UniqueIdentifier>
+    <Filter Include="AeroDynamics">
+      <UniqueIdentifier>{ee94a9a4-0d70-49e9-be02-4916e6e0a21f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Collision">
+      <UniqueIdentifier>{6f1e5e77-30fd-4325-bcb7-ad8ea6bab747}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{a1b7e044-d111-410d-8236-1d9217b25d97}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="VehicleDynamics">
+      <UniqueIdentifier>{90bb639e-0555-4b7d-a9f4-92dca0f41676}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tools">
+      <UniqueIdentifier>{8d454f58-8736-46a2-ba1f-041ce7162a30}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Continuum">
+      <UniqueIdentifier>{517ca349-1b37-4080-a926-52eb2c1c7ba9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CollisionPrimitive">
+      <UniqueIdentifier>{061fbe5e-4c3d-4a3f-a1cc-b61cb0ec883c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Destruction">
+      <UniqueIdentifier>{04d3a9af-3437-4166-bb22-0835c3e44f75}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FluidDynamics">
+      <UniqueIdentifier>{968cf3a5-ee0c-4da8-9722-0dfd1edb082d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Geometry">
+      <UniqueIdentifier>{f1c2ef34-2fa5-48a6-83c5-8a3972011bc4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ImageSpace">
+      <UniqueIdentifier>{aa10e6c9-e93c-4124-bab8-6131d48563f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LinearSystem">
+      <UniqueIdentifier>{a4f9c66b-2d01-4372-ab98-27e5d1ad904c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Maths">
+      <UniqueIdentifier>{f038cdef-b6d4-475c-9c6e-b6e57e88699e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PositionBasedDynamics">
+      <UniqueIdentifier>{03f56ded-b90e-4703-a99d-78775c0fadd9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Physics2d">
+      <UniqueIdentifier>{e380079c-bf2d-41b5-bc2a-380c26f896be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RigidBodyDynamics">
+      <UniqueIdentifier>{6fbadcf0-e83b-4bfe-8857-7205330415b3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Solver">
+      <UniqueIdentifier>{9bc8e2ba-3c55-494e-9af2-259a490cc166}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Optimization">
+      <UniqueIdentifier>{bd832452-55ae-459d-9538-34eef5555fd9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Capsule3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\ConvexMesh.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Cylinder3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Point3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Segment3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\ShapeType.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\HeightField3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\OrientedBox3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Plane3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Ray3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Sphere3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Tetrahedral.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Mesh.h" />
-    <ClInclude Include="..\..\Src\Collision\AABBTree.h" />
-    <ClInclude Include="..\..\Src\Collision\AABBTreeInference.h" />
-    <ClInclude Include="..\..\Src\Collision\AABBTreeOffline.h" />
-    <ClInclude Include="..\..\Src\Collision\BroadPhase.h" />
-    <ClInclude Include="..\..\Src\Collision\Contact.h" />
-    <ClInclude Include="..\..\Src\Collision\DynamicAABBTree.h" />
-    <ClInclude Include="..\..\Src\Collision\EPA.h" />
-    <ClInclude Include="..\..\Src\Destruction\GeometryCollection.h" />
-    <ClInclude Include="..\..\Src\Collision\GeometryDifference.h" />
-    <ClInclude Include="..\..\Src\Collision\GeometryIntersection.h" />
-    <ClInclude Include="..\..\Src\Collision\GeometryObject.h" />
-    <ClInclude Include="..\..\Src\Collision\GeometryQuery.h" />
-    <ClInclude Include="..\..\Src\Collision\GJK.h" />
-    <ClInclude Include="..\..\Src\Collision\Minkowski.h" />
-    <ClInclude Include="..\..\Src\Collision\MinkowskiSum.h" />
-    <ClInclude Include="..\..\Src\Collision\NarrowPhase.h" />
-    <ClInclude Include="..\..\Src\Collision\ProximityGrid.h" />
-    <ClInclude Include="..\..\Src\Collision\QuadTree.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\MeshBVH4.h" />
-    <ClInclude Include="..\..\Src\Collision\SAP_Incremental.h" />
-    <ClInclude Include="..\..\Src\Collision\Simplex.h" />
-    <ClInclude Include="..\..\Src\Collision\SparseSpatialHash.h" />
-    <ClInclude Include="..\..\Src\Collision\SAP.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\TriangleMesh.h" />
-    <ClInclude Include="..\..\Src\Continuum\FEMSolver.h" />
-    <ClInclude Include="..\..\Src\Continuum\MLSMPMSolver.h" />
-    <ClInclude Include="..\..\Src\Core\Array.h" />
-    <ClInclude Include="..\..\Src\Core\Base.h" />
-    <ClInclude Include="..\..\Src\Core\Stack.h" />
-    <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
-    <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
-    <ClInclude Include="..\..\Src\FluidDynamics\Laplace2DSolver.h" />
-    <ClInclude Include="..\..\Src\Geometry\ConvexHull3d.h" />
-    <ClInclude Include="..\..\Src\Geometry\DenseTensorField3d.h" />
-    <ClInclude Include="..\..\Src\Geometry\Polygon2d.h" />
-    <ClInclude Include="..\..\Src\Geometry\Polygon3d.h" />
-    <ClInclude Include="..\..\Src\Geometry\Spline.h" />
-    <ClInclude Include="..\..\Src\Geometry\TetrahedralMesh.h" />
-    <ClInclude Include="..\..\Src\Geometry\VHACD.h" />
-    <ClInclude Include="..\..\Src\Geometry\Voronoi2d.h" />
-    <ClInclude Include="..\..\Src\Geometry\VoxelField.h" />
-    <ClInclude Include="..\..\Src\Geometry\SparseVoxelField.h" />
-    <ClInclude Include="..\..\Src\ImageSpace\ContinuousBitmap.h" />
-    <ClInclude Include="..\..\Src\LinearSystem\DenseVector.h" />
-    <ClInclude Include="..\..\Src\LinearSystem\EigenValueDecomposition.h" />
-    <ClInclude Include="..\..\Src\LinearSystem\GaussianElimination.h" />
-    <ClInclude Include="..\..\Src\Maths\Float16.h" />
-    <ClInclude Include="..\..\Src\Maths\MatrixMxN.h" />
-    <ClInclude Include="..\..\Src\Maths\SIMD_AVX.h" />
-    <ClInclude Include="..\..\Src\Maths\SIMD_Neon.h" />
-    <ClInclude Include="..\..\Src\Maths\SIMD_Simulator.h" />
-    <ClInclude Include="..\..\Src\Maths\SIMD_SSE.h" />
-    <ClInclude Include="..\..\Src\Maths\Tensor.h" />
-    <ClInclude Include="..\..\Src\Maths\SIMD.h" />
-    <ClInclude Include="..\..\Src\Maths\VectorNd.h" />
-    <ClInclude Include="..\..\Src\Optimization\LBGFS.h" />
-    <ClInclude Include="..\..\Src\Optimization\LR.h" />
-    <ClInclude Include="..\..\Src\Optimization\SGD.h" />
-    <ClInclude Include="..\..\Src\Physics2d\Box2d.h" />
-    <ClInclude Include="..\..\Src\Physics2d\Circle2d.h" />
-    <ClInclude Include="..\..\Src\Physics2d\GJK2d.h" />
-    <ClInclude Include="..\..\Src\Physics2d\Point2d.h" />
-    <ClInclude Include="..\..\Src\Physics2d\SAT.h" />
-    <ClInclude Include="..\..\Src\Physics2d\Shape2d.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\Jacobian.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\KinematicsTree.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\ForceField.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\KeyFrameAnimation.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\WarmStart.h" />
-    <ClInclude Include="..\..\Src\Geometry\ConvexHull2d.h" />
-    <ClInclude Include="..\..\Src\ImageSpace\ImageProcessing.h" />
-    <ClInclude Include="..\..\Src\ImageSpace\Rasterizer.h" />
-    <ClInclude Include="..\..\Src\LinearSystem\DenseMatrix.h" />
-    <ClInclude Include="..\..\Src\LinearSystem\GaussSeidelIteration.h" />
-    <ClInclude Include="..\..\Src\LinearSystem\JacobiIteration.h" />
-    <ClInclude Include="..\..\Src\LinearSystem\LUFactorization.h" />
-    <ClInclude Include="..\..\Src\LinearSystem\PolarDecomposition.h" />
-    <ClInclude Include="..\..\Src\LinearSystem\ProjectedGaussSeidel.h" />
-    <ClInclude Include="..\..\Src\LinearSystem\SparseMatrix.h" />
-    <ClInclude Include="..\..\Src\LinearSystem\SingularValueDecomposition.h" />
-    <ClInclude Include="..\..\Src\Maths\Box3d.h" />
-    <ClInclude Include="..\..\Src\Maths\Frustum.h" />
-    <ClInclude Include="..\..\Src\Maths\Maths.h" />
-    <ClInclude Include="..\..\Src\Maths\Matrix2d.h" />
-    <ClInclude Include="..\..\Src\Maths\Matrix3d.h" />
-    <ClInclude Include="..\..\Src\Maths\Matrix4d.h" />
-    <ClInclude Include="..\..\Src\Maths\Quaternion.h" />
-    <ClInclude Include="..\..\Src\Maths\Transform.h" />
-    <ClInclude Include="..\..\Src\Maths\Vector2d.h" />
-    <ClInclude Include="..\..\Src\Maths\Vector3d.h" />
-    <ClInclude Include="..\..\Src\Maths\Vector4d.h" />
-    <ClInclude Include="..\..\Src\PositionBasedDynamics\PositionBasedDynamicsSolver.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\MotionIntegration.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsEntity.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h" />
-    <ClInclude Include="..\..\Src\Solver\ConjugateGradientSolver.h" />
-    <ClInclude Include="..\..\Src\Solver\ConstraintSolver.h" />
-    <ClInclude Include="..\..\Src\Solver\ExponentialIntegrator.h" />
-    <ClInclude Include="..\..\Src\Solver\LCPSolver.h" />
-    <ClInclude Include="..\..\Src\Solver\NewtonRaphsonIteration.h" />
-    <ClInclude Include="..\..\Src\Solver\NumericalODESolver.h" />
-    <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h" />
-    <ClInclude Include="..\..\Src\Solver\SequentialImpulseSolver.h" />
-    <ClInclude Include="..\..\Src\Solver\SparseConjugateGradientSolver.h" />
-    <ClInclude Include="..\..\Src\Tools\AnimBinaryParser.h" />
-    <ClInclude Include="..\..\Src\Tools\libMat.h" />
-    <ClInclude Include="..\..\Src\Tools\libPng.h" />
-    <ClInclude Include="..\..\Src\Tools\libPPM.h" />
-    <ClInclude Include="..\..\Src\Tools\PhysxBinaryParser.h" />
-    <ClInclude Include="..\..\Src\Tools\PhysxFormat_34.hpp" />
-    <ClInclude Include="..\..\Src\Tools\PhysxFormat_41.hpp" />
-    <ClInclude Include="..\..\Src\Tools\PythonModule.h" />
-    <ClInclude Include="..\..\Src\Tools\Serialization.h" />
-    <ClInclude Include="..\..\Src\Tools\libBmp.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\AutonomousController.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\VehicleDynamics.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\LQR.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\MPC.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\PID.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\Vehicle.h" />
+    <ClInclude Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.h">
+      <Filter>AeroDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\AABBTree.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\AABBTreeInference.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\AABBTreeOffline.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Tools\AnimBinaryParser.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\StaticArray.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\VehicleDynamics\AutonomousController.h">
+      <Filter>VehicleDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\Base.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Physics2d\Box2d.h">
+      <Filter>Physics2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Box3d.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\BroadPhase.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Physics2d\Circle2d.h">
+      <Filter>Physics2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Capsule3d.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Solver\ConjugateGradientSolver.h">
+      <Filter>Solver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Solver\ConstraintSolver.h">
+      <Filter>Solver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\Contact.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\ImageSpace\ContinuousBitmap.h">
+      <Filter>ImageSpace</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\ConvexHull2d.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\ConvexHull3d.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\ConvexMesh.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Cylinder3d.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\DenseTensorField3d.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\DenseMatrix.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\DenseVector.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\DynamicAABBTree.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\EigenValueDecomposition.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\EPA.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Solver\ExponentialIntegrator.h">
+      <Filter>Solver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Float16.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Continuum\FEMSolver.h">
+      <Filter>Continuum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\ForceField.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Destruction\Fracture.h">
+      <Filter>Destruction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Frustum.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\GaussSeidelIteration.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\GaussianElimination.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Destruction\GeometryCollection.h">
+      <Filter>Destruction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\GeometryDifference.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\GeometryIntersection.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\GeometryObject.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\GeometryQuery.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\GJK.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Physics2d\GJK2d.h">
+      <Filter>Physics2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\HeightField3d.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\ImageSpace\ImageProcessing.h">
+      <Filter>ImageSpace</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\Jacobian.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\JacobiIteration.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\KeyFrameAnimation.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\KinematicsTree.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\FluidDynamics\Laplace2DSolver.h">
+      <Filter>FluidDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Optimization\LBGFS.h">
+      <Filter>Optimization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Solver\LCPSolver.h">
+      <Filter>Solver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Tools\libBmp.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Tools\libMat.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Tools\libPng.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Tools\libPPM.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\VehicleDynamics\LQR.h">
+      <Filter>VehicleDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Optimization\LR.h">
+      <Filter>Optimization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Maths.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Matrix2d.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Matrix3d.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Matrix4d.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\MatrixMxN.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Mesh.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\LUFactorization.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\MeshBVH4.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\MinkowskiSum.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Continuum\MLSMPMSolver.h">
+      <Filter>Continuum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\MotionIntegration.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\VehicleDynamics\MPC.h">
+      <Filter>VehicleDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\NarrowPhase.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Solver\NewtonRaphsonIteration.h">
+      <Filter>Solver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Solver\NumericalODESolver.h">
+      <Filter>Solver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\OrientedBox3d.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\VehicleDynamics\PID.h">
+      <Filter>VehicleDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Tools\PhysxBinaryParser.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Tools\PhysxFormat_34.hpp">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Tools\PhysxFormat_41.hpp">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Plane3d.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Destruction\PlanarCut.h">
+      <Filter>Destruction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Physics2d\Point2d.h">
+      <Filter>Physics2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\PolarDecomposition.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\Polygon2d.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\Polygon3d.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\PositionBasedDynamics\PositionBasedDynamicsSolver.h">
+      <Filter>PositionBasedDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\ProjectedGaussSeidel.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h">
+      <Filter>Solver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\ProximityGrid.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Tools\PythonModule.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\QuadTree.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Quaternion.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\ImageSpace\Rasterizer.h">
+      <Filter>ImageSpace</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Ray3d.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Physics2d\SAT.h">
+      <Filter>Physics2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\SAP.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\SAP_Incremental.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Segment3d.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Optimization\SGD.h">
+      <Filter>Optimization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Solver\SequentialImpulseSolver.h">
+      <Filter>Solver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Tools\Serialization.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Physics2d\Shape2d.h">
+      <Filter>Physics2d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\ShapeType.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\SIMD.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\SIMD_AVX.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\SIMD_Neon.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\SIMD_Simulator.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\SIMD_SSE.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\Simplex.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\SingularValueDecomposition.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Solver\SparseConjugateGradientSolver.h">
+      <Filter>Solver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\SparseMatrix.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\SparseSpatialHash.h">
+      <Filter>Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\SparseVoxelField.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\Spline.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Sphere3d.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\StaticStack.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Tensor.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Tetrahedral.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Vector2d.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Vector3d.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Vector4d.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\VectorNd.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\TetrahedralMesh.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Transform.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle3d.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\TriangleMesh.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\VehicleDynamics\Vehicle.h">
+      <Filter>VehicleDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\VehicleDynamics\VehicleDynamics.h">
+      <Filter>VehicleDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\VHACD.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\Voronoi2d.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\VoxelField.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\WarmStart.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3d.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\HeightField3d.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3d.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Segment3d.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Tetrahedral.cpp" />
-    <ClCompile Include="..\..\Src\Collision\AABBTree.cpp" />
-    <ClCompile Include="..\..\Src\Collision\AABBTreeInference.cpp" />
-    <ClCompile Include="..\..\Src\Collision\AABBTreeOffline.cpp" />
-    <ClCompile Include="..\..\Src\Collision\BroadPhase.cpp" />
-    <ClCompile Include="..\..\Src\Collision\Contact.cpp" />
-    <ClCompile Include="..\..\Src\Collision\DynamicAABBTree.cpp" />
-    <ClCompile Include="..\..\Src\Destruction\GeometryCollection.cpp" />
-    <ClCompile Include="..\..\Src\Collision\GeometryIntersection.cpp" />
-    <ClCompile Include="..\..\Src\Collision\GeometryObject.cpp" />
-    <ClCompile Include="..\..\Src\Collision\GeometryQuery.cpp" />
-    <ClCompile Include="..\..\Src\Collision\NarrowPhase.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\MeshBVH4.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\TriangleMesh.cpp" />
-    <ClCompile Include="..\..\Src\Continuum\FEMSolver.cpp" />
-    <ClCompile Include="..\..\Src\Continuum\MLSMPMSolver.cpp" />
-    <ClCompile Include="..\..\Src\Destruction\Fracture.cpp" />
-    <ClCompile Include="..\..\Src\Destruction\PlanarCut.cpp" />
-    <ClCompile Include="..\..\Src\FluidDynamics\Laplace2DSolver.cpp" />
-    <ClCompile Include="..\..\Src\Geometry\ConvexHull3d.cpp" />
-    <ClCompile Include="..\..\Src\Geometry\Polygon2d.cpp" />
-    <ClCompile Include="..\..\Src\Geometry\Polygon3d.cpp" />
-    <ClCompile Include="..\..\Src\Geometry\Spline.cpp" />
-    <ClCompile Include="..\..\Src\Geometry\TetrahedralMesh.cpp" />
-    <ClCompile Include="..\..\Src\Geometry\Voronoi2d.cpp" />
-    <ClCompile Include="..\..\Src\Geometry\VoxelField.cpp" />
-    <ClCompile Include="..\..\Src\Geometry\SparseVoxelField.cpp" />
-    <ClCompile Include="..\..\Src\LinearSystem\DenseMatrix.cpp" />
-    <ClCompile Include="..\..\Src\LinearSystem\DenseVector.cpp" />
-    <ClCompile Include="..\..\Src\LinearSystem\EigenValueDecomposition.cpp" />
-    <ClCompile Include="..\..\Src\LinearSystem\GaussSeidelIteration.cpp" />
-    <ClCompile Include="..\..\Src\LinearSystem\JacobiIteration.cpp" />
-    <ClCompile Include="..\..\Src\LinearSystem\ProjectedGaussSeidel.cpp" />
-    <ClCompile Include="..\..\Src\Maths\Matrix3d.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\Jacobian.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\KeyFrameAnimation.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\KinematicsTree.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\ForceField.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\WarmStart.cpp" />
-    <ClCompile Include="..\..\Src\Geometry\ConvexHull2d.cpp" />
-    <ClCompile Include="..\..\Src\ImageSpace\ImageProcessing.cpp" />
-    <ClCompile Include="..\..\Src\LinearSystem\PolarDecomposition.cpp" />
-    <ClCompile Include="..\..\Src\LinearSystem\SingularValueDecomposition.cpp" />
-    <ClCompile Include="..\..\Src\PositionBasedDynamics\PositionBasedDynamicsSolver.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\MotionIntegration.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBody.cpp" />
-    <ClCompile Include="..\..\Src\Solver\ConstraintSolver.cpp" />
-    <ClCompile Include="..\..\Src\Solver\LCPSolver.cpp" />
-    <ClCompile Include="..\..\Src\Solver\NewtonRaphsonIteration.cpp" />
-    <ClCompile Include="..\..\Src\Solver\NumericalODESolver.cpp" />
-    <ClCompile Include="..\..\Src\Solver\ProjectiveDynamicsSolver.cpp" />
-    <ClCompile Include="..\..\Src\Solver\SequentialImpulseSolver.cpp" />
-    <ClCompile Include="..\..\Src\Tools\AnimBinaryParser.cpp" />
-    <ClCompile Include="..\..\Src\Tools\PhysxBinaryParser.cpp" />
-    <ClCompile Include="..\..\Src\Tools\PythonModule.cpp" />
-    <ClCompile Include="..\..\Src\VehicleDynamics\AutonomousController.cpp" />
-    <ClCompile Include="..\..\Src\VehicleDynamics\VehicleDynamics.cpp" />
-    <ClCompile Include="..\..\Src\VehicleDynamics\Vehicle.cpp" />
+    <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp">
+      <Filter>AeroDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">
+      <Filter>Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Collision\AABBTreeInference.cpp">
+      <Filter>Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Collision\AABBTreeOffline.cpp">
+      <Filter>Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Tools\AnimBinaryParser.cpp">
+      <Filter>Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\VehicleDynamics\AutonomousController.cpp">
+      <Filter>VehicleDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Collision\BroadPhase.cpp">
+      <Filter>Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3d.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Solver\ConstraintSolver.cpp">
+      <Filter>Solver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Collision\Contact.cpp">
+      <Filter>Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\ConvexHull2d.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\ConvexHull3d.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\LinearSystem\DenseMatrix.cpp">
+      <Filter>LinearSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\LinearSystem\DenseVector.cpp">
+      <Filter>LinearSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Collision\DynamicAABBTree.cpp">
+      <Filter>Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\LinearSystem\EigenValueDecomposition.cpp">
+      <Filter>LinearSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Continuum\FEMSolver.cpp">
+      <Filter>Continuum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\ForceField.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Destruction\Fracture.cpp">
+      <Filter>Destruction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\LinearSystem\GaussSeidelIteration.cpp">
+      <Filter>LinearSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Destruction\GeometryCollection.cpp">
+      <Filter>Destruction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Collision\GeometryIntersection.cpp">
+      <Filter>Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Collision\GeometryObject.cpp">
+      <Filter>Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Collision\GeometryQuery.cpp">
+      <Filter>Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\HeightField3d.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\ImageSpace\ImageProcessing.cpp">
+      <Filter>ImageSpace</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\Jacobian.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\LinearSystem\JacobiIteration.cpp">
+      <Filter>LinearSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\KeyFrameAnimation.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\KinematicsTree.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\FluidDynamics\Laplace2DSolver.cpp">
+      <Filter>FluidDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Solver\LCPSolver.cpp">
+      <Filter>Solver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Maths\Matrix3d.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\MeshBVH4.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Continuum\MLSMPMSolver.cpp">
+      <Filter>Continuum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\MotionIntegration.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Collision\NarrowPhase.cpp">
+      <Filter>Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Solver\NewtonRaphsonIteration.cpp">
+      <Filter>Solver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Solver\NumericalODESolver.cpp">
+      <Filter>Solver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3d.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Tools\PhysxBinaryParser.cpp">
+      <Filter>Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Destruction\PlanarCut.cpp">
+      <Filter>Destruction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\LinearSystem\PolarDecomposition.cpp">
+      <Filter>LinearSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\Polygon2d.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\Polygon3d.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\PositionBasedDynamics\PositionBasedDynamicsSolver.cpp">
+      <Filter>PositionBasedDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\LinearSystem\ProjectedGaussSeidel.cpp">
+      <Filter>LinearSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Solver\ProjectiveDynamicsSolver.cpp">
+      <Filter>Solver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Tools\PythonModule.cpp">
+      <Filter>Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBody.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Segment3d.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Solver\SequentialImpulseSolver.cpp">
+      <Filter>Solver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\LinearSystem\SingularValueDecomposition.cpp">
+      <Filter>LinearSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\SparseVoxelField.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\Spline.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Tetrahedral.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\TetrahedralMesh.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\TriangleMesh.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\VehicleDynamics\Vehicle.cpp">
+      <Filter>VehicleDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\VehicleDynamics\VehicleDynamics.cpp">
+      <Filter>VehicleDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\Voronoi2d.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\VoxelField.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\WarmStart.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

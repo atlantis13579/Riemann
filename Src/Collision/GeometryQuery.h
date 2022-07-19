@@ -2,7 +2,7 @@
 
 #include <limits.h>
 #include <vector>
-#include "../Core/Stack.h"
+#include "../Core/StaticStack.h"
 #include "../Maths/Vector3d.h"
 #include "GeometryObject.h"
 
@@ -22,7 +22,7 @@ struct RayCastCache
 	}
 
 	Geometry*									prevhitGeom;
-	FixedStack<uint32_t, RAYCAST_STACK_SIZE>	prevStack;
+	StaticStack<uint32_t, RAYCAST_STACK_SIZE>	prevStack;
 };
 
 class CollisionFilter

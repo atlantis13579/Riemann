@@ -2,15 +2,15 @@
 #pragma once
 
 template<class T, int MaxSize>
-class Array
+class StaticArray
 {
 public:
-	Array()
+	StaticArray()
 	{
 		m_Size = 0;
 	}
 
-	~Array()
+	~StaticArray()
 	{
 	}
 

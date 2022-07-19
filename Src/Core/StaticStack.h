@@ -3,15 +3,15 @@
 #include <vector>
 
 template<class TNode, int MaxDepth>
-class FixedStack
+class StaticStack
 {
 public:
-	FixedStack()
+	StaticStack()
 	{
 		m_Top = 0;
 	}
 
-	void Restore(const FixedStack& rhs)
+	void Restore(const StaticStack& rhs)
 	{
 		m_Top = rhs.m_Top;
 		memcpy(m_Stack, rhs.m_Stack, sizeof(TNode) * m_Top);

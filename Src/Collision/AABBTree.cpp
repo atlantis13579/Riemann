@@ -3,7 +3,7 @@
 
 #include <assert.h>
 
-#include "../Core/Stack.h"
+#include "../Core/StaticStack.h"
 #include "AABBTreeOffline.h"
 #include "AABBTreeInference.h"
 #include "GeometryObject.h"
@@ -58,7 +58,7 @@ void AABBTree::Statistic(TreeStatistics& stat)
 {
 	memset(&stat, 0, sizeof(stat));
 
-	FixedStack<uint32_t, RAYCAST_STACK_SIZE> stack;
+	StaticStack<uint32_t, RAYCAST_STACK_SIZE> stack;
 	stack.Push(0);
 
 	while (!stack.Empty())
@@ -227,7 +227,7 @@ bool RayIntersectCacheObj(const Ray3d& Ray, const RayCastOption& Option, RayCast
 	return false;
 }
 
-bool RestoreCacheStack(const RayCastOption& Option, FixedStack<uint32_t, RAYCAST_STACK_SIZE>* Stack)
+bool RestoreCacheStack(const RayCastOption& Option, StaticStack<uint32_t, RAYCAST_STACK_SIZE>* Stack)
 {
 	const RayCastCache& Cache = Option.Cache;
 	if (!Cache.prevStack.Empty())
@@ -265,7 +265,7 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 		return false;
 	}
 
-	FixedStack<uint32_t, RAYCAST_STACK_SIZE> stack;
+	StaticStack<uint32_t, RAYCAST_STACK_SIZE> stack;
 	if (!RestoreCacheStack(Option, &stack))
 	{
 		stack.Push(0);
@@ -402,7 +402,7 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 		return false;
 	}
 
-	FixedStack<uint32_t, RAYCAST_STACK_SIZE> stack;
+	StaticStack<uint32_t, RAYCAST_STACK_SIZE> stack;
 	stack.Push(0);
 
 	while (!stack.Empty())

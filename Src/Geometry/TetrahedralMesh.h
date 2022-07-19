@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Core/Array.h"
+#include "../Core/StaticArray.h"
 #include "../Maths/Vector3d.h"
 #include "../Maths/Matrix3d.h"
 
@@ -126,8 +126,8 @@ public:
 	Vector3d GetCentroid(int i, int j) const;
 
 private:
-	Array<Node, MAX_NODES> m_nodes;
-	Array<Vector3d, MAX_NODES> m_restpos;
-	Array<TetrahedralNode, MAX_TETS> m_tets;
+	StaticArray<Node, MAX_NODES> m_nodes;
+	StaticArray<Vector3d, MAX_NODES> m_restpos;
+	StaticArray<TetrahedralNode, MAX_TETS> m_tets;
 };
 

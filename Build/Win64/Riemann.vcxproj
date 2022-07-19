@@ -96,7 +96,6 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\Capsule3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\ConvexMesh.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Cylinder3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Point3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Segment3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\ShapeType.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\HeightField3d.h" />
@@ -120,7 +119,6 @@
     <ClInclude Include="..\..\Src\Collision\GeometryObject.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryQuery.h" />
     <ClInclude Include="..\..\Src\Collision\GJK.h" />
-    <ClInclude Include="..\..\Src\Collision\Minkowski.h" />
     <ClInclude Include="..\..\Src\Collision\MinkowskiSum.h" />
     <ClInclude Include="..\..\Src\Collision\NarrowPhase.h" />
     <ClInclude Include="..\..\Src\Collision\ProximityGrid.h" />
@@ -133,9 +131,9 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\TriangleMesh.h" />
     <ClInclude Include="..\..\Src\Continuum\FEMSolver.h" />
     <ClInclude Include="..\..\Src\Continuum\MLSMPMSolver.h" />
-    <ClInclude Include="..\..\Src\Core\Array.h" />
+    <ClInclude Include="..\..\Src\Core\StaticArray.h" />
     <ClInclude Include="..\..\Src\Core\Base.h" />
-    <ClInclude Include="..\..\Src\Core\Stack.h" />
+    <ClInclude Include="..\..\Src\Core\StaticStack.h" />
     <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
     <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
     <ClInclude Include="..\..\Src\FluidDynamics\Laplace2DSolver.h" />
@@ -201,7 +199,6 @@
     <ClInclude Include="..\..\Src\Maths\Vector4d.h" />
     <ClInclude Include="..\..\Src\PositionBasedDynamics\PositionBasedDynamicsSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MotionIntegration.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsEntity.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h" />
     <ClInclude Include="..\..\Src\Solver\ConjugateGradientSolver.h" />

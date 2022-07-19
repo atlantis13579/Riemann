@@ -10,7 +10,7 @@
 
 const float kEpsilonPlane = 0.000001f;
 const float kPlaneSmallThickness = 0.0001f;
-const float kPlaneRadius = 10000.0f;
+const float kPlaneRadius = 100.0f;
 
 class Plane3d
 {
