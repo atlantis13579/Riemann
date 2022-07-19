@@ -69,32 +69,32 @@ public:
 		return Ret;
 	}
 
-	inline constexpr const T* operator*() const
+	inline const T* operator*() const
 	{
 		return mData;
 	}
 
-	inline constexpr T* operator*()
+	inline T* operator*()
 	{
 		return mData;
 	}
 
-	inline constexpr const T* operator[](int i) const
+	inline const T* operator[](int i) const
 	{
 		return mData + i * COLS;
 	}
 
-	inline constexpr T* operator[](int i)
+	inline T* operator[](int i)
 	{
 		return mData + i * COLS;
 	}
 
-	inline constexpr T operator()(int i, int j) const
+	inline T operator()(int i, int j) const
 	{
 		return mData[i * COLS + j];
 	}
 
-	inline constexpr T& operator()(int i, int j)
+	inline T& operator()(int i, int j)
 	{
 		return mData[i * COLS + j];
 	}

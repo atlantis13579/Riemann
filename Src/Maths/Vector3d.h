@@ -255,13 +255,13 @@ public:
 		return x != rhs.x || y != rhs.y || z != rhs.z;
 	}
 
-	inline constexpr T operator[] (int i) const
+	inline T	operator[] (int i) const
 	{
 		const T* p = (const T*)this;
 		return p[i];
 	}
 
-	inline constexpr T& operator[] (int i)
+	inline T&	operator[] (int i)
 	{
 		T* p = (T*)this;
 		return p[i];
