@@ -41,6 +41,6 @@ Vehicle Dynamics Solver
 
 ## Examples
 
-#### Rigid Body Dynamics Simulation
+#### Rigid Body Dynamics Simulation for Multiple boxes
 
-![111](https://user-images.githubusercontent.com/29682318/179655187-90d55ee7-0847-4987-941e-c9a36b3f323c.jpg)
+![111](https://user-images.githubusercontent.com/29682318/179689750-4481183e-54a8-4777-a36c-04a562a538bf.jpg)
