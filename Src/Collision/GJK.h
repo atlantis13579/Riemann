@@ -27,8 +27,8 @@ public:
 
 	GJK_result Solve(MinkowskiSum* Shape, Vector3d InitGuess)
 	{
-		simplex.AddPoint(InitGuess.SquareLength() > 0 ? -InitGuess : Vector3d::UnitX(), 1.0f, Shape);
-		Vector3d SearchDir = simplex.v[0].p;
+		simplex.AddPoint(InitGuess.SquareLength() > 0 ? -InitGuess : Vector3d::UnitX(), Shape);
+		Vector3d SearchDir = simplex.v[0].pos;
 
 		int nlastp = 0;
 		Vector3d lastp[4] = { SearchDir, SearchDir, SearchDir, SearchDir };
@@ -44,7 +44,7 @@ public:
 				return GJK_result::Inside;
 			}
 
-			simplex.AddPoint(-SearchDir, 0, Shape);
+			simplex.AddPoint(-SearchDir, Shape);
 
 			const Vector3d& p = simplex.LastPoint();
 			if (IsDuplicated(lastp, p))

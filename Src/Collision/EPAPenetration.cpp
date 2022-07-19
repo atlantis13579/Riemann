@@ -107,7 +107,7 @@ public:
 		face->c[0] = a;
 		face->c[1] = b;
 		face->c[2] = c;
-		face->n = CrossProduct(b->p - a->p, c->p - a->p);
+		face->n = CrossProduct(b->pos - a->pos, c->pos - a->pos);
 
 		const float l = face->n.Length();
 		if (l > EPA_ACCURACY)
@@ -118,7 +118,7 @@ public:
 			{
 				// Origin projects to the interior of the triangle
 				// Use distance to triangle plane
-				face->d = DotProduct(a->p, face->n) / l;
+				face->d = DotProduct(a->pos, face->n) / l;
 			}
 
 			face->n = face->n * (1 / l);
@@ -148,7 +148,7 @@ public:
 		if (f->pass != pass)
 		{
 			int e1 = i1m3[e];
-			if ((DotProduct(f->n, w->p) - f->d) < -EPA_PLANE_EPS)
+			if ((DotProduct(f->n, w->pos) - f->d) < -EPA_PLANE_EPS)
 			{
 				Face* nf = NewFace(f->c[e1], f->c[e], w, result, false);
 				if (nf)
@@ -207,9 +207,9 @@ public:
 private:
 	static bool GetEdgeDist(Face* face, Simplex::Vertex* a, Simplex::Vertex* b, float& dist)
 	{
-		Vector3d ba = b->p - a->p;
+		Vector3d ba = b->pos - a->pos;
 		Vector3d n_ab = CrossProduct(ba, face->n);   // Outward facing edge normal direction, on triangle plane
-		float a_dot_nab = DotProduct(a->p, n_ab);  // Only care about the sign to determine inside/outside, so not normalization required
+		float a_dot_nab = DotProduct(a->pos, n_ab);  // Only care about the sign to determine inside/outside, so not normalization required
 
 		if (a_dot_nab >= 0)
 		{
@@ -219,24 +219,24 @@ private:
 		// Outside of edge a->b
 
 		const float ba_l2 = ba.SquareLength();
-		const float a_dot_ba = DotProduct(a->p, ba);
-		const float b_dot_ba = DotProduct(b->p, ba);
+		const float a_dot_ba = DotProduct(a->pos, ba);
+		const float b_dot_ba = DotProduct(b->pos, ba);
 
 		if (a_dot_ba > 0)
 		{
 			// Pick distance Simplex::Vertex a
-			dist = a->p.Length();
+			dist = a->pos.Length();
 		}
 		else if (b_dot_ba < 0)
 		{
 			// Pick distance Simplex::Vertex b
-			dist = b->p.Length();
+			dist = b->pos.Length();
 		}
 		else
 		{
 			// Pick distance to edge a->b
-			const float a_dot_b = DotProduct(a->p, b->p);
-			float t = (a->p.SquareLength() * b->p.SquareLength() - a_dot_b * a_dot_b) / ba_l2;
+			const float a_dot_b = DotProduct(a->pos, b->pos);
+			float t = (a->pos.SquareLength() * b->pos.SquareLength() - a_dot_b * a_dot_b) / ba_l2;
 			float bigger = t >= 0 ? t : 0;
 			dist = sqrtf(bigger);
 		}
@@ -256,18 +256,16 @@ EPA_result EPAPenetration::Solve(Simplex& simplex, MinkowskiSum* Shape, const Ve
 {
 	if (simplex.dimension > 1 && simplex.EncloseOrigin())
 	{
-		HullBuilder hull;
-
 		result = EPA_result::Valid;
 
-		if (Determinant(simplex.v[0].p - simplex.v[3].p,
-			simplex.v[1].p - simplex.v[3].p,
-			simplex.v[2].p - simplex.v[3].p) < 0)
+		if (Determinant(simplex.v[0].pos - simplex.v[3].pos,
+						simplex.v[1].pos - simplex.v[3].pos,
+						simplex.v[2].pos - simplex.v[3].pos) < 0)
 		{
 			std::swap(simplex.v[0], simplex.v[1]);
-			std::swap(simplex.w[0], simplex.w[1]);
 		}
 
+		HullBuilder hull;
 		Face* tetra[] = { hull.NewFace(&simplex.v[0], &simplex.v[1], &simplex.v[2], result, true),
 						  hull.NewFace(&simplex.v[1], &simplex.v[0], &simplex.v[3], result, true),
 						  hull.NewFace(&simplex.v[2], &simplex.v[1], &simplex.v[3], result, true),
@@ -301,10 +299,10 @@ EPA_result EPAPenetration::Solve(Simplex& simplex, MinkowskiSum* Shape, const Ve
 				bool valid = true;
 				best->pass = ++pass;
 
-				v->d = best->n.Unit();
-				v->p = Shape->Support(v->d);
+				v->dir = best->n.Unit();
+				v->pos = Shape->Support(v->dir);
 
-				const float wdist = DotProduct(best->n, v->p) - best->d;
+				const float wdist = DotProduct(best->n, v->pos) - best->d;
 				if (wdist <= EPA_ACCURACY)
 				{
 					result = EPA_result::AccuraryReached;
@@ -337,9 +335,9 @@ EPA_result EPAPenetration::Solve(Simplex& simplex, MinkowskiSum* Shape, const Ve
 			simplex.v[0] = *outer.c[0];
 			simplex.v[1] = *outer.c[1];
 			simplex.v[2] = *outer.c[2];
-			simplex.w[0] = CrossProduct(outer.c[1]->p - projection, outer.c[2]->p - projection).Length();
-			simplex.w[1] = CrossProduct(outer.c[2]->p - projection, outer.c[0]->p - projection).Length();
-			simplex.w[2] = CrossProduct(outer.c[0]->p - projection, outer.c[1]->p - projection).Length();
+			simplex.w[0] = CrossProduct(outer.c[1]->pos - projection, outer.c[2]->pos - projection).Length();
+			simplex.w[1] = CrossProduct(outer.c[2]->pos - projection, outer.c[0]->pos - projection).Length();
+			simplex.w[2] = CrossProduct(outer.c[0]->pos - projection, outer.c[1]->pos - projection).Length();
 			const float sum = simplex.w[0] + simplex.w[1] + simplex.w[2];
 			simplex.w[0] /= sum;
 			simplex.w[1] /= sum;

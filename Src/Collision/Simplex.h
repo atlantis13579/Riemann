@@ -13,7 +13,7 @@ class Simplex
 public:
 	struct Vertex
 	{
-		Vector3d	d, p;			// dir and position
+		Vector3d	dir, pos;		// dir and position
 	};
 	Vertex		v[4];
 	float		w[4];				// barycentric coordinate
@@ -27,16 +27,15 @@ public:
 
 	const Vector3d& LastPoint() const
 	{
-		return v[dimension - 1].p;
+		return v[dimension - 1].pos;
 	}
 
-	void AddPoint(const Vector3d& dir, float ww, MinkowskiSum* Shape)
+	void AddPoint(const Vector3d& dir, MinkowskiSum* Shape)
 	{
-		w[dimension] = ww;
-		v[dimension].d = dir.Unit();
+		v[dimension].dir = dir.Unit();
 		if (Shape)
 		{
-			v[dimension].p = Shape->Support(v[dimension].d);
+			v[dimension].pos = Shape->Support(v[dimension].dir);
 		}
 		dimension++;
 	}
@@ -74,11 +73,11 @@ public:
 		switch (dimension)
 		{
 		case 2:
-			return ProjectOriginSegment(v[0].p, v[1].p, pos, mask);
+			return ProjectOriginSegment(v[0].pos, v[1].pos, pos, mask);
 		case 3:
-			return ProjectOriginTriangle(v[0].p, v[1].p, v[2].p, pos, mask);
+			return ProjectOriginTriangle(v[0].pos, v[1].pos, v[2].pos, pos, mask);
 		case 4:
-			return ProjectOriginTetrahedral(v[0].p, v[1].p, v[2].p, v[3].p, pos, mask);
+			return ProjectOriginTetrahedral(v[0].pos, v[1].pos, v[2].pos, v[3].pos, pos, mask);
 		default:
 			assert(false);
 			break;
@@ -96,11 +95,11 @@ public:
 			{
 				Vector3d axis = Vector3d(0, 0, 0);
 				axis[i] = 1;
-				AddPoint(axis, 0, nullptr);
+				AddPoint(axis, nullptr);
 				if (EncloseOrigin())
 					return true;
 				RemovePoint();
-				AddPoint(-axis, 0, nullptr);
+				AddPoint(-axis, nullptr);
 				if (EncloseOrigin())
 					return true;
 				RemovePoint();
@@ -109,7 +108,7 @@ public:
 		}
 		case 2:
 		{
-			const Vector3d d = v[1].p - v[0].p;
+			const Vector3d d = v[1].pos - v[0].pos;
 			for (int i = 0; i < 3; ++i)
 			{
 				Vector3d axis = Vector3d(0, 0, 0);
@@ -117,11 +116,11 @@ public:
 				Vector3d p = CrossProduct(d, axis);
 				if (p.SquareLength() > 0)
 				{
-					AddPoint(p, 0, nullptr);
+					AddPoint(p, nullptr);
 					if (EncloseOrigin())
 						return true;
 					RemovePoint();
-					AddPoint(-p, 0, nullptr);
+					AddPoint(-p, nullptr);
 					if (EncloseOrigin())
 						return true;
 					RemovePoint();
@@ -131,14 +130,14 @@ public:
 		}
 		case 3:
 		{
-			Vector3d n = CrossProduct(v[1].p - v[0].p, v[2].p - v[0].p);
+			Vector3d n = CrossProduct(v[1].pos - v[0].pos, v[2].pos - v[0].pos);
 			if (n.SquareLength() > 0)
 			{
-				AddPoint(n, 0, nullptr);
+				AddPoint(n, nullptr);
 				if (EncloseOrigin())
 					return true;
 				RemovePoint();
-				AddPoint(-n, 0, nullptr);
+				AddPoint(-n, nullptr);
 				if (EncloseOrigin())
 					return true;
 				RemovePoint();
@@ -147,7 +146,7 @@ public:
 		}
 		case 4:
 		{
-			const float det = Determinant(v[0].p - v[3].p, v[1].p - v[3].p, v[2].p - v[3].p);
+			const float det = Determinant(v[0].pos - v[3].pos, v[1].pos - v[3].pos, v[2].pos - v[3].pos);
 			if (fabsf(det) > 0)
 				return true;
 			break;

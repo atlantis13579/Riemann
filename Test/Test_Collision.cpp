@@ -109,7 +109,8 @@ void TestEPA()
 {
 	printf("Running TestEPA\n");
 
-	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, -5.0f, 0.0f), Vector3d::UnitY(), 1.0f);
+	// Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, -5.0f, 0.0f), Vector3d::UnitY(), 1.0f);
+	Geometry* plane1 = GeometryFactory::CreateOBB(Vector3d(0.0f, -5.0f, 0.0f), Vector3d(1.0f, 1.0f, 1.0f), Quaternion::One());
 	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
 	obb1->SetPosition(Vector3d(0.0f, -3.7f, 0.0f));
 	obb1->UpdateBoundingVolume();

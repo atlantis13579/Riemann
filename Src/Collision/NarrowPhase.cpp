@@ -47,7 +47,7 @@ public:
 
 		EPAPenetration epa;
 		EPA_result epa_status = epa.Solve(gjk.simplex, &shape, -guess);
-		if (epa_status == EPA_result::Failed)
+		if (epa_status == EPA_result::Failed || epa_status == EPA_result::FallBack)
 		{
 			return false;
 		}
@@ -56,7 +56,7 @@ public:
 		Vector3d w0 = Vector3d::Zero();
 		for (int i = 0; i < gjk.simplex.dimension; ++i)
 		{
-			w0 = w0 + shape.Support1(gjk.simplex.v[i].d) * gjk.simplex.w[i];
+			w0 = w0 + shape.Support1(gjk.simplex.v[i].dir) * gjk.simplex.w[i];
 		}
 		const Matrix4d& invWorld = Geom1->GetInverseWorldMatrix();
 		result.PositionLocal1 = invWorld * w0;
