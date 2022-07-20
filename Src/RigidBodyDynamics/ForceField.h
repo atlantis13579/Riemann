@@ -1,15 +1,41 @@
 #pragma once
 
-#include "../Geometry/DenseTensorField3d.h"
+#include "../Maths/Maths.h"
+#include "../Maths/Vector3d.h"
 
 class	RigidBodyDynamic;
 
-class ForceField : public DenseTensorField3d<Vector3d>
+struct ExplosionFieldParam
+{
+	enum class AttenuationType
+	{
+		LINEAR = 0,
+		SQUARE,
+		CUBIC,
+		SQRT,
+		ATTENUATION_COUNT
+	};
+
+	ExplosionFieldParam()
+	{
+		Attenuation = AttenuationType::LINEAR;
+	}
+
+	Vector3d		Center;
+	float			Radius;
+	Vector3d		ExplosionForce0;
+	Vector3d		ExplosionForce1;
+	AttenuationType	Attenuation;
+};
+
+class ForceField
 {
 public:
-	ForceField(const Vector3d& Force);
-	~ForceField();
+	virtual ~ForceField() {}
+	virtual bool		ApplyForce(RigidBodyDynamic* Rigid) = 0;
 
 public:
-	bool		ApplyForce(RigidBodyDynamic *Rigid);
+	static ForceField*	CreateGrivityField(const Vector3d& Gravity);
+	static ForceField*	CreateExplosionField(const ExplosionFieldParam& param);
 };
+

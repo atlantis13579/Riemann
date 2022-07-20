@@ -27,11 +27,11 @@ struct PhysicsMaterial
 
 	static constexpr float DefaultFrictionDynamic()
 	{
-		return 0.0f;
+		return 1.0f;
 	}
 
 	static constexpr float DefaultFrictionStatic()
 	{
-		return 1.0f;
+		return 0.0f;
 	}
 };

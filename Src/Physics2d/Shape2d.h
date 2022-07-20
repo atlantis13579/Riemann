@@ -2,6 +2,14 @@
 
 #include "Point2d.h"
 
+enum class ShapeType2d
+{
+	UNKNOWN = 0,
+	RECT,
+	CIRCLE,
+	CONVEX,
+};
+
 class Shape2d
 {
 public:

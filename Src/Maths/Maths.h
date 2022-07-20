@@ -72,6 +72,17 @@ inline T	LinearInterp(const T v1, const T v2, float mix)
 	return v1 * (1.0f - mix) + v2 * mix;
 }
 
+typedef float (*AttenuationFunc)(float);
+
+class Attenuation
+{
+public:
+	static float	Linear(float x) { x = Clamp(1.0f - x, 0.0f, 1.0f); return x; }
+	static float	Square(float x) { x = Clamp(1.0f - x, 0.0f, 1.0f); return x * x; }
+	static float	Cubic(float x) { x = Clamp(1.0f - x, 0.0f, 1.0f); return x * x * x; }
+	static float	Sqrt(float x) { x = Clamp(1.0f - x, 0.0f, 1.0f); return sqrtf(x); }
+};
+
 inline bool	IsFloatInf(float x)
 {
 	return x >= std::numeric_limits<float>::max() || x == std::numeric_limits<float>::infinity();

@@ -141,5 +141,5 @@ public:
 	static Geometry* CreateTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C);
 	static Geometry* CreateTriangleMesh();
 
-	static int		ObjectCount[ShapeType3d::GEOMETRY_COUNT];
+	static int		ObjectCount[(int)ShapeType3d::TYPE_COUNT];
 };
