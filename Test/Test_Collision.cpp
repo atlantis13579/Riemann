@@ -61,6 +61,13 @@ bool GJK_Solve(Geometry *Geom1, Geometry* Geom2)
 	return false;
 }
 
+float GJK_Solve_Distance(Geometry* Geom1, Geometry* Geom2)
+{
+	GeometryDifference shape(Geom1, Geom2);
+	GJKClosestDistance gjk;
+	return gjk.Solve(&shape);
+}
+
 void TestGJK()
 {
 	printf("Running TestGJK\n");
@@ -99,6 +106,9 @@ void TestGJK()
 	sp2->SetPosition(Vector3d(0.0f, 5.0f, 0.0f));
 	EXPECT(!GJK_Solve(sp1, sp2));
 	EXPECT(!GJK_Solve(plane1, sp2));
+
+	float dist = GJK_Solve_Distance(sp1, sp2);
+	EXPECT(fabsf(dist - 1.0f) < 0.01f);
 
 	return;
 }
