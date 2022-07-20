@@ -97,7 +97,7 @@ public:
 
 	bool Expand(uint8_t pass, Simplex::Vertex* w, Face* f, uint8_t e, EPA_result& result, sHorizon& horizon)
 	{
-		if (f->pass != pass)
+		if (f->pass == pass)
 		{
 			return false;
 		}
