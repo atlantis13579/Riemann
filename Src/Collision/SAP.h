@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <stdlib.h>
 #include <map>
 #include <set>
 #include <vector>
@@ -97,7 +98,7 @@ protected:
 		}
 
 		uint32_t	data;
-		float* value;
+		float*		value;
 	};
 
 	void InitAxis(int i, int axis)
@@ -127,6 +128,9 @@ protected:
 	{
 		if (low < high)
 		{
+			int k = low + (int)((high - low - 1) * 1.0f * rand() / RAND_MAX);
+			Swap(&axis[k], &axis[high]);
+
 			SweepPoint pivot = axis[high];
 			int i = low - 1;
 
