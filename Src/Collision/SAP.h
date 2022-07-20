@@ -161,16 +161,17 @@ protected:
 		for (size_t i = 0; i < axis.size(); ++i)
 		{
 			const SweepPoint* curr = &axis[i];
+			int curr_id = curr->id();
 			if (curr->left())
 			{
 				for (int active_id : active)
 				{
-					if (curr->id() != active_id)
+					if (curr_id != active_id)
 					{
-						OverlapKey key = PackOverlapKey(curr->id(), active_id);
+						OverlapKey key = PackOverlapKey(curr_id, active_id);
 						if (overlaps_count.find(key) == overlaps_count.end())
 						{
-							overlaps_count.insert(std::pair<OverlapKey, int>(key, filter));
+							overlaps_count.emplace(key, filter);
 						}
 						else
 						{
@@ -179,7 +180,7 @@ protected:
 					}
 				}
 
-				active.insert(curr->id());
+				active.insert(curr_id);
 			}
 			else
 			{
@@ -193,11 +194,11 @@ protected:
 
 					if (next->left())
 					{
-						assert(next->id() != curr->id());
+						assert(curr_id != next->id());
 						OverlapKey key = PackOverlapKey(curr->id(), next->id());
 						if (overlaps_count.find(key) == overlaps_count.end())
 						{
-							overlaps_count.insert(std::pair<OverlapKey, int>(key, filter));
+							overlaps_count.emplace(key, filter);
 						}
 						else
 						{
