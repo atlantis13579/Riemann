@@ -1,6 +1,5 @@
 
 #include "EPAPenetration.h"
-#include "../Core/StaticList.h"
 
 // Expanding Polytope Algorithm
 // http://allenchou.net/2013/12/game-physics-contact-generation-epa/
@@ -15,26 +14,67 @@
 
 struct Face
 {
-	Vector3d normal;
-	float dist;
+	Vector3d n;
+	float d;
 	Simplex::Vertex* v[3];
-	Face* adjacent[3];
-	Face *next, *prev;
-	uint8_t edge[3];
-	uint8_t pass;
+	Face* f[3];
+	Face* l[2];
+	unsigned char e[3];
+	unsigned char pass;
 
-	static void Bind(Face* fa, uint8_t ea, Face* fb, uint8_t eb)
+	static inline void Bind(Face* fa, int ea, Face* fb, int eb)
 	{
-		fa->edge[ea] = eb;
-		fa->adjacent[ea] = fb;
-		fb->edge[eb] = ea;
-		fb->adjacent[eb] = fa;
+		fa->e[ea] = (int)eb;
+		fa->f[ea] = fb;
+		fb->e[eb] = (int)ea;
+		fb->f[eb] = fa;
 	}
 };
 
 class HullBuilder
 {
 public:
+	class List
+	{
+	public:
+		Face* root;
+		int count;
+		List() : root(nullptr), count(0) {}
+
+		inline void Append(Face* face)
+		{
+			face->l[0] = 0;
+			face->l[1] = root;
+			if (root) root->l[0] = face;
+			root = face;
+			++count;
+		}
+
+		inline void Remove(Face* face)
+		{
+			if (face->l[1]) face->l[1]->l[0] = face->l[0];
+			if (face->l[0]) face->l[0]->l[1] = face->l[1];
+			if (face == root) root = face->l[1];
+			--count;
+		}
+
+		Face* FindBest()
+		{
+			Face* minf = root;
+			float mind = minf->d * minf->d;
+			for (Face* f = minf->l[1]; f; f = f->l[1])
+			{
+				const float sqd = f->d * f->d;
+				if (sqd < mind)
+				{
+					minf = f;
+					mind = sqd;
+				}
+			}
+			return minf;
+		}
+	};
+
 	struct sHorizon
 	{
 		Face* cf;
@@ -45,107 +85,98 @@ public:
 
 	HullBuilder()
 	{
+		m_nextsv = 0;
+		for (int i = 0; i < EPA_MAX_FACES; ++i)
+		{
+			m_stock.Append(&m_fc_store[EPA_MAX_FACES - i - 1]);
+		}
 	}
 
 	Face* NewFace(Simplex::Vertex* a, Simplex::Vertex* b, Simplex::Vertex* c, EPA_result& result, bool forced)
 	{
-		if (m_face_pool.Empty())
+		if (m_stock.root)
 		{
-			result = EPA_result::OutOfFaces;
-			return nullptr;
-		}
+			Face* face = m_stock.root;
+			m_stock.Remove(face);
+			m_hull.Append(face);
+			face->pass = 0;
+			face->v[0] = a;
+			face->v[1] = b;
+			face->v[2] = c;
+			face->n = CrossProduct(b->pos - a->pos, c->pos - a->pos);
 
-		Face* face = m_face_pool.Pop();
-		m_hull.Append(face);
-		face->pass = 0;
-		face->v[0] = a;
-		face->v[1] = b;
-		face->v[2] = c;
-		face->normal = CrossProduct(b->pos - a->pos, c->pos - a->pos);
-
-		const float l = face->normal.Length();
-		if (l > EPA_ACCURACY)
-		{
-			if (!(GetEdgeDist(face, a, b, face->dist) ||
-				GetEdgeDist(face, b, c, face->dist) ||
-				GetEdgeDist(face, c, a, face->dist)))
+			const float l = face->n.Length();
+			if (l > EPA_ACCURACY)
 			{
-				// Origin projects to the interior of the triangle
-				// Use distance to triangle plane
-				face->dist = DotProduct(a->pos, face->normal) / l;
-			}
+				if (!(GetEdgeDist(face, a, b, face->d) ||
+					GetEdgeDist(face, b, c, face->d) ||
+					GetEdgeDist(face, c, a, face->d)))
+				{
+					// Origin projects to the interior of the triangle
+					// Use distance to triangle plane
+					face->d = DotProduct(a->pos, face->n) / l;
+				}
 
-			face->normal = face->normal * (1.0f / l);
-			if (forced || face->dist >= -EPA_PLANE_EPS)
-			{
-				return face;
+				face->n = face->n * (1 / l);
+				if (forced || (face->d >= -EPA_PLANE_EPS))
+				{
+					return face;
+				}
+				else
+				{
+					result = EPA_result::NonConvex;
+				}
 			}
 			else
 			{
-				result = EPA_result::NonConvex;
+				result = EPA_result::Degenerated;
 			}
-		}
-		else
-		{
-			result = EPA_result::Degenerated;
-		}
 
-		m_hull.Remove(face);
-		m_face_pool.Append(face);
+			m_hull.Remove(face);
+			m_stock.Append(face);
+		}
+		result = m_stock.root ? EPA_result::OutOfVertices : EPA_result::OutOfFaces;
 		return nullptr;
 	}
 
-	bool Expand(uint8_t pass, Simplex::Vertex* w, Face* f, uint8_t e, EPA_result& result, sHorizon& horizon)
+	bool Expand(unsigned char pass, Simplex::Vertex* w, Face* f, int e, EPA_result& result, sHorizon& horizon)
 	{
 		if (f->pass != pass)
 		{
-			return false;
-		}
-
-		int e1 = (e + 1) % 3;
-		if ((DotProduct(f->normal, w->pos) - f->dist) < -EPA_PLANE_EPS)
-		{
-			Face* nf = NewFace(f->v[e1], f->v[e], w, result, false);
-			if (nf)
+			int e1 = (e + 1) % 3;
+			if ((DotProduct(f->n, w->pos) - f->d) < -EPA_PLANE_EPS)
 			{
-				Face::Bind(nf, 0, f, e);
-				if (horizon.cf)
-					Face::Bind(horizon.cf, 1, nf, 2);
-				else
-					horizon.ff = nf;
-				horizon.cf = nf;
-				++horizon.nf;
-				return true;
+				Face* nf = NewFace(f->v[e1], f->v[e], w, result, false);
+				if (nf)
+				{
+					Face::Bind(nf, 0, f, e);
+					if (horizon.cf)
+						Face::Bind(horizon.cf, 1, nf, 2);
+					else
+						horizon.ff = nf;
+					horizon.cf = nf;
+					++horizon.nf;
+					return true;
+				}
 			}
-		}
-		else
-		{
-			int e2 = (e + 2) % 3;
-			f->pass = pass;
-			if (Expand(pass, w, f->adjacent[e1], f->edge[e1], result, horizon) && Expand(pass, w, f->adjacent[e2], f->edge[e2], result, horizon))
+			else
 			{
-				m_hull.Remove(f);
-				m_face_pool.Append(f);
-				return (true);
+				int e2 = (e + 2) % 3;
+				f->pass = pass;
+				if (Expand(pass, w, f->f[e1], f->e[e1], result, horizon) && Expand(pass, w, f->f[e2], f->e[e2], result, horizon))
+				{
+					m_hull.Remove(f);
+					m_stock.Append(f);
+					return (true);
+				}
 			}
 		}
 		return false;
 	}
 
-	Face* FindClosestToOrigin()
+	Face* FindBest()
 	{
-		Face* min_face = m_hull.root;
-		float min_sqrdist = min_face->dist * min_face->dist;
-		for (Face* f = min_face->next; f; f = f->next)
-		{
-			const float sqrdist = f->dist * f->dist;
-			if (sqrdist < min_sqrdist)
-			{
-				min_face = f;
-				min_sqrdist = sqrdist;
-			}
-		}
-		return min_face;
+		return m_hull.FindBest();
 	}
 
 	int GetCount() const
@@ -153,22 +184,27 @@ public:
 		return m_hull.count;
 	}
 
+	int GetVertexCount() const
+	{
+		return m_nextsv;
+	}
+
 	Simplex::Vertex* AppendVertex()
 	{
-		return m_vertex_pool.Get();
+		return &m_sv_store[m_nextsv++];
 	}
 
 	void Free(Face* f)
 	{
 		m_hull.Remove(f);
-		m_face_pool.Append(f);
+		m_stock.Append(f);
 	}
 
 private:
 	static bool GetEdgeDist(Face* face, Simplex::Vertex* a, Simplex::Vertex* b, float& dist)
 	{
 		Vector3d ba = b->pos - a->pos;
-		Vector3d n_ab = CrossProduct(ba, face->normal);   // Outward facing edge normal direction, on triangle plane
+		Vector3d n_ab = CrossProduct(ba, face->n);   // Outward facing edge normal direction, on triangle plane
 		float a_dot_nab = DotProduct(a->pos, n_ab);  // Only care about the sign to determine inside/outside, so not normalization required
 
 		if (a_dot_nab >= 0)
@@ -177,6 +213,7 @@ private:
 		}
 
 		// Outside of edge a->b
+
 		const float ba_l2 = ba.SquareLength();
 		const float a_dot_ba = DotProduct(a->pos, ba);
 		const float b_dot_ba = DotProduct(b->pos, ba);
@@ -204,9 +241,11 @@ private:
 	}
 
 private:
-	StaticPool<Simplex::Vertex, EPA_MAX_VERTICES>	m_vertex_pool;
-	List<Face>										m_hull;
-	StaticList<Face, EPA_MAX_FACES>					m_face_pool;
+	Simplex::Vertex m_sv_store[EPA_MAX_VERTICES];
+	Face m_fc_store[EPA_MAX_FACES];
+	int m_nextsv;
+	List m_hull;
+	List m_stock;
 };
 
 EPA_result EPAPenetration::Solve(Simplex& simplex)
@@ -230,9 +269,9 @@ EPA_result EPAPenetration::Solve(Simplex& simplex)
 
 		if (hull.GetCount() == 4)
 		{
-			Face* best = hull.FindClosestToOrigin();
-			Face candidate = *best;
-			uint8_t pass = 0;
+			Face* best = hull.FindBest();
+			Face outer = *best;
+			int pass = 0;
 			Face::Bind(tetra[0], 0, tetra[1], 0);
 			Face::Bind(tetra[0], 1, tetra[2], 0);
 			Face::Bind(tetra[0], 2, tetra[3], 0);
@@ -245,38 +284,38 @@ EPA_result EPAPenetration::Solve(Simplex& simplex)
 			int iterations = 0;
 			while (iterations++ < EPA_MAX_ITERATIONS)
 			{
-				Simplex::Vertex* v = hull.AppendVertex();
-				if (v == nullptr)
+				if (hull.GetVertexCount() >= EPA_MAX_VERTICES)
 				{
 					result = EPA_result::OutOfVertices;
 					break;
 				}
 
-				best->pass = ++pass;
+				HullBuilder::sHorizon horizon;
+				Simplex::Vertex* v = hull.AppendVertex();
+				bool valid = true;
+				best->pass = (unsigned char)(++pass);
 
-				v->dir = best->normal.Unit();
+				v->dir = best->n.Unit();
 				v->pos = simplex.Support(v->dir);
 
-				const float wdist = DotProduct(best->normal, v->pos) - best->dist;
+				const float wdist = DotProduct(best->n, v->pos) - best->d;
 				if (wdist <= EPA_ACCURACY)
 				{
 					result = EPA_result::AccuraryReached;
 					break;
 				}
 
-				HullBuilder::sHorizon horizon;
-				bool valid = true;
 				for (int j = 0; j < 3 && valid; ++j)
 				{
-					valid &= hull.Expand(pass, v, best->adjacent[j], best->edge[j], result, horizon);
+					valid &= hull.Expand(pass, v, best->f[j], best->e[j], result, horizon);
 				}
 
-				if (valid && horizon.nf >= 3)
+				if (valid && (horizon.nf >= 3))
 				{
 					Face::Bind(horizon.cf, 1, horizon.ff, 2);
 					hull.Free(best);
-					best = hull.FindClosestToOrigin();
-					candidate = *best;
+					best = hull.FindBest();
+					outer = *best;
 				}
 				else
 				{
@@ -285,17 +324,17 @@ EPA_result EPAPenetration::Solve(Simplex& simplex)
 				}
 			}
 
-			const Vector3d projection = candidate.normal * candidate.dist;
-			penetration_normal = candidate.normal;
-			penetration_depth = candidate.dist;
+			const Vector3d projection = outer.n * outer.d;
+			penetration_normal = outer.n;
+			penetration_depth = outer.d;
 			simplex.dimension = 3;
-			Simplex::Vertex v[3] = { *candidate.v[0], *candidate.v[1], *candidate.v[2] };
-			simplex.v[0] = v[0];
-			simplex.v[1] = v[1];
-			simplex.v[2] = v[2];
-			simplex.w[0] = CrossProduct(v[1].pos - projection, v[2].pos - projection).Length();
-			simplex.w[1] = CrossProduct(v[2].pos - projection, v[0].pos - projection).Length();
-			simplex.w[2] = CrossProduct(v[0].pos - projection, v[1].pos - projection).Length();
+			Simplex::Vertex vv[3] = { *outer.v[0], *outer.v[1], *outer.v[2] };
+			simplex.v[0] = vv[0];
+			simplex.v[1] = vv[1];
+			simplex.v[2] = vv[2];
+			simplex.w[0] = CrossProduct(vv[1].pos - projection, vv[2].pos - projection).Length();
+			simplex.w[1] = CrossProduct(vv[2].pos - projection, vv[0].pos - projection).Length();
+			simplex.w[2] = CrossProduct(vv[0].pos - projection, vv[1].pos - projection).Length();
 			const float sum = simplex.w[0] + simplex.w[1] + simplex.w[2];
 			simplex.w[0] /= sum;
 			simplex.w[1] /= sum;

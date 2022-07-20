@@ -115,7 +115,6 @@
     <ClInclude Include="..\..\Src\Collision\Contact.h" />
     <ClInclude Include="..\..\Src\Collision\DynamicAABBTree.h" />
     <ClInclude Include="..\..\Src\Collision\EPAPenetration.h" />
-    <ClInclude Include="..\..\Src\Core\StaticList.h" />
     <ClInclude Include="..\..\Src\Destruction\GeometryCollection.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryDifference.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryIntersection.h" />

@@ -474,9 +474,6 @@
     <ClInclude Include="..\..\Src\Optimization\PCA.h">
       <Filter>Optimization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Core\StaticList.h">
-      <Filter>Core</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp">
