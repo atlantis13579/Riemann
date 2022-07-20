@@ -44,3 +44,10 @@ public:
 
 	void	AddNewContact(Geometry* _Geom1, Geometry* _Geom2, const ContactResult& result);
 };
+
+class ContactReport
+{
+public:
+	virtual ~ContactReport() {}
+};
+

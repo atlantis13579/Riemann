@@ -29,14 +29,14 @@ void WarmStart::Contact(Geometry* Geom1, Geometry* Geom2, ContactResult& contact
     float collisionImpulseVal = contact.SumImpulseNormal;
     Vector3d collisionImpulse = normal * collisionImpulseVal;
 
-    RigidBodyDynamic* rigidBodyDyn1 = rigidBody1->GetDynamic();
+    RigidBodyDynamic* rigidBodyDyn1 = rigidBody1->CastDynamic();
 	if (rigidBodyDyn1 && !rigidBodyDyn1->Sleep)
 	{
         rigidBodyDyn1->P = rigidBodyDyn1->P - collisionImpulse;
         rigidBodyDyn1->L = rigidBodyDyn1->L - collisionImpulseVal * contact.RelativePosition1.Cross(normal);
     }
 
-	RigidBodyDynamic* rigidBodyDyn2 = rigidBody2->GetDynamic();
+	RigidBodyDynamic* rigidBodyDyn2 = rigidBody2->CastDynamic();
     if (rigidBodyDyn2 && !rigidBodyDyn2->Sleep)
     {
         rigidBodyDyn2->P = rigidBodyDyn2->P + collisionImpulse;

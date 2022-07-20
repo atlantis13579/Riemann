@@ -14,8 +14,8 @@ void Jacobian::Init(ContactManifold* manifold, int idx, JacobianType jt, Vector3
 {
 	jacobinType = jt;
 
-	m_jva = dir * -1;
-	m_jwa = manifold->ContactPoints[idx].RelativePosition1.Cross(dir) * -1.0f;
+	m_jva = -dir;
+	m_jwa = -manifold->ContactPoints[idx].RelativePosition1.Cross(dir);
 	m_jvb = dir;
 	m_jwb = manifold->ContactPoints[idx].RelativePosition2.Cross(dir);
 
@@ -42,7 +42,7 @@ void Jacobian::Init(ContactManifold* manifold, int idx, JacobianType jt, Vector3
 		Vector3d wb = rigidB->GetAngularVelocity();
 		Vector3d rb = manifold->ContactPoints[idx].RelativePosition2;
 
-		m_bias = 0;
+		m_bias = 0.0f;
 		if (jacobinType == JacobianType::Normal)
 		{
 			// http://allenchou.net/2013/12/game-physics-resolution-contact-constraints/
@@ -57,13 +57,12 @@ void Jacobian::Init(ContactManifold* manifold, int idx, JacobianType jt, Vector3
 	Vector3d rva = rigidA->GetInverseInertia() * m_jwa;
 	Vector3d rvb = rigidB->GetInverseInertia() * m_jwb;
 
-	float k =
-		rigidA->GetInverseMass() + rigidB->GetInverseMass()
-		+ DotProduct(m_jwa, rva)
-		+ DotProduct(m_jwb, rvb);
+	float k = rigidA->GetInverseMass() + rigidB->GetInverseMass() + DotProduct(m_jwa, rva) + DotProduct(m_jwb, rvb);
 
 	m_effectiveMass = 1.0f / k;
 	m_totalLambda = 0.0f;
+
+	return;
 }
 
 void Jacobian::Solve(ContactManifold* manifold, Jacobian& jN, float dt)
@@ -72,9 +71,9 @@ void Jacobian::Solve(ContactManifold* manifold, Jacobian& jN, float dt)
 	RigidBody* rigidB = GetRigidBody(manifold->Geom2);
 	
 	float jv = DotProduct(m_jva, rigidA->GetLinearVelocity())
-		+ DotProduct(m_jwa, rigidA->GetAngularVelocity())
-		+ DotProduct(m_jvb, rigidB->GetLinearVelocity())
-		+ DotProduct(m_jwb, rigidB->GetAngularVelocity());
+			 + DotProduct(m_jwa, rigidA->GetAngularVelocity())
+			 + DotProduct(m_jvb, rigidB->GetLinearVelocity())
+			 + DotProduct(m_jwb, rigidB->GetAngularVelocity());
 
 	float lambda = m_effectiveMass * (-(jv + m_bias));
 	float oldTotalLambda = m_totalLambda;
@@ -85,7 +84,7 @@ void Jacobian::Solve(ContactManifold* manifold, Jacobian& jN, float dt)
 		break;
 
 	case JacobianType::Tangent:
-		float friction = rigidA->GetFriction() * rigidB->GetFriction();
+		float friction = rigidA->GetFrictionDynamic() * rigidB->GetFrictionDynamic();
 		float maxFriction = friction * jN.m_totalLambda;
 		m_totalLambda = Clamp(m_totalLambda + lambda, -maxFriction, maxFriction);
 		break;

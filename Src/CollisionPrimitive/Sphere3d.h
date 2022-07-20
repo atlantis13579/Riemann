@@ -172,8 +172,8 @@ public:
 
 	void			GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
-		const int stackCount = 6;
-		const int sliceCount = 8;
+		const int stackCount = 8;
+		const int sliceCount = 12;
 
 		GetVertices(stackCount, sliceCount, &Vertices, &Normals);
 

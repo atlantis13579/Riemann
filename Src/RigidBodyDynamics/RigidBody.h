@@ -8,6 +8,7 @@
 
 class Geometry;
 class RigidBodyDynamic;
+struct PhysicsMaterial;
 
 struct RigidBodyParam
 {
@@ -54,22 +55,30 @@ public:
 	// Constant quantities
 	float		InvMass;		// Inverse of Total Mass
 	Matrix3d	InvInertia;		// Inverse of Inertia Tensor
-	
+
+private:
+	PhysicsMaterial* Material;	// Not hold the memory
+
 public:
+	RigidBody();
+
 	Vector3d 		GetLinearVelocity() const;
 	Vector3d		GetAngularVelocity() const;
 	const Matrix3d&	GetInverseInertia() const;
 	Matrix3d		GetInverseInertia_WorldSpace() const;
 	const float&	GetInverseMass() const;
 
-	RigidBodyDynamic* GetDynamic();
+	RigidBodyDynamic* CastDynamic();
 	
 	void			SetLinearVelocity(const Vector3d &v);
 	void			SetAngularVelocity(const Vector3d &v);
-	
-	float			GetContactBeta() const { return 0.3f; }	// TODO
-	float			GetRestitution() const { return 0.0f; }	// TODO
-	float			GetFriction() const { return 1.0f; }	// TODO
+	void			SetLinearVelocityThreadSafe(const Vector3d& v);
+	void			SetAngularVelocityThreadSafe(const Vector3d& v);
+
+	float			GetContactBeta() const;
+	float			GetRestitution() const;
+	float			GetFrictionDynamic() const;
+	float			GetFrictionStatic() const;
 };
 
 

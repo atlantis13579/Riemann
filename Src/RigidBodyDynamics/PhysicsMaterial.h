@@ -2,16 +2,36 @@
 
 struct PhysicsMaterial
 {
-	PhysicsMaterial()
-	{
-		ContactBeta = 0.4f;
-		Restitution = 0.0f;
-		FrictionDynamic = 1.0f;
-		FrictionStatic = 1.0f;
-	}
-
 	float	ContactBeta;
 	float	Restitution;
 	float	FrictionDynamic;
 	float	FrictionStatic;
+
+	PhysicsMaterial()
+	{
+		ContactBeta = DefaultContactBeta();
+		Restitution = DefaultRestitution();
+		FrictionDynamic = DefaultFrictionDynamic();
+		FrictionStatic = DefaultFrictionStatic();
+	}
+
+	static constexpr float DefaultContactBeta()
+	{
+		return 0.4f;
+	}
+
+	static constexpr float DefaultRestitution()
+	{
+		return 0.0f;
+	}
+
+	static constexpr float DefaultFrictionDynamic()
+	{
+		return 0.0f;
+	}
+
+	static constexpr float DefaultFrictionStatic()
+	{
+		return 1.0f;
+	}
 };

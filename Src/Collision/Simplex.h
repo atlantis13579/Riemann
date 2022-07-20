@@ -5,6 +5,7 @@
 #include "../Maths/Vector3d.h"
 #include "MinkowskiSum.h"
 
+#define SIMPLEX1_EPS (1e-9f)
 #define SIMPLEX2_EPS (1e-9f)
 #define SIMPLEX3_EPS (1e-9f)
 #define SIMPLEX4_EPS (1e-9f)
@@ -16,10 +17,10 @@ public:
 	{
 		Vector3d	dir, pos;		// dir and position
 	};
-	Vertex		v[4];
-	float		w[4];				// barycentric coordinate
-	int			dimension;
-	MinkowskiSum* m_shape;
+	Vertex			v[4];
+	float			w[4];			// barycentric coordinate
+	int				dimension;
+	MinkowskiSum*	m_shape;
 
 public:
 	Simplex()
@@ -51,12 +52,6 @@ public:
 		assert(dimension >= 1);
 	}
 
-	Simplex& operator =(const Simplex& rhs)
-	{
-		memcpy(this, &rhs, sizeof(Simplex));
-		return *this;
-	}
-
 	void UpdatePointSet(int mask)
 	{
 		int new_dimension = 0;
@@ -72,16 +67,18 @@ public:
 		return;
 	}
 
-	bool ProjectOrigin(Vector3d& pos, int& mask)
+	bool ProjectOrigin(Vector3d& proj, int& mask)
 	{
 		switch (dimension)
 		{
-		case 2:
-			return ProjectOriginSegment(v[0].pos, v[1].pos, pos, mask);
-		case 3:
-			return ProjectOriginTriangle(v[0].pos, v[1].pos, v[2].pos, pos, mask);
 		case 4:
-			return ProjectOriginTetrahedral(v[0].pos, v[1].pos, v[2].pos, v[3].pos, pos, mask);
+			return ProjectOriginToTetrahedral(v[0].pos, v[1].pos, v[2].pos, v[3].pos, proj, mask);
+		case 3:
+			return ProjectOriginToTriangle(v[0].pos, v[1].pos, v[2].pos, proj, mask);
+		case 2:
+			return ProjectOriginToSegment(v[0].pos, v[1].pos, proj, mask);
+		case 1:
+			return ProjectOriginToPoint(v[0].pos, proj, mask);
 		default:
 			assert(false);
 			break;
@@ -89,7 +86,7 @@ public:
 		return false;
 	}
 
-	Vector3d Support(const Vector3d& Dir) const
+	inline Vector3d Support(const Vector3d& Dir) const
 	{
 		return m_shape->Support(Dir);
 	}
@@ -164,9 +161,21 @@ public:
 		return false;
 	}
 
-
 private:
-	static bool ProjectOriginSegment(const Vector3d& a, const Vector3d& b, Vector3d& pos, int& mask)
+	static bool ProjectOriginToPoint(const Vector3d& a, Vector3d& proj, int& mask)
+	{
+		float l = a.SquareLength();
+		if (l <= SIMPLEX1_EPS)
+		{
+			return false;
+		}
+
+		proj = a;
+		mask = 0b0001;
+		return true;
+	}
+
+	static bool ProjectOriginToSegment(const Vector3d& a, const Vector3d& b, Vector3d& proj, int& mask)
 	{
 		Vector3d d = b - a;
 		float l = d.SquareLength();
@@ -178,23 +187,23 @@ private:
 		float t = -DotProduct(a, d) / l;
 		if (t >= 1.0f)
 		{
-			pos = b;
+			proj = b;
 			mask = 0b0010;
 		}
 		else if (t <= 0.0f)
 		{
-			pos = a;
+			proj = a;
 			mask = 0b0001;
 		}
 		else
 		{
-			pos = a + d * t;
+			proj = a + d * t;
 			mask = 0b0011;
 		}
 		return true;
 	}
 
-	static bool ProjectOriginTriangle(const Vector3d& a, const Vector3d& b, const Vector3d& c, Vector3d& pos, int& mask)
+	static bool ProjectOriginToTriangle(const Vector3d& a, const Vector3d& b, const Vector3d& c, Vector3d& proj, int& mask)
 	{
 		Vector3d	v[] = { a, b, c };
 		Vector3d	dl[] = { a - b, b - c, c - a };
@@ -216,10 +225,10 @@ private:
 			if (dp > 0)
 			{
 				int j = (i + 1) % 3;
-				if (ProjectOriginSegment(v[i], v[j], subpos, submask) && subpos.SquareLength() < min_sqr_dist)
+				if (ProjectOriginToSegment(v[i], v[j], subpos, submask) && subpos.SquareLength() < min_sqr_dist)
 				{
 					min_sqr_dist = subpos.SquareLength();
-					pos = subpos;
+					proj = subpos;
 					mask = ((submask & 1) ? 1 << i : 0) + ((submask & 2) ? 1 << j : 0);
 				}
 			}
@@ -227,13 +236,13 @@ private:
 		if (min_sqr_dist == FLT_MAX)
 		{
 			float signedLen = DotProduct(a, n) / l;
-			pos = n * signedLen;
+			proj = n * signedLen;
 			mask = 0b0111;
 		}
 		return true;
 	}
 
-	static bool ProjectOriginTetrahedral(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, Vector3d& pos, int& mask)
+	static bool ProjectOriginToTetrahedral(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, Vector3d& proj, int& mask)
 	{
 		const Vector3d* vt[] = { &a, &b, &c, &d };
 		Vector3d dl[] = { a - d, b - d, c - d };
@@ -254,17 +263,17 @@ private:
 			float s = vl * DotProduct(d, CrossProduct(dl[i], dl[j]));
 			if (s > 0)
 			{
-				if (ProjectOriginTriangle(*vt[i], *vt[j], d, subpos, submask) && subpos.SquareLength() < min_sqr_dist)
+				if (ProjectOriginToTriangle(*vt[i], *vt[j], d, subpos, submask) && subpos.SquareLength() < min_sqr_dist)
 				{
 					min_sqr_dist = subpos.SquareLength();
-					pos = subpos;
+					proj = subpos;
 					mask = ((submask & 1) ? 1 << i : 0) + ((submask & 2) ? 1 << j : 0) + ((submask & 4) ? 8 : 0);
 				}
 			}
 		}
 		if (min_sqr_dist == FLT_MAX)
 		{
-			pos = Vector3d::Zero();
+			proj = Vector3d::Zero();
 			mask = 0b1111;
 		}
 		return true;

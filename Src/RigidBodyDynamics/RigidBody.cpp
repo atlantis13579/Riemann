@@ -1,8 +1,15 @@
 
 #include "RigidBody.h"
+#include "PhysicsMaterial.h"
 #include "../Collision/GeometryObject.h"
 
 static const float kMinimumInvMass = 1e-6f;
+
+RigidBody::RigidBody()
+{
+	Shape = nullptr;
+	Material = nullptr;
+}
 
 Vector3d 			RigidBody::GetLinearVelocity() const
 {
@@ -31,7 +38,7 @@ const float&		RigidBody::GetInverseMass() const
 	return InvMass;
 }
 
-RigidBodyDynamic* RigidBody::GetDynamic()
+RigidBodyDynamic* RigidBody::CastDynamic()
 {
 	return Static ? nullptr : (RigidBodyDynamic*)this;
 }
@@ -44,6 +51,26 @@ void				RigidBody::SetLinearVelocity(const Vector3d &v)
 void				RigidBody::SetAngularVelocity(const Vector3d &v)
 {
 	L = InvInertia.Invertible() ? InvInertia.Inverse() * v : Vector3d::Zero();
+}
+
+float				RigidBody::GetContactBeta() const
+{
+	return Material ? Material->ContactBeta : PhysicsMaterial::DefaultContactBeta();
+}
+
+float				RigidBody::GetRestitution() const
+{
+	return Material ? Material->Restitution : PhysicsMaterial::DefaultRestitution();
+}
+
+float				RigidBody::GetFrictionDynamic() const
+{
+	return Material ? Material->FrictionDynamic : PhysicsMaterial::DefaultFrictionDynamic();
+}
+
+float				RigidBody::GetFrictionStatic() const
+{
+	return Material ? Material->FrictionStatic : PhysicsMaterial::DefaultFrictionStatic();
 }
 
 void				RigidBodyDynamic::ApplyForce(const Vector3d& Force)
