@@ -34,6 +34,12 @@ public:
 		dimension = 0;
 	}
 
+	Simplex& operator=(const Simplex& rhs)
+	{
+		memcpy((void*)this, &rhs, sizeof(Simplex));
+		return *this;
+	}
+
 	const Vector3d& LastPoint() const
 	{
 		return v[dimension - 1].pos;
@@ -84,11 +90,6 @@ public:
 			break;
 		}
 		return false;
-	}
-
-	inline Vector3d Support(const Vector3d& Dir) const
-	{
-		return m_shape->Support(Dir);
 	}
 
 	bool EncloseOrigin()

@@ -53,8 +53,8 @@ bool GJK_Solve(Geometry *Geom1, Geometry* Geom2)
 {
 	GeometryDifference shape(Geom1, Geom2);
 	GJKIntersection gjk;
-	GJK_result gjk_status = gjk.Solve(&shape);
-	if (gjk_status == GJK_result::Inside)
+	GJK_status gjk_status = gjk.Solve(&shape);
+	if (gjk_status == GJK_status::Inside)
 	{
 		return true;
 	}
@@ -123,30 +123,30 @@ void TestEPA()
 	obb1->SetPosition(Vector3d(0.0f, -3.7f, 0.0f));
 
 	GJKIntersection gjk;
-	GJK_result gjk_status;
+	GJK_status gjk_status;
 
 	EPAPenetration epa;
-	EPA_result epa_status;
+	EPA_status epa_status;
 
 	GeometryDifference shape(plane1, obb1);
 
 	gjk_status = gjk.Solve(&shape);
-	EXPECT(gjk_status == GJK_result::Inside);
+	EXPECT(gjk_status == GJK_status::Inside);
 
-	epa_status = epa.Solve(gjk.simplex);
-	EXPECT(epa_status == EPA_result::AccuraryReached);
+	epa_status = epa.Solve(gjk.result);
+	EXPECT(epa_status == EPA_status::AccuraryReached);
 
 	obb1->SetPosition(Vector3d(20.0f, -3.7f, 0.0f));
 	gjk_status = gjk.Solve(&shape);
-	EXPECT(gjk_status == GJK_result::Inside);
-	epa_status = epa.Solve(gjk.simplex);
-	EXPECT(epa_status == EPA_result::AccuraryReached);
+	EXPECT(gjk_status == GJK_status::Inside);
+	epa_status = epa.Solve(gjk.result);
+	EXPECT(epa_status == EPA_status::AccuraryReached);
 
 	obb1->SetPosition(Vector3d(-20.0f, -3.7f, 0.0f));
 	gjk_status = gjk.Solve(&shape);
-	EXPECT(gjk_status == GJK_result::Inside);
-	epa_status = epa.Solve(gjk.simplex);
-	EXPECT(epa_status == EPA_result::AccuraryReached);
+	EXPECT(gjk_status == GJK_status::Inside);
+	epa_status = epa.Solve(gjk.result);
+	EXPECT(epa_status == EPA_status::AccuraryReached);
 
 	return;
 }

@@ -8,7 +8,7 @@
 // http://allenchou.net/2013/12/game-physics-collision-detection-gjk/
 // https://en.wikipedia.org/wiki/Gilbert%E2%80%93Johnson%E2%80%93Keerthi_distance_algorithm
 
-enum class GJK_result
+enum class GJK_status
 {
 	Separate,
 	Inside,
@@ -24,17 +24,17 @@ enum class GJK_result
 class GJKIntersection
 {
 public:
-	Simplex			simplex;
+	Simplex			result;
 	float			distance;
 
-	GJK_result Solve(MinkowskiSum* shape)
+	GJK_status Solve(MinkowskiSum* shape)
 	{
 		Vector3d InitGuess = shape->Center();
 
 		distance = -1.0f;
-		simplex.Init(shape);
-		simplex.AddPoint(InitGuess.SquareLength() > 0 ? InitGuess : -Vector3d::UnitX());
-		Vector3d dir = simplex.v[0].pos;
+		result.Init(shape);
+		result.AddPoint(InitGuess.SquareLength() > 0 ? InitGuess : -Vector3d::UnitX());
+		Vector3d dir = result.v[0].pos;
 
 		int nlastp = 0;
 		Vector3d lastp[4] = { dir, dir, dir, dir };
@@ -46,16 +46,16 @@ public:
 			distance = dir.Length();
 			if (distance < GJK_MIN_DISTANCE)
 			{
-				return GJK_result::Inside;
+				return GJK_status::Inside;
 			}
 
-			simplex.AddPoint(-dir);
+			result.AddPoint(-dir);
 
-			const Vector3d& p = simplex.LastPoint();
+			const Vector3d& p = result.LastPoint();
 			if (IsDuplicated(lastp, p))
 			{
 				// Find duplicate point, stop searching to avoid infinite loop
-				simplex.RemovePoint();
+				result.RemovePoint();
 				break;
 			}
 			else
@@ -70,28 +70,28 @@ public:
 			// Exceed accuracy, stop searching
 			if (distance - max_acc <= GJK_ACCURACY * distance)
 			{
-				simplex.RemovePoint();
+				result.RemovePoint();
 				break;
 			}
 
 			int mask = 0;
-			if (simplex.ProjectOrigin(dir, mask))
+			if (result.ProjectOrigin(dir, mask))
 			{
-				simplex.UpdatePointSet(mask);
+				result.UpdatePointSet(mask);
 
 				if (mask == 0b1111)
 				{
-					return GJK_result::Inside;
+					return GJK_status::Inside;
 				}
 			}
 			else
 			{
-				simplex.RemovePoint();
+				result.RemovePoint();
 				break;
 			}
 		};
 
-		return iter >= GJK_MAX_ITERATIONS ? GJK_result::Failed : GJK_result::Separate;
+		return iter >= GJK_MAX_ITERATIONS ? GJK_status::Failed : GJK_status::Separate;
 	}
 
 private:
@@ -115,17 +115,17 @@ public:
 	float Solve(MinkowskiSum* Shape)
 	{
 		GJKIntersection gjk;
-		GJK_result result = gjk.Solve(Shape);
+		GJK_status status = gjk.Solve(Shape);
 
-		if (result == GJK_result::Separate)
+		if (status == GJK_status::Separate)
 		{
 			return gjk.distance;
 		}
-		if (result == GJK_result::Inside)
+		if (status == GJK_status::Inside)
 		{
 			return -1.0f;
 		}
-		else if (result == GJK_result::Boundary)
+		else if (status == GJK_status::Boundary)
 		{
 			return 0.0f;
 		}

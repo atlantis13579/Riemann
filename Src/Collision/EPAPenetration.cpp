@@ -47,11 +47,11 @@ public:
 	{
 	}
 
-	Face* NewFace(Simplex::Vertex* a, Simplex::Vertex* b, Simplex::Vertex* c, EPA_result& result, bool forced)
+	Face* NewFace(Simplex::Vertex* a, Simplex::Vertex* b, Simplex::Vertex* c, EPA_status& result, bool forced)
 	{
 		if (m_face_pool.Empty())
 		{
-			result = EPA_result::OutOfFaces;
+			result = EPA_status::OutOfFaces;
 			return nullptr;
 		}
 
@@ -82,12 +82,12 @@ public:
 			}
 			else
 			{
-				result = EPA_result::NonConvex;
+				result = EPA_status::NonConvex;
 			}
 		}
 		else
 		{
-			result = EPA_result::Degenerated;
+			result = EPA_status::Degenerated;
 		}
 
 		m_hull.Remove(face);
@@ -95,7 +95,7 @@ public:
 		return nullptr;
 	}
 
-	bool Expand(uint8_t pass, Simplex::Vertex* w, Face* f, uint8_t e, EPA_result& result, sHorizon& horizon)
+	bool Expand(uint8_t pass, Simplex::Vertex* w, Face* f, uint8_t e, EPA_status& result, sHorizon& horizon)
 	{
 		if (f->pass == pass)
 		{
@@ -209,24 +209,26 @@ private:
 	StaticList<Face, EPA_MAX_FACES>					m_face_pool;
 };
 
-EPA_result EPAPenetration::Solve(Simplex& simplex)
+EPA_status EPAPenetration::Solve(const Simplex& _src)
 {
-	if (simplex.dimension > 1 && simplex.EncloseOrigin())
-	{
-		result = EPA_result::Valid;
+	result = _src;
 
-		if (Determinant(simplex.v[0].pos - simplex.v[3].pos,
-						simplex.v[1].pos - simplex.v[3].pos,
-						simplex.v[2].pos - simplex.v[3].pos) < 0)
+	if (result.dimension > 1 && result.EncloseOrigin())
+	{
+		status = EPA_status::Valid;
+
+		if (Determinant(result.v[0].pos - result.v[3].pos,
+						result.v[1].pos - result.v[3].pos,
+						result.v[2].pos - result.v[3].pos) < 0)
 		{
-			std::swap(simplex.v[0], simplex.v[1]);
+			std::swap(result.v[0], result.v[1]);
 		}
 
 		HullBuilder hull;
-		Face* tetra[] = { hull.NewFace(&simplex.v[0], &simplex.v[1], &simplex.v[2], result, true),
-						  hull.NewFace(&simplex.v[1], &simplex.v[0], &simplex.v[3], result, true),
-						  hull.NewFace(&simplex.v[2], &simplex.v[1], &simplex.v[3], result, true),
-						  hull.NewFace(&simplex.v[0], &simplex.v[2], &simplex.v[3], result, true) };
+		Face* tetra[] = { hull.NewFace(&result.v[0], &result.v[1], &result.v[2], status, true),
+						  hull.NewFace(&result.v[1], &result.v[0], &result.v[3], status, true),
+						  hull.NewFace(&result.v[2], &result.v[1], &result.v[3], status, true),
+						  hull.NewFace(&result.v[0], &result.v[2], &result.v[3], status, true) };
 
 		if (hull.GetCount() == 4)
 		{
@@ -240,7 +242,7 @@ EPA_result EPAPenetration::Solve(Simplex& simplex)
 			Face::Bind(tetra[1], 2, tetra[2], 1);
 			Face::Bind(tetra[2], 2, tetra[3], 1);
 
-			result = EPA_result::Valid;
+			status = EPA_status::Valid;
 
 			int iterations = 0;
 			while (iterations++ < EPA_MAX_ITERATIONS)
@@ -248,19 +250,19 @@ EPA_result EPAPenetration::Solve(Simplex& simplex)
 				Simplex::Vertex* v = hull.AppendVertex();
 				if (v == nullptr)
 				{
-					result = EPA_result::OutOfVertices;
+					status = EPA_status::OutOfVertices;
 					break;
 				}
 
 				best->pass = ++pass;
 
 				v->dir = best->normal.Unit();
-				v->pos = simplex.Support(v->dir);
+				v->pos = result.m_shape->Support(v->dir);
 
 				const float wdist = DotProduct(best->normal, v->pos) - best->dist;
 				if (wdist <= EPA_ACCURACY)
 				{
-					result = EPA_result::AccuraryReached;
+					status = EPA_status::AccuraryReached;
 					break;
 				}
 
@@ -268,7 +270,7 @@ EPA_result EPAPenetration::Solve(Simplex& simplex)
 				bool valid = true;
 				for (int j = 0; j < 3 && valid; ++j)
 				{
-					valid &= hull.Expand(pass, v, best->adjacent[j], best->edge[j], result, horizon);
+					valid &= hull.Expand(pass, v, best->adjacent[j], best->edge[j], status, horizon);
 				}
 
 				if (valid && horizon.nf >= 3)
@@ -280,7 +282,7 @@ EPA_result EPAPenetration::Solve(Simplex& simplex)
 				}
 				else
 				{
-					result = EPA_result::InvalidHull;
+					status = EPA_status::InvalidHull;
 					break;
 				}
 			}
@@ -288,32 +290,32 @@ EPA_result EPAPenetration::Solve(Simplex& simplex)
 			const Vector3d projection = candidate.normal * candidate.dist;
 			penetration_normal = candidate.normal;
 			penetration_depth = candidate.dist;
-			simplex.dimension = 3;
+			result.dimension = 3;
 			Simplex::Vertex v[3] = { *candidate.v[0], *candidate.v[1], *candidate.v[2] };
-			simplex.v[0] = v[0];
-			simplex.v[1] = v[1];
-			simplex.v[2] = v[2];
-			simplex.w[0] = CrossProduct(v[1].pos - projection, v[2].pos - projection).Length();
-			simplex.w[1] = CrossProduct(v[2].pos - projection, v[0].pos - projection).Length();
-			simplex.w[2] = CrossProduct(v[0].pos - projection, v[1].pos - projection).Length();
-			const float sum = simplex.w[0] + simplex.w[1] + simplex.w[2];
-			simplex.w[0] /= sum;
-			simplex.w[1] /= sum;
-			simplex.w[2] /= sum;
-			return result;
+			result.v[0] = v[0];
+			result.v[1] = v[1];
+			result.v[2] = v[2];
+			result.w[0] = CrossProduct(v[1].pos - projection, v[2].pos - projection).Length();
+			result.w[1] = CrossProduct(v[2].pos - projection, v[0].pos - projection).Length();
+			result.w[2] = CrossProduct(v[0].pos - projection, v[1].pos - projection).Length();
+			const float sum = result.w[0] + result.w[1] + result.w[2];
+			result.w[0] /= sum;
+			result.w[1] /= sum;
+			result.w[2] /= sum;
+			return status;
 		}
 	}
 
-	result = EPA_result::FallBack;
-	penetration_normal = simplex.m_shape->Center();
+	status = EPA_status::FallBack;
+	penetration_normal = result.m_shape->Center();
 	const float nl = penetration_normal.Length();
 	if (nl > 0)
 		penetration_normal = penetration_normal * (1 / nl);
 	else
 		penetration_normal = Vector3d(1, 0, 0);
 	penetration_depth = 0;
-	simplex.dimension = 1;
-	simplex.v[0] = simplex.v[0];
-	simplex.w[0] = 1;
-	return result;
+	result.dimension = 1;
+	result.v[0] = result.v[0];
+	result.w[0] = 1;
+	return status;
 }

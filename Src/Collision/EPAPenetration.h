@@ -2,7 +2,7 @@
 
 #include "Simplex.h"
 
-enum class EPA_result
+enum class EPA_status
 {
 	Valid,
 	Touching,
@@ -19,16 +19,17 @@ enum class EPA_result
 class EPAPenetration
 {
 public:
-	EPA_result	result;
+	EPA_status	status;
 	Vector3d	penetration_normal;
 	float		penetration_depth;
+	Simplex		result;
 
 	EPAPenetration()
 	{
-		result = EPA_result::Failed;
+		status = EPA_status::Failed;
 		penetration_normal = Vector3d(0, 0, 0);
 		penetration_depth = 0;
 	}
 
-	EPA_result Solve(Simplex& simplex);
+	EPA_status Solve(const Simplex& simplex);
 };

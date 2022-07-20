@@ -33,8 +33,8 @@ bool 				OverlapGJKSolver(const void* Obj1, const void* Obj2, const Transform &t
 	
 	GeometryDifference shape(Geom1, Geom2);
 	GJKIntersection gjk;
-	GJK_result gjk_status = gjk.Solve(&shape);
-	if (gjk_status == GJK_result::Inside)
+	GJK_status gjk_status = gjk.Solve(&shape);
+	if (gjk_status == GJK_status::Inside)
 	{
 		return true;
 	}
