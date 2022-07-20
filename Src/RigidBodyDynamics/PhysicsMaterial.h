@@ -17,7 +17,7 @@ struct PhysicsMaterial
 
 	static constexpr float DefaultContactBeta()
 	{
-		return 0.4f;
+		return 0.3f;
 	}
 
 	static constexpr float DefaultRestitution()
