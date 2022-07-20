@@ -36,7 +36,7 @@ bool ProjectedGaussSeidel_CPU::Solve(const float* A, const float* B, int N, floa
 	return false;
 }
 
-bool ProjectedGaussSeidel_CPU::Solve(const float* A, const float* B, const float* X1, const float* X2, int N, float* X, const int MaxIteration, const float kEps, const float Relaxation)
+bool ProjectedGaussSeidel_CPU::Solve(const float* A, const float* B, int N, float* X, const float* X1, const float* X2, const int MaxIteration, const float kEps, const float Relaxation)
 {
 	int Iter = 0;
 	while (Iter++ < MaxIteration)

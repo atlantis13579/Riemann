@@ -28,14 +28,14 @@ public:
 		return x * v.x + y * v.y;
 	}
 
-	inline float	Cross(const Point2& b) const
+	inline float	Cross(const Point2& v) const
 	{
-		return x * b.y - y * b.x;
+		return x * v.y - y * v.x;
 	}
 
 	Point2			Unit() const
 	{
-		float m = (float)Length();
+		float m = Length();
 		return Point2(x / m, y / m);
 	}
 
@@ -55,7 +55,7 @@ public:
 
 	inline float	Length() const
 	{
-		return (float)sqrtf(x * x + y * y);
+		return sqrtf(x * x + y * y);
 	}
 
 	inline float	SquareLength() const
@@ -106,16 +106,6 @@ public:
 		x -= v.x;
 		y -= v.y;
 	}
-
-	void	operator*= (const Point2& v)
-	{
-		x *= v.x;
-		y *= v.y;
-	}
-
-	void	operator/= (const Point2& v)
-	{
-		x /= v.x;
-		y /= v.y;
-	}
 };
+
+static_assert(sizeof(Point2) == 8, "sizeof Point2 is not valid");

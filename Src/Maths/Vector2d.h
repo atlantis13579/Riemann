@@ -41,9 +41,9 @@ public:
 		return x * v.x + y * v.y;
 	}
 
-	inline T	Cross(const TVector2<T>& b) const
+	inline T	Cross(const TVector2<T>& v) const
 	{
-		return x * b.y - y * b.x;
+		return x * v.y - y * v.x;
 	}
 
 	TVector2<T>	Unit() const

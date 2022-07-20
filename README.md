@@ -20,7 +20,7 @@ Rigid Body Dynamics Simulation
     * Bounding Volume Hierarchy
     * Sweep and Prune
     * Gilbert–Johnson–Keerthi algorithm
-    * Expanding Polytope Algorithm
+    * Expanding Polytope algorithm
     
 * Numerical Solver
     * Explicit Euler / Symplectic Euler / Implicit Euler / Verlet Integrator
@@ -41,6 +41,6 @@ Vehicle Dynamics Solver
 
 ## Examples
 
-#### Rigid Body Dynamics Simulation for Multiple boxes
+#### Rigid Body Dynamics Simulation for multiple boxes
 
 ![111](https://user-images.githubusercontent.com/29682318/179689750-4481183e-54a8-4777-a36c-04a562a538bf.jpg)

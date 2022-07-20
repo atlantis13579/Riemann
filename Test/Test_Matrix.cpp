@@ -145,7 +145,7 @@ void TestPGS()
 	B[0] = 10.5f;
 	B[1] = 17.0f;
 	B[2] = 242.0f;
-	ProjectedGaussSeidel_CPU::Solve(A.GetData(), B.GetData(), X1.GetData(), X2.GetData(), X.GetSize(), X.GetData(), 50);
+	ProjectedGaussSeidel_CPU::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), X1.GetData(), X2.GetData(), 50);
 	Y = A * X + B;
 	dp = Y.Dot(X);
 	EXPECT(X >= X1);
