@@ -109,9 +109,9 @@ void TestEPA()
 {
 	printf("Running TestEPA\n");
 
-	// Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, -5.0f, 0.0f), Vector3d::UnitY(), 1.0f);
-	Geometry* plane1 = GeometryFactory::CreateOBB(Vector3d(0.0f, -5.0f, 0.0f), Vector3d(1.0f, 1.0f, 1.0f), Quaternion::One());
-	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
+	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, -5.0f, 0.0f), Vector3d::UnitY(), 1.0f);
+	// Geometry* plane1 = GeometryFactory::CreateOBB(Vector3d(0.0f, -5.0f, 0.0f), Vector3d(100.0f, 1.0f, 100.0f), Quaternion::One());
+	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One() * 1.0f, Quaternion::One());
 	obb1->SetPosition(Vector3d(0.0f, -3.7f, 0.0f));
 	obb1->UpdateBoundingVolume();
 
@@ -123,7 +123,7 @@ void TestEPA()
 	EXPECT(gjk_status == GJK_result::Inside);
 
 	EPAPenetration epa;
-	EPA_result epa_status = epa.Solve(gjk.simplex, &shape, -guess);
+	EPA_result epa_status = epa.Solve(gjk.simplex, -guess);
 	EXPECT(epa_status == EPA_result::AccuraryReached);
 
 	return;
@@ -520,8 +520,8 @@ void TestSAPInc()
 
 void TestCollision()
 {
-	//TestSupport();
-	//TestGJK();
+	TestSupport();
+	TestGJK();
 	TestEPA();
 	TestOverlap();
 	TestRayAABB();

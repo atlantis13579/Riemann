@@ -20,9 +20,18 @@ public:
 	float		w[4];				// barycentric coordinate
 	int			dimension;
 
+private:
+	MinkowskiSum* m_shape;
+
 public:
 	Simplex()
 	{
+		Init(nullptr);
+	}
+
+	void Init(MinkowskiSum* _shape)
+	{
+		m_shape = _shape;
 		dimension = 0;
 	}
 
@@ -31,13 +40,10 @@ public:
 		return v[dimension - 1].pos;
 	}
 
-	void AddPoint(const Vector3d& dir, MinkowskiSum* Shape)
+	void AddPoint(const Vector3d& dir)
 	{
 		v[dimension].dir = dir.Unit();
-		if (Shape)
-		{
-			v[dimension].pos = Shape->Support(v[dimension].dir);
-		}
+		v[dimension].pos = m_shape->Support(v[dimension].dir);
 		dimension++;
 	}
 
@@ -85,6 +91,11 @@ public:
 		return false;
 	}
 
+	Vector3d Support(const Vector3d& Dir) const
+	{
+		return m_shape->Support(Dir);
+	}
+
 	bool EncloseOrigin()
 	{
 		switch (dimension)
@@ -95,11 +106,11 @@ public:
 			{
 				Vector3d axis = Vector3d(0, 0, 0);
 				axis[i] = 1;
-				AddPoint(axis, nullptr);
+				AddPoint(axis);
 				if (EncloseOrigin())
 					return true;
 				RemovePoint();
-				AddPoint(-axis, nullptr);
+				AddPoint(-axis);
 				if (EncloseOrigin())
 					return true;
 				RemovePoint();
@@ -116,11 +127,11 @@ public:
 				Vector3d p = CrossProduct(d, axis);
 				if (p.SquareLength() > 0)
 				{
-					AddPoint(p, nullptr);
+					AddPoint(p);
 					if (EncloseOrigin())
 						return true;
 					RemovePoint();
-					AddPoint(-p, nullptr);
+					AddPoint(-p);
 					if (EncloseOrigin())
 						return true;
 					RemovePoint();
@@ -133,11 +144,11 @@ public:
 			Vector3d n = CrossProduct(v[1].pos - v[0].pos, v[2].pos - v[0].pos);
 			if (n.SquareLength() > 0)
 			{
-				AddPoint(n, nullptr);
+				AddPoint(n);
 				if (EncloseOrigin())
 					return true;
 				RemovePoint();
-				AddPoint(-n, nullptr);
+				AddPoint(-n);
 				if (EncloseOrigin())
 					return true;
 				RemovePoint();

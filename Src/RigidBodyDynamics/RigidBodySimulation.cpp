@@ -94,6 +94,9 @@ struct ContactJacobians
 
 static void	ResolutionPhase(std::vector<ContactManifold> &manifolds, float dt)
 {
+	if (manifolds.empty())
+		return;
+
 	int nJacobians = 0;
 	for (size_t i = 0; i < manifolds.size(); ++i)
 	{
@@ -102,7 +105,7 @@ static void	ResolutionPhase(std::vector<ContactManifold> &manifolds, float dt)
 			nJacobians++;
 		}
 	}
-	
+
 	std::vector<ContactJacobians> jacobians;
 	jacobians.resize(nJacobians);
 	

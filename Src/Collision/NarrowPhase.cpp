@@ -46,8 +46,8 @@ public:
 		}
 
 		EPAPenetration epa;
-		EPA_result epa_status = epa.Solve(gjk.simplex, &shape, -guess);
-		if (epa_status == EPA_result::Failed || epa_status == EPA_result::FallBack)
+		EPA_result epa_status = epa.Solve(gjk.simplex, -guess);
+		if (epa_status == EPA_result::Failed)
 		{
 			return false;
 		}

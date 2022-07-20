@@ -16,11 +16,11 @@ struct Face
 {
 	Vector3d n;
 	float d;
-	Simplex::Vertex* c[3];
+	Simplex::Vertex* v[3];
 	Face* f[3];
 	Face* l[2];
-	int e[3];
-	int pass;
+	unsigned char e[3];
+	unsigned char pass;
 
 	static inline void Bind(Face* fa, int ea, Face* fb, int eb)
 	{
@@ -94,63 +94,59 @@ public:
 
 	Face* NewFace(Simplex::Vertex* a, Simplex::Vertex* b, Simplex::Vertex* c, EPA_result& result, bool forced)
 	{
-		if (m_stock.root == nullptr)
+		if (m_stock.root)
 		{
-			result = EPA_result::OutOfFaces;
-			return nullptr;
-		}
+			Face* face = m_stock.root;
+			m_stock.Remove(face);
+			m_hull.Append(face);
+			face->pass = 0;
+			face->v[0] = a;
+			face->v[1] = b;
+			face->v[2] = c;
+			face->n = CrossProduct(b->pos - a->pos, c->pos - a->pos);
 
-		Face* face = m_stock.root;
-		m_stock.Remove(face);
-		m_hull.Append(face);
-		face->pass = 0;
-		face->c[0] = a;
-		face->c[1] = b;
-		face->c[2] = c;
-		face->n = CrossProduct(b->pos - a->pos, c->pos - a->pos);
-
-		const float l = face->n.Length();
-		if (l > EPA_ACCURACY)
-		{
-			if (!(GetEdgeDist(face, a, b, face->d) ||
-				GetEdgeDist(face, b, c, face->d) ||
-				GetEdgeDist(face, c, a, face->d)))
+			const float l = face->n.Length();
+			if (l > EPA_ACCURACY)
 			{
-				// Origin projects to the interior of the triangle
-				// Use distance to triangle plane
-				face->d = DotProduct(a->pos, face->n) / l;
-			}
+				if (!(GetEdgeDist(face, a, b, face->d) ||
+					GetEdgeDist(face, b, c, face->d) ||
+					GetEdgeDist(face, c, a, face->d)))
+				{
+					// Origin projects to the interior of the triangle
+					// Use distance to triangle plane
+					face->d = DotProduct(a->pos, face->n) / l;
+				}
 
-			face->n = face->n * (1 / l);
-			if (forced || (face->d >= -EPA_PLANE_EPS))
-			{
-				return face;
+				face->n = face->n * (1 / l);
+				if (forced || (face->d >= -EPA_PLANE_EPS))
+				{
+					return face;
+				}
+				else
+				{
+					result = EPA_result::NonConvex;
+				}
 			}
 			else
 			{
-				result = EPA_result::NonConvex;
+				result = EPA_result::Degenerated;
 			}
-		}
-		else
-		{
-			result = EPA_result::Degenerated;
-		}
 
-		m_hull.Remove(face);
-		m_stock.Append(face);
+			m_hull.Remove(face);
+			m_stock.Append(face);
+		}
+		result = m_stock.root ? EPA_result::OutOfVertices : EPA_result::OutOfFaces;
 		return nullptr;
 	}
 
-	bool Expand(int pass, Simplex::Vertex* w, Face* f, int e, EPA_result& result, sHorizon& horizon)
+	bool Expand(unsigned char pass, Simplex::Vertex* w, Face* f, int e, EPA_result& result, sHorizon& horizon)
 	{
-		const int i1m3[] = { 1, 2, 0 };
-		const int i2m3[] = { 2, 0, 1 };
 		if (f->pass != pass)
 		{
-			int e1 = i1m3[e];
+			int e1 = (e + 1) % 3;
 			if ((DotProduct(f->n, w->pos) - f->d) < -EPA_PLANE_EPS)
 			{
-				Face* nf = NewFace(f->c[e1], f->c[e], w, result, false);
+				Face* nf = NewFace(f->v[e1], f->v[e], w, result, false);
 				if (nf)
 				{
 					Face::Bind(nf, 0, f, e);
@@ -165,8 +161,8 @@ public:
 			}
 			else
 			{
-				int e2 = i2m3[e];
-				f->pass = (int)pass;
+				int e2 = (e + 2) % 3;
+				f->pass = pass;
 				if (Expand(pass, w, f->f[e1], f->e[e1], result, horizon) && Expand(pass, w, f->f[e2], f->e[e2], result, horizon))
 				{
 					m_hull.Remove(f);
@@ -252,7 +248,7 @@ private:
 	List m_stock;
 };
 
-EPA_result EPAPenetration::Solve(Simplex& simplex, MinkowskiSum* Shape, const Vector3d& InitGuess)
+EPA_result EPAPenetration::Solve(Simplex& simplex, const Vector3d& InitGuess)
 {
 	if (simplex.dimension > 1 && simplex.EncloseOrigin())
 	{
@@ -290,7 +286,7 @@ EPA_result EPAPenetration::Solve(Simplex& simplex, MinkowskiSum* Shape, const Ve
 			{
 				if (hull.GetVertexCount() >= EPA_MAX_VERTICES)
 				{
-					result = EPA_result::AccuraryReached;
+					result = EPA_result::OutOfVertices;
 					break;
 				}
 
@@ -300,7 +296,7 @@ EPA_result EPAPenetration::Solve(Simplex& simplex, MinkowskiSum* Shape, const Ve
 				best->pass = ++pass;
 
 				v->dir = best->n.Unit();
-				v->pos = Shape->Support(v->dir);
+				v->pos = simplex.Support(v->dir);
 
 				const float wdist = DotProduct(best->n, v->pos) - best->d;
 				if (wdist <= EPA_ACCURACY)
@@ -332,12 +328,12 @@ EPA_result EPAPenetration::Solve(Simplex& simplex, MinkowskiSum* Shape, const Ve
 			penetration_normal = outer.n;
 			penetration_depth = outer.d;
 			simplex.dimension = 3;
-			simplex.v[0] = *outer.c[0];
-			simplex.v[1] = *outer.c[1];
-			simplex.v[2] = *outer.c[2];
-			simplex.w[0] = CrossProduct(outer.c[1]->pos - projection, outer.c[2]->pos - projection).Length();
-			simplex.w[1] = CrossProduct(outer.c[2]->pos - projection, outer.c[0]->pos - projection).Length();
-			simplex.w[2] = CrossProduct(outer.c[0]->pos - projection, outer.c[1]->pos - projection).Length();
+			simplex.v[0] = *outer.v[0];
+			simplex.v[1] = *outer.v[1];
+			simplex.v[2] = *outer.v[2];
+			simplex.w[0] = CrossProduct(outer.v[1]->pos - projection, outer.v[2]->pos - projection).Length();
+			simplex.w[1] = CrossProduct(outer.v[2]->pos - projection, outer.v[0]->pos - projection).Length();
+			simplex.w[2] = CrossProduct(outer.v[0]->pos - projection, outer.v[1]->pos - projection).Length();
 			const float sum = simplex.w[0] + simplex.w[1] + simplex.w[2];
 			simplex.w[0] /= sum;
 			simplex.w[1] /= sum;
