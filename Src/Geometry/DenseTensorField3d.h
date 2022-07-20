@@ -17,32 +17,40 @@ class DenseTensorField3d
 public:
 	DenseTensorField3d(const Box3d & BV, int nX, int nY, int nZ) : m_Fields({nX, nY, nZ})
 	{
+		m_IsConstField = false;
 		m_ConstTensor = TensorType::Zero();
 
 		m_BV = BV;
-		m_Size = TVector3<int>(nX, nY, nZ);
+		m_nX = nX;
+		m_nY = nY;
+		m_nZ = nZ;
 		m_CellSize = (BV.Max - BV.Min);
-		m_CellSize.x /= m_Size.x;
-		m_CellSize.y /= m_Size.y;
-		m_CellSize.z /= m_Size.z;
+		m_CellSize.x /= m_nX;
+		m_CellSize.y /= m_nY;
+		m_CellSize.z /= m_nZ;
 		m_InvCellSize = Vector3d(1.0f / m_CellSize.x, 1.0f / m_CellSize.y, 1.0f / m_CellSize.z);
 		m_InterpMethod = InterpMethod::BILINEAR;
 	}
 
-	DenseTensorField3d() : m_Fields({ 1, 1, 1 })
+	DenseTensorField3d(const TensorType& v)
 	{
-		m_BV = Box3d::Unit();
-		m_Size = TVector3<int>(1, 1, 1);
-		m_CellSize = m_InvCellSize = Vector3d::One();
+		m_IsConstField = true;
+		m_ConstTensor = v;
 	}
 
 	~DenseTensorField3d()
 	{
+
 	}
 
 public:
 	TensorType GetTensorByPosition(const Vector3d& pos) const
 	{
+		if (m_IsConstField)
+		{
+			return m_ConstTensor;
+		}
+
 		const float fx = (pos.x - m_BV.Min.x) * m_InvCellSize.x - 0.5f;
 		const float fy = (pos.y - m_BV.Min.y) * m_InvCellSize.y - 0.5f;
 		const float fz = (pos.z - m_BV.Min.z) * m_InvCellSize.z - 0.5f;
@@ -76,8 +84,10 @@ public:
 	}
 
 private:
+	bool					m_IsConstField;
 	TensorType				m_ConstTensor;
 	Box3d					m_BV;
+	int						m_nX, m_nY, m_nZ;
 	TVector3<int>			m_Size;
 	Vector3d				m_CellSize, m_InvCellSize;
 	Tensor<TensorType, 3>	m_Fields;

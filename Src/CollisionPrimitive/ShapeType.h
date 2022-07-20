@@ -1,6 +1,6 @@
 #pragma once
 
-enum class ShapeType3d
+enum ShapeType3d
 {
 	UNKNOWN = 0,
 	BOX,
@@ -13,5 +13,5 @@ enum class ShapeType3d
 	HEIGHTFIELD,
 	CONVEX_MESH,
 	TRIANGLE_MESH,
-	TYPE_COUNT,
+	GEOMETRY_COUNT,
 };

@@ -235,8 +235,8 @@ private:
 		}
 		if (min_sqr_dist == FLT_MAX)
 		{
-			float signedProjLen = DotProduct(a, n) / l;
-			proj = n * signedProjLen;
+			float signedLen = DotProduct(a, n) / l;
+			proj = n * signedLen;
 			mask = 0b0111;
 		}
 		return true;

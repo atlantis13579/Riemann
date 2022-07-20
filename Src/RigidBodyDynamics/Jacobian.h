@@ -20,7 +20,7 @@ struct  Jacobian
 		m_jwa = Vector3d::Zero();
 	}
 
-	void Setup(ContactManifold* manifold, int idx, JacobianType jt, const Vector3d& dir, float dt);
+	void Init(ContactManifold* manifold, int idx, JacobianType jt, Vector3d dir, float dt);
 	void Solve(ContactManifold* manifold, Jacobian& jN, float dt);
 
 	JacobianType jacobinType;

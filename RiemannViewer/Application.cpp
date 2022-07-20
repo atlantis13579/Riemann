@@ -108,7 +108,7 @@ void InitScene()
 		rp.Static = false;
         rp.LinearDamping = 0.99f;
         rp.AngularDamping = 0.99f;
-        for (int i = 0; i < 5; ++i)
+        for (int i = 0; i < 1; ++i)
         for (int j = 0; j < 5; ++j)
         for (int k = 0; k < 5; ++k)
         {

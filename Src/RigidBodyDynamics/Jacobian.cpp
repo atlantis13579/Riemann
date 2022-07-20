@@ -10,7 +10,7 @@ RigidBody* GetRigidBody(Geometry *Geom)
 	return static_cast<RigidBody*>(Geom->GetEntity());
 }
 
-void Jacobian::Setup(ContactManifold* manifold, int idx, JacobianType jt, const Vector3d& dir, float dt)
+void Jacobian::Init(ContactManifold* manifold, int idx, JacobianType jt, Vector3d dir, float dt)
 {
 	jacobinType = jt;
 

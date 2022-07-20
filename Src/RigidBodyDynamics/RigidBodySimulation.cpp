@@ -19,7 +19,8 @@ RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 	m_BPhase = BroadPhase::Create_SAP();
 	m_NPhase = NarrowPhase::Create_GJKEPA();
 	m_GeometryQuery = new GeometryQuery;
-	m_Fields.push_back(ForceField::CreateGrivityField(param.Gravity));
+	m_GravityField = new ForceField(param.Gravity);
+	m_WindField = nullptr;
 	m_SharedMem = nullptr;
 	m_SharedMemSize = 0;
 }
@@ -44,9 +45,16 @@ RigidBodySimulation::~RigidBodySimulation()
 		m_NPhase = nullptr;
 	}
 
-	for (size_t i = 0; i < m_Fields.size(); ++i)
+	if (m_GravityField)
 	{
-		delete m_Fields[i];
+		delete m_GravityField;
+		m_GravityField = nullptr;
+	}
+
+	if (m_WindField)
+	{
+		delete m_WindField;
+		m_WindField = nullptr;
 	}
 
 	for (size_t i = 0; i < m_RigidStatics.size(); ++i)
@@ -107,9 +115,9 @@ static void	ResolutionPhase(std::vector<ContactManifold> &manifolds, float dt)
 		for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
 		{
 			ContactManifold *manifold = &manifolds[i];
-			jacobians[k].jN.Setup(manifold, j, JacobianType::Normal,	manifold->ContactPoints[j].Normal, dt);
-			jacobians[k].jT.Setup(manifold, j, JacobianType::Tangent, manifold->ContactPoints[j].Tangent1, dt);
-			jacobians[k].jB.Setup(manifold, j, JacobianType::Tangent, manifold->ContactPoints[j].Tangent2, dt);
+			jacobians[k].jN.Init(manifold, j, JacobianType::Normal,	manifold->ContactPoints[j].Normal, dt);
+			jacobians[k].jT.Init(manifold, j, JacobianType::Tangent, manifold->ContactPoints[j].Tangent1, dt);
+			jacobians[k].jB.Init(manifold, j, JacobianType::Tangent, manifold->ContactPoints[j].Tangent2, dt);
 			k++;
 		}
 	}
@@ -131,8 +139,6 @@ static void	ResolutionPhase(std::vector<ContactManifold> &manifolds, float dt)
 
 void		RigidBodySimulation::SimulateSingleThread(float dt)
 {
-	ApplyForceFields();
-
 	MotionIntegration::Integrate(m_RigidDynamics, dt, MotionIntegration::IntegrateMethod::ExplicitEuler);
 
 	std::vector<Geometry*> Shapes;
@@ -161,6 +167,9 @@ void		RigidBodySimulation::SimulateSingleThread(float dt)
 	
 	ResolutionPhase(manifolds, dt);
 
+	ApplyGravity();
+	ApplyWind();
+
 	for (size_t i = 0; i < m_Kinematics.size(); ++i)
 	{
 		m_Kinematics[i]->Simulate(dt);
@@ -169,14 +178,33 @@ void		RigidBodySimulation::SimulateSingleThread(float dt)
 	return;
 }
 
-void		RigidBodySimulation::ApplyForceFields()
+void		RigidBodySimulation::ApplyGravity()
 {
-	for (size_t j = 0; j < m_Fields.size(); ++j)
+	if (m_GravityField == nullptr)
 	{
-		for (size_t i = 0; i < m_RigidDynamics.size(); ++i)
+		return;
+	}
+
+	for (size_t i = 0; i < m_RigidDynamics.size(); ++i)
+	{
+		if (m_RigidDynamics[i]->DisableGravity)
 		{
-			m_Fields[j]->ApplyForce(m_RigidDynamics[i]);
+			continue;
 		}
+		m_GravityField->ApplyForce(m_RigidDynamics[i]);
+	}
+}
+
+void		RigidBodySimulation::ApplyWind()
+{
+	if (m_WindField == nullptr)
+	{
+		return;
+	}
+
+	for (size_t i = 0; i < m_RigidDynamics.size(); ++i)
+	{
+		m_WindField->ApplyForce(m_RigidDynamics[i]);
 	}
 }
 
