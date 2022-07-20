@@ -25,10 +25,12 @@ class GJKIntersection
 public:
 	Simplex			simplex;
 
-	GJK_result Solve(MinkowskiSum* InShape, const Vector3d& InitGuess)
+	GJK_result Solve(MinkowskiSum* InShape)
 	{
+		Vector3d InitGuess = InShape->Center();
+
 		simplex.Init(InShape);
-		simplex.AddPoint(InitGuess.SquareLength() > 0 ? -InitGuess : Vector3d::UnitX());
+		simplex.AddPoint(InitGuess.SquareLength() > 0 ? InitGuess : -Vector3d::UnitX());
 		Vector3d SearchDir = simplex.v[0].pos;
 
 		int nlastp = 0;

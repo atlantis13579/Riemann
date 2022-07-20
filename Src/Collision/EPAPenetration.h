@@ -30,5 +30,5 @@ public:
 		penetration_depth = 0;
 	}
 
-	EPA_result Solve(Simplex& simplex, const Vector3d& InitGuess);
+	EPA_result Solve(Simplex& simplex);
 };

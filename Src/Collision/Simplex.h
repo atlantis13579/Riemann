@@ -5,9 +5,9 @@
 #include "../Maths/Vector3d.h"
 #include "MinkowskiSum.h"
 
-#define SIMPLEX2_EPS (0.0f)
-#define SIMPLEX3_EPS (0.0f)
-#define SIMPLEX4_EPS (0.0f)
+#define SIMPLEX2_EPS (1e-9f)
+#define SIMPLEX3_EPS (1e-9f)
+#define SIMPLEX4_EPS (1e-9f)
 
 class Simplex
 {
@@ -19,8 +19,6 @@ public:
 	Vertex		v[4];
 	float		w[4];				// barycentric coordinate
 	int			dimension;
-
-private:
 	MinkowskiSum* m_shape;
 
 public:
@@ -172,27 +170,28 @@ private:
 	{
 		Vector3d d = b - a;
 		float l = d.SquareLength();
-		if (l > SIMPLEX2_EPS)
+		if (l <= SIMPLEX2_EPS)
 		{
-			float t = -DotProduct(a, d) / l;
-			if (t >= 1.0f)
-			{
-				pos = b;
-				mask = 0b0010;
-			}
-			else if (t <= 0.0f)
-			{
-				pos = a;
-				mask = 0b0001;
-			}
-			else
-			{
-				pos = a + d * t;
-				mask = 0b0011;
-			}
-			return true;
+			return false;
 		}
-		return false;
+	
+		float t = -DotProduct(a, d) / l;
+		if (t >= 1.0f)
+		{
+			pos = b;
+			mask = 0b0010;
+		}
+		else if (t <= 0.0f)
+		{
+			pos = a;
+			mask = 0b0001;
+		}
+		else
+		{
+			pos = a + d * t;
+			mask = 0b0011;
+		}
+		return true;
 	}
 
 	static bool ProjectOriginTriangle(const Vector3d& a, const Vector3d& b, const Vector3d& c, Vector3d& pos, int& mask)
@@ -202,74 +201,72 @@ private:
 		Vector3d	n = CrossProduct(dl[0], dl[1]);
 
 		const float l = n.SquareLength();
-		if (l > SIMPLEX3_EPS)
+		if (l <= SIMPLEX3_EPS)
 		{
-			float mindist = FLT_MAX;
-			Vector3d subpos;
-			int submask = 0;
-			for (int i = 0; i < 3; ++i)
+			return false;
+		}
+
+		Vector3d subpos;
+		int submask = 0;
+		float min_sqr_dist = FLT_MAX;
+		for (int i = 0; i < 3; ++i)
+		{
+			Vector3d ns = CrossProduct(dl[i], n);
+			float dp = DotProduct(v[i], ns);
+			if (dp > 0)
 			{
-				Vector3d ns = CrossProduct(dl[i], n);
-				float dp = DotProduct(v[i], ns);
-				if (dp > 0)
+				int j = (i + 1) % 3;
+				if (ProjectOriginSegment(v[i], v[j], subpos, submask) && subpos.SquareLength() < min_sqr_dist)
 				{
-					int j = (i + 1) % 3;
-					float dist = ProjectOriginSegment(v[i], v[j], subpos, submask);
-					if (dist < mindist)
-					{
-						mindist = dist;
-						mask = ((submask & 1) ? 1 << i : 0) + ((submask & 2) ? 1 << j : 0);
-						pos = subpos;
-					}
+					min_sqr_dist = subpos.SquareLength();
+					pos = subpos;
+					mask = ((submask & 1) ? 1 << i : 0) + ((submask & 2) ? 1 << j : 0);
 				}
 			}
-			if (mindist == FLT_MAX)
-			{
-				const float d = DotProduct(a, n);
-				Vector3d p = n * (d / l);
-				mindist = p.SquareLength();
-				pos = sqrtf(mindist) * n;
-				mask = 0b0111;
-			}
-			return true;
 		}
-		return false;
+		if (min_sqr_dist == FLT_MAX)
+		{
+			float signedLen = DotProduct(a, n) / l;
+			pos = n * signedLen;
+			mask = 0b0111;
+		}
+		return true;
 	}
 
 	static bool ProjectOriginTetrahedral(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, Vector3d& pos, int& mask)
 	{
 		const Vector3d* vt[] = { &a, &b, &c, &d };
 		Vector3d dl[] = { a - d, b - d, c - d };
+		Vector3d n = CrossProduct(b - c, a - b);
 		float vl = Determinant(dl[0], dl[1], dl[2]);
-		bool ng = (vl * DotProduct(a, CrossProduct(b - c, a - b))) <= 0;
-		if (ng && (fabsf(vl) > SIMPLEX4_EPS))
+		float dp = DotProduct(a, n);
+		if (vl * dp > 0 || fabsf(vl) <= SIMPLEX4_EPS)
 		{
-			float mindist = FLT_MAX;
-			Vector3d subpos;
-			int submask = 0;
-			for (int i = 0; i < 3; ++i)
+			return false;
+		}
+
+		Vector3d subpos;
+		int submask = 0;
+		float min_sqr_dist = FLT_MAX;
+		for (int i = 0; i < 3; ++i)
+		{
+			int j = (i + 1) % 3;
+			float s = vl * DotProduct(d, CrossProduct(dl[i], dl[j]));
+			if (s > 0)
 			{
-				int j = (i + 1) % 3;
-				float s = vl * DotProduct(d, CrossProduct(dl[i], dl[j]));
-				if (s > 0)
+				if (ProjectOriginTriangle(*vt[i], *vt[j], d, subpos, submask) && subpos.SquareLength() < min_sqr_dist)
 				{
-					float dist = ProjectOriginTriangle(*vt[i], *vt[j], d, subpos, submask);
-					if (dist < mindist)
-					{
-						mindist = dist;
-						pos = subpos;
-						mask = (submask & 1 ? 1 << i : 0) + (submask & 2 ? 1 << j : 0) + (submask & 4 ? 8 : 0);
-					}
+					min_sqr_dist = subpos.SquareLength();
+					pos = subpos;
+					mask = ((submask & 1) ? 1 << i : 0) + ((submask & 2) ? 1 << j : 0) + ((submask & 4) ? 8 : 0);
 				}
 			}
-			if (mindist == FLT_MAX)
-			{
-				mindist = 0;
-				pos = Vector3d::Zero();
-				mask = 0b1111;
-			}
-			return true;
 		}
-		return false;
+		if (min_sqr_dist == FLT_MAX)
+		{
+			pos = Vector3d::Zero();
+			mask = 0b1111;
+		}
+		return true;
 	}
 };

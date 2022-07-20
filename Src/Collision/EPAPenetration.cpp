@@ -248,7 +248,7 @@ private:
 	List m_stock;
 };
 
-EPA_result EPAPenetration::Solve(Simplex& simplex, const Vector3d& InitGuess)
+EPA_result EPAPenetration::Solve(Simplex& simplex)
 {
 	if (simplex.dimension > 1 && simplex.EncloseOrigin())
 	{
@@ -344,7 +344,7 @@ EPA_result EPAPenetration::Solve(Simplex& simplex, const Vector3d& InitGuess)
 	}
 
 	result = EPA_result::FallBack;
-	penetration_normal = -InitGuess;
+	penetration_normal = simplex.m_shape->Center();
 	const float nl = penetration_normal.Length();
 	if (nl > 0)
 		penetration_normal = penetration_normal * (1 / nl);

@@ -52,10 +52,8 @@ void TestSupport()
 bool GJK_Solve(Geometry *Geom1, Geometry* Geom2)
 {
 	GeometryDifference shape(Geom1, Geom2);
-	Vector3d guess = shape.GetCenter();
-
 	GJKIntersection gjk;
-	GJK_result gjk_status = gjk.Solve(&shape, -guess);
+	GJK_result gjk_status = gjk.Solve(&shape);
 	if (gjk_status == GJK_result::Inside)
 	{
 		return true;
@@ -109,21 +107,35 @@ void TestEPA()
 {
 	printf("Running TestEPA\n");
 
-	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, -5.0f, 0.0f), Vector3d::UnitY(), 1.0f);
-	// Geometry* plane1 = GeometryFactory::CreateOBB(Vector3d(0.0f, -5.0f, 0.0f), Vector3d(100.0f, 1.0f, 100.0f), Quaternion::One());
+	// Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, -5.0f, 0.0f), Vector3d::UnitY(), 1.0f);
+	Geometry* plane1 = GeometryFactory::CreateOBB(Vector3d(0.0f, -5.0f, 0.0f), Vector3d(100.0f, 1.0f, 100.0f), Quaternion::One());
 	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One() * 1.0f, Quaternion::One());
 	obb1->SetPosition(Vector3d(0.0f, -3.7f, 0.0f));
-	obb1->UpdateBoundingVolume();
-
-	GeometryDifference shape(plane1, obb1);
-	Vector3d guess = shape.GetCenter();
 
 	GJKIntersection gjk;
-	GJK_result gjk_status = gjk.Solve(&shape, -guess);
-	EXPECT(gjk_status == GJK_result::Inside);
+	GJK_result gjk_status;
 
 	EPAPenetration epa;
-	EPA_result epa_status = epa.Solve(gjk.simplex, -guess);
+	EPA_result epa_status;
+
+	GeometryDifference shape(plane1, obb1);
+
+	gjk_status = gjk.Solve(&shape);
+	EXPECT(gjk_status == GJK_result::Inside);
+
+	epa_status = epa.Solve(gjk.simplex);
+	EXPECT(epa_status == EPA_result::AccuraryReached);
+
+	obb1->SetPosition(Vector3d(20.0f, -3.7f, 0.0f));
+	gjk_status = gjk.Solve(&shape);
+	EXPECT(gjk_status == GJK_result::Inside);
+	epa_status = epa.Solve(gjk.simplex);
+	EXPECT(epa_status == EPA_result::AccuraryReached);
+
+	obb1->SetPosition(Vector3d(-20.0f, -3.7f, 0.0f));
+	gjk_status = gjk.Solve(&shape);
+	EXPECT(gjk_status == GJK_result::Inside);
+	epa_status = epa.Solve(gjk.simplex);
 	EXPECT(epa_status == EPA_result::AccuraryReached);
 
 	return;

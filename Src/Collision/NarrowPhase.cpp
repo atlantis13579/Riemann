@@ -36,17 +36,15 @@ public:
 	bool Penetration(Geometry* Geom1, Geometry* Geom2, ContactResult& result)
 	{
 		GeometryDifference shape(Geom1, Geom2);
-		Vector3d guess = shape.GetCenter();
-
 		GJKIntersection gjk;
-		GJK_result gjk_result = gjk.Solve(&shape, -guess);
+		GJK_result gjk_result = gjk.Solve(&shape);
 		if (gjk_result != GJK_result::Inside)
 		{
 			return false;
 		}
 
 		EPAPenetration epa;
-		EPA_result epa_result = epa.Solve(gjk.simplex, -guess);
+		EPA_result epa_result = epa.Solve(gjk.simplex);
 		if (epa_result == EPA_result::Failed || epa_result == EPA_result::FallBack)
 		{
 			return false;

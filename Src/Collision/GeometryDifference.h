@@ -24,7 +24,7 @@ public:
 		return Geom2->GetSupport_WorldSpace(Dir);
 	}
 	
-	Vector3d GetCenter() const
+	virtual Vector3d Center() const override
 	{
 		Vector3d position1 = Geom1->GetBoundingVolume_WorldSpace().GetCenter();
 		Vector3d position2 = Geom2->GetBoundingVolume_WorldSpace().GetCenter();
