@@ -1,6 +1,5 @@
 #pragma once
 
-#include <float.h>
 #include "MinkowskiSum.h"
 #include "Simplex.h"
 
@@ -25,57 +24,52 @@ class GJKIntersection
 {
 public:
 	Simplex			simplex;
-	float			distance;
 
-	GJK_result Solve(MinkowskiSum* shape)
+	GJK_result Solve(MinkowskiSum* InShape)
 	{
-		Vector3d InitGuess = shape->Center();
+		Vector3d InitGuess = InShape->Center();
 
-		distance = -1.0f;
-		simplex.Init(shape);
+		simplex.Init(InShape);
 		simplex.AddPoint(InitGuess.SquareLength() > 0 ? InitGuess : -Vector3d::UnitX());
-		Vector3d dir = simplex.v[0].pos;
+		Vector3d SearchDir = simplex.v[0].pos;
 
 		int nlastp = 0;
-		Vector3d lastp[4] = { dir, dir, dir, dir };
+		Vector3d lastp[4] = { SearchDir, SearchDir, SearchDir, SearchDir };
 
-		float max_acc = 0.0f;
+		float max_omega = 0.0f;
+
 		int iter = 0;
 		while (iter++ < GJK_MAX_ITERATIONS)
 		{
-			distance = dir.Length();
-			if (distance < GJK_MIN_DISTANCE)
+			float rl = SearchDir.Length();
+			if (rl < GJK_MIN_DISTANCE)
 			{
 				return GJK_result::Inside;
 			}
 
-			simplex.AddPoint(-dir);
+			simplex.AddPoint(-SearchDir);
 
 			const Vector3d& p = simplex.LastPoint();
 			if (IsDuplicated(lastp, p))
 			{
-				// Find duplicate point, stop searching to avoid infinite loop
 				simplex.RemovePoint();
 				break;
 			}
 			else
 			{
-				nlastp = (nlastp + 1) & 3;
-				lastp[nlastp] = p;
+				lastp[nlastp = (nlastp + 1) & 3] = p;
 			}
 
-			float acc = DotProduct(dir, p) / distance;
-			max_acc = acc > max_acc ? acc : max_acc;
-
-			// Exceed accuracy, stop searching
-			if (distance - max_acc <= GJK_ACCURACY * distance)
+			float omega = DotProduct(SearchDir, p) / rl;
+			max_omega = omega > max_omega ? omega : max_omega;
+			if (((rl - max_omega) - (GJK_ACCURACY * rl)) <= 0)
 			{
 				simplex.RemovePoint();
 				break;
 			}
 
 			int mask = 0;
-			if (simplex.ProjectOrigin(dir, mask))
+			if (simplex.ProjectOrigin(SearchDir, mask))
 			{
 				simplex.UpdatePointSet(mask);
 
@@ -112,23 +106,10 @@ private:
 class GJKClosestDistance
 {
 public:
-	float Solve(MinkowskiSum* Shape)
-	{
-		GJKIntersection gjk;
-		GJK_result result = gjk.Solve(Shape);
+	Simplex			simplex;
 
-		if (result == GJK_result::Separate)
-		{
-			return gjk.distance;
-		}
-		if (result == GJK_result::Inside)
-		{
-			return -1.0f;
-		}
-		else if (result == GJK_result::Boundary)
-		{
-			return 0.0f;
-		}
-		return FLT_MAX;
+	float Solve(MinkowskiSum* Shape, Vector3d InitGuess)
+	{
+		return -1.0f;
 	}
 };
