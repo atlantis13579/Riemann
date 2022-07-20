@@ -356,23 +356,28 @@ public:
 		m_objs = objs;
 	}
 
-	virtual int	 GetBoundingVolumeCount() const
+	virtual int	 GetBoundingVolumeCount() const override
 	{
 		return (int)m_objs->size();
 	}
 
-	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const
+	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const override
 	{
 		const Box3d& box = m_objs->at(bv_i);
 		float* p = (float*)&box;
 		return left ? p + axis : p + 3 + axis;
 	}
 
-	virtual bool	Overlaps(int bv_i, int bv_j) const
+	virtual bool	Overlaps(int bv_i, int bv_j) const override
 	{
 		const Box3d& box1 = m_objs->at(bv_i);
 		const Box3d& box2 = m_objs->at(bv_j);
 		return box1.Intersect(box2);
+	}
+
+	virtual uint64_t	CalculateBoundingVolumeHash() const override
+	{
+		return 0;
 	}
 
 	std::vector<Box3d>* m_objs;
@@ -431,23 +436,28 @@ public:
 		m_objs = objs;
 	}
 
-	virtual int	 GetBoundingVolumeCount() const
+	virtual int	 GetBoundingVolumeCount() const override
 	{
 		return (int)m_objs->size();
 	}
 
-	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const
+	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const override
 	{
 		const Box3d& box = m_objs->at(bv_i)->GetBoundingVolume_WorldSpace();
 		float* p = (float*)&box;
 		return left ? p + axis : p + 3 + axis;
 	}
 
-	virtual bool	Overlaps(int bv_i, int bv_j) const
+	virtual bool	Overlaps(int bv_i, int bv_j) const override
 	{
 		const Box3d& box1 = m_objs->at(bv_i)->GetBoundingVolume_WorldSpace();
 		const Box3d& box2 = m_objs->at(bv_j)->GetBoundingVolume_WorldSpace();
 		return box1.Intersect(box2);
+	}
+
+	virtual uint64_t	CalculateBoundingVolumeHash() const override
+	{
+		return 0;
 	}
 
 	std::vector<Geometry*>* m_objs;

@@ -101,11 +101,13 @@ void InitScene()
     {
         rp.Static = true;
         Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d::UnitY(), 1.0f);
+        // Geometry* plane = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(100.0f, 2.1f, 100.0f));
         g_World->CreateRigidBody(plane, rp);
 		g_Renderer->AddGeometry(plane);
 
 		rp.Static = false;
-        for (int i = 0; i < 5; ++i)
+        rp.AngularDamping = 0.99f;
+        for (int i = 0; i < 2; ++i)
         for (int j = 0; j < 5; ++j)
         for (int k = 0; k < 5; ++k)
         {

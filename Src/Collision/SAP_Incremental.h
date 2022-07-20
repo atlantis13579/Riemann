@@ -22,6 +22,12 @@ public:
 
 	void IncrementalPrune(std::set<OverlapKey>* overlaps)
 	{
+		uint64_t Hash = m_Proxy->CalculateBoundingVolumeHash();
+		if (Hash != m_Hash)
+		{
+			m_IsDirty = true;
+		}
+
 		if (m_IsDirty)
 		{
 			m_IsDirty = false;

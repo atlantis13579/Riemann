@@ -293,7 +293,7 @@ EPA_result EPAPenetration::Solve(Simplex& simplex, const Vector3d& InitGuess)
 				HullBuilder::sHorizon horizon;
 				Simplex::Vertex* v = hull.AppendVertex();
 				bool valid = true;
-				best->pass = ++pass;
+				best->pass = (unsigned char)(++pass);
 
 				v->dir = best->n.Unit();
 				v->pos = simplex.Support(v->dir);
@@ -305,7 +305,7 @@ EPA_result EPAPenetration::Solve(Simplex& simplex, const Vector3d& InitGuess)
 					break;
 				}
 
-				for (int j = 0; (j < 3) && valid; ++j)
+				for (int j = 0; j < 3 && valid; ++j)
 				{
 					valid &= hull.Expand(pass, v, best->f[j], best->e[j], result, horizon);
 				}
@@ -328,12 +328,13 @@ EPA_result EPAPenetration::Solve(Simplex& simplex, const Vector3d& InitGuess)
 			penetration_normal = outer.n;
 			penetration_depth = outer.d;
 			simplex.dimension = 3;
-			simplex.v[0] = *outer.v[0];
-			simplex.v[1] = *outer.v[1];
-			simplex.v[2] = *outer.v[2];
-			simplex.w[0] = CrossProduct(outer.v[1]->pos - projection, outer.v[2]->pos - projection).Length();
-			simplex.w[1] = CrossProduct(outer.v[2]->pos - projection, outer.v[0]->pos - projection).Length();
-			simplex.w[2] = CrossProduct(outer.v[0]->pos - projection, outer.v[1]->pos - projection).Length();
+			Simplex::Vertex vv[3] = { *outer.v[0], *outer.v[1], *outer.v[2] };
+			simplex.v[0] = vv[0];
+			simplex.v[1] = vv[1];
+			simplex.v[2] = vv[2];
+			simplex.w[0] = CrossProduct(vv[1].pos - projection, vv[2].pos - projection).Length();
+			simplex.w[1] = CrossProduct(vv[2].pos - projection, vv[0].pos - projection).Length();
+			simplex.w[2] = CrossProduct(vv[0].pos - projection, vv[1].pos - projection).Length();
 			const float sum = simplex.w[0] + simplex.w[1] + simplex.w[2];
 			simplex.w[0] /= sum;
 			simplex.w[1] /= sum;

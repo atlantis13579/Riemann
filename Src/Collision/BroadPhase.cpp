@@ -72,23 +72,39 @@ public:
 	}
 
 private:
-	virtual int     GetBoundingVolumeCount() const override
+	virtual int     GetBoundingVolumeCount() const override final
 	{
 		return (int)m_pObjects->size();
 	}
 
-	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const override
+	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const override final
 	{
 		const Box3d& box = m_pObjects->at(bv_i)->GetBoundingVolume_WorldSpace();
 		float* p = (float*)&box;
 		return left ? p + axis : p + 3 + axis;
 	}
 
-	virtual bool    Overlaps(int bv_i, int bv_j) const override
+	virtual bool    Overlaps(int bv_i, int bv_j) const override final
 	{
 		const Box3d& box1 = m_pObjects->at(bv_i)->GetBoundingVolume_WorldSpace();
 		const Box3d& box2 = m_pObjects->at(bv_j)->GetBoundingVolume_WorldSpace();
 		return box1.Intersect(box2);
+	}
+
+	virtual uint64_t	CalculateBoundingVolumeHash() const override final
+	{
+		if (m_pObjects == nullptr || m_pObjects->empty())
+		{
+			return 0;
+		}
+
+		uint64_t hash = 0;
+		for (size_t i = 0; i < m_pObjects->size(); ++i)
+		{
+			hash ^= reinterpret_cast<uint64_t>(m_pObjects->at(i));
+			hash *= static_cast<uint64_t>(1099511628211ULL);
+		}
+		return hash;
 	}
 
 private:

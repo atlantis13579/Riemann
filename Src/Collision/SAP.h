@@ -22,6 +22,7 @@ public:
 		virtual int			GetBoundingVolumeCount() const = 0;
 		virtual float*		GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const = 0;
 		virtual bool		Overlaps(int bv_i, int bv_j) const = 0;
+		virtual uint64_t	CalculateBoundingVolumeHash() const = 0;
 	};
 
 	SAP(BoundingVolumeProxy* Proxy, const std::vector<int>& axis_list)
@@ -31,6 +32,7 @@ public:
 			m_AxisList.push_back(axis);
 		}
 		m_Axis.resize(m_AxisList.size());
+		m_Hash = Proxy->CalculateBoundingVolumeHash();
 	}
 
 	void Prune(std::set<OverlapKey>* overlaps)
@@ -181,4 +183,5 @@ protected:
 	BoundingVolumeProxy*					m_Proxy;
 	std::vector<std::vector<SweepPoint>>	m_Axis;
 	std::vector<int>						m_AxisList;
+	uint64_t								m_Hash;
 };
