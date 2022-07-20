@@ -1,6 +1,6 @@
-
 #pragma once
 
+#include <assert.h>
 #include <stdlib.h>
 #include <map>
 #include <set>
@@ -81,10 +81,10 @@ protected:
 	struct SweepPoint
 	{
 		SweepPoint() {}
-		SweepPoint(int id, bool left, float* val)
+		SweepPoint(int id, bool left, float* pval)
 		{
 			data = left ? ((1 << 31) | id) : id;
-			value = val;
+			pvalue = pval;
 		}
 
 		inline bool left() const
@@ -97,8 +97,13 @@ protected:
 			return data & 0x7FFFFFFF;
 		}
 
+		inline float value() const
+		{
+			return *pvalue;
+		}
+
 		uint32_t	data;
-		float*		value;
+		float*		pvalue;
 	};
 
 	void InitAxis(int i, int axis)
@@ -136,7 +141,7 @@ protected:
 
 			for (int j = low; j <= high - 1; ++j)
 			{
-				if (*axis[j].value <= *pivot.value)
+				if (axis[j].value() <= pivot.value())
 				{
 					i++;
 					Swap(&axis[i], &axis[j]);
@@ -158,7 +163,7 @@ protected:
 			const SweepPoint* curr = &axis[i];
 			if (curr->left())
 			{
-				for (auto active_id : active)
+				for (int active_id : active)
 				{
 					if (curr->id() != active_id)
 					{
@@ -178,6 +183,29 @@ protected:
 			}
 			else
 			{
+				for (size_t j = i + 1; j < axis.size(); ++j)
+				{
+					const SweepPoint* next = &axis[j];
+					if (curr->value() < next->value())
+					{
+						continue;
+					}
+
+					if (next->left())
+					{
+						assert(next->id() != curr->id());
+						OverlapKey key = PackOverlapKey(curr->id(), next->id());
+						if (overlaps_count.find(key) == overlaps_count.end())
+						{
+							overlaps_count.insert(std::pair<OverlapKey, int>(key, filter));
+						}
+						else
+						{
+							overlaps_count[key] |= filter;
+						}
+					}
+				}
+
 				active.erase(curr->id());
 			}
 		}

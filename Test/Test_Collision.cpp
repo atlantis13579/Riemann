@@ -206,6 +206,16 @@ void TestRTree2()
 	return;
 }
 
+void TestAABB()
+{
+	printf("Running TestAABB\n");
+	Box3d box1(Vector3d(0, 0, 0), Vector3d(10, 10, 10));
+	Box3d box2(Vector3d(4, 4, 4), Vector3d(5, 5, 5));
+	bool intersect1 = box1.Intersect(box2);
+	bool intersect2 = box2.Intersect(box1);
+	EXPECT(intersect1 && intersect2);
+}
+
 void TestOverlap()
 {
 	printf("Running TestOverlap\n");
@@ -370,6 +380,8 @@ void TestGeometryQuery()
 	return;
 }
 
+
+
 class BVProxy2 : public SAP::BoundingVolumeProxy
 {
 public:
@@ -424,7 +436,7 @@ void TestSAP()
 	sap.Prune(&overlaps);
 	EXPECT(overlaps.size() == 1);
 
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < 200; ++i)
 	{
 		Vector3d point1 = Vector3d::Random() * 100.0f;
 		Vector3d point2 = Vector3d::Random() * 100.0f;
@@ -542,7 +554,6 @@ void TestSAPInc()
 				EXPECT(overlaps.count(key) == 0);
 			}
 		}
-
 	}
 
 
@@ -555,6 +566,7 @@ void TestCollision()
 	TestSupport();
 	TestGJK();
 	TestEPA();
+	TestAABB();
 	TestOverlap();
 	TestRayAABB();
 	TestRTree1();
@@ -562,6 +574,6 @@ void TestCollision()
 	TestAABBTree();
 	TestGeometryQuery();
 	TestSAP();
-	TestSAPInc();
+	// TestSAPInc();
 	return;
 }
