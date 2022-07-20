@@ -43,4 +43,4 @@ Vehicle Dynamics Solver
 
 #### Rigid Body Dynamics Simulation for multiple boxes
 
-![111](https://user-images.githubusercontent.com/29682318/179689750-4481183e-54a8-4777-a36c-04a562a538bf.jpg)
+![boxes](https://user-images.githubusercontent.com/29682318/179940202-d48de7c4-5614-4ba4-afc1-04059aac63ca.gif)
