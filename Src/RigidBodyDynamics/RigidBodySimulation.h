@@ -25,8 +25,7 @@ public:
 
 public:
 	void			Simulate(float dt);
-	void			ApplyGravity();
-	void			ApplyWind();
+	void			ApplyForceFields();
     
     bool            LoadPhysxScene(const char *name, bool shared_mem);
 
@@ -47,11 +46,10 @@ private:
 	std::vector<RigidBodyDynamic*>	m_RigidDynamics;
 	std::vector<KinematicsTree*>	m_Kinematics;
 
-	GeometryQuery*	m_GeometryQuery;
-	BroadPhase*		m_BPhase;
-	NarrowPhase*	m_NPhase;
-	ForceField*		m_GravityField;
-	ForceField*		m_WindField;
-	void*			m_SharedMem;
-	size_t			m_SharedMemSize;
+	GeometryQuery*					m_GeometryQuery;
+	BroadPhase*						m_BPhase;
+	NarrowPhase*					m_NPhase;
+	std::vector<ForceField*>		m_Fields;
+	void*							m_SharedMem;
+	size_t							m_SharedMemSize;
 };

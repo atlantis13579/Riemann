@@ -14,9 +14,9 @@
 #include "../CollisionPrimitive/TriangleMesh.h"
 
 
-RayCastFunc		GeometryIntersection::raycastTable[ShapeType3d::GEOMETRY_COUNT] = { 0 };
-SweepFunc		GeometryIntersection::sweepTable[ShapeType3d::GEOMETRY_COUNT][ShapeType3d::GEOMETRY_COUNT] = { 0 };
-OverlapFunc		GeometryIntersection::overlapTable[ShapeType3d::GEOMETRY_COUNT][ShapeType3d::GEOMETRY_COUNT] = { 0 };
+RayCastFunc		GeometryIntersection::raycastTable[(int)ShapeType3d::TYPE_COUNT] = { 0 };
+SweepFunc		GeometryIntersection::sweepTable[(int)ShapeType3d::TYPE_COUNT][(int)ShapeType3d::TYPE_COUNT] = { 0 };
+OverlapFunc		GeometryIntersection::overlapTable[(int)ShapeType3d::TYPE_COUNT][(int)ShapeType3d::TYPE_COUNT] = { 0 };
 
 template <class T>
 inline bool			RayCastT(void* Obj, const Vector3d& Origin, const Vector3d& Dir, float* t)
@@ -136,10 +136,10 @@ inline bool			OverlapTTriangle(const void* Obj1, const void* Obj2, const Transfo
 }
 
 #define	REG_GEOMETRY_OBJ(_type, _name)				\
-	raycastTable[_type] = RayCastT<_name>;
+	raycastTable[(int)_type] = RayCastT<_name>;
 
 #define REG_OVERLAP_TEST(_type1, _type2, _func)		\
-	overlapTable[_type1][_type2] = _func;
+	overlapTable[(int)_type1][(int)_type2] = _func;
 
 GeometryIntersection::GeometryIntersection()
 {
@@ -196,21 +196,21 @@ GeometryIntersection s_geom_registration;
 
 RayCastFunc GeometryIntersection::GetRayCastFunc(ShapeType3d Type)
 {
-	RayCastFunc func = GeometryIntersection::raycastTable[Type];
+	RayCastFunc func = GeometryIntersection::raycastTable[(int)Type];
 	assert(func);
 	return func;
 }
 
 OverlapFunc GeometryIntersection::GetOverlapFunc(ShapeType3d Type1, ShapeType3d Type2)
 {
-	OverlapFunc func = GeometryIntersection::overlapTable[Type1][Type2];
+	OverlapFunc func = GeometryIntersection::overlapTable[(int)Type1][(int)Type2];
 	assert(func);
 	return func;
 }
 
 SweepFunc GeometryIntersection::GetSweepFunc(ShapeType3d Type1, ShapeType3d Type2)
 {
-	SweepFunc func = GeometryIntersection::sweepTable[Type1][Type2];
+	SweepFunc func = GeometryIntersection::sweepTable[(int)Type1][(int)Type2];
 	assert(func);
 	return func;
 }

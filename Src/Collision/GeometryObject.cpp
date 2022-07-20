@@ -20,11 +20,11 @@ public:
 	TGeometry()
 	{
 		m_Type = GEOM_TYPE::StaticType();
-		GeometryFactory::ObjectCount[m_Type]++;
+		GeometryFactory::ObjectCount[(int)m_Type]++;
 	}
 	virtual ~TGeometry()
 	{
-		GeometryFactory::ObjectCount[m_Type]--;
+		GeometryFactory::ObjectCount[(int)m_Type]--;
 	}
 
 	virtual Matrix3d		GetInertia_LocalSpace(float Mass) const override final
@@ -186,7 +186,7 @@ void 				GeometryFactory::DeleteGeometry(Geometry* Geom)
 	delete Geom;
 }
 
-int GeometryFactory::ObjectCount[ShapeType3d::GEOMETRY_COUNT] = { 0 };
+int GeometryFactory::ObjectCount[(int)ShapeType3d::TYPE_COUNT] = { 0 };
 
 Geometry* GeometryFactory::CreateOBB(const Vector3d& Center, const Vector3d& HalfExtent, const Quaternion& Rot)
 {
