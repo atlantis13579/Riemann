@@ -22,21 +22,21 @@ Rigid Body Dynamics Simulation
     * Gilbert–Johnson–Keerthi algorithm
     * Expanding Polytope algorithm
     
-* Numerical Solver
+* Numerical Method
     * Explicit Euler / Symplectic Euler / Implicit Euler / Verlet Integrator
     * Jacobian Matrix
     * Sequential Impulse Solver
     * Projected Gauss-Seidel
 
-Position Based Dynamics Solver
+Position Based Dynamics
 
 Aero Dynamics Solver
 
 Fluid Dynamics Solver
 
-Continuum Media Dynamics Solver
+Continuum Media Dynamics
 
-Vehicle Dynamics Solver
+Vehicle Dynamics / Autonomous Driving Simulation
 
 
 ## Examples
