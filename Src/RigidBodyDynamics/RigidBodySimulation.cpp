@@ -3,21 +3,23 @@
 
 #include <assert.h>
 
-#include "Jacobian.h"
-#include "MotionIntegration.h"
-#include "WarmStart.h"
-#include "ForceField.h"
-#include "KinematicsTree.h"
+#include "../Core/Base.h"
 #include "../Collision/GeometryQuery.h"
 #include "../Collision/GeometryObject.h"
-#include "../Collision/BroadPhase.h"
-#include "../Collision/NarrowPhase.h"
 #include "../Tools/PhysxBinaryParser.h"
+#include "BroadPhase.h"
+#include "NarrowPhase.h"
+#include "MotionIntegration.h"
+#include "SequentialImpulseSolver.h"
+#include "ForceField.h"
+#include "KinematicsTree.h"
+
 
 RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 {
 	m_BPhase = BroadPhase::Create_SAP();
 	m_NPhase = NarrowPhase::Create_GJKEPA();
+	m_RPhase = ResolutionPhase::CreateSequentialImpulseSolver();
 	m_GeometryQuery = new GeometryQuery;
 	m_Fields.push_back(ForceField::CreateGrivityField(param.Gravity));
 	m_SharedMem = nullptr;
@@ -26,23 +28,10 @@ RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 
 RigidBodySimulation::~RigidBodySimulation()
 {
-	if (m_GeometryQuery)
-	{
-		delete m_GeometryQuery;
-		m_GeometryQuery = nullptr;
-	}
-
-	if (m_BPhase)
-	{
-		delete m_BPhase;
-		m_BPhase = nullptr;
-	}
-
-	if (m_NPhase)
-	{
-		delete m_NPhase;
-		m_NPhase = nullptr;
-	}
+	SAFE_DELETE(m_GeometryQuery);
+	SAFE_DELETE(m_BPhase);
+	SAFE_DELETE(m_NPhase);
+	SAFE_DELETE(m_RPhase);
 
 	for (size_t i = 0; i < m_Fields.size(); ++i)
 	{
@@ -77,58 +66,6 @@ void		RigidBodySimulation::Simulate(float dt)
 	SimulateSingleThread(dt);
 }
 
-struct ContactJacobians
-{
-	Jacobian jN;
-	Jacobian jT;
-	Jacobian jB;
-};
-
-static void	ResolutionPhase(std::vector<ContactManifold> &manifolds, float dt)
-{
-	if (manifolds.empty())
-		return;
-
-	int nJacobians = 0;
-	for (size_t i = 0; i < manifolds.size(); ++i)
-	{
-		for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
-		{
-			nJacobians++;
-		}
-	}
-
-	std::vector<ContactJacobians> jacobians;
-	jacobians.resize(nJacobians);
-	
-	int k = 0;
-	for (size_t i = 0; i < manifolds.size(); ++i)
-	{
-		for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
-		{
-			ContactManifold *manifold = &manifolds[i];
-			jacobians[k].jN.Setup(manifold, j, JacobianType::Normal,	manifold->ContactPoints[j].Normal, dt);
-			jacobians[k].jT.Setup(manifold, j, JacobianType::Tangent, manifold->ContactPoints[j].Tangent1, dt);
-			jacobians[k].jB.Setup(manifold, j, JacobianType::Tangent, manifold->ContactPoints[j].Tangent2, dt);
-			k++;
-		}
-	}
-	
-	k = 0;
-	for (size_t i = 0; i < manifolds.size(); ++i)
-	{
-		for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
-		{
-			ContactManifold *manifold = &manifolds[i];
-			jacobians[k].jN.Solve(manifold, jacobians[k].jN, dt);
-			jacobians[k].jT.Solve(manifold, jacobians[k].jN, dt);
-			jacobians[k].jB.Solve(manifold, jacobians[k].jN, dt);
-			k++;
-		}
-	}
-
-}
-
 void		RigidBodySimulation::SimulateSingleThread(float dt)
 {
 	ApplyForceFields();
@@ -152,14 +89,15 @@ void		RigidBodySimulation::SimulateSingleThread(float dt)
 	}
 
 	std::vector<ContactManifold> manifolds;
-	if (m_NPhase && !overlaps.empty())
+	if (!overlaps.empty())
 	{
 		m_NPhase->CollisionDetection(overlaps, &manifolds);
 	}
 
-	WarmStart::Manifolds(manifolds, dt);
-	
-	ResolutionPhase(manifolds, dt);
+	if (m_RPhase)
+	{
+		m_RPhase->ResolveContact(manifolds, dt);
+	}
 
 	for (size_t i = 0; i < m_Kinematics.size(); ++i)
 	{

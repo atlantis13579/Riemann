@@ -9,6 +9,7 @@ class Geometry;
 class GeometryQuery;
 class BroadPhase;
 class NarrowPhase;
+class ResolutionPhase;
 class ForceField;
 class KinematicsTree;
 
@@ -49,6 +50,7 @@ private:
 	GeometryQuery*					m_GeometryQuery;
 	BroadPhase*						m_BPhase;
 	NarrowPhase*					m_NPhase;
+	ResolutionPhase*				m_RPhase;
 	std::vector<ForceField*>		m_Fields;
 	void*							m_SharedMem;
 	size_t							m_SharedMemSize;

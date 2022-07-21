@@ -90,9 +90,6 @@
     <ClInclude Include="..\..\Src\Maths\Box3d.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Collision\BroadPhase.h">
-      <Filter>Collision</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Physics2d\Circle.h">
       <Filter>Physics2d</Filter>
     </ClInclude>
@@ -104,9 +101,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Solver\ConstraintSolver.h">
       <Filter>Solver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Collision\Contact.h">
-      <Filter>Collision</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\ImageSpace\ContinuousBitmap.h">
       <Filter>ImageSpace</Filter>
@@ -267,9 +261,6 @@
     <ClInclude Include="..\..\Src\VehicleDynamics\MPC.h">
       <Filter>VehicleDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Collision\NarrowPhase.h">
-      <Filter>Collision</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Solver\NewtonRaphsonIteration.h">
       <Filter>Solver</Filter>
     </ClInclude>
@@ -359,9 +350,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Optimization\SGD.h">
       <Filter>Optimization</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Solver\SequentialImpulseSolver.h">
-      <Filter>Solver</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Tools\Serialization.h">
       <Filter>Tools</Filter>
@@ -480,6 +468,18 @@
     <ClInclude Include="..\..\Src\FluidDynamics\SmoothedParticleHydrodynamics.h">
       <Filter>FluidDynamics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\BroadPhase.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\NarrowPhase.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\Contact.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp">
@@ -503,17 +503,11 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Collision\BroadPhase.cpp">
-      <Filter>Collision</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3d.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Solver\ConstraintSolver.cpp">
       <Filter>Solver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Collision\Contact.cpp">
-      <Filter>Collision</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\ConvexHull2d.cpp">
       <Filter>Geometry</Filter>
@@ -593,9 +587,6 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MotionIntegration.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Collision\NarrowPhase.cpp">
-      <Filter>Collision</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Solver\NewtonRaphsonIteration.cpp">
       <Filter>Solver</Filter>
     </ClCompile>
@@ -644,9 +635,6 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\Segment3d.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Solver\SequentialImpulseSolver.cpp">
-      <Filter>Solver</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\LinearSystem\SingularValueDecomposition.cpp">
       <Filter>LinearSystem</Filter>
     </ClCompile>
@@ -688,6 +676,18 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\FluidDynamics\SmoothedParticleHydrodynamics.cpp">
       <Filter>FluidDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\BroadPhase.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\NarrowPhase.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\Contact.cpp">
+      <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

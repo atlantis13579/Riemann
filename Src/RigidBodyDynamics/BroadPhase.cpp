@@ -1,7 +1,7 @@
 
 #include "BroadPhase.h"
-#include "GeometryObject.h"
-#include "SAP_Incremental.h"
+#include "../Collision/GeometryObject.h"
+#include "../Collision/SAP_Incremental.h"
 
 class BroadPhaseBruteforceImplementation : public BroadPhase
 {

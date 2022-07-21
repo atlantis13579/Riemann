@@ -19,7 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\RiemannViewer\Application.cpp" />
+    <ClCompile Include="..\..\RiemannViewer\Viewer.cpp" />
+    <ClCompile Include="..\..\RiemannViewer\WinApplication.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\RiemannViewer\Viewer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

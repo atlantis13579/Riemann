@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "../Collision/Contact.h"
+#include "Contact.h"
 
 class WarmStart
 {
