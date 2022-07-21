@@ -45,6 +45,7 @@
     <ClCompile Include="..\..\Src\Destruction\Fracture.cpp" />
     <ClCompile Include="..\..\Src\Destruction\PlanarCut.cpp" />
     <ClCompile Include="..\..\Src\FluidDynamics\Laplace2DSolver.cpp" />
+    <ClCompile Include="..\..\Src\FluidDynamics\SmoothedParticleHydrodynamics.cpp" />
     <ClCompile Include="..\..\Src\Geometry\ConvexHull3d.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Polygon2d.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Polygon3d.cpp" />
@@ -140,6 +141,7 @@
     <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
     <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
     <ClInclude Include="..\..\Src\FluidDynamics\Laplace2DSolver.h" />
+    <ClInclude Include="..\..\Src\FluidDynamics\SmoothedParticleHydrodynamics.h" />
     <ClInclude Include="..\..\Src\Geometry\ConvexHull3d.h" />
     <ClInclude Include="..\..\Src\Geometry\DenseTensorField3d.h" />
     <ClInclude Include="..\..\Src\Geometry\Polygon2d.h" />

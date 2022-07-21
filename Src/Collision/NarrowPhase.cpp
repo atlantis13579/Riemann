@@ -54,7 +54,8 @@ public:
 		Vector3d w0 = Vector3d::Zero();
 		for (int i = 0; i < epa.result.dimension; ++i)
 		{
-			w0 = w0 + shape.Support1(epa.result.v[i].dir) * epa.result.w[i];
+			Vector3d pi = shape.Support1(epa.result.v[i].dir) * epa.result.w[i];
+			w0 = w0 + pi;
 		}
 		const Matrix4d& invWorld = Geom1->GetInverseWorldMatrix();
 		result.PositionLocal1 = invWorld * w0;

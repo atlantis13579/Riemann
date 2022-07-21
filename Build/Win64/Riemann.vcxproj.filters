@@ -477,6 +477,9 @@
     <ClInclude Include="..\..\Src\Core\StaticList.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\FluidDynamics\SmoothedParticleHydrodynamics.h">
+      <Filter>FluidDynamics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp">
@@ -682,6 +685,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Ragdoll.cpp">
       <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\FluidDynamics\SmoothedParticleHydrodynamics.cpp">
+      <Filter>FluidDynamics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

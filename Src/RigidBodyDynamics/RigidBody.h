@@ -10,6 +10,13 @@ class Geometry;
 class RigidBodyDynamic;
 struct PhysicsMaterial;
 
+enum class RigidType : uint8_t
+{
+	Static,
+	Dynamic,
+	Kinematic,
+};
+
 struct RigidBodyParam
 {
 	RigidBodyParam()
