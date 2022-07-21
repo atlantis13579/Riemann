@@ -8,6 +8,7 @@
 #include "../Src/RigidBodyDynamics/RigidBodySimulation.h"
 #include "../Src/RigidBodyDynamics/KinematicsTree.h"
 #include "../Renderer/Renderer.h"
+#include "ObjRenderer.h"
 #include "../Src/Tools/PhysxBinaryParser.h"
 
 WorldViewer::WorldViewer(Renderer* renderer)
@@ -55,7 +56,7 @@ void WorldViewer::LoadAnimation(const std::string& anim_name, const std::vector<
 		const std::string& name = nodes[i];
 
 		m_World->BindKinematicsNode(anim_name, name, p);
-		m_Renderer->AddGeometry(aabb);
+		AddGeometry(m_Renderer, aabb);
 	}
 }
 
@@ -66,7 +67,7 @@ void WorldViewer::LoadPhysxScene(const std::string& file_name)
 
 	for (Geometry* Geom : collection)
 	{
-		m_Renderer->AddGeometry(Geom);
+		AddGeometry(m_Renderer, Geom);
 	}
 
 	m_World->GetGeometryQuery()->BuildStaticGeometry(collection, 5);
@@ -78,7 +79,7 @@ void WorldViewer::LoadFlatObj(const std::string& file_name)
 	mesh.LoadFlat(file_name.c_str());
 	Transform* t = new Transform;
 	t->SetScale(Vector3d(0.01f, 0.01f, 0.01f));
-	m_Renderer->AddTriMesh(&mesh, t, false);
+	AddTriMesh(m_Renderer , &mesh, t, false);
 }
 
 void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3d &c, std::vector<Vector3d>& water_list)
@@ -129,7 +130,7 @@ void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3d &c
 	Transform* t = new Transform;
 	t->SetScale(Vector3d(0.02f, 0.02f, 0.02f));
 
-	m_Renderer->AddTriMesh(draw_mesh, t, false);
+	AddTriMesh(m_Renderer, draw_mesh, t, false);
 }
 
 void WorldViewer::CreateBoxesDemo()
@@ -139,7 +140,7 @@ void WorldViewer::CreateBoxesDemo()
 	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d::UnitY(), 1.0f);
 	// Geometry* plane = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(100.0f, 2.1f, 100.0f));
 	m_World->CreateRigidBody(plane, rp);
-	m_Renderer->AddGeometry(plane);
+	AddGeometry(m_Renderer, plane);
 
 	rp.Static = false;
 	rp.LinearDamping = 0.99f;
@@ -152,7 +153,7 @@ void WorldViewer::CreateBoxesDemo()
 		// Geometry* aabb = GeometryFactory::CreateSphere(Vector3d(j * 3.0f, 10.0f + i * 3.0f, k * 3.0f), 1.0f);
 		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
 		// p->ApplyTorgue(Vector3d(0, -50, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
-		m_Renderer->AddGeometry(aabb);
+		AddGeometry(m_Renderer, aabb);
 	}
 }
 

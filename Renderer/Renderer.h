@@ -7,12 +7,8 @@
 #endif
 
 #include "../Src/Maths/Vector3d.h"
-#include "../Src/Maths/Vector4d.h"
 
-class Mesh;
-class ConvexMesh;
 class Transform;
-class Geometry;
 
 struct Vertex1
 {
@@ -32,14 +28,7 @@ public:
 	Renderer() {}
 	virtual ~Renderer() {}
 
-	template <class TShape>
-	void AddGeometry(Geometry* geom, bool DrawMesh = true);
-	void AddGeometry(Geometry* geom);
-	void AddTriMesh(Mesh* mesh, Transform* Trans, bool RenderBV);
-	void AddPlane(Geometry* geom, bool DrawMesh = true);
-
 	virtual void Render() = 0;
-
 	virtual void SetCameraLookAt(Vector3d Eye, Vector3d At) = 0;
 	virtual bool AddTriangles(const char* Id, Transform* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth) = 0;
 	virtual bool AddWireframe(const char* Id, Transform* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices) = 0;
@@ -48,7 +37,6 @@ public:
 
 	virtual void SetFillMode(bool Wireframe) = 0;
 	virtual void SetDepthMode() = 0;
-
 
 	static Renderer* CreateDX11Renderer(void* hWnd, const char* shader_path);
 };

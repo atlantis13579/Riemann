@@ -1,4 +1,4 @@
-#include "Renderer.h"
+#include "../Renderer/Renderer.h"
 #include <vector>
 #include <string>
 #include "../Src/Collision/GeometryObject.h"
@@ -11,7 +11,7 @@
 #include "../Src/CollisionPrimitive/ConvexMesh.h"
 #include "../Src/CollisionPrimitive/HeightField3d.h"
 
-void Renderer::AddPlane(Geometry* geom, bool DrawMesh )
+void AddPlane(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 {
 	std::vector<Vector3d> Vertices;
 	std::vector<uint16_t> Indices;
@@ -27,12 +27,12 @@ void Renderer::AddPlane(Geometry* geom, bool DrawMesh )
 		{
 			vv.emplace_back(Vertices[i], Vector3d::One());
 		}
-		AddTriangles(name.c_str(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
+		renderer->AddTriangles(name.c_str(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
 	}
 }
 
 template <class TShape>
-void Renderer::AddGeometry(Geometry* geom, bool DrawMesh)
+void AddGeometryImpl(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 {
 	std::vector<Vector3d> Vertices;
 	std::vector<uint16_t> Indices;
@@ -48,7 +48,7 @@ void Renderer::AddGeometry(Geometry* geom, bool DrawMesh)
 		{
 			vv.emplace_back(Vertices[i], Normals[i]);
 		}
-		AddTriangles(name.c_str(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
+		renderer->AddTriangles(name.c_str(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
 	}
 	else
 	{
@@ -58,11 +58,11 @@ void Renderer::AddGeometry(Geometry* geom, bool DrawMesh)
 		{
 			vv.emplace_back(Vertices[i], Vector3d(1.0f, 1.0f, 1.0f));
 		}
-		AddWireframe(name.c_str(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
+		renderer->AddWireframe(name.c_str(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
 	}
 }
 
-void Renderer::AddTriMesh(Mesh* mesh, Transform* Trans, bool RenderBV)
+void AddTriMesh(Renderer* renderer, Mesh* mesh, Transform* Trans, bool RenderBV)
 {
 	mesh->CalculateNormals();
 
@@ -72,7 +72,7 @@ void Renderer::AddTriMesh(Mesh* mesh, Transform* Trans, bool RenderBV)
 		vv.emplace_back(mesh->Vertices[i], mesh->mNormals[i]);
 	}
 
-	AddTriangles(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetNumTriangles() * 3, mesh->GetIndicesWidth() * 2);
+	renderer->AddTriangles(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetNumTriangles() * 3, mesh->GetIndicesWidth() * 2);
 
 	if (RenderBV)
 	{
@@ -85,44 +85,44 @@ void Renderer::AddTriMesh(Mesh* mesh, Transform* Trans, bool RenderBV)
 		{
 			vv.emplace_back(Vertices[i], Vector3d(1.0f, 1.0f, 1.0f));
 		}
-		AddWireframe(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
+		renderer->AddWireframe(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
 	}
 
 	return;
 }
 
-void Renderer::AddGeometry(Geometry* geom)
+void AddGeometry(Renderer* renderer, Geometry* geom)
 {
 	if (geom->GetShapeType() == ShapeType3d::TRIANGLE_MESH)
 	{
-		AddTriMesh(geom->GetShapeObj<Mesh>(), geom->GetTransform(), true);
+		AddTriMesh(renderer, geom->GetShapeObj<Mesh>(), geom->GetTransform(), true);
 	}
 	else if (geom->GetShapeType() == ShapeType3d::CONVEX_MESH)
 	{
-		AddGeometry<ConvexMesh>(geom);
+		AddGeometryImpl<ConvexMesh>(renderer, geom);
 	}
 	else if (geom->GetShapeType() == ShapeType3d::BOX)
 	{
-		AddGeometry<AxisAlignedBox3d>(geom);
+		AddGeometryImpl<AxisAlignedBox3d>(renderer, geom);
 	}
 	else if (geom->GetShapeType() == ShapeType3d::PLANE)
 	{
-		AddPlane(geom);
+		AddPlane(renderer, geom);
 	}
 	else if (geom->GetShapeType() == ShapeType3d::SPHERE)
 	{
-		AddGeometry <Sphere3d >(geom);
+		AddGeometryImpl <Sphere3d >(renderer, geom);
 	}
 	else if (geom->GetShapeType() == ShapeType3d::CAPSULE)
 	{
-		AddGeometry <Capsule3d >(geom);
+		AddGeometryImpl <Capsule3d >(renderer, geom);
 	}
 	else if (geom->GetShapeType() == ShapeType3d::CYLINDER)
 	{
-		AddGeometry <Cylinder3d >(geom);
+		AddGeometryImpl <Cylinder3d >(renderer, geom);
 	}
 	else if (geom->GetShapeType() == ShapeType3d::HEIGHTFIELD)
 	{
-		AddGeometry <HeightField3d >(geom);
+		AddGeometryImpl <HeightField3d >(renderer, geom);
 	}
 }

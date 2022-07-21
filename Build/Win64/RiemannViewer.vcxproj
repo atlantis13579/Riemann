@@ -19,10 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\RiemannViewer\ObjRenderer.cpp" />
     <ClCompile Include="..\..\RiemannViewer\Viewer.cpp" />
     <ClCompile Include="..\..\RiemannViewer\WinApplication.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\RiemannViewer\ObjRenderer.h" />
     <ClInclude Include="..\..\RiemannViewer\Viewer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

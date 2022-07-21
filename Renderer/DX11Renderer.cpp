@@ -8,7 +8,6 @@
 #include <directxmath.h>
 #include <directxcolors.h>
 
-
 #include "../Src/Maths/Transform.h"
 
 using namespace DirectX;

@@ -20,7 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Renderer\DX11Renderer.cpp" />
-    <ClCompile Include="..\..\Renderer\Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Renderer\DX11Renderer.h" />
