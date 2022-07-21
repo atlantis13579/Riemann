@@ -32,7 +32,7 @@ struct Face
 	}
 };
 
-class HullBuilder
+class PolytopeBuilder
 {
 public:
 	struct sHorizon
@@ -43,7 +43,7 @@ public:
 		sHorizon() : cf(nullptr), ff(nullptr), nf(0) {}
 	};
 
-	HullBuilder()
+	PolytopeBuilder()
 	{
 	}
 
@@ -56,7 +56,7 @@ public:
 		}
 
 		Face* face = m_face_pool.Pop();
-		m_hull.Append(face);
+		m_face.Append(face);
 		face->pass = 0;
 		face->v[0] = a;
 		face->v[1] = b;
@@ -90,7 +90,7 @@ public:
 			result = EPA_status::Degenerated;
 		}
 
-		m_hull.Remove(face);
+		m_face.Remove(face);
 		m_face_pool.Append(face);
 		return nullptr;
 	}
@@ -124,7 +124,7 @@ public:
 			f->pass = pass;
 			if (Expand(pass, w, f->adjacent[e1], f->edge[e1], result, horizon) && Expand(pass, w, f->adjacent[e2], f->edge[e2], result, horizon))
 			{
-				m_hull.Remove(f);
+				m_face.Remove(f);
 				m_face_pool.Append(f);
 				return (true);
 			}
@@ -134,33 +134,33 @@ public:
 
 	Face* FindClosestToOrigin()
 	{
-		Face* min_face = m_hull.root;
-		float min_sqrdist = min_face->dist * min_face->dist;
-		for (Face* f = min_face->next; f; f = f->next)
+		Face* closest = m_face.root;
+		float min_sqrdist = closest->dist * closest->dist;
+		for (Face* f = closest->next; f; f = f->next)
 		{
 			const float sqrdist = f->dist * f->dist;
 			if (sqrdist < min_sqrdist)
 			{
-				min_face = f;
+				closest = f;
 				min_sqrdist = sqrdist;
 			}
 		}
-		return min_face;
+		return closest;
 	}
 
-	int GetCount() const
+	int NumFaces() const
 	{
-		return m_hull.count;
+		return m_face.count;
 	}
 
-	Simplex::Vertex* AppendVertex()
+	Simplex::Vertex* AddVertex()
 	{
 		return m_vertex_pool.Get();
 	}
 
-	void Free(Face* f)
+	void Remove(Face* f)
 	{
-		m_hull.Remove(f);
+		m_face.Remove(f);
 		m_face_pool.Append(f);
 	}
 
@@ -204,9 +204,9 @@ private:
 	}
 
 private:
-	StaticPool<Simplex::Vertex, EPA_MAX_VERTICES>	m_vertex_pool;
-	List<Face>										m_hull;
+	List<Face>										m_face;
 	StaticList<Face, EPA_MAX_FACES>					m_face_pool;
+	StaticPool<Simplex::Vertex, EPA_MAX_VERTICES>	m_vertex_pool;
 };
 
 EPA_status EPAPenetration::Solve(const Simplex& _src)
@@ -224,15 +224,15 @@ EPA_status EPAPenetration::Solve(const Simplex& _src)
 			std::swap(result.v[0], result.v[1]);
 		}
 
-		HullBuilder hull;
-		Face* tetra[] = { hull.NewFace(&result.v[0], &result.v[1], &result.v[2], status, true),
-						  hull.NewFace(&result.v[1], &result.v[0], &result.v[3], status, true),
-						  hull.NewFace(&result.v[2], &result.v[1], &result.v[3], status, true),
-						  hull.NewFace(&result.v[0], &result.v[2], &result.v[3], status, true) };
+		PolytopeBuilder polytope;
+		Face* tetra[] = { polytope.NewFace(&result.v[0], &result.v[1], &result.v[2], status, true),
+						  polytope.NewFace(&result.v[1], &result.v[0], &result.v[3], status, true),
+						  polytope.NewFace(&result.v[2], &result.v[1], &result.v[3], status, true),
+						  polytope.NewFace(&result.v[0], &result.v[2], &result.v[3], status, true) };
 
-		if (hull.GetCount() == 4)
+		if (polytope.NumFaces() == 4)
 		{
-			Face* best = hull.FindClosestToOrigin();
+			Face* best = polytope.FindClosestToOrigin();
 			Face candidate = *best;
 			uint8_t pass = 0;
 			Face::Bind(tetra[0], 0, tetra[1], 0);
@@ -247,7 +247,7 @@ EPA_status EPAPenetration::Solve(const Simplex& _src)
 			int iterations = 0;
 			while (iterations++ < EPA_MAX_ITERATIONS)
 			{
-				Simplex::Vertex* v = hull.AppendVertex();
+				Simplex::Vertex* v = polytope.AddVertex();
 				if (v == nullptr)
 				{
 					status = EPA_status::OutOfVertices;
@@ -259,25 +259,25 @@ EPA_status EPAPenetration::Solve(const Simplex& _src)
 				v->dir = best->normal.Unit();
 				v->pos = result.m_shape->Support(v->dir);
 
-				const float wdist = DotProduct(best->normal, v->pos) - best->dist;
-				if (wdist <= EPA_ACCURACY)
+				const float new_dist = DotProduct(best->normal, v->pos) - best->dist;
+				if (new_dist <= EPA_ACCURACY)
 				{
 					status = EPA_status::AccuraryReached;
 					break;
 				}
 
-				HullBuilder::sHorizon horizon;
+				PolytopeBuilder::sHorizon horizon;
 				bool valid = true;
 				for (int j = 0; j < 3 && valid; ++j)
 				{
-					valid &= hull.Expand(pass, v, best->adjacent[j], best->edge[j], status, horizon);
+					valid &= polytope.Expand(pass, v, best->adjacent[j], best->edge[j], status, horizon);
 				}
 
 				if (valid && horizon.nf >= 3)
 				{
 					Face::Bind(horizon.cf, 1, horizon.ff, 2);
-					hull.Free(best);
-					best = hull.FindClosestToOrigin();
+					polytope.Remove(best);
+					best = polytope.FindClosestToOrigin();
 					candidate = *best;
 				}
 				else

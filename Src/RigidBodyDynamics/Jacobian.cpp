@@ -2,7 +2,7 @@
 #include "Jacobian.h"
 #include "RigidBody.h"
 #include "../Maths/Maths.h"
-#include "../Collision/Contact.h"
+#include "Contact.h"
 #include "../Collision/GeometryObject.h"
 
 RigidBody* GetRigidBody(Geometry *Geom)
@@ -10,6 +10,8 @@ RigidBody* GetRigidBody(Geometry *Geom)
 	return static_cast<RigidBody*>(Geom->GetEntity());
 }
 
+// http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
+// https://www.youtube.com/watch?v=pmdYzNF9x34
 void Jacobian::Setup(ContactManifold* manifold, int idx, JacobianType jt, const Vector3d& dir, float dt)
 {
 	jacobinType = jt;
@@ -51,9 +53,7 @@ void Jacobian::Setup(ContactManifold* manifold, int idx, JacobianType jt, const 
 			m_bias = -(beta / dt) * manifold->ContactPoints[idx].PenetrationDepth + restitution * closingVelocity;
 		}
 	}
-		
-	// http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
-	// https://www.youtube.com/watch?v=pmdYzNF9x34
+
 	Vector3d rva = rigidA->GetInverseInertia() * m_jwa;
 	Vector3d rvb = rigidB->GetInverseInertia() * m_jwb;
 
