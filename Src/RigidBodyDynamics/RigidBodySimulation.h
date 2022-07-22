@@ -12,6 +12,7 @@ class NarrowPhase;
 class ResolutionPhase;
 class ForceField;
 class KinematicsTree;
+class ContactManifoldManager;
 
 struct RigidBodySimulationParam
 {
@@ -51,6 +52,7 @@ private:
 	BroadPhase*						m_BPhase;
 	NarrowPhase*					m_NPhase;
 	ResolutionPhase*				m_RPhase;
+	ContactManifoldManager*			m_CacheManifolds;
 	std::vector<ForceField*>		m_Fields;
 	void*							m_SharedMem;
 	size_t							m_SharedMemSize;
