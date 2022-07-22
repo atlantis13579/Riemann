@@ -61,9 +61,10 @@ public:
 			for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
 			{
 				ContactManifold& manifold = manifolds[i];
-				jacobians[k].jN.Solve(manifold.GeomA, manifold.GeomB, jacobians[k].jN, dt);
-				jacobians[k].jT.Solve(manifold.GeomA, manifold.GeomB, jacobians[k].jN, dt);
-				jacobians[k].jB.Solve(manifold.GeomA, manifold.GeomB, jacobians[k].jN, dt);
+				float totalLambda = jacobians[k].jN.m_totalLambda;
+				jacobians[k].jN.Solve(manifold.GeomA, manifold.GeomB, totalLambda);
+				jacobians[k].jT.Solve(manifold.GeomA, manifold.GeomB, totalLambda);
+				jacobians[k].jB.Solve(manifold.GeomA, manifold.GeomB, totalLambda);
 				k++;
 			}
 		}

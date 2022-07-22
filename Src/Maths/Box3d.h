@@ -27,6 +27,11 @@ public:
 		, Max(InMax)
 	{ }
 
+	TAABB3<T>(T InMin, T InMax)
+		: Min(InMin, InMin, InMin)
+		, Max(InMax, InMax, InMax)
+	{ }
+
 	TAABB3<T>(const TVector3<T>* v, int Num)
 	{
 		Min = Max = v[0];

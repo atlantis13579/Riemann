@@ -31,13 +31,13 @@ void Jacobian::Setup(ContactResult* contact, Geometry *GeomA, Geometry *GeomB, J
 {
 	jacobinType = jt;
 
-	Vector3d RelativePositionA = contact->PositionWorldA - GeomA->GetPosition();
-	Vector3d RelativePositionB = contact->PositionWorldB - GeomB->GetPosition();
+	Vector3d ra = contact->PositionWorldA - GeomA->GetPosition();
+	Vector3d rb = contact->PositionWorldB - GeomB->GetPosition();
 
 	m_jva = -dir;
-	m_jwa = -RelativePositionA.Cross(dir);
+	m_jwa = -ra.Cross(dir);
 	m_jvb = dir;
-	m_jwb = RelativePositionB.Cross(dir);
+	m_jwb = rb.Cross(dir);
 
 	m_bias = 0.0f;
 	
@@ -52,11 +52,9 @@ void Jacobian::Setup(ContactResult* contact, Geometry *GeomA, Geometry *GeomB, J
 
 		Vector3d va = rigidA->GetLinearVelocity();
 		Vector3d wa = rigidA->GetAngularVelocity();
-		Vector3d ra = RelativePositionA;
 
 		Vector3d vb = rigidB->GetLinearVelocity();
 		Vector3d wb = rigidB->GetAngularVelocity();
-		Vector3d rb = RelativePositionB;
 
 		Vector3d relativeVelocity = vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra);
 		float closingVelocity = relativeVelocity.Dot(dir);
@@ -73,7 +71,7 @@ void Jacobian::Setup(ContactResult* contact, Geometry *GeomA, Geometry *GeomB, J
 	return;
 }
 
-void Jacobian::Solve(Geometry* GeomA, Geometry* GeomB, Jacobian& jN, float dt)
+void Jacobian::Solve(Geometry* GeomA, Geometry* GeomB, float totalLambda)
 {
 	RigidBody* rigidA = GetRigidBody(GeomA);
 	RigidBody* rigidB = GetRigidBody(GeomB);
@@ -93,7 +91,7 @@ void Jacobian::Solve(Geometry* GeomA, Geometry* GeomB, Jacobian& jN, float dt)
 
 	case JacobianType::Tangent:
 		float friction = rigidA->GetFrictionDynamic() * rigidB->GetFrictionDynamic();
-		float maxFriction = friction * jN.m_totalLambda;
+		float maxFriction = friction * totalLambda;
 		m_totalLambda = Clamp(m_totalLambda + lambda, -maxFriction, maxFriction);
 		break;
 	}

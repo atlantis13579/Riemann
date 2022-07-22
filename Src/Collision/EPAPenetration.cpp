@@ -56,7 +56,7 @@ public:
 		}
 
 		Face* face = m_face_pool.Pop();
-		m_face.Append(face);
+		m_poly.Append(face);
 		face->pass = 0;
 		face->v[0] = a;
 		face->v[1] = b;
@@ -90,7 +90,7 @@ public:
 			result = EPA_status::Degenerated;
 		}
 
-		m_face.Remove(face);
+		m_poly.Remove(face);
 		m_face_pool.Append(face);
 		return nullptr;
 	}
@@ -124,7 +124,7 @@ public:
 			f->pass = pass;
 			if (Expand(pass, w, f->adjacent[e1], f->edge[e1], result, horizon) && Expand(pass, w, f->adjacent[e2], f->edge[e2], result, horizon))
 			{
-				m_face.Remove(f);
+				m_poly.Remove(f);
 				m_face_pool.Append(f);
 				return (true);
 			}
@@ -134,7 +134,7 @@ public:
 
 	Face* FindClosestToOrigin()
 	{
-		Face* closest = m_face.root;
+		Face* closest = m_poly.root;
 		float min_sqrdist = closest->dist * closest->dist;
 		for (Face* f = closest->next; f; f = f->next)
 		{
@@ -150,7 +150,7 @@ public:
 
 	int NumFaces() const
 	{
-		return m_face.count;
+		return m_poly.count;
 	}
 
 	Simplex::Vertex* AddVertex()
@@ -160,7 +160,7 @@ public:
 
 	void Remove(Face* f)
 	{
-		m_face.Remove(f);
+		m_poly.Remove(f);
 		m_face_pool.Append(f);
 	}
 
@@ -204,7 +204,7 @@ private:
 	}
 
 private:
-	List<Face>										m_face;
+	List<Face>										m_poly;
 	StaticList<Face, EPA_MAX_FACES>					m_face_pool;
 	StaticPool<Simplex::Vertex, EPA_MAX_VERTICES>	m_vertex_pool;
 };
@@ -217,7 +217,7 @@ EPA_status EPAPenetration::Solve(const Simplex& _src)
 	{
 		status = EPA_status::Valid;
 
-		if (Determinant(result.v[0].pos - result.v[3].pos,
+		if (TripleProduct(result.v[0].pos - result.v[3].pos,
 						result.v[1].pos - result.v[3].pos,
 						result.v[2].pos - result.v[3].pos) < 0)
 		{

@@ -153,7 +153,7 @@ public:
 		}
 		case 4:
 		{
-			const float det = Determinant(v[0].pos - v[3].pos, v[1].pos - v[3].pos, v[2].pos - v[3].pos);
+			const float det = TripleProduct(v[0].pos - v[3].pos, v[1].pos - v[3].pos, v[2].pos - v[3].pos);
 			if (fabsf(det) > 0)
 				return true;
 			break;
@@ -248,7 +248,7 @@ private:
 		const Vector3d* vt[] = { &a, &b, &c, &d };
 		Vector3d dl[] = { a - d, b - d, c - d };
 		Vector3d n = CrossProduct(b - c, a - b);
-		float vl = Determinant(dl[0], dl[1], dl[2]);
+		float vl = TripleProduct(dl[0], dl[1], dl[2]);
 		float dp = DotProduct(a, n);
 		if (vl * dp > 0 || fabsf(vl) <= SIMPLEX4_EPS)
 		{

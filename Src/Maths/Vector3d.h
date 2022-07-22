@@ -21,13 +21,6 @@ public:
 		z = _z;
 	}
 
-	inline TVector3<T>(T v[3])
-	{
-		x = v[0];
-		y = v[1];
-		z = v[2];
-	}
-
 	inline TVector3<T>(const TVector3<T>& v)
 	{
 		x = v.x;
@@ -35,18 +28,24 @@ public:
 		z = v.z;
 	}
 
-	inline TVector3<T>(T v)
+	template<typename N>
+	inline TVector3<T>(const TVector3<N>& v)
 	{
-		x = v;
-		y = v;
-		z = v;
+		x = (T)v.x;
+		y = (T)v.y;
+		z = (T)v.z;
+	}
+
+	inline TVector3<T>(T k)
+	{
+		x = y = z = k;
 	}
 
 	inline TVector3<T>()
 	{
 	}
 
-	inline void	SetEmpty()
+	inline void	SetZero()
 	{
 		x = y = z = 0.0f;
 	}
@@ -384,15 +383,15 @@ inline TVector3<T> operator* (T s, const TVector3<T>& vv)
 }
 
 template <typename T>
-inline T DotProduct(const TVector3<T> &lhs, const TVector3<T> &rhs)
+inline T DotProduct(const TVector3<T> &a, const TVector3<T> &b)
 {
-	return lhs.Dot(rhs);
+	return a.Dot(b);
 }
 
 template <typename T>
-inline TVector3<T> CrossProduct(const TVector3<T>& lhs, const TVector3<T>& rhs)
+inline TVector3<T> CrossProduct(const TVector3<T>& a, const TVector3<T>& b)
 {
-	return lhs.Cross(rhs);
+	return a.Cross(b);
 }
 
 template <typename T>
@@ -403,6 +402,12 @@ inline T Determinant(const TVector3<T>& a, const TVector3<T>& b, const TVector3<
 			a.x * b.y * c.z - a.z * b.y * c.x);
 }
 
+// This one is equivalent to Determinant, but seems more accuracy in float precision
+template <typename T>
+inline T TripleProduct(const TVector3<T>& a, const TVector3<T>& b, const TVector3<T>& c)
+{
+	return a.Cross(b).Dot(c);
+}
 
 typedef TVector3<float> Vector3d;
 

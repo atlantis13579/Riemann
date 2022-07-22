@@ -32,8 +32,8 @@ static void Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Entities, flo
 		Rigid->Shape->SetPosition(Rigid->X);
 		Rigid->Shape->SetRotationQuat(Rigid->Q);
 		Rigid->Shape->UpdateBoundingVolume();
-		Rigid->ExtForce.SetEmpty();
-		Rigid->ExtTorque.SetEmpty();
+		Rigid->ExtForce.SetZero();
+		Rigid->ExtTorque.SetZero();
 	}
 }
 

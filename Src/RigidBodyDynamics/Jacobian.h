@@ -15,6 +15,9 @@ enum JacobianType
 	Tangent
 };
 
+// Jacobian Matrix is a 1x12 Matrix which satisfy JV + b = 0
+// Where V is 12x1 generalized velocity [va, wa, vb, wb]^T
+// b is the bias term
 struct  Jacobian
 {
 	Jacobian()
@@ -26,7 +29,7 @@ struct  Jacobian
 	}
 
 	void Setup(ContactResult *contact, Geometry* GeomA, Geometry* GeomB, JacobianType jt, const Vector3d& dir, float dt);
-	void Solve(Geometry* GeomA, Geometry* GeomB, Jacobian& jN, float dt);
+	void Solve(Geometry* GeomA, Geometry* GeomB, float totalLambda);
 
 	JacobianType jacobinType;
 	Vector3d m_jva;
