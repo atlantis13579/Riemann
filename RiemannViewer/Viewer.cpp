@@ -145,7 +145,7 @@ void WorldViewer::CreateBoxesDemo()
 	rp.Static = false;
 	rp.LinearDamping = 0.99f;
 	rp.AngularDamping = 0.99f;
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 2; ++i)
 	for (int j = 0; j < 5; ++j)
 	for (int k = 0; k < 5; ++k)
 	{

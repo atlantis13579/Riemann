@@ -40,7 +40,7 @@ public:
     const GeometryQuery*    GetGeometryQuery() const { return m_GeometryQuery; }
     
 private:
-	void			SimulateSingleThread(float dt);
+	void			SimulateST(float dt);
 
 private:
 	std::vector<RigidBodyStatic*>	m_RigidStatics;

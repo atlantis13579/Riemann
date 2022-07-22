@@ -10,8 +10,8 @@ public:
 	ContactResult()
 	{
 		SumImpulseNormal = 0.0f;
-		SumImpulseTangent1 = 0.0f;
-		SumImpulseTangent2 = 0.0f;
+		SumImpulseTangent = 0.0f;
+		SumImpulseBinormal = 0.0f;
 		PositionLocalA = PositionLocalB = PositionWorldA = PositionWorldB = Vector3d::Zero();
 	}
 
@@ -20,13 +20,13 @@ public:
 	Vector3d	PositionWorldA;
 	Vector3d	PositionWorldB;
 	Vector3d	Normal;
-	Vector3d	Tangent1;
-	Vector3d	Tangent2;
+	Vector3d	Tangent;
+	Vector3d	Binormal;
 
 	float		PenetrationDepth;
 	float		SumImpulseNormal;
-	float		SumImpulseTangent1;
-	float		SumImpulseTangent2;
+	float		SumImpulseTangent;
+	float		SumImpulseBinormal;
 };
 
 #define MAX_CONTACT_POINTS 5

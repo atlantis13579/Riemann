@@ -46,8 +46,8 @@ void WarmStart::Contact(Geometry* GeomA, Geometry* GeomB, ContactResult& contact
     }
 
     // friction impulse
-    Vector3d tangent = contact.Tangent1;
-    float frictionImpulseVal = contact.SumImpulseTangent1;
+    Vector3d tangent = contact.Tangent;
+    float frictionImpulseVal = contact.SumImpulseTangent;
     Vector3d frictionImpulse = tangent * frictionImpulseVal;
 
     if (rigidBodyDyn1 && !rigidBodyDyn1->Sleep)

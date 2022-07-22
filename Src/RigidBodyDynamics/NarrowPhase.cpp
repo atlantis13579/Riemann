@@ -67,17 +67,17 @@ public:
 		result.PenetrationDepth = epa.penetration_depth;
 		if (result.Normal.x >= 0.57735f)
 		{
-			result.Tangent1.x = result.Normal.y;
-			result.Tangent1.y = -result.Normal.x;
-			result.Tangent1.z = 0;
+			result.Tangent.x = result.Normal.y;
+			result.Tangent.y = -result.Normal.x;
+			result.Tangent.z = 0;
 		}
 		else
 		{
-			result.Tangent1.x = 0;
-			result.Tangent1.y = result.Normal.z;
-			result.Tangent1.z = -result.Normal.y;
+			result.Tangent.x = 0;
+			result.Tangent.y = result.Normal.z;
+			result.Tangent.z = -result.Normal.y;
 		}
-		result.Tangent2 = CrossProduct(result.Normal, result.Tangent1);
+		result.Binormal = CrossProduct(result.Normal, result.Tangent);
 		return true;
 	}
 

@@ -63,10 +63,10 @@ RigidBodySimulation::~RigidBodySimulation()
 
 void		RigidBodySimulation::Simulate(float dt)
 {
-	SimulateSingleThread(dt);
+	SimulateST(dt);
 }
 
-void		RigidBodySimulation::SimulateSingleThread(float dt)
+void		RigidBodySimulation::SimulateST(float dt)
 {
 	ApplyForceFields();
 

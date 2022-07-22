@@ -27,12 +27,13 @@ static float BaumgarteStabilizationTerm(float dt, float PenetrationDepth)
 	return -(beta / dt) * PenetrationDepth;
 }
 
-void Jacobian::Setup(ContactResult* contact, Geometry *GeomA, Geometry *GeomB, JacobianType jt, const Vector3d& dir, float dt)
+void Jacobian::Setup(ContactResult* contact, Geometry *GeomA, Geometry *GeomB, const Vector3d& dir, float dt)
 {
-	jacobinType = jt;
+	m_rigidA = GetRigidBody(GeomA);
+	m_rigidB = GetRigidBody(GeomB);
 
-	Vector3d ra = contact->PositionWorldA - GeomA->GetPosition();
-	Vector3d rb = contact->PositionWorldB - GeomB->GetPosition();
+	Vector3d ra = contact->PositionWorldA - m_rigidA->X;
+	Vector3d rb = contact->PositionWorldB - m_rigidB->X;
 
 	m_jva = -dir;
 	m_jwa = -ra.Cross(dir);
@@ -40,46 +41,40 @@ void Jacobian::Setup(ContactResult* contact, Geometry *GeomA, Geometry *GeomB, J
 	m_jwb = rb.Cross(dir);
 
 	m_bias = 0.0f;
-	
-	RigidBody* rigidA = GetRigidBody(GeomA);
-	RigidBody* rigidB = GetRigidBody(GeomB);
 
 	if (jacobinType == JacobianType::Normal)
 	{
-		float restitutionA = rigidA->GetRestitution();
-		float restitutionB = rigidB->GetRestitution();
+		float restitutionA = m_rigidA->GetRestitution();
+		float restitutionB = m_rigidB->GetRestitution();
 		float restitution = restitutionA * restitutionB;
 
-		Vector3d va = rigidA->GetLinearVelocity();
-		Vector3d wa = rigidA->GetAngularVelocity();
+		Vector3d va = m_rigidA->GetLinearVelocity();
+		Vector3d wa = m_rigidA->GetAngularVelocity();
 
-		Vector3d vb = rigidB->GetLinearVelocity();
-		Vector3d wb = rigidB->GetAngularVelocity();
+		Vector3d vb = m_rigidB->GetLinearVelocity();
+		Vector3d wb = m_rigidB->GetAngularVelocity();
 
 		Vector3d relativeVelocity = vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra);
 		float closingVelocity = relativeVelocity.Dot(dir);
 		m_bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingVelocity;
 	}
 
-	Vector3d rva = rigidA->GetInverseInertia() * m_jwa;
-	Vector3d rvb = rigidB->GetInverseInertia() * m_jwb;
+	Vector3d rva = m_rigidA->GetInverseInertia() * m_jwa;
+	Vector3d rvb = m_rigidB->GetInverseInertia() * m_jwb;
 
-	float k = rigidA->GetInverseMass() + rigidB->GetInverseMass() + DotProduct(m_jwa, rva) + DotProduct(m_jwb, rvb);
+	float k = m_rigidA->GetInverseMass() + m_rigidB->GetInverseMass() + DotProduct(m_jwa, rva) + DotProduct(m_jwb, rvb);
 
 	m_effectiveMass = 1.0f / k;
 	m_totalLambda = 0.0f;
 	return;
 }
 
-void Jacobian::Solve(Geometry* GeomA, Geometry* GeomB, float totalLambda)
+void Jacobian::Solve(float totalLambda)
 {
-	RigidBody* rigidA = GetRigidBody(GeomA);
-	RigidBody* rigidB = GetRigidBody(GeomB);
-	
-	float jv = DotProduct(m_jva, rigidA->GetLinearVelocity())
-			 + DotProduct(m_jwa, rigidA->GetAngularVelocity())
-			 + DotProduct(m_jvb, rigidB->GetLinearVelocity())
-			 + DotProduct(m_jwb, rigidB->GetAngularVelocity());
+	float jv = DotProduct(m_jva, m_rigidA->GetLinearVelocity())
+			 + DotProduct(m_jwa, m_rigidA->GetAngularVelocity())
+			 + DotProduct(m_jvb, m_rigidB->GetLinearVelocity())
+			 + DotProduct(m_jwb, m_rigidB->GetAngularVelocity());
 
 	float lambda = m_effectiveMass * (-(jv + m_bias));
 	float oldTotalLambda = m_totalLambda;
@@ -90,28 +85,29 @@ void Jacobian::Solve(Geometry* GeomA, Geometry* GeomB, float totalLambda)
 		break;
 
 	case JacobianType::Tangent:
-		float friction = rigidA->GetFrictionDynamic() * rigidB->GetFrictionDynamic();
+	case JacobianType::Binormal:
+		float friction = m_rigidA->GetFrictionDynamic() * m_rigidB->GetFrictionDynamic();
 		float maxFriction = friction * totalLambda;
 		m_totalLambda = Clamp(m_totalLambda + lambda, -maxFriction, maxFriction);
 		break;
 	}
 	lambda = m_totalLambda - oldTotalLambda;
 	
-	Vector3d va = rigidA->GetLinearVelocity();
-	Vector3d vadelta = m_jva * rigidA->GetInverseMass() * lambda;
-	rigidA->SetLinearVelocity(va + vadelta);
+	Vector3d va = m_rigidA->GetLinearVelocity();
+	Vector3d vadelta = m_jva * m_rigidA->GetInverseMass() * lambda;
+	m_rigidA->SetLinearVelocity(va + vadelta);
 
-	Vector3d wa = rigidA->GetAngularVelocity();
-	Vector3d wadelta = (rigidA->GetInverseInertia_WorldSpace() * m_jwa) * lambda;
-	rigidA->SetAngularVelocity(wa + wadelta);
+	Vector3d wa = m_rigidA->GetAngularVelocity();
+	Vector3d wadelta = (m_rigidA->GetInverseInertia_WorldSpace() * m_jwa) * lambda;
+	m_rigidA->SetAngularVelocity(wa + wadelta);
 
-	Vector3d vb = rigidB->GetLinearVelocity();
-	Vector3d vbdelta = m_jvb * rigidB->GetInverseMass() * lambda;
-	rigidB->SetLinearVelocity(vb + vbdelta);
+	Vector3d vb = m_rigidB->GetLinearVelocity();
+	Vector3d vbdelta = m_jvb * m_rigidB->GetInverseMass() * lambda;
+	m_rigidB->SetLinearVelocity(vb + vbdelta);
 
-	Vector3d wb = rigidB->GetAngularVelocity();
-	Vector3d wbdelta = (rigidB->GetInverseInertia_WorldSpace() * m_jwb) * lambda;
-	rigidB->SetAngularVelocity(wb + wbdelta);
+	Vector3d wb = m_rigidB->GetAngularVelocity();
+	Vector3d wbdelta = (m_rigidB->GetInverseInertia_WorldSpace() * m_jwb) * lambda;
+	m_rigidB->SetAngularVelocity(wb + wbdelta);
 
 	return;
 }

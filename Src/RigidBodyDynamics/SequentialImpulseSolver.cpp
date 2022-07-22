@@ -3,8 +3,34 @@
 #include "Jacobian.h"
 #include "WarmStart.h"
 
-struct ContactJacobians
+// Velocity Constraint consists of three Jacobian constraint
+// JN * V + b == 0, JT * V + b == 0, JB * V + b == 0
+// Where V is 12x1 generalized velocity [va, wa, vb, wb]^T
+// b is the bias term
+struct VelocityConstraint
 {
+	VelocityConstraint() :
+		jN(JacobianType::Normal),
+		jT(JacobianType::Tangent),
+		jB(JacobianType::Binormal)
+	{
+	}
+
+	void Setup(ContactManifold& manifold, int j, float dt)
+	{
+		jN.Setup(&manifold.ContactPoints[j], manifold.GeomA, manifold.GeomB, manifold.ContactPoints[j].Normal, dt);
+		jT.Setup(&manifold.ContactPoints[j], manifold.GeomA, manifold.GeomB, manifold.ContactPoints[j].Tangent, dt);
+		jB.Setup(&manifold.ContactPoints[j], manifold.GeomA, manifold.GeomB, manifold.ContactPoints[j].Binormal, dt);
+	}
+
+	void Solve()
+	{
+		float totalLambda = jN.m_totalLambda;
+		jN.Solve(totalLambda);
+		jT.Solve(totalLambda);
+		jB.Solve(totalLambda);
+	}
+
 	Jacobian jN;
 	Jacobian jT;
 	Jacobian jB;
@@ -15,12 +41,11 @@ class SequentialImpulseSolver : public ResolutionPhase
 public:
 	SequentialImpulseSolver()
 	{
-
+		m_nMaxVelocityIterations = 8;
 	}
 
 	virtual ~SequentialImpulseSolver()
 	{
-
 	}
 
 	virtual void	ResolveContact(std::vector<ContactManifold>& manifolds, float dt) override final
@@ -30,45 +55,29 @@ public:
 
 		WarmStart::Manifolds(manifolds, dt);
 
-		int nJacobians = 0;
-		for (size_t i = 0; i < manifolds.size(); ++i)
-		{
-			for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
-			{
-				nJacobians++;
-			}
-		}
-
-		std::vector<ContactJacobians> jacobians;
-		jacobians.resize(nJacobians);
-
-		int k = 0;
+		std::vector<VelocityConstraint> velocityConstraints;
 		for (size_t i = 0; i < manifolds.size(); ++i)
 		{
 			for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
 			{
 				ContactManifold& manifold = manifolds[i];
-				jacobians[k].jN.Setup(&manifold.ContactPoints[j], manifold.GeomA, manifold.GeomB, JacobianType::Normal, manifold.ContactPoints[j].Normal, dt);
-				jacobians[k].jT.Setup(&manifold.ContactPoints[j], manifold.GeomA, manifold.GeomB, JacobianType::Tangent, manifold.ContactPoints[j].Tangent1, dt);
-				jacobians[k].jB.Setup(&manifold.ContactPoints[j], manifold.GeomA, manifold.GeomB, JacobianType::Tangent, manifold.ContactPoints[j].Tangent2, dt);
-				k++;
+				velocityConstraints.push_back(VelocityConstraint());
+				velocityConstraints.back().Setup(manifold, j, dt);
 			}
 		}
 
-		k = 0;
-		for (size_t i = 0; i < manifolds.size(); ++i)
+		int it = 0;
+		while (it++ <= m_nMaxVelocityIterations)
 		{
-			for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
+			for (size_t k = 0; k < velocityConstraints.size(); ++k)
 			{
-				ContactManifold& manifold = manifolds[i];
-				float totalLambda = jacobians[k].jN.m_totalLambda;
-				jacobians[k].jN.Solve(manifold.GeomA, manifold.GeomB, totalLambda);
-				jacobians[k].jT.Solve(manifold.GeomA, manifold.GeomB, totalLambda);
-				jacobians[k].jB.Solve(manifold.GeomA, manifold.GeomB, totalLambda);
-				k++;
+				velocityConstraints[k].Solve();
 			}
 		}
 	}
+
+private:
+	int m_nMaxVelocityIterations;
 };
 
 ResolutionPhase* ResolutionPhase::CreateSequentialImpulseSolver()
