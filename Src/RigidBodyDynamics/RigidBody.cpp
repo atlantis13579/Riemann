@@ -53,11 +53,6 @@ void				RigidBody::SetAngularVelocity(const Vector3d &v)
 	L = InvInertia.Invertible() ? InvInertia.Inverse() * v : Vector3d::Zero();
 }
 
-float				RigidBody::GetContactBeta() const
-{
-	return Material ? Material->ContactBeta : PhysicsMaterial::DefaultContactBeta();
-}
-
 float				RigidBody::GetRestitution() const
 {
 	return Material ? Material->Restitution : PhysicsMaterial::DefaultRestitution();

@@ -2,24 +2,22 @@
 
 struct PhysicsMaterial
 {
-	float	ContactBeta;
 	float	Restitution;
 	float	FrictionDynamic;
 	float	FrictionStatic;
 
 	PhysicsMaterial()
 	{
-		ContactBeta = DefaultContactBeta();
 		Restitution = DefaultRestitution();
 		FrictionDynamic = DefaultFrictionDynamic();
 		FrictionStatic = DefaultFrictionStatic();
 	}
 
-	static constexpr float DefaultContactBeta()
-	{
-		return 0.3f;
-	}
-
+	// The coefficient of restitution between two objects, 
+	// is defined as the ratio between the parting speed of 
+	// two colliders after collisionand the closing speed 
+	// before collision; for realistic result, you would 
+	// want to set this value between zero and one.
 	static constexpr float DefaultRestitution()
 	{
 		return 0.0f;

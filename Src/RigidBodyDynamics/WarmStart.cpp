@@ -12,35 +12,37 @@ void WarmStart::Manifolds(std::vector<ContactManifold>& manifolds, float dt)
         ContactManifold& manifold = manifolds[i];
         for (int i = 0; i < manifold.NumContactPointCount; i++)
         {
-            WarmStart::Contact(manifold.Geom1, manifold.Geom2, manifold.ContactPoints[i], dt);
+            WarmStart::Contact(manifold.GeomA, manifold.GeomB, manifold.ContactPoints[i], dt);
         }
     }
 }
 
-void WarmStart::Contact(Geometry* Geom1, Geometry* Geom2, ContactResult& contact, float dt)
+void WarmStart::Contact(Geometry* GeomA, Geometry* GeomB, ContactResult& contact, float dt)
 {
-    RigidBody* rigidBody1 = (RigidBody*)Geom1->GetEntity();
-    RigidBody* rigidBody2 = (RigidBody*)Geom2->GetEntity();
+    RigidBody* rigidBodyA = (RigidBody*)GeomA->GetEntity();
+    RigidBody* rigidBodyB = (RigidBody*)GeomB->GetEntity();
 
     //let normal point from a -> b
     Vector3d normal = -contact.Normal;
+	Vector3d RelativePositionA = contact.PositionWorldA - GeomA->GetPosition();
+	Vector3d RelativePositionB = contact.PositionWorldB - GeomB->GetPosition();
 
     // collision impulse
     float collisionImpulseVal = contact.SumImpulseNormal;
     Vector3d collisionImpulse = normal * collisionImpulseVal;
 
-    RigidBodyDynamic* rigidBodyDyn1 = rigidBody1->CastDynamic();
+    RigidBodyDynamic* rigidBodyDyn1 = rigidBodyA->CastDynamic();
 	if (rigidBodyDyn1 && !rigidBodyDyn1->Sleep)
 	{
         rigidBodyDyn1->P = rigidBodyDyn1->P - collisionImpulse;
-        rigidBodyDyn1->L = rigidBodyDyn1->L - collisionImpulseVal * contact.RelativePosition1.Cross(normal);
+        rigidBodyDyn1->L = rigidBodyDyn1->L - collisionImpulseVal * RelativePositionA.Cross(normal);
     }
 
-	RigidBodyDynamic* rigidBodyDyn2 = rigidBody2->CastDynamic();
+	RigidBodyDynamic* rigidBodyDyn2 = rigidBodyB->CastDynamic();
     if (rigidBodyDyn2 && !rigidBodyDyn2->Sleep)
     {
         rigidBodyDyn2->P = rigidBodyDyn2->P + collisionImpulse;
-        rigidBodyDyn2->L = rigidBodyDyn2->L - collisionImpulseVal * contact.RelativePosition2.Cross(normal);
+        rigidBodyDyn2->L = rigidBodyDyn2->L - collisionImpulseVal * RelativePositionB.Cross(normal);
     }
 
     // friction impulse
@@ -51,13 +53,13 @@ void WarmStart::Contact(Geometry* Geom1, Geometry* Geom2, ContactResult& contact
     if (rigidBodyDyn1 && !rigidBodyDyn1->Sleep)
     {
         rigidBodyDyn1->P = rigidBodyDyn1->P - frictionImpulse;
-        rigidBodyDyn1->L = rigidBodyDyn1->L - frictionImpulseVal * contact.RelativePosition1.Cross(tangent);
+        rigidBodyDyn1->L = rigidBodyDyn1->L - frictionImpulseVal * RelativePositionA.Cross(tangent);
     }
 
     if (rigidBodyDyn2 && !rigidBodyDyn2->Sleep)
     {
         rigidBodyDyn2->P = rigidBodyDyn2->P + frictionImpulse;
-        rigidBodyDyn2->L = rigidBodyDyn2->L - frictionImpulseVal * contact.RelativePosition2.Cross(tangent);
+        rigidBodyDyn2->L = rigidBodyDyn2->L - frictionImpulseVal * RelativePositionB.Cross(tangent);
     }
 }
 

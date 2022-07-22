@@ -2,7 +2,12 @@
 
 #include "../Maths/Vector3d.h"
 
+
+// http://allenchou.net/2013/12/game-physics-resolution-contact-constraints/
+// http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
+
 class ContactManifold;
+class ContactResult;
 
 enum JacobianType
 {
@@ -20,8 +25,8 @@ struct  Jacobian
 		m_jwa = Vector3d::Zero();
 	}
 
-	void Setup(ContactManifold* manifold, int idx, JacobianType jt, const Vector3d& dir, float dt);
-	void Solve(ContactManifold* manifold, Jacobian& jN, float dt);
+	void Setup(ContactResult *contact, Geometry* GeomA, Geometry* GeomB, JacobianType jt, const Vector3d& dir, float dt);
+	void Solve(Geometry* GeomA, Geometry* GeomB, Jacobian& jN, float dt);
 
 	JacobianType jacobinType;
 	Vector3d m_jva;
@@ -31,5 +36,4 @@ struct  Jacobian
 	float m_bias;
 	float m_effectiveMass;
 	float m_totalLambda;
-
 };

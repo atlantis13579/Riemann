@@ -1,10 +1,10 @@
 
 #include "NarrowPhase.h"
 #include "Contact.h"
-#include "GeometryObject.h"
-#include "GeometryDifference.h"
-#include "EPAPenetration.h"
-#include "GJK.h"
+#include "../Collision/GeometryObject.h"
+#include "../Collision/GeometryDifference.h"
+#include "../Collision/EPAPenetration.h"
+#include "../Collision/GJK.h"
 
 class NarrowPhase_GJKEPA : public NarrowPhase
 {
@@ -58,11 +58,11 @@ public:
 			w0 = w0 + pi;
 		}
 		const Matrix4d& invWorld = Geom1->GetInverseWorldMatrix();
-		result.PositionLocal1 = invWorld * w0;
+		result.PositionLocalA = invWorld * w0;
 		Vector3d p2 = w0 - epa.penetration_normal * epa.penetration_depth;
-		result.PositionLocal2 = invWorld * p2;
-		result.PositionWorld1 = w0;
-		result.PositionWorld2 = p2;
+		result.PositionLocalB = invWorld * p2;
+		result.PositionWorldA = w0;
+		result.PositionWorldB = p2;
 		result.Normal = epa.penetration_normal;
 		result.PenetrationDepth = epa.penetration_depth;
 		if (result.Normal.x >= 0.57735f)
@@ -78,8 +78,6 @@ public:
 			result.Tangent1.z = -result.Normal.y;
 		}
 		result.Tangent2 = CrossProduct(result.Normal, result.Tangent1);
-		result.RelativePosition1 = result.PositionWorld1 - Geom1->GetPosition();
-		result.RelativePosition2 = result.PositionWorld2 - Geom2->GetPosition();
 		return true;
 	}
 

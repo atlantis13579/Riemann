@@ -47,10 +47,10 @@ public:
 		{
 			for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
 			{
-				ContactManifold* manifold = &manifolds[i];
-				jacobians[k].jN.Setup(manifold, j, JacobianType::Normal, manifold->ContactPoints[j].Normal, dt);
-				jacobians[k].jT.Setup(manifold, j, JacobianType::Tangent, manifold->ContactPoints[j].Tangent1, dt);
-				jacobians[k].jB.Setup(manifold, j, JacobianType::Tangent, manifold->ContactPoints[j].Tangent2, dt);
+				ContactManifold& manifold = manifolds[i];
+				jacobians[k].jN.Setup(&manifold.ContactPoints[j], manifold.GeomA, manifold.GeomB, JacobianType::Normal, manifold.ContactPoints[j].Normal, dt);
+				jacobians[k].jT.Setup(&manifold.ContactPoints[j], manifold.GeomA, manifold.GeomB, JacobianType::Tangent, manifold.ContactPoints[j].Tangent1, dt);
+				jacobians[k].jB.Setup(&manifold.ContactPoints[j], manifold.GeomA, manifold.GeomB, JacobianType::Tangent, manifold.ContactPoints[j].Tangent2, dt);
 				k++;
 			}
 		}
@@ -60,10 +60,10 @@ public:
 		{
 			for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
 			{
-				ContactManifold* manifold = &manifolds[i];
-				jacobians[k].jN.Solve(manifold, jacobians[k].jN, dt);
-				jacobians[k].jT.Solve(manifold, jacobians[k].jN, dt);
-				jacobians[k].jB.Solve(manifold, jacobians[k].jN, dt);
+				ContactManifold& manifold = manifolds[i];
+				jacobians[k].jN.Solve(manifold.GeomA, manifold.GeomB, jacobians[k].jN, dt);
+				jacobians[k].jT.Solve(manifold.GeomA, manifold.GeomB, jacobians[k].jN, dt);
+				jacobians[k].jB.Solve(manifold.GeomA, manifold.GeomB, jacobians[k].jN, dt);
 				k++;
 			}
 		}

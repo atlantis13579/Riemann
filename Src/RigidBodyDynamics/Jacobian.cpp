@@ -1,57 +1,66 @@
 
+#include "../Maths/Maths.h"
+#include "../Collision/GeometryObject.h"
 #include "Jacobian.h"
 #include "RigidBody.h"
-#include "../Maths/Maths.h"
 #include "Contact.h"
-#include "../Collision/GeometryObject.h"
 
 RigidBody* GetRigidBody(Geometry *Geom)
 {
 	return static_cast<RigidBody*>(Geom->GetEntity());
 }
 
-// http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
-// https://www.youtube.com/watch?v=pmdYzNF9x34
-void Jacobian::Setup(ContactManifold* manifold, int idx, JacobianType jt, const Vector3d& dir, float dt)
+// Beta is typically a value between 0 and 1 (usually close to 0)
+// Unfortunately, there is no one correct value for beta; 
+// you will have to tweak this value based on the specific scenarios.
+// Erin Catto proposed that you start increasing the value from 0 
+// until your physics system starts to become unstable, and then use half that value.
+static float BaumgarteContactBeta()
+{
+	return 0.1f;
+}
+
+// Baumgarte Stabilization
+static float BaumgarteStabilizationTerm(float dt, float PenetrationDepth)
+{
+	const float beta = BaumgarteContactBeta();
+	return -(beta / dt) * PenetrationDepth;
+}
+
+void Jacobian::Setup(ContactResult* contact, Geometry *GeomA, Geometry *GeomB, JacobianType jt, const Vector3d& dir, float dt)
 {
 	jacobinType = jt;
 
+	Vector3d RelativePositionA = contact->PositionWorldA - GeomA->GetPosition();
+	Vector3d RelativePositionB = contact->PositionWorldB - GeomB->GetPosition();
+
 	m_jva = -dir;
-	m_jwa = -manifold->ContactPoints[idx].RelativePosition1.Cross(dir);
+	m_jwa = -RelativePositionA.Cross(dir);
 	m_jvb = dir;
-	m_jwb = manifold->ContactPoints[idx].RelativePosition2.Cross(dir);
+	m_jwb = RelativePositionB.Cross(dir);
 
 	m_bias = 0.0f;
 	
-	RigidBody* rigidA = GetRigidBody(manifold->Geom1);
-	RigidBody* rigidB = GetRigidBody(manifold->Geom2);
+	RigidBody* rigidA = GetRigidBody(GeomA);
+	RigidBody* rigidB = GetRigidBody(GeomB);
 
 	if (jacobinType == JacobianType::Normal)
 	{
-		float betaA = rigidA->GetContactBeta();
-		float betaB = rigidB->GetContactBeta();
-		float beta = betaA * betaB;
-
 		float restitutionA = rigidA->GetRestitution();
 		float restitutionB = rigidB->GetRestitution();
 		float restitution = restitutionA * restitutionB;
 
 		Vector3d va = rigidA->GetLinearVelocity();
 		Vector3d wa = rigidA->GetAngularVelocity();
-		Vector3d ra = manifold->ContactPoints[idx].RelativePosition1;
+		Vector3d ra = RelativePositionA;
 
 		Vector3d vb = rigidB->GetLinearVelocity();
 		Vector3d wb = rigidB->GetAngularVelocity();
-		Vector3d rb = manifold->ContactPoints[idx].RelativePosition2;
+		Vector3d rb = RelativePositionB;
 
-		m_bias = 0.0f;
-		if (jacobinType == JacobianType::Normal)
-		{
-			// http://allenchou.net/2013/12/game-physics-resolution-contact-constraints/
-			Vector3d relativeVelocity = vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra);
-			float closingVelocity = relativeVelocity.Dot(dir);
-			m_bias = -(beta / dt) * manifold->ContactPoints[idx].PenetrationDepth + restitution * closingVelocity;
-		}
+		Vector3d relativeVelocity = vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra);
+		float closingVelocity = relativeVelocity.Dot(dir);
+		m_bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingVelocity;
 	}
 
 	Vector3d rva = rigidA->GetInverseInertia() * m_jwa;
@@ -61,14 +70,13 @@ void Jacobian::Setup(ContactManifold* manifold, int idx, JacobianType jt, const 
 
 	m_effectiveMass = 1.0f / k;
 	m_totalLambda = 0.0f;
-
 	return;
 }
 
-void Jacobian::Solve(ContactManifold* manifold, Jacobian& jN, float dt)
+void Jacobian::Solve(Geometry* GeomA, Geometry* GeomB, Jacobian& jN, float dt)
 {
-	RigidBody* rigidA = GetRigidBody(manifold->Geom1);
-	RigidBody* rigidB = GetRigidBody(manifold->Geom2);
+	RigidBody* rigidA = GetRigidBody(GeomA);
+	RigidBody* rigidB = GetRigidBody(GeomB);
 	
 	float jv = DotProduct(m_jva, rigidA->GetLinearVelocity())
 			 + DotProduct(m_jwa, rigidA->GetAngularVelocity())
