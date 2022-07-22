@@ -21,7 +21,7 @@ struct PhysicsMaterial
 	// 1 = completely elastic collision response)
 	static constexpr float DefaultRestitution()
 	{
-		return 1.0f;
+		return 0.0f;
 	}
 
 	static constexpr float DefaultFrictionDynamic()
