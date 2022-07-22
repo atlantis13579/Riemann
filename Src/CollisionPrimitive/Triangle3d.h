@@ -293,7 +293,7 @@ public:
 		return true;
 	}
 
-	static Vector3d ClosestPointOnTriangle(const Vector3d &Point, const Vector3d &A, const Vector3d &B, const Vector3d &C)
+	static Vector3d ClosestPointOnTriangle(const Vector3d &Point, const Vector3d &A, const Vector3d &B, const Vector3d &C, unsigned char &mask)
 	{
 		const Vector3d BA = A - B;
 		const Vector3d AC = C - A;
@@ -303,7 +303,6 @@ public:
 		const Vector3d V[3] = {B, A, C};
 		const Vector3d N[3] = {Normal.Cross(BA), Normal.Cross(AC), Normal.Cross(CB)};
 		
-		unsigned char mask = 0;
 		for (int i = 0; i < 3; ++i)
 		{
 			if ((Point - V[i]).Dot(N[i]) > 0.0f)
@@ -348,7 +347,8 @@ public:
 	
 	static float	SqrDistancePointToTriangle(const Vector3d &Point, const Vector3d &A, const Vector3d &B, const Vector3d &C)
 	{
-		Vector3d Closest = ClosestPointOnTriangle(Point, A, B, C);
+		unsigned char mask = 0;
+		Vector3d Closest = ClosestPointOnTriangle(Point, A, B, C, mask);
 		return (Closest - Point).SquareLength();
 	}
 	

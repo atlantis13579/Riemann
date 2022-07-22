@@ -50,8 +50,8 @@ private:
 	void			SimulateST(float dt);
 
 private:
-	std::vector<RigidBodyStatic*>	m_RigidStatics;
-	std::vector<RigidBodyDynamic*>	m_RigidDynamics;
+	std::vector<RigidBodyStatic*>	m_StaticBodies;
+	std::vector<RigidBodyDynamic*>	m_DynamicBodies;
 	std::vector<KinematicsTree*>	m_Kinematics;
 
 	GeometryQuery*					m_GeometryQuery;

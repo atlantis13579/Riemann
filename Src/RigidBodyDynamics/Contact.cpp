@@ -104,7 +104,7 @@ bool ContactManifold::MergeManifold()
 		break;
 	}
 
-	return;
+	return true;
 }
 
 ContactManifoldManager::ContactManifoldManager()

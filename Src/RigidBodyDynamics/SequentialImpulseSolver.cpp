@@ -21,11 +21,11 @@ struct ContactVelocityConstraintSolver
 	void Setup(ContactManifold* manifold, int j, float dt)
 	{
 		m_contact = &manifold->ContactPoints[j];
-		RigidBody *rigidA = static_cast<RigidBody*>(manifold->GeomA->GetEntity());
-		RigidBody *rigidB = static_cast<RigidBody*>(manifold->GeomB->GetEntity());
-		m_jN.Setup(m_contact, rigidA, rigidB, manifold->ContactPoints[j].Normal, dt);
-		m_jT.Setup(m_contact, rigidA, rigidB, manifold->ContactPoints[j].Tangent, dt);
-		m_jB.Setup(m_contact, rigidA, rigidB, manifold->ContactPoints[j].Binormal, dt);
+		RigidBody *bodyA = static_cast<RigidBody*>(manifold->GeomA->GetEntity());
+		RigidBody *bodyB = static_cast<RigidBody*>(manifold->GeomB->GetEntity());
+		m_jN.Setup(m_contact, bodyA, bodyB, manifold->ContactPoints[j].Normal, dt);
+		m_jT.Setup(m_contact, bodyA, bodyB, manifold->ContactPoints[j].Tangent, dt);
+		m_jB.Setup(m_contact, bodyA, bodyB, manifold->ContactPoints[j].Binormal, dt);
 	}
 
 	void Solve()

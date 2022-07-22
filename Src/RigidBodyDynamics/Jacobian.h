@@ -26,10 +26,10 @@ struct  Jacobian
 		m_jwa = Vector3d::Zero();
 		m_jvb = Vector3d::Zero();
 		m_jwa = Vector3d::Zero();
-		m_rigidA = m_rigidB = nullptr;
+		m_bodyA = m_bodyB = nullptr;
 	}
 
-	void	Setup(const Contact *contact, RigidBody* rigidA, RigidBody* rigidB, const Vector3d& dir, float dt);
+	void	Setup(const Contact *contact, RigidBody* bodyA, RigidBody* bodyB, const Vector3d& dir, float dt);
 	void	Solve(float clampFactor);
 
 	JacobianType jacobinType;
@@ -40,6 +40,6 @@ struct  Jacobian
 	float	m_bias;
 	float	m_effectiveMass;
 	float	m_totalLambda;
-	RigidBody* m_rigidA;
-	RigidBody* m_rigidB;
+	RigidBody* m_bodyA;
+	RigidBody* m_bodyB;
 };

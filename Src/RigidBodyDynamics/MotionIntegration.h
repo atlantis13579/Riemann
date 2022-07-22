@@ -15,5 +15,5 @@ public:
 		ImplicitEuler
 	};
 
-	static void Integrate(std::vector<RigidBodyDynamic*> Entities, float dt, IntegrateMethod method);
+	static void Integrate(std::vector<RigidBodyDynamic*> Bodies, float dt, IntegrateMethod method);
 };

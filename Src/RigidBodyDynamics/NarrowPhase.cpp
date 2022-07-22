@@ -18,22 +18,20 @@ public:
 
 	}
 
-	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold>* contact) override final
+	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold>* manifolds) override final
 	{
-		contact->clear();
+		manifolds->clear();
 		for (size_t i = 0; i < overlaps.size(); ++i)
 		{
-			Contact result;
-			if (PenetrationTest(overlaps[i].Geom1, overlaps[i].Geom2, result))
+			EPAPenetration epa;
+			if (PenetrationTest(overlaps[i].Geom1, overlaps[i].Geom2, epa))
 			{
-				ContactManifold manifold;
-				manifold.AddNewContact(overlaps[i].Geom1, overlaps[i].Geom2, result);
-				contact->push_back(manifold);
+				ConstructManifols(overlaps[i].Geom1, overlaps[i].Geom2, epa, manifolds);
 			}
 		}
 	}
 
-	bool PenetrationTest(Geometry* Geom1, Geometry* Geom2, Contact& result)
+	bool PenetrationTest(Geometry* Geom1, Geometry* Geom2, EPAPenetration& epa)
 	{
 		GeometryDifference shape(Geom1, Geom2);
 		GJKIntersection gjk;
@@ -43,42 +41,55 @@ public:
 			return false;
 		}
 
-		EPAPenetration epa;
 		EPA_status epa_result = epa.Solve(gjk.result);
 		if (epa_result == EPA_status::Failed || epa_result == EPA_status::FallBack)
 		{
 			return false;
 		}
 
+		return  true;
+	}
+
+	void ConstructManifols(Geometry* Geom1, Geometry* Geom2, EPAPenetration& epa, std::vector<ContactManifold>* manifolds)
+	{
+		Contact contact;
+
 		// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
 		Vector3d w0 = Vector3d::Zero();
 		for (int i = 0; i < epa.result.dimension; ++i)
 		{
-			Vector3d pi = shape.Support1(epa.result.v[i].dir) * epa.result.w[i];
+			Vector3d pi = Geom1->GetSupport_WorldSpace(epa.result.v[i].dir) * epa.result.w[i];
 			w0 = w0 + pi;
 		}
 		const Matrix4d& invWorld = Geom1->GetInverseWorldMatrix();
-		result.PositionLocalA = invWorld * w0;
+		contact.PositionLocalA = invWorld * w0;
 		Vector3d p2 = w0 - epa.penetration_normal * epa.penetration_depth;
-		result.PositionLocalB = invWorld * p2;
-		result.PositionWorldA = w0;
-		result.PositionWorldB = p2;
-		result.Normal = epa.penetration_normal;
-		result.PenetrationDepth = epa.penetration_depth;
-		if (result.Normal.x >= 0.57735f)
+		contact.PositionLocalB = invWorld * p2;
+		contact.PositionWorldA = w0;
+		contact.PositionWorldB = p2;
+		contact.Normal = epa.penetration_normal;
+		contact.PenetrationDepth = epa.penetration_depth;
+		if (contact.Normal.x >= 0.57735f)
 		{
-			result.Tangent.x = result.Normal.y;
-			result.Tangent.y = -result.Normal.x;
-			result.Tangent.z = 0;
+			contact.Tangent.x = contact.Normal.y;
+			contact.Tangent.y = -contact.Normal.x;
+			contact.Tangent.z = 0;
 		}
 		else
 		{
-			result.Tangent.x = 0;
-			result.Tangent.y = result.Normal.z;
-			result.Tangent.z = -result.Normal.y;
+			contact.Tangent.x = 0;
+			contact.Tangent.y = contact.Normal.z;
+			contact.Tangent.z = -contact.Normal.y;
 		}
-		result.Binormal = CrossProduct(result.Normal, result.Tangent);
-		return true;
+		contact.Binormal = CrossProduct(contact.Normal, contact.Tangent);
+
+		manifolds->push_back(ContactManifold());
+		manifolds->back().AddNewContact(Geom1, Geom2, contact);
+	}
+
+	void ConstructManifold(std::vector<ContactManifold>* manifolds)
+	{
+
 	}
 
 private:
