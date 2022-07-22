@@ -11,9 +11,9 @@ class Contact
 public:
 	Contact()
 	{
-		SumImpulseNormal = 0.0f;
-		SumImpulseTangent = 0.0f;
-		SumImpulseBinormal = 0.0f;
+		totalImpulseNormal = 0.0f;
+		totalImpulseTangent = 0.0f;
+		totalImpulseBinormal = 0.0f;
 		PositionLocalA = PositionLocalB = PositionWorldA = PositionWorldB = Vector3d::Zero();
 	}
 
@@ -24,11 +24,12 @@ public:
 	Vector3d	Normal;
 	Vector3d	Tangent;
 	Vector3d	Binormal;
-
 	float		PenetrationDepth;
-	float		SumImpulseNormal;
-	float		SumImpulseTangent;
-	float		SumImpulseBinormal;
+
+	//	For warm start
+	float		totalImpulseNormal;
+	float		totalImpulseTangent;
+	float		totalImpulseBinormal;
 };
 
 #define MAX_CONTACT_POINTS 4
@@ -39,10 +40,13 @@ public:
 	Geometry* GeomA = nullptr;
 	Geometry* GeomB = nullptr;
 
-	Contact ContactPoints[MAX_CONTACT_POINTS];
+	Contact ContactPoints[MAX_CONTACT_POINTS + 1];
     int		NumContactPointCount = 0;
 
 	void	AddNewContact(Geometry* _Geom1, Geometry* _Geom2, const Contact& result);
+
+private:
+	bool	MergeManifold();
 };
 
 class ContactManifoldManager

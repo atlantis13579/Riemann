@@ -40,6 +40,12 @@ public:
     GeometryQuery*          GetGeometryQuery() { return m_GeometryQuery; }
     const GeometryQuery*    GetGeometryQuery() const { return m_GeometryQuery; }
     
+	float			GetSystemTotalEnergy() const;
+	float			GetSystemTotalLinearKinematicsEnergy() const;
+	float			GetSystemTotalAngularKinematicsEnergy() const;
+	Vector3d		GetSystemTotalLinearMomentum() const;
+	Vector3d		GetSystemTotalAngularMomentum() const;
+
 private:
 	void			SimulateST(float dt);
 

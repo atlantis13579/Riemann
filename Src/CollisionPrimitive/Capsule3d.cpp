@@ -147,10 +147,10 @@ bool Capsule3d::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
 	return aabb.SqrDistanceToSegment(X0, X1) <= Radius * Radius;
 }
 
-bool Capsule3d::IntersectSphere(const Vector3d& rCenter, float rRadius) const
+bool Capsule3d::IntersectSphere(const Vector3d& InCenter, float InRadius) const
 {
-	float SqrDist = Segment3d::SqrDistanceSegmentToPoint(X0, X1, rCenter);
-	return SqrDist <= (Radius + rRadius) * (Radius + rRadius);
+	float SqrDist = Segment3d::SqrDistancePointToSegment(InCenter, X0, X1);
+	return SqrDist <= (Radius + InRadius) * (Radius + InRadius);
 }
 
 bool Capsule3d::IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float rRadius) const

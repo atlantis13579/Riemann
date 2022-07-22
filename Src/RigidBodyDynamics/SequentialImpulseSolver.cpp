@@ -37,9 +37,9 @@ struct ContactVelocityConstraintSolver
 
 	void Finalize()
 	{
-		m_contact->SumImpulseNormal = m_jN.m_totalLambda;
-		m_contact->SumImpulseTangent = m_jT.m_totalLambda;
-		m_contact->SumImpulseBinormal = m_jB.m_totalLambda;
+		m_contact->totalImpulseNormal = m_jN.m_totalLambda;
+		m_contact->totalImpulseTangent = m_jT.m_totalLambda;
+		m_contact->totalImpulseBinormal = m_jB.m_totalLambda;
 	}
 
 	Contact*	m_contact;

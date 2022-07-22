@@ -48,6 +48,23 @@ const float&		RigidBody::GetInverseMass() const
 	return InvMass;
 }
 
+float RigidBody::GetKinematicsEnergy() const
+{
+	float l = GetLinearKinematicsEnergy();
+	float a = GetAngularKinematicsEnergy();
+	return l + a;
+}
+
+float RigidBody::GetLinearKinematicsEnergy() const
+{
+	return 0.5f * P.SquareLength() * InvMass;
+}
+
+float RigidBody::GetAngularKinematicsEnergy() const
+{
+	return 0.5f * L.Dot(InvInertia * L);
+}
+
 RigidBodyDynamic* RigidBody::CastDynamic()
 {
 	return Static ? nullptr : (RigidBodyDynamic*)this;
@@ -105,7 +122,7 @@ void				RigidBodyDynamic::ApplyTorgue(const Vector3d& Torque)
 
 void RigidBodyDynamic::ApplyTorgue(const Vector3d& RelativePosToCenterOfMass, const Vector3d& Force)
 {
-	ApplyTorgue(RelativePosToCenterOfMass.Cross(Force));
+	this->ExtTorque += RelativePosToCenterOfMass.Cross(Force);
 }
 
 void				RigidBodyDynamic::AppendShapes(std::vector<Geometry*> *Shapes)

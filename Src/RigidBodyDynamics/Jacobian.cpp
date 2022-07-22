@@ -57,10 +57,10 @@ void Jacobian::Setup(const Contact* contact, RigidBody* rigidA, RigidBody* rigid
 		Vector3d wb = rigidB->GetAngularVelocity();
 
 		Vector3d relativeVelocity = vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra);
-		float closingVelocity = relativeVelocity.Dot(dir);
-		closingVelocity = std::min(closingVelocity + kRestitutionSlop, 0.0f);
-		closingVelocity = closingVelocity < -kRestitutionSlop ? closingVelocity : 0.0f;
-		m_bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingVelocity;
+		float closingSpeed = relativeVelocity.Dot(dir);
+		closingSpeed = std::min(closingSpeed + kRestitutionSlop, 0.0f);
+		closingSpeed = closingSpeed < -kRestitutionSlop ? closingSpeed : 0.0f;
+		m_bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingSpeed;
 	}
 
 	Vector3d rva = rigidA->GetInverseInertia() * m_jwa;

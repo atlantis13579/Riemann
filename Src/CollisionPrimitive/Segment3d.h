@@ -21,7 +21,7 @@ public:
 
 	float			SqrDistanceToPoint(const Vector3d& Point) const
 	{
-		Vector3d Closest = Segment3d::ClosestPointOnSegment(P0, P1, Point);
+		Vector3d Closest = Segment3d::ClosestPointOnSegment(Point, P0, P1);
 		return (Point - Closest).SquareLength();
 	}
 
@@ -30,13 +30,13 @@ public:
 		return Segment3d::ClosestPointOnSegment(P0, P1, Point);
 	}
 
-	static float	SqrDistanceSegmentToPoint(const Vector3d& P0, const Vector3d& P1, const Vector3d& Point)
+	static float	SqrDistancePointToSegment(const Vector3d& Point, const Vector3d& P0, const Vector3d& P1)
 	{
-		Vector3d Closest = Segment3d::ClosestPointOnSegment(P0, P1, Point);
+		Vector3d Closest = Segment3d::ClosestPointOnSegment(Point, P0, P1);
 		return (Point - Closest).SquareLength();
 	}
 
-	static Vector3d ClosestPointOnSegment(const Vector3d& P0, const Vector3d& P1, const Vector3d &Point)
+	static Vector3d ClosestPointOnSegment(const Vector3d& Point, const Vector3d& P0, const Vector3d& P1)
 	{
 		const Vector3d V1 = P1 - P0;
 		const Vector3d V2 = Point - P0;

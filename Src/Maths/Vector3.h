@@ -69,7 +69,7 @@ public:
 	TVector3<T> SafeUnit() const
 	{
 		T m = SquareLength();
-		if (m < 1e-6f)
+		if (m < std::numeric_limits<T>::epsilon())
 		{
 			return TVector3<T>::Zero();
 		}
@@ -123,16 +123,6 @@ public:
 		return TVector3<T>(x / v.x, y / v.y, z / v.z);
 	}
 
-	TVector3<T> operator+(T k) const
-	{
-		return TVector3<T>(x + k, y + k, z + k);
-	}
-
-	TVector3<T> operator-(T k) const
-	{
-		return TVector3<T>(x - k, y - k, z - k);
-	}
-
 	inline TVector3<T> operator*(T k) const
 	{
 		return TVector3<T>(x * k, y * k, z * k);
@@ -174,20 +164,6 @@ public:
 		x /= v.x;
 		y /= v.y;
 		z /= v.z;
-	}
-
-	inline void	 operator+= (T k)
-	{
-		x += k;
-		y += k;
-		z += k;
-	}
-
-	inline void	 operator-= (T k)
-	{
-		x -= k;
-		y -= k;
-		z -= k;
 	}
 
 	inline void	 operator*= (T k)
@@ -291,6 +267,17 @@ public:
 		return z > x ? 2 : 0;
 	}
 
+	TVector3<T> Project(const TVector3<T>& to) const
+	{
+		if (to.SquareLength() < std::numeric_limits<T>::epsilon())
+		{
+			return TVector3<T>::Zero();
+		}
+		T n = Dot(to);
+		T d = to.Dot(to);
+		return to * (n / d);
+	}
+
 	TVector3<T> Abs() const
 	{
 		return TVector3<T>(std::abs(x), std::abs(y), std::abs(z));
@@ -321,7 +308,7 @@ public:
 
 	static TVector3<T> Slerp(const TVector3<T>& start, const TVector3<T>& end, float t)
 	{
-		float innerp = start.Dot(end);
+		T innerp = start.Dot(end);
 		innerp = std::min(std::max(-1.0f, innerp), 1.0f);
 		float angle = acosf(innerp) * t;
 		TVector3<T> base = (end - start * innerp).Unit();

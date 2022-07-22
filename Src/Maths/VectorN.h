@@ -91,21 +91,6 @@ public:
 		return Ret;
 	}
 
-	TVectorNd<T, SIZE> operator+(T k) const
-	{
-		TVectorNd<T, SIZE> Ret(*this);
-		for (int i = 0; i < SIZE; ++i)
-		{
-			Ret[i] += k;
-		}
-		return Ret;
-	}
-
-	TVectorNd<T, SIZE> operator-(T k) const
-	{
-		return operator+(-k);
-	}
-
 	TVectorNd<T, SIZE> operator*(T k) const
 	{
 		TVectorNd<T, SIZE> Ret(*this);
@@ -161,19 +146,6 @@ public:
 		{
 			mData[i] /= v[i];
 		}
-	}
-
-	void	 operator+= (T k)
-	{
-		for (int i = 0; i < SIZE; ++i)
-		{
-			mData[i] += k;
-		}
-	}
-
-	void	 operator-= (T k)
-	{
-		operator+=(-k);
 	}
 
 	void	 operator*= (T k)

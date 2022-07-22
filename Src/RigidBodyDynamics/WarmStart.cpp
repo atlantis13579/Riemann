@@ -28,7 +28,7 @@ void WarmStart::Apply(Geometry* GeomA, Geometry* GeomB, Contact& contact, float 
 	Vector3d RelativePositionB = contact.PositionWorldB - GeomB->GetPosition();
 
     // collision impulse
-    float collisionImpulseVal = contact.SumImpulseNormal;
+    float collisionImpulseVal = contact.totalImpulseNormal;
     Vector3d collisionImpulse = normal * collisionImpulseVal;
 
     RigidBodyDynamic* rigidBodyDyn1 = rigidBodyA->CastDynamic();
@@ -47,7 +47,7 @@ void WarmStart::Apply(Geometry* GeomA, Geometry* GeomB, Contact& contact, float 
 
     // friction impulse
     Vector3d tangent = contact.Tangent;
-    float frictionImpulseVal = contact.SumImpulseTangent;
+    float frictionImpulseVal = contact.totalImpulseTangent;
     Vector3d frictionImpulse = tangent * frictionImpulseVal;
 
     if (rigidBodyDyn1 && !rigidBodyDyn1->Sleep)

@@ -70,9 +70,10 @@ void		RigidBodySimulation::Simulate(float dt)
 
 void		RigidBodySimulation::SimulateST(float dt)
 {
-	ApplyForceFields();
-
-	MotionIntegration::Integrate(m_RigidDynamics, dt, MotionIntegration::IntegrateMethod::ExplicitEuler);
+	for (size_t i = 0; i < m_Kinematics.size(); ++i)
+	{
+		m_Kinematics[i]->Simulate(dt);
+	}
 
 	std::vector<Geometry*> Shapes;
 	for (size_t i = 0; i < m_RigidStatics.size(); ++i)
@@ -91,21 +92,24 @@ void		RigidBodySimulation::SimulateST(float dt)
 	}
 
 	std::vector<ContactManifold> manifolds;
-	if (!overlaps.empty())
+	if (m_NPhase && !overlaps.empty())
 	{
 		m_NPhase->CollisionDetection(overlaps, &manifolds);
 	}
 
-	if (m_RPhase)
+	if (m_RPhase && !manifolds.empty())
 	{
+		float e1 = GetSystemTotalLinearKinematicsEnergy();
+		Vector3d p1 = GetSystemTotalLinearMomentum();
 		m_RPhase->ResolveContact(manifolds, dt);
+		float e2 = GetSystemTotalLinearKinematicsEnergy();
+		Vector3d p2 = GetSystemTotalLinearMomentum();
+		int x = 0;
 	}
 
-	for (size_t i = 0; i < m_Kinematics.size(); ++i)
-	{
-		m_Kinematics[i]->Simulate(dt);
-	}
+	ApplyForceFields();
 
+	MotionIntegration::Integrate(m_RigidDynamics, dt, MotionIntegration::IntegrateMethod::ExplicitEuler);
 	return;
 }
 
@@ -206,4 +210,54 @@ KinematicsTree* RigidBodySimulation::FindKinematics(const std::string& resname)
 		}
 	}
 	return nullptr;
+}
+
+float RigidBodySimulation::GetSystemTotalEnergy() const
+{
+	float Energy = 0.0f;
+	for (size_t i = 0; i < m_RigidDynamics.size(); ++i)
+	{
+		Energy += m_RigidDynamics[i]->GetKinematicsEnergy();
+	}
+	return Energy;
+}
+
+float RigidBodySimulation::GetSystemTotalLinearKinematicsEnergy() const
+{
+	float Energy = 0.0f;
+	for (size_t i = 0; i < m_RigidDynamics.size(); ++i)
+	{
+		Energy += m_RigidDynamics[i]->GetLinearKinematicsEnergy();
+	}
+	return Energy;
+}
+
+float RigidBodySimulation::GetSystemTotalAngularKinematicsEnergy() const
+{
+	float Energy = 0.0f;
+	for (size_t i = 0; i < m_RigidDynamics.size(); ++i)
+	{
+		Energy += m_RigidDynamics[i]->GetAngularKinematicsEnergy();
+	}
+	return Energy;
+}
+
+Vector3d RigidBodySimulation::GetSystemTotalLinearMomentum() const
+{
+	Vector3d Momentum(0.0f);
+	for (size_t i = 0; i < m_RigidDynamics.size(); ++i)
+	{
+		Momentum += m_RigidDynamics[i]->GetLinearMomentum();
+	}
+	return Momentum;
+}
+
+Vector3d RigidBodySimulation::GetSystemTotalAngularMomentum() const
+{
+	Vector3d Momentum(0.0f);
+	for (size_t i = 0; i < m_RigidDynamics.size(); ++i)
+	{
+		Momentum += m_RigidDynamics[i]->GetAngularMomentum();
+	}
+	return Momentum;
 }

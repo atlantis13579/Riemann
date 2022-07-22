@@ -77,6 +77,10 @@ public:
 	Matrix3d		GetInverseInertia_WorldSpace() const;
 	const float&	GetInverseMass() const;
 
+	float			GetKinematicsEnergy() const;
+	float			GetLinearKinematicsEnergy() const;
+	float			GetAngularKinematicsEnergy() const;
+
 	RigidBodyDynamic* CastDynamic();
 	
 	void			SetLinearVelocity(const Vector3d &v);
@@ -86,7 +90,6 @@ public:
 	void			AddLinearMomentum(const Vector3d& dp);
 	void			AddAngularVelocity(const Vector3d& dw);
 
-	float			GetContactBeta() const;
 	float			GetRestitution() const;
 	float			GetFrictionDynamic() const;
 	float			GetFrictionStatic() const;

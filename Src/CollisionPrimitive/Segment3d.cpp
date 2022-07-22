@@ -136,12 +136,12 @@ float Segment3d::SqrDistanceSegmentToSegment(const Vector3d& A0, const Vector3d&
 {
 	if ((B0 - B1).SquareLength() <= 1e-6f)
 	{
-		return Segment3d::SqrDistanceSegmentToPoint(A0, A1, B0);
+		return Segment3d::SqrDistancePointToSegment(B0, A0, A1);
 	}
 
 	if ((A0 - A1).SquareLength() <= 1e-6f)
 	{
-		return Segment3d::SqrDistanceSegmentToPoint(B0, B1, A0);
+		return Segment3d::SqrDistancePointToSegment(A0, B0, B1);
 	}
 
 	Vector3d X, Y;
