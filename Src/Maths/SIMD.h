@@ -41,8 +41,8 @@ static_assert(sizeof(VecI16V) == 16, "simd size not correct!");
 
 #include <float.h>
 #include "Maths.h"
-#include "Vector3d.h"
-#include "Vector4d.h"
+#include "Vector3.h"
+#include "Vector4.h"
 
 inline void V3WriteX(Vec3V& v, float f)
 {

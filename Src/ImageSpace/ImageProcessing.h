@@ -5,7 +5,7 @@
 #include <vector>
 #include <queue>
 
-#include "../Maths/Vector2d.h"
+#include "../Maths/Vector2.h"
 
 template<typename T>
 int Filter(T* Cell, int nX, int nY, std::function<bool(T Val)> filter_func, bool Reverse)

@@ -2,8 +2,8 @@
 #pragma once
 
 #include <vector>
-#include "../Maths/Vector3d.h"
-#include "../Maths/Matrix3d.h"
+#include "../Maths/Vector3.h"
+#include "../Maths/Matrix3.h"
 #include "../Maths/Quaternion.h"
 
 class Geometry;

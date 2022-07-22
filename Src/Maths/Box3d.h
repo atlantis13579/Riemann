@@ -5,8 +5,8 @@
 #include <algorithm>
 #include <vector>
 
-#include "Vector3d.h"
-#include "Matrix4d.h"
+#include "Vector3.h"
+#include "Matrix4.h"
 
 #define _USE_MATH_DEFINES
 

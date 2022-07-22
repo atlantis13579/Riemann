@@ -5,7 +5,7 @@
 #include <float.h>
 #include <stdint.h>
 
-#include "../Maths/Vector3d.h"
+#include "../Maths/Vector3.h"
 #include "../Maths/Box3d.h"
 
 inline void* AlignMemory(void *Memory, int Width)

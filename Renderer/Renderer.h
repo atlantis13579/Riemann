@@ -6,7 +6,7 @@
 #  define RENDERER_API __declspec(dllimport)
 #endif
 
-#include "../Src/Maths/Vector3d.h"
+#include "../Src/Maths/Vector3.h"
 
 class Transform;
 

@@ -2,7 +2,7 @@
 
 #include <string>
 #include <vector>
-#include "../Src/Maths/Vector3d.h"
+#include "../Src/Maths/Vector3.h"
 
 class RigidBodySimulation;
 class Renderer;

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Vector3d.h"
-#include "Vector4d.h"
-#include "Matrix3d.h"
-#include "Matrix4d.h"
+#include "Vector3.h"
+#include "Vector4.h"
+#include "Matrix3.h"
+#include "Matrix4.h"
 #include "Quaternion.h"
 
 class Transform

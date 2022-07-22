@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "../Maths/Vector3d.h"
+#include "../Maths/Vector3.h"
 #include "../Maths/Quaternion.h"
 
 #include "KeyFrameAnimation.h"

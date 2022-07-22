@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "../Maths/Box3d.h"
-#include "../Maths/Vector3d.h"
+#include "../Maths/Vector3.h"
 #include "ShapeType.h"
 
 #define TRIANGLE_BATCH			(4096)

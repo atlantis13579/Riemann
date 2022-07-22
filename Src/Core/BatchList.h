@@ -66,7 +66,7 @@ public:
 		return p;
 	}
 
-	T*		ReserveOneBatch()
+	T*		AllocOneBatch()
 	{
 		m_Count += m_BatchSize;
 

@@ -4,7 +4,7 @@
 #include "../Src/Maths/Tensor.h"
 #include "../Src/Maths/Box3d.h"
 #include "../Src/Maths/Maths.h"
-#include "../Src/Maths/Matrix2d.h"
+#include "../Src/Maths/Matrix2.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Float16.h"
 #include "../Src/Geometry/Spline.h"

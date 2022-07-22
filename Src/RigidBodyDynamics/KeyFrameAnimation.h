@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "../Maths/Vector3d.h"
+#include "../Maths/Vector3.h"
 #include "../Maths/Quaternion.h"
 
 template<typename T>

@@ -935,7 +935,7 @@ bool	VoxelField::SerializeFrom(const char* filename)
 	uint32_t NumVoxels = header.nVoxels;
 
 	m_VoxelBatchs.Init(0, NumVoxels);
-	Voxel* Voxels = m_VoxelBatchs.ReserveOneBatch();
+	Voxel* Voxels = m_VoxelBatchs.AllocOneBatch();
 
 	{
 		std::vector<VoxelFast> buffer_vx;

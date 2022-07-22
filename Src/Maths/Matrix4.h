@@ -2,8 +2,8 @@
 #pragma once
 
 #include <string.h>
-#include "Vector3d.h"
-#include "Vector4d.h"
+#include "Vector3.h"
+#include "Vector4.h"
 
 class Matrix4d
 {
@@ -178,12 +178,12 @@ public:
 
 	Vector4d operator*(const Vector4d& vv) const
 	{
-		float In[4] = { vv.x, vv.y, vv.z, vv.w };
-		float out[4] = { 0 };
+		Vector4d In = { vv.x, vv.y, vv.z, vv.w };
+		Vector4d out = { 0 };
 		for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			out[i] += mat[i][j] * In[j];
-		return Vector4d(out);
+		return out;
 	}
 
 	Matrix4d operator+(const Matrix4d& mm) const

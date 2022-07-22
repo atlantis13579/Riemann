@@ -57,7 +57,7 @@
     <ClCompile Include="..\..\Src\LinearSystem\GaussSeidelIteration.cpp" />
     <ClCompile Include="..\..\Src\LinearSystem\JacobiIteration.cpp" />
     <ClCompile Include="..\..\Src\LinearSystem\ProjectedGaussSeidel.cpp" />
-    <ClCompile Include="..\..\Src\Maths\Matrix3d.cpp" />
+    <ClCompile Include="..\..\Src\Maths\Matrix3.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\BroadPhase.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Contact.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Jacobian.cpp" />
@@ -154,6 +154,7 @@
     <ClInclude Include="..\..\Src\LinearSystem\EigenValueDecomposition.h" />
     <ClInclude Include="..\..\Src\LinearSystem\GaussianElimination.h" />
     <ClInclude Include="..\..\Src\Maths\Float16.h" />
+    <ClInclude Include="..\..\Src\Maths\Matrix2.h" />
     <ClInclude Include="..\..\Src\Maths\MatrixMxN.h" />
     <ClInclude Include="..\..\Src\Maths\SIMD_AVX.h" />
     <ClInclude Include="..\..\Src\Maths\SIMD_Neon.h" />
@@ -161,7 +162,8 @@
     <ClInclude Include="..\..\Src\Maths\SIMD_SSE.h" />
     <ClInclude Include="..\..\Src\Maths\Tensor.h" />
     <ClInclude Include="..\..\Src\Maths\SIMD.h" />
-    <ClInclude Include="..\..\Src\Maths\VectorNd.h" />
+    <ClInclude Include="..\..\Src\Maths\Vector2.h" />
+    <ClInclude Include="..\..\Src\Maths\VectorN.h" />
     <ClInclude Include="..\..\Src\Optimization\LBGFS.h" />
     <ClInclude Include="..\..\Src\Optimization\LR.h" />
     <ClInclude Include="..\..\Src\Optimization\PCA.h" />
@@ -198,14 +200,12 @@
     <ClInclude Include="..\..\Src\Maths\Box3d.h" />
     <ClInclude Include="..\..\Src\Maths\Frustum.h" />
     <ClInclude Include="..\..\Src\Maths\Maths.h" />
-    <ClInclude Include="..\..\Src\Maths\Matrix2d.h" />
-    <ClInclude Include="..\..\Src\Maths\Matrix3d.h" />
-    <ClInclude Include="..\..\Src\Maths\Matrix4d.h" />
+    <ClInclude Include="..\..\Src\Maths\Matrix3.h" />
+    <ClInclude Include="..\..\Src\Maths\Matrix4.h" />
     <ClInclude Include="..\..\Src\Maths\Quaternion.h" />
     <ClInclude Include="..\..\Src\Maths\Transform.h" />
-    <ClInclude Include="..\..\Src\Maths\Vector2d.h" />
-    <ClInclude Include="..\..\Src\Maths\Vector3d.h" />
-    <ClInclude Include="..\..\Src\Maths\Vector4d.h" />
+    <ClInclude Include="..\..\Src\Maths\Vector3.h" />
+    <ClInclude Include="..\..\Src\Maths\Vector4.h" />
     <ClInclude Include="..\..\Src\PositionBasedDynamics\PositionBasedDynamicsSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MotionIntegration.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.h" />

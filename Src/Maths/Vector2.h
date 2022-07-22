@@ -20,12 +20,6 @@ public:
 		y = _y;
 	}
 
-	TVector2(T v[2])
-	{
-		x = v[0];
-		y = v[1];
-	}
-
 	TVector2(const TVector2<T>& v)
 	{
 		x = v.x;

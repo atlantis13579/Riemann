@@ -2,7 +2,7 @@
 
 #include "Mesh.h"
 #include "MeshBVH4.h"
-#include "../Maths/Matrix3d.h"
+#include "../Maths/Matrix3.h"
 
 struct TriMeshHitOption 
 {

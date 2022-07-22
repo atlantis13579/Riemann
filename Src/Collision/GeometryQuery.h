@@ -3,7 +3,7 @@
 #include <limits.h>
 #include <vector>
 #include "../Core/StaticStack.h"
-#include "../Maths/Vector3d.h"
+#include "../Maths/Vector3.h"
 #include "GeometryObject.h"
 
 class AABBTree;

@@ -5,7 +5,7 @@
 #include <queue>
 #include <map>
 
-#include "../Maths/Vector2d.h"
+#include "../Maths/Vector2.h"
 
 const int kMinPolygonPoints = 5;
 

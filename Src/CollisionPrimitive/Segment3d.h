@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Maths/Vector3d.h"
+#include "../Maths/Vector3.h"
 
 class Segment3d
 {

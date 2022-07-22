@@ -8,7 +8,7 @@
 #include <math.h>
 #include <algorithm>
 
-#include "Vector3d.h"
+#include "Vector3.h"
 
 template <typename T>
 class TVector4
@@ -22,14 +22,6 @@ public:
 		y = _y;
 		z = _z;
 		w = _w;
-	}
-
-	TVector4<T>(T v[4])
-	{
-		x = v[0];
-		y = v[1];
-		z = v[2];
-		w = v[3];
 	}
 
 	TVector4<T>(const TVector4<T>& v)
@@ -48,12 +40,12 @@ public:
 		w = w;
 	}
 
-	TVector4<T>(T v)
+	TVector4<T>(T k)
 	{
-		x = v;
-		y = v;
-		z = v;
-		w = v;
+		x = k;
+		y = k;
+		z = k;
+		w = k;
 	}
 
 	TVector4<T>()

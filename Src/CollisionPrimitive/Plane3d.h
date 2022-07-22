@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 #include "ShapeType.h"
-#include "../Maths/Vector3d.h"
-#include "../Maths/Matrix3d.h"
+#include "../Maths/Vector3.h"
+#include "../Maths/Matrix3.h"
 #include "../Maths/Box3d.h"
 
 const float kEpsilonPlane = 0.000001f;

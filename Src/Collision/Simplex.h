@@ -2,7 +2,7 @@
 
 #include <assert.h>
 #include <float.h>
-#include "../Maths/Vector3d.h"
+#include "../Maths/Vector3.h"
 #include "MinkowskiSum.h"
 
 #define SIMPLEX1_EPS (1e-9f)

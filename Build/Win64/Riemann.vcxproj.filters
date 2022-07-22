@@ -225,13 +225,10 @@
     <ClInclude Include="..\..\Src\Maths\Maths.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\Matrix2d.h">
+    <ClInclude Include="..\..\Src\Maths\Matrix3.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\Matrix3d.h">
-      <Filter>Maths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\Matrix4d.h">
+    <ClInclude Include="..\..\Src\Maths\Matrix4.h">
       <Filter>Maths</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Maths\MatrixMxN.h">
@@ -405,16 +402,13 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\Tetrahedral.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\Vector2d.h">
+    <ClInclude Include="..\..\Src\Maths\Vector3.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\Vector3d.h">
+    <ClInclude Include="..\..\Src\Maths\Vector4.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\Vector4d.h">
-      <Filter>Maths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\VectorNd.h">
+    <ClInclude Include="..\..\Src\Maths\VectorN.h">
       <Filter>Maths</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\TetrahedralMesh.h">
@@ -479,6 +473,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Core\BatchList.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Matrix2.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Vector2.h">
+      <Filter>Maths</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -572,7 +572,7 @@
     <ClCompile Include="..\..\Src\Solver\LCPSolver.cpp">
       <Filter>Solver</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Maths\Matrix3d.cpp">
+    <ClCompile Include="..\..\Src\Maths\Matrix3.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\MeshBVH4.cpp">

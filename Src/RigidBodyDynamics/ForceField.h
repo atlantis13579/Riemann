@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Maths/Maths.h"
-#include "../Maths/Vector3d.h"
+#include "../Maths/Vector3.h"
 
 class	RigidBodyDynamic;
 

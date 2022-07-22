@@ -4,7 +4,7 @@
 #include <cmath>
 #include <type_traits>
 #include <vector>
-#include "VectorNd.h"
+#include "VectorN.h"
 #include "Maths.h"
 #include "../LinearSystem/GaussianElimination.h"
 

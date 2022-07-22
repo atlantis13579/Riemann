@@ -2,7 +2,7 @@
 
 #include "../Maths/Tensor.h"
 #include "../Maths/Box3d.h"
-#include "../Maths/Vector3d.h"
+#include "../Maths/Vector3.h"
 #include "../Maths/Maths.h"
 
 enum InterpMethod

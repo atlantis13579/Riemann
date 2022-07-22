@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Maths/Vector3d.h"
+#include "../Maths/Vector3.h"
 
 // http://allenchou.net/2013/12/game-physics-resolution-contact-constraints/
 

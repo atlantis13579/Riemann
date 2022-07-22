@@ -11,7 +11,7 @@
 #include "ShapeType.h"
 #include "Sphere3d.h"
 #include "../Maths/Maths.h"
-#include "../Maths/Matrix3d.h"
+#include "../Maths/Matrix3.h"
 
 class Capsule3d
 {

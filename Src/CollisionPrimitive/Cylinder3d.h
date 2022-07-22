@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "ShapeType.h"
-#include "../Maths/Matrix3d.h"
+#include "../Maths/Matrix3.h"
 
 class Cylinder3d
 {
