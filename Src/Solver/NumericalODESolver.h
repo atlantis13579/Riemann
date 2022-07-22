@@ -10,21 +10,21 @@ namespace NumericalODESolver
 {
 
 // (input vector, nDof, t, output vector)
-typedef std::function<void(const float*, int, float, float*)> ODEVectorFunction;
+typedef std::function<void(const float*, int, float, float*)> ode_vector_function_t;
 
 // (input vector, output index, t)
-typedef std::function<float(const float*, int, float)> ODEVectorFunction2;
+typedef std::function<float(const float*, int, float)> ode_vector_function2_t;
 
 class ExplicitEuler
 {
 public:
-	ExplicitEuler(const ODEVectorFunction& dvdt, float t0);
+	ExplicitEuler(const ode_vector_function_t& dvdt, float t0);
 	~ExplicitEuler() {}
 
 	void Integrate(float dt, int nDof, float* v);
 
 private:
-	ODEVectorFunction m_dvdt;
+	ode_vector_function_t m_dvdt;
 	std::vector<float> m_buf;
 	float m_t;
 };
@@ -33,13 +33,13 @@ private:
 class MidpointEuler
 {
 public:
-	MidpointEuler(const ODEVectorFunction& dvdt, float t0);
+	MidpointEuler(const ode_vector_function_t& dvdt, float t0);
 	~MidpointEuler() {}
 
 	void Integrate(float dt, int nDof, float* v);
 
 private:
-	ODEVectorFunction m_dvdt;
+	ode_vector_function_t m_dvdt;
 	std::vector<float> m_buf;
 	float m_t;
 };
@@ -48,13 +48,13 @@ private:
 class SymplecticEuler
 {
 public:
-	SymplecticEuler(const ODEVectorFunction2& dvdt, float t0);
+	SymplecticEuler(const ode_vector_function2_t& dvdt, float t0);
 	~SymplecticEuler() {}
 
 	void Integrate(float dt, int nDof, float* v);
 
 private:
-	ODEVectorFunction2 m_dvdt;
+	ode_vector_function2_t m_dvdt;
 	float m_t;
 };
 
@@ -63,13 +63,13 @@ private:
 class ImplicitEuler_FixedPointIteration
 {
 public:
-	ImplicitEuler_FixedPointIteration(const ODEVectorFunction& dvdt, float t0, int MaxIter);
+	ImplicitEuler_FixedPointIteration(const ode_vector_function_t& dvdt, float t0, int MaxIter);
 	~ImplicitEuler_FixedPointIteration() {}
 
 	void Integrate(float dt, int nDof, float* v);
 
 private:
-	ODEVectorFunction m_dvdt;
+	ode_vector_function_t m_dvdt;
 	std::vector<float> m_buf;
 	float m_t;
 	int m_MaxIter;
@@ -80,14 +80,14 @@ private:
 class ImplicitEuler_NewtonIteration
 {
 public:
-	ImplicitEuler_NewtonIteration(const ODEVectorFunction& dvdt, const ODEVectorFunction& d2vdt2, float t0, int MaxIter);
+	ImplicitEuler_NewtonIteration(const ode_vector_function_t& dvdt, const ode_vector_function_t& d2vdt2, float t0, int MaxIter);
 	~ImplicitEuler_NewtonIteration() {}
 
 	void Integrate(float dt, int nDof, float* v);
 
 private:
-	ODEVectorFunction m_dvdt;		// first derivative
-	ODEVectorFunction m_d2vt2;		// second derivative
+	ode_vector_function_t m_dvdt;		// first derivative
+	ode_vector_function_t m_d2vt2;		// second derivative
 	std::vector<float> m_buf;
 	float m_t;
 	int m_MaxIter;
@@ -98,13 +98,13 @@ private:
 class VerletIntegration
 {
 public:
-	VerletIntegration(const ODEVectorFunction& d2vdt2, float t0);
+	VerletIntegration(const ode_vector_function_t& d2vdt2, float t0);
 	~VerletIntegration() {}
 
 	void Integrate(float dt, int nDof, float* v);
 
 private:
-	ODEVectorFunction m_d2vdt2;
+	ode_vector_function_t m_d2vdt2;
 	std::vector<float> m_buf;
 	float m_t;
 };
@@ -113,13 +113,13 @@ private:
 class RungeKutta4
 {
 public:
-	RungeKutta4(const ODEVectorFunction& dvdt, float t0);
+	RungeKutta4(const ode_vector_function_t& dvdt, float t0);
 	~RungeKutta4() {}
 
 	void Integrate(float dt, int nDof, float* v);
 
 private:
-	ODEVectorFunction m_dvdt;
+	ode_vector_function_t m_dvdt;
 	std::vector<float> m_buf;
 	float m_t;
 };

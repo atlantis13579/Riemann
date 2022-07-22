@@ -99,9 +99,6 @@
     <ClInclude Include="..\..\Src\Solver\ConjugateGradientSolver.h">
       <Filter>Solver</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Solver\ConstraintSolver.h">
-      <Filter>Solver</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\ImageSpace\ContinuousBitmap.h">
       <Filter>ImageSpace</Filter>
     </ClInclude>
@@ -480,6 +477,9 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Contact.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Core\DynamicList.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp">
@@ -505,9 +505,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3d.cpp">
       <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Solver\ConstraintSolver.cpp">
-      <Filter>Solver</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\ConvexHull2d.cpp">
       <Filter>Geometry</Filter>

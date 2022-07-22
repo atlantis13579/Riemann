@@ -137,7 +137,7 @@ void WorldViewer::CreateBoxesDemo()
 {
 	RigidBodyParam rp;
 	rp.Static = true;
-	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d::UnitY(), 1.0f);
+	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d(0.0f, 1.0f, 0.0f), 1.0f);
 	// Geometry* plane = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(100.0f, 2.1f, 100.0f));
 	m_World->CreateRigidBody(plane, rp);
 	AddGeometry(m_Renderer, plane);
@@ -149,7 +149,7 @@ void WorldViewer::CreateBoxesDemo()
 	for (int j = 0; j < 5; ++j)
 	for (int k = 0; k < 5; ++k)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(j * 2.1f, 10.0f + i * 5.0f, k * 2.1f), Vector3d(1.0f, 1.0f, 1.0f));
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(j * 2.1f, 5.0f + i * 2.1f, k * 2.1f), Vector3d(1.0f, 1.0f, 1.0f));
 		// Geometry* aabb = GeometryFactory::CreateSphere(Vector3d(j * 3.0f, 10.0f + i * 3.0f, k * 3.0f), 1.0f);
 		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
 		// p->ApplyTorgue(Vector3d(0, -50, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());

@@ -1,13 +1,15 @@
 #pragma once
 
+#include <vector>
 #include "../Maths/Vector3d.h"
+#include "../Core/DynamicList.h"
 
 class Geometry;
 
-class ContactResult
+class Contact
 {
 public:
-	ContactResult()
+	Contact()
 	{
 		SumImpulseNormal = 0.0f;
 		SumImpulseTangent = 0.0f;
@@ -29,7 +31,7 @@ public:
 	float		SumImpulseBinormal;
 };
 
-#define MAX_CONTACT_POINTS 5
+#define MAX_CONTACT_POINTS 4
 
 class ContactManifold
 {
@@ -37,10 +39,20 @@ public:
 	Geometry* GeomA = nullptr;
 	Geometry* GeomB = nullptr;
 
-	ContactResult ContactPoints[MAX_CONTACT_POINTS];
-    int NumContactPointCount = 0;
+	Contact ContactPoints[MAX_CONTACT_POINTS];
+    int		NumContactPointCount = 0;
 
-	void	AddNewContact(Geometry* _Geom1, Geometry* _Geom2, const ContactResult& result);
+	void	AddNewContact(Geometry* _Geom1, Geometry* _Geom2, const Contact& result);
+};
+
+class ContactManifoldManager
+{
+public:
+	ContactManifoldManager();
+	~ContactManifoldManager();
+
+private:
+	DynamicBatchList<ContactManifold>	mManifolds;
 };
 
 class ContactReport

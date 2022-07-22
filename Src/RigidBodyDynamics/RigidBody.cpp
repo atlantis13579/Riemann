@@ -16,9 +16,19 @@ Vector3d 			RigidBody::GetLinearVelocity() const
 	return P * InvMass;
 }
 
+const Vector3d&		RigidBody::GetLinearMomentum() const
+{
+	return P;
+}
+
 Vector3d			RigidBody::GetAngularVelocity() const
 {
 	return InvInertia * L;
+}
+
+const Vector3d&		RigidBody::GetAngularMomentum() const
+{
+	return L;
 }
 
 const Matrix3d&	 	RigidBody::GetInverseInertia() const
@@ -48,9 +58,24 @@ void				RigidBody::SetLinearVelocity(const Vector3d &v)
 	P = InvMass > kMinimumInvMass ? v / InvMass : Vector3d::Zero();
 }
 
-void				RigidBody::SetAngularVelocity(const Vector3d &v)
+void				RigidBody::SetAngularVelocity(const Vector3d &w)
 {
-	L = InvInertia.Invertible() ? InvInertia.Inverse() * v : Vector3d::Zero();
+	L = InvInertia.Invertible() ? InvInertia.Inverse() * w : Vector3d::Zero();
+}
+
+void				RigidBody::AddLinearVelocity(const Vector3d& dv)
+{
+	P = InvMass > kMinimumInvMass ? (P + dv / InvMass) / InvMass : Vector3d::Zero();
+}
+
+void				RigidBody::AddLinearMomentum(const Vector3d& dp)
+{
+	P = InvMass > kMinimumInvMass ? (P + dp) / InvMass : Vector3d::Zero();
+}
+
+void				RigidBody::AddAngularVelocity(const Vector3d& dw)
+{
+	L = InvInertia.Invertible() ? (L + InvInertia.Inverse() * dw) : Vector3d::Zero();
 }
 
 float				RigidBody::GetRestitution() const

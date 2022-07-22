@@ -1,4 +1,5 @@
 
+#include <float.h>
 #include "../Maths/Maths.h"
 #include "Jacobian.h"
 #include "RigidBody.h"
@@ -22,7 +23,7 @@ static float BaumgarteStabilizationTerm(float dt, float PenetrationDepth)
 }
 
 // http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
-void Jacobian::Setup(ContactResult* contact, RigidBody* rigidA, RigidBody* rigidB, const Vector3d& dir, float dt)
+void Jacobian::Setup(const Contact* contact, RigidBody* rigidA, RigidBody* rigidB, const Vector3d& dir, float dt)
 {
 	Vector3d ra = contact->PositionWorldA - rigidA->X;
 	Vector3d rb = contact->PositionWorldB - rigidB->X;
@@ -31,6 +32,9 @@ void Jacobian::Setup(ContactResult* contact, RigidBody* rigidA, RigidBody* rigid
 	m_jwa = -ra.Cross(dir);
 	m_jvb = dir;
 	m_jwb = rb.Cross(dir);
+
+	m_rigidA = rigidA;
+	m_rigidB = rigidB;
 
 	m_bias = 0.0f;
 
@@ -42,7 +46,6 @@ void Jacobian::Setup(ContactResult* contact, RigidBody* rigidA, RigidBody* rigid
 
 		Vector3d va = rigidA->GetLinearVelocity();
 		Vector3d wa = rigidA->GetAngularVelocity();
-
 		Vector3d vb = rigidB->GetLinearVelocity();
 		Vector3d wb = rigidB->GetAngularVelocity();
 
@@ -61,45 +64,36 @@ void Jacobian::Setup(ContactResult* contact, RigidBody* rigidA, RigidBody* rigid
 	return;
 }
 
-void Jacobian::Solve(RigidBody* m_rigidA, RigidBody* m_rigidB, float totalLambda)
+void Jacobian::Solve()
 {
 	float jv = DotProduct(m_jva, m_rigidA->GetLinearVelocity())
 			 + DotProduct(m_jwa, m_rigidA->GetAngularVelocity())
 			 + DotProduct(m_jvb, m_rigidB->GetLinearVelocity())
 			 + DotProduct(m_jwb, m_rigidB->GetAngularVelocity());
 
-	float lambda = m_effectiveMass * (-(jv + m_bias));
+	float lambda = m_effectiveMass * (-jv - m_bias);
 	float oldTotalLambda = m_totalLambda;
-	switch (jacobinType)
+	if (jacobinType == JacobianType::Normal)
 	{
-	case JacobianType::Normal:
-		m_totalLambda = std::max(m_totalLambda + lambda, 0.0f);
-		break;
-	case JacobianType::Tangent:
-	case JacobianType::Binormal:
+		m_totalLambda = Clamp(m_totalLambda + lambda, 0.0f, FLT_MAX);
+	}
+	else
+	{
 		float friction = m_rigidA->GetFrictionDynamic() * m_rigidB->GetFrictionDynamic();
-		float maxFriction = friction * totalLambda;
+		float maxFriction = friction * m_totalLambda;
 		m_totalLambda = Clamp(m_totalLambda + lambda, -maxFriction, maxFriction);
-		break;
 	}
 	lambda = m_totalLambda - oldTotalLambda;
 	
-	Vector3d va = m_rigidA->GetLinearVelocity();
-	Vector3d vadelta = m_jva * m_rigidA->GetInverseMass() * lambda;
-	m_rigidA->SetLinearVelocity(va + vadelta);
+	Vector3d dpa = m_jva * lambda;
+	Vector3d dwa = (m_rigidA->GetInverseInertia_WorldSpace() * m_jwa) * lambda;
+	Vector3d dpb = m_jvb * lambda;
+	Vector3d dwb = (m_rigidB->GetInverseInertia_WorldSpace() * m_jwb) * lambda;
 
-	Vector3d wa = m_rigidA->GetAngularVelocity();
-	Vector3d wadelta = (m_rigidA->GetInverseInertia_WorldSpace() * m_jwa) * lambda;
-	m_rigidA->SetAngularVelocity(wa + wadelta);
-
-	Vector3d vb = m_rigidB->GetLinearVelocity();
-	Vector3d vbdelta = m_jvb * m_rigidB->GetInverseMass() * lambda;
-	m_rigidB->SetLinearVelocity(vb + vbdelta);
-
-	Vector3d wb = m_rigidB->GetAngularVelocity();
-	Vector3d wbdelta = (m_rigidB->GetInverseInertia_WorldSpace() * m_jwb) * lambda;
-	m_rigidB->SetAngularVelocity(wb + wbdelta);
-
+	m_rigidA->AddLinearMomentum(dpa);
+	m_rigidA->AddAngularVelocity(dwa);
+	m_rigidB->AddLinearMomentum(dpb);
+	m_rigidB->AddAngularVelocity(dwb);
 	return;
 }
 

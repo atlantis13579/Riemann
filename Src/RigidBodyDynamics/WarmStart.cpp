@@ -5,19 +5,19 @@
 
 // http://allenchou.net/2014/01/game-physics-stability-warm-starting/
 
-void WarmStart::Manifolds(std::vector<ContactManifold>& manifolds, float dt)
+void WarmStart::ApplyVelocityConstraint(std::vector<ContactManifold>& manifolds, float dt)
 {
     for (size_t i = 0; i < manifolds.size(); ++i)
     {
         ContactManifold& manifold = manifolds[i];
         for (int i = 0; i < manifold.NumContactPointCount; i++)
         {
-            WarmStart::Contact(manifold.GeomA, manifold.GeomB, manifold.ContactPoints[i], dt);
+            WarmStart::Apply(manifold.GeomA, manifold.GeomB, manifold.ContactPoints[i], dt);
         }
     }
 }
 
-void WarmStart::Contact(Geometry* GeomA, Geometry* GeomB, ContactResult& contact, float dt)
+void WarmStart::Apply(Geometry* GeomA, Geometry* GeomB, Contact& contact, float dt)
 {
     RigidBody* rigidBodyA = (RigidBody*)GeomA->GetEntity();
     RigidBody* rigidBodyB = (RigidBody*)GeomB->GetEntity();

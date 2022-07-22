@@ -23,7 +23,7 @@ public:
 		contact->clear();
 		for (size_t i = 0; i < overlaps.size(); ++i)
 		{
-			ContactResult result;
+			Contact result;
 			if (PenetrationTest(overlaps[i].Geom1, overlaps[i].Geom2, result))
 			{
 				ContactManifold manifold;
@@ -33,7 +33,7 @@ public:
 		}
 	}
 
-	bool PenetrationTest(Geometry* Geom1, Geometry* Geom2, ContactResult& result)
+	bool PenetrationTest(Geometry* Geom1, Geometry* Geom2, Contact& result)
 	{
 		GeometryDifference shape(Geom1, Geom2);
 		GJKIntersection gjk;

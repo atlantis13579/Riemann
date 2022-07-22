@@ -9,7 +9,7 @@ namespace NumericalODESolver
 {
 
 // https://en.wikipedia.org/wiki/Explicit_and_implicit_methods
-ExplicitEuler::ExplicitEuler(const ODEVectorFunction& dvdt, float t0)
+ExplicitEuler::ExplicitEuler(const ode_vector_function_t& dvdt, float t0)
 {
 	m_dvdt = dvdt;
 	m_t = t0;
@@ -30,7 +30,7 @@ void ExplicitEuler::Integrate(float dt, int nDof, float* v)
 
 
 // https://en.wikipedia.org/wiki/Midpoint_method
-MidpointEuler::MidpointEuler(const ODEVectorFunction& dvdt, float t0)
+MidpointEuler::MidpointEuler(const ode_vector_function_t& dvdt, float t0)
 {
 	m_dvdt = dvdt;
 	m_t = t0;
@@ -58,7 +58,7 @@ void MidpointEuler::Integrate(float dt, int nDof, float* v)
 
 
 // https://en.wikipedia.org/wiki/Semi-implicit_Euler_method
-SymplecticEuler::SymplecticEuler(const ODEVectorFunction2& dvdt, float t0)
+SymplecticEuler::SymplecticEuler(const ode_vector_function2_t& dvdt, float t0)
 {
 	m_dvdt = dvdt;
 	m_t = t0;
@@ -75,7 +75,7 @@ void SymplecticEuler::Integrate(float dt, int nDof, float* v)
 
 
 // https://en.wikipedia.org/wiki/Backward_Euler_method
-ImplicitEuler_FixedPointIteration::ImplicitEuler_FixedPointIteration(const ODEVectorFunction& dvdt, float t0, int MaxIter)
+ImplicitEuler_FixedPointIteration::ImplicitEuler_FixedPointIteration(const ode_vector_function_t& dvdt, float t0, int MaxIter)
 {
 	m_dvdt = dvdt;
 	m_MaxIter = MaxIter;
@@ -110,7 +110,7 @@ void ImplicitEuler_FixedPointIteration::Integrate(float dt, int nDof, float* v)
 
 // https://en.wikipedia.org/wiki/Backward_Euler_method
 // https://en.wikipedia.org/wiki/Stiff_equation
-ImplicitEuler_NewtonIteration::ImplicitEuler_NewtonIteration(const ODEVectorFunction& dvdt, const ODEVectorFunction& d2vdt2, float t0, int MaxIter)
+ImplicitEuler_NewtonIteration::ImplicitEuler_NewtonIteration(const ode_vector_function_t& dvdt, const ode_vector_function_t& d2vdt2, float t0, int MaxIter)
 {
 	m_dvdt = dvdt;
 	m_d2vt2 = d2vdt2;
@@ -154,7 +154,7 @@ void ImplicitEuler_NewtonIteration::Integrate(float dt, int nDof, float* v)
 
 
 // https://en.wikipedia.org/wiki/Verlet_integration
-VerletIntegration::VerletIntegration(const ODEVectorFunction& d2vdt2, float t0)
+VerletIntegration::VerletIntegration(const ode_vector_function_t& d2vdt2, float t0)
 {
 	m_d2vdt2 = d2vdt2;
 	m_t = t0;
@@ -186,7 +186,7 @@ void VerletIntegration::Integrate(float dt, int nDof, float* v)
 
 
 // https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
-RungeKutta4::RungeKutta4(const ODEVectorFunction& dvdt, float t0)
+RungeKutta4::RungeKutta4(const ode_vector_function_t& dvdt, float t0)
 {
 	m_dvdt = dvdt;
 	m_t = t0;

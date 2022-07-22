@@ -4,7 +4,7 @@
 
 // http://allenchou.net/2013/12/game-physics-resolution-contact-constraints/
 
-class ContactResult;
+class Contact;
 class RigidBody;
 
 enum JacobianType
@@ -26,17 +26,20 @@ struct  Jacobian
 		m_jwa = Vector3d::Zero();
 		m_jvb = Vector3d::Zero();
 		m_jwa = Vector3d::Zero();
+		m_rigidA = m_rigidB = nullptr;
 	}
 
-	void Setup(ContactResult *contact, RigidBody* rigidA, RigidBody* rigidB, const Vector3d& dir, float dt);
-	void Solve(RigidBody* rigidA, RigidBody* rigidB, float totalLambda);
+	void	Setup(const Contact *contact, RigidBody* rigidA, RigidBody* rigidB, const Vector3d& dir, float dt);
+	void	Solve();
 
 	JacobianType jacobinType;
 	Vector3d m_jva;
 	Vector3d m_jwa;
 	Vector3d m_jvb;
 	Vector3d m_jwb;
-	float m_bias;
-	float m_effectiveMass;
-	float m_totalLambda;
+	float	m_bias;
+	float	m_effectiveMass;
+	float	m_totalLambda;
+	RigidBody* m_rigidA;
+	RigidBody* m_rigidB;
 };

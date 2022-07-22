@@ -2,6 +2,7 @@
 #include "SequentialImpulseSolver.h"
 #include "Jacobian.h"
 #include "WarmStart.h"
+#include "RigidBody.h"
 #include "../Collision/GeometryObject.h"
 
 // Velocity Constraint consists of three Jacobian constraint
@@ -17,28 +18,31 @@ struct ContactVelocityConstraintSolver
 	{
 	}
 
-	void Setup(ContactManifold& manifold, int j, float dt)
+	void Setup(ContactManifold* manifold, int j, float dt)
 	{
-		m_Contact = &manifold.ContactPoints[j];
-		m_rigidA = static_cast<RigidBody*>(manifold.GeomA->GetEntity());
-		m_rigidB = static_cast<RigidBody*>(manifold.GeomB->GetEntity());
-		m_jN.Setup(m_Contact, m_rigidA, m_rigidB, manifold.ContactPoints[j].Normal, dt);
-		m_jT.Setup(m_Contact, m_rigidA, m_rigidB, manifold.ContactPoints[j].Tangent, dt);
-		m_jB.Setup(m_Contact, m_rigidA, m_rigidB, manifold.ContactPoints[j].Binormal, dt);
+		m_contact = &manifold->ContactPoints[j];
+		RigidBody *rigidA = static_cast<RigidBody*>(manifold->GeomA->GetEntity());
+		RigidBody *rigidB = static_cast<RigidBody*>(manifold->GeomB->GetEntity());
+		m_jN.Setup(m_contact, rigidA, rigidB, manifold->ContactPoints[j].Normal, dt);
+		m_jT.Setup(m_contact, rigidA, rigidB, manifold->ContactPoints[j].Tangent, dt);
+		m_jB.Setup(m_contact, rigidA, rigidB, manifold->ContactPoints[j].Binormal, dt);
 	}
 
 	void Solve()
 	{
-		float totalLambda = m_jN.m_totalLambda;
-		m_jN.Solve(m_rigidA, m_rigidB, totalLambda);
-		m_jT.Solve(m_rigidA, m_rigidB, totalLambda);
-		m_jB.Solve(m_rigidA, m_rigidB, totalLambda);
+		m_jN.Solve();
+		m_jT.Solve();
+		m_jB.Solve();
 	}
 
-	ContactResult*	m_Contact;
-	RigidBody*		m_rigidA;
-	RigidBody*		m_rigidB;
+	void Finalize()
+	{
+		m_contact->SumImpulseNormal = m_jN.m_totalLambda;
+		m_contact->SumImpulseTangent = m_jT.m_totalLambda;
+		m_contact->SumImpulseBinormal = m_jB.m_totalLambda;
+	}
 
+	Contact*	m_contact;
 	Jacobian		m_jN;
 	Jacobian		m_jT;
 	Jacobian		m_jB;
@@ -61,14 +65,14 @@ public:
 		if (manifolds.empty())
 			return;
 
-		WarmStart::Manifolds(manifolds, dt);
+		WarmStart::ApplyVelocityConstraint(manifolds, dt);
 
 		std::vector<ContactVelocityConstraintSolver> velocityConstraints;
 		for (size_t i = 0; i < manifolds.size(); ++i)
 		{
 			for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
 			{
-				ContactManifold& manifold = manifolds[i];
+				ContactManifold* manifold = &manifolds[i];
 				velocityConstraints.push_back(ContactVelocityConstraintSolver());
 				velocityConstraints.back().Setup(manifold, j, dt);
 			}
@@ -81,6 +85,11 @@ public:
 			{
 				velocityConstraints[k].Solve();
 			}
+		}
+
+		for (size_t k = 0; k < velocityConstraints.size(); ++k)
+		{
+			velocityConstraints[k].Finalize();
 		}
 	}
 

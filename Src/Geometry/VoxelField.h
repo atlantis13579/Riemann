@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Maths/Box3d.h"
+#include "../Core/DynamicList.h"
 
 #include "stdint.h"
 #include <functional>
@@ -114,7 +115,5 @@ private:
 	Box3d		m_BV;
 
 	std::vector<Voxel*>			m_Fields;
-	std::vector<VoxelBatch>		m_VoxelBatchs;
-	Voxel*						m_FreeVoxelList;
-	int							m_NumVoxels;
+	DynamicBatchList<Voxel>		m_VoxelBatchs;
 };

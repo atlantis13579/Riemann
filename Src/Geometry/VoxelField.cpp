@@ -11,15 +11,17 @@ VoxelField::VoxelField()
 	m_SizeX = 0;
 	m_SizeY = 0;
 	m_SizeZ = 0;
-	m_NumVoxels = 0;
-	m_FreeVoxelList = nullptr;
 }
 
 VoxelField::~VoxelField()
 {
 	m_Fields.clear();
-	m_VoxelBatchs.clear();
-	m_FreeVoxelList = nullptr;
+}
+
+template<typename T>
+T vx_clamp(const T X, const T Min, const T Max)
+{
+	return X < Min ? Min : X < Max ? X : Max;
 }
 
 void VoxelField::MakeEmpty(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
@@ -37,8 +39,8 @@ void VoxelField::MakeEmpty(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, flo
 	m_Fields.resize(m_SizeX * m_SizeZ);
 	memset(&m_Fields[0], 0, sizeof(m_Fields[0]) * m_SizeX * m_SizeZ);
 
-	m_VoxelBatchs.clear();
-	m_FreeVoxelList = nullptr;
+	int kVoxelBatchSize = vx_clamp(m_SizeX * m_SizeZ / 2, 1024, 1024 * 1024);
+	m_VoxelBatchs.Init(1, kVoxelBatchSize);
 }
 
 
@@ -140,11 +142,6 @@ std::string VoxelField::DebugString(int idx) const
 	return str;
 }
 
-template<typename T> 
-T vx_clamp(const T X, const T Min, const T Max)
-{
-	return X < Min ? Min : X < Max ? X : Max;
-}
 
 int		VoxelField::WorldSpaceToVoxelIndex(const Vector3d& pos) const
 {
@@ -264,33 +261,12 @@ bool VoxelField::AddVoxel(int idx, uint16_t ymin, uint16_t ymax, float MergeThr)
 
 Voxel*	VoxelField::AllocVoxel()
 {
-	m_NumVoxels++;
-
-	if (m_FreeVoxelList)
-	{
-		Voxel* p = m_FreeVoxelList;
-		m_FreeVoxelList = m_FreeVoxelList->next;
-		return p;
-	}
-
-	int kVoxelBatchSize = vx_clamp(m_SizeX * m_SizeZ / 2, 1024, 1024 * 1024);
-	if (m_VoxelBatchs.empty() || m_VoxelBatchs.back().Current >= (int)m_VoxelBatchs.back().Voxels.size())
-	{
-		m_VoxelBatchs.resize(m_VoxelBatchs.size() + 1);
-		m_VoxelBatchs.back().Voxels.resize(kVoxelBatchSize);
-		m_VoxelBatchs.back().Current = 0;
-	}
-	VoxelBatch& Batch = m_VoxelBatchs.back();
-	Voxel* p = &Batch.Voxels[Batch.Current++];
-	return p;
+	return m_VoxelBatchs.Alloc();
 }
 
 void VoxelField::FreeVoxel(Voxel* p)
 {
-	m_NumVoxels--;
-
-	p->next = m_FreeVoxelList;
-	m_FreeVoxelList = p;
+	m_VoxelBatchs.Free(p);
 }
 
 static bool VoxelIntersects(const Voxel* v1, const Voxel* v2, uint16_t Thr)
@@ -725,12 +701,12 @@ int		VoxelField::CalculateNumFields() const
 
 uint64_t VoxelField::EstimateMemoryUseage() const
 {
-	return m_NumVoxels * sizeof(Voxel) + m_SizeX * m_SizeZ * sizeof(Voxel*);
+	return m_VoxelBatchs.GetCount() * sizeof(Voxel) + m_SizeX * m_SizeZ * sizeof(Voxel*);
 }
 
 uint64_t VoxelField::EstimateMemoryUseageEx() const
 {
-	return m_NumVoxels * sizeof(VoxelFast) + m_SizeX * m_SizeZ * sizeof(uint32_t);
+	return  m_VoxelBatchs.GetCount() * sizeof(VoxelFast) + m_SizeX * m_SizeZ * sizeof(uint32_t);
 }
 
 void	VoxelField::GenerateHeightMap(std::vector<float>& heightmap) const
@@ -837,7 +813,7 @@ bool	VoxelField::SerializeTo(const char* filename)
 
 	VoxelFileHeader	header;
 	header.nFields = CalculateNumFields();
-	header.nVoxels = m_NumVoxels;
+	header.nVoxels = m_VoxelBatchs.GetCount();
 	header.SizeX = m_SizeX;
 	header.SizeY = m_SizeY;
 	header.SizeZ = m_SizeZ;
@@ -873,7 +849,7 @@ bool	VoxelField::SerializeTo(const char* filename)
 		pf->idx = i;
 		while (v)
 		{
-			if (nVoxels == m_NumVoxels)
+			if (nVoxels == m_VoxelBatchs.GetCount())
 			{
 				assert(false);
 				return false;
@@ -956,12 +932,10 @@ bool	VoxelField::SerializeFrom(const char* filename)
 
 	MakeEmpty(header.BV, header.SizeX, header.SizeY, header.SizeZ, header.VoxelSize, header.VoxelHeight);
 	
-	m_NumVoxels = header.nVoxels;
+	uint32_t NumVoxels = header.nVoxels;
 
-	m_VoxelBatchs.resize(1);
-	m_VoxelBatchs[0].Current = header.nVoxels;
-	m_VoxelBatchs[0].Voxels.resize(header.nVoxels);
-	std::vector<Voxel>& Voxels = m_VoxelBatchs[0].Voxels;
+	m_VoxelBatchs.Init(0, NumVoxels);
+	Voxel* Voxels = m_VoxelBatchs.ReserveOneBatch();
 
 	{
 		std::vector<VoxelFast> buffer_vx;
@@ -984,10 +958,10 @@ bool	VoxelField::SerializeFrom(const char* filename)
 		buffer_field.resize(header.nFields);
 		fread(&buffer_field[0], sizeof(VoxelFileField), buffer_field.size(), fp);
 
-		size_t curr = 0;
+		uint32_t curr = 0;
 		for (uint32_t i = 0; i < header.nFields; ++i)
 		{
-			if (curr >= Voxels.size())
+			if (curr >= NumVoxels)
 			{
 				assert(false);
 				return false;
@@ -995,7 +969,7 @@ bool	VoxelField::SerializeFrom(const char* filename)
 
 			int idx = buffer_field[i].idx;
 			m_Fields[idx] = &Voxels[curr];
-			int Count = (i < header.nFields - 1) ? (buffer_field[i + 1].idx - buffer_field[i].idx) : (m_NumVoxels - buffer_field[i + 1].idx);
+			int Count = (i < header.nFields - 1) ? (buffer_field[i + 1].idx - buffer_field[i].idx) : (NumVoxels - buffer_field[i + 1].idx);
 			for (int j = 0; j < Count - 1; ++j)
 			{
 				Voxels[curr + j].next = &Voxels[curr + j + 1];

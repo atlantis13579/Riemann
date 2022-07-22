@@ -70,7 +70,9 @@ public:
 	RigidBody();
 
 	Vector3d 		GetLinearVelocity() const;
+	const Vector3d& GetLinearMomentum() const;
 	Vector3d		GetAngularVelocity() const;
+	const Vector3d&	GetAngularMomentum() const;
 	const Matrix3d&	GetInverseInertia() const;
 	Matrix3d		GetInverseInertia_WorldSpace() const;
 	const float&	GetInverseMass() const;
@@ -78,9 +80,11 @@ public:
 	RigidBodyDynamic* CastDynamic();
 	
 	void			SetLinearVelocity(const Vector3d &v);
-	void			SetAngularVelocity(const Vector3d &v);
-	void			SetLinearVelocityThreadSafe(const Vector3d& v);
-	void			SetAngularVelocityThreadSafe(const Vector3d& v);
+	void			SetAngularVelocity(const Vector3d &w);
+
+	void			AddLinearVelocity(const Vector3d& dv);
+	void			AddLinearMomentum(const Vector3d& dp);
+	void			AddAngularVelocity(const Vector3d& dw);
 
 	float			GetContactBeta() const;
 	float			GetRestitution() const;
