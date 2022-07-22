@@ -477,7 +477,7 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Contact.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Core\DynamicList.h">
+    <ClInclude Include="..\..\Src\Core\BatchList.h">
       <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>

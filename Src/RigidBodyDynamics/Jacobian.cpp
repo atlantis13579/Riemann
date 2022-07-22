@@ -1,25 +1,32 @@
 
 #include <float.h>
+#include <algorithm>
 #include "../Maths/Maths.h"
 #include "Jacobian.h"
 #include "RigidBody.h"
 #include "Contact.h"
+
+// With restitution slop, we take away just a little bit of energy every time a collision
+// occur, so that the bouncing ball would eventually settle on the floor, completely at rest.
+static const float kRestitutionSlop = 1.0f;
 
 // Beta is typically a value between 0 and 1 (usually close to 0)
 // Unfortunately, there is no one correct value for beta; 
 // you will have to tweak this value based on the specific scenarios.
 // Erin Catto proposed that you start increasing the value from 0 
 // until your physics system starts to become unstable, and then use half that value.
-static inline float BaumgarteContactBeta()
-{
-	return 0.1f;
-}
+static const float kBaumgarteContactBeta = 0.1f;
+
+// Allow objects to penetrate a bit before actually applying Baumgarte Stabiliation
+// Without slop, if two colliders are just penetrating by a teeny bit, extra impulse is applied. 
+// This would result in unnecessary jitter and objects will hardly sit tight when they are supposed to be at rest
+static const float kPenetrationSlop = 0.05f;
 
 // Baumgarte Stabilization
 static float BaumgarteStabilizationTerm(float dt, float PenetrationDepth)
 {
-	const float beta = BaumgarteContactBeta();
-	return -(beta / dt) * PenetrationDepth;
+	const float beta = kBaumgarteContactBeta;
+	return -(beta / dt) * std::max(PenetrationDepth - kPenetrationSlop, 0.0f);
 }
 
 // http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
@@ -51,6 +58,8 @@ void Jacobian::Setup(const Contact* contact, RigidBody* rigidA, RigidBody* rigid
 
 		Vector3d relativeVelocity = vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra);
 		float closingVelocity = relativeVelocity.Dot(dir);
+		closingVelocity = std::min(closingVelocity + kRestitutionSlop, 0.0f);
+		closingVelocity = closingVelocity < -kRestitutionSlop ? closingVelocity : 0.0f;
 		m_bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingVelocity;
 	}
 
@@ -64,7 +73,7 @@ void Jacobian::Setup(const Contact* contact, RigidBody* rigidA, RigidBody* rigid
 	return;
 }
 
-void Jacobian::Solve()
+void Jacobian::Solve(float clampFactor)
 {
 	float jv = DotProduct(m_jva, m_rigidA->GetLinearVelocity())
 			 + DotProduct(m_jwa, m_rigidA->GetAngularVelocity())
@@ -80,7 +89,7 @@ void Jacobian::Solve()
 	else
 	{
 		float friction = m_rigidA->GetFrictionDynamic() * m_rigidB->GetFrictionDynamic();
-		float maxFriction = friction * m_totalLambda;
+		float maxFriction = friction * clampFactor;
 		m_totalLambda = Clamp(m_totalLambda + lambda, -maxFriction, maxFriction);
 	}
 	lambda = m_totalLambda - oldTotalLambda;

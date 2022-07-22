@@ -30,7 +30,7 @@ struct  Jacobian
 	}
 
 	void	Setup(const Contact *contact, RigidBody* rigidA, RigidBody* rigidB, const Vector3d& dir, float dt);
-	void	Solve();
+	void	Solve(float clampFactor);
 
 	JacobianType jacobinType;
 	Vector3d m_jva;

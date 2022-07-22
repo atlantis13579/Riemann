@@ -3,7 +3,7 @@
 #include <vector>
 
 template<class T>
-class DynamicBatchList
+class BatchList
 {
 public:
 	struct OneBatch
@@ -12,7 +12,7 @@ public:
 		int				Current;
 	};
 
-	DynamicBatchList()
+	BatchList()
 	{
 	}
 

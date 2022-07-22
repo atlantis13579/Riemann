@@ -2,7 +2,7 @@
 
 #include <vector>
 #include "../Maths/Vector3d.h"
-#include "../Core/DynamicList.h"
+#include "../Core/BatchList.h"
 
 class Geometry;
 
@@ -52,7 +52,7 @@ public:
 	~ContactManifoldManager();
 
 private:
-	DynamicBatchList<ContactManifold>	mManifolds;
+	BatchList<ContactManifold>	mManifolds;
 };
 
 class ContactReport

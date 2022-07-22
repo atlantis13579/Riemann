@@ -30,9 +30,9 @@ struct ContactVelocityConstraintSolver
 
 	void Solve()
 	{
-		m_jN.Solve();
-		m_jT.Solve();
-		m_jB.Solve();
+		m_jN.Solve(1.0f);
+		m_jT.Solve(m_jN.m_totalLambda);
+		m_jB.Solve(m_jN.m_totalLambda);
 	}
 
 	void Finalize()
