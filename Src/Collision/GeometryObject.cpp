@@ -241,11 +241,16 @@ Geometry* GeometryFactory::CreateSphere(const Vector3d& Center, float Radius)
 
 Geometry* GeometryFactory::CreateCapsule(const Vector3d& X1, const Vector3d& X2, float Radius)
 {
+	Quaternion quat = Quaternion::One();
+	if ((X2 - X1).SquareLength() < 1e-9)
+	{
+		quat.FromTwoAxis(Vector3d::UnitY(), X2 - X1);
+	}
 	Vector3d Center = (X1 + X2) * 0.5f;
 	TGeometry<Capsule3d>* p = new TGeometry<Capsule3d>();
 	p->Init(X1 - Center, X2 - Center, Radius);
 	p->SetPosition(Center);
-	p->SetRotationQuat(Quaternion::One());
+	p->SetRotationQuat(quat);
 	p->UpdateBoundingVolume();
 	return (Geometry*)p;
 }

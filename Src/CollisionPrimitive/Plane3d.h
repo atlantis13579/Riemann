@@ -267,6 +267,69 @@ public:
 		);
 	}
 
+	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	{
+		Box3d box = GetBoundingVolume();
+		const Vector3d& Bmin = box.Min;
+		const Vector3d& Bmax = box.Max;
+
+		int axis = dir.Abs().LargestAxis();
+		if (dir[axis] < 0.0f)
+		{
+			switch (axis)
+			{
+			case 0:
+				FacePoints[0] = Vector3d(Bmax.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3d(Bmax.x, Bmax.y, Bmin.z);
+				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3d(Bmax.x, Bmin.y, Bmax.z);
+				break;
+
+			case 1:
+				FacePoints[0] = Vector3d(Bmin.x, Bmax.y, Bmin.z);
+				FacePoints[1] = Vector3d(Bmin.x, Bmax.y, Bmax.z);
+				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3d(Bmax.x, Bmax.y, Bmin.z);
+				break;
+
+			case 2:
+				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmax.z);
+				FacePoints[1] = Vector3d(Bmax.x, Bmin.y, Bmax.z);
+				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3d(Bmin.x, Bmax.y, Bmax.z);
+				break;
+			}
+		}
+		else
+		{
+			switch (axis)
+			{
+			case 0:
+				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3d(Bmin.x, Bmin.y, Bmax.z);
+				FacePoints[2] = Vector3d(Bmin.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3d(Bmin.x, Bmax.y, Bmin.z);
+				break;
+
+			case 1:
+				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3d(Bmax.x, Bmin.y, Bmin.z);
+				FacePoints[2] = Vector3d(Bmax.x, Bmin.y, Bmax.z);
+				FacePoints[3] = Vector3d(Bmin.x, Bmin.y, Bmax.z);
+				break;
+
+			case 2:
+				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3d(Bmin.x, Bmax.y, Bmin.z);
+				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmin.z);
+				FacePoints[3] = Vector3d(Bmax.x, Bmin.y, Bmin.z);
+				break;
+			}
+		}
+
+		return 4;
+	}
+
 	void			GetVerties(Vector3d *v, float Radius)
 	{
 		Vector3d v0 = Vector3d::UnitY();

@@ -4,8 +4,9 @@
 
 // http://allenchou.net/2013/12/game-physics-resolution-contact-constraints/
 
-class Contact;
+struct Contact;
 class RigidBody;
+class ContactManifold;
 
 enum JacobianType
 {
@@ -42,4 +43,28 @@ struct  Jacobian
 	float	m_totalLambda;
 	RigidBody* m_bodyA;
 	RigidBody* m_bodyB;
+};
+
+// Velocity Constraint consists of three Jacobian constraint
+// JN * V + b == 0, JT * V + b == 0, JB * V + b == 0
+// Where V is 12x1 generalized velocity [va, wa, vb, wb]^T
+// b is the bias term
+// to model the equation : (vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra)) * n == 0
+struct ContactVelocityConstraintSolver
+{
+	ContactVelocityConstraintSolver() :
+		m_jN(JacobianType::Normal),
+		m_jT(JacobianType::Tangent),
+		m_jB(JacobianType::Binormal)
+	{
+	}
+
+	void Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, float dt);
+	void Solve();
+	void Finalize();
+
+	Contact* m_contact;
+	Jacobian	m_jN;
+	Jacobian	m_jT;
+	Jacobian	m_jB;
 };

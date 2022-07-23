@@ -475,17 +475,17 @@ void AABBTree::InitAABBTreeBuild(AABBTreeBuildData& params)
 	if (m_GeometryIndicesBase)
 		return;
 
-	m_NumGeometries = params.NumGeometries;
-	m_GeometryIndicesBase = new int[params.NumGeometries];
-	for (int i = 0; i < params.NumGeometries; ++i)
+	m_NumGeometries = params.numGeometries;
+	m_GeometryIndicesBase = new int[params.numGeometries];
+	for (int i = 0; i < params.numGeometries; ++i)
 		m_GeometryIndicesBase[i] = (int)i;
 
 	params.pAABBTree = new AABBTreeOffline();
-	params.pAABBTree->Init(params.NumGeometries, params.NumGeometriesPerNode);
+	params.pAABBTree->Init(params.numGeometries, params.numGeometriesPerNode);
 
 	params.pIndicesBase = m_GeometryIndicesBase;
-	params.pCenterBuffer = (Vector3d*) new float[(params.NumGeometries + 1)*3];
-	for (int i = 0; i < params.NumGeometries; i++)
+	params.pCenterBuffer = (Vector3d*) new float[(params.numGeometries + 1)*3];
+	for (int i = 0; i < params.numGeometries; i++)
 	{
 		params.pCenterBuffer[i] = params.pAABBArray[i].GetCenter();
 	}

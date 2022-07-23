@@ -11,8 +11,8 @@ struct AABBTreeNodeInference;
 struct AABBTreeBuildData
 {
 	AABBTreeBuildData(const Box3d* pArray, int nGeometries = 0, int GeometriesPerNode = 1) :
-		NumGeometriesPerNode(GeometriesPerNode),
-		NumGeometries(nGeometries),
+		numGeometriesPerNode(GeometriesPerNode),
+		numGeometries(nGeometries),
 		pAABBArray(pArray),
 		pCenterBuffer(nullptr),
 		pIndicesBase(nullptr),
@@ -23,8 +23,8 @@ struct AABBTreeBuildData
 
 	~AABBTreeBuildData()
 	{
-		NumGeometriesPerNode = 0;
-		NumGeometries = 0;
+		numGeometriesPerNode = 0;
+		numGeometries = 0;
 		pAABBArray = nullptr;
 		Release();
 	}
@@ -39,8 +39,8 @@ struct AABBTreeBuildData
 		pIndicesBase = nullptr;
 	}
 
-	int							NumGeometriesPerNode;	
-	int							NumGeometries;
+	int							numGeometriesPerNode;	
+	int							numGeometries;
 	const Box3d*				pAABBArray;
 	Vector3d*					pCenterBuffer;		// Holds the memory
 	int*						pIndicesBase;

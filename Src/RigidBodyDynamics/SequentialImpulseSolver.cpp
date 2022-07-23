@@ -5,48 +5,6 @@
 #include "RigidBody.h"
 #include "../Collision/GeometryObject.h"
 
-// Velocity Constraint consists of three Jacobian constraint
-// JN * V + b == 0, JT * V + b == 0, JB * V + b == 0
-// Where V is 12x1 generalized velocity [va, wa, vb, wb]^T
-// b is the bias term
-struct ContactVelocityConstraintSolver
-{
-	ContactVelocityConstraintSolver() :
-		m_jN(JacobianType::Normal),
-		m_jT(JacobianType::Tangent),
-		m_jB(JacobianType::Binormal)
-	{
-	}
-
-	void Setup(ContactManifold* manifold, int j, float dt)
-	{
-		m_contact = &manifold->ContactPoints[j];
-		RigidBody *bodyA = static_cast<RigidBody*>(manifold->GeomA->GetEntity());
-		RigidBody *bodyB = static_cast<RigidBody*>(manifold->GeomB->GetEntity());
-		m_jN.Setup(m_contact, bodyA, bodyB, manifold->ContactPoints[j].Normal, dt);
-		m_jT.Setup(m_contact, bodyA, bodyB, manifold->ContactPoints[j].Tangent, dt);
-		m_jB.Setup(m_contact, bodyA, bodyB, manifold->ContactPoints[j].Binormal, dt);
-	}
-
-	void Solve()
-	{
-		m_jN.Solve(1.0f);
-		m_jT.Solve(m_jN.m_totalLambda);
-		m_jB.Solve(m_jN.m_totalLambda);
-	}
-
-	void Finalize()
-	{
-		m_contact->totalImpulseNormal = m_jN.m_totalLambda;
-		m_contact->totalImpulseTangent = m_jT.m_totalLambda;
-		m_contact->totalImpulseBinormal = m_jB.m_totalLambda;
-	}
-
-	Contact*	m_contact;
-	Jacobian	m_jN;
-	Jacobian	m_jT;
-	Jacobian	m_jB;
-};
 
 class SequentialImpulseSolver : public ResolutionPhase
 {
@@ -73,8 +31,11 @@ public:
 			for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
 			{
 				ContactManifold* manifold = &manifolds[i];
+				RigidBody* bodyA = static_cast<RigidBody*>(manifold->GeomA->GetEntity());
+				RigidBody* bodyB = static_cast<RigidBody*>(manifold->GeomB->GetEntity());
+
 				velocityConstraints.push_back(ContactVelocityConstraintSolver());
-				velocityConstraints.back().Setup(manifold, j, dt);
+				velocityConstraints.back().Setup(&manifold->ContactPoints[j], bodyA, bodyB, dt);
 			}
 		}
 

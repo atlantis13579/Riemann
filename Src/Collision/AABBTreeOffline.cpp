@@ -59,7 +59,7 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 
 	BV = Box3d(minV, maxV);
 
-	if (nPrims <= Params.NumGeometriesPerNode)
+	if (nPrims <= Params.numGeometriesPerNode)
 		return;
 
 	meansV *= 1.0f / float(nPrims);
@@ -86,7 +86,7 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 
 	if (!validSplit)
 	{
-		if (nPrims > Params.NumGeometriesPerNode)
+		if (nPrims > Params.numGeometriesPerNode)
 		{
 			nSplitLeft = nPrims >> 1;
 		}

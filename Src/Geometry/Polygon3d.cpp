@@ -1,7 +1,7 @@
 #include "Polygon3d.h"
 #include "../CollisionPrimitive/Triangle3d.h"
 
-#define MAX_POINTS	8		// TODO
+#define POLY_STACK_SIZE		32
 
 float PolygonArea3D(const Vector3d* polygon, int nvert)
 {
@@ -57,7 +57,7 @@ void ClipPolygonByPlane3D(const Vector3d* polygon, int n, const Vector3d& Origin
 
 void ClipPolygonByProjectPolygon3D(const Vector3d* polygon, int n1, const Vector3d* polyProj, int n2, const Vector3d& projNormal, Vector3d* clipped, int *nc)
 {
-	Vector3d tmp[2][MAX_POINTS];
+	Vector3d tmp[2][POLY_STACK_SIZE];
 	int ntmp[2] = { 0 };
 	int idx = 0;
 
@@ -153,7 +153,7 @@ void ClipPolygonByProjectSegment3D(const Vector3d* polygon, int n, const Vector3
 
 void ClipPolygonByAABB3D(const Vector3d* polygon, int n, const Vector3d& Min, const Vector3d &Max, Vector3d* clipped, int *nc)
 {
-	Vector3d tmp[2][MAX_POINTS];
+	Vector3d tmp[2][POLY_STACK_SIZE];
 	int ntmp[2] = { 0 };
 	int idx = 0;
 
@@ -226,7 +226,7 @@ bool ClipPolygonAgainPolygon3D(const Vector3d* poly1, int n1, const Vector3d* po
 	if (n1 < 2 || n2 < 3)
 		return false;
 
-	Vector3d clipped_face[MAX_POINTS];
+	Vector3d clipped_face[POLY_STACK_SIZE];
 	int nc = 0;
 
 	if (n1 >= 3)

@@ -106,3 +106,24 @@ void Jacobian::Solve(float clampFactor)
 	return;
 }
 
+void ContactVelocityConstraintSolver::Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, float dt)
+{
+	m_contact = contact;
+	m_jN.Setup(m_contact, bodyA, bodyB, m_contact->Normal, dt);
+	m_jT.Setup(m_contact, bodyA, bodyB, m_contact->Tangent, dt);
+	m_jB.Setup(m_contact, bodyA, bodyB, m_contact->Binormal, dt);
+}
+
+void ContactVelocityConstraintSolver::Solve()
+{
+	m_jN.Solve(1.0f);
+	m_jT.Solve(m_jN.m_totalLambda);
+	m_jB.Solve(m_jN.m_totalLambda);
+}
+
+void ContactVelocityConstraintSolver::Finalize()
+{
+	m_contact->totalImpulseNormal = m_jN.m_totalLambda;
+	m_contact->totalImpulseTangent = m_jT.m_totalLambda;
+	m_contact->totalImpulseBinormal = m_jB.m_totalLambda;
+}

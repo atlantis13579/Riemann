@@ -6,7 +6,7 @@
 
 class Geometry;
 
-class Contact
+struct Contact
 {
 public:
 	Contact()

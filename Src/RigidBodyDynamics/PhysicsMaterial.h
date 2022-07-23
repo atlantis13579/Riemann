@@ -1,16 +1,24 @@
 #pragma once
 
+enum DefaultPhysicsMaterial
+{
+	Concrete = 0,
+	Ice,
+	BounceBall,
+	NUM_DEFAULT_PHYSICS_MATERIALS,
+};
+
 struct PhysicsMaterial
 {
-	float	Restitution;
-	float	FrictionDynamic;
-	float	FrictionStatic;
+	float		Restitution;
+	float		FrictionDynamic;
+	float		FrictionStatic;
 
-	PhysicsMaterial()
+	PhysicsMaterial(float r, float fd, float fs)
 	{
-		Restitution = DefaultRestitution();
-		FrictionDynamic = DefaultFrictionDynamic();
-		FrictionStatic = DefaultFrictionStatic();
+		Restitution = r;
+		FrictionDynamic = fd;
+		FrictionStatic = fs;
 	}
 
 	// The coefficient of restitution between two objects, 
@@ -33,4 +41,6 @@ struct PhysicsMaterial
 	{
 		return 1.0f;
 	}
+
+	static const PhysicsMaterial defaultMeterialTable[(int)NUM_DEFAULT_PHYSICS_MATERIALS];
 };

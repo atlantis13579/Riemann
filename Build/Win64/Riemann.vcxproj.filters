@@ -243,9 +243,6 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\MeshBVH4.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Collision\MinkowskiSum.h">
-      <Filter>CollisionPrimitive</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Continuum\MLSMPMSolver.h">
       <Filter>Continuum</Filter>
     </ClInclude>
@@ -479,6 +476,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Maths\Vector2.h">
       <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Collision\MinkowskiSum.h">
+      <Filter>Collision</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

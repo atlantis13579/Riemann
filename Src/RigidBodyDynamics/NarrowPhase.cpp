@@ -12,7 +12,7 @@ class NarrowPhase_GJKEPA : public NarrowPhase
 public:
 	NarrowPhase_GJKEPA()
 	{
-
+		mUseContactFace = true;
 	}
 	virtual ~NarrowPhase_GJKEPA()
 	{
@@ -51,7 +51,7 @@ public:
 		return  true;
 	}
 
-	bool ConstructSupportFace(Geometry* GeomA, Geometry* GeomB, const Vector3d& penetration_normal, SupportFace &Face)
+	static bool ConstructSupportFace(Geometry* GeomA, Geometry* GeomB, const Vector3d& penetration_normal, SupportFace &Face)
 	{
 		SupportFace FaceA, FaceB;
 		GeomA->GetSupportFace_WorldSpace(-penetration_normal, FaceA);
@@ -75,7 +75,10 @@ public:
 		}
 
 		SupportFace ContactFace;
-		ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
+		if (mUseContactFace)
+		{
+			ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
+		}
 
 		const Matrix4d& invWorld = GeomA->GetInverseWorldMatrix();
 		for (int i = -1; i < ContactFace.GetSize(); ++i)
@@ -108,8 +111,7 @@ public:
 	}
 
 private:
-
-
+	bool mUseContactFace;
 };
 
 NarrowPhase* NarrowPhase::Create_GJKEPA()
