@@ -108,8 +108,14 @@ public:
 
 	Vector3d    GetSupport(const Vector3d& dir) const
 	{
-		// TODO
-		return Vector3d::UnitY();
+		assert(false);
+		return Vector3d::Zero();
+	}
+
+	int			GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	{
+		assert(false);
+		return 0;
 	}
 
 	Matrix3d	GetInertiaTensor(float Mass) const

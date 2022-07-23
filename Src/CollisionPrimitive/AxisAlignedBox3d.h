@@ -191,6 +191,70 @@ public:
 		);
 	}
 
+	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	{
+		return AxisAlignedBox3d::GetSupportFace(Min, Max, dir, FacePoints);
+	}
+
+	static int		GetSupportFace(const Vector3d& Bmin, const Vector3d& Bmax, const Vector3d& dir, Vector3d* FacePoints)
+	{
+		int axis = dir.LargestAxis();
+		if (dir[axis] < 0.0f)
+		{
+			switch (axis)
+			{
+			case 0:
+				FacePoints[0] = Vector3d(Bmax.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3d(Bmax.x, Bmax.y, Bmin.z);
+				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3d(Bmax.x, Bmin.y, Bmax.z);
+				break;
+
+			case 1:
+				FacePoints[0] = Vector3d(Bmin.x, Bmax.y, Bmin.z);
+				FacePoints[1] = Vector3d(Bmin.x, Bmax.y, Bmax.z);
+				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3d(Bmax.x, Bmax.y, Bmin.z);
+				break;
+
+			case 2:
+				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmax.z);
+				FacePoints[1] = Vector3d(Bmax.x, Bmin.y, Bmax.z);
+				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3d(Bmin.x, Bmax.y, Bmax.z);
+				break;
+			}
+		}
+		else
+		{
+			switch (axis)
+			{
+			case 0:
+				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3d(Bmin.x, Bmin.y, Bmax.z);
+				FacePoints[2] = Vector3d(Bmin.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3d(Bmin.x, Bmax.y, Bmin.z);
+				break;
+
+			case 1:
+				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3d(Bmax.x, Bmin.y, Bmin.z);
+				FacePoints[2] = Vector3d(Bmax.x, Bmin.y, Bmax.z);
+				FacePoints[3] = Vector3d(Bmin.x, Bmin.y, Bmax.z);
+				break;
+
+			case 2:
+				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3d(Bmin.x, Bmax.y, Bmin.z);
+				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmin.z);
+				FacePoints[3] = Vector3d(Bmax.x, Bmin.y, Bmin.z);
+				break;
+			}
+		}
+
+		return 4;
+	}
+
 	void			GetMesh2(std::vector<Vector3d> &Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
 		Vertices.resize(8);

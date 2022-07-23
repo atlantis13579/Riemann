@@ -145,6 +145,12 @@ public:
 		return Center + Normalized * Radius;
 	}
 
+	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	{
+		*FacePoints = Sphere3d::GetSupport(Center, Radius, dir);
+		return 1;
+	}
+
 	void			GetVertices(int stackCount, int sliceCount, std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
 	{
 		const float mPI = 2.0f * asinf(1.0f);

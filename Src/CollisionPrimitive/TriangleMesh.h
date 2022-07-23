@@ -1,5 +1,6 @@
 #pragma once
 
+#include <assert.h>
 #include "Mesh.h"
 #include "MeshBVH4.h"
 #include "../Maths/Matrix3.h"
@@ -65,8 +66,8 @@ public:
 	}
 
 	Matrix3d		GetInertiaTensor(float Mass) const;
-
 	Vector3d		GetSupport(const Vector3d& dir) const;
+	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const;
 
 private:
 	MeshBVH4*	m_BVH;

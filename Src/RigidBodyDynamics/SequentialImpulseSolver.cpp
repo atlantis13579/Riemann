@@ -43,9 +43,9 @@ struct ContactVelocityConstraintSolver
 	}
 
 	Contact*	m_contact;
-	Jacobian		m_jN;
-	Jacobian		m_jT;
-	Jacobian		m_jB;
+	Jacobian	m_jN;
+	Jacobian	m_jT;
+	Jacobian	m_jB;
 };
 
 class SequentialImpulseSolver : public ResolutionPhase

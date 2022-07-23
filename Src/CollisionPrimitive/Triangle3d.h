@@ -475,6 +475,12 @@ public:
 		return C;
 	}
 
+	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	{
+		*FacePoints = Triangle3d::GetSupport(A, B, C, dir);
+		return 1;
+	}
+
 	void			GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
 	{
 		Vertices = std::vector<Vector3d>({ A , B, C });

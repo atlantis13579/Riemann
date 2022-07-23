@@ -1,6 +1,7 @@
 
 #include "NarrowPhase.h"
 #include "Contact.h"
+#include "../Geometry/Polygon3d.h"
 #include "../Collision/GeometryObject.h"
 #include "../Collision/GeometryDifference.h"
 #include "../Collision/EPAPenetration.h"
@@ -36,7 +37,7 @@ public:
 		GeometryDifference shape(Geom1, Geom2);
 		GJKIntersection gjk;
 		GJK_status gjk_status = gjk.Solve(&shape);
-		if (gjk_status != GJK_status::Inside)
+		if (gjk_status != GJK_status::Intersect)
 		{
 			return false;
 		}
@@ -50,18 +51,38 @@ public:
 		return  true;
 	}
 
-	void ConstructManifols(Geometry* Geom1, Geometry* Geom2, EPAPenetration& epa, std::vector<ContactManifold>* manifolds)
+	void ConstructManifols(Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, std::vector<ContactManifold>* manifolds)
 	{
-		Contact contact;
+		manifolds->push_back(ContactManifold());
+
+		SupportFace FaceA, FaceB;
+		GeomA->GetSupportFace_WorldSpace(-epa.penetration_normal, FaceA);
+		GeomB->GetSupportFace_WorldSpace(epa.penetration_normal, FaceB);
+
+		StaticArray<Vector3d, MAX_FACE_POINTS> Contact1, Contact2;
+		int c1 = 0, c2 = 0;
+		float mSpeculativeContactDistance = 0.02f;
+		bool succ = ClipPolygon3D(FaceA.GetData(), FaceA.GetSize(), FaceB.GetData(), FaceB.GetSize(), -epa.penetration_normal, mSpeculativeContactDistance, Contact1.GetData(), c1, Contact2.GetData(), c2);
+		Contact1.SetSize(c1);
+		Contact2.SetSize(c2);
+
+		if (Contact1.GetSize() > 0 || Contact2.GetSize() > 0)
+		{
+
+			int x = 0;
+		}
 
 		// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
 		Vector3d w0 = Vector3d::Zero();
 		for (int i = 0; i < epa.result.dimension; ++i)
 		{
-			Vector3d pi = Geom1->GetSupport_WorldSpace(epa.result.v[i].dir) * epa.result.w[i];
+			Vector3d pi = GeomA->GetSupport_WorldSpace(epa.result.v[i].dir) * epa.result.w[i];
 			w0 = w0 + pi;
 		}
-		const Matrix4d& invWorld = Geom1->GetInverseWorldMatrix();
+
+		const Matrix4d& invWorld = GeomA->GetInverseWorldMatrix();
+
+		Contact contact;
 		contact.PositionLocalA = invWorld * w0;
 		Vector3d p2 = w0 - epa.penetration_normal * epa.penetration_depth;
 		contact.PositionLocalB = invWorld * p2;
@@ -83,13 +104,7 @@ public:
 		}
 		contact.Binormal = CrossProduct(contact.Normal, contact.Tangent);
 
-		manifolds->push_back(ContactManifold());
-		manifolds->back().AddNewContact(Geom1, Geom2, contact);
-	}
-
-	void ConstructManifold(std::vector<ContactManifold>* manifolds)
-	{
-
+		manifolds->back().AddNewContact(GeomA, GeomB, contact);
 	}
 
 private:

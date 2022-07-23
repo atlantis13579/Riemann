@@ -54,7 +54,7 @@ bool GJK_Solve(Geometry *Geom1, Geometry* Geom2)
 	GeometryDifference shape(Geom1, Geom2);
 	GJKIntersection gjk;
 	GJK_status gjk_status = gjk.Solve(&shape);
-	if (gjk_status == GJK_status::Inside)
+	if (gjk_status == GJK_status::Intersect)
 	{
 		return true;
 	}
@@ -131,20 +131,20 @@ void TestEPA()
 	GeometryDifference shape(plane1, obb1);
 
 	gjk_status = gjk.Solve(&shape);
-	EXPECT(gjk_status == GJK_status::Inside);
+	EXPECT(gjk_status == GJK_status::Intersect);
 
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
 
 	obb1->SetPosition(Vector3d(20.0f, -3.7f, 0.0f));
 	gjk_status = gjk.Solve(&shape);
-	EXPECT(gjk_status == GJK_status::Inside);
+	EXPECT(gjk_status == GJK_status::Intersect);
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
 
 	obb1->SetPosition(Vector3d(-20.0f, -3.7f, 0.0f));
 	gjk_status = gjk.Solve(&shape);
-	EXPECT(gjk_status == GJK_status::Inside);
+	EXPECT(gjk_status == GJK_status::Intersect);
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
 

@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <assert.h>
 #include <math.h>
 #include <stdint.h>
 #include <vector>
@@ -129,6 +130,13 @@ public:
 		}
 		Vector3d Normalized = dir / sqrtf(distSqr);
 		return FarthestCap + Normalized * Radius;
+	}
+
+	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	{
+		assert(false);
+		*FacePoints = GetSupport(X0, X1, Radius, dir);
+		return 1;
 	}
 
 	void				GetVertices(int stackCount, int sliceCount, std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)

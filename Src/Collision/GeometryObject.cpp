@@ -37,6 +37,11 @@ public:
 		return GEOM_TYPE::GetSupport(Dir);
 	}
 
+	virtual void			GetSupportFace_LocalSpace(const Vector3d& Dir, SupportFace& Face) const override final
+	{
+		Face.SetSize(GEOM_TYPE::GetSupportFace(Dir, Face.GetData()));
+	}
+
 	virtual Box3d			GetBoundingVolume_LocalSpace() const override final
 	{
 		return GEOM_TYPE::GetBoundingVolume();
@@ -170,6 +175,16 @@ Vector3d			Geometry::GetSupport_WorldSpace(const Vector3d& Dir) const
 	Vector3d SupportLocal = GetSupport_LocalSpace(DirLocal);
 	Vector3d SupportWorld = m_Transform.LocalToWorldEx(SupportLocal);
 	return SupportWorld;
+}
+
+void Geometry::GetSupportFace_WorldSpace(const Vector3d& Dir, SupportFace& Face) const
+{
+	Vector3d DirLocal = m_Transform.WorldToLocalDirection(Dir);
+	GetSupportFace_LocalSpace(DirLocal, Face);
+	for (int i = 0; i < Face.GetSize(); ++i)
+	{
+		Face[i] = m_Transform.LocalToWorldEx(Face[i]);
+	}
 }
 
 Matrix3d			Geometry::GetInverseInertia_LocalSpace(float InvMass) const

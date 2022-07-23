@@ -1,8 +1,9 @@
 
 #pragma once
 
-#include <vector>
+#include <assert.h>
 #include <stdint.h>
+#include <vector>
 
 #include "ShapeType.h"
 #include "Plane3d.h"
@@ -125,8 +126,14 @@ public:
 
 	Vector3d		GetSupport(const Vector3d& dir) const
 	{
-		// TOOD
+		assert(false);
 		return Vector3d::Zero();
+	}
+
+	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	{
+		assert(false);
+		return 0;
 	}
 
 	void	GetMesh(std::vector<Vector3d>& _Vertices, std::vector<uint16_t>& _Indices, std::vector<Vector3d>& _Normals)

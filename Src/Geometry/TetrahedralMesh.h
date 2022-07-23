@@ -99,7 +99,7 @@ public:
 
 	const TetrahedralNode* GetTetrahedral(int index) const
 	{
-		if (index >= m_tets.Size())
+		if (index >= m_tets.GetSize())
 			return nullptr;
 		return &m_tets[index];
 	}
@@ -111,12 +111,12 @@ public:
 
 	int GetNumNodes() const
 	{
-		return m_nodes.Size();
+		return m_nodes.GetSize();
 	}
 
 	int GetNumTetrahedrals() const
 	{
-		return m_tets.Size();
+		return m_tets.GetSize();
 	}
 
 	void GetTransforms(int tetindex, Matrix3d& Ds, Matrix3d& F, Matrix3d& R, Matrix3d& S) const;

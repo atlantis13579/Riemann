@@ -15,3 +15,5 @@ enum class ShapeType3d
 	TRIANGLE_MESH,
 	TYPE_COUNT,
 };
+
+#define MAX_FACE_POINTS		(8)

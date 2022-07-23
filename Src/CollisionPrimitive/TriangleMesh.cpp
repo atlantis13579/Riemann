@@ -394,3 +394,9 @@ Vector3d TriangleMesh::GetSupport(const Vector3d& dir) const
 	assert(false);
 	return Vector3d::Zero();
 }
+
+int TriangleMesh::GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+{
+	assert(false);
+	return 0;
+}

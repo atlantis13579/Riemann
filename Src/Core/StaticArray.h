@@ -1,7 +1,7 @@
 
 #pragma once
 
-template<class T, int MaxSize>
+template<class T, int MAX_SIZE>
 class StaticArray
 {
 public:
@@ -24,30 +24,57 @@ public:
 		return m_Buf[i];
 	}
 
+	inline T* GetData()
+	{
+		return m_Buf;
+	}
+
+	inline const T* GetData() const
+	{
+		return m_Buf;
+	}
+
+	inline T* Add()
+	{
+		if (m_Size >= MAX_SIZE)
+			return nullptr;
+		return m_Buf[m_Size++];
+	}
+
 	inline void Push(T v)
 	{
-		m_Buf[m_Size++] = v;
+		if (m_Size < MAX_SIZE)
+		{
+			m_Buf[m_Size++] = v;
+		}
 	}
 
 	inline T Pop()
 	{
-		if (m_Size > 0)
-			return m_Buf[--m_Size];
-		else
-			return 0;
+		return m_Size > 0 ? m_Buf[--m_Size] : T();
 	}
 
-	inline void SetEmpty()
+	inline void Clear()
 	{
 		m_Size = 0;
 	}
 
-	inline int Size() const
+	inline void SetSize(int Size)
+	{
+		m_Size = Size;
+	}
+
+	inline int GetSize() const
 	{
 		return m_Size;
 	}
 
+	inline int GetMaxSize() const
+	{
+		return MAX_SIZE;
+	}
+
 private:
 	int		m_Size;
-	T		m_Buf[MaxSize];
+	T		m_Buf[MAX_SIZE];
 };

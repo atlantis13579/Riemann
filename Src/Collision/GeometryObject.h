@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "../Core/StaticArray.h"
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
 #include "../CollisionPrimitive/ShapeType.h"
@@ -23,6 +24,8 @@ struct CollisionData
 	}
 	unsigned int v0;
 };
+
+typedef	StaticArray<Vector3d, MAX_FACE_POINTS> SupportFace;
 
 class Geometry
 {
@@ -99,11 +102,13 @@ public:
 	void					UpdateBoundingVolume();
 	const Box3d&			GetBoundingVolume_WorldSpace() const;
 	Vector3d				GetSupport_WorldSpace(const Vector3d& Dir) const;
+	void					GetSupportFace_WorldSpace(const Vector3d& Dir, SupportFace& Face) const;
 	Matrix3d				GetInverseInertia_LocalSpace(float InvMass) const;
 
 private:
 	virtual Matrix3d		GetInertia_LocalSpace(float InvMass) const = 0;
 	virtual Vector3d		GetSupport_LocalSpace(const Vector3d& Dir) const = 0;
+	virtual void			GetSupportFace_LocalSpace(const Vector3d& Dir, SupportFace& Face) const = 0;
 	virtual Box3d			GetBoundingVolume_LocalSpace() const = 0;
 
 	const void*				GetShapeObjPtr() const

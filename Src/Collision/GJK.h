@@ -10,9 +10,8 @@
 
 enum class GJK_status
 {
-	Separate,
-	Inside,
-	Boundary,
+	NotIntersect,
+	Intersect,
 	Failed
 };
 
@@ -46,7 +45,7 @@ public:
 			distance = dir.Length();
 			if (distance < GJK_MIN_DISTANCE)
 			{
-				return GJK_status::Inside;
+				return GJK_status::Intersect;
 			}
 
 			result.AddPoint(-dir);
@@ -81,7 +80,7 @@ public:
 
 				if (mask == 0b1111)
 				{
-					return GJK_status::Inside;
+					return GJK_status::Intersect;
 				}
 			}
 			else
@@ -91,7 +90,7 @@ public:
 			}
 		};
 
-		return iter >= GJK_MAX_ITERATIONS ? GJK_status::Failed : GJK_status::Separate;
+		return iter >= GJK_MAX_ITERATIONS ? GJK_status::Failed : GJK_status::NotIntersect;
 	}
 
 private:
@@ -117,17 +116,13 @@ public:
 		GJKIntersection gjk;
 		GJK_status status = gjk.Solve(Shape);
 
-		if (status == GJK_status::Separate)
+		if (status == GJK_status::NotIntersect)
 		{
 			return gjk.distance;
 		}
-		if (status == GJK_status::Inside)
+		if (status == GJK_status::Intersect)
 		{
 			return -1.0f;
-		}
-		else if (status == GJK_status::Boundary)
-		{
-			return 0.0f;
 		}
 		return FLT_MAX;
 	}
