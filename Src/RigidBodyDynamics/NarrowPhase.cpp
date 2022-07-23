@@ -51,26 +51,20 @@ public:
 		return  true;
 	}
 
+	bool ConstructSupportFace(Geometry* GeomA, Geometry* GeomB, const Vector3d& penetration_normal, SupportFace &Face)
+	{
+		SupportFace FaceA, FaceB;
+		GeomA->GetSupportFace_WorldSpace(-penetration_normal, FaceA);
+		GeomB->GetSupportFace_WorldSpace(penetration_normal, FaceB);
+
+		float mSpeculativeContactDistance = 0.02f;
+		bool succ = ClipPolygonAgainPolygon3D(FaceA.GetData(), FaceA.GetSize(), FaceB.GetData(), FaceB.GetSize(), penetration_normal, mSpeculativeContactDistance, Face.GetData(), Face.GetSizeData(), nullptr, nullptr);
+		return succ;
+	}
+
 	void ConstructManifols(Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, std::vector<ContactManifold>* manifolds)
 	{
 		manifolds->push_back(ContactManifold());
-
-		SupportFace FaceA, FaceB;
-		GeomA->GetSupportFace_WorldSpace(-epa.penetration_normal, FaceA);
-		GeomB->GetSupportFace_WorldSpace(epa.penetration_normal, FaceB);
-
-		StaticArray<Vector3d, MAX_FACE_POINTS> Contact1, Contact2;
-		int c1 = 0, c2 = 0;
-		float mSpeculativeContactDistance = 0.02f;
-		bool succ = ClipPolygon3D(FaceA.GetData(), FaceA.GetSize(), FaceB.GetData(), FaceB.GetSize(), -epa.penetration_normal, mSpeculativeContactDistance, Contact1.GetData(), c1, Contact2.GetData(), c2);
-		Contact1.SetSize(c1);
-		Contact2.SetSize(c2);
-
-		if (Contact1.GetSize() > 0 || Contact2.GetSize() > 0)
-		{
-
-			int x = 0;
-		}
 
 		// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
 		Vector3d w0 = Vector3d::Zero();
@@ -80,31 +74,37 @@ public:
 			w0 = w0 + pi;
 		}
 
+		SupportFace ContactFace;
+		ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
+
 		const Matrix4d& invWorld = GeomA->GetInverseWorldMatrix();
-
-		Contact contact;
-		contact.PositionLocalA = invWorld * w0;
-		Vector3d p2 = w0 - epa.penetration_normal * epa.penetration_depth;
-		contact.PositionLocalB = invWorld * p2;
-		contact.PositionWorldA = w0;
-		contact.PositionWorldB = p2;
-		contact.Normal = epa.penetration_normal;
-		contact.PenetrationDepth = epa.penetration_depth;
-		if (contact.Normal.x >= 0.57735f)
+		for (int i = -1; i < ContactFace.GetSize(); ++i)
 		{
-			contact.Tangent.x = contact.Normal.y;
-			contact.Tangent.y = -contact.Normal.x;
-			contact.Tangent.z = 0;
-		}
-		else
-		{
-			contact.Tangent.x = 0;
-			contact.Tangent.y = contact.Normal.z;
-			contact.Tangent.z = -contact.Normal.y;
-		}
-		contact.Binormal = CrossProduct(contact.Normal, contact.Tangent);
+			Vector3d p0 = i == -1 ? w0 : ContactFace[i];
+			Contact contact;
+			contact.PositionLocalA = invWorld * p0;
+			Vector3d p2 = p0 - epa.penetration_normal * epa.penetration_depth;
+			contact.PositionLocalB = invWorld * p2;
+			contact.PositionWorldA = p0;
+			contact.PositionWorldB = p2;
+			contact.Normal = epa.penetration_normal;
+			contact.PenetrationDepth = epa.penetration_depth;
+			if (contact.Normal.x >= 0.57735f)
+			{
+				contact.Tangent.x = contact.Normal.y;
+				contact.Tangent.y = -contact.Normal.x;
+				contact.Tangent.z = 0;
+			}
+			else
+			{
+				contact.Tangent.x = 0;
+				contact.Tangent.y = contact.Normal.z;
+				contact.Tangent.z = -contact.Normal.y;
+			}
+			contact.Binormal = CrossProduct(contact.Normal, contact.Tangent);
 
-		manifolds->back().AddNewContact(GeomA, GeomB, contact);
+			manifolds->back().AddNewContact(GeomA, GeomB, contact);
+		}
 	}
 
 private:

@@ -198,7 +198,7 @@ public:
 
 	static int		GetSupportFace(const Vector3d& Bmin, const Vector3d& Bmax, const Vector3d& dir, Vector3d* FacePoints)
 	{
-		int axis = dir.LargestAxis();
+		int axis = dir.Abs().LargestAxis();
 		if (dir[axis] < 0.0f)
 		{
 			switch (axis)

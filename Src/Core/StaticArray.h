@@ -34,6 +34,11 @@ public:
 		return m_Buf;
 	}
 
+	inline int* GetSizeData()
+	{
+		return &m_Size;
+	}
+
 	inline T* Add()
 	{
 		if (m_Size >= MAX_SIZE)

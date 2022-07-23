@@ -3,9 +3,39 @@
 
 #include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/Geometry/Spline.h"
+#include "../Src/Geometry/Polygon3d.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/SparseVoxelField.h"
 #include "../Src/Geometry/DenseTensorField3d.h"
+
+void TestClip()
+{
+	printf("Running TestClip\n");
+
+	Vector3d poly1[] = { Vector3d(0, 0, 0), Vector3d(4, 0, 0), Vector3d(4, 4, 0), Vector3d(0, 4, 0) };
+	Vector3d poly2[] = { Vector3d(-1, -1, 0), Vector3d(-1, 1, 0), Vector3d(1, 1, 0), Vector3d(1, -1, 0) };
+	Vector3d poly3[] = { Vector3d(2, 5, -1), Vector3d(2, 5, 1), Vector3d(5, 2, 1), Vector3d(5, 2, -1) };
+
+	int c1 = 0, c2 = 0;
+	Vector3d clip1[8], clip2[8];
+
+	ClipPolygonByPlane3D(poly1, 4, Vector3d(1, 1, 0), Vector3d::UnitY(), clip1, &c1);
+	EXPECT(c1 == 4);
+	ClipPolygonByPlane3D(poly1, 4, Vector3d(3, 3, 0), Vector3d(3, 3, 0), clip1, &c1);
+	EXPECT(c1 == 3);
+	ClipPolygonByPlane3D(poly1, 4, Vector3d(3, 3, 0), Vector3d(-3, -3, 0), clip1, &c1);
+	EXPECT(c1 == 5);
+	ClipPolygonByProjectPolygon3D(poly1, 4, poly3, 4, Vector3d(3, 3, 0), clip1, &c1);
+	EXPECT(c1 == 6);
+	ClipPolygonByProjectPolygon3D(poly1, 4, poly3, 4, Vector3d(3, 3, 0), clip1, &c1);
+	EXPECT(c1 == 6);
+	ClipPolygonByAABB3D(poly1, 4, Vector3d(2, 2, -1), Vector3d(5, 5, 1), clip1, &c1);
+	EXPECT(c1 == 4);
+
+	bool succ = ClipPolygonAgainPolygon3D(poly1, 4, poly2, 4, Vector3d::UnitZ(), 0.02f, clip1, &c1, clip2, &c2);
+	EXPECT(succ);
+	return;
+}
 
 void TestCatmullRom()
 {
@@ -71,6 +101,7 @@ void TestMesh1()
 
 void TestGeometry()
 {
+	TestClip();
 	TestCatmullRom();
 	TestMesh1();
 }

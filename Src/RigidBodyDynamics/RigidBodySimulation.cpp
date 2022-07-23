@@ -99,12 +99,7 @@ void		RigidBodySimulation::SimulateST(float dt)
 
 	if (m_RPhase && !manifolds.empty())
 	{
-		float e1 = GetSystemTotalLinearKinematicsEnergy();
-		Vector3d p1 = GetSystemTotalLinearMomentum();
 		m_RPhase->ResolveContact(manifolds, dt);
-		float e2 = GetSystemTotalLinearKinematicsEnergy();
-		Vector3d p2 = GetSystemTotalLinearMomentum();
-		int x = 0;
 	}
 
 	ApplyForceFields();
