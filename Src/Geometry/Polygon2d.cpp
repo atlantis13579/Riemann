@@ -3,34 +3,34 @@
 
 #include "Polygon2d.h"
 
-static float DistancePtSegSqr(const Vector2d& pt, const Vector2d& p, const Vector2d& q, float* dt)
+static float SqrtDistancePointToSegment2D(const Vector2d& point, const Vector2d& P0, const Vector2d& P1, float* dt)
 {
-	float pqx = q.x - p.x;
-	float pqy = q.y - p.y;
-	float dx = pt.x - p.x;
-	float dy = pt.y - p.y;
+	float pqx = P1.x - P0.x;
+	float pqy = P1.y - P0.y;
+	float dx = point.x - P0.x;
+	float dy = point.y - P0.y;
 	float d = pqy * pqy + pqx * pqx;
 	float t = pqy * dy + pqx * dx;
 	if (d > 0) t /= d;
 	if (t < 0) t = 0;
 	else if (t > 1) t = 1;
-	dy = p.y + t * pqy - pt.y;
-	dx = p.x + t * pqx - pt.x;
+	dy = P0.y + t * pqy - point.y;
+	dx = P0.x + t * pqx - point.x;
 	if (dt) *dt = t;
 	return dy * dy + dx * dx;
 }
 
-static bool SqrDistanceToEdges(const Vector2d& pt, const Vector2d* polygon, int nvert, float* ed, float* et)
+static bool SqrDistancePointToPolygon2D(const Vector2d& point, const Vector2d* polygon, int nvert, float* ed, float* et)
 {
 	int i, j;
 	bool c = false;
 	for (i = 0, j = nvert - 1; i < nvert; j = i++) {
 		const Vector2d& vi = polygon[i];
 		const Vector2d& vj = polygon[j];
-		if (((vi.x > pt.x) != (vj.x > pt.x)) &&
-			(pt.y < (vj.y - vi.y) * (pt.x - vi.x) / (vj.x - vi.x) + vi.y))
+		if (((vi.x > point.x) != (vj.x > point.x)) &&
+			(point.y < (vj.y - vi.y) * (point.x - vi.x) / (vj.x - vi.x) + vi.y))
 			c = !c;
-		ed[j] = DistancePtSegSqr(pt, vj, vi, &et[j]);
+		ed[j] = SqrtDistancePointToSegment2D(point, vj, vi, &et[j]);
 	}
 	return c;
 }
@@ -41,7 +41,7 @@ Vector2d ClosestPointInPolygon2D(const Vector2d& pt, const Vector2d* polygon, in
 	std::vector<float>  edget;
 	edged.resize(nvert);
 	edget.resize(nvert);
-	*inside = SqrDistanceToEdges(pt, polygon, nvert, &edged[0], &edget[0]);
+	*inside = SqrDistancePointToPolygon2D(pt, polygon, nvert, &edged[0], &edget[0]);
 	if (*inside) {
 		// Point is inside the polygon, return the point.
 		return pt;

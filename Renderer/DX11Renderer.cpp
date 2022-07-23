@@ -21,6 +21,7 @@ struct ConstantBuffer
     Matrix4d World;
     Matrix4d View;
     Matrix4d Projection;
+    Vector4d EyePos;
 };
 
 struct DX11StaticMesh
@@ -355,6 +356,7 @@ public:
     virtual void SetCameraLookAt(Vector3d Eye, Vector3d At) override
     {
         Vector3d Up = Vector3d(0.0f, 1.0f, 0.0f);
+        m_Eye = Eye;
         m_View = Transform::BuildViewMatrix_LHCoordinateSystem(Eye, At, Up);
     }
 
@@ -512,6 +514,7 @@ public:
         ConstantBuffer cb;
         cb.View = m_View;
         cb.Projection = m_Projection;
+        cb.EyePos = Vector4d(m_Eye.x, m_Eye.y, m_Eye.z, 0);
 
         for (size_t i = 0; i < m_AllMesh.size(); ++i)
         {
@@ -550,6 +553,7 @@ private:
 
     Matrix4d                m_View;
     Matrix4d                m_Projection;
+    Vector3d                m_Eye;
 
     std::vector<DX11StaticMesh> m_AllMesh;
 };

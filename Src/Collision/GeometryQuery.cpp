@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <string.h>
+#include "../Core/Base.h"
 #include "AABBTree.h"
 #include "DynamicAABBTree.h"
 #include "SparseSpatialHash.h"
@@ -17,23 +18,9 @@ GeometryQuery::GeometryQuery()
 
 GeometryQuery::~GeometryQuery()
 {
-	if (m_staticGeometry)
-	{
-		delete m_staticGeometry;
-		m_staticGeometry = nullptr;
-	}
-
-	if (m_dynamicPruner)
-	{
-		delete m_dynamicPruner;
-		m_dynamicPruner = nullptr;
-	}
-
-	if (m_SpatialHash)
-	{
-		delete m_SpatialHash;
-		m_SpatialHash = nullptr;
-	}
+	SAFE_DELETE(m_staticGeometry);
+	SAFE_DELETE(m_dynamicPruner);
+	SAFE_DELETE(m_SpatialHash);
 
 	for (size_t i = 0; i < m_Objects.size(); ++i)
 	{
@@ -54,8 +41,8 @@ void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, i
 			boxes[i] = Objects[i]->GetBoundingVolume_WorldSpace();
 		}
 		m_Objects = Objects;
-		AABBTreeBuildData param(&boxes[0], (int)boxes.size(), nPrimitivePerNode);
 
+		AABBTreeBuildData param(&boxes[0], (int)boxes.size(), nPrimitivePerNode);
 		m_staticGeometry->StaticBuild(param);
 	}
 }
@@ -75,11 +62,15 @@ bool GeometryQuery::RayCast(const Vector3d& Origin, const Vector3d& Dir, const R
 bool GeometryQuery::OverlapBox(const Vector3d& Center, const Vector3d& Extent, const OverlapOption& Option, OverlapResult* Result)
 {
 	Result->Reset();
-	Geometry* Box = GeometryFactory::CreateOBB(Center, Extent);
-	Geometry** pp = &m_Objects[0];
-	m_staticGeometry->Overlap(Box, pp, Option, Result);
-	GeometryFactory::DeleteGeometry(Box);
-	return Result->overlaps;
+	if (m_staticGeometry)
+	{
+		Geometry* Box = GeometryFactory::CreateOBB(Center, Extent);
+		Geometry** pp = &m_Objects[0];
+		m_staticGeometry->Overlap(Box, pp, Option, Result);
+		GeometryFactory::DeleteGeometry(Box);
+		return Result->overlaps;
+	}
+	return false;
 }
 
 class DefaultCollisionFilter : public CollisionFilter

@@ -44,13 +44,11 @@ RigidBodySimulation::~RigidBodySimulation()
 	{
 		delete m_StaticBodies[i];
 	}
-	m_StaticBodies.clear();
 
 	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 	{
 		delete m_DynamicBodies[i];
 	}
-	m_DynamicBodies.clear();
 
 	for (size_t i = 0; i < m_Kinematics.size(); ++i)
 	{
