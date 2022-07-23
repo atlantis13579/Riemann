@@ -1,10 +1,10 @@
 
-#include "SequentialImpulseSolver.h"
+#include "ConstraintSolver.h"
 #include "Jacobian.h"
-#include "WarmStart.h"
 #include "RigidBody.h"
+#include "SequentialImpulseSolver.h"
+#include "WarmStart.h"
 #include "../Collision/GeometryObject.h"
-
 
 class SequentialImpulseSolver : public ResolutionPhase
 {
@@ -55,7 +55,10 @@ public:
 	}
 
 private:
-	int m_nMaxVelocityIterations;
+	int 	m_nMaxVelocityIterations;
+	int 	m_nMaxPositionIterations;
+	
+	std::vector<PositionConstraint>	m_PositionConstraints;
 };
 
 ResolutionPhase* ResolutionPhase::CreateSequentialImpulseSolver()

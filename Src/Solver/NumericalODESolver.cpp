@@ -75,11 +75,12 @@ void SymplecticEuler::Integrate(float dt, int nDof, float* v)
 
 
 // https://en.wikipedia.org/wiki/Backward_Euler_method
-ImplicitEuler_FixedPointIteration::ImplicitEuler_FixedPointIteration(const ode_vector_function_t& dvdt, float t0, int MaxIter)
+ImplicitEuler_FixedPointIteration::ImplicitEuler_FixedPointIteration(const ode_vector_function_t& dvdt, float t0, int MaxIter, float Eps)
 {
 	m_dvdt = dvdt;
 	m_MaxIter = MaxIter;
 	m_t = t0;
+	m_Eps = Eps;
 }
 
 void ImplicitEuler_FixedPointIteration::Integrate(float dt, int nDof, float* v)
@@ -97,7 +98,7 @@ void ImplicitEuler_FixedPointIteration::Integrate(float dt, int nDof, float* v)
 		for (int i = 0; i < nDof; ++i)
 		{
 			float dev = fabsf(dv[i] * dt);
-			if (dev < 0.0001f)
+			if (dev < m_Eps)
 				continue;
 			v[i] = v[i] + dv[i] * dt;
 			converge = false;
@@ -110,12 +111,15 @@ void ImplicitEuler_FixedPointIteration::Integrate(float dt, int nDof, float* v)
 
 // https://en.wikipedia.org/wiki/Backward_Euler_method
 // https://en.wikipedia.org/wiki/Stiff_equation
-ImplicitEuler_NewtonIteration::ImplicitEuler_NewtonIteration(const ode_vector_function_t& dvdt, const ode_vector_function_t& d2vdt2, float t0, int MaxIter)
+ImplicitEuler_NewtonIteration::ImplicitEuler_NewtonIteration(const ode_vector_function_t& dvdt,
+															 const ode_vector_function_t& d2vdt2,
+															 float t0, int MaxIter, float Eps)
 {
 	m_dvdt = dvdt;
 	m_d2vt2 = d2vdt2;
 	m_MaxIter = MaxIter;
 	m_t = t0;
+	m_Eps = Eps;
 }
 
 void ImplicitEuler_NewtonIteration::Integrate(float dt, int nDof, float* v)
@@ -140,7 +144,7 @@ void ImplicitEuler_NewtonIteration::Integrate(float dt, int nDof, float* v)
 			float F = v[i] - v0[i] - dt * dv[i];
 			float DF = 1 - dt * d2v[i];
 			float dev = fabsf(F / DF);
-			if (dev < 0.00001f)
+			if (dev < m_Eps)
 				continue;
 			v[i] = v[i] - F / DF;
 			converge = false;

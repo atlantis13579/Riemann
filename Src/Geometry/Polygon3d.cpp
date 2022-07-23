@@ -130,7 +130,6 @@ void ClipPolygonByProjectSegment3D(const Vector3d* polygon, int n, const Vector3
 		Vector3d e2 = polygon[j];
 		float curr_proj = (P0 - e2).Dot(edge_normal);
 		bool cur_inside = curr_proj < 0.0f;
-
 		if (cur_inside != prev_inside)
 		{
 			Vector3d e12 = e2 - e1;
@@ -217,7 +216,7 @@ void ClipPolygonByAABB3D(const Vector3d* polygon, int n, const Vector3d& Min, co
 }
 
 bool ClipPolygonAgainPolygon3D(const Vector3d* poly1, int n1, const Vector3d* poly2, int n2, const Vector3d& proj_normal,
-								float maxDistSqr, Vector3d *clipped1, int *c1, Vector3d* clipped2, int *c2)
+								float maxsqrDistFactor, Vector3d *clipped1, int *c1, Vector3d* clipped2, int *c2)
 {
 
 	if (c1) *c1 = 0;
@@ -257,10 +256,10 @@ bool ClipPolygonAgainPolygon3D(const Vector3d* poly1, int n1, const Vector3d* po
 		for (int i = 0; i < nc; ++i)
 		{
 			const Vector3d& p2 = clipped_face[i];
-			float distance = (p2 - plane_origin).Dot(plane_normal);
-			if (distance <= 0.0f || distance * distance < maxDistSqr * sqr_dist)
+			const float dist = (p2 - plane_origin).Dot(plane_normal);
+			if (dist <= 0.0f || dist * dist < maxsqrDistFactor * sqr_dist)
 			{
-				Vector3d p1 = p2 - (distance / sqr_dist) * plane_normal;
+				Vector3d p1 = p2 - (dist / sqr_dist) * plane_normal;
 				if (clipped1 && c1)
 					clipped1[(*c1)++] = p1;
 				if (clipped2 && c2)

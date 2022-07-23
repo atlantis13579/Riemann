@@ -20,9 +20,7 @@ void ContactManifold::AddNewContact(Geometry* _Geom1, Geometry* _Geom2, const Co
 bool ContactManifold::MergeManifold()
 {
 	assert(NumContactPointCount == MAX_CONTACT_POINTS + 1);
-
-	uint8_t mask = 0;
-
+	
 	// find the contact with deepest penetration depth
 	Contact* c0 = nullptr;
 	float max_penetration = -FLT_MAX;

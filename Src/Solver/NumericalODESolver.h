@@ -63,7 +63,7 @@ private:
 class ImplicitEuler_FixedPointIteration
 {
 public:
-	ImplicitEuler_FixedPointIteration(const ode_vector_function_t& dvdt, float t0, int MaxIter);
+	ImplicitEuler_FixedPointIteration(const ode_vector_function_t& dvdt, float t0, int MaxIter, float Eps);
 	~ImplicitEuler_FixedPointIteration() {}
 
 	void Integrate(float dt, int nDof, float* v);
@@ -73,6 +73,7 @@ private:
 	std::vector<float> m_buf;
 	float m_t;
 	int m_MaxIter;
+	float m_Eps;
 };
 
 
@@ -80,7 +81,7 @@ private:
 class ImplicitEuler_NewtonIteration
 {
 public:
-	ImplicitEuler_NewtonIteration(const ode_vector_function_t& dvdt, const ode_vector_function_t& d2vdt2, float t0, int MaxIter);
+	ImplicitEuler_NewtonIteration(const ode_vector_function_t& dvdt, const ode_vector_function_t& d2vdt2, float t0, int MaxIter, float Eps);
 	~ImplicitEuler_NewtonIteration() {}
 
 	void Integrate(float dt, int nDof, float* v);
@@ -91,6 +92,7 @@ private:
 	std::vector<float> m_buf;
 	float m_t;
 	int m_MaxIter;
+	float m_Eps;
 };
 
 

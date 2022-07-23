@@ -5,6 +5,12 @@
 #include "../Collision/GeometryObject.h"
 #include "../Solver/NumericalODESolver.h"
 
+// Physically Based Modeling by David Baraff
+// https://www.cs.cmu.edu/~baraff/sigcourse/
+// https://fgiesen.wordpress.com/2012/08/24/quaternion-differentiation/
+// https://www.ashwinnarayan.com/post/how-to-integrate-quaternions/
+// ----------------
+
 static void Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
 {
 	for (size_t i = 0; i < Bodies.size(); ++i)
@@ -15,19 +21,15 @@ static void Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float
 			continue;
 		}
 		
-		// Physically Based Modeling by David Baraff
-		// https://www.cs.cmu.edu/~baraff/sigcourse/
-		// https://fgiesen.wordpress.com/2012/08/24/quaternion-differentiation/
-		// https://www.ashwinnarayan.com/post/how-to-integrate-quaternions/
-		// ----------------
-		Body->P = (Body->P + Body->ExtForce * dt) * Body->LinearDamping;		// P' = Force
 		Body->X = Body->X + (Body->P * Body->InvMass) * dt;						// X' = v = P / m
-		Body->L = (Body->L + Body->ExtTorque * dt) * Body->AngularDamping;		// L' = Torque
 		Matrix3d R = Body->Q.ToRotationMatrix();
 		Matrix3d invInertiaWorld = R * Body->InvInertia * R.Transpose();
 		Vector3d AngularVelocity = invInertiaWorld * Body->L;
-		Quaternion dQ = 0.5f * Quaternion(0.0f, AngularVelocity) * Body->Q;		// Q' = 0.5 * AngularVelocity * Q 
+		Quaternion dQ = 0.5f * Quaternion(0.0f, AngularVelocity) * Body->Q;		// Q' = 0.5 * AngularVelocity * Q
 		Body->Q = (Body->Q + dQ * dt).Unit();
+		
+		Body->P = (Body->P + Body->ExtForce * dt) * Body->LinearDamping;		// P' = Force
+		Body->L = (Body->L + Body->ExtTorque * dt) * Body->AngularDamping;		// L' = Torque
 		
 		Body->Shape->SetPosition(Body->X);
 		Body->Shape->SetRotationQuat(Body->Q);
@@ -43,6 +45,30 @@ static void Integrate_MidpointEuler(std::vector<RigidBodyDynamic*> Bodies, float
 
 static void Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
 {
+	for (size_t i = 0; i < Bodies.size(); ++i)
+	{
+		RigidBodyDynamic* Body = Bodies[i];
+		if (Body == nullptr || Body->Static || Body->Sleep)
+		{
+			continue;
+		}
+		
+		Body->P = (Body->P + Body->ExtForce * dt) * Body->LinearDamping;		// P' = Force
+		Body->L = (Body->L + Body->ExtTorque * dt) * Body->AngularDamping;		// L' = Torque
+		
+		Body->X = Body->X + (Body->P * Body->InvMass) * dt;						// X' = v = P / m
+		Matrix3d R = Body->Q.ToRotationMatrix();
+		Matrix3d invInertiaWorld = R * Body->InvInertia * R.Transpose();
+		Vector3d AngularVelocity = invInertiaWorld * Body->L;
+		Quaternion dQ = 0.5f * Quaternion(0.0f, AngularVelocity) * Body->Q;		// Q' = 0.5 * AngularVelocity * Q
+		Body->Q = (Body->Q + dQ * dt).Unit();
+		
+		Body->Shape->SetPosition(Body->X);
+		Body->Shape->SetRotationQuat(Body->Q);
+		Body->Shape->UpdateBoundingVolume();
+		Body->ExtForce.SetZero();
+		Body->ExtTorque.SetZero();
+	}
 }
 
 static void Integrate_ImplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
