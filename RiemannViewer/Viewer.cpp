@@ -19,7 +19,7 @@ WorldViewer::WorldViewer(Renderer* renderer)
 	m_Renderer = renderer;
 	CreateSimulator();
 	UpdateCamera();
-	CreateDemo();
+	CreateDominoDemo();
 }
 
 WorldViewer::~WorldViewer()
@@ -94,7 +94,6 @@ void WorldViewer::CreateDominoDemo()
 		rp.Static = false;
 		Geometry* sp = GeometryFactory::CreateSphere(Vector3d(0.0f, 10.0f, -20.0f), 1.0f);
 		p = (RigidBodyDynamic*)m_World->CreateRigidBody(sp, rp); 
-		//p->ApplyForce(400.0f * Vector3d::UnitZ());
 		p->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
 		AddGeometry(m_Renderer, sp);
 	}
@@ -104,10 +103,6 @@ void WorldViewer::CreateDominoDemo()
 	{
 		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 4.0f, -10.0f + i * 2.0f), Vector3d(2.0f, 3.0f, 0.25f));
 		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
-		if (i == 0)
-		{
-			// p->ApplyTorgue(Vector3d(0.0f, 3.0f, 0.0f), 20.0f * Vector3d::UnitZ());
-		}
 		AddGeometry(m_Renderer, aabb);
 	}
 

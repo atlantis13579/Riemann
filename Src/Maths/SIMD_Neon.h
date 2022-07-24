@@ -55,12 +55,12 @@ inline Scaler Scaler_Mul(const Scaler a, const Scaler b)
 	return vmul_f32(a, b);
 }
 
-inline BVec4 Scaler_Equal(const Scaler a, const Scaler b)
+inline B128 Scaler_Equal(const Scaler a, const Scaler b)
 {
 	return vdupq_lane_u32(vceq_f32(a, b), 0);
 }
 
-inline Scaler Scaler_Sel(const BVec4 c, const Scaler a, const Scaler b)
+inline Scaler Scaler_Sel(const B128 c, const Scaler a, const Scaler b)
 {
 	return vbsl_f32(vget_low_u32(c), a, b);
 }
@@ -151,12 +151,12 @@ inline Scaler Scaler_Abs(const Scaler a)
 	return vabs_f32(a);
 }
 
-inline BVec4 Scaler_Greater(const Scaler a, const Scaler b)
+inline B128 Scaler_Greater(const Scaler a, const Scaler b)
 {
 	return vdupq_lane_u32(vcgt_f32(a, b), 0);
 }
 
-inline BVec4 Scaler_GreaterEqual(const Scaler a, const Scaler b)
+inline B128 Scaler_GreaterEqual(const Scaler a, const Scaler b)
 {
 	return vdupq_lane_u32(vcge_f32(a, b), 0);
 }
@@ -191,12 +191,12 @@ inline Scaler Scaler_Round(const Scaler a)
 // BVec4
 //////////////////////////////////
 
-inline BVec4 BFFFF()
+inline B128 BFFFF()
 {
 	return vmovq_n_u32(0);
 }
 
-inline BVec4 BFFFT()
+inline B128 BFFFT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -204,7 +204,7 @@ inline BVec4 BFFFT()
 	return vcombine_u32(zeros, zo);
 }
 
-inline BVec4 BFFTF()
+inline B128 BFFTF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -212,14 +212,14 @@ inline BVec4 BFFTF()
 	return vcombine_u32(zeros, oz);
 }
 
-inline BVec4 BFFTT()
+inline B128 BFFTT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
 	return vcombine_u32(zeros, ones);
 }
 
-inline BVec4 BFTFF()
+inline B128 BFTFF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -227,7 +227,7 @@ inline BVec4 BFTFF()
 	return vcombine_u32(zo, zeros);
 }
 
-inline BVec4 BFTFT()
+inline B128 BFTFT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -235,7 +235,7 @@ inline BVec4 BFTFT()
 	return vcombine_u32(zo, zo);
 }
 
-inline BVec4 BFTTF()
+inline B128 BFTTF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -244,7 +244,7 @@ inline BVec4 BFTTF()
 	return vcombine_u32(zo, oz);
 }
 
-inline BVec4 BFTTT()
+inline B128 BFTTT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -252,7 +252,7 @@ inline BVec4 BFTTT()
 	return vcombine_u32(zo, ones);
 }
 
-inline BVec4 BTFFF()
+inline B128 BTFFF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -261,7 +261,7 @@ inline BVec4 BTFFF()
 	return vcombine_u32(oz, zeros);
 }
 
-inline BVec4 BTFFT()
+inline B128 BTFFT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -270,7 +270,7 @@ inline BVec4 BTFFT()
 	return vcombine_u32(oz, zo);
 }
 
-inline BVec4 BTFTF()
+inline B128 BTFTF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -278,7 +278,7 @@ inline BVec4 BTFTF()
 	return vcombine_u32(oz, oz);
 }
 
-inline BVec4 BTFTT()
+inline B128 BTFTT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -286,14 +286,14 @@ inline BVec4 BTFTT()
 	return vcombine_u32(oz, ones);
 }
 
-inline BVec4 BTTFF()
+inline B128 BTTFF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
 	return vcombine_u32(ones, zeros);
 }
 
-inline BVec4 BTTFT()
+inline B128 BTTFT()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -301,7 +301,7 @@ inline BVec4 BTTFT()
 	return vcombine_u32(ones, zo);
 }
 
-inline BVec4 BTTTF()
+inline B128 BTTTF()
 {
 	const uint32x2_t zeros = vmov_n_u32(0);
 	const uint32x2_t ones = vmov_n_u32(0xffffFFFF);
@@ -309,33 +309,33 @@ inline BVec4 BTTTF()
 	return vcombine_u32(ones, oz);
 }
 
-inline BVec4 BTTTT()
+inline B128 BTTTT()
 {
 	return vmovq_n_u32(0xffffFFFF);
 }
 
-inline BVec4 BVec4_And(const BVec4 a, const BVec4 b)
+inline B128 B128_And(const B128 a, const B128 b)
 {
 	return vandq_u32(a, b);
 }
 
-inline BVec4 BVec4_Not(const BVec4 a)
+inline B128 B128_Not(const B128 a)
 {
 	return vmvnq_u32(a);
 }
 
-inline BVec4 BVec4_AndNot(const BVec4 a, const BVec4 b)
+inline B128 B128_AndNot(const B128 a, const B128 b)
 {
 	// return vbicq_u32(a, b);
 	return vandq_u32(a, vmvnq_u32(b));
 }
 
-inline BVec4 BVec4_Or(const BVec4 a, const BVec4 b)
+inline B128 B128_Or(const B128 a, const B128 b)
 {
 	return vorrq_u32(a, b);
 }
 
-inline BVec4 BVec4_All(const BVec4 a)
+inline B128 B128_All(const B128 a)
 {
 	const uint32x2_t allTrue = vmov_n_u32(0xffffFFFF);
 	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
@@ -346,7 +346,7 @@ inline BVec4 BVec4_All(const BVec4 a)
 	return vdupq_lane_u32(result, 0);
 }
 
-inline BVec4 BVec4_Any(const BVec4 a)
+inline B128 B128_Any(const B128 a)
 {
 	const uint32x2_t allTrue = vmov_n_u32(0xffffFFFF);
 	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
@@ -361,40 +361,40 @@ inline BVec4 BVec4_Any(const BVec4 a)
 // Vec4
 //////////////////////////////////
 
-inline Vec4 Vec4_Load(const float f)
+inline F128 F128_Load(const float f)
 {
 	return vdupq_n_f32(reinterpret_cast<const float32_t&>(f));
 }
 
-inline Vec4 Vec4_LoadA(const float* f)
+inline F128 F128_LoadA(const float* f)
 {
 	ASSERT_ISALIGNED16(f);
 	return vld1q_f32(reinterpret_cast<const float32_t*>(f));
 }
 
-inline Vec4 Vec4_Load(Vec4* addr)
+inline F128 F128_Load(F128* addr)
 {
 	return vld1q_f32(reinterpret_cast<float32_t*>(addr));
 }
 
-inline void Vec4_StoreA(Vec4 a, float* f)
+inline void F128_StoreA(F128 a, float* f)
 {
 	ASSERT_ISALIGNED16(f);
 	vst1q_f32(reinterpret_cast<float32_t*>(f), a);
 }
 
-inline Vec4 Vec4V_From_FloatV(Scaler f)
+inline F128 Vec4V_From_FloatV(Scaler f)
 {
 	return vcombine_f32(f, f);
 }
 
-inline Vec4 Vec4_Load_Vector3d(const Vector3d& f)
+inline F128 F128_Load_Vector3d(const Vector3d& f)
 {
 	alignas(16) float data[4] = { f.x, f.y, f.z, 0.0f };
-	return Vec4_LoadA(data);
+	return F128_LoadA(data);
 }
 
-inline Vec4 Vec4_PermYXWZ(const Vec4 a)
+inline F128 F128_PermYXWZ(const F128 a)
 {
 	const float32x2_t xy = vget_low_f32(a);
 	const float32x2_t zw = vget_high_f32(a);
@@ -403,7 +403,7 @@ inline Vec4 Vec4_PermYXWZ(const Vec4 a)
 	return vcombine_f32(yx, wz);
 }
 
-inline Vec4 Vec4_PermXZXZ(const Vec4 a)
+inline F128 F128_PermXZXZ(const F128 a)
 {
 	const float32x2_t xy = vget_low_f32(a);
 	const float32x2_t zw = vget_high_f32(a);
@@ -411,7 +411,7 @@ inline Vec4 Vec4_PermXZXZ(const Vec4 a)
 	return vcombine_f32(xzyw.val[0], xzyw.val[0]);
 }
 
-inline Vec4 Vec4_PermYWYW(const Vec4 a)
+inline F128 F128_PermYWYW(const F128 a)
 {
 	const float32x2_t xy = vget_low_f32(a);
 	const float32x2_t zw = vget_high_f32(a);
@@ -419,7 +419,7 @@ inline Vec4 Vec4_PermYWYW(const Vec4 a)
 	return vcombine_f32(xzyw.val[1], xzyw.val[1]);
 }
 
-inline Vec4 Vec4_PermYZXW(const Vec4 a)
+inline F128 F128_PermYZXW(const F128 a)
 {
 	const uint32x2_t xy = vget_low_u32(vreinterpretq_u32_f32(a));
 	const uint32x2_t zw = vget_high_u32(vreinterpretq_u32_f32(a));
@@ -428,163 +428,163 @@ inline Vec4 Vec4_PermYZXW(const Vec4 a)
 	return vreinterpretq_f32_u32(vcombine_u32(yz, xw));
 }
 
-inline Vec4 Vec4_PermZWXY(const Vec4 a)
+inline F128 F128_PermZWXY(const F128 a)
 {
 	const float32x2_t low = vget_low_f32(a);
 	const float32x2_t high = vget_high_f32(a);
 	return vcombine_f32(high, low);
 }
 
-inline Vec4 Vec4_Sel(const BVec4 c, const Vec4 a, const Vec4 b)
+inline F128 F128_Sel(const B128 c, const F128 a, const F128 b)
 {
 	return vbslq_f32(c, a, b);
 }
 
-inline BVec4 Vec4_Equal(const Vec4 a, const Vec4 b)
+inline B128 F128_Equal(const F128 a, const F128 b)
 {
 	return vceqq_f32(a, b);
 }
 
-inline Vec4 Vec4_Zero()
+inline F128 F128_Zero()
 {
 	return vreinterpretq_f32_u32(vmovq_n_u32(0));
 }
 
-inline Vec4 Vec4_One()
+inline F128 F128_One()
 {
 	return vmovq_n_f32(1.0f);
 }
 
-inline Vec4 Vec4_Neg(const Vec4 f)
+inline F128 F128_Neg(const F128 f)
 {
 	return vnegq_f32(f);
 }
 
-inline Vec4 Vec4_Add(const Vec4 a, const Vec4 b)
+inline F128 F128_Add(const F128 a, const F128 b)
 {
 	return vaddq_f32(a, b);
 }
 
-inline Vec4 Vec4_Sub(const Vec4 a, const Vec4 b)
+inline F128 F128_Sub(const F128 a, const F128 b)
 {
 	return vsubq_f32(a, b);
 }
 
-inline Vec4 Vec4_Scale(const Vec4 a, const Scaler b)
+inline F128 F128_Scale(const F128 a, const Scaler b)
 {
 	return vmulq_lane_f32(a, b, 0);
 }
 
-inline Vec4 Vec4_Mul(const Vec4 a, const Vec4 b)
+inline F128 F128_Mul(const F128 a, const F128 b)
 {
 	return vmulq_f32(a, b);
 }
 
-inline Vec4 Vec4_ScaleInv(const Vec4 a, const Scaler b)
+inline F128 F128_ScaleInv(const F128 a, const Scaler b)
 {
 	const float32x2_t invB = VRECIP(b);
 	return vmulq_lane_f32(a, invB, 0);
 }
 
-inline Vec4 Vec4_Div(const Vec4 a, const Vec4 b)
+inline F128 F128_Div(const F128 a, const F128 b)
 {
 	const float32x4_t invB = VRECIPQ(b);
 	return vmulq_f32(a, invB);
 }
 
-inline Vec4 Vec4_ScaleInvFast(const Vec4 a, const Scaler b)
+inline F128 F128_ScaleInvFast(const F128 a, const Scaler b)
 {
 	const float32x2_t invB = VRECIPE(b);
 	return vmulq_lane_f32(a, invB, 0);
 }
 
-inline Vec4 Vec4_DivFast(const Vec4 a, const Vec4 b)
+inline F128 F128_DivFast(const F128 a, const F128 b)
 {
 	const float32x4_t invB = VRECIPEQ(b);
 	return vmulq_f32(a, invB);
 }
 
-inline Vec4 Vec4_Recip(const Vec4 a)
+inline F128 F128_Recip(const F128 a)
 {
 	return VRECIPQ(a);
 }
 
-inline Vec4 Vec4_RecipFast(const Vec4 a)
+inline F128 F128_RecipFast(const F128 a)
 {
 	return VRECIPEQ(a);
 }
 
-inline Vec4 Vec4_RSqrt(const Vec4 a)
+inline F128 F128_RSqrt(const F128 a)
 {
 	return VRECIPSQRTQ(a);
 }
 
-inline Vec4 Vec4_RSqrtFast(const Vec4 a)
+inline F128 F128_RSqrtFast(const F128 a)
 {
 	return VRECIPSQRTEQ(a);
 }
 
-inline Vec4 Vec4_Sqrt(const Vec4 a)
+inline F128 F128_Sqrt(const F128 a)
 {
-	return Vec4_Sel(Vec4_Equal(a, Vec4_Zero()), a, Vec4_Mul(a, VRECIPSQRTQ(a)));
+	return F128_Sel(F128_Equal(a, F128_Zero()), a, F128_Mul(a, VRECIPSQRTQ(a)));
 }
 
-inline Vec4 Vec4_ScaleAdd(const Vec4 a, const Scaler b, const Vec4 c)
+inline F128 F128_ScaleAdd(const F128 a, const Scaler b, const F128 c)
 {
 	return vmlaq_lane_f32(c, a, b, 0);
 }
 
-inline Vec4 Vec4_MAdd(const Vec4 a, const Vec4 b, const Vec4 c)
+inline F128 F128_MAdd(const F128 a, const F128 b, const F128 c)
 {
 	return vmlaq_f32(c, a, b);
 }
 
-inline Vec4 Vec4_NegMSub(const Vec4 a, const Vec4 b, const Vec4 c)
+inline F128 F128_NegMSub(const F128 a, const F128 b, const F128 c)
 {
 	return vmlsq_f32(c, a, b);
 }
 
-inline Scaler Vec4_GetW(const Vec4 f)
+inline Scaler F128_GetW(const F128 f)
 {
 	const float32x2_t fhigh = vget_high_f32(f);
 	return vdup_lane_f32(fhigh, 1);
 }
 
-inline Scaler Vec4_GetX(const Vec4 f)
+inline Scaler F128_GetX(const F128 f)
 {
 	const float32x2_t fLow = vget_low_f32(f);
 	return vdup_lane_f32(fLow, 0);
 }
 
-inline Scaler Vec4_GetY(const Vec4 f)
+inline Scaler F128_GetY(const F128 f)
 {
 	const float32x2_t fLow = vget_low_f32(f);
 	return vdup_lane_f32(fLow, 1);
 }
 
-inline Scaler Vec4_GetZ(const Vec4 f)
+inline Scaler F128_GetZ(const F128 f)
 {
 	const float32x2_t fhigh = vget_high_f32(f);
 	return vdup_lane_f32(fhigh, 0);
 }
 
-inline Vec4 Vec4_SetW(const Vec4 v, const Scaler f)
+inline F128 F128_SetW(const F128 v, const Scaler f)
 {
-	return Vec4_Sel(BTTTF(), v, vcombine_f32(f, f));
+	return F128_Sel(BTTTF(), v, vcombine_f32(f, f));
 }
 
-inline Vec4 Vec4_ClearW(const Vec4 v)
+inline F128 F128_ClearW(const F128 v)
 {
-	return Vec4_Sel(BTTTF(), v, Vec4_Zero());
+	return F128_Sel(BTTTF(), v, F128_Zero());
 }
 
-inline Vec4 Vec4_Abs(const Vec4 a)
+inline F128 F128_Abs(const F128 a)
 {
 	return vabsq_f32(a);
 }
 
 template <int index>
-inline Vec4 Vec4_SplatElement(Vec4 a)
+inline F128 F128_SplatElement(F128 a)
 {
 	if (index < 2)
 	{
@@ -600,7 +600,7 @@ inline Vec4 Vec4_SplatElement(Vec4 a)
 	}
 }
 
-inline Scaler Vec4_Dot(const Vec4 a, const Vec4 b)
+inline Scaler F128_Dot(const F128 a, const F128 b)
 {
 	const float32x4_t tmp = vmulq_f32(a, b);
 	const float32x2_t low = vget_low_f32(tmp);
@@ -611,12 +611,12 @@ inline Scaler Vec4_Dot(const Vec4 a, const Vec4 b)
 	return sumWZYX;
 }
 
-inline Scaler Vec4_Dot3(const Vec4 aa, const Vec4 bb)
+inline Scaler F128_Dot3(const F128 aa, const F128 bb)
 {
 	// PT: the V3Dot code relies on the fact that W=0 so we can't reuse it as-is, we need to clear W first.
 	// TODO: find a better implementation that does not need to clear W.
-	const Vec4 a = Vec4_ClearW(aa);
-	const Vec4 b = Vec4_ClearW(bb);
+	const F128 a = F128_ClearW(aa);
+	const F128 b = F128_ClearW(bb);
 
 	const float32x4_t tmp = vmulq_f32(a, b);
 	const float32x2_t low = vget_low_f32(tmp);
@@ -627,7 +627,7 @@ inline Scaler Vec4_Dot3(const Vec4 aa, const Vec4 bb)
 	return sum0ZYX;
 }
 
-inline Vec4 Vec4_Cross(const Vec4 a, const Vec4 b)
+inline F128 F128_Cross(const F128 a, const F128 b)
 {
 	const uint32x2_t TF = { 0xffffFFFF, 0x0 };
 	const float32x2_t ay_ax = vget_low_f32(a);  // d2
@@ -650,7 +650,7 @@ inline Vec4 Vec4_Cross(const Vec4 a, const Vec4 b)
 	return vcombine_f32(retLow, vreinterpret_f32_u32(retHigh));
 }
 
-inline Scaler Vec4_Length(const Vec4 a)
+inline Scaler F128_Length(const F128 a)
 {
 	const float32x4_t tmp = vmulq_f32(a, a);
 	const float32x2_t low = vget_low_f32(tmp);
@@ -661,54 +661,54 @@ inline Scaler Vec4_Length(const Vec4 a)
 	return Scaler_Sqrt(sumWZYX);
 }
 
-inline Scaler Vec4_SquareLength(const Vec4 a)
+inline Scaler F128_SquareLength(const F128 a)
 {
-	return Vec4_Dot(a, a);
+	return F128_Dot(a, a);
 }
 
-inline Vec4 Vec4_Normalize(const Vec4 a)
-{
-	//PX_ASSERT(!FAllEq(V4LengthSq(a), FZero()));
-	return Vec4_ScaleInv(a, Vec4_Length(a));
-}
-
-inline Vec4 Vec4_NormalizeFast(const Vec4 a)
+inline F128 F128_Normalize(const F128 a)
 {
 	//PX_ASSERT(!FAllEq(V4LengthSq(a), FZero()));
-	return Vec4_Scale(a, Scaler_RSqrtFast(Vec4_Dot(a, a)));
+	return F128_ScaleInv(a, F128_Length(a));
 }
 
-inline BVec4 Vec4_Greater(const Vec4 a, const Vec4 b)
+inline F128 F128_NormalizeFast(const F128 a)
+{
+	//PX_ASSERT(!FAllEq(V4LengthSq(a), FZero()));
+	return F128_Scale(a, Scaler_RSqrtFast(F128_Dot(a, a)));
+}
+
+inline B128 F128_Greater(const F128 a, const F128 b)
 {
 	return vcgtq_f32(a, b);
 }
 
-inline BVec4 Vec4_GreaterEqual(const Vec4 a, const Vec4 b)
+inline B128 F128_GreaterEqual(const F128 a, const F128 b)
 {
 	return vcgeq_f32(a, b);
 }
 
-inline Vec4 Vec4_Max(const Vec4 a, const Vec4 b)
+inline F128 F128_Max(const F128 a, const F128 b)
 {
 	return vmaxq_f32(a, b);
 }
 
-inline Vec4 Vec4_Min(const Vec4 a, const Vec4 b)
+inline F128 F128_Min(const F128 a, const F128 b)
 {
 	return vminq_f32(a, b);
 }
 
-inline Vec4 Vec4_Round(const Vec4 a)
+inline F128 F128_Round(const F128 a)
 {
 	// truncate(a + (0.5f - sign(a)))
-	const Vec4 half = Vec4_Load(0.5f);
+	const F128 half = F128_Load(0.5f);
 	const float32x4_t sign = vcvtq_f32_u32((vshrq_n_u32(vreinterpretq_u32_f32(a), 31)));
-	const Vec4 aPlusHalf = Vec4_Add(a, half);
-	const Vec4 aRound = Vec4_Sub(aPlusHalf, sign);
+	const F128 aPlusHalf = F128_Add(a, half);
+	const F128 aRound = F128_Sub(aPlusHalf, sign);
 	return vcvtq_f32_s32(vcvtq_s32_f32(aRound));
 }
 
-inline void Vec4_Transpose(Vec4& col0, Vec4& col1, Vec4& col2, Vec4& col3)
+inline void F128_Transpose(F128& col0, F128& col1, F128& col2, F128& col3)
 {
 	const float32x4x2_t v0v1 = vzipq_f32(col0, col2);
 	const float32x4x2_t v2v3 = vzipq_f32(col1, col3);
@@ -724,75 +724,75 @@ inline void Vec4_Transpose(Vec4& col0, Vec4& col1, Vec4& col2, Vec4& col3)
 // UVec4
 //////////////////////////////////
 
-inline UVec4 UVec4_LoadXYZW(unsigned int x, unsigned int y, unsigned int z, unsigned int w)
+inline U128 U128_LoadXYZW(unsigned int x, unsigned int y, unsigned int z, unsigned int w)
 {
 	const uint32x4_t ret = { x, y, z, w };
 	return ret;
 }
 
-inline UVec4 UVec4_Load(const unsigned int i)
+inline U128 U128_Load(const unsigned int i)
 {
 	return vdupq_n_u32(i);
 }
 
-inline UVec4 UVec4_LoadU(const unsigned int* i)
+inline U128 U128_LoadU(const unsigned int* i)
 {
 	return vld1q_u32(i);
 }
 
-inline UVec4 UVec4_LoadA(const unsigned int* i)
+inline U128 U128_LoadA(const unsigned int* i)
 {
 	return vld1q_u32(i);
 }
 
-inline UVec4 UVec4_OR(UVec4 a, UVec4 b)
+inline U128 U128_OR(U128 a, U128 b)
 {
 	return vorrq_u32(a, b);
 }
 
-inline UVec4 UVec4_XOR(UVec4 a, UVec4 b)
+inline U128 U128_XOR(U128 a, U128 b)
 {
 	return veorq_u32(a, b);
 }
 
-inline UVec4 UVec4_AND(UVec4 a, UVec4 b)
+inline U128 U128_AND(U128 a, U128 b)
 {
 	return vandq_u32(a, b);
 }
 
-inline UVec4 UVec4_ANDNOT(UVec4 a, UVec4 b)
+inline U128 U128_ANDNOT(U128 a, U128 b)
 {
 	// return vbicq_u32(a, b); // creates gcc compiler bug in RTreeQueries.cpp
 	return vandq_u32(a, vmvnq_u32(b));
 }
 
-inline void UVec4_StoreA(const UVec4 uv, unsigned int* u)
+inline void U128_StoreA(const U128 uv, unsigned int* u)
 {
 	ASSERT_ISALIGNED16(u);
 	vst1q_u32(reinterpret_cast<uint32_t*>(u), uv);
 }
 
-inline UVec4 UVec4_Load_BVec4(const BVec4& a)
+inline U128 U128_Load_BVec4(const B128& a)
 {
 	return a;
 }
 
-inline void UVec4_StoreAA(UVec4 val, UVec4* address)
+inline void U128_StoreAA(U128 val, U128* address)
 {
 	vst1q_u32(reinterpret_cast<uint32_t*>(address), val);
 }
 
-inline Vec4 Vec4V_From_VecU32V(UVec4 a)
+inline F128 Vec4V_From_VecU32V(U128 a)
 {
 	return vcvtq_f32_u32(a);
 }
 
-inline Vec4 Vec4V_ReinterpretFrom_VecU32V(UVec4 a)
+inline F128 Vec4V_ReinterpretFrom_VecU32V(U128 a)
 {
 	return vreinterpretq_f32_u32(a);
 }
 
-inline UVec4 VecU32V_ReinterpretFrom_Vec4V(Vec4 a)
+inline U128 VecU32V_ReinterpretFrom_Vec4V(F128 a)
 {
 	return vreinterpretq_u32_f32(a);
 }

@@ -10,33 +10,33 @@
 namespace SIMDSimulator
 {
 
-inline Vec4 Vec4_Load_Vector3d(const Vector3d& f)
+inline F128 F128_Load_Vector3d(const Vector3d& f)
 {
-	return Vec4(f.x, f.y, f.z, 0.0f);
+	return F128(f.x, f.y, f.z, 0.0f);
 }
 
 template <int index>
-inline Vec4 Vec4_SplatElement(Vec4 a)
+inline F128 F128_SplatElement(F128 a)
 {
-	return Vec4(a[index], a[index], a[index], a[index]);
+	return F128(a[index], a[index], a[index], a[index]);
 }
 
-inline Vec4 Vec4_Load(const float f)
+inline F128 F128_Load(const float f)
 {
-	return Vec4(f, f, f, f);
+	return F128(f, f, f, f);
 }
 
-inline Vec4 Vec4_LoadA(const float* f)
+inline F128 F128_LoadA(const float* f)
 {
-	return Vec4(f[0], f[1], f[2], f[3]);
+	return F128(f[0], f[1], f[2], f[3]);
 }
 
-inline Vec4 Vec4_LoadU(const float* f)
+inline F128 F128_LoadU(const float* f)
 {
-	return Vec4_LoadA(f);
+	return F128_LoadA(f);
 }
 
-inline void Vec4_StoreA(Vec4 a, float* f)
+inline void F128_StoreA(F128 a, float* f)
 {
 	f[0] = a.x;
 	f[1] = a.y;
@@ -44,22 +44,22 @@ inline void Vec4_StoreA(Vec4 a, float* f)
 	f[3] = a.w;
 }
 
-inline void Vec4_StoreU(Vec4 a, float* f)
+inline void F128_StoreU(F128 a, float* f)
 {
-	Vec4_StoreA(a, f);
+	F128_StoreA(a, f);
 }
 
-inline BVec4 Vec4_Greater(const Vec4 a, const Vec4 b)
+inline B128 F128_Greater(const F128 a, const F128 b)
 {
 	return TVector4<bool>(a.x > b.x, a.y > b.y, a.z > b.z, a.w > b.w);
 }
 
-inline BVec4 Vec4_GreaterOrEqual(const Vec4 a, const Vec4 b)
+inline B128 F128_GreaterOrEqual(const F128 a, const F128 b)
 {
 	return TVector4<bool>(a.x >= b.x, a.y >= b.y, a.z >= b.z, a.w >= b.w);
 }
 
-inline BVec4 Vec4_Equal(const Vec4 a, const Vec4 b)
+inline B128 F128_Equal(const F128 a, const F128 b)
 {
 	return TVector4<bool>(a.x == b.x, a.y == b.y, a.z == b.z, a.w == b.w);
 }
@@ -68,22 +68,22 @@ inline BVec4 Vec4_Equal(const Vec4 a, const Vec4 b)
 // BVec4
 //////////////////////////////////
 
-inline BVec4 BVec4_And(const BVec4 a, const BVec4 b)
+inline B128 B128_And(const B128 a, const B128 b)
 {
 	return TVector4<bool>(a.x && b.x, a.y && b.y, a.z && b.z, a.w && b.w);
 }
 
-inline BVec4 BVec4_Not(const BVec4 a)
+inline B128 B128_Not(const B128 a)
 {
 	return TVector4<bool>(!a.x, !a.y, !a.z, !a.w);
 }
 
-inline BVec4 BVec4_AndNot(const BVec4 a, const BVec4 b)
+inline B128 B128_AndNot(const B128 a, const B128 b)
 {
 	return TVector4<bool>(a.x && !b.x, a.y && !b.y, a.z && !b.z, a.w && !b.w);
 }
 
-inline BVec4 BVec4_Or(const BVec4 a, const BVec4 b)
+inline B128 B128_Or(const B128 a, const B128 b)
 {
 	return TVector4<bool>(a.x || b.x, a.y || b.y, a.z || b.z, a.w || b.w);
 }
@@ -91,12 +91,12 @@ inline BVec4 BVec4_Or(const BVec4 a, const BVec4 b)
 //////////////////////////////////
 // UVec4
 //////////////////////////////////
-inline UVec4 UVec4_Load_BVec4(const BVec4 a)
+inline U128 U128_Load_BVec4(const B128 a)
 {
 	return TVector4<unsigned int>(a.x, a.y, a.z, a.w);
 }
 
-inline void UVec4_StoreA(const UVec4 uv, uint32_t* u)
+inline void U128_StoreA(const U128 uv, uint32_t* u)
 {
 	f[0] = a.x;
 	f[1] = a.y;

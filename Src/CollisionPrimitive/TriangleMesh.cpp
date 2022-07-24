@@ -106,15 +106,15 @@ bool TriangleMesh::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) con
 	assert((uintptr_t(m_BVH->BatchPtr) & 127) == 0);
 	assert((uintptr_t(this) & 15) == 0);
 
-	Vec4 nqMin = Vec4_Load_Vector3d(Bmin);
-	Vec4 nqMax = Vec4_Load_Vector3d(Bmax);
+	F128 nqMin = F128_Load_Vector3d(Bmin);
+	F128 nqMax = F128_Load_Vector3d(Bmax);
 
-	Vec4 nqMinx4 = Vec4_SplatElement<0>(nqMin);
-	Vec4 nqMiny4 = Vec4_SplatElement<1>(nqMin);
-	Vec4 nqMinz4 = Vec4_SplatElement<2>(nqMin);
-	Vec4 nqMaxx4 = Vec4_SplatElement<0>(nqMax);
-	Vec4 nqMaxy4 = Vec4_SplatElement<1>(nqMax);
-	Vec4 nqMaxz4 = Vec4_SplatElement<2>(nqMax);
+	F128 nqMinx4 = F128_SplatElement<0>(nqMin);
+	F128 nqMiny4 = F128_SplatElement<1>(nqMin);
+	F128 nqMinz4 = F128_SplatElement<2>(nqMin);
+	F128 nqMaxx4 = F128_SplatElement<0>(nqMax);
+	F128 nqMaxy4 = F128_SplatElement<1>(nqMax);
+	F128 nqMaxz4 = F128_SplatElement<2>(nqMax);
 
 	uint8_t* batch_ptr = (uint8_t*)(m_BVH->BatchPtr);
 	uint32_t* stackPtr = stack;
@@ -139,25 +139,25 @@ bool TriangleMesh::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) con
 		BVHNodeBatch* tn = reinterpret_cast<BVHNodeBatch*>(batch_ptr + top);
 		const uint32_t* Data = (reinterpret_cast<BVHNodeBatch*>(tn))->Data;
 
-		Vec4 minx4 = Vec4_LoadA(tn->minx);
-		Vec4 miny4 = Vec4_LoadA(tn->miny);
-		Vec4 minz4 = Vec4_LoadA(tn->minz);
-		Vec4 maxx4 = Vec4_LoadA(tn->maxx);
-		Vec4 maxy4 = Vec4_LoadA(tn->maxy);
-		Vec4 maxz4 = Vec4_LoadA(tn->maxz);
+		F128 minx4 = F128_LoadA(tn->minx);
+		F128 miny4 = F128_LoadA(tn->miny);
+		F128 minz4 = F128_LoadA(tn->minz);
+		F128 maxx4 = F128_LoadA(tn->maxx);
+		F128 maxy4 = F128_LoadA(tn->maxy);
+		F128 maxz4 = F128_LoadA(tn->maxz);
 
 		// AABB/AABB overlap test
-		BVec4 res0 = nqMinx4 > maxx4;
-		BVec4 res1 = nqMiny4 > maxy4;
-		BVec4 res2 = nqMinz4 > maxz4;
-		BVec4 res3 = minx4 > nqMaxx4;
-		BVec4 res4 = miny4 > nqMaxy4;
-		BVec4 res5 = minz4 > nqMaxz4;
-		BVec4 resx = ((res0 || res1) || (res2 || res3)) || ((res4 || res5));
+		B128 res0 = nqMinx4 > maxx4;
+		B128 res1 = nqMiny4 > maxy4;
+		B128 res2 = nqMinz4 > maxz4;
+		B128 res3 = minx4 > nqMaxx4;
+		B128 res4 = miny4 > nqMaxy4;
+		B128 res5 = minz4 > nqMaxz4;
+		B128 resx = ((res0 || res1) || (res2 || res3)) || ((res4 || res5));
 		alignas(16) uint32_t resa[SIMD_WIDTH];
 
-		UVec4 res4x = UVec4_Load_BVec4(resx);
-		UVec4_StoreA(res4x, resa);
+		U128 res4x = U128_Load_BVec4(resx);
+		U128_StoreA(res4x, resa);
 
 		cacheTopValid = false;
 		for (uint32_t i = 0; i < SIMD_WIDTH; i++)
@@ -239,9 +239,9 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 
 	Result->hitTime = FLT_MAX;
 
-	const UVec4 signMask = UVec4_LoadXYZW((1 << 31), (1 << 31), (1 << 31), (1 << 31));
-	const Vec4 epsFloat4 = Vec4_Load(1e-9f);
-	const Vec4 twos = Vec4_Load(2.0f);
+	const U128 signMask = U128_LoadXYZW((1 << 31), (1 << 31), (1 << 31), (1 << 31));
+	const F128 epsFloat4 = F128_Load(1e-9f);
+	const F128 twos = F128_Load(2.0f);
 	const uint32_t maxStack = 128;
 	uint32_t stack1[maxStack];
 	uint32_t* stack = stack1 + 1;
@@ -253,31 +253,31 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 	float maxT = Option.maxDist;
 
 	uint8_t* batch_ptr = (uint8_t*)(m_BVH->BatchPtr);
-	Vec4 maxT4;
-	maxT4 = Vec4_Load(maxT);
-	Vec4 rayP = Vec4_Load_Vector3d(Origin);
-	Vec4 rayD = Vec4_Load_Vector3d(Dir);
-	UVec4 raySign = UVec4_AND(VecU32V_ReinterpretFrom_Vec4V(rayD), signMask);
-	Vec4 rayDAbs = Vec4_Abs(rayD); // abs value of rayD
-	Vec4 rayInvD = Vec4V_ReinterpretFrom_VecU32V(UVec4_OR(raySign, VecU32V_ReinterpretFrom_Vec4V(Vec4_Max(rayDAbs, epsFloat4)))); // clamp near-zero components up to epsilon
+	F128 maxT4;
+	maxT4 = F128_Load(maxT);
+	F128 rayP = F128_Load_Vector3d(Origin);
+	F128 rayD = F128_Load_Vector3d(Dir);
+	U128 raySign = U128_AND(VecU32V_ReinterpretFrom_Vec4V(rayD), signMask);
+	F128 rayDAbs = F128_Abs(rayD); // abs value of rayD
+	F128 rayInvD = Vec4V_ReinterpretFrom_VecU32V(U128_OR(raySign, VecU32V_ReinterpretFrom_Vec4V(F128_Max(rayDAbs, epsFloat4)))); // clamp near-zero components up to epsilon
 	rayD = rayInvD;
 
 	//rayInvD = V4Recip(rayInvD);
 	// Newton-Raphson iteration for reciprocal (see wikipedia):
 	// X[n+1] = X[n]*(2-original*X[n]), X[0] = V4RecipFast estimate
 	//rayInvD = rayInvD*(twos-rayD*rayInvD);
-	rayInvD = Vec4_RecipFast(rayInvD); // initial estimate, not accurate enough
-	rayInvD = rayInvD * Vec4_NegMSub(rayD, rayInvD, twos);
+	rayInvD = F128_RecipFast(rayInvD); // initial estimate, not accurate enough
+	rayInvD = rayInvD * F128_NegMSub(rayD, rayInvD, twos);
 
 	// P+tD=a; t=(a-P)/D
 	// t=(a - p.x)*1/d.x = a/d.x +(- p.x/d.x)
-	Vec4 rayPinvD = Vec4_NegMSub(rayInvD, rayP, Vec4_Zero());
-	Vec4 rayInvDsplatX = Vec4_SplatElement<0>(rayInvD);
-	Vec4 rayInvDsplatY = Vec4_SplatElement<1>(rayInvD);
-	Vec4 rayInvDsplatZ = Vec4_SplatElement<2>(rayInvD);
-	Vec4 rayPinvDsplatX = Vec4_SplatElement<0>(rayPinvD);
-	Vec4 rayPinvDsplatY = Vec4_SplatElement<1>(rayPinvD);
-	Vec4 rayPinvDsplatZ = Vec4_SplatElement<2>(rayPinvD);
+	F128 rayPinvD = F128_NegMSub(rayInvD, rayP, F128_Zero());
+	F128 rayInvDsplatX = F128_SplatElement<0>(rayInvD);
+	F128 rayInvDsplatY = F128_SplatElement<1>(rayInvD);
+	F128 rayInvDsplatZ = F128_SplatElement<2>(rayInvD);
+	F128 rayPinvDsplatX = F128_SplatElement<0>(rayPinvD);
+	F128 rayPinvDsplatY = F128_SplatElement<1>(rayPinvD);
+	F128 rayPinvDsplatZ = F128_SplatElement<2>(rayPinvD);
 
 	assert(SIMD_WIDTH == 4 || SIMD_WIDTH == 8);
 	assert(m_BVH->NumRoots > 0);
@@ -305,7 +305,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 				if (Result->hitTime < maxT)
 				{
 					maxT = Result->hitTime;
-					maxT4 = Vec4_Load(maxT);
+					maxT4 = F128_Load(maxT);
 				}
 			}
 
@@ -317,22 +317,22 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 		BVHNodeBatch* tn = reinterpret_cast<BVHNodeBatch*>(batch_ptr + top);
 
 		// 6i load
-		Vec4 minx4a = Vec4_LoadA(tn->minx), miny4a = Vec4_LoadA(tn->miny), minz4a = Vec4_LoadA(tn->minz);
-		Vec4 maxx4a = Vec4_LoadA(tn->maxx), maxy4a = Vec4_LoadA(tn->maxy), maxz4a = Vec4_LoadA(tn->maxz);
+		F128 minx4a = F128_LoadA(tn->minx), miny4a = F128_LoadA(tn->miny), minz4a = F128_LoadA(tn->minz);
+		F128 maxx4a = F128_LoadA(tn->maxx), maxy4a = F128_LoadA(tn->maxy), maxz4a = F128_LoadA(tn->maxz);
 
 		// 1i disabled test
 		// AP scaffold - optimization opportunity - can save 2 instructions here
-		UVec4 ignore4a = Vec4_Greater(minx4a, maxx4a); // 1 if degenerate box (empty slot in the page)
+		U128 ignore4a = F128_Greater(minx4a, maxx4a); // 1 if degenerate box (empty slot in the page)
 
 		// P+tD=a; t=(a-P)/D
 		// t=(a - p.x)*1/d.x = a/d.x +(- p.x/d.x)
 		// 6i
-		Vec4 tminxa0 = Vec4_MAdd(minx4a, rayInvDsplatX, rayPinvDsplatX);
-		Vec4 tminya0 = Vec4_MAdd(miny4a, rayInvDsplatY, rayPinvDsplatY);
-		Vec4 tminza0 = Vec4_MAdd(minz4a, rayInvDsplatZ, rayPinvDsplatZ);
-		Vec4 tmaxxa0 = Vec4_MAdd(maxx4a, rayInvDsplatX, rayPinvDsplatX);
-		Vec4 tmaxya0 = Vec4_MAdd(maxy4a, rayInvDsplatY, rayPinvDsplatY);
-		Vec4 tmaxza0 = Vec4_MAdd(maxz4a, rayInvDsplatZ, rayPinvDsplatZ);
+		F128 tminxa0 = F128_MAdd(minx4a, rayInvDsplatX, rayPinvDsplatX);
+		F128 tminya0 = F128_MAdd(miny4a, rayInvDsplatY, rayPinvDsplatY);
+		F128 tminza0 = F128_MAdd(minz4a, rayInvDsplatZ, rayPinvDsplatZ);
+		F128 tmaxxa0 = F128_MAdd(maxx4a, rayInvDsplatX, rayPinvDsplatX);
+		F128 tmaxya0 = F128_MAdd(maxy4a, rayInvDsplatY, rayPinvDsplatY);
+		F128 tmaxza0 = F128_MAdd(maxz4a, rayInvDsplatZ, rayPinvDsplatZ);
 
 		// test half-spaces
 		// P+tD=dN
@@ -342,27 +342,27 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 
 		// 6i
 		// now compute tnear and tfar for each pair of planes for each box
-		Vec4 tminxa = Vec4_Min(tminxa0, tmaxxa0);
-		Vec4 tmaxxa = Vec4_Max(tminxa0, tmaxxa0);
-		Vec4 tminya = Vec4_Min(tminya0, tmaxya0);
-		Vec4 tmaxya = Vec4_Max(tminya0, tmaxya0);
-		Vec4 tminza = Vec4_Min(tminza0, tmaxza0);
-		Vec4 tmaxza = Vec4_Max(tminza0, tmaxza0);
+		F128 tminxa = F128_Min(tminxa0, tmaxxa0);
+		F128 tmaxxa = F128_Max(tminxa0, tmaxxa0);
+		F128 tminya = F128_Min(tminya0, tmaxya0);
+		F128 tmaxya = F128_Max(tminya0, tmaxya0);
+		F128 tminza = F128_Min(tminza0, tmaxza0);
+		F128 tmaxza = F128_Max(tminza0, tmaxza0);
 
 		// 8i
-		Vec4 maxOfNeasa = Vec4_Max(Vec4_Max(tminxa, tminya), tminza);
-		Vec4 minOfFarsa = Vec4_Min(Vec4_Min(tmaxxa, tmaxya), tmaxza);
-		ignore4a = UVec4_OR(ignore4a, (epsFloat4 > minOfFarsa));  // if tfar is negative, ignore since its a ray, not a line
+		F128 maxOfNeasa = F128_Max(F128_Max(tminxa, tminya), tminza);
+		F128 minOfFarsa = F128_Min(F128_Min(tmaxxa, tmaxya), tmaxza);
+		ignore4a = U128_OR(ignore4a, (epsFloat4 > minOfFarsa));  // if tfar is negative, ignore since its a ray, not a line
 		// AP scaffold: update the build to eliminate 3 more instructions for ignore4a above
-		//VecU32V ignore4a = Vec4_Greater(epsFloat4, minOfFarsa);  // if tfar is negative, ignore since its a ray, not a line
-		ignore4a = UVec4_OR(ignore4a, (maxOfNeasa > maxT4));  // if tnear is over maxT, ignore this result
+		//VecU32V ignore4a = F128_Greater(epsFloat4, minOfFarsa);  // if tfar is negative, ignore since its a ray, not a line
+		ignore4a = U128_OR(ignore4a, (maxOfNeasa > maxT4));  // if tnear is over maxT, ignore this result
 
 		// 2i
-		UVec4 resa4 = Vec4_Greater(maxOfNeasa, minOfFarsa); // if 1 => fail
-		resa4 = UVec4_OR(resa4, ignore4a);
+		U128 resa4 = F128_Greater(maxOfNeasa, minOfFarsa); // if 1 => fail
+		resa4 = U128_OR(resa4, ignore4a);
 
 		// 1i
-		UVec4_StoreAA(resa4, reinterpret_cast<UVec4*>(resa));
+		U128_StoreAA(resa4, reinterpret_cast<U128*>(resa));
 
 		uint32_t* ptrs = (reinterpret_cast<BVHNodeBatch*>(tn))->Data;
 
