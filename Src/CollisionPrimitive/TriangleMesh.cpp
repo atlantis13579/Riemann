@@ -106,15 +106,15 @@ bool TriangleMesh::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) con
 	assert((uintptr_t(m_BVH->BatchPtr) & 127) == 0);
 	assert((uintptr_t(this) & 15) == 0);
 
-	Vec4V nqMin = Vec4V_From_PxVec3_WUndefined(Bmin);
-	Vec4V nqMax = Vec4V_From_PxVec3_WUndefined(Bmax);
+	Vec4 nqMin = Vec4_Load_Vector3d(Bmin);
+	Vec4 nqMax = Vec4_Load_Vector3d(Bmax);
 
-	Vec4V nqMinx4 = V4SplatElement<0>(nqMin);
-	Vec4V nqMiny4 = V4SplatElement<1>(nqMin);
-	Vec4V nqMinz4 = V4SplatElement<2>(nqMin);
-	Vec4V nqMaxx4 = V4SplatElement<0>(nqMax);
-	Vec4V nqMaxy4 = V4SplatElement<1>(nqMax);
-	Vec4V nqMaxz4 = V4SplatElement<2>(nqMax);
+	Vec4 nqMinx4 = Vec4_SplatElement<0>(nqMin);
+	Vec4 nqMiny4 = Vec4_SplatElement<1>(nqMin);
+	Vec4 nqMinz4 = Vec4_SplatElement<2>(nqMin);
+	Vec4 nqMaxx4 = Vec4_SplatElement<0>(nqMax);
+	Vec4 nqMaxy4 = Vec4_SplatElement<1>(nqMax);
+	Vec4 nqMaxz4 = Vec4_SplatElement<2>(nqMax);
 
 	uint8_t* batch_ptr = (uint8_t*)(m_BVH->BatchPtr);
 	uint32_t* stackPtr = stack;
@@ -139,21 +139,25 @@ bool TriangleMesh::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) con
 		BVHNodeBatch* tn = reinterpret_cast<BVHNodeBatch*>(batch_ptr + top);
 		const uint32_t* Data = (reinterpret_cast<BVHNodeBatch*>(tn))->Data;
 
-		Vec4V minx4 = V4LoadA(tn->minx);
-		Vec4V miny4 = V4LoadA(tn->miny);
-		Vec4V minz4 = V4LoadA(tn->minz);
-		Vec4V maxx4 = V4LoadA(tn->maxx);
-		Vec4V maxy4 = V4LoadA(tn->maxy);
-		Vec4V maxz4 = V4LoadA(tn->maxz);
+		Vec4 minx4 = Vec4_LoadA(tn->minx);
+		Vec4 miny4 = Vec4_LoadA(tn->miny);
+		Vec4 minz4 = Vec4_LoadA(tn->minz);
+		Vec4 maxx4 = Vec4_LoadA(tn->maxx);
+		Vec4 maxy4 = Vec4_LoadA(tn->maxy);
+		Vec4 maxz4 = Vec4_LoadA(tn->maxz);
 
 		// AABB/AABB overlap test
-		BoolV res0 = V4IsGrtr(nqMinx4, maxx4); BoolV res1 = V4IsGrtr(nqMiny4, maxy4); BoolV res2 = V4IsGrtr(nqMinz4, maxz4);
-		BoolV res3 = V4IsGrtr(minx4, nqMaxx4); BoolV res4 = V4IsGrtr(miny4, nqMaxy4); BoolV res5 = V4IsGrtr(minz4, nqMaxz4);
-		BoolV resx = BOr(BOr(BOr(res0, res1), BOr(res2, res3)), BOr(res4, res5));
+		BVec4 res0 = Vec4_Greater(nqMinx4, maxx4);
+		BVec4 res1 = Vec4_Greater(nqMiny4, maxy4);
+		BVec4 res2 = Vec4_Greater(nqMinz4, maxz4);
+		BVec4 res3 = Vec4_Greater(minx4, nqMaxx4);
+		BVec4 res4 = Vec4_Greater(miny4, nqMaxy4);
+		BVec4 res5 = Vec4_Greater(minz4, nqMaxz4);
+		BVec4 resx = BVec4_Or(BVec4_Or(BVec4_Or(res0, res1), BVec4_Or(res2, res3)), BVec4_Or(res4, res5));
 		alignas(16) uint32_t resa[SIMD_WIDTH];
 
-		VecU32V res4x = VecU32V_From_BoolV(resx);
-		U4StoreA(res4x, resa);
+		UVec4 res4x = UVec4_Load_BVec4(resx);
+		UVec4_StoreA(res4x, resa);
 
 		cacheTopValid = false;
 		for (uint32_t i = 0; i < SIMD_WIDTH; i++)
@@ -235,9 +239,9 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 
 	Result->hitTime = FLT_MAX;
 
-	const VecU32V signMask = U4LoadXYZW((1 << 31), (1 << 31), (1 << 31), (1 << 31));
-	const Vec4V epsFloat4 = V4Load(1e-9f);
-	const Vec4V twos = V4Load(2.0f);
+	const UVec4 signMask = UVec4_LoadXYZW((1 << 31), (1 << 31), (1 << 31), (1 << 31));
+	const Vec4 epsFloat4 = Vec4_Load(1e-9f);
+	const Vec4 twos = Vec4_Load(2.0f);
 	const uint32_t maxStack = 128;
 	uint32_t stack1[maxStack];
 	uint32_t* stack = stack1 + 1;
@@ -249,31 +253,31 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 	float maxT = Option.maxDist;
 
 	uint8_t* batch_ptr = (uint8_t*)(m_BVH->BatchPtr);
-	Vec4V maxT4;
-	maxT4 = V4Load(maxT);
-	Vec4V rayP = Vec4V_From_PxVec3_WUndefined(Origin);
-	Vec4V rayD = Vec4V_From_PxVec3_WUndefined(Dir);
-	VecU32V raySign = V4U32and(VecU32V_ReinterpretFrom_Vec4V(rayD), signMask);
-	Vec4V rayDAbs = V4Abs(rayD); // abs value of rayD
-	Vec4V rayInvD = Vec4V_ReinterpretFrom_VecU32V(V4U32or(raySign, VecU32V_ReinterpretFrom_Vec4V(V4Max(rayDAbs, epsFloat4)))); // clamp near-zero components up to epsilon
+	Vec4 maxT4;
+	maxT4 = Vec4_Load(maxT);
+	Vec4 rayP = Vec4_Load_Vector3d(Origin);
+	Vec4 rayD = Vec4_Load_Vector3d(Dir);
+	UVec4 raySign = UVec4_AND(VecU32V_ReinterpretFrom_Vec4V(rayD), signMask);
+	Vec4 rayDAbs = Vec4_Abs(rayD); // abs value of rayD
+	Vec4 rayInvD = Vec4V_ReinterpretFrom_VecU32V(UVec4_OR(raySign, VecU32V_ReinterpretFrom_Vec4V(Vec4_Max(rayDAbs, epsFloat4)))); // clamp near-zero components up to epsilon
 	rayD = rayInvD;
 
 	//rayInvD = V4Recip(rayInvD);
 	// Newton-Raphson iteration for reciprocal (see wikipedia):
 	// X[n+1] = X[n]*(2-original*X[n]), X[0] = V4RecipFast estimate
 	//rayInvD = rayInvD*(twos-rayD*rayInvD);
-	rayInvD = V4RecipFast(rayInvD); // initial estimate, not accurate enough
-	rayInvD = V4Mul(rayInvD, V4NegMulSub(rayD, rayInvD, twos));
+	rayInvD = Vec4_RecipFast(rayInvD); // initial estimate, not accurate enough
+	rayInvD = Vec4_Mul(rayInvD, Vec4_NegMulSub(rayD, rayInvD, twos));
 
 	// P+tD=a; t=(a-P)/D
 	// t=(a - p.x)*1/d.x = a/d.x +(- p.x/d.x)
-	Vec4V rayPinvD = V4NegMulSub(rayInvD, rayP, V4Zero());
-	Vec4V rayInvDsplatX = V4SplatElement<0>(rayInvD);
-	Vec4V rayInvDsplatY = V4SplatElement<1>(rayInvD);
-	Vec4V rayInvDsplatZ = V4SplatElement<2>(rayInvD);
-	Vec4V rayPinvDsplatX = V4SplatElement<0>(rayPinvD);
-	Vec4V rayPinvDsplatY = V4SplatElement<1>(rayPinvD);
-	Vec4V rayPinvDsplatZ = V4SplatElement<2>(rayPinvD);
+	Vec4 rayPinvD = Vec4_NegMulSub(rayInvD, rayP, Vec4_Zero());
+	Vec4 rayInvDsplatX = Vec4_SplatElement<0>(rayInvD);
+	Vec4 rayInvDsplatY = Vec4_SplatElement<1>(rayInvD);
+	Vec4 rayInvDsplatZ = Vec4_SplatElement<2>(rayInvD);
+	Vec4 rayPinvDsplatX = Vec4_SplatElement<0>(rayPinvD);
+	Vec4 rayPinvDsplatY = Vec4_SplatElement<1>(rayPinvD);
+	Vec4 rayPinvDsplatZ = Vec4_SplatElement<2>(rayPinvD);
 
 	assert(SIMD_WIDTH == 4 || SIMD_WIDTH == 8);
 	assert(m_BVH->NumRoots > 0);
@@ -301,7 +305,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 				if (Result->hitTime < maxT)
 				{
 					maxT = Result->hitTime;
-					maxT4 = V4Load(maxT);
+					maxT4 = Vec4_Load(maxT);
 				}
 			}
 
@@ -313,22 +317,22 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 		BVHNodeBatch* tn = reinterpret_cast<BVHNodeBatch*>(batch_ptr + top);
 
 		// 6i load
-		Vec4V minx4a = V4LoadA(tn->minx), miny4a = V4LoadA(tn->miny), minz4a = V4LoadA(tn->minz);
-		Vec4V maxx4a = V4LoadA(tn->maxx), maxy4a = V4LoadA(tn->maxy), maxz4a = V4LoadA(tn->maxz);
+		Vec4 minx4a = Vec4_LoadA(tn->minx), miny4a = Vec4_LoadA(tn->miny), minz4a = Vec4_LoadA(tn->minz);
+		Vec4 maxx4a = Vec4_LoadA(tn->maxx), maxy4a = Vec4_LoadA(tn->maxy), maxz4a = Vec4_LoadA(tn->maxz);
 
 		// 1i disabled test
 		// AP scaffold - optimization opportunity - can save 2 instructions here
-		VecU32V ignore4a = V4IsGrtrV32u(minx4a, maxx4a); // 1 if degenerate box (empty slot in the page)
+		UVec4 ignore4a = Vec4_Greater(minx4a, maxx4a); // 1 if degenerate box (empty slot in the page)
 
 		// P+tD=a; t=(a-P)/D
 		// t=(a - p.x)*1/d.x = a/d.x +(- p.x/d.x)
 		// 6i
-		Vec4V tminxa0 = V4MulAdd(minx4a, rayInvDsplatX, rayPinvDsplatX);
-		Vec4V tminya0 = V4MulAdd(miny4a, rayInvDsplatY, rayPinvDsplatY);
-		Vec4V tminza0 = V4MulAdd(minz4a, rayInvDsplatZ, rayPinvDsplatZ);
-		Vec4V tmaxxa0 = V4MulAdd(maxx4a, rayInvDsplatX, rayPinvDsplatX);
-		Vec4V tmaxya0 = V4MulAdd(maxy4a, rayInvDsplatY, rayPinvDsplatY);
-		Vec4V tmaxza0 = V4MulAdd(maxz4a, rayInvDsplatZ, rayPinvDsplatZ);
+		Vec4 tminxa0 = Vec4_MAdd(minx4a, rayInvDsplatX, rayPinvDsplatX);
+		Vec4 tminya0 = Vec4_MAdd(miny4a, rayInvDsplatY, rayPinvDsplatY);
+		Vec4 tminza0 = Vec4_MAdd(minz4a, rayInvDsplatZ, rayPinvDsplatZ);
+		Vec4 tmaxxa0 = Vec4_MAdd(maxx4a, rayInvDsplatX, rayPinvDsplatX);
+		Vec4 tmaxya0 = Vec4_MAdd(maxy4a, rayInvDsplatY, rayPinvDsplatY);
+		Vec4 tmaxza0 = Vec4_MAdd(maxz4a, rayInvDsplatZ, rayPinvDsplatZ);
 
 		// test half-spaces
 		// P+tD=dN
@@ -338,24 +342,24 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 
 		// 6i
 		// now compute tnear and tfar for each pair of planes for each box
-		Vec4V tminxa = V4Min(tminxa0, tmaxxa0); Vec4V tmaxxa = V4Max(tminxa0, tmaxxa0);
-		Vec4V tminya = V4Min(tminya0, tmaxya0); Vec4V tmaxya = V4Max(tminya0, tmaxya0);
-		Vec4V tminza = V4Min(tminza0, tmaxza0); Vec4V tmaxza = V4Max(tminza0, tmaxza0);
+		Vec4 tminxa = Vec4_Min(tminxa0, tmaxxa0); Vec4 tmaxxa = Vec4_Max(tminxa0, tmaxxa0);
+		Vec4 tminya = Vec4_Min(tminya0, tmaxya0); Vec4 tmaxya = Vec4_Max(tminya0, tmaxya0);
+		Vec4 tminza = Vec4_Min(tminza0, tmaxza0); Vec4 tmaxza = Vec4_Max(tminza0, tmaxza0);
 
 		// 8i
-		Vec4V maxOfNeasa = V4Max(V4Max(tminxa, tminya), tminza);
-		Vec4V minOfFarsa = V4Min(V4Min(tmaxxa, tmaxya), tmaxza);
-		ignore4a = V4U32or(ignore4a, V4IsGrtrV32u(epsFloat4, minOfFarsa));  // if tfar is negative, ignore since its a ray, not a line
+		Vec4 maxOfNeasa = Vec4_Max(Vec4_Max(tminxa, tminya), tminza);
+		Vec4 minOfFarsa = Vec4_Min(Vec4_Min(tmaxxa, tmaxya), tmaxza);
+		ignore4a = UVec4_OR(ignore4a, Vec4_Greater(epsFloat4, minOfFarsa));  // if tfar is negative, ignore since its a ray, not a line
 		// AP scaffold: update the build to eliminate 3 more instructions for ignore4a above
-		//VecU32V ignore4a = V4IsGrtrV32u(epsFloat4, minOfFarsa);  // if tfar is negative, ignore since its a ray, not a line
-		ignore4a = V4U32or(ignore4a, V4IsGrtrV32u(maxOfNeasa, maxT4));  // if tnear is over maxT, ignore this result
+		//VecU32V ignore4a = Vec4_Greater(epsFloat4, minOfFarsa);  // if tfar is negative, ignore since its a ray, not a line
+		ignore4a = UVec4_OR(ignore4a, Vec4_Greater(maxOfNeasa, maxT4));  // if tnear is over maxT, ignore this result
 
 		// 2i
-		VecU32V resa4 = V4IsGrtrV32u(maxOfNeasa, minOfFarsa); // if 1 => fail
-		resa4 = V4U32or(resa4, ignore4a);
+		UVec4 resa4 = Vec4_Greater(maxOfNeasa, minOfFarsa); // if 1 => fail
+		resa4 = UVec4_OR(resa4, ignore4a);
 
 		// 1i
-		V4U32StoreAligned(resa4, reinterpret_cast<VecU32V*>(resa));
+		UVec4_StoreAA(resa4, reinterpret_cast<UVec4*>(resa));
 
 		uint32_t* ptrs = (reinterpret_cast<BVHNodeBatch*>(tn))->Data;
 

@@ -15,7 +15,7 @@
 WorldViewer::WorldViewer(Renderer* renderer)
 {
 	m_CamCenter = Vector3d::Zero();
-	m_CamParam = Vector3d(1.0f, 1.0f, 10.0f);
+	m_CamParam = Vector3d(1.0f, 0.6f, 15.0f);
 	m_Renderer = renderer;
 	CreateSimulator();
 	UpdateCamera();
@@ -53,6 +53,9 @@ void WorldViewer::CreateDemo()
 
 void WorldViewer::CreateStackBoxesDemo()
 {
+	m_CamParam = Vector3d(1.6f, 0.1f, 20.0f);
+	UpdateCamera();
+
 	RigidBodyParam rp;
 	rp.Static = true;
 	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d::UnitY(), 1.0f);
@@ -71,6 +74,9 @@ void WorldViewer::CreateStackBoxesDemo()
 
 void WorldViewer::CreateDominoDemo()
 {
+	m_CamParam = Vector3d(1.6f, 0.6f, 23.0f);
+	UpdateCamera();
+
 	RigidBodyParam rp;
 	rp.Static = true;
 	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, 0, 0), Vector3d::UnitY(), 1.0f);
