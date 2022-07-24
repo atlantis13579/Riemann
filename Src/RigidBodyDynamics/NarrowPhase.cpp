@@ -30,6 +30,8 @@ public:
 				ConstructManifols(overlaps[i].Geom1, overlaps[i].Geom2, epa, manifolds);
 			}
 		}
+
+		return;
 	}
 
 	bool PenetrationTest(Geometry* Geom1, Geometry* Geom2, EPAPenetration& epa)
@@ -108,10 +110,44 @@ public:
 
 			manifolds->back().AddNewContact(GeomA, GeomB, contact);
 		}
+
+		return;
 	}
 
 private:
 	bool mUseContactFace;
+};
+
+class NarrowPhase_SAT : public NarrowPhase
+{
+public:
+	NarrowPhase_SAT()
+	{
+	}
+	virtual ~NarrowPhase_SAT()
+	{
+	}
+
+	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold>* manifolds) override final
+	{
+		return;
+	}
+};
+
+class NarrowPhase_PersistentContactManifold : public NarrowPhase
+{
+public:
+	NarrowPhase_PersistentContactManifold()
+	{
+	}
+	virtual ~NarrowPhase_PersistentContactManifold()
+	{
+	}
+
+	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold>* manifolds) override final
+	{
+		return;
+	}
 };
 
 NarrowPhase* NarrowPhase::Create_GJKEPA()

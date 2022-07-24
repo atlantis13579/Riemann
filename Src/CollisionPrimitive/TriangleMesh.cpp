@@ -257,9 +257,9 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 	maxT4 = F128_Load(maxT);
 	F128 rayP = F128_Load_Vector3d(Origin);
 	F128 rayD = F128_Load_Vector3d(Dir);
-	U128 raySign = U128_AND(VecU32V_ReinterpretFrom_Vec4V(rayD), signMask);
+	U128 raySign = U128_AND(U128_ReinterpretFrom_Vec4V(rayD), signMask);
 	F128 rayDAbs = F128_Abs(rayD); // abs value of rayD
-	F128 rayInvD = Vec4V_ReinterpretFrom_VecU32V(U128_OR(raySign, VecU32V_ReinterpretFrom_Vec4V(F128_Max(rayDAbs, epsFloat4)))); // clamp near-zero components up to epsilon
+	F128 rayInvD = Vec4V_ReinterpretFrom_VecU32V(U128_OR(raySign, U128_ReinterpretFrom_Vec4V(F128_Max(rayDAbs, epsFloat4)))); // clamp near-zero components up to epsilon
 	rayD = rayInvD;
 
 	//rayInvD = V4Recip(rayInvD);

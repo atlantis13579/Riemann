@@ -655,7 +655,7 @@ inline F128 Vec4V_ReinterpretFrom_VecU32V(U128 a)
 	return F128(a);
 }
 
-inline U128 VecU32V_ReinterpretFrom_Vec4V(F128 a)
+inline U128 U128_ReinterpretFrom_Vec4V(F128 a)
 {
 	return U128(a);
 }

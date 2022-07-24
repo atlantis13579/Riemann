@@ -17,10 +17,10 @@ public:
 		PositionLocalA = PositionLocalB = PositionWorldA = PositionWorldB = Vector3d::Zero();
 	}
 
-	Vector3d	PositionLocalA;
-	Vector3d	PositionLocalB;
 	Vector3d	PositionWorldA;
 	Vector3d	PositionWorldB;
+	Vector3d	PositionLocalA;
+	Vector3d	PositionLocalB;
 	Vector3d	Normal;
 	Vector3d	Tangent;
 	Vector3d	Binormal;
@@ -47,6 +47,7 @@ public:
 
 private:
 	bool	MergeManifold();
+	bool	FindBest4();
 };
 
 class ContactManifoldManager
