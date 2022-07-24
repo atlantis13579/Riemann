@@ -4,10 +4,6 @@
 BVec4 BVec4_Or(const BVec4 a, const BVec4 b);
 BVec4 BTTTT();
 BVec4 BFFFF();
-FloatV Vec4_GetX(const Vec4 f);
-FloatV Vec4_GetY(const Vec4 f);
-FloatV Vec4_GetZ(const Vec4 f);
-FloatV Vec4_GetW(const Vec4 f);
 Vec4 Vec4_LoadA(const float* const f);
 Vec4 V4Sel(const BVec4 c, const Vec4 a, const Vec4 b);
 BVec4 Vec4_Equal(const Vec4 a, const Vec4 b);
@@ -49,102 +45,57 @@ static const VECTORF32 g_PXTwoPi = {{3.141592655f * 2.0f, 3.141592655f * 2.0f, 3
 #define VRECIPSQRT rsqrt_newton<4>
 
 //////////////////////////////////
-// FLOATV
+// Scaler
 //////////////////////////////////
-///
-inline FloatV FLoad(const float f)
+
+inline Scaler Scaler_Load(const float f)
 {
 	return vdup_n_f32(reinterpret_cast<const float32_t&>(f));
 }
 
-inline FloatV FLoadA(const float* const f)
+inline Scaler Scaler_LoadA(const float* const f)
 {
 	ASSERT_ISALIGNED16(f);
 	return vld1_f32(reinterpret_cast<const float32_t*>(f));
 }
 
-inline FloatV FZero()
+inline Scaler Scaler_Zero()
 {
-	return FLoad(0.0f);
+	return Scaler_Load(0.0f);
 }
 
-inline FloatV FOne()
+inline Scaler Scaler_One()
 {
-	return FLoad(1.0f);
+	return Scaler_Load(1.0f);
 }
 
-inline FloatV FHalf()
+inline Scaler Scaler_Neg(const Scaler f)
 {
-	return FLoad(0.5f);
-}
-
-inline FloatV FEps()
-{
-	return FLoad(1e-7f);
-}
-
-inline FloatV IZero()
-{
-	return vreinterpret_f32_u32(vdup_n_u32(0));
-}
-
-inline FloatV IOne()
-{
-	return vreinterpret_f32_u32(vdup_n_u32(1));
-}
-
-inline FloatV ITwo()
-{
-	return vreinterpret_f32_u32(vdup_n_u32(2));
-}
-
-inline FloatV IThree()
-{
-	return vreinterpret_f32_u32(vdup_n_u32(3));
-}
-
-inline FloatV IFour()
-{
-	return vreinterpret_f32_u32(vdup_n_u32(4));
-}
-
-inline FloatV FNeg(const FloatV f)
-{
-	ASSERT_ISVALIDFLOATV(f);
 	return vneg_f32(f);
 }
 
-inline FloatV FAdd(const FloatV a, const FloatV b)
+inline Scaler Scaler_Add(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return vadd_f32(a, b);
 }
 
-inline FloatV FSub(const FloatV a, const FloatV b)
+inline Scaler Scaler_Sub(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return vsub_f32(a, b);
 }
 
-inline FloatV FMul(const FloatV a, const FloatV b)
+inline Scaler Scaler_Mul(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return vmul_f32(a, b);
 }
 
-inline BVec4 FIsEq(const FloatV a, const FloatV b)
+inline BVec4 Scaler_Equal(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return vdupq_lane_u32(vceq_f32(a, b), 0);
 }
 
-inline FloatV FSel(const BVec4 c, const FloatV a, const FloatV b)
+inline Scaler Scaler_Sel(const BVec4 c, const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(vbsl_f32(vget_low_u32(c), a, b));
 	return vbsl_f32(vget_low_u32(c), a, b);
 }
 
@@ -184,132 +135,83 @@ inline float32x4_t rsqrtq_newton(const float32x4_t& in)
 	return rsqrt;
 }
 
-inline FloatV FDiv(const FloatV a, const FloatV b)
+inline Scaler Scaler_Div(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return vmul_f32(a, VRECIP(b));
 }
 
-inline FloatV FDivFast(const FloatV a, const FloatV b)
+inline Scaler Scaler_DivFast(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return vmul_f32(a, VRECIPE(b));
 }
 
-inline FloatV FRecip(const FloatV a)
+inline Scaler Scaler_Recip(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
 	return VRECIP(a);
 }
 
-inline FloatV FRecipFast(const FloatV a)
+inline Scaler Scaler_RecipFast(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
 	return VRECIPE(a);
 }
 
-inline FloatV FRsqrt(const FloatV a)
+inline Scaler Scaler_RSqrt(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
 	return VRECIPSQRT(a);
 }
 
-inline FloatV FSqrt(const FloatV a)
+inline Scaler Scaler_Sqrt(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	return FSel(FIsEq(a, FZero()), a, vmul_f32(a, VRECIPSQRT(a)));
+	return Scaler_Sel(Scaler_Equal(a, Scaler_Zero()), a, vmul_f32(a, VRECIPSQRT(a)));
 }
 
-inline FloatV FRsqrtFast(const FloatV a)
+inline Scaler Scaler_RSqrtFast(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
 	return VRECIPSQRTE(a);
 }
 
-inline FloatV FScaleAdd(const FloatV a, const FloatV b, const FloatV c)
+inline Scaler Scaler_MAdd(const Scaler a, const Scaler b, const Scaler c)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
-	ASSERT_ISVALIDFLOATV(c);
 	return vmla_f32(c, a, b);
 }
 
-inline FloatV FNegScaleSub(const FloatV a, const FloatV b, const FloatV c)
+inline Scaler Scaler_NegMSub(const Scaler a, const Scaler b, const Scaler c)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
-	ASSERT_ISVALIDFLOATV(c);
 	return vmls_f32(c, a, b);
 }
 
-inline FloatV FAbs(const FloatV a)
+inline Scaler Scaler_Abs(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
 	return vabs_f32(a);
 }
 
-inline BVec4 FIsGrtr(const FloatV a, const FloatV b)
+inline BVec4 Scaler_Greater(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return vdupq_lane_u32(vcgt_f32(a, b), 0);
 }
 
-inline BVec4 FIsGrtrOrEq(const FloatV a, const FloatV b)
+inline BVec4 Scaler_GreaterEqual(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return vdupq_lane_u32(vcge_f32(a, b), 0);
 }
 
-inline FloatV FMax(const FloatV a, const FloatV b)
+inline Scaler Scaler_Max(const Scaler a, const Scaler b)
 {
-	//ASSERT_ISVALIDFLOATV(a);
-	//ASSERT_ISVALIDFLOATV(b);
 	return vmax_f32(a, b);
 }
 
-inline FloatV FMin(const FloatV a, const FloatV b)
+inline Scaler Scaler_Min(const Scaler a, const Scaler b)
 {
-	//ASSERT_ISVALIDFLOATV(a);
-	//ASSERT_ISVALIDFLOATV(b);
 	return vmin_f32(a, b);
 }
 
-inline FloatV FClamp(const FloatV a, const FloatV minV, const FloatV maxV)
+inline Scaler Scaler_Clamp(const Scaler a, const Scaler minV, const Scaler maxV)
 {
-	ASSERT_ISVALIDFLOATV(minV);
-	ASSERT_ISVALIDFLOATV(maxV);
 	return vmax_f32(vmin_f32(a, maxV), minV);
 }
 
-inline unsigned int FAllGrtr(const FloatV a, const FloatV b)
+inline Scaler Scaler_Round(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
-	return vget_lane_u32(vcgt_f32(a, b), 0);
-}
-
-inline unsigned int FAllGrtrOrEq(const FloatV a, const FloatV b)
-{
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
-	return vget_lane_u32(vcge_f32(a, b), 0);
-}
-
-inline unsigned int FAllEq(const FloatV a, const FloatV b)
-{
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
-	return vget_lane_u32(vceq_f32(a, b), 0);
-}
-
-inline FloatV FRound(const FloatV a)
-{
-	ASSERT_ISVALIDFLOATV(a);
-
 	// truncate(a + (0.5f - sign(a)))
 	const float32x2_t half = vdup_n_f32(0.5f);
 	const float32x2_t sign = vcvt_f32_u32((vshr_n_u32(vreinterpret_u32_f32(a), 31)));
@@ -317,121 +219,6 @@ inline FloatV FRound(const FloatV a)
 	const float32x2_t aRound = vsub_f32(aPlusHalf, sign);
 	int32x2_t tmp = vcvt_s32_f32(aRound);
 	return vcvt_f32_s32(tmp);
-}
-
-inline FloatV FSin(const FloatV a)
-{
-	ASSERT_ISVALIDFLOATV(a);
-
-	// Modulo the range of the given angles such that -XM_2PI <= Angles < XM_2PI
-	const FloatV recipTwoPi = FLoadA(g_PXReciprocalTwoPi.f);
-	const FloatV twoPi = FLoadA(g_PXTwoPi.f);
-	const FloatV tmp = FMul(a, recipTwoPi);
-	const FloatV b = FRound(tmp);
-	const FloatV V1 = FNegScaleSub(twoPi, b, a);
-
-	// sin(V) ~= V - V^3 / 3! + V^5 / 5! - V^7 / 7! + V^9 / 9! - V^11 / 11! + V^13 / 13! -
-	//           V^15 / 15! + V^17 / 17! - V^19 / 19! + V^21 / 21! - V^23 / 23! (for -PI <= V < PI)
-	const FloatV V2 = FMul(V1, V1);
-	const FloatV V3 = FMul(V2, V1);
-	const FloatV V5 = FMul(V3, V2);
-	const FloatV V7 = FMul(V5, V2);
-	const FloatV V9 = FMul(V7, V2);
-	const FloatV V11 = FMul(V9, V2);
-	const FloatV V13 = FMul(V11, V2);
-	const FloatV V15 = FMul(V13, V2);
-	const FloatV V17 = FMul(V15, V2);
-	const FloatV V19 = FMul(V17, V2);
-	const FloatV V21 = FMul(V19, V2);
-	const FloatV V23 = FMul(V21, V2);
-
-	const Vec4 sinCoefficients0 = Vec4_LoadA(g_PXSinCoefficients0.f);
-	const Vec4 sinCoefficients1 = Vec4_LoadA(g_PXSinCoefficients1.f);
-	const Vec4 sinCoefficients2 = Vec4_LoadA(g_PXSinCoefficients2.f);
-
-	const FloatV S1 = Vec4_GetY(sinCoefficients0);
-	const FloatV S2 = Vec4_GetZ(sinCoefficients0);
-	const FloatV S3 = Vec4_GetW(sinCoefficients0);
-	const FloatV S4 = Vec4_GetX(sinCoefficients1);
-	const FloatV S5 = Vec4_GetY(sinCoefficients1);
-	const FloatV S6 = Vec4_GetZ(sinCoefficients1);
-	const FloatV S7 = Vec4_GetW(sinCoefficients1);
-	const FloatV S8 = Vec4_GetX(sinCoefficients2);
-	const FloatV S9 = Vec4_GetY(sinCoefficients2);
-	const FloatV S10 = Vec4_GetZ(sinCoefficients2);
-	const FloatV S11 = Vec4_GetW(sinCoefficients2);
-
-	FloatV Result;
-	Result = FScaleAdd(S1, V3, V1);
-	Result = FScaleAdd(S2, V5, Result);
-	Result = FScaleAdd(S3, V7, Result);
-	Result = FScaleAdd(S4, V9, Result);
-	Result = FScaleAdd(S5, V11, Result);
-	Result = FScaleAdd(S6, V13, Result);
-	Result = FScaleAdd(S7, V15, Result);
-	Result = FScaleAdd(S8, V17, Result);
-	Result = FScaleAdd(S9, V19, Result);
-	Result = FScaleAdd(S10, V21, Result);
-	Result = FScaleAdd(S11, V23, Result);
-
-	return Result;
-}
-
-inline FloatV FCos(const FloatV a)
-{
-	ASSERT_ISVALIDFLOATV(a);
-
-	// Modulo the range of the given angles such that -XM_2PI <= Angles < XM_2PI
-	const FloatV recipTwoPi = FLoadA(g_PXReciprocalTwoPi.f);
-	const FloatV twoPi = FLoadA(g_PXTwoPi.f);
-	const FloatV tmp = FMul(a, recipTwoPi);
-	const FloatV b = FRound(tmp);
-	const FloatV V1 = FNegScaleSub(twoPi, b, a);
-
-	// cos(V) ~= 1 - V^2 / 2! + V^4 / 4! - V^6 / 6! + V^8 / 8! - V^10 / 10! + V^12 / 12! -
-	//           V^14 / 14! + V^16 / 16! - V^18 / 18! + V^20 / 20! - V^22 / 22! (for -PI <= V < PI)
-	const FloatV V2 = FMul(V1, V1);
-	const FloatV V4 = FMul(V2, V2);
-	const FloatV V6 = FMul(V4, V2);
-	const FloatV V8 = FMul(V4, V4);
-	const FloatV V10 = FMul(V6, V4);
-	const FloatV V12 = FMul(V6, V6);
-	const FloatV V14 = FMul(V8, V6);
-	const FloatV V16 = FMul(V8, V8);
-	const FloatV V18 = FMul(V10, V8);
-	const FloatV V20 = FMul(V10, V10);
-	const FloatV V22 = FMul(V12, V10);
-
-	const Vec4 cosCoefficients0 = Vec4_LoadA(g_PXCosCoefficients0.f);
-	const Vec4 cosCoefficients1 = Vec4_LoadA(g_PXCosCoefficients1.f);
-	const Vec4 cosCoefficients2 = Vec4_LoadA(g_PXCosCoefficients2.f);
-
-	const FloatV C1 = Vec4_GetY(cosCoefficients0);
-	const FloatV C2 = Vec4_GetZ(cosCoefficients0);
-	const FloatV C3 = Vec4_GetW(cosCoefficients0);
-	const FloatV C4 = Vec4_GetX(cosCoefficients1);
-	const FloatV C5 = Vec4_GetY(cosCoefficients1);
-	const FloatV C6 = Vec4_GetZ(cosCoefficients1);
-	const FloatV C7 = Vec4_GetW(cosCoefficients1);
-	const FloatV C8 = Vec4_GetX(cosCoefficients2);
-	const FloatV C9 = Vec4_GetY(cosCoefficients2);
-	const FloatV C10 = Vec4_GetZ(cosCoefficients2);
-	const FloatV C11 = Vec4_GetW(cosCoefficients2);
-
-	FloatV Result;
-	Result = FScaleAdd(C1, V2, FOne());
-	Result = FScaleAdd(C2, V4, Result);
-	Result = FScaleAdd(C3, V6, Result);
-	Result = FScaleAdd(C4, V8, Result);
-	Result = FScaleAdd(C5, V10, Result);
-	Result = FScaleAdd(C6, V12, Result);
-	Result = FScaleAdd(C7, V14, Result);
-	Result = FScaleAdd(C8, V16, Result);
-	Result = FScaleAdd(C9, V18, Result);
-	Result = FScaleAdd(C10, V20, Result);
-	Result = FScaleAdd(C11, V22, Result);
-
-	return Result;
 }
 
 //////////////////////////////////
@@ -630,7 +417,7 @@ inline void Vec4_StoreA(Vec4 a, float* f)
 	vst1q_f32(reinterpret_cast<float32_t*>(f), a);
 }
 
-inline Vec4 Vec4V_From_FloatV(FloatV f)
+inline Vec4 Vec4V_From_FloatV(Scaler f)
 {
 	return vcombine_f32(f, f);
 }
@@ -639,48 +426,6 @@ inline Vec4 Vec4_Load_Vector3d(const Vector3d& f)
 {
 	alignas(16) float data[4] = { f.x, f.y, f.z, 0.0f };
 	return Vec4_LoadA(data);
-}
-
-inline Vec4 V4UnpackXY(const Vec4& a, const Vec4& b)
-{
-	return vzipq_f32(a, b).val[0];
-}
-
-inline Vec4 V4UnpackZW(const Vec4& a, const Vec4& b)
-{
-	return vzipq_f32(a, b).val[1];
-}
-
-inline Vec4 V4UnitW()
-{
-	const float32x2_t zeros = vreinterpret_f32_u32(vmov_n_u32(0));
-	const float32x2_t ones = vmov_n_f32(1.0f);
-	const float32x2_t zo = vext_f32(zeros, ones, 1);
-	return vcombine_f32(zeros, zo);
-}
-
-inline Vec4 V4UnitX()
-{
-	const float32x2_t zeros = vreinterpret_f32_u32(vmov_n_u32(0));
-	const float32x2_t ones = vmov_n_f32(1.0f);
-	const float32x2_t oz = vext_f32(ones, zeros, 1);
-	return vcombine_f32(oz, zeros);
-}
-
-inline Vec4 V4UnitY()
-{
-	const float32x2_t zeros = vreinterpret_f32_u32(vmov_n_u32(0));
-	const float32x2_t ones = vmov_n_f32(1.0f);
-	const float32x2_t zo = vext_f32(zeros, ones, 1);
-	return vcombine_f32(zo, zeros);
-}
-
-inline Vec4 V4UnitZ()
-{
-	const float32x2_t zeros = vreinterpret_f32_u32(vmov_n_u32(0));
-	const float32x2_t ones = vmov_n_f32(1.0f);
-	const float32x2_t oz = vext_f32(ones, zeros, 1);
-	return vcombine_f32(zeros, oz);
 }
 
 inline Vec4 Vec4_PermYXWZ(const Vec4 a)
@@ -724,42 +469,12 @@ inline Vec4 Vec4_PermZWXY(const Vec4 a)
 	return vcombine_f32(high, low);
 }
 
-template <unsigned char E0, unsigned char E1, unsigned char E2, unsigned char E3>
-inline Vec4 V4Perm(const Vec4 V)
-{
-	static const uint32_t ControlElement[4] =
-	{
-#if 1
-		0x03020100, // XM_SWIZZLE_X
-		0x07060504, // XM_SWIZZLE_Y
-		0x0B0A0908, // XM_SWIZZLE_Z
-		0x0F0E0D0C, // XM_SWIZZLE_W
-#else
-		0x00010203, // XM_SWIZZLE_X
-		0x04050607, // XM_SWIZZLE_Y
-		0x08090A0B, // XM_SWIZZLE_Z
-		0x0C0D0E0F, // XM_SWIZZLE_W
-#endif
-	};
-
-	uint8x8x2_t tbl;
-	tbl.val[0] = vreinterpret_u8_f32(vget_low_f32(V));
-	tbl.val[1] = vreinterpret_u8_f32(vget_high_f32(V));
-
-	uint8x8_t idx =
-	    vcreate_u8(static_cast<uint64_t>(ControlElement[E0]) | (static_cast<uint64_t>(ControlElement[E1]) << 32));
-	const uint8x8_t rL = vtbl2_u8(tbl, idx);
-	idx = vcreate_u8(static_cast<uint64_t>(ControlElement[E2]) | (static_cast<uint64_t>(ControlElement[E3]) << 32));
-	const uint8x8_t rH = vtbl2_u8(tbl, idx);
-	return vreinterpretq_f32_u8(vcombine_u8(rL, rH));
-}
-
 inline Vec4 Vec4_Zero()
 {
 	return vreinterpretq_f32_u32(vmovq_n_u32(0));
 }
 
-inline Vec4 V4One()
+inline Vec4 Vec4_One()
 {
 	return vmovq_n_f32(1.0f);
 }
@@ -779,7 +494,7 @@ inline Vec4 Vec4_Sub(const Vec4 a, const Vec4 b)
 	return vsubq_f32(a, b);
 }
 
-inline Vec4 Vec4_Scale(const Vec4 a, const FloatV b)
+inline Vec4 Vec4_Scale(const Vec4 a, const Scaler b)
 {
 	return vmulq_lane_f32(a, b, 0);
 }
@@ -789,9 +504,8 @@ inline Vec4 Vec4_Mul(const Vec4 a, const Vec4 b)
 	return vmulq_f32(a, b);
 }
 
-inline Vec4 Vec4_ScaleInv(const Vec4 a, const FloatV b)
+inline Vec4 Vec4_ScaleInv(const Vec4 a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(b);
 	const float32x2_t invB = VRECIP(b);
 	return vmulq_lane_f32(a, invB, 0);
 }
@@ -802,9 +516,8 @@ inline Vec4 Vec4_Div(const Vec4 a, const Vec4 b)
 	return vmulq_f32(a, invB);
 }
 
-inline Vec4 Vec4_ScaleInvFast(const Vec4 a, const FloatV b)
+inline Vec4 Vec4_ScaleInvFast(const Vec4 a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(b);
 	const float32x2_t invB = VRECIPE(b);
 	return vmulq_lane_f32(a, invB, 0);
 }
@@ -840,9 +553,8 @@ inline Vec4 Vec4_Sqrt(const Vec4 a)
 	return V4Sel(Vec4_Equal(a, Vec4_Zero()), a, Vec4_Mul(a, VRECIPSQRTQ(a)));
 }
 
-inline Vec4 Vec4_ScaleAdd(const Vec4 a, const FloatV b, const Vec4 c)
+inline Vec4 Vec4_ScaleAdd(const Vec4 a, const Scaler b, const Vec4 c)
 {
-	ASSERT_ISVALIDFLOATV(b);
 	return vmlaq_lane_f32(c, a, b, 0);
 }
 
@@ -851,38 +563,37 @@ inline Vec4 Vec4_MAdd(const Vec4 a, const Vec4 b, const Vec4 c)
 	return vmlaq_f32(c, a, b);
 }
 
-inline Vec4 Vec4_NegMulSub(const Vec4 a, const Vec4 b, const Vec4 c)
+inline Vec4 Vec4_NegMSub(const Vec4 a, const Vec4 b, const Vec4 c)
 {
 	return vmlsq_f32(c, a, b);
 }
 
-inline FloatV Vec4_GetW(const Vec4 f)
+inline Scaler Vec4_GetW(const Vec4 f)
 {
 	const float32x2_t fhigh = vget_high_f32(f);
 	return vdup_lane_f32(fhigh, 1);
 }
 
-inline FloatV Vec4_GetX(const Vec4 f)
+inline Scaler Vec4_GetX(const Vec4 f)
 {
 	const float32x2_t fLow = vget_low_f32(f);
 	return vdup_lane_f32(fLow, 0);
 }
 
-inline FloatV Vec4_GetY(const Vec4 f)
+inline Scaler Vec4_GetY(const Vec4 f)
 {
 	const float32x2_t fLow = vget_low_f32(f);
 	return vdup_lane_f32(fLow, 1);
 }
 
-inline FloatV Vec4_GetZ(const Vec4 f)
+inline Scaler Vec4_GetZ(const Vec4 f)
 {
 	const float32x2_t fhigh = vget_high_f32(f);
 	return vdup_lane_f32(fhigh, 0);
 }
 
-inline Vec4 V4SetW(const Vec4 v, const FloatV f)
+inline Vec4 Vec4_SetW(const Vec4 v, const Scaler f)
 {
-	ASSERT_ISVALIDFLOATV(f);
 	return V4Sel(BTTTF(), v, vcombine_f32(f, f));
 }
 
@@ -891,20 +602,9 @@ inline Vec4 Vec4_ClearW(const Vec4 v)
 	return V4Sel(BTTTF(), v, Vec4_Zero());
 }
 
-
 inline Vec4 Vec4_Abs(const Vec4 a)
 {
 	return vabsq_f32(a);
-}
-
-inline FloatV Vec4_SumElements(const Vec4 a)
-{
-	const Vec4 xy = V4UnpackXY(a, a); // x,x,y,y
-	const Vec4 zw = V4UnpackZW(a, a); // z,z,w,w
-	const Vec4 xz_yw = Vec4_Add(xy, zw); // x+z,x+z,y+w,y+w
-	const FloatV xz = Vec4_GetX(xz_yw);   // x+z
-	const FloatV yw = Vec4_GetZ(xz_yw);   // y+w
-	return FAdd(xz, yw);               // sum
 }
 
 template <int index>
@@ -924,7 +624,7 @@ inline Vec4 Vec4_SplatElement(Vec4 a)
 	}
 }
 
-inline FloatV Vec4_Dot(const Vec4 a, const Vec4 b)
+inline Scaler Vec4_Dot(const Vec4 a, const Vec4 b)
 {
 	const float32x4_t tmp = vmulq_f32(a, b);
 	const float32x2_t low = vget_low_f32(tmp);
@@ -935,7 +635,7 @@ inline FloatV Vec4_Dot(const Vec4 a, const Vec4 b)
 	return sumWZYX;
 }
 
-inline FloatV Vec4_Dot3(const Vec4 aa, const Vec4 bb)
+inline Scaler Vec4_Dot3(const Vec4 aa, const Vec4 bb)
 {
 	// PT: the V3Dot code relies on the fact that W=0 so we can't reuse it as-is, we need to clear W first.
 	// TODO: find a better implementation that does not need to clear W.
@@ -974,7 +674,7 @@ inline Vec4 Vec4_Cross(const Vec4 a, const Vec4 b)
 	return vcombine_f32(retLow, vreinterpret_f32_u32(retHigh));
 }
 
-inline FloatV Vec4_Length(const Vec4 a)
+inline Scaler Vec4_Length(const Vec4 a)
 {
 	const float32x4_t tmp = vmulq_f32(a, a);
 	const float32x2_t low = vget_low_f32(tmp);
@@ -982,10 +682,10 @@ inline FloatV Vec4_Length(const Vec4 a)
 
 	const float32x2_t sumTmp = vpadd_f32(low, high);       // = {0+z, x+y}
 	const float32x2_t sumWZYX = vpadd_f32(sumTmp, sumTmp); // = {x+y+z, x+y+z}
-	return FSqrt(sumWZYX);
+	return Scaler_Sqrt(sumWZYX);
 }
 
-inline FloatV Vec4_SquareLength(const Vec4 a)
+inline Scaler Vec4_SquareLength(const Vec4 a)
 {
 	return Vec4_Dot(a, a);
 }
@@ -999,7 +699,7 @@ inline Vec4 Vec4_Normalize(const Vec4 a)
 inline Vec4 Vec4_NormalizeFast(const Vec4 a)
 {
 	//PX_ASSERT(!FAllEq(V4LengthSq(a), FZero()));
-	return Vec4_Scale(a, FRsqrtFast(Vec4_Dot(a, a)));
+	return Vec4_Scale(a, Scaler_RSqrtFast(Vec4_Dot(a, a)));
 }
 
 inline BVec4 V4IsEqU32(const UVec4 a, const UVec4 b)
@@ -1017,7 +717,7 @@ inline BVec4 Vec4_Greater(const Vec4 a, const Vec4 b)
 	return vcgtq_f32(a, b);
 }
 
-inline BVec4 Vec4_GreaterOrEqual(const Vec4 a, const Vec4 b)
+inline BVec4 Vec4_GreaterEqual(const Vec4 a, const Vec4 b)
 {
 	return vcgeq_f32(a, b);
 }
@@ -1053,7 +753,7 @@ inline Vec4 V4Sin(const Vec4 a)
 	const Vec4 twoPi = Vec4_LoadA(g_PXTwoPi.f);
 	const Vec4 tmp = Vec4_Mul(a, recipTwoPi);
 	const Vec4 b = Vec4_Round(tmp);
-	const Vec4 V1 = Vec4_NegMulSub(twoPi, b, a);
+	const Vec4 V1 = Vec4_NegMSub(twoPi, b, a);
 
 	// sin(V) ~= V - V^3 / 3! + V^5 / 5! - V^7 / 7! + V^9 / 9! - V^11 / 11! + V^13 / 13! -
 	//           V^15 / 15! + V^17 / 17! - V^19 / 19! + V^21 / 21! - V^23 / 23! (for -PI <= V < PI)
@@ -1074,17 +774,17 @@ inline Vec4 V4Sin(const Vec4 a)
 	const Vec4 sinCoefficients1 = Vec4_LoadA(g_PXSinCoefficients1.f);
 	const Vec4 sinCoefficients2 = Vec4_LoadA(g_PXSinCoefficients2.f);
 
-	const FloatV S1 = Vec4_GetY(sinCoefficients0);
-	const FloatV S2 = Vec4_GetZ(sinCoefficients0);
-	const FloatV S3 = Vec4_GetW(sinCoefficients0);
-	const FloatV S4 = Vec4_GetX(sinCoefficients1);
-	const FloatV S5 = Vec4_GetY(sinCoefficients1);
-	const FloatV S6 = Vec4_GetZ(sinCoefficients1);
-	const FloatV S7 = Vec4_GetW(sinCoefficients1);
-	const FloatV S8 = Vec4_GetX(sinCoefficients2);
-	const FloatV S9 = Vec4_GetY(sinCoefficients2);
-	const FloatV S10 = Vec4_GetZ(sinCoefficients2);
-	const FloatV S11 = Vec4_GetW(sinCoefficients2);
+	const Scaler S1 = Vec4_GetY(sinCoefficients0);
+	const Scaler S2 = Vec4_GetZ(sinCoefficients0);
+	const Scaler S3 = Vec4_GetW(sinCoefficients0);
+	const Scaler S4 = Vec4_GetX(sinCoefficients1);
+	const Scaler S5 = Vec4_GetY(sinCoefficients1);
+	const Scaler S6 = Vec4_GetZ(sinCoefficients1);
+	const Scaler S7 = Vec4_GetW(sinCoefficients1);
+	const Scaler S8 = Vec4_GetX(sinCoefficients2);
+	const Scaler S9 = Vec4_GetY(sinCoefficients2);
+	const Scaler S10 = Vec4_GetZ(sinCoefficients2);
+	const Scaler S11 = Vec4_GetW(sinCoefficients2);
 
 	Vec4 Result;
 	Result = Vec4_ScaleAdd(V3, S1, V1);
@@ -1108,7 +808,7 @@ inline Vec4 V4Cos(const Vec4 a)
 	const Vec4 twoPi = Vec4_LoadA(g_PXTwoPi.f);
 	const Vec4 tmp = Vec4_Mul(a, recipTwoPi);
 	const Vec4 b = Vec4_Round(tmp);
-	const Vec4 V1 = Vec4_NegMulSub(twoPi, b, a);
+	const Vec4 V1 = Vec4_NegMSub(twoPi, b, a);
 
 	// cos(V) ~= 1 - V^2 / 2! + V^4 / 4! - V^6 / 6! + V^8 / 8! - V^10 / 10! + V^12 / 12! -
 	//           V^14 / 14! + V^16 / 16! - V^18 / 18! + V^20 / 20! - V^22 / 22! (for -PI <= V < PI)
@@ -1128,20 +828,20 @@ inline Vec4 V4Cos(const Vec4 a)
 	const Vec4 cosCoefficients1 = Vec4_LoadA(g_PXCosCoefficients1.f);
 	const Vec4 cosCoefficients2 = Vec4_LoadA(g_PXCosCoefficients2.f);
 
-	const FloatV C1 = Vec4_GetY(cosCoefficients0);
-	const FloatV C2 = Vec4_GetZ(cosCoefficients0);
-	const FloatV C3 = Vec4_GetW(cosCoefficients0);
-	const FloatV C4 = Vec4_GetX(cosCoefficients1);
-	const FloatV C5 = Vec4_GetY(cosCoefficients1);
-	const FloatV C6 = Vec4_GetZ(cosCoefficients1);
-	const FloatV C7 = Vec4_GetW(cosCoefficients1);
-	const FloatV C8 = Vec4_GetX(cosCoefficients2);
-	const FloatV C9 = Vec4_GetY(cosCoefficients2);
-	const FloatV C10 = Vec4_GetZ(cosCoefficients2);
-	const FloatV C11 = Vec4_GetW(cosCoefficients2);
+	const Scaler C1 = Vec4_GetY(cosCoefficients0);
+	const Scaler C2 = Vec4_GetZ(cosCoefficients0);
+	const Scaler C3 = Vec4_GetW(cosCoefficients0);
+	const Scaler C4 = Vec4_GetX(cosCoefficients1);
+	const Scaler C5 = Vec4_GetY(cosCoefficients1);
+	const Scaler C6 = Vec4_GetZ(cosCoefficients1);
+	const Scaler C7 = Vec4_GetW(cosCoefficients1);
+	const Scaler C8 = Vec4_GetX(cosCoefficients2);
+	const Scaler C9 = Vec4_GetY(cosCoefficients2);
+	const Scaler C10 = Vec4_GetZ(cosCoefficients2);
+	const Scaler C11 = Vec4_GetW(cosCoefficients2);
 
 	Vec4 Result;
-	Result = Vec4_ScaleAdd(V2, C1, V4One());
+	Result = Vec4_ScaleAdd(V2, C1, Vec4_One());
 	Result = Vec4_ScaleAdd(V4, C2, Result);
 	Result = Vec4_ScaleAdd(V6, C3, Result);
 	Result = Vec4_ScaleAdd(V8, C4, Result);
@@ -1214,11 +914,6 @@ inline UVec4 UVec4_ANDNOT(UVec4 a, UVec4 b)
 	return vandq_u32(a, vmvnq_u32(b));
 }
 
-inline IVec4 IVec4_Load(const int i)
-{
-	return vdupq_n_s32(i);
-}
-
 inline void UVec4_StoreA(const UVec4 uv, unsigned int* u)
 {
 	ASSERT_ISALIGNED16(u);
@@ -1240,24 +935,9 @@ inline Vec4 Vec4V_From_VecU32V(UVec4 a)
 	return vcvtq_f32_u32(a);
 }
 
-inline Vec4 Vec4V_From_VecI32V(IVec4 a)
-{
-	return vcvtq_f32_s32(a);
-}
-
-inline IVec4 VecI32V_From_Vec4V(Vec4 a)
-{
-	return vcvtq_s32_f32(a);
-}
-
 inline Vec4 Vec4V_ReinterpretFrom_VecU32V(UVec4 a)
 {
 	return vreinterpretq_f32_u32(a);
-}
-
-inline Vec4 Vec4V_ReinterpretFrom_VecI32V(IVec4 a)
-{
-	return vreinterpretq_f32_s32(a);
 }
 
 inline UVec4 VecU32V_ReinterpretFrom_Vec4V(Vec4 a)
@@ -1265,8 +945,4 @@ inline UVec4 VecU32V_ReinterpretFrom_Vec4V(Vec4 a)
 	return vreinterpretq_u32_f32(a);
 }
 
-inline IVec4 VecI32V_ReinterpretFrom_Vec4V(Vec4 a)
-{
-	return vreinterpretq_s32_f32(a);
-}
 

@@ -8,7 +8,7 @@ void TestSIMD()
 	Vec4 v1 = Vec4_LoadXYZW(1.0f, 2.0f, 3.0f, 4.0f);
 	Vec4 v2 = Vec4_Load(2.0f);
 	Vec4 v3 = Vec4_Mul(v1, v2);
-	Vector3d vv = V4ReadXYZ(v3);
+	Vector3d vv = Vec4_ReadXYZ(v3);
 	v2 = Vec4_Load_Vector3d(vv);
 	float* p = (float*)&v2;
 	EXPECT(p[0] == 2.0f && p[1] == 4.0f && p[2] == 6.0f)

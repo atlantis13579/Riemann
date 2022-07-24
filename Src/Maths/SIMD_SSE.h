@@ -7,243 +7,142 @@ __m128 m128_I2F(__m128i n);
 __m128i m128_F2I(__m128 n);
 alignas(16) const uint32_t gMaskXYZ[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0 };
 }
-Vec4 Vec4_ClearW(const Vec4 v);
-Vec4 V4Sel(const BVec4 c, const Vec4 a, const Vec4 b);
-UVec4 UVec4_ANDNOT(UVec4 a, UVec4 b);
 
 //////////////////////////////////
 // FLOATV
 //////////////////////////////////
-inline FloatV FLoad(const float f)
+inline Scaler Scaler_Load(const float f)
 {
 	return _mm_load1_ps(&f);
 }
 
-inline void FStore(const FloatV a, float* f)
+inline void Scaler_Store(const Scaler a, float* f)
 {
-	ASSERT_ISVALIDFLOATV(a);
 	_mm_store_ss(f, a);
 }
 
-inline FloatV FZero()
+inline Scaler Scaler_Zero()
 {
 	return _mm_setzero_ps();
 }
 
-inline FloatV FOne()
+inline Scaler Scaler_One()
 {
-	return FLoad(1.0f);
+	return Scaler_Load(1.0f);
 }
 
-inline FloatV FHalf()
+inline Scaler Scaler_Neg(const Scaler f)
 {
-	return FLoad(0.5f);
-}
-
-inline FloatV FEps()
-{
-	return FLoad(1e-7f);
-}
-
-inline FloatV IZero()
-{
-	const uint32_t zero = 0;
-	return _mm_load1_ps((float*)&zero);
-}
-
-inline FloatV IOne()
-{
-	const uint32_t one = 1;
-	return _mm_load1_ps((float*)&one);
-}
-
-inline FloatV ITwo()
-{
-	const uint32_t two = 2;
-	return _mm_load1_ps((float*)&two);
-}
-
-inline FloatV IThree()
-{
-	const uint32_t three = 3;
-	return _mm_load1_ps((float*)&three);
-}
-
-inline FloatV IFour()
-{
-	const uint32_t four = 4;
-	return _mm_load1_ps((float*)&four);
-}
-
-inline FloatV FNeg(const FloatV f)
-{
-	ASSERT_ISVALIDFLOATV(f);
 	return _mm_sub_ps(_mm_setzero_ps(), f);
 }
 
-inline FloatV FAdd(const FloatV a, const FloatV b)
+inline Scaler Scaler_Add(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_add_ps(a, b);
 }
 
-inline FloatV FSub(const FloatV a, const FloatV b)
+inline Scaler Scaler_Sub(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_sub_ps(a, b);
 }
 
-inline FloatV FMul(const FloatV a, const FloatV b)
+inline Scaler Scaler_Mul(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_mul_ps(a, b);
 }
 
-inline FloatV FDiv(const FloatV a, const FloatV b)
+inline Scaler Scaler_Div(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_div_ps(a, b);
 }
 
-inline FloatV FDivFast(const FloatV a, const FloatV b)
+inline Scaler Scaler_DivFast(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_mul_ps(a, _mm_rcp_ps(b));
 }
 
-inline FloatV FRecip(const FloatV a)
+inline Scaler Scaler_Recip(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	return _mm_div_ps(FOne(), a);
+	return _mm_div_ps(Scaler_One(), a);
 }
 
-inline FloatV FRecipFast(const FloatV a)
+inline Scaler Scaler_RecipFast(const Scaler a)
 {
 	return _mm_rcp_ps(a);
 }
 
-inline FloatV FRsqrt(const FloatV a)
+inline Scaler Scaler_RSqrt(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	return _mm_div_ps(FOne(), _mm_sqrt_ps(a));
+	return _mm_div_ps(Scaler_One(), _mm_sqrt_ps(a));
 }
 
-inline FloatV FSqrt(const FloatV a)
+inline Scaler Scaler_Sqrt(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
 	return _mm_sqrt_ps(a);
 }
 
-inline FloatV FRsqrtFast(const FloatV a)
+inline Scaler Scaler_RSqrtFast(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
 	return _mm_rsqrt_ps(a);
 }
 
-inline FloatV FScaleAdd(const FloatV a, const FloatV b, const FloatV c)
+inline Scaler Scaler_MAdd(const Scaler a, const Scaler b, const Scaler c)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
-	ASSERT_ISVALIDFLOATV(c);
-	return FAdd(FMul(a, b), c);
+	return Scaler_Add(Scaler_Mul(a, b), c);
 }
 
-inline FloatV FNegScaleSub(const FloatV a, const FloatV b, const FloatV c)
+inline Scaler Scaler_NegMSub(const Scaler a, const Scaler b, const Scaler c)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
-	ASSERT_ISVALIDFLOATV(c);
-	return FSub(c, FMul(a, b));
+	return Scaler_Sub(c, Scaler_Mul(a, b));
 }
 
-inline FloatV FAbs(const FloatV a)
+inline Scaler Scaler_Abs(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
 	alignas(16) const static uint32_t absMask[4] = { 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF };
 	return _mm_and_ps(a, _mm_load_ps((float*)absMask));
 }
 
-inline FloatV FSel(const BVec4 c, const FloatV a, const FloatV b)
+inline Scaler Scaler_Sel(const BVec4 c, const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(_mm_or_ps(_mm_andnot_ps(c, b), _mm_and_ps(c, a)));
 	return _mm_or_ps(_mm_andnot_ps(c, b), _mm_and_ps(c, a));
 }
 
-inline BVec4 FIsGrtr(const FloatV a, const FloatV b)
+inline BVec4 Scaler_Greater(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_cmpgt_ps(a, b);
 }
 
-inline BVec4 FIsGrtrOrEq(const FloatV a, const FloatV b)
+inline BVec4 Scaler_GreaterEqual(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_cmpge_ps(a, b);
 }
 
-inline BVec4 FIsEq(const FloatV a, const FloatV b)
+inline BVec4 Scaler_Equal(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_cmpeq_ps(a, b);
 }
 
-inline FloatV FMax(const FloatV a, const FloatV b)
+inline Scaler Scaler_Max(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_max_ps(a, b);
 }
 
-inline FloatV FMin(const FloatV a, const FloatV b)
+inline Scaler Scaler_Min(const Scaler a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_min_ps(a, b);
 }
 
-inline FloatV FClamp(const FloatV a, const FloatV minV, const FloatV maxV)
+inline Scaler Scaler_Clamp(const Scaler a, const Scaler minV, const Scaler maxV)
 {
-	ASSERT_ISVALIDFLOATV(minV);
-	ASSERT_ISVALIDFLOATV(maxV);
 	return _mm_max_ps(_mm_min_ps(a, maxV), minV);
 }
 
-inline uint32_t FAllGrtr(const FloatV a, const FloatV b)
+inline Scaler Scaler_Round(const Scaler a)
 {
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
-	return uint32_t(_mm_comigt_ss(a, b));
-}
-
-inline uint32_t FAllGrtrOrEq(const FloatV a, const FloatV b)
-{
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
-	return uint32_t(_mm_comige_ss(a, b));
-}
-
-inline uint32_t FAllEq(const FloatV a, const FloatV b)
-{
-	ASSERT_ISVALIDFLOATV(a);
-	ASSERT_ISVALIDFLOATV(b);
-	return uint32_t(_mm_comieq_ss(a, b));
-}
-
-inline FloatV FRound(const FloatV a)
-{
-	ASSERT_ISVALIDFLOATV(a);
 	// return _mm_round_ps(a, 0x0);
-	const FloatV half = FLoad(0.5f);
+	const Scaler half = Scaler_Load(0.5f);
 	const __m128 signBit = _mm_cvtepi32_ps(_mm_srli_epi32(_mm_cvtps_epi32(a), 31));
-	const FloatV aRound = FSub(FAdd(a, half), signBit);
+	const Scaler aRound = Scaler_Sub(Scaler_Add(a, half), signBit);
 	__m128i tmp = _mm_cvttps_epi32(aRound);
 	return _mm_cvtepi32_ps(tmp);
 }
@@ -251,23 +150,6 @@ inline FloatV FRound(const FloatV a)
 //////////////////////////////////
 // BoolV
 //////////////////////////////////
-
-inline BVec4 BLoad(const bool f)
-{
-	const uint32_t i = uint32_t(-(int)f);
-	return _mm_load1_ps((float*)&i);
-}
-
-inline void BStoreA(const BVec4 a, uint32_t* f)
-{
-	ASSERT_ISALIGNED16(f);
-	_mm_store_ps((float*)f, a);
-}
-
-inline void Store_From_BoolV(const BVec4 b, uint32_t* b2)
-{
-	_mm_store_ss((float*)b2, b);
-}
 
 inline BVec4 BFFFF()
 {
@@ -431,22 +313,6 @@ inline BVec4 BVec4_Any(const BVec4 a)
 	                 _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
 }
 
-inline BVec4 BAllTrue3(const BVec4 a)
-{
-	const BVec4 bTmp =
-	    _mm_and_ps(_mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 1, 0, 1)), _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 2, 2, 2)));
-	return _mm_and_ps(_mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(0, 0, 0, 0)),
-	                  _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
-}
-
-inline BVec4 BAnyTrue3(const BVec4 a)
-{
-	const BVec4 bTmp =
-	    _mm_or_ps(_mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 1, 0, 1)), _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 2, 2, 2)));
-	return _mm_or_ps(_mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(0, 0, 0, 0)),
-	                 _mm_shuffle_ps(bTmp, bTmp, _MM_SHUFFLE(1, 1, 1, 1)));
-}
-
 /////////////////////////////////////
 // Vec4V
 //////////////////////////////////
@@ -478,22 +344,22 @@ inline void Vec4_StoreU(const Vec4 a, float* f)
 	_mm_storeu_ps(f, a);
 }
 
-inline FloatV Vec4_GetX(const Vec4 f)
+inline Scaler Vec4_GetX(const Vec4 f)
 {
 	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(0, 0, 0, 0));
 }
 
-inline FloatV Vec4_GetY(const Vec4 f)
+inline Scaler Vec4_GetY(const Vec4 f)
 {
 	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(1, 1, 1, 1));
 }
 
-inline FloatV Vec4_GetZ(const Vec4 f)
+inline Scaler Vec4_GetZ(const Vec4 f)
 {
 	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(2, 2, 2, 2));
 }
 
-inline FloatV Vec4_GetW(const Vec4 f)
+inline Scaler Vec4_GetW(const Vec4 f)
 {
 	return _mm_shuffle_ps(f, f, _MM_SHUFFLE(3, 3, 3, 3));
 }
@@ -503,7 +369,7 @@ inline Vec4 Vec4_ClearW(const Vec4 v)
 	return _mm_and_ps(v, (IVec4&)internalWindowsSimd::gMaskXYZ);
 }
 
-inline Vec4 Vec4V_From_FloatV(FloatV f)
+inline Vec4 Vec4V_From_FloatV(Scaler f)
 {
 	return f;
 }
@@ -543,7 +409,7 @@ inline Vec4 Vec4_Zero()
 	return _mm_setzero_ps();
 }
 
-inline Vec4 V4One()
+inline Vec4 Vec4_One()
 {
 	return Vec4_Load(1.0f);
 }
@@ -563,7 +429,7 @@ inline Vec4 Vec4_Sub(const Vec4 a, const Vec4 b)
 	return _mm_sub_ps(a, b);
 }
 
-inline Vec4 Vec4_Scale(const Vec4 a, const FloatV b)
+inline Vec4 Vec4_Scale(const Vec4 a, const Scaler b)
 {
 	return _mm_mul_ps(a, b);
 }
@@ -573,9 +439,8 @@ inline Vec4 Vec4_Mul(const Vec4 a, const Vec4 b)
 	return _mm_mul_ps(a, b);
 }
 
-inline Vec4 Vec4_ScaleInv(const Vec4 a, const FloatV b)
+inline Vec4 Vec4_ScaleInv(const Vec4 a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_div_ps(a, b);
 }
 
@@ -584,9 +449,8 @@ inline Vec4 Vec4_Div(const Vec4 a, const Vec4 b)
 	return _mm_div_ps(a, b);
 }
 
-inline Vec4 Vec4_ScaleInvFast(const Vec4 a, const FloatV b)
+inline Vec4 Vec4_ScaleInvFast(const Vec4 a, const Scaler b)
 {
-	ASSERT_ISVALIDFLOATV(b);
 	return _mm_mul_ps(a, _mm_rcp_ps(b));
 }
 
@@ -597,7 +461,7 @@ inline Vec4 Vec4_DivFast(const Vec4 a, const Vec4 b)
 
 inline Vec4 Vec4_Recip(const Vec4 a)
 {
-	return _mm_div_ps(V4One(), a);
+	return _mm_div_ps(Vec4_One(), a);
 }
 
 inline Vec4 Vec4_RecipFast(const Vec4 a)
@@ -607,7 +471,7 @@ inline Vec4 Vec4_RecipFast(const Vec4 a)
 
 inline Vec4 Vec4_RSqrt(const Vec4 a)
 {
-	return _mm_div_ps(V4One(), _mm_sqrt_ps(a));
+	return _mm_div_ps(Vec4_One(), _mm_sqrt_ps(a));
 }
 
 inline Vec4 Vec4_RSqrtFast(const Vec4 a)
@@ -620,9 +484,8 @@ inline Vec4 Vec4_Sqrt(const Vec4 a)
 	return _mm_sqrt_ps(a);
 }
 
-inline Vec4 Vec4_ScaleAdd(const Vec4 a, const FloatV b, const Vec4 c)
+inline Vec4 Vec4_ScaleAdd(const Vec4 a, const Scaler b, const Vec4 c)
 {
-	ASSERT_ISVALIDFLOATV(b);
 	return Vec4_Add(Vec4_Scale(a, b), c);
 }
 
@@ -631,7 +494,7 @@ inline Vec4 Vec4_MAdd(const Vec4 a, const Vec4 b, const Vec4 c)
 	return Vec4_Add(Vec4_Mul(a, b), c);
 }
 
-inline Vec4 Vec4_NegMulSub(const Vec4 a, const Vec4 b, const Vec4 c)
+inline Vec4 Vec4_NegMSub(const Vec4 a, const Vec4 b, const Vec4 c)
 {
 	return Vec4_Sub(c, Vec4_Mul(a, b));
 }
@@ -651,7 +514,7 @@ inline Vec4 Vec4_Abs(const Vec4 a)
 	return Vec4_Max(a, Vec4_Neg(a));
 }
 
-inline FloatV Vec4_Dot(const Vec4 a, const Vec4 b)
+inline Scaler Vec4_Dot(const Vec4 a, const Vec4 b)
 {
 	const __m128 dot1 = _mm_mul_ps(a, b);                                     // x,y,z,w
 	const __m128 shuf1 = _mm_shuffle_ps(dot1, dot1, _MM_SHUFFLE(2, 1, 0, 3)); // w,x,y,z
@@ -660,7 +523,7 @@ inline FloatV Vec4_Dot(const Vec4 a, const Vec4 b)
 	return _mm_add_ps(_mm_add_ps(shuf2, shuf3), _mm_add_ps(dot1, shuf1));
 }
 
-inline FloatV Vec4_Dot3(const Vec4 a, const Vec4 b)
+inline Scaler Vec4_Dot3(const Vec4 a, const Vec4 b)
 {
 	const __m128 dot1 = _mm_mul_ps(a, b);                                     // aw*bw | az*bz | ay*by | ax*bx
 	const __m128 shuf1 = _mm_shuffle_ps(dot1, dot1, _MM_SHUFFLE(0, 0, 0, 0)); // ax*bx | ax*bx | ax*bx | ax*bx
@@ -678,25 +541,23 @@ inline Vec4 Vec4_Cross(const Vec4 a, const Vec4 b)
 	return _mm_sub_ps(_mm_mul_ps(l1, l2), _mm_mul_ps(r1, r2));
 }
 
-inline FloatV Vec4_Length(const Vec4 a)
+inline Scaler Vec4_Length(const Vec4 a)
 {
 	return _mm_sqrt_ps(Vec4_Dot(a, a));
 }
 
-inline FloatV Vec4_SquareLength(const Vec4 a)
+inline Scaler Vec4_SquareLength(const Vec4 a)
 {
 	return Vec4_Dot(a, a);
 }
 
 inline Vec4 Vec4_Normalize(const Vec4 a)
 {
-	ASSERT_ISFINITELENGTH(a);
 	return Vec4_ScaleInv(a, _mm_sqrt_ps(Vec4_Dot(a, a)));
 }
 
 inline Vec4 Vec4_NormalizeFast(const Vec4 a)
 {
-	ASSERT_ISFINITELENGTH(a);
 	return Vec4_ScaleInvFast(a, _mm_sqrt_ps(Vec4_Dot(a, a)));
 }
 
@@ -710,7 +571,7 @@ inline BVec4 Vec4_Greater(const Vec4 a, const Vec4 b)
 	return _mm_cmpgt_ps(a, b);
 }
 
-inline BVec4 Vec4_GreaterOrEqual(const Vec4 a, const Vec4 b)
+inline BVec4 Vec4_GreaterEqual(const Vec4 a, const Vec4 b)
 {
 	return _mm_cmpge_ps(a, b);
 }
@@ -760,12 +621,6 @@ inline Vec4 Vec4_Load_Vector3d(const Vector3d& f)
 }
 
 //////////////////////////////////
-// Vec3
-//////////////////////////////////
-
-
-
-//////////////////////////////////
 // IVec4 / UVec4
 //////////////////////////////////
 inline IVec4 UVec4_Load(const uint32_t i)
@@ -795,17 +650,7 @@ inline void UVec4_StoreA(const UVec4 uv, uint32_t* u)
 	_mm_store_ps((float*)u, uv);
 }
 
-inline IVec4 IVec4_Load(const int i)
-{
-	return _mm_load1_ps((float*)&i);
-}
-
 inline Vec4 Vec4V_ReinterpretFrom_VecU32V(UVec4 a)
-{
-	return Vec4(a);
-}
-
-inline Vec4 Vec4V_ReinterpretFrom_VecI32V(IVec4 a)
 {
 	return Vec4(a);
 }
@@ -813,11 +658,6 @@ inline Vec4 Vec4V_ReinterpretFrom_VecI32V(IVec4 a)
 inline UVec4 VecU32V_ReinterpretFrom_Vec4V(Vec4 a)
 {
 	return UVec4(a);
-}
-
-inline IVec4 VecI32V_ReinterpretFrom_Vec4V(Vec4 a)
-{
-	return IVec4(a);
 }
 
 typedef union

@@ -574,6 +574,6 @@ void TestCollision()
 	TestAABBTree();
 	TestGeometryQuery();
 	TestSAP();
-	// TestSAPInc();
+	TestSAPInc();
 	return;
 }

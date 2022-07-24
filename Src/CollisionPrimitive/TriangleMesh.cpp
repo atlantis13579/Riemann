@@ -267,11 +267,11 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 	// X[n+1] = X[n]*(2-original*X[n]), X[0] = V4RecipFast estimate
 	//rayInvD = rayInvD*(twos-rayD*rayInvD);
 	rayInvD = Vec4_RecipFast(rayInvD); // initial estimate, not accurate enough
-	rayInvD = Vec4_Mul(rayInvD, Vec4_NegMulSub(rayD, rayInvD, twos));
+	rayInvD = Vec4_Mul(rayInvD, Vec4_NegMSub(rayD, rayInvD, twos));
 
 	// P+tD=a; t=(a-P)/D
 	// t=(a - p.x)*1/d.x = a/d.x +(- p.x/d.x)
-	Vec4 rayPinvD = Vec4_NegMulSub(rayInvD, rayP, Vec4_Zero());
+	Vec4 rayPinvD = Vec4_NegMSub(rayInvD, rayP, Vec4_Zero());
 	Vec4 rayInvDsplatX = Vec4_SplatElement<0>(rayInvD);
 	Vec4 rayInvDsplatY = Vec4_SplatElement<1>(rayInvD);
 	Vec4 rayInvDsplatZ = Vec4_SplatElement<2>(rayInvD);

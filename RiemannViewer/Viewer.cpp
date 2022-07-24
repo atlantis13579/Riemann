@@ -84,15 +84,17 @@ void WorldViewer::CreateDominoDemo()
 	AddGeometry(m_Renderer, plane);
 
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 2.0f, -16.0f), Vector3d(2.0f, 1.0f, 5.0f));
+		Quaternion q;
+		q.FromRotationAxis(Vector3d::UnitX(), 0.4f);
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 3.0f, -18.0f), Vector3d(2.0f, 2.0f, 6.0f), q);
 		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
 		p->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
 		AddGeometry(m_Renderer, aabb);
 
 		rp.Static = false;
-		Geometry* sp = GeometryFactory::CreateSphere(Vector3d(0.0f, 4.0f, -20.0f), 1.0f);
+		Geometry* sp = GeometryFactory::CreateSphere(Vector3d(0.0f, 10.0f, -20.0f), 1.0f);
 		p = (RigidBodyDynamic*)m_World->CreateRigidBody(sp, rp); 
-		p->ApplyForce(400.0f * Vector3d::UnitZ());
+		//p->ApplyForce(400.0f * Vector3d::UnitZ());
 		p->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
 		AddGeometry(m_Renderer, sp);
 	}
