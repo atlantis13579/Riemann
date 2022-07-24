@@ -45,7 +45,7 @@ void Jacobian::Setup(const Contact* contact, RigidBody* bodyA, RigidBody* bodyB,
 
 	m_bias = 0.0f;
 
-	if (jacobinType == JacobianType::Normal)
+	if (m_Type == Jacobian::Normal)
 	{
 		float restitutionA = bodyA->GetRestitution();
 		float restitutionB = bodyB->GetRestitution();
@@ -73,7 +73,7 @@ void Jacobian::Setup(const Contact* contact, RigidBody* bodyA, RigidBody* bodyB,
 	return;
 }
 
-void Jacobian::Solve(float clampFactor)
+void Jacobian::Solve(float clampmin, float clampmax)
 {
 	float jv = DotProduct(m_jva, m_bodyA->GetLinearVelocity())
 			 + DotProduct(m_jwa, m_bodyA->GetAngularVelocity())
@@ -82,16 +82,7 @@ void Jacobian::Solve(float clampFactor)
 
 	float lambda = m_effectiveMass * (-jv - m_bias);
 	float oldTotalLambda = m_totalLambda;
-	if (jacobinType == JacobianType::Normal)
-	{
-		m_totalLambda = Clamp(m_totalLambda + lambda, 0.0f, FLT_MAX);
-	}
-	else
-	{
-		float friction = m_bodyA->GetFrictionDynamic() * m_bodyB->GetFrictionDynamic();
-		float maxFriction = friction * clampFactor;
-		m_totalLambda = Clamp(m_totalLambda + lambda, -maxFriction, maxFriction);
-	}
+	m_totalLambda = Clamp(m_totalLambda + lambda, clampmin, clampmax);
 	lambda = m_totalLambda - oldTotalLambda;
 	
 	Vector3d dpa = m_jva * lambda;
@@ -116,9 +107,12 @@ void ContactVelocityConstraintSolver::Setup(Contact* contact, RigidBody* bodyA, 
 
 void ContactVelocityConstraintSolver::Solve()
 {
-	m_jN.Solve(1.0f);
-	m_jT.Solve(m_jN.m_totalLambda);
-	m_jB.Solve(m_jN.m_totalLambda);
+	m_jN.Solve(0.0f, FLT_MAX);
+
+	float friction = m_jN.m_bodyA->GetFrictionDynamic() * m_jN.m_bodyB->GetFrictionDynamic();
+	float maxFriction = friction * m_jN.m_totalLambda;
+	m_jT.Solve(-maxFriction, maxFriction);
+	m_jB.Solve(-maxFriction, maxFriction);
 }
 
 void ContactVelocityConstraintSolver::Finalize()

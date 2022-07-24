@@ -8,21 +8,21 @@ struct Contact;
 class RigidBody;
 class ContactManifold;
 
-enum JacobianType
-{
-	Normal,
-	Tangent,
-	Binormal,
-};
-
 // Jacobian is a 1x12 Matrix which satisfy JV + b = 0
 // Where V is 12x1 generalized velocity [va, wa, vb, wb]^T
 // b is the bias term
 struct  Jacobian
 {
-	Jacobian(JacobianType jt)
+	enum
 	{
-		jacobinType = jt;
+		Normal,
+		Tangent,
+		Binormal,
+	};
+
+	Jacobian(int jt)
+	{
+		m_Type = jt;
 		m_jva = Vector3d::Zero();
 		m_jwa = Vector3d::Zero();
 		m_jvb = Vector3d::Zero();
@@ -31,9 +31,9 @@ struct  Jacobian
 	}
 
 	void	Setup(const Contact *contact, RigidBody* bodyA, RigidBody* bodyB, const Vector3d& dir, float dt);
-	void	Solve(float clampFactor);
+	void	Solve(float clampmin, float clampmax);
 
-	JacobianType jacobinType;
+	int m_Type;
 	Vector3d m_jva;
 	Vector3d m_jwa;
 	Vector3d m_jvb;
@@ -53,9 +53,9 @@ struct  Jacobian
 struct ContactVelocityConstraintSolver
 {
 	ContactVelocityConstraintSolver() :
-		m_jN(JacobianType::Normal),
-		m_jT(JacobianType::Tangent),
-		m_jB(JacobianType::Binormal)
+		m_jN(Jacobian::Normal),
+		m_jT(Jacobian::Tangent),
+		m_jB(Jacobian::Binormal)
 	{
 	}
 
@@ -63,7 +63,7 @@ struct ContactVelocityConstraintSolver
 	void Solve();
 	void Finalize();
 
-	Contact* m_contact;
+	Contact*	m_contact;
 	Jacobian	m_jN;
 	Jacobian	m_jT;
 	Jacobian	m_jB;
