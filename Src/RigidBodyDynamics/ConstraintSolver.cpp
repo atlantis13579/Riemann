@@ -36,6 +36,16 @@ public:
 	virtual void Solve();
 };
 
+class JointConstraint : public PositionConstraint
+{
+public:
+	JointConstraint() {}
+	virtual ~JointConstraint() {}
+	virtual void Setup();
+	virtual void Solve();
+};
+
+
 
 
 

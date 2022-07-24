@@ -523,6 +523,7 @@ public:
             cb.World = mesh.Trans->GetWorldMatrix();
             m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
             m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
+            m_pImmediateContext->PSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
 
             UINT stride = sizeof(Vertex1);
             UINT offset = 0;

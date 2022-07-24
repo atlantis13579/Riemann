@@ -480,6 +480,9 @@
     <ClInclude Include="..\..\Src\Collision\MinkowskiSum.h">
       <Filter>Collision</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\ConstraintSolver.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp">
@@ -684,6 +687,9 @@
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Contact.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\ConstraintSolver.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
   </ItemGroup>
