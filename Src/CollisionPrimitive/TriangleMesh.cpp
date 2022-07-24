@@ -147,13 +147,13 @@ bool TriangleMesh::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) con
 		Vec4 maxz4 = Vec4_LoadA(tn->maxz);
 
 		// AABB/AABB overlap test
-		BVec4 res0 = Vec4_Greater(nqMinx4, maxx4);
-		BVec4 res1 = Vec4_Greater(nqMiny4, maxy4);
-		BVec4 res2 = Vec4_Greater(nqMinz4, maxz4);
-		BVec4 res3 = Vec4_Greater(minx4, nqMaxx4);
-		BVec4 res4 = Vec4_Greater(miny4, nqMaxy4);
-		BVec4 res5 = Vec4_Greater(minz4, nqMaxz4);
-		BVec4 resx = BVec4_Or(BVec4_Or(BVec4_Or(res0, res1), BVec4_Or(res2, res3)), BVec4_Or(res4, res5));
+		BVec4 res0 = nqMinx4 > maxx4;
+		BVec4 res1 = nqMiny4 > maxy4;
+		BVec4 res2 = nqMinz4 > maxz4;
+		BVec4 res3 = minx4 > nqMaxx4;
+		BVec4 res4 = miny4 > nqMaxy4;
+		BVec4 res5 = minz4 > nqMaxz4;
+		BVec4 resx = ((res0 || res1) || (res2 || res3)) || ((res4 || res5));
 		alignas(16) uint32_t resa[SIMD_WIDTH];
 
 		UVec4 res4x = UVec4_Load_BVec4(resx);
@@ -267,7 +267,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 	// X[n+1] = X[n]*(2-original*X[n]), X[0] = V4RecipFast estimate
 	//rayInvD = rayInvD*(twos-rayD*rayInvD);
 	rayInvD = Vec4_RecipFast(rayInvD); // initial estimate, not accurate enough
-	rayInvD = Vec4_Mul(rayInvD, Vec4_NegMSub(rayD, rayInvD, twos));
+	rayInvD = rayInvD * Vec4_NegMSub(rayD, rayInvD, twos);
 
 	// P+tD=a; t=(a-P)/D
 	// t=(a - p.x)*1/d.x = a/d.x +(- p.x/d.x)
@@ -342,17 +342,20 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 
 		// 6i
 		// now compute tnear and tfar for each pair of planes for each box
-		Vec4 tminxa = Vec4_Min(tminxa0, tmaxxa0); Vec4 tmaxxa = Vec4_Max(tminxa0, tmaxxa0);
-		Vec4 tminya = Vec4_Min(tminya0, tmaxya0); Vec4 tmaxya = Vec4_Max(tminya0, tmaxya0);
-		Vec4 tminza = Vec4_Min(tminza0, tmaxza0); Vec4 tmaxza = Vec4_Max(tminza0, tmaxza0);
+		Vec4 tminxa = Vec4_Min(tminxa0, tmaxxa0);
+		Vec4 tmaxxa = Vec4_Max(tminxa0, tmaxxa0);
+		Vec4 tminya = Vec4_Min(tminya0, tmaxya0);
+		Vec4 tmaxya = Vec4_Max(tminya0, tmaxya0);
+		Vec4 tminza = Vec4_Min(tminza0, tmaxza0);
+		Vec4 tmaxza = Vec4_Max(tminza0, tmaxza0);
 
 		// 8i
 		Vec4 maxOfNeasa = Vec4_Max(Vec4_Max(tminxa, tminya), tminza);
 		Vec4 minOfFarsa = Vec4_Min(Vec4_Min(tmaxxa, tmaxya), tmaxza);
-		ignore4a = UVec4_OR(ignore4a, Vec4_Greater(epsFloat4, minOfFarsa));  // if tfar is negative, ignore since its a ray, not a line
+		ignore4a = UVec4_OR(ignore4a, (epsFloat4 > minOfFarsa));  // if tfar is negative, ignore since its a ray, not a line
 		// AP scaffold: update the build to eliminate 3 more instructions for ignore4a above
 		//VecU32V ignore4a = Vec4_Greater(epsFloat4, minOfFarsa);  // if tfar is negative, ignore since its a ray, not a line
-		ignore4a = UVec4_OR(ignore4a, Vec4_Greater(maxOfNeasa, maxT4));  // if tnear is over maxT, ignore this result
+		ignore4a = UVec4_OR(ignore4a, (maxOfNeasa > maxT4));  // if tnear is over maxT, ignore this result
 
 		// 2i
 		UVec4 resa4 = Vec4_Greater(maxOfNeasa, minOfFarsa); // if 1 => fail

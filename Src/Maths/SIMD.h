@@ -90,26 +90,96 @@ inline const Vector4d& Vec4_ReadXYZW(const Vec4& v)
 #include "SIMD_SSE.h"
 #endif
 
+inline Vec4 operator-(const Vec4 f)
+{
+	return Vec4_Neg(f);
+}
+
+inline Vec4 operator+(const Vec4 a, const Vec4 b)
+{
+	return Vec4_Add(a, b);
+}
+
+inline Vec4 operator-(const Vec4 a, const Vec4 b)
+{
+	return Vec4_Sub(a, b);
+}
+
+inline Vec4 operator*(const Vec4 a, const Vec4 b)
+{
+	return Vec4_Mul(a, b);
+}
+
+inline Vec4 operator/(const Vec4 a, const Vec4 b)
+{
+	return Vec4_Div(a, b);
+}
+
+inline BVec4 operator>(const Vec4 a, const Vec4 b)
+{
+	return Vec4_Greater(a, b);
+}
+
+inline BVec4 operator>=(const Vec4 a, const Vec4 b)
+{
+	return Vec4_GreaterEqual(a, b);
+}
+
+inline BVec4 operator==(const Vec4 a, const Vec4 b)
+{
+	return Vec4_Equal(a, b);
+}
+
+inline BVec4 operator&&(const BVec4 a, const BVec4 b)
+{
+	return BVec4_And(a, b);
+}
+
+inline BVec4 operator!(const BVec4 a)
+{
+	return BVec4_Not(a);
+}
+
+inline BVec4 operator||(const BVec4 a, const BVec4 b)
+{
+	return BVec4_Or(a, b);
+}
+
+inline UVec4 operator|(UVec4 a, UVec4 b)
+{
+	return UVec4_OR(a, b);
+}
+
+inline UVec4 operator^(UVec4 a, UVec4 b)
+{
+	return UVec4_XOR(a, b);
+}
+
+inline UVec4 operator&(UVec4 a, UVec4 b)
+{
+	return UVec4_AND(a, b);
+}
+
 inline Vec4 V4Sin(const Vec4 a)
 {
 	const Vec4 recipTwoPi = Vec4_Load(0.5f / 3.141592655f);
 	const Vec4 twoPi = Vec4_Load(3.141592655f * 2.0f);
-	const Vec4 tmp = Vec4_Mul(a, recipTwoPi);
+	const Vec4 tmp = a * recipTwoPi;
 	const Vec4 b = Vec4_Round(tmp);
 	const Vec4 V1 = Vec4_NegMSub(twoPi, b, a);
 
-	const Vec4 V2 = Vec4_Mul(V1, V1);
-	const Vec4 V3 = Vec4_Mul(V2, V1);
-	const Vec4 V5 = Vec4_Mul(V3, V2);
-	const Vec4 V7 = Vec4_Mul(V5, V2);
-	const Vec4 V9 = Vec4_Mul(V7, V2);
-	const Vec4 V11 = Vec4_Mul(V9, V2);
-	const Vec4 V13 = Vec4_Mul(V11, V2);
-	const Vec4 V15 = Vec4_Mul(V13, V2);
-	const Vec4 V17 = Vec4_Mul(V15, V2);
-	const Vec4 V19 = Vec4_Mul(V17, V2);
-	const Vec4 V21 = Vec4_Mul(V19, V2);
-	const Vec4 V23 = Vec4_Mul(V21, V2);
+	const Vec4 V2 = V1 * V1;
+	const Vec4 V3 = V2 * V1;
+	const Vec4 V5 = V3 * V2;
+	const Vec4 V7 = V5 * V2;
+	const Vec4 V9 = V7 * V2;
+	const Vec4 V11 = V9 * V2;
+	const Vec4 V13 = V11 * V2;
+	const Vec4 V15 = V13 * V2;
+	const Vec4 V17 = V15 * V2;
+	const Vec4 V19 = V17 * V2;
+	const Vec4 V21 = V19 * V2;
+	const Vec4 V23 = V21 * V2;
 
 	const Scaler S1 = Scaler_Load(-0.166666667f);
 	const Scaler S2 = Scaler_Load(8.333333333e-3f);
@@ -143,21 +213,21 @@ inline Vec4 V4Cos(const Vec4 a)
 {
 	const Vec4 recipTwoPi = Vec4_Load(0.5f / 3.141592655f);
 	const Vec4 twoPi = Vec4_Load(3.141592655f * 2.0f);
-	const Vec4 tmp = Vec4_Mul(a, recipTwoPi);
+	const Vec4 tmp = a * recipTwoPi;
 	const Vec4 b = Vec4_Round(tmp);
 	const Vec4 V1 = Vec4_NegMSub(twoPi, b, a);
 
-	const Vec4 V2 = Vec4_Mul(V1, V1);
-	const Vec4 V4 = Vec4_Mul(V2, V2);
-	const Vec4 V6 = Vec4_Mul(V4, V2);
-	const Vec4 V8 = Vec4_Mul(V4, V4);
-	const Vec4 V10 = Vec4_Mul(V6, V4);
-	const Vec4 V12 = Vec4_Mul(V6, V6);
-	const Vec4 V14 = Vec4_Mul(V8, V6);
-	const Vec4 V16 = Vec4_Mul(V8, V8);
-	const Vec4 V18 = Vec4_Mul(V10, V8);
-	const Vec4 V20 = Vec4_Mul(V10, V10);
-	const Vec4 V22 = Vec4_Mul(V12, V10);
+	const Vec4 V2 = V1 * V1;
+	const Vec4 V4 = V2 * V2;
+	const Vec4 V6 = V4 * V2;
+	const Vec4 V8 = V4 * V4;
+	const Vec4 V10 = V6 * V4;
+	const Vec4 V12 = V6 * V6;
+	const Vec4 V14 = V8 * V6;
+	const Vec4 V16 = V8 * V8;
+	const Vec4 V18 = V10 * V8;
+	const Vec4 V20 = V10 * V10;
+	const Vec4 V22 = V12 * V10;
 
 	const Scaler C1 = Scaler_Load(-0.5f);
 	const Scaler C2 = Scaler_Load(4.166666667e-2f);

@@ -7,7 +7,7 @@ void TestSIMD()
 	printf("Running TestSIMD\n");
 	Vec4 v1 = Vec4_LoadXYZW(1.0f, 2.0f, 3.0f, 4.0f);
 	Vec4 v2 = Vec4_Load(2.0f);
-	Vec4 v3 = Vec4_Mul(v1, v2);
+	Vec4 v3 = v1 * v2;
 	Vector3d vv = Vec4_ReadXYZ(v3);
 	v2 = Vec4_Load_Vector3d(vv);
 	float* p = (float*)&v2;
