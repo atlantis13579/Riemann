@@ -90,6 +90,8 @@ public:
 	void			AddLinearMomentum(const Vector3d& dp);
 	void			AddAngularVelocity(const Vector3d& dw);
 
+	void			SetDefaultPhysicsMaterial(int idx);
+
 	float			GetRestitution() const;
 	float			GetFrictionDynamic() const;
 	float			GetFrictionStatic() const;

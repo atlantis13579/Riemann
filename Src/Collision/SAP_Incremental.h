@@ -25,6 +25,7 @@ public:
 		uint64_t Hash = m_Proxy->CalculateBoundingVolumeHash();
 		if (Hash != m_Hash)
 		{
+			m_Hash = Hash;
 			m_IsDirty = true;
 		}
 

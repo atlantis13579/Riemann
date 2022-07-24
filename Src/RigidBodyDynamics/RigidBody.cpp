@@ -82,17 +82,22 @@ void				RigidBody::SetAngularVelocity(const Vector3d &w)
 
 void				RigidBody::AddLinearVelocity(const Vector3d& dv)
 {
-	P = InvMass > kMinimumInvMass ? (P + dv / InvMass) / InvMass : Vector3d::Zero();
+	P = InvMass > kMinimumInvMass ? P + dv / InvMass : Vector3d::Zero();
 }
 
 void				RigidBody::AddLinearMomentum(const Vector3d& dp)
 {
-	P = InvMass > kMinimumInvMass ? (P + dp) / InvMass : Vector3d::Zero();
+	P = InvMass > kMinimumInvMass ? P + dp : Vector3d::Zero();
 }
 
 void				RigidBody::AddAngularVelocity(const Vector3d& dw)
 {
 	L = InvInertia.Invertible() ? (L + InvInertia.Inverse() * dw) : Vector3d::Zero();
+}
+
+void				RigidBody::SetDefaultPhysicsMaterial(int idx)
+{
+	Material = (PhysicsMaterial*)&PhysicsMaterial::defaultMeterialTable[idx];
 }
 
 float				RigidBody::GetRestitution() const

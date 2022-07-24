@@ -5,6 +5,7 @@
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/Geometry/VoxelField.h"
+#include "../Src/RigidBodyDynamics/PhysicsMaterial.h"
 #include "../Src/RigidBodyDynamics/RigidBodySimulation.h"
 #include "../Src/RigidBodyDynamics/KinematicsTree.h"
 #include "../Renderer/Renderer.h"
@@ -18,7 +19,7 @@ WorldViewer::WorldViewer(Renderer* renderer)
 	m_Renderer = renderer;
 	CreateSimulator();
 	UpdateCamera();
-	CreateBoxesDemo();
+	CreateDemo();
 }
 
 WorldViewer::~WorldViewer()
@@ -26,16 +27,97 @@ WorldViewer::~WorldViewer()
 	delete m_World;
 }
 
-void WorldViewer::CreateSimulator()
+void WorldViewer::CreateDemo()
 {
-	RigidBodySimulationParam param;
-	param.Gravity = Vector3d(0, -9.8f, 0);
-	m_World = new RigidBodySimulation(param);
+	RigidBodyParam rp;
+	rp.Static = true;
+	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d(0.0f, 1.0f, 0.0f), 1.0f);
+	// Geometry* plane = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(100.0f, 2.1f, 100.0f));
+	m_World->CreateRigidBody(plane, rp);
+	AddGeometry(m_Renderer, plane);
+
+	rp.Static = false;
+	// rp.LinearDamping = 0.99f;
+	// rp.AngularDamping = 0.99f;
+	for (int i = 0; i < 1; ++i)
+	for (int j = 0; j < 1; ++j)
+	for (int k = 0; k < 1; ++k)
+	{
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(j * 2.1f, 5.0f + i * 6, k * 2.1f), Vector3d(1.0f, 1.0f, 1.0f));
+		// Geometry* aabb = GeometryFactory::CreateSphere(Vector3d(j * 3.0f, 10.0f + i * 3.0f, k * 3.0f), 1.0f);
+		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
+		// p->ApplyTorgue(Vector3d(0, -50, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
+		AddGeometry(m_Renderer, aabb);
+	}
 }
 
-void WorldViewer::UpdateSimulator(float dt)
+void WorldViewer::CreateStackBoxesDemo()
 {
-	m_World->Simulate(dt);
+	RigidBodyParam rp;
+	rp.Static = true;
+	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d::UnitY(), 1.0f);
+	m_World->CreateRigidBody(plane, rp);
+	AddGeometry(m_Renderer, plane);
+
+	rp.Static = false;
+	for (int i = 0; i < 10; ++i)
+	for (int j = 0; j < 10 - i; ++j)
+	{
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, i * 3.0f, -10.0f + (j + i * 0.5f) * 2.1f), Vector3d::One());
+		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
+		AddGeometry(m_Renderer, aabb);
+	}
+}
+
+void WorldViewer::CreateDominoDemo()
+{
+	RigidBodyParam rp;
+	rp.Static = true;
+	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, 0, 0), Vector3d::UnitY(), 1.0f);
+	m_World->CreateRigidBody(plane, rp);
+	AddGeometry(m_Renderer, plane);
+
+	{
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 2.0f, -16.0f), Vector3d(2.0f, 1.0f, 5.0f));
+		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
+		p->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
+		AddGeometry(m_Renderer, aabb);
+
+		rp.Static = false;
+		Geometry* sp = GeometryFactory::CreateSphere(Vector3d(0.0f, 4.0f, -20.0f), 1.0f);
+		p = (RigidBodyDynamic*)m_World->CreateRigidBody(sp, rp); 
+		p->ApplyForce(400.0f * Vector3d::UnitZ());
+		p->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
+		AddGeometry(m_Renderer, sp);
+	}
+
+	rp.InvMass = 3.f;
+	for (int i = 0; i < 10; ++i)
+	{
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 4.0f, -10.0f + i * 2.0f), Vector3d(2.0f, 3.0f, 0.25f));
+		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
+		if (i == 0)
+		{
+			// p->ApplyTorgue(Vector3d(0.0f, 3.0f, 0.0f), 20.0f * Vector3d::UnitZ());
+		}
+		AddGeometry(m_Renderer, aabb);
+	}
+
+	for (int i = 0; i < 7; ++i)
+	{
+		Quaternion q;
+		q.FromRotationAxis(Vector3d::UnitY(), i * 30 * (3.14f / 180));
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(2.0f * i, 4.0f, 10.0f + 1.5f * ( i < 4 ? i : 6 - i)), Vector3d(2.0f, 3.0f, 0.25f), q);
+		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
+		AddGeometry(m_Renderer, aabb);
+	}
+
+	for (int i = 0; i < 10; ++i)
+	{
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(12.0f, 4.0f, 10.0f - (i+1) * 2.0f), Vector3d(2.0f, 3.0f, 0.25f));
+		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
+		AddGeometry(m_Renderer, aabb);
+	}
 }
 
 void WorldViewer::LoadAnimation(const std::string& anim_name, const std::vector<std::string>& nodes)
@@ -133,28 +215,17 @@ void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3d &c
 	AddTriMesh(m_Renderer, draw_mesh, t, false);
 }
 
-void WorldViewer::CreateBoxesDemo()
-{
-	RigidBodyParam rp;
-	rp.Static = true;
-	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d(0.0f, 1.0f, 0.0f), 1.0f);
-	// Geometry* plane = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(100.0f, 2.1f, 100.0f));
-	m_World->CreateRigidBody(plane, rp);
-	AddGeometry(m_Renderer, plane);
 
-	rp.Static = false;
-	rp.LinearDamping = 0.99f;
-	rp.AngularDamping = 0.99f;
-	for (int i = 0; i < 2; ++i)
-	for (int j = 0; j < 5; ++j)
-	for (int k = 0; k < 5; ++k)
-	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(j * 2.1f, 5.0f + i * 2.1f, k * 2.1f), Vector3d(1.0f, 1.0f, 1.0f));
-		// Geometry* aabb = GeometryFactory::CreateSphere(Vector3d(j * 3.0f, 10.0f + i * 3.0f, k * 3.0f), 1.0f);
-		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
-		// p->ApplyTorgue(Vector3d(0, -50, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
-		AddGeometry(m_Renderer, aabb);
-	}
+void WorldViewer::CreateSimulator()
+{
+	RigidBodySimulationParam param;
+	param.Gravity = Vector3d(0, -9.8f, 0);
+	m_World = new RigidBodySimulation(param);
+}
+
+void WorldViewer::UpdateSimulator(float dt)
+{
+	m_World->Simulate(dt);
 }
 
 Vector3d WorldViewer::GetCameraPosition()

@@ -21,8 +21,10 @@ public:
 	void LoadFlatObj(const std::string& file_name);
 	void LoadVoxelField(const std::string& file_name, const Vector3d& c, std::vector<Vector3d>& water_list);
 
-	void CreateBoxesDemo();
-
+	void CreateDemo();
+	void CreateStackBoxesDemo();
+	void CreateDominoDemo();
+	
 	Vector3d GetCameraPosition();
 	void UpdateCamera();
 	void KeyboardMsg(char c);

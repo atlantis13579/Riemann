@@ -194,8 +194,9 @@ protected:
 
 					if (next->left())
 					{
-						assert(curr_id != next->id());
-						OverlapKey key = PackOverlapKey(curr->id(), next->id());
+						int next_id = next->id();
+						assert(curr_id != next_id);
+						OverlapKey key = PackOverlapKey(curr_id, next_id);
 						if (overlaps_count.find(key) == overlaps_count.end())
 						{
 							overlaps_count.emplace(key, filter);
@@ -207,7 +208,7 @@ protected:
 					}
 				}
 
-				active.erase(curr->id());
+				active.erase(curr_id);
 			}
 		}
 	}
