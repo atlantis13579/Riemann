@@ -47,7 +47,7 @@ public:
 
 private:
 	bool	MergeManifold();
-	bool	FindBest4();
+	bool	MergeManifold2();
 };
 
 class ContactManifoldManager
