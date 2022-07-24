@@ -1,40 +1,6 @@
 
 #pragma once
 
-BVec4 BVec4_Or(const BVec4 a, const BVec4 b);
-BVec4 BTTTT();
-BVec4 BFFFF();
-Vec4 Vec4_LoadA(const float* const f);
-Vec4 V4Sel(const BVec4 c, const Vec4 a, const Vec4 b);
-BVec4 Vec4_Equal(const Vec4 a, const Vec4 b);
-
-struct alignas(16) VECTORF32 { float f[4]; };
-
-static const VECTORF32 g_PXSinCoefficients0 = {{1.0f, -0.166666667f, 8.333333333e-3f, -1.984126984e-4f}};
-static const VECTORF32 g_PXSinCoefficients1 = {{2.755731922e-6f, -2.505210839e-8f, 1.605904384e-10f, -7.647163732e-13f}};
-static const VECTORF32 g_PXSinCoefficients2 = {{2.811457254e-15f, -8.220635247e-18f, 1.957294106e-20f, -3.868170171e-23f}};
-static const VECTORF32 g_PXCosCoefficients0 = {{1.0f, -0.5f, 4.166666667e-2f, -1.388888889e-3f}};
-static const VECTORF32 g_PXCosCoefficients1 = {{2.480158730e-5f, -2.755731922e-7f, 2.087675699e-9f, -1.147074560e-11f}};
-static const VECTORF32 g_PXCosCoefficients2 = {{4.779477332e-14f, -1.561920697e-16f, 4.110317623e-19f, -8.896791392e-22f}};
-static const VECTORF32 g_PXTanCoefficients0 = {{1.0f, 0.333333333f, 0.133333333f, 5.396825397e-2f}};
-static const VECTORF32 g_PXTanCoefficients1 = {{2.186948854e-2f, 8.863235530e-3f, 3.592128167e-3f, 1.455834485e-3f}};
-static const VECTORF32 g_PXTanCoefficients2 = {{5.900274264e-4f, 2.391290764e-4f, 9.691537707e-5f, 3.927832950e-5f}};
-static const VECTORF32 g_PXASinCoefficients0 = {{-0.05806367563904f, -0.41861972469416f, 0.22480114791621f, 2.17337241360606f}};
-static const VECTORF32 g_PXASinCoefficients1 = {{0.61657275907170f, 4.29696498283455f, -1.18942822255452f, -6.53784832094831f}};
-static const VECTORF32 g_PXASinCoefficients2 = {{-1.36926553863413f, -4.48179294237210f, 1.41810672941833f, 5.48179257935713f}};
-static const VECTORF32 g_PXATanCoefficients0 = {{1.0f, 0.333333334f, 0.2f, 0.142857143f}};
-static const VECTORF32 g_PXATanCoefficients1 = {{1.111111111e-1f, 9.090909091e-2f, 7.692307692e-2f, 6.666666667e-2f}};
-static const VECTORF32 g_PXATanCoefficients2 = {{5.882352941e-2f, 5.263157895e-2f, 4.761904762e-2f, 4.347826087e-2f}};
-static const VECTORF32 g_PXSinEstCoefficients = {{1.0f, -1.66521856991541e-1f, 8.199913018755e-3f, -1.61475937228e-4f}};
-static const VECTORF32 g_PXCosEstCoefficients = {{1.0f, -4.95348008918096e-1f, 3.878259962881e-2f, -9.24587976263e-4f}};
-static const VECTORF32 g_PXTanEstCoefficients = {{2.484f, -1.954923183e-1f, 2.467401101f, 1.0f / 3.141592655f}};
-static const VECTORF32 g_PXATanEstCoefficients = {{7.689891418951e-1f, 1.104742493348f, 8.661844266006e-1f, 3.141592655f * 0.5f}};
-static const VECTORF32 g_PXASinEstCoefficients = {{-1.36178272886711f, 2.37949493464538f, -8.08228565650486e-1f, 2.78440142746736e-1f}};
-static const VECTORF32 g_PXASinEstConstants = {{1.00000011921f, 3.141592655f * 0.5f, 0.0f, 0.0f}};
-static const VECTORF32 g_PXPiConstants0 = {{3.141592655f, 3.141592655f * 2.0f, 1.0f / 3.141592655f, 0.5f / 3.141592655f}};
-static const VECTORF32 g_PXReciprocalTwoPi = {{0.5f / 3.141592655f, 0.5f / 3.141592655f, 0.5f / 3.141592655f, 0.5f / 3.141592655f}};
-static const VECTORF32 g_PXTwoPi = {{3.141592655f * 2.0f, 3.141592655f * 2.0f, 3.141592655f * 2.0f, 3.141592655f * 2.0f}};
-
 #define VRECIPEQ recipq_newton<1>
 #define VRECIPE recip_newton<1>
 #define VRECIPSQRTEQ rsqrtq_newton<1>
@@ -222,7 +188,7 @@ inline Scaler Scaler_Round(const Scaler a)
 }
 
 //////////////////////////////////
-// BoolV
+// BVec4
 //////////////////////////////////
 
 inline BVec4 BFFFF()
@@ -392,7 +358,7 @@ inline BVec4 BVec4_Any(const BVec4 a)
 }
 
 //////////////////////////////////
-// Vec4V
+// Vec4
 //////////////////////////////////
 
 inline Vec4 Vec4_Load(const float f)
@@ -467,6 +433,16 @@ inline Vec4 Vec4_PermZWXY(const Vec4 a)
 	const float32x2_t low = vget_low_f32(a);
 	const float32x2_t high = vget_high_f32(a);
 	return vcombine_f32(high, low);
+}
+
+inline Vec4 Vec4_Sel(const BVec4 c, const Vec4 a, const Vec4 b)
+{
+	return vbslq_f32(c, a, b);
+}
+
+inline BVec4 Vec4_Equal(const Vec4 a, const Vec4 b)
+{
+	return vceqq_f32(a, b);
 }
 
 inline Vec4 Vec4_Zero()
@@ -550,7 +526,7 @@ inline Vec4 Vec4_RSqrtFast(const Vec4 a)
 
 inline Vec4 Vec4_Sqrt(const Vec4 a)
 {
-	return V4Sel(Vec4_Equal(a, Vec4_Zero()), a, Vec4_Mul(a, VRECIPSQRTQ(a)));
+	return Vec4_Sel(Vec4_Equal(a, Vec4_Zero()), a, Vec4_Mul(a, VRECIPSQRTQ(a)));
 }
 
 inline Vec4 Vec4_ScaleAdd(const Vec4 a, const Scaler b, const Vec4 c)
@@ -594,12 +570,12 @@ inline Scaler Vec4_GetZ(const Vec4 f)
 
 inline Vec4 Vec4_SetW(const Vec4 v, const Scaler f)
 {
-	return V4Sel(BTTTF(), v, vcombine_f32(f, f));
+	return Vec4_Sel(BTTTF(), v, vcombine_f32(f, f));
 }
 
 inline Vec4 Vec4_ClearW(const Vec4 v)
 {
-	return V4Sel(BTTTF(), v, Vec4_Zero());
+	return Vec4_Sel(BTTTF(), v, Vec4_Zero());
 }
 
 inline Vec4 Vec4_Abs(const Vec4 a)
@@ -702,16 +678,6 @@ inline Vec4 Vec4_NormalizeFast(const Vec4 a)
 	return Vec4_Scale(a, Scaler_RSqrtFast(Vec4_Dot(a, a)));
 }
 
-inline BVec4 V4IsEqU32(const UVec4 a, const UVec4 b)
-{
-	return vceqq_u32(a, b);
-}
-
-inline Vec4 V4Sel(const BVec4 c, const Vec4 a, const Vec4 b)
-{
-	return vbslq_f32(c, a, b);
-}
-
 inline BVec4 Vec4_Greater(const Vec4 a, const Vec4 b)
 {
 	return vcgtq_f32(a, b);
@@ -720,11 +686,6 @@ inline BVec4 Vec4_Greater(const Vec4 a, const Vec4 b)
 inline BVec4 Vec4_GreaterEqual(const Vec4 a, const Vec4 b)
 {
 	return vcgeq_f32(a, b);
-}
-
-inline BVec4 Vec4_Equal(const Vec4 a, const Vec4 b)
-{
-	return vceqq_f32(a, b);
 }
 
 inline Vec4 Vec4_Max(const Vec4 a, const Vec4 b)
@@ -747,115 +708,6 @@ inline Vec4 Vec4_Round(const Vec4 a)
 	return vcvtq_f32_s32(vcvtq_s32_f32(aRound));
 }
 
-inline Vec4 V4Sin(const Vec4 a)
-{
-	const Vec4 recipTwoPi = Vec4_LoadA(g_PXReciprocalTwoPi.f);
-	const Vec4 twoPi = Vec4_LoadA(g_PXTwoPi.f);
-	const Vec4 tmp = Vec4_Mul(a, recipTwoPi);
-	const Vec4 b = Vec4_Round(tmp);
-	const Vec4 V1 = Vec4_NegMSub(twoPi, b, a);
-
-	// sin(V) ~= V - V^3 / 3! + V^5 / 5! - V^7 / 7! + V^9 / 9! - V^11 / 11! + V^13 / 13! -
-	//           V^15 / 15! + V^17 / 17! - V^19 / 19! + V^21 / 21! - V^23 / 23! (for -PI <= V < PI)
-	const Vec4 V2 = Vec4_Mul(V1, V1);
-	const Vec4 V3 = Vec4_Mul(V2, V1);
-	const Vec4 V5 = Vec4_Mul(V3, V2);
-	const Vec4 V7 = Vec4_Mul(V5, V2);
-	const Vec4 V9 = Vec4_Mul(V7, V2);
-	const Vec4 V11 = Vec4_Mul(V9, V2);
-	const Vec4 V13 = Vec4_Mul(V11, V2);
-	const Vec4 V15 = Vec4_Mul(V13, V2);
-	const Vec4 V17 = Vec4_Mul(V15, V2);
-	const Vec4 V19 = Vec4_Mul(V17, V2);
-	const Vec4 V21 = Vec4_Mul(V19, V2);
-	const Vec4 V23 = Vec4_Mul(V21, V2);
-
-	const Vec4 sinCoefficients0 = Vec4_LoadA(g_PXSinCoefficients0.f);
-	const Vec4 sinCoefficients1 = Vec4_LoadA(g_PXSinCoefficients1.f);
-	const Vec4 sinCoefficients2 = Vec4_LoadA(g_PXSinCoefficients2.f);
-
-	const Scaler S1 = Vec4_GetY(sinCoefficients0);
-	const Scaler S2 = Vec4_GetZ(sinCoefficients0);
-	const Scaler S3 = Vec4_GetW(sinCoefficients0);
-	const Scaler S4 = Vec4_GetX(sinCoefficients1);
-	const Scaler S5 = Vec4_GetY(sinCoefficients1);
-	const Scaler S6 = Vec4_GetZ(sinCoefficients1);
-	const Scaler S7 = Vec4_GetW(sinCoefficients1);
-	const Scaler S8 = Vec4_GetX(sinCoefficients2);
-	const Scaler S9 = Vec4_GetY(sinCoefficients2);
-	const Scaler S10 = Vec4_GetZ(sinCoefficients2);
-	const Scaler S11 = Vec4_GetW(sinCoefficients2);
-
-	Vec4 Result;
-	Result = Vec4_ScaleAdd(V3, S1, V1);
-	Result = Vec4_ScaleAdd(V5, S2, Result);
-	Result = Vec4_ScaleAdd(V7, S3, Result);
-	Result = Vec4_ScaleAdd(V9, S4, Result);
-	Result = Vec4_ScaleAdd(V11, S5, Result);
-	Result = Vec4_ScaleAdd(V13, S6, Result);
-	Result = Vec4_ScaleAdd(V15, S7, Result);
-	Result = Vec4_ScaleAdd(V17, S8, Result);
-	Result = Vec4_ScaleAdd(V19, S9, Result);
-	Result = Vec4_ScaleAdd(V21, S10, Result);
-	Result = Vec4_ScaleAdd(V23, S11, Result);
-
-	return Result;
-}
-
-inline Vec4 V4Cos(const Vec4 a)
-{
-	const Vec4 recipTwoPi = Vec4_LoadA(g_PXReciprocalTwoPi.f);
-	const Vec4 twoPi = Vec4_LoadA(g_PXTwoPi.f);
-	const Vec4 tmp = Vec4_Mul(a, recipTwoPi);
-	const Vec4 b = Vec4_Round(tmp);
-	const Vec4 V1 = Vec4_NegMSub(twoPi, b, a);
-
-	// cos(V) ~= 1 - V^2 / 2! + V^4 / 4! - V^6 / 6! + V^8 / 8! - V^10 / 10! + V^12 / 12! -
-	//           V^14 / 14! + V^16 / 16! - V^18 / 18! + V^20 / 20! - V^22 / 22! (for -PI <= V < PI)
-	const Vec4 V2 = Vec4_Mul(V1, V1);
-	const Vec4 V4 = Vec4_Mul(V2, V2);
-	const Vec4 V6 = Vec4_Mul(V4, V2);
-	const Vec4 V8 = Vec4_Mul(V4, V4);
-	const Vec4 V10 = Vec4_Mul(V6, V4);
-	const Vec4 V12 = Vec4_Mul(V6, V6);
-	const Vec4 V14 = Vec4_Mul(V8, V6);
-	const Vec4 V16 = Vec4_Mul(V8, V8);
-	const Vec4 V18 = Vec4_Mul(V10, V8);
-	const Vec4 V20 = Vec4_Mul(V10, V10);
-	const Vec4 V22 = Vec4_Mul(V12, V10);
-
-	const Vec4 cosCoefficients0 = Vec4_LoadA(g_PXCosCoefficients0.f);
-	const Vec4 cosCoefficients1 = Vec4_LoadA(g_PXCosCoefficients1.f);
-	const Vec4 cosCoefficients2 = Vec4_LoadA(g_PXCosCoefficients2.f);
-
-	const Scaler C1 = Vec4_GetY(cosCoefficients0);
-	const Scaler C2 = Vec4_GetZ(cosCoefficients0);
-	const Scaler C3 = Vec4_GetW(cosCoefficients0);
-	const Scaler C4 = Vec4_GetX(cosCoefficients1);
-	const Scaler C5 = Vec4_GetY(cosCoefficients1);
-	const Scaler C6 = Vec4_GetZ(cosCoefficients1);
-	const Scaler C7 = Vec4_GetW(cosCoefficients1);
-	const Scaler C8 = Vec4_GetX(cosCoefficients2);
-	const Scaler C9 = Vec4_GetY(cosCoefficients2);
-	const Scaler C10 = Vec4_GetZ(cosCoefficients2);
-	const Scaler C11 = Vec4_GetW(cosCoefficients2);
-
-	Vec4 Result;
-	Result = Vec4_ScaleAdd(V2, C1, Vec4_One());
-	Result = Vec4_ScaleAdd(V4, C2, Result);
-	Result = Vec4_ScaleAdd(V6, C3, Result);
-	Result = Vec4_ScaleAdd(V8, C4, Result);
-	Result = Vec4_ScaleAdd(V10, C5, Result);
-	Result = Vec4_ScaleAdd(V12, C6, Result);
-	Result = Vec4_ScaleAdd(V14, C7, Result);
-	Result = Vec4_ScaleAdd(V16, C8, Result);
-	Result = Vec4_ScaleAdd(V18, C9, Result);
-	Result = Vec4_ScaleAdd(V20, C10, Result);
-	Result = Vec4_ScaleAdd(V22, C11, Result);
-
-	return Result;
-}
-
 inline void Vec4_Transpose(Vec4& col0, Vec4& col1, Vec4& col2, Vec4& col3)
 {
 	const float32x4x2_t v0v1 = vzipq_f32(col0, col2);
@@ -869,7 +721,7 @@ inline void Vec4_Transpose(Vec4& col0, Vec4& col1, Vec4& col2, Vec4& col3)
 }
 
 //////////////////////////////////
-// VecU32V / VecI32V
+// UVec4
 //////////////////////////////////
 
 inline UVec4 UVec4_LoadXYZW(unsigned int x, unsigned int y, unsigned int z, unsigned int w)

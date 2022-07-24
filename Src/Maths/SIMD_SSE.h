@@ -9,7 +9,7 @@ alignas(16) const uint32_t gMaskXYZ[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0
 }
 
 //////////////////////////////////
-// FLOATV
+// Scaler
 //////////////////////////////////
 inline Scaler Scaler_Load(const float f)
 {
@@ -148,7 +148,7 @@ inline Scaler Scaler_Round(const Scaler a)
 }
 
 //////////////////////////////////
-// BoolV
+// BVec4
 //////////////////////////////////
 
 inline BVec4 BFFFF()
@@ -314,7 +314,7 @@ inline BVec4 BVec4_Any(const BVec4 a)
 }
 
 /////////////////////////////////////
-// Vec4V
+// Vec4
 //////////////////////////////////
 
 inline Vec4 Vec4_Load(const float f)
@@ -561,7 +561,7 @@ inline Vec4 Vec4_NormalizeFast(const Vec4 a)
 	return Vec4_ScaleInvFast(a, _mm_sqrt_ps(Vec4_Dot(a, a)));
 }
 
-inline Vec4 V4Sel(const BVec4 c, const Vec4 a, const Vec4 b)
+inline Vec4 Vec4_Sel(const BVec4 c, const Vec4 a, const Vec4 b)
 {
 	return _mm_or_ps(_mm_andnot_ps(c, b), _mm_and_ps(c, a));
 }
@@ -621,7 +621,7 @@ inline Vec4 Vec4_Load_Vector3d(const Vector3d& f)
 }
 
 //////////////////////////////////
-// IVec4 / UVec4
+// UVec4
 //////////////////////////////////
 inline IVec4 UVec4_Load(const uint32_t i)
 {

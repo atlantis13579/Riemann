@@ -17,5 +17,9 @@ void TestSIMD()
 	Vec4 v11 = Vec4_SplatElement<1>(v1);
 	Vec4 v12 = Vec4_SplatElement<2>(v1);
 
+	float s[] = { 1, 2, 3, 4 };
+	const Vec4 v4 = Vec4_LoadU(s);
+	Scaler y = Vec4_GetY(v4);
+
 	return;
 }
