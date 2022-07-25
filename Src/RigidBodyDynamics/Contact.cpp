@@ -115,7 +115,7 @@ bool ContactManifold::MergeManifold()
 bool ContactManifold::MergeManifold2()
 {
 	assert(NumContactPointCount == MAX_CONTACT_POINTS + 1);
-	uint8_t mask = 0;
+
 	// find the contact with deepest penetration depth
 	Contact* c0 = nullptr;
 	float max_penetration = -FLT_MAX;
@@ -128,6 +128,7 @@ bool ContactManifold::MergeManifold2()
 			c0 = contact;
 		}
 	}
+
 	// find the contact farthest from c0
 	Contact* c1 = nullptr;
 	float max_sqr_dist = -FLT_MAX;
@@ -159,6 +160,7 @@ bool ContactManifold::MergeManifold2()
 			c2 = contact;
 		}
 	}
+
 	// find the contact farthest form triangle c0 c1 c2
 	Contact* c3 = nullptr;
 	float max_sqr_dist_tri = -FLT_MAX;
@@ -174,19 +176,23 @@ bool ContactManifold::MergeManifold2()
 			c3 = contact;
 		}
 	}
+
 	assert(c0 != c1 && c0 != c2 && c0 != c3);
 	assert(c1 != c2 && c1 != c3);
 	assert(c2 != c3);
+
 	for (int i = 0; i < NumContactPointCount; ++i)
 	{
 		Contact* contact = &ContactPoints[i];
 		if (contact == c0 || contact == c1 || contact == c2 || contact == c3)
 			continue;
+
 		NumContactPointCount--;
 		if (i == MAX_CONTACT_POINTS)
 		{
 			break;
 		}
+
 		memcpy(contact, &ContactPoints[MAX_CONTACT_POINTS], sizeof(Contact));
 		break;
 	}

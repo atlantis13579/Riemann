@@ -5,22 +5,9 @@
 #include <float.h>
 #include <stdint.h>
 
+#include "../Core/Base.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Box3d.h"
-
-inline void* AlignMemory(void *Memory, int Width)
-{
-#if INTPTR_MAX == INT32_MAX
-	return = (void*)((((uint32_t)(Memory + Width - 1) / Width) * Width);
-#else
-	return (void*)((((uint64_t)Memory + Width - 1) / Width) * Width);
-#endif
-}
-
-inline bool IsAlign(void* Memory, int Width)
-{
-	return (((intptr_t)Memory) & (Width - 1)) == 0;
-}
 
 #define SIMD_WIDTH		4
 

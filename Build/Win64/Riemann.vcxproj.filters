@@ -354,18 +354,6 @@
     <ClInclude Include="..\..\Src\Maths\SIMD.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\SIMD_AVX.h">
-      <Filter>Maths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\SIMD_Neon.h">
-      <Filter>Maths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\SIMD_Simulator.h">
-      <Filter>Maths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\SIMD_SSE.h">
-      <Filter>Maths</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Collision\Simplex.h">
       <Filter>Collision</Filter>
     </ClInclude>

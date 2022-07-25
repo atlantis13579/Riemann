@@ -157,10 +157,6 @@
     <ClInclude Include="..\..\Src\Maths\Float16.h" />
     <ClInclude Include="..\..\Src\Maths\Matrix2.h" />
     <ClInclude Include="..\..\Src\Maths\MatrixMxN.h" />
-    <ClInclude Include="..\..\Src\Maths\SIMD_AVX.h" />
-    <ClInclude Include="..\..\Src\Maths\SIMD_Neon.h" />
-    <ClInclude Include="..\..\Src\Maths\SIMD_Simulator.h" />
-    <ClInclude Include="..\..\Src\Maths\SIMD_SSE.h" />
     <ClInclude Include="..\..\Src\Maths\Tensor.h" />
     <ClInclude Include="..\..\Src\Maths\SIMD.h" />
     <ClInclude Include="..\..\Src\Maths\Vector2.h" />
