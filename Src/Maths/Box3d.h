@@ -226,7 +226,7 @@ public:
 		return GetIntersection(Box.Min, Box.Max, OutBox);
 	}
 
-	TAABB3<T>	Transform(const Matrix4d& M) const
+	TAABB3<T>	Transform(const Matrix4& M) const
 	{
 		TAABB3<T> Box;
 

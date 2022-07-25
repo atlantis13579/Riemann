@@ -4,11 +4,11 @@
 
 static const float kTorSegment = 1e-4f;
 
-void SolveClosestPointsOnSegment(const Vector3d& A0, const Vector3d& A1, const Vector3d& B0, const Vector3d& B1, Vector3d& P0, Vector3d& P1, bool bNearlyParallel)
+void SolveClosestPointsOnSegment(const Vector3& A0, const Vector3& A1, const Vector3& B0, const Vector3& B1, Vector3& P0, Vector3& P1, bool bNearlyParallel)
 {
-	Vector3d V0 = A1 - A0;
-	Vector3d V1 = B1 - B0;
-	Vector3d V2 = A0 - B0;
+	Vector3 V0 = A1 - A0;
+	Vector3 V1 = B1 - B0;
+	Vector3 V2 = A0 - B0;
 
 	const float dp00 = V0.Dot(V0);
 	const float dp01 = V0.Dot(V1);
@@ -93,15 +93,15 @@ void SolveClosestPointsOnSegment(const Vector3d& A0, const Vector3d& A1, const V
 	P1 = B0 + T2 * V1;
 }
 
-void Segment3d::ClosestPointsOnSegment(const Vector3d& A0, const Vector3d& A1, const Vector3d& B0, const Vector3d& B1, Vector3d& P0, Vector3d& P1)
+void Segment3d::ClosestPointsOnSegment(const Vector3& A0, const Vector3& A1, const Vector3& B0, const Vector3& B1, Vector3& P0, Vector3& P1)
 {
 	SolveClosestPointsOnSegment(A0, A1, B0, B1, P0, P1, false);
 }
 
-void Segment3d::ClosestPointsOnSegmentEx(const Vector3d& A0, const Vector3d& A1, const Vector3d& B0, const Vector3d& B1, Vector3d& P0, Vector3d& P1)
+void Segment3d::ClosestPointsOnSegmentEx(const Vector3& A0, const Vector3& A1, const Vector3& B0, const Vector3& B1, Vector3& P0, Vector3& P1)
 {
-	const Vector3d norm0 = (A1 - A0).SafeUnit();
-	const Vector3d norm1 = (B1 - B0).SafeUnit();
+	const Vector3 norm0 = (A1 - A0).SafeUnit();
+	const Vector3 norm1 = (B1 - B0).SafeUnit();
 
 	const bool bS1IsPoint = norm0.IsZero();
 	const bool bS2IsPoint = norm1.IsZero();
@@ -132,7 +132,7 @@ void Segment3d::ClosestPointsOnSegmentEx(const Vector3d& A0, const Vector3d& A1,
 	}
 }
 
-float Segment3d::SqrDistanceSegmentToSegment(const Vector3d& A0, const Vector3d& A1, const Vector3d& B0, const Vector3d& B1)
+float Segment3d::SqrDistanceSegmentToSegment(const Vector3& A0, const Vector3& A1, const Vector3& B0, const Vector3& B1)
 {
 	if ((B0 - B1).SquareLength() <= 1e-6f)
 	{
@@ -144,12 +144,12 @@ float Segment3d::SqrDistanceSegmentToSegment(const Vector3d& A0, const Vector3d&
 		return Segment3d::SqrDistancePointToSegment(A0, B0, B1);
 	}
 
-	Vector3d X, Y;
+	Vector3 X, Y;
 	ClosestPointsOnSegment(A0, A1, B0, B1, X, Y);
 	return (X - Y).SquareLength();
 }
 
-float Segment3d::DistanceToPlane(const Vector3d& Normal, float D) const
+float Segment3d::DistanceToPlane(const Vector3& Normal, float D) const
 {
 	Plane3d plane(Normal, D, Plane3d::VerySmallThickness());
 	return plane.DistanceToSegment(P0, P1);

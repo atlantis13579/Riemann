@@ -2,8 +2,8 @@
 
 #include "../Maths/Vector2.h"
 
-Vector2d ClosestPointInPolygon2D(const Vector2d& pt, const Vector2d* polygon, int nvert, bool* inside);
+Vector2 ClosestPointInPolygon2D(const Vector2& pt, const Vector2* polygon, int nvert, bool* inside);
 
-bool PointInPolygon2D(const Vector2d& pt, const Vector2d* polygon, int nvert);
+bool PointInPolygon2D(const Vector2& pt, const Vector2* polygon, int nvert);
 
-float PolygonArea2D(const Vector2d* polygon, int nvert);
+float PolygonArea2D(const Vector2* polygon, int nvert);

@@ -18,14 +18,14 @@ class Mesh
 public:
 	uint32_t				NumVertices;
 	uint32_t				NumTriangles;
-	std::vector<Vector3d>	mVertices;
+	std::vector<Vector3>	mVertices;
 	std::vector<uint16_t>	mIndices;
-	std::vector<Vector3d>	mNormals;
+	std::vector<Vector3>	mNormals;
 	Box3d					BoundingVolume;
 	uint8_t					Flags;
 	std::string				ResourceId;
 
-	Vector3d*				Vertices;
+	Vector3*				Vertices;
 	uint16_t*				Indices;
 
 	Mesh()
@@ -123,7 +123,7 @@ public:
 		return NumTriangles;
 	}
 
-	inline const Vector3d& GetVertex(int i, int j) const
+	inline const Vector3& GetVertex(int i, int j) const
 	{
 		if (Is16bitIndices())
 		{
@@ -136,7 +136,7 @@ public:
 		}
 	}
 
-	inline const Vector3d& operator ()(int i, int j) const
+	inline const Vector3& operator ()(int i, int j) const
 	{
 		return GetVertex(i, j);
 	}
@@ -162,12 +162,12 @@ public:
 		}
 		else
 		{
-			Vertices = (Vector3d*)Verts;
+			Vertices = (Vector3*)Verts;
 			Indices = (uint16_t*)Tris;
 		}
 	}
 
-	void AddVertex(const Vector3d& v)
+	void AddVertex(const Vector3& v)
 	{
 		if (NumVertices >= mVertices.size())
 		{
@@ -210,11 +210,11 @@ public:
 		NumTriangles++;
 	}
 
-	void AddAABB(const Vector3d& Bmin, const Vector3d& Bmax)
+	void AddAABB(const Vector3& Bmin, const Vector3& Bmax)
 	{
 		int k = NumVertices;
 
-		Vector3d v[8];
+		Vector3 v[8];
 		Box3d::GetVertices(Bmin, Bmax, v);
 		for (int i = 0; i < 8; ++i)
 		{
@@ -291,7 +291,7 @@ public:
 		}
 
 		char *p = buf, *pEnd = buf + bufSize;
-		Vector3d v;
+		Vector3 v;
 		while (p < pEnd)
 		{
 			char row[512];
@@ -385,7 +385,7 @@ public:
 		return true;
 	}
 
-	int FilterTriangle(std::function<bool(const Vector3d&, const Vector3d&, const Vector3d&)> filter_func)
+	int FilterTriangle(std::function<bool(const Vector3&, const Vector3&, const Vector3&)> filter_func)
 	{
 		int j = 0;
 		if (Is16bitIndices())
@@ -460,10 +460,10 @@ public:
 				i1 = Indices32[3 * i + 1];
 				i2 = Indices32[3 * i + 2];
 			}
-			const Vector3d& v0 = Vertices[i0];
-			const Vector3d& v1 = Vertices[i1];
-			const Vector3d& v2 = Vertices[i2];
-			Vector3d Nor = (v1 - v0).Cross(v2 - v0);
+			const Vector3& v0 = Vertices[i0];
+			const Vector3& v1 = Vertices[i1];
+			const Vector3& v2 = Vertices[i2];
+			Vector3 Nor = (v1 - v0).Cross(v2 - v0);
 			mNormals[i0] += Nor.Unit(); Count[i0]++;
 			mNormals[i1] += Nor.Unit(); Count[i1]++;
 			mNormals[i2] += Nor.Unit(); Count[i2]++;

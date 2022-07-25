@@ -39,17 +39,17 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 	int* geoms = Params.pIndicesBase + this->IndexOffset;
 	int nPrims = NumGeometries;
 
-	Vector3d meansV = Params.pCenterBuffer[geoms[0]];
+	Vector3 meansV = Params.pCenterBuffer[geoms[0]];
 	const Box3d* pAABB = Params.pAABBArray;
 
-	Vector3d minV = pAABB[geoms[0]].Min;
-	Vector3d maxV = pAABB[geoms[0]].Max;
+	Vector3 minV = pAABB[geoms[0]].Min;
+	Vector3 maxV = pAABB[geoms[0]].Max;
 
 	for (int i = 1; i < nPrims; ++i)
 	{
 		int index = geoms[i];
-		const Vector3d& curMinV = pAABB[index].Min;
-		const Vector3d& curMaxV = pAABB[index].Max;
+		const Vector3& curMinV = pAABB[index].Min;
+		const Vector3& curMaxV = pAABB[index].Max;
 
 		meansV += Params.pCenterBuffer[index];
 		
@@ -64,11 +64,11 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 
 	meansV *= 1.0f / float(nPrims);
 
-	Vector3d varsV = Vector3d::Zero();
+	Vector3 varsV = Vector3::Zero();
 	for (int i = 0; i < nPrims; ++i)
 	{
 		int index = geoms[i];
-		Vector3d centerV = Params.pCenterBuffer[index];
+		Vector3 centerV = Params.pCenterBuffer[index];
 		centerV = centerV - meansV;
 		centerV = centerV * centerV;
 		varsV = varsV + centerV;

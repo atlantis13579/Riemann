@@ -12,18 +12,18 @@
 void TestBasicMath()
 {
 	printf("Running TestBasicMath\n");
-	Matrix3d mat1, mat2;
+	Matrix3 mat1, mat2;
 	Quaternion q1, q2;
-	Vector3d v1, v2, s1, s2;
+	Vector3 v1, v2, s1, s2;
 
-	mat1.FromAxisAngle(Vector3d::UnitX(), ToRadian(45.0f));
-	q1.FromRotationAxis(Vector3d::UnitX(), ToRadian(45.0f));
+	mat1.FromAxisAngle(Vector3::UnitX(), ToRadian(45.0f));
+	q1.FromRotationAxis(Vector3::UnitX(), ToRadian(45.0f));
 	mat2 = q1.ToRotationMatrix();
 
 	float dist = (mat1 - mat2).L1Norm();
 	EXPECT1(dist < 0.0001f, dist);
 
-	v1 = Vector3d(1.0f, 2.0f, 3.0f);
+	v1 = Vector3(1.0f, 2.0f, 3.0f);
 
 	mat1.FromAxisAngle(v1.Unit(), ToRadian(30.0f));
 	q1.FromRotationMatrix(mat1);
@@ -40,7 +40,7 @@ void TestBasicMath()
 	EXPECT1((v1 - v2).SquareLength() < 0.000001f, (v1 - v2).SquareLength());
 	EXPECT1((q1 - q2).SquareLength() < 0.000001f, (q1 - q2).SquareLength());
 
-	s1 = Vector3d(2.0f, 1.0f, 3.0f);
+	s1 = Vector3(2.0f, 1.0f, 3.0f);
 	trans.SetScale(s1);
 	
 	Transform::WorldMatrixToTRS(trans.GetWorldMatrix(), v2, q2, s2);
@@ -49,7 +49,7 @@ void TestBasicMath()
 	EXPECT((q1 - q2).SquareLength() < 0.0001f);
 	EXPECT((s1 - s2).SquareLength() < 0.0001f);
 
-	trans.SetScale(Vector3d::One());
+	trans.SetScale(Vector3::One());
 	Transform::WorldMatrixToTRS(trans.GetWorldMatrix() * trans.GetWorldMatrix(), v2, q2, s2);
 
 	EXPECT((v1 + v1 - v2).SquareLength() < 0.00001f);
@@ -75,15 +75,15 @@ void TestFloat16()
 	// float	x1 = Float16::FromFloat32(1.0f).ToFloat();
 	// float	x2 = Float16::FromFloat32(1.111111f).ToFloat();
 	printf("Running TestFloat16\n");
-	std::vector<Vector3d> cc;
+	std::vector<Vector3> cc;
 	std::vector<float> dd, d2;
 	for (int i = 0; i <= 20; ++i)
 	{
 		float t = 1.0f * i / 20;
-		Vector3d p0 = Vector3d(0, 0, 0);
-		Vector3d p1 = Vector3d(1, 0, 1);
-		Vector3d t1 = CubicHermite::Calculate(p0, p1, Vector3d(1, 0, 1).Unit(), Vector3d(1, 0, 1).Unit(), t);
-		Vector3d t2 = LinearInterp(p0, p1, t);
+		Vector3 p0 = Vector3(0, 0, 0);
+		Vector3 p1 = Vector3(1, 0, 1);
+		Vector3 t1 = CubicHermite::Calculate(p0, p1, Vector3(1, 0, 1).Unit(), Vector3(1, 0, 1).Unit(), t);
+		Vector3 t2 = LinearInterp(p0, p1, t);
 		cc.push_back(t1);
 		if (i != 0)
 		{

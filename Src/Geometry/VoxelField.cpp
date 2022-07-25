@@ -55,9 +55,9 @@ bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, Mesh* _m
 	const Mesh &mesh = *_mesh;
 	for (uint32_t i = 0; i < mesh.GetNumTriangles(); ++i)
 	{
-		Vector3d v0 = mesh(i, 0);
-		Vector3d v1 = mesh(i, 1);
-		Vector3d v2 = mesh(i, 2);
+		Vector3 v0 = mesh(i, 0);
+		Vector3 v1 = mesh(i, 1);
+		Vector3 v2 = mesh(i, 2);
 		if (!VoxelizationTri(v0, v1, v2, info))
 		{
 			return false;
@@ -113,7 +113,7 @@ Voxel* VoxelField::GetVoxelByY(Voxel* Base, float y, float Thr)
 	return nullptr;
 }
 
-Voxel*	VoxelField::GetVoxel(const Vector3d& pos)
+Voxel*	VoxelField::GetVoxel(const Vector3& pos)
 {
 	int idx = WorldSpaceToVoxelIndex(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
@@ -143,7 +143,7 @@ std::string VoxelField::DebugString(int idx) const
 }
 
 
-int		VoxelField::WorldSpaceToVoxelIndex(const Vector3d& pos) const
+int		VoxelField::WorldSpaceToVoxelIndex(const Vector3& pos) const
 {
 	const int x = vx_clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
 	const int z = vx_clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
@@ -161,7 +161,7 @@ float	VoxelField::VoxelSpaceToWorldSpaceY(uint16_t y) const
 	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
 }
 
-Box3d	VoxelField::GetVoxelBox(const Vector3d& pos) const
+Box3d	VoxelField::GetVoxelBox(const Vector3& pos) const
 {
 	int idx = WorldSpaceToVoxelIndex(pos);
 	int z = idx / m_SizeX;
@@ -181,13 +181,13 @@ Box3d	VoxelField::GetVoxelBox(int x, int y, int z) const
 	box.Min.x = m_BV.Min.x + m_VoxelSize * x;
 	box.Min.y = m_BV.Min.y + m_VoxelHeight * y;
 	box.Min.z = m_BV.Min.z + m_VoxelSize * z;
-	box.Max = box.Min + Vector3d(m_VoxelSize, m_VoxelHeight, m_VoxelSize);
+	box.Max = box.Min + Vector3(m_VoxelSize, m_VoxelHeight, m_VoxelSize);
 	return box;
 }
 
 
 
-uint32_t	VoxelField::GetVoxelData(const Vector3d& pos)
+uint32_t	VoxelField::GetVoxelData(const Vector3& pos)
 {
 	int idx = WorldSpaceToVoxelIndex(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
@@ -297,7 +297,7 @@ static int CountVoxel(const Voxel* v)
 }
 
 
-static void InterpolateTri(const Vector3d* In, int nn, Vector3d* out1, int* nout1, Vector3d* out2, int* nout2, float x, int axis)
+static void InterpolateTri(const Vector3* In, int nn, Vector3* out1, int* nout1, Vector3* out2, int* nout2, float x, int axis)
 {
 	float d[12];
 	for (int i = 0; i < nn; ++i)
@@ -345,7 +345,7 @@ static void InterpolateTri(const Vector3d* In, int nn, Vector3d* out1, int* nout
 	*nout2 = n;
 }
 
-bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info)
+bool VoxelField::VoxelizationTri(const Vector3& v0, const Vector3& v1, const Vector3& v2, const VoxelizationInfo& info)
 {
 	// const float dy = m_BV.Max.y - m_BV.Min.y;
 	const float ics = 1.0f / m_VoxelSize;
@@ -361,8 +361,8 @@ bool VoxelField::VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const V
 	const int z0 = vx_clamp((int)((tbox.Min.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
 	const int z1 = vx_clamp((int)((tbox.Max.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
 
-	Vector3d buf[7 * 4];
-	Vector3d *In = buf, *inrow = buf + 7, *p1 = buf + 7 * 2, *p2 = buf + 7 * 3;
+	Vector3 buf[7 * 4];
+	Vector3 *In = buf, *inrow = buf + 7, *p1 = buf + 7 * 2, *p2 = buf + 7 * 3;
 
 	In[0] = v0;
 	In[1] = v1;
@@ -616,7 +616,7 @@ static int vx_neighbour4x_safe(int idx, int nx, int nz, int dir) {
 	return -1;
 }
 
-uint64_t	VoxelField::Separate(const Vector3d& pos, uint32_t data, float IntersectThr)
+uint64_t	VoxelField::Separate(const Vector3& pos, uint32_t data, float IntersectThr)
 {
 	int idx = WorldSpaceToVoxelIndex(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)
@@ -766,7 +766,7 @@ Mesh* VoxelField::CreateDebugMesh(int x1, int x2, int z1, int z2) const
 
 	for (int i = z1; i <= z2; ++i)
 	{
-		Vector3d Bmin, Bmax;
+		Vector3 Bmin, Bmax;
 		Bmin.z = m_BV.Min.z + m_VoxelSize * i;
 		Bmax.z = m_BV.Min.z + m_VoxelSize * (i + 1);
 

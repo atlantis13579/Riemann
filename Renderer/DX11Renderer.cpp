@@ -18,10 +18,10 @@ using namespace DirectX;
 
 struct ConstantBuffer
 {
-    Matrix4d World;
-    Matrix4d View;
-    Matrix4d Projection;
-    Vector4d EyePos;
+    Matrix4 World;
+    Matrix4 View;
+    Matrix4 Projection;
+    Vector4 EyePos;
 };
 
 struct DX11StaticMesh
@@ -315,7 +315,7 @@ public:
             return hr;
 
         // Initialize the view matrix
-        SetCameraLookAt(Vector3d(0.0f, 0.0f, 5.0f), Vector3d(0.0f, 0.0f, 0.0f));
+        SetCameraLookAt(Vector3(0.0f, 0.0f, 5.0f), Vector3(0.0f, 0.0f, 0.0f));
 
         // Initialize the projection matrix
         m_Projection = Transform::BuildPerspectiveMatrix_LHCoordinateSystem(XM_PIDIV2, width / (FLOAT)height, 0.001f, 100000.0f);
@@ -353,9 +353,9 @@ public:
         m_pImmediateContext->OMSetDepthStencilState(pDepthStencilState, 0);
     }
 
-    virtual void SetCameraLookAt(Vector3d Eye, Vector3d At) override
+    virtual void SetCameraLookAt(Vector3 Eye, Vector3 At) override
     {
-        Vector3d Up = Vector3d(0.0f, 1.0f, 0.0f);
+        Vector3 Up = Vector3(0.0f, 1.0f, 0.0f);
         m_Eye = Eye;
         m_View = Transform::BuildViewMatrix_LHCoordinateSystem(Eye, At, Up);
     }
@@ -514,7 +514,7 @@ public:
         ConstantBuffer cb;
         cb.View = m_View;
         cb.Projection = m_Projection;
-        cb.EyePos = Vector4d(m_Eye.x, m_Eye.y, m_Eye.z, 0);
+        cb.EyePos = Vector4(m_Eye.x, m_Eye.y, m_Eye.z, 0);
 
         for (size_t i = 0; i < m_AllMesh.size(); ++i)
         {
@@ -552,9 +552,9 @@ private:
     ID3D11InputLayout* m_pVertexLayout = nullptr;
     ID3D11DepthStencilView* m_pDepthBuffer = nullptr;
 
-    Matrix4d                m_View;
-    Matrix4d                m_Projection;
-    Vector3d                m_Eye;
+    Matrix4                m_View;
+    Matrix4                m_Projection;
+    Vector3                m_Eye;
 
     std::vector<DX11StaticMesh> m_AllMesh;
 };

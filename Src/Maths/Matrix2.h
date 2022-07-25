@@ -2,40 +2,40 @@
 
 #include "Vector2.h"
 
-class Matrix2d
+class Matrix2
 {
 public:
 	float mat[2][2];
 
-	Matrix2d()
+	Matrix2()
 	{
 
 	}
 
-	Matrix2d(float mm[2][2])
+	Matrix2(float mm[2][2])
 	{
 		memcpy(mat, mm, sizeof(mat));
 	}
 
-	Matrix2d(const Matrix2d& mm)
+	Matrix2(const Matrix2& mm)
 	{
 		memcpy(mat, mm.mat, sizeof(mat));
 	}
 
-	Matrix2d(float a00, float a01,
+	Matrix2(float a00, float a01,
 			float a10, float a11)
 	{
 		mat[0][0] = a00; mat[0][1] = a01;
 		mat[1][0] = a10; mat[1][1] = a11;
 	}
 
-	Matrix2d(float a00, float a11)
+	Matrix2(float a00, float a11)
 	{
 		mat[0][0] = a00; mat[0][1] = 0.0f;
 		mat[1][0] = 0.0f; mat[1][1] = a11;
 	}
 
-	Matrix2d(const Vector2d& c0, const Vector2d& c1)
+	Matrix2(const Vector2& c0, const Vector2& c1)
 	{
 		mat[0][0] = c0.x; mat[0][1] = c1.x;
 		mat[1][0] = c0.y; mat[1][1] = c1.y;
@@ -60,44 +60,44 @@ public:
 		mat[1][1] = mat[0][0];
 	}
 
-	Matrix2d	operator*(const Matrix2d& mm) const
+	Matrix2	operator*(const Matrix2& mm) const
 	{
-		return Matrix2d(
+		return Matrix2(
 			mat[0][0] * mm.mat[0][0] + mat[0][1] * mm.mat[1][0],
 			mat[0][0] * mm.mat[0][1] + mat[0][1] * mm.mat[1][1],
 			mat[1][0] * mm.mat[0][0] + mat[1][1] * mm.mat[1][0],
 			mat[1][0] * mm.mat[0][1] + mat[1][1] * mm.mat[1][1]);
 	}
 
-	Matrix2d	operator*(float k) const
+	Matrix2	operator*(float k) const
 	{
-		return Matrix2d(
+		return Matrix2(
 			mat[0][0] * k, mat[0][1] * k,
 			mat[1][0] * k, mat[1][1] * k);
 	}
 
-	Vector2d	operator*(const Vector2d& vec) const
+	Vector2	operator*(const Vector2& vec) const
 	{
-		return Vector2d(
+		return Vector2(
 			mat[0][0] * vec.x + mat[0][1] * vec.y,
 			mat[1][0] * vec.x + mat[1][1] * vec.y);
 	}
 
-	Matrix2d	operator+(const Matrix2d& mm) const
+	Matrix2	operator+(const Matrix2& mm) const
 	{
-		return Matrix2d(
+		return Matrix2(
 			mat[0][0] + mm.mat[0][0], mat[0][1] + mm.mat[0][1],
 			mat[1][0] + mm.mat[1][0], mat[1][1] + mm.mat[1][1]);
 	}
 
-	Matrix2d	operator-(const Matrix2d& mm) const
+	Matrix2	operator-(const Matrix2& mm) const
 	{
-		return Matrix2d(
+		return Matrix2(
 			mat[0][0] - mm.mat[0][0], mat[0][1] - mm.mat[0][1],
 			mat[1][0] - mm.mat[1][0], mat[1][1] - mm.mat[1][1]);
 	}
 
-	inline		Matrix2d& operator=(const Matrix2d& rhs)
+	inline		Matrix2& operator=(const Matrix2& rhs)
 	{
 		memcpy(mat, rhs.mat, sizeof(mat));
 		return *this;
@@ -113,33 +113,33 @@ public:
 		return mat[i][j];
 	}
 
-	inline const Vector2d& operator[](int i) const
+	inline const Vector2& operator[](int i) const
 	{
-		const Vector2d *row = static_cast<const Vector2d*>((const void*)mat);
+		const Vector2 *row = static_cast<const Vector2*>((const void*)mat);
 		return row[i];
 	}
 
-	inline Vector2d& operator[](int i)
+	inline Vector2& operator[](int i)
 	{
-		Vector2d *row = static_cast<Vector2d*>((void*)mat);
+		Vector2 *row = static_cast<Vector2*>((void*)mat);
 		return row[i];
 	}
 
-	inline const Vector2d& Row(int i) const
+	inline const Vector2& Row(int i) const
 	{
-		const Vector2d *row = static_cast<const Vector2d*>((const void*)mat);
+		const Vector2 *row = static_cast<const Vector2*>((const void*)mat);
 		return row[i];
 	}
 
-	inline Vector2d& Row(int i)
+	inline Vector2& Row(int i)
 	{
-		Vector2d *row = static_cast<Vector2d*>((void*)mat);
+		Vector2 *row = static_cast<Vector2*>((void*)mat);
 		return row[i];
 	}
 
-	inline Vector2d Column(int i) const
+	inline Vector2 Column(int i) const
 	{
-		return Vector2d(mat[0][i], mat[1][i]);
+		return Vector2(mat[0][i], mat[1][i]);
 	}
 
 	inline float	Trace() const
@@ -176,24 +176,24 @@ public:
 		return fabsf(d) > 1e-6;
 	}
 
-	Matrix2d		Inverse() const
+	Matrix2		Inverse() const
 	{
 		float d = Determinant();
 		// Warning!!! Assume d != 0
 		d = 1.0f / d;
-		return Matrix2d(
+		return Matrix2(
 			mat[0][0] * d, mat[0][1] * d,
 			mat[1][0] * d, mat[1][1] * d);
 	}
 
-	Matrix2d		Transpose() const
+	Matrix2		Transpose() const
 	{
-		return Matrix2d(mat[0][0], mat[1][0],
+		return Matrix2(mat[0][0], mat[1][0],
 						mat[0][1], mat[1][1]);
 	}
 
 	// Solve AX = B
-	bool			Solve(const Vector2d& b, Vector2d& x)
+	bool			Solve(const Vector2& b, Vector2& x)
 	{
 		float det = Determinant();
 		if (fabsf(det) < 1e-6)
@@ -205,15 +205,15 @@ public:
 		return true;
 	}
 
-	void			SolveEigenSymmetric(float EigenValue[2], Vector2d EigenVector[3]) const
+	void			SolveEigenSymmetric(float EigenValue[2], Vector2 EigenVector[3]) const
 	{
 		float sum = fabsf(mat[0][0]) + fabsf(mat[1][1]);
 
 		// The matrix is diagonal within numerical round-off
 		if (fabsf(mat[0][1]) + sum == sum)
 		{
-			EigenVector[0] = Vector2d(1.0f, 0.0f);
-			EigenVector[1] = Vector2d(0.0f, 1.0f);
+			EigenVector[0] = Vector2(1.0f, 0.0f);
+			EigenVector[1] = Vector2(0.0f, 1.0f);
 			EigenValue[0] = mat[0][0];
 			EigenValue[1] = mat[1][1];
 			return;
@@ -240,15 +240,15 @@ public:
 		cs *= invLength;
 		sn *= invLength;
 
-		EigenVector[0] = Vector2d(cs, -sn);
-		EigenVector[1] = Vector2d(sn, cs);
+		EigenVector[0] = Vector2(cs, -sn);
+		EigenVector[1] = Vector2(sn, cs);
 	}
 
-	static const Matrix2d& Identity()
+	static const Matrix2& Identity()
 	{
-		static Matrix2d Identity(1, 0, 0, 1);
+		static Matrix2 Identity(1, 0, 0, 1);
 		return Identity;
 	}
 };
 
-static_assert(sizeof(Matrix2d) == 16, "sizeof Matrix2d is not valid");
+static_assert(sizeof(Matrix2) == 16, "sizeof Matrix2 is not valid");

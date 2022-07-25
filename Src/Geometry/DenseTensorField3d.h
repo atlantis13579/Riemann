@@ -25,7 +25,7 @@ public:
 		m_CellSize.x /= m_Size.x;
 		m_CellSize.y /= m_Size.y;
 		m_CellSize.z /= m_Size.z;
-		m_InvCellSize = Vector3d(1.0f / m_CellSize.x, 1.0f / m_CellSize.y, 1.0f / m_CellSize.z);
+		m_InvCellSize = Vector3(1.0f / m_CellSize.x, 1.0f / m_CellSize.y, 1.0f / m_CellSize.z);
 		m_InterpMethod = InterpMethod::BILINEAR;
 	}
 
@@ -33,7 +33,7 @@ public:
 	{
 		m_BV = Box3d::Unit();
 		m_Size = TVector3<int>(1, 1, 1);
-		m_CellSize = m_InvCellSize = Vector3d::One();
+		m_CellSize = m_InvCellSize = Vector3::One();
 	}
 
 	~DenseTensorField3d()
@@ -41,7 +41,7 @@ public:
 	}
 
 public:
-	TensorType GetTensorByPosition(const Vector3d& pos) const
+	TensorType GetTensorByPosition(const Vector3& pos) const
 	{
 		const float fx = (pos.x - m_BV.Min.x) * m_InvCellSize.x - 0.5f;
 		const float fy = (pos.y - m_BV.Min.y) * m_InvCellSize.y - 0.5f;
@@ -79,7 +79,7 @@ private:
 	TensorType				m_ConstTensor;
 	Box3d					m_BV;
 	TVector3<int>			m_Size;
-	Vector3d				m_CellSize, m_InvCellSize;
+	Vector3				m_CellSize, m_InvCellSize;
 	Tensor<TensorType, 3>	m_Fields;
 	InterpMethod			m_InterpMethod;
 };

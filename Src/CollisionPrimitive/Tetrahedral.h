@@ -6,14 +6,14 @@
 class Tetrahedral
 {
 public:
-	Vector3d A, B, C, D;
+	Vector3 A, B, C, D;
 
 public:
 	Tetrahedral()
 	{
 	}
 
-	Tetrahedral(const Vector3d& InA, const Vector3d& InB, const Vector3d& InC, const Vector3d& InD)
+	Tetrahedral(const Vector3& InA, const Vector3& InB, const Vector3& InC, const Vector3& InD)
 	{
 		Init(InA, InB, InC, InD);
 	}
@@ -23,7 +23,7 @@ public:
 		return ShapeType3d::TETRAHEDRAL;
 	}
 
-	void			Init(const Vector3d& InA, const Vector3d& InB, const Vector3d& InC, const Vector3d& InD)
+	void			Init(const Vector3& InA, const Vector3& InB, const Vector3& InC, const Vector3& InD)
 	{
 		A = InA;
 		B = InB;
@@ -31,12 +31,12 @@ public:
 		D = InD;
 	}
 
-	Vector3d operator[](int i)
+	Vector3 operator[](int i)
 	{
 		return (&A)[i];
 	}
 
-	const Vector3d& operator[](int i) const
+	const Vector3& operator[](int i) const
 	{
 		return (&A)[i];
 	}

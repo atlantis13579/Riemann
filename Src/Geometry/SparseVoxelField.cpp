@@ -36,7 +36,7 @@ void	SparseVoxelField::InitField(const Box3d& Bv, int nVoxels, int SizeX, int Si
 }
 
 
-int		SparseVoxelField::GetVoxelIdx(const Vector3d& pos) const
+int		SparseVoxelField::GetVoxelIdx(const Vector3& pos) const
 {
 	const int x = Clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
 	const int z = Clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
@@ -56,7 +56,7 @@ float	SparseVoxelField::VoxelSpaceToWorldSpaceY(uint16_t y) const
 }
 
 
-uint32_t	SparseVoxelField::WorldSpaceToVoxelSpaceY(const Vector3d& pos) const
+uint32_t	SparseVoxelField::WorldSpaceToVoxelSpaceY(const Vector3& pos) const
 {
 	int idx = GetVoxelIdx(pos);
 	if (idx < 0 || idx >= m_SizeX * m_SizeZ)

@@ -15,7 +15,7 @@
 
 struct Face
 {
-	Vector3d normal;
+	Vector3 normal;
 	float dist;
 	Simplex::Vertex* v[3];
 	Face* adjacent[3];
@@ -167,8 +167,8 @@ public:
 private:
 	static bool GetEdgeDist(Face* face, Simplex::Vertex* a, Simplex::Vertex* b, float& dist)
 	{
-		Vector3d ba = b->pos - a->pos;
-		Vector3d n_ab = CrossProduct(ba, face->normal);   // Outward facing edge normal direction, on triangle plane
+		Vector3 ba = b->pos - a->pos;
+		Vector3 n_ab = CrossProduct(ba, face->normal);   // Outward facing edge normal direction, on triangle plane
 		float a_dot_nab = DotProduct(a->pos, n_ab);  // Only care about the sign to determine inside/outside, so not normalization required
 
 		if (a_dot_nab >= 0)
@@ -287,7 +287,7 @@ EPA_status EPAPenetration::Solve(const Simplex& _src)
 				}
 			}
 
-			const Vector3d projection = candidate.normal * candidate.dist;
+			const Vector3 projection = candidate.normal * candidate.dist;
 			penetration_normal = candidate.normal;
 			penetration_depth = candidate.dist;
 			result.dimension = 3;
@@ -312,7 +312,7 @@ EPA_status EPAPenetration::Solve(const Simplex& _src)
 	if (nl > 0)
 		penetration_normal = penetration_normal * (1 / nl);
 	else
-		penetration_normal = Vector3d(1, 0, 0);
+		penetration_normal = Vector3(1, 0, 0);
 	penetration_depth = 0;
 	result.dimension = 1;
 	result.v[0] = result.v[0];

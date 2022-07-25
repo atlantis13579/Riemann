@@ -69,8 +69,8 @@ struct RayCastResult
 		hit = false;
 		hitTime = FLT_MAX;
 		hitTimeMin = FLT_MAX;
-		hitPoint = Vector3d::Zero();
-		hitNormal = Vector3d::UnitY();
+		hitPoint = Vector3::Zero();
+		hitNormal = Vector3::UnitY();
 		hitGeom = nullptr;
         hitGeometries.clear();
         #ifdef _DEBUG
@@ -88,8 +88,8 @@ struct RayCastResult
 	bool		hit;
 	float		hitTime;            // temp val
 	float		hitTimeMin;         // result
-	Vector3d	hitPoint;
-	Vector3d	hitNormal;
+	Vector3	hitPoint;
+	Vector3	hitNormal;
 	Geometry*	hitGeom;
     std::vector<Geometry*>  hitGeometries;
     
@@ -161,8 +161,8 @@ public:
 public:
 	void			BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
 	
-	bool			RayCast(const Vector3d &Origin, const Vector3d& Dir, const RayCastOption& Option, RayCastResult *Result);
-	bool			OverlapBox(const Vector3d &Center, const Vector3d& Extent, const OverlapOption& Option, OverlapResult* Result);
+	bool			RayCast(const Vector3 &Origin, const Vector3& Dir, const RayCastOption& Option, RayCastResult *Result);
+	bool			OverlapBox(const Vector3 &Center, const Vector3& Extent, const OverlapOption& Option, OverlapResult* Result);
 
 	AABBTree*		GetStaticTree()
 	{

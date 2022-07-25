@@ -11,7 +11,7 @@
 class Sphere3d
 {
 public:
-	Vector3d Center;
+	Vector3 Center;
 	float Radius;
 
 public:
@@ -19,7 +19,7 @@ public:
 	{
 	}
 
-	Sphere3d(const Vector3d& InCenter, float InRadius)
+	Sphere3d(const Vector3& InCenter, float InRadius)
 	{
 		Center = InCenter;
 		Radius = InRadius;
@@ -31,14 +31,14 @@ public:
 	}
 
 public:
-	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
 	{
 		return RayIntersectSphere(Origin, Dir, Center, Radius, t);
 	}
 
-	static bool		RayIntersectSphere(const Vector3d& Origin, const Vector3d& Dir, const Vector3d& Center, float Radius, float* t)
+	static bool		RayIntersectSphere(const Vector3& Origin, const Vector3& Dir, const Vector3& Center, float Radius, float* t)
 	{
-		Vector3d oc = Origin - Center;
+		Vector3 oc = Origin - Center;
 		float a = Dir.SquareLength();
 		float b = 2.0f * oc.Dot(Dir);
 		float c = oc.SquareLength() - Radius * Radius;
@@ -56,7 +56,7 @@ public:
 		return false;
 	}
 
-	bool			IntersectPoint(const Vector3d& Point) const
+	bool			IntersectPoint(const Vector3& Point) const
 	{
 		float sqr_dist = (Point - Center).SquareLength();
 		if (sqr_dist <= Radius * Radius)
@@ -67,7 +67,7 @@ public:
 	}
 
 	// AABB intersects with a solid sphere or not by Jim Arvo, in "Graphics Gems":
-	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
+	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	{
 		float dmin = 0.0f;
 		for (int i = 0; i < 3; i++)
@@ -89,12 +89,12 @@ public:
 		return false;
 	}
 
-	bool			IntersectSphere(const Vector3d &rCenter, float rRadius) const
+	bool			IntersectSphere(const Vector3 &rCenter, float rRadius) const
 	{
 		return SphereIntersectSphere(Center, Radius, rCenter, rRadius);
 	}
 
-	static bool		SphereIntersectSphere(const Vector3d& Center, float Radius, const Vector3d& rCenter, float rRadius)
+	static bool		SphereIntersectSphere(const Vector3& Center, float Radius, const Vector3& rCenter, float rRadius)
 	{
 		float SqrDist = (Center - rCenter).SquareLength();
 		return SqrDist <= (Radius + rRadius) * (Radius + rRadius);
@@ -103,7 +103,7 @@ public:
 	Box3d			GetBoundingVolume() const
 	{
 		Box3d Box;
-		Box.BuildFromCenterAndExtent(Center, Vector3d(Radius));
+		Box.BuildFromCenterAndExtent(Center, Vector3(Radius));
 		return Box;
 	}
 
@@ -113,53 +113,53 @@ public:
 		return FourThirdsPI * Radius * Radius * Radius;
 	}
 
-	Vector3d		GetCenterOfMass() const
+	Vector3		GetCenterOfMass() const
 	{
 		return Center;
 	}
 
-	Matrix3d		GetInertiaTensor(float Mass) const
+	Matrix3		GetInertiaTensor(float Mass) const
 	{
 		return GetInertiaTensor(Radius, Mass);
 	}
 
-	static Matrix3d GetInertiaTensor(float Radius, float Mass)
+	static Matrix3 GetInertiaTensor(float Radius, float Mass)
 	{
 		const float Diagonal = 2.0f * Mass * Radius * Radius / 5.0f;
-		return Matrix3d(Diagonal, Diagonal, Diagonal);
+		return Matrix3(Diagonal, Diagonal, Diagonal);
 	}
 
-	Vector3d		GetSupport(const Vector3d& dir) const
+	Vector3		GetSupport(const Vector3& dir) const
 	{
 		return GetSupport(Center, Radius, dir);
 	}
 
-	static Vector3d GetSupport(const Vector3d& Center, float Radius, const Vector3d& dir)
+	static Vector3 GetSupport(const Vector3& Center, float Radius, const Vector3& dir)
 	{
 		float distSqr = dir.SquareLength();
 		if (distSqr <= 1e-6)
 		{
 			return Center;
 		}
-		Vector3d Normalized = dir / sqrtf(distSqr);
+		Vector3 Normalized = dir / sqrtf(distSqr);
 		return Center + Normalized * Radius;
 	}
 
-	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
 	{
 		*FacePoints = Sphere3d::GetSupport(Center, Radius, dir);
 		return 1;
 	}
 
-	void			GetVertices(int stackCount, int sliceCount, std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
+	void			GetVertices(int stackCount, int sliceCount, std::vector<Vector3>* Vertices, std::vector<Vector3>* Normals)
 	{
 		const float mPI = 2.0f * asinf(1.0f);
 
 		float phiStep = mPI / stackCount;
 		float thetaStep = 2.0f * mPI / sliceCount;
 
-		Vertices->push_back(Vector3d(0, Radius, 0));
-		if (Normals) Normals->push_back(Vector3d::UnitY());
+		Vertices->push_back(Vector3(0, Radius, 0));
+		if (Normals) Normals->push_back(Vector3::UnitY());
 
 		for (int i = 1; i < stackCount; i++)
 		{
@@ -167,16 +167,16 @@ public:
 			for (int j = 0; j <= sliceCount; j++)
 			{
 				float theta = j * thetaStep;
-				Vector3d p = Vector3d(sinf(phi) * cosf(theta), cosf(phi), sinf(phi) * sinf(theta)) * Radius;
+				Vector3 p = Vector3(sinf(phi) * cosf(theta), cosf(phi), sinf(phi) * sinf(theta)) * Radius;
 				Vertices->push_back(p);
 				if (Normals) Normals->push_back(p - Center);
 			}
 		}
-		Vertices->push_back(Vector3d(0, -Radius, 0));
-		if (Normals) Normals->push_back(-Vector3d::UnitY());
+		Vertices->push_back(Vector3(0, -Radius, 0));
+		if (Normals) Normals->push_back(-Vector3::UnitY());
 	}
 
-	void			GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void			GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
 		const int stackCount = 8;
 		const int sliceCount = 12;
@@ -215,7 +215,7 @@ public:
 		}
 	}
 
-	void			GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
+	void			GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		const int stackCount = 6;
 		const int sliceCount = 8;

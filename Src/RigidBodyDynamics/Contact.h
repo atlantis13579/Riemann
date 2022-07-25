@@ -14,16 +14,16 @@ public:
 		totalImpulseNormal = 0.0f;
 		totalImpulseTangent = 0.0f;
 		totalImpulseBinormal = 0.0f;
-		PositionLocalA = PositionLocalB = PositionWorldA = PositionWorldB = Vector3d::Zero();
+		PositionLocalA = PositionLocalB = PositionWorldA = PositionWorldB = Vector3::Zero();
 	}
 
-	Vector3d	PositionWorldA;
-	Vector3d	PositionWorldB;
-	Vector3d	PositionLocalA;
-	Vector3d	PositionLocalB;
-	Vector3d	Normal;
-	Vector3d	Tangent;
-	Vector3d	Binormal;
+	Vector3	PositionWorldA;
+	Vector3	PositionWorldB;
+	Vector3	PositionLocalA;
+	Vector3	PositionLocalB;
+	Vector3	Normal;
+	Vector3	Tangent;
+	Vector3	Binormal;
 	float		PenetrationDepth;
 
 	//	For warm start

@@ -10,7 +10,7 @@
 namespace SIMDSimulator
 {
 
-inline F128 F128_Load_Vector3d(const Vector3d& f)
+inline F128 F128_Load_Vector3d(const Vector3& f)
 {
 	return F128(f.x, f.y, f.z, 0.0f);
 }

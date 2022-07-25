@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-void Matrix3d::LoadRotateX(float rfloatAngle)
+void Matrix3::LoadRotateX(float rfloatAngle)
 {
 	float fCos, fSin;
 	fCos = cosf(rfloatAngle);
@@ -14,7 +14,7 @@ void Matrix3d::LoadRotateX(float rfloatAngle)
 	mat[2][0] = 1.0f;	mat[2][1] = -fSin; mat[2][2] = fCos;
 }
 
-void Matrix3d::LoadRotateY(float rfloatAngle)
+void Matrix3::LoadRotateY(float rfloatAngle)
 {
 	float fCos, fSin;
 	fCos = cosf(rfloatAngle);
@@ -24,7 +24,7 @@ void Matrix3d::LoadRotateY(float rfloatAngle)
 	mat[2][0] = fSin;	mat[2][1] = 0.0f;	mat[2][2] = fCos;
 }
 
-void Matrix3d::LoadRotateZ(float rfloatAngle)
+void Matrix3::LoadRotateZ(float rfloatAngle)
 {
 	float fCos, fSin;
 	fCos = cosf(rfloatAngle);
@@ -34,7 +34,7 @@ void Matrix3d::LoadRotateZ(float rfloatAngle)
 	mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
 }
 
-void Matrix3d::Load2DOrthogonalTransform(float dx, float dy, float dAngle) {
+void Matrix3::Load2DOrthogonalTransform(float dx, float dy, float dAngle) {
 	float fCos, fSin;
 	fCos = cosf(dAngle);
 	fSin = sinf(dAngle);
@@ -43,7 +43,7 @@ void Matrix3d::Load2DOrthogonalTransform(float dx, float dy, float dAngle) {
 	mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
 }
 
-void Matrix3d::Bidiagonalize(Matrix3d& rA, Matrix3d& rL, Matrix3d& rR)
+void Matrix3::Bidiagonalize(Matrix3& rA, Matrix3& rL, Matrix3& rR)
 {
 	float afV[3], afW[3];
 	float fLength, fSign, fT1, fInvT1, fT2;
@@ -81,7 +81,7 @@ void Matrix3d::Bidiagonalize(Matrix3d& rA, Matrix3d& rL, Matrix3d& rR)
 	}
 	else
 	{
-		rL = Matrix3d::Identity();
+		rL = Matrix3::Identity();
 		bIdentity = true;
 	}
 
@@ -112,7 +112,7 @@ void Matrix3d::Bidiagonalize(Matrix3d& rA, Matrix3d& rL, Matrix3d& rR)
 	}
 	else
 	{
-		rR = Matrix3d::Identity();
+		rR = Matrix3::Identity();
 	}
 
 	// map second column to (*,*,0)
@@ -156,7 +156,7 @@ void Matrix3d::Bidiagonalize(Matrix3d& rA, Matrix3d& rL, Matrix3d& rR)
 	}
 }
 
-void Matrix3d::GolubKahanStep(Matrix3d& rA, Matrix3d& rL, Matrix3d& rR)
+void Matrix3::GolubKahanStep(Matrix3& rA, Matrix3& rL, Matrix3& rR)
 {
 	float fT11 = rA[0][1] * rA[0][1] + rA[1][1] * rA[1][1];
 	float fT22 = rA[1][2] * rA[1][2] + rA[2][2] * rA[2][2];
@@ -260,7 +260,7 @@ void Matrix3d::GolubKahanStep(Matrix3d& rA, Matrix3d& rL, Matrix3d& rR)
 	}
 }
 
-void Matrix3d::SingularValueDecomposition(Matrix3d& rL, Vector3d& rS, Matrix3d& rR) const
+void Matrix3::SingularValueDecomposition(Matrix3& rL, Vector3& rS, Matrix3& rR) const
 {
 	// temas: currently unused
 	//const int iMax = 16;
@@ -268,7 +268,7 @@ void Matrix3d::SingularValueDecomposition(Matrix3d& rL, Vector3d& rS, Matrix3d& 
 	const float fSvdEpsilon = 1e-04f;
 	const int   iSvdMaxIterations = 32;
 
-	Matrix3d kA = *this;
+	Matrix3 kA = *this;
 	Bidiagonalize(kA, rL, rR);
 
 	for (uint32_t i = 0; i < iSvdMaxIterations; i++)
@@ -384,10 +384,10 @@ void Matrix3d::SingularValueDecomposition(Matrix3d& rL, Vector3d& rS, Matrix3d& 
 	}
 }
 
-void Matrix3d::SingularValueComposition(const Matrix3d& rL,	const Vector3d& rS, const Matrix3d& rR)
+void Matrix3::SingularValueComposition(const Matrix3& rL,	const Vector3& rS, const Matrix3& rR)
 {
 	int iRow, iCol;
-	Matrix3d kTmp;
+	Matrix3 kTmp;
 
 	// product S*R
 	for (iRow = 0; iRow < 3; ++iRow)
@@ -408,7 +408,7 @@ void Matrix3d::SingularValueComposition(const Matrix3d& rL,	const Vector3d& rS, 
 	}
 }
 
-void Matrix3d::Orthonormalize()
+void Matrix3::Orthonormalize()
 {
 	// Algorithm uses Gram-Schmidt orthogonalization.  If 'this' matrix is
 	//	   [ m0 ]		[ q0 ]
@@ -470,16 +470,16 @@ void Matrix3d::Orthonormalize()
 	mat[2][2] *= fInvLength;
 }
 
-void Matrix3d::PolarDecomposition(Matrix3d& rU, Matrix3d& rP) const
+void Matrix3::PolarDecomposition(Matrix3& rU, Matrix3& rP) const
 {
-	Matrix3d L, R;
-	Vector3d S;
+	Matrix3 L, R;
+	Vector3 S;
 	SingularValueDecomposition(L, S, R);
-	rP = R.Transpose() * Matrix3d(S.x, S.y, S.z) * R;
+	rP = R.Transpose() * Matrix3(S.x, S.y, S.z) * R;
 	rU = L * R;
 }
 
-void Matrix3d::QDUDecomposition(Matrix3d& rQ, Vector3d& rD, Vector3d& rU) const
+void Matrix3::QDUDecomposition(Matrix3& rQ, Vector3& rD, Vector3& rU) const
 {
 	// Factor M = QR = QDU where Q is orthogonal, D is diagonal,
 	// and U is upper triangular with ones on its diagonal.  Algorithm uses
@@ -556,7 +556,7 @@ void Matrix3d::QDUDecomposition(Matrix3d& rQ, Vector3d& rD, Vector3d& rU) const
 	}
 
 	// build "right" matrix R
-	Matrix3d kR;
+	Matrix3 kR;
 	kR[0][0] = rQ[0][0] * mat[0][0] + rQ[1][0] * mat[1][0] +
 		rQ[2][0] * mat[2][0];
 	kR[0][1] = rQ[0][0] * mat[0][1] + rQ[1][0] * mat[1][1] +
@@ -582,7 +582,7 @@ void Matrix3d::QDUDecomposition(Matrix3d& rQ, Vector3d& rD, Vector3d& rU) const
 	rU[2] = kR[1][2] / rD[1];
 }
 //-----------------------------------------------------------------------
-float Matrix3d::MaxCubicRoot(float afCoeff[3])
+float Matrix3::MaxCubicRoot(float afCoeff[3])
 {
 	// Spectral norm is for A^T*A, so characteristic polynomial
 	// P(x) = c[0]+c[1]*x+c[2]*x^2+x^3 has three positive float roots.
@@ -626,9 +626,9 @@ float Matrix3d::MaxCubicRoot(float afCoeff[3])
 	return fX;
 }
 //-----------------------------------------------------------------------
-float Matrix3d::SpectralNorm() const
+float Matrix3::SpectralNorm() const
 {
-	Matrix3d kP;
+	Matrix3 kP;
 	int iRow, iCol;
 	float fPmax = 0.0;
 	for (iRow = 0; iRow < 3; ++iRow)
@@ -667,7 +667,7 @@ float Matrix3d::SpectralNorm() const
 	return fNorm;
 }
 
-float Matrix3d::ToAxisAngle(Vector3d& Axis) const
+float Matrix3::ToAxisAngle(Vector3& Axis) const
 {
 	// Let (x,y,z) be the unit-length axis and let A be an angle of rotation.
 	// The rotation matrix is R = I + sin(A)*P + (1-cos(A))*P^2 where
@@ -766,7 +766,7 @@ float Matrix3d::ToAxisAngle(Vector3d& Axis) const
 	return Angle;
 }
 
-bool Matrix3d::ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const
+bool Matrix3::ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const
 {
 	// rot =  cy*cz          -cy*sz           sy
 	//        cz*sx*sy+cx*sz  cx*cz-sx*sy*sz -cy*sx
@@ -800,32 +800,32 @@ bool Matrix3d::ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const
 	}
 }
 
-void Matrix3d::FromEulerAnglesXYZ(float Yaw, float Pitch,	float Roll)
+void Matrix3::FromEulerAnglesXYZ(float Yaw, float Pitch,	float Roll)
 {
 	float fCos, fSin;
 
 	fCos = cosf(Yaw);
 	fSin = sinf(Yaw);
-	Matrix3d kXMat(1.0f, 0.0f, 0.0f,
+	Matrix3 kXMat(1.0f, 0.0f, 0.0f,
 		0.0f, fCos, fSin,
 		0.0f, -fSin, fCos);
 
 	fCos = cosf(Pitch);
 	fSin = sinf(Pitch);
-	Matrix3d kYMat(fCos, 0.0f, -fSin,
+	Matrix3 kYMat(fCos, 0.0f, -fSin,
 		0.0f, 1.0f, 0.0f,
 		fSin, 0.0f, fCos);
 
 	fCos = cosf(Roll);
 	fSin = sinf(Roll);
-	Matrix3d kZMat(fCos, fSin, 0.0f,
+	Matrix3 kZMat(fCos, fSin, 0.0f,
 		-fSin, fCos, 0.0f,
 		0.0f, 0.0f, 1.0f);
 
 	*this = kXMat * kYMat * kZMat;
 }
 
-void Matrix3d::TriDiagonal(float Diag[3], float SubDiag[3])
+void Matrix3::TriDiagonal(float Diag[3], float SubDiag[3])
 {
 	// Householder reduction T = Q^t M Q
 	//   Input:
@@ -883,7 +883,7 @@ void Matrix3d::TriDiagonal(float Diag[3], float SubDiag[3])
 	}
 }
 
-bool Matrix3d::QRIteration(float Diag[3], float SubDiag[3])
+bool Matrix3::QRIteration(float Diag[3], float SubDiag[3])
 {
 	for (int i0 = 0; i0 < 3; i0++)
 	{
@@ -961,9 +961,9 @@ bool Matrix3d::QRIteration(float Diag[3], float SubDiag[3])
 	return true;
 }
 
-void Matrix3d::SolveEigenSymmetric(float EigenValue[3], Vector3d EigenVector[3]) const
+void Matrix3::SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const
 {
-	Matrix3d kMatrix = *this;
+	Matrix3 kMatrix = *this;
 	float SubDiag[3];
 	kMatrix.TriDiagonal(EigenValue, SubDiag);
 	kMatrix.QRIteration(EigenValue, SubDiag);
@@ -975,7 +975,7 @@ void Matrix3d::SolveEigenSymmetric(float EigenValue[3], Vector3d EigenVector[3])
 		EigenVector[i][2] = kMatrix[2][i];
 	}
 
-	Vector3d kCross = EigenVector[1].Cross(EigenVector[2]);
+	Vector3 kCross = EigenVector[1].Cross(EigenVector[2]);
 	float Det = EigenVector[0].Dot(kCross);
 	if (Det < 0.0)
 	{

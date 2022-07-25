@@ -3,27 +3,27 @@
 #include <string.h>
 #include "Vector3.h"
 
-class Matrix3d
+class Matrix3
 {
 public:
 	float mat[3][3];
 
-	Matrix3d()
+	Matrix3()
 	{
 
 	}
 
-	Matrix3d(float m[3][3])
+	Matrix3(float m[3][3])
 	{
 		memcpy(mat, m, sizeof(mat));
 	}
 
-	Matrix3d(const Matrix3d& m)
+	Matrix3(const Matrix3& m)
 	{
 		memcpy(mat, m.mat, sizeof(mat));
 	}
 
-	Matrix3d(float a00, float a01, float a02,
+	Matrix3(float a00, float a01, float a02,
 		float a10, float a11, float a12,
 		float a20, float a21, float a22)
 	{
@@ -32,13 +32,13 @@ public:
 		mat[2][0] = a20; mat[2][1] = a21; mat[2][2] = a22;
 	}
 
-	Matrix3d(float a00, float a11, float a22)
+	Matrix3(float a00, float a11, float a22)
 	{
 		memset(mat, 0, sizeof(mat));
 		mat[0][0] = a00; mat[1][1] = a11; mat[2][2] = a22;
 	}
 
-	Matrix3d(const Vector3d& c0, const Vector3d& c1, const Vector3d& c2)
+	Matrix3(const Vector3& c0, const Vector3& c1, const Vector3& c2)
 	{
 		mat[0][0] = c0.x; mat[0][1] = c1.x; mat[0][2] = c2.x;
 		mat[1][0] = c0.y; mat[1][1] = c1.y; mat[1][2] = c2.y;
@@ -58,9 +58,9 @@ public:
 	void LoadRotateZ(float rfloatAngle);
 	void Load2DOrthogonalTransform(float dx, float dy, float dAngle);
 
-	Matrix3d Transpose() const
+	Matrix3 Transpose() const
 	{
-		return Matrix3d(mat[0][0], mat[1][0], mat[2][0],
+		return Matrix3(mat[0][0], mat[1][0], mat[2][0],
 			mat[0][1], mat[1][1], mat[2][1],
 			mat[0][2], mat[1][2], mat[2][2]);
 	}
@@ -72,57 +72,57 @@ public:
 			+ mat[0][2] * (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]);
 	}
 
-	Matrix3d operator+(const Matrix3d& mm) const
+	Matrix3 operator+(const Matrix3& mm) const
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
 			for (int j = 0; j < 3; j++)
 				m[i][j] = mat[i][j] + mm.mat[i][j];
-		return Matrix3d(m);
+		return Matrix3(m);
 	}
 
-	Matrix3d operator-(const Matrix3d& mm) const
+	Matrix3 operator-(const Matrix3& mm) const
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
 			m[i][j] = mat[i][j] - mm.mat[i][j];
-		return Matrix3d(m);
+		return Matrix3(m);
 	}
 
-	Matrix3d operator-() const
+	Matrix3 operator-() const
 	{
 		return *this * -1.0f;
 	}
 
-	Matrix3d operator*(const Matrix3d& mm) const
+	Matrix3 operator*(const Matrix3& mm) const
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
 			m[i][j] = mat[i][0] * mm.mat[0][j] + mat[i][1] * mm.mat[1][j] + mat[i][2] * mm.mat[2][j];
-		return Matrix3d(m);
+		return Matrix3(m);
 	}
 
-	Matrix3d operator*(float k) const
+	Matrix3 operator*(float k) const
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
 			for (int j = 0; j < 3; j++)
 				m[i][j] = mat[i][j] * k;
-		return Matrix3d(m);
+		return Matrix3(m);
 	}
 
-	Vector3d operator*(const Vector3d& vv) const
+	Vector3 operator*(const Vector3& vv) const
 	{
-		Vector3d v;
+		Vector3 v;
 		v.x = mat[0][0] * vv.x + mat[0][1] * vv.y + mat[0][2] * vv.z;
 		v.y = mat[1][0] * vv.x + mat[1][1] * vv.y + mat[1][2] * vv.z;
 		v.z = mat[2][0] * vv.x + mat[2][1] * vv.y + mat[2][2] * vv.z;
 		return v;
 	}
 
-	inline Matrix3d& operator=(const Matrix3d& rhs)
+	inline Matrix3& operator=(const Matrix3& rhs)
 	{
 		memcpy(mat, rhs.mat, sizeof(mat));
 		return *this;
@@ -138,33 +138,33 @@ public:
 		return mat[i][j];
 	}
 
-	inline const Vector3d& operator[](int i) const
+	inline const Vector3& operator[](int i) const
 	{
-		const Vector3d *row = static_cast<const Vector3d*>((const void*)mat);
+		const Vector3 *row = static_cast<const Vector3*>((const void*)mat);
 		return row[i];
 	}
 
-	inline Vector3d& operator[](int i)
+	inline Vector3& operator[](int i)
 	{
-		Vector3d *row = static_cast<Vector3d*>((void*)mat);
+		Vector3 *row = static_cast<Vector3*>((void*)mat);
 		return row[i];
 	}
 
-	inline const Vector3d& Row(int i) const
+	inline const Vector3& Row(int i) const
 	{
-		const Vector3d *row = static_cast<const Vector3d*>((const void*)mat);
+		const Vector3 *row = static_cast<const Vector3*>((const void*)mat);
 		return row[i];
 	}
 
-	inline Vector3d& Row(int i)
+	inline Vector3& Row(int i)
 	{
-		Vector3d *row = static_cast<Vector3d*>((void*)mat);
+		Vector3 *row = static_cast<Vector3*>((void*)mat);
 		return row[i];
 	}
 
-	inline Vector3d Column(int i) const
+	inline Vector3 Column(int i) const
 	{
-		return Vector3d(mat[0][i], mat[1][i], mat[2][i]);
+		return Vector3(mat[0][i], mat[1][i], mat[2][i]);
 	}
 
 	float Trace() const
@@ -196,39 +196,39 @@ public:
 		return fabsf(d) > 1e-6;
 	}
 
-	Matrix3d Inverse() const
+	Matrix3 Inverse() const
 	{
 		float d = Determinant();
 		// Warning!!! Assume d != 0
 		d = 1.0f / d;
-		return Matrix3d((mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) * d, -(mat[0][1] * mat[2][2] - mat[0][2] * mat[2][1]) * d, (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) * d,
+		return Matrix3((mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) * d, -(mat[0][1] * mat[2][2] - mat[0][2] * mat[2][1]) * d, (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) * d,
 			-(mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0]) * d, (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) * d, -(mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0]) * d,
 			(mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) * d, -(mat[0][0] * mat[2][1] - mat[0][1] * mat[2][0]) * d, (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) * d);
 	}
 
 	// Solve AX = B
-	bool Solve(const Vector3d& b, Vector3d& x)
+	bool Solve(const Vector3& b, Vector3& x)
 	{
 		float d = Determinant();
 		if (fabsf(d) < 1e-6)
 		{
 			return false;
 		}
-		const Vector3d *row = static_cast<const Vector3d*>((const void*)mat);
+		const Vector3 *row = static_cast<const Vector3*>((const void*)mat);
 		x.x = b.Dot(row[1].Cross(row[2])) / d;
 		x.y = row[0].Dot(b.Cross(row[2])) / d;
 		x.z = row[0].Dot(row[1].Cross(b)) / d;
 		return true;
 	}
 
-	static Matrix3d Skew(Vector3d& v)
+	static Matrix3 Skew(Vector3& v)
 	{
-		return Matrix3d(0, -v.z, v.y,
+		return Matrix3(0, -v.z, v.y,
 						v.z, 0, -v.x,
 						-v.y, v.x, 0);
 	}
 
-	void		FromAxisAngle(const Vector3d& Axis, float Radian)
+	void		FromAxisAngle(const Vector3& Axis, float Radian)
 	{
 		float fCos = cosf(Radian);
 		float fSin = sinf(Radian);
@@ -254,58 +254,58 @@ public:
 		mat[2][2] = fZ2 * fOneMinusCos + fCos;
 	}
 
-	void		FromTwoAxis(const Vector3d& AxisFrom, const Vector3d& AxisTo)
+	void		FromTwoAxis(const Vector3& AxisFrom, const Vector3& AxisTo)
 	{
-		Vector3d UnitAxisFrom = AxisFrom.Unit();
-		Vector3d UnitAxisTo = AxisTo.Unit();
-		Vector3d Axis = UnitAxisFrom.Cross(UnitAxisTo);
+		Vector3 UnitAxisFrom = AxisFrom.Unit();
+		Vector3 UnitAxisTo = AxisTo.Unit();
+		Vector3 Axis = UnitAxisFrom.Cross(UnitAxisTo);
 		float Angle = acosf(UnitAxisFrom.Dot(UnitAxisTo));
 		FromAxisAngle(Axis, Angle);
 	}
 
 	void		FromEulerAnglesXYZ(float Yaw, float Pitch, float Roll);
 
-	float		ToAxisAngle(Vector3d& Axis) const;
+	float		ToAxisAngle(Vector3& Axis) const;
 	bool		ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const;
 
-	void		SingularValueDecomposition(Matrix3d& rL, Vector3d& rS, Matrix3d& rR) const;
-	void		SingularValueComposition(const Matrix3d& rL, const Vector3d& rS, const Matrix3d& rR);
+	void		SingularValueDecomposition(Matrix3& rL, Vector3& rS, Matrix3& rR) const;
+	void		SingularValueComposition(const Matrix3& rL, const Vector3& rS, const Matrix3& rR);
 	void		Orthonormalize();
-	void		PolarDecomposition(Matrix3d& rU, Matrix3d& rP) const;
-	void		QDUDecomposition(Matrix3d& rQ, Vector3d& rD, Vector3d& rU) const;
+	void		PolarDecomposition(Matrix3& rU, Matrix3& rP) const;
+	void		QDUDecomposition(Matrix3& rQ, Vector3& rD, Vector3& rU) const;
 	float		SpectralNorm() const;
 
-	void		SolveEigenSymmetric(float EigenValue[3], Vector3d EigenVector[3]) const;
+	void		SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const;
 	void		TriDiagonal(float Diag[3], float SubDiag[3]);
 	bool		QRIteration(float Diag[3], float SubDiag[3]);
 
-	static void Bidiagonalize(Matrix3d& kA, Matrix3d& kL, Matrix3d& kR);
-	static void GolubKahanStep(Matrix3d& kA, Matrix3d& kL, Matrix3d& kR);
+	static void Bidiagonalize(Matrix3& kA, Matrix3& kL, Matrix3& kR);
+	static void GolubKahanStep(Matrix3& kA, Matrix3& kL, Matrix3& kR);
 	static float MaxCubicRoot(float afCoeff[3]);
 
-	static const Matrix3d& Zero()
+	static const Matrix3& Zero()
 	{
-		static Matrix3d Zero(0, 0, 0, 0, 0, 0, 0, 0, 0);
+		static Matrix3 Zero(0, 0, 0, 0, 0, 0, 0, 0, 0);
 		return Zero;
 	}
 
-	static const Matrix3d& Identity()
+	static const Matrix3& Identity()
 	{
-		static Matrix3d Identity(1, 0, 0, 0, 1, 0, 0, 0, 1);
+		static Matrix3 Identity(1, 0, 0, 0, 1, 0, 0, 0, 1);
 		return Identity;
 	}
 };
 
-inline Matrix3d operator* (float f, const Matrix3d& mm)
+inline Matrix3 operator* (float f, const Matrix3& mm)
 {
 	return mm * f;
 }
 
-inline Vector3d operator* (const Vector3d &v, const Matrix3d& mm)
+inline Vector3 operator* (const Vector3 &v, const Matrix3& mm)
 {
-	return Vector3d(v.x * mm[0][0] + v.y * mm[1][0] + v.z * mm[2][0],
+	return Vector3(v.x * mm[0][0] + v.y * mm[1][0] + v.z * mm[2][0],
 					v.x * mm[0][1] + v.y * mm[1][1] + v.z * mm[2][1],
 					v.x * mm[0][2] + v.y * mm[1][2] + v.z * mm[2][2]);
 }
 
-static_assert(sizeof(Matrix3d) == 36, "sizeof Matrix3d is not valid");
+static_assert(sizeof(Matrix3) == 36, "sizeof Matrix3 is not valid");

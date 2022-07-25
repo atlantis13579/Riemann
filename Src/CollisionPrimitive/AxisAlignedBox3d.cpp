@@ -2,9 +2,9 @@
 #include "AxisAlignedBox3d.h"
 
 
-static void face(unsigned int i0, unsigned int i1, unsigned int i2, Vector3d& rkPnt, const Vector3d& rkDir, const Vector3d& extents, const Vector3d& rkPmE, float* t, float& rfSqrDistance)
+static void face(unsigned int i0, unsigned int i1, unsigned int i2, Vector3& rkPnt, const Vector3& rkDir, const Vector3& extents, const Vector3& rkPmE, float* t, float& rfSqrDistance)
 {
-	Vector3d kPpE;
+	Vector3 kPpE;
 	float fLSqr, fInv, fTmp, fParam, fT, fDelta;
 
 	kPpE[i1] = rkPnt[i1] + extents[i1];
@@ -202,9 +202,9 @@ static void face(unsigned int i0, unsigned int i1, unsigned int i2, Vector3d& rk
 	}
 }
 
-static void caseNoZeros(Vector3d& rkPnt, const Vector3d& rkDir, const Vector3d& extents, float* t, float& rfSqrDistance)
+static void caseNoZeros(Vector3& rkPnt, const Vector3& rkDir, const Vector3& extents, float* t, float& rfSqrDistance)
 {
-	Vector3d kPmE(rkPnt.x - extents.x, rkPnt.y - extents.y, rkPnt.z - extents.z);
+	Vector3 kPmE(rkPnt.x - extents.x, rkPnt.y - extents.y, rkPnt.z - extents.z);
 
 	float fProdDxPy, fProdDyPx, fProdDzPx, fProdDxPz, fProdDzPy, fProdDyPz;
 
@@ -242,7 +242,7 @@ static void caseNoZeros(Vector3d& rkPnt, const Vector3d& rkDir, const Vector3d& 
 	}
 }
 
-static void case0(unsigned int i0, unsigned int i1, unsigned int i2, Vector3d& rkPnt, const Vector3d& rkDir, const Vector3d& extents, float* t, float& rfSqrDistance)
+static void case0(unsigned int i0, unsigned int i1, unsigned int i2, Vector3& rkPnt, const Vector3& rkDir, const Vector3& extents, float* t, float& rfSqrDistance)
 {
 	float fPmE0 = rkPnt[i0] - extents[i0];
 	float fPmE1 = rkPnt[i1] - extents[i1];
@@ -319,7 +319,7 @@ static void case0(unsigned int i0, unsigned int i1, unsigned int i2, Vector3d& r
 	}
 }
 
-static void case00(unsigned int i0, unsigned int i1, unsigned int i2, Vector3d& rkPnt, const Vector3d& rkDir, const Vector3d& extents, float* t, float& rfSqrDistance)
+static void case00(unsigned int i0, unsigned int i1, unsigned int i2, Vector3& rkPnt, const Vector3& rkDir, const Vector3& extents, float* t, float& rfSqrDistance)
 {
 	float fDelta;
 
@@ -355,7 +355,7 @@ static void case00(unsigned int i0, unsigned int i1, unsigned int i2, Vector3d& 
 	}
 }
 
-static void case000(Vector3d& rkPnt, const Vector3d& extents, float& rfSqrDistance)
+static void case000(Vector3& rkPnt, const Vector3& extents, float& rfSqrDistance)
 {
 	float fDelta;
 
@@ -399,11 +399,11 @@ static void case000(Vector3d& rkPnt, const Vector3d& extents, float& rfSqrDistan
 	}
 }
 
-float AxisAlignedBox3d::SqrDistanceToLine(const Vector3d& P0, const Vector3d& tDir, float* t) const
+float AxisAlignedBox3d::SqrDistanceToLine(const Vector3& P0, const Vector3& tDir, float* t) const
 {
-	Vector3d Center = GetCenter() - P0;
-	Vector3d Extent = (Max - Min) * 0.5f;
-	Vector3d Dir = tDir;
+	Vector3 Center = GetCenter() - P0;
+	Vector3 Extent = (Max - Min) * 0.5f;
+	Vector3 Dir = tDir;
 
 	bool reflect[3];
 	for (int i = 0; i < 3; i++)
@@ -478,7 +478,7 @@ float AxisAlignedBox3d::SqrDistanceToLine(const Vector3d& P0, const Vector3d& tD
 	return sqrDistance;
 }
 
-float AxisAlignedBox3d::SqrDistanceToSegment(const Vector3d& P0, const Vector3d& P1) const
+float AxisAlignedBox3d::SqrDistanceToSegment(const Vector3& P0, const Vector3& P1) const
 {
 	float t;
 	float sqrDistance = SqrDistanceToLine(P0, P1 - P0, &t);
@@ -499,21 +499,21 @@ float AxisAlignedBox3d::SqrDistanceToSegment(const Vector3d& P0, const Vector3d&
 	}
 }
 
-bool AxisAlignedBox3d::IntersectSphere(const Vector3d& Center, float Radius) const
+bool AxisAlignedBox3d::IntersectSphere(const Vector3& Center, float Radius) const
 {
 	float SqrDist = SqrDistanceToPoint(Center);
 	return SqrDist <= Radius * Radius;
 }
 
-bool AxisAlignedBox3d::IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float Radius) const
+bool AxisAlignedBox3d::IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const
 {
 	float SqrDist = SqrDistanceToSegment(P0, P1);
 	return SqrDist <= Radius * Radius;
 }
 
-Vector3d AxisAlignedBox3d::ClosestPointTo(const Vector3d& Point) const
+Vector3 AxisAlignedBox3d::ClosestPointTo(const Vector3& Point) const
 {
-	Vector3d closest = GetCenter();
+	Vector3 closest = GetCenter();
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -529,9 +529,9 @@ Vector3d AxisAlignedBox3d::ClosestPointTo(const Vector3d& Point) const
 	return closest;
 }
 
-float AxisAlignedBox3d::SqrDistanceToPoint(const Vector3d& Point) const
+float AxisAlignedBox3d::SqrDistanceToPoint(const Vector3& Point) const
 {
-	Vector3d closest = ClosestPointTo(Point);
+	Vector3 closest = ClosestPointTo(Point);
 	return (closest - Point).SquareLength();
 }
 

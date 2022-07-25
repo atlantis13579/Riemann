@@ -38,9 +38,9 @@ class SparseSpatialHash
 public:
 	SparseSpatialHash()
 	{
-		m_Origin = Vector3d::Zero();
-		m_CellSize = Vector3d::One();
-		m_InvCellSize = Vector3d::One();
+		m_Origin = Vector3::Zero();
+		m_CellSize = Vector3::One();
+		m_InvCellSize = Vector3::One();
 	}
 
 	~SparseSpatialHash()
@@ -53,14 +53,14 @@ public:
 		return (int)m_Buckets.size();
 	}
 
-	uint32_t ComputeHashBucketIndex2D(const Vector3d& Pos) const
+	uint32_t ComputeHashBucketIndex2D(const Vector3& Pos) const
 	{
 		int x = (int)(floorf((Pos.x - m_Origin.x) * m_InvCellSize.x));
 		int z = (int)(floorf((Pos.z - m_Origin.z) * m_InvCellSize.z));
 		return hash_id_2d(x, z, GetBucketSize());
 	}
 
-	uint32_t ComputeHashBucketIndex3D(const Vector3d& Pos) const
+	uint32_t ComputeHashBucketIndex3D(const Vector3& Pos) const
 	{
 		int x = (int)(floorf((Pos.x - m_Origin.x) * m_InvCellSize.x));
 		int y = (int)(floorf((Pos.y - m_Origin.y) * m_InvCellSize.y));
@@ -69,7 +69,7 @@ public:
 	}
 
 private:
-	Vector3d m_Origin;
-	Vector3d m_CellSize, m_InvCellSize;
+	Vector3 m_Origin;
+	Vector3 m_CellSize, m_InvCellSize;
 	std::vector<SpatialEntiry>	m_Buckets;
 };

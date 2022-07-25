@@ -16,7 +16,7 @@ class ContactManifoldManager;
 
 struct RigidBodySimulationParam
 {
-	Vector3d Gravity;
+	Vector3 Gravity;
 };
 
 class RigidBodySimulation
@@ -43,8 +43,8 @@ public:
 	float			GetSystemTotalEnergy() const;
 	float			GetSystemTotalLinearKinematicsEnergy() const;
 	float			GetSystemTotalAngularKinematicsEnergy() const;
-	Vector3d		GetSystemTotalLinearMomentum() const;
-	Vector3d		GetSystemTotalAngularMomentum() const;
+	Vector3		GetSystemTotalLinearMomentum() const;
+	Vector3		GetSystemTotalAngularMomentum() const;
 
 private:
 	void			SimulateST(float dt);

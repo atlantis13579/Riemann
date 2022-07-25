@@ -8,22 +8,22 @@
 class OrientedBox3d
 {
 public:
-	Vector3d	Center;
-	Vector3d	Extent;
-	Matrix3d	Rot;
+	Vector3	Center;
+	Vector3	Extent;
+	Matrix3	Rot;
 
 	OrientedBox3d()
 	{
 	}
 
-	OrientedBox3d(const Vector3d& _Center, const Vector3d& _Extent, const Matrix3d& _Rot)
+	OrientedBox3d(const Vector3& _Center, const Vector3& _Extent, const Matrix3& _Rot)
 	{
 		Center = _Center;
 		Extent = _Extent;
 		Rot = _Rot;
 	}
 
-	float SqrDistanceToPoint(const Vector3d& Point) const;
-	float SqrDistanceToLine(const Vector3d& P0, const Vector3d& Dir, float* t) const;
-	float SqrDistanceToSegment(const Vector3d& P0, const Vector3d& P1) const;
+	float SqrDistanceToPoint(const Vector3& Point) const;
+	float SqrDistanceToLine(const Vector3& P0, const Vector3& Dir, float* t) const;
+	float SqrDistanceToSegment(const Vector3& P0, const Vector3& P1) const;
 };

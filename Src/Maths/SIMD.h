@@ -8,7 +8,7 @@
 	#include "Vector3.h"
 	#include "Vector4.h"
 	typedef float				Scaler;
-	typedef Vector4d			F128;
+	typedef Vector4			F128;
 	typedef TVector4<bool>		B128;
 	typedef TVector4<uint32_t>	U128;
 	typedef TVector4<int>		I128;
@@ -44,32 +44,32 @@ static_assert(sizeof(I128) == 16, "simd size vector not correct!");
 
 inline float F128_ReadX(const F128& v)
 {
-	return reinterpret_cast<const Vector4d&>(v).x;
+	return reinterpret_cast<const Vector4&>(v).x;
 }
 
 inline float F128_ReadY(const F128& v)
 {
-	return reinterpret_cast<const Vector4d&>(v).y;
+	return reinterpret_cast<const Vector4&>(v).y;
 }
 
 inline float F128_ReadZ(const F128& v)
 {
-	return reinterpret_cast<const Vector4d&>(v).z;
+	return reinterpret_cast<const Vector4&>(v).z;
 }
 
 inline float F128_ReadW(const F128& v)
 {
-	return reinterpret_cast<const Vector4d&>(v).w;
+	return reinterpret_cast<const Vector4&>(v).w;
 }
 
-inline const Vector3d& F128_ReadXYZ(const F128& v)
+inline const Vector3& F128_ReadXYZ(const F128& v)
 {
-	return reinterpret_cast<const Vector3d&>(v);
+	return reinterpret_cast<const Vector3&>(v);
 }
 
-inline const Vector4d& F128_ReadXYZW(const F128& v)
+inline const Vector4& F128_ReadXYZW(const F128& v)
 {
-    return reinterpret_cast<const Vector4d&>(v);
+    return reinterpret_cast<const Vector4&>(v);
 }
 
 #if _DEBUG && 0

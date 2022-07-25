@@ -16,10 +16,10 @@ public:
 	void Init();
 	void Simulate();
 
-	void SetPosition(int nodeindex, Vector3d pos);
-	void SetVelocity(int nodeindex, Vector3d vel);
-	void SetExtForce(int nodeindex, Vector3d force);
-	void AddExtForce(int nodeindex, Vector3d force);
+	void SetPosition(int nodeindex, Vector3 pos);
+	void SetVelocity(int nodeindex, Vector3 vel);
+	void SetExtForce(int nodeindex, Vector3 force);
+	void AddExtForce(int nodeindex, Vector3 force);
 	void SetPinnedNode(int node, bool isConstrained){ m_pinned[node] = isConstrained; }
 
 private:

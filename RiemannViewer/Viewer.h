@@ -19,13 +19,13 @@ public:
 	void LoadAnimation(const std::string& anim_name, const std::vector<std::string>& nodes);
 	void LoadPhysxScene(const std::string& file_name);
 	void LoadFlatObj(const std::string& file_name);
-	void LoadVoxelField(const std::string& file_name, const Vector3d& c, std::vector<Vector3d>& water_list);
+	void LoadVoxelField(const std::string& file_name, const Vector3& c, std::vector<Vector3>& water_list);
 
 	void CreateDemo();
 	void CreateStackBoxesDemo();
 	void CreateDominoDemo();
 	
-	Vector3d GetCameraPosition();
+	Vector3 GetCameraPosition();
 	void UpdateCamera();
 	void KeyboardMsg(char c);
 	void MouseMsg(int x, int y, bool LButtonDown);
@@ -35,8 +35,8 @@ private:
 	RigidBodySimulation* m_World;
 	Renderer* m_Renderer;
 
-	Vector3d    m_CamCenter;
-	Vector3d    m_CamParam;
+	Vector3    m_CamCenter;
+	Vector3    m_CamParam;
 };
 
 

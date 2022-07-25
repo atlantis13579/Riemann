@@ -48,17 +48,17 @@ float RayCast(void *p, float x0, float y0, float z0, float dx, float dy, float d
     GeometryQuery* query = world->GetGeometryQuery();
     assert(query);
     
-    bool success = query->RayCast(Vector3d(x0, y0, z0), Vector3d(dx, dy, dz).Unit(), Option, &Result);
+    bool success = query->RayCast(Vector3(x0, y0, z0), Vector3(dx, dy, dz).Unit(), Option, &Result);
     if (success)
     {
-        return (Result.hitPoint - Vector3d(x0, y0, z0)).Length();
+        return (Result.hitPoint - Vector3(x0, y0, z0)).Length();
     }
     return -1.0f;
 }
 
 float RayCast2(void *p, float x0, float y0, float z0, float x1, float y1, float z1)
 {
-    Vector3d Dir = Vector3d(x1 - x0, y1 - y0, z1 - z0).Unit();
+    Vector3 Dir = Vector3(x1 - x0, y1 - y0, z1 - z0).Unit();
     return RayCast(p, x0, y0, z0, Dir.x, Dir.y, Dir.z);
 }
 
@@ -96,17 +96,17 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
 	GeometryQuery* query = world->GetGeometryQuery();
 	assert(query);
 
-    Vector3d cameraOrigin(x0, y0, z0);
-    Vector3d cameraDirection = Vector3d(dx, dy, dz).Unit();
-    Vector3d cameraUp = Vector3d(ux, uy, uz).Unit();
+    Vector3 cameraOrigin(x0, y0, z0);
+    Vector3 cameraDirection = Vector3(dx, dy, dz).Unit();
+    Vector3 cameraUp = Vector3(ux, uy, uz).Unit();
     float AspectRatio = 1.0f * w2 / h2;
 
     nearz = std::max(0.1f, nearz);
 	float CX = 2.0f * nearz * tanf(0.5f * fov);
 	float CY = CX / AspectRatio;
 
-    Vector3d cameraX = cameraUp.Cross(cameraDirection) * CX;
-    Vector3d cameraY = cameraX.Cross(cameraDirection).Unit() * CY;
+    Vector3 cameraX = cameraUp.Cross(cameraDirection) * CX;
+    Vector3 cameraY = cameraX.Cross(cameraDirection).Unit() * CY;
 
     #pragma omp parallel for schedule(dynamic, 1)
 	for (int y = 0; y < h2; ++y)
@@ -115,7 +115,7 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
 		Option.MaxDist = farz;
         for (int x = 0; x < w2; ++x)
         {
-            Vector3d rayDirection = cameraDirection * nearz + ((y - h2 * 0.5f) / h2) * cameraY + ((x - w2 * 0.5f) / w2) * cameraX;
+            Vector3 rayDirection = cameraDirection * nearz + ((y - h2 * 0.5f) / h2) * cameraY + ((x - w2 * 0.5f) / w2) * cameraX;
 			RayCastResult Result;
             bool success = query->RayCast(cameraOrigin, rayDirection.Unit(), Option, &Result);
 			if (success)

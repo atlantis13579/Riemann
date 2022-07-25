@@ -5,26 +5,26 @@
 #include "Vector3.h"
 #include "Vector4.h"
 
-class Matrix4d
+class Matrix4
 {
 public:
 	float mat[4][4];
 
-	Matrix4d()
+	Matrix4()
 	{
 	}
 
-	Matrix4d(float m[4][4])
+	Matrix4(float m[4][4])
 	{
 		memcpy(mat, m, sizeof(mat));
 	}
 
-	Matrix4d(const Matrix4d& m)
+	Matrix4(const Matrix4& m)
 	{
 		memcpy(mat, m.mat, sizeof(mat));
 	}
 
-	Matrix4d(float a00, float a01, float a02, float a03,
+	Matrix4(float a00, float a01, float a02, float a03,
 			float a10, float a11, float a12, float a13,
 			float a20, float a21, float a22, float a23,
 			float a30, float a31, float a32, float a33)
@@ -48,7 +48,7 @@ public:
 		memset(mat, 0, sizeof(mat));
 	}
 
-	inline Matrix4d& operator=(const Matrix4d& rhs)
+	inline Matrix4& operator=(const Matrix4& rhs)
 	{
 		memcpy(mat, rhs.mat, sizeof(mat));
 		return *this;
@@ -64,38 +64,38 @@ public:
 		return mat[i][j];
 	}
 	
-	inline const Vector4d& operator[](int i) const
+	inline const Vector4& operator[](int i) const
 	{
-		const Vector4d *row = static_cast<const Vector4d*>((const void*)mat);
+		const Vector4 *row = static_cast<const Vector4*>((const void*)mat);
 		return row[i];
 	}
 
-	inline Vector4d& operator[](int i)
+	inline Vector4& operator[](int i)
 	{
-		Vector4d *row = static_cast<Vector4d*>((void*)mat);
+		Vector4 *row = static_cast<Vector4*>((void*)mat);
 		return row[i];
 	}
 
-	inline const Vector4d& Row(int i) const
+	inline const Vector4& Row(int i) const
 	{
-		const Vector4d *row = static_cast<const Vector4d*>((const void*)mat);
+		const Vector4 *row = static_cast<const Vector4*>((const void*)mat);
 		return row[i];
 	}
 
-	inline Vector4d& Row(int i)
+	inline Vector4& Row(int i)
 	{
-		Vector4d *row = static_cast<Vector4d*>((void*)mat);
+		Vector4 *row = static_cast<Vector4*>((void*)mat);
 		return row[i];
 	}
 	
-	inline Vector4d Column(int i) const
+	inline Vector4 Column(int i) const
 	{
-		return Vector4d(mat[0][i], mat[1][i], mat[2][i], mat[3][i]);
+		return Vector4(mat[0][i], mat[1][i], mat[2][i], mat[3][i]);
 	}
 
-	Matrix4d Transpose() const
+	Matrix4 Transpose() const
 	{
-		return Matrix4d(mat[0][0], mat[1][0], mat[2][0], mat[3][0],
+		return Matrix4(mat[0][0], mat[1][0], mat[2][0], mat[3][0],
 						mat[0][1], mat[1][1], mat[2][1], mat[3][1],
 						mat[0][2], mat[1][2], mat[2][2], mat[3][2],
 						mat[0][3], mat[1][3], mat[2][3], mat[3][3]);
@@ -107,7 +107,7 @@ public:
 		return fabsf(d) > 1e-6;
 	}
 
-	Matrix4d Inverse()
+	Matrix4 Inverse()
 	{
 		float result[4][4];
 		result[0][0] = -mat[2][3] * mat[3][2] * mat[1][1] + mat[2][2] * mat[3][3] * mat[1][1] + mat[2][3] * mat[3][1] * mat[1][2] - mat[2][2] * mat[3][1] * mat[1][3] - mat[3][3] * mat[1][2] * mat[2][1] + mat[3][2] * mat[1][3] * mat[2][1];
@@ -130,7 +130,7 @@ public:
 		for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			result[i][j] *= d;
-		return Matrix4d(result);
+		return Matrix4(result);
 	}
 
 	float Trace() const
@@ -166,53 +166,53 @@ public:
 	}
 
 
-	Matrix4d operator*(const Matrix4d& mm) const
+	Matrix4 operator*(const Matrix4& mm) const
 	{
 		float m[4][4] = { 0 };
 		for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 		for (int k = 0; k < 4; k++)
 			m[i][j] += mat[i][k] * mm.mat[k][j];
-		return Matrix4d(m);
+		return Matrix4(m);
 	}
 
-	Vector4d operator*(const Vector4d& vv) const
+	Vector4 operator*(const Vector4& vv) const
 	{
-		Vector4d In = { vv.x, vv.y, vv.z, vv.w };
-		Vector4d out = { 0 };
+		Vector4 In = { vv.x, vv.y, vv.z, vv.w };
+		Vector4 out = { 0 };
 		for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			out[i] += mat[i][j] * In[j];
 		return out;
 	}
 
-	Matrix4d operator+(const Matrix4d& mm) const
+	Matrix4 operator+(const Matrix4& mm) const
 	{
 		float m[4][4];
 		for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			m[i][j] = mat[i][j] + mm.mat[i][j];
-		return Matrix4d(m);
+		return Matrix4(m);
 	}
 
-	Matrix4d operator-(const Matrix4d& mm) const
+	Matrix4 operator-(const Matrix4& mm) const
 	{
 		float m[4][4];
 		for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			m[i][j] = mat[i][j] - mm.mat[i][j];
-		return Matrix4d(m);
+		return Matrix4(m);
 	}
 
-	static const Matrix4d& Identity()
+	static const Matrix4& Identity()
 	{
-		static Matrix4d Identity(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+		static Matrix4 Identity(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 		return Identity;
 	}
 };
 
 template <typename T>
-inline TVector4<T> operator* (const TVector4<T>& vec, const Matrix4d& mm) {
+inline TVector4<T> operator* (const TVector4<T>& vec, const Matrix4& mm) {
 	return TVector4<T>(
 		mm.mat[0][0] * vec.x + mm.mat[1][0] * vec.y + mm.mat[2][0] * vec.z + mm.mat[3][0] * vec.w,
 		mm.mat[0][1] * vec.x + mm.mat[1][1] * vec.y + mm.mat[2][1] * vec.z + mm.mat[3][1] * vec.w,
@@ -221,7 +221,7 @@ inline TVector4<T> operator* (const TVector4<T>& vec, const Matrix4d& mm) {
 }
 
 template <typename T>
-inline TVector4<T> operator* (const Matrix4d& mm, const TVector4<T>& vec) {
+inline TVector4<T> operator* (const Matrix4& mm, const TVector4<T>& vec) {
 	return TVector4<T>(
 		mm.mat[0][0] * vec.x + mm.mat[0][1] * vec.y + mm.mat[0][2] * vec.z + mm.mat[0][3] * vec.w,
 		mm.mat[1][0] * vec.x + mm.mat[1][1] * vec.y + mm.mat[1][2] * vec.z + mm.mat[1][3] * vec.w,
@@ -230,11 +230,11 @@ inline TVector4<T> operator* (const Matrix4d& mm, const TVector4<T>& vec) {
 }
 
 template <typename T>
-inline TVector3<T> operator *(const Matrix4d& mat, const TVector3<T>& Point)
+inline TVector3<T> operator *(const Matrix4& mat, const TVector3<T>& Point)
 {
-	TVector4<T> hSpace = Vector4d(Point.x, Point.y, Point.z, (T)1);
+	TVector4<T> hSpace = Vector4(Point.x, Point.y, Point.z, (T)1);
 	TVector4<T> t = mat * hSpace;
 	return t.xyz();
 }
 
-static_assert(sizeof(Matrix4d) == 64, "sizeof Matrix4d is not valid");
+static_assert(sizeof(Matrix4) == 64, "sizeof Matrix4 is not valid");

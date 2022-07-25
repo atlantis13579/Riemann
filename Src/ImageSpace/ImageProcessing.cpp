@@ -96,8 +96,8 @@ void SegmentsSimplification_DouglasPeucker(std::vector<Vector2i> &polygon, int t
 
 static float dot_product(const Vector2i&a, const Vector2i&b, const Vector2i&c)
 {
-	Vector2d ab = Vector2d((float)(a.x - b.x), (float)(a.y - b.y));
-	Vector2d cb = Vector2d((float)(c.x - b.x), (float)(c.y - b.y));
+	Vector2 ab = Vector2((float)(a.x - b.x), (float)(a.y - b.y));
+	Vector2 cb = Vector2((float)(c.x - b.x), (float)(c.y - b.y));
 	ab.Normalize();
 	cb.Normalize();
 	return ab.Dot(cb);

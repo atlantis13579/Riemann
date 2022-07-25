@@ -3,7 +3,7 @@
 
 #include "Polygon2d.h"
 
-static float SqrtDistancePointToSegment2D(const Vector2d& point, const Vector2d& P0, const Vector2d& P1, float* dt)
+static float SqrtDistancePointToSegment2D(const Vector2& point, const Vector2& P0, const Vector2& P1, float* dt)
 {
 	float pqx = P1.x - P0.x;
 	float pqy = P1.y - P0.y;
@@ -20,13 +20,13 @@ static float SqrtDistancePointToSegment2D(const Vector2d& point, const Vector2d&
 	return dy * dy + dx * dx;
 }
 
-static bool SqrDistancePointToPolygon2D(const Vector2d& point, const Vector2d* polygon, int nvert, float* ed, float* et)
+static bool SqrDistancePointToPolygon2D(const Vector2& point, const Vector2* polygon, int nvert, float* ed, float* et)
 {
 	int i, j;
 	bool c = false;
 	for (i = 0, j = nvert - 1; i < nvert; j = i++) {
-		const Vector2d& vi = polygon[i];
-		const Vector2d& vj = polygon[j];
+		const Vector2& vi = polygon[i];
+		const Vector2& vj = polygon[j];
 		if (((vi.x > point.x) != (vj.x > point.x)) &&
 			(point.y < (vj.y - vi.y) * (point.x - vi.x) / (vj.x - vi.x) + vi.y))
 			c = !c;
@@ -35,7 +35,7 @@ static bool SqrDistancePointToPolygon2D(const Vector2d& point, const Vector2d* p
 	return c;
 }
 
-Vector2d ClosestPointInPolygon2D(const Vector2d& pt, const Vector2d* polygon, int nvert, bool* inside)
+Vector2 ClosestPointInPolygon2D(const Vector2& pt, const Vector2* polygon, int nvert, bool* inside)
 {
 	std::vector<float>  edged;
 	std::vector<float>  edget;
@@ -57,18 +57,18 @@ Vector2d ClosestPointInPolygon2D(const Vector2d& pt, const Vector2d* polygon, in
 		}
 	}
 
-	const Vector2d& va = polygon[imin];
-	const Vector2d& vb = polygon[(imin + 1) % nvert];
-	return Vector2d::Lerp(va, vb, edget[imin]);
+	const Vector2& va = polygon[imin];
+	const Vector2& vb = polygon[(imin + 1) % nvert];
+	return Vector2::Lerp(va, vb, edget[imin]);
 }
 
 
-bool PointInPolygon2D(const Vector2d& pt, const Vector2d* polygon, int nvert)
+bool PointInPolygon2D(const Vector2& pt, const Vector2* polygon, int nvert)
 {
 	bool c = false;
 	for (int i = 0, j = nvert - 1; i < nvert; j = i++) {
-		const Vector2d* pi = polygon + i;
-		const Vector2d* pj = polygon + j;
+		const Vector2* pi = polygon + i;
+		const Vector2* pj = polygon + j;
 		if (((pi->y > pt.y) != (pj->y > pt.y)) &&
 			(pt.x < (pj->x - pi->x) * (pt.y - pi->y) /
 				(pj->y - pi->y) + pi->x))
@@ -77,7 +77,7 @@ bool PointInPolygon2D(const Vector2d& pt, const Vector2d* polygon, int nvert)
 	return c;
 }
 
-float PolygonArea2D(const Vector2d* polygon, int nvert)
+float PolygonArea2D(const Vector2* polygon, int nvert)
 {
 	if (nvert < 3)
 		return 0.0f;

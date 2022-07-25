@@ -13,9 +13,9 @@
 
 void AddPlane(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 {
-	std::vector<Vector3d> Vertices;
+	std::vector<Vector3> Vertices;
 	std::vector<uint16_t> Indices;
-	std::vector<Vector3d> Normals;
+	std::vector<Vector3> Normals;
 	Plane3d* shape = geom->GetShapeObj<Plane3d>();
 
 	std::string name = std::to_string(geom->GetGuid());
@@ -25,7 +25,7 @@ void AddPlane(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 		std::vector<Vertex1> vv;
 		for (size_t i = 0; i < Vertices.size(); ++i)
 		{
-			vv.emplace_back(Vertices[i], Vector3d::One());
+			vv.emplace_back(Vertices[i], Vector3::One());
 		}
 		renderer->AddTriangles(name.c_str(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
 	}
@@ -34,9 +34,9 @@ void AddPlane(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 template <class TShape>
 void AddGeometryImpl(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 {
-	std::vector<Vector3d> Vertices;
+	std::vector<Vector3> Vertices;
 	std::vector<uint16_t> Indices;
-	std::vector<Vector3d> Normals;
+	std::vector<Vector3> Normals;
 	TShape* shape = geom->GetShapeObj<TShape>();
 
 	std::string name = std::to_string(geom->GetGuid());
@@ -56,7 +56,7 @@ void AddGeometryImpl(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 		std::vector<Vertex1> vv;
 		for (size_t i = 0; i < Vertices.size(); ++i)
 		{
-			vv.emplace_back(Vertices[i], Vector3d(1.0f, 1.0f, 1.0f));
+			vv.emplace_back(Vertices[i], Vector3(1.0f, 1.0f, 1.0f));
 		}
 		renderer->AddWireframe(name.c_str(), geom->GetTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
 	}
@@ -76,14 +76,14 @@ void AddTriMesh(Renderer* renderer, Mesh* mesh, Transform* Trans, bool RenderBV)
 
 	if (RenderBV)
 	{
-		std::vector<Vector3d> Vertices;
+		std::vector<Vector3> Vertices;
 		std::vector<uint16_t> Indices;
 		AxisAlignedBox3d aabb(mesh->BoundingVolume.Min, mesh->BoundingVolume.Max);
 		aabb.GetWireframe(Vertices, Indices);
 		vv.clear();
 		for (size_t i = 0; i < Vertices.size(); ++i)
 		{
-			vv.emplace_back(Vertices[i], Vector3d(1.0f, 1.0f, 1.0f));
+			vv.emplace_back(Vertices[i], Vector3(1.0f, 1.0f, 1.0f));
 		}
 		renderer->AddWireframe(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
 	}

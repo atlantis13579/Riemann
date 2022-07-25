@@ -42,7 +42,7 @@ struct AABBTreeBuildData
 	int							numGeometriesPerNode;	
 	int							numGeometries;
 	const Box3d*				pAABBArray;
-	Vector3d*					pCenterBuffer;		// Holds the memory
+	Vector3*					pCenterBuffer;		// Holds the memory
 	int*						pIndicesBase;
 	AABBTreeOffline*			pAABBTree;
 };

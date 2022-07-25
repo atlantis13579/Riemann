@@ -42,12 +42,12 @@ public:
 public:
 	void			MakeEmpty(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
 	bool			VoxelizationTrianglesSet(const VoxelizationInfo& info, Mesh* mesh);
-	bool			VoxelizationTri(const Vector3d& v0, const Vector3d& v1, const Vector3d& v2, const VoxelizationInfo& info);
+	bool			VoxelizationTri(const Vector3& v0, const Vector3& v1, const Vector3& v2, const VoxelizationInfo& info);
 	bool			VoxelizationYPlane(float world_y);
 	bool			VoxelizationYPlane(float world_y_min, float world_y_max);
 	bool			VoxelizationCube(const Box3d& cube);
 	bool			MakeComplementarySet();
-	uint64_t		Separate(const Vector3d& pos, uint32_t data, float IntersectThr);
+	uint64_t		Separate(const Vector3& pos, uint32_t data, float IntersectThr);
 	int				SolveTopology(float IntersectThr, std::unordered_map<int, uint64_t>* volumes = nullptr);
 	bool			IntersectYPlane(float y_value, std::vector<int>& output, float Thr);
 	int				Filter(std::function<bool(Voxel* v)> func);
@@ -58,15 +58,15 @@ public:
 	void			TraversalField(std::function<void(int idx, Voxel* v)> callback);
 
 	std::string		DebugString(int idx) const;
-	Voxel*			GetVoxel(const Vector3d& pos);
+	Voxel*			GetVoxel(const Vector3& pos);
 	Voxel*			GetVoxel(int idx);
 	Voxel*			GetVoxelByY(Voxel* Base, float y, float Thr);
-	int				WorldSpaceToVoxelIndex(const Vector3d& pos) const;
+	int				WorldSpaceToVoxelIndex(const Vector3& pos) const;
 	int				WorldSpaceToVoxelSpaceY(float pos_y) const;
 	float			VoxelSpaceToWorldSpaceY(uint16_t y) const;
-	Box3d			GetVoxelBox(const Vector3d& pos) const;
+	Box3d			GetVoxelBox(const Vector3& pos) const;
 	Box3d			GetVoxelBox(int x, int y, int z) const;
-	uint32_t		GetVoxelData(const Vector3d& pos);
+	uint32_t		GetVoxelData(const Vector3& pos);
 
 	bool			SerializeTo(const char* filename);
 	bool			SerializeFrom(const char* filename);

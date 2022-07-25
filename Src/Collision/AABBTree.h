@@ -29,7 +29,7 @@ public:
 	void	StaticBuild(AABBTreeBuildData& params);
 	void	Statistic(TreeStatistics &stat);
 
-	int		IntersectPoint(const Vector3d& Point) const;
+	int		IntersectPoint(const Vector3& Point) const;
 	bool	RayCast(const Ray3d& ray, Geometry** ObjectCollection, const RayCastOption& Option, RayCastResult *Result) const;
 	bool	RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const;
 	bool	Overlap(Geometry *geometry, Geometry** ObjectCollection, const OverlapOption& Option, OverlapResult *Result);

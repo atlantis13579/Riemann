@@ -22,9 +22,9 @@ static void Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float
 		}
 		
 		Body->X = Body->X + (Body->P * Body->InvMass) * dt;						// X' = v = P / m
-		Matrix3d R = Body->Q.ToRotationMatrix();
-		Matrix3d invInertiaWorld = R * Body->InvInertia * R.Transpose();
-		Vector3d AngularVelocity = invInertiaWorld * Body->L;
+		Matrix3 R = Body->Q.ToRotationMatrix();
+		Matrix3 invInertiaWorld = R * Body->InvInertia * R.Transpose();
+		Vector3 AngularVelocity = invInertiaWorld * Body->L;
 		Quaternion dQ = 0.5f * Quaternion(0.0f, AngularVelocity) * Body->Q;		// Q' = 0.5 * AngularVelocity * Q
 		Body->Q = (Body->Q + dQ * dt).Unit();
 		
@@ -57,9 +57,9 @@ static void Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, flo
 		Body->L = (Body->L + Body->ExtTorque * dt) * Body->AngularDamping;		// L' = Torque
 		
 		Body->X = Body->X + (Body->P * Body->InvMass) * dt;						// X' = v = P / m
-		Matrix3d R = Body->Q.ToRotationMatrix();
-		Matrix3d invInertiaWorld = R * Body->InvInertia * R.Transpose();
-		Vector3d AngularVelocity = invInertiaWorld * Body->L;
+		Matrix3 R = Body->Q.ToRotationMatrix();
+		Matrix3 invInertiaWorld = R * Body->InvInertia * R.Transpose();
+		Vector3 AngularVelocity = invInertiaWorld * Body->L;
 		Quaternion dQ = 0.5f * Quaternion(0.0f, AngularVelocity) * Body->Q;		// Q' = 0.5 * AngularVelocity * Q
 		Body->Q = (Body->Q + dQ * dt).Unit();
 		

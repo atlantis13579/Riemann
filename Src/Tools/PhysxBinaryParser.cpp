@@ -35,7 +35,7 @@ typedef uint8_t PxU8;
 typedef float PxF32;
 typedef double PxF64;
 typedef float PxReal;
-typedef Vector3d PxVec3;
+typedef Vector3 PxVec3;
 
 typedef uint64_t PxSerialObjectId;
 
@@ -61,22 +61,22 @@ class PhysxBinaryParser
 public:
 	static Geometry* CreateSphere(physx::PxSphereGeometry* physxObj)
 	{
-		return GeometryFactory::CreateSphere(Vector3d::Zero(), physxObj->radius);
+		return GeometryFactory::CreateSphere(Vector3::Zero(), physxObj->radius);
 	}
 
 	static Geometry* CreatePlane(physx::PxPlaneGeometry* physxObj)
 	{
-		return GeometryFactory::CreatePlane(Vector3d::Zero(), Vector3d::UnitY());
+		return GeometryFactory::CreatePlane(Vector3::Zero(), Vector3::UnitY());
 	}
 
 	static Geometry* CreateCapsule(physx::PxCapsuleGeometry* physxObj)
 	{
-		return GeometryFactory::CreateCapsule(Vector3d::UnitY() * -physxObj->halfHeight, Vector3d::UnitY() * physxObj->halfHeight, physxObj->radius);
+		return GeometryFactory::CreateCapsule(Vector3::UnitY() * -physxObj->halfHeight, Vector3::UnitY() * physxObj->halfHeight, physxObj->radius);
 	}
 
 	static Geometry* CreateBox(physx::PxBoxGeometry* physxObj)
 	{
-		return GeometryFactory::CreateOBB(Vector3d::Zero(), physxObj->halfExtents);
+		return GeometryFactory::CreateOBB(Vector3::Zero(), physxObj->halfExtents);
 	}
 
 	static Geometry* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj, bool shared_mem)
@@ -113,7 +113,7 @@ public:
 		const uint32_t					nRows = pxhf->mData.rows;
 
 		TCE3<float>	ce = pxhf->mData.mAABB;
-		Vector3d Scale = Vector3d(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
+		Vector3 Scale = Vector3(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
 		ce.Center *= Scale;
 		ce.Extent *= Scale;
 		Geometry* Geom = GeometryFactory::CreateHeightField(ce.GetAABB(), nRows, nCols);
@@ -280,7 +280,7 @@ public:
 
 			RigidBodyParam param;
 			param.InvMass = core.inverseMass;
-			param.Inertia = Matrix3d(core.inverseInertia.x, core.inverseInertia.y, core.inverseInertia.z).Inverse();
+			param.Inertia = Matrix3(core.inverseInertia.x, core.inverseInertia.y, core.inverseInertia.z).Inverse();
 			param.LinearVelocity = core.linearVelocity;
 			param.AngularVelocity = core.angularVelocity;
 			param.LinearDamping = core.linearDamping;

@@ -121,7 +121,7 @@ void KinematicsTree::Simulate(float elapsed)
 		AnimTreeNode* node = &m_FlatTree[i];
 		AnimTreeNode* parent = &m_FlatTree[node->Parent];
 
-		Vector3d pos = Vector3d::Zero();
+		Vector3 pos = Vector3::Zero();
 		Quaternion quat = Quaternion::One();
 		node->Anim.Advance(elapsed_rated, &pos, &quat);
 
@@ -200,7 +200,7 @@ bool KinematicsTree::Deserialize(const std::string& filepath)
 	return true;
 }
 
-void KinematicsTree::SetRootTransform(const Vector3d& pos, const Quaternion& rot)
+void KinematicsTree::SetRootTransform(const Vector3& pos, const Quaternion& rot)
 {
 	if (m_FlatTree.size() > 0)
 	{

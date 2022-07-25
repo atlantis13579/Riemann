@@ -12,12 +12,12 @@ class Cylinder3d
 public:
 	float		Radius;
 	float		Height;
-	Vector3d	X0, X1;
+	Vector3	X0, X1;
 
 public:
 	Cylinder3d() {}
 
-	Cylinder3d(float _Radius, const Vector3d& _X0, const Vector3d& _X1)
+	Cylinder3d(float _Radius, const Vector3& _X0, const Vector3& _X1)
 	{
 		Radius = _Radius;
 		Height = (_X0 - _X1).Length();
@@ -47,26 +47,26 @@ public:
 		return (float)M_PI * Radius * Radius * Height;
 	}
 
-	Matrix3d GetInertiaTensor(float Mass) const
+	Matrix3 GetInertiaTensor(float Mass) const
 	{
 		return GetInertiaTensor(Radius, Height, Mass);
 	}
 
-	static Matrix3d GetInertiaTensor(float Radius, float Height, float Mass)
+	static Matrix3 GetInertiaTensor(float Radius, float Height, float Mass)
 	{
 		// https://www.wolframalpha.com/input/?i=cylinder
 		float RR = Radius * Radius;
 		float Diag12 = Mass / 12.0f * (3.0f * RR + Height * Height);
 		float Diag3 = Mass / 2.0f * RR;
-		return Matrix3d(Diag12, Diag12, Diag3);
+		return Matrix3(Diag12, Diag12, Diag3);
 	}
 
-	void	GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void	GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
 
 	}
 
-	void	GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
+	void	GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
 	{
 
 	}

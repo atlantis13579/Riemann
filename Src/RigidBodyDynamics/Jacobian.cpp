@@ -30,10 +30,10 @@ static float BaumgarteStabilizationTerm(float dt, float PenetrationDepth)
 }
 
 // http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
-void Jacobian::Setup(const Contact* contact, RigidBody* bodyA, RigidBody* bodyB, const Vector3d& dir, float dt)
+void Jacobian::Setup(const Contact* contact, RigidBody* bodyA, RigidBody* bodyB, const Vector3& dir, float dt)
 {
-	Vector3d ra = contact->PositionWorldA - bodyA->X;
-	Vector3d rb = contact->PositionWorldB - bodyB->X;
+	Vector3 ra = contact->PositionWorldA - bodyA->X;
+	Vector3 rb = contact->PositionWorldB - bodyB->X;
 
 	m_jva = -dir;
 	m_jwa = -ra.Cross(dir);
@@ -51,20 +51,20 @@ void Jacobian::Setup(const Contact* contact, RigidBody* bodyA, RigidBody* bodyB,
 		float restitutionB = bodyB->GetRestitution();
 		float restitution = restitutionA * restitutionB;
 
-		Vector3d va = bodyA->GetLinearVelocity();
-		Vector3d wa = bodyA->GetAngularVelocity();
-		Vector3d vb = bodyB->GetLinearVelocity();
-		Vector3d wb = bodyB->GetAngularVelocity();
+		Vector3 va = bodyA->GetLinearVelocity();
+		Vector3 wa = bodyA->GetAngularVelocity();
+		Vector3 vb = bodyB->GetLinearVelocity();
+		Vector3 wb = bodyB->GetAngularVelocity();
 
-		Vector3d relativeVelocity = vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra);
+		Vector3 relativeVelocity = vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra);
 		float closingSpeed = relativeVelocity.Dot(dir);
 		closingSpeed = std::min(closingSpeed + kRestitutionSlop, 0.0f);
 		closingSpeed = closingSpeed < -kRestitutionSlop ? closingSpeed : 0.0f;
 		m_bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingSpeed;
 	}
 
-	Vector3d rva = bodyA->GetInverseInertia() * m_jwa;
-	Vector3d rvb = bodyB->GetInverseInertia() * m_jwb;
+	Vector3 rva = bodyA->GetInverseInertia() * m_jwa;
+	Vector3 rvb = bodyB->GetInverseInertia() * m_jwb;
 
 	float k = bodyA->GetInverseMass() + bodyB->GetInverseMass() + DotProduct(m_jwa, rva) + DotProduct(m_jwb, rvb);
 
@@ -85,10 +85,10 @@ void Jacobian::Solve(float clampmin, float clampmax)
 	m_totalLambda = Clamp(m_totalLambda + lambda, clampmin, clampmax);
 	lambda = m_totalLambda - oldTotalLambda;
 	
-	Vector3d dpa = m_jva * lambda;
-	Vector3d dwa = (m_bodyA->GetInverseInertia_WorldSpace() * m_jwa) * lambda;
-	Vector3d dpb = m_jvb * lambda;
-	Vector3d dwb = (m_bodyB->GetInverseInertia_WorldSpace() * m_jwb) * lambda;
+	Vector3 dpa = m_jva * lambda;
+	Vector3 dwa = (m_bodyA->GetInverseInertia_WorldSpace() * m_jwa) * lambda;
+	Vector3 dpb = m_jvb * lambda;
+	Vector3 dwb = (m_bodyB->GetInverseInertia_WorldSpace() * m_jwb) * lambda;
 
 	m_bodyA->AddLinearMomentum(dpa);
 	m_bodyA->AddAngularVelocity(dwa);

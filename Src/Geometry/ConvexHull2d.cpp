@@ -3,7 +3,7 @@
 
 #include "../Maths/Maths.h"
 
-void __convex_points_sort(int* p, int low, int high, int ori, const std::vector<Vector2d> &points)
+void __convex_points_sort(int* p, int low, int high, int ori, const std::vector<Vector2> &points)
 {
 	const float kEpilson = 0.00001f;
 
@@ -38,7 +38,7 @@ void __convex_points_sort(int* p, int low, int high, int ori, const std::vector<
 	}
 }
 
-void ConvexHull_GrahamScan(const std::vector<Vector2d>& points, std::vector<Vector2d>* hull)
+void ConvexHull_GrahamScan(const std::vector<Vector2>& points, std::vector<Vector2>* hull)
 {
 	hull->clear();
 	int nPts = (int)points.size();
@@ -56,8 +56,8 @@ void ConvexHull_GrahamScan(const std::vector<Vector2d>& points, std::vector<Vect
 	hull->push_back(points[order[1]]);
 	for (jj = 1, ii = 2; ii < nPts; ++ii)
 	{
-		Vector2d i1 = jj == 0 ? hull->back() : hull->at(jj - 1);
-		Vector2d i2 = hull->at(jj);
+		Vector2 i1 = jj == 0 ? hull->back() : hull->at(jj - 1);
+		Vector2 i2 = hull->at(jj);
 		int i3 = order[ii];
 		float ddd = (i1 - points[i3]).Cross(i2 - points[i3]);
 		while (jj >= 1 && (i1 - points[i3]).Cross(i2 - points[i3]) <= 0)
@@ -80,8 +80,8 @@ void ConvexHull_GrahamScan(const std::vector<Vector2d>& points, std::vector<Vect
 	int top = jj + 1;
 	for (ii = nPts - 2; ii >= 0; --ii)
 	{
-		Vector2d i1 = jj == 0 ? hull->back() : hull->at(jj - 1);
-		Vector2d i2 = hull->at(jj);
+		Vector2 i1 = jj == 0 ? hull->back() : hull->at(jj - 1);
+		Vector2 i2 = hull->at(jj);
 		int i3 = order[ii];
 		while (jj >= top && (i1 - points[i3]).Cross(i2 - points[i3]) <= 0)
 		{
@@ -102,12 +102,12 @@ void ConvexHull_GrahamScan(const std::vector<Vector2d>& points, std::vector<Vect
 }
 
 
-static bool IsFarAway(const Vector2d &v0, const Vector2d& v1, const Vector2d& v2)
+static bool IsFarAway(const Vector2 &v0, const Vector2& v1, const Vector2& v2)
 {
 	return (v0-v1).SquareLength() < (v0 - v2).SquareLength();
 }
 
-void ConvexHull_GiftWrapping(const std::vector<Vector2d>& points, std::vector<Vector2d>* hull)
+void ConvexHull_GiftWrapping(const std::vector<Vector2>& points, std::vector<Vector2>* hull)
 {
 	const float kEpilson = 0.00001f;
 
@@ -144,7 +144,7 @@ void ConvexHull_GiftWrapping(const std::vector<Vector2d>& points, std::vector<Ve
 
 #define	n(_s)	(((_s)+1)%nPts)
 
-void RotatingCaliper(const std::vector<Vector2d>& convex, int* i1, int* i2)
+void RotatingCaliper(const std::vector<Vector2>& convex, int* i1, int* i2)
 {
 	if (convex.size() < 1)
 	{

@@ -14,8 +14,8 @@
 
 WorldViewer::WorldViewer(Renderer* renderer)
 {
-	m_CamCenter = Vector3d::Zero();
-	m_CamParam = Vector3d(1.0f, 0.6f, 15.0f);
+	m_CamCenter = Vector3::Zero();
+	m_CamParam = Vector3(1.0f, 0.6f, 15.0f);
 	m_Renderer = renderer;
 	CreateSimulator();
 	UpdateCamera();
@@ -31,8 +31,8 @@ void WorldViewer::CreateDemo()
 {
 	RigidBodyParam rp;
 	rp.Static = true;
-	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d(0.0f, 1.0f, 0.0f), 1.0f);
-	// Geometry* plane = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(100.0f, 2.1f, 100.0f));
+	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3(0.0f, 1.0f, 0.0f), 1.0f);
+	// Geometry* plane = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0f, 0.0f), Vector3(100.0f, 2.1f, 100.0f));
 	m_World->CreateRigidBody(plane, rp);
 	AddGeometry(m_Renderer, plane);
 
@@ -43,22 +43,22 @@ void WorldViewer::CreateDemo()
 	for (int j = 0; j < 1; ++j)
 	for (int k = 0; k < 1; ++k)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(j * 2.1f, 5.0f + i * 6, k * 2.1f), Vector3d(1.0f, 1.0f, 1.0f));
-		// Geometry* aabb = GeometryFactory::CreateSphere(Vector3d(j * 3.0f, 10.0f + i * 3.0f, k * 3.0f), 1.0f);
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 5.0f + i * 6, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
+		// Geometry* aabb = GeometryFactory::CreateSphere(Vector3(j * 3.0f, 10.0f + i * 3.0f, k * 3.0f), 1.0f);
 		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
-		// p->ApplyTorgue(Vector3d(0, -50, 0).Cross(Vector3d::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
+		// p->ApplyTorgue(Vector3(0, -50, 0).Cross(Vector3::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
 		AddGeometry(m_Renderer, aabb);
 	}
 }
 
 void WorldViewer::CreateStackBoxesDemo()
 {
-	m_CamParam = Vector3d(1.6f, 0.1f, 20.0f);
+	m_CamParam = Vector3(1.6f, 0.1f, 20.0f);
 	UpdateCamera();
 
 	RigidBodyParam rp;
 	rp.Static = true;
-	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, -5.0f, 0), Vector3d::UnitY(), 1.0f);
+	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3::UnitY(), 1.0f);
 	m_World->CreateRigidBody(plane, rp);
 	AddGeometry(m_Renderer, plane);
 
@@ -66,7 +66,7 @@ void WorldViewer::CreateStackBoxesDemo()
 	for (int i = 0; i < 10; ++i)
 	for (int j = 0; j < 10 - i; ++j)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, i * 3.0f, -10.0f + (j + i * 0.5f) * 2.1f), Vector3d::One());
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, i * 3.0f, -10.0f + (j + i * 0.5f) * 2.1f), Vector3::One());
 		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
 		AddGeometry(m_Renderer, aabb);
 	}
@@ -74,25 +74,25 @@ void WorldViewer::CreateStackBoxesDemo()
 
 void WorldViewer::CreateDominoDemo()
 {
-	m_CamParam = Vector3d(1.6f, 0.6f, 23.0f);
+	m_CamParam = Vector3(1.6f, 0.6f, 23.0f);
 	UpdateCamera();
 
 	RigidBodyParam rp;
 	rp.Static = true;
-	Geometry* plane = GeometryFactory::CreatePlane(Vector3d(0, 0, 0), Vector3d::UnitY(), 1.0f);
+	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, 0, 0), Vector3::UnitY(), 1.0f);
 	m_World->CreateRigidBody(plane, rp);
 	AddGeometry(m_Renderer, plane);
 
 	{
 		Quaternion q;
-		q.FromRotationAxis(Vector3d::UnitX(), 0.4f);
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 3.0f, -18.0f), Vector3d(2.0f, 2.0f, 6.0f), q);
+		q.FromRotationAxis(Vector3::UnitX(), 0.4f);
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, 3.0f, -18.0f), Vector3(2.0f, 2.0f, 6.0f), q);
 		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
 		p->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
 		AddGeometry(m_Renderer, aabb);
 
 		rp.Static = false;
-		Geometry* sp = GeometryFactory::CreateSphere(Vector3d(0.0f, 10.0f, -20.0f), 1.0f);
+		Geometry* sp = GeometryFactory::CreateSphere(Vector3(0.0f, 10.0f, -20.0f), 1.0f);
 		p = (RigidBodyDynamic*)m_World->CreateRigidBody(sp, rp); 
 		p->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
 		AddGeometry(m_Renderer, sp);
@@ -101,7 +101,7 @@ void WorldViewer::CreateDominoDemo()
 	rp.InvMass = 3.f;
 	for (int i = 0; i < 10; ++i)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, 4.0f, -10.0f + i * 2.0f), Vector3d(2.0f, 3.0f, 0.25f));
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, 4.0f, -10.0f + i * 2.0f), Vector3(2.0f, 3.0f, 0.25f));
 		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
 		AddGeometry(m_Renderer, aabb);
 	}
@@ -109,15 +109,15 @@ void WorldViewer::CreateDominoDemo()
 	for (int i = 0; i < 7; ++i)
 	{
 		Quaternion q;
-		q.FromRotationAxis(Vector3d::UnitY(), i * 30 * (3.14f / 180));
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(2.0f * i, 4.0f, 10.0f + 1.5f * ( i < 4 ? i : 6 - i)), Vector3d(2.0f, 3.0f, 0.25f), q);
+		q.FromRotationAxis(Vector3::UnitY(), i * 30 * (3.14f / 180));
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(2.0f * i, 4.0f, 10.0f + 1.5f * ( i < 4 ? i : 6 - i)), Vector3(2.0f, 3.0f, 0.25f), q);
 		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
 		AddGeometry(m_Renderer, aabb);
 	}
 
 	for (int i = 0; i < 10; ++i)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(12.0f, 4.0f, 10.0f - (i+1) * 2.0f), Vector3d(2.0f, 3.0f, 0.25f));
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(12.0f, 4.0f, 10.0f - (i+1) * 2.0f), Vector3(2.0f, 3.0f, 0.25f));
 		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
 		AddGeometry(m_Renderer, aabb);
 	}
@@ -131,11 +131,11 @@ void WorldViewer::LoadAnimation(const std::string& anim_name, const std::vector<
 	m_World->LoadAnimation(anim_name, anim_name, 10.0f, true);
 
 	KinematicsTree* tree = m_World->FindKinematics(anim_name);
-	tree->SetRootTransform(Vector3d(0, -10, 0), Quaternion::One());
+	tree->SetRootTransform(Vector3(0, -10, 0), Quaternion::One());
 
 	for (size_t i = 1; i < nodes.size(); ++i)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3d(0.0f, (float)i, 0.0f), Vector3d(1.0f, 3.0f, 1.0f));
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, (float)i, 0.0f), Vector3(1.0f, 3.0f, 1.0f));
 		RigidBodyStatic* p = (RigidBodyStatic*)m_World->CreateRigidBody(aabb, rp);
 		
 		const std::string& name = nodes[i];
@@ -163,11 +163,11 @@ void WorldViewer::LoadFlatObj(const std::string& file_name)
 	Mesh mesh;
 	mesh.LoadFlat(file_name.c_str());
 	Transform* t = new Transform;
-	t->SetScale(Vector3d(0.01f, 0.01f, 0.01f));
+	t->SetScale(Vector3(0.01f, 0.01f, 0.01f));
 	AddTriMesh(m_Renderer , &mesh, t, false);
 }
 
-void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3d &c, std::vector<Vector3d>& water_list)
+void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3 &c, std::vector<Vector3>& water_list)
 {
 	VoxelField field;
 
@@ -180,10 +180,10 @@ void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3d &c
 
 	field.MakeComplementarySet();
 
-	Vector3d pos_main = field.GetBoundingVolume().GetCenter();
+	Vector3 pos_main = field.GetBoundingVolume().GetCenter();
 	pos_main.y = field.GetBoundingVolume().Max.y - 5.0f;
 
-	const Vector3d Thr = Vector3d(0, 0.5f, 0);
+	const Vector3 Thr = Vector3(0, 0.5f, 0);
 
 	uint64_t vol = field.Separate(pos_main, 1, 0.1f);
 	for (size_t i = 0; i < water_list.size(); ++i)
@@ -209,11 +209,11 @@ void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3d &c
 	int idx_water_level = field.WorldSpaceToVoxelSpaceY(water_level);
 	int idx_water_level2 = field.WorldSpaceToVoxelSpaceY(water_level);
 
-	Vector3d pmin = Vector3d(c.x - 200.0f, water_level, c.z - 200.0f);
-	Vector3d pmax = Vector3d(c.x + 200.0f, water_level, c.z + 200.0f);
+	Vector3 pmin = Vector3(c.x - 200.0f, water_level, c.z - 200.0f);
+	Vector3 pmax = Vector3(c.x + 200.0f, water_level, c.z + 200.0f);
 
 	Transform* t = new Transform;
-	t->SetScale(Vector3d(0.02f, 0.02f, 0.02f));
+	t->SetScale(Vector3(0.02f, 0.02f, 0.02f));
 
 	AddTriMesh(m_Renderer, draw_mesh, t, false);
 }
@@ -222,7 +222,7 @@ void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3d &c
 void WorldViewer::CreateSimulator()
 {
 	RigidBodySimulationParam param;
-	param.Gravity = Vector3d(0, -9.8f, 0);
+	param.Gravity = Vector3(0, -9.8f, 0);
 	m_World = new RigidBodySimulation(param);
 }
 
@@ -231,22 +231,22 @@ void WorldViewer::UpdateSimulator(float dt)
 	m_World->Simulate(dt);
 }
 
-Vector3d WorldViewer::GetCameraPosition()
+Vector3 WorldViewer::GetCameraPosition()
 {
-	return m_CamCenter + Vector3d(sinf(m_CamParam.x) * cosf(m_CamParam.y), sinf(m_CamParam.y), cosf(m_CamParam.x) * cosf(m_CamParam.y)) * m_CamParam.z;
+	return m_CamCenter + Vector3(sinf(m_CamParam.x) * cosf(m_CamParam.y), sinf(m_CamParam.y), cosf(m_CamParam.x) * cosf(m_CamParam.y)) * m_CamParam.z;
 }
 
 void WorldViewer::UpdateCamera()
 {
-	Vector3d Eye = GetCameraPosition();
-	Vector3d Center = m_CamCenter;
+	Vector3 Eye = GetCameraPosition();
+	Vector3 Center = m_CamCenter;
 	m_Renderer->SetCameraLookAt(Eye, Center);
 }
 
 void WorldViewer::KeyboardMsg(char c)
 {
 	float Scale = 5.0f;
-	Vector3d Dir = m_CamCenter - GetCameraPosition();
+	Vector3 Dir = m_CamCenter - GetCameraPosition();
 	Dir.y = 0;
 	Dir.Normalize();
 	Dir *= Scale;

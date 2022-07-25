@@ -135,7 +135,7 @@ void ProjectiveDynamicsSolver::Init()
 
 }
 
-void ProjectiveDynamicsSolver::SetPosition(int nodeindex, Vector3d pos)
+void ProjectiveDynamicsSolver::SetPosition(int nodeindex, Vector3 pos)
 {
 	m_q[nodeindex * 3] = pos.x;
 	m_q[nodeindex * 3 + 1] = pos.y;
@@ -148,21 +148,21 @@ void ProjectiveDynamicsSolver::SetPosition(int nodeindex, Vector3d pos)
 	m_tetmesh->GetNode(nodeindex).position = pos;
 }
 
-void ProjectiveDynamicsSolver::SetVelocity(int nodeindex, Vector3d vel)
+void ProjectiveDynamicsSolver::SetVelocity(int nodeindex, Vector3 vel)
 {
 	m_v[nodeindex * 3] = vel.x;
 	m_v[nodeindex * 3 + 1] = vel.y;
 	m_v[nodeindex * 3 + 2] = vel.z;
 
 }
-void ProjectiveDynamicsSolver::SetExtForce(int nodeindex, Vector3d force)
+void ProjectiveDynamicsSolver::SetExtForce(int nodeindex, Vector3 force)
 {
 	m_fext[nodeindex * 3] = force.x;
 	m_fext[nodeindex * 3 + 1] = force.y;
 	m_fext[nodeindex * 3 + 2] = force.z;
 }
 
-void ProjectiveDynamicsSolver::AddExtForce(int nodeindex, Vector3d force)
+void ProjectiveDynamicsSolver::AddExtForce(int nodeindex, Vector3 force)
 {
 	m_fext[nodeindex * 3] += force.x;
 	m_fext[nodeindex * 3 + 1] += force.y;
@@ -196,14 +196,14 @@ void ProjectiveDynamicsSolver::Simulate()
 			int i2 = t->node[2];
 			int i3 = t->node[3];
 
-			Vector3d v0(m_q[i0 * 3], m_q[i0 * 3 + 1], m_q[i0 * 3 + 2]);
-			Vector3d v1(m_q[i1 * 3], m_q[i1 * 3 + 1], m_q[i1 * 3 + 2]);
-			Vector3d v2(m_q[i2 * 3], m_q[i2 * 3 + 1], m_q[i2 * 3 + 2]);
-			Vector3d v3(m_q[i3 * 3], m_q[i3 * 3 + 1], m_q[i3 * 3 + 2]);
+			Vector3 v0(m_q[i0 * 3], m_q[i0 * 3 + 1], m_q[i0 * 3 + 2]);
+			Vector3 v1(m_q[i1 * 3], m_q[i1 * 3 + 1], m_q[i1 * 3 + 2]);
+			Vector3 v2(m_q[i2 * 3], m_q[i2 * 3 + 1], m_q[i2 * 3 + 2]);
+			Vector3 v3(m_q[i3 * 3], m_q[i3 * 3 + 1], m_q[i3 * 3 + 2]);
 
-			Matrix3d D = m_tetmesh->GenerateD(v0, v1, v2, v3);
-			Matrix3d R = m_tetmesh->GetRotationMatrix(i, D);
-			Matrix3d edges = R * t->Dm * t->weight * t->volume;
+			Matrix3 D = m_tetmesh->GenerateD(v0, v1, v2, v3);
+			Matrix3 R = m_tetmesh->GetRotationMatrix(i, D);
+			Matrix3 edges = R * t->Dm * t->weight * t->volume;
 
 			for (int j = 0; j < 3; j++)
 			{
@@ -235,7 +235,7 @@ void ProjectiveDynamicsSolver::Simulate()
 
 	for (int i = 0; i < m_nNodes; i++)
 	{
-		m_tetmesh->GetNode(i).position = Vector3d(m_q[i * 3], m_q[i * 3 + 1], m_q[i * 3 + 2]);
+		m_tetmesh->GetNode(i).position = Vector3(m_q[i * 3], m_q[i * 3 + 1], m_q[i * 3 + 2]);
 	}
 }
 

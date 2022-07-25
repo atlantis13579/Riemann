@@ -22,7 +22,7 @@ public:
 		w = q.w;
 	}
 
-	Quaternion(float _w, const Vector3d &_v)
+	Quaternion(float _w, const Vector3 &_v)
 	{
 		w = _w;
 		x = _v.x;
@@ -55,13 +55,13 @@ public:
 	Quaternion Inverse() const
 	{
 		float m = Length();
-		return Quaternion(w / m, Vector3d(-x / m, -y / m, -z / m));
+		return Quaternion(w / m, Vector3(-x / m, -y / m, -z / m));
 	}
 
 	Quaternion Unit() const
 	{
 		float m = Length();
-		return Quaternion(w / m, Vector3d(x / m, y / m, z / m));
+		return Quaternion(w / m, Vector3(x / m, y / m, z / m));
 	}
 
 	float Dot(const Quaternion& rhs) const
@@ -79,16 +79,16 @@ public:
 		return w * w + x * x + y * y + z * z;
 	}
 
-	void FromRotationAxis(const Vector3d& axis, float radian)
+	void FromRotationAxis(const Vector3& axis, float radian)
 	{
 		*this = Quaternion(cosf(radian / 2), axis * sinf(radian / 2));
 	}
 	
-	void FromTwoAxis(const Vector3d& AxisFrom, const Vector3d& AxisTo)
+	void FromTwoAxis(const Vector3& AxisFrom, const Vector3& AxisTo)
 	{
-		Vector3d UnitAxisFrom = AxisFrom.Unit();
-		Vector3d UnitAxisTo = AxisTo.Unit();
-		Vector3d Axis = UnitAxisFrom.Cross(UnitAxisTo);
+		Vector3 UnitAxisFrom = AxisFrom.Unit();
+		Vector3 UnitAxisTo = AxisTo.Unit();
+		Vector3 Axis = UnitAxisFrom.Cross(UnitAxisTo);
 		float Angle = acosf(UnitAxisFrom.Dot(UnitAxisTo));
 		FromRotationAxis(Axis, Angle);
 	}
@@ -96,14 +96,14 @@ public:
 	void FromEuler(float x, float y, float z)
 	{
 		Quaternion xrot, yrot, zrot;
-		xrot.FromRotationAxis(Vector3d(1, 0, 0), x);
-		yrot.FromRotationAxis(Vector3d(0, 1, 0), y);
-		zrot.FromRotationAxis(Vector3d(0, 0, 1), z);
+		xrot.FromRotationAxis(Vector3(1, 0, 0), x);
+		yrot.FromRotationAxis(Vector3(0, 1, 0), y);
+		zrot.FromRotationAxis(Vector3(0, 0, 1), z);
 		*this = zrot * yrot * xrot;
 	}
 
 	// https://d3cw3dd2w32x2b.cloudfront.net/wp-content/uploads/2015/01/matrix-to-quat.pdf
-	void FromRotationMatrix(const Matrix3d& mat)
+	void FromRotationMatrix(const Matrix3& mat)
 	{
 		float t;
 		Quaternion q;
@@ -137,9 +137,9 @@ public:
 		*this = q;
 	}
 
-	Vector3d ToEuler() const
+	Vector3 ToEuler() const
 	{
-		return Vector3d(
+		return Vector3(
 			atan2f(2 * x*w - 2 * y*z, 1 - 2 * x*x - 2 * z*z),
 			atan2f(2 * y*w - 2 * x*z, 1 - 2 * y*y - 2 * z*z),
 			asinf(2 * x*y + 2 * z*w));
@@ -174,10 +174,10 @@ public:
 		return *this * q.Inverse();
 	}
 
-	Vector3d operator*(const Vector3d& vec) const
+	Vector3 operator*(const Vector3& vec) const
 	{
-		Vector3d v(x, y, z);
-		Vector3d t = v.Cross(vec) * 2;
+		Vector3 v(x, y, z);
+		Vector3 t = v.Cross(vec) * 2;
 		return vec + t * w + v.Cross(t);
 	}
 
@@ -267,7 +267,7 @@ public:
         return Slerp(start, end, t);
     }
 
-	Matrix4d ToRotationMatrix4d() const
+	Matrix4 ToRotationMatrix4d() const
 	{
 		float x2 = x * x;
 		float y2 = y * y;
@@ -279,13 +279,13 @@ public:
 		float wy = w * y;
 		float wz = w * z;
 
-		return Matrix4d(1.0f - 2.0f * (y2 + z2), 2.0f * (xy - wz), 2.0f * (xz + wy), 0.0f,
+		return Matrix4(1.0f - 2.0f * (y2 + z2), 2.0f * (xy - wz), 2.0f * (xz + wy), 0.0f,
 			2.0f * (xy + wz), 1.0f - 2.0f * (x2 + z2), 2.0f * (yz - wx), 0.0f,
 			2.0f * (xz - wy), 2.0f * (yz + wx), 1.0f - 2.0f * (x2 + y2), 0.0f,
 			0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
-	Matrix3d ToRotationMatrix() const
+	Matrix3 ToRotationMatrix() const
 	{
 		float x2 = x * x;
 		float y2 = y * y;
@@ -297,7 +297,7 @@ public:
 		float wy = w * y;
 		float wz = w * z;
 
-		return Matrix3d(1.0f - 2.0f * (y2 + z2), 2.0f * (xy - wz), 2.0f * (xz + wy),
+		return Matrix3(1.0f - 2.0f * (y2 + z2), 2.0f * (xy - wz), 2.0f * (xz + wy),
 			2.0f * (xy + wz), 1.0f - 2.0f * (x2 + z2), 2.0f * (yz - wx),
 			2.0f * (xz - wy), 2.0f * (yz + wx), 1.0f - 2.0f * (x2 + y2));
 	}

@@ -6,8 +6,8 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Quaternion.h"
 
-typedef std::vector<std::pair<int, Vector3d>>	ScaleKeyframes;
-typedef std::vector<std::pair<int, Vector3d>>	PositionKeyframes;
+typedef std::vector<std::pair<int, Vector3>>	ScaleKeyframes;
+typedef std::vector<std::pair<int, Vector3>>	PositionKeyframes;
 typedef std::vector<std::pair<int, Quaternion>> RotationKeyframes;
 typedef std::vector<std::pair<int, float>>		YawKeyframes;
 

@@ -99,7 +99,7 @@ void AABBTree::Statistic(TreeStatistics& stat)
 	}
 }
 
-int AABBTree::IntersectPoint(const Vector3d& Point) const
+int AABBTree::IntersectPoint(const Vector3& Point) const
 {
 	AABBTreeNodeInference* p = m_AABBTreeInference;
 	if (p == nullptr || !p->BV.IsInside(Point))
@@ -484,7 +484,7 @@ void AABBTree::InitAABBTreeBuild(AABBTreeBuildData& params)
 	params.pAABBTree->Init(params.numGeometries, params.numGeometriesPerNode);
 
 	params.pIndicesBase = m_GeometryIndicesBase;
-	params.pCenterBuffer = (Vector3d*) new float[(params.numGeometries + 1)*3];
+	params.pCenterBuffer = (Vector3*) new float[(params.numGeometries + 1)*3];
 	for (int i = 0; i < params.numGeometries; i++)
 	{
 		params.pCenterBuffer[i] = params.pAABBArray[i].GetCenter();

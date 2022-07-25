@@ -15,7 +15,7 @@ class Simplex
 public:
 	struct Vertex
 	{
-		Vector3d	dir, pos;		// dir and position
+		Vector3	dir, pos;		// dir and position
 	};
 	Vertex			v[4];
 	float			w[4];			// barycentric coordinate
@@ -40,12 +40,12 @@ public:
 		return *this;
 	}
 
-	const Vector3d& LastPoint() const
+	const Vector3& LastPoint() const
 	{
 		return v[dimension - 1].pos;
 	}
 
-	void AddPoint(const Vector3d& dir)
+	void AddPoint(const Vector3& dir)
 	{
 		v[dimension].dir = dir.Unit();
 		v[dimension].pos = m_shape->Support(v[dimension].dir);
@@ -73,7 +73,7 @@ public:
 		return;
 	}
 
-	bool ProjectOrigin(Vector3d& proj, int& mask)
+	bool ProjectOrigin(Vector3& proj, int& mask)
 	{
 		switch (dimension)
 		{
@@ -100,7 +100,7 @@ public:
 		{
 			for (int i = 0; i < 3; ++i)
 			{
-				Vector3d axis = Vector3d(0, 0, 0);
+				Vector3 axis = Vector3(0, 0, 0);
 				axis[i] = 1;
 				AddPoint(axis);
 				if (EncloseOrigin())
@@ -115,12 +115,12 @@ public:
 		}
 		case 2:
 		{
-			const Vector3d d = v[1].pos - v[0].pos;
+			const Vector3 d = v[1].pos - v[0].pos;
 			for (int i = 0; i < 3; ++i)
 			{
-				Vector3d axis = Vector3d(0, 0, 0);
+				Vector3 axis = Vector3(0, 0, 0);
 				axis[i] = 1;
-				Vector3d p = CrossProduct(d, axis);
+				Vector3 p = CrossProduct(d, axis);
 				if (p.SquareLength() > 0)
 				{
 					AddPoint(p);
@@ -137,7 +137,7 @@ public:
 		}
 		case 3:
 		{
-			Vector3d n = CrossProduct(v[1].pos - v[0].pos, v[2].pos - v[0].pos);
+			Vector3 n = CrossProduct(v[1].pos - v[0].pos, v[2].pos - v[0].pos);
 			if (n.SquareLength() > 0)
 			{
 				AddPoint(n);
@@ -163,7 +163,7 @@ public:
 	}
 
 private:
-	static bool ProjectOriginToPoint(const Vector3d& a, Vector3d& proj, int& mask)
+	static bool ProjectOriginToPoint(const Vector3& a, Vector3& proj, int& mask)
 	{
 		float l = a.SquareLength();
 		if (l <= SIMPLEX1_EPS)
@@ -176,9 +176,9 @@ private:
 		return true;
 	}
 
-	static bool ProjectOriginToSegment(const Vector3d& a, const Vector3d& b, Vector3d& proj, int& mask)
+	static bool ProjectOriginToSegment(const Vector3& a, const Vector3& b, Vector3& proj, int& mask)
 	{
-		Vector3d d = b - a;
+		Vector3 d = b - a;
 		float l = d.SquareLength();
 		if (l <= SIMPLEX2_EPS)
 		{
@@ -204,11 +204,11 @@ private:
 		return true;
 	}
 
-	static bool ProjectOriginToTriangle(const Vector3d& a, const Vector3d& b, const Vector3d& c, Vector3d& proj, int& mask)
+	static bool ProjectOriginToTriangle(const Vector3& a, const Vector3& b, const Vector3& c, Vector3& proj, int& mask)
 	{
-		Vector3d	v[] = { a, b, c };
-		Vector3d	dl[] = { a - b, b - c, c - a };
-		Vector3d	n = CrossProduct(dl[0], dl[1]);
+		Vector3	v[] = { a, b, c };
+		Vector3	dl[] = { a - b, b - c, c - a };
+		Vector3	n = CrossProduct(dl[0], dl[1]);
 
 		const float l = n.SquareLength();
 		if (l <= SIMPLEX3_EPS)
@@ -216,12 +216,12 @@ private:
 			return false;
 		}
 
-		Vector3d subpos;
+		Vector3 subpos;
 		int submask = 0;
 		float min_sqr_dist = FLT_MAX;
 		for (int i = 0; i < 3; ++i)
 		{
-			Vector3d ns = CrossProduct(dl[i], n);
+			Vector3 ns = CrossProduct(dl[i], n);
 			float dp = DotProduct(v[i], ns);
 			if (dp > 0)
 			{
@@ -243,11 +243,11 @@ private:
 		return true;
 	}
 
-	static bool ProjectOriginToTetrahedral(const Vector3d& a, const Vector3d& b, const Vector3d& c, const Vector3d& d, Vector3d& proj, int& mask)
+	static bool ProjectOriginToTetrahedral(const Vector3& a, const Vector3& b, const Vector3& c, const Vector3& d, Vector3& proj, int& mask)
 	{
-		const Vector3d* vt[] = { &a, &b, &c, &d };
-		Vector3d dl[] = { a - d, b - d, c - d };
-		Vector3d n = CrossProduct(b - c, a - b);
+		const Vector3* vt[] = { &a, &b, &c, &d };
+		Vector3 dl[] = { a - d, b - d, c - d };
+		Vector3 n = CrossProduct(b - c, a - b);
 		float vl = TripleProduct(dl[0], dl[1], dl[2]);
 		float dp = DotProduct(a, n);
 		if (vl * dp > 0 || fabsf(vl) <= SIMPLEX4_EPS)
@@ -255,7 +255,7 @@ private:
 			return false;
 		}
 
-		Vector3d subpos;
+		Vector3 subpos;
 		int submask = 0;
 		float min_sqr_dist = FLT_MAX;
 		for (int i = 0; i < 3; ++i)
@@ -274,7 +274,7 @@ private:
 		}
 		if (min_sqr_dist == FLT_MAX)
 		{
-			proj = Vector3d::Zero();
+			proj = Vector3::Zero();
 			mask = 0b1111;
 		}
 		return true;

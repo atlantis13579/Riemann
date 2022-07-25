@@ -388,7 +388,7 @@ inline F128 Vec4V_From_FloatV(Scaler f)
 	return vcombine_f32(f, f);
 }
 
-inline F128 F128_Load_Vector3d(const Vector3d& f)
+inline F128 F128_Load_Vector3d(const Vector3& f)
 {
 	alignas(16) float data[4] = { f.x, f.y, f.z, 0.0f };
 	return F128_LoadA(data);

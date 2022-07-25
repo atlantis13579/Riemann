@@ -70,7 +70,7 @@ void	TriangleMesh::GetVertIndices(uint32_t triIndex, uint32_t& i0, uint32_t& i1,
 	}
 }
 
-bool TriangleMesh::OverlapTri(uint32_t HitNode, const Vector3d& Bmin, const Vector3d& Bmax) const
+bool TriangleMesh::OverlapTri(uint32_t HitNode, const Vector3& Bmin, const Vector3& Bmax) const
 {
 	LeafNode currLeaf(HitNode);
 	uint32_t NumLeafTriangles = currLeaf.GetNumTriangles();
@@ -82,9 +82,9 @@ bool TriangleMesh::OverlapTri(uint32_t HitNode, const Vector3d& Bmin, const Vect
 		const uint32_t triangleIndex = BaseTriIndex + i;
 		GetVertIndices(triangleIndex, i0, i1, i2);
 
-		const Vector3d& v0 = Vertices[i0];
-		const Vector3d& v1 = Vertices[i1];
-		const Vector3d& v2 = Vertices[i2];
+		const Vector3& v0 = Vertices[i0];
+		const Vector3& v1 = Vertices[i1];
+		const Vector3& v2 = Vertices[i2];
 
 		bool intersect = Triangle3d::IntersectAABB(v0, v1, v2, Bmin, Bmax);
 		if (intersect)
@@ -96,7 +96,7 @@ bool TriangleMesh::OverlapTri(uint32_t HitNode, const Vector3d& Bmin, const Vect
 	return false;
 }
 
-bool TriangleMesh::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
+bool TriangleMesh::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 {
 	const uint32_t maxStack = 128;
 	uint32_t stack1[maxStack];
@@ -185,7 +185,7 @@ bool TriangleMesh::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) con
 	return false;
 }
 
-bool	TriangleMesh::RayIntersectTri(uint32_t HitNode, const Vector3d& Origin, const Vector3d& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const
+bool	TriangleMesh::RayIntersectTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const
 {
 	LeafNode currLeaf(HitNode);
 	uint32_t NumLeafTriangles = currLeaf.GetNumTriangles();
@@ -200,9 +200,9 @@ bool	TriangleMesh::RayIntersectTri(uint32_t HitNode, const Vector3d& Origin, con
 		const uint32_t triangleIndex = BaseTriIndex + i;
 		GetVertIndices(triangleIndex, i0, i1, i2);
 
-		const Vector3d& v0 = Vertices[i0];
-		const Vector3d& v1 = Vertices[i1];
-		const Vector3d& v2 = Vertices[i2];
+		const Vector3& v0 = Vertices[i0];
+		const Vector3& v1 = Vertices[i1];
+		const Vector3& v2 = Vertices[i2];
 
 		float t;
 		bool intersect = Triangle3d::RayIntersectTriangle(Origin, Dir, v0, v1, v2, &t);
@@ -230,7 +230,7 @@ bool	TriangleMesh::RayIntersectTri(uint32_t HitNode, const Vector3d& Origin, con
 	return hit;
 }
 
-bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const
+bool TriangleMesh::IntersectRay(const Vector3& Origin, const Vector3& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const
 {
 	if (m_BVH == nullptr)
 	{
@@ -375,7 +375,7 @@ bool TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, con
 	return Result->hitTime != FLT_MAX;
 }
 
-bool	TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+bool	TriangleMesh::IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
 {
 	TriMeshHitOption Option;
 	Option.hitNearest = true;
@@ -390,19 +390,19 @@ bool	TriangleMesh::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, flo
 	return false;
 }
 
-Matrix3d TriangleMesh::GetInertiaTensor(float Mass) const
+Matrix3 TriangleMesh::GetInertiaTensor(float Mass) const
 {
 	assert(false);
-	return Matrix3d::Zero();
+	return Matrix3::Zero();
 }
 
-Vector3d TriangleMesh::GetSupport(const Vector3d& dir) const
+Vector3 TriangleMesh::GetSupport(const Vector3& dir) const
 {
 	assert(false);
-	return Vector3d::Zero();
+	return Vector3::Zero();
 }
 
-int TriangleMesh::GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+int TriangleMesh::GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
 {
 	assert(false);
 	return 0;

@@ -3,15 +3,15 @@
 #include "Segment3d.h"
 #include "../Maths/Maths.h"
 
-bool Capsule3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+bool Capsule3d::IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
 {
-	const Vector3d X1ToStart = Origin - X0;
-	Vector3d Axis = (X1 - X0) / Length;
+	const Vector3 X1ToStart = Origin - X0;
+	Vector3 Axis = (X1 - X0) / Length;
 	const float AxisDotX1ToStart = DotProduct(X1ToStart, Axis);
 	if (AxisDotX1ToStart >= -Radius && AxisDotX1ToStart <= Length + Radius)
 	{
 		const float ClampedProjection = Clamp<float>(AxisDotX1ToStart, 0, Length);
-		const Vector3d ClampedProjectionPosition = Axis * ClampedProjection;
+		const Vector3 ClampedProjectionPosition = Axis * ClampedProjection;
 		const float Dist2 = (X1ToStart - ClampedProjectionPosition).SquareLength();
 		if (Dist2 <= Radius * Radius)
 		{
@@ -74,8 +74,8 @@ bool Capsule3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float*
 				}
 			}
 
-			const Vector3d SpherePosition = Origin + Dir * Time;
-			const Vector3d CylinderToSpherePosition = SpherePosition - X0;
+			const Vector3 SpherePosition = Origin + Dir * Time;
+			const Vector3 CylinderToSpherePosition = SpherePosition - X0;
 			const float PositionLengthOnCoreCylinder = DotProduct(CylinderToSpherePosition, Axis);
 			if (PositionLengthOnCoreCylinder >= 0 && PositionLengthOnCoreCylinder < Length)
 			{
@@ -100,8 +100,8 @@ bool Capsule3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float*
 		Sphere3d X2Sphere(X1, Radius);
 
 		float Time1, Time2;
-		Vector3d Position1, Position2;
-		Vector3d Normal1, Normal2;
+		Vector3 Position1, Position2;
+		Vector3 Normal1, Normal2;
 		bool bHitX1 = X1Sphere.IntersectRay(Origin, Dir, &Time1);
 		bool bHitX2 = X2Sphere.IntersectRay(Origin, Dir, &Time2);
 
@@ -141,19 +141,19 @@ bool Capsule3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float*
 	return false;
 }
 
-bool Capsule3d::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
+bool Capsule3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 {
 	AxisAlignedBox3d aabb(Bmin, Bmax);
 	return aabb.SqrDistanceToSegment(X0, X1) <= Radius * Radius;
 }
 
-bool Capsule3d::IntersectSphere(const Vector3d& InCenter, float InRadius) const
+bool Capsule3d::IntersectSphere(const Vector3& InCenter, float InRadius) const
 {
 	float SqrDist = Segment3d::SqrDistancePointToSegment(InCenter, X0, X1);
 	return SqrDist <= (Radius + InRadius) * (Radius + InRadius);
 }
 
-bool Capsule3d::IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float rRadius) const
+bool Capsule3d::IntersectCapsule(const Vector3& P0, const Vector3& P1, float rRadius) const
 {
 	if ((P1 - P0).SquareLength() < TINY_NUMBER)
 	{

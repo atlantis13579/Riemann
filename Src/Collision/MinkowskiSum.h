@@ -5,6 +5,6 @@
 class MinkowskiSum
 {
 public:
-	virtual Vector3d Center() const = 0;
-	virtual Vector3d Support(const Vector3d& Dir) const = 0;
+	virtual Vector3 Center() const = 0;
+	virtual Vector3 Support(const Vector3& Dir) const = 0;
 };

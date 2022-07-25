@@ -35,7 +35,7 @@ void MeshBVH4::ValidateRecursive(void* p, uint32_t Depth, const Box3d& parentBou
 				Mesh* pm = (Mesh*)p;
 				for (int i = 0; i < 3; ++i)
 				{
-					const Vector3d &vv = pm->GetVertex(triangleIndex, i);
+					const Vector3 &vv = pm->GetVertex(triangleIndex, i);
 					assert(bounds->IsInside(vv));
 				}
 				continue;
@@ -95,7 +95,7 @@ struct SortBoundsPredicate
 	}
 };
 
-float SAH(const Vector3d& v)
+float SAH(const Vector3& v)
 {
 	return v.x * v.y + v.y * v.z + v.x * v.z;
 }
@@ -177,8 +177,8 @@ struct SubSortSAH
 					tempPermute[i] = order[tempRanks[i]];
 			}
 
-			Vector3d boundsLmn = allBounds[tempPermute[0]].Min;
-			Vector3d boundsLmx = allBounds[tempPermute[0]].Max;
+			Vector3 boundsLmn = allBounds[tempPermute[0]].Min;
+			Vector3 boundsLmx = allBounds[tempPermute[0]].Max;
 
 			for (int ii = 1; ii < splitStartL; ii++)
 			{
@@ -194,8 +194,8 @@ struct SubSortSAH
 				metricL[countL0++] = SAH(boundsLmx - boundsLmn);
 			}
 
-			Vector3d boundsRmn = allBounds[tempPermute[ClusterSize - 1]].Min;
-			Vector3d boundsRmx = allBounds[tempPermute[ClusterSize - 1]].Max;
+			Vector3 boundsRmn = allBounds[tempPermute[ClusterSize - 1]].Min;
+			Vector3 boundsRmx = allBounds[tempPermute[ClusterSize - 1]].Max;
 			for (int ii = int(ClusterSize - 2); ii > splitStartR; ii--)
 			{
 				boundsRmn = boundsRmn.Min(allBounds[tempPermute[ii]].Min);
@@ -266,8 +266,8 @@ struct SubSortSAH
 	float ComputeSA(const uint32_t* permute, const Interval& split)
 	{
 		assert(split.count >= 1);
-		Vector3d bmn = allBounds[permute[split.start]].Min;
-		Vector3d bmx = allBounds[permute[split.start]].Max;
+		Vector3 bmn = allBounds[permute[split.start]].Min;
+		Vector3 bmx = allBounds[permute[split.start]].Max;
 		for (uint32_t i = 1; i < split.count; i++)
 		{
 			const Box3d& b1 = allBounds[permute[split.start + i]];
@@ -558,8 +558,8 @@ void MeshBVH4::BuildFromBounds(MeshBVH4& bvh, const std::vector<Box3d>& allBound
 	bvh.NumBatches = bvh.NumNodes / SIMD_WIDTH;
 	bvh.Memory = new uint8_t[sizeof(BVHNodeBatch) * bvh.NumBatches + 127];
 	bvh.BatchPtr = (BVHNodeBatch*)AlignMemory(bvh.Memory, 128);
-	bvh.BoundsMin = Vector4d(meshBounds.Min, 0.0f);
-	bvh.BoundsMax = Vector4d(meshBounds.Max, 0.0f);
+	bvh.BoundsMin = Vector4(meshBounds.Min, 0.0f);
+	bvh.BoundsMax = Vector4(meshBounds.Max, 0.0f);
 	bvh.BatchSize = SIMD_WIDTH;
 	bvh.MaxDepth = maxDepth;
 	assert(bvh.NumNodes % SIMD_WIDTH == 0);
@@ -622,7 +622,7 @@ Box3d BVHNodeBatch::ComputeBounds()
 		_maxy = std::max(_maxy, maxy[j]);
 		_maxz = std::max(_maxz, maxz[j]);
 	}
-	return Box3d(Vector3d(_minx, _miny, _minz), Vector3d(_maxx, _maxy, _maxz));
+	return Box3d(Vector3(_minx, _miny, _minz), Vector3(_maxx, _maxy, _maxz));
 }
 
 /////////////////////////////////////////////////////////////////////////

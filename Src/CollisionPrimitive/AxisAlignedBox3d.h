@@ -11,15 +11,15 @@
 class AxisAlignedBox3d
 {
 public:
-	Vector3d Min;
-	Vector3d Max;
+	Vector3 Min;
+	Vector3 Max;
 
 public:
 	AxisAlignedBox3d()
 	{
 	}
 
-	AxisAlignedBox3d(const Vector3d& Bmin, const Vector3d& Bmax)
+	AxisAlignedBox3d(const Vector3& Bmin, const Vector3& Bmax)
 	{
 		Min = Bmin;
 		Max = Bmax;
@@ -31,7 +31,7 @@ public:
 	}
 
 public:
-	bool			IntersectPoint(const Vector3d& Point) const
+	bool			IntersectPoint(const Vector3& Point) const
 	{
 		if (Point.x >= Min.x && Point.x <= Max.x &&
 			Point.y >= Min.y && Point.y <= Max.y &&
@@ -42,7 +42,7 @@ public:
 		return false;
 	}
 
-	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
+	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	{
 		if (Min.x > Bmax.x || Bmin.x > Max.x)
 		{
@@ -62,14 +62,14 @@ public:
 		return true;
 	}
 
-	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
 	{
-		const Vector3d b0 = Min - Origin;
-		const Vector3d b1 = Max - Origin;
+		const Vector3 b0 = Min - Origin;
+		const Vector3 b1 = Max - Origin;
 
 		float tMin = 0;
 		float tMax = FLT_MAX;
-		Vector3d Normal(0.0f);
+		Vector3 Normal(0.0f);
 
 		for (int i = 0; i < 3; ++i)
 		{
@@ -93,7 +93,7 @@ public:
 				t1 = b1[i] * InvDir;
 			}
 
-			Vector3d CurNormal = Vector3d(0.0f);
+			Vector3 CurNormal = Vector3(0.0f);
 			CurNormal[i] = 1.0f;
 
 			if (t0 > t1)
@@ -127,15 +127,15 @@ public:
 		return true;
 	}
 
-	bool			IntersectSphere(const Vector3d& Center, float Radius) const;
-	bool			IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float Radius) const;
+	bool			IntersectSphere(const Vector3& Center, float Radius) const;
+	bool			IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
 
-	Vector3d		ClosestPointTo(const Vector3d& Point) const;
-	float			SqrDistanceToPoint(const Vector3d& Point) const;
-	float			SqrDistanceToLine(const Vector3d& P0, const Vector3d& Dir, float* t) const;
-	float			SqrDistanceToSegment(const Vector3d& P0, const Vector3d& P1) const;
+	Vector3		ClosestPointTo(const Vector3& Point) const;
+	float			SqrDistanceToPoint(const Vector3& Point) const;
+	float			SqrDistanceToLine(const Vector3& P0, const Vector3& Dir, float* t) const;
+	float			SqrDistanceToSegment(const Vector3& P0, const Vector3& P1) const;
 
-	Vector3d		GetCenter() const
+	Vector3		GetCenter() const
 	{
 		return (Max + Min) * 0.5f;
 	}
@@ -150,53 +150,53 @@ public:
 		return GetVolume(Min, Max);
 	}
 
-	static float	GetVolume(const Vector3d& Bmin, const Vector3d& Bmax)
+	static float	GetVolume(const Vector3& Bmin, const Vector3& Bmax)
 	{
 		return ((Bmax.x - Bmin.x) * (Bmax.y - Bmin.y) * (Bmax.z - Bmin.z));
 	}
 
-	Vector3d		GetCenterOfMass() const
+	Vector3		GetCenterOfMass() const
 	{
 		return (Max + Min) * 0.5f;
 	}
 
-	Matrix3d		GetInertiaTensor(float Mass) const
+	Matrix3		GetInertiaTensor(float Mass) const
 	{
 		return GetInertiaTensor(Min, Max, Mass);
 	}
 
-	static Matrix3d GetInertiaTensor(const Vector3d& Bmin, const Vector3d& Bmax, float Mass)
+	static Matrix3 GetInertiaTensor(const Vector3& Bmin, const Vector3& Bmax, float Mass)
 	{
-		Vector3d Dim = Bmax - Bmin;
+		Vector3 Dim = Bmax - Bmin;
 
 		// https://www.wolframalpha.com/input/?i=cuboid
 		const float M = Mass / 12;
 		const float WW = Dim.x * Dim.x;
 		const float HH = Dim.y * Dim.y;
 		const float DD = Dim.z * Dim.z;
-		return Matrix3d(M * (HH + DD), M * (WW + DD), M * (WW + HH));
+		return Matrix3(M * (HH + DD), M * (WW + DD), M * (WW + HH));
 	}
 
-	Vector3d		GetSupport(const Vector3d& dir) const
+	Vector3		GetSupport(const Vector3& dir) const
 	{
 		return GetSupport(Min, Max, dir);
 	}
 
-	static Vector3d GetSupport(const Vector3d& Bmin, const Vector3d& Bmax, const Vector3d& dir)
+	static Vector3 GetSupport(const Vector3& Bmin, const Vector3& Bmax, const Vector3& dir)
 	{
-		return Vector3d(
+		return Vector3(
 			dir.x > 0 ? Bmax.x : Bmin.x,
 			dir.y > 0 ? Bmax.y : Bmin.y,
 			dir.z > 0 ? Bmax.z : Bmin.z
 		);
 	}
 
-	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
 	{
 		return AxisAlignedBox3d::GetSupportFace(Min, Max, dir, FacePoints);
 	}
 
-	static int		GetSupportFace(const Vector3d& Bmin, const Vector3d& Bmax, const Vector3d& dir, Vector3d* FacePoints)
+	static int		GetSupportFace(const Vector3& Bmin, const Vector3& Bmax, const Vector3& dir, Vector3* FacePoints)
 	{
 		int axis = dir.Abs().LargestAxis();
 		if (dir[axis] < 0.0f)
@@ -204,24 +204,24 @@ public:
 			switch (axis)
 			{
 			case 0:
-				FacePoints[0] = Vector3d(Bmax.x, Bmin.y, Bmin.z);
-				FacePoints[1] = Vector3d(Bmax.x, Bmax.y, Bmin.z);
-				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmax.z);
-				FacePoints[3] = Vector3d(Bmax.x, Bmin.y, Bmax.z);
+				FacePoints[0] = Vector3(Bmax.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3(Bmax.x, Bmax.y, Bmin.z);
+				FacePoints[2] = Vector3(Bmax.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3(Bmax.x, Bmin.y, Bmax.z);
 				break;
 
 			case 1:
-				FacePoints[0] = Vector3d(Bmin.x, Bmax.y, Bmin.z);
-				FacePoints[1] = Vector3d(Bmin.x, Bmax.y, Bmax.z);
-				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmax.z);
-				FacePoints[3] = Vector3d(Bmax.x, Bmax.y, Bmin.z);
+				FacePoints[0] = Vector3(Bmin.x, Bmax.y, Bmin.z);
+				FacePoints[1] = Vector3(Bmin.x, Bmax.y, Bmax.z);
+				FacePoints[2] = Vector3(Bmax.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3(Bmax.x, Bmax.y, Bmin.z);
 				break;
 
 			case 2:
-				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmax.z);
-				FacePoints[1] = Vector3d(Bmax.x, Bmin.y, Bmax.z);
-				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmax.z);
-				FacePoints[3] = Vector3d(Bmin.x, Bmax.y, Bmax.z);
+				FacePoints[0] = Vector3(Bmin.x, Bmin.y, Bmax.z);
+				FacePoints[1] = Vector3(Bmax.x, Bmin.y, Bmax.z);
+				FacePoints[2] = Vector3(Bmax.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3(Bmin.x, Bmax.y, Bmax.z);
 				break;
 			}
 		}
@@ -230,24 +230,24 @@ public:
 			switch (axis)
 			{
 			case 0:
-				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmin.z);
-				FacePoints[1] = Vector3d(Bmin.x, Bmin.y, Bmax.z);
-				FacePoints[2] = Vector3d(Bmin.x, Bmax.y, Bmax.z);
-				FacePoints[3] = Vector3d(Bmin.x, Bmax.y, Bmin.z);
+				FacePoints[0] = Vector3(Bmin.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3(Bmin.x, Bmin.y, Bmax.z);
+				FacePoints[2] = Vector3(Bmin.x, Bmax.y, Bmax.z);
+				FacePoints[3] = Vector3(Bmin.x, Bmax.y, Bmin.z);
 				break;
 
 			case 1:
-				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmin.z);
-				FacePoints[1] = Vector3d(Bmax.x, Bmin.y, Bmin.z);
-				FacePoints[2] = Vector3d(Bmax.x, Bmin.y, Bmax.z);
-				FacePoints[3] = Vector3d(Bmin.x, Bmin.y, Bmax.z);
+				FacePoints[0] = Vector3(Bmin.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3(Bmax.x, Bmin.y, Bmin.z);
+				FacePoints[2] = Vector3(Bmax.x, Bmin.y, Bmax.z);
+				FacePoints[3] = Vector3(Bmin.x, Bmin.y, Bmax.z);
 				break;
 
 			case 2:
-				FacePoints[0] = Vector3d(Bmin.x, Bmin.y, Bmin.z);
-				FacePoints[1] = Vector3d(Bmin.x, Bmax.y, Bmin.z);
-				FacePoints[2] = Vector3d(Bmax.x, Bmax.y, Bmin.z);
-				FacePoints[3] = Vector3d(Bmax.x, Bmin.y, Bmin.z);
+				FacePoints[0] = Vector3(Bmin.x, Bmin.y, Bmin.z);
+				FacePoints[1] = Vector3(Bmin.x, Bmax.y, Bmin.z);
+				FacePoints[2] = Vector3(Bmax.x, Bmax.y, Bmin.z);
+				FacePoints[3] = Vector3(Bmax.x, Bmin.y, Bmin.z);
 				break;
 			}
 		}
@@ -255,12 +255,12 @@ public:
 		return 4;
 	}
 
-	void			GetMesh2(std::vector<Vector3d> &Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void			GetMesh2(std::vector<Vector3> &Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
 		Vertices.resize(8);
 		Box3d::GetVertices(Min, Max, &Vertices[0]);
 		
-		Vector3d Center = GetCenterOfMass();
+		Vector3 Center = GetCenterOfMass();
 
 		Normals.resize(8);
 		for (int i = 0; i < 8; ++i)
@@ -283,24 +283,24 @@ public:
 			6, 7, 3 });
 	}
 
-	void			GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void			GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
 		Vertices.resize(36);
 		Indices.resize(36);
 		Normals.resize(36);
 
-		Vector3d BV[] = { Min, Max };
+		Vector3 BV[] = { Min, Max };
 
 #define SET_VERTICES(_idx, _x, _y, _z)	\
-		Vertices[_idx] = Vector3d(BV[_x].x, BV[_y].y, BV[_z].z);	\
+		Vertices[_idx] = Vector3(BV[_x].x, BV[_y].y, BV[_z].z);	\
 		Indices[_idx] = (_idx);	\
-		Normals[_idx] = (_z == 0) ? -Vector3d::UnitZ() : Vector3d::UnitZ();	\
-		Vertices[_idx + 12] = Vector3d(BV[_y].x, BV[_z].y, BV[_x].z);	\
+		Normals[_idx] = (_z == 0) ? -Vector3::UnitZ() : Vector3::UnitZ();	\
+		Vertices[_idx + 12] = Vector3(BV[_y].x, BV[_z].y, BV[_x].z);	\
 		Indices[_idx + 12] = (_idx + 12);	\
-		Normals[_idx + 12] = (_z == 0) ? -Vector3d::UnitY() : Vector3d::UnitY();	\
-		Vertices[_idx + 24] = Vector3d(BV[_z].x, BV[_x].y, BV[_y].z);	\
+		Normals[_idx + 12] = (_z == 0) ? -Vector3::UnitY() : Vector3::UnitY();	\
+		Vertices[_idx + 24] = Vector3(BV[_z].x, BV[_x].y, BV[_y].z);	\
 		Indices[_idx + 24] = (_idx + 24);	\
-		Normals[_idx + 24] = (_z == 0) ? -Vector3d::UnitX() : Vector3d::UnitX();	\
+		Normals[_idx + 24] = (_z == 0) ? -Vector3::UnitX() : Vector3::UnitX();	\
 
 		SET_VERTICES(0, 0, 0, 0);
 		SET_VERTICES(1, 1, 0, 0);
@@ -318,7 +318,7 @@ public:
 #undef SET_VERTICES
 	}
 
-	void			GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
+	void			GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		Vertices.resize(8);
 		Box3d::GetVertices(Min, Max, &Vertices[0]);

@@ -9,7 +9,7 @@
 
 static const float HfCellThickness = 0.0001f;
 
-bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
+bool HeightField3d::IntersectRayCell(const Vector3& Origin, const Vector3& Dir, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
 {
 	float minH, maxH;
 	GetHeightRange(i, j, minH, maxH);
@@ -25,8 +25,8 @@ bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir
 	}
 
 	{
-		Vector3d Bmin(BV.Min.x + i * DX, minH, BV.Min.z + j * DZ);
-		Vector3d Bmax(BV.Min.x + (i + 1) * DX, maxH, BV.Min.z + (j + 1) * DZ);
+		Vector3 Bmin(BV.Min.x + i * DX, minH, BV.Min.z + j * DZ);
+		Vector3 Bmax(BV.Min.x + (i + 1) * DX, maxH, BV.Min.z + (j + 1) * DZ);
 		float t0, t1;
 		if (!Ray3d::RayIntersectAABB2(Origin, Dir, Bmin, Bmax, HfCellThickness, Option.maxDist, &t0, &t1))
 		{
@@ -37,7 +37,7 @@ bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir
 	bool hit = false;
 	float min_t = FLT_MAX;
 
-	Vector3d Tris[6];
+	Vector3 Tris[6];
 	int nT = GetCellTriangle(i, j, Tris);
 	for (int k = 0; k < nT; k += 3)
 	{
@@ -59,7 +59,7 @@ bool HeightField3d::IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir
 	return hit;
 }
 
-bool HeightField3d::IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
+bool HeightField3d::IntersectRayY(const Vector3& Origin, const Vector3& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
 {
 	const int i = X_INDEX(Origin.x);
 	const int j = Z_INDEX(Origin.z);
@@ -71,7 +71,7 @@ bool HeightField3d::IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, c
 	bool hit = false;
 	float min_t = FLT_MAX;
 
-	Vector3d Tris[6];
+	Vector3 Tris[6];
 	int nT = GetCellTriangle(i, j, Tris);
 	for (int k = 0; k < nT; k += 3)
 	{
@@ -93,7 +93,7 @@ bool HeightField3d::IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, c
 	return hit;
 }
 
-bool HeightField3d::IntersectRayBruteForce(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
+bool HeightField3d::IntersectRayBruteForce(const Vector3& Origin, const Vector3& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
 {
 	float min_dist = FLT_MAX;
 	for (uint32_t i = 0; i < nX - 1; ++i)
@@ -111,7 +111,7 @@ bool HeightField3d::IntersectRayBruteForce(const Vector3d& Origin, const Vector3
 	return min_dist != FLT_MAX;
 }
 
-bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
+bool HeightField3d::IntersectRay(const Vector3& Origin, const Vector3& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
 {
 	if (Origin.y > BV.Max.y && Dir.y >= 0)
 	{
@@ -122,7 +122,7 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 		return false;
 	}
 
-	int AxisY = Dir.ParallelTo(Vector3d::UnitY());
+	int AxisY = Dir.ParallelTo(Vector3::UnitY());
 	if (AxisY != 0)
 	{
 		// Handle the most common case
@@ -137,8 +137,8 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 		return false;
 	}
 
-	Vector3d P0 = Origin + Dir * t0;
-	Vector3d P1 = Origin + Dir * t1;
+	Vector3 P0 = Origin + Dir * t0;
+	Vector3 P1 = Origin + Dir * t1;
 
 	const int istart = X_INDEX(P0.x);
 	const int jstart = Z_INDEX(P0.z);
@@ -229,7 +229,7 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, co
 }
 
 
-bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+bool HeightField3d::IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
 {
 	HeightFieldHitOption Option;
 	Option.maxDist = FLT_MAX;
@@ -243,7 +243,7 @@ bool HeightField3d::IntersectRay(const Vector3d& Origin, const Vector3d& Dir, fl
 	return false;
 }
 
-bool HeightField3d::IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
+bool HeightField3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 {
 	Box3d Intersect;
 	if (!BV.GetIntersection(Box3d(Bmin, Bmax), Intersect))
@@ -278,8 +278,8 @@ bool HeightField3d::GetCellBV(int i, int j, Box3d &box) const
 	{
 		return false;
 	}
-	box.Min = Vector3d(BV.Min.x + DX * (i + 0), minH, BV.Min.z + DZ * (j + 0));
-	box.Max = Vector3d(BV.Min.x + DX * (i + 1), maxH, BV.Min.z + DZ * (j + 1));
+	box.Min = Vector3(BV.Min.x + DX * (i + 0), minH, BV.Min.z + DZ * (j + 0));
+	box.Max = Vector3(BV.Min.x + DX * (i + 1), maxH, BV.Min.z + DZ * (j + 1));
 	return true;
 }
 
@@ -328,7 +328,7 @@ bool HeightField3d::GetHeightRange(int i, int j, float& minH, float& maxH) const
 	return false;
 }
 
-int HeightField3d::GetCellTriangle(int i, int j, Vector3d Tris[6]) const
+int HeightField3d::GetCellTriangle(int i, int j, Vector3 Tris[6]) const
 {
 	assert(i >= 0 && i < (int)nX - 1);
 	assert(j >= 0 && j < (int)nZ - 1);
@@ -345,7 +345,7 @@ int HeightField3d::GetCellTriangle(int i, int j, Vector3d Tris[6]) const
 	uint8_t Hole0 = Cells[i + j * nX].Tessellation0;
 	uint8_t Hole1 = Cells[i + j * nX].Tessellation1;
 
-	Vector3d Base = Vector3d(BV.Min.x + DX * i, 0.0f, BV.Min.z + DZ * j);
+	Vector3 Base = Vector3(BV.Min.x + DX * i, 0.0f, BV.Min.z + DZ * j);
 	
 	float Height0 = GetHeight(i0);
 	float Height1 = GetHeight(i1);
@@ -355,16 +355,16 @@ int HeightField3d::GetCellTriangle(int i, int j, Vector3d Tris[6]) const
 	int nt = 0;
 	if (Hole0 != 0x7F)
 	{
-		Tris[0] = Base + Vector3d(0.0f, Height2, DZ);
-		Tris[1] = Base + Vector3d(0.0f, Height0, 0.0f);
-		Tris[2] = tessFlag ? Base + Vector3d(DX, Height3, DZ) : Base + Vector3d(DX, Height1, 0.0f);
+		Tris[0] = Base + Vector3(0.0f, Height2, DZ);
+		Tris[1] = Base + Vector3(0.0f, Height0, 0.0f);
+		Tris[2] = tessFlag ? Base + Vector3(DX, Height3, DZ) : Base + Vector3(DX, Height1, 0.0f);
 		nt += 3;
 	}
 	if (Hole1 != 0x7F)
 	{
-		Tris[nt + 0] = Base + Vector3d(DX, Height3, DZ);
-		Tris[nt + 1] = tessFlag ? Base + Vector3d(0.0f, Height0, 0.0f) : Base + Vector3d(0.0f,Height2, DZ);
-		Tris[nt + 2] = Base + Vector3d(DX, Height1, 0.0f);
+		Tris[nt + 0] = Base + Vector3(DX, Height3, DZ);
+		Tris[nt + 1] = tessFlag ? Base + Vector3(0.0f, Height0, 0.0f) : Base + Vector3(0.0f,Height2, DZ);
+		Tris[nt + 2] = Base + Vector3(DX, Height1, 0.0f);
 		nt += 3;
 	}
 

@@ -16,13 +16,13 @@ struct AnimTreeNode
 	AnimTreeNode()
 	{
 		Entity = nullptr;
-		X = Vector3d::Zero();
+		X = Vector3::Zero();
 		Q = Quaternion::One();
 		Parent = -1;
 	}
 
 	std::string						Name;
-	Vector3d						X;
+	Vector3						X;
 	Quaternion						Q;
 	KeyFrameAnimation						Anim;
 	RigidBodyStatic*				Entity;
@@ -37,7 +37,7 @@ public:
 	void						Simulate(float elapsed);
 	bool						Deserialize(const std::string& filepath);
 
-	void						SetRootTransform(const Vector3d& pos, const Quaternion& rot);
+	void						SetRootTransform(const Vector3& pos, const Quaternion& rot);
 	const std::string&			GetName() const { return m_ResName; }
 	void						SetName(const std::string& Name) { m_ResName = Name; }
 	void						SetAnimationPlayRate(float play_rate);

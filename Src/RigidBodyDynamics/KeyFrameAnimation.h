@@ -18,7 +18,7 @@ struct Keyframe
 	T	key;
 };
 
-typedef Keyframe<Vector3d> KeyframePos;
+typedef Keyframe<Vector3> KeyframePos;
 typedef Keyframe<Quaternion> KeyframeQuat;
 
 template<typename T>
@@ -47,11 +47,11 @@ public:
 	bool CheckAnimData() const;
 	void SetTime(float time);
 	bool IsFinish() const;
-	bool Advance(float elapsed, Vector3d* pos, Quaternion* quat);
+	bool Advance(float elapsed, Vector3* pos, Quaternion* quat);
 
 private:
 
-	Timeline<Vector3d>			m_TimelinePosition;
+	Timeline<Vector3>			m_TimelinePosition;
 	Timeline<Quaternion>		m_TimelineRotation;
 	std::vector<KeyframePos>	m_FramesPosition;
 	std::vector<KeyframeQuat>	m_FramesRotation;

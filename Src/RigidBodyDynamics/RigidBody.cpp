@@ -11,35 +11,35 @@ RigidBody::RigidBody()
 	Material = nullptr;
 }
 
-Vector3d 			RigidBody::GetLinearVelocity() const
+Vector3 			RigidBody::GetLinearVelocity() const
 {
 	return P * InvMass;
 }
 
-const Vector3d&		RigidBody::GetLinearMomentum() const
+const Vector3&		RigidBody::GetLinearMomentum() const
 {
 	return P;
 }
 
-Vector3d			RigidBody::GetAngularVelocity() const
+Vector3			RigidBody::GetAngularVelocity() const
 {
 	return InvInertia * L;
 }
 
-const Vector3d&		RigidBody::GetAngularMomentum() const
+const Vector3&		RigidBody::GetAngularMomentum() const
 {
 	return L;
 }
 
-const Matrix3d&	 	RigidBody::GetInverseInertia() const
+const Matrix3&	 	RigidBody::GetInverseInertia() const
 {
 	return InvInertia;
 }
 
-Matrix3d			RigidBody::GetInverseInertia_WorldSpace() const
+Matrix3			RigidBody::GetInverseInertia_WorldSpace() const
 {
-	Matrix3d R = Q.ToRotationMatrix();
-	Matrix3d invInertiaWorld = R * InvInertia * R.Transpose();
+	Matrix3 R = Q.ToRotationMatrix();
+	Matrix3 invInertiaWorld = R * InvInertia * R.Transpose();
 	return invInertiaWorld;
 }
 
@@ -70,29 +70,29 @@ RigidBodyDynamic* RigidBody::CastDynamic()
 	return Static ? nullptr : (RigidBodyDynamic*)this;
 }
 
-void				RigidBody::SetLinearVelocity(const Vector3d &v)
+void				RigidBody::SetLinearVelocity(const Vector3 &v)
 {
-	P = InvMass > kMinimumInvMass ? v / InvMass : Vector3d::Zero();
+	P = InvMass > kMinimumInvMass ? v / InvMass : Vector3::Zero();
 }
 
-void				RigidBody::SetAngularVelocity(const Vector3d &w)
+void				RigidBody::SetAngularVelocity(const Vector3 &w)
 {
-	L = InvInertia.Invertible() ? InvInertia.Inverse() * w : Vector3d::Zero();
+	L = InvInertia.Invertible() ? InvInertia.Inverse() * w : Vector3::Zero();
 }
 
-void				RigidBody::AddLinearVelocity(const Vector3d& dv)
+void				RigidBody::AddLinearVelocity(const Vector3& dv)
 {
-	P = InvMass > kMinimumInvMass ? P + dv / InvMass : Vector3d::Zero();
+	P = InvMass > kMinimumInvMass ? P + dv / InvMass : Vector3::Zero();
 }
 
-void				RigidBody::AddLinearMomentum(const Vector3d& dp)
+void				RigidBody::AddLinearMomentum(const Vector3& dp)
 {
-	P = InvMass > kMinimumInvMass ? P + dp : Vector3d::Zero();
+	P = InvMass > kMinimumInvMass ? P + dp : Vector3::Zero();
 }
 
-void				RigidBody::AddAngularVelocity(const Vector3d& dw)
+void				RigidBody::AddAngularVelocity(const Vector3& dw)
 {
-	L = InvInertia.Invertible() ? (L + InvInertia.Inverse() * dw) : Vector3d::Zero();
+	L = InvInertia.Invertible() ? (L + InvInertia.Inverse() * dw) : Vector3::Zero();
 }
 
 void				RigidBody::SetDefaultPhysicsMaterial(int idx)
@@ -115,17 +115,17 @@ float				RigidBody::GetFrictionStatic() const
 	return Material ? Material->FrictionStatic : PhysicsMaterial::DefaultFrictionStatic();
 }
 
-void				RigidBodyDynamic::ApplyForce(const Vector3d& Force)
+void				RigidBodyDynamic::ApplyForce(const Vector3& Force)
 {
 	this->ExtForce += Force;
 }
 
-void				RigidBodyDynamic::ApplyTorgue(const Vector3d& Torque)
+void				RigidBodyDynamic::ApplyTorgue(const Vector3& Torque)
 {
 	this->ExtTorque += Torque;
 }
 
-void RigidBodyDynamic::ApplyTorgue(const Vector3d& RelativePosToCenterOfMass, const Vector3d& Force)
+void RigidBodyDynamic::ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force)
 {
 	this->ExtTorque += RelativePosToCenterOfMass.Cross(Force);
 }
@@ -142,10 +142,10 @@ RigidBodyDynamic*	RigidBodyDynamic::CreateRigidBody(Geometry* Shape, const Rigid
 	Rigid->InvInertia = Shape->GetInverseInertia_LocalSpace(Rigid->InvMass);
 	Rigid->X = Shape->GetPosition();
 	Rigid->Q = Shape->GetRotationQuat();
-	Rigid->P = Rigid->InvMass > 0.0f ? param.LinearVelocity / Rigid->InvMass : Vector3d::Zero();
-	Rigid->L = Rigid->InvInertia.Invertible() ? Rigid->InvInertia.Inverse() * param.AngularVelocity : Vector3d::Zero();
-	Rigid->ExtForce = Vector3d::Zero();
-	Rigid->ExtTorque = Vector3d::Zero();
+	Rigid->P = Rigid->InvMass > 0.0f ? param.LinearVelocity / Rigid->InvMass : Vector3::Zero();
+	Rigid->L = Rigid->InvInertia.Invertible() ? Rigid->InvInertia.Inverse() * param.AngularVelocity : Vector3::Zero();
+	Rigid->ExtForce = Vector3::Zero();
+	Rigid->ExtTorque = Vector3::Zero();
 	Rigid->LinearDamping = param.LinearDamping;
 	Rigid->AngularDamping = param.AngularDamping;
 	Rigid->MaxContactImpulse = param.MaxContactImpulse;
@@ -162,17 +162,17 @@ RigidBodyStatic* RigidBodyStatic::CreateRigidBody(Geometry* Shape)
 {
 	RigidBodyStatic* Rigid = new RigidBodyStatic;
 	Rigid->InvMass = 0.0f;
-	Rigid->InvInertia = Matrix3d::Zero();
+	Rigid->InvInertia = Matrix3::Zero();
 	Rigid->X = Shape->GetPosition();
 	Rigid->Q = Shape->GetRotationQuat();
-	Rigid->P = Vector3d::Zero();
-	Rigid->L = Vector3d::Zero();
+	Rigid->P = Vector3::Zero();
+	Rigid->L = Vector3::Zero();
 	Rigid->Shape = Shape;
 	Rigid->Static = true;
 	return Rigid;
 }
 
-void RigidBodyStatic::SetTransform(const Vector3d& pos, const Quaternion& quat)
+void RigidBodyStatic::SetTransform(const Vector3& pos, const Quaternion& quat)
 {
 	X = pos;
 	Q = quat;
@@ -181,7 +181,7 @@ void RigidBodyStatic::SetTransform(const Vector3d& pos, const Quaternion& quat)
 	Shape->UpdateBoundingVolume();
 }
 
-void RigidBodyStatic::SetPosition(const Vector3d& pos)
+void RigidBodyStatic::SetPosition(const Vector3& pos)
 {
 	X = pos;
 	Shape->SetPosition(pos);

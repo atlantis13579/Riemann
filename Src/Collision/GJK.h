@@ -28,15 +28,15 @@ public:
 
 	GJK_status Solve(MinkowskiSum* shape)
 	{
-		Vector3d InitGuess = shape->Center();
+		Vector3 InitGuess = shape->Center();
 
 		distance = -1.0f;
 		result.Init(shape);
-		result.AddPoint(InitGuess.SquareLength() > 0 ? InitGuess : -Vector3d::UnitX());
-		Vector3d dir = result.v[0].pos;
+		result.AddPoint(InitGuess.SquareLength() > 0 ? InitGuess : -Vector3::UnitX());
+		Vector3 dir = result.v[0].pos;
 
 		int nlastp = 0;
-		Vector3d lastp[4] = { dir, dir, dir, dir };
+		Vector3 lastp[4] = { dir, dir, dir, dir };
 
 		float max_acc = 0.0f;
 		int iter = 0;
@@ -50,7 +50,7 @@ public:
 
 			result.AddPoint(-dir);
 
-			const Vector3d& p = result.LastPoint();
+			const Vector3& p = result.LastPoint();
 			if (IsDuplicated(lastp, p))
 			{
 				// Find duplicate point, stop searching to avoid infinite loop
@@ -94,11 +94,11 @@ public:
 	}
 
 private:
-	static bool IsDuplicated(Vector3d lastp[4], const Vector3d& p)
+	static bool IsDuplicated(Vector3 lastp[4], const Vector3& p)
 	{
 		for (int i = 0; i < 4; ++i)
 		{
-			Vector3d diff = p - lastp[i];
+			Vector3 diff = p - lastp[i];
 			if (diff.SquareLength() < GJK_DUPLICATED_EPS)
 			{
 				return true;

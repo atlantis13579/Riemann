@@ -269,7 +269,7 @@ public:
 	}
 };
 
-typedef TVector4<float> Vector4d;
+typedef TVector4<float> Vector4;
 
-static_assert(sizeof(Vector4d) == 16, "sizeof Vector4d is not valid");
+static_assert(sizeof(Vector4) == 16, "sizeof Vector4 is not valid");
 

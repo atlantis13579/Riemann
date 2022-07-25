@@ -12,14 +12,14 @@
 class Triangle3d
 {
 public:
-	Vector3d A, B, C;
+	Vector3 A, B, C;
 
 public:
 	Triangle3d()
 	{
 	}
 
-	Triangle3d(const Vector3d& InA, const Vector3d& InB, const Vector3d& InC)
+	Triangle3d(const Vector3& InA, const Vector3& InB, const Vector3& InC)
 	{
 		Init(InA, InB, InC);
 	}
@@ -29,40 +29,40 @@ public:
 		return ShapeType3d::TRIANGLE;
 	}
 
-	void			Init(const Vector3d& InA, const Vector3d& InB, const Vector3d& InC)
+	void			Init(const Vector3& InA, const Vector3& InB, const Vector3& InC)
 	{
 		A = InA;
 		B = InB;
 		C = InC;
 	}
 
-	Vector3d operator[](int i)
+	Vector3 operator[](int i)
 	{
 		return (&A)[i];
 	}
 
-	const Vector3d& operator[](int i) const
+	const Vector3& operator[](int i) const
 	{
 		return (&A)[i];
 	}
 
-	Vector3d		GetNormal() const
+	Vector3		GetNormal() const
 	{
 		return GetNormal(A, B, C);
 	}
 
-	static Vector3d GetNormal(const Vector3d& A, const Vector3d& B, const Vector3d& C)
+	static Vector3 GetNormal(const Vector3& A, const Vector3& B, const Vector3& C)
 	{
-		Vector3d cross = (B - A).Cross(C - A);
+		Vector3 cross = (B - A).Cross(C - A);
 		return cross.Unit();
 	}
 
-	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
 	{
 		return RayIntersectTriangle(Origin, Dir, A, B, C, t);
 	}
 
-	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const
+	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	{
 		return IntersectAABB(A, B, C, Bmin, Bmax);
 	}
@@ -70,20 +70,20 @@ public:
 	// By Tomas Akenine-Moller
 	// https://fileadmin.cs.lth.se/cs/Personal/Tomas_Akenine-Moller/code/
 	// -----
-	static bool		IntersectAABB(const Vector3d& A, const Vector3d& B, const Vector3d& C, const Vector3d& Bmin, const Vector3d& Bmax)
+	static bool		IntersectAABB(const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& Bmin, const Vector3& Bmax)
 	{
-		Vector3d Center = (Bmax + Bmin) * 0.5f;
-		Vector3d Extent = Bmax - Center;
+		Vector3 Center = (Bmax + Bmin) * 0.5f;
+		Vector3 Extent = Bmax - Center;
 
 		float min, max, p0, p1, p2, rad, fex, fey, fez;
 
-		Vector3d v0 = A - Center;
-		Vector3d v1 = B - Center;
-		Vector3d v2 = C - Center;
+		Vector3 v0 = A - Center;
+		Vector3 v1 = B - Center;
+		Vector3 v2 = C - Center;
 
-		Vector3d e0 = v1 - v0;
-		Vector3d e1 = v2 - v1;
-		Vector3d e2 = v0 - v2;
+		Vector3 e0 = v1 - v0;
+		Vector3 e1 = v2 - v1;
+		Vector3 e2 = v0 - v2;
 
 		fex = fabsf(e0.x);
 		fey = fabsf(e0.y);
@@ -265,9 +265,9 @@ public:
 		if (min > Extent.z || max < -Extent.z)
 			return false;
 
-		Vector3d Normal = e0.Cross(e1);
+		Vector3 Normal = e0.Cross(e1);
 
-		Vector3d vmin, vmax;
+		Vector3 vmin, vmax;
 		float v;
 		for (int i = 0; i <= 2; i++)
 		{
@@ -293,15 +293,15 @@ public:
 		return true;
 	}
 
-	static Vector3d ClosestPointOnTriangle(const Vector3d &Point, const Vector3d &A, const Vector3d &B, const Vector3d &C, unsigned char &mask)
+	static Vector3 ClosestPointOnTriangle(const Vector3 &Point, const Vector3 &A, const Vector3 &B, const Vector3 &C, unsigned char &mask)
 	{
-		const Vector3d BA = A - B;
-		const Vector3d AC = C - A;
-		const Vector3d CB = B - C;
-		const Vector3d Normal = BA.Cross(CB);
+		const Vector3 BA = A - B;
+		const Vector3 AC = C - A;
+		const Vector3 CB = B - C;
+		const Vector3 Normal = BA.Cross(CB);
 		
-		const Vector3d V[3] = {B, A, C};
-		const Vector3d N[3] = {Normal.Cross(BA), Normal.Cross(AC), Normal.Cross(CB)};
+		const Vector3 V[3] = {B, A, C};
+		const Vector3 N[3] = {Normal.Cross(BA), Normal.Cross(AC), Normal.Cross(CB)};
 		
 		for (int i = 0; i < 3; ++i)
 		{
@@ -345,37 +345,37 @@ public:
 		return A;
 	}
 	
-	static float	SqrDistancePointToTriangle(const Vector3d &Point, const Vector3d &A, const Vector3d &B, const Vector3d &C)
+	static float	SqrDistancePointToTriangle(const Vector3 &Point, const Vector3 &A, const Vector3 &B, const Vector3 &C)
 	{
 		unsigned char mask = 0;
-		Vector3d Closest = ClosestPointOnTriangle(Point, A, B, C, mask);
+		Vector3 Closest = ClosestPointOnTriangle(Point, A, B, C, mask);
 		return (Closest - Point).SquareLength();
 	}
 	
-	float			SqrDistanceToPoint(const Vector3d &Point) const
+	float			SqrDistanceToPoint(const Vector3 &Point) const
 	{
 		return Triangle3d::SqrDistancePointToTriangle(Point, A, B, C);
 	}
 	
-	bool			IntersectSphere(const Vector3d& Center, float Radius) const
+	bool			IntersectSphere(const Vector3& Center, float Radius) const
 	{
 		return SqrDistanceToPoint(Center) <= Radius * Radius;
 	}
 
 	// Moller CTrumbore intersection algorithm
-	static bool		RayIntersectTriangle(const Vector3d& Origin,
-										const Vector3d& Dir,
-										const Vector3d& A,
-										const Vector3d& B,
-										const Vector3d& C,
+	static bool		RayIntersectTriangle(const Vector3& Origin,
+										const Vector3& Dir,
+										const Vector3& A,
+										const Vector3& B,
+										const Vector3& C,
 										float* t)
 	{
 		const float kEpsilonTri = 0.0000001f;
 		//Find vectors for two edges sharing V1
-		const Vector3d e1 = B - A;
-		const Vector3d e2 = C - A;
+		const Vector3 e1 = B - A;
+		const Vector3 e2 = C - A;
 		//Begin calculating determinant - also used to calculate u parameter
-		const Vector3d P = Dir.Cross(e2);
+		const Vector3 P = Dir.Cross(e2);
 		//if determinant is near zero, ray lies in plane of triangle
 		const float det = e1.Dot(P);
 		//NOT CULLING
@@ -386,7 +386,7 @@ public:
 		const float inv_det = 1.f / det;
 
 		//calculate distance from V1 to ray origin
-		const Vector3d T = Origin - A;
+		const Vector3 T = Origin - A;
 
 		//Calculate u parameter and test bound
 		const float u = T.Dot(P) * inv_det;
@@ -397,7 +397,7 @@ public:
 		}
 
 		//Prepare to test v parameter
-		const Vector3d Q = T.Cross(e1);
+		const Vector3 Q = T.Cross(e1);
 
 		//Calculate V parameter and test bound
 		const float v = Dir.Dot(Q) * inv_det;
@@ -418,14 +418,14 @@ public:
 		return false;
 	}
 	
-	Vector3d		BaryCentric2D(const Vector3d& Point)
+	Vector3		BaryCentric2D(const Vector3& Point)
 	{
 		float a = ((B.y - C.y) * (Point.x - C.x) + (C.x - B.x) * (Point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y));
 		float b = ((C.y - A.y) * (Point.x - C.x) + (A.x - C.x) * (Point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y));
-		return Vector3d(a, b, 1.0f - a - b);
+		return Vector3(a, b, 1.0f - a - b);
 	}
 	
-	static float 	TriangleArea3D(const Vector3d& A, const Vector3d& B, const Vector3d& C)
+	static float 	TriangleArea3D(const Vector3& A, const Vector3& B, const Vector3& C)
 	{
 		float cx = (B.y - A.y) * (C.z - A.z) - (C.y - A.y) * (B.z - A.z);
 		float cy = (B.z - A.z) * (C.x - A.x) - (C.z - A.z) * (B.x - A.x);
@@ -446,18 +446,18 @@ public:
 		return box;
 	}
 
-	Matrix3d		GetInertiaTensor(float Mass) const
+	Matrix3		GetInertiaTensor(float Mass) const
 	{
 		// TODO
-		return Matrix3d(1, 1, 1);
+		return Matrix3(1, 1, 1);
 	}
 
-	Vector3d		GetSupport(const Vector3d& dir) const
+	Vector3		GetSupport(const Vector3& dir) const
 	{
 		return GetSupport(A, B, C, dir);
 	}
 
-	static Vector3d GetSupport(const Vector3d& A, const Vector3d& B, const Vector3d& C, const Vector3d& Dir)
+	static Vector3 GetSupport(const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& Dir)
 	{
 		float dpa = DotProduct(A, Dir);
 		float dpb = DotProduct(B, Dir);
@@ -475,31 +475,31 @@ public:
 		return C;
 	}
 
-	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
 	{
 		*FacePoints = Triangle3d::GetSupport(A, B, C, dir);
 		return 1;
 	}
 
-	void			GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void			GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
-		Vertices = std::vector<Vector3d>({ A , B, C });
-		Vector3d Nor = GetNormal();
-		Normals = std::vector<Vector3d>({ Nor, Nor , Nor });
+		Vertices = std::vector<Vector3>({ A , B, C });
+		Vector3 Nor = GetNormal();
+		Normals = std::vector<Vector3>({ Nor, Nor , Nor });
 		Indices = std::vector<uint16_t>({ 0,1,2, 2,3,0 });
 	}
 
-	void			GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
+	void			GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
 	{
-		Vertices = std::vector<Vector3d>({ A , B, C });
+		Vertices = std::vector<Vector3>({ A , B, C });
 		Indices = std::vector<uint16_t>({ 0,1, 1,2, 2,0 });
 	}
 	
 private:
-	static Vector3d _ClosestPointOnEdge(const Vector3d& P0, const Vector3d& P1, const Vector3d &Point)
+	static Vector3 _ClosestPointOnEdge(const Vector3& P0, const Vector3& P1, const Vector3 &Point)
 	{
-		const Vector3d V1 = P1 - P0;
-		const Vector3d V2 = Point - P0;
+		const Vector3 V1 = P1 - P0;
+		const Vector3 V2 = Point - P0;
 
 		const float dp1 = V2.Dot(V1);
 		if (dp1 <= 0)

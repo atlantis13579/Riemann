@@ -42,10 +42,10 @@ public:
 
 	void			InitField(const Box3d& Bv, int nVoxels, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
 
-	int				GetVoxelIdx(const Vector3d& pos) const;
+	int				GetVoxelIdx(const Vector3& pos) const;
 	int				VoxelSpaceToWorldSpaceY(float pos_y) const;
 	float			VoxelSpaceToWorldSpaceY(uint16_t y) const;
-	uint32_t		WorldSpaceToVoxelSpaceY(const Vector3d& pos) const;
+	uint32_t		WorldSpaceToVoxelSpaceY(const Vector3& pos) const;
 
 	bool			SerializeFrom(const char* filename);
 	int				GetVoxelCount(uint32_t idx) const;

@@ -615,7 +615,7 @@ inline F128 F128_SplatElement(F128 a)
 		_mm_shuffle_epi32(internalWindowsSimd::m128_F2I(a), _MM_SHUFFLE(index, index, index, index)));
 }
 
-inline F128 F128_Load_Vector3d(const Vector3d& f)
+inline F128 F128_Load_Vector3d(const Vector3& f)
 {
 	return _mm_set_ps(0.0f, f.z, f.y, f.x);
 }

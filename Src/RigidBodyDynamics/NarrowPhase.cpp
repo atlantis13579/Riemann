@@ -53,7 +53,7 @@ public:
 		return  true;
 	}
 
-	static bool ConstructSupportFace(Geometry* GeomA, Geometry* GeomB, const Vector3d& penetration_normal, SupportFace &Face)
+	static bool ConstructSupportFace(Geometry* GeomA, Geometry* GeomB, const Vector3& penetration_normal, SupportFace &Face)
 	{
 		SupportFace FaceA, FaceB;
 		GeomA->GetSupportFace_WorldSpace(-penetration_normal, FaceA);
@@ -69,10 +69,10 @@ public:
 		manifolds->push_back(ContactManifold());
 
 		// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
-		Vector3d w0 = Vector3d::Zero();
+		Vector3 w0 = Vector3::Zero();
 		for (int i = 0; i < epa.result.dimension; ++i)
 		{
-			Vector3d pi = GeomA->GetSupport_WorldSpace(epa.result.v[i].dir) * epa.result.w[i];
+			Vector3 pi = GeomA->GetSupport_WorldSpace(epa.result.v[i].dir) * epa.result.w[i];
 			w0 = w0 + pi;
 		}
 
@@ -82,13 +82,13 @@ public:
 			ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
 		}
 
-		const Matrix4d& invWorld = GeomA->GetInverseWorldMatrix();
+		const Matrix4& invWorld = GeomA->GetInverseWorldMatrix();
 		for (int i = -1; i < ContactFace.GetSize(); ++i)
 		{
-			Vector3d p0 = i == -1 ? w0 : ContactFace[i];
+			Vector3 p0 = i == -1 ? w0 : ContactFace[i];
 			Contact contact;
 			contact.PositionLocalA = invWorld * p0;
-			Vector3d p2 = p0 - epa.penetration_normal * epa.penetration_depth;
+			Vector3 p2 = p0 - epa.penetration_normal * epa.penetration_depth;
 			contact.PositionLocalB = invWorld * p2;
 			contact.PositionWorldA = p0;
 			contact.PositionWorldB = p2;

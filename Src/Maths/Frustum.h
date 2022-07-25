@@ -110,7 +110,7 @@ public:
 		return true;
 	}
 
-	bool PointInFrustum(const Vector3d& vec) const
+	bool PointInFrustum(const Vector3& vec) const
 	{
 		for (int i = 0; i < 6; i++)
 		{

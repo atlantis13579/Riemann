@@ -396,7 +396,7 @@ inline T TripleProduct(const TVector3<T>& a, const TVector3<T>& b, const TVector
 	return a.Cross(b).Dot(c);
 }
 
-typedef TVector3<float> Vector3d;
+typedef TVector3<float> Vector3;
 
-static_assert(sizeof(Vector3d) == 12, "sizeof Vector3d is not valid");
+static_assert(sizeof(Vector3) == 12, "sizeof Vector3 is not valid");
 

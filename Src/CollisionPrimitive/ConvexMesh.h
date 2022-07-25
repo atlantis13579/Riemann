@@ -24,10 +24,10 @@ struct HullFace3d
 class ConvexMesh
 {
 public:
-	Vector3d					CenterOfMass;
+	Vector3					CenterOfMass;
 	Box3d						BoundingVolume;
-	Matrix3d					Inertia;
-	std::vector<Vector3d>		Vertices;
+	Matrix3					Inertia;
+	std::vector<Vector3>		Vertices;
 	std::vector<uint16_t>		Edges;
 	std::vector<HullFace3d>		Faces;
 	uint32_t					NumVertices;
@@ -63,7 +63,7 @@ public:
 		NumFaces++;
 	}
 
-	void			SetVerties(const Vector3d* Verts, uint32_t Nv)
+	void			SetVerties(const Vector3* Verts, uint32_t Nv)
 	{
 		Vertices.resize(Nv);
 		memcpy(&Vertices[0], Verts, sizeof(Vertices[0]) * Vertices.size());
@@ -92,7 +92,7 @@ public:
 		return NumFaces;
 	}
 
-	Vector3d		GetNormal(uint32_t i) const
+	Vector3		GetNormal(uint32_t i) const
 	{
 		return (Vertices[i] - CenterOfMass).Unit();
 	}
@@ -108,7 +108,7 @@ public:
 	}
 
 
-	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
 	{
 		// TODO
 		return false;
@@ -119,29 +119,29 @@ public:
 		return BoundingVolume;
 	}
 
-	const Matrix3d&	GetInertiaTensor(float Mass) const
+	const Matrix3&	GetInertiaTensor(float Mass) const
 	{
 		return Inertia;
 	}
 
-	Vector3d		GetSupport(const Vector3d& dir) const
+	Vector3		GetSupport(const Vector3& dir) const
 	{
 		assert(false);
-		return Vector3d::Zero();
+		return Vector3::Zero();
 	}
 
-	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
 	{
 		assert(false);
 		return 0;
 	}
 
-	void	GetMesh(std::vector<Vector3d>& _Vertices, std::vector<uint16_t>& _Indices, std::vector<Vector3d>& _Normals)
+	void	GetMesh(std::vector<Vector3>& _Vertices, std::vector<uint16_t>& _Indices, std::vector<Vector3>& _Normals)
 	{
 
 	}
 
-	void	GetWireframe(std::vector<Vector3d>& _Vertices, std::vector<uint16_t>& _Indices)
+	void	GetWireframe(std::vector<Vector3>& _Vertices, std::vector<uint16_t>& _Indices)
 	{
 		_Vertices = Vertices;
 		_Indices = Edges;

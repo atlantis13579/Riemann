@@ -17,15 +17,15 @@
 class Capsule3d
 {
 public:
-	Vector3d	X0;
-	Vector3d	X1;
+	Vector3	X0;
+	Vector3	X1;
 	float		Length;
 	float		Radius;
 
 public:
 	Capsule3d() {}
 
-	Capsule3d(const Vector3d& InX1, const Vector3d& InX2, float InRadius)
+	Capsule3d(const Vector3& InX1, const Vector3& InX2, float InRadius)
 	{
 		Init(InX1, InX2, InRadius);
 	}
@@ -35,7 +35,7 @@ public:
 		return ShapeType3d::CAPSULE;
 	}
 
-	void		Init(const Vector3d& InX0, const Vector3d& InX1, float InRadius)
+	void		Init(const Vector3& InX0, const Vector3& InX1, float InRadius)
 	{
 		X0 = InX0;
 		X1 = InX1;
@@ -44,17 +44,17 @@ public:
 	}
 
 public:
-	inline Vector3d		GetAxis() const
+	inline Vector3		GetAxis() const
 	{
 		return X1 - X0;
 	}
 
-	inline Vector3d		GetUnitAxis() const
+	inline Vector3		GetUnitAxis() const
 	{
 		return (X1 - X0).Unit();
 	}
 
-	inline Vector3d		GetOrigin() const
+	inline Vector3		GetOrigin() const
 	{
 		return (X0 + X1) * 0.5f;
 	}
@@ -74,13 +74,13 @@ public:
 
 	bool				IsYAxisAligned() const
 	{
-		return (X1 - X0).ParallelTo(Vector3d::UnitY()) == 0;
+		return (X1 - X0).ParallelTo(Vector3::UnitY()) == 0;
 	}
 
-	bool				IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
-	bool				IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const;
-	bool				IntersectSphere(const Vector3d& rCenter, float rRadius) const;
-	bool				IntersectCapsule(const Vector3d& P0, const Vector3d& P1, float Radius) const;
+	bool				IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const;
+	bool				IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
+	bool				IntersectSphere(const Vector3& rCenter, float rRadius) const;
+	bool				IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
 
 	float				GetVolume() const
 	{
@@ -92,12 +92,12 @@ public:
 		return (float)M_PI * Radius * Radius * (Height + 4.0f * Radius / 3.0f);
 	}
 
-	Matrix3d			GetInertiaTensor(float Mass) const
+	Matrix3			GetInertiaTensor(float Mass) const
 	{
 		return GetInertiaTensor(Radius, GetHeight(), Mass);
 	}
 
-	static Matrix3d		GetInertiaTensor(float Radius, float Height, float Mass)
+	static Matrix3		GetInertiaTensor(float Radius, float Height, float Mass)
 	{
 		// https://www.wolframalpha.com/input/?i=capsule&assumption=%7B%22C%22,+%22capsule%22%7D+-%3E+%7B%22Solid%22%7D
 		float R = Radius;
@@ -110,36 +110,36 @@ public:
 		// (R^2 * (15H + 16R) / (30H +40R))
 		float Diag3 = Mass * (RR * (15.0f * H + 16.0f * R)) / (30.0f * H + 40.0f * R);
 
-		return Matrix3d(Diag12, Diag12, Diag3);
+		return Matrix3(Diag12, Diag12, Diag3);
 	}
 
-	Vector3d GetSupport(const Vector3d& dir) const
+	Vector3 GetSupport(const Vector3& dir) const
 	{
 		return GetSupport(X0, X1, Radius, dir);
 	}
 
-	static Vector3d		GetSupport(const Vector3d& X0, const Vector3d& X1, float Radius, const Vector3d& dir)
+	static Vector3		GetSupport(const Vector3& X0, const Vector3& X1, float Radius, const Vector3& dir)
 	{
-		Vector3d Axis = X1 - X0;
+		Vector3 Axis = X1 - X0;
 		float dp = DotProduct(dir, Axis);
-		Vector3d FarthestCap = dp >= 0 ? X1 : X0;
+		Vector3 FarthestCap = dp >= 0 ? X1 : X0;
 		float distSqr = dir.SquareLength();
 		if (distSqr <= 1e-6)
 		{
 			return FarthestCap;
 		}
-		Vector3d Normalized = dir / sqrtf(distSqr);
+		Vector3 Normalized = dir / sqrtf(distSqr);
 		return FarthestCap + Normalized * Radius;
 	}
 
-	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
 	{
 		assert(false);
 		*FacePoints = GetSupport(X0, X1, Radius, dir);
 		return 1;
 	}
 
-	void				GetVertices(int stackCount, int sliceCount, std::vector<Vector3d>* Vertices, std::vector<Vector3d>* Normals)
+	void				GetVertices(int stackCount, int sliceCount, std::vector<Vector3>* Vertices, std::vector<Vector3>* Normals)
 	{
 		const float mPI = 2.0f * asinf(1.0f);
 
@@ -147,8 +147,8 @@ public:
 		float thetaStep = 2.0f * mPI / sliceCount;
 		float Length = (X1 - X0).Length();
 
-		Vertices->push_back(Vector3d(0, Length * 0.5f + Radius, 0));
-		if (Normals) Normals->push_back(Vector3d::UnitY());
+		Vertices->push_back(Vector3(0, Length * 0.5f + Radius, 0));
+		if (Normals) Normals->push_back(Vector3::UnitY());
 
 		for (int i = 1; i < stackCount; i++)
 		{
@@ -157,20 +157,20 @@ public:
 			for (int j = 0; j <= sliceCount; j++)
 			{
 				float theta = j * thetaStep;
-				Vector3d p = Vector3d(Radius * sinf(phi) * cosf(theta), height + Radius * cosf(phi), Radius * sinf(phi) * sinf(theta));
+				Vector3 p = Vector3(Radius * sinf(phi) * cosf(theta), height + Radius * cosf(phi), Radius * sinf(phi) * sinf(theta));
 				Vertices->push_back(p);
 				if (Normals) Normals->push_back(p);
 			}
 		}
-		Vertices->push_back(Vector3d(0, -Length * 0.5f -Radius, 0));
-		if (Normals) Normals->push_back(-Vector3d::UnitY());
+		Vertices->push_back(Vector3(0, -Length * 0.5f -Radius, 0));
+		if (Normals) Normals->push_back(-Vector3::UnitY());
 
 		if (!IsYAxisAligned())
 		{
-			Matrix3d Rot;
-			Rot.FromTwoAxis(Vector3d::UnitY(), X1 - X0);
+			Matrix3 Rot;
+			Rot.FromTwoAxis(Vector3::UnitY(), X1 - X0);
 
-			Vector3d* pV = &Vertices->at(0);
+			Vector3* pV = &Vertices->at(0);
 			for (size_t i = 0; i < Vertices->size(); ++i)
 			{
 				pV[i] = Rot * pV[i];
@@ -178,7 +178,7 @@ public:
 
 			if (Normals)
 			{
-				Vector3d* pN = &Normals->at(0);
+				Vector3* pN = &Normals->at(0);
 				for (size_t i = 0; i < Normals->size(); ++i)
 				{
 					pN[i] = Rot * pN[i];
@@ -186,10 +186,10 @@ public:
 			}
 		}
 
-		Vector3d Center = GetOrigin();
+		Vector3 Center = GetOrigin();
 		if (Center.SquareLength() > 0.001f)
 		{
-			Vector3d* pV = &Vertices->at(0);
+			Vector3* pV = &Vertices->at(0);
 			for (size_t i = 0; i < Vertices->size(); ++i)
 			{
 				pV[i] = pV[i] + Center;
@@ -198,7 +198,7 @@ public:
 
 	}
 
-	void				GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void				GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
 		const int stackCount = 5;
 		const int sliceCount = 8;
@@ -237,7 +237,7 @@ public:
 		}
 	}
 
-	void			GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
+	void			GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		const int stackCount = 5;
 		const int sliceCount = 8;

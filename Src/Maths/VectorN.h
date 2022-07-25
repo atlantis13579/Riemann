@@ -3,14 +3,14 @@
 #include<string.h>
 
 template<typename T, int SIZE>
-class TVectorNd
+class TVectorN
 {
 public:
-	TVectorNd()
+	TVectorN()
 	{
 	}
 	
-	TVectorNd(bool Zero)
+	TVectorN(bool Zero)
 	{
 		if (Zero)
 		{
@@ -18,7 +18,7 @@ public:
 		}
 	}
 
-	TVectorNd(const std::initializer_list<T>& v)
+	TVectorN(const std::initializer_list<T>& v)
 	{
 		memset(mData, 0, sizeof(T) * SIZE);
 		int i = 0;
@@ -30,7 +30,7 @@ public:
 		}
 	}
 
-	TVectorNd(const TVectorNd<T, SIZE>& v)
+	TVectorN(const TVectorN<T, SIZE>& v)
 	{
 		memcpy(mData, v.mData, sizeof(T) * SIZE);
 	}
@@ -55,15 +55,15 @@ public:
 		return mData[i];
 	}
 
-	TVectorNd<T, SIZE>& operator=(const TVectorNd<T, SIZE>& v)
+	TVectorN<T, SIZE>& operator=(const TVectorN<T, SIZE>& v)
 	{
 		memcpy(mData, v.mData, sizeof(T) * SIZE);
 		return *this;
 	}
 
-	TVectorNd<T, SIZE> operator+(const TVectorNd<T, SIZE>& v) const
+	TVectorN<T, SIZE> operator+(const TVectorN<T, SIZE>& v) const
 	{
-		TVectorNd<T, SIZE> Ret(*this);
+		TVectorN<T, SIZE> Ret(*this);
 		for (int i = 0; i < SIZE; ++i)
 		{
 			Ret[i] += v[i];
@@ -71,9 +71,9 @@ public:
 		return Ret;
 	}
 
-	TVectorNd<T, SIZE> operator-(const TVectorNd<T, SIZE>& v) const
+	TVectorN<T, SIZE> operator-(const TVectorN<T, SIZE>& v) const
 	{
-		TVectorNd<T, SIZE> Ret(*this);
+		TVectorN<T, SIZE> Ret(*this);
 		for (int i = 0; i < SIZE; ++i)
 		{
 			Ret[i] -= v[i];
@@ -81,9 +81,9 @@ public:
 		return Ret;
 	}
 
-	TVectorNd<T, SIZE> operator*(const TVectorNd<T, SIZE>& v) const
+	TVectorN<T, SIZE> operator*(const TVectorN<T, SIZE>& v) const
 	{
-		TVectorNd<T, SIZE> Ret(*this);
+		TVectorN<T, SIZE> Ret(*this);
 		for (int i = 0; i < SIZE; ++i)
 		{
 			Ret[i] *= v[i];
@@ -91,9 +91,9 @@ public:
 		return Ret;
 	}
 
-	TVectorNd<T, SIZE> operator*(T k) const
+	TVectorN<T, SIZE> operator*(T k) const
 	{
-		TVectorNd<T, SIZE> Ret(*this);
+		TVectorN<T, SIZE> Ret(*this);
 		for (int i = 0; i < SIZE; ++i)
 		{
 			Ret[i] *= k;
@@ -101,14 +101,14 @@ public:
 		return Ret;
 	}
 
-	TVectorNd<T, SIZE> operator/(T k) const
+	TVectorN<T, SIZE> operator/(T k) const
 	{
 		return operator*((T)1 / k);
 	}
 
-	TVectorNd<T, SIZE> operator-()
+	TVectorN<T, SIZE> operator-()
 	{
-		TVectorNd<T, SIZE> Ret(*this);
+		TVectorN<T, SIZE> Ret(*this);
 		for (int i = 0; i < SIZE; ++i)
 		{
 			Ret[i] = -Ret[i];
@@ -116,7 +116,7 @@ public:
 		return Ret;
 	}
 
-	void	 operator+= (const TVectorNd<T, SIZE>& v)
+	void	 operator+= (const TVectorN<T, SIZE>& v)
 	{
 		for (int i = 0; i < SIZE; ++i)
 		{
@@ -124,7 +124,7 @@ public:
 		}
 	}
 
-	void	 operator-= (const TVectorNd<T, SIZE>& v)
+	void	 operator-= (const TVectorN<T, SIZE>& v)
 	{
 		for (int i = 0; i < SIZE; ++i)
 		{
@@ -132,7 +132,7 @@ public:
 		}
 	}
 
-	void	 operator*= (const TVectorNd<T, SIZE>& v)
+	void	 operator*= (const TVectorN<T, SIZE>& v)
 	{
 		for (int i = 0; i < SIZE; ++i)
 		{
@@ -140,7 +140,7 @@ public:
 		}
 	}
 
-	void	 operator/= (const TVectorNd<T, SIZE>& v)
+	void	 operator/= (const TVectorN<T, SIZE>& v)
 	{
 		for (int i = 0; i < SIZE; ++i)
 		{
@@ -161,7 +161,7 @@ public:
 		operator*= ((T)1 / k);
 	}
 
-	T			Dot(const TVectorNd<T, SIZE>& v) const
+	T			Dot(const TVectorN<T, SIZE>& v) const
 	{
 		T dp = (T)0;
 		for (int i = 0; i < SIZE; ++i)
@@ -181,9 +181,9 @@ public:
 		memset(mData, 0, sizeof(T) * SIZE);
 	}
 
-	static TVectorNd<T, SIZE> Zero()
+	static TVectorN<T, SIZE> Zero()
 	{
-		static TVectorNd<T, SIZE> s_Zero(true);
+		static TVectorN<T, SIZE> s_Zero(true);
 		return s_Zero;
 	}
 
@@ -192,4 +192,8 @@ private:
 };
 
 template<int SIZE>
-using VectorNd = TVectorNd<float, SIZE>;
+using VectorNd = TVectorN<float, SIZE>;
+
+typedef TVectorN<float, 8>	Vector8;
+typedef TVectorN<float, 16>	Vector16;
+

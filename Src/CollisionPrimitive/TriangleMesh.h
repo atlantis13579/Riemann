@@ -14,7 +14,7 @@ struct TriMeshHitOption
 struct TriMeshHitResult
 {
 	float		hitTime;
-	Vector3d	hitNormal;
+	Vector3	hitNormal;
 	uint32_t	hitIndex;
 	int		    hitTestCount;
     
@@ -54,20 +54,20 @@ public:
 
 	void			GetVertIndices(uint32_t triIndex, uint32_t& i0, uint32_t& i1, uint32_t& i2) const;
 
-	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
-	bool			IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;
-	bool			RayIntersectTri(uint32_t HitNode, const Vector3d& Origin, const Vector3d& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;
-	bool			OverlapTri(uint32_t HitNode, const Vector3d& Bmin, const Vector3d& Bmax) const;
-	bool			IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const;
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const;
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;
+	bool			RayIntersectTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Dir, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;
+	bool			OverlapTri(uint32_t HitNode, const Vector3& Bmin, const Vector3& Bmax) const;
+	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 
 	const Box3d&	GetBoundingVolume() const
 	{
 		return BoundingVolume;
 	}
 
-	Matrix3d		GetInertiaTensor(float Mass) const;
-	Vector3d		GetSupport(const Vector3d& dir) const;
-	int				GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const;
+	Matrix3		GetInertiaTensor(float Mass) const;
+	Vector3		GetSupport(const Vector3& dir) const;
+	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const;
 
 private:
 	MeshBVH4*	m_BVH;

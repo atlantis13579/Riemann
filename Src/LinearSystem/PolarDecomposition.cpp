@@ -3,7 +3,7 @@
 
 #define TOLERANCE 0.01f
 
-float PolarDecompose::OneNorm(const Matrix3d& F)
+float PolarDecompose::OneNorm(const Matrix3& F)
 {
 	float norm = 0.0f;
 	for (int i = 0; i < 3; i++)
@@ -15,7 +15,7 @@ float PolarDecompose::OneNorm(const Matrix3d& F)
 	return norm;
 }
 
-float PolarDecompose::InfNorm(const Matrix3d& F)
+float PolarDecompose::InfNorm(const Matrix3& F)
 {
 	float norm = 0.0;
 	for (int i = 0; i < 3; i++)
@@ -27,10 +27,10 @@ float PolarDecompose::InfNorm(const Matrix3d& F)
 	return norm;
 }
 
-void PolarDecompose::Compute(const Matrix3d& F, Matrix3d& R, Matrix3d& S)
+void PolarDecompose::Compute(const Matrix3& F, Matrix3& R, Matrix3& S)
 {
-	Matrix3d Mk;
-	Matrix3d Ek;
+	Matrix3 Mk;
+	Matrix3 Ek;
 	float det, M_oneNorm, M_infNorm, E_oneNorm;
 
 	Mk = F.Transpose();
@@ -40,14 +40,14 @@ void PolarDecompose::Compute(const Matrix3d& F, Matrix3d& R, Matrix3d& S)
 
 	do
 	{
-		Vector3d v1 = Vector3d(Mk(2, 0), Mk(2, 1), Mk(2, 2));
-		Vector3d v2 = Vector3d(Mk(0, 0), Mk(0, 1), Mk(0, 2));
-		Vector3d v3 = Vector3d(Mk(1, 0), Mk(1, 1), Mk(1, 2));
+		Vector3 v1 = Vector3(Mk(2, 0), Mk(2, 1), Mk(2, 2));
+		Vector3 v2 = Vector3(Mk(0, 0), Mk(0, 1), Mk(0, 2));
+		Vector3 v3 = Vector3(Mk(1, 0), Mk(1, 1), Mk(1, 2));
 
-		Vector3d r1 = Vector3d(Mk(1, 0), Mk(1, 1), Mk(1, 2)).Cross(v1);
-		Vector3d r2 = Vector3d(Mk(2, 0), Mk(2, 1), Mk(2, 2)).Cross(v2);
-		Vector3d r3 = Vector3d(Mk(0, 0), Mk(0, 1), Mk(0, 2)).Cross(v3);
-		Matrix3d MadjTk(r1.x, r1.y, r1.z,
+		Vector3 r1 = Vector3(Mk(1, 0), Mk(1, 1), Mk(1, 2)).Cross(v1);
+		Vector3 r2 = Vector3(Mk(2, 0), Mk(2, 1), Mk(2, 2)).Cross(v2);
+		Vector3 r3 = Vector3(Mk(0, 0), Mk(0, 1), Mk(0, 2)).Cross(v3);
+		Matrix3 MadjTk(r1.x, r1.y, r1.z,
 			r2.x, r2.y, r2.z,
 			r3.x, r3.y, r3.z);
 
@@ -84,10 +84,10 @@ void PolarDecompose::Compute(const Matrix3d& F, Matrix3d& R, Matrix3d& S)
 	R = Mk.Transpose();
 }
 
-void PolarDecompose::ComputeFull(const Matrix3d& F, Matrix3d& R, Matrix3d& S)
+void PolarDecompose::ComputeFull(const Matrix3& F, Matrix3& R, Matrix3& S)
 {
-	Matrix3d Mk;
-	Matrix3d Ek;
+	Matrix3 Mk;
+	Matrix3 Ek;
 	float det, M_oneNorm, M_infNorm, E_oneNorm;
 
 	Mk = F.Transpose();
@@ -97,14 +97,14 @@ void PolarDecompose::ComputeFull(const Matrix3d& F, Matrix3d& R, Matrix3d& S)
 
 	do
 	{
-		Vector3d v1 = Vector3d(Mk(2, 0), Mk(2, 1), Mk(2, 2));
-		Vector3d v2 = Vector3d(Mk(0, 0), Mk(0, 1), Mk(0, 2));
-		Vector3d v3 = Vector3d(Mk(1, 0), Mk(1, 1), Mk(1, 2));
+		Vector3 v1 = Vector3(Mk(2, 0), Mk(2, 1), Mk(2, 2));
+		Vector3 v2 = Vector3(Mk(0, 0), Mk(0, 1), Mk(0, 2));
+		Vector3 v3 = Vector3(Mk(1, 0), Mk(1, 1), Mk(1, 2));
 
-		Vector3d r1 = Vector3d(Mk(1, 0), Mk(1, 1), Mk(1, 2)).Cross(v1);
-		Vector3d r2 = Vector3d(Mk(2, 0), Mk(2, 1), Mk(2, 2)).Cross(v2);
-		Vector3d r3 = Vector3d(Mk(0, 0), Mk(0, 1), Mk(0, 2)).Cross(v3);
-		Matrix3d MadjTk(r1.x, r1.y, r1.z,
+		Vector3 r1 = Vector3(Mk(1, 0), Mk(1, 1), Mk(1, 2)).Cross(v1);
+		Vector3 r2 = Vector3(Mk(2, 0), Mk(2, 1), Mk(2, 2)).Cross(v2);
+		Vector3 r3 = Vector3(Mk(0, 0), Mk(0, 1), Mk(0, 2)).Cross(v3);
+		Matrix3 MadjTk(r1.x, r1.y, r1.z,
 						r2.x, r2.y, r2.z,
 						r3.x, r3.y, r3.z);
 

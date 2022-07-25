@@ -21,10 +21,10 @@ struct ExplosionFieldParam
 		Attenuation = AttenuationType::LINEAR;
 	}
 
-	Vector3d		Center;
+	Vector3		Center;
 	float			Radius;
-	Vector3d		ExplosionForce0;
-	Vector3d		ExplosionForce1;
+	Vector3		ExplosionForce0;
+	Vector3		ExplosionForce1;
 	AttenuationType	Attenuation;
 };
 
@@ -35,7 +35,7 @@ public:
 	virtual bool		ApplyForce(RigidBodyDynamic* Rigid) = 0;
 
 public:
-	static ForceField*	CreateGrivityField(const Vector3d& Gravity);
+	static ForceField*	CreateGrivityField(const Vector3& Gravity);
 	static ForceField*	CreateExplosionField(const ExplosionFieldParam& param);
 };
 

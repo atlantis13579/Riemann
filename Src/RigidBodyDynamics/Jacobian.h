@@ -23,21 +23,21 @@ struct  Jacobian
 	Jacobian(int jt)
 	{
 		m_Type = jt;
-		m_jva = Vector3d::Zero();
-		m_jwa = Vector3d::Zero();
-		m_jvb = Vector3d::Zero();
-		m_jwa = Vector3d::Zero();
+		m_jva = Vector3::Zero();
+		m_jwa = Vector3::Zero();
+		m_jvb = Vector3::Zero();
+		m_jwa = Vector3::Zero();
 		m_bodyA = m_bodyB = nullptr;
 	}
 
-	void	Setup(const Contact *contact, RigidBody* bodyA, RigidBody* bodyB, const Vector3d& dir, float dt);
+	void	Setup(const Contact *contact, RigidBody* bodyA, RigidBody* bodyB, const Vector3& dir, float dt);
 	void	Solve(float clampmin, float clampmax);
 
 	int m_Type;
-	Vector3d m_jva;
-	Vector3d m_jwa;
-	Vector3d m_jvb;
-	Vector3d m_jwb;
+	Vector3 m_jva;
+	Vector3 m_jwa;
+	Vector3 m_jvb;
+	Vector3 m_jwb;
 	float	m_bias;
 	float	m_effectiveMass;
 	float	m_totalLambda;

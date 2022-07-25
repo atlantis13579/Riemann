@@ -1,12 +1,12 @@
 
 #include "KeyFrameAnimation.h"
 
-Vector3d	ProjectiveVelocityBlending(const Vector3d& P0, const Vector3d& P1, const Vector3d& V0, const Vector3d& V1, const Vector3d& A1, float t, float blend)
+Vector3	ProjectiveVelocityBlending(const Vector3& P0, const Vector3& P1, const Vector3& V0, const Vector3& V1, const Vector3& A1, float t, float blend)
 {
-	Vector3d V = V0 + (V1 - V0) * blend;
-	Vector3d _P0 = P0 + V0 * t + 0.5f * A1 * t * t;
-	Vector3d _P1 = P1 + V * t + 0.5f * A1 * t * t;
-	Vector3d Pos = _P0 + (_P1 - P0) * blend;
+	Vector3 V = V0 + (V1 - V0) * blend;
+	Vector3 _P0 = P0 + V0 * t + 0.5f * A1 * t * t;
+	Vector3 _P1 = P1 + V * t + 0.5f * A1 * t * t;
+	Vector3 Pos = _P0 + (_P1 - P0) * blend;
 	return Pos;
 }
 
@@ -27,7 +27,7 @@ void KeyFrameAnimation::LoadKeyframes(const std::vector<KeyframePos>& frame_pos,
 
 void KeyFrameAnimation::LoadRotationY(const Quaternion& quat, float radian, int time_ms)
 {
-	Quaternion rot(radian, Vector3d(0.0f, 1.0f, 0.0f));
+	Quaternion rot(radian, Vector3(0.0f, 1.0f, 0.0f));
 
 	m_FramesPosition.clear();
 	m_FramesRotation.resize(2);
@@ -79,9 +79,9 @@ T Lerp(const T& start, const T& end, float t)
 }
 
 template<>
-Vector3d Lerp(const Vector3d& start, const Vector3d& end, float t)
+Vector3 Lerp(const Vector3& start, const Vector3& end, float t)
 {
-	return Vector3d::Lerp(start, end, t);
+	return Vector3::Lerp(start, end, t);
 }
 
 template<>
@@ -154,7 +154,7 @@ static bool InterpFrame(float elapsed, const std::vector<Keyframe<T>>& frames, b
 	return false;
 }
 
-bool KeyFrameAnimation::Advance(float elapsed, Vector3d* pos, Quaternion* quat)
+bool KeyFrameAnimation::Advance(float elapsed, Vector3* pos, Quaternion* quat)
 {
 	bool success_pos = InterpFrame(elapsed, m_FramesPosition, m_IsLoop, m_TimelinePosition, pos);
 	bool success_quat = InterpFrame(elapsed, m_FramesRotation, m_IsLoop, m_TimelineRotation, quat);

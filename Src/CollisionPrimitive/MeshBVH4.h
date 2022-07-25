@@ -157,7 +157,7 @@ public:
 
 	static void		BuildFromBounds(MeshBVH4& bvh, const std::vector<Box3d>& allBounds, std::vector<uint32_t>& Permute, const Box3d& meshBounds);
 
-	Vector4d		BoundsMin, BoundsMax;
+	Vector4		BoundsMin, BoundsMax;
 	uint8_t*		Memory;
 	float			____Unuse1[6];
 	uint32_t		BatchSize;

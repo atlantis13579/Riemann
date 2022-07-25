@@ -24,17 +24,17 @@ bool ContactManifold::MergeManifold()
 	assert(NumContactPointCount == MAX_CONTACT_POINTS + 1);
 
 	const float kMinSqrDist = 1e-6f;
-	StaticArray<Vector3d, MAX_CONTACT_POINTS + 1> projected;
+	StaticArray<Vector3, MAX_CONTACT_POINTS + 1> projected;
 	StaticArray<float, MAX_CONTACT_POINTS + 1> penetration_depth_sq;
 	for (int i = 0; i < NumContactPointCount; ++i)
 	{
 		Contact* contact = &ContactPoints[i];
 
-		const Vector3d& local1 = contact->PositionLocalA;
+		const Vector3& local1 = contact->PositionLocalA;
 		projected.Push(local1 - local1.Dot(contact->Normal) * contact->Normal);
 
-		const Vector3d& w1 = contact->PositionWorldA;
-		const Vector3d& w2 = contact->PositionWorldB;
+		const Vector3& w1 = contact->PositionWorldA;
+		const Vector3& w2 = contact->PositionWorldB;
 		penetration_depth_sq.Push(std::max(kMinSqrDist, (w1 - w2).SquareLength()));
 	}
 
@@ -70,7 +70,7 @@ bool ContactManifold::MergeManifold()
 	float min_val = 0.0f;
 	max_val = 0.0f;
 
-	Vector3d perp = (projected[point1] - projected[point0]).Cross(ContactPoints[0].Normal);
+	Vector3 perp = (projected[point1] - projected[point0]).Cross(ContactPoints[0].Normal);
 	for (int i = 0; i < projected.GetSize(); ++i)
 	{
 		if (point0 == i || point1 == i)

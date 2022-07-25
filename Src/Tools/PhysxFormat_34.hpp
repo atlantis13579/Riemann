@@ -396,7 +396,7 @@ namespace PhysxFormat_34
 		{
 			// PT: vertices are followed by indices, so it will be safe to V4Load vertices from a deserialized binary file
 			if (mVertices)
-				mVertices = context.readExtraData<Vector3d, 16>(mNbVertices);
+				mVertices = context.readExtraData<Vector3, 16>(mNbVertices);
 
 			if (mTriangles)
 			{
@@ -472,7 +472,7 @@ namespace PhysxFormat_34
 	class alignas(16) RTree
 	{
 	public:
-		Vector4d		mBoundsMin, mBoundsMax, mInvDiagonal, mDiagonalScaler; // 16
+		Vector4		mBoundsMin, mBoundsMax, mInvDiagonal, mDiagonalScaler; // 16
 		uint32_t		mPageSize;
 		uint32_t		mNumRootPages;
 		uint32_t		mNumLevels;
@@ -608,16 +608,16 @@ namespace PhysxFormat_34
 	struct ConvexHullData
 	{
 		TCE3<float>		mAABB;
-		Vector3d		mCenterOfMass;
+		Vector3		mCenterOfMass;
 		uint16_t		mNbEdges;
 		PxU8			mNbHullVertices;
 		PxU8			mNbPolygons;
 
-		const Vector3d* getVerts()	const
+		const Vector3* getVerts()	const
 		{
 			const char* tmp = reinterpret_cast<const char*>(mPolygons);
 			tmp += sizeof(HullPolygonData) * mNbPolygons;
-			return reinterpret_cast<const Vector3d*>(tmp);
+			return reinterpret_cast<const Vector3*>(tmp);
 		}
 
 		const uint16_t* getVerticesByEdges16() const
@@ -626,7 +626,7 @@ namespace PhysxFormat_34
 			{
 				const char* tmp = reinterpret_cast<const char*>(mPolygons);
 				tmp += sizeof(HullPolygonData) * mNbPolygons;
-				tmp += sizeof(Vector3d) * mNbHullVertices;
+				tmp += sizeof(Vector3) * mNbHullVertices;
 				tmp += sizeof(uint8_t) * (mNbEdges & ~0x8000) * 2;
 				tmp += sizeof(uint8_t) * mNbHullVertices * 3;
 				return reinterpret_cast<const uint16_t*>(tmp);
@@ -648,7 +648,7 @@ namespace PhysxFormat_34
 		{
 			uint32_t bytesNeeded = sizeof(HullPolygonData) * data.mNbPolygons;
 			uint16_t mnbEdges = (data.mNbEdges & ~0x8000);
-			bytesNeeded += sizeof(Vector3d) * data.mNbHullVertices;
+			bytesNeeded += sizeof(Vector3) * data.mNbHullVertices;
 			bytesNeeded += sizeof(uint8_t) * mnbEdges * 2;
 			bytesNeeded += sizeof(uint8_t) * data.mNbHullVertices * 3;
 			bytesNeeded += (data.mNbEdges & ~0x8000) ? (sizeof(uint16_t) * mnbEdges * 2) : 0;
@@ -687,7 +687,7 @@ namespace PhysxFormat_34
 		uint32_t			mNb;
 		PxBigConvexData* mBigConvexData;
 		float					mMass;
-		Matrix3d				mInertia;
+		Matrix3				mInertia;
 		void* mMeshFactory;
 	};
 
@@ -821,7 +821,7 @@ namespace PhysxFormat_34
 	{
 	public:
 		Quaternion q;
-		Vector3d p;
+		Vector3 p;
 	};
 
 	enum Enum
@@ -846,7 +846,7 @@ namespace PhysxFormat_34
 	class PxBoxGeometry : public PxGeometry
 	{
 	public:
-		Vector3d halfExtents;
+		Vector3 halfExtents;
 	};
 
 	class PxSphereGeometry : public PxGeometry
@@ -870,7 +870,7 @@ namespace PhysxFormat_34
 	class PxMeshScale
 	{
 	public:
-		Vector3d		scale;
+		Vector3		scale;
 		Quaternion		rotation;
 	};
 
@@ -1320,8 +1320,8 @@ namespace PhysxFormat_34
 	public:
 		BodyCore			mBodyCore;
 		PxTransform			mBufferedBody2World;
-		Vector3d			mBufferedLinVelocity;
-		Vector3d			mBufferedAngVelocity;
+		Vector3			mBufferedLinVelocity;
+		Vector3			mBufferedAngVelocity;
 		PxReal				mBufferedWakeCounter;
 		PxU32				mBufferedIsSleeping;
 		PxU32				mBodyBufferFlags;

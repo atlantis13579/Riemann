@@ -22,29 +22,29 @@
 void TestSupport()
 {
 	printf("Running TestSupport\n");
-	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
+	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 	
-	Vector3d support;
+	Vector3 support;
 
-	support = obb2->GetSupport_WorldSpace(Vector3d::UnitX());
+	support = obb2->GetSupport_WorldSpace(Vector3::UnitX());
 	EXPECT(fabsf(support.x - 1.0f) < 0.1f);
 	
-	support = obb2->GetSupport_WorldSpace(-Vector3d::UnitX());
+	support = obb2->GetSupport_WorldSpace(-Vector3::UnitX());
 	EXPECT(fabsf(support.x + 1.0f) < 0.1f);
 	
-	support = obb2->GetSupport_WorldSpace(Vector3d::UnitY());
+	support = obb2->GetSupport_WorldSpace(Vector3::UnitY());
 	EXPECT(fabsf(support.y - 1.0f) < 0.1f);
 	
-	obb2->SetPosition(Vector3d(5.0f, 0.0f, 0.0f));
-	support = obb2->GetSupport_WorldSpace(Vector3d::UnitX());
+	obb2->SetPosition(Vector3(5.0f, 0.0f, 0.0f));
+	support = obb2->GetSupport_WorldSpace(Vector3::UnitX());
 	EXPECT(fabsf(support.x - 6.0f) < 0.1f);
 	
 	Quaternion quat;
-	quat.FromRotationAxis(Vector3d::UnitZ(), PI_OVER_4);
+	quat.FromRotationAxis(Vector3::UnitZ(), PI_OVER_4);
 	obb2->SetRotationQuat(quat);
-	support = obb2->GetSupport_WorldSpace(Vector3d::UnitX());
+	support = obb2->GetSupport_WorldSpace(Vector3::UnitX());
 	EXPECT(fabsf(support.x - (5.0f + SQRT_2)) < 0.1f);
-	support = obb2->GetSupport_WorldSpace(Vector3d::UnitY());
+	support = obb2->GetSupport_WorldSpace(Vector3::UnitY());
 	EXPECT(fabsf(support.y - SQRT_2) < 0.1f);
 	return;
 }
@@ -72,15 +72,15 @@ void TestGJK()
 {
 	printf("Running TestGJK\n");
 	
-	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, 0.0f, 0.0f), Vector3d::UnitY());
-	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
-	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
+	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitY());
+	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
+	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 	EXPECT(GJK_Solve(obb1, obb2));
 
-	obb2->SetPosition(Vector3d(0.5f, 0.0f, 0.0f));
+	obb2->SetPosition(Vector3(0.5f, 0.0f, 0.0f));
 	EXPECT(GJK_Solve(obb1, obb2));
 	
-	obb2->SetPosition(Vector3d(0.0f, 2.1f, 0.0f));
+	obb2->SetPosition(Vector3(0.0f, 2.1f, 0.0f));
 	EXPECT(!GJK_Solve(obb1, obb2));
 	
 	EXPECT(GJK_Solve(obb1, plane1));
@@ -89,21 +89,21 @@ void TestGJK()
 	EXPECT(!GJK_Solve(obb2, plane1));
 	
 	Quaternion quat;
-	quat.FromRotationAxis(Vector3d::UnitX(), PI_OVER_4);
+	quat.FromRotationAxis(Vector3::UnitX(), PI_OVER_4);
 	obb2->SetRotationQuat(quat);
 	EXPECT(GJK_Solve(obb2, obb1));
 	EXPECT(GJK_Solve(obb1, obb2));
 	
-	obb2->SetPosition(Vector3d(0.0f, 1.1f, 0.0f));
+	obb2->SetPosition(Vector3(0.0f, 1.1f, 0.0f));
 	EXPECT(GJK_Solve(obb2, plane1));
 	EXPECT(GJK_Solve(plane1, obb2));
 	
-	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3d(0.0f, 0.0, 0.0f), 2.0f);
-	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3d(0.0f, 0.0, 0.0f), 2.0f);
+	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
+	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
 	EXPECT(GJK_Solve(sp1, sp2));
 	EXPECT(GJK_Solve(sp1, plane1));
 	
-	sp2->SetPosition(Vector3d(0.0f, 5.0f, 0.0f));
+	sp2->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
 	EXPECT(!GJK_Solve(sp1, sp2));
 	EXPECT(!GJK_Solve(plane1, sp2));
 
@@ -117,10 +117,10 @@ void TestEPA()
 {
 	printf("Running TestEPA\n");
 
-	// Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, -5.0f, 0.0f), Vector3d::UnitY(), 1.0f);
-	Geometry* plane1 = GeometryFactory::CreateOBB(Vector3d(0.0f, -5.0f, 0.0f), Vector3d(100.0f, 1.0f, 100.0f), Quaternion::One());
-	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One() * 1.0f, Quaternion::One());
-	obb1->SetPosition(Vector3d(0.0f, -3.7f, 0.0f));
+	// Geometry* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, -5.0f, 0.0f), Vector3::UnitY(), 1.0f);
+	Geometry* plane1 = GeometryFactory::CreateOBB(Vector3(0.0f, -5.0f, 0.0f), Vector3(100.0f, 1.0f, 100.0f), Quaternion::One());
+	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One() * 1.0f, Quaternion::One());
+	obb1->SetPosition(Vector3(0.0f, -3.7f, 0.0f));
 
 	GJKIntersection gjk;
 	GJK_status gjk_status;
@@ -136,13 +136,13 @@ void TestEPA()
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
 
-	obb1->SetPosition(Vector3d(20.0f, -3.7f, 0.0f));
+	obb1->SetPosition(Vector3(20.0f, -3.7f, 0.0f));
 	gjk_status = gjk.Solve(&shape);
 	EXPECT(gjk_status == GJK_status::Intersect);
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
 
-	obb1->SetPosition(Vector3d(-20.0f, -3.7f, 0.0f));
+	obb1->SetPosition(Vector3(-20.0f, -3.7f, 0.0f));
 	gjk_status = gjk.Solve(&shape);
 	EXPECT(gjk_status == GJK_status::Intersect);
 	epa_status = epa.Solve(gjk.result);
@@ -155,24 +155,24 @@ void TestRTree1()
 {
 	printf("Running TestRTree1\n");
 	TriangleMesh mesh;
-	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
-	mesh.AddAABB(Vector3d(-0.5f, -0.5f, -0.5f), Vector3d(0.5f, 0.5f, 0.5f));
+	mesh.AddAABB(Vector3(-1, -1, -1), Vector3(1, 1, 1));
+	mesh.AddAABB(Vector3(-0.5f, -0.5f, -0.5f), Vector3(0.5f, 0.5f, 0.5f));
 	mesh.Compact();
 	mesh.BuildBVH();
 	float t;
 	bool success;
-	success = mesh.IntersectRay(Vector3d(0.0f, 10.0f, 0.0f), -Vector3d::UnitY(), &t);
+	success = mesh.IntersectRay(Vector3(0.0f, 10.0f, 0.0f), -Vector3::UnitY(), &t);
 	EXPECT(success);
 	EXPECT(FloatEqual(t, 9.0f));
 
-	success = mesh.IntersectRay(Vector3d(2.0f, 10.0f, 0.0f), -Vector3d::UnitY(), &t);
+	success = mesh.IntersectRay(Vector3(2.0f, 10.0f, 0.0f), -Vector3::UnitY(), &t);
 	EXPECT(!success);
 
-	success = mesh.IntersectRay(Vector3d(0.0f, 0.75f, 0.0f), Vector3d::UnitY(), &t);
+	success = mesh.IntersectRay(Vector3(0.0f, 0.75f, 0.0f), Vector3::UnitY(), &t);
 	EXPECT(success);
 	EXPECT(FloatEqual(t, 0.25f));
 
-	success = mesh.IntersectRay(Vector3d(0.0f, 0.0f, 0.0f), Vector3d(1, 1, 1).Unit(), &t);
+	success = mesh.IntersectRay(Vector3(0.0f, 0.0f, 0.0f), Vector3(1, 1, 1).Unit(), &t);
 	EXPECT(success);
 	EXPECT(FloatEqual(t, sqrtf(3.0f) * 0.5f));
 
@@ -191,13 +191,13 @@ void TestRTree2()
 		mesh.Compact();
 		mesh.BuildBVH();
 
-		Vector3d Center;
+		Vector3 Center;
 		Center = (mesh(0, 0) + mesh(0, 1) + mesh(0, 2)) / 3.0f;
 		Center.y = 0.0f;
 
 		float t1, t2;
 		bool success1, success2;
-		Vector3d Dir = Vector3d::UnitY();
+		Vector3 Dir = Vector3::UnitY();
 		success1 = Triangle3d::RayIntersectTriangle(Center, Dir, mesh(0, 0), mesh(0, 1), mesh(0, 2), &t1);
 		success2 = mesh.IntersectRay(Center, Dir, &t2);
 		EXPECT(success1 == success2);
@@ -209,8 +209,8 @@ void TestRTree2()
 void TestAABB()
 {
 	printf("Running TestAABB\n");
-	Box3d box1(Vector3d(0, 0, 0), Vector3d(10, 10, 10));
-	Box3d box2(Vector3d(4, 4, 4), Vector3d(5, 5, 5));
+	Box3d box1(Vector3(0, 0, 0), Vector3(10, 10, 10));
+	Box3d box2(Vector3(4, 4, 4), Vector3(5, 5, 5));
 	bool intersect1 = box1.Intersect(box2);
 	bool intersect2 = box2.Intersect(box1);
 	EXPECT(intersect1 && intersect2);
@@ -219,17 +219,17 @@ void TestAABB()
 void TestOverlap()
 {
 	printf("Running TestOverlap\n");
-	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3d(0.0f, 0.0f, 0.0f), Vector3d::UnitY());
-	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
-	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3d(0.0f, 0.0, 0.0f), Vector3d::One(), Quaternion::One());
+	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitY());
+	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
+	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 	EXPECT(obb1->Overlap(obb2));
 	EXPECT(obb2->Overlap(obb1));
 
-	obb2->SetPosition(Vector3d(0.5f, 0.0f, 0.0f));
+	obb2->SetPosition(Vector3(0.5f, 0.0f, 0.0f));
 	EXPECT(obb1->Overlap(obb2));
 	EXPECT(obb2->Overlap(obb1));
 	
-	obb2->SetPosition(Vector3d(0.0f, 2.1f, 0.0f));
+	obb2->SetPosition(Vector3(0.0f, 2.1f, 0.0f));
 	EXPECT(!obb1->Overlap(obb2));
 	EXPECT(!obb2->Overlap(obb1));
 	
@@ -239,23 +239,23 @@ void TestOverlap()
 	EXPECT(!plane1->Overlap(obb2));
 	
 	Quaternion quat;
-	quat.FromRotationAxis(Vector3d::UnitX(), PI_OVER_4);
+	quat.FromRotationAxis(Vector3::UnitX(), PI_OVER_4);
 	obb2->SetRotationQuat(quat);
 	EXPECT(obb1->Overlap(obb2));
 	EXPECT(obb2->Overlap(obb1));
 	
-	obb2->SetPosition(Vector3d(0.0f, 1.1f, 0.0f));
+	obb2->SetPosition(Vector3(0.0f, 1.1f, 0.0f));
 	EXPECT(plane1->Overlap(obb2));
 	EXPECT(obb2->Overlap(plane1));
 	
-	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3d(0.0f, 0.0, 0.0f), 2.0f);
-	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3d(1.0f, 0.0, 0.0f), 2.0f);
+	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
+	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3(1.0f, 0.0, 0.0f), 2.0f);
 	EXPECT(sp1->Overlap(sp2));
 	EXPECT(sp2->Overlap(sp1));
 	EXPECT(sp1->Overlap(plane1));
 	EXPECT(plane1->Overlap(sp1));
 	
-	sp2->SetPosition(Vector3d(0.0f, 5.0f, 0.0f));
+	sp2->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
 	EXPECT(!sp1->Overlap(sp2));
 	EXPECT(!sp2->Overlap(sp1));
 	EXPECT(!plane1->Overlap(sp2));
@@ -265,23 +265,23 @@ void TestOverlap()
 void TestRayAABB()
 {
 	printf("Running TestRayAABB\n");
-	Vector3d Origin(-100, 0, 50);
-	Vector3d Dir(1, 0, 0);
+	Vector3 Origin(-100, 0, 50);
+	Vector3 Dir(1, 0, 0);
 	float t0 = 0, t1 = 0;
 	bool success;
-	EXPECT(Ray3d::RayIntersectAABB2(Origin, Dir, Vector3d::Zero(), Vector3d(100, 100, 100), 0.00001f, 100000.0f, &t0, &t1));
+	EXPECT(Ray3d::RayIntersectAABB2(Origin, Dir, Vector3::Zero(), Vector3(100, 100, 100), 0.00001f, 100000.0f, &t0, &t1));
 
-	// Vector3d InPos = Origin + Dir * t0;
-	// Vector3d OutPos = Origin + Dir * t1;
+	// Vector3 InPos = Origin + Dir * t0;
+	// Vector3 OutPos = Origin + Dir * t1;
 
 	// int x0 = (int)(InPos.x / 1.0f);
 	// int x1 = (int)(OutPos.x / 1.0f);
 
-	Triangle3d Tri(Vector3d(0, 1, 0), Vector3d(0, 0, 0), Vector3d(1, 0, 0));
-	success = Tri.IntersectAABB(Vector3d(-1, -1, -1), Vector3d(1, 1, 1));
+	Triangle3d Tri(Vector3(0, 1, 0), Vector3(0, 0, 0), Vector3(1, 0, 0));
+	success = Tri.IntersectAABB(Vector3(-1, -1, -1), Vector3(1, 1, 1));
 	EXPECT(success);
 
-	success = Tri.IntersectAABB(Vector3d(1, 1, 1), Vector3d(2, 2, 2));
+	success = Tri.IntersectAABB(Vector3(1, 1, 1), Vector3(2, 2, 2));
 	EXPECT(!success);
 
 	return;
@@ -291,9 +291,9 @@ void TestAABBTree()
 {
 	printf("Running TestAABBTree\n");
 	std::vector<Box3d> boxes;
-	boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(1, 1, 1));
-	boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(1, 1, 3));
-	boxes.emplace_back(Vector3d(1, 1, 1), Vector3d(1, 1, 2));
+	boxes.emplace_back(Vector3(0, 0, 0), Vector3(1, 1, 1));
+	boxes.emplace_back(Vector3(0, 0, 0), Vector3(1, 1, 3));
+	boxes.emplace_back(Vector3(1, 1, 1), Vector3(1, 1, 2));
 
 	AABBTree tree;
 
@@ -302,27 +302,27 @@ void TestAABBTree()
 	tree.Release();
 	tree.StaticBuild(param);
 
-	int p = tree.IntersectPoint(Vector3d(-1.0f, -1.0f, -1.0f));
+	int p = tree.IntersectPoint(Vector3(-1.0f, -1.0f, -1.0f));
 	EXPECT(p == -1);
-	p = tree.IntersectPoint(Vector3d(0.5f, 0.5f, 0.5f));
+	p = tree.IntersectPoint(Vector3(0.5f, 0.5f, 0.5f));
 	EXPECT(p >= 0);
-	p = tree.IntersectPoint(Vector3d(0.5f, 0.5f, 2.5f));
+	p = tree.IntersectPoint(Vector3(0.5f, 0.5f, 2.5f));
 	EXPECT(p == 1);
 
 	RayCastOption Option;
 	RayCastResult Result;
-	Ray3d ray(Vector3d(0.5f, 0.5f, 100.0f), Vector3d(0.0f, 0.0f, -1.0f));
+	Ray3d ray(Vector3(0.5f, 0.5f, 100.0f), Vector3(0.0f, 0.0f, -1.0f));
 	bool hit = tree.RayCastBoundingBox(ray, Option, &Result);
 	EXPECT(hit);
 
-	ray.Origin = Vector3d(0.5f, 0.5f, 0.5f);
+	ray.Origin = Vector3(0.5f, 0.5f, 0.5f);
 	hit = tree.RayCastBoundingBox(ray, Option, &Result);
 	EXPECT(hit);
 
 	for (int i = 0; i < 10000; ++i)
 	{
-		Vector3d point1 = Vector3d::Random() * 100.0f;
-		Vector3d point2 = Vector3d::Random() * 100.0f;
+		Vector3 point1 = Vector3::Random() * 100.0f;
+		Vector3 point2 = Vector3::Random() * 100.0f;
 		boxes.emplace_back(point1, point1 + point2);
 	}
 
@@ -333,7 +333,7 @@ void TestAABBTree()
 
 	for (int i = 0; i < 10000; ++i)
 	{
-		Vector3d point = Vector3d::Random() * 100.0f;
+		Vector3 point = Vector3::Random() * 100.0f;
 		p = tree.IntersectPoint(point);
 
 		ray.Origin = point;
@@ -354,26 +354,26 @@ void TestGeometryQuery()
 	GeometryQuery scene;
 	
 	std::vector<Geometry*> objs;
-	objs.emplace_back(GeometryFactory::CreatePlane(Vector3d(0.0f, 0.0f, 0.0f), Vector3d::UnitZ()));
-	objs.emplace_back(GeometryFactory::CreatePlane(Vector3d(0.0f, 0.0f, 10.0f), Vector3d::UnitZ()));
-	objs.emplace_back(GeometryFactory::CreateOBB(Vector3d::Zero(), Vector3d(1, 1, 1)));
+	objs.emplace_back(GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitZ()));
+	objs.emplace_back(GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 10.0f), Vector3::UnitZ()));
+	objs.emplace_back(GeometryFactory::CreateOBB(Vector3::Zero(), Vector3(1, 1, 1)));
 	scene.BuildStaticGeometry(objs, 1);
 
 	RayCastResult result;
 	RayCastOption option;
-	scene.RayCast(Vector3d(0.2f, 0.2f, 5.0f), Vector3d(0.2f, 0.2f, -1.0f), option , &result);
+	scene.RayCast(Vector3(0.2f, 0.2f, 5.0f), Vector3(0.2f, 0.2f, -1.0f), option , &result);
 	EXPECT(result.hit);
 	EXPECT(fabsf(result.hitTimeMin - 4.0f) < 0.001f);
 
-	scene.RayCast(Vector3d(0.0f, 0.0f, -5.0f), Vector3d(0.0f, 0.0f, -1.0f), option, &result);
+	scene.RayCast(Vector3(0.0f, 0.0f, -5.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
 	EXPECT(!result.hit);
 
-	scene.RayCast(Vector3d(0.0f, 0.0f, 15.0f), Vector3d(0.0f, 0.0f, -1.0f), option, &result);
+	scene.RayCast(Vector3(0.0f, 0.0f, 15.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
 	EXPECT(result.hit);
 	EXPECT(fabsf(result.hitTimeMin - 5.0f) < 0.001f);
 
 	option.Type = RayCastOption::RayCastType::RAYCAST_PENETRATE;
-	scene.RayCast(Vector3d(0.0f, 0.0f, 15.0f), Vector3d(0.0f, 0.0f, -1.0f), option, &result);
+	scene.RayCast(Vector3(0.0f, 0.0f, 15.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
 	EXPECT(result.hit);
 	EXPECT(result.hitGeometries.size() == 3);
 
@@ -422,9 +422,9 @@ void TestSAP()
 	printf("Running TestSAP\n");
 	std::set<OverlapKey> overlaps;
 	std::vector<Box3d> boxes;
-	boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(2, 2, 2));
-	boxes.emplace_back(Vector3d(1, 1, 1), Vector3d(3, 3, 3));
-	boxes.emplace_back(Vector3d(0, 0, 0), Vector3d(15, 15, 15));
+	boxes.emplace_back(Vector3(0, 0, 0), Vector3(2, 2, 2));
+	boxes.emplace_back(Vector3(1, 1, 1), Vector3(3, 3, 3));
+	boxes.emplace_back(Vector3(0, 0, 0), Vector3(15, 15, 15));
 
 	BVProxy2 P(&boxes);
 	SAP sap(&P, { 0, 1, 2 });
@@ -432,14 +432,14 @@ void TestSAP()
 	sap.Prune(&overlaps);
 	EXPECT(overlaps.size() == 3);
 
-	boxes[2] = Box3d(Vector3d(10, 10, 10), Vector3d(15, 15, 15));
+	boxes[2] = Box3d(Vector3(10, 10, 10), Vector3(15, 15, 15));
 	sap.Prune(&overlaps);
 	EXPECT(overlaps.size() == 1);
 
 	for (int i = 0; i < 200; ++i)
 	{
-		Vector3d point1 = Vector3d::Random() * 100.0f;
-		Vector3d point2 = Vector3d::Random() * 100.0f;
+		Vector3 point1 = Vector3::Random() * 100.0f;
+		Vector3 point2 = Vector3::Random() * 100.0f;
 		boxes.emplace_back(point1, point1 + point2);
 	}
 	sap.Prune(&overlaps);
@@ -501,9 +501,9 @@ void TestSAPInc()
 {
 	printf("Running TestSAPInc\n");
 	std::vector<Geometry*> boxes;
-	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d(0.5f, 0.5f, 0.5f), Vector3d(0.5f, 0.5f, 0.5f)));
-	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d(2.5f, 2.5f, 2.5f), Vector3d(0.5f, 0.5f, 0.5f)));
-	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3d(15, 15, 15), Vector3d(5, 5, 5)));
+	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.5f, 0.5f, 0.5f)));
+	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3(2.5f, 2.5f, 2.5f), Vector3(0.5f, 0.5f, 0.5f)));
+	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3(15, 15, 15), Vector3(5, 5, 5)));
 
 	BVProxy P(&boxes);
 	IncrementalSAP sap(&P, { 0, 1, 2 });
@@ -513,7 +513,7 @@ void TestSAPInc()
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 0);
 
-	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3d(-10, -10, -10));
+	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3(-10, -10, -10));
 	boxes[2]->UpdateBoundingVolume();
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 2);
@@ -521,22 +521,22 @@ void TestSAPInc()
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 2);
 
-	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3d(10, 10, 10));
+	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3(10, 10, 10));
 	boxes[2]->UpdateBoundingVolume();
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 0);
 
 	for (int i = 0; i < 100; ++i)
 	{
-		Vector3d point1 = Vector3d::Random() * 100.0f;
-		Vector3d point2 = Vector3d::Random() * 100.0f;
+		Vector3 point1 = Vector3::Random() * 100.0f;
+		Vector3 point2 = Vector3::Random() * 100.0f;
 		boxes.emplace_back(GeometryFactory::CreateOBB(point1, point2));
 	}
 	sap.SetDirty();
 
 	for (int k = 0; k < 10; ++k)
 	{
-		boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3d::Random() * 20.0f);
+		boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3::Random() * 20.0f);
 		boxes[2]->UpdateBoundingVolume();
 		sap.IncrementalPrune(&overlaps);
 

@@ -17,7 +17,7 @@ struct HeightFieldHitOption
 struct HeightFieldHitResult
 {
 	float		hitTime;
-	Vector3d	hitNormal;
+	Vector3	hitNormal;
 	uint32_t	cellIndex;
 	int		    hitTestCount;
     
@@ -102,31 +102,31 @@ public:
 		return BV;
 	}
 
-    bool    IntersectAABB(const Vector3d& Bmin, const Vector3d& Bmax) const;
-	bool    IntersectRay(const Vector3d& Origin, const Vector3d& Dir, float* t) const;
-    bool    IntersectRay(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult *Result) const;
+    bool    IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
+	bool    IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const;
+    bool    IntersectRay(const Vector3& Origin, const Vector3& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult *Result) const;
 
-	Vector3d    GetSupport(const Vector3d& dir) const
+	Vector3    GetSupport(const Vector3& dir) const
 	{
 		assert(false);
-		return Vector3d::Zero();
+		return Vector3::Zero();
 	}
 
-	int			GetSupportFace(const Vector3d& dir, Vector3d* FacePoints) const
+	int			GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
 	{
 		assert(false);
 		return 0;
 	}
 
-	Matrix3d	GetInertiaTensor(float Mass) const
+	Matrix3	GetInertiaTensor(float Mass) const
 	{
-		return Matrix3d(Mass, Mass, Mass);
+		return Matrix3(Mass, Mass, Mass);
 	}
 
 	bool	GetCellBV(int i, int j, Box3d &box) const;
 	bool	GetHeightRange(int i, int j, float &minH, float & maxH) const;
 
-	int		GetCellTriangle(int i, int j, Vector3d Tris[6]) const;
+	int		GetCellTriangle(int i, int j, Vector3 Tris[6]) const;
 
 	int		GetCellTriangle(int i, int j, uint32_t Tris[6]) const
 	{
@@ -164,7 +164,7 @@ public:
 		return nt;
 	}
 
-	void GetMesh(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3d>& Normals)
+	void GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
 		if (nZ * nZ == 0)
 		{
@@ -175,7 +175,7 @@ public:
 		for (uint32_t i = 0; i < nX; i++)
 		for (uint32_t j = 0; j < nZ; j++)
 		{
-			Vertices[i * nZ + j] = Vector3d(BV.Min.x + DX * i, GetHeight(i * nZ + j), BV.Min.z + DX * j);
+			Vertices[i * nZ + j] = Vector3(BV.Min.x + DX * i, GetHeight(i * nZ + j), BV.Min.z + DX * j);
 		}
 
 		assert(Vertices.size() < 65535);
@@ -205,10 +205,10 @@ public:
 			uint16_t i0 = Indices[3 * i + 0];
 			uint16_t i1 = Indices[3 * i + 1];
 			uint16_t i2 = Indices[3 * i + 2];
-			const Vector3d& v0 = Vertices[i0];
-			const Vector3d& v1 = Vertices[i1];
-			const Vector3d& v2 = Vertices[i2];
-			Vector3d Nor = (v1 - v0).Cross(v2 - v0);
+			const Vector3& v0 = Vertices[i0];
+			const Vector3& v1 = Vertices[i1];
+			const Vector3& v2 = Vertices[i2];
+			Vector3 Nor = (v1 - v0).Cross(v2 - v0);
 			Normals[i0] += Nor.Unit(); Count[i0]++;
 			Normals[i1] += Nor.Unit(); Count[i1]++;
 			Normals[i2] += Nor.Unit(); Count[i2]++;
@@ -221,13 +221,13 @@ public:
 		}
 	}
 
-	void GetWireframe(std::vector<Vector3d>& Vertices, std::vector<uint16_t>& Indices)
+	void GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
 	{
 
 	}
     
 private:
-	bool IntersectRayBruteForce(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
-    bool IntersectRayCell(const Vector3d& Origin, const Vector3d& Dir, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
-    bool IntersectRayY(const Vector3d& Origin, const Vector3d& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
+	bool IntersectRayBruteForce(const Vector3& Origin, const Vector3& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
+    bool IntersectRayCell(const Vector3& Origin, const Vector3& Dir, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
+    bool IntersectRayY(const Vector3& Origin, const Vector3& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
 };

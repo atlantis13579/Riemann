@@ -9,10 +9,10 @@
 
 struct Node
 {
-	Vector3d position;
+	Vector3 position;
 	float mass;
 	Node() {}
-	Node(const Vector3d& _position, float _mass) : position(_position), mass(_mass) {}
+	Node(const Vector3& _position, float _mass) : position(_position), mass(_mass) {}
 };
 
 struct TetrahedralNode
@@ -20,10 +20,10 @@ struct TetrahedralNode
 	int node[4];
 	float weight;
 	float volume;
-	Matrix3d Dm;
-	Matrix3d Bm;
+	Matrix3 Dm;
+	Matrix3 Bm;
 	TetrahedralNode() = default;
-	TetrahedralNode(int _n1, int _n2, int _n3, int _n4, float _weight, float _volume, Matrix3d& _Dm) : Dm(_Dm), Bm(_Dm.Inverse())
+	TetrahedralNode(int _n1, int _n2, int _n3, int _n4, float _weight, float _volume, Matrix3& _Dm) : Dm(_Dm), Bm(_Dm.Inverse())
 	{
 		weight = _weight;
 		volume = _volume;
@@ -46,9 +46,9 @@ public:
 		m_restpos.Push(node.position);
 	}
 
-	Matrix3d GenerateD(Vector3d& v0, Vector3d& v1, Vector3d& v2, Vector3d& v3)
+	Matrix3 GenerateD(Vector3& v0, Vector3& v1, Vector3& v2, Vector3& v3)
 	{
-		return Matrix3d(v0.x - v3.x, v1.x - v3.x, v2.x - v3.x,
+		return Matrix3(v0.x - v3.x, v1.x - v3.x, v2.x - v3.x,
 						v0.y - v3.y, v1.y - v3.y, v2.y - v3.y,
 						v0.z - v3.z, v1.z - v3.z, v2.z - v3.z);
 	}
@@ -56,7 +56,7 @@ public:
 
 	void AddTetrahedral(int t1, int t2, int t3, int t4, float weight)
 	{
-		Matrix3d Dm = Matrix3d(m_restpos[t1].x - m_restpos[t4].x, m_restpos[t2].x - m_restpos[t4].x, m_restpos[t3].x - m_restpos[t4].x,
+		Matrix3 Dm = Matrix3(m_restpos[t1].x - m_restpos[t4].x, m_restpos[t2].x - m_restpos[t4].x, m_restpos[t3].x - m_restpos[t4].x,
 							   m_restpos[t1].y - m_restpos[t4].y, m_restpos[t2].y - m_restpos[t4].y, m_restpos[t3].y - m_restpos[t4].y,
 							   m_restpos[t1].z - m_restpos[t4].z, m_restpos[t2].z - m_restpos[t4].z, m_restpos[t3].z - m_restpos[t4].z);
 
@@ -67,7 +67,7 @@ public:
 
 	void AddTetrahedral(int t[4], float weight)
 	{
-		Matrix3d Dm = Matrix3d(m_restpos[t[0]].x - m_restpos[t[3]].x, m_restpos[t[1]].x - m_restpos[t[3]].x, m_restpos[t[2]].x - m_restpos[t[3]].x,
+		Matrix3 Dm = Matrix3(m_restpos[t[0]].x - m_restpos[t[3]].x, m_restpos[t[1]].x - m_restpos[t[3]].x, m_restpos[t[2]].x - m_restpos[t[3]].x,
 							   m_restpos[t[0]].y - m_restpos[t[3]].y, m_restpos[t[1]].y - m_restpos[t[3]].y, m_restpos[t[2]].y - m_restpos[t[3]].y,
 							   m_restpos[t[0]].z - m_restpos[t[3]].z, m_restpos[t[1]].z - m_restpos[t[3]].z, m_restpos[t[2]].z - m_restpos[t[3]].z);
 
@@ -86,13 +86,13 @@ public:
 		return m_nodes[index];
 	}
 
-	void SetPosition(int index, const Vector3d& pos)
+	void SetPosition(int index, const Vector3& pos)
 	{
 		m_nodes[index].position = pos;
 		m_restpos[index] = pos;
 	}
 
-	const Vector3d& GetPosition(int index) const
+	const Vector3& GetPosition(int index) const
 	{
 		return m_nodes[index].position;
 	}
@@ -104,7 +104,7 @@ public:
 		return &m_tets[index];
 	}
 
-	const Vector3d& GetRestPosition(int index) const
+	const Vector3& GetRestPosition(int index) const
 	{
 		return m_restpos[index];
 	}
@@ -119,15 +119,15 @@ public:
 		return m_tets.GetSize();
 	}
 
-	void GetTransforms(int tetindex, Matrix3d& Ds, Matrix3d& F, Matrix3d& R, Matrix3d& S) const;
+	void GetTransforms(int tetindex, Matrix3& Ds, Matrix3& F, Matrix3& R, Matrix3& S) const;
 
-	Matrix3d GetRotationMatrix(int tetindex, Matrix3d& Ds) const;
+	Matrix3 GetRotationMatrix(int tetindex, Matrix3& Ds) const;
 
-	Vector3d GetCentroid(int i, int j) const;
+	Vector3 GetCentroid(int i, int j) const;
 
 private:
 	StaticArray<Node, MAX_NODES> m_nodes;
-	StaticArray<Vector3d, MAX_NODES> m_restpos;
+	StaticArray<Vector3, MAX_NODES> m_restpos;
 	StaticArray<TetrahedralNode, MAX_TETS> m_tets;
 };
 

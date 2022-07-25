@@ -235,9 +235,9 @@ float RigidBodySimulation::GetSystemTotalAngularKinematicsEnergy() const
 	return Energy;
 }
 
-Vector3d RigidBodySimulation::GetSystemTotalLinearMomentum() const
+Vector3 RigidBodySimulation::GetSystemTotalLinearMomentum() const
 {
-	Vector3d Momentum(0.0f);
+	Vector3 Momentum(0.0f);
 	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 	{
 		Momentum += m_DynamicBodies[i]->GetLinearMomentum();
@@ -245,9 +245,9 @@ Vector3d RigidBodySimulation::GetSystemTotalLinearMomentum() const
 	return Momentum;
 }
 
-Vector3d RigidBodySimulation::GetSystemTotalAngularMomentum() const
+Vector3 RigidBodySimulation::GetSystemTotalAngularMomentum() const
 {
-	Vector3d Momentum(0.0f);
+	Vector3 Momentum(0.0f);
 	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 	{
 		Momentum += m_DynamicBodies[i]->GetAngularMomentum();

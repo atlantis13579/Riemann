@@ -12,27 +12,27 @@ void TestClip()
 {
 	printf("Running TestClip\n");
 
-	Vector3d poly1[] = { Vector3d(0, 0, 0), Vector3d(4, 0, 0), Vector3d(4, 4, 0), Vector3d(0, 4, 0) };
-	Vector3d poly2[] = { Vector3d(-1, -1, 0), Vector3d(-1, 1, 0), Vector3d(1, 1, 0), Vector3d(1, -1, 0) };
-	Vector3d poly3[] = { Vector3d(2, 5, -1), Vector3d(2, 5, 1), Vector3d(5, 2, 1), Vector3d(5, 2, -1) };
+	Vector3 poly1[] = { Vector3(0, 0, 0), Vector3(4, 0, 0), Vector3(4, 4, 0), Vector3(0, 4, 0) };
+	Vector3 poly2[] = { Vector3(-1, -1, 0), Vector3(-1, 1, 0), Vector3(1, 1, 0), Vector3(1, -1, 0) };
+	Vector3 poly3[] = { Vector3(2, 5, -1), Vector3(2, 5, 1), Vector3(5, 2, 1), Vector3(5, 2, -1) };
 
 	int c1 = 0, c2 = 0;
-	Vector3d clip1[8], clip2[8];
+	Vector3 clip1[8], clip2[8];
 
-	ClipPolygonByPlane3D(poly1, 4, Vector3d(1, 1, 0), Vector3d::UnitY(), clip1, &c1);
+	ClipPolygonByPlane3D(poly1, 4, Vector3(1, 1, 0), Vector3::UnitY(), clip1, &c1);
 	EXPECT(c1 == 4);
-	ClipPolygonByPlane3D(poly1, 4, Vector3d(3, 3, 0), Vector3d(3, 3, 0), clip1, &c1);
+	ClipPolygonByPlane3D(poly1, 4, Vector3(3, 3, 0), Vector3(3, 3, 0), clip1, &c1);
 	EXPECT(c1 == 3);
-	ClipPolygonByPlane3D(poly1, 4, Vector3d(3, 3, 0), Vector3d(-3, -3, 0), clip1, &c1);
+	ClipPolygonByPlane3D(poly1, 4, Vector3(3, 3, 0), Vector3(-3, -3, 0), clip1, &c1);
 	EXPECT(c1 == 5);
-	ClipPolygonByProjectPolygon3D(poly1, 4, poly3, 4, Vector3d(3, 3, 0), clip1, &c1);
+	ClipPolygonByProjectPolygon3D(poly1, 4, poly3, 4, Vector3(3, 3, 0), clip1, &c1);
 	EXPECT(c1 == 6);
-	ClipPolygonByProjectPolygon3D(poly1, 4, poly3, 4, Vector3d(3, 3, 0), clip1, &c1);
+	ClipPolygonByProjectPolygon3D(poly1, 4, poly3, 4, Vector3(3, 3, 0), clip1, &c1);
 	EXPECT(c1 == 6);
-	ClipPolygonByAABB3D(poly1, 4, Vector3d(2, 2, -1), Vector3d(5, 5, 1), clip1, &c1);
+	ClipPolygonByAABB3D(poly1, 4, Vector3(2, 2, -1), Vector3(5, 5, 1), clip1, &c1);
 	EXPECT(c1 == 4);
 
-	bool succ = ClipPolygonAgainPolygon3D(poly1, 4, poly2, 4, Vector3d::UnitZ(), 0.02f, clip1, &c1, clip2, &c2);
+	bool succ = ClipPolygonAgainPolygon3D(poly1, 4, poly2, 4, Vector3::UnitZ(), 0.02f, clip1, &c1, clip2, &c2);
 	EXPECT(succ);
 	return;
 }
@@ -40,7 +40,7 @@ void TestClip()
 void TestCatmullRom()
 {
 	printf("Running TestCatmullRom\n");
-	std::vector<Vector3d> paths;
+	std::vector<Vector3> paths;
 	paths.emplace_back(0.0f, 0.0f, 0.0f);
 	paths.emplace_back(0.0f, 1.0f, 0.0f);
 	paths.emplace_back(2.0f, 1.0f, 0.0f);
@@ -58,7 +58,7 @@ void TestMesh1()
 {
 	printf("Running TestMesh1\n");
 	Mesh mesh;
-	mesh.AddAABB(Vector3d(-1, -1, -1), Vector3d(0.99f, 0.99f, 0.99f));
+	mesh.AddAABB(Vector3(-1, -1, -1), Vector3(0.99f, 0.99f, 0.99f));
 	mesh.CalculateBoundingBox();
 
 	VoxelField field;
@@ -75,19 +75,19 @@ void TestMesh1()
 	SparseVoxelField inference;
 	inference.SerializeFrom("data/test.voxel");
 
-	Box3d v = field.GetVoxelBox(Vector3d(-0.1f, -0.1f, -0.1f));
+	Box3d v = field.GetVoxelBox(Vector3(-0.1f, -0.1f, -0.1f));
 	EXPECT(FloatEqual(v.Min.x, -1.0f));
 	EXPECT(FloatEqual(v.Max.x, 0.0f));
 
-	v = field.GetVoxelBox(Vector3d(0.01f, 0.01f, 0.01f));
+	v = field.GetVoxelBox(Vector3(0.01f, 0.01f, 0.01f));
 	EXPECT(FloatEqual(v.Min.x, 0.0f));
 	EXPECT(FloatEqual(v.Max.x, 1.0f));
 
 	field.MakeComplementarySet();
 
 	VoxelizationInfo info;
-	info.BV.Min = Vector3d(-2, -2, -2);
-	info.BV.Max = Vector3d(2, 2, 2);
+	info.BV.Min = Vector3(-2, -2, -2);
+	info.BV.Max = Vector3(2, 2, 2);
 	info.VoxelHeight = 0.5f;
 	info.VoxelSize = 0.5f;
 

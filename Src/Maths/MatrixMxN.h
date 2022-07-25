@@ -52,16 +52,16 @@ public:
 		memcpy(mData, v.mData, sizeof(T) * ROWS * COLS);
 	}
 
-	TVectorNd<T, COLS>	GetRow(int i) const
+	TVectorN<T, COLS>	GetRow(int i) const
 	{
-		TVectorNd<T, COLS> Ret;
+		TVectorN<T, COLS> Ret;
 		memcpy(*Ret, mData + i * COLS, sizeof(T) * COLS);
 		return Ret;
 	}
 
-	TVectorNd<T, ROWS>	GetCol(int i) const
+	TVectorN<T, ROWS>	GetCol(int i) const
 	{
-		TVectorNd<T, ROWS> Ret;
+		TVectorN<T, ROWS> Ret;
 		for (int j = 0; j < ROWS; ++j)
 		{
 			Ret[j] = mData[j * COLS + i];
@@ -153,9 +153,9 @@ public:
 		return Ret;
 	}
 
-	TVectorNd<T, ROWS>			operator*(const TVectorNd<T, COLS>& v) const
+	TVectorN<T, ROWS>			operator*(const TVectorN<T, COLS>& v) const
 	{
-		TVectorNd<T, ROWS> Ret;
+		TVectorN<T, ROWS> Ret;
 		T* pm = *Ret;
 		const T* pv = *v;
 		for (int i = 0; i < ROWS; ++i)

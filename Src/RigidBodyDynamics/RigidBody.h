@@ -34,9 +34,9 @@ struct RigidBodyParam
 	}
 
 	float		InvMass;
-	Matrix3d	Inertia;
-	Vector3d	LinearVelocity;
-	Vector3d	AngularVelocity;
+	Matrix3	Inertia;
+	Vector3	LinearVelocity;
+	Vector3	AngularVelocity;
 	float		LinearDamping;
 	float		AngularDamping;
 	float		ContactReportThreshold;
@@ -54,14 +54,14 @@ public:
 	bool		Static;
 
 	// State variable
-	Vector3d	X;				// Position
+	Vector3	X;				// Position
 	Quaternion	Q;				// Rotation Quaternion
-	Vector3d	P;				// Linear Momentum
-	Vector3d	L;				// Angular Momentum
+	Vector3	P;				// Linear Momentum
+	Vector3	L;				// Angular Momentum
 	
 	// Constant quantities
 	float		InvMass;		// Inverse of Total Mass
-	Matrix3d	InvInertia;		// Inverse of Inertia Tensor
+	Matrix3	InvInertia;		// Inverse of Inertia Tensor
 
 private:
 	PhysicsMaterial* Material;	// Not hold the memory
@@ -69,12 +69,12 @@ private:
 public:
 	RigidBody();
 
-	Vector3d 		GetLinearVelocity() const;
-	const Vector3d& GetLinearMomentum() const;
-	Vector3d		GetAngularVelocity() const;
-	const Vector3d&	GetAngularMomentum() const;
-	const Matrix3d&	GetInverseInertia() const;
-	Matrix3d		GetInverseInertia_WorldSpace() const;
+	Vector3 		GetLinearVelocity() const;
+	const Vector3& GetLinearMomentum() const;
+	Vector3		GetAngularVelocity() const;
+	const Vector3&	GetAngularMomentum() const;
+	const Matrix3&	GetInverseInertia() const;
+	Matrix3		GetInverseInertia_WorldSpace() const;
 	const float&	GetInverseMass() const;
 
 	float			GetKinematicsEnergy() const;
@@ -83,12 +83,12 @@ public:
 
 	RigidBodyDynamic* CastDynamic();
 	
-	void			SetLinearVelocity(const Vector3d &v);
-	void			SetAngularVelocity(const Vector3d &w);
+	void			SetLinearVelocity(const Vector3 &v);
+	void			SetAngularVelocity(const Vector3 &w);
 
-	void			AddLinearVelocity(const Vector3d& dv);
-	void			AddLinearMomentum(const Vector3d& dp);
-	void			AddAngularVelocity(const Vector3d& dw);
+	void			AddLinearVelocity(const Vector3& dv);
+	void			AddLinearMomentum(const Vector3& dp);
+	void			AddAngularVelocity(const Vector3& dw);
 
 	void			SetDefaultPhysicsMaterial(int idx);
 
@@ -101,8 +101,8 @@ public:
 class RigidBodyStatic : public RigidBody
 {
 public:
-	void SetTransform(const Vector3d& pos, const Quaternion& quat);
-	void SetPosition(const Vector3d& pos);
+	void SetTransform(const Vector3& pos, const Quaternion& quat);
+	void SetPosition(const Vector3& pos);
 	void SetRotation(const Quaternion& quat);
 	void AppendShapes(std::vector<Geometry*>* Shapes);
 
@@ -112,8 +112,8 @@ public:
 class RigidBodyDynamic : public RigidBody
 {
 public:
-	Vector3d	ExtForce;
-	Vector3d	ExtTorque;
+	Vector3	ExtForce;
+	Vector3	ExtTorque;
 
 	float		LinearDamping;
 	float		AngularDamping;
@@ -123,9 +123,9 @@ public:
 	bool		DisableGravity;
 	bool		Sleep;
 
-	void		ApplyForce(const Vector3d& Force);
-	void		ApplyTorgue(const Vector3d& Torque);
-	void		ApplyTorgue(const Vector3d& RelativePosToCenterOfMass, const Vector3d& Force);
+	void		ApplyForce(const Vector3& Force);
+	void		ApplyTorgue(const Vector3& Torque);
+	void		ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force);
 	void		AppendShapes(std::vector<Geometry*> *Shape);
 
 	static RigidBodyDynamic* CreateRigidBody(Geometry* Shape, const RigidBodyParam &param);

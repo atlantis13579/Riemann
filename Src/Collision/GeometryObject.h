@@ -25,7 +25,7 @@ struct CollisionData
 	unsigned int v0;
 };
 
-typedef	StaticArray<Vector3d, MAX_FACE_POINTS> SupportFace;
+typedef	StaticArray<Vector3, MAX_FACE_POINTS> SupportFace;
 
 class Geometry
 {
@@ -34,13 +34,13 @@ class Geometry
 public:
 	virtual ~Geometry() {}
 
-	void					SetPosition(const Vector3d& Position);
-	Vector3d				GetPosition() const;
-	Matrix3d				GetRotationMatrix() const;
+	void					SetPosition(const Vector3& Position);
+	Vector3				GetPosition() const;
+	Matrix3				GetRotationMatrix() const;
 	Quaternion				GetRotationQuat() const;
 	void					SetRotationQuat(const Quaternion& Rotation);
-	const Matrix4d&			GetWorldMatrix();
-	const Matrix4d&			GetInverseWorldMatrix();
+	const Matrix4&			GetWorldMatrix();
+	const Matrix4&			GetInverseWorldMatrix();
 
 	void*					GetEntity();
 	void					SetEntity(void* Entity);
@@ -95,20 +95,20 @@ public:
 		m_Guid = guid;
 	}
 
-	virtual bool			RayCast(const Vector3d& Origin, const Vector3d &Dir, const RayCastOption* Option, RayCastResult *Result) const = 0;
+	virtual bool			RayCast(const Vector3& Origin, const Vector3 &Dir, const RayCastOption* Option, RayCastResult *Result) const = 0;
 	bool					Overlap(const Geometry* Geom) const;
-	bool					Sweep(const Geometry* Geom, const Vector3d& Dir, float* t) const;
+	bool					Sweep(const Geometry* Geom, const Vector3& Dir, float* t) const;
 
 	void					UpdateBoundingVolume();
 	const Box3d&			GetBoundingVolume_WorldSpace() const;
-	Vector3d				GetSupport_WorldSpace(const Vector3d& Dir) const;
-	void					GetSupportFace_WorldSpace(const Vector3d& Dir, SupportFace& Face) const;
-	Matrix3d				GetInverseInertia_LocalSpace(float InvMass) const;
+	Vector3				GetSupport_WorldSpace(const Vector3& Dir) const;
+	void					GetSupportFace_WorldSpace(const Vector3& Dir, SupportFace& Face) const;
+	Matrix3				GetInverseInertia_LocalSpace(float InvMass) const;
 
 private:
-	virtual Matrix3d		GetInertia_LocalSpace(float InvMass) const = 0;
-	virtual Vector3d		GetSupport_LocalSpace(const Vector3d& Dir) const = 0;
-	virtual void			GetSupportFace_LocalSpace(const Vector3d& Dir, SupportFace& Face) const = 0;
+	virtual Matrix3		GetInertia_LocalSpace(float InvMass) const = 0;
+	virtual Vector3		GetSupport_LocalSpace(const Vector3& Dir) const = 0;
+	virtual void			GetSupportFace_LocalSpace(const Vector3& Dir, SupportFace& Face) const = 0;
 	virtual Box3d			GetBoundingVolume_LocalSpace() const = 0;
 
 	const void*				GetShapeObjPtr() const
@@ -137,13 +137,13 @@ class GeometryFactory
 public:
 	static void		 DeleteGeometry(Geometry *Geom);
 
-	static Geometry* CreateOBB(const Vector3d& Center, const Vector3d & HalfExtent, const Quaternion& Rot = Quaternion::One());
-	static Geometry* CreatePlane(const Vector3d& Center, const Vector3d& Normal, float HalfThickness = 0.01f);
-	static Geometry* CreateSphere(const Vector3d& Center, float Radius);
-	static Geometry* CreateCapsule(const Vector3d& X1, const Vector3d& X2, float Radius);
+	static Geometry* CreateOBB(const Vector3& Center, const Vector3 & HalfExtent, const Quaternion& Rot = Quaternion::One());
+	static Geometry* CreatePlane(const Vector3& Center, const Vector3& Normal, float HalfThickness = 0.01f);
+	static Geometry* CreateSphere(const Vector3& Center, float Radius);
+	static Geometry* CreateCapsule(const Vector3& X1, const Vector3& X2, float Radius);
 	static Geometry* CreateHeightField(const Box3d& Bv, int nRows, int nCols);
 	static Geometry* CreateConvexMesh();
-	static Geometry* CreateTriangle(const Vector3d& A, const Vector3d& B, const Vector3d& C);
+	static Geometry* CreateTriangle(const Vector3& A, const Vector3& B, const Vector3& C);
 	static Geometry* CreateTriangleMesh();
 
 	static int		ObjectCount[(int)ShapeType3d::TYPE_COUNT];
