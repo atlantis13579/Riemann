@@ -219,28 +219,24 @@ public:
 		return start * cosf(angle) + base * sinf(angle);
 	}
 
-	static const TVector2<T>& Zero()
+	constexpr static TVector2<T> Zero()
 	{
-		static TVector2<T> zero(0, 0);
-		return zero;
+		return TVector2<T>(0, 0);
 	}
 
-	static const TVector2<T>& One()
+	constexpr static TVector2<T> One()
 	{
-		static TVector2<T> One((T)1, (T)1);
-		return One;
+		return TVector2<T>((T)1, (T)1);
 	}
 
-	static const TVector2<T>& UnitX()
+	constexpr static TVector2<T> UnitX()
 	{
-		static TVector2<T> inf((T)1, 0);
-		return inf;
+		return TVector2<T>((T)1, 0);
 	}
 
-	static const TVector2<T>& UnitY()
+	constexpr static TVector2<T> UnitY()
 	{
-		static TVector2<T> inf(0, (T)1);
-		return inf;
+		return TVector2<T>(0, (T)1);
 	}
 };
 

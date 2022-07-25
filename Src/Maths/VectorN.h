@@ -183,8 +183,7 @@ public:
 
 	static TVectorN<T, SIZE> Zero()
 	{
-		static TVectorN<T, SIZE> s_Zero(true);
-		return s_Zero;
+		return TVectorN<T, SIZE>(true);
 	}
 
 private:

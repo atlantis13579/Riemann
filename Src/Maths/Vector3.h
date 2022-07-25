@@ -69,7 +69,7 @@ public:
 	TVector3<T> SafeUnit() const
 	{
 		T m = SquareLength();
-		if (m < std::numeric_limits<T>::epsilon())
+		if (m <= std::numeric_limits<T>::epsilon())
 		{
 			return TVector3<T>::Zero();
 		}
@@ -242,12 +242,12 @@ public:
 		return p[i];
 	}
 
-	bool IsZero() const
+	bool		IsZero() const
 	{
-		return SquareLength() < 0.00001f;
+		return SquareLength() <= std::numeric_limits<T>::epsilon();
 	}
 
-	int ParallelTo(const TVector3<T>&v) const
+	int			ParallelTo(const TVector3<T>&v) const
 	{
 		T dp = this->Dot(v);
 		T dp2 = SquareLength() * v.SquareLength();
@@ -315,46 +315,39 @@ public:
 		return start * cosf(angle) + base * sinf(angle);
 	}
 
-	static TVector3<T> InfMin()
+	constexpr static TVector3<T> InfMin()
 	{
-		static TVector3<T> inf(-std::numeric_limits<T>::max, -std::numeric_limits<T>::max, -std::numeric_limits<T>::max);
-		return inf;
+		return TVector3<T>(-std::numeric_limits<T>::max, -std::numeric_limits<T>::max, -std::numeric_limits<T>::max);
 	}
 
-	static TVector3<T> InfMax()
+	constexpr static TVector3<T> InfMax()
 	{
-		static TVector3<T> inf(std::numeric_limits<T>::max, std::numeric_limits<T>::max, std::numeric_limits<T>::max);
-		return inf;
+		return TVector3<T>(std::numeric_limits<T>::max, std::numeric_limits<T>::max, std::numeric_limits<T>::max);
 	}
 
-	static const TVector3<T>& Zero()
+	constexpr static TVector3<T> Zero()
 	{
-		static TVector3<T> zero(0, 0, 0);
-		return zero;
+		return TVector3<T>(0, 0, 0);
 	}
 
-	static const TVector3<T>& One()
+	constexpr static TVector3<T> One()
 	{
-		static TVector3<T> One((T)1, (T)1, (T)1);
-		return One;
+		return TVector3<T>((T)1, (T)1, (T)1);
 	}
 
-	static const TVector3<T>& UnitX()
+	constexpr static TVector3<T> UnitX()
 	{
-		static TVector3<T> unitX((T)1, 0, 0);
-		return unitX;
+		return TVector3<T>((T)1, 0, 0);
 	}
 
-	static const TVector3<T>& UnitY()
+	constexpr static TVector3<T> UnitY()
 	{
-		static TVector3<T> unitY(0, (T)1, 0);
-		return unitY;
+		return TVector3<T>(0, (T)1, 0);
 	}
 
-	static const TVector3<T>& UnitZ()
+	constexpr static TVector3<T> UnitZ()
 	{
-		static TVector3<T> unitZ(0, 0, (T)1);
-		return unitZ;
+		return TVector3<T>(0, 0, (T)1);
 	}
 
 	static TVector3<T> Random()

@@ -204,10 +204,14 @@ public:
 		return Matrix4(m);
 	}
 
-	static const Matrix4& Identity()
+	static Matrix4 Zero()
 	{
-		static Matrix4 Identity(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-		return Identity;
+		return Matrix4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	}
+
+	static Matrix4 Identity()
+	{
+		return Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 	}
 };
 

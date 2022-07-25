@@ -283,16 +283,14 @@ public:
 	static void GolubKahanStep(Matrix3& kA, Matrix3& kL, Matrix3& kR);
 	static float MaxCubicRoot(float afCoeff[3]);
 
-	static const Matrix3& Zero()
+	static Matrix3 Zero()
 	{
-		static Matrix3 Zero(0, 0, 0, 0, 0, 0, 0, 0, 0);
-		return Zero;
+		return Matrix3(0, 0, 0, 0, 0, 0, 0, 0, 0);
 	}
 
-	static const Matrix3& Identity()
+	static Matrix3 Identity()
 	{
-		static Matrix3 Identity(1, 0, 0, 0, 1, 0, 0, 0, 1);
-		return Identity;
+		return Matrix3(1, 0, 0, 0, 1, 0, 0, 0, 1);;
 	}
 };
 

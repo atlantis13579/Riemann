@@ -303,14 +303,12 @@ public:
 
 	static TMatrixMxN<T, ROWS, COLS> Zero()
 	{
-		static TMatrixMxN<T, ROWS, COLS> s_Zero(false);
-		return s_Zero;
+		return TMatrixMxN<T, ROWS, COLS>(false);
 	}
 
 	static TMatrixMxN<T, ROWS, COLS> Identity()
 	{
-		static TMatrixMxN<T, ROWS, COLS> s_Identity(true);
-		return s_Identity;
+		return TMatrixMxN<T, ROWS, COLS>(true);
 	}
 
 protected:
@@ -324,10 +322,10 @@ inline TMatrixMxN<T, ROWS, COLS> operator* (T s, const TMatrixMxN<T, ROWS, COLS>
 }
 
 template<typename T, int SIZE>
-using TMatrixNd = TMatrixMxN<T, SIZE, SIZE>;
+using TMatrixN = TMatrixMxN<T, SIZE, SIZE>;
 
 template<int ROWS, int COLS>
 using MatrixMxN = TMatrixMxN<float, ROWS, COLS>;
 
 template<int SIZE>
-using SquareMatrix = TMatrixNd<float, SIZE>;
+using MatrixN = TMatrixN<float, SIZE>;

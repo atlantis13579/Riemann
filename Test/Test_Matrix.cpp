@@ -44,7 +44,7 @@ void TestMatrix2()
 {
 	printf("Running TestMatrix2\n");
 
-	SquareMatrix<10> M;
+	MatrixN<10> M;
 	M[0][0] = 2.0f;
 	M[0][1] = 3.0f;
 	M(1, 0) = -1.5f;
@@ -53,8 +53,8 @@ void TestMatrix2()
 	for (int j = 0; j < 10; ++j)
 		M(i, j) = 1.0f * rand() / RAND_MAX;
 
-	SquareMatrix<10> invM = (M + M).Inverse();
-	SquareMatrix<10> Id = (M + M) * invM;
+	MatrixN<10> invM = (M + M).Inverse();
+	MatrixN<10> Id = (M + M) * invM;
 	bool IsId = Id.IsIdentity(1e-4f);
 	EXPECT(IsId);
 
@@ -65,7 +65,7 @@ void TestMatrix2()
 
 	VectorNd<10>	Vec = M * M.GetCol(0);
 	float dp = M.GetRow(0).Dot(M.GetCol(0));
-	SquareMatrix<10>	Mat = M * M.Transpose().Transpose();
+	MatrixN<10>	Mat = M * M.Transpose().Transpose();
 
 	EXPECT(dp == Vec[0]);
 	EXPECT(dp == Mat[0][0]);

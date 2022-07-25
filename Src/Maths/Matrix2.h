@@ -244,10 +244,14 @@ public:
 		EigenVector[1] = Vector2(sn, cs);
 	}
 
-	static const Matrix2& Identity()
+	static Matrix2 Zero()
 	{
-		static Matrix2 Identity(1, 0, 0, 1);
-		return Identity;
+		return  Matrix2(0, 0, 0, 0);
+	}
+
+	static Matrix2 Identity()
+	{
+		return  Matrix2(1, 0, 0, 1);
 	}
 };
 

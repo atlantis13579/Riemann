@@ -27,11 +27,11 @@ void TestLqr()
 	const float dt = 0.1f;
 
 	// State matrix
-	SquareMatrix<2> A = { dt, 1.0f, 0.0f, dt };
+	MatrixN<2> A = { dt, 1.0f, 0.0f, dt };
 	MatrixMxN<2, 1> B = { 0.0f, 1.0f };
 
-	SquareMatrix<N> Q = SquareMatrix<N>::Identity();
-	SquareMatrix<M> R = SquareMatrix<M>::Identity();
+	MatrixN<N> Q = MatrixN<N>::Identity();
+	MatrixN<M> R = MatrixN<M>::Identity();
 
 	LinearQuadraticRegulator<N, M> planner(A, B, Q, R);
 	LinearQuadraticRegulator<N, M>::State i = {0.0f, 0.0f};

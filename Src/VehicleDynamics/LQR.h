@@ -11,8 +11,8 @@ class LinearQuadraticRegulator
 {
 public:
     using VectorMx1 = VectorNd<mInput>;
-    using MatrixNxN = SquareMatrix<nState>;
-    using MatrixMxM = SquareMatrix<mInput>;
+    using MatrixNxN = MatrixN<nState>;
+    using MatrixMxM = MatrixN<mInput>;
     using InputMatrix = MatrixMxN<nState, mInput>;
     using GainMatrix = MatrixMxN<mInput, nState>;
     using State = VectorNd<nState>;

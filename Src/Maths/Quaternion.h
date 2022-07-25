@@ -302,34 +302,29 @@ public:
 			2.0f * (xz - wy), 2.0f * (yz + wx), 1.0f - 2.0f * (x2 + y2));
 	}
 
-	static const Quaternion& Zero()
+	static Quaternion Zero()
 	{
-		static Quaternion zero(0, 0, 0, 0);
-		return zero;
+		return Quaternion(0, 0, 0, 0);
 	}
 
-	static const Quaternion& One()
+	static Quaternion One()
 	{
-		static Quaternion one(0, 0, 0, 1);
-		return one;
+		return Quaternion(0, 0, 0, 1);
 	}
 
-	static const Quaternion & UnitX()
+	static Quaternion UnitX()
 	{
-		static Quaternion unitX(1, 0, 0, 0);
-		return unitX;
+		return Quaternion(1, 0, 0, 0);
 	}
 
-	static const Quaternion& UnitY()
+	static Quaternion UnitY()
 	{
-		static Quaternion unitY(0, 1, 0, 0);
-		return unitY;
+		return Quaternion(0, 1, 0, 0);
 	}
 
-	static const Quaternion& UnitZ()
+	static Quaternion UnitZ()
 	{
-		static Quaternion unitZ(0, 0, 1, 0);
-		return unitZ;
+		return Quaternion(0, 0, 1, 0);
 	}
 };
 
