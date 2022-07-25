@@ -1648,96 +1648,26 @@ namespace SIMD_EMU
 
 #endif
 
-inline F128 operator-(const F128 f)
-{
-	return F128_Neg(f);
-}
-
-inline F128 operator+(const F128 a, const F128 b)
-{
-	return F128_Add(a, b);
-}
-
-inline F128 operator-(const F128 a, const F128 b)
-{
-	return F128_Sub(a, b);
-}
-
-inline F128 operator*(const F128 a, const F128 b)
-{
-	return F128_Mul(a, b);
-}
-
-inline F128 operator/(const F128 a, const F128 b)
-{
-	return F128_Div(a, b);
-}
-
-inline B128 operator>(const F128 a, const F128 b)
-{
-	return F128_Greater(a, b);
-}
-
-inline B128 operator>=(const F128 a, const F128 b)
-{
-	return F128_GreaterEqual(a, b);
-}
-
-inline B128 operator==(const F128 a, const F128 b)
-{
-	return F128_Equal(a, b);
-}
-
-inline B128 operator&&(const B128 a, const B128 b)
-{
-	return B128_And(a, b);
-}
-
-inline B128 operator!(const B128 a)
-{
-	return B128_Not(a);
-}
-
-inline B128 operator||(const B128 a, const B128 b)
-{
-	return B128_Or(a, b);
-}
-
-inline U128 operator|(U128 a, U128 b)
-{
-	return U128_OR(a, b);
-}
-
-inline U128 operator^(U128 a, U128 b)
-{
-	return U128_XOR(a, b);
-}
-
-inline U128 operator&(U128 a, U128 b)
-{
-	return U128_AND(a, b);
-}
-
-inline F128 V4Sin(const F128 a)
+inline F128 F128_Sin(const F128 a)
 {
 	const F128 recipTwoPi = F128_Load(0.5f / 3.141592655f);
 	const F128 twoPi = F128_Load(3.141592655f * 2.0f);
-	const F128 tmp = a * recipTwoPi;
+	const F128 tmp = F128_Mul(a, recipTwoPi);
 	const F128 b = F128_Round(tmp);
 	const F128 V1 = F128_NegMSub(twoPi, b, a);
 
-	const F128 V2 = V1 * V1;
-	const F128 V3 = V2 * V1;
-	const F128 V5 = V3 * V2;
-	const F128 V7 = V5 * V2;
-	const F128 V9 = V7 * V2;
-	const F128 V11 = V9 * V2;
-	const F128 V13 = V11 * V2;
-	const F128 V15 = V13 * V2;
-	const F128 V17 = V15 * V2;
-	const F128 V19 = V17 * V2;
-	const F128 V21 = V19 * V2;
-	const F128 V23 = V21 * V2;
+	const F128 V2 = F128_Mul(V1, V1);
+	const F128 V3 = F128_Mul(V2, V1);
+	const F128 V5 = F128_Mul(V3, V2);
+	const F128 V7 = F128_Mul(V5, V2);
+	const F128 V9 = F128_Mul(V7, V2);
+	const F128 V11 = F128_Mul(V9, V2);
+	const F128 V13 = F128_Mul(V11, V2);
+	const F128 V15 = F128_Mul(V13, V2);
+	const F128 V17 = F128_Mul(V15, V2);
+	const F128 V19 = F128_Mul(V17, V2);
+	const F128 V21 = F128_Mul(V19, V2);
+	const F128 V23 = F128_Mul(V21, V2);
 
 	const Scaler S1 = Scaler_Load(-0.166666667f);
 	const Scaler S2 = Scaler_Load(8.333333333e-3f);
@@ -1767,25 +1697,25 @@ inline F128 V4Sin(const F128 a)
 	return Result;
 }
 
-inline F128 V4Cos(const F128 a)
+inline F128 F128_Cos(const F128 a)
 {
 	const F128 recipTwoPi = F128_Load(0.5f / 3.141592655f);
 	const F128 twoPi = F128_Load(3.141592655f * 2.0f);
-	const F128 tmp = a * recipTwoPi;
+	const F128 tmp = F128_Mul(a, recipTwoPi);
 	const F128 b = F128_Round(tmp);
 	const F128 V1 = F128_NegMSub(twoPi, b, a);
 
-	const F128 V2 = V1 * V1;
-	const F128 V4 = V2 * V2;
-	const F128 V6 = V4 * V2;
-	const F128 V8 = V4 * V4;
-	const F128 V10 = V6 * V4;
-	const F128 V12 = V6 * V6;
-	const F128 V14 = V8 * V6;
-	const F128 V16 = V8 * V8;
-	const F128 V18 = V10 * V8;
-	const F128 V20 = V10 * V10;
-	const F128 V22 = V12 * V10;
+	const F128 V2 = F128_Mul(V1, V1);
+	const F128 V4 = F128_Mul(V2, V2);
+	const F128 V6 = F128_Mul(V4, V2);
+	const F128 V8 = F128_Mul(V4, V4);
+	const F128 V10 = F128_Mul(V6, V4);
+	const F128 V12 = F128_Mul(V6, V6);
+	const F128 V14 = F128_Mul(V8, V6);
+	const F128 V16 = F128_Mul(V8, V8);
+	const F128 V18 = F128_Mul(V10, V8);
+	const F128 V20 = F128_Mul(V10, V10);
+	const F128 V22 = F128_Mul(V12, V10);
 
 	const Scaler C1 = Scaler_Load(-0.5f);
 	const Scaler C2 = Scaler_Load(4.166666667e-2f);

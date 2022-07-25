@@ -43,7 +43,7 @@ bool ContactManifold::MergeManifold()
 	float max_val = -FLT_MAX;
 	for (int i = 0; i < NumContactPointCount; ++i)
 	{
-		Contact* contact = &ContactPoints[i];
+		// Contact* contact = &ContactPoints[i];
 		const float val = std::max(kMinSqrDist, projected[i].SquareLength()) * penetration_depth_sq[i];
 		if (max_val < val)
 		{

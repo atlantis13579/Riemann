@@ -147,13 +147,13 @@ bool TriangleMesh::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 		F128 maxz4 = F128_LoadA(tn->maxz);
 
 		// AABB/AABB overlap test
-		B128 res0 = nqMinx4 > maxx4;
-		B128 res1 = nqMiny4 > maxy4;
-		B128 res2 = nqMinz4 > maxz4;
-		B128 res3 = minx4 > nqMaxx4;
-		B128 res4 = miny4 > nqMaxy4;
-		B128 res5 = minz4 > nqMaxz4;
-		B128 resx = ((res0 || res1) || (res2 || res3)) || ((res4 || res5));
+		B128 res0 = F128_Greater(nqMinx4, maxx4);
+		B128 res1 = F128_Greater(nqMiny4, maxy4);
+		B128 res2 = F128_Greater(nqMinz4, maxz4);
+		B128 res3 = F128_Greater(minx4, nqMaxx4);
+		B128 res4 = F128_Greater(miny4, nqMaxy4);
+		B128 res5 = F128_Greater(minz4, nqMaxz4);
+		B128 resx = B128_Or(B128_Or(B128_Or(res0, res1), B128_Or(res2, res3)), B128_Or(res4, res5));
 		alignas(16) uint32_t resa[SIMD_WIDTH];
 
 		U128 res4x = U128_Load_BVec4(resx);
@@ -267,7 +267,7 @@ bool TriangleMesh::IntersectRay(const Vector3& Origin, const Vector3& Dir, const
 	// X[n+1] = X[n]*(2-original*X[n]), X[0] = V4RecipFast estimate
 	//rayInvD = rayInvD*(twos-rayD*rayInvD);
 	rayInvD = F128_RecipFast(rayInvD); // initial estimate, not accurate enough
-	rayInvD = rayInvD * F128_NegMSub(rayD, rayInvD, twos);
+	rayInvD = F128_Mul(rayInvD, F128_NegMSub(rayD, rayInvD, twos));
 
 	// P+tD=a; t=(a-P)/D
 	// t=(a - p.x)*1/d.x = a/d.x +(- p.x/d.x)
@@ -352,10 +352,10 @@ bool TriangleMesh::IntersectRay(const Vector3& Origin, const Vector3& Dir, const
 		// 8i
 		F128 maxOfNeasa = F128_Max(F128_Max(tminxa, tminya), tminza);
 		F128 minOfFarsa = F128_Min(F128_Min(tmaxxa, tmaxya), tmaxza);
-		ignore4a = U128_OR(ignore4a, (epsFloat4 > minOfFarsa));  // if tfar is negative, ignore since its a ray, not a line
+		ignore4a = U128_OR(ignore4a, F128_Greater(epsFloat4, minOfFarsa));  // if tfar is negative, ignore since its a ray, not a line
 		// AP scaffold: update the build to eliminate 3 more instructions for ignore4a above
 		//VecU32V ignore4a = F128_Greater(epsFloat4, minOfFarsa);  // if tfar is negative, ignore since its a ray, not a line
-		ignore4a = U128_OR(ignore4a, (maxOfNeasa > maxT4));  // if tnear is over maxT, ignore this result
+		ignore4a = U128_OR(ignore4a, F128_Greater(maxOfNeasa, maxT4));  // if tnear is over maxT, ignore this result
 
 		// 2i
 		U128 resa4 = F128_Greater(maxOfNeasa, minOfFarsa); // if 1 => fail

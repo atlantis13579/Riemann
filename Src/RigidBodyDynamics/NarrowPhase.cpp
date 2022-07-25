@@ -82,7 +82,7 @@ public:
 			ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
 		}
 
-		const Matrix4& invWorldA = GeomA->GetInverseWorldMatrix();
+		// const Matrix4& invWorldA = GeomA->GetInverseWorldMatrix();
 		for (int i = -1; i < ContactFace.GetSize(); ++i)
 		{
 			Vector3 pa = i == -1 ? w0 : ContactFace[i];

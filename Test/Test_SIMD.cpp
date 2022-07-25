@@ -7,7 +7,7 @@ void TestSIMD()
 	printf("Running TestSIMD\n");
 	F128 v1 = F128_LoadXYZW(1.0f, 2.0f, 3.0f, 4.0f);
 	F128 v2 = F128_Load(2.0f);
-	F128 v3 = v1 * v2;
+	F128 v3 = F128_Mul(v1, v2);
 	Vector3 vv = F128_ReadXYZ(v3);
 	v2 = F128_Load_Vector3d(vv);
 	float* p = (float*)&v2;

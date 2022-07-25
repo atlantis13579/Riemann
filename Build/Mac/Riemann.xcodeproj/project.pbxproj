@@ -184,16 +184,12 @@
 		ADD23CDE288762E100A849BE /* LR.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CDB288762E100A849BE /* LR.h */; };
 		ADD23CDF288762E100A849BE /* SGD.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CDC288762E100A849BE /* SGD.h */; };
 		ADD23CE0288762E100A849BE /* LBGFS.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CDD288762E100A849BE /* LBGFS.h */; };
-		ADD23CF7288762ED00A849BE /* SIMD_AVX.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CE2288762EC00A849BE /* SIMD_AVX.h */; };
 		ADD23CF8288762ED00A849BE /* Quaternion.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CE3288762EC00A849BE /* Quaternion.h */; };
 		ADD23CF9288762ED00A849BE /* Maths.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CE4288762EC00A849BE /* Maths.h */; };
-		ADD23CFA288762ED00A849BE /* SIMD_Neon.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CE5288762EC00A849BE /* SIMD_Neon.h */; };
-		ADD23CFB288762ED00A849BE /* SIMD_SSE.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CE6288762EC00A849BE /* SIMD_SSE.h */; };
 		ADD23CFC288762ED00A849BE /* Transform.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CE7288762ED00A849BE /* Transform.h */; };
 		ADD23CFD288762ED00A849BE /* Box3d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CE8288762ED00A849BE /* Box3d.h */; };
 		ADD23CFE288762ED00A849BE /* Float16.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CE9288762ED00A849BE /* Float16.h */; };
 		ADD23D01288762ED00A849BE /* MatrixMxN.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CEC288762ED00A849BE /* MatrixMxN.h */; };
-		ADD23D02288762ED00A849BE /* SIMD_Simulator.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CED288762ED00A849BE /* SIMD_Simulator.h */; };
 		ADD23D03288762ED00A849BE /* SIMD.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CEE288762ED00A849BE /* SIMD.h */; };
 		ADD23D06288762ED00A849BE /* Tensor.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CF1288762ED00A849BE /* Tensor.h */; };
 		ADD23D09288762ED00A849BE /* Frustum.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CF4288762ED00A849BE /* Frustum.h */; };
@@ -397,16 +393,12 @@
 		ADD23CDB288762E100A849BE /* LR.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LR.h; path = ../../Src/Optimization/LR.h; sourceTree = "<group>"; };
 		ADD23CDC288762E100A849BE /* SGD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SGD.h; path = ../../Src/Optimization/SGD.h; sourceTree = "<group>"; };
 		ADD23CDD288762E100A849BE /* LBGFS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LBGFS.h; path = ../../Src/Optimization/LBGFS.h; sourceTree = "<group>"; };
-		ADD23CE2288762EC00A849BE /* SIMD_AVX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SIMD_AVX.h; path = ../../Src/Maths/SIMD_AVX.h; sourceTree = "<group>"; };
 		ADD23CE3288762EC00A849BE /* Quaternion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Quaternion.h; path = ../../Src/Maths/Quaternion.h; sourceTree = "<group>"; };
 		ADD23CE4288762EC00A849BE /* Maths.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Maths.h; path = ../../Src/Maths/Maths.h; sourceTree = "<group>"; };
-		ADD23CE5288762EC00A849BE /* SIMD_Neon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SIMD_Neon.h; path = ../../Src/Maths/SIMD_Neon.h; sourceTree = "<group>"; };
-		ADD23CE6288762EC00A849BE /* SIMD_SSE.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SIMD_SSE.h; path = ../../Src/Maths/SIMD_SSE.h; sourceTree = "<group>"; };
 		ADD23CE7288762ED00A849BE /* Transform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Transform.h; path = ../../Src/Maths/Transform.h; sourceTree = "<group>"; };
 		ADD23CE8288762ED00A849BE /* Box3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Box3d.h; path = ../../Src/Maths/Box3d.h; sourceTree = "<group>"; };
 		ADD23CE9288762ED00A849BE /* Float16.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Float16.h; path = ../../Src/Maths/Float16.h; sourceTree = "<group>"; };
 		ADD23CEC288762ED00A849BE /* MatrixMxN.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MatrixMxN.h; path = ../../Src/Maths/MatrixMxN.h; sourceTree = "<group>"; };
-		ADD23CED288762ED00A849BE /* SIMD_Simulator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SIMD_Simulator.h; path = ../../Src/Maths/SIMD_Simulator.h; sourceTree = "<group>"; };
 		ADD23CEE288762ED00A849BE /* SIMD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SIMD.h; path = ../../Src/Maths/SIMD.h; sourceTree = "<group>"; };
 		ADD23CF1288762ED00A849BE /* Tensor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Tensor.h; path = ../../Src/Maths/Tensor.h; sourceTree = "<group>"; };
 		ADD23CF4288762ED00A849BE /* Frustum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Frustum.h; path = ../../Src/Maths/Frustum.h; sourceTree = "<group>"; };
@@ -627,10 +619,6 @@
 				ADD23CE4288762EC00A849BE /* Maths.h */,
 				ADD23CEC288762ED00A849BE /* MatrixMxN.h */,
 				ADD23CE3288762EC00A849BE /* Quaternion.h */,
-				ADD23CE2288762EC00A849BE /* SIMD_AVX.h */,
-				ADD23CE5288762EC00A849BE /* SIMD_Neon.h */,
-				ADD23CED288762ED00A849BE /* SIMD_Simulator.h */,
-				ADD23CE6288762EC00A849BE /* SIMD_SSE.h */,
 				ADD23CEE288762ED00A849BE /* SIMD.h */,
 				ADD23CF1288762ED00A849BE /* Tensor.h */,
 				ADD23CE7288762ED00A849BE /* Transform.h */,
@@ -823,7 +811,6 @@
 				ADD23C69288762AE00A849BE /* PID.h in Headers */,
 				ADD23BD92887614E00A849BE /* ProximityGrid.h in Headers */,
 				ADD23CA1288762C000A849BE /* NewtonRaphsonIteration.h in Headers */,
-				ADD23CF7288762ED00A849BE /* SIMD_AVX.h in Headers */,
 				ADD23BF42887616200A849BE /* Ray3d.h in Headers */,
 				ADAA4C3E28898D6000E8AE2E /* Contact.h in Headers */,
 				ADD23C062887616200A849BE /* ConvexMesh.h in Headers */,
@@ -857,7 +844,6 @@
 				ADD23D20288762F900A849BE /* DenseMatrix.h in Headers */,
 				ADD23D23288762F900A849BE /* SparseMatrix.h in Headers */,
 				ADD23C81288762B800A849BE /* libMat.h in Headers */,
-				ADD23CFA288762ED00A849BE /* SIMD_Neon.h in Headers */,
 				ADD23CFE288762ED00A849BE /* Float16.h in Headers */,
 				ADD23BCC2887614E00A849BE /* QuadTree.h in Headers */,
 				ADD23C7F288762B800A849BE /* PhysxFormat_34.hpp in Headers */,
@@ -925,7 +911,6 @@
 				ADD23CD7288762D900A849BE /* GJK2d.h in Headers */,
 				ADD23C4D288761AE00A849BE /* SparseVoxelField.h in Headers */,
 				ADD23BC72887614E00A849BE /* SAP.h in Headers */,
-				ADD23CFB288762ED00A849BE /* SIMD_SSE.h in Headers */,
 				ADD23CCA288762CC00A849BE /* Ragdoll.h in Headers */,
 				ADD23BC52887614E00A849BE /* AABBTreeOffline.h in Headers */,
 				ADD23CB8288762CC00A849BE /* RigidBody.h in Headers */,
@@ -936,7 +921,6 @@
 				ADD23BF32887616200A849BE /* AxisAlignedBox3d.h in Headers */,
 				ADD23D2B288762F900A849BE /* GaussianElimination.h in Headers */,
 				ADD23D09288762ED00A849BE /* Frustum.h in Headers */,
-				ADD23D02288762ED00A849BE /* SIMD_Simulator.h in Headers */,
 				ADD23C83288762B800A849BE /* libPPM.h in Headers */,
 				ADD23CD9288762D900A849BE /* Point2d.h in Headers */,
 				ADD23CF9288762ED00A849BE /* Maths.h in Headers */,
