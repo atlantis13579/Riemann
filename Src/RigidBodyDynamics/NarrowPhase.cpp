@@ -82,16 +82,16 @@ public:
 			ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
 		}
 
-		const Matrix4& invWorld = GeomA->GetInverseWorldMatrix();
+		const Matrix4& invWorldA = GeomA->GetInverseWorldMatrix();
 		for (int i = -1; i < ContactFace.GetSize(); ++i)
 		{
-			Vector3 p0 = i == -1 ? w0 : ContactFace[i];
+			Vector3 pa = i == -1 ? w0 : ContactFace[i];
 			Contact contact;
-			contact.PositionLocalA = invWorld * p0;
-			Vector3 p2 = p0 - epa.penetration_normal * epa.penetration_depth;
-			contact.PositionLocalB = invWorld * p2;
-			contact.PositionWorldA = p0;
-			contact.PositionWorldB = p2;
+			contact.PositionLocalA = pa - GeomA->GetPosition();
+			Vector3 pb = pa - epa.penetration_normal * epa.penetration_depth;
+			contact.PositionLocalB = pb - GeomB->GetPosition();
+			contact.PositionWorldA = pa;
+			contact.PositionWorldB = pb;
 			contact.Normal = epa.penetration_normal;
 			contact.PenetrationDepth = epa.penetration_depth;
 			if (contact.Normal.x >= 0.57735f)

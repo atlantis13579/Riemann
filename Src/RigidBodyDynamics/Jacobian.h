@@ -13,31 +13,19 @@ class ContactManifold;
 // b is the bias term
 struct  Jacobian
 {
-	enum
+	Jacobian()
 	{
-		Normal,
-		Tangent,
-		Binormal,
-	};
-
-	Jacobian(int jt)
-	{
-		m_Type = jt;
-		m_jva = Vector3::Zero();
-		m_jwa = Vector3::Zero();
-		m_jvb = Vector3::Zero();
-		m_jwa = Vector3::Zero();
 		m_bodyA = m_bodyB = nullptr;
 	}
 
-	void	Setup(const Contact *contact, RigidBody* bodyA, RigidBody* bodyB, const Vector3& dir, float dt);
-	void	Solve(float clampmin, float clampmax);
+	void	Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, const Vector3& dir, float bias);
+	void	Solve(float lambdamin, float lambdamax);
 
-	int m_Type;
 	Vector3 m_jva;
 	Vector3 m_jwa;
 	Vector3 m_jvb;
 	Vector3 m_jwb;
+	float	m_error;
 	float	m_bias;
 	float	m_effectiveMass;
 	float	m_totalLambda;
@@ -52,16 +40,14 @@ struct  Jacobian
 // to model the equation : (vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra)) * n == 0
 struct ContactVelocityConstraintSolver
 {
-	ContactVelocityConstraintSolver() :
-		m_jN(Jacobian::Normal),
-		m_jT(Jacobian::Tangent),
-		m_jB(Jacobian::Binormal)
+	ContactVelocityConstraintSolver()
 	{
 	}
 
-	void Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, float dt);
-	void Solve();
-	void Finalize();
+	void	Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, float dt);
+	void	Solve();
+	float	GetSquaredError() const;
+	void	Finalize();
 
 	Contact*	m_contact;
 	Jacobian	m_jN;

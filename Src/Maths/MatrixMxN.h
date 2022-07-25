@@ -1,6 +1,6 @@
 #pragma once
 
-#include<string.h>
+#include <string.h>
 #include <cmath>
 #include <type_traits>
 #include <vector>

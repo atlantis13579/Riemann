@@ -1,10 +1,59 @@
-
+#include <assert.h>
 #include <float.h>
 #include <algorithm>
 #include "../Maths/Maths.h"
 #include "Jacobian.h"
 #include "RigidBody.h"
 #include "Contact.h"
+
+// http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
+void Jacobian::Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, const Vector3& dir, float bias)
+{
+	m_jva = -dir;
+	m_jwa = -contact->PositionLocalA.Cross(dir);
+	m_jvb = dir;
+	m_jwb = contact->PositionLocalB.Cross(dir);
+
+	m_bodyA = bodyA;
+	m_bodyB = bodyB;
+
+	m_bias = bias;
+	m_error = 0.0f;
+
+	Vector3 rva = bodyA->GetInverseInertia() * m_jwa;
+	Vector3 rvb = bodyB->GetInverseInertia() * m_jwb;
+
+	float k = bodyA->GetInverseMass() + bodyB->GetInverseMass() + DotProduct(m_jwa, rva) + DotProduct(m_jwb, rvb);
+
+	m_effectiveMass = 1.0f / k;
+	m_totalLambda = 0.0f;
+	return;
+}
+
+void Jacobian::Solve(float lambdamin, float lambdamax)
+{
+	float jv = DotProduct(m_jva, m_bodyA->GetLinearVelocity())
+			 + DotProduct(m_jwa, m_bodyA->GetAngularVelocity())
+			 + DotProduct(m_jvb, m_bodyB->GetLinearVelocity())
+			 + DotProduct(m_jwb, m_bodyB->GetAngularVelocity());
+
+	m_error = jv + m_bias;
+	float lambda = m_effectiveMass * (-m_error);
+	float oldTotalLambda = m_totalLambda;
+	m_totalLambda = Clamp(m_totalLambda + lambda, lambdamin, lambdamax);
+	lambda = m_totalLambda - oldTotalLambda;
+	
+	Vector3 dpa = m_jva * lambda;
+	Vector3 dwa = (m_bodyA->GetInverseInertia_WorldSpace() * m_jwa) * lambda;
+	Vector3 dpb = m_jvb * lambda;
+	Vector3 dwb = (m_bodyB->GetInverseInertia_WorldSpace() * m_jwb) * lambda;
+
+	m_bodyA->AddLinearMomentum(dpa);
+	m_bodyA->AddAngularVelocity(dwa);
+	m_bodyB->AddLinearMomentum(dpb);
+	m_bodyB->AddAngularVelocity(dwb);
+	return;
+}
 
 // With restitution slop, we take away just a little bit of energy every time a collision
 // occur, so that the bouncing ball would eventually settle on the floor, completely at rest.
@@ -29,80 +78,25 @@ static float BaumgarteStabilizationTerm(float dt, float PenetrationDepth)
 	return -(beta / dt) * std::max(PenetrationDepth - kPenetrationSlop, 0.0f);
 }
 
-// http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
-void Jacobian::Setup(const Contact* contact, RigidBody* bodyA, RigidBody* bodyB, const Vector3& dir, float dt)
-{
-	Vector3 ra = contact->PositionWorldA - bodyA->X;
-	Vector3 rb = contact->PositionWorldB - bodyB->X;
-
-	m_jva = -dir;
-	m_jwa = -ra.Cross(dir);
-	m_jvb = dir;
-	m_jwb = rb.Cross(dir);
-
-	m_bodyA = bodyA;
-	m_bodyB = bodyB;
-
-	m_bias = 0.0f;
-
-	if (m_Type == Jacobian::Normal)
-	{
-		float restitutionA = bodyA->GetRestitution();
-		float restitutionB = bodyB->GetRestitution();
-		float restitution = restitutionA * restitutionB;
-
-		Vector3 va = bodyA->GetLinearVelocity();
-		Vector3 wa = bodyA->GetAngularVelocity();
-		Vector3 vb = bodyB->GetLinearVelocity();
-		Vector3 wb = bodyB->GetAngularVelocity();
-
-		Vector3 relativeVelocity = vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra);
-		float closingSpeed = relativeVelocity.Dot(dir);
-		closingSpeed = std::min(closingSpeed + kRestitutionSlop, 0.0f);
-		closingSpeed = closingSpeed < -kRestitutionSlop ? closingSpeed : 0.0f;
-		m_bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingSpeed;
-	}
-
-	Vector3 rva = bodyA->GetInverseInertia() * m_jwa;
-	Vector3 rvb = bodyB->GetInverseInertia() * m_jwb;
-
-	float k = bodyA->GetInverseMass() + bodyB->GetInverseMass() + DotProduct(m_jwa, rva) + DotProduct(m_jwb, rvb);
-
-	m_effectiveMass = 1.0f / k;
-	m_totalLambda = 0.0f;
-	return;
-}
-
-void Jacobian::Solve(float clampmin, float clampmax)
-{
-	float jv = DotProduct(m_jva, m_bodyA->GetLinearVelocity())
-			 + DotProduct(m_jwa, m_bodyA->GetAngularVelocity())
-			 + DotProduct(m_jvb, m_bodyB->GetLinearVelocity())
-			 + DotProduct(m_jwb, m_bodyB->GetAngularVelocity());
-
-	float lambda = m_effectiveMass * (-jv - m_bias);
-	float oldTotalLambda = m_totalLambda;
-	m_totalLambda = Clamp(m_totalLambda + lambda, clampmin, clampmax);
-	lambda = m_totalLambda - oldTotalLambda;
-	
-	Vector3 dpa = m_jva * lambda;
-	Vector3 dwa = (m_bodyA->GetInverseInertia_WorldSpace() * m_jwa) * lambda;
-	Vector3 dpb = m_jvb * lambda;
-	Vector3 dwb = (m_bodyB->GetInverseInertia_WorldSpace() * m_jwb) * lambda;
-
-	m_bodyA->AddLinearMomentum(dpa);
-	m_bodyA->AddAngularVelocity(dwa);
-	m_bodyB->AddLinearMomentum(dpb);
-	m_bodyB->AddAngularVelocity(dwb);
-	return;
-}
-
 void ContactVelocityConstraintSolver::Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, float dt)
 {
 	m_contact = contact;
-	m_jN.Setup(m_contact, bodyA, bodyB, m_contact->Normal, dt);
-	m_jT.Setup(m_contact, bodyA, bodyB, m_contact->Tangent, dt);
-	m_jB.Setup(m_contact, bodyA, bodyB, m_contact->Binormal, dt);
+
+	float restitutionA = bodyA->GetRestitution();
+	float restitutionB = bodyB->GetRestitution();
+	float restitution = restitutionA * restitutionB;
+	Vector3 va = bodyA->GetLinearVelocity();
+	Vector3 wa = bodyA->GetAngularVelocity();
+	Vector3 vb = bodyB->GetLinearVelocity();
+	Vector3 wb = bodyB->GetAngularVelocity();
+	Vector3 relativeVelocity = vb + CrossProduct(wb, contact->PositionLocalB) - va - CrossProduct(wa, contact->PositionLocalA);
+	float closingSpeed = relativeVelocity.Dot(m_contact->Normal);
+	closingSpeed = std::min(closingSpeed + kRestitutionSlop, 0.0f);
+	closingSpeed = closingSpeed < -kRestitutionSlop ? closingSpeed : 0.0f;
+	float bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingSpeed;
+	m_jN.Setup(contact, bodyA, bodyB, m_contact->Normal, bias);
+	m_jT.Setup(contact, bodyA, bodyB, m_contact->Tangent, 0.0f);
+	m_jB.Setup(contact, bodyA, bodyB, m_contact->Binormal, 0.0f);
 }
 
 void ContactVelocityConstraintSolver::Solve()
@@ -113,6 +107,11 @@ void ContactVelocityConstraintSolver::Solve()
 	float maxFriction = friction * m_jN.m_totalLambda;
 	m_jT.Solve(-maxFriction, maxFriction);
 	m_jB.Solve(-maxFriction, maxFriction);
+}
+
+float ContactVelocityConstraintSolver::GetSquaredError() const
+{
+	return m_jN.m_error * m_jN.m_error + m_jT.m_error * m_jT.m_error + m_jB.m_error * m_jB.m_error;
 }
 
 void ContactVelocityConstraintSolver::Finalize()

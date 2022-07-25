@@ -39,19 +39,36 @@ public:
 			}
 		}
 
-		int it = 0;
-		while (it++ <= m_nMaxVelocityIterations)
+		if (!velocityConstraints.empty())
 		{
+			int it = 0;
+			const float kStopVelocityIterationThreshold = 1e-6f;
+			while (it++ <= m_nMaxVelocityIterations)
+			{
+				float sumSqrError = 0.0;
+				for (size_t k = 0; k < velocityConstraints.size(); ++k)
+				{
+					velocityConstraints[k].Solve();
+
+					sumSqrError += velocityConstraints[k].GetSquaredError();
+				}
+
+				sumSqrError /= velocityConstraints.size();
+				if (sumSqrError < kStopVelocityIterationThreshold)
+				{
+					break;
+				}
+			}
+
 			for (size_t k = 0; k < velocityConstraints.size(); ++k)
 			{
-				velocityConstraints[k].Solve();
+				velocityConstraints[k].Finalize();
 			}
+
+			return;
 		}
 
-		for (size_t k = 0; k < velocityConstraints.size(); ++k)
-		{
-			velocityConstraints[k].Finalize();
-		}
+
 	}
 
 private:
