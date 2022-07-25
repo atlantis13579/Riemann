@@ -39,6 +39,7 @@ class ContactManifold
 public:
 	Geometry* GeomA = nullptr;
 	Geometry* GeomB = nullptr;
+	ContactManifold *next = nullptr;
 
 	Contact ContactPoints[MAX_CONTACT_POINTS + 1];
     int		NumContactPointCount = 0;

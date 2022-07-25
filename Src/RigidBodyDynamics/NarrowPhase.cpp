@@ -1,6 +1,7 @@
 
 #include "NarrowPhase.h"
 #include "Contact.h"
+#include "../Core/BatchList.h"
 #include "../Geometry/Polygon3d.h"
 #include "../Collision/GeometryObject.h"
 #include "../Collision/GeometryDifference.h"
@@ -12,15 +13,18 @@ class NarrowPhase_GJKEPA : public NarrowPhase
 public:
 	NarrowPhase_GJKEPA()
 	{
-		mUseContactFace = true;
+		m_UseContactFace = true;
+		m_ManifoldPool.Init(1, 256);
 	}
 	virtual ~NarrowPhase_GJKEPA()
 	{
 
 	}
 
-	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold>* manifolds) override final
+	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold*>* manifolds) override final
 	{
+		m_ManifoldPool.Clear();
+		
 		manifolds->clear();
 		for (size_t i = 0; i < overlaps.size(); ++i)
 		{
@@ -64,9 +68,10 @@ public:
 		return succ;
 	}
 
-	void ConstructManifols(Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, std::vector<ContactManifold>* manifolds)
+	void ConstructManifols(Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, std::vector<ContactManifold*>* manifolds)
 	{
-		manifolds->push_back(ContactManifold());
+		ContactManifold *manifold = m_ManifoldPool.Alloc();
+		manifolds->push_back(manifold);
 
 		// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
 		Vector3 w0 = Vector3::Zero();
@@ -77,7 +82,7 @@ public:
 		}
 
 		SupportFace ContactFace;
-		if (mUseContactFace)
+		if (m_UseContactFace)
 		{
 			ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
 		}
@@ -108,14 +113,15 @@ public:
 			}
 			contact.Binormal = CrossProduct(contact.Normal, contact.Tangent);
 
-			manifolds->back().AddNewContact(GeomA, GeomB, contact);
+			manifold->AddNewContact(GeomA, GeomB, contact);
 		}
 
 		return;
 	}
 
 private:
-	bool mUseContactFace;
+	bool 						m_UseContactFace;
+	BatchList<ContactManifold>	m_ManifoldPool;
 };
 
 class NarrowPhase_SAT : public NarrowPhase
@@ -128,7 +134,7 @@ public:
 	{
 	}
 
-	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold>* manifolds) override final
+	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold*>* manifolds) override final
 	{
 		return;
 	}
@@ -144,10 +150,13 @@ public:
 	{
 	}
 
-	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold>* manifolds) override final
+	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold*>* manifolds) override final
 	{
 		return;
 	}
+	
+private:
+	BatchList<ContactManifold>	m_ManifoldPool;
 };
 
 NarrowPhase* NarrowPhase::Create_GJKEPA()

@@ -1,18 +1,19 @@
 
+#include "Contact.h"
 #include "WarmStart.h"
 #include "RigidBody.h"
 #include "../Collision/GeometryObject.h"
 
 // http://allenchou.net/2014/01/game-physics-stability-warm-starting/
 
-void WarmStart::ApplyVelocityConstraint(std::vector<ContactManifold>& manifolds, float dt)
+void WarmStart::ApplyVelocityConstraint(std::vector<ContactManifold*>& manifolds, float dt)
 {
     for (size_t i = 0; i < manifolds.size(); ++i)
     {
-        ContactManifold& manifold = manifolds[i];
-        for (int i = 0; i < manifold.NumContactPointCount; i++)
+        ContactManifold* manifold = manifolds[i];
+        for (int i = 0; i < manifold->NumContactPointCount; i++)
         {
-            WarmStart::Apply(manifold.GeomA, manifold.GeomB, manifold.ContactPoints[i], dt);
+            WarmStart::Apply(manifold->GeomA, manifold->GeomB, manifold->ContactPoints[i], dt);
         }
     }
 }

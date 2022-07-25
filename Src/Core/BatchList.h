@@ -10,6 +10,11 @@ public:
 	{
 		std::vector<T>	Stores;
 		int				Current;
+		
+		bool			Full() const
+		{
+			return Current >= (int)Stores.size();
+		}
 	};
 
 	BatchList()
@@ -19,6 +24,7 @@ public:
 	void	Init(int nBatchs, int BatchSize)
 	{
 		m_Count = 0;
+		m_CurrBatch = 0;
 		m_FreeList = nullptr;
 		m_BatchSize = BatchSize;
 		m_Batchs.clear();
@@ -35,15 +41,6 @@ public:
 		return m_Count;
 	}
 
-	T*		GetBatchData(int i)
-	{
-		if (i >= (int)m_Batchs.size())
-		{
-			return nullptr;
-		}
-		return &m_Batchs[i].Stores[0];
-	}
-
 	T*		Alloc()
 	{
 		m_Count++;
@@ -55,14 +52,21 @@ public:
 			return p;
 		}
 
-		if (m_Batchs.empty() || m_Batchs.back().Current >= (int)m_Batchs.back().Stores.size())
+		OneBatch *Batch = m_Batchs.empty() ? nullptr : &m_Batchs[m_CurrBatch];
+		if (Batch == nullptr || (Batch->Full() && m_CurrBatch >= (int)m_Batchs.size() - 1))
 		{
 			m_Batchs.resize(m_Batchs.size() + 1);
-			m_Batchs.back().Stores.resize(m_BatchSize);
-			m_Batchs.back().Current = 0;
+			m_CurrBatch = (int)m_Batchs.size() - 1;
+			Batch = &m_Batchs[m_CurrBatch];
+			Batch->Stores.resize(m_BatchSize);
+			Batch->Current = 0;
 		}
-		OneBatch& Batch = m_Batchs.back();
-		T* p = &Batch.Stores[Batch.Current++];
+		else if (Batch->Full() && m_CurrBatch < (int)m_Batchs.size() - 1)
+		{
+			m_CurrBatch++;
+			Batch = &m_Batchs[m_CurrBatch];
+		}
+		T* p = &Batch->Stores[Batch->Current++];
 		return p;
 	}
 
@@ -70,14 +74,22 @@ public:
 	{
 		m_Count += m_BatchSize;
 
-		if (m_Batchs.empty() || m_Batchs.back().Current >= (int)m_Batchs.back().Stores.size())
+		OneBatch *Batch = m_Batchs.empty() ? nullptr : &m_Batchs[m_CurrBatch];
+		if (Batch == nullptr || (Batch->Full() && m_CurrBatch >= (int)m_Batchs.size() - 1))
 		{
 			m_Batchs.resize(m_Batchs.size() + 1);
-			m_Batchs.back().Stores.resize(m_BatchSize);
-			m_Batchs.back().Current = 0;
+			m_CurrBatch = (int)m_Batchs.size() - 1;
+			Batch = &m_Batchs[m_CurrBatch];
+			Batch->Stores.resize(m_BatchSize);
+			Batch->Current = 0;
 		}
-		m_Batchs.back().Current = m_BatchSize;
-		return &m_Batchs.back().Stores[0];
+		else if (Batch->Full() && m_CurrBatch < (int)m_Batchs.size() - 1)
+		{
+			m_CurrBatch++;
+			Batch = &m_Batchs[m_CurrBatch];
+		}
+		Batch->Current = m_BatchSize;
+		return &Batch->Stores[0];
 	}
 
 	void	Free(T* p)
@@ -90,10 +102,22 @@ public:
 			m_FreeList = p;
 		}
 	}
+	
+	void	Clear()
+	{
+		for (size_t i = 0; i < m_Batchs.size(); ++i)
+		{
+			m_Batchs[i].Current = 0;
+		}
+		m_Count = 0;
+		m_CurrBatch = m_Batchs.empty() ? -1 : 0;
+		m_FreeList = nullptr;
+	}
 
 private:
 	std::vector<OneBatch>	m_Batchs;
 	T*						m_FreeList;
 	int						m_Count;
+	int						m_CurrBatch;
 	int						m_BatchSize;
 };

@@ -20,7 +20,6 @@ RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 	m_BPhase = BroadPhase::Create_SAP();
 	m_NPhase = NarrowPhase::Create_GJKEPA();
 	m_RPhase = ResolutionPhase::CreateSequentialImpulseSolver();
-	m_CacheManifolds = new ContactManifoldManager();
 	m_GeometryQuery = new GeometryQuery;
 	m_Fields.push_back(ForceField::CreateGrivityField(param.Gravity));
 	m_SharedMem = nullptr;
@@ -33,7 +32,6 @@ RigidBodySimulation::~RigidBodySimulation()
 	SAFE_DELETE(m_BPhase);
 	SAFE_DELETE(m_NPhase);
 	SAFE_DELETE(m_RPhase);
-	SAFE_DELETE(m_CacheManifolds);
 
 	for (size_t i = 0; i < m_Fields.size(); ++i)
 	{
@@ -89,7 +87,7 @@ void		RigidBodySimulation::SimulateST(float dt)
 		m_BPhase->ProduceOverlaps(Shapes, &overlaps);
 	}
 
-	std::vector<ContactManifold> manifolds;
+	std::vector<ContactManifold*> manifolds;
 	if (m_NPhase && !overlaps.empty())
 	{
 		m_NPhase->CollisionDetection(overlaps, &manifolds);

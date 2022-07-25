@@ -1,4 +1,5 @@
 
+#include "Contact.h"
 #include "ConstraintSolver.h"
 #include "Jacobian.h"
 #include "RigidBody.h"
@@ -18,7 +19,7 @@ public:
 	{
 	}
 
-	virtual void	ResolveContact(std::vector<ContactManifold>& manifolds, float dt) override final
+	virtual void	ResolveContact(std::vector<ContactManifold*>& manifolds, float dt) override final
 	{
 		if (manifolds.empty())
 			return;
@@ -28,9 +29,9 @@ public:
 		std::vector<ContactVelocityConstraintSolver> velocityConstraints;
 		for (size_t i = 0; i < manifolds.size(); ++i)
 		{
-			for (int j = 0; j < manifolds[i].NumContactPointCount; ++j)
+			for (int j = 0; j < manifolds[i]->NumContactPointCount; ++j)
 			{
-				ContactManifold* manifold = &manifolds[i];
+				ContactManifold* manifold = manifolds[i];
 				RigidBody* bodyA = static_cast<RigidBody*>(manifold->GeomA->GetEntity());
 				RigidBody* bodyB = static_cast<RigidBody*>(manifold->GeomB->GetEntity());
 
