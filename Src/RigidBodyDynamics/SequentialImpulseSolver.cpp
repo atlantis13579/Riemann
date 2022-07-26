@@ -32,8 +32,8 @@ public:
 			for (int j = 0; j < manifolds[i]->NumContactPointCount; ++j)
 			{
 				ContactManifold* manifold = manifolds[i];
-				RigidBody* bodyA = static_cast<RigidBody*>(manifold->GeomA->GetParent());
-				RigidBody* bodyB = static_cast<RigidBody*>(manifold->GeomB->GetParent());
+				RigidBody* bodyA = manifold->GeomA->GetParent<RigidBody>();
+				RigidBody* bodyB = manifold->GeomB->GetParent<RigidBody>();
 
 				velocityConstraints.push_back(ContactVelocityConstraintSolver());
 				velocityConstraints.back().Setup(&manifold->ContactPoints[j], bodyA, bodyB, dt);

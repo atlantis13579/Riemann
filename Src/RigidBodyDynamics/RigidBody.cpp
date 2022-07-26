@@ -12,6 +12,11 @@ RigidBody::RigidBody()
 	mMaterial = nullptr;
 }
 
+RigidBody::~RigidBody()
+{
+	mGeometry = nullptr;
+}
+
 void RigidBody::AddGeometry(Geometry* Geom)
 {
 	assert(Geom->GetNext() == nullptr);
@@ -25,6 +30,7 @@ void RigidBody::AddGeometry(Geometry* Geom)
 	{
 		mGeometry = Geom;
 	}
+	Geom->SetParent(this);
 }
 
 void RigidBody::GetGeometries(std::vector<Geometry*>* Geometries)
@@ -194,6 +200,9 @@ void RigidBodyStatic::AppendShapes(std::vector<Geometry*>* Shapes)
 RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
 {
 	RigidBodyDynamic* body = new RigidBodyDynamic;
+	body->mRigidType = RigidType::Dynamic;
+	body->mMotionType = param.motionType;
+	body->mGeometry = geom;
 	body->InvMass = param.invMass < kMinimumInvMass ? 0.0f : param.invMass;
 	body->InvInertia = geom->GetInverseInertia_LocalSpace(body->InvMass);
 	body->X = geom ? geom->GetPosition() : param.pos;
@@ -208,27 +217,24 @@ RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param,
 	body->SleepThreshold = param.sleepThreshold;
 	body->FreezeThreshold = param.freezeThreshold;
 	body->DisableGravity = param.disableGravity;
-	body->mRigidType = RigidType::Dynamic;
 	body->Sleep = false;
-	body->mGeometry = geom;
-	body->mMotionType = param.motionType;
-	if (geom) geom->SetParent(body);
+	if (geom) body->AddGeometry(geom);
 	return body;
 }
 
 RigidBodyStatic* RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
 {
 	RigidBodyStatic* body = new RigidBodyStatic;
+	body->mRigidType = RigidType::Dynamic;
+	body->mMotionType = param.motionType;
+	body->mGeometry = geom;
 	body->InvMass = 0.0f;
 	body->InvInertia = Matrix3::Zero();
 	body->X = geom ? geom->GetPosition() : param.pos;
 	body->Q = geom ? geom->GetRotationQuat() : param.quat;
 	body->P = Vector3::Zero();
 	body->L = Vector3::Zero();
-	body->mGeometry = geom;
-	body->mRigidType = RigidType::Dynamic;
-	body->mMotionType = param.motionType;
-	if (geom) geom->SetParent(body);
+	if(geom) body->AddGeometry(geom);
 	return body;
 }
 

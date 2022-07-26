@@ -9,8 +9,7 @@
 
 uint64_t GetGuid(Geometry* g)
 {
-	RigidBody* b = static_cast<RigidBody*>(g->GetParent());
-	return b->GetGuid();
+	return g->GetParent<RigidBody>()->GetGuid();
 }
 
 void TestPhysxBin()

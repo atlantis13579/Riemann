@@ -356,13 +356,13 @@ public:
 	}
 
 private:
-	Vector3	m_Translation;
+	Vector3		m_Translation;
 	Quaternion	m_Rotation;
-	Vector3	m_Scale;
+	Vector3		m_Scale;
 
 	bool		m_bWorldMatrixDirty;
 	bool		m_bInvWorldMatrixDirty;
-	Matrix4	m_WorldMatrix;
-	Matrix4	m_InvWorldMatrix;
+	Matrix4		m_WorldMatrix;
+	Matrix4		m_InvWorldMatrix;
 };
 

@@ -41,8 +41,16 @@ public:
 	const Matrix4&			GetWorldMatrix();
 	const Matrix4&			GetInverseWorldMatrix();
 
-	void*					GetParent();
-	void					SetParent(void* parent);
+	template<class T>
+	inline T*				GetParent()
+	{
+		return static_cast<T*>(m_Parent);
+	}
+
+	inline void				SetParent(void* parent)
+	{
+		m_Parent = parent;
+	}
 
 	inline Geometry*		GetNext()
 	{

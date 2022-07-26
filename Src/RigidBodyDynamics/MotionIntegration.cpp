@@ -17,7 +17,7 @@ static void Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float
 	{
 		RigidBodyDynamic* Body = Bodies[i];
 		assert(Body);
-		if (Body->mRigidType == RigidType::Static || Body->Sleep)
+		if (Body->Sleep)
 		{
 			continue;
 		}
@@ -50,7 +50,7 @@ static void Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, flo
 	{
 		RigidBodyDynamic* Body = Bodies[i];
 		assert(Body);
-		if (Body->mRigidType == RigidType::Static || Body->Sleep)
+		if (Body->Sleep)
 		{
 			continue;
 		}

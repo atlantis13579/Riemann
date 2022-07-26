@@ -85,7 +85,7 @@ private:
 
 public:
 	RigidBody();
-	~RigidBody() {}
+	virtual ~RigidBody();
 
 	void					AddGeometry(Geometry* Geom);
 	void					GetGeometries(std::vector<Geometry*>* Geometries);

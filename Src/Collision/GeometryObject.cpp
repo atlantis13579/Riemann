@@ -143,16 +143,6 @@ const Matrix4&		Geometry::GetInverseWorldMatrix()
 	return m_Transform.GetInverseWorldMatrix();
 }
 
-void* Geometry::GetParent()
-{
-	return m_Parent;
-}
-
-void				Geometry::SetParent(void* Entity)
-{
-	m_Parent = Entity;
-}
-
 bool				Geometry::Overlap(const Geometry* Geom) const
 {
 	OverlapFunc func = GeometryIntersection::GetOverlapFunc(m_Type, Geom->GetShapeType());

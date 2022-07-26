@@ -20,8 +20,8 @@ void WarmStart::ApplyVelocityConstraint(std::vector<ContactManifold*>& manifolds
 
 void WarmStart::Apply(Geometry* GeomA, Geometry* GeomB, Contact& contact, float dt)
 {
-    RigidBody* rigidBodyA = (RigidBody*)GeomA->GetParent();
-    RigidBody* rigidBodyB = (RigidBody*)GeomB->GetParent();
+    RigidBody* rigidBodyA = GeomA->GetParent<RigidBody>();
+    RigidBody* rigidBodyB = GeomB->GetParent<RigidBody>();
 
     //let normal point from a -> b
     Vector3 normal = -contact.Normal;
