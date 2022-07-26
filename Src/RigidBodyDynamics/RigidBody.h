@@ -1,12 +1,14 @@
 
 #pragma once
 
+#include <stdint.h>
 #include <vector>
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
 #include "../Maths/Quaternion.h"
 
 class Geometry;
+class RigidBodyStatic;
 class RigidBodyDynamic;
 struct PhysicsMaterial;
 
@@ -17,86 +19,119 @@ enum class RigidType : uint8_t
 	Kinematic,
 };
 
+enum class MorionType : uint8_t
+{
+	Discrete,
+	Continuous,
+};
+
 struct RigidBodyParam
 {
 	RigidBodyParam()
 	{
 		memset(this, 0, sizeof(RigidBodyParam));
-		InvMass = 1.0f;
-		LinearDamping = 0.999f;
-		AngularDamping = 0.999f;
-		ContactReportThreshold = 0.1f;
-		MaxContactImpulse = 10.0f;
-		SleepThreshold = 0.1f;
-		FreezeThreshold = 0.1f;
-		DisableGravity = false;
-		Static = true;
+		pos = Vector3::Zero();
+		quat = Quaternion::One();
+		invMass = 1.0f;
+		linearDamping = 0.999f;
+		angularDamping = 0.999f;
+		contactReportThreshold = 0.1f;
+		maxContactImpulse = 10.0f;
+		sleepThreshold = 0.1f;
+		freezeThreshold = 0.1f;
+		disableGravity = false;
+		rigidType = RigidType::Static;
+		motionType = MorionType::Discrete;
 	}
 
-	float		InvMass;
-	Matrix3	Inertia;
-	Vector3	LinearVelocity;
-	Vector3	AngularVelocity;
-	float		LinearDamping;
-	float		AngularDamping;
-	float		ContactReportThreshold;
-	float		MaxContactImpulse;
-	float		SleepThreshold;
-	float		FreezeThreshold;
-	bool		DisableGravity;
-	bool		Static;
+	Vector3		pos;
+	Quaternion	quat;
+	float		invMass;
+	Matrix3		inertia;
+	Vector3		linearVelocity;
+	Vector3		angularVelocity;
+	float		linearDamping;
+	float		angularDamping;
+	float		contactReportThreshold;
+	float		maxContactImpulse;
+	float		sleepThreshold;
+	float		freezeThreshold;
+	bool		disableGravity;
+	RigidType	rigidType;
+	MorionType	motionType;
 };
 
 class RigidBody
 {
 public:
-	Geometry*	Shape;
-	bool		Static;
+	Geometry*	mGeometry;
+	RigidType	mRigidType;
+	MorionType	mMotionType;
+
+	uint64_t	mGuid;
 
 	// State variable
-	Vector3	X;				// Position
+	Vector3		X;				// Position
 	Quaternion	Q;				// Rotation Quaternion
-	Vector3	P;				// Linear Momentum
-	Vector3	L;				// Angular Momentum
+	Vector3		P;				// Linear Momentum
+	Vector3		L;				// Angular Momentum
 	
 	// Constant quantities
 	float		InvMass;		// Inverse of Total Mass
-	Matrix3	InvInertia;		// Inverse of Inertia Tensor
+	Matrix3		InvInertia;		// Inverse of Inertia Tensor
 
 private:
-	PhysicsMaterial* Material;	// Not hold the memory
+	PhysicsMaterial* mMaterial;	// Not hold the memory
 
 public:
 	RigidBody();
+	~RigidBody() {}
 
-	Vector3 		GetLinearVelocity() const;
-	const Vector3& GetLinearMomentum() const;
-	Vector3		GetAngularVelocity() const;
-	const Vector3&	GetAngularMomentum() const;
-	const Matrix3&	GetInverseInertia() const;
-	Matrix3		GetInverseInertia_WorldSpace() const;
-	const float&	GetInverseMass() const;
+	void					AddGeometry(Geometry* Geom);
+	void					GetGeometries(std::vector<Geometry*>* Geometries);
 
-	float			GetKinematicsEnergy() const;
-	float			GetLinearKinematicsEnergy() const;
-	float			GetAngularKinematicsEnergy() const;
+	uint64_t				GetGuid() const
+	{
+		return mGuid;
+	}
 
-	RigidBodyDynamic* CastDynamic();
+	void					SetGuid(uint64_t guid)
+	{
+		mGuid = guid;
+	}
+
+	Vector3 			GetLinearVelocity() const;
+	const Vector3&		GetLinearMomentum() const;
+	Vector3				GetAngularVelocity() const;
+	const Vector3&		GetAngularMomentum() const;
+	const Matrix3&		GetInverseInertia() const;
+	Matrix3				GetInverseInertia_WorldSpace() const;
+	const float&		GetInverseMass() const;
+
+	float				GetKinematicsEnergy() const;
+	float				GetLinearKinematicsEnergy() const;
+	float				GetAngularKinematicsEnergy() const;
+
+	RigidBodyStatic*	CastStatic();
+	RigidBodyDynamic*	CastDynamic();
 	
-	void			SetLinearVelocity(const Vector3 &v);
-	void			SetAngularVelocity(const Vector3 &w);
+	void				SetLinearVelocity(const Vector3 &v);
+	void				SetAngularVelocity(const Vector3 &w);
 
-	void			AddLinearVelocity(const Vector3& dv);
-	void			AddLinearMomentum(const Vector3& dp);
-	void			AddAngularVelocity(const Vector3& dw);
+	void				AddLinearVelocity(const Vector3& dv);
+	void				AddLinearMomentum(const Vector3& dp);
+	void				AddAngularVelocity(const Vector3& dw);
 
-	void			SetDefaultPhysicsMaterial(int idx);
+	void				SetDefaultPhysicsMaterial(int idx);
 
-	float			GetRestitution() const;
-	float			GetFrictionDynamic() const;
-	float			GetFrictionStatic() const;
+	float				GetRestitution() const;
+	float				GetFrictionDynamic() const;
+	float				GetFrictionStatic() const;
+
+	static RigidBody*	CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
 };
 
+void	GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*>* geometries);
 
 class RigidBodyStatic : public RigidBody
 {
@@ -106,7 +141,7 @@ public:
 	void SetRotation(const Quaternion& quat);
 	void AppendShapes(std::vector<Geometry*>* Shapes);
 
-	static RigidBodyStatic* CreateRigidBody(Geometry* Shape);
+	static RigidBodyStatic* CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
 };
 
 class RigidBodyDynamic : public RigidBody
@@ -128,5 +163,5 @@ public:
 	void		ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force);
 	void		AppendShapes(std::vector<Geometry*> *Shape);
 
-	static RigidBodyDynamic* CreateRigidBody(Geometry* Shape, const RigidBodyParam &param);
+	static RigidBodyDynamic* CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
 };

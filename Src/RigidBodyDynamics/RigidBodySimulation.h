@@ -42,8 +42,8 @@ public:
 	float			GetSystemTotalEnergy() const;
 	float			GetSystemTotalLinearKinematicsEnergy() const;
 	float			GetSystemTotalAngularKinematicsEnergy() const;
-	Vector3		GetSystemTotalLinearMomentum() const;
-	Vector3		GetSystemTotalAngularMomentum() const;
+	Vector3			GetSystemTotalLinearMomentum() const;
+	Vector3			GetSystemTotalAngularMomentum() const;
 
 private:
 	void			SimulateST(float dt);

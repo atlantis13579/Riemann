@@ -18,7 +18,7 @@ void AddPlane(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 	std::vector<Vector3> Normals;
 	Plane3d* shape = geom->GetShapeObj<Plane3d>();
 
-	std::string name = std::to_string(geom->GetGuid());
+	std::string name = std::to_string((intptr_t)geom);
 	if (DrawMesh)
 	{
 		shape->GetMesh(Vertices, Indices, Normals);
@@ -39,7 +39,7 @@ void AddGeometryImpl(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 	std::vector<Vector3> Normals;
 	TShape* shape = geom->GetShapeObj<TShape>();
 
-	std::string name = std::to_string(geom->GetGuid());
+	std::string name = std::to_string((intptr_t)geom);
 	if (DrawMesh)
 	{
 		shape->GetMesh(Vertices, Indices, Normals);

@@ -2,20 +2,30 @@
 
 #include "Test.h"
 #include "../Src/Maths/Maths.h"
+#include "../Src/RigidBodyDynamics/RigidBody.h"
 #include "../Src/Collision/AABBTree.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Tools/PhysxBinaryParser.h"
 
+uint64_t GetGuid(Geometry* g)
+{
+	RigidBody* b = static_cast<RigidBody*>(g->GetParent());
+	return b->GetGuid();
+}
+
 void TestPhysxBin()
 {
 	printf("Running TestPhysxBin Japan\n");
-	std::vector<Geometry*> collection;
+	std::vector<RigidBody*> collection;
 	bool load_succ = LoadPhysxBinary("data/Japan.xml.bin", &collection);
 	EXPECT(load_succ);
 	if (load_succ)
 	{
+		std::vector<Geometry*> geometries;
+		GetAllGeometries(collection, &geometries);
+
 		GeometryQuery query;
-		query.BuildStaticGeometry(collection, 1);
+		query.BuildStaticGeometry(geometries, 1);
 		RayCastOption Option;
 		RayCastResult Result;
 
@@ -31,8 +41,11 @@ void TestPhysxBin()
 
 	if (load_succ)
 	{
+		std::vector<Geometry*> geometries;
+		GetAllGeometries(collection, &geometries);
+
 		GeometryQuery query;
-		query.BuildStaticGeometry(collection, 1);
+		query.BuildStaticGeometry(geometries, 1);
 
 		TreeStatistics stat;
 		query.GetStaticTree()->Statistic(stat);
@@ -45,7 +58,7 @@ void TestPhysxBin()
 
 		bool ret = query.RayCast(Vector3(-569, 50, 427), Vector3(1, -1, 1).Unit(), Option, &Result);
 		EXPECT(ret);
-		EXPECT(Result.hitGeom->GetGuid() == 2759574283328);
+		EXPECT(GetGuid(Result.hitGeom) == 2759574283328);
 
 		Vector3 Pos = Result.hitPoint;
 
@@ -57,7 +70,7 @@ void TestPhysxBin()
 		OOption.maxOverlaps = 1;
 		ret = query.OverlapBox(Vector3(Pos.x, Pos.y, Pos.z), 1.0f * Vector3::One(), OOption, &OResult);
 		EXPECT(ret);
-		EXPECT(OResult.overlapGeoms[0]->GetGuid() == 2759574283328);
+		EXPECT(GetGuid(OResult.overlapGeoms[0]) == 2759574283328);
 
 		ret = query.RayCast(Vector3(Pos.x + 0.01f, Pos.y - 10.0f, Pos.z + 0.01f), -Vector3::UnitY(), Option, &Result);
 		// EXPECT(!ret);		// TODO filter the world box
@@ -65,15 +78,15 @@ void TestPhysxBin()
 		ret = query.RayCast(Vector3(Pos.x + 0.01f, Pos.y, Pos.z + 0.01f), -Vector3::UnitY(), Option, &Result);
 		EXPECT(ret);
 		EXPECT(FloatDiff(Result.hitPoint.y, Pos.y) < 0.2f);
-		EXPECT(Result.hitGeom->GetGuid() == 2759584952560);
+		EXPECT(GetGuid(Result.hitGeom) == 2759584952560);
 
 		ret = query.RayCast(Vector3(-2222, 0, -773), -Vector3::UnitY(), Option, &Result);
 		EXPECT(ret);
-		EXPECT(Result.hitGeom->GetGuid() == 2309460023584);
+		EXPECT(GetGuid(Result.hitGeom) == 2309460023584);
 
 		ret = query.RayCast(Vector3(-569, 0, 427), -Vector3::UnitY(), Option, &Result);
 		EXPECT(ret);
-		EXPECT(Result.hitGeom->GetGuid() == 2309201640896);
+		EXPECT(GetGuid(Result.hitGeom) == 2309201640896);
 	}
 
 	return;
@@ -82,14 +95,17 @@ void TestPhysxBin()
 void TestRaycastBenchmark()
 {
 	printf("Running TestRaycastBenchmark\n");
-	std::vector<Geometry*> collection;
+	std::vector<RigidBody*> collection;
 	bool load_succ = LoadPhysxBinary("data/fighting_new.xml.bin", &collection);
 	EXPECT(load_succ);
 	
 	if (load_succ)
 	{
+		std::vector<Geometry*> geometries;
+		GetAllGeometries(collection, &geometries);
+
 		GeometryQuery query;
-		query.BuildStaticGeometry(collection, 5);
+		query.BuildStaticGeometry(geometries, 5);
 
 		TreeStatistics stat;
 		query.GetStaticTree()->Statistic(stat);
@@ -104,7 +120,7 @@ void TestRaycastBenchmark()
 		{
 			ret = query.RayCast(Vector3(-569, 0, 427), Vector3(1, -1, 1).Unit(), Option, &Result);
 			EXPECT(ret);
-			EXPECT(Result.hitGeom->GetGuid() == 2309201640896);
+			EXPECT(GetGuid(Result.hitGeom) == 2309201640896);
 
 			if (i == 0)
 			{

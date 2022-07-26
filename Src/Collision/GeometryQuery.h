@@ -85,12 +85,12 @@ struct RayCastResult
 		#endif // _DEBUG
 	}
 
-	bool		hit;
-	float		hitTime;            // temp val
-	float		hitTimeMin;         // result
-	Vector3	hitPoint;
-	Vector3	hitNormal;
-	Geometry*	hitGeom;
+	bool					hit;
+	float					hitTime;            // temp val
+	float					hitTimeMin;         // result
+	Vector3					hitPoint;
+	Vector3					hitNormal;
+	Geometry*				hitGeom;
     std::vector<Geometry*>  hitGeometries;
     
 	int			hitTestCount;       // debug
@@ -160,7 +160,8 @@ public:
 
 public:
 	void			BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
-	
+	void			BuildStaticGeometry(GeometryIterator *iter, int nPrimitivePerNode);
+
 	bool			RayCast(const Vector3 &Origin, const Vector3& Dir, const RayCastOption& Option, RayCastResult *Result);
 	bool			OverlapBox(const Vector3 &Center, const Vector3& Extent, const OverlapOption& Option, OverlapResult* Result);
 

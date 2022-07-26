@@ -97,6 +97,11 @@ bool				TGeometry<HeightField3d>::RayCast(const Vector3& Origin, const Vector3& 
 	return Ret;
 }
 
+Geometry::Geometry()
+{
+	m_Next = nullptr;
+}
+
 const Box3d&		Geometry::GetBoundingVolume_WorldSpace() const
 {
 	return m_BoxWorld;
@@ -138,14 +143,14 @@ const Matrix4&		Geometry::GetInverseWorldMatrix()
 	return m_Transform.GetInverseWorldMatrix();
 }
 
-void* Geometry::GetEntity()
+void* Geometry::GetParent()
 {
-	return m_Entity;
+	return m_Parent;
 }
 
-void				Geometry::SetEntity(void* Entity)
+void				Geometry::SetParent(void* Entity)
 {
-	m_Entity = Entity;
+	m_Parent = Entity;
 }
 
 bool				Geometry::Overlap(const Geometry* Geom) const

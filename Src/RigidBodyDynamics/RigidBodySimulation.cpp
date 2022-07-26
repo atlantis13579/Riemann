@@ -117,7 +117,7 @@ void		RigidBodySimulation::ApplyForceFields()
 
 bool         RigidBodySimulation::LoadPhysxScene(const char *name, bool shared_mem)
 {
-    std::vector<Geometry*> collection;
+    std::vector<RigidBody*> collection;
 	if (shared_mem)
 	{
 		m_SharedMem = ::LoadPhysxBinaryMmap(name, &collection, m_SharedMemSize);
@@ -135,25 +135,38 @@ bool         RigidBodySimulation::LoadPhysxScene(const char *name, bool shared_m
 		}
 	}
 
+	std::vector<Geometry*> geoms;
+	for (size_t i = 0; i < collection.size(); ++i)
+	{
+		RigidBody* body = collection[i];
+		if (body->mRigidType == RigidType::Static)
+		{
+			m_StaticBodies.push_back(body->CastStatic());
+		}
+		else if (body->mRigidType == RigidType::Dynamic)
+		{
+			m_DynamicBodies.push_back(body->CastDynamic());
+		}
+		body->GetGeometries(&geoms);
+	}
+
     assert(m_GeometryQuery);
-    m_GeometryQuery->BuildStaticGeometry(collection, 5);
+    m_GeometryQuery->BuildStaticGeometry(geoms, 5);
     return true;
 }
 
 RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
 {
-	if (param.Static)
+	RigidBody *body = RigidBody::CreateRigidBody(param, Geom);
+	if (body->mRigidType == RigidType::Static)
 	{
-		RigidBodyStatic* Rigid = RigidBodyStatic::CreateRigidBody(Geom);
-		Geom->SetEntity(Rigid);
-		m_StaticBodies.push_back(Rigid);
-		return Rigid;
+		m_StaticBodies.push_back(body->CastStatic());
 	}
-
-	RigidBodyDynamic* Rigid = RigidBodyDynamic::CreateRigidBody(Geom, param);
-	Geom->SetEntity(Rigid);
-	m_DynamicBodies.push_back(Rigid);
-	return Rigid;
+	else if (body->mRigidType == RigidType::Dynamic)
+	{
+		m_DynamicBodies.push_back(body->CastDynamic());
+	}
+	return body;
 }
 
 bool RigidBodySimulation::LoadAnimation(const std::string& resname, const std::string& filepath, float play_rate, bool begin_play)

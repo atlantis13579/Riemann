@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdint.h>
-
 #include "../Core/StaticArray.h"
 #include "../Maths/Box3d.h"
 #include "../Maths/Transform.h"
@@ -32,30 +30,41 @@ class Geometry
 	friend class GeometryFactory;
 	friend class GeometryRegistration;
 public:
+	Geometry();
 	virtual ~Geometry() {}
 
 	void					SetPosition(const Vector3& Position);
-	Vector3				GetPosition() const;
-	Matrix3				GetRotationMatrix() const;
+	Vector3					GetPosition() const;
+	Matrix3					GetRotationMatrix() const;
 	Quaternion				GetRotationQuat() const;
 	void					SetRotationQuat(const Quaternion& Rotation);
 	const Matrix4&			GetWorldMatrix();
 	const Matrix4&			GetInverseWorldMatrix();
 
-	void*					GetEntity();
-	void					SetEntity(void* Entity);
+	void*					GetParent();
+	void					SetParent(void* parent);
 
-	const Transform*		GetTransform() const
+	inline Geometry*		GetNext()
+	{
+		return m_Next;
+	}
+
+	inline void				SetNext(Geometry* next)
+	{
+		m_Next = next;
+	}
+
+	inline const Transform* GetTransform() const
 	{
 		return &m_Transform;
 	}
 	
-	Transform*				GetTransform()
+	inline Transform*		GetTransform()
 	{
 		return &m_Transform;
 	}
 
-	ShapeType3d				GetShapeType() const
+	inline ShapeType3d		GetShapeType() const
 	{
 		return m_Type;
 	}
@@ -85,29 +94,19 @@ public:
 		return nullptr;
 	}
 
-	uint64_t				GetGuid() const
-	{
-		return m_Guid;
-	}
-
-	void					SetGuid(uint64_t guid)
-	{
-		m_Guid = guid;
-	}
-
 	virtual bool			RayCast(const Vector3& Origin, const Vector3 &Dir, const RayCastOption* Option, RayCastResult *Result) const = 0;
 	bool					Overlap(const Geometry* Geom) const;
 	bool					Sweep(const Geometry* Geom, const Vector3& Dir, float* t) const;
 
 	void					UpdateBoundingVolume();
 	const Box3d&			GetBoundingVolume_WorldSpace() const;
-	Vector3				GetSupport_WorldSpace(const Vector3& Dir) const;
+	Vector3					GetSupport_WorldSpace(const Vector3& Dir) const;
 	void					GetSupportFace_WorldSpace(const Vector3& Dir, SupportFace& Face) const;
-	Matrix3				GetInverseInertia_LocalSpace(float InvMass) const;
+	Matrix3					GetInverseInertia_LocalSpace(float InvMass) const;
 
 private:
-	virtual Matrix3		GetInertia_LocalSpace(float InvMass) const = 0;
-	virtual Vector3		GetSupport_LocalSpace(const Vector3& Dir) const = 0;
+	virtual Matrix3			GetInertia_LocalSpace(float InvMass) const = 0;
+	virtual Vector3			GetSupport_LocalSpace(const Vector3& Dir) const = 0;
 	virtual void			GetSupportFace_LocalSpace(const Vector3& Dir, SupportFace& Face) const = 0;
 	virtual Box3d			GetBoundingVolume_LocalSpace() const = 0;
 
@@ -127,9 +126,16 @@ protected:
 	ShapeType3d				m_Type;
 	Box3d					m_BoxWorld;
 	Transform				m_Transform;
-	uint64_t				m_Guid;
 	CollisionData			m_FilterData;
-	void*					m_Entity;
+	void*					m_Parent;
+	Geometry*				m_Next;
+};
+
+class GeometryIterator
+{
+public:
+	virtual ~GeometryIterator() {}
+	virtual Geometry* GetNext() = 0;
 };
 
 class GeometryFactory

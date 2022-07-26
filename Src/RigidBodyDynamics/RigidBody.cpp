@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include "RigidBody.h"
 #include "PhysicsMaterial.h"
 #include "../Collision/GeometryObject.h"
@@ -7,8 +8,31 @@ static const float kMinimumInvMass = 1e-6f;
 
 RigidBody::RigidBody()
 {
-	Shape = nullptr;
-	Material = nullptr;
+	mGeometry = nullptr;
+	mMaterial = nullptr;
+}
+
+void RigidBody::AddGeometry(Geometry* Geom)
+{
+	assert(Geom->GetNext() == nullptr);
+	if (mGeometry)
+	{
+		assert(mGeometry->GetNext() == nullptr);
+		mGeometry->SetNext(Geom);
+		Geom->SetNext(nullptr);
+	}
+	else
+	{
+		mGeometry = Geom;
+	}
+}
+
+void RigidBody::GetGeometries(std::vector<Geometry*>* Geometries)
+{
+	for (Geometry* g = mGeometry; g; g = g->GetNext())
+	{
+		Geometries->push_back(g);
+	}
 }
 
 Vector3 			RigidBody::GetLinearVelocity() const
@@ -65,9 +89,14 @@ float RigidBody::GetAngularKinematicsEnergy() const
 	return 0.5f * L.Dot(InvInertia * L);
 }
 
+RigidBodyStatic* RigidBody::CastStatic()
+{
+	return mRigidType == RigidType::Static ? (RigidBodyStatic*)this : nullptr;
+}
+
 RigidBodyDynamic* RigidBody::CastDynamic()
 {
-	return Static ? nullptr : (RigidBodyDynamic*)this;
+	return mRigidType == RigidType::Dynamic ? (RigidBodyDynamic*)this : nullptr;
 }
 
 void				RigidBody::SetLinearVelocity(const Vector3 &v)
@@ -97,22 +126,22 @@ void				RigidBody::AddAngularVelocity(const Vector3& dw)
 
 void				RigidBody::SetDefaultPhysicsMaterial(int idx)
 {
-	Material = (PhysicsMaterial*)&PhysicsMaterial::defaultMeterialTable[idx];
+	mMaterial = (PhysicsMaterial*)&PhysicsMaterial::defaultMeterialTable[idx];
 }
 
 float				RigidBody::GetRestitution() const
 {
-	return Material ? Material->Restitution : PhysicsMaterial::DefaultRestitution();
+	return mMaterial ? mMaterial->Restitution : PhysicsMaterial::DefaultRestitution();
 }
 
 float				RigidBody::GetFrictionDynamic() const
 {
-	return Material ? Material->FrictionDynamic : PhysicsMaterial::DefaultFrictionDynamic();
+	return mMaterial ? mMaterial->FrictionDynamic : PhysicsMaterial::DefaultFrictionDynamic();
 }
 
 float				RigidBody::GetFrictionStatic() const
 {
-	return Material ? Material->FrictionStatic : PhysicsMaterial::DefaultFrictionStatic();
+	return mMaterial ? mMaterial->FrictionStatic : PhysicsMaterial::DefaultFrictionStatic();
 }
 
 void				RigidBodyDynamic::ApplyForce(const Vector3& Force)
@@ -132,69 +161,94 @@ void RigidBodyDynamic::ApplyTorgue(const Vector3& RelativePosToCenterOfMass, con
 
 void				RigidBodyDynamic::AppendShapes(std::vector<Geometry*> *Shapes)
 {
-	Shapes->push_back(this->Shape);
-}
-
-RigidBodyDynamic*	RigidBodyDynamic::CreateRigidBody(Geometry* Shape, const RigidBodyParam& param)
-{
-	RigidBodyDynamic* Rigid = new RigidBodyDynamic;
-	Rigid->InvMass = param.InvMass < kMinimumInvMass ? 0.0f : param.InvMass;
-	Rigid->InvInertia = Shape->GetInverseInertia_LocalSpace(Rigid->InvMass);
-	Rigid->X = Shape->GetPosition();
-	Rigid->Q = Shape->GetRotationQuat();
-	Rigid->P = Rigid->InvMass > 0.0f ? param.LinearVelocity / Rigid->InvMass : Vector3::Zero();
-	Rigid->L = Rigid->InvInertia.Invertible() ? Rigid->InvInertia.Inverse() * param.AngularVelocity : Vector3::Zero();
-	Rigid->ExtForce = Vector3::Zero();
-	Rigid->ExtTorque = Vector3::Zero();
-	Rigid->LinearDamping = param.LinearDamping;
-	Rigid->AngularDamping = param.AngularDamping;
-	Rigid->MaxContactImpulse = param.MaxContactImpulse;
-	Rigid->SleepThreshold = param.SleepThreshold;
-	Rigid->FreezeThreshold = param.FreezeThreshold;
-	Rigid->DisableGravity = param.DisableGravity;
-	Rigid->Static = param.Static;
-	Rigid->Sleep = Rigid->Static;
-	Rigid->Shape = Shape;
-	return Rigid;
-}
-
-RigidBodyStatic* RigidBodyStatic::CreateRigidBody(Geometry* Shape)
-{
-	RigidBodyStatic* Rigid = new RigidBodyStatic;
-	Rigid->InvMass = 0.0f;
-	Rigid->InvInertia = Matrix3::Zero();
-	Rigid->X = Shape->GetPosition();
-	Rigid->Q = Shape->GetRotationQuat();
-	Rigid->P = Vector3::Zero();
-	Rigid->L = Vector3::Zero();
-	Rigid->Shape = Shape;
-	Rigid->Static = true;
-	return Rigid;
+	Shapes->push_back(this->mGeometry);
 }
 
 void RigidBodyStatic::SetTransform(const Vector3& pos, const Quaternion& quat)
 {
 	X = pos;
 	Q = quat;
-	Shape->SetPosition(pos);
-	Shape->SetRotationQuat(quat);
-	Shape->UpdateBoundingVolume();
+	mGeometry->SetPosition(pos);
+	mGeometry->SetRotationQuat(quat);
+	mGeometry->UpdateBoundingVolume();
 }
 
 void RigidBodyStatic::SetPosition(const Vector3& pos)
 {
 	X = pos;
-	Shape->SetPosition(pos);
+	mGeometry->SetPosition(pos);
 }
 
 void RigidBodyStatic::SetRotation(const Quaternion& quat)
 {
 	Q = quat;
-	Shape->SetRotationQuat(quat);
-	Shape->UpdateBoundingVolume();
+	mGeometry->SetRotationQuat(quat);
+	mGeometry->UpdateBoundingVolume();
 }
 
 void RigidBodyStatic::AppendShapes(std::vector<Geometry*>* Shapes)
 {
-	Shapes->push_back(this->Shape);
+	Shapes->push_back(this->mGeometry);
+}
+
+RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
+{
+	RigidBodyDynamic* body = new RigidBodyDynamic;
+	body->InvMass = param.invMass < kMinimumInvMass ? 0.0f : param.invMass;
+	body->InvInertia = geom->GetInverseInertia_LocalSpace(body->InvMass);
+	body->X = geom ? geom->GetPosition() : param.pos;
+	body->Q = geom ? geom->GetRotationQuat() : param.quat;
+	body->P = body->InvMass > 0.0f ? param.linearVelocity / body->InvMass : Vector3::Zero();
+	body->L = body->InvInertia.Invertible() ? body->InvInertia.Inverse() * param.angularVelocity : Vector3::Zero();
+	body->ExtForce = Vector3::Zero();
+	body->ExtTorque = Vector3::Zero();
+	body->LinearDamping = param.linearDamping;
+	body->AngularDamping = param.angularDamping;
+	body->MaxContactImpulse = param.maxContactImpulse;
+	body->SleepThreshold = param.sleepThreshold;
+	body->FreezeThreshold = param.freezeThreshold;
+	body->DisableGravity = param.disableGravity;
+	body->mRigidType = RigidType::Dynamic;
+	body->Sleep = false;
+	body->mGeometry = geom;
+	body->mMotionType = param.motionType;
+	if (geom) geom->SetParent(body);
+	return body;
+}
+
+RigidBodyStatic* RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
+{
+	RigidBodyStatic* body = new RigidBodyStatic;
+	body->InvMass = 0.0f;
+	body->InvInertia = Matrix3::Zero();
+	body->X = geom ? geom->GetPosition() : param.pos;
+	body->Q = geom ? geom->GetRotationQuat() : param.quat;
+	body->P = Vector3::Zero();
+	body->L = Vector3::Zero();
+	body->mGeometry = geom;
+	body->mRigidType = RigidType::Dynamic;
+	body->mMotionType = param.motionType;
+	if (geom) geom->SetParent(body);
+	return body;
+}
+
+// static
+RigidBody* RigidBody::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
+{
+	if (param.rigidType == RigidType::Static)
+	{
+		RigidBodyStatic* Rigid = RigidBodyStatic::CreateRigidBody(param, geom);
+		return Rigid;
+	}
+
+	RigidBodyDynamic* Rigid = RigidBodyDynamic::CreateRigidBody(param, geom);
+	return Rigid;
+}
+
+void GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*> *geometries)
+{
+	for (size_t i = 0; i < bodies.size(); ++i)
+	{
+		bodies[i]->GetGeometries(geometries);
+	}
 }

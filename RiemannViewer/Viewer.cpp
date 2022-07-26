@@ -19,7 +19,7 @@ WorldViewer::WorldViewer(Renderer* renderer)
 	m_Renderer = renderer;
 	CreateSimulator();
 	UpdateCamera();
-	CreateDominoDemo();
+	CreateDemo();
 }
 
 WorldViewer::~WorldViewer()
@@ -30,16 +30,16 @@ WorldViewer::~WorldViewer()
 void WorldViewer::CreateDemo()
 {
 	RigidBodyParam rp;
-	rp.Static = true;
+	rp.rigidType = RigidType::Static;
 	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3(0.0f, 1.0f, 0.0f), 1.0f);
 	// Geometry* plane = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0f, 0.0f), Vector3(100.0f, 2.1f, 100.0f));
 	m_World->CreateRigidBody(plane, rp);
 	AddGeometry(m_Renderer, plane);
 
-	rp.Static = false;
+	rp.rigidType = RigidType::Dynamic;
 	// rp.LinearDamping = 0.99f;
 	// rp.AngularDamping = 0.99f;
-	for (int i = 0; i < 1; ++i)
+	for (int i = 0; i < 3; ++i)
 	for (int j = 0; j < 1; ++j)
 	for (int k = 0; k < 1; ++k)
 	{
@@ -53,16 +53,16 @@ void WorldViewer::CreateDemo()
 
 void WorldViewer::CreateStackBoxesDemo()
 {
-	m_CamParam = Vector3(1.6f, 0.1f, 20.0f);
+	m_CamParam = Vector3(1.0f, 0.5f, 25.0f);
 	UpdateCamera();
 
 	RigidBodyParam rp;
-	rp.Static = true;
+	rp.rigidType = RigidType::Static;
 	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3::UnitY(), 1.0f);
 	m_World->CreateRigidBody(plane, rp);
 	AddGeometry(m_Renderer, plane);
 
-	rp.Static = false;
+	rp.rigidType = RigidType::Dynamic;
 	for (int i = 0; i < 10; ++i)
 	for (int j = 0; j < 10 - i; ++j)
 	{
@@ -78,7 +78,7 @@ void WorldViewer::CreateDominoDemo()
 	UpdateCamera();
 
 	RigidBodyParam rp;
-	rp.Static = true;
+	rp.rigidType = RigidType::Static;
 	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, 0, 0), Vector3::UnitY(), 1.0f);
 	m_World->CreateRigidBody(plane, rp);
 	AddGeometry(m_Renderer, plane);
@@ -91,14 +91,14 @@ void WorldViewer::CreateDominoDemo()
 		p->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
 		AddGeometry(m_Renderer, aabb);
 
-		rp.Static = false;
-		Geometry* sp = GeometryFactory::CreateSphere(Vector3(0.0f, 10.0f, -20.0f), 1.0f);
+		rp.rigidType = RigidType::Dynamic;
+		Geometry* sp = GeometryFactory::CreateSphere(Vector3(0.0f, 20.0f, -20.0f), 1.0f);
 		p = (RigidBodyDynamic*)m_World->CreateRigidBody(sp, rp); 
 		p->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
 		AddGeometry(m_Renderer, sp);
 	}
 
-	rp.InvMass = 3.f;
+	rp.invMass = 3.f;
 	for (int i = 0; i < 10; ++i)
 	{
 		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, 4.0f, -10.0f + i * 2.0f), Vector3(2.0f, 3.0f, 0.25f));
@@ -126,7 +126,7 @@ void WorldViewer::CreateDominoDemo()
 void WorldViewer::LoadAnimation(const std::string& anim_name, const std::vector<std::string>& nodes)
 {
 	RigidBodyParam rp;
-	rp.Static = true;
+	rp.rigidType = RigidType::Static;
 
 	m_World->LoadAnimation(anim_name, anim_name, 10.0f, true);
 
@@ -147,15 +147,18 @@ void WorldViewer::LoadAnimation(const std::string& anim_name, const std::vector<
 
 void WorldViewer::LoadPhysxScene(const std::string& file_name)
 {
-	std::vector<Geometry*> collection;;
+	std::vector<RigidBody*> collection;
 	LoadPhysxBinary(file_name.c_str(), &collection);
 
-	for (Geometry* Geom : collection)
+	std::vector<Geometry*> geometries;
+	GetAllGeometries(collection, &geometries);
+
+	for (Geometry* Geom : geometries)
 	{
 		AddGeometry(m_Renderer, Geom);
 	}
 
-	m_World->GetGeometryQuery()->BuildStaticGeometry(collection, 5);
+	m_World->GetGeometryQuery()->BuildStaticGeometry(geometries, 5);
 }
 
 void WorldViewer::LoadFlatObj(const std::string& file_name)

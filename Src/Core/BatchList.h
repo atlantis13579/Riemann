@@ -33,7 +33,7 @@ public:
 			m_Batchs[i].Current = 0;
 			m_Batchs[i].Stores.resize(BatchSize);
 		}
-		m_CurrBatch = m_Batchs.empty() ? -1 : 0;
+		m_CurrBatch = nBatchs - 1;
 	}
 
 	int		GetCount() const

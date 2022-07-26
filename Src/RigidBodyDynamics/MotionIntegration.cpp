@@ -16,7 +16,8 @@ static void Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float
 	for (size_t i = 0; i < Bodies.size(); ++i)
 	{
 		RigidBodyDynamic* Body = Bodies[i];
-		if (Body == nullptr || Body->Static || Body->Sleep)
+		assert(Body);
+		if (Body->mRigidType == RigidType::Static || Body->Sleep)
 		{
 			continue;
 		}
@@ -31,9 +32,9 @@ static void Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float
 		Body->P = (Body->P + Body->ExtForce * dt) * Body->LinearDamping;		// P' = Force
 		Body->L = (Body->L + Body->ExtTorque * dt) * Body->AngularDamping;		// L' = Torque
 		
-		Body->Shape->SetPosition(Body->X);
-		Body->Shape->SetRotationQuat(Body->Q);
-		Body->Shape->UpdateBoundingVolume();
+		Body->mGeometry->SetPosition(Body->X);
+		Body->mGeometry->SetRotationQuat(Body->Q);
+		Body->mGeometry->UpdateBoundingVolume();
 		Body->ExtForce.SetZero();
 		Body->ExtTorque.SetZero();
 	}
@@ -48,7 +49,8 @@ static void Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, flo
 	for (size_t i = 0; i < Bodies.size(); ++i)
 	{
 		RigidBodyDynamic* Body = Bodies[i];
-		if (Body == nullptr || Body->Static || Body->Sleep)
+		assert(Body);
+		if (Body->mRigidType == RigidType::Static || Body->Sleep)
 		{
 			continue;
 		}
@@ -63,9 +65,9 @@ static void Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, flo
 		Quaternion dQ = 0.5f * Quaternion(0.0f, AngularVelocity) * Body->Q;		// Q' = 0.5 * AngularVelocity * Q
 		Body->Q = (Body->Q + dQ * dt).Unit();
 		
-		Body->Shape->SetPosition(Body->X);
-		Body->Shape->SetRotationQuat(Body->Q);
-		Body->Shape->UpdateBoundingVolume();
+		Body->mGeometry->SetPosition(Body->X);
+		Body->mGeometry->SetRotationQuat(Body->Q);
+		Body->mGeometry->UpdateBoundingVolume();
 		Body->ExtForce.SetZero();
 		Body->ExtTorque.SetZero();
 	}
