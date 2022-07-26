@@ -66,7 +66,6 @@ class RigidBody
 public:
 	Geometry*	mGeometry;
 	RigidType	mRigidType;
-	MorionType	mMotionType;
 
 	uint64_t	mGuid;
 
@@ -87,15 +86,15 @@ public:
 	RigidBody();
 	virtual ~RigidBody();
 
-	void					AddGeometry(Geometry* Geom);
-	void					GetGeometries(std::vector<Geometry*>* Geometries);
+	void				AddGeometry(Geometry* Geom);
+	void				GetGeometries(std::vector<Geometry*>* Geometries);
 
-	uint64_t				GetGuid() const
+	uint64_t			GetGuid() const
 	{
 		return mGuid;
 	}
 
-	void					SetGuid(uint64_t guid)
+	void				SetGuid(uint64_t guid)
 	{
 		mGuid = guid;
 	}
@@ -136,11 +135,10 @@ class RigidBodyStatic : public RigidBody
 public:
 	virtual ~RigidBodyStatic() {}
 
-	void SetTransform(const Vector3& pos, const Quaternion& quat);
-	void SetPosition(const Vector3& pos);
-	void SetRotation(const Quaternion& quat);
-
 	static RigidBodyStatic* CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
+
+private:
+	RigidBodyStatic(const RigidBodyParam& param, Geometry* geom);
 };
 
 class RigidBodyDynamic : public RigidBody
@@ -151,6 +149,7 @@ public:
 	Vector3		ExtForce;
 	Vector3		ExtTorque;
 
+	MorionType	mMotionType;
 	float		LinearDamping;
 	float		AngularDamping;
 	float		MaxContactImpulse;
@@ -164,14 +163,19 @@ public:
 	void		ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force);
 
 	static RigidBodyDynamic* CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
+
+private:
+	RigidBodyDynamic(const RigidBodyParam& param, Geometry* geom);
 };
 
 class RigidBodyKinematics : public RigidBody
 {
 public:
-	virtual ~RigidBodyKinematics() {}
-
-	void		SetTransform(const Vector3& pos, const Quaternion& quat);
+	RigidBodyKinematics();
+	virtual	~RigidBodyKinematics() {}
+	void	SetPosition(const Vector3& pos);
+	void	SetRotation(const Quaternion& quat);
+	void	SetTransform(const Vector3& pos, const Quaternion& quat);
 };
 
 void	GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*>* geometries);

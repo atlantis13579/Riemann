@@ -9,6 +9,14 @@ KinematicsTree::KinematicsTree()
 	m_PlayRate = 1.0f;
 }
 
+KinematicsTree::~KinematicsTree()
+{
+	for (size_t i = 0; i < m_FlatTree.size(); ++i)
+	{
+		delete m_FlatTree[i];
+	}
+}
+
 struct _Node
 {
 	_Node() { Idx = -1; }

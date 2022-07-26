@@ -130,7 +130,7 @@ void WorldViewer::LoadAnimation(const std::string& anim_name, const std::vector<
 
 	m_World->LoadAnimation(anim_name, anim_name, 10.0f, true);
 
-	KinematicsTree* tree = m_World->FindKinematics(anim_name);
+	KinematicsTree* tree = static_cast<KinematicsTree*>(m_World->FindKinematics(anim_name));
 	tree->SetRootTransform(Vector3(0, -10, 0), Quaternion::One());
 
 	for (size_t i = 1; i < nodes.size(); ++i)

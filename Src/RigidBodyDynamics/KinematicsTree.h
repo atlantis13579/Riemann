@@ -25,17 +25,30 @@ public:
 	int							Parent;
 };
 
-class KinematicsTree
+class KinematicsDriver
+{
+public:
+	virtual ~KinematicsDriver() {}
+	virtual void		Simulate(float elapsed) = 0;
+
+	const std::string&	GetName() const { return m_ResName; }
+	void				SetName(const std::string& Name) { m_ResName = Name; }
+
+private:
+	std::string			m_ResName;
+};
+
+class KinematicsTree : public KinematicsDriver
 {
 public:
 	KinematicsTree();
+	virtual ~KinematicsTree();
 
-	void				Simulate(float elapsed);
+	virtual void		Simulate(float elapsed) override final;
 	bool				Deserialize(const std::string& filepath);
 
 	void				SetRootTransform(const Vector3& pos, const Quaternion& rot);
-	const std::string&	GetName() const { return m_ResName; }
-	void				SetName(const std::string& Name) { m_ResName = Name; }
+
 	void				SetAnimationPlayRate(float play_rate);
 	void				Pause(bool pause);
 	bool				IsPause() const;
@@ -48,7 +61,6 @@ private:
 private:
 	float				m_PlayRate;
 	bool				m_Pause;
-	std::string			m_ResName;
 	std::string			m_ResPath;
 	std::vector<KeyframeKinematics*>	m_FlatTree;
 };

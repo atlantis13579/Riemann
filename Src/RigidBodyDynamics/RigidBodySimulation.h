@@ -11,7 +11,7 @@ class BroadPhase;
 class NarrowPhase;
 class ResolutionPhase;
 class ForceField;
-class KinematicsTree;
+class KinematicsDriver;
 
 struct RigidBodySimulationParam
 {
@@ -25,32 +25,32 @@ public:
 	~RigidBodySimulation();
 
 public:
-	void			Simulate(float dt);
-	void			ApplyForceFields();
+	void				Simulate(float dt);
+	void				ApplyForceFields();
     
-    bool            LoadPhysxScene(const char *name, bool shared_mem);
+    bool				LoadPhysxScene(const char *name, bool shared_mem);
 
-	RigidBody*		CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
+	RigidBody*			CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
 
-	bool			LoadAnimation(const std::string& resname, const std::string &filepath, float play_rate, bool begin_play);
-	KinematicsTree*	FindKinematics(const std::string& resname);
+	bool				LoadAnimation(const std::string& resname, const std::string &filepath, float play_rate, bool begin_play);
+	KinematicsDriver*	FindKinematics(const std::string& resname);
 
     GeometryQuery*          GetGeometryQuery() { return m_GeometryQuery; }
     const GeometryQuery*    GetGeometryQuery() const { return m_GeometryQuery; }
     
-	float			GetSystemTotalEnergy() const;
-	float			GetSystemTotalLinearKinematicsEnergy() const;
-	float			GetSystemTotalAngularKinematicsEnergy() const;
-	Vector3			GetSystemTotalLinearMomentum() const;
-	Vector3			GetSystemTotalAngularMomentum() const;
+	float				GetSystemTotalEnergy() const;
+	float				GetSystemTotalLinearKinematicsEnergy() const;
+	float				GetSystemTotalAngularKinematicsEnergy() const;
+	Vector3				GetSystemTotalLinearMomentum() const;
+	Vector3				GetSystemTotalAngularMomentum() const;
 
 private:
-	void			SimulateST(float dt);
+	void				SimulateST(float dt);
 
 private:
 	std::vector<RigidBodyStatic*>	m_StaticBodies;
 	std::vector<RigidBodyDynamic*>	m_DynamicBodies;
-	std::vector<KinematicsTree*>	m_Kinematics;
+	std::vector<KinematicsDriver*>	m_Kinematics;
 
 	GeometryQuery*					m_GeometryQuery;
 	BroadPhase*						m_BPhase;

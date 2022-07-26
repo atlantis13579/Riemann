@@ -194,7 +194,7 @@ bool RigidBodySimulation::LoadAnimation(const std::string& resname, const std::s
 	return true;
 }
 
-KinematicsTree* RigidBodySimulation::FindKinematics(const std::string& resname)
+KinematicsDriver* RigidBodySimulation::FindKinematics(const std::string& resname)
 {
 	for (size_t i = 0; i < m_Kinematics.size(); ++i)
 	{
