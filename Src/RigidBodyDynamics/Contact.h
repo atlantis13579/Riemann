@@ -24,7 +24,7 @@ public:
 	Vector3	Normal;
 	Vector3	Tangent;
 	Vector3	Binormal;
-	float		PenetrationDepth;
+	float	PenetrationDepth;
 
 	//	For warm start
 	float		totalImpulseNormal;
@@ -40,6 +40,11 @@ public:
 	Geometry* GeomA = nullptr;
 	Geometry* GeomB = nullptr;
 	ContactManifold *next = nullptr;
+
+	void	Reset()
+	{
+		NumContactPointCount = 0;
+	}
 
 	Contact ContactPoints[MAX_CONTACT_POINTS + 1];
     int		NumContactPointCount = 0;

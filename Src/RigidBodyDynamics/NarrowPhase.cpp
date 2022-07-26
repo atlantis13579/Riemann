@@ -71,7 +71,7 @@ public:
 	void ConstructManifols(Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, std::vector<ContactManifold*>* manifolds)
 	{
 		ContactManifold *manifold = m_ManifoldPool.Alloc();
-		manifolds->push_back(manifold);
+		manifold->Reset();
 
 		// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
 		Vector3 w0 = Vector3::Zero();
@@ -115,6 +115,8 @@ public:
 
 			manifold->AddNewContact(GeomA, GeomB, contact);
 		}
+
+		manifolds->push_back(manifold);
 
 		return;
 	}

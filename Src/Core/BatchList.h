@@ -24,7 +24,6 @@ public:
 	void	Init(int nBatchs, int BatchSize)
 	{
 		m_Count = 0;
-		m_CurrBatch = 0;
 		m_FreeList = nullptr;
 		m_BatchSize = BatchSize;
 		m_Batchs.clear();
@@ -34,6 +33,7 @@ public:
 			m_Batchs[i].Current = 0;
 			m_Batchs[i].Stores.resize(BatchSize);
 		}
+		m_CurrBatch = m_Batchs.empty() ? -1 : 0;
 	}
 
 	int		GetCount() const
