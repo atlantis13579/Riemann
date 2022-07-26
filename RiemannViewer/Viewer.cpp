@@ -146,11 +146,8 @@ void WorldViewer::LoadAnimation(const std::string& anim_name, const std::vector<
 
 void WorldViewer::LoadPhysxScene(const std::string& file_name)
 {
-	std::vector<RigidBody*> collection;
-	LoadPhysxBinary(file_name.c_str(), &collection);
-
 	std::vector<Geometry*> geometries;
-	GetAllGeometries(collection, &geometries);
+	LoadPhysxBinary(file_name.c_str(), nullptr, &geometries);
 
 	for (Geometry* Geom : geometries)
 	{

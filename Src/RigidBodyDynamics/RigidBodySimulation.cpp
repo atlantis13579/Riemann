@@ -118,9 +118,10 @@ void		RigidBodySimulation::ApplyForceFields()
 bool         RigidBodySimulation::LoadPhysxScene(const char *name, bool shared_mem)
 {
     std::vector<RigidBody*> collection;
+	std::vector<Geometry*> geoms;
 	if (shared_mem)
 	{
-		m_SharedMem = ::LoadPhysxBinaryMmap(name, &collection, m_SharedMemSize);
+		m_SharedMem = ::LoadPhysxBinaryMmap(name, nullptr, &geoms, m_SharedMemSize);
 		if (!m_SharedMem)
 		{
 			return false;
@@ -128,14 +129,13 @@ bool         RigidBodySimulation::LoadPhysxScene(const char *name, bool shared_m
 	}
 	else
 	{
-		bool load_succ = ::LoadPhysxBinary(name, &collection);
+		bool load_succ = ::LoadPhysxBinary(name, nullptr, &geoms);
 		if (!load_succ)
 		{
 			return false;
 		}
 	}
 
-	std::vector<Geometry*> geoms;
 	for (size_t i = 0; i < collection.size(); ++i)
 	{
 		RigidBody* body = collection[i];
@@ -147,7 +147,6 @@ bool         RigidBodySimulation::LoadPhysxScene(const char *name, bool shared_m
 		{
 			m_DynamicBodies.push_back(body->CastDynamic());
 		}
-		body->GetGeometries(&geoms);
 	}
 
     assert(m_GeometryQuery);

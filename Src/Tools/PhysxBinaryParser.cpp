@@ -230,7 +230,7 @@ public:
 		return Geom;
 	}
 
-	static void CreateRigidBodies(void *px, int classType, uint64_t guid, std::vector<RigidBody*> *bodies, bool shared_mem)
+	static void CreateRigidBodies(void *px, int classType, uint64_t guid, std::vector<RigidBody*> *bodies, std::vector<Geometry*>* geoms, bool shared_mem)
 	{
 		if (classType == physx::PxConcreteType::eMATERIAL)
 		{
@@ -243,11 +243,16 @@ public:
 		{
 			physx::NpRigidStatic* rigid = (physx::NpRigidStatic*)px;
 
-			RigidBodyParam param;
-			param.pos = rigid->mRigidStatic.mStatic.mCore.body2World.p;
-			param.quat = rigid->mRigidStatic.mStatic.mCore.body2World.q;
-			RigidBodyStatic* body = RigidBodyStatic::CreateRigidBody(param, nullptr);
-			body->SetGuid(guid);
+			RigidBodyStatic* body = nullptr;
+			if (bodies)
+			{
+				RigidBodyParam param;
+				param.pos = rigid->mRigidStatic.mStatic.mCore.body2World.p;
+				param.quat = rigid->mRigidStatic.mStatic.mCore.body2World.q;
+				RigidBodyStatic* body = RigidBodyStatic::CreateRigidBody(param, nullptr);
+				body->SetGuid(guid);
+				bodies->push_back(body);
+			}
 
 			int nShapes = rigid->GetNumShapes();
 			physx::NpShape* const* pShades = rigid->GetShapes();
@@ -259,11 +264,11 @@ public:
 					g->SetCenterOfMass(rigid->mRigidStatic.mStatic.mCore.body2World.p);
 					g->SetRotation(rigid->mRigidStatic.mStatic.mCore.body2World.q);
 					g->UpdateBoundingVolume();
-					body->AddGeometry(g);
+					if (geoms) geoms->push_back(g);
+					if (bodies) body->AddGeometry(g);
 				}
 			}
 
-			bodies->push_back(body);
 			return;
 		}
 		else if (classType == physx::PxConcreteType::eRIGID_DYNAMIC)
@@ -271,23 +276,28 @@ public:
 			physx::NpRigidDynamic* rigid = (physx::NpRigidDynamic*)px;
 			const physx::PxsBodyCore& core = rigid->mBody.mBodyCore.mCore;
 
-			RigidBodyParam param;
-			param.pos = core.body2World.p;
-			param.quat = core.body2World.q;
-			param.invMass = core.inverseMass;
-			param.inertia = Matrix3(core.inverseInertia.x, core.inverseInertia.y, core.inverseInertia.z).Inverse();
-			param.linearVelocity = core.linearVelocity;
-			param.angularVelocity = core.angularVelocity;
-			param.linearDamping = core.linearDamping;
-			param.angularDamping = core.angularDamping;
-			param.contactReportThreshold = core.contactReportThreshold;
-			param.maxContactImpulse = core.maxContactImpulse;
-			param.sleepThreshold = core.sleepThreshold;
-			param.freezeThreshold = core.freezeThreshold;
-			param.disableGravity = false;
+			RigidBodyDynamic* body = nullptr;
+			if (bodies)
+			{
+				RigidBodyParam param;
+				param.pos = core.body2World.p;
+				param.quat = core.body2World.q;
+				param.invMass = core.inverseMass;
+				param.inertia = Matrix3(core.inverseInertia.x, core.inverseInertia.y, core.inverseInertia.z).Inverse();
+				param.linearVelocity = core.linearVelocity;
+				param.angularVelocity = core.angularVelocity;
+				param.linearDamping = core.linearDamping;
+				param.angularDamping = core.angularDamping;
+				param.contactReportThreshold = core.contactReportThreshold;
+				param.maxContactImpulse = core.maxContactImpulse;
+				param.sleepThreshold = core.sleepThreshold;
+				param.freezeThreshold = core.freezeThreshold;
+				param.disableGravity = false;
 
-			RigidBodyDynamic* body = RigidBodyDynamic::CreateRigidBody(param, nullptr);
-			body->SetGuid(guid);
+				RigidBodyDynamic* body = RigidBodyDynamic::CreateRigidBody(param, nullptr);
+				body->SetGuid(guid);
+				bodies->push_back(body);
+			}
 
 			int nShapes = rigid->GetNumShapes();
 			physx::NpShape* const* pShades = rigid->GetShapes();
@@ -299,11 +309,11 @@ public:
 					g->SetCenterOfMass(core.body2World.p);
 					g->SetRotation(core.body2World.q);
 					g->UpdateBoundingVolume();
-					body->AddGeometry(g);
+					if (geoms) geoms->push_back(g);
+					if (bodies) body->AddGeometry(g);
 				}
 			}
 
-			bodies->push_back(body);
 			return;
 		}
 		else
@@ -502,8 +512,11 @@ void	ReleaseSharedMem(void* addr, size_t size)
 	#endif
 }
 
-bool	LoadPhysxBinary(const char* Filename, std::vector<RigidBody*>* bodies)
+bool	LoadPhysxBinary(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<Geometry*>* geoms)
 {
+	if (bodies) bodies->clear();
+	if (geoms) geoms->clear();
+
 	FILE* fp = fopen(Filename, "rb");
 	if (fp == nullptr)
 	{
@@ -527,14 +540,17 @@ bool	LoadPhysxBinary(const char* Filename, std::vector<RigidBody*>* bodies)
 
 	for (auto it : collection.mClass)
 	{
-		PhysxBinaryParser::CreateRigidBodies(it.first, it.second, collection.mObjects[it.first], bodies, false);
+		PhysxBinaryParser::CreateRigidBodies(it.first, it.second, collection.mObjects[it.first], bodies, geoms, false);
 	}
 
 	return collection.mObjects.size() > 0;
 }
 
-void*	LoadPhysxBinaryMmap(const char* Filename, std::vector<RigidBody*>* bodies, size_t &mem_size)
+void*	LoadPhysxBinaryMmap(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<Geometry*>* geoms, size_t &mem_size)
 {
+	if (bodies) bodies->clear();
+	if (geoms) geoms->clear();
+
 #if defined(__linux__)
 	int fd = open(Filename, O_RDONLY);
 	if (fd == -1)
@@ -581,7 +597,7 @@ void*	LoadPhysxBinaryMmap(const char* Filename, std::vector<RigidBody*>* bodies,
 
 	for (auto it : collection.mClass)
 	{
-		PhysxBinaryParser::CreateRigidBodies(it.first, it.second, collection.mObjects[it.first], bodies, true);
+		PhysxBinaryParser::CreateRigidBodies(it.first, it.second, collection.mObjects[it.first], bodies, geoms, true);
 	}
 
 	return addr;

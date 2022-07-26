@@ -40,9 +40,9 @@ inline bool IsNan(float f)
 	return f != f;
 }
 
-inline bool IsValidFloat(float f)
-{
-	return (f == f) && (f != NAN) && (f != INFINITY) && (f != INFINITY);
-}
+// inline bool IsValidFloat(float f)
+// {
+// 	return (f == f) && (f != NAN) && (f != INFINITY) && (f != INFINITY);
+// }
 
 

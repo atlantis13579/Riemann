@@ -16,13 +16,11 @@ void TestPhysxBin()
 {
 	printf("Running TestPhysxBin Japan\n");
 	std::vector<RigidBody*> collection;
-	bool load_succ = LoadPhysxBinary("data/Japan.xml.bin", &collection);
+	std::vector<Geometry*> geometries;
+	bool load_succ = LoadPhysxBinary("data/Japan.xml.bin", nullptr, &geometries);
 	EXPECT(load_succ);
 	if (load_succ)
 	{
-		std::vector<Geometry*> geometries;
-		GetAllGeometries(collection, &geometries);
-
 		GeometryQuery query;
 		query.BuildStaticGeometry(geometries, 1);
 		RayCastOption Option;
@@ -34,15 +32,11 @@ void TestPhysxBin()
 
 	printf("Running TestPhysxBin fighting_new\n");
 
-	collection.clear();
-	load_succ = LoadPhysxBinary("data/fighting_new.xml.bin", &collection);
+	load_succ = LoadPhysxBinary("data/fighting_new.xml.bin", &collection, &geometries);
 	EXPECT(load_succ);
 
 	if (load_succ)
 	{
-		std::vector<Geometry*> geometries;
-		GetAllGeometries(collection, &geometries);
-
 		GeometryQuery query;
 		query.BuildStaticGeometry(geometries, 1);
 
@@ -95,14 +89,12 @@ void TestRaycastBenchmark()
 {
 	printf("Running TestRaycastBenchmark\n");
 	std::vector<RigidBody*> collection;
-	bool load_succ = LoadPhysxBinary("data/fighting_new.xml.bin", &collection);
+	std::vector<Geometry*> geometries;
+	bool load_succ = LoadPhysxBinary("data/fighting_new.xml.bin", &collection, &geometries);
 	EXPECT(load_succ);
 	
 	if (load_succ)
 	{
-		std::vector<Geometry*> geometries;
-		GetAllGeometries(collection, &geometries);
-
 		GeometryQuery query;
 		query.BuildStaticGeometry(geometries, 5);
 
