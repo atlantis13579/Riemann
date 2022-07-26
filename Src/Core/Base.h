@@ -34,3 +34,15 @@ inline bool IsAlign(void* Memory, int Width)
 {
 	return (((intptr_t)Memory) & (Width - 1)) == 0;
 }
+
+inline bool IsNan(float f)
+{
+	return f != f;
+}
+
+inline bool IsValidFloat(float f)
+{
+	return (f == f) && (f != NAN) && (f != INFINITY) && (f != INFINITY);
+}
+
+
