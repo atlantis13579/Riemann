@@ -66,10 +66,25 @@ public:
 	Geometry();
 	virtual ~Geometry() {}
 
-	void					SetCenterOfMass(const Vector3& Position);
-	const Vector3&			GetCenterOfMass() const;
-	const Quaternion&		GetRotation() const;
-	void					SetRotation(const Quaternion& Rotation);
+	inline const Vector3&	GetCenterOfMass() const
+	{
+		return m_CenterOfMassTransform.Translation;
+	}
+
+	inline void				SetCenterOfMass(const Vector3& Position)
+	{
+		m_CenterOfMassTransform.Translation = Position;
+	}
+
+	inline const Quaternion& GetRotation() const
+	{
+		return m_CenterOfMassTransform.Rotation;
+	}
+
+	inline void				SetRotation(const Quaternion& Rotation)
+	{
+		m_CenterOfMassTransform.Rotation = Rotation;
+	}
 
 	template<class T>
 	inline T*				GetParent()
@@ -92,14 +107,14 @@ public:
 		m_Next = next;
 	}
 
-	inline const GeometryTransform* GetTransform() const
+	inline const GeometryTransform* GetCenterOfMassTransform() const
 	{
-		return &m_Transform;
+		return &m_CenterOfMassTransform;
 	}
 
-	inline GeometryTransform* GetTransform()
+	inline GeometryTransform* GetCenterOfMassTransform()
 	{
-		return &m_Transform;
+		return &m_CenterOfMassTransform;
 	}
 
 	inline ShapeType3d		GetShapeType() const
@@ -107,13 +122,13 @@ public:
 		return m_Type;
 	}
 	
-	const CollisionData&	GetFilterData() const
+	inline const CollisionData&	GetFilterData() const
 	{
 		return m_FilterData;
 	}
 
 	template<class GEOM_TYPE>
-	GEOM_TYPE*				GetShapeObj()
+	inline GEOM_TYPE*			GetShapeObj()
 	{
 		if (m_Type == GEOM_TYPE::StaticType())
 		{
@@ -123,7 +138,7 @@ public:
 	}
 
 	template<class GEOM_TYPE>
-	const GEOM_TYPE*		GetShapeObj() const
+	inline const GEOM_TYPE*		GetShapeObj() const
 	{
 		if (m_Type == GEOM_TYPE::StaticType())
 		{
@@ -137,7 +152,12 @@ public:
 	bool					Sweep(const Geometry* Geom, const Vector3& Dir, float* t) const;
 
 	void					UpdateBoundingVolume();
-	const Box3d&			GetBoundingVolume_WorldSpace() const;
+
+	inline const Box3d&		GetBoundingVolume_WorldSpace() const
+	{
+		return m_BoxWorld;
+	}
+
 	Vector3					GetSupport_WorldSpace(const Vector3& Dir) const;
 	void					GetSupportFace_WorldSpace(const Vector3& Dir, SupportFace& Face) const;
 	Matrix3					GetInverseInertia_LocalSpace(float InvMass) const;
@@ -163,7 +183,7 @@ private:
 protected:
 	ShapeType3d				m_Type;
 	Box3d					m_BoxWorld;
-	GeometryTransform		m_Transform;
+	GeometryTransform		m_CenterOfMassTransform;
 	CollisionData			m_FilterData;
 	void*					m_Parent;
 	Geometry*				m_Next;

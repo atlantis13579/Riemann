@@ -291,10 +291,10 @@ public:
 
 	static void			TRToWorldMatrix(Matrix4& World, const Vector3& Translation, const Quaternion& Rotation)
 	{
-		Matrix4 matTrans = BuildTranslationMatrix(Translation);
-		Matrix4 matRot = Rotation.ToRotationMatrix4();
-
-		World = matTrans * matRot;			// make sure Translation Matrix go first.
+		World = Rotation.ToRotationMatrix4();
+		World[0][3] += Translation.x;
+		World[1][3] += Translation.y;
+		World[2][3] += Translation.z;
 	}
 
 	static void			TRSToInverseWorldMatrix(Matrix4& InvWorld, const Vector3& Translation, const Quaternion& Rotation, const Vector3& Scale)
@@ -308,10 +308,10 @@ public:
 
 	static void			TRToInverseWorldMatrix(Matrix4& InvWorld, const Vector3& Translation, const Quaternion& Rotation)
 	{
-		Matrix4 matTrans = BuildTranslationMatrix(-Translation);
-		Matrix4 matRot = Rotation.ToRotationMatrix4().Transpose();
-
-		InvWorld = matRot * matTrans;		// make sure Rotation Matrix go first.
+		InvWorld = Rotation.ToRotationMatrix4().Transpose();
+		InvWorld[0][3] -= Translation.x;
+		InvWorld[1][3] -= Translation.y;
+		InvWorld[2][3] -= Translation.z;
 	}
 
 	static void			WorldMatrixToTR(const Matrix4& World, Vector3& Translation, Quaternion& Rotation)

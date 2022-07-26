@@ -1,6 +1,7 @@
 
 #include "DX11Renderer.h"
 
+#include <assert.h>
 #include <string>
 #include <vector>
 #include <d3d11_1.h>
@@ -28,6 +29,7 @@ struct GeometryTransform_t
 static Matrix4 GetTransfromMatrix(void *p)
 {
     GeometryTransform_t* t = (GeometryTransform_t*)p;
+    assert(t);
     Matrix4 mat;
     Transform::TRToWorldMatrix(mat, t->Translation, t->Rotation);
     return mat;
@@ -537,7 +539,6 @@ public:
         {
             DX11StaticMesh& mesh = m_AllMesh[i];
 
-            Transform trans;
             cb.World = GetTransfromMatrix(mesh.Trans);
             m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
             m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);

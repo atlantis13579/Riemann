@@ -131,11 +131,11 @@ public:
 	static RigidBody*	CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
 };
 
-void	GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*>* geometries);
-
 class RigidBodyStatic : public RigidBody
 {
 public:
+	virtual ~RigidBodyStatic() {}
+
 	void SetTransform(const Vector3& pos, const Quaternion& quat);
 	void SetPosition(const Vector3& pos);
 	void SetRotation(const Quaternion& quat);
@@ -147,8 +147,10 @@ public:
 class RigidBodyDynamic : public RigidBody
 {
 public:
-	Vector3	ExtForce;
-	Vector3	ExtTorque;
+	virtual ~RigidBodyDynamic() {}
+
+	Vector3		ExtForce;
+	Vector3		ExtTorque;
 
 	float		LinearDamping;
 	float		AngularDamping;
@@ -165,3 +167,6 @@ public:
 
 	static RigidBodyDynamic* CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
 };
+
+
+void	GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*>* geometries);

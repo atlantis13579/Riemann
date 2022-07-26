@@ -51,8 +51,8 @@ public:
 	{
 		Result->AddTestCount(1);
 
-		const Vector3 Origin_Local = m_Transform.WorldToLocal(Origin);
-		const Vector3 Dir_Local = m_Transform.WorldToLocalDirection(Dir);
+		const Vector3 Origin_Local = m_CenterOfMassTransform.WorldToLocal(Origin);
+		const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Dir);
 		const GEOM_TYPE* p = (const GEOM_TYPE*)this;
 		float t;
 		if (p->IntersectRay(Origin_Local, Dir_Local, &t) && t < Option->MaxDist)
@@ -72,8 +72,8 @@ bool				TGeometry<TriangleMesh>::RayCast(const Vector3& Origin, const Vector3& D
 	HitOption.maxDist = Option->MaxDist;
 
 	TriMeshHitResult HitResult = { 0 };
-	const Vector3 Origin_Local = m_Transform.WorldToLocal(Origin);
-	const Vector3 Dir_Local = m_Transform.WorldToLocalDirection(Dir);
+	const Vector3 Origin_Local = m_CenterOfMassTransform.WorldToLocal(Origin);
+	const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Dir);
 	const TriangleMesh* p = (const TriangleMesh*)this;
 	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 	Result->hitTime = HitResult.hitTime;
@@ -88,8 +88,8 @@ bool				TGeometry<HeightField3d>::RayCast(const Vector3& Origin, const Vector3& 
 	HitOption.maxDist = Option->MaxDist;
 
 	HeightFieldHitResult HitResult = { 0 };
-	const Vector3 Origin_Local = m_Transform.WorldToLocal(Origin);
-	const Vector3 Dir_Local = m_Transform.WorldToLocalDirection(Dir);
+	const Vector3 Origin_Local = m_CenterOfMassTransform.WorldToLocal(Origin);
+	const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Dir);
 	const HeightField3d* p = (const HeightField3d*)this;
 	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 	Result->hitTime = HitResult.hitTime;
@@ -102,37 +102,12 @@ Geometry::Geometry()
 	m_Next = nullptr;
 }
 
-const Box3d&		Geometry::GetBoundingVolume_WorldSpace() const
-{
-	return m_BoxWorld;
-}
-
-const Vector3&		Geometry::GetCenterOfMass() const
-{
-	return m_Transform.Translation;
-}
-
-void				Geometry::SetCenterOfMass(const Vector3& Position)
-{
-	m_Transform.Translation = Position;
-}
-
-const Quaternion&	Geometry::GetRotation() const
-{
-	return m_Transform.Rotation;
-}
-
-void				Geometry::SetRotation(const Quaternion& Rotation)
-{
-	m_Transform.Rotation = Rotation;
-}
-
 bool				Geometry::Overlap(const Geometry* Geom) const
 {
 	OverlapFunc func = GeometryIntersection::GetOverlapFunc(m_Type, Geom->GetShapeType());
 	assert(func);
 	GeometryTransform trans;
-	trans.LoadLocal1ToLocal2(m_Transform, *Geom->GetTransform());
+	trans.LoadLocal1ToLocal2(m_CenterOfMassTransform, *Geom->GetCenterOfMassTransform());
 	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &trans);
 }
 
@@ -145,24 +120,24 @@ bool				Geometry::Sweep(const Geometry* Geom, const Vector3& Dir, float* t) cons
 
 void 				Geometry::UpdateBoundingVolume()
 {
-	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_Transform.Translation, m_Transform.Rotation);
+	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_CenterOfMassTransform.Translation, m_CenterOfMassTransform.Rotation);
 }
 
 Vector3				Geometry::GetSupport_WorldSpace(const Vector3& Dir) const
 {
-	Vector3 DirLocal = m_Transform.WorldToLocalDirection(Dir);
+	Vector3 DirLocal = m_CenterOfMassTransform.WorldToLocalDirection(Dir);
 	Vector3 SupportLocal = GetSupport_LocalSpace(DirLocal);
-	Vector3 SupportWorld = m_Transform.LocalToWorld(SupportLocal);
+	Vector3 SupportWorld = m_CenterOfMassTransform.LocalToWorld(SupportLocal);
 	return SupportWorld;
 }
 
 void				Geometry::GetSupportFace_WorldSpace(const Vector3& Dir, SupportFace& Face) const
 {
-	Vector3 DirLocal = m_Transform.WorldToLocalDirection(Dir);
+	Vector3 DirLocal = m_CenterOfMassTransform.WorldToLocalDirection(Dir);
 	GetSupportFace_LocalSpace(DirLocal, Face);
 	for (int i = 0; i < Face.GetSize(); ++i)
 	{
-		Face[i] = m_Transform.LocalToWorld(Face[i]);
+		Face[i] = m_CenterOfMassTransform.LocalToWorld(Face[i]);
 	}
 }
 
