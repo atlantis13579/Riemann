@@ -71,20 +71,20 @@ void		RigidBodySimulation::SimulateST(float dt)
 		m_Kinematics[i]->Simulate(dt);
 	}
 
-	std::vector<Geometry*> Shapes;
+	std::vector<Geometry*> geoms;
 	for (size_t i = 0; i < m_StaticBodies.size(); ++i)
 	{
-		m_StaticBodies[i]->AppendShapes(&Shapes);
+		m_StaticBodies[i]->GetGeometries(&geoms);
 	}
 	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 	{
-		m_DynamicBodies[i]->AppendShapes(&Shapes);
+		m_DynamicBodies[i]->GetGeometries(&geoms);
 	}
 
 	std::vector<OverlapPair> overlaps;
 	if (m_BPhase)
 	{
-		m_BPhase->ProduceOverlaps(Shapes, &overlaps);
+		m_BPhase->ProduceOverlaps(geoms, &overlaps);
 	}
 
 	std::vector<ContactManifold*> manifolds;
@@ -192,16 +192,6 @@ bool RigidBodySimulation::LoadAnimation(const std::string& resname, const std::s
 	tree->Pause(!begin_play);
 	m_Kinematics.push_back(tree);
 	return true;
-}
-
-bool RigidBodySimulation::BindKinematicsNode(const std::string& resname, const std::string& node, RigidBodyStatic *body)
-{
-	KinematicsTree* tree = FindKinematics(resname);
-	if (tree == nullptr)
-	{
-		return false;
-	}
-	return tree->Bind(node, body);
 }
 
 KinematicsTree* RigidBodySimulation::FindKinematics(const std::string& resname)

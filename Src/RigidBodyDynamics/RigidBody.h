@@ -139,7 +139,6 @@ public:
 	void SetTransform(const Vector3& pos, const Quaternion& quat);
 	void SetPosition(const Vector3& pos);
 	void SetRotation(const Quaternion& quat);
-	void AppendShapes(std::vector<Geometry*>* Shapes);
 
 	static RigidBodyStatic* CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
 };
@@ -163,10 +162,16 @@ public:
 	void		ApplyForce(const Vector3& Force);
 	void		ApplyTorgue(const Vector3& Torque);
 	void		ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force);
-	void		AppendShapes(std::vector<Geometry*> *Shape);
 
 	static RigidBodyDynamic* CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
 };
 
+class RigidBodyKinematics : public RigidBody
+{
+public:
+	virtual ~RigidBodyKinematics() {}
+
+	void		SetTransform(const Vector3& pos, const Quaternion& quat);
+};
 
 void	GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*>* geometries);

@@ -17,13 +17,13 @@ struct _Node
 	std::vector<_Node*> Childrens;
 };
 
-void _Flatten(std::vector<AnimTreeNode>& FlatTree, int Parent, const _Node* Tree, const AnimTreeData* data)
+void _Flatten(std::vector<KeyframeKinematics*>& FlatTree, int Parent, const _Node* Tree, const AnimTreeData* data)
 {
 	std::vector<KeyframePos> frames_pos;
 	std::vector<KeyframeQuat> frames_quat;
 
-	FlatTree.push_back(AnimTreeNode());
-	AnimTreeNode* node = &FlatTree.back();
+	KeyframeKinematics* node = new KeyframeKinematics();
+	FlatTree.push_back(node);
 
 	if (Tree->Idx >= 0)
 	{
@@ -98,7 +98,7 @@ bool KinematicsTree::BuildFlatTree(AnimTreeData* data)
 
 	for (size_t i = 1; i < m_FlatTree.size(); ++i)
 	{
-		if (!m_FlatTree[i].Anim.CheckAnimData())
+		if (!m_FlatTree[i]->Anim.CheckAnimData())
 		{
 			m_FlatTree.clear();
 			return false;
@@ -118,8 +118,8 @@ void KinematicsTree::Simulate(float elapsed)
 	float elapsed_rated = elapsed * m_PlayRate;
 	for (size_t i = 1; i < m_FlatTree.size(); ++i)
 	{
-		AnimTreeNode* node = &m_FlatTree[i];
-		AnimTreeNode* parent = &m_FlatTree[node->Parent];
+		KeyframeKinematics* node = m_FlatTree[i];
+		KeyframeKinematics* parent = m_FlatTree[node->Parent];
 
 		Vector3 pos = Vector3::Zero();
 		Quaternion quat = Quaternion::One();
@@ -128,9 +128,9 @@ void KinematicsTree::Simulate(float elapsed)
 		node->X = parent->X + parent->Q * pos;
 		node->Q = parent->Q * quat;
 
-		if (node->Entity)
+		if (node)
 		{
-			node->Entity->SetTransform(node->X, node->Q);
+			node->SetTransform(node->X, node->Q);
 		}
 	}
 }
@@ -150,31 +150,18 @@ void KinematicsTree::SetAnimationPlayRate(float play_rate)
 	m_PlayRate = play_rate;
 }
 
-bool KinematicsTree::Bind(const std::string& node_name, RigidBodyStatic* body)
+bool KinematicsTree::BindGeometry(const std::string& node_name, Geometry* geom)
 {
 	for (size_t i = 0; i < m_FlatTree.size(); ++i)
 	{
-		if (m_FlatTree[i].Name == node_name)
+		if (m_FlatTree[i]->Name == node_name)
 		{
-			m_FlatTree[i].Entity = body;
-			m_FlatTree[i].X = body->X;
-			m_FlatTree[i].Q = body->Q;
+			m_FlatTree[i]->AddGeometry(geom);
 			return true;
 		}
 	}
 
 	return false;
-}
-
-void KinematicsTree::UnBind(RigidBodyStatic* body)
-{
-	for (size_t i = 0; i < m_FlatTree.size(); ++i)
-	{
-		if (m_FlatTree[i].Entity == body)
-		{
-			m_FlatTree[i].Entity = nullptr;
-		}
-	}
 }
 
 bool KinematicsTree::Deserialize(const std::string& filepath)
@@ -204,7 +191,7 @@ void KinematicsTree::SetRootTransform(const Vector3& pos, const Quaternion& rot)
 {
 	if (m_FlatTree.size() > 0)
 	{
-		m_FlatTree[0].X = pos;
-		m_FlatTree[0].Q = rot;
+		m_FlatTree[0]->X = pos;
+		m_FlatTree[0]->Q = rot;
 	}
 }

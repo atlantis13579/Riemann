@@ -165,39 +165,7 @@ void RigidBodyDynamic::ApplyTorgue(const Vector3& RelativePosToCenterOfMass, con
 	this->ExtTorque += RelativePosToCenterOfMass.Cross(Force);
 }
 
-void				RigidBodyDynamic::AppendShapes(std::vector<Geometry*> *Shapes)
-{
-	Shapes->push_back(this->mGeometry);
-}
-
-void RigidBodyStatic::SetTransform(const Vector3& pos, const Quaternion& quat)
-{
-	X = pos;
-	Q = quat;
-	mGeometry->SetCenterOfMass(pos);
-	mGeometry->SetRotation(quat);
-	mGeometry->UpdateBoundingVolume();
-}
-
-void RigidBodyStatic::SetPosition(const Vector3& pos)
-{
-	X = pos;
-	mGeometry->SetCenterOfMass(pos);
-}
-
-void RigidBodyStatic::SetRotation(const Quaternion& quat)
-{
-	Q = quat;
-	mGeometry->SetRotation(quat);
-	mGeometry->UpdateBoundingVolume();
-}
-
-void RigidBodyStatic::AppendShapes(std::vector<Geometry*>* Shapes)
-{
-	Shapes->push_back(this->mGeometry);
-}
-
-RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
+RigidBodyDynamic*	RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
 {
 	RigidBodyDynamic* body = new RigidBodyDynamic;
 	body->mRigidType = RigidType::Dynamic;
@@ -222,7 +190,7 @@ RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param,
 	return body;
 }
 
-RigidBodyStatic* RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
+RigidBodyStatic*	RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
 {
 	RigidBodyStatic* body = new RigidBodyStatic;
 	body->mRigidType = RigidType::Dynamic;
@@ -239,7 +207,7 @@ RigidBodyStatic* RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, G
 }
 
 // static
-RigidBody* RigidBody::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
+RigidBody*			RigidBody::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
 {
 	if (param.rigidType == RigidType::Static)
 	{
@@ -250,6 +218,17 @@ RigidBody* RigidBody::CreateRigidBody(const RigidBodyParam& param, Geometry* geo
 	RigidBodyDynamic* Rigid = RigidBodyDynamic::CreateRigidBody(param, geom);
 	return Rigid;
 }
+
+
+void				RigidBodyKinematics::SetTransform(const Vector3& pos, const Quaternion& quat)
+{
+	X = pos;
+	Q = quat;
+	mGeometry->SetCenterOfMass(pos);
+	mGeometry->SetRotation(quat);
+	mGeometry->UpdateBoundingVolume();
+}
+
 
 void GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*> *geometries)
 {

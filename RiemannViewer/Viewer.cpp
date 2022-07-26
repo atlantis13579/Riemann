@@ -126,7 +126,7 @@ void WorldViewer::CreateDominoDemo()
 void WorldViewer::LoadAnimation(const std::string& anim_name, const std::vector<std::string>& nodes)
 {
 	RigidBodyParam rp;
-	rp.rigidType = RigidType::Static;
+	rp.rigidType = RigidType::Kinematic;
 
 	m_World->LoadAnimation(anim_name, anim_name, 10.0f, true);
 
@@ -136,11 +136,10 @@ void WorldViewer::LoadAnimation(const std::string& anim_name, const std::vector<
 	for (size_t i = 1; i < nodes.size(); ++i)
 	{
 		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, (float)i, 0.0f), Vector3(1.0f, 3.0f, 1.0f));
-		RigidBodyStatic* p = (RigidBodyStatic*)m_World->CreateRigidBody(aabb, rp);
 		
 		const std::string& name = nodes[i];
 
-		m_World->BindKinematicsNode(anim_name, name, p);
+		tree->BindGeometry(name, aabb);
 		AddGeometry(m_Renderer, aabb);
 	}
 }

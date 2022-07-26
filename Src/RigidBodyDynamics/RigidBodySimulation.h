@@ -31,9 +31,8 @@ public:
     bool            LoadPhysxScene(const char *name, bool shared_mem);
 
 	RigidBody*		CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
-	bool			LoadAnimation(const std::string& resname, const std::string &filepath, float play_rate, bool begin_play);
 
-	bool			BindKinematicsNode(const std::string& anim, const std::string& node, RigidBodyStatic* body);
+	bool			LoadAnimation(const std::string& resname, const std::string &filepath, float play_rate, bool begin_play);
 	KinematicsTree*	FindKinematics(const std::string& resname);
 
     GeometryQuery*          GetGeometryQuery() { return m_GeometryQuery; }
