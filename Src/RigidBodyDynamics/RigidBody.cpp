@@ -68,7 +68,7 @@ const Matrix3&	 	RigidBody::GetInverseInertia() const
 
 Matrix3			RigidBody::GetInverseInertia_WorldSpace() const
 {
-	Matrix3 R = Q.ToRotationMatrix();
+	Matrix3 R = Q.ToRotationMatrix3();
 	Matrix3 invInertiaWorld = R * InvInertia * R.Transpose();
 	return invInertiaWorld;
 }
@@ -174,21 +174,21 @@ void RigidBodyStatic::SetTransform(const Vector3& pos, const Quaternion& quat)
 {
 	X = pos;
 	Q = quat;
-	mGeometry->SetPosition(pos);
-	mGeometry->SetRotationQuat(quat);
+	mGeometry->SetCenterOfMass(pos);
+	mGeometry->SetRotation(quat);
 	mGeometry->UpdateBoundingVolume();
 }
 
 void RigidBodyStatic::SetPosition(const Vector3& pos)
 {
 	X = pos;
-	mGeometry->SetPosition(pos);
+	mGeometry->SetCenterOfMass(pos);
 }
 
 void RigidBodyStatic::SetRotation(const Quaternion& quat)
 {
 	Q = quat;
-	mGeometry->SetRotationQuat(quat);
+	mGeometry->SetRotation(quat);
 	mGeometry->UpdateBoundingVolume();
 }
 
@@ -205,8 +205,8 @@ RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param,
 	body->mGeometry = geom;
 	body->InvMass = param.invMass < kMinimumInvMass ? 0.0f : param.invMass;
 	body->InvInertia = geom->GetInverseInertia_LocalSpace(body->InvMass);
-	body->X = geom ? geom->GetPosition() : param.pos;
-	body->Q = geom ? geom->GetRotationQuat() : param.quat;
+	body->X = geom ? geom->GetCenterOfMass() : param.pos;
+	body->Q = geom ? geom->GetRotation() : param.quat;
 	body->P = body->InvMass > 0.0f ? param.linearVelocity / body->InvMass : Vector3::Zero();
 	body->L = body->InvInertia.Invertible() ? body->InvInertia.Inverse() * param.angularVelocity : Vector3::Zero();
 	body->ExtForce = Vector3::Zero();
@@ -230,8 +230,8 @@ RigidBodyStatic* RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, G
 	body->mGeometry = geom;
 	body->InvMass = 0.0f;
 	body->InvInertia = Matrix3::Zero();
-	body->X = geom ? geom->GetPosition() : param.pos;
-	body->Q = geom ? geom->GetRotationQuat() : param.quat;
+	body->X = geom ? geom->GetCenterOfMass() : param.pos;
+	body->Q = geom ? geom->GetRotation() : param.quat;
 	body->P = Vector3::Zero();
 	body->L = Vector3::Zero();
 	if(geom) body->AddGeometry(geom);

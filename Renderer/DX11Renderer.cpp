@@ -9,12 +9,29 @@
 #include <directxcolors.h>
 
 #include "../Src/Maths/Transform.h"
+#include "../Src/Maths/Vector4.h"
+#include "../Src/Maths/Matrix4.h"
+#include "../Src/Maths/Quaternion.h"
 
 using namespace DirectX;
 
 //--------------------------------------------------------------------------------------
 // Structures
 //--------------------------------------------------------------------------------------
+
+struct GeometryTransform_t
+{
+	Vector3		Translation;
+	Quaternion	Rotation;
+};
+
+static Matrix4 GetTransfromMatrix(void *p)
+{
+    GeometryTransform_t* t = (GeometryTransform_t*)p;
+    Matrix4 mat;
+    Transform::TRToWorldMatrix(mat, t->Translation, t->Rotation);
+    return mat;
+};
 
 struct ConstantBuffer
 {
@@ -30,7 +47,7 @@ struct DX11StaticMesh
     ID3D11Buffer* pVertexBuffer = nullptr;
     ID3D11Buffer* pIndexBuffer = nullptr;
     ID3D11Buffer* pConstantBuffer = nullptr;
-    Transform*    Trans;
+    void*         Trans;
     int           IndexCount = 0;
     DXGI_FORMAT   IndexFormat = DXGI_FORMAT_R32_UINT;
     D3D11_PRIMITIVE_TOPOLOGY   Topology;
@@ -360,17 +377,17 @@ public:
         m_View = Transform::BuildViewMatrix_LHCoordinateSystem(Eye, At, Up);
     }
 
-    virtual bool AddTriangles(const char* Id, Transform* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth) override
+    virtual bool AddTriangles(const char* Id, void* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth) override
     {
         return AddPrimitive(Id, pTrans, pVerties, nVerties, pIndices, nIndices, IndicesWidth, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     }
 
-	virtual bool AddWireframe(const char* Id, Transform* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices) override
+	virtual bool AddWireframe(const char* Id, void* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices) override
 	{
         return AddPrimitive(Id, pTrans, pVerties, nVerties, pIndices, nIndices, 2, D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 	}
 
-    bool AddPrimitive(const char* Id, Transform *pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth, D3D11_PRIMITIVE_TOPOLOGY Topology)
+    bool AddPrimitive(const char* Id, void * pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth, D3D11_PRIMITIVE_TOPOLOGY Topology)
     {
         HRESULT hr = S_OK;
 
@@ -520,7 +537,8 @@ public:
         {
             DX11StaticMesh& mesh = m_AllMesh[i];
 
-            cb.World = mesh.Trans->GetWorldMatrix();
+            Transform trans;
+            cb.World = GetTransfromMatrix(mesh.Trans);
             m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
             m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
             m_pImmediateContext->PSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);

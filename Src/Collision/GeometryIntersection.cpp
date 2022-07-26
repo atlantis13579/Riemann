@@ -1,4 +1,5 @@
 
+#include "GeometryObject.h"
 #include "GeometryIntersection.h"
 #include "GeometryDifference.h"
 #include "GJK.h"
@@ -25,7 +26,7 @@ inline bool			RayCastT(void* Obj, const Vector3& Origin, const Vector3& Dir, flo
 	return p->IntersectRay(Origin, Dir, t);
 }
 
-bool 				OverlapGJKSolver(const void* Obj1, const void* Obj2, const Transform &transLocal1ToLocal2)
+bool 				OverlapGJKSolver(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
 {
 	// Hack, see GetShapeObjPtr()
 	const Geometry* Geom1 = reinterpret_cast<const Geometry*>((intptr_t)Obj1 - sizeof(Geometry));
@@ -41,96 +42,96 @@ bool 				OverlapGJKSolver(const void* Obj1, const void* Obj2, const Transform &t
 	return false;
 }
 
-bool				OverlapPlanePlane(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+bool				OverlapPlanePlane(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
 {
 	const Plane3d* plane1 = static_cast<const Plane3d*>(Obj1);
 	const Plane3d* plane2 = static_cast<const Plane3d*>(Obj2);
-	Vector3 Normal = transLocal1ToLocal2.LocalToWorldDirection(plane1->Normal);
-	Vector3 Origin = transLocal1ToLocal2.LocalToWorldEx(plane1->GetOrigin());
+	Vector3 Normal = transLocal1ToLocal2->LocalToWorldDirection(plane1->Normal);
+	Vector3 Origin = transLocal1ToLocal2->LocalToWorld(plane1->GetOrigin());
 	Plane3d plane_new(Normal, Origin, plane1->HalfThickness);
 	return plane2->IntersectPlane(plane_new.Normal, plane_new.D);
 }
 
-inline bool			OverlapPlaneBox(const void* Obj1, const void* Obj2, const Transform &transLocal1ToLocal2)
+inline bool			OverlapPlaneBox(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
 {
 	const Plane3d* plane = static_cast<const Plane3d*>(Obj1);
-	Vector3 Normal = transLocal1ToLocal2.LocalToWorldDirection(plane->Normal);
-	Vector3 Origin = transLocal1ToLocal2.LocalToWorldEx(plane->GetOrigin());
+	Vector3 Normal = transLocal1ToLocal2->LocalToWorldDirection(plane->Normal);
+	Vector3 Origin = transLocal1ToLocal2->LocalToWorld(plane->GetOrigin());
 	Plane3d plane_new(Normal, Origin, plane->HalfThickness);
 	const AxisAlignedBox3d* box = static_cast<const AxisAlignedBox3d*>(Obj2);
 	return plane_new.IntersectAABB(box->Min, box->Max);
 }
 
-inline bool			OverlapBoxPlane(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+inline bool			OverlapBoxPlane(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
 {
 	const Plane3d* plane = static_cast<const Plane3d*>(Obj2);
-	Vector3 Normal = transLocal1ToLocal2.WorldToLocalDirection(plane->Normal);
-	Vector3 Origin = transLocal1ToLocal2.WorldToLocalEx(plane->GetOrigin());
+	Vector3 Normal = transLocal1ToLocal2->WorldToLocalDirection(plane->Normal);
+	Vector3 Origin = transLocal1ToLocal2->WorldToLocal(plane->GetOrigin());
 	Plane3d plane_new(Normal, Origin, plane->HalfThickness);
 	const AxisAlignedBox3d* box = static_cast<const AxisAlignedBox3d*>(Obj1);
 	return plane_new.IntersectAABB(box->Min, box->Max);
 }
 
 template <class T>
-inline bool			OverlapSphereT(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+inline bool			OverlapSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
 {
 	const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj1);
 	float Radius = sphere->Radius;
-	Vector3 Center = transLocal1ToLocal2.LocalToWorldEx(sphere->Center);
+	Vector3 Center = transLocal1ToLocal2->LocalToWorld(sphere->Center);
 	const T* p = static_cast<const T*>(Obj2);
 	return p->IntersectSphere(Center, Radius);
 }
 
 template <class T>
-inline bool			OverlapTSphere(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+inline bool			OverlapTSphere(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
 {
 	const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj2);
 	float Radius = sphere->Radius;
-	Vector3 Center = transLocal1ToLocal2.WorldToLocalEx(sphere->Center);
+	Vector3 Center = transLocal1ToLocal2->WorldToLocal(sphere->Center);
 	const T* p = static_cast<const T*>(Obj1);
 	return p->IntersectSphere(Center, Radius);
 }
 
 template <class T>
-inline bool			OverlapCapsuleT(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+inline bool			OverlapCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
 {
 	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj1);
 	float Radius = capsule->Radius;
-	Vector3 P0 = transLocal1ToLocal2.LocalToWorldEx(capsule->X0);
-	Vector3 P1 = transLocal1ToLocal2.LocalToWorldEx(capsule->X1);
+	Vector3 P0 = transLocal1ToLocal2->LocalToWorld(capsule->X0);
+	Vector3 P1 = transLocal1ToLocal2->LocalToWorld(capsule->X1);
 	const T* p = static_cast<const T*>(Obj2);
 	return p->IntersectCapsule(P0, P1, Radius);
 }
 
 template <class T>
-inline bool			OverlapTCapsule(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+inline bool			OverlapTCapsule(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
 {
 	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj2);
 	float Radius = capsule->Radius;
-	Vector3 P0 = transLocal1ToLocal2.WorldToLocalEx(capsule->X0);
-	Vector3 P1 = transLocal1ToLocal2.WorldToLocalEx(capsule->X1);
+	Vector3 P0 = transLocal1ToLocal2->WorldToLocal(capsule->X0);
+	Vector3 P1 = transLocal1ToLocal2->WorldToLocal(capsule->X1);
 	const T* p = static_cast<const T*>(Obj1);
 	return p->IntersectCapsule(P0, P1, Radius);
 }
 
 template <class T>
-inline bool			OverlapTriangleT(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+inline bool			OverlapTriangleT(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
 {
 	const Triangle3d* tri = static_cast<const Triangle3d*>(Obj1);
-	Vector3 A = transLocal1ToLocal2.LocalToWorldEx(tri->A);
-	Vector3 B = transLocal1ToLocal2.LocalToWorldEx(tri->B);
-	Vector3 C = transLocal1ToLocal2.LocalToWorldEx(tri->C);
+	Vector3 A = transLocal1ToLocal2->LocalToWorld(tri->A);
+	Vector3 B = transLocal1ToLocal2->LocalToWorld(tri->B);
+	Vector3 C = transLocal1ToLocal2->LocalToWorld(tri->C);
 	const T* p = static_cast<const T*>(Obj2);
 	return p->IntersectTriangle(A, B, C);
 }
 
 template <class T>
-inline bool			OverlapTTriangle(const void* Obj1, const void* Obj2, const Transform& transLocal1ToLocal2)
+inline bool			OverlapTTriangle(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
 {
 	const Triangle3d* tri = static_cast<const Triangle3d*>(Obj2);
-	Vector3 A = transLocal1ToLocal2.WorldToLocalEx(tri->A);
-	Vector3 B = transLocal1ToLocal2.WorldToLocalEx(tri->B);
-	Vector3 C = transLocal1ToLocal2.WorldToLocalEx(tri->C);
+	Vector3 A = transLocal1ToLocal2->WorldToLocal(tri->A);
+	Vector3 B = transLocal1ToLocal2->WorldToLocal(tri->B);
+	Vector3 C = transLocal1ToLocal2->WorldToLocal(tri->C);
 	const T* p = static_cast<const T*>(Obj1);
 	return p->IntersectTriangle(A, B, C);
 }

@@ -35,13 +35,13 @@ void TestSupport()
 	support = obb2->GetSupport_WorldSpace(Vector3::UnitY());
 	EXPECT(fabsf(support.y - 1.0f) < 0.1f);
 	
-	obb2->SetPosition(Vector3(5.0f, 0.0f, 0.0f));
+	obb2->SetCenterOfMass(Vector3(5.0f, 0.0f, 0.0f));
 	support = obb2->GetSupport_WorldSpace(Vector3::UnitX());
 	EXPECT(fabsf(support.x - 6.0f) < 0.1f);
 	
 	Quaternion quat;
 	quat.FromRotationAxis(Vector3::UnitZ(), PI_OVER_4);
-	obb2->SetRotationQuat(quat);
+	obb2->SetRotation(quat);
 	support = obb2->GetSupport_WorldSpace(Vector3::UnitX());
 	EXPECT(fabsf(support.x - (5.0f + SQRT_2)) < 0.1f);
 	support = obb2->GetSupport_WorldSpace(Vector3::UnitY());
@@ -77,10 +77,10 @@ void TestGJK()
 	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 	EXPECT(GJK_Solve(obb1, obb2));
 
-	obb2->SetPosition(Vector3(0.5f, 0.0f, 0.0f));
+	obb2->SetCenterOfMass(Vector3(0.5f, 0.0f, 0.0f));
 	EXPECT(GJK_Solve(obb1, obb2));
 	
-	obb2->SetPosition(Vector3(0.0f, 2.1f, 0.0f));
+	obb2->SetCenterOfMass(Vector3(0.0f, 2.1f, 0.0f));
 	EXPECT(!GJK_Solve(obb1, obb2));
 	
 	EXPECT(GJK_Solve(obb1, plane1));
@@ -90,11 +90,11 @@ void TestGJK()
 	
 	Quaternion quat;
 	quat.FromRotationAxis(Vector3::UnitX(), PI_OVER_4);
-	obb2->SetRotationQuat(quat);
+	obb2->SetRotation(quat);
 	EXPECT(GJK_Solve(obb2, obb1));
 	EXPECT(GJK_Solve(obb1, obb2));
 	
-	obb2->SetPosition(Vector3(0.0f, 1.1f, 0.0f));
+	obb2->SetCenterOfMass(Vector3(0.0f, 1.1f, 0.0f));
 	EXPECT(GJK_Solve(obb2, plane1));
 	EXPECT(GJK_Solve(plane1, obb2));
 	
@@ -103,7 +103,7 @@ void TestGJK()
 	EXPECT(GJK_Solve(sp1, sp2));
 	EXPECT(GJK_Solve(sp1, plane1));
 	
-	sp2->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
+	sp2->SetCenterOfMass(Vector3(0.0f, 5.0f, 0.0f));
 	EXPECT(!GJK_Solve(sp1, sp2));
 	EXPECT(!GJK_Solve(plane1, sp2));
 
@@ -120,7 +120,7 @@ void TestEPA()
 	// Geometry* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, -5.0f, 0.0f), Vector3::UnitY(), 1.0f);
 	Geometry* plane1 = GeometryFactory::CreateOBB(Vector3(0.0f, -5.0f, 0.0f), Vector3(100.0f, 1.0f, 100.0f), Quaternion::One());
 	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One() * 1.0f, Quaternion::One());
-	obb1->SetPosition(Vector3(0.0f, -3.7f, 0.0f));
+	obb1->SetCenterOfMass(Vector3(0.0f, -3.7f, 0.0f));
 
 	GJKIntersection gjk;
 	GJK_status gjk_status;
@@ -136,13 +136,13 @@ void TestEPA()
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
 
-	obb1->SetPosition(Vector3(20.0f, -3.7f, 0.0f));
+	obb1->SetCenterOfMass(Vector3(20.0f, -3.7f, 0.0f));
 	gjk_status = gjk.Solve(&shape);
 	EXPECT(gjk_status == GJK_status::Intersect);
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
 
-	obb1->SetPosition(Vector3(-20.0f, -3.7f, 0.0f));
+	obb1->SetCenterOfMass(Vector3(-20.0f, -3.7f, 0.0f));
 	gjk_status = gjk.Solve(&shape);
 	EXPECT(gjk_status == GJK_status::Intersect);
 	epa_status = epa.Solve(gjk.result);
@@ -225,11 +225,11 @@ void TestOverlap()
 	EXPECT(obb1->Overlap(obb2));
 	EXPECT(obb2->Overlap(obb1));
 
-	obb2->SetPosition(Vector3(0.5f, 0.0f, 0.0f));
+	obb2->SetCenterOfMass(Vector3(0.5f, 0.0f, 0.0f));
 	EXPECT(obb1->Overlap(obb2));
 	EXPECT(obb2->Overlap(obb1));
 	
-	obb2->SetPosition(Vector3(0.0f, 2.1f, 0.0f));
+	obb2->SetCenterOfMass(Vector3(0.0f, 2.1f, 0.0f));
 	EXPECT(!obb1->Overlap(obb2));
 	EXPECT(!obb2->Overlap(obb1));
 	
@@ -240,11 +240,11 @@ void TestOverlap()
 	
 	Quaternion quat;
 	quat.FromRotationAxis(Vector3::UnitX(), PI_OVER_4);
-	obb2->SetRotationQuat(quat);
+	obb2->SetRotation(quat);
 	EXPECT(obb1->Overlap(obb2));
 	EXPECT(obb2->Overlap(obb1));
 	
-	obb2->SetPosition(Vector3(0.0f, 1.1f, 0.0f));
+	obb2->SetCenterOfMass(Vector3(0.0f, 1.1f, 0.0f));
 	EXPECT(plane1->Overlap(obb2));
 	EXPECT(obb2->Overlap(plane1));
 	
@@ -255,7 +255,7 @@ void TestOverlap()
 	EXPECT(sp1->Overlap(plane1));
 	EXPECT(plane1->Overlap(sp1));
 	
-	sp2->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
+	sp2->SetCenterOfMass(Vector3(0.0f, 5.0f, 0.0f));
 	EXPECT(!sp1->Overlap(sp2));
 	EXPECT(!sp2->Overlap(sp1));
 	EXPECT(!plane1->Overlap(sp2));
@@ -513,7 +513,7 @@ void TestSAPInc()
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 0);
 
-	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3(-10, -10, -10));
+	boxes[2]->SetCenterOfMass(boxes[2]->GetCenterOfMass() + Vector3(-10, -10, -10));
 	boxes[2]->UpdateBoundingVolume();
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 2);
@@ -521,7 +521,7 @@ void TestSAPInc()
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 2);
 
-	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3(10, 10, 10));
+	boxes[2]->SetCenterOfMass(boxes[2]->GetCenterOfMass() + Vector3(10, 10, 10));
 	boxes[2]->UpdateBoundingVolume();
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 0);
@@ -536,7 +536,7 @@ void TestSAPInc()
 
 	for (int k = 0; k < 10; ++k)
 	{
-		boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3::Random() * 20.0f);
+		boxes[2]->SetCenterOfMass(boxes[2]->GetCenterOfMass() + Vector3::Random() * 20.0f);
 		boxes[2]->UpdateBoundingVolume();
 		sap.IncrementalPrune(&overlaps);
 

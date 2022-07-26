@@ -23,23 +23,14 @@ public:
 		m_Scale = Vector3::One();
 	}
 
-	void				LoadLocal1ToLocal2(const Transform &t1, const Transform &t2)
-	{
-		m_bWorldMatrixDirty = true;
-		m_bInvWorldMatrixDirty = true;
-		m_Translation = t1.GetTranslation() - t2.GetTranslation();
-		m_Rotation = t1.GetRotation() * t2.GetRotation().Conjugate();
-		m_Scale = Vector3::One();
-	}
-
 	const Vector3&		GetTranslation() const
 	{
 		return m_Translation;
 	}
 
-	Matrix3			GetRotationMatrix() const
+	Matrix3				GetRotationMatrix() const
 	{
-		return m_Rotation.ToRotationMatrix();
+		return m_Rotation.ToRotationMatrix3();
 	}
 
 	const Quaternion&	GetRotation() const
@@ -264,7 +255,7 @@ public:
 
 	static Matrix4		BuildRotationMatrix_Quat(const Quaternion& Rot)
 	{
-		return Rot.ToRotationMatrix4d();
+		return Rot.ToRotationMatrix4();
 	}
 
 
@@ -293,7 +284,7 @@ public:
 	{
 		Matrix4 matTrans = BuildTranslationMatrix(Translation);
 		Matrix4 matScale = BuildScaleMatrix(Scale);
-		Matrix4 matRot = Rotation.ToRotationMatrix4d();
+		Matrix4 matRot = Rotation.ToRotationMatrix4();
 		
 		World = matTrans * matRot * matScale;			// make sure Translation Matrix go first.
 	}
@@ -301,7 +292,7 @@ public:
 	static void			TRToWorldMatrix(Matrix4& World, const Vector3& Translation, const Quaternion& Rotation)
 	{
 		Matrix4 matTrans = BuildTranslationMatrix(Translation);
-		Matrix4 matRot = Rotation.ToRotationMatrix4d();
+		Matrix4 matRot = Rotation.ToRotationMatrix4();
 
 		World = matTrans * matRot;			// make sure Translation Matrix go first.
 	}
@@ -310,7 +301,7 @@ public:
 	{
 		Matrix4 matTrans = BuildTranslationMatrix(-Translation);
 		Matrix4 matScale = BuildScaleMatrix(Vector3::One() / Scale);
-		Matrix4 matRot = Rotation.ToRotationMatrix4d().Transpose();
+		Matrix4 matRot = Rotation.ToRotationMatrix4().Transpose();
 
 		InvWorld = matScale * matRot * matTrans;		// make sure Scale Matrix go first.
 	}
@@ -318,7 +309,7 @@ public:
 	static void			TRToInverseWorldMatrix(Matrix4& InvWorld, const Vector3& Translation, const Quaternion& Rotation)
 	{
 		Matrix4 matTrans = BuildTranslationMatrix(-Translation);
-		Matrix4 matRot = Rotation.ToRotationMatrix4d().Transpose();
+		Matrix4 matRot = Rotation.ToRotationMatrix4().Transpose();
 
 		InvWorld = matRot * matTrans;		// make sure Rotation Matrix go first.
 	}

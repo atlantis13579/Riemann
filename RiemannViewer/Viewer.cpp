@@ -39,11 +39,11 @@ void WorldViewer::CreateDemo()
 	rp.rigidType = RigidType::Dynamic;
 	// rp.LinearDamping = 0.99f;
 	// rp.AngularDamping = 0.99f;
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 5; ++i)
 	for (int j = 0; j < 1; ++j)
 	for (int k = 0; k < 1; ++k)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 5.0f + i * 6, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 0.0f + i * 2.1f, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
 		// Geometry* aabb = GeometryFactory::CreateSphere(Vector3(j * 3.0f, 10.0f + i * 3.0f, k * 3.0f), 1.0f);
 		RigidBodyDynamic* p = (RigidBodyDynamic*)m_World->CreateRigidBody(aabb, rp);
 		// p->ApplyTorgue(Vector3(0, -50, 0).Cross(Vector3::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
@@ -161,15 +161,6 @@ void WorldViewer::LoadPhysxScene(const std::string& file_name)
 	m_World->GetGeometryQuery()->BuildStaticGeometry(geometries, 5);
 }
 
-void WorldViewer::LoadFlatObj(const std::string& file_name)
-{
-	Mesh mesh;
-	mesh.LoadFlat(file_name.c_str());
-	Transform* t = new Transform;
-	t->SetScale(Vector3(0.01f, 0.01f, 0.01f));
-	AddTriMesh(m_Renderer , &mesh, t, false);
-}
-
 void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3 &c, std::vector<Vector3>& water_list)
 {
 	VoxelField field;
@@ -215,10 +206,10 @@ void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3 &c,
 	Vector3 pmin = Vector3(c.x - 200.0f, water_level, c.z - 200.0f);
 	Vector3 pmax = Vector3(c.x + 200.0f, water_level, c.z + 200.0f);
 
-	Transform* t = new Transform;
-	t->SetScale(Vector3(0.02f, 0.02f, 0.02f));
-
-	AddTriMesh(m_Renderer, draw_mesh, t, false);
+	// Transform* t = new Transform;
+	// t->SetScale(Vector3(0.02f, 0.02f, 0.02f));
+	// TODO
+	AddTriMesh(m_Renderer, draw_mesh, nullptr, false);
 }
 
 

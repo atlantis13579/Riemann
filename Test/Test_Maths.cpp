@@ -18,7 +18,7 @@ void TestBasicMath()
 
 	mat1.FromAxisAngle(Vector3::UnitX(), ToRadian(45.0f));
 	q1.FromRotationAxis(Vector3::UnitX(), ToRadian(45.0f));
-	mat2 = q1.ToRotationMatrix();
+	mat2 = q1.ToRotationMatrix3();
 
 	float dist = (mat1 - mat2).L1Norm();
 	EXPECT1(dist < 0.0001f, dist);
@@ -27,7 +27,7 @@ void TestBasicMath()
 
 	mat1.FromAxisAngle(v1.Unit(), ToRadian(30.0f));
 	q1.FromRotationMatrix(mat1);
-	mat2 = q1.ToRotationMatrix();
+	mat2 = q1.ToRotationMatrix3();
 
 	dist = (mat1 - mat2).L1Norm();
 	EXPECT1(dist < 0.0001f, dist);

@@ -267,7 +267,7 @@ public:
         return Slerp(start, end, t);
     }
 
-	Matrix4 ToRotationMatrix4d() const
+	Matrix4 ToRotationMatrix4() const
 	{
 		float x2 = x * x;
 		float y2 = y * y;
@@ -285,7 +285,7 @@ public:
 			0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
-	Matrix3 ToRotationMatrix() const
+	Matrix3 ToRotationMatrix3() const
 	{
 		float x2 = x * x;
 		float y2 = y * y;

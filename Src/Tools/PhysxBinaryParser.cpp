@@ -256,8 +256,8 @@ public:
 				Geometry* g = CreateShape(pShades[i], shared_mem);
 				if (g)
 				{
-					g->SetPosition(rigid->mRigidStatic.mStatic.mCore.body2World.p);
-					g->SetRotationQuat(rigid->mRigidStatic.mStatic.mCore.body2World.q);
+					g->SetCenterOfMass(rigid->mRigidStatic.mStatic.mCore.body2World.p);
+					g->SetRotation(rigid->mRigidStatic.mStatic.mCore.body2World.q);
 					g->UpdateBoundingVolume();
 					body->AddGeometry(g);
 				}
@@ -296,8 +296,8 @@ public:
 				Geometry* g = CreateShape(pShades[i], shared_mem);
 				if (g)
 				{
-					g->SetPosition(core.body2World.p);
-					g->SetRotationQuat(core.body2World.q);
+					g->SetCenterOfMass(core.body2World.p);
+					g->SetRotation(core.body2World.q);
 					g->UpdateBoundingVolume();
 					body->AddGeometry(g);
 				}

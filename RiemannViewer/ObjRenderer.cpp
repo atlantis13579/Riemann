@@ -62,7 +62,7 @@ void AddGeometryImpl(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 	}
 }
 
-void AddTriMesh(Renderer* renderer, Mesh* mesh, Transform* Trans, bool RenderBV)
+void AddTriMesh(Renderer* renderer, Mesh* mesh, void* Trans, bool RenderBV)
 {
 	mesh->CalculateNormals();
 

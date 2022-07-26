@@ -92,9 +92,9 @@ public:
 		{
 			Vector3 pa = i == -1 ? w0 : ContactFace[i];
 			Contact contact;
-			contact.PositionLocalA = pa - GeomA->GetPosition();
+			contact.PositionLocalA = pa - GeomA->GetCenterOfMass();
 			Vector3 pb = pa - epa.penetration_normal * epa.penetration_depth;
-			contact.PositionLocalB = pb - GeomB->GetPosition();
+			contact.PositionLocalB = pb - GeomB->GetCenterOfMass();
 			contact.PositionWorldA = pa;
 			contact.PositionWorldB = pb;
 			contact.Normal = epa.penetration_normal;

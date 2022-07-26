@@ -1,8 +1,9 @@
 #pragma once
 
 #include "../Core/StaticArray.h"
+#include "../Maths/Vector3.h"
+#include "../Maths/Quaternion.h"
 #include "../Maths/Box3d.h"
-#include "../Maths/Transform.h"
 #include "../CollisionPrimitive/ShapeType.h"
 
 class GeometryFactory;
@@ -25,6 +26,38 @@ struct CollisionData
 
 typedef	StaticArray<Vector3, MAX_FACE_POINTS> SupportFace;
 
+struct GeometryTransform
+{
+	Vector3		Translation;
+	Quaternion	Rotation;
+
+	Vector3		LocalToWorld(const Vector3& Point) const
+	{
+		return Rotation * Point + Translation;
+	}
+
+	Vector3		LocalToWorldDirection(const Vector3& Dir) const
+	{
+		return Rotation * Dir;
+	}
+
+	Vector3		WorldToLocal(const Vector3& Point) const
+	{
+		return Rotation.Conjugate() * (Point - Translation);
+	}
+
+	Vector3		WorldToLocalDirection(const Vector3& Dir) const
+	{
+		return Rotation.Conjugate() * Dir;
+	}
+
+	void		LoadLocal1ToLocal2(const GeometryTransform& t1, const GeometryTransform& t2)
+	{
+		Translation = t1.Translation - t2.Translation;
+		Rotation = t1.Rotation * t2.Rotation.Conjugate();
+	}
+};
+
 class Geometry
 {
 	friend class GeometryFactory;
@@ -33,13 +66,10 @@ public:
 	Geometry();
 	virtual ~Geometry() {}
 
-	void					SetPosition(const Vector3& Position);
-	Vector3					GetPosition() const;
-	Matrix3					GetRotationMatrix() const;
-	Quaternion				GetRotationQuat() const;
-	void					SetRotationQuat(const Quaternion& Rotation);
-	const Matrix4&			GetWorldMatrix();
-	const Matrix4&			GetInverseWorldMatrix();
+	void					SetCenterOfMass(const Vector3& Position);
+	const Vector3&			GetCenterOfMass() const;
+	const Quaternion&		GetRotation() const;
+	void					SetRotation(const Quaternion& Rotation);
 
 	template<class T>
 	inline T*				GetParent()
@@ -62,12 +92,12 @@ public:
 		m_Next = next;
 	}
 
-	inline const Transform* GetTransform() const
+	inline const GeometryTransform* GetTransform() const
 	{
 		return &m_Transform;
 	}
-	
-	inline Transform*		GetTransform()
+
+	inline GeometryTransform* GetTransform()
 	{
 		return &m_Transform;
 	}
@@ -133,7 +163,7 @@ private:
 protected:
 	ShapeType3d				m_Type;
 	Box3d					m_BoxWorld;
-	Transform				m_Transform;
+	GeometryTransform		m_Transform;
 	CollisionData			m_FilterData;
 	void*					m_Parent;
 	Geometry*				m_Next;

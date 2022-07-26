@@ -7,6 +7,7 @@
 
 #include "Vector3.h"
 #include "Matrix4.h"
+#include "Quaternion.h"
 
 #define _USE_MATH_DEFINES
 
@@ -244,6 +245,15 @@ public:
 		Box.BuildFromCenterAndExtent(NewCenter, NewExtent);
 
 		return Box;
+	}
+
+	TAABB3<T>	Transform(const Vector3& t, const Quaternion& q) const
+	{
+		Matrix4 mat = q.ToRotationMatrix4();
+		mat[0][3] += t.x;
+		mat[1][3] += t.y;
+		mat[2][3] += t.z;
+		return Transform(mat);
 	}
 	
 	static void GetVertices(const TVector3<T>& Bmin, const TVector3<T>& Bmax, TVector3<T> *v)
