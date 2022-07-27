@@ -130,10 +130,24 @@ private:
 	std::vector<Geometry*>*		m_pObjects;
 };
 
+class BroadPhaseDynamicAABBImplementation : public BroadPhase
+{
+public:
+	virtual ~BroadPhaseDynamicAABBImplementation() {}
+
+	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
+	{
+	}
+};
 
 BroadPhase* BroadPhase::Create_SAP()
 {
 	return new BroadPhaseSAPImplementation();
+}
+
+BroadPhase* BroadPhase::Create_DynamicAABB()
+{
+	return new BroadPhaseDynamicAABBImplementation();
 }
 
 BroadPhase* BroadPhase::Create_Bruteforce()

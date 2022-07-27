@@ -14,4 +14,6 @@ public:
 	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold*>* contact) = 0;
 
 	static NarrowPhase* Create_GJKEPA();
+	static NarrowPhase* Create_SAT();
+	static NarrowPhase* Create_PCM();
 };

@@ -198,7 +198,7 @@
     <ClInclude Include="..\..\Src\FluidDynamics\Laplace2DSolver.h">
       <Filter>FluidDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Optimization\LBGFS.h">
+    <ClInclude Include="..\..\Src\Optimization\LBFGS.h">
       <Filter>Optimization</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Solver\LCPSolver.h">
@@ -219,7 +219,7 @@
     <ClInclude Include="..\..\Src\VehicleDynamics\LQR.h">
       <Filter>VehicleDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Optimization\LR.h">
+    <ClInclude Include="..\..\Src\Optimization\LinearRegression.h">
       <Filter>Optimization</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Maths\Maths.h">
@@ -339,7 +339,7 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\Segment3d.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Optimization\SGD.h">
+    <ClInclude Include="..\..\Src\Optimization\StochasticGradientDescent.h">
       <Filter>Optimization</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Tools\Serialization.h">
@@ -432,7 +432,7 @@
     <ClInclude Include="..\..\Src\Physics2d\Convex.h">
       <Filter>Physics2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\Featherstone.h">
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\FeatherstoneSolver.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Optimization\PCA.h">
@@ -470,6 +470,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\ConstraintSolver.h">
       <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Optimization\GaussNewton.h">
+      <Filter>Optimization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Optimization\LevenbergMarquardt.h">
+      <Filter>Optimization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

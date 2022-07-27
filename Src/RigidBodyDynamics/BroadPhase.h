@@ -25,4 +25,5 @@ public:
 	static BroadPhase* Create_AllPairs();		// Slow, debug purpose
 	static BroadPhase* Create_Bruteforce();		// Slow, debug purpose
 	static BroadPhase* Create_SAP();
+	static BroadPhase* Create_DynamicAABB();
 };

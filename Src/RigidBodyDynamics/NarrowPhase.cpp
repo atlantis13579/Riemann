@@ -165,3 +165,13 @@ NarrowPhase* NarrowPhase::Create_GJKEPA()
 {
 	return new NarrowPhase_GJKEPA();
 }
+
+NarrowPhase* NarrowPhase::Create_SAT()
+{
+	return new NarrowPhase_SAT();
+}
+
+NarrowPhase* NarrowPhase::Create_PCM()
+{
+	return new NarrowPhase_PersistentContactManifold();
+}

@@ -161,10 +161,12 @@
     <ClInclude Include="..\..\Src\Maths\SIMD.h" />
     <ClInclude Include="..\..\Src\Maths\Vector2.h" />
     <ClInclude Include="..\..\Src\Maths\VectorN.h" />
-    <ClInclude Include="..\..\Src\Optimization\LBGFS.h" />
-    <ClInclude Include="..\..\Src\Optimization\LR.h" />
+    <ClInclude Include="..\..\Src\Optimization\GaussNewton.h" />
+    <ClInclude Include="..\..\Src\Optimization\LBFGS.h" />
+    <ClInclude Include="..\..\Src\Optimization\LevenbergMarquardt.h" />
+    <ClInclude Include="..\..\Src\Optimization\LinearRegression.h" />
     <ClInclude Include="..\..\Src\Optimization\PCA.h" />
-    <ClInclude Include="..\..\Src\Optimization\SGD.h" />
+    <ClInclude Include="..\..\Src\Optimization\StochasticGradientDescent.h" />
     <ClInclude Include="..\..\Src\Physics2d\Convex.h" />
     <ClInclude Include="..\..\Src\Physics2d\Rect.h" />
     <ClInclude Include="..\..\Src\Physics2d\Circle.h" />
@@ -175,7 +177,7 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\BroadPhase.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\ConstraintSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Contact.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\Featherstone.h" />
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\FeatherstoneSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Jacobian.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\KinematicsTree.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\ForceField.h" />
