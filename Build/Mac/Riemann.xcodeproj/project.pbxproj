@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		ADAA4C3D28898D6000E8AE2E /* Featherstone.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3428898D6000E8AE2E /* Featherstone.h */; };
 		ADAA4C3E28898D6000E8AE2E /* Contact.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3528898D6000E8AE2E /* Contact.h */; };
 		ADAA4C3F28898D6000E8AE2E /* SequentialImpulseSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */; };
 		ADAA4C4028898D6000E8AE2E /* NarrowPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */; };
@@ -181,9 +180,6 @@
 		ADD23CD8288762D900A849BE /* Circle.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CD2288762D900A849BE /* Circle.h */; };
 		ADD23CD9288762D900A849BE /* Point2d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CD3288762D900A849BE /* Point2d.h */; };
 		ADD23CDA288762D900A849BE /* Shape2d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CD4288762D900A849BE /* Shape2d.h */; };
-		ADD23CDE288762E100A849BE /* LR.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CDB288762E100A849BE /* LR.h */; };
-		ADD23CDF288762E100A849BE /* SGD.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CDC288762E100A849BE /* SGD.h */; };
-		ADD23CE0288762E100A849BE /* LBGFS.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CDD288762E100A849BE /* LBGFS.h */; };
 		ADD23CF8288762ED00A849BE /* Quaternion.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CE3288762EC00A849BE /* Quaternion.h */; };
 		ADD23CF9288762ED00A849BE /* Maths.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CE4288762EC00A849BE /* Maths.h */; };
 		ADD23CFC288762ED00A849BE /* Transform.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CE7288762ED00A849BE /* Transform.h */; };
@@ -213,10 +209,15 @@
 		ADD23D2F288762F900A849BE /* ProjectedGaussSeidel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D1C288762F900A849BE /* ProjectedGaussSeidel.cpp */; };
 		ADD23D30288762F900A849BE /* SingularValueDecomposition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D1D288762F900A849BE /* SingularValueDecomposition.cpp */; };
 		ADD23D322887631800A849BE /* PCA.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D312887631800A849BE /* PCA.h */; };
+		ADF862252891875A00DBC516 /* FeatherstoneSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF862242891875A00DBC516 /* FeatherstoneSolver.h */; };
+		ADF8622B2891876C00DBC516 /* LinearRegression.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF862262891876B00DBC516 /* LinearRegression.h */; };
+		ADF8622C2891876C00DBC516 /* LevenbergMarquardt.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF862272891876B00DBC516 /* LevenbergMarquardt.h */; };
+		ADF8622D2891876C00DBC516 /* LBFGS.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF862282891876B00DBC516 /* LBFGS.h */; };
+		ADF8622E2891876C00DBC516 /* GaussNewton.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF862292891876B00DBC516 /* GaussNewton.h */; };
+		ADF8622F2891876C00DBC516 /* StochasticGradientDescent.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF8622A2891876B00DBC516 /* StochasticGradientDescent.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		ADAA4C3428898D6000E8AE2E /* Featherstone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Featherstone.h; path = ../../Src/RigidBodyDynamics/Featherstone.h; sourceTree = "<group>"; };
 		ADAA4C3528898D6000E8AE2E /* Contact.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Contact.h; path = ../../Src/RigidBodyDynamics/Contact.h; sourceTree = "<group>"; };
 		ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SequentialImpulseSolver.h; path = ../../Src/RigidBodyDynamics/SequentialImpulseSolver.h; sourceTree = "<group>"; };
 		ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NarrowPhase.cpp; path = ../../Src/RigidBodyDynamics/NarrowPhase.cpp; sourceTree = "<group>"; };
@@ -390,9 +391,6 @@
 		ADD23CD2288762D900A849BE /* Circle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Circle.h; path = ../../Src/Physics2d/Circle.h; sourceTree = "<group>"; };
 		ADD23CD3288762D900A849BE /* Point2d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Point2d.h; path = ../../Src/Physics2d/Point2d.h; sourceTree = "<group>"; };
 		ADD23CD4288762D900A849BE /* Shape2d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Shape2d.h; path = ../../Src/Physics2d/Shape2d.h; sourceTree = "<group>"; };
-		ADD23CDB288762E100A849BE /* LR.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LR.h; path = ../../Src/Optimization/LR.h; sourceTree = "<group>"; };
-		ADD23CDC288762E100A849BE /* SGD.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SGD.h; path = ../../Src/Optimization/SGD.h; sourceTree = "<group>"; };
-		ADD23CDD288762E100A849BE /* LBGFS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LBGFS.h; path = ../../Src/Optimization/LBGFS.h; sourceTree = "<group>"; };
 		ADD23CE3288762EC00A849BE /* Quaternion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Quaternion.h; path = ../../Src/Maths/Quaternion.h; sourceTree = "<group>"; };
 		ADD23CE4288762EC00A849BE /* Maths.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Maths.h; path = ../../Src/Maths/Maths.h; sourceTree = "<group>"; };
 		ADD23CE7288762ED00A849BE /* Transform.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Transform.h; path = ../../Src/Maths/Transform.h; sourceTree = "<group>"; };
@@ -423,6 +421,12 @@
 		ADD23D1D288762F900A849BE /* SingularValueDecomposition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SingularValueDecomposition.cpp; path = ../../Src/LinearSystem/SingularValueDecomposition.cpp; sourceTree = "<group>"; };
 		ADD23D312887631800A849BE /* PCA.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PCA.h; path = ../../Src/Optimization/PCA.h; sourceTree = "<group>"; };
 		ADE742E12820A994007DEEB3 /* libRiemann.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRiemann.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		ADF862242891875A00DBC516 /* FeatherstoneSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FeatherstoneSolver.h; path = ../../Src/RigidBodyDynamics/FeatherstoneSolver.h; sourceTree = "<group>"; };
+		ADF862262891876B00DBC516 /* LinearRegression.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LinearRegression.h; path = ../../Src/Optimization/LinearRegression.h; sourceTree = "<group>"; };
+		ADF862272891876B00DBC516 /* LevenbergMarquardt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LevenbergMarquardt.h; path = ../../Src/Optimization/LevenbergMarquardt.h; sourceTree = "<group>"; };
+		ADF862282891876B00DBC516 /* LBFGS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LBFGS.h; path = ../../Src/Optimization/LBFGS.h; sourceTree = "<group>"; };
+		ADF862292891876B00DBC516 /* GaussNewton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GaussNewton.h; path = ../../Src/Optimization/GaussNewton.h; sourceTree = "<group>"; };
+		ADF8622A2891876B00DBC516 /* StochasticGradientDescent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = StochasticGradientDescent.h; path = ../../Src/Optimization/StochasticGradientDescent.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -534,13 +538,13 @@
 		ADD23B8C288760A800A849BE /* RigidBodyDynamics */ = {
 			isa = PBXGroup;
 			children = (
+				ADF862242891875A00DBC516 /* FeatherstoneSolver.h */,
 				ADBBEE1E288C486800C3D6CD /* ConstraintSolver.cpp */,
 				ADBBEE1D288C486800C3D6CD /* ConstraintSolver.h */,
 				ADAA4C3A28898D6000E8AE2E /* BroadPhase.cpp */,
 				ADAA4C3828898D6000E8AE2E /* BroadPhase.h */,
 				ADAA4C3B28898D6000E8AE2E /* Contact.cpp */,
 				ADAA4C3528898D6000E8AE2E /* Contact.h */,
-				ADAA4C3428898D6000E8AE2E /* Featherstone.h */,
 				ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */,
 				ADAA4C3C28898D6000E8AE2E /* NarrowPhase.h */,
 				ADAA4C3928898D6000E8AE2E /* SequentialImpulseSolver.cpp */,
@@ -594,10 +598,12 @@
 		ADD23B8F288760BD00A849BE /* Optimization */ = {
 			isa = PBXGroup;
 			children = (
+				ADF862292891876B00DBC516 /* GaussNewton.h */,
+				ADF862282891876B00DBC516 /* LBFGS.h */,
+				ADF862272891876B00DBC516 /* LevenbergMarquardt.h */,
+				ADF862262891876B00DBC516 /* LinearRegression.h */,
+				ADF8622A2891876B00DBC516 /* StochasticGradientDescent.h */,
 				ADD23D312887631800A849BE /* PCA.h */,
-				ADD23CDD288762E100A849BE /* LBGFS.h */,
-				ADD23CDB288762E100A849BE /* LR.h */,
-				ADD23CDC288762E100A849BE /* SGD.h */,
 			);
 			name = Optimization;
 			sourceTree = "<group>";
@@ -839,6 +845,7 @@
 				ADD23CBE288762CC00A849BE /* RigidBodySimulation.h in Headers */,
 				ADAA4C3F28898D6000E8AE2E /* SequentialImpulseSolver.h in Headers */,
 				ADD23D03288762ED00A849BE /* SIMD.h in Headers */,
+				ADF862252891875A00DBC516 /* FeatherstoneSolver.h in Headers */,
 				ADD23BC12887614E00A849BE /* GeometryDifference.h in Headers */,
 				ADD23BF52887616200A849BE /* TriangleMesh.h in Headers */,
 				ADD23D20288762F900A849BE /* DenseMatrix.h in Headers */,
@@ -853,11 +860,11 @@
 				ADD23D322887631800A849BE /* PCA.h in Headers */,
 				ADD23C7B288762B800A849BE /* libBmp.h in Headers */,
 				ADD23CDA288762D900A849BE /* Shape2d.h in Headers */,
-				ADD23CDF288762E100A849BE /* SGD.h in Headers */,
 				ADBBEE11288C41A300C3D6CD /* Matrix2.h in Headers */,
 				ADD23BD12887614E00A849BE /* GJK.h in Headers */,
 				ADBBEE1C288C468700C3D6CD /* StaticList.h in Headers */,
 				ADBBEE17288C41A300C3D6CD /* Vector4.h in Headers */,
+				ADF8622F2891876C00DBC516 /* StochasticGradientDescent.h in Headers */,
 				ADD23C49288761AE00A849BE /* Spline.h in Headers */,
 				ADD23C172887618C00A849BE /* StaticArray.h in Headers */,
 				ADD23C79288762B800A849BE /* PhysxBinaryParser.h in Headers */,
@@ -880,11 +887,13 @@
 				ADD23C092887616200A849BE /* Tetrahedral.h in Headers */,
 				ADD23C222887619700A849BE /* GeometryCollection.h in Headers */,
 				ADD23C4A288761AE00A849BE /* ConvexHull3d.h in Headers */,
+				ADF8622D2891876C00DBC516 /* LBFGS.h in Headers */,
 				ADD23C46288761AE00A849BE /* VHACD.h in Headers */,
 				ADD23C64288762AE00A849BE /* VehicleDynamics.h in Headers */,
 				ADAA4C492889930500E8AE2E /* SmoothedParticleHydrodynamics.h in Headers */,
 				ADD23CF8288762ED00A849BE /* Quaternion.h in Headers */,
 				ADAA4C4528898D6000E8AE2E /* NarrowPhase.h in Headers */,
+				ADF8622C2891876C00DBC516 /* LevenbergMarquardt.h in Headers */,
 				ADD23D28288762F900A849BE /* ProjectedGaussSeidel.h in Headers */,
 				ADD23BDA2887614E00A849BE /* SparseSpatialHash.h in Headers */,
 				ADD23C82288762B800A849BE /* PhysxFormat_41.hpp in Headers */,
@@ -907,13 +916,13 @@
 				ADD23C052887616200A849BE /* Capsule3d.h in Headers */,
 				ADD23B9B2887613100A849BE /* UncompressedKarmanVortex2D.h in Headers */,
 				ADD23CD8288762D900A849BE /* Circle.h in Headers */,
-				ADD23CE0288762E100A849BE /* LBGFS.h in Headers */,
 				ADD23CD7288762D900A849BE /* GJK2d.h in Headers */,
 				ADD23C4D288761AE00A849BE /* SparseVoxelField.h in Headers */,
 				ADD23BC72887614E00A849BE /* SAP.h in Headers */,
 				ADD23CCA288762CC00A849BE /* Ragdoll.h in Headers */,
 				ADD23BC52887614E00A849BE /* AABBTreeOffline.h in Headers */,
 				ADD23CB8288762CC00A849BE /* RigidBody.h in Headers */,
+				ADF8622E2891876C00DBC516 /* GaussNewton.h in Headers */,
 				ADD23C112887617000A849BE /* FEMSolver.h in Headers */,
 				ADD23C63288762AE00A849BE /* AutonomousController.h in Headers */,
 				ADBBEE18288C41A300C3D6CD /* VectorN.h in Headers */,
@@ -922,13 +931,13 @@
 				ADD23D2B288762F900A849BE /* GaussianElimination.h in Headers */,
 				ADD23D09288762ED00A849BE /* Frustum.h in Headers */,
 				ADD23C83288762B800A849BE /* libPPM.h in Headers */,
+				ADF8622B2891876C00DBC516 /* LinearRegression.h in Headers */,
 				ADD23CD9288762D900A849BE /* Point2d.h in Headers */,
 				ADD23CF9288762ED00A849BE /* Maths.h in Headers */,
 				ADD23CD6288762D900A849BE /* Rect.h in Headers */,
 				ADD23C3E288761AE00A849BE /* DenseTensorField3d.h in Headers */,
 				ADD23D27288762F900A849BE /* LUFactorization.h in Headers */,
 				ADD23C84288762B800A849BE /* PythonModule.h in Headers */,
-				ADD23CDE288762E100A849BE /* LR.h in Headers */,
 				ADD23C43288761AE00A849BE /* ConvexHull2d.h in Headers */,
 				ADD23CFD288762ED00A849BE /* Box3d.h in Headers */,
 				ADD23BD42887614E00A849BE /* GeometryQuery.h in Headers */,
@@ -940,7 +949,6 @@
 				ADD23BF82887616200A849BE /* Plane3d.h in Headers */,
 				ADD23C032887616200A849BE /* Sphere3d.h in Headers */,
 				ADD23CC4288762CC00A849BE /* Jacobian.h in Headers */,
-				ADAA4C3D28898D6000E8AE2E /* Featherstone.h in Headers */,
 				ADD23CC8288762CC00A849BE /* MotionIntegration.h in Headers */,
 				ADBBEE12288C41A300C3D6CD /* Vector3.h in Headers */,
 				ADD23BFB2887616200A849BE /* OrientedBox3d.h in Headers */,

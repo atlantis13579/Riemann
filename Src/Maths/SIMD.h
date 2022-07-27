@@ -10,10 +10,10 @@
 
 #if defined(SIMD_INSTRUCTION_EMU)
 	typedef float				Scaler;
-	typedef Vector4				F128;
-	typedef TVector4<uint32_t>	B128;
+	typedef TVector4<float>		F128;
+	typedef TVector4<bool>		B128;
 	typedef TVector4<uint32_t>	U128;
-	typedef TVector4<int>		I128;
+	typedef TVector4<int32_t>	I128;
 #elif defined(__arm__) || defined(__aarch64__)
     #include <arm_neon.h>
     typedef float32x2_t Scaler;
@@ -37,7 +37,6 @@
 #endif
 
 static_assert(sizeof(F128) == 16, "simd size vector not correct!");
-static_assert(sizeof(B128) == 16, "simd size vector not correct!");
 static_assert(sizeof(U128) == 16, "simd size vector not correct!");
 static_assert(sizeof(I128) == 16, "simd size vector not correct!");
 
@@ -1558,6 +1557,11 @@ inline U128 U128_ANDNOT(U128 a, U128 b)
 
 namespace SIMD_EMU
 {
+	inline Scaler Scaler_Load(float f)
+	{
+		return f;
+	}
+
 	inline F128 F128_Load_Vector3d(const Vector3& f)
 	{
 		return F128(f.x, f.y, f.z, 0.0f);
@@ -1597,54 +1601,125 @@ namespace SIMD_EMU
 		F128_StoreA(a, f);
 	}
 
+	inline F128 F128_Add(const F128 a, const F128 b)
+	{
+		return a + b;
+	}
+
+	inline F128 F128_Sub(const F128 a, const F128 b)
+	{
+		return a - b;
+	}
+
+	inline F128 F128_Mul(const F128 a, const F128 b)
+	{
+		return a * b;
+	}
+
+	inline F128 F128_Div(const F128 a, const F128 b)
+	{
+		return TVector4<float>(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
+	}
+
+	inline F128 F128_ScaleAdd(const F128 a, const Scaler b, const F128 c)
+	{
+		return a * b + c;
+	}
+
+	inline F128 F128_MAdd(const F128 a, const F128 b, const F128 c)
+	{
+		return a * b + c;
+	}
+
+	inline F128 F128_NegMSub(const F128 a, const F128 b, const F128 c)
+	{
+		return -(a * b - c);
+	}
+
+	inline F128 F128_Max(const F128 a, const F128 b)
+	{
+		return F128(a.x > b.x ? a.x : b.x,
+					a.y > b.y ? a.y : b.y,
+					a.z > b.z ? a.z : b.z,
+					a.w > b.w ? a.w : b.w);
+	}
+
+	inline F128 F128_Min(const F128 a, const F128 b)
+	{
+		return F128(a.x < b.x ? a.x : b.x,
+					a.y < b.y ? a.y : b.y,
+					a.z < b.z ? a.z : b.z,
+					a.w < b.w ? a.w : b.w);
+	}
+
+	inline F128 F128_Abs(const F128 a)
+	{
+		return F128(a.x >= 0 ? a.x : -a.x,
+					a.y >= 0 ? a.y : -a.y,
+					a.z >= 0 ? a.z : -a.z,
+					a.w >= 0 ? a.w : -a.w);
+	}
+
+	inline F128 F128_One()
+	{
+		return F128(1.0f, 1.0f, 1.0f, 1.0f);
+	}
+
+	inline F128 F128_Round(const F128 a)
+	{
+		return F128(roundf(a.x), roundf(a.y), roundf(a.z), roundf(a.w));
+	}
+
 	inline B128 F128_Greater(const F128 a, const F128 b)
 	{
-		return TVector4<bool>(a.x > b.x, a.y > b.y, a.z > b.z, a.w > b.w);
+		return B128(a.x > b.x, a.y > b.y, a.z > b.z, a.w > b.w);
 	}
 
 	inline B128 F128_GreaterOrEqual(const F128 a, const F128 b)
 	{
-		return TVector4<bool>(a.x >= b.x, a.y >= b.y, a.z >= b.z, a.w >= b.w);
+		return B128(a.x >= b.x, a.y >= b.y, a.z >= b.z, a.w >= b.w);
 	}
 
 	inline B128 F128_Equal(const F128 a, const F128 b)
 	{
-		return TVector4<bool>(a.x == b.x, a.y == b.y, a.z == b.z, a.w == b.w);
+		return B128(a.x == b.x, a.y == b.y, a.z == b.z, a.w == b.w);
 	}
 
 	inline B128 B128_And(const B128 a, const B128 b)
 	{
-		return TVector4<bool>(a.x && b.x, a.y && b.y, a.z && b.z, a.w && b.w);
+		return B128(a.x && b.x, a.y && b.y, a.z && b.z, a.w && b.w);
 	}
 
 	inline B128 B128_Not(const B128 a)
 	{
-		return TVector4<bool>(!a.x, !a.y, !a.z, !a.w);
+		return B128(!a.x, !a.y, !a.z, !a.w);
 	}
 
 	inline B128 B128_AndNot(const B128 a, const B128 b)
 	{
-		return TVector4<bool>(a.x && !b.x, a.y && !b.y, a.z && !b.z, a.w && !b.w);
+		return B128(a.x && !b.x, a.y && !b.y, a.z && !b.z, a.w && !b.w);
 	}
 
 	inline B128 B128_Or(const B128 a, const B128 b)
 	{
-		return TVector4<bool>(a.x || b.x, a.y || b.y, a.z || b.z, a.w || b.w);
+		return B128(a.x || b.x, a.y || b.y, a.z || b.z, a.w || b.w);
 	}
 
 	inline U128 U128_Load_BVec4(const B128 a)
 	{
-		return TVector4<unsigned int>(a.x, a.y, a.z, a.w);
+		return U128(a.x, a.y, a.z, a.w);
 	}
 
-	inline void U128_StoreA(const U128 uv, uint32_t* u)
+	inline void U128_StoreA(const U128 a, uint32_t* u)
 	{
-		f[0] = a.x;
-		f[1] = a.y;
-		f[2] = a.z;
-		f[3] = a.w;
+		u[0] = a.x;
+		u[1] = a.y;
+		u[2] = a.z;
+		u[3] = a.w;
 	}
 }
+
+using namespace SIMD_EMU;
 
 #endif
 
