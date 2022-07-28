@@ -156,7 +156,7 @@ bool TriangleMesh::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 		B128 resx = B128_Or(B128_Or(B128_Or(res0, res1), B128_Or(res2, res3)), B128_Or(res4, res5));
 		alignas(16) uint32_t resa[SIMD_WIDTH];
 
-		U128 res4x = U128_Load_BVec4(resx);
+		U128 res4x = U128_Load_B128(resx);
 		U128_StoreA(res4x, resa);
 
 		cacheTopValid = false;
@@ -257,9 +257,9 @@ bool TriangleMesh::IntersectRay(const Vector3& Origin, const Vector3& Dir, const
 	maxT4 = F128_Load(maxT);
 	F128 rayP = F128_Load_Vector3d(Origin);
 	F128 rayD = F128_Load_Vector3d(Dir);
-	U128 raySign = U128_AND(U128_ReinterpretFrom_Vec4V(rayD), signMask);
+	U128 raySign = U128_AND(U128_ReinterpretFrom_F128(rayD), signMask);
 	F128 rayDAbs = F128_Abs(rayD); // abs value of rayD
-	F128 rayInvD = Vec4V_ReinterpretFrom_VecU32V(U128_OR(raySign, U128_ReinterpretFrom_Vec4V(F128_Max(rayDAbs, epsFloat4)))); // clamp near-zero components up to epsilon
+	F128 rayInvD = F128_ReinterpretFrom_U128(U128_OR(raySign, U128_ReinterpretFrom_F128(F128_Max(rayDAbs, epsFloat4)))); // clamp near-zero components up to epsilon
 	rayD = rayInvD;
 
 	//rayInvD = V4Recip(rayInvD);
@@ -322,7 +322,7 @@ bool TriangleMesh::IntersectRay(const Vector3& Origin, const Vector3& Dir, const
 
 		// 1i disabled test
 		// AP scaffold - optimization opportunity - can save 2 instructions here
-		U128 ignore4a = F128_Greater(minx4a, maxx4a); // 1 if degenerate box (empty slot in the page)
+		U128 ignore4a = U128_Load_B128(F128_Greater(minx4a, maxx4a)); // 1 if degenerate box (empty slot in the page)
 
 		// P+tD=a; t=(a-P)/D
 		// t=(a - p.x)*1/d.x = a/d.x +(- p.x/d.x)
@@ -352,13 +352,13 @@ bool TriangleMesh::IntersectRay(const Vector3& Origin, const Vector3& Dir, const
 		// 8i
 		F128 maxOfNeasa = F128_Max(F128_Max(tminxa, tminya), tminza);
 		F128 minOfFarsa = F128_Min(F128_Min(tmaxxa, tmaxya), tmaxza);
-		ignore4a = U128_OR(ignore4a, F128_Greater(epsFloat4, minOfFarsa));  // if tfar is negative, ignore since its a ray, not a line
+		ignore4a = U128_OR(ignore4a, U128_Load_B128(F128_Greater(epsFloat4, minOfFarsa)));  // if tfar is negative, ignore since its a ray, not a line
 		// AP scaffold: update the build to eliminate 3 more instructions for ignore4a above
 		//VecU32V ignore4a = F128_Greater(epsFloat4, minOfFarsa);  // if tfar is negative, ignore since its a ray, not a line
-		ignore4a = U128_OR(ignore4a, F128_Greater(maxOfNeasa, maxT4));  // if tnear is over maxT, ignore this result
+		ignore4a = U128_OR(ignore4a, U128_Load_B128(F128_Greater(maxOfNeasa, maxT4)));  // if tnear is over maxT, ignore this result
 
 		// 2i
-		U128 resa4 = F128_Greater(maxOfNeasa, minOfFarsa); // if 1 => fail
+		U128 resa4 = U128_Load_B128(F128_Greater(maxOfNeasa, minOfFarsa)); // if 1 => fail
 		resa4 = U128_OR(resa4, ignore4a);
 
 		// 1i

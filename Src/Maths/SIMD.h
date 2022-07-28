@@ -449,11 +449,6 @@ inline void F128_StoreA(F128 a, float* f)
 	vst1q_f32(reinterpret_cast<float32_t*>(f), a);
 }
 
-inline F128 Vec4V_From_FloatV(Scaler f)
-{
-	return vcombine_f32(f, f);
-}
-
 inline F128 F128_Load_Vector3d(const Vector3& f)
 {
 	alignas(16) float data[4] = { f.x, f.y, f.z, 0.0f };
@@ -834,7 +829,7 @@ inline void U128_StoreA(const U128 uv, unsigned int* u)
 	vst1q_u32(reinterpret_cast<uint32_t*>(u), uv);
 }
 
-inline U128 U128_Load_BVec4(const B128& a)
+inline U128 U128_Load_B128(const B128& a)
 {
 	return a;
 }
@@ -844,17 +839,17 @@ inline void U128_StoreAA(U128 val, U128* address)
 	vst1q_u32(reinterpret_cast<uint32_t*>(address), val);
 }
 
-inline F128 Vec4V_From_VecU32V(U128 a)
+inline F128 F128_From_U128(U128 a)
 {
 	return vcvtq_f32_u32(a);
 }
 
-inline F128 Vec4V_ReinterpretFrom_VecU32V(U128 a)
+inline F128 F128_ReinterpretFrom_U128(U128 a)
 {
 	return vreinterpretq_f32_u32(a);
 }
 
-inline U128 U128_ReinterpretFrom_Vec4V(F128 a)
+inline U128 U128_ReinterpretFrom_F128(F128 a)
 {
 	return vreinterpretq_u32_f32(a);
 }
@@ -1226,11 +1221,6 @@ inline F128 F128_ClearW(const F128 v)
 	return _mm_and_ps(v, (I128&)internalWindowsSimd::gMaskXYZ);
 }
 
-inline F128 Vec4V_From_FloatV(Scaler f)
-{
-	return f;
-}
-
 inline F128 F128_PermYXWZ(const F128 a)
 {
 	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(2, 3, 0, 1));
@@ -1482,7 +1472,7 @@ inline U128 U128_Load(const uint32_t i)
 	return _mm_load1_ps((float*)&i);
 }
 
-inline U128 U128_Load_BVec4(const B128 a)
+inline U128 U128_Load_B128(const B128 a)
 {
 	return a;
 }
@@ -1504,12 +1494,12 @@ inline void U128_StoreA(const U128 uv, uint32_t* u)
 	_mm_store_ps((float*)u, uv);
 }
 
-inline F128 Vec4V_ReinterpretFrom_VecU32V(U128 a)
+inline F128 F128_ReinterpretFrom_U128(U128 a)
 {
 	return F128(a);
 }
 
-inline U128 U128_ReinterpretFrom_Vec4V(F128 a)
+inline U128 U128_ReinterpretFrom_F128(F128 a)
 {
 	return U128(a);
 }
@@ -1660,6 +1650,11 @@ namespace SIMD_EMU
 					a.w >= 0 ? a.w : -a.w);
 	}
 
+	inline F128 F128_Zero()
+	{
+		return F128(0.0f, 0.0f, 0.0f, 0.0f);
+	}
+
 	inline F128 F128_One()
 	{
 		return F128(1.0f, 1.0f, 1.0f, 1.0f);
@@ -1668,6 +1663,11 @@ namespace SIMD_EMU
 	inline F128 F128_Round(const F128 a)
 	{
 		return F128(roundf(a.x), roundf(a.y), roundf(a.z), roundf(a.w));
+	}
+
+	inline F128 F128_RecipFast(const F128 a)
+	{
+		return F128(1.0f / a.x, 1.0f / a.y, 1.0f / a.z, 1.0f);
 	}
 
 	inline B128 F128_Greater(const F128 a, const F128 b)
@@ -1705,9 +1705,34 @@ namespace SIMD_EMU
 		return B128(a.x || b.x, a.y || b.y, a.z || b.z, a.w || b.w);
 	}
 
-	inline U128 U128_Load_BVec4(const B128 a)
+	inline U128 U128_Load_B128(const B128 a)
 	{
 		return U128(a.x, a.y, a.z, a.w);
+	}
+
+	inline U128 U128_LoadXYZW(const uint32_t x, const uint32_t y, const uint32_t z, const uint32_t w)
+	{
+		return U128(x, y, z, w);
+	}
+
+	inline F128 F128_From_U128(const U128 a)
+	{
+		return F128(*(float*)&a.x, *(float*)&a.y, *(float*)&a.z, *(float*)&a.w);
+	}
+
+	inline U128 U128_From_F128(const F128 a)
+	{
+		return U128(*(uint32_t*)&a.x, *(uint32_t*)&a.y, *(uint32_t*)&a.z, *(uint32_t*)&a.w);
+	}
+
+	inline F128 F128_ReinterpretFrom_U128(const U128 a)
+	{
+		return F128((float)a.x, (float)a.y, (float)a.z, (float)a.w);
+	}
+
+	inline U128 U128_ReinterpretFrom_F128(const F128 a)
+	{
+		return U128((uint32_t)a.x, (uint32_t)a.y, (uint32_t)a.z, (uint32_t)a.w);
 	}
 
 	inline void U128_StoreA(const U128 a, uint32_t* u)
@@ -1716,6 +1741,26 @@ namespace SIMD_EMU
 		u[1] = a.y;
 		u[2] = a.z;
 		u[3] = a.w;
+	}
+
+	inline void U128_StoreAA(U128 val, U128* address)
+	{
+		*address = val;
+	}
+
+	inline U128 U128_Zero()
+	{
+		return U128(0, 0, 0, 0);
+	}
+
+	inline U128 U128_AND(const U128 a, const U128 b)
+	{
+		return U128(a.x & b.x, a.y & b.y, a.z & b.z, a.w & b.w);
+	}
+
+	inline U128 U128_OR(const U128 a, const U128 b)
+	{
+		return U128(a.x | b.x, a.y | b.y, a.z | b.z, a.w | b.w);
 	}
 }
 
