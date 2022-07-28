@@ -200,8 +200,8 @@ public:
 		{
 			if (Normal.z > kEpsilonPlane)
 			{
-				Box.Min.z = -D / Normal.z - HalfThickness;
-				Box.Max.z = -D / Normal.z + HalfThickness;
+				Box.mMin.z = -D / Normal.z - HalfThickness;
+				Box.mMax.z = -D / Normal.z + HalfThickness;
 			}
 		}
 
@@ -209,8 +209,8 @@ public:
 		{
 			if (Normal.x > kEpsilonPlane)
 			{
-				Box.Min.x = -D / Normal.x - HalfThickness;
-				Box.Max.x = -D / Normal.x + HalfThickness;
+				Box.mMin.x = -D / Normal.x - HalfThickness;
+				Box.mMax.x = -D / Normal.x + HalfThickness;
 			}
 		}
 
@@ -218,8 +218,8 @@ public:
 		{
 			if (Normal.y > kEpsilonPlane)
 			{
-				Box.Min.y = -D / Normal.y - HalfThickness;
-				Box.Max.y = -D / Normal.y + HalfThickness;
+				Box.mMin.y = -D / Normal.y - HalfThickness;
+				Box.mMax.y = -D / Normal.y + HalfThickness;
 			}
 		}
 
@@ -261,17 +261,17 @@ public:
 	{
 		Box3d box = GetBoundingVolume();
 		return Vector3(
-			dir.x > 0 ? box.Max.x : box.Min.x,
-			dir.y > 0 ? box.Max.y : box.Min.y,
-			dir.z > 0 ? box.Max.z : box.Min.z
+			dir.x > 0 ? box.mMax.x : box.mMin.x,
+			dir.y > 0 ? box.mMax.y : box.mMin.y,
+			dir.z > 0 ? box.mMax.z : box.mMin.z
 		);
 	}
 
 	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
 	{
 		Box3d box = GetBoundingVolume();
-		const Vector3& Bmin = box.Min;
-		const Vector3& Bmax = box.Max;
+		const Vector3& Bmin = box.mMin;
+		const Vector3& Bmax = box.mMax;
 
 		int axis = dir.Abs().LargestAxis();
 		if (dir[axis] < 0.0f)

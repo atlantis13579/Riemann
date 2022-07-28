@@ -37,7 +37,7 @@ void TriangleMesh::BuildBVH()
 	for (uint32_t i = 0; i < NumTriangles; ++i)
 	{
 		allBounds.push_back(Box3d(GetVertex(i, 0), GetVertex(i, 1), GetVertex(i, 2)));
-		meshBounds.Grow(allBounds.back());
+		meshBounds.Encapsulate(allBounds.back());
 	}
 
 	CreateEmptyBVH();

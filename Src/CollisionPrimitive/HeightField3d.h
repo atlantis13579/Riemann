@@ -175,7 +175,7 @@ public:
 		for (uint32_t i = 0; i < nX; i++)
 		for (uint32_t j = 0; j < nZ; j++)
 		{
-			Vertices[i * nZ + j] = Vector3(BV.Min.x + DX * i, GetHeight(i * nZ + j), BV.Min.z + DX * j);
+			Vertices[i * nZ + j] = Vector3(BV.mMin.x + DX * i, GetHeight(i * nZ + j), BV.mMin.z + DX * j);
 		}
 
 		assert(Vertices.size() < 65535);

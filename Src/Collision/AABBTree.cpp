@@ -139,7 +139,7 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Geoms, int NumGeoms, Geom
 	if (GeometryCollection == nullptr)
 	{
 		float t;
-		if (Ray.IntersectAABB(BV.Min, BV.Max, &t) && t < Option.MaxDist)
+		if (Ray.IntersectAABB(BV.mMin, BV.mMax, &t) && t < Option.MaxDist)
 		{
 			Result->hit = true;
 			if (t < Result->hitTimeMin)
@@ -260,7 +260,7 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 	float t1, t2;
 	AABBTreeNodeInference* p = m_AABBTreeInference;
-	if (p == nullptr || !Ray.IntersectAABB(p->BV.Min, p->BV.Max, &t1))
+	if (p == nullptr || !Ray.IntersectAABB(p->BV.mMin, p->BV.mMax, &t1))
 	{
 		return false;
 	}
@@ -299,8 +299,8 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 			Result->AddTestCount(2);
 
-			bool hit1 = Ray.IntersectAABB(Left->BV.Min, Left->BV.Max, &t1);
-			bool hit2 = Ray.IntersectAABB(Right->BV.Min, Right->BV.Max, &t2);
+			bool hit1 = Ray.IntersectAABB(Left->BV.mMin, Left->BV.mMax, &t1);
+			bool hit2 = Ray.IntersectAABB(Right->BV.mMin, Right->BV.mMax, &t2);
 
             if (Option.Type != RayCastOption::RAYCAST_PENETRATE)
             {
@@ -397,7 +397,7 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 	const Box3d &aabb = geometry->GetBoundingVolume_WorldSpace();
 
 	AABBTreeNodeInference* p = m_AABBTreeInference;
-	if (p == nullptr || !aabb.Intersect(p->BV.Min, p->BV.Max))
+	if (p == nullptr || !aabb.Intersect(p->BV.mMin, p->BV.mMax))
 	{
 		return false;
 	}
@@ -431,8 +431,8 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 			AABBTreeNodeInference* Left = LEFT_NODE(p);
 			AABBTreeNodeInference* Right = Left + 1;
 
-			bool intersect1 = aabb.Intersect(Left->BV.Min, Left->BV.Max);
-			bool intersect2 = aabb.Intersect(Right->BV.Min, Right->BV.Max);
+			bool intersect1 = aabb.Intersect(Left->BV.mMin, Left->BV.mMax);
+			bool intersect2 = aabb.Intersect(Right->BV.mMin, Right->BV.mMax);
 
 			if (intersect1 && intersect2)
 			{
