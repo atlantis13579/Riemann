@@ -352,8 +352,7 @@ bool VoxelField::VoxelizationTri(const Vector3& v0, const Vector3& v1, const Vec
 	const float ich = 1.0f / m_VoxelHeight;
 
 	Box3d tbox(v0, v0);
-	tbox.Grow(v1);
-	tbox.Grow(v2);
+	tbox.Encapsulate(v1, v2);
 
 	if (!tbox.Intersect(m_BV))
 		return true;

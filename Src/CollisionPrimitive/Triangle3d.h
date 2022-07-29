@@ -441,8 +441,7 @@ public:
 	Box3d			GetBoundingVolume() const
 	{
 		Box3d box(A, A);
-		box.Grow(B);
-		box.Grow(C);
+		box.Encapsulate(B, C);
 		return box;
 	}
 

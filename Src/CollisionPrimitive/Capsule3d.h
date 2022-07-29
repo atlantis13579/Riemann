@@ -67,7 +67,7 @@ public:
 	Box3d				GetBoundingVolume() const
 	{
 		Box3d box(X0, X0);
-		box.Grow(X1);
+		box.Encapsulate(X1);
 		box.Thicken(Radius);
 		return box;
 	}

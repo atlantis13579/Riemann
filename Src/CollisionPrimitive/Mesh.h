@@ -203,9 +203,7 @@ public:
 		{
 			BoundingVolume = Box3d(Vertices[a], Vertices[a]);
 		}
-		BoundingVolume.Grow(Vertices[a]);
-		BoundingVolume.Grow(Vertices[b]);
-		BoundingVolume.Grow(Vertices[c]);
+		BoundingVolume.Encapsulate(Vertices[a], Vertices[b], Vertices[c]);
 
 		NumTriangles++;
 	}

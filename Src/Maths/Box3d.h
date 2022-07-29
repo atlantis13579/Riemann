@@ -38,15 +38,14 @@ public:
 		mMin = mMax = v[0];
 		for (int i = 1; i < Num; ++i)
 		{
-			this->Grow(v[i]);
+			this->Encapsulate(v[i]);
 		}
 	}
 
 	TAABB3<T>(const TVector3<T>& v0, const TVector3<T>& v1, const TVector3<T>& v2)
 	{
 		mMin = mMax = v0;
-		this->Grow(v1);
-		this->Grow(v2);
+		this->Encapsulate(v1, v2);
 	}
 
 	TAABB3<T>(const std::vector<TVector3<T>> &v)
@@ -55,7 +54,7 @@ public:
 		for (size_t i = 1; i < v.size(); ++i)
 		{
 
-			this->Grow(v[i]);
+			this->Encapsulate(v[i]);
 		}
 	}
 
@@ -89,17 +88,37 @@ public:
 		*this = TAABB3<T>::Empty();
 	}
 
-	TAABB3<T>& Grow(const TVector3<T>& rhs)
-	{
-		mMin = mMin.Min(rhs);
-		mMax = mMax.Max(rhs);
-		return *this;
-	}
-
 	TAABB3<T>& Thicken(float Thickness)
 	{
 		mMin -= Thickness;
 		mMax += Thickness;
+		return *this;
+	}
+	
+	TAABB3<T>& Encapsulate(const TVector3<T>& a)
+	{
+		mMin = mMin.Min(a);
+		mMax = mMax.Max(a);
+		return *this;
+	}
+	
+	TAABB3<T>& Encapsulate(const TVector3<T>& a, const TVector3<T>& b)
+	{
+		mMin = mMin.Min(a);
+		mMax = mMax.Max(a);
+		mMin = mMin.Min(b);
+		mMax = mMax.Max(b);
+		return *this;
+	}
+	
+	TAABB3<T>& Encapsulate(const TVector3<T>& a, const TVector3<T>& b, const TVector3<T>& c)
+	{
+		mMin = mMin.Min(a);
+		mMax = mMax.Max(a);
+		mMin = mMin.Min(b);
+		mMax = mMax.Max(b);
+		mMin = mMin.Min(c);
+		mMax = mMax.Max(c);
 		return *this;
 	}
 
