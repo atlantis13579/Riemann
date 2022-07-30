@@ -506,6 +506,17 @@ inline B128 F128_Equal(const F128 a, const F128 b)
 	return vceqq_f32(a, b);
 }
 
+inline F128 F128_LoadU(const float* f)
+{
+	return vld1q_f32(reinterpret_cast<const float32_t*>(f));
+}
+
+inline F128 F128_LoadXYZW(const float x, const float y, const float z, const float w)
+{
+	const float32x4_t ret = { x, y, z, w };
+	return ret;
+}
+
 inline F128 F128_Zero()
 {
 	return vreinterpretq_f32_u32(vmovq_n_u32(0));
@@ -1246,7 +1257,7 @@ inline F128 F128_PermZWXY(const F128 a)
 	return _mm_shuffle_ps(a, a, _MM_SHUFFLE(1, 0, 3, 2));
 }
 
-inline F128 F128_LoadXYZW(const float& x, const float& y, const float& z, const float& w)
+inline F128 F128_LoadXYZW(const float x, const float y, const float z, const float w)
 {
 	return _mm_set_ps(w, z, y, x);
 }

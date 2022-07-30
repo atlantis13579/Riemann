@@ -33,7 +33,7 @@ public:
 		, mMax(InMax, InMax, InMax)
 	{ }
 
-	TAABB3<T>(const TVector3<T>* v, int Num)
+	explicit TAABB3<T>(const TVector3<T>* v, int Num)
 	{
 		mMin = mMax = v[0];
 		for (int i = 1; i < Num; ++i)
@@ -56,6 +56,18 @@ public:
 
 			this->Encapsulate(v[i]);
 		}
+	}
+	
+	TAABB3<T>(const TAABB3<T>& aabb1)
+	{
+		mMin = aabb1.mMin;
+		mMax = aabb1.mMax;
+	}
+	
+	TAABB3<T>(const TAABB3<T>& aabb1, const TAABB3<T>& aabb2)
+	{
+		mMin = aabb2.mMin.Min(aabb1.mMin);
+		mMax = aabb2.mMax.Max(aabb1.mMax);
 	}
 
 public:
