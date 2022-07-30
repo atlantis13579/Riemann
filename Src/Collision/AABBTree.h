@@ -4,9 +4,11 @@
 #include "../Maths/Box3d.h"
 #include "../CollisionPrimitive/Ray3d.h"
 #include "AABBTreeOffline.h"
-#include "GeometryQuery.h"
 
+struct RayCastOption;
 struct RayCastResult;
+struct OverlapOption;
+struct OverlapResult;
 struct AABBTreeNodeInference;
 class Geometry;
 

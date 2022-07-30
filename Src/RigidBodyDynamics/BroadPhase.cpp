@@ -1,7 +1,30 @@
 
 #include "BroadPhase.h"
+#include "RigidBody.h"
+#include "../Collision/DynamicAABBTree.h"
 #include "../Collision/GeometryObject.h"
 #include "../Collision/SAP_Incremental.h"
+
+static bool IsMovingRigid(Geometry* geom)
+{
+	RigidBody *body = geom->GetParent<RigidBody>();
+	if (body == nullptr)
+	{
+		return false;
+	}
+	
+	if (body->mRigidType == RigidType::Static)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+static bool HasMovingRigid(Geometry* geom1, Geometry* geom2)
+{
+	return IsMovingRigid(geom1) || IsMovingRigid(geom2);
+}
 
 class BroadPhaseAllPairsImplementation : public BroadPhase
 {
@@ -37,7 +60,11 @@ public:
 			const Box3d& box2 = AllObjects[j]->GetBoundingVolume_WorldSpace();
 			if (box1.Intersect(box2))
 			{
-				overlaps->emplace_back(AllObjects[i], AllObjects[j]);
+				Geometry *gi = AllObjects[i];
+				Geometry *gj = AllObjects[j];
+				if (!HasMovingRigid(gi, gj))
+					continue;
+				overlaps->emplace_back(gi, gj);
 			}
 		}
 	}
@@ -84,7 +111,11 @@ public:
 		{
 			int i, j;
 			SAP::UnpackOverlapKey(it, &i, &j);
-			overlaps->emplace_back(AllObjects[i], AllObjects[j]);
+			Geometry *gi = AllObjects[i];
+			Geometry *gj = AllObjects[j];
+			if (!HasMovingRigid(gi, gj))
+				continue;
+			overlaps->emplace_back(gi, gj);
 		}
 	}
 
@@ -133,11 +164,34 @@ private:
 class BroadPhaseDynamicAABBImplementation : public BroadPhase
 {
 public:
+	BroadPhaseDynamicAABBImplementation(DynamicAABBTree *tree)
+	{
+		m_tree = tree;
+	}
 	virtual ~BroadPhaseDynamicAABBImplementation() {}
 
 	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
 	{
+		std::vector<void*> result;
+		for (size_t i = 0; i < AllObjects.size(); ++i)
+		{
+			Geometry *gi = AllObjects[i];
+			if (!IsMovingRigid(gi))
+				continue;
+			
+			m_tree->Query(gi->GetBoundingVolume_WorldSpace(), &result);
+			for (size_t j = 0; j < result.size(); ++j)
+			{
+				Geometry *gj = static_cast<Geometry*>(result[j]);
+				if (gj <= gi)
+					continue;
+				overlaps->emplace_back(gi, gj);
+			}
+		}
 	}
+	
+private:
+	DynamicAABBTree *m_tree;
 };
 
 BroadPhase* BroadPhase::Create_SAP()
@@ -145,9 +199,9 @@ BroadPhase* BroadPhase::Create_SAP()
 	return new BroadPhaseSAPImplementation();
 }
 
-BroadPhase* BroadPhase::Create_DynamicAABB()
+BroadPhase* BroadPhase::Create_DynamicAABB(DynamicAABBTree *tree)
 {
-	return new BroadPhaseDynamicAABBImplementation();
+	return new BroadPhaseDynamicAABBImplementation(tree);
 }
 
 BroadPhase* BroadPhase::Create_Bruteforce()

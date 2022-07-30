@@ -19,6 +19,7 @@
 #include "../Src/Collision/GeometryDifference.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPAPenetration.h"
+#include "../Src/Maths/Maths.h"
 
 void TestDynamicAABB()
 {
@@ -26,19 +27,56 @@ void TestDynamicAABB()
 	
 	DynamicAABBTree tree;
 	
-	std::vector<Geometry*> geoms;
+	struct Actor
+	{
+		Actor(Geometry *_geom, int _id)
+		{
+			p = _geom;
+			id = _id;
+		}
+		Geometry *p;
+		int		id;
+	};
+	
+	std::vector<Actor> geoms;
 	for (int i = 0; i < 128; ++i)
 	{
 		Geometry* obb = GeometryFactory::CreateOBB(Vector3::Random() * 10.0f, Vector3::One(), Quaternion::One());
-		geoms.push_back(obb);
+		int id = tree.Add(obb->GetBoundingVolume_WorldSpace(), obb);
+		EXPECT(tree.Validate());
+		geoms.emplace_back(obb, id);
 		
 	}
 	
-	for (size_t i = 0; i < geoms.size(); ++i)
+	for (int k = 0; k < 1000; ++k)
 	{
-		Geometry* obb = geoms[i];
-		tree.Add(obb->GetBoundingVolume_WorldSpace(), obb);
-		EXPECT(tree.Validate());
+		for (size_t i = 0; i < geoms.size(); ++i)
+		{
+			int r = RandomInt(0, 5);
+			if (geoms[i].id == -1)
+			{
+				if (r == 0)
+				{
+					geoms[i].id = tree.Add(geoms[i].p->GetBoundingVolume_WorldSpace(), geoms[i].p);
+				}
+			}
+			else
+			{
+				if (r == 0)
+				{
+					tree.Remove(geoms[i].id);
+					geoms[i].id = -1;
+				}
+				else
+				{
+					geoms[i].p->SetCenterOfMass(Vector3::Random() * 10.0f);
+					geoms[i].p->UpdateBoundingVolume();
+					tree.Update(geoms[i].id, geoms[i].p->GetBoundingVolume_WorldSpace(), Vector3::UnitY());
+				}
+			}
+			
+			EXPECT(tree.Validate());
+		}
 	}
 	
 	tree.Rebuild();
@@ -591,7 +629,6 @@ void TestSAPInc()
 void TestCollision()
 {
 	TestDynamicAABB();
-	return;
 	TestSupport();
 	TestGJK();
 	TestEPA();

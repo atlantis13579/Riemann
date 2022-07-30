@@ -5,7 +5,12 @@
 #include <vector>
 #include "../Maths/Box3d.h"
 #include "../CollisionPrimitive/Ray3d.h"
-#include "GeometryQuery.h"
+
+struct RayCastOption;
+struct RayCastResult;
+struct OverlapOption;
+struct OverlapResult;
+class Geometry;
 
 class DynamicAABBTree
 {

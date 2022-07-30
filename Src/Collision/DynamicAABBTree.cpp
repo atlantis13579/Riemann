@@ -1,6 +1,8 @@
 
 #include <assert.h>
 #include "DynamicAABBTree.h"
+#include "GeometryQuery.h"
+#include "GeometryObject.h"
 
 DynamicAABBTree::DynamicAABBTree()
 {

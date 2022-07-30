@@ -3,10 +3,10 @@
 
 #include <assert.h>
 
-#include "../Core/StaticStack.h"
 #include "AABBTreeOffline.h"
 #include "AABBTreeInference.h"
 #include "GeometryObject.h"
+#include "GeometryQuery.h"
 
 AABBTree::AABBTree()
 {
