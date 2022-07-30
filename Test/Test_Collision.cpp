@@ -12,12 +12,39 @@
 #include "../Src/CollisionPrimitive/MeshBVH4.h"
 #include "../Src/CollisionPrimitive/TriangleMesh.h"
 #include "../Src/Collision/AABBTree.h"
+#include "../Src/Collision/DynamicAABBTree.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Collision/SAP.h"
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GeometryDifference.h"
 #include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPAPenetration.h"
+
+void TestDynamicAABB()
+{
+	printf("Running TestDynamicAABB\n");
+	
+	DynamicAABBTree tree;
+	
+	std::vector<Geometry*> geoms;
+	for (int i = 0; i < 128; ++i)
+	{
+		Geometry* obb = GeometryFactory::CreateOBB(Vector3::Random() * 10.0f, Vector3::One(), Quaternion::One());
+		geoms.push_back(obb);
+		
+	}
+	
+	for (size_t i = 0; i < geoms.size(); ++i)
+	{
+		Geometry* obb = geoms[i];
+		tree.AddNode(obb->GetBoundingVolume_WorldSpace(), obb);
+		EXPECT(tree.Validate());
+	}
+	
+	tree.Rebuild();
+	
+	return;
+}
 
 void TestSupport()
 {
@@ -563,6 +590,8 @@ void TestSAPInc()
 
 void TestCollision()
 {
+	TestDynamicAABB();
+	return;
 	TestSupport();
 	TestGJK();
 	TestEPA();

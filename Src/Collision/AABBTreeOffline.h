@@ -52,17 +52,17 @@ class AABBTreeNodeOffline
 public:
 	AABBTreeNodeOffline()
 	{
-		Children[0] = Children[1] = nullptr;
+		child1 = child2 = nullptr;
 	}
 
 	~AABBTreeNodeOffline()
 	{
-		Children[0] = Children[1] = nullptr;
+		child1 = child2 = nullptr;
 	}
 
 	bool	IsLeafNode() const
 	{
-		if (Children[0] == nullptr)
+		if (child1 == nullptr)
 		{
 			return true;
 		}
@@ -74,8 +74,9 @@ public:
 	void	BuildHierarchyRecursive(AABBTreeBuildData& Params);
 
 public:
-	Box3d							BV;
-	AABBTreeNodeOffline*			Children[2];
+	Box3d							aabb;
+	AABBTreeNodeOffline*			child1;
+	AABBTreeNodeOffline*			child2;
 	int								IndexOffset;
 	int								NumGeometries;
 };

@@ -16,7 +16,7 @@ void MeshBVH4::ValidateRecursive(void* p, uint32_t Depth, const Box3d& parentBou
 		if (batch->IsEmpty(j))
 			continue;
 		Box3d* bounds = (Box3d*)&n.minx;
-		assert(bounds->IsInside(parentBounds));
+		assert(parentBounds.IsInside(*bounds));
 		if (!n.IsLeaf())
 		{
 			assert((n.Data & 1) == 0);
@@ -542,7 +542,7 @@ void MeshBVH4::BuildFromBounds(MeshBVH4& bvh, const std::vector<Box3d>& allBound
 				for (uint32_t s = 0; s < SIMD_WIDTH; s++)
 				{
 					const TreeNode& child = resultTree[tr.NextNodeIndex + s];
-					assert(child.LeafCount == -1 || child.bounds.IsInside(tr.bounds));
+					assert(child.LeafCount == -1 || tr.bounds.IsInside(child.bounds));
 				}
 
 				n.Data = uint32_t(tr.NextNodeIndex * sizeof(BVHNode));

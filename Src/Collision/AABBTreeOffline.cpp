@@ -8,14 +8,14 @@ void AABBTreeNodeOffline::BuildHierarchyRecursive(AABBTreeBuildData& params)
 
 	if (!IsLeafNode())
 	{
-		this->Children[0]->BuildHierarchyRecursive(params);
-		this->Children[1]->BuildHierarchyRecursive(params);
+		this->child1->BuildHierarchyRecursive(params);
+		this->child2->BuildHierarchyRecursive(params);
 	}
 }
 
 int AABBTreeNodeOffline::SplitAxis(const AABBTreeBuildData& Params, int *pGeometries, int Num, int Axis)
 {
-	const float SplitValue = (BV.mMin[Axis] + BV.mMax[Axis]) * 0.5f;
+	const float SplitValue = (aabb.mMin[Axis] + aabb.mMax[Axis]) * 0.5f;
 	int nSplitLeft = 0;
 
 	for (int i = 0; i < Num; ++i)
@@ -57,7 +57,7 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 		maxV = maxV.Max(curMaxV);
 	}
 
-	BV = Box3d(minV, maxV);
+	aabb = Box3d(minV, maxV);
 
 	if (nPrims <= Params.numGeometriesPerNode)
 		return;
@@ -96,14 +96,14 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 		}
 	}
 
-	this->Children[0] = Params.pAABBTree->AllocNodes();
-	this->Children[1] = this->Children[0] + 1;
+	this->child1 = Params.pAABBTree->AllocNodes();
+	this->child2 = this->child1 + 1;
 
 	// Assign children
 	assert(!IsLeafNode());
-	this->Children[0]->IndexOffset = this->IndexOffset;
-	this->Children[0]->NumGeometries = nSplitLeft;
-	this->Children[1]->IndexOffset = this->IndexOffset + nSplitLeft;
-	this->Children[1]->NumGeometries = NumGeometries - nSplitLeft;
+	this->child1->IndexOffset = this->IndexOffset;
+	this->child1->NumGeometries = nSplitLeft;
+	this->child2->IndexOffset = this->IndexOffset + nSplitLeft;
+	this->child2->NumGeometries = NumGeometries - nSplitLeft;
 }
 

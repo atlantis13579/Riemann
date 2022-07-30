@@ -6,12 +6,12 @@
 #include <vector>
 #include "../Maths/Box3d.h"
 
-static const float kAabbExtension = 0.1f;
-static const float kAabbMultiplier = 4.0f;
-
 class DynamicAABBTree
 {
 public:
+	static constexpr float kAABBThickness = 0.1f;
+	static constexpr float kAABBMultiplier = 4.0f;
+	
 	struct Node
 	{
 		bool IsLeaf() const
@@ -41,7 +41,6 @@ public:
 		m_nodes.resize(m_nodeCapacity);
 		memset(&m_nodes[0], 0, m_nodeCapacity * sizeof(Node));
 
-		// Build a linked list for the free list.
 		for (int i = 0; i < m_nodeCapacity - 1; ++i)
 		{
 			m_nodes[i].next = i + 1;
@@ -50,110 +49,103 @@ public:
 		m_nodes[m_nodeCapacity-1].next = -1;
 		m_nodes[m_nodeCapacity-1].height = -1;
 		m_freeList = 0;
-
-		m_insertionCount = 0;
 	}
 	
 	~DynamicAABBTree()
 	{
 	}
 
-	int CreateProxy(const Box3d& aabb, void* userData)
+	int AddNode(const Box3d& aabb, void* userData)
 	{
-		int proxyId = AllocateNode();
+		int nodeId = AllocNode();
 
-		// Fatten the aabb.
-		Vector3 r(kAabbExtension, kAabbExtension, kAabbExtension);
-		m_nodes[proxyId].aabb.mMin = aabb.mMin - r;
-		m_nodes[proxyId].aabb.mMax = aabb.mMax + r;
-		m_nodes[proxyId].userData = userData;
-		m_nodes[proxyId].height = 0;
-		m_nodes[proxyId].moved = true;
+		Vector3 thickness(kAABBThickness, kAABBThickness, kAABBThickness);
+		m_nodes[nodeId].aabb.mMin = aabb.mMin - thickness;
+		m_nodes[nodeId].aabb.mMax = aabb.mMax + thickness;
+		m_nodes[nodeId].userData = userData;
+		m_nodes[nodeId].height = 0;
+		m_nodes[nodeId].moved = true;
 
-		InsertLeaf(proxyId);
+		InsertLeaf(nodeId);
 
-		return proxyId;
+		return nodeId;
 	}
 
-	void DestroyProxy(int proxyId)
+	void RemoveNode(int nodeId)
 	{
-		assert(0 <= proxyId && proxyId < m_nodeCapacity);
-		assert(m_nodes[proxyId].IsLeaf());
+		assert(0 <= nodeId && nodeId < m_nodeCapacity);
+		assert(m_nodes[nodeId].IsLeaf());
 
-		RemoveLeaf(proxyId);
-		FreeNode(proxyId);
+		RemoveLeaf(nodeId);
+		FreeNode(nodeId);
 	}
 
-	bool MoveProxy(int proxyId, const Box3d& aabb, const Vector3& displacement)
+	bool MoveNode(int nodeId, const Box3d& aabb, const Vector3& displacement)
 	{
-		assert(0 <= proxyId && proxyId < m_nodeCapacity);
-		assert(m_nodes[proxyId].IsLeaf());
+		assert(0 <= nodeId && nodeId < m_nodeCapacity);
+		assert(m_nodes[nodeId].IsLeaf());
 
-		// Extend AABB
-		Box3d fatAABB;
-		Vector3 r(kAabbExtension, kAabbExtension, kAabbExtension);
-		fatAABB.mMin = aabb.mMin - r;
-		fatAABB.mMax = aabb.mMax + r;
+		Vector3 thickness(kAABBThickness, kAABBThickness, kAABBThickness);
+		Box3d newAABB(aabb.mMin - thickness, aabb.mMax + thickness);
 
 		// Predict AABB movement
-		Vector3 d = kAabbMultiplier * displacement;
+		Vector3 dir = kAABBMultiplier * displacement;
 
-		if (d.x < 0.0f)
+		if (dir.x < 0.0f)
 		{
-			fatAABB.mMin.x += d.x;
+			newAABB.mMin.x += dir.x;
 		}
 		else
 		{
-			fatAABB.mMax.x += d.x;
+			newAABB.mMax.x += dir.x;
 		}
 
-		if (d.y < 0.0f)
+		if (dir.y < 0.0f)
 		{
-			fatAABB.mMin.y += d.y;
+			newAABB.mMin.y += dir.y;
 		}
 		else
 		{
-			fatAABB.mMax.y += d.y;
+			newAABB.mMax.y += dir.y;
+		}
+		
+		if (dir.z < 0.0f)
+		{
+			newAABB.mMin.z += dir.z;
+		}
+		else
+		{
+			newAABB.mMax.z += dir.z;
 		}
 
-		const Box3d& treeAABB = m_nodes[proxyId].aabb;
-		if (aabb.IsInside(treeAABB))
+		const Box3d& treeAABB = m_nodes[nodeId].aabb;
+		if (treeAABB.IsInside(aabb))
 		{
-			// The tree AABB still contains the object, but it might be too large.
-			// Perhaps the object was moving fast but has since gone to sleep.
-			// The huge AABB is larger than the new fat AABB.
-			Box3d hugeAABB;
-			hugeAABB.mMin = fatAABB.mMin - kAabbMultiplier * r;
-			hugeAABB.mMax = fatAABB.mMax + kAabbMultiplier * r;
-
-			if (treeAABB.IsInside(hugeAABB))
+			Box3d largeAABB(newAABB.mMin - kAABBMultiplier * thickness, newAABB.mMax + kAABBMultiplier * thickness);
+			if (largeAABB.IsInside(treeAABB))
 			{
-				// The tree AABB contains the object AABB and the tree AABB is
-				// not too large. No tree update needed.
+				// The large AABB contains the object AABB, no tree update needed.
 				return false;
 			}
-
-			// Otherwise the tree AABB is huge and needs to be shrunk
 		}
 
-		RemoveLeaf(proxyId);
+		RemoveLeaf(nodeId);
 
-		m_nodes[proxyId].aabb = fatAABB;
+		m_nodes[nodeId].aabb = newAABB;
 
-		InsertLeaf(proxyId);
+		InsertLeaf(nodeId);
 
-		m_nodes[proxyId].moved = true;
+		m_nodes[nodeId].moved = true;
 
 		return true;
 	}
 	
 
-	void RebuildBottomUp()
+	void Rebuild()
 	{
 		int* nodes = new int[m_nodeCount];
 		int count = 0;
 
-		// Build array of leaves. Free the rest.
 		for (int i = 0; i < m_nodeCapacity; ++i)
 		{
 			if (m_nodes[i].height < 0)
@@ -201,7 +193,7 @@ public:
 			Node* child1 = &m_nodes[index1];
 			Node* child2 = &m_nodes[index2];
 
-			int parentIndex = AllocateNode();
+			int parentIndex = AllocNode();
 			Node* parent = &m_nodes[parentIndex];
 			parent->child1 = index1;
 			parent->child2 = index2;
@@ -222,31 +214,41 @@ public:
 
 		Validate();
 	}
-
-	void ShiftOrigin(const Vector3& newOrigin)
-	{
-		// Build array of leaves. Free the rest.
-		for (int i = 0; i < m_nodeCapacity; ++i)
-		{
-			m_nodes[i].aabb.mMin -= newOrigin;
-			m_nodes[i].aabb.mMax -= newOrigin;
-		}
-	}
 	
-private:
-	int AllocateNode()
+	bool Validate() const
 	{
-		// Expand the node pool as needed.
+		if (!ValidateRecursive(m_root))
+			return false;
+		
+		if (!ValidateAABBs(m_root))
+			return false;
+
+		int freeCount = 0;
+		int freeIndex = m_freeList;
+		while (freeIndex != -1)
+		{
+			if (!(0 <= freeIndex && freeIndex < m_nodeCapacity))
+				return false;
+			freeIndex = m_nodes[freeIndex].next;
+			++freeCount;
+		}
+
+		if (GetHeight() != ComputeHeight())
+			return false;
+		if (m_nodeCount + freeCount != m_nodeCapacity)
+			return false;
+		return true;
+	}
+
+private:
+	int AllocNode()
+	{
 		if (m_freeList == -1)
 		{
 			assert(m_nodeCount == m_nodeCapacity);
 
-			// The free list is empty. Rebuild a bigger pool.
 			m_nodeCapacity *= 2;
 			m_nodes.resize(m_nodeCapacity);
-
-			// Build a linked list for the free list. The parent
-			// pointer becomes the "next" pointer.
 			for (int i = m_nodeCount; i < m_nodeCapacity - 1; ++i)
 			{
 				m_nodes[i].next = i + 1;
@@ -257,7 +259,6 @@ private:
 			m_freeList = m_nodeCount;
 		}
 
-		// Peel a node off the free list.
 		int nodeId = m_freeList;
 		m_freeList = m_nodes[nodeId].next;
 		m_nodes[nodeId].parent = -1;
@@ -280,11 +281,8 @@ private:
 		--m_nodeCount;
 	}
 	
-
 	void InsertLeaf(int leaf)
 	{
-		++m_insertionCount;
-
 		if (m_root == -1)
 		{
 			m_root = leaf;
@@ -292,86 +290,58 @@ private:
 			return;
 		}
 
-		// Find the best sibling for this node
+		// Find the best node from bottom up
 		Box3d leafAABB = m_nodes[leaf].aabb;
 		int index = m_root;
 		while (m_nodes[index].IsLeaf() == false)
 		{
-			int child1 = m_nodes[index].child1;
-			int child2 = m_nodes[index].child2;
+			float vol = m_nodes[index].aabb.GetVolume();
+			Box3d mergedAABB = Box3d(m_nodes[index].aabb, leafAABB);
+			float mergedVol = mergedAABB.GetVolume();
 
-			float area = m_nodes[index].aabb.GetVolume();
+			float cost = 2.0f * mergedVol;
+			float inheritanceCost = 2.0f * (mergedVol - vol);
 
-			Box3d MergedAABB = Box3d(m_nodes[index].aabb, leafAABB);
-			float MergedArea = MergedAABB.GetVolume();
-
-			// Cost of creating a new parent for this node and the new leaf
-			float cost = 2.0f * MergedArea;
-
-			// Minimum cost of pushing the leaf further down the tree
-			float inheritanceCost = 2.0f * (MergedArea - area);
-
-			// Cost of descending into child1
-			float cost1;
-			if (m_nodes[child1].IsLeaf())
+			int child[2] = {m_nodes[index].child1, m_nodes[index].child2};
+			float costChild[2];
+			
+			for (int k = 0; k < 2; ++k)
 			{
-				Box3d aabb = Box3d(leafAABB, m_nodes[child1].aabb);
-				cost1 = aabb.GetVolume() + inheritanceCost;
-			}
-			else
-			{
-				Box3d aabb = Box3d(leafAABB, m_nodes[child1].aabb);
-				float oldArea = m_nodes[child1].aabb.GetVolume();
-				float newArea = aabb.GetVolume();
-				cost1 = (newArea - oldArea) + inheritanceCost;
-			}
-
-			// Cost of descending into child2
-			float cost2;
-			if (m_nodes[child2].IsLeaf())
-			{
-				Box3d aabb = Box3d(leafAABB, m_nodes[child2].aabb);
-				cost2 = aabb.GetVolume() + inheritanceCost;
-			}
-			else
-			{
-				Box3d aabb = Box3d(leafAABB, m_nodes[child2].aabb);
-				float oldArea = m_nodes[child2].aabb.GetVolume();
-				float newArea = aabb.GetVolume();
-				cost2 = newArea - oldArea + inheritanceCost;
+				float ccost;
+				int c = child[k];
+				if (m_nodes[c].IsLeaf())
+				{
+					Box3d aabb = Box3d(leafAABB, m_nodes[c].aabb);
+					ccost = aabb.GetVolume() + inheritanceCost;
+				}
+				else
+				{
+					Box3d aabb = Box3d(leafAABB, m_nodes[c].aabb);
+					float oldVol = m_nodes[c].aabb.GetVolume();
+					float newVol = aabb.GetVolume();
+					ccost = (newVol - oldVol) + inheritanceCost;
+				}
+				costChild[k] = ccost;
 			}
 
-			// Descend according to the minimum cost.
-			if (cost < cost1 && cost < cost2)
+			if (cost < costChild[0] && cost < costChild[1])
 			{
 				break;
 			}
 
-			// Descend
-			if (cost1 < cost2)
-			{
-				index = child1;
-			}
-			else
-			{
-				index = child2;
-			}
+			index = costChild[0] < costChild[1] ? child[0] : child[1];
 		}
-
-		int sibling = index;
-
-		// Create a new parent.
-		int oldParent = m_nodes[sibling].parent;
-		int newParent = AllocateNode();
+		
+		int oldParent = m_nodes[index].parent;
+		int newParent = AllocNode();
 		m_nodes[newParent].parent = oldParent;
 		m_nodes[newParent].userData = nullptr;
-		m_nodes[newParent].aabb = Box3d(leafAABB, m_nodes[sibling].aabb);
-		m_nodes[newParent].height = m_nodes[sibling].height + 1;
+		m_nodes[newParent].aabb = Box3d(leafAABB, m_nodes[index].aabb);
+		m_nodes[newParent].height = m_nodes[index].height + 1;
 
 		if (oldParent != -1)
 		{
-			// The sibling was not the root.
-			if (m_nodes[oldParent].child1 == sibling)
+			if (m_nodes[oldParent].child1 == index)
 			{
 				m_nodes[oldParent].child1 = newParent;
 			}
@@ -380,22 +350,21 @@ private:
 				m_nodes[oldParent].child2 = newParent;
 			}
 
-			m_nodes[newParent].child1 = sibling;
+			m_nodes[newParent].child1 = index;
 			m_nodes[newParent].child2 = leaf;
-			m_nodes[sibling].parent = newParent;
+			m_nodes[index].parent = newParent;
 			m_nodes[leaf].parent = newParent;
 		}
 		else
 		{
-			// The sibling was the root.
-			m_nodes[newParent].child1 = sibling;
+			m_nodes[newParent].child1 = index;
 			m_nodes[newParent].child2 = leaf;
-			m_nodes[sibling].parent = newParent;
+			m_nodes[index].parent = newParent;
 			m_nodes[leaf].parent = newParent;
 			m_root = newParent;
 		}
 
-		// Walk back up the tree fixing heights and AABBs
+		// update AABBs from bottom up
 		index = m_nodes[leaf].parent;
 		while (index != -1)
 		{
@@ -412,8 +381,6 @@ private:
 
 			index = m_nodes[index].parent;
 		}
-
-		//Validate();
 	}
 	
 	void RemoveLeaf(int leaf)
@@ -426,32 +393,22 @@ private:
 
 		int parent = m_nodes[leaf].parent;
 		int grandParent = m_nodes[parent].parent;
-		int sibling;
-		if (m_nodes[parent].child1 == leaf)
-		{
-			sibling = m_nodes[parent].child2;
-		}
-		else
-		{
-			sibling = m_nodes[parent].child1;
-		}
+		int index = m_nodes[parent].child1 == leaf ? index = m_nodes[parent].child2 :	index = m_nodes[parent].child1;
 
 		if (grandParent != -1)
 		{
-			// Destroy parent and connect sibling to grandParent.
 			if (m_nodes[grandParent].child1 == parent)
 			{
-				m_nodes[grandParent].child1 = sibling;
+				m_nodes[grandParent].child1 = index;
 			}
 			else
 			{
-				m_nodes[grandParent].child2 = sibling;
+				m_nodes[grandParent].child2 = index;
 			}
-			m_nodes[sibling].parent = grandParent;
+			m_nodes[index].parent = grandParent;
 			FreeNode(parent);
 
-			// Adjust ancestor bounds.
-			int index = grandParent;
+			index = grandParent;
 			while (index != -1)
 			{
 				index = Balance(index);
@@ -467,12 +424,10 @@ private:
 		}
 		else
 		{
-			m_root = sibling;
-			m_nodes[sibling].parent = -1;
+			m_root = index;
+			m_nodes[index].parent = -1;
 			FreeNode(parent);
 		}
-
-		//Validate();
 	}
 
 	int Balance(int iA)
@@ -648,17 +603,18 @@ private:
 		int height = ComputeHeight(m_root);
 		return height;
 	}
-
-	void ValidateStructure(int index) const
+	
+	bool ValidateRecursive(int index) const
 	{
 		if (index == -1)
 		{
-			return;
+			return true;
 		}
 
 		if (index == m_root)
 		{
-			assert(m_nodes[index].parent == -1);
+			if (m_nodes[index].parent != -1)
+				return false;
 		}
 
 		const Node* node = &m_nodes[index];
@@ -668,27 +624,31 @@ private:
 
 		if (node->IsLeaf())
 		{
-			assert(child1 == -1);
-			assert(child2 == -1);
-			assert(node->height == 0);
-			return;
+			if (child1 != -1 || child2 != -1 || node->height != 0)
+				return false;
+			return true;
 		}
 
-		assert(0 <= child1 && child1 < m_nodeCapacity);
-		assert(0 <= child2 && child2 < m_nodeCapacity);
+		if (!(0 <= child1 && child1 < m_nodeCapacity))
+			return false;
+		
+		if (!(0 <= child2 && child2 < m_nodeCapacity))
+			return false;
 
-		assert(m_nodes[child1].parent == index);
-		assert(m_nodes[child2].parent == index);
+		if (m_nodes[child1].parent != index)
+			return false;
+		
+		if (m_nodes[child2].parent != index)
+			return false;
 
-		ValidateStructure(child1);
-		ValidateStructure(child2);
+		return ValidateRecursive(child1) && ValidateRecursive(child2);
 	}
 
-	void ValidateMetrics(int index) const
+	bool ValidateAABBs(int index) const
 	{
 		if (index == -1)
 		{
-			return;
+			return true;
 		}
 
 		const Node* node = &m_nodes[index];
@@ -698,47 +658,34 @@ private:
 
 		if (node->IsLeaf())
 		{
-			assert(child1 == -1);
-			assert(child2 == -1);
-			assert(node->height == 0);
-			return;
+			if (child1 != -1 || child2 != -1 || node->height != 0)
+				return false;
+			return true;
 		}
 
-		assert(0 <= child1 && child1 < m_nodeCapacity);
-		assert(0 <= child2 && child2 < m_nodeCapacity);
+		if (!(0 <= child1 && child1 < m_nodeCapacity))
+			return false;
+		
+		if (!(0 <= child2 && child2 < m_nodeCapacity))
+			return false;
 
 		int height1 = m_nodes[child1].height;
 		int height2 = m_nodes[child2].height;
-		int height;
-		height = 1 + std::max(height1, height2);
-		assert(node->height == height);
+		int height = 1 + std::max(height1, height2);
+		
+		if (node->height != height)
+			return false;
 
 		Box3d aabb;
 		aabb = Box3d(m_nodes[child1].aabb, m_nodes[child2].aabb);
 
-		assert(aabb.mMin == node->aabb.mMin);
-		assert(aabb.mMax == node->aabb.mMax);
+		if (aabb.mMin != node->aabb.mMin)
+			return false;
+		
+		if (aabb.mMax != node->aabb.mMax)
+			return false;
 
-		ValidateMetrics(child1);
-		ValidateMetrics(child2);
-	}
-
-	void Validate() const
-	{
-		ValidateStructure(m_root);
-		ValidateMetrics(m_root);
-
-		int freeCount = 0;
-		int freeIndex = m_freeList;
-		while (freeIndex != -1)
-		{
-			assert(0 <= freeIndex && freeIndex < m_nodeCapacity);
-			freeIndex = m_nodes[freeIndex].next;
-			++freeCount;
-		}
-
-		assert(GetHeight() == ComputeHeight());
-		assert(m_nodeCount + freeCount == m_nodeCapacity);
+		return ValidateAABBs(child1) && ValidateAABBs(child2);
 	}
 
 	int GetMaxBalance() const
@@ -770,5 +717,4 @@ private:
 	int m_nodeCount;
 	int m_nodeCapacity;
 	int m_freeList;
-	int m_insertionCount;
 };

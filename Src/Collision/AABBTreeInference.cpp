@@ -23,7 +23,7 @@ AABBTreeNodeInference* AABBTreeOffline::BuildInferenceTree()
 		AABBTreeNodeOffline* p = block.pMem;
 		for (int i = 0; i < block.nUsedNodes; ++i)
 		{
-			Compact[offset].BV = p[i].BV;
+			Compact[offset].aabb = p[i].aabb;
 			if (p[i].IsLeafNode())
 			{
 				const int index = p[i].IndexOffset;
@@ -34,14 +34,14 @@ AABBTreeNodeInference* AABBTreeOffline::BuildInferenceTree()
 			}
 			else
 			{
-				assert(p[i].Children[0]);
+				assert(p[i].child1);
 				uint32_t localNodeIndex = 0xffffffff;
 				uint32_t nodeBase = 0;
 				for (size_t j = 0; j < Blocks.size(); ++j)
 				{
-					if (p[i].Children[0] >= Blocks[j].pMem && p[i].Children[0] < Blocks[j].pMem + Blocks[j].nUsedNodes)
+					if (p[i].child1 >= Blocks[j].pMem && p[i].child1 < Blocks[j].pMem + Blocks[j].nUsedNodes)
 					{
-						localNodeIndex = (uint32_t)(p[i].Children[0] - Blocks[j].pMem);
+						localNodeIndex = (uint32_t)(p[i].child1 - Blocks[j].pMem);
 						break;
 					}
 					nodeBase += Blocks[j].nUsedNodes;

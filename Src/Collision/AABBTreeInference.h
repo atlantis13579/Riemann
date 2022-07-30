@@ -11,7 +11,7 @@ struct AABBTreeNodeInference
 {
 	inline const Box3d& GetBoundingVolume() const
 	{
-		return BV;
+		return aabb;
 	}
 
 	inline bool			IsLeafNode() const
@@ -74,7 +74,7 @@ struct AABBTreeNodeInference
 		return nullptr;
 	}
 
-	Box3d				BV;
+	Box3d				aabb;
 	uint32_t			Data;	// 27 bits node or prim index|4 bits #prims|1 bit leaf
 };
 

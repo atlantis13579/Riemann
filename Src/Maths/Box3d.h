@@ -244,7 +244,7 @@ public:
 
 	inline bool IsInside(const TAABB3<T>& rhs) const
 	{
-		return ((rhs.mMin.x <= mMin.x) && (rhs.mMax.x >= mMax.x) && (rhs.mMin.y <= mMin.y) && (rhs.mMax.y >= mMax.y) && (rhs.mMin.z <= mMin.z) && (rhs.mMax.z >= mMax.z));
+		return ((mMin.x <= rhs.mMin.x) && (mMax.x >= rhs.mMax.x) && (mMin.y <= rhs.mMin.y) && (mMax.y >= rhs.mMax.y) && (mMin.z <= rhs.mMin.z) && (mMax.z >= rhs.mMax.z));
 	}
 
 	bool		GetIntersection(const TVector3<T>& Bmin, const TVector3<T>& Bmax, TAABB3<T>& OutBox) const

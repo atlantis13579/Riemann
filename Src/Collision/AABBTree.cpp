@@ -102,7 +102,7 @@ void AABBTree::Statistic(TreeStatistics& stat)
 int AABBTree::IntersectPoint(const Vector3& Point) const
 {
 	AABBTreeNodeInference* p = m_AABBTreeInference;
-	if (p == nullptr || !p->BV.IsInside(Point))
+	if (p == nullptr || !p->aabb.IsInside(Point))
 	{
 		return -1;
 	}
@@ -116,12 +116,12 @@ int AABBTree::IntersectPoint(const Vector3& Point) const
 
 		AABBTreeNodeInference* Left = LEFT_NODE(p);
 		AABBTreeNodeInference* Right = RIGHT_NODE(p);
-		if (Left && Left->BV.IsInside(Point))
+		if (Left && Left->aabb.IsInside(Point))
 		{
 			p = Left;
 			continue;
 		}
-		if (Right && Right->BV.IsInside(Point))
+		if (Right && Right->aabb.IsInside(Point))
 		{
 			p = Right;
 			continue;
@@ -260,7 +260,7 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 	float t1, t2;
 	AABBTreeNodeInference* p = m_AABBTreeInference;
-	if (p == nullptr || !Ray.IntersectAABB(p->BV.mMin, p->BV.mMax, &t1))
+	if (p == nullptr || !Ray.IntersectAABB(p->aabb.mMin, p->aabb.mMax, &t1))
 	{
 		return false;
 	}
@@ -299,8 +299,8 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 			Result->AddTestCount(2);
 
-			bool hit1 = Ray.IntersectAABB(Left->BV.mMin, Left->BV.mMax, &t1);
-			bool hit2 = Ray.IntersectAABB(Right->BV.mMin, Right->BV.mMax, &t2);
+			bool hit1 = Ray.IntersectAABB(Left->aabb.mMin, Left->aabb.mMax, &t1);
+			bool hit2 = Ray.IntersectAABB(Right->aabb.mMin, Right->aabb.mMax, &t2);
 
             if (Option.Type != RayCastOption::RAYCAST_PENETRATE)
             {
@@ -397,7 +397,7 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 	const Box3d &aabb = geometry->GetBoundingVolume_WorldSpace();
 
 	AABBTreeNodeInference* p = m_AABBTreeInference;
-	if (p == nullptr || !aabb.Intersect(p->BV.mMin, p->BV.mMax))
+	if (p == nullptr || !aabb.Intersect(p->aabb.mMin, p->aabb.mMax))
 	{
 		return false;
 	}
@@ -431,13 +431,13 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 			AABBTreeNodeInference* Left = LEFT_NODE(p);
 			AABBTreeNodeInference* Right = Left + 1;
 
-			bool intersect1 = aabb.Intersect(Left->BV.mMin, Left->BV.mMax);
-			bool intersect2 = aabb.Intersect(Right->BV.mMin, Right->BV.mMax);
+			bool intersect1 = aabb.Intersect(Left->aabb.mMin, Left->aabb.mMax);
+			bool intersect2 = aabb.Intersect(Right->aabb.mMin, Right->aabb.mMax);
 
 			if (intersect1 && intersect2)
 			{
-				float d1 = (aabb.GetCenter() - Left->BV.GetCenter()).SquareLength();
-				float d2 = (aabb.GetCenter() - Right->BV.GetCenter()).SquareLength();
+				float d1 = (aabb.GetCenter() - Left->aabb.GetCenter()).SquareLength();
+				float d2 = (aabb.GetCenter() - Right->aabb.GetCenter()).SquareLength();
 
 				if (d1 < d2)
 				{
