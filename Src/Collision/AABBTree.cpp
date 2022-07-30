@@ -341,7 +341,7 @@ bool  AABBTree::RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option
 	return RayCast(ray, nullptr, &Option, Result);
 }
 
-static bool OverlapGeometries(Geometry *geometry, int* Indices, int NumIndices, Geometry** GeometryCollection, const OverlapOption* Option, OverlapResult* Result)
+static bool OverlapGeometries(const Geometry *geometry, int* Indices, int NumIndices, Geometry** GeometryCollection, const OverlapOption* Option, OverlapResult* Result)
 {
 	assert(NumIndices > 0);
 	if (GeometryCollection == nullptr)
@@ -379,7 +379,7 @@ static bool OverlapGeometries(Geometry *geometry, int* Indices, int NumIndices, 
 	return Result->overlaps;
 }
 
-bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const OverlapOption* Option, OverlapResult* Result) const
+bool AABBTree::Overlap(const Geometry *geometry, Geometry** ObjectCollection, const OverlapOption* Option, OverlapResult* Result) const
 {
 	Result->overlaps = false;
 	Result->overlapGeoms.clear();
@@ -426,19 +426,8 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 
 			if (intersect1 && intersect2)
 			{
-				float d1 = (aabb.GetCenter() - Left->aabb.GetCenter()).SquareLength();
-				float d2 = (aabb.GetCenter() - Right->aabb.GetCenter()).SquareLength();
-
-				if (d1 < d2)
-				{
-					p = Left;
-					stack.Push((uint32_t)(Right - m_AABBTreeInference));
-				}
-				else
-				{
-					p = Right;
-					stack.Push((uint32_t)(Left - m_AABBTreeInference));
-				}
+				p = Left;
+				stack.Push((uint32_t)(Right - m_AABBTreeInference));
 				continue;
 			}
 			else if (intersect1)

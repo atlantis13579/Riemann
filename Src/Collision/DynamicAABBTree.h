@@ -41,7 +41,8 @@ public:
 	bool 	Update(int nodeId, const Box3d& aabb, const Vector3& displacement);
 	
 	bool	RayCast(const Ray3d& Ray, const RayCastOption* Option, RayCastResult *Result) const;
-	bool	Overlap(Geometry *geometry, const OverlapOption* Option, OverlapResult *Result) const;
+	bool	Overlap(const Geometry *geometry, const OverlapOption* Option, OverlapResult *Result) const;
+	bool	Query(const Box3d& aabb, std::vector<void*> *Result) const;
 	
 	void 	Rebuild();
 	bool 	Validate() const;
@@ -51,7 +52,7 @@ private:
 	void 	FreeNode(int nodeId);
 	void 	InsertLeaf(int leaf);
 	void 	RemoveLeaf(int leaf);
-	int 	Balance(int iA);
+	int 	Balance(int nodeA);
 	
 	int 	GetHeight() const;
 	int 	ComputeHeight(int nodeId) const;

@@ -53,7 +53,6 @@ public:
 		{
 			return false;
 		}
-
 		Result->AddTestCount(1);
 
 		const Vector3 Origin_Local = m_CenterOfMassTransform.WorldToLocal(Origin);
