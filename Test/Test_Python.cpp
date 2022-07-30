@@ -4,7 +4,6 @@
 #include <chrono>
 
 #include "Test.h"
-#include "../Src/ImageSpace/ContinuousBitmap.h"
 #include "../Src/Tools/PhysxBinaryParser.h"
 #include "../Src/Tools/PythonModule.h"
 

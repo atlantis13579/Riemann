@@ -76,7 +76,7 @@ private:
 	int 	m_nMaxVelocityIterations;
 	int 	m_nMaxPositionIterations;
 	
-	std::vector<PositionConstraint>	m_PositionConstraints;
+	std::vector<PositionConstraint*>	m_PositionConstraints;
 };
 
 ResolutionPhase* ResolutionPhase::CreateSequentialImpulseSolver()

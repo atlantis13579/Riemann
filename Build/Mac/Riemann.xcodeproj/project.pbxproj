@@ -118,7 +118,6 @@
 		ADD23C55288762A600A849BE /* ImageProcessing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C51288762A600A849BE /* ImageProcessing.cpp */; };
 		ADD23C56288762A600A849BE /* ImageProcessing.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C52288762A600A849BE /* ImageProcessing.h */; };
 		ADD23C57288762A600A849BE /* Rasterizer.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C53288762A600A849BE /* Rasterizer.h */; };
-		ADD23C58288762A600A849BE /* ContinuousBitmap.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C54288762A600A849BE /* ContinuousBitmap.h */; };
 		ADD23C62288762AE00A849BE /* Vehicle.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C59288762AE00A849BE /* Vehicle.h */; };
 		ADD23C63288762AE00A849BE /* AutonomousController.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C5A288762AE00A849BE /* AutonomousController.h */; };
 		ADD23C64288762AE00A849BE /* VehicleDynamics.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C5B288762AE00A849BE /* VehicleDynamics.h */; };
@@ -211,6 +210,11 @@
 		ADD23D322887631800A849BE /* PCA.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D312887631800A849BE /* PCA.h */; };
 		ADF27299289544BB00E6FE68 /* MassSpring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADF27297289544BB00E6FE68 /* MassSpring.cpp */; };
 		ADF2729A289544BB00E6FE68 /* MassSpring.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF27298289544BB00E6FE68 /* MassSpring.h */; };
+		ADF2729C28954C8800E6FE68 /* ContinuousBitmap.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF2729B28954C8800E6FE68 /* ContinuousBitmap.h */; };
+		ADF272A128954DA600E6FE68 /* PBDRigidDynamicsSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADF2729D28954DA600E6FE68 /* PBDRigidDynamicsSolver.cpp */; };
+		ADF272A228954DA600E6FE68 /* XPBDRigidDynamicsSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF2729E28954DA600E6FE68 /* XPBDRigidDynamicsSolver.h */; };
+		ADF272A328954DA600E6FE68 /* PBDRigidDynamicsSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF2729F28954DA600E6FE68 /* PBDRigidDynamicsSolver.h */; };
+		ADF272A428954DA600E6FE68 /* XPBDRigidDynamicsSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADF272A028954DA600E6FE68 /* XPBDRigidDynamicsSolver.cpp */; };
 		ADF862252891875A00DBC516 /* FeatherstoneSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF862242891875A00DBC516 /* FeatherstoneSolver.h */; };
 		ADF8622B2891876C00DBC516 /* LinearRegression.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF862262891876B00DBC516 /* LinearRegression.h */; };
 		ADF8622C2891876C00DBC516 /* LevenbergMarquardt.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF862272891876B00DBC516 /* LevenbergMarquardt.h */; };
@@ -331,7 +335,6 @@
 		ADD23C51288762A600A849BE /* ImageProcessing.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ImageProcessing.cpp; path = ../../Src/ImageSpace/ImageProcessing.cpp; sourceTree = "<group>"; };
 		ADD23C52288762A600A849BE /* ImageProcessing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ImageProcessing.h; path = ../../Src/ImageSpace/ImageProcessing.h; sourceTree = "<group>"; };
 		ADD23C53288762A600A849BE /* Rasterizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Rasterizer.h; path = ../../Src/ImageSpace/Rasterizer.h; sourceTree = "<group>"; };
-		ADD23C54288762A600A849BE /* ContinuousBitmap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ContinuousBitmap.h; path = ../../Src/ImageSpace/ContinuousBitmap.h; sourceTree = "<group>"; };
 		ADD23C59288762AE00A849BE /* Vehicle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Vehicle.h; path = ../../Src/VehicleDynamics/Vehicle.h; sourceTree = "<group>"; };
 		ADD23C5A288762AE00A849BE /* AutonomousController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AutonomousController.h; path = ../../Src/VehicleDynamics/AutonomousController.h; sourceTree = "<group>"; };
 		ADD23C5B288762AE00A849BE /* VehicleDynamics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VehicleDynamics.h; path = ../../Src/VehicleDynamics/VehicleDynamics.h; sourceTree = "<group>"; };
@@ -425,6 +428,11 @@
 		ADE742E12820A994007DEEB3 /* libRiemann.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRiemann.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADF27297289544BB00E6FE68 /* MassSpring.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MassSpring.cpp; path = ../../Src/PositionBasedDynamics/MassSpring.cpp; sourceTree = "<group>"; };
 		ADF27298289544BB00E6FE68 /* MassSpring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MassSpring.h; path = ../../Src/PositionBasedDynamics/MassSpring.h; sourceTree = "<group>"; };
+		ADF2729B28954C8800E6FE68 /* ContinuousBitmap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ContinuousBitmap.h; path = ../../Src/Tools/ContinuousBitmap.h; sourceTree = "<group>"; };
+		ADF2729D28954DA600E6FE68 /* PBDRigidDynamicsSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PBDRigidDynamicsSolver.cpp; path = ../../Src/PositionBasedDynamics/PBDRigidDynamicsSolver.cpp; sourceTree = "<group>"; };
+		ADF2729E28954DA600E6FE68 /* XPBDRigidDynamicsSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XPBDRigidDynamicsSolver.h; path = ../../Src/PositionBasedDynamics/XPBDRigidDynamicsSolver.h; sourceTree = "<group>"; };
+		ADF2729F28954DA600E6FE68 /* PBDRigidDynamicsSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PBDRigidDynamicsSolver.h; path = ../../Src/PositionBasedDynamics/PBDRigidDynamicsSolver.h; sourceTree = "<group>"; };
+		ADF272A028954DA600E6FE68 /* XPBDRigidDynamicsSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = XPBDRigidDynamicsSolver.cpp; path = ../../Src/PositionBasedDynamics/XPBDRigidDynamicsSolver.cpp; sourceTree = "<group>"; };
 		ADF862242891875A00DBC516 /* FeatherstoneSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = FeatherstoneSolver.h; path = ../../Src/RigidBodyDynamics/FeatherstoneSolver.h; sourceTree = "<group>"; };
 		ADF862262891876B00DBC516 /* LinearRegression.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LinearRegression.h; path = ../../Src/Optimization/LinearRegression.h; sourceTree = "<group>"; };
 		ADF862272891876B00DBC516 /* LevenbergMarquardt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LevenbergMarquardt.h; path = ../../Src/Optimization/LevenbergMarquardt.h; sourceTree = "<group>"; };
@@ -506,6 +514,7 @@
 			children = (
 				ADD23C73288762B800A849BE /* AnimBinaryParser.cpp */,
 				ADD23C6F288762B800A849BE /* AnimBinaryParser.h */,
+				ADF2729B28954C8800E6FE68 /* ContinuousBitmap.h */,
 				ADD23C6E288762B800A849BE /* libBmp.h */,
 				ADD23C74288762B800A849BE /* libMat.h */,
 				ADD23C70288762B800A849BE /* libPng.h */,
@@ -582,8 +591,12 @@
 			children = (
 				ADF27297289544BB00E6FE68 /* MassSpring.cpp */,
 				ADF27298289544BB00E6FE68 /* MassSpring.h */,
+				ADF2729D28954DA600E6FE68 /* PBDRigidDynamicsSolver.cpp */,
+				ADF2729F28954DA600E6FE68 /* PBDRigidDynamicsSolver.h */,
 				ADD23CCB288762D300A849BE /* PositionBasedDynamicsSolver.cpp */,
 				ADD23CCC288762D300A849BE /* PositionBasedDynamicsSolver.h */,
+				ADF272A028954DA600E6FE68 /* XPBDRigidDynamicsSolver.cpp */,
+				ADF2729E28954DA600E6FE68 /* XPBDRigidDynamicsSolver.h */,
 			);
 			name = PositionBasedDynamics;
 			sourceTree = "<group>";
@@ -667,7 +680,6 @@
 		ADD23B92288760DA00A849BE /* ImageSpace */ = {
 			isa = PBXGroup;
 			children = (
-				ADD23C54288762A600A849BE /* ContinuousBitmap.h */,
 				ADD23C51288762A600A849BE /* ImageProcessing.cpp */,
 				ADD23C52288762A600A849BE /* ImageProcessing.h */,
 				ADD23C53288762A600A849BE /* Rasterizer.h */,
@@ -831,7 +843,6 @@
 				ADD23D26288762F900A849BE /* SingularValueDecomposition.h in Headers */,
 				ADD23BBE2887614E00A849BE /* SAP_Incremental.h in Headers */,
 				ADD23CB7288762CC00A849BE /* KeyFrameAnimation.h in Headers */,
-				ADD23C58288762A600A849BE /* ContinuousBitmap.h in Headers */,
 				ADD23BC02887614E00A849BE /* AABBTreeInference.h in Headers */,
 				ADD23C42288761AE00A849BE /* Polygon2d.h in Headers */,
 				ADD23CA0288762C000A849BE /* ProjectiveDynamicsSolver.h in Headers */,
@@ -875,6 +886,7 @@
 				ADD23C172887618C00A849BE /* StaticArray.h in Headers */,
 				ADD23C79288762B800A849BE /* PhysxBinaryParser.h in Headers */,
 				ADBBEE1F288C486800C3D6CD /* PositionConstraint.h in Headers */,
+				ADF272A328954DA600E6FE68 /* PBDRigidDynamicsSolver.h in Headers */,
 				ADD23C4F288761AE00A849BE /* Voronoi2d.h in Headers */,
 				ADD23C7D288762B800A849BE /* libPng.h in Headers */,
 				ADD23C212887619700A849BE /* Fracture.h in Headers */,
@@ -885,6 +897,7 @@
 				ADD23C4E288761AE00A849BE /* VoxelField.h in Headers */,
 				ADD23BCD2887614E00A849BE /* Simplex.h in Headers */,
 				ADD23CBD288762CC00A849BE /* PhysicsMaterial.h in Headers */,
+				ADF2729C28954C8800E6FE68 /* ContinuousBitmap.h in Headers */,
 				ADD23C62288762AE00A849BE /* Vehicle.h in Headers */,
 				ADD23C67288762AE00A849BE /* MPC.h in Headers */,
 				ADD23D2E288762F900A849BE /* EigenValueDecomposition.h in Headers */,
@@ -895,6 +908,7 @@
 				ADD23C4A288761AE00A849BE /* ConvexHull3d.h in Headers */,
 				ADF8622D2891876C00DBC516 /* LBFGS.h in Headers */,
 				ADD23C46288761AE00A849BE /* VHACD.h in Headers */,
+				ADF272A228954DA600E6FE68 /* XPBDRigidDynamicsSolver.h in Headers */,
 				ADD23C64288762AE00A849BE /* VehicleDynamics.h in Headers */,
 				ADAA4C492889930500E8AE2E /* SmoothedParticleHydrodynamics.h in Headers */,
 				ADD23CF8288762ED00A849BE /* Quaternion.h in Headers */,
@@ -1040,6 +1054,7 @@
 				ADD23BCB2887614E00A849BE /* AABBTreeInference.cpp in Sources */,
 				ADD23CBF288762CC00A849BE /* RigidBody.cpp in Sources */,
 				ADD23C012887616200A849BE /* Tetrahedral.cpp in Sources */,
+				ADF272A428954DA600E6FE68 /* XPBDRigidDynamicsSolver.cpp in Sources */,
 				ADD23BBD2887614E00A849BE /* GeometryIntersection.cpp in Sources */,
 				ADD23D1F288762F900A849BE /* JacobiIteration.cpp in Sources */,
 				ADD23D25288762F900A849BE /* GaussSeidelIteration.cpp in Sources */,
@@ -1073,6 +1088,7 @@
 				ADD23BD72887614E00A849BE /* DynamicAABBTree.cpp in Sources */,
 				ADD23BFC2887616200A849BE /* Capsule3d.cpp in Sources */,
 				ADAA4C4428898D6000E8AE2E /* Contact.cpp in Sources */,
+				ADF272A128954DA600E6FE68 /* PBDRigidDynamicsSolver.cpp in Sources */,
 				ADD23CB9288762CC00A849BE /* WarmStart.cpp in Sources */,
 				ADBBEE20288C486800C3D6CD /* PositionConstraint.cpp in Sources */,
 				ADD23C102887617000A849BE /* FEMSolver.cpp in Sources */,
