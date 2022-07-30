@@ -31,14 +31,14 @@ void WarmStart::Apply(Geometry* GeomA, Geometry* GeomB, Contact& contact, float 
     Vector3 collisionImpulse = normal * collisionImpulseVal;
 
     RigidBodyDynamic* rigidBodyDyn1 = rigidBodyA->CastDynamic();
-	if (rigidBodyDyn1 && !rigidBodyDyn1->Sleep)
+	if (rigidBodyDyn1 && !rigidBodyDyn1->mSleep)
 	{
         rigidBodyDyn1->P = rigidBodyDyn1->P - collisionImpulse;
         rigidBodyDyn1->L = rigidBodyDyn1->L - collisionImpulseVal * contact.PositionLocalA.Cross(normal);
     }
 
 	RigidBodyDynamic* rigidBodyDyn2 = rigidBodyB->CastDynamic();
-    if (rigidBodyDyn2 && !rigidBodyDyn2->Sleep)
+    if (rigidBodyDyn2 && !rigidBodyDyn2->mSleep)
     {
         rigidBodyDyn2->P = rigidBodyDyn2->P + collisionImpulse;
         rigidBodyDyn2->L = rigidBodyDyn2->L - collisionImpulseVal * contact.PositionLocalB.Cross(normal);
@@ -49,13 +49,13 @@ void WarmStart::Apply(Geometry* GeomA, Geometry* GeomB, Contact& contact, float 
     float frictionImpulseVal = contact.totalImpulseTangent;
     Vector3 frictionImpulse = tangent * frictionImpulseVal;
 
-    if (rigidBodyDyn1 && !rigidBodyDyn1->Sleep)
+    if (rigidBodyDyn1 && !rigidBodyDyn1->mSleep)
     {
         rigidBodyDyn1->P = rigidBodyDyn1->P - frictionImpulse;
         rigidBodyDyn1->L = rigidBodyDyn1->L - frictionImpulseVal * contact.PositionLocalA.Cross(tangent);
     }
 
-    if (rigidBodyDyn2 && !rigidBodyDyn2->Sleep)
+    if (rigidBodyDyn2 && !rigidBodyDyn2->mSleep)
     {
         rigidBodyDyn2->P = rigidBodyDyn2->P + frictionImpulse;
         rigidBodyDyn2->L = rigidBodyDyn2->L - frictionImpulseVal * contact.PositionLocalB.Cross(tangent);

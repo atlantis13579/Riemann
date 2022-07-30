@@ -14,7 +14,7 @@ public:
 
 	virtual bool ApplyForce(RigidBodyDynamic* Rigid) override final
 	{
-		if (Rigid->DisableGravity)
+		if (Rigid->mDisableGravity)
 		{
 			return true;
 		}

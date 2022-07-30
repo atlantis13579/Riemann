@@ -152,18 +152,22 @@ public:
 	Vector3		ExtTorque;
 
 	MorionType	mMotionType;
-	float		LinearDamping;
-	float		AngularDamping;
-	float		MaxContactImpulse;
-	float		SleepThreshold;
-	float		FreezeThreshold;
-	bool		DisableGravity;
-	bool		Sleep;
+	float		mLinearDamping;
+	float		mAngularDamping;
+	float		mMaxContactImpulse;
+	float		mSleepThreshold;
+	float		mFreezeThreshold;
+	bool		mDisableGravity;
+	bool		mSleep;
 
 	void		ApplyForce(const Vector3& Force);
 	void		ApplyTorgue(const Vector3& Torque);
 	void		ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force);
-
+	
+	bool		AutoSleep();
+	void		Sleep();
+	void		Wakeup();
+	
 	static RigidBodyDynamic* CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
 
 private:

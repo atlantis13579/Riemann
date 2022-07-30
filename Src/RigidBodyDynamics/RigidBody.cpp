@@ -198,13 +198,13 @@ RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, Geometry* geom)
 	this->L = this->InvInertia.Invertible() ? this->InvInertia.Inverse() * param.angularVelocity : Vector3::Zero();
 	this->ExtForce = Vector3::Zero();
 	this->ExtTorque = Vector3::Zero();
-	this->LinearDamping = param.linearDamping;
-	this->AngularDamping = param.angularDamping;
-	this->MaxContactImpulse = param.maxContactImpulse;
-	this->SleepThreshold = param.sleepThreshold;
-	this->FreezeThreshold = param.freezeThreshold;
-	this->DisableGravity = param.disableGravity;
-	this->Sleep = false;
+	this->mLinearDamping = param.linearDamping;
+	this->mAngularDamping = param.angularDamping;
+	this->mMaxContactImpulse = param.maxContactImpulse;
+	this->mSleepThreshold = param.sleepThreshold;
+	this->mFreezeThreshold = param.freezeThreshold;
+	this->mDisableGravity = param.disableGravity;
+	this->mSleep = false;
 	if (geom) this->AddGeometry(geom);
 }
 
@@ -218,9 +218,31 @@ void		RigidBodyDynamic::ApplyTorgue(const Vector3& Torque)
 	this->ExtTorque += Torque;
 }
 
-void RigidBodyDynamic::ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force)
+void 		RigidBodyDynamic::ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force)
 {
 	this->ExtTorque += RelativePosToCenterOfMass.Cross(Force);
+}
+
+
+bool		RigidBodyDynamic::AutoSleep()
+{
+	float k = GetKinematicsEnergy();
+	if (k < mSleepThreshold)
+	{
+		Sleep();
+		return true;
+	}
+	return mSleep;
+}
+
+void		RigidBodyDynamic::Sleep()
+{
+	mSleep = true;
+}
+
+void		RigidBodyDynamic::Wakeup()
+{
+	mSleep = false;
 }
 
 RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
