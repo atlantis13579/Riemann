@@ -2,6 +2,7 @@
 #include <assert.h>
 #include "MotionIntegration.h"
 #include "RigidBody.h"
+#include "RigidBodySimulation.h"
 #include "../Collision/GeometryObject.h"
 #include "../Solver/NumericalODESolver.h"
 
@@ -78,9 +79,10 @@ static void Integrate_ImplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float
 }
 
 // static
-void MotionIntegration::Integrate(std::vector<RigidBodyDynamic*> Bodies, float dt, IntegrateMethod method)
+void MotionIntegration::Integrate(std::vector<RigidBodyDynamic*> Bodies, float dt, uint8_t method)
 {
-	switch (method)
+	IntegrateMethod m = (IntegrateMethod)method;
+	switch (m)
 	{
 	case IntegrateMethod::ExplicitEuler:
 		Integrate_ExplicitEuler(Bodies, dt);

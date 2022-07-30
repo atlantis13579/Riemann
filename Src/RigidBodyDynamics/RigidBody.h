@@ -78,7 +78,9 @@ public:
 	// Constant quantities
 	float		InvMass;		// Inverse of Total Mass
 	Matrix3		InvInertia;		// Inverse of Inertia Tensor
-
+	
+	int			mNodeId;		// nodeId from DynamicAABB Tree
+	
 private:
 	PhysicsMaterial* mMaterial;	// Not hold the memory
 

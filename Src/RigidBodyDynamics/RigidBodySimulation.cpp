@@ -21,7 +21,8 @@ RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 	m_NPhase = NarrowPhase::Create_GJKEPA();
 	m_RPhase = ResolutionPhase::CreateSequentialImpulseSolver();
 	m_GeometryQuery = new GeometryQuery;
-	m_Fields.push_back(ForceField::CreateGrivityField(param.Gravity));
+	m_IntegrateMethod = param.integrateMethod;
+	m_Fields.push_back(ForceField::CreateGrivityField(param.gravity));
 	m_SharedMem = nullptr;
 	m_SharedMemSize = 0;
 }
@@ -100,7 +101,7 @@ void		RigidBodySimulation::SimulateST(float dt)
 
 	ApplyForceFields();
 
-	MotionIntegration::Integrate(m_DynamicBodies, dt, MotionIntegration::IntegrateMethod::ExplicitEuler);
+	MotionIntegration::Integrate(m_DynamicBodies, dt, (int)m_IntegrateMethod);
 	return;
 }
 

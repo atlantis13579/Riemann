@@ -202,6 +202,11 @@ public:
 	{
 		return m_staticGeometry;
 	}
+	
+	DynamicAABBTree*	GetDynamicTree()
+	{
+		return m_dynamicPruner;
+	}
 
 private:
 	std::vector<Geometry*>	m_Objects;

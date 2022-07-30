@@ -10,6 +10,7 @@ RigidBody::RigidBody()
 {
 	mGeometry = nullptr;
 	mMaterial = nullptr;
+	mNodeId = -1;
 }
 
 RigidBody::~RigidBody()
@@ -232,6 +233,8 @@ RigidBodyKinematics::RigidBodyKinematics()
 	mRigidType = RigidType::Kinematic;
 	InvMass = 0.0f;
 	InvInertia = Matrix3::Zero();
+	X = Vector3::Zero();
+	Q = Quaternion::One();
 	P = Vector3::Zero();
 	L = Vector3::Zero();
 }

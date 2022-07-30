@@ -13,9 +13,50 @@ class ResolutionPhase;
 class ForceField;
 class KinematicsDriver;
 
+enum class BroadPhaseAlgorithm : uint8_t
+{
+	SAP,
+	AllPairs,
+	DynamicAABB,
+};
+
+enum class NarrowPhaseAlgorithm : uint8_t
+{
+	GJKEPA,
+	PCM,
+};
+
+enum class RigidSolver : uint8_t
+{
+	SequentialImpulse,
+	LCPGlobal,
+	PBD,
+	XPBD,
+};
+
+enum class IntegrateMethod : uint8_t
+{
+	ExplicitEuler,
+	MidpointEuler,
+	SymplecticEuler,
+	ImplicitEuler
+};
+
 struct RigidBodySimulationParam
 {
-	Vector3 Gravity;
+	RigidBodySimulationParam()
+	{
+		gravity = Vector3::Zero();
+		broadphase = BroadPhaseAlgorithm::SAP;
+		narrowphase = NarrowPhaseAlgorithm::GJKEPA;
+		solver = RigidSolver::SequentialImpulse;
+		integrateMethod = IntegrateMethod::ExplicitEuler;
+	}
+	Vector3 				gravity;
+	BroadPhaseAlgorithm		broadphase;
+	NarrowPhaseAlgorithm	narrowphase;
+	RigidSolver				solver;
+	IntegrateMethod 		integrateMethod;
 };
 
 class RigidBodySimulation
@@ -56,6 +97,7 @@ private:
 	BroadPhase*						m_BPhase;
 	NarrowPhase*					m_NPhase;
 	ResolutionPhase*				m_RPhase;
+	IntegrateMethod					m_IntegrateMethod;
 	std::vector<ForceField*>		m_Fields;
 	void*							m_SharedMem;
 	size_t							m_SharedMemSize;
