@@ -58,7 +58,7 @@ void AABBTree::Statistic(TreeStatistics& stat)
 {
 	memset(&stat, 0, sizeof(stat));
 
-	StaticStack<uint32_t, RAYCAST_STACK_SIZE> stack;
+	StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
 	stack.Push(0);
 
 	while (!stack.Empty())
@@ -67,7 +67,7 @@ void AABBTree::Statistic(TreeStatistics& stat)
 
 		while (p)
 		{
-			if (p->IsLeafNode())
+			if (p->IsLeaf())
 			{
 				stat.NumNodes += 1;
 				stat.MaxGeometriesAtLeaf = std::max(stat.MaxGeometriesAtLeaf, p->GetNumGeometries());
@@ -109,7 +109,7 @@ int AABBTree::IntersectPoint(const Vector3& Point) const
 
 	while (p)
 	{
-		if (p->IsLeafNode())
+		if (p->IsLeaf())
 		{
 			return GET_INDEX(p);
 		}
@@ -133,13 +133,13 @@ int AABBTree::IntersectPoint(const Vector3& Point) const
 	return -1;
 }
 
-static int RayIntersectGeometry(const Ray3d& Ray, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Box3d& BV, const RayCastOption& Option, RayCastResult* Result)
+static int RayIntersectGeometries(const Ray3d& Ray, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Box3d& BV, const RayCastOption* Option, RayCastResult* Result)
 {
 	assert(NumGeoms > 0);
 	if (GeometryCollection == nullptr)
 	{
 		float t;
-		if (Ray.IntersectAABB(BV.mMin, BV.mMax, &t) && t < Option.MaxDist)
+		if (Ray.IntersectAABB(BV.mMin, BV.mMax, &t) && t < Option->MaxDist)
 		{
 			Result->hit = true;
 			if (t < Result->hitTimeMin)
@@ -161,26 +161,21 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Geoms, int NumGeoms, Geom
 		Geometry *Geom = GeometryCollection[index];
         assert(Geom);
 		
-		if (Geom == Option.Cache.prevhitGeom)
+		if (Geom == Option->Cache.prevhitGeom)
 		{
 			continue;
 		}
-		
-		if (Option.Filter && !Option.Filter->IsCollidable(Option.FilterData, Geom->GetFilterData()))
-		{
-			continue;
-		}
-		
-		bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, &Option, Result);
+
+		bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, Option, Result);
 		if (hit)
 		{
-			if (Option.Type == RayCastOption::RAYCAST_ANY)
+			if (Option->Type == RayCastOption::RAYCAST_ANY)
 			{
 				min_idx = index;
 				min_t = Result->hitTime;
 				break;
 			}
-            else if (Option.Type == RayCastOption::RAYCAST_PENETRATE)
+            else if (Option->Type == RayCastOption::RAYCAST_PENETRATE)
             {
                 Result->hitGeometries.push_back(Geom);
             }
@@ -205,17 +200,12 @@ static int RayIntersectGeometry(const Ray3d& Ray, int* Geoms, int NumGeoms, Geom
 	return min_idx;
 }
 
-bool RayIntersectCacheObj(const Ray3d& Ray, const RayCastOption& Option, RayCastResult* Result)
+bool RayIntersectCacheObj(const Ray3d& Ray, const RayCastOption* Option, RayCastResult* Result)
 {
-	const RayCastCache& Cache = Option.Cache;
+	const RayCastCache& Cache = Option->Cache;
 	if (Cache.prevhitGeom)
 	{
-		if (Option.Filter && !Option.Filter->IsCollidable(Option.FilterData, Cache.prevhitGeom->GetFilterData()))
-		{
-			return false;
-		}
-		
-		bool hit = Cache.prevhitGeom->RayCast(Ray.Origin, Ray.Dir, &Option, Result);
+		bool hit = Cache.prevhitGeom->RayCast(Ray.Origin, Ray.Dir, Option, Result);
 		if (hit)
 		{
 			Result->hit = true;
@@ -227,18 +217,18 @@ bool RayIntersectCacheObj(const Ray3d& Ray, const RayCastOption& Option, RayCast
 	return false;
 }
 
-bool RestoreCacheStack(const RayCastOption& Option, StaticStack<uint32_t, RAYCAST_STACK_SIZE>* Stack)
+bool RestoreCacheStack(const RayCastOption* Option, StaticStack<uint32_t, TREE_MAX_DEPTH>* Stack)
 {
-	const RayCastCache& Cache = Option.Cache;
+	const RayCastCache& Cache = Option->Cache;
 	if (!Cache.prevStack.Empty())
 	{
-		Stack->Restore(Option.Cache.prevStack);
+		Stack->Restore(Option->Cache.prevStack);
 		return true;
 	}
 	return false;
 }
 
-bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const RayCastOption& Option, RayCastResult* Result) const
+bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const
 {
 	Result->hit = false;
 	Result->hitTestCount = 0;
@@ -247,12 +237,12 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 	if (RayIntersectCacheObj(Ray, Option, Result))
 	{
-		if (Option.Type == RayCastOption::RAYCAST_ANY)
+		if (Option->Type == RayCastOption::RAYCAST_ANY)
 		{
 			Result->hitPoint = Ray.PointAt(Result->hitTimeMin);
 			return true;
 		}
-		else if (Option.Type == RayCastOption::RAYCAST_PENETRATE)
+		else if (Option->Type == RayCastOption::RAYCAST_PENETRATE)
 		{
 			Result->hitGeometries.push_back(Result->hitGeom);
 		}
@@ -260,12 +250,12 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 	float t1, t2;
 	AABBTreeNodeInference* p = m_AABBTreeInference;
-	if (p == nullptr || !Ray.IntersectAABB(p->aabb.mMin, p->aabb.mMax, &t1))
+	if (p == nullptr || !Ray.IntersectAABB(p->aabb.mMin, p->aabb.mMax, &t1) || t1 >= Option->MaxDist)
 	{
 		return false;
 	}
 
-	StaticStack<uint32_t, RAYCAST_STACK_SIZE> stack;
+	StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
 	if (!RestoreCacheStack(Option, &stack))
 	{
 		stack.Push(0);
@@ -273,19 +263,19 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 	while (!stack.Empty())
 	{
-		AABBTreeNodeInference* p = m_AABBTreeInference + stack.Pop();
+		p = m_AABBTreeInference + stack.Pop();
 
 		while (p)
 		{
-			if (p->IsLeafNode())
+			if (p->IsLeaf())
 			{
 				int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 				int	 nPrimitives = p->GetNumGeometries();
 				const Box3d& Box = p->GetBoundingVolume();
-				int HitId =	RayIntersectGeometry(Ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
+				int HitId =	RayIntersectGeometries(Ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
 				if (HitId >= 0)
 				{
-					if (Option.Type == RayCastOption::RAYCAST_ANY)
+					if (Option->Type == RayCastOption::RAYCAST_ANY)
 					{
 						Result->hitPoint = Ray.PointAt(Result->hitTimeMin);
 						return true;
@@ -302,10 +292,10 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 			bool hit1 = Ray.IntersectAABB(Left->aabb.mMin, Left->aabb.mMax, &t1);
 			bool hit2 = Ray.IntersectAABB(Right->aabb.mMin, Right->aabb.mMax, &t2);
 
-            if (Option.Type != RayCastOption::RAYCAST_PENETRATE)
+            if (Option->Type != RayCastOption::RAYCAST_PENETRATE)
             {
-                hit1 = hit1 && t1 < Result->hitTimeMin && t1 < Option.MaxDist;
-                hit2 = hit2 && t2 < Result->hitTimeMin && t2 < Option.MaxDist;
+                hit1 = hit1 && t1 < Result->hitTimeMin && t1 < Option->MaxDist;
+                hit2 = hit2 && t2 < Result->hitTimeMin && t2 < Option->MaxDist;
             }
             
 			if (hit1 && hit2)
@@ -348,10 +338,10 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 bool  AABBTree::RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const
 {
-	return RayCast(ray, nullptr, Option, Result);
+	return RayCast(ray, nullptr, &Option, Result);
 }
 
-static bool OverlapGeometry(Geometry *geometry, int* Indices, int NumIndices, Geometry** GeometryCollection, const OverlapOption& Option, OverlapResult* Result)
+static bool OverlapGeometries(Geometry *geometry, int* Indices, int NumIndices, Geometry** GeometryCollection, const OverlapOption* Option, OverlapResult* Result)
 {
 	assert(NumIndices > 0);
 	if (GeometryCollection == nullptr)
@@ -361,26 +351,26 @@ static bool OverlapGeometry(Geometry *geometry, int* Indices, int NumIndices, Ge
 
 	for (int i = 0; i < NumIndices; ++i)
 	{
-		Result->AddTestCount(1);
-
 		const int index = Indices[i];
 		Geometry* candidate = GeometryCollection[index];
 
-		if (Option.Filter && !Option.Filter->IsCollidable(Option.FilterData, candidate->GetFilterData()))
+		if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, candidate->GetFilterData()))
 		{
-			continue;
+			return false;
 		}
 		
+		Result->AddTestCount(1);
+
 		bool overlap = geometry->Overlap(candidate);
 		if (overlap)
 		{
 			Result->overlaps = true;
-			if (Result->overlapGeoms.size() < Option.maxOverlaps)
+			if (Result->overlapGeoms.size() < Option->maxOverlaps)
 			{
 				Result->overlapGeoms.push_back(candidate);
 			}
 
-			if (Result->overlapGeoms.size() >= Option.maxOverlaps)
+			if (Result->overlapGeoms.size() >= Option->maxOverlaps)
 			{
 				return true;
 			}
@@ -389,7 +379,7 @@ static bool OverlapGeometry(Geometry *geometry, int* Indices, int NumIndices, Ge
 	return Result->overlaps;
 }
 
-bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const OverlapOption& Option, OverlapResult* Result)
+bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const OverlapOption* Option, OverlapResult* Result) const
 {
 	Result->overlaps = false;
 	Result->overlapGeoms.clear();
@@ -402,7 +392,7 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 		return false;
 	}
 
-	StaticStack<uint32_t, RAYCAST_STACK_SIZE> stack;
+	StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
 	stack.Push(0);
 
 	while (!stack.Empty())
@@ -411,14 +401,14 @@ bool AABBTree::Overlap(Geometry *geometry, Geometry** ObjectCollection, const Ov
 
 		while (p)
 		{
-			if (p->IsLeafNode())
+			if (p->IsLeaf())
 			{
 				int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 				int	 nPrimitives = p->GetNumGeometries();
-				bool overlap = OverlapGeometry(geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Option, Result);
+				bool overlap = OverlapGeometries(geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Option, Result);
 				if (overlap)
 				{
-					if (Result->overlapGeoms.size() >= Option.maxOverlaps)
+					if (Result->overlapGeoms.size() >= Option->maxOverlaps)
 					{
 						return true;
 					}

@@ -37,7 +37,7 @@ void TestDynamicAABB()
 	for (size_t i = 0; i < geoms.size(); ++i)
 	{
 		Geometry* obb = geoms[i];
-		tree.AddNode(obb->GetBoundingVolume_WorldSpace(), obb);
+		tree.Add(obb->GetBoundingVolume_WorldSpace(), obb);
 		EXPECT(tree.Validate());
 	}
 	

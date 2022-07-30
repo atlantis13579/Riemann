@@ -27,12 +27,12 @@ public:
 		GeometryFactory::ObjectCount[(int)m_Type]--;
 	}
 
-	virtual Matrix3		GetInertia_LocalSpace(float Mass) const override final
+	virtual Matrix3			GetInertia_LocalSpace(float Mass) const override final
 	{
 		return GEOM_TYPE::GetInertiaTensor(Mass);
 	}
 
-	virtual Vector3		GetSupport_LocalSpace(const Vector3& Dir) const override final
+	virtual Vector3			GetSupport_LocalSpace(const Vector3& Dir) const override final
 	{
 		return GEOM_TYPE::GetSupport(Dir);
 	}
@@ -49,6 +49,11 @@ public:
 
 	virtual bool			RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption* Option, RayCastResult* Result) const override final
 	{
+		if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, this->GetFilterData()))
+		{
+			return false;
+		}
+
 		Result->AddTestCount(1);
 
 		const Vector3 Origin_Local = m_CenterOfMassTransform.WorldToLocal(Origin);

@@ -14,7 +14,7 @@ struct AABBTreeNodeInference
 		return aabb;
 	}
 
-	inline bool			IsLeafNode() const
+	inline bool			IsLeaf() const
 	{
 		return Data & 1;
 	}

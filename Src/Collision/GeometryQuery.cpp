@@ -30,7 +30,9 @@ GeometryQuery::~GeometryQuery()
 
 void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode)
 {
-	if (m_staticGeometry == nullptr && Objects.size() > 0)
+	SAFE_DELETE(m_staticGeometry);
+	
+	if (Objects.size() > 0)
 	{
 		m_staticGeometry = new AABBTree;
 
@@ -50,23 +52,53 @@ void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, i
 bool GeometryQuery::RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption& Option, RayCastResult* Result)
 {
 	Result->Reset();
+	
+	bool hit = false;
+	
 	if (m_staticGeometry)
 	{
 		Ray3d ray(Origin, Dir);
 		Geometry** pp = &m_Objects[0];
-		return m_staticGeometry->RayCast(ray, pp, Option, Result);
+		hit = m_staticGeometry->RayCast(ray, pp, &Option, Result);
+		
+		if (Option.Type == RayCastOption::RAYCAST_ANY && hit)
+		{
+			return true;
+		}
 	}
-	return false;
+	
+	if (m_dynamicPruner)
+	{
+		Ray3d ray(Origin, Dir);
+		RayCastResult Result2;
+		bool hit_dynamic = m_dynamicPruner->RayCast(ray, &Option, &Result2);
+		if (hit_dynamic)
+		{
+			if (!hit)
+			{
+				*Result = Result2;
+			}
+			else
+			{
+				Result->Merge(Result2);
+			}
+			return true;
+		}
+	}
+	
+	return hit;
 }
 
 bool GeometryQuery::OverlapBox(const Vector3& Center, const Vector3& Extent, const OverlapOption& Option, OverlapResult* Result)
 {
 	Result->Reset();
+	
 	if (m_staticGeometry)
 	{
+		// TODO, Box
 		Geometry* Box = GeometryFactory::CreateOBB(Center, Extent);
 		Geometry** pp = &m_Objects[0];
-		m_staticGeometry->Overlap(Box, pp, Option, Result);
+		m_staticGeometry->Overlap(Box, pp, &Option, Result);
 		GeometryFactory::DeleteGeometry(Box);
 		return Result->overlaps;
 	}

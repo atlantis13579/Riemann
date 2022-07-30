@@ -11,7 +11,7 @@ class DynamicAABBTree;
 class SparseSpatialHash;
 class Geometry;
 
-#define RAYCAST_STACK_SIZE		(32)
+#define TREE_MAX_DEPTH		(32)
 
 struct RayCastCache
 {
@@ -21,8 +21,8 @@ struct RayCastCache
 		prevStack.Clear();
 	}
 
-	Geometry*									prevhitGeom;
-	StaticStack<uint32_t, RAYCAST_STACK_SIZE>	prevStack;
+	Geometry*								prevhitGeom;
+	StaticStack<uint32_t, TREE_MAX_DEPTH>	prevStack;
 };
 
 class CollisionFilter
@@ -42,6 +42,7 @@ struct RayCastOption
         RAYCAST_ANY = 1,
         RAYCAST_PENETRATE = 2,
 	};
+	
 	RayCastOption()
 	{
 		Type = RAYCAST_NEAREST;
@@ -49,6 +50,7 @@ struct RayCastOption
         MaxObjects = INT_MAX;
 		Filter = nullptr;
 	}
+	
 	RayCastType		Type;
 	RayCastCache	Cache;
 	float			MaxDist;
@@ -77,6 +79,35 @@ struct RayCastResult
 		hitTestCount = 0;
         #endif //_DEBUG
 	}
+	
+	RayCastResult& operator =(const RayCastResult& rhs)
+	{
+		hit = rhs.hit;
+		hitTime = rhs.hitTime;
+		hitTimeMin = rhs.hitTimeMin;
+		hitPoint = rhs.hitPoint;
+		hitNormal = rhs.hitNormal;
+		hitGeom = rhs.hitGeom;
+		hitGeometries = rhs.hitGeometries;
+		#ifdef _DEBUG
+		hitTestCount = rhs.hitTestCount;
+		#endif //_DEBUG
+		return *this;
+	}
+	
+	void Merge(const RayCastResult& rhs)
+	{
+		hit = hit || rhs.hit;
+		hitPoint = hitTimeMin < rhs.hitTimeMin ? hitPoint : rhs.hitPoint;
+		hitNormal = hitTimeMin < rhs.hitTimeMin ? hitNormal : rhs.hitNormal;
+		hitGeom = hitTimeMin < rhs.hitTimeMin ? hitGeom : rhs.hitGeom;
+		hitTime = hitTime < rhs.hitTime ? hitTime : rhs.hitTime;
+		hitTimeMin = hitTimeMin < rhs.hitTimeMin ? hitTimeMin : rhs.hitTimeMin;
+		hitGeometries.insert(hitGeometries.end(), rhs.hitGeometries.begin(), rhs.hitGeometries.end());
+		#ifdef _DEBUG
+		hitTestCount += rhs.hitTestCount;
+		#endif //_DEBUG
+	}
 
 	void AddTestCount(int Count)
 	{
@@ -93,7 +124,7 @@ struct RayCastResult
 	Geometry*				hitGeom;
     std::vector<Geometry*>  hitGeometries;
     
-	int			hitTestCount;       // debug
+	int						hitTestCount;       // debug
 };
 
 struct SweepOption
@@ -113,11 +144,13 @@ struct OverlapOption
 	enum OverlapTestType
 	{
 	};
+	
 	OverlapOption()
 	{
 		maxOverlaps = 1;
 		Filter = nullptr;
 	}
+	
 	unsigned int	maxOverlaps;
 	CollisionData 	FilterData;
 	CollisionFilter	*Filter;
