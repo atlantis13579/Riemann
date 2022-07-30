@@ -1,6 +1,6 @@
 
 #include "Contact.h"
-#include "ConstraintSolver.h"
+#include "PositionConstraint.h"
 #include "Jacobian.h"
 #include "RigidBody.h"
 #include "SequentialImpulseSolver.h"

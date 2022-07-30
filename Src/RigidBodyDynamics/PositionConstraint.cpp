@@ -1,4 +1,4 @@
-#include "ConstraintSolver.h"
+#include "PositionConstraint.h"
 
 class FixedConstraint : public PositionConstraint
 {

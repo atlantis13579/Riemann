@@ -152,13 +152,13 @@ public:
 	Vector3		ExtTorque;
 
 	MorionType	mMotionType;
-	float		mLinearDamping;
-	float		mAngularDamping;
-	float		mMaxContactImpulse;
-	float		mSleepThreshold;
-	float		mFreezeThreshold;
-	bool		mDisableGravity;
-	bool		mSleep;
+	float		LinearDamping;
+	float		AngularDamping;
+	float		MaxContactImpulse;
+	float		SleepThreshold;
+	float		FreezeThreshold;
+	bool		DisableGravity;
+	bool		Sleeping;
 
 	void		ApplyForce(const Vector3& Force);
 	void		ApplyTorgue(const Vector3& Torque);

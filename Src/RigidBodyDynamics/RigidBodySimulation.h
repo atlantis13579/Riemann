@@ -13,20 +13,20 @@ class ResolutionPhase;
 class ForceField;
 class KinematicsDriver;
 
-enum class BroadPhaseAlgorithm : uint8_t
+enum class BroadPhaseSolver : uint8_t
 {
 	SAP,
 	AllPairs,
 	DynamicAABB,
 };
 
-enum class NarrowPhaseAlgorithm : uint8_t
+enum class NarrowPhaseSolver : uint8_t
 {
 	GJKEPA,
 	PCM,
 };
 
-enum class RigidSolver : uint8_t
+enum class ConstraintSolver : uint8_t
 {
 	SequentialImpulse,
 	LCPGlobal,
@@ -47,16 +47,16 @@ struct RigidBodySimulationParam
 	RigidBodySimulationParam()
 	{
 		gravity = Vector3::Zero();
-		broadphase = BroadPhaseAlgorithm::SAP;
-		narrowphase = NarrowPhaseAlgorithm::GJKEPA;
-		solver = RigidSolver::SequentialImpulse;
+		broadphase = BroadPhaseSolver::SAP;
+		narrowphase = NarrowPhaseSolver::GJKEPA;
+		constraintSolver = ConstraintSolver::SequentialImpulse;
 		integrateMethod = IntegrateMethod::ExplicitEuler;
 	}
-	Vector3 				gravity;
-	BroadPhaseAlgorithm		broadphase;
-	NarrowPhaseAlgorithm	narrowphase;
-	RigidSolver				solver;
-	IntegrateMethod 		integrateMethod;
+	Vector3 			gravity;
+	BroadPhaseSolver	broadphase;
+	NarrowPhaseSolver	narrowphase;
+	ConstraintSolver	constraintSolver;
+	IntegrateMethod 	integrateMethod;
 };
 
 class RigidBodySimulation
