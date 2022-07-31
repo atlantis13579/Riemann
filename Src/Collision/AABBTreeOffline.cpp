@@ -36,8 +36,8 @@ int AABBTreeNodeOffline::SplitAxis(const AABBTreeBuildData& Params, int *pGeomet
 
 void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 {
-	int* geoms = Params.pIndicesBase + this->IndexOffset;
-	int nPrims = NumGeometries;
+	int* geoms = Params.pIndicesBase + this->indexOffset;
+	int nPrims = numGeometries;
 
 	Vector3 meansV = Params.pCenterBuffer[geoms[0]];
 	const Box3d* pAABB = Params.pAABBArray;
@@ -78,7 +78,7 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 
 	const int axis = varsV.LargestAxis();
 
-	int	nSplitLeft = SplitAxis(Params, geoms, NumGeometries, axis);
+	int	nSplitLeft = SplitAxis(Params, geoms, numGeometries, axis);
 	
 	bool validSplit = true;
 	if (!nSplitLeft || nSplitLeft == nPrims)
@@ -101,9 +101,9 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 
 	// Assign children
 	assert(!IsLeafNode());
-	this->child1->IndexOffset = this->IndexOffset;
-	this->child1->NumGeometries = nSplitLeft;
-	this->child2->IndexOffset = this->IndexOffset + nSplitLeft;
-	this->child2->NumGeometries = NumGeometries - nSplitLeft;
+	this->child1->indexOffset = this->indexOffset;
+	this->child1->numGeometries = nSplitLeft;
+	this->child2->indexOffset = this->indexOffset + nSplitLeft;
+	this->child2->numGeometries = numGeometries - nSplitLeft;
 }
 

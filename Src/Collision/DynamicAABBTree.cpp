@@ -73,7 +73,7 @@ bool DynamicAABBTree::RayCast(const Ray3d& Ray, const RayCastOption* Option, Ray
 
 	while (!stack.Empty())
 	{
-		const Node* p = &m_nodes[stack.Pop()];
+		p = &m_nodes[stack.Pop()];
 		while (p)
 		{
 			if (p->IsLeaf())

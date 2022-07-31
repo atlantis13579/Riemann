@@ -26,8 +26,8 @@ AABBTreeNodeInference* AABBTreeOffline::BuildInferenceTree()
 			Compact[offset].aabb = p[i].aabb;
 			if (p[i].IsLeafNode())
 			{
-				const int index = p[i].IndexOffset;
-				const int nPrimitives = p[i].NumGeometries;
+				const int index = p[i].indexOffset;
+				const int nPrimitives = p[i].numGeometries;
 				assert(nPrimitives <= 16);
 
 				Compact[offset].Data = (index << 5) | ((nPrimitives & 15) << 1) | 1;

@@ -395,6 +395,8 @@ void TestAABBTree()
 
 	tree.Release();
 	tree.StaticBuild(param2);
+	TreeStatistics stat;
+	tree.Statistic(stat);
 
 	for (int i = 0; i < 10000; ++i)
 	{

@@ -56,26 +56,16 @@ struct AABBTreeNodeInference
 
 	inline const AABBTreeNodeInference* GetRightNode(const AABBTreeNodeInference* Base) const
 	{
-		const AABBTreeNodeInference* Left = GetLeftNode(Base);
-		if (Left)
-		{
-			return Left + 1;
-		}
-		return nullptr;
+		return Base + (Data >> 1) + 1;
 	}
 
 	inline AABBTreeNodeInference* GetRightNode(AABBTreeNodeInference* Base)
 	{
-		AABBTreeNodeInference* Left = GetLeftNode(Base);
-		if (Left)
-		{
-			return Left + 1;
-		}
-		return nullptr;
+		return Base + (Data >> 1) + 1;
 	}
 
 	Box3d				aabb;
-	uint32_t			Data;	// 27 bits node or prim index|4 bits #prims|1 bit leaf
+	uint32_t			Data;		// 27 bits node index | 4 bits #Geometries | 1 bit leaf
 };
 
 static_assert(sizeof(AABBTreeNodeInference) == 28, "Size of AABBTreeNodeInference is not valid");

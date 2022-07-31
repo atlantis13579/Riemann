@@ -74,11 +74,11 @@ public:
 	void	BuildHierarchyRecursive(AABBTreeBuildData& Params);
 
 public:
-	Box3d							aabb;
-	AABBTreeNodeOffline*			child1;
-	AABBTreeNodeOffline*			child2;
-	int								IndexOffset;
-	int								NumGeometries;
+	Box3d					aabb;
+	AABBTreeNodeOffline*	child1;
+	AABBTreeNodeOffline*	child2;
+	int						indexOffset;
+	int						numGeometries;
 };
 
 
@@ -115,8 +115,8 @@ public:
 		pHead = new  AABBTreeNodeOffline[estimatedFinalSize];
 		memset(pHead, 0, sizeof(AABBTreeNodeOffline) * estimatedFinalSize);
 
-		pHead->IndexOffset = 0;
-		pHead->NumGeometries = nGeometries;
+		pHead->indexOffset = 0;
+		pHead->numGeometries = nGeometries;
 
 		Blocks.emplace_back(pHead, 1, estimatedFinalSize);
 		nCurrentBlockIndex = 0;

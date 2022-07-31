@@ -64,12 +64,13 @@ void AABBTree::Statistic(TreeStatistics& stat)
 	while (!stack.Empty())
 	{
 		AABBTreeNodeInference* p = m_AABBTreeInference + stack.Pop();
-
 		while (p)
 		{
+			stat.NumNodes += 1;
+			
 			if (p->IsLeaf())
 			{
-				stat.NumNodes += 1;
+				stat.NumLeafs += 1;
 				stat.MaxGeometriesAtLeaf = std::max(stat.MaxGeometriesAtLeaf, p->GetNumGeometries());
 				stat.MaxDepth = std::max(stat.MaxDepth, stack.Depth());
 				break;
@@ -79,18 +80,9 @@ void AABBTree::Statistic(TreeStatistics& stat)
 			AABBTreeNodeInference* Right = RIGHT_NODE(p);
 			if (Left && Right)
 			{
-				p = Left;
-				stack.Push((uint32_t)(Right - m_AABBTreeInference));
-				continue;
-			}
-			else if (Left)
-			{
-				p = Left;
-				continue;
-			}
-			else if (Right)
-			{
 				p = Right;
+				stack.Push((uint32_t)(Left - m_AABBTreeInference));
+				assert(!stack.Full());
 				continue;
 			}
 
@@ -264,7 +256,6 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 	while (!stack.Empty())
 	{
 		p = m_AABBTreeInference + stack.Pop();
-
 		while (p)
 		{
 			if (p->IsLeaf())
@@ -285,7 +276,7 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 			}
 
 			AABBTreeNodeInference* Left = LEFT_NODE(p);
-			AABBTreeNodeInference* Right = Left + 1;
+			AABBTreeNodeInference* Right = RIGHT_NODE(p);
 
 			Result->AddTestCount(2);
 
@@ -298,6 +289,7 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
                 hit2 = hit2 && t2 < Result->hitTimeMin && t2 < Option->MaxDist;
             }
             
+			assert(!stack.Full());
 			if (hit1 && hit2)
 			{
 				if (t1 < t2)
@@ -356,7 +348,7 @@ static bool OverlapGeometries(const Geometry *geometry, int* Indices, int NumInd
 
 		if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, candidate->GetFilterData()))
 		{
-			return false;
+			continue;
 		}
 		
 		Result->AddTestCount(1);
@@ -397,8 +389,7 @@ bool AABBTree::Overlap(const Geometry *geometry, Geometry** ObjectCollection, co
 
 	while (!stack.Empty())
 	{
-		AABBTreeNodeInference* p = m_AABBTreeInference + stack.Pop();
-
+		p = m_AABBTreeInference + stack.Pop();
 		while (p)
 		{
 			if (p->IsLeaf())
@@ -419,7 +410,7 @@ bool AABBTree::Overlap(const Geometry *geometry, Geometry** ObjectCollection, co
 			Result->AddTestCount(2);
 
 			AABBTreeNodeInference* Left = LEFT_NODE(p);
-			AABBTreeNodeInference* Right = Left + 1;
+			AABBTreeNodeInference* Right = RIGHT_NODE(p);
 
 			bool intersect1 = aabb.Intersect(Left->aabb.mMin, Left->aabb.mMax);
 			bool intersect2 = aabb.Intersect(Right->aabb.mMin, Right->aabb.mMax);

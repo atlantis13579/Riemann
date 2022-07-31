@@ -36,6 +36,11 @@ public:
 	{
 		return m_Top;
 	}
+	
+	bool Full() const
+	{
+		return m_Top >= MaxDepth;
+	}
 
 	bool Empty() const
 	{

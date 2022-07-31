@@ -17,6 +17,7 @@ struct TreeStatistics
 	int MaxDepth;
 	int MaxGeometriesAtLeaf;
 	int NumNodes;
+	int NumLeafs;
 };
 
 class AABBTree
