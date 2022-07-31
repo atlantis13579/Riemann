@@ -7,23 +7,23 @@
 class GravityField : public ForceField
 {
 public:
-	GravityField(const Vector3& Gravity) : m_Gravity(Gravity)
+	GravityField(const Vector3& Gravity) : m_GravityAcc(Gravity)
 	{
 
 	}
 
 	virtual bool ApplyForce(RigidBodyDynamic* Rigid) override final
 	{
-		if (Rigid->DisableGravity)
+		if (Rigid->DisableGravity || Rigid->InvMass <= 1e-6f)
 		{
 			return true;
 		}
-		Rigid->ApplyForce(m_Gravity);
+		Rigid->ApplyForce(m_GravityAcc / Rigid->InvMass);
 		return true;
 	}
 
 private:
-	Vector3 m_Gravity;
+	Vector3 m_GravityAcc;
 };
 
 class DenseField : public ForceField, DenseTensorField3d<Vector3>

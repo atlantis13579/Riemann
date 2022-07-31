@@ -52,7 +52,7 @@ struct RigidBodySimulationParam
 		constraintSolver = ConstraintSolver::SequentialImpulse;
 		integrateMethod = IntegrateMethod::ExplicitEuler;
 	}
-	Vector3 			gravity;
+	Vector3 			gravity;		// gravity acc
 	BroadPhaseSolver	broadphase;
 	NarrowPhaseSolver	narrowphase;
 	ConstraintSolver	constraintSolver;

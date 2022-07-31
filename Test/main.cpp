@@ -10,6 +10,7 @@ extern void TestPython();
 extern void TestSIMD();
 extern void TestMatrix();
 extern void TestVehicle();
+extern void TestOptimization();
 
 void TestAll()
 {
@@ -21,12 +22,13 @@ void TestAll()
 	TestSIMD();
 	TestMatrix();
 	TestVehicle();
+	TestOptimization();
 }
 
 int main()
 {
 	printf("Running ...\n");
-	TestGeometry();
+	TestAll();
 	printf("All Test Done\n");
 	return 0;
 }
