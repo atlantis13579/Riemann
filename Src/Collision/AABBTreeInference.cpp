@@ -35,6 +35,7 @@ AABBTreeNodeInference* AABBTreeOffline::BuildInferenceTree()
 			else
 			{
 				assert(p[i].child1);
+				assert(p[i].child2);
 				uint32_t localNodeIndex = 0xffffffff;
 				uint32_t nodeBase = 0;
 				for (size_t j = 0; j < Blocks.size(); ++j)

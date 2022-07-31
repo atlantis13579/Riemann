@@ -8,6 +8,12 @@
 class AABBTreeOffline;
 struct AABBTreeNodeInference;
 
+enum class SplitHeuristic : uint8_t
+{
+	Space,
+	TreeBalance,
+};
+
 struct AABBTreeBuildData
 {
 	AABBTreeBuildData(const Box3d* pArray, int nGeometries = 0, int GeometriesPerNode = 1) :
@@ -18,7 +24,7 @@ struct AABBTreeBuildData
 		pIndicesBase(nullptr),
 		pAABBTree(nullptr)
 	{
-
+		splitter = SplitHeuristic::Space;
 	}
 
 	~AABBTreeBuildData()
@@ -45,6 +51,7 @@ struct AABBTreeBuildData
 	Vector3*					pCenterBuffer;		// Holds the memory
 	int*						pIndicesBase;
 	AABBTreeOffline*			pAABBTree;
+	SplitHeuristic				splitter;
 };
 
 class AABBTreeNodeOffline
@@ -69,7 +76,8 @@ public:
 		return false;
 	}
 
-	int		SplitAxis(const AABBTreeBuildData& Params, int* pGeometries, int Num, int Axis);
+	int		SplitAxisBySpace(const AABBTreeBuildData& Params, int* pGeometries, int Num, int Axis);
+	int		SplitAxisByNumGeometries(const AABBTreeBuildData& Params, int* pGeometries, int Num, int Axis);
 	void	SubDivideAABBArray(AABBTreeBuildData& Params);
 	void	BuildHierarchyRecursive(AABBTreeBuildData& Params);
 

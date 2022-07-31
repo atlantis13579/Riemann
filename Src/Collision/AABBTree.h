@@ -14,6 +14,7 @@ class Geometry;
 
 struct TreeStatistics
 {
+	int MaxStack;
 	int MaxDepth;
 	int MaxGeometriesAtLeaf;
 	int NumNodes;

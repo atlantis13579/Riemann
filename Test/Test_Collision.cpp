@@ -392,7 +392,8 @@ void TestAABBTree()
 	}
 
 	AABBTreeBuildData param2(&boxes[0], (int)boxes.size(), 1);
-
+	param2.splitter = SplitHeuristic::TreeBalance;
+	
 	tree.Release();
 	tree.StaticBuild(param2);
 	TreeStatistics stat;

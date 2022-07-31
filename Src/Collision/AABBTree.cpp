@@ -60,10 +60,15 @@ void AABBTree::Statistic(TreeStatistics& stat)
 
 	StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
 	stack.Push(0);
-
+	
+	int curr_depth = 1;
+	StaticStack<uint32_t, TREE_MAX_DEPTH> depth;
+	depth.Push(curr_depth);
+	
 	while (!stack.Empty())
 	{
 		AABBTreeNodeInference* p = m_AABBTreeInference + stack.Pop();
+		curr_depth = depth.Pop();
 		while (p)
 		{
 			stat.NumNodes += 1;
@@ -72,7 +77,8 @@ void AABBTree::Statistic(TreeStatistics& stat)
 			{
 				stat.NumLeafs += 1;
 				stat.MaxGeometriesAtLeaf = std::max(stat.MaxGeometriesAtLeaf, p->GetNumGeometries());
-				stat.MaxDepth = std::max(stat.MaxDepth, stack.Depth());
+				stat.MaxStack = std::max(stat.MaxStack, stack.Depth());
+				stat.MaxDepth = std::max(stat.MaxDepth, curr_depth);
 				break;
 			}
 
@@ -80,9 +86,12 @@ void AABBTree::Statistic(TreeStatistics& stat)
 			AABBTreeNodeInference* Right = RIGHT_NODE(p);
 			if (Left && Right)
 			{
-				p = Right;
-				stack.Push((uint32_t)(Left - m_AABBTreeInference));
+				p = Left;
+				stack.Push((uint32_t)(Right - m_AABBTreeInference));
 				assert(!stack.Full());
+				
+				curr_depth += 1;
+				depth.Push(curr_depth);
 				continue;
 			}
 
