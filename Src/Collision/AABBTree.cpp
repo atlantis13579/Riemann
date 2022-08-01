@@ -424,6 +424,7 @@ bool AABBTree::Overlap(const Geometry *geometry, Geometry** ObjectCollection, co
 			bool intersect1 = aabb.Intersect(Left->aabb.mMin, Left->aabb.mMax);
 			bool intersect2 = aabb.Intersect(Right->aabb.mMin, Right->aabb.mMax);
 
+			assert(!stack.Full());
 			if (intersect1 && intersect2)
 			{
 				p = Left;

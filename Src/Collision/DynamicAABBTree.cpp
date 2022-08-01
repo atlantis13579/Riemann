@@ -68,7 +68,7 @@ bool DynamicAABBTree::RayCast(const Ray3d& Ray, const RayCastOption* Option, Ray
 		return false;
 	}
 
-	StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
+	StaticStack<int, TREE_MAX_DEPTH> stack;
 	stack.Push(m_root);
 
 	while (!stack.Empty())
@@ -90,13 +90,13 @@ bool DynamicAABBTree::RayCast(const Ray3d& Ray, const RayCastOption* Option, Ray
 			}
 
 			assert(p->child1 != -1 && p->child2 != -1);
-			const Node* Left = &m_nodes[p->child1];
-			const Node* Right = &m_nodes[p->child2];
+			const Node* child1 = &m_nodes[p->child1];
+			const Node* child2 = &m_nodes[p->child2];
 
 			Result->AddTestCount(2);
 
-			bool hit1 = Ray.IntersectAABB(Left->aabb.mMin, Left->aabb.mMax, &t1);
-			bool hit2 = Ray.IntersectAABB(Right->aabb.mMin, Right->aabb.mMax, &t2);
+			bool hit1 = Ray.IntersectAABB(child1->aabb.mMin, child1->aabb.mMax, &t1);
+			bool hit2 = Ray.IntersectAABB(child2->aabb.mMin, child2->aabb.mMax, &t2);
 
 			if (Option->Type != RayCastOption::RAYCAST_PENETRATE)
 			{
@@ -104,28 +104,29 @@ bool DynamicAABBTree::RayCast(const Ray3d& Ray, const RayCastOption* Option, Ray
 				hit2 = hit2 && t2 < Result->hitTimeMin && t2 < Option->MaxDist;
 			}
 			
+			assert(!stack.Full());
 			if (hit1 && hit2)
 			{
 				if (t1 < t2)
 				{
-					p = Left;
 					stack.Push(p->child2);
+					p = child1;
 				}
 				else
 				{
-					p = Right;
 					stack.Push(p->child1);
+					p = child2;
 				}
 				continue;
 			}
 			else if (hit1)
 			{
-				p = Left;
+				p = child1;
 				continue;
 			}
 			else if (hit2)
 			{
-				p = Right;
+				p = child2;
 				continue;
 			}
 
@@ -187,7 +188,7 @@ bool DynamicAABBTree::Overlap(const Geometry *geometry, const OverlapOption* Opt
 		return false;
 	}
 
-	StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
+	StaticStack<int, TREE_MAX_DEPTH> stack;
 	stack.Push(m_root);
 
 	while (!stack.Empty())
@@ -209,28 +210,29 @@ bool DynamicAABBTree::Overlap(const Geometry *geometry, const OverlapOption* Opt
 			}
 
 			assert(p->child1 != -1 && p->child2 != -1);
-			const Node* Left = &m_nodes[p->child1];
-			const Node* Right = &m_nodes[p->child2];
+			const Node* child1 = &m_nodes[p->child1];
+			const Node* child2 = &m_nodes[p->child2];
 
-			bool intersect1 = aabb.Intersect(Left->aabb.mMin, Left->aabb.mMax);
-			bool intersect2 = aabb.Intersect(Right->aabb.mMin, Right->aabb.mMax);
+			bool intersect1 = aabb.Intersect(child1->aabb.mMin, child1->aabb.mMax);
+			bool intersect2 = aabb.Intersect(child2->aabb.mMin, child2->aabb.mMax);
 
 			Result->AddTestCount(2);
 			
+			assert(!stack.Full());
 			if (intersect1 && intersect2)
 			{
-				p = Left;
 				stack.Push(p->child2);
+				p = child1;
 				continue;
 			}
 			else if (intersect1)
 			{
-				p = Left;
+				p = child1;
 				continue;
 			}
 			else if (intersect2)
 			{
-				p = Right;
+				p = child2;
 				continue;
 			}
 
@@ -257,12 +259,13 @@ bool DynamicAABBTree::Query(const Box3d& aabb, std::vector<void*> *Result) const
 		return false;
 	}
 
-	StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
+	StaticStack<int, TREE_MAX_DEPTH> stack;
 	stack.Push(m_root);
 
 	while (!stack.Empty())
 	{
-		const Node* p = &m_nodes[stack.Pop()];
+		int Id = stack.Pop();
+		const Node* p = &m_nodes[Id];
 		while (p)
 		{
 			if (p->IsLeaf())
@@ -272,26 +275,27 @@ bool DynamicAABBTree::Query(const Box3d& aabb, std::vector<void*> *Result) const
 			}
 
 			assert(p->child1 != -1 && p->child2 != -1);
-			const Node* Left = &m_nodes[p->child1];
-			const Node* Right = &m_nodes[p->child2];
+			const Node* child1 = &m_nodes[p->child1];
+			const Node* child2 = &m_nodes[p->child2];
 
-			bool intersect1 = aabb.Intersect(Left->aabb.mMin, Left->aabb.mMax);
-			bool intersect2 = aabb.Intersect(Right->aabb.mMin, Right->aabb.mMax);
+			bool intersect1 = aabb.Intersect(child1->aabb.mMin, child1->aabb.mMax);
+			bool intersect2 = aabb.Intersect(child2->aabb.mMin, child2->aabb.mMax);
 
+			assert(!stack.Full());
 			if (intersect1 && intersect2)
 			{
-				p = Left;
 				stack.Push(p->child2);
+				p = child1;
 				continue;
 			}
 			else if (intersect1)
 			{
-				p = Left;
+				p = child1;
 				continue;
 			}
 			else if (intersect2)
 			{
-				p = Right;
+				p = child2;
 				continue;
 			}
 

@@ -17,6 +17,7 @@ enum class BroadPhaseSolver : uint8_t
 {
 	SAP,
 	AllPairs,
+	Bruteforce,
 	DynamicAABB,
 };
 
@@ -46,13 +47,13 @@ struct RigidBodySimulationParam
 {
 	RigidBodySimulationParam()
 	{
-		gravity = Vector3::Zero();
+		gravityAcc = Vector3::Zero();
 		broadphase = BroadPhaseSolver::SAP;
 		narrowphase = NarrowPhaseSolver::GJKEPA;
 		constraintSolver = ConstraintSolver::SequentialImpulse;
 		integrateMethod = IntegrateMethod::ExplicitEuler;
 	}
-	Vector3 			gravity;		// gravity acc
+	Vector3 			gravityAcc;		// gravity acc
 	BroadPhaseSolver	broadphase;
 	NarrowPhaseSolver	narrowphase;
 	ConstraintSolver	constraintSolver;
@@ -72,6 +73,7 @@ public:
     bool				LoadPhysxScene(const char *name, bool shared_mem);
 
 	RigidBody*			CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
+	bool				RemoveRigidBody(RigidBody* Body);
 
 	bool				LoadAnimation(const std::string& resname, const std::string &filepath, float play_rate, bool begin_play);
 	KinematicsDriver*	FindKinematics(const std::string& resname);

@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "../Core/Base.h"
+#include "../Collision/DynamicAABBTree.h"
 #include "../Collision/GeometryQuery.h"
 #include "../Collision/GeometryObject.h"
 #include "../Tools/PhysxBinaryParser.h"
@@ -17,12 +18,28 @@
 
 RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 {
-	m_BPhase = BroadPhase::Create_SAP();
+	m_GeometryQuery = new GeometryQuery;
+	if (param.broadphase == BroadPhaseSolver::SAP)
+	{
+		m_BPhase = BroadPhase::Create_SAP();
+	}
+	else if (param.broadphase == BroadPhaseSolver::Bruteforce)
+	{
+		m_BPhase = BroadPhase::Create_Bruteforce();
+	}
+	if (param.broadphase == BroadPhaseSolver::AllPairs)
+	{
+		m_BPhase = BroadPhase::Create_AllPairs();
+	}
+	if (param.broadphase == BroadPhaseSolver::DynamicAABB)
+	{
+		m_GeometryQuery->CreateDynamicGeometry();
+		m_BPhase = BroadPhase::Create_DynamicAABB(m_GeometryQuery->GetDynamicTree());
+	}
 	m_NPhase = NarrowPhase::Create_GJKEPA();
 	m_RPhase = ResolutionPhase::CreateSequentialImpulseSolver();
-	m_GeometryQuery = new GeometryQuery;
 	m_IntegrateMethod = param.integrateMethod;
-	m_Fields.push_back(ForceField::CreateGrivityField(param.gravity));
+	m_Fields.push_back(ForceField::CreateGrivityField(param.gravityAcc));
 	m_SharedMem = nullptr;
 	m_SharedMemSize = 0;
 }
@@ -166,7 +183,47 @@ RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyP
 	{
 		m_DynamicBodies.push_back(body->CastDynamic());
 	}
+
+	if (m_GeometryQuery->GetDynamicTree())
+	{
+		body->mNodeId = m_GeometryQuery->GetDynamicTree()->Add(Geom->GetBoundingVolume_WorldSpace(), Geom);
+	}
 	return body;
+}
+
+bool RigidBodySimulation::RemoveRigidBody(RigidBody* Body)
+{
+	if (Body->mRigidType == RigidType::Static)
+	{
+		for (size_t i = 0; i < m_StaticBodies.size(); ++i)
+		{
+			if (m_StaticBodies[i] == Body)
+			{
+				m_StaticBodies.erase(m_StaticBodies.begin() + i);
+				if (m_GeometryQuery->GetDynamicTree())
+				{
+					m_GeometryQuery->GetDynamicTree()->Remove(Body->mNodeId);
+				}
+				return true;
+			}
+		}
+	}
+	else if (Body->mRigidType == RigidType::Dynamic)
+	{
+		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
+		{
+			if (m_DynamicBodies[i] == Body)
+			{
+				m_DynamicBodies.erase(m_DynamicBodies.begin() + i);
+				if (m_GeometryQuery->GetDynamicTree())
+				{
+					m_GeometryQuery->GetDynamicTree()->Remove(Body->mNodeId);
+				}
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 bool RigidBodySimulation::LoadAnimation(const std::string& resname, const std::string& filepath, float play_rate, bool begin_play)

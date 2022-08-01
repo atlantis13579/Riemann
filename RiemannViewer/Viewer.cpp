@@ -212,7 +212,7 @@ void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3 &c,
 void WorldViewer::CreateSimulator()
 {
 	RigidBodySimulationParam param;
-	param.Gravity = Vector3(0, -9.8f, 0);
+	param.gravityAcc = Vector3(0, -9.8f, 0);
 	m_World = new RigidBodySimulation(param);
 }
 

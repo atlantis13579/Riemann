@@ -49,6 +49,12 @@ void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, i
 	}
 }
 
+void GeometryQuery::CreateDynamicGeometry()
+{
+	SAFE_DELETE(m_dynamicPruner);
+	m_dynamicPruner = new DynamicAABBTree;
+}
+
 bool GeometryQuery::RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption& Option, RayCastResult* Result)
 {
 	Result->Reset();

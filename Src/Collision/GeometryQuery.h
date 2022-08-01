@@ -194,7 +194,7 @@ public:
 public:
 	void			BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
 	void			BuildStaticGeometry(GeometryIterator *iter, int nPrimitivePerNode);
-
+	void			CreateDynamicGeometry();
 	bool			RayCast(const Vector3 &Origin, const Vector3& Dir, const RayCastOption& Option, RayCastResult *Result);
 	bool			OverlapBox(const Vector3 &Center, const Vector3& Extent, const OverlapOption& Option, OverlapResult* Result);
 
