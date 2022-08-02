@@ -1,5 +1,5 @@
 
-#include "Contact.h"
+#include "CollidingContact.h"
 #include "WarmStart.h"
 #include "RigidBody.h"
 #include "../Collision/GeometryObject.h"

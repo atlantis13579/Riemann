@@ -68,8 +68,7 @@ public:
 
 public:
 	void				Simulate(float dt);
-	void				ApplyForceFields();
-    
+
     bool				LoadPhysxScene(const char *name, bool shared_mem);
 
 	RigidBody*			CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
@@ -89,6 +88,10 @@ public:
 
 private:
 	void				SimulateST(float dt);
+	void				SimulateMT(float dt);
+
+	void				ApplyForceFields();
+	void				HandleRestingContact();
 
 private:
 	std::vector<RigidBodyStatic*>	m_StaticBodies;

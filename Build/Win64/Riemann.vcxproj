@@ -61,7 +61,7 @@
     <ClCompile Include="..\..\Src\PositionBasedDynamics\MassSpring.cpp" />
     <ClCompile Include="..\..\Src\PositionBasedDynamics\XPBDRigidDynamicsSolver.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\BroadPhase.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\Contact.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\CollidingContact.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Jacobian.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\KeyFrameAnimation.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\KinematicsTree.cpp" />
@@ -179,7 +179,7 @@
     <ClInclude Include="..\..\Src\PositionBasedDynamics\MassSpring.h" />
     <ClInclude Include="..\..\Src\PositionBasedDynamics\XPBDRigidDynamicsSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\BroadPhase.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\Contact.h" />
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\CollidingContact.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\FeatherstoneSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Jacobian.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\KinematicsTree.h" />

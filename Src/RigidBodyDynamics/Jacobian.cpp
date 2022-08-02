@@ -4,7 +4,7 @@
 #include "../Maths/Maths.h"
 #include "Jacobian.h"
 #include "RigidBody.h"
-#include "Contact.h"
+#include "CollidingContact.h"
 
 // http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
 void Jacobian::Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, const Vector3& dir, float bias)

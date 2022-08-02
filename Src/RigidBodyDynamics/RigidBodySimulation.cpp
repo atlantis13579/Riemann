@@ -119,7 +119,15 @@ void		RigidBodySimulation::SimulateST(float dt)
 	ApplyForceFields();
 
 	MotionIntegration::Integrate(m_DynamicBodies, dt, (int)m_IntegrateMethod);
+
+	HandleRestingContact();
+
 	return;
+}
+
+void		 RigidBodySimulation::SimulateMT(float dt)
+{
+
 }
 
 void		RigidBodySimulation::ApplyForceFields()
@@ -129,6 +137,26 @@ void		RigidBodySimulation::ApplyForceFields()
 		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 		{
 			m_Fields[j]->ApplyForce(m_DynamicBodies[i]);
+		}
+	}
+}
+
+void		RigidBodySimulation::HandleRestingContact()
+{
+	DynamicAABBTree* tree = m_GeometryQuery->GetDynamicTree();
+	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
+	{
+		RigidBodyDynamic* Body = m_DynamicBodies[i];
+		if (Body->Sleeping)
+			continue;
+		if (tree)
+		{
+			tree->Update(Body->mNodeId, Body->mGeometry->GetBoundingVolume_WorldSpace(), Body->GetLinearVelocity());
+		}
+		float energy = Body->GetKinematicsEnergy();
+		if (energy < Body->SleepThreshold)
+		{
+			Body->Sleep();
 		}
 	}
 }

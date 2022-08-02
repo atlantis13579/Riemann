@@ -1,7 +1,7 @@
 
 #include <assert.h>
 #include <algorithm>
-#include "Contact.h"
+#include "CollidingContact.h"
 #include "../Core/StaticArray.h"
 #include "../CollisionPrimitive/Segment3d.h"
 #include "../CollisionPrimitive/Triangle3d.h"

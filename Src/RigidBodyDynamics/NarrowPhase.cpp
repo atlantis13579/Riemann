@@ -1,6 +1,6 @@
 
 #include "NarrowPhase.h"
-#include "Contact.h"
+#include "CollidingContact.h"
 #include "../Core/BatchList.h"
 #include "../Geometry/Polygon3d.h"
 #include "../Collision/GeometryObject.h"

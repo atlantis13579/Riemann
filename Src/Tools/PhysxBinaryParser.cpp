@@ -249,7 +249,8 @@ public:
 				RigidBodyParam param;
 				param.pos = rigid->mRigidStatic.mStatic.mCore.body2World.p;
 				param.quat = rigid->mRigidStatic.mStatic.mCore.body2World.q;
-				RigidBodyStatic* body = RigidBodyStatic::CreateRigidBody(param, nullptr);
+				body = RigidBodyStatic::CreateRigidBody(param, nullptr);
+				assert(body);
 				body->SetGuid(guid);
 				bodies->push_back(body);
 			}
@@ -294,7 +295,7 @@ public:
 				param.freezeThreshold = core.freezeThreshold;
 				param.disableGravity = false;
 
-				RigidBodyDynamic* body = RigidBodyDynamic::CreateRigidBody(param, nullptr);
+				body = RigidBodyDynamic::CreateRigidBody(param, nullptr);
 				body->SetGuid(guid);
 				bodies->push_back(body);
 			}

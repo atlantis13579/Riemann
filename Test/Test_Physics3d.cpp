@@ -32,6 +32,8 @@ void TestPhysxBin()
 
 	printf("Running TestPhysxBin fighting_new\n");
 
+	collection.clear();
+	geometries.clear();
 	load_succ = LoadPhysxBinary("data/fighting_new.xml.bin", &collection, &geometries);
 	EXPECT(load_succ);
 

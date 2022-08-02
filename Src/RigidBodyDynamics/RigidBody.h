@@ -37,8 +37,8 @@ struct RigidBodyParam
 		angularDamping = 0.999f;
 		contactReportThreshold = 0.1f;
 		maxContactImpulse = 10.0f;
-		sleepThreshold = 0.1f;
-		freezeThreshold = 0.1f;
+		sleepThreshold = 0.01f;
+		freezeThreshold = 0.01f;
 		disableGravity = false;
 		rigidType = RigidType::Static;
 		motionType = MorionType::Discrete;

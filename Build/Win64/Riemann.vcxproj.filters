@@ -453,7 +453,7 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\NarrowPhase.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\Contact.h">
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\CollidingContact.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Core\BatchList.h">
@@ -686,7 +686,7 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\NarrowPhase.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\Contact.cpp">
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\CollidingContact.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\PositionBasedDynamics\MassSpring.cpp">
