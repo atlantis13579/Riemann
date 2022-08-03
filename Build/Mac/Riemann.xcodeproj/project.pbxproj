@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		ADAA4C3E28898D6000E8AE2E /* Contact.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3528898D6000E8AE2E /* Contact.h */; };
+		AD02FE47289AAB06004D13D9 /* CollidingContact.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE45289AAB06004D13D9 /* CollidingContact.h */; };
+		AD02FE48289AAB06004D13D9 /* CollidingContact.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD02FE46289AAB06004D13D9 /* CollidingContact.cpp */; };
 		ADAA4C3F28898D6000E8AE2E /* SequentialImpulseSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */; };
 		ADAA4C4028898D6000E8AE2E /* NarrowPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */; };
 		ADAA4C4128898D6000E8AE2E /* BroadPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3828898D6000E8AE2E /* BroadPhase.h */; };
 		ADAA4C4228898D6000E8AE2E /* SequentialImpulseSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C3928898D6000E8AE2E /* SequentialImpulseSolver.cpp */; };
 		ADAA4C4328898D6000E8AE2E /* BroadPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C3A28898D6000E8AE2E /* BroadPhase.cpp */; };
-		ADAA4C4428898D6000E8AE2E /* Contact.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C3B28898D6000E8AE2E /* Contact.cpp */; };
 		ADAA4C4528898D6000E8AE2E /* NarrowPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3C28898D6000E8AE2E /* NarrowPhase.h */; };
 		ADAA4C482889930500E8AE2E /* SmoothedParticleHydrodynamics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C462889930500E8AE2E /* SmoothedParticleHydrodynamics.cpp */; };
 		ADAA4C492889930500E8AE2E /* SmoothedParticleHydrodynamics.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C472889930500E8AE2E /* SmoothedParticleHydrodynamics.h */; };
@@ -222,13 +222,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		ADAA4C3528898D6000E8AE2E /* Contact.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Contact.h; path = ../../Src/RigidBodyDynamics/Contact.h; sourceTree = "<group>"; };
+		AD02FE45289AAB06004D13D9 /* CollidingContact.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CollidingContact.h; path = ../../Src/RigidBodyDynamics/CollidingContact.h; sourceTree = "<group>"; };
+		AD02FE46289AAB06004D13D9 /* CollidingContact.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CollidingContact.cpp; path = ../../Src/RigidBodyDynamics/CollidingContact.cpp; sourceTree = "<group>"; };
 		ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SequentialImpulseSolver.h; path = ../../Src/RigidBodyDynamics/SequentialImpulseSolver.h; sourceTree = "<group>"; };
 		ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NarrowPhase.cpp; path = ../../Src/RigidBodyDynamics/NarrowPhase.cpp; sourceTree = "<group>"; };
 		ADAA4C3828898D6000E8AE2E /* BroadPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BroadPhase.h; path = ../../Src/RigidBodyDynamics/BroadPhase.h; sourceTree = "<group>"; };
 		ADAA4C3928898D6000E8AE2E /* SequentialImpulseSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SequentialImpulseSolver.cpp; path = ../../Src/RigidBodyDynamics/SequentialImpulseSolver.cpp; sourceTree = "<group>"; };
 		ADAA4C3A28898D6000E8AE2E /* BroadPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = BroadPhase.cpp; path = ../../Src/RigidBodyDynamics/BroadPhase.cpp; sourceTree = "<group>"; };
-		ADAA4C3B28898D6000E8AE2E /* Contact.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Contact.cpp; path = ../../Src/RigidBodyDynamics/Contact.cpp; sourceTree = "<group>"; };
 		ADAA4C3C28898D6000E8AE2E /* NarrowPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NarrowPhase.h; path = ../../Src/RigidBodyDynamics/NarrowPhase.h; sourceTree = "<group>"; };
 		ADAA4C462889930500E8AE2E /* SmoothedParticleHydrodynamics.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SmoothedParticleHydrodynamics.cpp; path = ../../Src/FluidDynamics/SmoothedParticleHydrodynamics.cpp; sourceTree = "<group>"; };
 		ADAA4C472889930500E8AE2E /* SmoothedParticleHydrodynamics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SmoothedParticleHydrodynamics.h; path = ../../Src/FluidDynamics/SmoothedParticleHydrodynamics.h; sourceTree = "<group>"; };
@@ -549,8 +549,8 @@
 			children = (
 				ADAA4C3A28898D6000E8AE2E /* BroadPhase.cpp */,
 				ADAA4C3828898D6000E8AE2E /* BroadPhase.h */,
-				ADAA4C3B28898D6000E8AE2E /* Contact.cpp */,
-				ADAA4C3528898D6000E8AE2E /* Contact.h */,
+				AD02FE46289AAB06004D13D9 /* CollidingContact.cpp */,
+				AD02FE45289AAB06004D13D9 /* CollidingContact.h */,
 				ADF862242891875A00DBC516 /* FeatherstoneSolver.h */,
 				ADD23CA8288762CC00A849BE /* ForceField.cpp */,
 				ADD23CB1288762CC00A849BE /* ForceField.h */,
@@ -830,7 +830,6 @@
 				ADD23BD92887614E00A849BE /* ProximityGrid.h in Headers */,
 				ADD23CA1288762C000A849BE /* NewtonRaphsonIteration.h in Headers */,
 				ADD23BF42887616200A849BE /* Ray3d.h in Headers */,
-				ADAA4C3E28898D6000E8AE2E /* Contact.h in Headers */,
 				ADD23C062887616200A849BE /* ConvexMesh.h in Headers */,
 				ADBBEE15288C41A300C3D6CD /* Matrix4.h in Headers */,
 				ADBBEE1B288C468700C3D6CD /* BatchList.h in Headers */,
@@ -918,6 +917,7 @@
 				ADD23C9F288762C000A849BE /* SparseConjugateGradientSolver.h in Headers */,
 				ADD23BF92887616200A849BE /* Triangle3d.h in Headers */,
 				ADD23CC2288762CC00A849BE /* WarmStart.h in Headers */,
+				AD02FE47289AAB06004D13D9 /* CollidingContact.h in Headers */,
 				ADD23BD02887614E00A849BE /* GeometryObject.h in Headers */,
 				ADD23C002887616200A849BE /* Cylinder3d.h in Headers */,
 				ADBBEE16288C41A300C3D6CD /* Vector2.h in Headers */,
@@ -1071,6 +1071,7 @@
 				ADD23D2D288762F900A849BE /* EigenValueDecomposition.cpp in Sources */,
 				ADD23C202887619700A849BE /* Fracture.cpp in Sources */,
 				ADD23CC7288762CC00A849BE /* KinematicsTree.cpp in Sources */,
+				AD02FE48289AAB06004D13D9 /* CollidingContact.cpp in Sources */,
 				ADD23C4C288761AE00A849BE /* ConvexHull3d.cpp in Sources */,
 				ADD23C68288762AE00A849BE /* AutonomousController.cpp in Sources */,
 				ADD23BF72887616200A849BE /* MeshBVH4.cpp in Sources */,
@@ -1080,7 +1081,6 @@
 				ADD23CBA288762CC00A849BE /* PhysicsMaterial.cpp in Sources */,
 				ADD23BD72887614E00A849BE /* DynamicAABBTree.cpp in Sources */,
 				ADD23BFC2887616200A849BE /* Capsule3d.cpp in Sources */,
-				ADAA4C4428898D6000E8AE2E /* Contact.cpp in Sources */,
 				ADD23CB9288762CC00A849BE /* WarmStart.cpp in Sources */,
 				ADBBEE20288C486800C3D6CD /* PositionConstraint.cpp in Sources */,
 				ADD23C102887617000A849BE /* FEMSolver.cpp in Sources */,
