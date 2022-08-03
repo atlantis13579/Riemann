@@ -408,8 +408,9 @@ void TestAABBTree()
 		hit = tree.RayCastBoundingBox(ray, Option, &Result);
 		if (hit)
 		{
+			float t;
 			Box3d bb = boxes[hit];
-			// EXPECT(ray.IntersectAABB(bb.Min, bb.Max, &t));	  // TODO
+			EXPECT(ray.IntersectAABB(bb.mMin, bb.mMax, &t));
 		}
 	}
 
