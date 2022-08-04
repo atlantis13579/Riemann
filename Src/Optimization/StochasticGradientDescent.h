@@ -76,3 +76,24 @@ private:
 public:
 	sgdfloatval_t mse;
 };
+
+
+template<typename sgdfloatval_t>
+class SGDMinimizer
+{
+public:
+	SGDMinimizer()
+	{
+		status = 0;
+		iterations = 0;
+	}
+	
+	sgdfloatval_t Minimize(LBFGSEvalFunction<sgdfloatval_t>* func, int Dim)
+	{
+		return 0;
+	}
+
+public:
+	int status;
+	int iterations;
+};
