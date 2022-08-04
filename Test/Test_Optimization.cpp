@@ -76,20 +76,22 @@ void TestLR()
 {
 	printf("Running TestLR\n");
 
-	const int N = 10;
+	const int N = 100;
 	float a = 1.0f, b = 0.0f;
-	DenseMatrix x(N, 1);
-	DenseVector y(N);
+	TDenseMatrix<float> x(N, 1);
+	TDenseVector<float> y(N);
 	for (int i = 0; i < N; ++i)
 	{
 		float xx = 1.0f * rand() / RAND_MAX;
 		x[i][0] = xx;
-		y[i] = a * xx + b + 0.001f * rand() / RAND_MAX;
+		y[i] = a * xx + b + 0.01f * rand() / RAND_MAX;
 	}
 
+	LRParam param;
+	param.algorithm = LR_algorithm::GradientDescent;
 	LRModel<float> lr(1);
-	lr.Fit(x.GetData(), y.GetData(), N);
-
+	lr.Fit(x.GetData(), y.GetData(), N, param);
+	printf("a = %.2f, b = %.2f\n", lr.coef[0], lr.coef[1]);
 	return;
 }
 
