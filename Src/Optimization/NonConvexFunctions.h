@@ -35,7 +35,7 @@ lbfgsfloatval_t Rosenbrock2D(const lbfgsfloatval_t a, const lbfgsfloatval_t b, c
 }
 
 template<typename lbfgsfloatval_t>
-void Rosenbrock2D(const lbfgsfloatval_t a, const lbfgsfloatval_t b, const lbfgsfloatval_t* x, int dim, lbfgsfloatval_t* y, lbfgsfloatval_t* gradient)
+void Rosenbrock2D(const lbfgsfloatval_t a, const lbfgsfloatval_t b, const lbfgsfloatval_t* x, int dim, lbfgsfloatval_t* f, lbfgsfloatval_t* gradient)
 {
 	lbfgsfloatval_t sum = (lbfgsfloatval_t)0;
 	for (int i = 0; i < dim; i += 2)
@@ -46,5 +46,5 @@ void Rosenbrock2D(const lbfgsfloatval_t a, const lbfgsfloatval_t b, const lbfgsf
 		gradient[i+1] = (lbfgsfloatval_t)2 * b * t2;
 		sum += t1 * t1 + b * t2 * t2;
 	}
-	*y = sum;
+	*f = sum;
 }

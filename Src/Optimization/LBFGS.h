@@ -3,12 +3,17 @@
 // Limited memory BFGS (L-BFGS)
 // https://en.wikipedia.org/wiki/Limited-memory_BFGS
 
-// This library is a C port of the Broyden-Fletcher-Goldfarb-Shanno
-// (L-BFGS) method written by Naoaki Okazaki.
+// The L-BFGS method solves the unconstrainted minimization problem :
+// minimize F(x), x = (x1, x2, ..., xN),
+// given a eval function F(x) and its gradient G(x)
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+// This is a C++ template port of the implementation of Limited-memory
+// Broyden-Fletcher-Goldfarb-Shanno (L-BFGS) method written by Jorge Nocedal / Naoaki Okazaki
+// The original C source code written by Naoaki Okazaki is available at :
+// https://github.com/chokkan/liblbfgs
+// The original FORTRAN source code written by Jorge Nocedal is available at :
+// http://www.ece.northwestern.edu/~nocedal/lbfgs.html
+
 #include <math.h>
 
 #ifndef LBFGS_IEEE_FLOAT
@@ -1438,6 +1443,8 @@ inline int lbfgs(
 		}
 	}
 
+	unsigned char* memory = NULL;
+
 	xp = (lbfgsfloatval_t*)vecalloc(n * sizeof(lbfgsfloatval_t));
 	g = (lbfgsfloatval_t*)vecalloc(n * sizeof(lbfgsfloatval_t));
 	gp = (lbfgsfloatval_t*)vecalloc(n * sizeof(lbfgsfloatval_t));
@@ -1448,7 +1455,7 @@ inline int lbfgs(
 		goto lbfgs_exit;
 	}
 
-	if (param.orthantwise_c != 0.) {
+	if (param.orthantwise_c != 0) {
 		pg = (lbfgsfloatval_t*)vecalloc(n * sizeof(lbfgsfloatval_t));
 		if (pg == NULL) {
 			ret = LBFGSERR_OUTOFMEMORY;
@@ -1625,7 +1632,6 @@ lbfgs_exit:
 	}
 
 	vecfree(pf);
-
 	if (lm != NULL) {
 		for (i = 0;i < m;++i) {
 			vecfree(lm[i].s);
@@ -1727,51 +1733,68 @@ class LBFGSEvalFunction
 {
 public:
 	virtual ~LBFGSEvalFunction() {}
-	virtual void Evaluate(const lbfgsfloatval_t* X, int Dim, lbfgsfloatval_t* Y, lbfgsfloatval_t* Gradient) const = 0;
+	virtual void Evaluate(const lbfgsfloatval_t* X, int Dim, lbfgsfloatval_t* F, lbfgsfloatval_t* Gradient) const = 0;
+};
+
+template<typename lbfgsfloatval_t>
+struct LBFGSInstance
+{
+	LBFGSEvalFunction<lbfgsfloatval_t>* eval;
+	void* minimizer;
 };
 
 template<typename lbfgsfloatval_t>
 class LBFGSMinimizer
 {
 public:
+	LBFGSMinimizer()
+	{
+		status = 0;
+		iterations = 0;
+	}
+
 	lbfgsfloatval_t Minimize(LBFGSEvalFunction<lbfgsfloatval_t>* func, int Dim)
 	{
-		lbfgsfloatval_t ymin;
+		lbfgsfloatval_t min_f;
 		lbfgsfloatval_t* x = lbfgs_malloc<lbfgsfloatval_t>(Dim);
 		for (int i = 0; i < Dim; i += 2) {
 			x[i] = (lbfgsfloatval_t)0;
 		}
-		bool ret = _Minimize(func, x, Dim, &ymin);
+		bool success = _solve(func, x, Dim, &min_f);
 		lbfgs_free<lbfgsfloatval_t>(x);
-		return ret ? ymin : std::numeric_limits<lbfgsfloatval_t>::max();
+		return success ? min_f : std::numeric_limits<lbfgsfloatval_t>::max();
 	}
 
-	lbfgsfloatval_t Minimize(LBFGSEvalFunction<lbfgsfloatval_t>* func, int Dim, lbfgsfloatval_t* init_x)
+	lbfgsfloatval_t Minimize(LBFGSEvalFunction<lbfgsfloatval_t>* func, lbfgsfloatval_t* init_x, int Dim)
 	{
 		lbfgsfloatval_t ymin;
-		bool ret = _Minimize(func, init_x, Dim, &ymin);
-		return ret ? ymin : std::numeric_limits<lbfgsfloatval_t>::max();
+		bool success = _solve(func, init_x, Dim, &ymin);
+		return success ? ymin : std::numeric_limits<lbfgsfloatval_t>::max();
 	}
 
-	bool Minimize(LBFGSEvalFunction<lbfgsfloatval_t>* func, lbfgsfloatval_t* init_x, int Dim, lbfgsfloatval_t* min_y)
+	bool Minimize(LBFGSEvalFunction<lbfgsfloatval_t>* func, lbfgsfloatval_t* init_x, int Dim, lbfgsfloatval_t* min_f)
 	{
-		_Minimize(func, init_x, Dim, min_y);
+		return _solve(func, init_x, Dim, min_f);
 	}
 
 private:
-	bool _Minimize(LBFGSEvalFunction<lbfgsfloatval_t>* func, lbfgsfloatval_t* init_x, int Dim, lbfgsfloatval_t *min_y)
+	bool _solve(LBFGSEvalFunction<lbfgsfloatval_t>* func, lbfgsfloatval_t* init_x, int Dim, lbfgsfloatval_t * min_f)
 	{
+		iterations = 0;
+		LBFGSInstance<lbfgsfloatval_t> instance;
+		instance.eval = func;
+		instance.minimizer = this;
 		lbfgs_parameter_t<lbfgsfloatval_t> param;
-		int ret = lbfgs<lbfgsfloatval_t>(Dim, init_x, min_y, lbfgs_evaluate, lbfgs_progress, (void*)func, &param);
-		return ret == LBFGS_SUCCESS ? true : false;
+		status = lbfgs<lbfgsfloatval_t>(Dim, init_x, min_f, lbfgs_evaluate, lbfgs_progress, (void*)&instance, &param);
+		return status == LBFGS_SUCCESS ? true : false;
 	}
 
 	static lbfgsfloatval_t lbfgs_evaluate(void* instance, const lbfgsfloatval_t* x, lbfgsfloatval_t* g, const int n, const lbfgsfloatval_t step)
 	{
-		LBFGSEvalFunction<lbfgsfloatval_t>* func = static_cast<LBFGSEvalFunction<lbfgsfloatval_t>*>(instance);
-		lbfgsfloatval_t y;
-		func->Evaluate(x, n, &y, g);
-		return y;
+		LBFGSInstance<lbfgsfloatval_t>* p = static_cast<LBFGSInstance<lbfgsfloatval_t>*>(instance);
+		lbfgsfloatval_t f;
+		p->eval->Evaluate(x, n, &f, g);
+		return f;
 	}
 
 	static int lbfgs_progress(
@@ -1787,6 +1810,12 @@ private:
 		int ls
 	)
 	{
+		LBFGSInstance<lbfgsfloatval_t>* p = static_cast<LBFGSInstance<lbfgsfloatval_t>*>(instance);
+		((LBFGSMinimizer<lbfgsfloatval_t>*)p->minimizer)->iterations = k;
 		return 0;
 	}
+
+public:
+	int status;
+	int iterations;
 };

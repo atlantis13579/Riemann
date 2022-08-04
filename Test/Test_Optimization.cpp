@@ -12,9 +12,9 @@ class Rosenbrock2DEvalFunction : public LBFGSEvalFunction<double>
 {
 public:
 	virtual ~Rosenbrock2DEvalFunction() {}
-	virtual void Evaluate(const double* X, int Dim, double* Y, double* Gradient) const override final
+	virtual void Evaluate(const double* X, int Dim, double* F, double* Gradient) const override final
 	{
-		Rosenbrock2D(1.0, 100.0, X, Dim, Y, Gradient);
+		Rosenbrock2D(1.0, 100.0, X, Dim, F, Gradient);
 	}
 };
 
@@ -24,7 +24,7 @@ class TestEvalFunction : public LBFGSEvalFunction<T>
 public:
 	TestEvalFunction(T c) : c_(c) { }
 	virtual ~TestEvalFunction() {}
-	virtual void Evaluate(const T* X, int Dim, T* Y, T* Gradient) const override final
+	virtual void Evaluate(const T* X, int Dim, T* F, T* Gradient) const override final
 	{
 		T sum = (T)0;
 		for (int i = 0; i < Dim; ++i)
@@ -32,7 +32,7 @@ public:
 			sum += (X[i] - c_) * (X[i] - c_);
 			Gradient[i] = (T)2.0 * (X[i] - c_);
 		}
-		*Y = sum;
+		*F = sum;
 	}
 private:
 	T c_;
@@ -47,8 +47,8 @@ void TestLBFGS()
 	EXPECT(fabs(miny) < 0.0001);
 
 	TestEvalFunction<double> func2(10.0);
-	TDenseVector<double> x(2, 0.0);
-	miny = minimizer.Minimize(&func2, 2, x.GetData());
+	double x[2] = { 0 };
+	miny = minimizer.Minimize(&func2, x, 2);
 	EXPECT(fabs(miny) < 0.0001);
 	EXPECT(fabs(x[0] - 10.0) < 0.0001);
 	EXPECT(fabs(x[1] - 10.0) < 0.0001);
