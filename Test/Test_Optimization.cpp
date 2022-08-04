@@ -95,10 +95,20 @@ void TestLR()
 	return;
 }
 
+void TestSGD()
+{
+	printf("Running TestSGD\n");
+	
+	
+	
+	return;
+}
+
 void TestOptimization()
 {
 	TestNonConvexFunctions();
 	TestLBFGS();
 	TestLR();
+	TestSGD();
 	return;
 }
