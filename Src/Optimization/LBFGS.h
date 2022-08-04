@@ -1443,8 +1443,6 @@ inline int lbfgs(
 		}
 	}
 
-	unsigned char* memory = NULL;
-
 	xp = (lbfgsfloatval_t*)vecalloc(n * sizeof(lbfgsfloatval_t));
 	g = (lbfgsfloatval_t*)vecalloc(n * sizeof(lbfgsfloatval_t));
 	gp = (lbfgsfloatval_t*)vecalloc(n * sizeof(lbfgsfloatval_t));
