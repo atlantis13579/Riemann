@@ -28,7 +28,7 @@ public:
 		pData = &mData[0];
 	}
 
-	TDenseVector(const TDenseVector<T>&& v) : mSize(v.mSize)
+	TDenseVector(TDenseVector<T>&& v) : mSize(v.mSize)
 	{
 		mData = std::move(v.mData);
 		pData = mData.size() > 0 ? &mData[0] : v.pData;
@@ -73,6 +73,14 @@ public:
 	{
 		mSize = v.mSize;
 		mData = v.mData;
+		pData = mData.size() > 0 ? &mData[0] : v.pData;
+		return *this;
+	}
+
+	TDenseVector<T>& operator=(TDenseVector<T>&& v)
+	{
+		mSize = v.mSize;
+		mData = std::move(v.mData);
 		pData = mData.size() > 0 ? &mData[0] : v.pData;
 		return *this;
 	}

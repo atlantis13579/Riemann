@@ -163,11 +163,14 @@
     <ClInclude Include="..\..\Src\Maths\SIMD.h" />
     <ClInclude Include="..\..\Src\Maths\Vector2.h" />
     <ClInclude Include="..\..\Src\Maths\VectorN.h" />
+    <ClInclude Include="..\..\Src\Optimization\ConvexFunctions.h" />
     <ClInclude Include="..\..\Src\Optimization\GaussNewton.h" />
     <ClInclude Include="..\..\Src\Optimization\LBFGS.h" />
     <ClInclude Include="..\..\Src\Optimization\LevenbergMarquardt.h" />
     <ClInclude Include="..\..\Src\Optimization\LinearRegression.h" />
+    <ClInclude Include="..\..\Src\Optimization\NonConvexFunctions.h" />
     <ClInclude Include="..\..\Src\Optimization\PCA.h" />
+    <ClInclude Include="..\..\Src\Optimization\QuadraticProgramming.h" />
     <ClInclude Include="..\..\Src\Optimization\StochasticGradientDescent.h" />
     <ClInclude Include="..\..\Src\Physics2d\Convex.h" />
     <ClInclude Include="..\..\Src\Physics2d\Rect.h" />

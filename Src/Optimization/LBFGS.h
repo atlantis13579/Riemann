@@ -1813,3 +1813,80 @@ static void owlqn_project(
 		}
 	}
 }
+
+template<typename FloatType>
+class LBFGSEvalFunction
+{
+public:
+	LBFGSEvalFunction() {}
+	~LBFGSEvalFunction() {}
+	virtual void Evaluate(const FloatType* X, int Dim, FloatType* Y, FloatType* Gradient) const = 0;
+};
+
+template<typename FloatType>
+class LBFGSMinimizer
+{
+public:
+	FloatType Minimize(LBFGSEvalFunction<FloatType>* func, int Dim)
+	{
+		FloatType ymin;
+		bool ret = Minimize(func, Dim, &ymin);
+		return ret ? ymin : std::numeric_limits<FloatType>::max();
+	}
+
+	FloatType Minimize(LBFGSEvalFunction<FloatType>* func, FloatType* init_x, int Dim)
+	{
+		FloatType ymin;
+		bool ret = _Minimize(func, init_x, Dim, &ymin);
+		return ret ? ymin : std::numeric_limits<FloatType>::max();
+	}
+
+	bool Minimize(LBFGSEvalFunction<FloatType>* func, int Dim, FloatType *min_y)
+	{
+		lbfgsfloatval_t* x = lbfgs_malloc(Dim);
+		for (int i = 0; i < Dim; i += 2) {
+			x[i] = (FloatType)0;
+		}
+		bool ret = _Minimize(func, x, Dim, min_y);
+		lbfgs_free(x);
+		return ret;
+	}
+
+	bool Minimize(LBFGSEvalFunction<FloatType>* func, FloatType* init_x, int Dim, FloatType* min_y)
+	{
+		_Minimize(func, init_x, Dim, min_y);
+	}
+
+private:
+	bool _Minimize(LBFGSEvalFunction<FloatType>* func, FloatType* init_x, int Dim, FloatType *min_y)
+	{
+		lbfgs_parameter_t param;
+		lbfgs_parameter_init(&param);
+		int ret = lbfgs(Dim, init_x, min_y, lbfgs_evaluate, lbfgs_progress, (void*)func, &param);
+		return ret == LBFGS_SUCCESS ? true : false;
+	}
+
+	static lbfgsfloatval_t lbfgs_evaluate(void* instance, const lbfgsfloatval_t* x, lbfgsfloatval_t* g, const int n, const lbfgsfloatval_t step)
+	{
+		LBFGSEvalFunction<FloatType>* func = static_cast<LBFGSEvalFunction<FloatType>*>(instance);
+		FloatType y;
+		func->Evaluate(x, n, &y, g);
+		return y;
+	}
+
+	static int lbfgs_progress(
+		void* instance,
+		const lbfgsfloatval_t* x,
+		const lbfgsfloatval_t* g,
+		const lbfgsfloatval_t fx,
+		const lbfgsfloatval_t xnorm,
+		const lbfgsfloatval_t gnorm,
+		const lbfgsfloatval_t step,
+		int n,
+		int k,
+		int ls
+	)
+	{
+		return 0;
+	}
+};
