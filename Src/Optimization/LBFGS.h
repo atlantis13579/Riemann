@@ -1818,8 +1818,7 @@ template<typename FloatType>
 class LBFGSEvalFunction
 {
 public:
-	LBFGSEvalFunction() {}
-	~LBFGSEvalFunction() {}
+	virtual ~LBFGSEvalFunction() {}
 	virtual void Evaluate(const FloatType* X, int Dim, FloatType* Y, FloatType* Gradient) const = 0;
 };
 
@@ -1830,26 +1829,20 @@ public:
 	FloatType Minimize(LBFGSEvalFunction<FloatType>* func, int Dim)
 	{
 		FloatType ymin;
-		bool ret = Minimize(func, Dim, &ymin);
-		return ret ? ymin : std::numeric_limits<FloatType>::max();
-	}
-
-	FloatType Minimize(LBFGSEvalFunction<FloatType>* func, FloatType* init_x, int Dim)
-	{
-		FloatType ymin;
-		bool ret = _Minimize(func, init_x, Dim, &ymin);
-		return ret ? ymin : std::numeric_limits<FloatType>::max();
-	}
-
-	bool Minimize(LBFGSEvalFunction<FloatType>* func, int Dim, FloatType *min_y)
-	{
 		lbfgsfloatval_t* x = lbfgs_malloc(Dim);
 		for (int i = 0; i < Dim; i += 2) {
 			x[i] = (FloatType)0;
 		}
-		bool ret = _Minimize(func, x, Dim, min_y);
+		bool ret = _Minimize(func, x, Dim, &ymin);
 		lbfgs_free(x);
-		return ret;
+		return ret ? ymin : std::numeric_limits<FloatType>::max();
+	}
+
+	FloatType Minimize(LBFGSEvalFunction<FloatType>* func, int Dim, FloatType* init_x)
+	{
+		FloatType ymin;
+		bool ret = _Minimize(func, init_x, Dim, &ymin);
+		return ret ? ymin : std::numeric_limits<FloatType>::max();
 	}
 
 	bool Minimize(LBFGSEvalFunction<FloatType>* func, FloatType* init_x, int Dim, FloatType* min_y)
