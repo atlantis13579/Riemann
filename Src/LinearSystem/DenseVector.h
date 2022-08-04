@@ -21,9 +21,8 @@ public:
 		pData = &mData[0];
 	}
 
-	TDenseVector(const TDenseVector<T>& v)
+	TDenseVector(const TDenseVector<T>& v) : mSize(v.mSize)
 	{
-		mSize = v.mSize;
 		mData = v.mData;
 		pData = &mData[0];
 	}
@@ -54,7 +53,12 @@ public:
 		return pData;
 	}
 
-	bool		HoldsMemory() const
+	inline int		GetDataSize() const
+	{
+		return mSize * sizeof(T);
+	}
+
+	bool			HoldsMemory() const
 	{
 		return mData.size() > 0;
 	}
@@ -371,7 +375,6 @@ public:
 		}
 		return true;
 	}
-
 
 	T			Dot(const TDenseVector<T>& v) const
 	{

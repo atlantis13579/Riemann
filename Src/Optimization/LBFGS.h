@@ -11,20 +11,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#ifndef LBFGS_FLOAT
-#define LBFGS_FLOAT     64
-#endif
-
 #ifndef LBFGS_IEEE_FLOAT
 #define LBFGS_IEEE_FLOAT    1
-#endif
-
-#if     LBFGS_FLOAT == 32
-typedef float lbfgsfloatval_t;
-#elif   LBFGS_FLOAT == 64
-typedef double lbfgsfloatval_t;
-#else
-#error "libLBFGS supports single (float; LBFGS_FLOAT = 32) or double (double; LBFGS_FLOAT=64) precision only."
 #endif
 
 enum {
@@ -74,7 +62,27 @@ enum {
 	LBFGS_LINESEARCH_BACKTRACKING_STRONG_WOLFE = 3,
 };
 
-typedef struct {
+template<typename lbfgsfloatval_t>
+struct lbfgs_parameter_t {
+	lbfgs_parameter_t()
+	{
+		m = 6;
+		epsilon = (lbfgsfloatval_t)1e-5;
+		past = 0;
+		delta = (lbfgsfloatval_t)1e-5;
+		max_iterations = 0;
+		linesearch = LBFGS_LINESEARCH_DEFAULT;
+		max_linesearch = 40;
+		min_step = (lbfgsfloatval_t)1e-20;
+		max_step = (lbfgsfloatval_t)1e20;
+		ftol = (lbfgsfloatval_t)1e-4;
+		wolfe = (lbfgsfloatval_t)0.9;
+		gtol = (lbfgsfloatval_t)0.9;
+		xtol = (lbfgsfloatval_t)1.0e-16;
+		orthantwise_c = (lbfgsfloatval_t)0.0;
+		orthantwise_start = 0;
+		orthantwise_end = -1;
+	}
 	int             m;
 	lbfgsfloatval_t epsilon;
 	int             past;
@@ -91,9 +99,10 @@ typedef struct {
 	lbfgsfloatval_t orthantwise_c;
 	int             orthantwise_start;
 	int             orthantwise_end;
-} lbfgs_parameter_t;
+};
 
-typedef lbfgsfloatval_t (*lbfgs_evaluate_t)(
+template<typename lbfgsfloatval_t>
+using lbfgs_evaluate_t = lbfgsfloatval_t (*)(
 	void *instance,
 	const lbfgsfloatval_t *x,
 	lbfgsfloatval_t *g,
@@ -101,7 +110,8 @@ typedef lbfgsfloatval_t (*lbfgs_evaluate_t)(
 	const lbfgsfloatval_t step
 	);
 
-typedef int (*lbfgs_progress_t)(
+template<typename lbfgsfloatval_t>
+using lbfgs_progress_t = int (*)(
 	void *instance,
 	const lbfgsfloatval_t *x,
 	const lbfgsfloatval_t *g,
@@ -114,7 +124,7 @@ typedef int (*lbfgs_progress_t)(
 	int ls
 	);
 
-#if     defined(USE_SSE) && defined(__SSE2__) && LBFGS_FLOAT == 64
+#if     defined(USE_SSE) && defined(__SSE2__)
 
 	#include <stdlib.h>
 	#ifndef __APPLE__
@@ -157,135 +167,137 @@ typedef int (*lbfgs_progress_t)(
 	#endif
 	}
 
-	#define fsigndiff(x, y) \
-		((_mm_movemask_pd(_mm_set_pd(*(x), *(y))) + 1) & 0x002)
-
-	#define vecset(x, c, n) \
-	{ \
-		int i; \
-		__m128d XMM0 = _mm_set1_pd(c); \
-		for (i = 0;i < (n);i += 8) { \
-			_mm_store_pd((x)+i  , XMM0); \
-			_mm_store_pd((x)+i+2, XMM0); \
-			_mm_store_pd((x)+i+4, XMM0); \
-			_mm_store_pd((x)+i+6, XMM0); \
-		} \
+	inline static int fsigndiff(double* x, double* y)
+	{
+		return ((_mm_movemask_pd(_mm_set_pd(*(x), *(y))) + 1) & 0x002);
 	}
 
-	#define veccpy(y, x, n) \
-	{ \
-		int i; \
-		for (i = 0;i < (n);i += 8) { \
-			__m128d XMM0 = _mm_load_pd((x)+i  ); \
-			__m128d XMM1 = _mm_load_pd((x)+i+2); \
-			__m128d XMM2 = _mm_load_pd((x)+i+4); \
-			__m128d XMM3 = _mm_load_pd((x)+i+6); \
-			_mm_store_pd((y)+i  , XMM0); \
-			_mm_store_pd((y)+i+2, XMM1); \
-			_mm_store_pd((y)+i+4, XMM2); \
-			_mm_store_pd((y)+i+6, XMM3); \
-		} \
+	inline static void vecset(double* x, const double c, const int n)
+	{
+		int i;
+		__m128d XMM0 = _mm_set1_pd(c);
+		for (i = 0;i < (n);i += 8) {
+			_mm_store_pd((x)+i  , XMM0);
+			_mm_store_pd((x)+i+2, XMM0);
+			_mm_store_pd((x)+i+4, XMM0);
+			_mm_store_pd((x)+i+6, XMM0);
+		}
 	}
 
-	#define vecncpy(y, x, n) \
-	{ \
-		int i; \
-		for (i = 0;i < (n);i += 8) { \
-			__m128d XMM0 = _mm_setzero_pd(); \
-			__m128d XMM1 = _mm_setzero_pd(); \
-			__m128d XMM2 = _mm_setzero_pd(); \
-			__m128d XMM3 = _mm_setzero_pd(); \
-			__m128d XMM4 = _mm_load_pd((x)+i  ); \
-			__m128d XMM5 = _mm_load_pd((x)+i+2); \
-			__m128d XMM6 = _mm_load_pd((x)+i+4); \
-			__m128d XMM7 = _mm_load_pd((x)+i+6); \
-			XMM0 = _mm_sub_pd(XMM0, XMM4); \
-			XMM1 = _mm_sub_pd(XMM1, XMM5); \
-			XMM2 = _mm_sub_pd(XMM2, XMM6); \
-			XMM3 = _mm_sub_pd(XMM3, XMM7); \
-			_mm_store_pd((y)+i  , XMM0); \
-			_mm_store_pd((y)+i+2, XMM1); \
-			_mm_store_pd((y)+i+4, XMM2); \
-			_mm_store_pd((y)+i+6, XMM3); \
-		} \
+	inline static void veccpy(double* y, const double* x, const int n)
+	{
+		int i;
+		for (i = 0;i < (n);i += 8) {
+			__m128d XMM0 = _mm_load_pd((x)+i  );
+			__m128d XMM1 = _mm_load_pd((x)+i+2);
+			__m128d XMM2 = _mm_load_pd((x)+i+4);
+			__m128d XMM3 = _mm_load_pd((x)+i+6);
+			_mm_store_pd((y)+i  , XMM0);
+			_mm_store_pd((y)+i+2, XMM1);
+			_mm_store_pd((y)+i+4, XMM2);
+			_mm_store_pd((y)+i+6, XMM3);
+		}
 	}
 
-	#define vecadd(y, x, c, n) \
-	{ \
-		int i; \
-		__m128d XMM7 = _mm_set1_pd(c); \
-		for (i = 0;i < (n);i += 4) { \
-			__m128d XMM0 = _mm_load_pd((x)+i  ); \
-			__m128d XMM1 = _mm_load_pd((x)+i+2); \
-			__m128d XMM2 = _mm_load_pd((y)+i  ); \
-			__m128d XMM3 = _mm_load_pd((y)+i+2); \
-			XMM0 = _mm_mul_pd(XMM0, XMM7); \
-			XMM1 = _mm_mul_pd(XMM1, XMM7); \
-			XMM2 = _mm_add_pd(XMM2, XMM0); \
-			XMM3 = _mm_add_pd(XMM3, XMM1); \
-			_mm_store_pd((y)+i  , XMM2); \
-			_mm_store_pd((y)+i+2, XMM3); \
-		} \
+	inline static void vecncpy(double* y, const double* x, const int n)
+	{
+		int i;
+		for (i = 0;i < (n);i += 8) {
+			__m128d XMM0 = _mm_setzero_pd();
+			__m128d XMM1 = _mm_setzero_pd();
+			__m128d XMM2 = _mm_setzero_pd();
+			__m128d XMM3 = _mm_setzero_pd();
+			__m128d XMM4 = _mm_load_pd((x)+i  );
+			__m128d XMM5 = _mm_load_pd((x)+i+2);
+			__m128d XMM6 = _mm_load_pd((x)+i+4);
+			__m128d XMM7 = _mm_load_pd((x)+i+6);
+			XMM0 = _mm_sub_pd(XMM0, XMM4);
+			XMM1 = _mm_sub_pd(XMM1, XMM5);
+			XMM2 = _mm_sub_pd(XMM2, XMM6);
+			XMM3 = _mm_sub_pd(XMM3, XMM7);
+			_mm_store_pd((y)+i, XMM0);
+			_mm_store_pd((y)+i+2, XMM1);
+			_mm_store_pd((y)+i+4, XMM2);
+			_mm_store_pd((y)+i+6, XMM3);
+		}
 	}
 
-	#define vecdiff(z, x, y, n) \
-	{ \
-		int i; \
-		for (i = 0;i < (n);i += 8) { \
-			__m128d XMM0 = _mm_load_pd((x)+i  ); \
-			__m128d XMM1 = _mm_load_pd((x)+i+2); \
-			__m128d XMM2 = _mm_load_pd((x)+i+4); \
-			__m128d XMM3 = _mm_load_pd((x)+i+6); \
-			__m128d XMM4 = _mm_load_pd((y)+i  ); \
-			__m128d XMM5 = _mm_load_pd((y)+i+2); \
-			__m128d XMM6 = _mm_load_pd((y)+i+4); \
-			__m128d XMM7 = _mm_load_pd((y)+i+6); \
-			XMM0 = _mm_sub_pd(XMM0, XMM4); \
-			XMM1 = _mm_sub_pd(XMM1, XMM5); \
-			XMM2 = _mm_sub_pd(XMM2, XMM6); \
-			XMM3 = _mm_sub_pd(XMM3, XMM7); \
-			_mm_store_pd((z)+i  , XMM0); \
-			_mm_store_pd((z)+i+2, XMM1); \
-			_mm_store_pd((z)+i+4, XMM2); \
-			_mm_store_pd((z)+i+6, XMM3); \
-		} \
+	inline static void vecadd(double* y, const double* x, const double c, const int n)
+	{
+		int i;
+		__m128d XMM7 = _mm_set1_pd(c);
+		for (i = 0;i < (n);i += 4) {
+			__m128d XMM0 = _mm_load_pd((x)+i  );
+			__m128d XMM1 = _mm_load_pd((x)+i+2);
+			__m128d XMM2 = _mm_load_pd((y)+i  );
+			__m128d XMM3 = _mm_load_pd((y)+i+2);
+			XMM0 = _mm_mul_pd(XMM0, XMM7);
+			XMM1 = _mm_mul_pd(XMM1, XMM7);
+			XMM2 = _mm_add_pd(XMM2, XMM0);
+			XMM3 = _mm_add_pd(XMM3, XMM1);
+			_mm_store_pd((y)+i  , XMM2);
+			_mm_store_pd((y)+i+2, XMM3);
+		}
 	}
 
-	#define vecscale(y, c, n) \
-	{ \
-		int i; \
-		__m128d XMM7 = _mm_set1_pd(c); \
-		for (i = 0;i < (n);i += 4) { \
-			__m128d XMM0 = _mm_load_pd((y)+i  ); \
-			__m128d XMM1 = _mm_load_pd((y)+i+2); \
-			XMM0 = _mm_mul_pd(XMM0, XMM7); \
-			XMM1 = _mm_mul_pd(XMM1, XMM7); \
-			_mm_store_pd((y)+i  , XMM0); \
-			_mm_store_pd((y)+i+2, XMM1); \
-		} \
+	inline static void vecdiff(double* z, const double* x, const double* y, const int n)
+	{
+		int i;
+		for (i = 0;i < (n);i += 8) {
+			__m128d XMM0 = _mm_load_pd((x)+i  );
+			__m128d XMM1 = _mm_load_pd((x)+i+2);
+			__m128d XMM2 = _mm_load_pd((x)+i+4);
+			__m128d XMM3 = _mm_load_pd((x)+i+6);
+			__m128d XMM4 = _mm_load_pd((y)+i  );
+			__m128d XMM5 = _mm_load_pd((y)+i+2);
+			__m128d XMM6 = _mm_load_pd((y)+i+4);
+			__m128d XMM7 = _mm_load_pd((y)+i+6);
+			XMM0 = _mm_sub_pd(XMM0, XMM4);
+			XMM1 = _mm_sub_pd(XMM1, XMM5);
+			XMM2 = _mm_sub_pd(XMM2, XMM6);
+			XMM3 = _mm_sub_pd(XMM3, XMM7);
+			_mm_store_pd((z)+i  , XMM0);
+			_mm_store_pd((z)+i+2, XMM1);
+			_mm_store_pd((z)+i+4, XMM2);
+			_mm_store_pd((z)+i+6, XMM3);
+		}
 	}
 
-	#define vecmul(y, x, n) \
-	{ \
-		int i; \
-		for (i = 0;i < (n);i += 8) { \
-			__m128d XMM0 = _mm_load_pd((x)+i  ); \
-			__m128d XMM1 = _mm_load_pd((x)+i+2); \
-			__m128d XMM2 = _mm_load_pd((x)+i+4); \
-			__m128d XMM3 = _mm_load_pd((x)+i+6); \
-			__m128d XMM4 = _mm_load_pd((y)+i  ); \
-			__m128d XMM5 = _mm_load_pd((y)+i+2); \
-			__m128d XMM6 = _mm_load_pd((y)+i+4); \
-			__m128d XMM7 = _mm_load_pd((y)+i+6); \
-			XMM4 = _mm_mul_pd(XMM4, XMM0); \
-			XMM5 = _mm_mul_pd(XMM5, XMM1); \
-			XMM6 = _mm_mul_pd(XMM6, XMM2); \
-			XMM7 = _mm_mul_pd(XMM7, XMM3); \
-			_mm_store_pd((y)+i  , XMM4); \
-			_mm_store_pd((y)+i+2, XMM5); \
-			_mm_store_pd((y)+i+4, XMM6); \
-			_mm_store_pd((y)+i+6, XMM7); \
-		} \
+	inline static void vecscale(double* y, const double c, const int n)
+	{
+		int i;
+		__m128d XMM7 = _mm_set1_pd(c);
+		for (i = 0;i < (n);i += 4) {
+			__m128d XMM0 = _mm_load_pd((y)+i  );
+			__m128d XMM1 = _mm_load_pd((y)+i+2);
+			XMM0 = _mm_mul_pd(XMM0, XMM7);
+			XMM1 = _mm_mul_pd(XMM1, XMM7);
+			_mm_store_pd((y)+i  , XMM0);
+			_mm_store_pd((y)+i+2, XMM1);
+		}
+	}
+
+	inline static void vecmul(double* y, const double* x, const int n)
+	{
+		int i;
+		for (i = 0;i < (n);i += 8) {
+			__m128d XMM0 = _mm_load_pd((x)+i  );
+			__m128d XMM1 = _mm_load_pd((x)+i+2);
+			__m128d XMM2 = _mm_load_pd((x)+i+4);
+			__m128d XMM3 = _mm_load_pd((x)+i+6);
+			__m128d XMM4 = _mm_load_pd((y)+i  );
+			__m128d XMM5 = _mm_load_pd((y)+i+2);
+			__m128d XMM6 = _mm_load_pd((y)+i+4);
+			__m128d XMM7 = _mm_load_pd((y)+i+6);
+			XMM4 = _mm_mul_pd(XMM4, XMM0);
+			XMM5 = _mm_mul_pd(XMM5, XMM1);
+			XMM6 = _mm_mul_pd(XMM6, XMM2);
+			XMM7 = _mm_mul_pd(XMM7, XMM3);
+			_mm_store_pd((y)+i  , XMM4);
+			_mm_store_pd((y)+i+2, XMM5);
+			_mm_store_pd((y)+i+4, XMM6);
+			_mm_store_pd((y)+i+6, XMM7);
+		}
 	}
 
 	#if     3 <= __SSE__ || defined(__SSE3__)
@@ -306,346 +318,287 @@ typedef int (*lbfgs_progress_t)(
 
 	#endif
 
-	#define vecdot(s, x, y, n) \
-	{ \
-		int i; \
-		__m128d XMM0 = _mm_setzero_pd(); \
-		__m128d XMM1 = _mm_setzero_pd(); \
-		__m128d XMM2, XMM3, XMM4, XMM5; \
-		for (i = 0;i < (n);i += 4) { \
-			XMM2 = _mm_load_pd((x)+i  ); \
-			XMM3 = _mm_load_pd((x)+i+2); \
-			XMM4 = _mm_load_pd((y)+i  ); \
-			XMM5 = _mm_load_pd((y)+i+2); \
-			XMM2 = _mm_mul_pd(XMM2, XMM4); \
-			XMM3 = _mm_mul_pd(XMM3, XMM5); \
-			XMM0 = _mm_add_pd(XMM0, XMM2); \
-			XMM1 = _mm_add_pd(XMM1, XMM3); \
-		} \
-		XMM0 = _mm_add_pd(XMM0, XMM1); \
-		XMM1 = _mm_shuffle_pd(XMM0, XMM0, _MM_SHUFFLE2(1, 1)); \
-		XMM0 = _mm_add_pd(XMM0, XMM1); \
-		_mm_store_sd((s), XMM0); \
-	}
-
-	#define vec2norm(s, x, n) \
-	{ \
-		int i; \
-		__m128d XMM0 = _mm_setzero_pd(); \
-		__m128d XMM1 = _mm_setzero_pd(); \
-		__m128d XMM2, XMM3, XMM4, XMM5; \
-		for (i = 0;i < (n);i += 4) { \
-			XMM2 = _mm_load_pd((x)+i  ); \
-			XMM3 = _mm_load_pd((x)+i+2); \
-			XMM4 = XMM2; \
-			XMM5 = XMM3; \
-			XMM2 = _mm_mul_pd(XMM2, XMM4); \
-			XMM3 = _mm_mul_pd(XMM3, XMM5); \
-			XMM0 = _mm_add_pd(XMM0, XMM2); \
-			XMM1 = _mm_add_pd(XMM1, XMM3); \
-		} \
-		XMM0 = _mm_add_pd(XMM0, XMM1); \
-		XMM1 = _mm_shuffle_pd(XMM0, XMM0, _MM_SHUFFLE2(1, 1)); \
-		XMM0 = _mm_add_pd(XMM0, XMM1); \
-		XMM0 = _mm_sqrt_pd(XMM0); \
-		_mm_store_sd((s), XMM0); \
-	}
-
-
-	#define vec2norminv(s, x, n) \
-	{ \
-		int i; \
-		__m128d XMM0 = _mm_setzero_pd(); \
-		__m128d XMM1 = _mm_setzero_pd(); \
-		__m128d XMM2, XMM3, XMM4, XMM5; \
-		for (i = 0;i < (n);i += 4) { \
-			XMM2 = _mm_load_pd((x)+i  ); \
-			XMM3 = _mm_load_pd((x)+i+2); \
-			XMM4 = XMM2; \
-			XMM5 = XMM3; \
-			XMM2 = _mm_mul_pd(XMM2, XMM4); \
-			XMM3 = _mm_mul_pd(XMM3, XMM5); \
-			XMM0 = _mm_add_pd(XMM0, XMM2); \
-			XMM1 = _mm_add_pd(XMM1, XMM3); \
-		} \
-		XMM2 = _mm_set1_pd(1.0); \
-		XMM0 = _mm_add_pd(XMM0, XMM1); \
-		XMM1 = _mm_shuffle_pd(XMM0, XMM0, _MM_SHUFFLE2(1, 1)); \
-		XMM0 = _mm_add_pd(XMM0, XMM1); \
-		XMM0 = _mm_sqrt_pd(XMM0); \
-		XMM2 = _mm_div_pd(XMM2, XMM0); \
-		_mm_store_sd((s), XMM2); \
-	}
-
-#elif   defined(USE_SSE) && defined(__SSE__) && LBFGS_FLOAT == 32
-
-	#include <stdlib.h>
-	#ifndef __APPLE__
-	#include <malloc.h>
-	#endif
-	#include <memory.h>
-
-	#if     1400 <= _MSC_VER
-	#include <intrin.h>
-	#endif/*_MSC_VER*/
-
-	#if     HAVE_XMMINTRIN_H
-	#include <xmmintrin.h>
-	#endif
-
-	#if     LBFGS_FLOAT == 32 && LBFGS_IEEE_FLOAT
-	#define fsigndiff(x, y) (((*(uint32_t*)(x)) ^ (*(uint32_t*)(y))) & 0x80000000U)
-	#else
-	#define fsigndiff(x, y) (*(x) * (*(y) / fabs(*(y))) < 0.)
-	#endif
-
-	inline static void* vecalloc(size_t size)
+	inline static void vecdot(double* s, const double* x, const double* y, const int n)
 	{
-	#if     defined(_MSC_VER)
-		void *memblock = _aligned_malloc(size, 16);
-	#elif   defined(__APPLE__)
-		void *memblock = malloc(size);
-	#else
-		void *memblock = NULL, *p = NULL;
-		if (posix_memalign(&p, 16, size) == 0) {
-			memblock = p;
+		int i;
+		__m128d XMM0 = _mm_setzero_pd();
+		__m128d XMM1 = _mm_setzero_pd();
+		__m128d XMM2, XMM3, XMM4, XMM5;
+		for (i = 0;i < (n);i += 4) {
+			XMM2 = _mm_load_pd((x)+i  );
+			XMM3 = _mm_load_pd((x)+i+2);
+			XMM4 = _mm_load_pd((y)+i  );
+			XMM5 = _mm_load_pd((y)+i+2);
+			XMM2 = _mm_mul_pd(XMM2, XMM4);
+			XMM3 = _mm_mul_pd(XMM3, XMM5);
+			XMM0 = _mm_add_pd(XMM0, XMM2);
+			XMM1 = _mm_add_pd(XMM1, XMM3);
 		}
-	#endif
-		if (memblock != NULL) {
-			memset(memblock, 0, size);
-		}
-		return memblock;
+		XMM0 = _mm_add_pd(XMM0, XMM1);
+		XMM1 = _mm_shuffle_pd(XMM0, XMM0, _MM_SHUFFLE2(1, 1));
+		XMM0 = _mm_add_pd(XMM0, XMM1);
+		_mm_store_sd((s), XMM0);
 	}
 
-	inline static void vecfree(void *memblock)
+	inline static void vec2norm(double* s, const double* x, const int n)
 	{
-	#ifdef	_MSC_VER
-		_aligned_free(memblock);
-	#else
-		free(memblock);
-	#endif
+		int i;
+		__m128d XMM0 = _mm_setzero_pd();
+		__m128d XMM1 = _mm_setzero_pd();
+		__m128d XMM2, XMM3, XMM4, XMM5;
+		for (i = 0;i < (n);i += 4) {
+			XMM2 = _mm_load_pd((x)+i  );
+			XMM3 = _mm_load_pd((x)+i+2);
+			XMM4 = XMM2;
+			XMM5 = XMM3;
+			XMM2 = _mm_mul_pd(XMM2, XMM4);
+			XMM3 = _mm_mul_pd(XMM3, XMM5);
+			XMM0 = _mm_add_pd(XMM0, XMM2);
+			XMM1 = _mm_add_pd(XMM1, XMM3);
+		}
+		XMM0 = _mm_add_pd(XMM0, XMM1);
+		XMM1 = _mm_shuffle_pd(XMM0, XMM0, _MM_SHUFFLE2(1, 1));
+		XMM0 = _mm_add_pd(XMM0, XMM1);
+		XMM0 = _mm_sqrt_pd(XMM0);
+		_mm_store_sd((s), XMM0);
 	}
 
-	#define vecset(x, c, n) \
-	{ \
-		int i; \
-		__m128 XMM0 = _mm_set_ps1(c); \
-		for (i = 0;i < (n);i += 16) { \
-			_mm_store_ps((x)+i   , XMM0); \
-			_mm_store_ps((x)+i+ 4, XMM0); \
-			_mm_store_ps((x)+i+ 8, XMM0); \
-			_mm_store_ps((x)+i+12, XMM0); \
-		} \
+	inline static void vec2norminv(double* s, const double* x, const int n)
+	{
+		int i;
+		__m128d XMM0 = _mm_setzero_pd();
+		__m128d XMM1 = _mm_setzero_pd();
+		__m128d XMM2, XMM3, XMM4, XMM5;
+		for (i = 0;i < (n);i += 4) {
+			XMM2 = _mm_load_pd((x)+i  );
+			XMM3 = _mm_load_pd((x)+i+2);
+			XMM4 = XMM2;
+			XMM5 = XMM3;
+			XMM2 = _mm_mul_pd(XMM2, XMM4);
+			XMM3 = _mm_mul_pd(XMM3, XMM5);
+			XMM0 = _mm_add_pd(XMM0, XMM2);
+			XMM1 = _mm_add_pd(XMM1, XMM3);
+		}
+		XMM2 = _mm_set1_pd(1.0);
+		XMM0 = _mm_add_pd(XMM0, XMM1);
+		XMM1 = _mm_shuffle_pd(XMM0, XMM0, _MM_SHUFFLE2(1, 1));
+		XMM0 = _mm_add_pd(XMM0, XMM1);
+		XMM0 = _mm_sqrt_pd(XMM0);
+		XMM2 = _mm_div_pd(XMM2, XMM0);
+		_mm_store_sd((s), XMM2);
 	}
 
-	#define veccpy(y, x, n) \
-	{ \
-		int i; \
-		for (i = 0;i < (n);i += 16) { \
-			__m128 XMM0 = _mm_load_ps((x)+i   ); \
-			__m128 XMM1 = _mm_load_ps((x)+i+ 4); \
-			__m128 XMM2 = _mm_load_ps((x)+i+ 8); \
-			__m128 XMM3 = _mm_load_ps((x)+i+12); \
-			_mm_store_ps((y)+i   , XMM0); \
-			_mm_store_ps((y)+i+ 4, XMM1); \
-			_mm_store_ps((y)+i+ 8, XMM2); \
-			_mm_store_ps((y)+i+12, XMM3); \
-		} \
+	inline static int fsigndiff(float* x, float* y)
+	{
+		#if    LBFGS_IEEE_FLOAT
+		return (((*(uint32_t*)(x)) ^ (*(uint32_t*)(y))) & 0x80000000U);
+		#else
+		return (*(x) * (*(y) / fabs(*(y))) < 0.0f);
+		#endif
 	}
 
-	#define vecncpy(y, x, n) \
-	{ \
-		int i; \
-		const uint32_t mask = 0x80000000; \
-		__m128 XMM4 = _mm_load_ps1((float*)&mask); \
-		for (i = 0;i < (n);i += 16) { \
-			__m128 XMM0 = _mm_load_ps((x)+i   ); \
-			__m128 XMM1 = _mm_load_ps((x)+i+ 4); \
-			__m128 XMM2 = _mm_load_ps((x)+i+ 8); \
-			__m128 XMM3 = _mm_load_ps((x)+i+12); \
-			XMM0 = _mm_xor_ps(XMM0, XMM4); \
-			XMM1 = _mm_xor_ps(XMM1, XMM4); \
-			XMM2 = _mm_xor_ps(XMM2, XMM4); \
-			XMM3 = _mm_xor_ps(XMM3, XMM4); \
-			_mm_store_ps((y)+i   , XMM0); \
-			_mm_store_ps((y)+i+ 4, XMM1); \
-			_mm_store_ps((y)+i+ 8, XMM2); \
-			_mm_store_ps((y)+i+12, XMM3); \
-		} \
+	inline static void vecset(float* x, const float c, const int n)
+	{
+		int i;
+		__m128 XMM0 = _mm_set_ps1(c);
+		for (i = 0;i < (n);i += 16) {
+			_mm_store_ps((x)+i   , XMM0);
+			_mm_store_ps((x)+i+ 4, XMM0);
+			_mm_store_ps((x)+i+ 8, XMM0);
+			_mm_store_ps((x)+i+12, XMM0);
+		}
 	}
 
-	#define vecadd(y, x, c, n) \
-	{ \
-		int i; \
-		__m128 XMM7 = _mm_set_ps1(c); \
-		for (i = 0;i < (n);i += 8) { \
-			__m128 XMM0 = _mm_load_ps((x)+i  ); \
-			__m128 XMM1 = _mm_load_ps((x)+i+4); \
-			__m128 XMM2 = _mm_load_ps((y)+i  ); \
-			__m128 XMM3 = _mm_load_ps((y)+i+4); \
-			XMM0 = _mm_mul_ps(XMM0, XMM7); \
-			XMM1 = _mm_mul_ps(XMM1, XMM7); \
-			XMM2 = _mm_add_ps(XMM2, XMM0); \
-			XMM3 = _mm_add_ps(XMM3, XMM1); \
-			_mm_store_ps((y)+i  , XMM2); \
-			_mm_store_ps((y)+i+4, XMM3); \
-		} \
+	inline static void veccpy(float* y, const float* x, const int n)
+	{
+		int i;
+		for (i = 0;i < (n);i += 16) {
+			__m128 XMM0 = _mm_load_ps((x)+i   );
+			__m128 XMM1 = _mm_load_ps((x)+i+ 4);
+			__m128 XMM2 = _mm_load_ps((x)+i+ 8);
+			__m128 XMM3 = _mm_load_ps((x)+i+12);
+			_mm_store_ps((y)+i   , XMM0);
+			_mm_store_ps((y)+i+ 4, XMM1);
+			_mm_store_ps((y)+i+ 8, XMM2);
+			_mm_store_ps((y)+i+12, XMM3);
+		}
 	}
 
-	#define vecdiff(z, x, y, n) \
-	{ \
-		int i; \
-		for (i = 0;i < (n);i += 16) { \
-			__m128 XMM0 = _mm_load_ps((x)+i   ); \
-			__m128 XMM1 = _mm_load_ps((x)+i+ 4); \
-			__m128 XMM2 = _mm_load_ps((x)+i+ 8); \
-			__m128 XMM3 = _mm_load_ps((x)+i+12); \
-			__m128 XMM4 = _mm_load_ps((y)+i   ); \
-			__m128 XMM5 = _mm_load_ps((y)+i+ 4); \
-			__m128 XMM6 = _mm_load_ps((y)+i+ 8); \
-			__m128 XMM7 = _mm_load_ps((y)+i+12); \
-			XMM0 = _mm_sub_ps(XMM0, XMM4); \
-			XMM1 = _mm_sub_ps(XMM1, XMM5); \
-			XMM2 = _mm_sub_ps(XMM2, XMM6); \
-			XMM3 = _mm_sub_ps(XMM3, XMM7); \
-			_mm_store_ps((z)+i   , XMM0); \
-			_mm_store_ps((z)+i+ 4, XMM1); \
-			_mm_store_ps((z)+i+ 8, XMM2); \
-			_mm_store_ps((z)+i+12, XMM3); \
-		} \
+	inline static void vecncpy(float* y, const float* x, const int n)
+	{
+		int i;
+		const uint32_t mask = 0x80000000;
+		__m128 XMM4 = _mm_load_ps1((float*)&mask);
+		for (i = 0;i < (n);i += 16) {
+			__m128 XMM0 = _mm_load_ps((x)+i   );
+			__m128 XMM1 = _mm_load_ps((x)+i+ 4);
+			__m128 XMM2 = _mm_load_ps((x)+i+ 8);
+			__m128 XMM3 = _mm_load_ps((x)+i+12);
+			XMM0 = _mm_xor_ps(XMM0, XMM4);
+			XMM1 = _mm_xor_ps(XMM1, XMM4);
+			XMM2 = _mm_xor_ps(XMM2, XMM4);
+			XMM3 = _mm_xor_ps(XMM3, XMM4);
+			_mm_store_ps((y)+i   , XMM0);
+			_mm_store_ps((y)+i+ 4, XMM1);
+			_mm_store_ps((y)+i+ 8, XMM2);
+			_mm_store_ps((y)+i+12, XMM3);
+		}
 	}
 
-	#define vecscale(y, c, n) \
-	{ \
-		int i; \
-		__m128 XMM7 = _mm_set_ps1(c); \
-		for (i = 0;i < (n);i += 8) { \
-			__m128 XMM0 = _mm_load_ps((y)+i  ); \
-			__m128 XMM1 = _mm_load_ps((y)+i+4); \
-			XMM0 = _mm_mul_ps(XMM0, XMM7); \
-			XMM1 = _mm_mul_ps(XMM1, XMM7); \
-			_mm_store_ps((y)+i  , XMM0); \
-			_mm_store_ps((y)+i+4, XMM1); \
-		} \
+	inline static void vecadd(float* y, const float* x, const float c, const int n)
+	{
+		int i;
+		__m128 XMM7 = _mm_set_ps1(c);
+		for (i = 0;i < (n);i += 8) {
+			__m128 XMM0 = _mm_load_ps((x)+i  );
+			__m128 XMM1 = _mm_load_ps((x)+i+4);
+			__m128 XMM2 = _mm_load_ps((y)+i  );
+			__m128 XMM3 = _mm_load_ps((y)+i+4);
+			XMM0 = _mm_mul_ps(XMM0, XMM7);
+			XMM1 = _mm_mul_ps(XMM1, XMM7);
+			XMM2 = _mm_add_ps(XMM2, XMM0);
+			XMM3 = _mm_add_ps(XMM3, XMM1);
+			_mm_store_ps((y)+i  , XMM2);
+			_mm_store_ps((y)+i+4, XMM3);
+		}
 	}
 
-	#define vecmul(y, x, n) \
-	{ \
-		int i; \
-		for (i = 0;i < (n);i += 16) { \
-			__m128 XMM0 = _mm_load_ps((x)+i   ); \
-			__m128 XMM1 = _mm_load_ps((x)+i+ 4); \
-			__m128 XMM2 = _mm_load_ps((x)+i+ 8); \
-			__m128 XMM3 = _mm_load_ps((x)+i+12); \
-			__m128 XMM4 = _mm_load_ps((y)+i   ); \
-			__m128 XMM5 = _mm_load_ps((y)+i+ 4); \
-			__m128 XMM6 = _mm_load_ps((y)+i+ 8); \
-			__m128 XMM7 = _mm_load_ps((y)+i+12); \
-			XMM4 = _mm_mul_ps(XMM4, XMM0); \
-			XMM5 = _mm_mul_ps(XMM5, XMM1); \
-			XMM6 = _mm_mul_ps(XMM6, XMM2); \
-			XMM7 = _mm_mul_ps(XMM7, XMM3); \
-			_mm_store_ps((y)+i   , XMM4); \
-			_mm_store_ps((y)+i+ 4, XMM5); \
-			_mm_store_ps((y)+i+ 8, XMM6); \
-			_mm_store_ps((y)+i+12, XMM7); \
-		} \
+	inline static void vecdiff(float* z, const float* x, const float* y, const int n)
+	{
+		int i;
+		for (i = 0;i < (n);i += 16) {
+			__m128 XMM0 = _mm_load_ps((x)+i   );
+			__m128 XMM1 = _mm_load_ps((x)+i+ 4);
+			__m128 XMM2 = _mm_load_ps((x)+i+ 8);
+			__m128 XMM3 = _mm_load_ps((x)+i+12);
+			__m128 XMM4 = _mm_load_ps((y)+i   );
+			__m128 XMM5 = _mm_load_ps((y)+i+ 4);
+			__m128 XMM6 = _mm_load_ps((y)+i+ 8);
+			__m128 XMM7 = _mm_load_ps((y)+i+12);
+			XMM0 = _mm_sub_ps(XMM0, XMM4);
+			XMM1 = _mm_sub_ps(XMM1, XMM5);
+			XMM2 = _mm_sub_ps(XMM2, XMM6);
+			XMM3 = _mm_sub_ps(XMM3, XMM7);
+			_mm_store_ps((z)+i   , XMM0);
+			_mm_store_ps((z)+i+ 4, XMM1);
+			_mm_store_ps((z)+i+ 8, XMM2);
+			_mm_store_ps((z)+i+12, XMM3);
+		}
 	}
 
-	#if     3 <= __SSE__ || defined(__SSE3__)
-
-	#define __horizontal_sum(r, rw) \
-		r = _mm_hadd_ps(r, r); \
-		r = _mm_hadd_ps(r, r);
-
-	#else
-
-	#define __horizontal_sum(r, rw) \
-		rw = r; \
-		r = _mm_shuffle_ps(r, rw, _MM_SHUFFLE(1, 0, 3, 2)); \
-		r = _mm_add_ps(r, rw); \
-		rw = r; \
-		r = _mm_shuffle_ps(r, rw, _MM_SHUFFLE(2, 3, 0, 1)); \
-		r = _mm_add_ps(r, rw);
-
-	#endif
-
-	#define vecdot(s, x, y, n) \
-	{ \
-		int i; \
-		__m128 XMM0 = _mm_setzero_ps(); \
-		__m128 XMM1 = _mm_setzero_ps(); \
-		__m128 XMM2, XMM3, XMM4, XMM5; \
-		for (i = 0;i < (n);i += 8) { \
-			XMM2 = _mm_load_ps((x)+i  ); \
-			XMM3 = _mm_load_ps((x)+i+4); \
-			XMM4 = _mm_load_ps((y)+i  ); \
-			XMM5 = _mm_load_ps((y)+i+4); \
-			XMM2 = _mm_mul_ps(XMM2, XMM4); \
-			XMM3 = _mm_mul_ps(XMM3, XMM5); \
-			XMM0 = _mm_add_ps(XMM0, XMM2); \
-			XMM1 = _mm_add_ps(XMM1, XMM3); \
-		} \
-		XMM0 = _mm_add_ps(XMM0, XMM1); \
-		__horizontal_sum(XMM0, XMM1); \
-		_mm_store_ss((s), XMM0); \
+	inline static void vecscale(float* y, const float c, const int n)
+	{
+		int i;
+		__m128 XMM7 = _mm_set_ps1(c);
+		for (i = 0;i < (n);i += 8) {
+			__m128 XMM0 = _mm_load_ps((y)+i  );
+			__m128 XMM1 = _mm_load_ps((y)+i+4);
+			XMM0 = _mm_mul_ps(XMM0, XMM7);
+			XMM1 = _mm_mul_ps(XMM1, XMM7);
+			_mm_store_ps((y)+i  , XMM0);
+			_mm_store_ps((y)+i+4, XMM1);
+		}
 	}
 
-	#define vec2norm(s, x, n) \
-	{ \
-		int i; \
-		__m128 XMM0 = _mm_setzero_ps(); \
-		__m128 XMM1 = _mm_setzero_ps(); \
-		__m128 XMM2, XMM3; \
-		for (i = 0;i < (n);i += 8) { \
-			XMM2 = _mm_load_ps((x)+i  ); \
-			XMM3 = _mm_load_ps((x)+i+4); \
-			XMM2 = _mm_mul_ps(XMM2, XMM2); \
-			XMM3 = _mm_mul_ps(XMM3, XMM3); \
-			XMM0 = _mm_add_ps(XMM0, XMM2); \
-			XMM1 = _mm_add_ps(XMM1, XMM3); \
-		} \
-		XMM0 = _mm_add_ps(XMM0, XMM1); \
-		__horizontal_sum(XMM0, XMM1); \
-		XMM2 = XMM0; \
-		XMM1 = _mm_rsqrt_ss(XMM0); \
-		XMM3 = XMM1; \
-		XMM1 = _mm_mul_ss(XMM1, XMM1); \
-		XMM1 = _mm_mul_ss(XMM1, XMM3); \
-		XMM1 = _mm_mul_ss(XMM1, XMM0); \
-		XMM1 = _mm_mul_ss(XMM1, _mm_set_ss(-0.5f)); \
-		XMM3 = _mm_mul_ss(XMM3, _mm_set_ss(1.5f)); \
-		XMM3 = _mm_add_ss(XMM3, XMM1); \
-		XMM3 = _mm_mul_ss(XMM3, XMM2); \
-		_mm_store_ss((s), XMM3); \
+	inline static void vecmul(float* y, const float* x, const int n)
+	{
+		int i;
+		for (i = 0;i < (n);i += 16) {
+			__m128 XMM0 = _mm_load_ps((x)+i   );
+			__m128 XMM1 = _mm_load_ps((x)+i+ 4);
+			__m128 XMM2 = _mm_load_ps((x)+i+ 8);
+			__m128 XMM3 = _mm_load_ps((x)+i+12);
+			__m128 XMM4 = _mm_load_ps((y)+i   );
+			__m128 XMM5 = _mm_load_ps((y)+i+ 4);
+			__m128 XMM6 = _mm_load_ps((y)+i+ 8);
+			__m128 XMM7 = _mm_load_ps((y)+i+12);
+			XMM4 = _mm_mul_ps(XMM4, XMM0);
+			XMM5 = _mm_mul_ps(XMM5, XMM1);
+			XMM6 = _mm_mul_ps(XMM6, XMM2);
+			XMM7 = _mm_mul_ps(XMM7, XMM3);
+			_mm_store_ps((y)+i   , XMM4);
+			_mm_store_ps((y)+i+ 4, XMM5);
+			_mm_store_ps((y)+i+ 8, XMM6);
+			_mm_store_ps((y)+i+12, XMM7);
+		}
 	}
 
-	#define vec2norminv(s, x, n) \
-	{ \
-		int i; \
-		__m128 XMM0 = _mm_setzero_ps(); \
-		__m128 XMM1 = _mm_setzero_ps(); \
-		__m128 XMM2, XMM3; \
-		for (i = 0;i < (n);i += 16) { \
-			XMM2 = _mm_load_ps((x)+i  ); \
-			XMM3 = _mm_load_ps((x)+i+4); \
-			XMM2 = _mm_mul_ps(XMM2, XMM2); \
-			XMM3 = _mm_mul_ps(XMM3, XMM3); \
-			XMM0 = _mm_add_ps(XMM0, XMM2); \
-			XMM1 = _mm_add_ps(XMM1, XMM3); \
-		} \
-		XMM0 = _mm_add_ps(XMM0, XMM1); \
-		__horizontal_sum(XMM0, XMM1); \
-		XMM2 = XMM0; \
-		XMM1 = _mm_rsqrt_ss(XMM0); \
-		XMM3 = XMM1; \
-		XMM1 = _mm_mul_ss(XMM1, XMM1); \
-		XMM1 = _mm_mul_ss(XMM1, XMM3); \
-		XMM1 = _mm_mul_ss(XMM1, XMM0); \
-		XMM1 = _mm_mul_ss(XMM1, _mm_set_ss(-0.5f)); \
-		XMM3 = _mm_mul_ss(XMM3, _mm_set_ss(1.5f)); \
-		XMM3 = _mm_add_ss(XMM3, XMM1); \
-		_mm_store_ss((s), XMM3); \
+	inline static void vecdot(float* s, const float* x, const float* y, const int n)
+	{
+		int i;
+		__m128 XMM0 = _mm_setzero_ps();
+		__m128 XMM1 = _mm_setzero_ps();
+		__m128 XMM2, XMM3, XMM4, XMM5;
+		for (i = 0;i < (n);i += 8) {
+			XMM2 = _mm_load_ps((x)+i  );
+			XMM3 = _mm_load_ps((x)+i+4);
+			XMM4 = _mm_load_ps((y)+i  );
+			XMM5 = _mm_load_ps((y)+i+4);
+			XMM2 = _mm_mul_ps(XMM2, XMM4);
+			XMM3 = _mm_mul_ps(XMM3, XMM5);
+			XMM0 = _mm_add_ps(XMM0, XMM2);
+			XMM1 = _mm_add_ps(XMM1, XMM3);
+		}
+		XMM0 = _mm_add_ps(XMM0, XMM1);
+		__horizontal_sum(XMM0, XMM1);
+		_mm_store_ss((s), XMM0);
+	}
+
+	inline static void vec2norm(float* s, const float* x, const int n)
+	{
+		int i;
+		__m128 XMM0 = _mm_setzero_ps();
+		__m128 XMM1 = _mm_setzero_ps();
+		__m128 XMM2, XMM3;
+		for (i = 0;i < (n);i += 8) {
+			XMM2 = _mm_load_ps((x)+i  );
+			XMM3 = _mm_load_ps((x)+i+4);
+			XMM2 = _mm_mul_ps(XMM2, XMM2);
+			XMM3 = _mm_mul_ps(XMM3, XMM3);
+			XMM0 = _mm_add_ps(XMM0, XMM2);
+			XMM1 = _mm_add_ps(XMM1, XMM3);
+		}
+		XMM0 = _mm_add_ps(XMM0, XMM1);
+		__horizontal_sum(XMM0, XMM1);
+		XMM2 = XMM0;
+		XMM1 = _mm_rsqrt_ss(XMM0);
+		XMM3 = XMM1;
+		XMM1 = _mm_mul_ss(XMM1, XMM1);
+		XMM1 = _mm_mul_ss(XMM1, XMM3);
+		XMM1 = _mm_mul_ss(XMM1, XMM0);
+		XMM1 = _mm_mul_ss(XMM1, _mm_set_ss(-0.5f));
+		XMM3 = _mm_mul_ss(XMM3, _mm_set_ss(1.5f));
+		XMM3 = _mm_add_ss(XMM3, XMM1);
+		XMM3 = _mm_mul_ss(XMM3, XMM2);
+		_mm_store_ss((s), XMM3);
+	}
+
+	inline static void vec2norminv(float* s, const float* x, const int n)
+	{
+		int i;
+		__m128 XMM0 = _mm_setzero_ps();
+		__m128 XMM1 = _mm_setzero_ps();
+		__m128 XMM2, XMM3;
+		for (i = 0;i < (n);i += 16) {
+			XMM2 = _mm_load_ps((x)+i  );
+			XMM3 = _mm_load_ps((x)+i+4);
+			XMM2 = _mm_mul_ps(XMM2, XMM2);
+			XMM3 = _mm_mul_ps(XMM3, XMM3);
+			XMM0 = _mm_add_ps(XMM0, XMM2);
+			XMM1 = _mm_add_ps(XMM1, XMM3);
+		}
+		XMM0 = _mm_add_ps(XMM0, XMM1);
+		__horizontal_sum(XMM0, XMM1);
+		XMM2 = XMM0;
+		XMM1 = _mm_rsqrt_ss(XMM0);
+		XMM3 = XMM1;
+		XMM1 = _mm_mul_ss(XMM1, XMM1);
+		XMM1 = _mm_mul_ss(XMM1, XMM3);
+		XMM1 = _mm_mul_ss(XMM1, XMM0);
+		XMM1 = _mm_mul_ss(XMM1, _mm_set_ss(-0.5f));
+		XMM3 = _mm_mul_ss(XMM3, _mm_set_ss(1.5f));
+		XMM3 = _mm_add_ss(XMM3, XMM1);
+		_mm_store_ss((s), XMM3);
 	}
 
 #else
@@ -653,11 +606,19 @@ typedef int (*lbfgs_progress_t)(
 	#include <stdlib.h>
 	#include <memory.h>
 
-	#if     LBFGS_FLOAT == 32 && LBFGS_IEEE_FLOAT
-	#define fsigndiff(x, y) (((*(uint32_t*)(x)) ^ (*(uint32_t*)(y))) & 0x80000000U)
+	inline static int fsigndiff(float* x, float* y)
+	{
+	#if    LBFGS_IEEE_FLOAT
+		return (((*(uint32_t*)(x)) ^ (*(uint32_t*)(y))) & 0x80000000U);
 	#else
-	#define fsigndiff(x, y) (*(x) * (*(y) / fabs(*(y))) < 0.)
+		return (*(x) * (*(y) / fabs(*(y))) < 0.0f);
 	#endif
+	}
+
+	inline static int fsigndiff(double* x, double* y)
+	{
+		return (*(x) * (*(y) / fabs(*(y))) < 0.0f);
+	}
 
 	inline static void* vecalloc(size_t size)
 	{
@@ -673,6 +634,7 @@ typedef int (*lbfgs_progress_t)(
 		free(memblock);
 	}
 
+	template<typename lbfgsfloatval_t>
 	inline static void vecset(lbfgsfloatval_t *x, const lbfgsfloatval_t c, const int n)
 	{
 		int i;
@@ -682,6 +644,7 @@ typedef int (*lbfgs_progress_t)(
 		}
 	}
 
+	template<typename lbfgsfloatval_t>
 	inline static void veccpy(lbfgsfloatval_t *y, const lbfgsfloatval_t *x, const int n)
 	{
 		int i;
@@ -691,6 +654,7 @@ typedef int (*lbfgs_progress_t)(
 		}
 	}
 
+	template<typename lbfgsfloatval_t>
 	inline static void vecncpy(lbfgsfloatval_t *y, const lbfgsfloatval_t *x, const int n)
 	{
 		int i;
@@ -700,6 +664,7 @@ typedef int (*lbfgs_progress_t)(
 		}
 	}
 
+	template<typename lbfgsfloatval_t>
 	inline static void vecadd(lbfgsfloatval_t *y, const lbfgsfloatval_t *x, const lbfgsfloatval_t c, const int n)
 	{
 		int i;
@@ -708,7 +673,8 @@ typedef int (*lbfgs_progress_t)(
 			y[i] += c * x[i];
 		}
 	}
-
+	
+	template<typename lbfgsfloatval_t>
 	inline static void vecdiff(lbfgsfloatval_t *z, const lbfgsfloatval_t *x, const lbfgsfloatval_t *y, const int n)
 	{
 		int i;
@@ -718,6 +684,7 @@ typedef int (*lbfgs_progress_t)(
 		}
 	}
 
+	template<typename lbfgsfloatval_t>
 	inline static void vecscale(lbfgsfloatval_t *y, const lbfgsfloatval_t c, const int n)
 	{
 		int i;
@@ -727,6 +694,7 @@ typedef int (*lbfgs_progress_t)(
 		}
 	}
 
+	template<typename lbfgsfloatval_t>
 	inline static void vecmul(lbfgsfloatval_t *y, const lbfgsfloatval_t *x, const int n)
 	{
 		int i;
@@ -736,6 +704,7 @@ typedef int (*lbfgs_progress_t)(
 		}
 	}
 
+	template<typename lbfgsfloatval_t>
 	inline static void vecdot(lbfgsfloatval_t* s, const lbfgsfloatval_t *x, const lbfgsfloatval_t *y, const int n)
 	{
 		int i;
@@ -745,12 +714,14 @@ typedef int (*lbfgs_progress_t)(
 		}
 	}
 
+	template<typename lbfgsfloatval_t>
 	inline static void vec2norm(lbfgsfloatval_t* s, const lbfgsfloatval_t *x, const int n)
 	{
 		vecdot(s, x, x, n);
 		*s = (lbfgsfloatval_t)sqrt(*s);
 	}
-
+	
+	template<typename lbfgsfloatval_t>
 	inline static void vec2norminv(lbfgsfloatval_t* s, const lbfgsfloatval_t *x, const int n)
 	{
 		vec2norm(s, x, n);
@@ -763,30 +734,24 @@ typedef int (*lbfgs_progress_t)(
 #define max2(a, b)      ((a) >= (b) ? (a) : (b))
 #define max3(a, b, c)   max2(max2((a), (b)), (c));
 
-struct tag_callback_data {
+template<typename lbfgsfloatval_t>
+struct callback_data_t {
 	int n;
 	void *instance;
-	lbfgs_evaluate_t proc_evaluate;
-	lbfgs_progress_t proc_progress;
+	lbfgs_evaluate_t<lbfgsfloatval_t> proc_evaluate;
+	lbfgs_progress_t<lbfgsfloatval_t> proc_progress;
 };
-typedef struct tag_callback_data callback_data_t;
 
-struct tag_iteration_data {
+template<typename lbfgsfloatval_t>
+struct iteration_data_t {
 	lbfgsfloatval_t alpha;
 	lbfgsfloatval_t *s;
 	lbfgsfloatval_t *y;
 	lbfgsfloatval_t ys;
 };
-typedef struct tag_iteration_data iteration_data_t;
 
-static const lbfgs_parameter_t _defparam = {
-	6, 1e-5, 0, 1e-5,
-	0, LBFGS_LINESEARCH_DEFAULT, 40,
-	1e-20, 1e20, 1e-4, 0.9, 0.9, 1.0e-16,
-	0.0, 0, -1,
-};
-
-typedef int (*line_search_proc)(
+template<typename lbfgsfloatval_t>
+using line_search_proc = int (*)(
 	int n,
 	lbfgsfloatval_t *x,
 	lbfgsfloatval_t *f,
@@ -796,74 +761,338 @@ typedef int (*line_search_proc)(
 	const lbfgsfloatval_t* xp,
 	const lbfgsfloatval_t* gp,
 	lbfgsfloatval_t *wa,
-	callback_data_t *cd,
-	const lbfgs_parameter_t *param
-	);
-	
-static int line_search_backtracking(
-	int n,
-	lbfgsfloatval_t *x,
-	lbfgsfloatval_t *f,
-	lbfgsfloatval_t *g,
-	lbfgsfloatval_t *s,
-	lbfgsfloatval_t *stp,
-	const lbfgsfloatval_t* xp,
-	const lbfgsfloatval_t* gp,
-	lbfgsfloatval_t *wa,
-	callback_data_t *cd,
-	const lbfgs_parameter_t *param
+	callback_data_t<lbfgsfloatval_t> *cd,
+	const lbfgs_parameter_t<lbfgsfloatval_t> *param
 	);
 
-static int line_search_backtracking_owlqn(
-	int n,
-	lbfgsfloatval_t *x,
-	lbfgsfloatval_t *f,
-	lbfgsfloatval_t *g,
-	lbfgsfloatval_t *s,
-	lbfgsfloatval_t *stp,
-	const lbfgsfloatval_t* xp,
-	const lbfgsfloatval_t* gp,
-	lbfgsfloatval_t *wp,
-	callback_data_t *cd,
-	const lbfgs_parameter_t *param
-	);
+#define USES_MINIMIZER \
+	lbfgsfloatval_t a, d, gamma, theta, p, q, r, s;
 
-static int line_search_morethuente(
-	int n,
-	lbfgsfloatval_t *x,
-	lbfgsfloatval_t *f,
-	lbfgsfloatval_t *g,
-	lbfgsfloatval_t *s,
-	lbfgsfloatval_t *stp,
-	const lbfgsfloatval_t* xp,
-	const lbfgsfloatval_t* gp,
-	lbfgsfloatval_t *wa,
-	callback_data_t *cd,
-	const lbfgs_parameter_t *param
-	);
+#define CUBIC_MINIMIZER(cm, u, fu, du, v, fv, dv) \
+	d = (v) - (u); \
+	theta = ((fu) - (fv)) * 3 / d + (du) + (dv); \
+	p = abs(theta); \
+	q = abs(du); \
+	r = abs(dv); \
+	s = max3(p, q, r); \
+	a = theta / s; \
+	gamma = s * (lbfgsfloatval_t)sqrt(a * a - ((du) / s) * ((dv) / s)); \
+	if ((v) < (u)) gamma = -gamma; \
+	p = gamma - (du) + theta; \
+	q = gamma - (du) + gamma + (dv); \
+	r = p / q; \
+	(cm) = (u) + r * d;
 
-static int update_trial_interval(
-	lbfgsfloatval_t *x,
-	lbfgsfloatval_t *fx,
-	lbfgsfloatval_t *dx,
-	lbfgsfloatval_t *y,
-	lbfgsfloatval_t *fy,
-	lbfgsfloatval_t *dy,
-	lbfgsfloatval_t *t,
-	lbfgsfloatval_t *ft,
-	lbfgsfloatval_t *dt,
+#define CUBIC_MINIMIZER2(cm, u, fu, du, v, fv, dv, xmin, xmax) \
+	d = (v) - (u); \
+	theta = ((fu) - (fv)) * 3 / d + (du) + (dv); \
+	p = abs(theta); \
+	q = abs(du); \
+	r = abs(dv); \
+	s = max3(p, q, r); \
+	a = theta / s; \
+	gamma = s * (lbfgsfloatval_t)sqrt(max2(0, a * a - ((du) / s) * ((dv) / s))); \
+	if ((u) < (v)) gamma = -gamma; \
+	p = gamma - (dv) + theta; \
+	q = gamma - (dv) + gamma + (du); \
+	r = p / q; \
+	if (r < 0. && gamma != 0.) { \
+		(cm) = (v) - r * d; \
+	} else if (d > 0) { \
+		(cm) = (xmax); \
+	} else { \
+		(cm) = (xmin); \
+	}
+
+#define QUAD_MINIMIZER(qm, u, fu, du, v, fv) \
+	a = (v) - (u); \
+	(qm) = (u) + (du) / (((fu) - (fv)) / a + (du)) / 2 * a;
+
+#define QUAD_MINIMIZER2(qm, u, du, v, dv) \
+	a = (u) - (v); \
+	(qm) = (v) + (dv) / ((dv) - (du)) * a;
+
+template<typename lbfgsfloatval_t>
+int update_trial_interval(
+	lbfgsfloatval_t* x,
+	lbfgsfloatval_t* fx,
+	lbfgsfloatval_t* dx,
+	lbfgsfloatval_t* y,
+	lbfgsfloatval_t* fy,
+	lbfgsfloatval_t* dy,
+	lbfgsfloatval_t* t,
+	lbfgsfloatval_t* ft,
+	lbfgsfloatval_t* dt,
 	const lbfgsfloatval_t tmin,
 	const lbfgsfloatval_t tmax,
-	int *brackt
-	);
+	int* brackt
+)
+{
+	int bound;
+	int dsign = fsigndiff(dt, dx);
+	lbfgsfloatval_t mc;
+	lbfgsfloatval_t mq;
+	lbfgsfloatval_t newt;
+	USES_MINIMIZER;
 
-static lbfgsfloatval_t owlqn_x1norm(
+	if (*brackt) {
+		if (*t <= min2(*x, *y) || max2(*x, *y) <= *t) {
+			return LBFGSERR_OUTOFINTERVAL;
+		}
+		if (0. <= *dx * (*t - *x)) {
+			return LBFGSERR_INCREASEGRADIENT;
+		}
+		if (tmax < tmin) {
+			return LBFGSERR_INCORRECT_TMINMAX;
+		}
+	}
+
+	if (*fx < *ft) {
+		*brackt = 1;
+		bound = 1;
+		CUBIC_MINIMIZER(mc, *x, *fx, *dx, *t, *ft, *dt);
+		QUAD_MINIMIZER(mq, *x, *fx, *dx, *t, *ft);
+		if (fabs(mc - *x) < fabs(mq - *x)) {
+			newt = mc;
+		}
+		else {
+			newt = mc + (lbfgsfloatval_t)0.5 * (mq - mc);
+		}
+	}
+	else if (dsign) {
+		*brackt = 1;
+		bound = 0;
+		CUBIC_MINIMIZER(mc, *x, *fx, *dx, *t, *ft, *dt);
+		QUAD_MINIMIZER2(mq, *x, *dx, *t, *dt);
+		if (fabs(mc - *t) > fabs(mq - *t)) {
+			newt = mc;
+		}
+		else {
+			newt = mq;
+		}
+	}
+	else if (fabs(*dt) < fabs(*dx)) {
+		bound = 1;
+		CUBIC_MINIMIZER2(mc, *x, *fx, *dx, *t, *ft, *dt, tmin, tmax);
+		QUAD_MINIMIZER2(mq, *x, *dx, *t, *dt);
+		if (*brackt) {
+			if (fabs(*t - mc) < fabs(*t - mq)) {
+				newt = mc;
+			}
+			else {
+				newt = mq;
+			}
+		}
+		else {
+			if (fabs(*t - mc) > fabs(*t - mq)) {
+				newt = mc;
+			}
+			else {
+				newt = mq;
+			}
+		}
+	}
+	else {
+		bound = 0;
+		if (*brackt) {
+			CUBIC_MINIMIZER(newt, *t, *ft, *dt, *y, *fy, *dy);
+		}
+		else if (*x < *t) {
+			newt = tmax;
+		}
+		else {
+			newt = tmin;
+		}
+	}
+
+	if (*fx < *ft) {
+		*y = *t;
+		*fy = *ft;
+		*dy = *dt;
+	}
+	else {
+		if (dsign) {
+			*y = *x;
+			*fy = *fx;
+			*dy = *dx;
+		}
+		*x = *t;
+		*fx = *ft;
+		*dx = *dt;
+	}
+
+	if (tmax < newt) newt = tmax;
+	if (newt < tmin) newt = tmin;
+
+	if (*brackt && bound) {
+		mq = *x + (lbfgsfloatval_t)0.66 * (*y - *x);
+		if (*x < *y) {
+			if (mq < newt) newt = mq;
+		}
+		else {
+			if (newt < mq) newt = mq;
+		}
+	}
+
+	*t = newt;
+	return 0;
+}
+
+template<typename lbfgsfloatval_t>
+int line_search_morethuente(
+	int n,
+	lbfgsfloatval_t* x,
+	lbfgsfloatval_t* f,
+	lbfgsfloatval_t* g,
+	lbfgsfloatval_t* s,
+	lbfgsfloatval_t* stp,
+	const lbfgsfloatval_t* xp,
+	const lbfgsfloatval_t* gp,
+	lbfgsfloatval_t* wa,
+	callback_data_t<lbfgsfloatval_t>* cd,
+	const lbfgs_parameter_t<lbfgsfloatval_t>* param
+)
+{
+	int count = 0;
+	int brackt, stage1, uinfo = 0;
+	lbfgsfloatval_t dg;
+	lbfgsfloatval_t stx, fx, dgx;
+	lbfgsfloatval_t sty, fy, dgy;
+	lbfgsfloatval_t fxm, dgxm, fym, dgym, fm, dgm;
+	lbfgsfloatval_t finit, ftest1, dginit, dgtest;
+	lbfgsfloatval_t width, prev_width;
+	lbfgsfloatval_t stmin, stmax;
+
+	if (*stp <= 0.) {
+		return LBFGSERR_INVALIDPARAMETERS;
+	}
+
+	vecdot(&dginit, g, s, n);
+
+	if (0 < dginit) {
+		return LBFGSERR_INCREASEGRADIENT;
+	}
+
+	brackt = 0;
+	stage1 = 1;
+	finit = *f;
+	dgtest = param->ftol * dginit;
+	width = param->max_step - param->min_step;
+	prev_width = (lbfgsfloatval_t)2.0 * width;
+
+	stx = sty = 0.;
+	fx = fy = finit;
+	dgx = dgy = dginit;
+
+	for (;;) {
+		if (brackt) {
+			stmin = min2(stx, sty);
+			stmax = max2(stx, sty);
+		}
+		else {
+			stmin = stx;
+			stmax = *stp + (lbfgsfloatval_t)4.0 * (*stp - stx);
+		}
+
+		if (*stp < param->min_step) *stp = param->min_step;
+		if (param->max_step < *stp) *stp = param->max_step;
+
+		if ((brackt && ((*stp <= stmin || stmax <= *stp) || param->max_linesearch <= count + 1 || uinfo != 0)) || (brackt && (stmax - stmin <= param->xtol * stmax))) {
+			*stp = stx;
+		}
+
+		veccpy(x, xp, n);
+		vecadd(x, s, *stp, n);
+
+		*f = cd->proc_evaluate(cd->instance, x, g, cd->n, *stp);
+		vecdot(&dg, g, s, n);
+
+		ftest1 = finit + *stp * dgtest;
+		++count;
+
+		if (brackt && ((*stp <= stmin || stmax <= *stp) || uinfo != 0)) {
+			return LBFGSERR_ROUNDING_ERROR;
+		}
+		if (*stp == param->max_step && *f <= ftest1 && dg <= dgtest) {
+			return LBFGSERR_MAXIMUMSTEP;
+		}
+		if (*stp == param->min_step && (ftest1 < *f || dgtest <= dg)) {
+			return LBFGSERR_MINIMUMSTEP;
+		}
+		if (brackt && (stmax - stmin) <= param->xtol * stmax) {
+			return LBFGSERR_WIDTHTOOSMALL;
+		}
+		if (param->max_linesearch <= count) {
+			return LBFGSERR_MAXIMUMLINESEARCH;
+		}
+		if (*f <= ftest1 && fabs(dg) <= param->gtol * (-dginit)) {
+			return count;
+		}
+
+		if (stage1 && *f <= ftest1 && min2(param->ftol, param->gtol) * dginit <= dg) {
+			stage1 = 0;
+		}
+
+		if (stage1 && ftest1 < *f && *f <= fx) {
+			fm = *f - *stp * dgtest;
+			fxm = fx - stx * dgtest;
+			fym = fy - sty * dgtest;
+			dgm = dg - dgtest;
+			dgxm = dgx - dgtest;
+			dgym = dgy - dgtest;
+
+			uinfo = update_trial_interval(
+				&stx, &fxm, &dgxm,
+				&sty, &fym, &dgym,
+				stp, &fm, &dgm,
+				stmin, stmax, &brackt
+			);
+
+			fx = fxm + stx * dgtest;
+			fy = fym + sty * dgtest;
+			dgx = dgxm + dgtest;
+			dgy = dgym + dgtest;
+		}
+		else {
+			uinfo = update_trial_interval(
+				&stx, &fx, &dgx,
+				&sty, &fy, &dgy,
+				stp, f, &dg,
+				stmin, stmax, &brackt
+			);
+		}
+
+		if (brackt) {
+			if ((lbfgsfloatval_t)0.66 * prev_width <= abs(sty - stx)) {
+				*stp = stx + (lbfgsfloatval_t)0.5 * (sty - stx);
+			}
+			prev_width = width;
+			width = abs(sty - stx);
+		}
+	}
+
+	return LBFGSERR_LOGICERROR;
+}
+
+template<typename lbfgsfloatval_t>
+lbfgsfloatval_t owlqn_x1norm(
 	const lbfgsfloatval_t* x,
 	const int start,
 	const int n
-	);
+)
+{
+	int i;
+	lbfgsfloatval_t norm = 0.;
 
-static void owlqn_pseudo_gradient(
+	for (i = start; i < n; ++i) {
+		norm += abs(x[i]);
+	}
+
+	return norm;
+}
+
+template<typename lbfgsfloatval_t>
+void owlqn_pseudo_gradient(
 	lbfgsfloatval_t* pg,
 	const lbfgsfloatval_t* x,
 	const lbfgsfloatval_t* g,
@@ -871,14 +1100,199 @@ static void owlqn_pseudo_gradient(
 	const lbfgsfloatval_t c,
 	const int start,
 	const int end
-	);
+)
+{
+	int i;
 
-static void owlqn_project(
+	for (i = 0; i < start; ++i) {
+		pg[i] = g[i];
+	}
+
+	for (i = start; i < end; ++i) {
+		if (x[i] < 0.) {
+			pg[i] = g[i] - c;
+		}
+		else if (0. < x[i]) {
+			pg[i] = g[i] + c;
+		}
+		else {
+			if (g[i] < -c) {
+				pg[i] = g[i] + c;
+			}
+			else if (c < g[i]) {
+				pg[i] = g[i] - c;
+			}
+			else {
+				pg[i] = 0.;
+			}
+}
+	}
+
+	for (i = end; i < n; ++i) {
+		pg[i] = g[i];
+	}
+}
+
+template<typename lbfgsfloatval_t>
+void owlqn_project(
 	lbfgsfloatval_t* d,
 	const lbfgsfloatval_t* sign,
 	const int start,
 	const int end
-	);
+)
+{
+	int i;
+
+	for (i = start; i < end; ++i) {
+		if (d[i] * sign[i] <= 0) {
+			d[i] = 0;
+		}
+	}
+}
+
+template<typename lbfgsfloatval_t>
+int line_search_backtracking(
+	int n,
+	lbfgsfloatval_t* x,
+	lbfgsfloatval_t* f,
+	lbfgsfloatval_t* g,
+	lbfgsfloatval_t* s,
+	lbfgsfloatval_t* stp,
+	const lbfgsfloatval_t* xp,
+	const lbfgsfloatval_t* gp,
+	lbfgsfloatval_t* wp,
+	callback_data_t<lbfgsfloatval_t>* cd,
+	const lbfgs_parameter_t<lbfgsfloatval_t>* param
+)
+{
+	int count = 0;
+	lbfgsfloatval_t width, dg;
+	lbfgsfloatval_t finit, dginit = 0., dgtest;
+	const lbfgsfloatval_t dec = (lbfgsfloatval_t)0.5, inc = (lbfgsfloatval_t)2.1;
+
+	if (*stp <= 0.) {
+		return LBFGSERR_INVALIDPARAMETERS;
+	}
+
+	vecdot(&dginit, g, s, n);
+	if (0 < dginit) {
+		return LBFGSERR_INCREASEGRADIENT;
+	}
+
+	finit = *f;
+	dgtest = param->ftol * dginit;
+
+	for (;;) {
+		veccpy(x, xp, n);
+		vecadd(x, s, *stp, n);
+
+		*f = cd->proc_evaluate(cd->instance, x, g, cd->n, *stp);
+
+		++count;
+
+		if (*f > finit + *stp * dgtest) {
+			width = dec;
+		}
+		else {
+			if (param->linesearch == LBFGS_LINESEARCH_BACKTRACKING_ARMIJO) {
+				return count;
+			}
+
+			vecdot(&dg, g, s, n);
+			if (dg < param->wolfe * dginit) {
+				width = inc;
+			}
+			else {
+				if (param->linesearch == LBFGS_LINESEARCH_BACKTRACKING_WOLFE) {
+					return count;
+				}
+
+				if (dg > -param->wolfe * dginit) {
+					width = dec;
+				}
+				else {
+					return count;
+				}
+			}
+		}
+
+		if (*stp < param->min_step) {
+			return LBFGSERR_MINIMUMSTEP;
+		}
+		if (*stp > param->max_step) {
+			return LBFGSERR_MAXIMUMSTEP;
+		}
+		if (param->max_linesearch <= count) {
+			return LBFGSERR_MAXIMUMLINESEARCH;
+		}
+
+		(*stp) *= width;
+	}
+}
+
+template<typename lbfgsfloatval_t>
+int line_search_backtracking_owlqn(
+	int n,
+	lbfgsfloatval_t* x,
+	lbfgsfloatval_t* f,
+	lbfgsfloatval_t* g,
+	lbfgsfloatval_t* s,
+	lbfgsfloatval_t* stp,
+	const lbfgsfloatval_t* xp,
+	const lbfgsfloatval_t* gp,
+	lbfgsfloatval_t* wp,
+	callback_data_t<lbfgsfloatval_t>* cd,
+	const lbfgs_parameter_t<lbfgsfloatval_t>* param
+)
+{
+	int i, count = 0;
+	lbfgsfloatval_t width = 0.5, norm = 0.;
+	lbfgsfloatval_t finit = *f, dgtest;
+
+	if (*stp <= 0.) {
+		return LBFGSERR_INVALIDPARAMETERS;
+	}
+
+	for (i = 0; i < n; ++i) {
+		wp[i] = (xp[i] == 0.) ? -gp[i] : xp[i];
+	}
+
+	for (;;) {
+		veccpy(x, xp, n);
+		vecadd(x, s, *stp, n);
+
+		owlqn_project(x, wp, param->orthantwise_start, param->orthantwise_end);
+
+		*f = cd->proc_evaluate(cd->instance, x, g, cd->n, *stp);
+
+		norm = owlqn_x1norm(x, param->orthantwise_start, param->orthantwise_end);
+		*f += norm * param->orthantwise_c;
+
+		++count;
+
+		dgtest = 0.;
+		for (i = 0; i < n; ++i) {
+			dgtest += (x[i] - xp[i]) * gp[i];
+		}
+
+		if (*f <= finit + param->ftol * dgtest) {
+			return count;
+		}
+
+		if (*stp < param->min_step) {
+			return LBFGSERR_MINIMUMSTEP;
+		}
+		if (*stp > param->max_step) {
+			return LBFGSERR_MAXIMUMSTEP;
+		}
+		if (param->max_linesearch <= count) {
+			return LBFGSERR_MAXIMUMLINESEARCH;
+		}
+
+		(*stp) *= width;
+	}
+}
+
 
 #if     defined(USE_SSE) && (defined(__SSE__) || defined(__SSE2__))
 static int round_out_variables(int n)
@@ -890,6 +1304,7 @@ static int round_out_variables(int n)
 }
 #endif
 
+template<typename lbfgsfloatval_t>
 inline lbfgsfloatval_t* lbfgs_malloc(int n)
 {
 #if     defined(USE_SSE) && (defined(__SSE__) || defined(__SSE2__))
@@ -898,24 +1313,21 @@ inline lbfgsfloatval_t* lbfgs_malloc(int n)
 	return (lbfgsfloatval_t*)vecalloc(sizeof(lbfgsfloatval_t) * n);
 }
 
+template<typename lbfgsfloatval_t>
 inline void lbfgs_free(lbfgsfloatval_t *x)
 {
 	vecfree(x);
 }
 
-inline void lbfgs_parameter_init(lbfgs_parameter_t *param)
-{
-	memcpy(param, &_defparam, sizeof(*param));
-}
-
+template<typename lbfgsfloatval_t>
 inline int lbfgs(
 	int n,
 	lbfgsfloatval_t *x,
 	lbfgsfloatval_t *ptr_fx,
-	lbfgs_evaluate_t proc_evaluate,
-	lbfgs_progress_t proc_progress,
+	lbfgs_evaluate_t<lbfgsfloatval_t> proc_evaluate,
+	lbfgs_progress_t<lbfgsfloatval_t> proc_progress,
 	void *instance,
-	lbfgs_parameter_t *_param
+	lbfgs_parameter_t<lbfgsfloatval_t>*_param
 	)
 {
 	int ret;
@@ -923,20 +1335,20 @@ inline int lbfgs(
 	lbfgsfloatval_t step;
 
 	/* Constant parameters and their default values. */
-	lbfgs_parameter_t param = (_param != NULL) ? (*_param) : _defparam;
+	lbfgs_parameter_t<lbfgsfloatval_t> param = *_param;
 	const int m = param.m;
 
 	lbfgsfloatval_t *xp = NULL;
 	lbfgsfloatval_t *g = NULL, *gp = NULL, *pg = NULL;
 	lbfgsfloatval_t *d = NULL, *w = NULL, *pf = NULL;
-	iteration_data_t *lm = NULL, *it = NULL;
+	iteration_data_t<lbfgsfloatval_t> *lm = NULL, *it = NULL;
 	lbfgsfloatval_t ys, yy;
 	lbfgsfloatval_t xnorm, gnorm, beta;
 	lbfgsfloatval_t fx = 0.;
 	lbfgsfloatval_t rate = 0.;
-	line_search_proc linesearch = line_search_morethuente;
+	line_search_proc<lbfgsfloatval_t> linesearch = line_search_morethuente<lbfgsfloatval_t>;
 
-	callback_data_t cd;
+	callback_data_t<lbfgsfloatval_t> cd;
 	cd.n = n;
 	cd.instance = instance;
 	cd.proc_evaluate = proc_evaluate;
@@ -1044,7 +1456,7 @@ inline int lbfgs(
 		}
 	}
 
-	lm = (iteration_data_t*)vecalloc(m * sizeof(iteration_data_t));
+	lm = (iteration_data_t<lbfgsfloatval_t>*)vecalloc(m * sizeof(iteration_data_t<lbfgsfloatval_t>));
 	if (lm == NULL) {
 		ret = LBFGSERR_OUTOFMEMORY;
 		goto lbfgs_exit;
@@ -1310,559 +1722,54 @@ inline const char* lbfgs_strerror(int err)
 	}
 }
 
-static int line_search_backtracking(
-	int n,
-	lbfgsfloatval_t *x,
-	lbfgsfloatval_t *f,
-	lbfgsfloatval_t *g,
-	lbfgsfloatval_t *s,
-	lbfgsfloatval_t *stp,
-	const lbfgsfloatval_t* xp,
-	const lbfgsfloatval_t* gp,
-	lbfgsfloatval_t *wp,
-	callback_data_t *cd,
-	const lbfgs_parameter_t *param
-	)
-{
-	int count = 0;
-	lbfgsfloatval_t width, dg;
-	lbfgsfloatval_t finit, dginit = 0., dgtest;
-	const lbfgsfloatval_t dec = 0.5, inc = 2.1;
-
-	if (*stp <= 0.) {
-		return LBFGSERR_INVALIDPARAMETERS;
-	}
-
-	vecdot(&dginit, g, s, n);
-	if (0 < dginit) {
-		return LBFGSERR_INCREASEGRADIENT;
-	}
-
-	finit = *f;
-	dgtest = param->ftol * dginit;
-
-	for (;;) {
-		veccpy(x, xp, n);
-		vecadd(x, s, *stp, n);
-
-		*f = cd->proc_evaluate(cd->instance, x, g, cd->n, *stp);
-
-		++count;
-
-		if (*f > finit + *stp * dgtest) {
-			width = dec;
-		} else {
-			if (param->linesearch == LBFGS_LINESEARCH_BACKTRACKING_ARMIJO) {
-				return count;
-			}
-
-			vecdot(&dg, g, s, n);
-			if (dg < param->wolfe * dginit) {
-				width = inc;
-			} else {
-				if(param->linesearch == LBFGS_LINESEARCH_BACKTRACKING_WOLFE) {
-					return count;
-				}
-
-				if(dg > -param->wolfe * dginit) {
-					width = dec;
-				} else {
-					return count;
-				}
-			}
-		}
-
-		if (*stp < param->min_step) {
-			return LBFGSERR_MINIMUMSTEP;
-		}
-		if (*stp > param->max_step) {
-			return LBFGSERR_MAXIMUMSTEP;
-		}
-		if (param->max_linesearch <= count) {
-			return LBFGSERR_MAXIMUMLINESEARCH;
-		}
-
-		(*stp) *= width;
-	}
-}
-
-
-
-static int line_search_backtracking_owlqn(
-	int n,
-	lbfgsfloatval_t *x,
-	lbfgsfloatval_t *f,
-	lbfgsfloatval_t *g,
-	lbfgsfloatval_t *s,
-	lbfgsfloatval_t *stp,
-	const lbfgsfloatval_t* xp,
-	const lbfgsfloatval_t* gp,
-	lbfgsfloatval_t *wp,
-	callback_data_t *cd,
-	const lbfgs_parameter_t *param
-	)
-{
-	int i, count = 0;
-	lbfgsfloatval_t width = 0.5, norm = 0.;
-	lbfgsfloatval_t finit = *f, dgtest;
-
-	if (*stp <= 0.) {
-		return LBFGSERR_INVALIDPARAMETERS;
-	}
-
-	for (i = 0;i < n;++i) {
-		wp[i] = (xp[i] == 0.) ? -gp[i] : xp[i];
-	}
-
-	for (;;) {
-		veccpy(x, xp, n);
-		vecadd(x, s, *stp, n);
-
-		owlqn_project(x, wp, param->orthantwise_start, param->orthantwise_end);
-
-		*f = cd->proc_evaluate(cd->instance, x, g, cd->n, *stp);
-
-		norm = owlqn_x1norm(x, param->orthantwise_start, param->orthantwise_end);
-		*f += norm * param->orthantwise_c;
-
-		++count;
-
-		dgtest = 0.;
-		for (i = 0;i < n;++i) {
-			dgtest += (x[i] - xp[i]) * gp[i];
-		}
-
-		if (*f <= finit + param->ftol * dgtest) {
-			return count;
-		}
-
-		if (*stp < param->min_step) {
-			return LBFGSERR_MINIMUMSTEP;
-		}
-		if (*stp > param->max_step) {
-			return LBFGSERR_MAXIMUMSTEP;
-		}
-		if (param->max_linesearch <= count) {
-			return LBFGSERR_MAXIMUMLINESEARCH;
-		}
-
-		(*stp) *= width;
-	}
-}
-
-
-
-static int line_search_morethuente(
-	int n,
-	lbfgsfloatval_t *x,
-	lbfgsfloatval_t *f,
-	lbfgsfloatval_t *g,
-	lbfgsfloatval_t *s,
-	lbfgsfloatval_t *stp,
-	const lbfgsfloatval_t* xp,
-	const lbfgsfloatval_t* gp,
-	lbfgsfloatval_t *wa,
-	callback_data_t *cd,
-	const lbfgs_parameter_t *param
-	)
-{
-	int count = 0;
-	int brackt, stage1, uinfo = 0;
-	lbfgsfloatval_t dg;
-	lbfgsfloatval_t stx, fx, dgx;
-	lbfgsfloatval_t sty, fy, dgy;
-	lbfgsfloatval_t fxm, dgxm, fym, dgym, fm, dgm;
-	lbfgsfloatval_t finit, ftest1, dginit, dgtest;
-	lbfgsfloatval_t width, prev_width;
-	lbfgsfloatval_t stmin, stmax;
-
-	if (*stp <= 0.) {
-		return LBFGSERR_INVALIDPARAMETERS;
-	}
-
-	vecdot(&dginit, g, s, n);
-
-	if (0 < dginit) {
-		return LBFGSERR_INCREASEGRADIENT;
-	}
-
-	brackt = 0;
-	stage1 = 1;
-	finit = *f;
-	dgtest = param->ftol * dginit;
-	width = param->max_step - param->min_step;
-	prev_width = 2.0 * width;
-
-	stx = sty = 0.;
-	fx = fy = finit;
-	dgx = dgy = dginit;
-
-	for (;;) {
-		if (brackt) {
-			stmin = min2(stx, sty);
-			stmax = max2(stx, sty);
-		} else {
-			stmin = stx;
-			stmax = *stp + 4.0 * (*stp - stx);
-		}
-
-		if (*stp < param->min_step) *stp = param->min_step;
-		if (param->max_step < *stp) *stp = param->max_step;
-
-		if ((brackt && ((*stp <= stmin || stmax <= *stp) || param->max_linesearch <= count + 1 || uinfo != 0)) || (brackt && (stmax - stmin <= param->xtol * stmax))) {
-			*stp = stx;
-		}
-
-		veccpy(x, xp, n);
-		vecadd(x, s, *stp, n);
-
-		*f = cd->proc_evaluate(cd->instance, x, g, cd->n, *stp);
-		vecdot(&dg, g, s, n);
-
-		ftest1 = finit + *stp * dgtest;
-		++count;
-
-		if (brackt && ((*stp <= stmin || stmax <= *stp) || uinfo != 0)) {
-			return LBFGSERR_ROUNDING_ERROR;
-		}
-		if (*stp == param->max_step && *f <= ftest1 && dg <= dgtest) {
-			return LBFGSERR_MAXIMUMSTEP;
-		}
-		if (*stp == param->min_step && (ftest1 < *f || dgtest <= dg)) {
-			return LBFGSERR_MINIMUMSTEP;
-		}
-		if (brackt && (stmax - stmin) <= param->xtol * stmax) {
-			return LBFGSERR_WIDTHTOOSMALL;
-		}
-		if (param->max_linesearch <= count) {
-			return LBFGSERR_MAXIMUMLINESEARCH;
-		}
-		if (*f <= ftest1 && fabs(dg) <= param->gtol * (-dginit)) {
-			return count;
-		}
-
-		if (stage1 && *f <= ftest1 && min2(param->ftol, param->gtol) * dginit <= dg) {
-			stage1 = 0;
-		}
-
-		if (stage1 && ftest1 < *f && *f <= fx) {
-			fm = *f - *stp * dgtest;
-			fxm = fx - stx * dgtest;
-			fym = fy - sty * dgtest;
-			dgm = dg - dgtest;
-			dgxm = dgx - dgtest;
-			dgym = dgy - dgtest;
-
-			uinfo = update_trial_interval(
-				&stx, &fxm, &dgxm,
-				&sty, &fym, &dgym,
-				stp, &fm, &dgm,
-				stmin, stmax, &brackt
-				);
-
-			fx = fxm + stx * dgtest;
-			fy = fym + sty * dgtest;
-			dgx = dgxm + dgtest;
-			dgy = dgym + dgtest;
-		} else {
-			uinfo = update_trial_interval(
-				&stx, &fx, &dgx,
-				&sty, &fy, &dgy,
-				stp, f, &dg,
-				stmin, stmax, &brackt
-				);
-		}
-
-		if (brackt) {
-			if (0.66 * prev_width <= fabs(sty - stx)) {
-				*stp = stx + 0.5 * (sty - stx);
-			}
-			prev_width = width;
-			width = fabs(sty - stx);
-		}
-	}
-
-	return LBFGSERR_LOGICERROR;
-}
-
-#define USES_MINIMIZER \
-	lbfgsfloatval_t a, d, gamma, theta, p, q, r, s;
-
-#define CUBIC_MINIMIZER(cm, u, fu, du, v, fv, dv) \
-	d = (v) - (u); \
-	theta = ((fu) - (fv)) * 3 / d + (du) + (dv); \
-	p = fabs(theta); \
-	q = fabs(du); \
-	r = fabs(dv); \
-	s = max3(p, q, r); \
-	a = theta / s; \
-	gamma = s * sqrt(a * a - ((du) / s) * ((dv) / s)); \
-	if ((v) < (u)) gamma = -gamma; \
-	p = gamma - (du) + theta; \
-	q = gamma - (du) + gamma + (dv); \
-	r = p / q; \
-	(cm) = (u) + r * d;
-
-#define CUBIC_MINIMIZER2(cm, u, fu, du, v, fv, dv, xmin, xmax) \
-	d = (v) - (u); \
-	theta = ((fu) - (fv)) * 3 / d + (du) + (dv); \
-	p = fabs(theta); \
-	q = fabs(du); \
-	r = fabs(dv); \
-	s = max3(p, q, r); \
-	a = theta / s; \
-	gamma = s * sqrt(max2(0, a * a - ((du) / s) * ((dv) / s))); \
-	if ((u) < (v)) gamma = -gamma; \
-	p = gamma - (dv) + theta; \
-	q = gamma - (dv) + gamma + (du); \
-	r = p / q; \
-	if (r < 0. && gamma != 0.) { \
-		(cm) = (v) - r * d; \
-	} else if (d > 0) { \
-		(cm) = (xmax); \
-	} else { \
-		(cm) = (xmin); \
-	}
-
-#define QUAD_MINIMIZER(qm, u, fu, du, v, fv) \
-	a = (v) - (u); \
-	(qm) = (u) + (du) / (((fu) - (fv)) / a + (du)) / 2 * a;
-
-#define QUAD_MINIMIZER2(qm, u, du, v, dv) \
-	a = (u) - (v); \
-	(qm) = (v) + (dv) / ((dv) - (du)) * a;
-
-static int update_trial_interval(
-	lbfgsfloatval_t *x,
-	lbfgsfloatval_t *fx,
-	lbfgsfloatval_t *dx,
-	lbfgsfloatval_t *y,
-	lbfgsfloatval_t *fy,
-	lbfgsfloatval_t *dy,
-	lbfgsfloatval_t *t,
-	lbfgsfloatval_t *ft,
-	lbfgsfloatval_t *dt,
-	const lbfgsfloatval_t tmin,
-	const lbfgsfloatval_t tmax,
-	int *brackt
-	)
-{
-	int bound;
-	int dsign = fsigndiff(dt, dx);
-	lbfgsfloatval_t mc;
-	lbfgsfloatval_t mq;
-	lbfgsfloatval_t newt;
-	USES_MINIMIZER;
-
-	if (*brackt) {
-		if (*t <= min2(*x, *y) || max2(*x, *y) <= *t) {
-			return LBFGSERR_OUTOFINTERVAL;
-		}
-		if (0. <= *dx * (*t - *x)) {
-			return LBFGSERR_INCREASEGRADIENT;
-		}
-		if (tmax < tmin) {
-			return LBFGSERR_INCORRECT_TMINMAX;
-		}
-	}
-
-	if (*fx < *ft) {
-		*brackt = 1;
-		bound = 1;
-		CUBIC_MINIMIZER(mc, *x, *fx, *dx, *t, *ft, *dt);
-		QUAD_MINIMIZER(mq, *x, *fx, *dx, *t, *ft);
-		if (fabs(mc - *x) < fabs(mq - *x)) {
-			newt = mc;
-		} else {
-			newt = mc + 0.5 * (mq - mc);
-		}
-	} else if (dsign) {
-		*brackt = 1;
-		bound = 0;
-		CUBIC_MINIMIZER(mc, *x, *fx, *dx, *t, *ft, *dt);
-		QUAD_MINIMIZER2(mq, *x, *dx, *t, *dt);
-		if (fabs(mc - *t) > fabs(mq - *t)) {
-			newt = mc;
-		} else {
-			newt = mq;
-		}
-	} else if (fabs(*dt) < fabs(*dx)) {
-		bound = 1;
-		CUBIC_MINIMIZER2(mc, *x, *fx, *dx, *t, *ft, *dt, tmin, tmax);
-		QUAD_MINIMIZER2(mq, *x, *dx, *t, *dt);
-		if (*brackt) {
-			if (fabs(*t - mc) < fabs(*t - mq)) {
-				newt = mc;
-			} else {
-				newt = mq;
-			}
-		} else {
-			if (fabs(*t - mc) > fabs(*t - mq)) {
-				newt = mc;
-			} else {
-				newt = mq;
-			}
-		}
-	} else {
-		bound = 0;
-		if (*brackt) {
-			CUBIC_MINIMIZER(newt, *t, *ft, *dt, *y, *fy, *dy);
-		} else if (*x < *t) {
-			newt = tmax;
-		} else {
-			newt = tmin;
-		}
-	}
-
-	if (*fx < *ft) {
-		*y = *t;
-		*fy = *ft;
-		*dy = *dt;
-	} else {
-		if (dsign) {
-			*y = *x;
-			*fy = *fx;
-			*dy = *dx;
-		}
-		*x = *t;
-		*fx = *ft;
-		*dx = *dt;
-	}
-
-	if (tmax < newt) newt = tmax;
-	if (newt < tmin) newt = tmin;
-
-	if (*brackt && bound) {
-		mq = *x + 0.66 * (*y - *x);
-		if (*x < *y) {
-			if (mq < newt) newt = mq;
-		} else {
-			if (newt < mq) newt = mq;
-		}
-	}
-
-	*t = newt;
-	return 0;
-}
-
-static lbfgsfloatval_t owlqn_x1norm(
-	const lbfgsfloatval_t* x,
-	const int start,
-	const int n
-	)
-{
-	int i;
-	lbfgsfloatval_t norm = 0.;
-
-	for (i = start;i < n;++i) {
-		norm += fabs(x[i]);
-	}
-
-	return norm;
-}
-
-static void owlqn_pseudo_gradient(
-	lbfgsfloatval_t* pg,
-	const lbfgsfloatval_t* x,
-	const lbfgsfloatval_t* g,
-	const int n,
-	const lbfgsfloatval_t c,
-	const int start,
-	const int end
-	)
-{
-	int i;
-
-	for (i = 0;i < start;++i) {
-		pg[i] = g[i];
-	}
-
-	for (i = start;i < end;++i) {
-		if (x[i] < 0.) {
-			pg[i] = g[i] - c;
-		} else if (0. < x[i]) {
-			pg[i] = g[i] + c;
-		} else {
-			if (g[i] < -c) {
-				pg[i] = g[i] + c;
-			} else if (c < g[i]) {
-				pg[i] = g[i] - c;
-			} else {
-				pg[i] = 0.;
-			}
-		}
-	}
-
-	for (i = end;i < n;++i) {
-		pg[i] = g[i];
-	}
-}
-
-static void owlqn_project(
-	lbfgsfloatval_t* d,
-	const lbfgsfloatval_t* sign,
-	const int start,
-	const int end
-	)
-{
-	int i;
-
-	for (i = start;i < end;++i) {
-		if (d[i] * sign[i] <= 0) {
-			d[i] = 0;
-		}
-	}
-}
-
-template<typename FloatType>
+template<typename lbfgsfloatval_t>
 class LBFGSEvalFunction
 {
 public:
 	virtual ~LBFGSEvalFunction() {}
-	virtual void Evaluate(const FloatType* X, int Dim, FloatType* Y, FloatType* Gradient) const = 0;
+	virtual void Evaluate(const lbfgsfloatval_t* X, int Dim, lbfgsfloatval_t* Y, lbfgsfloatval_t* Gradient) const = 0;
 };
 
-template<typename FloatType>
+template<typename lbfgsfloatval_t>
 class LBFGSMinimizer
 {
 public:
-	FloatType Minimize(LBFGSEvalFunction<FloatType>* func, int Dim)
+	lbfgsfloatval_t Minimize(LBFGSEvalFunction<lbfgsfloatval_t>* func, int Dim)
 	{
-		FloatType ymin;
-		lbfgsfloatval_t* x = lbfgs_malloc(Dim);
+		lbfgsfloatval_t ymin;
+		lbfgsfloatval_t* x = lbfgs_malloc<lbfgsfloatval_t>(Dim);
 		for (int i = 0; i < Dim; i += 2) {
-			x[i] = (FloatType)0;
+			x[i] = (lbfgsfloatval_t)0;
 		}
 		bool ret = _Minimize(func, x, Dim, &ymin);
-		lbfgs_free(x);
-		return ret ? ymin : std::numeric_limits<FloatType>::max();
+		lbfgs_free<lbfgsfloatval_t>(x);
+		return ret ? ymin : std::numeric_limits<lbfgsfloatval_t>::max();
 	}
 
-	FloatType Minimize(LBFGSEvalFunction<FloatType>* func, int Dim, FloatType* init_x)
+	lbfgsfloatval_t Minimize(LBFGSEvalFunction<lbfgsfloatval_t>* func, int Dim, lbfgsfloatval_t* init_x)
 	{
-		FloatType ymin;
+		lbfgsfloatval_t ymin;
 		bool ret = _Minimize(func, init_x, Dim, &ymin);
-		return ret ? ymin : std::numeric_limits<FloatType>::max();
+		return ret ? ymin : std::numeric_limits<lbfgsfloatval_t>::max();
 	}
 
-	bool Minimize(LBFGSEvalFunction<FloatType>* func, FloatType* init_x, int Dim, FloatType* min_y)
+	bool Minimize(LBFGSEvalFunction<lbfgsfloatval_t>* func, lbfgsfloatval_t* init_x, int Dim, lbfgsfloatval_t* min_y)
 	{
 		_Minimize(func, init_x, Dim, min_y);
 	}
 
 private:
-	bool _Minimize(LBFGSEvalFunction<FloatType>* func, FloatType* init_x, int Dim, FloatType *min_y)
+	bool _Minimize(LBFGSEvalFunction<lbfgsfloatval_t>* func, lbfgsfloatval_t* init_x, int Dim, lbfgsfloatval_t *min_y)
 	{
-		lbfgs_parameter_t param;
-		lbfgs_parameter_init(&param);
-		int ret = lbfgs(Dim, init_x, min_y, lbfgs_evaluate, lbfgs_progress, (void*)func, &param);
+		lbfgs_parameter_t<lbfgsfloatval_t> param;
+		int ret = lbfgs<lbfgsfloatval_t>(Dim, init_x, min_y, lbfgs_evaluate, lbfgs_progress, (void*)func, &param);
 		return ret == LBFGS_SUCCESS ? true : false;
 	}
 
 	static lbfgsfloatval_t lbfgs_evaluate(void* instance, const lbfgsfloatval_t* x, lbfgsfloatval_t* g, const int n, const lbfgsfloatval_t step)
 	{
-		LBFGSEvalFunction<FloatType>* func = static_cast<LBFGSEvalFunction<FloatType>*>(instance);
-		FloatType y;
+		LBFGSEvalFunction<lbfgsfloatval_t>* func = static_cast<LBFGSEvalFunction<lbfgsfloatval_t>*>(instance);
+		lbfgsfloatval_t y;
 		func->Evaluate(x, n, &y, g);
 		return y;
 	}
