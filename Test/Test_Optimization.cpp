@@ -1,6 +1,7 @@
 
 #include "Test.h"
 #include "../Src/LinearSystem/DenseVector.h"
+#include "../Src/LinearSystem/DenseMatrix.h"
 #include "../Src/Optimization/LBFGS.h"
 #include "../Src/Optimization/PCA.h"
 #include "../Src/Optimization/StochasticGradientDescent.h"
@@ -26,13 +27,18 @@ public:
 	virtual ~TestEvalFunction() {}
 	virtual void Evaluate(const T* X, int Dim, T* F, T* Gradient) const override final
 	{
+		*F = _Eval(X, Dim);
+		T* pX = (T*)X;
+		NUMERIAL_GRADIENT(_Eval, pX, Dim, 0.01, Gradient);
+	}
+	T _Eval(const T* X, int Dim) const
+	{
 		T sum = (T)0;
 		for (int i = 0; i < Dim; ++i)
 		{
 			sum += (X[i] - c_) * (X[i] - c_);
-			Gradient[i] = (T)2.0 * (X[i] - c_);
 		}
-		*F = sum;
+		return sum;
 	}
 private:
 	T c_;
@@ -40,6 +46,8 @@ private:
 
 void TestLBFGS()
 {
+	printf("Running TestLBFGS\n");
+
 	Rosenbrock2DEvalFunction func1;
 
 	LBFGSMinimizer<double> minimizer;
@@ -64,9 +72,31 @@ void TestNonConvexFunctions()
 	return;
 }
 
+void TestLR()
+{
+	printf("Running TestLR\n");
+
+	const int N = 10;
+	float a = 1.0f, b = 0.0f;
+	DenseMatrix x(N, 1);
+	DenseVector y(N);
+	for (int i = 0; i < N; ++i)
+	{
+		float xx = 1.0f * rand() / RAND_MAX;
+		x[i][0] = xx;
+		y[i] = a * xx + b + 0.001f * rand() / RAND_MAX;
+	}
+
+	LRModel<float> lr(1);
+	lr.Fit(x.GetData(), y.GetData(), N);
+
+	return;
+}
+
 void TestOptimization()
 {
 	TestNonConvexFunctions();
 	TestLBFGS();
+	TestLR();
 	return;
 }
