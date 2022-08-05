@@ -5,7 +5,7 @@ class GradientDescentEvalFunction
 {
 public:
 	virtual ~GradientDescentEvalFunction() {}
-	virtual gdfloatval_t Evaluate(const gdfloatval_t* X, int Dim, gdfloatval_t* Gradient) const = 0;
+	virtual gdfloatval_t Evaluate(const gdfloatval_t* X, gdfloatval_t* Gradient) const = 0;
 };
 
 struct GDParam
@@ -49,7 +49,7 @@ public:
 		iterations = 0;
 		while (iterations++ < param.maxIterations)
 		{
-			gdfloatval_t Y = func->Evaluate(X, Dim, gradient);
+			gdfloatval_t Y = func->Evaluate(X, gradient);
 			for (int i = 0; i < Dim; ++i)
 			{
 				X[i] -= (gdfloatval_t)param.learningRate * gradient[i];

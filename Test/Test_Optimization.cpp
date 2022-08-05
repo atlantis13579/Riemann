@@ -102,7 +102,7 @@ class TestSGDLR : public SGDModel<double>
 {
 public:
 	virtual ~TestSGDLR() {}
-	virtual double Evaluate(const double* X, const double* F, double* G) const override final
+	virtual double Evaluate(const double* X, double* G) const override final
 	{
 		G[0] = X[0];
 		G[1] = 1.0;
@@ -146,7 +146,7 @@ class GDTest : public GradientDescentEvalFunction<float>
 {
 public:
 	virtual ~GDTest() {}
-	virtual float Evaluate(const float* X, int Dim, float* Gradient) const override final
+	virtual float Evaluate(const float* X, float* Gradient) const override final
 	{
 		float a = X[0];
 		float b = X[1];

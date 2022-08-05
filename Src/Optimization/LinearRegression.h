@@ -1,8 +1,6 @@
 #pragma once
 
-#include <stdlib.h>
 #include "../LinearSystem/DenseMatrix.h"
-#include "../LinearSystem/DenseVector.h"
 
 enum class LR_solver : uint8_t
 {
@@ -21,7 +19,6 @@ struct LRParam
 	int			batchSize = 128;
 	int			epochs = 10;
 	double		convergeMSE = 0.01;
-	bool		randomInitCoef = false;
 };
 
 template <typename T>
@@ -83,7 +80,7 @@ public:
 	}
 
 private:
-	static T EvalLR(T* coef, int dim, const T* X)
+	static inline T EvalLR(T* coef, int dim, const T* X)
 	{
 		T sum = coef[dim];
 		for (int i = 0; i < dim; ++i)
@@ -93,17 +90,17 @@ private:
 		return sum;
 	}
 	
-	void InitCoef(bool random)
+	void InitCoef()
 	{
 		for (int i = 0; i <= dim; ++i)
 		{
-			coef[i] = random ? (T)1 * rand() / RAND_MAX : (T)0;
+			coef[i] = (T)0;
 		}
 	}
 	
 	void GradientDescent(const T* X, const T* Y, const int N, const LRParam &param)
 	{
-		InitCoef(param.randomInitCoef);
+		InitCoef();
 
 		T learningRate = (T)param.learningRate;
 		for (int j = 0; j < N; ++j)
@@ -120,7 +117,7 @@ private:
 
 	void BatchGradientDescent(const T* X, const T* Y, const int N, const LRParam &param)
 	{
-		InitCoef(param.randomInitCoef);
+		InitCoef();
 
 		int it = 0;
 		while (it++ < param.maxIterations)
@@ -159,7 +156,7 @@ private:
 	
 	void StochasticGradientDescent(const T* X, const T* Y, const int N, const LRParam &param)
 	{
-		InitCoef(param.randomInitCoef);
+		InitCoef();
 		
 		int it = 0, k = 0;
 		const int epochs = param.epochs * N / param.batchSize;

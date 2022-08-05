@@ -5,7 +5,7 @@ class SGDModel
 {
 public:
 	virtual ~SGDModel() {}
-	virtual sgdfloatval_t Evaluate(const sgdfloatval_t* X, const sgdfloatval_t* F, sgdfloatval_t* G) const = 0;
+	virtual sgdfloatval_t Evaluate(const sgdfloatval_t* X, sgdfloatval_t* G) const = 0;
 	virtual void ApplyGradient(sgdfloatval_t* G) = 0;
 };
 
@@ -47,8 +47,7 @@ public:
 			for (int j = 0; j < param.batchSize; ++j)
 			{
 				const sgdfloatval_t* pX = X + DimX * k;
-				const sgdfloatval_t* pY = Y + k;
-				const sgdfloatval_t loss = model->Evaluate(pX, pY, gradient) - Y[k];
+				const sgdfloatval_t loss = model->Evaluate(pX, gradient) - Y[k];
 				for (int i = 0; i < Dim; ++i)
 				{
 					gradient_accum[i] += loss * gradient[i];
@@ -71,8 +70,7 @@ public:
 				for (int j = 0; j < N; ++j)
 				{
 					const sgdfloatval_t* pX = X + DimX * j;
-					const sgdfloatval_t* pY = Y + j;
-					const sgdfloatval_t error = model->Evaluate(pX, pY, gradient) - Y[j];
+					const sgdfloatval_t error = model->Evaluate(pX, gradient) - Y[j];
 					mse += error * error;
 				}
 				mse /= N;
