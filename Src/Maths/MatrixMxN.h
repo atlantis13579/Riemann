@@ -243,12 +243,12 @@ public:
 	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
 	T					Determinant() const
 	{
-		float Det;
-		if (GaussianElimination<float>()(mData, ROWS, nullptr, &Det))
+		T Det;
+		if (GaussianElimination<T>()(mData, ROWS, nullptr, &Det))
 		{
 			return Det;
 		}
-		return 0.0f;
+		return (T)0;
 	}
 
 	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
@@ -286,7 +286,7 @@ public:
 	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
 	bool				GetInverse(TMatrixMxN<T, ROWS, ROWS>& InvM) const
 	{
-		return GaussianElimination<float>()(mData, ROWS, *InvM, nullptr);
+		return GaussianElimination<T>()(mData, ROWS, *InvM, nullptr);
 	}
 
 	TMatrixMxN<T, COLS, ROWS>	Transpose() const

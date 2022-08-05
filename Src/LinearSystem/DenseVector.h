@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <memory>
 #include <vector>
 
@@ -389,6 +390,26 @@ public:
 			dp += pData[i] * v.pData[i];
 		}
 		return dp;
+	}
+
+	T			LpNorm(int p) const
+	{
+		T sum = (T)0;
+		for (int i = 1; i < mSize; ++i)
+		{
+			sum += std::pow(pData[i], p);
+		}
+		return std::pow(sum, (T)1 / p);
+	}
+
+	T			LInfinityNorm() const
+	{
+		T maxVal = pData[0];
+		for (int i = 1; i < mSize; ++i)
+		{
+			maxVal = std::max(maxVal, pData[i]);
+		}
+		return maxVal;
 	}
 
 	void		LoadZero()

@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <cmath>
 #include <vector>
 #include "DenseVector.h"
 #include "../Maths/Maths.h"
@@ -92,17 +93,17 @@ public:
 		return std::move(Ret);
 	}
 
-	bool			IsSquare() const
+	inline bool		IsSquare() const
 	{
 		return mCols == mRows;
 	}
 
-	bool			IsColumnVector() const
+	inline bool		IsColumnVector() const
 	{
 		return mCols == 1;
 	}
 
-	bool			IsRowVector() const
+	inline bool		IsRowVector() const
 	{
 		return mRows == 1;
 	}
@@ -244,6 +245,27 @@ public:
 		std::swap(mRows, mCols);
 	}
 
+	TDenseMatrix<T>		DotMatrix() const		// X^T * X
+	{
+		TDenseMatrix<T> Ret(mCols, mCols);
+		for (int i = 0; i < mCols; ++i)
+		for (int j = i; j < mCols; ++j)
+		{
+			T sum = (T)0;
+			for (int k = 0; k < mRows; ++k)
+			{
+				sum += pData[k * mCols + i] * pData[k * mCols + j];
+			}
+			Ret(i, j) = sum;
+		}
+		for (int i = 0; i < mCols; ++i)
+		for (int j = 0; j < i; ++j)
+		{
+			Ret(i, j) = Ret(j, i);
+		}
+		return std::move(Ret);
+	}
+
 	void		LoadZero()
 	{
 		memset(pData, 0, sizeof(T) * mRows * mCols);
@@ -331,6 +353,26 @@ public:
 		TDenseMatrix<T> Ret(*this);
 		Ret.TransposeInPlace();
 		return std::move(Ret);
+	}
+
+	T			LpNorm(int p) const
+	{
+		T sum = (T)0;
+		for (int i = 1; i < mRows * mCols; ++i)
+		{
+			sum += std::pow(pData[i], p);
+		}
+		return std::pow(sum, (T)1 / p);
+	}
+
+	T			LInfinityNorm() const
+	{
+		T maxVal = pData[0];
+		for (int i = 1; i < mRows * mCols; ++i)
+		{
+			maxVal = std::max(maxVal, pData[i]);
+		}
+		return maxVal;
 	}
 
 protected:

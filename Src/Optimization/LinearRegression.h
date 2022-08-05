@@ -4,7 +4,7 @@
 #include "../LinearSystem/DenseMatrix.h"
 #include "../LinearSystem/DenseVector.h"
 
-enum class LR_algorithm : uint8_t
+enum class LR_solver : uint8_t
 {
 	Auto,
 	GradientDescent,
@@ -15,13 +15,13 @@ enum class LR_algorithm : uint8_t
 
 struct LRParam
 {
-	LR_algorithm	algorithm = LR_algorithm::Auto;
-	double 			learningRate = 0.1;
-	int 			maxIterations = 100;
-	int				batchSize = 128;
-	int				epochs = 10;
-	double			convergeMSE = 0.01;
-	bool			randomInitCoef = false;
+	LR_solver	solver = LR_solver::Auto;
+	double 		learningRate = 0.1;
+	int 		maxIterations = 100;
+	int			batchSize = 128;
+	int			epochs = 10;
+	double		convergeMSE = 0.01;
+	bool		randomInitCoef = false;
 };
 
 template <typename T>
@@ -46,30 +46,30 @@ public:
 
 	void Fit(const T *X, const T * Y, int N, const LRParam &param)
 	{
-		LR_algorithm algorithm = param.algorithm;
-		if (algorithm == LR_algorithm::Auto)
+		LR_solver solver = param.solver;
+		if (solver == LR_solver::Auto)
 		{
 			if (dim <= 8 && N <= 1024)
-				algorithm = LR_algorithm::NormalEquation;
+				solver = LR_solver::NormalEquation;
 			else if (N <= 128)
-				algorithm = LR_algorithm::BatchGradientDescent;
+				solver = LR_solver::BatchGradientDescent;
 			else if (N <= 10000)
-				algorithm = LR_algorithm::GradientDescent;
+				solver = LR_solver::GradientDescent;
 			else
-				algorithm = LR_algorithm::StochasticGradientDescent;
+				solver = LR_solver::StochasticGradientDescent;
 		}
 		
-		switch (algorithm) {
-		case LR_algorithm::GradientDescent:
+		switch (solver) {
+		case LR_solver::GradientDescent:
 			GradientDescent(X, Y, N, param);
 			break;
-		case LR_algorithm::BatchGradientDescent:
+		case LR_solver::BatchGradientDescent:
 			BatchGradientDescent(X, Y, N, param);
 			break;
-		case LR_algorithm::StochasticGradientDescent:
+		case LR_solver::StochasticGradientDescent:
 			StochasticGradientDescent(X, Y, N, param);
 			break;
-		case LR_algorithm::NormalEquation:
+		case LR_solver::NormalEquation:
 			NormalEquation(X, Y, N);
 			break;
 		default:
@@ -192,12 +192,43 @@ private:
 
 	void NormalEquation(const T* pX, const T* pY, const int N)
 	{
-		TDenseMatrix<T> X((T*)pX, N, dim);
-		TDenseVector<T> Y((T*)pY, N);
-		TDenseMatrix<T> XTX = (X.Transpose() * X);
+		TDenseMatrix<T> XTX(dim + 1, dim + 1);
+		for (int i = 0; i <= dim; ++i)
+		for (int j = i; j <= dim; ++j)
+		{
+			T sum = (T)0;
+			for (int k = 0; k < N; ++k)
+			{
+				T xi = i < dim ? pX[k * dim + i] : (T)1;
+				T xj = j < dim ? pX[k * dim + j] : (T)1;
+				sum += xi * xj;
+			}
+			XTX(i, j) = sum;
+		}
+		for (int i = 0; i <= dim; ++i)
+		for (int j = 0; j < i; ++j)
+		{
+			XTX(i, j) = XTX(j, i);
+		}
+
 		TDenseMatrix<T> invXTX = XTX.Inverse();
-		TDenseVector<T> vCoef = invXTX * X.Transpose() * Y;
-		for (int i = 0; i < dim; ++i)
+		TDenseMatrix<T> invXTXXT(dim + 1, N);
+		for (int i = 0; i <= dim; ++i)
+		for (int j = 0; j < N; ++j)
+		{
+			T sum = (T)0;
+			for (int k = 0; k <= dim; ++k)
+			{
+				T xik = invXTX(i, k);
+				T xkj = k < dim ? pX[j * dim + k] : (T)1;
+				sum += xik * xkj;
+			}
+			invXTXXT(i, j) = sum;
+		}
+
+		TDenseVector<T> Y((T*)pY, N);
+		TDenseVector<T> vCoef = invXTXXT * Y;
+		for (int i = 0; i <= dim; ++i)
 		{
 			coef[i] = vCoef[i];
 		}
