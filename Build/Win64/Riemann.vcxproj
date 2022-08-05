@@ -165,6 +165,7 @@
     <ClInclude Include="..\..\Src\Maths\VectorN.h" />
     <ClInclude Include="..\..\Src\Optimization\ConvexFunctions.h" />
     <ClInclude Include="..\..\Src\Optimization\GaussNewton.h" />
+    <ClInclude Include="..\..\Src\Optimization\GradientDescent.h" />
     <ClInclude Include="..\..\Src\Optimization\LBFGS.h" />
     <ClInclude Include="..\..\Src\Optimization\LevenbergMarquardt.h" />
     <ClInclude Include="..\..\Src\Optimization\LinearRegression.h" />

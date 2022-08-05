@@ -2,48 +2,48 @@
 
 // https://en.wikipedia.org/wiki/Rosenbrock_function
 
-template<typename FloatType>
-FloatType Rosenbrock(const FloatType a, const FloatType b, const FloatType x1, const FloatType x2)
+template<typename T>
+T Rosenbrock(const T a, const T b, const T x1, const T x2)
 {
 	return (a - x1) * (a - x1) + b * (x2 - x1 * x1) * (x2 - x1 * x1);
 }
 
-template<typename FloatType>
-FloatType RosenbrockN(const FloatType a, const FloatType b, const FloatType *x, int dim)
+template<typename T>
+T RosenbrockN(const T a, const T b, const T *x, int dim)
 {
-	FloatType sum = (FloatType)0;
+	T sum = (T)0;
 	for (int i = 1; i < dim; ++i)
 	{
-		FloatType t1 = a - x[i-1];
-		FloatType t2 = x[i] - x[i-1] * x[i-1];
+		T t1 = a - x[i-1];
+		T t2 = x[i] - x[i-1] * x[i-1];
 		sum += t1 * t1 + b * t2 * t2;
 	}
 	return sum;
 }
 
-template<typename FloatType>
-FloatType Rosenbrock2D(const FloatType a, const FloatType b, const FloatType *x, int dim)
+template<typename T>
+T Rosenbrock2D(const T a, const T b, const T *x, int dim)
 {
-	FloatType sum = (FloatType)0;
+	T sum = (T)0;
 	for (int i = 0; i < dim; i += 2)
 	{
-		FloatType t1 = a - x[i];
-		FloatType t2 = x[i+1] - x[i] * x[i];
+		T t1 = a - x[i];
+		T t2 = x[i+1] - x[i] * x[i];
 		sum += t1 * t1 + b * t2 * t2;
 	}
 	return sum;
 }
 
-template<typename FloatType>
-FloatType Rosenbrock2D(const FloatType a, const FloatType b, const FloatType* x, int dim, FloatType* gradient)
+template<typename T>
+T Rosenbrock2D(const T a, const T b, const T* x, int dim, T* gradient)
 {
-	FloatType sum = (FloatType)0;
+	T sum = (T)0;
 	for (int i = 0; i < dim; i += 2)
 	{
-		FloatType t1 = a - x[i];
-		FloatType t2 = x[i + 1] - x[i] * x[i];
-		gradient[i] = -(FloatType)2 * t1 - (FloatType)4 * b * t2 * x[i];
-		gradient[i+1] = (FloatType)2 * b * t2;
+		T t1 = a - x[i];
+		T t2 = x[i + 1] - x[i] * x[i];
+		gradient[i] = -(T)2 * t1 - (T)4 * b * t2 * x[i];
+		gradient[i+1] = (T)2 * b * t2;
 		sum += t1 * t1 + b * t2 * t2;
 	}
 	return sum;

@@ -492,6 +492,9 @@
     <ClInclude Include="..\..\Src\Optimization\QuadraticProgramming.h">
       <Filter>Optimization</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Optimization\GradientDescent.h">
+      <Filter>Optimization</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp">

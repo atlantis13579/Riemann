@@ -4,6 +4,7 @@
 #include "../Src/LinearSystem/DenseMatrix.h"
 #include "../Src/Optimization/LBFGS.h"
 #include "../Src/Optimization/PCA.h"
+#include "../Src/Optimization/GradientDescent.h"
 #include "../Src/Optimization/StochasticGradientDescent.h"
 #include "../Src/Optimization/LinearRegression.h"
 #include "../Src/Optimization/LevenbergMarquardt.h"
