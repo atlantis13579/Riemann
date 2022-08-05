@@ -1731,7 +1731,7 @@ class LBFGSEvalFunction
 {
 public:
 	virtual ~LBFGSEvalFunction() {}
-	virtual void Evaluate(const lbfgsfloatval_t* X, int Dim, lbfgsfloatval_t* F, lbfgsfloatval_t* Gradient) const = 0;
+	virtual lbfgsfloatval_t Evaluate(const lbfgsfloatval_t* X, int Dim, lbfgsfloatval_t* Gradient) const = 0;
 };
 
 template<typename lbfgsfloatval_t>
@@ -1790,8 +1790,7 @@ private:
 	static lbfgsfloatval_t lbfgs_evaluate(void* instance, const lbfgsfloatval_t* x, lbfgsfloatval_t* g, const int n, const lbfgsfloatval_t step)
 	{
 		LBFGSInstance<lbfgsfloatval_t>* p = static_cast<LBFGSInstance<lbfgsfloatval_t>*>(instance);
-		lbfgsfloatval_t f;
-		p->eval->Evaluate(x, n, &f, g);
+		lbfgsfloatval_t f = p->eval->Evaluate(x, n, g);
 		return f;
 	}
 

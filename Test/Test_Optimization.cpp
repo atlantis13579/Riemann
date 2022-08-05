@@ -13,9 +13,9 @@ class Rosenbrock2DEvalFunction : public LBFGSEvalFunction<double>
 {
 public:
 	virtual ~Rosenbrock2DEvalFunction() {}
-	virtual void Evaluate(const double* X, int Dim, double* F, double* Gradient) const override final
+	virtual double Evaluate(const double* X, int Dim, double* Gradient) const override final
 	{
-		Rosenbrock2D(1.0, 100.0, X, Dim, F, Gradient);
+		return Rosenbrock2D(1.0, 100.0, X, Dim, Gradient);
 	}
 };
 
@@ -25,11 +25,11 @@ class TestEvalFunction : public LBFGSEvalFunction<T>
 public:
 	TestEvalFunction(T c) : c_(c) { }
 	virtual ~TestEvalFunction() {}
-	virtual void Evaluate(const T* X, int Dim, T* F, T* Gradient) const override final
+	virtual T Evaluate(const T* X, int Dim, T* Gradient) const override final
 	{
-		*F = _Eval(X, Dim);
 		T* pX = (T*)X;
 		NUMERIAL_GRADIENT(_Eval, pX, Dim, 0.01, Gradient);
+		return _Eval(X, Dim);
 	}
 	T _Eval(const T* X, int Dim) const
 	{
@@ -77,30 +77,66 @@ void TestLR()
 	printf("Running TestLR\n");
 
 	const int N = 100;
-	float a = 1.0f, b = 0.0f;
-	TDenseMatrix<float> x(N, 1);
+	float a = 1.0f, b = 2.0f, c = 0.0f;
+	TDenseMatrix<float> x(N, 2);
 	TDenseVector<float> y(N);
 	for (int i = 0; i < N; ++i)
 	{
-		float xx = 1.0f * rand() / RAND_MAX;
-		x[i][0] = xx;
-		y[i] = a * xx + b + 0.01f * rand() / RAND_MAX;
+		float x0 = 1.0f * rand() / RAND_MAX;
+		float x1 = 1.0f * rand() / RAND_MAX;
+		x[i][0] = x0;
+		x[i][1] = x1;
+		y[i] = a * x0 + b * x1 + c + 0.01f * rand() / RAND_MAX;
 	}
 
 	LRParam param;
 	param.algorithm = LR_algorithm::GradientDescent;
-	LRModel<float> lr(1);
+	LRModel<float> lr(2);
 	lr.Fit(x.GetData(), y.GetData(), N, param);
-	printf("a = %.2f, b = %.2f\n", lr.coef[0], lr.coef[1]);
+	printf("lr: a = %.2f, b = %.2f, c = %.2f\n", lr.coef[0], lr.coef[1], lr.coef[2]);
 	return;
 }
+
+class TestSGDLR : public SGDModel<double>
+{
+public:
+	virtual ~TestSGDLR() {}
+	virtual double Evaluate(const double* X, const double* F, double* G) const override final
+	{
+		G[0] = X[0];
+		G[1] = 1.0;
+		return a * X[0] + b;
+	}
+	virtual void ApplyGradient(double* G) override final
+	{
+		a += G[0];
+		b += G[1];
+	}
+
+public:
+	double a = 0;
+	double b = 0;
+};
 
 void TestSGD()
 {
 	printf("Running TestSGD\n");
 	
-	
-	
+	const int N = 100000;
+	float a = 1.0f, b = 0.0f;
+	TDenseVector<double> x(N);
+	TDenseVector<double> y(N);
+	for (int i = 0; i < N; ++i)
+	{
+		double xx = 1.0 * rand() / RAND_MAX;
+		x[i] = xx;
+		y[i] = a * xx + b + 0.01 * rand() / RAND_MAX;
+	}
+
+	TestSGDLR lr;
+	SGDLeastSquaresOptimizer<double> solver;
+	solver.Optimize(&lr, 2, x.GetData(), 1, y.GetData(), N);
+	printf("sgd: a = %.2f, b = %.2f\n", lr.a, lr.b);
 	return;
 }
 

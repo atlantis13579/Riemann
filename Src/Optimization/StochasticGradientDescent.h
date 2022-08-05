@@ -5,8 +5,8 @@ class SGDModel
 {
 public:
 	virtual ~SGDModel() {}
-	virtual void Evaluate(const sgdfloatval_t* X, int Dim, sgdfloatval_t* F, sgdfloatval_t* Gradient) const = 0;
-	virtual sgdfloatval_t* GetCoef();
+	virtual sgdfloatval_t Evaluate(const sgdfloatval_t* X, const sgdfloatval_t* F, sgdfloatval_t* G) const = 0;
+	virtual void ApplyGradient(sgdfloatval_t* G) = 0;
 };
 
 struct sgdparam_t
@@ -19,55 +19,51 @@ struct sgdparam_t
 };
 
 template<typename sgdfloatval_t>
-class SGDSolver
+class SGDLeastSquaresOptimizer
 {
 public:
-	SGDSolver()
+	SGDLeastSquaresOptimizer()
 	{
 		mse = (sgdfloatval_t)0;
 	}
 
-	void Solve(SGDModel<sgdfloatval_t>* model, const sgdfloatval_t* X, const int Dim, const sgdfloatval_t *Y, const int N)
+	void Optimize(SGDModel<sgdfloatval_t>* model, const int Dim, const sgdfloatval_t* X, const int DimX, const sgdfloatval_t *Y, const int N)
 	{
 		sgdparam_t param;
-		
-		sgdfloatval_t *coef = model->GetCoef();
-		for (int i = 0; i < Dim; ++i)
-		{
-			coef[i] = param.randominit ? (sgdfloatval_t)1 * rand() / RAND_MAX : (sgdfloatval_t)0;
-		}
-		
-		sgdfloatval_t *gradient = new sgdfloatval_t[2*Dim];
-		sgdfloatval_t *gradient_j = gradient + Dim;
+		sgdfloatval_t *gradient_accum = new sgdfloatval_t[2*Dim];
+		sgdfloatval_t *gradient = gradient_accum + Dim;
 		
 		int it = 0, k = 0;
-		const int epochs = param.epochs * N / param.batchSize;
-		while (it++ < epochs)
+		const int max_iterations = param.epochs * N / param.batchSize;
+		while (it++ < max_iterations)
 		{
 			for (int i = 0; i < Dim; ++i)
 			{
-				gradient[i] = (sgdfloatval_t)0;
+				gradient_accum[i] = (sgdfloatval_t)0;
 			}
 
 			for (int j = 0; j < param.batchSize; ++j)
 			{
-				const sgdfloatval_t* pX = X + Dim * k;
+				const sgdfloatval_t* pX = X + DimX * k;
 				const sgdfloatval_t* pY = Y + k;
-				const sgdfloatval_t delta = model->Evaluate(pX, Dim, pY, gradient_j) - Y[k];
+				const sgdfloatval_t loss = model->Evaluate(pX, pY, gradient) - Y[k];
 				for (int i = 0; i < Dim; ++i)
 				{
-					gradient[i] += gradient_j[i];
+					gradient_accum[i] += loss * gradient[i];
 				}
 				k = (k + 1) % N;
 			}
-			
+
+			sgdfloatval_t learningRate = (sgdfloatval_t)param.learningRate;
 			for (int i = 0; i < Dim; ++i)
 			{
-				coef[i] -= param.learningRate * gradient[i] / param.batchSize;
+				gradient_accum[i] = -learningRate * gradient_accum[i] / param.batchSize;
 			}
+
+			model->ApplyGradient(gradient_accum);
 		}
 		
-		delete []gradient;
+		delete []gradient_accum;
 	}
 	
 private:

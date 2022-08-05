@@ -102,15 +102,16 @@ private:
 	{
 		InitCoef(param.randomInitCoef);
 
+		T learningRate = (T)param.learningRate;
 		for (int j = 0; j < N; ++j)
 		{
 			const T* pX = X + dim * j;
-			const T delta = EvalLR(coef, dim, pX) - Y[j];
+			const T loss = EvalLR(coef, dim, pX) - Y[j];
 			for (int i = 0; i < dim; ++i)
 			{
-				coef[i] -= param.learningRate * delta * pX[i];
+				coef[i] -= learningRate * loss * pX[i];
 			}
-			coef[dim] -= param.learningRate * delta;
+			coef[dim] -= learningRate * loss;
 		}
 	}
 
@@ -130,24 +131,25 @@ private:
 			for (int j = 0; j < N; ++j)
 			{
 				const T* pX = X + dim * j;
-				const T delta = EvalLR(coef, dim, pX) - Y[j];
+				const T loss = EvalLR(coef, dim, pX) - Y[j];
 				for (int i = 0; i < dim; ++i)
 				{
-					gradient[i] += delta * pX[i];
+					gradient[i] += loss * pX[i];
 				}
-				gradient[dim] += delta;
-				mse += delta * delta;
+				gradient[dim] += loss;
+				mse += loss * loss;
 			}
 
 			mse /= N;
-			if (mse < param.convergeMSE)
+			if (mse < (T)param.convergeMSE)
 			{
 				break;
 			}
 			
+			T learningRate = (T)param.learningRate;
 			for (int i = 0; i <= dim; ++i)
 			{
-				coef[i] -= param.learningRate * gradient[i] / N;
+				coef[i] -= learningRate * gradient[i] / N;
 			}
 		}
 	}
@@ -168,18 +170,19 @@ private:
 			for (int j = 0; j < param.batchSize; ++j)
 			{
 				const T* pX = X + dim * k;
-				const T delta = EvalLR(coef, dim, pX) - Y[k];
+				const T loss = EvalLR(coef, dim, pX) - Y[k];
 				for (int i = 0; i < dim; ++i)
 				{
-					gradient[i] += delta * pX[i];
+					gradient[i] += loss * pX[i];
 				}
-				gradient[dim] += delta;
+				gradient[dim] += loss;
 				k = (k + 1) % N;
 			}
 			
+			T learningRate = (T)param.learningRate;
 			for (int i = 0; i <= dim; ++i)
 			{
-				coef[i] -= param.learningRate * gradient[i] / param.batchSize;
+				coef[i] -= learningRate * gradient[i] / param.batchSize;
 			}
 		}
 	}

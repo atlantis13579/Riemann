@@ -35,7 +35,7 @@ FloatType Rosenbrock2D(const FloatType a, const FloatType b, const FloatType *x,
 }
 
 template<typename FloatType>
-void Rosenbrock2D(const FloatType a, const FloatType b, const FloatType* x, int dim, FloatType* f, FloatType* gradient)
+FloatType Rosenbrock2D(const FloatType a, const FloatType b, const FloatType* x, int dim, FloatType* gradient)
 {
 	FloatType sum = (FloatType)0;
 	for (int i = 0; i < dim; i += 2)
@@ -46,7 +46,7 @@ void Rosenbrock2D(const FloatType a, const FloatType b, const FloatType* x, int 
 		gradient[i+1] = (FloatType)2 * b * t2;
 		sum += t1 * t1 + b * t2 * t2;
 	}
-	*f = sum;
+	return sum;
 }
 
 #define NUMERIAL_GRADIENT(_eval, _x, _dim, _dx, _gradient)	\
