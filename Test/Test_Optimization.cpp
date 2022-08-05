@@ -141,11 +141,41 @@ void TestSGD()
 	return;
 }
 
+class GDTest : public GradientDescentEvalFunction<float>
+{
+public:
+	virtual ~GDTest() {}
+	virtual float Evaluate(const float* X, int Dim, float* Gradient) const override final
+	{
+		float a = X[0];
+		float b = X[1];
+		Gradient[0] = 2 * (a - 1.0f);
+		Gradient[1] = 2 * (b - 2.0f);
+		return (a - 1.0f) * (a - 1.0f) + (b - 2.0f) * (b - 2.0f);
+	}
+};
+
+void TestGD()
+{
+	printf("Running TestGD\n");
+
+	GDTest sqr;
+	GDParam param;
+	GradientDescentMinimizer<float> minimizer;
+	float x[2] = { 0, 0 };
+	float miny = minimizer.Minimize(&sqr, x, 2, param);
+	EXPECT(fabs(miny) < 0.001);
+	EXPECT(fabs(x[0] - 1.0f) < 0.01);
+	EXPECT(fabs(x[1] - 2.0f) < 0.01);
+	return;
+}
+
 void TestOptimization()
 {
 	TestNonConvexFunctions();
 	TestLBFGS();
 	TestLR();
 	TestSGD();
+	TestGD();
 	return;
 }
