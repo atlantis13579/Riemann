@@ -9,13 +9,12 @@ public:
 	virtual void ApplyGradient(sgdfloatval_t* G) = 0;
 };
 
-struct sgdparam_t
+struct SGDParam
 {
 	double	learningRate = 0.01;
 	int		batchSize = 128;
 	int		epochs = 10;
-	double	convergeMSE = 0.01;
-	bool	randominit = true;
+	double	convergeMSE = 0.0001;
 };
 
 template<typename sgdfloatval_t>
@@ -24,19 +23,22 @@ class SGDLeastSquaresOptimizer
 public:
 	SGDLeastSquaresOptimizer()
 	{
-		mse = (sgdfloatval_t)0;
+		iterations = 0;
+		mse = (sgdfloatval_t)-1;
 	}
 
-	void Optimize(SGDModel<sgdfloatval_t>* model, const int Dim, const sgdfloatval_t* X, const int DimX, const sgdfloatval_t *Y, const int N)
+	void Optimize(SGDModel<sgdfloatval_t>* model, const int Dim, const sgdfloatval_t* X, const int DimX, const sgdfloatval_t *Y, const int N, const SGDParam &param)
 	{
-		sgdparam_t param;
 		sgdfloatval_t *gradient_accum = new sgdfloatval_t[2*Dim];
 		sgdfloatval_t *gradient = gradient_accum + Dim;
 		
-		int it = 0, k = 0;
+		iterations = 0;
+		int k = 0;
 		const int max_iterations = param.epochs * N / param.batchSize;
-		while (it++ < max_iterations)
+		while (iterations++ < max_iterations)
 		{
+			bool end_of_epoch = false;
+
 			for (int i = 0; i < Dim; ++i)
 			{
 				gradient_accum[i] = (sgdfloatval_t)0;
@@ -52,6 +54,7 @@ public:
 					gradient_accum[i] += loss * gradient[i];
 				}
 				k = (k + 1) % N;
+				end_of_epoch = k == 0;
 			}
 
 			sgdfloatval_t learningRate = (sgdfloatval_t)param.learningRate;
@@ -61,6 +64,24 @@ public:
 			}
 
 			model->ApplyGradient(gradient_accum);
+
+			if (end_of_epoch)
+			{
+				mse = (sgdfloatval_t)0;
+				for (int j = 0; j < N; ++j)
+				{
+					const sgdfloatval_t* pX = X + DimX * j;
+					const sgdfloatval_t* pY = Y + j;
+					const sgdfloatval_t error = model->Evaluate(pX, pY, gradient) - Y[j];
+					mse += error * error;
+				}
+				mse /= N;
+
+				if (mse < param.convergeMSE)
+				{
+					break;
+				}
+			}
 		}
 		
 		delete []gradient_accum;
@@ -70,7 +91,8 @@ private:
 	
 
 public:
-	sgdfloatval_t mse;
+	int				iterations;
+	sgdfloatval_t	mse;
 };
 
 

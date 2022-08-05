@@ -106,12 +106,12 @@ private:
 		for (int j = 0; j < N; ++j)
 		{
 			const T* pX = X + dim * j;
-			const T loss = EvalLR(coef, dim, pX) - Y[j];
+			const T error = EvalLR(coef, dim, pX) - Y[j];
 			for (int i = 0; i < dim; ++i)
 			{
-				coef[i] -= learningRate * loss * pX[i];
+				coef[i] -= learningRate * error * pX[i];
 			}
-			coef[dim] -= learningRate * loss;
+			coef[dim] -= learningRate * error;
 		}
 	}
 
@@ -131,13 +131,13 @@ private:
 			for (int j = 0; j < N; ++j)
 			{
 				const T* pX = X + dim * j;
-				const T loss = EvalLR(coef, dim, pX) - Y[j];
+				const T error = EvalLR(coef, dim, pX) - Y[j];
 				for (int i = 0; i < dim; ++i)
 				{
-					gradient[i] += loss * pX[i];
+					gradient[i] += error * pX[i];
 				}
-				gradient[dim] += loss;
-				mse += loss * loss;
+				gradient[dim] += error;
+				mse += error * error;
 			}
 
 			mse /= N;
@@ -170,12 +170,12 @@ private:
 			for (int j = 0; j < param.batchSize; ++j)
 			{
 				const T* pX = X + dim * k;
-				const T loss = EvalLR(coef, dim, pX) - Y[k];
+				const T error = EvalLR(coef, dim, pX) - Y[k];
 				for (int i = 0; i < dim; ++i)
 				{
-					gradient[i] += loss * pX[i];
+					gradient[i] += error * pX[i];
 				}
-				gradient[dim] += loss;
+				gradient[dim] += error;
 				k = (k + 1) % N;
 			}
 			

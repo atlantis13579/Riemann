@@ -134,8 +134,9 @@ void TestSGD()
 	}
 
 	TestSGDLR lr;
+	SGDParam param;
 	SGDLeastSquaresOptimizer<double> solver;
-	solver.Optimize(&lr, 2, x.GetData(), 1, y.GetData(), N);
+	solver.Optimize(&lr, 2, x.GetData(), 1, y.GetData(), N, param);
 	printf("sgd: a = %.2f, b = %.2f\n", lr.a, lr.b);
 	return;
 }
