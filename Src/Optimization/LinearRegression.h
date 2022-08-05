@@ -226,12 +226,17 @@ private:
 			invXTXXT(i, j) = sum;
 		}
 
-		TDenseVector<T> Y((T*)pY, N);
-		TDenseVector<T> vCoef = invXTXXT * Y;
 		for (int i = 0; i <= dim; ++i)
 		{
-			coef[i] = vCoef[i];
+			T sum = (T)0;
+			for (int j = 0; j < N; ++j)
+			{
+				sum += invXTXXT(i, j) * pY[j];
+			}
+			coef[i] = sum;
 		}
+
+		return;
 	}
 
 public:
