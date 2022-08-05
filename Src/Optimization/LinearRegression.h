@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdlib.h>
+#include "../LinearSystem/DenseMatrix.h"
+#include "../LinearSystem/DenseVector.h"
 
 enum class LR_algorithm : uint8_t
 {
@@ -68,6 +70,7 @@ public:
 			StochasticGradientDescent(X, Y, N, param);
 			break;
 		case LR_algorithm::NormalEquation:
+			NormalEquation(X, Y, N);
 			break;
 		default:
 			break;
@@ -184,6 +187,19 @@ private:
 			{
 				coef[i] -= learningRate * gradient[i] / param.batchSize;
 			}
+		}
+	}
+
+	void NormalEquation(const T* pX, const T* pY, const int N)
+	{
+		TDenseMatrix<T> X((T*)pX, N, dim);
+		TDenseVector<T> Y((T*)pY, N);
+		TDenseMatrix<T> XTX = (X.Transpose() * X);
+		TDenseMatrix<T> invXTX = XTX.Inverse();
+		TDenseVector<T> vCoef = invXTX * X.Transpose() * Y;
+		for (int i = 0; i < dim; ++i)
+		{
+			coef[i] = vCoef[i];
 		}
 	}
 

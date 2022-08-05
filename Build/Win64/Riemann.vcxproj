@@ -156,6 +156,7 @@
     <ClInclude Include="..\..\Src\LinearSystem\DenseVector.h" />
     <ClInclude Include="..\..\Src\LinearSystem\EigenValueDecomposition.h" />
     <ClInclude Include="..\..\Src\LinearSystem\GaussianElimination.h" />
+    <ClInclude Include="..\..\Src\LinearSystem\PseudoInverse.h" />
     <ClInclude Include="..\..\Src\Maths\Float16.h" />
     <ClInclude Include="..\..\Src\Maths\Matrix2.h" />
     <ClInclude Include="..\..\Src\Maths\MatrixMxN.h" />

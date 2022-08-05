@@ -153,9 +153,6 @@
     <ClInclude Include="..\..\Src\LinearSystem\GaussSeidelIteration.h">
       <Filter>LinearSystem</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\GaussianElimination.h">
-      <Filter>LinearSystem</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Destruction\GeometryCollection.h">
       <Filter>Destruction</Filter>
     </ClInclude>
@@ -494,6 +491,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Optimization\GradientDescent.h">
       <Filter>Optimization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\PseudoInverse.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\GaussianElimination.h">
+      <Filter>LinearSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
