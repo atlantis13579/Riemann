@@ -67,12 +67,12 @@ void PolarDecompose::Compute(const Matrix3& F, Matrix3& R, Matrix3& S)
 		float g2 = 0.5f / (gamma * det);
 
 		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
-			{
-				Ek(i, j) = Mk(i, j);
-				Mk(i, j) = g1 * Mk(i, j) + g2 * MadjTk(i, j);
-				Ek(i, j) -= Mk(i, j);
-			}
+		for (int j = 0; j < 3; j++)
+		{
+			Ek(i, j) = Mk(i, j);
+			Mk(i, j) = g1 * Mk(i, j) + g2 * MadjTk(i, j);
+			Ek(i, j) -= Mk(i, j);
+		}
 
 		E_oneNorm = OneNorm(Ek);
 		M_oneNorm = OneNorm(Mk);

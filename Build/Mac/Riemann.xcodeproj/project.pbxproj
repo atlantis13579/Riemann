@@ -14,6 +14,7 @@
 		AD02FE51289AB031004D13D9 /* ConvexFunctions.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE4F289AB030004D13D9 /* ConvexFunctions.h */; };
 		AD02FE52289AB031004D13D9 /* NonConvexFunctions.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE50289AB031004D13D9 /* NonConvexFunctions.h */; };
 		AD088367289DEC1A0008AB04 /* GradientDescent.h in Headers */ = {isa = PBXBuildFile; fileRef = AD088366289DEC1A0008AB04 /* GradientDescent.h */; };
+		AD088369289E42E30008AB04 /* PolynomialFit.h in Headers */ = {isa = PBXBuildFile; fileRef = AD088368289E42E30008AB04 /* PolynomialFit.h */; };
 		ADAA4C3F28898D6000E8AE2E /* SequentialImpulseSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */; };
 		ADAA4C4028898D6000E8AE2E /* NarrowPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */; };
 		ADAA4C4128898D6000E8AE2E /* BroadPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3828898D6000E8AE2E /* BroadPhase.h */; };
@@ -232,6 +233,7 @@
 		AD02FE4F289AB030004D13D9 /* ConvexFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConvexFunctions.h; path = ../../Src/Optimization/ConvexFunctions.h; sourceTree = "<group>"; };
 		AD02FE50289AB031004D13D9 /* NonConvexFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NonConvexFunctions.h; path = ../../Src/Optimization/NonConvexFunctions.h; sourceTree = "<group>"; };
 		AD088366289DEC1A0008AB04 /* GradientDescent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GradientDescent.h; path = ../../Src/Optimization/GradientDescent.h; sourceTree = "<group>"; };
+		AD088368289E42E30008AB04 /* PolynomialFit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PolynomialFit.h; path = ../../Src/Optimization/PolynomialFit.h; sourceTree = "<group>"; };
 		ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SequentialImpulseSolver.h; path = ../../Src/RigidBodyDynamics/SequentialImpulseSolver.h; sourceTree = "<group>"; };
 		ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NarrowPhase.cpp; path = ../../Src/RigidBodyDynamics/NarrowPhase.cpp; sourceTree = "<group>"; };
 		ADAA4C3828898D6000E8AE2E /* BroadPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BroadPhase.h; path = ../../Src/RigidBodyDynamics/BroadPhase.h; sourceTree = "<group>"; };
@@ -626,6 +628,7 @@
 				ADF862262891876B00DBC516 /* LinearRegression.h */,
 				AD02FE50289AB031004D13D9 /* NonConvexFunctions.h */,
 				ADD23D312887631800A849BE /* PCA.h */,
+				AD088368289E42E30008AB04 /* PolynomialFit.h */,
 				AD02FE4B289AAFBB004D13D9 /* QuadraticProgramming.h */,
 				ADF8622A2891876B00DBC516 /* StochasticGradientDescent.h */,
 			);
@@ -906,6 +909,7 @@
 				ADD23D2E288762F900A849BE /* EigenValueDecomposition.h in Headers */,
 				ADD23C122887617000A849BE /* MLSMPMSolver.h in Headers */,
 				ADD23CD5288762D900A849BE /* SAT.h in Headers */,
+				AD088369289E42E30008AB04 /* PolynomialFit.h in Headers */,
 				ADD23C092887616200A849BE /* Tetrahedral.h in Headers */,
 				ADD23C222887619700A849BE /* GeometryCollection.h in Headers */,
 				ADD23C4A288761AE00A849BE /* ConvexHull3d.h in Headers */,

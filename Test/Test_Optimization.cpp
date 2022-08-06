@@ -7,6 +7,7 @@
 #include "../Src/Optimization/GradientDescent.h"
 #include "../Src/Optimization/StochasticGradientDescent.h"
 #include "../Src/Optimization/LinearRegression.h"
+#include "../Src/Optimization/PolynomialFit.h"
 #include "../Src/Optimization/LevenbergMarquardt.h"
 #include "../Src/Optimization/NonConvexFunctions.h"
 
@@ -171,6 +172,27 @@ void TestGD()
 	return;
 }
 
+void TestPolyfit()
+{
+	printf("Running TestPolyfit\n");
+	const int N = 100;
+	DenseVector x(N);
+	DenseVector y(N);
+	float a = 2.0f, b = 1.0f, c = 3.0f;
+	for (int i = 0; i < N; ++i)
+	{
+		float xx = 1.0f * rand() / RAND_MAX;
+		x[i] = xx;
+		y[i] = a * xx * xx + b * xx + c + 0.01f * rand() / RAND_MAX;
+	}
+	
+	PolynomialFit<float, 2> p2;
+	
+	p2.Fit(x.GetData(), y.GetData(), N);
+	
+	printf("sgd: a = %.2f, b = %.2f, c = %.2f\n", p2.coef[2], p2.coef[1], p2.coef[0]);
+}
+
 void TestOptimization()
 {
 	TestNonConvexFunctions();
@@ -178,5 +200,6 @@ void TestOptimization()
 	TestLR();
 	TestSGD();
 	TestGD();
+	TestPolyfit();
 	return;
 }

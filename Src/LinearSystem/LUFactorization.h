@@ -1,7 +1,8 @@
-
 #pragma once
 
 // https://en.wikipedia.org/wiki/LU_decomposition
+
+#include <string.h>
 
 template<typename T>
 class LUFactorization
