@@ -41,7 +41,7 @@ public:
 		if (coef) delete []coef;
 	}
 
-	void Fit(const T *X, const T * Y, int N, const LRParam &param)
+	bool Fit(const T *X, const T * Y, int N, const LRParam &param)
 	{
 		LR_solver solver = param.solver;
 		if (solver == LR_solver::Auto)
@@ -56,24 +56,26 @@ public:
 				solver = LR_solver::StochasticGradientDescent;
 		}
 		
+		bool succ = false;
 		switch (solver) {
 		case LR_solver::GradientDescent:
-			GradientDescent(X, Y, N, param);
+			succ = GradientDescent(X, Y, N, param);
 			break;
 		case LR_solver::BatchGradientDescent:
-			BatchGradientDescent(X, Y, N, param);
+			succ = BatchGradientDescent(X, Y, N, param);
 			break;
 		case LR_solver::StochasticGradientDescent:
-			StochasticGradientDescent(X, Y, N, param);
+			succ = StochasticGradientDescent(X, Y, N, param);
 			break;
 		case LR_solver::NormalEquation:
-			NormalEquation(X, Y, N);
+			succ = NormalEquation(X, Y, N);
 			break;
 		default:
 			break;
 		}
 		
 		intercept = coef[dim];
+		return succ;
 	}
 
 	T Eval(const T* X) const
@@ -100,7 +102,7 @@ private:
 		}
 	}
 	
-	void GradientDescent(const T* X, const T* Y, const int N, const LRParam &param)
+	bool GradientDescent(const T* X, const T* Y, const int N, const LRParam &param)
 	{
 		InitCoef();
 
@@ -115,9 +117,11 @@ private:
 			}
 			coef[dim] -= learningRate * error;
 		}
+		
+		return true;
 	}
 
-	void BatchGradientDescent(const T* X, const T* Y, const int N, const LRParam &param)
+	bool BatchGradientDescent(const T* X, const T* Y, const int N, const LRParam &param)
 	{
 		InitCoef();
 
@@ -154,9 +158,11 @@ private:
 				coef[i] -= learningRate * gradient[i] / N;
 			}
 		}
+		
+		return true;
 	}
 	
-	void StochasticGradientDescent(const T* X, const T* Y, const int N, const LRParam &param)
+	bool StochasticGradientDescent(const T* X, const T* Y, const int N, const LRParam &param)
 	{
 		InitCoef();
 		
@@ -187,10 +193,12 @@ private:
 				coef[i] -= learningRate * gradient[i] / param.batchSize;
 			}
 		}
+		
+		return true;
 	}
 
 	// coef = (X^T * X)^(-1) * X^T * Y
-	void NormalEquation(const T* pX, const T* pY, const int N)
+	bool NormalEquation(const T* pX, const T* pY, const int N)
 	{
 		const T one = (T)1;
 		T *XTX = new T[2*(dim + 1)*(dim + 1) + (dim + 1)*N];
@@ -214,7 +222,11 @@ private:
 
 		T *invXTX = XTX + (dim + 1)*(dim + 1);
 		
-		GaussianElimination<T>()(XTX, dim + 1, invXTX, nullptr);
+		bool succ = GaussianElimination<T>()(XTX, dim + 1, invXTX, nullptr);
+		if (!succ)
+		{
+			return false;
+		}
 
 		T* invXTXXT = XTX + 2*(dim + 1)*(dim + 1);
 		for (int i = 0; i <= dim; ++i)
@@ -242,7 +254,7 @@ private:
 
 		delete []XTX;
 		
-		return;
+		return true;
 	}
 
 public:

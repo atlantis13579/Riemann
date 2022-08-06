@@ -1,12 +1,14 @@
 
 #include "Test.h"
 
+#include "../Src/Maths/Matrix3.h"
 #include "../Src/Maths/MatrixMxN.h"
 #include "../Src/LinearSystem/DenseMatrix.h"
 #include "../Src/LinearSystem/JacobiIteration.h"
 #include "../Src/LinearSystem/GaussSeidelIteration.h"
 #include "../Src/LinearSystem/ProjectedGaussSeidel.h"
 #include "../Src/LinearSystem/LUFactorization.h"
+#include "../Src/LinearSystem/SingularValueDecomposition.h"
 
 void TestMatrix1()
 {
@@ -158,10 +160,35 @@ void TestPGS()
 	return;
 }
 
+void TestSVD()
+{
+	Matrix3 A;
+	A[0][0] = 12.0f;
+	A[0][1] = 3.0f;
+	A[0][2] = 5.0f;
+	A(1, 0) = -1.5f;
+	A(1, 1) = 6.5f;
+	A(1, 2) = 11.5f;
+	A[2][0] = 10.0f;
+	A[2][1] = -10.0f;
+	A[2][2] = 160.1f;
+	
+	Vector3 s;
+	Matrix3 u, v;
+	A.SingularValueDecomposition(s, u, v);
+	
+	Vector3 s2;
+	Matrix3 u2, v2;
+	SingularValueDecomposition<float>()((const float*)&A, 3, 3, (float*)&s2, (float*)&u2, (float*)&v2);
+	
+	return;
+}
+
 void TestMatrix()
 {
 	TestMatrix1();
 	TestMatrix2();
 	TestSolve();
 	TestPGS();
+	TestSVD();
 }

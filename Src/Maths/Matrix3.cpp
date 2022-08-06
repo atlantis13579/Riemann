@@ -260,7 +260,7 @@ void Matrix3::GolubKahanStep(Matrix3& rA, Matrix3& rL, Matrix3& rR)
 	}
 }
 
-void Matrix3::SingularValueDecomposition(Matrix3& rL, Vector3& rS, Matrix3& rR) const
+void Matrix3::SingularValueDecomposition(Vector3& S, Matrix3& U, Matrix3& V) const
 {
 	// temas: currently unused
 	//const int iMax = 16;
@@ -269,7 +269,7 @@ void Matrix3::SingularValueDecomposition(Matrix3& rL, Vector3& rS, Matrix3& rR) 
 	const int   iSvdMaxIterations = 32;
 
 	Matrix3 kA = *this;
-	Bidiagonalize(kA, rL, rR);
+	Bidiagonalize(kA, U, V);
 
 	for (uint32_t i = 0; i < iSvdMaxIterations; i++)
 	{
@@ -285,9 +285,9 @@ void Matrix3::SingularValueDecomposition(Matrix3& rL, Vector3& rS, Matrix3& rR) 
 		{
 			if (bTest2)
 			{
-				rS[0] = kA[0][0];
-				rS[1] = kA[1][1];
-				rS[2] = kA[2][2];
+				S[0] = kA[0][0];
+				S[1] = kA[1][1];
+				S[2] = kA[2][2];
 				break;
 			}
 			else
@@ -301,10 +301,10 @@ void Matrix3::SingularValueDecomposition(Matrix3& rL, Vector3& rS, Matrix3& rR) 
 
 				for (iCol = 0; iCol < 3; ++iCol)
 				{
-					fTmp0 = rL[iCol][1];
-					fTmp1 = rL[iCol][2];
-					rL[iCol][1] = fCos0 * fTmp0 - fSin0 * fTmp1;
-					rL[iCol][2] = fSin0 * fTmp0 + fCos0 * fTmp1;
+					fTmp0 = U[iCol][1];
+					fTmp1 = U[iCol][2];
+					U[iCol][1] = fCos0 * fTmp0 - fSin0 * fTmp1;
+					U[iCol][2] = fSin0 * fTmp0 + fCos0 * fTmp1;
 				}
 
 				fTan1 = (kA[1][2] - kA[2][2] * fTan0) / kA[1][1];
@@ -313,16 +313,16 @@ void Matrix3::SingularValueDecomposition(Matrix3& rL, Vector3& rS, Matrix3& rR) 
 
 				for (iRow = 0; iRow < 3; ++iRow)
 				{
-					fTmp0 = rR[1][iRow];
-					fTmp1 = rR[2][iRow];
-					rR[1][iRow] = fCos1 * fTmp0 - fSin1 * fTmp1;
-					rR[2][iRow] = fSin1 * fTmp0 + fCos1 * fTmp1;
+					fTmp0 = V[1][iRow];
+					fTmp1 = V[2][iRow];
+					V[1][iRow] = fCos1 * fTmp0 - fSin1 * fTmp1;
+					V[2][iRow] = fSin1 * fTmp0 + fCos1 * fTmp1;
 				}
 
-				rS[0] = kA[0][0];
-				rS[1] = fCos0 * fCos1 * kA[1][1] -
+				S[0] = kA[0][0];
+				S[1] = fCos0 * fCos1 * kA[1][1] -
 					fSin1 * (fCos0 * kA[1][2] - fSin0 * kA[2][2]);
-				rS[2] = fSin0 * fSin1 * kA[1][1] +
+				S[2] = fSin0 * fSin1 * kA[1][1] +
 					fCos1 * (fSin0 * kA[1][2] + fCos0 * kA[2][2]);
 				break;
 			}
@@ -340,10 +340,10 @@ void Matrix3::SingularValueDecomposition(Matrix3& rL, Vector3& rS, Matrix3& rR) 
 
 				for (iCol = 0; iCol < 3; ++iCol)
 				{
-					fTmp0 = rL[iCol][0];
-					fTmp1 = rL[iCol][1];
-					rL[iCol][0] = fCos0 * fTmp0 - fSin0 * fTmp1;
-					rL[iCol][1] = fSin0 * fTmp0 + fCos0 * fTmp1;
+					fTmp0 = U[iCol][0];
+					fTmp1 = U[iCol][1];
+					U[iCol][0] = fCos0 * fTmp0 - fSin0 * fTmp1;
+					U[iCol][1] = fSin0 * fTmp0 + fCos0 * fTmp1;
 				}
 
 				fTan1 = (kA[0][1] - kA[1][1] * fTan0) / kA[0][0];
@@ -352,22 +352,22 @@ void Matrix3::SingularValueDecomposition(Matrix3& rL, Vector3& rS, Matrix3& rR) 
 
 				for (iRow = 0; iRow < 3; ++iRow)
 				{
-					fTmp0 = rR[0][iRow];
-					fTmp1 = rR[1][iRow];
-					rR[0][iRow] = fCos1 * fTmp0 - fSin1 * fTmp1;
-					rR[1][iRow] = fSin1 * fTmp0 + fCos1 * fTmp1;
+					fTmp0 = V[0][iRow];
+					fTmp1 = V[1][iRow];
+					V[0][iRow] = fCos1 * fTmp0 - fSin1 * fTmp1;
+					V[1][iRow] = fSin1 * fTmp0 + fCos1 * fTmp1;
 				}
 
-				rS[0] = fCos0 * fCos1 * kA[0][0] -
+				S[0] = fCos0 * fCos1 * kA[0][0] -
 					fSin1 * (fCos0 * kA[0][1] - fSin0 * kA[1][1]);
-				rS[1] = fSin0 * fSin1 * kA[0][0] +
+				S[1] = fSin0 * fSin1 * kA[0][0] +
 					fCos1 * (fSin0 * kA[0][1] + fCos0 * kA[1][1]);
-				rS[2] = kA[2][2];
+				S[2] = kA[2][2];
 				break;
 			}
 			else
 			{
-				GolubKahanStep(kA, rL, rR);
+				GolubKahanStep(kA, U, V);
 			}
 		}
 	}
@@ -375,16 +375,16 @@ void Matrix3::SingularValueDecomposition(Matrix3& rL, Vector3& rS, Matrix3& rR) 
 	// positize diagonal
 	for (iRow = 0; iRow < 3; ++iRow)
 	{
-		if (rS[iRow] < 0.0)
+		if (S[iRow] < 0.0)
 		{
-			rS[iRow] = -rS[iRow];
+			S[iRow] = -S[iRow];
 			for (iCol = 0; iCol < 3; ++iCol)
-				rR[iRow][iCol] = -rR[iRow][iCol];
+				V[iRow][iCol] = -V[iRow][iCol];
 		}
 	}
 }
 
-void Matrix3::SingularValueComposition(const Matrix3& rL,	const Vector3& rS, const Matrix3& rR)
+void Matrix3::SingularValueComposition(const Vector3& S, const Matrix3& U, const Matrix3& V)
 {
 	int iRow, iCol;
 	Matrix3 kTmp;
@@ -393,7 +393,7 @@ void Matrix3::SingularValueComposition(const Matrix3& rL,	const Vector3& rS, con
 	for (iRow = 0; iRow < 3; ++iRow)
 	{
 		for (iCol = 0; iCol < 3; ++iCol)
-			kTmp[iRow][iCol] = rS[iRow] * rR[iRow][iCol];
+			kTmp[iRow][iCol] = S[iRow] * V[iRow][iCol];
 	}
 
 	// product L*S*R
@@ -403,7 +403,7 @@ void Matrix3::SingularValueComposition(const Matrix3& rL,	const Vector3& rS, con
 		{
 			mat[iRow][iCol] = 0.0;
 			for (int iMid = 0; iMid < 3; iMid++)
-				mat[iRow][iCol] += rL[iRow][iMid] * kTmp[iMid][iCol];
+				mat[iRow][iCol] += U[iRow][iMid] * kTmp[iMid][iCol];
 		}
 	}
 }
@@ -472,11 +472,11 @@ void Matrix3::Orthonormalize()
 
 void Matrix3::PolarDecomposition(Matrix3& rU, Matrix3& rP) const
 {
-	Matrix3 L, R;
+	Matrix3 U, V;
 	Vector3 S;
-	SingularValueDecomposition(L, S, R);
-	rP = R.Transpose() * Matrix3(S.x, S.y, S.z) * R;
-	rU = L * R;
+	SingularValueDecomposition(S, U, V);
+	rP = V.Transpose() * Matrix3(S.x, S.y, S.z) * V;
+	rU = U * V;
 }
 
 void Matrix3::QDUDecomposition(Matrix3& rQ, Vector3& rD, Vector3& rU) const

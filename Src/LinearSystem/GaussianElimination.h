@@ -2,29 +2,29 @@
 
 #include <string.h>
 
-#define matInvM(i, j)		(InvM[i*nRows + j])
+#define matInvM(i, j)		(InvM[i*nDim + j])
 
 template<typename T>
 class GaussianElimination
 {
 public:
-	bool operator()(const T* M, int nRows, T* InvM, T* Determinant) const
+	bool operator()(const T* M, int nDim, T* InvM, T* Determinant) const
 	{
-		int nSize = nRows * nRows;
-		T* localInverseM = nullptr;
+		int nSize = nDim * nDim;
+		T* bufferInvM = nullptr;
 		bool NeedInverse = InvM != nullptr;
 		if (!NeedInverse)
 		{
-			localInverseM = new T[nSize];
-			InvM = localInverseM;
+			bufferInvM = new T[nSize];
+			InvM = bufferInvM;
 		}
 		memcpy(InvM, M, nSize * sizeof(T));
 
-		int *buffer = new int[3*nRows];
+		int *buffer = new int[3*nDim];
 		int *colIndex = buffer;
-		int *rowIndex = buffer + nRows;
-		int *pivoted = buffer + 2 * nRows;
-		memset(pivoted, 0, sizeof(pivoted[0])*nRows);
+		int *rowIndex = buffer + nDim;
+		int *pivoted = buffer + 2 * nDim;
+		memset(pivoted, 0, sizeof(pivoted[0])*nDim);
 
 		const T zero = (T)0;
 		const T one = (T)1;
@@ -35,17 +35,17 @@ public:
 		}
 
 		int i1, i2, row = 0, col = 0;
-		for (int i0 = 0; i0 < nRows; ++i0)
+		for (int i0 = 0; i0 < nDim; ++i0)
 		{
 			T maxVal = zero;
-			for (i1 = 0; i1 < nRows; ++i1)
+			for (i1 = 0; i1 < nDim; ++i1)
 			{
 				if (pivoted[i1] != 0)
 				{
 					continue;
 				}
 				
-				for (i2 = 0; i2 < nRows; ++i2)
+				for (i2 = 0; i2 < nDim; ++i2)
 				{
 					if (pivoted[i2] != 0)
 					{
@@ -74,7 +74,7 @@ public:
 					*Determinant = zero;
 				}
 				
-				if (localInverseM) delete []localInverseM;
+				if (bufferInvM) delete []bufferInvM;
 				if (buffer) delete []buffer;
 				return false;
 			}
@@ -84,7 +84,7 @@ public:
 			if (row != col)
 			{
 				odd = !odd;
-				for (int i = 0; i < nRows; ++i)
+				for (int i = 0; i < nDim; ++i)
 				{
 					T t = matInvM(row, i);
 					matInvM(row, i) = matInvM(col, i);
@@ -99,12 +99,12 @@ public:
 			if (Determinant) *Determinant *= diagonal;
 			T inv = one / diagonal;
 			matInvM(col, col) = one;
-			for (i2 = 0; i2 < nRows; ++i2)
+			for (i2 = 0; i2 < nDim; ++i2)
 			{
 				matInvM(col, i2) *= inv;
 			}
 
-			for (i1 = 0; i1 < nRows; ++i1)
+			for (i1 = 0; i1 < nDim; ++i1)
 			{
 				if (i1 == col)
 				{
@@ -113,7 +113,7 @@ public:
 				
 				T save = matInvM(i1, col);
 				matInvM(i1, col) = zero;
-				for (i2 = 0; i2 < nRows; ++i2)
+				for (i2 = 0; i2 < nDim; ++i2)
 				{
 					matInvM(i1, i2) -= matInvM(col, i2) * save;
 				}
@@ -122,14 +122,14 @@ public:
 
 		if (InvM)
 		{
-			for (i1 = nRows - 1; i1 >= 0; --i1)
+			for (i1 = nDim - 1; i1 >= 0; --i1)
 			{
 				if (rowIndex[i1] == colIndex[i1])
 				{
 					continue;
 				}
 				
-				for (i2 = 0; i2 < nRows; ++i2)
+				for (i2 = 0; i2 < nDim; ++i2)
 				{
 					T t = matInvM(i2, rowIndex[i1]);
 					matInvM(i2, rowIndex[i1]) = matInvM(i2, colIndex[i1]);
@@ -143,7 +143,7 @@ public:
 			*Determinant = -*Determinant;
 		}
 		
-		if (localInverseM) delete []localInverseM;
+		if (bufferInvM) delete []bufferInvM;
 		if (buffer) delete []buffer;
 		return true;
 	}

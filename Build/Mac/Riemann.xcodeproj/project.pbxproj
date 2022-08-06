@@ -15,6 +15,7 @@
 		AD02FE52289AB031004D13D9 /* NonConvexFunctions.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE50289AB031004D13D9 /* NonConvexFunctions.h */; };
 		AD088367289DEC1A0008AB04 /* GradientDescent.h in Headers */ = {isa = PBXBuildFile; fileRef = AD088366289DEC1A0008AB04 /* GradientDescent.h */; };
 		AD088369289E42E30008AB04 /* PolynomialFit.h in Headers */ = {isa = PBXBuildFile; fileRef = AD088368289E42E30008AB04 /* PolynomialFit.h */; };
+		AD08836B289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h in Headers */ = {isa = PBXBuildFile; fileRef = AD08836A289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h */; };
 		ADAA4C3F28898D6000E8AE2E /* SequentialImpulseSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */; };
 		ADAA4C4028898D6000E8AE2E /* NarrowPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */; };
 		ADAA4C4128898D6000E8AE2E /* BroadPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3828898D6000E8AE2E /* BroadPhase.h */; };
@@ -207,10 +208,8 @@
 		ADD23D2A288762F900A849BE /* JacobiIteration.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D17288762F900A849BE /* JacobiIteration.h */; };
 		ADD23D2B288762F900A849BE /* GaussianElimination.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D18288762F900A849BE /* GaussianElimination.h */; };
 		ADD23D2C288762F900A849BE /* DenseVector.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D19288762F900A849BE /* DenseVector.h */; };
-		ADD23D2D288762F900A849BE /* EigenValueDecomposition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D1A288762F900A849BE /* EigenValueDecomposition.cpp */; };
 		ADD23D2E288762F900A849BE /* EigenValueDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D1B288762F900A849BE /* EigenValueDecomposition.h */; };
 		ADD23D2F288762F900A849BE /* ProjectedGaussSeidel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D1C288762F900A849BE /* ProjectedGaussSeidel.cpp */; };
-		ADD23D30288762F900A849BE /* SingularValueDecomposition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D1D288762F900A849BE /* SingularValueDecomposition.cpp */; };
 		ADD23D322887631800A849BE /* PCA.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D312887631800A849BE /* PCA.h */; };
 		ADF27299289544BB00E6FE68 /* MassSpring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADF27297289544BB00E6FE68 /* MassSpring.cpp */; };
 		ADF2729A289544BB00E6FE68 /* MassSpring.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF27298289544BB00E6FE68 /* MassSpring.h */; };
@@ -234,6 +233,7 @@
 		AD02FE50289AB031004D13D9 /* NonConvexFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NonConvexFunctions.h; path = ../../Src/Optimization/NonConvexFunctions.h; sourceTree = "<group>"; };
 		AD088366289DEC1A0008AB04 /* GradientDescent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GradientDescent.h; path = ../../Src/Optimization/GradientDescent.h; sourceTree = "<group>"; };
 		AD088368289E42E30008AB04 /* PolynomialFit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PolynomialFit.h; path = ../../Src/Optimization/PolynomialFit.h; sourceTree = "<group>"; };
+		AD08836A289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MoorePenrosePseudoInverse.h; path = ../../Src/LinearSystem/MoorePenrosePseudoInverse.h; sourceTree = "<group>"; };
 		ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SequentialImpulseSolver.h; path = ../../Src/RigidBodyDynamics/SequentialImpulseSolver.h; sourceTree = "<group>"; };
 		ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NarrowPhase.cpp; path = ../../Src/RigidBodyDynamics/NarrowPhase.cpp; sourceTree = "<group>"; };
 		ADAA4C3828898D6000E8AE2E /* BroadPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BroadPhase.h; path = ../../Src/RigidBodyDynamics/BroadPhase.h; sourceTree = "<group>"; };
@@ -426,10 +426,8 @@
 		ADD23D17288762F900A849BE /* JacobiIteration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = JacobiIteration.h; path = ../../Src/LinearSystem/JacobiIteration.h; sourceTree = "<group>"; };
 		ADD23D18288762F900A849BE /* GaussianElimination.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GaussianElimination.h; path = ../../Src/LinearSystem/GaussianElimination.h; sourceTree = "<group>"; };
 		ADD23D19288762F900A849BE /* DenseVector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DenseVector.h; path = ../../Src/LinearSystem/DenseVector.h; sourceTree = "<group>"; };
-		ADD23D1A288762F900A849BE /* EigenValueDecomposition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EigenValueDecomposition.cpp; path = ../../Src/LinearSystem/EigenValueDecomposition.cpp; sourceTree = "<group>"; };
 		ADD23D1B288762F900A849BE /* EigenValueDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EigenValueDecomposition.h; path = ../../Src/LinearSystem/EigenValueDecomposition.h; sourceTree = "<group>"; };
 		ADD23D1C288762F900A849BE /* ProjectedGaussSeidel.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ProjectedGaussSeidel.cpp; path = ../../Src/LinearSystem/ProjectedGaussSeidel.cpp; sourceTree = "<group>"; };
-		ADD23D1D288762F900A849BE /* SingularValueDecomposition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SingularValueDecomposition.cpp; path = ../../Src/LinearSystem/SingularValueDecomposition.cpp; sourceTree = "<group>"; };
 		ADD23D312887631800A849BE /* PCA.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PCA.h; path = ../../Src/Optimization/PCA.h; sourceTree = "<group>"; };
 		ADE742E12820A994007DEEB3 /* libRiemann.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRiemann.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADF27297289544BB00E6FE68 /* MassSpring.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MassSpring.cpp; path = ../../Src/PositionBasedDynamics/MassSpring.cpp; sourceTree = "<group>"; };
@@ -666,17 +664,16 @@
 				ADD23D0D288762F900A849BE /* DenseMatrix.h */,
 				ADD23D0E288762F900A849BE /* DenseVector.cpp */,
 				ADD23D19288762F900A849BE /* DenseVector.h */,
-				ADD23D1A288762F900A849BE /* EigenValueDecomposition.cpp */,
 				ADD23D1B288762F900A849BE /* EigenValueDecomposition.h */,
 				ADD23D18288762F900A849BE /* GaussianElimination.h */,
 				ADD23D11288762F900A849BE /* GaussSeidelIteration.h */,
 				ADD23D17288762F900A849BE /* JacobiIteration.h */,
 				ADD23D14288762F900A849BE /* LUFactorization.h */,
+				AD08836A289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h */,
 				ADD23D0F288762F900A849BE /* PolarDecomposition.cpp */,
 				ADD23D16288762F900A849BE /* PolarDecomposition.h */,
 				ADD23D1C288762F900A849BE /* ProjectedGaussSeidel.cpp */,
 				ADD23D15288762F900A849BE /* ProjectedGaussSeidel.h */,
-				ADD23D1D288762F900A849BE /* SingularValueDecomposition.cpp */,
 				ADD23D13288762F900A849BE /* SingularValueDecomposition.h */,
 				ADD23D10288762F900A849BE /* SparseMatrix.h */,
 			);
@@ -899,6 +896,7 @@
 				ADD23D24288762F900A849BE /* GaussSeidelIteration.h in Headers */,
 				ADD23D06288762ED00A849BE /* Tensor.h in Headers */,
 				ADD23C9A288762C000A849BE /* ConjugateGradientSolver.h in Headers */,
+				AD08836B289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h in Headers */,
 				ADD23CFC288762ED00A849BE /* Transform.h in Headers */,
 				ADD23C4E288761AE00A849BE /* VoxelField.h in Headers */,
 				ADD23BCD2887614E00A849BE /* Simplex.h in Headers */,
@@ -1084,7 +1082,6 @@
 				ADAA4C4228898D6000E8AE2E /* SequentialImpulseSolver.cpp in Sources */,
 				ADD23D22288762F900A849BE /* PolarDecomposition.cpp in Sources */,
 				ADBBEE14288C41A300C3D6CD /* Matrix3.cpp in Sources */,
-				ADD23D2D288762F900A849BE /* EigenValueDecomposition.cpp in Sources */,
 				ADD23C202887619700A849BE /* Fracture.cpp in Sources */,
 				ADD23CC7288762CC00A849BE /* KinematicsTree.cpp in Sources */,
 				AD02FE48289AAB06004D13D9 /* CollidingContact.cpp in Sources */,
@@ -1102,7 +1099,6 @@
 				ADD23C102887617000A849BE /* FEMSolver.cpp in Sources */,
 				ADD23C0A2887616200A849BE /* HeightField3d.cpp in Sources */,
 				ADD23C0F2887617000A849BE /* MLSMPMSolver.cpp in Sources */,
-				ADD23D30288762F900A849BE /* SingularValueDecomposition.cpp in Sources */,
 				ADD23BFF2887616200A849BE /* OrientedBox3d.cpp in Sources */,
 				ADD23BCA2887614E00A849BE /* AABBTree.cpp in Sources */,
 				ADD23BCE2887614E00A849BE /* AABBTreeOffline.cpp in Sources */,

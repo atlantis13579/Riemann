@@ -178,18 +178,18 @@ void TestPolyfit()
 	const int N = 100;
 	DenseVector x(N);
 	DenseVector y(N);
-	float a = 2.0f, b = 1.0f, c = 3.0f;
+	float a = 2.0f, b = 1.0f, c = 1.5f, d = 0.5f;
 	for (int i = 0; i < N; ++i)
 	{
 		float xx = 1.0f * rand() / RAND_MAX;
 		x[i] = xx;
-		y[i] = a * xx * xx + b * xx + c + 0.01f * rand() / RAND_MAX;
+		y[i] = a * xx * xx * xx + b * xx * xx + c * xx + d + 0.01f * rand() / RAND_MAX;
 	}
 	
-	PolynomialFit<float, 2> p2;
-	p2.Fit(x.GetData(), y.GetData(), N);
+	CubicFit<float> p3;
+	p3.Fit(x.GetData(), y.GetData(), N);
 	
-	printf("polyfit: a = %.2f, b = %.2f, c = %.2f\n", p2.coef[2], p2.coef[1], p2.coef[0]);
+	printf("polyfit: a = %.2f, b = %.2f, c = %.2f, c = %.3f\n", p3.coef[3], p3.coef[2], p3.coef[1], p3.coef[0]);
 	
 	return;
 }

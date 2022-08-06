@@ -44,7 +44,7 @@ public:
 		mat[1][0] = c0.y; mat[1][1] = c1.y; mat[1][2] = c2.y;
 		mat[2][0] = c0.z; mat[2][1] = c1.z; mat[2][2] = c2.z;
 	}
-
+	
 	void LoadIdentiry()
 	{
 		mat[0][0] = 1; mat[0][1] = 0; mat[0][2] = 0;
@@ -58,21 +58,21 @@ public:
 	void LoadRotateZ(float rfloatAngle);
 	void Load2DOrthogonalTransform(float dx, float dy, float dAngle);
 
-	Matrix3 Transpose() const
+	inline Matrix3 Transpose() const
 	{
 		return Matrix3(mat[0][0], mat[1][0], mat[2][0],
 			mat[0][1], mat[1][1], mat[2][1],
 			mat[0][2], mat[1][2], mat[2][2]);
 	}
 
-	float Determinant() const
+	inline float Determinant() const
 	{
 		return mat[0][0] * (mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1])
 			- mat[0][1] * (mat[2][2] * mat[1][0] - mat[1][2] * mat[2][0])
 			+ mat[0][2] * (mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]);
 	}
 
-	Matrix3 operator+(const Matrix3& mm) const
+	inline Matrix3 operator+(const Matrix3& mm) const
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
@@ -81,7 +81,7 @@ public:
 		return Matrix3(m);
 	}
 
-	Matrix3 operator-(const Matrix3& mm) const
+	inline Matrix3 operator-(const Matrix3& mm) const
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
@@ -90,12 +90,12 @@ public:
 		return Matrix3(m);
 	}
 
-	Matrix3 operator-() const
+	inline Matrix3 operator-() const
 	{
 		return *this * -1.0f;
 	}
 
-	Matrix3 operator*(const Matrix3& mm) const
+	inline Matrix3 operator*(const Matrix3& mm) const
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
@@ -104,7 +104,7 @@ public:
 		return Matrix3(m);
 	}
 
-	Matrix3 operator*(float k) const
+	inline Matrix3 operator*(float k) const
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
@@ -113,7 +113,7 @@ public:
 		return Matrix3(m);
 	}
 
-	Vector3 operator*(const Vector3& vv) const
+	inline Vector3 operator*(const Vector3& vv) const
 	{
 		Vector3 v;
 		v.x = mat[0][0] * vv.x + mat[0][1] * vv.y + mat[0][2] * vv.z;
@@ -177,7 +177,7 @@ public:
 		float l1_norm = 0.0f;
 		const float* p = (const float *)this;
 		for (int i = 0; i < 9; ++i)
-			l1_norm += fabsf(p[i]);
+			l1_norm += fabs(p[i]);
 		return l1_norm;
 	}
 
@@ -268,8 +268,8 @@ public:
 	float		ToAxisAngle(Vector3& Axis) const;
 	bool		ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const;
 
-	void		SingularValueDecomposition(Matrix3& rL, Vector3& rS, Matrix3& rR) const;
-	void		SingularValueComposition(const Matrix3& rL, const Vector3& rS, const Matrix3& rR);
+	void		SingularValueDecomposition(Vector3& S, Matrix3& U, Matrix3& V) const;
+	void		SingularValueComposition(const Vector3& S, const Matrix3& U, const Matrix3& V);
 	void		Orthonormalize();
 	void		PolarDecomposition(Matrix3& rU, Matrix3& rP) const;
 	void		QDUDecomposition(Matrix3& rQ, Vector3& rD, Vector3& rU) const;
