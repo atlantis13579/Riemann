@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include <functional>
 #include "../Maths/Matrix3.h"
 
 class PolarDecompose

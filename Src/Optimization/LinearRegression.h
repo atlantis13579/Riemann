@@ -1,6 +1,11 @@
 #pragma once
 
+// #define USE_PSEUDO_INVERSE
+#ifdef USE_PSEUDO_INVERSE
+#include "../LinearSystem/MoorePenrosePseudoInverse.h"
+#else
 #include "../LinearSystem/GaussianElimination.h"
+#endif // USE_PSEUDO_INVERSE
 
 enum class LR_solver : uint8_t
 {
@@ -222,7 +227,12 @@ private:
 
 		T *invXTX = XTX + (dim + 1)*(dim + 1);
 		
+		#ifdef USE_PSEUDO_INVERSE
+		bool succ = MoorePenrosePseudoInverse<T>()(XTX, dim + 1, invXTX);
+		#else
 		bool succ = GaussianElimination<T>()(XTX, dim + 1, invXTX, nullptr);
+		#endif
+		
 		if (!succ)
 		{
 			return false;

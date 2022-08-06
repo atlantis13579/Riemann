@@ -6,7 +6,6 @@
 
 // Solve A * X = B , A is square Matrix of size N, B is Vector of size N
 // https://en.wikipedia.org/wiki/Jacobi_method
-
 template<typename T>
 class JacobiIteration_CPU
 {

@@ -8,7 +8,7 @@ template<typename T>
 class LUFactorization
 {
 public:
-	static void Solve(const T* A, int N, T* L, T* U)
+	void operator()(const T* A, int N, T* L, T* U) const
 	{
 		memset(U, 0, sizeof(U[0]) * N * N);
 		memset(L, 0, sizeof(L[0]) * N * N);
