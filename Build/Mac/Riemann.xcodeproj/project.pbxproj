@@ -11,8 +11,7 @@
 		AD02FE48289AAB06004D13D9 /* CollidingContact.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD02FE46289AAB06004D13D9 /* CollidingContact.cpp */; };
 		AD02FE4C289AAFBB004D13D9 /* QuadraticProgramming.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE4B289AAFBB004D13D9 /* QuadraticProgramming.h */; };
 		AD02FE4E289AAFCB004D13D9 /* Convex.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE4D289AAFCB004D13D9 /* Convex.h */; };
-		AD02FE51289AB031004D13D9 /* ConvexFunctions.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE4F289AB030004D13D9 /* ConvexFunctions.h */; };
-		AD02FE52289AB031004D13D9 /* NonConvexFunctions.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE50289AB031004D13D9 /* NonConvexFunctions.h */; };
+		AD02FE52289AB031004D13D9 /* SpecialFunctions.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE50289AB031004D13D9 /* SpecialFunctions.h */; };
 		AD088367289DEC1A0008AB04 /* GradientDescent.h in Headers */ = {isa = PBXBuildFile; fileRef = AD088366289DEC1A0008AB04 /* GradientDescent.h */; };
 		AD088369289E42E30008AB04 /* PolynomialFit.h in Headers */ = {isa = PBXBuildFile; fileRef = AD088368289E42E30008AB04 /* PolynomialFit.h */; };
 		AD08836B289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h in Headers */ = {isa = PBXBuildFile; fileRef = AD08836A289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h */; };
@@ -229,8 +228,7 @@
 		AD02FE46289AAB06004D13D9 /* CollidingContact.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CollidingContact.cpp; path = ../../Src/RigidBodyDynamics/CollidingContact.cpp; sourceTree = "<group>"; };
 		AD02FE4B289AAFBB004D13D9 /* QuadraticProgramming.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = QuadraticProgramming.h; path = ../../Src/Optimization/QuadraticProgramming.h; sourceTree = "<group>"; };
 		AD02FE4D289AAFCB004D13D9 /* Convex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Convex.h; path = ../../Src/Physics2d/Convex.h; sourceTree = "<group>"; };
-		AD02FE4F289AB030004D13D9 /* ConvexFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConvexFunctions.h; path = ../../Src/Optimization/ConvexFunctions.h; sourceTree = "<group>"; };
-		AD02FE50289AB031004D13D9 /* NonConvexFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NonConvexFunctions.h; path = ../../Src/Optimization/NonConvexFunctions.h; sourceTree = "<group>"; };
+		AD02FE50289AB031004D13D9 /* SpecialFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SpecialFunctions.h; path = ../../Src/Optimization/SpecialFunctions.h; sourceTree = "<group>"; };
 		AD088366289DEC1A0008AB04 /* GradientDescent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GradientDescent.h; path = ../../Src/Optimization/GradientDescent.h; sourceTree = "<group>"; };
 		AD088368289E42E30008AB04 /* PolynomialFit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PolynomialFit.h; path = ../../Src/Optimization/PolynomialFit.h; sourceTree = "<group>"; };
 		AD08836A289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MoorePenrosePseudoInverse.h; path = ../../Src/LinearSystem/MoorePenrosePseudoInverse.h; sourceTree = "<group>"; };
@@ -618,13 +616,12 @@
 		ADD23B8F288760BD00A849BE /* Optimization */ = {
 			isa = PBXGroup;
 			children = (
-				AD02FE4F289AB030004D13D9 /* ConvexFunctions.h */,
 				ADF862292891876B00DBC516 /* GaussNewton.h */,
 				AD088366289DEC1A0008AB04 /* GradientDescent.h */,
 				ADF862282891876B00DBC516 /* LBFGS.h */,
 				ADF862272891876B00DBC516 /* LevenbergMarquardt.h */,
 				ADF862262891876B00DBC516 /* LinearRegression.h */,
-				AD02FE50289AB031004D13D9 /* NonConvexFunctions.h */,
+				AD02FE50289AB031004D13D9 /* SpecialFunctions.h */,
 				ADD23D312887631800A849BE /* PCA.h */,
 				AD088368289E42E30008AB04 /* PolynomialFit.h */,
 				AD02FE4B289AAFBB004D13D9 /* QuadraticProgramming.h */,
@@ -925,7 +922,7 @@
 				ADD23BD82887614E00A849BE /* EPAPenetration.h in Headers */,
 				ADD23C50288761AE00A849BE /* TetrahedralMesh.h in Headers */,
 				ADD23C7C288762B800A849BE /* AnimBinaryParser.h in Headers */,
-				AD02FE52289AB031004D13D9 /* NonConvexFunctions.h in Headers */,
+				AD02FE52289AB031004D13D9 /* SpecialFunctions.h in Headers */,
 				ADD23CCE288762D300A849BE /* PositionBasedDynamicsSolver.h in Headers */,
 				ADD23BFD2887616200A849BE /* Segment3d.h in Headers */,
 				ADD23C9F288762C000A849BE /* SparseConjugateGradientSolver.h in Headers */,
@@ -955,7 +952,6 @@
 				ADD23C112887617000A849BE /* FEMSolver.h in Headers */,
 				ADD23C63288762AE00A849BE /* AutonomousController.h in Headers */,
 				ADBBEE18288C41A300C3D6CD /* VectorN.h in Headers */,
-				AD02FE51289AB031004D13D9 /* ConvexFunctions.h in Headers */,
 				ADD23BFA2887616200A849BE /* HeightField3d.h in Headers */,
 				ADF2729A289544BB00E6FE68 /* MassSpring.h in Headers */,
 				ADD23BF32887616200A849BE /* AxisAlignedBox3d.h in Headers */,

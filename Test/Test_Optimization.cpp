@@ -9,7 +9,7 @@
 #include "../Src/Optimization/LinearRegression.h"
 #include "../Src/Optimization/PolynomialFit.h"
 #include "../Src/Optimization/LevenbergMarquardt.h"
-#include "../Src/Optimization/NonConvexFunctions.h"
+#include "../Src/Optimization/SpecialFunctions.h"
 
 class Rosenbrock2DEvalFunction : public LBFGSEvalFunction<double>
 {

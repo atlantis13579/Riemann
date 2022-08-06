@@ -1,7 +1,17 @@
 #pragma once
 
-// https://en.wikipedia.org/wiki/Rosenbrock_function
+template<typename T>
+T Square(T* X, int Dim)
+{
+	T sum = (T)0;
+	for (int i = 0; i < Dim; ++i)
+	{
+		sum += X[i] * X[i];
+	}
+	return sum;
+}
 
+// https://en.wikipedia.org/wiki/Rosenbrock_function
 template<typename T>
 T Rosenbrock(const T a, const T b, const T x1, const T x2)
 {
