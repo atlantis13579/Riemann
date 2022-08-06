@@ -211,6 +211,14 @@ public:
 			-(mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0]) * d, (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) * d, -(mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0]) * d,
 			(mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) * d, -(mat[0][0] * mat[2][1] - mat[0][1] * mat[2][0]) * d, (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) * d);
 	}
+	
+	Matrix3 PseudoInverse() const
+	{
+		Vector3 S;
+		Matrix3 U, V;
+		SingularValueDecomposition(S, U, V);
+		return V * Matrix3(S) * U.Transpose();
+	}
 
 	// Solve AX = B
 	bool Solve(const Vector3& b, Vector3& x)

@@ -245,7 +245,7 @@ public:
 		std::swap(mRows, mCols);
 	}
 
-	TDenseMatrix<T>		DotMatrix() const		// X^T * X
+	TDenseMatrix<T>		CoProduct() const		// X^T * X
 	{
 		TDenseMatrix<T> Ret(mCols, mCols);
 		for (int i = 0; i < mCols; ++i)

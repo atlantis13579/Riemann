@@ -133,7 +133,7 @@ void TestPGS()
 	DenseVector X(3);
 
 	X.LoadZero();
-	ProjectedGaussSeidel_CPU::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 50, 1e-10f);
+	ProjectedGaussSeidel_CPU<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 50, 1e-10f);
 	DenseVector Y = A * X + B;
 	float dp = X.Dot(Y);
 	EXPECT(X >= -0.00001f);
@@ -148,7 +148,7 @@ void TestPGS()
 	B[0] = 10.5f;
 	B[1] = 17.0f;
 	B[2] = 242.0f;
-	ProjectedGaussSeidel_CPU::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), X1.GetData(), X2.GetData(), 50);
+	ProjectedGaussSeidel_CPU<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), X1.GetData(), X2.GetData(), 50);
 	Y = A * X + B;
 	dp = Y.Dot(X);
 	EXPECT(X >= X1);
