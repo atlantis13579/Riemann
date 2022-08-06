@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../LinearSystem/DenseMatrix.h"
+#include "../LinearSystem/GaussianElimination.h"
 
 enum class LR_solver : uint8_t
 {
@@ -72,6 +72,8 @@ public:
 		default:
 			break;
 		}
+		
+		intercept = coef[dim];
 	}
 
 	T Eval(const T* X) const
@@ -187,40 +189,45 @@ private:
 		}
 	}
 
+	// coef = (X^T * X)^(-1) * X^T * Y
 	void NormalEquation(const T* pX, const T* pY, const int N)
 	{
-		TDenseMatrix<T> XTX(dim + 1, dim + 1);
+		const T one = (T)1;
+		T *XTX = new T[2*(dim + 1)*(dim + 1) + (dim + 1)*N];
 		for (int i = 0; i <= dim; ++i)
 		for (int j = i; j <= dim; ++j)
 		{
 			T sum = (T)0;
 			for (int k = 0; k < N; ++k)
 			{
-				T xi = i < dim ? pX[k * dim + i] : (T)1;
-				T xj = j < dim ? pX[k * dim + j] : (T)1;
+				T xi = i < dim ? pX[k * dim + i] : one;
+				T xj = j < dim ? pX[k * dim + j] : one;
 				sum += xi * xj;
 			}
-			XTX(i, j) = sum;
+			XTX[i * (dim+1) + j] = sum;
 		}
 		for (int i = 0; i <= dim; ++i)
 		for (int j = 0; j < i; ++j)
 		{
-			XTX(i, j) = XTX(j, i);
+			XTX[i * (dim+1) + j] = XTX[j * (dim+1) + i];
 		}
 
-		TDenseMatrix<T> invXTX = XTX.Inverse();
-		TDenseMatrix<T> invXTXXT(dim + 1, N);
+		T *invXTX = XTX + (dim + 1)*(dim + 1);
+		
+		GaussianElimination<T>()(XTX, dim + 1, invXTX, nullptr);
+
+		T* invXTXXT = XTX + 2*(dim + 1)*(dim + 1);
 		for (int i = 0; i <= dim; ++i)
 		for (int j = 0; j < N; ++j)
 		{
 			T sum = (T)0;
 			for (int k = 0; k <= dim; ++k)
 			{
-				T xik = invXTX(i, k);
-				T xkj = k < dim ? pX[j * dim + k] : (T)1;
+				T xik = invXTX[i * (dim + 1) +  k];
+				T xkj = k < dim ? pX[j * dim + k] : one;
 				sum += xik * xkj;
 			}
-			invXTXXT(i, j) = sum;
+			invXTXXT[i * N + j] = sum;
 		}
 
 		for (int i = 0; i <= dim; ++i)
@@ -228,16 +235,19 @@ private:
 			T sum = (T)0;
 			for (int j = 0; j < N; ++j)
 			{
-				sum += invXTXXT(i, j) * pY[j];
+				sum += invXTXXT[i * N + j] * pY[j];
 			}
 			coef[i] = sum;
 		}
 
+		delete []XTX;
+		
 		return;
 	}
 
 public:
 	T* coef;
+	T intercept;
 	T* gradient;
 	int dim;
 };

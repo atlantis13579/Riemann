@@ -11,22 +11,28 @@ public:
 	bool operator()(const T* M, int nRows, T* InvM, T* Determinant) const
 	{
 		int nSize = nRows * nRows;
-		std::vector<T> localInverseM;
+		T* localInverseM = nullptr;
 		bool NeedInverse = InvM != nullptr;
 		if (!NeedInverse)
 		{
-			localInverseM.resize(nSize);
-			InvM = localInverseM.data();
+			localInverseM = new T[nSize];
+			InvM = localInverseM;
 		}
 		memcpy(InvM, M, nSize * sizeof(T));
 
-		std::vector<int> colIndex(nRows), rowIndex(nRows), pivoted(nRows);
-		std::fill(pivoted.begin(), pivoted.end(), 0);
+		int *buffer = new int[3*nRows];
+		int *colIndex = buffer;
+		int *rowIndex = buffer + nRows;
+		int *pivoted = buffer + 2 * nRows;
+		memset(pivoted, 0, sizeof(pivoted[0])*nRows);
 
 		const T zero = (T)0;
 		const T one = (T)1;
 		bool odd = false;
-		if (Determinant) *Determinant = one;
+		if (Determinant)
+		{
+			*Determinant = one;
+		}
 
 		int i1, i2, row = 0, col = 0;
 		for (int i0 = 0; i0 < nRows; ++i0)
@@ -34,21 +40,25 @@ public:
 			T maxVal = zero;
 			for (i1 = 0; i1 < nRows; ++i1)
 			{
-				if (!pivoted[i1])
+				if (pivoted[i1] != 0)
 				{
-					for (i2 = 0; i2 < nRows; ++i2)
+					continue;
+				}
+				
+				for (i2 = 0; i2 < nRows; ++i2)
+				{
+					if (pivoted[i2] != 0)
 					{
-						if (!pivoted[i2])
-						{
-							T Val = matInvM(i1, i2);
-							T absVal = (Val >= zero ? Val : -Val);
-							if (absVal > maxVal)
-							{
-								maxVal = absVal;
-								row = i1;
-								col = i2;
-							}
-						}
+						continue;
+					}
+					
+					T Val = matInvM(i1, i2);
+					T absVal = (Val >= zero ? Val : -Val);
+					if (absVal > maxVal)
+					{
+						maxVal = absVal;
+						row = i1;
+						col = i2;
 					}
 				}
 			}
@@ -59,7 +69,13 @@ public:
 				{
 					memset(InvM, 0, nSize * sizeof(T));
 				}
-				if (Determinant) *Determinant = zero;
+				if (Determinant)
+				{
+					*Determinant = zero;
+				}
+				
+				if (localInverseM) delete []localInverseM;
+				if (buffer) delete []buffer;
 				return false;
 			}
 
@@ -70,7 +86,9 @@ public:
 				odd = !odd;
 				for (int i = 0; i < nRows; ++i)
 				{
-					std::swap(matInvM(row, i), matInvM(col, i));
+					T t = matInvM(row, i);
+					matInvM(row, i) = matInvM(col, i);
+					matInvM(col, i) = t;
 				}
 			}
 
@@ -88,14 +106,16 @@ public:
 
 			for (i1 = 0; i1 < nRows; ++i1)
 			{
-				if (i1 != col)
+				if (i1 == col)
 				{
-					T save = matInvM(i1, col);
-					matInvM(i1, col) = zero;
-					for (i2 = 0; i2 < nRows; ++i2)
-					{
-						matInvM(i1, i2) -= matInvM(col, i2) * save;
-					}
+					continue;
+				}
+				
+				T save = matInvM(i1, col);
+				matInvM(i1, col) = zero;
+				for (i2 = 0; i2 < nRows; ++i2)
+				{
+					matInvM(i1, i2) -= matInvM(col, i2) * save;
 				}
 			}
 		}
@@ -104,12 +124,16 @@ public:
 		{
 			for (i1 = nRows - 1; i1 >= 0; --i1)
 			{
-				if (rowIndex[i1] != colIndex[i1])
+				if (rowIndex[i1] == colIndex[i1])
 				{
-					for (i2 = 0; i2 < nRows; ++i2)
-					{
-						std::swap(matInvM(i2, rowIndex[i1]), matInvM(i2, colIndex[i1]));
-					}
+					continue;
+				}
+				
+				for (i2 = 0; i2 < nRows; ++i2)
+				{
+					T t = matInvM(i2, rowIndex[i1]);
+					matInvM(i2, rowIndex[i1]) = matInvM(i2, colIndex[i1]);
+					matInvM(i2, colIndex[i1]) = t;
 				}
 			}
 		}
@@ -118,7 +142,9 @@ public:
 		{
 			*Determinant = -*Determinant;
 		}
-
+		
+		if (localInverseM) delete []localInverseM;
+		if (buffer) delete []buffer;
 		return true;
 	}
 };

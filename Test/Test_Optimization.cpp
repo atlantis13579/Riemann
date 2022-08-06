@@ -94,7 +94,7 @@ void TestLR()
 	param.solver = LR_solver::NormalEquation;
 	LRModel<float> lr(2);
 	lr.Fit(x.GetData(), y.GetData(), N, param);
-	printf("lr: a = %.2f, b = %.2f, c = %.2f\n", lr.coef[0], lr.coef[1], lr.coef[2]);
+	printf("lr: a = %.2f, b = %.2f, c = %.2f\n", lr.coef[0], lr.coef[1], lr.intercept);
 	return;
 }
 

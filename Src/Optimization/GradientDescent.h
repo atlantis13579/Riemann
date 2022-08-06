@@ -52,7 +52,7 @@ public:
 			gdfloatval_t Y = func->Evaluate(X, gradient);
 			for (int i = 0; i < Dim; ++i)
 			{
-				X[i] -= (gdfloatval_t)param.learningRate * gradient[i];
+				X[i] -= learningRate * gradient[i];
 			}
 
 			gdfloatval_t diff = Y < min_Y ? min_Y - Y : Y - min_Y;

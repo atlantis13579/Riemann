@@ -13,6 +13,7 @@
 		AD02FE4E289AAFCB004D13D9 /* Convex.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE4D289AAFCB004D13D9 /* Convex.h */; };
 		AD02FE51289AB031004D13D9 /* ConvexFunctions.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE4F289AB030004D13D9 /* ConvexFunctions.h */; };
 		AD02FE52289AB031004D13D9 /* NonConvexFunctions.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE50289AB031004D13D9 /* NonConvexFunctions.h */; };
+		AD088367289DEC1A0008AB04 /* GradientDescent.h in Headers */ = {isa = PBXBuildFile; fileRef = AD088366289DEC1A0008AB04 /* GradientDescent.h */; };
 		ADAA4C3F28898D6000E8AE2E /* SequentialImpulseSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */; };
 		ADAA4C4028898D6000E8AE2E /* NarrowPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */; };
 		ADAA4C4128898D6000E8AE2E /* BroadPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3828898D6000E8AE2E /* BroadPhase.h */; };
@@ -232,6 +233,7 @@
 		AD02FE4D289AAFCB004D13D9 /* Convex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Convex.h; path = ../../Src/Physics2d/Convex.h; sourceTree = "<group>"; };
 		AD02FE4F289AB030004D13D9 /* ConvexFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConvexFunctions.h; path = ../../Src/Optimization/ConvexFunctions.h; sourceTree = "<group>"; };
 		AD02FE50289AB031004D13D9 /* NonConvexFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NonConvexFunctions.h; path = ../../Src/Optimization/NonConvexFunctions.h; sourceTree = "<group>"; };
+		AD088366289DEC1A0008AB04 /* GradientDescent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GradientDescent.h; path = ../../Src/Optimization/GradientDescent.h; sourceTree = "<group>"; };
 		ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SequentialImpulseSolver.h; path = ../../Src/RigidBodyDynamics/SequentialImpulseSolver.h; sourceTree = "<group>"; };
 		ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NarrowPhase.cpp; path = ../../Src/RigidBodyDynamics/NarrowPhase.cpp; sourceTree = "<group>"; };
 		ADAA4C3828898D6000E8AE2E /* BroadPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BroadPhase.h; path = ../../Src/RigidBodyDynamics/BroadPhase.h; sourceTree = "<group>"; };
@@ -622,6 +624,7 @@
 			children = (
 				AD02FE4F289AB030004D13D9 /* ConvexFunctions.h */,
 				ADF862292891876B00DBC516 /* GaussNewton.h */,
+				AD088366289DEC1A0008AB04 /* GradientDescent.h */,
 				ADF862282891876B00DBC516 /* LBFGS.h */,
 				ADF862272891876B00DBC516 /* LevenbergMarquardt.h */,
 				ADF862262891876B00DBC516 /* LinearRegression.h */,
@@ -951,6 +954,7 @@
 				ADD23BC52887614E00A849BE /* AABBTreeOffline.h in Headers */,
 				ADD23CB8288762CC00A849BE /* RigidBody.h in Headers */,
 				ADF8622E2891876C00DBC516 /* GaussNewton.h in Headers */,
+				AD088367289DEC1A0008AB04 /* GradientDescent.h in Headers */,
 				ADD23C112887617000A849BE /* FEMSolver.h in Headers */,
 				ADD23C63288762AE00A849BE /* AutonomousController.h in Headers */,
 				ADBBEE18288C41A300C3D6CD /* VectorN.h in Headers */,
