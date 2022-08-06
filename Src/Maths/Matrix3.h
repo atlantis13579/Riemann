@@ -37,6 +37,12 @@ public:
 		memset(mat, 0, sizeof(mat));
 		mat[0][0] = a00; mat[1][1] = a11; mat[2][2] = a22;
 	}
+	
+	Matrix3(const Vector3& diag)
+	{
+		memset(mat, 0, sizeof(mat));
+		mat[0][0] = diag.x; mat[1][1] = diag.y; mat[2][2] = diag.z;
+	}
 
 	Matrix3(const Vector3& c0, const Vector3& c1, const Vector3& c2)
 	{
@@ -268,6 +274,7 @@ public:
 	float		ToAxisAngle(Vector3& Axis) const;
 	bool		ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const;
 
+	// A = U * S * V^T
 	void		SingularValueDecomposition(Vector3& S, Matrix3& U, Matrix3& V) const;
 	void		SingularValueComposition(const Vector3& S, const Matrix3& U, const Matrix3& V);
 	void		Orthonormalize();

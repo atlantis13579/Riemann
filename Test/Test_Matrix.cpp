@@ -179,10 +179,18 @@ void TestSVD()
 	Vector3 s;
 	Matrix3 u, v;
 	A.SingularValueDecomposition(s, u, v);
+	Matrix3 AA = u * Matrix3(s) * v.Transpose();
 	
 	Vector3 s2;
 	Matrix3 u2, v2;
 	SingularValueDecomposition<float>()((const float*)&A, 3, 3, (float*)&s2, (float*)&u2, (float*)&v2);
+	Matrix3 AA2 = u2 * Matrix3(s2) * v2.Transpose();
+	
+	float me1 = sqrtf((AA - A).L2Norm() / 9);
+	float me2 = sqrtf((AA2 - A).L2Norm() / 9);
+
+	EXPECT(me1 < 3.0f);		// the algorithm is not good
+	EXPECT(me2 < 0.1f);
 	
 	return;
 }
@@ -196,8 +204,6 @@ void TestPseudoInverse()
 	A[0][1] = 3.0f;
 	A[1][0] = 5.0f;
 	A[1][1] = 1.0f;
-	
-	TDenseMatrix<float> InvATAAT = A.DotMatrix().Inverse() * A.Transpose();
 	
 	TDenseMatrix<float> InvA = A.Inverse();
 	TDenseMatrix<float> pInvA = A.PseudoInverse();

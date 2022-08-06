@@ -1,6 +1,7 @@
 #pragma once
 
 // perform Singular Value Decomposition of a matrix
+// A = U * S * V^T
 
 #include <string.h>
 
@@ -8,9 +9,9 @@ template<typename T>
 class SingularValueDecomposition
 {
 public:
-	bool operator()(const T* M, int nRows, int nCols, T* Singular, T* U, T* V) const
+	bool operator()(const T* A, int nRows, int nCols, T* Singular, T* U, T* V) const
 	{
-		memcpy(U, M, sizeof(T)*nRows*nCols);
+		memcpy(U, A, sizeof(T)*nRows*nCols);
 		return compute_svd(U, nRows, nCols, Singular, V);
 	}
 	
