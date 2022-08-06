@@ -95,12 +95,12 @@ void TestSolve()
 	DenseVector X(3);
 
 	X.LoadZero();
-	JacobiIteration_CPU J;
+	JacobiIteration_CPU<float> J;
 	J.Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
 	DenseVector Y = A * X;
 	EXPECT(Y.FuzzyEqual(B, 1e-2f));
 
-	GaussSeidelIteration_CPU::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
+	GaussSeidelIteration_CPU<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
 	Y = A * X;
 	EXPECT(Y.FuzzyEqual(B, 1e-2f));
 

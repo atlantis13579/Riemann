@@ -194,13 +194,11 @@
 		ADD23D06288762ED00A849BE /* Tensor.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CF1288762ED00A849BE /* Tensor.h */; };
 		ADD23D09288762ED00A849BE /* Frustum.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CF4288762ED00A849BE /* Frustum.h */; };
 		ADD23D1E288762F900A849BE /* DenseMatrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D0B288762F900A849BE /* DenseMatrix.cpp */; };
-		ADD23D1F288762F900A849BE /* JacobiIteration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D0C288762F900A849BE /* JacobiIteration.cpp */; };
 		ADD23D20288762F900A849BE /* DenseMatrix.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D0D288762F900A849BE /* DenseMatrix.h */; };
 		ADD23D21288762F900A849BE /* DenseVector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D0E288762F900A849BE /* DenseVector.cpp */; };
 		ADD23D22288762F900A849BE /* PolarDecomposition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D0F288762F900A849BE /* PolarDecomposition.cpp */; };
 		ADD23D23288762F900A849BE /* SparseMatrix.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D10288762F900A849BE /* SparseMatrix.h */; };
 		ADD23D24288762F900A849BE /* GaussSeidelIteration.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D11288762F900A849BE /* GaussSeidelIteration.h */; };
-		ADD23D25288762F900A849BE /* GaussSeidelIteration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D12288762F900A849BE /* GaussSeidelIteration.cpp */; };
 		ADD23D26288762F900A849BE /* SingularValueDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D13288762F900A849BE /* SingularValueDecomposition.h */; };
 		ADD23D27288762F900A849BE /* LUFactorization.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D14288762F900A849BE /* LUFactorization.h */; };
 		ADD23D28288762F900A849BE /* ProjectedGaussSeidel.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D15288762F900A849BE /* ProjectedGaussSeidel.h */; };
@@ -414,13 +412,11 @@
 		ADD23CF1288762ED00A849BE /* Tensor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Tensor.h; path = ../../Src/Maths/Tensor.h; sourceTree = "<group>"; };
 		ADD23CF4288762ED00A849BE /* Frustum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Frustum.h; path = ../../Src/Maths/Frustum.h; sourceTree = "<group>"; };
 		ADD23D0B288762F900A849BE /* DenseMatrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DenseMatrix.cpp; path = ../../Src/LinearSystem/DenseMatrix.cpp; sourceTree = "<group>"; };
-		ADD23D0C288762F900A849BE /* JacobiIteration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = JacobiIteration.cpp; path = ../../Src/LinearSystem/JacobiIteration.cpp; sourceTree = "<group>"; };
 		ADD23D0D288762F900A849BE /* DenseMatrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DenseMatrix.h; path = ../../Src/LinearSystem/DenseMatrix.h; sourceTree = "<group>"; };
 		ADD23D0E288762F900A849BE /* DenseVector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DenseVector.cpp; path = ../../Src/LinearSystem/DenseVector.cpp; sourceTree = "<group>"; };
 		ADD23D0F288762F900A849BE /* PolarDecomposition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PolarDecomposition.cpp; path = ../../Src/LinearSystem/PolarDecomposition.cpp; sourceTree = "<group>"; };
 		ADD23D10288762F900A849BE /* SparseMatrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseMatrix.h; path = ../../Src/LinearSystem/SparseMatrix.h; sourceTree = "<group>"; };
 		ADD23D11288762F900A849BE /* GaussSeidelIteration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GaussSeidelIteration.h; path = ../../Src/LinearSystem/GaussSeidelIteration.h; sourceTree = "<group>"; };
-		ADD23D12288762F900A849BE /* GaussSeidelIteration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GaussSeidelIteration.cpp; path = ../../Src/LinearSystem/GaussSeidelIteration.cpp; sourceTree = "<group>"; };
 		ADD23D13288762F900A849BE /* SingularValueDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SingularValueDecomposition.h; path = ../../Src/LinearSystem/SingularValueDecomposition.h; sourceTree = "<group>"; };
 		ADD23D14288762F900A849BE /* LUFactorization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LUFactorization.h; path = ../../Src/LinearSystem/LUFactorization.h; sourceTree = "<group>"; };
 		ADD23D15288762F900A849BE /* ProjectedGaussSeidel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ProjectedGaussSeidel.h; path = ../../Src/LinearSystem/ProjectedGaussSeidel.h; sourceTree = "<group>"; };
@@ -670,9 +666,7 @@
 				ADD23D1A288762F900A849BE /* EigenValueDecomposition.cpp */,
 				ADD23D1B288762F900A849BE /* EigenValueDecomposition.h */,
 				ADD23D18288762F900A849BE /* GaussianElimination.h */,
-				ADD23D12288762F900A849BE /* GaussSeidelIteration.cpp */,
 				ADD23D11288762F900A849BE /* GaussSeidelIteration.h */,
-				ADD23D0C288762F900A849BE /* JacobiIteration.cpp */,
 				ADD23D17288762F900A849BE /* JacobiIteration.h */,
 				ADD23D14288762F900A849BE /* LUFactorization.h */,
 				ADD23D0F288762F900A849BE /* PolarDecomposition.cpp */,
@@ -1069,8 +1063,6 @@
 				ADD23C012887616200A849BE /* Tetrahedral.cpp in Sources */,
 				ADF272A428954DA600E6FE68 /* XPBDRigidDynamicsSolver.cpp in Sources */,
 				ADD23BBD2887614E00A849BE /* GeometryIntersection.cpp in Sources */,
-				ADD23D1F288762F900A849BE /* JacobiIteration.cpp in Sources */,
-				ADD23D25288762F900A849BE /* GaussSeidelIteration.cpp in Sources */,
 				ADD23C78288762B800A849BE /* PhysxBinaryParser.cpp in Sources */,
 				ADD23C3F288761AE00A849BE /* Spline.cpp in Sources */,
 				ADD23C6A288762AE00A849BE /* Vehicle.cpp in Sources */,
