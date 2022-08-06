@@ -9,6 +9,7 @@
 #include "../Src/LinearSystem/ProjectedGaussSeidel.h"
 #include "../Src/LinearSystem/LUFactorization.h"
 #include "../Src/LinearSystem/SingularValueDecomposition.h"
+#include "../Src/LinearSystem/MoorePenrosePseudoInverse.h"
 
 void TestMatrix1()
 {
@@ -162,6 +163,8 @@ void TestPGS()
 
 void TestSVD()
 {
+	printf("Running TestSVD\n");
+	
 	Matrix3 A;
 	A[0][0] = 12.0f;
 	A[0][1] = 3.0f;
@@ -184,6 +187,44 @@ void TestSVD()
 	return;
 }
 
+void TestPseudoInverse()
+{
+	printf("Running TestPseudoInverse\n");
+	
+	TDenseMatrix<float> A(2);
+	A[0][0] = 12.0f;
+	A[0][1] = 3.0f;
+	A[1][0] = 5.0f;
+	A[1][1] = 1.0f;
+	
+	TDenseMatrix<float> InvATAAT = A.DotMatrix().Inverse() * A.Transpose();
+	
+	TDenseMatrix<float> InvA = A.Inverse();
+	TDenseMatrix<float> pInvA = A.PseudoInverse();
+	TDenseMatrix<float> AA = A * pInvA * A;
+	
+	float *p1 = A.GetData(), *p2 = AA.GetData();
+	for (int i = 0; i < 4; ++i)
+	{
+		EXPECT(fabsf(p1[i] - p2[i]) < 0.01f);
+	}
+	
+	A.LoadIdentity();
+	A[1][1] = 0.0f;
+	
+	pInvA = A.PseudoInverse();
+	AA = A * pInvA * A;
+	
+	p1 = A.GetData();
+	p2 = AA.GetData();
+	for (int i = 0; i < 4; ++i)
+	{
+		EXPECT(fabsf(p1[i] - p2[i]) < 0.01f);
+	}
+	
+	return;
+}
+
 void TestMatrix()
 {
 	TestMatrix1();
@@ -191,4 +232,5 @@ void TestMatrix()
 	TestSolve();
 	TestPGS();
 	TestSVD();
+	TestPseudoInverse();
 }

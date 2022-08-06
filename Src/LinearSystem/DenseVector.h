@@ -165,7 +165,7 @@ public:
 		return operator*((T)1 / k);
 	}
 
-	TDenseVector<T> operator-()
+	TDenseVector<T> operator-() const
 	{
 		TDenseVector<T> Ret(*this);
 		for (int i = 0; i < GetSize(); ++i)
@@ -363,6 +363,16 @@ public:
 				return false;
 		}
 		return true;
+	}
+	
+	TDenseVector<T> Inverse() const
+	{
+		TDenseVector<T> Ret(*this);
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			Ret[i] = (T)1 / Ret[i];
+		}
+		return std::move(Ret);
 	}
 
 	bool		FuzzyEqual(const TDenseVector<T>& rhs, T Eps) const

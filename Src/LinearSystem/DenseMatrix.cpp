@@ -1,5 +1,6 @@
 #include "DenseMatrix.h"
 #include "GaussianElimination.h"
+#include "MoorePenrosePseudoInverse.h"
 
 void gemm_slow(const float* m1, const float* m2, int r1, int c1, int c2, float* m)
 {
@@ -69,4 +70,13 @@ float	TDenseMatrix<float>::Determinant() const
 		return Det;
 	}
 	return 0.0f;
+}
+
+template<>
+TDenseMatrix<float> TDenseMatrix<float>::PseudoInverse() const
+{
+	assert(IsSquare());
+	TDenseMatrix<float> pinv(mRows, mRows);
+	MoorePenrosePseudoInverse<float>()(GetData(), mRows, pinv.GetData());
+	return pinv;
 }

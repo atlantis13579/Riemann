@@ -286,7 +286,6 @@ private:
 		return true;
 	}
 	
-private:
 	static inline T Abs(const T x)
 	{
 		return x >= 0 ? x : -x;

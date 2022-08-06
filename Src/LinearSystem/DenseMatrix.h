@@ -284,6 +284,20 @@ public:
 			pData[i * mRows + i] = (T)1;
 		}
 	}
+	
+	void 		LoadDiagonal(const TDenseVector<T> &diag)
+	{
+		if (!IsSquare() || mRows != diag.GetSize())
+		{
+			return;
+		}
+		
+		LoadZero();
+		for (int i = 0; i < mRows; ++i)
+		{
+			pData[i * mRows + i] = diag[i];
+		}
+	}
 
 	bool		IsZero() const
 	{
@@ -345,6 +359,8 @@ public:
 		}
 		return std::move(InvM);
 	}
+	
+	TDenseMatrix<T> PseudoInverse() const;
 
 	bool		GetInverse(TDenseMatrix<T>& InvM) const;
 
