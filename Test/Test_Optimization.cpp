@@ -187,10 +187,31 @@ void TestPolyfit()
 	}
 	
 	PolynomialFit<float, 2> p2;
-	
 	p2.Fit(x.GetData(), y.GetData(), N);
 	
-	printf("sgd: a = %.2f, b = %.2f, c = %.2f\n", p2.coef[2], p2.coef[1], p2.coef[0]);
+	printf("polyfit: a = %.2f, b = %.2f, c = %.2f\n", p2.coef[2], p2.coef[1], p2.coef[0]);
+	
+	return;
+}
+
+void TestApproximation()
+{
+	printf("Running TestApproximation\n");
+	
+	PolynomialApproximation<float, 2> p2;
+	p2.Approximate(expf, 0.0f, 1.0f);
+	
+	float f0 = p2.Eval(0.0f);
+	float f1 = p2.Eval(0.5f);
+	float f2 = p2.Eval(1.0f);
+	
+	float e0 = expf(0.0f);
+	float e1 = expf(0.5f);
+	float e2 = expf(1.0f);
+	
+	printf("app : diff(0) = %.2f, diff(0.5) = %.2f, diff(1) = %.2f\n", fabsf(f0 - e0), fabsf(f1 - e1), fabsf(f2 - e2));
+	
+	return;
 }
 
 void TestOptimization()
@@ -201,5 +222,6 @@ void TestOptimization()
 	TestSGD();
 	TestGD();
 	TestPolyfit();
+	TestApproximation();
 	return;
 }

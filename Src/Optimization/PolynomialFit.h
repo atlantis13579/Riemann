@@ -107,7 +107,7 @@ public:
 	}
 	
 public:
-	T coef[Dim+1];		// f(x) = c0 + c1 * x + c2 * x^2 + ... + cN * c^N
+	T coef[Dim+1] = {0};	// f(x) = c0 + c1 * x + c2 * x^2 + ... + cN * c^N
 };
 
 template<typename T>
@@ -124,3 +124,55 @@ using Quartic = PolynomialFit<T, 4>;
 
 template<typename T>
 using QuinticFit = PolynomialFit<T, 5>;
+
+template<typename T>
+using SrcFunction = T (*)(T);
+
+template<typename T, int Dim>
+class PolynomialApproximation {
+public:
+	bool Approximate(const SrcFunction<T> &F, const T interval_min, const T interval_max, int samples = 128)
+	{
+		if (samples <= Dim)
+			return false;
+		
+		T *buffer = new T[2*samples];
+		T *X = buffer;
+		T *Y = buffer + samples;
+		T di = (interval_max - interval_min) / (samples - 1);
+		for (int i = 0; i < samples; ++i)
+		{
+			X[i] = i < samples - 1 ? di * i : interval_max;
+			Y[i] = F(X[i]);
+		}
+		
+		PolynomialFit<T, Dim> poly;
+		bool succ = poly.Fit(X, Y, samples);
+		
+		delete []buffer;
+		
+		if (succ)
+		{
+			for (int i = 0; i <= Dim; ++i)
+			{
+				coef[i] = poly.coef[i];
+			}
+		}
+		return succ;
+	}
+	
+	T Eval(const T x) const
+	{
+		T sum = (T)0;
+		T powx = (T)1;
+		for (int i = 0; i <= Dim; ++i)
+		{
+			sum += coef[i] * powx;
+			powx *= x;
+		}
+		return sum;
+	}
+	
+public:
+	T coef[Dim+1] = {0};	// f(x) = c0 + c1 * x + c2 * x^2 + ... + cN * c^N
+};
