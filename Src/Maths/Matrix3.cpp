@@ -260,7 +260,7 @@ void Matrix3::GolubKahanStep(Matrix3& rA, Matrix3& rL, Matrix3& rR)
 	}
 }
 
-void Matrix3::SingularValueDecomposition(Vector3& S, Matrix3& U, Matrix3& V) const
+void Matrix3::SingularValueDecompose(Matrix3& U, Vector3& S, Matrix3& V) const
 {
 	// temas: currently unused
 	//const int iMax = 16;
@@ -386,7 +386,7 @@ void Matrix3::SingularValueDecomposition(Vector3& S, Matrix3& U, Matrix3& V) con
 	V = V.Transpose();
 }
 
-void Matrix3::SingularValueComposition(const Vector3& S, const Matrix3& U, const Matrix3& V)
+void Matrix3::SingularValueCompose(const Vector3& S, const Matrix3& U, const Matrix3& V)
 {
 	*this = U * S * V.Transpose();
 }
@@ -453,16 +453,159 @@ void Matrix3::Orthonormalize()
 	mat[2][2] *= fInvLength;
 }
 
-void Matrix3::PolarDecomposition(Matrix3& rU, Matrix3& rP) const
+static float OneNorm(const Matrix3& F)
 {
-	Matrix3 U, V;
-	Vector3 S;
-	SingularValueDecomposition(S, U, V);
-	rP = V * Matrix3(S.x, S.y, S.z) * V.Transpose();
-	rU = U * V;
+	float norm = 0.0f;
+	for (int i = 0; i < 3; i++)
+	{
+		float columnAbsSum = fabsf(F(0, i)) + fabsf(F(1, i)) + fabsf(F(2, i));
+		if (columnAbsSum > norm)
+			norm = columnAbsSum;
+	}
+	return norm;
 }
 
-void Matrix3::QDUDecomposition(Matrix3& rQ, Vector3& rD, Vector3& rU) const
+static float InfNorm(const Matrix3& F)
+{
+	float norm = 0.0;
+	for (int i = 0; i < 3; i++)
+	{
+		float rowSum = fabsf(F(i, 0)) + fabsf(F(i, 1)) + fabsf(F(i, 2));
+		if (rowSum > norm)
+			norm = rowSum;
+	}
+	return norm;
+}
+
+#define POLAR_TOLERANCE 0.01f
+
+bool Matrix3::PolarDecomposeU(Matrix3& R) const
+{
+	Matrix3 Mk;
+	Matrix3 Ek;
+	float det, M_oneNorm, M_infNorm, E_oneNorm;
+
+	Mk = Transpose();
+
+	M_oneNorm = OneNorm(Mk);
+	M_infNorm = InfNorm(Mk);
+
+	do
+	{
+		Vector3 v1 = Vector3(Mk(2, 0), Mk(2, 1), Mk(2, 2));
+		Vector3 v2 = Vector3(Mk(0, 0), Mk(0, 1), Mk(0, 2));
+		Vector3 v3 = Vector3(Mk(1, 0), Mk(1, 1), Mk(1, 2));
+
+		Vector3 r1 = Vector3(Mk(1, 0), Mk(1, 1), Mk(1, 2)).Cross(v1);
+		Vector3 r2 = Vector3(Mk(2, 0), Mk(2, 1), Mk(2, 2)).Cross(v2);
+		Vector3 r3 = Vector3(Mk(0, 0), Mk(0, 1), Mk(0, 2)).Cross(v3);
+		Matrix3 MadjTk(r1.x, r1.y, r1.z,
+			r2.x, r2.y, r2.z,
+			r3.x, r3.y, r3.z);
+
+		det = Mk(0, 0) * MadjTk(0, 0) + Mk(0, 1) * MadjTk(0, 1) + Mk(0, 2) * MadjTk(0, 2);
+		if (fabsf(det) < 1e-6)
+		{
+			return false;
+		}
+
+		float MadjT_one = OneNorm(MadjTk);
+		float MadjT_inf = InfNorm(MadjTk);
+
+		float gamma = sqrtf(sqrtf((MadjT_one * MadjT_inf) / (M_oneNorm * M_infNorm)) / fabsf(det));
+		float g1 = gamma * 0.5f;
+		float g2 = 0.5f / (gamma * det);
+
+		for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+		{
+			Ek(i, j) = Mk(i, j);
+			Mk(i, j) = g1 * Mk(i, j) + g2 * MadjTk(i, j);
+			Ek(i, j) -= Mk(i, j);
+		}
+
+		E_oneNorm = OneNorm(Ek);
+		M_oneNorm = OneNorm(Mk);
+		M_infNorm = InfNorm(Mk);
+	} while (E_oneNorm > M_oneNorm * POLAR_TOLERANCE);
+
+	// Q = Mk^T
+
+	R = Mk.Transpose();
+	return true;
+}
+
+bool Matrix3::PolarDecomposeUP(Matrix3& R, Matrix3& S) const
+{
+	Matrix3 Mk;
+	Matrix3 Ek;
+	float det, M_oneNorm, M_infNorm, E_oneNorm;
+
+	Mk = Transpose();
+
+	M_oneNorm = OneNorm(Mk);
+	M_infNorm = InfNorm(Mk);
+
+	do
+	{
+		Vector3 v1 = Vector3(Mk(2, 0), Mk(2, 1), Mk(2, 2));
+		Vector3 v2 = Vector3(Mk(0, 0), Mk(0, 1), Mk(0, 2));
+		Vector3 v3 = Vector3(Mk(1, 0), Mk(1, 1), Mk(1, 2));
+
+		Vector3 r1 = Vector3(Mk(1, 0), Mk(1, 1), Mk(1, 2)).Cross(v1);
+		Vector3 r2 = Vector3(Mk(2, 0), Mk(2, 1), Mk(2, 2)).Cross(v2);
+		Vector3 r3 = Vector3(Mk(0, 0), Mk(0, 1), Mk(0, 2)).Cross(v3);
+		Matrix3 MadjTk(r1.x, r1.y, r1.z,
+						r2.x, r2.y, r2.z,
+						r3.x, r3.y, r3.z);
+
+		det = Mk(0, 0) * MadjTk(0, 0) + Mk(0, 1) * MadjTk(0, 1) + Mk(0, 2) * MadjTk(0, 2);
+		if (fabsf(det) < 1e-6)
+		{
+			return false;
+		}
+
+		float MadjT_one = OneNorm(MadjTk);
+		float MadjT_inf = InfNorm(MadjTk);
+
+		float gamma = sqrtf(sqrtf((MadjT_one * MadjT_inf) / (M_oneNorm * M_infNorm)) / fabsf(det));
+		float g1 = gamma * 0.5f;
+		float g2 = 0.5f / (gamma * det);
+
+		for (int i = 0; i < 3; ++i)
+		for (int j = 0; j < 3; ++j)
+		{
+			Ek(i, j) = Mk(i, j);
+			Mk(i, j) = g1 * Mk(i, j) + g2 * MadjTk(i, j);
+			Ek(i, j) -= Mk(i, j);
+		}
+
+		E_oneNorm = OneNorm(Ek);
+		M_oneNorm = OneNorm(Mk);
+		M_infNorm = InfNorm(Mk);
+	} while (E_oneNorm > M_oneNorm * POLAR_TOLERANCE);
+
+	// Q = Mk^T
+
+	R = Mk.Transpose();
+
+	for (int i = 0; i < 3; ++i)
+	for (int j = 0; j < 3; ++j)
+	{
+		S(i, j) = 0.0;
+		for (int k = 0; k < 3; ++k)
+			S(i, j) += Mk(i, k) * mat[k][j];
+	}
+
+	// S must be symmetric; enforce the symmetry
+	for (int i = 0; i < 3; i++)
+	for (int j = i; j < 3; j++)
+		S(i, j) = S(j, i) = 0.5f * (S(i, j) + S(j, i));
+	
+	return true;
+}
+
+void Matrix3::QDUDecompose(Matrix3& rQ, Vector3& rD, Vector3& rU) const
 {
 	// Factor M = QR = QDU where Q is orthogonal, D is diagonal,
 	// and U is upper triangular with ones on its diagonal.  Algorithm uses

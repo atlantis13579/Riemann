@@ -1,13 +1,27 @@
-
 #pragma once
 
-#include "../Maths/Matrix3.h"
+#include "DenseVector.h"
+#include "DenseMatrix.h"
+#include "SingularValueDecomposition.h"
 
-class PolarDecompose
+template<typename T>
+class PolarDecomposition
 {
 public:
-	static float OneNorm(const Matrix3& F);
-	static float InfNorm(const Matrix3& F);
-	static void Compute(const Matrix3& F, Matrix3& R, Matrix3& S);
-	static void ComputeFull(const Matrix3& F, Matrix3& R, Matrix3& S);
+	bool operator()(const T* A, int nDim, T* U, T* P) const
+	{
+		TDenseVector<T> S(nDim);
+		TDenseMatrix<T> sU(U, nDim, nDim);
+		TDenseMatrix<T> sV(P, nDim, nDim);
+		if (!SingularValueDecomposition<T>()(A, nDim, nDim, sU.GetData(), S.GetData(), sV.GetData()))
+		{
+			return false;
+		}
+		TDenseMatrix<T> mU(nDim, nDim), mP(nDim, nDim);
+		mP = sV * TDenseMatrix<T>(S) * sV.Transpose();
+		mU = sU * sV.Transpose();
+		memcpy(U, mU.GetData(), sizeof(T)*nDim*nDim);
+		memcpy(P, mP.GetData(), sizeof(T)*nDim*nDim);
+		return true;
+	}
 };

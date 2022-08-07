@@ -178,12 +178,12 @@ void TestSVD()
 	
 	Vector3 s;
 	Matrix3 u, v;
-	A.SingularValueDecomposition(s, u, v);
+	A.SingularValueDecompose(u, s, v);
 	Matrix3 AA = u * Matrix3(s) * v.Transpose();
 	
 	Vector3 s2;
 	Matrix3 u2, v2;
-	SingularValueDecomposition<float>()((const float*)&A, 3, 3, (float*)&s2, (float*)&u2, (float*)&v2);
+	SingularValueDecomposition<float>()((const float*)&A, 3, 3, (float*)&u2, (float*)&s2, (float*)&v2);
 	Matrix3 AA2 = u2 * Matrix3(s2) * v2.Transpose();
 	
 	float me1 = sqrtf((AA - A).L2Norm() / 9);
@@ -231,6 +231,31 @@ void TestPseudoInverse()
 	return;
 }
 
+void TestPolarDecomp()
+{
+	printf("Running TestPolarDecomp\n");
+	
+	Matrix3 A;
+	A[0][0] = 12.0f;
+	A[0][1] = 3.0f;
+	A[0][2] = 5.0f;
+	A(1, 0) = -1.5f;
+	A(1, 1) = 6.5f;
+	A(1, 2) = 11.5f;
+	A[2][0] = 10.0f;
+	A[2][1] = -10.0f;
+	A[2][2] = 160.1f;
+	
+	Matrix3 u1, p1;
+	A.PolarDecomposeUP(u1, p1);
+	
+	Matrix3 AA = u1 * p1;
+	float norm = (AA - A).L1Norm() / 9;
+	EXPECT(norm < 0.001f);
+	
+	return;
+}
+
 void TestMatrix()
 {
 	TestMatrix1();
@@ -239,4 +264,5 @@ void TestMatrix()
 	TestPGS();
 	TestSVD();
 	TestPseudoInverse();
+	TestPolarDecomp();
 }

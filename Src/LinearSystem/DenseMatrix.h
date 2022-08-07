@@ -25,6 +25,12 @@ public:
 	{
 		pData = &mData[0];
 	}
+	
+	TDenseMatrix(const TDenseVector<T>& diag) : mRows(diag.GetSize()), mCols(diag.GetSize()), mData(diag.GetSize() * diag.GetSize())
+	{
+		pData = &mData[0];
+		LoadDiagonal(diag);
+	}
 
 	TDenseMatrix(const TDenseMatrix& v) : mRows(v.mRows), mCols(v.mCols), mData(mCols* mRows)
 	{
@@ -287,15 +293,16 @@ public:
 	
 	void 		LoadDiagonal(const TDenseVector<T> &diag)
 	{
-		if (!IsSquare() || mRows != diag.GetSize())
+		int Size = mRows < mCols ? mRows : mCols;
+		if (Size != diag.GetSize())
 		{
 			return;
 		}
 		
 		LoadZero();
-		for (int i = 0; i < mRows; ++i)
+		for (int i = 0; i < Size; ++i)
 		{
-			pData[i * mRows + i] = diag[i];
+			pData[i * mCols + i] = diag[i];
 		}
 	}
 
@@ -360,10 +367,11 @@ public:
 		return std::move(InvM);
 	}
 	
+	bool			GetInverse(TDenseMatrix<T>& InvM) const;
+
 	TDenseMatrix<T> PseudoInverse() const;
-
-	bool		GetInverse(TDenseMatrix<T>& InvM) const;
-
+	bool			GetPseudoInverse(TDenseMatrix<T>& pinv) const;
+	
 	TDenseMatrix<T>	Transpose() const
 	{
 		TDenseMatrix<T> Ret(*this);
@@ -390,6 +398,12 @@ public:
 		}
 		return maxVal;
 	}
+	
+	// M = U * S * V^T
+	bool 	SingularValueDecompose(TDenseMatrix<T> &U, TDenseVector<T> &S, TDenseMatrix<T> &V) const;
+	
+	// M = U * P
+	bool 	PolarDecompose(TDenseMatrix<T> &U, TDenseMatrix<T> &P) const;
 
 protected:
 	int				mRows;

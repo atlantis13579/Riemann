@@ -1,6 +1,5 @@
 
 #include "TetrahedralMesh.h"
-#include "../LinearSystem/PolarDecomposition.h"
 
 TetrahedralMesh::TetrahedralMesh()
 {
@@ -23,18 +22,18 @@ void TetrahedralMesh::GetTransforms(int tetindex, Matrix3& Ds, Matrix3& F, Matri
 
 	F = Ds * DmInv;
 
-	PolarDecompose::ComputeFull(F, R, S);
+	F.PolarDecomposeUP(R, S);
 }
 
 Matrix3 TetrahedralMesh::GetRotationMatrix(int tetindex, Matrix3& Ds) const
 {
 	const TetrahedralNode& t = m_tets[tetindex];
 	Matrix3 F = Ds * t.Bm;
-	Matrix3 R, S;
+	Matrix3 R;
 
-	PolarDecompose::Compute(F, R, S);
+	F.PolarDecomposeU(R);
 
-	if(R.Determinant() < 0)
+	if (R.Determinant() < 0)
 		R = Matrix3(-1, 0, 0,
 					 0, -1, 0,
 					 0, 0, -1) * R;

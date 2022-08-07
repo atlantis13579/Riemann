@@ -20,7 +20,7 @@ public:
 	{
 		TDenseVector<T> S(nDim);
 		TDenseMatrix<T> InvS(nDim, nDim), UT(nDim, nDim), V(nDim, nDim);
-		if (!SingularValueDecomposition<T>()(M, nDim, nDim, S.GetData(), UT.GetData(), V.GetData()))
+		if (!SingularValueDecomposition<T>()(M, nDim, nDim, UT.GetData(), S.GetData(), V.GetData()))
 		{
 			return false;
 		}

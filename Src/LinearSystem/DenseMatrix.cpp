@@ -1,6 +1,8 @@
 #include "DenseMatrix.h"
 #include "GaussianElimination.h"
 #include "MoorePenrosePseudoInverse.h"
+#include "SingularValueDecomposition.h"
+#include "PolarDecomposition.h"
 
 void gemm_slow(const float* m1, const float* m2, int r1, int c1, int c2, float* m)
 {
@@ -76,7 +78,38 @@ template<>
 TDenseMatrix<float> TDenseMatrix<float>::PseudoInverse() const
 {
 	assert(IsSquare());
-	TDenseMatrix<float> pinv(mRows, mRows);
-	MoorePenrosePseudoInverse<float>()(GetData(), mRows, pinv.GetData());
+	TDenseMatrix<float> pinv;
+	bool succ = MoorePenrosePseudoInverse<float>()(GetData(), mRows, pinv.GetData());
+	assert(succ);
 	return pinv;
+}
+
+template<>
+bool	TDenseMatrix<float>::GetPseudoInverse(TDenseMatrix<float>& pinv) const
+{
+	assert(IsSquare());
+	pinv.SetSize(mRows, mRows);
+	return MoorePenrosePseudoInverse<float>()(GetData(), mRows, pinv.GetData());
+}
+
+template<>
+bool 	TDenseMatrix<float>::SingularValueDecompose(TDenseMatrix<float> &U, TDenseVector<float> &S, TDenseMatrix<float> &V) const
+{
+	S.SetSize(std::min(mRows, mCols));
+	U.SetSize(mRows, mRows);
+	V.SetSize(mCols, mCols);
+	if (!::SingularValueDecomposition<float>()(GetData(), mRows, mCols, U.GetData(), S.GetData(), V.GetData()))
+	{
+		return false;
+	}
+	return true;
+}
+
+template<>
+bool 	TDenseMatrix<float>::PolarDecompose(TDenseMatrix<float> &U, TDenseMatrix<float> &P) const
+{
+	assert(IsSquare());
+	U.SetSize(mRows, mRows);
+	P.SetSize(mRows, mRows);
+	return ::PolarDecomposition<float>()(GetData(), mRows, U.GetData(), P.GetData());
 }

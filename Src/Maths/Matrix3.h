@@ -216,7 +216,7 @@ public:
 	{
 		Vector3 S;
 		Matrix3 U, V;
-		SingularValueDecomposition(S, U, V);
+		SingularValueDecompose(U, S, V);
 		return V * Matrix3(S) * U.Transpose();
 	}
 
@@ -283,11 +283,12 @@ public:
 	bool		ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const;
 
 	// A = U * S * V^T
-	void		SingularValueDecomposition(Vector3& S, Matrix3& U, Matrix3& V) const;
-	void		SingularValueComposition(const Vector3& S, const Matrix3& U, const Matrix3& V);
+	void		SingularValueDecompose(Matrix3& U, Vector3& S, Matrix3& V) const;
+	void		SingularValueCompose(const Vector3& S, const Matrix3& U, const Matrix3& V);
 	void		Orthonormalize();
-	void		PolarDecomposition(Matrix3& rU, Matrix3& rP) const;
-	void		QDUDecomposition(Matrix3& rQ, Vector3& rD, Vector3& rU) const;
+	bool		PolarDecomposeUP(Matrix3& U, Matrix3& P) const;
+	bool		PolarDecomposeU(Matrix3& U) const;
+	void		QDUDecompose(Matrix3& rQ, Vector3& rD, Vector3& rU) const;
 	float		SpectralNorm() const;
 
 	void		SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const;

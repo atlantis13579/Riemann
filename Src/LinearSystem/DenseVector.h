@@ -38,6 +38,13 @@ public:
 	{
 		pData = p;
 	}
+	
+	void SetSize(int nSize)
+	{
+		mSize = nSize;
+		mData.resize(nSize);
+		pData = &mData[0];
+	}
 
 	inline int		GetSize() const
 	{

@@ -16,6 +16,7 @@
 		AD088369289E42E30008AB04 /* PolynomialFit.h in Headers */ = {isa = PBXBuildFile; fileRef = AD088368289E42E30008AB04 /* PolynomialFit.h */; };
 		AD08836B289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h in Headers */ = {isa = PBXBuildFile; fileRef = AD08836A289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h */; };
 		AD08836D289EA4C30008AB04 /* CholeskyDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = AD08836C289EA4C30008AB04 /* CholeskyDecomposition.h */; };
+		AD1DD0B0289F0EAB0085AA67 /* QRDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1DD0AF289F0EAB0085AA67 /* QRDecomposition.h */; };
 		ADAA4C3F28898D6000E8AE2E /* SequentialImpulseSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */; };
 		ADAA4C4028898D6000E8AE2E /* NarrowPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */; };
 		ADAA4C4128898D6000E8AE2E /* BroadPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3828898D6000E8AE2E /* BroadPhase.h */; };
@@ -198,7 +199,6 @@
 		ADD23D1E288762F900A849BE /* DenseMatrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D0B288762F900A849BE /* DenseMatrix.cpp */; };
 		ADD23D20288762F900A849BE /* DenseMatrix.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D0D288762F900A849BE /* DenseMatrix.h */; };
 		ADD23D21288762F900A849BE /* DenseVector.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D0E288762F900A849BE /* DenseVector.cpp */; };
-		ADD23D22288762F900A849BE /* PolarDecomposition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D0F288762F900A849BE /* PolarDecomposition.cpp */; };
 		ADD23D23288762F900A849BE /* SparseMatrix.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D10288762F900A849BE /* SparseMatrix.h */; };
 		ADD23D24288762F900A849BE /* GaussSeidelIteration.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D11288762F900A849BE /* GaussSeidelIteration.h */; };
 		ADD23D26288762F900A849BE /* SingularValueDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D13288762F900A849BE /* SingularValueDecomposition.h */; };
@@ -233,6 +233,7 @@
 		AD088368289E42E30008AB04 /* PolynomialFit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PolynomialFit.h; path = ../../Src/Optimization/PolynomialFit.h; sourceTree = "<group>"; };
 		AD08836A289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MoorePenrosePseudoInverse.h; path = ../../Src/LinearSystem/MoorePenrosePseudoInverse.h; sourceTree = "<group>"; };
 		AD08836C289EA4C30008AB04 /* CholeskyDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CholeskyDecomposition.h; path = ../../Src/LinearSystem/CholeskyDecomposition.h; sourceTree = "<group>"; };
+		AD1DD0AF289F0EAB0085AA67 /* QRDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = QRDecomposition.h; path = ../../Src/LinearSystem/QRDecomposition.h; sourceTree = "<group>"; };
 		ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SequentialImpulseSolver.h; path = ../../Src/RigidBodyDynamics/SequentialImpulseSolver.h; sourceTree = "<group>"; };
 		ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NarrowPhase.cpp; path = ../../Src/RigidBodyDynamics/NarrowPhase.cpp; sourceTree = "<group>"; };
 		ADAA4C3828898D6000E8AE2E /* BroadPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BroadPhase.h; path = ../../Src/RigidBodyDynamics/BroadPhase.h; sourceTree = "<group>"; };
@@ -415,7 +416,6 @@
 		ADD23D0B288762F900A849BE /* DenseMatrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DenseMatrix.cpp; path = ../../Src/LinearSystem/DenseMatrix.cpp; sourceTree = "<group>"; };
 		ADD23D0D288762F900A849BE /* DenseMatrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DenseMatrix.h; path = ../../Src/LinearSystem/DenseMatrix.h; sourceTree = "<group>"; };
 		ADD23D0E288762F900A849BE /* DenseVector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DenseVector.cpp; path = ../../Src/LinearSystem/DenseVector.cpp; sourceTree = "<group>"; };
-		ADD23D0F288762F900A849BE /* PolarDecomposition.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PolarDecomposition.cpp; path = ../../Src/LinearSystem/PolarDecomposition.cpp; sourceTree = "<group>"; };
 		ADD23D10288762F900A849BE /* SparseMatrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseMatrix.h; path = ../../Src/LinearSystem/SparseMatrix.h; sourceTree = "<group>"; };
 		ADD23D11288762F900A849BE /* GaussSeidelIteration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GaussSeidelIteration.h; path = ../../Src/LinearSystem/GaussSeidelIteration.h; sourceTree = "<group>"; };
 		ADD23D13288762F900A849BE /* SingularValueDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SingularValueDecomposition.h; path = ../../Src/LinearSystem/SingularValueDecomposition.h; sourceTree = "<group>"; };
@@ -668,9 +668,9 @@
 				ADD23D17288762F900A849BE /* JacobiIteration.h */,
 				ADD23D14288762F900A849BE /* LUFactorization.h */,
 				AD08836A289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h */,
-				ADD23D0F288762F900A849BE /* PolarDecomposition.cpp */,
 				ADD23D16288762F900A849BE /* PolarDecomposition.h */,
 				ADD23D15288762F900A849BE /* ProjectedGaussSeidel.h */,
+				AD1DD0AF289F0EAB0085AA67 /* QRDecomposition.h */,
 				ADD23D13288762F900A849BE /* SingularValueDecomposition.h */,
 				ADD23D10288762F900A849BE /* SparseMatrix.h */,
 			);
@@ -878,6 +878,7 @@
 				ADD23C7B288762B800A849BE /* libBmp.h in Headers */,
 				ADD23CDA288762D900A849BE /* Shape2d.h in Headers */,
 				ADBBEE11288C41A300C3D6CD /* Matrix2.h in Headers */,
+				AD1DD0B0289F0EAB0085AA67 /* QRDecomposition.h in Headers */,
 				ADD23BD12887614E00A849BE /* GJK.h in Headers */,
 				ADBBEE1C288C468700C3D6CD /* StaticList.h in Headers */,
 				ADBBEE17288C41A300C3D6CD /* Vector4.h in Headers */,
@@ -1077,7 +1078,6 @@
 				ADAA4C4028898D6000E8AE2E /* NarrowPhase.cpp in Sources */,
 				ADD23C55288762A600A849BE /* ImageProcessing.cpp in Sources */,
 				ADAA4C4228898D6000E8AE2E /* SequentialImpulseSolver.cpp in Sources */,
-				ADD23D22288762F900A849BE /* PolarDecomposition.cpp in Sources */,
 				ADBBEE14288C41A300C3D6CD /* Matrix3.cpp in Sources */,
 				ADD23C202887619700A849BE /* Fracture.cpp in Sources */,
 				ADD23CC7288762CC00A849BE /* KinematicsTree.cpp in Sources */,
