@@ -2,44 +2,42 @@
 #include "Matrix3.h"
 #include "Maths.h"
 
-#include <stdint.h>
-
-void Matrix3::LoadRotateX(float rfloatAngle)
+void Matrix3::LoadRotateX(float angle)
 {
-	float fCos, fSin;
-	fCos = cosf(rfloatAngle);
-	fSin = sinf(rfloatAngle);
+	float c, s;
+	c = cosf(angle);
+	s = sinf(angle);
 	mat[0][0] = 1.0f;	mat[0][1] = 0.0f;	mat[0][2] = 0.0f;
-	mat[1][0] = 1.0f;	mat[1][1] = fCos;	mat[1][2] = fSin;
-	mat[2][0] = 1.0f;	mat[2][1] = -fSin; mat[2][2] = fCos;
+	mat[1][0] = 1.0f;	mat[1][1] = c;	mat[1][2] = s;
+	mat[2][0] = 1.0f;	mat[2][1] = -s; mat[2][2] = c;
 }
 
-void Matrix3::LoadRotateY(float rfloatAngle)
+void Matrix3::LoadRotateY(float angle)
 {
-	float fCos, fSin;
-	fCos = cosf(rfloatAngle);
-	fSin = sinf(rfloatAngle);
-	mat[0][0] = fCos;	mat[0][1] = 0.0f;	mat[0][2] = -fSin;
+	float c, s;
+	c = cosf(angle);
+	s = sinf(angle);
+	mat[0][0] = c;	mat[0][1] = 0.0f;	mat[0][2] = -s;
 	mat[1][0] = 0.0f;	mat[1][1] = 1.0f;	mat[1][2] = 0.0f;
-	mat[2][0] = fSin;	mat[2][1] = 0.0f;	mat[2][2] = fCos;
+	mat[2][0] = s;	mat[2][1] = 0.0f;	mat[2][2] = c;
 }
 
-void Matrix3::LoadRotateZ(float rfloatAngle)
+void Matrix3::LoadRotateZ(float angle)
 {
-	float fCos, fSin;
-	fCos = cosf(rfloatAngle);
-	fSin = sinf(rfloatAngle);
-	mat[0][0] = fCos;	mat[0][1] = fSin; mat[0][2] = 0.0f;
-	mat[1][0] = -fSin; mat[1][1] = fCos;	mat[1][2] = 0.0f;
+	float c, s;
+	c = cosf(angle);
+	s = sinf(angle);
+	mat[0][0] = c;	mat[0][1] = s; mat[0][2] = 0.0f;
+	mat[1][0] = -s; mat[1][1] = c;	mat[1][2] = 0.0f;
 	mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
 }
 
 void Matrix3::Load2DOrthogonalTransform(float dx, float dy, float dAngle) {
-	float fCos, fSin;
-	fCos = cosf(dAngle);
-	fSin = sinf(dAngle);
-	mat[0][0] = fCos;	mat[0][1] = -fSin; mat[0][2] = dx;
-	mat[1][0] = fSin; mat[1][1] = fCos;	mat[1][2] = dy;
+	float c, s;
+	c = cosf(dAngle);
+	s = sinf(dAngle);
+	mat[0][0] = c;	mat[0][1] = -s; mat[0][2] = dx;
+	mat[1][0] = s; mat[1][1] = c;	mat[1][2] = dy;
 	mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
 }
 
@@ -172,115 +170,113 @@ void Matrix3::GolubKahanStep(Matrix3& rA, Matrix3& rL, Matrix3& rR)
 		fabsf(fRoot2 - fT22) ? fRoot1 : fRoot2);
 	float fZ = rA[0][1];
 	float fInvLength = InvSqrt(fY * fY + fZ * fZ);
-	float fSin = fZ * fInvLength;
-	float fCos = -fY * fInvLength;
+	float s = fZ * fInvLength;
+	float c = -fY * fInvLength;
 
 	float fTmp0 = rA[0][0];
 	float fTmp1 = rA[0][1];
-	rA[0][0] = fCos * fTmp0 - fSin * fTmp1;
-	rA[0][1] = fSin * fTmp0 + fCos * fTmp1;
-	rA[1][0] = -fSin * rA[1][1];
-	rA[1][1] *= fCos;
+	rA[0][0] = c * fTmp0 - s * fTmp1;
+	rA[0][1] = s * fTmp0 + c * fTmp1;
+	rA[1][0] = -s * rA[1][1];
+	rA[1][1] *= c;
 
 	int iRow;
 	for (iRow = 0; iRow < 3; ++iRow)
 	{
 		fTmp0 = rR[0][iRow];
 		fTmp1 = rR[1][iRow];
-		rR[0][iRow] = fCos * fTmp0 - fSin * fTmp1;
-		rR[1][iRow] = fSin * fTmp0 + fCos * fTmp1;
+		rR[0][iRow] = c * fTmp0 - s * fTmp1;
+		rR[1][iRow] = s * fTmp0 + c * fTmp1;
 	}
 
 	// adjust left
 	fY = rA[0][0];
 	fZ = rA[1][0];
 	fInvLength = InvSqrt(fY * fY + fZ * fZ);
-	fSin = fZ * fInvLength;
-	fCos = -fY * fInvLength;
+	s = fZ * fInvLength;
+	c = -fY * fInvLength;
 
-	rA[0][0] = fCos * rA[0][0] - fSin * rA[1][0];
+	rA[0][0] = c * rA[0][0] - s * rA[1][0];
 	fTmp0 = rA[0][1];
 	fTmp1 = rA[1][1];
-	rA[0][1] = fCos * fTmp0 - fSin * fTmp1;
-	rA[1][1] = fSin * fTmp0 + fCos * fTmp1;
-	rA[0][2] = -fSin * rA[1][2];
-	rA[1][2] *= fCos;
+	rA[0][1] = c * fTmp0 - s * fTmp1;
+	rA[1][1] = s * fTmp0 + c * fTmp1;
+	rA[0][2] = -s * rA[1][2];
+	rA[1][2] *= c;
 
 	int iCol;
 	for (iCol = 0; iCol < 3; ++iCol)
 	{
 		fTmp0 = rL[iCol][0];
 		fTmp1 = rL[iCol][1];
-		rL[iCol][0] = fCos * fTmp0 - fSin * fTmp1;
-		rL[iCol][1] = fSin * fTmp0 + fCos * fTmp1;
+		rL[iCol][0] = c * fTmp0 - s * fTmp1;
+		rL[iCol][1] = s * fTmp0 + c * fTmp1;
 	}
 
 	// adjust right
 	fY = rA[0][1];
 	fZ = rA[0][2];
 	fInvLength = InvSqrt(fY * fY + fZ * fZ);
-	fSin = fZ * fInvLength;
-	fCos = -fY * fInvLength;
+	s = fZ * fInvLength;
+	c = -fY * fInvLength;
 
-	rA[0][1] = fCos * rA[0][1] - fSin * rA[0][2];
+	rA[0][1] = c * rA[0][1] - s * rA[0][2];
 	fTmp0 = rA[1][1];
 	fTmp1 = rA[1][2];
-	rA[1][1] = fCos * fTmp0 - fSin * fTmp1;
-	rA[1][2] = fSin * fTmp0 + fCos * fTmp1;
-	rA[2][1] = -fSin * rA[2][2];
-	rA[2][2] *= fCos;
+	rA[1][1] = c * fTmp0 - s * fTmp1;
+	rA[1][2] = s * fTmp0 + c * fTmp1;
+	rA[2][1] = -s * rA[2][2];
+	rA[2][2] *= c;
 
 	for (iRow = 0; iRow < 3; ++iRow)
 	{
 		fTmp0 = rR[1][iRow];
 		fTmp1 = rR[2][iRow];
-		rR[1][iRow] = fCos * fTmp0 - fSin * fTmp1;
-		rR[2][iRow] = fSin * fTmp0 + fCos * fTmp1;
+		rR[1][iRow] = c * fTmp0 - s * fTmp1;
+		rR[2][iRow] = s * fTmp0 + c * fTmp1;
 	}
 
 	// adjust left
 	fY = rA[1][1];
 	fZ = rA[2][1];
 	fInvLength = InvSqrt(fY * fY + fZ * fZ);
-	fSin = fZ * fInvLength;
-	fCos = -fY * fInvLength;
+	s = fZ * fInvLength;
+	c = -fY * fInvLength;
 
-	rA[1][1] = fCos * rA[1][1] - fSin * rA[2][1];
+	rA[1][1] = c * rA[1][1] - s * rA[2][1];
 	fTmp0 = rA[1][2];
 	fTmp1 = rA[2][2];
-	rA[1][2] = fCos * fTmp0 - fSin * fTmp1;
-	rA[2][2] = fSin * fTmp0 + fCos * fTmp1;
+	rA[1][2] = c * fTmp0 - s * fTmp1;
+	rA[2][2] = s * fTmp0 + c * fTmp1;
 
 	for (iCol = 0; iCol < 3; ++iCol)
 	{
 		fTmp0 = rL[iCol][1];
 		fTmp1 = rL[iCol][2];
-		rL[iCol][1] = fCos * fTmp0 - fSin * fTmp1;
-		rL[iCol][2] = fSin * fTmp0 + fCos * fTmp1;
+		rL[iCol][1] = c * fTmp0 - s * fTmp1;
+		rL[iCol][2] = s * fTmp0 + c * fTmp1;
 	}
 }
 
 void Matrix3::SingularValueDecompose(Matrix3& U, Vector3& S, Matrix3& V) const
 {
-	// temas: currently unused
-	//const int iMax = 16;
 	int i, j;
-	const float fSvdEpsilon = 1e-04f;
-	const int   iSvdMaxIterations = 32;
+	const float kSvdEpsilon = 1e-04f;
+	const int   kSvdMaxIterations = 32;
 
 	Matrix3 kA = *this;
 	Bidiagonalize(kA, U, V);
 
-	for (uint32_t i = 0; i < iSvdMaxIterations; i++)
+	for (uint32_t i = 0; i < kSvdMaxIterations; i++)
 	{
 		float fTmp, fTmp0, fTmp1;
-		float fSin0, fCos0, fTan0;
-		float fSin1, fCos1, fTan1;
+		float s0, c0, fTan0;
+		float s1, c1, fTan1;
 
 		bool bTest1 = (fabsf(kA[0][1]) <=
-			fSvdEpsilon * (fabsf(kA[0][0]) + fabsf(kA[1][1])));
+			kSvdEpsilon * (fabsf(kA[0][0]) + fabsf(kA[1][1])));
 		bool bTest2 = (fabsf(kA[1][2]) <=
-			fSvdEpsilon * (fabsf(kA[1][1]) + fabsf(kA[2][2])));
+			kSvdEpsilon * (fabsf(kA[1][1]) + fabsf(kA[2][2])));
 		if (bTest1)
 		{
 			if (bTest2)
@@ -296,34 +292,34 @@ void Matrix3::SingularValueDecompose(Matrix3& U, Vector3& S, Matrix3& V) const
 				fTmp = (kA[1][1] * kA[1][1] - kA[2][2] * kA[2][2] +
 					kA[1][2] * kA[1][2]) / (kA[1][2] * kA[2][2]);
 				fTan0 = 0.5f * (fTmp + sqrtf(fTmp * fTmp + 4.0f));
-				fCos0 = InvSqrt(1.0f + fTan0 * fTan0);
-				fSin0 = fTan0 * fCos0;
+				c0 = InvSqrt(1.0f + fTan0 * fTan0);
+				s0 = fTan0 * c0;
 
 				for (j = 0; j < 3; ++j)
 				{
 					fTmp0 = U[j][1];
 					fTmp1 = U[j][2];
-					U[j][1] = fCos0 * fTmp0 - fSin0 * fTmp1;
-					U[j][2] = fSin0 * fTmp0 + fCos0 * fTmp1;
+					U[j][1] = c0 * fTmp0 - s0 * fTmp1;
+					U[j][2] = s0 * fTmp0 + c0 * fTmp1;
 				}
 
 				fTan1 = (kA[1][2] - kA[2][2] * fTan0) / kA[1][1];
-				fCos1 = InvSqrt(1.0f + fTan1 * fTan1);
-				fSin1 = -fTan1 * fCos1;
+				c1 = InvSqrt(1.0f + fTan1 * fTan1);
+				s1 = -fTan1 * c1;
 
 				for (i = 0; i < 3; ++i)
 				{
 					fTmp0 = V[1][i];
 					fTmp1 = V[2][i];
-					V[1][i] = fCos1 * fTmp0 - fSin1 * fTmp1;
-					V[2][i] = fSin1 * fTmp0 + fCos1 * fTmp1;
+					V[1][i] = c1 * fTmp0 - s1 * fTmp1;
+					V[2][i] = s1 * fTmp0 + c1 * fTmp1;
 				}
 
 				S[0] = kA[0][0];
-				S[1] = fCos0 * fCos1 * kA[1][1] -
-					fSin1 * (fCos0 * kA[1][2] - fSin0 * kA[2][2]);
-				S[2] = fSin0 * fSin1 * kA[1][1] +
-					fCos1 * (fSin0 * kA[1][2] + fCos0 * kA[2][2]);
+				S[1] = c0 * c1 * kA[1][1] -
+					s1 * (c0 * kA[1][2] - s0 * kA[2][2]);
+				S[2] = s0 * s1 * kA[1][1] +
+					c1 * (s0 * kA[1][2] + c0 * kA[2][2]);
 				break;
 			}
 		}
@@ -335,33 +331,33 @@ void Matrix3::SingularValueDecompose(Matrix3& U, Vector3& S, Matrix3& V) const
 				fTmp = (kA[0][0] * kA[0][0] + kA[1][1] * kA[1][1] -
 					kA[0][1] * kA[0][1]) / (kA[0][1] * kA[1][1]);
 				fTan0 = 0.5f * (-fTmp + sqrtf(fTmp * fTmp + 4.0f));
-				fCos0 = InvSqrt(1.0f + fTan0 * fTan0);
-				fSin0 = fTan0 * fCos0;
+				c0 = InvSqrt(1.0f + fTan0 * fTan0);
+				s0 = fTan0 * c0;
 
 				for (j = 0; j < 3; ++j)
 				{
 					fTmp0 = U[j][0];
 					fTmp1 = U[j][1];
-					U[j][0] = fCos0 * fTmp0 - fSin0 * fTmp1;
-					U[j][1] = fSin0 * fTmp0 + fCos0 * fTmp1;
+					U[j][0] = c0 * fTmp0 - s0 * fTmp1;
+					U[j][1] = s0 * fTmp0 + c0 * fTmp1;
 				}
 
 				fTan1 = (kA[0][1] - kA[1][1] * fTan0) / kA[0][0];
-				fCos1 = InvSqrt(1.0f + fTan1 * fTan1);
-				fSin1 = -fTan1 * fCos1;
+				c1 = InvSqrt(1.0f + fTan1 * fTan1);
+				s1 = -fTan1 * c1;
 
 				for (i = 0; i < 3; ++i)
 				{
 					fTmp0 = V[0][i];
 					fTmp1 = V[1][i];
-					V[0][i] = fCos1 * fTmp0 - fSin1 * fTmp1;
-					V[1][i] = fSin1 * fTmp0 + fCos1 * fTmp1;
+					V[0][i] = c1 * fTmp0 - s1 * fTmp1;
+					V[1][i] = s1 * fTmp0 + c1 * fTmp1;
 				}
 
-				S[0] = fCos0 * fCos1 * kA[0][0] -
-					fSin1 * (fCos0 * kA[0][1] - fSin0 * kA[1][1]);
-				S[1] = fSin0 * fSin1 * kA[0][0] +
-					fCos1 * (fSin0 * kA[0][1] + fCos0 * kA[1][1]);
+				S[0] = c0 * c1 * kA[0][0] -
+					s1 * (c0 * kA[0][1] - s0 * kA[1][1]);
+				S[1] = s0 * s1 * kA[0][0] +
+					c1 * (s0 * kA[0][1] + c0 * kA[1][1]);
 				S[2] = kA[2][2];
 				break;
 			}
@@ -755,40 +751,34 @@ float Matrix3::MaxCubicRoot(float afCoeff[3])
 float Matrix3::SpectralNorm() const
 {
 	Matrix3 kP;
-	int iRow, iCol;
 	float fPmax = 0.0;
-	for (iRow = 0; iRow < 3; ++iRow)
+	for (int i = 0; i < 3; ++i)
+	for (int j = 0; j < 3; ++j)
 	{
-		for (iCol = 0; iCol < 3; ++iCol)
+		kP[i][j] = 0.0;
+		for (int iMid = 0; iMid < 3; iMid++)
 		{
-			kP[iRow][iCol] = 0.0;
-			for (int iMid = 0; iMid < 3; iMid++)
-			{
-				kP[iRow][iCol] +=
-					mat[iMid][iRow] * mat[iMid][iCol];
-			}
-			if (kP[iRow][iCol] > fPmax)
-				fPmax = kP[iRow][iCol];
+			kP[i][j] += mat[iMid][i] * mat[iMid][j];
 		}
+		if (kP[i][j] > fPmax)
+			fPmax = kP[i][j];
 	}
 
 	float fInvPmax = 1.0f / fPmax;
-	for (iRow = 0; iRow < 3; ++iRow)
-	{
-		for (iCol = 0; iCol < 3; ++iCol)
-			kP[iRow][iCol] *= fInvPmax;
-	}
+	for (int i = 0; i < 3; ++i)
+	for (int j = 0; j < 3; ++j)
+		kP[i][j] *= fInvPmax;
 
-	float afCoeff[3];
-	afCoeff[0] = -(kP[0][0] * (kP[1][1] * kP[2][2] - kP[1][2] * kP[2][1]) +
-		kP[0][1] * (kP[2][0] * kP[1][2] - kP[1][0] * kP[2][2]) +
-		kP[0][2] * (kP[1][0] * kP[2][1] - kP[2][0] * kP[1][1]));
-	afCoeff[1] = kP[0][0] * kP[1][1] - kP[0][1] * kP[1][0] +
-		kP[0][0] * kP[2][2] - kP[0][2] * kP[2][0] +
-		kP[1][1] * kP[2][2] - kP[1][2] * kP[2][1];
-	afCoeff[2] = -(kP[0][0] + kP[1][1] + kP[2][2]);
+	float a[3];
+	a[0] = -(kP[0][0] * (kP[1][1] * kP[2][2] - kP[1][2] * kP[2][1]) +
+			 kP[0][1] * (kP[2][0] * kP[1][2] - kP[1][0] * kP[2][2]) +
+			 kP[0][2] * (kP[1][0] * kP[2][1] - kP[2][0] * kP[1][1]));
+	a[1] = 	kP[0][0] * kP[1][1] - kP[0][1] * kP[1][0] +
+			kP[0][0] * kP[2][2] - kP[0][2] * kP[2][0] +
+			kP[1][1] * kP[2][2] - kP[1][2] * kP[2][1];
+	a[2] = -(kP[0][0] + kP[1][1] + kP[2][2]);
 
-	float fRoot = MaxCubicRoot(afCoeff);
+	float fRoot = MaxCubicRoot(a);
 	float fNorm = sqrtf(fPmax * fRoot);
 	return fNorm;
 }
@@ -818,8 +808,8 @@ float Matrix3::ToAxisAngle(Vector3& Axis) const
 	// it does not matter which sign you choose on the square roots.
 
 	float fTrace = mat[0][0] + mat[1][1] + mat[2][2];
-	float fCos = 0.5f * (fTrace - 1.0f);
-	float Angle = acosf(fCos);  // in [0,PI]
+	float c = 0.5f * (fTrace - 1.0f);
+	float Angle = acosf(c);  // in [0,PI]
 
 	if (Angle > 0.0f)
 	{
@@ -928,24 +918,24 @@ bool Matrix3::ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const
 
 void Matrix3::FromEulerAnglesXYZ(float Yaw, float Pitch,	float Roll)
 {
-	float fCos, fSin;
+	float c, s;
 
-	fCos = cosf(Yaw);
-	fSin = sinf(Yaw);
+	c = cosf(Yaw);
+	s = sinf(Yaw);
 	Matrix3 kXMat(1.0f, 0.0f, 0.0f,
-		0.0f, fCos, fSin,
-		0.0f, -fSin, fCos);
+		0.0f, c, s,
+		0.0f, -s, c);
 
-	fCos = cosf(Pitch);
-	fSin = sinf(Pitch);
-	Matrix3 kYMat(fCos, 0.0f, -fSin,
+	c = cosf(Pitch);
+	s = sinf(Pitch);
+	Matrix3 kYMat(c, 0.0f, -s,
 		0.0f, 1.0f, 0.0f,
-		fSin, 0.0f, fCos);
+		s, 0.0f, c);
 
-	fCos = cosf(Roll);
-	fSin = sinf(Roll);
-	Matrix3 kZMat(fCos, fSin, 0.0f,
-		-fSin, fCos, 0.0f,
+	c = cosf(Roll);
+	s = sinf(Roll);
+	Matrix3 kZMat(c, s, 0.0f,
+		-s, c, 0.0f,
 		0.0f, 0.0f, 1.0f);
 
 	*this = kXMat * kYMat * kZMat;
@@ -1034,42 +1024,42 @@ bool Matrix3::QRIteration(float Diag[3], float SubDiag[3])
 				t0 = Diag[i1] - Diag[i0] + SubDiag[i0] / (t0 - t1);
 			else
 				t0 = Diag[i1] - Diag[i0] + SubDiag[i0] / (t0 + t1);
-			float fSin = 1.0;
-			float fCos = 1.0;
+			float s = 1.0;
+			float c = 1.0;
 			float t2 = 0.0;
 			for (int i2 = i1 - 1; i2 >= i0; --i2)
 			{
-				float fTmp3 = fSin * SubDiag[i2];
-				float fTmp4 = fCos * SubDiag[i2];
+				float fTmp3 = s * SubDiag[i2];
+				float fTmp4 = c * SubDiag[i2];
 				if (fabsf(fTmp3) >= fabsf(t0))
 				{
-					fCos = t0 / fTmp3;
-					t1 = sqrtf(fCos * fCos + 1.0f);
+					c = t0 / fTmp3;
+					t1 = sqrtf(c * c + 1.0f);
 					SubDiag[i2 + 1] = fTmp3 * t1;
-					fSin = 1.0f / t1;
-					fCos *= fSin;
+					s = 1.0f / t1;
+					c *= s;
 				}
 				else
 				{
-					fSin = fTmp3 / t0;
-					t1 = sqrtf(fSin * fSin + 1.0f);
+					s = fTmp3 / t0;
+					t1 = sqrtf(s * s + 1.0f);
 					SubDiag[i2 + 1] = t0 * t1;
-					fCos = 1.0f / t1;
-					fSin *= fCos;
+					c = 1.0f / t1;
+					s *= c;
 				}
 				t0 = Diag[i2 + 1] - t2;
-				t1 = (Diag[i2] - t0) * fSin + 2.0f * fTmp4 * fCos;
-				t2 = fSin * t1;
+				t1 = (Diag[i2] - t0) * s + 2.0f * fTmp4 * c;
+				t2 = s * t1;
 				Diag[i2 + 1] = t0 + t2;
-				t0 = fCos * t1 - fTmp4;
+				t0 = c * t1 - fTmp4;
 
 				for (int iRow = 0; iRow < 3; ++iRow)
 				{
 					fTmp3 = mat[iRow][i2 + 1];
-					mat[iRow][i2 + 1] = fSin * mat[iRow][i2] +
-						fCos * fTmp3;
-					mat[iRow][i2] = fCos * mat[iRow][i2] -
-						fSin * fTmp3;
+					mat[iRow][i2 + 1] = s * mat[iRow][i2] +
+						c * fTmp3;
+					mat[iRow][i2] = c * mat[iRow][i2] -
+						s * fTmp3;
 				}
 			}
 			Diag[i0] -= t2;

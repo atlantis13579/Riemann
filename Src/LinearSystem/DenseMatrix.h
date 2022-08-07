@@ -11,28 +11,28 @@ template<typename T>
 class TDenseMatrix
 {
 public:
-	TDenseMatrix() : mRows(0), mCols(0)
+	explicit TDenseMatrix() : mRows(0), mCols(0)
 	{
 
 	}
 
-	TDenseMatrix(int nSize) : TDenseMatrix(nSize, nSize)
+	explicit TDenseMatrix(int nSize) : TDenseMatrix(nSize, nSize)
 	{
 
 	}
 
-	TDenseMatrix(int nRows, int nCols) : mRows(nRows), mCols(nCols), mData(nCols* nRows)
+	explicit TDenseMatrix(int nRows, int nCols) : mRows(nRows), mCols(nCols), mData(nCols* nRows)
 	{
 		pData = &mData[0];
 	}
 	
-	TDenseMatrix(const TDenseVector<T>& diag) : mRows(diag.GetSize()), mCols(diag.GetSize()), mData(diag.GetSize() * diag.GetSize())
+	explicit TDenseMatrix(const TDenseVector<T>& diag) : mRows(diag.GetSize()), mCols(diag.GetSize()), mData(diag.GetSize() * diag.GetSize())
 	{
 		pData = &mData[0];
 		LoadDiagonal(diag);
 	}
 
-	TDenseMatrix(const TDenseMatrix& v) : mRows(v.mRows), mCols(v.mCols), mData(mCols* mRows)
+	explicit TDenseMatrix(const TDenseMatrix& v) : mRows(v.mRows), mCols(v.mCols), mData(mCols* mRows)
 	{
 		pData = &mData[0];
 		memcpy(pData, v.pData, sizeof(T) * mRows * mCols);
@@ -44,7 +44,7 @@ public:
 		pData = mData.size() > 0 ? &mData[0] : v.pData;
 	}
 
-	TDenseMatrix(T* p, int nRows, int nCols) : mRows(nRows), mCols(nCols)
+	explicit TDenseMatrix(T* p, int nRows, int nCols) : mRows(nRows), mCols(nCols)
 	{
 		pData = p;
 	}
@@ -57,7 +57,7 @@ public:
 		pData = &mData[0];
 	}
 
-	inline int	GetLength() const
+	inline int	GetSize() const
 	{
 		return mRows * mCols;
 	}
@@ -160,7 +160,7 @@ public:
 		}
 
 		TDenseMatrix<T> Ret(*this);
-		for (int i = 0; i < GetLength(); ++i)
+		for (int i = 0; i < GetSize(); ++i)
 		{
 			Ret.pData[i] += v.pData[i];
 		}
@@ -175,7 +175,7 @@ public:
 		}
 
 		TDenseMatrix<T> Ret(*this);
-		for (int i = 0; i < GetLength(); ++i)
+		for (int i = 0; i < GetSize(); ++i)
 		{
 			Ret.pData[i] -= v.pData[i];
 		}
@@ -185,7 +185,7 @@ public:
 	TDenseMatrix<T> operator*(T k) const
 	{
 		TDenseMatrix<T> Ret(*this);
-		for (int i = 0; i < GetLength(); ++i)
+		for (int i = 0; i < GetSize(); ++i)
 		{
 			Ret.pData[i] *= k;
 		}
@@ -198,7 +198,7 @@ public:
 	TDenseMatrix<T>	operator-() const
 	{
 		TDenseMatrix<T> Ret(*this);
-		for (int i = 0; i < GetLength(); ++i)
+		for (int i = 0; i < GetSize(); ++i)
 		{
 			Ret.pData[i] = -Ret.pData[i];
 		}
@@ -212,7 +212,7 @@ public:
 			return;
 		}
 
-		for (int i = 0; i < GetLength(); ++i)
+		for (int i = 0; i < GetSize(); ++i)
 		{
 			pData[i] += v.pData[i];
 		}
@@ -220,12 +220,12 @@ public:
 
 	void		operator-= (const TDenseMatrix<T>& v)
 	{
-		if (GetLength() != v.GetSize())
+		if (GetSize() != v.GetSize())
 		{
 			return;
 		}
 
-		for (int i = 0; i < GetLength(); ++i)
+		for (int i = 0; i < GetSize(); ++i)
 		{
 			pData[i] -= v.pData[i];
 		}
@@ -233,7 +233,7 @@ public:
 
 	void		operator*= (T k)
 	{
-		for (int i = 0; i < GetLength(); ++i)
+		for (int i = 0; i < GetSize(); ++i)
 		{
 			pData[i] *= k;
 		}
@@ -308,7 +308,7 @@ public:
 
 	bool		IsZero() const
 	{
-		for (int i = 0; i < GetLength(); ++i)
+		for (int i = 0; i < GetSize(); ++i)
 		{
 			if (!FuzzyZero(pData[i]))
 				return false;
@@ -357,7 +357,6 @@ public:
 
 	TDenseMatrix<T>	Inverse() const
 	{
-		assert(IsSquare());
 		TDenseMatrix<T> InvM(GetRows());
 		bool success = GetInverse(InvM);
 		if (!success)
@@ -369,7 +368,14 @@ public:
 	
 	bool			GetInverse(TDenseMatrix<T>& InvM) const;
 
-	TDenseMatrix<T> PseudoInverse() const;
+	TDenseMatrix<T> PseudoInverse() const
+	{
+		TDenseMatrix<T> pinv;
+		bool succ = GetPseudoInverse(pinv);
+		assert(succ);
+		return pinv;
+	}
+	
 	bool			GetPseudoInverse(TDenseMatrix<T>& pinv) const;
 	
 	TDenseMatrix<T>	Transpose() const

@@ -2,6 +2,18 @@
 
 #include <memory.h>
 
+template <class T>
+struct Rank
+{
+	static constexpr int value = 0;
+};
+
+template <class T, int Dim>
+struct Rank<T[Dim]>
+{
+	static constexpr int value = 1 + Rank<T>::value;
+};
+
 template <typename DataType, int Rank>
 class Tensor
 {
@@ -47,17 +59,22 @@ public:
 		}
 	}
 
-	void Load(DataType* p)
+	void 	Load(DataType* p)
 	{
 		memcpy(pData, p, sizeof(DataType) * Size);
 	}
 
-	void LoadZero()
+	void	LoadZero()
 	{
 		memset(pData, 0, sizeof(DataType) * Size);
 	}
+	
+	inline constexpr int GetRank() const
+	{
+		return Rank;
+	}
 
-	int  Dimension(int Index) const
+	inline int GetDimension(int Index) const
 	{
 		return Dimensions[Index];
 	}

@@ -59,9 +59,9 @@ public:
 	}
 
 	// Generate Rotate Matrix
-	void LoadRotateX(float rfloatAngle);
-	void LoadRotateY(float rfloatAngle);
-	void LoadRotateZ(float rfloatAngle);
+	void LoadRotateX(float angle);
+	void LoadRotateY(float angle);
+	void LoadRotateZ(float angle);
 	void Load2DOrthogonalTransform(float dx, float dy, float dAngle);
 
 	inline Matrix3 Transpose() const

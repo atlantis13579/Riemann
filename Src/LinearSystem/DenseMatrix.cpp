@@ -1,8 +1,11 @@
 #include "DenseMatrix.h"
+#include "CholeskyDecomposition.h"
 #include "GaussianElimination.h"
+#include "LUFactorization.h"
 #include "MoorePenrosePseudoInverse.h"
-#include "SingularValueDecomposition.h"
 #include "PolarDecomposition.h"
+#include "QRDecomposition.h"
+#include "SingularValueDecomposition.h"
 
 void gemm_slow(const float* m1, const float* m2, int r1, int c1, int c2, float* m)
 {
@@ -58,7 +61,8 @@ TDenseVector<float> TDenseMatrix<float>::operator*(const TDenseVector<float>& v)
 template<>
 bool	TDenseMatrix<float>::GetInverse(TDenseMatrix<float>& InvM) const
 {
-	assert(IsSquare());
+	if (!IsSquare())
+		return false;
 	InvM.SetSize(mRows, mRows);
 	return GaussianElimination<float>()(GetData(), mRows, InvM.GetData(), nullptr);
 }
@@ -75,19 +79,10 @@ float	TDenseMatrix<float>::Determinant() const
 }
 
 template<>
-TDenseMatrix<float> TDenseMatrix<float>::PseudoInverse() const
-{
-	assert(IsSquare());
-	TDenseMatrix<float> pinv;
-	bool succ = MoorePenrosePseudoInverse<float>()(GetData(), mRows, pinv.GetData());
-	assert(succ);
-	return pinv;
-}
-
-template<>
 bool	TDenseMatrix<float>::GetPseudoInverse(TDenseMatrix<float>& pinv) const
 {
-	assert(IsSquare());
+	if (!IsSquare())
+		return false;
 	pinv.SetSize(mRows, mRows);
 	return MoorePenrosePseudoInverse<float>()(GetData(), mRows, pinv.GetData());
 }

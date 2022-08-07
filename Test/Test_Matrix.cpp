@@ -10,6 +10,8 @@
 #include "../Src/LinearSystem/LUFactorization.h"
 #include "../Src/LinearSystem/SingularValueDecomposition.h"
 #include "../Src/LinearSystem/MoorePenrosePseudoInverse.h"
+#include "../Src/LinearSystem/SparseMatrix.h"
+#include "../Src/LinearSystem/SparseVector.h"
 
 void TestMatrix1()
 {
@@ -72,6 +74,16 @@ void TestMatrix2()
 
 	EXPECT(dp == Vec[0]);
 	EXPECT(dp == Mat[0][0]);
+	return;
+}
+
+void TestSparse()
+{
+	printf("Running TestSparse\n");
+	float aaa[] = {0, 1, 0, 1, 0, 0, 0};
+	
+	TSparseVector<float> x(aaa, 7);
+	
 	return;
 }
 
@@ -260,6 +272,7 @@ void TestMatrix()
 {
 	TestMatrix1();
 	TestMatrix2();
+	TestSparse();
 	TestSolve();
 	TestPGS();
 	TestSVD();

@@ -8,21 +8,21 @@ template<typename T>
 class TDenseVector
 {
 public:
-	TDenseVector() : mSize(0), pData(nullptr)
+	explicit TDenseVector() : mSize(0), pData(nullptr)
 	{
 	}
 
-	TDenseVector(int nSize) : mSize(nSize), mData(nSize)
-	{
-		pData = &mData[0];
-	}
-
-	TDenseVector(int nSize, T Val) : mSize(nSize), mData(nSize, Val)
+	explicit TDenseVector(int nSize) : mSize(nSize), mData(nSize)
 	{
 		pData = &mData[0];
 	}
 
-	TDenseVector(const TDenseVector<T>& v) : mSize(v.mSize)
+	explicit TDenseVector(int nSize, T Val) : mSize(nSize), mData(nSize, Val)
+	{
+		pData = &mData[0];
+	}
+
+	explicit TDenseVector(const TDenseVector<T>& v) : mSize(v.mSize)
 	{
 		mData = v.mData;
 		pData = &mData[0];
@@ -34,7 +34,7 @@ public:
 		pData = mData.size() > 0 ? &mData[0] : v.pData;
 	}
 
-	TDenseVector(T* p, int nSize) : mSize(nSize)
+	explicit TDenseVector(T* p, int nSize) : mSize(nSize)
 	{
 		pData = p;
 	}

@@ -68,6 +68,7 @@ void TestTensor()
 	auto t2 = t[9][19][29];
 
 	EXPECT(t2[39] == 2.0f);
+	EXPECT(t.GetRank() == 4);
 }
 
 void TestFloat16()

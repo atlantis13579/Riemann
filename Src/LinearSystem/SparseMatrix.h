@@ -1,6 +1,5 @@
 #pragma once
 
-#include <math.h>
 #include <string.h>
 #include <vector>
 #include "DenseMatrix.h"
