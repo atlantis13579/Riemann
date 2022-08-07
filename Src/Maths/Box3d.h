@@ -3,7 +3,6 @@
 
 #include <float.h>
 #include <algorithm>
-#include <vector>
 
 #include "Vector3.h"
 #include "Matrix4.h"
@@ -23,12 +22,12 @@ public:
 
 public:
 	TAABB3<T>() { }
-	TAABB3<T>(const TVector3<T>& InMin, const TVector3<T>& InMax)
+	explicit TAABB3<T>(const TVector3<T>& InMin, const TVector3<T>& InMax)
 		: mMin(InMin)
 		, mMax(InMax)
 	{ }
 
-	TAABB3<T>(T InMin, T InMax)
+	explicit TAABB3<T>(T InMin, T InMax)
 		: mMin(InMin, InMin, InMin)
 		, mMax(InMax, InMax, InMax)
 	{ }
@@ -42,32 +41,22 @@ public:
 		}
 	}
 
-	TAABB3<T>(const TVector3<T>& v0, const TVector3<T>& v1, const TVector3<T>& v2)
+	explicit TAABB3<T>(const TVector3<T>& v0, const TVector3<T>& v1, const TVector3<T>& v2)
 	{
 		mMin = mMax = v0;
 		this->Encapsulate(v1, v2);
 	}
-
-	TAABB3<T>(const std::vector<TVector3<T>> &v)
+	
+	explicit TAABB3<T>(const TAABB3<T>& aabb1, const TAABB3<T>& aabb2)
 	{
-		mMin = mMax = v[0];
-		for (size_t i = 1; i < v.size(); ++i)
-		{
-
-			this->Encapsulate(v[i]);
-		}
+		mMin = aabb2.mMin.Min(aabb1.mMin);
+		mMax = aabb2.mMax.Max(aabb1.mMax);
 	}
 	
 	TAABB3<T>(const TAABB3<T>& aabb1)
 	{
 		mMin = aabb1.mMin;
 		mMax = aabb1.mMax;
-	}
-	
-	TAABB3<T>(const TAABB3<T>& aabb1, const TAABB3<T>& aabb2)
-	{
-		mMin = aabb2.mMin.Min(aabb1.mMin);
-		mMax = aabb2.mMax.Max(aabb1.mMax);
 	}
 
 public:

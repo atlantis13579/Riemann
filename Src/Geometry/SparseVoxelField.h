@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <vector>
 #include "../Maths/Box3d.h"
 
 #define VOXEL_FILE_MAGIC	(0x32F0587A)

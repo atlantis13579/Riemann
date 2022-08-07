@@ -3,6 +3,7 @@
 
 #include <float.h>
 #include <stdint.h>
+#include <vector>
 
 #include "ShapeType.h"
 #include "../Maths/Matrix3.h"

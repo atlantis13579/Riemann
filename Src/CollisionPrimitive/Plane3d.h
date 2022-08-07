@@ -2,6 +2,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <vector>
 
 #include "ShapeType.h"
 #include "../Maths/Vector3.h"

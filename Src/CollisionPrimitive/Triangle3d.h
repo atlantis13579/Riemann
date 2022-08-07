@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <vector>
 
 #include "../Maths/Box3d.h"
 #include "../Maths/Vector3.h"

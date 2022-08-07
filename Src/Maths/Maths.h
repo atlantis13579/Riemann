@@ -3,7 +3,6 @@
 
 #include <math.h>
 #include <stdlib.h>
-#include <cstdlib>
 #include <limits>
 
 #ifndef PI
@@ -69,7 +68,7 @@ inline T	Clamp(const T X, const T Min, const T Max)
 template<typename T>
 inline T	LinearInterp(const T v1, const T v2, float mix)
 {
-	return v1 * (1.0f - mix) + v2 * mix;
+	return v1 * ((T)1 - mix) + v2 * mix;
 }
 
 typedef float (*AttenuationFunc)(float);
