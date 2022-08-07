@@ -12,33 +12,33 @@ public:
 
 	}
 
-	Matrix2(float mm[2][2])
+	explicit Matrix2(float mm[2][2])
 	{
 		memcpy(mat, mm, sizeof(mat));
 	}
 
-	Matrix2(const Matrix2& mm)
-	{
-		memcpy(mat, mm.mat, sizeof(mat));
-	}
-
-	Matrix2(float a00, float a01,
+	explicit Matrix2(float a00, float a01,
 			float a10, float a11)
 	{
 		mat[0][0] = a00; mat[0][1] = a01;
 		mat[1][0] = a10; mat[1][1] = a11;
 	}
 
-	Matrix2(float a00, float a11)
+	explicit Matrix2(float a00, float a11)
 	{
 		mat[0][0] = a00; mat[0][1] = 0.0f;
 		mat[1][0] = 0.0f; mat[1][1] = a11;
 	}
 
-	Matrix2(const Vector2& c0, const Vector2& c1)
+	explicit Matrix2(const Vector2& c0, const Vector2& c1)
 	{
 		mat[0][0] = c0.x; mat[0][1] = c1.x;
 		mat[1][0] = c0.y; mat[1][1] = c1.y;
+	}
+	
+	Matrix2(const Matrix2& mm)
+	{
+		memcpy(mat, mm.mat, sizeof(mat));
 	}
 
 	void		LoadZero()

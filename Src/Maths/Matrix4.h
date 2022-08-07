@@ -14,25 +14,25 @@ public:
 	{
 	}
 
-	Matrix4(float m[4][4])
+	explicit Matrix4(float m[4][4])
 	{
 		memcpy(mat, m, sizeof(mat));
 	}
 
-	Matrix4(const Matrix4& m)
-	{
-		memcpy(mat, m.mat, sizeof(mat));
-	}
-
-	Matrix4(float a00, float a01, float a02, float a03,
-			float a10, float a11, float a12, float a13,
-			float a20, float a21, float a22, float a23,
-			float a30, float a31, float a32, float a33)
+	explicit Matrix4(float a00, float a01, float a02, float a03,
+					 float a10, float a11, float a12, float a13,
+					 float a20, float a21, float a22, float a23,
+					 float a30, float a31, float a32, float a33)
 	{
 		mat[0][0] = a00; mat[0][1] = a01; mat[0][2] = a02; mat[0][3] = a03;
 		mat[1][0] = a10; mat[1][1] = a11; mat[1][2] = a12; mat[1][3] = a13;
 		mat[2][0] = a20; mat[2][1] = a21; mat[2][2] = a22; mat[2][3] = a23;
 		mat[3][0] = a30; mat[3][1] = a31; mat[3][2] = a32; mat[3][3] = a33;
+	}
+	
+	Matrix4(const Matrix4& m)
+	{
+		memcpy(mat, m.mat, sizeof(mat));
 	}
 
 	void LoadIdentity()
@@ -178,8 +178,8 @@ public:
 
 	Vector4 operator*(const Vector4& vv) const
 	{
-		Vector4 In = { vv.x, vv.y, vv.z, vv.w };
-		Vector4 out = { 0 };
+		Vector4 In(vv.x, vv.y, vv.z, vv.w);
+		Vector4 out(0, 0, 0, 0);
 		for (int i = 0; i < 4; i++)
 		for (int j = 0; j < 4; j++)
 			out[i] += mat[i][j] * In[j];

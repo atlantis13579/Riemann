@@ -10,7 +10,7 @@ public:
 	{
 	}
 	
-	TVectorN(bool Zero)
+	explicit TVectorN(bool Zero)
 	{
 		if (Zero)
 		{

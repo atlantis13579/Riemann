@@ -16,12 +16,32 @@ class TVector4
 public:
 	T x, y, z, w;
 
-	TVector4<T>(T _x, T _y, T _z, T _w)
+	TVector4<T>()
+	{
+	}
+
+	explicit TVector4<T>(T k)
+	{
+		x = k;
+		y = k;
+		z = k;
+		w = k;
+	}
+
+	explicit TVector4<T>(T _x, T _y, T _z, T _w)
 	{
 		x = _x;
 		y = _y;
 		z = _z;
 		w = _w;
+	}
+	
+	explicit TVector4<T>(const TVector3<T>& v, float w)
+	{
+		x = v.x;
+		y = v.y;
+		z = v.z;
+		w = w;
 	}
 
 	TVector4<T>(const TVector4<T>& v)
@@ -31,27 +51,7 @@ public:
 		z = v.z;
 		w = v.w;
 	}
-
-	TVector4<T>(const TVector3<T>& v, float w)
-	{
-		x = v.x;
-		y = v.y;
-		z = v.z;
-		w = w;
-	}
-
-	TVector4<T>(T k)
-	{
-		x = k;
-		y = k;
-		z = k;
-		w = k;
-	}
-
-	TVector4<T>()
-	{
-	}
-
+	
 	TVector3<T> xyz() const
 	{
 		return TVector3<T>(x, y, z);

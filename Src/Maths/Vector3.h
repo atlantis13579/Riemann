@@ -13,8 +13,17 @@ class TVector3
 {
 public:
 	T x, y, z;
+	
+	inline TVector3<T>()
+	{
+	}
 
-	inline TVector3<T>(T _x, T _y, T _z)
+	explicit inline TVector3<T>(T k)
+	{
+		x = y = z = k;
+	}
+
+	explicit inline TVector3<T>(T _x, T _y, T _z)
 	{
 		x = _x;
 		y = _y;
@@ -34,15 +43,6 @@ public:
 		x = (T)v.x;
 		y = (T)v.y;
 		z = (T)v.z;
-	}
-
-	inline TVector3<T>(T k)
-	{
-		x = y = z = k;
-	}
-
-	inline TVector3<T>()
-	{
 	}
 
 	inline void	SetZero()
@@ -122,6 +122,16 @@ public:
 	{
 		return TVector3<T>(x / v.x, y / v.y, z / v.z);
 	}
+	
+	inline TVector3<T> operator+(T k) const
+	{
+		return TVector3<T>(x + k, y + k, z + k);
+	}
+
+	inline TVector3<T> operator-(T k) const
+	{
+		return TVector3<T>(x - k, y - k, z - k);
+	}
 
 	inline TVector3<T> operator*(T k) const
 	{
@@ -164,6 +174,20 @@ public:
 		x /= v.x;
 		y /= v.y;
 		z /= v.z;
+	}
+	
+	inline void	 operator+= (T k)
+	{
+		x += k;
+		y += k;
+		z += k;
+	}
+
+	inline void	 operator-= (T k)
+	{
+		x -= k;
+		y -= k;
+		z -= k;
 	}
 
 	inline void	 operator*= (T k)

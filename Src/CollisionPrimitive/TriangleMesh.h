@@ -14,7 +14,7 @@ struct TriMeshHitOption
 struct TriMeshHitResult
 {
 	float		hitTime;
-	Vector3	hitNormal;
+	Vector3		hitNormal;
 	uint32_t	hitIndex;
 	int		    hitTestCount;
     

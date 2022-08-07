@@ -8,47 +8,47 @@ class Matrix3
 public:
 	float mat[3][3];
 
-	Matrix3()
+	explicit Matrix3()
 	{
 
 	}
 
-	Matrix3(float m[3][3])
+	explicit Matrix3(float m[3][3])
 	{
 		memcpy(mat, m, sizeof(mat));
 	}
 
-	Matrix3(const Matrix3& m)
-	{
-		memcpy(mat, m.mat, sizeof(mat));
-	}
-
-	Matrix3(float a00, float a01, float a02,
-		float a10, float a11, float a12,
-		float a20, float a21, float a22)
+	explicit Matrix3(float a00, float a01, float a02,
+					 float a10, float a11, float a12,
+					 float a20, float a21, float a22)
 	{
 		mat[0][0] = a00; mat[0][1] = a01; mat[0][2] = a02;
 		mat[1][0] = a10; mat[1][1] = a11; mat[1][2] = a12;
 		mat[2][0] = a20; mat[2][1] = a21; mat[2][2] = a22;
 	}
 
-	Matrix3(float a00, float a11, float a22)
+	explicit Matrix3(float a00, float a11, float a22)
 	{
 		memset(mat, 0, sizeof(mat));
 		mat[0][0] = a00; mat[1][1] = a11; mat[2][2] = a22;
 	}
 	
-	Matrix3(const Vector3& diag)
+	explicit Matrix3(const Vector3& diag)
 	{
 		memset(mat, 0, sizeof(mat));
 		mat[0][0] = diag.x; mat[1][1] = diag.y; mat[2][2] = diag.z;
 	}
 
-	Matrix3(const Vector3& c0, const Vector3& c1, const Vector3& c2)
+	explicit Matrix3(const Vector3& c0, const Vector3& c1, const Vector3& c2)
 	{
 		mat[0][0] = c0.x; mat[0][1] = c1.x; mat[0][2] = c2.x;
 		mat[1][0] = c0.y; mat[1][1] = c1.y; mat[1][2] = c2.y;
 		mat[2][0] = c0.z; mat[2][1] = c1.z; mat[2][2] = c2.z;
+	}
+	
+	Matrix3(const Matrix3& m)
+	{
+		memcpy(mat, m.mat, sizeof(mat));
 	}
 	
 	void LoadIdentiry()
@@ -277,10 +277,9 @@ public:
 		FromAxisAngle(Axis, Angle);
 	}
 
-	void		FromEulerAnglesXYZ(float Yaw, float Pitch, float Roll);
-
 	float		ToAxisAngle(Vector3& Axis) const;
-	bool		ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const;
+	void		FromEulerAngles(float Yaw, float Pitch, float Roll);
+	bool		ToEulerAngles(float& Yaw, float& Pitch, float& Roll) const;
 
 	// A = U * S * V^T
 	void		SingularValueDecompose(Matrix3& U, Vector3& S, Matrix3& V) const;
@@ -290,14 +289,9 @@ public:
 	bool		PolarDecomposeU(Matrix3& U) const;
 	void		QDUDecompose(Matrix3& rQ, Vector3& rD, Vector3& rU) const;
 	float		SpectralNorm() const;
-
-	void		SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const;
 	void		TriDiagonal(float Diag[3], float SubDiag[3]);
 	bool		QRIteration(float Diag[3], float SubDiag[3]);
-
-	static void Bidiagonalize(Matrix3& kA, Matrix3& kL, Matrix3& kR);
-	static void GolubKahanStep(Matrix3& kA, Matrix3& kL, Matrix3& kR);
-	static float MaxCubicRoot(float afCoeff[3]);
+	void		SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const;
 
 	static Matrix3 Zero()
 	{
@@ -306,7 +300,7 @@ public:
 
 	static Matrix3 Identity()
 	{
-		return Matrix3(1, 0, 0, 0, 1, 0, 0, 0, 1);;
+		return Matrix3(1, 0, 0, 0, 1, 0, 0, 0, 1);
 	}
 };
 

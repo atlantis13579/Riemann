@@ -23,7 +23,7 @@ public:
 	}
 
 	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
-	TMatrixMxN(bool Identity)
+	explicit TMatrixMxN(bool Identity)
 	{
 		if (Identity)
 		{

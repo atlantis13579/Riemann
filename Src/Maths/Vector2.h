@@ -13,8 +13,12 @@ class TVector2
 {
 public:
 	T x, y;
+	
+	TVector2()
+	{
+	}
 
-	TVector2(T _x, T _y)
+	explicit TVector2(T _x, T _y)
 	{
 		x = _x;
 		y = _y;
@@ -24,10 +28,6 @@ public:
 	{
 		x = v.x;
 		y = v.y;
-	}
-
-	TVector2()
-	{
 	}
 
 	inline T	Dot(const TVector2<T>& v) const

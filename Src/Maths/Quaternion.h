@@ -10,19 +10,11 @@ class Quaternion
 public:
 	float x, y, z, w;
 
-	Quaternion()
+	explicit Quaternion()
 	{
 	}
 
-	Quaternion(const Quaternion& q)
-	{
-		x = q.x;
-		y = q.y;
-		z = q.z;
-		w = q.w;
-	}
-
-	Quaternion(float _w, const Vector3 &_v)
+	explicit Quaternion(float _w, const Vector3 &_v)
 	{
 		w = _w;
 		x = _v.x;
@@ -30,12 +22,20 @@ public:
 		z = _v.z;
 	}
 
-	Quaternion(float _x, float _y, float _z, float _w)
+	explicit Quaternion(float _x, float _y, float _z, float _w)
 	{
 		x = _x;
 		y = _y;
 		z = _z;
 		w = _w;
+	}
+	
+	Quaternion(const Quaternion& q)
+	{
+		x = q.x;
+		y = q.y;
+		z = q.z;
+		w = q.w;
 	}
 
 	Quaternion& operator=(const Quaternion& q)

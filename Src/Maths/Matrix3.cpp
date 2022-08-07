@@ -8,8 +8,8 @@ void Matrix3::LoadRotateX(float angle)
 	c = cosf(angle);
 	s = sinf(angle);
 	mat[0][0] = 1.0f;	mat[0][1] = 0.0f;	mat[0][2] = 0.0f;
-	mat[1][0] = 1.0f;	mat[1][1] = c;	mat[1][2] = s;
-	mat[2][0] = 1.0f;	mat[2][1] = -s; mat[2][2] = c;
+	mat[1][0] = 1.0f;	mat[1][1] = c;		mat[1][2] = s;
+	mat[2][0] = 1.0f;	mat[2][1] = -s; 	mat[2][2] = c;
 }
 
 void Matrix3::LoadRotateY(float angle)
@@ -17,9 +17,9 @@ void Matrix3::LoadRotateY(float angle)
 	float c, s;
 	c = cosf(angle);
 	s = sinf(angle);
-	mat[0][0] = c;	mat[0][1] = 0.0f;	mat[0][2] = -s;
+	mat[0][0] = c;		mat[0][1] = 0.0f;	mat[0][2] = -s;
 	mat[1][0] = 0.0f;	mat[1][1] = 1.0f;	mat[1][2] = 0.0f;
-	mat[2][0] = s;	mat[2][1] = 0.0f;	mat[2][2] = c;
+	mat[2][0] = s;		mat[2][1] = 0.0f;	mat[2][2] = c;
 }
 
 void Matrix3::LoadRotateZ(float angle)
@@ -27,8 +27,8 @@ void Matrix3::LoadRotateZ(float angle)
 	float c, s;
 	c = cosf(angle);
 	s = sinf(angle);
-	mat[0][0] = c;	mat[0][1] = s; mat[0][2] = 0.0f;
-	mat[1][0] = -s; mat[1][1] = c;	mat[1][2] = 0.0f;
+	mat[0][0] = c;		mat[0][1] = s; 		mat[0][2] = 0.0f;
+	mat[1][0] = -s; 	mat[1][1] = c;		mat[1][2] = 0.0f;
 	mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
 }
 
@@ -36,12 +36,12 @@ void Matrix3::Load2DOrthogonalTransform(float dx, float dy, float dAngle) {
 	float c, s;
 	c = cosf(dAngle);
 	s = sinf(dAngle);
-	mat[0][0] = c;	mat[0][1] = -s; mat[0][2] = dx;
-	mat[1][0] = s; mat[1][1] = c;	mat[1][2] = dy;
+	mat[0][0] = c;		mat[0][1] = -s; 	mat[0][2] = dx;
+	mat[1][0] = s; 		mat[1][1] = c;		mat[1][2] = dy;
 	mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
 }
 
-void Matrix3::Bidiagonalize(Matrix3& rA, Matrix3& rL, Matrix3& rR)
+static void Bidiagonalize(Matrix3& rA, Matrix3& rL, Matrix3& rR)
 {
 	float afV[3], afW[3];
 	float fLength, fSign, fT1, fInvT1, fT2;
@@ -154,7 +154,7 @@ void Matrix3::Bidiagonalize(Matrix3& rA, Matrix3& rL, Matrix3& rR)
 	}
 }
 
-void Matrix3::GolubKahanStep(Matrix3& rA, Matrix3& rL, Matrix3& rR)
+static void GolubKahanStep(Matrix3& rA, Matrix3& rL, Matrix3& rR)
 {
 	float fT11 = rA[0][1] * rA[0][1] + rA[1][1] * rA[1][1];
 	float fT22 = rA[1][2] * rA[1][2] + rA[2][2] * rA[2][2];
@@ -384,7 +384,7 @@ void Matrix3::SingularValueDecompose(Matrix3& U, Vector3& S, Matrix3& V) const
 
 void Matrix3::SingularValueCompose(const Vector3& S, const Matrix3& U, const Matrix3& V)
 {
-	*this = U * S * V.Transpose();
+	*this = U * Matrix3(S) * V.Transpose();
 }
 
 void Matrix3::Orthonormalize()
@@ -703,13 +703,12 @@ void Matrix3::QDUDecompose(Matrix3& rQ, Vector3& rD, Vector3& rU) const
 	rU[1] = kR[0][2] * fInvD0;
 	rU[2] = kR[1][2] / rD[1];
 }
-//-----------------------------------------------------------------------
-float Matrix3::MaxCubicRoot(float afCoeff[3])
-{
-	// Spectral norm is for A^T*A, so characteristic polynomial
-	// P(x) = c[0]+c[1]*x+c[2]*x^2+x^3 has three positive float roots.
-	// This yields the assertions c[0] < 0 and c[2]*c[2] >= 3*c[1].
 
+// Spectral norm is for A^T*A, so characteristic polynomial
+// P(x) = c[0]+c[1]*x+c[2]*x^2+x^3 has three positive float roots.
+// This yields the assertions c[0] < 0 and c[2]*c[2] >= 3*c[1].
+static float MaxCubicRoot(float afCoeff[3])
+{
 	// quick out for uniform scale (triple root)
 	const float fOneThird = 1.0f / 3.0f;
 	const float fEpsilon = 1e-06f;
@@ -882,7 +881,7 @@ float Matrix3::ToAxisAngle(Vector3& Axis) const
 	return Angle;
 }
 
-bool Matrix3::ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const
+bool Matrix3::ToEulerAngles(float& Yaw, float& Pitch, float& Roll) const
 {
 	// rot =  cy*cz          -cy*sz           sy
 	//        cz*sx*sy+cx*sz  cx*cz-sx*sy*sz -cy*sx
@@ -916,7 +915,7 @@ bool Matrix3::ToEulerAnglesXYZ(float& Yaw, float& Pitch, float& Roll) const
 	}
 }
 
-void Matrix3::FromEulerAnglesXYZ(float Yaw, float Pitch,	float Roll)
+void Matrix3::FromEulerAngles(float Yaw, float Pitch, float Roll)
 {
 	float c, s;
 
@@ -987,15 +986,7 @@ void Matrix3::TriDiagonal(float Diag[3], float SubDiag[3])
 		Diag[2] = fF;
 		SubDiag[0] = fB;
 		SubDiag[1] = fE;
-		mat[0][0] = 1.0f;
-		mat[0][1] = 0.0f;
-		mat[0][2] = 0.0f;
-		mat[1][0] = 0.0f;
-		mat[1][1] = 1.0f;
-		mat[1][2] = 0.0f;
-		mat[2][0] = 0.0f;
-		mat[2][1] = 0.0f;
-		mat[2][2] = 1.0f;
+		LoadIdentiry();
 	}
 }
 
