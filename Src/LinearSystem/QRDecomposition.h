@@ -42,21 +42,17 @@ private:
 				V[p] /= L;
 			}
 
-			for (int r = 0; r < m; ++r)
-			for (int c = 0; c < m; ++c)
+			H.LoadZero();
+			for (int r = i; r < m; ++r)
+			for (int c = i; c < m; ++c)
 			{
-				if (r >= i && c >= i)
-				{
-					H[r][c] = KroneckerDelta(r, c) - 2 * V[r - i] * V[c - i];
-				}
-				else
-				{
-					H[r][c] = KroneckerDelta(r, c);
-				}
+				H[r][c] = - 2 * V[r - i] * V[c - i];
 			}
 
-			R = H * R;
-			Q = Q * H;
+			// R += H * R;
+			// Q += Q * H;
+			R.SubAdd(SubMultiply(H, R, i, m - 1, 0, m - 1, 0, n - 1), i, m - 1, 0, n - 1);
+			Q.SubAdd(SubMultiply(Q, H, 0, m - 1, i, m - 1, i, m - 1), 0, m - 1, i, m - 1);
 		}
 
 		for (int c = 0; c < n; ++c)
@@ -78,11 +74,6 @@ private:
 		TDenseMatrix<T>(pQ, m, m).Assign(Q);
 		TDenseMatrix<T>(pR, m, n).Assign(R);
 		return;
-	}
-
-	static inline T KroneckerDelta(int a, int b)
-	{
-		return a == b ? (T)1 : (T)0;
 	}
 
 	static T Norm(T* v, int k)

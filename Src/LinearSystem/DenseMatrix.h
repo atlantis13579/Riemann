@@ -8,6 +8,24 @@
 #include "../Maths/Maths.h"
 
 template<typename T>
+void gemm_sub(const T* mat1, const T* mat2, int r1, int c1, int c2, int i0, int i1, int j0, int j1, int k0, int k1, T* mat);
+
+template<typename T>
+void gemm(const T* mat1, const T* mat2, int r1, int c1, int c2, T* mat)
+{
+	gemm_sub(mat1, mat2, r1, c1, c2, 0, r1 - 1, 0, c1 - 1, 0, c2 - 1, mat);
+}
+
+template<typename T>
+void gemv_sub(const T* mat1, const T* vec1, int r, int c, int i0, int i1, int k0, int k1, T* v);
+
+template<typename T>
+void gemv(const T* mat1, const T* vec1, int r, int c, T* v)
+{
+	gemv_sub(mat1, vec1, r, c, 0, r - 1, 0, c - 1, v);
+}
+
+template<typename T>
 class TDenseMatrix
 {
 public:
@@ -152,50 +170,42 @@ public:
 		return pData[i * mCols + j];
 	}
 
-	TDenseMatrix<T>& operator=(const TDenseMatrix<T>& v)
+	TDenseMatrix<T>& operator=(const TDenseMatrix<T>& m)
 	{
-		mRows = v.mRows;
-		mCols = v.mCols;
-		mData = v.mData;
-		pData = mData.size() > 0 ? &mData[0] : v.pData;
+		mRows = m.mRows;
+		mCols = m.mCols;
+		mData = m.mData;
+		pData = mData.size() > 0 ? &mData[0] : m.pData;
 		return *this;
 	}
 
-	TDenseMatrix<T>& operator=(TDenseMatrix<T>&& v)
+	TDenseMatrix<T>& operator=(TDenseMatrix<T>&& m)
 	{
-		mRows = v.mRows;
-		mCols = v.mCols;
-		mData = std::move(v.mData);
-		pData = mData.size() > 0 ? &mData[0] : v.pData;
+		mRows = m.mRows;
+		mCols = m.mCols;
+		mData = std::move(m.mData);
+		pData = mData.size() > 0 ? &mData[0] : m.pData;
 		return *this;
 	}
 
-	TDenseMatrix<T> operator+(const TDenseMatrix<T>& v) const
+	TDenseMatrix<T> operator+(const TDenseMatrix<T>& m) const
 	{
-		if (GetCols() != v.GetCols() || GetRows() != v.GetRows())
-		{
-			return TDenseMatrix<T>();
-		}
-
+		assert(GetCols() == m.GetCols()  && GetRows() == m.GetRows() );
 		TDenseMatrix<T> Ret(*this);
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			Ret.pData[i] += v.pData[i];
+			Ret.pData[i] += m.pData[i];
 		}
 		return std::move(Ret);
 	}
 
-	TDenseMatrix<T> operator-(const TDenseMatrix<T>& v) const
+	TDenseMatrix<T> operator-(const TDenseMatrix<T>& m) const
 	{
-		if (GetCols() != v.GetCols() || GetRows() != v.GetRows())
-		{
-			return TDenseMatrix<T>();
-		}
-
+		assert(GetCols() == m.GetCols()  && GetRows() == m.GetRows() );
 		TDenseMatrix<T> Ret(*this);
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			Ret.pData[i] -= v.pData[i];
+			Ret.pData[i] -= m.pData[i];
 		}
 		return std::move(Ret);
 	}
@@ -210,8 +220,21 @@ public:
 		return std::move(Ret);
 	}
 
-	TDenseMatrix<T>	operator*(const TDenseMatrix<T>& v) const;
-	TDenseVector<T>	operator*(const TDenseVector<T>& v) const;
+	TDenseMatrix<T>	operator*(const TDenseMatrix<T>& m) const
+	{
+		assert(mCols == m.mRows);
+		TDenseMatrix<T> Ret(mRows, m.mCols);
+		gemm<T>(GetData(), m.GetData(), mRows, mCols, m.mCols, Ret.GetData());
+		return Ret;
+	}
+
+	TDenseVector<T>	operator*(const TDenseVector<T>& v) const
+	{
+		assert(mCols == v.GetSize());
+		TDenseVector<T> Ret(mRows);
+		gemv<T>(GetData(), v.GetData(), mRows, mCols, Ret.GetData());
+		return Ret;
+	}
 
 	TDenseMatrix<T>	operator-() const
 	{
@@ -223,29 +246,21 @@ public:
 		return std::move(Ret);
 	}
 
-	void		operator+= (const TDenseMatrix<T>& v)
+	void		operator+= (const TDenseMatrix<T>& m)
 	{
-		if (GetCols() != v.GetCols() || GetRows() != v.GetRows())
-		{
-			return;
-		}
-
+		assert(GetCols() == m.GetCols()  && GetRows() == m.GetRows());
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			pData[i] += v.pData[i];
+			pData[i] += m.pData[i];
 		}
 	}
 
-	void		operator-= (const TDenseMatrix<T>& v)
+	void		operator-= (const TDenseMatrix<T>& m)
 	{
-		if (GetSize() != v.GetSize())
-		{
-			return;
-		}
-
+		assert(GetCols() == m.GetCols()  && GetRows() == m.GetRows());
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			pData[i] -= v.pData[i];
+			pData[i] -= m.pData[i];
 		}
 	}
 
@@ -254,6 +269,16 @@ public:
 		for (int i = 0; i < GetSize(); ++i)
 		{
 			pData[i] *= k;
+		}
+	}
+
+	void		SubAdd(const TDenseMatrix<T>& m, int i0, int i1, int j0, int j1)
+	{
+		assert(GetCols() == m.GetCols() && GetRows() == m.GetRows());
+		for (int i = i0; i <= i1; ++i)
+		for (int j = j0; j <= j1; ++j)
+		{
+			pData[i * mCols + j] += m.pData[i * mCols + j];
 		}
 	}
 
@@ -547,9 +572,19 @@ protected:
 };
 
 template <typename T>
-inline TDenseMatrix<T> operator* (T s, const TDenseMatrix<T>& vv)
+inline TDenseMatrix<T> operator* (T s, const TDenseMatrix<T>& m)
 {
-	return vv * s;
+	return m * s;
+}
+
+template <typename T>
+TDenseMatrix<T>	SubMultiply(const TDenseMatrix<T>& m1, const TDenseMatrix<T>& m2, int i0, int i1, int j0, int j1, int k0, int k1)
+{
+	assert(m1.GetCols() == m2.GetRows());
+	TDenseMatrix<T> Ret(m1.GetRows(), m2.GetCols());
+	Ret.LoadZero();
+	gemm_sub<T>(m1.GetData(), m2.GetData(), m1.GetRows(), m1.GetCols(), m2.GetCols(), i0, i1, j0, j1, k0, k1, Ret.GetData());
+	return Ret;
 }
 
 using DenseMatrix = TDenseMatrix<float>;
