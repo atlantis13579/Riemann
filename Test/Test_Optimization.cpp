@@ -1,5 +1,6 @@
 
 #include "Test.h"
+#include "../Src/Maths/Maths.h"
 #include "../Src/LinearSystem/DenseVector.h"
 #include "../Src/LinearSystem/DenseMatrix.h"
 #include "../Src/Optimization/LBFGS.h"
@@ -214,6 +215,27 @@ void TestApproximation()
 	return;
 }
 
+void TestPCA()
+{
+	printf("Running TestPCA\n");
+	
+	DenseMatrix Data(4, 1000);
+	for (int i = 0; i < Data.GetRows(); ++i)
+	for (int j = 0; j < Data.GetCols(); ++j)
+	{
+		Data(i, j) = RandomFloat(1.0f, 100.0f);
+	}
+	
+	PrincipalComponentAnalysis<float> pca;
+	pca.Fit(Data);
+	
+	EXPECT(pca.ComponentsMatrix.GetSize() == 16);
+	pca.TopKComponents(1);
+	pca.Transform(Data);
+	
+	return;
+}
+
 void TestOptimization()
 {
 	TestNonConvexFunctions();
@@ -223,5 +245,6 @@ void TestOptimization()
 	TestGD();
 	TestPolyfit();
 	TestApproximation();
+	TestPCA();
 	return;
 }

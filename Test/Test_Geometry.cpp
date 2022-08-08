@@ -125,7 +125,7 @@ void TestBuildOBB()
 	EXPECT(fabsf(obb.Center.y - center.y) < 0.1f);
 	EXPECT(fabsf(obb.Center.z - center.z) < 0.1f);
 	
-	Vector3 dir = obb.Rot.Column(0);
+	Vector3 dir = obb.Rot.GetCol(0);
 	float dp = dir.Dot(Vector3::UnitX());
 	EXPECT(dp >= 0.8f);
 	

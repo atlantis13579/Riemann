@@ -89,9 +89,8 @@ public:
 
 	TDenseVector<T>	GetRow(int i) const
 	{
-		TDenseVector<T> Ret(mCols);
-		memcpy(Ret.GetData(), pData + i * mCols, sizeof(T) * mCols);
-		return std::move(Ret);
+		TDenseVector<T> Ret(pData + i * mCols, mCols);
+		return Ret;
 	}
 
 	TDenseVector<T>	GetCol(int i) const
@@ -102,6 +101,19 @@ public:
 			Ret[j] = pData[j * mCols + i];
 		}
 		return std::move(Ret);
+	}
+	
+	void		SetRowZero(int i)
+	{
+		memset(pData + i * mCols, 0, sizeof(T)*mCols);
+	}
+	
+	void		SetColZero(int i)
+	{
+		for (int j = 0; j < mRows; ++j)
+		{
+			pData[j*mCols + i] = (T)0;
+		}
 	}
 
 	bool			HoldsMemory() const

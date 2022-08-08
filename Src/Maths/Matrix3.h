@@ -171,19 +171,19 @@ public:
 		return mat[0];
 	}
 
-	inline const Vector3& Row(int i) const
+	inline const Vector3& GetRow(int i) const
 	{
 		const Vector3 *row = static_cast<const Vector3*>((const void*)mat);
 		return row[i];
 	}
 
-	inline Vector3& Row(int i)
+	inline Vector3& GetRow(int i)
 	{
 		Vector3 *row = static_cast<Vector3*>((void*)mat);
 		return row[i];
 	}
 
-	inline Vector3 Column(int i) const
+	inline Vector3 GetCol(int i) const
 	{
 		return Vector3(mat[0][i], mat[1][i], mat[2][i]);
 	}
