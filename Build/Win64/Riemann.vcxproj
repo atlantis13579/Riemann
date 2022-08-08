@@ -153,6 +153,7 @@
     <ClInclude Include="..\..\Src\LinearSystem\EigenValueDecomposition.h" />
     <ClInclude Include="..\..\Src\LinearSystem\GaussianElimination.h" />
     <ClInclude Include="..\..\Src\LinearSystem\GaussSeidelIteration.h" />
+    <ClInclude Include="..\..\Src\LinearSystem\gemm.inl" />
     <ClInclude Include="..\..\Src\LinearSystem\JacobiIteration.h" />
     <ClInclude Include="..\..\Src\LinearSystem\LUFactorization.h" />
     <ClInclude Include="..\..\Src\LinearSystem\MoorePenrosePseudoInverse.h" />

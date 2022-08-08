@@ -330,6 +330,8 @@ void TestEigen()
 	TDenseMatrix<float> EigenVectors;
 	A.EigenDecompose(EigenValues, EigenVectors);
 
+	EXPECT(fabsf(EigenValues[0] - 132.0f) < 1.0f);
+
 	for (int i = 0; i < EigenVectors.GetCols(); ++i)
 	{
 		TDenseVector<float> v = EigenVectors.GetCol(i);

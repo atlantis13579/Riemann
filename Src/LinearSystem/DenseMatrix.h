@@ -5,34 +5,8 @@
 #include <cmath>
 #include <vector>
 #include "DenseVector.h"
+#include "gemm.inl"
 #include "../Maths/Maths.h"
-
-template<typename T>
-void gemm_block(const T* mat1, const T* mat2, int r1, int c1, int c2, int i0, int i1, int j0, int j1, int k0, int k1, T* mat);
-
-template<typename T>
-void gemv_block(const T* mat1, const T* vec1, int r, int c, int i0, int i1, int k0, int k1, T* v);
-
-template<typename T>
-void gema_block(const T* mat1, const T* mat2, int r, int c, int i0, int i1, int j0, int j1, T* mat);
-
-template<typename T>
-void gemm(const T* mat1, const T* mat2, int r1, int c1, int c2, T* mat)
-{
-	gemm_block(mat1, mat2, r1, c1, c2, 0, r1 - 1, 0, c1 - 1, 0, c2 - 1, mat);
-}
-
-template<typename T>
-void gemv(const T* mat1, const T* vec1, int r, int c, T* v)
-{
-	gemv_block(mat1, vec1, r, c, 0, r - 1, 0, c - 1, v);
-}
-
-template<typename T>
-void gema(const T* mat1, const T* mat2, int r, int c, T* mat)
-{
-	gema_block(mat1, mat2, r, c, 0, r - 1, 0, c - 1, mat);
-}
 
 template<typename T>
 class TDenseMatrix
@@ -593,7 +567,7 @@ public:
 	bool 	PolarDecompose(TDenseMatrix<T> &U, TDenseMatrix<T> &P) const;
 
 	// M = Q * R
-	void 	QRDecompose(TDenseMatrix<T>& Q, TDenseMatrix<T>& R) const;
+	bool 	QRDecompose(TDenseMatrix<T>& Q, TDenseMatrix<T>& R) const;
 
 	// Get Eigen Values and EigenVectors as column vector
 	bool	EigenDecompose(TDenseVector<T>& EigenValues, TDenseMatrix<T>& EigenVectors) const;

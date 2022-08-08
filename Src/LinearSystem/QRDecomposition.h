@@ -5,18 +5,20 @@
 // https://en.wikipedia.org/wiki/QR_decomposition
 // https://en.wikipedia.org/wiki/Householder_transformation
 
-#include <math.h>
 #include <string.h>
-#include "DenseMatrix.h"
+#include "gemm.inl"
 
 template <typename T>
 class QRDecomposition
 {
 public:
-	void operator()(const T* A, int nRows, int nCols, T* Q, T* R) const
+	bool operator()(const T* A, int nRows, int nCols, T* Q, T* R) const
 	{
+		if (nCols < nRows)
+			return false;
+
         compute_householder(A, Q, R, nRows, nCols);
-		return;
+		return true;
 	}
 
 private:
@@ -72,17 +74,17 @@ private:
 
 		for (int c = 0; c < n; ++c)
 		{
-			if (R[c*n+c] < 0)
+			if (R[c*n+c] >= 0)
+				continue;
+
+			for (int r = 0; r < n; ++r)
 			{
-				for (int r = 0; r < n; ++r)
-				{
-					R[c*n+r] = -R[c*n+r];
-					Q[r*m+c] = -Q[r*m+c];
-				}
-				for (int r = n; r < m; ++r)
-				{
-					Q[r*m+c] = -Q[r*m+c];
-				}
+				R[c*n+r] = -R[c*n+r];
+				Q[r*m+c] = -Q[r*m+c];
+			}
+			for (int r = n; r < m; ++r)
+			{
+				Q[r*m+c] = -Q[r*m+c];
 			}
 		}
 

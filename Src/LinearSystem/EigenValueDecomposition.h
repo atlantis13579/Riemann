@@ -3,13 +3,28 @@
 // https://en.wikipedia.org/wiki/Eigenvalue_algorithm
 
 #include <string.h>
-#include "DenseMatrix.h"
+#include "gemm.inl"
+
+// Solve Eigen with QR Decompose (householder algorithm)
+// 
+// X <- A
+// for it = 1 to 30
+//   Q , R <- QRDecompose(X);
+//   X <- R * Q;
+//   EigenVectors <- EigenVectors * Q;
+// EigenValues = diag(X)
 
 template<typename T>
 class SolveEigenSymmetric
 {
 public:
-	bool operator()(const T* A, int n, T* EignValues, T *EigenVectors) const
+	void operator()(const T* A, int n, T* EigenValues, T* EigenVectors) const
+	{
+		solve_eigen_qr_iterations(A, n, EigenValues, EigenVectors);
+	}
+
+private:
+	void solve_eigen_qr_iterations(const T* A, int n, T* EigenValues, T* EigenVectors) const
 	{
 		memset(EigenVectors, 0, sizeof(T) * n * n);
 		for (int i = 0; i < n; ++i)
@@ -17,14 +32,13 @@ public:
 			EigenVectors[i*n + i] = (T)1;
 		}
 
-		T* buf = new T[5 * n * n + n];
+		T* buf = new T[4 * n * n + n];
 
 		T* X = buf;
 		T* Q = buf + n * n;
 		T* R = buf + 2 * n * n;
 		T* H = buf + 3 * n * n;
-		T* buffer = buf + 4 * n * n;
-		T* v = buf + 5 * n * n;
+		T* v = buf + 4 * n * n;
 
 		memcpy(X, A, sizeof(T) * n * n);
 
@@ -32,9 +46,7 @@ public:
 		int it = 0;
 		while (it++ < maxIterations)
 		{
-			// Q , R = QRDecompose(X);
-			// X = R * Q;
-			// EigenVectors = EigenVectors * Q;
+			// Q, R <- QRDecompose(X) , householder
 
 			memset(Q, 0, sizeof(T) * n * n);
 			for (int i = 0; i < n; ++i)
@@ -68,46 +80,46 @@ public:
 				}
 
 				// R += H * R;
-				gemm_block<T>(H, R, n, n, n, i, n - 1, 0, n - 1, 0, n - 1, buffer);
-				gema_block<T>(R, buffer, n, n, i, n - 1, 0, n - 1, R);
+				gemm_block<T>(H, R, n, n, n, i, n - 1, 0, n - 1, 0, n - 1, X);
+				gema_block<T>(R, X, n, n, i, n - 1, 0, n - 1, R);
 
 				// Q += Q * H;
-				gemm_block<T>(Q, H, n, n, n, 0, n - 1, i, n - 1, i, n - 1, buffer);
-				gema_block<T>(Q, buffer, n, n, 0, n - 1, i, n - 1, Q);
+				gemm_block<T>(Q, H, n, n, n, 0, n - 1, i, n - 1, i, n - 1, X);
+				gema_block<T>(Q, X, n, n, 0, n - 1, i, n - 1, Q);
 			}
 
 			for (int c = 0; c < n; ++c)
 			{
-				if (R[c * n + c] < 0)
+				if (R[c * n + c] >= 0)
+					continue;
+
+				for (int r = 0; r < n; ++r)
 				{
-					for (int r = 0; r < n; ++r)
-					{
-						R[c * n + r] = -R[c * n + r];
-						Q[r * n + c] = -Q[r * n + c];
-					}
-					for (int r = n; r < n; ++r)
-					{
-						Q[r * n + c] = -Q[r * n + c];
-					}
+					R[c * n + r] = -R[c * n + r];
+					Q[r * n + c] = -Q[r * n + c];
+				}
+				for (int r = n; r < n; ++r)
+				{
+					Q[r * n + c] = -Q[r * n + c];
 				}
 			}
 
+			// EigenVectors = EigenVectors * Q;
 			gemm<T>(EigenVectors, Q, n, n, n, X);
 			memcpy(EigenVectors, X, sizeof(T) * n * n);
+
+			// X = R * Q;
 			gemm<T>(R, Q, n, n, n, X);
 		}
 
 		for (int i = 0; i < n; ++i)
 		{
-			EignValues[i] = X[i * n + i];
+			EigenValues[i] = X[i * n + i];
 		}
 
 		delete[]buf;
-
-		return true;
 	}
 
-private:
 	static T compute_norm(T* v, int k)
 	{
 		T sum = (T)0;
