@@ -37,16 +37,17 @@ public:
 		LoadDiagonal(diag);
 	}
 
-	explicit TDenseMatrix(const TDenseMatrix& v) : mRows(v.mRows), mCols(v.mCols), mData(mCols* mRows)
+	explicit TDenseMatrix(const TDenseMatrix& m) : mRows(m.mRows), mCols(m.mCols), mData(mCols* mRows)
 	{
 		pData = &mData[0];
-		memcpy(pData, v.pData, sizeof(T) * mRows * mCols);
+		memcpy(pData, m.pData, sizeof(T) * mRows * mCols);
 	}
 
-	TDenseMatrix(TDenseMatrix&& v) : mRows(v.mRows), mCols(v.mCols)
+	TDenseMatrix(TDenseMatrix&& m) : mRows(m.mRows), mCols(m.mCols)
 	{
-		mData = std::move(v.mData);
-		pData = mData.size() > 0 ? &mData[0] : v.pData;
+		if (!m.mData.empty())
+			mData = std::move(m.mData);
+		pData = mData.size() > 0 ? &mData[0] : m.pData;
 	}
 
 	explicit TDenseMatrix(T* p, int nRows, int nCols) : mRows(nRows), mCols(nCols)
@@ -90,7 +91,7 @@ public:
 	TDenseVector<T>	GetRow(int i) const
 	{
 		TDenseVector<T> Ret(pData + i * mCols, mCols);
-		return Ret;
+		return std::move(Ret);
 	}
 
 	TDenseVector<T>	GetCol(int i) const
@@ -302,15 +303,32 @@ public:
 		return true;
 	}
 
+	// https://en.wikipedia.org/wiki/In-place_matrix_transposition
 	void		TransposeInPlace()
 	{
-		for (int i = 0; i < mRows; ++i)
-		for (int j = i + 1; j < mCols; ++j)
+		for (int i = 0; i < mRows * mCols; ++i)
 		{
-			T t = pData[i * mRows + j];
-			pData[i * mRows + j] = pData[j * mCols + i];
-			pData[j * mCols + i] = t;
+			int next = i;
+			int j = 0;
+			do
+			{
+				++j;
+				next = (next % mRows) * mCols + next / mRows;
+			} while (next > i);
+
+			if (next >= i && j != 1)
+			{
+				const T t = pData[i];
+				next = i;
+				do
+				{
+					j = (next % mRows) * mCols + next / mRows;
+					pData[next] = (j == i) ? t : pData[j];
+					next = j;
+				} while (next > i);
+			}
 		}
+		
 		std::swap(mRows, mCols);
 	}
 

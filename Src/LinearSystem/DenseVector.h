@@ -24,7 +24,8 @@ public:
 
 	explicit TDenseVector(const TDenseVector<T>& v) : mSize(v.mSize)
 	{
-		mData = v.mData;
+		if (!v.mData.empty())
+			mData = v.mData;
 		pData = &mData[0];
 	}
 

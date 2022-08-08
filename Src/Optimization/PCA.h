@@ -2,69 +2,110 @@
 
 #include "../LinearSystem/DenseMatrix.h"
 
-template<typename T>
+template<typename T, bool ColumnWise = true>
 class PrincipalComponentAnalysis
 {
 public:
 	void Fit(const TDenseMatrix<T>& Data)
 	{
-		int Dim = Data.GetRows();
-		Means.SetSize(Dim);
-
-		int n = Data.GetCols();
-		for (int i = 0; i < Dim; ++i)
-		{
-			const T *p = Data[i];
-			
-			Means[i] = 0;
-			for (int j = 0; j < n; ++j)
-			{
-				Means[i] += p[j];
-			}
-			Means[i] /= n;
-		}
+		int Dim, n;
 		
-		Covariance.SetSize(Dim, Dim);
+		if (ColumnWise)
+		{
+			Dim = Data.GetRows();
+			means.SetSize(Dim);
+
+			n = Data.GetCols();
+			for (int i = 0; i < Dim; ++i)
+			{
+				const T *p = Data[i];
+					
+				T sum = 0;
+				for (int j = 0; j < n; ++j)
+				{
+					sum += p[j];
+				}
+				means[i] = sum / n;
+			}
+		}
+		else
+		{
+			Dim = Data.GetCols();
+			means.SetSize(Dim);
+
+			means.LoadZero();
+			n = Data.GetRows();
+			for (int i = 0; i < n; ++i)
+			{
+				means += Data.GetRow(i);
+			}
+			means /= n;
+		}
+			
+		covariance.SetSize(Dim, Dim);
 		for (int i = 0; i < Dim; ++i)
 		for (int j = i; j < Dim; ++j)
 		{
-			const T *p = Data[i];
-			
+			const T *pi = Data[i];
+				
 			T sum = (T)0;
 			for (int k = 0; k < n; ++k)
 			{
-				sum += p[k] * Data[k][j];
+				sum += (pi[k] - means[i]) * (Data[k][j] - means[j]);
 			}
-			Covariance(i, j) = sum / n;
+			covariance(i, j) = sum / n;
 		}
+
 		for (int i = 0; i < Dim; ++i)
 		for (int j = 0; j < i; ++j)
 		{
-			Covariance(i, j) = Covariance(j, i);
+			covariance(i, j) = covariance(j, i);
 		}
 		
-		Covariance.EigenDecompose(Eigens, ComponentsMatrix);
+		covariance.EigenDecompose(eigens, componentsMatrix);
+		
+		if (!ColumnWise)
+			componentsMatrix.TransposeInPlace();
 	}
 	
 	void TopKComponents(int k)
 	{
 		// Sort ?
 		
-		for (int i = k; i < Eigens.GetSize(); ++i)
+		for (int i = k; i < eigens.GetSize(); ++i)
 		{
-			Eigens[i] = 0;
-			ComponentsMatrix.SetColZero(i);
+			eigens[i] = 0;
+			componentsMatrix.SetColZero(i);
 		}
 	}
 	
-	void Transform(DenseMatrix& src)
+	void Transform(TDenseMatrix<T>& src)
 	{
-		src = ComponentsMatrix * src;
+		if (ColumnWise)
+		{
+			src = componentsMatrix * src;
+		}
+		else
+		{
+			src = src * componentsMatrix;
+		}
+	}
+	
+	void Transform(TDenseVector<T>& src)
+	{
+		if (ColumnWise)
+		{
+			src = componentsMatrix * src;
+		}
+		else
+		{
+			src = src * componentsMatrix;
+		}
 	}
 	
 public:
-	TDenseVector<T> Means;
-	TDenseMatrix<T> Covariance;
-	TDenseVector<T> Eigens;
-	TDenseMatrix<T> ComponentsMatrix;
+	TDenseVector<T> means;
+	TDenseMatrix<T> covariance;
+	TDenseVector<T> eigens;
+	TDenseMatrix<T> componentsMatrix;
 };

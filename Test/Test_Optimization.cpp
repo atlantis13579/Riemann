@@ -226,10 +226,12 @@ void TestPCA()
 		Data(i, j) = RandomFloat(1.0f, 100.0f);
 	}
 	
-	PrincipalComponentAnalysis<float> pca;
+	Data.TransposeInPlace();
+	
+	PrincipalComponentAnalysis<float, 0> pca;
 	pca.Fit(Data);
 	
-	EXPECT(pca.ComponentsMatrix.GetSize() == 16);
+	EXPECT(pca.componentsMatrix.GetSize() == 16);
 	pca.TopKComponents(1);
 	pca.Transform(Data);
 	
