@@ -299,6 +299,48 @@ void TestQR()
 	return;
 }
 
+void TestEigen()
+{
+	printf("Running TestEigen\n");
+
+	TDenseMatrix<float> A(4, 4);
+	A[0][0] = 54.0f;
+	A[0][1] = 30.0f;
+	A[0][2] = 49.0f;
+	A[0][3] = 28.0f;
+
+	A[1][0] = 30.0f;
+	A[1][1] = 50.0f;
+	A[1][2] = 8.0f;
+	A[1][3] = 44.0f;
+
+	A[2][0] = 49.0f;
+	A[2][1] = 8.0f;
+	A[2][2] = 46.0f;
+	A[2][3] = 16.0f;
+
+	A[3][0] = 28.0f;
+	A[3][1] = 44.0f;
+	A[3][2] = 16.0f;
+	A[3][3] = 12.0f;
+
+	EXPECT(A.IsSymmetric());
+
+	TDenseVector<float> EigenValues;
+	TDenseMatrix<float> EigenVectors;
+	A.EigenDecompose(EigenValues, EigenVectors);
+
+	for (int i = 0; i < EigenVectors.GetCols(); ++i)
+	{
+		TDenseVector<float> v = EigenVectors.GetCol(i);
+		TDenseVector<float> Av = A * v;
+		TDenseVector<float> Ev = EigenValues[i] * v;
+		EXPECT(Av.FuzzyEqual(Ev, 0.001f));
+	}
+
+	return;
+}
+
 void TestMatrix()
 {
 	TestMatrix1();
@@ -310,4 +352,5 @@ void TestMatrix()
 	TestPseudoInverse();
 	TestPolarDecomp();
 	TestQR();
+	TestEigen();
 }

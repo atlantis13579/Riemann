@@ -8,21 +8,30 @@
 #include "../Maths/Maths.h"
 
 template<typename T>
-void gemm_sub(const T* mat1, const T* mat2, int r1, int c1, int c2, int i0, int i1, int j0, int j1, int k0, int k1, T* mat);
+void gemm_block(const T* mat1, const T* mat2, int r1, int c1, int c2, int i0, int i1, int j0, int j1, int k0, int k1, T* mat);
+
+template<typename T>
+void gemv_block(const T* mat1, const T* vec1, int r, int c, int i0, int i1, int k0, int k1, T* v);
+
+template<typename T>
+void gema_block(const T* mat1, const T* mat2, int r, int c, int i0, int i1, int j0, int j1, T* mat);
 
 template<typename T>
 void gemm(const T* mat1, const T* mat2, int r1, int c1, int c2, T* mat)
 {
-	gemm_sub(mat1, mat2, r1, c1, c2, 0, r1 - 1, 0, c1 - 1, 0, c2 - 1, mat);
+	gemm_block(mat1, mat2, r1, c1, c2, 0, r1 - 1, 0, c1 - 1, 0, c2 - 1, mat);
 }
-
-template<typename T>
-void gemv_sub(const T* mat1, const T* vec1, int r, int c, int i0, int i1, int k0, int k1, T* v);
 
 template<typename T>
 void gemv(const T* mat1, const T* vec1, int r, int c, T* v)
 {
-	gemv_sub(mat1, vec1, r, c, 0, r - 1, 0, c - 1, v);
+	gemv_block(mat1, vec1, r, c, 0, r - 1, 0, c - 1, v);
+}
+
+template<typename T>
+void gema(const T* mat1, const T* mat2, int r, int c, T* mat)
+{
+	gema_block(mat1, mat2, r, c, 0, r - 1, 0, c - 1, mat);
 }
 
 template<typename T>
@@ -190,7 +199,7 @@ public:
 
 	TDenseMatrix<T> operator+(const TDenseMatrix<T>& m) const
 	{
-		assert(GetCols() == m.GetCols()  && GetRows() == m.GetRows() );
+		assert(mCols == m.mCols && mRows == m.mRows);
 		TDenseMatrix<T> Ret(*this);
 		for (int i = 0; i < GetSize(); ++i)
 		{
@@ -201,7 +210,7 @@ public:
 
 	TDenseMatrix<T> operator-(const TDenseMatrix<T>& m) const
 	{
-		assert(GetCols() == m.GetCols()  && GetRows() == m.GetRows() );
+		assert(mCols == m.mCols && mRows == m.mRows);
 		TDenseMatrix<T> Ret(*this);
 		for (int i = 0; i < GetSize(); ++i)
 		{
@@ -224,7 +233,7 @@ public:
 	{
 		assert(mCols == m.mRows);
 		TDenseMatrix<T> Ret(mRows, m.mCols);
-		gemm<T>(GetData(), m.GetData(), mRows, mCols, m.mCols, Ret.GetData());
+		gemm<T>(pData, m.pData, mRows, mCols, m.mCols, Ret.pData);
 		return Ret;
 	}
 
@@ -232,7 +241,7 @@ public:
 	{
 		assert(mCols == v.GetSize());
 		TDenseVector<T> Ret(mRows);
-		gemv<T>(GetData(), v.GetData(), mRows, mCols, Ret.GetData());
+		gemv<T>(pData, v.GetData(), mRows, mCols, Ret.GetData());
 		return Ret;
 	}
 
@@ -248,7 +257,7 @@ public:
 
 	void		operator+= (const TDenseMatrix<T>& m)
 	{
-		assert(GetCols() == m.GetCols()  && GetRows() == m.GetRows());
+		assert(mCols == m.mCols && mRows == m.mRows);
 		for (int i = 0; i < GetSize(); ++i)
 		{
 			pData[i] += m.pData[i];
@@ -257,7 +266,7 @@ public:
 
 	void		operator-= (const TDenseMatrix<T>& m)
 	{
-		assert(GetCols() == m.GetCols()  && GetRows() == m.GetRows());
+		assert(mCols == m.mCols && mRows == m.mRows);
 		for (int i = 0; i < GetSize(); ++i)
 		{
 			pData[i] -= m.pData[i];
@@ -274,12 +283,17 @@ public:
 
 	void		SubAdd(const TDenseMatrix<T>& m, int i0, int i1, int j0, int j1)
 	{
-		assert(GetCols() == m.GetCols() && GetRows() == m.GetRows());
-		for (int i = i0; i <= i1; ++i)
-		for (int j = j0; j <= j1; ++j)
-		{
-			pData[i * mCols + j] += m.pData[i * mCols + j];
-		}
+		assert(mCols == m.mCols && mRows == m.mRows);
+		gema_block<T>(pData, m.pData, mRows, mCols, i0, i1, j0, j1, pData);
+	}
+
+	TDenseMatrix<T>	SubMultiply(const TDenseMatrix<T>& m, int i0, int i1, int j0, int j1, int k0, int k1)
+	{
+		assert(mCols == m.mRows);
+		TDenseMatrix<T> Ret(mRows, m.mCols);
+		Ret.LoadZero();
+		gemm_block<T>(pData, m.pData, mRows, mCols, m.mCols, i0, i1, j0, j1, k0, k1, Ret.pData);
+		return Ret;
 	}
 
 	bool		FuzzyEqual(const TDenseMatrix<T> &rhs, const T Eplison = (T)1e-6) const
@@ -367,6 +381,23 @@ public:
 				if (!::FuzzyEqual(dp, (T)0, Eplison))
 					return false;
 			}
+		}
+
+		return true;
+	}
+
+	bool		IsSymmetric(const T Eplison = (T)1e-3) const
+	{
+		if (!IsSquare())
+			return false;
+
+		for (int i = 0; i < mCols; ++i)
+		for (int j = i + 1; j < mCols; ++j)
+		{
+			const T& a = pData[i * mCols + j];
+			const T& b = pData[j * mCols + i];
+			if (!::FuzzyEqual(a, b, Eplison))
+				return false;
 		}
 
 		return true;
@@ -564,6 +595,9 @@ public:
 	// M = Q * R
 	void 	QRDecompose(TDenseMatrix<T>& Q, TDenseMatrix<T>& R) const;
 
+	// Get Eigen Values and EigenVectors as column vector
+	bool	EigenDecompose(TDenseVector<T>& EigenValues, TDenseMatrix<T>& EigenVectors) const;
+
 protected:
 	int				mRows;
 	int				mCols;
@@ -575,16 +609,6 @@ template <typename T>
 inline TDenseMatrix<T> operator* (T s, const TDenseMatrix<T>& m)
 {
 	return m * s;
-}
-
-template <typename T>
-TDenseMatrix<T>	SubMultiply(const TDenseMatrix<T>& m1, const TDenseMatrix<T>& m2, int i0, int i1, int j0, int j1, int k0, int k1)
-{
-	assert(m1.GetCols() == m2.GetRows());
-	TDenseMatrix<T> Ret(m1.GetRows(), m2.GetCols());
-	Ret.LoadZero();
-	gemm_sub<T>(m1.GetData(), m2.GetData(), m1.GetRows(), m1.GetCols(), m2.GetCols(), i0, i1, j0, j1, k0, k1, Ret.GetData());
-	return Ret;
 }
 
 using DenseMatrix = TDenseMatrix<float>;

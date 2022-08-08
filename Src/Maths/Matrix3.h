@@ -297,7 +297,7 @@ public:
 	void		Orthonormalize();
 	bool		PolarDecomposeUP(Matrix3& U, Matrix3& P) const;
 	bool		PolarDecomposeU(Matrix3& U) const;
-	void		QDUDecompose(Matrix3& rQ, Vector3& rD, Vector3& rU) const;
+	void		QDUDecompose(Matrix3& Q, Vector3& D, Vector3& U) const;
 	float		SpectralNorm() const;
 	void		TriDiagonal(float Diag[3], float SubDiag[3]);
 	bool		QRIteration(float Diag[3], float SubDiag[3]);

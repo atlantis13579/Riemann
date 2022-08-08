@@ -402,48 +402,31 @@ void Matrix3::Orthonormalize()
 	// product of vectors A and B.
 
 	// compute q0
-	float fInvLength = InvSqrt(mat[0][0] * mat[0][0]
-		+ mat[0][1] * mat[0][1] + mat[0][2] * mat[0][2]);
+	float fInvLength = InvSqrt(mat[0][0] * mat[0][0] + mat[0][1] * mat[0][1] + mat[0][2] * mat[0][2]);
 
 	mat[0][0] *= fInvLength;
 	mat[0][1] *= fInvLength;
 	mat[0][2] *= fInvLength;
 
 	// compute q1
-	float fDot0 =
-		mat[0][0] * mat[1][0] +
-		mat[0][1] * mat[1][1] +
-		mat[0][2] * mat[1][2];
+	float dp0 =	mat[0][0] * mat[1][0] +	mat[0][1] * mat[1][1] +	mat[0][2] * mat[1][2];
+	mat[1][0] -= dp0 * mat[0][0];
+	mat[1][1] -= dp0 * mat[0][1];
+	mat[1][2] -= dp0 * mat[0][2];
 
-	mat[1][0] -= fDot0 * mat[0][0];
-	mat[1][1] -= fDot0 * mat[0][1];
-	mat[1][2] -= fDot0 * mat[0][2];
-
-	fInvLength = InvSqrt(mat[1][0] * mat[1][0] +
-		mat[1][1] * mat[1][1] + mat[1][2] * mat[1][2]);
-
+	fInvLength = InvSqrt(mat[1][0] * mat[1][0] + mat[1][1] * mat[1][1] + mat[1][2] * mat[1][2]);
 	mat[0][1] *= fInvLength;
 	mat[1][1] *= fInvLength;
 	mat[2][1] *= fInvLength;
 
 	// q2 = (m2-(q0*m2)q0-(q1*m2)q1)/|m2-(q0*m2)q0-(q1*m2)q1|
-	float fDot1 =
-		mat[1][0] * mat[2][0] +
-		mat[1][1] * mat[2][1] +
-		mat[1][2] * mat[2][2];
+	float dp1 =	mat[1][0] * mat[2][0] +	mat[1][1] * mat[2][1] +	mat[1][2] * mat[2][2];
+	dp0 = mat[0][0] * mat[2][0] + mat[0][1] * mat[2][1] + mat[0][2] * mat[2][2];
+	mat[2][0] -= dp0 * mat[0][0] + dp1 * mat[1][0];
+	mat[2][1] -= dp0 * mat[0][1] + dp1 * mat[1][1];
+	mat[2][2] -= dp0 * mat[0][2] + dp1 * mat[1][2];
 
-	fDot0 =
-		mat[0][0] * mat[2][0] +
-		mat[0][1] * mat[2][1] +
-		mat[0][2] * mat[2][2];
-
-	mat[2][0] -= fDot0 * mat[0][0] + fDot1 * mat[1][0];
-	mat[2][1] -= fDot0 * mat[0][1] + fDot1 * mat[1][1];
-	mat[2][2] -= fDot0 * mat[0][2] + fDot1 * mat[1][2];
-
-	fInvLength = InvSqrt(mat[2][0] * mat[2][0] +
-		mat[2][1] * mat[2][1] + mat[2][2] * mat[2][2]);
-
+	fInvLength = InvSqrt(mat[2][0] * mat[2][0] + mat[2][1] * mat[2][1] + mat[2][2] * mat[2][2]);
 	mat[2][0] *= fInvLength;
 	mat[2][1] *= fInvLength;
 	mat[2][2] *= fInvLength;
@@ -601,7 +584,7 @@ bool Matrix3::PolarDecomposeUP(Matrix3& R, Matrix3& S) const
 	return true;
 }
 
-void Matrix3::QDUDecompose(Matrix3& rQ, Vector3& rD, Vector3& rU) const
+void Matrix3::QDUDecompose(Matrix3& Q, Vector3& D, Vector3& U) const
 {
 	// Factor M = QR = QDU where Q is orthogonal, D is diagonal,
 	// and U is upper triangular with ones on its diagonal.  Algorithm uses
@@ -631,77 +614,64 @@ void Matrix3::QDUDecompose(Matrix3& rQ, Vector3& rD, Vector3& rU) const
 	// U stores the entries U[0] = u01, U[1] = u02, U[2] = u12
 
 	// build orthogonal matrix Q
-	float fInvLength = InvSqrt(mat[0][0] * mat[0][0]
-		+ mat[1][0] * mat[1][0] +
-		mat[2][0] * mat[2][0]);
-	rQ[0][0] = mat[0][0] * fInvLength;
-	rQ[1][0] = mat[1][0] * fInvLength;
-	rQ[2][0] = mat[2][0] * fInvLength;
+	float fInvLength = InvSqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
+	Q[0][0] = mat[0][0] * fInvLength;
+	Q[1][0] = mat[1][0] * fInvLength;
+	Q[2][0] = mat[2][0] * fInvLength;
 
-	float fDot = rQ[0][0] * mat[0][1] + rQ[1][0] * mat[1][1] +
-		rQ[2][0] * mat[2][1];
-	rQ[0][1] = mat[0][1] - fDot * rQ[0][0];
-	rQ[1][1] = mat[1][1] - fDot * rQ[1][0];
-	rQ[2][1] = mat[2][1] - fDot * rQ[2][0];
-	fInvLength = InvSqrt(rQ[0][1] * rQ[0][1] + rQ[1][1] * rQ[1][1] +
-		rQ[2][1] * rQ[2][1]);
-	rQ[0][1] *= fInvLength;
-	rQ[1][1] *= fInvLength;
-	rQ[2][1] *= fInvLength;
+	float dp = Q[0][0] * mat[0][1] + Q[1][0] * mat[1][1] + Q[2][0] * mat[2][1];
+	Q[0][1] = mat[0][1] - dp * Q[0][0];
+	Q[1][1] = mat[1][1] - dp * Q[1][0];
+	Q[2][1] = mat[2][1] - dp * Q[2][0];
+	fInvLength = InvSqrt(Q[0][1] * Q[0][1] + Q[1][1] * Q[1][1] + Q[2][1] * Q[2][1]);
+	Q[0][1] *= fInvLength;
+	Q[1][1] *= fInvLength;
+	Q[2][1] *= fInvLength;
 
-	fDot = rQ[0][0] * mat[0][2] + rQ[1][0] * mat[1][2] +
-		rQ[2][0] * mat[2][2];
-	rQ[0][2] = mat[0][2] - fDot * rQ[0][0];
-	rQ[1][2] = mat[1][2] - fDot * rQ[1][0];
-	rQ[2][2] = mat[2][2] - fDot * rQ[2][0];
-	fDot = rQ[0][1] * mat[0][2] + rQ[1][1] * mat[1][2] +
-		rQ[2][1] * mat[2][2];
-	rQ[0][2] -= fDot * rQ[0][1];
-	rQ[1][2] -= fDot * rQ[1][1];
-	rQ[2][2] -= fDot * rQ[2][1];
-	fInvLength = InvSqrt(rQ[0][2] * rQ[0][2] + rQ[1][2] * rQ[1][2] +
-		rQ[2][2] * rQ[2][2]);
-	rQ[0][2] *= fInvLength;
-	rQ[1][2] *= fInvLength;
-	rQ[2][2] *= fInvLength;
+	dp = Q[0][0] * mat[0][2] + Q[1][0] * mat[1][2] + Q[2][0] * mat[2][2];
+	Q[0][2] = mat[0][2] - dp * Q[0][0];
+	Q[1][2] = mat[1][2] - dp * Q[1][0];
+	Q[2][2] = mat[2][2] - dp * Q[2][0];
+	dp = Q[0][1] * mat[0][2] + Q[1][1] * mat[1][2] + Q[2][1] * mat[2][2];
+	Q[0][2] -= dp * Q[0][1];
+	Q[1][2] -= dp * Q[1][1];
+	Q[2][2] -= dp * Q[2][1];
+	fInvLength = InvSqrt(Q[0][2] * Q[0][2] + Q[1][2] * Q[1][2] + Q[2][2] * Q[2][2]);
+	Q[0][2] *= fInvLength;
+	Q[1][2] *= fInvLength;
+	Q[2][2] *= fInvLength;
 
 	// guarantee that orthogonal matrix has determinant 1 (no reflections)
-	float fDet = rQ[0][0] * rQ[1][1] * rQ[2][2] + rQ[0][1] * rQ[1][2] * rQ[2][0] +
-		rQ[0][2] * rQ[1][0] * rQ[2][1] - rQ[0][2] * rQ[1][1] * rQ[2][0] -
-		rQ[0][1] * rQ[1][0] * rQ[2][2] - rQ[0][0] * rQ[1][2] * rQ[2][1];
+	float fDet = Q[0][0] * Q[1][1] * Q[2][2] + Q[0][1] * Q[1][2] * Q[2][0] +
+				Q[0][2] * Q[1][0] * Q[2][1] - Q[0][2] * Q[1][1] * Q[2][0] -
+				Q[0][1] * Q[1][0] * Q[2][2] - Q[0][0] * Q[1][2] * Q[2][1];
 
 	if (fDet < 0.0)
 	{
 		for (int iRow = 0; iRow < 3; ++iRow)
-			for (int iCol = 0; iCol < 3; ++iCol)
-				rQ[iRow][iCol] = -rQ[iRow][iCol];
+		for (int iCol = 0; iCol < 3; ++iCol)
+			Q[iRow][iCol] = -Q[iRow][iCol];
 	}
 
 	// build "right" matrix R
 	Matrix3 kR;
-	kR[0][0] = rQ[0][0] * mat[0][0] + rQ[1][0] * mat[1][0] +
-		rQ[2][0] * mat[2][0];
-	kR[0][1] = rQ[0][0] * mat[0][1] + rQ[1][0] * mat[1][1] +
-		rQ[2][0] * mat[2][1];
-	kR[1][1] = rQ[0][1] * mat[0][1] + rQ[1][1] * mat[1][1] +
-		rQ[2][1] * mat[2][1];
-	kR[0][2] = rQ[0][0] * mat[0][2] + rQ[1][0] * mat[1][2] +
-		rQ[2][0] * mat[2][2];
-	kR[1][2] = rQ[0][1] * mat[0][2] + rQ[1][1] * mat[1][2] +
-		rQ[2][1] * mat[2][2];
-	kR[2][2] = rQ[0][2] * mat[0][2] + rQ[1][2] * mat[1][2] +
-		rQ[2][2] * mat[2][2];
+	kR[0][0] = Q[0][0] * mat[0][0] + Q[1][0] * mat[1][0] + Q[2][0] * mat[2][0];
+	kR[0][1] = Q[0][0] * mat[0][1] + Q[1][0] * mat[1][1] + Q[2][0] * mat[2][1];
+	kR[1][1] = Q[0][1] * mat[0][1] + Q[1][1] * mat[1][1] + Q[2][1] * mat[2][1];
+	kR[0][2] = Q[0][0] * mat[0][2] + Q[1][0] * mat[1][2] + Q[2][0] * mat[2][2];
+	kR[1][2] = Q[0][1] * mat[0][2] + Q[1][1] * mat[1][2] + Q[2][1] * mat[2][2];
+	kR[2][2] = Q[0][2] * mat[0][2] + Q[1][2] * mat[1][2] + Q[2][2] * mat[2][2];
 
 	// the scaling component
-	rD[0] = kR[0][0];
-	rD[1] = kR[1][1];
-	rD[2] = kR[2][2];
+	D[0] = kR[0][0];
+	D[1] = kR[1][1];
+	D[2] = kR[2][2];
 
 	// the shear component
-	float fInvD0 = 1.0f / rD[0];
-	rU[0] = kR[0][1] * fInvD0;
-	rU[1] = kR[0][2] * fInvD0;
-	rU[2] = kR[1][2] / rD[1];
+	float fInvD0 = 1.0f / D[0];
+	U[0] = kR[0][1] * fInvD0;
+	U[1] = kR[0][2] * fInvD0;
+	U[2] = kR[1][2] / D[1];
 }
 
 // Spectral norm is for A^T*A, so characteristic polynomial
@@ -829,8 +799,7 @@ float Matrix3::ToAxisAngle(Vector3& Axis) const
 				if (mat[0][0] >= mat[2][2])
 				{
 					// r00 is maximum diagonal term
-					Axis.x = 0.5f * sqrtf(mat[0][0] -
-						mat[1][1] - mat[2][2] + 1.0f);
+					Axis.x = 0.5f * sqrtf(mat[0][0] - mat[1][1] - mat[2][2] + 1.0f);
 					fHalfInverse = 0.5f / Axis.x;
 					Axis.y = fHalfInverse * mat[0][1];
 					Axis.z = fHalfInverse * mat[0][2];
@@ -838,8 +807,7 @@ float Matrix3::ToAxisAngle(Vector3& Axis) const
 				else
 				{
 					// r22 is maximum diagonal term
-					Axis.z = 0.5f * sqrtf(mat[2][2] -
-						mat[0][0] - mat[1][1] + 1.0f);
+					Axis.z = 0.5f * sqrtf(mat[2][2] - mat[0][0] - mat[1][1] + 1.0f);
 					fHalfInverse = 0.5f / Axis.z;
 					Axis.x = fHalfInverse * mat[0][2];
 					Axis.y = fHalfInverse * mat[1][2];
@@ -851,8 +819,7 @@ float Matrix3::ToAxisAngle(Vector3& Axis) const
 				if (mat[1][1] >= mat[2][2])
 				{
 					// r11 is maximum diagonal term
-					Axis.y = 0.5f * sqrtf(mat[1][1] -
-						mat[0][0] - mat[2][2] + 1.0f);
+					Axis.y = 0.5f * sqrtf(mat[1][1] - mat[0][0] - mat[2][2] + 1.0f);
 					fHalfInverse = 0.5f / Axis.y;
 					Axis.x = fHalfInverse * mat[0][1];
 					Axis.z = fHalfInverse * mat[1][2];
@@ -860,8 +827,7 @@ float Matrix3::ToAxisAngle(Vector3& Axis) const
 				else
 				{
 					// r22 is maximum diagonal term
-					Axis.z = 0.5f * sqrtf(mat[2][2] -
-						mat[0][0] - mat[1][1] + 1.0f);
+					Axis.z = 0.5f * sqrtf(mat[2][2] - mat[0][0] - mat[1][1] + 1.0f);
 					fHalfInverse = 0.5f / Axis.z;
 					Axis.x = fHalfInverse * mat[0][2];
 					Axis.y = fHalfInverse * mat[1][2];
@@ -1001,8 +967,7 @@ bool Matrix3::QRIteration(float Diag[3], float SubDiag[3])
 			int i1;
 			for (i1 = i0; i1 <= 1; ++i1)
 			{
-				float sum = fabsf(Diag[i1]) +
-					fabsf(Diag[i1 + 1]);
+				float sum = fabsf(Diag[i1]) + fabsf(Diag[i1 + 1]);
 				if (fabsf(SubDiag[i1]) + sum == sum)
 					break;
 			}
@@ -1070,20 +1035,20 @@ bool Matrix3::QRIteration(float Diag[3], float SubDiag[3])
 
 void Matrix3::SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const
 {
-	Matrix3 kMatrix = *this;
+	Matrix3 t = *this;
 	float SubDiag[3];
-	kMatrix.TriDiagonal(EigenValue, SubDiag);
-	kMatrix.QRIteration(EigenValue, SubDiag);
+	t.TriDiagonal(EigenValue, SubDiag);
+	t.QRIteration(EigenValue, SubDiag);
 
 	for (int i = 0; i < 3; ++i)
 	{
-		EigenVector[i][0] = kMatrix[0][i];
-		EigenVector[i][1] = kMatrix[1][i];
-		EigenVector[i][2] = kMatrix[2][i];
+		EigenVector[i][0] = t[0][i];
+		EigenVector[i][1] = t[1][i];
+		EigenVector[i][2] = t[2][i];
 	}
 
-	Vector3 kCross = EigenVector[1].Cross(EigenVector[2]);
-	float Det = EigenVector[0].Dot(kCross);
+	Vector3 cross = EigenVector[1].Cross(EigenVector[2]);
+	float Det = EigenVector[0].Dot(cross);
 	if (Det < 0.0)
 	{
 		EigenVector[2][0] = -EigenVector[2][0];

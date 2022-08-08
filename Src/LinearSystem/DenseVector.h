@@ -395,7 +395,7 @@ public:
 		return std::move(Ret);
 	}
 
-	bool		FuzzyEqual(const TDenseVector<T>& rhs, T Eps) const
+	bool		FuzzyEqual(const TDenseVector<T>& rhs, const T Eps = (T)1e-6f) const
 	{
 		if (GetSize() != rhs.GetSize())
 			return false;
@@ -482,5 +482,11 @@ private:
 	std::vector<T>	mData;
 	T* 				pData;
 };
+
+template <typename T>
+inline TDenseVector<T> operator* (T s, const TDenseVector<T>& v)
+{
+	return v * s;
+}
 
 using DenseVector = TDenseVector<float>;

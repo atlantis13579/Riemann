@@ -20,63 +20,78 @@ public:
 	}
 
 private:
-	static void compute_householder(const T* pA, T* pQ, T *pR, int m, int n)
+	static void compute_householder(const T* A, T* Q, T *R, int m, int n)
 	{
-		TDenseMatrix<T> Q(m, m), R(m, n), H(m, m);
-		TDenseVector<T> V(m);
-		Q.LoadIdentity();
-		memcpy(R.GetData(), pA, sizeof(T) * m * n);
+		int max_dim = m > n ? m : n;
+
+		T* buf = new T[m * m + m + max_dim * max_dim];
+
+		T* H = buf;
+		T* v = H + m * m;
+		T* buffer = H + m * m + m;
+
+		memset(Q, 0, sizeof(T) * m * m);
+		for (int i = 0; i < m; ++i)
+		{
+			Q[i * m + i] = (T)1;
+		}
+
+		memcpy(R, A, sizeof(T) * m * n);
 
 		for (int i = 0; i < n; ++i)
 		{
 			for (int j = 0; j < m - i; ++j)
 			{
-				V[j] = R[j + i][i];
+				v[j] = R[(j + i) * n + i];
 			}
-			T L = Norm(V.GetData(), m - i);
+			T L = compute_norm(v, m - i);
 
-			V[0] += V[0] > 0 ? L : -L;
-			L = Norm(V.GetData(), m - i);
+			v[0] += v[0] > 0 ? L : -L;
+			L = compute_norm(v, m - i);
 
-			for (int p = 0; p < m-i; p++) {
-				V[p] /= L;
+			for (int p = 0; p < m-i; p++)
+			{
+				v[p] /= L;
 			}
 
-			H.LoadZero();
+			memset(H, 0, sizeof(T) * m * m);
 			for (int r = i; r < m; ++r)
 			for (int c = i; c < m; ++c)
 			{
-				H[r][c] = - 2 * V[r - i] * V[c - i];
+				H[r*m+c] = - 2 * v[r - i] * v[c - i];
 			}
 
 			// R += H * R;
+			gemm_block<T>(H, R, m, m, n, i, m - 1, 0, m - 1, 0, n - 1, buffer);
+			gema_block<T>(R, buffer, m, n, i, m - 1, 0, n - 1, R);
+
 			// Q += Q * H;
-			R.SubAdd(SubMultiply(H, R, i, m - 1, 0, m - 1, 0, n - 1), i, m - 1, 0, n - 1);
-			Q.SubAdd(SubMultiply(Q, H, 0, m - 1, i, m - 1, i, m - 1), 0, m - 1, i, m - 1);
+			gemm_block<T>(Q, H, m, m, m, 0, m - 1, i, m - 1, i, m - 1, buffer);
+			gema_block<T>(Q, buffer, m, n, 0, m - 1, i, m - 1, Q);
 		}
 
 		for (int c = 0; c < n; ++c)
 		{
-			if (R[c][c] < 0)
+			if (R[c*n+c] < 0)
 			{
 				for (int r = 0; r < n; ++r)
 				{
-					R[c][r] = -R[c][r];
-					Q[r][c] = -Q[r][c];
+					R[c*n+r] = -R[c*n+r];
+					Q[r*m+c] = -Q[r*m+c];
 				}
 				for (int r = n; r < m; ++r)
 				{
-					Q[r][c] = -Q[r][c];
+					Q[r*m+c] = -Q[r*m+c];
 				}
 			}
 		}
 
-		TDenseMatrix<T>(pQ, m, m).Assign(Q);
-		TDenseMatrix<T>(pR, m, n).Assign(R);
+		delete []buf;
+
 		return;
 	}
 
-	static T Norm(T* v, int k)
+	static T compute_norm(T* v, int k)
 	{
 		T sum = (T)0;
 		for (int i = 0; i < k; i++) {
