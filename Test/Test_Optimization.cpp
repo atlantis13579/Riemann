@@ -226,9 +226,7 @@ void TestPCA()
 		Data(i, j) = RandomFloat(1.0f, 100.0f);
 	}
 	
-	Data.TransposeInPlace();
-	
-	PrincipalComponentAnalysis<float, 0> pca;
+	PrincipalComponentAnalysis<float> pca;
 	pca.Fit(Data);
 	
 	EXPECT(pca.componentsMatrix.GetSize() == 16);
