@@ -55,7 +55,7 @@ public:
 	TVectorN<T, COLS>	GetRow(int i) const
 	{
 		TVectorN<T, COLS> Ret;
-		memcpy(*Ret, mData + i * COLS, sizeof(T) * COLS);
+		memcpy(Ret.Data(), mData + i * COLS, sizeof(T) * COLS);
 		return Ret;
 	}
 
@@ -69,12 +69,12 @@ public:
 		return Ret;
 	}
 
-	inline const T* operator*() const
+	inline const T* Data() const
 	{
 		return mData;
 	}
 
-	inline T* operator*()
+	inline T* Data()
 	{
 		return mData;
 	}
@@ -139,8 +139,8 @@ public:
 	TMatrixMxN<T, ROWS, COLS2>	operator*(const TMatrixMxN<T, COLS, COLS2>& v) const
 	{
 		TMatrixMxN<T, ROWS, COLS2> Ret;
-		T* pm = *Ret;
-		const T* pv = *v;
+		T* pm = Ret.Data();
+		const T* pv = v.Data();
 		for (int i = 0; i < ROWS; ++i)
 		for (int j = 0; j < COLS2; ++j)
 		{
@@ -156,8 +156,8 @@ public:
 	TVectorN<T, ROWS>			operator*(const TVectorN<T, COLS>& v) const
 	{
 		TVectorN<T, ROWS> Ret;
-		T* pm = *Ret;
-		const T* pv = *v;
+		T* pm = Ret.Data();
+		const T* pv = v.Data();
 		for (int i = 0; i < ROWS; ++i)
 		{
 			T dp = (T)0;
@@ -286,13 +286,13 @@ public:
 	DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
 	bool				GetInverse(TMatrixMxN<T, ROWS, ROWS>& InvM) const
 	{
-		return GaussianElimination<T>()(mData, ROWS, *InvM, nullptr);
+		return GaussianElimination<T>()(mData, ROWS, InvM.Data(), nullptr);
 	}
 
 	TMatrixMxN<T, COLS, ROWS>	Transpose() const
 	{
 		TMatrixMxN<T, COLS, ROWS> Ret;
-		T* p = *Ret;
+		T* p = Ret.Data();
 		for (int i = 0; i < ROWS; ++i)
 		for (int j = 0; j < COLS; ++j)
 		{

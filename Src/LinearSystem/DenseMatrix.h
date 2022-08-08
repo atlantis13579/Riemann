@@ -251,18 +251,35 @@ public:
 		std::swap(mRows, mCols);
 	}
 
+	T			DotProductRow(int i, int j) const
+	{
+		T sum = (T)0;
+		T* pi = pData + i * mCols;
+		T* pj = pData + j * mCols;
+		for (int k = 0; k < mCols; ++k)
+		{
+			sum += pi[k] * pj[k];
+		}
+		return sum;
+	}
+
+	T			DotProductCol(int i, int j) const
+	{
+		T sum = (T)0;
+		for (int k = 0; k < mRows; ++k)
+		{
+			sum += pData[k * mCols + i] * pData[k * mCols + j];
+		}
+		return sum;
+	}
+
 	TDenseMatrix<T>		CoProduct() const		// X^T * X
 	{
 		TDenseMatrix<T> Ret(mCols, mCols);
 		for (int i = 0; i < mCols; ++i)
 		for (int j = i; j < mCols; ++j)
 		{
-			T sum = (T)0;
-			for (int k = 0; k < mRows; ++k)
-			{
-				sum += pData[k * mCols + i] * pData[k * mCols + j];
-			}
-			Ret(i, j) = sum;
+			Ret(i, j) = DotProductCol(i, j);
 		}
 		for (int i = 0; i < mCols; ++i)
 		for (int j = 0; j < i; ++j)
@@ -270,6 +287,60 @@ public:
 			Ret(i, j) = Ret(j, i);
 		}
 		return std::move(Ret);
+	}
+
+	bool		IsOrthogonal(const T Eplison = (T)1e-6) const
+	{
+		if (!IsSquare())
+			return false;
+
+		for (int i = 0; i < mCols; ++i)
+		for (int j = i; j < mCols; ++j)
+		{
+			T dp = DotProductCol(i, j);
+			if (i == j)
+			{
+				if (!FuzzyEqual(dp, (T)1, Eplison))
+					return false;
+			}
+			else
+			{
+				if (!FuzzyEqual(dp, (T)0, Eplison))
+					return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool		IsUpperTriangle(const T Eplison = (T)1e-6) const
+	{
+		if (!IsSquare())
+			return false;
+
+		for (int i = 0; i < mRows; ++i)
+		for (int j = 0; j < i; ++j)
+		{
+			T a = mData[i * mRows + j];
+			if (!FuzzyEqual(a, (T)0, Eplison))
+				return false;
+		}
+		return true;
+	}
+
+	bool		IsLowerTriangle(const T Eplison = (T)1e-6) const
+	{
+		if (IsSquare())
+			return false;
+
+		for (int i = 0; i < mRows; ++i)
+		for (int j = i + 1; j < mRows; ++j)
+		{
+			T a = mData[i * mRows + j];
+			if (!FuzzyEqual(a, (T)0, Eplison))
+				return false;
+		}
+		return true;
 	}
 
 	void		LoadZero()
@@ -316,7 +387,7 @@ public:
 		return true;
 	}
 
-	bool		IsIdentity(float Eplison = 1e-6f) const
+	bool		IsIdentity(const T Eplison = (T)1e-6) const
 	{
 		if (!IsSquare())
 		{
@@ -366,7 +437,7 @@ public:
 		return std::move(InvM);
 	}
 	
-	bool			GetInverse(TDenseMatrix<T>& InvM) const;
+	bool		GetInverse(TDenseMatrix<T>& InvM) const;
 
 	TDenseMatrix<T> PseudoInverse() const
 	{
@@ -376,7 +447,7 @@ public:
 		return pinv;
 	}
 	
-	bool			GetPseudoInverse(TDenseMatrix<T>& pinv) const;
+	bool		GetPseudoInverse(TDenseMatrix<T>& pinv) const;
 	
 	TDenseMatrix<T>	Transpose() const
 	{
@@ -404,7 +475,7 @@ public:
 		}
 		return maxVal;
 	}
-	
+
 	// M = U * S * V^T
 	bool 	SingularValueDecompose(TDenseMatrix<T> &U, TDenseVector<T> &S, TDenseMatrix<T> &V) const;
 	

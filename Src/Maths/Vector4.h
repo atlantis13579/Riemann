@@ -57,7 +57,7 @@ public:
 		return TVector3<T>(x, y, z);
 	}
 
-	inline T    Dot(const TVector4<T>& v) const
+	inline T Dot(const TVector4<T>& v) const
 	{
 		return x * v.x + y * v.y + z * v.z + w * v.w;
 	}
@@ -77,12 +77,12 @@ public:
 		w /= m;
 	}
 
-	T    Length() const
+	inline T Length() const
 	{
 		return sqrtf(x * x + y * y + z * z + w * w);
 	}
 
-	T    SquareLength() const
+	inline T SquareLength() const
 	{
 		return x * x + y * y + z * z + w * w;
 	}
@@ -92,7 +92,7 @@ public:
 		return TVector4<T>(std::abs(x), std::abs(y), std::abs(z), std::abs(w));
 	}
 
-	TVector4<T>& operator=(const TVector4<T>& v)
+	inline TVector4<T>& operator=(const TVector4<T>& v)
 	{
 		x = v.x;
 		y = v.y;
@@ -101,37 +101,37 @@ public:
 		return *this;
 	}
 
-	TVector4<T> operator+(const TVector4<T>& v) const
+	inline TVector4<T> operator+(const TVector4<T>& v) const
 	{
 		return TVector4<T>(x + v.x, y + v.y, z + v.z, w + v.w);
 	}
 
-	TVector4<T> operator-(const TVector4<T>& v) const
+	inline TVector4<T> operator-(const TVector4<T>& v) const
 	{
 		return TVector4<T>(x - v.x, y - v.y, z - v.z, w - v.w);
 	}
 
-	TVector4<T> operator*(const TVector4<T>& v) const
+	inline TVector4<T> operator*(const TVector4<T>& v) const
 	{
 		return TVector4<T>(x * v.x, y * v.y, z * v.z, w * v.w);
 	}
 
-	TVector4<T> operator*(T k) const
+	inline TVector4<T> operator*(T k) const
 	{
 		return TVector4<T>(x * k, y * k, z * k, w * k);
 	}
 
-	TVector4<T> operator/(T k) const
+	inline TVector4<T> operator/(T k) const
 	{
 		return TVector4<T>(x / k, y / k, z / k, w / k);
 	}
 
-	TVector4<T> operator-()
+	inline TVector4<T> operator-()
 	{
 		return TVector4<T>(-x, -y, -z, -w);
 	}
 
-	void	 operator+= (const TVector4<T>& v)
+	inline void	operator+= (const TVector4<T>& v)
 	{
 		x += v.x;
 		y += v.y;
@@ -139,7 +139,7 @@ public:
 		w += v.w;
 	}
 
-	void	 operator-= (const TVector4<T>& v)
+	inline void	operator-= (const TVector4<T>& v)
 	{
 		x -= v.x;
 		y -= v.y;
@@ -147,7 +147,7 @@ public:
 		w -= v.w;
 	}
 
-	void	 operator*= (const TVector4<T>& v)
+	inline void	operator*= (const TVector4<T>& v)
 	{
 		x *= v.x;
 		y *= v.y;
@@ -155,7 +155,7 @@ public:
 		w *= v.w;
 	}
 
-	void	 operator/= (const TVector4<T>& v)
+	inline void	operator/= (const TVector4<T>& v)
 	{
 		x /= v.x;
 		y /= v.y;
@@ -163,7 +163,7 @@ public:
 		w /= v.w;
 	}
 
-	void	 operator*= (T k)
+	inline void	operator*= (T k)
 	{
 		x *= k;
 		y *= k;
@@ -171,7 +171,7 @@ public:
 		w *= k;
 	}
 
-	void	 operator/= (T k)
+	inline void	operator/= (T k)
 	{
 		x /= k;
 		y /= k;
@@ -179,54 +179,64 @@ public:
 		w /= k;
 	}
 
-	bool	operator> (T k) const
+	inline bool	operator> (T k) const
 	{
 		return x > k && y > k && z > k && w > k;
 	}
 
-	bool	operator>= (T k) const
+	inline bool	operator>= (T k) const
 	{
 		return x >= k && y >= k && z >= k && w >= k;
 	}
 
-	bool	operator< (T k) const
+	inline bool	operator< (T k) const
 	{
 		return x < k&& y < k&& z < k && w < k;
 	}
 
-	bool	operator<= (T k) const
+	inline bool	operator<= (T k) const
 	{
 		return x <= k && y <= k && z <= k && w <= k;
 	}
 
-	bool	operator> (const TVector4<T>& rhs) const
+	inline bool	operator> (const TVector4<T>& rhs) const
 	{
 		return x > rhs.x && y > rhs.y && z > rhs.z && w > rhs.w;
 	}
 
-	bool	operator>= (const TVector4<T>& rhs) const
+	inline bool	operator>= (const TVector4<T>& rhs) const
 	{
 		return x >= rhs.x && y >= rhs.y && z >= rhs.z && w >= rhs.w;
 	}
 
-	bool	operator< (const TVector4<T>& rhs) const
+	inline bool	operator< (const TVector4<T>& rhs) const
 	{
 		return x < rhs.x&& y < rhs.y&& z < rhs.z && w < rhs.w;
 	}
 
-	bool	operator<= (const TVector4<T>& rhs) const
+	inline bool	operator<= (const TVector4<T>& rhs) const
 	{
 		return x <= rhs.x && y <= rhs.y && z <= rhs.z && w <= rhs.w;
 	}
 
-	bool	operator==(const TVector4<T>& rhs) const
+	inline bool	operator==(const TVector4<T>& rhs) const
 	{
 		return x == rhs.x && y == rhs.y && z == rhs.z && w == rhs.w;
 	}
 
-	bool	operator!=(const TVector4<T>& rhs) const
+	inline bool	operator!=(const TVector4<T>& rhs) const
 	{
 		return x != rhs.x || y != rhs.y || z != rhs.z || w != rhs.w;
+	}
+
+	inline const T* Data() const
+	{
+		return &x;
+	}
+
+	inline T* Data()
+	{
+		return &x;
 	}
 
 	inline T operator[](int i) const

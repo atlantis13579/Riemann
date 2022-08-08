@@ -4,6 +4,8 @@
 #include "DenseMatrix.h"
 #include "SingularValueDecomposition.h"
 
+// https://en.wikipedia.org/wiki/Polar_decomposition
+
 template<typename T>
 class PolarDecomposition
 {

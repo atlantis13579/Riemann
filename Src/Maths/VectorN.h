@@ -35,12 +35,12 @@ public:
 		memcpy(mData, v.mData, sizeof(T) * SIZE);
 	}
 
-	inline const T* operator*() const
+	inline const T* Data() const
 	{
 		return mData;
 	}
 
-	inline T* operator*()
+	inline T* Data()
 	{
 		return mData;
 	}

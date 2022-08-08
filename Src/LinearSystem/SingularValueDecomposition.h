@@ -129,7 +129,7 @@ private:
 				for (j = l; j < n; j++)
 					v[i*n+j] = v[j*n+i] = 0.0;
 			}
-			v[i*n+i] = 1.0;
+			v[i*n+i] = (T)1;
 			g = rv1[i];
 			l = i;
 		}
@@ -144,7 +144,7 @@ private:
 					a[i*n+j] = 0.0;
 			if (g)
 			{
-				g = 1.0 / g;
+				g = (T)1 / g;
 				if (i != n - 1)
 				{
 					for (j = l; j < n; j++)
@@ -196,7 +196,7 @@ private:
 							g = w[i];
 							h = PYTHAG(f, g);
 							w[i] = h;
-							h = 1.0 / h;
+							h = (T)1 / h;
 							c = g * h;
 							s = - f * h;
 							for (j = 0; j < m; j++)
@@ -232,8 +232,8 @@ private:
 				y = w[nm];
 				g = rv1[nm];
 				h = rv1[k];
-				f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2.0 * h * y);
-				g = PYTHAG(f, 1.0);
+				f = ((y - z) * (y + z) + (g - h) * (g + h)) / ((T)2 * h * y);
+				g = PYTHAG(f, (T)1);
 				f = ((x - z) * (x + z) + h * ((y / (f + SIGN(g, f))) - h)) / x;
 			  
 				// next QR transformation
@@ -264,7 +264,7 @@ private:
 					w[j] = z;
 					if (z)
 					{
-						z = 1.0 / z;
+						z = (T)1 / z;
 						c = f * z;
 						s = h * z;
 					}
@@ -305,8 +305,8 @@ private:
 	static T PYTHAG(T a, T b)
 	{
 		T at = fabs(a), bt = fabs(b), ct, result;
-		if (at > bt) { ct = bt / at; result = at * sqrt(1.0 + ct * ct); }
-		else if (bt > 0) { ct = at / bt; result = bt * sqrt(1.0 + ct * ct); }
+		if (at > bt) { ct = bt / at; result = at * sqrt((T)1 + ct * ct); }
+		else if (bt > 0) { ct = at / bt; result = bt * sqrt((T)1 + ct * ct); }
 		else result = 0;
 		return(result);
 	}

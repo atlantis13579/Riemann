@@ -188,18 +188,23 @@ void TestSVD()
 	A[2][1] = -10.0f;
 	A[2][2] = 160.1f;
 	
-	Vector3 s;
-	Matrix3 u, v;
-	A.SingularValueDecompose(u, s, v);
-	Matrix3 AA = u * Matrix3(s) * v.Transpose();
+	Vector3 s1;
+	Matrix3 u1, v1;
+	A.SingularValueDecompose(u1, s1, v1);
+	Matrix3 AA = u1 * Matrix3(s1) * v1.Transpose();
 	
 	Vector3 s2;
 	Matrix3 u2, v2;
-	SingularValueDecomposition<float>()((const float*)&A, 3, 3, (float*)&u2, (float*)&s2, (float*)&v2);
+	SingularValueDecomposition<float>()(A.Data(), 3, 3, u2.Data(), s2.Data(), v2.Data());
 	Matrix3 AA2 = u2 * Matrix3(s2) * v2.Transpose();
 	
 	float me1 = sqrtf((AA - A).L2Norm() / 9);
 	float me2 = sqrtf((AA2 - A).L2Norm() / 9);
+
+	EXPECT(DenseMatrix(u1.Data(), 3, 3).IsOrthogonal(0.05f));	// the algorithm is not good
+	EXPECT(DenseMatrix(v1.Data(), 3, 3).IsOrthogonal(0.05f));	// the algorithm is not good
+	EXPECT(DenseMatrix(u2.Data(), 3, 3).IsOrthogonal());
+	EXPECT(DenseMatrix(v2.Data(), 3, 3).IsOrthogonal());
 
 	EXPECT(me1 < 3.0f);		// the algorithm is not good
 	EXPECT(me2 < 0.1f);

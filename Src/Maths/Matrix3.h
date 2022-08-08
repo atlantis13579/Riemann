@@ -156,6 +156,16 @@ public:
 		return row[i];
 	}
 
+	inline const float* Data() const
+	{
+		return mat[0];
+	}
+
+	inline float* Data()
+	{
+		return mat[0];
+	}
+
 	inline const Vector3& Row(int i) const
 	{
 		const Vector3 *row = static_cast<const Vector3*>((const void*)mat);

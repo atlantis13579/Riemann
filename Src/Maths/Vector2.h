@@ -186,6 +186,16 @@ public:
 		return x != rhs.x || y != rhs.y;
 	}
 
+	inline const T* Data() const
+	{
+		return &x;
+	}
+
+	inline T* Data()
+	{
+		return &x;
+	}
+
 	inline T operator[](int i) const
 	{
 		const T* p = (const T*)this;

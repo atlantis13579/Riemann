@@ -103,6 +103,16 @@ public:
 		return *this;
 	}
 
+	inline const float* Data() const
+	{
+		return mat[0];
+	}
+
+	inline float* Data()
+	{
+		return mat[0];
+	}
+
 	inline float operator()(int i, int j) const
 	{
 		return mat[i][j];
