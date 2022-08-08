@@ -123,7 +123,7 @@ public:
 		for (int i = k; i < eigens.GetSize(); ++i)
 		{
 			eigens[i] = 0;
-			componentsMatrix.SetColZero(i);
+			componentsMatrix.SetRowZero(i);
 		}
 	}
 	
