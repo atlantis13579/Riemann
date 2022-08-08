@@ -183,7 +183,7 @@ public:
 		float l1_norm = 0.0f;
 		const float* p = (const float *)this;
 		for (int i = 0; i < 9; ++i)
-			l1_norm += fabs(p[i]);
+			l1_norm += fabsf(p[i]);
 		return l1_norm;
 	}
 

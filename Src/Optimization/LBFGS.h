@@ -1749,6 +1749,7 @@ public:
 	{
 		status = 0;
 		iterations = 0;
+		mse = 0;
 	}
 
 	lbfgsfloatval_t Minimize(LBFGSEvalFunction<lbfgsfloatval_t>* func, int Dim)
@@ -1779,6 +1780,7 @@ private:
 	bool _solve(LBFGSEvalFunction<lbfgsfloatval_t>* func, lbfgsfloatval_t* init_x, int Dim, lbfgsfloatval_t * min_f)
 	{
 		iterations = 0;
+		mse = 0;
 		LBFGSInstance<lbfgsfloatval_t> instance;
 		instance.eval = func;
 		instance.minimizer = this;
@@ -1808,11 +1810,14 @@ private:
 	)
 	{
 		LBFGSInstance<lbfgsfloatval_t>* p = static_cast<LBFGSInstance<lbfgsfloatval_t>*>(instance);
-		((LBFGSMinimizer<lbfgsfloatval_t>*)p->minimizer)->iterations = k;
+		LBFGSMinimizer<lbfgsfloatval_t>* minimizer = ((LBFGSMinimizer<lbfgsfloatval_t>*)p->minimizer);
+		minimizer->iterations = k;
+		minimizer->mse = xnorm;
 		return 0;
 	}
 
 public:
 	int status;
 	int iterations;
+	lbfgsfloatval_t mse;
 };

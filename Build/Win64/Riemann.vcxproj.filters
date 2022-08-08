@@ -117,17 +117,8 @@
     <ClInclude Include="..\..\Src\Geometry\DenseTensorField3d.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\DenseMatrix.h">
-      <Filter>LinearSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\DenseVector.h">
-      <Filter>LinearSystem</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Collision\DynamicAABBTree.h">
       <Filter>Collision</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\EigenValueDecomposition.h">
-      <Filter>LinearSystem</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Collision\EPAPenetration.h">
       <Filter>Collision</Filter>
@@ -149,9 +140,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Maths\Frustum.h">
       <Filter>Maths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\GaussSeidelIteration.h">
-      <Filter>LinearSystem</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Destruction\GeometryCollection.h">
       <Filter>Destruction</Filter>
@@ -182,9 +170,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Jacobian.h">
       <Filter>RigidBodyDynamics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\JacobiIteration.h">
-      <Filter>LinearSystem</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\KeyFrameAnimation.h">
       <Filter>RigidBodyDynamics</Filter>
@@ -234,9 +219,6 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\Mesh.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\LUFactorization.h">
-      <Filter>LinearSystem</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\CollisionPrimitive\MeshBVH4.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
@@ -282,9 +264,6 @@
     <ClInclude Include="..\..\Src\Physics2d\Point2d.h">
       <Filter>Physics2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\PolarDecomposition.h">
-      <Filter>LinearSystem</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\Polygon2d.h">
       <Filter>Geometry</Filter>
     </ClInclude>
@@ -293,9 +272,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\PositionBasedDynamics\PositionBasedDynamicsSolver.h">
       <Filter>PositionBasedDynamics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\ProjectedGaussSeidel.h">
-      <Filter>LinearSystem</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h">
       <Filter>Solver</Filter>
@@ -354,14 +330,8 @@
     <ClInclude Include="..\..\Src\Collision\Simplex.h">
       <Filter>Collision</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\SingularValueDecomposition.h">
-      <Filter>LinearSystem</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Solver\SparseConjugateGradientSolver.h">
       <Filter>Solver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\SparseMatrix.h">
-      <Filter>LinearSystem</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Collision\SparseSpatialHash.h">
       <Filter>Collision</Filter>
@@ -480,23 +450,62 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PositionConstraint.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Optimization\ConvexFunctions.h">
-      <Filter>Optimization</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Optimization\NonConvexFunctions.h">
-      <Filter>Optimization</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Optimization\QuadraticProgramming.h">
       <Filter>Optimization</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Optimization\GradientDescent.h">
       <Filter>Optimization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\LinearSystem\PseudoInverse.h">
+    <ClInclude Include="..\..\Src\LinearSystem\CholeskyDecomposition.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\DenseMatrix.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\DenseVector.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\EigenValueDecomposition.h">
       <Filter>LinearSystem</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\LinearSystem\GaussianElimination.h">
       <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\GaussSeidelIteration.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\JacobiIteration.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\LUFactorization.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\MoorePenrosePseudoInverse.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\PolarDecomposition.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\ProjectedGaussSeidel.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\QRDecomposition.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\SingularValueDecomposition.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\SparseMatrix.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\SparseVector.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Optimization\PolynomialFit.h">
+      <Filter>Optimization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Optimization\SpecialFunctions.h">
+      <Filter>Optimization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -530,17 +539,8 @@
     <ClCompile Include="..\..\Src\Geometry\ConvexHull3d.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\LinearSystem\DenseMatrix.cpp">
-      <Filter>LinearSystem</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\LinearSystem\DenseVector.cpp">
-      <Filter>LinearSystem</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Collision\DynamicAABBTree.cpp">
       <Filter>Collision</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\LinearSystem\EigenValueDecomposition.cpp">
-      <Filter>LinearSystem</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Continuum\FEMSolver.cpp">
       <Filter>Continuum</Filter>
@@ -550,9 +550,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Destruction\Fracture.cpp">
       <Filter>Destruction</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\LinearSystem\GaussSeidelIteration.cpp">
-      <Filter>LinearSystem</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Destruction\GeometryCollection.cpp">
       <Filter>Destruction</Filter>
@@ -574,9 +571,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Jacobian.cpp">
       <Filter>RigidBodyDynamics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\LinearSystem\JacobiIteration.cpp">
-      <Filter>LinearSystem</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\KeyFrameAnimation.cpp">
       <Filter>RigidBodyDynamics</Filter>
@@ -620,9 +614,6 @@
     <ClCompile Include="..\..\Src\Destruction\PlanarCut.cpp">
       <Filter>Destruction</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\LinearSystem\PolarDecomposition.cpp">
-      <Filter>LinearSystem</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\Polygon2d.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
@@ -631,9 +622,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\PositionBasedDynamics\PositionBasedDynamicsSolver.cpp">
       <Filter>PositionBasedDynamics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\LinearSystem\ProjectedGaussSeidel.cpp">
-      <Filter>LinearSystem</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Solver\ProjectiveDynamicsSolver.cpp">
       <Filter>Solver</Filter>
@@ -649,9 +637,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Segment3d.cpp">
       <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\LinearSystem\SingularValueDecomposition.cpp">
-      <Filter>LinearSystem</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\SparseVoxelField.cpp">
       <Filter>Geometry</Filter>
@@ -712,6 +697,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PositionConstraint.cpp">
       <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\LinearSystem\DenseMatrix.cpp">
+      <Filter>LinearSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\LinearSystem\DenseVector.cpp">
+      <Filter>LinearSystem</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

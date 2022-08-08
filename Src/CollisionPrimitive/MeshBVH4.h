@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <float.h>
 #include <stdint.h>
+#include <vector>
 
 #include "../Core/Base.h"
 #include "../Maths/Vector3.h"

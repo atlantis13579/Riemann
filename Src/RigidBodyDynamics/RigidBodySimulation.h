@@ -31,7 +31,6 @@ enum class ConstraintSolver : uint8_t
 {
 	SequentialImpulse,
 	LCPGlobal,
-	PBD,
 	XPBD,
 };
 
