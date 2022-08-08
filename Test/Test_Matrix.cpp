@@ -9,6 +9,7 @@
 #include "../Src/LinearSystem/ProjectedGaussSeidel.h"
 #include "../Src/LinearSystem/LUFactorization.h"
 #include "../Src/LinearSystem/SingularValueDecomposition.h"
+#include "../Src/LinearSystem/QRDecomposition.h"
 #include "../Src/LinearSystem/MoorePenrosePseudoInverse.h"
 #include "../Src/LinearSystem/SparseMatrix.h"
 #include "../Src/LinearSystem/SparseVector.h"
@@ -273,6 +274,31 @@ void TestPolarDecomp()
 	return;
 }
 
+void TestQR()
+{
+	printf("Running TestQR\n");
+
+	DenseMatrix A(3, 3);
+	A[0][0] = 12.0f;
+	A[0][1] = -51.0f;
+	A[0][2] = 4.0f;
+	A[1][0] = 6.0f;
+	A[1][1] = 167.0f;
+	A[1][2] = -68.0f;
+	A[2][0] = -4.0f;
+	A[2][1] = 24.0f;
+	A[2][2] = -41.1f;
+
+	DenseMatrix q, r;
+	A.QRDecompose(q, r);
+	EXPECT(q.IsOrthogonal(0.00001f));
+	EXPECT(r.IsUpperTriangle(0.00001f));
+
+	DenseMatrix A2 = q * r;
+	EXPECT(A.FuzzyEqual(A2));
+	return;
+}
+
 void TestMatrix()
 {
 	TestMatrix1();
@@ -283,4 +309,5 @@ void TestMatrix()
 	TestSVD();
 	TestPseudoInverse();
 	TestPolarDecomp();
+	TestQR();
 }

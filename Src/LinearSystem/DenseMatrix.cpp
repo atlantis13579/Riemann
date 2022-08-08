@@ -108,3 +108,11 @@ bool 	TDenseMatrix<float>::PolarDecompose(TDenseMatrix<float> &U, TDenseMatrix<f
 	P.SetSize(mRows, mRows);
 	return ::PolarDecomposition<float>()(GetData(), mRows, U.GetData(), P.GetData());
 }
+
+template<>
+void 	TDenseMatrix<float>::QRDecompose(TDenseMatrix<float>& Q, TDenseMatrix<float>& R) const
+{
+	Q.SetSize(mRows, mRows);
+	R.SetSize(mRows, mCols);
+	::QRDecomposition<float>()(GetData(), mRows, mCols, Q.GetData(), R.GetData());
+}

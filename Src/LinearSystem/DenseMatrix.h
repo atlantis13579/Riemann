@@ -11,7 +11,7 @@ template<typename T>
 class TDenseMatrix
 {
 public:
-	explicit TDenseMatrix() : mRows(0), mCols(0)
+	explicit TDenseMatrix() : mRows(0), mCols(0), pData(nullptr)
 	{
 
 	}
@@ -97,6 +97,24 @@ public:
 			Ret[j] = pData[j * mCols + i];
 		}
 		return std::move(Ret);
+	}
+
+	bool			HoldsMemory() const
+	{
+		return mData.size() > 0 || pData == nullptr;
+	}
+
+	void			Assign(const TDenseMatrix<T> &rhs)
+	{
+		if (!HoldsMemory())
+		{
+			memcpy(pData, rhs.GetData(), mRows * mCols * sizeof(T));
+		}
+		else
+		{
+			SetSize(rhs.GetRows(), rhs.GetCols());
+			memcpy(pData, rhs.GetData(), mRows * mCols * sizeof(T));
+		}
 	}
 
 	inline bool		IsSquare() const
@@ -239,6 +257,22 @@ public:
 		}
 	}
 
+	bool		FuzzyEqual(const TDenseMatrix<T> &rhs, const T Eplison = (T)1e-6) const
+	{
+		if (mRows != rhs.GetRows() || mCols != rhs.GetCols())
+			return false;
+
+		const T* p1 = GetData();
+		const T* p2 = GetData();
+		for (int i = 0; i < mRows * mCols; ++i)
+		{
+			if (!::FuzzyEqual(p1[i], p2[i], Eplison))
+				return false;
+		}
+
+		return true;
+	}
+
 	void		TransposeInPlace()
 	{
 		for (int i = 0; i < mRows; ++i)
@@ -300,12 +334,12 @@ public:
 			T dp = DotProductCol(i, j);
 			if (i == j)
 			{
-				if (!FuzzyEqual(dp, (T)1, Eplison))
+				if (!::FuzzyEqual(dp, (T)1, Eplison))
 					return false;
 			}
 			else
 			{
-				if (!FuzzyEqual(dp, (T)0, Eplison))
+				if (!::FuzzyEqual(dp, (T)0, Eplison))
 					return false;
 			}
 		}
@@ -318,11 +352,11 @@ public:
 		if (!IsSquare())
 			return false;
 
-		for (int i = 0; i < mRows; ++i)
+		for (int i = 1; i < mRows; ++i)
 		for (int j = 0; j < i; ++j)
 		{
 			T a = mData[i * mRows + j];
-			if (!FuzzyEqual(a, (T)0, Eplison))
+			if (!::FuzzyEqual(a, (T)0, Eplison))
 				return false;
 		}
 		return true;
@@ -333,11 +367,11 @@ public:
 		if (IsSquare())
 			return false;
 
-		for (int i = 0; i < mRows; ++i)
+		for (int i = 0; i < mRows - 1; ++i)
 		for (int j = i + 1; j < mRows; ++j)
 		{
 			T a = mData[i * mRows + j];
-			if (!FuzzyEqual(a, (T)0, Eplison))
+			if (!::FuzzyEqual(a, (T)0, Eplison))
 				return false;
 		}
 		return true;
@@ -401,12 +435,12 @@ public:
 			T v = pData[i * n + j];
 			if (i == j)
 			{
-				if (!FuzzyEqual(v, (T)1, Eplison))
+				if (!::FuzzyEqual(v, (T)1, Eplison))
 					return false;
 			}
 			else
 			{
-				if (!FuzzyEqual(v, (T)0, Eplison))
+				if (!::FuzzyEqual(v, (T)0, Eplison))
 					return false;
 			}
 		}
@@ -456,6 +490,26 @@ public:
 		return std::move(Ret);
 	}
 
+	T			L1Norm() const
+	{
+		T sum = (T)0;
+		for (int i = 1; i < mRows * mCols; ++i)
+		{
+			sum += std::abs(pData[i]);
+		}
+		return sum;
+	}
+
+	T			L2Norm() const
+	{
+		T sum = (T)0;
+		for (int i = 1; i < mRows * mCols; ++i)
+		{
+			sum += pData[i] * pData[i];
+		}
+		return std::sqrt(sum);
+	}
+
 	T			LpNorm(int p) const
 	{
 		T sum = (T)0;
@@ -481,6 +535,9 @@ public:
 	
 	// M = U * P
 	bool 	PolarDecompose(TDenseMatrix<T> &U, TDenseMatrix<T> &P) const;
+
+	// M = Q * R
+	void 	QRDecompose(TDenseMatrix<T>& Q, TDenseMatrix<T>& R) const;
 
 protected:
 	int				mRows;

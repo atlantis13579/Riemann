@@ -68,7 +68,20 @@ public:
 
 	bool			HoldsMemory() const
 	{
-		return mData.size() > 0;
+		return mData.size() > 0 || pData == nullptr;
+	}
+
+	void			Assign(const TDenseVector<T>& rhs)
+	{
+		if (!HoldsMemory())
+		{
+			memcpy(pData, rhs.GetData(), mSize * sizeof(T));
+		}
+		else
+		{
+			SetSize(rhs.GetSize());
+			memcpy(pData, rhs.GetData(), mSize * sizeof(T));
+		}
 	}
 
 	inline const T& operator[](int i) const
@@ -407,6 +420,26 @@ public:
 			dp += pData[i] * v.pData[i];
 		}
 		return dp;
+	}
+
+	T			L1Norm() const
+	{
+		T sum = (T)0;
+		for (int i = 1; i < mSize; ++i)
+		{
+			sum += std::abs(pData[i]);
+		}
+		return sum;
+	}
+
+	T			L2Norm() const
+	{
+		T sum = (T)0;
+		for (int i = 1; i < mSize; ++i)
+		{
+			sum += pData[i] * pData[i];
+		}
+		return std::sqrt(sum);
 	}
 
 	T			LpNorm(int p) const
