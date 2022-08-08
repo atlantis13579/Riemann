@@ -2,11 +2,15 @@
 
 #include <assert.h>
 #include <math.h>
-#include <cmath>
 #include <vector>
 #include "DenseVector.h"
 #include "gemm.inl"
-#include "../Maths/Maths.h"
+
+template<typename T>
+bool FloatEqual(const T a, const T b, const T Eps = (T)1e-6)
+{
+	return fabs(a - b) < Eps;
+}
 
 template<typename T>
 class TDenseMatrix
@@ -276,10 +280,10 @@ public:
 			return false;
 
 		const T* p1 = GetData();
-		const T* p2 = GetData();
+		const T* p2 = rhs.GetData();
 		for (int i = 0; i < mRows * mCols; ++i)
 		{
-			if (!::FuzzyEqual(p1[i], p2[i], Eplison))
+			if (!::FloatEqual(p1[i], p2[i], Eplison))
 				return false;
 		}
 
@@ -347,12 +351,12 @@ public:
 			T dp = DotProductCol(i, j);
 			if (i == j)
 			{
-				if (!::FuzzyEqual(dp, (T)1, Eplison))
+				if (!::FloatEqual(dp, (T)1, Eplison))
 					return false;
 			}
 			else
 			{
-				if (!::FuzzyEqual(dp, (T)0, Eplison))
+				if (!::FloatEqual(dp, (T)0, Eplison))
 					return false;
 			}
 		}
@@ -370,7 +374,7 @@ public:
 		{
 			const T& a = pData[i * mCols + j];
 			const T& b = pData[j * mCols + i];
-			if (!::FuzzyEqual(a, b, Eplison))
+			if (!::FloatEqual(a, b, Eplison))
 				return false;
 		}
 
@@ -386,7 +390,7 @@ public:
 		for (int j = 0; j < i; ++j)
 		{
 			T a = mData[i * mRows + j];
-			if (!::FuzzyEqual(a, (T)0, Eplison))
+			if (!::FloatEqual(a, (T)0, Eplison))
 				return false;
 		}
 		return true;
@@ -401,7 +405,7 @@ public:
 		for (int j = i + 1; j < mRows; ++j)
 		{
 			T a = mData[i * mRows + j];
-			if (!::FuzzyEqual(a, (T)0, Eplison))
+			if (!::FloatEqual(a, (T)0, Eplison))
 				return false;
 		}
 		return true;
@@ -445,7 +449,7 @@ public:
 	{
 		for (int i = 0; i < GetSize(); ++i)
 		{
-			if (!FuzzyZero(pData[i]))
+			if (!FloatEqual(pData[i], (T)0))
 				return false;
 		}
 		return true;
@@ -465,12 +469,12 @@ public:
 			T v = pData[i * n + j];
 			if (i == j)
 			{
-				if (!::FuzzyEqual(v, (T)1, Eplison))
+				if (!::FloatEqual(v, (T)1, Eplison))
 					return false;
 			}
 			else
 			{
-				if (!::FuzzyEqual(v, (T)0, Eplison))
+				if (!::FloatEqual(v, (T)0, Eplison))
 					return false;
 			}
 		}

@@ -1046,13 +1046,4 @@ void Matrix3::SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) c
 		EigenVector[i][1] = t[1][i];
 		EigenVector[i][2] = t[2][i];
 	}
-
-	Vector3 cross = EigenVector[1].Cross(EigenVector[2]);
-	float Det = EigenVector[0].Dot(cross);
-	if (Det < 0.0)
-	{
-		EigenVector[2][0] = -EigenVector[2][0];
-		EigenVector[2][1] = -EigenVector[2][1];
-		EigenVector[2][2] = -EigenVector[2][2];
-	}
 }

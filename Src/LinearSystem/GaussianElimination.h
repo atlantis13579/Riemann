@@ -63,7 +63,7 @@ public:
 				}
 			}
 
-			if (FuzzyEqual(maxVal, zero))
+			if (fabs(maxVal) < zero)
 			{
 				if (NeedInverse)
 				{

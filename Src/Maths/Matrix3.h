@@ -51,6 +51,11 @@ public:
 		memcpy(mat, m.mat, sizeof(mat));
 	}
 	
+	void LoadZero()
+	{
+		memset(mat, 0, sizeof(mat));
+	}
+	
 	void LoadIdentiry()
 	{
 		mat[0][0] = 1; mat[0][1] = 0; mat[0][2] = 0;

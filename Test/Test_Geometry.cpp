@@ -1,7 +1,9 @@
 
 #include "Test.h"
 
+#include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
 #include "../Src/CollisionPrimitive/Mesh.h"
+#include "../Src/CollisionPrimitive/OrientedBox3d.h"
 #include "../Src/Geometry/Spline.h"
 #include "../Src/Geometry/Polygon3d.h"
 #include "../Src/Geometry/VoxelField.h"
@@ -99,9 +101,41 @@ void TestMesh1()
 	return;
 }
 
+void TestBuildOBB()
+{
+	printf("Running TestBuildOBB\n");
+	
+	AxisAlignedBox3d aabb(Vector3(-10.0f, -2.5f, -1.0f), Vector3(10.0f, 2.5f, 1.0f));
+	Matrix3 mat;
+	Vector3 center(1, 1, 2);
+	
+	mat.LoadRotateZ(PI_OVER_6);
+	std::vector<Vector3> verties, normals;
+	std::vector<uint16_t> Indices;
+	
+	aabb.GetMesh(verties, Indices, normals);
+	for (size_t i = 0; i < verties.size(); ++i)
+	{
+		verties[i] = mat * verties[i] + center;
+	}
+	
+	OrientedBox3d obb = OrientedBox3d::CalcBoundingOBB_PCA(verties.data(), (int)verties.size());
+	
+	EXPECT(fabsf(obb.Center.x - center.x) < 0.1f);
+	EXPECT(fabsf(obb.Center.y - center.y) < 0.1f);
+	EXPECT(fabsf(obb.Center.z - center.z) < 0.1f);
+	
+	Vector3 dir = obb.Rot.Column(0);
+	float dp = dir.Dot(Vector3::UnitX());
+	EXPECT(dp >= 0.8f);
+	
+	return;
+}
+
 void TestGeometry()
 {
 	TestClip();
 	TestCatmullRom();
 	TestMesh1();
+	TestBuildOBB();
 }

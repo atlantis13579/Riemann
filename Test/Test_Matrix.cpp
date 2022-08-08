@@ -295,7 +295,7 @@ void TestQR()
 	EXPECT(r.IsUpperTriangle(0.00001f));
 
 	DenseMatrix A2 = q * r;
-	EXPECT(A.FuzzyEqual(A2));
+	EXPECT(A.FuzzyEqual(A2, 0.01f));
 	return;
 }
 
@@ -339,6 +339,8 @@ void TestEigen()
 		TDenseVector<float> Ev = EigenValues[i] * v;
 		EXPECT(Av.FuzzyEqual(Ev, 0.001f));
 	}
+	
+	EXPECT((A * EigenVectors).FuzzyEqual(EigenVectors * TDenseMatrix<float>(EigenValues), 0.001f));
 
 	return;
 }

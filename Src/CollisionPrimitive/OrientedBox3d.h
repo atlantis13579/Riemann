@@ -22,6 +22,8 @@ public:
 		Extent = _Extent;
 		Rot = _Rot;
 	}
+	
+	static OrientedBox3d CalcBoundingOBB_PCA(const Vector3 *points, int n);
 
 	float SqrDistanceToPoint(const Vector3& Point) const;
 	float SqrDistanceToLine(const Vector3& P0, const Vector3& Dir, float* t) const;
