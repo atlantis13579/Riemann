@@ -31,30 +31,66 @@ struct GeometryTransform
 	Vector3		Translation;
 	Quaternion	Rotation;
 
-	Vector3		LocalToWorld(const Vector3& Point) const
+	inline Vector3	LocalToWorld(const Vector3& Point) const
 	{
 		return Rotation * Point + Translation;
 	}
 
-	Vector3		LocalToWorldDirection(const Vector3& Dir) const
+	inline Vector3	LocalToWorldDirection(const Vector3& Dir) const
 	{
 		return Rotation * Dir;
 	}
 
-	Vector3		WorldToLocal(const Vector3& Point) const
+	inline Vector3	WorldToLocal(const Vector3& Point) const
 	{
 		return Rotation.Conjugate() * (Point - Translation);
 	}
 
-	Vector3		WorldToLocalDirection(const Vector3& Dir) const
+	inline Vector3	WorldToLocalDirection(const Vector3& Dir) const
 	{
 		return Rotation.Conjugate() * Dir;
 	}
+};
 
-	// Center at object1 's center of mass
-	void		LoadLocal1ToLocal2(const GeometryTransform& t1, const GeometryTransform& t2)
+struct Geometry2Transform
+{
+	Vector3		Translation;
+	Quaternion	Rotation1;
+	Quaternion	Rotation2;
+
+	Vector3		Local2ToWorld(const Vector3& Point) const
 	{
-		Rotation = t1.Rotation * t2.Rotation.Conjugate();
+		return Rotation2.Conjugate() * (Rotation1 * Point + Translation);
+	}
+
+	Vector3		Local2ToWorldDirection(const Vector3& Dir) const
+	{
+		Quaternion quat = Rotation1 * Rotation2.Conjugate();
+		return quat * Dir;
+	}
+
+	Vector3		WorldToLocal2(const Vector3& Point) const
+	{
+		return Rotation1.Conjugate() * (Rotation2 * Point - Translation);
+	}
+
+	Vector3		WorldToLocal2Direction(const Vector3& Dir) const
+	{
+		Quaternion quat = Rotation1 * Rotation2.Conjugate();
+		return quat.Conjugate() * Dir;
+	}
+
+	Matrix3		ToRotationMatrix3() const
+	{
+		Quaternion quat = Rotation1 * Rotation2.Conjugate();
+		return quat.ToRotationMatrix3();
+	}
+
+	// Center at object2 's center of mass
+	void		LoadLocal2(const GeometryTransform& t1, const GeometryTransform& t2)
+	{
+		Rotation1 = t1.Rotation;
+		Rotation2 = t2.Rotation;
 		Translation = t1.Translation - t2.Translation;
 	}
 };

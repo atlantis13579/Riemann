@@ -38,7 +38,7 @@ public:
 		w = q.w;
 	}
 
-	Quaternion& operator=(const Quaternion& q)
+	inline Quaternion& operator=(const Quaternion& q)
 	{
 		x = q.x;
 		y = q.y;
@@ -47,34 +47,34 @@ public:
 		return *this;
 	}
 
-	Quaternion Conjugate() const
+	inline Quaternion Conjugate() const
 	{
 		return Quaternion(-x, -y, -z, w);
 	}
 
-	Quaternion Inverse() const
+	inline Quaternion Inverse() const
 	{
 		float m = Length();
 		return Quaternion(w / m, Vector3(-x / m, -y / m, -z / m));
 	}
 
-	Quaternion Unit() const
+	inline Quaternion Unit() const
 	{
 		float m = Length();
 		return Quaternion(w / m, Vector3(x / m, y / m, z / m));
 	}
 
-	float Dot(const Quaternion& rhs) const
+	inline float Dot(const Quaternion& rhs) const
 	{
 		return w * w + x * x + y * y + z * z;
 	}
 
-	float Length() const
+	inline float Length() const
 	{
 		return sqrtf(w*w + x*x + y*y + z*z);
 	}
 
-	float SquareLength() const
+	inline float SquareLength() const
 	{
 		return w * w + x * x + y * y + z * z;
 	}
@@ -160,22 +160,22 @@ public:
 			asinf(2 * x*y + 2 * z*w));
 	}
 
-	Quaternion operator+(const Quaternion& q) const
+	inline Quaternion operator+(const Quaternion& q) const
 	{
 		return Quaternion(x + q.x, y + q.y, z + q.z, w + q.w);
 	}
 
-	Quaternion operator-(const Quaternion& q) const
+	inline Quaternion operator-(const Quaternion& q) const
 	{
 		return Quaternion(x - q.x, y - q.y, z - q.z, w - q.w);
 	}
 
-	Quaternion operator*(float k) const
+	inline Quaternion operator*(float k) const
 	{
 		return Quaternion(x * k, y * k, z * k, w * k);
 	}
 
-	Quaternion operator*(const Quaternion& q) const
+	inline Quaternion operator*(const Quaternion& q) const
 	{
 		return Quaternion(
 						y * q.z - z * q.y + x * q.w + w * q.x,
@@ -184,19 +184,19 @@ public:
 						w * q.w - x * q.x - y * q.y - z * q.z);
 	}
 	
-	Quaternion operator/(const Quaternion& q) const
+	inline Quaternion operator/(const Quaternion& q) const
 	{
 		return *this * q.Inverse();
 	}
 
-	Vector3 operator*(const Vector3& vec) const
+	inline Vector3 operator*(const Vector3& vec) const
 	{
 		Vector3 v(x, y, z);
 		Vector3 t = v.Cross(vec) * 2;
 		return vec + t * w + v.Cross(t);
 	}
 
-	Quaternion& operator+=(const Quaternion& q)
+	inline Quaternion& operator+=(const Quaternion& q)
 	{
 		x += q.x;
 		y += q.y;
@@ -205,7 +205,7 @@ public:
 		return *this;
 	}
 
-	Quaternion& operator-=(const Quaternion& q)
+	inline Quaternion& operator-=(const Quaternion& q)
 	{
 		x -= q.x;
 		y -= q.y;
@@ -214,7 +214,7 @@ public:
 		return *this;
 	}
 
-	Quaternion& operator*=(float k)
+	inline Quaternion& operator*=(float k)
 	{
 		x *= k;
 		y *= k;
@@ -223,13 +223,13 @@ public:
 		return *this;
 	}
 
-	Quaternion& operator*=(const Quaternion& q)
+	inline Quaternion& operator*=(const Quaternion& q)
 	{
 		*this = *this * q;
 		return *this;
 	}
 
-	Quaternion& operator/=(const Quaternion& q)
+	inline Quaternion& operator/=(const Quaternion& q)
 	{
 		*this *= q.Inverse();
 		return *this;

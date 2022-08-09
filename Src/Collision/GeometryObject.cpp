@@ -110,8 +110,8 @@ bool				Geometry::Overlap(const Geometry* Geom) const
 {
 	OverlapFunc func = GeometryIntersection::GetOverlapFunc(m_Type, Geom->GetShapeType());
 	assert(func);
-	GeometryTransform trans;
-	trans.LoadLocal1ToLocal2(m_CenterOfMassTransform, *Geom->GetCenterOfMassTransform());
+	Geometry2Transform trans;
+	trans.LoadLocal2(m_CenterOfMassTransform, *Geom->GetCenterOfMassTransform());
 	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &trans);
 }
 
