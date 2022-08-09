@@ -81,6 +81,6 @@ bool TDenseMatrix<float>::EigenDecompose(TDenseVector<float>& EigenValues, TDens
 
 	EigenValues.SetSize(mRows);
 	EigenVectors.SetSize(mRows, mRows);
-	::SolveEigenSymmetric<float>()(pData, mRows, EigenValues.GetData(), EigenVectors.GetData());
+	::SymmetricEigenSolver<float>()(pData, mRows, EigenValues.GetData(), EigenVectors.GetData());
 	return true;
 }

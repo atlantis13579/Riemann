@@ -134,7 +134,7 @@ public:
 	
 	void Transform(TDenseVector<T>& src)
 	{
-		src = src * componentsMatrix;
+		src = componentsMatrix * src;
 	}
 	
 public:

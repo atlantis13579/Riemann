@@ -10,7 +10,7 @@ OrientedBox3d OrientedBox3d::CalcBoundingOBB_PCA(const Vector3 *points, int n)
 	{
 		mean += points[i];
 	}
-	mean /= n;
+	mean *= (1.0f / n);
 	
 	Matrix3 covMatrix;
 	covMatrix.LoadZero();

@@ -17,80 +17,88 @@ public:
 		if (nCols < nRows)
 			return false;
 
-        compute_householder(A, Q, R, nRows, nCols);
+		qr_householder_reflections(A, Q, R, nRows, nCols);
 		return true;
 	}
 
 private:
-	static void compute_householder(const T* A, T* Q, T *R, int m, int n)
+	static void qr_householder_reflections(const T* a, T* q, T *r, int m, int n)
 	{
 		int max_dim = m > n ? m : n;
 
 		T* buf = new T[m * m + m + max_dim * max_dim];
 
-		T* H = buf;
-		T* v = H + m * m;
-		T* buffer = H + m * m + m;
+		T* h = buf;
+		T* v = h + m * m;
+		T* buffer = h + m * m + m;
 
-		memset(Q, 0, sizeof(T) * m * m);
+		memset(q, 0, sizeof(T) * m * m);
 		for (int i = 0; i < m; ++i)
 		{
-			Q[i * m + i] = (T)1;
+			q[i * m + i] = (T)1;
 		}
 
-		memcpy(R, A, sizeof(T) * m * n);
+		memcpy(r, a, sizeof(T) * m * n);
 
 		for (int i = 0; i < n; ++i)
 		{
 			for (int j = 0; j < m - i; ++j)
 			{
-				v[j] = R[(j + i) * n + i];
+				v[j] = r[(j + i) * n + i];
 			}
-			T L = compute_norm(v, m - i);
+			T norm = compute_norm(v, m - i);
 
-			v[0] += v[0] > 0 ? L : -L;
-			L = compute_norm(v, m - i);
+			v[0] += v[0] > 0 ? norm : -norm;
+			norm = compute_norm(v, m - i);
 
-			for (int p = 0; p < m-i; p++)
+			for (int j = 0; j < m - i; ++j)
 			{
-				v[p] /= L;
+				v[j] /= norm;
 			}
 
-			memset(H, 0, sizeof(T) * m * m);
-			for (int r = i; r < m; ++r)
-			for (int c = i; c < m; ++c)
+			memset(h, 0, sizeof(T) * m * m);
+			for (int j = i; j < m; ++j)
+			for (int k = i; k < m; ++k)
 			{
-				H[r*m+c] = - 2 * v[r - i] * v[c - i];
+				h[j*m+k] = - 2 * v[j - i] * v[k - i];
 			}
 
 			// R += H * R;
-			gemm_block<T>(H, R, m, m, n, i, m - 1, 0, m - 1, 0, n - 1, buffer);
-			gema_block<T>(R, buffer, m, n, i, m - 1, 0, n - 1, R);
+			gemm_block(h, r, m, m, n, i, m - 1, 0, m - 1, 0, n - 1, buffer);
+			gema_block(r, buffer, m, n, i, m - 1, 0, n - 1, r);
 
 			// Q += Q * H;
-			gemm_block<T>(Q, H, m, m, m, 0, m - 1, i, m - 1, i, m - 1, buffer);
-			gema_block<T>(Q, buffer, m, n, 0, m - 1, i, m - 1, Q);
+			gemm_block(q, h, m, m, m, 0, m - 1, i, m - 1, i, m - 1, buffer);
+			gema_block(q, buffer, m, n, 0, m - 1, i, m - 1, q);
 		}
 
-		for (int c = 0; c < n; ++c)
+		for (int i = 0; i < n; ++i)
 		{
-			if (R[c*n+c] >= 0)
+			if (r[i*n+i] >= 0)
 				continue;
 
-			for (int r = 0; r < n; ++r)
+			for (int j = 0; j < n; ++j)
 			{
-				R[c*n+r] = -R[c*n+r];
-				Q[r*m+c] = -Q[r*m+c];
+				r[i*n+j] = -r[i*n+j];
+				q[j*m+i] = -q[j*m+i];
 			}
 			for (int r = n; r < m; ++r)
 			{
-				Q[r*m+c] = -Q[r*m+c];
+				q[r*m+i] = -q[r*m+i];
 			}
 		}
 
 		delete []buf;
 
 		return;
+	}
+
+	static void qr_gram_schmidt(const T* a, T* q, T* r, int m, int n)
+	{
+	}
+
+	static void qr_givens_rotations(const T* a, T* q, T* r, int m, int n)
+	{
 	}
 
 	static T compute_norm(T* v, int k)
