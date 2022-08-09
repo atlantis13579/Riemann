@@ -265,10 +265,6 @@ void Matrix3::SingularValueDecompose(Matrix3& U, Vector3& S, Matrix3& V) const
 
 	for (uint32_t i = 0; i < max_iterations; i++)
 	{
-		float t0, t1, t2;
-		float s0, c0, tan0;
-		float s1, c1, tan1;
-
 		bool bTest1 = fabsf(A[0][1]) <= epsilon * (fabsf(A[0][0]) + fabsf(A[1][1]));
 		bool bTest2 = fabsf(A[1][2]) <= epsilon * (fabsf(A[1][1]) + fabsf(A[2][2]));
 		if (bTest1)
@@ -283,29 +279,25 @@ void Matrix3::SingularValueDecompose(Matrix3& U, Vector3& S, Matrix3& V) const
 			else
 			{
 				// 2x2 closed form factorization
-				t0 = (A[1][1] * A[1][1] - A[2][2] * A[2][2] + A[1][2] * A[1][2]) / (A[1][2] * A[2][2]);
-				tan0 = 0.5f * (t0 + sqrtf(t0 * t0 + 4.0f));
-				c0 = InvSqrt(1.0f + tan0 * tan0);
-				s0 = tan0 * c0;
+				float t0 = (A[1][1] * A[1][1] - A[2][2] * A[2][2] + A[1][2] * A[1][2]) / (A[1][2] * A[2][2]);
+				float tan0 = 0.5f * (t0 + sqrtf(t0 * t0 + 4.0f));
+				float c0 = InvSqrt(1.0f + tan0 * tan0);
+				float s0 = tan0 * c0;
 
 				for (j = 0; j < 3; ++j)
 				{
-					t1 = U[j][1];
-					t2 = U[j][2];
-					U[j][1] = c0 * t1 - s0 * t2;
-					U[j][2] = s0 * t1 + c0 * t2;
+					U[j][1] = c0 * U[j][1] - s0 * U[j][2];
+					U[j][2] = s0 * U[j][1] + c0 * U[j][2];
 				}
 
-				tan1 = (A[1][2] - A[2][2] * tan0) / A[1][1];
-				c1 = InvSqrt(1.0f + tan1 * tan1);
-				s1 = -tan1 * c1;
+				float tan1 = (A[1][2] - A[2][2] * tan0) / A[1][1];
+				float c1 = InvSqrt(1.0f + tan1 * tan1);
+				float s1 = -tan1 * c1;
 
 				for (i = 0; i < 3; ++i)
 				{
-					t1 = V[1][i];
-					t2 = V[2][i];
-					V[1][i] = c1 * t1 - s1 * t2;
-					V[2][i] = s1 * t1 + c1 * t2;
+					V[1][i] = c1 * V[1][i] - s1 * V[2][i];
+					V[2][i] = s1 * V[1][i] + c1 * V[2][i];
 				}
 
 				S[0] = A[0][0];
@@ -321,30 +313,26 @@ void Matrix3::SingularValueDecompose(Matrix3& U, Vector3& S, Matrix3& V) const
 			if (bTest2)
 			{
 				// 2x2 closed form factorization
-				t0 = (A[0][0] * A[0][0] + A[1][1] * A[1][1] -
+				float t0 = (A[0][0] * A[0][0] + A[1][1] * A[1][1] -
 					A[0][1] * A[0][1]) / (A[0][1] * A[1][1]);
-				tan0 = 0.5f * (-t0 + sqrtf(t0 * t0 + 4.0f));
-				c0 = InvSqrt(1.0f + tan0 * tan0);
-				s0 = tan0 * c0;
+				float tan0 = 0.5f * (-t0 + sqrtf(t0 * t0 + 4.0f));
+				float c0 = InvSqrt(1.0f + tan0 * tan0);
+				float s0 = tan0 * c0;
 
 				for (j = 0; j < 3; ++j)
 				{
-					t1 = U[j][0];
-					t2 = U[j][1];
-					U[j][0] = c0 * t1 - s0 * t2;
-					U[j][1] = s0 * t1 + c0 * t2;
+					U[j][0] = c0 * U[j][0] - s0 * U[j][1];
+					U[j][1] = s0 * U[j][0] + c0 * U[j][1];
 				}
 
-				tan1 = (A[0][1] - A[1][1] * tan0) / A[0][0];
-				c1 = InvSqrt(1.0f + tan1 * tan1);
-				s1 = -tan1 * c1;
+				float tan1 = (A[0][1] - A[1][1] * tan0) / A[0][0];
+				float c1 = InvSqrt(1.0f + tan1 * tan1);
+				float s1 = -tan1 * c1;
 
 				for (i = 0; i < 3; ++i)
 				{
-					t1 = V[0][i];
-					t2 = V[1][i];
-					V[0][i] = c1 * t1 - s1 * t2;
-					V[1][i] = s1 * t1 + c1 * t2;
+					V[0][i] = c1 * V[0][i] - s1 * V[1][i];
+					V[1][i] = s1 * V[0][i] + c1 * V[1][i];
 				}
 
 				S[0] = c0 * c1 * A[0][0] -
@@ -577,115 +565,22 @@ bool Matrix3::PolarDecomposeUP(Matrix3& R, Matrix3& S) const
 	return true;
 }
 
-void Matrix3::QDUDecompose(Matrix3& Q, Vector3& D, Vector3& U) const
-{
-	// Factor M = QR = QDU where Q is orthogonal, D is diagonal,
-	// and U is upper triangular with ones on its diagonal.  Algorithm uses
-	// Gram-Schmidt orthogonalization (the QR algorithm).
-	//
-	// If M = [ m0 | m1 | m2 ] and Q = [ q0 | q1 | q2 ], then
-	//
-	//   q0 = m0/|m0|
-	//   q1 = (m1-(q0*m1)q0)/|m1-(q0*m1)q0|
-	//   q2 = (m2-(q0*m2)q0-(q1*m2)q1)/|m2-(q0*m2)q0-(q1*m2)q1|
-	//
-	// where |V| indicates length of vector V and A*B indicates dot
-	// product of vectors A and B.  The matrix R has entries
-	//
-	//   r00 = q0*m0  r01 = q0*m1  r02 = q0*m2
-	//   r10 = 0      r11 = q1*m1  r12 = q1*m2
-	//   r20 = 0      r21 = 0      r22 = q2*m2
-	//
-	// so D = diag(r00,r11,r22) and U has entries u01 = r01/r00,
-	// u02 = r02/r00, and u12 = r12/r11.
-
-	// Q = rotation
-	// D = scaling
-	// U = shear
-
-	// D stores the three diagonal entries r00, r11, r22
-	// U stores the entries U[0] = u01, U[1] = u02, U[2] = u12
-
-	// build orthogonal matrix Q
-	float inv = InvSqrt(mat[0][0] * mat[0][0] + mat[1][0] * mat[1][0] + mat[2][0] * mat[2][0]);
-	Q[0][0] = mat[0][0] * inv;
-	Q[1][0] = mat[1][0] * inv;
-	Q[2][0] = mat[2][0] * inv;
-
-	float dp = Q[0][0] * mat[0][1] + Q[1][0] * mat[1][1] + Q[2][0] * mat[2][1];
-	Q[0][1] = mat[0][1] - dp * Q[0][0];
-	Q[1][1] = mat[1][1] - dp * Q[1][0];
-	Q[2][1] = mat[2][1] - dp * Q[2][0];
-
-	inv = InvSqrt(Q[0][1] * Q[0][1] + Q[1][1] * Q[1][1] + Q[2][1] * Q[2][1]);
-	Q[0][1] *= inv;
-	Q[1][1] *= inv;
-	Q[2][1] *= inv;
-
-	dp = Q[0][0] * mat[0][2] + Q[1][0] * mat[1][2] + Q[2][0] * mat[2][2];
-	Q[0][2] = mat[0][2] - dp * Q[0][0];
-	Q[1][2] = mat[1][2] - dp * Q[1][0];
-	Q[2][2] = mat[2][2] - dp * Q[2][0];
-
-	dp = Q[0][1] * mat[0][2] + Q[1][1] * mat[1][2] + Q[2][1] * mat[2][2];
-	Q[0][2] -= dp * Q[0][1];
-	Q[1][2] -= dp * Q[1][1];
-	Q[2][2] -= dp * Q[2][1];
-
-	inv = InvSqrt(Q[0][2] * Q[0][2] + Q[1][2] * Q[1][2] + Q[2][2] * Q[2][2]);
-	Q[0][2] *= inv;
-	Q[1][2] *= inv;
-	Q[2][2] *= inv;
-
-	// guarantee that orthogonal matrix has determinant 1 (no reflections)
-	float fDet = Q[0][0] * Q[1][1] * Q[2][2] + Q[0][1] * Q[1][2] * Q[2][0] +
-				Q[0][2] * Q[1][0] * Q[2][1] - Q[0][2] * Q[1][1] * Q[2][0] -
-				Q[0][1] * Q[1][0] * Q[2][2] - Q[0][0] * Q[1][2] * Q[2][1];
-
-	if (fDet < 0.0)
-	{
-		for (int iRow = 0; iRow < 3; ++iRow)
-		for (int iCol = 0; iCol < 3; ++iCol)
-			Q[iRow][iCol] = -Q[iRow][iCol];
-	}
-
-	// build "right" matrix R
-	Matrix3 R;
-	R[0][0] = Q[0][0] * mat[0][0] + Q[1][0] * mat[1][0] + Q[2][0] * mat[2][0];
-	R[0][1] = Q[0][0] * mat[0][1] + Q[1][0] * mat[1][1] + Q[2][0] * mat[2][1];
-	R[1][1] = Q[0][1] * mat[0][1] + Q[1][1] * mat[1][1] + Q[2][1] * mat[2][1];
-	R[0][2] = Q[0][0] * mat[0][2] + Q[1][0] * mat[1][2] + Q[2][0] * mat[2][2];
-	R[1][2] = Q[0][1] * mat[0][2] + Q[1][1] * mat[1][2] + Q[2][1] * mat[2][2];
-	R[2][2] = Q[0][2] * mat[0][2] + Q[1][2] * mat[1][2] + Q[2][2] * mat[2][2];
-
-	// the scaling component
-	D[0] = R[0][0];
-	D[1] = R[1][1];
-	D[2] = R[2][2];
-
-	// the shear component
-	float fInvD0 = 1.0f / D[0];
-	U[0] = R[0][1] * fInvD0;
-	U[1] = R[0][2] * fInvD0;
-	U[2] = R[1][2] / D[1];
-}
-
-static float FindCubicRoot(const float polymonial[3])
+static float FindCubicRoot(const float polynomial[3])
 {
 	const float eps = 1e-6f;
-	float discr = polymonial[2] * polymonial[2] - 3.0f * polymonial[1];
+	float discr = polynomial[2] * polynomial[2] - 3.0f * polynomial[1];
 	if (discr <= eps)
-		return -polymonial[2] / 3.0f;
+		return -polynomial[2] / 3.0f;
 
 	float x = 1.0;
-	float val = polymonial[0] + x * (polymonial[1] + x * (polymonial[2] + x));
+	float val = polynomial[0] + x * (polynomial[1] + x * (polynomial[2] + x));
 	if (val < 0.0)
 	{
-		x = fabsf(polymonial[0]);
-		float t = 1.0f + fabsf(polymonial[1]);
+		x = fabsf(polynomial[0]);
+		float t = 1.0f + fabsf(polynomial[1]);
 		if (t > x)
 			x = t;
-		t = 1.0f + fabsf(polymonial[2]);
+		t = 1.0f + fabsf(polynomial[2]);
 		if (t > x)
 			x = t;
 	}
@@ -693,50 +588,15 @@ static float FindCubicRoot(const float polymonial[3])
 	// Newton's method to find root
 	for (int i = 0; i < 16; ++i)
 	{
-		val = polymonial[0] + x * (polymonial[1] + x * (polymonial[2] + x));
+		val = polynomial[0] + x * (polynomial[1] + x * (polynomial[2] + x));
 		if (fabsf(val) <= eps)
 			return x;
 
-		float dev = polymonial[1] + 2.0f * x * polymonial[2] + 3.0f * x * x;
+		float dev = polynomial[1] + 2.0f * x * polynomial[2] + 3.0f * x * x;
 		x -= val / dev;
 	}
 
 	return x;
-}
-//-----------------------------------------------------------------------
-float Matrix3::SpectralNorm() const
-{
-	Matrix3 P;
-	float pmax = 0.0;
-	for (int i = 0; i < 3; ++i)
-	for (int j = 0; j < 3; ++j)
-	{
-		P[i][j] = 0.0;
-		for (int iMid = 0; iMid < 3; iMid++)
-		{
-			P[i][j] += mat[iMid][i] * mat[iMid][j];
-		}
-		if (P[i][j] > pmax)
-			pmax = P[i][j];
-	}
-
-	float fInvPmax = 1.0f / pmax;
-	for (int i = 0; i < 3; ++i)
-	for (int j = 0; j < 3; ++j)
-		P[i][j] *= fInvPmax;
-
-	float a[3];
-	a[0] = -(P[0][0] * (P[1][1] * P[2][2] - P[1][2] * P[2][1]) +
-			 P[0][1] * (P[2][0] * P[1][2] - P[1][0] * P[2][2]) +
-			 P[0][2] * (P[1][0] * P[2][1] - P[2][0] * P[1][1]));
-	a[1] = 	P[0][0] * P[1][1] - P[0][1] * P[1][0] +
-			P[0][0] * P[2][2] - P[0][2] * P[2][0] +
-			P[1][1] * P[2][2] - P[1][2] * P[2][1];
-	a[2] = -(P[0][0] + P[1][1] + P[2][2]);
-
-	float root = FindCubicRoot(a);
-	float norm = sqrtf(pmax * root);
-	return norm;
 }
 
 float Matrix3::ToAxisAngle(Vector3& Axis) const
@@ -849,7 +709,7 @@ bool Matrix3::ToEulerAngles(float& Yaw, float& Pitch, float& Roll) const
 		}
 		else
 		{
-			// WARNING.  Not a unique solution.
+			// Not a unique solution.
 			float fRmY = atan2f(mat[1][0], mat[1][1]);
 			Roll = float(0.0);  // any angle works
 			Yaw = Roll - fRmY;
@@ -858,7 +718,7 @@ bool Matrix3::ToEulerAngles(float& Yaw, float& Pitch, float& Roll) const
 	}
 	else
 	{
-		// WARNING.  Not a unique solution.
+		// Not a unique solution.
 		float fRpY = atan2f(mat[1][0], mat[1][1]);
 		Roll = float(0.0);  // any angle works
 		Yaw = fRpY - Roll;

@@ -4,18 +4,19 @@
 // https://en.wikipedia.org/wiki/Linear%E2%80%93quadratic_regulator
 
 #include <cmath>
+#include <vector>
 #include "../Maths/MatrixMxN.h"
 
 template<int nState, int mInput>
 class LinearQuadraticRegulator
 {
 public:
-    using VectorMx1 = VectorNd<mInput>;
+    using VectorMx1 = VectorN<mInput>;
     using MatrixNxN = MatrixN<nState>;
     using MatrixMxM = MatrixN<mInput>;
     using InputMatrix = MatrixMxN<nState, mInput>;
     using GainMatrix = MatrixMxN<mInput, nState>;
-    using State = VectorNd<nState>;
+    using State = VectorN<nState>;
 
 public:
     LinearQuadraticRegulator(MatrixNxN _A, InputMatrix _B, MatrixNxN _Q, MatrixMxM _R)
@@ -46,7 +47,7 @@ public:
 
             path->push_back(e + target);
 
-            if (e.SquaredNorm() <= mTolerance * mTolerance)
+            if (e.SquaredLength() <= mTolerance * mTolerance)
             {
                 return true;
             }

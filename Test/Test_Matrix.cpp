@@ -69,7 +69,7 @@ void TestMatrix2()
 
 	EXPECT(fabsf(det * detI - 0.9999f) < 0.001f);
 
-	VectorNd<10>	Vec = M * M.GetCol(0);
+	VectorN<10>	Vec = M * M.GetCol(0);
 	float dp = M.GetRow(0).Dot(M.GetCol(0));
 	MatrixN<10>	Mat = M * M.Transpose().Transpose();
 

@@ -183,9 +183,6 @@
     <ClInclude Include="..\..\Src\Optimization\LBFGS.h">
       <Filter>Optimization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Solver\LCPSolver.h">
-      <Filter>Solver</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Tools\libBmp.h">
       <Filter>Tools</Filter>
     </ClInclude>
@@ -510,6 +507,9 @@
     <ClInclude Include="..\..\Src\LinearSystem\gemm.inl">
       <Filter>LinearSystem</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\LCPSolver.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp">
@@ -583,9 +583,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\FluidDynamics\Laplace2DSolver.cpp">
       <Filter>FluidDynamics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Solver\LCPSolver.cpp">
-      <Filter>Solver</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Maths\Matrix3.cpp">
       <Filter>Maths</Filter>
@@ -706,6 +703,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\LinearSystem\DenseVector.cpp">
       <Filter>LinearSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\LCPSolver.cpp">
+      <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

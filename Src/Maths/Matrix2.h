@@ -9,7 +9,6 @@ public:
 
 	Matrix2()
 	{
-
 	}
 
 	explicit Matrix2(float mm[2][2])
@@ -60,7 +59,7 @@ public:
 		mat[1][1] = mat[0][0];
 	}
 
-	Matrix2	operator*(const Matrix2& mm) const
+	inline Matrix2	operator*(const Matrix2& mm) const
 	{
 		return Matrix2(
 			mat[0][0] * mm.mat[0][0] + mat[0][1] * mm.mat[1][0],
@@ -69,35 +68,35 @@ public:
 			mat[1][0] * mm.mat[0][1] + mat[1][1] * mm.mat[1][1]);
 	}
 
-	Matrix2	operator*(float k) const
+	inline Matrix2	operator*(float k) const
 	{
 		return Matrix2(
 			mat[0][0] * k, mat[0][1] * k,
 			mat[1][0] * k, mat[1][1] * k);
 	}
 
-	Vector2	operator*(const Vector2& vec) const
+	inline Vector2	operator*(const Vector2& vec) const
 	{
 		return Vector2(
 			mat[0][0] * vec.x + mat[0][1] * vec.y,
 			mat[1][0] * vec.x + mat[1][1] * vec.y);
 	}
 
-	Matrix2	operator+(const Matrix2& mm) const
+	inline Matrix2	operator+(const Matrix2& mm) const
 	{
 		return Matrix2(
 			mat[0][0] + mm.mat[0][0], mat[0][1] + mm.mat[0][1],
 			mat[1][0] + mm.mat[1][0], mat[1][1] + mm.mat[1][1]);
 	}
 
-	Matrix2	operator-(const Matrix2& mm) const
+	inline Matrix2	operator-(const Matrix2& mm) const
 	{
 		return Matrix2(
 			mat[0][0] - mm.mat[0][0], mat[0][1] - mm.mat[0][1],
 			mat[1][0] - mm.mat[1][0], mat[1][1] - mm.mat[1][1]);
 	}
 
-	inline		Matrix2& operator=(const Matrix2& rhs)
+	inline Matrix2&	operator=(const Matrix2& rhs)
 	{
 		memcpy(mat, rhs.mat, sizeof(mat));
 		return *this;
@@ -162,7 +161,7 @@ public:
 		return mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
 	}
 
-	float			L1Norm() const
+	float		L1Norm() const
 	{
 		float l1_norm = 0.0f;
 		const float* p = (const float*)this;
@@ -170,8 +169,8 @@ public:
 			l1_norm += fabsf(p[i]);
 		return l1_norm;
 	}
-
-	float			L2Norm() const
+	
+	float		L2Norm() const
 	{
 		float l2_norm = 0.0f;
 		const float* p = (const float*)this;
@@ -180,7 +179,7 @@ public:
 		return l2_norm;
 	}
 
-	bool			Invertible() const
+	bool		Invertible() const
 	{
 		float d = Determinant();
 		return fabsf(d) > 1e-6;
@@ -203,7 +202,7 @@ public:
 	}
 
 	// Solve AX = B
-	bool			Solve(const Vector2& b, Vector2& x)
+	bool		Solve(const Vector2& b, Vector2& x)
 	{
 		float det = Determinant();
 		if (fabsf(det) < 1e-6)
@@ -215,12 +214,12 @@ public:
 		return true;
 	}
 
-	void			SolveEigenSymmetric(float EigenValue[2], Vector2 EigenVector[3]) const
+	void		SolveEigenSymmetric(float EigenValue[2], Vector2 EigenVector[2]) const
 	{
-		float sum = fabsf(mat[0][0]) + fabsf(mat[1][1]);
+		float tr = fabsf(mat[0][0]) + fabsf(mat[1][1]);
 
 		// The matrix is diagonal within numerical round-off
-		if (fabsf(mat[0][1]) + sum == sum)
+		if (fabsf(mat[0][1]) + tr == tr)
 		{
 			EigenVector[0] = Vector2(1.0f, 0.0f);
 			EigenVector[1] = Vector2(0.0f, 1.0f);
@@ -231,9 +230,9 @@ public:
 
 		float trace = Trace();
 		float diff = mat[0][0] - mat[1][1];
-		float discr = sqrtf(diff * diff + 4.0f * mat[1][1] * mat[1][1]);
-		EigenValue[0] = (trace - discr) * 0.5f;
-		EigenValue[1] = (trace + discr) * 0.5f;
+		float delta = sqrtf(diff * diff + 4.0f * mat[1][1] * mat[1][1]);
+		EigenValue[0] = (trace - delta) * 0.5f;
+		EigenValue[1] = (trace + delta) * 0.5f;
 
 		float cs, sn;
 		if (diff >= 0.0f)
@@ -246,9 +245,9 @@ public:
 			cs = EigenValue[0] - mat[0][0];
 			sn = mat[0][1];
 		}
-		float invLength = 1.0f / sqrtf(cs * cs + sn * sn);
-		cs *= invLength;
-		sn *= invLength;
+		float inv = 1.0f / sqrtf(cs * cs + sn * sn);
+		cs *= inv;
+		sn *= inv;
 
 		EigenVector[0] = Vector2(cs, -sn);
 		EigenVector[1] = Vector2(sn, cs);

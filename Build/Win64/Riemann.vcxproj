@@ -62,6 +62,7 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\KeyFrameAnimation.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\KinematicsTree.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\ForceField.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\LCPSolver.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\NarrowPhase.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PositionConstraint.cpp" />
@@ -73,7 +74,6 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MotionIntegration.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBody.cpp" />
-    <ClCompile Include="..\..\Src\Solver\LCPSolver.cpp" />
     <ClCompile Include="..\..\Src\Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="..\..\Src\Solver\NumericalODESolver.cpp" />
     <ClCompile Include="..\..\Src\Solver\ProjectiveDynamicsSolver.cpp" />
@@ -195,6 +195,7 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Jacobian.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\KinematicsTree.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\ForceField.h" />
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\LCPSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\NarrowPhase.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\KeyFrameAnimation.h" />
@@ -219,7 +220,6 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h" />
     <ClInclude Include="..\..\Src\Solver\ConjugateGradientSolver.h" />
     <ClInclude Include="..\..\Src\Solver\ExponentialIntegrator.h" />
-    <ClInclude Include="..\..\Src\Solver\LCPSolver.h" />
     <ClInclude Include="..\..\Src\Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="..\..\Src\Solver\NumericalODESolver.h" />
     <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h" />

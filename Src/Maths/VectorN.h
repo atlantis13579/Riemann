@@ -2,7 +2,7 @@
 
 #include<string.h>
 
-template<typename T, int SIZE>
+template<typename T, int DIM>
 class TVectorN
 {
 public:
@@ -20,19 +20,19 @@ public:
 
 	TVectorN(const std::initializer_list<T>& v)
 	{
-		memset(mData, 0, sizeof(T) * SIZE);
+		memset(mData, 0, sizeof(T) * DIM);
 		int i = 0;
 		for (const T &vv : v)
 		{
 			mData[i] = vv;
-			if (i++ >= SIZE)
+			if (i++ >= DIM)
 				break;
 		}
 	}
 
-	TVectorN(const TVectorN<T, SIZE>& v)
+	TVectorN(const TVectorN<T, DIM>& v)
 	{
-		memcpy(mData, v.mData, sizeof(T) * SIZE);
+		memcpy(mData, v.mData, sizeof(T) * DIM);
 	}
 
 	inline const T* Data() const
@@ -55,143 +55,183 @@ public:
 		return mData[i];
 	}
 
-	TVectorN<T, SIZE>& operator=(const TVectorN<T, SIZE>& v)
+	inline TVectorN<T, DIM>& operator=(const TVectorN<T, DIM>& v)
 	{
-		memcpy(mData, v.mData, sizeof(T) * SIZE);
+		memcpy(mData, v.mData, sizeof(T) * DIM);
 		return *this;
 	}
 
-	TVectorN<T, SIZE> operator+(const TVectorN<T, SIZE>& v) const
+	inline TVectorN<T, DIM> operator+(const TVectorN<T, DIM>& v) const
 	{
-		TVectorN<T, SIZE> Ret(*this);
-		for (int i = 0; i < SIZE; ++i)
+		TVectorN<T, DIM> Ret(*this);
+		for (int i = 0; i < DIM; ++i)
 		{
 			Ret[i] += v[i];
 		}
 		return Ret;
 	}
 
-	TVectorN<T, SIZE> operator-(const TVectorN<T, SIZE>& v) const
+	inline TVectorN<T, DIM> operator-(const TVectorN<T, DIM>& v) const
 	{
-		TVectorN<T, SIZE> Ret(*this);
-		for (int i = 0; i < SIZE; ++i)
+		TVectorN<T, DIM> Ret(*this);
+		for (int i = 0; i < DIM; ++i)
 		{
 			Ret[i] -= v[i];
 		}
 		return Ret;
 	}
 
-	TVectorN<T, SIZE> operator*(const TVectorN<T, SIZE>& v) const
+	inline TVectorN<T, DIM> operator*(const TVectorN<T, DIM>& v) const
 	{
-		TVectorN<T, SIZE> Ret(*this);
-		for (int i = 0; i < SIZE; ++i)
+		TVectorN<T, DIM> Ret(*this);
+		for (int i = 0; i < DIM; ++i)
 		{
 			Ret[i] *= v[i];
 		}
 		return Ret;
 	}
 
-	TVectorN<T, SIZE> operator*(T k) const
+	inline TVectorN<T, DIM> operator*(T k) const
 	{
-		TVectorN<T, SIZE> Ret(*this);
-		for (int i = 0; i < SIZE; ++i)
+		TVectorN<T, DIM> Ret(*this);
+		for (int i = 0; i < DIM; ++i)
 		{
 			Ret[i] *= k;
 		}
 		return Ret;
 	}
 
-	TVectorN<T, SIZE> operator/(T k) const
+	inline TVectorN<T, DIM> operator/(T k) const
 	{
 		return operator*((T)1 / k);
 	}
 
-	TVectorN<T, SIZE> operator-()
+	inline TVectorN<T, DIM> operator-()
 	{
-		TVectorN<T, SIZE> Ret(*this);
-		for (int i = 0; i < SIZE; ++i)
+		TVectorN<T, DIM> Ret(*this);
+		for (int i = 0; i < DIM; ++i)
 		{
 			Ret[i] = -Ret[i];
 		}
 		return Ret;
 	}
 
-	void	 operator+= (const TVectorN<T, SIZE>& v)
+	inline void	 operator+= (const TVectorN<T, DIM>& v)
 	{
-		for (int i = 0; i < SIZE; ++i)
+		for (int i = 0; i < DIM; ++i)
 		{
 			mData[i] += v[i];
 		}
 	}
 
-	void	 operator-= (const TVectorN<T, SIZE>& v)
+	inline void	 operator-= (const TVectorN<T, DIM>& v)
 	{
-		for (int i = 0; i < SIZE; ++i)
+		for (int i = 0; i < DIM; ++i)
 		{
 			mData[i] -= v[i];
 		}
 	}
 
-	void	 operator*= (const TVectorN<T, SIZE>& v)
+	inline void	 operator*= (const TVectorN<T, DIM>& v)
 	{
-		for (int i = 0; i < SIZE; ++i)
+		for (int i = 0; i < DIM; ++i)
 		{
 			mData[i] *= v[i];
 		}
 	}
 
-	void	 operator/= (const TVectorN<T, SIZE>& v)
+	inline void	 operator/= (const TVectorN<T, DIM>& v)
 	{
-		for (int i = 0; i < SIZE; ++i)
+		for (int i = 0; i < DIM; ++i)
 		{
 			mData[i] /= v[i];
 		}
 	}
 
-	void	 operator*= (T k)
+	inline void	 operator*= (T k)
 	{
-		for (int i = 0; i < SIZE; ++i)
+		for (int i = 0; i < DIM; ++i)
 		{
 			mData[i] *= k;
 		}
 	}
 
-	void	 operator/= (T k)
+	inline void	 operator/= (T k)
 	{
 		operator*= ((T)1 / k);
 	}
 
-	T			Dot(const TVectorN<T, SIZE>& v) const
+	inline T	Dot(const TVectorN<T, DIM>& v) const
 	{
 		T dp = (T)0;
-		for (int i = 0; i < SIZE; ++i)
+		for (int i = 0; i < DIM; ++i)
 		{
 			dp += mData[i] * v.mData[i];
 		}
 		return dp;
 	}
 
-	T			SquaredNorm() const
+	inline T	SquaredLength() const
 	{
 		return Dot(*this);
 	}
 
-	void		LoadZero()
+	T					L1Norm() const
 	{
-		memset(mData, 0, sizeof(T) * SIZE);
+		T sum = (T)0;
+		for (int i = 1; i < DIM; ++i)
+		{
+			sum += std::abs(mData[i]);
+		}
+		return sum;
 	}
 
-	static TVectorN<T, SIZE> Zero()
+	T					L2Norm() const
 	{
-		return TVectorN<T, SIZE>(true);
+		T sum = (T)0;
+		for (int i = 1; i < DIM; ++i)
+		{
+			sum += mData[i] * mData[i];
+		}
+		return std::sqrt(sum);
+	}
+
+	T					LpNorm(int p) const
+	{
+		T sum = (T)0;
+		for (int i = 1; i < DIM; ++i)
+		{
+			sum += std::pow(mData[i], p);
+		}
+		return std::pow(sum, (T)1 / p);
+	}
+
+	T					LInfinityNorm() const
+	{
+		T maxVal = mData[0];
+		for (int i = 1; i < DIM; ++i)
+		{
+			maxVal = std::max(maxVal, mData[i]);
+		}
+		return maxVal;
+	}
+
+	void		LoadZero()
+	{
+		memset(mData, 0, sizeof(T) * DIM);
+	}
+
+	static TVectorN<T, DIM> Zero()
+	{
+		return TVectorN<T, DIM>(true);
 	}
 
 private:
-	T	mData[SIZE];
+	T	mData[DIM];
 };
 
-template<int SIZE>
-using VectorNd = TVectorN<float, SIZE>;
+template<int DIM>
+using VectorN = TVectorN<float, DIM>;
 
 typedef TVectorN<float, 8>	Vector8;
 typedef TVectorN<float, 16>	Vector16;

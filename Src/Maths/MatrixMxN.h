@@ -3,7 +3,6 @@
 #include <string.h>
 #include <cmath>
 #include <type_traits>
-#include <vector>
 #include "VectorN.h"
 #include "Maths.h"
 #include "../LinearSystem/GaussianElimination.h"
@@ -52,11 +51,16 @@ public:
 		memcpy(mData, v.mData, sizeof(T) * ROWS * COLS);
 	}
 
-	TVectorN<T, COLS>	GetRow(int i) const
+	const TVectorN<T, COLS>&	GetRow(int i) const
 	{
-		TVectorN<T, COLS> Ret;
-		memcpy(Ret.Data(), mData + i * COLS, sizeof(T) * COLS);
-		return Ret;
+		const TVectorN<T, COLS>* row = static_cast<const TVectorN<T, COLS>*>((const void*)mData);
+		return row[i];
+	}
+
+	TVectorN<T, COLS>& GetRow(int i)
+	{
+		TVectorN<T, COLS>* row = static_cast<TVectorN<T, COLS>*>((void*)mData);
+		return row[i];
 	}
 
 	TVectorN<T, ROWS>	GetCol(int i) const
@@ -263,6 +267,26 @@ public:
 		return InvM;
 	}
 
+	T					L1Norm() const
+	{
+		T sum = (T)0;
+		for (int i = 1; i < ROWS * COLS; ++i)
+		{
+			sum += std::abs(mData[i]);
+		}
+		return sum;
+	}
+
+	T					L2Norm() const
+	{
+		T sum = (T)0;
+		for (int i = 1; i < ROWS * COLS; ++i)
+		{
+			sum += mData[i] * mData[i];
+		}
+		return std::sqrt(sum);
+	}
+
 	T					LpNorm(int p) const
 	{
 		T sum = (T)0;
@@ -321,11 +345,11 @@ inline TMatrixMxN<T, ROWS, COLS> operator* (T s, const TMatrixMxN<T, ROWS, COLS>
 	return vv * s;
 }
 
-template<typename T, int SIZE>
-using TMatrixN = TMatrixMxN<T, SIZE, SIZE>;
+template<typename T, int DIM>
+using TMatrixN = TMatrixMxN<T, DIM, DIM>;
 
 template<int ROWS, int COLS>
 using MatrixMxN = TMatrixMxN<float, ROWS, COLS>;
 
-template<int SIZE>
-using MatrixN = TMatrixN<float, SIZE>;
+template<int DIM>
+using MatrixN = TMatrixN<float, DIM>;

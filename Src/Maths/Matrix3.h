@@ -10,7 +10,6 @@ public:
 
 	explicit Matrix3()
 	{
-
 	}
 
 	explicit Matrix3(float m[3][3])
@@ -188,12 +187,12 @@ public:
 		return Vector3(mat[0][i], mat[1][i], mat[2][i]);
 	}
 
-	float Trace() const
+	inline float	Trace() const
 	{
 		return mat[0][0] + mat[1][1] + mat[2][2];
 	}
 
-	float L1Norm() const
+	float		L1Norm() const
 	{
 		float l1_norm = 0.0f;
 		const float* p = (const float *)this;
@@ -202,7 +201,7 @@ public:
 		return l1_norm;
 	}
 
-	float L2Norm() const
+	float		L2Norm() const
 	{
 		float l2_norm = 0.0f;
 		const float* p = (const float*)this;
@@ -211,13 +210,13 @@ public:
 		return l2_norm;
 	}
 
-	bool Invertible() const
+	bool		Invertible() const
 	{
 		float d = Determinant();
 		return fabsf(d) > 1e-6;
 	}
 
-	Matrix3 Inverse() const
+	Matrix3		Inverse() const
 	{
 		float d = Determinant();
 		// Warning!!! Assume d != 0
@@ -227,7 +226,7 @@ public:
 			(mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) * d, -(mat[0][0] * mat[2][1] - mat[0][1] * mat[2][0]) * d, (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) * d);
 	}
 	
-	Matrix3 PseudoInverse() const
+	Matrix3		PseudoInverse() const
 	{
 		Vector3 S;
 		Matrix3 U, V;
@@ -236,7 +235,7 @@ public:
 	}
 
 	// Solve AX = B
-	bool Solve(const Vector3& b, Vector3& x)
+	bool		Solve(const Vector3& b, Vector3& x)
 	{
 		float d = Determinant();
 		if (fabsf(d) < 1e-6)
@@ -302,8 +301,6 @@ public:
 	void		Orthonormalize();
 	bool		PolarDecomposeUP(Matrix3& U, Matrix3& P) const;
 	bool		PolarDecomposeU(Matrix3& U) const;
-	void		QDUDecompose(Matrix3& Q, Vector3& D, Vector3& U) const;
-	float		SpectralNorm() const;
 	void		TriDiagonal(float Diag[3], float SubDiag[3]);
 	bool		QRIteration(float Diag[3], float SubDiag[3]);
 	void		SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const;
@@ -322,13 +319,6 @@ public:
 inline Matrix3 operator* (float f, const Matrix3& mm)
 {
 	return mm * f;
-}
-
-inline Vector3 operator* (const Vector3 &v, const Matrix3& mm)
-{
-	return Vector3(v.x * mm[0][0] + v.y * mm[1][0] + v.z * mm[2][0],
-					v.x * mm[0][1] + v.y * mm[1][1] + v.z * mm[2][1],
-					v.x * mm[0][2] + v.y * mm[1][2] + v.z * mm[2][2]);
 }
 
 static_assert(sizeof(Matrix3) == 36, "sizeof Matrix3 is not valid");
