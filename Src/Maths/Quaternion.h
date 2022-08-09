@@ -10,7 +10,7 @@ class Quaternion
 public:
 	float x, y, z, w;
 
-	explicit Quaternion()
+	Quaternion()
 	{
 	}
 
@@ -77,6 +77,21 @@ public:
 	float SquareLength() const
 	{
 		return w * w + x * x + y * y + z * z;
+	}
+
+	void FromRotateX(float radian)
+	{
+		FromRotationAxis(Vector3::UnitX(), radian);
+	}
+
+	void FromRotateY(float radian)
+	{
+		FromRotationAxis(Vector3::UnitY(), radian);
+	}
+
+	void FromRotateZ(float radian)
+	{
+		FromRotationAxis(Vector3::UnitZ(), radian);
 	}
 
 	void FromRotationAxis(const Vector3& axis, float radian)

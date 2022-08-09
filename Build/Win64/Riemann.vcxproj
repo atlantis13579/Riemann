@@ -111,7 +111,12 @@
     <ClInclude Include="..\..\Src\Collision\DynamicAABBTree.h" />
     <ClInclude Include="..\..\Src\Collision\EPAPenetration.h" />
     <ClInclude Include="..\..\Src\Core\BatchList.h" />
+    <ClInclude Include="..\..\Src\Core\JobSystem.h" />
+    <ClInclude Include="..\..\Src\Core\LockFreeHashMap.h" />
+    <ClInclude Include="..\..\Src\Core\LockFreeList.h" />
     <ClInclude Include="..\..\Src\Core\StaticList.h" />
+    <ClInclude Include="..\..\Src\Core\StaticPool.h" />
+    <ClInclude Include="..\..\Src\Core\ThreadPool.h" />
     <ClInclude Include="..\..\Src\Destruction\GeometryCollection.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryDifference.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryIntersection.h" />

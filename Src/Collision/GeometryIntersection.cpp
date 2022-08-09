@@ -10,6 +10,7 @@
 #include "../CollisionPrimitive/Triangle3d.h"
 #include "../CollisionPrimitive/HeightField3d.h"
 #include "../CollisionPrimitive/Cylinder3d.h"
+#include "../CollisionPrimitive/OrientedBox3d.h"
 #include "../CollisionPrimitive/Capsule3d.h"
 #include "../CollisionPrimitive/ConvexMesh.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
@@ -60,6 +61,15 @@ inline bool			OverlapPlaneBox(const void* Obj1, const void* Obj2, const Geometry
 	Plane3d plane_new(Normal, Origin, plane->HalfThickness);
 	const AxisAlignedBox3d* box = static_cast<const AxisAlignedBox3d*>(Obj2);
 	return plane_new.IntersectAABB(box->Min, box->Max);
+}
+
+inline bool			OverlapBoxBox(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
+{
+	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
+	const AxisAlignedBox3d* box2 = static_cast<const AxisAlignedBox3d*>(Obj2);
+	OrientedBox3d obb1(transLocal1ToLocal2->LocalToWorld(box1->GetCenter()), box1->GetExtent(), transLocal1ToLocal2->Rotation.ToRotationMatrix3());
+	OrientedBox3d obb2(Vector3::Zero(), box2->GetExtent(), Matrix3::Identity());
+	return obb2.IntersectOBB(obb1);
 }
 
 inline bool			OverlapBoxPlane(const void* Obj1, const void* Obj2, const GeometryTransform* transLocal1ToLocal2)
@@ -153,7 +163,7 @@ GeometryIntersection::GeometryIntersection()
 	REG_GEOMETRY_OBJ(ShapeType3d::CONVEX_MESH,	ConvexMesh)
 	REG_GEOMETRY_OBJ(ShapeType3d::TRIANGLE_MESH,TriangleMesh)
 
-	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::BOX,				OverlapGJKSolver);
+	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::BOX,				OverlapBoxBox);
 	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::PLANE,				OverlapBoxPlane);
 	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::SPHERE,			OverlapTSphere<AxisAlignedBox3d>);
 	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::CAPSULE,			nullptr);

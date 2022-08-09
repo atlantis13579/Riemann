@@ -5,6 +5,7 @@
 #include "../Src/CollisionPrimitive/Plane3d.h"
 #include "../Src/CollisionPrimitive/Sphere3d.h"
 #include "../Src/CollisionPrimitive/Ray3d.h"
+#include "../Src/CollisionPrimitive/OrientedBox3d.h"
 #include "../Src/CollisionPrimitive/Triangle3d.h"
 #include "../Src/CollisionPrimitive/Cylinder3d.h"
 #include "../Src/CollisionPrimitive/Capsule3d.h"
@@ -279,6 +280,42 @@ void TestAABB()
 	bool intersect1 = box1.Intersect(box2);
 	bool intersect2 = box2.Intersect(box1);
 	EXPECT(intersect1 && intersect2);
+}
+
+void TestOBB()
+{
+	printf("Running TestOBB\n");
+
+	{
+		OrientedBox3d obb1(Vector3(0, 0, 0), Vector3(1, 1, 1), Matrix3::Identity());
+		OrientedBox3d obb2(Vector3(1, 1, 1), Vector3(5, 4, 4), Matrix3::Identity());
+		obb1.Rotation.LoadRotateY(PI_OVER_3);
+		obb2.Rotation.LoadRotateX(PI_OVER_3);
+		bool intersect = obb1.IntersectOBB(obb2);
+		EXPECT(intersect);
+
+		obb2.Center.x = 10.0f;
+
+		intersect = obb1.IntersectOBB(obb2);
+		EXPECT(!intersect);
+	}
+
+	{
+		Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
+		Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(2.5f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
+
+		EXPECT(!obb1->Overlap(obb2));
+
+		Quaternion quat;
+		quat.FromRotateZ(PI_OVER_4);
+		obb2->SetRotation(quat);
+		EXPECT(!obb1->Overlap(obb2));
+
+		obb1->SetRotation(quat);
+		EXPECT(obb1->Overlap(obb2));
+	}
+
+	return;
 }
 
 void TestOverlap()
@@ -632,12 +669,13 @@ void TestSAPInc()
 
 void TestCollision()
 {
+	TestOBB();
+	TestOverlap();
 	TestDynamicAABB();
 	TestSupport();
 	TestGJK();
 	TestEPA();
 	TestAABB();
-	TestOverlap();
 	TestRayAABB();
 	TestRTree1();
 	TestRTree2();

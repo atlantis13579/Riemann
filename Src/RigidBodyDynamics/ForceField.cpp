@@ -1,5 +1,4 @@
 
-#include <functional>
 #include "ForceField.h"
 #include "RigidBody.h"
 #include "../Geometry/DenseTensorField3d.h"
@@ -40,6 +39,17 @@ public:
 		Rigid->ApplyForce(Force);
 		return true;
 	}
+};
+
+typedef float (*AttenuationFunc)(float);
+
+class Attenuation
+{
+public:
+	static float	Linear(float x) { x = Clamp(1.0f - x, 0.0f, 1.0f); return x; }
+	static float	Square(float x) { x = Clamp(1.0f - x, 0.0f, 1.0f); return x * x; }
+	static float	Cubic(float x) { x = Clamp(1.0f - x, 0.0f, 1.0f); return x * x * x; }
+	static float	Sqrt(float x) { x = Clamp(1.0f - x, 0.0f, 1.0f); return sqrtf(x); }
 };
 
 class ExplosionField : public ForceField

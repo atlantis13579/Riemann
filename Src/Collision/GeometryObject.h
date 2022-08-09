@@ -51,10 +51,11 @@ struct GeometryTransform
 		return Rotation.Conjugate() * Dir;
 	}
 
+	// Center at object1 's center of mass
 	void		LoadLocal1ToLocal2(const GeometryTransform& t1, const GeometryTransform& t2)
 	{
-		Translation = t1.Translation - t2.Translation;
 		Rotation = t1.Rotation * t2.Rotation.Conjugate();
+		Translation = t1.Translation - t2.Translation;
 	}
 };
 

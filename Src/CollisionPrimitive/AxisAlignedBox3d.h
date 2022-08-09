@@ -131,14 +131,19 @@ public:
 	bool			IntersectSphere(const Vector3& Center, float Radius) const;
 	bool			IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
 
-	Vector3		ClosestPointTo(const Vector3& Point) const;
+	Vector3			ClosestPointTo(const Vector3& Point) const;
 	float			SqrDistanceToPoint(const Vector3& Point) const;
 	float			SqrDistanceToLine(const Vector3& P0, const Vector3& Dir, float* t) const;
 	float			SqrDistanceToSegment(const Vector3& P0, const Vector3& P1) const;
 
-	Vector3		GetCenter() const
+	Vector3			GetCenter() const
 	{
 		return (Max + Min) * 0.5f;
+	}
+
+	Vector3			GetExtent() const
+	{
+		return (Max - Min) * 0.5f;
 	}
 
 	Box3d			GetBoundingVolume() const

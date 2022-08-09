@@ -1,6 +1,7 @@
 
 #include "EPAPenetration.h"
 #include "../Core/StaticList.h"
+#include "../Core/StaticPool.h"
 
 // Expanding Polytope Algorithm
 // http://allenchou.net/2013/12/game-physics-contact-generation-epa/

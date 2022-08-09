@@ -510,6 +510,21 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\LCPSolver.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Core\JobSystem.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\ThreadPool.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\StaticPool.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\LockFreeHashMap.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\LockFreeList.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp">

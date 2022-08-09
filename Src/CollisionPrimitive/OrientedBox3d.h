@@ -10,7 +10,7 @@ class OrientedBox3d
 public:
 	Vector3	Center;
 	Vector3	Extent;
-	Matrix3	Rot;
+	Matrix3	Rotation;
 
 	OrientedBox3d()
 	{
@@ -20,10 +20,12 @@ public:
 	{
 		Center = _Center;
 		Extent = _Extent;
-		Rot = _Rot;
+		Rotation = _Rot;
 	}
 	
 	static OrientedBox3d CalcBoundingOBB_PCA(const Vector3 *points, int n);
+
+	bool IntersectOBB(const OrientedBox3d& obb);
 
 	float SqrDistanceToPoint(const Vector3& Point) const;
 	float SqrDistanceToLine(const Vector3& P0, const Vector3& Dir, float* t) const;
