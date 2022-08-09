@@ -129,7 +129,7 @@ public:
 		return fabsf(Dist);
 	}
 
-	Vector3		ClosestPointTo(const Vector3& Point) const
+	Vector3			ClosestPointTo(const Vector3& Point) const
 	{
 		float SignedDist = SignedDistanceTo(Point);
 		return Point - SignedDist * Normal;

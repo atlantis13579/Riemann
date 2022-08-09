@@ -566,14 +566,15 @@ bool AxisAlignedBox3d::IntersectCapsule(const Vector3& P0, const Vector3& P1, fl
 	minimum = std::min(minimum, x2);				\
 	maximum = std::max(maximum, x2);
 
-bool AxisAlignedBox3d::IntersectTriangle(const Vector3& tp0, const Vector3& tp1, const Vector3& tp2) const
+// The code from Physx
+bool AxisAlignedBox3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const
 {
 	Vector3 boxcenter = GetCenter();
 	Vector3 extents = GetExtent();
 
-	const Vector3 v0 = tp0 - boxcenter;
-	const Vector3 v1 = tp1 - boxcenter;
-	const Vector3 v2 = tp2 - boxcenter;
+	const Vector3 v0 = A - boxcenter;
+	const Vector3 v1 = B - boxcenter;
+	const Vector3 v2 = C - boxcenter;
 
 	// compute triangle edges
 	const Vector3 e0 = v1 - v0;	// tri edge 0

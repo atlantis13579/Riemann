@@ -353,18 +353,18 @@ public:
 		return (Closest - Point).SquareLength();
 	}
 	
-	float			SqrDistanceToPoint(const Vector3 &Point) const
+	float		SqrDistanceToPoint(const Vector3 &Point) const
 	{
 		return Triangle3d::SqrDistancePointToTriangle(Point, A, B, C);
 	}
 	
-	bool			IntersectSphere(const Vector3& Center, float Radius) const
+	bool		IntersectSphere(const Vector3& Center, float Radius) const
 	{
 		return SqrDistanceToPoint(Center) <= Radius * Radius;
 	}
 
 	// Moller CTrumbore intersection algorithm
-	static bool		RayIntersectTriangle(const Vector3& Origin,
+	static bool	RayIntersectTriangle(const Vector3& Origin,
 										const Vector3& Direction,
 										const Vector3& A,
 										const Vector3& B,
@@ -426,7 +426,7 @@ public:
 		return Vector3(a, b, 1.0f - a - b);
 	}
 	
-	static float 	TriangleArea3D(const Vector3& A, const Vector3& B, const Vector3& C)
+	static float TriangleArea3D(const Vector3& A, const Vector3& B, const Vector3& C)
 	{
 		float cx = (B.y - A.y) * (C.z - A.z) - (C.y - A.y) * (B.z - A.z);
 		float cy = (B.z - A.z) * (C.x - A.x) - (C.z - A.z) * (B.x - A.x);
@@ -434,12 +434,12 @@ public:
 		return 0.5f * sqrtf(cx * cx + cy * cy + cz * cz);
 	}
 	
-	float			CalcArea() const
+	float		CalcArea() const
 	{
 		return Triangle3d::TriangleArea3D(A, B, C);
 	}
 
-	Box3d			GetBoundingVolume() const
+	Box3d		GetBoundingVolume() const
 	{
 		Box3d box(A, A);
 		box.Encapsulate(B, C);
@@ -475,13 +475,13 @@ public:
 		return C;
 	}
 
-	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
+	int			GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 	{
 		*FacePoints = Triangle3d::GetSupport(A, B, C, Direction);
 		return 1;
 	}
 
-	void			GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
+	void		GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
 		Vertices = std::vector<Vector3>({ A , B, C });
 		Vector3 Nor = GetNormal();
@@ -489,7 +489,7 @@ public:
 		Indices = std::vector<uint16_t>({0,1,2 });
 	}
 
-	void			GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
+	void		GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		Vertices = std::vector<Vector3>({ A , B, C });
 		Indices = std::vector<uint16_t>({ 0,1, 1,2, 2,0 });

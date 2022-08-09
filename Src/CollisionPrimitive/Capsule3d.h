@@ -17,8 +17,8 @@
 class Capsule3d
 {
 public:
-	Vector3	X0;
-	Vector3	X1;
+	Vector3		X0;
+	Vector3		X1;
 	float		Length;
 	float		Radius;
 
@@ -81,6 +81,7 @@ public:
 	bool				IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	bool				IntersectSphere(const Vector3& rCenter, float rRadius) const;
 	bool				IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
+	bool				IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
 	float				GetVolume() const
 	{
@@ -92,7 +93,7 @@ public:
 		return (float)M_PI * Radius * Radius * (Height + 4.0f * Radius / 3.0f);
 	}
 
-	Matrix3			GetInertiaTensor(float Mass) const
+	Matrix3				GetInertiaTensor(float Mass) const
 	{
 		return GetInertiaTensor(Radius, GetHeight(), Mass);
 	}

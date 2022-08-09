@@ -133,12 +133,10 @@ GeometryIntersection::GeometryIntersection()
 	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::PLANE,				OverlapBoxPlane);
 	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::TRIANGLE,			OverlapTTriangle<AxisAlignedBox3d>);
 	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::HEIGHTFIELD,		OverlapBoxHeightfield);
-	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::CONVEX_MESH,		OverlapGJKSolver);
 	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::TRIANGLE_MESH,		nullptr);
 	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::PLANE,				OverlapPlanePlane);
 	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::TRIANGLE,			OverlapTTriangle<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::HEIGHTFIELD,		nullptr);
-	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::CONVEX_MESH,		OverlapGJKSolver);
 	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::TRIANGLE_MESH,		nullptr);
 	REG_OVERLAP_TEST(ShapeType3d::SPHERE, 		ShapeType3d::BOX,				OverlapSphereT<AxisAlignedBox3d>);
 	REG_OVERLAP_TEST(ShapeType3d::SPHERE, 		ShapeType3d::PLANE,				OverlapSphereT<Plane3d>);
@@ -146,16 +144,18 @@ GeometryIntersection::GeometryIntersection()
 	REG_OVERLAP_TEST(ShapeType3d::SPHERE, 		ShapeType3d::CAPSULE,			OverlapSphereT<Sphere3d>);
 	REG_OVERLAP_TEST(ShapeType3d::SPHERE, 		ShapeType3d::TRIANGLE,			OverlapSphereT<Triangle3d>);
 	REG_OVERLAP_TEST(ShapeType3d::SPHERE, 		ShapeType3d::HEIGHTFIELD,		nullptr);
-	REG_OVERLAP_TEST(ShapeType3d::SPHERE, 		ShapeType3d::CONVEX_MESH,		OverlapGJKSolver);
 	REG_OVERLAP_TEST(ShapeType3d::SPHERE, 		ShapeType3d::TRIANGLE_MESH,		nullptr);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::BOX,				OverlapCapsuleT<AxisAlignedBox3d>);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::PLANE,				OverlapCapsuleT<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::CAPSULE,			OverlapCapsuleT<Capsule3d>);
-	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::TRIANGLE,			nullptr);
+	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::TRIANGLE,			OverlapTTriangle<Capsule3d>);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::HEIGHTFIELD,		nullptr);
-	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::CONVEX_MESH,		OverlapGJKSolver);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::TRIANGLE_MESH,		nullptr);
-	REG_OVERLAP_TEST(ShapeType3d::CONVEX_MESH, 	ShapeType3d::CONVEX_MESH,		OverlapGJKSolver);
+	REG_OVERLAP_TEST(ShapeType3d::CONVEX_MESH,	ShapeType3d::BOX,				OverlapGJKSolver);
+	REG_OVERLAP_TEST(ShapeType3d::CONVEX_MESH,	ShapeType3d::PLANE,				OverlapGJKSolver);
+	REG_OVERLAP_TEST(ShapeType3d::CONVEX_MESH,	ShapeType3d::SPHERE,			OverlapGJKSolver);
+	REG_OVERLAP_TEST(ShapeType3d::CONVEX_MESH,	ShapeType3d::CAPSULE,			OverlapGJKSolver);
+	REG_OVERLAP_TEST(ShapeType3d::CONVEX_MESH,	ShapeType3d::CONVEX_MESH,		OverlapGJKSolver);
 }
 
 GeometryIntersection s_geom_registration;
