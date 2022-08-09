@@ -86,6 +86,41 @@ inline float InvSqrt(float x) {
 	return x;
 }
 
+template<typename T>
+inline T CubicRoot(const T polynomial[3])
+{
+	const T eps = (T)1e-6;
+	const T discr = polynomial[2] * polynomial[2] - 3 * polynomial[1];
+	if (discr <= eps)
+		return -polynomial[2] / 3;
+
+	T x = (T)1;
+	T val = polynomial[0] + x * (polynomial[1] + x * (polynomial[2] + x));
+	if (val < 0)
+	{
+		x = fabs(polynomial[0]);
+		float t = (T)1 + fabsf(polynomial[1]);
+		if (t > x)
+			x = t;
+		t = (T)1 + fabsf(polynomial[2]);
+		if (t > x)
+			x = t;
+	}
+
+	// Newton's method to find root
+	for (int i = 0; i < 16; ++i)
+	{
+		val = polynomial[0] + x * (polynomial[1] + x * (polynomial[2] + x));
+		if (fabs(val) <= eps)
+			return x;
+
+		float dev = polynomial[1] + 2 * x * polynomial[2] + 3 * x * x;
+		x -= val / dev;
+	}
+
+	return x;
+}
+
 // from http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel
 inline int BitCount(unsigned int v)
 {
@@ -116,7 +151,7 @@ inline float Epsilon()
 template <typename T>
 inline constexpr T Epsilon(T a)
 {
-	const T aa = std::abs(a) + (T)1;
+	const T aa = fabs(a) + (T)1;
 	if (aa == std::numeric_limits<T>::infinity())
 	{
 		return (T)kEpsilon;
@@ -181,3 +216,5 @@ inline bool FuzzyZero(float v1)
 {
 	return fabsf(v1) < 1e-6f;
 }
+
+

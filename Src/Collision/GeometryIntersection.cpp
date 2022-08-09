@@ -108,6 +108,8 @@ inline bool			OverlapBoxHeightfield(const void* Obj1, const void* Obj2, const Ge
 {
 	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
 	const HeightField3d* hf = static_cast<const HeightField3d*>(Obj2);
+	(void)box1;
+	(void)hf;
 	assert(false);
 	return false;
 }

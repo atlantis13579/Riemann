@@ -5,14 +5,14 @@
 
 bool Capsule3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 {
-	const Vector3 VX1 = Origin - X0;
+	const Vector3 vx0 = Origin - X0;
 	Vector3 Axis = (X1 - X0) / Length;
-	const float dp = DotProduct(VX1, Axis);
+	const float dp = DotProduct(vx0, Axis);
 	if (dp >= -Radius && dp <= Length + Radius)
 	{
 		const float proj = Clamp<float>(dp, 0, Length);
 		const Vector3 proj_pos = Axis * proj;
-		const float dist = (VX1 - proj_pos).SquareLength();
+		const float dist = (vx0 - proj_pos).SquareLength();
 		if (dist <= Radius * Radius)
 		{
 			*t = 0;
@@ -20,58 +20,54 @@ bool Capsule3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, fl
 		}
 	}
 
-	const float AxisDotDir = DotProduct(Axis, Direction);
-	const float AxisDotDir2 = AxisDotDir * AxisDotDir;
-	const float X1ToStartDotDir = DotProduct(VX1, Direction);
-	const float X1ToStart2 = VX1.SquareLength();
-	const float A = 1 - AxisDotDir2;
-	const float C = X1ToStart2 - dp * dp - Radius * Radius;
+	const float ad = DotProduct(Axis, Direction);
+	const float sqrDist = vx0.SquareLength();
+	const float a = 1 - ad * ad;
+	const float c = sqrDist - dp * dp - Radius * Radius;
 
 	bool bCheckCaps = false;
 
-	if (C <= 0.f)
+	if (c <= 0.f)
 	{
-		// Inside cylinder so check caps
 		bCheckCaps = true;
 	}
 	else
 	{
-		const float HalfB = (X1ToStartDotDir - dp * AxisDotDir);
-		const float QuarterUnderRoot = HalfB * HalfB - A * C;
+		const float b = DotProduct(vx0, Direction) - dp * ad;
+		const float delta = b * b - a * c;
 
-		if (QuarterUnderRoot < 0)
+		if (delta < 0)
 		{
 			bCheckCaps = true;
 		}
 		else
 		{
 			float time;
-			const bool bSingleHit = QuarterUnderRoot < 1e-4;
-			if (bSingleHit)
+			const bool hit = delta < 1e-4;
+			if (hit)
 			{
-				time = (A == 0) ? 0 : (-HalfB / A);
+				time = (a == 0) ? 0 : (-b / a);
 
 			}
 			else
 			{
-				time = (A == 0) ? 0 : ((-HalfB - sqrtf(QuarterUnderRoot)) / A); //we already checked for initial overlap so just take smallest time
-				if (time < 0)	//we must have passed the cylinder
+				time = (a == 0) ? 0 : ((-b - sqrtf(delta)) / a);
+				if (time < 0)
 				{
 					return false;
 				}
 			}
 
-			const Vector3 SpherePosition = Origin + Direction * time;
-			const Vector3 CylinderToSpherePosition = SpherePosition - X0;
-			const float PositionLengthOnCoreCylinder = DotProduct(CylinderToSpherePosition, Axis);
-			if (PositionLengthOnCoreCylinder >= 0 && PositionLengthOnCoreCylinder < Length)
+			const Vector3 pos = Origin + Direction * time;
+			const float dist = DotProduct(pos - X0, Axis);
+			if (dist >= 0 && dist < Length)
 			{
 				*t = time;
 				return true;
 			}
 			else
 			{
-				bCheckCaps = !bSingleHit;
+				bCheckCaps = !hit;
 			}
 		}
 	}

@@ -566,7 +566,8 @@ bool AxisAlignedBox3d::IntersectCapsule(const Vector3& P0, const Vector3& P1, fl
 	minimum = std::min(minimum, x2);				\
 	maximum = std::max(maximum, x2);
 
-// The code from Physx
+// Real Time Collision Detection - Christer Ericson
+// Chapter 5.2.9, page 169-172
 bool AxisAlignedBox3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const
 {
 	Vector3 boxcenter = GetCenter();

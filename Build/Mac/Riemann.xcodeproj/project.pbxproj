@@ -18,6 +18,13 @@
 		AD08836D289EA4C30008AB04 /* CholeskyDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = AD08836C289EA4C30008AB04 /* CholeskyDecomposition.h */; };
 		AD1DD0B0289F0EAB0085AA67 /* QRDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1DD0AF289F0EAB0085AA67 /* QRDecomposition.h */; };
 		AD1DD0B2289F60770085AA67 /* SparseVector.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1DD0B1289F60770085AA67 /* SparseVector.h */; };
+		ADA2A25828A29E67009EDBE2 /* JobSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25328A29E67009EDBE2 /* JobSystem.h */; };
+		ADA2A25928A29E67009EDBE2 /* ThreadPool.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25428A29E67009EDBE2 /* ThreadPool.h */; };
+		ADA2A25A28A29E67009EDBE2 /* LockFreeHashMap.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */; };
+		ADA2A25B28A29E67009EDBE2 /* LockFreeList.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25628A29E67009EDBE2 /* LockFreeList.h */; };
+		ADA2A25C28A29E67009EDBE2 /* StaticPool.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25728A29E67009EDBE2 /* StaticPool.h */; };
+		ADA2A25F28A2A18F009EDBE2 /* LCPSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25D28A2A18F009EDBE2 /* LCPSolver.h */; };
+		ADA2A26028A2A18F009EDBE2 /* LCPSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADA2A25E28A2A18F009EDBE2 /* LCPSolver.cpp */; };
 		ADAA4C3F28898D6000E8AE2E /* SequentialImpulseSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */; };
 		ADAA4C4028898D6000E8AE2E /* NarrowPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */; };
 		ADAA4C4128898D6000E8AE2E /* BroadPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3828898D6000E8AE2E /* BroadPhase.h */; };
@@ -150,12 +157,10 @@
 		ADD23C83288762B800A849BE /* libPPM.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C76288762B800A849BE /* libPPM.h */; };
 		ADD23C84288762B800A849BE /* PythonModule.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C77288762B800A849BE /* PythonModule.h */; };
 		ADD23C96288762C000A849BE /* ExponentialIntegrator.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C87288762C000A849BE /* ExponentialIntegrator.h */; };
-		ADD23C97288762C000A849BE /* LCPSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C88288762C000A849BE /* LCPSolver.cpp */; };
 		ADD23C99288762C000A849BE /* NumericalODESolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C8A288762C000A849BE /* NumericalODESolver.cpp */; };
 		ADD23C9A288762C000A849BE /* ConjugateGradientSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C8B288762C000A849BE /* ConjugateGradientSolver.h */; };
 		ADD23C9B288762C000A849BE /* NewtonRaphsonIteration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C8C288762C000A849BE /* NewtonRaphsonIteration.cpp */; };
 		ADD23C9C288762C000A849BE /* ProjectiveDynamicsSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C8D288762C000A849BE /* ProjectiveDynamicsSolver.cpp */; };
-		ADD23C9D288762C000A849BE /* LCPSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C8E288762C000A849BE /* LCPSolver.h */; };
 		ADD23C9F288762C000A849BE /* SparseConjugateGradientSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C90288762C000A849BE /* SparseConjugateGradientSolver.h */; };
 		ADD23CA0288762C000A849BE /* ProjectiveDynamicsSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C91288762C000A849BE /* ProjectiveDynamicsSolver.h */; };
 		ADD23CA1288762C000A849BE /* NewtonRaphsonIteration.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C92288762C000A849BE /* NewtonRaphsonIteration.h */; };
@@ -237,6 +242,13 @@
 		AD1DD0AF289F0EAB0085AA67 /* QRDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = QRDecomposition.h; path = ../../Src/LinearSystem/QRDecomposition.h; sourceTree = "<group>"; };
 		AD1DD0B1289F60770085AA67 /* SparseVector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseVector.h; path = ../../Src/LinearSystem/SparseVector.h; sourceTree = "<group>"; };
 		AD48C75928A133DB0035DEA9 /* gemm.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = gemm.inl; path = ../../Src/LinearSystem/gemm.inl; sourceTree = "<group>"; };
+		ADA2A25328A29E67009EDBE2 /* JobSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = JobSystem.h; path = ../../Src/Core/JobSystem.h; sourceTree = "<group>"; };
+		ADA2A25428A29E67009EDBE2 /* ThreadPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ThreadPool.h; path = ../../Src/Core/ThreadPool.h; sourceTree = "<group>"; };
+		ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LockFreeHashMap.h; path = ../../Src/Core/LockFreeHashMap.h; sourceTree = "<group>"; };
+		ADA2A25628A29E67009EDBE2 /* LockFreeList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LockFreeList.h; path = ../../Src/Core/LockFreeList.h; sourceTree = "<group>"; };
+		ADA2A25728A29E67009EDBE2 /* StaticPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = StaticPool.h; path = ../../Src/Core/StaticPool.h; sourceTree = "<group>"; };
+		ADA2A25D28A2A18F009EDBE2 /* LCPSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LCPSolver.h; path = ../../Src/RigidBodyDynamics/LCPSolver.h; sourceTree = "<group>"; };
+		ADA2A25E28A2A18F009EDBE2 /* LCPSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LCPSolver.cpp; path = ../../Src/RigidBodyDynamics/LCPSolver.cpp; sourceTree = "<group>"; };
 		ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SequentialImpulseSolver.h; path = ../../Src/RigidBodyDynamics/SequentialImpulseSolver.h; sourceTree = "<group>"; };
 		ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NarrowPhase.cpp; path = ../../Src/RigidBodyDynamics/NarrowPhase.cpp; sourceTree = "<group>"; };
 		ADAA4C3828898D6000E8AE2E /* BroadPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BroadPhase.h; path = ../../Src/RigidBodyDynamics/BroadPhase.h; sourceTree = "<group>"; };
@@ -369,12 +381,10 @@
 		ADD23C76288762B800A849BE /* libPPM.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libPPM.h; path = ../../Src/Tools/libPPM.h; sourceTree = "<group>"; };
 		ADD23C77288762B800A849BE /* PythonModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PythonModule.h; path = ../../Src/Tools/PythonModule.h; sourceTree = "<group>"; };
 		ADD23C87288762C000A849BE /* ExponentialIntegrator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ExponentialIntegrator.h; path = ../../Src/Solver/ExponentialIntegrator.h; sourceTree = "<group>"; };
-		ADD23C88288762C000A849BE /* LCPSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = LCPSolver.cpp; path = ../../Src/Solver/LCPSolver.cpp; sourceTree = "<group>"; };
 		ADD23C8A288762C000A849BE /* NumericalODESolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NumericalODESolver.cpp; path = ../../Src/Solver/NumericalODESolver.cpp; sourceTree = "<group>"; };
 		ADD23C8B288762C000A849BE /* ConjugateGradientSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConjugateGradientSolver.h; path = ../../Src/Solver/ConjugateGradientSolver.h; sourceTree = "<group>"; };
 		ADD23C8C288762C000A849BE /* NewtonRaphsonIteration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NewtonRaphsonIteration.cpp; path = ../../Src/Solver/NewtonRaphsonIteration.cpp; sourceTree = "<group>"; };
 		ADD23C8D288762C000A849BE /* ProjectiveDynamicsSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ProjectiveDynamicsSolver.cpp; path = ../../Src/Solver/ProjectiveDynamicsSolver.cpp; sourceTree = "<group>"; };
-		ADD23C8E288762C000A849BE /* LCPSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LCPSolver.h; path = ../../Src/Solver/LCPSolver.h; sourceTree = "<group>"; };
 		ADD23C90288762C000A849BE /* SparseConjugateGradientSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseConjugateGradientSolver.h; path = ../../Src/Solver/SparseConjugateGradientSolver.h; sourceTree = "<group>"; };
 		ADD23C91288762C000A849BE /* ProjectiveDynamicsSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ProjectiveDynamicsSolver.h; path = ../../Src/Solver/ProjectiveDynamicsSolver.h; sourceTree = "<group>"; };
 		ADD23C92288762C000A849BE /* NewtonRaphsonIteration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NewtonRaphsonIteration.h; path = ../../Src/Solver/NewtonRaphsonIteration.h; sourceTree = "<group>"; };
@@ -538,8 +548,6 @@
 			children = (
 				ADD23C8B288762C000A849BE /* ConjugateGradientSolver.h */,
 				ADD23C87288762C000A849BE /* ExponentialIntegrator.h */,
-				ADD23C88288762C000A849BE /* LCPSolver.cpp */,
-				ADD23C8E288762C000A849BE /* LCPSolver.h */,
 				ADD23C8C288762C000A849BE /* NewtonRaphsonIteration.cpp */,
 				ADD23C92288762C000A849BE /* NewtonRaphsonIteration.h */,
 				ADD23C8A288762C000A849BE /* NumericalODESolver.cpp */,
@@ -567,6 +575,8 @@
 				ADD23CA3288762CC00A849BE /* KeyFrameAnimation.h */,
 				ADD23CB3288762CC00A849BE /* KinematicsTree.cpp */,
 				ADD23CB5288762CC00A849BE /* KinematicsTree.h */,
+				ADA2A25E28A2A18F009EDBE2 /* LCPSolver.cpp */,
+				ADA2A25D28A2A18F009EDBE2 /* LCPSolver.h */,
 				ADD23CAD288762CC00A849BE /* MotionIntegration.cpp */,
 				ADD23CB4288762CC00A849BE /* MotionIntegration.h */,
 				ADAA4C3728898D6000E8AE2E /* NarrowPhase.cpp */,
@@ -746,6 +756,11 @@
 		ADD23B962887610100A849BE /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				ADA2A25328A29E67009EDBE2 /* JobSystem.h */,
+				ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */,
+				ADA2A25628A29E67009EDBE2 /* LockFreeList.h */,
+				ADA2A25728A29E67009EDBE2 /* StaticPool.h */,
+				ADA2A25428A29E67009EDBE2 /* ThreadPool.h */,
 				ADBBEE19288C468700C3D6CD /* BatchList.h */,
 				ADBBEE1A288C468700C3D6CD /* StaticList.h */,
 				ADD23C152887618C00A849BE /* Base.h */,
@@ -844,6 +859,7 @@
 				ADD23C062887616200A849BE /* ConvexMesh.h in Headers */,
 				ADBBEE15288C41A300C3D6CD /* Matrix4.h in Headers */,
 				ADBBEE1B288C468700C3D6CD /* BatchList.h in Headers */,
+				ADA2A25828A29E67009EDBE2 /* JobSystem.h in Headers */,
 				ADD23D26288762F900A849BE /* SingularValueDecomposition.h in Headers */,
 				ADD23BBE2887614E00A849BE /* SAP_Incremental.h in Headers */,
 				ADD23CB7288762CC00A849BE /* KeyFrameAnimation.h in Headers */,
@@ -888,6 +904,7 @@
 				ADBBEE1C288C468700C3D6CD /* StaticList.h in Headers */,
 				ADBBEE17288C41A300C3D6CD /* Vector4.h in Headers */,
 				ADF8622F2891876C00DBC516 /* StochasticGradientDescent.h in Headers */,
+				ADA2A25928A29E67009EDBE2 /* ThreadPool.h in Headers */,
 				ADD23C49288761AE00A849BE /* Spline.h in Headers */,
 				ADD23C172887618C00A849BE /* StaticArray.h in Headers */,
 				ADD23C79288762B800A849BE /* PhysxBinaryParser.h in Headers */,
@@ -895,6 +912,7 @@
 				AD02FE4E289AAFCB004D13D9 /* Convex.h in Headers */,
 				ADD23C4F288761AE00A849BE /* Voronoi2d.h in Headers */,
 				ADD23C7D288762B800A849BE /* libPng.h in Headers */,
+				ADA2A25F28A2A18F009EDBE2 /* LCPSolver.h in Headers */,
 				ADD23C212887619700A849BE /* Fracture.h in Headers */,
 				ADD23D24288762F900A849BE /* GaussSeidelIteration.h in Headers */,
 				ADD23D06288762ED00A849BE /* Tensor.h in Headers */,
@@ -902,6 +920,7 @@
 				AD08836B289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h in Headers */,
 				ADD23CFC288762ED00A849BE /* Transform.h in Headers */,
 				ADD23C4E288761AE00A849BE /* VoxelField.h in Headers */,
+				ADA2A25C28A29E67009EDBE2 /* StaticPool.h in Headers */,
 				ADD23BCD2887614E00A849BE /* Simplex.h in Headers */,
 				ADD23CBD288762CC00A849BE /* PhysicsMaterial.h in Headers */,
 				ADF2729C28954C8800E6FE68 /* ContinuousBitmap.h in Headers */,
@@ -944,7 +963,9 @@
 				ADD23C40288761AE00A849BE /* Polygon3d.h in Headers */,
 				ADD23BCF2887614E00A849BE /* MinkowskiSum.h in Headers */,
 				ADD23C052887616200A849BE /* Capsule3d.h in Headers */,
+				ADA2A25A28A29E67009EDBE2 /* LockFreeHashMap.h in Headers */,
 				ADD23B9B2887613100A849BE /* UncompressedKarmanVortex2D.h in Headers */,
+				ADA2A25B28A29E67009EDBE2 /* LockFreeList.h in Headers */,
 				ADD23CD8288762D900A849BE /* Circle.h in Headers */,
 				AD08836D289EA4C30008AB04 /* CholeskyDecomposition.h in Headers */,
 				ADD23CD7288762D900A849BE /* GJK2d.h in Headers */,
@@ -979,7 +1000,6 @@
 				ADD23D2C288762F900A849BE /* DenseVector.h in Headers */,
 				ADBBEE13288C41A300C3D6CD /* Matrix3.h in Headers */,
 				ADD23CC5288762CC00A849BE /* ForceField.h in Headers */,
-				ADD23C9D288762C000A849BE /* LCPSolver.h in Headers */,
 				ADD23BF82887616200A849BE /* Plane3d.h in Headers */,
 				ADD23C032887616200A849BE /* Sphere3d.h in Headers */,
 				ADD23CC4288762CC00A849BE /* Jacobian.h in Headers */,
@@ -1053,11 +1073,11 @@
 				ADD23BC42887614E00A849BE /* GeometryQuery.cpp in Sources */,
 				ADD23D1E288762F900A849BE /* DenseMatrix.cpp in Sources */,
 				ADAA4C4328898D6000E8AE2E /* BroadPhase.cpp in Sources */,
+				ADA2A26028A2A18F009EDBE2 /* LCPSolver.cpp in Sources */,
 				ADD23C44288761AE00A849BE /* VoxelField.cpp in Sources */,
 				ADD23CC0288762CC00A849BE /* RigidBodySimulation.cpp in Sources */,
 				ADD23C9B288762C000A849BE /* NewtonRaphsonIteration.cpp in Sources */,
 				ADD23C99288762C000A849BE /* NumericalODESolver.cpp in Sources */,
-				ADD23C97288762C000A849BE /* LCPSolver.cpp in Sources */,
 				ADD23C66288762AE00A849BE /* VehicleDynamics.cpp in Sources */,
 				ADD23CBC288762CC00A849BE /* ForceField.cpp in Sources */,
 				ADD23D21288762F900A849BE /* DenseVector.cpp in Sources */,

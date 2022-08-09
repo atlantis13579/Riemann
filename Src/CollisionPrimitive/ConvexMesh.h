@@ -116,8 +116,18 @@ public:
 
 	bool		VerifyIndices() const
 	{
+		if (NumFaces != (int)Faces.size())
+			return false;
+		
+		if (NumVertices != (int)Vertices.size())
+			return false;
+		
 		if (NumEdges != (int)Edges.size())
 			return false;
+		
+		if (EulerNumber() != 2)
+			return false;
+		
 		for (uint32_t i = 0; i < Edges.size(); ++i)
 		{
 			if (Edges[i].s >= NumVertices)
@@ -125,11 +135,29 @@ public:
 			if (Edges[i].e >= NumVertices)
 				return false;
 		}
+		
 		return true;
+	}
+	
+	void		BuildHull()
+	{
+		ComputeCenterOfMass();
+		ComputeBoundingVolume();
+		ComputeInertia();
+	}
+	
+	void		ComputeCenterOfMass()
+	{
+		CenterOfMass = Vector3::Zero();
+		for (size_t i = 0; i < Vertices.size(); ++i)
+		{
+			CenterOfMass += Vertices[i];
+		}
+		CenterOfMass *= (1.0f / Vertices.size());
 	}
 
 	// http://number-none.com/blow/inertia/deriving_i.html
-	void		CalcInertia()
+	void		ComputeInertia()
 	{
 		Vector3 mean;
 		for (size_t i = 0; i < Vertices.size(); ++i)
@@ -146,7 +174,7 @@ public:
 		{
 			for (size_t k = 0; k < Vertices.size(); ++k)
 			{
-				float cij = (Vertices[k][i] - mean[i]) * (Vertices[k][j] - mean[j]);
+				float cij = (Vertices[k][i] - CenterOfMass[i]) * (Vertices[k][j] - CenterOfMass[j]);
 				covariance_matrix[i][j] += cij;
 			}
 			covariance_matrix[i][j] /= Vertices.size();
@@ -168,7 +196,7 @@ public:
 		return;
 	}
 
-	void		BuildBoundingVolume()
+	void		ComputeBoundingVolume()
 	{
 		BoundingVolume.SetEmpty();
 		for (size_t i = 0; i < Vertices.size(); ++i)
@@ -241,7 +269,7 @@ public:
 
 		for (size_t i = 0; i < Vertices.size(); ++i)
 		{
-			float dot = Vertices[i].Dot(Direction);
+			const float dot = Vertices[i].Dot(Direction);
 			if (dot > max_dot)
 			{
 				max_dot = dot;

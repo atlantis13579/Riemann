@@ -565,40 +565,6 @@ bool Matrix3::PolarDecomposeUP(Matrix3& R, Matrix3& S) const
 	return true;
 }
 
-static float FindCubicRoot(const float polynomial[3])
-{
-	const float eps = 1e-6f;
-	float discr = polynomial[2] * polynomial[2] - 3.0f * polynomial[1];
-	if (discr <= eps)
-		return -polynomial[2] / 3.0f;
-
-	float x = 1.0;
-	float val = polynomial[0] + x * (polynomial[1] + x * (polynomial[2] + x));
-	if (val < 0.0)
-	{
-		x = fabsf(polynomial[0]);
-		float t = 1.0f + fabsf(polynomial[1]);
-		if (t > x)
-			x = t;
-		t = 1.0f + fabsf(polynomial[2]);
-		if (t > x)
-			x = t;
-	}
-
-	// Newton's method to find root
-	for (int i = 0; i < 16; ++i)
-	{
-		val = polynomial[0] + x * (polynomial[1] + x * (polynomial[2] + x));
-		if (fabsf(val) <= eps)
-			return x;
-
-		float dev = polynomial[1] + 2.0f * x * polynomial[2] + 3.0f * x * x;
-		x -= val / dev;
-	}
-
-	return x;
-}
-
 float Matrix3::ToAxisAngle(Vector3& Axis) const
 {
 	// Let (x,y,z) be the unit-length axis and let A be an angle of rotation.
