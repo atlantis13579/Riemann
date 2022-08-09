@@ -1,6 +1,6 @@
 
 #include "AxisAlignedBox3d.h"
-
+#include "Plane3d.h"
 
 static void face(unsigned int i0, unsigned int i1, unsigned int i2, Vector3& rkPnt, const Vector3& rkDir, const Vector3& extents, const Vector3& rkPmE, float* t, float& rfSqrDistance)
 {
@@ -509,6 +509,132 @@ bool AxisAlignedBox3d::IntersectCapsule(const Vector3& P0, const Vector3& P1, fl
 {
 	float SqrDist = SqrDistanceToSegment(P0, P1);
 	return SqrDist <= Radius * Radius;
+}
+
+
+#define AXISTEST_X01(a, b, fa, fb)					\
+	p0 = a*v0.y - b*v0.z;							\
+	p2 = a*v2.y - b*v2.z;							\
+	minimum = std::min(p0, p2);						\
+	maximum = std::max(p0, p2);						\
+	rad = fa * extents.y + fb * extents.z;			\
+	if(minimum>rad || maximum<-rad) return false;
+
+#define AXISTEST_X2(a, b, fa, fb)					\
+	p0 = a*v0.y - b*v0.z;							\
+	p1 = a*v1.y - b*v1.z;							\
+	minimum = std::min(p0, p1);						\
+	maximum = std::max(p0, p1);						\
+	rad = fa * extents.y + fb * extents.z;			\
+	if(minimum>rad || maximum<-rad) return false;
+
+#define AXISTEST_Y02(a, b, fa, fb)					\
+	p0 = -a*v0.x + b*v0.z;							\
+	p2 = -a*v2.x + b*v2.z;							\
+	minimum = std::min(p0, p2);						\
+	maximum = std::max(p0, p2);						\
+	rad = fa * extents.x + fb * extents.z;			\
+	if(minimum>rad || maximum<-rad) return false;
+
+#define AXISTEST_Y1(a, b, fa, fb)					\
+	p0 = -a*v0.x + b*v0.z;							\
+	p1 = -a*v1.x + b*v1.z;							\
+	minimum = std::min(p0, p1);						\
+	maximum = std::max(p0, p1);						\
+	rad = fa * extents.x + fb * extents.z;			\
+	if(minimum>rad || maximum<-rad) return false;
+
+#define AXISTEST_Z12(a, b, fa, fb)					\
+	p1 = a*v1.x - b*v1.y;							\
+	p2 = a*v2.x - b*v2.y;							\
+	minimum = std::min(p1, p2);						\
+	maximum = std::max(p1, p2);						\
+	rad = fa * extents.x + fb * extents.y;			\
+	if(minimum>rad || maximum<-rad) return false;
+
+#define AXISTEST_Z0(a, b, fa, fb)					\
+	p0 = a*v0.x - b*v0.y;							\
+	p1 = a*v1.x - b*v1.y;							\
+	minimum = std::min(p0, p1);						\
+	maximum = std::max(p0, p1);						\
+	rad = fa * extents.x + fb * extents.y;			\
+	if(minimum>rad || maximum<-rad) return false;
+
+#define FINDMINMAX(x0, x1, x2, minimum, maximum)	\
+	minimum = std::min(x0, x1);						\
+	maximum = std::max(x0, x1);						\
+	minimum = std::min(minimum, x2);				\
+	maximum = std::max(maximum, x2);
+
+bool AxisAlignedBox3d::IntersectTriangle(const Vector3& tp0, const Vector3& tp1, const Vector3& tp2) const
+{
+	Vector3 boxcenter = GetCenter();
+	Vector3 extents = GetExtent();
+
+	const Vector3 v0 = tp0 - boxcenter;
+	const Vector3 v1 = tp1 - boxcenter;
+	const Vector3 v2 = tp2 - boxcenter;
+
+	// compute triangle edges
+	const Vector3 e0 = v1 - v0;	// tri edge 0
+	const Vector3 e1 = v2 - v1;	// tri edge 1
+	const Vector3 e2 = v0 - v2;	// tri edge 2
+
+	float minimum, maximum, rad, p0, p1, p2;
+
+	// Bullet 3: test the 9 tests first (this was faster)
+	float fex = fabsf(e0.x);
+	float fey = fabsf(e0.y);
+	float fez = fabsf(e0.z);
+	AXISTEST_X01(e0.z, e0.y, fez, fey);
+	AXISTEST_Y02(e0.z, e0.x, fez, fex);
+	AXISTEST_Z12(e0.y, e0.x, fey, fex);
+
+	fex = fabsf(e1.x);
+	fey = fabsf(e1.y);
+	fez = fabsf(e1.z);
+	AXISTEST_X01(e1.z, e1.y, fez, fey);
+	AXISTEST_Y02(e1.z, e1.x, fez, fex);
+	AXISTEST_Z0(e1.y, e1.x, fey, fex);
+
+	fex = fabsf(e2.x);
+	fey = fabsf(e2.y);
+	fez = fabsf(e2.z);
+	AXISTEST_X2(e2.z, e2.y, fez, fey);
+	AXISTEST_Y1(e2.z, e2.x, fez, fex);
+	AXISTEST_Z12(e2.y, e2.x, fey, fex);
+
+	// Bullet 1:
+	//  first test overlap in the {x,y,z}-directions
+	//  find minimum, maximum of the triangle each direction, and test for overlap in
+	//  that direction -- this is equivalent to testing a minimal AABB around
+	//  the triangle against the AABB
+
+	// test in X-direction
+	FINDMINMAX(v0.x, v1.x, v2.x, minimum, maximum);
+	if (minimum > extents.x || maximum < -extents.x)
+		return false;
+
+	// test in Y-direction
+	FINDMINMAX(v0.y, v1.y, v2.y, minimum, maximum);
+	if (minimum > extents.y || maximum < -extents.y)
+		return false;
+
+	// test in Z-direction
+	FINDMINMAX(v0.z, v1.z, v2.z, minimum, maximum);
+	if (minimum > extents.z || maximum < -extents.z)
+		return false;
+
+	// Bullet 2:
+	//  test if the box intersects the plane of the triangle
+	//  compute plane equation of triangle: normal*x+d=0
+	Vector3 normal = e0.Cross(e1);
+	const float D = -DotProduct(normal, v0);	// plane eq: normal.x+d=0
+	Plane3d plane(normal, D);
+	if (!plane.IntersectAABB(-extents, extents))
+		return false;
+
+	return true;
 }
 
 Vector3 AxisAlignedBox3d::ClosestPointTo(const Vector3& Point) const

@@ -486,7 +486,7 @@ public:
 		Vertices = std::vector<Vector3>({ A , B, C });
 		Vector3 Nor = GetNormal();
 		Normals = std::vector<Vector3>({ Nor, Nor , Nor });
-		Indices = std::vector<uint16_t>({ 0,1,2, 2,3,0 });
+		Indices = std::vector<uint16_t>({0,1,2 });
 	}
 
 	void			GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)

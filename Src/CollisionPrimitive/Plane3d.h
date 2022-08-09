@@ -25,14 +25,14 @@ public:
 	{
 	}
 
-	Plane3d(const Vector3& InNormal, Vector3& InOrigin, float InHalfThickness)
+	Plane3d(const Vector3& InNormal, Vector3& InOrigin, const float InHalfThickness = kPlaneSmallThickness)
 	{
 		Normal = InNormal.Unit();
 		D = -InOrigin.Dot(Normal);
 		HalfThickness = InHalfThickness;
 	}
 
-	Plane3d(const Vector3& InNormal, float InD, float InHalfThickness)
+	Plane3d(const Vector3& InNormal, float InD, const float InHalfThickness = kPlaneSmallThickness)
 	{
 		Normal = InNormal.Unit();
 		D = InD;
@@ -176,7 +176,7 @@ public:
 		return !Parallel;
 	}
 
-	float			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const
+	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const
 	{
 		float Dist = DistanceToTriangle(A, B, C);
 		return Dist > 0.0f;

@@ -109,10 +109,23 @@ Geometry::Geometry()
 bool				Geometry::Overlap(const Geometry* Geom) const
 {
 	OverlapFunc func = GeometryIntersection::GetOverlapFunc(m_Type, Geom->GetShapeType());
-	assert(func);
-	Geometry2Transform trans;
-	trans.LoadLocal2(m_CenterOfMassTransform, *Geom->GetCenterOfMassTransform());
-	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &trans);
+	if (func)
+	{
+		Geometry2Transform trans;
+		trans.LoadLocal2(m_CenterOfMassTransform, *Geom->GetCenterOfMassTransform());
+		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &trans);
+	}
+
+	func = GeometryIntersection::GetOverlapFunc(Geom->GetShapeType(), m_Type);
+	if (func)
+	{
+		Geometry2Transform trans;
+		trans.LoadLocal2(*Geom->GetCenterOfMassTransform(), m_CenterOfMassTransform);
+		return func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), &trans);
+	}
+
+	assert(false);
+	return false;
 }
 
 bool				Geometry::Sweep(const Geometry* Geom, const Vector3& Direction, float* t) const

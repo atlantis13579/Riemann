@@ -53,16 +53,6 @@ bool				OverlapPlanePlane(const void* Obj1, const void* Obj2, const Geometry2Tra
 	return plane2->IntersectPlane(plane_new.Normal, plane_new.D);
 }
 
-inline bool			OverlapPlaneBox(const void* Obj1, const void* Obj2, const Geometry2Transform* transLocal1ToLocal2)
-{
-	const Plane3d* plane = static_cast<const Plane3d*>(Obj1);
-	Vector3 Normal = transLocal1ToLocal2->Local2ToWorldDirection(plane->Normal);
-	Vector3 Origin = transLocal1ToLocal2->Local2ToWorld(plane->GetOrigin());
-	Plane3d plane_new(Normal, Origin, plane->HalfThickness);
-	const AxisAlignedBox3d* box = static_cast<const AxisAlignedBox3d*>(Obj2);
-	return plane_new.IntersectAABB(box->Min, box->Max);
-}
-
 inline bool			OverlapBoxBox(const void* Obj1, const void* Obj2, const Geometry2Transform* transLocal1ToLocal2)
 {
 	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
@@ -93,16 +83,6 @@ inline bool			OverlapSphereT(const void* Obj1, const void* Obj2, const Geometry2
 }
 
 template <class T>
-inline bool			OverlapTSphere(const void* Obj1, const void* Obj2, const Geometry2Transform* transLocal1ToLocal2)
-{
-	const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj2);
-	float Radius = sphere->Radius;
-	Vector3 Center = transLocal1ToLocal2->WorldToLocal2(sphere->Center);
-	const T* p = static_cast<const T*>(Obj1);
-	return p->IntersectSphere(Center, Radius);
-}
-
-template <class T>
 inline bool			OverlapCapsuleT(const void* Obj1, const void* Obj2, const Geometry2Transform* transLocal1ToLocal2)
 {
 	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj1);
@@ -114,28 +94,6 @@ inline bool			OverlapCapsuleT(const void* Obj1, const void* Obj2, const Geometry
 }
 
 template <class T>
-inline bool			OverlapTCapsule(const void* Obj1, const void* Obj2, const Geometry2Transform* transLocal1ToLocal2)
-{
-	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj2);
-	float Radius = capsule->Radius;
-	Vector3 P0 = transLocal1ToLocal2->WorldToLocal2(capsule->X0);
-	Vector3 P1 = transLocal1ToLocal2->WorldToLocal2(capsule->X1);
-	const T* p = static_cast<const T*>(Obj1);
-	return p->IntersectCapsule(P0, P1, Radius);
-}
-
-template <class T>
-inline bool			OverlapTriangleT(const void* Obj1, const void* Obj2, const Geometry2Transform* transLocal1ToLocal2)
-{
-	const Triangle3d* tri = static_cast<const Triangle3d*>(Obj1);
-	Vector3 A = transLocal1ToLocal2->Local2ToWorld(tri->A);
-	Vector3 B = transLocal1ToLocal2->Local2ToWorld(tri->B);
-	Vector3 C = transLocal1ToLocal2->Local2ToWorld(tri->C);
-	const T* p = static_cast<const T*>(Obj2);
-	return p->IntersectTriangle(A, B, C);
-}
-
-template <class T>
 inline bool			OverlapTTriangle(const void* Obj1, const void* Obj2, const Geometry2Transform* transLocal1ToLocal2)
 {
 	const Triangle3d* tri = static_cast<const Triangle3d*>(Obj2);
@@ -144,6 +102,14 @@ inline bool			OverlapTTriangle(const void* Obj1, const void* Obj2, const Geometr
 	Vector3 C = transLocal1ToLocal2->WorldToLocal2(tri->C);
 	const T* p = static_cast<const T*>(Obj1);
 	return p->IntersectTriangle(A, B, C);
+}
+
+inline bool			OverlapBoxHeightfield(const void* Obj1, const void* Obj2, const Geometry2Transform* transLocal1ToLocal2)
+{
+	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
+	const HeightField3d* hf = static_cast<const HeightField3d*>(Obj2);
+	assert(false);
+	return false;
 }
 
 #define	REG_GEOMETRY_OBJ(_type, _name)				\
@@ -165,16 +131,11 @@ GeometryIntersection::GeometryIntersection()
 
 	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::BOX,				OverlapBoxBox);
 	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::PLANE,				OverlapBoxPlane);
-	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::SPHERE,			OverlapTSphere<AxisAlignedBox3d>);
-	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::CAPSULE,			nullptr);
-	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::TRIANGLE,			nullptr);
-	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::HEIGHTFIELD,		nullptr);
+	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::TRIANGLE,			OverlapTTriangle<AxisAlignedBox3d>);
+	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::HEIGHTFIELD,		OverlapBoxHeightfield);
 	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::CONVEX_MESH,		OverlapGJKSolver);
 	REG_OVERLAP_TEST(ShapeType3d::BOX,			ShapeType3d::TRIANGLE_MESH,		nullptr);
-	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::BOX,				OverlapPlaneBox);
 	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::PLANE,				OverlapPlanePlane);
-	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::SPHERE,			OverlapTSphere<Plane3d>);
-	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::CAPSULE,			OverlapTCapsule<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::TRIANGLE,			OverlapTTriangle<Plane3d>);
 	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::HEIGHTFIELD,		nullptr);
 	REG_OVERLAP_TEST(ShapeType3d::PLANE,		ShapeType3d::CONVEX_MESH,		OverlapGJKSolver);
@@ -189,18 +150,12 @@ GeometryIntersection::GeometryIntersection()
 	REG_OVERLAP_TEST(ShapeType3d::SPHERE, 		ShapeType3d::TRIANGLE_MESH,		nullptr);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::BOX,				OverlapCapsuleT<AxisAlignedBox3d>);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::PLANE,				OverlapCapsuleT<Plane3d>);
-	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::SPHERE,			OverlapTSphere<Capsule3d>);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::CAPSULE,			OverlapCapsuleT<Capsule3d>);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::TRIANGLE,			nullptr);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::HEIGHTFIELD,		nullptr);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::CONVEX_MESH,		OverlapGJKSolver);
 	REG_OVERLAP_TEST(ShapeType3d::CAPSULE, 		ShapeType3d::TRIANGLE_MESH,		nullptr);
-	REG_OVERLAP_TEST(ShapeType3d::HEIGHTFIELD, 	ShapeType3d::BOX,				nullptr);
 	REG_OVERLAP_TEST(ShapeType3d::CONVEX_MESH, 	ShapeType3d::CONVEX_MESH,		OverlapGJKSolver);
-	REG_OVERLAP_TEST(ShapeType3d::TRIANGLE, 	ShapeType3d::BOX,				nullptr);
-	REG_OVERLAP_TEST(ShapeType3d::TRIANGLE, 	ShapeType3d::PLANE,				OverlapTriangleT<Plane3d>);
-	REG_OVERLAP_TEST(ShapeType3d::TRIANGLE, 	ShapeType3d::SPHERE,			OverlapTSphere<Triangle3d>);
-	REG_OVERLAP_TEST(ShapeType3d::TRIANGLE_MESH, ShapeType3d::BOX,				nullptr);
 }
 
 GeometryIntersection s_geom_registration;

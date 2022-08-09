@@ -153,7 +153,8 @@ public:
 
 		for (int i = 0; i < Mesh->mHullData.mNbPolygons; ++i)
 		{
-			ConvMesh->AddFace(Mesh->mHullData.mPolygons[i].mPlane);
+			const physx::HullPolygonData& poly = Mesh->mHullData.mPolygons[i];
+			ConvMesh->AddFace(poly.mPlane, poly.mNbVerts, poly.mVRef8);
 		}
 		ConvMesh->SetVerties(Mesh->mHullData.getVerts(), Mesh->mHullData.mNbHullVertices);
 

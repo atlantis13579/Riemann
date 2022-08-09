@@ -102,11 +102,11 @@ public:
 		return BV;
 	}
 
-    bool    IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
-	bool    IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
-    bool    IntersectRay(const Vector3& Origin, const Vector3& Direction, const HeightFieldHitOption& Option, HeightFieldHitResult *Result) const;
+    bool		IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
+	bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
+    bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, const HeightFieldHitOption& Option, HeightFieldHitResult *Result) const;
 
-	Vector3    GetSupport(const Vector3& Direction) const
+	Vector3		GetSupport(const Vector3& Direction) const
 	{
 		assert(false);
 		return Vector3::Zero();
@@ -128,43 +128,9 @@ public:
 
 	int		GetCellTriangle(int i, int j, Vector3 Tris[6]) const;
 
-	int		GetCellTriangle(int i, int j, uint32_t Tris[6]) const
-	{
-		assert(0 <= i && i < (int)nX - 1);
-		assert(0 <= j && j < (int)nZ - 1);
-		
-		bool tessFlag = Cells[i + j * nX].Tessellation0 & 0x80;
-		uint16_t i0 = j * nX + i;
-		uint16_t i1 = j * nX + i + 1;
-		uint16_t i2 = (j + 1) * nX + i;
-		uint16_t i3 = (j + 1) * nX + i + 1;
-		// i2---i3
-		// |    |
-		// |    |
-		// i0---i1
-		uint8_t Hole0 = Cells[i + j * nX].Tessellation0;
-		uint8_t Hole1 = Cells[i + j * nX].Tessellation1;
+	int		GetCellTriangle(int i, int j, uint32_t Tris[6]) const;
 
-		int nt = 0;
-		if (Hole0 != 0x7F)
-		{
-			Tris[0] = i2;
-			Tris[1] = i0;
-			Tris[2] = tessFlag ? i3 : i1;
-			nt += 3;
-		}
-		if (Hole1 != 0x7F)
-		{
-			Tris[nt + 0] = i3;
-			Tris[nt + 1] = tessFlag ? i0 : i2;
-			Tris[nt + 2] = i1;
-			nt += 3;
-		}
-
-		return nt;
-	}
-
-	void GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
+	void	GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
 		if (nZ * nZ == 0)
 		{
