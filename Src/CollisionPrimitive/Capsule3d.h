@@ -25,9 +25,9 @@ public:
 public:
 	Capsule3d() {}
 
-	Capsule3d(const Vector3& InX1, const Vector3& InX2, float InRadius)
+	Capsule3d(const Vector3& InX0, const Vector3& InX1, float InRadius)
 	{
-		Init(InX1, InX2, InRadius);
+		Init(InX0, InX1, InRadius);
 	}
 
 	static constexpr ShapeType3d	StaticType()

@@ -25,7 +25,7 @@ public:
 		return (Point - Closest).SquareLength();
 	}
 
-	Vector3		ClosestPointTo(const Vector3& Point) const
+	Vector3			ClosestPointTo(const Vector3& Point) const
 	{
 		return Segment3d::ClosestPointOnSegment(P0, P1, Point);
 	}
