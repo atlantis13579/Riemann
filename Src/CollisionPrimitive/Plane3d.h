@@ -61,14 +61,14 @@ public:
 		return false;
 	}
 
-	bool			IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 	{
-		return RayIntersectPlane(Origin, Dir, Normal, D, t);
+		return RayIntersectPlane(Origin, Direction, Normal, D, t);
 	}
 
-	static bool		RayIntersectPlane(const Vector3& Origin, const Vector3& Dir, const Vector3 & Normal, float D, float* t)
+	static bool		RayIntersectPlane(const Vector3& Origin, const Vector3& Direction, const Vector3 & Normal, float D, float* t)
 	{
-		const float det = Dir.Dot(Normal);
+		const float det = Direction.Dot(Normal);
 		if (det > -kEpsilonPlane && det < kEpsilonPlane) {
 			return false;
 		}
@@ -258,24 +258,24 @@ public:
 		return Matrix3(1, 1, 1);
 	}
 
-	Vector3		GetSupport(const Vector3& dir) const
+	Vector3		GetSupport(const Vector3& Direction) const
 	{
 		Box3d box = GetBoundingVolume();
 		return Vector3(
-			dir.x > 0 ? box.mMax.x : box.mMin.x,
-			dir.y > 0 ? box.mMax.y : box.mMin.y,
-			dir.z > 0 ? box.mMax.z : box.mMin.z
+			Direction.x > 0 ? box.mMax.x : box.mMin.x,
+			Direction.y > 0 ? box.mMax.y : box.mMin.y,
+			Direction.z > 0 ? box.mMax.z : box.mMin.z
 		);
 	}
 
-	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
+	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 	{
 		Box3d box = GetBoundingVolume();
 		const Vector3& Bmin = box.mMin;
 		const Vector3& Bmax = box.mMax;
 
-		int axis = dir.Abs().LargestAxis();
-		if (dir[axis] < 0.0f)
+		int axis = Direction.Abs().LargestAxis();
+		if (Direction[axis] < 0.0f)
 		{
 			switch (axis)
 			{

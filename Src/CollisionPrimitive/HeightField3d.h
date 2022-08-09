@@ -103,16 +103,16 @@ public:
 	}
 
     bool    IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
-	bool    IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const;
-    bool    IntersectRay(const Vector3& Origin, const Vector3& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult *Result) const;
+	bool    IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
+    bool    IntersectRay(const Vector3& Origin, const Vector3& Direction, const HeightFieldHitOption& Option, HeightFieldHitResult *Result) const;
 
-	Vector3    GetSupport(const Vector3& dir) const
+	Vector3    GetSupport(const Vector3& Direction) const
 	{
 		assert(false);
 		return Vector3::Zero();
 	}
 
-	int			GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
+	int			GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 	{
 		assert(false);
 		return 0;
@@ -227,7 +227,7 @@ public:
 	}
     
 private:
-	bool IntersectRayBruteForce(const Vector3& Origin, const Vector3& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
-    bool IntersectRayCell(const Vector3& Origin, const Vector3& Dir, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
-    bool IntersectRayY(const Vector3& Origin, const Vector3& Dir, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
+	bool IntersectRayBruteForce(const Vector3& Origin, const Vector3& Direction, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
+    bool IntersectRayCell(const Vector3& Origin, const Vector3& Direction, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
+    bool IntersectRayY(const Vector3& Origin, const Vector3& Direction, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
 };

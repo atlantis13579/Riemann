@@ -67,13 +67,13 @@ public:
 		return true;
 	}
 
-	static bool		RayIntersectAABB(const Vector3& Origin, const Vector3& Dir, const Vector3& Bmin, const Vector3& Bmax, float* t)
+	static bool		RayIntersectAABB(const Vector3& Origin, const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t)
 	{
 		float enter = 0.0f, exit = 1.0f;
 
 		for (int i = 0; i < 3; ++i)
 		{
-			if (!RayIntersectAABB_1D(Origin[i], Dir[i], Bmin[i], Bmax[i], &enter, &exit))
+			if (!RayIntersectAABB_1D(Origin[i], Direction[i], Bmin[i], Bmax[i], &enter, &exit))
 			{
 				return false;
 			}
@@ -88,14 +88,14 @@ public:
 		return false;
 	}
 
-	static bool		RayIntersectAABB2(const Vector3& Origin, const Vector3& Dir, const Vector3& Bmin, const Vector3& Bmax, float thickness, float maxDist, float* t0, float* t1)
+	static bool		RayIntersectAABB2(const Vector3& Origin, const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float thickness, float maxDist, float* t0, float* t1)
 	{
 		const float kEpsilon = 1e-9f;
 
 		Vector3 invD;
-		invD.x = 1.0f / (std::max(fabsf(Dir.x), kEpsilon) * (Dir.x >= 0 ? 1.0f : -1.0f));
-		invD.y = 1.0f / (std::max(fabsf(Dir.y), kEpsilon) * (Dir.y >= 0 ? 1.0f : -1.0f));
-		invD.z = 1.0f / (std::max(fabsf(Dir.z), kEpsilon) * (Dir.z >= 0 ? 1.0f : -1.0f));
+		invD.x = 1.0f / (std::max(fabsf(Direction.x), kEpsilon) * (Direction.x >= 0 ? 1.0f : -1.0f));
+		invD.y = 1.0f / (std::max(fabsf(Direction.y), kEpsilon) * (Direction.y >= 0 ? 1.0f : -1.0f));
+		invD.z = 1.0f / (std::max(fabsf(Direction.z), kEpsilon) * (Direction.z >= 0 ? 1.0f : -1.0f));
 
 		Vector3 b0 = (Bmin - thickness - Origin) * invD;
 		Vector3 b1 = (Bmax + thickness - Origin) * invD;

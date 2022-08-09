@@ -58,9 +58,9 @@ public:
 		return cross.Unit();
 	}
 
-	bool			IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 	{
-		return RayIntersectTriangle(Origin, Dir, A, B, C, t);
+		return RayIntersectTriangle(Origin, Direction, A, B, C, t);
 	}
 
 	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
@@ -365,7 +365,7 @@ public:
 
 	// Moller CTrumbore intersection algorithm
 	static bool		RayIntersectTriangle(const Vector3& Origin,
-										const Vector3& Dir,
+										const Vector3& Direction,
 										const Vector3& A,
 										const Vector3& B,
 										const Vector3& C,
@@ -376,7 +376,7 @@ public:
 		const Vector3 e1 = B - A;
 		const Vector3 e2 = C - A;
 		//Begin calculating determinant - also used to calculate u parameter
-		const Vector3 P = Dir.Cross(e2);
+		const Vector3 P = Direction.Cross(e2);
 		//if determinant is near zero, ray lies in plane of triangle
 		const float det = e1.Dot(P);
 		//NOT CULLING
@@ -401,7 +401,7 @@ public:
 		const Vector3 Q = T.Cross(e1);
 
 		//Calculate V parameter and test bound
-		const float v = Dir.Dot(Q) * inv_det;
+		const float v = Direction.Dot(Q) * inv_det;
 		//The intersection lies outside of the triangle
 		if (v < 0.f || u + v  > 1.f)
 		{
@@ -452,16 +452,16 @@ public:
 		return Matrix3(1, 1, 1);
 	}
 
-	Vector3		GetSupport(const Vector3& dir) const
+	Vector3		GetSupport(const Vector3& Direction) const
 	{
-		return GetSupport(A, B, C, dir);
+		return GetSupport(A, B, C, Direction);
 	}
 
-	static Vector3 GetSupport(const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& Dir)
+	static Vector3 GetSupport(const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& Direction)
 	{
-		float dpa = DotProduct(A, Dir);
-		float dpb = DotProduct(B, Dir);
-		float dpc = DotProduct(C, Dir);
+		float dpa = DotProduct(A, Direction);
+		float dpb = DotProduct(B, Direction);
+		float dpc = DotProduct(C, Direction);
 
 		if (dpa >= dpb && dpa >= dpc)
 		{
@@ -475,9 +475,9 @@ public:
 		return C;
 	}
 
-	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
+	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 	{
-		*FacePoints = Triangle3d::GetSupport(A, B, C, dir);
+		*FacePoints = Triangle3d::GetSupport(A, B, C, Direction);
 		return 1;
 	}
 

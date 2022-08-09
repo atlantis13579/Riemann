@@ -55,7 +55,7 @@ void GeometryQuery::CreateDynamicGeometry()
 	m_dynamicPruner = new DynamicAABBTree;
 }
 
-bool GeometryQuery::RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption& Option, RayCastResult* Result)
+bool GeometryQuery::RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult* Result)
 {
 	Result->Reset();
 	
@@ -63,7 +63,7 @@ bool GeometryQuery::RayCast(const Vector3& Origin, const Vector3& Dir, const Ray
 	
 	if (m_staticGeometry)
 	{
-		Ray3d ray(Origin, Dir);
+		Ray3d ray(Origin, Direction);
 		Geometry** pp = &m_Objects[0];
 		hit = m_staticGeometry->RayCast(ray, pp, &Option, Result);
 		
@@ -75,7 +75,7 @@ bool GeometryQuery::RayCast(const Vector3& Origin, const Vector3& Dir, const Ray
 	
 	if (m_dynamicPruner)
 	{
-		Ray3d ray(Origin, Dir);
+		Ray3d ray(Origin, Direction);
 		RayCastResult Result2;
 		bool hit_dynamic = m_dynamicPruner->RayCast(ray, &Option, &Result2);
 		if (hit_dynamic)

@@ -95,9 +95,9 @@ public:
 		return m_Rotation * Point + m_Translation;
 	}
 	
-	Vector3			LocalToWorldDirection(const Vector3& Dir) const
+	Vector3			LocalToWorldDirection(const Vector3& Direction) const
 	{
-		return m_Rotation * Dir;
+		return m_Rotation * Direction;
 	}
 
 	Vector3			WorldToLocal(const Vector3& Point)
@@ -111,9 +111,9 @@ public:
 		return m_Rotation.Conjugate() * (Point - m_Translation);
 	}
 
-	Vector3			WorldToLocalDirection(const Vector3& Dir) const
+	Vector3			WorldToLocalDirection(const Vector3& Direction) const
 	{
-		return m_Rotation.Conjugate() * Dir;
+		return m_Rotation.Conjugate() * Direction;
 	}
 
 	static Matrix4		BuildViewMatrix_RHCoordinateSystem(const Vector3& Eye, const Vector3& LookAt, const Vector3& Up)

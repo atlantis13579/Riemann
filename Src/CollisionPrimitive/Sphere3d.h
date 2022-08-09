@@ -31,16 +31,16 @@ public:
 	}
 
 public:
-	bool			IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 	{
-		return RayIntersectSphere(Origin, Dir, Center, Radius, t);
+		return RayIntersectSphere(Origin, Direction, Center, Radius, t);
 	}
 
-	static bool		RayIntersectSphere(const Vector3& Origin, const Vector3& Dir, const Vector3& Center, float Radius, float* t)
+	static bool		RayIntersectSphere(const Vector3& Origin, const Vector3& Direction, const Vector3& Center, float Radius, float* t)
 	{
 		Vector3 oc = Origin - Center;
-		float a = Dir.SquareLength();
-		float b = 2.0f * oc.Dot(Dir);
+		float a = Direction.SquareLength();
+		float b = 2.0f * oc.Dot(Direction);
 		float c = oc.SquareLength() - Radius * Radius;
 		float discriminant = b * b - 4 * a * c;
 		if (discriminant < 0)
@@ -129,25 +129,25 @@ public:
 		return Matrix3(Diagonal, Diagonal, Diagonal);
 	}
 
-	Vector3		GetSupport(const Vector3& dir) const
+	Vector3		GetSupport(const Vector3& Direction) const
 	{
-		return GetSupport(Center, Radius, dir);
+		return GetSupport(Center, Radius, Direction);
 	}
 
-	static Vector3 GetSupport(const Vector3& Center, float Radius, const Vector3& dir)
+	static Vector3 GetSupport(const Vector3& Center, float Radius, const Vector3& Direction)
 	{
-		float distSqr = dir.SquareLength();
+		float distSqr = Direction.SquareLength();
 		if (distSqr <= 1e-6)
 		{
 			return Center;
 		}
-		Vector3 Normalized = dir / sqrtf(distSqr);
+		Vector3 Normalized = Direction / sqrtf(distSqr);
 		return Center + Normalized * Radius;
 	}
 
-	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
+	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 	{
-		*FacePoints = Sphere3d::GetSupport(Center, Radius, dir);
+		*FacePoints = Sphere3d::GetSupport(Center, Radius, Direction);
 		return 1;
 	}
 

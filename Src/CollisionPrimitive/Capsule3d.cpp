@@ -3,7 +3,7 @@
 #include "Segment3d.h"
 #include "../Maths/Maths.h"
 
-bool Capsule3d::IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
+bool Capsule3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 {
 	const Vector3 X1ToStart = Origin - X0;
 	Vector3 Axis = (X1 - X0) / Length;
@@ -33,9 +33,9 @@ bool Capsule3d::IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t
 	//c = ||Origin-x1||^2 - <Axis, Origin-x1>^2 - R^2 Note this tells us if start point is inside (c < 0) or outside (c > 0) of cylinder
 
 	const float AxisDotX1ToStart2 = AxisDotX1ToStart * AxisDotX1ToStart;
-	const float AxisDotDir = DotProduct(Axis, Dir);
+	const float AxisDotDir = DotProduct(Axis, Direction);
 	const float AxisDotDir2 = AxisDotDir * AxisDotDir;
-	const float X1ToStartDotDir = DotProduct(X1ToStart, Dir);
+	const float X1ToStartDotDir = DotProduct(X1ToStart, Direction);
 	const float X1ToStart2 = X1ToStart.SquareLength();
 	const float A = 1 - AxisDotDir2;
 	const float C = X1ToStart2 - AxisDotX1ToStart2 - Radius * Radius;
@@ -74,7 +74,7 @@ bool Capsule3d::IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t
 				}
 			}
 
-			const Vector3 SpherePosition = Origin + Dir * Time;
+			const Vector3 SpherePosition = Origin + Direction * Time;
 			const Vector3 CylinderToSpherePosition = SpherePosition - X0;
 			const float PositionLengthOnCoreCylinder = DotProduct(CylinderToSpherePosition, Axis);
 			if (PositionLengthOnCoreCylinder >= 0 && PositionLengthOnCoreCylinder < Length)
@@ -102,8 +102,8 @@ bool Capsule3d::IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t
 		float Time1, Time2;
 		Vector3 Position1, Position2;
 		Vector3 Normal1, Normal2;
-		bool bHitX1 = X1Sphere.IntersectRay(Origin, Dir, &Time1);
-		bool bHitX2 = X2Sphere.IntersectRay(Origin, Dir, &Time2);
+		bool bHitX1 = X1Sphere.IntersectRay(Origin, Direction, &Time1);
+		bool bHitX2 = X2Sphere.IntersectRay(Origin, Direction, &Time2);
 
 		if (bHitX1 && bHitX2)
 		{

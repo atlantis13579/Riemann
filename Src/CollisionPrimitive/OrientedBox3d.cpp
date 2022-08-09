@@ -53,12 +53,12 @@ OrientedBox3d OrientedBox3d::CalcBoundingOBB_PCA(const Vector3 *points, int n)
 	return box;
 }
 
-float OrientedBox3d::SqrDistanceToLine(const Vector3& P0, const Vector3& Dir, float* t) const
+float OrientedBox3d::SqrDistanceToLine(const Vector3& P0, const Vector3& Direction, float* t) const
 {
 	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
 
 	const Vector3 P0_BoxSpace = Rotation * (P0 - Center);
-	const Vector3 Dir_BoxSpace = Rotation * Dir;
+	const Vector3 Dir_BoxSpace = Rotation * Direction;
 
 	float SqrDist = aabb.SqrDistanceToLine(P0_BoxSpace, Dir_BoxSpace, t);
 	return SqrDist;
@@ -171,7 +171,13 @@ static bool OBBIntersectOBB(const Vector3& ca, const Vector3& ea, const Matrix3&
 	return true;
 }
 
-bool OrientedBox3d::IntersectOBB(const OrientedBox3d& obb)
+bool OrientedBox3d::IntersectOBB(const OrientedBox3d& obb) const
 {
 	return OBBIntersectOBB(Center, Extent, Rotation, obb.Center, obb.Extent, obb.Rotation);
+}
+
+bool OrientedBox3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
+{
+	const OrientedBox3d obb((Bmax + Bmin) * 0.5f, (Bmax - Bmin) * 0.5f, Matrix3::Identity());
+	return IntersectOBB(obb);
 }

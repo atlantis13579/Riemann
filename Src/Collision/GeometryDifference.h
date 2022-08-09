@@ -14,14 +14,14 @@ public:
 	const Geometry* Geom1;
 	const Geometry* Geom2;
 
-	inline Vector3 Support1(const Vector3& Dir) const
+	inline Vector3 Support1(const Vector3& Direction) const
 	{
-		return Geom1->GetSupport_WorldSpace(Dir);
+		return Geom1->GetSupport_WorldSpace(Direction);
 	}
 
-	inline Vector3 Support2(const Vector3& Dir) const
+	inline Vector3 Support2(const Vector3& Direction) const
 	{
-		return Geom2->GetSupport_WorldSpace(Dir);
+		return Geom2->GetSupport_WorldSpace(Direction);
 	}
 	
 	virtual Vector3 Center() const override
@@ -31,10 +31,10 @@ public:
 		return position1 - position2;
 	}
 
-	virtual Vector3 Support(const Vector3& Dir) const override
+	virtual Vector3 Support(const Vector3& Direction) const override
 	{
-		Vector3 support1 = Support1(Dir);
-		Vector3 support2 = Support2(-Dir);
+		Vector3 support1 = Support1(Direction);
+		Vector3 support2 = Support2(-Direction);
 		Vector3 diff = support1 - support2;
 		return diff;
 	}

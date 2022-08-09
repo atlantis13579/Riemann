@@ -21,10 +21,10 @@ SweepFunc		GeometryIntersection::sweepTable[(int)ShapeType3d::TYPE_COUNT][(int)S
 OverlapFunc		GeometryIntersection::overlapTable[(int)ShapeType3d::TYPE_COUNT][(int)ShapeType3d::TYPE_COUNT] = { 0 };
 
 template <class T>
-inline bool			RayCastT(void* Obj, const Vector3& Origin, const Vector3& Dir, float* t)
+inline bool			RayCastT(void* Obj, const Vector3& Origin, const Vector3& Direction, float* t)
 {
 	T* p = static_cast<T*>(Obj);
-	return p->IntersectRay(Origin, Dir, t);
+	return p->IntersectRay(Origin, Direction, t);
 }
 
 bool 				OverlapGJKSolver(const void* Obj1, const void* Obj2, const Geometry2Transform* transLocal1ToLocal2)

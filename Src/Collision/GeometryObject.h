@@ -36,9 +36,9 @@ struct GeometryTransform
 		return Rotation * Point + Translation;
 	}
 
-	inline Vector3	LocalToWorldDirection(const Vector3& Dir) const
+	inline Vector3	LocalToWorldDirection(const Vector3& Direction) const
 	{
-		return Rotation * Dir;
+		return Rotation * Direction;
 	}
 
 	inline Vector3	WorldToLocal(const Vector3& Point) const
@@ -46,9 +46,9 @@ struct GeometryTransform
 		return Rotation.Conjugate() * (Point - Translation);
 	}
 
-	inline Vector3	WorldToLocalDirection(const Vector3& Dir) const
+	inline Vector3	WorldToLocalDirection(const Vector3& Direction) const
 	{
-		return Rotation.Conjugate() * Dir;
+		return Rotation.Conjugate() * Direction;
 	}
 };
 
@@ -63,10 +63,10 @@ struct Geometry2Transform
 		return Rotation2.Conjugate() * (Rotation1 * Point + Translation);
 	}
 
-	Vector3		Local2ToWorldDirection(const Vector3& Dir) const
+	Vector3		Local2ToWorldDirection(const Vector3& Direction) const
 	{
 		Quaternion quat = Rotation1 * Rotation2.Conjugate();
-		return quat * Dir;
+		return quat * Direction;
 	}
 
 	Vector3		WorldToLocal2(const Vector3& Point) const
@@ -74,10 +74,10 @@ struct Geometry2Transform
 		return Rotation1.Conjugate() * (Rotation2 * Point - Translation);
 	}
 
-	Vector3		WorldToLocal2Direction(const Vector3& Dir) const
+	Vector3		WorldToLocal2Direction(const Vector3& Direction) const
 	{
 		Quaternion quat = Rotation1 * Rotation2.Conjugate();
-		return quat.Conjugate() * Dir;
+		return quat.Conjugate() * Direction;
 	}
 
 	Matrix3		ToRotationMatrix3() const
@@ -186,7 +186,7 @@ public:
 
 	virtual bool			RayCast(const Vector3& Origin, const Vector3 &Dir, const RayCastOption* Option, RayCastResult *Result) const = 0;
 	bool					Overlap(const Geometry* Geom) const;
-	bool					Sweep(const Geometry* Geom, const Vector3& Dir, float* t) const;
+	bool					Sweep(const Geometry* Geom, const Vector3& Direction, float* t) const;
 
 	void					UpdateBoundingVolume();
 
@@ -195,14 +195,14 @@ public:
 		return m_BoxWorld;
 	}
 
-	Vector3					GetSupport_WorldSpace(const Vector3& Dir) const;
-	void					GetSupportFace_WorldSpace(const Vector3& Dir, SupportFace& Face) const;
+	Vector3					GetSupport_WorldSpace(const Vector3& Direction) const;
+	void					GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const;
 	Matrix3					GetInverseInertia_LocalSpace(float InvMass) const;
 
 private:
 	virtual Matrix3			GetInertia_LocalSpace(float InvMass) const = 0;
-	virtual Vector3			GetSupport_LocalSpace(const Vector3& Dir) const = 0;
-	virtual void			GetSupportFace_LocalSpace(const Vector3& Dir, SupportFace& Face) const = 0;
+	virtual Vector3			GetSupport_LocalSpace(const Vector3& Direction) const = 0;
+	virtual void			GetSupportFace_LocalSpace(const Vector3& Direction, SupportFace& Face) const = 0;
 	virtual Box3d			GetBoundingVolume_LocalSpace() const = 0;
 
 	const void*				GetShapeObjPtr() const

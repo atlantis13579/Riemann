@@ -32,14 +32,14 @@ public:
 		return GEOM_TYPE::GetInertiaTensor(Mass);
 	}
 
-	virtual Vector3			GetSupport_LocalSpace(const Vector3& Dir) const override final
+	virtual Vector3			GetSupport_LocalSpace(const Vector3& Direction) const override final
 	{
-		return GEOM_TYPE::GetSupport(Dir);
+		return GEOM_TYPE::GetSupport(Direction);
 	}
 
-	virtual void			GetSupportFace_LocalSpace(const Vector3& Dir, SupportFace& Face) const override final
+	virtual void			GetSupportFace_LocalSpace(const Vector3& Direction, SupportFace& Face) const override final
 	{
-		Face.SetSize(GEOM_TYPE::GetSupportFace(Dir, Face.GetData()));
+		Face.SetSize(GEOM_TYPE::GetSupportFace(Direction, Face.GetData()));
 	}
 
 	virtual Box3d			GetBoundingVolume_LocalSpace() const override final
@@ -47,7 +47,7 @@ public:
 		return GEOM_TYPE::GetBoundingVolume();
 	}
 
-	virtual bool			RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption* Option, RayCastResult* Result) const override final
+	virtual bool			RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const override final
 	{
 		if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, this->GetFilterData()))
 		{
@@ -56,7 +56,7 @@ public:
 		Result->AddTestCount(1);
 
 		const Vector3 Origin_Local = m_CenterOfMassTransform.WorldToLocal(Origin);
-		const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Dir);
+		const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
 		const GEOM_TYPE* p = (const GEOM_TYPE*)this;
 		float t;
 		if (p->IntersectRay(Origin_Local, Dir_Local, &t) && t < Option->MaxDist)
@@ -69,7 +69,7 @@ public:
 };
 
 template<>
-bool				TGeometry<TriangleMesh>::RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption* Option, RayCastResult* Result) const
+bool				TGeometry<TriangleMesh>::RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const
 {
 	TriMeshHitOption HitOption;
 	HitOption.hitNearest = Option->Type == RayCastOption::RAYCAST_NEAREST;
@@ -77,7 +77,7 @@ bool				TGeometry<TriangleMesh>::RayCast(const Vector3& Origin, const Vector3& D
 
 	TriMeshHitResult HitResult = { 0 };
 	const Vector3 Origin_Local = m_CenterOfMassTransform.WorldToLocal(Origin);
-	const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Dir);
+	const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
 	const TriangleMesh* p = (const TriangleMesh*)this;
 	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 	Result->hitTime = HitResult.hitTime;
@@ -86,14 +86,14 @@ bool				TGeometry<TriangleMesh>::RayCast(const Vector3& Origin, const Vector3& D
 }
 
 template<>
-bool				TGeometry<HeightField3d>::RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption* Option, RayCastResult* Result) const
+bool				TGeometry<HeightField3d>::RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const
 {
 	HeightFieldHitOption HitOption;
 	HitOption.maxDist = Option->MaxDist;
 
 	HeightFieldHitResult HitResult = { 0 };
 	const Vector3 Origin_Local = m_CenterOfMassTransform.WorldToLocal(Origin);
-	const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Dir);
+	const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
 	const HeightField3d* p = (const HeightField3d*)this;
 	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 	Result->hitTime = HitResult.hitTime;
@@ -115,11 +115,11 @@ bool				Geometry::Overlap(const Geometry* Geom) const
 	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &trans);
 }
 
-bool				Geometry::Sweep(const Geometry* Geom, const Vector3& Dir, float* t) const
+bool				Geometry::Sweep(const Geometry* Geom, const Vector3& Direction, float* t) const
 {
 	SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
 	assert(func);
-	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), Dir, t);
+	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), Direction, t);
 }
 
 void 				Geometry::UpdateBoundingVolume()
@@ -127,17 +127,17 @@ void 				Geometry::UpdateBoundingVolume()
 	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_CenterOfMassTransform.Translation, m_CenterOfMassTransform.Rotation);
 }
 
-Vector3				Geometry::GetSupport_WorldSpace(const Vector3& Dir) const
+Vector3				Geometry::GetSupport_WorldSpace(const Vector3& Direction) const
 {
-	Vector3 DirLocal = m_CenterOfMassTransform.WorldToLocalDirection(Dir);
+	Vector3 DirLocal = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
 	Vector3 SupportLocal = GetSupport_LocalSpace(DirLocal);
 	Vector3 SupportWorld = m_CenterOfMassTransform.LocalToWorld(SupportLocal);
 	return SupportWorld;
 }
 
-void				Geometry::GetSupportFace_WorldSpace(const Vector3& Dir, SupportFace& Face) const
+void				Geometry::GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const
 {
-	Vector3 DirLocal = m_CenterOfMassTransform.WorldToLocalDirection(Dir);
+	Vector3 DirLocal = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
 	GetSupportFace_LocalSpace(DirLocal, Face);
 	for (int i = 0; i < Face.GetSize(); ++i)
 	{

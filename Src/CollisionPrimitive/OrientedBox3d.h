@@ -25,9 +25,10 @@ public:
 	
 	static OrientedBox3d CalcBoundingOBB_PCA(const Vector3 *points, int n);
 
-	bool IntersectOBB(const OrientedBox3d& obb);
+	bool IntersectOBB(const OrientedBox3d& obb) const;
+	bool IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 
 	float SqrDistanceToPoint(const Vector3& Point) const;
-	float SqrDistanceToLine(const Vector3& P0, const Vector3& Dir, float* t) const;
+	float SqrDistanceToLine(const Vector3& P0, const Vector3& Direction, float* t) const;
 	float SqrDistanceToSegment(const Vector3& P0, const Vector3& P1) const;
 };

@@ -63,7 +63,7 @@ public:
 		return true;
 	}
 
-	bool			IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 	{
 		const Vector3 b0 = Min - Origin;
 		const Vector3 b1 = Max - Origin;
@@ -75,7 +75,7 @@ public:
 		for (int i = 0; i < 3; ++i)
 		{
 			float t0, t1;
-			if (fabsf(Dir[i]) < 0.00001f)
+			if (fabsf(Direction[i]) < 0.00001f)
 			{
 				if (b0[i] > 0 || b1[i] < 0)
 				{
@@ -89,7 +89,7 @@ public:
 			}
 			else
 			{
-				const float InvDir = 1.0f / Dir[i];
+				const float InvDir = 1.0f / Direction[i];
 				t0 = b0[i] * InvDir;
 				t1 = b1[i] * InvDir;
 			}
@@ -133,7 +133,7 @@ public:
 
 	Vector3			ClosestPointTo(const Vector3& Point) const;
 	float			SqrDistanceToPoint(const Vector3& Point) const;
-	float			SqrDistanceToLine(const Vector3& P0, const Vector3& Dir, float* t) const;
+	float			SqrDistanceToLine(const Vector3& P0, const Vector3& Direction, float* t) const;
 	float			SqrDistanceToSegment(const Vector3& P0, const Vector3& P1) const;
 
 	Vector3			GetCenter() const
@@ -183,29 +183,29 @@ public:
 		return Matrix3(M * (HH + DD), M * (WW + DD), M * (WW + HH));
 	}
 
-	Vector3		GetSupport(const Vector3& dir) const
+	Vector3		GetSupport(const Vector3& Direction) const
 	{
-		return GetSupport(Min, Max, dir);
+		return GetSupport(Min, Max, Direction);
 	}
 
-	static Vector3 GetSupport(const Vector3& Bmin, const Vector3& Bmax, const Vector3& dir)
+	static Vector3 GetSupport(const Vector3& Bmin, const Vector3& Bmax, const Vector3& Direction)
 	{
 		return Vector3(
-			dir.x > 0 ? Bmax.x : Bmin.x,
-			dir.y > 0 ? Bmax.y : Bmin.y,
-			dir.z > 0 ? Bmax.z : Bmin.z
+			Direction.x > 0 ? Bmax.x : Bmin.x,
+			Direction.y > 0 ? Bmax.y : Bmin.y,
+			Direction.z > 0 ? Bmax.z : Bmin.z
 		);
 	}
 
-	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
+	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 	{
-		return AxisAlignedBox3d::GetSupportFace(Min, Max, dir, FacePoints);
+		return AxisAlignedBox3d::GetSupportFace(Min, Max, Direction, FacePoints);
 	}
 
-	static int		GetSupportFace(const Vector3& Bmin, const Vector3& Bmax, const Vector3& dir, Vector3* FacePoints)
+	static int		GetSupportFace(const Vector3& Bmin, const Vector3& Bmax, const Vector3& Direction, Vector3* FacePoints)
 	{
-		int axis = dir.Abs().LargestAxis();
-		if (dir[axis] < 0.0f)
+		int axis = Direction.Abs().LargestAxis();
+		if (Direction[axis] < 0.0f)
 		{
 			switch (axis)
 			{

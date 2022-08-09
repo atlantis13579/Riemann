@@ -24,9 +24,9 @@ struct HullFace3d
 class ConvexMesh
 {
 public:
-	Vector3					CenterOfMass;
+	Vector3						CenterOfMass;
 	Box3d						BoundingVolume;
-	Matrix3					Inertia;
+	Matrix3						Inertia;
 	std::vector<Vector3>		Vertices;
 	std::vector<uint16_t>		Edges;
 	std::vector<HullFace3d>		Faces;
@@ -97,7 +97,7 @@ public:
 		return (Vertices[i] - CenterOfMass).Unit();
 	}
 
-	bool			VerifyIndices() const
+	bool		VerifyIndices() const
 	{
 		for (uint32_t i = 0; i < NumEdges; ++i)
 		{
@@ -108,7 +108,7 @@ public:
 	}
 
 
-	bool			IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const
+	bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 	{
 		// TODO
 		return false;
@@ -124,13 +124,25 @@ public:
 		return Inertia;
 	}
 
-	Vector3		GetSupport(const Vector3& dir) const
+	Vector3		GetSupport(const Vector3& Direction) const
 	{
-		assert(false);
-		return Vector3::Zero();
+		float max_dot = -FLT_MAX;
+		Vector3 max_v = Vector3::Zero();
+
+		for (size_t i = 0; i < Vertices.size(); ++i)
+		{
+			float dot = Vertices[i].Dot(Direction);
+			if (dot > max_dot)
+			{
+				max_dot = dot;
+				max_v = Vertices[i];
+			}
+		}
+
+		return max_v;
 	}
 
-	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
+	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 	{
 		assert(false);
 		return 0;

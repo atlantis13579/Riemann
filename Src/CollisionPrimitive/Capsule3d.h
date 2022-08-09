@@ -77,7 +77,7 @@ public:
 		return (X1 - X0).ParallelTo(Vector3::UnitY()) == 0;
 	}
 
-	bool				IntersectRay(const Vector3& Origin, const Vector3& Dir, float* t) const;
+	bool				IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 	bool				IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	bool				IntersectSphere(const Vector3& rCenter, float rRadius) const;
 	bool				IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
@@ -113,29 +113,29 @@ public:
 		return Matrix3(Diag12, Diag12, Diag3);
 	}
 
-	Vector3 GetSupport(const Vector3& dir) const
+	Vector3 GetSupport(const Vector3& Direction) const
 	{
-		return GetSupport(X0, X1, Radius, dir);
+		return GetSupport(X0, X1, Radius, Direction);
 	}
 
-	static Vector3		GetSupport(const Vector3& X0, const Vector3& X1, float Radius, const Vector3& dir)
+	static Vector3		GetSupport(const Vector3& X0, const Vector3& X1, float Radius, const Vector3& Direction)
 	{
 		Vector3 Axis = X1 - X0;
-		float dp = DotProduct(dir, Axis);
+		float dp = DotProduct(Direction, Axis);
 		Vector3 FarthestCap = dp >= 0 ? X1 : X0;
-		float distSqr = dir.SquareLength();
+		float distSqr = Direction.SquareLength();
 		if (distSqr <= 1e-6)
 		{
 			return FarthestCap;
 		}
-		Vector3 Normalized = dir / sqrtf(distSqr);
+		Vector3 Normalized = Direction / sqrtf(distSqr);
 		return FarthestCap + Normalized * Radius;
 	}
 
-	int				GetSupportFace(const Vector3& dir, Vector3* FacePoints) const
+	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 	{
 		assert(false);
-		*FacePoints = GetSupport(X0, X1, Radius, dir);
+		*FacePoints = GetSupport(X0, X1, Radius, Direction);
 		return 1;
 	}
 
