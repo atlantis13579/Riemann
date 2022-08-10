@@ -1,28 +1,47 @@
 
 #include "ConvexMesh.h"
 
+void ConvexMesh::SetConvexData(Vector3* verts, uint16_t nVerties,
+							   HullFace3d* faces, uint16_t nFaces,
+							   uint16_t* edges, uint16_t nEdges,
+							   uint8_t* indices, uint16_t nIndices,
+							   bool shared_mem)
+{
+
+	NumVertices = nVerties;
+	NumFaces = nFaces;
+	NumEdges = nEdges;
+	NumIndices = nIndices;
+	
+#ifndef USE_EDGE_DATA
+	nEdges = 0;
+#endif
+	
+	if (!shared_mem)
+	{
+		int buffer_size =	sizeof(HullVertex3d) * nVerties +
+							sizeof(HullFace3d) * nFaces +
+							sizeof(HullEdge3d) * nEdges +
+							sizeof(uint8_t) * nIndices;
+		
+		Buffers.resize(buffer_size);
+		
+		Vertices = (HullVertex3d*)Buffers.data();
+		Faces = (HullFace3d*)(Vertices + nVerties);
+		Edges = (HullEdge3d*)(Faces + nFaces);
+		Indices = (uint8_t*)(Edges + nEdges);
+	}
+	else
+	{
+		Vertices = (HullVertex3d*)verts;
+		Faces = faces;
+		Edges = (HullEdge3d*)edges;
+		Indices = indices;
+	}
+}
+
 bool ConvexMesh::ValidateStructure() const
 {
-	if (NumFaces != (int)Faces.size())
-	{
-		return false;
-	}
-
-	if (NumVertices != (int)Vertices.size())
-	{
-		return false;
-	}
-
-	if (NumEdges != (int)Edges.size())
-	{
-		return false;
-	}
-
-	if (NumIndices != (int)Indices.size())
-	{
-		return false;
-	}
-
 	if (EulerNumber() != 2)
 	{
 		return false;
@@ -77,32 +96,25 @@ void ConvexMesh::ComputeCenterOfMass()
 	{
 		CenterOfMass += Vertices[i].p;
 	}
-	CenterOfMass *= (1.0f / Vertices.size());
+	CenterOfMass *= (1.0f / NumVertices);
 }
 
 // http://number-none.com/blow/inertia/deriving_i.html
 void ConvexMesh::ComputeInertia()
 {
-	Vector3 mean;
-	for (uint16_t i = 0; i < NumVertices; ++i)
-	{
-		mean += Vertices[i].p;
-	}
-	mean *= (1.0f / Vertices.size());
-
 	Matrix3 covariance_matrix;
 	covariance_matrix.LoadZero();
 
 	for (int i = 0; i < 3; ++i)
-		for (int j = 0; j < 3; ++j)
+	for (int j = 0; j < 3; ++j)
+	{
+		for (uint16_t k = 0; k < NumVertices; ++k)
 		{
-			for (uint16_t k = 0; k < NumVertices; ++k)
-			{
-				float cij = (Vertices[k].p[i] - CenterOfMass[i]) * (Vertices[k].p[j] - CenterOfMass[j]);
-				covariance_matrix[i][j] += cij;
-			}
-			covariance_matrix[i][j] /= Vertices.size();
+			float cij = (Vertices[k].p[i] - CenterOfMass[i]) * (Vertices[k].p[j] - CenterOfMass[j]);
+			covariance_matrix[i][j] += cij;
 		}
+		covariance_matrix[i][j] /= NumVertices;
+	}
 
 	float eigens[3];
 	Vector3 eigen_vectors[3];
@@ -213,7 +225,7 @@ int ConvexMesh::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) co
 		const HullFace3d& hull = Faces[max_idx];
 		for (uint8_t j = 0; j < hull.numVerties; ++j)
 		{
-			FacePoints[j++] = Vertices[Indices[hull.first + j]].p;
+			FacePoints[j] = Vertices[Indices[hull.first + j]].p;
 		}
 		return hull.numVerties;
 	}

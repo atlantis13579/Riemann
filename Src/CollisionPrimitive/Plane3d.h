@@ -10,6 +10,7 @@
 #include "../Maths/Box3d.h"
 
 const float kEpsilonPlane = 0.000001f;
+const float kHalfThickness = 0.01f;
 const float kPlaneSmallThickness = 0.0001f;
 const float kPlaneRadius = 10000.0f;
 
@@ -17,26 +18,23 @@ class Plane3d
 {
 public:
 	Vector3 Normal;    //  P * Normal + D = 0
-	float D;
-	float HalfThickness;
+	float 	D;
 
 public:
 	Plane3d()
 	{
 	}
 
-	Plane3d(const Vector3& InNormal, Vector3& InOrigin, const float InHalfThickness = kPlaneSmallThickness)
+	Plane3d(const Vector3& InNormal, Vector3& InOrigin)
 	{
 		Normal = InNormal.Unit();
 		D = -InOrigin.Dot(Normal);
-		HalfThickness = InHalfThickness;
 	}
 
-	Plane3d(const Vector3& InNormal, float InD, const float InHalfThickness = kPlaneSmallThickness)
+	Plane3d(const Vector3& InNormal, float InD)
 	{
 		Normal = InNormal.Unit();
 		D = InD;
-		HalfThickness = InHalfThickness;
 	}
 
 	static constexpr ShapeType3d	StaticType()
@@ -201,8 +199,8 @@ public:
 		{
 			if (Normal.z > kEpsilonPlane)
 			{
-				Box.mMin.z = -D / Normal.z - HalfThickness;
-				Box.mMax.z = -D / Normal.z + HalfThickness;
+				Box.mMin.z = -D / Normal.z - kHalfThickness;
+				Box.mMax.z = -D / Normal.z + kHalfThickness;
 			}
 		}
 
@@ -210,8 +208,8 @@ public:
 		{
 			if (Normal.x > kEpsilonPlane)
 			{
-				Box.mMin.x = -D / Normal.x - HalfThickness;
-				Box.mMax.x = -D / Normal.x + HalfThickness;
+				Box.mMin.x = -D / Normal.x - kHalfThickness;
+				Box.mMax.x = -D / Normal.x + kHalfThickness;
 			}
 		}
 
@@ -219,8 +217,8 @@ public:
 		{
 			if (Normal.y > kEpsilonPlane)
 			{
-				Box.mMin.y = -D / Normal.y - HalfThickness;
-				Box.mMax.y = -D / Normal.y + HalfThickness;
+				Box.mMin.y = -D / Normal.y - kHalfThickness;
+				Box.mMax.y = -D / Normal.y + kHalfThickness;
 			}
 		}
 
@@ -365,3 +363,5 @@ public:
 		Indices = { 0,1, 1,2, 2,3, 3,0 };
 	}
 };
+
+static_assert(sizeof(Plane3d) == 16, "sizeof(Plane3d) not right");

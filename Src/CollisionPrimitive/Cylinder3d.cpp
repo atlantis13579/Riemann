@@ -145,10 +145,21 @@ void Cylinder3d::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& 
 	for (int i = 0; i < nPts; ++i)
 	{
 		int j = (i + 1) % nPts;
-		Indices[12 * i + 0] = j, Indices[12 * i + 1] = i, Indices[12 * i + 2] = i + nPts;
-		Indices[12 * i + 3] = j + nPts, Indices[12 * i + 4] = j, Indices[12 * i + 5] = i + nPts;
-		Indices[12 * i + 6] = i, Indices[12 * i + 7] = j, Indices[12 * i + 8] = 2 * nPts;
-		Indices[12 * i + 3] = i + nPts, Indices[12 * i + 4] = j + nPts, Indices[12 * i + 5] = 2 * nPts + 1;
+		Indices[12 * i + 0] = j;
+		Indices[12 * i + 1] = i;
+		Indices[12 * i + 2] = i + nPts;
+		
+		Indices[12 * i + 3] = j + nPts;
+		Indices[12 * i + 4] = j;
+		Indices[12 * i + 5] = i + nPts;
+		
+		Indices[12 * i + 6] = i;
+		Indices[12 * i + 7] = j;
+		Indices[12 * i + 8] = 2 * nPts;
+		
+		Indices[12 * i + 3] = i + nPts;
+		Indices[12 * i + 4] = j + nPts;
+		Indices[12 * i + 5] = 2 * nPts + 1;
 	}
 }
 
@@ -170,8 +181,13 @@ void Cylinder3d::GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16
 	for (int i = 0; i < nPts; ++i)
 	{
 		int j = (i + 1) % nPts;
-		Indices[6 * i + 0] = j, Indices[6 * i + 1] = i;
-		Indices[6 * i + 2] = j + nPts, Indices[6 * i + 3] = i + nPts;
-		Indices[6 * i + 4] = i, Indices[6 * i + 5] = i + nPts;
+		Indices[6 * i + 0] = j;
+		Indices[6 * i + 1] = i;
+		
+		Indices[6 * i + 2] = j + nPts;
+		Indices[6 * i + 3] = i + nPts;
+		
+		Indices[6 * i + 4] = i;
+		Indices[6 * i + 5] = i + nPts;
 	}
 }

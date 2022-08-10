@@ -568,54 +568,54 @@ namespace PhysxFormat_41
 		PxU8			mNbHullVertices;
 		PxU8			mNbPolygons;
 
-		const PxVec3* getHullVertices()	const
+		PxVec3* getHullVertices()
 		{
-			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			char* tmp = reinterpret_cast<char*>(mPolygons);
 			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
-			return reinterpret_cast<const Vector3*>(tmp);
+			return reinterpret_cast<PxVec3*>(tmp);
 		}
 
-		const PxU8* getFacesByEdges8()	const
+		PxU8* getFacesByEdges8()
 		{
-			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			char* tmp = reinterpret_cast<char*>(mPolygons);
 			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
 			tmp += sizeof(PxVec3) * mNbHullVertices;
-			return reinterpret_cast<const PxU8*>(tmp);
+			return reinterpret_cast<PxU8*>(tmp);
 		}
 
-		const PxU8* getFacesByVertices8() const
+		PxU8* getFacesByVertices8()
 		{
-			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			char* tmp = reinterpret_cast<char*>(mPolygons);
 			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
 			tmp += sizeof(PxVec3) * mNbHullVertices;
 			tmp += sizeof(PxU8) * mNbEdges * 2;
-			return reinterpret_cast<const PxU8*>(tmp);
+			return reinterpret_cast<PxU8*>(tmp);
 		}
 
-		const PxU16* getVerticesByEdges16() const
+		uint16_t* getVerticesByEdges16()
 		{
 			if (mNbEdges & 0x8000)
 			{
-				const char* tmp = reinterpret_cast<const char*>(mPolygons);
+				char* tmp = reinterpret_cast<char*>(mPolygons);
 				tmp += sizeof(GuHullPolygonData) * mNbPolygons;
 				tmp += sizeof(PxVec3) * mNbHullVertices;
 				tmp += sizeof(PxU8) * (mNbEdges & ~0x8000) * 2;
 				tmp += sizeof(PxU8) * mNbHullVertices * 3;
-				return reinterpret_cast<const uint16_t*>(tmp);
+				return reinterpret_cast<uint16_t*>(tmp);
 			}
 			return nullptr;
 		}
 
-		const PxU8* getVertexData8() const
+		PxU8* getVertexData8()
 		{
-			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			char* tmp = reinterpret_cast<char*>(mPolygons);
 			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
 			tmp += sizeof(PxVec3) * mNbHullVertices;
 			tmp += sizeof(PxU8) * mNbEdges * 2;
 			tmp += sizeof(PxU8) * mNbHullVertices * 3;
 			if (mNbEdges & 0x8000)
 				tmp += sizeof(PxU16) * mNbEdges * 2;
-			return reinterpret_cast<const PxU8*>(tmp);
+			return reinterpret_cast<PxU8*>(tmp);
 		}
 
 		GuHullPolygonData* mPolygons;

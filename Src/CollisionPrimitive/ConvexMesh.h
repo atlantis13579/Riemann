@@ -9,6 +9,8 @@
 #include "../Maths/Box3d.h"
 #include "../Maths/Matrix3.h"
 
+// #define USE_EDGE_DATA
+
 struct HullVertex3d
 {
 	explicit HullVertex3d(const Vector3& _p)
@@ -27,8 +29,9 @@ struct HullFace3d
 		first = first_idx;
 	}
 	Plane3d			plane;
-	uint8_t			numVerties;
 	uint16_t		first;
+	uint8_t			numVerties;
+	uint8_t			padding;
 };
 
 struct HullEdge3d
@@ -43,21 +46,24 @@ struct HullEdge3d
 };
 
 static_assert(sizeof(HullVertex3d) == 12, "sizeof(HullVertex3d) not right");
+static_assert(sizeof(HullEdge3d) == 4, "sizeof(HullEdge3d) not right");
+static_assert(sizeof(HullFace3d) == 20, "sizeof(HullFace3d) not right");
 
 class ConvexMesh
 {
 public:
-	Vector3						CenterOfMass;
-	Box3d						BoundingVolume;
-	Matrix3						Inertia;
-	std::vector<HullVertex3d>	Vertices;
-	std::vector<HullEdge3d>		Edges;
-	std::vector<HullFace3d>		Faces;
-	std::vector<uint8_t>		Indices;
-	uint16_t					NumVertices;
-	uint16_t					NumEdges;
-	uint16_t					NumFaces;
-	uint16_t					NumIndices;
+	Vector3				CenterOfMass;
+	Box3d				BoundingVolume;
+	Matrix3				Inertia;
+	HullVertex3d*		Vertices;
+	HullEdge3d*			Edges;
+	HullFace3d*			Faces;
+	uint8_t*			Indices;
+	uint16_t			NumVertices;
+	uint16_t			NumEdges;
+	uint16_t			NumFaces;
+	uint16_t			NumIndices;
+	std::vector<char>	Buffers;
 
 	ConvexMesh()
 	{
@@ -71,50 +77,20 @@ public:
 
 	void		Release()
 	{
-		NumVertices = NumFaces = NumEdges = 0;
-		Vertices.clear();
-		Edges.clear();
-		Faces.clear();
-		Indices.clear();
+		NumVertices = NumFaces = NumEdges = NumIndices = 0;
+		Buffers.clear();
 	}
 
 	int			EulerNumber() const
 	{
 		return NumVertices - NumEdges + NumFaces;
 	}
-
-	void		AddFace(const Plane3d& p, uint8_t nVerties, uint16_t idx)
-	{
-		Faces.emplace_back(p, nVerties, idx);
-		NumFaces++;
-	}
-
-	void		SetVerties(const Vector3* Verts, uint16_t nVerties)
-	{
-		NumVertices = nVerties;
-		for (uint32_t i = 0; i < nVerties; ++i)
-		{
-			Vertices.emplace_back(Verts[i]);
-		}
-	}
-
-	void		SetEdges(const uint16_t* edges, uint16_t nEdges)
-	{
-		NumEdges = nEdges;
-		for (uint16_t i = 0; i < nEdges; ++i)
-		{
-			Edges.emplace_back(edges[2 * i], edges[2 * i + 1]);
-		}
-	}
-
-	void		SetIndices(const uint8_t* indices, uint16_t nIndices)
-	{
-		NumIndices = nIndices;
-		for (uint16_t i = 0; i < NumIndices; ++i)
-		{
-			Indices.emplace_back(indices[i]);
-		}
-	}
+	
+	void 		SetConvexData(Vector3* verts, uint16_t nVerties,
+							  HullFace3d* faces, uint16_t nFaces,
+							  uint16_t* edges, uint16_t nEdges,
+							  uint8_t* indices, uint16_t nIndices,
+							  bool shared_mem);
 
 	uint16_t	GetNumVertices() const
 	{

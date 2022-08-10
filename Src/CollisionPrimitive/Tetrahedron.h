@@ -1,5 +1,6 @@
 #pragma once
 
+#include <float.h>
 #include <vector>
 #include "../Maths/Vector3.h"
 #include "ShapeType.h"

@@ -49,7 +49,7 @@ bool				OverlapPlanePlane(const void* Obj1, const void* Obj2, const Geometry2Tra
 	const Plane3d* plane2 = static_cast<const Plane3d*>(Obj2);
 	Vector3 Normal = trans->Local1ToLocal2Direction(plane1->Normal);
 	Vector3 Origin = trans->Local1ToLocal2(plane1->GetOrigin());
-	Plane3d plane_new(Normal, Origin, plane1->HalfThickness);
+	Plane3d plane_new(Normal, Origin);
 	return plane2->IntersectPlane(plane_new.Normal, plane_new.D);
 }
 
@@ -67,7 +67,7 @@ inline bool			OverlapBoxPlane(const void* Obj1, const void* Obj2, const Geometry
 	const Plane3d* plane = static_cast<const Plane3d*>(Obj2);
 	Vector3 Normal = trans->Local2ToLocal1Direction(plane->Normal);
 	Vector3 Origin = trans->Local2ToLocal1(plane->GetOrigin());
-	Plane3d plane_new(Normal, Origin, plane->HalfThickness);
+	Plane3d plane_new(Normal, Origin);
 	const AxisAlignedBox3d* box = static_cast<const AxisAlignedBox3d*>(Obj1);
 	return plane_new.IntersectAABB(box->Min, box->Max);
 }

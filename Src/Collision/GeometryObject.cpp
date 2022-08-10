@@ -185,12 +185,11 @@ Geometry*	GeometryFactory::CreateOBB(const Vector3& Center, const Vector3& HalfE
 	return (Geometry*)p;
 }
 
-Geometry*	GeometryFactory::CreatePlane(const Vector3& Center, const Vector3& Normal, float HalfThickness)
+Geometry*	GeometryFactory::CreatePlane(const Vector3& Center, const Vector3& Normal)
 {
 	TGeometry<Plane3d>* p = new TGeometry<Plane3d>();
 	p->Normal = Vector3::UnitY();
 	p->D = 0.0f;
-	p->HalfThickness = HalfThickness;
 	p->SetCenterOfMass(Center);
 	Quaternion quat;
 	quat.FromTwoAxis(p->Normal, Normal);

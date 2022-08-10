@@ -146,35 +146,33 @@ public:
 
 	static Geometry* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj, bool shared_mem)
 	{
-		const physx::ConvexMesh* Mesh = physxObj->convexMesh;
+		physx::ConvexMesh* Mesh = physxObj->convexMesh;
 
 		Geometry* Geom = GeometryFactory::CreateConvexMesh();
 		ConvexMesh* ConvMesh = Geom->GetShapeObj<ConvexMesh>();
-		const physx::ConvexHullData& hull = Mesh->mHullData;
-
+		physx::ConvexHullData& hull = Mesh->mHullData;
+		
+		assert(hull.getHullVertices());
+		assert(hull.getVerticesByEdges16());
+		assert(hull.getVertexData8());
+		
 		PxU16 maxIndices = 0;
 		for (int i = 0; i < hull.mNbPolygons; ++i)
 		{
 			const physx::GuHullPolygonData& poly = hull.mPolygons[i];
 			maxIndices = std::max(maxIndices, PxU16(poly.mMinIndex + poly.mNbVerts));
-			ConvMesh->AddFace(poly.mPlane, poly.mNbVerts, poly.mVRef8);
 		}
-		ConvMesh->SetVerties(hull.getHullVertices(), hull.mNbHullVertices);
-
-		assert(hull.getVerticesByEdges16());
-		ConvMesh->SetEdges(hull.getVerticesByEdges16(), hull.mNbEdges & ~0x8000);
-		ConvMesh->SetIndices(hull.getVertexData8(), maxIndices);
+		
+		ConvMesh->SetConvexData((Vector3*)hull.getHullVertices(), hull.mNbHullVertices,
+								(HullFace3d*)hull.mPolygons, hull.mNbPolygons,
+								hull.getVerticesByEdges16(), hull.mNbEdges & ~0x8000,
+								hull.getVertexData8(), maxIndices,
+								shared_mem);
 		assert(ConvMesh->ValidateStructure());
 
 		ConvMesh->Inertia = Mesh->mInertia;
 		ConvMesh->CenterOfMass = hull.mCenterOfMass;
 		ConvMesh->BoundingVolume = hull.mAABB.GetAABB();
-
-		assert(ConvMesh->EulerNumber() == 2);
-		assert(ConvMesh->NumVertices == ConvMesh->Vertices.size());
-		assert(ConvMesh->NumEdges * 2 == ConvMesh->Edges.size());
-		assert(ConvMesh->NumFaces == ConvMesh->Faces.size());
-
 		return Geom;
 	}
 

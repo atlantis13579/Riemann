@@ -577,6 +577,7 @@ namespace PhysxFormat_34
 #else
 	static_assert(offsetof(PxRTreeTriangleMesh, mNbVertices) == 32, "offset of mNbVertices not right");
 #endif
+	static_assert(sizeof(GuHullPolygonData) == 20, "sizeof(GuHullPolygonData) not valid");
     static_assert(sizeof(TriangleMesh) == 160, "sizeof(PxTriangleMesh) not valid");
     static_assert(sizeof(MeshBVH4) == 96, "sizeof(MeshBVH) not valid");
 	static_assert(sizeof(PxRTreeTriangleMesh) == 256, "sizeof(PxRTreeTriangleMesh) not valid");
@@ -613,54 +614,54 @@ namespace PhysxFormat_34
 		PxU8			mNbHullVertices;
 		PxU8			mNbPolygons;
 
-		const PxVec3* getHullVertices()	const
+		PxVec3* getHullVertices()
 		{
-			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			char* tmp = reinterpret_cast<char*>(mPolygons);
 			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
-			return reinterpret_cast<const PxVec3*>(tmp);
+			return reinterpret_cast<PxVec3*>(tmp);
 		}
 
-		const PxU8* getFacesByEdges8()	const
+		PxU8* getFacesByEdges8()
 		{
-			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			char* tmp = reinterpret_cast<char*>(mPolygons);
 			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
 			tmp += sizeof(PxVec3) * mNbHullVertices;
-			return reinterpret_cast<const PxU8*>(tmp);
+			return reinterpret_cast<PxU8*>(tmp);
 		}
 
-		const PxU8* getFacesByVertices8() const
+		PxU8* getFacesByVertices8()
 		{
-			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			char* tmp = reinterpret_cast<char*>(mPolygons);
 			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
 			tmp += sizeof(PxVec3) * mNbHullVertices;
 			tmp += sizeof(PxU8) * mNbEdges * 2;
-			return reinterpret_cast<const PxU8*>(tmp);
+			return reinterpret_cast<PxU8*>(tmp);
 		}
 
-		const uint16_t* getVerticesByEdges16() const
+		uint16_t* getVerticesByEdges16()
 		{
 			if (mNbEdges & 0x8000)
 			{
-				const char* tmp = reinterpret_cast<const char*>(mPolygons);
+				char* tmp = reinterpret_cast<char*>(mPolygons);
 				tmp += sizeof(GuHullPolygonData) * mNbPolygons;
 				tmp += sizeof(PxVec3) * mNbHullVertices;
 				tmp += sizeof(PxU8) * (mNbEdges & ~0x8000) * 2;
 				tmp += sizeof(PxU8) * mNbHullVertices * 3;
-				return reinterpret_cast<const uint16_t*>(tmp);
+				return reinterpret_cast<uint16_t*>(tmp);
 			}
 			return nullptr;
 		}
 
-		const PxU8* getVertexData8() const
+		PxU8* getVertexData8()
 		{
-			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			char* tmp = reinterpret_cast<char*>(mPolygons);
 			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
 			tmp += sizeof(PxVec3) * mNbHullVertices;
 			tmp += sizeof(PxU8) * mNbEdges * 2;
 			tmp += sizeof(PxU8) * mNbHullVertices * 3;
 			if (mNbEdges & 0x8000)
 				tmp += sizeof(PxU16) * mNbEdges * 2;
-			return reinterpret_cast<const PxU8*>(tmp);
+			return reinterpret_cast<PxU8*>(tmp);
 		}
 
 		GuHullPolygonData* mPolygons;

@@ -18,6 +18,11 @@
 		AD08836D289EA4C30008AB04 /* CholeskyDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = AD08836C289EA4C30008AB04 /* CholeskyDecomposition.h */; };
 		AD1DD0B0289F0EAB0085AA67 /* QRDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1DD0AF289F0EAB0085AA67 /* QRDecomposition.h */; };
 		AD1DD0B2289F60770085AA67 /* SparseVector.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1DD0B1289F60770085AA67 /* SparseVector.h */; };
+		AD80071128A3E4E3001387F3 /* Tetrahedron.h in Headers */ = {isa = PBXBuildFile; fileRef = AD80070C28A3E4E3001387F3 /* Tetrahedron.h */; };
+		AD80071228A3E4E3001387F3 /* Tetrahedron.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80070D28A3E4E3001387F3 /* Tetrahedron.cpp */; };
+		AD80071328A3E4E3001387F3 /* Polyhedron.h in Headers */ = {isa = PBXBuildFile; fileRef = AD80070E28A3E4E3001387F3 /* Polyhedron.h */; };
+		AD80071428A3E4E3001387F3 /* Cylinder3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80070F28A3E4E3001387F3 /* Cylinder3d.cpp */; };
+		AD80071528A3E4E3001387F3 /* ConvexMesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80071028A3E4E3001387F3 /* ConvexMesh.cpp */; };
 		ADA2A25828A29E67009EDBE2 /* JobSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25328A29E67009EDBE2 /* JobSystem.h */; };
 		ADA2A25928A29E67009EDBE2 /* ThreadPool.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25428A29E67009EDBE2 /* ThreadPool.h */; };
 		ADA2A25A28A29E67009EDBE2 /* LockFreeHashMap.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */; };
@@ -86,7 +91,6 @@
 		ADD23BFE2887616200A849BE /* ShapeType.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BE62887616100A849BE /* ShapeType.h */; };
 		ADD23BFF2887616200A849BE /* OrientedBox3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23BE72887616100A849BE /* OrientedBox3d.cpp */; };
 		ADD23C002887616200A849BE /* Cylinder3d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BE82887616100A849BE /* Cylinder3d.h */; };
-		ADD23C012887616200A849BE /* Tetrahedral.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23BE92887616100A849BE /* Tetrahedral.cpp */; };
 		ADD23C022887616200A849BE /* AxisAlignedBox3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23BEA2887616100A849BE /* AxisAlignedBox3d.cpp */; };
 		ADD23C032887616200A849BE /* Sphere3d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BEB2887616100A849BE /* Sphere3d.h */; };
 		ADD23C042887616200A849BE /* Mesh.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BEC2887616100A849BE /* Mesh.h */; };
@@ -94,7 +98,6 @@
 		ADD23C062887616200A849BE /* ConvexMesh.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BEE2887616100A849BE /* ConvexMesh.h */; };
 		ADD23C072887616200A849BE /* MeshBVH4.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BEF2887616100A849BE /* MeshBVH4.h */; };
 		ADD23C082887616200A849BE /* Segment3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23BF02887616200A849BE /* Segment3d.cpp */; };
-		ADD23C092887616200A849BE /* Tetrahedral.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BF12887616200A849BE /* Tetrahedral.h */; };
 		ADD23C0A2887616200A849BE /* HeightField3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23BF22887616200A849BE /* HeightField3d.cpp */; };
 		ADD23C0F2887617000A849BE /* MLSMPMSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C0B2887617000A849BE /* MLSMPMSolver.cpp */; };
 		ADD23C102887617000A849BE /* FEMSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C0C2887617000A849BE /* FEMSolver.cpp */; };
@@ -242,6 +245,11 @@
 		AD1DD0AF289F0EAB0085AA67 /* QRDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = QRDecomposition.h; path = ../../Src/LinearSystem/QRDecomposition.h; sourceTree = "<group>"; };
 		AD1DD0B1289F60770085AA67 /* SparseVector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseVector.h; path = ../../Src/LinearSystem/SparseVector.h; sourceTree = "<group>"; };
 		AD48C75928A133DB0035DEA9 /* gemm.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = gemm.inl; path = ../../Src/LinearSystem/gemm.inl; sourceTree = "<group>"; };
+		AD80070C28A3E4E3001387F3 /* Tetrahedron.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Tetrahedron.h; path = ../../Src/CollisionPrimitive/Tetrahedron.h; sourceTree = "<group>"; };
+		AD80070D28A3E4E3001387F3 /* Tetrahedron.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Tetrahedron.cpp; path = ../../Src/CollisionPrimitive/Tetrahedron.cpp; sourceTree = "<group>"; };
+		AD80070E28A3E4E3001387F3 /* Polyhedron.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Polyhedron.h; path = ../../Src/CollisionPrimitive/Polyhedron.h; sourceTree = "<group>"; };
+		AD80070F28A3E4E3001387F3 /* Cylinder3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Cylinder3d.cpp; path = ../../Src/CollisionPrimitive/Cylinder3d.cpp; sourceTree = "<group>"; };
+		AD80071028A3E4E3001387F3 /* ConvexMesh.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ConvexMesh.cpp; path = ../../Src/CollisionPrimitive/ConvexMesh.cpp; sourceTree = "<group>"; };
 		ADA2A25328A29E67009EDBE2 /* JobSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = JobSystem.h; path = ../../Src/Core/JobSystem.h; sourceTree = "<group>"; };
 		ADA2A25428A29E67009EDBE2 /* ThreadPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ThreadPool.h; path = ../../Src/Core/ThreadPool.h; sourceTree = "<group>"; };
 		ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LockFreeHashMap.h; path = ../../Src/Core/LockFreeHashMap.h; sourceTree = "<group>"; };
@@ -310,7 +318,6 @@
 		ADD23BE62887616100A849BE /* ShapeType.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ShapeType.h; path = ../../Src/CollisionPrimitive/ShapeType.h; sourceTree = "<group>"; };
 		ADD23BE72887616100A849BE /* OrientedBox3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = OrientedBox3d.cpp; path = ../../Src/CollisionPrimitive/OrientedBox3d.cpp; sourceTree = "<group>"; };
 		ADD23BE82887616100A849BE /* Cylinder3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Cylinder3d.h; path = ../../Src/CollisionPrimitive/Cylinder3d.h; sourceTree = "<group>"; };
-		ADD23BE92887616100A849BE /* Tetrahedral.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Tetrahedral.cpp; path = ../../Src/CollisionPrimitive/Tetrahedral.cpp; sourceTree = "<group>"; };
 		ADD23BEA2887616100A849BE /* AxisAlignedBox3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AxisAlignedBox3d.cpp; path = ../../Src/CollisionPrimitive/AxisAlignedBox3d.cpp; sourceTree = "<group>"; };
 		ADD23BEB2887616100A849BE /* Sphere3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Sphere3d.h; path = ../../Src/CollisionPrimitive/Sphere3d.h; sourceTree = "<group>"; };
 		ADD23BEC2887616100A849BE /* Mesh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Mesh.h; path = ../../Src/CollisionPrimitive/Mesh.h; sourceTree = "<group>"; };
@@ -318,7 +325,6 @@
 		ADD23BEE2887616100A849BE /* ConvexMesh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConvexMesh.h; path = ../../Src/CollisionPrimitive/ConvexMesh.h; sourceTree = "<group>"; };
 		ADD23BEF2887616100A849BE /* MeshBVH4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MeshBVH4.h; path = ../../Src/CollisionPrimitive/MeshBVH4.h; sourceTree = "<group>"; };
 		ADD23BF02887616200A849BE /* Segment3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Segment3d.cpp; path = ../../Src/CollisionPrimitive/Segment3d.cpp; sourceTree = "<group>"; };
-		ADD23BF12887616200A849BE /* Tetrahedral.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Tetrahedral.h; path = ../../Src/CollisionPrimitive/Tetrahedral.h; sourceTree = "<group>"; };
 		ADD23BF22887616200A849BE /* HeightField3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HeightField3d.cpp; path = ../../Src/CollisionPrimitive/HeightField3d.cpp; sourceTree = "<group>"; };
 		ADD23C0B2887617000A849BE /* MLSMPMSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MLSMPMSolver.cpp; path = ../../Src/Continuum/MLSMPMSolver.cpp; sourceTree = "<group>"; };
 		ADD23C0C2887617000A849BE /* FEMSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FEMSolver.cpp; path = ../../Src/Continuum/FEMSolver.cpp; sourceTree = "<group>"; };
@@ -788,7 +794,9 @@
 				ADD23BDB2887616100A849BE /* AxisAlignedBox3d.h */,
 				ADD23BE42887616100A849BE /* Capsule3d.cpp */,
 				ADD23BED2887616100A849BE /* Capsule3d.h */,
+				AD80071028A3E4E3001387F3 /* ConvexMesh.cpp */,
 				ADD23BEE2887616100A849BE /* ConvexMesh.h */,
+				AD80070F28A3E4E3001387F3 /* Cylinder3d.cpp */,
 				ADD23BE82887616100A849BE /* Cylinder3d.h */,
 				ADD23BF22887616200A849BE /* HeightField3d.cpp */,
 				ADD23BE22887616100A849BE /* HeightField3d.h */,
@@ -797,14 +805,15 @@
 				ADD23BEF2887616100A849BE /* MeshBVH4.h */,
 				ADD23BE72887616100A849BE /* OrientedBox3d.cpp */,
 				ADD23BE32887616100A849BE /* OrientedBox3d.h */,
-				ADD23BE02887616100A849BE /* Plane3d.h */,
 				ADD23BDC2887616100A849BE /* Ray3d.h */,
+				ADD23BE02887616100A849BE /* Plane3d.h */,
+				AD80070E28A3E4E3001387F3 /* Polyhedron.h */,
 				ADD23BF02887616200A849BE /* Segment3d.cpp */,
 				ADD23BE52887616100A849BE /* Segment3d.h */,
 				ADD23BE62887616100A849BE /* ShapeType.h */,
 				ADD23BEB2887616100A849BE /* Sphere3d.h */,
-				ADD23BE92887616100A849BE /* Tetrahedral.cpp */,
-				ADD23BF12887616200A849BE /* Tetrahedral.h */,
+				AD80070D28A3E4E3001387F3 /* Tetrahedron.cpp */,
+				AD80070C28A3E4E3001387F3 /* Tetrahedron.h */,
 				ADD23BE12887616100A849BE /* Triangle3d.h */,
 				ADD23BDE2887616100A849BE /* TriangleMesh.cpp */,
 				ADD23BDD2887616100A849BE /* TriangleMesh.h */,
@@ -926,11 +935,11 @@
 				ADF2729C28954C8800E6FE68 /* ContinuousBitmap.h in Headers */,
 				ADD23C62288762AE00A849BE /* Vehicle.h in Headers */,
 				ADD23C67288762AE00A849BE /* MPC.h in Headers */,
+				AD80071328A3E4E3001387F3 /* Polyhedron.h in Headers */,
 				ADD23D2E288762F900A849BE /* EigenValueDecomposition.h in Headers */,
 				ADD23C122887617000A849BE /* MLSMPMSolver.h in Headers */,
 				ADD23CD5288762D900A849BE /* SAT.h in Headers */,
 				AD088369289E42E30008AB04 /* PolynomialFit.h in Headers */,
-				ADD23C092887616200A849BE /* Tetrahedral.h in Headers */,
 				ADD23C222887619700A849BE /* GeometryCollection.h in Headers */,
 				ADD23C4A288761AE00A849BE /* ConvexHull3d.h in Headers */,
 				ADF8622D2891876C00DBC516 /* LBFGS.h in Headers */,
@@ -947,6 +956,7 @@
 				ADD23BD82887614E00A849BE /* EPAPenetration.h in Headers */,
 				ADD23C50288761AE00A849BE /* TetrahedralMesh.h in Headers */,
 				ADD23C7C288762B800A849BE /* AnimBinaryParser.h in Headers */,
+				AD80071128A3E4E3001387F3 /* Tetrahedron.h in Headers */,
 				AD02FE52289AB031004D13D9 /* SpecialFunctions.h in Headers */,
 				ADD23CCE288762D300A849BE /* PositionBasedDynamicsSolver.h in Headers */,
 				ADD23BFD2887616200A849BE /* Segment3d.h in Headers */,
@@ -1086,12 +1096,13 @@
 				ADD23C022887616200A849BE /* AxisAlignedBox3d.cpp in Sources */,
 				ADD23BCB2887614E00A849BE /* AABBTreeInference.cpp in Sources */,
 				ADD23CBF288762CC00A849BE /* RigidBody.cpp in Sources */,
-				ADD23C012887616200A849BE /* Tetrahedral.cpp in Sources */,
 				ADF272A428954DA600E6FE68 /* XPBDRigidDynamicsSolver.cpp in Sources */,
 				ADD23BBD2887614E00A849BE /* GeometryIntersection.cpp in Sources */,
 				ADD23C78288762B800A849BE /* PhysxBinaryParser.cpp in Sources */,
 				ADD23C3F288761AE00A849BE /* Spline.cpp in Sources */,
+				AD80071228A3E4E3001387F3 /* Tetrahedron.cpp in Sources */,
 				ADD23C6A288762AE00A849BE /* Vehicle.cpp in Sources */,
+				AD80071528A3E4E3001387F3 /* ConvexMesh.cpp in Sources */,
 				ADD23BD62887614E00A849BE /* EPAPenetration.cpp in Sources */,
 				ADD23C27288761A300A849BE /* Laplace2DSolver.cpp in Sources */,
 				ADD23C7E288762B800A849BE /* PythonModule.cpp in Sources */,
@@ -1131,6 +1142,7 @@
 				ADD23CBB288762CC00A849BE /* KeyFrameAnimation.cpp in Sources */,
 				ADD23B9C2887613100A849BE /* UncompressedKarmanVortex2D.cpp in Sources */,
 				ADD23CC6288762CC00A849BE /* Ragdoll.cpp in Sources */,
+				AD80071428A3E4E3001387F3 /* Cylinder3d.cpp in Sources */,
 				ADD23C082887616200A849BE /* Segment3d.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
