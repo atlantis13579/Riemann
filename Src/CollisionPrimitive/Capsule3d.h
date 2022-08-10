@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <assert.h>
@@ -63,6 +62,11 @@ public:
 		return Length;
 	}
 
+	inline float		GetHalfHeight() const
+	{
+		return Length * 0.5f;
+	}
+
 	Box3d				GetBoundingVolume() const
 	{
 		Box3d box(X0, X0);
@@ -122,20 +126,38 @@ public:
 	{
 		Vector3 Axis = X1 - X0;
 		float dp = DotProduct(Direction, Axis);
-		Vector3 FarthestCap = dp >= 0 ? X1 : X0;
-		float distSqr = Direction.SquareLength();
-		if (distSqr <= 1e-6)
-		{
-			return FarthestCap;
-		}
-		Vector3 Normalized = Direction / sqrtf(distSqr);
-		return FarthestCap + Normalized * Radius;
+		Vector3 cap = dp >= 0 ? X1 : X0;
+		return cap + Direction.Unit() * Radius;
 	}
 
 	int					GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 	{
-		assert(false);
-		*FacePoints = GetSupport(X0, X1, Radius, Direction);
+		Vector3 DirectionXZ = Vector3(Direction.x, 0.0f, Direction.z);
+
+		// hit  top/bottom
+		float len = DirectionXZ.Length();
+		if (len == 0.0f)
+		{
+			FacePoints[0] = GetSupport(Direction);
+			return 1;
+		}
+
+		Vector3 support = (Radius / len) * DirectionXZ;
+		Vector3 support_top = Vector3(0, Length * 0.5f, 0) - support;
+		Vector3 support_bottom = Vector3(0, -Length * 0.5f, 0) - support;
+
+		float proj_top = support_top.Dot(Direction);
+		float proj_bottom = support_bottom.Dot(Direction);
+
+		// near parallel, hit edge
+		if (fabsf(proj_top - proj_bottom) < 0.02f * Direction.Length())
+		{
+			FacePoints[0] = support_top;
+			FacePoints[1] = support_bottom;
+			return 2;
+		}
+
+		FacePoints[0] = GetSupport(Direction);
 		return 1;
 	}
 

@@ -87,14 +87,14 @@ inline float InvSqrt(float x) {
 }
 
 template <typename T>
-inline int SolveQuadratic(const T a, const T b, const T c, T root[2])		// ax^2 + bx + c = 0
+inline int SolveQuadratic(const T a, const T b, const T c, T roots[2])		// ax^2 + bx + c = 0
 {
 	const T eps = (T)1e-9;
 	if (fabs(a) < eps)
 	{
 		if (fabs(b) < eps)
 			return 0;
-		root[0] = -c / b;
+		roots[0] = -c / b;
 		return 1;
 	}
 
@@ -103,8 +103,15 @@ inline int SolveQuadratic(const T a, const T b, const T c, T root[2])		// ax^2 +
 	{
 		return 0;
 	}
-	root[0] = (-b - std::sqrt(discriminant)) / (2 * a);
-	root[1] = (-b + std::sqrt(discriminant)) / (2 * a);
+
+	if (fabs(discriminant) < eps)
+	{
+		roots[0] = roots[1] = -b / (2 * a);
+		return 1;
+	}
+
+	roots[0] = (-b - std::sqrt(discriminant)) / (2 * a);
+	roots[1] = (-b + std::sqrt(discriminant)) / (2 * a);
 	return 2;
 }
 

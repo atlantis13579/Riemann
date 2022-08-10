@@ -1,6 +1,5 @@
 #pragma once
 
-#include <assert.h>
 #include <math.h>
 #include <stdint.h>
 
@@ -8,18 +7,17 @@
 #include "../Maths/Maths.h"
 #include "../Maths/Matrix3.h"
 
-// Approximation of top face with 8 vertices
-static const float cSin45 = 0.70710678118654752440084436210485f;
-static const Vector3 cTopFace[] =
+// Approximation of top faces
+static const Vector3 CylinderFaces[] =
 {
-	Vector3(0.0f,	1.0f,	1.0f),
-	Vector3(cSin45,	1.0f,	cSin45),
-	Vector3(1.0f,	1.0f,	0.0f),
-	Vector3(cSin45,	1.0f,	-cSin45),
-	Vector3(-0.0f,	1.0f,	-1.0f),
-	Vector3(-cSin45,1.0f,	-cSin45),
-	Vector3(-1.0f,	1.0f,	0.0f),
-	Vector3(-cSin45,1.0f,	cSin45)
+	Vector3(0.0f,		1.0f,	1.0f),
+	Vector3(PI_OVER_4,	1.0f,	PI_OVER_4),
+	Vector3(1.0f,		1.0f,	0.0f),
+	Vector3(PI_OVER_4,	1.0f,	-PI_OVER_4),
+	Vector3(-0.0f,		1.0f,	-1.0f),
+	Vector3(-PI_OVER_4,	1.0f,	-PI_OVER_4),
+	Vector3(-1.0f,		1.0f,	0.0f),
+	Vector3(-PI_OVER_4,	1.0f,	PI_OVER_4)
 };
 
 class Cylinder3d
@@ -62,9 +60,19 @@ public:
 		return X1 - X0;
 	}
 
+	inline Vector3	GetUnitAxis() const
+	{
+		return (X1 - X0).Unit();
+	}
+
 	inline float GetHeight() const
 	{
 		return Height;
+	}
+
+	inline float GetHalfHeight() const
+	{
+		return Height * 0.5f;
 	}
 
 	float GetVolume() const
@@ -131,10 +139,10 @@ public:
 		// top or bottom
 		const float signy = Direction.y > 0 ? 1.0f : -1.0f;
 		Vector3 s(Radius, HalfHeight * signy, Radius);
-		int nPts = sizeof(cTopFace) / sizeof(cTopFace[0]);
+		int nPts = sizeof(CylinderFaces) / sizeof(CylinderFaces[0]);
 		for (int i = 0; nPts; ++i)
 		{
-			FacePoints[i] = Vector3(cTopFace[i].x * s.x, cTopFace[i].y * s.y, cTopFace[i].z * s.z);
+			FacePoints[i] = Vector3(CylinderFaces[i].x * s.x, CylinderFaces[i].y * s.y, CylinderFaces[i].z * s.z);
 		}
 		return nPts;
 	}
@@ -180,12 +188,13 @@ public:
 			float a = DirectionXZ.SquareLength();
 			float b = 2.0f * OriginXZ.Dot(DirectionXZ);
 			float c = sqr - Radius * Radius;
-			float discriminant = b * b - 4 * a * c;
-			if (discriminant < 0)
+
+			float roots[2];
+			if (SolveQuadratic(a, b, c) == 0)
 			{
 				return false;
 			}
-			float h = (-b - sqrtf(discriminant)) / (2.0f * a);
+			float h = std::min(roots[0], roots[1]);
 			if (h >= 0.0f)
 			{
 				*t = h;
@@ -198,7 +207,7 @@ public:
 
 	void		GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
-		int nPts = sizeof(cTopFace) / sizeof(cTopFace[0]);
+		int nPts = sizeof(CylinderFaces) / sizeof(CylinderFaces[0]);
 		Vector3 s = Vector3(Radius, Height * 0.5f, Radius);
 		Vertices.resize(nPts * 2 + 2);
 		Normals.resize(nPts * 2 + 2);
@@ -209,7 +218,7 @@ public:
 		Normals[2 * nPts + 1] = -Vector3::UnitY();
 		for (int i = 0; i < nPts; ++i)
 		{
-			Vector3 p = Vector3(cTopFace[i].x * s.x, cTopFace[i].y * s.y, cTopFace[i].z * s.z);
+			Vector3 p = Vector3(CylinderFaces[i].x * s.x, CylinderFaces[i].y * s.y, CylinderFaces[i].z * s.z);
 			Vertices[2*i] = p;
 			Vertices[2*i+1] = Vector3(p.x, -p.y, p.z);
 			Normals[2*i] = (Vertices[2*i] - Normals[2*nPts]).Unit();
@@ -229,14 +238,14 @@ public:
 
 	void		GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
 	{
-		int nPts = sizeof(cTopFace) / sizeof(cTopFace[0]);
+		int nPts = sizeof(CylinderFaces) / sizeof(CylinderFaces[0]);
 		Vector3 s = Vector3(Radius, Height * 0.5f, Radius);
 		Vertices.resize(nPts * 2 + 2);
 		Vertices[2 * nPts] = Vector3(0.0f, Height * 0.5f, 0.0f);
 		Vertices[2 * nPts + 1] = Vector3(0.0f, -Height * 0.5f, 0.0f);
 		for (int i = 0; i < nPts; ++i)
 		{
-			Vector3 p = Vector3(cTopFace[i].x * s.x, cTopFace[i].y * s.y, cTopFace[i].z * s.z);
+			Vector3 p = Vector3(CylinderFaces[i].x * s.x, CylinderFaces[i].y * s.y, CylinderFaces[i].z * s.z);
 			Vertices[2 * i] = p;
 			Vertices[2 * i + 1] = Vector3(p.x, -p.y, p.z);
 		}

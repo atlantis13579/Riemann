@@ -19,10 +19,10 @@ public:
 	{
 	}
 
-	Sphere3d(const Vector3& InCenter, float InRadius)
+	Sphere3d(const Vector3& _Center, float _Radius)
 	{
-		Center = InCenter;
-		Radius = InRadius;
+		Center = _Center;
+		Radius = _Radius;
 	}
 
 	static constexpr ShapeType3d	StaticType()
