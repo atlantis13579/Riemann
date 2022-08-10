@@ -210,16 +210,16 @@ Geometry*			GeometryFactory::CreateSphere(const Vector3& Center, float Radius)
 	return (Geometry*)p;
 }
 
-Geometry*			GeometryFactory::CreateCapsule(const Vector3& X1, const Vector3& X2, float Radius)
+Geometry*			GeometryFactory::CreateCapsule(const Vector3& X0, const Vector3& X1, float Radius)
 {
 	Quaternion quat = Quaternion::One();
-	if ((X2 - X1).SquareLength() < 1e-9)
+	if ((X1 - X0).SquareLength() < 1e-9)
 	{
-		quat.FromTwoAxis(Vector3::UnitY(), X2 - X1);
+		quat.FromTwoAxis(Vector3::UnitY(), X1 - X0);
 	}
-	Vector3 Center = (X1 + X2) * 0.5f;
+	Vector3 Center = (X0 + X1) * 0.5f;
 	TGeometry<Capsule3d>* p = new TGeometry<Capsule3d>();
-	p->Init(X1 - Center, X2 - Center, Radius);
+	p->Init(X0 - Center, X1 - Center, Radius);
 	p->SetCenterOfMass(Center);
 	p->SetRotation(quat);
 	p->UpdateBoundingVolume();

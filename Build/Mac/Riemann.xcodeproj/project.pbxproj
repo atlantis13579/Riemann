@@ -756,16 +756,16 @@
 		ADD23B962887610100A849BE /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				ADD23C152887618C00A849BE /* Base.h */,
+				ADBBEE19288C468700C3D6CD /* BatchList.h */,
 				ADA2A25328A29E67009EDBE2 /* JobSystem.h */,
 				ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */,
 				ADA2A25628A29E67009EDBE2 /* LockFreeList.h */,
-				ADA2A25728A29E67009EDBE2 /* StaticPool.h */,
-				ADA2A25428A29E67009EDBE2 /* ThreadPool.h */,
-				ADBBEE19288C468700C3D6CD /* BatchList.h */,
-				ADBBEE1A288C468700C3D6CD /* StaticList.h */,
-				ADD23C152887618C00A849BE /* Base.h */,
 				ADD23C142887618C00A849BE /* StaticArray.h */,
 				ADD23C132887618C00A849BE /* StaticStack.h */,
+				ADBBEE1A288C468700C3D6CD /* StaticList.h */,
+				ADA2A25728A29E67009EDBE2 /* StaticPool.h */,
+				ADA2A25428A29E67009EDBE2 /* ThreadPool.h */,
 			);
 			name = Core;
 			sourceTree = "<group>";

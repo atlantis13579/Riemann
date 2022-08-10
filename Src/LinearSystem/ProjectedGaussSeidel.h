@@ -1,4 +1,3 @@
-
 #pragma once
 
 // Projected Successive Over Relaxation (PSOR)
@@ -29,7 +28,7 @@ public:
 				}
 				T X0 = (-B[i] - beta) / A[i * N + i];
 				X0 = X[i] + Relaxation * (X0 - X[i]);
-				X0 = std::max(T(0), X0);
+				X0 = pmax(T(0), X0);
 				Norm += (X[i] - X0) * (X[i] - X0);
 				X[i] = X0;
 			}
@@ -63,7 +62,7 @@ public:
 				}
 				T X0 = (-B[i] - beta) / A[i * N + i];
 				X0 = X[i] + Relaxation * (X0 - X[i]);
-				X0 = std::min(std::max(X1[i], X0), X2[i]);
+				X0 = pmin(pmax(X1[i], X0), X2[i]);
 				Norm += (X[i] - X0) * (X[i] - X0);
 				X[i] = X0;
 			}
@@ -74,5 +73,15 @@ public:
 			}
 		}
 		return false;
+	}
+	
+	static T pmax(const T &a, const T &b)
+	{
+		return a >= b ? a : b;
+	}
+	
+	static T pmin(const T &a, const T &b)
+	{
+		return a < b ? a : b;
 	}
 };

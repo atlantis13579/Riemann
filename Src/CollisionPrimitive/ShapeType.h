@@ -1,6 +1,6 @@
 #pragma once
 
-enum class ShapeType3d
+enum class ShapeType3d : unsigned char
 {
 	UNKNOWN = 0,
 	BOX,

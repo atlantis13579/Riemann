@@ -3,7 +3,6 @@
 // A = QR where Q is an orthogonal matrix and R is an upper triangular matrix
 
 // https://en.wikipedia.org/wiki/QR_decomposition
-// https://en.wikipedia.org/wiki/Householder_transformation
 
 #include <string.h>
 #include "gemm.inl"
@@ -22,6 +21,7 @@ public:
 	}
 
 private:
+	// https://en.wikipedia.org/wiki/Householder_transformation
 	static void qr_householder_reflections(const T* a, T* q, T *r, int m, int n)
 	{
 		int max_dim = m > n ? m : n;

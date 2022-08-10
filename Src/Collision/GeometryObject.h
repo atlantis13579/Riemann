@@ -231,6 +231,7 @@ class GeometryIterator
 public:
 	virtual ~GeometryIterator() {}
 	virtual Geometry* GetNext() = 0;
+	virtual int GetSize() const = 0;
 };
 
 class GeometryFactory
@@ -241,7 +242,7 @@ public:
 	static Geometry* CreateOBB(const Vector3& Center, const Vector3 & HalfExtent, const Quaternion& Rot = Quaternion::One());
 	static Geometry* CreatePlane(const Vector3& Center, const Vector3& Normal, float HalfThickness = 0.01f);
 	static Geometry* CreateSphere(const Vector3& Center, float Radius);
-	static Geometry* CreateCapsule(const Vector3& X1, const Vector3& X2, float Radius);
+	static Geometry* CreateCapsule(const Vector3& X0, const Vector3& X1, float Radius);
 	static Geometry* CreateHeightField(const Box3d& Bv, int nRows, int nCols);
 	static Geometry* CreateConvexMesh();
 	static Geometry* CreateTriangle(const Vector3& A, const Vector3& B, const Vector3& C);
