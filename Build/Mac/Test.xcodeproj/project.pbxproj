@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		AD689BA32895EA2C0054B238 /* Test_Optimization.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD689BA22895EA2C0054B238 /* Test_Optimization.cpp */; };
+		AD80071B28A462B8001387F3 /* Test_Core.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80071A28A462B8001387F3 /* Test_Core.cpp */; };
 		ADD23D3F2887634D00A849BE /* Test_Python.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D332887634C00A849BE /* Test_Python.cpp */; };
 		ADD23D402887634D00A849BE /* Test_Matrix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D352887634C00A849BE /* Test_Matrix.cpp */; };
 		ADD23D412887634D00A849BE /* Test_Physics2d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D362887634C00A849BE /* Test_Physics2d.cpp */; };
@@ -37,6 +38,7 @@
 /* Begin PBXFileReference section */
 		AD2C31C82820AB10007157B6 /* Test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Test; sourceTree = BUILT_PRODUCTS_DIR; };
 		AD689BA22895EA2C0054B238 /* Test_Optimization.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Optimization.cpp; path = ../../Test/Test_Optimization.cpp; sourceTree = "<group>"; };
+		AD80071A28A462B8001387F3 /* Test_Core.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Core.cpp; path = ../../Test/Test_Core.cpp; sourceTree = "<group>"; };
 		ADD23D332887634C00A849BE /* Test_Python.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Python.cpp; path = ../../Test/Test_Python.cpp; sourceTree = "<group>"; };
 		ADD23D342887634C00A849BE /* Test.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Test.h; path = ../../Test/Test.h; sourceTree = "<group>"; };
 		ADD23D352887634C00A849BE /* Test_Matrix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Matrix.cpp; path = ../../Test/Test_Matrix.cpp; sourceTree = "<group>"; };
@@ -68,6 +70,7 @@
 			isa = PBXGroup;
 			children = (
 				ADD23D392887634C00A849BE /* main.cpp */,
+				AD80071A28A462B8001387F3 /* Test_Core.cpp */,
 				ADD23D372887634C00A849BE /* Test_Collision.cpp */,
 				ADD23D3D2887634C00A849BE /* Test_Geometry.cpp */,
 				ADD23D3A2887634C00A849BE /* Test_Image.cpp */,
@@ -161,6 +164,7 @@
 				AD689BA32895EA2C0054B238 /* Test_Optimization.cpp in Sources */,
 				ADD23D412887634D00A849BE /* Test_Physics2d.cpp in Sources */,
 				ADD23D472887634D00A849BE /* Test_Vehicle.cpp in Sources */,
+				AD80071B28A462B8001387F3 /* Test_Core.cpp in Sources */,
 				ADD23D402887634D00A849BE /* Test_Matrix.cpp in Sources */,
 				ADD23D462887634D00A849BE /* Test_SIMD.cpp in Sources */,
 				ADD23D442887634D00A849BE /* main.cpp in Sources */,

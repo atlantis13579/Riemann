@@ -1,6 +1,7 @@
 
 #include "stdio.h"
 
+extern void TestCores();
 extern void TestMaths();
 extern void TestCollision();
 extern void TestGeometry();
@@ -14,6 +15,7 @@ extern void TestOptimization();
 
 void TestAll()
 {
+	TestCores();
 	TestMaths();
 	TestCollision();
 	TestGeometry();

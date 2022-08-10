@@ -182,13 +182,11 @@ RayCastFunc GeometryIntersection::GetRayCastFunc(ShapeType3d Type)
 OverlapFunc GeometryIntersection::GetOverlapFunc(ShapeType3d Type1, ShapeType3d Type2)
 {
 	OverlapFunc func = GeometryIntersection::overlapTable[(int)Type1][(int)Type2];
-	assert(func);
 	return func;
 }
 
 SweepFunc GeometryIntersection::GetSweepFunc(ShapeType3d Type1, ShapeType3d Type2)
 {
 	SweepFunc func = GeometryIntersection::sweepTable[(int)Type1][(int)Type2];
-	assert(func);
 	return func;
 }

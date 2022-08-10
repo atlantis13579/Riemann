@@ -45,7 +45,7 @@ private:
 		T prev_norm = (T)0;
 
 		const int maxIterations = 32;
-		const T convergeEps = (T)(1e-5);
+		const T convergeEps = (T)(1e-6);
 
 		int it = 0;
 		while (it++ < maxIterations)

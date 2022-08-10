@@ -126,8 +126,8 @@ void ConvexMesh::ComputeInertia()
 	}
 
 	Inertia = Matrix3(eigen_vectors[0].x, eigen_vectors[1].x, eigen_vectors[2].x,
-		eigen_vectors[0].y, eigen_vectors[1].y, eigen_vectors[2].y,
-		eigen_vectors[0].z, eigen_vectors[1].z, eigen_vectors[2].z);
+					  eigen_vectors[0].y, eigen_vectors[1].y, eigen_vectors[2].y,
+					  eigen_vectors[0].z, eigen_vectors[1].z, eigen_vectors[2].z);
 
 	return;
 }
