@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <math.h>
+#include <cmath>
 #include <stdlib.h>
 #include <limits>
 
@@ -86,23 +86,62 @@ inline float InvSqrt(float x) {
 	return x;
 }
 
-template<typename T>
-inline T CubicRoot(const T polynomial[3])
+template <typename T>
+inline int SolveQuadratic(const T a, const T b, const T c, T root[2])		// ax^2 + bx + c = 0
+{
+	const T eps = (T)1e-9;
+	if (fabs(a) < eps)
+	{
+		if (fabs(b) < eps)
+			return 0;
+		root[0] = -c / b;
+		return 1;
+	}
+
+	T discriminant = b * b - 4 * a * c;
+	if (discriminant < 0)
+	{
+		return 0;
+	}
+	root[0] = (-b - std::sqrt(discriminant)) / (2 * a);
+	root[1] = (-b + std::sqrt(discriminant)) / (2 * a);
+	return 2;
+}
+
+template <typename T>
+inline T SolveQuadratic(const T a, const T b, const T c)		// ax^2 + bx + c = 0
 {
 	const T eps = (T)1e-6;
-	const T discr = polynomial[2] * polynomial[2] - 3 * polynomial[1];
-	if (discr <= eps)
-		return -polynomial[2] / 3;
+	if (fabs(a) < eps)
+	{
+		if (fabs(b) < eps)
+			return std::numeric_limits<T>::max();
+		return -c / b;
+	}
+
+	T discriminant = b * b - 4 * a * c;
+	if (discriminant < 0)
+		return std::numeric_limits<T>::max();
+	return (-b + std::sqrt(discriminant)) / (2 * a);
+}
+
+template<typename T>
+inline T SolveCubic(const T a, const T b, const T c)		// x^3 + ax^2 + bx + c = 0
+{
+	const T eps = (T)1e-6;
+	const T discriminant = a * a - 3 * b;
+	if (discriminant <= eps)
+		return -a / 3;
 
 	T x = (T)1;
-	T val = polynomial[0] + x * (polynomial[1] + x * (polynomial[2] + x));
+	T val = c + x * (b + x * (a + x));
 	if (val < 0)
 	{
-		x = fabs(polynomial[0]);
-		float t = (T)1 + fabsf(polynomial[1]);
+		x = fabs(c);
+		float t = (T)1 + fabs(b);
 		if (t > x)
 			x = t;
-		t = (T)1 + fabsf(polynomial[2]);
+		t = (T)1 + fabs(a);
 		if (t > x)
 			x = t;
 	}
@@ -110,15 +149,24 @@ inline T CubicRoot(const T polynomial[3])
 	// Newton's method to find root
 	for (int i = 0; i < 16; ++i)
 	{
-		val = polynomial[0] + x * (polynomial[1] + x * (polynomial[2] + x));
+		val = c + x * (b + x * (a + x));
 		if (fabs(val) <= eps)
 			return x;
 
-		float dev = polynomial[1] + 2 * x * polynomial[2] + 3 * x * x;
+		float dev = b + 2 * x * a + 3 * x * x;
 		x -= val / dev;
 	}
 
 	return x;
+}
+
+template<typename T>
+inline T SolveCubic(const T a, const T b, const T c, const T d)		// ax^3 + bx^2 + cx + c = 0
+{
+	const T eps = (T)1e-6;
+	if (fabs(a) < eps)
+		return SolveQuadratic(b, c, d);
+	return SolveCubic(b / a, c / a, d / a);
 }
 
 // from http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetParallel

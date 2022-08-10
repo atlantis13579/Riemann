@@ -106,7 +106,7 @@ Geometry::Geometry()
 	m_Next = nullptr;
 }
 
-bool				Geometry::Overlap(const Geometry* Geom) const
+bool		Geometry::Overlap(const Geometry* Geom) const
 {
 	OverlapFunc func = GeometryIntersection::GetOverlapFunc(m_Type, Geom->GetShapeType());
 	if (func)
@@ -128,19 +128,19 @@ bool				Geometry::Overlap(const Geometry* Geom) const
 	return false;
 }
 
-bool				Geometry::Sweep(const Geometry* Geom, const Vector3& Direction, float* t) const
+bool		Geometry::Sweep(const Geometry* Geom, const Vector3& Direction, float* t) const
 {
 	SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
 	assert(func);
 	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), Direction, t);
 }
 
-void 				Geometry::UpdateBoundingVolume()
+void 		Geometry::UpdateBoundingVolume()
 {
 	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_CenterOfMassTransform.Translation, m_CenterOfMassTransform.Rotation);
 }
 
-Vector3				Geometry::GetSupport_WorldSpace(const Vector3& Direction) const
+Vector3		Geometry::GetSupport_WorldSpace(const Vector3& Direction) const
 {
 	Vector3 DirLocal = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
 	Vector3 SupportLocal = GetSupport_LocalSpace(DirLocal);
@@ -148,7 +148,7 @@ Vector3				Geometry::GetSupport_WorldSpace(const Vector3& Direction) const
 	return SupportWorld;
 }
 
-void				Geometry::GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const
+void		Geometry::GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const
 {
 	Vector3 DirLocal = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
 	GetSupportFace_LocalSpace(DirLocal, Face);
@@ -158,7 +158,7 @@ void				Geometry::GetSupportFace_WorldSpace(const Vector3& Direction, SupportFac
 	}
 }
 
-Matrix3				Geometry::GetInverseInertia_LocalSpace(float InvMass) const
+Matrix3		Geometry::GetInverseInertia_LocalSpace(float InvMass) const
 {
 	if (InvMass == 0.0f)
 	{
@@ -167,14 +167,14 @@ Matrix3				Geometry::GetInverseInertia_LocalSpace(float InvMass) const
 	return GetInertia_LocalSpace(1.0f / InvMass).Inverse();
 }
 
-void 				GeometryFactory::DeleteGeometry(Geometry* Geom)
+void 		GeometryFactory::DeleteGeometry(Geometry* Geom)
 {
 	delete Geom;
 }
 
 int GeometryFactory::ObjectCount[(int)ShapeType3d::TYPE_COUNT] = { 0 };
 
-Geometry*			GeometryFactory::CreateOBB(const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot)
+Geometry*	GeometryFactory::CreateOBB(const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot)
 {
 	TGeometry<AxisAlignedBox3d>* p = new TGeometry<AxisAlignedBox3d>();
 	p->Min = -HalfExtent;
@@ -185,7 +185,7 @@ Geometry*			GeometryFactory::CreateOBB(const Vector3& Center, const Vector3& Hal
 	return (Geometry*)p;
 }
 
-Geometry*			GeometryFactory::CreatePlane(const Vector3& Center, const Vector3& Normal, float HalfThickness)
+Geometry*	GeometryFactory::CreatePlane(const Vector3& Center, const Vector3& Normal, float HalfThickness)
 {
 	TGeometry<Plane3d>* p = new TGeometry<Plane3d>();
 	p->Normal = Vector3::UnitY();
@@ -199,7 +199,7 @@ Geometry*			GeometryFactory::CreatePlane(const Vector3& Center, const Vector3& N
 	return (Geometry*)p;
 }
 
-Geometry*			GeometryFactory::CreateSphere(const Vector3& Center, float Radius)
+Geometry*	GeometryFactory::CreateSphere(const Vector3& Center, float Radius)
 {
 	TGeometry<Sphere3d>* p = new TGeometry<Sphere3d>();
 	p->Center = Vector3::Zero();
@@ -210,7 +210,23 @@ Geometry*			GeometryFactory::CreateSphere(const Vector3& Center, float Radius)
 	return (Geometry*)p;
 }
 
-Geometry*			GeometryFactory::CreateCapsule(const Vector3& X0, const Vector3& X1, float Radius)
+Geometry*	GeometryFactory::CreateCylinder(const Vector3& X0, const Vector3& X1, float Radius)
+{
+	Quaternion quat = Quaternion::One();
+	if ((X1 - X0).SquareLength() < 1e-9)
+	{
+		quat.FromTwoAxis(Vector3::UnitY(), X1 - X0);
+	}
+	Vector3 Center = (X0 + X1) * 0.5f;
+	TGeometry<Cylinder3d>* p = new TGeometry<Cylinder3d>();
+	p->Init(X0 - Center, X1 - Center, Radius);
+	p->SetCenterOfMass(Center);
+	p->SetRotation(quat);
+	p->UpdateBoundingVolume();
+	return (Geometry*)p;
+}
+
+Geometry*	GeometryFactory::CreateCapsule(const Vector3& X0, const Vector3& X1, float Radius)
 {
 	Quaternion quat = Quaternion::One();
 	if ((X1 - X0).SquareLength() < 1e-9)
@@ -226,7 +242,7 @@ Geometry*			GeometryFactory::CreateCapsule(const Vector3& X0, const Vector3& X1,
 	return (Geometry*)p;
 }
 
-Geometry*			GeometryFactory::CreateHeightField(const Box3d &Bv, int nRows, int nCols)
+Geometry*	GeometryFactory::CreateHeightField(const Box3d &Bv, int nRows, int nCols)
 {
 	TGeometry<HeightField3d>* p = new TGeometry<HeightField3d>();
 	p->Init(Bv, nRows, nCols);
@@ -236,7 +252,7 @@ Geometry*			GeometryFactory::CreateHeightField(const Box3d &Bv, int nRows, int n
 	return (Geometry*)p;
 }
 
-Geometry*			GeometryFactory::CreateConvexMesh()
+Geometry*	GeometryFactory::CreateConvexMesh()
 {
 	TGeometry<ConvexMesh>* p = new TGeometry<ConvexMesh>();
 	p->SetCenterOfMass(Vector3::Zero());
@@ -245,7 +261,7 @@ Geometry*			GeometryFactory::CreateConvexMesh()
 	return (Geometry*)p;
 }
 
-Geometry*			GeometryFactory::CreateTriangle(const Vector3& A, const Vector3& B, const Vector3& C)
+Geometry*	GeometryFactory::CreateTriangle(const Vector3& A, const Vector3& B, const Vector3& C)
 {
 	Vector3 Center = (A + B + C) / 3.0f;
 	TGeometry<Triangle3d>* p = new TGeometry<Triangle3d>();
@@ -256,7 +272,7 @@ Geometry*			GeometryFactory::CreateTriangle(const Vector3& A, const Vector3& B, 
 	return (Geometry*)p;
 }
 
-Geometry*			GeometryFactory::CreateTriangleMesh()
+Geometry*	GeometryFactory::CreateTriangleMesh()
 {
 	TGeometry<TriangleMesh>* p = new TGeometry<TriangleMesh>();
 	p->SetCenterOfMass(Vector3::Zero());

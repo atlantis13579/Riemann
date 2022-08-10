@@ -242,6 +242,7 @@ public:
 	static Geometry* CreateOBB(const Vector3& Center, const Vector3 & HalfExtent, const Quaternion& Rot = Quaternion::One());
 	static Geometry* CreatePlane(const Vector3& Center, const Vector3& Normal, float HalfThickness = 0.01f);
 	static Geometry* CreateSphere(const Vector3& Center, float Radius);
+	static Geometry* CreateCylinder(const Vector3& X0, const Vector3& X1, float Radius);
 	static Geometry* CreateCapsule(const Vector3& X0, const Vector3& X1, float Radius);
 	static Geometry* CreateHeightField(const Box3d& Bv, int nRows, int nCols);
 	static Geometry* CreateConvexMesh();

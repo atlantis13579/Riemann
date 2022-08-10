@@ -11,7 +11,6 @@
 
 #include "ShapeType.h"
 #include "Sphere3d.h"
-#include "../Maths/Maths.h"
 #include "../Maths/Matrix3.h"
 
 class Capsule3d
@@ -25,9 +24,9 @@ public:
 public:
 	Capsule3d() {}
 
-	Capsule3d(const Vector3& InX0, const Vector3& InX1, float InRadius)
+	Capsule3d(const Vector3& _X0, const Vector3& _X1, float _Radius)
 	{
-		Init(InX0, InX1, InRadius);
+		Init(_X0, _X1, _Radius);
 	}
 
 	static constexpr ShapeType3d	StaticType()
@@ -35,12 +34,12 @@ public:
 		return ShapeType3d::CAPSULE;
 	}
 
-	void		Init(const Vector3& InX0, const Vector3& InX1, float InRadius)
+	void		Init(const Vector3& _X0, const Vector3& _X1, float _Radius)
 	{
-		X0 = InX0;
-		X1 = InX1;
-		Length = (InX1 - InX0).Length();
-		Radius = InRadius;
+		X0 = _X0;
+		X1 = _X1;
+		Length = (_X1 - _X0).Length();
+		Radius = _Radius;
 	}
 
 public:
@@ -54,7 +53,7 @@ public:
 		return (X1 - X0).Unit();
 	}
 
-	inline Vector3		GetOrigin() const
+	inline Vector3		GetCenter() const
 	{
 		return (X0 + X1) * 0.5f;
 	}
@@ -133,14 +132,14 @@ public:
 		return FarthestCap + Normalized * Radius;
 	}
 
-	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
+	int					GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 	{
 		assert(false);
 		*FacePoints = GetSupport(X0, X1, Radius, Direction);
 		return 1;
 	}
 
-	void				GetVertices(int stackCount, int sliceCount, std::vector<Vector3>* Vertices, std::vector<Vector3>* Normals)
+	void				GetVertices(int stackCount, int sliceCount, std::vector<Vector3>& Vertices, std::vector<Vector3>* Normals)
 	{
 		const float mPI = 2.0f * asinf(1.0f);
 
@@ -148,7 +147,7 @@ public:
 		float thetaStep = 2.0f * mPI / sliceCount;
 		float Length = (X1 - X0).Length();
 
-		Vertices->push_back(Vector3(0, Length * 0.5f + Radius, 0));
+		Vertices.push_back(Vector3(0, Length * 0.5f + Radius, 0));
 		if (Normals) Normals->push_back(Vector3::UnitY());
 
 		for (int i = 1; i < stackCount; i++)
@@ -159,11 +158,11 @@ public:
 			{
 				float theta = j * thetaStep;
 				Vector3 p = Vector3(Radius * sinf(phi) * cosf(theta), height + Radius * cosf(phi), Radius * sinf(phi) * sinf(theta));
-				Vertices->push_back(p);
+				Vertices.push_back(p);
 				if (Normals) Normals->push_back(p);
 			}
 		}
-		Vertices->push_back(Vector3(0, -Length * 0.5f -Radius, 0));
+		Vertices.push_back(Vector3(0, -Length * 0.5f -Radius, 0));
 		if (Normals) Normals->push_back(-Vector3::UnitY());
 
 		if (!IsYAxisAligned())
@@ -171,15 +170,15 @@ public:
 			Matrix3 Rot;
 			Rot.FromTwoAxis(Vector3::UnitY(), X1 - X0);
 
-			Vector3* pV = &Vertices->at(0);
-			for (size_t i = 0; i < Vertices->size(); ++i)
+			Vector3* pV = Vertices.data();
+			for (size_t i = 0; i < Vertices.size(); ++i)
 			{
 				pV[i] = Rot * pV[i];
 			}
 
 			if (Normals)
 			{
-				Vector3* pN = &Normals->at(0);
+				Vector3* pN = Normals->data();
 				for (size_t i = 0; i < Normals->size(); ++i)
 				{
 					pN[i] = Rot * pN[i];
@@ -187,11 +186,11 @@ public:
 			}
 		}
 
-		Vector3 Center = GetOrigin();
+		Vector3 Center = GetCenter();
 		if (Center.SquareLength() > 0.001f)
 		{
-			Vector3* pV = &Vertices->at(0);
-			for (size_t i = 0; i < Vertices->size(); ++i)
+			Vector3* pV = Vertices.data();
+			for (size_t i = 0; i < Vertices.size(); ++i)
 			{
 				pV[i] = pV[i] + Center;
 			}
@@ -204,7 +203,7 @@ public:
 		const int stackCount = 5;
 		const int sliceCount = 8;
 
-		GetVertices(stackCount, sliceCount, &Vertices, &Normals);
+		GetVertices(stackCount, sliceCount, Vertices, &Normals);
 
 		for (int i = 1; i <= sliceCount; i++)
 		{
@@ -243,7 +242,7 @@ public:
 		const int stackCount = 5;
 		const int sliceCount = 8;
 
-		GetVertices(stackCount, sliceCount, &Vertices, nullptr);
+		GetVertices(stackCount, sliceCount, Vertices, nullptr);
 
 		for (int i = 1; i <= sliceCount; i++)
 		{

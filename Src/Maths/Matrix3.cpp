@@ -160,9 +160,9 @@ static void GolubKahanStep(Matrix3& A, Matrix3& L, Matrix3& R)
 	float t12 = A[1][1] * A[1][2];
 	float tr = t11 + t22;
 	float diff = t11 - t22;
-	float delta = sqrtf(diff * diff + 4.0f * t12 * t12);
-	float root1 = 0.5f * (tr + delta);
-	float root2 = 0.5f * (tr - delta);
+	float discriminant = sqrtf(diff * diff + 4.0f * t12 * t12);
+	float root1 = 0.5f * (tr + discriminant);
+	float root2 = 0.5f * (tr - discriminant);
 
 	// adjust right
 	float y = A[0][0] - (fabsf(root1 - t22) <= fabsf(root2 - t22) ? root1 : root2);
