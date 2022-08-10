@@ -112,7 +112,7 @@ bool				Geometry::Overlap(const Geometry* Geom) const
 	if (func)
 	{
 		Geometry2Transform trans;
-		trans.LoadLocal2(m_CenterOfMassTransform, *Geom->GetCenterOfMassTransform());
+		trans.LoadTrans(m_CenterOfMassTransform, *Geom->GetCenterOfMassTransform());
 		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &trans);
 	}
 
@@ -120,7 +120,7 @@ bool				Geometry::Overlap(const Geometry* Geom) const
 	if (func)
 	{
 		Geometry2Transform trans;
-		trans.LoadLocal2(*Geom->GetCenterOfMassTransform(), m_CenterOfMassTransform);
+		trans.LoadTrans(*Geom->GetCenterOfMassTransform(), m_CenterOfMassTransform);
 		return func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), &trans);
 	}
 

@@ -505,7 +505,7 @@ namespace PhysxFormat_41
 		float	mExtents[3];
 	};
 
-	struct PxHullPolygonData
+	struct GuHullPolygonData
 	{
 		Plane3d			mPlane;
 		uint16_t	mVRef8;
@@ -563,33 +563,62 @@ namespace PhysxFormat_41
 	struct ConvexHullData
 	{
 		TCE3<float>		mAABB;
-		Vector3				mCenterOfMass;
-		uint16_t			mNbEdges;
-		uint8_t			mNbHullVertices;
-		uint8_t			mNbPolygons;
+		PxVec3			mCenterOfMass;
+		PxU16			mNbEdges;
+		PxU8			mNbHullVertices;
+		PxU8			mNbPolygons;
 
-		const Vector3* getVerts()	const
+		const PxVec3* getHullVertices()	const
 		{
 			const char* tmp = reinterpret_cast<const char*>(mPolygons);
-			tmp += sizeof(PxHullPolygonData) * mNbPolygons;
+			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
 			return reinterpret_cast<const Vector3*>(tmp);
 		}
 
-		const uint16_t* getVerticesByEdges16() const
+		const PxU8* getFacesByEdges8()	const
+		{
+			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
+			tmp += sizeof(PxVec3) * mNbHullVertices;
+			return reinterpret_cast<const PxU8*>(tmp);
+		}
+
+		const PxU8* getFacesByVertices8() const
+		{
+			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
+			tmp += sizeof(PxVec3) * mNbHullVertices;
+			tmp += sizeof(PxU8) * mNbEdges * 2;
+			return reinterpret_cast<const PxU8*>(tmp);
+		}
+
+		const PxU16* getVerticesByEdges16() const
 		{
 			if (mNbEdges & 0x8000)
 			{
 				const char* tmp = reinterpret_cast<const char*>(mPolygons);
-				tmp += sizeof(PxHullPolygonData) * mNbPolygons;
-				tmp += sizeof(Vector3) * mNbHullVertices;
-				tmp += sizeof(uint8_t) * (mNbEdges & ~0x8000) * 2;
-				tmp += sizeof(uint8_t) * mNbHullVertices * 3;
+				tmp += sizeof(GuHullPolygonData) * mNbPolygons;
+				tmp += sizeof(PxVec3) * mNbHullVertices;
+				tmp += sizeof(PxU8) * (mNbEdges & ~0x8000) * 2;
+				tmp += sizeof(PxU8) * mNbHullVertices * 3;
 				return reinterpret_cast<const uint16_t*>(tmp);
 			}
 			return nullptr;
 		}
 
-		PxHullPolygonData* mPolygons;
+		const PxU8* getVertexData8() const
+		{
+			const char* tmp = reinterpret_cast<const char*>(mPolygons);
+			tmp += sizeof(GuHullPolygonData) * mNbPolygons;
+			tmp += sizeof(PxVec3) * mNbHullVertices;
+			tmp += sizeof(PxU8) * mNbEdges * 2;
+			tmp += sizeof(PxU8) * mNbHullVertices * 3;
+			if (mNbEdges & 0x8000)
+				tmp += sizeof(PxU16) * mNbEdges * 2;
+			return reinterpret_cast<const PxU8*>(tmp);
+		}
+
+		GuHullPolygonData* mPolygons;
 		PxBigConvexRawData* mBigConvexRawData;
 		PxInternalObjectsData	mInternal;
 	};
@@ -601,7 +630,7 @@ namespace PhysxFormat_41
 
 		uint32_t computeBufferSize(const ConvexHullData& data, uint32_t nb)
 		{
-			uint32_t bytesNeeded = sizeof(PxHullPolygonData) * data.mNbPolygons;
+			uint32_t bytesNeeded = sizeof(GuHullPolygonData) * data.mNbPolygons;
 			uint16_t mnbEdges = (data.mNbEdges & ~0x8000);
 			bytesNeeded += sizeof(Vector3) * data.mNbHullVertices;
 			bytesNeeded += sizeof(uint8_t) * mnbEdges * 2;
@@ -617,7 +646,7 @@ namespace PhysxFormat_41
 		void importExtraData(PxDeserializationContext& context)
 		{
 			const uint32_t bufferSize = computeBufferSize(mHullData, GetNb());
-			mHullData.mPolygons = reinterpret_cast<PxHullPolygonData*>(context.readExtraData<uint8_t, 16>(bufferSize));
+			mHullData.mPolygons = reinterpret_cast<GuHullPolygonData*>(context.readExtraData<uint8_t, 16>(bufferSize));
 
 			assert(mBigConvexData == nullptr);
 			if (mBigConvexData)

@@ -150,21 +150,25 @@ public:
 
 		Geometry* Geom = GeometryFactory::CreateConvexMesh();
 		ConvexMesh* ConvMesh = Geom->GetShapeObj<ConvexMesh>();
+		const physx::ConvexHullData& hull = Mesh->mHullData;
 
-		for (int i = 0; i < Mesh->mHullData.mNbPolygons; ++i)
+		PxU16 maxIndices = 0;
+		for (int i = 0; i < hull.mNbPolygons; ++i)
 		{
-			const physx::HullPolygonData& poly = Mesh->mHullData.mPolygons[i];
+			const physx::GuHullPolygonData& poly = hull.mPolygons[i];
+			maxIndices = std::max(maxIndices, PxU16(poly.mMinIndex + poly.mNbVerts));
 			ConvMesh->AddFace(poly.mPlane, poly.mNbVerts, poly.mVRef8);
 		}
-		ConvMesh->SetVerties(Mesh->mHullData.getVerts(), Mesh->mHullData.mNbHullVertices);
+		ConvMesh->SetVerties(hull.getHullVertices(), hull.mNbHullVertices);
 
-		assert(Mesh->mHullData.getVerticesByEdges16());
-		ConvMesh->SetEdges(Mesh->mHullData.getVerticesByEdges16(), Mesh->mHullData.mNbEdges & ~0x8000);
-		assert(ConvMesh->VerifyIndices());
+		assert(hull.getVerticesByEdges16());
+		ConvMesh->SetEdges(hull.getVerticesByEdges16(), hull.mNbEdges & ~0x8000);
+		ConvMesh->SetIndices(hull.getVertexData8(), maxIndices);
+		assert(ConvMesh->ValidateStructure());
 
 		ConvMesh->Inertia = Mesh->mInertia;
-		ConvMesh->CenterOfMass = Mesh->mHullData.mCenterOfMass;
-		ConvMesh->BoundingVolume = Mesh->mHullData.mAABB.GetAABB();
+		ConvMesh->CenterOfMass = hull.mCenterOfMass;
+		ConvMesh->BoundingVolume = hull.mAABB.GetAABB();
 
 		assert(ConvMesh->EulerNumber() == 2);
 		assert(ConvMesh->NumVertices == ConvMesh->Vertices.size());
