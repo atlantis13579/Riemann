@@ -525,6 +525,9 @@
     <ClInclude Include="..\..\Src\Core\LockFreeList.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Polyhedron.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp">
