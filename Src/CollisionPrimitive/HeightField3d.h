@@ -130,67 +130,9 @@ public:
 
 	int		GetCellTriangle(int i, int j, uint32_t Tris[6]) const;
 
-	void	GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
-	{
-		if (nZ * nZ == 0)
-		{
-			return;
-		}
+	void	GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
 
-		Vertices.resize(nX * nZ);
-		for (uint32_t i = 0; i < nX; i++)
-		for (uint32_t j = 0; j < nZ; j++)
-		{
-			Vertices[i * nZ + j] = Vector3(BV.mMin.x + DX * i, GetHeight(i * nZ + j), BV.mMin.z + DX * j);
-		}
-
-		assert(Vertices.size() < 65535);
-		Indices.resize((nZ - 1) * (nX - 1) * 2 * 3);
-		int nTris = 0;
-		uint32_t Tris[6];
-
-		for (uint32_t i = 0; i < (nZ - 1); ++i)
-		for (uint32_t j = 0; j < (nX - 1); ++j)
-		{
-			int nT = GetCellTriangle(i, j, Tris);
-			for (int k = 0; k < nT; k += 3)
-			{
-				Indices[3 * nTris + 0] = Tris[k + 0];
-				Indices[3 * nTris + 1] = Tris[k + 1];
-				Indices[3 * nTris + 2] = Tris[k + 2];
-				nTris++;
-			}
-		}
-
-		std::vector<int> Count;
-		Count.resize(Vertices.size(), 0);
-		Normals.resize(Vertices.size());
-		memset(&Normals[0], 0, sizeof(Normals[0]) * Normals.size());
-		for (int i = 0; i < nTris; ++i)
-		{
-			uint16_t i0 = Indices[3 * i + 0];
-			uint16_t i1 = Indices[3 * i + 1];
-			uint16_t i2 = Indices[3 * i + 2];
-			const Vector3& v0 = Vertices[i0];
-			const Vector3& v1 = Vertices[i1];
-			const Vector3& v2 = Vertices[i2];
-			Vector3 Nor = (v1 - v0).Cross(v2 - v0);
-			Normals[i0] += Nor.Unit(); Count[i0]++;
-			Normals[i1] += Nor.Unit(); Count[i1]++;
-			Normals[i2] += Nor.Unit(); Count[i2]++;
-		}
-
-		for (size_t i = 0; i < Normals.size(); ++i)
-		{
-			Normals[i] *= 1.0f / Count[i];
-			Normals[i].Normalize();
-		}
-	}
-
-	void GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
-	{
-
-	}
+	void	GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);
     
 private:
 	bool IntersectRayBruteForce(const Vector3& Origin, const Vector3& Direction, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;

@@ -499,6 +499,203 @@ float AxisAlignedBox3d::SqrDistanceToSegment(const Vector3& P0, const Vector3& P
 	}
 }
 
+int AxisAlignedBox3d::GetSupportFace(const Vector3& Bmin, const Vector3& Bmax, const Vector3& Direction, Vector3* FacePoints)
+{
+	int axis = Direction.Abs().LargestAxis();
+	if (Direction[axis] < 0.0f)
+	{
+		switch (axis)
+		{
+		case 0:
+			FacePoints[0] = Vector3(Bmax.x, Bmin.y, Bmin.z);
+			FacePoints[1] = Vector3(Bmax.x, Bmax.y, Bmin.z);
+			FacePoints[2] = Vector3(Bmax.x, Bmax.y, Bmax.z);
+			FacePoints[3] = Vector3(Bmax.x, Bmin.y, Bmax.z);
+			break;
+
+		case 1:
+			FacePoints[0] = Vector3(Bmin.x, Bmax.y, Bmin.z);
+			FacePoints[1] = Vector3(Bmin.x, Bmax.y, Bmax.z);
+			FacePoints[2] = Vector3(Bmax.x, Bmax.y, Bmax.z);
+			FacePoints[3] = Vector3(Bmax.x, Bmax.y, Bmin.z);
+			break;
+
+		case 2:
+			FacePoints[0] = Vector3(Bmin.x, Bmin.y, Bmax.z);
+			FacePoints[1] = Vector3(Bmax.x, Bmin.y, Bmax.z);
+			FacePoints[2] = Vector3(Bmax.x, Bmax.y, Bmax.z);
+			FacePoints[3] = Vector3(Bmin.x, Bmax.y, Bmax.z);
+			break;
+		}
+	}
+	else
+	{
+		switch (axis)
+		{
+		case 0:
+			FacePoints[0] = Vector3(Bmin.x, Bmin.y, Bmin.z);
+			FacePoints[1] = Vector3(Bmin.x, Bmin.y, Bmax.z);
+			FacePoints[2] = Vector3(Bmin.x, Bmax.y, Bmax.z);
+			FacePoints[3] = Vector3(Bmin.x, Bmax.y, Bmin.z);
+			break;
+
+		case 1:
+			FacePoints[0] = Vector3(Bmin.x, Bmin.y, Bmin.z);
+			FacePoints[1] = Vector3(Bmax.x, Bmin.y, Bmin.z);
+			FacePoints[2] = Vector3(Bmax.x, Bmin.y, Bmax.z);
+			FacePoints[3] = Vector3(Bmin.x, Bmin.y, Bmax.z);
+			break;
+
+		case 2:
+			FacePoints[0] = Vector3(Bmin.x, Bmin.y, Bmin.z);
+			FacePoints[1] = Vector3(Bmin.x, Bmax.y, Bmin.z);
+			FacePoints[2] = Vector3(Bmax.x, Bmax.y, Bmin.z);
+			FacePoints[3] = Vector3(Bmax.x, Bmin.y, Bmin.z);
+			break;
+		}
+	}
+
+	return 4;
+}
+
+void AxisAlignedBox3d::GetMesh2(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
+{
+	Vertices.resize(8);
+	Box3d::GetVertices(Min, Max, &Vertices[0]);
+
+	Vector3 Center = GetCenterOfMass();
+
+	Normals.resize(8);
+	for (int i = 0; i < 8; ++i)
+	{
+		Normals[i] = Vertices[i] - Center;
+	}
+
+	Indices = std::vector<uint16_t>({
+		0, 1, 2,
+		1, 3, 2,
+		4, 5, 6,
+		5, 7, 6,
+		0, 1, 4,
+		5, 4, 1,
+		1, 3, 5,
+		7, 5, 3,
+		2, 4, 0,
+		6, 4, 2,
+		3, 2, 6,
+		6, 7, 3 });
+}
+
+void AxisAlignedBox3d::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
+{
+	Vertices.resize(36);
+	Indices.resize(36);
+	Normals.resize(36);
+
+	Vector3 BV[] = { Min, Max };
+
+#define SET_VERTICES(_idx, _x, _y, _z)	\
+			Vertices[_idx] = Vector3(BV[_x].x, BV[_y].y, BV[_z].z);	\
+			Indices[_idx] = (_idx);	\
+			Normals[_idx] = (_z == 0) ? -Vector3::UnitZ() : Vector3::UnitZ();	\
+			Vertices[_idx + 12] = Vector3(BV[_y].x, BV[_z].y, BV[_x].z);	\
+			Indices[_idx + 12] = (_idx + 12);	\
+			Normals[_idx + 12] = (_z == 0) ? -Vector3::UnitY() : Vector3::UnitY();	\
+			Vertices[_idx + 24] = Vector3(BV[_z].x, BV[_x].y, BV[_y].z);	\
+			Indices[_idx + 24] = (_idx + 24);	\
+			Normals[_idx + 24] = (_z == 0) ? -Vector3::UnitX() : Vector3::UnitX();	\
+
+	SET_VERTICES(0, 0, 0, 0);
+	SET_VERTICES(1, 1, 0, 0);
+	SET_VERTICES(2, 0, 1, 0);
+	SET_VERTICES(3, 1, 0, 0);
+	SET_VERTICES(4, 0, 1, 0);
+	SET_VERTICES(5, 1, 1, 0);
+	SET_VERTICES(6, 0, 0, 1);
+	SET_VERTICES(7, 1, 0, 1);
+	SET_VERTICES(8, 0, 1, 1);
+	SET_VERTICES(9, 1, 0, 1);
+	SET_VERTICES(10, 0, 1, 1);
+	SET_VERTICES(11, 1, 1, 1);
+
+#undef SET_VERTICES
+}
+
+void AxisAlignedBox3d::GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
+{
+	Vertices.resize(8);
+	Box3d::GetVertices(Min, Max, &Vertices[0]);
+	Indices = std::vector<uint16_t>({
+		0, 1, 1, 3, 3, 2, 2, 0,
+		0, 4, 1, 5, 3, 7, 2, 6,
+		4, 5, 5, 7, 7, 6, 6, 4 });
+}
+
+bool AxisAlignedBox3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
+{
+	const Vector3 b0 = Min - Origin;
+	const Vector3 b1 = Max - Origin;
+
+	float tMin = 0;
+	float tMax = FLT_MAX;
+	Vector3 Normal(0.0f);
+
+	for (int i = 0; i < 3; ++i)
+	{
+		float t0, t1;
+		if (fabsf(Direction[i]) < 0.00001f)
+		{
+			if (b0[i] > 0 || b1[i] < 0)
+			{
+				return false;
+			}
+			else
+			{
+				t0 = 0;
+				t1 = FLT_MAX;
+			}
+		}
+		else
+		{
+			const float InvDir = 1.0f / Direction[i];
+			t0 = b0[i] * InvDir;
+			t1 = b1[i] * InvDir;
+		}
+
+		Vector3 CurNormal = Vector3(0.0f);
+		CurNormal[i] = 1.0f;
+
+		if (t0 > t1)
+		{
+			std::swap(t0, t1);
+		}
+		else
+		{
+			CurNormal[i] = -1.0f;
+		}
+
+		if (t0 > tMin)
+		{
+			Normal = CurNormal;
+		}
+		tMin = std::max(tMin, t0);
+		tMax = std::min(tMax, t1);
+
+		if (tMin > tMax)
+		{
+			return false;
+		}
+	}
+
+	if (tMax < 0)
+	{
+		return false;
+	}
+
+	*t = tMin;
+	return true;
+}
+
 bool AxisAlignedBox3d::IntersectSphere(const Vector3& Center, float Radius) const
 {
 	float SqrDist = SqrDistanceToPoint(Center);

@@ -65,8 +65,8 @@ public:
 		return BoundingVolume;
 	}
 
-	Matrix3		GetInertiaTensor(float Mass) const;
-	Vector3		GetSupport(const Vector3& Direction) const;
+	Matrix3			GetInertiaTensor(float Mass) const;
+	Vector3			GetSupport(const Vector3& Direction) const;
 	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
 
 private:
