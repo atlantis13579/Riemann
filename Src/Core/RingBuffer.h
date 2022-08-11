@@ -65,6 +65,11 @@ public:
 		write = read = 0;
 	}
 
+	int	GetSize() const
+	{
+		return (write + Capacity - read) % Capacity;
+	}
+
 	bool Push(const T& v)
 	{
 		bool succ = false;

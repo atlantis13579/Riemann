@@ -87,6 +87,12 @@ public:
 struct JobGraph : public Graph<Job*>
 {
 public:
+	void AddJob(const char* name, JobFunction func)
+	{
+		Job* job = Job::Create(name, func);
+		AddNode(job);
+	}
+
 	void CreateParallelJobs(const std::vector<Job*>& _jobs)
 	{
 		nodes = _jobs;
@@ -111,8 +117,9 @@ public:
 	}
 	inline void		Signal(int v)
 	{
-		if (v <= 0) return;
-		std::lock_guard<std::mutex> ulock(lock);
+		if (v <= 0)
+			return;
+		std::unique_lock<std::mutex> ulock(lock);
 		value += v;
 		if (v > 1)
 			cv.notify_all();
@@ -124,8 +131,11 @@ public:
 		if (v <= 0)
 			return;
 		std::unique_lock<std::mutex> ulock(lock);
+		while (value < v)
+		{
+			cv.wait(ulock);
+		}
 		value -= v;
-		cv.wait(ulock, [this]() { return value >= 0; });
 	}
 
 	std::mutex				lock;
@@ -146,13 +156,20 @@ public:
 		mWorkers.WaitUntilAllThreadExit();
 	}
 
+	void CreateWorkers(int num_workers)
+	{
+		mWorkers.Start(num_workers, [this](int id) { ThreadMain(id); });
+	}
+
 	bool ExecuteGraph(int num_workers, const JobGraph& graph)
 	{
 		if (!SolveGraphDependencys(graph))
 		{
 			return false;
 		}
-		return Execute(num_workers, false);
+		Execute();
+		WaitOneExecution();
+		return true;
 	}
 
 	bool ExecuteGraphAsync(int num_workers, const JobGraph& graph)
@@ -161,7 +178,8 @@ public:
 		{
 			return false;
 		}
-		return Execute(num_workers, true);
+		Execute();
+		return true;
 	}
 
 	void Terminate()
@@ -171,25 +189,18 @@ public:
 	}
 
 private:
-	bool Execute(int num_workers, bool Async)
+	void Execute()
 	{
-		mWorkers.Start(num_workers, [this](int id) { ThreadMain(id); });
-
-		if (!Async)
-		{
-			WaitOneExecution();
-		}
-		return true;
+		mSemaphore.Signal(mActiveQueue.GetSize());
 	}
 
 	void WaitOneExecution()
 	{
 		while (!mTerminate && mJobsReminding > 0)
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(16));
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			continue;
 		}
-		return;
 	}
 
 	void ThreadMain(int id)
@@ -219,17 +230,14 @@ private:
 			auto p = g.edges[i];
 			g.nodes[p.first]->AddChild(g.nodes[p.second]);
 		}
-		int count = 0;
 		for (size_t i = 0; i < g.nodes.size(); ++i)
 		{
 			Job *p = g.nodes[i];
 			if (p->GetDependencies() == 0)
 			{
 				mActiveQueue.Push(p);
-				count++;
 			}
 		}
-		mSemaphore.Signal(count);
 		return true;
 	}
 

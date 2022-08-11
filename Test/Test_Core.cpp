@@ -32,18 +32,19 @@ void TestJob()
 	printf("Running TestJob\n");
 
 	JobSystem system;
+	system.CreateWorkers(-1);
 	JobGraph graph;
 
 	for (int i = 0; i < 12; ++i)
 	{
-		graph.AddNode(Job::Create(std::to_string(i).c_str(), [i] {
+		graph.AddJob(std::to_string(i).c_str(), [i] {
 			if (i == 6)
-				std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 			else
 				std::this_thread::sleep_for(std::chrono::milliseconds(200));
 			auto tid = std::this_thread::get_id();
-			printf("tis: %d, job : %d\n", *(int*)&tid, i);
-		}));
+			printf("tid: %d, job : %d\n", *(int*)&tid, i);
+		});
 	}
 	graph.AddEdge(0, 4);
 	graph.AddEdge(0, 5);

@@ -4,6 +4,7 @@
 #ifdef BUILD_PYTHON_MODULE
 
 #include <assert.h>
+#include "../Core/JobSystem.h"
 #include "../RigidBodyDynamics/RigidBodySimulation.h"
 #include "../Collision/GeometryQuery.h"
 #include "../ImageSpace/ImageProcessing.h"
@@ -62,6 +63,8 @@ float RayCast2(void *p, float x0, float y0, float z0, float x1, float y1, float 
     return RayCast(p, x0, y0, z0, Dir.x, Dir.y, Dir.z);
 }
 
+JobSystem* jobSys = nullptr;
+
 void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float fov, float nearz, float farz,
                       float x0, float y0, float z0, float dx, float dy, float dz, float ux, float uy, float uz, bool debug_draw)
 {
@@ -74,6 +77,12 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
 	{
 		return;
 	}
+
+    if (jobSys == nullptr)
+    {
+        jobSys = new JobSystem();
+        jobSys->CreateWorkers(-1);
+    }
 
     bool downscale = true;
     if ((width & 1) || (height & 1))
@@ -108,28 +117,32 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
     Vector3 cameraX = cameraUp.Cross(cameraDirection) * CX;
     Vector3 cameraY = cameraX.Cross(cameraDirection).Unit() * CY;
 
-    #pragma omp parallel for schedule(dynamic, 1)
+    JobGraph graph;
+
 	for (int y = 0; y < h2; ++y)
     {
-		RayCastOption Option;
-		Option.MaxDist = farz;
-        for (int x = 0; x < w2; ++x)
-        {
-            Vector3 rayDirection = cameraDirection * nearz + ((y - h2 * 0.5f) / h2) * cameraY + ((x - w2 * 0.5f) / w2) * cameraX;
-			RayCastResult Result;
-            bool success = query->RayCast(cameraOrigin, rayDirection.Unit(), Option, &Result);
-			if (success)
-			{
-				float depth = Result.hitTimeMin;
-                fp[y * w2 + w2 - 1 - x] = std::min(depth, Option.MaxDist);
-			}
-            else
+        graph.AddJob(std::to_string(y).c_str(), [=] {
+            RayCastOption Option;
+            Option.MaxDist = farz;
+            for (int x = 0; x < w2; ++x)
             {
-                fp[y * w2 + w2 - 1 - x] = Option.MaxDist;
-            }
-			Option.Cache.prevhitGeom = Result.hitGeom;
-        }
+                Vector3 rayDirection = cameraDirection * nearz + ((y - h2 * 0.5f) / h2) * cameraY + ((x - w2 * 0.5f) / w2) * cameraX;
+                RayCastResult Result;
+                bool success = query->RayCast(cameraOrigin, rayDirection.Unit(), Option, &Result);
+                if (success)
+                {
+                    float depth = Result.hitTimeMin;
+                    fp[y * w2 + w2 - 1 - x] = std::min(depth, Option.MaxDist);
+                }
+                else
+                {
+                    fp[y * w2 + w2 - 1 - x] = Option.MaxDist;
+                }
+                Option.Cache.prevhitGeom = Result.hitGeom;
+            }});
     }
+
+    jobSys->ExecuteGraph(-1, graph);
 
     if (downscale)
     {
