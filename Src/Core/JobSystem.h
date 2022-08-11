@@ -1,11 +1,11 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <string>
 #include "Graph.h"
 #include "ThreadPool.h"
-#include "Semaphore.h"
 #include "RingBuffer.h"
 
 class JobSystem;
@@ -102,6 +102,37 @@ public:
 	}
 };
 
+class Semaphore
+{
+public:
+	inline			Semaphore()
+	{
+		value = 0;
+	}
+	inline void		Signal(int v)
+	{
+		if (v <= 0) return;
+		std::lock_guard<std::mutex> ulock(lock);
+		value += v;
+		if (v > 1)
+			cv.notify_all();
+		else
+			cv.notify_one();
+	}
+	inline void		Wait(int v)
+	{
+		if (v <= 0)
+			return;
+		std::unique_lock<std::mutex> ulock(lock);
+		value -= v;
+		cv.wait(ulock, [this]() { return value >= 0; });
+	}
+
+	std::mutex				lock;
+	std::condition_variable	cv;
+	int						value;
+};
+
 class JobSystem
 {
 public:
@@ -112,105 +143,117 @@ public:
 	~JobSystem()
 	{
 		Terminate();
-		WaitExecution();
-	}
-
-	void WaitExecution()
-	{
 		mWorkers.WaitUntilAllThreadExit();
 	}
 
-	bool ExecuteGraph(int num_threads, const JobGraph &graph)
+	bool ExecuteGraph(int num_workers, const JobGraph& graph)
 	{
 		if (!SolveGraphDependencys(graph))
 		{
 			return false;
 		}
-		Execute(num_threads);
-		WaitExecution();
-		return true;
+		return Execute(num_workers, false);
 	}
 
-	bool ExecuteGraphAsync(int num_threads, const JobGraph& graph)
+	bool ExecuteGraphAsync(int num_workers, const JobGraph& graph)
 	{
 		if (!SolveGraphDependencys(graph))
 		{
 			return false;
 		}
-		Execute(num_threads);
-		return true;
+		return Execute(num_workers, true);
 	}
-	
+
 	void Terminate()
 	{
 		mTerminate = true;
-	}
-	
-private:
-	void Execute(int num_threads)
-	{
-		mWorkers.Start(num_threads, [this](int id) { ExecuteMain(id); });
+		mSemaphore.Signal(MAX_JOB_QUEUE_SIZE);
 	}
 
-	void ExecuteMain(int id)
+private:
+	bool Execute(int num_workers, bool Async)
+	{
+		mWorkers.Start(num_workers, [this](int id) { ThreadMain(id); });
+
+		if (!Async)
+		{
+			WaitOneExecution();
+		}
+		return true;
+	}
+
+	void WaitOneExecution()
+	{
+		while (!mTerminate && mJobsReminding > 0)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(16));
+			continue;
+		}
+		return;
+	}
+
+	void ThreadMain(int id)
 	{
 		while (!mTerminate)
 		{
-			Job *job = mActiveQueue.Pop();
-			if (job == nullptr)
+			mSemaphore.Wait(1);
+
+			Job* job = mActiveQueue.Pop();
+			if (job)
 			{
-				if (mJobsRemindingSingleExecution <= 0)
-					break;
-				continue;
+				job->Execute();
+				RemoveDependencys(job);
+				job->Release();
+
+				--mJobsReminding;
 			}
-
-			job->Execute();
-			RemoveDependencys(job);
-			job->Release();
-
-			--mJobsRemindingSingleExecution;
 		}
-
-		return;
 	}
 
 	bool SolveGraphDependencys(const JobGraph& g)
 	{
-		mJobsRemindingSingleExecution += (int)g.nodes.size();
+		mJobsReminding += (int)g.nodes.size();
 		mActiveQueue.Clear();
 		for (size_t i = 0; i < g.edges.size(); ++i)
 		{
 			auto p = g.edges[i];
 			g.nodes[p.first]->AddChild(g.nodes[p.second]);
 		}
+		int count = 0;
 		for (size_t i = 0; i < g.nodes.size(); ++i)
 		{
 			Job *p = g.nodes[i];
 			if (p->GetDependencies() == 0)
 			{
 				mActiveQueue.Push(p);
+				count++;
 			}
 		}
+		mSemaphore.Signal(count);
 		return true;
 	}
 
 	void RemoveDependencys(Job *job)
 	{
-		std::vector<Job*>& ChildJobs = job->mChildJobs;
+		int count = 0;
+		const std::vector<Job*>& ChildJobs = job->mChildJobs;
 		for (size_t i = 0; i < ChildJobs.size(); ++i)
 		{
 			Job* job = ChildJobs[i];
 			if (job->RemoveDependency())
 			{
 				mActiveQueue.Push(job);
+				count++;
 			}
 		}
+		mSemaphore.Signal(count);
 	}
 	
 private:
 	ThreadPool										mWorkers;
 	ThreadSafeRingBuffer<Job*, MAX_JOB_QUEUE_SIZE>	mActiveQueue;
 	std::atomic<bool>								mTerminate;
-	std::atomic<int>								mJobsRemindingSingleExecution;
+	std::atomic<int>								mJobsReminding;
+	Semaphore										mSemaphore;
 };
 

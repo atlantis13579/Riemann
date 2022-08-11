@@ -48,7 +48,7 @@ public:
 		
 		for (int i = 0; i < num_threads; ++i)
 		{
-			mThreads[i] = std::thread(main, i);
+			mThreads[i] = std::thread(main, i + 1);
 		}
 	}
 	

@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include <string>
 #include <chrono>
 #include "Test.h"
@@ -37,7 +38,7 @@ void TestJob()
 	{
 		graph.AddNode(Job::Create(std::to_string(i).c_str(), [i] {
 			if (i == 6)
-				std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 			else
 				std::this_thread::sleep_for(std::chrono::milliseconds(200));
 			auto tid = std::this_thread::get_id();

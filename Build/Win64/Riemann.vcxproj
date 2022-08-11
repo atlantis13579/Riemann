@@ -118,7 +118,6 @@
     <ClInclude Include="..\..\Src\Core\JobSystem.h" />
     <ClInclude Include="..\..\Src\Core\LockFreeHashMap.h" />
     <ClInclude Include="..\..\Src\Core\RingBuffer.h" />
-    <ClInclude Include="..\..\Src\Core\Semaphore.h" />
     <ClInclude Include="..\..\Src\Core\StaticList.h" />
     <ClInclude Include="..\..\Src\Core\StaticPool.h" />
     <ClInclude Include="..\..\Src\Core\ThreadPool.h" />
