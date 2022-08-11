@@ -4,6 +4,7 @@
 #include <chrono>
 #include <functional>
 #include <string>
+#include <set>
 #include "Graph.h"
 #include "ThreadPool.h"
 #include "RingBuffer.h"
@@ -93,6 +94,77 @@ public:
 		AddNode(job);
 	}
 
+	void AddDependency(int s, int e)
+	{
+		AddEdge(s, e);
+	}
+
+	void BuildDependencys()
+	{
+		for (size_t i = 0; i < edges.size(); ++i)
+		{
+			auto p = edges[i];
+			nodes[p.first]->AddChild(nodes[p.second]);
+		}
+	}
+
+	bool HasCycleDFS() const
+	{
+		struct DFSStack
+		{
+			size_t i;
+			Job* p;
+		};
+
+		std::vector<DFSStack> stack;
+		stack.resize(nodes.size());
+		int curr = 0;
+		for (size_t i = 0; i < nodes.size(); ++i)
+		{
+			Job* p = nodes[i];
+			if (p->GetDependencies() != 0)
+				continue;
+
+			std::set<Job*> visited;
+			int depth = 0;
+			stack[depth].i = 0;
+			stack[depth].p = p;
+
+			while (depth >= 0)
+			{
+				size_t i0 = stack[depth].i;
+				Job* p0 = stack[depth].p;
+
+				if (i0 >= p0->mChildJobs.size())
+				{
+					--depth;
+					visited.erase(p0);
+					if (depth >= 0)
+						stack[depth].i += 1;
+					continue;
+				}
+		
+				if (p0->mChildJobs[i0]->mChildJobs.empty())
+				{
+					stack[depth].i += 1;
+					continue;
+				}
+				
+				Job* next = p0->mChildJobs[i0];
+				++depth;
+				stack[depth].i = 0;
+				stack[depth].p = next;
+
+				if (visited.find(next) != visited.end())
+					return true;
+				visited.insert(next);
+
+				continue;
+			}
+		}
+		return false;
+	}
+
 	void CreateParallelJobs(const std::vector<Job*>& _jobs)
 	{
 		nodes = _jobs;
@@ -158,27 +230,26 @@ public:
 
 	void CreateWorkers(int num_workers)
 	{
-		mWorkers.Start(num_workers, [this](int id) { ThreadMain(id); });
+		mWorkers.Stop();
+		mWorkers.Start(num_workers, [this](int id) { JobThreadMain(id); });
 	}
 
 	bool ExecuteGraph(int num_workers, const JobGraph& graph)
 	{
-		if (!SolveGraphDependencys(graph))
+		if (!Execute(graph))
 		{
 			return false;
 		}
-		Execute();
 		WaitOneExecution();
 		return true;
 	}
 
 	bool ExecuteGraphAsync(int num_workers, const JobGraph& graph)
 	{
-		if (!SolveGraphDependencys(graph))
+		if (!Execute(graph))
 		{
 			return false;
 		}
-		Execute();
 		return true;
 	}
 
@@ -189,11 +260,6 @@ public:
 	}
 
 private:
-	void Execute()
-	{
-		mSemaphore.Signal(mActiveQueue.GetSize());
-	}
-
 	void WaitOneExecution()
 	{
 		while (!mTerminate && mJobsReminding > 0)
@@ -203,7 +269,7 @@ private:
 		}
 	}
 
-	void ThreadMain(int id)
+	void JobThreadMain(int id)
 	{
 		while (!mTerminate)
 		{
@@ -221,23 +287,21 @@ private:
 		}
 	}
 
-	bool SolveGraphDependencys(const JobGraph& g)
+	bool Execute(const JobGraph& g)
 	{
 		mJobsReminding += (int)g.nodes.size();
 		mActiveQueue.Clear();
-		for (size_t i = 0; i < g.edges.size(); ++i)
-		{
-			auto p = g.edges[i];
-			g.nodes[p.first]->AddChild(g.nodes[p.second]);
-		}
+		int count = 0;
 		for (size_t i = 0; i < g.nodes.size(); ++i)
 		{
 			Job *p = g.nodes[i];
 			if (p->GetDependencies() == 0)
 			{
 				mActiveQueue.Push(p);
+				count++;
 			}
 		}
+		mSemaphore.Signal(count);
 		return true;
 	}
 

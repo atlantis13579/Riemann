@@ -60,17 +60,22 @@ public:
 		Clear();
 	}
 
-	void Clear()
+	void	Clear()
 	{
+		lock.lock();
 		write = read = 0;
+		lock.unlock();
 	}
 
-	int	GetSize() const
+	int		GetSize()
 	{
-		return (write + Capacity - read) % Capacity;
+		lock.lock();
+		int n = (write + Capacity - read) % Capacity;
+		lock.unlock();
+		return n;
 	}
 
-	bool Push(const T& v)
+	bool	Push(const T& v)
 	{
 		bool succ = false;
 		lock.lock();
@@ -85,7 +90,7 @@ public:
 		return succ;
 	}
 
-	T Pop()
+	T		Pop()
 	{
 		T ret = T(0);
 		lock.lock();

@@ -46,25 +46,28 @@ void TestJob()
 			printf("tid: %d, job : %d\n", *(int*)&tid, i);
 		});
 	}
-	graph.AddEdge(0, 4);
-	graph.AddEdge(0, 5);
-	graph.AddEdge(0, 6);
-	graph.AddEdge(1, 4);
-	graph.AddEdge(1, 5);
-	graph.AddEdge(1, 6);
-	graph.AddEdge(2, 4);
-	graph.AddEdge(2, 5);
-	graph.AddEdge(2, 6);
-	graph.AddEdge(3, 4);
-	graph.AddEdge(3, 5);
-	graph.AddEdge(3, 6);
-	graph.AddEdge(4, 7);
-	graph.AddEdge(5, 9);
-	graph.AddEdge(6, 8);
-	graph.AddEdge(7, 9);
-	graph.AddEdge(7, 10);
-	graph.AddEdge(9, 11);
-	graph.AddEdge(10, 11);
+	graph.AddDependency(0, 4);
+	graph.AddDependency(0, 5);
+	graph.AddDependency(0, 6);
+	graph.AddDependency(1, 4);
+	graph.AddDependency(1, 5);
+	graph.AddDependency(1, 6);
+	graph.AddDependency(2, 4);
+	graph.AddDependency(2, 5);
+	graph.AddDependency(2, 6);
+	graph.AddDependency(3, 4);
+	graph.AddDependency(3, 5);
+	graph.AddDependency(3, 6);
+	graph.AddDependency(4, 7);
+	graph.AddDependency(5, 9);
+	graph.AddDependency(6, 8);
+	graph.AddDependency(7, 9);
+	graph.AddDependency(7, 10);
+	graph.AddDependency(9, 11);
+	graph.AddDependency(10, 11);
+	graph.BuildDependencys();
+
+	EXPECT(!graph.HasCycleDFS());
 
 	system.ExecuteGraph(2, graph);
 	return;
