@@ -26,8 +26,9 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\Cylinder3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\HeightField3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3d.cpp" />
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Polyhedron.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Segment3d.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Tetrahedron.cpp" />
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Sphere3d.cpp" />
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp" />
     <ClCompile Include="..\..\Src\Collision\AABBTreeInference.cpp" />
     <ClCompile Include="..\..\Src\Collision\AABBTreeOffline.cpp" />
@@ -105,7 +106,6 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\Plane3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Ray3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Sphere3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Tetrahedron.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Mesh.h" />
     <ClInclude Include="..\..\Src\Collision\AABBTree.h" />
@@ -114,9 +114,11 @@
     <ClInclude Include="..\..\Src\Collision\DynamicAABBTree.h" />
     <ClInclude Include="..\..\Src\Collision\EPAPenetration.h" />
     <ClInclude Include="..\..\Src\Core\BatchList.h" />
+    <ClInclude Include="..\..\Src\Core\Graph.h" />
     <ClInclude Include="..\..\Src\Core\JobSystem.h" />
     <ClInclude Include="..\..\Src\Core\LockFreeHashMap.h" />
-    <ClInclude Include="..\..\Src\Core\LockFreeList.h" />
+    <ClInclude Include="..\..\Src\Core\RingBuffer.h" />
+    <ClInclude Include="..\..\Src\Core\Semaphore.h" />
     <ClInclude Include="..\..\Src\Core\StaticList.h" />
     <ClInclude Include="..\..\Src\Core\StaticPool.h" />
     <ClInclude Include="..\..\Src\Core\ThreadPool.h" />

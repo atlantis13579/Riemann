@@ -1,13 +1,13 @@
 
 #pragma once
 
-template<class T, int MAX_SIZE>
+template<class T, int Capacity>
 class StaticArray
 {
 public:
 	StaticArray()
 	{
-		m_Size = 0;
+		size = 0;
 	}
 
 	~StaticArray()
@@ -16,70 +16,72 @@ public:
 
 	inline T& operator[](int i)
 	{
-		return m_Buf[i];
+		return data[i];
 	}
 
 	inline const T& operator[](int i) const
 	{
-		return m_Buf[i];
+		return data[i];
 	}
 
 	inline T* GetData()
 	{
-		return m_Buf;
+		return data;
 	}
 
 	inline const T* GetData() const
 	{
-		return m_Buf;
+		return data;
 	}
 
 	inline int* GetSizeData()
 	{
-		return &m_Size;
+		return &size;
 	}
 
 	inline T* Add()
 	{
-		if (m_Size >= MAX_SIZE)
+		if (size >= Capacity)
 			return nullptr;
-		return m_Buf[m_Size++];
+		return data[size++];
 	}
 
-	inline void Push(T v)
+	inline bool Push(const T& v)
 	{
-		if (m_Size < MAX_SIZE)
+		if (size < Capacity)
 		{
-			m_Buf[m_Size++] = v;
+			data[size++] = v;
+			return true;
 		}
+		return false;
 	}
 
 	inline T Pop()
 	{
-		return m_Size > 0 ? m_Buf[--m_Size] : T();
+		return size > 0 ? data[--size] : T();
 	}
 
 	inline void Clear()
 	{
-		m_Size = 0;
+		size = 0;
 	}
 
-	inline void SetSize(int Size)
+	inline void SetSize(int s)
 	{
-		m_Size = Size;
+		size = s;
 	}
 
 	inline int GetSize() const
 	{
-		return m_Size;
+		return size;
 	}
 
-	inline int GetMaxSize() const
+	inline int GetCapacity() const
 	{
-		return MAX_SIZE;
+		return Capacity;
 	}
 
 private:
-	int		m_Size;
-	T		m_Buf[MAX_SIZE];
+	int		size;
+	T		data[Capacity];
 };

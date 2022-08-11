@@ -10,7 +10,7 @@
 #include "../Maths/Box3d.h"
 
 const float kEpsilonPlane = 0.000001f;
-const float kHalfThickness = 0.01f;
+const float kHalfThickness = 1.0f;
 const float kPlaneSmallThickness = 0.0001f;
 const float kPlaneRadius = 10000.0f;
 

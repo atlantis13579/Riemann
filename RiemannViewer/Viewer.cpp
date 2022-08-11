@@ -31,7 +31,7 @@ void WorldViewer::CreateDemo()
 {
 	RigidBodyParam rp;
 	rp.rigidType = RigidType::Static;
-	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3(0.0f, 1.0f, 0.0f), 1.0f);
+	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3(0.0f, 1.0f, 0.0f));
 	// Geometry* plane = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0f, 0.0f), Vector3(100.0f, 2.1f, 100.0f));
 	m_World->CreateRigidBody(plane, rp);
 	AddGeometry(m_Renderer, plane);
@@ -58,7 +58,7 @@ void WorldViewer::CreateStackBoxesDemo()
 
 	RigidBodyParam rp;
 	rp.rigidType = RigidType::Static;
-	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3::UnitY(), 1.0f);
+	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3::UnitY());
 	m_World->CreateRigidBody(plane, rp);
 	AddGeometry(m_Renderer, plane);
 
@@ -79,7 +79,7 @@ void WorldViewer::CreateDominoDemo()
 
 	RigidBodyParam rp;
 	rp.rigidType = RigidType::Static;
-	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, 0, 0), Vector3::UnitY(), 1.0f);
+	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, 0, 0), Vector3::UnitY());
 	m_World->CreateRigidBody(plane, rp);
 	AddGeometry(m_Renderer, plane);
 

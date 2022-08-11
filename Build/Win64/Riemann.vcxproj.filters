@@ -348,9 +348,6 @@
     <ClInclude Include="..\..\Src\Maths\Tensor.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Tetrahedron.h">
-      <Filter>CollisionPrimitive</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Maths\Vector3.h">
       <Filter>Maths</Filter>
     </ClInclude>
@@ -522,11 +519,17 @@
     <ClInclude Include="..\..\Src\Core\LockFreeHashMap.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Core\LockFreeList.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\CollisionPrimitive\Polyhedron.h">
       <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\RingBuffer.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\Graph.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\Semaphore.h">
+      <Filter>Core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -662,9 +665,6 @@
     <ClCompile Include="..\..\Src\Geometry\Spline.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Tetrahedron.cpp">
-      <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\TetrahedralMesh.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
@@ -729,6 +729,12 @@
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Cylinder3d.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Polyhedron.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Sphere3d.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
   </ItemGroup>

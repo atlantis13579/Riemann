@@ -1,21 +1,47 @@
 #pragma once
 
-template<typename T, int SIZE>
+#include <mutex>
+
+template<typename T, int Capacity>
 class StaticPool
 {
 public:
-	StaticPool() : m_size(0) {}
+	StaticPool() : size(0) {}
 
 	T* Get()
 	{
-		if (m_size >= sizeof(m_pool) / sizeof(m_pool[0]))
+		if (size >= Capacity)
 		{
 			return nullptr;
 		}
-		return &m_pool[m_size++];
+		return &data[size++];
 	}
 
 private:
-	int	m_size;
-	T	m_pool[SIZE];
+	T	data[Capacity];
+	int	size;
+};
+
+template<typename T, int Capacity>
+class ThreadSafeStaticPool
+{
+public:
+	ThreadSafeStaticPool() : size(0) {}
+
+	T* Get()
+	{
+		T* p = nullptr;
+		lock.lock();
+		if (size < Capacity)
+		{
+			p = &data[size++];
+		}
+		lock.unlock();
+		return p;
+	}
+
+private:
+	T	data[Capacity];
+	int	size;
+	std::mutex	lock;
 };

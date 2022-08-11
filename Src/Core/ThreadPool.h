@@ -18,16 +18,31 @@ public:
 		Stop();
 	}
 	
-	int GetNumHardwareConcurrency() const
+	int GetMaxHardwareConcurrency() const
 	{
 		return (int)std::thread::hardware_concurrency();
+	}
+
+	void WaitUntilAllThreadExit()
+	{
+		if (mThreads.empty())
+			return;
+
+		for (size_t i = 0; i < mThreads.size(); ++i)
+		{
+			std::thread& t = mThreads[i];
+			if (t.joinable())
+				t.join();
+		}
+
+		mThreads.clear();
 	}
 	
 	void Start(int num_threads, ThreadFunction main)
 	{
 		if (num_threads < 0)
 		{
-			num_threads = GetNumHardwareConcurrency();
+			num_threads = GetMaxHardwareConcurrency();
 		}
 		mThreads.resize(num_threads);
 		
@@ -39,17 +54,7 @@ public:
 	
 	void Stop()
 	{
-		if (mThreads.empty())
-			return;
-
-		for (size_t i = 0; i < mThreads.size(); ++i)
-		{
-			std::thread &t = mThreads[i];
-			if (t.joinable())
-				t.join();
-		}
-
-		mThreads.clear();
+		WaitUntilAllThreadExit();
 	}
 	
 private:

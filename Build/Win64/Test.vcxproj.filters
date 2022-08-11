@@ -13,6 +13,7 @@
     <ClCompile Include="..\..\Test\Test_SIMD.cpp" />
     <ClCompile Include="..\..\Test\Test_Vehicle.cpp" />
     <ClCompile Include="..\..\Test\Test_Optimization.cpp" />
+    <ClCompile Include="..\..\Test\Test_Core.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Test\pytest.py" />
