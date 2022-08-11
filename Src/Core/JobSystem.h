@@ -16,18 +16,21 @@ using JobFunction = std::function<void()>;
 
 class Job
 {
-private:
-	Job()
-	{
-		AddRefCount();
-	}
-
 public:
+	enum class Job_status
+	{
+		WaitDependency,
+		Queueing,
+		Running,
+		Finished,
+	};
+	
 	static Job*	Create(const char* name, JobFunction func)
 	{
 		Job* job = new Job();
 		job->mJobName = std::string(name);
 		job->mJobFunction = func;
+		job->mFreeOnRelease = true;
 		return job;
 	}
 
@@ -47,7 +50,7 @@ public:
 		if (mRefCount.fetch_sub(1, std::memory_order_release) == 1)
 		{
 			std::atomic_thread_fence(std::memory_order_acquire);
-			delete this;
+			if (mFreeOnRelease) delete this;
 		}
 	}
 
@@ -74,12 +77,21 @@ public:
 	{
 		mJobFunction();
 	}
+	
+private:
+	Job()
+	{
+		AddRefCount();
+		mDependencies = 0;
+	}
 
 private:
 	std::string			mJobName;
 	JobFunction 		mJobFunction;
 	std::atomic<int>	mDependencies;
 	std::atomic<int>	mRefCount;
+	std::atomic<int>	mStatus;
+	bool				mFreeOnRelease;
 
 public:
 	std::vector<Job*>	mChildJobs;
@@ -118,7 +130,6 @@ public:
 
 		std::vector<DFSStack> stack;
 		stack.resize(nodes.size());
-		int curr = 0;
 		for (size_t i = 0; i < nodes.size(); ++i)
 		{
 			Job* p = nodes[i];
