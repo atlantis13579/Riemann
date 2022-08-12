@@ -1,6 +1,7 @@
 # Introduction
 
-Riemann is a 3D Geometry / Collision Detection / Physics Engine with zero dependencies
+Riemann is a 3D Geometry / Collision Detection / Physics Engine with zero dependencies.
+This is a personal learning project, I want to write my own physics engine to understand some of the cool staff that makes a physics engines works.
 
 ## Features
 
