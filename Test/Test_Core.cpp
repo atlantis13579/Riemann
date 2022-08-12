@@ -67,7 +67,7 @@ void TestJob()
 	graph.AddDependency(10, 11);
 	graph.BuildDependencys();
 
-	EXPECT(!graph.HasCycleDFS());
+	EXPECT(!graph.HasCycle());
 
 	system.ExecuteGraph(2, graph);
 	return;

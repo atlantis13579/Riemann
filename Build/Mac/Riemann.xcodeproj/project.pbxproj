@@ -25,7 +25,6 @@
 		AD80071528A3E4E3001387F3 /* ConvexMesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80071028A3E4E3001387F3 /* ConvexMesh.cpp */; };
 		AD80071728A3F69A001387F3 /* Polyhedron.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80071628A3F69A001387F3 /* Polyhedron.cpp */; };
 		AD80071928A45CB3001387F3 /* Sphere3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80071828A45CB3001387F3 /* Sphere3d.cpp */; };
-		AD86910728A5CE210023E317 /* WindField.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD86910628A5CE210023E317 /* WindField.cpp */; };
 		ADA2A25828A29E67009EDBE2 /* JobSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25328A29E67009EDBE2 /* JobSystem.h */; };
 		ADA2A25928A29E67009EDBE2 /* ThreadPool.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25428A29E67009EDBE2 /* ThreadPool.h */; };
 		ADA2A25A28A29E67009EDBE2 /* LockFreeHashMap.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */; };
@@ -52,7 +51,6 @@
 		ADBBEE1C288C468700C3D6CD /* StaticList.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE1A288C468700C3D6CD /* StaticList.h */; };
 		ADBBEE1F288C486800C3D6CD /* PositionConstraint.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE1D288C486800C3D6CD /* PositionConstraint.h */; };
 		ADBBEE20288C486800C3D6CD /* PositionConstraint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADBBEE1E288C486800C3D6CD /* PositionConstraint.cpp */; };
-		ADD23B9B2887613100A849BE /* WindField.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23B992887613100A849BE /* WindField.h */; };
 		ADD23BBC2887614E00A849BE /* AABBTree.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23B9D2887614E00A849BE /* AABBTree.h */; };
 		ADD23BBD2887614E00A849BE /* GeometryIntersection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23B9E2887614E00A849BE /* GeometryIntersection.cpp */; };
 		ADD23BBE2887614E00A849BE /* SAP_Incremental.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23B9F2887614E00A849BE /* SAP_Incremental.h */; };
@@ -115,7 +113,6 @@
 		ADD23C242887619700A849BE /* PlanarCut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C1E2887619700A849BE /* PlanarCut.cpp */; };
 		ADD23C27288761A300A849BE /* Laplace2DSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C25288761A300A849BE /* Laplace2DSolver.cpp */; };
 		ADD23C28288761A300A849BE /* Laplace2DSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C26288761A300A849BE /* Laplace2DSolver.h */; };
-		ADD23C3D288761AE00A849BE /* SparseVoxelField.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C29288761AE00A849BE /* SparseVoxelField.cpp */; };
 		ADD23C3E288761AE00A849BE /* DenseTensorField3d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C2A288761AE00A849BE /* DenseTensorField3d.h */; };
 		ADD23C3F288761AE00A849BE /* Spline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C2B288761AE00A849BE /* Spline.cpp */; };
 		ADD23C40288761AE00A849BE /* Polygon3d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C2C288761AE00A849BE /* Polygon3d.h */; };
@@ -131,7 +128,6 @@
 		ADD23C4A288761AE00A849BE /* ConvexHull3d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C36288761AE00A849BE /* ConvexHull3d.h */; };
 		ADD23C4B288761AE00A849BE /* ConvexHull2d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C37288761AE00A849BE /* ConvexHull2d.cpp */; };
 		ADD23C4C288761AE00A849BE /* ConvexHull3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C38288761AE00A849BE /* ConvexHull3d.cpp */; };
-		ADD23C4D288761AE00A849BE /* SparseVoxelField.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C39288761AE00A849BE /* SparseVoxelField.h */; };
 		ADD23C4E288761AE00A849BE /* VoxelField.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C3A288761AE00A849BE /* VoxelField.h */; };
 		ADD23C4F288761AE00A849BE /* Voronoi2d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C3B288761AE00A849BE /* Voronoi2d.h */; };
 		ADD23C50288761AE00A849BE /* TetrahedralMesh.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C3C288761AE00A849BE /* TetrahedralMesh.h */; };
@@ -220,6 +216,11 @@
 		ADD23D2C288762F900A849BE /* DenseVector.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D19288762F900A849BE /* DenseVector.h */; };
 		ADD23D2E288762F900A849BE /* EigenValueDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D1B288762F900A849BE /* EigenValueDecomposition.h */; };
 		ADD23D322887631800A849BE /* PCA.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D312887631800A849BE /* PCA.h */; };
+		ADEF48BC28A6E99100FD544C /* Triangle3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADEF48BB28A6E99100FD544C /* Triangle3d.cpp */; };
+		ADEF48C128A6E9A300FD544C /* WindSimulation.h in Headers */ = {isa = PBXBuildFile; fileRef = ADEF48BD28A6E9A300FD544C /* WindSimulation.h */; };
+		ADEF48C228A6E9A300FD544C /* VonKarmanVortexStreet.h in Headers */ = {isa = PBXBuildFile; fileRef = ADEF48BE28A6E9A300FD544C /* VonKarmanVortexStreet.h */; };
+		ADEF48C328A6E9A300FD544C /* WindSimulation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADEF48BF28A6E9A300FD544C /* WindSimulation.cpp */; };
+		ADEF48C428A6E9A300FD544C /* VonKarmanVortexStreet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADEF48C028A6E9A300FD544C /* VonKarmanVortexStreet.cpp */; };
 		ADF27299289544BB00E6FE68 /* MassSpring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADF27297289544BB00E6FE68 /* MassSpring.cpp */; };
 		ADF2729A289544BB00E6FE68 /* MassSpring.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF27298289544BB00E6FE68 /* MassSpring.h */; };
 		ADF2729C28954C8800E6FE68 /* ContinuousBitmap.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF2729B28954C8800E6FE68 /* ContinuousBitmap.h */; };
@@ -253,7 +254,6 @@
 		AD80071028A3E4E3001387F3 /* ConvexMesh.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ConvexMesh.cpp; path = ../../Src/CollisionPrimitive/ConvexMesh.cpp; sourceTree = "<group>"; };
 		AD80071628A3F69A001387F3 /* Polyhedron.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Polyhedron.cpp; path = ../../Src/CollisionPrimitive/Polyhedron.cpp; sourceTree = "<group>"; };
 		AD80071828A45CB3001387F3 /* Sphere3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Sphere3d.cpp; path = ../../Src/CollisionPrimitive/Sphere3d.cpp; sourceTree = "<group>"; };
-		AD86910628A5CE210023E317 /* WindField.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = WindField.cpp; path = ../../Src/AeroDynamics/WindField.cpp; sourceTree = "<group>"; };
 		ADA2A25328A29E67009EDBE2 /* JobSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = JobSystem.h; path = ../../Src/Core/JobSystem.h; sourceTree = "<group>"; };
 		ADA2A25428A29E67009EDBE2 /* ThreadPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ThreadPool.h; path = ../../Src/Core/ThreadPool.h; sourceTree = "<group>"; };
 		ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LockFreeHashMap.h; path = ../../Src/Core/LockFreeHashMap.h; sourceTree = "<group>"; };
@@ -280,7 +280,6 @@
 		ADBBEE1A288C468700C3D6CD /* StaticList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = StaticList.h; path = ../../Src/Core/StaticList.h; sourceTree = "<group>"; };
 		ADBBEE1D288C486800C3D6CD /* PositionConstraint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PositionConstraint.h; path = ../../Src/RigidBodyDynamics/PositionConstraint.h; sourceTree = "<group>"; };
 		ADBBEE1E288C486800C3D6CD /* PositionConstraint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PositionConstraint.cpp; path = ../../Src/RigidBodyDynamics/PositionConstraint.cpp; sourceTree = "<group>"; };
-		ADD23B992887613100A849BE /* WindField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = WindField.h; path = ../../Src/AeroDynamics/WindField.h; sourceTree = "<group>"; };
 		ADD23B9D2887614E00A849BE /* AABBTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AABBTree.h; path = ../../Src/Collision/AABBTree.h; sourceTree = "<group>"; };
 		ADD23B9E2887614E00A849BE /* GeometryIntersection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GeometryIntersection.cpp; path = ../../Src/Collision/GeometryIntersection.cpp; sourceTree = "<group>"; };
 		ADD23B9F2887614E00A849BE /* SAP_Incremental.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SAP_Incremental.h; path = ../../Src/Collision/SAP_Incremental.h; sourceTree = "<group>"; };
@@ -343,7 +342,6 @@
 		ADD23C1E2887619700A849BE /* PlanarCut.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PlanarCut.cpp; path = ../../Src/Destruction/PlanarCut.cpp; sourceTree = "<group>"; };
 		ADD23C25288761A300A849BE /* Laplace2DSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Laplace2DSolver.cpp; path = ../../Src/FluidDynamics/Laplace2DSolver.cpp; sourceTree = "<group>"; };
 		ADD23C26288761A300A849BE /* Laplace2DSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Laplace2DSolver.h; path = ../../Src/FluidDynamics/Laplace2DSolver.h; sourceTree = "<group>"; };
-		ADD23C29288761AE00A849BE /* SparseVoxelField.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SparseVoxelField.cpp; path = ../../Src/Geometry/SparseVoxelField.cpp; sourceTree = "<group>"; };
 		ADD23C2A288761AE00A849BE /* DenseTensorField3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DenseTensorField3d.h; path = ../../Src/Geometry/DenseTensorField3d.h; sourceTree = "<group>"; };
 		ADD23C2B288761AE00A849BE /* Spline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Spline.cpp; path = ../../Src/Geometry/Spline.cpp; sourceTree = "<group>"; };
 		ADD23C2C288761AE00A849BE /* Polygon3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Polygon3d.h; path = ../../Src/Geometry/Polygon3d.h; sourceTree = "<group>"; };
@@ -359,7 +357,6 @@
 		ADD23C36288761AE00A849BE /* ConvexHull3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConvexHull3d.h; path = ../../Src/Geometry/ConvexHull3d.h; sourceTree = "<group>"; };
 		ADD23C37288761AE00A849BE /* ConvexHull2d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ConvexHull2d.cpp; path = ../../Src/Geometry/ConvexHull2d.cpp; sourceTree = "<group>"; };
 		ADD23C38288761AE00A849BE /* ConvexHull3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ConvexHull3d.cpp; path = ../../Src/Geometry/ConvexHull3d.cpp; sourceTree = "<group>"; };
-		ADD23C39288761AE00A849BE /* SparseVoxelField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseVoxelField.h; path = ../../Src/Geometry/SparseVoxelField.h; sourceTree = "<group>"; };
 		ADD23C3A288761AE00A849BE /* VoxelField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoxelField.h; path = ../../Src/Geometry/VoxelField.h; sourceTree = "<group>"; };
 		ADD23C3B288761AE00A849BE /* Voronoi2d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Voronoi2d.h; path = ../../Src/Geometry/Voronoi2d.h; sourceTree = "<group>"; };
 		ADD23C3C288761AE00A849BE /* TetrahedralMesh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TetrahedralMesh.h; path = ../../Src/Geometry/TetrahedralMesh.h; sourceTree = "<group>"; };
@@ -449,6 +446,11 @@
 		ADD23D1B288762F900A849BE /* EigenValueDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EigenValueDecomposition.h; path = ../../Src/LinearSystem/EigenValueDecomposition.h; sourceTree = "<group>"; };
 		ADD23D312887631800A849BE /* PCA.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PCA.h; path = ../../Src/Optimization/PCA.h; sourceTree = "<group>"; };
 		ADE742E12820A994007DEEB3 /* libRiemann.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRiemann.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		ADEF48BB28A6E99100FD544C /* Triangle3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Triangle3d.cpp; path = ../../Src/CollisionPrimitive/Triangle3d.cpp; sourceTree = "<group>"; };
+		ADEF48BD28A6E9A300FD544C /* WindSimulation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = WindSimulation.h; path = ../../Src/AeroDynamics/WindSimulation.h; sourceTree = "<group>"; };
+		ADEF48BE28A6E9A300FD544C /* VonKarmanVortexStreet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VonKarmanVortexStreet.h; path = ../../Src/AeroDynamics/VonKarmanVortexStreet.h; sourceTree = "<group>"; };
+		ADEF48BF28A6E9A300FD544C /* WindSimulation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = WindSimulation.cpp; path = ../../Src/AeroDynamics/WindSimulation.cpp; sourceTree = "<group>"; };
+		ADEF48C028A6E9A300FD544C /* VonKarmanVortexStreet.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = VonKarmanVortexStreet.cpp; path = ../../Src/AeroDynamics/VonKarmanVortexStreet.cpp; sourceTree = "<group>"; };
 		ADF27297289544BB00E6FE68 /* MassSpring.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MassSpring.cpp; path = ../../Src/PositionBasedDynamics/MassSpring.cpp; sourceTree = "<group>"; };
 		ADF27298289544BB00E6FE68 /* MassSpring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MassSpring.h; path = ../../Src/PositionBasedDynamics/MassSpring.h; sourceTree = "<group>"; };
 		ADF2729B28954C8800E6FE68 /* ContinuousBitmap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ContinuousBitmap.h; path = ../../Src/Tools/ContinuousBitmap.h; sourceTree = "<group>"; };
@@ -476,8 +478,10 @@
 		ADD23B872887604600A849BE /* AeroDynamics */ = {
 			isa = PBXGroup;
 			children = (
-				AD86910628A5CE210023E317 /* WindField.cpp */,
-				ADD23B992887613100A849BE /* WindField.h */,
+				ADEF48C028A6E9A300FD544C /* VonKarmanVortexStreet.cpp */,
+				ADEF48BE28A6E9A300FD544C /* VonKarmanVortexStreet.h */,
+				ADEF48BF28A6E9A300FD544C /* WindSimulation.cpp */,
+				ADEF48BD28A6E9A300FD544C /* WindSimulation.h */,
 			);
 			name = AeroDynamics;
 			sourceTree = "<group>";
@@ -722,8 +726,6 @@
 				ADD23C2E288761AE00A849BE /* Polygon2d.h */,
 				ADD23C33288761AE00A849BE /* Polygon3d.cpp */,
 				ADD23C2C288761AE00A849BE /* Polygon3d.h */,
-				ADD23C29288761AE00A849BE /* SparseVoxelField.cpp */,
-				ADD23C39288761AE00A849BE /* SparseVoxelField.h */,
 				ADD23C2B288761AE00A849BE /* Spline.cpp */,
 				ADD23C35288761AE00A849BE /* Spline.h */,
 				ADD23C31288761AE00A849BE /* TetrahedralMesh.cpp */,
@@ -817,6 +819,7 @@
 				ADD23BE62887616100A849BE /* ShapeType.h */,
 				AD80071828A45CB3001387F3 /* Sphere3d.cpp */,
 				ADD23BEB2887616100A849BE /* Sphere3d.h */,
+				ADEF48BB28A6E99100FD544C /* Triangle3d.cpp */,
 				ADD23BE12887616100A849BE /* Triangle3d.h */,
 				ADD23BDE2887616100A849BE /* TriangleMesh.cpp */,
 				ADD23BDD2887616100A849BE /* TriangleMesh.h */,
@@ -948,6 +951,7 @@
 				ADD23C222887619700A849BE /* GeometryCollection.h in Headers */,
 				ADD23C4A288761AE00A849BE /* ConvexHull3d.h in Headers */,
 				ADF8622D2891876C00DBC516 /* LBFGS.h in Headers */,
+				ADEF48C228A6E9A300FD544C /* VonKarmanVortexStreet.h in Headers */,
 				ADD23C46288761AE00A849BE /* VHACD.h in Headers */,
 				ADF272A228954DA600E6FE68 /* XPBDRigidDynamicsSolver.h in Headers */,
 				ADD23C64288762AE00A849BE /* VehicleDynamics.h in Headers */,
@@ -978,11 +982,9 @@
 				ADD23BCF2887614E00A849BE /* MinkowskiSum.h in Headers */,
 				ADD23C052887616200A849BE /* Capsule3d.h in Headers */,
 				ADA2A25A28A29E67009EDBE2 /* LockFreeHashMap.h in Headers */,
-				ADD23B9B2887613100A849BE /* WindField.h in Headers */,
 				ADD23CD8288762D900A849BE /* Circle.h in Headers */,
 				AD08836D289EA4C30008AB04 /* CholeskyDecomposition.h in Headers */,
 				ADD23CD7288762D900A849BE /* GJK2d.h in Headers */,
-				ADD23C4D288761AE00A849BE /* SparseVoxelField.h in Headers */,
 				ADD23BC72887614E00A849BE /* SAP.h in Headers */,
 				ADD23CCA288762CC00A849BE /* Ragdoll.h in Headers */,
 				ADD23BC52887614E00A849BE /* AABBTreeOffline.h in Headers */,
@@ -998,6 +1000,7 @@
 				ADD23D2B288762F900A849BE /* GaussianElimination.h in Headers */,
 				ADD23D09288762ED00A849BE /* Frustum.h in Headers */,
 				ADD23C83288762B800A849BE /* libPPM.h in Headers */,
+				ADEF48C128A6E9A300FD544C /* WindSimulation.h in Headers */,
 				AD1DD0B2289F60770085AA67 /* SparseVector.h in Headers */,
 				ADF8622B2891876C00DBC516 /* LinearRegression.h in Headers */,
 				ADD23CD9288762D900A849BE /* Point2d.h in Headers */,
@@ -1101,6 +1104,7 @@
 				ADD23BCB2887614E00A849BE /* AABBTreeInference.cpp in Sources */,
 				ADD23CBF288762CC00A849BE /* RigidBody.cpp in Sources */,
 				ADF272A428954DA600E6FE68 /* XPBDRigidDynamicsSolver.cpp in Sources */,
+				ADEF48BC28A6E99100FD544C /* Triangle3d.cpp in Sources */,
 				ADD23BBD2887614E00A849BE /* GeometryIntersection.cpp in Sources */,
 				ADD23C78288762B800A849BE /* PhysxBinaryParser.cpp in Sources */,
 				ADD23C3F288761AE00A849BE /* Spline.cpp in Sources */,
@@ -1111,6 +1115,7 @@
 				ADD23C7E288762B800A849BE /* PythonModule.cpp in Sources */,
 				ADD23C242887619700A849BE /* PlanarCut.cpp in Sources */,
 				ADF27299289544BB00E6FE68 /* MassSpring.cpp in Sources */,
+				ADEF48C428A6E9A300FD544C /* VonKarmanVortexStreet.cpp in Sources */,
 				ADD23C232887619700A849BE /* GeometryCollection.cpp in Sources */,
 				ADD23C80288762B800A849BE /* AnimBinaryParser.cpp in Sources */,
 				ADD23CC1288762CC00A849BE /* MotionIntegration.cpp in Sources */,
@@ -1128,18 +1133,17 @@
 				ADD23BF72887616200A849BE /* MeshBVH4.cpp in Sources */,
 				ADD23BD32887614E00A849BE /* GeometryObject.cpp in Sources */,
 				ADD23BF62887616200A849BE /* TriangleMesh.cpp in Sources */,
-				ADD23C3D288761AE00A849BE /* SparseVoxelField.cpp in Sources */,
 				ADD23CBA288762CC00A849BE /* PhysicsMaterial.cpp in Sources */,
 				ADD23BD72887614E00A849BE /* DynamicAABBTree.cpp in Sources */,
 				ADD23BFC2887616200A849BE /* Capsule3d.cpp in Sources */,
 				ADD23CB9288762CC00A849BE /* WarmStart.cpp in Sources */,
 				ADBBEE20288C486800C3D6CD /* PositionConstraint.cpp in Sources */,
+				ADEF48C328A6E9A300FD544C /* WindSimulation.cpp in Sources */,
 				ADD23C102887617000A849BE /* FEMSolver.cpp in Sources */,
 				ADD23C0A2887616200A849BE /* HeightField3d.cpp in Sources */,
 				ADD23C0F2887617000A849BE /* MLSMPMSolver.cpp in Sources */,
 				ADD23BFF2887616200A849BE /* OrientedBox3d.cpp in Sources */,
 				ADD23BCA2887614E00A849BE /* AABBTree.cpp in Sources */,
-				AD86910728A5CE210023E317 /* WindField.cpp in Sources */,
 				ADD23BCE2887614E00A849BE /* AABBTreeOffline.cpp in Sources */,
 				ADD23CCD288762D300A849BE /* PositionBasedDynamicsSolver.cpp in Sources */,
 				ADD23C9C288762C000A849BE /* ProjectiveDynamicsSolver.cpp in Sources */,

@@ -38,7 +38,7 @@ public:
 		mThreads.clear();
 	}
 	
-	void Start(int num_threads, ThreadFunction main)
+	void Start(int num_threads, const ThreadFunction& main)
 	{
 		if (num_threads < 0)
 		{

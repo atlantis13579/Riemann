@@ -4,7 +4,6 @@
 #include <chrono>
 #include <functional>
 #include <string>
-#include <set>
 #include "Graph.h"
 #include "ThreadPool.h"
 #include "RingBuffer.h"
@@ -26,7 +25,7 @@ public:
 		Finished,
 	};
 
-	Job(const char* name, JobFunction func)
+	Job(const char* name, const JobFunction& func)
 	{
 		AddRefCount();
 		mJobName = std::string(name);
@@ -36,7 +35,7 @@ public:
 		mFreeOnRelease = false;
 	}
 	
-	static Job*	Create(const char* name, JobFunction func)
+	static Job*	Create(const char* name, const JobFunction& func)
 	{
 		Job* job = new Job(name, func);
 		job->mFreeOnRelease = true;
@@ -104,7 +103,7 @@ public:
 struct JobGraph : public Graph<Job*>
 {
 public:
-	void AddJob(const char* name, JobFunction func)
+	void AddJob(const char* name, const JobFunction& func)
 	{
 		Job* job = Job::Create(name, func);
 		AddNode(job);
@@ -122,61 +121,6 @@ public:
 			auto p = edges[i];
 			nodes[p.first]->AddChild(nodes[p.second]);
 		}
-	}
-
-	bool HasCycleDFS() const
-	{
-		struct DFSStack
-		{
-			size_t i;
-			Job* p;
-		};
-
-		std::vector<DFSStack> stack;
-		stack.resize(nodes.size());
-		for (size_t i = 0; i < nodes.size(); ++i)
-		{
-			Job* p = nodes[i];
-			if (p->GetDependencies() != 0)
-				continue;
-
-			std::set<Job*> visited;
-			int depth = 0;
-			stack[depth].i = 0;
-			stack[depth].p = p;
-
-			while (depth >= 0)
-			{
-				size_t i0 = stack[depth].i;
-				Job* p0 = stack[depth].p;
-
-				if (i0 >= p0->mChildJobs.size())
-				{
-					--depth;
-					visited.erase(p0);
-					if (depth >= 0)
-						stack[depth].i += 1;
-					continue;
-				}
-		
-				if (p0->mChildJobs[i0]->mChildJobs.empty())
-				{
-					stack[depth].i += 1;
-					continue;
-				}
-				
-				Job* next = p0->mChildJobs[i0];
-				++depth;
-				stack[depth].i = 0;
-				stack[depth].p = next;
-
-				if (visited.find(next) != visited.end())
-					return true;
-				visited.insert(next);
-				continue;
-			}
-		}
-		return false;
 	}
 
 	void CreateParallelJobs(const std::vector<Job*>& _jobs)

@@ -6,7 +6,7 @@
 #include "../Maths/Matrix3.h"
 #include "../Maths/Vector3.h"
 
-static Matrix3 computeRegularPolyhedronInertiaTensor(int V, int F, int P, const Vector3 &cm, Vector3* verts, uint8_t* indices);
+Matrix3 computeRegularPolyhedronInertiaTensor(int V, int F, int P, const Vector3 &cm, Vector3* verts, uint8_t* indices);
 
 // Polyhedron is a compact version of ConvexMesh
 // For a regular Polyhedron,
