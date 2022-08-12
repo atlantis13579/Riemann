@@ -61,59 +61,61 @@ bool Sphere3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	return false;
 }
 
-bool Sphere3d::IntersectSphere(const Vector3& rCenter, float rRadius) const
+bool Sphere3d::IntersectSphere(const Vector3& _Center, float _Radius) const
 {
-	return SphereIntersectSphere(Center, Radius, rCenter, rRadius);
+	return SphereIntersectSphere(Center, Radius, _Center, _Radius);
 }
 
 // static
-static Vector3 ClosestPointOnTriangleEx(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& BA, const Vector3& CA)
+Vector3 ClosestPtPointTriangle(const Vector3& p, const Vector3& a, const Vector3& b, const Vector3& c)
 {
-	const Vector3 PA = Point - A;
-	const float d1 = BA.Dot(PA);
-	const float d2 = CA.Dot(PA);
-	if (d1 <= 0.0f && d2 <= 0.0f)
-		return A;
+	// Check if P in vertex region outside A
+	Vector3 ab = b - a;
+	Vector3 ac = c - a;
+	Vector3 ap = p - a;
+	float d1 = DotProduct(ab, ap);
+	float d2 = DotProduct(ac, ap);
+	if (d1 <= 0.0f && d2 <= 0.0f) return a; // barycentric coordinates (1,0,0)
 
-	const Vector3 PB = Point - B;
-	const float d3 = BA.Dot(PB);
-	const float d4 = CA.Dot(PB);
-	if (d3 >= 0.0f && d4 <= d3)
-		return B;
+	// Check if P in vertex region outside B
+	Vector3 bp = p - b;
+	float d3 = DotProduct(ab, bp);
+	float d4 = DotProduct(ac, bp);
+	if (d3 >= 0.0f && d4 <= d3) return b; // barycentric coordinates (0,1,0)
 
-	const float vc = d1 * d4 - d3 * d2;
-	if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f)
-	{
-		const float v = d1 / (d1 - d3);
-		return A + v * BA;
+	// Check if P in edge region of AB, if so return projection of P onto AB
+	float vc = d1 * d4 - d3 * d2;
+	if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f) {
+		float v = d1 / (d1 - d3);
+		return a + v * ab; // barycentric coordinates (1-v,v,0)
 	}
 
-	const Vector3 PC = Point - C;
-	const float d5 = BA.Dot(PC);
-	const float d6 = CA.Dot(PC);
-	if (d6 >= 0.0f && d5 <= d6)
-		return C;
+	// Check if P in vertex region outside C
+	Vector3 cp = p - c;
+	float d5 = DotProduct(ab, cp);
+	float d6 = DotProduct(ac, cp);
+	if (d6 >= 0.0f && d5 <= d6) return c; // barycentric coordinates (0,0,1)
 
-	const float vb = d5 * d2 - d1 * d6;
-	if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f)
-	{
-		const float w = d2 / (d2 - d6);
-		return A + w * CA;
+	// Check if P in edge region of AC, if so return projection of P onto AC
+	float vb = d5 * d2 - d1 * d6;
+	if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f) {
+		float w = d2 / (d2 - d6);
+		return a + w * ac; // barycentric coordinates (1-w,0,w)
 	}
 
-	const float va = d3 * d6 - d5 * d4;
-	if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f)
-	{
-		const float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
-		return B + w * (C - B);
+	// Check if P in edge region of BC, if so return projection of P onto BC
+	float va = d3 * d6 - d5 * d4;
+	if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f) {
+		float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+		return b + w * (c - b); // barycentric coordinates (0,1-w,w)
 	}
 
-	const float denom = 1.0f / (va + vb + vc);
-	const float v = vb * denom;
-	const float w = vc * denom;
-	return A + BA * v + CA * w;
+	// P inside face region. Compute Q through its barycentric coordinates (u,v,w)
+	float denom = 1.0f / (va + vb + vc);
+	float v = vb * denom;
+	float w = vc * denom;
+	return a + ab * v + ac * w; // = u*a + v*b + w*c, u = va * denom = 1.0f - v - w
 }
-
 
 bool Sphere3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const
 {
@@ -123,7 +125,7 @@ bool Sphere3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vecto
 		return true;
 	}
 
-	const Vector3 cp = ClosestPointOnTriangleEx(Center, A, B, C, B - A, C - A);
+	const Vector3 cp = ClosestPtPointTriangle(Center, A, B, C);
 	sqrDist = (cp - Center).SquareLength();
 	if (sqrDist <= Radius * Radius)
 	{

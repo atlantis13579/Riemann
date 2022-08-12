@@ -270,6 +270,7 @@ Vector3 Triangle3d::ClosestPointOnTriangle(const Vector3& Point, const Vector3& 
 	const Vector3 V[3] = { B, A, C };
 	const Vector3 N[3] = { Normal.Cross(BA), Normal.Cross(AC), Normal.Cross(CB) };
 
+	mask = 0;
 	for (int i = 0; i < 3; ++i)
 	{
 		if ((Point - V[i]).Dot(N[i]) > 0.0f)
@@ -314,7 +315,7 @@ Vector3 Triangle3d::ClosestPointOnTriangle(const Vector3& Point, const Vector3& 
 
 float Triangle3d::SqrDistancePointToTriangle(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C)
 {
-	unsigned char mask = 0;
+	unsigned char mask;
 	Vector3 Closest = ClosestPointOnTriangle(Point, A, B, C, mask);
 	return (Closest - Point).SquareLength();
 }
@@ -326,8 +327,14 @@ float Triangle3d::SqrDistanceToPoint(const Vector3& Point) const
 
 bool Triangle3d::IntersectSphere(const Vector3& Center, float Radius) const
 {
-	Sphere3d sphere(Center, Radius);
-	return sphere.IntersectTriangle(A, B, C);
+	// Find point P on triangle ABC closest to sphere center
+	unsigned char mask;
+	Vector3 p = ClosestPointOnTriangle(Center, A, B, C, mask);
+
+	// Sphere and triangle intersect if the (squared) distance from sphere
+	// center to point p is less than the (squared) sphere radius
+	Vector3 v = p - Center;
+	return DotProduct(v, v) <= Radius * Radius;
 }
 
 bool Triangle3d::IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const

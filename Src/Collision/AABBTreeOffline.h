@@ -1,9 +1,8 @@
-
 #pragma once
 
-#include "../Maths/Box3d.h"
-
 #include <vector>
+
+#include "../Maths/Box3d.h"
 
 class AABBTreeOffline;
 struct AABBTreeNodeInference;

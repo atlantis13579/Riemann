@@ -1,9 +1,8 @@
 
-#include "Spline.h"
-
-#include "math.h"
-#include <functional>
 #include <vector>
+
+#include "Spline.h"
+#include "math.h"
 
 #include "../Solver/NewtonRaphsonIteration.h"
 

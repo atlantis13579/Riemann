@@ -1,8 +1,7 @@
 
-#include "RigidBodySimulation.h"
-
 #include <assert.h>
 
+#include "RigidBodySimulation.h"
 #include "../Core/Base.h"
 #include "../Core/JobSystem.h"
 #include "../Collision/DynamicAABBTree.h"
@@ -15,7 +14,6 @@
 #include "SequentialImpulseSolver.h"
 #include "ForceField.h"
 #include "KinematicsTree.h"
-
 
 RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 {
