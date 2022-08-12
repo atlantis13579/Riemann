@@ -26,6 +26,8 @@ struct TriMeshHitResult
 	}
 };
 
+
+
 class TriangleMesh : public Mesh
 {
 public:
@@ -52,13 +54,13 @@ public:
 	MeshBVH4*		CreateEmptyBVH();
 	void			BuildBVH();
 
-	void			GetVertIndices(uint32_t triIndex, uint32_t& i0, uint32_t& i1, uint32_t& i2) const;
-
 	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;
 	bool			RayIntersectTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Direction, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;
-	bool			OverlapTri(uint32_t HitNode, const Vector3& Bmin, const Vector3& Bmax) const;
 	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
+	bool			IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const;
+	bool			IntersectSphere(const Vector3& Center, float Radius) const;
+	bool			IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const;
 
 	const Box3d&	GetBoundingVolume() const
 	{

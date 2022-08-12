@@ -113,6 +113,24 @@ public:
 		return Is16bitIndices() ? 1 : 2;
 	}
 
+	void GetVertIndices(uint32_t triIndex, uint32_t& i0, uint32_t& i1, uint32_t& i2) const
+	{
+		if (Is16bitIndices())
+		{
+			const uint16_t* p = GetIndices16() + 3 * triIndex;
+			i0 = p[0];
+			i1 = p[1];
+			i2 = p[2];
+		}
+		else
+		{
+			const uint32_t* p = GetIndices32() + 3 * triIndex;
+			i0 = p[0];
+			i1 = p[1];
+			i2 = p[2];
+		}
+	}
+
 	inline uint32_t GetNumVertices() const
 	{
 		return NumVertices;

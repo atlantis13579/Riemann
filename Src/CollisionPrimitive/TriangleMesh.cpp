@@ -1,9 +1,11 @@
 
-
 #include "TriangleMesh.h"
+#include "AxisAlignedBox3d.h"
+#include "OrientedBox3d.h"
+#include "Sphere3d.h"
+#include "Capsule3d.h"
 #include "Triangle3d.h"
 #include "../Maths/SIMD.h"
-#include "../Collision/GeometryQuery.h"
 
 #include <algorithm>
 #include <array>
@@ -52,25 +54,14 @@ void TriangleMesh::BuildBVH()
 #endif
 }
 
-void	TriangleMesh::GetVertIndices(uint32_t triIndex, uint32_t& i0, uint32_t& i1, uint32_t& i2) const
+class IntersectTest
 {
-	if (Is16bitIndices())
-	{
-		const uint16_t* p = GetIndices16() + 3 * triIndex;
-		i0 = p[0];
-		i1 = p[1];
-		i2 = p[2];
-	}
-	else
-	{
-		const uint32_t* p = GetIndices32() + 3 * triIndex;
-		i0 = p[0];
-		i1 = p[1];
-		i2 = p[2];
-	}
-}
+public:
+	~IntersectTest() {}
 
-bool TriangleMesh::OverlapTri(uint32_t HitNode, const Vector3& Bmin, const Vector3& Bmax) const
+};
+
+static bool IntersectTri(const Mesh* mesh, uint32_t HitNode, TriIntersect* interface)
 {
 	LeafNode currLeaf(HitNode);
 	uint32_t NumLeafTriangles = currLeaf.GetNumTriangles();
@@ -80,13 +71,13 @@ bool TriangleMesh::OverlapTri(uint32_t HitNode, const Vector3& Bmin, const Vecto
 	{
 		uint32_t i0, i1, i2;
 		const uint32_t triangleIndex = BaseTriIndex + i;
-		GetVertIndices(triangleIndex, i0, i1, i2);
+		mesh->GetVertIndices(triangleIndex, i0, i1, i2);
 
-		const Vector3& v0 = Vertices[i0];
-		const Vector3& v1 = Vertices[i1];
-		const Vector3& v2 = Vertices[i2];
+		const Vector3& v0 = mesh->Vertices[i0];
+		const Vector3& v1 = mesh->Vertices[i1];
+		const Vector3& v2 = mesh->Vertices[i2];
 
-		bool intersect = Triangle3d::IntersectAABB(v0, v1, v2, Bmin, Bmax);
+		bool intersect = interface->IntersectTri(v0, v1, v2);
 		if (intersect)
 		{
 			return true;
@@ -96,15 +87,15 @@ bool TriangleMesh::OverlapTri(uint32_t HitNode, const Vector3& Bmin, const Vecto
 	return false;
 }
 
-bool TriangleMesh::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
+static bool IntersectBVH(const Mesh *mesh, const MeshBVH4 *bvh, const Vector3& Bmin, const Vector3& Bmax, TriIntersect *interface)
 {
 	const uint32_t maxStack = 128;
 	uint32_t stack1[maxStack];
 	uint32_t* stack = stack1 + 1;
 
-	assert(m_BVH->BatchPtr);
-	assert((uintptr_t(m_BVH->BatchPtr) & 127) == 0);
-	assert((uintptr_t(this) & 15) == 0);
+	assert(bvh->BatchPtr);
+	assert((uintptr_t(bvh->BatchPtr) & 127) == 0);
+	assert((uintptr_t(mesh) & 15) == 0);
 
 	F128 nqMin = F128_Load_Vector3d(Bmin);
 	F128 nqMax = F128_Load_Vector3d(Bmax);
@@ -116,13 +107,13 @@ bool TriangleMesh::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	F128 nqMaxy4 = F128_SplatElement<1>(nqMax);
 	F128 nqMaxz4 = F128_SplatElement<2>(nqMax);
 
-	uint8_t* batch_ptr = (uint8_t*)(m_BVH->BatchPtr);
+	uint8_t* batch_ptr = (uint8_t*)(bvh->BatchPtr);
 	uint32_t* stackPtr = stack;
 
 	assert(SIMD_WIDTH == 4 || SIMD_WIDTH == 8);
-	assert(IsPowerOfTwo(m_BVH->BatchSize));
+	assert(IsPowerOfTwo(bvh->BatchSize));
 
-	for (int j = int(m_BVH->NumRoots - 1); j >= 0; j--)
+	for (int j = int(bvh->NumRoots - 1); j >= 0; j--)
 		*stackPtr++ = j * sizeof(BVHNodeBatch);
 
 	uint32_t cacheTopValid = true;
@@ -167,7 +158,7 @@ bool TriangleMesh::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 				continue;
 			if (tn->Data[i] & 1)
 			{
-				bool overlap = OverlapTri(ptr, Bmin, Bmax);
+				bool overlap = IntersectTri(mesh, ptr, interface);
 				if (overlap)
 				{
 					return true;
@@ -183,6 +174,53 @@ bool TriangleMesh::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	} while (stackPtr > stack);
 
 	return false;
+}
+
+bool TriangleMesh::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
+{
+	TriIntersectShape<AxisAlignedBox3d> test;
+	test.shape = AxisAlignedBox3d(Bmin, Bmax);
+	return IntersectBVH(this, m_BVH, Bmin, Bmax, &test);
+}
+
+bool TriangleMesh::IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const
+{
+	class TriIntersectOBB : public TriIntersect
+	{
+	public:
+		virtual bool IntersectTri(const Vector3& A, const Vector3& B, const Vector3& C)
+		{
+			Vector3 AA = invRot * A;
+			Vector3 BB = invRot * B;
+			Vector3 CC = invRot * C;
+			return Triangle3d::IntersectAABB(AA, BB, CC, invMin, invMax);
+		}
+		Matrix3 invRot;
+		Vector3 invMin;
+		Vector3 invMax;
+	};
+	TriIntersectOBB test;
+	test.invRot = rot.Inverse();
+	test.invMin = Center - Extent;
+	test.invMax = Center + Extent;
+	Box3d box = OrientedBox3d::ComputeBoundingVolume(Center, Extent, rot);
+	return IntersectBVH(this, m_BVH, box.mMin, box.mMax, &test);
+}
+
+bool TriangleMesh::IntersectSphere(const Vector3& Center, float Radius) const
+{
+	TriIntersectShape<Sphere3d> test;
+	test.shape = Sphere3d(Center, Radius);
+	Box3d box = test.shape.GetBoundingVolume();
+	return IntersectBVH(this, m_BVH, box.mMin, box.mMax, &test);
+}
+
+bool TriangleMesh::IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const
+{
+	TriIntersectShape<Capsule3d> test;
+	test.shape = Capsule3d(X0, X1, Radius);
+	Box3d box = test.shape.GetBoundingVolume();
+	return IntersectBVH(this, m_BVH, box.mMin, box.mMax, &test);
 }
 
 bool	TriangleMesh::RayIntersectTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Direction, const TriMeshHitOption& Option, TriMeshHitResult* Result) const

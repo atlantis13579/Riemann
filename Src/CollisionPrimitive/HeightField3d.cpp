@@ -368,7 +368,7 @@ bool HeightField3d::IntersectCapsule(const Vector3& X0, const Vector3& X1, float
 	}
 	CELLS_VISITOR_END()
 
-		return false;
+	return false;
 }
 
 bool HeightField3d::GetCellBV(int i, int j, Box3d &box) const
