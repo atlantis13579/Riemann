@@ -139,13 +139,13 @@ struct SweepResult
 	}
 };
 
-struct OverlapOption
+struct IntersectOption
 {
 	enum OverlapTestType
 	{
 	};
 	
-	OverlapOption()
+	IntersectOption()
 	{
 		maxOverlaps = 1;
 		Filter = nullptr;
@@ -156,9 +156,9 @@ struct OverlapOption
 	CollisionFilter	*Filter;
 };
 
-struct OverlapResult
+struct IntersectResult
 {
-	OverlapResult()
+	IntersectResult()
 	{
 		Reset();
 	}
@@ -196,7 +196,7 @@ public:
 	void			BuildStaticGeometry(GeometryIterator *iter, int nPrimitivePerNode);
 	void			CreateDynamicGeometry();
 	bool			RayCast(const Vector3 &Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult *Result);
-	bool			OverlapBox(const Vector3 &Center, const Vector3& Extent, const OverlapOption& Option, OverlapResult* Result);
+	bool			OverlapBox(const Vector3 &Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result);
 
 	AABBTree*		GetStaticTree()
 	{

@@ -48,8 +48,8 @@ void TestPhysxBin()
 		RayCastOption Option;
 		RayCastResult Result;
 
-		OverlapOption OOption;
-		OverlapResult OResult;
+		IntersectOption OOption;
+		IntersectResult OResult;
 
 		bool ret = query.RayCast(Vector3(-569, 50, 427), Vector3(1, -1, 1).Unit(), Option, &Result);
 		EXPECT(ret);

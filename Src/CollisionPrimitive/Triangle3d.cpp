@@ -1,5 +1,7 @@
 
 #include "Triangle3d.h"
+#include "Capsule3d.h"
+#include "Sphere3d.h"
 
 bool Triangle3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 {
@@ -322,70 +324,16 @@ float Triangle3d::SqrDistanceToPoint(const Vector3& Point) const
 	return Triangle3d::SqrDistancePointToTriangle(Point, A, B, C);
 }
 
-// static
-static Vector3 ClosestPointOnTriangleEx(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& BA, const Vector3& CA)
-{
-	const Vector3 PA = Point - A;
-	const float d1 = BA.Dot(PA);
-	const float d2 = CA.Dot(PA);
-	if (d1 <= 0.0f && d2 <= 0.0f)
-		return A;
-
-	const Vector3 PB = Point - B;
-	const float d3 = BA.Dot(PB);
-	const float d4 = CA.Dot(PB);
-	if (d3 >= 0.0f && d4 <= d3)
-		return B;
-
-	const float vc = d1 * d4 - d3 * d2;
-	if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f)
-	{
-		const float v = d1 / (d1 - d3);
-		return A + v * BA;
-	}
-
-	const Vector3 PC = Point - C;
-	const float d5 = BA.Dot(PC);
-	const float d6 = CA.Dot(PC);
-	if (d6 >= 0.0f && d5 <= d6)
-		return C;
-
-	const float vb = d5 * d2 - d1 * d6;
-	if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f)
-	{
-		const float w = d2 / (d2 - d6);
-		return A + w * CA;
-	}
-
-	const float va = d3 * d6 - d5 * d4;
-	if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f)
-	{
-		const float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
-		return B + w * (C - B);
-	}
-
-	const float denom = 1.0f / (va + vb + vc);
-	const float v = vb * denom;
-	const float w = vc * denom;
-	return A + BA * v + CA * w;
-}
-
-
 bool Triangle3d::IntersectSphere(const Vector3& Center, float Radius) const
 {
-	float sqrDist = (A - Center).SquareLength();
-	if (sqrDist <= Radius * Radius)
-	{
-		return true;
-	}
+	Sphere3d sphere(Center, Radius);
+	return sphere.IntersectTriangle(A, B, C);
+}
 
-	const Vector3 cp = ClosestPointOnTriangleEx(Center, A, B, C, B - A, C - A);
-	sqrDist = (cp - Center).SquareLength();
-	if (sqrDist <= Radius * Radius)
-	{
-		return true;
-	}
-	return false;
+bool Triangle3d::IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const
+{
+	Capsule3d capsule(X0, X1, Radius);
+	return capsule.IntersectTriangle(A, B, C);
 }
 
 // Moller CTrumbore intersection algorithm

@@ -342,7 +342,7 @@ bool  AABBTree::RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option
 	return RayCast(ray, nullptr, &Option, Result);
 }
 
-static bool OverlapGeometries(const Geometry *geometry, int* Indices, int NumIndices, Geometry** GeometryCollection, const OverlapOption* Option, OverlapResult* Result)
+static bool OverlapGeometries(const Geometry *geometry, int* Indices, int NumIndices, Geometry** GeometryCollection, const IntersectOption* Option, IntersectResult* Result)
 {
 	assert(NumIndices > 0);
 	if (GeometryCollection == nullptr)
@@ -362,7 +362,7 @@ static bool OverlapGeometries(const Geometry *geometry, int* Indices, int NumInd
 		
 		Result->AddTestCount(1);
 
-		bool overlap = geometry->Overlap(candidate);
+		bool overlap = geometry->Intersect(candidate);
 		if (overlap)
 		{
 			Result->overlaps = true;
@@ -380,7 +380,7 @@ static bool OverlapGeometries(const Geometry *geometry, int* Indices, int NumInd
 	return Result->overlaps;
 }
 
-bool AABBTree::Overlap(const Geometry *geometry, Geometry** ObjectCollection, const OverlapOption* Option, OverlapResult* Result) const
+bool AABBTree::Intersect(const Geometry *geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const
 {
 	Result->overlaps = false;
 	Result->overlapGeoms.clear();

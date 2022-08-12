@@ -143,7 +143,7 @@ bool DynamicAABBTree::RayCast(const Ray3d& Ray, const RayCastOption* Option, Ray
 	return false;
 }
 
-static bool OverlapGeometry(const Geometry *geometry, void* userData, const OverlapOption* Option, OverlapResult* Result)
+static bool OverlapGeometry(const Geometry *geometry, void* userData, const IntersectOption* Option, IntersectResult* Result)
 {
 	Geometry *candidate = static_cast<Geometry*>(userData);
 
@@ -154,7 +154,7 @@ static bool OverlapGeometry(const Geometry *geometry, void* userData, const Over
 	
 	Result->AddTestCount(1);
 	
-	bool overlap = geometry->Overlap(candidate);
+	bool overlap = geometry->Intersect(candidate);
 	if (overlap)
 	{
 		Result->overlaps = true;
@@ -171,7 +171,7 @@ static bool OverlapGeometry(const Geometry *geometry, void* userData, const Over
 	return Result->overlaps;
 }
 
-bool DynamicAABBTree::Overlap(const Geometry *geometry, const OverlapOption* Option, OverlapResult *Result) const
+bool DynamicAABBTree::Intersect(const Geometry *geometry, const IntersectOption* Option, IntersectResult *Result) const
 {
 	Result->overlaps = false;
 	Result->overlapGeoms.clear();

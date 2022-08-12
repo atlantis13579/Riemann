@@ -1,5 +1,11 @@
 
+#include "Triangle3d.h"
 #include "Sphere3d.h"
+
+bool Sphere3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
+{
+	return RayIntersectSphere(Origin, Direction, Center, Radius, t);
+}
 
 // static
 bool Sphere3d::RayIntersectSphere(const Vector3& Origin, const Vector3& Direction, const Vector3& Center, float Radius, float* t)
@@ -61,7 +67,7 @@ bool Sphere3d::IntersectSphere(const Vector3& rCenter, float rRadius) const
 }
 
 // static
-static Vector3 _cloestPointOnTriangle(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& BA, const Vector3& CA)
+static Vector3 ClosestPointOnTriangleEx(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& BA, const Vector3& CA)
 {
 	const Vector3 PA = Point - A;
 	const float d1 = BA.Dot(PA);
@@ -108,6 +114,7 @@ static Vector3 _cloestPointOnTriangle(const Vector3& Point, const Vector3& A, co
 	return A + BA * v + CA * w;
 }
 
+
 bool Sphere3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const
 {
 	float sqrDist = (A - Center).SquareLength();
@@ -116,7 +123,7 @@ bool Sphere3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vecto
 		return true;
 	}
 
-	const Vector3 cp = _cloestPointOnTriangle(Center, A, B, C, B - A, C - A);
+	const Vector3 cp = ClosestPointOnTriangleEx(Center, A, B, C, B - A, C - A);
 	sqrDist = (cp - Center).SquareLength();
 	if (sqrDist <= Radius * Radius)
 	{

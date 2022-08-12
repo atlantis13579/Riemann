@@ -30,13 +30,8 @@ public:
 	}
 
 public:
-	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
-	{
-		return RayIntersectSphere(Origin, Direction, Center, Radius, t);
-	}
-
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 	static bool		RayIntersectSphere(const Vector3& Origin, const Vector3& Direction, const Vector3& Center, float Radius, float* t);
-
 	bool			IntersectPoint(const Vector3& Point) const;
 	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	bool			IntersectSphere(const Vector3 &rCenter, float rRadius) const;

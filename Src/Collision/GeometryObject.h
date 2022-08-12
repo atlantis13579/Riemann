@@ -10,8 +10,8 @@ class GeometryFactory;
 class GeometryRegistration;
 struct RayCastOption;
 struct RayCastResult;
-struct OverlapOption;
-struct OverlapResult;
+struct IntersectOption;
+struct IntersectResult;
 struct SweepOption;
 struct SweepResult;
 
@@ -223,7 +223,7 @@ public:
 	}
 
 	virtual bool			RayCast(const Vector3& Origin, const Vector3 &Dir, const RayCastOption* Option, RayCastResult *Result) const = 0;
-	bool					Overlap(const Geometry* Geom) const;
+	bool					Intersect(const Geometry* Geom) const;
 	bool					Sweep(const Geometry* Geom, const Vector3& Direction, float* t) const;
 
 	void					UpdateBoundingVolume();

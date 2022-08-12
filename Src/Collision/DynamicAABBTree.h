@@ -8,8 +8,8 @@
 
 struct RayCastOption;
 struct RayCastResult;
-struct OverlapOption;
-struct OverlapResult;
+struct IntersectOption;
+struct IntersectResult;
 class Geometry;
 
 class DynamicAABBTree
@@ -46,7 +46,7 @@ public:
 	bool 	Update(int nodeId, const Box3d& aabb, const Vector3& displacement);
 	
 	bool	RayCast(const Ray3d& Ray, const RayCastOption* Option, RayCastResult *Result) const;
-	bool	Overlap(const Geometry *geometry, const OverlapOption* Option, OverlapResult *Result) const;
+	bool	Intersect(const Geometry *geometry, const IntersectOption* Option, IntersectResult *Result) const;
 	bool	Query(const Box3d& aabb, std::vector<void*> *Result) const;
 	
 	void 	Rebuild();

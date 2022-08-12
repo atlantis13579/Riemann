@@ -106,9 +106,9 @@ Geometry::Geometry()
 	m_Next = nullptr;
 }
 
-bool		Geometry::Overlap(const Geometry* Geom) const
+bool		Geometry::Intersect(const Geometry* Geom) const
 {
-	OverlapFunc func = GeometryIntersection::GetOverlapFunc(m_Type, Geom->GetShapeType());
+	IntersectFunc func = GeometryIntersection::GetIntersectFunc(m_Type, Geom->GetShapeType());
 	if (func)
 	{
 		Geometry2Transform trans;
@@ -116,7 +116,7 @@ bool		Geometry::Overlap(const Geometry* Geom) const
 		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &trans);
 	}
 
-	func = GeometryIntersection::GetOverlapFunc(Geom->GetShapeType(), m_Type);
+	func = GeometryIntersection::GetIntersectFunc(Geom->GetShapeType(), m_Type);
 	if (func)
 	{
 		Geometry2Transform trans;

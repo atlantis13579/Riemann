@@ -304,64 +304,64 @@ void TestOBB()
 		Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 		Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(2.5f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 
-		EXPECT(!obb1->Overlap(obb2));
+		EXPECT(!obb1->Intersect(obb2));
 
 		Quaternion quat;
 		quat.FromRotateZ(PI_OVER_4);
 		obb2->SetRotation(quat);
-		EXPECT(!obb1->Overlap(obb2));
+		EXPECT(!obb1->Intersect(obb2));
 
 		obb1->SetRotation(quat);
-		EXPECT(obb1->Overlap(obb2));
+		EXPECT(obb1->Intersect(obb2));
 	}
 
 	return;
 }
 
-void TestOverlap()
+void TestIntersect()
 {
-	printf("Running TestOverlap\n");
+	printf("Running TestIntersect\n");
 	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitY());
 	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
-	EXPECT(obb1->Overlap(obb2));
-	EXPECT(obb2->Overlap(obb1));
+	EXPECT(obb1->Intersect(obb2));
+	EXPECT(obb2->Intersect(obb1));
 
 	obb2->SetCenterOfMass(Vector3(0.5f, 0.0f, 0.0f));
-	EXPECT(obb1->Overlap(obb2));
-	EXPECT(obb2->Overlap(obb1));
+	EXPECT(obb1->Intersect(obb2));
+	EXPECT(obb2->Intersect(obb1));
 	
 	obb2->SetCenterOfMass(Vector3(0.0f, 2.1f, 0.0f));
-	EXPECT(!obb1->Overlap(obb2));
-	EXPECT(!obb2->Overlap(obb1));
+	EXPECT(!obb1->Intersect(obb2));
+	EXPECT(!obb2->Intersect(obb1));
 	
-	EXPECT(obb1->Overlap(plane1));
-	EXPECT(plane1->Overlap(obb1));
-	EXPECT(!obb2->Overlap(plane1));
-	EXPECT(!plane1->Overlap(obb2));
+	EXPECT(obb1->Intersect(plane1));
+	EXPECT(plane1->Intersect(obb1));
+	EXPECT(!obb2->Intersect(plane1));
+	EXPECT(!plane1->Intersect(obb2));
 	
 	Quaternion quat;
 	quat.FromRotationAxis(Vector3::UnitX(), PI_OVER_4);
 	obb2->SetRotation(quat);
-	EXPECT(obb1->Overlap(obb2));
-	EXPECT(obb2->Overlap(obb1));
+	EXPECT(obb1->Intersect(obb2));
+	EXPECT(obb2->Intersect(obb1));
 	
 	obb2->SetCenterOfMass(Vector3(0.0f, 1.1f, 0.0f));
-	EXPECT(plane1->Overlap(obb2));
-	EXPECT(obb2->Overlap(plane1));
+	EXPECT(plane1->Intersect(obb2));
+	EXPECT(obb2->Intersect(plane1));
 	
 	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
 	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3(1.0f, 0.0, 0.0f), 2.0f);
-	EXPECT(sp1->Overlap(sp2));
-	EXPECT(sp2->Overlap(sp1));
-	EXPECT(sp1->Overlap(plane1));
-	EXPECT(plane1->Overlap(sp1));
+	EXPECT(sp1->Intersect(sp2));
+	EXPECT(sp2->Intersect(sp1));
+	EXPECT(sp1->Intersect(plane1));
+	EXPECT(plane1->Intersect(sp1));
 	
 	sp2->SetCenterOfMass(Vector3(0.0f, 5.0f, 0.0f));
-	EXPECT(!sp1->Overlap(sp2));
-	EXPECT(!sp2->Overlap(sp1));
-	EXPECT(!plane1->Overlap(sp2));
-	EXPECT(!sp2->Overlap(plane1));
+	EXPECT(!sp1->Intersect(sp2));
+	EXPECT(!sp2->Intersect(sp1));
+	EXPECT(!plane1->Intersect(sp2));
+	EXPECT(!sp2->Intersect(plane1));
 }
 
 void TestRayAABB()
@@ -670,7 +670,7 @@ void TestSAPInc()
 void TestCollision()
 {
 	TestOBB();
-	TestOverlap();
+	TestIntersect();
 	TestDynamicAABB();
 	TestSupport();
 	TestGJK();

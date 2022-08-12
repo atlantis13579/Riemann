@@ -95,7 +95,7 @@ bool GeometryQuery::RayCast(const Vector3& Origin, const Vector3& Direction, con
 	return hit;
 }
 
-bool GeometryQuery::OverlapBox(const Vector3& Center, const Vector3& Extent, const OverlapOption& Option, OverlapResult* Result)
+bool GeometryQuery::OverlapBox(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result)
 {
 	Result->Reset();
 	
@@ -104,7 +104,7 @@ bool GeometryQuery::OverlapBox(const Vector3& Center, const Vector3& Extent, con
 		// TODO, Box
 		Geometry* Box = GeometryFactory::CreateOBB(Center, Extent);
 		Geometry** pp = &m_Objects[0];
-		m_staticGeometry->Overlap(Box, pp, &Option, Result);
+		m_staticGeometry->Intersect(Box, pp, &Option, Result);
 		GeometryFactory::DeleteGeometry(Box);
 		return Result->overlaps;
 	}

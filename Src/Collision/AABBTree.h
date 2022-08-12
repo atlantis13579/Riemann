@@ -7,8 +7,8 @@
 
 struct RayCastOption;
 struct RayCastResult;
-struct OverlapOption;
-struct OverlapResult;
+struct IntersectOption;
+struct IntersectResult;
 struct AABBTreeNodeInference;
 class Geometry;
 
@@ -34,7 +34,7 @@ public:
 	void	Statistic(TreeStatistics &stat);
 
 	bool	RayCast(const Ray3d& ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult *Result) const;
-	bool	Overlap(const Geometry *geometry, Geometry** ObjectCollection, const OverlapOption* Option, OverlapResult *Result) const;
+	bool	Intersect(const Geometry *geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult *Result) const;
 	
 	int		IntersectPoint(const Vector3& Point) const;
 	bool	RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const;

@@ -25,12 +25,20 @@ public:
 		Running,
 		Finished,
 	};
+
+	Job(const char* name, JobFunction func)
+	{
+		AddRefCount();
+		mJobName = std::string(name);
+		mJobFunction = func;
+		mStatus = Job_status::Idle;
+		mDependencies = 0;
+		mFreeOnRelease = false;
+	}
 	
 	static Job*	Create(const char* name, JobFunction func)
 	{
-		Job* job = new Job();
-		job->mJobName = std::string(name);
-		job->mJobFunction = func;
+		Job* job = new Job(name, func);
 		job->mFreeOnRelease = true;
 		return job;
 	}
@@ -79,14 +87,6 @@ public:
 		mStatus = Job_status::Running;
 		mJobFunction();
 		mStatus = Job_status::Finished;
-	}
-	
-private:
-	Job()
-	{
-		AddRefCount();
-		mStatus = Job_status::Idle;
-		mDependencies = 0;
 	}
 
 private:
