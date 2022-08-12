@@ -362,3 +362,4 @@ Test/Test.xcodeproj/xcshareddata/xcschemes/Test.xcscheme
 *.mdb
 *.timestamp
 *.modulevalidation
+*.so

@@ -25,6 +25,7 @@
 		AD80071528A3E4E3001387F3 /* ConvexMesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80071028A3E4E3001387F3 /* ConvexMesh.cpp */; };
 		AD80071728A3F69A001387F3 /* Polyhedron.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80071628A3F69A001387F3 /* Polyhedron.cpp */; };
 		AD80071928A45CB3001387F3 /* Sphere3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80071828A45CB3001387F3 /* Sphere3d.cpp */; };
+		AD86910728A5CE210023E317 /* WindField.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD86910628A5CE210023E317 /* WindField.cpp */; };
 		ADA2A25828A29E67009EDBE2 /* JobSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25328A29E67009EDBE2 /* JobSystem.h */; };
 		ADA2A25928A29E67009EDBE2 /* ThreadPool.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25428A29E67009EDBE2 /* ThreadPool.h */; };
 		ADA2A25A28A29E67009EDBE2 /* LockFreeHashMap.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */; };
@@ -51,8 +52,7 @@
 		ADBBEE1C288C468700C3D6CD /* StaticList.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE1A288C468700C3D6CD /* StaticList.h */; };
 		ADBBEE1F288C486800C3D6CD /* PositionConstraint.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE1D288C486800C3D6CD /* PositionConstraint.h */; };
 		ADBBEE20288C486800C3D6CD /* PositionConstraint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADBBEE1E288C486800C3D6CD /* PositionConstraint.cpp */; };
-		ADD23B9B2887613100A849BE /* UncompressedKarmanVortex2D.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23B992887613100A849BE /* UncompressedKarmanVortex2D.h */; };
-		ADD23B9C2887613100A849BE /* UncompressedKarmanVortex2D.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23B9A2887613100A849BE /* UncompressedKarmanVortex2D.cpp */; };
+		ADD23B9B2887613100A849BE /* WindField.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23B992887613100A849BE /* WindField.h */; };
 		ADD23BBC2887614E00A849BE /* AABBTree.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23B9D2887614E00A849BE /* AABBTree.h */; };
 		ADD23BBD2887614E00A849BE /* GeometryIntersection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23B9E2887614E00A849BE /* GeometryIntersection.cpp */; };
 		ADD23BBE2887614E00A849BE /* SAP_Incremental.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23B9F2887614E00A849BE /* SAP_Incremental.h */; };
@@ -253,6 +253,7 @@
 		AD80071028A3E4E3001387F3 /* ConvexMesh.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ConvexMesh.cpp; path = ../../Src/CollisionPrimitive/ConvexMesh.cpp; sourceTree = "<group>"; };
 		AD80071628A3F69A001387F3 /* Polyhedron.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Polyhedron.cpp; path = ../../Src/CollisionPrimitive/Polyhedron.cpp; sourceTree = "<group>"; };
 		AD80071828A45CB3001387F3 /* Sphere3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Sphere3d.cpp; path = ../../Src/CollisionPrimitive/Sphere3d.cpp; sourceTree = "<group>"; };
+		AD86910628A5CE210023E317 /* WindField.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = WindField.cpp; path = ../../Src/AeroDynamics/WindField.cpp; sourceTree = "<group>"; };
 		ADA2A25328A29E67009EDBE2 /* JobSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = JobSystem.h; path = ../../Src/Core/JobSystem.h; sourceTree = "<group>"; };
 		ADA2A25428A29E67009EDBE2 /* ThreadPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ThreadPool.h; path = ../../Src/Core/ThreadPool.h; sourceTree = "<group>"; };
 		ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LockFreeHashMap.h; path = ../../Src/Core/LockFreeHashMap.h; sourceTree = "<group>"; };
@@ -279,8 +280,7 @@
 		ADBBEE1A288C468700C3D6CD /* StaticList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = StaticList.h; path = ../../Src/Core/StaticList.h; sourceTree = "<group>"; };
 		ADBBEE1D288C486800C3D6CD /* PositionConstraint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PositionConstraint.h; path = ../../Src/RigidBodyDynamics/PositionConstraint.h; sourceTree = "<group>"; };
 		ADBBEE1E288C486800C3D6CD /* PositionConstraint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PositionConstraint.cpp; path = ../../Src/RigidBodyDynamics/PositionConstraint.cpp; sourceTree = "<group>"; };
-		ADD23B992887613100A849BE /* UncompressedKarmanVortex2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = UncompressedKarmanVortex2D.h; path = ../../Src/AeroDynamics/UncompressedKarmanVortex2D.h; sourceTree = "<group>"; };
-		ADD23B9A2887613100A849BE /* UncompressedKarmanVortex2D.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = UncompressedKarmanVortex2D.cpp; path = ../../Src/AeroDynamics/UncompressedKarmanVortex2D.cpp; sourceTree = "<group>"; };
+		ADD23B992887613100A849BE /* WindField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = WindField.h; path = ../../Src/AeroDynamics/WindField.h; sourceTree = "<group>"; };
 		ADD23B9D2887614E00A849BE /* AABBTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AABBTree.h; path = ../../Src/Collision/AABBTree.h; sourceTree = "<group>"; };
 		ADD23B9E2887614E00A849BE /* GeometryIntersection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GeometryIntersection.cpp; path = ../../Src/Collision/GeometryIntersection.cpp; sourceTree = "<group>"; };
 		ADD23B9F2887614E00A849BE /* SAP_Incremental.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SAP_Incremental.h; path = ../../Src/Collision/SAP_Incremental.h; sourceTree = "<group>"; };
@@ -476,8 +476,8 @@
 		ADD23B872887604600A849BE /* AeroDynamics */ = {
 			isa = PBXGroup;
 			children = (
-				ADD23B9A2887613100A849BE /* UncompressedKarmanVortex2D.cpp */,
-				ADD23B992887613100A849BE /* UncompressedKarmanVortex2D.h */,
+				AD86910628A5CE210023E317 /* WindField.cpp */,
+				ADD23B992887613100A849BE /* WindField.h */,
 			);
 			name = AeroDynamics;
 			sourceTree = "<group>";
@@ -978,7 +978,7 @@
 				ADD23BCF2887614E00A849BE /* MinkowskiSum.h in Headers */,
 				ADD23C052887616200A849BE /* Capsule3d.h in Headers */,
 				ADA2A25A28A29E67009EDBE2 /* LockFreeHashMap.h in Headers */,
-				ADD23B9B2887613100A849BE /* UncompressedKarmanVortex2D.h in Headers */,
+				ADD23B9B2887613100A849BE /* WindField.h in Headers */,
 				ADD23CD8288762D900A849BE /* Circle.h in Headers */,
 				AD08836D289EA4C30008AB04 /* CholeskyDecomposition.h in Headers */,
 				ADD23CD7288762D900A849BE /* GJK2d.h in Headers */,
@@ -1139,12 +1139,12 @@
 				ADD23C0F2887617000A849BE /* MLSMPMSolver.cpp in Sources */,
 				ADD23BFF2887616200A849BE /* OrientedBox3d.cpp in Sources */,
 				ADD23BCA2887614E00A849BE /* AABBTree.cpp in Sources */,
+				AD86910728A5CE210023E317 /* WindField.cpp in Sources */,
 				ADD23BCE2887614E00A849BE /* AABBTreeOffline.cpp in Sources */,
 				ADD23CCD288762D300A849BE /* PositionBasedDynamicsSolver.cpp in Sources */,
 				ADD23C9C288762C000A849BE /* ProjectiveDynamicsSolver.cpp in Sources */,
 				ADD23C47288761AE00A849BE /* Polygon3d.cpp in Sources */,
 				ADD23CBB288762CC00A849BE /* KeyFrameAnimation.cpp in Sources */,
-				ADD23B9C2887613100A849BE /* UncompressedKarmanVortex2D.cpp in Sources */,
 				ADD23CC6288762CC00A849BE /* Ragdoll.cpp in Sources */,
 				AD80071428A3E4E3001387F3 /* Cylinder3d.cpp in Sources */,
 				ADD23C082887616200A849BE /* Segment3d.cpp in Sources */,

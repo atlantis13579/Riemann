@@ -17,8 +17,9 @@ using JobFunction = std::function<void()>;
 class Job
 {
 public:
-	enum class Job_status
+	enum Job_status
 	{
+		Idle,
 		WaitDependency,
 		Queueing,
 		Running,
@@ -75,13 +76,16 @@ public:
 
 	void	Execute()
 	{
+		mStatus = Job_status::Running;
 		mJobFunction();
+		mStatus = Job_status::Finished;
 	}
 	
 private:
 	Job()
 	{
 		AddRefCount();
+		mStatus = Job_status::Idle;
 		mDependencies = 0;
 	}
 
@@ -90,10 +94,10 @@ private:
 	JobFunction 		mJobFunction;
 	std::atomic<int>	mDependencies;
 	std::atomic<int>	mRefCount;
-	std::atomic<int>	mStatus;
 	bool				mFreeOnRelease;
 
 public:
+	std::atomic<int>	mStatus;
 	std::vector<Job*>	mChildJobs;
 };
 
@@ -169,7 +173,6 @@ public:
 				if (visited.find(next) != visited.end())
 					return true;
 				visited.insert(next);
-
 				continue;
 			}
 		}
@@ -305,11 +308,16 @@ private:
 		int count = 0;
 		for (size_t i = 0; i < g.nodes.size(); ++i)
 		{
-			Job *p = g.nodes[i];
-			if (p->GetDependencies() == 0)
+			Job *job = g.nodes[i];
+			if (job->GetDependencies() == 0)
 			{
-				mActiveQueue.Push(p);
+				job->mStatus = Job::Job_status::Queueing;
+				mActiveQueue.Push(job);
 				count++;
+			}
+			else
+			{
+				job->mStatus = Job::Job_status::WaitDependency;
 			}
 		}
 		mSemaphore.Signal(count);
@@ -325,6 +333,7 @@ private:
 			Job* job = ChildJobs[i];
 			if (job->RemoveDependency())
 			{
+				job->mStatus = Job::Job_status::Queueing;
 				mActiveQueue.Push(job);
 				count++;
 			}

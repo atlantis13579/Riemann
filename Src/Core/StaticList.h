@@ -27,15 +27,15 @@ public:
 };
 
 
-template<typename T, int SIZE>
+template<typename T, int Capacity>
 class StaticList
 {
 public:
 	StaticList() : root(nullptr), count(0)
 	{
-		for (int i = 0; i < SIZE; ++i)
+		for (int i = 0; i < Capacity; ++i)
 		{
-			Append(&m_pool[SIZE - i - 1]);
+			Append(&m_pool[Capacity - i - 1]);
 		}
 	}
 
@@ -72,5 +72,5 @@ public:
 private:
 	T*	root;
 	int count;
-	T	m_pool[SIZE];
+	T	m_pool[Capacity];
 };
