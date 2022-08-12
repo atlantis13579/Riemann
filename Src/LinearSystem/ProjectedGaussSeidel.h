@@ -26,7 +26,10 @@ public:
 				{
 					beta += A[i * N + j] * X[j];
 				}
-				T X0 = (-B[i] - beta) / A[i * N + i];
+				T denom = A[i * N + i];
+				if (-kEps < denom && denom < kEps)
+					denom = kEps;
+				T X0 = (-B[i] - beta) / denom;
 				X0 = X[i] + Relaxation * (X0 - X[i]);
 				X0 = pmax(T(0), X0);
 				Norm += (X[i] - X0) * (X[i] - X0);
@@ -60,7 +63,10 @@ public:
 				{
 					beta += A[i * N + j] * X[j];
 				}
-				T X0 = (-B[i] - beta) / A[i * N + i];
+				T denom = A[i * N + i];
+				if (-kEps < denom && denom < kEps)
+					denom = kEps;
+				T X0 = (-B[i] - beta) / denom;
 				X0 = X[i] + Relaxation * (X0 - X[i]);
 				X0 = pmin(pmax(X1[i], X0), X2[i]);
 				Norm += (X[i] - X0) * (X[i] - X0);

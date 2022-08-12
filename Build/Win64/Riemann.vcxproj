@@ -19,7 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp" />
+    <ClCompile Include="..\..\Src\AeroDynamics\VonKarmanVortexStreet.cpp" />
+    <ClCompile Include="..\..\Src\AeroDynamics\WindSimulation.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\ConvexMesh.cpp" />
@@ -93,7 +94,8 @@
     <ClCompile Include="..\..\Src\VehicleDynamics\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.h" />
+    <ClInclude Include="..\..\Src\AeroDynamics\VonKarmanVortexStreet.h" />
+    <ClInclude Include="..\..\Src\AeroDynamics\WindSimulation.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Capsule3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\ConvexMesh.h" />

@@ -10,6 +10,7 @@ Rigid Body Dynamics Simulation
     * Sphere
     * Oriented Box
     * Capsule
+    * Cylinder
     * Convex Mesh
     * Triangle Mesh
     * Height Field
@@ -29,8 +30,6 @@ Rigid Body Dynamics Simulation
     * LCP Solver using Projected Gauss-Seidel
 
 Position Based Dynamics
-
-Aero Dynamics Solver
 
 Fluid Dynamics Solver
 

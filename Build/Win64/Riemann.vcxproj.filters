@@ -57,9 +57,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.h">
-      <Filter>AeroDynamics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Collision\AABBTree.h">
       <Filter>Collision</Filter>
     </ClInclude>
@@ -528,11 +525,14 @@
     <ClInclude Include="..\..\Src\Core\Graph.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\AeroDynamics\VonKarmanVortexStreet.h">
+      <Filter>AeroDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\AeroDynamics\WindSimulation.h">
+      <Filter>AeroDynamics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Src\AeroDynamics\UncompressedKarmanVortex2D.cpp">
-      <Filter>AeroDynamics</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">
       <Filter>Collision</Filter>
     </ClCompile>
@@ -733,6 +733,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Sphere3d.cpp">
       <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\AeroDynamics\VonKarmanVortexStreet.cpp">
+      <Filter>AeroDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\AeroDynamics\WindSimulation.cpp">
+      <Filter>AeroDynamics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

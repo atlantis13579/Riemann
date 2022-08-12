@@ -29,7 +29,10 @@ public:
 				{
 					beta += A[i * N + j] * X[j];
 				}
-				X0[i] = (B[i] - beta) / A[i * N + i];
+				T denom = A[i * N + i];
+				if (-kEps < denom && denom < kEps)
+					denom = kEps;
+				X0[i] = (B[i] - beta) / denom;
 			}
 
 			T Norm = (T)0;

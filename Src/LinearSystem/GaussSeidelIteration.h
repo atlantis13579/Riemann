@@ -1,4 +1,3 @@
-
 #pragma once
 
 // Solve A * X = B , A is square Matrix of size N, B is Vector of size N
@@ -30,7 +29,10 @@ public:
 				{
 					beta += A[i * N + j] * X[j];
 				}
-				T delta = (B[i] - beta) / A[i * N + i];
+				T denom = A[i * N + i];
+				if (-kEps < denom && denom < kEps)
+					denom = kEps;
+				T delta = (B[i] - beta) / denom;
 				Norm += (X[i] - delta) * (X[i] - delta);
 				X[i] += Relaxation * (delta - X[i]);
 			}
