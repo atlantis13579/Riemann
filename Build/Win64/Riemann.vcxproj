@@ -54,7 +54,6 @@
     <ClCompile Include="..\..\Src\Geometry\TetrahedralMesh.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Voronoi2d.cpp" />
     <ClCompile Include="..\..\Src\Geometry\VoxelField.cpp" />
-    <ClCompile Include="..\..\Src\Geometry\SparseVoxelField.cpp" />
     <ClCompile Include="..\..\Src\LinearSystem\DenseMatrix.cpp" />
     <ClCompile Include="..\..\Src\LinearSystem\DenseVector.cpp" />
     <ClCompile Include="..\..\Src\Maths\Matrix3.cpp" />
@@ -156,8 +155,6 @@
     <ClInclude Include="..\..\Src\Geometry\VHACD.h" />
     <ClInclude Include="..\..\Src\Geometry\Voronoi2d.h" />
     <ClInclude Include="..\..\Src\Geometry\VoxelField.h" />
-    <ClInclude Include="..\..\Src\Geometry\SparseVoxelField.h" />
-    <ClInclude Include="..\..\Src\ImageSpace\ContinuousBitmap.h" />
     <ClInclude Include="..\..\Src\LinearSystem\CholeskyDecomposition.h" />
     <ClInclude Include="..\..\Src\LinearSystem\DenseMatrix.h" />
     <ClInclude Include="..\..\Src\LinearSystem\DenseVector.h" />
@@ -237,6 +234,7 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.h" />
     <ClInclude Include="..\..\Src\Solver\SparseConjugateGradientSolver.h" />
     <ClInclude Include="..\..\Src\Tools\AnimBinaryParser.h" />
+    <ClInclude Include="..\..\Src\Tools\ContinuousBitmap.h" />
     <ClInclude Include="..\..\Src\Tools\libMat.h" />
     <ClInclude Include="..\..\Src\Tools\libPng.h" />
     <ClInclude Include="..\..\Src\Tools\libPPM.h" />

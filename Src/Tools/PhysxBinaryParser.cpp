@@ -164,7 +164,7 @@ public:
 		}
 		
 		ConvMesh->SetConvexData((Vector3*)hull.getHullVertices(), hull.mNbHullVertices,
-								(HullFace3d*)hull.mPolygons, hull.mNbPolygons,
+								(ConvexMeshFace*)hull.mPolygons, hull.mNbPolygons,
 								hull.getVerticesByEdges16(), hull.mNbEdges & ~0x8000,
 								hull.getVertexData8(), maxIndices,
 								shared_mem);

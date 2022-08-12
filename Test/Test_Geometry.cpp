@@ -7,7 +7,6 @@
 #include "../Src/Geometry/Spline.h"
 #include "../Src/Geometry/Polygon3d.h"
 #include "../Src/Geometry/VoxelField.h"
-#include "../Src/Geometry/SparseVoxelField.h"
 #include "../Src/Geometry/DenseTensorField3d.h"
 
 void TestClip()

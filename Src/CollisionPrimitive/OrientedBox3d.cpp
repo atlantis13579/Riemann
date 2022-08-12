@@ -37,9 +37,9 @@ OrientedBox3d OrientedBox3d::CalcBoundingOBB_PCA(const Vector3 *points, int n)
 	
 	OrientedBox3d box;
 	box.Center = mean;
-	box.Rotation = Matrix3(v[0].x, v[1].x, v[2].x,
-					  v[0].y, v[1].y, v[2].y,
-					  v[0].z, v[1].z, v[2].z);
+	box.Rotation = Matrix3(	v[0].x, v[1].x, v[2].x,
+							v[0].y, v[1].y, v[2].y,
+							v[0].z, v[1].z, v[2].z);
 	box.Extent = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 	
 	for (int i = 0; i < n; ++i)

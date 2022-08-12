@@ -43,7 +43,7 @@ public:
 	}
 
 public:
-	Vector3		GetOrigin() const
+	Vector3			GetOrigin() const
 	{
 		return -Normal * D;
 	}

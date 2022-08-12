@@ -11,13 +11,13 @@ enum InterpMethod
 	BILINEAR
 };
 
-template<typename TensorType>
+template<typename ScalerType>
 class DenseTensorField3d
 {
 public:
 	DenseTensorField3d(const Box3d & BV, int nX, int nY, int nZ) : m_Fields({nX, nY, nZ})
 	{
-		m_ConstTensor = TensorType::Zero();
+		m_ConstTensor = ScalerType::Zero();
 
 		m_BV = BV;
 		m_Size = TVector3<int>(nX, nY, nZ);
@@ -41,7 +41,7 @@ public:
 	}
 
 public:
-	TensorType GetTensorByPosition(const Vector3& pos) const
+	ScalerType GetTensorByPosition(const Vector3& pos) const
 	{
 		const float fx = (pos.x - m_BV.mMin.x) * m_InvCellSize.x - 0.5f;
 		const float fy = (pos.y - m_BV.mMin.y) * m_InvCellSize.y - 0.5f;
@@ -63,12 +63,12 @@ public:
 			const float dx = fx - nx;
 			const float dy = fy - ny;
 			const float dz = fz - nz;
-			TensorType y11 = LinearInterp(m_Fields(nx, ny, nz), m_Fields(nx + 1, ny, nz), dx);
-			TensorType y12 = LinearInterp(m_Fields(nx, ny, nz + 1), m_Fields(nx + 1, ny, nz + 1), dx);
-			TensorType y21 = LinearInterp(m_Fields(nx, ny + 1, nz), m_Fields(nx + 1, ny + 1, nz), dx);
-			TensorType y22 = LinearInterp(m_Fields(nx, ny + 1, nz + 1), m_Fields(nx + 1, ny + 1, nz + 1), dx);
-			TensorType z1 = LinearInterp(y11, y21, dy);
-			TensorType z2 = LinearInterp(y12, y22, dy);
+			ScalerType y11 = LinearInterp(m_Fields(nx, ny, nz), m_Fields(nx + 1, ny, nz), dx);
+			ScalerType y12 = LinearInterp(m_Fields(nx, ny, nz + 1), m_Fields(nx + 1, ny, nz + 1), dx);
+			ScalerType y21 = LinearInterp(m_Fields(nx, ny + 1, nz), m_Fields(nx + 1, ny + 1, nz), dx);
+			ScalerType y22 = LinearInterp(m_Fields(nx, ny + 1, nz + 1), m_Fields(nx + 1, ny + 1, nz + 1), dx);
+			ScalerType z1 = LinearInterp(y11, y21, dy);
+			ScalerType z2 = LinearInterp(y12, y22, dy);
 			return LinearInterp(z1, z2, dz);
 		}
 
@@ -76,10 +76,10 @@ public:
 	}
 
 private:
-	TensorType				m_ConstTensor;
+	ScalerType				m_ConstTensor;
 	Box3d					m_BV;
 	TVector3<int>			m_Size;
-	Vector3				m_CellSize, m_InvCellSize;
-	Tensor<TensorType, 3>	m_Fields;
+	Vector3					m_CellSize, m_InvCellSize;
+	Tensor<ScalerType, 3>	m_Fields;
 	InterpMethod			m_InterpMethod;
 };

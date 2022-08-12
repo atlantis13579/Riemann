@@ -76,6 +76,18 @@ inline bool	IsFloatInf(float x)
 	return x >= std::numeric_limits<float>::max() || x == std::numeric_limits<float>::infinity();
 }
 
+template <typename T>
+inline T Sqr(const T x)
+{
+	return x * x;
+}
+
+template <typename T>
+inline T Cube(const T x)
+{
+	return x * x * x; 
+}
+
 // http://www.matrix67.com/data/InvSqrt.pdf
 inline float InvSqrt(float x) {
 	float xhalf = 0.5f * x;

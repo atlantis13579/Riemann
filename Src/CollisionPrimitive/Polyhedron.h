@@ -3,7 +3,10 @@
 #include <float.h>
 #include <vector>
 #include "../Maths/Box3d.h"
+#include "../Maths/Matrix3.h"
 #include "../Maths/Vector3.h"
+
+static Matrix3 computeRegularPolyhedronInertiaTensor(int V, int F, int P, const Vector3 &cm, Vector3* verts, uint8_t* indices);
 
 // Polyhedron is a compact version of ConvexMesh
 // For a regular Polyhedron,
@@ -16,7 +19,8 @@ class Polyhedron
 	static_assert(2 * E % F == 0, "Not a regular Polyhedron");
 public:
 	Vector3	v[V];
-	uint8_t	Indices[2*E+F];
+	uint8_t	indices[2*E];
+	Matrix3	Inertia;
 	
 	constexpr int	GetNumVertices() const
 	{
@@ -33,7 +37,7 @@ public:
 		return F;
 	}
 	
-	constexpr int	GetPolygonSize() const
+	constexpr int	GetNumFaceVertices() const
 	{
 		return (2 * E) / F;
 	}
@@ -61,6 +65,16 @@ public:
 	void		BuildRegularPolyhedron(float Radius)
 	{
 		
+	}
+
+	void		ComputeInertiaTensor()
+	{
+		Inertia = ::computeRegularPolyhedronInertiaTensor(V, F, GetNumFaceVertices(), ComputeCenterOfMass(), v, indices);
+	}
+
+	Matrix3		GetInertiaTensor(float Mass) const
+	{
+		return Inertia * Mass;
 	}
 	
 	Vector3		ComputeCenterOfMass() const

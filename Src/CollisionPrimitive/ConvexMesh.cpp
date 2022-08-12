@@ -1,8 +1,9 @@
 
 #include "ConvexMesh.h"
+#include "../Geometry/ConvexHull3d.h"
 
 void ConvexMesh::SetConvexData(Vector3* verts, uint16_t nVerties,
-							   HullFace3d* faces, uint16_t nFaces,
+							   ConvexMeshFace* faces, uint16_t nFaces,
 							   uint16_t* edges, uint16_t nEdges,
 							   uint8_t* indices, uint16_t nIndices,
 							   bool shared_mem)
@@ -19,23 +20,23 @@ void ConvexMesh::SetConvexData(Vector3* verts, uint16_t nVerties,
 	
 	if (!shared_mem)
 	{
-		int buffer_size =	sizeof(HullVertex3d) * nVerties +
-							sizeof(HullFace3d) * nFaces +
-							sizeof(HullEdge3d) * nEdges +
+		int buffer_size =	sizeof(Vector3) * nVerties +
+							sizeof(ConvexMeshFace) * nFaces +
+							sizeof(ConvexMeshEdge) * nEdges +
 							sizeof(uint8_t) * nIndices;
 		
 		Buffers.resize(buffer_size);
 		
-		Vertices = (HullVertex3d*)Buffers.data();
-		Faces = (HullFace3d*)(Vertices + nVerties);
-		Edges = (HullEdge3d*)(Faces + nFaces);
+		Vertices = (Vector3*)Buffers.data();
+		Faces = (ConvexMeshFace*)(Vertices + nVerties);
+		Edges = (ConvexMeshEdge*)(Faces + nFaces);
 		Indices = (uint8_t*)(Edges + nEdges);
 	}
 	else
 	{
-		Vertices = (HullVertex3d*)verts;
+		Vertices = (Vector3*)verts;
 		Faces = faces;
-		Edges = (HullEdge3d*)edges;
+		Edges = (ConvexMeshEdge*)edges;
 		Indices = indices;
 	}
 }
@@ -85,7 +86,7 @@ bool ConvexMesh::BuildHull()
 {
 	ComputeCenterOfMass();
 	ComputeBoundingVolume();
-	ComputeInertia();
+	ComputeInertia_VolumeIntegration();
 	return ValidateStructure();
 }
 
@@ -94,41 +95,40 @@ void ConvexMesh::ComputeCenterOfMass()
 	CenterOfMass = Vector3::Zero();
 	for (uint16_t i = 0; i < NumVertices; ++i)
 	{
-		CenterOfMass += Vertices[i].p;
+		CenterOfMass += Vertices[i];
 	}
 	CenterOfMass *= (1.0f / NumVertices);
 }
 
-// http://number-none.com/blow/inertia/deriving_i.html
-void ConvexMesh::ComputeInertia()
+void ConvexMesh::ComputeInertia_VolumeIntegration()
 {
-	Matrix3 covariance_matrix;
-	covariance_matrix.LoadZero();
+	ConvexHull3d hull;
+	hull.faces.resize(NumFaces);
+	hull.verts.reserve(NumVertices);
 
-	for (int i = 0; i < 3; ++i)
-	for (int j = 0; j < 3; ++j)
+	for (uint16_t i = 0; i < NumVertices; ++i)
 	{
-		for (uint16_t k = 0; k < NumVertices; ++k)
+		hull.verts[i] = Vertices[i];
+	}
+	for (uint16_t i = 0; i < NumFaces; ++i)
+	{
+		ConvexMeshFace& f = Faces[i];
+		HullFace3d& face = hull.faces[i];
+		face.norm = f.plane.Normal;
+		face.w = f.plane.D;
+		face.verts.resize(f.numVerties);
+		for (uint8_t j = 0; j < f.numVerties; ++j)
 		{
-			float cij = (Vertices[k].p[i] - CenterOfMass[i]) * (Vertices[k].p[j] - CenterOfMass[j]);
-			covariance_matrix[i][j] += cij;
+			face.verts[j] = Indices[f.first + j];
 		}
-		covariance_matrix[i][j] /= NumVertices;
 	}
 
-	float eigens[3];
-	Vector3 eigen_vectors[3];
-	covariance_matrix.SolveEigenSymmetric(eigens, eigen_vectors);
+	Inertia = ComputePolyhedralInertiaTensor_VolumeIntegration(hull);
+}
 
-	if (Determinant(eigen_vectors[0], eigen_vectors[1], eigen_vectors[2]) < 0)
-	{
-		eigen_vectors[2] = -eigen_vectors[2];
-	}
-
-	Inertia = Matrix3(eigen_vectors[0].x, eigen_vectors[1].x, eigen_vectors[2].x,
-					  eigen_vectors[0].y, eigen_vectors[1].y, eigen_vectors[2].y,
-					  eigen_vectors[0].z, eigen_vectors[1].z, eigen_vectors[2].z);
-
+void ConvexMesh::ComputeInertia_PCA()
+{
+	Inertia = ComputePointCloudInertiaTensor_PCA(Vertices, (int)NumVertices);
 	return;
 }
 
@@ -137,7 +137,7 @@ void ConvexMesh::ComputeBoundingVolume()
 	BoundingVolume.SetEmpty();
 	for (uint16_t i = 0; i < NumVertices; ++i)
 	{
-		BoundingVolume.Encapsulate(Vertices[i].p);
+		BoundingVolume.Encapsulate(Vertices[i]);
 	}
 }
 
@@ -194,11 +194,11 @@ Vector3 ConvexMesh::GetSupport(const Vector3& Direction) const
 
 	for (uint16_t i = 0; i < NumVertices; ++i)
 	{
-		const float dot = Vertices[i].p.Dot(Direction);
+		const float dot = Vertices[i].Dot(Direction);
 		if (dot > max_dot)
 		{
 			max_dot = dot;
-			max_v = Vertices[i].p;
+			max_v = Vertices[i];
 		}
 	}
 
@@ -222,10 +222,10 @@ int ConvexMesh::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) co
 
 	if (max_idx != 0xFFFF)
 	{
-		const HullFace3d& hull = Faces[max_idx];
+		const ConvexMeshFace& hull = Faces[max_idx];
 		for (uint8_t j = 0; j < hull.numVerties; ++j)
 		{
-			FacePoints[j] = Vertices[Indices[hull.first + j]].p;
+			FacePoints[j] = Vertices[Indices[hull.first + j]];
 		}
 		return hull.numVerties;
 	}
@@ -237,13 +237,13 @@ void ConvexMesh::GetMesh(std::vector<Vector3>& _Vertices, std::vector<uint16_t>&
 {
 	for (uint16_t i = 0; i < NumVertices; ++i)
 	{
-		_Vertices.push_back(Vertices[i].p);
+		_Vertices.push_back(Vertices[i]);
 		_Normals.push_back(GetNormal((uint32_t)i));
 	}
 
 	for (uint16_t i = 0; i < NumFaces; ++i)
 	{
-		const HullFace3d& face = Faces[i];
+		const ConvexMeshFace& face = Faces[i];
 		for (uint8_t j = 1; j < face.numVerties - 1; ++j)
 		{
 			_Indices.push_back(Indices[face.first]);
@@ -257,7 +257,7 @@ void ConvexMesh::GetWireframe(std::vector<Vector3>& _Vertices, std::vector<uint1
 {
 	for (uint16_t i = 0; i < NumVertices; ++i)
 	{
-		_Vertices.push_back(Vertices[i].p);
+		_Vertices.push_back(Vertices[i]);
 	}
 	for (uint16_t i = 0; i < NumEdges; ++i)
 	{

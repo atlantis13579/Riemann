@@ -96,9 +96,6 @@
     <ClInclude Include="..\..\Src\Solver\ConjugateGradientSolver.h">
       <Filter>Solver</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\ImageSpace\ContinuousBitmap.h">
-      <Filter>ImageSpace</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\ConvexHull2d.h">
       <Filter>Geometry</Filter>
     </ClInclude>
@@ -330,9 +327,6 @@
     <ClInclude Include="..\..\Src\Collision\SparseSpatialHash.h">
       <Filter>Collision</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\SparseVoxelField.h">
-      <Filter>Geometry</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\Spline.h">
       <Filter>Geometry</Filter>
     </ClInclude>
@@ -531,6 +525,9 @@
     <ClInclude Include="..\..\Src\AeroDynamics\WindSimulation.h">
       <Filter>AeroDynamics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Tools\ContinuousBitmap.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">
@@ -655,9 +652,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Segment3d.cpp">
       <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Geometry\SparseVoxelField.cpp">
-      <Filter>Geometry</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\Spline.cpp">
       <Filter>Geometry</Filter>
