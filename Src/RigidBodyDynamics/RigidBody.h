@@ -122,6 +122,7 @@ public:
 	void				AddLinearVelocity(const Vector3& dv);
 	void				AddLinearMomentum(const Vector3& dp);
 	void				AddAngularVelocity(const Vector3& dw);
+	void				AddAngularMomentum(const Vector3& dl);
 
 	void				SetDefaultPhysicsMaterial(int idx);
 
