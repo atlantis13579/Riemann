@@ -289,13 +289,22 @@ bool HeightField3d::IntersectOBB(const Vector3& Center, const Vector3& Extent, c
 		return false;
 	}
 
+	Matrix3 invRot = rot.Inverse();
+	Vector3 aabbMin = Center - Extent;
+	Vector3 aabbMax = Center + Extent;
+
 	CELLS_VISITOR_BEGIN(box.mMin, box.mMax)
 	{
 		Vector3 Tris[6];
 		int n = GetCellTriangle(i, j, Tris);
+		for (int k = 0; k < n; k++)
+		{
+			Tris[i] = invRot * Tris[i];
+		}
+
 		for (int k = 0; k < n; k += 3)
 		{
-			if (Triangle3d::IntersectAABB(Tris[k], Tris[k + 1], Tris[k + 2], -Extent, Extent))
+			if (Triangle3d::IntersectAABB(Tris[k], Tris[k + 1], Tris[k + 2], aabbMin, aabbMax))
 			{
 				return true;
 			}

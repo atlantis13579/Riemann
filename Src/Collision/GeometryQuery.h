@@ -166,7 +166,7 @@ struct IntersectResult
 	void AddTestCount(int Count)
 	{
 		#ifdef _DEBUG
-		overlapTestCount += Count;
+		intersectTestCount += Count;
 		#endif // _DEBUG
 	}
 
@@ -175,14 +175,23 @@ struct IntersectResult
 		overlaps = true;
 		overlapGeoms.clear();
 		#ifdef _DEBUG
-		overlapTestCount = 0;
+		intersectTestCount = 0;
 		#endif // _DEBUG
+	}
+
+	void Merge(const IntersectResult& rhs)
+	{
+		overlaps = overlaps || rhs.overlaps;
+		overlapGeoms.insert(overlapGeoms.end(), rhs.overlapGeoms.begin(), rhs.overlapGeoms.end());
+		#ifdef _DEBUG
+		intersectTestCount += rhs.intersectTestCount;
+		#endif //_DEBUG
 	}
 
 	bool					overlaps;
 	std::vector<Geometry*>	overlapGeoms;
     
-	int						overlapTestCount;       // debug
+	int						intersectTestCount;       // debug
 };
 
 class GeometryQuery
@@ -193,10 +202,11 @@ public:
 
 public:
 	void			BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
-	void			BuildStaticGeometry(GeometryIterator *iter, int nPrimitivePerNode);
 	void			CreateDynamicGeometry();
-	bool			RayCast(const Vector3 &Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult *Result);
-	bool			OverlapBox(const Vector3 &Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result);
+	bool			RayCastTest(const Vector3 &Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult *Result);
+	bool			IntersectTest_Box(const Vector3 &Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result);
+	bool			IntersectTest_Sphere(const Vector3& Center, float Radius, const IntersectOption& Option, IntersectResult* Result);
+	bool			IntersectTest_Capsule(const Vector3& Center, float HalfHeight, float Radius, const IntersectOption& Option, IntersectResult* Result);
 
 	AABBTree*		GetStaticTree()
 	{
@@ -207,6 +217,9 @@ public:
 	{
 		return m_dynamicPruner;
 	}
+
+private:
+	bool			IntersectTest_Impl(const Geometry* geom, const IntersectOption& Option, IntersectResult* Result);
 
 private:
 	std::vector<Geometry*>	m_Objects;

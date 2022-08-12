@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "../Core/Base.h"
+#include "../Core/JobSystem.h"
 #include "../Collision/DynamicAABBTree.h"
 #include "../Collision/GeometryQuery.h"
 #include "../Collision/GeometryObject.h"
@@ -40,6 +41,11 @@ RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 	m_RPhase = ResolutionPhase::CreateSequentialImpulseSolver();
 	m_IntegrateMethod = param.integrateMethod;
 	m_Fields.push_back(ForceField::CreateGrivityField(param.gravityAcc));
+	m_Jobsystem = new JobSystem;
+	if (param.workerThreads != 0)
+	{
+		m_Jobsystem->CreateWorkers(param.workerThreads);
+	}
 	m_SharedMem = nullptr;
 	m_SharedMemSize = 0;
 }
@@ -69,6 +75,12 @@ RigidBodySimulation::~RigidBodySimulation()
 	for (size_t i = 0; i < m_Kinematics.size(); ++i)
 	{
 		delete m_Kinematics[i];
+	}
+
+	if (m_Jobsystem)
+	{
+		m_Jobsystem->Terminate();
+		delete m_Jobsystem;
 	}
 
 	if (m_SharedMem)

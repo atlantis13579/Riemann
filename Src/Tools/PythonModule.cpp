@@ -49,7 +49,7 @@ float RayCast(void *p, float x0, float y0, float z0, float dx, float dy, float d
     GeometryQuery* query = world->GetGeometryQuery();
     assert(query);
     
-    bool success = query->RayCast(Vector3(x0, y0, z0), Vector3(dx, dy, dz).Unit(), Option, &Result);
+    bool success = query->RayCastTest(Vector3(x0, y0, z0), Vector3(dx, dy, dz).Unit(), Option, &Result);
     if (success)
     {
         return (Result.hitPoint - Vector3(x0, y0, z0)).Length();
@@ -128,7 +128,7 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
             {
                 Vector3 rayDirection = cameraDirection * nearz + ((y - h2 * 0.5f) / h2) * cameraY + ((x - w2 * 0.5f) / w2) * cameraX;
                 RayCastResult Result;
-                bool success = query->RayCast(cameraOrigin, rayDirection.Unit(), Option, &Result);
+                bool success = query->RayCastTest(cameraOrigin, rayDirection.Unit(), Option, &Result);
                 if (success)
                 {
                     float depth = Result.hitTimeMin;

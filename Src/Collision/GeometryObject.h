@@ -287,5 +287,9 @@ public:
 	static Geometry* CreateTriangle(const Vector3& A, const Vector3& B, const Vector3& C);
 	static Geometry* CreateTriangleMesh();
 
+	static Geometry* CreateOBB_placement(void* pBuf, const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot = Quaternion::One());
+	static Geometry* CreateSphere_placement(void* pBuf, const Vector3& Center, float Radius);
+	static Geometry* CreateCapsule_placement(void* pBuf, const Vector3& X0, const Vector3& X1, float Radius);
+
 	static int		ObjectCount[(int)ShapeType3d::TYPE_COUNT];
 };

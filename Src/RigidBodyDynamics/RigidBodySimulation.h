@@ -12,6 +12,7 @@ class NarrowPhase;
 class ResolutionPhase;
 class ForceField;
 class KinematicsDriver;
+class JobSystem;
 
 enum class BroadPhaseSolver : uint8_t
 {
@@ -51,12 +52,14 @@ struct RigidBodySimulationParam
 		narrowphase = NarrowPhaseSolver::GJKEPA;
 		constraintSolver = ConstraintSolver::SequentialImpulse;
 		integrateMethod = IntegrateMethod::ExplicitEuler;
+		workerThreads = 0;
 	}
 	Vector3 			gravityAcc;		// gravity acc
 	BroadPhaseSolver	broadphase;
 	NarrowPhaseSolver	narrowphase;
 	ConstraintSolver	constraintSolver;
 	IntegrateMethod 	integrateMethod;
+	int					workerThreads;
 };
 
 class RigidBodySimulation
@@ -97,6 +100,7 @@ private:
 	std::vector<RigidBodyDynamic*>	m_DynamicBodies;
 	std::vector<KinematicsDriver*>	m_Kinematics;
 
+	JobSystem*						m_Jobsystem;
 	GeometryQuery*					m_GeometryQuery;
 	BroadPhase*						m_BPhase;
 	NarrowPhase*					m_NPhase;

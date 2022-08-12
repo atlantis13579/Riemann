@@ -88,32 +88,12 @@ inline bool			IntersectSphereT(const void* Obj1, const void* Obj2, const Geometr
 }
 
 template <class T>
-inline bool			IntersectSphereT_WS(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
-{
-	const Sphere3d* box1 = static_cast<const Sphere3d*>(Obj1);
-	const T* p = static_cast<const T*>(Obj2);
-	Sphere3d sp(trans->Local1ToWorld(box1->Center), box1->Radius);
-	return p->IntersectSphere(sp.Center, sp.Radius);
-}
-
-template <class T>
 inline bool			IntersectCapsuleT(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
 {
 	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj1);
 	float Radius = capsule->Radius;
 	Vector3 P0 = trans->Local1ToLocal2(capsule->X0);
 	Vector3 P1 = trans->Local1ToLocal2(capsule->X1);
-	const T* p = static_cast<const T*>(Obj2);
-	return p->IntersectCapsule(P0, P1, Radius);
-}
-
-template <class T>
-inline bool			IntersectCapsuleT_WS(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
-{
-	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj1);
-	float Radius = capsule->Radius;
-	Vector3 P0 = trans->Local1ToWorld(capsule->X0);
-	Vector3 P1 = trans->Local1ToWorld(capsule->X1);
 	const T* p = static_cast<const T*>(Obj2);
 	return p->IntersectCapsule(P0, P1, Radius);
 }
@@ -134,10 +114,9 @@ inline bool			IntersectBoxT_WS(const void* Obj1, const void* Obj2, const Geometr
 {
 	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
 	const T* p = static_cast<const T*>(Obj2);
-	OrientedBox3d obb1(trans->Local1ToWorld(box1->GetCenter()), box1->GetExtent(), trans->Local1ToWorldRotationMatrix());
+	OrientedBox3d obb1(trans->Local1ToLocal2(box1->GetCenter()), box1->GetExtent(), trans->Local1ToLocal2RotationMatrix());
 	return p->IntersectOBB(obb1.Center, obb1.Extent, obb1.Rotation);
 }
-
 
 #define	REG_RAYCAST_FUNC(_type, _name)				\
 	raycastTable[(int)_type] = RayCastT<_name>;
@@ -171,7 +150,7 @@ GeometryIntersection::GeometryIntersection()
 	REG_INTERSECT_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::SPHERE,			IntersectSphereT<Sphere3d>);
 	REG_INTERSECT_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::CAPSULE,			IntersectSphereT<Sphere3d>);
 	REG_INTERSECT_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::TRIANGLE,			IntersectSphereT<Triangle3d>);
-	REG_INTERSECT_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::HEIGHTFIELD,		IntersectSphereT_WS<HeightField3d>);
+	REG_INTERSECT_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::HEIGHTFIELD,		IntersectSphereT<HeightField3d>);
 	REG_INTERSECT_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::TRIANGLE_MESH,		nullptr);
 	REG_INTERSECT_FUNC(ShapeType3d::CYLINDER,		ShapeType3d::BOX,				IntersectGJKSolver);
 	REG_INTERSECT_FUNC(ShapeType3d::CYLINDER,		ShapeType3d::PLANE,				IntersectGJKSolver);
@@ -185,7 +164,7 @@ GeometryIntersection::GeometryIntersection()
 	REG_INTERSECT_FUNC(ShapeType3d::CAPSULE, 		ShapeType3d::PLANE,				IntersectCapsuleT<Plane3d>);
 	REG_INTERSECT_FUNC(ShapeType3d::CAPSULE, 		ShapeType3d::CAPSULE,			IntersectCapsuleT<Capsule3d>);
 	REG_INTERSECT_FUNC(ShapeType3d::CAPSULE, 		ShapeType3d::TRIANGLE,			IntersectTTriangle<Capsule3d>);
-	REG_INTERSECT_FUNC(ShapeType3d::CAPSULE, 		ShapeType3d::HEIGHTFIELD,		IntersectCapsuleT_WS<HeightField3d>);
+	REG_INTERSECT_FUNC(ShapeType3d::CAPSULE, 		ShapeType3d::HEIGHTFIELD,		IntersectCapsuleT<HeightField3d>);
 	REG_INTERSECT_FUNC(ShapeType3d::CAPSULE, 		ShapeType3d::TRIANGLE_MESH,		nullptr);
 	REG_INTERSECT_FUNC(ShapeType3d::CONVEX_MESH,	ShapeType3d::BOX,				IntersectGJKSolver);
 	REG_INTERSECT_FUNC(ShapeType3d::CONVEX_MESH,	ShapeType3d::PLANE,				IntersectGJKSolver);
