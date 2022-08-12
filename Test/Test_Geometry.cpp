@@ -118,7 +118,7 @@ void TestBuildOBB()
 		verties[i] = mat * verties[i] + center;
 	}
 	
-	OrientedBox3d obb = OrientedBox3d::CalcBoundingOBB_PCA(verties.data(), (int)verties.size());
+	OrientedBox3d obb = OrientedBox3d::ComputeBoundingOBB_PCA(verties.data(), (int)verties.size());
 	
 	EXPECT(fabsf(obb.Center.x - center.x) < 0.1f);
 	EXPECT(fabsf(obb.Center.y - center.y) < 0.1f);

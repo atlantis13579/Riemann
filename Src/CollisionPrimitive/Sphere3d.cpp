@@ -60,6 +60,71 @@ bool Sphere3d::IntersectSphere(const Vector3& rCenter, float rRadius) const
 	return SphereIntersectSphere(Center, Radius, rCenter, rRadius);
 }
 
+// static
+static Vector3 _cloestPointOnTriangle(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& BA, const Vector3& CA)
+{
+	const Vector3 PA = Point - A;
+	const float d1 = BA.Dot(PA);
+	const float d2 = CA.Dot(PA);
+	if (d1 <= 0.0f && d2 <= 0.0f)
+		return A;
+
+	const Vector3 PB = Point - B;
+	const float d3 = BA.Dot(PB);
+	const float d4 = CA.Dot(PB);
+	if (d3 >= 0.0f && d4 <= d3)
+		return B;
+
+	const float vc = d1 * d4 - d3 * d2;
+	if (vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f)
+	{
+		const float v = d1 / (d1 - d3);
+		return A + v * BA;
+	}
+
+	const Vector3 PC = Point - C;
+	const float d5 = BA.Dot(PC);
+	const float d6 = CA.Dot(PC);
+	if (d6 >= 0.0f && d5 <= d6)
+		return C;
+
+	const float vb = d5 * d2 - d1 * d6;
+	if (vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f)
+	{
+		const float w = d2 / (d2 - d6);
+		return A + w * CA;
+	}
+
+	const float va = d3 * d6 - d5 * d4;
+	if (va <= 0.0f && (d4 - d3) >= 0.0f && (d5 - d6) >= 0.0f)
+	{
+		const float w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+		return B + w * (C - B);
+	}
+
+	const float denom = 1.0f / (va + vb + vc);
+	const float v = vb * denom;
+	const float w = vc * denom;
+	return A + BA * v + CA * w;
+}
+
+bool Sphere3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const
+{
+	float sqrDist = (A - Center).SquareLength();
+	if (sqrDist <= Radius * Radius)
+	{
+		return true;
+	}
+
+	const Vector3 cp = _cloestPointOnTriangle(Center, A, B, C, B - A, C - A);
+	sqrDist = (cp - Center).SquareLength();
+	if (sqrDist <= Radius * Radius)
+	{
+		return true;
+	}
+	return false;
+}
+
 bool Sphere3d::SphereIntersectSphere(const Vector3& Center, float Radius, const Vector3& rCenter, float rRadius)
 {
 	float SqrDist = (Center - rCenter).SquareLength();

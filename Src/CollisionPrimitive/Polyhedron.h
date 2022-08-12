@@ -19,9 +19,9 @@ class Polyhedron
 	static_assert(2 * E % F == 0, "Not a regular Polyhedron");
 public:
 	Vector3	v[V];
-	uint8_t	indices[2*E];
+	uint8_t	indices[2 * E];
 	Matrix3	Inertia;
-	
+
 	constexpr int	GetNumVertices() const
 	{
 		return V;
@@ -36,12 +36,12 @@ public:
 	{
 		return F;
 	}
-	
+
 	constexpr int	GetNumFaceVertices() const
 	{
 		return (2 * E) / F;
 	}
-	
+
 	Vector3	operator[](int i)
 	{
 		return v[i];
@@ -51,7 +51,7 @@ public:
 	{
 		return v[i];
 	}
-	
+
 	Vector3* GetData()
 	{
 		return v;
@@ -61,10 +61,29 @@ public:
 	{
 		return v;
 	}
-	
+
 	void		BuildRegularPolyhedron(float Radius)
 	{
-		
+
+	}
+
+	Vector3		GetNormal(int iface)
+	{
+		int P = GetNumFaceVertices();
+		Vector3 A = v[indices[iface*P]];
+		Vector3 B = v[indices[iface*P+1]];
+		Vector3 C = v[indices[iface*P+2]];
+		return (B - A).Cross(C - A);
+	}
+
+	void		GetFacePolygon(int iface, std::vector<Vector3>& polygon)
+	{
+		int P = GetNumFaceVertices();
+		polygon.resize(P);
+		for (int i = 0; i < P; ++i)
+		{
+			polygon[i] = v[indices[iface * P + i]];
+		}
 	}
 
 	void		ComputeInertiaTensor()

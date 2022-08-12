@@ -17,7 +17,7 @@ struct HeightFieldHitOption
 struct HeightFieldHitResult
 {
 	float		hitTime;
-	Vector3	hitNormal;
+	Vector3		hitNormal;
 	uint32_t	cellIndex;
 	int		    hitTestCount;
     
@@ -103,6 +103,9 @@ public:
 	}
 
     bool		IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
+	bool		IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const;
+	bool		IntersectSphere(const Vector3& Center, float Radius) const;
+	bool		IntersectCapsule(const Vector3& X0, const Vector3 &X1, float Radius) const;
 	bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
     bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, const HeightFieldHitOption& Option, HeightFieldHitResult *Result) const;
 
@@ -118,20 +121,23 @@ public:
 		return 0;
 	}
 
-	Matrix3	GetInertiaTensor(float Mass) const
+	Matrix3		GetInertiaTensor(float Mass) const
 	{
 		return Matrix3(Mass, Mass, Mass);
 	}
 
+	inline Vector3	GetCellCenter2D(int i, int j) const
+	{
+		Vector3 v = Vector3(BV.mMin.x + DX * (i + 0.0f), 0.0f, BV.mMin.z + DZ * (j + 0.5f));
+		return v;
+	}
+
 	bool	GetCellBV(int i, int j, Box3d &box) const;
 	bool	GetHeightRange(int i, int j, float &minH, float & maxH) const;
-
 	int		GetCellTriangle(int i, int j, Vector3 Tris[6]) const;
-
 	int		GetCellTriangle(int i, int j, uint32_t Tris[6]) const;
 
 	void	GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
-
 	void	GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);
     
 private:

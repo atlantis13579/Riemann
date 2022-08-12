@@ -734,5 +734,8 @@
     <ClCompile Include="..\..\Src\AeroDynamics\WindSimulation.cpp">
       <Filter>AeroDynamics</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Triangle3d.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -1,7 +1,10 @@
 
 #include "HeightField3d.h"
+#include "Capsule3d.h"
+#include "OrientedBox3d.h"
 #include "Triangle3d.h"
 #include "Ray3d.h"
+#include "Sphere3d.h"
 #include "../Maths/Maths.h"
 
 #define X_INDEX(_x)		((int)((_x - BV.mMin.x) * InvDX))
@@ -243,6 +246,17 @@ bool HeightField3d::IntersectRay(const Vector3& Origin, const Vector3& Direction
 	return false;
 }
 
+#define CELLS_VISITOR_BEGIN(_bmin, _bmax)	\
+	const int i0 = X_INDEX((_bmin).x);		\
+	const int j0 = Z_INDEX((_bmin).z);		\
+	const int i1 = X_INDEX((_bmax).x);		\
+	const int j1 = Z_INDEX((_bmax).z);		\
+	for (int i = i0; i <= i1; ++i)			\
+	for (int j = j0; j <= j1; ++j)			\
+	{
+
+#define CELLS_VISITOR_END()				}
+
 bool HeightField3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 {
 	Box3d Intersect;
@@ -254,12 +268,7 @@ bool HeightField3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) cons
 	float minH = Bmin.y;
 	float maxH = Bmax.y;
 
-	const int i0 = X_INDEX(Intersect.mMin.x);
-	const int j0 = Z_INDEX(Intersect.mMin.z);
-	const int i1 = X_INDEX(Intersect.mMax.x);
-	const int j1 = Z_INDEX(Intersect.mMax.z);
-	for (int i = i0; i <= i1; ++i)
-	for (int j = j0; j <= j1; ++j)
+	CELLS_VISITOR_BEGIN(Intersect.mMin, Intersect.mMax)
 	{
 		float H = GetHeight(i * nZ + j);
 		if (minH <= H && H <= maxH)
@@ -267,8 +276,90 @@ bool HeightField3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) cons
 			return true;
 		}
 	}
+	CELLS_VISITOR_END()
 
 	return true;
+}
+
+bool HeightField3d::IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const
+{
+	Box3d box = OrientedBox3d::ComputeBoundingVolume(Center, Extent, rot);
+	if (!box.Intersect(BV))
+	{
+		return false;
+	}
+
+	CELLS_VISITOR_BEGIN(box.mMin, box.mMax)
+	{
+		Vector3 Tris[6];
+		int n = GetCellTriangle(i, j, Tris);
+		for (int k = 0; k < n; k += 3)
+		{
+			if (Triangle3d::IntersectAABB(Tris[k], Tris[k + 1], Tris[k + 2], -Extent, Extent))
+			{
+				return true;
+			}
+		}
+	}
+	CELLS_VISITOR_END()
+
+	return false;
+}
+
+bool HeightField3d::IntersectSphere(const Vector3& Center, float Radius) const
+{
+	Sphere3d sphere(Center, Radius);
+	Box3d box = sphere.GetBoundingVolume();
+	if (!box.Intersect(BV))
+	{
+		return false;
+	}
+
+	CELLS_VISITOR_BEGIN(box.mMin, box.mMax)
+	{
+		Vector3 c = GetCellCenter2D(i, j);
+		if ((c - Center).SquareLength() > Radius * Radius)
+			continue;
+
+		Vector3 Tris[6];
+		int n = GetCellTriangle(i, j, Tris);
+		for (int k = 0; k < n; k += 3)
+		{
+			if (sphere.IntersectTriangle(Tris[k], Tris[k + 1], Tris[k + 2]))
+			{
+				return true;
+			}
+		}
+	}
+	CELLS_VISITOR_END()
+
+	return false;
+}
+
+bool HeightField3d::IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const
+{
+	Capsule3d capsule(X0, X1, Radius);
+	Box3d box = capsule.GetBoundingVolume();
+	if (!box.Intersect(BV))
+	{
+		return false;
+	}
+
+	CELLS_VISITOR_BEGIN(box.mMin, box.mMax)
+	{
+		Vector3 Tris[6];
+		int n = GetCellTriangle(i, j, Tris);
+		for (int k = 0; k < n; k += 3)
+		{
+			if (capsule.IntersectTriangle(Tris[k], Tris[k + 1], Tris[k + 2]))
+			{
+				return true;
+			}
+		}
+	}
+	CELLS_VISITOR_END()
+
+		return false;
 }
 
 bool HeightField3d::GetCellBV(int i, int j, Box3d &box) const
@@ -416,10 +507,10 @@ void HeightField3d::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t
 
 	Vertices.resize(nX * nZ);
 	for (uint32_t i = 0; i < nX; i++)
-		for (uint32_t j = 0; j < nZ; j++)
-		{
-			Vertices[i * nZ + j] = Vector3(BV.mMin.x + DX * i, GetHeight(i * nZ + j), BV.mMin.z + DX * j);
-		}
+	for (uint32_t j = 0; j < nZ; j++)
+	{
+		Vertices[i * nZ + j] = Vector3(BV.mMin.x + DX * i, GetHeight(i * nZ + j), BV.mMin.z + DX * j);
+	}
 
 	assert(Vertices.size() < 65535);
 	Indices.resize((nZ - 1) * (nX - 1) * 2 * 3);
@@ -427,17 +518,17 @@ void HeightField3d::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t
 	uint32_t Tris[6];
 
 	for (uint32_t i = 0; i < (nZ - 1); ++i)
-		for (uint32_t j = 0; j < (nX - 1); ++j)
+	for (uint32_t j = 0; j < (nX - 1); ++j)
+	{
+		int nT = GetCellTriangle(i, j, Tris);
+		for (int k = 0; k < nT; k += 3)
 		{
-			int nT = GetCellTriangle(i, j, Tris);
-			for (int k = 0; k < nT; k += 3)
-			{
-				Indices[3 * nTris + 0] = Tris[k + 0];
-				Indices[3 * nTris + 1] = Tris[k + 1];
-				Indices[3 * nTris + 2] = Tris[k + 2];
-				nTris++;
-			}
+			Indices[3 * nTris + 0] = Tris[k + 0];
+			Indices[3 * nTris + 1] = Tris[k + 1];
+			Indices[3 * nTris + 2] = Tris[k + 2];
+			nTris++;
 		}
+	}
 
 	std::vector<int> Count;
 	Count.resize(Vertices.size(), 0);

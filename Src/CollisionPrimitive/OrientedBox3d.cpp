@@ -3,7 +3,7 @@
 #include "AxisAlignedBox3d.h"
 
 // static
-OrientedBox3d OrientedBox3d::CalcBoundingOBB_PCA(const Vector3 *points, int n)
+OrientedBox3d OrientedBox3d::ComputeBoundingOBB_PCA(const Vector3 *points, int n)
 {
 	Vector3 mean;
 	for (int i = 0; i < n; ++i)
@@ -51,6 +51,26 @@ OrientedBox3d OrientedBox3d::CalcBoundingOBB_PCA(const Vector3 *points, int n)
 	}
 	
 	return box;
+}
+
+Box3d OrientedBox3d::ComputeBoundingVolume(const Vector3& Center, const Vector3& Extent, const Matrix3& Rot)
+{
+	Box3d box;
+	box.SetEmpty();
+	box.Encapsulate(Rot * (Center + Vector3(Extent.x, Extent.y, Extent.z)));
+	box.Encapsulate(Rot * (Center + Vector3(Extent.x, Extent.y, -Extent.z)));
+	box.Encapsulate(Rot * (Center + Vector3(Extent.x, -Extent.y, Extent.z)));
+	box.Encapsulate(Rot * (Center + Vector3(Extent.x, -Extent.y, -Extent.z)));
+	box.Encapsulate(Rot * (Center + Vector3(-Extent.x, Extent.y, Extent.z)));
+	box.Encapsulate(Rot * (Center + Vector3(-Extent.x, Extent.y, -Extent.z)));
+	box.Encapsulate(Rot * (Center + Vector3(-Extent.x, -Extent.y, Extent.z)));
+	box.Encapsulate(Rot * (Center + Vector3(-Extent.x, -Extent.y, -Extent.z)));
+	return box;
+}
+
+Box3d OrientedBox3d::ComputeBoundingVolume() const
+{
+	return OrientedBox3d::ComputeBoundingVolume(Center, Extent, Rotation);
 }
 
 float OrientedBox3d::SqrDistanceToLine(const Vector3& P0, const Vector3& Direction, float* t) const
@@ -174,6 +194,11 @@ static bool OBBIntersectOBB(const Vector3& ca, const Vector3& ea, const Matrix3&
 bool OrientedBox3d::IntersectOBB(const OrientedBox3d& obb) const
 {
 	return OBBIntersectOBB(Center, Extent, Rotation, obb.Center, obb.Extent, obb.Rotation);
+}
+
+bool OrientedBox3d::IntersectOBB(const Vector3& _Center, const Vector3& _Extent, const Matrix3& _Rot) const
+{
+	return OBBIntersectOBB(Center, Extent, Rotation, _Center, _Extent, _Rot);
 }
 
 bool OrientedBox3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const

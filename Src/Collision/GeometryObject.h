@@ -55,13 +55,14 @@ struct GeometryTransform
 // Transformation between object 1's local space and object 2's local space
 struct Geometry2Transform
 {
-	Vector3		Translation12;
+	Vector3		Translation1;
+	Vector3		Translation2;
 	Quaternion	Rotation1;
 	Quaternion	Rotation2;
 
 	Vector3		Local1ToLocal2(const Vector3& Point) const
 	{
-		return Rotation2.Conjugate() * (Rotation1 * Point + Translation12);
+		return Rotation2.Conjugate() * (Rotation1 * Point + Translation1 - Translation2);
 	}
 
 	Vector3		Local1ToLocal2Direction(const Vector3& Direction) const
@@ -70,28 +71,65 @@ struct Geometry2Transform
 		return quat * Direction;
 	}
 
+	Matrix3		Local1ToLocal2RotationMatrix() const
+	{
+		Quaternion quat = Rotation1 * Rotation2.Conjugate();
+		return quat.ToRotationMatrix3();
+	}
+
 	Vector3		Local2ToLocal1(const Vector3& Point) const
 	{
-		return Rotation1.Conjugate() * (Rotation2 * Point - Translation12);
+		return Rotation1.Conjugate() * (Rotation2 * Point + Translation2 - Translation1);
 	}
 
 	Vector3		Local2ToLocal1Direction(const Vector3& Direction) const
 	{
-		Quaternion quat = Rotation1 * Rotation2.Conjugate();
-		return quat.Conjugate() * Direction;
+		Quaternion quat = Rotation2 * Rotation1.Conjugate();
+		return quat * Direction;
 	}
 
 	Matrix3		Local2ToLocal1RotationMatrix() const
 	{
-		Quaternion quat = Rotation1 * Rotation2.Conjugate();
+		Quaternion quat = Rotation2 * Rotation1.Conjugate();
 		return quat.ToRotationMatrix3();
+	}
+
+	Vector3		Local1ToWorld(const Vector3& Point) const
+	{
+		return Rotation1 * Point + Translation1;
+	}
+
+	Vector3		Local1ToWorldDirection(const Vector3& Direction) const
+	{
+		return Rotation1 * Direction;
+	}
+
+	Matrix3		Local1ToWorldRotationMatrix() const
+	{
+		return Rotation1.ToRotationMatrix3();
+	}
+
+	Vector3		Local2ToWorld(const Vector3& Point) const
+	{
+		return Rotation2 * Point + Translation2;
+	}
+
+	Vector3		Local2ToWorldDirection(const Vector3& Direction) const
+	{
+		return Rotation2 * Direction;
+	}
+
+	Matrix3		Local2ToWorldRotationMatrix() const
+	{
+		return Rotation2.ToRotationMatrix3();
 	}
 
 	void		LoadTrans(const GeometryTransform& t1, const GeometryTransform& t2)
 	{
 		Rotation1 = t1.Rotation;
 		Rotation2 = t2.Rotation;
-		Translation12 = t1.Translation - t2.Translation;
+		Translation1 = t1.Translation;
+		Translation2 = t2.Translation;
 	}
 };
 

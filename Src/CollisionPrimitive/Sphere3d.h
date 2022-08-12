@@ -40,14 +40,19 @@ public:
 	bool			IntersectPoint(const Vector3& Point) const;
 	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	bool			IntersectSphere(const Vector3 &rCenter, float rRadius) const;
+	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3 &C) const;
 
 	static bool		SphereIntersectSphere(const Vector3& Center, float Radius, const Vector3& rCenter, float rRadius);
 
-	Box3d			GetBoundingVolume() const
+	static Box3d	CalcBoundingVolume(const Vector3& Center, float Radius)
 	{
 		Box3d Box;
 		Box.BuildFromCenterAndExtent(Center, Vector3(Radius));
 		return Box;
+	}
+	Box3d			GetBoundingVolume() const
+	{
+		return Sphere3d::CalcBoundingVolume(Center, Radius);
 	}
 
 	float			GetVolume() const
@@ -56,7 +61,7 @@ public:
 		return FourThirdsPI * Radius * Radius * Radius;
 	}
 
-	Vector3		GetCenterOfMass() const
+	Vector3			GetCenterOfMass() const
 	{
 		return Center;
 	}

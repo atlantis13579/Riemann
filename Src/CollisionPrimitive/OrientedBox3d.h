@@ -1,7 +1,7 @@
-
 #pragma once
 
 #include "ShapeType.h"
+#include "../Maths/Box3d.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
 
@@ -23,9 +23,12 @@ public:
 		Rotation = _Rot;
 	}
 	
-	static OrientedBox3d CalcBoundingOBB_PCA(const Vector3 *points, int n);
+	static OrientedBox3d	ComputeBoundingOBB_PCA(const Vector3 *points, int n);
+	static Box3d			ComputeBoundingVolume(const Vector3& Center, const Vector3& Extent, const Matrix3& Rot);
+	Box3d					ComputeBoundingVolume() const;
 
 	bool IntersectOBB(const OrientedBox3d& obb) const;
+	bool IntersectOBB(const Vector3& _Center, const Vector3& _Extent, const Matrix3& _Rot) const;
 	bool IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 
 	float SqrDistanceToPoint(const Vector3& Point) const;
