@@ -80,23 +80,13 @@ struct RayCastResult
         #endif //_DEBUG
 	}
 	
-	RayCastResult& operator =(const RayCastResult& rhs)
-	{
-		hit = rhs.hit;
-		hitTime = rhs.hitTime;
-		hitTimeMin = rhs.hitTimeMin;
-		hitPoint = rhs.hitPoint;
-		hitNormal = rhs.hitNormal;
-		hitGeom = rhs.hitGeom;
-		hitGeometries = rhs.hitGeometries;
-		#ifdef _DEBUG
-		hitTestCount = rhs.hitTestCount;
-		#endif //_DEBUG
-		return *this;
-	}
-	
 	void Merge(const RayCastResult& rhs)
 	{
+		if (!hit)
+		{
+			*this = rhs;
+			return;
+		}
 		hit = hit || rhs.hit;
 		hitPoint = hitTimeMin < rhs.hitTimeMin ? hitPoint : rhs.hitPoint;
 		hitNormal = hitTimeMin < rhs.hitTimeMin ? hitNormal : rhs.hitNormal;
@@ -125,18 +115,6 @@ struct RayCastResult
     std::vector<Geometry*>  hitGeometries;
     
 	int						hitTestCount;       // debug
-};
-
-struct SweepOption
-{
-
-};
-
-struct SweepResult
-{
-	SweepResult()
-	{
-	}
 };
 
 struct IntersectOption
@@ -181,6 +159,11 @@ struct IntersectResult
 
 	void Merge(const IntersectResult& rhs)
 	{
+		if (!overlaps)
+		{
+			*this = rhs;
+			return;
+		}
 		overlaps = overlaps || rhs.overlaps;
 		overlapGeoms.insert(overlapGeoms.end(), rhs.overlapGeoms.begin(), rhs.overlapGeoms.end());
 		#ifdef _DEBUG
@@ -194,6 +177,48 @@ struct IntersectResult
 	int						intersectTestCount;       // debug
 };
 
+struct SweepOption
+{
+
+};
+
+struct SweepResult
+{
+	SweepResult()
+	{
+		Reset();
+	}
+	
+	void Reset()
+	{
+		hit = false;
+		hitTime = FLT_MAX;
+		hitTimeMin = FLT_MAX;
+		hitPoint = Vector3::Zero();
+		hitGeom = nullptr;
+	}
+	
+	void Merge(const SweepResult& rhs)
+	{
+		if (!hit)
+		{
+			*this = rhs;
+			return;
+		}
+		hit = hit || rhs.hit;
+		hitPoint = hitTimeMin < rhs.hitTimeMin ? hitPoint : rhs.hitPoint;
+		hitGeom = hitTimeMin < rhs.hitTimeMin ? hitGeom : rhs.hitGeom;
+		hitTime = hitTime < rhs.hitTime ? hitTime : rhs.hitTime;
+		hitTimeMin = hitTimeMin < rhs.hitTimeMin ? hitTimeMin : rhs.hitTimeMin;
+	}
+	
+	bool					hit;
+	float					hitTime;            // temp val
+	float					hitTimeMin;         // result
+	Vector3					hitPoint;
+	Geometry*				hitGeom;
+};
+
 class GeometryQuery
 {
 public:
@@ -201,14 +226,18 @@ public:
 	~GeometryQuery();
 
 public:
-	void			BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
-	void			CreateDynamicGeometry();
-	bool			RayCastTest(const Vector3 &Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult *Result);
-	bool			IntersectTest_Box(const Vector3 &Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result);
-	bool			IntersectTest_Sphere(const Vector3& Center, float Radius, const IntersectOption& Option, IntersectResult* Result);
-	bool			IntersectTest_Capsule(const Vector3& Center, float HalfHeight, float Radius, const IntersectOption& Option, IntersectResult* Result);
+	void		BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
+	void		CreateDynamicGeometry();
+	
+	bool		RayCastTest(const Vector3 &Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult *Result);
+	bool		BoxCastTest(const Vector3 &Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult *Result);
+	bool		SphereCastTest(const Vector3 &Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result);
+	bool		CapsuleCastTest(const Vector3 &Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result);
+	bool		IntersectTest_Box(const Vector3 &Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result);
+	bool		IntersectTest_Sphere(const Vector3& Center, float Radius, const IntersectOption& Option, IntersectResult* Result);
+	bool		IntersectTest_Capsule(const Vector3& X0, const Vector3 &X1, float Radius, const IntersectOption& Option, IntersectResult* Result);
 
-	AABBTree*		GetStaticTree()
+	AABBTree*	GetStaticTree()
 	{
 		return m_staticGeometry;
 	}
@@ -219,8 +248,9 @@ public:
 	}
 
 private:
-	bool			IntersectTest_Impl(const Geometry* geom, const IntersectOption& Option, IntersectResult* Result);
-
+	bool		IntersectTest_Impl(const Geometry* geom, const IntersectOption& Option, IntersectResult* Result);
+	bool		SweepTest_Impl(const Geometry* geom, const SweepOption& Option, SweepResult* Result);
+	
 private:
 	std::vector<Geometry*>	m_Objects;
 

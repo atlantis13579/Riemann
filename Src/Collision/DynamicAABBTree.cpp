@@ -244,6 +244,12 @@ bool DynamicAABBTree::Intersect(const Geometry *geometry, const IntersectOption*
 	return Result->overlaps;
 }
 
+bool DynamicAABBTree::Sweep(const Geometry *geometry, const SweepOption* Option, SweepResult *Result) const
+{
+	assert(false);
+	return false;
+}
+
 bool DynamicAABBTree::Query(const Box3d& aabb, std::vector<void*> *Result) const
 {
 	Result->clear();

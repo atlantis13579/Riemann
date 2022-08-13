@@ -10,6 +10,8 @@ struct RayCastOption;
 struct RayCastResult;
 struct IntersectOption;
 struct IntersectResult;
+struct SweepOption;
+struct SweepResult;
 class Geometry;
 
 class DynamicAABBTree
@@ -47,6 +49,7 @@ public:
 	
 	bool	RayCast(const Ray3d& Ray, const RayCastOption* Option, RayCastResult *Result) const;
 	bool	Intersect(const Geometry *geometry, const IntersectOption* Option, IntersectResult *Result) const;
+	bool	Sweep(const Geometry *geometry, const SweepOption* Option, SweepResult *Result) const;
 	bool	Query(const Box3d& aabb, std::vector<void*> *Result) const;
 	
 	void 	Rebuild();

@@ -11,13 +11,14 @@
 #include "Sphere3d.h"
 #include "../Maths/Matrix3.h"
 
+// {x | (x - [X0 + (X1 - X0)*t])^2 <= Radius }, 0 <= t <= 1 }
 class Capsule3d
 {
 public:
 	Vector3		X0;
 	Vector3		X1;
-	float		Length;
 	float		Radius;
+	float		Length;
 
 public:
 	Capsule3d() {}
@@ -36,8 +37,8 @@ public:
 	{
 		X0 = _X0;
 		X1 = _X1;
-		Length = (_X1 - _X0).Length();
 		Radius = _Radius;
+		Length = (_X1 - _X0).Length();
 	}
 
 public:

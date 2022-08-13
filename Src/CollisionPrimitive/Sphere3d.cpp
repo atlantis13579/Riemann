@@ -380,7 +380,7 @@ Sphere3d Sphere3d::ComputeBoundingSphere_RitterIteration(const Vector3 *_points,
 }
 
 // Welzl, E. (1991). Smallest enclosing disks (balls and ellipsoids) (pp. 359-370). Springer Berlin Heidelberg.
-Sphere3d WelzlAlgorithm(Vector3* points, int n, Vector3* support, int n_support)
+Sphere3d WelzlAlgorithm_Recursive(Vector3* points, int n, Vector3* support, int n_support)
 {
 	if (n == 0)
 	{
@@ -397,13 +397,13 @@ Sphere3d WelzlAlgorithm(Vector3* points, int n, Vector3* support, int n_support)
 	int i = rand() % n;
 	std::swap(points[i], points[n - 1]);
 	
-	Sphere3d min = WelzlAlgorithm(points, n - 1, support, n_support);
+	Sphere3d min = WelzlAlgorithm_Recursive(points, n - 1, support, n_support);
 	if((points[n-1] - min.Center).SquareLength() <= min.Radius * min.Radius)
 	{
 		return min;
 	}
 	support[n_support] = points[n-1];
-	return WelzlAlgorithm(points, n - 1, support, n_support + 1);
+	return WelzlAlgorithm_Recursive(points, n - 1, support, n_support + 1);
 }
 
 // static
@@ -418,7 +418,7 @@ Sphere3d Sphere3d::ComputeBoundingSphere_Welzl(const Vector3 *_points, int n)
 	std::shuffle(points.begin(), points.end(), g);
 	
 	Vector3 support[4];
-	Sphere3d s = WelzlAlgorithm(points.data(), n, support, 0);
+	Sphere3d s = WelzlAlgorithm_Recursive(points.data(), n, support, 0);
 	s.Radius += kSphereEnlargeFactor;
 	return s;
 }

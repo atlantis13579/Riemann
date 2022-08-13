@@ -79,14 +79,7 @@ bool GeometryQuery::RayCastTest(const Vector3& Origin, const Vector3& Direction,
 		bool hit_dynamic = m_dynamicPruner->RayCast(ray, &Option, &Result2);
 		if (hit_dynamic)
 		{
-			if (!hit)
-			{
-				*Result = Result2;
-			}
-			else
-			{
-				Result->Merge(Result2);
-			}
+			Result->Merge(Result2);
 			return true;
 		}
 	}
@@ -95,6 +88,27 @@ bool GeometryQuery::RayCastTest(const Vector3& Origin, const Vector3& Direction,
 }
 
 #define MAX_GEOMETRY_STACK_SIZE	(128)
+
+bool GeometryQuery::BoxCastTest(const Vector3 &Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
+{
+	char stack[MAX_GEOMETRY_STACK_SIZE];
+	Geometry* Box = GeometryFactory::CreateOBB_placement(stack, Center, Extent);
+	return SweepTest_Impl(Box, Option, Result);
+}
+
+bool GeometryQuery::SphereCastTest(const Vector3 &Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
+{
+	char stack[MAX_GEOMETRY_STACK_SIZE];
+	Geometry* Sphere = GeometryFactory::CreateSphere_placement(stack, Center, Radius);
+	return SweepTest_Impl(Sphere, Option, Result);
+}
+
+bool GeometryQuery::CapsuleCastTest(const Vector3 &Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
+{
+	char stack[MAX_GEOMETRY_STACK_SIZE];
+	Geometry* Capsule = GeometryFactory::CreateCapsule_placement(stack, Center - Vector3(0, HalfH, 0), Center + Vector3(0, HalfH, 0), Radius);
+	return SweepTest_Impl(Capsule, Option, Result);
+}
 
 bool GeometryQuery::IntersectTest_Box(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result)
 {
@@ -110,10 +124,10 @@ bool GeometryQuery::IntersectTest_Sphere(const Vector3& Center, float Radius, co
 	return IntersectTest_Impl(Sphere, Option, Result);
 }
 
-bool GeometryQuery::IntersectTest_Capsule(const Vector3& Center, float HalfHeight, float Radius, const IntersectOption& Option, IntersectResult* Result)
+bool GeometryQuery::IntersectTest_Capsule(const Vector3& X0, const Vector3 &X1, float Radius, const IntersectOption& Option, IntersectResult* Result)
 {
 	char stack[MAX_GEOMETRY_STACK_SIZE];
-	Geometry* Capsule = GeometryFactory::CreateCapsule_placement(stack, Center - Vector3(0, HalfHeight, 0), Center + Vector3(0, HalfHeight, 0), Radius);
+	Geometry* Capsule = GeometryFactory::CreateCapsule_placement(stack, X0, X1, Radius);
 	return IntersectTest_Impl(Capsule, Option, Result);
 }
 
@@ -129,7 +143,7 @@ bool GeometryQuery::IntersectTest_Impl(const Geometry* geom, const IntersectOpti
 		hit = m_staticGeometry->Intersect(geom, pp, &Option, Result);
 		if (hit && Result->overlapGeoms.size() >= Option.maxOverlaps)
 		{
-			return hit;
+			return true;
 		}
 	}
 
@@ -139,14 +153,38 @@ bool GeometryQuery::IntersectTest_Impl(const Geometry* geom, const IntersectOpti
 		bool hit_dynamic = m_dynamicPruner->Intersect(geom, &Option, &Result2);
 		if (hit_dynamic)
 		{
-			if (!hit)
-			{
-				*Result = Result2;
-			}
-			else
-			{
-				Result->Merge(Result2);
-			}
+			Result->Merge(Result2);
+			return true;
+		}
+	}
+
+	return hit;
+}
+
+bool GeometryQuery::SweepTest_Impl(const Geometry* geom, const SweepOption& Option, SweepResult* Result)
+{
+	Result->Reset();
+
+	bool hit = false;
+
+	if (m_staticGeometry)
+	{
+		Geometry** pp = &m_Objects[0];
+		hit = m_staticGeometry->Sweep(geom, pp, &Option, Result);
+		if (hit)
+		{
+			return true;
+		}
+	}
+
+	if (m_dynamicPruner)
+	{
+		SweepResult Result2;
+		bool hit_dynamic = m_dynamicPruner->Sweep(geom, &Option, &Result2);
+		if (hit_dynamic)
+		{
+			Result->Merge(Result2);
+			return true;
 		}
 	}
 

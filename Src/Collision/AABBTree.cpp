@@ -450,6 +450,12 @@ bool AABBTree::Intersect(const Geometry *geometry, Geometry** ObjectCollection, 
 	return Result->overlaps;
 }
 
+bool AABBTree::Sweep(const Geometry *geometry, Geometry** ObjectCollection, const SweepOption* Option, SweepResult *Result) const
+{
+	assert(false);
+	return false;
+}
+
 void AABBTree::InitAABBTreeBuild(AABBTreeBuildData& params)
 {
 	if (m_GeometryIndicesBase)

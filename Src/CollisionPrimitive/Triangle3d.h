@@ -70,13 +70,15 @@ public:
 	bool			IntersectSphere(const Vector3& Center, float Radius) const;
 	bool			IntersectCapsule(const Vector3& X0, const Vector3 &X1, float Radius) const;
 
-	static Vector3	ClosestPointOnTriangle(const Vector3 &Point, const Vector3 &A, const Vector3 &B, const Vector3 &C, unsigned char &mask);
+	static Vector3	ClosestPointOnTriangle(const Vector3 &Point, const Vector3 &A, const Vector3 &B, const Vector3 &C);
+	static Vector3	ClosestPointOnTriangleEx(const Vector3 &Point, const Vector3 &A, const Vector3 &B, const Vector3 &C, unsigned char &mask);
 	static float	SqrDistancePointToTriangle(const Vector3 &Point, const Vector3 &A, const Vector3 &B, const Vector3 &C);
 	float			SqrDistanceToPoint(const Vector3 &Point) const;
 	
 	Vector3			BaryCentric2D(const Vector3& Point) const;
 	Vector3			BaryCentric3D(const Vector3& Point) const;
 	static float	TriangleArea3D(const Vector3& A, const Vector3& B, const Vector3& C);
+	
 	float			CalcArea() const
 	{
 		return Triangle3d::TriangleArea3D(A, B, C);
@@ -100,6 +102,7 @@ public:
 	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
 
 	void			GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
-
 	void			GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);
 };
+
+Vector3 ClosestPtTetrahedronToPoint(const Vector3& p, const Vector3& a, const Vector3& b, const Vector3& c, const Vector3& d);

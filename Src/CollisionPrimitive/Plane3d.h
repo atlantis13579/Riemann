@@ -167,10 +167,14 @@ public:
 		return Dist <= Radius;
 	}
 
-	bool			IntersectPlane(const Vector3& Normal, float D) const
+	bool			IntersectPlane(const Vector3& _Normal, float _D) const
 	{
-		bool Parallel = Normal.ParallelTo(Normal);
-		return !Parallel;
+		bool Parallel = Normal.ParallelTo(_Normal);
+		if (Parallel)
+		{
+			return D == _D;
+		}
+		return true;
 	}
 
 	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const

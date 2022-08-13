@@ -30,6 +30,8 @@ OrientedBox3d OrientedBox3d::ComputeBoundingOBB_PCA(const Vector3 *points, int n
 							v[0].z, v[1].z, v[2].z);
 	box.Extent = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 	
+	// TODO, optimize second / third axis using Polygon2D - MinAreaRect
+	
 	for (int i = 0; i < n; ++i)
 	{
 		Vector3 p = (box.Rotation * (points[i] - CenterOfMass)).Abs();
@@ -64,31 +66,21 @@ Box3d OrientedBox3d::GetBoundingVolume() const
 float OrientedBox3d::SqrDistanceToLine(const Vector3& P0, const Vector3& Direction, float* t) const
 {
 	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
-
-	const Vector3 P0_BoxSpace = Rotation * (P0 - Center);
-	const Vector3 Dir_BoxSpace = Rotation * Direction;
-
-	float SqrDist = aabb.SqrDistanceToLine(P0_BoxSpace, Dir_BoxSpace, t);
+	float SqrDist = aabb.SqrDistanceToLine(P0 * Rotation, Direction * Rotation, t);
 	return SqrDist;
 }
 
 float OrientedBox3d::SqrDistanceToSegment(const Vector3& P0, const Vector3& P1) const
 {
 	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
-
-	const Vector3 P0_BoxSpace = Rotation * (P0 - Center);
-	const Vector3 P1_BoxSpace = Rotation * (P1 - Center);
-	float SqrDist = aabb.SqrDistanceToSegment(P0_BoxSpace, P1_BoxSpace);
+	float SqrDist = aabb.SqrDistanceToSegment(P0 * Rotation, P1 * Rotation);
 	return SqrDist;
 }
 
 float OrientedBox3d::SqrDistanceToPoint(const Vector3& Point) const
 {
 	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
-
-	const Vector3 Point_BoxSpace = Rotation * (Point - Center);
-
-	float SqrDist = aabb.SqrDistanceToPoint(Point_BoxSpace);
+	float SqrDist = aabb.SqrDistanceToPoint(Point * Rotation);
 	return SqrDist;
 }
 
@@ -179,6 +171,24 @@ static bool OBBIntersectOBB(const Vector3& ca, const Vector3& ea, const Matrix3&
 	return true;
 }
 
+bool OrientedBox3d::IntersectPoint(const Vector3& point) const
+{
+	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
+	return aabb.IntersectPoint(point * Rotation);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
+}
+
+bool OrientedBox3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
+{
+	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
+	return aabb.IntersectRay(Origin * Rotation, Direction * Rotation, t);
+}
+
+bool OrientedBox3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
+{
+	const OrientedBox3d obb((Bmax + Bmin) * 0.5f, (Bmax - Bmin) * 0.5f, Matrix3::Identity());
+	return IntersectOBB(obb);
+}
+
 bool OrientedBox3d::IntersectOBB(const OrientedBox3d& obb) const
 {
 	return OBBIntersectOBB(Center, Extent, Rotation, obb.Center, obb.Extent, obb.Rotation);
@@ -189,10 +199,16 @@ bool OrientedBox3d::IntersectOBB(const Vector3& _Center, const Vector3& _Extent,
 	return OBBIntersectOBB(Center, Extent, Rotation, _Center, _Extent, _Rot);
 }
 
-bool OrientedBox3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
+bool OrientedBox3d::IntersectSphere(const Vector3& _Center, float _Radius) const
 {
-	const OrientedBox3d obb((Bmax + Bmin) * 0.5f, (Bmax - Bmin) * 0.5f, Matrix3::Identity());
-	return IntersectOBB(obb);
+	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
+	return aabb.IntersectSphere(_Center * Rotation, _Radius);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
+}
+
+bool OrientedBox3d::IntersectCapsule(const Vector3& X0, const Vector3 &X1, float Radius) const
+{
+	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
+	return aabb.IntersectCapsule(X0 * Rotation, X1 * Rotation, Radius);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
 }
 
 bool OrientedBox3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3 &C) const

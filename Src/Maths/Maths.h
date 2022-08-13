@@ -1,8 +1,6 @@
-
 #pragma once
 
 #include <cmath>
-#include <stdlib.h>
 #include <limits>
 
 #ifndef PI

@@ -3,6 +3,11 @@
 
 #include "Polygon2d.h"
 
+float Signed2DTriArea(const Vector2& a, const Vector2& b, const Vector2& c)
+{
+	return (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
+}
+
 static float SqrtDistancePointToSegment2D(const Vector2& point, const Vector2& P0, const Vector2& P1, float* dt)
 {
 	float pqx = P1.x - P0.x;
@@ -108,4 +113,34 @@ int PointFarthestFromEdge(const Vector2& a, const Vector2& b, Vector2 *polygon, 
 		}
 	}
 	return bestIndex;
+}
+
+float MinAreaRect(const Vector2 *points, int n, Vector2 &center, Vector2 axis[2])
+{
+	float minArea = FLT_MAX;
+	for (int i = 0, j = n - 1; i < n; j = i, i++)
+	{
+		Vector2 e0 = (points[i] - points[j]).Unit();
+		Vector2 e1 = Vector2(-e0.y, e0.x); // = Perp2D(e0)
+		float min0 = 0.0f, min1 = 0.0f, max0 = 0.0f, max1 = 0.0f;
+		for (int k = 0; k < n; k++)
+		{
+			Vector2 d = points[k] - points[j];
+			float dot = d.Dot(e0);
+			min0 = std::min(min0, dot);
+			max0 = std::max(max0, dot);
+			dot = d.Dot(e1);
+			min1 = std::min(min1, dot);
+			max1 = std::max(max1, dot);
+		}
+		const float area = (max0 - min0) * (max1 - min1);
+		if (area < minArea)
+		{
+			minArea = area;
+			center = points[j] + 0.5f * ((min0 + max0) * e0 + (min1 + max1) * e1);
+			axis[0] = e0;
+			axis[1] = e1;
+		}
+	}
+	return minArea;
 }

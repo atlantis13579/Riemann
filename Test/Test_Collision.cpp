@@ -322,6 +322,38 @@ void TestAABB()
 	EXPECT(intersect1 && intersect2);
 }
 
+
+void TestBuildOBB()
+{
+	printf("Running TestBuildOBB\n");
+	
+	AxisAlignedBox3d aabb(Vector3(-10.0f, -2.5f, -1.0f), Vector3(10.0f, 2.5f, 1.0f));
+	Matrix3 mat;
+	Vector3 center(1, 1, 2);
+	
+	mat.LoadRotateZ(PI_OVER_6);
+	std::vector<Vector3> verties, normals;
+	std::vector<uint16_t> Indices;
+	
+	aabb.GetMesh(verties, Indices, normals);
+	for (size_t i = 0; i < verties.size(); ++i)
+	{
+		verties[i] = mat * verties[i] + center;
+	}
+	
+	OrientedBox3d obb = OrientedBox3d::ComputeBoundingOBB_PCA(verties.data(), (int)verties.size());
+	
+	EXPECT(fabsf(obb.Center.x - center.x) < 0.1f);
+	EXPECT(fabsf(obb.Center.y - center.y) < 0.1f);
+	EXPECT(fabsf(obb.Center.z - center.z) < 0.1f);
+	
+	Vector3 dir = obb.Rotation.GetCol(0);
+	float dp = dir.Dot(Vector3::UnitX());
+	EXPECT(dp >= 0.8f);
+	
+	return;
+}
+
 void TestOBB()
 {
 	printf("Running TestOBB\n");
@@ -711,6 +743,7 @@ void TestCollision()
 {
 	TestTriangle();
 	TestSphere();
+	TestBuildOBB();
 	TestOBB();
 	TestIntersect();
 	TestDynamicAABB();
