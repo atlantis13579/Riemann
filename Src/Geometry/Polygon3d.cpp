@@ -1,7 +1,7 @@
 #include "Polygon3d.h"
 #include "../CollisionPrimitive/Triangle3d.h"
 
-#define POLY_STACK_SIZE		32
+#define POLY_STACK_SIZE		64
 
 float PolygonArea3D(const Vector3* polygon, int nvert)
 {

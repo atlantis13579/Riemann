@@ -27,12 +27,12 @@ inline bool			RayCastT(void* Obj, const Vector3& Origin, const Vector3& Directio
 	return p->IntersectRay(Origin, Direction, t);
 }
 
-bool 				IntersectNotSupport(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
+bool 	IntersectNotSupport(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 {
 	return false;
 }
 
-bool 				IntersectGJKSolver(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
+bool 	IntersectGJKSolver(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 {
 	// Hack, see GetShapeObjPtr()
 	const Geometry* Geom1 = reinterpret_cast<const Geometry*>((intptr_t)Obj1 - sizeof(Geometry));
@@ -48,73 +48,80 @@ bool 				IntersectGJKSolver(const void* Obj1, const void* Obj2, const Geometry2T
 	return false;
 }
 
-bool				IntersectPlanePlane(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
+bool	IntersectPlanePlane(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 {
+	const Geometry2Transform trans(t1, t2);
 	const Plane3d* plane1 = static_cast<const Plane3d*>(Obj1);
 	const Plane3d* plane2 = static_cast<const Plane3d*>(Obj2);
-	Vector3 Normal = trans->Local1ToLocal2Direction(plane1->Normal);
-	Vector3 Origin = trans->Local1ToLocal2(plane1->GetOrigin());
+	Vector3 Normal = trans.Local1ToLocal2Direction(plane1->Normal);
+	Vector3 Origin = trans.Local1ToLocal2(plane1->GetOrigin());
 	Plane3d plane_new(Normal, Origin);
 	return plane2->IntersectPlane(plane_new.Normal, plane_new.D);
 }
 
-inline bool			IntersectBoxBox(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
+bool	IntersectBoxBox(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 {
+	const Geometry2Transform trans(t1, t2);
 	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
 	const AxisAlignedBox3d* box2 = static_cast<const AxisAlignedBox3d*>(Obj2);
-	OrientedBox3d obb1(trans->Local1ToLocal2(box1->GetCenter()), box1->GetExtent(), trans->Local1ToLocal2RotationMatrix());
+	OrientedBox3d obb1(trans.Local1ToLocal2(box1->GetCenter()), box1->GetExtent(), trans.Local1ToLocal2RotationMatrix());
 	OrientedBox3d obb2(Vector3::Zero(), box2->GetExtent(), Matrix3::Identity());
 	return obb2.IntersectOBB(obb1);
 }
 
-inline bool			IntersectBoxPlane(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
+bool	IntersectBoxPlane(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 {
+	const Geometry2Transform trans(t1, t2);
 	const Plane3d* plane = static_cast<const Plane3d*>(Obj2);
-	Vector3 Normal = trans->Local2ToLocal1Direction(plane->Normal);
-	Vector3 Origin = trans->Local2ToLocal1(plane->GetOrigin());
+	Vector3 Normal = trans.Local2ToLocal1Direction(plane->Normal);
+	Vector3 Origin = trans.Local2ToLocal1(plane->GetOrigin());
 	Plane3d plane_new(Normal, Origin);
 	const AxisAlignedBox3d* box = static_cast<const AxisAlignedBox3d*>(Obj1);
 	return plane_new.IntersectAABB(box->Min, box->Max);
 }
 
 template <class T>
-inline bool			IntersectSphereT(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
+bool	IntersectSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 {
+	const Geometry2Transform trans(t1, t2);
 	const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj1);
 	float Radius = sphere->Radius;
-	Vector3 Center = trans->Local1ToLocal2(sphere->Center);
+	Vector3 Center = trans.Local1ToLocal2(sphere->Center);
 	const T* p = static_cast<const T*>(Obj2);
 	return p->IntersectSphere(Center, Radius);
 }
 
 template <class T>
-inline bool			IntersectCapsuleT(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
+bool	IntersectCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 {
+	const Geometry2Transform trans(t1, t2);
 	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj1);
 	float Radius = capsule->Radius;
-	Vector3 P0 = trans->Local1ToLocal2(capsule->X0);
-	Vector3 P1 = trans->Local1ToLocal2(capsule->X1);
+	Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
+	Vector3 P1 = trans.Local1ToLocal2(capsule->X1);
 	const T* p = static_cast<const T*>(Obj2);
 	return p->IntersectCapsule(P0, P1, Radius);
 }
 
 template <class T>
-inline bool			IntersectTTriangle(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
+bool	IntersectTTriangle(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 {
+	const Geometry2Transform trans(t1, t2);
 	const Triangle3d* tri = static_cast<const Triangle3d*>(Obj2);
-	Vector3 A = trans->Local2ToLocal1(tri->A);
-	Vector3 B = trans->Local2ToLocal1(tri->B);
-	Vector3 C = trans->Local2ToLocal1(tri->C);
+	Vector3 A = trans.Local2ToLocal1(tri->A);
+	Vector3 B = trans.Local2ToLocal1(tri->B);
+	Vector3 C = trans.Local2ToLocal1(tri->C);
 	const T* p = static_cast<const T*>(Obj1);
 	return p->IntersectTriangle(A, B, C);
 }
 
 template <class T>
-inline bool			IntersectBoxT_WS(const void* Obj1, const void* Obj2, const Geometry2Transform* trans)
+bool	IntersectBoxT_WS(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 {
+	const Geometry2Transform trans(t1, t2);
 	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
 	const T* p = static_cast<const T*>(Obj2);
-	OrientedBox3d obb1(trans->Local1ToLocal2(box1->GetCenter()), box1->GetExtent(), trans->Local1ToLocal2RotationMatrix());
+	OrientedBox3d obb1(trans.Local1ToLocal2(box1->GetCenter()), box1->GetExtent(), trans.Local1ToLocal2RotationMatrix());
 	return p->IntersectOBB(obb1.Center, obb1.Extent, obb1.Rotation);
 }
 

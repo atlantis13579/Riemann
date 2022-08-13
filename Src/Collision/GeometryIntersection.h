@@ -2,10 +2,11 @@
 
 #include "../CollisionPrimitive/ShapeType.h"
 
+struct GeometryTransform;
 struct Geometry2Transform;
 
 typedef bool (*RayCastFunc)(void*, const Vector3&, const Vector3&, float*);
-typedef bool (*IntersectFunc)(const void*, const void*, const Geometry2Transform*);
+typedef bool (*IntersectFunc)(const void*, const void*, const GeometryTransform*, const GeometryTransform*);
 typedef bool (*SweepFunc)(const void*, const void*, const Vector3&, float*);
 
 class GeometryIntersection

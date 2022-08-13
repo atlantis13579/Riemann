@@ -16,4 +16,5 @@ enum class ShapeType3d : unsigned char
 	TYPE_COUNT,
 };
 
-#define MAX_FACE_POINTS		(8)
+#define MAX_FACE_POINTS	16
+

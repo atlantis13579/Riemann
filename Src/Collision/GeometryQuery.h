@@ -119,10 +119,6 @@ struct RayCastResult
 
 struct IntersectOption
 {
-	enum OverlapTestType
-	{
-	};
-	
 	IntersectOption()
 	{
 		maxOverlaps = 1;
@@ -179,7 +175,9 @@ struct IntersectResult
 
 struct SweepOption
 {
-
+	float			MaxDist;
+	CollisionData 	FilterData;
+	CollisionFilter	*Filter;
 };
 
 struct SweepResult

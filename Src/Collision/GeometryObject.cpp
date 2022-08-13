@@ -114,17 +114,13 @@ bool		Geometry::Intersect(const Geometry* Geom) const
 	IntersectFunc func = GeometryIntersection::GetIntersectFunc(m_Type, Geom->GetShapeType());
 	if (func)
 	{
-		Geometry2Transform trans;
-		trans.LoadTrans(m_CenterOfMassTransform, *Geom->GetCenterOfMassTransform());
-		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &trans);
+		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_CenterOfMassTransform, Geom->GetCenterOfMassTransform());
 	}
 
 	func = GeometryIntersection::GetIntersectFunc(Geom->GetShapeType(), m_Type);
 	if (func)
 	{
-		Geometry2Transform trans;
-		trans.LoadTrans(*Geom->GetCenterOfMassTransform(), m_CenterOfMassTransform);
-		return func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), &trans);
+		return func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), Geom->GetCenterOfMassTransform(), &m_CenterOfMassTransform);
 	}
 
 	assert(false);

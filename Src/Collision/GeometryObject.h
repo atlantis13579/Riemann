@@ -59,6 +59,14 @@ struct Geometry2Transform
 	Vector3		Translation2;
 	Quaternion	Rotation1;
 	Quaternion	Rotation2;
+	
+	Geometry2Transform(const GeometryTransform* t1, const GeometryTransform* t2)
+	{
+		Rotation1 = t1->Rotation;
+		Rotation2 = t2->Rotation;
+		Translation1 = t1->Translation;
+		Translation2 = t2->Translation;
+	}
 
 	Vector3		Local1ToLocal2(const Vector3& Point) const
 	{
@@ -122,14 +130,6 @@ struct Geometry2Transform
 	Matrix3		Local2ToWorldRotationMatrix() const
 	{
 		return Rotation2.ToRotationMatrix3();
-	}
-
-	void		LoadTrans(const GeometryTransform& t1, const GeometryTransform& t2)
-	{
-		Rotation1 = t1.Rotation;
-		Rotation2 = t2.Rotation;
-		Translation1 = t1.Translation;
-		Translation2 = t2.Translation;
 	}
 };
 
