@@ -5,30 +5,18 @@
 // static
 OrientedBox3d OrientedBox3d::ComputeBoundingOBB_PCA(const Vector3 *points, int n)
 {
-	Vector3 mean;
+	Vector3 CenterOfMass;
 	for (int i = 0; i < n; ++i)
 	{
-		mean += points[i];
+		CenterOfMass += points[i];
 	}
-	mean *= (1.0f / n);
+	CenterOfMass *= (1.0f / n);
 	
-	Matrix3 covMatrix;
-	covMatrix.LoadZero();
-	
-	for (int i = 0; i < 3; ++i)
-	for (int j = 0; j < 3; ++j)
-	{
-		for (int k = 0; k < n; ++k)
-		{
-			float cij = (points[k][i] - mean[i]) * (points[k][j] - mean[j]);
-			covMatrix[i][j] += cij;
-		}
-		covMatrix[i][j] /= n;
-	}
+	Matrix3 covariance_matrix = Matrix3::ComputeCovarianceMatrix(points, n);
 	
 	float eigens[3];
 	Vector3 v[3];
-	covMatrix.SolveEigenSymmetric(eigens, v);
+	covariance_matrix.SolveEigenSymmetric(eigens, v);
 	
 	if (Determinant(v[0], v[1], v[2]) < 0)
 	{
@@ -36,7 +24,7 @@ OrientedBox3d OrientedBox3d::ComputeBoundingOBB_PCA(const Vector3 *points, int n
 	}
 	
 	OrientedBox3d box;
-	box.Center = mean;
+	box.Center = CenterOfMass;
 	box.Rotation = Matrix3(	v[0].x, v[1].x, v[2].x,
 							v[0].y, v[1].y, v[2].y,
 							v[0].z, v[1].z, v[2].z);
@@ -44,7 +32,7 @@ OrientedBox3d OrientedBox3d::ComputeBoundingOBB_PCA(const Vector3 *points, int n
 	
 	for (int i = 0; i < n; ++i)
 	{
-		Vector3 p = (box.Rotation * (points[i] - mean)).Abs();
+		Vector3 p = (box.Rotation * (points[i] - CenterOfMass)).Abs();
 		box.Extent.x = std::max(box.Extent.x, p.x);
 		box.Extent.y = std::max(box.Extent.y, p.y);
 		box.Extent.z = std::max(box.Extent.z, p.z);

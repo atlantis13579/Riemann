@@ -16,3 +16,5 @@ void ClipPolygonByAABB3D(const Vector3* polygon, int n1, const Vector3& Min, con
 
 bool ClipPolygonAgainPolygon3D(const Vector3* poly1, int n1, const Vector3* poly2, int n2, const Vector3& Direction,
 								float maxsqrDistFactor, Vector3* clipped1, int* c1, Vector3* clipped2, int* c2);
+
+bool IsConvexQuadrilateral(const Vector3& a, const Vector3& b, const Vector3& c, const Vector3& d);

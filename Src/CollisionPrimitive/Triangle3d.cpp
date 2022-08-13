@@ -3,6 +3,12 @@
 #include "Capsule3d.h"
 #include "Sphere3d.h"
 
+bool Triangle3d::IntersectPoint(const Vector3& Point) const
+{
+	Vector3 bc = BaryCentric2D(Point);
+	return bc.x >= 0 && bc.y >= 0.0f && bc.z >= 0.0f;
+}
+
 bool Triangle3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 {
 	return RayIntersectTriangle(Origin, Direction, A, B, C, t);
@@ -394,11 +400,31 @@ bool Triangle3d::RayIntersectTriangle(const Vector3& Origin, const Vector3& Dire
 	return false;
 }
 
-Vector3 Triangle3d::BaryCentric2D(const Vector3& Point)
+Vector3 Triangle3d::BaryCentric2D(const Vector3& Point) const
 {
 	float a = ((B.y - C.y) * (Point.x - C.x) + (C.x - B.x) * (Point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y));
 	float b = ((C.y - A.y) * (Point.x - C.x) + (A.x - C.x) * (Point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y));
 	return Vector3(a, b, 1.0f - a - b);
+}
+
+inline float TriArea2D(float x1, float y1, float x2, float y2, float x3, float y3)
+{
+	return (x1-x2)*(y2-y3) - (x2-x3)*(y1-y2);
+}
+
+Vector3	Triangle3d::BaryCentric3D(const Vector3& Point) const
+{
+	Vector3 v0 = B - A, v1 = C - A, v2 = Point - A;
+	float d00 = DotProduct(v0, v0);
+	float d01 = DotProduct(v0, v1);
+	float d11 = DotProduct(v1, v1);
+	float d20 = DotProduct(v2, v0);
+	float d21 = DotProduct(v2, v1);
+	float denom = d00 * d11 - d01 * d01;
+	float v = (d11 * d20 - d01 * d21) / denom;
+	float w = (d00 * d21 - d01 * d20) / denom;
+	float u = 1.0f - v - w;
+	return Vector3(u, v, w);
 }
 
 float Triangle3d::TriangleArea3D(const Vector3& A, const Vector3& B, const Vector3& C)

@@ -1,4 +1,5 @@
 
+#include <float.h>
 #include "Matrix3.h"
 #include "Maths.h"
 
@@ -39,6 +40,32 @@ void Matrix3::Load2DOrthogonalTransform(float dx, float dy, float angle) {
 	mat[0][0] = c;		mat[0][1] = -s; 	mat[0][2] = dx;
 	mat[1][0] = s; 		mat[1][1] = c;		mat[1][2] = dy;
 	mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
+}
+
+// static
+Matrix3	Matrix3::ComputeCovarianceMatrix(const Vector3 *v, int n)
+{
+	Vector3 mean = Vector3::Zero();
+	for (uint16_t i = 0; i < n; ++i)
+	{
+		mean += v[i];
+	}
+	mean *= (1.0f / n);
+
+	float c00 = 0, c01 = 0, c02 = 0, c11 = 0, c12 = 0, c22 = 0;
+	for (int k = 0; k < n; ++k)
+	{
+		c00 += (v[k].x - mean.x) * (v[k].x - mean.x);
+		c01 += (v[k].x - mean.x) * (v[k].y - mean.y);
+		c02 += (v[k].x - mean.x) * (v[k].z - mean.z);
+		c11 += (v[k].y - mean.y) * (v[k].y - mean.y);
+		c12 += (v[k].y - mean.y) * (v[k].z - mean.z);
+		c22 += (v[k].z - mean.z) * (v[k].z - mean.z);
+	}
+	
+	Matrix3 covariance_matrix = Matrix3(c00, c01, c11, c01, c11, c12, c02, c01, c22);
+	covariance_matrix *= (1.0f / n);
+	return covariance_matrix;
 }
 
 static void Bidiagonalize(Matrix3& A, Matrix3& L, Matrix3& R)
@@ -720,7 +747,6 @@ void Matrix3::TriDiagonal(float Diag[3], float SubDiag[3])
 	//     mat, orthogonal matrix Q
 	//     diag, diagonal entries of T
 	//     subd, subdiagonal entries of T (T is symmetric)
-
 	float fA = mat[0][0];
 	float fB = mat[0][1];
 	float fC = mat[0][2];
@@ -836,9 +862,8 @@ bool Matrix3::QRIteration(float diag[3], float subdiag[3])
 	return true;
 }
 
-void Matrix3::SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const
+static void SolveEigenQRIteration(Matrix3 t, float EigenValue[3], Vector3 EigenVector[3])
 {
-	Matrix3 t = *this;
 	float SubDiag[3];
 	t.TriDiagonal(EigenValue, SubDiag);
 	t.QRIteration(EigenValue, SubDiag);
@@ -849,4 +874,9 @@ void Matrix3::SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) c
 		EigenVector[i][1] = t[1][i];
 		EigenVector[i][2] = t[2][i];
 	}
+}
+
+void Matrix3::SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const
+{
+	SolveEigenQRIteration(*this, EigenValue, EigenVector);
 }

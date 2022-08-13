@@ -22,6 +22,19 @@
 #include "../Src/Collision/EPAPenetration.h"
 #include "../Src/Maths/Maths.h"
 
+void TestTriangle()
+{
+	Triangle3d tri(Vector3::UnitX(), Vector3::UnitY(), Vector3::UnitZ());
+	Vector3 p = Vector3::One();
+	Vector3 bc1 = tri.BaryCentric2D(p);
+	Vector3 bc2 = tri.BaryCentric3D(p);
+	(void)bc1;
+	(void)bc2;
+	EXPECT(!tri.IntersectPoint(p));
+	EXPECT(tri.IntersectPoint(tri.A));
+	return;
+}
+
 void TestDynamicAABB()
 {
 	printf("Running TestDynamicAABB\n");
@@ -669,6 +682,7 @@ void TestSAPInc()
 
 void TestCollision()
 {
+	TestTriangle();
 	TestOBB();
 	TestIntersect();
 	TestDynamicAABB();

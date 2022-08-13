@@ -1,7 +1,5 @@
-
 #pragma once
 
-#include <float.h>
 #include <stdint.h>
 #include <vector>
 
@@ -32,37 +30,8 @@ public:
 	}
 
 public:
-	bool			IntersectPoint(const Vector3& Point) const
-	{
-		if (Point.x >= Min.x && Point.x <= Max.x &&
-			Point.y >= Min.y && Point.y <= Max.y &&
-			Point.z >= Min.z && Point.z <= Max.z)
-		{
-			return true;
-		}
-		return false;
-	}
-
-	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
-	{
-		if (Min.x > Bmax.x || Bmin.x > Max.x)
-		{
-			return false;
-		}
-
-		if (Min.y > Bmax.y || Bmin.y > Max.y)
-		{
-			return false;
-		}
-
-		if (Min.z > Bmax.z || Bmin.z > Max.z)
-		{
-			return false;
-		}
-
-		return true;
-	}
-
+	bool			IntersectPoint(const Vector3& Point) const;
+	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 	bool			IntersectSphere(const Vector3& Center, float Radius) const;
 	bool			IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
@@ -120,25 +89,9 @@ public:
 		return Matrix3(M * (HH + DD), M * (WW + DD), M * (WW + HH));
 	}
 
-	Vector3		GetSupport(const Vector3& Direction) const
-	{
-		return GetSupport(Min, Max, Direction);
-	}
-
-	static Vector3 GetSupport(const Vector3& Bmin, const Vector3& Bmax, const Vector3& Direction)
-	{
-		return Vector3(
-			Direction.x > 0 ? Bmax.x : Bmin.x,
-			Direction.y > 0 ? Bmax.y : Bmin.y,
-			Direction.z > 0 ? Bmax.z : Bmin.z
-		);
-	}
-
-	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
-	{
-		return AxisAlignedBox3d::GetSupportFace(Min, Max, Direction, FacePoints);
-	}
-
+	Vector3			GetSupport(const Vector3& Direction) const;
+	static Vector3	GetSupport(const Vector3& Bmin, const Vector3& Bmax, const Vector3& Direction);
+	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
 	static int		GetSupportFace(const Vector3& Bmin, const Vector3& Bmax, const Vector3& Direction, Vector3* FacePoints);
 
 	void			GetMesh2(std::vector<Vector3> &Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);

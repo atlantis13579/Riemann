@@ -118,8 +118,8 @@ public:
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
-				m[i][j] = mat[i][j] * k;
+		for (int j = 0; j < 3; j++)
+			m[i][j] = mat[i][j] * k;
 		return Matrix3(m);
 	}
 
@@ -130,6 +130,22 @@ public:
 		v.y = mat[1][0] * vv.x + mat[1][1] * vv.y + mat[1][2] * vv.z;
 		v.z = mat[2][0] * vv.x + mat[2][1] * vv.y + mat[2][2] * vv.z;
 		return v;
+	}
+	
+	inline Matrix3& operator*=(float k)
+	{
+		for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			mat[i][j] *= k;
+		return *this;
+	}
+	
+	inline Matrix3& operator/=(float k)
+	{
+		for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			mat[i][j] /= k;
+		return *this;
 	}
 
 	inline Matrix3& operator=(const Matrix3& rhs)
@@ -295,7 +311,10 @@ public:
 	void		FromEulerAngles(float Yaw, float Pitch, float Roll);
 	bool		ToEulerAngles(float& Yaw, float& Pitch, float& Roll) const;
 
+	static Matrix3	ComputeCovarianceMatrix(const Vector3 *v, int n);
+	
 	// A = U * S * V^T
+
 	void		SingularValueDecompose(Matrix3& U, Vector3& S, Matrix3& V) const;
 	void		SingularValueCompose(const Vector3& S, const Matrix3& U, const Matrix3& V);
 	void		Orthonormalize();
@@ -304,7 +323,7 @@ public:
 	void		TriDiagonal(float Diag[3], float SubDiag[3]);
 	bool		QRIteration(float Diag[3], float SubDiag[3]);
 	void		SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const;
-
+	
 	static Matrix3 Zero()
 	{
 		return Matrix3(0, 0, 0, 0, 0, 0, 0, 0, 0);

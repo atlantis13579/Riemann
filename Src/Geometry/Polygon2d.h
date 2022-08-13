@@ -7,3 +7,6 @@ Vector2 ClosestPointInPolygon2D(const Vector2& pt, const Vector2* polygon, int n
 bool PointInPolygon2D(const Vector2& pt, const Vector2* polygon, int nvert);
 
 float PolygonArea2D(const Vector2* polygon, int nvert);
+
+int PointFarthestFromEdge(const Vector2& a, const Vector2& b, Vector2 *polygon, int nvert);
+

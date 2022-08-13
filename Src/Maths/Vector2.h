@@ -250,6 +250,12 @@ public:
 	}
 };
 
+template <typename T>
+inline T DotProduct(const TVector2<T> &a, const TVector2<T> &b)
+{
+	return a.Dot(b);
+}
+
 typedef TVector2<float> Vector2;
 typedef TVector2<int>	Vector2i;
 

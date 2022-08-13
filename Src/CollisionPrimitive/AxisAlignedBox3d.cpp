@@ -499,6 +499,26 @@ float AxisAlignedBox3d::SqrDistanceToSegment(const Vector3& P0, const Vector3& P
 	}
 }
 
+Vector3 AxisAlignedBox3d::GetSupport(const Vector3& Direction) const
+{
+	return GetSupport(Min, Max, Direction);
+}
+
+// static
+Vector3 AxisAlignedBox3d::GetSupport(const Vector3& Bmin, const Vector3& Bmax, const Vector3& Direction)
+{
+	return Vector3(
+		Direction.x > 0 ? Bmax.x : Bmin.x,
+		Direction.y > 0 ? Bmax.y : Bmin.y,
+		Direction.z > 0 ? Bmax.z : Bmin.z
+	);
+}
+
+int	 AxisAlignedBox3d::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
+{
+	return AxisAlignedBox3d::GetSupportFace(Min, Max, Direction, FacePoints);
+}
+
 int AxisAlignedBox3d::GetSupportFace(const Vector3& Bmin, const Vector3& Bmax, const Vector3& Direction, Vector3* FacePoints)
 {
 	int axis = Direction.Abs().LargestAxis();
@@ -629,6 +649,37 @@ void AxisAlignedBox3d::GetWireframe(std::vector<Vector3>& Vertices, std::vector<
 		0, 1, 1, 3, 3, 2, 2, 0,
 		0, 4, 1, 5, 3, 7, 2, 6,
 		4, 5, 5, 7, 7, 6, 6, 4 });
+}
+
+bool AxisAlignedBox3d::IntersectPoint(const Vector3& Point) const
+{
+	if (Point.x >= Min.x && Point.x <= Max.x &&
+		Point.y >= Min.y && Point.y <= Max.y &&
+		Point.z >= Min.z && Point.z <= Max.z)
+	{
+		return true;
+	}
+	return false;
+}
+
+bool AxisAlignedBox3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
+{
+	if (Min.x > Bmax.x || Bmin.x > Max.x)
+	{
+		return false;
+	}
+
+	if (Min.y > Bmax.y || Bmin.y > Max.y)
+	{
+		return false;
+	}
+
+	if (Min.z > Bmax.z || Bmin.z > Max.z)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 bool AxisAlignedBox3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const

@@ -1,12 +1,11 @@
 #pragma once
 
-#include <assert.h>
 #include <math.h>
 #include <stdint.h>
 #include <vector>
 
 #undef max
-#undef min 
+#undef min
 
 #include "ShapeType.h"
 #include "Sphere3d.h"

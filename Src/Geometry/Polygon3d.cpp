@@ -271,3 +271,14 @@ bool ClipPolygonAgainPolygon3D(const Vector3* poly1, int n1, const Vector3* poly
 	
 	return succ;
 }
+
+bool IsConvexQuadrilateral(const Vector3& a, const Vector3& b, const Vector3& c, const Vector3& d)
+{
+	Vector3 bda = CrossProduct(d - b, a - b);
+	Vector3 bdc = CrossProduct(d - b, c - b);
+	if (DotProduct(bda, bdc) >= 0.0f)
+		return false;
+	Vector3 acd = CrossProduct(c - a, d - a);
+	Vector3 acb = CrossProduct(c - a, b - a);
+	return DotProduct(acd, acb) < 0.0f;
+}

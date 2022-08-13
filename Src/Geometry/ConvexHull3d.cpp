@@ -5,26 +5,7 @@
 // http://number-none.com/blow/inertia/deriving_i.html
 Matrix3 ComputePointCloudInertiaTensor_PCA(const Vector3* Vertices, int NumVertices)
 {
-	Vector3 CenterOfMass = Vector3::Zero();
-	for (uint16_t i = 0; i < NumVertices; ++i)
-	{
-		CenterOfMass += Vertices[i];
-	}
-	CenterOfMass *= (1.0f / NumVertices);
-
-	Matrix3 covariance_matrix;
-	covariance_matrix.LoadZero();
-
-	for (int i = 0; i < 3; ++i)
-		for (int j = 0; j < 3; ++j)
-		{
-			for (uint16_t k = 0; k < NumVertices; ++k)
-			{
-				float cij = (Vertices[k][i] - CenterOfMass[i]) * (Vertices[k][j] - CenterOfMass[j]);
-				covariance_matrix[i][j] += cij;
-			}
-			covariance_matrix[i][j] /= NumVertices;
-		}
+	Matrix3 covariance_matrix = Matrix3::ComputeCovarianceMatrix(Vertices, NumVertices);
 
 	float eigens[3];
 	Vector3 eigen_vectors[3];

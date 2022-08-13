@@ -1,4 +1,5 @@
 
+#include "../Maths/Maths.h"
 #include "Triangle3d.h"
 #include "Sphere3d.h"
 
@@ -138,6 +139,206 @@ bool Sphere3d::SphereIntersectSphere(const Vector3& Center, float Radius, const 
 {
 	float SqrDist = (Center - rCenter).SquareLength();
 	return SqrDist <= (Radius + rRadius) * (Radius + rRadius);
+}
+
+static void MostSeparatedPointsOnAABB(const Vector3* points, int n, int &min, int &max)
+{
+	int minx = 0, maxx = 0, miny = 0, maxy = 0, minz = 0, maxz = 0;
+	for (int i = 1; i < n; i++)
+	{
+		if (points[i].x < points[minx].x)
+			minx = i;
+		if (points[i].x > points[maxx].x)
+			maxx = i;
+		if (points[i].y < points[miny].y)
+			miny = i;
+		if (points[i].y > points[maxy].y)
+			maxy = i;
+		if (points[i].z < points[minz].z)
+			minz = i;
+		if (points[i].z > points[maxz].z)
+			maxz = i;
+	}
+
+	float dist2x = DotProduct(points[maxx] - points[minx], points[maxx] - points[minx]);
+	float dist2y = DotProduct(points[maxy] - points[miny], points[maxy] - points[miny]);
+	float dist2z = DotProduct(points[maxz] - points[minz], points[maxz] - points[minz]);
+	min = minx;
+	max = maxx;
+	if (dist2y > dist2x && dist2y > dist2z)
+	{
+		max = maxy;
+		min = miny;
+	}
+	if (dist2z > dist2x && dist2z > dist2y)
+	{
+		max = maxz;
+		min = minz;
+	}
+}
+
+static Sphere3d SphereFromDistantPoints(const Vector3 *points, int n)
+{
+	int min, max;
+	MostSeparatedPointsOnAABB(points, n, min, max);
+
+	Sphere3d sphere;
+	sphere.Center = (points[min] + points[max]) * 0.5f;
+	sphere.Radius = sqrtf(DotProduct(points[max] - sphere.Center, points[max] - sphere.Center));
+	return sphere;
+}
+
+Sphere3d& Sphere3d::Encapsulate(const Vector3& p)
+{
+	Vector3 d = p - Center;
+	float sqrdist = d.SquareLength();
+	if (sqrdist > Radius * Radius)
+	{
+		float dist = sqrtf(sqrdist);
+		float newRadius = (Radius + dist) * 0.5f;
+		float k = (newRadius - Radius) / dist;
+		Radius = newRadius;
+		Center = Center + d * k;
+	}
+	return *this;
+}
+
+// static
+Sphere3d	Sphere3d::ComputeBoundingSphere_MostSeparated(const Vector3 *points, int n)
+{
+	Sphere3d sphere = SphereFromDistantPoints(points, n);
+	for (int i = 0; i < n; ++i)
+	{
+		sphere.Encapsulate(points[i]);
+	}
+	return sphere;
+}
+
+static Sphere3d EigenSphere(const Vector3 *points, int n)
+{
+	float eigens[3];
+	Vector3 v[3];
+	Matrix3 covariance_matrix = Matrix3::ComputeCovarianceMatrix(points, n);
+	covariance_matrix.SolveEigenSymmetric(eigens, v);
+
+	// Find the component with largest abs eigenvalue (largest axis)
+	Vector3 dir = v[0];
+	float maxe = fabsf(eigens[0]);
+	if (fabsf(eigens[1]) > maxe)
+	{
+		dir = v[1];
+		maxe = fabsf(eigens[1]);
+	}
+	if (fabsf(eigens[2]) > maxe)
+	{
+		dir = v[2];
+		maxe = fabsf(eigens[2]);
+	}
+
+	int imin = -1, imax = -1;
+	float minproj = FLT_MAX, maxproj = -FLT_MAX;
+	for (int i = 0; i < n; i++)
+	{
+		float proj = points[i].Dot(dir);
+		if (proj < minproj)
+		{
+			minproj = proj;
+			imin = i;
+		}
+		if (proj > maxproj)
+		{
+			maxproj = proj;
+			imax = i;
+		}
+	}
+	Vector3 minpt = points[imin];
+	Vector3 maxpt = points[imax];
+
+	float dist = sqrtf(DotProduct(maxpt - minpt, maxpt - minpt));
+	
+	Sphere3d sphere;
+	sphere.Radius = dist * 0.5f;
+	sphere.Center = (minpt + maxpt) * 0.5f;
+	return sphere;
+}
+
+// static
+Sphere3d Sphere3d::ComputeBoundingSphere_Eigen(const Vector3 *points, int n)
+{
+	Sphere3d sphere = EigenSphere(points, n);
+	for (int i = 0; i < n; ++i)
+	{
+		sphere.Encapsulate(points[i]);
+	}
+	return sphere;
+}
+
+// Real Time Collision Detection - Christer Ericson
+// Chapter 4.3.4, page 98-99
+Sphere3d Sphere3d::ComputeBoundingSphere_RitterIteration(const Vector3 *_points, int n)
+{
+	std::vector<Vector3> points;
+	points.resize(n);
+	memcpy(points.data(), _points, n * sizeof(_points[0]));
+	
+	Sphere3d s = ComputeBoundingSphere_MostSeparated(points.data(), n);
+	Sphere3d s2 = s;
+	
+	const int maxIterations = 8;
+	for (int k = 0; k < maxIterations; k++)
+	{
+		s2.Radius = s2.Radius * 0.95f;
+	
+		for (int i = 0; i < n; i++)
+		{
+			int j = RandomInt(i + 1, n - 1);
+			Swap(points[i], points[j]);
+			s2.Encapsulate(points[i]);
+		}
+
+		// found a tighter sphere
+		if (s2.Radius < s.Radius)
+			s = s2;
+	}
+	
+	return s;
+}
+
+/*
+// Welzl, E. (1991). Smallest enclosing disks (balls and ellipsoids) (pp. 359-370). Springer Berlin Heidelberg.
+Sphere3d WelzlAlgorithm(const Vector3* pt, unsigned int numPts, Vector3* sos, unsigned int numSos)
+{
+	// if no input points, the recursion has bottomed out. Now compute an
+	// exact sphere based on points in set of support (zero through four points)
+	if (numPts == 0)
+	{
+		switch (numSos)
+		{
+		case 0: return Sphere3d();
+		case 1: return Sphere3d(sos[0]);
+		case 2: return Sphere3d(sos[0], sos[1]);
+		case 3: return Sphere3d(sos[0], sos[1], sos[2]);
+		case 4: return Sphere3d(sos[0], sos[1], sos[2], sos[3]);
+		}
+	}
+	// Pick a point at "random" (here just the last point of the input set)
+	int index = numPts - 1;
+	// Recursively compute the smallest bounding sphere of the remaining points
+	Sphere3d smallestSphere = WelzlAlgorithm(pt, numPts - 1, sos, numSos); // (*)
+	// If the selected point lies inside this sphere, it is indeed the smallest
+	if((pt[index] - smallestSphere.Center).SquareLength() <= smallestSphere.Radius * smallestSphere.Radius)
+		return smallestSphere;
+	// Otherwise, update set of support to additionally contain the new point
+	sos[numSos] = pt[index];
+	// Recursively compute the smallest sphere of remaining points with new s.o.s.
+	return WelzlAlgorithm(pt, numPts - 1, sos, numSos + 1);
+}
+ */
+
+// static
+Sphere3d Sphere3d::ComputeBoundingSphere_Welzl(const Vector3 *points, int n)
+{
+	return Sphere3d();
 }
 
 Vector3 Sphere3d::GetSupport(const Vector3& Center, float Radius, const Vector3& Direction)

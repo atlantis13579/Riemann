@@ -23,6 +23,18 @@ public:
 		Center = _Center;
 		Radius = _Radius;
 	}
+	
+	Sphere3d(const Vector3& A)
+	{
+		Center = A;
+		Radius = 0.0f;
+	}
+	
+	Sphere3d(const Vector3& A, const Vector3 &B)
+	{
+		Center = (A + B) * 0.5f;
+		Radius = (A - B).Length() * 0.5f;
+	}
 
 	static constexpr ShapeType3d	StaticType()
 	{
@@ -36,7 +48,6 @@ public:
 	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	bool			IntersectSphere(const Vector3 &rCenter, float rRadius) const;
 	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3 &C) const;
-
 	static bool		SphereIntersectSphere(const Vector3& Center, float Radius, const Vector3& rCenter, float rRadius);
 
 	static Box3d	CalcBoundingVolume(const Vector3& Center, float Radius)
@@ -45,11 +56,19 @@ public:
 		Box.BuildFromCenterAndExtent(Center, Vector3(Radius));
 		return Box;
 	}
+	
 	Box3d			GetBoundingVolume() const
 	{
 		return Sphere3d::CalcBoundingVolume(Center, Radius);
 	}
-
+	
+	Sphere3d& 		Encapsulate(const Vector3& p);
+	
+	static Sphere3d	ComputeBoundingSphere_MostSeparated(const Vector3 *points, int n);
+	static Sphere3d	ComputeBoundingSphere_Eigen(const Vector3 *points, int n);
+	static Sphere3d	ComputeBoundingSphere_RitterIteration(const Vector3 *points, int n);
+	static Sphere3d	ComputeBoundingSphere_Welzl(const Vector3 *points, int n);
+	
 	float			GetVolume() const
 	{
 		const float FourThirdsPI = (4.0f / 3.0f) * (float)M_PI;

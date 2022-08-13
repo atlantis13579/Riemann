@@ -91,3 +91,21 @@ float PolygonArea2D(const Vector2* polygon, int nvert)
 	return 0.5f * fabsf(area);
 }
 
+int PointFarthestFromEdge(const Vector2& a, const Vector2& b, Vector2 *polygon, int nvert)
+{
+	Vector2 e = b - a;
+	Vector2 eperp = Vector2(-e.y, e.x);
+	int bestIndex = -1;
+	float maxVal = -FLT_MAX, rightMostVal = -FLT_MAX;
+	for (int i = 1; i < nvert; i++)
+	{
+		float d = DotProduct(polygon[i] - a, eperp);
+		float r = DotProduct(polygon[i] - a, e);
+		if (d > maxVal || (d == maxVal && r > rightMostVal)) {
+			bestIndex = i;
+			maxVal = d;
+			rightMostVal = r;
+		}
+	}
+	return bestIndex;
+}

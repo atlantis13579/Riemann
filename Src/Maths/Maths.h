@@ -60,6 +60,14 @@ inline bool FloatEqual(float v1, float v2)
 }
 
 template<typename T>
+inline void Swap(T& a, T& b)
+{
+	T t = a;
+	a = b;
+	b = t;
+}
+
+template<typename T>
 inline T	Clamp(const T X, const T Min, const T Max)
 {
 	return X < Min ? Min : X < Max ? X : Max;

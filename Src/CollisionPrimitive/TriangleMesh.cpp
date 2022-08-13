@@ -71,8 +71,8 @@ static bool IntersectTri(const Mesh* mesh, uint32_t HitNode, const Shape& shape)
 	for (uint32_t i = 0; i < NumLeafTriangles; i++)
 	{
 		uint32_t i0, i1, i2;
-		const uint32_t triangleIndex = BaseTriIndex + i;
-		mesh->GetVertIndices(triangleIndex, i0, i1, i2);
+		const uint32_t index = BaseTriIndex + i;
+		mesh->GetVertIndices(index, i0, i1, i2);
 
 		const Vector3& v0 = mesh->Vertices[i0];
 		const Vector3& v1 = mesh->Vertices[i1];
@@ -164,8 +164,8 @@ static bool IntersectBVH(const Mesh *mesh, const MeshBVH4 *bvh, const Shape& sha
 				continue;
 			if (tn->Data[i] & 1)
 			{
-				bool overlap = IntersectTri(mesh, ptr, shape);
-				if (overlap)
+				bool intersect = IntersectTri(mesh, ptr, shape);
+				if (intersect)
 				{
 					return true;
 				}
