@@ -68,7 +68,7 @@ Box3d OrientedBox3d::ComputeBoundingVolume(const Vector3& Center, const Vector3&
 	return box;
 }
 
-Box3d OrientedBox3d::ComputeBoundingVolume() const
+Box3d OrientedBox3d::GetBoundingVolume() const
 {
 	return OrientedBox3d::ComputeBoundingVolume(Center, Extent, Rotation);
 }
@@ -205,4 +205,10 @@ bool OrientedBox3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) cons
 {
 	const OrientedBox3d obb((Bmax + Bmin) * 0.5f, (Bmax - Bmin) * 0.5f, Matrix3::Identity());
 	return IntersectOBB(obb);
+}
+
+bool OrientedBox3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3 &C) const
+{
+	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
+	return aabb.IntersectTriangle(A * Rotation, B * Rotation, C * Rotation);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
 }

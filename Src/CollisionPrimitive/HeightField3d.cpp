@@ -246,17 +246,6 @@ bool HeightField3d::IntersectRay(const Vector3& Origin, const Vector3& Direction
 	return false;
 }
 
-#define CELLS_VISITOR_BEGIN(_bmin, _bmax)	\
-	const int i0 = X_INDEX((_bmin).x);		\
-	const int j0 = Z_INDEX((_bmin).z);		\
-	const int i1 = X_INDEX((_bmax).x);		\
-	const int j1 = Z_INDEX((_bmax).z);		\
-	for (int i = i0; i <= i1; ++i)			\
-	for (int j = j0; j <= j1; ++j)			\
-	{
-
-#define CELLS_VISITOR_END()				}
-
 bool HeightField3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 {
 	Box3d Intersect;
@@ -268,7 +257,12 @@ bool HeightField3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) cons
 	float minH = Bmin.y;
 	float maxH = Bmax.y;
 
-	CELLS_VISITOR_BEGIN(Intersect.mMin, Intersect.mMax)
+	const int i0 = X_INDEX(Intersect.mMin.x);
+	const int j0 = Z_INDEX(Intersect.mMin.z);
+	const int i1 = X_INDEX(Intersect.mMax.x);
+	const int j1 = Z_INDEX(Intersect.mMax.z);
+	for (int i = i0; i <= i1; ++i)
+	for (int j = j0; j <= j1; ++j)
 	{
 		float H = GetHeight(i * nZ + j);
 		if (minH <= H && H <= maxH)
@@ -276,99 +270,61 @@ bool HeightField3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) cons
 			return true;
 		}
 	}
-	CELLS_VISITOR_END()
 
 	return true;
 }
 
-bool HeightField3d::IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const
+template<class Shape>
+bool IntersectHF(const HeightField3d *hf, const Shape &shape)
 {
-	Box3d box = OrientedBox3d::ComputeBoundingVolume(Center, Extent, rot);
-	if (!box.Intersect(BV))
+	const Box3d b = shape.GetBoundingVolume();
+	const Box3d& BV = hf->BV;
+	const float InvDX = hf->InvDX;
+	const float InvDZ = hf->InvDZ;
+	
+	Box3d Intersect;
+	if (!BV.GetIntersection(b, Intersect))
 	{
 		return false;
 	}
 
-	Matrix3 invRot = rot.Inverse();
-	Vector3 aabbMin = Center - Extent;
-	Vector3 aabbMax = Center + Extent;
-
-	CELLS_VISITOR_BEGIN(box.mMin, box.mMax)
+	const int i0 = X_INDEX(Intersect.mMin.x);
+	const int j0 = Z_INDEX(Intersect.mMin.z);
+	const int i1 = X_INDEX(Intersect.mMax.x);
+	const int j1 = Z_INDEX(Intersect.mMax.z);
+	for (int i = i0; i <= i1; ++i)
+	for (int j = j0; j <= j1; ++j)
 	{
 		Vector3 Tris[6];
-		int n = GetCellTriangle(i, j, Tris);
-		for (int k = 0; k < n; k++)
-		{
-			Tris[i] = invRot * Tris[i];
-		}
-
+		int n = hf->GetCellTriangle(i, j, Tris);
 		for (int k = 0; k < n; k += 3)
 		{
-			if (Triangle3d::IntersectAABB(Tris[k], Tris[k + 1], Tris[k + 2], aabbMin, aabbMax))
+			if (shape.IntersectTriangle(Tris[k], Tris[k + 1], Tris[k + 2]))
 			{
 				return true;
 			}
 		}
 	}
-	CELLS_VISITOR_END()
-
+	
 	return false;
+}
+
+bool HeightField3d::IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const
+{
+	OrientedBox3d obb(Center, Extent, rot);
+	return IntersectHF(this, obb);
 }
 
 bool HeightField3d::IntersectSphere(const Vector3& Center, float Radius) const
 {
 	Sphere3d sphere(Center, Radius);
-	Box3d box = sphere.GetBoundingVolume();
-	if (!box.Intersect(BV))
-	{
-		return false;
-	}
-
-	CELLS_VISITOR_BEGIN(box.mMin, box.mMax)
-	{
-		Vector3 c = GetCellCenter2D(i, j);
-		if ((c - Center).SquareLength() > Radius * Radius)
-			continue;
-
-		Vector3 Tris[6];
-		int n = GetCellTriangle(i, j, Tris);
-		for (int k = 0; k < n; k += 3)
-		{
-			if (sphere.IntersectTriangle(Tris[k], Tris[k + 1], Tris[k + 2]))
-			{
-				return true;
-			}
-		}
-	}
-	CELLS_VISITOR_END()
-
-	return false;
+	return IntersectHF(this, sphere);
 }
 
 bool HeightField3d::IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const
 {
 	Capsule3d capsule(X0, X1, Radius);
-	Box3d box = capsule.GetBoundingVolume();
-	if (!box.Intersect(BV))
-	{
-		return false;
-	}
-
-	CELLS_VISITOR_BEGIN(box.mMin, box.mMax)
-	{
-		Vector3 Tris[6];
-		int n = GetCellTriangle(i, j, Tris);
-		for (int k = 0; k < n; k += 3)
-		{
-			if (capsule.IntersectTriangle(Tris[k], Tris[k + 1], Tris[k + 2]))
-			{
-				return true;
-			}
-		}
-	}
-	CELLS_VISITOR_END()
-
-	return false;
+	return IntersectHF(this, capsule);
 }
 
 bool HeightField3d::GetCellBV(int i, int j, Box3d &box) const

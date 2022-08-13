@@ -61,7 +61,8 @@ public:
 
 };
 
-static bool IntersectTri(const Mesh* mesh, uint32_t HitNode, TriIntersect* interface)
+template <class Shape>
+static bool IntersectTri(const Mesh* mesh, uint32_t HitNode, const Shape& shape)
 {
 	LeafNode currLeaf(HitNode);
 	uint32_t NumLeafTriangles = currLeaf.GetNumTriangles();
@@ -77,7 +78,7 @@ static bool IntersectTri(const Mesh* mesh, uint32_t HitNode, TriIntersect* inter
 		const Vector3& v1 = mesh->Vertices[i1];
 		const Vector3& v2 = mesh->Vertices[i2];
 
-		bool intersect = interface->IntersectTri(v0, v1, v2);
+		bool intersect = shape.IntersectTriangle(v0, v1, v2);
 		if (intersect)
 		{
 			return true;
@@ -87,8 +88,13 @@ static bool IntersectTri(const Mesh* mesh, uint32_t HitNode, TriIntersect* inter
 	return false;
 }
 
-static bool IntersectBVH(const Mesh *mesh, const MeshBVH4 *bvh, const Vector3& Bmin, const Vector3& Bmax, TriIntersect *interface)
+template <class Shape>
+static bool IntersectBVH(const Mesh *mesh, const MeshBVH4 *bvh, const Shape& shape)
 {
+	Box3d bv = shape.GetBoundingVolume();
+	const Vector3 &Bmin = bv.mMin;
+	const Vector3 &Bmax = bv.mMax;
+	
 	const uint32_t maxStack = 128;
 	uint32_t stack1[maxStack];
 	uint32_t* stack = stack1 + 1;
@@ -158,7 +164,7 @@ static bool IntersectBVH(const Mesh *mesh, const MeshBVH4 *bvh, const Vector3& B
 				continue;
 			if (tn->Data[i] & 1)
 			{
-				bool overlap = IntersectTri(mesh, ptr, interface);
+				bool overlap = IntersectTri(mesh, ptr, shape);
 				if (overlap)
 				{
 					return true;
@@ -178,49 +184,26 @@ static bool IntersectBVH(const Mesh *mesh, const MeshBVH4 *bvh, const Vector3& B
 
 bool TriangleMesh::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 {
-	TriIntersectShape<AxisAlignedBox3d> test;
-	test.shape = AxisAlignedBox3d(Bmin, Bmax);
-	return IntersectBVH(this, m_BVH, Bmin, Bmax, &test);
+	AxisAlignedBox3d shape(Bmin, Bmax);
+	return IntersectBVH(this, m_BVH, shape);
 }
 
 bool TriangleMesh::IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const
 {
-	class TriIntersectOBB : public TriIntersect
-	{
-	public:
-		virtual bool IntersectTri(const Vector3& A, const Vector3& B, const Vector3& C)
-		{
-			Vector3 AA = invRot * A;
-			Vector3 BB = invRot * B;
-			Vector3 CC = invRot * C;
-			return Triangle3d::IntersectAABB(AA, BB, CC, invMin, invMax);
-		}
-		Matrix3 invRot;
-		Vector3 invMin;
-		Vector3 invMax;
-	};
-	TriIntersectOBB test;
-	test.invRot = rot.Inverse();
-	test.invMin = Center - Extent;
-	test.invMax = Center + Extent;
-	Box3d box = OrientedBox3d::ComputeBoundingVolume(Center, Extent, rot);
-	return IntersectBVH(this, m_BVH, box.mMin, box.mMax, &test);
+	OrientedBox3d shape(Center, Extent, rot);
+	return IntersectBVH(this, m_BVH, shape);
 }
 
 bool TriangleMesh::IntersectSphere(const Vector3& Center, float Radius) const
 {
-	TriIntersectShape<Sphere3d> test;
-	test.shape = Sphere3d(Center, Radius);
-	Box3d box = test.shape.GetBoundingVolume();
-	return IntersectBVH(this, m_BVH, box.mMin, box.mMax, &test);
+	Sphere3d shape(Center, Radius);
+	return IntersectBVH(this, m_BVH, shape);
 }
 
 bool TriangleMesh::IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const
 {
-	TriIntersectShape<Capsule3d> test;
-	test.shape = Capsule3d(X0, X1, Radius);
-	Box3d box = test.shape.GetBoundingVolume();
-	return IntersectBVH(this, m_BVH, box.mMin, box.mMax, &test);
+	Capsule3d shape(X0, X1, Radius);
+	return IntersectBVH(this, m_BVH, shape);
 }
 
 bool	TriangleMesh::RayIntersectTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Direction, const TriMeshHitOption& Option, TriMeshHitResult* Result) const

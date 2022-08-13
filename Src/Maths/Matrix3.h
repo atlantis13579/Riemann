@@ -321,4 +321,11 @@ inline Matrix3 operator* (float f, const Matrix3& mm)
 	return mm * f;
 }
 
+inline Vector3 operator* (const Vector3 &v, const Matrix3& mm)
+{
+	return Vector3(v.x * mm[0][0] + v.y * mm[1][0] + v.z * mm[2][0],
+				   v.x * mm[0][1] + v.y * mm[1][1] + v.z * mm[2][1],
+				   v.x * mm[0][2] + v.y * mm[1][2] + v.z * mm[2][2]);
+}
+
 static_assert(sizeof(Matrix3) == 36, "sizeof Matrix3 is not valid");

@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <assert.h>
@@ -102,22 +101,4 @@ public:
 	void			GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
 
 	void			GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);
-};
-
-class TriIntersect
-{
-public:
-	virtual ~TriIntersect() {}
-	virtual bool IntersectTri(const Vector3& A, const Vector3& B, const Vector3& C) = 0;
-};
-
-template<class Shape>
-class TriIntersectShape : public TriIntersect
-{
-public:
-	virtual bool IntersectTri(const Vector3& A, const Vector3& B, const Vector3& C) override final
-	{
-		return shape.IntersectTriangle(A, B, C);
-	}
-	Shape shape;
 };

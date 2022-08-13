@@ -9,6 +9,22 @@
 #include "../Src/Maths/Float16.h"
 #include "../Src/Geometry/Spline.h"
 
+void TestMat3()
+{
+	Matrix3 mat, m1, m2;
+	m1.LoadRotateY(1.0f);
+	m2.LoadRotateZ(2.0f);
+	mat = m1 * m2;
+	Matrix3 invMat = mat.Inverse();
+	Matrix3 transpose = mat.Transpose();
+	EXPECT(fabsf((invMat - transpose).L2Norm()) < 1e-6f);
+	Vector3 v(1.0f, 20.0f, -5.0f);
+	Vector3 v1 = invMat * v, v2 = v * mat, v3 = transpose * v;
+	EXPECT((v1 - v2).SquareLength() < 1e-6f);
+	EXPECT((v1 - v3).SquareLength() < 1e-6f);
+	return;
+}
+
 void TestBasicMath()
 {
 	printf("Running TestBasicMath\n");
@@ -98,6 +114,7 @@ void TestFloat16()
 
 void TestMaths()
 {
+	TestMat3();
 	TestBasicMath();
 	TestTensor();
 	TestFloat16();

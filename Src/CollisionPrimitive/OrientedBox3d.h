@@ -25,11 +25,12 @@ public:
 	
 	static OrientedBox3d	ComputeBoundingOBB_PCA(const Vector3 *points, int n);
 	static Box3d			ComputeBoundingVolume(const Vector3& Center, const Vector3& Extent, const Matrix3& Rot);
-	Box3d					ComputeBoundingVolume() const;
+	Box3d					GetBoundingVolume() const;
 
 	bool IntersectOBB(const OrientedBox3d& obb) const;
 	bool IntersectOBB(const Vector3& _Center, const Vector3& _Extent, const Matrix3& _Rot) const;
 	bool IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
+	bool IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3 &C) const;
 
 	float SqrDistanceToPoint(const Vector3& Point) const;
 	float SqrDistanceToLine(const Vector3& P0, const Vector3& Direction, float* t) const;
