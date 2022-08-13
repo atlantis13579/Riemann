@@ -1,7 +1,83 @@
 
+#include <algorithm>
+#include <random>
 #include "../Maths/Maths.h"
 #include "Triangle3d.h"
 #include "Sphere3d.h"
+
+static const float kSphereEnlargeFactor = 1e-6f;		// avoid floating error
+
+Sphere3d::Sphere3d(const Vector3& A)
+{
+	Center = A;
+	Radius = 0.0f;
+}
+
+Sphere3d::Sphere3d(const Vector3& A, const Vector3 &B)
+{
+	Center = (A + B) * 0.5f;
+	Radius = (A - B).Length() * 0.5f + kSphereEnlargeFactor;
+}
+
+// https://en.wikipedia.org/wiki/Circumscribed_circle#Cartesian_coordinates_from_cross-_and_dot-products
+Sphere3d::Sphere3d(const Vector3& A, const Vector3 &B, const Vector3 &C)
+{
+	Vector3 BA = B - A, CA = C - A;
+	float a = BA.Dot(BA), b = BA.Dot(CA), c = CA.Dot(CA);
+	float d = a * c - b * b;
+	if (fabsf(d) < 1e-6f)
+	{
+		Vector3 p[3] = {A, B, C};
+		int max_i = -1;
+		float max_dist = FLT_MAX;
+		for (int i = 0; i < 3; ++i)
+		{
+			const float d = (p[i] - p[(i+1)%3]).SquareLength();
+			if (d > max_dist)
+			{
+				max_dist = d;
+				max_i = i;
+			}
+		}
+		assert(max_i != -1);
+		
+		Sphere3d s(p[max_i], p[(max_i+1)%3]);
+		Center = s.Center;
+		Radius = s.Radius;
+		return;
+	}
+	float s = (a - b) * c / (2.0f * d), t = (c - b) * a / (2.0f * d);
+	Center = A + s * BA + t * CA;
+	Radius = (A - Center).Length() + kSphereEnlargeFactor;
+}
+
+Sphere3d::Sphere3d(const Vector3& A, const Vector3 &B, const Vector3 &C, const Vector3 &D)
+{
+	Vector3 BA = B - A, CA = C - A, DA = D - A;
+	const float n = BA.Dot(CA.Cross(DA));
+	if (fabsf(n) < 1e-6f)
+	{
+		Sphere3d min(Vector3::Zero(), FLT_MAX);
+		Vector3 p[4] = {A, B, C, D};
+		for (int i = 0; i < 4; ++i)
+		{
+			Sphere3d s(p[i], p[(i+1)%4], p[(i+2)%4]);
+			s.Encapsulate(p[(i+3)%4]);
+			if (s.Radius < min.Radius)
+			{
+				min = s;
+			}
+		}
+		Center = min.Center;
+		Radius = min.Radius;
+		return;
+	}
+	float d1 = BA.SquareLength(), d2 = CA.SquareLength(), d3 = DA.SquareLength();
+	Center.x = (A.x + ((CA.y*DA.z - DA.y*CA.z)*d1 - (BA.y*DA.z - DA.y*BA.z)*d2 + (BA.y*CA.z - CA.y*BA.z)*d3) / (n * 2.0f));
+	Center.y = (A.y + (-(CA.x*DA.z - DA.x*CA.z)*d1 + (BA.x*DA.z - DA.x*BA.z)*d2 - (BA.x*CA.z - CA.x*BA.z)*d3) / (n * 2.0f));
+	Center.z = (A.z + ((CA.x*DA.y - DA.x*CA.y)*d1 - (BA.x*DA.y - DA.x*BA.y)*d2 + (BA.x*CA.y - CA.x*BA.y)*d3) / (n * 2.0f));
+	Radius = (Center - A).Length() + kSphereEnlargeFactor;
+}
 
 bool Sphere3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 {
@@ -292,7 +368,7 @@ Sphere3d Sphere3d::ComputeBoundingSphere_RitterIteration(const Vector3 *_points,
 		for (int i = 0; i < n; i++)
 		{
 			int j = RandomInt(i + 1, n - 1);
-			Swap(points[i], points[j]);
+			std::swap(points[i], points[j]);
 			s2.Encapsulate(points[i]);
 		}
 
@@ -300,45 +376,51 @@ Sphere3d Sphere3d::ComputeBoundingSphere_RitterIteration(const Vector3 *_points,
 		if (s2.Radius < s.Radius)
 			s = s2;
 	}
-	
 	return s;
 }
 
-/*
 // Welzl, E. (1991). Smallest enclosing disks (balls and ellipsoids) (pp. 359-370). Springer Berlin Heidelberg.
-Sphere3d WelzlAlgorithm(const Vector3* pt, unsigned int numPts, Vector3* sos, unsigned int numSos)
+Sphere3d WelzlAlgorithm(Vector3* points, int n, Vector3* support, int n_support)
 {
-	// if no input points, the recursion has bottomed out. Now compute an
-	// exact sphere based on points in set of support (zero through four points)
-	if (numPts == 0)
+	if (n == 0)
 	{
-		switch (numSos)
+		switch (n_support)
 		{
 		case 0: return Sphere3d();
-		case 1: return Sphere3d(sos[0]);
-		case 2: return Sphere3d(sos[0], sos[1]);
-		case 3: return Sphere3d(sos[0], sos[1], sos[2]);
-		case 4: return Sphere3d(sos[0], sos[1], sos[2], sos[3]);
+		case 1: return Sphere3d(support[0]);
+		case 2: return Sphere3d(support[0], support[1]);
+		case 3: return Sphere3d(support[0], support[1], support[2]);
+		case 4: return Sphere3d(support[0], support[1], support[2], support[3]);
 		}
 	}
-	// Pick a point at "random" (here just the last point of the input set)
-	int index = numPts - 1;
-	// Recursively compute the smallest bounding sphere of the remaining points
-	Sphere3d smallestSphere = WelzlAlgorithm(pt, numPts - 1, sos, numSos); // (*)
-	// If the selected point lies inside this sphere, it is indeed the smallest
-	if((pt[index] - smallestSphere.Center).SquareLength() <= smallestSphere.Radius * smallestSphere.Radius)
-		return smallestSphere;
-	// Otherwise, update set of support to additionally contain the new point
-	sos[numSos] = pt[index];
-	// Recursively compute the smallest sphere of remaining points with new s.o.s.
-	return WelzlAlgorithm(pt, numPts - 1, sos, numSos + 1);
+	
+	int i = rand() % n;
+	std::swap(points[i], points[n - 1]);
+	
+	Sphere3d min = WelzlAlgorithm(points, n - 1, support, n_support);
+	if((points[n-1] - min.Center).SquareLength() <= min.Radius * min.Radius)
+	{
+		return min;
+	}
+	support[n_support] = points[n-1];
+	return WelzlAlgorithm(points, n - 1, support, n_support + 1);
 }
- */
 
 // static
-Sphere3d Sphere3d::ComputeBoundingSphere_Welzl(const Vector3 *points, int n)
+Sphere3d Sphere3d::ComputeBoundingSphere_Welzl(const Vector3 *_points, int n)
 {
-	return Sphere3d();
+	std::vector<Vector3> points;
+	points.resize(n);
+	memcpy(points.data(), _points, n * sizeof(_points[0]));
+	
+	std::random_device rd;
+	std::mt19937 g(rd());
+	std::shuffle(points.begin(), points.end(), g);
+	
+	Vector3 support[4];
+	Sphere3d s = WelzlAlgorithm(points.data(), n, support, 0);
+	s.Radius += kSphereEnlargeFactor;
+	return s;
 }
 
 Vector3 Sphere3d::GetSupport(const Vector3& Center, float Radius, const Vector3& Direction)

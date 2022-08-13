@@ -35,6 +35,33 @@ void TestTriangle()
 	return;
 }
 
+void TestSphere()
+{
+	Vector3 a = Vector3(0, 0, 0);
+	Vector3 b = Vector3(0, 1, 0);
+	Vector3 c = Vector3(1, 0, 0);
+	Vector3 d = Vector3(1, 1, 0);
+	Sphere3d s(a, b, c, d);
+
+	EXPECT(s.IntersectPoint(a));
+	EXPECT(s.IntersectPoint(b));
+	EXPECT(s.IntersectPoint(b));
+	EXPECT(s.IntersectPoint(c));
+	
+	int n = 1000;
+	std::vector<Vector3> points;
+	for (int i = 0 ;i < n; ++i)
+	{
+		points.push_back(10.0f * Vector3::Random());
+	}
+	Sphere3d s1 = Sphere3d::ComputeBoundingSphere_Welzl(points.data(), n);
+	for (int i = 0 ;i < n; ++i)
+	{
+		EXPECT(s1.IntersectPoint(points[i]));
+	}
+	return;
+}
+
 void TestDynamicAABB()
 {
 	printf("Running TestDynamicAABB\n");
@@ -683,6 +710,7 @@ void TestSAPInc()
 void TestCollision()
 {
 	TestTriangle();
+	TestSphere();
 	TestOBB();
 	TestIntersect();
 	TestDynamicAABB();

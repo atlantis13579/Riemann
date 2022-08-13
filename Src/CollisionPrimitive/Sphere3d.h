@@ -24,17 +24,10 @@ public:
 		Radius = _Radius;
 	}
 	
-	Sphere3d(const Vector3& A)
-	{
-		Center = A;
-		Radius = 0.0f;
-	}
-	
-	Sphere3d(const Vector3& A, const Vector3 &B)
-	{
-		Center = (A + B) * 0.5f;
-		Radius = (A - B).Length() * 0.5f;
-	}
+	Sphere3d(const Vector3& A);
+	Sphere3d(const Vector3& A, const Vector3 &B);
+	Sphere3d(const Vector3& A, const Vector3 &B, const Vector3 &C);
+	Sphere3d(const Vector3& A, const Vector3 &B, const Vector3 &C, const Vector3 &D);
 
 	static constexpr ShapeType3d	StaticType()
 	{
@@ -62,6 +55,7 @@ public:
 		return Sphere3d::CalcBoundingVolume(Center, Radius);
 	}
 	
+	void			Enlarge(float d) { Radius += d; }
 	Sphere3d& 		Encapsulate(const Vector3& p);
 	
 	static Sphere3d	ComputeBoundingSphere_MostSeparated(const Vector3 *points, int n);
