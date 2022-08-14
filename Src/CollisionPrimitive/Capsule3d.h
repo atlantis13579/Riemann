@@ -33,7 +33,7 @@ public:
 		return ShapeType3d::CAPSULE;
 	}
 
-	void		Init(const Vector3& _X0, const Vector3& _X1, float _Radius)
+	inline void		Init(const Vector3& _X0, const Vector3& _X1, float _Radius)
 	{
 		X0 = _X0;
 		X1 = _X1;
@@ -42,32 +42,32 @@ public:
 	}
 
 public:
-	inline Vector3		GetAxis() const
+	inline Vector3	GetAxis() const
 	{
 		return X1 - X0;
 	}
 
-	inline Vector3		GetUnitAxis() const
+	inline Vector3	GetUnitAxis() const
 	{
 		return (X1 - X0).Unit();
 	}
 
-	inline Vector3		GetCenter() const
+	inline Vector3	GetCenter() const
 	{
 		return (X0 + X1) * 0.5f;
 	}
 
-	inline float		GetHeight() const
+	inline float	GetHeight() const
 	{
 		return Length;
 	}
 
-	inline float		GetHalfHeight() const
+	inline float	GetHalfHeight() const
 	{
 		return Length * 0.5f;
 	}
 
-	Box3d				GetBoundingVolume() const
+	Box3d			GetBoundingVolume() const
 	{
 		Box3d box(X0, X0);
 		box.Encapsulate(X1);
@@ -75,33 +75,34 @@ public:
 		return box;
 	}
 
-	bool				IsYAxisAligned() const
+	bool			IsYAxisAligned() const
 	{
 		return (X1 - X0).ParallelTo(Vector3::UnitY()) == 0;
 	}
 
-	bool				IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
-	bool				IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
-	bool				IntersectSphere(const Vector3& rCenter, float rRadius) const;
-	bool				IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
-	bool				IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
+	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
+	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
+	bool			IntersectSphere(const Vector3& rCenter, float rRadius) const;
+	bool 			IntersectSegment(const Vector3& X0, const Vector3 &X1) const;
+	bool			IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
+	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
-	float				GetVolume() const
+	float			GetVolume() const
 	{
 		return GetVolume(Radius, GetHeight());
 	}
 
-	static float		GetVolume(float Radius, float Height)
+	static float	GetVolume(float Radius, float Height)
 	{
 		return (float)M_PI * Radius * Radius * (Height + 4.0f * Radius / 3.0f);
 	}
 
-	Matrix3				GetInertiaTensor(float Mass) const
+	Matrix3			GetInertiaTensor(float Mass) const
 	{
 		return GetInertiaTensor(Radius, GetHeight(), Mass);
 	}
 
-	static Matrix3		GetInertiaTensor(float Radius, float Height, float Mass)
+	static Matrix3	GetInertiaTensor(float Radius, float Height, float Mass)
 	{
 		// https://www.wolframalpha.com/input/?i=capsule&assumption=%7B%22C%22,+%22capsule%22%7D+-%3E+%7B%22Solid%22%7D
 		float R = Radius;

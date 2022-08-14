@@ -539,19 +539,19 @@ void TestGeometryQuery()
 
 	RayCastResult result;
 	RayCastOption option;
-	scene.RayCastTest(Vector3(0.2f, 0.2f, 5.0f), Vector3(0.2f, 0.2f, -1.0f), option , &result);
+	scene.RayCastQuery(Vector3(0.2f, 0.2f, 5.0f), Vector3(0.2f, 0.2f, -1.0f), option , &result);
 	EXPECT(result.hit);
 	EXPECT(fabsf(result.hitTimeMin - 4.0f) < 0.001f);
 
-	scene.RayCastTest(Vector3(0.0f, 0.0f, -5.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
+	scene.RayCastQuery(Vector3(0.0f, 0.0f, -5.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
 	EXPECT(!result.hit);
 
-	scene.RayCastTest(Vector3(0.0f, 0.0f, 15.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
+	scene.RayCastQuery(Vector3(0.0f, 0.0f, 15.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
 	EXPECT(result.hit);
 	EXPECT(fabsf(result.hitTimeMin - 5.0f) < 0.001f);
 
 	option.Type = RayCastOption::RayCastType::RAYCAST_PENETRATE;
-	scene.RayCastTest(Vector3(0.0f, 0.0f, 15.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
+	scene.RayCastQuery(Vector3(0.0f, 0.0f, 15.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
 	EXPECT(result.hit);
 	EXPECT(result.hitGeometries.size() == 3);
 

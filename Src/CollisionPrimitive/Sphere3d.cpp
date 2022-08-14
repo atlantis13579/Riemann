@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <random>
 #include "../Maths/Maths.h"
+#include "Ray3d.h"
 #include "Triangle3d.h"
 #include "Sphere3d.h"
 
@@ -217,15 +218,68 @@ bool Sphere3d::SphereIntersectSphere(const Vector3& Center, float Radius, const 
 	return SqrDist <= (Radius + rRadius) * (Radius + rRadius);
 }
 
-bool Sphere3d::SweepSphere(const Vector3 &Direction, const Vector3 &rCenter, float rRadius, Vector3 *p, float *t) const
+bool Sphere3d::SweepAABB(const Vector3 &Direction, const Vector3& bmin, const Vector3& bmax, Vector3 *n, float *t) const
+{
+	// TODO
+	return false;
+}
+
+bool Sphere3d::SweepSphere(const Vector3 &Direction, const Vector3 &rCenter, float rRadius, Vector3 *n, float *t) const
 {
 	Sphere3d s1(rCenter, rRadius + Radius);
 	if (s1.IntersectRay(Center, Direction, t))
 	{
-		*p = Center + Direction * (*t);
+		Vector3 p = Center + Direction * (*t);
+		Vector3 dir = p - s1.Center;
+		if (dir.SquareLength() > 1e-6f)
+		{
+			*n = dir;
+		}
+		else
+		{
+			*n = -Direction;
+		}
 		return true;
 	}
 	return false;
+}
+
+// weather a if sphere with radius r moving from a to b intersects with a plane
+bool TestMovingSpherePlane(const Vector3& a, const Vector3& b, float r, const Vector3 &Normal, float D)
+{
+	float adist = a.Dot(Normal) + D;
+	float bdist = b.Dot(Normal) + D;
+	if (adist * bdist < 0.0f)
+		return true;
+	if (fabsf(adist) <= r || fabsf(bdist) <= r)
+		return true;
+	return false;
+}
+
+bool Sphere3d::SweepPlane(const Vector3 &Direction, const Vector3 &Normal, float D, Vector3 *n, float *t) const
+{
+	float dist = Normal.Dot(Center) + D;
+	if (fabsf(dist) <= Radius)
+	{
+		*t = 0.0f;
+		*n = Normal;
+		return true;
+	}
+	else
+	{
+		float denom = Normal.Dot(Direction);
+		if (denom * dist >= 0.0f)
+		{
+			return false;
+		}
+		else
+		{
+			float r = dist > 0.0f ? Radius : -Radius;
+			*t = (r - dist) / denom;
+			*n = Normal;
+			return true;
+		}
+	}
 }
 
 static void MostSeparatedPointsOnAABB(const Vector3* points, int n, int &min, int &max)
@@ -286,6 +340,30 @@ Sphere3d& Sphere3d::Encapsulate(const Vector3& p)
 		float k = (newRadius - Radius) / dist;
 		Radius = newRadius;
 		Center = Center + d * k;
+	}
+	return *this;
+}
+
+Sphere3d& Sphere3d::Encapsulate(const Sphere3d& s1)
+{
+	Vector3 d = s1.Center - Center;
+	float dist2 = d.Dot(d);
+
+	if ((s1.Radius - Radius) * (s1.Radius - Radius) >= dist2)
+	{
+		if (s1.Radius >= Radius)
+		{
+			Radius = s1.Radius;
+			Center = s1.Center;
+		}
+	}
+	else
+	{
+		float dist = sqrtf(dist2);
+		float r = (dist + Radius + s1.Radius) * 0.5f;
+		if (dist > 1e-6f)
+			Center += ((r - Radius) / dist) * d;
+		Radius = r;
 	}
 	return *this;
 }

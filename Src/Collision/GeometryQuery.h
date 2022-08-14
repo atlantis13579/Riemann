@@ -200,7 +200,7 @@ struct SweepResult
 		hit = false;
 		hitTime = FLT_MAX;
 		hitTimeMin = FLT_MAX;
-		hitPoint = Vector3::Zero();
+		hitNormal = Vector3::Zero();
 		hitGeom = nullptr;
 		hitGeometries.clear();
 		#ifdef _DEBUG
@@ -216,7 +216,7 @@ struct SweepResult
 			return;
 		}
 		hit = hit || rhs.hit;
-		hitPoint = hitTimeMin < rhs.hitTimeMin ? hitPoint : rhs.hitPoint;
+		hitNormal = hitTimeMin < rhs.hitTimeMin ? hitNormal : rhs.hitNormal;
 		hitGeom = hitTimeMin < rhs.hitTimeMin ? hitGeom : rhs.hitGeom;
 		hitGeometries.insert(hitGeometries.end(), rhs.hitGeometries.begin(), rhs.hitGeometries.end());
 		hitTime = hitTime < rhs.hitTime ? hitTime : rhs.hitTime;
@@ -236,7 +236,7 @@ struct SweepResult
 	bool					hit;
 	float					hitTime;            // temp val
 	float					hitTimeMin;         // result
-	Vector3					hitPoint;
+	Vector3					hitNormal;
 	Geometry*				hitGeom;
 	std::vector<Geometry*>  hitGeometries;
 	int						hitTestCount;       // debug
@@ -252,14 +252,14 @@ public:
 	void		BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
 	void		CreateDynamicGeometry();
 	
-	bool		RayCastTest(const Vector3 &Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult *Result);
-	bool		BoxCastTest(const Vector3 &Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult *Result);
-	bool		SphereCastTest(const Vector3 &Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result);
-	bool		CapsuleCastTest(const Vector3 &Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result);
-	bool		IntersectTest_Box(const Vector3 &Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result);
-	bool		IntersectTest_Sphere(const Vector3& Center, float Radius, const IntersectOption& Option, IntersectResult* Result);
-	bool		IntersectTest_Capsule(const Vector3& X0, const Vector3 &X1, float Radius, const IntersectOption& Option, IntersectResult* Result);
-
+	bool		RayCastQuery(const Vector3 &Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult *Result);
+	bool		IntersectQueryBox(const Vector3 &Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result);
+	bool		IntersectQuerySphere(const Vector3& Center, float Radius, const IntersectOption& Option, IntersectResult* Result);
+	bool		IntersectQueryCapsule(const Vector3& X0, const Vector3 &X1, float Radius, const IntersectOption& Option, IntersectResult* Result);
+	bool		BoxCastQuery(const Vector3 &Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult *Result);
+	bool		SphereCastQuery(const Vector3 &Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result);
+	bool		CapsuleCastQuery(const Vector3 &Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result);
+	
 	AABBTree*	GetStaticTree()
 	{
 		return m_staticGeometry;

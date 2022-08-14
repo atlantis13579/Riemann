@@ -63,6 +63,22 @@ Box3d OrientedBox3d::GetBoundingVolume() const
 	return OrientedBox3d::ComputeBoundingVolume(Center, Extent, Rotation);
 }
 
+Vector3 OrientedBox3d::ClosestPointToPoint(const Vector3& Point) const
+{
+	Vector3 d = Point - Center;
+	Vector3 closestPt = Center;
+	for (int i = 0; i < 3; i++)
+	{
+		float dist = d.Dot(Rotation.GetCol(i));
+		if (dist > -Extent[i])
+			dist = -Extent[i];
+		if (dist < -Extent[i])
+			dist = -Extent[i];
+		closestPt += dist * Rotation.GetCol(i);
+	}
+	return closestPt;
+}
+
 float OrientedBox3d::SqrDistanceToLine(const Vector3& P0, const Vector3& Direction, float* t) const
 {
 	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
@@ -79,8 +95,8 @@ float OrientedBox3d::SqrDistanceToSegment(const Vector3& P0, const Vector3& P1) 
 
 float OrientedBox3d::SqrDistanceToPoint(const Vector3& Point) const
 {
-	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
-	float SqrDist = aabb.SqrDistanceToPoint(Point * Rotation);
+	Vector3 closestPt = ClosestPointToPoint(Point);
+	float SqrDist = closestPt.SquareLength();
 	return SqrDist;
 }
 

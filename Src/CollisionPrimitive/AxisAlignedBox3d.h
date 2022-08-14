@@ -38,7 +38,7 @@ public:
 	bool			IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
 	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
-	Vector3			ClosestPointTo(const Vector3& Point) const;
+	Vector3			ClosestPointToPoint(const Vector3& Point) const;
 	float			SqrDistanceToPoint(const Vector3& Point) const;
 	float			SqrDistanceToLine(const Vector3& P0, const Vector3& Direction, float* t) const;
 	float			SqrDistanceToSegment(const Vector3& P0, const Vector3& P1) const;

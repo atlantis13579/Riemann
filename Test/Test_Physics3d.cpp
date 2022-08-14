@@ -26,7 +26,7 @@ void TestPhysxBin()
 		RayCastOption Option;
 		RayCastResult Result;
 
-		query.RayCastTest(Vector3(-521.23f, 55.87f, 399.15f), Vector3(0, -1, 0).Unit(), Option, &Result);
+		query.RayCastQuery(Vector3(-521.23f, 55.87f, 399.15f), Vector3(0, -1, 0).Unit(), Option, &Result);
 		EXPECT(FuzzyEqual(Result.hitPoint.y, 55.53f, 0.1f));
 	}
 
@@ -51,35 +51,35 @@ void TestPhysxBin()
 		IntersectOption OOption;
 		IntersectResult OResult;
 
-		bool ret = query.RayCastTest(Vector3(-569, 50, 427), Vector3(1, -1, 1).Unit(), Option, &Result);
+		bool ret = query.RayCastQuery(Vector3(-569, 50, 427), Vector3(1, -1, 1).Unit(), Option, &Result);
 		EXPECT(ret);
 		EXPECT(GetGuid(Result.hitGeom) == 2759574283328);
 
 		Vector3 Pos = Result.hitPoint;
 
-		ret = query.RayCastTest(Vector3(-569, -50, 427), Vector3(1, 0, 1).Unit(), Option, &Result);
+		ret = query.RayCastQuery(Vector3(-569, -50, 427), Vector3(1, 0, 1).Unit(), Option, &Result);
 
-		ret = query.IntersectTest_Box(Vector3(Pos.x, Pos.y + 15.0f, Pos.z), Vector3::One(), OOption, &OResult);
+		ret = query.IntersectQueryBox(Vector3(Pos.x, Pos.y + 15.0f, Pos.z), Vector3::One(), OOption, &OResult);
 		EXPECT(!ret);
 
 		OOption.maxOverlaps = 1;
-		ret = query.IntersectTest_Box(Vector3(Pos.x, Pos.y, Pos.z), 1.0f * Vector3::One(), OOption, &OResult);
+		ret = query.IntersectQueryBox(Vector3(Pos.x, Pos.y, Pos.z), 1.0f * Vector3::One(), OOption, &OResult);
 		EXPECT(ret);
 		EXPECT(GetGuid(OResult.overlapGeoms[0]) == 2759574283328);
 
-		ret = query.RayCastTest(Vector3(Pos.x + 0.01f, Pos.y - 10.0f, Pos.z + 0.01f), -Vector3::UnitY(), Option, &Result);
+		ret = query.RayCastQuery(Vector3(Pos.x + 0.01f, Pos.y - 10.0f, Pos.z + 0.01f), -Vector3::UnitY(), Option, &Result);
 		// EXPECT(!ret);		// TODO filter the world box
 
-		ret = query.RayCastTest(Vector3(Pos.x + 0.01f, Pos.y, Pos.z + 0.01f), -Vector3::UnitY(), Option, &Result);
+		ret = query.RayCastQuery(Vector3(Pos.x + 0.01f, Pos.y, Pos.z + 0.01f), -Vector3::UnitY(), Option, &Result);
 		EXPECT(ret);
 		EXPECT(FloatDiff(Result.hitPoint.y, Pos.y) < 0.2f);
 		EXPECT(GetGuid(Result.hitGeom) == 2759584952560);
 
-		ret = query.RayCastTest(Vector3(-2222, 0, -773), -Vector3::UnitY(), Option, &Result);
+		ret = query.RayCastQuery(Vector3(-2222, 0, -773), -Vector3::UnitY(), Option, &Result);
 		EXPECT(ret);
 		EXPECT(GetGuid(Result.hitGeom) == 2309460023584);
 
-		ret = query.RayCastTest(Vector3(-569, 0, 427), -Vector3::UnitY(), Option, &Result);
+		ret = query.RayCastQuery(Vector3(-569, 0, 427), -Vector3::UnitY(), Option, &Result);
 		EXPECT(ret);
 		EXPECT(GetGuid(Result.hitGeom) == 2309201640896);
 	}
@@ -111,7 +111,7 @@ void TestRaycastBenchmark()
 		auto t1 = std::chrono::steady_clock::now();
 		for (int i = 0; i < rays; ++i)
 		{
-			ret = query.RayCastTest(Vector3(-569, 0, 427), Vector3(1, -1, 1).Unit(), Option, &Result);
+			ret = query.RayCastQuery(Vector3(-569, 0, 427), Vector3(1, -1, 1).Unit(), Option, &Result);
 			EXPECT(ret);
 			EXPECT(GetGuid(Result.hitGeom) == 2309201640896);
 

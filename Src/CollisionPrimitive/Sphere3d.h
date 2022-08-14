@@ -42,7 +42,10 @@ public:
 	bool			IntersectSphere(const Vector3 &rCenter, float rRadius) const;
 	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3 &C) const;
 	static bool		SphereIntersectSphere(const Vector3& Center, float Radius, const Vector3& rCenter, float rRadius);
-	bool			SweepSphere(const Vector3 &Direction, const Vector3 &rCenter, float rRadius, Vector3 *p, float *t) const;
+	bool 			SweepAABB(const Vector3 &Direction, const Vector3& bmin, const Vector3& bmax, Vector3 *n, float *t) const;
+	bool			SweepSphere(const Vector3 &Direction, const Vector3 &rCenter, float rRadius, Vector3 *n, float *t) const;
+	bool 			SweepPlane(const Vector3 &Direction, const Vector3 &Normal, float D, Vector3 *n, float *t) const;
+	
 
 	static Box3d	CalcBoundingVolume(const Vector3& Center, float Radius)
 	{
@@ -58,6 +61,7 @@ public:
 	
 	void			Enlarge(float d) { Radius += d; }
 	Sphere3d& 		Encapsulate(const Vector3& p);
+	Sphere3d& 		Encapsulate(const Sphere3d& s1);
 	
 	static Sphere3d	ComputeBoundingSphere_MostSeparated(const Vector3 *points, int n);
 	static Sphere3d	ComputeBoundingSphere_Eigen(const Vector3 *points, int n);

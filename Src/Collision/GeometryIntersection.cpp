@@ -126,14 +126,14 @@ bool	IntersectBoxT_WS(const void* Obj1, const void* Obj2, const GeometryTransfor
 }
 
 template <class T>
-bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Direction, Vector3 *p, float* t)
+bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3 *n, float* t)
 {
 	const Geometry2Transform trans(t1, t2);
 	const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj1);
 	float Radius = sphere->Radius;
 	Vector3 Center = trans.Local1ToLocal2(sphere->Center);
 	const T* obj = static_cast<const T*>(Obj2);
-	return obj->SweepSphere(Direction, Center, Radius, p, t);
+	return obj->SweepSphere(Dir, Center, Radius, n, t);
 }
 
 #define	REG_RAYCAST_FUNC(_type, _name)				\

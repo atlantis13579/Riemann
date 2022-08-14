@@ -1,5 +1,6 @@
-#include "Capsule3d.h"
+
 #include "AxisAlignedBox3d.h"
+#include "Capsule3d.h"
 #include "Segment3d.h"
 #include "../Maths/Maths.h"
 
@@ -111,6 +112,18 @@ bool Capsule3d::IntersectSphere(const Vector3& InCenter, float InRadius) const
 {
 	float SqrDist = Segment3d::SqrDistancePointToSegment(InCenter, X0, X1);
 	return SqrDist <= (Radius + InRadius) * (Radius + InRadius);
+}
+
+bool Capsule3d::IntersectSegment(const Vector3& P0, const Vector3 &P1) const
+{
+	if ((P1 - P0).SquareLength() < TINY_NUMBER)
+	{
+		float SqrDist = Segment3d::SqrDistancePointToSegment(P0, X0, X1);
+		return SqrDist <= Radius * Radius;
+	}
+
+	const float SqrDist = Segment3d::SqrDistanceSegmentToSegment(P0, P1, X0, X1);
+	return SqrDist <= Radius * Radius;
 }
 
 bool Capsule3d::IntersectCapsule(const Vector3& P0, const Vector3& P1, float rRadius) const

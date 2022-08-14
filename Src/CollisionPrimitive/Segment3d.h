@@ -20,11 +20,11 @@ public:
 	}
 
 	float			SqrDistanceToPoint(const Vector3& Point) const;
-	Vector3			ClosestPointTo(const Vector3& Point) const;
+	Vector3			ClosestPointToPoint(const Vector3& Point) const;
 	static float	SqrDistancePointToSegment(const Vector3& Point, const Vector3& P0, const Vector3& P1);
-	static Vector3 	ClosestPointOnSegment(const Vector3& Point, const Vector3& P0, const Vector3& P1);
-	static void		ClosestPointsOnSegment(const Vector3& A0, const Vector3& A1, const Vector3& B0, const Vector3& B1, Vector3& P0, Vector3& P1);
-	static void		ClosestPointsOnSegmentEx(const Vector3& A0, const Vector3& A1, const Vector3& B0, const Vector3& B1, Vector3& P0, Vector3& P1);
+	static Vector3 	ClosestPointOnSegmentToPoint(const Vector3& Point, const Vector3& P0, const Vector3& P1);
+	static void		ClosestPointsBetweenSegments(const Vector3& A0, const Vector3& A1, const Vector3& B0, const Vector3& B1, Vector3& P0, Vector3& P1);
+	static void		ClosestPointsBetweenSegmentsEx(const Vector3& A0, const Vector3& A1, const Vector3& B0, const Vector3& B1, Vector3& P0, Vector3& P1);
 	static float	SqrDistanceSegmentToSegment(const Vector3& A0, const Vector3& A1, const Vector3& B0, const Vector3& B1);
 	float 			SqrDistanceToSegment(const Vector3& B0, const Vector3& B1) const;
 	float			DistanceToPlane(const Vector3& Normal, float D) const;

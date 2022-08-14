@@ -919,7 +919,7 @@ bool AxisAlignedBox3d::IntersectTriangle(const Vector3& A, const Vector3& B, con
 	return true;
 }
 
-Vector3 AxisAlignedBox3d::ClosestPointTo(const Vector3& Point) const
+Vector3 AxisAlignedBox3d::ClosestPointToPoint(const Vector3& Point) const
 {
 	Vector3 closest = GetCenter();
 
@@ -939,7 +939,7 @@ Vector3 AxisAlignedBox3d::ClosestPointTo(const Vector3& Point) const
 
 float AxisAlignedBox3d::SqrDistanceToPoint(const Vector3& Point) const
 {
-	Vector3 closest = ClosestPointTo(Point);
+	Vector3 closest = ClosestPointToPoint(Point);
 	return (closest - Point).SquareLength();
 }
 

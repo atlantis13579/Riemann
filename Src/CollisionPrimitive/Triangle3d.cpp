@@ -291,14 +291,14 @@ static Vector3 ClosestPointOnEdge(const Vector3& P0, const Vector3& P1, const Ve
 }
 
 // static
-Vector3 Triangle3d::ClosestPointOnTriangle(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C)
+Vector3 Triangle3d::ClosestPointOnTriangleToPoint(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C)
 {
 	unsigned char mask;
-	return ClosestPointOnTriangleEx(Point, A, B, C, mask);
+	return ClosestPointOnTriangleToPointEx(Point, A, B, C, mask);
 }
 
 // static
-Vector3 Triangle3d::ClosestPointOnTriangleEx(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C, unsigned char& mask)
+Vector3 Triangle3d::ClosestPointOnTriangleToPointEx(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C, unsigned char& mask)
 {
 	const Vector3 BA = A - B;
 	const Vector3 AC = C - A;
@@ -353,7 +353,7 @@ Vector3 Triangle3d::ClosestPointOnTriangleEx(const Vector3& Point, const Vector3
 
 float Triangle3d::SqrDistancePointToTriangle(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C)
 {
-	Vector3 Closest = ClosestPointOnTriangle(Point, A, B, C);
+	Vector3 Closest = ClosestPointOnTriangleToPoint(Point, A, B, C);
 	return (Closest - Point).SquareLength();
 }
 
@@ -362,10 +362,15 @@ float Triangle3d::SqrDistanceToPoint(const Vector3& Point) const
 	return Triangle3d::SqrDistancePointToTriangle(Point, A, B, C);
 }
 
+Vector3	Triangle3d::ClosestPointToPoint(const Vector3 &Point) const
+{
+	return Triangle3d::ClosestPointOnTriangleToPoint(Point, A, B, C);
+}
+
 bool Triangle3d::IntersectSphere(const Vector3& Center, float Radius) const
 {
 	// Find point P on triangle ABC closest to sphere center
-	Vector3 p = ClosestPointOnTriangle(Center, A, B, C);
+	Vector3 p = ClosestPointOnTriangleToPoint(Center, A, B, C);
 
 	// Sphere and triangle intersect if the (squared) distance from sphere
 	// center to point p is less than the (squared) sphere radius
@@ -519,7 +524,7 @@ Vector3 ClosestPtTetrahedronToPoint(const Vector3& p, const Vector3& a, const Ve
 	float min_dist = FLT_MAX;
 	if (PointOutsideOfPlane(p, a, b, c))
 	{
-		const Vector3 q = Triangle3d::ClosestPointOnTriangle(p, a, b, c);
+		const Vector3 q = Triangle3d::ClosestPointOnTriangleToPoint(p, a, b, c);
 		const float dist = DotProduct(q - p, q - p);
 		if (dist < min_dist)
 		{
@@ -530,7 +535,7 @@ Vector3 ClosestPtTetrahedronToPoint(const Vector3& p, const Vector3& a, const Ve
 
 	if (PointOutsideOfPlane(p, a, c, d))
 	{
-		const Vector3 q = Triangle3d::ClosestPointOnTriangle(p, a, c, d);
+		const Vector3 q = Triangle3d::ClosestPointOnTriangleToPoint(p, a, c, d);
 		const float dist = DotProduct(q - p, q - p);
 		if (dist < min_dist)
 		{
@@ -541,7 +546,7 @@ Vector3 ClosestPtTetrahedronToPoint(const Vector3& p, const Vector3& a, const Ve
 
 	if (PointOutsideOfPlane(p, a, d, b))
 	{
-		const Vector3 q = Triangle3d::ClosestPointOnTriangle(p, a, d, b);
+		const Vector3 q = Triangle3d::ClosestPointOnTriangleToPoint(p, a, d, b);
 		const float dist = DotProduct(q - p, q - p);
 		if (dist < min_dist)
 		{
@@ -552,7 +557,7 @@ Vector3 ClosestPtTetrahedronToPoint(const Vector3& p, const Vector3& a, const Ve
 
 	if (PointOutsideOfPlane(p, b, d, c))
 	{
-		const Vector3 q = Triangle3d::ClosestPointOnTriangle(p, b, d, c);
+		const Vector3 q = Triangle3d::ClosestPointOnTriangleToPoint(p, b, d, c);
 		const float dist = DotProduct(q - p, q - p);
 		if (dist < min_dist)
 		{

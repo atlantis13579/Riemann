@@ -82,10 +82,11 @@ public:
 	bool			IntersectSphere(const Vector3& Center, float Radius) const;
 	bool			IntersectCapsule(const Vector3& X0, const Vector3 &X1, float Radius) const;
 
-	static Vector3	ClosestPointOnTriangle(const Vector3 &Point, const Vector3 &A, const Vector3 &B, const Vector3 &C);
-	static Vector3	ClosestPointOnTriangleEx(const Vector3 &Point, const Vector3 &A, const Vector3 &B, const Vector3 &C, unsigned char &mask);
+	static Vector3	ClosestPointOnTriangleToPoint(const Vector3 &Point, const Vector3 &A, const Vector3 &B, const Vector3 &C);
+	static Vector3	ClosestPointOnTriangleToPointEx(const Vector3 &Point, const Vector3 &A, const Vector3 &B, const Vector3 &C, unsigned char &mask);
 	static float	SqrDistancePointToTriangle(const Vector3 &Point, const Vector3 &A, const Vector3 &B, const Vector3 &C);
 	float			SqrDistanceToPoint(const Vector3 &Point) const;
+	Vector3			ClosestPointToPoint(const Vector3 &Point) const;
 	
 	Vector3			BaryCentric2D(const Vector3& Point) const;
 	Vector3			BaryCentric3D(const Vector3& Point) const;

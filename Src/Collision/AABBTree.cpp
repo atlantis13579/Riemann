@@ -454,16 +454,16 @@ static int SweepGeometries(const Geometry *geometry, int* Geoms, int NumGeoms, G
 {
 	assert(NumGeoms > 0);
 	float t;
-	Vector3 p;
+	Vector3 normal;
 	if (GeometryCollection == nullptr)
 	{
-		if (geometry->SweepAABB(Direction, BV.mMin, BV.mMax, &p, &t) && t < Option->MaxDist)
+		if (geometry->SweepAABB(Direction, BV.mMin, BV.mMax, &normal, &t) && t < Option->MaxDist)
 		{
 			Result->hit = true;
 			if (t < Result->hitTimeMin)
 			{
 				Result->hitGeom = nullptr;
-				Result->hitPoint = p;
+				Result->hitNormal = normal;
 				Result->hitTimeMin = t;
 			}
 			return *Geoms;
@@ -481,14 +481,14 @@ static int SweepGeometries(const Geometry *geometry, int* Geoms, int NumGeoms, G
 		Geometry *candidate = GeometryCollection[index];
 		assert(candidate);
 
-		bool hit = geometry->Sweep(Direction, candidate, &p, &t);
+		bool hit = geometry->Sweep(Direction, candidate, &normal, &t);
 		if (hit)
 		{
 			if (Option->Type == SweepOption::SWEEP_ANY)
 			{
 				min_idx = index;
 				min_t = Result->hitTime;
-				min_p = p;
+				min_p = normal;
 				break;
 			}
 			else if (Option->Type == SweepOption::SWEEP_PENETRATE)
@@ -500,7 +500,7 @@ static int SweepGeometries(const Geometry *geometry, int* Geoms, int NumGeoms, G
 			{
 				min_idx = index;
 				min_t = Result->hitTime;
-				min_p = p;
+				min_p = normal;
 			}
 		}
 	}
@@ -512,7 +512,7 @@ static int SweepGeometries(const Geometry *geometry, int* Geoms, int NumGeoms, G
 		{
 			Result->hitGeom = GeometryCollection[min_idx];
 			Result->hitTimeMin = min_t;
-			Result->hitPoint = min_p;
+			Result->hitNormal = min_p;
 		}
 	}
 	return min_idx;
@@ -526,9 +526,9 @@ bool AABBTree::Sweep(const Geometry *geometry, Geometry** ObjectCollection, cons
 	Result->hitGeom = nullptr;
 
 	float t1, t2;
-	Vector3 hitp;
+	Vector3 normal;
 	AABBTreeNodeInference* p = m_AABBTreeInference;
-	if (p == nullptr || !geometry->SweepAABB(Direction, p->aabb.mMin, p->aabb.mMax, &hitp, &t1))
+	if (p == nullptr || !geometry->SweepAABB(Direction, p->aabb.mMin, p->aabb.mMax, &normal, &t1))
 	{
 		return false;
 	}
@@ -562,8 +562,8 @@ bool AABBTree::Sweep(const Geometry *geometry, Geometry** ObjectCollection, cons
 
 			Result->AddTestCount(2);
 
-			bool hit1 = geometry->SweepAABB(Direction, Left->aabb.mMin, Left->aabb.mMax, &hitp, &t1);
-			bool hit2 = geometry->SweepAABB(Direction, Right->aabb.mMin, Right->aabb.mMax, &hitp, &t2);
+			bool hit1 = geometry->SweepAABB(Direction, Left->aabb.mMin, Left->aabb.mMax, &normal, &t1);
+			bool hit2 = geometry->SweepAABB(Direction, Right->aabb.mMin, Right->aabb.mMax, &normal, &t2);
 
 			if (Option->Type != SweepOption::SWEEP_PENETRATE)
 			{

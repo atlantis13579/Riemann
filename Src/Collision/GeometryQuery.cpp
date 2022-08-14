@@ -55,7 +55,7 @@ void GeometryQuery::CreateDynamicGeometry()
 	m_dynamicPruner = new DynamicAABBTree;
 }
 
-bool GeometryQuery::RayCastTest(const Vector3& Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult* Result)
+bool GeometryQuery::RayCastQuery(const Vector3& Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult* Result)
 {
 	Result->Reset();
 	
@@ -87,42 +87,42 @@ bool GeometryQuery::RayCastTest(const Vector3& Origin, const Vector3& Direction,
 	return hit;
 }
 
-bool GeometryQuery::BoxCastTest(const Vector3 &Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
+bool GeometryQuery::BoxCastQuery(const Vector3 &Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
 {
 	char stack[MAX_GEOMETRY_STACK_SIZE];
 	Geometry* Box = GeometryFactory::CreateOBB_placement(stack, Center, Extent);
 	return SweepTest_Impl(Box, Direction, Option, Result);
 }
 
-bool GeometryQuery::SphereCastTest(const Vector3 &Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
+bool GeometryQuery::SphereCastQuery(const Vector3 &Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
 {
 	char stack[MAX_GEOMETRY_STACK_SIZE];
 	Geometry* Sphere = GeometryFactory::CreateSphere_placement(stack, Center, Radius);
 	return SweepTest_Impl(Sphere, Direction, Option, Result);
 }
 
-bool GeometryQuery::CapsuleCastTest(const Vector3 &Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
+bool GeometryQuery::CapsuleCastQuery(const Vector3 &Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
 {
 	char stack[MAX_GEOMETRY_STACK_SIZE];
 	Geometry* Capsule = GeometryFactory::CreateCapsule_placement(stack, Center - Vector3(0, HalfH, 0), Center + Vector3(0, HalfH, 0), Radius);
 	return SweepTest_Impl(Capsule, Direction, Option, Result);
 }
 
-bool GeometryQuery::IntersectTest_Box(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result)
+bool GeometryQuery::IntersectQueryBox(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result)
 {
 	char stack[MAX_GEOMETRY_STACK_SIZE];
 	Geometry* Box = GeometryFactory::CreateOBB_placement(stack, Center, Extent);
 	return IntersectTest_Impl(Box, Option, Result);
 }
 
-bool GeometryQuery::IntersectTest_Sphere(const Vector3& Center, float Radius, const IntersectOption& Option, IntersectResult* Result)
+bool GeometryQuery::IntersectQuerySphere(const Vector3& Center, float Radius, const IntersectOption& Option, IntersectResult* Result)
 {
 	char stack[MAX_GEOMETRY_STACK_SIZE];
 	Geometry* Sphere = GeometryFactory::CreateSphere_placement(stack, Center, Radius);
 	return IntersectTest_Impl(Sphere, Option, Result);
 }
 
-bool GeometryQuery::IntersectTest_Capsule(const Vector3& X0, const Vector3 &X1, float Radius, const IntersectOption& Option, IntersectResult* Result)
+bool GeometryQuery::IntersectQueryCapsule(const Vector3& X0, const Vector3 &X1, float Radius, const IntersectOption& Option, IntersectResult* Result)
 {
 	char stack[MAX_GEOMETRY_STACK_SIZE];
 	Geometry* Capsule = GeometryFactory::CreateCapsule_placement(stack, X0, X1, Radius);
