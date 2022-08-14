@@ -19,12 +19,25 @@ public:
 	{
 	}
 
-	virtual void	ResolveContact(std::vector<ContactManifold*>& manifolds, float dt) override final
+	virtual void	ResolveContact(const std::vector<Geometry*>& AllObjects,
+								   std::vector<ContactManifold*>& manifolds,
+								   float dt) override final
 	{
 		if (manifolds.empty())
 			return;
 
-		WarmStart::ApplyVelocityConstraint(manifolds, dt);
+		WarmStart::ApplyVelocityConstraint(AllObjects, manifolds, dt);
+		
+		if (m_PhaseSpace.size() < AllObjects.size())
+		{
+			m_PhaseSpace.resize(AllObjects.size());
+		}
+		for (size_t i = 0; i < AllObjects.size(); ++i)
+		{
+			RigidBody* body = AllObjects[i]->GetParent<RigidBody>();
+			m_PhaseSpace[i].v = body->GetLinearVelocity();
+			m_PhaseSpace[i].w = body->GetAngularVelocity();
+		}
 
 		std::vector<ContactVelocityConstraintSolver> velocityConstraints;
 		for (size_t i = 0; i < manifolds.size(); ++i)
@@ -32,11 +45,12 @@ public:
 			for (int j = 0; j < manifolds[i]->NumContactPointCount; ++j)
 			{
 				ContactManifold* manifold = manifolds[i];
-				RigidBody* bodyA = manifold->GeomA->GetParent<RigidBody>();
-				RigidBody* bodyB = manifold->GeomB->GetParent<RigidBody>();
+				RigidBody* bodyA = AllObjects[manifold->indexA]->GetParent<RigidBody>();
+				RigidBody* bodyB = AllObjects[manifold->indexB]->GetParent<RigidBody>();
 
-				velocityConstraints.push_back(ContactVelocityConstraintSolver());
-				velocityConstraints.back().Setup(&manifold->ContactPoints[j], bodyA, bodyB, dt);
+				velocityConstraints.push_back(ContactVelocityConstraintSolver(
+					m_PhaseSpace.data(), manifold->indexA, manifold->indexB, bodyA, bodyB));
+				velocityConstraints.back().Setup(&manifold->ContactPoints[j], dt);
 			}
 		}
 
@@ -65,6 +79,13 @@ public:
 			{
 				velocityConstraints[k].Finalize();
 			}
+			
+			for (size_t i = 0; i < AllObjects.size(); ++i)
+			{
+				RigidBody* body = AllObjects[i]->GetParent<RigidBody>();
+				body->SetLinearVelocity(m_PhaseSpace[i].v);
+				body->SetAngularVelocity(m_PhaseSpace[i].w);
+			}
 
 			return;
 		}
@@ -77,6 +98,7 @@ private:
 	int 	m_nMaxPositionIterations;
 	
 	std::vector<PositionConstraint*>	m_PositionConstraints;
+	std::vector<GeneralizedVelocity>	m_PhaseSpace;
 };
 
 ResolutionPhase* ResolutionPhase::CreateSequentialImpulseSolver()

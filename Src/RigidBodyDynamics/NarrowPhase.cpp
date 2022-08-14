@@ -21,17 +21,22 @@ public:
 
 	}
 
-	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold*>* manifolds) override final
+	virtual void CollisionDetection(const std::vector<Geometry*>& AllObjects,
+									const std::vector<OverlapPair>& overlaps,
+									std::vector<ContactManifold*>* manifolds) override final
 	{
 		m_ManifoldPool.Clear();
 		
 		manifolds->clear();
 		for (size_t i = 0; i < overlaps.size(); ++i)
 		{
+			Geometry *geom1 = AllObjects[overlaps[i].index1];
+			Geometry *geom2 = AllObjects[overlaps[i].index2];
+			
 			EPAPenetration epa;
-			if (PenetrationTest(overlaps[i].Geom1, overlaps[i].Geom2, epa))
+			if (PenetrationTest(geom1, geom2, epa))
 			{
-				ConstructManifols(overlaps[i].Geom1, overlaps[i].Geom2, epa, manifolds);
+				ConstructManifols(overlaps[i].index1, overlaps[i].index2, geom1, geom2, epa, manifolds);
 			}
 		}
 
@@ -68,7 +73,7 @@ public:
 		return succ;
 	}
 
-	void ConstructManifols(Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, std::vector<ContactManifold*>* manifolds)
+	void ConstructManifols(int indexA, int indexB, Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, std::vector<ContactManifold*>* manifolds)
 	{
 		ContactManifold *manifold = m_ManifoldPool.Alloc();
 		manifold->Reset();
@@ -113,7 +118,7 @@ public:
 			}
 			contact.Binormal = CrossProduct(contact.Normal, contact.Tangent);
 
-			manifold->AddNewContact(GeomA, GeomB, contact);
+			manifold->AddNewContact(indexA, indexB, contact);
 		}
 
 		manifolds->push_back(manifold);
@@ -136,7 +141,9 @@ public:
 	{
 	}
 
-	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold*>* manifolds) override final
+	virtual void CollisionDetection(const std::vector<Geometry*>& AllObjects,
+									const std::vector<OverlapPair>& overlaps,
+									std::vector<ContactManifold*>* manifolds) override final
 	{
 		return;
 	}
@@ -152,7 +159,9 @@ public:
 	{
 	}
 
-	virtual void CollisionDetection(std::vector<OverlapPair>& overlaps, std::vector<ContactManifold*>* manifolds) override final
+	virtual void CollisionDetection(const std::vector<Geometry*>& AllObjects,
+									const std::vector<OverlapPair>& overlaps,
+									std::vector<ContactManifold*>* manifolds) override final
 	{
 		return;
 	}

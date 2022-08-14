@@ -6,10 +6,10 @@
 #include "../CollisionPrimitive/Segment3d.h"
 #include "../CollisionPrimitive/Triangle3d.h"
 
-void ContactManifold::AddNewContact(Geometry* _Geom1, Geometry* _Geom2, const Contact& result)
+void ContactManifold::AddNewContact(int a, int b, const Contact& result)
 {
-	GeomA = _Geom1;
-	GeomB = _Geom2;
+	indexA = a;
+	indexB = b;
 	ContactPoints[NumContactPointCount] = result;
 	NumContactPointCount++;
 

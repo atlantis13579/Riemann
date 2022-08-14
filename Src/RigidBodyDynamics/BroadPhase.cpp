@@ -31,15 +31,16 @@ class BroadPhaseAllPairsImplementation : public BroadPhase
 public:
 	virtual ~BroadPhaseAllPairsImplementation() {}
 
-	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
+	virtual void ProduceOverlaps(const std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
 	{
 		overlaps->clear();
 
-		for (size_t i = 0; i < AllObjects.size(); ++i)
-		for (size_t j = 0; j < AllObjects.size(); ++j)
+		int n = (int)AllObjects.size();
+		for (int i = 0; i < n; ++i)
+		for (int j = 0; j < n; ++j)
 		{
 			if (i == j) continue;
-			overlaps->emplace_back(AllObjects[i], AllObjects[j]);
+			overlaps->emplace_back(i, j);
 		}
 	}
 };
@@ -49,12 +50,13 @@ class BroadPhaseBruteforceImplementation : public BroadPhase
 public:
 	virtual ~BroadPhaseBruteforceImplementation() {}
 
-	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
+	virtual void ProduceOverlaps(const std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
 	{
 		overlaps->clear();
 
-		for (size_t i = 0; i < AllObjects.size(); ++i)
-		for (size_t j = i + 1; j < AllObjects.size(); ++j)
+		int n = (int)AllObjects.size();
+		for (int i = 0; i < n; ++i)
+		for (int j = i + 1; j < n; ++j)
 		{
 			const Box3d& box1 = AllObjects[i]->GetBoundingVolume_WorldSpace();
 			const Box3d& box2 = AllObjects[j]->GetBoundingVolume_WorldSpace();
@@ -64,7 +66,7 @@ public:
 				Geometry *gj = AllObjects[j];
 				if (!HasMovingRigid(gi, gj))
 					continue;
-				overlaps->emplace_back(gi, gj);
+				overlaps->emplace_back(i, j);
 			}
 		}
 	}
@@ -96,7 +98,7 @@ public:
 
 public:
 
-	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
+	virtual void ProduceOverlaps(const std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
 	{
 		if (AllObjects.empty())
 		{
@@ -115,7 +117,7 @@ public:
 			Geometry *gj = AllObjects[j];
 			if (!HasMovingRigid(gi, gj))
 				continue;
-			overlaps->emplace_back(gi, gj);
+			overlaps->emplace_back(i, j);
 		}
 	}
 
@@ -156,9 +158,9 @@ private:
 	}
 
 private:
-	IncrementalSAP				*m_SAP;
-	std::set<OverlapKey>		m_Overlaps;
-	std::vector<Geometry*>*		m_pObjects;
+	IncrementalSAP					*m_SAP;
+	std::set<OverlapKey>			m_Overlaps;
+	const std::vector<Geometry*>*	m_pObjects;
 };
 
 class BroadPhaseDynamicAABBImplementation : public BroadPhase
@@ -170,22 +172,23 @@ public:
 	}
 	virtual ~BroadPhaseDynamicAABBImplementation() {}
 
-	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
+	virtual void ProduceOverlaps(const std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
 	{
 		std::vector<void*> result;
-		for (size_t i = 0; i < AllObjects.size(); ++i)
+		int n = (int)AllObjects.size();
+		for (int i = 0; i < n; ++i)
 		{
 			Geometry *gi = AllObjects[i];
 			if (!IsMovingRigid(gi))
 				continue;
 			
 			m_tree->Query(gi->GetBoundingVolume_WorldSpace(), &result);
-			for (size_t j = 0; j < result.size(); ++j)
+			for (int j = 0; j < (int)result.size(); ++j)
 			{
 				Geometry *gj = static_cast<Geometry*>(result[j]);
 				if (gj <= gi)
 					continue;
-				overlaps->emplace_back(gi, gj);
+				overlaps->emplace_back(i, j);
 			}
 		}
 	}

@@ -37,8 +37,11 @@ public:
 class ContactManifold
 {
 public:
-	Geometry* GeomA = nullptr;
-	Geometry* GeomB = nullptr;
+	int indexA = 0;
+	int indexB = 0;
+	Contact ContactPoints[MAX_CONTACT_POINTS + 1];
+	int	NumContactPointCount = 0;
+	
 	ContactManifold *next = nullptr;
 
 	void	Reset()
@@ -46,10 +49,7 @@ public:
 		NumContactPointCount = 0;
 	}
 
-	Contact ContactPoints[MAX_CONTACT_POINTS + 1];
-    int		NumContactPointCount = 0;
-
-	void	AddNewContact(Geometry* _Geom1, Geometry* _Geom2, const Contact& result);
+	void	AddNewContact(int a, int b, const Contact& result);
 
 private:
 	bool	MergeManifold();
@@ -70,5 +70,12 @@ class ContactReport
 {
 public:
 	virtual ~ContactReport() {}
+};
+
+class ManifoldIsland
+{
+public:
+	std::vector<Geometry*> *pobjs;
+	std::vector<ContactManifold*> manifolds;
 };
 

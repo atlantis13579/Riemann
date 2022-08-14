@@ -1,7 +1,7 @@
-
 #include <assert.h>
 
 #include "RigidBodySimulation.h"
+
 #include "../Core/Base.h"
 #include "../Core/JobSystem.h"
 #include "../Collision/DynamicAABBTree.h"
@@ -118,12 +118,12 @@ void		RigidBodySimulation::SimulateST(float dt)
 	std::vector<ContactManifold*> manifolds;
 	if (m_NPhase && !overlaps.empty())
 	{
-		m_NPhase->CollisionDetection(overlaps, &manifolds);
+		m_NPhase->CollisionDetection(geoms, overlaps, &manifolds);
 	}
 
 	if (m_RPhase && !manifolds.empty())
 	{
-		m_RPhase->ResolveContact(manifolds, dt);
+		m_RPhase->ResolveContact(geoms, manifolds, dt);
 	}
 
 	ApplyForceFields();
@@ -133,11 +133,6 @@ void		RigidBodySimulation::SimulateST(float dt)
 	HandleRestingContact();
 
 	return;
-}
-
-void		 RigidBodySimulation::SimulateMT(float dt)
-{
-
 }
 
 void		RigidBodySimulation::ApplyForceFields()

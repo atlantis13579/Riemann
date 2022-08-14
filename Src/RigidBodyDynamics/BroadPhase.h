@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <vector>
@@ -8,20 +7,20 @@ class DynamicAABBTree;
 
 struct OverlapPair
 {
-	OverlapPair(Geometry* _Geom1, Geometry* _Geom2)
+	OverlapPair(int _Geom1, int _Geom2)
 	{
-		Geom1 = _Geom1;
-		Geom2 = _Geom2;
+		index1 = _Geom1;
+		index2 = _Geom2;
 	}
-	Geometry* Geom1;
-	Geometry* Geom2;
+	int index1;
+	int index2;
 };
 
 class BroadPhase
 {
 public:
 	virtual ~BroadPhase() {}
-	virtual void ProduceOverlaps(std::vector<Geometry*>& AllObjects, std::vector<OverlapPair> *overlaps) = 0;
+	virtual void ProduceOverlaps(const std::vector<Geometry*>& AllObjects, std::vector<OverlapPair> *overlaps) = 0;
 
 	static BroadPhase* Create_AllPairs();		// Slow, debug purpose
 	static BroadPhase* Create_Bruteforce();		// Slow, debug purpose

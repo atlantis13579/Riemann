@@ -49,7 +49,7 @@ Vehicle Dynamics / Autonomous Driving Simulation
 
 ![domino](https://user-images.githubusercontent.com/29682318/180676459-119abeea-6d8a-4b9e-8fc4-ad87207eb6ed.gif)
 
-#### Boxes stack
+#### Stable boxes stacking
 
 ![stack](https://user-images.githubusercontent.com/29682318/180676472-73c80918-6daa-44b0-a34f-e3fcffebdd1e.gif)
 

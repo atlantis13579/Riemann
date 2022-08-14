@@ -14,6 +14,13 @@ class ForceField;
 class KinematicsDriver;
 class JobSystem;
 
+enum class ThreadMode : uint8_t
+{
+	SingleThread,
+	PhysicsThread,
+	JobSystem,
+};
+
 enum class BroadPhaseSolver : uint8_t
 {
 	SAP,
@@ -48,6 +55,7 @@ struct RigidBodySimulationParam
 	RigidBodySimulationParam()
 	{
 		gravityAcc = Vector3::Zero();
+		threadMode = ThreadMode::SingleThread;
 		broadphase = BroadPhaseSolver::SAP;
 		narrowphase = NarrowPhaseSolver::GJKEPA;
 		constraintSolver = ConstraintSolver::SequentialImpulse;
@@ -55,6 +63,7 @@ struct RigidBodySimulationParam
 		workerThreads = 0;
 	}
 	Vector3 			gravityAcc;		// gravity acc
+	ThreadMode			threadMode;
 	BroadPhaseSolver	broadphase;
 	NarrowPhaseSolver	narrowphase;
 	ConstraintSolver	constraintSolver;
@@ -90,7 +99,6 @@ public:
 
 private:
 	void				SimulateST(float dt);
-	void				SimulateMT(float dt);
 
 	void				ApplyForceFields();
 	void				HandleRestingContact();
