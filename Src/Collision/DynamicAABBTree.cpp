@@ -244,9 +244,121 @@ bool DynamicAABBTree::Intersect(const Geometry *geometry, const IntersectOption*
 	return Result->overlaps;
 }
 
-bool DynamicAABBTree::Sweep(const Geometry *geometry, const SweepOption* Option, SweepResult *Result) const
+static bool SweepGeometry(const Geometry *geometry, const Vector3& Direction, void* userData, const SweepOption* Option, SweepResult* Result)
 {
-	assert(false);
+	Geometry *canditate = static_cast<Geometry*>(userData);
+	
+	float t;
+	Vector3 hitp;
+	bool hit = geometry->Sweep(Direction, canditate, &hitp, &t);
+	if (hit)
+	{
+		if (Option->Type == SweepOption::SWEEP_PENETRATE)
+		{
+			Result->hitGeometries.push_back(canditate);
+		}
+
+		if (Result->hitTime < Result->hitTimeMin)
+		{
+			Result->hitTimeMin = Result->hitTime;
+			Result->hitPoint = hitp;
+			Result->hitGeom = canditate;
+		}
+		return true;
+	}
+	return false;
+}
+
+bool DynamicAABBTree::Sweep(const Geometry *geometry, const Vector3& Direction, const SweepOption* Option, SweepResult *Result) const
+{
+	Result->hit = false;
+	Result->hitTestCount = 0;
+	Result->hitTimeMin = FLT_MAX;
+	Result->hitGeom = nullptr;
+	
+	if (m_root == -1)
+	{
+		return false;
+	}
+
+	float t1, t2;
+	Vector3 hitp;
+	const Node* p = &m_nodes[m_root];
+	if (p == nullptr || !geometry->SweepAABB(Direction, p->aabb.mMin, p->aabb.mMax, &hitp, &t1) || t1 >= Option->MaxDist)
+	{
+		return false;
+	}
+
+	StaticStack<int, TREE_MAX_DEPTH> stack;
+	stack.Push(m_root);
+
+	while (!stack.Empty())
+	{
+		p = &m_nodes[stack.Pop()];
+		while (p)
+		{
+			if (p->IsLeaf())
+			{
+				if (SweepGeometry(geometry, Direction, p->userData, Option, Result))
+				{
+					if (Option->Type == SweepOption::SWEEP_ANY)
+					{
+						return true;
+					}
+				}
+				break;
+			}
+
+			assert(p->child1 != -1 && p->child2 != -1);
+			const Node* child1 = &m_nodes[p->child1];
+			const Node* child2 = &m_nodes[p->child2];
+
+			Result->AddTestCount(2);
+
+			bool hit1 = geometry->SweepAABB(Direction, child1->aabb.mMin, child1->aabb.mMax, &hitp, &t1);
+			bool hit2 = geometry->SweepAABB(Direction, child2->aabb.mMin, child2->aabb.mMax, &hitp, &t2);
+
+			if (Option->Type != SweepOption::SWEEP_PENETRATE)
+			{
+				hit1 = hit1 && t1 < Result->hitTimeMin && t1 < Option->MaxDist;
+				hit2 = hit2 && t2 < Result->hitTimeMin && t2 < Option->MaxDist;
+			}
+			
+			assert(!stack.Full());
+			if (hit1 && hit2)
+			{
+				if (t1 < t2)
+				{
+					stack.Push(p->child2);
+					p = child1;
+				}
+				else
+				{
+					stack.Push(p->child1);
+					p = child2;
+				}
+				continue;
+			}
+			else if (hit1)
+			{
+				p = child1;
+				continue;
+			}
+			else if (hit2)
+			{
+				p = child2;
+				continue;
+			}
+
+			break;
+		}
+
+	}
+
+	if (Result->hit || Result->hitGeometries.size() > 0)
+	{
+		return true;
+	}
 	return false;
 }
 

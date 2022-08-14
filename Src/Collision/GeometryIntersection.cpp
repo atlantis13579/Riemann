@@ -125,11 +125,25 @@ bool	IntersectBoxT_WS(const void* Obj1, const void* Obj2, const GeometryTransfor
 	return p->IntersectOBB(obb1.Center, obb1.Extent, obb1.Rotation);
 }
 
+template <class T>
+bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Direction, Vector3 *p, float* t)
+{
+	const Geometry2Transform trans(t1, t2);
+	const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj1);
+	float Radius = sphere->Radius;
+	Vector3 Center = trans.Local1ToLocal2(sphere->Center);
+	const T* obj = static_cast<const T*>(Obj2);
+	return obj->SweepSphere(Direction, Center, Radius, p, t);
+}
+
 #define	REG_RAYCAST_FUNC(_type, _name)				\
 	raycastTable[(int)_type] = RayCastT<_name>;
 
 #define REG_INTERSECT_FUNC(_type1, _type2, _func)		\
 	intersectTable[(int)_type1][(int)_type2] = _func;
+
+#define REG_SWEEP_FUNC(_type1, _type2, _func)		\
+	sweepTable[(int)_type1][(int)_type2] = _func;
 
 GeometryIntersection::GeometryIntersection()
 {
@@ -179,6 +193,8 @@ GeometryIntersection::GeometryIntersection()
 	REG_INTERSECT_FUNC(ShapeType3d::CONVEX_MESH,	ShapeType3d::CYLINDER,			IntersectGJKSolver);
 	REG_INTERSECT_FUNC(ShapeType3d::CONVEX_MESH,	ShapeType3d::CAPSULE,			IntersectGJKSolver);
 	REG_INTERSECT_FUNC(ShapeType3d::CONVEX_MESH,	ShapeType3d::CONVEX_MESH,		IntersectGJKSolver);
+	
+	REG_SWEEP_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::SPHERE,			SweepSphereT<Sphere3d>);
 }
 
 GeometryIntersection s_geom_registration;

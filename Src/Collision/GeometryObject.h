@@ -224,8 +224,9 @@ public:
 
 	virtual bool			RayCast(const Vector3& Origin, const Vector3 &Dir, const RayCastOption* Option, RayCastResult *Result) const = 0;
 	bool					Intersect(const Geometry* Geom) const;
-	bool					Sweep(const Geometry* Geom, const Vector3& Direction, float* t) const;
-
+	bool					SweepAABB(const Vector3& Direction, const Vector3 &Bmin, const Vector3& Bmax, Vector3 *p, float* t) const;
+	bool					Sweep(const Vector3& Direction, const Geometry* Geom, Vector3 *p, float* t) const;
+	
 	void					UpdateBoundingVolume();
 
 	inline const Box3d&		GetBoundingVolume_WorldSpace() const

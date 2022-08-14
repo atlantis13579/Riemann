@@ -127,11 +127,18 @@ bool		Geometry::Intersect(const Geometry* Geom) const
 	return false;
 }
 
-bool		Geometry::Sweep(const Geometry* Geom, const Vector3& Direction, float* t) const
+bool		Geometry::SweepAABB(const Vector3& Direction, const Vector3 &Bmin, const Vector3& Bmax, Vector3 *p, float *t) const
+{
+	char stack[MAX_GEOMETRY_STACK_SIZE];
+	Geometry* aabb = GeometryFactory::CreateOBB_placement(stack, (Bmin + Bmax) * 0.5f, (Bmax - Bmin) * 0.5f );
+	return Sweep(Direction, aabb, p, t);
+}
+
+bool		Geometry::Sweep(const Vector3& Direction, const Geometry* Geom, Vector3 *p, float* t) const
 {
 	SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
 	assert(func);
-	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), Direction, t);
+	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_CenterOfMassTransform, Geom->GetCenterOfMassTransform(), Direction, p, t);
 }
 
 void 		Geometry::UpdateBoundingVolume()

@@ -7,7 +7,7 @@ struct Geometry2Transform;
 
 typedef bool (*RayCastFunc)(void*, const Vector3&, const Vector3&, float*);
 typedef bool (*IntersectFunc)(const void*, const void*, const GeometryTransform*, const GeometryTransform*);
-typedef bool (*SweepFunc)(const void*, const void*, const Vector3&, float*);
+typedef bool (*SweepFunc)(const void*, const void*, const GeometryTransform*, const GeometryTransform*, const Vector3&, Vector3*, float*);
 
 class GeometryIntersection
 {

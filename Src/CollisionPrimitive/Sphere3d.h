@@ -42,6 +42,7 @@ public:
 	bool			IntersectSphere(const Vector3 &rCenter, float rRadius) const;
 	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3 &C) const;
 	static bool		SphereIntersectSphere(const Vector3& Center, float Radius, const Vector3& rCenter, float rRadius);
+	bool			SweepSphere(const Vector3 &Direction, const Vector3 &rCenter, float rRadius, Vector3 *p, float *t) const;
 
 	static Box3d	CalcBoundingVolume(const Vector3& Center, float Radius)
 	{

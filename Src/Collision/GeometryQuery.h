@@ -11,7 +11,8 @@ class DynamicAABBTree;
 class SparseSpatialHash;
 class Geometry;
 
-#define TREE_MAX_DEPTH		(32)
+#define TREE_MAX_DEPTH			(32)
+#define MAX_GEOMETRY_STACK_SIZE	(128)
 
 struct RayCastCache
 {
@@ -175,6 +176,13 @@ struct IntersectResult
 
 struct SweepOption
 {
+	enum SweepType
+	{
+		SWEEP_NEAREST = 0,
+		SWEEP_ANY = 1,
+		SWEEP_PENETRATE = 2,
+	};
+	SweepType		Type;
 	float			MaxDist;
 	CollisionData 	FilterData;
 	CollisionFilter	*Filter;
@@ -194,6 +202,10 @@ struct SweepResult
 		hitTimeMin = FLT_MAX;
 		hitPoint = Vector3::Zero();
 		hitGeom = nullptr;
+		hitGeometries.clear();
+		#ifdef _DEBUG
+		hitTestCount = 0;
+		#endif //_DEBUG
 	}
 	
 	void Merge(const SweepResult& rhs)
@@ -206,8 +218,19 @@ struct SweepResult
 		hit = hit || rhs.hit;
 		hitPoint = hitTimeMin < rhs.hitTimeMin ? hitPoint : rhs.hitPoint;
 		hitGeom = hitTimeMin < rhs.hitTimeMin ? hitGeom : rhs.hitGeom;
+		hitGeometries.insert(hitGeometries.end(), rhs.hitGeometries.begin(), rhs.hitGeometries.end());
 		hitTime = hitTime < rhs.hitTime ? hitTime : rhs.hitTime;
 		hitTimeMin = hitTimeMin < rhs.hitTimeMin ? hitTimeMin : rhs.hitTimeMin;
+		#ifdef _DEBUG
+		hitTestCount += rhs.hitTestCount;
+		#endif //_DEBUG
+	}
+	
+	void AddTestCount(int Count)
+	{
+		#ifdef _DEBUG
+		hitTestCount += Count;
+		#endif // _DEBUG
 	}
 	
 	bool					hit;
@@ -215,6 +238,8 @@ struct SweepResult
 	float					hitTimeMin;         // result
 	Vector3					hitPoint;
 	Geometry*				hitGeom;
+	std::vector<Geometry*>  hitGeometries;
+	int						hitTestCount;       // debug
 };
 
 class GeometryQuery
@@ -247,7 +272,7 @@ public:
 
 private:
 	bool		IntersectTest_Impl(const Geometry* geom, const IntersectOption& Option, IntersectResult* Result);
-	bool		SweepTest_Impl(const Geometry* geom, const SweepOption& Option, SweepResult* Result);
+	bool		SweepTest_Impl(const Geometry* geom, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 	
 private:
 	std::vector<Geometry*>	m_Objects;

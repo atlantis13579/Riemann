@@ -450,9 +450,162 @@ bool AABBTree::Intersect(const Geometry *geometry, Geometry** ObjectCollection, 
 	return Result->overlaps;
 }
 
-bool AABBTree::Sweep(const Geometry *geometry, Geometry** ObjectCollection, const SweepOption* Option, SweepResult *Result) const
+static int SweepGeometries(const Geometry *geometry, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Vector3 &Direction, const Box3d &BV, const SweepOption* Option, SweepResult* Result)
 {
-	assert(false);
+	assert(NumGeoms > 0);
+	float t;
+	Vector3 p;
+	if (GeometryCollection == nullptr)
+	{
+		if (geometry->SweepAABB(Direction, BV.mMin, BV.mMax, &p, &t) && t < Option->MaxDist)
+		{
+			Result->hit = true;
+			if (t < Result->hitTimeMin)
+			{
+				Result->hitGeom = nullptr;
+				Result->hitPoint = p;
+				Result->hitTimeMin = t;
+			}
+			return *Geoms;
+		}
+
+		return -1;
+	}
+
+	int min_idx = -1;
+	float min_t = FLT_MAX;
+	Vector3 min_p;
+	for (int i = 0; i < NumGeoms; ++i)
+	{
+		const int index = Geoms[i];
+		Geometry *candidate = GeometryCollection[index];
+		assert(candidate);
+
+		bool hit = geometry->Sweep(Direction, candidate, &p, &t);
+		if (hit)
+		{
+			if (Option->Type == SweepOption::SWEEP_ANY)
+			{
+				min_idx = index;
+				min_t = Result->hitTime;
+				min_p = p;
+				break;
+			}
+			else if (Option->Type == SweepOption::SWEEP_PENETRATE)
+			{
+				Result->hitGeometries.push_back(candidate);
+			}
+
+			if (Result->hitTime < min_t)
+			{
+				min_idx = index;
+				min_t = Result->hitTime;
+				min_p = p;
+			}
+		}
+	}
+
+	if (min_idx != -1)
+	{
+		Result->hit = true;
+		if (min_t < Result->hitTimeMin)
+		{
+			Result->hitGeom = GeometryCollection[min_idx];
+			Result->hitTimeMin = min_t;
+			Result->hitPoint = min_p;
+		}
+	}
+	return min_idx;
+}
+
+bool AABBTree::Sweep(const Geometry *geometry, Geometry** ObjectCollection, const Vector3 &Direction, const SweepOption* Option, SweepResult *Result) const
+{
+	Result->hit = false;
+	Result->hitTestCount = 0;
+	Result->hitTimeMin = FLT_MAX;
+	Result->hitGeom = nullptr;
+
+	float t1, t2;
+	Vector3 hitp;
+	AABBTreeNodeInference* p = m_AABBTreeInference;
+	if (p == nullptr || !geometry->SweepAABB(Direction, p->aabb.mMin, p->aabb.mMax, &hitp, &t1))
+	{
+		return false;
+	}
+
+	StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
+	stack.Push(0);
+
+	while (!stack.Empty())
+	{
+		p = m_AABBTreeInference + stack.Pop();
+		while (p)
+		{
+			if (p->IsLeaf())
+			{
+				int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
+				int	 nPrimitives = p->GetNumGeometries();
+				const Box3d& Box = p->GetBoundingVolume();
+				int HitId =	SweepGeometries(geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Direction, Box, Option, Result);
+				if (HitId >= 0)
+				{
+					if (Option->Type == SweepOption::SWEEP_ANY)
+					{
+						return true;
+					}
+				}
+				break;
+			}
+
+			AABBTreeNodeInference* Left = LEFT_NODE(p);
+			AABBTreeNodeInference* Right = RIGHT_NODE(p);
+
+			Result->AddTestCount(2);
+
+			bool hit1 = geometry->SweepAABB(Direction, Left->aabb.mMin, Left->aabb.mMax, &hitp, &t1);
+			bool hit2 = geometry->SweepAABB(Direction, Right->aabb.mMin, Right->aabb.mMax, &hitp, &t2);
+
+			if (Option->Type != SweepOption::SWEEP_PENETRATE)
+			{
+				hit1 = hit1 && t1 < Result->hitTimeMin && t1 < Option->MaxDist;
+				hit2 = hit2 && t2 < Result->hitTimeMin && t2 < Option->MaxDist;
+			}
+			
+			assert(!stack.Full());
+			if (hit1 && hit2)
+			{
+				if (t1 < t2)
+				{
+					p = Left;
+					stack.Push((uint32_t)(Right - m_AABBTreeInference));
+				}
+				else
+				{
+					p = Right;
+					stack.Push((uint32_t)(Left - m_AABBTreeInference));
+				}
+				continue;
+			}
+			else if (hit1)
+			{
+				p = Left;
+				continue;
+			}
+			else if (hit2)
+			{
+				p = Right;
+				continue;
+			}
+
+			break;
+		}
+
+	}
+
+	if (Result->hit || Result->hitGeometries.size() > 0)
+	{
+		return true;
+	}
 	return false;
 }
 

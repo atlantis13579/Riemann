@@ -217,6 +217,17 @@ bool Sphere3d::SphereIntersectSphere(const Vector3& Center, float Radius, const 
 	return SqrDist <= (Radius + rRadius) * (Radius + rRadius);
 }
 
+bool Sphere3d::SweepSphere(const Vector3 &Direction, const Vector3 &rCenter, float rRadius, Vector3 *p, float *t) const
+{
+	Sphere3d s1(rCenter, rRadius + Radius);
+	if (s1.IntersectRay(Center, Direction, t))
+	{
+		*p = Center + Direction * (*t);
+		return true;
+	}
+	return false;
+}
+
 static void MostSeparatedPointsOnAABB(const Vector3* points, int n, int &min, int &max)
 {
 	int minx = 0, maxx = 0, miny = 0, maxy = 0, minz = 0, maxz = 0;

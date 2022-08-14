@@ -87,27 +87,25 @@ bool GeometryQuery::RayCastTest(const Vector3& Origin, const Vector3& Direction,
 	return hit;
 }
 
-#define MAX_GEOMETRY_STACK_SIZE	(128)
-
 bool GeometryQuery::BoxCastTest(const Vector3 &Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
 {
 	char stack[MAX_GEOMETRY_STACK_SIZE];
 	Geometry* Box = GeometryFactory::CreateOBB_placement(stack, Center, Extent);
-	return SweepTest_Impl(Box, Option, Result);
+	return SweepTest_Impl(Box, Direction, Option, Result);
 }
 
 bool GeometryQuery::SphereCastTest(const Vector3 &Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
 {
 	char stack[MAX_GEOMETRY_STACK_SIZE];
 	Geometry* Sphere = GeometryFactory::CreateSphere_placement(stack, Center, Radius);
-	return SweepTest_Impl(Sphere, Option, Result);
+	return SweepTest_Impl(Sphere, Direction, Option, Result);
 }
 
 bool GeometryQuery::CapsuleCastTest(const Vector3 &Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult *Result)
 {
 	char stack[MAX_GEOMETRY_STACK_SIZE];
 	Geometry* Capsule = GeometryFactory::CreateCapsule_placement(stack, Center - Vector3(0, HalfH, 0), Center + Vector3(0, HalfH, 0), Radius);
-	return SweepTest_Impl(Capsule, Option, Result);
+	return SweepTest_Impl(Capsule, Direction, Option, Result);
 }
 
 bool GeometryQuery::IntersectTest_Box(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result)
@@ -161,7 +159,7 @@ bool GeometryQuery::IntersectTest_Impl(const Geometry* geom, const IntersectOpti
 	return hit;
 }
 
-bool GeometryQuery::SweepTest_Impl(const Geometry* geom, const SweepOption& Option, SweepResult* Result)
+bool GeometryQuery::SweepTest_Impl(const Geometry* geom, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 {
 	Result->Reset();
 
@@ -170,7 +168,7 @@ bool GeometryQuery::SweepTest_Impl(const Geometry* geom, const SweepOption& Opti
 	if (m_staticGeometry)
 	{
 		Geometry** pp = &m_Objects[0];
-		hit = m_staticGeometry->Sweep(geom, pp, &Option, Result);
+		hit = m_staticGeometry->Sweep(geom, pp, Direction, &Option, Result);
 		if (hit)
 		{
 			return true;
@@ -180,7 +178,7 @@ bool GeometryQuery::SweepTest_Impl(const Geometry* geom, const SweepOption& Opti
 	if (m_dynamicPruner)
 	{
 		SweepResult Result2;
-		bool hit_dynamic = m_dynamicPruner->Sweep(geom, &Option, &Result2);
+		bool hit_dynamic = m_dynamicPruner->Sweep(geom, Direction, &Option, &Result2);
 		if (hit_dynamic)
 		{
 			Result->Merge(Result2);

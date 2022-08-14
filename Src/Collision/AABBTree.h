@@ -35,7 +35,7 @@ public:
 
 	bool	RayCast(const Ray3d& ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult *Result) const;
 	bool	Intersect(const Geometry *geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult *Result) const;
-	bool	Sweep(const Geometry *geometry, Geometry** ObjectCollection, const SweepOption* Option, SweepResult *Result) const;
+	bool	Sweep(const Geometry *geometry, Geometry** ObjectCollection, const Vector3 &Direction, const SweepOption* Option, SweepResult *Result) const;
 	
 	int		IntersectPoint(const Vector3& Point) const;
 	bool	RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const;
