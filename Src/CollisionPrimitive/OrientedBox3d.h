@@ -28,6 +28,7 @@ public:
 	Box3d					GetBoundingVolume() const;
 
 	bool IntersectPoint(const Vector3& point) const;
+	bool IntersectPlane(const Vector3& normal, const float D) const;
 	bool IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 	bool IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	bool IntersectOBB(const OrientedBox3d& obb) const;

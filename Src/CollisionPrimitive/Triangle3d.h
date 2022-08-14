@@ -45,15 +45,26 @@ public:
 		return (&A)[i];
 	}
 
+	Vector3		GetUnitNormal() const
+	{
+		return GetUnitNormal(A, B, C);
+	}
+
+	static Vector3 GetUnitNormal(const Vector3& A, const Vector3& B, const Vector3& C)
+	{
+		Vector3 cross = (B - A).Cross(C - A);
+		return cross.Unit();
+	}
+	
 	Vector3		GetNormal() const
 	{
 		return GetNormal(A, B, C);
 	}
-
+	
 	static Vector3 GetNormal(const Vector3& A, const Vector3& B, const Vector3& C)
 	{
 		Vector3 cross = (B - A).Cross(C - A);
-		return cross.Unit();
+		return cross;
 	}
 
 	static bool		RayIntersectTriangle(const Vector3& Origin,
@@ -65,6 +76,7 @@ public:
 
 	bool			IntersectPoint(const Vector3& Point) const;
 	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
+	bool			IntersectSegment(const Vector3& P0, const Vector3& P1) const;
 	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	static bool		IntersectAABB(const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& Bmin, const Vector3& Bmax);
 	bool			IntersectSphere(const Vector3& Center, float Radius) const;

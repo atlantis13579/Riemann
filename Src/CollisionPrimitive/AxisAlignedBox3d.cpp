@@ -747,6 +747,38 @@ bool AxisAlignedBox3d::IntersectRay(const Vector3& Origin, const Vector3& Direct
 	return true;
 }
 
+bool AxisAlignedBox3d::IntersectSegment(const Vector3& p0, const Vector3& p1) const
+{
+	Vector3 c = GetCenter();
+	Vector3 e = GetExtent();
+	Vector3 m = (p0 + p1) * 0.5f;
+	Vector3 d = p1 - m;
+	m = m - c;
+
+	float adx = fabsf(d.x);
+	if (fabsf(m.x) > e.x + adx)
+		return false;
+	float ady = fabsf(d.y);
+	if (fabsf(m.y) > e.y + ady)
+		return false;
+	float adz = fabsf(d.z);
+	if (fabsf(m.z) > e.z + adz)
+		return false;
+	
+	const float kEps = 1e-6f;
+	adx += kEps;
+	ady += kEps;
+	adz += kEps;
+
+	if (fabsf(m.y * d.z - m.z * d.y) > e.y * adz + e.z * ady)
+		return false;
+	if (fabsf(m.z * d.x - m.x * d.z) > e.x * adz + e.z * adx)
+		return false;
+	if (fabsf(m.x * d.y - m.y * d.x) > e.x * ady + e.y * adx)
+		return false;
+	return true;
+}
+
 bool AxisAlignedBox3d::IntersectSphere(const Vector3& Center, float Radius) const
 {
 	float SqrDist = SqrDistanceToPoint(Center);

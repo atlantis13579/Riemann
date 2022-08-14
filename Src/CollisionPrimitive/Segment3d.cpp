@@ -98,6 +98,46 @@ void Segment3d::ClosestPointsOnSegment(const Vector3& A0, const Vector3& A1, con
 	SolveClosestPointsOnSegment(A0, A1, B0, B1, P0, P1, false);
 }
 
+float Segment3d::SqrDistanceToPoint(const Vector3& Point) const
+{
+	Vector3 Closest = Segment3d::ClosestPointOnSegment(Point, P0, P1);
+	return (Point - Closest).SquareLength();
+}
+
+Vector3 Segment3d::ClosestPointTo(const Vector3& Point) const
+{
+	return Segment3d::ClosestPointOnSegment(P0, P1, Point);
+}
+
+// static
+float Segment3d::SqrDistancePointToSegment(const Vector3& Point, const Vector3& P0, const Vector3& P1)
+{
+	Vector3 Closest = Segment3d::ClosestPointOnSegment(Point, P0, P1);
+	return (Point - Closest).SquareLength();
+}
+
+// static
+Vector3 Segment3d::ClosestPointOnSegment(const Vector3& Point, const Vector3& P0, const Vector3& P1)
+{
+	const Vector3 V1 = P1 - P0;
+	const Vector3 V2 = Point - P0;
+
+	const float dp1 = V2.Dot(V1);
+	if (dp1 <= 0)
+	{
+		return P0;
+	}
+
+	const float dp2 = V1.Dot(V1);
+	if (dp2 <= dp1)
+	{
+		return P1;
+	}
+
+	return P0 + V1 * (dp2 / dp2);
+}
+
+
 void Segment3d::ClosestPointsOnSegmentEx(const Vector3& A0, const Vector3& A1, const Vector3& B0, const Vector3& B1, Vector3& P0, Vector3& P1)
 {
 	const Vector3 norm0 = (A1 - A0).SafeUnit();
@@ -147,6 +187,11 @@ float Segment3d::SqrDistanceSegmentToSegment(const Vector3& A0, const Vector3& A
 	Vector3 X, Y;
 	ClosestPointsOnSegment(A0, A1, B0, B1, X, Y);
 	return (X - Y).SquareLength();
+}
+
+float Segment3d::SqrDistanceToSegment(const Vector3& B0, const Vector3& B1) const
+{
+	return Segment3d::SqrDistanceSegmentToSegment(P0, P1, B0, B1);
 }
 
 float Segment3d::DistanceToPlane(const Vector3& Normal, float D) const

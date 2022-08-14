@@ -8,6 +8,26 @@ float Signed2DTriArea(const Vector2& a, const Vector2& b, const Vector2& c)
 	return (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
 }
 
+int SegmentIntersectSegment2D(const Vector2& a, const Vector2& b, const Vector2& c, const Vector2& d, float *t, Vector2 *p)
+{
+	float a1 = Signed2DTriArea(a, b, d);
+	float a2 = Signed2DTriArea(a, b, c);
+
+	if (a1 * a2 < 0.0f)
+	{
+		float a3 = Signed2DTriArea(c, d, a);
+		float a4 = a3 + a2 - a1;
+		if (a3 * a4 < 0.0f)
+		{
+			*t = a3 / (a3 - a4);
+			*p = a + (*t) * (b - a);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 static float SqrtDistancePointToSegment2D(const Vector2& point, const Vector2& P0, const Vector2& P1, float* dt)
 {
 	float pqx = P1.x - P0.x;

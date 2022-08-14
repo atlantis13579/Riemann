@@ -46,7 +46,7 @@ void AABBTree::StaticBuild(AABBTreeBuildData& params)
 	assert(params.pAABBTree);
 	m_AABBTreeInference = params.pAABBTree->BuildInferenceTree();
 
-	delete params.pAABBTree;
+	delete  params.pAABBTree;
 	params.pAABBTree = nullptr;
 }
 
@@ -470,7 +470,7 @@ void AABBTree::InitAABBTreeBuild(AABBTreeBuildData& params)
 	params.pAABBTree->Init(params.numGeometries, params.numGeometriesPerNode);
 
 	params.pIndicesBase = m_GeometryIndicesBase;
-	params.pCenterBuffer = (Vector3*) new float[(params.numGeometries + 1)*3];
+	params.pCenterBuffer = new Vector3[params.numGeometries + 1];
 	for (int i = 0; i < params.numGeometries; i++)
 	{
 		params.pCenterBuffer[i] = params.pAABBArray[i].GetCenter();

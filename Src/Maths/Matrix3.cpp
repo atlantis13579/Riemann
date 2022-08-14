@@ -42,28 +42,175 @@ void Matrix3::Load2DOrthogonalTransform(float dx, float dy, float angle) {
 	mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
 }
 
+float Matrix3::ToAxisAngle(Vector3& Axis) const
+{
+	// Let (x,y,z) be the unit-length axis and let A be an angle of rotation.
+	// The rotation matrix is R = I + sin(A)*P + (1-cos(A))*P^2 where
+	// I is the identity and
+	//
+	//       +-        -+
+	//   P = |  0 -z +y |
+	//       | +z  0 -x |
+	//       | -y +x  0 |
+	//       +-        -+
+	//
+	// If A > 0, R represents a counterclockwise rotation about the axis in
+	// the sense of looking from the tip of the axis vector towards the
+	// origin.  Some algebra will show that
+	//
+	//   cos(A) = (trace(R)-1)/2  and  R - R^t = 2*sin(A)*P
+	//
+	// In the event that A = pi, R-R^t = 0 which prevents us from extracting
+	// the axis through P.  Instead note that R = I+2*P^2 when A = pi, so
+	// P^2 = (R-I)/2.  The diagonal entries of P^2 are x^2-1, y^2-1, and
+	// z^2-1.  We can solve these for axis (x,y,z).  Because the angle is pi,
+	// it does not matter which sign you choose on the square roots.
+
+	float tr = mat[0][0] + mat[1][1] + mat[2][2];
+	float c = 0.5f * (tr - 1.0f);
+	float Angle = acosf(c);  // in [0,PI]
+
+	if (Angle > 0.0f)
+	{
+		if (Angle < PI)
+		{
+			Axis.x = mat[2][1] - mat[1][2];
+			Axis.y = mat[0][2] - mat[2][0];
+			Axis.z = mat[1][0] - mat[0][1];
+			Axis.Normalize();
+		}
+		else
+		{
+			if (mat[0][0] >= mat[1][1])
+			{
+				// r00 >= r11
+				if (mat[0][0] >= mat[2][2])
+				{
+					// r00 is maximum diagonal term
+					Axis.x = 0.5f * sqrtf(mat[0][0] - mat[1][1] - mat[2][2] + 1.0f);
+					float inv = 0.5f / Axis.x;
+					Axis.y = inv * mat[0][1];
+					Axis.z = inv * mat[0][2];
+				}
+				else
+				{
+					// r22 is maximum diagonal term
+					Axis.z = 0.5f * sqrtf(mat[2][2] - mat[0][0] - mat[1][1] + 1.0f);
+					float inv = 0.5f / Axis.z;
+					Axis.x = inv * mat[0][2];
+					Axis.y = inv * mat[1][2];
+				}
+			}
+			else
+			{
+				// r11 > r00
+				if (mat[1][1] >= mat[2][2])
+				{
+					// r11 is maximum diagonal term
+					Axis.y = 0.5f * sqrtf(mat[1][1] - mat[0][0] - mat[2][2] + 1.0f);
+					float inv = 0.5f / Axis.y;
+					Axis.x = inv * mat[0][1];
+					Axis.z = inv * mat[1][2];
+				}
+				else
+				{
+					// r22 is maximum diagonal term
+					Axis.z = 0.5f * sqrtf(mat[2][2] - mat[0][0] - mat[1][1] + 1.0f);
+					float inv = 0.5f / Axis.z;
+					Axis.x = inv * mat[0][2];
+					Axis.y = inv * mat[1][2];
+				}
+			}
+		}
+	}
+	else
+	{
+		// The angle is 0 and the matrix is the identity.  Any axis will
+		// work, so just use the x-axis.
+		Axis.x = 1.0f;
+		Axis.y = 0.0f;
+		Axis.z = 0.0f;
+	}
+
+	return Angle;
+}
+
+bool Matrix3::ToEulerAngles(float& Yaw, float& Pitch, float& Roll) const
+{
+	// rot =  cy*cz          -cy*sz           sy
+	//        cz*sx*sy+cx*sz  cx*cz-sx*sy*sz -cy*sx
+	//       -cx*cz*sy+sx*sz  cz*sx+cx*sy*sz  cx*cy
+
+	Pitch = asinf(mat[0][2]);
+	if (Pitch < PI_OVER_2)
+	{
+		if (Pitch > -PI_OVER_2)
+		{
+			Yaw = atan2f(-mat[1][2], mat[2][2]);
+			Roll = atan2f(-mat[0][1], mat[0][0]);
+			return true;
+		}
+		else
+		{
+			// Not a unique solution.
+			float fRmY = atan2f(mat[1][0], mat[1][1]);
+			Roll = float(0.0);  // any angle works
+			Yaw = Roll - fRmY;
+			return false;
+		}
+	}
+	else
+	{
+		// Not a unique solution.
+		float fRpY = atan2f(mat[1][0], mat[1][1]);
+		Roll = float(0.0);  // any angle works
+		Yaw = fRpY - Roll;
+		return false;
+	}
+}
+
+void Matrix3::FromEulerAngles(float Yaw, float Pitch, float Roll)
+{
+	float c, s;
+
+	c = cosf(Yaw);
+	s = sinf(Yaw);
+	Matrix3 kXMat(1.0f, 0.0f, 0.0f, 0.0f, c, s, 0.0f, -s, c);
+
+	c = cosf(Pitch);
+	s = sinf(Pitch);
+	Matrix3 kYMat(c, 0.0f, -s, 0.0f, 1.0f, 0.0f, s, 0.0f, c);
+
+	c = cosf(Roll);
+	s = sinf(Roll);
+	Matrix3 kZMat(c, s, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 1.0f);
+
+	*this = kXMat * kYMat * kZMat;
+}
+
+
 // static
 Matrix3	Matrix3::ComputeCovarianceMatrix(const Vector3 *v, int n)
 {
 	Vector3 mean = Vector3::Zero();
-	for (uint16_t i = 0; i < n; ++i)
+	for (int i = 0; i < n; ++i)
 	{
 		mean += v[i];
 	}
 	mean *= (1.0f / n);
 
 	float c00 = 0, c01 = 0, c02 = 0, c11 = 0, c12 = 0, c22 = 0;
-	for (int k = 0; k < n; ++k)
+	for (int i = 0; i < n; ++i)
 	{
-		c00 += (v[k].x - mean.x) * (v[k].x - mean.x);
-		c01 += (v[k].x - mean.x) * (v[k].y - mean.y);
-		c02 += (v[k].x - mean.x) * (v[k].z - mean.z);
-		c11 += (v[k].y - mean.y) * (v[k].y - mean.y);
-		c12 += (v[k].y - mean.y) * (v[k].z - mean.z);
-		c22 += (v[k].z - mean.z) * (v[k].z - mean.z);
+		c00 += (v[i].x - mean.x) * (v[i].x - mean.x);
+		c01 += (v[i].x - mean.x) * (v[i].y - mean.y);
+		c02 += (v[i].x - mean.x) * (v[i].z - mean.z);
+		c11 += (v[i].y - mean.y) * (v[i].y - mean.y);
+		c12 += (v[i].y - mean.y) * (v[i].z - mean.z);
+		c22 += (v[i].z - mean.z) * (v[i].z - mean.z);
 	}
 	
-	Matrix3 covariance_matrix = Matrix3(c00, c01, c11, c01, c11, c12, c02, c01, c22);
+	Matrix3 covariance_matrix = Matrix3(c00, c01, c11, c01, c11, c12, c02, c12, c22);
 	covariance_matrix *= (1.0f / n);
 	return covariance_matrix;
 }
@@ -590,152 +737,6 @@ bool Matrix3::PolarDecomposeUP(Matrix3& R, Matrix3& S) const
 		S(i, j) = S(j, i) = 0.5f * (S(i, j) + S(j, i));
 	
 	return true;
-}
-
-float Matrix3::ToAxisAngle(Vector3& Axis) const
-{
-	// Let (x,y,z) be the unit-length axis and let A be an angle of rotation.
-	// The rotation matrix is R = I + sin(A)*P + (1-cos(A))*P^2 where
-	// I is the identity and
-	//
-	//       +-        -+
-	//   P = |  0 -z +y |
-	//       | +z  0 -x |
-	//       | -y +x  0 |
-	//       +-        -+
-	//
-	// If A > 0, R represents a counterclockwise rotation about the axis in
-	// the sense of looking from the tip of the axis vector towards the
-	// origin.  Some algebra will show that
-	//
-	//   cos(A) = (trace(R)-1)/2  and  R - R^t = 2*sin(A)*P
-	//
-	// In the event that A = pi, R-R^t = 0 which prevents us from extracting
-	// the axis through P.  Instead note that R = I+2*P^2 when A = pi, so
-	// P^2 = (R-I)/2.  The diagonal entries of P^2 are x^2-1, y^2-1, and
-	// z^2-1.  We can solve these for axis (x,y,z).  Because the angle is pi,
-	// it does not matter which sign you choose on the square roots.
-
-	float tr = mat[0][0] + mat[1][1] + mat[2][2];
-	float c = 0.5f * (tr - 1.0f);
-	float Angle = acosf(c);  // in [0,PI]
-
-	if (Angle > 0.0f)
-	{
-		if (Angle < PI)
-		{
-			Axis.x = mat[2][1] - mat[1][2];
-			Axis.y = mat[0][2] - mat[2][0];
-			Axis.z = mat[1][0] - mat[0][1];
-			Axis.Normalize();
-		}
-		else
-		{
-			if (mat[0][0] >= mat[1][1])
-			{
-				// r00 >= r11
-				if (mat[0][0] >= mat[2][2])
-				{
-					// r00 is maximum diagonal term
-					Axis.x = 0.5f * sqrtf(mat[0][0] - mat[1][1] - mat[2][2] + 1.0f);
-					float inv = 0.5f / Axis.x;
-					Axis.y = inv * mat[0][1];
-					Axis.z = inv * mat[0][2];
-				}
-				else
-				{
-					// r22 is maximum diagonal term
-					Axis.z = 0.5f * sqrtf(mat[2][2] - mat[0][0] - mat[1][1] + 1.0f);
-					float inv = 0.5f / Axis.z;
-					Axis.x = inv * mat[0][2];
-					Axis.y = inv * mat[1][2];
-				}
-			}
-			else
-			{
-				// r11 > r00
-				if (mat[1][1] >= mat[2][2])
-				{
-					// r11 is maximum diagonal term
-					Axis.y = 0.5f * sqrtf(mat[1][1] - mat[0][0] - mat[2][2] + 1.0f);
-					float inv = 0.5f / Axis.y;
-					Axis.x = inv * mat[0][1];
-					Axis.z = inv * mat[1][2];
-				}
-				else
-				{
-					// r22 is maximum diagonal term
-					Axis.z = 0.5f * sqrtf(mat[2][2] - mat[0][0] - mat[1][1] + 1.0f);
-					float inv = 0.5f / Axis.z;
-					Axis.x = inv * mat[0][2];
-					Axis.y = inv * mat[1][2];
-				}
-			}
-		}
-	}
-	else
-	{
-		// The angle is 0 and the matrix is the identity.  Any axis will
-		// work, so just use the x-axis.
-		Axis.x = 1.0f;
-		Axis.y = 0.0f;
-		Axis.z = 0.0f;
-	}
-
-	return Angle;
-}
-
-bool Matrix3::ToEulerAngles(float& Yaw, float& Pitch, float& Roll) const
-{
-	// rot =  cy*cz          -cy*sz           sy
-	//        cz*sx*sy+cx*sz  cx*cz-sx*sy*sz -cy*sx
-	//       -cx*cz*sy+sx*sz  cz*sx+cx*sy*sz  cx*cy
-
-	Pitch = asinf(mat[0][2]);
-	if (Pitch < PI_OVER_2)
-	{
-		if (Pitch > -PI_OVER_2)
-		{
-			Yaw = atan2f(-mat[1][2], mat[2][2]);
-			Roll = atan2f(-mat[0][1], mat[0][0]);
-			return true;
-		}
-		else
-		{
-			// Not a unique solution.
-			float fRmY = atan2f(mat[1][0], mat[1][1]);
-			Roll = float(0.0);  // any angle works
-			Yaw = Roll - fRmY;
-			return false;
-		}
-	}
-	else
-	{
-		// Not a unique solution.
-		float fRpY = atan2f(mat[1][0], mat[1][1]);
-		Roll = float(0.0);  // any angle works
-		Yaw = fRpY - Roll;
-		return false;
-	}
-}
-
-void Matrix3::FromEulerAngles(float Yaw, float Pitch, float Roll)
-{
-	float c, s;
-
-	c = cosf(Yaw);
-	s = sinf(Yaw);
-	Matrix3 kXMat(1.0f, 0.0f, 0.0f, 0.0f, c, s, 0.0f, -s, c);
-
-	c = cosf(Pitch);
-	s = sinf(Pitch);
-	Matrix3 kYMat(c, 0.0f, -s, 0.0f, 1.0f, 0.0f, s, 0.0f, c);
-
-	c = cosf(Roll);
-	s = sinf(Roll);
-	Matrix3 kZMat(c, s, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 1.0f);
-
-	*this = kXMat * kYMat * kZMat;
 }
 
 void Matrix3::TriDiagonal(float Diag[3], float SubDiag[3])

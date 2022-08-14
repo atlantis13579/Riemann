@@ -86,13 +86,13 @@ public:
 		float Diag3 = Mass / 2.0f * RR;
 		return Matrix3(Diag12, Diag12, Diag3);
 	}
-
-	Vector3		GetSupport(const Vector3& Direction) const;
-
-	int			GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
-
+	
 	bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 	static bool IntersectRayInfinityLength(const Vector3& Origin, const Vector3& Direction, float Radius, float *t);
+	bool		IntersectSegment(const Vector3& P0, const Vector3& P1) const;
+
+	Vector3		GetSupport(const Vector3& Direction) const;
+	int			GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
 
 	void		GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
 	void		GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);

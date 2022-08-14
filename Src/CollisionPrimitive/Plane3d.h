@@ -35,6 +35,12 @@ public:
 		Normal = InNormal.Unit();
 		D = InD;
 	}
+	
+	Plane3d(const Vector3& A, const Vector3& B, const Vector3& C)
+	{
+		Normal = (A - C).Cross(B - C);
+		D = -C.Dot(Normal);
+	}
 
 	static constexpr ShapeType3d	StaticType()
 	{
@@ -61,6 +67,18 @@ public:
 	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 	{
 		return RayIntersectPlane(Origin, Direction, Normal, D, t);
+	}
+	
+	bool			IntersectSegment(const Vector3& P0, const Vector3& P1) const
+	{
+		Vector3 e = P1 - P0;
+		float t = (-D - Normal.Dot(P0)) / Normal.Dot(e);
+		if (t >= 0.0f && t <= 1.0f)
+		{
+			// q = a + t * e;	intersect point
+			return true;
+		}
+		return false;
 	}
 
 	static bool		RayIntersectPlane(const Vector3& Origin, const Vector3& Direction, const Vector3 & Normal, float D, float* t)
@@ -99,6 +117,33 @@ public:
 			return false;
 		}
 
+		return true;
+	}
+	
+	static bool 	GetIntersection(const Plane3d& p1, const Plane3d& p2, Vector3 &Origin, Vector3 &Dir)
+	{
+		Dir = p1.Normal.Cross(p2.Normal);
+		if (Dir.Dot(Dir) < 1e-6f)
+			return false;
+
+		float d11 = p1.Normal.Dot(p1.Normal);
+		float d12 = p1.Normal.Dot(p2.Normal);
+		float d22 = p2.Normal.Dot(p2.Normal);
+
+		const float denom = d11*d22 - d12*d12;
+		float k1 = (-p1.D*d22 + p2.D*d12) / denom;
+		float k2 = (-p2.D*d11 + p1.D*d12) / denom;
+		Origin = k1 * p1.Normal + k2 * p2.Normal;
+		return true;
+	}
+	
+	static bool 	GetIntersection(const Plane3d& p1, const Plane3d& p2, const Plane3d& p3, Vector3 &p)
+	{
+		Vector3 u = p2.Normal.Cross(p3.Normal);
+		float denom = p1.Normal.Dot(u);
+		if (fabsf(denom) < 1e-6f)
+			return false;
+		p = (-p1.D * u + p1.Normal.Cross(-p3.D * p2.Normal + p2.D * p3.Normal)) / denom;
 		return true;
 	}
 	

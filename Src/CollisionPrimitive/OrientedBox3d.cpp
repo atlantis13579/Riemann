@@ -177,6 +177,15 @@ bool OrientedBox3d::IntersectPoint(const Vector3& point) const
 	return aabb.IntersectPoint(point * Rotation);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
 }
 
+bool OrientedBox3d::IntersectPlane(const Vector3& normal, const float D) const
+{
+	float r =	Extent.x * fabsf(DotProduct(normal, Rotation.GetCol(0))) +
+				Extent.y * fabsf(DotProduct(normal, Rotation.GetCol(1))) +
+				Extent.z * fabsf(DotProduct(normal, Rotation.GetCol(2)));
+	float s = normal.Dot(Center) + D;
+	return fabsf(s) <= r;
+}
+
 bool OrientedBox3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 {
 	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);

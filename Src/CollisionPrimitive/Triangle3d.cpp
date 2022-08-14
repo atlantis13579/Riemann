@@ -240,6 +240,31 @@ bool Triangle3d::IntersectAABB(const Vector3& A, const Vector3& B, const Vector3
 	return true;
 }
 
+bool Triangle3d::IntersectSegment(const Vector3& P0, const Vector3& P1) const
+{
+	Vector3 dir = P0 - P1;
+	Vector3 n = GetNormal();
+
+	float d = dir.Dot(n);
+	if (d <= 0.0f)
+		return false;
+
+	Vector3 ap = P0 - A;
+	float t = ap.Dot(n);
+	if (t > d || t < 0.0f)
+		return false;
+
+	Vector3 e = dir.Cross(ap);
+	float v = (C - A).Dot(e);
+	if (v < 0.0f || v > d)
+		return false;
+	float w = -(B - A).Dot(e);
+	if (w < 0.0f || v + w > d)
+		return false;
+
+	return true;
+}
+
 bool Triangle3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 {
 	return IntersectAABB(A, B, C, Bmin, Bmax);

@@ -121,6 +121,50 @@ bool Cylinder3d::IntersectRayInfinityLength(const Vector3& Origin, const Vector3
 	return true;
 }
 
+bool Cylinder3d::IntersectSegment(const Vector3& P0, const Vector3& P1) const
+{
+	Vector3 sa, sb;
+	Vector3 d = P0 - P1, m = sa - P1, n = sb - sa;
+	float md = d.Dot(d);
+	float nd = d.Dot(d);
+	float dd = d.Dot(d);
+	if (md < 0.0f && md + nd < 0.0f)
+		return false;
+	if (md > dd && md + nd > dd)
+		return false;
+	float nn = n.Dot(n);
+	float mn = n.Dot(m);
+	float a = dd * nn - nd * nd;
+	float k = m.Dot(m) - Radius * Radius;
+	float c = dd * k - md * md;
+	if (fabsf(a) < 1e-6f)
+	{
+		return c <= 0;
+	}
+	float b = dd * mn - nd * md;
+	float discr = b * b - a * c;
+	if (discr < 0)
+		return false;
+	float t = (-b - sqrtf(discr)) / a;
+	if (t < 0.0f || t > 1.0f)
+		return false;
+	if (md + t * nd < 0.0f)
+	{
+		if (nd <= 0.0f)
+			return false;
+		t = -md / nd;
+		return k + 2 * t * (mn + t * nn) <= 0.0f;
+	}
+	else if (md + t * nd > dd)
+	{
+		if (nd >= 0.0f)
+			return false;
+		t = (dd - md) / nd;
+		return k + dd - 2 * md + t * (2 * (mn - nd) + t * nn) <= 0.0f;
+	}
+	return true;
+}
+
 void Cylinder3d::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 {
 	int nPts = sizeof(CylinderFaces) / sizeof(CylinderFaces[0]);
