@@ -39,6 +39,7 @@
 		ADAA4C4528898D6000E8AE2E /* NarrowPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C3C28898D6000E8AE2E /* NarrowPhase.h */; };
 		ADAA4C482889930500E8AE2E /* SmoothedParticleHydrodynamics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADAA4C462889930500E8AE2E /* SmoothedParticleHydrodynamics.cpp */; };
 		ADAA4C492889930500E8AE2E /* SmoothedParticleHydrodynamics.h in Headers */ = {isa = PBXBuildFile; fileRef = ADAA4C472889930500E8AE2E /* SmoothedParticleHydrodynamics.h */; };
+		ADB8FF2128AAF1780064588F /* Plane3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADB8FF2028AAF1780064588F /* Plane3d.cpp */; };
 		ADBBEE11288C41A300C3D6CD /* Matrix2.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE09288C41A300C3D6CD /* Matrix2.h */; };
 		ADBBEE12288C41A300C3D6CD /* Vector3.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE0A288C41A300C3D6CD /* Vector3.h */; };
 		ADBBEE13288C41A300C3D6CD /* Matrix3.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE0B288C41A300C3D6CD /* Matrix3.h */; };
@@ -62,7 +63,6 @@
 		ADD23BC72887614E00A849BE /* SAP.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BA82887614E00A849BE /* SAP.h */; };
 		ADD23BC92887614E00A849BE /* GeometryIntersection.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BAA2887614E00A849BE /* GeometryIntersection.h */; };
 		ADD23BCA2887614E00A849BE /* AABBTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23BAB2887614E00A849BE /* AABBTree.cpp */; };
-		ADD23BCB2887614E00A849BE /* AABBTreeInference.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23BAC2887614E00A849BE /* AABBTreeInference.cpp */; };
 		ADD23BCC2887614E00A849BE /* QuadTree.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BAD2887614E00A849BE /* QuadTree.h */; };
 		ADD23BCD2887614E00A849BE /* Simplex.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BAE2887614E00A849BE /* Simplex.h */; };
 		ADD23BCE2887614E00A849BE /* AABBTreeOffline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23BAF2887614E00A849BE /* AABBTreeOffline.cpp */; };
@@ -268,6 +268,7 @@
 		ADAA4C3C28898D6000E8AE2E /* NarrowPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = NarrowPhase.h; path = ../../Src/RigidBodyDynamics/NarrowPhase.h; sourceTree = "<group>"; };
 		ADAA4C462889930500E8AE2E /* SmoothedParticleHydrodynamics.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SmoothedParticleHydrodynamics.cpp; path = ../../Src/FluidDynamics/SmoothedParticleHydrodynamics.cpp; sourceTree = "<group>"; };
 		ADAA4C472889930500E8AE2E /* SmoothedParticleHydrodynamics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SmoothedParticleHydrodynamics.h; path = ../../Src/FluidDynamics/SmoothedParticleHydrodynamics.h; sourceTree = "<group>"; };
+		ADB8FF2028AAF1780064588F /* Plane3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Plane3d.cpp; path = ../../Src/CollisionPrimitive/Plane3d.cpp; sourceTree = "<group>"; };
 		ADBBEE09288C41A300C3D6CD /* Matrix2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Matrix2.h; path = ../../Src/Maths/Matrix2.h; sourceTree = "<group>"; };
 		ADBBEE0A288C41A300C3D6CD /* Vector3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Vector3.h; path = ../../Src/Maths/Vector3.h; sourceTree = "<group>"; };
 		ADBBEE0B288C41A300C3D6CD /* Matrix3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Matrix3.h; path = ../../Src/Maths/Matrix3.h; sourceTree = "<group>"; };
@@ -291,7 +292,6 @@
 		ADD23BA82887614E00A849BE /* SAP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SAP.h; path = ../../Src/Collision/SAP.h; sourceTree = "<group>"; };
 		ADD23BAA2887614E00A849BE /* GeometryIntersection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GeometryIntersection.h; path = ../../Src/Collision/GeometryIntersection.h; sourceTree = "<group>"; };
 		ADD23BAB2887614E00A849BE /* AABBTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AABBTree.cpp; path = ../../Src/Collision/AABBTree.cpp; sourceTree = "<group>"; };
-		ADD23BAC2887614E00A849BE /* AABBTreeInference.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AABBTreeInference.cpp; path = ../../Src/Collision/AABBTreeInference.cpp; sourceTree = "<group>"; };
 		ADD23BAD2887614E00A849BE /* QuadTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = QuadTree.h; path = ../../Src/Collision/QuadTree.h; sourceTree = "<group>"; };
 		ADD23BAE2887614E00A849BE /* Simplex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Simplex.h; path = ../../Src/Collision/Simplex.h; sourceTree = "<group>"; };
 		ADD23BAF2887614E00A849BE /* AABBTreeOffline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AABBTreeOffline.cpp; path = ../../Src/Collision/AABBTreeOffline.cpp; sourceTree = "<group>"; };
@@ -491,7 +491,6 @@
 			children = (
 				ADD23BAB2887614E00A849BE /* AABBTree.cpp */,
 				ADD23B9D2887614E00A849BE /* AABBTree.h */,
-				ADD23BAC2887614E00A849BE /* AABBTreeInference.cpp */,
 				ADD23BA12887614E00A849BE /* AABBTreeInference.h */,
 				ADD23BAF2887614E00A849BE /* AABBTreeOffline.cpp */,
 				ADD23BA62887614E00A849BE /* AABBTreeOffline.h */,
@@ -811,6 +810,7 @@
 				ADD23BE72887616100A849BE /* OrientedBox3d.cpp */,
 				ADD23BE32887616100A849BE /* OrientedBox3d.h */,
 				ADD23BDC2887616100A849BE /* Ray3d.h */,
+				ADB8FF2028AAF1780064588F /* Plane3d.cpp */,
 				ADD23BE02887616100A849BE /* Plane3d.h */,
 				AD80071628A3F69A001387F3 /* Polyhedron.cpp */,
 				AD80070E28A3E4E3001387F3 /* Polyhedron.h */,
@@ -1101,7 +1101,6 @@
 				AD80071928A45CB3001387F3 /* Sphere3d.cpp in Sources */,
 				ADD23C45288761AE00A849BE /* TetrahedralMesh.cpp in Sources */,
 				ADD23C022887616200A849BE /* AxisAlignedBox3d.cpp in Sources */,
-				ADD23BCB2887614E00A849BE /* AABBTreeInference.cpp in Sources */,
 				ADD23CBF288762CC00A849BE /* RigidBody.cpp in Sources */,
 				ADF272A428954DA600E6FE68 /* XPBDRigidDynamicsSolver.cpp in Sources */,
 				ADEF48BC28A6E99100FD544C /* Triangle3d.cpp in Sources */,
@@ -1132,6 +1131,7 @@
 				ADD23C68288762AE00A849BE /* AutonomousController.cpp in Sources */,
 				ADD23BF72887616200A849BE /* MeshBVH4.cpp in Sources */,
 				ADD23BD32887614E00A849BE /* GeometryObject.cpp in Sources */,
+				ADB8FF2128AAF1780064588F /* Plane3d.cpp in Sources */,
 				ADD23BF62887616200A849BE /* TriangleMesh.cpp in Sources */,
 				ADD23CBA288762CC00A849BE /* PhysicsMaterial.cpp in Sources */,
 				ADD23BD72887614E00A849BE /* DynamicAABBTree.cpp in Sources */,

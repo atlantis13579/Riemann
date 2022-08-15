@@ -3,7 +3,7 @@
 // Projected Successive Over Relaxation (PSOR)
 // Projected Gauss Seidel (PGS)
 template<typename T>
-class ProjectedGaussSeidel_CPU
+class ProjectedGaussSeidel
 {
 public:
 	// Solve X, A * X + B >= 0, X >= 0 and dot(A * X + B, X) = 0,

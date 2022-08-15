@@ -10,21 +10,19 @@
 #define EPA_PLANE_EPS (0.00001f)
 #define EPA_INSIDE_EPS (0.01f)
 #define EPA_MAX_VERTICES (128)
-#define EPA_MAX_ITERATIONS (255)
-#define EPA_FALLBACK (10 * EPA_ACCURACY)
 #define EPA_MAX_FACES (EPA_MAX_VERTICES * 2)
 
-struct Face
+struct EpaFace
 {
 	Vector3 normal;
 	float dist;
 	Simplex::Vertex* v[3];
-	Face* adjacent[3];
-	Face *next, *prev;
+	EpaFace* adjacent[3];
+	EpaFace *next, *prev;
 	uint8_t edge[3];
 	uint8_t pass;
 
-	static void Bind(Face* fa, uint8_t ea, Face* fb, uint8_t eb)
+	static void Bind(EpaFace* fa, uint8_t ea, EpaFace* fb, uint8_t eb)
 	{
 		fa->edge[ea] = eb;
 		fa->adjacent[ea] = fb;
@@ -36,19 +34,19 @@ struct Face
 class PolytopeBuilder
 {
 public:
-	struct sHorizon
+	struct Horizon
 	{
-		Face* cf;
-		Face* ff;
+		EpaFace* cf;
+		EpaFace* ff;
 		int nf;
-		sHorizon() : cf(nullptr), ff(nullptr), nf(0) {}
+		Horizon() : cf(nullptr), ff(nullptr), nf(0) {}
 	};
 
 	PolytopeBuilder()
 	{
 	}
 
-	Face* NewFace(Simplex::Vertex* a, Simplex::Vertex* b, Simplex::Vertex* c, EPA_status& result, bool forced)
+	EpaFace* NewFace(Simplex::Vertex* a, Simplex::Vertex* b, Simplex::Vertex* c, EPA_status& result, bool forced)
 	{
 		if (m_face_pool.Empty())
 		{
@@ -56,7 +54,7 @@ public:
 			return nullptr;
 		}
 
-		Face* face = m_face_pool.Pop();
+		EpaFace* face = m_face_pool.Pop();
 		m_poly.Append(face);
 		face->pass = 0;
 		face->v[0] = a;
@@ -96,7 +94,7 @@ public:
 		return nullptr;
 	}
 
-	bool Expand(uint8_t pass, Simplex::Vertex* w, Face* f, uint8_t e, EPA_status& result, sHorizon& horizon)
+	bool Expand(uint8_t pass, Simplex::Vertex* w, EpaFace* f, uint8_t e, EPA_status& result, Horizon& horizon)
 	{
 		if (f->pass == pass)
 		{
@@ -106,12 +104,12 @@ public:
 		int e1 = (e + 1) % 3;
 		if ((DotProduct(f->normal, w->pos) - f->dist) < -EPA_PLANE_EPS)
 		{
-			Face* nf = NewFace(f->v[e1], f->v[e], w, result, false);
+			EpaFace* nf = NewFace(f->v[e1], f->v[e], w, result, false);
 			if (nf)
 			{
-				Face::Bind(nf, 0, f, e);
+				EpaFace::Bind(nf, 0, f, e);
 				if (horizon.cf)
-					Face::Bind(horizon.cf, 1, nf, 2);
+					EpaFace::Bind(horizon.cf, 1, nf, 2);
 				else
 					horizon.ff = nf;
 				horizon.cf = nf;
@@ -133,11 +131,11 @@ public:
 		return false;
 	}
 
-	Face* FindClosestToOrigin()
+	EpaFace* FindClosestToOrigin()
 	{
-		Face* closest = m_poly.root;
+		EpaFace* closest = m_poly.root;
 		float min_sqrdist = closest->dist * closest->dist;
-		for (Face* f = closest->next; f; f = f->next)
+		for (EpaFace* f = closest->next; f; f = f->next)
 		{
 			const float sqrdist = f->dist * f->dist;
 			if (sqrdist < min_sqrdist)
@@ -159,14 +157,14 @@ public:
 		return m_vertex_pool.Get();
 	}
 
-	void Remove(Face* f)
+	void Remove(EpaFace* f)
 	{
 		m_poly.Remove(f);
 		m_face_pool.Append(f);
 	}
 
 private:
-	static bool GetEdgeDist(Face* face, Simplex::Vertex* a, Simplex::Vertex* b, float& dist)
+	static bool GetEdgeDist(EpaFace* face, Simplex::Vertex* a, Simplex::Vertex* b, float& dist)
 	{
 		Vector3 ba = b->pos - a->pos;
 		Vector3 n_ab = CrossProduct(ba, face->normal);   // Outward facing edge normal direction, on triangle plane
@@ -205,8 +203,8 @@ private:
 	}
 
 private:
-	List<Face>										m_poly;
-	StaticList<Face, EPA_MAX_FACES>					m_face_pool;
+	List<EpaFace>									m_poly;
+	StaticList<EpaFace, EPA_MAX_FACES>				m_face_pool;
 	StaticPool<Simplex::Vertex, EPA_MAX_VERTICES>	m_vertex_pool;
 };
 
@@ -219,34 +217,35 @@ EPA_status EPAPenetration::Solve(const Simplex& _src)
 		status = EPA_status::Valid;
 
 		if (TripleProduct(result.v[0].pos - result.v[3].pos,
-						result.v[1].pos - result.v[3].pos,
-						result.v[2].pos - result.v[3].pos) < 0)
+						  result.v[1].pos - result.v[3].pos,
+						  result.v[2].pos - result.v[3].pos) < 0)
 		{
 			std::swap(result.v[0], result.v[1]);
 		}
 
 		PolytopeBuilder polytope;
-		Face* tetra[] = { polytope.NewFace(&result.v[0], &result.v[1], &result.v[2], status, true),
-						  polytope.NewFace(&result.v[1], &result.v[0], &result.v[3], status, true),
-						  polytope.NewFace(&result.v[2], &result.v[1], &result.v[3], status, true),
-						  polytope.NewFace(&result.v[0], &result.v[2], &result.v[3], status, true) };
+		EpaFace* tetra[] = {polytope.NewFace(&result.v[0], &result.v[1], &result.v[2], status, true),
+							polytope.NewFace(&result.v[1], &result.v[0], &result.v[3], status, true),
+							polytope.NewFace(&result.v[2], &result.v[1], &result.v[3], status, true),
+							polytope.NewFace(&result.v[0], &result.v[2], &result.v[3], status, true) };
 
 		if (polytope.NumFaces() == 4)
 		{
-			Face* best = polytope.FindClosestToOrigin();
-			Face candidate = *best;
+			EpaFace* best = polytope.FindClosestToOrigin();
+			EpaFace candidate = *best;
 			uint8_t pass = 0;
-			Face::Bind(tetra[0], 0, tetra[1], 0);
-			Face::Bind(tetra[0], 1, tetra[2], 0);
-			Face::Bind(tetra[0], 2, tetra[3], 0);
-			Face::Bind(tetra[1], 1, tetra[3], 2);
-			Face::Bind(tetra[1], 2, tetra[2], 1);
-			Face::Bind(tetra[2], 2, tetra[3], 1);
+			EpaFace::Bind(tetra[0], 0, tetra[1], 0);
+			EpaFace::Bind(tetra[0], 1, tetra[2], 0);
+			EpaFace::Bind(tetra[0], 2, tetra[3], 0);
+			EpaFace::Bind(tetra[1], 1, tetra[3], 2);
+			EpaFace::Bind(tetra[1], 2, tetra[2], 1);
+			EpaFace::Bind(tetra[2], 2, tetra[3], 1);
 
 			status = EPA_status::Valid;
 
-			int iterations = 0;
-			while (iterations++ < EPA_MAX_ITERATIONS)
+			int iter = 0;
+			int kMaxIterations = 255;
+			while (iter++ < kMaxIterations)
 			{
 				Simplex::Vertex* v = polytope.AddVertex();
 				if (v == nullptr)
@@ -267,7 +266,7 @@ EPA_status EPAPenetration::Solve(const Simplex& _src)
 					break;
 				}
 
-				PolytopeBuilder::sHorizon horizon;
+				PolytopeBuilder::Horizon horizon;
 				bool valid = true;
 				for (int j = 0; j < 3 && valid; ++j)
 				{
@@ -276,7 +275,7 @@ EPA_status EPAPenetration::Solve(const Simplex& _src)
 
 				if (valid && horizon.nf >= 3)
 				{
-					Face::Bind(horizon.cf, 1, horizon.ff, 2);
+					EpaFace::Bind(horizon.cf, 1, horizon.ff, 2);
 					polytope.Remove(best);
 					best = polytope.FindClosestToOrigin();
 					candidate = *best;

@@ -40,8 +40,8 @@ void Jacobian::Solve(float lambdamin, float lambdamax)
 			 + DotProduct(m_jvb, m_gb->v)
 			 + DotProduct(m_jwb, m_gb->w);
 
-	// J * (v + dv) + b == 0
-	// Assume dv = (inv(Mass Matrix) * J^T) * lambda
+	// Given v, find dv such that J * (v + dv) + b == 0
+	// assume dv = (inv(Mass Matrix) * J^T) * lambda (linearity)
 	// then lambda =  (jv + b) / (J * inv(Mass Matrix) * J^T)
 	m_error = jv + m_bias;
 	float lambda = m_effectiveMass * (-m_error);

@@ -20,7 +20,7 @@ class EPAPenetration
 {
 public:
 	EPA_status	status;
-	Vector3	penetration_normal;
+	Vector3		penetration_normal;
 	float		penetration_depth;
 	Simplex		result;
 

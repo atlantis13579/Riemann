@@ -1,4 +1,3 @@
-
 #pragma once
 
 template<class T, int Capacity>

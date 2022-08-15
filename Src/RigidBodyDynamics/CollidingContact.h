@@ -27,9 +27,9 @@ public:
 	float	PenetrationDepth;
 
 	//	For warm start
-	float		totalImpulseNormal;
-	float		totalImpulseTangent;
-	float		totalImpulseBinormal;
+	float	totalImpulseNormal;
+	float	totalImpulseTangent;
+	float	totalImpulseBinormal;
 };
 
 #define MAX_CONTACT_POINTS 4

@@ -1,5 +1,6 @@
 
-#include "AABBTree.h"
+#include "AABBTreeOffline.h"
+#include "AABBTreeInference.h"
 #include <assert.h>
 #include <algorithm>
 
@@ -138,3 +139,111 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 	this->child2->numGeometries = numGeometries - nSplitLeft;
 }
 
+
+void AABBTreeOffline::Release()
+{
+	for (size_t i = 0; i < Blocks.size(); ++i)
+	{
+		NodeBlock& s = Blocks[i];
+		delete[]s.pMem;
+	}
+
+	Blocks.clear();
+	nCurrentBlockIndex = 0;
+	nTotalNodes = 0;
+}
+
+void AABBTreeOffline::Init(int nGeometries, int nGeometriesPerNode)
+{
+	const int maxSize = nGeometries * 2 - 1;
+	const int estimatedFinalSize = maxSize <= 1024 ? maxSize : maxSize / nGeometriesPerNode;
+	pHead = new  AABBTreeNodeOffline[estimatedFinalSize];
+	memset(pHead, 0, sizeof(AABBTreeNodeOffline) * estimatedFinalSize);
+
+	pHead->indexOffset = 0;
+	pHead->numGeometries = nGeometries;
+
+	Blocks.emplace_back(pHead, 1, estimatedFinalSize);
+	nCurrentBlockIndex = 0;
+	nTotalNodes = 1;
+}
+
+void AABBTreeOffline::Build(AABBTreeBuildData &params)
+{
+	pHead->BuildHierarchyRecursive(params);
+}
+
+AABBTreeNodeOffline* AABBTreeOffline::AllocNodes()
+{
+	nTotalNodes += 2;
+	NodeBlock& currentBlock = Blocks[nCurrentBlockIndex];
+	if (currentBlock.nUsedNodes + 2 <= currentBlock.nMaxNodes)
+	{
+		AABBTreeNodeOffline* p = currentBlock.pMem + currentBlock.nUsedNodes;
+		currentBlock.nUsedNodes += 2;
+		return p;
+	}
+	else
+	{
+		// Allocate new Block
+		const int size = 1024;
+		AABBTreeNodeOffline* p = new AABBTreeNodeOffline[size];
+		memset(p, 0, sizeof(AABBTreeNodeOffline) * size);
+
+		Blocks.emplace_back(p, 2, size);
+		nCurrentBlockIndex++;
+		return p;
+	}
+}
+
+AABBTreeNodeInference* AABBTreeOffline::BuildInferenceTree()
+{
+	if (nTotalNodes <= 0)
+	{
+		return nullptr;
+	}
+
+	AABBTreeNodeInference* Compact = (AABBTreeNodeInference*)new char[sizeof(AABBTreeNodeInference) * nTotalNodes];
+	memset(Compact, 0, sizeof(AABBTreeNodeInference) * nTotalNodes);
+
+	int offset = 0;
+	for (size_t k = 0; k < Blocks.size(); ++k)
+	{
+		const NodeBlock& block = Blocks[k];
+
+		AABBTreeNodeOffline* p = block.pMem;
+		for (int i = 0; i < block.nUsedNodes; ++i)
+		{
+			Compact[offset].aabb = p[i].aabb;
+			if (p[i].IsLeafNode())
+			{
+				const int index = p[i].indexOffset;
+				const int nPrimitives = p[i].numGeometries;
+				assert(nPrimitives <= 16);
+
+				Compact[offset].Data = (index << 5) | ((nPrimitives & 15) << 1) | 1;
+			}
+			else
+			{
+				assert(p[i].child1);
+				assert(p[i].child2);
+				uint32_t localNodeIndex = 0xffffffff;
+				uint32_t nodeBase = 0;
+				for (size_t j = 0; j < Blocks.size(); ++j)
+				{
+					if (p[i].child1 >= Blocks[j].pMem && p[i].child1 < Blocks[j].pMem + Blocks[j].nUsedNodes)
+					{
+						localNodeIndex = (uint32_t)(p[i].child1 - Blocks[j].pMem);
+						break;
+					}
+					nodeBase += Blocks[j].nUsedNodes;
+				}
+				const uint32_t nodeIndex = nodeBase + localNodeIndex;
+				Compact[offset].Data = nodeIndex << 1;
+			}
+			offset++;
+		}
+	}
+
+	return Compact;
+}

@@ -165,6 +165,11 @@ public:
 			atan2f(2 * y*w - 2 * x*z, 1 - 2 * y*y - 2 * z*z),
 			asinf(2 * x*y + 2 * z*w));
 	}
+	
+	inline Quaternion operator-() const
+	{
+		return Quaternion(-x, -y, -z, -w);
+	}
 
 	inline Quaternion operator+(const Quaternion& q) const
 	{

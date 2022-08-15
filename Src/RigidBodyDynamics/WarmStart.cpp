@@ -13,16 +13,19 @@ void WarmStart::ApplyVelocityConstraint(const std::vector<Geometry*>& AllObjects
         ContactManifold* manifold = manifolds[i];
         for (int i = 0; i < manifold->NumContactPointCount; i++)
         {
-            WarmStart::Apply(AllObjects[manifold->indexA], AllObjects[manifold->indexB], manifold->ContactPoints[i], dt);
+			RigidBody* BodyA = AllObjects[manifold->indexA]->GetParent<RigidBody>();
+			RigidBody* BodyB = AllObjects[manifold->indexB]->GetParent<RigidBody>();
+            WarmStart::Apply(BodyA, BodyB, manifold->ContactPoints[i], dt);
         }
     }
 }
 
-void WarmStart::Apply(Geometry* GeomA, Geometry* GeomB, Contact& contact, float dt)
+void WarmStart::Apply(RigidBody* BodyA, RigidBody* BodyB, Contact& contact, float dt)
 {
-    RigidBody* rigidBodyA = GeomA->GetParent<RigidBody>();
-    RigidBody* rigidBodyB = GeomB->GetParent<RigidBody>();
-
+	// TODO, not implemented
+	return;
+	
+	/*
     //let normal point from a -> b
     Vector3 normal = -contact.Normal;
 
@@ -30,14 +33,14 @@ void WarmStart::Apply(Geometry* GeomA, Geometry* GeomB, Contact& contact, float 
     float collisionImpulseVal = contact.totalImpulseNormal;
     Vector3 collisionImpulse = normal * collisionImpulseVal;
 
-    RigidBodyDynamic* rigidBodyDyn1 = rigidBodyA->CastDynamic();
+    RigidBodyDynamic* rigidBodyDyn1 = BodyA->CastDynamic();
 	if (rigidBodyDyn1 && !rigidBodyDyn1->Sleeping)
 	{
         rigidBodyDyn1->P = rigidBodyDyn1->P - collisionImpulse;
         rigidBodyDyn1->L = rigidBodyDyn1->L - collisionImpulseVal * contact.PositionLocalA.Cross(normal);
     }
 
-	RigidBodyDynamic* rigidBodyDyn2 = rigidBodyB->CastDynamic();
+	RigidBodyDynamic* rigidBodyDyn2 = BodyB->CastDynamic();
     if (rigidBodyDyn2 && !rigidBodyDyn2->Sleeping)
     {
         rigidBodyDyn2->P = rigidBodyDyn2->P + collisionImpulse;
@@ -60,5 +63,6 @@ void WarmStart::Apply(Geometry* GeomA, Geometry* GeomB, Contact& contact, float 
         rigidBodyDyn2->P = rigidBodyDyn2->P + frictionImpulse;
         rigidBodyDyn2->L = rigidBodyDyn2->L - frictionImpulseVal * contact.PositionLocalB.Cross(tangent);
     }
+	*/
 }
 

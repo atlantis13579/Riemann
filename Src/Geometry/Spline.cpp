@@ -1,6 +1,4 @@
 
-#include <vector>
-
 #include "Spline.h"
 #include "math.h"
 

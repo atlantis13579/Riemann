@@ -1,7 +1,5 @@
 #pragma once
 
-#include <float.h>
-#include <algorithm>
 #include <vector>
 #include "../Maths/Box3d.h"
 #include "../CollisionPrimitive/Ray3d.h"

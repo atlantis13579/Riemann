@@ -102,62 +102,10 @@ public:
 		Release();
 	}
 
-	void Release()
-	{
-		for (size_t i = 0; i < Blocks.size(); ++i)
-		{
-			NodeBlock& s = Blocks[i];
-			delete[]s.pMem;
-		}
-
-		Blocks.clear();
-		nCurrentBlockIndex = 0;
-		nTotalNodes = 0;
-	}
-
-	void Init(int nGeometries, int nGeometriesPerNode)
-	{
-		const int maxSize = nGeometries * 2 - 1;
-		const int estimatedFinalSize = maxSize <= 1024 ? maxSize : maxSize / nGeometriesPerNode;
-		pHead = new  AABBTreeNodeOffline[estimatedFinalSize];
-		memset(pHead, 0, sizeof(AABBTreeNodeOffline) * estimatedFinalSize);
-
-		pHead->indexOffset = 0;
-		pHead->numGeometries = nGeometries;
-
-		Blocks.emplace_back(pHead, 1, estimatedFinalSize);
-		nCurrentBlockIndex = 0;
-		nTotalNodes = 1;
-	}
-
-	void Build(AABBTreeBuildData &params)
-	{
-		pHead->BuildHierarchyRecursive(params);
-	}
-
-	AABBTreeNodeOffline* AllocNodes()
-	{
-		nTotalNodes += 2;
-		NodeBlock& currentBlock = Blocks[nCurrentBlockIndex];
-		if (currentBlock.nUsedNodes + 2 <= currentBlock.nMaxNodes)
-		{
-			AABBTreeNodeOffline* p = currentBlock.pMem + currentBlock.nUsedNodes;
-			currentBlock.nUsedNodes += 2;
-			return p;
-		}
-		else
-		{
-			// Allocate new Block
-			const int size = 1024;
-			AABBTreeNodeOffline* p = new AABBTreeNodeOffline[size];
-			memset(p, 0, sizeof(AABBTreeNodeOffline) * size);
-
-			Blocks.emplace_back(p, 2, size);
-			nCurrentBlockIndex++;
-			return p;
-		}
-	}
-
+	void Release();
+	void Init(int nGeometries, int nGeometriesPerNode);
+	void Build(AABBTreeBuildData &params);
+	AABBTreeNodeOffline* AllocNodes();
 	AABBTreeNodeInference* BuildInferenceTree();
 
 private:
