@@ -282,7 +282,7 @@ public:
 		return q.Unit();
 	}
  
-    // Comnining the slerp and nlerp, use nlerp when the angle is small, otherwise slerp
+    // Combining the slerp and nlerp, use nlerp when the angle is small, otherwise slerp
  	static Quaternion NSlerp(const Quaternion& start, const Quaternion& end, float t)
     {
         float dp = start.Dot(end);
