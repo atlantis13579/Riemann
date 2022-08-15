@@ -233,6 +233,19 @@ private:
 template<int DIM>
 using VectorN = TVectorN<float, DIM>;
 
+template<typename T>
+using TVector8 = TVectorN<T, 8>;
+
+template<typename T>
+using TVector12 = TVectorN<T, 12>;
+
+template<typename T>
+using TVector16 = TVectorN<T, 16>;
+
 typedef TVectorN<float, 8>	Vector8;
+typedef TVectorN<float, 12>	Vector12;
 typedef TVectorN<float, 16>	Vector16;
 
+static_assert(sizeof(Vector8) == 32, "sizeof Vector8 is not valid");
+static_assert(sizeof(Vector12) == 48, "sizeof Vector12 is not valid");
+static_assert(sizeof(Vector16) == 64, "sizeof Vector16 is not valid");

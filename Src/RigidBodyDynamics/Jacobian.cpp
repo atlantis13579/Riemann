@@ -22,11 +22,8 @@ void Jacobian::Setup(Contact* contact, RigidBody *bodyA, RigidBody *bodyB, Gener
 	m_invmjvb = bodyB->GetInverseMass() * m_jvb;
 	m_invmjwb = bodyB->GetInverseInertia_WorldSpace() * m_jwb;
 
-	Vector3 rva = bodyA->GetInverseInertia_WorldSpace() * m_jwa;
-	Vector3 rvb = bodyB->GetInverseInertia_WorldSpace() * m_jwb;
-
 	// k = J * inv(Mass Matrix) * J^T
-	float k = bodyA->GetInverseMass() * m_jva.Dot(m_jva) + bodyB->GetInverseMass() * m_jvb.Dot(m_jvb) + DotProduct(m_jwa, rva) + DotProduct(m_jwb, rvb);
+	float k = DotProduct(m_jva, m_invmjva) + DotProduct(m_jwa, m_invmjwa) + DotProduct(m_jvb, m_invmjvb) + DotProduct(m_jwb, m_invmjwb);
 
 	m_effectiveMass = 1.0f / k;
 	m_totalLambda = 0.0f;
