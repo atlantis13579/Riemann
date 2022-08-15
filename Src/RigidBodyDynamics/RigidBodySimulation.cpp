@@ -126,17 +126,28 @@ void		RigidBodySimulation::SimulateST(float dt)
 		m_RPhase->ResolveContact(geoms, manifolds, dt);
 	}
 
-	ApplyForceFields();
+	PreIntegrate();
 
 	MotionIntegration::Integrate(m_DynamicBodies, dt, (int)m_IntegrateMethod);
 
-	HandleRestingContact();
+	PostIntegrate();
 
 	return;
 }
 
-void		RigidBodySimulation::ApplyForceFields()
+void		RigidBodySimulation::PreIntegrate()
 {
+	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
+	{
+		RigidBodyDynamic* Body = m_DynamicBodies[i];
+		if (!Body->Sleeping)
+			continue;
+		if (Body->GetKinematicsEnergy() > Body->SleepThreshold)
+		{
+			Body->Wakeup();
+		}
+	}
+
 	for (size_t j = 0; j < m_Fields.size(); ++j)
 	{
 		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
@@ -146,23 +157,20 @@ void		RigidBodySimulation::ApplyForceFields()
 	}
 }
 
-void		RigidBodySimulation::HandleRestingContact()
+void		RigidBodySimulation::PostIntegrate()
 {
-	return;
 	DynamicAABBTree* tree = m_GeometryQuery->GetDynamicTree();
 	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 	{
 		RigidBodyDynamic* Body = m_DynamicBodies[i];
+		Body->ExtForce.SetZero();
+		Body->ExtTorque.SetZero();
 		if (Body->Sleeping)
 			continue;
+		Body->AutoSleep();
 		if (tree)
 		{
 			tree->Update(Body->mNodeId, Body->mGeometry->GetBoundingVolume_WorldSpace(), Body->GetLinearVelocity());
-		}
-		float energy = Body->GetKinematicsEnergy();
-		if (energy < Body->SleepThreshold)
-		{
-			Body->Sleep();
 		}
 	}
 }

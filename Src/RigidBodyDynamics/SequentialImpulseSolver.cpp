@@ -28,15 +28,15 @@ public:
 
 		WarmStart::ApplyVelocityConstraint(AllObjects, manifolds, dt);
 		
-		if (m_PhaseSpace.size() < AllObjects.size())
+		if (m_Phase.size() < AllObjects.size())
 		{
-			m_PhaseSpace.resize(AllObjects.size());
+			m_Phase.resize(AllObjects.size());
 		}
 		for (size_t i = 0; i < AllObjects.size(); ++i)
 		{
 			RigidBody* body = AllObjects[i]->GetParent<RigidBody>();
-			m_PhaseSpace[i].v = body->GetLinearVelocity();
-			m_PhaseSpace[i].w = body->GetAngularVelocity();
+			m_Phase[i].v = body->GetLinearVelocity();
+			m_Phase[i].w = body->GetAngularVelocity();
 		}
 
 		std::vector<ContactVelocityConstraintSolver> velocityConstraints;
@@ -49,7 +49,7 @@ public:
 				RigidBody* bodyB = AllObjects[manifold->indexB]->GetParent<RigidBody>();
 
 				velocityConstraints.push_back(ContactVelocityConstraintSolver(
-					m_PhaseSpace.data(), manifold->indexA, manifold->indexB, bodyA, bodyB));
+					m_Phase.data(), manifold->indexA, manifold->indexB, bodyA, bodyB));
 				velocityConstraints.back().Setup(&manifold->ContactPoints[j], dt);
 			}
 		}
@@ -83,8 +83,8 @@ public:
 			for (size_t i = 0; i < AllObjects.size(); ++i)
 			{
 				RigidBody* body = AllObjects[i]->GetParent<RigidBody>();
-				body->SetLinearVelocity(m_PhaseSpace[i].v);
-				body->SetAngularVelocity(m_PhaseSpace[i].w);
+				body->SetLinearVelocity(m_Phase[i].v);
+				body->SetAngularVelocity(m_Phase[i].w);
 			}
 
 			return;
@@ -98,7 +98,7 @@ private:
 	int 	m_nMaxPositionIterations;
 	
 	std::vector<PositionConstraint*>	m_PositionConstraints;
-	std::vector<GeneralizedVelocity>	m_PhaseSpace;
+	std::vector<GeneralizedVelocity>	m_Phase;
 };
 
 ResolutionPhase* ResolutionPhase::CreateSequentialImpulseSolver()

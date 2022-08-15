@@ -51,9 +51,9 @@ struct  Jacobian
 // to model the equation : (vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra)) * n == 0
 struct ContactVelocityConstraintSolver
 {
-	ContactVelocityConstraintSolver(GeneralizedVelocity *_phaseSpace, int _ia, int _ib, RigidBody* _bodyA, RigidBody* _bodyB)
+	ContactVelocityConstraintSolver(GeneralizedVelocity *_phase, int _ia, int _ib, RigidBody* _bodyA, RigidBody* _bodyB)
 	{
-		PhaseSpace = _phaseSpace;
+		phase = _phase;
 		bodyA = _bodyA;
 		bodyB = _bodyB;
 		indexA = _ia;
@@ -70,7 +70,7 @@ struct ContactVelocityConstraintSolver
 	Jacobian	m_jT;
 	Jacobian	m_jB;
 	
-	GeneralizedVelocity* PhaseSpace;
+	GeneralizedVelocity* phase;
 	RigidBody *bodyA, *bodyB;
 	int indexA, indexB;
 };

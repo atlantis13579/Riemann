@@ -13,7 +13,7 @@ public:
 
 	virtual bool ApplyForce(RigidBodyDynamic* Rigid) override final
 	{
-		if (Rigid->DisableGravity || Rigid->InvMass <= 1e-6f)
+		if (Rigid->Sleeping || Rigid->DisableGravity || Rigid->InvMass <= 1e-6f)
 		{
 			return true;
 		}

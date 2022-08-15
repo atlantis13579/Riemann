@@ -116,6 +116,16 @@ void		RigidBody::SetAngularVelocity(const Vector3 &w)
 	L = InvInertia.Invertible() ? InvInertia.Inverse() * w : Vector3::Zero();
 }
 
+void		RigidBody::SetLinearMomentum(const Vector3& p)
+{
+	P = InvMass > kMinimumInvMass ? p : Vector3::Zero();
+}
+
+void		RigidBody::SetAngularMomentum(const Vector3& l)
+{
+	L = InvInertia.Invertible() ? l : Vector3::Zero();
+}
+
 void		RigidBody::AddLinearVelocity(const Vector3& dv)
 {
 	if (InvMass > kMinimumInvMass)
@@ -235,18 +245,26 @@ void 		RigidBodyDynamic::ApplyTorgue(const Vector3& RelativePosToCenterOfMass, c
 
 bool		RigidBodyDynamic::AutoSleep()
 {
-	float k = GetKinematicsEnergy();
-	if (k < SleepThreshold)
+	const float energy = GetKinematicsEnergy();
+	if (energy < SleepThreshold)
 	{
 		Sleep();
-		return true;
+	}
+	else
+	{
+		Wakeup();
 	}
 	return Sleeping;
 }
 
 void		RigidBodyDynamic::Sleep()
 {
-	Sleeping = true;
+	if (!Sleeping)
+	{
+		Sleeping = true;
+		SetLinearMomentum(Vector3::Zero());
+		SetAngularMomentum(Vector3::Zero());
+	}
 }
 
 void		RigidBodyDynamic::Wakeup()

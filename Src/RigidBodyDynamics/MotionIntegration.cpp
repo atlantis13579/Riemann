@@ -12,8 +12,9 @@
 // https://www.ashwinnarayan.com/post/how-to-integrate-quaternions/
 // ----------------
 
-static void Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
+static int Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
 {
+	int count = 0;
 	for (size_t i = 0; i < Bodies.size(); ++i)
 	{
 		RigidBodyDynamic* Body = Bodies[i];
@@ -36,17 +37,19 @@ static void Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float
 		Body->mGeometry->SetCenterOfMass(Body->X);
 		Body->mGeometry->SetRotation(Body->Q);
 		Body->mGeometry->UpdateBoundingVolume();
-		Body->ExtForce.SetZero();
-		Body->ExtTorque.SetZero();
+		count++;
 	}
+	return count;
 }
 
-static void Integrate_MidpointEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
+static int Integrate_MidpointEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
 {
+	return 0;
 }
 
-static void Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
+static int Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
 {
+	int count = 0;
 	for (size_t i = 0; i < Bodies.size(); ++i)
 	{
 		RigidBodyDynamic* Body = Bodies[i];
@@ -69,13 +72,14 @@ static void Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, flo
 		Body->mGeometry->SetCenterOfMass(Body->X);
 		Body->mGeometry->SetRotation(Body->Q);
 		Body->mGeometry->UpdateBoundingVolume();
-		Body->ExtForce.SetZero();
-		Body->ExtTorque.SetZero();
+		count++;
 	}
+	return count;
 }
 
-static void Integrate_ImplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
+static int Integrate_ImplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
 {
+	return 0;
 }
 
 // static

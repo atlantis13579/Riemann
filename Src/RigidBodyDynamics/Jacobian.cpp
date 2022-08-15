@@ -22,8 +22,8 @@ void Jacobian::Setup(Contact* contact, RigidBody *bodyA, RigidBody *bodyB, Gener
 	m_invmjvb = bodyB->GetInverseMass() * m_jvb;
 	m_invmjwb = bodyB->GetInverseInertia_WorldSpace() * m_jwb;
 
-	Vector3 rva = bodyA->GetInverseInertia() * m_jwa;
-	Vector3 rvb = bodyB->GetInverseInertia() * m_jwb;
+	Vector3 rva = bodyA->GetInverseInertia_WorldSpace() * m_jwa;
+	Vector3 rvb = bodyB->GetInverseInertia_WorldSpace() * m_jwb;
 
 	// k = J * inv(Mass Matrix) * J^T
 	float k = bodyA->GetInverseMass() * m_jva.Dot(m_jva) + bodyB->GetInverseMass() * m_jvb.Dot(m_jvb) + DotProduct(m_jwa, rva) + DotProduct(m_jwb, rvb);
@@ -89,18 +89,18 @@ void ContactVelocityConstraintSolver::Setup(Contact* contact, float dt)
 	float restitutionA = bodyA->GetRestitution();
 	float restitutionB = bodyB->GetRestitution();
 	float restitution = restitutionA * restitutionB;
-	Vector3 va = PhaseSpace[indexA].v;
-	Vector3 wa = PhaseSpace[indexA].w;
-	Vector3 vb = PhaseSpace[indexB].v;
-	Vector3 wb = PhaseSpace[indexB].w;
-	Vector3 relativeVelocity = vb + CrossProduct(wb, contact->PositionLocalB) - va - CrossProduct(wa, contact->PositionLocalA);
+	Vector3 va = phase[indexA].v;
+	Vector3 wa = phase[indexA].w;
+	Vector3 vb = phase[indexB].v;
+	Vector3 wb = phase[indexB].w;
+	Vector3 relativeVelocity = vb + wb.Cross(contact->PositionLocalB) - va - wa.Cross(contact->PositionLocalA);
 	float closingSpeed = relativeVelocity.Dot(m_contact->Normal);
 	closingSpeed = std::min(closingSpeed + kRestitutionSlop, 0.0f);
 	closingSpeed = closingSpeed < -kRestitutionSlop ? closingSpeed : 0.0f;
 	float bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingSpeed;
-	m_jN.Setup(contact, bodyA, bodyB, PhaseSpace + indexA, PhaseSpace + indexB, m_contact->Normal, bias);
-	m_jT.Setup(contact, bodyA, bodyB, PhaseSpace + indexA, PhaseSpace + indexB, m_contact->Tangent, 0.0f);
-	m_jB.Setup(contact, bodyA, bodyB, PhaseSpace + indexA, PhaseSpace + indexB, m_contact->Binormal, 0.0f);
+	m_jN.Setup(contact, bodyA, bodyB, phase + indexA, phase + indexB, m_contact->Normal, bias);
+	m_jT.Setup(contact, bodyA, bodyB, phase + indexA, phase + indexB, m_contact->Tangent, 0.0f);
+	m_jB.Setup(contact, bodyA, bodyB, phase + indexA, phase + indexB, m_contact->Binormal, 0.0f);
 }
 
 void ContactVelocityConstraintSolver::Solve()

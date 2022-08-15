@@ -101,13 +101,22 @@ public:
 		mGuid = guid;
 	}
 
+	const Matrix3&		GetInverseInertia() const;
+	Matrix3				GetInverseInertia_WorldSpace() const;
+	const float&		GetInverseMass() const;
+
 	Vector3 			GetLinearVelocity() const;
 	const Vector3&		GetLinearMomentum() const;
 	Vector3				GetAngularVelocity() const;
 	const Vector3&		GetAngularMomentum() const;
-	const Matrix3&		GetInverseInertia() const;
-	Matrix3				GetInverseInertia_WorldSpace() const;
-	const float&		GetInverseMass() const;
+	void				SetLinearVelocity(const Vector3 &v);
+	void				SetAngularVelocity(const Vector3 &w);
+	void				SetLinearMomentum(const Vector3& p);
+	void				SetAngularMomentum(const Vector3& l);
+	void				AddLinearVelocity(const Vector3& dv);
+	void				AddAngularVelocity(const Vector3& dw);
+	void				AddLinearMomentum(const Vector3& dp);
+	void				AddAngularMomentum(const Vector3& dl);
 
 	float				GetKinematicsEnergy() const;
 	float				GetLinearKinematicsEnergy() const;
@@ -116,14 +125,6 @@ public:
 	RigidBodyStatic*	CastStatic();
 	RigidBodyDynamic*	CastDynamic();
 	
-	void				SetLinearVelocity(const Vector3 &v);
-	void				SetAngularVelocity(const Vector3 &w);
-
-	void				AddLinearVelocity(const Vector3& dv);
-	void				AddLinearMomentum(const Vector3& dp);
-	void				AddAngularVelocity(const Vector3& dw);
-	void				AddAngularMomentum(const Vector3& dl);
-
 	void				SetDefaultPhysicsMaterial(int idx);
 
 	float				GetRestitution() const;

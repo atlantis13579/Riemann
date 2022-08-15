@@ -100,8 +100,8 @@ public:
 private:
 	void				SimulateST(float dt);
 
-	void				ApplyForceFields();
-	void				HandleRestingContact();
+	void				PreIntegrate();
+	void				PostIntegrate();
 
 private:
 	std::vector<RigidBodyStatic*>	m_StaticBodies;
