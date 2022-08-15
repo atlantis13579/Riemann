@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include "Triangle3d.h"
 #include "Capsule3d.h"
 #include "Sphere3d.h"

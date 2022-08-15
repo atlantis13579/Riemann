@@ -98,6 +98,8 @@ void ContactVelocityConstraintSolver::Setup(Contact* contact, float dt)
 
 void ContactVelocityConstraintSolver::Solve()
 {
+	m_jN.m_ = m_jT.m_ = m_jB.m_ = this;
+
 	m_jN.Solve(0.0f, FLT_MAX);
 
 	float friction = bodyA->GetFrictionDynamic() * bodyB->GetFrictionDynamic();

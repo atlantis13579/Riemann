@@ -737,5 +737,8 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\Triangle3d.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Plane3d.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

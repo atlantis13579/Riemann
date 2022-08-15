@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include <algorithm>
 #include <random>
 #include "../Maths/Maths.h"

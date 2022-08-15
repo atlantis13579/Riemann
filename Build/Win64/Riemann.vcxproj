@@ -27,6 +27,7 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\Cylinder3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\HeightField3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3d.cpp" />
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Plane3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Polyhedron.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Segment3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Sphere3d.cpp" />
