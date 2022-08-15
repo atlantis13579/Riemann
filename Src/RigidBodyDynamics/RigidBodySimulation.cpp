@@ -148,6 +148,7 @@ void		RigidBodySimulation::ApplyForceFields()
 
 void		RigidBodySimulation::HandleRestingContact()
 {
+	return;
 	DynamicAABBTree* tree = m_GeometryQuery->GetDynamicTree();
 	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 	{

@@ -7,7 +7,7 @@
 #include "CollidingContact.h"
 
 // http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
-void Jacobian::Setup(Contact* contact, const Vector3& dir, float bias)
+void Jacobian::Setup(Contact* contact, RigidBody *bodyA, RigidBody *bodyB, GeneralizedVelocity* ga, GeneralizedVelocity* gb, const Vector3& dir, float bias)
 {
 	m_jva = -dir;
 	m_jwa = -contact->PositionLocalA.Cross(dir);
@@ -17,38 +17,45 @@ void Jacobian::Setup(Contact* contact, const Vector3& dir, float bias)
 	m_bias = bias;
 	m_error = 0.0f;
 
-	Vector3 rva = m_->bodyA->GetInverseInertia() * m_jwa;
-	Vector3 rvb = m_->bodyB->GetInverseInertia() * m_jwb;
+	m_invmjva = bodyA->GetInverseMass() * m_jva;
+	m_invmjwa = bodyA->GetInverseInertia_WorldSpace() * m_jwa;
+	m_invmjvb = bodyB->GetInverseMass() * m_jvb;
+	m_invmjwb = bodyB->GetInverseInertia_WorldSpace() * m_jwb;
 
-	float k = m_->bodyA->GetInverseMass() + m_->bodyB->GetInverseMass() + DotProduct(m_jwa, rva) + DotProduct(m_jwb, rvb);
+	Vector3 rva = bodyA->GetInverseInertia() * m_jwa;
+	Vector3 rvb = bodyB->GetInverseInertia() * m_jwb;
+
+	// k = J * inv(Mass Matrix) * J^T
+	float k = bodyA->GetInverseMass() * m_jva.Dot(m_jva) + bodyB->GetInverseMass() * m_jvb.Dot(m_jvb) + DotProduct(m_jwa, rva) + DotProduct(m_jwb, rvb);
 
 	m_effectiveMass = 1.0f / k;
 	m_totalLambda = 0.0f;
+
+	m_ga = ga;
+	m_gb = gb;
 	return;
 }
 
 void Jacobian::Solve(float lambdamin, float lambdamax)
 {
-	float jv = DotProduct(m_jva, m_->PhaseSpace[m_->indexA].v)
-			 + DotProduct(m_jwa, m_->PhaseSpace[m_->indexA].w)
-			 + DotProduct(m_jvb, m_->PhaseSpace[m_->indexB].v)
-			 + DotProduct(m_jwb, m_->PhaseSpace[m_->indexB].w);
+	float jv = DotProduct(m_jva, m_ga->v) 
+			 + DotProduct(m_jwa, m_ga->w)
+			 + DotProduct(m_jvb, m_gb->v)
+			 + DotProduct(m_jwb, m_gb->w);
 
+	// J * (v + dv) + b == 0
+	// Assume dv = (inv(Mass Matrix) * J^T) * lambda
+	// then lambda =  (jv + b) / (J * inv(Mass Matrix) * J^T)
 	m_error = jv + m_bias;
 	float lambda = m_effectiveMass * (-m_error);
 	float oldTotalLambda = m_totalLambda;
 	m_totalLambda = Clamp(m_totalLambda + lambda, lambdamin, lambdamax);
 	lambda = m_totalLambda - oldTotalLambda;
-	
-	Vector3 dva = (m_->bodyA->GetInverseMass() * m_jva) * lambda;
-	Vector3 dwa = (m_->bodyA->GetInverseInertia_WorldSpace() * m_jwa) * lambda;
-	Vector3 dvb = (m_->bodyB->GetInverseMass() * m_jvb) * lambda;
-	Vector3 dwb = (m_->bodyB->GetInverseInertia_WorldSpace() * m_jwb) * lambda;
 
-	m_->PhaseSpace[m_->indexA].v += dva;
-	m_->PhaseSpace[m_->indexA].w += dwa;
-	m_->PhaseSpace[m_->indexB].v += dvb;
-	m_->PhaseSpace[m_->indexB].w += dwb;
+	m_ga->v += m_invmjva * lambda;
+	m_ga->w += m_invmjwa * lambda;
+	m_gb->v += m_invmjvb * lambda;
+	m_gb->w += m_invmjwb * lambda;
 	return;
 }
 
@@ -91,15 +98,13 @@ void ContactVelocityConstraintSolver::Setup(Contact* contact, float dt)
 	closingSpeed = std::min(closingSpeed + kRestitutionSlop, 0.0f);
 	closingSpeed = closingSpeed < -kRestitutionSlop ? closingSpeed : 0.0f;
 	float bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingSpeed;
-	m_jN.Setup(contact, m_contact->Normal, bias);
-	m_jT.Setup(contact, m_contact->Tangent, 0.0f);
-	m_jB.Setup(contact, m_contact->Binormal, 0.0f);
+	m_jN.Setup(contact, bodyA, bodyB, PhaseSpace + indexA, PhaseSpace + indexB, m_contact->Normal, bias);
+	m_jT.Setup(contact, bodyA, bodyB, PhaseSpace + indexA, PhaseSpace + indexB, m_contact->Tangent, 0.0f);
+	m_jB.Setup(contact, bodyA, bodyB, PhaseSpace + indexA, PhaseSpace + indexB, m_contact->Binormal, 0.0f);
 }
 
 void ContactVelocityConstraintSolver::Solve()
 {
-	m_jN.m_ = m_jT.m_ = m_jB.m_ = this;
-
 	m_jN.Solve(0.0f, FLT_MAX);
 
 	float friction = bodyA->GetFrictionDynamic() * bodyB->GetFrictionDynamic();

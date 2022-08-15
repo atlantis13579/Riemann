@@ -20,23 +20,28 @@ struct GeneralizedVelocity
 // b is the bias term
 struct  Jacobian
 {
-	Jacobian(ContactVelocityConstraintSolver *parent)
+	Jacobian()
 	{
-		m_ = parent;
 	}
 
-	void	Setup(Contact* contact, const Vector3& dir, float bias);
+	void	Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, GeneralizedVelocity* ga, GeneralizedVelocity* gb, const Vector3& dir, float bias);
 	void	Solve(float lambdamin, float lambdamax);
 
-	Vector3 m_jva;
+	Vector3 m_jva;			// J
 	Vector3 m_jwa;
 	Vector3 m_jvb;
 	Vector3 m_jwb;
+	Vector3 m_invmjva;		// Inv(Mass Matrix) * J^T
+	Vector3 m_invmjwa;
+	Vector3 m_invmjvb;
+	Vector3 m_invmjwb;
 	float	m_error;
 	float	m_bias;
 	float	m_effectiveMass;
 	float	m_totalLambda;
-	ContactVelocityConstraintSolver* m_;
+
+	GeneralizedVelocity* m_ga;
+	GeneralizedVelocity* m_gb;
 };
 
 // Velocity Constraint consists of three Jacobian constraint
@@ -46,10 +51,7 @@ struct  Jacobian
 // to model the equation : (vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra)) * n == 0
 struct ContactVelocityConstraintSolver
 {
-	ContactVelocityConstraintSolver(GeneralizedVelocity *_phaseSpace, int _ia, int _ib, RigidBody* _bodyA, RigidBody* _bodyB) :
-	m_jN(this),
-	m_jT(this),
-	m_jB(this)
+	ContactVelocityConstraintSolver(GeneralizedVelocity *_phaseSpace, int _ia, int _ib, RigidBody* _bodyA, RigidBody* _bodyB)
 	{
 		PhaseSpace = _phaseSpace;
 		bodyA = _bodyA;
