@@ -203,13 +203,13 @@ Geometry* GeometryFactory::CreateSphere_placement(void* pBuf, const Vector3& Cen
 Geometry* GeometryFactory::CreateCapsule_placement(void* pBuf, const Vector3& X0, const Vector3& X1, float Radius)
 {
 	Quaternion quat = Quaternion::One();
-	if ((X1 - X0).SquareLength() < 1e-9)
+	if ((X1 - X0).SquareLength() > 1e-6)
 	{
 		quat.FromTwoAxis(Vector3::UnitY(), X1 - X0);
 	}
 	Vector3 Center = (X0 + X1) * 0.5f;
 	TGeometry<Capsule3d>* p = pBuf ? new (pBuf)TGeometry<Capsule3d>() : new TGeometry<Capsule3d>();
-	p->Init(X0 - Center, X1 - Center, Radius);
+	p->Init(quat.Conjugate() * (X0 - Center), quat.Conjugate() * (X1 - Center), Radius);
 	p->SetCenterOfMass(Center);
 	p->SetRotation(quat);
 	p->UpdateBoundingVolume();
@@ -227,9 +227,9 @@ Geometry*	GeometryFactory::CreatePlane(const Vector3& Center, const Vector3& Nor
 	TGeometry<Plane3d>* p = new TGeometry<Plane3d>();
 	p->Normal = Vector3::UnitY();
 	p->D = 0.0f;
-	p->SetCenterOfMass(Center);
 	Quaternion quat;
-	quat.FromTwoAxis(p->Normal, Normal);
+	quat.FromTwoAxis(Vector3::UnitY(), Normal);
+	p->SetCenterOfMass(Center);
 	p->SetRotation(quat);
 	p->UpdateBoundingVolume();
 	return (Geometry*)p;
@@ -244,13 +244,13 @@ Geometry*	GeometryFactory::CreateSphere(const Vector3& Center, float Radius)
 Geometry*	GeometryFactory::CreateCylinder(const Vector3& X0, const Vector3& X1, float Radius)
 {
 	Quaternion quat = Quaternion::One();
-	if ((X1 - X0).SquareLength() < 1e-9)
+	if ((X1 - X0).SquareLength() > 1e-6)
 	{
 		quat.FromTwoAxis(Vector3::UnitY(), X1 - X0);
 	}
 	Vector3 Center = (X0 + X1) * 0.5f;
 	TGeometry<Cylinder3d>* p = new TGeometry<Cylinder3d>();
-	p->Init(X0 - Center, X1 - Center, Radius);
+	p->Init(quat.Conjugate() * (X0 - Center), quat.Conjugate() * (X1 - Center), Radius);
 	p->SetCenterOfMass(Center);
 	p->SetRotation(quat);
 	p->UpdateBoundingVolume();

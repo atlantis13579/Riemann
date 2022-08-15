@@ -77,7 +77,7 @@ public:
 
 	bool			IsYAxisAligned() const
 	{
-		return (X1 - X0).ParallelTo(Vector3::UnitY()) == 0;
+		return (X1 - X0).ParallelTo(Vector3::UnitY());
 	}
 
 	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;

@@ -3,7 +3,7 @@
 #include "Matrix3.h"
 #include "Maths.h"
 
-void Matrix3::LoadRotateX(float angle)
+Matrix3& Matrix3::LoadRotateX(float angle)
 {
 	float c, s;
 	c = cosf(angle);
@@ -11,9 +11,10 @@ void Matrix3::LoadRotateX(float angle)
 	mat[0][0] = 1.0f;	mat[0][1] = 0.0f;	mat[0][2] = 0.0f;
 	mat[1][0] = 1.0f;	mat[1][1] = c;		mat[1][2] = s;
 	mat[2][0] = 1.0f;	mat[2][1] = -s; 	mat[2][2] = c;
+	return *this;
 }
 
-void Matrix3::LoadRotateY(float angle)
+Matrix3& Matrix3::LoadRotateY(float angle)
 {
 	float c, s;
 	c = cosf(angle);
@@ -21,9 +22,10 @@ void Matrix3::LoadRotateY(float angle)
 	mat[0][0] = c;		mat[0][1] = 0.0f;	mat[0][2] = -s;
 	mat[1][0] = 0.0f;	mat[1][1] = 1.0f;	mat[1][2] = 0.0f;
 	mat[2][0] = s;		mat[2][1] = 0.0f;	mat[2][2] = c;
+	return *this;
 }
 
-void Matrix3::LoadRotateZ(float angle)
+Matrix3& Matrix3::LoadRotateZ(float angle)
 {
 	float c, s;
 	c = cosf(angle);
@@ -31,15 +33,17 @@ void Matrix3::LoadRotateZ(float angle)
 	mat[0][0] = c;		mat[0][1] = s; 		mat[0][2] = 0.0f;
 	mat[1][0] = -s; 	mat[1][1] = c;		mat[1][2] = 0.0f;
 	mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
+	return *this;
 }
 
-void Matrix3::Load2DOrthogonalTransform(float dx, float dy, float angle) {
+Matrix3& Matrix3::Load2DOrthogonalTransform(float dx, float dy, float angle) {
 	float c, s;
 	c = cosf(angle);
 	s = sinf(angle);
 	mat[0][0] = c;		mat[0][1] = -s; 	mat[0][2] = dx;
 	mat[1][0] = s; 		mat[1][1] = c;		mat[1][2] = dy;
 	mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
+	return *this;
 }
 
 float Matrix3::ToAxisAngle(Vector3& Axis) const

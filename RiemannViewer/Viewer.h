@@ -23,6 +23,7 @@ public:
 	void CreateDemo();
 	void CreateStackBoxesDemo();
 	void CreateDominoDemo();
+	void CreateSeeSawDemo();
 	
 	Vector3 GetCameraPosition();
 	void UpdateCamera();

@@ -62,12 +62,6 @@ public:
 		mat[2][0] = 0; mat[2][1] = 0; mat[2][2] = 1;
 	}
 
-	// Generate Rotate Matrix
-	void LoadRotateX(float angle);
-	void LoadRotateY(float angle);
-	void LoadRotateZ(float angle);
-	void Load2DOrthogonalTransform(float dx, float dy, float dAngle);
-
 	inline Matrix3 Transpose() const
 	{
 		return Matrix3(mat[0][0], mat[1][0], mat[2][0],
@@ -272,7 +266,13 @@ public:
 						-v.y, v.x, 0);
 	}
 
-	void		FromAxisAngle(const Vector3& Axis, float Radian)
+	// Generate Rotate Matrix
+	Matrix3& LoadRotateX(float angle);
+	Matrix3& LoadRotateY(float angle);
+	Matrix3& LoadRotateZ(float angle);
+	Matrix3& Load2DOrthogonalTransform(float dx, float dy, float dAngle);
+
+	Matrix3& FromAxisAngle(const Vector3& Axis, float Radian)
 	{
 		float fCos = cosf(Radian);
 		float fSin = sinf(Radian);
@@ -296,15 +296,16 @@ public:
 		mat[2][0] = fXZM - fYSin;
 		mat[2][1] = fYZM + fXSin;
 		mat[2][2] = fZ2 * fOneMinusCos + fCos;
+		return *this;
 	}
 
-	void		FromTwoAxis(const Vector3& AxisFrom, const Vector3& AxisTo)
+	Matrix3& FromTwoAxis(const Vector3& AxisFrom, const Vector3& AxisTo)
 	{
 		Vector3 UnitAxisFrom = AxisFrom.Unit();
 		Vector3 UnitAxisTo = AxisTo.Unit();
 		Vector3 Axis = UnitAxisFrom.Cross(UnitAxisTo);
 		float Angle = acosf(UnitAxisFrom.Dot(UnitAxisTo));
-		FromAxisAngle(Axis, Angle);
+		return FromAxisAngle(Axis, Angle);
 	}
 
 	float		ToAxisAngle(Vector3& Axis) const;

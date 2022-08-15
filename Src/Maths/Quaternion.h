@@ -79,46 +79,51 @@ public:
 		return w * w + x * x + y * y + z * z;
 	}
 
-	void FromRotateX(float radian)
+	Quaternion& FromRotateX(float radian)
 	{
 		FromRotationAxis(Vector3::UnitX(), radian);
+		return *this;
 	}
 
-	void FromRotateY(float radian)
+	Quaternion& FromRotateY(float radian)
 	{
 		FromRotationAxis(Vector3::UnitY(), radian);
+		return *this;
 	}
 
-	void FromRotateZ(float radian)
+	Quaternion& FromRotateZ(float radian)
 	{
 		FromRotationAxis(Vector3::UnitZ(), radian);
+		return *this;
 	}
 
-	void FromRotationAxis(const Vector3& axis, float radian)
+	Quaternion& FromRotationAxis(const Vector3& axis, float radian)
 	{
 		*this = Quaternion(cosf(radian / 2), axis * sinf(radian / 2));
+		return *this;
 	}
 	
-	void FromTwoAxis(const Vector3& AxisFrom, const Vector3& AxisTo)
+	Quaternion& FromTwoAxis(const Vector3& AxisFrom, const Vector3& AxisTo)
 	{
 		Vector3 UnitAxisFrom = AxisFrom.Unit();
 		Vector3 UnitAxisTo = AxisTo.Unit();
 		Vector3 Axis = UnitAxisFrom.Cross(UnitAxisTo);
 		float Angle = acosf(UnitAxisFrom.Dot(UnitAxisTo));
-		FromRotationAxis(Axis, Angle);
+		return FromRotationAxis(Axis, Angle);
 	}
 
-	void FromEuler(float x, float y, float z)
+	Quaternion& FromEuler(float x, float y, float z)
 	{
 		Quaternion xrot, yrot, zrot;
 		xrot.FromRotationAxis(Vector3(1, 0, 0), x);
 		yrot.FromRotationAxis(Vector3(0, 1, 0), y);
 		zrot.FromRotationAxis(Vector3(0, 0, 1), z);
 		*this = zrot * yrot * xrot;
+		return *this;
 	}
 
 	// https://d3cw3dd2w32x2b.cloudfront.net/wp-content/uploads/2015/01/matrix-to-quat.pdf
-	void FromRotationMatrix(const Matrix3& mat)
+	Quaternion& FromRotationMatrix(const Matrix3& mat)
 	{
 		float t;
 		Quaternion q;
@@ -150,6 +155,7 @@ public:
 		}
 		q *= 0.5f / sqrtf(t);
 		*this = q;
+		return *this;
 	}
 
 	Vector3 ToEuler() const

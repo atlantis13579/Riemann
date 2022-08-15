@@ -125,8 +125,7 @@ bool HeightField3d::IntersectRay(const Vector3& Origin, const Vector3& Direction
 		return false;
 	}
 
-	int AxisY = Direction.ParallelTo(Vector3::UnitY());
-	if (AxisY != 0)
+	if (Direction.ParallelTo(Vector3::UnitY()))
 	{
 		// Handle the most common case
 		return IntersectRayY(Origin, Direction, Option, Result);
