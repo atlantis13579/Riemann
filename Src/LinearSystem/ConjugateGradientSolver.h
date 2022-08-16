@@ -2,7 +2,8 @@
 
 #include <string.h>
 
-// solve ax = b, given a, b
+// given a b, where a is n*n matrix, b is a n*1 matrix
+// solve ax = b
 // https://en.wikipedia.org/wiki/Conjugate_gradient_method
 
 template<typename T>

@@ -18,16 +18,9 @@ public:
 	virtual ~SequentialImpulseSolver()
 	{
 	}
-
-	virtual void	ResolveContact(const std::vector<Geometry*>& geoms,
-								   std::vector<ContactManifold*>& manifolds,
-								   float dt) override final
+	
+	virtual void	PreResolve(const std::vector<Geometry*>& geoms) override final
 	{
-		if (manifolds.empty())
-			return;
-
-		WarmStart::ApplyVelocityConstraint(geoms, manifolds, dt);
-		
 		if (m_Buffer.size() < geoms.size())
 		{
 			m_Buffer.resize(geoms.size());
@@ -38,6 +31,16 @@ public:
 			m_Buffer[i].v = body->GetLinearVelocity();
 			m_Buffer[i].w = body->GetAngularVelocity();
 		}
+	}
+
+	virtual void	ResolveContact(const std::vector<Geometry*>& geoms,
+								   std::vector<ContactManifold*>& manifolds,
+								   float dt) override final
+	{
+		if (manifolds.empty())
+			return;
+
+		WarmStart::ApplyVelocityConstraint(geoms, manifolds, dt);
 
 		std::vector<ContactVelocityConstraintSolver> velocityConstraints;
 		for (size_t i = 0; i < manifolds.size(); ++i)
@@ -79,18 +82,24 @@ public:
 			{
 				velocityConstraints[k].Finalize();
 			}
-			
-			for (size_t i = 0; i < geoms.size(); ++i)
-			{
-				RigidBody* body = geoms[i]->GetParent<RigidBody>();
-				body->SetLinearVelocity(m_Buffer[i].v);
-				body->SetAngularVelocity(m_Buffer[i].w);
-			}
 
 			return;
 		}
 
 
+	}
+	
+	virtual void	PostResolve(const std::vector<Geometry*>& geoms) override final
+	{
+		for (size_t i = 0; i < geoms.size(); ++i)
+		{
+			RigidBody* body = geoms[i]->GetParent<RigidBody>();
+			if (body->mRigidType == RigidType::Dynamic)
+			{
+				body->SetLinearVelocity(m_Buffer[i].v);
+				body->SetAngularVelocity(m_Buffer[i].w);
+			}
+		}
 	}
 
 private:

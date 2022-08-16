@@ -72,9 +72,10 @@ public:
 	virtual ~ContactReport() {}
 };
 
-class ManifoldIsland
+class ContactManifoldIslands
 {
 public:
-	std::vector<ContactManifold*> manifolds;
+	void BuildIslands(const std::vector<Geometry*> &geoms, const std::vector<ContactManifold*> &manifolds);
+	
+	std::vector<std::vector<ContactManifold*>> islands;
 };
-

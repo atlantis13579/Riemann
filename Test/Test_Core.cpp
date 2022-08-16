@@ -3,6 +3,7 @@
 #include <string>
 #include <chrono>
 #include "Test.h"
+#include "../Src/Core/Graph.h"
 #include "../Src/Core/JobSystem.h"
 #include "../Src/Core/ThreadPool.h"
 #include "../Src/Core/RingBuffer.h"
@@ -73,8 +74,43 @@ void TestJob()
 	return;
 }
 
+void TestGraph()
+{
+	Graph<int> gr;
+	for (int i = 0; i < 9; ++i)
+		gr.nodes.push_back(i);
+	gr.edges.emplace_back(1, 2);
+	gr.edges.emplace_back(3, 2);
+	gr.edges.emplace_back(3, 1);
+	gr.edges.emplace_back(5, 4);
+	gr.edges.emplace_back(2, 4);
+	gr.edges.emplace_back(2, 6);
+	
+	std::vector<std::vector<int>> islands;
+	gr.BuildIslands({false, false, true, false, false,  false, false, false, false}, &islands);
+	
+	EXPECT(islands.size() == 3);
+	EXPECT(islands[0].size() == 3);		// 1, 2, 3
+	EXPECT(islands[1].size() == 3);		// 2, 4, 5
+	EXPECT(islands[2].size() == 2);		// 2, 6
+	for (size_t i = 0; i < islands[0].size(); ++i)
+	{
+		EXPECT(islands[0][i] == 1 || islands[0][i] == 2 || islands[0][i] == 3);
+	}
+	for (size_t i = 0; i < islands[1].size(); ++i)
+	{
+		EXPECT(islands[1][i] == 2 || islands[1][i] == 4 || islands[1][i] == 5);
+	}
+	for (size_t i = 0; i < islands[2].size(); ++i)
+	{
+		EXPECT(islands[2][i] == 2 || islands[2][i] == 6);
+	}
+	return;
+}
+
 void TestCores()
 {
 	// TestThreadPool();
-	TestJob();
+	// TestJob();
+	TestGraph();
 }

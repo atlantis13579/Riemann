@@ -25,11 +25,11 @@ static int Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float 
 		}
 
 		Body->X = Body->X + (Body->V) * dt;									// X' = v
-		Matrix3 R = Body->Q.ToRotationMatrix3();
-		Matrix3 invInertiaWorld = R * Body->InvInertia * R.Transpose();
 		Quaternion dQ = 0.5f * Quaternion(0.0f, Body->W) * Body->Q;			// Q' = 0.5 * W * Q
 		Body->Q = (Body->Q + dQ * dt).Unit();
 		
+		Matrix3 R = Body->Q.ToRotationMatrix3();
+		Matrix3 invInertiaWorld = R * Body->InvInertia * R.Transpose();
 		float LinearDamping = 1.0f -(1.0f - Body->LinearDamping) * dt;
 		float AngularDamping = 1.0f -(1.0f - Body->AngularDamping) * dt;
 		Body->V = (Body->V + Body->InvMass * Body->ExtForce * dt) * LinearDamping;		// V' = Force / mass

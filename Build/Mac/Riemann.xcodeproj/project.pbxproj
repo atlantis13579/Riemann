@@ -168,9 +168,7 @@
 		ADD23C4E288761AE00A849BE /* VoxelField.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C3A288761AE00A849BE /* VoxelField.h */; };
 		ADD23C4F288761AE00A849BE /* Voronoi2d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C3B288761AE00A849BE /* Voronoi2d.h */; };
 		ADD23C50288761AE00A849BE /* TetrahedralMesh.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C3C288761AE00A849BE /* TetrahedralMesh.h */; };
-		ADD23C96288762C000A849BE /* ExponentialIntegrator.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C87288762C000A849BE /* ExponentialIntegrator.h */; };
 		ADD23C99288762C000A849BE /* NumericalODESolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C8A288762C000A849BE /* NumericalODESolver.cpp */; };
-		ADD23C9A288762C000A849BE /* ConjugateGradientSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C8B288762C000A849BE /* ConjugateGradientSolver.h */; };
 		ADD23C9B288762C000A849BE /* NewtonRaphsonIteration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C8C288762C000A849BE /* NewtonRaphsonIteration.cpp */; };
 		ADD23C9C288762C000A849BE /* ProjectiveDynamicsSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C8D288762C000A849BE /* ProjectiveDynamicsSolver.cpp */; };
 		ADD23C9F288762C000A849BE /* SparseConjugateGradientSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C90288762C000A849BE /* SparseConjugateGradientSolver.h */; };
@@ -398,9 +396,7 @@
 		ADD23C3A288761AE00A849BE /* VoxelField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoxelField.h; path = ../../Src/Geometry/VoxelField.h; sourceTree = "<group>"; };
 		ADD23C3B288761AE00A849BE /* Voronoi2d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Voronoi2d.h; path = ../../Src/Geometry/Voronoi2d.h; sourceTree = "<group>"; };
 		ADD23C3C288761AE00A849BE /* TetrahedralMesh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = TetrahedralMesh.h; path = ../../Src/Geometry/TetrahedralMesh.h; sourceTree = "<group>"; };
-		ADD23C87288762C000A849BE /* ExponentialIntegrator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ExponentialIntegrator.h; path = ../../Src/Solver/ExponentialIntegrator.h; sourceTree = "<group>"; };
 		ADD23C8A288762C000A849BE /* NumericalODESolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NumericalODESolver.cpp; path = ../../Src/Solver/NumericalODESolver.cpp; sourceTree = "<group>"; };
-		ADD23C8B288762C000A849BE /* ConjugateGradientSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConjugateGradientSolver.h; path = ../../Src/Solver/ConjugateGradientSolver.h; sourceTree = "<group>"; };
 		ADD23C8C288762C000A849BE /* NewtonRaphsonIteration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = NewtonRaphsonIteration.cpp; path = ../../Src/Solver/NewtonRaphsonIteration.cpp; sourceTree = "<group>"; };
 		ADD23C8D288762C000A849BE /* ProjectiveDynamicsSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ProjectiveDynamicsSolver.cpp; path = ../../Src/Solver/ProjectiveDynamicsSolver.cpp; sourceTree = "<group>"; };
 		ADD23C90288762C000A849BE /* SparseConjugateGradientSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseConjugateGradientSolver.h; path = ../../Src/Solver/SparseConjugateGradientSolver.h; sourceTree = "<group>"; };
@@ -573,8 +569,6 @@
 		ADD23B8B288760A000A849BE /* Solver */ = {
 			isa = PBXGroup;
 			children = (
-				ADD23C8B288762C000A849BE /* ConjugateGradientSolver.h */,
-				ADD23C87288762C000A849BE /* ExponentialIntegrator.h */,
 				ADD23C8C288762C000A849BE /* NewtonRaphsonIteration.cpp */,
 				ADD23C92288762C000A849BE /* NewtonRaphsonIteration.h */,
 				ADD23C8A288762C000A849BE /* NumericalODESolver.cpp */,
@@ -903,7 +897,6 @@
 				AD1B174C28ABC384003E024E /* ContinuousBitmap.h in Headers */,
 				ADD23BBC2887614E00A849BE /* AABBTree.h in Headers */,
 				ADD23D01288762ED00A849BE /* MatrixMxN.h in Headers */,
-				ADD23C96288762C000A849BE /* ExponentialIntegrator.h in Headers */,
 				AD1B174928ABC384003E024E /* libPng.h in Headers */,
 				ADD23D29288762F900A849BE /* PolarDecomposition.h in Headers */,
 				ADD23BC22887614E00A849BE /* DynamicAABBTree.h in Headers */,
@@ -945,7 +938,6 @@
 				ADD23D24288762F900A849BE /* GaussSeidelIteration.h in Headers */,
 				AD1B174F28ABC384003E024E /* libPPM.h in Headers */,
 				ADD23D06288762ED00A849BE /* Tensor.h in Headers */,
-				ADD23C9A288762C000A849BE /* ConjugateGradientSolver.h in Headers */,
 				AD1B175328ABC384003E024E /* PhysxFormat_34.hpp in Headers */,
 				AD08836B289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h in Headers */,
 				ADD23CFC288762ED00A849BE /* Transform.h in Headers */,

@@ -2,7 +2,10 @@
 #include <assert.h>
 #include <algorithm>
 #include "CollidingContact.h"
+#include "RigidBody.h"
+#include "../Core/Graph.h"
 #include "../Core/StaticArray.h"
+#include "../Collision/GeometryObject.h"
 #include "../CollisionPrimitive/Segment3d.h"
 #include "../CollisionPrimitive/Triangle3d.h"
 
@@ -207,4 +210,24 @@ ContactManifoldManager::ContactManifoldManager()
 ContactManifoldManager::~ContactManifoldManager()
 {
 
+}
+
+void ContactManifoldIslands::BuildIslands(const std::vector<Geometry*> &geoms, const std::vector<ContactManifold*> &manifolds)
+{
+	Graph<ContactManifold*> graph;
+	graph.nodes = manifolds;
+	for (size_t i = 0; i < manifolds.size(); ++i)
+	{
+		graph.edges.emplace_back(manifolds[i]->indexA, manifolds[i]->indexB);
+	}
+	std::vector<bool> separate;
+	separate.resize(geoms.size());
+	for (size_t i = 0; i < separate.size(); ++i)
+	{
+		RigidBody* body = geoms[i]->GetParent<RigidBody>();
+		separate[i] = body->mRigidType == RigidType::Static;
+	}
+	
+	graph.BuildIslands(separate, &islands);
+	return;
 }

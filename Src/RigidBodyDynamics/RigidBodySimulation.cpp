@@ -10,6 +10,7 @@
 #include "../Collision/GeometryObject.h"
 #include "../Modules/Tools/PhysxBinaryParser.h"
 #include "BroadPhase.h"
+#include "CollidingContact.h"
 #include "NarrowPhase.h"
 #include "MotionIntegration.h"
 #include "SequentialImpulseSolver.h"
@@ -126,7 +127,26 @@ void		RigidBodySimulation::SimulateST(float dt)
 
 	if (m_Solver && !manifolds.empty())
 	{
-		m_Solver->ResolveContact(geoms, manifolds, dt);
+		m_Solver->PreResolve(geoms);
+		
+		const bool BuildIslands = true;
+		if (BuildIslands)
+		{
+			ContactManifoldIslands manifold_islands;
+			manifold_islands.BuildIslands(geoms, manifolds);
+			manifolds.clear();
+			
+			for (size_t i = 0; i < manifold_islands.islands.size(); ++i)
+			{
+				m_Solver->ResolveContact(geoms, manifold_islands.islands[i], dt);
+			}
+		}
+		else
+		{
+			m_Solver->ResolveContact(geoms, manifolds, dt);
+		}
+		
+		m_Solver->PostResolve(geoms);
 	}
 
 	PreIntegrate(dt);
