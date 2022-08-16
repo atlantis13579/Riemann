@@ -9,8 +9,8 @@
 #include "../Src/RigidBodyDynamics/RigidBodySimulation.h"
 #include "../Src/RigidBodyDynamics/KinematicsTree.h"
 #include "../Renderer/Renderer.h"
-#include "ObjRenderer.h"
 #include "../Src/Modules/Tools/PhysxBinaryParser.h"
+#include "ObjRenderer.h"
 
 WorldViewer::WorldViewer(Renderer* renderer)
 {
@@ -32,19 +32,15 @@ void WorldViewer::CreateDemo()
 	RigidBodyParam rp;
 	rp.rigidType = RigidType::Static;
 	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3(0.0f, 1.0f, 0.0f));
-	// Geometry* plane = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0f, 0.0f), Vector3(100.0f, 2.1f, 100.0f));
 	m_World->CreateRigidBody(plane, rp);
 
 	rp.rigidType = RigidType::Dynamic;
-	// rp.linearDamping = 0.99f;
-	// rp.angularDamping = 0.99f;
 	for (int i = 0; i < 5; ++i)
 	for (int j = 0; j < 1; ++j)
 	for (int k = 0; k < 1; ++k)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 0.01f -0.0f  + i * 2.1f, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 0.01f - 3.0f  + i * 2.01f, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
 		RigidBodyDynamic* p = m_World->CreateRigidBody(aabb, rp)->CastDynamic();
-		// p->ApplyTorgue(Vector3(0, -50, 0).Cross(Vector3::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
 	}
 
 	AddToRender();
@@ -60,7 +56,7 @@ void WorldViewer::CreateDemo()
 			Geometry* sphere = GeometryFactory::CreateSphere(p0, 1.0f);
 			RigidBodyDynamic* body = m_World->CreateRigidBody(sphere, rp)->CastDynamic();
 			body->DisableGravity = true;
-			body->ApplyLinearAcceleration(-p0.Unit() * 100.0f);
+			body->ApplyLinearAcceleration((Vector3(5.0f, 0.0f, 5.0f)-p0).Unit() * 100.0f);
 			AddGeometry(m_Renderer, sphere);
 		}
 	};
@@ -150,7 +146,7 @@ void WorldViewer::CreateSeeSawDemo()
 {
 	RigidBodyParam rp;
 	rp.rigidType = RigidType::Static;
-	Geometry* box = GeometryFactory::CreateOBB(Vector3(0, -0.25f, 0), Vector3(30, 0.25f, 30));
+	Geometry* box = GeometryFactory::CreatePlane(Vector3(0, -1, 0), Vector3::UnitY());
 	m_World->CreateRigidBody(box, rp);
 
 	box = GeometryFactory::CreateOBB(Vector3(3, 0, 0), Vector3(1, 1, 1), Quaternion().FromRotateZ(0.7f));
@@ -160,6 +156,8 @@ void WorldViewer::CreateSeeSawDemo()
 	box = GeometryFactory::CreateOBB(Vector3(2, 1.7f, 0), Vector3(5, 0.25f, 1));
 	m_World->CreateRigidBody(box, rp);
 
+	box = GeometryFactory::CreateSphere(Vector3(-1, 4, 0), 0.5f);
+	m_World->CreateRigidBody(box, rp);
 	rp.invMass = 0.5f;
 	box = GeometryFactory::CreateOBB(Vector3(-2, 4, 0), Vector3(0.5f, 0.5f, 0.5f));
 	m_World->CreateRigidBody(box, rp);

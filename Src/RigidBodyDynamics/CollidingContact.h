@@ -75,7 +75,6 @@ public:
 class ManifoldIsland
 {
 public:
-	std::vector<Geometry*> *pobjs;
 	std::vector<ContactManifold*> manifolds;
 };
 

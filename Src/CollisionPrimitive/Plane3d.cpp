@@ -321,10 +321,10 @@ void Plane3d::GetVerties(Vector3* v, float Radius)
 	Vector3 v2 = Normal.Cross(v1);
 
 	Vector3 Origin = GetOrigin();
-	v[0] = Origin + v1 * Radius;
-	v[1] = Origin + v2 * Radius;
-	v[2] = Origin + v1 * -Radius;
-	v[3] = Origin + v2 * -Radius;
+	v[0] = Origin + v1 * Radius + Normal * kHalfThickness;
+	v[1] = Origin + v2 * Radius + Normal * kHalfThickness;
+	v[2] = Origin + v1 * -Radius + Normal * kHalfThickness;
+	v[3] = Origin + v2 * -Radius + Normal * kHalfThickness;
 	return;
 }
 
