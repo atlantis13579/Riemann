@@ -10,7 +10,7 @@ class NarrowPhase
 {
 public:
 	virtual ~NarrowPhase() {}
-	virtual void CollisionDetection(const std::vector<Geometry*>& AllObjects,
+	virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
 									const std::vector<OverlapPair>& overlaps,
 									std::vector<ContactManifold*>* contact) = 0;
 

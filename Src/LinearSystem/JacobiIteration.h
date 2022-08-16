@@ -8,7 +8,7 @@ template<typename T>
 class JacobiIteration_CPU
 {
 public:
-	bool Solve(const T* A, const T* B, int N, T* X, const int MaxIteration, const T kEps = (T)0.00001)
+	static bool Solve(const T* A, const T* B, int N, T* X, const int MaxIteration, const T kEps = (T)0.00001)
 	{
 		T stack_mem[1024];
 		T* heap_mem = nullptr;

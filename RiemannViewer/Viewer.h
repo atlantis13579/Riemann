@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 #include <vector>
 #include "../Src/Maths/Vector3.h"
@@ -31,9 +32,12 @@ public:
 	void MouseMsg(int x, int y, bool LButtonDown);
 	void MouseWheel(int zDelta, bool CtrlButtonDown);
 
+	void AddToRender();
+
 private:
 	RigidBodySimulation* m_World;
 	Renderer* m_Renderer;
+	std::function<void(char)> m_KeyboardEvent;
 
 	Vector3    m_CamCenter;
 	Vector3    m_CamParam;

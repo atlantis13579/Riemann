@@ -243,6 +243,18 @@ void 		RigidBodyDynamic::ApplyTorgue(const Vector3& RelativePosToCenterOfMass, c
 }
 
 
+void RigidBodyDynamic::ApplyLinearAcceleration(const Vector3& LinAcc)
+{
+	if (InvMass > kMinimumInvMass)
+		ApplyForce(LinAcc / InvMass);
+}
+
+void RigidBodyDynamic::ApplyAngularAcceleration(const Vector3& AngAcc)
+{
+	if (InvInertia.Invertible())
+		ApplyTorgue(InvInertia.Inverse() * AngAcc);
+}
+
 bool		RigidBodyDynamic::AutoSleep()
 {
 	const float energy = GetKinematicsEnergy();

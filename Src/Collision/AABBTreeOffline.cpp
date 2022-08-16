@@ -196,7 +196,7 @@ AABBTreeNodeOffline* AABBTreeOffline::AllocNodes()
 	}
 }
 
-CacheFriendlyAABBTree* AABBTreeOffline::BuildInferenceTree()
+CacheFriendlyAABBTree* AABBTreeOffline::BuildCacheFriendlyTree()
 {
 	if (nTotalNodes <= 0)
 	{

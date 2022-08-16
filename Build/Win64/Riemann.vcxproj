@@ -94,6 +94,7 @@
     <ClCompile Include="..\..\Src\Modules\VehicleDynamics\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Src\Core\LogSystem.h" />
     <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
     <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
     <ClInclude Include="..\..\Src\LinearSystem\ConjugateGradientSolver.h" />

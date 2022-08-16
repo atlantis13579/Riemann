@@ -3,6 +3,7 @@
 #include "RigidBodySimulation.h"
 
 #include "../Core/Base.h"
+#include "../Core/LogSystem.h"
 #include "../Core/JobSystem.h"
 #include "../Collision/DynamicAABBTree.h"
 #include "../Collision/GeometryQuery.h"
@@ -126,20 +127,34 @@ void		RigidBodySimulation::SimulateST(float dt)
 		m_RPhase->ResolveContact(geoms, manifolds, dt);
 	}
 
-	PreIntegrate();
+	PreIntegrate(dt);
 
 	MotionIntegration::Integrate(m_DynamicBodies, dt, (int)m_IntegrateMethod);
 
-	PostIntegrate();
+	if (m_DynamicBodies.size())
+	{
+
+		static Vector3 p0 = m_DynamicBodies[0]->X;
+		static float tt = 0.0f;
+		tt += dt;
+		float diff = (m_DynamicBodies[0]->X - p0).Length();
+		if (tt < 1.2f)
+			Logger::OutputDebugWindow("%.3f %.3f\n", tt, diff);
+	}
+
+
+	PostIntegrate(dt);
 
 	return;
 }
 
-void		RigidBodySimulation::PreIntegrate()
+void		RigidBodySimulation::PreIntegrate(float dt)
 {
 	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 	{
 		RigidBodyDynamic* Body = m_DynamicBodies[i];
+		Body->ExtForce /= (dt * 2.0f);
+		Body->ExtTorque /= (dt * 2.0f);
 		if (!Body->Sleeping)
 			continue;
 		if (Body->GetKinematicsEnergy() > Body->SleepThreshold)
@@ -157,7 +172,7 @@ void		RigidBodySimulation::PreIntegrate()
 	}
 }
 
-void		RigidBodySimulation::PostIntegrate()
+void		RigidBodySimulation::PostIntegrate(float dt)
 {
 	DynamicAABBTree* tree = m_GeometryQuery->GetDynamicTree();
 	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
@@ -303,6 +318,18 @@ KinematicsDriver* RigidBodySimulation::FindKinematics(const std::string& resname
 		}
 	}
 	return nullptr;
+}
+
+void RigidBodySimulation::GetAllGeometries(std::vector<Geometry*> *geoms)
+{
+	for (size_t i = 0; i < m_StaticBodies.size(); ++i)
+	{
+		m_StaticBodies[i]->GetGeometries(geoms);
+	}
+	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
+	{
+		m_DynamicBodies[i]->GetGeometries(geoms);
+	}
 }
 
 float RigidBodySimulation::GetSystemTotalEnergy() const

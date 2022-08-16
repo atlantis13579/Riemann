@@ -9,7 +9,7 @@ template<typename T>
 class ConjugateGradientSolver
 {
 public:
-	static bool Solve(const T* A, const T *B, int n, T* X, const int m_MaxIterations = 100, const T m_Epsilon = (T)0.0001)
+	static bool Solve(const T* A, const T *B, int n, T* X, const int maxIterations = 100, const T Eps = (T)0.0001)
 	{
 		T stack_mem[1024 * 3 * 4];
 		T *heap_mem = nullptr;
@@ -36,7 +36,7 @@ public:
 		T delta0 = deltaNew;
 		T alpha = 0, beta = 0;
 
-		while (it < m_MaxIterations)
+		while (it < maxIterations)
 		{
 			it++;
 			for (int i = 0; i < n; i++)
@@ -47,7 +47,7 @@ public:
 			for (int i = 0; i < n; i++)
 				X[i] = X[i] + alpha * d[i];
 
-			if (it % 50 == 0)		// Ting point errors ???
+			if (it % 50 == 0)		// floating point errors ???
 			{
 				for (int i = 0; i < n; ++i)
 					r[i] = B[i] - Dot(A + i * n, X, n);
@@ -65,7 +65,7 @@ public:
 			for (int i = 0; i < n; ++i)
 				d[i] = r[i] + beta * d[i];
 
-			if (deltaNew < m_Epsilon * m_Epsilon * delta0)
+			if (deltaNew < Eps * Eps * delta0)
 			{
 				break;
 			}

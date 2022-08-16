@@ -44,7 +44,7 @@ void AABBTree::StaticBuild(AABBTreeBuildData& params)
 	params.Release();
 
 	assert(params.pAABBTree);
-	m_AABBTreeInference = params.pAABBTree->BuildInferenceTree();
+	m_AABBTreeInference = params.pAABBTree->BuildCacheFriendlyTree();
 
 	delete  params.pAABBTree;
 	params.pAABBTree = nullptr;

@@ -20,7 +20,7 @@ class BroadPhase
 {
 public:
 	virtual ~BroadPhase() {}
-	virtual void ProduceOverlaps(const std::vector<Geometry*>& AllObjects, std::vector<OverlapPair> *overlaps) = 0;
+	virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair> *overlaps) = 0;
 
 	static BroadPhase* Create_AllPairs();		// Slow, debug purpose
 	static BroadPhase* Create_Bruteforce();		// Slow, debug purpose

@@ -31,11 +31,11 @@ class BroadPhaseAllPairsImplementation : public BroadPhase
 public:
 	virtual ~BroadPhaseAllPairsImplementation() {}
 
-	virtual void ProduceOverlaps(const std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
+	virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
 	{
 		overlaps->clear();
 
-		int n = (int)AllObjects.size();
+		int n = (int)geoms.size();
 		for (int i = 0; i < n; ++i)
 		for (int j = 0; j < n; ++j)
 		{
@@ -50,20 +50,20 @@ class BroadPhaseBruteforceImplementation : public BroadPhase
 public:
 	virtual ~BroadPhaseBruteforceImplementation() {}
 
-	virtual void ProduceOverlaps(const std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
+	virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
 	{
 		overlaps->clear();
 
-		int n = (int)AllObjects.size();
+		int n = (int)geoms.size();
 		for (int i = 0; i < n; ++i)
 		for (int j = i + 1; j < n; ++j)
 		{
-			const Box3d& box1 = AllObjects[i]->GetBoundingVolume_WorldSpace();
-			const Box3d& box2 = AllObjects[j]->GetBoundingVolume_WorldSpace();
+			const Box3d& box1 = geoms[i]->GetBoundingVolume_WorldSpace();
+			const Box3d& box2 = geoms[j]->GetBoundingVolume_WorldSpace();
 			if (box1.Intersect(box2))
 			{
-				Geometry *gi = AllObjects[i];
-				Geometry *gj = AllObjects[j];
+				Geometry *gi = geoms[i];
+				Geometry *gj = geoms[j];
 				if (!HasMovingRigid(gi, gj))
 					continue;
 				overlaps->emplace_back(i, j);
@@ -98,14 +98,14 @@ public:
 
 public:
 
-	virtual void ProduceOverlaps(const std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
+	virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
 	{
-		if (AllObjects.empty())
+		if (geoms.empty())
 		{
 			return;
 		}
 		
-		m_pObjects = &AllObjects;
+		m_pObjects = &geoms;
 		m_SAP->IncrementalPrune(&m_Overlaps);
 
 		overlaps->clear();
@@ -113,8 +113,8 @@ public:
 		{
 			int i, j;
 			SAP::UnpackOverlapKey(it, &i, &j);
-			Geometry *gi = AllObjects[i];
-			Geometry *gj = AllObjects[j];
+			Geometry *gi = geoms[i];
+			Geometry *gj = geoms[j];
 			if (!HasMovingRigid(gi, gj))
 				continue;
 			overlaps->emplace_back(i, j);
@@ -172,13 +172,13 @@ public:
 	}
 	virtual ~BroadPhaseDynamicAABBImplementation() {}
 
-	virtual void ProduceOverlaps(const std::vector<Geometry*>& AllObjects, std::vector<OverlapPair>* overlaps) override final
+	virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
 	{
 		std::vector<void*> result;
-		int n = (int)AllObjects.size();
+		int n = (int)geoms.size();
 		for (int i = 0; i < n; ++i)
 		{
-			Geometry *gi = AllObjects[i];
+			Geometry *gi = geoms[i];
 			if (!IsMovingRigid(gi))
 				continue;
 			

@@ -23,7 +23,7 @@ static int Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float 
 		{
 			continue;
 		}
-		
+
 		Body->X = Body->X + (Body->P * Body->InvMass) * dt;						// X' = v = P / m
 		Matrix3 R = Body->Q.ToRotationMatrix3();
 		Matrix3 invInertiaWorld = R * Body->InvInertia * R.Transpose();
@@ -31,8 +31,10 @@ static int Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float 
 		Quaternion dQ = 0.5f * Quaternion(0.0f, AngularVelocity) * Body->Q;		// Q' = 0.5 * AngularVelocity * Q
 		Body->Q = (Body->Q + dQ * dt).Unit();
 		
-		Body->P = (Body->P + Body->ExtForce * dt) * Body->LinearDamping;		// P' = Force
-		Body->L = (Body->L + Body->ExtTorque * dt) * Body->AngularDamping;		// L' = Torque
+		float LinearDamping = 1.0f -(1.0f - Body->LinearDamping) * dt;
+		float AngularDamping = 1.0f -(1.0f - Body->AngularDamping) * dt;
+		Body->P = (Body->P + Body->ExtForce * dt) * LinearDamping;		// P' = Force
+		Body->L = (Body->L + Body->ExtTorque * dt) * AngularDamping;	// L' = Torque
 		
 		Body->mGeometry->SetCenterOfMass(Body->X);
 		Body->mGeometry->SetRotation(Body->Q);
@@ -59,8 +61,10 @@ static int Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, floa
 			continue;
 		}
 		
-		Body->P = (Body->P + Body->ExtForce * dt) * Body->LinearDamping;		// P' = Force
-		Body->L = (Body->L + Body->ExtTorque * dt) * Body->AngularDamping;		// L' = Torque
+		float LinearDamping = 1.0f - (1.0f - Body->LinearDamping) * dt;
+		float AngularDamping = 1.0f - (1.0f - Body->AngularDamping) * dt;
+		Body->P = (Body->P + Body->ExtForce * dt) * LinearDamping;		// P' = Force
+		Body->L = (Body->L + Body->ExtTorque * dt) * AngularDamping;	// L' = Torque
 		
 		Body->X = Body->X + (Body->P * Body->InvMass) * dt;						// X' = v = P / m
 		Matrix3 R = Body->Q.ToRotationMatrix3();

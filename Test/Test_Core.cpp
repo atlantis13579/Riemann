@@ -32,7 +32,7 @@ void TestJob()
 	printf("Running TestJob\n");
 
 	JobSystem system;
-	system.CreateWorkers(-1);
+	system.CreateWorkers(2);
 	JobGraph graph;
 
 	for (int i = 0; i < 12; ++i)
@@ -69,7 +69,7 @@ void TestJob()
 
 	EXPECT(!graph.HasCycle());
 
-	system.ExecuteGraph(2, graph);
+	system.ExecuteGraph(graph);
 	return;
 }
 

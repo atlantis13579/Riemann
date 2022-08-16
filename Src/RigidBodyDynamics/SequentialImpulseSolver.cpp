@@ -19,22 +19,22 @@ public:
 	{
 	}
 
-	virtual void	ResolveContact(const std::vector<Geometry*>& AllObjects,
+	virtual void	ResolveContact(const std::vector<Geometry*>& geoms,
 								   std::vector<ContactManifold*>& manifolds,
 								   float dt) override final
 	{
 		if (manifolds.empty())
 			return;
 
-		WarmStart::ApplyVelocityConstraint(AllObjects, manifolds, dt);
+		WarmStart::ApplyVelocityConstraint(geoms, manifolds, dt);
 		
-		if (m_Phase.size() < AllObjects.size())
+		if (m_Phase.size() < geoms.size())
 		{
-			m_Phase.resize(AllObjects.size());
+			m_Phase.resize(geoms.size());
 		}
-		for (size_t i = 0; i < AllObjects.size(); ++i)
+		for (size_t i = 0; i < geoms.size(); ++i)
 		{
-			RigidBody* body = AllObjects[i]->GetParent<RigidBody>();
+			RigidBody* body = geoms[i]->GetParent<RigidBody>();
 			m_Phase[i].v = body->GetLinearVelocity();
 			m_Phase[i].w = body->GetAngularVelocity();
 		}
@@ -45,8 +45,8 @@ public:
 			for (int j = 0; j < manifolds[i]->NumContactPointCount; ++j)
 			{
 				ContactManifold* manifold = manifolds[i];
-				RigidBody* bodyA = AllObjects[manifold->indexA]->GetParent<RigidBody>();
-				RigidBody* bodyB = AllObjects[manifold->indexB]->GetParent<RigidBody>();
+				RigidBody* bodyA = geoms[manifold->indexA]->GetParent<RigidBody>();
+				RigidBody* bodyB = geoms[manifold->indexB]->GetParent<RigidBody>();
 
 				velocityConstraints.push_back(ContactVelocityConstraintSolver(
 					m_Phase.data(), manifold->indexA, manifold->indexB, bodyA, bodyB));
@@ -80,9 +80,9 @@ public:
 				velocityConstraints[k].Finalize();
 			}
 			
-			for (size_t i = 0; i < AllObjects.size(); ++i)
+			for (size_t i = 0; i < geoms.size(); ++i)
 			{
-				RigidBody* body = AllObjects[i]->GetParent<RigidBody>();
+				RigidBody* body = geoms[i]->GetParent<RigidBody>();
 				body->SetLinearVelocity(m_Phase[i].v);
 				body->SetAngularVelocity(m_Phase[i].w);
 			}

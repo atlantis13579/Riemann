@@ -106,7 +106,7 @@ public:
 	void Init(int nGeometries, int nGeometriesPerNode);
 	void Build(AABBTreeBuildData &params);
 	AABBTreeNodeOffline* AllocNodes();
-	CacheFriendlyAABBTree* BuildInferenceTree();
+	CacheFriendlyAABBTree* BuildCacheFriendlyTree();
 
 private:
 	AABBTreeNodeOffline* pHead;

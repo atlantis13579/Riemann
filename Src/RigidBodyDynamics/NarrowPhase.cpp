@@ -21,7 +21,7 @@ public:
 
 	}
 
-	virtual void CollisionDetection(const std::vector<Geometry*>& AllObjects,
+	virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
 									const std::vector<OverlapPair>& overlaps,
 									std::vector<ContactManifold*>* manifolds) override final
 	{
@@ -30,8 +30,8 @@ public:
 		manifolds->clear();
 		for (size_t i = 0; i < overlaps.size(); ++i)
 		{
-			Geometry *geom1 = AllObjects[overlaps[i].index1];
-			Geometry *geom2 = AllObjects[overlaps[i].index2];
+			Geometry *geom1 = geoms[overlaps[i].index1];
+			Geometry *geom2 = geoms[overlaps[i].index2];
 			
 			EPAPenetration epa;
 			if (PenetrationTest(geom1, geom2, epa))
@@ -141,7 +141,7 @@ public:
 	{
 	}
 
-	virtual void CollisionDetection(const std::vector<Geometry*>& AllObjects,
+	virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
 									const std::vector<OverlapPair>& overlaps,
 									std::vector<ContactManifold*>* manifolds) override final
 	{
@@ -159,7 +159,7 @@ public:
 	{
 	}
 
-	virtual void CollisionDetection(const std::vector<Geometry*>& AllObjects,
+	virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
 									const std::vector<OverlapPair>& overlaps,
 									std::vector<ContactManifold*>* manifolds) override final
 	{

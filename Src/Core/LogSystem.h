@@ -1,0 +1,42 @@
+#pragma once
+
+#include <stdarg.h>
+#include <string>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+class Logger
+{
+public:
+	static void OutputDebugWindow(const char* format, ...)
+	{
+		va_list args;
+		va_start(args, format);
+		std::string str = stringPrintfEx(format, args);
+		va_end(args);
+#ifdef _WIN32
+		OutputDebugStringA(str.c_str());
+#else
+		(void)str.c_str();
+#endif
+	}
+
+	static std::string stringPrintf(const char* format, ...) {
+		va_list args;
+		va_start(args, format);
+		char sss[1024];
+		vsnprintf(sss, sizeof(sss), format, args);
+		std::string str = std::string(sss);
+		va_end(args);
+		return std::move(str);
+	}
+
+	static std::string stringPrintfEx(const char* format, va_list args) {
+		char sss[1024];
+		vsnprintf(sss, sizeof(sss), format, args);
+		std::string str = sss;
+		return std::move(str);
+	}
+};

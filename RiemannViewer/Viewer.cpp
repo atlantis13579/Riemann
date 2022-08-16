@@ -34,21 +34,36 @@ void WorldViewer::CreateDemo()
 	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3(0.0f, 1.0f, 0.0f));
 	// Geometry* plane = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0f, 0.0f), Vector3(100.0f, 2.1f, 100.0f));
 	m_World->CreateRigidBody(plane, rp);
-	AddGeometry(m_Renderer, plane);
 
 	rp.rigidType = RigidType::Dynamic;
-	// rp.LinearDamping = 0.99f;
-	// rp.AngularDamping = 0.99f;
+	// rp.linearDamping = 0.99f;
+	// rp.angularDamping = 0.99f;
 	for (int i = 0; i < 5; ++i)
 	for (int j = 0; j < 1; ++j)
 	for (int k = 0; k < 1; ++k)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 0.0f + i * 2.1f, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
-		// Geometry* aabb = GeometryFactory::CreateSphere(Vector3(j * 3.0f, 10.0f + i * 3.0f, k * 3.0f), 1.0f);
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 0.01f -0.0f  + i * 2.1f, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
 		RigidBodyDynamic* p = m_World->CreateRigidBody(aabb, rp)->CastDynamic();
 		// p->ApplyTorgue(Vector3(0, -50, 0).Cross(Vector3::UnitZ()) * aabb->GetBoundingVolume_WorldSpace().GetLengthZ());
-		AddGeometry(m_Renderer, aabb);
 	}
+
+	AddToRender();
+
+	m_KeyboardEvent = [=](char c)
+	{
+		if (c == 'i')
+		{
+			RigidBodyParam rp;
+			rp.rigidType = RigidType::Dynamic;
+			rp.invMass = 0.1f;
+			Vector3 p0 = Vector3(21.0f, 12.0f, 1.0f);
+			Geometry* sphere = GeometryFactory::CreateSphere(p0, 1.0f);
+			RigidBodyDynamic* body = m_World->CreateRigidBody(sphere, rp)->CastDynamic();
+			body->DisableGravity = true;
+			body->ApplyLinearAcceleration(-p0.Unit() * 100.0f);
+			AddGeometry(m_Renderer, sphere);
+		}
+	};
 }
 
 void WorldViewer::CreateStackBoxesDemo()
@@ -60,7 +75,6 @@ void WorldViewer::CreateStackBoxesDemo()
 	rp.rigidType = RigidType::Static;
 	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3::UnitY());
 	m_World->CreateRigidBody(plane, rp);
-	AddGeometry(m_Renderer, plane);
 
 	rp.rigidType = RigidType::Dynamic;
 	for (int i = 0; i < 10; ++i)
@@ -68,8 +82,25 @@ void WorldViewer::CreateStackBoxesDemo()
 	{
 		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, i * 3.0f, -10.0f + (j + i * 0.5f) * 2.1f), Vector3::One());
 		m_World->CreateRigidBody(aabb, rp);
-		AddGeometry(m_Renderer, aabb);
 	}
+
+	AddToRender();
+
+	m_KeyboardEvent = [=](char c)
+	{
+		if (c == 'i')
+		{
+			RigidBodyParam rp;
+			rp.rigidType = RigidType::Dynamic;
+			rp.invMass = 0.1f;
+			Vector3 p0 = Vector3(21.0f, 12.0f, 1.0f);
+			Geometry* sphere = GeometryFactory::CreateSphere(p0, 1.0f);
+			RigidBodyDynamic* body = m_World->CreateRigidBody(sphere, rp)->CastDynamic();
+			body->DisableGravity = true;
+			body->SetLinearVelocity(-p0.Unit() * 100);
+			AddGeometry(m_Renderer, sphere);
+		}
+	};
 }
 
 void WorldViewer::CreateDominoDemo()
@@ -81,19 +112,16 @@ void WorldViewer::CreateDominoDemo()
 	rp.rigidType = RigidType::Static;
 	Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, 0, 0), Vector3::UnitY());
 	m_World->CreateRigidBody(plane, rp);
-	AddGeometry(m_Renderer, plane);
 
 	{
 		Quaternion q;
 		q.FromRotationAxis(Vector3::UnitX(), 0.4f);
 		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, 3.5f, -18.0f), Vector3(2.0f, 2.0f, 6.0f), q);
 		m_World->CreateRigidBody(aabb, rp)->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
-		AddGeometry(m_Renderer, aabb);
 
 		rp.rigidType = RigidType::Dynamic;
 		Geometry* sp = GeometryFactory::CreateSphere(Vector3(0.0f, 20.0f, -20.0f), 1.0f);
 		m_World->CreateRigidBody(sp, rp)->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
-		AddGeometry(m_Renderer, sp);
 	}
 
 	rp.invMass = 3.f;
@@ -101,7 +129,6 @@ void WorldViewer::CreateDominoDemo()
 	{
 		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, 4.0f, -10.0f + i * 2.0f), Vector3(2.0f, 3.0f, 0.15f));
 		m_World->CreateRigidBody(aabb, rp);
-		AddGeometry(m_Renderer, aabb);
 	}
 
 	for (int i = 0; i < 7; ++i)
@@ -110,15 +137,15 @@ void WorldViewer::CreateDominoDemo()
 		q.FromRotationAxis(Vector3::UnitY(), i * 30 * (3.14f / 180));
 		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(2.0f * i, 4.0f, 10.0f + 1.5f * ( i < 4 ? i : 6 - i)), Vector3(2.0f, 3.0f, 0.15f), q);
 		m_World->CreateRigidBody(aabb, rp);
-		AddGeometry(m_Renderer, aabb);
 	}
 
 	for (int i = 0; i < 10; ++i)
 	{
 		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(12.0f, 4.0f, 10.0f - (i+1) * 2.0f), Vector3(2.0f, 3.0f, 0.15f));
 		m_World->CreateRigidBody(aabb, rp);
-		AddGeometry(m_Renderer, aabb);
 	}
+
+	AddToRender();
 }
 
 void WorldViewer::CreateSeeSawDemo()
@@ -127,28 +154,24 @@ void WorldViewer::CreateSeeSawDemo()
 	rp.rigidType = RigidType::Static;
 	Geometry* box = GeometryFactory::CreateOBB(Vector3(0, -0.25f, 0), Vector3(30, 0.25f, 30));
 	m_World->CreateRigidBody(box, rp);
-	AddGeometry(m_Renderer, box);
 
 	box = GeometryFactory::CreateOBB(Vector3(3, 0, 0), Vector3(1, 1, 1), Quaternion().FromRotateZ(0.7f));
 	m_World->CreateRigidBody(box, rp);
-	AddGeometry(m_Renderer, box);
 
 	rp.rigidType = RigidType::Dynamic;
 	box = GeometryFactory::CreateOBB(Vector3(2, 1.7f, 0), Vector3(5, 0.25f, 1));
 	m_World->CreateRigidBody(box, rp);
-	AddGeometry(m_Renderer, box);
 
 	rp.invMass = 0.5f;
 	box = GeometryFactory::CreateOBB(Vector3(-2, 4, 0), Vector3(0.5f, 0.5f, 0.5f));
 	m_World->CreateRigidBody(box, rp);
-	AddGeometry(m_Renderer, box);
 
 	rp.invMass = 0.05f;
 	box = GeometryFactory::CreateCylinder(Vector3(7, 10, -1), Vector3(7, 10, 3), 0.5f);
 	// box = GeometryFactory::CreateCapsule(Vector3(7, 10, -1), Vector3(7, 10, 3), 0.5f);
 	m_World->CreateRigidBody(box, rp);
-	AddGeometry(m_Renderer, box);
 
+	AddToRender();
 	return;
 }
 
@@ -299,6 +322,11 @@ void WorldViewer::KeyboardMsg(char c)
 		m_CamCenter.y += Scale;
 	}
 	UpdateCamera();
+
+	if (m_KeyboardEvent)
+	{
+		m_KeyboardEvent(c);
+	}
 }
 
 void WorldViewer::MouseMsg(int x, int y, bool LButtonDown)
@@ -334,5 +362,15 @@ void WorldViewer::MouseWheel(int zDelta, bool CtrlButtonDown)
 		Scale = 1.0f / Scale;
 	m_CamParam.z *= Scale;
 	UpdateCamera();
+}
+
+void WorldViewer::AddToRender()
+{
+	std::vector<Geometry*> geoms;
+	m_World->GetAllGeometries(&geoms);
+	for (size_t i = 0; i < geoms.size(); ++i)
+	{
+		AddGeometry(m_Renderer, geoms[i]);
+	}
 }
 

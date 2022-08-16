@@ -4,11 +4,11 @@
 #ifdef BUILD_PYTHON_MODULE
 
 #include <assert.h>
-#include "../Core/JobSystem.h"
-#include "../RigidBodyDynamics/RigidBodySimulation.h"
-#include "../Collision/GeometryQuery.h"
+#include "../../Core/JobSystem.h"
+#include "../../RigidBodyDynamics/RigidBodySimulation.h"
+#include "../../Collision/GeometryQuery.h"
 #include "../ImageSpace/ImageProcessing.h"
-#include "../Tools/libPng.h"
+#include "libPng.h"
 
 extern "C"
 {
@@ -142,7 +142,7 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
             }});
     }
 
-    jobSys->ExecuteGraph(-1, graph);
+    jobSys->ExecuteGraph(graph);
 
     if (downscale)
     {

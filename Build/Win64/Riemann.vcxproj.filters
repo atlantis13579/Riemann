@@ -528,6 +528,9 @@
     <ClInclude Include="..\..\Src\LinearSystem\ConjugateGradientSolver.h">
       <Filter>LinearSystem</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Core\LogSystem.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">

@@ -165,7 +165,9 @@ public:
 	void		ApplyForce(const Vector3& Force);
 	void		ApplyTorgue(const Vector3& Torque);
 	void		ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force);
-	
+	void		ApplyLinearAcceleration(const Vector3& LinAcc);
+	void		ApplyAngularAcceleration(const Vector3& AngAcc);
+
 	bool		AutoSleep();
 	void		Sleep();
 	void		Wakeup();

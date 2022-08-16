@@ -192,7 +192,7 @@ public:
 		mWorkers.Start(num_workers, [this](int id) { JobThreadMain(id); });
 	}
 
-	bool ExecuteGraph(int num_workers, const JobGraph& graph)
+	bool ExecuteGraph(const JobGraph& graph)
 	{
 		if (!Execute(graph))
 		{
@@ -202,7 +202,7 @@ public:
 		return true;
 	}
 
-	bool ExecuteGraphAsync(int num_workers, const JobGraph& graph)
+	bool ExecuteGraphAsync(const JobGraph& graph)
 	{
 		if (!Execute(graph))
 		{

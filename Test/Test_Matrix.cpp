@@ -112,12 +112,17 @@ void TestSolve()
 	DenseVector X(3);
 
 	X.LoadZero();
-	JacobiIteration_CPU<float> J;
-	J.Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
+	JacobiIteration_CPU<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
 	DenseVector Y = A * X;
 	EXPECT(Y.FuzzyEqual(B, 1e-2f));
 
+	X.LoadZero();
 	GaussSeidelIteration<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
+	Y = A * X;
+	EXPECT(Y.FuzzyEqual(B, 1e-2f));
+
+	X.LoadZero();
+	ConjugateGradientSolver<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
 	Y = A * X;
 	EXPECT(Y.FuzzyEqual(B, 1e-2f));
 
@@ -358,4 +363,5 @@ void TestMatrix()
 	TestPolarDecomp();
 	TestQR();
 	TestEigen();
+	return;
 }

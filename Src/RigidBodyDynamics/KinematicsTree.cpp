@@ -1,6 +1,6 @@
 
 #include "KinematicsTree.h"
-#include "../Tools/AnimBinaryParser.h"
+#include "../Modules/Tools/AnimBinaryParser.h"
 #include "RigidBody.h"
 
 KinematicsTree::KinematicsTree()

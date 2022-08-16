@@ -88,6 +88,7 @@ public:
 	bool				LoadAnimation(const std::string& resname, const std::string &filepath, float play_rate, bool begin_play);
 	KinematicsDriver*	FindKinematics(const std::string& resname);
 
+	void				GetAllGeometries(std::vector<Geometry*>	*AllObjects);
     GeometryQuery*          GetGeometryQuery() { return m_GeometryQuery; }
     const GeometryQuery*    GetGeometryQuery() const { return m_GeometryQuery; }
     
@@ -100,8 +101,8 @@ public:
 private:
 	void				SimulateST(float dt);
 
-	void				PreIntegrate();
-	void				PostIntegrate();
+	void				PreIntegrate(float dt);
+	void				PostIntegrate(float dt);
 
 private:
 	std::vector<RigidBodyStatic*>	m_StaticBodies;
