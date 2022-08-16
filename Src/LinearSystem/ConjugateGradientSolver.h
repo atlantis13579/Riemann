@@ -11,16 +11,15 @@ class ConjugateGradientSolver
 public:
 	static bool Solve(const T* A, const T *B, int n, T* X, const int maxIterations = 100, const T Eps = (T)0.0001)
 	{
-		T stack_mem[1024 * 3 * 4];
+		T stack_mem[1024 * 3 * 3];
 		T *heap_mem = nullptr;
-		if (4 * n > sizeof(stack_mem) / sizeof(stack_mem[0]))
+		if (3 * n > sizeof(stack_mem) / sizeof(stack_mem[0]))
 		{
-			heap_mem = new T[4 * n];
+			heap_mem = new T[3 * n];
 		}
 		T* r = heap_mem ? heap_mem : stack_mem;
 		T* d = r + n;
 		T* q = r + 2 * n;
-		T* temp = r + 3 * n;
 
 		memset(r, 0, sizeof(T) * n);
 		memset(d, 0, sizeof(T) * n);

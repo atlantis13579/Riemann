@@ -30,13 +30,13 @@ public:
 		vsnprintf(sss, sizeof(sss), format, args);
 		std::string str = std::string(sss);
 		va_end(args);
-		return std::move(str);
+		return str;
 	}
 
 	static std::string stringPrintfEx(const char* format, va_list args) {
 		char sss[1024];
 		vsnprintf(sss, sizeof(sss), format, args);
 		std::string str = sss;
-		return std::move(str);
+		return str;
 	}
 };
