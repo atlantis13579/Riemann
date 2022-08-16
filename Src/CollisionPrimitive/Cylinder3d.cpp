@@ -34,8 +34,11 @@ Vector3 Cylinder3d::GetSupport(const Vector3& Direction) const
 {
 	const float sy = Direction.y > 0 ? 1.0f : -1.0f;
 	const float o = sqrtf(Direction.x * Direction.x + Direction.z * Direction.z);
-	if (o > 0)
-		return Vector3(Radius * Direction.x / o, sy * Height * 0.5f, Radius * Direction.z / o);
+	if (o > 1e-6f)
+	{
+		Vector3 support(Radius * Direction.x / o, sy * Height * 0.5f, Radius * Direction.z / o);
+		return support;
+	}
 	return Vector3(0.0f, sy * Height * 0.5f, 0.0f);
 }
 

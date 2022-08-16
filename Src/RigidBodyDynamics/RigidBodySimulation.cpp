@@ -37,7 +37,7 @@ RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 		m_BPhase = BroadPhase::Create_DynamicAABB(m_GeometryQuery->GetDynamicTree());
 	}
 	m_NPhase = NarrowPhase::Create_GJKEPA();
-	m_RPhase = ResolutionPhase::CreateSequentialImpulseSolver();
+	m_Solver = ConstraintSolver::CreateSequentialImpulseSolver();
 	m_IntegrateMethod = param.integrateMethod;
 	m_Fields.push_back(ForceField::CreateGrivityField(param.gravityAcc));
 	m_Jobsystem = new JobSystem;
@@ -54,7 +54,7 @@ RigidBodySimulation::~RigidBodySimulation()
 	SAFE_DELETE(m_GeometryQuery);
 	SAFE_DELETE(m_BPhase);
 	SAFE_DELETE(m_NPhase);
-	SAFE_DELETE(m_RPhase);
+	SAFE_DELETE(m_Solver);
 
 	for (size_t i = 0; i < m_Fields.size(); ++i)
 	{
@@ -124,9 +124,9 @@ void		RigidBodySimulation::SimulateST(float dt)
 		m_NPhase->CollisionDetection(geoms, overlaps, &manifolds);
 	}
 
-	if (m_RPhase && !manifolds.empty())
+	if (m_Solver && !manifolds.empty())
 	{
-		m_RPhase->ResolveContact(geoms, manifolds, dt);
+		m_Solver->ResolveContact(geoms, manifolds, dt);
 	}
 
 	PreIntegrate(dt);
@@ -143,7 +143,7 @@ void		RigidBodySimulation::PreIntegrate(float dt)
 	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 	{
 		RigidBodyDynamic* Body = m_DynamicBodies[i];
-		Body->ExtForce /= (dt * 2.0f);
+		Body->ExtForce /= (dt * 2.0f);	 // Force Unit  1 Newton =  1 kg m / s^2
 		Body->ExtTorque /= (dt * 2.0f);
 		if (!Body->Sleeping)
 			continue;

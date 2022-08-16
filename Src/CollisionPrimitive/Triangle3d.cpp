@@ -496,8 +496,7 @@ Vector3 Triangle3d::GetSupport(const Vector3& Direction) const
 
 int Triangle3d::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 {
-	*FacePoints = Triangle3d::GetSupport(A, B, C, Direction);
-	return 1;
+	return 0;
 }
 
 void Triangle3d::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)

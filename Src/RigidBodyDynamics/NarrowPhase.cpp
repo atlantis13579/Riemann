@@ -89,7 +89,11 @@ public:
 		SupportFace ContactFace;
 		if (m_UseContactFace)
 		{
-			ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
+			bool succ = ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
+			if (!succ)
+			{
+				succ = ConstructSupportFace(GeomB, GeomA, -epa.penetration_normal, ContactFace);
+			}
 		}
 
 		// const Matrix4& invWorldA = GeomA->GetInverseWorldMatrix();

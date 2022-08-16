@@ -531,8 +531,7 @@ Vector3 Sphere3d::GetSupport(const Vector3& Direction) const
 
 int Sphere3d::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 {
-	*FacePoints = Sphere3d::GetSupport(Center, Radius, Direction);
-	return 1;
+	return 0;
 }
 
 void Sphere3d::GetVertices(int stackCount, int sliceCount, std::vector<Vector3>* Vertices, std::vector<Vector3>* Normals)

@@ -10,7 +10,7 @@ class Geometry;
 class GeometryQuery;
 class BroadPhase;
 class NarrowPhase;
-class ResolutionPhase;
+class ConstraintSolver;
 class ForceField;
 class KinematicsDriver;
 class JobSystem;
@@ -36,7 +36,7 @@ enum class NarrowPhaseSolver : uint8_t
 	PCM,
 };
 
-enum class ConstraintSolver : uint8_t
+enum class ResolutionPhaseSolver : uint8_t
 {
 	SequentialImpulse,
 	LCPGlobal,
@@ -71,17 +71,17 @@ struct RigidBodySimulationParam
 		threadMode = ThreadMode::SingleThread;
 		broadphase = BroadPhaseSolver::SAP;
 		narrowphase = NarrowPhaseSolver::GJKEPA;
-		constraintSolver = ConstraintSolver::SequentialImpulse;
+		resolutionSolver = ResolutionPhaseSolver::SequentialImpulse;
 		integrateMethod = IntegrateMethod::ExplicitEuler;
 		workerThreads = 0;
 	}
-	Vector3 			gravityAcc;		// gravity acc
-	ThreadMode			threadMode;
-	BroadPhaseSolver	broadphase;
-	NarrowPhaseSolver	narrowphase;
-	ConstraintSolver	constraintSolver;
-	IntegrateMethod 	integrateMethod;
-	int					workerThreads;
+	Vector3 				gravityAcc;		// gravity acc
+	ThreadMode				threadMode;
+	BroadPhaseSolver		broadphase;
+	NarrowPhaseSolver		narrowphase;
+	ResolutionPhaseSolver	resolutionSolver;
+	IntegrateMethod 		integrateMethod;
+	int						workerThreads;
 };
 
 class RigidBodySimulation
@@ -126,7 +126,7 @@ private:
 	GeometryQuery*					m_GeometryQuery;
 	BroadPhase*						m_BPhase;
 	NarrowPhase*					m_NPhase;
-	ResolutionPhase*				m_RPhase;
+	ConstraintSolver*				m_Solver;
 	IntegrateMethod					m_IntegrateMethod;
 	std::vector<ForceField*>		m_Fields;
 	WorldClock						m_Clock;

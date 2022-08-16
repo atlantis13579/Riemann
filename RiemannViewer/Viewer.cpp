@@ -96,7 +96,6 @@ void WorldViewer::CreateStackBoxesDemo()
 			Vector3 p0 = Vector3(21.0f, 12.0f, 1.0f);
 			Geometry* sphere = GeometryFactory::CreateSphere(p0, 1.0f);
 			RigidBodyDynamic* body = m_World->CreateRigidBody(sphere, rp)->CastDynamic();
-			body->DisableGravity = true;
 			body->SetLinearVelocity(-p0.Unit() * 100);
 			AddGeometry(m_Renderer, sphere);
 		}
@@ -124,10 +123,9 @@ void WorldViewer::CreateDominoDemo()
 		m_World->CreateRigidBody(sp, rp)->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
 	}
 
-	rp.invMass = 3.f;
 	for (int i = 0; i < 10; ++i)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, 4.0f, -10.0f + i * 2.0f), Vector3(2.0f, 3.0f, 0.15f));
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, 4.0f, -10.0f + i * 2.0f), Vector3(2.0f, 3.0f, 0.25f));
 		m_World->CreateRigidBody(aabb, rp);
 	}
 
@@ -135,13 +133,13 @@ void WorldViewer::CreateDominoDemo()
 	{
 		Quaternion q;
 		q.FromRotationAxis(Vector3::UnitY(), i * 30 * (3.14f / 180));
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(2.0f * i, 4.0f, 10.0f + 1.5f * ( i < 4 ? i : 6 - i)), Vector3(2.0f, 3.0f, 0.15f), q);
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(2.0f * i, 4.0f, 10.0f + 1.5f * ( i < 4 ? i : 6 - i)), Vector3(2.0f, 3.0f, 0.25f), q);
 		m_World->CreateRigidBody(aabb, rp);
 	}
 
 	for (int i = 0; i < 10; ++i)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(12.0f, 4.0f, 10.0f - (i+1) * 2.0f), Vector3(2.0f, 3.0f, 0.15f));
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(12.0f, 4.0f, 10.0f - (i+1) * 2.0f), Vector3(2.0f, 3.0f, 0.25f));
 		m_World->CreateRigidBody(aabb, rp);
 	}
 
@@ -166,7 +164,7 @@ void WorldViewer::CreateSeeSawDemo()
 	box = GeometryFactory::CreateOBB(Vector3(-2, 4, 0), Vector3(0.5f, 0.5f, 0.5f));
 	m_World->CreateRigidBody(box, rp);
 
-	rp.invMass = 0.05f;
+	rp.invMass = 0.01f;
 	box = GeometryFactory::CreateCylinder(Vector3(7, 10, -1), Vector3(7, 10, 3), 0.5f);
 	// box = GeometryFactory::CreateCapsule(Vector3(7, 10, -1), Vector3(7, 10, 3), 0.5f);
 	m_World->CreateRigidBody(box, rp);

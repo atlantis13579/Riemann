@@ -7,7 +7,7 @@
 #include "WarmStart.h"
 #include "../Collision/GeometryObject.h"
 
-class SequentialImpulseSolver : public ResolutionPhase
+class SequentialImpulseSolver : public ConstraintSolver
 {
 public:
 	SequentialImpulseSolver()
@@ -28,15 +28,15 @@ public:
 
 		WarmStart::ApplyVelocityConstraint(geoms, manifolds, dt);
 		
-		if (m_Phase.size() < geoms.size())
+		if (m_Buffer.size() < geoms.size())
 		{
-			m_Phase.resize(geoms.size());
+			m_Buffer.resize(geoms.size());
 		}
 		for (size_t i = 0; i < geoms.size(); ++i)
 		{
 			RigidBody* body = geoms[i]->GetParent<RigidBody>();
-			m_Phase[i].v = body->GetLinearVelocity();
-			m_Phase[i].w = body->GetAngularVelocity();
+			m_Buffer[i].v = body->GetLinearVelocity();
+			m_Buffer[i].w = body->GetAngularVelocity();
 		}
 
 		std::vector<ContactVelocityConstraintSolver> velocityConstraints;
@@ -49,7 +49,7 @@ public:
 				RigidBody* bodyB = geoms[manifold->indexB]->GetParent<RigidBody>();
 
 				velocityConstraints.push_back(ContactVelocityConstraintSolver(
-					m_Phase.data(), manifold->indexA, manifold->indexB, bodyA, bodyB));
+					m_Buffer.data(), manifold->indexA, manifold->indexB, bodyA, bodyB));
 				velocityConstraints.back().Setup(&manifold->ContactPoints[j], dt);
 			}
 		}
@@ -83,8 +83,8 @@ public:
 			for (size_t i = 0; i < geoms.size(); ++i)
 			{
 				RigidBody* body = geoms[i]->GetParent<RigidBody>();
-				body->SetLinearVelocity(m_Phase[i].v);
-				body->SetAngularVelocity(m_Phase[i].w);
+				body->SetLinearVelocity(m_Buffer[i].v);
+				body->SetAngularVelocity(m_Buffer[i].w);
 			}
 
 			return;
@@ -98,10 +98,10 @@ private:
 	int 	m_nMaxPositionIterations;
 	
 	std::vector<PositionConstraint*>	m_PositionConstraints;
-	std::vector<GeneralizedVelocity>	m_Phase;
+	std::vector<GeneralizedVelocity>	m_Buffer;
 };
 
-ResolutionPhase* ResolutionPhase::CreateSequentialImpulseSolver()
+ConstraintSolver* ConstraintSolver::CreateSequentialImpulseSolver()
 {
 	return new SequentialImpulseSolver();
 }
