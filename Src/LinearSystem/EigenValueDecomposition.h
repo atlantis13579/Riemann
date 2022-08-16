@@ -32,13 +32,18 @@ private:
 			EigenVectors[i*n + i] = (T)1;
 		}
 
-		T* buf = new T[4 * n * n + n];
+		T stack_mem[4 * 32 * 32];
+		T* heap_mem = nullptr;
+		if ((4 * n * n + n) > sizeof(stack_mem) / sizeof(stack_mem[0]))
+		{
+			heap_mem = new T[4 * n * n + n];
+		}
 
-		T* x = buf;
-		T* q = buf + n * n;
-		T* r = buf + 2 * n * n;
-		T* h = buf + 3 * n * n;
-		T* v = buf + 4 * n * n;
+		T* x = heap_mem ? heap_mem : stack_mem;
+		T* q = x + n * n;
+		T* r = x + 2 * n * n;
+		T* h = x + 3 * n * n;
+		T* v = x + 4 * n * n;
 
 		memcpy(x, A, sizeof(T) * n * n);
 
@@ -131,7 +136,7 @@ private:
 			EigenValues[i] = x[i * n + i];
 		}
 
-		delete[]buf;
+		if (heap_mem) delete[]heap_mem;
 	}
 
 	static T compute_norm(T* v, int k)

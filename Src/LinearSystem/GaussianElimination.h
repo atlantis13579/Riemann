@@ -10,20 +10,33 @@ class GaussianElimination
 public:
 	bool operator()(const T* M, int nDim, T* InvM, T* Determinant) const
 	{
-		int nSize = nDim * nDim;
-		T* bufferInvM = nullptr;
-		bool NeedInverse = InvM != nullptr;
-		if (!NeedInverse)
-		{
-			bufferInvM = new T[nSize];
-			InvM = bufferInvM;
-		}
-		memcpy(InvM, M, nSize * sizeof(T));
+		char  stack_mem[8 * 64 * 64 + 3 * 4 * 64];
+		char* heap_mem = nullptr;
 
-		int *buffer = new int[3*nDim];
-		int *colIndex = buffer;
-		int *rowIndex = buffer + nDim;
-		int *pivoted = buffer + 2 * nDim;
+		int nSize = nDim * nDim;
+		int* colIndex = nullptr;
+		bool needInverse = InvM != nullptr;
+
+		int mem_size = (!needInverse ? sizeof(T) * nSize : 0) + sizeof(int) * 3 * nDim;
+		if (mem_size > sizeof(stack_mem))
+		{
+			heap_mem = new char[mem_size];
+		}
+
+		if (!needInverse)
+		{
+			InvM = heap_mem ? (T*)heap_mem : (T*)stack_mem;
+			colIndex = (int*)(InvM + nSize);
+		}
+		else
+		{
+			colIndex = heap_mem ? (int*)heap_mem : (int*)stack_mem;
+		}
+
+		int* rowIndex = colIndex + nDim;
+		int* pivoted = colIndex + 2 * nDim;
+
+		memcpy(InvM, M, nSize * sizeof(T));
 		memset(pivoted, 0, sizeof(pivoted[0])*nDim);
 
 		const T zero = (T)0;
@@ -65,7 +78,7 @@ public:
 
 			if (fabs(maxVal) < zero)
 			{
-				if (NeedInverse)
+				if (needInverse)
 				{
 					memset(InvM, 0, nSize * sizeof(T));
 				}
@@ -74,8 +87,7 @@ public:
 					*Determinant = zero;
 				}
 				
-				if (bufferInvM) delete []bufferInvM;
-				if (buffer) delete []buffer;
+				if (heap_mem) delete []heap_mem;
 				return false;
 			}
 
@@ -143,8 +155,8 @@ public:
 			*Determinant = -*Determinant;
 		}
 		
-		if (bufferInvM) delete []bufferInvM;
-		if (buffer) delete []buffer;
+		if (heap_mem) delete []heap_mem;
+
 		return true;
 	}
 };

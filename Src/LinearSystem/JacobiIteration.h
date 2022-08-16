@@ -1,8 +1,6 @@
-
 #pragma once
 
 #include <string.h>
-#include <vector>
 
 // Solve A * X = B , A is square Matrix of size N, B is Vector of size N
 // https://en.wikipedia.org/wiki/Jacobi_method
@@ -12,9 +10,15 @@ class JacobiIteration_CPU
 public:
 	bool Solve(const T* A, const T* B, int N, T* X, const int MaxIteration, const T kEps = (T)0.00001)
 	{
-		std::vector<T>	X0;
-		X0.resize(N);
+		T stack_mem[1024];
+		T* heap_mem = nullptr;
+		if (N > sizeof(stack_mem) / sizeof(stack_mem[0]))
+		{
+			heap_mem = new T[N];
+		}
+		T* X0 = heap_mem ? heap_mem : stack_mem;
 
+		bool succ = false;
 		int Iter = 0;
 		while (Iter++ < MaxIteration)
 		{
@@ -45,9 +49,12 @@ public:
 
 			if (Norm < kEps)
 			{
-				return true;
+				succ = true;
+				break;
 			}
 		}
-		return false;
+
+		if (heap_mem) delete[]heap_mem;
+		return succ;
 	}
 };

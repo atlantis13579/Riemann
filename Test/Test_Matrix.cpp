@@ -13,6 +13,7 @@
 #include "../Src/LinearSystem/MoorePenrosePseudoInverse.h"
 #include "../Src/LinearSystem/SparseMatrix.h"
 #include "../Src/LinearSystem/SparseVector.h"
+#include "../Src/LinearSystem/ConjugateGradientSolver.h"
 
 void TestMatrix1()
 {

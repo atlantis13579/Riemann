@@ -3,7 +3,7 @@
 
 #include "Test.h"
 
-#include "../Src/Tools/ContinuousBitmap.h"
+#include "../Src/Modules/Tools/ContinuousBitmap.h"
 
 void TestBitmap()
 {

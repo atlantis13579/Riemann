@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Src\AeroDynamics\VonKarmanVortexStreet.cpp" />
-    <ClCompile Include="..\..\Src\AeroDynamics\WindSimulation.cpp" />
+    <ClCompile Include="..\..\Src\Modules\AeroDynamics\VonKarmanVortexStreet.cpp" />
+    <ClCompile Include="..\..\Src\Modules\AeroDynamics\WindSimulation.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\ConvexMesh.cpp" />
@@ -33,7 +33,6 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\Sphere3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Triangle3d.cpp" />
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp" />
-    <ClCompile Include="..\..\Src\Collision\AABBTreeInference.cpp" />
     <ClCompile Include="..\..\Src\Collision\AABBTreeOffline.cpp" />
     <ClCompile Include="..\..\Src\Collision\DynamicAABBTree.cpp" />
     <ClCompile Include="..\..\Src\Collision\EPAPenetration.cpp" />
@@ -43,12 +42,12 @@
     <ClCompile Include="..\..\Src\Collision\GeometryQuery.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\MeshBVH4.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\TriangleMesh.cpp" />
-    <ClCompile Include="..\..\Src\Continuum\FEMSolver.cpp" />
-    <ClCompile Include="..\..\Src\Continuum\MLSMPMSolver.cpp" />
+    <ClCompile Include="..\..\Src\Modules\ContinuumMediaDynamics\FEMSolver.cpp" />
+    <ClCompile Include="..\..\Src\Modules\ContinuumMediaDynamics\MLSMPMSolver.cpp" />
     <ClCompile Include="..\..\Src\Destruction\Fracture.cpp" />
     <ClCompile Include="..\..\Src\Destruction\PlanarCut.cpp" />
-    <ClCompile Include="..\..\Src\FluidDynamics\Laplace2DSolver.cpp" />
-    <ClCompile Include="..\..\Src\FluidDynamics\SmoothedParticleHydrodynamics.cpp" />
+    <ClCompile Include="..\..\Src\Modules\FluidDynamics\Laplace2DSolver.cpp" />
+    <ClCompile Include="..\..\Src\Modules\FluidDynamics\SmoothedParticleHydrodynamics.cpp" />
     <ClCompile Include="..\..\Src\Geometry\ConvexHull3d.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Polygon2d.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Polygon3d.cpp" />
@@ -74,7 +73,7 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Ragdoll.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\WarmStart.cpp" />
     <ClCompile Include="..\..\Src\Geometry\ConvexHull2d.cpp" />
-    <ClCompile Include="..\..\Src\ImageSpace\ImageProcessing.cpp" />
+    <ClCompile Include="..\..\Src\Modules\ImageSpace\ImageProcessing.cpp" />
     <ClCompile Include="..\..\Src\PositionBasedDynamics\PositionBasedDynamicsSolver.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MotionIntegration.cpp" />
@@ -83,20 +82,23 @@
     <ClCompile Include="..\..\Src\Solver\NumericalODESolver.cpp" />
     <ClCompile Include="..\..\Src\Solver\ProjectiveDynamicsSolver.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.cpp" />
-    <ClCompile Include="..\..\Src\Tools\AnimBinaryParser.cpp" />
-    <ClCompile Include="..\..\Src\Tools\PhysxBinaryParser.cpp">
+    <ClCompile Include="..\..\Src\Modules\Tools\AnimBinaryParser.cpp" />
+    <ClCompile Include="..\..\Src\Modules\Tools\PhysxBinaryParser.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Tools\PythonModule.cpp" />
-    <ClCompile Include="..\..\Src\VehicleDynamics\AutonomousController.cpp" />
-    <ClCompile Include="..\..\Src\VehicleDynamics\VehicleDynamics.cpp" />
-    <ClCompile Include="..\..\Src\VehicleDynamics\Vehicle.cpp" />
+    <ClCompile Include="..\..\Src\Modules\Tools\PythonModule.cpp" />
+    <ClCompile Include="..\..\Src\Modules\VehicleDynamics\AutonomousController.cpp" />
+    <ClCompile Include="..\..\Src\Modules\VehicleDynamics\VehicleDynamics.cpp" />
+    <ClCompile Include="..\..\Src\Modules\VehicleDynamics\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Src\AeroDynamics\VonKarmanVortexStreet.h" />
-    <ClInclude Include="..\..\Src\AeroDynamics\WindSimulation.h" />
+    <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
+    <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
+    <ClInclude Include="..\..\Src\LinearSystem\ConjugateGradientSolver.h" />
+    <ClInclude Include="..\..\Src\Modules\AeroDynamics\VonKarmanVortexStreet.h" />
+    <ClInclude Include="..\..\Src\Modules\AeroDynamics\WindSimulation.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Capsule3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\ConvexMesh.h" />
@@ -131,7 +133,6 @@
     <ClInclude Include="..\..\Src\Collision\GeometryQuery.h" />
     <ClInclude Include="..\..\Src\Collision\GJK.h" />
     <ClInclude Include="..\..\Src\Collision\MinkowskiSum.h" />
-    <ClInclude Include="..\..\Src\Collision\ProximityGrid.h" />
     <ClInclude Include="..\..\Src\Collision\QuadTree.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\MeshBVH4.h" />
     <ClInclude Include="..\..\Src\Collision\SAP_Incremental.h" />
@@ -139,15 +140,13 @@
     <ClInclude Include="..\..\Src\Collision\SparseSpatialHash.h" />
     <ClInclude Include="..\..\Src\Collision\SAP.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\TriangleMesh.h" />
-    <ClInclude Include="..\..\Src\Continuum\FEMSolver.h" />
-    <ClInclude Include="..\..\Src\Continuum\MLSMPMSolver.h" />
     <ClInclude Include="..\..\Src\Core\StaticArray.h" />
     <ClInclude Include="..\..\Src\Core\Base.h" />
     <ClInclude Include="..\..\Src\Core\StaticStack.h" />
-    <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
-    <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
-    <ClInclude Include="..\..\Src\FluidDynamics\Laplace2DSolver.h" />
-    <ClInclude Include="..\..\Src\FluidDynamics\SmoothedParticleHydrodynamics.h" />
+    <ClInclude Include="..\..\Src\Modules\ContinuumMediaDynamics\FEMSolver.h" />
+    <ClInclude Include="..\..\Src\Modules\ContinuumMediaDynamics\MLSMPMSolver.h" />
+    <ClInclude Include="..\..\Src\Modules\FluidDynamics\Laplace2DSolver.h" />
+    <ClInclude Include="..\..\Src\Modules\FluidDynamics\SmoothedParticleHydrodynamics.h" />
     <ClInclude Include="..\..\Src\Geometry\ConvexHull3d.h" />
     <ClInclude Include="..\..\Src\Geometry\DenseTensorField3d.h" />
     <ClInclude Include="..\..\Src\Geometry\Polygon2d.h" />
@@ -190,13 +189,13 @@
     <ClInclude Include="..\..\Src\Optimization\QuadraticProgramming.h" />
     <ClInclude Include="..\..\Src\Optimization\SpecialFunctions.h" />
     <ClInclude Include="..\..\Src\Optimization\StochasticGradientDescent.h" />
-    <ClInclude Include="..\..\Src\Physics2d\Convex.h" />
-    <ClInclude Include="..\..\Src\Physics2d\Rect.h" />
-    <ClInclude Include="..\..\Src\Physics2d\Circle.h" />
-    <ClInclude Include="..\..\Src\Physics2d\GJK2d.h" />
-    <ClInclude Include="..\..\Src\Physics2d\Point2d.h" />
-    <ClInclude Include="..\..\Src\Physics2d\SAT.h" />
-    <ClInclude Include="..\..\Src\Physics2d\Shape2d.h" />
+    <ClInclude Include="..\..\Src\Modules\Physics2d\Convex.h" />
+    <ClInclude Include="..\..\Src\Modules\Physics2d\Rect.h" />
+    <ClInclude Include="..\..\Src\Modules\Physics2d\Circle.h" />
+    <ClInclude Include="..\..\Src\Modules\Physics2d\GJK2d.h" />
+    <ClInclude Include="..\..\Src\Modules\Physics2d\Point2d.h" />
+    <ClInclude Include="..\..\Src\Modules\Physics2d\SAT.h" />
+    <ClInclude Include="..\..\Src\Modules\Physics2d\Shape2d.h" />
     <ClInclude Include="..\..\Src\PositionBasedDynamics\MassSpring.h" />
     <ClInclude Include="..\..\Src\PositionBasedDynamics\XPBDRigidDynamicsSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\BroadPhase.h" />
@@ -213,8 +212,8 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Ragdoll.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\WarmStart.h" />
     <ClInclude Include="..\..\Src\Geometry\ConvexHull2d.h" />
-    <ClInclude Include="..\..\Src\ImageSpace\ImageProcessing.h" />
-    <ClInclude Include="..\..\Src\ImageSpace\Rasterizer.h" />
+    <ClInclude Include="..\..\Src\Modules\ImageSpace\ImageProcessing.h" />
+    <ClInclude Include="..\..\Src\Modules\ImageSpace\Rasterizer.h" />
     <ClInclude Include="..\..\Src\Maths\Box3d.h" />
     <ClInclude Include="..\..\Src\Maths\Frustum.h" />
     <ClInclude Include="..\..\Src\Maths\Maths.h" />
@@ -229,29 +228,28 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h" />
     <ClInclude Include="..\..\Src\Solver\ConjugateGradientSolver.h" />
-    <ClInclude Include="..\..\Src\Solver\ExponentialIntegrator.h" />
     <ClInclude Include="..\..\Src\Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="..\..\Src\Solver\NumericalODESolver.h" />
     <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.h" />
     <ClInclude Include="..\..\Src\Solver\SparseConjugateGradientSolver.h" />
-    <ClInclude Include="..\..\Src\Tools\AnimBinaryParser.h" />
-    <ClInclude Include="..\..\Src\Tools\ContinuousBitmap.h" />
-    <ClInclude Include="..\..\Src\Tools\libMat.h" />
-    <ClInclude Include="..\..\Src\Tools\libPng.h" />
-    <ClInclude Include="..\..\Src\Tools\libPPM.h" />
-    <ClInclude Include="..\..\Src\Tools\PhysxBinaryParser.h" />
-    <ClInclude Include="..\..\Src\Tools\PhysxFormat_34.hpp" />
-    <ClInclude Include="..\..\Src\Tools\PhysxFormat_41.hpp" />
-    <ClInclude Include="..\..\Src\Tools\PythonModule.h" />
-    <ClInclude Include="..\..\Src\Tools\Serialization.h" />
-    <ClInclude Include="..\..\Src\Tools\libBmp.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\AutonomousController.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\VehicleDynamics.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\LQR.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\MPC.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\PID.h" />
-    <ClInclude Include="..\..\Src\VehicleDynamics\Vehicle.h" />
+    <ClInclude Include="..\..\Src\Modules\Tools\AnimBinaryParser.h" />
+    <ClInclude Include="..\..\Src\Modules\Tools\ContinuousBitmap.h" />
+    <ClInclude Include="..\..\Src\Modules\Tools\libMat.h" />
+    <ClInclude Include="..\..\Src\Modules\Tools\libPng.h" />
+    <ClInclude Include="..\..\Src\Modules\Tools\libPPM.h" />
+    <ClInclude Include="..\..\Src\Modules\Tools\PhysxBinaryParser.h" />
+    <ClInclude Include="..\..\Src\Modules\Tools\PhysxFormat_34.hpp" />
+    <ClInclude Include="..\..\Src\Modules\Tools\PhysxFormat_41.hpp" />
+    <ClInclude Include="..\..\Src\Modules\Tools\PythonModule.h" />
+    <ClInclude Include="..\..\Src\Modules\Tools\Serialization.h" />
+    <ClInclude Include="..\..\Src\Modules\Tools\libBmp.h" />
+    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\AutonomousController.h" />
+    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\VehicleDynamics.h" />
+    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\LQR.h" />
+    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\MPC.h" />
+    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\PID.h" />
+    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\Vehicle.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

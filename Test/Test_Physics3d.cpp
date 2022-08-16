@@ -5,7 +5,7 @@
 #include "../Src/RigidBodyDynamics/RigidBody.h"
 #include "../Src/Collision/AABBTree.h"
 #include "../Src/Collision/GeometryQuery.h"
-#include "../Src/Tools/PhysxBinaryParser.h"
+#include "../Src/Modules/Tools/PhysxBinaryParser.h"
 
 uint64_t GetGuid(Geometry* g)
 {

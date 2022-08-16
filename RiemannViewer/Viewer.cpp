@@ -10,7 +10,7 @@
 #include "../Src/RigidBodyDynamics/KinematicsTree.h"
 #include "../Renderer/Renderer.h"
 #include "ObjRenderer.h"
-#include "../Src/Tools/PhysxBinaryParser.h"
+#include "../Src/Modules/Tools/PhysxBinaryParser.h"
 
 WorldViewer::WorldViewer(Renderer* renderer)
 {

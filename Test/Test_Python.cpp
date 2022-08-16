@@ -4,8 +4,8 @@
 #include <chrono>
 
 #include "Test.h"
-#include "../Src/Tools/PhysxBinaryParser.h"
-#include "../Src/Tools/PythonModule.h"
+#include "../Src/Modules/Tools/PhysxBinaryParser.h"
+#include "../Src/Modules/Tools/PythonModule.h"
 
 void TestDepthImage()
 {

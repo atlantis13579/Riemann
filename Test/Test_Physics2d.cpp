@@ -1,8 +1,8 @@
 
 #include "Test.h"
 
-#include "../Src/Physics2d/Rect.h"
-#include "../Src/Physics2d/Circle.h"
+#include "../Src/Modules/Physics2d/Rect.h"
+#include "../Src/Modules/Physics2d/Circle.h"
 
 void TestRect()
 {

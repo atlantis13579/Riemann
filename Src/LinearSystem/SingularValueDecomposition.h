@@ -29,8 +29,15 @@ private:
 		{
 			return false;
 		}
-	  
-		rv1 = new T[n];
+
+		T stack_mem[1024];
+		T* heap_mem = nullptr;
+		if (n > sizeof(stack_mem) / sizeof(stack_mem[0]))
+		{
+			heap_mem = new T[n];
+		}
+		rv1 = heap_mem ? heap_mem : stack_mem;
+
 		const int max_iterations = 30;
 
 		// Householder reduction to bidiagonal form
@@ -283,7 +290,9 @@ private:
 				w[k] = x;
 			}
 		}
-		delete []rv1;
+
+		if (heap_mem) delete []heap_mem;
+
 		return true;
 	}
 	
