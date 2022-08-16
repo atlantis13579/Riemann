@@ -32,6 +32,7 @@ class ForceField
 {
 public:
 	virtual ~ForceField() {}
+	virtual void		Update(float dt) {}
 	virtual bool		ApplyForce(RigidBodyDynamic* Rigid) = 0;
 
 public:

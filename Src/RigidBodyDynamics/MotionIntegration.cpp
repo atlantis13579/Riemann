@@ -44,11 +44,6 @@ static int Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float 
 	return count;
 }
 
-static int Integrate_MidpointEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
-{
-	return 0;
-}
-
 static int Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
 {
 	int count = 0;
@@ -81,11 +76,6 @@ static int Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, floa
 	return count;
 }
 
-static int Integrate_ImplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
-{
-	return 0;
-}
-
 // static
 void MotionIntegration::Integrate(std::vector<RigidBodyDynamic*> Bodies, float dt, uint8_t method)
 {
@@ -95,14 +85,8 @@ void MotionIntegration::Integrate(std::vector<RigidBodyDynamic*> Bodies, float d
 	case IntegrateMethod::ExplicitEuler:
 		Integrate_ExplicitEuler(Bodies, dt);
 		break;
-	case IntegrateMethod::MidpointEuler:
-		Integrate_MidpointEuler(Bodies, dt);
-		break;
 	case IntegrateMethod::SymplecticEuler:
 		Integrate_SymplecticEuler(Bodies, dt);
-		break;
-	case IntegrateMethod::ImplicitEuler:
-		Integrate_ImplicitEuler(Bodies, dt);
 		break;
 	default:
 		assert(false);

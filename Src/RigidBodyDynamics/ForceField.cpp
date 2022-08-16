@@ -1,4 +1,5 @@
 
+#include <assert.h>
 #include "ForceField.h"
 #include "RigidBody.h"
 #include "../Geometry/DenseTensorField3d.h"
@@ -13,11 +14,11 @@ public:
 
 	virtual bool ApplyForce(RigidBodyDynamic* Rigid) override final
 	{
-		if (Rigid->Sleeping || Rigid->DisableGravity || Rigid->InvMass <= 1e-6f)
+		if (Rigid->Sleeping || Rigid->DisableGravity)
 		{
 			return true;
 		}
-		Rigid->ApplyForce(m_GravityAcc / Rigid->InvMass);
+		Rigid->ApplyLinearAcceleration(m_GravityAcc);
 		return true;
 	}
 
@@ -30,7 +31,6 @@ class DenseField : public ForceField, DenseTensorField3d<Vector3>
 public:
 	DenseField()
 	{
-
 	}
 
 	virtual bool ApplyForce(RigidBodyDynamic* Rigid) override final
@@ -39,6 +39,56 @@ public:
 		Rigid->ApplyForce(Force);
 		return true;
 	}
+};
+
+class TimeEvoluteDenseField3d : public ForceField
+{
+public:
+	TimeEvoluteDenseField3d()
+	{
+		m_curr_idx = -1;
+	}
+
+	virtual void Update(float dt) override final
+	{
+		if (m_Frames.size() > 0)
+		{
+			m_curr = std::fmod(m_curr + dt, m_Frames.back());
+		}
+
+		m_curr_idx = -1;
+		for (size_t i = 0; i < m_Frames.size(); ++i)
+		{
+			if (m_curr < m_Frames.size())
+			{
+				m_curr_idx = (int)i;
+				break;
+			}
+		}
+
+		assert(m_curr_idx != -1);
+		assert(m_Frames.size() + 1 == m_Fields.size());
+	}
+
+	virtual bool ApplyForce(RigidBodyDynamic* Rigid) override final
+	{
+		if (m_curr_idx != -1)
+		{
+			Vector3 Force1 = m_Fields[m_curr_idx].GetTensorByPosition(Rigid->X);
+			Vector3 Force2 = m_Fields[m_curr_idx + 1].GetTensorByPosition(Rigid->X);
+			float dt = m_curr_idx > 1 ? (m_curr - m_Frames[m_curr_idx - 1] / m_Frames[m_curr_idx] - m_Frames[m_curr_idx - 1]) : (m_curr / m_Frames[m_curr_idx]);
+			Vector3 Force = LinearInterp(Force1, Force2, dt);
+			Rigid->ApplyForce(Force);
+			return true;
+		}
+		return false;
+	}
+
+private:
+	std::vector<float> m_Frames;
+	std::vector<DenseTensorField3d<Vector3>> m_Fields;
+	float m_curr;
+	int m_curr_idx;
 };
 
 typedef float (*AttenuationFunc)(float);
@@ -61,6 +111,11 @@ public:
 		{
 			m_Param.Attenuation = ExplosionFieldParam::AttenuationType::LINEAR;
 		}
+	}
+
+	virtual void Update(float dt) override final
+	{
+
 	}
 
 	virtual bool ApplyForce(RigidBodyDynamic* Rigid) override final

@@ -270,7 +270,7 @@ void WorldViewer::CreateSimulator()
 
 void WorldViewer::UpdateSimulator(float dt)
 {
-	m_World->Simulate(dt);
+	m_World->Simulate();
 }
 
 Vector3 WorldViewer::GetCameraPosition()

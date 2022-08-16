@@ -88,9 +88,11 @@ RigidBodySimulation::~RigidBodySimulation()
 	}
 }
 
-void		RigidBodySimulation::Simulate(float dt)
+void		RigidBodySimulation::Simulate()
 {
-	SimulateST(dt);
+	m_Clock.tick++;
+
+	SimulateST(m_Clock.deltatime);
 }
 
 void		RigidBodySimulation::SimulateST(float dt)
@@ -131,18 +133,6 @@ void		RigidBodySimulation::SimulateST(float dt)
 
 	MotionIntegration::Integrate(m_DynamicBodies, dt, (int)m_IntegrateMethod);
 
-	if (m_DynamicBodies.size())
-	{
-
-		static Vector3 p0 = m_DynamicBodies[0]->X;
-		static float tt = 0.0f;
-		tt += dt;
-		float diff = (m_DynamicBodies[0]->X - p0).Length();
-		if (tt < 1.2f)
-			Logger::OutputDebugWindow("%.3f %.3f\n", tt, diff);
-	}
-
-
 	PostIntegrate(dt);
 
 	return;
@@ -165,6 +155,8 @@ void		RigidBodySimulation::PreIntegrate(float dt)
 
 	for (size_t j = 0; j < m_Fields.size(); ++j)
 	{
+		m_Fields[j]->Update(dt);
+
 		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 		{
 			m_Fields[j]->ApplyForce(m_DynamicBodies[i]);

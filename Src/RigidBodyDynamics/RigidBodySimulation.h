@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #include <string>
 #include <vector>
 
@@ -45,9 +46,21 @@ enum class ConstraintSolver : uint8_t
 enum class IntegrateMethod : uint8_t
 {
 	ExplicitEuler,
-	MidpointEuler,
 	SymplecticEuler,
-	ImplicitEuler
+};
+
+struct WorldClock
+{
+	WorldClock()
+	{
+		tick = 0;
+		simhz = 60;
+		deltatime = 1.0f / simhz;
+	}
+
+	uint64_t	tick;
+	int			simhz;		// Update per second, default 60
+	float		deltatime;
 };
 
 struct RigidBodySimulationParam
@@ -78,7 +91,7 @@ public:
 	~RigidBodySimulation();
 
 public:
-	void				Simulate(float dt);
+	void				Simulate();
 
     bool				LoadPhysxScene(const char *name, bool shared_mem);
 
@@ -116,6 +129,7 @@ private:
 	ResolutionPhase*				m_RPhase;
 	IntegrateMethod					m_IntegrateMethod;
 	std::vector<ForceField*>		m_Fields;
+	WorldClock						m_Clock;
 	void*							m_SharedMem;
 	size_t							m_SharedMemSize;
 };

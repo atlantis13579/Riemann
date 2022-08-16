@@ -2,6 +2,7 @@
 
 #include "../Maths/Tensor.h"
 #include "../Maths/Box3d.h"
+#include "../Maths/Vector2.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Maths.h"
 
@@ -10,6 +11,74 @@ enum InterpMethod
 	NO_INTERP = 0,
 	BILINEAR
 };
+
+template<typename ScalerType>
+class DenseTensorField2d
+{
+public:
+	DenseTensorField2d(const Vector2& Bmin, const Vector2& Bmax, int nX, int nY) : m_Fields({ nX, nY })
+	{
+		m_ConstTensor = ScalerType::Zero();
+
+		m_Bmin = Bmin;
+		m_Bmax = Bmax;
+		m_Size = TVector2<int>(nX, nY);
+		m_CellSize = (m_Bmax - m_Bmin);
+		m_CellSize.x /= m_Size.x;
+		m_CellSize.y /= m_Size.y;
+		m_InvCellSize = Vector2(1.0f / m_CellSize.x, 1.0f / m_CellSize.y);
+		m_InterpMethod = InterpMethod::BILINEAR;
+	}
+
+	DenseTensorField2d() : m_Fields({ 1, 1 })
+	{
+		m_Bmin = Vector2::Zero();
+		m_Bmax = Vector2::One();
+		m_Size = TVector2<int>(1, 1);
+		m_CellSize = m_InvCellSize = Vector2::One();
+	}
+
+	~DenseTensorField2d()
+	{
+	}
+
+public:
+	ScalerType GetTensorByPosition(const Vector3& pos) const
+	{
+		const float fx = (pos.x - m_Bmin.x) * m_InvCellSize.x - 0.5f;
+		const float fy = (pos.y - m_Bmin.y) * m_InvCellSize.y - 0.5f;
+		const int nx = (int)(fx);
+		const int ny = (int)(fy);
+		if (nx < 0 || nx >= m_Size.x || ny < 0 || ny >= m_Size.y)
+		{
+			return m_ConstTensor;
+		}
+
+		if (m_InterpMethod == InterpMethod::BILINEAR)
+		{
+			if (nx == m_Size.x - 1 || ny == m_Size.y - 1)
+			{
+				return m_Fields(nx, ny);
+			}
+			const float dx = fx - nx;
+			const float dy = fy - ny;
+			ScalerType y1 = LinearInterp(m_Fields(nx, ny), m_Fields(nx + 1, ny), dx);
+			ScalerType y2 = LinearInterp(m_Fields(nx, ny + 1), m_Fields(nx + 1, ny + 1), dx);
+			return LinearInterp(y1, y2, dy);
+		}
+
+		return m_Fields(nx, ny);
+	}
+
+private:
+	ScalerType				m_ConstTensor;
+	Vector2					m_Bmin, m_Bmax;
+	TVector2<int>			m_Size;
+	Vector2					m_CellSize, m_InvCellSize;
+	Tensor<ScalerType, 2>	m_Fields;
+	InterpMethod			m_InterpMethod;
+};
+
 
 template<typename ScalerType>
 class DenseTensorField3d
@@ -56,7 +125,7 @@ public:
 
 		if (m_InterpMethod == InterpMethod::BILINEAR)
 		{
-			if (nx == m_Size.x - 1 || nx == m_Size.x - 1 )
+			if (nx == m_Size.x - 1 || ny == m_Size.y - 1 || nz == m_Size.z - 1)
 			{
 				return m_Fields(nx, ny, nz);
 			}
