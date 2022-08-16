@@ -7,7 +7,7 @@
 #include "../Collision/DynamicAABBTree.h"
 #include "../Collision/GeometryQuery.h"
 #include "../Collision/GeometryObject.h"
-#include "../Tools/PhysxBinaryParser.h"
+#include "../Modules/Tools/PhysxBinaryParser.h"
 #include "BroadPhase.h"
 #include "NarrowPhase.h"
 #include "MotionIntegration.h"

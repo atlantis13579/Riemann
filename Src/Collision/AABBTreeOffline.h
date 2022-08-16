@@ -5,7 +5,7 @@
 #include "../Maths/Box3d.h"
 
 class AABBTreeOffline;
-struct AABBTreeNodeInference;
+struct CacheFriendlyAABBTree;
 
 enum class SplitHeuristic : uint8_t
 {
@@ -106,7 +106,7 @@ public:
 	void Init(int nGeometries, int nGeometriesPerNode);
 	void Build(AABBTreeBuildData &params);
 	AABBTreeNodeOffline* AllocNodes();
-	AABBTreeNodeInference* BuildInferenceTree();
+	CacheFriendlyAABBTree* BuildInferenceTree();
 
 private:
 	AABBTreeNodeOffline* pHead;

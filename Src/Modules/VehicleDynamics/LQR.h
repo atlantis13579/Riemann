@@ -5,7 +5,7 @@
 
 #include <cmath>
 #include <vector>
-#include "../Maths/MatrixMxN.h"
+#include "../../Maths/MatrixMxN.h"
 
 template<int nState, int mInput>
 class LinearQuadraticRegulator

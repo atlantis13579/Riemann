@@ -6,7 +6,7 @@
 
 class AABBTreeOffline;
 
-struct AABBTreeNodeInference
+struct CacheFriendlyAABBTree
 {
 	inline const Box3d& GetBoundingVolume() const
 	{
@@ -43,22 +43,22 @@ struct AABBTreeNodeInference
 		return (Data >> 1) + 1;
 	}
 
-	inline const AABBTreeNodeInference* GetLeftNode(const AABBTreeNodeInference* Base)	const
+	inline const CacheFriendlyAABBTree* GetLeftNode(const CacheFriendlyAABBTree* Base)	const
 	{
 		return Base + (Data >> 1);
 	}
 
-	inline AABBTreeNodeInference* GetLeftNode(AABBTreeNodeInference* Base)
+	inline CacheFriendlyAABBTree* GetLeftNode(CacheFriendlyAABBTree* Base)
 	{
 		return Base + (Data >> 1);
 	}
 
-	inline const AABBTreeNodeInference* GetRightNode(const AABBTreeNodeInference* Base) const
+	inline const CacheFriendlyAABBTree* GetRightNode(const CacheFriendlyAABBTree* Base) const
 	{
 		return Base + (Data >> 1) + 1;
 	}
 
-	inline AABBTreeNodeInference* GetRightNode(AABBTreeNodeInference* Base)
+	inline CacheFriendlyAABBTree* GetRightNode(CacheFriendlyAABBTree* Base)
 	{
 		return Base + (Data >> 1) + 1;
 	}
@@ -67,4 +67,4 @@ struct AABBTreeNodeInference
 	uint32_t			Data;		// 27 bits node index | 4 bits #Geometries | 1 bit leaf
 };
 
-static_assert(sizeof(AABBTreeNodeInference) == 28, "Size of AABBTreeNodeInference is not valid");
+static_assert(sizeof(CacheFriendlyAABBTree) == 28, "Size of AABBTreeNodeInference is not valid");

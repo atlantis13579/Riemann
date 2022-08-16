@@ -196,15 +196,15 @@ AABBTreeNodeOffline* AABBTreeOffline::AllocNodes()
 	}
 }
 
-AABBTreeNodeInference* AABBTreeOffline::BuildInferenceTree()
+CacheFriendlyAABBTree* AABBTreeOffline::BuildInferenceTree()
 {
 	if (nTotalNodes <= 0)
 	{
 		return nullptr;
 	}
 
-	AABBTreeNodeInference* Compact = (AABBTreeNodeInference*)new char[sizeof(AABBTreeNodeInference) * nTotalNodes];
-	memset(Compact, 0, sizeof(AABBTreeNodeInference) * nTotalNodes);
+	CacheFriendlyAABBTree* Compact = (CacheFriendlyAABBTree*)new char[sizeof(CacheFriendlyAABBTree) * nTotalNodes];
+	memset(Compact, 0, sizeof(CacheFriendlyAABBTree) * nTotalNodes);
 
 	int offset = 0;
 	for (size_t k = 0; k < Blocks.size(); ++k)

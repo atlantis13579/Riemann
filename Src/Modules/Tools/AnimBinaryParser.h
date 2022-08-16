@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 
-#include "../Maths/Vector3.h"
-#include "../Maths/Quaternion.h"
+#include "../../Maths/Vector3.h"
+#include "../../Maths/Quaternion.h"
 
 typedef std::vector<std::pair<int, Vector3>>	ScaleKeyframes;
 typedef std::vector<std::pair<int, Vector3>>	PositionKeyframes;

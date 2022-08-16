@@ -5,8 +5,6 @@
 #include <queue>
 #include <map>
 
-#include "../Maths/Vector2.h"
-
 const int kMinPolygonPoints = 5;
 
 int triangle_area(const Vector2i &p1, const Vector2i &p2, const Vector2i &p3)

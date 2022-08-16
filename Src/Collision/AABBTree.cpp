@@ -67,7 +67,7 @@ void AABBTree::Statistic(TreeStatistics& stat)
 	
 	while (!stack.Empty())
 	{
-		AABBTreeNodeInference* p = m_AABBTreeInference + stack.Pop();
+		CacheFriendlyAABBTree* p = m_AABBTreeInference + stack.Pop();
 		curr_depth = depth.Pop();
 		while (p)
 		{
@@ -82,8 +82,8 @@ void AABBTree::Statistic(TreeStatistics& stat)
 				break;
 			}
 
-			AABBTreeNodeInference* Left = LEFT_NODE(p);
-			AABBTreeNodeInference* Right = RIGHT_NODE(p);
+			CacheFriendlyAABBTree* Left = LEFT_NODE(p);
+			CacheFriendlyAABBTree* Right = RIGHT_NODE(p);
 			if (Left && Right)
 			{
 				p = Left;
@@ -102,7 +102,7 @@ void AABBTree::Statistic(TreeStatistics& stat)
 
 int AABBTree::IntersectPoint(const Vector3& Point) const
 {
-	AABBTreeNodeInference* p = m_AABBTreeInference;
+	CacheFriendlyAABBTree* p = m_AABBTreeInference;
 	if (p == nullptr || !p->aabb.IsInside(Point))
 	{
 		return -1;
@@ -115,8 +115,8 @@ int AABBTree::IntersectPoint(const Vector3& Point) const
 			return GET_INDEX(p);
 		}
 
-		AABBTreeNodeInference* Left = LEFT_NODE(p);
-		AABBTreeNodeInference* Right = RIGHT_NODE(p);
+		CacheFriendlyAABBTree* Left = LEFT_NODE(p);
+		CacheFriendlyAABBTree* Right = RIGHT_NODE(p);
 		if (Left && Left->aabb.IsInside(Point))
 		{
 			p = Left;
@@ -250,7 +250,7 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 	}
 
 	float t1, t2;
-	AABBTreeNodeInference* p = m_AABBTreeInference;
+	CacheFriendlyAABBTree* p = m_AABBTreeInference;
 	if (p == nullptr || !Ray.IntersectAABB(p->aabb.mMin, p->aabb.mMax, &t1) || t1 >= Option->MaxDist)
 	{
 		return false;
@@ -284,8 +284,8 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 				break;
 			}
 
-			AABBTreeNodeInference* Left = LEFT_NODE(p);
-			AABBTreeNodeInference* Right = RIGHT_NODE(p);
+			CacheFriendlyAABBTree* Left = LEFT_NODE(p);
+			CacheFriendlyAABBTree* Right = RIGHT_NODE(p);
 
 			Result->AddTestCount(2);
 
@@ -387,7 +387,7 @@ bool AABBTree::Intersect(const Geometry *geometry, Geometry** ObjectCollection, 
 
 	const Box3d &aabb = geometry->GetBoundingVolume_WorldSpace();
 
-	AABBTreeNodeInference* p = m_AABBTreeInference;
+	CacheFriendlyAABBTree* p = m_AABBTreeInference;
 	if (p == nullptr || !aabb.Intersect(p->aabb.mMin, p->aabb.mMax))
 	{
 		return false;
@@ -418,8 +418,8 @@ bool AABBTree::Intersect(const Geometry *geometry, Geometry** ObjectCollection, 
 
 			Result->AddTestCount(2);
 
-			AABBTreeNodeInference* Left = LEFT_NODE(p);
-			AABBTreeNodeInference* Right = RIGHT_NODE(p);
+			CacheFriendlyAABBTree* Left = LEFT_NODE(p);
+			CacheFriendlyAABBTree* Right = RIGHT_NODE(p);
 
 			bool intersect1 = aabb.Intersect(Left->aabb.mMin, Left->aabb.mMax);
 			bool intersect2 = aabb.Intersect(Right->aabb.mMin, Right->aabb.mMax);
@@ -527,7 +527,7 @@ bool AABBTree::Sweep(const Geometry *geometry, Geometry** ObjectCollection, cons
 
 	float t1, t2;
 	Vector3 normal;
-	AABBTreeNodeInference* p = m_AABBTreeInference;
+	CacheFriendlyAABBTree* p = m_AABBTreeInference;
 	if (p == nullptr || !geometry->SweepAABB(Direction, p->aabb.mMin, p->aabb.mMax, &normal, &t1))
 	{
 		return false;
@@ -557,8 +557,8 @@ bool AABBTree::Sweep(const Geometry *geometry, Geometry** ObjectCollection, cons
 				break;
 			}
 
-			AABBTreeNodeInference* Left = LEFT_NODE(p);
-			AABBTreeNodeInference* Right = RIGHT_NODE(p);
+			CacheFriendlyAABBTree* Left = LEFT_NODE(p);
+			CacheFriendlyAABBTree* Right = RIGHT_NODE(p);
 
 			Result->AddTestCount(2);
 

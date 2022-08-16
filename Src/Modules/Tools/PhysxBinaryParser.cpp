@@ -13,16 +13,16 @@
 
 #include "PhysxBinaryParser.h"
 #include "Serialization.h"
-#include "../Collision/GeometryObject.h"
-#include "../CollisionPrimitive/ConvexMesh.h"
-#include "../CollisionPrimitive/HeightField3d.h"
-#include "../CollisionPrimitive/TriangleMesh.h"
-#include "../CollisionPrimitive/MeshBVH4.h"
-#include "../RigidBodyDynamics/RigidBody.h"
-#include "../Core/Base.h"
-#include "../Maths/Box3d.h"
-#include "../Maths/Transform.h"
-#include "../Maths/Quaternion.h"
+#include "../../Collision/GeometryObject.h"
+#include "../../CollisionPrimitive/ConvexMesh.h"
+#include "../../CollisionPrimitive/HeightField3d.h"
+#include "../../CollisionPrimitive/TriangleMesh.h"
+#include "../../CollisionPrimitive/MeshBVH4.h"
+#include "../../RigidBodyDynamics/RigidBody.h"
+#include "../../Core/Base.h"
+#include "../../Maths/Box3d.h"
+#include "../../Maths/Transform.h"
+#include "../../Maths/Quaternion.h"
 
 typedef int64_t PxI64;
 typedef uint64_t PxU64;

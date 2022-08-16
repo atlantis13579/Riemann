@@ -9,7 +9,7 @@ struct IntersectOption;
 struct IntersectResult;
 struct SweepOption;
 struct SweepResult;
-struct AABBTreeNodeInference;
+struct CacheFriendlyAABBTree;
 class Geometry;
 
 struct TreeStatistics
@@ -47,5 +47,5 @@ private:
 	int*						m_GeometryIndicesBase;
 	int							m_NumGeometries;
 
-	AABBTreeNodeInference		*m_AABBTreeInference;
+	CacheFriendlyAABBTree		*m_AABBTreeInference;
 };
