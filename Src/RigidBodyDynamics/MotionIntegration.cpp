@@ -24,17 +24,16 @@ static int Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float 
 			continue;
 		}
 
-		Body->X = Body->X + (Body->P * Body->InvMass) * dt;						// X' = v = P / m
+		Body->X = Body->X + (Body->V) * dt;									// X' = v
 		Matrix3 R = Body->Q.ToRotationMatrix3();
 		Matrix3 invInertiaWorld = R * Body->InvInertia * R.Transpose();
-		Vector3 AngularVelocity = invInertiaWorld * Body->L;
-		Quaternion dQ = 0.5f * Quaternion(0.0f, AngularVelocity) * Body->Q;		// Q' = 0.5 * AngularVelocity * Q
+		Quaternion dQ = 0.5f * Quaternion(0.0f, Body->W) * Body->Q;			// Q' = 0.5 * W * Q
 		Body->Q = (Body->Q + dQ * dt).Unit();
 		
 		float LinearDamping = 1.0f -(1.0f - Body->LinearDamping) * dt;
 		float AngularDamping = 1.0f -(1.0f - Body->AngularDamping) * dt;
-		Body->P = (Body->P + Body->ExtForce * dt) * LinearDamping;		// P' = Force
-		Body->L = (Body->L + Body->ExtTorque * dt) * AngularDamping;	// L' = Torque
+		Body->V = (Body->V + Body->InvMass * Body->ExtForce * dt) * LinearDamping;		// V' = Force / mass
+		Body->W = (Body->W + invInertiaWorld * Body->ExtTorque * dt) * AngularDamping;	// W' = Torque / invInertia
 		
 		Body->mGeometry->SetCenterOfMass(Body->X);
 		Body->mGeometry->SetRotation(Body->Q);
@@ -55,17 +54,16 @@ static int Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, floa
 		{
 			continue;
 		}
-		
-		float LinearDamping = 1.0f - (1.0f - Body->LinearDamping) * dt;
-		float AngularDamping = 1.0f - (1.0f - Body->AngularDamping) * dt;
-		Body->P = (Body->P + Body->ExtForce * dt) * LinearDamping;		// P' = Force
-		Body->L = (Body->L + Body->ExtTorque * dt) * AngularDamping;	// L' = Torque
-		
-		Body->X = Body->X + (Body->P * Body->InvMass) * dt;						// X' = v = P / m
+
 		Matrix3 R = Body->Q.ToRotationMatrix3();
 		Matrix3 invInertiaWorld = R * Body->InvInertia * R.Transpose();
-		Vector3 AngularVelocity = invInertiaWorld * Body->L;
-		Quaternion dQ = 0.5f * Quaternion(0.0f, AngularVelocity) * Body->Q;		// Q' = 0.5 * AngularVelocity * Q
+		float LinearDamping = 1.0f - (1.0f - Body->LinearDamping) * dt;
+		float AngularDamping = 1.0f - (1.0f - Body->AngularDamping) * dt;
+		Body->V = (Body->V + Body->InvMass * Body->ExtForce * dt) * LinearDamping;		// V' = Force / mass
+		Body->W = (Body->W + invInertiaWorld * Body->ExtTorque * dt) * AngularDamping;	// W' = Torque / invInertia
+		
+		Body->X = Body->X + (Body->V) * dt;										// X' = v
+		Quaternion dQ = 0.5f * Quaternion(0.0f, Body->W) * Body->Q;				// Q' = 0.5 * W * Q
 		Body->Q = (Body->Q + dQ * dt).Unit();
 		
 		Body->mGeometry->SetCenterOfMass(Body->X);

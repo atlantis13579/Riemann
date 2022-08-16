@@ -72,8 +72,8 @@ public:
 	// State variable
 	Vector3		X;				// Position
 	Quaternion	Q;				// Rotation Quaternion
-	Vector3		P;				// Linear Momentum
-	Vector3		L;				// Angular Momentum
+	Vector3		V;				// Linear Velocity
+	Vector3		W;				// Angular Velocity
 	
 	// Constant quantities
 	float		InvMass;		// Inverse of Total Mass
@@ -105,10 +105,10 @@ public:
 	Matrix3				GetInverseInertia_WorldSpace() const;
 	const float&		GetInverseMass() const;
 
-	Vector3 			GetLinearVelocity() const;
-	const Vector3&		GetLinearMomentum() const;
-	Vector3				GetAngularVelocity() const;
-	const Vector3&		GetAngularMomentum() const;
+	const Vector3& 		GetLinearVelocity() const;
+	Vector3				GetLinearMomentum() const;
+	const Vector3&		GetAngularVelocity() const;
+	Vector3				GetAngularMomentum() const;
 	void				SetLinearVelocity(const Vector3 &v);
 	void				SetAngularVelocity(const Vector3 &w);
 	void				SetLinearMomentum(const Vector3& p);

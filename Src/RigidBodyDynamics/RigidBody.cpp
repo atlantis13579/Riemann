@@ -42,24 +42,24 @@ void RigidBody::GetGeometries(std::vector<Geometry*>* Geometries)
 	}
 }
 
-Vector3 	RigidBody::GetLinearVelocity() const
+const Vector3& 	RigidBody::GetLinearVelocity() const
 {
-	return P * InvMass;
+	return V;
 }
 
-const Vector3&	RigidBody::GetLinearMomentum() const
+Vector3			RigidBody::GetLinearMomentum() const
 {
-	return P;
+	return InvMass > kMinimumInvMass ? Vector3::Zero() : V / InvMass;
 }
 
-Vector3		RigidBody::GetAngularVelocity() const
+const Vector3&	RigidBody::GetAngularVelocity() const
 {
-	return InvInertia * L;
+	return W;
 }
 
-const Vector3&		RigidBody::GetAngularMomentum() const
+Vector3			RigidBody::GetAngularMomentum() const
 {
-	return L;
+	return InvInertia.Invertible() ? InvInertia.Inverse() * W : Vector3::Zero();;
 }
 
 const Matrix3&	 	RigidBody::GetInverseInertia() const
@@ -88,12 +88,12 @@ float		RigidBody::GetKinematicsEnergy() const
 
 float		RigidBody::GetLinearKinematicsEnergy() const
 {
-	return 0.5f * P.SquareLength() * InvMass;
+	return InvMass > kMinimumInvMass ? 0.5f * V.SquareLength() / InvMass : 0.0f;
 }
 
 float		RigidBody::GetAngularKinematicsEnergy() const
 {
-	return 0.5f * L.Dot(InvInertia * L);
+	return InvInertia.Invertible() ? 0.5f * W.Dot(InvInertia.Inverse() * W) : 0.0f;
 }
 
 RigidBodyStatic* RigidBody::CastStatic()
@@ -108,46 +108,42 @@ RigidBodyDynamic* RigidBody::CastDynamic()
 
 void		RigidBody::SetLinearVelocity(const Vector3 &v)
 {
-	P = InvMass > kMinimumInvMass ? v / InvMass : Vector3::Zero();
+	V = v;
 }
 
 void		RigidBody::SetAngularVelocity(const Vector3 &w)
 {
-	L = InvInertia.Invertible() ? InvInertia.Inverse() * w : Vector3::Zero();
+	W = w;
 }
 
 void		RigidBody::SetLinearMomentum(const Vector3& p)
 {
-	P = InvMass > kMinimumInvMass ? p : Vector3::Zero();
+	V = InvMass * p;
 }
 
 void		RigidBody::SetAngularMomentum(const Vector3& l)
 {
-	L = InvInertia.Invertible() ? l : Vector3::Zero();
+	W = InvInertia * l;
 }
 
 void		RigidBody::AddLinearVelocity(const Vector3& dv)
 {
-	if (InvMass > kMinimumInvMass)
-		P = P + dv / InvMass;
+	V += dv;
 }
 
 void		RigidBody::AddLinearMomentum(const Vector3& dp)
 {
-	if (InvMass > kMinimumInvMass)
-		P = P + dp;
+	V += InvMass * dp;
 }
 
 void		RigidBody::AddAngularVelocity(const Vector3& dw)
 {
-	if (InvInertia.Invertible())
-		L = L + InvInertia.Inverse() * dw;
+	W += dw;
 }
 
 void RigidBody::AddAngularMomentum(const Vector3& dl)
 {
-	if (InvInertia.Invertible())
-		L = L + dl;
+	W += InvInertia * dl;
 }
 
 void		RigidBody::SetDefaultPhysicsMaterial(int idx)
@@ -198,8 +194,8 @@ RigidBodyStatic::RigidBodyStatic(const RigidBodyParam& param, Geometry* geom)
 	this->InvInertia = Matrix3::Zero();
 	this->X = geom ? geom->GetCenterOfMass() : param.pos;
 	this->Q = geom ? geom->GetRotation() : param.quat;
-	this->P = Vector3::Zero();
-	this->L = Vector3::Zero();
+	this->V = Vector3::Zero();
+	this->W = Vector3::Zero();
 	this->mGeometry = geom;
 	if (geom) this->AddGeometry(geom);
 }
@@ -213,8 +209,8 @@ RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, Geometry* geom)
 	this->InvInertia = geom->GetInverseInertia_LocalSpace(this->InvMass);
 	this->X = geom ? geom->GetCenterOfMass() : param.pos;
 	this->Q = geom ? geom->GetRotation() : param.quat;
-	this->P = this->InvMass > 0.0f ? param.linearVelocity / this->InvMass : Vector3::Zero();
-	this->L = this->InvInertia.Invertible() ? this->InvInertia.Inverse() * param.angularVelocity : Vector3::Zero();
+	this->V = param.linearVelocity;
+	this->W = param.angularVelocity;
 	this->ExtForce = Vector3::Zero();
 	this->ExtTorque = Vector3::Zero();
 	this->LinearDamping = param.linearDamping;
@@ -296,8 +292,8 @@ RigidBodyKinematics::RigidBodyKinematics()
 	InvInertia = Matrix3::Zero();
 	X = Vector3::Zero();
 	Q = Quaternion::One();
-	P = Vector3::Zero();
-	L = Vector3::Zero();
+	V = Vector3::Zero();
+	W = Vector3::Zero();
 }
 
 void RigidBodyKinematics::SetPosition(const Vector3& pos)
