@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Src\Destruction\GeometrySet.cpp" />
+    <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp" />
     <ClCompile Include="..\..\Src\Modules\AeroDynamics\VonKarmanVortexStreet.cpp" />
     <ClCompile Include="..\..\Src\Modules\AeroDynamics\WindSimulation.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.cpp" />
@@ -36,7 +38,6 @@
     <ClCompile Include="..\..\Src\Collision\AABBTreeOffline.cpp" />
     <ClCompile Include="..\..\Src\Collision\DynamicAABBTree.cpp" />
     <ClCompile Include="..\..\Src\Collision\EPAPenetration.cpp" />
-    <ClCompile Include="..\..\Src\Destruction\GeometryCollection.cpp" />
     <ClCompile Include="..\..\Src\Collision\GeometryIntersection.cpp" />
     <ClCompile Include="..\..\Src\Collision\GeometryObject.cpp" />
     <ClCompile Include="..\..\Src\Collision\GeometryQuery.cpp" />
@@ -96,7 +97,9 @@
   <ItemGroup>
     <ClInclude Include="..\..\Src\Core\LogSystem.h" />
     <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
+    <ClInclude Include="..\..\Src\Destruction\GeometrySet.h" />
     <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
+    <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h" />
     <ClInclude Include="..\..\Src\LinearSystem\ConjugateGradientSolver.h" />
     <ClInclude Include="..\..\Src\Modules\AeroDynamics\VonKarmanVortexStreet.h" />
     <ClInclude Include="..\..\Src\Modules\AeroDynamics\WindSimulation.h" />
@@ -127,7 +130,6 @@
     <ClInclude Include="..\..\Src\Core\StaticList.h" />
     <ClInclude Include="..\..\Src\Core\StaticPool.h" />
     <ClInclude Include="..\..\Src\Core\ThreadPool.h" />
-    <ClInclude Include="..\..\Src\Destruction\GeometryCollection.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryDifference.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryIntersection.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryObject.h" />

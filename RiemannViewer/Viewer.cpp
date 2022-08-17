@@ -36,10 +36,10 @@ void WorldViewer::CreateDemo()
 
 	rp.rigidType = RigidType::Dynamic;
 	for (int i = 0; i < 5; ++i)
-	for (int j = 0; j < 1; ++j)
-	for (int k = 0; k < 1; ++k)
+	for (int j = 0; j < 5; ++j)
+	for (int k = 0; k < 5; ++k)
 	{
-		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 0.01f - 3.0f  + i * 2.01f, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
+		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(j * 3, 0.01f - 3.0f  + i * 2.01f, k * 3), Vector3(1.0f, 1.0f, 1.0f));
 		RigidBodyDynamic* p = m_World->CreateRigidBody(aabb, rp)->CastDynamic();
 	}
 

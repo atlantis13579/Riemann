@@ -117,9 +117,6 @@
     <ClInclude Include="..\..\Src\Maths\Frustum.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Destruction\GeometryCollection.h">
-      <Filter>Destruction</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Collision\GeometryDifference.h">
       <Filter>Collision</Filter>
     </ClInclude>
@@ -531,6 +528,12 @@
     <ClInclude Include="..\..\Src\Core\LogSystem.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Destruction\GeometrySet.h">
+      <Filter>Destruction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h">
+      <Filter>Destruction</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">
@@ -558,9 +561,6 @@
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Destruction\Fracture.cpp">
-      <Filter>Destruction</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Destruction\GeometryCollection.cpp">
       <Filter>Destruction</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Collision\GeometryIntersection.cpp">
@@ -739,6 +739,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Modules\AeroDynamics\WindSimulation.cpp">
       <Filter>Modules\AeroDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Destruction\GeometrySet.cpp">
+      <Filter>Destruction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp">
+      <Filter>Destruction</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

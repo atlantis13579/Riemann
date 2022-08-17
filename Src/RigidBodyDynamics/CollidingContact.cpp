@@ -1,6 +1,7 @@
 
 #include <assert.h>
 #include <algorithm>
+#include <queue>
 #include "CollidingContact.h"
 #include "RigidBody.h"
 #include "../Core/Graph.h"
@@ -214,11 +215,11 @@ ContactManifoldManager::~ContactManifoldManager()
 
 void ContactManifoldIslands::BuildIslands(const std::vector<Geometry*> &geoms, const std::vector<ContactManifold*> &manifolds)
 {
-	Graph<ContactManifold*> graph;
-	graph.nodes = manifolds;
+	GraphNE<Geometry*, ContactManifold*> graph;
+	graph.nodes = geoms;
 	for (size_t i = 0; i < manifolds.size(); ++i)
 	{
-		graph.edges.emplace_back(manifolds[i]->indexA, manifolds[i]->indexB);
+		graph.AddEdge(manifolds[i]->indexA, manifolds[i]->indexB, manifolds[i]);
 	}
 	std::vector<bool> separate;
 	separate.resize(geoms.size());
@@ -227,7 +228,7 @@ void ContactManifoldIslands::BuildIslands(const std::vector<Geometry*> &geoms, c
 		RigidBody* body = geoms[i]->GetParent<RigidBody>();
 		separate[i] = body->mRigidType == RigidType::Static;
 	}
-	
-	graph.BuildIslands(separate, &islands);
+
+	graph.BuildEdgeIslands(separate, &islands);
 	return;
 }

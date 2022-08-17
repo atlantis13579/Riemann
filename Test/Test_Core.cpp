@@ -76,18 +76,18 @@ void TestJob()
 
 void TestGraph()
 {
-	Graph<int> gr;
+	GraphNE<int, const char*> gr;
 	for (int i = 0; i < 9; ++i)
 		gr.nodes.push_back(i);
-	gr.edges.emplace_back(1, 2);
-	gr.edges.emplace_back(3, 2);
-	gr.edges.emplace_back(3, 1);
-	gr.edges.emplace_back(5, 4);
-	gr.edges.emplace_back(2, 4);
-	gr.edges.emplace_back(2, 6);
-	
+	gr.edges.emplace_back(1, 2, "a");
+	gr.edges.emplace_back(3, 2, "b");
+	gr.edges.emplace_back(3, 1, "c");
+	gr.edges.emplace_back(5, 4, "d");
+	gr.edges.emplace_back(2, 4, "e");
+	gr.edges.emplace_back(2, 6, "f");
+
 	std::vector<std::vector<int>> islands;
-	gr.BuildIslands({false, false, true, false, false,  false, false, false, false}, &islands);
+	gr.BuildNodeIslands({false, false, true, false, false,  false, false, false, false}, &islands);
 	
 	EXPECT(islands.size() == 3);
 	EXPECT(islands[0].size() == 3);		// 1, 2, 3
@@ -105,6 +105,13 @@ void TestGraph()
 	{
 		EXPECT(islands[2][i] == 2 || islands[2][i] == 6);
 	}
+
+	std::vector<std::vector<const char*>> islands2;
+	gr.BuildEdgeIslands({ false, false, true, false, false,  false, false, false, false }, &islands2);
+	EXPECT(islands2.size() == 3);
+	EXPECT(islands2[0].size() == 3);		// a, b, c
+	EXPECT(islands2[1].size() == 2);		// d, e
+	EXPECT(islands2[2].size() == 1);		// f
 	return;
 }
 
