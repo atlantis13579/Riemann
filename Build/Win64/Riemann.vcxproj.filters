@@ -534,6 +534,9 @@
     <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h">
       <Filter>Destruction</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Core\Profiler.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">

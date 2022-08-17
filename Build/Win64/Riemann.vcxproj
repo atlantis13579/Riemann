@@ -96,6 +96,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Src\Core\LogSystem.h" />
+    <ClInclude Include="..\..\Src\Core\Profiler.h" />
     <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
     <ClInclude Include="..\..\Src\Destruction\GeometrySet.h" />
     <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />

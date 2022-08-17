@@ -230,5 +230,13 @@ void ContactManifoldIslands::BuildIslands(const std::vector<Geometry*> &geoms, c
 	}
 
 	graph.BuildEdgeIslands(separate, &islands);
+
+	size_t count = 0;
+	for (size_t i = 0; i < islands.size(); ++i)
+	{
+		count += islands[i].size();
+	}
+	assert(count == manifolds.size());
+
 	return;
 }
