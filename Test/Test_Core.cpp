@@ -109,9 +109,9 @@ void TestGraph()
 	std::vector<std::vector<const char*>> islands2;
 	gr.BuildEdgeIslands({ false, false, true, false, false,  false, false, false, false }, &islands2);
 	EXPECT(islands2.size() == 3);
-	EXPECT(islands2[0].size() == 3);		// a, b, c
-	EXPECT(islands2[1].size() == 2);		// d, e
-	EXPECT(islands2[2].size() == 1);		// f
+	EXPECT(islands2[0].size() == 3);	// a, b, c
+	EXPECT(islands2[1].size() == 2);	// d, e
+	EXPECT(islands2[2].size() == 1);	// f
 	return;
 }
 

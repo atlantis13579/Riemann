@@ -478,6 +478,17 @@ public:
         return false;
     }
 
+    virtual bool Reset() override
+    {
+		for (size_t i = 0; i < m_AllMesh.size(); ++i)
+		{
+            DX11StaticMesh& mesh = m_AllMesh[i];
+			mesh.Release();
+			m_AllMesh.erase(m_AllMesh.begin() + i);
+			return true;
+		}
+        return true;
+    }
 
     //--------------------------------------------------------------------------------------
     // Helper for compiling shaders with D3DCompile

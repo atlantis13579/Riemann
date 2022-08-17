@@ -3,12 +3,20 @@
 #include <assert.h>
 #include <queue>
 #include <set>
-#include <tuple>
 #include <vector>
 
 template <typename N>
 struct Graph
 {
+	struct Edge
+	{
+		Edge(int _n0, int _n1) : n0(_n0), n1(_n1) {}
+		int n0;
+		int n1;
+	};
+	std::vector<N>		nodes;
+	std::vector<Edge>	edges;
+
 	void AddNode(const N& v)
 	{
 		nodes.push_back(v);
@@ -18,7 +26,7 @@ struct Graph
 	{
 		edges.emplace_back(s, e);
 	}
-	
+
 	// Kahn’s Algorithm for Topological Sort
 	bool HasCycle() const
 	{
@@ -67,52 +75,6 @@ struct Graph
 		}
 		return has_cycle;
 	}
-	
-	void KahnTopologicalSort(std::vector<int> &sorted) const
-	{
-		std::vector<bool> adjs;
-		std::vector<int> degree;
-		BuildAdjacencyMatrix(adjs);
-		BuildDegreeMatrix(degree);
-		
-		int n = (int)nodes.size();
-		std::queue<int> qu;
-		for (int i = 0; i < n; ++i)
-		{
-			if (degree[i] == 0)
-			{
-				qu.push(i);
-			}
-		}
-		
-		while (!qu.empty())
-		{
-			int c = qu.front();
-			qu.pop();
-			sorted.push_back(c);
-			
-			for (int i = 0; i < n; ++i)
-			{
-				if (adjs[c*n+i] == false)
-					continue;
-
-				assert(degree[i] > 0);
-				degree[i] -= 1;
-				if (degree[i] == 0)
-				{
-					qu.push(i);
-				}
-			}
-		}
-		
-		for (int i = 0; i < n; ++i)
-		{
-			if (degree[i] == 0)
-				continue;
-			
-			sorted.push_back(i);
-		}
-	}
 
 	void BuildAdjacencyMatrix(std::vector<bool>& adjs) const
 	{
@@ -121,7 +83,7 @@ struct Graph
 		for (size_t i = 0; i < edges.size(); ++i)
 		{
 			auto e = edges[i];
-			adjs[e.first * n + e.second] = true;
+			adjs[e.n0 * n + e.n1] = true;
 		}
 	}
 	
@@ -132,22 +94,22 @@ struct Graph
 		for (size_t i = 0; i < edges.size(); ++i)
 		{
 			auto e = edges[i];
-			degrees[e.second] += 1;
+			degrees[e.n1] += 1;
 		}
 	}
 	
-	void BuildSparseAdjacencyMatrix(std::vector<int>& offset, std::vector<int>& adjs)
+	void BuildSparseAdjacencyMatrix(std::vector<int>& entry, std::vector<int>& adjs)
 	{
-		std::vector<std::pair<int, int>>	&edges1 = edges;
-		std::vector<std::pair<int, int>>	edges2 = edges;
+		std::vector<Edge>	&edges1 = edges;
+		std::vector<Edge>	edges2 = edges;
 		
 		// Make Edge Ascending
 		for (size_t i = 0; i < edges1.size(); ++i)
 		{
-			std::pair<int, int> e = edges1[i];
-			if (e.first > e.second)
+			Edge &a = edges1[i];
+			if (a.n0 > a.n1)
 			{
-				edges1[i] = std::pair<int, int>(e.second, e.first);
+				std::swap(a.n0, a.n1);
 			}
 		}
 		
@@ -156,20 +118,20 @@ struct Graph
 		// Make Edge Descending
 		for (size_t i = 0; i < edges2.size(); ++i)
 		{
-			std::pair<int, int> e = edges2[i];
-			if (e.first < e.second)
+			Edge& a = edges1[i];
+			if (a.n0 < a.n1)
 			{
-				edges2[i] = std::pair<int, int>(e.second, e.first);
+				std::swap(a.n0, a.n1);
 			}
 		}
 		std::sort(edges2.begin(), edges2.end());
 		
-		offset.resize(nodes.size());
+		entry.resize(nodes.size());
 		adjs.clear();
 		
-		for (size_t i = 0; i < offset.size(); ++i)
+		for (size_t i = 0; i < entry.size(); ++i)
 		{
-			offset[i] = -1;
+			entry[i] = -1;
 		}
 		
 		// Merge edges1 and edges2
@@ -179,54 +141,67 @@ struct Graph
 		{
 			size_t size_old = adjs.size();
 			
-			while (pivot2 < edges2.size() && edges2[pivot2].first == i)
+			while (pivot2 < edges2.size() && edges2[pivot2].n0 == i)
 			{
-				adjs.push_back(edges2[pivot2].second);
+				adjs.push_back(edges2[pivot2].n1);
 				pivot2++;
 			}
 			
-			while (pivot1 < edges1.size() && edges1[pivot1].first == i)
+			while (pivot1 < edges1.size() && edges1[pivot1].n0 == i)
 			{
-				adjs.push_back(edges1[pivot1].second);
+				adjs.push_back(edges1[pivot1].n1);
 				pivot1++;
 			}
 			
 			if (adjs.size() > size_old)
 			{
-				offset[i] = (int)size_old;
+				entry[i] = (int)size_old;
 			}
 		}
 	}
 	
-	static bool GetAdjacencyList(const std::vector<int>& offset, const std::vector<int>& adjs, int i, int *offset0, int *offset1)
+	static bool GetAdjacencyList(const std::vector<int>& entry, int adjs, int n0, int *entry0, int *entry1)
 	{
-		if (offset[i] == -1)
+		if (entry[n0] == -1)
 		{
 			return false;
 		}
 		
-		int j0 = offset[i], j1 = (int)adjs.size() - 1;
-		for (size_t j = i + 1; j < offset.size(); ++j)
+		int j0 = entry[n0], j1 = adjs - 1;
+		for (size_t j = n0 + 1; j < entry.size(); ++j)
 		{
-			if (offset[j] != -1)
+			if (entry[j] != -1)
 			{
-				j1 = offset[j] - 1;
+				j1 = entry[j] - 1;
 				break;
 			}
 		}
 		
-		*offset0 = j0;
-		*offset1 = j1;
+		*entry0 = j0;
+		*entry1 = j1;
 		return true;
 	}
-	
-	std::vector<N>						nodes;
-	std::vector<std::pair<int, int>>	edges;
 };
 
 template <typename N, typename E>
 struct GraphNE
 {
+	struct Edge
+	{
+		Edge(int _n0, int _n1, const E& _obj) : n0(_n0), n1(_n1), obj(_obj) {}
+		int n0;
+		int n1;
+		E   obj;
+	};
+	struct EdgeAdj
+	{
+		EdgeAdj(int _n1, const E& _obj) : n1(_n1), obj(_obj) {}
+		int n1;
+		E   obj;
+	};
+	std::vector<N>		nodes;
+	std::vector<Edge>	edges;
+
 	void AddNode(const N& n)
 	{
 		nodes.push_back(n);
@@ -237,25 +212,25 @@ struct GraphNE
 		edges.emplace_back(n1, n2, e);
 	}
 
-	void BuildSparseAdjacencyMatrix(std::vector<int>& offset, std::vector<std::pair<int, E>>& adjs)
+	void BuildSparseAdjacencyMatrix(std::vector<int>& entry, std::vector<EdgeAdj>& adjs)
 	{
-		std::vector<std::tuple<int, int, E>>& edges1 = edges;
-		std::vector<std::tuple<int, int, E>>  edges2 = edges;
+		std::vector<Edge>& edges1 = edges;
+		std::vector<Edge>  edges2 = edges;
 
 		// Make Edge Ascending
 		for (size_t i = 0; i < edges1.size(); ++i)
 		{
-			std::tuple<int, int, E> a = edges1[i];
-			if (std::get<0>(a) > std::get<1>(a))
+			Edge& a = edges1[i];
+			if (a.n0 > a.n1)
 			{
-				edges1[i] = std::tuple<int, int, E>(std::get<1>(a), std::get<0>(a), std::get<2>(a));
+				std::swap(a.n0, a.n1);
 			}
 		}
 
-		auto sort = [](std::tuple<int, int, E>& a, std::tuple<int, int, E>& b) {
-						if (std::get<0>(a) == std::get<0>(b))
-							return std::get<1>(a) < std::get<1>(b);
-						return std::get<0>(a) < std::get<0>(b);
+		auto sort = [](const Edge& a, const Edge& b) {
+			if (a.n0 == b.n0)
+				return a.n1 < b.n1;
+			return a.n0 < b.n0;
 		};
 
 		std::sort(edges1.begin(), edges1.end(), sort);
@@ -263,20 +238,20 @@ struct GraphNE
 		// Make Edge Descending
 		for (size_t i = 0; i < edges2.size(); ++i)
 		{
-			std::tuple<int, int, E> a = edges1[i];
-			if (std::get<0>(a) < std::get<1>(a))
+			Edge& a = edges2[i];
+			if (a.n0 < a.n1)
 			{
-				edges2[i] = std::tuple<int, int, E>(std::get<1>(a), std::get<0>(a), std::get<2>(a));
+				std::swap(a.n0, a.n1);
 			}
 		}
 		std::sort(edges2.begin(), edges2.end(), sort);
 
-		offset.resize(nodes.size());
+		entry.resize(nodes.size());
 		adjs.clear();
 
-		for (size_t i = 0; i < offset.size(); ++i)
+		for (size_t i = 0; i < entry.size(); ++i)
 		{
-			offset[i] = -1;
+			entry[i] = -1;
 		}
 
 		// Merge edges1 and edges2
@@ -286,45 +261,23 @@ struct GraphNE
 		{
 			size_t size_old = adjs.size();
 
-			while (pivot2 < edges2.size() && std::get<0>(edges2[pivot2]) == i)
+			while (pivot2 < edges2.size() && edges2[pivot2].n0 == i)
 			{
-				adjs.emplace_back(std::get<1>(edges2[pivot2]), std::get<2>(edges2[pivot2]));
+				adjs.emplace_back(edges2[pivot2].n1, edges2[pivot2].obj);
 				pivot2++;
 			}
 
-			while (pivot1 < edges1.size() && std::get<0>(edges1[pivot1]) == i)
+			while (pivot1 < edges1.size() && edges1[pivot1].n0 == i)
 			{
-				adjs.emplace_back(std::get<1>(edges1[pivot1]), std::get<2>(edges1[pivot1]));
+				adjs.emplace_back(edges1[pivot1].n1, edges1[pivot1].obj);
 				pivot1++;
 			}
 
 			if (adjs.size() > size_old)
 			{
-				offset[i] = (int)size_old;
+				entry[i] = (int)size_old;
 			}
 		}
-	}
-
-	static bool GetAdjacencyList(const std::vector<int>& offset, const std::vector<std::pair<int, E>>& adjs, int i, int* offset0, int* offset1)
-	{
-		if (offset[i] == -1)
-		{
-			return false;
-		}
-
-		int j0 = offset[i], j1 = (int)adjs.size() - 1;
-		for (size_t j = i + 1; j < offset.size(); ++j)
-		{
-			if (offset[j] != -1)
-			{
-				j1 = offset[j] - 1;
-				break;
-			}
-		}
-
-		*offset0 = j0;
-		*offset1 = j1;
-		return true;
 	}
 
 	void BuildNodeIslands(const std::vector<bool>& separate, std::vector<std::vector<N>>* islands)
@@ -332,9 +285,9 @@ struct GraphNE
 		islands->clear();
 
 		std::vector<bool> in_island;
-		std::vector<int> offset;
-		std::vector<std::pair<int, E>> adjs;
-		BuildSparseAdjacencyMatrix(offset, adjs);
+		std::vector<int> entry;
+		std::vector<EdgeAdj> adjs;
+		BuildSparseAdjacencyMatrix(entry, adjs);
 
 		int n = (int)nodes.size();
 
@@ -346,7 +299,7 @@ struct GraphNE
 
 		for (int i = 0; i < n; ++i)
 		{
-			if (offset[i] == -1 || separate[i] || in_island[i])
+			if (entry[i] == -1 || separate[i] || in_island[i])
 			{
 				continue;
 			}
@@ -366,21 +319,21 @@ struct GraphNE
 				island.push_back(nodes[curr]);
 				in_island[curr] = true;
 
-				if (offset[curr] == -1 || separate[curr])
+				if (entry[curr] == -1 || separate[curr])
 				{
 					continue;
 				}
 
 				int j0, j1;
-				GetAdjacencyList(offset, adjs, curr, &j0, &j1);
+				Graph<N>::GetAdjacencyList(entry, (int)adjs.size(), curr, &j0, &j1);
 				assert(j0 <= j1);
 
 				for (int j = j0; j <= j1; ++j)
 				{
-					if (in_queue.count(adjs[j].first) != 0)
+					if (in_queue.count(adjs[j].n1) != 0)
 						continue;
-					qu.push(adjs[j].first);
-					in_queue.insert(adjs[j].first);
+					qu.push(adjs[j].n1);
+					in_queue.insert(adjs[j].n1);
 				}
 			}
 
@@ -393,10 +346,10 @@ struct GraphNE
 		islands->clear();
 
 		std::vector<bool> in_island;
-		std::vector<int> offset;
-		std::vector<std::pair<int, E>> adjs;
-		BuildSparseAdjacencyMatrix(offset, adjs);
-
+		std::vector<int> entry;
+		std::vector<EdgeAdj> adjs;
+		BuildSparseAdjacencyMatrix(entry, adjs);
+		
 		int n = (int)nodes.size();
 
 		in_island.resize(n);
@@ -407,7 +360,7 @@ struct GraphNE
 
 		for (int i = 0; i < n; ++i)
 		{
-			if (offset[i] == -1 || separate[i] || in_island[i])
+			if (entry[i] == -1 || separate[i] || in_island[i])
 			{
 				continue;
 			}
@@ -425,22 +378,22 @@ struct GraphNE
 
 				in_island[curr] = true;
 
-				if (offset[curr] == -1 || separate[curr])
+				if (entry[curr] == -1 || separate[curr])
 				{
 					continue;
 				}
 
 				int j0, j1;
-				GetAdjacencyList(offset, adjs, curr, &j0, &j1);
+				Graph<N>::GetAdjacencyList(entry, (int)adjs.size(), curr, &j0, &j1);
 				assert(j0 <= j1);
 
 				for (int j = j0; j <= j1; ++j)
 				{
-					if (in_queue.count(adjs[j].second) != 0)
+					if (in_queue.count(adjs[j].obj) != 0)
 						continue;
-					qu.push(adjs[j].first);
-					in_queue.insert(adjs[j].second);
-					island.push_back(adjs[j].second);
+					qu.push(adjs[j].n1);
+					in_queue.insert(adjs[j].obj);
+					island.push_back(adjs[j].obj);
 				}
 			}
 
@@ -448,7 +401,5 @@ struct GraphNE
 		}
 	}
 
-	std::vector<N>							nodes;
-	std::vector<std::tuple<int, int, E>>	edges;
 };
 

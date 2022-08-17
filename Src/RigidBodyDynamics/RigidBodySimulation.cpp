@@ -61,21 +61,25 @@ RigidBodySimulation::~RigidBodySimulation()
 	{
 		delete m_Fields[i];
 	}
+	m_Fields.clear();
 
 	for (size_t i = 0; i < m_StaticBodies.size(); ++i)
 	{
 		delete m_StaticBodies[i];
 	}
+	m_StaticBodies.clear();
 
 	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 	{
 		delete m_DynamicBodies[i];
 	}
+	m_DynamicBodies.clear();
 
 	for (size_t i = 0; i < m_Kinematics.size(); ++i)
 	{
 		delete m_Kinematics[i];
 	}
+	m_Kinematics.clear();
 
 	if (m_Jobsystem)
 	{
@@ -94,6 +98,29 @@ void		RigidBodySimulation::Simulate()
 	m_Clock.tick++;
 
 	SimulateST(m_Clock.deltatime);
+}
+
+void		RigidBodySimulation::Reset()
+{
+	for (size_t i = 0; i < m_StaticBodies.size(); ++i)
+	{
+		m_StaticBodies[i]->ReleaseGeometries();
+		delete m_StaticBodies[i];
+	}
+	m_StaticBodies.clear();
+
+	for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
+	{
+		m_DynamicBodies[i]->ReleaseGeometries();
+		delete m_DynamicBodies[i];
+	}
+	m_DynamicBodies.clear();
+
+	for (size_t i = 0; i < m_Kinematics.size(); ++i)
+	{
+		delete m_Kinematics[i];
+	}
+	m_Kinematics.clear();
 }
 
 void		RigidBodySimulation::SimulateST(float dt)

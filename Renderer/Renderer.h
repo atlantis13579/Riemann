@@ -32,6 +32,7 @@ public:
 	virtual bool AddWireframe(const char* Id, void* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices) = 0;
 	virtual bool UpdateVerties(const char* Id, const Vertex1* pVerties, int nVerties) = 0;
 	virtual bool DeleteMesh(const char* Id) = 0;
+	virtual bool Reset() = 0;
 
 	virtual void SetFillMode(bool Wireframe) = 0;
 	virtual void SetDepthMode() = 0;

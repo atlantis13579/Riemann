@@ -119,7 +119,7 @@ public:
 		for (size_t i = 0; i < edges.size(); ++i)
 		{
 			auto p = edges[i];
-			nodes[p.first]->AddChild(nodes[p.second]);
+			nodes[p.n0]->AddChild(nodes[p.n1]);
 		}
 	}
 

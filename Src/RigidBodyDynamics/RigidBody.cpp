@@ -42,6 +42,17 @@ void RigidBody::GetGeometries(std::vector<Geometry*>* Geometries)
 	}
 }
 
+void RigidBody::ReleaseGeometries()
+{
+	Geometry* g = mGeometry;
+	while (g)
+	{
+		Geometry* next = g->GetNext();
+		delete g;
+		g = next;
+	}
+}
+
 const Vector3& 	RigidBody::GetLinearVelocity() const
 {
 	return V;

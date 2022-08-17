@@ -90,6 +90,7 @@ public:
 
 	void				AddGeometry(Geometry* Geom);
 	void				GetGeometries(std::vector<Geometry*>* Geometries);
+	void				ReleaseGeometries();
 
 	uint64_t			GetGuid() const
 	{

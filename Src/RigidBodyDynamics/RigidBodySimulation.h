@@ -92,6 +92,7 @@ public:
 
 public:
 	void				Simulate();
+	void				Reset();
 
     bool				LoadPhysxScene(const char *name, bool shared_mem);
 

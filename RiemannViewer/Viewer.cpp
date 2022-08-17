@@ -52,11 +52,11 @@ void WorldViewer::CreateDemo()
 			RigidBodyParam rp;
 			rp.rigidType = RigidType::Dynamic;
 			rp.invMass = 0.1f;
-			Vector3 p0 = Vector3(21.0f, 12.0f, 1.0f);
+			Vector3 p0 = GetCameraPosition();
 			Geometry* sphere = GeometryFactory::CreateSphere(p0, 1.0f);
 			RigidBodyDynamic* body = m_World->CreateRigidBody(sphere, rp)->CastDynamic();
 			body->DisableGravity = true;
-			body->ApplyLinearAcceleration((Vector3(5.0f, 0.0f, 5.0f)-p0).Unit() * 100.0f);
+			body->ApplyLinearAcceleration((m_CamCenter - p0).Unit() * 100.0f);
 			AddGeometry(m_Renderer, sphere);
 		}
 	};
@@ -283,6 +283,26 @@ void WorldViewer::UpdateCamera()
 
 void WorldViewer::KeyboardMsg(char c)
 {
+	if ('1' <= c && c <= '9')
+	{
+		std::function<void(WorldViewer*)> demos[] = {
+			&WorldViewer::CreateDemo,
+			&WorldViewer::CreateStackBoxesDemo,
+			&WorldViewer::CreateDominoDemo,
+			&WorldViewer::CreateSeeSawDemo,
+		};
+
+		int idx = c - '1';
+		if (idx <= sizeof(demos) / sizeof(demos[0]))
+		{
+			m_Renderer->Reset();
+			m_World->Reset();
+
+			demos[idx](this);
+			return;
+		}
+	}
+
 	float Scale = 5.0f;
 	Vector3 Dir = m_CamCenter - GetCameraPosition();
 	Dir.y = 0;
