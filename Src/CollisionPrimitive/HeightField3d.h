@@ -131,6 +131,8 @@ public:
 		Vector3 v = Vector3(BV.mMin.x + DX * (i + 0.0f), 0.0f, BV.mMin.z + DZ * (j + 0.5f));
 		return v;
 	}
+	
+	float		GetVolume() const { return 0.0f; }
 
 	bool	GetCellBV(int i, int j, Box3d &box) const;
 	bool	GetHeightRange(int i, int j, float &minH, float & maxH) const;

@@ -121,6 +121,8 @@ public:
 	{
 		return BoundingVolume;
 	}
+	
+	float		GetVolume() const { return 0.0f; }			// TODO
 
 	Matrix3		GetInertiaTensor(float Mass) const
 	{

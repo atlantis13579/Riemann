@@ -154,9 +154,9 @@ RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, Geometry* geom)
 	this->mRigidType = RigidType::Dynamic;
 	this->mMotionType = param.motionType;
 	this->InvMass = param.invMass < kMinimumInvMass ? 0.0f : param.invMass;
-	this->InvInertia = geom->GetInverseInertia_LocalSpace(this->InvMass);
-	this->X = geom ? geom->GetCenterOfMass() : param.pos;
-	this->Q = geom ? geom->GetRotation() : param.quat;
+	this->InvInertia = Geometry::GetInverseInertiaMultibody(geom, this->InvMass);
+	this->X = geom ? Geometry::GetCenterOfMassMultibody(geom) : param.pos;
+	this->Q = geom ? Geometry::GetRotationMultibody(geom) : param.quat;
 	this->V = param.linearVelocity;
 	this->W = param.angularVelocity;
 	this->ExtForce = Vector3::Zero();

@@ -66,6 +66,8 @@ public:
 	{
 		return BoundingVolume;
 	}
+	
+	float			GetVolume() const { return 0.0f; }
 
 	Matrix3			GetInertiaTensor(float Mass) const;
 	Vector3			GetSupport(const Vector3& Direction) const;

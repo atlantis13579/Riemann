@@ -70,6 +70,10 @@
 		AD80071528A3E4E3001387F3 /* ConvexMesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80071028A3E4E3001387F3 /* ConvexMesh.cpp */; };
 		AD80071728A3F69A001387F3 /* Polyhedron.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80071628A3F69A001387F3 /* Polyhedron.cpp */; };
 		AD80071928A45CB3001387F3 /* Sphere3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD80071828A45CB3001387F3 /* Sphere3d.cpp */; };
+		AD9FF9F028AD219900F90B8E /* VoronoiTessellation.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9FF9EC28AD219900F90B8E /* VoronoiTessellation.h */; };
+		AD9FF9F128AD219900F90B8E /* GeometrySet.h in Headers */ = {isa = PBXBuildFile; fileRef = AD9FF9ED28AD219900F90B8E /* GeometrySet.h */; };
+		AD9FF9F228AD219900F90B8E /* VoronoiTessellation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD9FF9EE28AD219900F90B8E /* VoronoiTessellation.cpp */; };
+		AD9FF9F328AD219900F90B8E /* GeometrySet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD9FF9EF28AD219900F90B8E /* GeometrySet.cpp */; };
 		ADA2A25828A29E67009EDBE2 /* JobSystem.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25328A29E67009EDBE2 /* JobSystem.h */; };
 		ADA2A25928A29E67009EDBE2 /* ThreadPool.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25428A29E67009EDBE2 /* ThreadPool.h */; };
 		ADA2A25A28A29E67009EDBE2 /* LockFreeHashMap.h in Headers */ = {isa = PBXBuildFile; fileRef = ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */; };
@@ -117,7 +121,6 @@
 		ADD23BD62887614E00A849BE /* EPAPenetration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23BB72887614E00A849BE /* EPAPenetration.cpp */; };
 		ADD23BD72887614E00A849BE /* DynamicAABBTree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23BB82887614E00A849BE /* DynamicAABBTree.cpp */; };
 		ADD23BD82887614E00A849BE /* EPAPenetration.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BB92887614E00A849BE /* EPAPenetration.h */; };
-		ADD23BD92887614E00A849BE /* ProximityGrid.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BBA2887614E00A849BE /* ProximityGrid.h */; };
 		ADD23BDA2887614E00A849BE /* SparseSpatialHash.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BBB2887614E00A849BE /* SparseSpatialHash.h */; };
 		ADD23BF32887616200A849BE /* AxisAlignedBox3d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BDB2887616100A849BE /* AxisAlignedBox3d.h */; };
 		ADD23BF42887616200A849BE /* Ray3d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23BDC2887616100A849BE /* Ray3d.h */; };
@@ -147,8 +150,6 @@
 		ADD23C1F2887619700A849BE /* PlanarCut.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C192887619700A849BE /* PlanarCut.h */; };
 		ADD23C202887619700A849BE /* Fracture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C1A2887619700A849BE /* Fracture.cpp */; };
 		ADD23C212887619700A849BE /* Fracture.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C1B2887619700A849BE /* Fracture.h */; };
-		ADD23C222887619700A849BE /* GeometryCollection.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C1C2887619700A849BE /* GeometryCollection.h */; };
-		ADD23C232887619700A849BE /* GeometryCollection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C1D2887619700A849BE /* GeometryCollection.cpp */; };
 		ADD23C242887619700A849BE /* PlanarCut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C1E2887619700A849BE /* PlanarCut.cpp */; };
 		ADD23C3E288761AE00A849BE /* DenseTensorField3d.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23C2A288761AE00A849BE /* DenseTensorField3d.h */; };
 		ADD23C3F288761AE00A849BE /* Spline.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23C2B288761AE00A849BE /* Spline.cpp */; };
@@ -298,6 +299,10 @@
 		AD80071028A3E4E3001387F3 /* ConvexMesh.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ConvexMesh.cpp; path = ../../Src/CollisionPrimitive/ConvexMesh.cpp; sourceTree = "<group>"; };
 		AD80071628A3F69A001387F3 /* Polyhedron.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Polyhedron.cpp; path = ../../Src/CollisionPrimitive/Polyhedron.cpp; sourceTree = "<group>"; };
 		AD80071828A45CB3001387F3 /* Sphere3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Sphere3d.cpp; path = ../../Src/CollisionPrimitive/Sphere3d.cpp; sourceTree = "<group>"; };
+		AD9FF9EC28AD219900F90B8E /* VoronoiTessellation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoronoiTessellation.h; path = ../../Src/Destruction/VoronoiTessellation.h; sourceTree = "<group>"; };
+		AD9FF9ED28AD219900F90B8E /* GeometrySet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GeometrySet.h; path = ../../Src/Destruction/GeometrySet.h; sourceTree = "<group>"; };
+		AD9FF9EE28AD219900F90B8E /* VoronoiTessellation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = VoronoiTessellation.cpp; path = ../../Src/Destruction/VoronoiTessellation.cpp; sourceTree = "<group>"; };
+		AD9FF9EF28AD219900F90B8E /* GeometrySet.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GeometrySet.cpp; path = ../../Src/Destruction/GeometrySet.cpp; sourceTree = "<group>"; };
 		ADA2A25328A29E67009EDBE2 /* JobSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = JobSystem.h; path = ../../Src/Core/JobSystem.h; sourceTree = "<group>"; };
 		ADA2A25428A29E67009EDBE2 /* ThreadPool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ThreadPool.h; path = ../../Src/Core/ThreadPool.h; sourceTree = "<group>"; };
 		ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LockFreeHashMap.h; path = ../../Src/Core/LockFreeHashMap.h; sourceTree = "<group>"; };
@@ -345,7 +350,6 @@
 		ADD23BB72887614E00A849BE /* EPAPenetration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EPAPenetration.cpp; path = ../../Src/Collision/EPAPenetration.cpp; sourceTree = "<group>"; };
 		ADD23BB82887614E00A849BE /* DynamicAABBTree.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DynamicAABBTree.cpp; path = ../../Src/Collision/DynamicAABBTree.cpp; sourceTree = "<group>"; };
 		ADD23BB92887614E00A849BE /* EPAPenetration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EPAPenetration.h; path = ../../Src/Collision/EPAPenetration.h; sourceTree = "<group>"; };
-		ADD23BBA2887614E00A849BE /* ProximityGrid.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ProximityGrid.h; path = ../../Src/Collision/ProximityGrid.h; sourceTree = "<group>"; };
 		ADD23BBB2887614E00A849BE /* SparseSpatialHash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparseSpatialHash.h; path = ../../Src/Collision/SparseSpatialHash.h; sourceTree = "<group>"; };
 		ADD23BDB2887616100A849BE /* AxisAlignedBox3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AxisAlignedBox3d.h; path = ../../Src/CollisionPrimitive/AxisAlignedBox3d.h; sourceTree = "<group>"; };
 		ADD23BDC2887616100A849BE /* Ray3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Ray3d.h; path = ../../Src/CollisionPrimitive/Ray3d.h; sourceTree = "<group>"; };
@@ -375,8 +379,6 @@
 		ADD23C192887619700A849BE /* PlanarCut.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PlanarCut.h; path = ../../Src/Destruction/PlanarCut.h; sourceTree = "<group>"; };
 		ADD23C1A2887619700A849BE /* Fracture.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Fracture.cpp; path = ../../Src/Destruction/Fracture.cpp; sourceTree = "<group>"; };
 		ADD23C1B2887619700A849BE /* Fracture.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Fracture.h; path = ../../Src/Destruction/Fracture.h; sourceTree = "<group>"; };
-		ADD23C1C2887619700A849BE /* GeometryCollection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GeometryCollection.h; path = ../../Src/Destruction/GeometryCollection.h; sourceTree = "<group>"; };
-		ADD23C1D2887619700A849BE /* GeometryCollection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GeometryCollection.cpp; path = ../../Src/Destruction/GeometryCollection.cpp; sourceTree = "<group>"; };
 		ADD23C1E2887619700A849BE /* PlanarCut.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PlanarCut.cpp; path = ../../Src/Destruction/PlanarCut.cpp; sourceTree = "<group>"; };
 		ADD23C2A288761AE00A849BE /* DenseTensorField3d.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DenseTensorField3d.h; path = ../../Src/Geometry/DenseTensorField3d.h; sourceTree = "<group>"; };
 		ADD23C2B288761AE00A849BE /* Spline.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Spline.cpp; path = ../../Src/Geometry/Spline.cpp; sourceTree = "<group>"; };
@@ -519,7 +521,6 @@
 				ADD23BB52887614E00A849BE /* GeometryQuery.h */,
 				ADD23BB22887614E00A849BE /* GJK.h */,
 				ADD23BB02887614E00A849BE /* MinkowskiSum.h */,
-				ADD23BBA2887614E00A849BE /* ProximityGrid.h */,
 				ADD23BAD2887614E00A849BE /* QuadTree.h */,
 				ADD23B9F2887614E00A849BE /* SAP_Incremental.h */,
 				ADD23BA82887614E00A849BE /* SAP.h */,
@@ -764,10 +765,12 @@
 			children = (
 				ADD23C1A2887619700A849BE /* Fracture.cpp */,
 				ADD23C1B2887619700A849BE /* Fracture.h */,
-				ADD23C1D2887619700A849BE /* GeometryCollection.cpp */,
-				ADD23C1C2887619700A849BE /* GeometryCollection.h */,
+				AD9FF9EF28AD219900F90B8E /* GeometrySet.cpp */,
+				AD9FF9ED28AD219900F90B8E /* GeometrySet.h */,
 				ADD23C1E2887619700A849BE /* PlanarCut.cpp */,
 				ADD23C192887619700A849BE /* PlanarCut.h */,
+				AD9FF9EE28AD219900F90B8E /* VoronoiTessellation.cpp */,
+				AD9FF9EC28AD219900F90B8E /* VoronoiTessellation.h */,
 			);
 			name = Destruction;
 			sourceTree = "<group>";
@@ -873,7 +876,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AD1B176228ABC38C003E024E /* SAT.h in Headers */,
-				ADD23BD92887614E00A849BE /* ProximityGrid.h in Headers */,
 				AD1B173128ABC379003E024E /* AutonomousController.h in Headers */,
 				ADD23CA1288762C000A849BE /* NewtonRaphsonIteration.h in Headers */,
 				ADD23BF42887616200A849BE /* Ray3d.h in Headers */,
@@ -895,6 +897,7 @@
 				ADD23BFE2887616200A849BE /* ShapeType.h in Headers */,
 				ADD23D2A288762F900A849BE /* JacobiIteration.h in Headers */,
 				AD1B174C28ABC384003E024E /* ContinuousBitmap.h in Headers */,
+				AD9FF9F128AD219900F90B8E /* GeometrySet.h in Headers */,
 				ADD23BBC2887614E00A849BE /* AABBTree.h in Headers */,
 				ADD23D01288762ED00A849BE /* MatrixMxN.h in Headers */,
 				AD1B174928ABC384003E024E /* libPng.h in Headers */,
@@ -910,6 +913,7 @@
 				ADD23D03288762ED00A849BE /* SIMD.h in Headers */,
 				ADF862252891875A00DBC516 /* FeatherstoneSolver.h in Headers */,
 				ADD23BC12887614E00A849BE /* GeometryDifference.h in Headers */,
+				AD9FF9F028AD219900F90B8E /* VoronoiTessellation.h in Headers */,
 				ADD23BF52887616200A849BE /* TriangleMesh.h in Headers */,
 				ADD23D20288762F900A849BE /* DenseMatrix.h in Headers */,
 				ADD23D23288762F900A849BE /* SparseMatrix.h in Headers */,
@@ -948,7 +952,6 @@
 				AD80071328A3E4E3001387F3 /* Polyhedron.h in Headers */,
 				ADD23D2E288762F900A849BE /* EigenValueDecomposition.h in Headers */,
 				AD088369289E42E30008AB04 /* PolynomialFit.h in Headers */,
-				ADD23C222887619700A849BE /* GeometryCollection.h in Headers */,
 				ADD23C4A288761AE00A849BE /* ConvexHull3d.h in Headers */,
 				ADF8622D2891876C00DBC516 /* LBFGS.h in Headers */,
 				AD1B174D28ABC384003E024E /* AnimBinaryParser.h in Headers */,
@@ -1101,12 +1104,14 @@
 				ADD23C99288762C000A849BE /* NumericalODESolver.cpp in Sources */,
 				AD1B174E28ABC384003E024E /* PhysxBinaryParser.cpp in Sources */,
 				AD1B177628ABC3BA003E024E /* FEMSolver.cpp in Sources */,
+				AD9FF9F328AD219900F90B8E /* GeometrySet.cpp in Sources */,
 				AD1B173528ABC379003E024E /* Vehicle.cpp in Sources */,
 				ADD23CBC288762CC00A849BE /* ForceField.cpp in Sources */,
 				ADD23D21288762F900A849BE /* DenseVector.cpp in Sources */,
 				ADD23CC3288762CC00A849BE /* Jacobian.cpp in Sources */,
 				AD80071928A45CB3001387F3 /* Sphere3d.cpp in Sources */,
 				ADD23C45288761AE00A849BE /* TetrahedralMesh.cpp in Sources */,
+				AD9FF9F228AD219900F90B8E /* VoronoiTessellation.cpp in Sources */,
 				AD1B173828ABC379003E024E /* VehicleDynamics.cpp in Sources */,
 				ADD23C022887616200A849BE /* AxisAlignedBox3d.cpp in Sources */,
 				ADD23CBF288762CC00A849BE /* RigidBody.cpp in Sources */,
@@ -1120,7 +1125,6 @@
 				ADD23BD62887614E00A849BE /* EPAPenetration.cpp in Sources */,
 				ADD23C242887619700A849BE /* PlanarCut.cpp in Sources */,
 				ADF27299289544BB00E6FE68 /* MassSpring.cpp in Sources */,
-				ADD23C232887619700A849BE /* GeometryCollection.cpp in Sources */,
 				ADD23CC1288762CC00A849BE /* MotionIntegration.cpp in Sources */,
 				ADAA4C4028898D6000E8AE2E /* NarrowPhase.cpp in Sources */,
 				ADAA4C4228898D6000E8AE2E /* SequentialImpulseSolver.cpp in Sources */,

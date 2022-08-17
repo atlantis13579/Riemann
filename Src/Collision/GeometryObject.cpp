@@ -48,6 +48,11 @@ public:
 	{
 		return GEOM_TYPE::GetBoundingVolume();
 	}
+	
+	virtual float			GetVolume() const override final
+	{
+		return GEOM_TYPE::GetVolume();
+	}
 
 	virtual bool			RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const override final
 	{
@@ -107,6 +112,38 @@ Geometry::Geometry()
 {
 	m_Parent = nullptr;
 	m_Next = nullptr;
+}
+
+// static
+Vector3		Geometry::GetCenterOfMassMultibody(const Geometry* geom)
+{
+	Vector3 CMV = Vector3::Zero();
+	float vol = 0.0f;
+	const Geometry *g = geom;
+	while (g)
+	{
+		CMV += g->GetCenterOfMass() * g->GetVolume();
+		vol += g->GetVolume();
+		g = g->GetNext();
+	}
+	if (vol > 1e-6f)
+	{
+		CMV = CMV / vol;
+	}
+	return CMV;
+}
+
+// static
+Quaternion	Geometry::GetRotationMultibody(const Geometry* geom)
+{
+	return geom->GetRotation();
+}
+
+// static
+Matrix3	Geometry::GetInverseInertiaMultibody(const Geometry* geom, float InvMass)
+{
+	// TODO
+	return geom->GetInverseInertia_LocalSpace(InvMass);
 }
 
 bool		Geometry::Intersect(const Geometry* Geom) const

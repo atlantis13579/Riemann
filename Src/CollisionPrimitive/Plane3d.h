@@ -83,6 +83,8 @@ public:
 	{
 		return kPlaneSmallThickness;
 	}
+	
+	float			GetVolume() const { return 0.0f; }
 
 	Box3d			GetBoundingVolume() const;
 

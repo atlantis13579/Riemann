@@ -96,6 +96,8 @@ public:
 	{
 		return Triangle3d::TriangleArea3D(A, B, C);
 	}
+	
+	float			GetVolume() const { return 0.0f; }
 
 	Box3d		GetBoundingVolume() const
 	{

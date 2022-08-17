@@ -176,6 +176,11 @@ public:
 	{
 		return m_Next;
 	}
+	
+	inline const Geometry*		GetNext() const
+	{
+		return m_Next;
+	}
 
 	inline void				LinkNext(Geometry* next)
 	{
@@ -221,6 +226,10 @@ public:
 		}
 		return nullptr;
 	}
+	
+	static Vector3			GetCenterOfMassMultibody(const Geometry* Geom);
+	static Quaternion		GetRotationMultibody(const Geometry* Geom);
+	static Matrix3			GetInverseInertiaMultibody(const Geometry* Geom, float InvMass);
 
 	virtual bool			RayCast(const Vector3& Origin, const Vector3 &Dir, const RayCastOption* Option, RayCastResult *Result) const = 0;
 	bool					Intersect(const Geometry* Geom) const;
@@ -243,6 +252,7 @@ private:
 	virtual Vector3			GetSupport_LocalSpace(const Vector3& Direction) const = 0;
 	virtual void			GetSupportFace_LocalSpace(const Vector3& Direction, SupportFace& Face) const = 0;
 	virtual Box3d			GetBoundingVolume_LocalSpace() const = 0;
+	virtual float			GetVolume() const = 0;
 
 	const void*				GetShapeObjPtr() const
 	{
