@@ -484,9 +484,8 @@ public:
 		{
             DX11StaticMesh& mesh = m_AllMesh[i];
 			mesh.Release();
-			m_AllMesh.erase(m_AllMesh.begin() + i);
-			return true;
 		}
+        m_AllMesh.clear();
         return true;
     }
 

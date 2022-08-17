@@ -12,6 +12,18 @@
 // https://www.ashwinnarayan.com/post/how-to-integrate-quaternions/
 // ----------------
 
+static void UpdateBody(RigidBodyDynamic* Body)
+{
+	Geometry* g = Body->mGeometry;
+	while (g)
+	{
+		g->SetCenterOfMass(Body->X);
+		g->SetRotation(Body->Q);
+		g->UpdateBoundingVolume();
+		g = g->GetNext();
+	}
+}
+
 static int Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float dt)
 {
 	int count = 0;
@@ -35,9 +47,7 @@ static int Integrate_ExplicitEuler(std::vector<RigidBodyDynamic*> Bodies, float 
 		Body->V = (Body->V + Body->InvMass * Body->ExtForce * dt) * LinearDamping;		// V' = Force / mass
 		Body->W = (Body->W + invInertiaWorld * Body->ExtTorque * dt) * AngularDamping;	// W' = Torque / invInertia
 		
-		Body->mGeometry->SetCenterOfMass(Body->X);
-		Body->mGeometry->SetRotation(Body->Q);
-		Body->mGeometry->UpdateBoundingVolume();
+		UpdateBody(Body);
 		count++;
 	}
 	return count;
@@ -66,9 +76,7 @@ static int Integrate_SymplecticEuler(std::vector<RigidBodyDynamic*> Bodies, floa
 		Quaternion dQ = 0.5f * Quaternion(0.0f, Body->W) * Body->Q;				// Q' = 0.5 * W * Q
 		Body->Q = (Body->Q + dQ * dt).Unit();
 		
-		Body->mGeometry->SetCenterOfMass(Body->X);
-		Body->mGeometry->SetRotation(Body->Q);
-		Body->mGeometry->UpdateBoundingVolume();
+		UpdateBody(Body);
 		count++;
 	}
 	return count;

@@ -20,18 +20,28 @@ RigidBody::~RigidBody()
 
 void RigidBody::AddGeometry(Geometry* Geom)
 {
-	assert(Geom->GetNext() == nullptr);
 	if (mGeometry)
 	{
-		assert(mGeometry->GetNext() == nullptr);
-		mGeometry->SetNext(Geom);
+		Geometry* g = mGeometry;
+		while (g->GetNext())
+		{
+			g = g->GetNext();
+		}
+		assert(g->GetNext() == nullptr);
+		g->SetNext(Geom);
 		Geom->SetNext(nullptr);
 	}
 	else
 	{
 		mGeometry = Geom;
 	}
-	Geom->SetParent(this);
+
+	Geometry* g = Geom;
+	while (g)
+	{
+		g->SetParent(this);
+		g = g->GetNext();
+	}
 }
 
 void RigidBody::GetGeometries(std::vector<Geometry*>* Geometries)
@@ -207,7 +217,6 @@ RigidBodyStatic::RigidBodyStatic(const RigidBodyParam& param, Geometry* geom)
 	this->Q = geom ? geom->GetRotation() : param.quat;
 	this->V = Vector3::Zero();
 	this->W = Vector3::Zero();
-	this->mGeometry = geom;
 	if (geom) this->AddGeometry(geom);
 }
 
@@ -215,7 +224,6 @@ RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, Geometry* geom)
 {
 	this->mRigidType = RigidType::Dynamic;
 	this->mMotionType = param.motionType;
-	this->mGeometry = geom;
 	this->InvMass = param.invMass < kMinimumInvMass ? 0.0f : param.invMass;
 	this->InvInertia = geom->GetInverseInertia_LocalSpace(this->InvMass);
 	this->X = geom ? geom->GetCenterOfMass() : param.pos;

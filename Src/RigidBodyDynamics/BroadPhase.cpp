@@ -21,8 +21,12 @@ static bool IsMovingRigid(Geometry* geom)
 	return true;
 }
 
-static bool HasMovingRigid(Geometry* geom1, Geometry* geom2)
+static bool IsValidPair(Geometry* geom1, Geometry* geom2)
 {
+	if (geom1->GetParent<void*>() == geom2->GetParent<void*>())
+	{
+		return false;
+	}
 	return IsMovingRigid(geom1) || IsMovingRigid(geom2);
 }
 
@@ -64,7 +68,7 @@ public:
 			{
 				Geometry *gi = geoms[i];
 				Geometry *gj = geoms[j];
-				if (!HasMovingRigid(gi, gj))
+				if (!IsValidPair(gi, gj))
 					continue;
 				overlaps->emplace_back(i, j);
 			}
@@ -115,7 +119,7 @@ public:
 			SAP::UnpackOverlapKey(it, &i, &j);
 			Geometry *gi = geoms[i];
 			Geometry *gj = geoms[j];
-			if (!HasMovingRigid(gi, gj))
+			if (!IsValidPair(gi, gj))
 				continue;
 			overlaps->emplace_back(i, j);
 		}

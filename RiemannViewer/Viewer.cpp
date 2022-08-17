@@ -27,6 +27,8 @@ WorldViewer::~WorldViewer()
 	delete m_World;
 }
 
+#include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
+
 void WorldViewer::CreateDemo()
 {
 	RigidBodyParam rp;
@@ -35,11 +37,22 @@ void WorldViewer::CreateDemo()
 	m_World->CreateRigidBody(plane, rp);
 
 	rp.rigidType = RigidType::Dynamic;
-	for (int i = 0; i < 5; ++i)
+	for (int i = 0; i < 6; ++i)
 	for (int j = 0; j < 1; ++j)
 	for (int k = 0; k < 1; ++k)
 	{
 		Geometry* aabb = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 0.01f - 3.0f  + i * 2.01f, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
+		Geometry* aabb2 = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 0.01f - 3.0f + i * 2.01f, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
+		Geometry* aabb3 = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 0.01f - 3.0f + i * 2.01f, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
+		aabb->SetNext(aabb2);
+		aabb2->SetNext(aabb3);
+		AxisAlignedBox3d *px = aabb2->GetShapeObj<AxisAlignedBox3d>();
+		px->Min.x -= 2.0f;
+		px->Max.x -= 2.0f;
+		px = aabb3->GetShapeObj<AxisAlignedBox3d>();
+		px->Max.z += 2.0f;
+		px->Min.z += 2.0f;
+
 		RigidBodyDynamic* p = m_World->CreateRigidBody(aabb, rp)->CastDynamic();
 	}
 
