@@ -177,7 +177,7 @@ public:
 		return m_Next;
 	}
 
-	inline void				SetNext(Geometry* next)
+	inline void				LinkNext(Geometry* next)
 	{
 		m_Next = next;
 	}

@@ -27,8 +27,6 @@ WorldViewer::~WorldViewer()
 	delete m_World;
 }
 
-#include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
-
 void WorldViewer::CreateDemo()
 {
 	RigidBodyParam rp;
