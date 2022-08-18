@@ -221,6 +221,7 @@
 		ADD23D2C288762F900A849BE /* DenseVector.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D19288762F900A849BE /* DenseVector.h */; };
 		ADD23D2E288762F900A849BE /* EigenValueDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D1B288762F900A849BE /* EigenValueDecomposition.h */; };
 		ADD23D322887631800A849BE /* PCA.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23D312887631800A849BE /* PCA.h */; };
+		ADD913C228AE745B001368C7 /* Profiler.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD913C128AE745B001368C7 /* Profiler.h */; };
 		ADEF48BC28A6E99100FD544C /* Triangle3d.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADEF48BB28A6E99100FD544C /* Triangle3d.cpp */; };
 		ADF27299289544BB00E6FE68 /* MassSpring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADF27297289544BB00E6FE68 /* MassSpring.cpp */; };
 		ADF2729A289544BB00E6FE68 /* MassSpring.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF27298289544BB00E6FE68 /* MassSpring.h */; };
@@ -450,6 +451,7 @@
 		ADD23D19288762F900A849BE /* DenseVector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DenseVector.h; path = ../../Src/LinearSystem/DenseVector.h; sourceTree = "<group>"; };
 		ADD23D1B288762F900A849BE /* EigenValueDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EigenValueDecomposition.h; path = ../../Src/LinearSystem/EigenValueDecomposition.h; sourceTree = "<group>"; };
 		ADD23D312887631800A849BE /* PCA.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PCA.h; path = ../../Src/Optimization/PCA.h; sourceTree = "<group>"; };
+		ADD913C128AE745B001368C7 /* Profiler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Profiler.h; path = ../../Src/Core/Profiler.h; sourceTree = "<group>"; };
 		ADE742E12820A994007DEEB3 /* libRiemann.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRiemann.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADEF48BB28A6E99100FD544C /* Triangle3d.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Triangle3d.cpp; path = ../../Src/CollisionPrimitive/Triangle3d.cpp; sourceTree = "<group>"; };
 		ADF27297289544BB00E6FE68 /* MassSpring.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MassSpring.cpp; path = ../../Src/PositionBasedDynamics/MassSpring.cpp; sourceTree = "<group>"; };
@@ -784,6 +786,7 @@
 				ADA2A25328A29E67009EDBE2 /* JobSystem.h */,
 				ADA2A25528A29E67009EDBE2 /* LockFreeHashMap.h */,
 				AD1B178228ABC409003E024E /* LogSystem.h */,
+				ADD913C128AE745B001368C7 /* Profiler.h */,
 				AD649FF528A53D56002E9C7A /* RingBuffer.h */,
 				ADD23C142887618C00A849BE /* StaticArray.h */,
 				ADD23C132887618C00A849BE /* StaticStack.h */,
@@ -1010,6 +1013,7 @@
 				AD1B178028ABC3C3003E024E /* WindSimulation.h in Headers */,
 				ADD23C3E288761AE00A849BE /* DenseTensorField3d.h in Headers */,
 				AD1B177028ABC3B0003E024E /* Laplace2DSolver.h in Headers */,
+				ADD913C228AE745B001368C7 /* Profiler.h in Headers */,
 				ADD23D27288762F900A849BE /* LUFactorization.h in Headers */,
 				AD1B176328ABC38C003E024E /* Rect.h in Headers */,
 				ADD23C43288761AE00A849BE /* ConvexHull2d.h in Headers */,
