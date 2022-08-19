@@ -12,7 +12,8 @@ class SequentialImpulseSolver : public ConstraintSolver
 public:
 	SequentialImpulseSolver()
 	{
-		m_nMaxVelocityIterations = 8;
+		m_nMaxPositionIterations = 8;
+		m_nMaxVelocityIterations = 1;
 	}
 
 	virtual ~SequentialImpulseSolver()
@@ -21,16 +22,7 @@ public:
 	
 	virtual void	PreResolve(const std::vector<Geometry*>& geoms) override final
 	{
-		if (m_Buffer.size() < geoms.size())
-		{
-			m_Buffer.resize(geoms.size());
-		}
-		for (size_t i = 0; i < geoms.size(); ++i)
-		{
-			RigidBody* body = geoms[i]->GetParent<RigidBody>();
-			m_Buffer[i].v = body->GetLinearVelocity();
-			m_Buffer[i].w = body->GetAngularVelocity();
-		}
+		RrepareSolverBuffer(geoms);
 	}
 
 	virtual void	ResolveContact(const std::vector<Geometry*>& geoms,
@@ -60,8 +52,8 @@ public:
 		if (!velocityConstraints.empty())
 		{
 			int it = 0;
-			const float kStopVelocityIterationThreshold = 1e-6f;
-			while (it++ <= m_nMaxVelocityIterations)
+			const float kStopPositionIterationThreshold = 1e-6f;
+			while (it++ <= m_nMaxPositionIterations)
 			{
 				float sumSqrError = 0.0;
 				for (size_t k = 0; k < velocityConstraints.size(); ++k)
@@ -72,7 +64,7 @@ public:
 				}
 
 				sumSqrError /= velocityConstraints.size();
-				if (sumSqrError < kStopVelocityIterationThreshold)
+				if (sumSqrError < kStopPositionIterationThreshold)
 				{
 					break;
 				}
@@ -81,6 +73,17 @@ public:
 			for (size_t k = 0; k < velocityConstraints.size(); ++k)
 			{
 				velocityConstraints[k].Finalize();
+			}
+			
+			RrepareSolverBuffer(geoms);
+			
+			it = 0;
+			while (it++ <= m_nMaxVelocityIterations)
+			{
+				for (size_t k = 0; k < velocityConstraints.size(); ++k)
+				{
+					velocityConstraints[k].Solve();
+				}
 			}
 
 			return;
@@ -101,10 +104,24 @@ public:
 			}
 		}
 	}
+	
+	void 			RrepareSolverBuffer(const std::vector<Geometry*>& geoms)
+	{
+		if (m_Buffer.size() < geoms.size())
+		{
+			m_Buffer.resize(geoms.size());
+		}
+		for (size_t i = 0; i < geoms.size(); ++i)
+		{
+			RigidBody* body = geoms[i]->GetParent<RigidBody>();
+			m_Buffer[i].v = body->GetLinearVelocity();
+			m_Buffer[i].w = body->GetAngularVelocity();
+		}
+	}
 
 private:
-	int 	m_nMaxVelocityIterations;
 	int 	m_nMaxPositionIterations;
+	int 	m_nMaxVelocityIterations;
 	
 	std::vector<PositionConstraint*>	m_PositionConstraints;
 	std::vector<GeneralizedVelocity>	m_Buffer;
