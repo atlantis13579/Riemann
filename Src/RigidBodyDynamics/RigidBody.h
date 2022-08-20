@@ -157,6 +157,8 @@ public:
 	bool		DisableGravity;
 	bool		Sleeping;
 	bool		Freezing;
+	Vector3		SolverV;
+	Vector3		SolverW;
 
 	void		ApplyForce(const Vector3& Force);
 	void		ApplyTorgue(const Vector3& Torque);

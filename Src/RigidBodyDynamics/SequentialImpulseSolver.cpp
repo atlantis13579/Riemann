@@ -22,7 +22,23 @@ public:
 	
 	virtual void	PreResolve(const std::vector<Geometry*>& geoms) override final
 	{
-		RrepareSolverBuffer(geoms);
+		int n = (int)geoms.size();
+		if (m_Buffer.size() < 2 * n)
+		{
+			m_Buffer.resize(2 * n);
+		}
+		for (int i = 0; i < n; ++i)
+		{
+			RigidBody* body = geoms[i]->GetParent<RigidBody>();
+			m_Buffer[i].v = body->GetLinearVelocity();
+			m_Buffer[i].w = body->GetAngularVelocity();
+		}
+		for (int i = n; i < 2 * n; ++i)
+		{
+			RigidBody* body = geoms[i - n]->GetParent<RigidBody>();
+			m_Buffer[i].v = body->GetLinearVelocity();
+			m_Buffer[i].w = body->GetAngularVelocity();
+		}
 	}
 
 	virtual void	ResolveContact(const std::vector<Geometry*>& geoms,
@@ -34,7 +50,7 @@ public:
 
 		WarmStart::ApplyVelocityConstraint(geoms, manifolds, dt);
 
-		std::vector<ContactVelocityConstraintSolver> velocityConstraints;
+		std::vector<JacobianSolver> velocityConstraints;
 		for (size_t i = 0; i < manifolds.size(); ++i)
 		{
 			for (int j = 0; j < manifolds[i]->NumContactPointCount; ++j)
@@ -43,9 +59,9 @@ public:
 				RigidBody* bodyA = geoms[manifold->indexA]->GetParent<RigidBody>();
 				RigidBody* bodyB = geoms[manifold->indexB]->GetParent<RigidBody>();
 
-				velocityConstraints.push_back(ContactVelocityConstraintSolver(
+				velocityConstraints.push_back(JacobianSolver(
 					m_Buffer.data(), manifold->indexA, manifold->indexB, bodyA, bodyB));
-				velocityConstraints.back().Setup(&manifold->ContactPoints[j], dt);
+				velocityConstraints.back().SetupPositionPass(&manifold->ContactPoints[j], dt);
 			}
 		}
 
@@ -69,13 +85,16 @@ public:
 					break;
 				}
 			}
-
+			
 			for (size_t k = 0; k < velocityConstraints.size(); ++k)
 			{
 				velocityConstraints[k].Finalize();
 			}
 			
-			RrepareSolverBuffer(geoms);
+			for (size_t k = 0; k < velocityConstraints.size(); ++k)
+			{
+				velocityConstraints[k].SetupVelocityPass((int)m_Buffer.size() / 2);
+			}
 			
 			it = 0;
 			while (it++ <= m_nMaxVelocityIterations)
@@ -85,37 +104,24 @@ public:
 					velocityConstraints[k].Solve();
 				}
 			}
-
+			
 			return;
 		}
-
-
 	}
 	
 	virtual void	PostResolve(const std::vector<Geometry*>& geoms) override final
 	{
-		for (size_t i = 0; i < geoms.size(); ++i)
+		int n = (int)geoms.size();
+		for (int i = 0; i < n; ++i)
 		{
-			RigidBody* body = geoms[i]->GetParent<RigidBody>();
-			if (body->mRigidType == RigidType::Dynamic)
+			RigidBodyDynamic* body = geoms[i]->GetParent<RigidBody>()->CastDynamic();
+			if (body)
 			{
 				body->SetLinearVelocity(m_Buffer[i].v);
 				body->SetAngularVelocity(m_Buffer[i].w);
+				body->SolverV = m_Buffer[i + n].v;
+				body->SolverW = m_Buffer[i + n].w;
 			}
-		}
-	}
-	
-	void 			RrepareSolverBuffer(const std::vector<Geometry*>& geoms)
-	{
-		if (m_Buffer.size() < geoms.size())
-		{
-			m_Buffer.resize(geoms.size());
-		}
-		for (size_t i = 0; i < geoms.size(); ++i)
-		{
-			RigidBody* body = geoms[i]->GetParent<RigidBody>();
-			m_Buffer[i].v = body->GetLinearVelocity();
-			m_Buffer[i].w = body->GetAngularVelocity();
 		}
 	}
 

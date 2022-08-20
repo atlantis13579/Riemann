@@ -169,6 +169,8 @@ RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, Geometry* geom)
 	this->DisableGravity = param.disableGravity;
 	this->Sleeping = false;
 	this->Freezing = false;
+	this->SolverV = Vector3::Zero();
+	this->SolverW = Vector3::Zero();
 	if (geom) this->AddGeometry(geom);
 }
 

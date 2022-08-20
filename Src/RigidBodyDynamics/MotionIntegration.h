@@ -4,6 +4,8 @@
 
 class RigidBodyDynamic;
 
+#define USE_SOLVER_VW	0x02
+
 class MotionIntegration
 {
 public:

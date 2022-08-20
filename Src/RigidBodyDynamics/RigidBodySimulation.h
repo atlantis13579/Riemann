@@ -45,8 +45,8 @@ enum class ResolutionPhaseSolver : uint8_t
 
 enum class IntegrateMethod : uint8_t
 {
-	ExplicitEuler,
-	SymplecticEuler,
+	ExplicitEuler = 0x00,
+	SymplecticEuler = 0x01,
 };
 
 struct WorldClock
