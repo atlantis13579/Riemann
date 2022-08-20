@@ -370,6 +370,14 @@ void TestCholesky()
 	EXPECT(L.IsLowerTriangle());
 	EXPECT(A.FuzzyEqual(L * L.Transpose()));
 	
+	TDenseVector<float>	B(3), X;
+	B[0] = 2.0f;
+	B[1] = 2.0f;
+	B[2] = 4.0f;
+	
+	EXPECT(A.SolveCholesky(B, X));
+	EXPECT(FuzzyEqual(X.Dot(X), 3.0f));
+	
 	return;
 }
 

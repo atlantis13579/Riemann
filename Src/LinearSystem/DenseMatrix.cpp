@@ -109,3 +109,23 @@ bool TDenseMatrix<float>::CholeskyDecompose(TDenseMatrix<float>& L) const
 	L.SetSize(mRows, mRows);
 	return ::CholeskyDecomposition<float>()(pData, mRows, L.GetData());
 }
+
+template<>
+bool TDenseMatrix<float>::SolveCholesky(const TDenseVector<float>& B, TDenseVector<float>& X)
+{
+	TDenseMatrix<float> L;
+	if (!CholeskyDecompose(L))
+	{
+		return false;
+	}
+	
+	TDenseVector<float>	BT(mRows);
+	if (!::LowerTriangularSolver<float>()(L.GetData(), mRows, B.GetData(), BT.GetData()))
+	{
+		return false;
+	}
+	
+	X.SetSize(mRows);
+	L.TransposeInPlace();
+	return ::UpperTriangularSolver<float>()(L.GetData(), mRows, BT.GetData(), X.GetData());
+}

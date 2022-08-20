@@ -73,3 +73,30 @@ public:
 		return true;
 	}
 };
+
+// Solve UX = b where U is a upper triangular matrix
+template<typename T>
+class UpperTriangularSolver
+{
+public:
+	bool operator()(const T* U, int n, const T* B, T *X) const
+	{
+		for (int i = n - 1; i >= 0; --i)
+		{
+			T sum = (T)0;
+			for (int j = i + 1; j < n; ++j)
+			{
+				sum += U[i*n+j] * X[j];
+			}
+			
+			if (fabs(U[i*n+i]) < (T)1e-9)
+			{
+				return false;
+			}
+			
+			X[i] = (B[i] - sum) / U[i*n+i];
+		}
+		
+		return true;
+	}
+};

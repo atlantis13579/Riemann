@@ -612,6 +612,9 @@ public:
 	// M = L * L^T
 	bool	CholeskyDecompose(TDenseMatrix<T>& L) const;
 	
+	// Solve M * x = b uisng Cholesky Decompose
+	bool	SolveCholesky(const TDenseVector<T>& B, TDenseVector<T>& X);
+	
 protected:
 	int				mRows;
 	int				mCols;

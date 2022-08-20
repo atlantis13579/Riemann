@@ -1,5 +1,6 @@
 
 #include "KinematicsTree.h"
+#include "KeyFrameAnimation.h"
 #include "RigidBody.h"
 #include "../Modules/Tools/AnimBinaryParser.h"
 

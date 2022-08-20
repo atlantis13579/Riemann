@@ -47,7 +47,7 @@ public:
 
             path->push_back(e + target);
 
-            if (e.SquaredLength() <= mTolerance * mTolerance)
+            if (e.SquareLength() <= mTolerance * mTolerance)
             {
                 return true;
             }

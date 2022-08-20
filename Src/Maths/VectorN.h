@@ -170,8 +170,13 @@ public:
 		}
 		return dp;
 	}
+	
+	inline T	Length() const
+	{
+		return L2Norm();
+	}
 
-	inline T	SquaredLength() const
+	inline T	SquareLength() const
 	{
 		return Dot(*this);
 	}

@@ -6,8 +6,6 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Quaternion.h"
 
-#include "KeyFrameAnimation.h"
-
 class AnimTreeData;
 class Geometry;
 class KeyframeKinematics;
