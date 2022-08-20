@@ -6,24 +6,12 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Quaternion.h"
 
-#include "RigidBody.h"
 #include "KeyFrameAnimation.h"
 
 class AnimTreeData;
+class Geometry;
+class KeyframeKinematics;
 class RigidBodyStatic;
-
-class KeyframeKinematics : public RigidBodyKinematics
-{
-public:
-	KeyframeKinematics()
-	{
-		Parent = -1;
-	}
-
-	KeyFrameAnimation			Anim;
-	std::string					Name;
-	int							Parent;
-};
 
 class KinematicsDriver
 {

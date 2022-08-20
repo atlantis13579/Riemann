@@ -428,7 +428,7 @@ public:
 
 	bool		IsLowerTriangle(const T Eplison = (T)1e-6) const
 	{
-		if (IsSquare())
+		if (!IsSquare())
 			return false;
 
 		for (int i = 0; i < mRows - 1; ++i)
@@ -606,6 +606,12 @@ public:
 	// Get Eigen Values and EigenVectors as column vector
 	bool	EigenDecompose(TDenseVector<T>& EigenValues, TDenseMatrix<T>& EigenVectors) const;
 
+	// M = L * L^T
+	bool	LUDecompose(TDenseMatrix<T>& L, TDenseMatrix<T>& U) const;
+	
+	// M = L * L^T
+	bool	CholeskyDecompose(TDenseMatrix<T>& L) const;
+	
 protected:
 	int				mRows;
 	int				mCols;

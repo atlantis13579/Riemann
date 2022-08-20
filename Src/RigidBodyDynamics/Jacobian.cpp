@@ -79,7 +79,7 @@ static float BaumgarteStabilizationTerm(float dt, float PenetrationDepth)
 	return -(beta / dt) * std::max(PenetrationDepth - kPenetrationSlop, 0.0f);
 }
 
-void JacobianSolver::SetupPositionPass(Contact* contact, float dt)
+void ContactJacobianSolver::SetupPositionPass(Contact* contact, float dt)
 {
 	m_contact = contact;
 
@@ -100,7 +100,7 @@ void JacobianSolver::SetupPositionPass(Contact* contact, float dt)
 	m_jB.Setup(contact, bodyA, bodyB, phase + indexA, phase + indexB, m_contact->Binormal, 0.0f);
 }
 
-void JacobianSolver::SetupVelocityPass(int n)
+void ContactJacobianSolver::SetupVelocityPass(int n)
 {
 	m_jN.m_ga = phase + n + indexA;
 	m_jN.m_gb = phase + n + indexB;
@@ -110,7 +110,7 @@ void JacobianSolver::SetupVelocityPass(int n)
 	m_jB.m_gb = phase + n + indexB;
 }
 
-void JacobianSolver::Solve()
+void ContactJacobianSolver::Solve()
 {
 	m_jN.Solve(0.0f, FLT_MAX);
 
@@ -120,12 +120,12 @@ void JacobianSolver::Solve()
 	m_jB.Solve(-maxFriction, maxFriction);
 }
 
-float JacobianSolver::GetSquaredError() const
+float ContactJacobianSolver::GetSquaredError() const
 {
 	return m_jN.m_error * m_jN.m_error + m_jT.m_error * m_jT.m_error + m_jB.m_error * m_jB.m_error;
 }
 
-void JacobianSolver::Finalize()
+void ContactJacobianSolver::Finalize()
 {
 	m_contact->totalImpulseNormal = m_jN.m_totalLambda;
 	m_contact->totalImpulseTangent = m_jT.m_totalLambda;

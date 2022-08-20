@@ -50,7 +50,7 @@ public:
 
 		WarmStart::ApplyVelocityConstraint(geoms, manifolds, dt);
 
-		std::vector<JacobianSolver> velocityConstraints;
+		std::vector<ContactJacobianSolver> velocityConstraints;
 		for (size_t i = 0; i < manifolds.size(); ++i)
 		{
 			for (int j = 0; j < manifolds[i]->NumContactPointCount; ++j)
@@ -59,7 +59,7 @@ public:
 				RigidBody* bodyA = geoms[manifold->indexA]->GetParent<RigidBody>();
 				RigidBody* bodyB = geoms[manifold->indexB]->GetParent<RigidBody>();
 
-				velocityConstraints.push_back(JacobianSolver(
+				velocityConstraints.push_back(ContactJacobianSolver(
 					m_Buffer.data(), manifold->indexA, manifold->indexB, bodyA, bodyB));
 				velocityConstraints.back().SetupPositionPass(&manifold->ContactPoints[j], dt);
 			}

@@ -351,6 +351,28 @@ void TestEigen()
 	return;
 }
 
+void TestCholesky()
+{
+	printf("Running TestCholesky\n");
+	TDenseMatrix<float> A(3, 3), L;
+	A[0][0] = 1.0f;
+	A[0][1] = 0.0f;
+	A[0][2] = 1.0f;
+	A[1][0] = 0.0f;
+	A[1][1] = 2.0f;
+	A[1][2] = 0.0f;
+	A[2][0] = 1.0f;
+	A[2][1] = 0.0f;
+	A[2][2] = 3.0f;
+	
+	EXPECT(A.IsSymmetric());
+	EXPECT(A.CholeskyDecompose(L));
+	EXPECT(L.IsLowerTriangle());
+	EXPECT(A.FuzzyEqual(L * L.Transpose()));
+	
+	return;
+}
+
 void TestMatrix()
 {
 	TestMatrix1();
@@ -363,5 +385,6 @@ void TestMatrix()
 	TestPolarDecomp();
 	TestQR();
 	TestEigen();
+	TestCholesky();
 	return;
 }

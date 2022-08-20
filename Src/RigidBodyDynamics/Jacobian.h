@@ -7,7 +7,7 @@
 struct Contact;
 class RigidBody;
 class ContactManifold;
-struct JacobianSolver;
+struct ContactJacobianSolver;
 
 struct GeneralizedVelocity
 {
@@ -49,9 +49,9 @@ struct  Jacobian
 // Where V is 12x1 generalized velocity [va, wa, vb, wb]^T
 // b is the bias term
 // to model the equation : (vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra)) * n == 0
-struct JacobianSolver
+struct ContactJacobianSolver
 {
-	JacobianSolver(GeneralizedVelocity *_phase, int _ia, int _ib, RigidBody* _bodyA, RigidBody* _bodyB)
+	ContactJacobianSolver(GeneralizedVelocity *_phase, int _ia, int _ib, RigidBody* _bodyA, RigidBody* _bodyB)
 	{
 		phase = _phase;
 		bodyA = _bodyA;

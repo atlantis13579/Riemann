@@ -8,7 +8,7 @@ template<typename T>
 class LUFactorization
 {
 public:
-	void operator()(const T* A, int N, T* L, T* U) const
+	bool operator()(const T* A, int N, T* L, T* U) const
 	{
 		memset(U, 0, sizeof(U[0]) * N * N);
 		memset(L, 0, sizeof(L[0]) * N * N);
@@ -34,6 +34,11 @@ public:
 
 				U[i * N+j] = A[i * N + j] - s;
 			}
+			
+			if (fabs(U[i * N + i]) < (T)1e-9)
+			{
+				return false;
+			}
 
 			if (i + 1 < N)
 			{
@@ -54,8 +59,7 @@ public:
 
 			}
 		}
+		
+		return true;
 	}
-
-
-
 };

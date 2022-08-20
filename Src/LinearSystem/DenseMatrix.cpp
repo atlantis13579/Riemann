@@ -84,3 +84,28 @@ bool TDenseMatrix<float>::EigenDecompose(TDenseVector<float>& EigenValues, TDens
 	::SymmetricEigenSolver<float>()(pData, mRows, EigenValues.GetData(), EigenVectors.GetData());
 	return true;
 }
+
+template<>
+bool TDenseMatrix<float>::LUDecompose(TDenseMatrix<float>& L, TDenseMatrix<float>& U) const
+{
+	if (!IsSquare())
+	{
+		return false;
+	}
+	
+	L.SetSize(mRows, mRows);
+	U.SetSize(mRows, mRows);
+	return ::LUFactorization<float>()(pData, mRows, L.GetData(), U.GetData());
+}
+
+template<>
+bool TDenseMatrix<float>::CholeskyDecompose(TDenseMatrix<float>& L) const
+{
+	if (!IsSquare())
+	{
+		return false;
+	}
+	
+	L.SetSize(mRows, mRows);
+	return ::CholeskyDecomposition<float>()(pData, mRows, L.GetData());
+}

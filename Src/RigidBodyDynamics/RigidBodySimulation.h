@@ -8,6 +8,9 @@
 
 class Geometry;
 class GeometryQuery;
+class RigidBody;
+class RigidBodyStatic;
+class RigidBodyDynamic;
 class BroadPhase;
 class NarrowPhase;
 class ConstraintSolver;

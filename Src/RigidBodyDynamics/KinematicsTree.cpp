@@ -1,7 +1,20 @@
 
 #include "KinematicsTree.h"
-#include "../Modules/Tools/AnimBinaryParser.h"
 #include "RigidBody.h"
+#include "../Modules/Tools/AnimBinaryParser.h"
+
+class KeyframeKinematics : public RigidBodyKinematics
+{
+public:
+	KeyframeKinematics()
+	{
+		Parent = -1;
+	}
+
+	KeyFrameAnimation			Anim;
+	std::string					Name;
+	int							Parent;
+};
 
 KinematicsTree::KinematicsTree()
 {
