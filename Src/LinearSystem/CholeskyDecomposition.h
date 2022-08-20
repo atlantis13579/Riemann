@@ -46,3 +46,30 @@ public:
 		return true;
 	}
 };
+
+// Solve LX = b where L is a lower triangular matrix
+template<typename T>
+class LowerTriangularSolver
+{
+public:
+	bool operator()(const T* L, int n, const T* B, T *X) const
+	{
+		for (int i = 0; i < n; ++i)
+		{
+			T sum = (T)0;
+			for (int j = 0; j < i; ++j)
+			{
+				sum += L[i*n+j] * X[j];
+			}
+			
+			if (fabs(L[i*n+i]) < (T)1e-9)
+			{
+				return false;
+			}
+			
+			X[i] = (B[i] - sum) / L[i*n+i];
+		}
+		
+		return true;
+	}
+};
