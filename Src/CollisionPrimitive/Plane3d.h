@@ -60,6 +60,7 @@ public:
 	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
 	bool			PenetrateSphere(const Vector3 &Center, float Radius, Vector3 *normal, float *depth) const;
+	bool			PenetrateOBB(const Vector3 &rCenter, const Vector3 &rExtent, const Matrix3& rRot, Vector3 *normal, float *depth) const;
 	
 	static bool 	GetIntersection(const Plane3d& p1, const Plane3d& p2, Vector3 &Origin, Vector3 &Dir);
 	static bool 	GetIntersection(const Plane3d& p1, const Plane3d& p2, const Plane3d& p3, Vector3 &p);

@@ -63,12 +63,11 @@ bool	IntersectPlanePlane(const void* Obj1, const void* Obj2, const GeometryTrans
 
 bool	IntersectBoxBox(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 {
-	const Geometry2Transform trans(t1, t2);
 	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
 	const AxisAlignedBox3d* box2 = static_cast<const AxisAlignedBox3d*>(Obj2);
-	OrientedBox3d obb1(trans.Local1ToLocal2(box1->GetCenter()), box1->GetExtent(), trans.Local1ToLocal2RotationMatrix());
-	OrientedBox3d obb2(Vector3::Zero(), box2->GetExtent(), Matrix3::Identity());
-	return obb2.IntersectOBB(obb1);
+	OrientedBox3d obb1(t1->LocalToWorld(box1->GetCenter()), box1->GetExtent(), t1->Rotation.ToRotationMatrix3());
+	OrientedBox3d obb2(t2->LocalToWorld(box2->GetCenter()), box2->GetExtent(), t2->Rotation.ToRotationMatrix3());
+	return obb1.IntersectOBB(obb2);
 }
 
 bool	IntersectBoxPlane(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
@@ -156,6 +155,15 @@ bool	PenetrateEPASolver(const void* Obj1, const void* Obj2, const GeometryTransf
 bool 	PenetrateNotSupport(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3 *n, float *d)
 {
 	return false;
+}
+
+bool	PenetrateBoxBox(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3 *n, float *d)
+{
+	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
+	const AxisAlignedBox3d* box2 = static_cast<const AxisAlignedBox3d*>(Obj2);
+	OrientedBox3d obb1(t1->LocalToWorld(box1->GetCenter()), box1->GetExtent(), t1->Rotation.ToRotationMatrix3());
+	OrientedBox3d obb2(t2->LocalToWorld(box2->GetCenter()), box2->GetExtent(), t2->Rotation.ToRotationMatrix3());
+	return obb1.PenetrateOBB(obb2, n, d);
 }
 
 template <class T>
@@ -266,9 +274,9 @@ GeometryIntersection::GeometryIntersection()
 	REG_INTERSECT_FUNC(ShapeType3d::HEIGHTFIELD,	ShapeType3d::TRIANGLE_MESH,		IntersectNotSupport);
 	REG_INTERSECT_FUNC(ShapeType3d::TRIANGLE_MESH,	ShapeType3d::TRIANGLE_MESH,		IntersectNotSupport);
 	
-	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::BOX,				nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::BOX,				PenetrateBoxBox);
 	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::SPHERE,			PenetrateBoxT_WS<Sphere3d>);
-	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::PLANE,				nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::PLANE,				PenetrateBoxT_WS<Plane3d>);
 	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::CONVEX_MESH,		nullptr);
 	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::HEIGHTFIELD,		nullptr);
 	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::TRIANGLE_MESH,		nullptr);

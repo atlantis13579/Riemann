@@ -235,7 +235,7 @@ bool Capsule3d::PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *
 		*Normal /= len;
 	}
 	*Normal = -*Normal;
-	*Depth = -(s - len);
+	*Depth = s - len;
 	return true;
 }
 

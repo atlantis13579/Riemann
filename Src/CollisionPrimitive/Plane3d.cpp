@@ -190,7 +190,62 @@ bool Plane3d::PenetrateSphere(const Vector3 &Center, float Radius, Vector3 *norm
 	}
 
 	*normal	= -Normal;
-	*depth = -(Radius - d);
+	*depth = Radius - d;
+	return true;
+}
+
+bool Plane3d::PenetrateOBB(const Vector3 &rCenter, const Vector3 &rExtent, const Matrix3& rRot, Vector3 *normal, float *depth) const
+{
+	Vector3 v[8];
+	
+	const Vector3 base0 = rRot.GetCol(0);
+	const Vector3 base1 = rRot.GetCol(1);
+	const Vector3 base2 = rRot.GetCol(2);
+	
+	const Vector3 axis0 = base0 * rExtent.x;
+	const Vector3 axis1 = base1 * rExtent.y;
+	const Vector3 axis2 = base2 * rExtent.z;
+
+	//     7+------+6			0 = ---
+	//     /|     /|			1 = +--
+	//    / |    / |			2 = ++-
+	//   / 4+---/--+5			3 = -+-
+	// 3+------+2 /    y   z	4 = --+
+	//  | /    | /     |  /		5 = +-+
+	//  |/     |/      |/		6 = +++
+	// 0+------+1      *---x	7 = -++
+
+	v[0] = v[3] = v[4] = v[7] = rCenter - axis0;
+	v[1] = v[2] = v[5] = v[6] = rCenter + axis0;
+
+	Vector3 tmp = axis1 + axis2;
+	v[0] -= tmp;
+	v[1] -= tmp;
+	v[6] += tmp;
+	v[7] += tmp;
+
+	tmp = axis1 - axis2;
+	v[2] += tmp;
+	v[3] += tmp;
+	v[4] -= tmp;
+	v[5] -= tmp;
+
+	float dmin = FLT_MAX;
+	for(int i = 0; i < 8; ++i)
+	{
+		const float d = Normal.Dot(v[i]) + D;
+		if (d < dmin)
+		{
+			dmin = d;
+		}
+	}
+	if (dmin > 0.0f)
+	{
+		return false;
+	}
+
+	*normal	= -Normal;
+	*depth = -dmin;
 	return true;
 }
 

@@ -83,7 +83,7 @@ public:
 	int			mNodeId;		// nodeId from DynamicAABB Tree
 	
 private:
-	PhysicsMaterial* mMaterial;	// Not hold the memory
+	short		mMaterialId;
 
 public:
 	RigidBody();
@@ -119,7 +119,7 @@ public:
 	float			GetKinematicsEnergy() const;
 	float			GetLinearKinematicsEnergy() const;
 	float			GetAngularKinematicsEnergy() const;
-	void			SetDefaultPhysicsMaterial(int idx);
+	void			SetDefaultPhysicsMaterial(uint16_t idx);
 
 	float			GetRestitution() const;
 	float			GetFrictionDynamic() const;

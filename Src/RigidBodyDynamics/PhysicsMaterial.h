@@ -2,7 +2,8 @@
 
 enum DefaultPhysicsMaterial
 {
-	Concrete = 0,
+	Default = 0,
+	Concrete,
 	Ice,
 	BounceBall,
 	NUM_DEFAULT_PHYSICS_MATERIALS,
@@ -10,6 +11,12 @@ enum DefaultPhysicsMaterial
 
 struct PhysicsMaterial
 {
+	// The coefficient of restitution between two objects,
+	// is defined as the ratio between the parting speed of
+	// two colliders after collisionand the closing speed
+	// before collision
+	// 0 = completely inelastic collision response
+	// 1 = completely elastic collision response)
 	float		Restitution;
 	float		FrictionDynamic;
 	float		FrictionStatic;
@@ -20,27 +27,13 @@ struct PhysicsMaterial
 		FrictionDynamic = fd;
 		FrictionStatic = fs;
 	}
-
-	// The coefficient of restitution between two objects, 
-	// is defined as the ratio between the parting speed of 
-	// two colliders after collisionand the closing speed 
-	// before collision
-	// 0 = completely inelastic collision response
-	// 1 = completely elastic collision response)
-	static constexpr float DefaultRestitution()
+	static const PhysicsMaterial* getMaterial(unsigned short mid)
 	{
-		return 0.0f;
+		if (mid >= NUM_DEFAULT_PHYSICS_MATERIALS)
+		{
+			mid = 0;
+		}
+		return &materialTable[mid];
 	}
-
-	static constexpr float DefaultFrictionDynamic()
-	{
-		return 1.0f;
-	}
-
-	static constexpr float DefaultFrictionStatic()
-	{
-		return 1.0f;
-	}
-
-	static const PhysicsMaterial defaultMeterialTable[(int)NUM_DEFAULT_PHYSICS_MATERIALS];
+	static const PhysicsMaterial materialTable[(int)NUM_DEFAULT_PHYSICS_MATERIALS];
 };

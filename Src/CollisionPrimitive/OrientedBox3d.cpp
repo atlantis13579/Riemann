@@ -3,6 +3,18 @@
 #include "AxisAlignedBox3d.h"
 #include "Sphere3d.h"
 
+void OrientedBox3d::GetVertices(Vector3 v[8]) const
+{
+	v[0] = Center + Rotation * Vector3(Extent.x, Extent.y, Extent.z);
+	v[1] = Center + Rotation * Vector3(-Extent.x, Extent.y, Extent.z);
+	v[2] = Center + Rotation * Vector3(Extent.x, -Extent.y, Extent.z);
+	v[3] = Center + Rotation * Vector3(-Extent.x, -Extent.y, Extent.z);
+	v[4] = Center + Rotation * Vector3(Extent.x, Extent.y, -Extent.z);
+	v[5] = Center + Rotation * Vector3(-Extent.x, Extent.y, -Extent.z);
+	v[6] = Center + Rotation * Vector3(Extent.x, -Extent.y, -Extent.z);
+	v[7] = Center + Rotation * Vector3(-Extent.x, -Extent.y, -Extent.z);
+}
+
 // static
 OrientedBox3d OrientedBox3d::ComputeBoundingOBB_PCA(const Vector3 *points, int n)
 {
@@ -62,6 +74,16 @@ Box3d OrientedBox3d::ComputeBoundingVolume(const Vector3& Center, const Vector3&
 Box3d OrientedBox3d::GetBoundingVolume() const
 {
 	return OrientedBox3d::ComputeBoundingVolume(Center, Extent, Rotation);
+}
+
+void OrientedBox3d::ProjectAxis(const Vector3& Axis, float *t0, float *t1) const
+{
+	const float c = Center.Dot(Axis);
+	const float e = fabsf(Rotation.GetCol(0).Dot(Axis)) * Extent.x
+				+	fabsf(Rotation.GetCol(1).Dot(Axis)) * Extent.y
+				+	fabsf(Rotation.GetCol(2).Dot(Axis)) * Extent.z;
+	*t0 = c - e;
+	*t1 = c + e;
 }
 
 Vector3 OrientedBox3d::ClosestPointToPoint(const Vector3& Point) const
@@ -243,14 +265,95 @@ bool OrientedBox3d::IntersectTriangle(const Vector3& A, const Vector3& B, const 
 	return aabb.IntersectTriangle(A * Rotation, B * Rotation, C * Rotation);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
 }
 
+static bool testBoxBoxAxis(const OrientedBox3d& obb0, const OrientedBox3d& obb1, const Vector3& axis, Vector3* normal, float* depth)
+{
+	float min0, max0;
+	obb0.ProjectAxis(axis, &min0, &max0);
+
+	float min1, max1;
+	obb1.ProjectAxis(axis, &min1, &max1);
+
+	if (max0 < min1 || max1 < min0)
+		return false;
+
+	float d = std::min(max0 - min1, max1 - min0);
+	if (d < *depth)
+	{
+		*depth = d;
+		*normal = axis;
+	}
+	return true;
+}
+
+bool OrientedBox3d::PenetrateOBB(const OrientedBox3d& obb, Vector3 *Normal, float *Depth) const
+{
+	Vector3 n;
+	float d = FLT_MAX;
+	for (int i = 0; i < 3; ++i)
+	{
+		if(!testBoxBoxAxis(*this, obb, Rotation.GetCol(i), &n, &d))
+			return false;
+		if(!testBoxBoxAxis(*this, obb, obb.Rotation.GetCol(i), &n, &d))
+			return false;
+	}
+
+	for (int j = 0; j < 3; ++j)
+	for (int i = 0; i < 3; ++i)
+	{
+		Vector3 cross = Rotation.GetRow(i).Cross(obb.Rotation.GetRow(j));
+		if (cross.SquareLength() > 1e-6f)
+		{
+			cross.Normalize();
+			if (!testBoxBoxAxis(*this, obb, cross, &n, &d))
+				return false;
+		}
+	}
+	
+	if (n.Dot(Center - obb.Center) < 0.0f)
+		n = -n;
+	
+	*Normal	= -n;
+	*Depth	= d;
+	return true;
+}
+
+bool OrientedBox3d::PenetrateOBB(const Vector3& _Center, const Vector3& _Extent, const Matrix3& _Rot, Vector3 *Normal, float *Depth) const
+{
+	OrientedBox3d obb(_Center, _Extent, _Rot);
+	return PenetrateOBB(obb, Normal, Depth);
+}
+
 bool OrientedBox3d::PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const
 {
 	Sphere3d sphere(rCenter, rRadius);
 	if (sphere.PenetrateOBB(Center, Extent, Rotation, Normal, Depth))
 	{
 		*Normal = -*Normal;
-		*Depth = -*Depth;
 		return true;
 	}
 	return false;
+}
+
+bool OrientedBox3d::PenetratePlane(const Vector3 &pNormal, float D, Vector3 *Normal, float *Depth) const
+{
+	Vector3 v[8];
+	GetVertices(v);
+
+	float dmin = FLT_MAX;
+	for(int i = 0; i < 8; ++i)
+	{
+		const float d = pNormal.Dot(v[i]) + D;
+		if (d < dmin)
+		{
+			dmin = d;
+		}
+	}
+	if (dmin > 0.0f)
+	{
+		return false;
+	}
+
+	*Normal	= pNormal;
+	*Depth = -dmin;
+	return true;
 }

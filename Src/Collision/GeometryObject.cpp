@@ -179,7 +179,6 @@ bool		Geometry::Penetration(const Geometry* Geom, Vector3 *Normal, float* Depth)
 		if (succ)
 		{
 			*Normal = -*Normal;
-			*Depth = -*Depth;
 			return true;
 		}
 		return false;

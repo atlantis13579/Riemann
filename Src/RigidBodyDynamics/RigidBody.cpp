@@ -7,7 +7,7 @@
 RigidBody::RigidBody()
 {
 	mGeometry = nullptr;
-	mMaterial = nullptr;
+	mMaterialId = 0;
 	mNodeId = -1;
 }
 
@@ -96,24 +96,24 @@ float RigidBody::GetAngularKinematicsEnergy() const
 	return InvInertia.Invertible() ? 0.5f * W.Dot(InvInertia.Inverse() * W) : 0.0f;
 }
 
-void		RigidBody::SetDefaultPhysicsMaterial(int idx)
+void		RigidBody::SetDefaultPhysicsMaterial(uint16_t idx)
 {
-	mMaterial = (PhysicsMaterial*)&PhysicsMaterial::defaultMeterialTable[idx];
+	mMaterialId = idx;
 }
 
 float		RigidBody::GetRestitution() const
 {
-	return mMaterial ? mMaterial->Restitution : PhysicsMaterial::DefaultRestitution();
+	return PhysicsMaterial::getMaterial(mMaterialId)->Restitution;
 }
 
 float		RigidBody::GetFrictionDynamic() const
 {
-	return mMaterial ? mMaterial->FrictionDynamic : PhysicsMaterial::DefaultFrictionDynamic();
+	return PhysicsMaterial::getMaterial(mMaterialId)->FrictionDynamic;
 }
 
 float		RigidBody::GetFrictionStatic() const
 {
-	return mMaterial ? mMaterial->FrictionStatic : PhysicsMaterial::DefaultFrictionStatic();
+	return PhysicsMaterial::getMaterial(mMaterialId)->FrictionStatic;
 }
 
 // static
