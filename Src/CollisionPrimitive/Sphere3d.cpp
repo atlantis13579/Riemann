@@ -145,6 +145,28 @@ bool Sphere3d::IntersectSphere(const Vector3& _Center, float _Radius) const
 	return SphereIntersectSphere(Center, Radius, _Center, _Radius);
 }
 
+bool Sphere3d::PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const
+{
+	float SqrDist = (Center - rCenter).SquareLength();
+	if (SqrDist > (Radius + rRadius) * (Radius + rRadius))
+	{
+		return false;
+	}
+	
+	*Normal = Center - rCenter;
+	float len = Normal->Length();
+	if (len < 1e-6f)
+	{
+		*Normal = Vector3::UnitY();
+	}
+	else
+	{
+		*Normal = *Normal / len;
+	}
+	*Depth = Radius + rRadius - len;
+	return true;
+}
+
 // static
 Vector3 ClosestPtPointTriangle(const Vector3& p, const Vector3& a, const Vector3& b, const Vector3& c)
 {

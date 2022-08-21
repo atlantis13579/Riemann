@@ -164,6 +164,24 @@ bool		Geometry::Intersect(const Geometry* Geom) const
 	return false;
 }
 
+bool		Geometry::Penetration(const Geometry* Geom, Vector3 *Normal, float* Depth) const
+{
+	PenetrationFunc func = GeometryIntersection::GetPenetrationFunc(m_Type, Geom->GetShapeType());
+	if (func)
+	{
+		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_CenterOfMassTransform, Geom->GetCenterOfMassTransform(), Normal, Depth);
+	}
+
+	func = GeometryIntersection::GetPenetrationFunc(Geom->GetShapeType(), m_Type);
+	if (func)
+	{
+		return func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), Geom->GetCenterOfMassTransform(), &m_CenterOfMassTransform, Normal, Depth);
+	}
+
+	assert(false);
+	return false;
+}
+
 bool		Geometry::SweepAABB(const Vector3& Direction, const Vector3 &Bmin, const Vector3& Bmax, Vector3 *normal, float *t) const
 {
 	char stack[MAX_GEOMETRY_STACK_SIZE];

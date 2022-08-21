@@ -41,6 +41,7 @@ public:
 	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	bool			IntersectSphere(const Vector3 &rCenter, float rRadius) const;
 	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3 &C) const;
+	bool			PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const;
 	static bool		SphereIntersectSphere(const Vector3& Center, float Radius, const Vector3& rCenter, float rRadius);
 	bool 			SweepAABB(const Vector3 &Direction, const Vector3& bmin, const Vector3& bmax, Vector3 *n, float *t) const;
 	bool			SweepSphere(const Vector3 &Direction, const Vector3 &rCenter, float rRadius, Vector3 *n, float *t) const;

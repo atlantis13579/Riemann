@@ -3,6 +3,7 @@
 #include "GeometryIntersection.h"
 #include "GeometryDifference.h"
 #include "GJK.h"
+#include "EPAPenetration.h"
 
 #include "../CollisionPrimitive/AxisAlignedBox3d.h"
 #include "../CollisionPrimitive/Plane3d.h"
@@ -17,8 +18,9 @@
 
 
 RayCastFunc		GeometryIntersection::raycastTable[(int)ShapeType3d::TYPE_COUNT] = { 0 };
-SweepFunc		GeometryIntersection::sweepTable[(int)ShapeType3d::TYPE_COUNT][(int)ShapeType3d::TYPE_COUNT] = { 0 };
 IntersectFunc	GeometryIntersection::intersectTable[(int)ShapeType3d::TYPE_COUNT][(int)ShapeType3d::TYPE_COUNT] = { 0 };
+PenetrationFunc	GeometryIntersection::penetrationTable[(int)ShapeType3d::TYPE_COUNT][(int)ShapeType3d::TYPE_COUNT] = { 0 };
+SweepFunc		GeometryIntersection::sweepTable[(int)ShapeType3d::TYPE_COUNT][(int)ShapeType3d::TYPE_COUNT] = { 0 };
 
 template <class T>
 inline bool			RayCastT(void* Obj, const Vector3& Origin, const Vector3& Direction, float* t)
@@ -126,6 +128,44 @@ bool	IntersectBoxT_WS(const void* Obj1, const void* Obj2, const GeometryTransfor
 }
 
 template <class T>
+bool	PenetrateEPASolver(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3 *n, float *d)
+{
+	// Hack, see GetShapeObjPtr()
+	const Geometry* Geom1 = reinterpret_cast<const Geometry*>((intptr_t)Obj1 - sizeof(Geometry));
+	const Geometry* Geom2 = reinterpret_cast<const Geometry*>((intptr_t)Obj2 - sizeof(Geometry));
+	
+	GeometryDifference shape(Geom1, Geom2);
+	GJKIntersection gjk;
+	GJK_status gjk_status = gjk.Solve(&shape);
+	if (gjk_status != GJK_status::Intersect)
+	{
+		return false;
+	}
+
+	EPAPenetration epa;
+	EPA_status epa_result = epa.Solve(gjk.result);
+	if (epa_result == EPA_status::Failed || epa_result == EPA_status::FallBack)
+	{
+		return false;
+	}
+	
+	*n = epa.penetration_normal;
+	*d = epa.penetration_depth;
+	return  true;
+}
+
+template <class T>
+bool	PenetrateSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3 *n, float *d)
+{
+	const Geometry2Transform trans(t1, t2);
+	const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj1);
+	float Radius = sphere->Radius;
+	Vector3 Center = trans.Local1ToLocal2(sphere->Center);
+	const T* p = static_cast<const T*>(Obj2);
+	return p->PenetrateSphere(Center, Radius, n, d);
+}
+
+template <class T>
 bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3 *n, float* t)
 {
 	const Geometry2Transform trans(t1, t2);
@@ -141,6 +181,9 @@ bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t
 
 #define REG_INTERSECT_FUNC(_type1, _type2, _func)		\
 	intersectTable[(int)_type1][(int)_type2] = _func;
+
+#define REG_PENETRATE_FUNC(_type1, _type2, _func)		\
+	penetrationTable[(int)_type1][(int)_type2] = _func;
 
 #define REG_SWEEP_FUNC(_type1, _type2, _func)		\
 	sweepTable[(int)_type1][(int)_type2] = _func;
@@ -194,7 +237,9 @@ GeometryIntersection::GeometryIntersection()
 	REG_INTERSECT_FUNC(ShapeType3d::CONVEX_MESH,	ShapeType3d::CAPSULE,			IntersectGJKSolver);
 	REG_INTERSECT_FUNC(ShapeType3d::CONVEX_MESH,	ShapeType3d::CONVEX_MESH,		IntersectGJKSolver);
 	
-	REG_SWEEP_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::SPHERE,			SweepSphereT<Sphere3d>);
+	REG_PENETRATE_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::SPHERE,			PenetrateSphereT<Sphere3d>);
+	
+	REG_SWEEP_FUNC(ShapeType3d::SPHERE, 			ShapeType3d::SPHERE,			SweepSphereT<Sphere3d>);
 }
 
 GeometryIntersection s_geom_registration;
@@ -209,6 +254,12 @@ RayCastFunc GeometryIntersection::GetRayCastFunc(ShapeType3d Type)
 IntersectFunc GeometryIntersection::GetIntersectFunc(ShapeType3d Type1, ShapeType3d Type2)
 {
 	IntersectFunc func = GeometryIntersection::intersectTable[(int)Type1][(int)Type2];
+	return func;
+}
+
+PenetrationFunc GeometryIntersection::GetPenetrationFunc(ShapeType3d Type1, ShapeType3d Type2)
+{
+	PenetrationFunc func = GeometryIntersection::penetrationTable[(int)Type1][(int)Type2];
 	return func;
 }
 

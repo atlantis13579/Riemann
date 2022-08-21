@@ -59,6 +59,7 @@ void TestSphere()
 	{
 		EXPECT(s1.IntersectPoint(points[i]));
 	}
+	
 	return;
 }
 
@@ -253,7 +254,20 @@ void TestEPA()
 	EXPECT(gjk_status == GJK_status::Intersect);
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
-
+	
+	Geometry *sp0 = GeometryFactory::CreateSphere(Vector3(1.0f, 1.0f, 0.0f), 1.5f);
+	Geometry *sp1 = GeometryFactory::CreateSphere(Vector3(3.0f, 1.0f, 0.0f), 1.0f);
+	shape = GeometryDifference(sp0, sp1);
+	EXPECT(gjk.Solve(&shape) == GJK_status::Intersect);
+	EXPECT(epa.Solve(gjk.result) != EPA_status::Failed);
+	
+	Vector3 normal;
+	float depth;
+	EXPECT(sp0->Penetration(sp1, &normal, &depth));
+	
+	EXPECT(normal.Dot(epa.penetration_normal) > 0.99f);
+	EXPECT(fabsf(depth - epa.penetration_depth) < 0.001f);
+	
 	return;
 }
 
