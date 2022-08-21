@@ -127,7 +127,6 @@ bool	IntersectBoxT_WS(const void* Obj1, const void* Obj2, const GeometryTransfor
 	return p->IntersectOBB(obb1.Center, obb1.Extent, obb1.Rotation);
 }
 
-template <class T>
 bool	PenetrateEPASolver(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3 *n, float *d)
 {
 	// Hack, see GetShapeObjPtr()
@@ -154,6 +153,21 @@ bool	PenetrateEPASolver(const void* Obj1, const void* Obj2, const GeometryTransf
 	return  true;
 }
 
+bool 	PenetrateNotSupport(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3 *n, float *d)
+{
+	return false;
+}
+
+template <class T>
+bool	PenetrateBoxT_WS(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3 *n, float *d)
+{
+	const Geometry2Transform trans(t1, t2);
+	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
+	const T* p = static_cast<const T*>(Obj2);
+	OrientedBox3d obb1(trans.Local1ToLocal2(box1->GetCenter()), box1->GetExtent(), trans.Local1ToLocal2RotationMatrix());
+	return p->PenetrateOBB(obb1.Center, obb1.Extent, obb1.Rotation, n, d);
+}
+
 template <class T>
 bool	PenetrateSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3 *n, float *d)
 {
@@ -163,6 +177,18 @@ bool	PenetrateSphereT(const void* Obj1, const void* Obj2, const GeometryTransfor
 	Vector3 Center = trans.Local1ToLocal2(sphere->Center);
 	const T* p = static_cast<const T*>(Obj2);
 	return p->PenetrateSphere(Center, Radius, n, d);
+}
+
+template <class T>
+bool	IntersectCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3 *n, float *d)
+{
+	const Geometry2Transform trans(t1, t2);
+	const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj1);
+	float Radius = capsule->Radius;
+	Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
+	Vector3 P1 = trans.Local1ToLocal2(capsule->X1);
+	const T* p = static_cast<const T*>(Obj2);
+	return p->PenetrateCapsule(P0, P1, Radius, n, d);
 }
 
 template <class T>
@@ -176,7 +202,7 @@ bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t
 	return obj->SweepSphere(Dir, Center, Radius, n, t);
 }
 
-#define	REG_RAYCAST_FUNC(_type, _name)				\
+#define	REG_RAYCAST_FUNC(_type, _name)					\
 	raycastTable[(int)_type] = RayCastT<_name>;
 
 #define REG_INTERSECT_FUNC(_type1, _type2, _func)		\
@@ -185,7 +211,7 @@ bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t
 #define REG_PENETRATE_FUNC(_type1, _type2, _func)		\
 	penetrationTable[(int)_type1][(int)_type2] = _func;
 
-#define REG_SWEEP_FUNC(_type1, _type2, _func)		\
+#define REG_SWEEP_FUNC(_type1, _type2, _func)			\
 	sweepTable[(int)_type1][(int)_type2] = _func;
 
 GeometryIntersection::GeometryIntersection()
@@ -236,8 +262,39 @@ GeometryIntersection::GeometryIntersection()
 	REG_INTERSECT_FUNC(ShapeType3d::CONVEX_MESH,	ShapeType3d::CYLINDER,			IntersectGJKSolver);
 	REG_INTERSECT_FUNC(ShapeType3d::CONVEX_MESH,	ShapeType3d::CAPSULE,			IntersectGJKSolver);
 	REG_INTERSECT_FUNC(ShapeType3d::CONVEX_MESH,	ShapeType3d::CONVEX_MESH,		IntersectGJKSolver);
+	REG_INTERSECT_FUNC(ShapeType3d::HEIGHTFIELD,	ShapeType3d::HEIGHTFIELD,		IntersectNotSupport);
+	REG_INTERSECT_FUNC(ShapeType3d::HEIGHTFIELD,	ShapeType3d::TRIANGLE_MESH,		IntersectNotSupport);
+	REG_INTERSECT_FUNC(ShapeType3d::TRIANGLE_MESH,	ShapeType3d::TRIANGLE_MESH,		IntersectNotSupport);
 	
+	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::BOX,				nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::SPHERE,			PenetrateBoxT_WS<Sphere3d>);
+	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::PLANE,				nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::CONVEX_MESH,		nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::HEIGHTFIELD,		nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::BOX, 			ShapeType3d::TRIANGLE_MESH,		nullptr);
 	REG_PENETRATE_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::SPHERE,			PenetrateSphereT<Sphere3d>);
+	REG_PENETRATE_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::PLANE,				PenetrateSphereT<Plane3d>);
+	REG_PENETRATE_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::CAPSULE,			PenetrateSphereT<Capsule3d>);
+	REG_PENETRATE_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::CONVEX_MESH,		nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::HEIGHTFIELD,		nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::SPHERE, 		ShapeType3d::TRIANGLE_MESH,		nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::CAPSULE, 		ShapeType3d::CAPSULE,			IntersectCapsuleT<Capsule3d>);
+	REG_PENETRATE_FUNC(ShapeType3d::CAPSULE, 		ShapeType3d::PLANE,				nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::CAPSULE, 		ShapeType3d::CONVEX_MESH,		nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::CAPSULE, 		ShapeType3d::HEIGHTFIELD,		nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::CAPSULE, 		ShapeType3d::TRIANGLE_MESH,		nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::CYLINDER,		ShapeType3d::BOX,				PenetrateEPASolver);
+	REG_PENETRATE_FUNC(ShapeType3d::CYLINDER,		ShapeType3d::PLANE,				PenetrateEPASolver);
+	REG_PENETRATE_FUNC(ShapeType3d::CYLINDER,		ShapeType3d::SPHERE,			PenetrateEPASolver);
+	REG_PENETRATE_FUNC(ShapeType3d::CYLINDER,		ShapeType3d::CYLINDER,			PenetrateEPASolver);
+	REG_PENETRATE_FUNC(ShapeType3d::CYLINDER,		ShapeType3d::CAPSULE,			PenetrateEPASolver);
+	REG_PENETRATE_FUNC(ShapeType3d::CYLINDER,		ShapeType3d::TRIANGLE,			PenetrateEPASolver);
+	REG_PENETRATE_FUNC(ShapeType3d::CYLINDER,		ShapeType3d::HEIGHTFIELD,		PenetrateNotSupport);
+	REG_PENETRATE_FUNC(ShapeType3d::CYLINDER,		ShapeType3d::TRIANGLE_MESH,		PenetrateNotSupport);
+	REG_PENETRATE_FUNC(ShapeType3d::CONVEX_MESH,	ShapeType3d::PLANE,				nullptr);
+	REG_PENETRATE_FUNC(ShapeType3d::HEIGHTFIELD,	ShapeType3d::HEIGHTFIELD,		PenetrateNotSupport);
+	REG_PENETRATE_FUNC(ShapeType3d::HEIGHTFIELD,	ShapeType3d::TRIANGLE_MESH,		PenetrateNotSupport);
+	REG_PENETRATE_FUNC(ShapeType3d::TRIANGLE_MESH,	ShapeType3d::TRIANGLE_MESH,		PenetrateNotSupport);
 	
 	REG_SWEEP_FUNC(ShapeType3d::SPHERE, 			ShapeType3d::SPHERE,			SweepSphereT<Sphere3d>);
 }

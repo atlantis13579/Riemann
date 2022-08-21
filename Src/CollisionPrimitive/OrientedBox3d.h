@@ -41,6 +41,8 @@ public:
 	bool 	IntersectSphere(const Vector3& _Center, float _Radius) const;
 	bool 	IntersectCapsule(const Vector3& X0, const Vector3 &X1, float _Radius) const;
 	bool 	IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3 &C) const;
+	
+	bool	PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const;
 
 	Vector3	ClosestPointToPoint(const Vector3& Point) const;
 	float 	SqrDistanceToPoint(const Vector3& Point) const;

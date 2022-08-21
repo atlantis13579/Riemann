@@ -2,10 +2,12 @@
 #include <assert.h>
 #include <algorithm>
 #include <random>
+
+#include "Sphere3d.h"
 #include "../Maths/Maths.h"
 #include "Ray3d.h"
 #include "Triangle3d.h"
-#include "Sphere3d.h"
+#include "Segment3d.h"
 
 static const float kSphereEnlargeFactor = 1e-6f;		// avoid floating error
 
@@ -145,26 +147,10 @@ bool Sphere3d::IntersectSphere(const Vector3& _Center, float _Radius) const
 	return SphereIntersectSphere(Center, Radius, _Center, _Radius);
 }
 
-bool Sphere3d::PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const
+bool Sphere3d::IntersectCapsule(const Vector3& X0, const Vector3& X1, float rRadius) const
 {
-	float SqrDist = (Center - rCenter).SquareLength();
-	if (SqrDist > (Radius + rRadius) * (Radius + rRadius))
-	{
-		return false;
-	}
-	
-	*Normal = Center - rCenter;
-	float len = Normal->Length();
-	if (len < 1e-6f)
-	{
-		*Normal = Vector3::UnitY();
-	}
-	else
-	{
-		*Normal = *Normal / len;
-	}
-	*Depth = Radius + rRadius - len;
-	return true;
+	float SqrDist = Segment3d::SqrDistancePointToSegment(Center, X0, X1);
+	return SqrDist <= (Radius + rRadius) * (Radius + rRadius);
 }
 
 // static
@@ -239,6 +225,153 @@ bool Sphere3d::SphereIntersectSphere(const Vector3& Center, float Radius, const 
 {
 	float SqrDist = (Center - rCenter).SquareLength();
 	return SqrDist <= (Radius + rRadius) * (Radius + rRadius);
+}
+
+bool Sphere3d::PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const
+{
+	float SqrDist = (Center - rCenter).SquareLength();
+	if (SqrDist > (Radius + rRadius) * (Radius + rRadius))
+	{
+		return false;
+	}
+	
+	*Normal = Center - rCenter;
+	float len = Normal->Length();
+	if (len < 1e-6f)
+	{
+		*Normal = Vector3::UnitY();
+	}
+	else
+	{
+		*Normal = *Normal / len;
+	}
+	*Depth = Radius + rRadius - len;
+	return true;
+}
+
+bool Sphere3d::PenetratePlane(const Vector3 &pNormal, float D, Vector3 *Normal, float *Depth) const
+{
+	const float d = (Center + pNormal * D).Dot(pNormal);
+	if (d > Radius)
+	{
+		return false;
+	}
+
+	*Normal	= pNormal;
+	*Depth = Radius - d;
+	return true;
+}
+
+bool Sphere3d::PenetrateCapsule(const Vector3 &X0, const Vector3 &X1, float rRadius, Vector3 *Normal, float *Depth) const
+{
+	const float s = rRadius + Radius;
+	Vector3 Closest = Segment3d::ClosestPointOnSegmentToPoint(Center, X0, X1);
+	if((Center - Closest).SquareLength() > s * s)
+	{
+		return false;
+	}
+
+	*Normal = Center - Closest;
+	
+	const float len = Normal->Length();
+	if (len < 1e-6f)
+	{
+		*Normal = Vector3::UnitY();
+	}
+	else
+	{
+		*Normal /= len;
+	}
+	*Depth = s - len;
+	return true;
+}
+
+bool Sphere3d::PenetrateOBB(const Vector3 &rCenter, const Vector3 &rExtent, const Matrix3& rRot, Vector3 *Normal, float *Depth) const
+{
+	const Vector3 Delta = Center - rCenter;
+	Vector3 localDelta = Delta * rRot;
+
+	bool outside = false;
+
+	if (localDelta.x < -rExtent.x)
+	{
+		outside = true;
+		localDelta.x = -rExtent.x;
+	}
+	else if (localDelta.x >  rExtent.x)
+	{
+		outside = true;
+		localDelta.x = rExtent.x;
+	}
+
+	if (localDelta.y < -rExtent.y)
+	{
+		outside = true;
+		localDelta.y = -rExtent.y;
+	}
+	else if (localDelta.y >  rExtent.y)
+	{
+		outside = true;
+		localDelta.y = rExtent.y;
+	}
+
+	if (localDelta.z < -rExtent.z)
+	{
+		outside = true;
+		localDelta.z =-rExtent.z;
+	}
+	else if (localDelta.z >  rExtent.z)
+	{
+		outside = true;
+		localDelta.z = rExtent.z;
+	}
+
+	if (outside)
+	{
+		*Normal = Delta - rRot * localDelta;
+		const float sqr = Normal->SquareLength();
+		if (sqr > Radius * Radius)
+			return false;
+		const float len = sqrtf(sqr);
+
+		*Depth = len - Radius;
+		*Normal /= len;
+		return true;
+	}
+	
+	Vector3 localNormal;
+	Vector3 d = rExtent - localDelta.Abs();
+
+	if (d.y < d.x)
+	{
+		if (d.y < d.z)
+		{
+			localNormal = Vector3(0.0f, localDelta.y > 0.0f ? 1.0f : -1.0f, 0.0f);
+			*Depth = -d.y;
+		}
+		else
+		{
+			localNormal = Vector3(0.0f,0.0f, localDelta.z > 0.0f ? 1.0f : -1.0f);
+			*Depth = -d.z;
+		}
+	}
+	else
+	{
+		if (d.x < d.z)
+		{
+			localNormal = Vector3(localDelta.x > 0.0f ? 1.0f : -1.0f, 0.0f, 0.0f);
+			*Depth = -d.x;
+		}
+		else
+		{
+			localNormal = Vector3(0.0f,0.0f, localDelta.z > 0.0f ? 1.0f : -1.0f);
+			*Depth = -d.z;
+		}
+	}
+
+	*Normal = rRot * localNormal;
+	*Depth -= Radius;
+	return true;
 }
 
 bool Sphere3d::SweepAABB(const Vector3 &Direction, const Vector3& bmin, const Vector3& bmax, Vector3 *n, float *t) const

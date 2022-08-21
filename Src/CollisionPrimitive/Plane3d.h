@@ -8,11 +8,6 @@
 #include "../Maths/Matrix3.h"
 #include "../Maths/Box3d.h"
 
-const float kEpsilonPlane = 0.000001f;
-const float kHalfThickness = 1.0f;
-const float kPlaneSmallThickness = 0.0001f;
-const float kPlaneRadius = 1000.0f;
-
 class Plane3d
 {
 public:
@@ -64,6 +59,8 @@ public:
 	bool			IntersectPlane(const Vector3& _Normal, float _D) const;
 	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
+	bool			PenetrateSphere(const Vector3 &Center, float Radius, Vector3 *normal, float *depth) const;
+	
 	static bool 	GetIntersection(const Plane3d& p1, const Plane3d& p2, Vector3 &Origin, Vector3 &Dir);
 	static bool 	GetIntersection(const Plane3d& p1, const Plane3d& p2, const Plane3d& p3, Vector3 &p);
 	static float	SignedDistanceToPlane(const Vector3& Point, const Vector3& Normal, const Vector3& Origin);
@@ -74,18 +71,7 @@ public:
 	float			DistanceToSegment(const Vector3& P0, const Vector3& P1) const;
 	float			DistanceToTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
-	static float	PlaneRadius()
-	{
-		return kPlaneRadius;
-	}
-
-	static float	VerySmallThickness()
-	{
-		return kPlaneSmallThickness;
-	}
-	
 	float			GetVolume() const { return 0.0f; }
-
 	Box3d			GetBoundingVolume() const;
 
 	bool			PerpendicularTo(const Vector3& Axis) const;
@@ -93,13 +79,13 @@ public:
 	bool			ParallelToXZ() const;
 	bool			ParallelToYZ() const;
 
-	Matrix3		GetInertiaTensor(float Mass) const
+	Matrix3			GetInertiaTensor(float Mass) const
 	{
 		// TODO
 		return Matrix3(1, 1, 1);
 	}
 
-	Vector3		GetSupport(const Vector3& Direction) const;
+	Vector3			GetSupport(const Vector3& Direction) const;
 
 	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
 

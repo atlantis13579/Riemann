@@ -214,6 +214,58 @@ bool Capsule3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vect
 	return true;
 }
 
+bool Capsule3d::PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const
+{
+	const float s = rRadius + Radius;
+	Vector3 Closest = Segment3d::ClosestPointOnSegmentToPoint(rCenter, X0, X1);
+	if((rCenter - Closest).SquareLength() > s * s)
+	{
+		return false;
+	}
+
+	*Normal = rCenter - Closest;
+	
+	const float len = Normal->Length();
+	if (len < 1e-6f)
+	{
+		*Normal = Vector3::UnitY();
+	}
+	else
+	{
+		*Normal /= len;
+	}
+	*Normal = -*Normal;
+	*Depth = -(s - len);
+	return true;
+}
+
+bool Capsule3d::PenetrateCapsule(const Vector3 &P0, const Vector3 &P1, float rRadius, Vector3 *Normal, float *Depth) const
+{
+	Vector3 s, t;
+	Segment3d::ClosestPointsBetweenSegmentsEx(X0, X1, P0, P1, s, t);
+
+	const float r2 = Radius + rRadius;
+
+	if((s - t).SquareLength() > r2 * r2)
+	{
+		return false;
+	}
+
+	*Normal = s - t;
+
+	const float len = Normal->Length();
+	if (len < 1e-6f)
+	{
+		*Normal = Vector3::UnitY();
+	}
+	else
+	{
+		*Normal /= len;
+	}
+	*Depth = r2 - len;
+	return true;
+}
+
 Vector3 Capsule3d::GetSupport(const Vector3& X0, const Vector3& X1, float Radius, const Vector3& Direction)
 {
 	Vector3 Axis = X1 - X0;
@@ -393,3 +445,4 @@ void Capsule3d::GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_
 		Indices.push_back(baseIndex + i);
 	}
 }
+

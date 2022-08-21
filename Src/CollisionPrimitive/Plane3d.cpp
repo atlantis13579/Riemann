@@ -1,6 +1,11 @@
 
 #include "Plane3d.h"
 
+const float kEpsilonPlane = 0.000001f;
+const float kHalfThickness = 1.0f;
+const float kPlaneSmallThickness = 0.0001f;
+const float kPlaneRadius = 1000.0f;
+
 bool Plane3d::IntersectPoint(const Vector3& Point) const
 {
 	const float det = Point.Dot(Normal) + D;
@@ -176,9 +181,22 @@ bool Plane3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vector
 	return Dist > 0.0f;
 }
 
+bool Plane3d::PenetrateSphere(const Vector3 &Center, float Radius, Vector3 *normal, float *depth) const
+{
+	const float d = SignedDistanceTo(Center);
+	if (d > Radius)
+	{
+		return false;
+	}
+
+	*normal	= -Normal;
+	*depth = -(Radius - d);
+	return true;
+}
+
 Box3d Plane3d::GetBoundingVolume() const
 {
-	const float kMaxBV = PlaneRadius();
+	const float kMaxBV = kPlaneRadius;
 	Box3d Box(-kMaxBV, kMaxBV);
 
 	if (ParallelToXY())
@@ -186,7 +204,7 @@ Box3d Plane3d::GetBoundingVolume() const
 		if (Normal.z > kEpsilonPlane)
 		{
 			Box.mMin.z = -D / Normal.z - kHalfThickness;
-			Box.mMax.z = -D / Normal.z + kHalfThickness;
+			Box.mMax.z = -D / Normal.z + kPlaneSmallThickness;
 		}
 	}
 
@@ -195,7 +213,7 @@ Box3d Plane3d::GetBoundingVolume() const
 		if (Normal.x > kEpsilonPlane)
 		{
 			Box.mMin.x = -D / Normal.x - kHalfThickness;
-			Box.mMax.x = -D / Normal.x + kHalfThickness;
+			Box.mMax.x = -D / Normal.x + kPlaneSmallThickness;
 		}
 	}
 
@@ -204,7 +222,7 @@ Box3d Plane3d::GetBoundingVolume() const
 		if (Normal.y > kEpsilonPlane)
 		{
 			Box.mMin.y = -D / Normal.y - kHalfThickness;
-			Box.mMax.y = -D / Normal.y + kHalfThickness;
+			Box.mMax.y = -D / Normal.y + kPlaneSmallThickness;
 		}
 	}
 
@@ -321,10 +339,10 @@ void Plane3d::GetVerties(Vector3* v, float Radius)
 	Vector3 v2 = Normal.Cross(v1);
 
 	Vector3 Origin = GetOrigin();
-	v[0] = Origin + v1 * Radius + Normal * kHalfThickness;
-	v[1] = Origin + v2 * Radius + Normal * kHalfThickness;
-	v[2] = Origin + v1 * -Radius + Normal * kHalfThickness;
-	v[3] = Origin + v2 * -Radius + Normal * kHalfThickness;
+	v[0] = Origin + v1 * Radius;
+	v[1] = Origin + v2 * Radius;
+	v[2] = Origin + v1 * -Radius;
+	v[3] = Origin + v2 * -Radius;
 	return;
 }
 

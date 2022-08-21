@@ -1,6 +1,7 @@
 
 #include "OrientedBox3d.h"
 #include "AxisAlignedBox3d.h"
+#include "Sphere3d.h"
 
 // static
 OrientedBox3d OrientedBox3d::ComputeBoundingOBB_PCA(const Vector3 *points, int n)
@@ -240,4 +241,16 @@ bool OrientedBox3d::IntersectTriangle(const Vector3& A, const Vector3& B, const 
 {
 	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
 	return aabb.IntersectTriangle(A * Rotation, B * Rotation, C * Rotation);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
+}
+
+bool OrientedBox3d::PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const
+{
+	Sphere3d sphere(rCenter, rRadius);
+	if (sphere.PenetrateOBB(Center, Extent, Rotation, Normal, Depth))
+	{
+		*Normal = -*Normal;
+		*Depth = -*Depth;
+		return true;
+	}
+	return false;
 }

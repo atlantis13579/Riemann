@@ -37,17 +37,23 @@ public:
 public:
 	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 	static bool		RayIntersectSphere(const Vector3& Origin, const Vector3& Direction, const Vector3& Center, float Radius, float* t);
+	
 	bool			IntersectPoint(const Vector3& Point) const;
 	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	bool			IntersectSphere(const Vector3 &rCenter, float rRadius) const;
+	bool			IntersectCapsule(const Vector3& X0, const Vector3& X1, float rRadius) const;
 	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3 &C) const;
-	bool			PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const;
 	static bool		SphereIntersectSphere(const Vector3& Center, float Radius, const Vector3& rCenter, float rRadius);
+	
+	bool			PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const;
+	bool			PenetratePlane(const Vector3 &pNormal, float D, Vector3 *Normal, float *Depth) const;
+	bool			PenetrateCapsule(const Vector3 &X0, const Vector3 &X1, float rRadius, Vector3 *Normal, float *Depth) const;
+	bool			PenetrateOBB(const Vector3 &rCenter, const Vector3 &rExtent, const Matrix3& rRot, Vector3 *Normal, float *Depth) const;
+	
 	bool 			SweepAABB(const Vector3 &Direction, const Vector3& bmin, const Vector3& bmax, Vector3 *n, float *t) const;
 	bool			SweepSphere(const Vector3 &Direction, const Vector3 &rCenter, float rRadius, Vector3 *n, float *t) const;
 	bool 			SweepPlane(const Vector3 &Direction, const Vector3 &Normal, float D, Vector3 *n, float *t) const;
 	
-
 	static Box3d	CalcBoundingVolume(const Vector3& Center, float Radius)
 	{
 		Box3d Box;

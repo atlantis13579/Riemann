@@ -175,7 +175,14 @@ bool		Geometry::Penetration(const Geometry* Geom, Vector3 *Normal, float* Depth)
 	func = GeometryIntersection::GetPenetrationFunc(Geom->GetShapeType(), m_Type);
 	if (func)
 	{
-		return func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), Geom->GetCenterOfMassTransform(), &m_CenterOfMassTransform, Normal, Depth);
+		bool succ = func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), Geom->GetCenterOfMassTransform(), &m_CenterOfMassTransform, Normal, Depth);
+		if (succ)
+		{
+			*Normal = -*Normal;
+			*Depth = -*Depth;
+			return true;
+		}
+		return false;
 	}
 
 	assert(false);

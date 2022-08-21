@@ -81,12 +81,16 @@ public:
 	}
 
 	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
+	
 	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	bool			IntersectSphere(const Vector3& rCenter, float rRadius) const;
 	bool 			IntersectSegment(const Vector3& X0, const Vector3 &X1) const;
-	bool			IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
+	bool			IntersectCapsule(const Vector3& P0, const Vector3& P1, float rRadius) const;
 	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
+	bool			PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const;
+	bool			PenetrateCapsule(const Vector3 &P0, const Vector3 &P1, float rRadius, Vector3 *Normal, float *Depth) const;
+	
 	float			GetVolume() const
 	{
 		return GetVolume(Radius, GetHeight());
