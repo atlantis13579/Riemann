@@ -156,7 +156,7 @@ void		RigidBodySimulation::SimulateST(float dt)
 	
 	if (m_Solver && !manifolds.empty())
 	{
-		flag |= USE_SOLVER_VW;
+		// flag |= USE_SOLVER_VW;
 		
 		m_Solver->PreResolve(geoms);
 		
