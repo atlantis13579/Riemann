@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "Box3d.h"
@@ -88,21 +87,21 @@ public:
 	{
 		for (int i = 0; i < 6; i++)
 		{
-			if (m_Frustum[i][0] * box.Min.x + m_Frustum[i][1] * box.Min.y + m_Frustum[i][2] * box.Min.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * box.mMin.x + m_Frustum[i][1] * box.mMin.y + m_Frustum[i][2] * box.mMin.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.Max.x + m_Frustum[i][1] * box.Min.y + m_Frustum[i][2] * box.Min.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * box.mMax.x + m_Frustum[i][1] * box.mMin.y + m_Frustum[i][2] * box.mMin.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.Min.x + m_Frustum[i][1] * box.Max.y + m_Frustum[i][2] * box.Min.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * box.mMin.x + m_Frustum[i][1] * box.mMax.y + m_Frustum[i][2] * box.mMin.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.Max.x + m_Frustum[i][1] * box.Max.y + m_Frustum[i][2] * box.Min.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * box.mMax.x + m_Frustum[i][1] * box.mMax.y + m_Frustum[i][2] * box.mMin.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.Min.x + m_Frustum[i][1] * box.Min.y + m_Frustum[i][2] * box.Max.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * box.mMin.x + m_Frustum[i][1] * box.mMin.y + m_Frustum[i][2] * box.mMax.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.Max.x + m_Frustum[i][1] * box.Min.y + m_Frustum[i][2] * box.Max.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * box.mMax.x + m_Frustum[i][1] * box.mMin.y + m_Frustum[i][2] * box.mMax.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.Min.x + m_Frustum[i][1] * box.Max.y + m_Frustum[i][2] * box.Max.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * box.mMin.x + m_Frustum[i][1] * box.mMax.y + m_Frustum[i][2] * box.mMax.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.Max.x + m_Frustum[i][1] * box.Max.y + m_Frustum[i][2] * box.Max.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * box.mMax.x + m_Frustum[i][1] * box.mMax.y + m_Frustum[i][2] * box.mMax.z + m_Frustum[i][3] > 0)
 				continue;
 			return false;
 		}
