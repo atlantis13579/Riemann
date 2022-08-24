@@ -100,14 +100,23 @@ void ContactJacobianSolver::SetupPositionPass(Contact* contact, float dt)
 	m_jB.Setup(contact, bodyA, bodyB, phase + indexA, phase + indexB, m_contact->Binormal, 0.0f);
 }
 
-void ContactJacobianSolver::SetupVelocityPass(int n)
+void ContactJacobianSolver::SetupVelocityPass(Contact* contact, float dt, int n)
 {
-	m_jN.m_ga = phase + n + indexA;
-	m_jN.m_gb = phase + n + indexB;
-	m_jT.m_ga = phase + n + indexA;
-	m_jT.m_gb = phase + n + indexB;
-	m_jB.m_ga = phase + n + indexA;
-	m_jB.m_gb = phase + n + indexB;
+	float restitutionA = bodyA->GetRestitution();
+	float restitutionB = bodyB->GetRestitution();
+	float restitution = restitutionA * restitutionB;
+	Vector3 va = phase[n + indexA].v;
+	Vector3 wa = phase[n + indexA].w;
+	Vector3 vb = phase[n + indexB].v;
+	Vector3 wb = phase[n + indexB].w;
+	Vector3 relativeVelocity = vb + wb.Cross(contact->PositionLocalB) - va - wa.Cross(contact->PositionLocalA);
+	float closingSpeed = relativeVelocity.Dot(m_contact->Normal);
+	closingSpeed = std::min(closingSpeed + kRestitutionSlop, 0.0f);
+	closingSpeed = closingSpeed < -kRestitutionSlop ? closingSpeed : 0.0f;
+	float bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingSpeed;
+	m_jN.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Normal, bias);
+	m_jT.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Tangent, 0.0f);
+	m_jB.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Binormal, 0.0f);
 }
 
 void ContactJacobianSolver::Solve()

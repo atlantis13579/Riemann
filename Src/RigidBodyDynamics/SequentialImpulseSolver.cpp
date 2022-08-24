@@ -35,9 +35,7 @@ public:
 		}
 		for (int i = n; i < 2 * n; ++i)
 		{
-			RigidBody* body = geoms[i - n]->GetParent<RigidBody>();
-			m_Buffer[i].v = body->GetLinearVelocity();
-			m_Buffer[i].w = body->GetAngularVelocity();
+			m_Buffer[i].v = m_Buffer[i].w = Vector3(INFINITY, INFINITY, INFINITY);
 		}
 	}
 
@@ -50,15 +48,16 @@ public:
 
 		WarmStart::ApplyVelocityConstraint(geoms, manifolds, dt);
 
+		int n = (int)geoms.size();
 		std::vector<ContactJacobianSolver> velocityConstraints;
 		for (size_t i = 0; i < manifolds.size(); ++i)
 		{
-			for (int j = 0; j < manifolds[i]->NumContactPointCount; ++j)
-			{
-				ContactManifold* manifold = manifolds[i];
-				RigidBody* bodyA = geoms[manifold->indexA]->GetParent<RigidBody>();
-				RigidBody* bodyB = geoms[manifold->indexB]->GetParent<RigidBody>();
+			ContactManifold* manifold = manifolds[i];
+			RigidBody* bodyA = geoms[manifold->indexA]->GetParent<RigidBody>();
+			RigidBody* bodyB = geoms[manifold->indexB]->GetParent<RigidBody>();
 
+			for (int j = 0; j < manifold->NumContactPointCount; ++j)
+			{
 				velocityConstraints.push_back(ContactJacobianSolver(
 					m_Buffer.data(), manifold->indexA, manifold->indexB, bodyA, bodyB));
 				velocityConstraints.back().SetupPositionPass(&manifold->ContactPoints[j], dt);
@@ -91,17 +90,31 @@ public:
 				velocityConstraints[k].Finalize();
 			}
 			
-			for (size_t k = 0; k < velocityConstraints.size(); ++k)
+			int k = 0;
+			for (size_t i = 0; i < manifolds.size(); ++i)
 			{
-				velocityConstraints[k].SetupVelocityPass((int)m_Buffer.size() / 2);
+				ContactManifold* manifold = manifolds[i];
+				RigidBody* bodyA = geoms[manifold->indexA]->GetParent<RigidBody>();
+				RigidBody* bodyB = geoms[manifold->indexB]->GetParent<RigidBody>();
+
+				m_Buffer[n + manifold->indexA].v = bodyA->GetLinearVelocity();
+				m_Buffer[n + manifold->indexA].w = bodyA->GetAngularVelocity();
+				m_Buffer[n + manifold->indexB].v = bodyB->GetLinearVelocity();
+				m_Buffer[n + manifold->indexB].w = bodyB->GetAngularVelocity();
+
+				for (int j = 0; j < manifold->NumContactPointCount; ++j)
+				{
+					velocityConstraints[k].SetupVelocityPass(&manifold->ContactPoints[j], dt, n);
+					k++;
+				}
 			}
 			
 			it = 0;
 			while (it++ <= m_nMaxVelocityIterations)
 			{
-				for (size_t k = 0; k < velocityConstraints.size(); ++k)
+				for (size_t i = 0; i < velocityConstraints.size(); ++i)
 				{
-					velocityConstraints[k].Solve();
+					velocityConstraints[i].Solve();
 				}
 			}
 			

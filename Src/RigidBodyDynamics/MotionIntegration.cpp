@@ -24,7 +24,7 @@ static void UpdateBody(RigidBodyDynamic* Body)
 	}
 }
 
-static int Integrate_ExplicitEuler(const std::vector<RigidBodyDynamic*>& Bodies, float dt, bool solver_vw)
+static int Integrate_ExplicitEuler(const std::vector<RigidBodyDynamic*>& Bodies, float dt)
 {
 	int count = 0;
 	for (size_t i = 0; i < Bodies.size(); ++i)
@@ -47,11 +47,12 @@ static int Integrate_ExplicitEuler(const std::vector<RigidBodyDynamic*>& Bodies,
 		Body->V = (Body->V + Body->InvMass * Body->ExtForce * dt) * LinearDamping;		// V' = Force / mass
 		Body->W = (Body->W + invInertiaWorld * Body->ExtTorque * dt) * AngularDamping;	// W' = Torque / invInertia
 		
-		if (solver_vw)
-		{
-			Body->V = Body->SolverV;
-			Body->W = Body->SolverW;
-		}
+		//if (Body->SolverV.x < INFINITY)
+		//{
+		//	Body->V = Body->SolverV;
+		//	Body->W = Body->SolverW;
+		//}
+		Body->SolverV.x = INFINITY;
 		
 		UpdateBody(Body);
 		count++;
@@ -59,7 +60,7 @@ static int Integrate_ExplicitEuler(const std::vector<RigidBodyDynamic*>& Bodies,
 	return count;
 }
 
-static int Integrate_SymplecticEuler(const std::vector<RigidBodyDynamic*>& Bodies, float dt, bool solver_vw)
+static int Integrate_SymplecticEuler(const std::vector<RigidBodyDynamic*>& Bodies, float dt)
 {
 	int count = 0;
 	for (size_t i = 0; i < Bodies.size(); ++i)
@@ -82,11 +83,12 @@ static int Integrate_SymplecticEuler(const std::vector<RigidBodyDynamic*>& Bodie
 		Quaternion dQ = 0.5f * Quaternion(0.0f, Body->W) * Body->Q;				// Q' = 0.5 * W * Q
 		Body->Q = (Body->Q + dQ * dt).Unit();
 		
-		if (solver_vw)
-		{
-			Body->V = Body->SolverV;
-			Body->W = Body->SolverW;
-		}
+		//if (Body->SolverV.x < INFINITY)
+		//{
+		//	Body->V = Body->SolverV;
+		//	Body->W = Body->SolverW;
+		//}
+		//Body->SolverV.x = INFINITY;
 		
 		UpdateBody(Body);
 		count++;
@@ -98,14 +100,13 @@ static int Integrate_SymplecticEuler(const std::vector<RigidBodyDynamic*>& Bodie
 void MotionIntegration::Integrate(std::vector<RigidBodyDynamic*> Bodies, float dt, uint8_t flag)
 {
 	IntegrateMethod method = (IntegrateMethod)(flag & 0x01);
-	bool solver_vw = flag & USE_SOLVER_VW;
 	switch (method)
 	{
 	case IntegrateMethod::ExplicitEuler:
-		Integrate_ExplicitEuler(Bodies, dt, solver_vw);
+		Integrate_ExplicitEuler(Bodies, dt);
 		break;
 	case IntegrateMethod::SymplecticEuler:
-		Integrate_SymplecticEuler(Bodies, dt, solver_vw);
+		Integrate_SymplecticEuler(Bodies, dt);
 		break;
 	default:
 		assert(false);

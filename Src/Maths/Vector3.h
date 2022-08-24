@@ -95,7 +95,7 @@ public:
 		return x * x + y * y + z * z;
 	}
 
-	TVector3<T>& operator=(const TVector3<T>& v)
+	inline TVector3<T>& operator=(const TVector3<T>& v)
 	{
 		x = v.x;
 		y = v.y;

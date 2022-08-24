@@ -61,7 +61,7 @@ struct ContactJacobianSolver
 	}
 
 	void	SetupPositionPass(Contact* contact, float dt);
-	void	SetupVelocityPass(int n);
+	void	SetupVelocityPass(Contact* contact, float dt, int n);
 	void	Solve();
 	float	GetSquaredError() const;
 	void	Finalize();

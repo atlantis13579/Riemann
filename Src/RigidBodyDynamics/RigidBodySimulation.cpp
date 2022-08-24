@@ -152,12 +152,8 @@ void		RigidBodySimulation::SimulateST(float dt)
 		m_NPhase->CollisionDetection(geoms, overlaps, &manifolds);
 	}
 
-	uint8_t flag = (uint8_t)m_IntegrateMethod;
-	
 	if (m_Solver && !manifolds.empty())
 	{
-		// flag |= USE_SOLVER_VW;
-		
 		m_Solver->PreResolve(geoms);
 		
 		const bool BuildIslands = true;
@@ -182,7 +178,7 @@ void		RigidBodySimulation::SimulateST(float dt)
 
 	PreIntegrate(dt);
 
-	MotionIntegration::Integrate(m_DynamicBodies, dt, flag);
+	MotionIntegration::Integrate(m_DynamicBodies, dt, (uint8_t)m_IntegrateMethod);
 
 	PostIntegrate(dt);
 
