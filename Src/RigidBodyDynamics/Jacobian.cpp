@@ -113,7 +113,7 @@ void ContactJacobianSolver::SetupVelocityPass(Contact* contact, float dt, int n)
 	float closingSpeed = relativeVelocity.Dot(m_contact->Normal);
 	closingSpeed = std::min(closingSpeed + kRestitutionSlop, 0.0f);
 	closingSpeed = closingSpeed < -kRestitutionSlop ? closingSpeed : 0.0f;
-	float bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingSpeed;
+	float bias = restitution * closingSpeed;
 	m_jN.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Normal, bias);
 	m_jT.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Tangent, 0.0f);
 	m_jB.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Binormal, 0.0f);

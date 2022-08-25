@@ -47,13 +47,6 @@ static int Integrate_ExplicitEuler(const std::vector<RigidBodyDynamic*>& Bodies,
 		Body->V = (Body->V + Body->InvMass * Body->ExtForce * dt) * LinearDamping;		// V' = Force / mass
 		Body->W = (Body->W + invInertiaWorld * Body->ExtTorque * dt) * AngularDamping;	// W' = Torque / invInertia
 		
-		//if (Body->SolverV.x < INFINITY)
-		//{
-		//	Body->V = Body->SolverV;
-		//	Body->W = Body->SolverW;
-		//}
-		Body->SolverV.x = INFINITY;
-		
 		UpdateBody(Body);
 		count++;
 	}
@@ -82,13 +75,6 @@ static int Integrate_SymplecticEuler(const std::vector<RigidBodyDynamic*>& Bodie
 		Body->X = Body->X + (Body->V) * dt;										// X' = v
 		Quaternion dQ = 0.5f * Quaternion(0.0f, Body->W) * Body->Q;				// Q' = 0.5 * W * Q
 		Body->Q = (Body->Q + dQ * dt).Unit();
-		
-		//if (Body->SolverV.x < INFINITY)
-		//{
-		//	Body->V = Body->SolverV;
-		//	Body->W = Body->SolverW;
-		//}
-		//Body->SolverV.x = INFINITY;
 		
 		UpdateBody(Body);
 		count++;
