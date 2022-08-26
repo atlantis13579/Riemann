@@ -45,17 +45,17 @@ public:
 		mat[2][0] = c0.z; mat[2][1] = c1.z; mat[2][2] = c2.z;
 	}
 	
-	Matrix3(const Matrix3& m)
+	inline Matrix3(const Matrix3& m)
 	{
 		memcpy(mat, m.mat, sizeof(mat));
 	}
 	
-	void LoadZero()
+	inline void LoadZero()
 	{
 		memset(mat, 0, sizeof(mat));
 	}
 	
-	void LoadIdentiry()
+	inline void LoadIdentiry()
 	{
 		mat[0][0] = 1; mat[0][1] = 0; mat[0][2] = 0;
 		mat[1][0] = 0; mat[1][1] = 1; mat[1][2] = 0;

@@ -35,17 +35,17 @@ public:
 		mat[1][0] = c0.y; mat[1][1] = c1.y;
 	}
 	
-	Matrix2(const Matrix2& mm)
+	inline Matrix2(const Matrix2& mm)
 	{
 		memcpy(mat, mm.mat, sizeof(mat));
 	}
 
-	void		LoadZero()
+	inline void		LoadZero()
 	{
 		memset(mat, 0, sizeof(mat));
 	}
 
-	void		LoadIdentiry()
+	inline void		LoadIdentiry()
 	{
 		mat[0][0] = 1; mat[0][1] = 0;
 		mat[1][0] = 0; mat[1][1] = 1;

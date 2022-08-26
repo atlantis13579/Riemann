@@ -83,30 +83,35 @@ public:
 		NormalizePlane(m_Frustum, FRONT);
 	}
 
-	bool FrustumIntersectAABB(const Box3d& box) const
+	bool FrustumIntersectAABB(const Vector3& mMin, const Vector3& mMax) const
 	{
 		for (int i = 0; i < 6; i++)
 		{
-			if (m_Frustum[i][0] * box.mMin.x + m_Frustum[i][1] * box.mMin.y + m_Frustum[i][2] * box.mMin.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * mMin.x + m_Frustum[i][1] * mMin.y + m_Frustum[i][2] * mMin.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.mMax.x + m_Frustum[i][1] * box.mMin.y + m_Frustum[i][2] * box.mMin.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * mMax.x + m_Frustum[i][1] * mMin.y + m_Frustum[i][2] * mMin.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.mMin.x + m_Frustum[i][1] * box.mMax.y + m_Frustum[i][2] * box.mMin.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * mMin.x + m_Frustum[i][1] * mMax.y + m_Frustum[i][2] * mMin.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.mMax.x + m_Frustum[i][1] * box.mMax.y + m_Frustum[i][2] * box.mMin.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * mMax.x + m_Frustum[i][1] * mMax.y + m_Frustum[i][2] * mMin.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.mMin.x + m_Frustum[i][1] * box.mMin.y + m_Frustum[i][2] * box.mMax.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * mMin.x + m_Frustum[i][1] * mMin.y + m_Frustum[i][2] * mMax.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.mMax.x + m_Frustum[i][1] * box.mMin.y + m_Frustum[i][2] * box.mMax.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * mMax.x + m_Frustum[i][1] * mMin.y + m_Frustum[i][2] * mMax.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.mMin.x + m_Frustum[i][1] * box.mMax.y + m_Frustum[i][2] * box.mMax.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * mMin.x + m_Frustum[i][1] * mMax.y + m_Frustum[i][2] * mMax.z + m_Frustum[i][3] > 0)
 				continue;
-			if (m_Frustum[i][0] * box.mMax.x + m_Frustum[i][1] * box.mMax.y + m_Frustum[i][2] * box.mMax.z + m_Frustum[i][3] > 0)
+			if (m_Frustum[i][0] * mMax.x + m_Frustum[i][1] * mMax.y + m_Frustum[i][2] * mMax.z + m_Frustum[i][3] > 0)
 				continue;
 			return false;
 		}
 
 		return true;
+	}
+
+	bool FrustumIntersectAABB(const Box3d& box) const
+	{
+		return FrustumIntersectAABB(box.mMin, box.mMax);
 	}
 
 	bool PointInFrustum(const Vector3& vec) const
