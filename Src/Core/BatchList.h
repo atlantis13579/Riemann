@@ -19,6 +19,8 @@ public:
 
 	BatchList()
 	{
+		m_allocCount = 0;
+		m_freeList = nullptr;
 	}
 
 	void	Init(int nBatchs, int BatchSize)
