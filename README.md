@@ -28,13 +28,11 @@ Rigid Body Dynamics Simulation
     * Explicit Euler / Symplectic Euler / Implicit Euler / Verlet Integrator
     * Jacobian Matrix
     * Sequential Impulse Solver
-    * LCP Solver using Projected Gauss-Seidel
+    * Global LCP Solver using Projected Gauss-Seidel
 
 Position Based Dynamics
 
 Fluid Dynamics Solver
-
-Continuum Media Dynamics
 
 Vehicle Dynamics / Autonomous Driving Simulation
 
