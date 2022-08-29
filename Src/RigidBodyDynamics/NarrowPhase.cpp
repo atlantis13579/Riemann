@@ -8,6 +8,17 @@
 #include "../Collision/EPAPenetration.h"
 #include "../Collision/GJK.h"
 
+static bool ConstructSupportFace(Geometry* GeomA, Geometry* GeomB, const Vector3& penetration_normal, SupportFace& Face)
+{
+	SupportFace FaceA, FaceB;
+	GeomA->GetSupportFace_WorldSpace(-penetration_normal, FaceA);
+	GeomB->GetSupportFace_WorldSpace(penetration_normal, FaceB);
+
+	float mSpeculativeContactDistance = 0.02f;
+	bool succ = ClipPolygonAgainPolygon3D(FaceA.GetData(), FaceA.GetSize(), FaceB.GetData(), FaceB.GetSize(), penetration_normal, mSpeculativeContactDistance, Face.GetData(), Face.GetSizeData(), nullptr, nullptr);
+	return succ;
+}
+
 class NarrowPhase_GJKEPA : public NarrowPhase
 {
 public:
@@ -60,17 +71,6 @@ public:
 		}
 
 		return  true;
-	}
-
-	static bool ConstructSupportFace(Geometry* GeomA, Geometry* GeomB, const Vector3& penetration_normal, SupportFace &Face)
-	{
-		SupportFace FaceA, FaceB;
-		GeomA->GetSupportFace_WorldSpace(-penetration_normal, FaceA);
-		GeomB->GetSupportFace_WorldSpace(penetration_normal, FaceB);
-
-		float mSpeculativeContactDistance = 0.02f;
-		bool succ = ClipPolygonAgainPolygon3D(FaceA.GetData(), FaceA.GetSize(), FaceB.GetData(), FaceB.GetSize(), penetration_normal, mSpeculativeContactDistance, Face.GetData(), Face.GetSizeData(), nullptr, nullptr);
-		return succ;
 	}
 
 	void ConstructManifols(int indexA, int indexB, Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, std::vector<ContactManifold*>* manifolds)
