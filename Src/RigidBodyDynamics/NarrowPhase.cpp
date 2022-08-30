@@ -14,7 +14,7 @@ static bool ConstructSupportFace(Geometry* GeomA, Geometry* GeomB, const Vector3
 	GeomA->GetSupportFace_WorldSpace(-penetration_normal, FaceA);
 	GeomB->GetSupportFace_WorldSpace(penetration_normal, FaceB);
 
-	float mSpeculativeContactDistance = 0.02f;
+	const float mSpeculativeContactDistance = 0.02f;
 	bool succ = ClipPolygonAgainPolygon3D(FaceA.GetData(), FaceA.GetSize(), FaceB.GetData(), FaceB.GetSize(), penetration_normal, mSpeculativeContactDistance, Face.GetData(), Face.GetSizeData(), nullptr, nullptr);
 	return succ;
 }
