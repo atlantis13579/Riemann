@@ -473,7 +473,7 @@ void HeightField3d::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t
 	for (uint32_t i = 0; i < nX; i++)
 	for (uint32_t j = 0; j < nZ; j++)
 	{
-		Vertices[i * nZ + j] = Vector3(BV.mMin.x + DX * i, GetHeight(i * nZ + j), BV.mMin.z + DX * j);
+		Vertices[i * nZ + j] = Vector3(BV.mMin.x + DX * i, GetHeight(i * nZ + j), BV.mMin.z + DZ * j);
 	}
 
 	assert(Vertices.size() < 65535);

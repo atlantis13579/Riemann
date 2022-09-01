@@ -635,7 +635,7 @@ namespace PhysxFormat_41
 			bytesNeeded += sizeof(Vector3) * data.mNbHullVertices;
 			bytesNeeded += sizeof(uint8_t) * mnbEdges * 2;
 			bytesNeeded += sizeof(uint8_t) * data.mNbHullVertices * 3;
-			bytesNeeded += (data.mNbEdges & ~0x8000) ? (sizeof(uint16_t) * mnbEdges * 2) : 0;
+			bytesNeeded += (data.mNbEdges & 0x8000) ? (sizeof(uint16_t) * mnbEdges * 2) : 0;
 			bytesNeeded += sizeof(uint8_t) * nb;
 			const uint32_t mod = bytesNeeded % sizeof(float);
 			if (mod)
