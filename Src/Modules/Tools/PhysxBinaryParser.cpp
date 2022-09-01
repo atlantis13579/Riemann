@@ -146,7 +146,7 @@ public:
 
 	static Geometry* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj, bool shared_mem)
 	{
-		physx::ConvexMesh* Mesh = physxObj->convexMesh;
+		physx::GuConvexMesh* Mesh = physxObj->convexMesh;
 
 		Geometry* Geom = GeometryFactory::CreateConvexMesh();
 		ConvexMesh* ConvMesh = Geom->GetShapeObj<ConvexMesh>();
@@ -316,6 +316,182 @@ public:
 					if (geoms) geoms->push_back(g);
 					if (bodies) body->AddGeometry(g);
 				}
+			}
+
+			return;
+		}
+		else
+		{
+			// TODO
+			return;
+		}
+		return;
+	}
+
+	static void GenerateShapeTriangles(const physx::NpShape* shape, std::vector<Vector3>& vertices, std::vector<int>& indices, const Vector3& p, const Quaternion& q)
+	{
+		if (shape == nullptr)
+		{
+			return;
+		}
+
+		int Type = shape->getGeomType();
+		if (Type == physx::eCONVEXMESH)
+		{
+			physx::PxConvexMeshGeometry* convex = (physx::PxConvexMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.convex;
+			physx::ConvexHullData& hull = convex->convexMesh->mHullData;
+
+			Vector3 *v = (Vector3*)hull.getHullVertices();
+			PxU8* ind = hull.getVertexData8();
+
+			for (PxU8 i = 0; i < hull.mNbHullVertices; ++i)
+			{
+				vertices.push_back(q * v[i] + p);
+			}
+
+			int indices_begin = (int)vertices.size();
+			for (PxU8 i = 0; i < hull.mNbPolygons; ++i)
+			{
+				const physx::GuHullPolygonData& poly = hull.mPolygons[i];
+				for (PxU8 j = 1; j < poly.mNbVerts - 1; ++j)
+				{
+					indices.push_back(indices_begin + ind[poly.mVRef8]);
+					indices.push_back(indices_begin + ind[poly.mVRef8 + j]);
+					indices.push_back(indices_begin + ind[poly.mVRef8 + j + 1]);
+				}
+			}
+		}
+		else if (Type == physx::eTRIANGLEMESH)
+		{
+			int indices_begin = (int)vertices.size();
+
+			physx::PxTriangleMeshGeometry* pxMesh = (physx::PxTriangleMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.mesh;
+			const physx::PxRTreeTriangleMesh* Mesh = (const physx::PxRTreeTriangleMesh*)pxMesh->triangleMesh;
+
+			for (PxU32 i = 0; i < Mesh->mNbVertices; ++i)
+			{
+				vertices.push_back(q * Mesh->mVertices[i] + p);
+			}
+
+			if (Mesh->Is16BitIndices())
+			{
+				uint16_t* indices16 = (uint16_t*)Mesh->mTriangles;
+				for (PxU32 i = 0; i < Mesh->mNbTriangles; ++i)
+				{
+					uint16_t a = indices16[3 * i + 0];
+					uint16_t b = indices16[3 * i + 1];
+					uint16_t c = indices16[3 * i + 2];
+					indices.push_back(indices_begin + (int)a);
+					indices.push_back(indices_begin + (int)b);
+					indices.push_back(indices_begin + (int)c);
+				}
+			}
+			else
+			{
+				uint32_t* indices32 = (uint32_t*)Mesh->mTriangles;
+				for (PxU32 i = 0; i < Mesh->mNbTriangles; ++i)
+				{
+					uint32_t a = indices32[3 * i + 0];
+					uint32_t b = indices32[3 * i + 1];
+					uint32_t c = indices32[3 * i + 2];
+					indices.push_back(indices_begin + (int)a);
+					indices.push_back(indices_begin + (int)b);
+					indices.push_back(indices_begin + (int)c);
+				}
+			}
+		}
+		else if (Type == physx::eHEIGHTFIELD)
+		{
+			physx::PxHeightFieldGeometry* physxObj = (physx::PxHeightFieldGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.heightfield;
+			const physx::HeightField* pxhf = physxObj->heightField;
+			physx::PxHeightFieldSample* samples = pxhf->mData.samples;
+			const uint32_t					nCols = pxhf->mData.columns;
+			const uint32_t					nRows = pxhf->mData.rows;
+
+			TCE3<float>	ce = pxhf->mData.mAABB;
+			Vector3 Scale = Vector3(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
+			ce.Center *= Scale;
+			ce.Extent *= Scale;
+			TAABB3<float> BV = ce.GetAABB();
+			float DX = (BV.mMax.x - BV.mMin.x) / (nRows - 1);
+			float DZ = (BV.mMax.z - BV.mMin.z) / (nCols - 1);
+
+			int indices_begin = (int)vertices.size();
+
+			for (PxU32 i = 0; i < nRows; i++)
+			for (PxU32 j = 0; j < nCols; j++)
+			{
+				Vector3 v = Vector3(BV.mMin.x + DX * i, samples[i * nCols + j].height * Scale.y, BV.mMin.z + DZ * j);
+				vertices.push_back(q * v + p);
+			}
+
+			for (PxU32 i = 0; i < nRows - 1; i++)
+			for (PxU32 j = 0; j < nCols - 1; j++)
+			{
+				bool tessFlag = samples[j + i * nCols].materialIndex0 & 0x80;
+				uint16_t i0 = i * nCols + j;
+				uint16_t i1 = i * nCols + j + 1;
+				uint16_t i2 = (i + 1) * nCols + j;
+				uint16_t i3 = (i + 1) * nCols + j + 1;
+				// i2---i3
+				// |    |
+				// |    |
+				// i0---i1
+				uint8_t Hole0 = samples[j + i * nCols].materialIndex0;
+				uint8_t Hole1 = samples[j + i * nCols].materialIndex0;
+				
+				if (Hole0 != 0x7F)
+				{
+					indices.push_back(indices_begin + i2);
+					indices.push_back(indices_begin + i0);
+					indices.push_back(indices_begin + (tessFlag ? i3 : i1));
+				}
+				if (Hole1 != 0x7F)
+				{
+					indices.push_back(indices_begin + i3);
+					indices.push_back(indices_begin + (tessFlag ? i0 : i2));
+					indices.push_back(indices_begin + i1);
+				}
+			}
+		}
+		else
+		{
+			//	assert(false);
+		}
+	}
+
+	static void GenerateTriangles(void* px, int classType, uint64_t guid, std::vector<Vector3>& vertices, std::vector<int>& indices)
+	{
+		if (classType == physx::PxConcreteType::eMATERIAL)
+		{
+			physx::NpMaterial* material = (physx::NpMaterial*)px;
+			UNUSED(material);
+			// TODO
+			return;
+		}
+		else if (classType == physx::PxConcreteType::eRIGID_STATIC)
+		{
+			physx::NpRigidStatic* rigid = (physx::NpRigidStatic*)px;
+
+			int nShapes = rigid->GetNumShapes();
+			physx::NpShape* const* pShades = rigid->GetShapes();
+			for (int i = 0; i < nShapes; ++i)
+			{
+				GenerateShapeTriangles(pShades[i], vertices, indices, rigid->mRigidStatic.mStatic.mCore.body2World.p, rigid->mRigidStatic.mStatic.mCore.body2World.q);
+			}
+
+			return;
+		}
+		else if (classType == physx::PxConcreteType::eRIGID_DYNAMIC)
+		{
+			physx::NpRigidDynamic* rigid = (physx::NpRigidDynamic*)px;
+			const physx::PxsBodyCore& core = rigid->mBody.mBodyCore.mCore;
+
+			int nShapes = rigid->GetNumShapes();
+			physx::NpShape* const* pShades = rigid->GetShapes();
+			for (int i = 0; i < nShapes; ++i)
+			{
+				GenerateShapeTriangles(pShades[i], vertices, indices, core.body2World.p, core.body2World.q);
 			}
 
 			return;
@@ -605,4 +781,38 @@ void*	LoadPhysxBinaryMmap(const char* Filename, std::vector<RigidBody*>* bodies,
 	}
 
 	return addr;
+}
+
+bool	LoadPhysxBinaryTriangles(const char* Filename, std::vector<Vector3>& vertices, std::vector<int>& indices)
+{
+	vertices.clear();
+	indices.clear();
+
+	FILE* fp = fopen(Filename, "rb");
+	if (fp == nullptr)
+	{
+		return false;
+	}
+
+	std::vector<char> buffer;
+	fseek(fp, 0, SEEK_END);
+	uint64_t filesize = (uint64_t)ftell(fp);
+	fseek(fp, 0, 0);
+	buffer.resize(filesize + 127);
+	void* p = AlignMemory(&buffer[0], 128);
+	fread(p, 1, filesize, fp);
+	fclose(fp);
+
+	PhysxCollections collection;
+	if (!DeserializeFromBuffer(p, collection))
+	{
+		return false;
+	}
+
+	for (auto it : collection.mClass)
+	{
+		PhysxBinaryParser::GenerateTriangles(it.first, it.second, collection.mObjects[it.first], vertices, indices);
+	}
+
+	return collection.mObjects.size() > 0;
 }

@@ -175,7 +175,7 @@ namespace PhysxFormat_34
 
 	PX_DEFINE_TYPEINFO(PxBase, PxConcreteType::eUNDEFINED)
 	PX_DEFINE_TYPEINFO(PxMaterial, PxConcreteType::eMATERIAL)
-	PX_DEFINE_TYPEINFO(ConvexMesh, PxConcreteType::eCONVEX_MESH)
+	PX_DEFINE_TYPEINFO(GuConvexMesh, PxConcreteType::eCONVEX_MESH)
 	PX_DEFINE_TYPEINFO(TriangleMesh, PxConcreteType::eUNDEFINED)
 	PX_DEFINE_TYPEINFO(PxBVH33TriangleMesh, PxConcreteType::eTRIANGLE_MESH_BVH33)
 	PX_DEFINE_TYPEINFO(PxBVH34TriangleMesh, PxConcreteType::eTRIANGLE_MESH_BVH34)
@@ -396,7 +396,7 @@ namespace PhysxFormat_34
 		{
 			// PT: vertices are followed by indices, so it will be safe to V4Load vertices from a deserialized binary file
 			if (mVertices)
-				mVertices = context.readExtraData<Vector3, 16>(mNbVertices);
+				mVertices = context.readExtraData<PxVec3, 16>(mNbVertices);
 
 			if (mTriangles)
 			{
@@ -669,16 +669,16 @@ namespace PhysxFormat_34
 		InternalObjectsData	mInternal;
 	};
 
-	class ConvexMesh : public PxBase, public PxRefCountable
+	class GuConvexMesh : public PxBase, public PxRefCountable
 	{
 	public:
 		virtual	bool				isKindOf(const char* name) const { return !::strcmp("PxConvexMesh", name) || PxBase::isKindOf(name); }
 
-		uint32_t computeBufferSize(const ConvexHullData& data, uint32_t nb)
+		static uint32_t computeBufferSize(const ConvexHullData& data, uint32_t nb)
 		{
 			uint32_t bytesNeeded = sizeof(GuHullPolygonData) * data.mNbPolygons;
 			uint16_t mnbEdges = (data.mNbEdges & ~0x8000);
-			bytesNeeded += sizeof(Vector3) * data.mNbHullVertices;
+			bytesNeeded += sizeof(PxVec3) * data.mNbHullVertices;
 			bytesNeeded += sizeof(uint8_t) * mnbEdges * 2;
 			bytesNeeded += sizeof(uint8_t) * data.mNbHullVertices * 3;
 			bytesNeeded += (data.mNbEdges & 0x8000) ? (sizeof(uint16_t) * mnbEdges * 2) : 0;
@@ -694,7 +694,6 @@ namespace PhysxFormat_34
 			const uint32_t bufferSize = computeBufferSize(mHullData, GetNb());
 			mHullData.mPolygons = reinterpret_cast<GuHullPolygonData*>(context.readExtraData<uint8_t, 16>(bufferSize));
 
-			assert(mBigConvexData == nullptr);
 			if (mBigConvexData)
 			{
 				mBigConvexData = context.readExtraData<PxBigConvexData, 16>();
@@ -715,14 +714,14 @@ namespace PhysxFormat_34
 
 		ConvexHullData		mHullData;
 		uint32_t			mNb;
-		PxBigConvexData* mBigConvexData;
-		float					mMass;
+		PxBigConvexData*	mBigConvexData;
+		float				mMass;
 		Matrix3				mInertia;
 		void* mMeshFactory;
 	};
 
 	static_assert(sizeof(ConvexHullData) == 72, "sizeof(ConvexHullData) not valid");
-	static_assert(sizeof(ConvexMesh) == 168, "sizeof(ConvexMesh) not valid");
+	static_assert(sizeof(GuConvexMesh) == 168, "sizeof(ConvexMesh) not valid");
 
 	struct PxHeightFieldSample
 	{
@@ -851,7 +850,7 @@ namespace PhysxFormat_34
 	{
 	public:
 		Quaternion q;
-		Vector3 p;
+		PxVec3 p;
 	};
 
 	enum Enum
@@ -876,7 +875,7 @@ namespace PhysxFormat_34
 	class PxBoxGeometry : public PxGeometry
 	{
 	public:
-		Vector3 halfExtents;
+		PxVec3 halfExtents;
 	};
 
 	class PxSphereGeometry : public PxGeometry
@@ -900,7 +899,7 @@ namespace PhysxFormat_34
 	class PxMeshScale
 	{
 	public:
-		Vector3		scale;
+		PxVec3		scale;
 		Quaternion		rotation;
 	};
 
@@ -908,7 +907,7 @@ namespace PhysxFormat_34
 	{
 	public:
 		PxMeshScale			scale;
-		ConvexMesh*			convexMesh;
+		GuConvexMesh*			convexMesh;
 		PxReal				maxMargin;			//!< Max shrunk amount permitted by PCM contact gen
 		PxU8				meshFlags;
 		PxU8				paddingFromFlags[3];
@@ -1090,7 +1089,7 @@ namespace PhysxFormat_34
 			PxConvexMeshGeometryLL llGeom;
 			static_cast<PxConvexMeshGeometry&>(llGeom) = hlGeom;
 
-			ConvexMesh* cm = static_cast<ConvexMesh*>(hlGeom.convexMesh);
+			GuConvexMesh* cm = static_cast<GuConvexMesh*>(hlGeom.convexMesh);
 
 			llGeom.hullData = &cm->mHullData;
 			llGeom.gpuCompatible = false;
@@ -1350,8 +1349,8 @@ namespace PhysxFormat_34
 	public:
 		BodyCore			mBodyCore;
 		PxTransform			mBufferedBody2World;
-		Vector3			mBufferedLinVelocity;
-		Vector3			mBufferedAngVelocity;
+		PxVec3			mBufferedLinVelocity;
+		PxVec3			mBufferedAngVelocity;
 		PxReal				mBufferedWakeCounter;
 		PxU32				mBufferedIsSleeping;
 		PxU32				mBodyBufferFlags;
@@ -1628,7 +1627,7 @@ namespace PhysxFormat_34
 		}
 		else if (classType == PxConcreteType::eCONVEX_MESH)
 		{
-			instance = DeserializePhysxObj<ConvexMesh>(address, context);
+			instance = DeserializePhysxObj<GuConvexMesh>(address, context);
 		}
 		else if (classType == PxConcreteType::eTRIANGLE_MESH_BVH33)
 		{
