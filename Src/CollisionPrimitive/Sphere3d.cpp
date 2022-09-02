@@ -696,7 +696,7 @@ void Sphere3d::GetVertices(int stackCount, int sliceCount, std::vector<Vector3>*
 	float phiStep = mPI / stackCount;
 	float thetaStep = 2.0f * mPI / sliceCount;
 
-	Vertices->push_back(Vector3(0, Radius, 0));
+	Vertices->push_back(Center + Vector3(0, Radius, 0));
 	if (Normals) Normals->push_back(Vector3::UnitY());
 
 	for (int i = 1; i < stackCount; i++)
@@ -706,11 +706,11 @@ void Sphere3d::GetVertices(int stackCount, int sliceCount, std::vector<Vector3>*
 		{
 			float theta = j * thetaStep;
 			Vector3 p = Vector3(sinf(phi) * cosf(theta), cosf(phi), sinf(phi) * sinf(theta)) * Radius;
-			Vertices->push_back(p);
-			if (Normals) Normals->push_back(p - Center);
+			Vertices->push_back(Center + p);
+			if (Normals) Normals->push_back(p);
 		}
 	}
-	Vertices->push_back(Vector3(0, -Radius, 0));
+	Vertices->push_back(Center + Vector3(0, -Radius, 0));
 	if (Normals) Normals->push_back(-Vector3::UnitY());
 }
 

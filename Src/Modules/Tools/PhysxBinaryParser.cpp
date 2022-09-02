@@ -454,6 +454,97 @@ public:
 				}
 			}
 		}
+		else if (Type == physx::eBOX)
+		{
+			physx::PxBoxGeometry* box = (physx::PxBoxGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.box;
+			PxVec3 ext = box->halfExtents;
+			Vector3 v[8];
+			v[0] = Vector3(-ext.x, -ext.y, -ext.z);
+			v[1] = Vector3(ext.x, -ext.y, -ext.z);
+			v[2] = Vector3(-ext.x, ext.y, -ext.z);
+			v[3] = Vector3(ext.x, ext.y, -ext.z);
+			v[4] = Vector3(-ext.x, -ext.y, ext.z);
+			v[5] = Vector3(ext.x, -ext.y, ext.z);
+			v[6] = Vector3(-ext.x, ext.y, ext.z);
+			v[7] = Vector3(ext.x, ext.y, ext.z);
+			for (int j = 0; j < 8; j++)
+			{
+				vertices.push_back(q * v[j] + p);
+			}
+			const int ind[] = {
+				0, 1, 2,
+				1, 3, 2,
+				4, 5, 6,
+				5, 7, 6,
+				0, 1, 4,
+				5, 4, 1,
+				1, 3, 5,
+				7, 5, 3,
+				2, 4, 0,
+				6, 4, 2,
+				3, 2, 6,
+				6, 7, 3
+			};
+			for (int j = 0; j < sizeof(ind) / sizeof(ind[0]); j++)
+			{
+				indices.push_back(ind[j]);
+			}
+		}
+		else if (Type == physx::eSPHERE)
+		{
+			physx::PxSphereGeometry* sphere = (physx::PxSphereGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.sphere;
+
+			const float mPI = 2.0f * asinf(1.0f);
+			const int stackCount = 6;
+			const int sliceCount = 8;
+			const float phiStep = mPI / stackCount;
+			const float thetaStep = 2.0f * mPI / sliceCount;
+			const float radius = sphere->radius;
+
+			vertices.push_back(q * Vector3(0, radius, 0) + p);
+			for (int i = 1; i < stackCount; i++)
+			{
+				float phi = i * phiStep;
+				for (int j = 0; j <= sliceCount; j++)
+				{
+					float theta = j * thetaStep;
+					Vector3 v = Vector3(sinf(phi) * cosf(theta), cosf(phi), sinf(phi) * sinf(theta)) * radius;
+					vertices.push_back(q * v + p);
+				}
+			}
+			vertices.push_back(q * Vector3(0, -radius, 0) + p);
+
+			for (int i = 1; i <= sliceCount; i++)
+			{
+				indices.push_back(0);
+				indices.push_back(i + 1);
+				indices.push_back(i);
+			}
+
+			int baseIndex = 1;
+			int Count = sliceCount + 1;
+			for (int i = 0; i < stackCount - 2; i++)
+			{
+				for (int j = 0; j < sliceCount; j++)
+				{
+					indices.push_back(baseIndex + i * Count + j);
+					indices.push_back(baseIndex + i * Count + j + 1);
+					indices.push_back(baseIndex + (i + 1) * Count + j);
+
+					indices.push_back(baseIndex + (i + 1) * Count + j);
+					indices.push_back(baseIndex + i * Count + j + 1);
+					indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+				}
+			}
+			int PoleIndex = (stackCount - 1) * (sliceCount + 1) + 1;
+			baseIndex = PoleIndex - Count;
+			for (int i = 0; i < sliceCount; i++)
+			{
+				indices.push_back(PoleIndex);
+				indices.push_back(baseIndex + i);
+				indices.push_back(baseIndex + i + 1);
+			}
+		}
 		else
 		{
 			//	assert(false);
