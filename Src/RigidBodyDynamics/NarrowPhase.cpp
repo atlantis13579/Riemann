@@ -19,6 +19,27 @@ static bool ConstructSupportFace(Geometry* GeomA, Geometry* GeomB, const Vector3
 	return succ;
 }
 
+
+static bool PenetrationTest(Geometry* Geom1, Geometry* Geom2, EPAPenetration& epa)
+{
+	GeometryDifference shape(Geom1, Geom2);
+	GJKIntersection gjk;
+	GJK_status gjk_status = gjk.Solve(&shape);
+	if (gjk_status != GJK_status::Intersect)
+	{
+		return false;
+	}
+
+	EPA_status epa_result = epa.Solve(gjk.result);
+	if (epa_result == EPA_status::Failed || epa_result == EPA_status::FallBack)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+
 class NarrowPhase_GJKEPA : public NarrowPhase
 {
 public:
@@ -52,25 +73,6 @@ public:
 		}
 
 		return;
-	}
-
-	bool PenetrationTest(Geometry* Geom1, Geometry* Geom2, EPAPenetration& epa)
-	{
-		GeometryDifference shape(Geom1, Geom2);
-		GJKIntersection gjk;
-		GJK_status gjk_status = gjk.Solve(&shape);
-		if (gjk_status != GJK_status::Intersect)
-		{
-			return false;
-		}
-
-		EPA_status epa_result = epa.Solve(gjk.result);
-		if (epa_result == EPA_status::Failed || epa_result == EPA_status::FallBack)
-		{
-			return false;
-		}
-
-		return  true;
 	}
 
 	void ConstructManifols(int indexA, int indexB, Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, std::vector<ContactManifold*>* manifolds)
