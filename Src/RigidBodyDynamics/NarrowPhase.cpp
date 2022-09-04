@@ -39,13 +39,65 @@ static bool PenetrationTest(Geometry* Geom1, Geometry* Geom2, EPAPenetration& ep
 	return true;
 }
 
+static void ConstructManifols(int indexA, int indexB, Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, ContactManifold *manifold)
+{
+	manifold->Reset();
+
+	// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
+	Vector3 w0 = Vector3::Zero();
+	for (int i = 0; i < epa.result.dimension; ++i)
+	{
+		Vector3 pi = GeomA->GetSupport_WorldSpace(epa.result.v[i].dir) * epa.result.w[i];
+		w0 = w0 + pi;
+	}
+
+	const bool UseContactFace = true;
+	SupportFace ContactFace;
+	if (UseContactFace)
+	{
+		bool succ = ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
+		if (!succ)
+		{
+			succ = ConstructSupportFace(GeomB, GeomA, -epa.penetration_normal, ContactFace);
+		}
+	}
+
+	// const Matrix4& invWorldA = GeomA->GetInverseWorldMatrix();
+	for (int i = -1; i < ContactFace.GetSize(); ++i)
+	{
+		Vector3 pa = i == -1 ? w0 : ContactFace[i];
+		Contact contact;
+		contact.PositionLocalA = pa - GeomA->GetCenterOfMass();
+		Vector3 pb = pa - epa.penetration_normal * epa.penetration_depth;
+		contact.PositionLocalB = pb - GeomB->GetCenterOfMass();
+		contact.PositionWorldA = pa;
+		contact.PositionWorldB = pb;
+		contact.Normal = epa.penetration_normal;
+		contact.PenetrationDepth = epa.penetration_depth;
+		if (contact.Normal.x >= 0.57735f)
+		{
+			contact.Tangent.x = contact.Normal.y;
+			contact.Tangent.y = -contact.Normal.x;
+			contact.Tangent.z = 0;
+		}
+		else
+		{
+			contact.Tangent.x = 0;
+			contact.Tangent.y = contact.Normal.z;
+			contact.Tangent.z = -contact.Normal.y;
+		}
+		contact.Binormal = CrossProduct(contact.Normal, contact.Tangent);
+
+		manifold->AddNewContact(indexA, indexB, contact);
+	}
+}
+
 
 class NarrowPhase_GJKEPA : public NarrowPhase
 {
 public:
 	NarrowPhase_GJKEPA()
 	{
-		m_UseContactFace = true;
 		m_ManifoldPool.Init(1, 256);
 	}
 	virtual ~NarrowPhase_GJKEPA()
@@ -68,72 +120,39 @@ public:
 			EPAPenetration epa;
 			if (PenetrationTest(geom1, geom2, epa))
 			{
-				ConstructManifols(overlaps[i].index1, overlaps[i].index2, geom1, geom2, epa, manifolds);
+				ContactManifold *manifold = m_ManifoldPool.Alloc();
+				ConstructManifols(overlaps[i].index1, overlaps[i].index2, geom1, geom2, epa, manifold);
+				manifolds->push_back(manifold);
 			}
 		}
-
-		return;
-	}
-
-	void ConstructManifols(int indexA, int indexB, Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, std::vector<ContactManifold*>* manifolds)
-	{
-		ContactManifold *manifold = m_ManifoldPool.Alloc();
-		manifold->Reset();
-
-		// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
-		Vector3 w0 = Vector3::Zero();
-		for (int i = 0; i < epa.result.dimension; ++i)
-		{
-			Vector3 pi = GeomA->GetSupport_WorldSpace(epa.result.v[i].dir) * epa.result.w[i];
-			w0 = w0 + pi;
-		}
-
-		SupportFace ContactFace;
-		if (m_UseContactFace)
-		{
-			bool succ = ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
-			if (!succ)
-			{
-				succ = ConstructSupportFace(GeomB, GeomA, -epa.penetration_normal, ContactFace);
-			}
-		}
-
-		// const Matrix4& invWorldA = GeomA->GetInverseWorldMatrix();
-		for (int i = -1; i < ContactFace.GetSize(); ++i)
-		{
-			Vector3 pa = i == -1 ? w0 : ContactFace[i];
-			Contact contact;
-			contact.PositionLocalA = pa - GeomA->GetCenterOfMass();
-			Vector3 pb = pa - epa.penetration_normal * epa.penetration_depth;
-			contact.PositionLocalB = pb - GeomB->GetCenterOfMass();
-			contact.PositionWorldA = pa;
-			contact.PositionWorldB = pb;
-			contact.Normal = epa.penetration_normal;
-			contact.PenetrationDepth = epa.penetration_depth;
-			if (contact.Normal.x >= 0.57735f)
-			{
-				contact.Tangent.x = contact.Normal.y;
-				contact.Tangent.y = -contact.Normal.x;
-				contact.Tangent.z = 0;
-			}
-			else
-			{
-				contact.Tangent.x = 0;
-				contact.Tangent.y = contact.Normal.z;
-				contact.Tangent.z = -contact.Normal.y;
-			}
-			contact.Binormal = CrossProduct(contact.Normal, contact.Tangent);
-
-			manifold->AddNewContact(indexA, indexB, contact);
-		}
-
-		manifolds->push_back(manifold);
 
 		return;
 	}
 
 private:
-	bool 						m_UseContactFace;
+	BatchList<ContactManifold>	m_ManifoldPool;
+};
+
+class NarrowPhase_PenetrateTable : public NarrowPhase
+{
+public:
+	NarrowPhase_PenetrateTable()
+	{
+		m_ManifoldPool.Init(1, 256);
+	}
+	virtual ~NarrowPhase_PenetrateTable()
+	{
+
+	}
+
+	virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
+									const std::vector<OverlapPair>& overlaps,
+									std::vector<ContactManifold*>* manifolds) override final
+	{
+		return;
+	}
+
+private:
 	BatchList<ContactManifold>	m_ManifoldPool;
 };
 
