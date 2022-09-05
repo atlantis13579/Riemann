@@ -457,19 +457,19 @@ public:
 		else if (Type == physx::eBOX)
 		{
 			physx::PxBoxGeometry* box = (physx::PxBoxGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.box;
-			PxVec3 ext = box->halfExtents;
-			Vector3 v[8];
-			v[0] = Vector3(-ext.x, -ext.y, -ext.z);
-			v[1] = Vector3(ext.x, -ext.y, -ext.z);
-			v[2] = Vector3(-ext.x, ext.y, -ext.z);
-			v[3] = Vector3(ext.x, ext.y, -ext.z);
-			v[4] = Vector3(-ext.x, -ext.y, ext.z);
-			v[5] = Vector3(ext.x, -ext.y, ext.z);
-			v[6] = Vector3(-ext.x, ext.y, ext.z);
-			v[7] = Vector3(ext.x, ext.y, ext.z);
+			const PxVec3& ext = box->halfExtents;
+			PxVec3 v[8];
+			v[0] = p + q * PxVec3(-ext.x, -ext.y, -ext.z);
+			v[1] = p + q * PxVec3(ext.x, -ext.y, -ext.z);
+			v[2] = p + q * PxVec3(-ext.x, ext.y, -ext.z);
+			v[3] = p + q * PxVec3(ext.x, ext.y, -ext.z);
+			v[4] = p + q * PxVec3(-ext.x, -ext.y, ext.z);
+			v[5] = p + q * PxVec3(ext.x, -ext.y, ext.z);
+			v[6] = p + q * PxVec3(-ext.x, ext.y, ext.z);
+			v[7] = p + q * PxVec3(ext.x, ext.y, ext.z);
 			for (int j = 0; j < 8; j++)
 			{
-				vertices.push_back(q * v[j] + p);
+				vertices.push_back(v[j]);
 			}
 			const int ind[] = {
 				0, 1, 2,
