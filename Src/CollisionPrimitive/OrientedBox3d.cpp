@@ -212,8 +212,8 @@ static bool OBBIntersectOBB(const Vector3& ca, const Vector3& ea, const Matrix3&
 
 bool OrientedBox3d::IntersectPoint(const Vector3& point) const
 {
-	AxisAlignedBox3d aabb(Center - Extent, Center + Extent);
-	return aabb.IntersectPoint(point * Rotation);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
+	AxisAlignedBox3d aabb(-Extent, Extent);
+	return aabb.IntersectPoint((point- Center) * Rotation);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
 }
 
 bool OrientedBox3d::IntersectPlane(const Vector3& normal, const float D) const
