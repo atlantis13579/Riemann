@@ -175,7 +175,7 @@ float CatmullRom::Curvature(const Vector3& a, const Vector3& b, const Vector3& c
 	//						(ddy * dx - ddx * dy) * (ddy * dx - ddx * dy)) / powf(dx * dx + dy * dy + dz * dz, 1.5f);
 	Vector3 DL = 3.0f * a * tt + 2.0f * b * t + c;
 	Vector3 DDL = 6.0f * a * t + 2.0f * b;
-	float curvature = (DL.Cross(DDL)).Length() / std::max(DL.Length(), 1e-6f);
+	float curvature = (DL.Cross(DDL)).Length() / std::max(powf(DL.SquareLength(), 1.5f), 1e-6f);
 	curvature = curvature < 1e-6f ? 0.0f : curvature;
 	return curvature;
 }
