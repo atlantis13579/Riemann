@@ -59,8 +59,8 @@ public:
 	double	GetSysTimeSeconds() const
 	{
 		std::chrono::steady_clock::time_point curr = std::chrono::steady_clock::now();
-		const double time = (double)std::chrono::duration_cast<std::chrono::seconds>(curr - start_time).count();
-		return time;
+		const double time_ms = (double)std::chrono::duration_cast<std::chrono::milliseconds>(curr - start_time).count();
+		return time_ms * 0.001;
 	}
 
 private:
