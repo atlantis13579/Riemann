@@ -26,11 +26,14 @@ class WorldTime
 public:
 	WorldTime()
 	{
-		InitStartTime();
 	}
 
 	void	Advanced(double dt)
 	{
+		if (seconds < 0)
+		{
+			InitStartTime();		// init
+		}
 		milliseconds += dt;
 		if (milliseconds >= 1.0)
 		{
@@ -65,6 +68,6 @@ public:
 
 private:
 	std::chrono::steady_clock::time_point	start_time;
-	int		seconds;
-	double	milliseconds;
+	int		seconds = -1;
+	double	milliseconds = 0.0;
 };
