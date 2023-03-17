@@ -8,13 +8,18 @@ class RingBuffer
 public:
 	RingBuffer()
 	{
-		write = read = 0;
+		Clear();
 	}
 
 	inline bool Full() const
 	{
 		int next = (write + 1) % Capacity;
 		return next == read;
+	}
+	
+	inline bool Clear() const
+	{
+		read = write = 0;
 	}
 
 	inline bool Empty() const
