@@ -104,7 +104,7 @@ void ConvexMesh::ComputeInertia_VolumeIntegration()
 {
 	ConvexHull3d hull;
 	hull.faces.resize(NumFaces);
-	hull.verts.reserve(NumVertices);
+	hull.verts.resize(NumVertices);
 
 	for (uint16_t i = 0; i < NumVertices; ++i)
 	{
