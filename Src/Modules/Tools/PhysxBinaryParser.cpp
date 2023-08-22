@@ -438,7 +438,7 @@ public:
 				// |    |
 				// i0---i1
 				uint8_t Hole0 = samples[j + i * nCols].materialIndex0;
-				uint8_t Hole1 = samples[j + i * nCols].materialIndex0;
+				uint8_t Hole1 = samples[j + i * nCols].materialIndex1;
 				
 				if (Hole0 != 0x7F)
 				{
