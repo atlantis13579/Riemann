@@ -175,21 +175,22 @@ bool Matrix3::ToEulerAngles(float& Yaw, float& Pitch, float& Roll) const
 
 void Matrix3::FromEulerAngles(float Yaw, float Pitch, float Roll)
 {
-	float c, s;
+	const float sy = sinf(Yaw);
+	const float cy = cosf(Yaw);
+	const float sp = sinf(Pitch);
+	const float cp = cosf(Pitch);
+	const float sr = sinf(Roll);
+	const float cr = cosf(Roll);
 
-	c = cosf(Yaw);
-	s = sinf(Yaw);
-	Matrix3 kXMat(1.0f, 0.0f, 0.0f, 0.0f, c, s, 0.0f, -s, c);
-
-	c = cosf(Pitch);
-	s = sinf(Pitch);
-	Matrix3 kYMat(c, 0.0f, -s, 0.0f, 1.0f, 0.0f, s, 0.0f, c);
-
-	c = cosf(Roll);
-	s = sinf(Roll);
-	Matrix3 kZMat(c, s, 0.0f, -s, c, 0.0f, 0.0f, 0.0f, 1.0f);
-
-	*this = kXMat * kYMat * kZMat;
+	mat[0][0] = (sr * sp * sy + cr * cy);
+	mat[0][1] = (sr * cp);
+	mat[0][2] = (sr * sp * cy - cr * sy);
+	mat[1][0] = (cr * sp * sy - sr * cy);
+	mat[1][1] = (cr * cp);
+	mat[1][2] = (cr * sp * cy + sr * sy);
+	mat[2][0] = (cp * sy);
+	mat[2][1] = (-sp);
+	mat[2][2] = (cp * cy);
 }
 
 

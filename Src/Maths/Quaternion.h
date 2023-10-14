@@ -1,6 +1,7 @@
 #pragma once
 
 #include <math.h>
+#include "Maths.h"
 #include "Vector3.h"
 #include "Matrix4.h"
 #include "Matrix3.h"
@@ -112,14 +113,52 @@ public:
 		return FromRotationAxis(Axis, Angle);
 	}
 
-	Quaternion& FromEuler(float x, float y, float z)
+	Quaternion& FromEuler(float yaw, float roll, float pitch)
 	{
-		Quaternion xrot, yrot, zrot;
-		xrot.FromRotationAxis(Vector3(1, 0, 0), x);
-		yrot.FromRotationAxis(Vector3(0, 1, 0), y);
-		zrot.FromRotationAxis(Vector3(0, 0, 1), z);
-		*this = zrot * yrot * xrot;
+		float sp = sinf(pitch * 0.5f);
+		float sy = sinf(yaw * 0.5f);
+		float sr = sinf(roll * 0.5f);
+
+		float cp = cosf(pitch * 0.5f);
+		float cy = cosf(yaw * 0.5f);
+		float cr = cosf(roll * 0.5f);
+
+		x = cy * cr * sp + sy * sr * cp;
+		y = sy * cr * cp - cy * sr * sp;
+		z = cy * sr * cp - sy * cr * sp;
+		w = cy * cr * cp + sy * sr * sp;
 		return *this;
+	}
+
+	Vector3 ToEuler(float& yaw, float& roll, float& pitch) const
+	{
+		float sqx = x * x;
+		float sqy = y * y;
+		float sqz = z * z;
+		float sqw = w * w;
+
+		float unit = sqx + sqy + sqz + sqw;
+		float test = w * x - y * z;
+		if (test > 0.4999f * unit)		//  0.4999f OR  0.5f - EPSILON
+		{
+			// Singularity at north pole
+			yaw = 2.0f * atan2f(y, w);		// Yaw
+			pitch = PI_OVER_2;				// Pitch
+			roll = 0;						// Roll
+		}
+		else if (test < -0.4999f * unit)	// -0.4999f OR -0.5f + EPSILON
+		{
+			// Singularity at south pole
+			yaw = 2.0f * atan2f(y, w);		// Yaw
+			pitch = -PI_OVER_2;				// Pitch
+			roll = 0;						// Roll
+		}
+		else
+		{
+			yaw = atan2f(2.0f * (x * z + w * y), sqz + sqw - sqx - sqy);	// Yaw
+			pitch = asinf(2.0f * test / unit);								// Pitch
+			roll = atan2f(2.0f * (x * y + w * z), sqy + sqw - sqx - sqz);	// Roll
+		}
 	}
 
 	// https://d3cw3dd2w32x2b.cloudfront.net/wp-content/uploads/2015/01/matrix-to-quat.pdf
@@ -158,14 +197,43 @@ public:
 		return *this;
 	}
 
-	Vector3 ToEuler() const
+	// https://www.intel.com/content/dam/develop/external/us/en/documents/293748-142817.pdf
+	Matrix4 ToRotationMatrix4() const
 	{
-		return Vector3(
-			atan2f(2 * x*w - 2 * y*z, 1 - 2 * x*x - 2 * z*z),
-			atan2f(2 * y*w - 2 * x*z, 1 - 2 * y*y - 2 * z*z),
-			asinf(2 * x*y + 2 * z*w));
+		const float x2 = x * x;
+		const float y2 = y * y;
+		const float z2 = z * z;
+		const float xy = x * y;
+		const float xz = x * z;
+		const float yz = y * z;
+		const float wx = w * x;
+		const float wy = w * y;
+		const float wz = w * z;
+
+		return Matrix4(1.0f - 2.0f * (y2 + z2), 2.0f * (xy - wz), 2.0f * (xz + wy), 0.0f,
+			2.0f * (xy + wz), 1.0f - 2.0f * (x2 + z2), 2.0f * (yz - wx), 0.0f,
+			2.0f * (xz - wy), 2.0f * (yz + wx), 1.0f - 2.0f * (x2 + y2), 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f);
 	}
-	
+
+	// https://www.intel.com/content/dam/develop/external/us/en/documents/293748-142817.pdf
+	Matrix3 ToRotationMatrix3() const
+	{
+		const float x2 = x * x;
+		const float y2 = y * y;
+		const float z2 = z * z;
+		const float xy = x * y;
+		const float xz = x * z;
+		const float yz = y * z;
+		const float wx = w * x;
+		const float wy = w * y;
+		const float wz = w * z;
+
+		return Matrix3(1.0f - 2.0f * (y2 + z2), 2.0f * (xy - wz), 2.0f * (xz + wy),
+			2.0f * (xy + wz), 1.0f - 2.0f * (x2 + z2), 2.0f * (yz - wx),
+			2.0f * (xz - wy), 2.0f * (yz + wx), 1.0f - 2.0f * (x2 + y2));
+	}
+
 	inline Quaternion operator-() const
 	{
 		return Quaternion(-x, -y, -z, -w);
@@ -292,41 +360,6 @@ public:
         }
         return Slerp(start, end, t);
     }
-
-	Matrix4 ToRotationMatrix4() const
-	{
-		float x2 = x * x;
-		float y2 = y * y;
-		float z2 = z * z;
-		float xy = x * y;
-		float xz = x * z;
-		float yz = y * z;
-		float wx = w * x;
-		float wy = w * y;
-		float wz = w * z;
-
-		return Matrix4(1.0f - 2.0f * (y2 + z2), 2.0f * (xy - wz), 2.0f * (xz + wy), 0.0f,
-			2.0f * (xy + wz), 1.0f - 2.0f * (x2 + z2), 2.0f * (yz - wx), 0.0f,
-			2.0f * (xz - wy), 2.0f * (yz + wx), 1.0f - 2.0f * (x2 + y2), 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f);
-	}
-
-	Matrix3 ToRotationMatrix3() const
-	{
-		float x2 = x * x;
-		float y2 = y * y;
-		float z2 = z * z;
-		float xy = x * y;
-		float xz = x * z;
-		float yz = y * z;
-		float wx = w * x;
-		float wy = w * y;
-		float wz = w * z;
-
-		return Matrix3(1.0f - 2.0f * (y2 + z2), 2.0f * (xy - wz), 2.0f * (xz + wy),
-			2.0f * (xy + wz), 1.0f - 2.0f * (x2 + z2), 2.0f * (yz - wx),
-			2.0f * (xz - wy), 2.0f * (yz + wx), 1.0f - 2.0f * (x2 + y2));
-	}
 
 	static Quaternion Zero()
 	{
