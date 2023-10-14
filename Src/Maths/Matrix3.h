@@ -19,7 +19,7 @@ public:
 	}
 
 	explicit Matrix3(float a00, float a01, float a02,
-		float a10, float a11, float a12,
+					 float a10, float a11, float a12,
 					 float a20, float a21, float a22)
 	{
 		mat[0][0] = a00; mat[0][1] = a01; mat[0][2] = a02;
@@ -39,18 +39,27 @@ public:
 		mat[0][0] = diag.x; mat[1][1] = diag.y; mat[2][2] = diag.z;
 	}
 
-	explicit Matrix3(const Vector3& c0, const Vector3& c1, const Vector3& c2)
+	explicit Matrix3(const Vector3& c0, const Vector3& c1, const Vector3& c2, bool row_wise)
 	{
-		mat[0][0] = c0.x; mat[0][1] = c1.x; mat[0][2] = c2.x;
-		mat[1][0] = c0.y; mat[1][1] = c1.y; mat[1][2] = c2.y;
-		mat[2][0] = c0.z; mat[2][1] = c1.z; mat[2][2] = c2.z;
+		if (row_wise)
+		{
+			mat[0][0] = c0.x; mat[0][1] = c0.y; mat[0][2] = c0.z;
+			mat[1][0] = c1.x; mat[1][1] = c1.y; mat[1][2] = c1.z;
+			mat[2][0] = c2.x; mat[2][1] = c2.y; mat[2][2] = c2.z;
+		}
+		else
+		{
+			mat[0][0] = c0.x; mat[0][1] = c1.x; mat[0][2] = c2.x;
+			mat[1][0] = c0.y; mat[1][1] = c1.y; mat[1][2] = c2.y;
+			mat[2][0] = c0.z; mat[2][1] = c1.z; mat[2][2] = c2.z;
+		}
 	}
 	
 	inline Matrix3(const Matrix3& m)
 	{
 		memcpy(mat, m.mat, sizeof(mat));
 	}
-	
+
 	inline void LoadZero()
 	{
 		memset(mat, 0, sizeof(mat));
@@ -81,8 +90,8 @@ public:
 	{
 		float m[3][3];
 		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
-				m[i][j] = mat[i][j] + mm.mat[i][j];
+		for (int j = 0; j < 3; j++)
+			m[i][j] = mat[i][j] + mm.mat[i][j];
 		return Matrix3(m);
 	}
 
@@ -125,6 +134,31 @@ public:
 		v.y = mat[1][0] * vv.x + mat[1][1] * vv.y + mat[1][2] * vv.z;
 		v.z = mat[2][0] * vv.x + mat[2][1] * vv.y + mat[2][2] * vv.z;
 		return v;
+	}
+
+	inline Matrix3& operator+=(const Matrix3& mm)
+	{
+		for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			mat[i][j] += mm[i][j];
+		return *this;
+	}
+
+	inline Matrix3& operator-=(const Matrix3& mm)
+	{
+		for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			mat[i][j] -= mm[i][j];
+		return *this;
+	}
+
+	inline Matrix3& operator*=(const Matrix3& mm)
+	{
+		float m[3][3];
+		for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			m[i][j] = mat[i][0] * mm.mat[0][j] + mat[i][1] * mm.mat[1][j] + mat[i][2] * mm.mat[2][j];
+		memcpy(mat, m, sizeof(mat));
 	}
 	
 	inline Matrix3& operator*=(float k)
@@ -1158,24 +1192,28 @@ public:
 		return true;
 	}
 
-	void		SolveEigenQRIteration(float EigenValue[3], Vector3 EigenVector[3]) const
+	bool		SolveEigenQRIteration(float EigenValue[3], Vector3 EigenVector[3]) const
 	{
 		Matrix3 m = *this;
 		float SubDiag[3];
 		m.Diagonalize(EigenValue, SubDiag);
-		m.QRIteration(EigenValue, SubDiag);
-
-		for (int i = 0; i < 3; ++i)
+		if (m.QRIteration(EigenValue, SubDiag))
 		{
-			EigenVector[i][0] = m[0][i];
-			EigenVector[i][1] = m[1][i];
-			EigenVector[i][2] = m[2][i];
+			for (int i = 0; i < 3; ++i)
+			{
+				EigenVector[i][0] = m[0][i];
+				EigenVector[i][1] = m[1][i];
+				EigenVector[i][2] = m[2][i];
+			}
+			return true;
 		}
+
+		return false;
 	}
 
-	void		SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const
+	bool		SolveEigenSymmetric(float EigenValue[3], Vector3 EigenVector[3]) const
 	{
-		SolveEigenQRIteration(EigenValue, EigenVector);
+		return SolveEigenQRIteration(EigenValue, EigenVector);
 	}
 	
 	static Matrix3 Zero()

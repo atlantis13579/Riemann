@@ -21,6 +21,8 @@
   <ItemGroup>
     <ClCompile Include="..\..\Src\Destruction\GeometrySet.cpp" />
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\MassProperties.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\MeshSimplification.cpp" />
     <ClCompile Include="..\..\Src\Modules\AeroDynamics\VonKarmanVortexStreet.cpp" />
     <ClCompile Include="..\..\Src\Modules\AeroDynamics\WindSimulation.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.cpp" />
@@ -100,7 +102,10 @@
     <ClInclude Include="..\..\Src\Destruction\GeometrySet.h" />
     <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
     <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h" />
+    <ClInclude Include="..\..\Src\Geometry\MassProperties.h" />
+    <ClInclude Include="..\..\Src\Geometry\MeshSimplification.h" />
     <ClInclude Include="..\..\Src\LinearSystem\ConjugateGradientSolver.h" />
+    <ClInclude Include="..\..\Src\Maths\Pose.h" />
     <ClInclude Include="..\..\Src\Modules\AeroDynamics\VonKarmanVortexStreet.h" />
     <ClInclude Include="..\..\Src\Modules\AeroDynamics\WindSimulation.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.h" />

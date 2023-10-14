@@ -537,6 +537,15 @@
     <ClInclude Include="..\..\Src\Core\Profiler.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\MassProperties.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\MeshSimplification.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Pose.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">
@@ -745,6 +754,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp">
       <Filter>Destruction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\MeshSimplification.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\MassProperties.cpp">
+      <Filter>Geometry</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
