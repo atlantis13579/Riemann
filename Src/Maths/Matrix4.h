@@ -34,6 +34,24 @@ public:
 		memcpy(mat, m.mat, sizeof(mat));
 	}
 
+	Matrix4(const Vector4& v0, const Vector4& v1, const Vector4& v2, const Vector4& v3, bool row_wise)
+	{
+		if (row_wise)
+		{
+			mat[0][0] = v0.x; mat[0][1] = v0.y; mat[0][2] = v0.z; mat[0][3] = v0.w;
+			mat[1][0] = v1.x; mat[1][1] = v1.y; mat[1][2] = v1.z; mat[1][3] = v1.w;
+			mat[2][0] = v2.x; mat[2][1] = v2.y; mat[2][2] = v2.z; mat[2][3] = v2.w;
+			mat[3][0] = v3.x; mat[3][1] = v3.y; mat[3][2] = v3.z; mat[3][3] = v3.w;
+		}
+		else
+		{
+			mat[0][0] = v0.x; mat[0][1] = v1.x; mat[0][2] = v2.x; mat[0][3] = v3.x;
+			mat[1][0] = v0.y; mat[1][1] = v1.y; mat[1][2] = v2.y; mat[1][3] = v3.y;
+			mat[2][0] = v0.z; mat[2][1] = v1.z; mat[2][2] = v2.z; mat[2][3] = v3.z;
+			mat[3][0] = v0.w; mat[3][1] = v1.w; mat[3][2] = v2.w; mat[3][3] = v3.w;
+		}
+	}
+
 	void LoadIdentity()
 	{
 		mat[0][0] = 1; mat[0][1] = 0; mat[0][2] = 0; mat[0][3] = 0;
@@ -211,6 +229,39 @@ public:
 		for (int j = 0; j < 4; j++)
 			m[i][j] = mat[i][j] - mm.mat[i][j];
 		return Matrix4(m);
+	}
+
+	const Matrix4& operator+=(const Matrix4& mm)
+	{
+		for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; j++)
+			mat[i][j] += mm.mat[i][j];
+		return *this;
+	}
+
+	const Matrix4& operator-=(const Matrix4& mm)
+	{
+		for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; j++)
+			mat[i][j] -= mm.mat[i][j];
+		return *this;
+	}
+
+	const Matrix4& operator*=(float s)
+	{
+		for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; j++)
+			mat[i][j] *= s;
+		return *this;
+	}
+
+	const Matrix4& operator/=(float s)
+	{
+		float invs = 1.0f / s;
+		for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; j++)
+			mat[i][j] *= invs;
+		return *this;
 	}
 
 	static Matrix4 Zero()
