@@ -65,8 +65,8 @@ bool	IntersectBoxBox(const void* Obj1, const void* Obj2, const GeometryTransform
 {
 	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
 	const AxisAlignedBox3d* box2 = static_cast<const AxisAlignedBox3d*>(Obj2);
-	OrientedBox3d obb1(t1->LocalToWorld(box1->GetCenter()), box1->GetExtent(), t1->Rotation.ToRotationMatrix3());
-	OrientedBox3d obb2(t2->LocalToWorld(box2->GetCenter()), box2->GetExtent(), t2->Rotation.ToRotationMatrix3());
+	OrientedBox3d obb1(t1->LocalToWorld(box1->GetCenter()), box1->GetExtent(), t1->transform.quat.ToRotationMatrix3());
+	OrientedBox3d obb2(t2->LocalToWorld(box2->GetCenter()), box2->GetExtent(), t2->transform.quat.ToRotationMatrix3());
 	return obb1.IntersectOBB(obb2);
 }
 
@@ -161,8 +161,8 @@ bool	PenetrateBoxBox(const void* Obj1, const void* Obj2, const GeometryTransform
 {
 	const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
 	const AxisAlignedBox3d* box2 = static_cast<const AxisAlignedBox3d*>(Obj2);
-	OrientedBox3d obb1(t1->LocalToWorld(box1->GetCenter()), box1->GetExtent(), t1->Rotation.ToRotationMatrix3());
-	OrientedBox3d obb2(t2->LocalToWorld(box2->GetCenter()), box2->GetExtent(), t2->Rotation.ToRotationMatrix3());
+	OrientedBox3d obb1(t1->LocalToWorld(box1->GetCenter()), box1->GetExtent(), t1->transform.quat.ToRotationMatrix3());
+	OrientedBox3d obb2(t2->LocalToWorld(box2->GetCenter()), box2->GetExtent(), t2->transform.quat.ToRotationMatrix3());
 	return obb1.PenetrateOBB(obb2, n, d);
 }
 

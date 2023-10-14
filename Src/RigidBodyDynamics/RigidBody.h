@@ -2,9 +2,8 @@
 
 #include <stdint.h>
 #include <vector>
-#include "../Maths/Vector3.h"
+#include "../Maths/Pose.h"
 #include "../Maths/Matrix3.h"
-#include "../Maths/Quaternion.h"
 
 class Geometry;
 class RigidBodyStatic;
@@ -31,8 +30,8 @@ struct RigidBodyParam
 	RigidBodyParam()
 	{
 		memset(this, 0, sizeof(RigidBodyParam));
-		pos = Vector3::Zero();
-		quat = Quaternion::One();
+		init_pose.pos = Vector3::Zero();
+		init_pose.quat = Quaternion::One();
 		invMass = 1.0f;
 		linearDamping = 0.999f;
 		angularDamping = 0.999f;
@@ -45,8 +44,7 @@ struct RigidBodyParam
 		motionType = MorionType::Discrete;
 	}
 
-	Vector3		pos;
-	Quaternion	quat;
+	Pose		init_pose;
 	float		invMass;
 	Matrix3		inertia;
 	Vector3		linearVelocity;

@@ -250,8 +250,8 @@ public:
 			if (bodies)
 			{
 				RigidBodyParam param;
-				param.pos = rigid->mRigidStatic.mStatic.mCore.body2World.p;
-				param.quat = rigid->mRigidStatic.mStatic.mCore.body2World.q;
+				param.init_pose.pos = rigid->mRigidStatic.mStatic.mCore.body2World.p;
+				param.init_pose.quat = rigid->mRigidStatic.mStatic.mCore.body2World.q;
 				body = RigidBodyStatic::CreateRigidBody(param, nullptr);
 				assert(body);
 				body->SetGuid(guid);
@@ -284,8 +284,8 @@ public:
 			if (bodies)
 			{
 				RigidBodyParam param;
-				param.pos = core.body2World.p;
-				param.quat = core.body2World.q;
+				param.init_pose.pos = core.body2World.p;
+				param.init_pose.quat = core.body2World.q;
 				param.invMass = core.inverseMass;
 				param.inertia = Matrix3(core.inverseInertia.x, core.inverseInertia.y, core.inverseInertia.z).Inverse();
 				param.linearVelocity = core.linearVelocity;

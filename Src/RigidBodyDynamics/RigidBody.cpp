@@ -142,8 +142,8 @@ RigidBodyStatic::RigidBodyStatic(const RigidBodyParam& param, Geometry* geom)
 	this->mRigidType = RigidType::Static;
 	this->InvMass = 0.0f;
 	this->InvInertia = Matrix3::Zero();
-	this->X = geom ? geom->GetCenterOfMass() : param.pos;
-	this->Q = geom ? geom->GetRotation() : param.quat;
+	this->X = geom ? geom->GetCenterOfMass() : param.init_pose.pos;
+	this->Q = geom ? geom->GetRotation() : param.init_pose.quat;
 	this->V = Vector3::Zero();
 	this->W = Vector3::Zero();
 	if (geom) this->AddGeometry(geom);
@@ -155,8 +155,8 @@ RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, Geometry* geom)
 	this->mMotionType = param.motionType;
 	this->InvMass = param.invMass < kMinimumInvMass ? 0.0f : param.invMass;
 	this->InvInertia = Geometry::GetInverseInertiaMultibody(geom, this->InvMass);
-	this->X = geom ? Geometry::GetCenterOfMassMultibody(geom) : param.pos;
-	this->Q = geom ? Geometry::GetRotationMultibody(geom) : param.quat;
+	this->X = geom ? Geometry::GetCenterOfMassMultibody(geom) : param.init_pose.pos;
+	this->Q = geom ? Geometry::GetRotationMultibody(geom) : param.init_pose.quat;
 	this->V = param.linearVelocity;
 	this->W = param.angularVelocity;
 	this->ExtForce = Vector3::Zero();

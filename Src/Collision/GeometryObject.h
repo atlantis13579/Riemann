@@ -1,8 +1,7 @@
 #pragma once
 
 #include "../Core/StaticArray.h"
-#include "../Maths/Vector3.h"
-#include "../Maths/Quaternion.h"
+#include "../Maths/Pose.h"
 #include "../Maths/Box3d.h"
 #include "../CollisionPrimitive/ShapeType.h"
 
@@ -28,108 +27,105 @@ typedef	StaticArray<Vector3, MAX_FACE_POINTS> SupportFace;
 
 struct GeometryTransform
 {
-	Vector3		Translation;
-	Quaternion	Rotation;
+	Pose	transform;
 
 	inline Vector3	LocalToWorld(const Vector3& Point) const
 	{
-		return Rotation * Point + Translation;
+		return transform.quat * Point + transform.pos;
 	}
 
 	inline Vector3	LocalToWorldDirection(const Vector3& Direction) const
 	{
-		return Rotation * Direction;
+		return transform.quat * Direction;
 	}
 
 	inline Vector3	WorldToLocal(const Vector3& Point) const
 	{
-		return Rotation.Conjugate() * (Point - Translation);
+		return transform.quat.Conjugate() * (Point - transform.pos);
 	}
 
 	inline Vector3	WorldToLocalDirection(const Vector3& Direction) const
 	{
-		return Rotation.Conjugate() * Direction;
+		return transform.quat.Conjugate() * Direction;
 	}
 };
 
 // Transformation between object 1's local space and object 2's local space
 struct Geometry2Transform
 {
-	Vector3		Translation1;
-	Vector3		Translation2;
-	Quaternion	Rotation1;
-	Quaternion	Rotation2;
+	Pose	transform1;
+	Pose	transform2;
 	
 	Geometry2Transform(const GeometryTransform* t1, const GeometryTransform* t2)
 	{
-		Rotation1 = t1->Rotation;
-		Rotation2 = t2->Rotation;
-		Translation1 = t1->Translation;
-		Translation2 = t2->Translation;
+		transform1.quat = t1->transform.quat;
+		transform2.quat = t2->transform.quat;
+		transform1.pos = t1->transform.pos;
+		transform2.pos = t2->transform.pos;
 	}
 
 	Vector3		Local1ToLocal2(const Vector3& Point) const
 	{
-		return Rotation2.Conjugate() * (Rotation1 * Point + Translation1 - Translation2);
+		return transform2.quat.Conjugate() * (transform1.quat * Point + transform1.pos - transform2.pos);
 	}
 
 	Vector3		Local1ToLocal2Direction(const Vector3& Direction) const
 	{
-		Quaternion quat = Rotation1 * Rotation2.Conjugate();
+		Quaternion quat = transform1.quat * transform2.quat.Conjugate();
 		return quat * Direction;
 	}
 
 	Matrix3		Local1ToLocal2RotationMatrix() const
 	{
-		Quaternion quat = Rotation1 * Rotation2.Conjugate();
+		Quaternion quat = transform1.quat * transform2.quat.Conjugate();
 		return quat.ToRotationMatrix3();
 	}
 
 	Vector3		Local2ToLocal1(const Vector3& Point) const
 	{
-		return Rotation1.Conjugate() * (Rotation2 * Point + Translation2 - Translation1);
+		return transform1.quat.Conjugate() * (transform2.quat * Point + transform2.pos - transform1.pos);
 	}
 
 	Vector3		Local2ToLocal1Direction(const Vector3& Direction) const
 	{
-		Quaternion quat = Rotation2 * Rotation1.Conjugate();
+		Quaternion quat = transform2.quat * transform1.quat.Conjugate();
 		return quat * Direction;
 	}
 
 	Matrix3		Local2ToLocal1RotationMatrix() const
 	{
-		Quaternion quat = Rotation2 * Rotation1.Conjugate();
+		Quaternion quat = transform2.quat * transform1.quat.Conjugate();
 		return quat.ToRotationMatrix3();
 	}
 
 	Vector3		Local1ToWorld(const Vector3& Point) const
 	{
-		return Rotation1 * Point + Translation1;
+		return transform1.quat * Point + transform1.pos;
 	}
 
 	Vector3		Local1ToWorldDirection(const Vector3& Direction) const
 	{
-		return Rotation1 * Direction;
+		return transform1.quat * Direction;
 	}
 
 	Matrix3		Local1ToWorldRotationMatrix() const
 	{
-		return Rotation1.ToRotationMatrix3();
+		return transform1.quat.ToRotationMatrix3();
 	}
 
 	Vector3		Local2ToWorld(const Vector3& Point) const
 	{
-		return Rotation2 * Point + Translation2;
+		return transform2.quat * Point + transform2.pos;
 	}
 
 	Vector3		Local2ToWorldDirection(const Vector3& Direction) const
 	{
-		return Rotation2 * Direction;
+		return transform2.quat * Direction;
 	}
 
 	Matrix3		Local2ToWorldRotationMatrix() const
 	{
-		return Rotation2.ToRotationMatrix3();
+		return transform2.quat.ToRotationMatrix3();
 	}
 };
 
@@ -143,22 +139,22 @@ public:
 
 	inline const Vector3&	GetCenterOfMass() const
 	{
-		return m_CenterOfMassTransform.Translation;
+		return m_CenterOfMassTransform.transform.pos;
 	}
 
 	inline void				SetCenterOfMass(const Vector3& Position)
 	{
-		m_CenterOfMassTransform.Translation = Position;
+		m_CenterOfMassTransform.transform.pos = Position;
 	}
 
 	inline const Quaternion& GetRotation() const
 	{
-		return m_CenterOfMassTransform.Rotation;
+		return m_CenterOfMassTransform.transform.quat;
 	}
 
 	inline void				SetRotation(const Quaternion& Rotation)
 	{
-		m_CenterOfMassTransform.Rotation = Rotation;
+		m_CenterOfMassTransform.transform.quat = Rotation;
 	}
 
 	template<class T>

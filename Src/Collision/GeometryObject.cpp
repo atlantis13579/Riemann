@@ -204,7 +204,7 @@ bool		Geometry::Sweep(const Vector3& Direction, const Geometry* Geom, Vector3 *n
 
 void 		Geometry::UpdateBoundingVolume()
 {
-	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_CenterOfMassTransform.Translation, m_CenterOfMassTransform.Rotation);
+	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_CenterOfMassTransform.transform.pos, m_CenterOfMassTransform.transform.quat);
 }
 
 Vector3		Geometry::GetSupport_WorldSpace(const Vector3& Direction) const
