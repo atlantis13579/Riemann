@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Core/StaticArray.h"
-#include "../Maths/Pose.h"
+#include "../Maths/Transform.h"
 #include "../Maths/Box3d.h"
 #include "../CollisionPrimitive/ShapeType.h"
 

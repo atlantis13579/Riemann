@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "../Maths/Pose.h"
+#include "../Maths/Transform.h"
 
 void ComputeCompositeMassProperties(
 	const std::vector<Pose>& vPose,

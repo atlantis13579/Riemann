@@ -105,7 +105,6 @@
     <ClInclude Include="..\..\Src\Geometry\MassProperties.h" />
     <ClInclude Include="..\..\Src\Geometry\MeshSimplification.h" />
     <ClInclude Include="..\..\Src\LinearSystem\ConjugateGradientSolver.h" />
-    <ClInclude Include="..\..\Src\Maths\Pose.h" />
     <ClInclude Include="..\..\Src\Modules\AeroDynamics\VonKarmanVortexStreet.h" />
     <ClInclude Include="..\..\Src\Modules\AeroDynamics\WindSimulation.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.h" />

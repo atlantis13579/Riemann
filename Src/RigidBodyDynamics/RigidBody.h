@@ -2,8 +2,7 @@
 
 #include <stdint.h>
 #include <vector>
-#include "../Maths/Pose.h"
-#include "../Maths/Matrix3.h"
+#include "../Maths/Transform.h"
 
 class Geometry;
 class RigidBodyStatic;
