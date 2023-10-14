@@ -3,10 +3,13 @@
 #include <vector>
 #include "../Maths/Transform.h"
 
-void ComputeCompositeMassProperties(
-	const std::vector<Pose>& vPose,
-	const std::vector<float>& vMass,
-	const std::vector<float>& vVolume,
-	const std::vector<Matrix3>& vInertia,
-	const std::vector<Vector3>& vCenterOfMass,
-	float& Mass, float& Volume, Matrix3& InertiaMat, Vector3& InertiaVec, Vector3& CenterOfMass);
+struct MassProperties
+{
+	float Mass;
+	float Volume;
+	Matrix3 InertiaMat;
+	Vector3 InertiaVec;
+	Vector3 CenterOfMass;
+};
+
+void ComputeCompositeMassProperties(const std::vector<Pose> &vPose, const std::vector<MassProperties>& vProperties, MassProperties& P);

@@ -4,57 +4,48 @@
 // Calculating inertia for a multi shape rigid body
 // https://en.wikipedia.org/wiki/Parallel_axis_theorem
 // https://stackoverflow.com/questions/13602661/calculating-inertia-for-a-multi-shape-rigid-body
-void ComputeCompositeMassProperties(
-	const std::vector<Pose>& vPose,
-	const std::vector<float>& vMass,
-	const std::vector<float>& vVolume,
-	const std::vector<Matrix3>& vInertia,
-	const std::vector<Vector3>& vCenterOfMass,
-	float& Mass, float& Volume, Matrix3& InertiaMat, Vector3& InertiaVec, Vector3& CenterOfMass)
+void ComputeCompositeMassProperties(const std::vector<Pose>& vPose, const std::vector<MassProperties>& vProperties, MassProperties& P)
 {
-	assert(vPose.size() == vMass.size());
-	assert(vPose.size() == vInertia.size());
-	assert(vPose.size() == vVolume.size());
-	assert(vPose.size() == vCenterOfMass.size());
+	assert(vPose.size() == vProperties.size());
 
-	Mass = 0.0f;
-	Volume = 0.0f;
-	CenterOfMass = Vector3::Zero();
-	InertiaMat = Matrix3::Identity();
-	InertiaVec = Vector3::One();
+	P.Mass = 0.0f;
+	P.Volume = 0.0f;
+	P.CenterOfMass = Vector3::Zero();
+	P.InertiaMat = Matrix3::Identity();
+	P.InertiaVec = Vector3::One();
 
-	if (vPose.empty())
+	if (vProperties.empty())
 	{
 		return;
 	}
 
-	for (size_t i = 0; i < vMass.size(); ++i)
+	for (size_t i = 0; i < vProperties.size(); ++i)
 	{
-		Mass += vMass[i];
-		Volume += vVolume[i];
-		CenterOfMass += (vPose[i].pos + vCenterOfMass[i]) * vMass[i];
+		P.Mass += vProperties[i].Mass;
+		P.Volume += vProperties[i].Volume;
+		P.CenterOfMass += (vPose[i].pos + vProperties[i].CenterOfMass) * vProperties[i].Mass;
 	}
-	CenterOfMass = fabsf(Mass) > 1e-3f ? (CenterOfMass / Mass) : Vector3(0.0f, 0.0f, 0.0f);
-	Mass = std::max(1e-3f, Mass);
-	Volume = std::max(1e-3f, Volume);
+	P.CenterOfMass = fabsf(P.Mass) > 1e-3f ? (P.CenterOfMass / P.Mass) : Vector3(0.0f, 0.0f, 0.0f);
+	P.Mass = std::max(1e-3f, P.Mass);
+	P.Volume = std::max(1e-3f, P.Volume);
 
-	InertiaMat = Matrix3::Zero();
-	for (size_t i = 0; i < vMass.size(); ++i)
+	P.InertiaMat = Matrix3::Zero();
+	for (size_t i = 0; i < vProperties.size(); ++i)
 	{
-		const float d = vMass[i] * (vPose[i].pos + vCenterOfMass[i] - CenterOfMass).SquareLength();
+		const float d = vProperties[i].Mass * (vPose[i].pos + vProperties[i].CenterOfMass - P.CenterOfMass).SquareLength();
 		const Matrix3 D(Vector3(d, d, d), Vector3(d, d, d), Vector3(d, d, d), true);
-		InertiaMat += vPose[i].quat.ToRotationMatrix3() * vInertia[i] + D;
+		P.InertiaMat += vPose[i].quat.ToRotationMatrix3() * vProperties[i].InertiaMat + D;
 	}
 
 	float eigen_values[3];
 	Vector3 eigen_vectors[3];
-	if (InertiaMat.SolveEigenSymmetric(eigen_values, eigen_vectors))
+	if (P.InertiaMat.SolveEigenSymmetric(eigen_values, eigen_vectors))
 	{
-		InertiaVec = Vector3(fabsf(eigen_values[0]), fabsf(eigen_values[1]), fabsf(eigen_values[2]));
+		P.InertiaVec = Vector3(fabsf(eigen_values[0]), fabsf(eigen_values[1]), fabsf(eigen_values[2]));
 	}
 	else
 	{
 		// default value
-		InertiaVec = Vector3(Mass, Mass, Mass);
+		P.InertiaVec = Vector3(P.Mass, P.Mass, P.Mass);
 	}
 }
