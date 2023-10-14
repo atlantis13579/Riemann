@@ -58,7 +58,6 @@
     <ClCompile Include="..\..\Src\Geometry\VoxelField.cpp" />
     <ClCompile Include="..\..\Src\LinearSystem\DenseMatrix.cpp" />
     <ClCompile Include="..\..\Src\LinearSystem\DenseVector.cpp" />
-    <ClCompile Include="..\..\Src\Maths\Matrix3.cpp" />
     <ClCompile Include="..\..\Src\PositionBasedDynamics\MassSpring.cpp" />
     <ClCompile Include="..\..\Src\PositionBasedDynamics\XPBDRigidDynamicsSolver.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\BroadPhase.cpp" />

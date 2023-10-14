@@ -587,9 +587,6 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\KinematicsTree.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Maths\Matrix3.cpp">
-      <Filter>Maths</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\MeshBVH4.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>

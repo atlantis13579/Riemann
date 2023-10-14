@@ -90,7 +90,6 @@
 		ADBBEE11288C41A300C3D6CD /* Matrix2.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE09288C41A300C3D6CD /* Matrix2.h */; };
 		ADBBEE12288C41A300C3D6CD /* Vector3.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE0A288C41A300C3D6CD /* Vector3.h */; };
 		ADBBEE13288C41A300C3D6CD /* Matrix3.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE0B288C41A300C3D6CD /* Matrix3.h */; };
-		ADBBEE14288C41A300C3D6CD /* Matrix3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADBBEE0C288C41A300C3D6CD /* Matrix3.cpp */; };
 		ADBBEE15288C41A300C3D6CD /* Matrix4.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE0D288C41A300C3D6CD /* Matrix4.h */; };
 		ADBBEE16288C41A300C3D6CD /* Vector2.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE0E288C41A300C3D6CD /* Vector2.h */; };
 		ADBBEE17288C41A300C3D6CD /* Vector4.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE0F288C41A300C3D6CD /* Vector4.h */; };
@@ -320,7 +319,6 @@
 		ADBBEE09288C41A300C3D6CD /* Matrix2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Matrix2.h; path = ../../Src/Maths/Matrix2.h; sourceTree = "<group>"; };
 		ADBBEE0A288C41A300C3D6CD /* Vector3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Vector3.h; path = ../../Src/Maths/Vector3.h; sourceTree = "<group>"; };
 		ADBBEE0B288C41A300C3D6CD /* Matrix3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Matrix3.h; path = ../../Src/Maths/Matrix3.h; sourceTree = "<group>"; };
-		ADBBEE0C288C41A300C3D6CD /* Matrix3.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Matrix3.cpp; path = ../../Src/Maths/Matrix3.cpp; sourceTree = "<group>"; };
 		ADBBEE0D288C41A300C3D6CD /* Matrix4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Matrix4.h; path = ../../Src/Maths/Matrix4.h; sourceTree = "<group>"; };
 		ADBBEE0E288C41A300C3D6CD /* Vector2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Vector2.h; path = ../../Src/Maths/Vector2.h; sourceTree = "<group>"; };
 		ADBBEE0F288C41A300C3D6CD /* Vector4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Vector4.h; path = ../../Src/Maths/Vector4.h; sourceTree = "<group>"; };
@@ -675,7 +673,6 @@
 				ADD23CF4288762ED00A849BE /* Frustum.h */,
 				ADD23CE4288762EC00A849BE /* Maths.h */,
 				ADBBEE09288C41A300C3D6CD /* Matrix2.h */,
-				ADBBEE0C288C41A300C3D6CD /* Matrix3.cpp */,
 				ADBBEE0B288C41A300C3D6CD /* Matrix3.h */,
 				ADBBEE0D288C41A300C3D6CD /* Matrix4.h */,
 				ADD23CEC288762ED00A849BE /* MatrixMxN.h */,
@@ -1132,7 +1129,6 @@
 				ADD23CC1288762CC00A849BE /* MotionIntegration.cpp in Sources */,
 				ADAA4C4028898D6000E8AE2E /* NarrowPhase.cpp in Sources */,
 				ADAA4C4228898D6000E8AE2E /* SequentialImpulseSolver.cpp in Sources */,
-				ADBBEE14288C41A300C3D6CD /* Matrix3.cpp in Sources */,
 				AD80071728A3F69A001387F3 /* Polyhedron.cpp in Sources */,
 				ADD23C202887619700A849BE /* Fracture.cpp in Sources */,
 				ADD23CC7288762CC00A849BE /* KinematicsTree.cpp in Sources */,
