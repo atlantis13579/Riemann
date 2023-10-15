@@ -758,5 +758,8 @@
     <ClCompile Include="..\..\Src\Geometry\MassProperties.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Mesh.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

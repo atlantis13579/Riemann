@@ -36,12 +36,12 @@ public:
 		w = _w;
 	}
 	
-	explicit TVector4<T>(const TVector3<T>& v, float w)
+	explicit TVector4<T>(const TVector3<T>& v, float vw)
 	{
 		x = v.x;
 		y = v.y;
 		z = v.z;
-		w = w;
+		w = vw;
 	}
 
 	TVector4<T>(const TVector4<T>& v)

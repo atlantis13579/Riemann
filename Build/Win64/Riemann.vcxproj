@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Mesh.cpp" />
     <ClCompile Include="..\..\Src\Destruction\GeometrySet.cpp" />
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp" />
     <ClCompile Include="..\..\Src\Geometry\MassProperties.cpp" />

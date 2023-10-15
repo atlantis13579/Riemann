@@ -7,6 +7,14 @@
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/DenseTensorField3d.h"
 
+void TestMeshSimplify()
+{
+	Mesh mesh;
+	mesh.LoadObj("data/bunny.obj");
+	mesh.Simplify(0.3f);
+	mesh.ExportObj("data/bunny2.obj");
+}
+
 void TestClip()
 {
 	printf("Running TestClip\n");
@@ -101,6 +109,7 @@ void TestMesh1()
 
 void TestGeometry()
 {
+	TestMeshSimplify();
 	TestClip();
 	TestCatmullRom();
 	TestMesh1();

@@ -1,3 +1,7 @@
+
+#include "../Maths/Vector3.h"
+#include "../Maths/Vector4.h"
+#include "../Maths/Matrix4.h"
 #include "MeshSimplification.h"
 
 #include <assert.h>
@@ -36,12 +40,12 @@ public:
 
 	Vertex(float x = 0, float y = 0, float z = 0) : p(x, y, z)
 	{
+		Q = Matrix4::Zero();
 	}
 
 	bool IsNeighbor(int index) const
 	{
-		for (size_t i = 0; i < m_neighbors.size(); ++i)
-		{
+		for (size_t i = 0; i < m_neighbors.size(); ++i) {
 			if (m_neighbors[i] == index) {
 				return true;
 			}
@@ -58,8 +62,7 @@ public:
 	{
 		for (size_t i = 0; i < m_neighbors.size(); ++i)
 		{
-			if (m_neighbors[i] == index)
-			{
+			if (m_neighbors[i] == index) {
 				m_neighbors[i] = m_neighbors.back();
 				m_neighbors.pop_back();
 				return;
@@ -74,7 +77,7 @@ public:
 		{
 			if (vertices[m_neighbors[i]].IsNeighbor(m_neighbors[j]))
 			{
-				Vector3 norm = (vertices[m_neighbors[i]].p - p).Cross(vertices[m_neighbors[j]].p - p).Unit();
+				Vector3 norm = (vertices[m_neighbors[i]].p - p).Cross(vertices[m_neighbors[j]].p - p).SafeUnit();
 				float w = -(p.Dot(norm));
 				Vector4 v4(norm, w);
 				Q += dp_matrix(v4);
@@ -137,8 +140,8 @@ struct Node
 		index = 0;
 		left = 0;
 		right = 0;
-		minBound = Vector3();
-		maxBound = Vector3();
+		minBound = Vector3::Zero();
+		maxBound = Vector3::Zero();
 		dim = 0;
 	}
 };
@@ -156,7 +159,7 @@ public:
 
 	Pair() {
 		cost = 0.0;
-		optPos = Vector3();
+		optPos = Vector3::Zero();
 		heapIndex = 0;
 		index = 0;
 		v[0] = v[1] = 0;
@@ -164,7 +167,7 @@ public:
 
 	Pair(int v0, int v1) {
 		cost = 0.0;
-		optPos = Vector3();
+		optPos = Vector3::Zero();
 		heapIndex = 0;
 		index = 0;
 		v[0] = v0;
@@ -568,7 +571,7 @@ public:
 		Vector3 v1 = vertices[indices[1]].p;
 		Vector3 v2 = vertices[indices[2]].p;
 
-		return (v1 - v0).Cross(v2 - v0).Unit();
+		return (v1 - v0).Cross(v2 - v0).SafeUnit();
 	}
 
 	friend bool operator==(const Face& face1, const Face& face2) {
@@ -719,59 +722,21 @@ public:
 	~MeshSimplification() {
 	}
 
-	void GetNewVertices(std::vector<Vector3>& _vertices)
+	void GetNewVertices(std::vector<Vector3>& _vertices, std::vector<int>& _indices)
 	{
+		_vertices.clear();
+		_indices.clear();
+
+		int vNum = 0;
+
 		for (int index = 1; index < m_vOffset; ++index)
 		{
 			if (!m_valid[index])
 			{
 				continue;
 			}
+			m_vertices[index].newIndex = vNum;
 			_vertices.emplace_back(m_vertices[index].p.x, m_vertices[index].p.y, m_vertices[index].p.z);
-		}
-	}
-
-	bool ExportOriginalObj(const char *file)
-	{
-		FILE* fp = fopen(file, "w");
-		if (!fp)
-		{
-			return false;
-		}
-
-		fprintf(fp, "# %d vertices, %d faces\n", m_vOffset - 1, m_fOffset - 1);
-
-		for (int index = 1; index < m_vOffset; ++index)
-		{
-			fprintf(fp, "v %.3f %.3f, %.3f\n", m_vertices[index].p.x, m_vertices[index].p.y, m_vertices[index].p.z);
-		}
-
-		for (int index = 1; index < m_fOffset; ++index)
-		{
-			fprintf(fp, "f %d %d, %d\n", m_old_face[index].indices[0], m_old_face[index].indices[1], m_old_face[index].indices[2]);
-		}
-
-		fclose(fp);
-		return true;
-	}
-
-	bool ExportSimplifiedObj(const char* file)
-	{
-		FILE* fp = fopen(file, "w");
-		if (!fp)
-		{
-			return false;
-		}
-
-		int vNum = 0, fNum = 0;
-		for (int index = 1; index < m_vOffset; ++index)
-		{
-			if (!m_valid[index])
-			{
-				continue;
-			}
-			m_vertices[index].newIndex = vNum + 1;
-			fprintf(fp, "v %.3f %.3f, %.3f\n", m_vertices[index].p.x, m_vertices[index].p.y, m_vertices[index].p.z);
 			++vNum;
 		}
 
@@ -788,12 +753,13 @@ public:
 					int neiIndex2 = m_vertices[index].m_neighbors[j];
 					if (!m_inFace[neiIndex1] && !m_inFace[neiIndex2]) {
 						if (m_vertices[neiIndex1].IsNeighbor(neiIndex2)) {
-							++fNum;
 							Face realFace;
 							int b = m_faceMap.get(Face(index, neiIndex1, neiIndex2), realFace);
 							if (b)
 							{
-								fprintf(fp, "f %d %d, %d\n", m_vertices[realFace.indices[0]].newIndex, m_vertices[realFace.indices[1]].newIndex, m_vertices[realFace.indices[2]].newIndex);
+								_indices.push_back(m_vertices[realFace.indices[0]].newIndex);
+								_indices.push_back(m_vertices[realFace.indices[1]].newIndex);
+								_indices.push_back(m_vertices[realFace.indices[2]].newIndex);
 							}
 						}
 					}
@@ -801,8 +767,58 @@ public:
 			}
 			m_inFace[index] = true;
 		}
+	}
 
-		fprintf(fp, "# %d vertices, %d faces\n", vNum, fNum);
+	bool ExportOriginalObj(const char *file)
+	{
+		FILE* fp = fopen(file, "w");
+		if (!fp)
+		{
+			return false;
+		}
+
+		fprintf(fp, "# %d vertices, %d faces\n", m_vOffset - 1, m_fOffset - 1);
+
+		for (int index = 1; index < m_vOffset; ++index)
+		{
+			fprintf(fp, "v %.3f %.3f %.3f\n", m_vertices[index].p.x, m_vertices[index].p.y, m_vertices[index].p.z);
+		}
+
+		for (int index = 1; index < m_fOffset; ++index)
+		{
+			fprintf(fp, "f %d %d %d\n", m_old_face[index].indices[0], m_old_face[index].indices[1], m_old_face[index].indices[2]);
+		}
+
+		fclose(fp);
+		return true;
+	}
+
+	bool ExportSimplifiedObj(const char* file)
+	{
+		FILE* fp = fopen(file, "w");
+		if (!fp)
+		{
+			return false;
+		}
+
+		std::vector<Vector3> _vertices;
+		std::vector<int> _indices;
+		GetNewVertices(_vertices, _indices);
+
+		assert((_indices.size() % 3) == 0);
+		size_t nt = _indices.size() / 3;
+
+		fprintf(fp, "# %d vertices, %d faces\n", (int)_vertices.size(), (int)nt);
+
+		for (size_t i = 0; i < _vertices.size(); ++i)
+		{
+			fprintf(fp, "v %.3f %.3f %.3f\n", _vertices[i].x, _vertices[i].y, _vertices[i].z);
+		}
+
+		for (size_t i = 0; i < nt; ++i)
+		{
+			fprintf(fp, "f %d %d %d\n", _indices[i * 3 + 0] + 1, _indices[i * 3 + 1] + 1, _indices[i * 3 + 2] + 1);
+		}
 
 		fclose(fp);
 		return true;
@@ -950,7 +966,7 @@ public:
 					if (realFace.indices[0] == pair.v[0]) p0 = newPos;
 					else if (realFace.indices[1] == pair.v[0]) p1 = newPos;
 					else p2 = newPos;
-					Vector3 newNorm = (p1 - p0).Cross(p2 - p0).Unit();
+					Vector3 newNorm = (p1 - p0).Cross(p2 - p0).SafeUnit();
 					if (originNorm.Dot(newNorm) < INVERSE_LIMIT)
 					{
 						m_vertices[pair.v[0]].RemovePair(pair.index);
@@ -1086,3 +1102,44 @@ public:
 		return true;
 	}
 };
+
+bool SimplifyMesh(const Vector3* pv, const void* pi, int nv, int nt, bool is16bit, float rate, std::vector<Vector3>& new_v, std::vector<int>& new_i)
+{
+	MeshSimplification s;
+
+	for (int i = 0; i < nv; ++i)
+	{
+		s.AddVertex(pv[i]);
+	}
+
+	for (int i = 0; i < nt; ++i)
+	{
+		int indices[3];
+		if (is16bit)
+		{
+			const uint16_t* pi16 = static_cast<const uint16_t*>(pi);
+			indices[0] = (int)pi16[i * 3 + 0] + 1;
+			indices[1] = (int)pi16[i * 3 + 1] + 1;
+			indices[2] = (int)pi16[i * 3 + 2] + 1;
+		}
+		else
+		{
+			const uint32_t* pi32 = static_cast<const uint32_t*>(pi);
+			indices[0] = (int)pi32[i * 3 + 0] + 1;
+			indices[1] = (int)pi32[i * 3 + 1] + 1;
+			indices[2] = (int)pi32[i * 3 + 2] + 1;
+		}
+
+		Face face(indices);
+		s.AddFace(face);
+	}
+
+	if (!s.Simplify(rate, 0.0f))
+	{
+		return false;
+	}
+
+	s.GetNewVertices(new_v, new_i);
+	return true;
+
+}

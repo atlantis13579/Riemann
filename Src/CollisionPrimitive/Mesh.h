@@ -163,7 +163,9 @@ public:
 		Release();
 
 		if (Is16bit)
-			Flags |= INDICES_16_BIT;
+			Flags |= (INDICES_16_BIT);
+		else
+			Flags &= (~INDICES_16_BIT);
 		NumVertices = Nv;
 		NumTriangles = Nt;
 
@@ -341,7 +343,49 @@ public:
 		return true;
 	}
 
-	bool WriteFlat(const char* name)
+	bool ExportObj(const char *name)
+	{
+		FILE* fp = fopen(name, "w");
+		if (!fp)
+		{
+			return false;
+		}
+
+		int nv = (int)GetNumVertices();
+		int nt = (int)GetNumTriangles();
+
+		fprintf(fp, "# %d vertices, %d faces\n", nv, nt);
+
+		for (int i = 0; i < nv; ++i)
+		{
+			fprintf(fp, "v %.3f %.3f %.3f\n", Vertices[i].x, Vertices[i].y, Vertices[i].z);
+		}
+
+		for (int i = 0; i < nt; ++i)
+		{
+			int i0, i1, i2;
+			if (Is16bitIndices())
+			{
+				i0 = Indices[3 * i + 0];
+				i1 = Indices[3 * i + 1];
+				i2 = Indices[3 * i + 2];
+			}
+			else
+			{
+				uint32_t* Indices32 = GetIndices32();
+				i0 = Indices32[3 * i + 0];
+				i1 = Indices32[3 * i + 1];
+				i2 = Indices32[3 * i + 2];
+			}
+
+			fprintf(fp, "f %d %d %d\n", i0 + 1, i1 + 1, i2 + 1);
+		}
+
+		fclose(fp);
+		return true;
+	}
+
+	bool ExportFlat(const char* name)
 	{
 		FILE* fp = fopen(name, "wb");
 		if (!fp)
@@ -399,6 +443,8 @@ public:
 		CalculateBoundingBox();
 		return true;
 	}
+
+	bool Simplify(float rate);
 
 	int FilterTriangle(std::function<bool(const Vector3&, const Vector3&, const Vector3&)> filter_func)
 	{
