@@ -543,6 +543,9 @@
     <ClInclude Include="..\..\Src\Geometry\MeshSimplification.h">
       <Filter>Geometry</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Core\BitSet.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">

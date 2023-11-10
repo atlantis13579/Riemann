@@ -921,7 +921,7 @@ bool AxisAlignedBox3d::IntersectTriangle(const Vector3& A, const Vector3& B, con
 
 Vector3 AxisAlignedBox3d::ClosestPointToPoint(const Vector3& Point) const
 {
-	Vector3 closest = GetCenter();
+	Vector3 closest = Point;
 
 	for (int i = 0; i < 3; i++)
 	{
