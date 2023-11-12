@@ -1,4 +1,5 @@
-#include <assert.h>
+#pragma once
+
 #include <string>
 #include <vector>
 
@@ -33,15 +34,15 @@ public:
 		}
 	}
 
-	std::string debug_str() const
+	std::string to_string() const
 	{
 		std::string str;
 		for (size_t i = 0; i < m_set.size(); ++i)
 		{
 			if (m_set[i] == 0)
 				continue;
-			int k = (i < m_set.size() - 1) ? 64 : (m_size & 63);
-			for (int j = 0; j < k; ++j)
+			int k = (i < m_set.size() - 1) ? 63 : (m_size & 63);
+			for (int j = 0; j <= k; ++j)
 			{
 				if (m_set[i] & (1i64 << j))
 				{
@@ -50,6 +51,25 @@ public:
 			}
 		}
 		return str;
+	}
+
+	std::vector<int> to_vector() const
+	{
+		std::vector<int> ret;
+		for (size_t i = 0; i < m_set.size(); ++i)
+		{
+			if (m_set[i] == 0)
+				continue;
+			int k = (i < m_set.size() - 1) ? 63 : (m_size & 63);
+			for (int j = 0; j <= k; ++j)
+			{
+				if (m_set[i] & (1i64 << j))
+				{
+					ret.push_back((int)(i * 64 + j));
+				}
+			}
+		}
+		return ret;
 	}
 
 	size_t size() const
@@ -84,9 +104,8 @@ public:
 		}
 	}
 
-	bool operator()(int i) const
+	bool operator[](size_t i) const
 	{
-		assert(0 <= i && i < m_size);
 		return m_set[i >> 8] & (1i64 << (i & 63)) ? true : false;
 	}
 
@@ -97,15 +116,13 @@ public:
 		return *this;
 	}
 
-	bool get(int i) const
+	bool get(size_t i) const
 	{
-		assert(0 <= i && i < m_size);
 		return m_set[i >> 8] & (1i64 << (i & 63)) ? true : false;
 	}
 
-	void set(int i, bool b)
+	void set(size_t i, bool b)
 	{
-		assert(0 <= i && i < m_size);
 		if (b)
 		{
 			m_set[i >> 8] |= (1i64 << (i & 63));
@@ -116,19 +133,31 @@ public:
 		}
 	}
 
+	bool get_safe(size_t i) const
+	{
+		if (0 <= i && i < m_size)
+		{
+			return get(i);
+		}
+		return false;
+	}
+
+	void set_safe(size_t i, bool b)
+	{
+		if (0 <= i && i < m_size)
+		{
+			set(i, b);
+		}
+	}
+
 	bit_set operator~() const
 	{
-		bit_set ret(m_size);
-		for (size_t i = 0; i < m_set.size(); ++i)
-		{
-			ret.m_set[i] = ~m_set[i];
-		}
-		return ret;
+		return set_complement();
 	}
 
 	bit_set operator-() const
 	{
-		return operator~();
+		return set_complement();
 	}
 
 	bit_set operator+(const bit_set& rhs) const
@@ -161,46 +190,32 @@ public:
 		return ret;
 	}
 
-	const bit_set& operator+=(const bit_set& rhs)
+	bit_set set_complement() const
 	{
-		if (m_size < rhs.m_size)
+		bit_set ret(m_size);
+		for (size_t i = 0; i < m_set.size(); ++i)
 		{
-			resize(rhs.m_size);
+			ret.m_set[i] = ~m_set[i];
 		}
-		for (size_t i = 0; i < rhs.m_set.size(); ++i)
-		{
-			m_set[i] |= rhs.m_set[i];
-		}
-		return *this;
-	}
-
-	const bit_set& operator-=(const bit_set& rhs)
-	{
-		if (m_size < rhs.m_size)
-		{
-			resize(rhs.m_size);
-		}
-		for (size_t i = 0; i < rhs.m_set.size(); ++i)
-		{
-			m_set[i] &= (~rhs.m_set[i]);
-		}
-		return *this;
-	}
-
-	const bit_set& operator&=(const bit_set& rhs)
-	{
-		if (m_size < rhs.m_size)
-		{
-			resize(rhs.m_size);
-		}
-		for (size_t i = 0; i < rhs.m_set.size(); ++i)
-		{
-			m_set[i] &= rhs.m_set[i];
-		}
-		return *this;
+		return ret;
 	}
 
 private:
 	size_t					m_size;
 	std::vector<uint64_t>   m_set;
 };
+
+inline bit_set set_union(const bit_set& lhs, const bit_set& rhs)
+{
+	return lhs + rhs;
+}
+
+inline bit_set set_difference(const bit_set& lhs, const bit_set& rhs)
+{
+	return lhs - rhs;
+}
+
+inline bit_set set_intersection(const bit_set& lhs, const bit_set& rhs)
+{
+	return lhs & rhs;
+}

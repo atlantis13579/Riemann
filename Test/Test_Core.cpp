@@ -4,6 +4,7 @@
 #include <chrono>
 #include "Test.h"
 #include "../Src/Core/Graph.h"
+#include "../Src/Core/BitSet.h"
 #include "../Src/Core/JobSystem.h"
 #include "../Src/Core/ThreadPool.h"
 #include "../Src/Core/RingBuffer.h"
