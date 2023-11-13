@@ -6,7 +6,7 @@
 class bit_set
 {
 public:
-	explicit bit_set(size_t size)
+	explicit bit_set(size_t size = 0)
 	{
 		m_size = size;
 		m_set.resize((m_size + 63) / 64, 0);
@@ -30,7 +30,7 @@ public:
 		m_set.resize((m_size + 63) / 64, 0);
 		for (int i : list)
 		{
-			m_set[i >> 8] |= (1i64 << (i & 63));
+			m_set[i >> 6] |= (1LL << (i & 63));
 		}
 	}
 
@@ -44,7 +44,7 @@ public:
 			int k = (i < m_set.size() - 1) ? 63 : (m_size & 63);
 			for (int j = 0; j <= k; ++j)
 			{
-				if (m_set[i] & (1i64 << j))
+				if (m_set[i] & (1LL << j))
 				{
 					str += std::to_string(i * 64 + j) + ", ";
 				}
@@ -63,7 +63,7 @@ public:
 			int k = (i < m_set.size() - 1) ? 63 : (m_size & 63);
 			for (int j = 0; j <= k; ++j)
 			{
-				if (m_set[i] & (1i64 << j))
+				if (m_set[i] & (1LL << j))
 				{
 					ret.push_back((int)(i * 64 + j));
 				}
@@ -98,7 +98,7 @@ public:
 			size_t k = (m_size + 63) / 64 - 1;
 			for (int i = m_size & 63; i < 64; ++i)
 			{
-				m_set[k] &= ~(1i64 << i);
+				m_set[k] &= ~(1LL << i);
 			}
 			m_size = new_size;
 		}
@@ -106,7 +106,7 @@ public:
 
 	bool operator[](size_t i) const
 	{
-		return m_set[i >> 8] & (1i64 << (i & 63)) ? true : false;
+		return m_set[i >> 6] & (1LL << (i & 63)) ? true : false;
 	}
 
 	const bit_set& operator=(const bit_set& rhs)
@@ -118,18 +118,18 @@ public:
 
 	bool get(size_t i) const
 	{
-		return m_set[i >> 8] & (1i64 << (i & 63)) ? true : false;
+		return m_set[i >> 6] & (1LL << (i & 63)) ? true : false;
 	}
 
 	void set(size_t i, bool b)
 	{
 		if (b)
 		{
-			m_set[i >> 8] |= (1i64 << (i & 63));
+			m_set[i >> 6] |= (1LL << (i & 63));
 		}
 		else
 		{
-			m_set[i >> 8] &= ~(1i64 << (i & 63));
+			m_set[i >> 6] &= ~(1LL << (i & 63));
 		}
 	}
 
