@@ -18,10 +18,10 @@ public:
 		m_set = rhs.m_set;
 	}
 
-	bit_set(const std::initializer_list<int>& list)
+	bit_set(const std::initializer_list<uint32_t>& list)
 	{
 		m_size = 0;
-		for (int i : list)
+		for (uint32_t i : list)
 		{
 			if (i > m_size)
 				m_size = i;
@@ -36,12 +36,14 @@ public:
 
 	std::string to_string() const
 	{
+		if (m_size == 0)
+			return "";
 		std::string str;
 		for (size_t i = 0; i < m_set.size(); ++i)
 		{
 			if (m_set[i] == 0)
 				continue;
-			int k = (i < m_set.size() - 1) ? 63 : (m_size & 63);
+			int k = (i < m_set.size() - 1) ? 63 : ((m_size - 1) & 63);
 			for (int j = 0; j <= k; ++j)
 			{
 				if (m_set[i] & (1LL << j))
@@ -53,19 +55,21 @@ public:
 		return str;
 	}
 
-	std::vector<int> to_vector() const
+	std::vector<uint32_t> to_vector() const
 	{
-		std::vector<int> ret;
+		if (m_size == 0)
+			return {};
+		std::vector<uint32_t> ret;
 		for (size_t i = 0; i < m_set.size(); ++i)
 		{
 			if (m_set[i] == 0)
 				continue;
-			int k = (i < m_set.size() - 1) ? 63 : (m_size & 63);
+			int k = (i < m_set.size() - 1) ? 63 : ((m_size - 1) & 63);
 			for (int j = 0; j <= k; ++j)
 			{
 				if (m_set[i] & (1LL << j))
 				{
-					ret.push_back((int)(i * 64 + j));
+					ret.push_back((uint32_t)(i * 64 + j));
 				}
 			}
 		}
@@ -133,6 +137,16 @@ public:
 		}
 	}
 
+	void insert(size_t i)
+	{
+		m_set[i >> 6] |= (1LL << (i & 63));
+	}
+
+	void erase(size_t i)
+	{
+		m_set[i >> 6] &= ~(1LL << (i & 63));
+	}
+
 	bool get_safe(size_t i) const
 	{
 		if (0 <= i && i < m_size)
@@ -163,9 +177,9 @@ public:
 	bit_set operator+(const bit_set& rhs) const
 	{
 		bit_set ret(std::max(m_set.size(), rhs.m_set.size()));
-		for (size_t i = 0; i < std::min(m_set.size(), rhs.m_set.size()); ++i)
+		for (size_t i = 0; i < ret.m_set.size(); ++i)
 		{
-			ret.m_set[i] = m_set[i] | rhs.m_set[i];
+			ret.m_set[i] = (i < m_set.size() ? m_set[i] : 0) | (i < rhs.m_set.size() ? rhs.m_set[i] : 0);
 		}
 		return ret;
 	}
@@ -173,9 +187,9 @@ public:
 	bit_set operator-(const bit_set& rhs) const
 	{
 		bit_set ret(std::max(m_size, rhs.m_size));
-		for (size_t i = 0; i < std::min(m_set.size(), rhs.m_set.size()); ++i)
+		for (size_t i = 0; i < ret.m_set.size(); ++i)
 		{
-			ret.m_set[i] = m_set[i] & (~rhs.m_set[i]);
+			ret.m_set[i] = (i < m_set.size() ? m_set[i] : 0) & ~(i < rhs.m_set.size() ? rhs.m_set[i] : 0);
 		}
 		return ret;
 	}
