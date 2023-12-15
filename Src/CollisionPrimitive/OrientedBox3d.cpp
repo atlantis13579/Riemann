@@ -71,7 +71,7 @@ Box3d OrientedBox3d::ComputeBoundingVolume(const Vector3& Center, const Vector3&
 	return box;
 }
 
-Box3d OrientedBox3d::GetBoundingVolume() const
+Box3d OrientedBox3d::CalculateBoundingVolume() const
 {
 	return OrientedBox3d::ComputeBoundingVolume(Center, Extent, Rotation);
 }

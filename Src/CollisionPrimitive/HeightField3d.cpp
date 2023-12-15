@@ -276,7 +276,7 @@ bool HeightField3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) cons
 template<class Shape>
 bool IntersectHF(const HeightField3d *hf, const Shape &shape)
 {
-	const Box3d b = shape.GetBoundingVolume();
+	const Box3d b = shape.CalculateBoundingVolume();
 	const Box3d& BV = hf->BV;
 	const float InvDX = hf->InvDX;
 	const float InvDZ = hf->InvDZ;
@@ -324,6 +324,16 @@ bool HeightField3d::IntersectCapsule(const Vector3& X0, const Vector3& X1, float
 {
 	Capsule3d capsule(X0, X1, Radius);
 	return IntersectHF(this, capsule);
+}
+
+bool HeightField3d::CalculateVolumeProperties(MassParameters* p, float Density) const
+{
+	p->Volume = 0.0f;
+	p->Mass = 0.0f;
+	p->CenterOfMass = BV.GetCenter();
+	p->BoundingVolume = BV;
+	p->InertiaMat = Matrix3::Identity();
+	return true;
 }
 
 bool HeightField3d::GetCellBV(int i, int j, Box3d &box) const

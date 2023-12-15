@@ -170,14 +170,14 @@ public:
 // Fast and Accurate Computation of Polyhedral Mass Properties, by Brian Mirtich
 // https://people.eecs.berkeley.edu/~jfc/mirtich/massProps.html
 // https://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
-Matrix3 ComputePolyhedralInertiaTensor_VolumeIntegration(const ConvexHull3d& hull)
+Matrix3 ComputePolyhedralInertiaTensor_VolumeIntegration(const ConvexHull3d& hull, float density, float &Volume, float &Mass, Vector3& CenterOfMass)
 {
 	PolyhedralMassProperties mp;
 	mp.computeVolumeIntegrals(hull);
 
-	float density = 1.0;  // assume unit density
-	float mass = density * mp.T0;
-	const Vector3 CenterOfMass = mp.T1 / mp.T0;
+	Volume = mp.T0;
+	Mass = density * mp.T0;
+	CenterOfMass = mp.T1 / mp.T0;
 	Matrix3 Inertia;
 
 	Inertia[0][0] = density * (mp.T2[1] + mp.T2[2]);
@@ -188,12 +188,12 @@ Matrix3 ComputePolyhedralInertiaTensor_VolumeIntegration(const ConvexHull3d& hul
 	Inertia[2][0] = Inertia[0][2] = -density * mp.TP[2];
 
 	/* translate inertia tensor to center of mass */
-	Inertia[0][0] -= mass * (CenterOfMass[1] * CenterOfMass[1] + CenterOfMass[2] * CenterOfMass[2]);
-	Inertia[1][1] -= mass * (CenterOfMass[2] * CenterOfMass[2] + CenterOfMass[0] * CenterOfMass[0]);
-	Inertia[2][2] -= mass * (CenterOfMass[0] * CenterOfMass[0] + CenterOfMass[1] * CenterOfMass[1]);
-	Inertia[0][1] = Inertia[1][0] += mass * CenterOfMass[0] * CenterOfMass[1];
-	Inertia[1][2] = Inertia[2][1] += mass * CenterOfMass[1] * CenterOfMass[2];
-	Inertia[2][0] = Inertia[0][2] += mass * CenterOfMass[2] * CenterOfMass[0];
+	Inertia[0][0] -= Mass * (CenterOfMass[1] * CenterOfMass[1] + CenterOfMass[2] * CenterOfMass[2]);
+	Inertia[1][1] -= Mass * (CenterOfMass[2] * CenterOfMass[2] + CenterOfMass[0] * CenterOfMass[0]);
+	Inertia[2][2] -= Mass * (CenterOfMass[0] * CenterOfMass[0] + CenterOfMass[1] * CenterOfMass[1]);
+	Inertia[0][1] = Inertia[1][0] += Mass * CenterOfMass[0] * CenterOfMass[1];
+	Inertia[1][2] = Inertia[2][1] += Mass * CenterOfMass[1] * CenterOfMass[2];
+	Inertia[2][0] = Inertia[0][2] += Mass * CenterOfMass[2] * CenterOfMass[0];
 
 	return Inertia;
 }

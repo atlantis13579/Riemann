@@ -61,24 +61,34 @@ public:
 		return Height * 0.5f;
 	}
 
-	float GetVolume() const
-	{
-		return GetVolume(Radius, Height);
+	bool	CalculateVolumeProperties(MassParameters* p, float Density) const
+	{ 
+		p->Volume = CalculateVolume();
+		p->Mass = p->Volume * Density;
+		p->BoundingVolume = CalculateBoundingVolume();
+		p->CenterOfMass = p->BoundingVolume.GetCenter();
+		p->InertiaMat = CalculateInertiaTensor(p->Mass);
+		return true;
 	}
 
-	static float GetVolume(float Radius, float Height)
+	float CalculateVolume() const
+	{
+		return CalculateVolume(Radius, Height);
+	}
+
+	static float CalculateVolume(float Radius, float Height)
 	{
 		return (float)M_PI * Radius * Radius * Height;
 	}
 
-	Box3d		GetBoundingVolume() const;
+	Box3d		CalculateBoundingVolume() const;
 
-	Matrix3 GetInertiaTensor(float Mass) const
+	Matrix3 CalculateInertiaTensor(float Mass) const
 	{
-		return GetInertiaTensor(Radius, Height, Mass);
+		return CalculateInertiaTensor(Radius, Height, Mass);
 	}
 
-	static Matrix3 GetInertiaTensor(float Radius, float Height, float Mass)
+	static Matrix3 CalculateInertiaTensor(float Radius, float Height, float Mass)
 	{
 		// https://www.wolframalpha.com/input/?i=cylinder
 		float RR = Radius * Radius;

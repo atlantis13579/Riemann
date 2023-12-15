@@ -42,7 +42,7 @@ void TestBasicMath()
 	v1 = Vector3(1.0f, 2.0f, 3.0f);
 
 	mat1.FromAxisAngle(v1.Unit(), ToRadian(30.0f));
-	q1.FromRotationMatrix(mat1);
+	q1.FromRotationMatrix3(mat1);
 	mat2 = q1.ToRotationMatrix3();
 
 	dist = (mat1 - mat2).L1Norm();

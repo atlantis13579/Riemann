@@ -42,9 +42,6 @@ static_assert(sizeof(ConvexMeshFace) == 20, "sizeof(HullFace3d) not right");
 class ConvexMesh
 {
 public:
-	Vector3				CenterOfMass;
-	Box3d				BoundingVolume;
-	Matrix3				Inertia;
 	Vector3*			Vertices;
 	ConvexMeshEdge*		Edges;
 	ConvexMeshFace*		Faces;
@@ -102,32 +99,13 @@ public:
 		return NumIndices;
 	}
 
-	Vector3		GetNormal(uint32_t i) const
-	{
-		return (Vertices[i] - CenterOfMass).Unit();
-	}
-
 	bool		ValidateStructure() const;
 	
-	bool		BuildHull();
-	void		ComputeCenterOfMass();
-	void		ComputeInertia_VolumeIntegration();
-	void		ComputeInertia_PCA();
-	void		ComputeBoundingVolume();
+	Box3d		ComputeBoundingVolume(const Vector3& CenterOfMass) const;
 
 	bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 
-	const Box3d&	GetBoundingVolume() const
-	{
-		return BoundingVolume;
-	}
-	
-	float		GetVolume() const { return 0.0f; }			// TODO
-
-	Matrix3		GetInertiaTensor(float Mass) const
-	{
-		return Inertia * Mass;
-	}
+	bool		CalculateVolumeProperties(MassParameters* p, float Density) const;
 
 	Vector3		GetSupport(const Vector3& Direction) const;
 	int			GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;

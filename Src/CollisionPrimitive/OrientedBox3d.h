@@ -32,7 +32,7 @@ public:
 	
 	static OrientedBox3d	ComputeBoundingOBB_PCA(const Vector3 *points, int n);
 	static Box3d			ComputeBoundingVolume(const Vector3& Center, const Vector3& Extent, const Matrix3& Rot);
-	Box3d					GetBoundingVolume() const;
+	Box3d					CalculateBoundingVolume() const;
 
 	bool	IntersectPoint(const Vector3& point) const;
 	bool 	IntersectPlane(const Vector3& normal, const float D) const;

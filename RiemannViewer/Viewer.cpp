@@ -53,11 +53,17 @@ void WorldViewer::CreateDemo()
 			rp.rigidType = RigidType::Dynamic;
 			rp.invMass = 0.1f;
 			Vector3 p0 = GetCameraPosition();
-			Geometry* sphere = GeometryFactory::CreateSphere(p0, 1.0f);
-			RigidBodyDynamic* body = m_World->CreateRigidBody(sphere, rp)->CastDynamic();
-			body->DisableGravity = false;
+			RigidBodyDynamic* body = m_World->CreateRigidBody(rp, Pose(p0))->CastDynamic();
+
+			{
+				Geometry* sphere = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
+				sphere->SetLocalPosition(Vector3::Zero());
+				body->AddGeometry(sphere);
+				AddGeometry(m_Renderer, sphere);
+			}
+
+			body->DisableGravity = true;
 			body->ApplyLinearAcceleration((m_CamCenter - p0).Unit() * 100.0f);
-			AddGeometry(m_Renderer, sphere);
 		}
 	};
 }
@@ -278,7 +284,7 @@ void WorldViewer::KeyboardMsg(char c)
 		};
 
 		int idx = c - '1';
-		if (idx <= sizeof(demos) / sizeof(demos[0]))
+		if (idx < sizeof(demos) / sizeof(demos[0]))
 		{
 			m_Renderer->Reset();
 			m_World->Reset();

@@ -29,29 +29,19 @@ public:
 		GeometryFactory::ObjectCount[(int)m_Type]--;
 	}
 
-	virtual Matrix3			GetInertia_LocalSpace(float Mass) const override final
+	virtual void			UpdateVolumeProperties() override final
 	{
-		return GEOM_TYPE::GetInertiaTensor(Mass);
+		GEOM_TYPE::CalculateVolumeProperties(&m_VolumeProperties, m_Density);
 	}
 
-	virtual Vector3			GetSupport_LocalSpace(const Vector3& Direction) const override final
+	virtual Vector3			CalculateSupport_LocalSpace(const Vector3& Direction) const override final
 	{
 		return GEOM_TYPE::GetSupport(Direction);
 	}
 
-	virtual void			GetSupportFace_LocalSpace(const Vector3& Direction, SupportFace& Face) const override final
+	virtual void			CalculateSupportFace_LocalSpace(const Vector3& Direction, SupportFace& Face) const override final
 	{
 		Face.SetSize(GEOM_TYPE::GetSupportFace(Direction, Face.GetData()));
-	}
-
-	virtual Box3d			GetBoundingVolume_LocalSpace() const override final
-	{
-		return GEOM_TYPE::GetBoundingVolume();
-	}
-	
-	virtual float			GetVolume() const override final
-	{
-		return GEOM_TYPE::GetVolume();
 	}
 
 	virtual bool			RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const override final
@@ -62,8 +52,8 @@ public:
 		}
 		Result->AddTestCount(1);
 
-		const Vector3 Origin_Local = m_CenterOfMassTransform.WorldToLocal(Origin);
-		const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
+		const Vector3 Origin_Local = m_WorldTransform.WorldToLocal(Origin);
+		const Vector3 Dir_Local = m_WorldTransform.WorldToLocalDirection(Direction);
 		const GEOM_TYPE* p = (const GEOM_TYPE*)this;
 		float t;
 		if (p->IntersectRay(Origin_Local, Dir_Local, &t) && t < Option->MaxDist)
@@ -83,8 +73,8 @@ bool				TGeometry<TriangleMesh>::RayCast(const Vector3& Origin, const Vector3& D
 	HitOption.maxDist = Option->MaxDist;
 
 	TriMeshHitResult HitResult = { 0 };
-	const Vector3 Origin_Local = m_CenterOfMassTransform.WorldToLocal(Origin);
-	const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
+	const Vector3 Origin_Local = m_WorldTransform.WorldToLocal(Origin);
+	const Vector3 Dir_Local = m_WorldTransform.WorldToLocalDirection(Direction);
 	const TriangleMesh* p = (const TriangleMesh*)this;
 	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 	Result->hitTime = HitResult.hitTime;
@@ -99,8 +89,8 @@ bool				TGeometry<HeightField3d>::RayCast(const Vector3& Origin, const Vector3& 
 	HitOption.maxDist = Option->MaxDist;
 
 	HeightFieldHitResult HitResult = { 0 };
-	const Vector3 Origin_Local = m_CenterOfMassTransform.WorldToLocal(Origin);
-	const Vector3 Dir_Local = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
+	const Vector3 Origin_Local = m_WorldTransform.WorldToLocal(Origin);
+	const Vector3 Dir_Local = m_WorldTransform.WorldToLocalDirection(Direction);
 	const HeightField3d* p = (const HeightField3d*)this;
 	bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 	Result->hitTime = HitResult.hitTime;
@@ -110,40 +100,37 @@ bool				TGeometry<HeightField3d>::RayCast(const Vector3& Origin, const Vector3& 
 
 Geometry::Geometry()
 {
+	m_Density = 1.0f;
 	m_Parent = nullptr;
-	m_Next = nullptr;
+	m_NodeId = -1;
+}
+
+Geometry::~Geometry()
+{
+
 }
 
 // static
-Vector3		Geometry::GetCenterOfMassMultibody(const Geometry* geom)
+Pose		Geometry::CalculateCenterOfMassPoseMultibody(const std::vector<Geometry*>& geoms)
 {
-	Vector3 CMV = Vector3::Zero();
+	Pose p;
+	p.pos = Vector3::Zero();
 	float vol = 0.0f;
-	const Geometry *g = geom;
-	while (g)
+
+	for (size_t i = 0; i < geoms.size(); ++i)
 	{
-		CMV += g->GetCenterOfMass() * g->GetVolume();
-		vol += g->GetVolume();
-		g = g->GetNext();
+		Geometry* g = geoms[i];
+		p.pos += g->GetWorldPosition() * g->GetMassParameters()->Mass;
+		vol += g->GetMassParameters()->Volume;
 	}
 	if (vol > 1e-6f)
 	{
-		CMV = CMV / vol;
+		p.pos = p.pos / vol;
 	}
-	return CMV;
-}
 
-// static
-Quaternion	Geometry::GetRotationMultibody(const Geometry* geom)
-{
-	return geom->GetRotation();
-}
+	p.quat = (geoms.size() == 1) ? geoms[1]->GetWorldRotation() : Quaternion::One();
 
-// static
-Matrix3	Geometry::GetInverseInertiaMultibody(const Geometry* geom, float InvMass)
-{
-	// TODO
-	return geom->GetInverseInertia_LocalSpace(InvMass);
+	return p;
 }
 
 bool		Geometry::Intersect(const Geometry* Geom) const
@@ -151,13 +138,13 @@ bool		Geometry::Intersect(const Geometry* Geom) const
 	IntersectFunc func = GeometryIntersection::GetIntersectFunc(m_Type, Geom->GetShapeType());
 	if (func)
 	{
-		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_CenterOfMassTransform, Geom->GetCenterOfMassTransform());
+		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform());
 	}
 
 	func = GeometryIntersection::GetIntersectFunc(Geom->GetShapeType(), m_Type);
 	if (func)
 	{
-		return func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), Geom->GetCenterOfMassTransform(), &m_CenterOfMassTransform);
+		return func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), Geom->GetWorldTransform(), &m_WorldTransform);
 	}
 
 	assert(false);
@@ -169,13 +156,13 @@ bool		Geometry::Penetration(const Geometry* Geom, Vector3 *Normal, float* Depth)
 	PenetrationFunc func = GeometryIntersection::GetPenetrationFunc(m_Type, Geom->GetShapeType());
 	if (func)
 	{
-		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_CenterOfMassTransform, Geom->GetCenterOfMassTransform(), Normal, Depth);
+		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform(), Normal, Depth);
 	}
 
 	func = GeometryIntersection::GetPenetrationFunc(Geom->GetShapeType(), m_Type);
 	if (func)
 	{
-		bool succ = func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), Geom->GetCenterOfMassTransform(), &m_CenterOfMassTransform, Normal, Depth);
+		bool succ = func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), Geom->GetWorldTransform(), &m_WorldTransform, Normal, Depth);
 		if (succ)
 		{
 			*Normal = -*Normal;
@@ -199,39 +186,35 @@ bool		Geometry::Sweep(const Vector3& Direction, const Geometry* Geom, Vector3 *n
 {
 	SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
 	assert(func);
-	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_CenterOfMassTransform, Geom->GetCenterOfMassTransform(), Direction, normal, t);
+	return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform(), Direction, normal, t);
 }
 
 void 		Geometry::UpdateBoundingVolume()
 {
-	m_BoxWorld = GetBoundingVolume_LocalSpace().Transform(m_CenterOfMassTransform.transform.pos, m_CenterOfMassTransform.transform.quat);
+	m_BoxWorld = m_VolumeProperties.BoundingVolume.Transform(m_WorldTransform.transform.pos, m_WorldTransform.transform.quat);
 }
 
 Vector3		Geometry::GetSupport_WorldSpace(const Vector3& Direction) const
 {
-	Vector3 DirLocal = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
-	Vector3 SupportLocal = GetSupport_LocalSpace(DirLocal);
-	Vector3 SupportWorld = m_CenterOfMassTransform.LocalToWorld(SupportLocal);
+	Vector3 DirLocal = m_WorldTransform.WorldToLocalDirection(Direction);
+	Vector3 SupportLocal = CalculateSupport_LocalSpace(DirLocal);
+	Vector3 SupportWorld = m_WorldTransform.LocalToWorld(SupportLocal);
 	return SupportWorld;
 }
 
 void		Geometry::GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const
 {
-	Vector3 DirLocal = m_CenterOfMassTransform.WorldToLocalDirection(Direction);
-	GetSupportFace_LocalSpace(DirLocal, Face);
+	Vector3 DirLocal = m_WorldTransform.WorldToLocalDirection(Direction);
+	CalculateSupportFace_LocalSpace(DirLocal, Face);
 	for (int i = 0; i < Face.GetSize(); ++i)
 	{
-		Face[i] = m_CenterOfMassTransform.LocalToWorld(Face[i]);
+		Face[i] = m_WorldTransform.LocalToWorld(Face[i]);
 	}
 }
 
-Matrix3		Geometry::GetInverseInertia_LocalSpace(float InvMass) const
+Matrix3		Geometry::GetInertiaTensor_LocalSpace() const
 {
-	if (InvMass == 0.0f)
-	{
-		return Matrix3::Zero();
-	}
-	return GetInertia_LocalSpace(1.0f / InvMass).Inverse();
+	return m_VolumeProperties.InertiaMat;
 }
 
 void 		GeometryFactory::DeleteGeometry(Geometry* Geom)
@@ -244,9 +227,9 @@ Geometry*	GeometryFactory::CreateOBB_placement(void* pBuf, const Vector3& Center
 	TGeometry<AxisAlignedBox3d>* p = pBuf ? new (pBuf) TGeometry<AxisAlignedBox3d>() : new TGeometry<AxisAlignedBox3d>();
 	p->Min = -HalfExtent;
 	p->Max = HalfExtent;
-	p->SetCenterOfMass(Center);
-	p->SetRotation(Rot);
-	p->UpdateBoundingVolume();
+	p->UpdateVolumeProperties();
+	p->SetWorldTransform(Center, Rot);
+
 	return (Geometry*)p;
 }
 
@@ -255,9 +238,8 @@ Geometry* GeometryFactory::CreateSphere_placement(void* pBuf, const Vector3& Cen
 	TGeometry<Sphere3d>* p = pBuf ? new (pBuf)TGeometry<Sphere3d>() : new TGeometry<Sphere3d>();
 	p->Center = Vector3::Zero();
 	p->Radius = Radius;
-	p->SetCenterOfMass(Center);
-	p->SetRotation(Quaternion::One());
-	p->UpdateBoundingVolume();
+	p->UpdateVolumeProperties();
+	p->SetWorldTransform(Center, Quaternion::One());
 	return (Geometry*)p;
 }
 
@@ -271,9 +253,8 @@ Geometry* GeometryFactory::CreateCapsule_placement(void* pBuf, const Vector3& X0
 	Vector3 Center = (X0 + X1) * 0.5f;
 	TGeometry<Capsule3d>* p = pBuf ? new (pBuf)TGeometry<Capsule3d>() : new TGeometry<Capsule3d>();
 	p->Init(quat.Conjugate() * (X0 - Center), quat.Conjugate() * (X1 - Center), Radius);
-	p->SetCenterOfMass(Center);
-	p->SetRotation(quat);
-	p->UpdateBoundingVolume();
+	p->UpdateVolumeProperties();
+	p->SetWorldTransform(Center, quat);
 	return (Geometry*)p;
 }
 
@@ -290,9 +271,8 @@ Geometry*	GeometryFactory::CreatePlane(const Vector3& Center, const Vector3& Nor
 	p->D = 0.0f;
 	Quaternion quat;
 	quat.FromTwoAxis(Vector3::UnitY(), Normal);
-	p->SetCenterOfMass(Center);
-	p->SetRotation(quat);
-	p->UpdateBoundingVolume();
+	p->UpdateVolumeProperties();
+	p->SetWorldTransform(Center, quat);
 	return (Geometry*)p;
 }
 
@@ -312,9 +292,8 @@ Geometry*	GeometryFactory::CreateCylinder(const Vector3& X0, const Vector3& X1, 
 	Vector3 Center = (X0 + X1) * 0.5f;
 	TGeometry<Cylinder3d>* p = new TGeometry<Cylinder3d>();
 	p->Init(quat.Conjugate() * (X0 - Center), quat.Conjugate() * (X1 - Center), Radius);
-	p->SetCenterOfMass(Center);
-	p->SetRotation(quat);
-	p->UpdateBoundingVolume();
+	p->UpdateVolumeProperties();
+	p->SetWorldTransform(Center, quat);
 	return (Geometry*)p;
 }
 
@@ -329,18 +308,16 @@ Geometry* GeometryFactory::CreateTriangle(const Vector3& A, const Vector3& B, co
 	Vector3 Center = (A + B + C) / 3.0f;
 	TGeometry<Triangle3d>* p = new TGeometry<Triangle3d>();
 	p->Init(A - Center, B - Center, C - Center);
-	p->SetCenterOfMass(Center);
-	p->SetRotation(Quaternion::One());
-	p->UpdateBoundingVolume();
+	p->UpdateVolumeProperties();
+	p->SetWorldTransform(Center, Quaternion::One());
 	return (Geometry*)p;
 }
 
 Geometry* GeometryFactory::CreateConvexMesh()
 {
 	TGeometry<ConvexMesh>* p = new TGeometry<ConvexMesh>();
-	p->SetCenterOfMass(Vector3::Zero());
-	p->SetRotation(Quaternion::One());
-	p->UpdateBoundingVolume();
+	p->UpdateVolumeProperties();
+	p->SetWorldTransform(Vector3::Zero(), Quaternion::One());
 	return (Geometry*)p;
 }
 
@@ -348,17 +325,15 @@ Geometry*	GeometryFactory::CreateHeightField(const Box3d &Bv, int nRows, int nCo
 {
 	TGeometry<HeightField3d>* p = new TGeometry<HeightField3d>();
 	p->Init(Bv, nRows, nCols);
-	p->SetCenterOfMass(Vector3::Zero());
-	p->SetRotation(Quaternion::One());
-	p->UpdateBoundingVolume();
+	p->UpdateVolumeProperties();
+	p->SetWorldTransform(Vector3::Zero(), Quaternion::One());
 	return (Geometry*)p;
 }
 
 Geometry*	GeometryFactory::CreateTriangleMesh()
 {
 	TGeometry<TriangleMesh>* p = new TGeometry<TriangleMesh>();
-	p->SetCenterOfMass(Vector3::Zero());
-	p->SetRotation(Quaternion::One());
-	p->UpdateBoundingVolume();
+	p->UpdateVolumeProperties();
+	p->SetWorldTransform(Vector3::Zero(), Quaternion::One());
 	return (Geometry*)p;
 }

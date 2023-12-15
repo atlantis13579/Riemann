@@ -170,9 +170,12 @@ public:
 								shared_mem);
 		assert(ConvMesh->ValidateStructure());
 
-		ConvMesh->Inertia = Mesh->mInertia;
-		ConvMesh->CenterOfMass = hull.mCenterOfMass;
-		ConvMesh->BoundingVolume = hull.mAABB.GetAABB();
+		MassParameters* vp = Geom->GetMassParameters();
+		vp->Mass = Mesh->mMass;
+		vp->Volume = Mesh->mMass;
+		vp->InertiaMat = Mesh->mInertia;
+		vp->CenterOfMass = hull.mCenterOfMass;
+		vp->BoundingVolume = hull.mAABB.GetAABB();
 		return Geom;
 	}
 
@@ -250,9 +253,8 @@ public:
 			if (bodies)
 			{
 				RigidBodyParam param;
-				param.init_pose.pos = rigid->mRigidStatic.mStatic.mCore.body2World.p;
-				param.init_pose.quat = rigid->mRigidStatic.mStatic.mCore.body2World.q;
-				body = RigidBodyStatic::CreateRigidBody(param, nullptr);
+				Pose init_pose(rigid->mRigidStatic.mStatic.mCore.body2World.p, rigid->mRigidStatic.mStatic.mCore.body2World.q);
+				body = RigidBodyStatic::CreateRigidBody(param, init_pose);
 				assert(body);
 				body->SetGuid(guid);
 				bodies->push_back(body);
@@ -265,9 +267,7 @@ public:
 				Geometry* g = CreateShape(pShades[i], shared_mem);
 				if (g)
 				{
-					g->SetCenterOfMass(rigid->mRigidStatic.mStatic.mCore.body2World.p);
-					g->SetRotation(rigid->mRigidStatic.mStatic.mCore.body2World.q);
-					g->UpdateBoundingVolume();
+					g->SetWorldTransform(rigid->mRigidStatic.mStatic.mCore.body2World.p, rigid->mRigidStatic.mStatic.mCore.body2World.q);
 					if (geoms) geoms->push_back(g);
 					if (bodies) body->AddGeometry(g);
 				}
@@ -284,8 +284,6 @@ public:
 			if (bodies)
 			{
 				RigidBodyParam param;
-				param.init_pose.pos = core.body2World.p;
-				param.init_pose.quat = core.body2World.q;
 				param.invMass = core.inverseMass;
 				param.inertia = Matrix3(core.inverseInertia.x, core.inverseInertia.y, core.inverseInertia.z).Inverse();
 				param.linearVelocity = core.linearVelocity;
@@ -298,7 +296,9 @@ public:
 				param.freezeThreshold = core.freezeThreshold;
 				param.disableGravity = false;
 
-				body = RigidBodyDynamic::CreateRigidBody(param, nullptr);
+				Pose init_pose(core.body2World.p, core.body2World.q);
+
+				body = RigidBodyDynamic::CreateRigidBody(param, init_pose);
 				body->SetGuid(guid);
 				bodies->push_back(body);
 			}
@@ -310,9 +310,7 @@ public:
 				Geometry* g = CreateShape(pShades[i], shared_mem);
 				if (g)
 				{
-					g->SetCenterOfMass(core.body2World.p);
-					g->SetRotation(core.body2World.q);
-					g->UpdateBoundingVolume();
+					g->SetWorldTransform(core.body2World.p, core.body2World.q);
 					if (geoms) geoms->push_back(g);
 					if (bodies) body->AddGeometry(g);
 				}

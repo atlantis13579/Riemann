@@ -62,14 +62,16 @@ public:
 	bool			IntersectSphere(const Vector3& Center, float Radius) const;
 	bool			IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const;
 
-	const Box3d&	GetBoundingVolume() const
+	bool CalculateVolumeProperties(MassParameters* p, float Density) const
 	{
-		return BoundingVolume;
+		p->Volume = 0.0f;
+		p->Mass = 0.0f;
+		p->CenterOfMass = BoundingVolume.GetCenter();
+		p->BoundingVolume = BoundingVolume;
+		p->InertiaMat = Matrix3::Identity();
+		return true;
 	}
-	
-	float			GetVolume() const { return 0.0f; }
 
-	Matrix3			GetInertiaTensor(float Mass) const;
 	Vector3			GetSupport(const Vector3& Direction) const;
 	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
 

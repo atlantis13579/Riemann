@@ -249,7 +249,7 @@ bool Plane3d::PenetrateOBB(const Vector3 &rCenter, const Vector3 &rExtent, const
 	return true;
 }
 
-Box3d Plane3d::GetBoundingVolume() const
+Box3d Plane3d::CalculateBoundingVolume() const
 {
 	const float kMaxBV = kPlaneRadius;
 	Box3d Box(-kMaxBV, kMaxBV);
@@ -311,7 +311,7 @@ bool Plane3d::ParallelToYZ() const
 
 Vector3 Plane3d::GetSupport(const Vector3& Direction) const
 {
-	Box3d box = GetBoundingVolume();
+	Box3d box = CalculateBoundingVolume();
 	return Vector3(
 		Direction.x > 0 ? box.mMax.x : box.mMin.x,
 		Direction.y > 0 ? box.mMax.y : box.mMin.y,
@@ -321,7 +321,7 @@ Vector3 Plane3d::GetSupport(const Vector3& Direction) const
 
 int Plane3d::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 {
-	Box3d box = GetBoundingVolume();
+	Box3d box = CalculateBoundingVolume();
 	const Vector3& Bmin = box.mMin;
 	const Vector3& Bmax = box.mMax;
 

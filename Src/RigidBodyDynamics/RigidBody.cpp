@@ -3,73 +3,48 @@
 #include "RigidBody.h"
 #include "PhysicsMaterial.h"
 #include "../Collision/GeometryObject.h"
+#include "../CollisionPrimitive/MassParameters.h"
 
 RigidBody::RigidBody()
 {
-	mGeometry = nullptr;
 	mMaterialId = 0;
-	mNodeId = -1;
 }
 
 RigidBody::~RigidBody()
 {
-	mGeometry = nullptr;
 }
 
 void RigidBody::AddGeometry(Geometry* Geom)
 {
-	if (mGeometry)
+	if (Geom)
 	{
-		Geometry* g = mGeometry;
-		while (g->GetNext())
-		{
-			g = g->GetNext();
-		}
-		assert(g->GetNext() == nullptr);
-		g->LinkNext(Geom);
-	}
-	else
-	{
-		mGeometry = Geom;
-	}
+		mGeometries.push_back(Geom);
+		Geom->SetParent(this);
 
-	Geometry* g = Geom;
-	while (g)
-	{
-		g->SetParent(this);
-		g = g->GetNext();
+		UpdateMassParameters();
 	}
 }
 
 void RigidBody::GetGeometries(std::vector<Geometry*>* Geometries)
 {
-	for (Geometry* g = mGeometry; g; g = g->GetNext())
+	for (Geometry* g : mGeometries)
 	{
 		Geometries->push_back(g);
 	}
 }
 
-int RigidBody::GetNumGeometries() const
+size_t RigidBody::GetNumGeometries() const
 {
-	int count = 0;
-	Geometry* g = mGeometry;
-	while (g)
-	{
-		g = g->GetNext();
-		count++;
-	}
-	return count;
+	return mGeometries.size();
 }
 
 void RigidBody::ReleaseGeometries()
 {
-	Geometry* g = mGeometry;
-	while (g)
+	for (Geometry* g : mGeometries)
 	{
-		Geometry* next = g->GetNext();
 		delete g;
-		g = next;
 	}
+	mGeometries.clear();
 }
 
 Matrix3		RigidBody::GetInverseInertia_WorldSpace() const
@@ -77,6 +52,41 @@ Matrix3		RigidBody::GetInverseInertia_WorldSpace() const
 	Matrix3 R = Q.ToRotationMatrix3();
 	Matrix3 invInertiaWorld = R * InvInertia * R.Transpose();
 	return invInertiaWorld;
+}
+
+void RigidBody::UpdateGeometries()
+{
+	for (Geometry *g : mGeometries)
+	{
+		const Pose* local_trans = g->GetLocalTransform();
+		Vector3 world_pos = X + Q * (local_trans->pos - CM);
+		Quaternion world_quat = Q * local_trans->quat;
+		g->SetWorldTransform(world_pos, world_quat);
+	}
+}
+
+void RigidBody::UpdateMassParameters()
+{
+	if (mRigidType == RigidType::Static)
+	{
+		return;
+	}
+
+	std::vector<const Pose*> vPose;
+	std::vector<const MassParameters*> vProperties;
+	MassParameters P;
+
+	for (Geometry* g : mGeometries)
+	{
+		vPose.emplace_back(g->GetLocalTransform());
+		vProperties.push_back(g->GetMassParameters());
+	}
+
+	ComputeCompositeMassParameters(vPose, vProperties, P);
+
+	CM = P.CenterOfMass;
+	InvMass = 1.0f / P.Mass;
+	InvInertia = P.InertiaMat.Inverse();
 }
 
 float		RigidBody::GetKinematicsEnergy() const
@@ -117,46 +127,45 @@ float		RigidBody::GetFrictionStatic() const
 }
 
 // static
-RigidBody* RigidBody::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
+RigidBody* RigidBody::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
 {
 	if (param.rigidType == RigidType::Static)
 	{
-		RigidBodyStatic* Rigid = RigidBodyStatic::CreateRigidBody(param, geom);
+		RigidBodyStatic* Rigid = RigidBodyStatic::CreateRigidBody(param, init_pose);
 		return Rigid;
 	}
 	else if (param.rigidType == RigidType::Dynamic)
 	{
-		RigidBodyDynamic* Rigid = RigidBodyDynamic::CreateRigidBody(param, geom);
+		RigidBodyDynamic* Rigid = RigidBodyDynamic::CreateRigidBody(param, init_pose);
 		return Rigid;
 	}
 	return nullptr;
 }
 
-RigidBodyStatic* RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
+RigidBodyStatic* RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
 {
-	return new RigidBodyStatic(param, geom);
+	return new RigidBodyStatic(param, init_pose);
 }
 
-RigidBodyStatic::RigidBodyStatic(const RigidBodyParam& param, Geometry* geom)
+RigidBodyStatic::RigidBodyStatic(const RigidBodyParam& param, const Pose& init_pose)
 {
 	this->mRigidType = RigidType::Static;
 	this->InvMass = 0.0f;
 	this->InvInertia = Matrix3::Zero();
-	this->X = geom ? geom->GetCenterOfMass() : param.init_pose.pos;
-	this->Q = geom ? geom->GetRotation() : param.init_pose.quat;
+	this->X = init_pose.pos;
+	this->Q = init_pose.quat;
 	this->V = Vector3::Zero();
 	this->W = Vector3::Zero();
-	if (geom) this->AddGeometry(geom);
 }
 
-RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, Geometry* geom)
+RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, const Pose& init_pose)
 {
 	this->mRigidType = RigidType::Dynamic;
 	this->mMotionType = param.motionType;
-	this->InvMass = param.invMass < kMinimumInvMass ? 0.0f : param.invMass;
-	this->InvInertia = Geometry::GetInverseInertiaMultibody(geom, this->InvMass);
-	this->X = geom ? Geometry::GetCenterOfMassMultibody(geom) : param.init_pose.pos;
-	this->Q = geom ? Geometry::GetRotationMultibody(geom) : param.init_pose.quat;
+	this->InvMass = 1.0f;
+	this->InvInertia = Matrix3(1.0f, 1.0f, 1.0f);
+	this->X = init_pose.pos;
+	this->Q = init_pose.quat;
 	this->V = param.linearVelocity;
 	this->W = param.angularVelocity;
 	this->ExtForce = Vector3::Zero();
@@ -171,7 +180,6 @@ RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, Geometry* geom)
 	this->Freezing = false;
 	this->SolverV = Vector3(INFINITY, INFINITY, INFINITY);
 	this->SolverW = Vector3(INFINITY, INFINITY, INFINITY);
-	if (geom) this->AddGeometry(geom);
 }
 
 void		RigidBodyDynamic::ApplyForce(const Vector3& Force)
@@ -245,9 +253,9 @@ void		RigidBodyDynamic::Wakeup()
 	}
 }
 
-RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param, Geometry* geom)
+RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
 {
-	return new RigidBodyDynamic(param, geom);
+	return new RigidBodyDynamic(param, init_pose);
 }
 
 RigidBodyKinematics::RigidBodyKinematics()
@@ -264,19 +272,18 @@ RigidBodyKinematics::RigidBodyKinematics()
 void RigidBodyKinematics::SetPosition(const Vector3& pos)
 {
 	X = pos;
-	for (Geometry *g = mGeometry; g ; g = g->GetNext())
+	for (Geometry* g : mGeometries)
 	{
-		g->SetCenterOfMass(pos);
-		g->UpdateBoundingVolume();
+		g->SetWorldPosition(pos);
 	}
 }
 
 void RigidBodyKinematics::SetRotation(const Quaternion& quat)
 {
 	Q = quat;
-	for (Geometry* g = mGeometry; g; g = g->GetNext())
+	for (Geometry* g : mGeometries)
 	{
-		g->SetRotation(quat);
+		g->SetWorldRotation(quat);
 		g->UpdateBoundingVolume();
 	}
 }
@@ -285,11 +292,9 @@ void		RigidBodyKinematics::SetTransform(const Vector3& pos, const Quaternion& qu
 {
 	X = pos;
 	Q = quat;
-	for (Geometry* g = mGeometry; g; g = g->GetNext())
+	for (Geometry* g : mGeometries)
 	{
-		g->SetCenterOfMass(pos);
-		g->SetRotation(quat);
-		g->UpdateBoundingVolume();
+		g->SetWorldTransform(pos, quat);
 	}
 }
 

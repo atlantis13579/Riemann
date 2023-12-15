@@ -15,7 +15,7 @@ static const Vector3 CylinderFaces[] =
 	Vector3(-PI_OVER_4,	1.0f,	PI_OVER_4)
 };
 
-Box3d Cylinder3d::GetBoundingVolume() const
+Box3d Cylinder3d::CalculateBoundingVolume() const
 {
 	Box3d box(Vector3(-Radius, -Height * 0.5f, -Radius), Vector3(Radius, Height * 0.5f, Radius));
 	Vector3 center = GetCenter();

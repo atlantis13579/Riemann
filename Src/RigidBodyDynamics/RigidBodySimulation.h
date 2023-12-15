@@ -99,6 +99,7 @@ public:
 
     bool				LoadPhysxScene(const char *name, bool shared_mem);
 
+	RigidBody*			CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose);
 	RigidBody*			CreateRigidBody(Geometry *Geom, const RigidBodyParam &param);
 	bool				RemoveRigidBody(RigidBody* Body);
 

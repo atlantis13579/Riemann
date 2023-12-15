@@ -28,7 +28,17 @@ public:
 		};
 		m_size = m_size + 1;
 		m_set.resize((m_size + 63) / 64, 0);
-		for (int i : list)
+		for (uint32_t i : list)
+		{
+			m_set[i >> 6] |= (1LL << (i & 63));
+		}
+	}
+
+	bit_set(size_t size, const std::vector<uint32_t>& list)
+	{
+		m_size = size;
+		m_set.resize((m_size + 63) / 64, 0);
+		for (uint32_t i : list)
 		{
 			m_set[i >> 6] |= (1LL << (i & 63));
 		}
@@ -99,10 +109,13 @@ public:
 			{
 				m_set[i] = 0;
 			}
-			size_t k = (m_size + 63) / 64 - 1;
-			for (int i = m_size & 63; i < 64; ++i)
+			if (m_size > 0)
 			{
-				m_set[k] &= ~(1LL << i);
+				size_t k = (m_size + 63) / 64 - 1;
+				for (int i = m_size & 63; i < 64; ++i)
+				{
+					m_set[k] &= ~(1LL << i);
+				}
 			}
 			m_size = new_size;
 		}
@@ -184,6 +197,14 @@ public:
 		return ret;
 	}
 
+	void operator+=(const bit_set& rhs)
+	{
+		for (size_t i = 0; i < m_set.size(); ++i)
+		{
+			m_set[i] |= (i < rhs.m_set.size() ? rhs.m_set[i] : 0);
+		}
+	}
+
 	bit_set operator-(const bit_set& rhs) const
 	{
 		bit_set ret(std::max(m_size, rhs.m_size));
@@ -194,6 +215,14 @@ public:
 		return ret;
 	}
 
+	void operator-=(const bit_set& rhs)
+	{
+		for (size_t i = 0; i < m_set.size(); ++i)
+		{
+			m_set[i] &= (~(i < rhs.m_set.size() ? rhs.m_set[i] : 0));
+		}
+	}
+
 	bit_set operator&(const bit_set& rhs) const
 	{
 		bit_set ret(std::max(m_size, rhs.m_size));
@@ -202,6 +231,14 @@ public:
 			ret.m_set[i] = m_set[i] & rhs.m_set[i];
 		}
 		return ret;
+	}
+
+	void operator&=(const bit_set& rhs)
+	{
+		for (size_t i = 0; i < m_set.size(); ++i)
+		{
+			m_set[i] &= (i < rhs.m_set.size() ? rhs.m_set[i] : 0);
+		}
 	}
 
 	bit_set set_complement() const

@@ -91,7 +91,7 @@ static bool IntersectTri(const Mesh* mesh, uint32_t HitNode, const Shape& shape)
 template <class Shape>
 static bool IntersectBVH(const Mesh *mesh, const MeshBVH4 *bvh, const Shape& shape)
 {
-	Box3d bv = shape.GetBoundingVolume();
+	Box3d bv = shape.CalculateBoundingVolume();
 	const Vector3 &Bmin = bv.mMin;
 	const Vector3 &Bmax = bv.mMax;
 	
@@ -409,12 +409,6 @@ bool	TriangleMesh::IntersectRay(const Vector3& Origin, const Vector3& Direction,
 		return true;
 	}
 	return false;
-}
-
-Matrix3 TriangleMesh::GetInertiaTensor(float Mass) const
-{
-	assert(false);
-	return Matrix3::Zero();
 }
 
 Vector3 TriangleMesh::GetSupport(const Vector3& Direction) const

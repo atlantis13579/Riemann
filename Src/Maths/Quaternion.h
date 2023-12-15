@@ -162,7 +162,7 @@ public:
 	}
 
 	// https://d3cw3dd2w32x2b.cloudfront.net/wp-content/uploads/2015/01/matrix-to-quat.pdf
-	Quaternion& FromRotationMatrix(const Matrix3& mat)
+	Quaternion& FromRotationMatrix3(const Matrix3& mat)
 	{
 		float t;
 		Quaternion q;
@@ -390,6 +390,26 @@ public:
 inline Quaternion operator* (float v, const Quaternion& q)
 {
 	return q * v;
+}
+
+inline Quaternion DirectionToQuat(const Vector3& dir)
+{
+	Vector3 axis_x = Vector3::UnitX();
+	float dp = axis_x.Dot(dir);
+	if (dp > 0.99f)
+	{
+		return Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+	}
+	else if (dp < -0.99f)
+	{
+		return Quaternion(0.0f, 1.0f, 0.0f, 0.0f);
+	}
+	else
+	{
+		float radian = acosf(dp);
+		Vector3 axis = axis_x.Cross(dir);
+		return Quaternion(radian, axis);
+	}
 }
 
 static_assert(sizeof(Quaternion) == 16, "sizeof Quaternion is not valid");

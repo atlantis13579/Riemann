@@ -61,7 +61,7 @@ public:
 		return Box;
 	}
 	
-	Box3d			GetBoundingVolume() const
+	Box3d			CalculateBoundingVolume() const
 	{
 		return Sphere3d::CalcBoundingVolume(Center, Radius);
 	}
@@ -75,7 +75,17 @@ public:
 	static Sphere3d	ComputeBoundingSphere_RitterIteration(const Vector3 *points, int n);
 	static Sphere3d	ComputeBoundingSphere_Welzl(const Vector3 *points, int n);
 	
-	float			GetVolume() const
+	bool CalculateVolumeProperties(MassParameters* p, float Density) const
+	{
+		p->Volume = CalculateVolume();
+		p->Mass = p->Volume * Density;
+		p->CenterOfMass = Center;
+		p->BoundingVolume = CalculateBoundingVolume();
+		p->InertiaMat = CalculateInertiaTensor(p->Mass);
+		return true;
+	}
+
+	float			CalculateVolume() const
 	{
 		const float FourThirdsPI = (4.0f / 3.0f) * (float)M_PI;
 		return FourThirdsPI * Radius * Radius * Radius;
@@ -86,12 +96,12 @@ public:
 		return Center;
 	}
 
-	Matrix3		GetInertiaTensor(float Mass) const
+	Matrix3		CalculateInertiaTensor(float Mass) const
 	{
-		return GetInertiaTensor(Radius, Mass);
+		return CalculateInertiaTensor(Radius, Mass);
 	}
 
-	static Matrix3 GetInertiaTensor(float Radius, float Mass)
+	static Matrix3 CalculateInertiaTensor(float Radius, float Mass)
 	{
 		const float Diagonal = 2.0f * Mass * Radius * Radius / 5.0f;
 		return Matrix3(Diagonal, Diagonal, Diagonal);

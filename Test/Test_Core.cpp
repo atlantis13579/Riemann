@@ -116,8 +116,20 @@ void TestGraph()
 	return;
 }
 
+void TestBitSet()
+{
+	bit_set affected(2614);
+	for (int i = 0; i <= 2614; ++i)
+	{
+		affected.set(i, true);
+	}
+	std::vector<uint32_t> str = affected.to_vector();
+	return;
+}
+
 void TestCores()
 {
+	TestBitSet();
 	// TestThreadPool();
 	// TestJob();
 	TestGraph();

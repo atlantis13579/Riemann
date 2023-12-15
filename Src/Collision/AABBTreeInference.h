@@ -8,7 +8,7 @@ class AABBTreeOffline;
 
 struct CacheFriendlyAABBTree
 {
-	inline const Box3d& GetBoundingVolume() const
+	inline const Box3d& CalculateBoundingVolume() const
 	{
 		return aabb;
 	}

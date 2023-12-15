@@ -97,19 +97,21 @@ public:
 		return Triangle3d::TriangleArea3D(A, B, C);
 	}
 	
-	float			GetVolume() const { return 0.0f; }
+	bool CalculateVolumeProperties(MassParameters* p, float Density) const
+	{
+		p->Volume = 0.0f;
+		p->Mass = 0.0f;
+		p->CenterOfMass = (A + B + C) / 3.0f;
+		p->BoundingVolume = CalculateBoundingVolume();
+		p->InertiaMat = Matrix3::Identity();
+		return true;
+	}
 
-	Box3d		GetBoundingVolume() const
+	Box3d			CalculateBoundingVolume() const
 	{
 		Box3d box(A, A);
 		box.Encapsulate(B, C);
 		return box;
-	}
-
-	Matrix3		GetInertiaTensor(float Mass) const
-	{
-		// TODO
-		return Matrix3(Mass, Mass, Mass);
 	}
 
 	Vector3			GetSupport(const Vector3& Direction) const;

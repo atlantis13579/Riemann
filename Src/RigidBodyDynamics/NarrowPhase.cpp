@@ -67,9 +67,9 @@ static void ConstructManifols(int indexA, int indexB, Geometry* GeomA, Geometry*
 	{
 		Vector3 pa = i == -1 ? w0 : ContactFace[i];
 		Contact contact;
-		contact.PositionLocalA = pa - GeomA->GetCenterOfMass();
+		contact.PositionLocalA = pa - GeomA->GetWorldPosition();
 		Vector3 pb = pa - epa.penetration_normal * epa.penetration_depth;
-		contact.PositionLocalB = pb - GeomB->GetCenterOfMass();
+		contact.PositionLocalB = pb - GeomB->GetWorldPosition();
 		contact.PositionWorldA = pa;
 		contact.PositionWorldB = pb;
 		contact.Normal = epa.penetration_normal;

@@ -537,14 +537,14 @@
     <ClInclude Include="..\..\Src\Core\Profiler.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\MassProperties.h">
-      <Filter>Geometry</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\MeshSimplification.h">
       <Filter>Geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Core\BitSet.h">
       <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\MassParameters.h">
+      <Filter>CollisionPrimitive</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -758,10 +758,10 @@
     <ClCompile Include="..\..\Src\Geometry\MeshSimplification.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Geometry\MassProperties.cpp">
-      <Filter>Geometry</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Mesh.cpp">
+      <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\MassParameters.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
   </ItemGroup>

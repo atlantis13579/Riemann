@@ -97,11 +97,6 @@ public:
 		return Cells[idx].Tessellation1;
 	}
 	
-	Box3d   		GetBoundingVolume() const
-	{
-		return BV;
-	}
-
     bool		IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 	bool		IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const;
 	bool		IntersectSphere(const Vector3& Center, float Radius) const;
@@ -121,18 +116,13 @@ public:
 		return 0;
 	}
 
-	Matrix3		GetInertiaTensor(float Mass) const
-	{
-		return Matrix3(Mass, Mass, Mass);
-	}
+	bool	CalculateVolumeProperties(MassParameters* p, float Density) const;
 
 	inline Vector3	GetCellCenter2D(int i, int j) const
 	{
 		Vector3 v = Vector3(BV.mMin.x + DX * (i + 0.0f), 0.0f, BV.mMin.z + DZ * (j + 0.5f));
 		return v;
 	}
-	
-	float		GetVolume() const { return 0.0f; }
 
 	bool	GetCellBV(int i, int j, Box3d &box) const;
 	bool	GetHeightRange(int i, int j, float &minH, float & maxH) const;

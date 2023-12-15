@@ -62,14 +62,15 @@ public:
 		for (int i = 0; i < n; ++i)
 		for (int j = i + 1; j < n; ++j)
 		{
-			const Box3d& box1 = geoms[i]->GetBoundingVolume_WorldSpace();
-			const Box3d& box2 = geoms[j]->GetBoundingVolume_WorldSpace();
+			Geometry* gi = geoms[i];
+			Geometry* gj = geoms[j];
+			if (!IsValidPair(gi, gj))
+				continue;
+
+			const Box3d& box1 = gi->GetBoundingVolume_WorldSpace();
+			const Box3d& box2 = gj->GetBoundingVolume_WorldSpace();
 			if (box1.Intersect(box2))
 			{
-				Geometry *gi = geoms[i];
-				Geometry *gj = geoms[j];
-				if (!IsValidPair(gi, gj))
-					continue;
 				overlaps->emplace_back(i, j);
 			}
 		}

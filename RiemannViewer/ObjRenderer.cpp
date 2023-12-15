@@ -27,7 +27,7 @@ void AddPlane(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 		{
 			vv.emplace_back(Vertices[i], Vector3::One());
 		}
-		renderer->AddTriangles(name.c_str(), geom->GetCenterOfMassTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
+		renderer->AddTriangles(name.c_str(), geom->GetWorldTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
 	}
 }
 
@@ -48,7 +48,7 @@ void AddGeometryImpl(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 		{
 			vv.emplace_back(Vertices[i], Normals[i]);
 		}
-		renderer->AddTriangles(name.c_str(), geom->GetCenterOfMassTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
+		renderer->AddTriangles(name.c_str(), geom->GetWorldTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size(), 2);
 	}
 	else
 	{
@@ -58,7 +58,7 @@ void AddGeometryImpl(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
 		{
 			vv.emplace_back(Vertices[i], Vector3(1.0f, 1.0f, 1.0f));
 		}
-		renderer->AddWireframe(name.c_str(), geom->GetCenterOfMassTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
+		renderer->AddWireframe(name.c_str(), geom->GetWorldTransform(), &vv[0], (int)vv.size(), &Indices[0], (int)Indices.size());
 	}
 }
 
@@ -95,7 +95,7 @@ void AddGeometry(Renderer* renderer, Geometry* geom)
 {
 	if (geom->GetShapeType() == ShapeType3d::TRIANGLE_MESH)
 	{
-		AddTriMesh(renderer, geom->GetShapeObj<Mesh>(), geom->GetCenterOfMassTransform(), true);
+		AddTriMesh(renderer, geom->GetShapeObj<Mesh>(), geom->GetWorldTransform(), true);
 	}
 	else if (geom->GetShapeType() == ShapeType3d::CONVEX_MESH)
 	{

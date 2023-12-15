@@ -29,8 +29,6 @@ struct RigidBodyParam
 	RigidBodyParam()
 	{
 		memset(this, 0, sizeof(RigidBodyParam));
-		init_pose.pos = Vector3::Zero();
-		init_pose.quat = Quaternion::One();
 		invMass = 1.0f;
 		linearDamping = 0.999f;
 		angularDamping = 0.999f;
@@ -43,7 +41,6 @@ struct RigidBodyParam
 		motionType = MorionType::Discrete;
 	}
 
-	Pose		init_pose;
 	float		invMass;
 	Matrix3		inertia;
 	Vector3		linearVelocity;
@@ -62,10 +59,9 @@ struct RigidBodyParam
 class RigidBody
 {
 public:
-	Geometry*	mGeometry;
-	RigidType	mRigidType;
-
-	uint64_t	mGuid;
+	std::vector<Geometry*>	mGeometries;
+	RigidType				mRigidType;
+	uint64_t				mGuid;
 
 	// State variable
 	Vector3		X;				// Position
@@ -74,10 +70,9 @@ public:
 	Vector3		W;				// Angular Velocity
 	
 	// Constant quantities
+	Vector3		CM;				// Center of mass of multiple Geometries
 	float		InvMass;		// Inverse of Total Mass
 	Matrix3		InvInertia;		// Inverse of Inertia Tensor
-	
-	int			mNodeId;		// nodeId from DynamicAABB Tree
 	
 private:
 	short		mMaterialId;
@@ -88,7 +83,9 @@ public:
 
 	void			AddGeometry(Geometry* Geom);
 	void			GetGeometries(std::vector<Geometry*>* Geometries);
-	int				GetNumGeometries() const;
+	inline std::vector<Geometry*>& Geometries() { return mGeometries; }
+	inline const std::vector<Geometry*>& Geometries() const { return mGeometries; }
+	size_t			GetNumGeometries() const;
 	void			ReleaseGeometries();
 
 	uint64_t		GetGuid() const { return mGuid; }
@@ -110,6 +107,9 @@ public:
 	void			AddLinearMomentum(const Vector3& dp) {	V += InvMass * dp; }
 	void			AddAngularMomentum(const Vector3& dl) { W += InvInertia * dl; }
 
+	void			UpdateGeometries();
+	void			UpdateMassParameters();
+
 	RigidBodyStatic* CastStatic() {	return mRigidType == RigidType::Static ? (RigidBodyStatic*)this : nullptr; }
 	RigidBodyDynamic* CastDynamic() { return mRigidType == RigidType::Dynamic ? (RigidBodyDynamic*)this : nullptr; }
 
@@ -122,7 +122,7 @@ public:
 	float			GetFrictionDynamic() const;
 	float			GetFrictionStatic() const;
 
-	static RigidBody*	CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
+	static RigidBody* CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose);
 };
 
 class RigidBodyStatic : public RigidBody
@@ -130,10 +130,10 @@ class RigidBodyStatic : public RigidBody
 public:
 	virtual ~RigidBodyStatic() {}
 
-	static RigidBodyStatic* CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
+	static RigidBodyStatic* CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose);
 
 private:
-	RigidBodyStatic(const RigidBodyParam& param, Geometry* geom);
+	RigidBodyStatic(const RigidBodyParam& param, const Pose& init_pose);
 };
 
 class RigidBodyDynamic : public RigidBody
@@ -168,10 +168,10 @@ public:
 	void		Freeze();
 	void		Defreeze();
 	
-	static RigidBodyDynamic* CreateRigidBody(const RigidBodyParam& param, Geometry* geom);
+	static RigidBodyDynamic* CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose);
 
 private:
-	RigidBodyDynamic(const RigidBodyParam& param, Geometry* geom);
+	RigidBodyDynamic(const RigidBodyParam& param, const Pose& init_pose);
 };
 
 class RigidBodyKinematics : public RigidBody

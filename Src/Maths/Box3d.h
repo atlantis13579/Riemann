@@ -153,7 +153,7 @@ public:
 		return mMax - mMin;
 	}
 	
-	T GetVolume() const
+	T CalculateVolume() const
 	{
 		return (mMax.x - mMin.x) * (mMax.y - mMin.y) * (mMax.z - mMin.z);
 	}

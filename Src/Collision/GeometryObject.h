@@ -1,9 +1,11 @@
 #pragma once
 
+#include <vector>
 #include "../Core/StaticArray.h"
 #include "../Maths/Transform.h"
 #include "../Maths/Box3d.h"
 #include "../CollisionPrimitive/ShapeType.h"
+#include "../CollisionPrimitive/MassParameters.h"
 
 class GeometryFactory;
 class GeometryRegistration;
@@ -19,8 +21,14 @@ struct CollisionData
 	CollisionData()
 	{
 		v0 = 0;
+		v1 = 0;
+		v2 = 0;
+		v3 = 0;
 	}
 	unsigned int v0;
+	unsigned int v1;
+	unsigned int v2;
+	unsigned int v3;
 };
 
 typedef	StaticArray<Vector3, MAX_FACE_POINTS> SupportFace;
@@ -135,26 +143,66 @@ class Geometry
 	friend class GeometryRegistration;
 public:
 	Geometry();
-	virtual ~Geometry() {}
+	virtual ~Geometry();
 
-	inline const Vector3&	GetCenterOfMass() const
+	inline const Vector3&	GetWorldPosition() const
 	{
-		return m_CenterOfMassTransform.transform.pos;
+		return m_WorldTransform.transform.pos;
 	}
 
-	inline void				SetCenterOfMass(const Vector3& Position)
+	inline const Quaternion& GetWorldRotation() const
 	{
-		m_CenterOfMassTransform.transform.pos = Position;
+		return m_WorldTransform.transform.quat;
 	}
 
-	inline const Quaternion& GetRotation() const
+	inline const GeometryTransform* GetWorldTransform() const
 	{
-		return m_CenterOfMassTransform.transform.quat;
+		return &m_WorldTransform;
 	}
 
-	inline void				SetRotation(const Quaternion& Rotation)
+	inline GeometryTransform* GetWorldTransform()
 	{
-		m_CenterOfMassTransform.transform.quat = Rotation;
+		return &m_WorldTransform;
+	}
+
+	inline void				SetWorldPosition(const Vector3& Position)
+	{
+		m_WorldTransform.transform.pos = Position;
+		UpdateBoundingVolume();
+	}
+
+	inline void				SetWorldRotation(const Quaternion& Rotation)
+	{
+		m_WorldTransform.transform.quat = Rotation;
+		UpdateBoundingVolume();
+	}
+	
+	inline void				SetWorldTransform(const Vector3& Position, const Quaternion& Rotation)
+	{
+		m_WorldTransform.transform.pos = Position;
+		m_WorldTransform.transform.quat = Rotation;
+		UpdateBoundingVolume();
+	}
+
+	inline void				SetLocalPosition(const Vector3& Position)
+	{
+		m_LocalTransform.pos = Position;
+	}
+
+	inline void				SetLocalRotation(const Quaternion& Rotation)
+	{
+		m_LocalTransform.quat = Rotation;
+	}
+
+	inline void				SetLocalTransform(const Vector3& Position, const Quaternion& Rotation)
+	{
+		m_LocalTransform.pos = Position;
+		m_LocalTransform.quat = Rotation;
+	}
+
+	inline const Pose*		GetLocalTransform() const
+	{
+		return &m_LocalTransform;
 	}
 
 	template<class T>
@@ -168,29 +216,24 @@ public:
 		m_Parent = parent;
 	}
 
-	inline Geometry*		GetNext()
+	inline MassParameters* GetMassParameters()
 	{
-		return m_Next;
-	}
-	
-	inline const Geometry*		GetNext() const
-	{
-		return m_Next;
+		return &m_VolumeProperties;
 	}
 
-	inline void				LinkNext(Geometry* next)
+	inline const Box3d&		GetBoundingVolume_WorldSpace() const
 	{
-		m_Next = next;
+		return m_BoxWorld;
 	}
 
-	inline const GeometryTransform* GetCenterOfMassTransform() const
+	inline const Box3d&		GetBoundingVolume_LocalSpace() const
 	{
-		return &m_CenterOfMassTransform;
+		return m_VolumeProperties.BoundingVolume;
 	}
 
-	inline GeometryTransform* GetCenterOfMassTransform()
+	inline void				SetBoundingVolume_LocalSpace(const Box3d& box)
 	{
-		return &m_CenterOfMassTransform;
+		m_VolumeProperties.BoundingVolume = box;
 	}
 
 	inline ShapeType3d		GetShapeType() const
@@ -222,10 +265,11 @@ public:
 		}
 		return nullptr;
 	}
+
+	inline void				SetNodeId(int NodeId) { m_NodeId = NodeId; }
+	inline int				GetNodeId() const { return m_NodeId; }
 	
-	static Vector3			GetCenterOfMassMultibody(const Geometry* Geom);
-	static Quaternion		GetRotationMultibody(const Geometry* Geom);
-	static Matrix3			GetInverseInertiaMultibody(const Geometry* Geom, float InvMass);
+	static Pose				CalculateCenterOfMassPoseMultibody(const std::vector<Geometry*>& geoms);
 
 	virtual bool			RayCast(const Vector3& Origin, const Vector3 &Dir, const RayCastOption* Option, RayCastResult *Result) const = 0;
 	bool					Intersect(const Geometry* Geom) const;
@@ -233,23 +277,16 @@ public:
 	bool					SweepAABB(const Vector3& Direction, const Vector3 &Bmin, const Vector3& Bmax, Vector3 *Normal, float* t) const;
 	bool					Sweep(const Vector3& Direction, const Geometry* Geom, Vector3 *normal, float* t) const;
 	
+	virtual void			UpdateVolumeProperties() = 0;
 	void					UpdateBoundingVolume();
-
-	inline const Box3d&		GetBoundingVolume_WorldSpace() const
-	{
-		return m_BoxWorld;
-	}
 
 	Vector3					GetSupport_WorldSpace(const Vector3& Direction) const;
 	void					GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const;
-	Matrix3					GetInverseInertia_LocalSpace(float InvMass) const;
+	Matrix3					GetInertiaTensor_LocalSpace() const;
 
 private:
-	virtual Matrix3			GetInertia_LocalSpace(float InvMass) const = 0;
-	virtual Vector3			GetSupport_LocalSpace(const Vector3& Direction) const = 0;
-	virtual void			GetSupportFace_LocalSpace(const Vector3& Direction, SupportFace& Face) const = 0;
-	virtual Box3d			GetBoundingVolume_LocalSpace() const = 0;
-	virtual float			GetVolume() const = 0;
+	virtual Vector3			CalculateSupport_LocalSpace(const Vector3& Direction) const = 0;
+	virtual void			CalculateSupportFace_LocalSpace(const Vector3& Direction, SupportFace& Face) const = 0;
 
 	const void*				GetShapeObjPtr() const
 	{
@@ -266,18 +303,13 @@ private:
 protected:
 	ShapeType3d				m_Type;
 	Box3d					m_BoxWorld;
-	GeometryTransform		m_CenterOfMassTransform;
+	GeometryTransform		m_WorldTransform;
+	Pose					m_LocalTransform;
 	CollisionData			m_FilterData;
+	MassParameters		m_VolumeProperties;
+	float					m_Density;
 	void*					m_Parent;
-	Geometry*				m_Next;
-};
-
-class GeometryIterator
-{
-public:
-	virtual ~GeometryIterator() {}
-	virtual Geometry* GetNext() = 0;
-	virtual int GetSize() const = 0;
+	int						m_NodeId;		// nodeId from DynamicAABB Tree
 };
 
 class GeometryFactory

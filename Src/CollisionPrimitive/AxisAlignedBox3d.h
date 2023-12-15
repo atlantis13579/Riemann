@@ -53,19 +53,29 @@ public:
 		return (Max - Min) * 0.5f;
 	}
 
-	Box3d			GetBoundingVolume() const
+	Box3d			CalculateBoundingVolume() const
 	{
 		return Box3d(Min, Max);
 	}
 
-	float			GetVolume() const
+	float			CalculateVolume() const
 	{
-		return GetVolume(Min, Max);
+		return CalculateVolume(Min, Max);
 	}
 
-	static float	GetVolume(const Vector3& Bmin, const Vector3& Bmax)
+	static float	CalculateVolume(const Vector3& Bmin, const Vector3& Bmax)
 	{
 		return ((Bmax.x - Bmin.x) * (Bmax.y - Bmin.y) * (Bmax.z - Bmin.z));
+	}
+
+	bool			CalculateVolumeProperties(MassParameters* p, float Density) const
+	{
+		p->Volume = CalculateVolume();
+		p->Mass = p->Volume * Density;
+		p->BoundingVolume = CalculateBoundingVolume();
+		p->CenterOfMass = p->BoundingVolume.GetCenter();
+		p->InertiaMat = CalculateInertiaTensor(p->Mass);
+		return true;
 	}
 
 	Vector3		GetCenterOfMass() const
@@ -73,12 +83,12 @@ public:
 		return (Max + Min) * 0.5f;
 	}
 
-	Matrix3		GetInertiaTensor(float Mass) const
+	Matrix3		CalculateInertiaTensor(float Mass) const
 	{
-		return GetInertiaTensor(Min, Max, Mass);
+		return CalculateInertiaTensor(Min, Max, Mass);
 	}
 
-	static Matrix3 GetInertiaTensor(const Vector3& Bmin, const Vector3& Bmax, float Mass)
+	static Matrix3 CalculateInertiaTensor(const Vector3& Bmin, const Vector3& Bmax, float Mass)
 	{
 		Vector3 Dim = Bmax - Bmin;
 

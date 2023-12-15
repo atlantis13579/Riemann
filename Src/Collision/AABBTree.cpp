@@ -271,7 +271,7 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 			{
 				int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 				int	 nPrimitives = p->GetNumGeometries();
-				const Box3d& Box = p->GetBoundingVolume();
+				const Box3d& Box = p->CalculateBoundingVolume();
 				int HitId =	RayIntersectGeometries(Ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
 				if (HitId >= 0)
 				{
@@ -545,7 +545,7 @@ bool AABBTree::Sweep(const Geometry *geometry, Geometry** ObjectCollection, cons
 			{
 				int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 				int	 nPrimitives = p->GetNumGeometries();
-				const Box3d& Box = p->GetBoundingVolume();
+				const Box3d& Box = p->CalculateBoundingVolume();
 				int HitId =	SweepGeometries(geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Direction, Box, Option, Result);
 				if (HitId >= 0)
 				{

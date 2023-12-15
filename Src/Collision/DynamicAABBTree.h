@@ -63,7 +63,7 @@ private:
 	int 	GetHeight() const;
 	int 	ComputeHeight(int nodeId) const;
 	int 	ComputeHeight() const;
-	float	GetVolumeRatio() const;
+	float	CalculateVolumeRatio() const;
 	int 	GetMaxBalance() const;
 	
 	bool 	ValidateRecursive(int nodeId) const;

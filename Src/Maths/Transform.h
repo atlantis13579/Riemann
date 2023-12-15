@@ -14,7 +14,7 @@ struct Pose
 		quat = Quaternion::One();
 	}
 
-	Pose(const Vector3& _pos, const Quaternion& _quat)
+	explicit Pose(const Vector3& _pos, const Quaternion& _quat = Quaternion::One())
 	{
 		pos = _pos;
 		quat = _quat;
@@ -342,7 +342,7 @@ public:
 	{
 		Translation = Vector3(World[0][3], World[1][3], World[2][3]);
 		Matrix3 mat3(World[0][0], World[0][1], World[0][2], World[1][0], World[1][1], World[1][2], World[2][0], World[2][1], World[2][2]);
-		Rotation.FromRotationMatrix(mat3);
+		Rotation.FromRotationMatrix3(mat3);
 	}
 
 	// For only non-composite scale transform
@@ -355,7 +355,7 @@ public:
 		Matrix3 matRot(World[0][0] / sx, World[0][1] / sy, World[0][2] / sz,
 						World[1][0] / sx, World[1][1] / sy, World[1][2] / sz,
 						World[2][0] / sx, World[2][1] / sy, World[2][2] / sz);
-		Rotation.FromRotationMatrix(matRot);
+		Rotation.FromRotationMatrix3(matRot);
 		Scale = Vector3(sx, sy, sz);
 		return;
 	}

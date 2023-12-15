@@ -308,6 +308,18 @@ public:
 		return to * (n / d);
 	}
 
+	void DecomposeOrthonormalFrame(TVector3<T>& v0, TVector3<T>& v1, TVector3<T>& v2) const
+	{
+		v0 = Unit();
+		v1 = v0.Cross(TVector3<T>::UnitX());
+		if (v1.SquareLength() < 1e-3f)
+		{
+			v1 = v0.Cross(TVector3<T>::UnitY());
+		}
+		v2 = v0.Cross(v1);
+		return;
+	}
+
 	TVector3<T> Abs() const
 	{
 		return TVector3<T>(std::abs(x), std::abs(y), std::abs(z));

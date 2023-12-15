@@ -67,7 +67,7 @@ public:
 		return Length * 0.5f;
 	}
 
-	Box3d			GetBoundingVolume() const
+	Box3d			CalculateBoundingVolume() const
 	{
 		Box3d box(X0, X0);
 		box.Encapsulate(X1);
@@ -91,22 +91,32 @@ public:
 	bool			PenetrateSphere(const Vector3 &rCenter, float rRadius, Vector3 *Normal, float *Depth) const;
 	bool			PenetrateCapsule(const Vector3 &P0, const Vector3 &P1, float rRadius, Vector3 *Normal, float *Depth) const;
 	
-	float			GetVolume() const
+	bool			CalculateVolumeProperties(MassParameters* p, float Density) const
 	{
-		return GetVolume(Radius, GetHeight());
+		p->Volume = CalculateVolume();
+		p->Mass = p->Volume * Density;
+		p->BoundingVolume = CalculateBoundingVolume();
+		p->CenterOfMass = p->BoundingVolume.GetCenter();
+		p->InertiaMat = CalculateInertiaTensor(p->Mass);
+		return true;
 	}
 
-	static float	GetVolume(float Radius, float Height)
+	float			CalculateVolume() const
+	{
+		return CalculateVolume(Radius, GetHeight());
+	}
+
+	static float	CalculateVolume(float Radius, float Height)
 	{
 		return (float)M_PI * Radius * Radius * (Height + 4.0f * Radius / 3.0f);
 	}
 
-	Matrix3			GetInertiaTensor(float Mass) const
+	Matrix3			CalculateInertiaTensor(float Mass) const
 	{
-		return GetInertiaTensor(Radius, GetHeight(), Mass);
+		return CalculateInertiaTensor(Radius, GetHeight(), Mass);
 	}
 
-	static Matrix3	GetInertiaTensor(float Radius, float Height, float Mass)
+	static Matrix3	CalculateInertiaTensor(float Radius, float Height, float Mass)
 	{
 		// https://www.wolframalpha.com/input/?i=capsule&assumption=%7B%22C%22,+%22capsule%22%7D+-%3E+%7B%22Solid%22%7D
 		float R = Radius;

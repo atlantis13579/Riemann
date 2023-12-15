@@ -5,7 +5,7 @@
 #include "../Geometry/ConvexHull3d.h"
 
 template<>
-float 	Tetrahedron::GetVolume() const
+float 	Tetrahedron::CalculateVolume() const
 {
 	float det = Determinant(v[0] - v[3], v[1] - v[3], v[2] - v[3]);
 	return fabsf(det);
@@ -55,5 +55,7 @@ Matrix3 computeRegularPolyhedronInertiaTensor(int V, int F, int P, const Vector3
 		}
 	}
 
-	return ComputePolyhedralInertiaTensor_VolumeIntegration(hull);
+	float Mass, Volume;
+	Vector3 center_of_mass;
+	return ComputePolyhedralInertiaTensor_VolumeIntegration(hull, 1.0f, Volume, Mass, center_of_mass);
 }

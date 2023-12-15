@@ -192,7 +192,6 @@ public:
 		return l2_norm;
 	}
 
-
 	Matrix4 operator*(const Matrix4& mm) const
 	{
 		float m[4][4] = { 0 };
@@ -264,14 +263,16 @@ public:
 		return *this;
 	}
 
-	static Matrix4 Zero()
+	static const Matrix4& Zero()
 	{
-		return Matrix4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		static Matrix4 mat(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		return mat;
 	}
 
-	static Matrix4 Identity()
+	static const Matrix4& Identity()
 	{
-		return Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+		static Matrix4 mat(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+		return mat;
 	}
 };
 

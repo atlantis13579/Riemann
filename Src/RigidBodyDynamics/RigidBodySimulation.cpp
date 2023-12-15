@@ -224,7 +224,10 @@ void		RigidBodySimulation::PostIntegrate(float dt)
 		Body->AutoSleep();
 		if (tree)
 		{
-			tree->Update(Body->mNodeId, Body->mGeometry->GetBoundingVolume_WorldSpace(), Body->GetLinearVelocity());
+			for (Geometry* g : Body->Geometries())
+			{
+				tree->Update(g->GetNodeId(), g->GetBoundingVolume_WorldSpace(), Body->GetLinearVelocity());
+			}
 		}
 	}
 }
@@ -268,9 +271,9 @@ bool         RigidBodySimulation::LoadPhysxScene(const char *name, bool shared_m
     return true;
 }
 
-RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
+RigidBody* RigidBodySimulation::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
 {
-	RigidBody *body = RigidBody::CreateRigidBody(param, Geom);
+	RigidBody* body = RigidBody::CreateRigidBody(param, init_pose);
 	if (body->mRigidType == RigidType::Static)
 	{
 		m_StaticBodies.push_back(body->CastStatic());
@@ -280,10 +283,21 @@ RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyP
 		m_DynamicBodies.push_back(body->CastDynamic());
 	}
 
+	return body;
+}
+
+RigidBody*	RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
+{
+	Pose init_pose(Geom->GetWorldPosition(), Geom->GetWorldRotation());
+	RigidBody *body = CreateRigidBody(param, init_pose);
+	body->AddGeometry(Geom);
+
 	if (m_GeometryQuery->GetDynamicTree())
 	{
-		body->mNodeId = m_GeometryQuery->GetDynamicTree()->Add(Geom->GetBoundingVolume_WorldSpace(), Geom);
+		int NodeId = m_GeometryQuery->GetDynamicTree()->Add(Geom->GetBoundingVolume_WorldSpace(), Geom);
+		Geom->SetNodeId(NodeId);
 	}
+
 	return body;
 }
 
@@ -298,7 +312,10 @@ bool RigidBodySimulation::RemoveRigidBody(RigidBody* Body)
 				m_StaticBodies.erase(m_StaticBodies.begin() + i);
 				if (m_GeometryQuery->GetDynamicTree())
 				{
-					m_GeometryQuery->GetDynamicTree()->Remove(Body->mNodeId);
+					for (Geometry* g : Body->Geometries())
+					{
+						m_GeometryQuery->GetDynamicTree()->Remove(g->GetNodeId());
+					}
 				}
 				return true;
 			}
@@ -313,7 +330,10 @@ bool RigidBodySimulation::RemoveRigidBody(RigidBody* Body)
 				m_DynamicBodies.erase(m_DynamicBodies.begin() + i);
 				if (m_GeometryQuery->GetDynamicTree())
 				{
-					m_GeometryQuery->GetDynamicTree()->Remove(Body->mNodeId);
+					for (Geometry* g : Body->Geometries())
+					{
+						m_GeometryQuery->GetDynamicTree()->Remove(g->GetNodeId());
+					}
 				}
 				return true;
 			}

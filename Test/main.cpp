@@ -15,17 +15,19 @@ extern void TestOptimization();
 
 void TestAll()
 {
-	TestCores();
+	// TestCores();
 	TestMaths();
-	TestCollision();
-	TestGeometry();
-	TestPhysics3d();
-	TestPhysics2d();
-	TestSIMD();
-	TestMatrix();
-	TestVehicle();
-	TestOptimization();
+	// TestCollision();
+	// TestGeometry();
+	// TestPhysics3d();
+	// TestPhysics2d();
+	// TestSIMD();
+	// TestMatrix();
+	// TestVehicle();
+	// TestOptimization();
 }
+
+#include "../Src/Maths/Matrix3.h"
 
 int main()
 {

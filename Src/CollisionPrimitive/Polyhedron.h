@@ -91,7 +91,7 @@ public:
 		Inertia = ::computeRegularPolyhedronInertiaTensor(V, F, GetNumFaceVertices(), ComputeCenterOfMass(), v, indices);
 	}
 
-	Matrix3		GetInertiaTensor(float Mass) const
+	Matrix3		CalculateInertiaTensor(float Mass) const
 	{
 		return Inertia * Mass;
 	}
@@ -117,7 +117,7 @@ public:
 		return BV;
 	}
 	
-	float 		GetVolume() const;
+	float 		CalculateVolume() const;
 	
 	Vector3		GetSupport(const Vector3& Direction) const
 	{

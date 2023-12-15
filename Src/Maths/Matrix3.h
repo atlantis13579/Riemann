@@ -1216,14 +1216,16 @@ public:
 		return SolveEigenQRIteration(EigenValue, EigenVector);
 	}
 	
-	static Matrix3 Zero()
+	static const Matrix3& Zero()
 	{
-		return Matrix3(0, 0, 0, 0, 0, 0, 0, 0, 0);
+		static Matrix3 mat(0, 0, 0, 0, 0, 0, 0, 0, 0);
+		return mat;
 	}
 
-	static Matrix3 Identity()
+	static const Matrix3& Identity()
 	{
-		return Matrix3(1, 0, 0, 0, 1, 0, 0, 0, 1);
+		static Matrix3 mat(1, 0, 0, 0, 1, 0, 0, 0, 1);
+		return mat;
 	}
 };
 

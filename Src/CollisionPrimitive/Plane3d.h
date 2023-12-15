@@ -72,18 +72,22 @@ public:
 	float			DistanceToSegment(const Vector3& P0, const Vector3& P1) const;
 	float			DistanceToTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
-	float			GetVolume() const { return 0.0f; }
-	Box3d			GetBoundingVolume() const;
+	float			CalculateVolume() const { return 0.0f; }
+	Box3d			CalculateBoundingVolume() const;
 
 	bool			PerpendicularTo(const Vector3& Axis) const;
 	bool			ParallelToXY() const;
 	bool			ParallelToXZ() const;
 	bool			ParallelToYZ() const;
 
-	Matrix3			GetInertiaTensor(float Mass) const
+	bool	CalculateVolumeProperties(MassParameters* p, float Density) const
 	{
-		// TODO
-		return Matrix3(1, 1, 1);
+		p->Volume = 0.0f;
+		p->Mass = 0.0f;
+		p->CenterOfMass = GetOrigin();
+		p->BoundingVolume = CalculateBoundingVolume();
+		p->InertiaMat = Matrix3::Identity();
+		return true;
 	}
 
 	Vector3			GetSupport(const Vector3& Direction) const;

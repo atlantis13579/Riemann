@@ -19,4 +19,4 @@ struct ConvexHull3d
 
 Matrix3 ComputePointCloudInertiaTensor_PCA(const Vector3 *Vertices, int NumVertices);
 
-Matrix3 ComputePolyhedralInertiaTensor_VolumeIntegration(const ConvexHull3d &hull);
+Matrix3 ComputePolyhedralInertiaTensor_VolumeIntegration(const ConvexHull3d& hull, float density, float& Volume, float& Mass, Vector3& CenterOfMass);
