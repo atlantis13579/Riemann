@@ -73,6 +73,7 @@ bool Plane3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	return true;
 }
 
+// static
 bool Plane3d::GetIntersection(const Plane3d& p1, const Plane3d& p2, const Plane3d& p3, Vector3& p)
 {
 	Vector3 u = p2.Normal.Cross(p3.Normal);
@@ -83,6 +84,7 @@ bool Plane3d::GetIntersection(const Plane3d& p1, const Plane3d& p2, const Plane3
 	return true;
 }
 
+// static
 bool Plane3d::GetIntersection(const Plane3d& p1, const Plane3d& p2, Vector3& Origin, Vector3& Dir)
 {
 	Dir = p1.Normal.Cross(p2.Normal);
@@ -100,16 +102,33 @@ bool Plane3d::GetIntersection(const Plane3d& p1, const Plane3d& p2, Vector3& Ori
 	return true;
 }
 
+// static
 float Plane3d::SignedDistanceToPlane(const Vector3& Point, const Vector3& Normal, const Vector3& Origin)
 {
 	float signedDist = (Point - Origin).Dot(Normal);
 	return signedDist;
 }
 
+// static
 Vector3 Plane3d::ProjectToPlane(const Vector3& Point, const Vector3& Normal, const Vector3& Origin)
 {
 	float signedDist = (Point - Origin).Dot(Normal);
 	return Point - signedDist * Normal;
+}
+
+// static
+bool Plane3d::IntersectPlanes(const Plane3d& plane0, const Plane3d& plane1, const Plane3d& plane2, Vector3 *intersects)
+{
+	const Vector3 u = plane1.Normal.Cross(plane2.Normal);
+	const float d = plane0.Normal.Dot(u);
+	if (fabsf(d) < 1e-6f)
+	{
+		return false;
+	}
+	const Vector3 t = plane2.Normal * plane1.D - plane1.Normal * plane2.D;
+	const Vector3 p = plane0.Normal.Cross(t) - u * plane0.D;
+	*intersects = p / d;
+	return true;
 }
 
 float Plane3d::SignedDistanceTo(const Vector3& Point) const
@@ -258,8 +277,8 @@ Box3d Plane3d::CalculateBoundingVolume() const
 	{
 		if (Normal.z > kEpsilonPlane)
 		{
-			Box.mMin.z = -D / Normal.z - kHalfThickness;
-			Box.mMax.z = -D / Normal.z + kPlaneSmallThickness;
+			Box.Min.z = -D / Normal.z - kHalfThickness;
+			Box.Max.z = -D / Normal.z + kPlaneSmallThickness;
 		}
 	}
 
@@ -267,8 +286,8 @@ Box3d Plane3d::CalculateBoundingVolume() const
 	{
 		if (Normal.x > kEpsilonPlane)
 		{
-			Box.mMin.x = -D / Normal.x - kHalfThickness;
-			Box.mMax.x = -D / Normal.x + kPlaneSmallThickness;
+			Box.Min.x = -D / Normal.x - kHalfThickness;
+			Box.Max.x = -D / Normal.x + kPlaneSmallThickness;
 		}
 	}
 
@@ -276,8 +295,8 @@ Box3d Plane3d::CalculateBoundingVolume() const
 	{
 		if (Normal.y > kEpsilonPlane)
 		{
-			Box.mMin.y = -D / Normal.y - kHalfThickness;
-			Box.mMax.y = -D / Normal.y + kPlaneSmallThickness;
+			Box.Min.y = -D / Normal.y - kHalfThickness;
+			Box.Max.y = -D / Normal.y + kPlaneSmallThickness;
 		}
 	}
 
@@ -309,21 +328,31 @@ bool Plane3d::ParallelToYZ() const
 	return PerpendicularTo(Vector3::UnitX());
 }
 
+bool Plane3d::CalculateVolumeProperties(MassParameters* p, float Density) const
+{
+	p->Volume = 0.0f;
+	p->Mass = 0.0f;
+	p->CenterOfMass = GetOrigin();
+	p->BoundingVolume = CalculateBoundingVolume();
+	p->InertiaMat = Matrix3::Identity();
+	return true;
+}
+
 Vector3 Plane3d::GetSupport(const Vector3& Direction) const
 {
 	Box3d box = CalculateBoundingVolume();
 	return Vector3(
-		Direction.x > 0 ? box.mMax.x : box.mMin.x,
-		Direction.y > 0 ? box.mMax.y : box.mMin.y,
-		Direction.z > 0 ? box.mMax.z : box.mMin.z
+		Direction.x > 0 ? box.Max.x : box.Min.x,
+		Direction.y > 0 ? box.Max.y : box.Min.y,
+		Direction.z > 0 ? box.Max.z : box.Min.z
 	);
 }
 
 int Plane3d::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 {
 	Box3d box = CalculateBoundingVolume();
-	const Vector3& Bmin = box.mMin;
-	const Vector3& Bmax = box.mMax;
+	const Vector3& Bmin = box.Min;
+	const Vector3& Bmax = box.Max;
 
 	int axis = Direction.Abs().LargestAxis();
 	if (Direction[axis] < 0.0f)

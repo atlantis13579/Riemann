@@ -59,6 +59,26 @@ public:
 		mat[1][1] = mat[0][0];
 	}
 
+	inline Matrix2	operator+(const Matrix2& mm) const
+	{
+		return Matrix2(
+			mat[0][0] + mm.mat[0][0], mat[0][1] + mm.mat[0][1],
+			mat[1][0] + mm.mat[1][0], mat[1][1] + mm.mat[1][1]);
+	}
+
+	inline Matrix2	operator-(const Matrix2& mm) const
+	{
+		return Matrix2(
+			mat[0][0] - mm.mat[0][0], mat[0][1] - mm.mat[0][1],
+			mat[1][0] - mm.mat[1][0], mat[1][1] - mm.mat[1][1]);
+	}
+
+	inline Matrix2&	operator=(const Matrix2& rhs)
+	{
+		memcpy(mat, rhs.mat, sizeof(mat));
+		return *this;
+	}
+
 	inline Matrix2	operator*(const Matrix2& mm) const
 	{
 		return Matrix2(
@@ -82,23 +102,44 @@ public:
 			mat[1][0] * vec.x + mat[1][1] * vec.y);
 	}
 
-	inline Matrix2	operator+(const Matrix2& mm) const
+	inline Matrix2& operator+=(const Matrix2& mm)
 	{
-		return Matrix2(
-			mat[0][0] + mm.mat[0][0], mat[0][1] + mm.mat[0][1],
-			mat[1][0] + mm.mat[1][0], mat[1][1] + mm.mat[1][1]);
+		for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 2; j++)
+			mat[i][j] += mm[i][j];
+		return *this;
 	}
 
-	inline Matrix2	operator-(const Matrix2& mm) const
+	inline Matrix2& operator-=(const Matrix2& mm)
 	{
-		return Matrix2(
-			mat[0][0] - mm.mat[0][0], mat[0][1] - mm.mat[0][1],
-			mat[1][0] - mm.mat[1][0], mat[1][1] - mm.mat[1][1]);
+		for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 2; j++)
+			mat[i][j] -= mm[i][j];
+		return *this;
 	}
 
-	inline Matrix2&	operator=(const Matrix2& rhs)
+	inline Matrix2& operator*=(const Matrix2& mm)
 	{
-		memcpy(mat, rhs.mat, sizeof(mat));
+		float m[3][3];
+		for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 2; j++)
+			m[i][j] = mat[i][0] * mm.mat[0][j] + mat[i][1] * mm.mat[1][j];
+		memcpy(mat, m, sizeof(mat));
+	}
+
+	inline Matrix2& operator*=(float k)
+	{
+		for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 2; j++)
+			mat[i][j] *= k;
+		return *this;
+	}
+
+	inline Matrix2& operator/=(float k)
+	{
+		for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 2; j++)
+			mat[i][j] /= k;
 		return *this;
 	}
 
@@ -212,6 +253,29 @@ public:
 		x.x = (mat[1][1] * b.x - mat[0][1] * b.y) / det;
 		x.y = (mat[0][0] * b.y - mat[1][0] * b.x) / det;
 		return true;
+	}
+
+	// static
+	static Matrix2	ComputeCovarianceMatrix(const Vector2* v, int n)
+	{
+		Vector2 mean = Vector2::Zero();
+		for (int i = 0; i < n; ++i)
+		{
+			mean += v[i];
+		}
+		mean *= (1.0f / n);
+
+		float c00 = 0, c01 = 0, c11 = 0;
+		for (int i = 0; i < n; ++i)
+		{
+			c00 += (v[i].x - mean.x) * (v[i].x - mean.x);
+			c01 += (v[i].x - mean.x) * (v[i].y - mean.y);
+			c11 += (v[i].y - mean.y) * (v[i].y - mean.y);
+		}
+
+		Matrix2 covariance_matrix = Matrix2(c00, c01, c01, c11);
+		covariance_matrix *= (1.0f / n);
+		return covariance_matrix;
 	}
 
 	void		SolveEigenSymmetric(float EigenValue[2], Vector2 EigenVector[2]) const

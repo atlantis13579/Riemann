@@ -140,7 +140,7 @@ static int RayIntersectGeometries(const Ray3d& Ray, int* Geoms, int NumGeoms, Ge
 	if (GeometryCollection == nullptr)
 	{
 		float t;
-		if (Ray.IntersectAABB(BV.mMin, BV.mMax, &t) && t < Option->MaxDist)
+		if (Ray.IntersectAABB(BV.Min, BV.Max, &t) && t < Option->MaxDist)
 		{
 			Result->hit = true;
 			if (t < Result->hitTimeMin)
@@ -251,7 +251,7 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 	float t1, t2;
 	CacheFriendlyAABBTree* p = m_AABBTreeInference;
-	if (p == nullptr || !Ray.IntersectAABB(p->aabb.mMin, p->aabb.mMax, &t1) || t1 >= Option->MaxDist)
+	if (p == nullptr || !Ray.IntersectAABB(p->aabb.Min, p->aabb.Max, &t1) || t1 >= Option->MaxDist)
 	{
 		return false;
 	}
@@ -289,8 +289,8 @@ bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const Ray
 
 			Result->AddTestCount(2);
 
-			bool hit1 = Ray.IntersectAABB(Left->aabb.mMin, Left->aabb.mMax, &t1);
-			bool hit2 = Ray.IntersectAABB(Right->aabb.mMin, Right->aabb.mMax, &t2);
+			bool hit1 = Ray.IntersectAABB(Left->aabb.Min, Left->aabb.Max, &t1);
+			bool hit2 = Ray.IntersectAABB(Right->aabb.Min, Right->aabb.Max, &t2);
 
             if (Option->Type != RayCastOption::RAYCAST_PENETRATE)
             {
@@ -388,7 +388,7 @@ bool AABBTree::Intersect(const Geometry *geometry, Geometry** ObjectCollection, 
 	const Box3d &aabb = geometry->GetBoundingVolume_WorldSpace();
 
 	CacheFriendlyAABBTree* p = m_AABBTreeInference;
-	if (p == nullptr || !aabb.Intersect(p->aabb.mMin, p->aabb.mMax))
+	if (p == nullptr || !aabb.Intersect(p->aabb.Min, p->aabb.Max))
 	{
 		return false;
 	}
@@ -421,8 +421,8 @@ bool AABBTree::Intersect(const Geometry *geometry, Geometry** ObjectCollection, 
 			CacheFriendlyAABBTree* Left = LEFT_NODE(p);
 			CacheFriendlyAABBTree* Right = RIGHT_NODE(p);
 
-			bool intersect1 = aabb.Intersect(Left->aabb.mMin, Left->aabb.mMax);
-			bool intersect2 = aabb.Intersect(Right->aabb.mMin, Right->aabb.mMax);
+			bool intersect1 = aabb.Intersect(Left->aabb.Min, Left->aabb.Max);
+			bool intersect2 = aabb.Intersect(Right->aabb.Min, Right->aabb.Max);
 
 			assert(!stack.Full());
 			if (intersect1 && intersect2)
@@ -457,7 +457,7 @@ static int SweepGeometries(const Geometry *geometry, int* Geoms, int NumGeoms, G
 	Vector3 normal;
 	if (GeometryCollection == nullptr)
 	{
-		if (geometry->SweepAABB(Direction, BV.mMin, BV.mMax, &normal, &t) && t < Option->MaxDist)
+		if (geometry->SweepAABB(Direction, BV.Min, BV.Max, &normal, &t) && t < Option->MaxDist)
 		{
 			Result->hit = true;
 			if (t < Result->hitTimeMin)
@@ -528,7 +528,7 @@ bool AABBTree::Sweep(const Geometry *geometry, Geometry** ObjectCollection, cons
 	float t1, t2;
 	Vector3 normal;
 	CacheFriendlyAABBTree* p = m_AABBTreeInference;
-	if (p == nullptr || !geometry->SweepAABB(Direction, p->aabb.mMin, p->aabb.mMax, &normal, &t1))
+	if (p == nullptr || !geometry->SweepAABB(Direction, p->aabb.Min, p->aabb.Max, &normal, &t1))
 	{
 		return false;
 	}
@@ -562,8 +562,8 @@ bool AABBTree::Sweep(const Geometry *geometry, Geometry** ObjectCollection, cons
 
 			Result->AddTestCount(2);
 
-			bool hit1 = geometry->SweepAABB(Direction, Left->aabb.mMin, Left->aabb.mMax, &normal, &t1);
-			bool hit2 = geometry->SweepAABB(Direction, Right->aabb.mMin, Right->aabb.mMax, &normal, &t2);
+			bool hit1 = geometry->SweepAABB(Direction, Left->aabb.Min, Left->aabb.Max, &normal, &t1);
+			bool hit2 = geometry->SweepAABB(Direction, Right->aabb.Min, Right->aabb.Max, &normal, &t2);
 
 			if (Option->Type != SweepOption::SWEEP_PENETRATE)
 			{

@@ -63,7 +63,7 @@ bool DynamicAABBTree::RayCast(const Ray3d& Ray, const RayCastOption* Option, Ray
 
 	float t1, t2;
 	const Node* p = &m_nodes[m_root];
-	if (p == nullptr || !Ray.IntersectAABB(p->aabb.mMin, p->aabb.mMax, &t1) || t1 >= Option->MaxDist)
+	if (p == nullptr || !Ray.IntersectAABB(p->aabb.Min, p->aabb.Max, &t1) || t1 >= Option->MaxDist)
 	{
 		return false;
 	}
@@ -95,8 +95,8 @@ bool DynamicAABBTree::RayCast(const Ray3d& Ray, const RayCastOption* Option, Ray
 
 			Result->AddTestCount(2);
 
-			bool hit1 = Ray.IntersectAABB(child1->aabb.mMin, child1->aabb.mMax, &t1);
-			bool hit2 = Ray.IntersectAABB(child2->aabb.mMin, child2->aabb.mMax, &t2);
+			bool hit1 = Ray.IntersectAABB(child1->aabb.Min, child1->aabb.Max, &t1);
+			bool hit2 = Ray.IntersectAABB(child2->aabb.Min, child2->aabb.Max, &t2);
 
 			if (Option->Type != RayCastOption::RAYCAST_PENETRATE)
 			{
@@ -183,7 +183,7 @@ bool DynamicAABBTree::Intersect(const Geometry *geometry, const IntersectOption*
 
 	const Box3d &aabb = geometry->GetBoundingVolume_WorldSpace();
 	const Node* p = &m_nodes[m_root];
-	if (p == nullptr || !aabb.Intersect(p->aabb.mMin, p->aabb.mMax))
+	if (p == nullptr || !aabb.Intersect(p->aabb.Min, p->aabb.Max))
 	{
 		return false;
 	}
@@ -213,8 +213,8 @@ bool DynamicAABBTree::Intersect(const Geometry *geometry, const IntersectOption*
 			const Node* child1 = &m_nodes[p->child1];
 			const Node* child2 = &m_nodes[p->child2];
 
-			bool intersect1 = aabb.Intersect(child1->aabb.mMin, child1->aabb.mMax);
-			bool intersect2 = aabb.Intersect(child2->aabb.mMin, child2->aabb.mMax);
+			bool intersect1 = aabb.Intersect(child1->aabb.Min, child1->aabb.Max);
+			bool intersect2 = aabb.Intersect(child2->aabb.Min, child2->aabb.Max);
 
 			Result->AddTestCount(2);
 			
@@ -284,7 +284,7 @@ bool DynamicAABBTree::Sweep(const Geometry *geometry, const Vector3& Direction, 
 	float t1, t2;
 	Vector3 normal;
 	const Node* p = &m_nodes[m_root];
-	if (p == nullptr || !geometry->SweepAABB(Direction, p->aabb.mMin, p->aabb.mMax, &normal, &t1) || t1 >= Option->MaxDist)
+	if (p == nullptr || !geometry->SweepAABB(Direction, p->aabb.Min, p->aabb.Max, &normal, &t1) || t1 >= Option->MaxDist)
 	{
 		return false;
 	}
@@ -315,8 +315,8 @@ bool DynamicAABBTree::Sweep(const Geometry *geometry, const Vector3& Direction, 
 
 			Result->AddTestCount(2);
 
-			bool hit1 = geometry->SweepAABB(Direction, child1->aabb.mMin, child1->aabb.mMax, &normal, &t1);
-			bool hit2 = geometry->SweepAABB(Direction, child2->aabb.mMin, child2->aabb.mMax, &normal, &t2);
+			bool hit1 = geometry->SweepAABB(Direction, child1->aabb.Min, child1->aabb.Max, &normal, &t1);
+			bool hit2 = geometry->SweepAABB(Direction, child2->aabb.Min, child2->aabb.Max, &normal, &t2);
 
 			if (Option->Type != SweepOption::SWEEP_PENETRATE)
 			{
@@ -372,7 +372,7 @@ bool DynamicAABBTree::Query(const Box3d& aabb, std::vector<void*> *Result) const
 	}
 
 	const Node* p = &m_nodes[m_root];
-	if (p == nullptr || !aabb.Intersect(p->aabb.mMin, p->aabb.mMax))
+	if (p == nullptr || !aabb.Intersect(p->aabb.Min, p->aabb.Max))
 	{
 		return false;
 	}
@@ -396,8 +396,8 @@ bool DynamicAABBTree::Query(const Box3d& aabb, std::vector<void*> *Result) const
 			const Node* child1 = &m_nodes[p->child1];
 			const Node* child2 = &m_nodes[p->child2];
 
-			bool intersect1 = aabb.Intersect(child1->aabb.mMin, child1->aabb.mMax);
-			bool intersect2 = aabb.Intersect(child2->aabb.mMin, child2->aabb.mMax);
+			bool intersect1 = aabb.Intersect(child1->aabb.Min, child1->aabb.Max);
+			bool intersect2 = aabb.Intersect(child2->aabb.Min, child2->aabb.Max);
 
 			assert(!stack.Full());
 			if (intersect1 && intersect2)
@@ -430,8 +430,8 @@ int DynamicAABBTree::Add(const Box3d& aabb, void* userData)
 	int nodeId = AllocNode();
 
 	Vector3 thickness(kAABBThickness, kAABBThickness, kAABBThickness);
-	m_nodes[nodeId].aabb.mMin = aabb.mMin - thickness;
-	m_nodes[nodeId].aabb.mMax = aabb.mMax + thickness;
+	m_nodes[nodeId].aabb.Min = aabb.Min - thickness;
+	m_nodes[nodeId].aabb.Max = aabb.Max + thickness;
 	m_nodes[nodeId].userData = userData;
 	m_nodes[nodeId].height = 0;
 	m_nodes[nodeId].moved = true;
@@ -456,42 +456,42 @@ bool DynamicAABBTree::Update(int nodeId, const Box3d& aabb, const Vector3& displ
 	assert(m_nodes[nodeId].IsLeaf());
 
 	Vector3 thickness(kAABBThickness, kAABBThickness, kAABBThickness);
-	Box3d newAABB(aabb.mMin - thickness, aabb.mMax + thickness);
+	Box3d newAABB(aabb.Min - thickness, aabb.Max + thickness);
 
 	// Predict AABB movement
 	Vector3 dir = kAABBFattenScale * displacement;
 
 	if (dir.x < 0.0f)
 	{
-		newAABB.mMin.x += dir.x;
+		newAABB.Min.x += dir.x;
 	}
 	else
 	{
-		newAABB.mMax.x += dir.x;
+		newAABB.Max.x += dir.x;
 	}
 
 	if (dir.y < 0.0f)
 	{
-		newAABB.mMin.y += dir.y;
+		newAABB.Min.y += dir.y;
 	}
 	else
 	{
-		newAABB.mMax.y += dir.y;
+		newAABB.Max.y += dir.y;
 	}
 	
 	if (dir.z < 0.0f)
 	{
-		newAABB.mMin.z += dir.z;
+		newAABB.Min.z += dir.z;
 	}
 	else
 	{
-		newAABB.mMax.z += dir.z;
+		newAABB.Max.z += dir.z;
 	}
 
 	const Box3d& treeAABB = m_nodes[nodeId].aabb;
 	if (treeAABB.IsInside(aabb))
 	{
-		Box3d largeAABB(newAABB.mMin - kAABBFattenScale * thickness, newAABB.mMax + kAABBFattenScale * thickness);
+		Box3d largeAABB(newAABB.Min - kAABBFattenScale * thickness, newAABB.Max + kAABBFattenScale * thickness);
 		if (largeAABB.IsInside(treeAABB))
 		{
 			// The large AABB contains the object AABB, no tree update needed.
@@ -1093,10 +1093,10 @@ bool DynamicAABBTree::ValidateAABBs(int nodeId) const
 
 	Box3d aabb = Box3d(m_nodes[child1].aabb, m_nodes[child2].aabb);
 
-	if (aabb.mMin != node->aabb.mMin)
+	if (aabb.Min != node->aabb.Min)
 		return false;
 	
-	if (aabb.mMax != node->aabb.mMax)
+	if (aabb.Max != node->aabb.Max)
 		return false;
 
 	return ValidateAABBs(child1) && ValidateAABBs(child2);

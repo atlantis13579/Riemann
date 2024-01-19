@@ -85,8 +85,8 @@ Voxel* VoxelField::GetVoxelByY(Voxel* Base, float y, float Thr)
 	Voxel* prev = nullptr;
 	while (p)
 	{
-		float ymin = m_BV.mMin.y + m_VoxelHeight * p->ymin;
-		float ymax = m_BV.mMin.y + m_VoxelHeight * (p->ymax + 1);
+		float ymin = m_BV.Min.y + m_VoxelHeight * p->ymin;
+		float ymax = m_BV.Min.y + m_VoxelHeight * (p->ymax + 1);
 		if (ymin <= y && y <= ymax)
 		{
 			return p;
@@ -104,7 +104,7 @@ Voxel* VoxelField::GetVoxelByY(Voxel* Base, float y, float Thr)
 	}
 	if (prev)
 	{
-		float ymax = m_BV.mMin.y + m_VoxelHeight * (prev->ymax + 1);
+		float ymax = m_BV.Min.y + m_VoxelHeight * (prev->ymax + 1);
 		if (y - ymax < Thr)
 		{
 			return prev;
@@ -145,20 +145,20 @@ std::string VoxelField::DebugString(int idx) const
 
 int		VoxelField::WorldSpaceToVoxelIndex(const Vector3& pos) const
 {
-	const int x = vx_clamp((int)((pos.x - m_BV.mMin.x) * m_InvVoxelSize), 0, m_SizeX - 1);
-	const int z = vx_clamp((int)((pos.z - m_BV.mMin.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int x = vx_clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
+	const int z = vx_clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
 	return z * m_SizeX + x;
 }
 
 int		VoxelField::WorldSpaceToVoxelSpaceY(float pos_y) const
 {
-	const int y = vx_clamp((int)((pos_y - m_BV.mMin.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
+	const int y = vx_clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
 	return y;
 }
 
 float	VoxelField::VoxelSpaceToWorldSpaceY(uint16_t y) const
 {
-	return m_BV.mMin.y + (y + 0.5f) * m_VoxelHeight;
+	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
 }
 
 Box3d	VoxelField::GetVoxelBox(const Vector3& pos) const
@@ -178,10 +178,10 @@ Box3d	VoxelField::GetVoxelBox(int x, int y, int z) const
 		return Box3d::Unit();
 	}
 	Box3d box;
-	box.mMin.x = m_BV.mMin.x + m_VoxelSize * x;
-	box.mMin.y = m_BV.mMin.y + m_VoxelHeight * y;
-	box.mMin.z = m_BV.mMin.z + m_VoxelSize * z;
-	box.mMax = box.mMin + Vector3(m_VoxelSize, m_VoxelHeight, m_VoxelSize);
+	box.Min.x = m_BV.Min.x + m_VoxelSize * x;
+	box.Min.y = m_BV.Min.y + m_VoxelHeight * y;
+	box.Min.z = m_BV.Min.z + m_VoxelSize * z;
+	box.Max = box.Min + Vector3(m_VoxelSize, m_VoxelHeight, m_VoxelSize);
 	return box;
 }
 
@@ -357,8 +357,8 @@ bool VoxelField::VoxelizationTri(const Vector3& v0, const Vector3& v1, const Vec
 	if (!tbox.Intersect(m_BV))
 		return true;
 
-	const int z0 = vx_clamp((int)((tbox.mMin.z - m_BV.mMin.z) * ics), 0, m_SizeZ - 1);
-	const int z1 = vx_clamp((int)((tbox.mMax.z - m_BV.mMin.z) * ics), 0, m_SizeZ - 1);
+	const int z0 = vx_clamp((int)((tbox.Min.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
+	const int z1 = vx_clamp((int)((tbox.Max.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
 
 	Vector3 buf[7 * 4];
 	Vector3 *In = buf, *inrow = buf + 7, *p1 = buf + 7 * 2, *p2 = buf + 7 * 3;
@@ -371,7 +371,7 @@ bool VoxelField::VoxelizationTri(const Vector3& v0, const Vector3& v1, const Vec
 
 	for (int z = z0; z <= z1; ++z)
 	{
-		const float cz = m_BV.mMin.z + z * m_VoxelSize;
+		const float cz = m_BV.Min.z + z * m_VoxelSize;
 		InterpolateTri(In, nvIn, inrow, &nvrow, p1, &nvIn, cz + m_VoxelSize, 2);
 		std::swap(In, p1);
 		if (nvrow < 3)
@@ -383,14 +383,14 @@ bool VoxelField::VoxelizationTri(const Vector3& v0, const Vector3& v1, const Vec
 			minX = std::min(minX, inrow[i].x);
 			maxX = std::max(maxX, inrow[i].x);
 		}
-		const int x0 = vx_clamp((int)((minX - m_BV.mMin.x) * ics), 0, m_SizeX - 1);
-		const int x1 = vx_clamp((int)((maxX - m_BV.mMin.x) * ics), 0, m_SizeX - 1);
+		const int x0 = vx_clamp((int)((minX - m_BV.Min.x) * ics), 0, m_SizeX - 1);
+		const int x1 = vx_clamp((int)((maxX - m_BV.Min.x) * ics), 0, m_SizeX - 1);
 
 		int nv, nv2 = nvrow;
 
 		for (int x = x0; x <= x1; ++x)
 		{
-			const float cx = m_BV.mMin.x + x * m_VoxelSize;
+			const float cx = m_BV.Min.x + x * m_VoxelSize;
 			InterpolateTri(inrow, nv2, p1, &nv, p2, &nv2, cx + m_VoxelSize, 0);
 			std::swap(inrow, p2);
 			if (nv < 3)
@@ -403,15 +403,15 @@ bool VoxelField::VoxelizationTri(const Vector3& v0, const Vector3& v1, const Vec
 				ymax = std::max(ymax, p1[i].y);
 			}
 
-			if (ymax < m_BV.mMin.y || ymin > m_BV.mMax.y)
+			if (ymax < m_BV.Min.y || ymin > m_BV.Max.y)
 				continue;
 
-			if (ymin < m_BV.mMin.y)
-				ymin = m_BV.mMin.y;
-			if (ymax > m_BV.mMax.y)
-				ymax = m_BV.mMax.y;
-			ymin -= m_BV.mMin.y;
-			ymax -= m_BV.mMin.y;
+			if (ymin < m_BV.Min.y)
+				ymin = m_BV.Min.y;
+			if (ymax > m_BV.Max.y)
+				ymax = m_BV.Max.y;
+			ymin -= m_BV.Min.y;
+			ymax -= m_BV.Min.y;
 
 			const uint16_t y0 = (uint16_t)vx_clamp((int)(ymin * ich), 0, m_SizeY - 1);
 			const uint16_t y1 = (uint16_t)vx_clamp((int)(ymax * ich), 0, m_SizeY - 1);
@@ -442,12 +442,12 @@ bool VoxelField::VoxelizationYPlane(float world_y_min, float world_y_max)
 
 bool VoxelField::VoxelizationCube(const Box3d& cube)
 {
-	const int x0 = vx_clamp((int)((cube.mMin.x - m_BV.mMin.x) * m_InvVoxelSize), 0, m_SizeX - 1);
-	const int x1 = vx_clamp((int)((cube.mMax.x - m_BV.mMin.x) * m_InvVoxelSize), 0, m_SizeX - 1);
-	const int z0 = vx_clamp((int)((cube.mMin.z - m_BV.mMin.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
-	const int z1 = vx_clamp((int)((cube.mMax.z - m_BV.mMin.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
-	const uint16_t y0 = (uint16_t)WorldSpaceToVoxelSpaceY(cube.mMin.y);
-	const uint16_t y1 = (uint16_t)WorldSpaceToVoxelSpaceY(cube.mMax.y);
+	const int x0 = vx_clamp((int)((cube.Min.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
+	const int x1 = vx_clamp((int)((cube.Max.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
+	const int z0 = vx_clamp((int)((cube.Min.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int z1 = vx_clamp((int)((cube.Max.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const uint16_t y0 = (uint16_t)WorldSpaceToVoxelSpaceY(cube.Min.y);
+	const uint16_t y1 = (uint16_t)WorldSpaceToVoxelSpaceY(cube.Max.y);
 	for (int z = z0; z <= z1; ++z)
 	for (int x = x0; x <= x1; ++x)
 	{
@@ -714,14 +714,14 @@ void	VoxelField::GenerateHeightMap(std::vector<float>& heightmap) const
 
 	for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 	{
-		heightmap[i] = m_BV.mMin.y;
+		heightmap[i] = m_BV.Min.y;
 
 		Voxel* v = m_Fields[i];
 		while (v)
 		{
 			if (v->next == nullptr)
 			{
-				heightmap[i] = m_BV.mMin.y + (v->ymax + 1) * m_VoxelHeight;
+				heightmap[i] = m_BV.Min.y + (v->ymax + 1) * m_VoxelHeight;
 				break;
 			}
 			v = v->next;
@@ -766,19 +766,19 @@ Mesh* VoxelField::CreateDebugMesh(int x1, int x2, int z1, int z2) const
 	for (int i = z1; i <= z2; ++i)
 	{
 		Vector3 Bmin, Bmax;
-		Bmin.z = m_BV.mMin.z + m_VoxelSize * i;
-		Bmax.z = m_BV.mMin.z + m_VoxelSize * (i + 1);
+		Bmin.z = m_BV.Min.z + m_VoxelSize * i;
+		Bmax.z = m_BV.Min.z + m_VoxelSize * (i + 1);
 
 		for (int j = x1; j <= x2; ++j)
 		{
 			Voxel* v = m_Fields[i * m_SizeX + j];
 
-			Bmin.x = m_BV.mMin.x + m_VoxelSize * j;
-			Bmax.x = m_BV.mMin.x + m_VoxelSize * (j+1);
+			Bmin.x = m_BV.Min.x + m_VoxelSize * j;
+			Bmax.x = m_BV.Min.x + m_VoxelSize * (j+1);
 			while (v)
 			{
-				Bmin.y = m_BV.mMin.y + m_VoxelHeight * v->ymin;
-				Bmax.y = m_BV.mMin.y + m_VoxelHeight * (v->ymax + 1);
+				Bmin.y = m_BV.Min.y + m_VoxelHeight * v->ymin;
+				Bmax.y = m_BV.Min.y + m_VoxelHeight * (v->ymax + 1);
 				mesh->AddAABB(Bmin, Bmax);
 
 				v = v->next;
@@ -1015,21 +1015,21 @@ void	SparseVoxelField::InitField(const Box3d& Bv, int nVoxels, int SizeX, int Si
 
 int		SparseVoxelField::GetVoxelIdx(const Vector3& pos) const
 {
-	const int x = Clamp((int)((pos.x - m_BV.mMin.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
-	const int z = Clamp((int)((pos.z - m_BV.mMin.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int x = Clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
+	const int z = Clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
 	return z * m_SizeX + x;
 }
 
 
 int		SparseVoxelField::VoxelSpaceToWorldSpaceY(float pos_y) const
 {
-	const int y = Clamp((int)((pos_y - m_BV.mMin.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
+	const int y = Clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
 	return y;
 }
 
 float	SparseVoxelField::VoxelSpaceToWorldSpaceY(uint16_t y) const
 {
-	return m_BV.mMin.y + (y + 0.5f) * m_VoxelHeight;
+	return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
 }
 
 
@@ -1043,8 +1043,8 @@ uint32_t	SparseVoxelField::WorldSpaceToVoxelSpaceY(const Vector3& pos) const
 	for (uint32_t i = i0; i < i1; ++i)
 	{
 		const VoxelFast* v = &m_Voxels[i];
-		float ymin = m_BV.mMin.y + m_VoxelHeight * v->ymin;
-		float ymax = m_BV.mMin.y + m_VoxelHeight * (v->ymax + 1);
+		float ymin = m_BV.Min.y + m_VoxelHeight * v->ymin;
+		float ymax = m_BV.Min.y + m_VoxelHeight * (v->ymax + 1);
 		if (ymin <= pos.y && pos.y <= ymax)
 		{
 			return v->data;

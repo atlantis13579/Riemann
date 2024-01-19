@@ -216,9 +216,9 @@ EPA_status EPAPenetration::Solve(const Simplex& _src)
 	{
 		status = EPA_status::Valid;
 
-		if (TripleProduct(result.v[0].pos - result.v[3].pos,
-						  result.v[1].pos - result.v[3].pos,
-						  result.v[2].pos - result.v[3].pos) < 0)
+		if (ScalerTripleProduct(result.v[0].pos - result.v[3].pos,
+								result.v[1].pos - result.v[3].pos,
+								result.v[2].pos - result.v[3].pos) < 0)
 		{
 			std::swap(result.v[0], result.v[1]);
 		}

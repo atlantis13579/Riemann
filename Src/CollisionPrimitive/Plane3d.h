@@ -48,6 +48,12 @@ public:
 		return -Normal * D;
 	}
 
+	void			Shift(float margin)
+	{
+		Vector3 p = GetOrigin();
+		D = -margin - p.Dot(Normal);
+	}
+
 	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 	bool			IntersectSegment(const Vector3& P0, const Vector3& P1) const;
 	static bool		RayIntersectPlane(const Vector3& Origin, const Vector3& Direction, const Vector3 & Normal, float D, float* t);
@@ -66,6 +72,8 @@ public:
 	static bool 	GetIntersection(const Plane3d& p1, const Plane3d& p2, const Plane3d& p3, Vector3 &p);
 	static float	SignedDistanceToPlane(const Vector3& Point, const Vector3& Normal, const Vector3& Origin);
 	static Vector3	ProjectToPlane(const Vector3& Point, const Vector3& Normal, const Vector3& Origin);
+	static bool		IntersectPlanes(const Plane3d& plane0, const Plane3d& plane1, const Plane3d& plane2, Vector3* intersects);
+
 	float			SignedDistanceTo(const Vector3& Point) const;
 	float			DistanceToPoint(const Vector3& Point) const;
 	Vector3			ClosestPointTo(const Vector3& Point) const;
@@ -80,15 +88,7 @@ public:
 	bool			ParallelToXZ() const;
 	bool			ParallelToYZ() const;
 
-	bool	CalculateVolumeProperties(MassParameters* p, float Density) const
-	{
-		p->Volume = 0.0f;
-		p->Mass = 0.0f;
-		p->CenterOfMass = GetOrigin();
-		p->BoundingVolume = CalculateBoundingVolume();
-		p->InertiaMat = Matrix3::Identity();
-		return true;
-	}
+	bool			CalculateVolumeProperties(MassParameters* p, float Density) const;
 
 	Vector3			GetSupport(const Vector3& Direction) const;
 

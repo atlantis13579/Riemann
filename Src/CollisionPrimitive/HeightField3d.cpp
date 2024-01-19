@@ -7,8 +7,8 @@
 #include "Sphere3d.h"
 #include "../Maths/Maths.h"
 
-#define X_INDEX(_x)		((int)((_x - BV.mMin.x) * InvDX))
-#define Z_INDEX(_z)		((int)((_z - BV.mMin.z) * InvDZ))
+#define X_INDEX(_x)		((int)((_x - BV.Min.x) * InvDX))
+#define Z_INDEX(_z)		((int)((_z - BV.Min.z) * InvDZ))
 
 static const float HfCellThickness = 0.0001f;
 
@@ -28,8 +28,8 @@ bool HeightField3d::IntersectRayCell(const Vector3& Origin, const Vector3& Direc
 	}
 
 	{
-		Vector3 Bmin(BV.mMin.x + i * DX, minH, BV.mMin.z + j * DZ);
-		Vector3 Bmax(BV.mMin.x + (i + 1) * DX, maxH, BV.mMin.z + (j + 1) * DZ);
+		Vector3 Bmin(BV.Min.x + i * DX, minH, BV.Min.z + j * DZ);
+		Vector3 Bmax(BV.Min.x + (i + 1) * DX, maxH, BV.Min.z + (j + 1) * DZ);
 		float t0, t1;
 		if (!Ray3d::RayIntersectAABB2(Origin, Direction, Bmin, Bmax, HfCellThickness, Option.maxDist, &t0, &t1))
 		{
@@ -116,11 +116,11 @@ bool HeightField3d::IntersectRayBruteForce(const Vector3& Origin, const Vector3&
 
 bool HeightField3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
 {
-	if (Origin.y > BV.mMax.y && Direction.y >= 0)
+	if (Origin.y > BV.Max.y && Direction.y >= 0)
 	{
 		return false;
 	}
-	else if (Origin.y < BV.mMin.y && Direction.y <= 0)
+	else if (Origin.y < BV.Min.y && Direction.y <= 0)
 	{
 		return false;
 	}
@@ -134,7 +134,7 @@ bool HeightField3d::IntersectRay(const Vector3& Origin, const Vector3& Direction
 	Result->AddTestCount(1);
 
 	float t0, t1;
-	if (!Ray3d::RayIntersectAABB2(Origin, Direction, BV.mMin, BV.mMax, HfCellThickness, Option.maxDist, &t0, &t1))
+	if (!Ray3d::RayIntersectAABB2(Origin, Direction, BV.Min, BV.Max, HfCellThickness, Option.maxDist, &t0, &t1))
 	{
 		return false;
 	}
@@ -169,9 +169,9 @@ bool HeightField3d::IntersectRay(const Vector3& Origin, const Vector3& Direction
 
 	if (istart != iend && jstart != jend)
 	{
-		const float minx = BV.mMin.x + DX * istart;
+		const float minx = BV.Min.x + DX * istart;
 		const float maxx = minx + DX;
-		const float minz = BV.mMin.z + DZ * jstart;
+		const float minz = BV.Min.z + DZ * jstart;
 		const float maxz = minz + DZ;
 
 		const float dtx = DX / fabsf(P1.x - P0.x);
@@ -256,10 +256,10 @@ bool HeightField3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) cons
 	float minH = Bmin.y;
 	float maxH = Bmax.y;
 
-	const int i0 = X_INDEX(Intersect.mMin.x);
-	const int j0 = Z_INDEX(Intersect.mMin.z);
-	const int i1 = X_INDEX(Intersect.mMax.x);
-	const int j1 = Z_INDEX(Intersect.mMax.z);
+	const int i0 = X_INDEX(Intersect.Min.x);
+	const int j0 = Z_INDEX(Intersect.Min.z);
+	const int i1 = X_INDEX(Intersect.Max.x);
+	const int j1 = Z_INDEX(Intersect.Max.z);
 	for (int i = i0; i <= i1; ++i)
 	for (int j = j0; j <= j1; ++j)
 	{
@@ -287,10 +287,10 @@ bool IntersectHF(const HeightField3d *hf, const Shape &shape)
 		return false;
 	}
 
-	const int i0 = X_INDEX(Intersect.mMin.x);
-	const int j0 = Z_INDEX(Intersect.mMin.z);
-	const int i1 = X_INDEX(Intersect.mMax.x);
-	const int j1 = Z_INDEX(Intersect.mMax.z);
+	const int i0 = X_INDEX(Intersect.Min.x);
+	const int j0 = Z_INDEX(Intersect.Min.z);
+	const int i1 = X_INDEX(Intersect.Max.x);
+	const int j1 = Z_INDEX(Intersect.Max.z);
 	for (int i = i0; i <= i1; ++i)
 	for (int j = j0; j <= j1; ++j)
 	{
@@ -343,8 +343,8 @@ bool HeightField3d::GetCellBV(int i, int j, Box3d &box) const
 	{
 		return false;
 	}
-	box.mMin = Vector3(BV.mMin.x + DX * (i + 0), minH, BV.mMin.z + DZ * (j + 0));
-	box.mMax = Vector3(BV.mMin.x + DX * (i + 1), maxH, BV.mMin.z + DZ * (j + 1));
+	box.Min = Vector3(BV.Min.x + DX * (i + 0), minH, BV.Min.z + DZ * (j + 0));
+	box.Max = Vector3(BV.Min.x + DX * (i + 1), maxH, BV.Min.z + DZ * (j + 1));
 	return true;
 }
 
@@ -410,7 +410,7 @@ int HeightField3d::GetCellTriangle(int i, int j, Vector3 Tris[6]) const
 	uint8_t Hole0 = Cells[i + j * nX].Tessellation0;
 	uint8_t Hole1 = Cells[i + j * nX].Tessellation1;
 
-	Vector3 Base = Vector3(BV.mMin.x + DX * i, 0.0f, BV.mMin.z + DZ * j);
+	Vector3 Base = Vector3(BV.Min.x + DX * i, 0.0f, BV.Min.z + DZ * j);
 	
 	float Height0 = GetHeight(i0);
 	float Height1 = GetHeight(i1);
@@ -483,7 +483,7 @@ void HeightField3d::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t
 	for (uint32_t i = 0; i < nX; i++)
 	for (uint32_t j = 0; j < nZ; j++)
 	{
-		Vertices[i * nZ + j] = Vector3(BV.mMin.x + DX * i, GetHeight(i * nZ + j), BV.mMin.z + DZ * j);
+		Vertices[i * nZ + j] = Vector3(BV.Min.x + DX * i, GetHeight(i * nZ + j), BV.Min.z + DZ * j);
 	}
 
 	assert(Vertices.size() < 65535);

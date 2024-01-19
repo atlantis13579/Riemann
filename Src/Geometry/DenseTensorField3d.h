@@ -90,7 +90,7 @@ public:
 
 		m_BV = BV;
 		m_Size = TVector3<int>(nX, nY, nZ);
-		m_CellSize = (BV.mMax - BV.mMin);
+		m_CellSize = (BV.Max - BV.Min);
 		m_CellSize.x /= m_Size.x;
 		m_CellSize.y /= m_Size.y;
 		m_CellSize.z /= m_Size.z;
@@ -112,9 +112,9 @@ public:
 public:
 	ScalerType GetTensorByPosition(const Vector3& pos) const
 	{
-		const float fx = (pos.x - m_BV.mMin.x) * m_InvCellSize.x - 0.5f;
-		const float fy = (pos.y - m_BV.mMin.y) * m_InvCellSize.y - 0.5f;
-		const float fz = (pos.z - m_BV.mMin.z) * m_InvCellSize.z - 0.5f;
+		const float fx = (pos.x - m_BV.Min.x) * m_InvCellSize.x - 0.5f;
+		const float fy = (pos.y - m_BV.Min.y) * m_InvCellSize.y - 0.5f;
+		const float fz = (pos.z - m_BV.Min.z) * m_InvCellSize.z - 0.5f;
 		const int nx = (int)(fx);
 		const int ny = (int)(fy);
 		const int nz = (int)(fz);

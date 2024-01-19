@@ -105,7 +105,15 @@ Vector3 DiagonalizeInertiaMat(const Matrix3& InertiaMat, float Mass, Matrix3& Ro
 	Vector3 eigen_vectors[3];
 	if (InertiaMat.SolveEigenSymmetric(eigen_values, eigen_vectors))
 	{
-		Rotation = Matrix3(eigen_vectors[0].Unit(), eigen_vectors[1].Unit(), eigen_vectors[2].Unit(), false);
+		eigen_vectors[0].Normalize();
+		eigen_vectors[1].Normalize();
+		eigen_vectors[2].Normalize();
+		if (eigen_vectors[0].Dot(eigen_vectors[1].Cross(eigen_vectors[2])) < 0.0f)
+		{
+			eigen_vectors[2] = -eigen_vectors[2];
+		}
+
+		Rotation = Matrix3(eigen_vectors[0], eigen_vectors[1], eigen_vectors[2], false);
 		InertiaVec = Vector3(fabsf(eigen_values[0]), fabsf(eigen_values[1]), fabsf(eigen_values[2]));
 	}
 	else

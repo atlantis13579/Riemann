@@ -120,7 +120,7 @@ public:
 
 	inline Vector3	GetCellCenter2D(int i, int j) const
 	{
-		Vector3 v = Vector3(BV.mMin.x + DX * (i + 0.0f), 0.0f, BV.mMin.z + DZ * (j + 0.5f));
+		Vector3 v = Vector3(BV.Min.x + DX * (i + 0.0f), 0.0f, BV.Min.z + DZ * (j + 0.5f));
 		return v;
 	}
 

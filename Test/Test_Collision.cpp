@@ -22,6 +22,36 @@
 #include "../Src/Collision/EPAPenetration.h"
 #include "../Src/Maths/Maths.h"
 
+void TestPlane()
+{
+	Plane3d plane0, plane1, plane2;
+	bool success;
+	Vector3 p;
+
+	plane0 = Plane3d(Vector3(6.51947312e-06f, -0.0494406559f, -0.998777092f), -7.89754963f);
+	plane1 = Plane3d(Vector3(0.0f, 0.0f, -1.0f), -8.10573006f);
+	plane2 = Plane3d(Vector3(7.3720279e-05f, -0.559060335f, -0.829126954f), -4.48326111f);
+	success = Plane3d::IntersectPlanes(plane0, plane1, plane2, &p);
+	EXPECT(!success);
+
+	plane0 = Plane3d(Vector3::UnitX(), 0.0f);
+	plane1 = Plane3d(Vector3::UnitY(), 0.0f);
+	plane2 = Plane3d(Vector3::UnitZ(), 0.0f);
+
+	success = Plane3d::IntersectPlanes(plane0, plane1, plane2, &p);
+	EXPECT(success);
+	EXPECT((p - Vector3::Zero()).SquareLength() < 1e-6f);
+
+	plane0.Shift(0.1f);
+	plane1.Shift(0.1f);
+	plane2.Shift(0.1f);
+
+	success = Plane3d::IntersectPlanes(plane0, plane1, plane2, &p);
+	EXPECT(success);
+	EXPECT((p - Vector3(0.1f, 0.1f, 0.1f)).SquareLength() < 1e-6f);
+	return;
+}
+
 void TestTriangle()
 {
 	Triangle3d tri(Vector3::UnitX(), Vector3::UnitY(), Vector3::UnitZ());
@@ -755,6 +785,7 @@ void TestSAPInc()
 
 void TestCollision()
 {
+	TestPlane();
 	TestTriangle();
 	TestSphere();
 	TestBuildOBB();

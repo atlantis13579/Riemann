@@ -92,8 +92,8 @@ template <class Shape>
 static bool IntersectBVH(const Mesh *mesh, const MeshBVH4 *bvh, const Shape& shape)
 {
 	Box3d bv = shape.CalculateBoundingVolume();
-	const Vector3 &Bmin = bv.mMin;
-	const Vector3 &Bmax = bv.mMax;
+	const Vector3 &Bmin = bv.Min;
+	const Vector3 &Bmax = bv.Max;
 	
 	const uint32_t maxStack = 128;
 	uint32_t stack1[maxStack];

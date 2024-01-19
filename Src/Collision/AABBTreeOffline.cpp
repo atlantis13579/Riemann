@@ -17,7 +17,7 @@ void AABBTreeNodeOffline::BuildHierarchyRecursive(AABBTreeBuildData& params)
 
 int AABBTreeNodeOffline::SplitAxisBySpace(const AABBTreeBuildData& Params, int *pGeometries, int Num, int Axis)
 {
-	const float SplitValue = (aabb.mMin[Axis] + aabb.mMax[Axis]) * 0.5f;
+	const float SplitValue = (aabb.Min[Axis] + aabb.Max[Axis]) * 0.5f;
 	int nSplitLeft = 0;
 
 	for (int i = 0; i < Num; ++i)
@@ -69,14 +69,14 @@ void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 	Vector3 means = Params.pCenterBuffer[geoms[0]];
 	const Box3d* pAABB = Params.pAABBArray;
 
-	Vector3 bMin = pAABB[geoms[0]].mMin;
-	Vector3 bMax = pAABB[geoms[0]].mMax;
+	Vector3 bMin = pAABB[geoms[0]].Min;
+	Vector3 bMax = pAABB[geoms[0]].Max;
 
 	for (int i = 1; i < nGeoms; ++i)
 	{
 		int index = geoms[i];
-		const Vector3& mMin = pAABB[index].mMin;
-		const Vector3& mMax = pAABB[index].mMax;
+		const Vector3& mMin = pAABB[index].Min;
+		const Vector3& mMax = pAABB[index].Max;
 
 		means += Params.pCenterBuffer[index];
 		

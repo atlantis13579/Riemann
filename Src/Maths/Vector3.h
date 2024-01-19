@@ -405,30 +405,38 @@ inline TVector3<T> operator* (T s, const TVector3<T>& vv)
 }
 
 template <typename T>
-inline T DotProduct(const TVector3<T> &a, const TVector3<T> &b)
+inline T DotProduct(const TVector3<T> &A, const TVector3<T> &B)
 {
-	return a.Dot(b);
+	return A.Dot(B);
 }
 
 template <typename T>
-inline TVector3<T> CrossProduct(const TVector3<T>& a, const TVector3<T>& b)
+inline TVector3<T> CrossProduct(const TVector3<T>& A, const TVector3<T>& B)
 {
-	return a.Cross(b);
+	return A.Cross(B);
 }
 
 template <typename T>
-inline T Determinant(const TVector3<T>& a, const TVector3<T>& b, const TVector3<T>& c)
+inline T Determinant(const TVector3<T>& A, const TVector3<T>& B, const TVector3<T>& C)
 {
-	return (a.y * b.z * c.x + a.z * b.x * c.y -
-			a.x * b.z * c.y - a.y * b.x * c.z +
-			a.x * b.y * c.z - a.z * b.y * c.x);
+	return (A.y * B.z * C.x + A.z * B.x * C.y -
+			A.x * B.z * C.y - A.y * B.x * C.z +
+			A.x * B.y * C.z - A.z * B.y * C.x);
 }
 
+// A dot (B x C) 
 // This one is equivalent to Determinant, but seems more accuracy in float precision
 template <typename T>
-inline T TripleProduct(const TVector3<T>& a, const TVector3<T>& b, const TVector3<T>& c)
+inline T ScalerTripleProduct(const TVector3<T>& A, const TVector3<T>& B, const TVector3<T>& C)
 {
-	return a.Cross(b).Dot(c);
+	return A.Dot(B.Cross(C));
+}
+
+// A x (B x C)
+template <typename T>
+inline T VectorTripleProduct(const TVector3<T>& A, const TVector3<T>& B, const TVector3<T>& C)
+{
+	return (A.Dot(C)) * B - (A.Dot(B)) * C;
 }
 
 typedef TVector3<float> Vector3;

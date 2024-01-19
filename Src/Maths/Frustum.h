@@ -111,7 +111,7 @@ public:
 
 	bool FrustumIntersectAABB(const Box3d& box) const
 	{
-		return FrustumIntersectAABB(box.mMin, box.mMax);
+		return FrustumIntersectAABB(box.Min, box.Max);
 	}
 
 	bool PointInFrustum(const Vector3& vec) const

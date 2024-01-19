@@ -16,24 +16,24 @@ template <typename T>
 class TAABB3
 {
 public:
-	TVector3<T> mMin;
-	TVector3<T> mMax;
+	TVector3<T> Min;
+	TVector3<T> Max;
 
 public:
 	TAABB3<T>() { }
 	explicit TAABB3<T>(const TVector3<T>& InMin, const TVector3<T>& InMax)
-		: mMin(InMin)
-		, mMax(InMax)
+		: Min(InMin)
+		, Max(InMax)
 	{ }
 
 	explicit TAABB3<T>(T InMin, T InMax)
-		: mMin(InMin, InMin, InMin)
-		, mMax(InMax, InMax, InMax)
+		: Min(InMin, InMin, InMin)
+		, Max(InMax, InMax, InMax)
 	{ }
 
 	explicit TAABB3<T>(const TVector3<T>* v, int Num)
 	{
-		mMin = mMax = v[0];
+		Min = Max = v[0];
 		for (int i = 1; i < Num; ++i)
 		{
 			this->Encapsulate(v[i]);
@@ -42,39 +42,39 @@ public:
 
 	explicit TAABB3<T>(const TVector3<T>& v0, const TVector3<T>& v1, const TVector3<T>& v2)
 	{
-		mMin = mMax = v0;
+		Min = Max = v0;
 		this->Encapsulate(v1, v2);
 	}
 	
 	explicit TAABB3<T>(const TAABB3<T>& aabb1, const TAABB3<T>& aabb2)
 	{
-		mMin = aabb2.mMin.Min(aabb1.mMin);
-		mMax = aabb2.mMax.Max(aabb1.mMax);
+		Min = aabb2.Min.Min(aabb1.Min);
+		Max = aabb2.Max.Max(aabb1.Max);
 	}
 	
 	TAABB3<T>(const TAABB3<T>& aabb1)
 	{
-		mMin = aabb1.mMin;
-		mMax = aabb1.mMax;
+		Min = aabb1.Min;
+		Max = aabb1.Max;
 	}
 
 public:
 	bool operator==(const TAABB3<T>& Other) const
 	{
-		return (mMin == Other.mMin) && (mMax == Other.mMax);
+		return (Min == Other.Min) && (Max == Other.Max);
 	}
 	
 	TAABB3<T>& operator=(const TAABB3<T>& rhs)
 	{
-		mMin = rhs.mMin;
-		mMax = rhs.mMax;
+		Min = rhs.Min;
+		Max = rhs.Max;
 		return *this;
 	}
 
 	TAABB3<T>& operator+=(const TVector3<T>& rhs)
 	{
-		mMin += rhs;
-		mMax += rhs;
+		Min += rhs;
+		Max += rhs;
 		return *this;
 	}
 
@@ -90,87 +90,87 @@ public:
 
 	TAABB3<T>& Thicken(float Thickness)
 	{
-		mMin -= Thickness;
-		mMax += Thickness;
+		Min -= Thickness;
+		Max += Thickness;
 		return *this;
 	}
 	
 	TAABB3<T>& Encapsulate(const TVector3<T>& a)
 	{
-		mMin = mMin.Min(a);
-		mMax = mMax.Max(a);
+		Min = Min.Min(a);
+		Max = Max.Max(a);
 		return *this;
 	}
 	
 	TAABB3<T>& Encapsulate(const TVector3<T>& a, const TVector3<T>& b)
 	{
-		mMin = mMin.Min(a);
-		mMax = mMax.Max(a);
-		mMin = mMin.Min(b);
-		mMax = mMax.Max(b);
+		Min = Min.Min(a);
+		Max = Max.Max(a);
+		Min = Min.Min(b);
+		Max = Max.Max(b);
 		return *this;
 	}
 	
 	TAABB3<T>& Encapsulate(const TVector3<T>& a, const TVector3<T>& b, const TVector3<T>& c)
 	{
-		mMin = mMin.Min(a);
-		mMax = mMax.Max(a);
-		mMin = mMin.Min(b);
-		mMax = mMax.Max(b);
-		mMin = mMin.Min(c);
-		mMax = mMax.Max(c);
+		Min = Min.Min(a);
+		Max = Max.Max(a);
+		Min = Min.Min(b);
+		Max = Max.Max(b);
+		Min = Min.Min(c);
+		Max = Max.Max(c);
 		return *this;
 	}
 
 	TAABB3<T>& Encapsulate(const TAABB3<T>& aabb)
 	{
-		mMin = mMin.Min(aabb.mMin);
-		mMax = mMax.Max(aabb.mMax);
+		Min = Min.Min(aabb.Min);
+		Max = Max.Max(aabb.Max);
 		return *this;
 	}
 	
 	TAABB3<T>& Encapsulate(const TAABB3<T>& aabb1, const TAABB3<T>& aabb2)
 	{
-		mMin = mMin.Min(aabb1.mMin);
-		mMax = mMax.Max(aabb1.mMax);
-		mMin = mMin.Min(aabb2.mMin);
-		mMax = mMax.Max(aabb2.mMax);
+		Min = Min.Min(aabb1.Min);
+		Max = Max.Max(aabb1.Max);
+		Min = Min.Min(aabb2.Min);
+		Max = Max.Max(aabb2.Max);
 		return *this;
 	}
 
 	TVector3<T> GetCenter() const
 	{
-		return TVector3<T>((mMin + mMax) * 0.5f);
+		return TVector3<T>((Min + Max) * 0.5f);
 	}
 
 	TVector3<T> GetExtent() const
 	{
-		return (mMax - mMin) * 0.5f;
+		return (Max - Min) * 0.5f;
 	}
 
 	TVector3<T> GetSize() const
 	{
-		return mMax - mMin;
+		return Max - Min;
 	}
 	
 	T CalculateVolume() const
 	{
-		return (mMax.x - mMin.x) * (mMax.y - mMin.y) * (mMax.z - mMin.z);
+		return (Max.x - Min.x) * (Max.y - Min.y) * (Max.z - Min.z);
 	}
 
 	inline T GetLengthX() const
 	{
-		return mMax.x - mMin.x;
+		return Max.x - Min.x;
 	}
 
 	inline T GetLengthY() const
 	{
-		return mMax.y - mMin.y;
+		return Max.y - Min.y;
 	}
 
 	inline T GetLengthZ() const
 	{
-		return mMax.z - mMin.z;
+		return Max.z - Min.z;
 	}
 
 	void GetCenterAndExtent(TVector3<T>* center, TVector3<T>* Extent) const
@@ -181,23 +181,23 @@ public:
 
 	void BuildFromCenterAndExtent(const TVector3<T>& Center, const TVector3<T>& Extent)
 	{
-		mMin = Center - Extent;
-		mMax = Center + Extent;
+		Min = Center - Extent;
+		Max = Center + Extent;
 	}
 
 	inline bool Intersect(const TAABB3<T>& rhs) const
 	{
-		if (mMin.x > rhs.mMax.x || rhs.mMin.x > mMax.x)
+		if (Min.x > rhs.Max.x || rhs.Min.x > Max.x)
 		{
 			return false;
 		}
 
-		if (mMin.y > rhs.mMax.y || rhs.mMin.y > mMax.y)
+		if (Min.y > rhs.Max.y || rhs.Min.y > Max.y)
 		{
 			return false;
 		}
 
-		if (mMin.z > rhs.mMax.z || rhs.mMin.z > mMax.z)
+		if (Min.z > rhs.Max.z || rhs.Min.z > Max.z)
 		{
 			return false;
 		}
@@ -207,17 +207,17 @@ public:
 
 	inline bool Intersect(const TVector3<T>& Bmin, const TVector3<T>& Bmax) const
 	{
-		if (mMin.x > Bmax.x || Bmin.x > mMax.x)
+		if (Min.x > Bmax.x || Bmin.x > Max.x)
 		{
 			return false;
 		}
 
-		if (mMin.y > Bmax.y || Bmin.y > mMax.y)
+		if (Min.y > Bmax.y || Bmin.y > Max.y)
 		{
 			return false;
 		}
 
-		if (mMin.z > Bmax.z || Bmin.z > mMax.z)
+		if (Min.z > Bmax.z || Bmin.z > Max.z)
 		{
 			return false;
 		}
@@ -227,12 +227,12 @@ public:
 
 	inline bool IsInside(const TVector3<T>& rhs) const
 	{
-		return ((rhs.x >= mMin.x) && (rhs.x <= mMax.x) && (rhs.y >= mMin.y) && (rhs.y <= mMax.y) && (rhs.z >= mMin.z) && (rhs.z <= mMax.z));
+		return ((rhs.x >= Min.x) && (rhs.x <= Max.x) && (rhs.y >= Min.y) && (rhs.y <= Max.y) && (rhs.z >= Min.z) && (rhs.z <= Max.z));
 	}
 
 	inline bool IsInside(const TAABB3<T>& rhs) const
 	{
-		return ((mMin.x <= rhs.mMin.x) && (mMax.x >= rhs.mMax.x) && (mMin.y <= rhs.mMin.y) && (mMax.y >= rhs.mMax.y) && (mMin.z <= rhs.mMin.z) && (mMax.z >= rhs.mMax.z));
+		return ((Min.x <= rhs.Min.x) && (Max.x >= rhs.Max.x) && (Min.y <= rhs.Min.y) && (Max.y >= rhs.Max.y) && (Min.z <= rhs.Min.z) && (Max.z >= rhs.Max.z));
 	}
 
 	bool		GetIntersection(const TVector3<T>& Bmin, const TVector3<T>& Bmax, TAABB3<T>& OutBox) const
@@ -242,21 +242,21 @@ public:
 			return false;
 		}
 
-		OutBox.mMin.x = std::max(mMin.x, Bmin.x);
-		OutBox.mMax.x = std::min(mMax.x, Bmax.x);
+		OutBox.Min.x = std::max(Min.x, Bmin.x);
+		OutBox.Max.x = std::min(Max.x, Bmax.x);
 
-		OutBox.mMin.y = std::max(mMin.y, Bmin.y);
-		OutBox.mMax.y = std::min(mMax.y, Bmax.y);
+		OutBox.Min.y = std::max(Min.y, Bmin.y);
+		OutBox.Max.y = std::min(Max.y, Bmax.y);
 
-		OutBox.mMin.z = std::max(mMin.z, Bmin.z);
-		OutBox.mMax.z = std::min(mMax.z, Bmax.z);
+		OutBox.Min.z = std::max(Min.z, Bmin.z);
+		OutBox.Max.z = std::min(Max.z, Bmax.z);
 
 		return true;
 	}
 
 	bool		GetIntersection(const TAABB3<T>& Box, TAABB3<T> &OutBox) const
 	{
-		return GetIntersection(Box.mMin, Box.mMax, OutBox);
+		return GetIntersection(Box.Min, Box.Max, OutBox);
 	}
 
 	TAABB3<T>	Transform(const Matrix4& M) const

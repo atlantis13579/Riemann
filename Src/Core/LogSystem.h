@@ -23,7 +23,8 @@ public:
 #endif
 	}
 
-	static std::string stringPrintf(const char* format, ...) {
+	static std::string stringPrintf(const char* format, ...)
+	{
 		va_list args;
 		va_start(args, format);
 		char sss[1024];

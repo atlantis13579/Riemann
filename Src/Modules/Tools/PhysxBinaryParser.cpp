@@ -411,15 +411,15 @@ public:
 			ce.Center *= Scale;
 			ce.Extent *= Scale;
 			TAABB3<float> BV = ce.GetAABB();
-			float DX = (BV.mMax.x - BV.mMin.x) / (nRows - 1);
-			float DZ = (BV.mMax.z - BV.mMin.z) / (nCols - 1);
+			float DX = (BV.Max.x - BV.Min.x) / (nRows - 1);
+			float DZ = (BV.Max.z - BV.Min.z) / (nCols - 1);
 
 			int indices_begin = (int)vertices.size();
 
 			for (PxU32 i = 0; i < nRows; i++)
 			for (PxU32 j = 0; j < nCols; j++)
 			{
-				Vector3 v = Vector3(BV.mMin.x + DX * i, samples[i * nCols + j].height * Scale.y, BV.mMin.z + DZ * j);
+				Vector3 v = Vector3(BV.Min.x + DX * i, samples[i * nCols + j].height * Scale.y, BV.Min.z + DZ * j);
 				vertices.push_back(q * v + p);
 			}
 

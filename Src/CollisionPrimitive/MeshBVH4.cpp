@@ -44,12 +44,12 @@ void MeshBVH4::ValidateRecursive(void* p, uint32_t Depth, const Box3d& parentBou
 	}
 
 	Box3d recomputedBounds = batch->ComputeBounds();
-	assert((recomputedBounds.mMin.x - parentBounds.mMin.x) <= INFLATION_EPSILON);
-	assert((recomputedBounds.mMin.y - parentBounds.mMin.y) <= INFLATION_EPSILON);
-	assert((recomputedBounds.mMin.z - parentBounds.mMin.z) <= INFLATION_EPSILON);
-	assert((recomputedBounds.mMax.x - parentBounds.mMax.x) <= INFLATION_EPSILON);
-	assert((recomputedBounds.mMax.y - parentBounds.mMax.y) <= INFLATION_EPSILON);
-	assert((recomputedBounds.mMax.z - parentBounds.mMax.z) <= INFLATION_EPSILON);
+	assert((recomputedBounds.Min.x - parentBounds.Min.x) <= INFLATION_EPSILON);
+	assert((recomputedBounds.Min.y - parentBounds.Min.y) <= INFLATION_EPSILON);
+	assert((recomputedBounds.Min.z - parentBounds.Min.z) <= INFLATION_EPSILON);
+	assert((recomputedBounds.Max.x - parentBounds.Max.x) <= INFLATION_EPSILON);
+	assert((recomputedBounds.Max.y - parentBounds.Max.y) <= INFLATION_EPSILON);
+	assert((recomputedBounds.Max.z - parentBounds.Max.z) <= INFLATION_EPSILON);
 }
 
 void		MeshBVH4::Validate(void *p)
@@ -89,8 +89,8 @@ struct SortBoundsPredicate
 
 	bool operator()(const uint32_t& idx1, const uint32_t& idx2) const
 	{
-		float center1 = allBounds[idx1].mMin[coordIndex] + allBounds[idx1].mMax[coordIndex];
-		float center2 = allBounds[idx2].mMin[coordIndex] + allBounds[idx2].mMax[coordIndex];
+		float center1 = allBounds[idx1].Min[coordIndex] + allBounds[idx1].Max[coordIndex];
+		float center2 = allBounds[idx2].Min[coordIndex] + allBounds[idx2].Max[coordIndex];
 		return (center1 < center2);
 	}
 };
@@ -177,36 +177,36 @@ struct SubSortSAH
 					tempPermute[i] = order[tempRanks[i]];
 			}
 
-			Vector3 boundsLmn = allBounds[tempPermute[0]].mMin;
-			Vector3 boundsLmx = allBounds[tempPermute[0]].mMax;
+			Vector3 boundsLmn = allBounds[tempPermute[0]].Min;
+			Vector3 boundsLmx = allBounds[tempPermute[0]].Max;
 
 			for (int ii = 1; ii < splitStartL; ii++)
 			{
-				boundsLmn = boundsLmn.Min(allBounds[tempPermute[ii]].mMin);
-				boundsLmx = boundsLmx.Max(allBounds[tempPermute[ii]].mMax);
+				boundsLmn = boundsLmn.Min(allBounds[tempPermute[ii]].Min);
+				boundsLmx = boundsLmx.Max(allBounds[tempPermute[ii]].Max);
 			}
 
 			uint32_t countL0 = 0;
 			for (int ii = splitStartL; ii <= splitEndL; ii++)
 			{
-				boundsLmn = boundsLmn.Min(allBounds[tempPermute[ii]].mMin);
-				boundsLmx = boundsLmx.Max(allBounds[tempPermute[ii]].mMax);
+				boundsLmn = boundsLmn.Min(allBounds[tempPermute[ii]].Min);
+				boundsLmx = boundsLmx.Max(allBounds[tempPermute[ii]].Max);
 				metricL[countL0++] = SAH(boundsLmx - boundsLmn);
 			}
 
-			Vector3 boundsRmn = allBounds[tempPermute[ClusterSize - 1]].mMin;
-			Vector3 boundsRmx = allBounds[tempPermute[ClusterSize - 1]].mMax;
+			Vector3 boundsRmn = allBounds[tempPermute[ClusterSize - 1]].Min;
+			Vector3 boundsRmx = allBounds[tempPermute[ClusterSize - 1]].Max;
 			for (int ii = int(ClusterSize - 2); ii > splitStartR; ii--)
 			{
-				boundsRmn = boundsRmn.Min(allBounds[tempPermute[ii]].mMin);
-				boundsRmx = boundsRmx.Max(allBounds[tempPermute[ii]].mMax);
+				boundsRmn = boundsRmn.Min(allBounds[tempPermute[ii]].Min);
+				boundsRmx = boundsRmx.Max(allBounds[tempPermute[ii]].Max);
 			}
 
 			uint32_t countR0 = 0;
 			for (int ii = splitStartR; ii >= splitEndR; ii--)
 			{
-				boundsRmn = boundsRmn.Min(allBounds[tempPermute[ii]].mMin);
-				boundsRmx = boundsRmx.Max(allBounds[tempPermute[ii]].mMax);
+				boundsRmn = boundsRmn.Min(allBounds[tempPermute[ii]].Min);
+				boundsRmx = boundsRmx.Max(allBounds[tempPermute[ii]].Max);
 				metricR[countR0++] = SAH(boundsRmx - boundsRmn);
 			}
 
@@ -266,13 +266,13 @@ struct SubSortSAH
 	float ComputeSA(const uint32_t* permute, const Interval& split)
 	{
 		assert(split.count >= 1);
-		Vector3 bmn = allBounds[permute[split.start]].mMin;
-		Vector3 bmx = allBounds[permute[split.start]].mMax;
+		Vector3 bmn = allBounds[permute[split.start]].Min;
+		Vector3 bmx = allBounds[permute[split.start]].Max;
 		for (uint32_t i = 1; i < split.count; i++)
 		{
 			const Box3d& b1 = allBounds[permute[split.start + i]];
-			bmn = bmn.Min(b1.mMin);
-			bmx = bmx.Max(b1.mMax);
+			bmn = bmn.Min(b1.Min);
+			bmx = bmx.Max(b1.Max);
 		}
 
 		return SAH(bmx - bmn);
@@ -370,20 +370,20 @@ struct SubSortSAH
 			if (splitCount > 0)
 			{
 				Box3d b = allBounds[Permute[splitStarts[s]]];
-				float sahMin = SAH(b.mMax - b.mMin);
+				float sahMin = SAH(b.Max - b.Min);
 				float sahMax = sahMin;
 				for (uint32_t i = 1; i < splitCount; i++)
 				{
 					uint32_t localIndex = i + splitStarts[s];
 					const Box3d& b1 = allBounds[Permute[localIndex]];
-					float sah1 = SAH(b1.mMax - b1.mMin);
+					float sah1 = SAH(b1.Max - b1.Min);
 					sahMin = std::min(sahMin, sah1);
 					sahMax = std::max(sahMax, sah1);
 					b.Encapsulate(b1);
 				}
 
-				rtn.bounds.mMin = b.mMin;
-				rtn.bounds.mMax = b.mMax;
+				rtn.bounds.Min = b.Min;
+				rtn.bounds.Max = b.Max;
 
 				bool okSAH = (sahMax / sahMin < 40.0f);
 				if (!okSAH)
@@ -520,12 +520,12 @@ void MeshBVH4::BuildFromBounds(MeshBVH4& bvh, const std::vector<Box3d>& allBound
 		}
 		else
 		{
-			n.minx = tr.bounds.mMin.x;
-			n.miny = tr.bounds.mMin.y;
-			n.minz = tr.bounds.mMin.z;
-			n.maxx = tr.bounds.mMax.x;
-			n.maxy = tr.bounds.mMax.y;
-			n.maxz = tr.bounds.mMax.z;
+			n.minx = tr.bounds.Min.x;
+			n.miny = tr.bounds.Min.y;
+			n.minz = tr.bounds.Min.z;
+			n.maxx = tr.bounds.Max.x;
+			n.maxy = tr.bounds.Max.y;
+			n.maxz = tr.bounds.Max.z;
 			if (tr.LeafCount > 0)
 			{
 				n.Data = uint32_t(tr.NextNodeIndex);
@@ -558,8 +558,8 @@ void MeshBVH4::BuildFromBounds(MeshBVH4& bvh, const std::vector<Box3d>& allBound
 	bvh.NumBatches = bvh.NumNodes / SIMD_WIDTH;
 	bvh.Memory = new uint8_t[sizeof(BVHNodeBatch) * bvh.NumBatches + 127];
 	bvh.BatchPtr = (BVHNodeBatch*)AlignMemory(bvh.Memory, 128);
-	bvh.BoundsMin = Vector4(meshBounds.mMin, 0.0f);
-	bvh.BoundsMax = Vector4(meshBounds.mMax, 0.0f);
+	bvh.BoundsMin = Vector4(meshBounds.Min, 0.0f);
+	bvh.BoundsMax = Vector4(meshBounds.Max, 0.0f);
 	bvh.BatchSize = SIMD_WIDTH;
 	bvh.MaxDepth = maxDepth;
 	assert(bvh.NumNodes % SIMD_WIDTH == 0);
