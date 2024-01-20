@@ -153,7 +153,7 @@ public:
 		}
 		case 4:
 		{
-			const float det = ScalerTripleProduct(v[0].pos - v[3].pos, v[1].pos - v[3].pos, v[2].pos - v[3].pos);
+			const float det = ScalarTripleProduct(v[0].pos - v[3].pos, v[1].pos - v[3].pos, v[2].pos - v[3].pos);
 			if (fabsf(det) > 0)
 				return true;
 			break;
@@ -248,7 +248,7 @@ private:
 		const Vector3* vt[] = { &a, &b, &c, &d };
 		Vector3 dl[] = { a - d, b - d, c - d };
 		Vector3 n = CrossProduct(b - c, a - b);
-		float vl = ScalerTripleProduct(dl[0], dl[1], dl[2]);
+		float vl = ScalarTripleProduct(dl[0], dl[1], dl[2]);
 		float dp = DotProduct(a, n);
 		if (vl * dp > 0 || fabsf(vl) <= SIMPLEX4_EPS)
 		{

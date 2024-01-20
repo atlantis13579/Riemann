@@ -210,7 +210,7 @@ void WorldViewer::LoadVoxelField(const std::string& file_name, const Vector3 &c,
 	field.MakeComplementarySet();
 
 	Vector3 pos_main = field.GetBoundingVolume().GetCenter();
-	pos_main.y = field.GetBoundingVolume().mMax.y - 5.0f;
+	pos_main.y = field.GetBoundingVolume().Max.y - 5.0f;
 
 	const Vector3 Thr = Vector3(0, 0.5f, 0);
 

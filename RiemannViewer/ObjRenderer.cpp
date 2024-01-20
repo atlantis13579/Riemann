@@ -78,7 +78,7 @@ void AddTriMesh(Renderer* renderer, Mesh* mesh, void* Trans, bool RenderBV)
 	{
 		std::vector<Vector3> Vertices;
 		std::vector<uint16_t> Indices;
-		AxisAlignedBox3d aabb(mesh->BoundingVolume.mMin, mesh->BoundingVolume.mMax);
+		AxisAlignedBox3d aabb(mesh->BoundingVolume.Min, mesh->BoundingVolume.Max);
 		aabb.GetWireframe(Vertices, Indices);
 		vv.clear();
 		for (size_t i = 0; i < Vertices.size(); ++i)

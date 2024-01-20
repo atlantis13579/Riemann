@@ -427,7 +427,7 @@ inline T Determinant(const TVector3<T>& A, const TVector3<T>& B, const TVector3<
 // A dot (B x C) 
 // This one is equivalent to Determinant, but seems more accuracy in float precision
 template <typename T>
-inline T ScalerTripleProduct(const TVector3<T>& A, const TVector3<T>& B, const TVector3<T>& C)
+inline T ScalarTripleProduct(const TVector3<T>& A, const TVector3<T>& B, const TVector3<T>& C)
 {
 	return A.Dot(B.Cross(C));
 }
