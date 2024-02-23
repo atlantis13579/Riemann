@@ -436,6 +436,12 @@ bool Triangle3d::RayIntersectTriangle(const Vector3& Origin, const Vector3& Dire
 	return false;
 }
 
+bool Triangle3d::IsColinear(const Vector3& a, const Vector3& b, const Vector3& c)
+{
+	Vector3 n = (b - a).Cross(c - a);
+	return n.SquareLength() < 1e-6f;
+}
+
 Vector3 Triangle3d::BaryCentric2D(const Vector3& Point) const
 {
 	float a = ((B.y - C.y) * (Point.x - C.x) + (C.x - B.x) * (Point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y));

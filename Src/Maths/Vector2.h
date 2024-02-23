@@ -208,6 +208,16 @@ public:
 		return p[i];
 	}
 
+	inline TVector2<T> Min(const TVector2<T>& v) const
+	{
+		return TVector2<T>(std::min(v.x, x), std::min(v.y, y));
+	}
+
+	inline TVector2<T> Max(const TVector2<T>& v) const
+	{
+		return TVector2<T>(std::max(v.x, x), std::max(v.y, y));
+	}
+
 	static TVector2<T> Lerp(const TVector2<T>& start, const TVector2<T>& end, float t)
 	{
 		return TVector2<T>(

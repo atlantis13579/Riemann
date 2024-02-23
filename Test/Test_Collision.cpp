@@ -54,14 +54,20 @@ void TestPlane()
 
 void TestTriangle()
 {
-	Triangle3d tri(Vector3::UnitX(), Vector3::UnitY(), Vector3::UnitZ());
+	Triangle3d tri1(Vector3::UnitX(), Vector3::UnitY(), Vector3::UnitZ());
 	Vector3 p = Vector3::One();
-	Vector3 bc1 = tri.BaryCentric2D(p);
-	Vector3 bc2 = tri.BaryCentric3D(p);
+	Vector3 bc1 = tri1.BaryCentric2D(p);
+	Vector3 bc2 = tri1.BaryCentric3D(p);
 	(void)bc1;
 	(void)bc2;
-	EXPECT(!tri.IntersectPoint(p));
-	EXPECT(tri.IntersectPoint(tri.A));
+	EXPECT(!tri1.IntersectPoint(p));
+	EXPECT(tri1.IntersectPoint(tri1.A));
+
+	Triangle3d tri2(Vector3(5.09916496f, 8.30379868f, 4.52991295f), Vector3(5.08997154f, 8.29810333f, 4.52174377f), Vector3(5.09456825f, 8.300951f, 4.52582836f));
+	Vector3 length = tri2.GetSideLength();
+	Vector3 normal = tri2.GetNormal();
+	EXPECT(!tri2.IsValid());
+	EXPECT(Triangle3d::IsColinear(tri2.A, tri2.B, tri2.C));
 	return;
 }
 

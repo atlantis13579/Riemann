@@ -60,10 +60,26 @@ public:
 	{
 		return GetNormal(A, B, C);
 	}
+
+	Vector3		GetSideLength() const
+	{
+		return Vector3((A - B).Length(), (B - C).Length(), (C - A).Length());
+	}
+
+	bool		IsValid() const
+	{
+		Vector3 sides = GetSideLength();
+		bool v = sides.x + sides.y > sides.z &&
+				sides.y + sides.z > sides.x &&
+				sides.z + sides.x > sides.y;
+		return v;
+	}
 	
 	static Vector3 GetNormal(const Vector3& A, const Vector3& B, const Vector3& C)
 	{
-		Vector3 cross = (B - A).Cross(C - A);
+		Vector3 BA = B - A;
+		Vector3 CA = C - A;
+		Vector3 cross = BA.Cross(CA);
 		return cross;
 	}
 
@@ -73,6 +89,8 @@ public:
 		const Vector3& B,
 		const Vector3& C,
 		float* t);
+
+	static bool		IsColinear(const Vector3& a, const Vector3& b, const Vector3& c);
 
 	bool			IntersectPoint(const Vector3& Point) const;
 	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;

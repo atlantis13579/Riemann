@@ -423,6 +423,36 @@ public:
 		return dp;
 	}
 
+	TDenseVector<T> Min(const TDenseVector<T>& v) const
+	{
+		TDenseVector<T> Ret(mSize);
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			Ret[i] = std::min(pData[i], v.pData[i]);
+		}
+		return Ret;
+	}
+
+	TDenseVector<T> Max(const TDenseVector<T>& v) const
+	{
+		TDenseVector<T> Ret(mSize);
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			Ret[i] = std::max(pData[i], v.pData[i]);
+		}
+		return Ret;
+	}
+
+	static TDenseVector<T> Lerp(const TDenseVector<T>& start, const TDenseVector<T>& end, float t)
+	{
+		TDenseVector<T> Ret(mSize);
+		for (int i = 0; i < GetSize(); ++i)
+		{
+			Ret[i] = start[i] * (1.0f - t) + end[i] * t;
+		}
+		return Ret;
+	}
+
 	T			L1Norm() const
 	{
 		T sum = (T)0;

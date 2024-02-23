@@ -249,6 +249,16 @@ public:
 		return reinterpret_cast<T*>(this)[i];
 	}
 
+	inline TVector4<T> Min(const TVector4<T>& v) const
+	{
+		return TVector4<T>(std::min(v.x, x), std::min(v.y, y), std::min(v.z, z), std::min(v.w, w));
+	}
+
+	inline TVector4<T> Max(const TVector4<T>& v) const
+	{
+		return TVector4<T>(std::max(v.x, x), std::max(v.y, y), std::max(v.z, z), std::max(v.w, w));
+	}
+
 	static TVector4<T> Lerp(TVector4<T>& start, TVector4<T>& end, float t)
 	{
 		return TVector4<T>(

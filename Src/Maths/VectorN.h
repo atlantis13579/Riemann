@@ -181,7 +181,37 @@ public:
 		return Dot(*this);
 	}
 
-	T					L1Norm() const
+	TVectorN<T, DIM> Min(const TVectorN<T, DIM>& v) const
+	{
+		TVectorN<T, DIM> Ret;
+		for (int i = 0; i < DIM; ++i)
+		{
+			Ret[i] = std::min(mData[i], v.mData[i]);
+		}
+		return Ret;
+	}
+
+	TVectorN<T, DIM> Max(const TVectorN<T, DIM>& v) const
+	{
+		TVectorN<T, DIM> Ret;
+		for (int i = 0; i < DIM; ++i)
+		{
+			Ret[i] = std::max(mData[i], v.mData[i]);
+		}
+		return Ret;
+	}
+
+	static TVectorN<T, DIM> Lerp(const TVectorN<T, DIM>& start, const TVectorN<T, DIM>& end, float t)
+	{
+		TVectorN<T, DIM> Ret;
+		for (int i = 0; i < DIM; ++i)
+		{
+			Ret[i] = start[i] * (1.0f - t) + end[i] * t;
+		}
+		return Ret;
+	}
+
+	T			L1Norm() const
 	{
 		T sum = (T)0;
 		for (int i = 1; i < DIM; ++i)
@@ -191,7 +221,7 @@ public:
 		return sum;
 	}
 
-	T					L2Norm() const
+	T			L2Norm() const
 	{
 		T sum = (T)0;
 		for (int i = 1; i < DIM; ++i)
@@ -201,7 +231,7 @@ public:
 		return std::sqrt(sum);
 	}
 
-	T					LpNorm(int p) const
+	T			LpNorm(int p) const
 	{
 		T sum = (T)0;
 		for (int i = 1; i < DIM; ++i)
@@ -211,7 +241,7 @@ public:
 		return std::pow(sum, (T)1 / p);
 	}
 
-	T					LInfinityNorm() const
+	T			LInfinityNorm() const
 	{
 		T maxVal = mData[0];
 		for (int i = 1; i < DIM; ++i)

@@ -50,7 +50,7 @@ public:
 	
 	void TopKComponents(int k)
 	{
-		// Sort ?
+		std::sort(eigens.begin(), eigens.end(), [](const float a, const float b) {return a > b; });
 		
 		for (int i = k; i < eigens.GetSize(); ++i)
 		{
@@ -118,8 +118,8 @@ public:
 	
 	void TopKComponents(int k)
 	{
-		// Sort ?
-		
+		std::sort(eigens.begin(), eigens.end(), [](const float a, const float b) {return a > b; });
+
 		for (int i = k; i < eigens.GetSize(); ++i)
 		{
 			eigens[i] = 0;

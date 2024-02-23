@@ -121,6 +121,15 @@ public:
 		}
 	}
 
+
+	void clear()
+	{
+		for (size_t i = 0; i < m_set.size(); ++i)
+		{
+			m_set[i] = 0;
+		}
+	}
+
 	bool operator[](size_t i) const
 	{
 		return m_set[i >> 6] & (1LL << (i & 63)) ? true : false;
