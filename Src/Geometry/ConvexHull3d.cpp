@@ -106,19 +106,19 @@ namespace Riemann
 
 			Faa = k1 * Paa;
 			Fbb = k1 * Pbb;
-			Fcc = k3 * (Sqr(n[A]) * Paa + 2 * n[A] * n[B] * Pab + Sqr(n[B]) * Pbb
+			Fcc = k3 * (Maths::Sqr(n[A]) * Paa + 2 * n[A] * n[B] * Pab + Maths::Sqr(n[B]) * Pbb
 				+ w * (2 * (n[A] * Pa + n[B] * Pb) + w * P1));
 
 			Faaa = k1 * Paaa;
 			Fbbb = k1 * Pbbb;
-			Fccc = -k4 * (Cube(n[A]) * Paaa + 3 * Sqr(n[A]) * n[B] * Paab
-				+ 3 * n[A] * Sqr(n[B]) * Pabb + Cube(n[B]) * Pbbb
-				+ 3 * w * (Sqr(n[A]) * Paa + 2 * n[A] * n[B] * Pab + Sqr(n[B]) * Pbb)
+			Fccc = -k4 * (Maths::Cube(n[A]) * Paaa + 3 * Maths::Sqr(n[A]) * n[B] * Paab
+				+ 3 * n[A] * Maths::Sqr(n[B]) * Pabb + Maths::Cube(n[B]) * Pbbb
+				+ 3 * w * (Maths::Sqr(n[A]) * Paa + 2 * n[A] * n[B] * Pab + Maths::Sqr(n[B]) * Pbb)
 				+ w * w * (3 * (n[A] * Pa + n[B] * Pb) + w * P1));
 
 			Faab = k1 * Paab;
 			Fbbc = -k2 * (n[A] * Pabb + n[B] * Pbbb + w * Pbb);
-			Fcca = k3 * (Sqr(n[A]) * Paaa + 2 * n[A] * n[B] * Paab + Sqr(n[B]) * Pabb
+			Fcca = k3 * (Maths::Sqr(n[A]) * Paaa + 2 * n[A] * n[B] * Paab + Maths::Sqr(n[B]) * Pabb
 				+ w * (2 * (n[A] * Paa + n[B] * Pab) + w * Pa));
 		}
 

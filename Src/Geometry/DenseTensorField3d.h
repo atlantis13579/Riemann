@@ -24,7 +24,7 @@ namespace Riemann
 
 			m_Bmin = Bmin;
 			m_Bmax = Bmax;
-			m_Size = TVector2<int>(nX, nY);
+			m_Size = Vector2i(nX, nY);
 			m_CellSize = (m_Bmax - m_Bmin);
 			m_CellSize.x /= m_Size.x;
 			m_CellSize.y /= m_Size.y;
@@ -36,7 +36,7 @@ namespace Riemann
 		{
 			m_Bmin = Vector2::Zero();
 			m_Bmax = Vector2::One();
-			m_Size = TVector2<int>(1, 1);
+			m_Size = Vector2i(1, 1);
 			m_CellSize = m_InvCellSize = Vector2::One();
 		}
 
@@ -75,9 +75,9 @@ namespace Riemann
 	private:
 		ScalerType				m_ConstTensor;
 		Vector2					m_Bmin, m_Bmax;
-		TVector2<int>			m_Size;
+		Vector2i				m_Size;
 		Vector2					m_CellSize, m_InvCellSize;
-		Tensor<ScalerType, 2>	m_Fields;
+		Maths::Tensor<ScalerType, 2>	m_Fields;
 		InterpMethod			m_InterpMethod;
 	};
 
@@ -91,7 +91,7 @@ namespace Riemann
 			m_ConstTensor = ScalerType::Zero();
 
 			m_BV = BV;
-			m_Size = TVector3<int>(nX, nY, nZ);
+			m_Size = Vector3i(nX, nY, nZ);
 			m_CellSize = (BV.Max - BV.Min);
 			m_CellSize.x /= m_Size.x;
 			m_CellSize.y /= m_Size.y;
@@ -103,7 +103,7 @@ namespace Riemann
 		DenseTensorField3d() : m_Fields({ 1, 1, 1 })
 		{
 			m_BV = Box3d::Unit();
-			m_Size = TVector3<int>(1, 1, 1);
+			m_Size = Vector3i(1, 1, 1);
 			m_CellSize = m_InvCellSize = Vector3::One();
 		}
 
@@ -149,9 +149,9 @@ namespace Riemann
 	private:
 		ScalerType				m_ConstTensor;
 		Box3d					m_BV;
-		TVector3<int>			m_Size;
+		Vector3i				m_Size;
 		Vector3					m_CellSize, m_InvCellSize;
-		Tensor<ScalerType, 3>	m_Fields;
+		Maths::Tensor<ScalerType, 3>	m_Fields;
 		InterpMethod			m_InterpMethod;
 	};
 }

@@ -225,7 +225,7 @@ void TestPCA()
 	for (int i = 0; i < Data.GetRows(); ++i)
 	for (int j = 0; j < Data.GetCols(); ++j)
 	{
-		Data(i, j) = RandomFloat(1.0f, 100.0f);
+		Data(i, j) = Maths::RandomFloat(1.0f, 100.0f);
 	}
 	
 	PrincipalComponentAnalysis<float> pca;

@@ -14,7 +14,7 @@ public:
 		m_NumEntries = 0;
 		for (int i = 0; i < m; i++)
 		{
-			if (!FuzzyZero(A[i]))
+			if (!Maths::FuzzyZero(A[i]))
 			{
 				++m_NumEntries;
 			}
@@ -34,7 +34,7 @@ public:
 			int k = 0;
 			for (int i = 0; i < m; i++)
 			{
-				if (!FuzzyZero(A[i]))
+				if (!Maths::FuzzyZero(A[i]))
 				{
 					m_Entries[k] = A[i];
 					m_Indices[k] = i;

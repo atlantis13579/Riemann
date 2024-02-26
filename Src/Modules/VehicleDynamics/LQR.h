@@ -11,12 +11,12 @@ template<int nState, int mInput>
 class LinearQuadraticRegulator
 {
 public:
-    using VectorMx1 = VectorN<mInput>;
-    using MatrixNxN = MatrixN<nState>;
-    using MatrixMxM = MatrixN<mInput>;
-    using InputMatrix = MatrixMxN<nState, mInput>;
-    using GainMatrix = MatrixMxN<mInput, nState>;
-    using State = VectorN<nState>;
+    using VectorMx1 = Maths::VectorN<mInput>;
+    using MatrixNxN = Maths::MatrixN<nState>;
+    using MatrixMxM = Maths::MatrixN<mInput>;
+    using InputMatrix = Maths::MatrixMxN<nState, mInput>;
+    using GainMatrix = Maths::MatrixMxN<mInput, nState>;
+    using State = Maths::VectorN<nState>;
 
 public:
     LinearQuadraticRegulator(MatrixNxN _A, InputMatrix _B, MatrixNxN _Q, MatrixMxM _R)

@@ -85,12 +85,12 @@ void TestMesh1()
 	inference.SerializeFrom("../TestData/test.voxel");
 
 	Box3d v = field.GetVoxelBox(Vector3(-0.1f, -0.1f, -0.1f));
-	EXPECT(FloatEqual(v.Min.x, -1.0f));
-	EXPECT(FloatEqual(v.Max.x, 0.0f));
+	EXPECT(Maths::FloatEqual(v.Min.x, -1.0f));
+	EXPECT(Maths::FloatEqual(v.Max.x, 0.0f));
 
 	v = field.GetVoxelBox(Vector3(0.01f, 0.01f, 0.01f));
-	EXPECT(FloatEqual(v.Min.x, 0.0f));
-	EXPECT(FloatEqual(v.Max.x, 1.0f));
+	EXPECT(Maths::FloatEqual(v.Min.x, 0.0f));
+	EXPECT(Maths::FloatEqual(v.Max.x, 1.0f));
 
 	field.MakeComplementarySet();
 

@@ -111,7 +111,7 @@ namespace Riemann
 			float c = sqr - Radius * Radius;
 
 			float roots[2];
-			if (SolveQuadratic(a, b, c) == 0)
+			if (Maths::SolveQuadratic(a, b, c) == 0)
 			{
 				return false;
 			}

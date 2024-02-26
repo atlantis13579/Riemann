@@ -614,7 +614,7 @@ namespace Riemann
 
 			for (int i = 0; i < n; i++)
 			{
-				int j = RandomInt(i + 1, n - 1);
+				int j = Maths::RandomInt(i + 1, n - 1);
 				std::swap(points[i], points[j]);
 				s2.Encapsulate(points[i]);
 			}

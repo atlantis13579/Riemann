@@ -114,7 +114,7 @@ namespace Riemann
 			const uint32_t					nCols = pxhf->mData.columns;
 			const uint32_t					nRows = pxhf->mData.rows;
 
-			TCE3<float>	ce = pxhf->mData.mAABB;
+			Maths::TCE3<float>	ce = pxhf->mData.mAABB;
 			Vector3 Scale = Vector3(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
 			ce.Center *= Scale;
 			ce.Extent *= Scale;
@@ -408,11 +408,11 @@ namespace Riemann
 				const uint32_t					nCols = pxhf->mData.columns;
 				const uint32_t					nRows = pxhf->mData.rows;
 
-				TCE3<float>	ce = pxhf->mData.mAABB;
+				Maths::TCE3<float>	ce = pxhf->mData.mAABB;
 				Vector3 Scale = Vector3(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
 				ce.Center *= Scale;
 				ce.Extent *= Scale;
-				TAABB3<float> BV = ce.GetAABB();
+				Maths::TAABB3<float> BV = ce.GetAABB();
 				float DX = (BV.Max.x - BV.Min.x) / (nRows - 1);
 				float DZ = (BV.Max.z - BV.Min.z) / (nCols - 1);
 

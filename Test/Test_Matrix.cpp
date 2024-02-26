@@ -53,7 +53,7 @@ void TestMatrix2()
 {
 	printf("Running TestMatrix2\n");
 
-	MatrixN<10> M;
+	Maths::MatrixN<10> M;
 	M[0][0] = 2.0f;
 	M[0][1] = 3.0f;
 	M(1, 0) = -1.5f;
@@ -62,8 +62,8 @@ void TestMatrix2()
 	for (int j = 0; j < 10; ++j)
 		M(i, j) = 1.0f * rand() / RAND_MAX;
 
-	MatrixN<10> invM = (M + M).Inverse();
-	MatrixN<10> Id = (M + M) * invM;
+	Maths::MatrixN<10> invM = (M + M).Inverse();
+	Maths::MatrixN<10> Id = (M + M) * invM;
 	bool IsId = Id.IsIdentity(1e-4f);
 	EXPECT(IsId);
 
@@ -72,9 +72,9 @@ void TestMatrix2()
 
 	EXPECT(fabsf(det * detI - 0.9999f) < 0.001f);
 
-	VectorN<10>	Vec = M * M.GetCol(0);
+	Maths::VectorN<10>	Vec = M * M.GetCol(0);
 	float dp = M.GetRow(0).Dot(M.GetCol(0));
-	MatrixN<10>	Mat = M * M.Transpose().Transpose();
+	Maths::MatrixN<10>	Mat = M * M.Transpose().Transpose();
 
 	EXPECT(dp == Vec[0]);
 	EXPECT(dp == Mat[0][0]);
@@ -378,7 +378,7 @@ void TestCholesky()
 	B[2] = 4.0f;
 	
 	EXPECT(A.SolveCholesky(B, X));
-	EXPECT(FuzzyEqual(X.Dot(X), 3.0f));
+	EXPECT(Maths::FuzzyEqual(X.Dot(X), 3.0f));
 	
 	return;
 }

@@ -428,7 +428,7 @@ namespace PhysxFormat_34
 		PxU32					mNbTriangles;
 		PxVec3*					mVertices;
 		void*					mTriangles;				//!< 16 (<= 0xffff #vertices) or 32 bit trig indices (mNbTriangles * 3)
-		TCE3<float>				mAABB;
+		Maths::TCE3<float>		mAABB;
 		PxU8*					mExtraTrigData;			//one per trig
 		PxReal					mGeomEpsilon;			//!< see comments in cooking code referencing this variable
 		PxU8					mFlags;					//!< Flag whether indices are 16 or 32 bits wide
@@ -608,8 +608,8 @@ namespace PhysxFormat_34
 
 	struct ConvexHullData
 	{
-		TCE3<float>		mAABB;
-		PxVec3		mCenterOfMass;
+		Maths::TCE3<float>		mAABB;
+		PxVec3			mCenterOfMass;
 		uint16_t		mNbEdges;
 		PxU8			mNbHullVertices;
 		PxU8			mNbPolygons;
@@ -732,7 +732,7 @@ namespace PhysxFormat_34
 
 	struct HeightFieldData
 	{
-		TCE3<float>					mAABB;
+		Maths::TCE3<float>			mAABB;
 		PxU32						rows;					// PT: WARNING: don't change this member's name (used in ConvX)
 		PxU32						columns;				// PT: WARNING: don't change this member's name (used in ConvX)
 		PxReal						rowLimit;				// PT: to avoid runtime int-to-float conversions on Xbox

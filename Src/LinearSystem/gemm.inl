@@ -3,7 +3,7 @@
 // #define GEMM_USE_SIMD
 
 template<typename T>
-void gemm_block_slow(const T* mat1, const T* mat2, int r1, int c1, int c2, int i0, int i1, int j0, int j1, int k0, int k1, T* m)
+void gemm_block_ref(const T* mat1, const T* mat2, int r1, int c1, int c2, int i0, int i1, int j0, int j1, int k0, int k1, T* m)
 {
 	for (int i = i0; i <= i1; ++i)
 	for (int k = k0; k <= k1; ++k)
@@ -17,7 +17,7 @@ void gemm_block_slow(const T* mat1, const T* mat2, int r1, int c1, int c2, int i
 }
 
 template<typename T>
-void gemv_block_slow(const T* mat, const T* vec1, int r1, int c1, int i0, int i1, int j0, int j1, T* v)
+void gemv_block_ref(const T* mat, const T* vec1, int r1, int c1, int i0, int i1, int j0, int j1, T* v)
 {
 	for (int i = i0; i <= i1; ++i)
 	{
@@ -30,7 +30,7 @@ void gemv_block_slow(const T* mat, const T* vec1, int r1, int c1, int i0, int i1
 }
 
 template<typename T>
-void gema_block_slow(const T* mat1, const T* mat2, int r, int c, int i0, int i1, int j0, int j1, T* m)
+void gema_block_ref(const T* mat1, const T* mat2, int r, int c, int i0, int i1, int j0, int j1, T* m)
 {
 	for (int i = i0; i <= i1; ++i)
 	for (int j = j0; j <= j1; ++j)
@@ -48,19 +48,19 @@ void gema_block_slow(const T* mat1, const T* mat2, int r, int c, int i0, int i1,
 template<typename T>
 void gemm_block(const T* m1, const T* m2, int r1, int c1, int c2, int i0, int i1, int j0, int j1, int k0, int k1, T* m)
 {
-	gemm_block_slow<T>(m1, m2, r1, c1, c2, i0, i1, j0, j1, k0, k1, m);
+	gemm_block_ref<T>(m1, m2, r1, c1, c2, i0, i1, j0, j1, k0, k1, m);
 }
 
 template<typename T>
 void gemv_block(const T* m1, const T* v1, int r1, int c1, int i0, int i1, int k0, int k1, T* v)
 {
-	gemv_block_slow<T>(m1, v1, r1, c1, i0, i1, k0, k1, v);
+	gemv_block_ref<T>(m1, v1, r1, c1, i0, i1, k0, k1, v);
 }
 
 template<typename T>
 void gema_block(const T* mat1, const T* mat2, int r, int c, int i0, int i1, int j0, int j1, T* m)
 {
-	gema_block_slow<T>(mat1, mat2, r, c, i0, i1, j0, j1, m);
+	gema_block_ref<T>(mat1, mat2, r, c, i0, i1, j0, j1, m);
 }
 
 #endif 

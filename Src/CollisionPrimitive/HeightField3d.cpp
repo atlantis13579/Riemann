@@ -377,19 +377,19 @@ namespace Riemann
 
 		if (Hole0 != 0x7F && Hole1 != 0x7F)
 		{
-			minH = Min(Height0, Height1, Height2, Height3);
-			maxH = Max(Height0, Height1, Height2, Height3);
+			minH = Maths::Min(Height0, Height1, Height2, Height3);
+			maxH = Maths::Max(Height0, Height1, Height2, Height3);
 			return true;
 		}
 		else if (Hole0 != 0x7F)
 		{
-			minH = Min(Min(Height0, Height2), (tessFlag ? Height3 : Height1));
-			maxH = Max(Max(Height0, Height2), (tessFlag ? Height3 : Height1));
+			minH = Maths::Min(Maths::Min(Height0, Height2), (tessFlag ? Height3 : Height1));
+			maxH = Maths::Max(Maths::Max(Height0, Height2), (tessFlag ? Height3 : Height1));
 		}
 		else if (Hole1 != 0x7F)
 		{
-			minH = Min(Min(Height1, Height3), (tessFlag ? Height0 : Height2));
-			maxH = Max(Max(Height1, Height3), (tessFlag ? Height0 : Height2));
+			minH = Maths::Min(Maths::Min(Height1, Height3), (tessFlag ? Height0 : Height2));
+			maxH = Maths::Max(Maths::Max(Height1, Height3), (tessFlag ? Height0 : Height2));
 		}
 
 		return false;

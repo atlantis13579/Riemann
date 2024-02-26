@@ -34,8 +34,8 @@ void TestBasicMath()
 	Quaternion q1, q2;
 	Vector3 v1, v2, s1, s2;
 
-	mat1.FromAxisAngle(Vector3::UnitX(), ToRadian(45.0f));
-	q1.FromRotationAxis(Vector3::UnitX(), ToRadian(45.0f));
+	mat1.FromAxisAngle(Vector3::UnitX(), Maths::ToRadian(45.0f));
+	q1.FromRotationAxis(Vector3::UnitX(), Maths::ToRadian(45.0f));
 	mat2 = q1.ToRotationMatrix3();
 
 	float dist = (mat1 - mat2).L1Norm();
@@ -43,7 +43,7 @@ void TestBasicMath()
 
 	v1 = Vector3(1.0f, 2.0f, 3.0f);
 
-	mat1.FromAxisAngle(v1.Unit(), ToRadian(30.0f));
+	mat1.FromAxisAngle(v1.Unit(), Maths::ToRadian(30.0f));
 	q1.FromRotationMatrix3(mat1);
 	mat2 = q1.ToRotationMatrix3();
 
@@ -79,7 +79,7 @@ void TestBasicMath()
 void TestTensor()
 {
 	printf("Running TestTensor\n");
-	Tensor<float, 4> t(10, 20, 30, 40);
+	Maths::Tensor<float, 4> t(10, 20, 30, 40);
 	t(0, 0, 0, 0) = 1.0f;
 	t(9, 19, 29, 39) = 2.0f;
 

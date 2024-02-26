@@ -132,7 +132,7 @@ void TestDynamicAABB()
 	{
 		for (size_t i = 0; i < geoms.size(); ++i)
 		{
-			int r = RandomInt(0, 5);
+			int r = Maths::RandomInt(0, 5);
 			if (geoms[i].id == -1)
 			{
 				if (r == 0)
@@ -321,18 +321,18 @@ void TestRTree1()
 	bool success;
 	success = mesh.IntersectRay(Vector3(0.0f, 10.0f, 0.0f), -Vector3::UnitY(), &t);
 	EXPECT(success);
-	EXPECT(FloatEqual(t, 9.0f));
+	EXPECT(Maths::FloatEqual(t, 9.0f));
 
 	success = mesh.IntersectRay(Vector3(2.0f, 10.0f, 0.0f), -Vector3::UnitY(), &t);
 	EXPECT(!success);
 
 	success = mesh.IntersectRay(Vector3(0.0f, 0.75f, 0.0f), Vector3::UnitY(), &t);
 	EXPECT(success);
-	EXPECT(FloatEqual(t, 0.25f));
+	EXPECT(Maths::FloatEqual(t, 0.25f));
 
 	success = mesh.IntersectRay(Vector3(0.0f, 0.0f, 0.0f), Vector3(1, 1, 1).Unit(), &t);
 	EXPECT(success);
-	EXPECT(FloatEqual(t, sqrtf(3.0f) * 0.5f));
+	EXPECT(Maths::FloatEqual(t, sqrtf(3.0f) * 0.5f));
 
 	return;
 }
@@ -359,7 +359,7 @@ void TestRTree2()
 		success1 = Triangle3d::RayIntersectTriangle(Center, Dir, mesh(0, 0), mesh(0, 1), mesh(0, 2), &t1);
 		success2 = mesh.IntersectRay(Center, Dir, &t2);
 		EXPECT(success1 == success2);
-		EXPECT(FloatEqual(t1, t2));
+		EXPECT(Maths::FloatEqual(t1, t2));
 	}
 	return;
 }

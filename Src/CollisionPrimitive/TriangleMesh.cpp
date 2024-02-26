@@ -119,7 +119,7 @@ namespace Riemann
 		uint32_t* stackPtr = stack;
 
 		assert(SIMD_WIDTH == 4 || SIMD_WIDTH == 8);
-		assert(IsPowerOfTwo(bvh->BatchSize));
+		assert(Maths::IsPowerOfTwo(bvh->BatchSize));
 
 		for (int j = int(bvh->NumRoots - 1); j >= 0; j--)
 			*stackPtr++ = j * sizeof(BVHNodeBatch);

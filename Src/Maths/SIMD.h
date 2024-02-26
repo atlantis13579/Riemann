@@ -15,24 +15,24 @@
 	typedef TVector4<uint32_t>	U128;
 	typedef TVector4<int32_t>	I128;
 #elif defined(__arm__) || defined(__aarch64__)
-    #include <arm_neon.h>
-    typedef float32x2_t Scaler;
-    typedef float32x4_t F128;
-    typedef uint32x4_t  B128;
-    typedef uint32x4_t  U128;
-    typedef int32x4_t   I128;
+	#include <arm_neon.h>
+	typedef float32x2_t Scaler;
+	typedef float32x4_t F128;
+	typedef uint32x4_t  B128;
+	typedef uint32x4_t  U128;
+	typedef int32x4_t   I128;
 	#define SIMD_INSTRUCTION_NEON
 #else
-    #ifdef _WIN32
-    #include <intrin.h>
-    #else
-    #include <x86intrin.h>
-    #endif
-    typedef __m128 Scaler;
-    typedef __m128 F128;
-    typedef __m128 B128;
-    typedef __m128 U128;
-    typedef __m128 I128;
+	#ifdef _WIN32
+	#include <intrin.h>
+	#else
+	#include <x86intrin.h>
+	#endif
+	typedef __m128 Scaler;
+	typedef __m128 F128;
+	typedef __m128 B128;
+	typedef __m128 U128;
+	typedef __m128 I128;
 	#define SIMD_INSTRUCTION_SSE
 #endif
 
@@ -67,7 +67,7 @@ inline const Vector3& F128_ReadXYZ(const F128& v)
 
 inline const Vector4& F128_ReadXYZW(const F128& v)
 {
-    return reinterpret_cast<const Vector4&>(v);
+	return reinterpret_cast<const Vector4&>(v);
 }
 
 #if _DEBUG
@@ -1875,5 +1875,3 @@ inline F128 F128_Cos(const F128 a)
 
 	return Result;
 }
-
-

@@ -12,7 +12,7 @@ namespace Riemann
 		int i, j, pivot;
 		if (low < high)
 		{
-			int pi = RandomInt(low, high);
+			int pi = Maths::RandomInt(low, high);
 			pivot = p[pi];
 			p[pi] = p[low];
 			p[low] = pivot;

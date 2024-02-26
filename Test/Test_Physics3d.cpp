@@ -29,7 +29,7 @@ void TestPhysxBin()
 		RayCastResult Result;
 
 		query.RayCastQuery(Vector3(-521.23f, 55.87f, 399.15f), Vector3(0, -1, 0).Unit(), Option, &Result);
-		EXPECT(FuzzyEqual(Result.hitPoint.y, 55.53f, 0.1f));
+		EXPECT(Maths::FuzzyEqual(Result.hitPoint.y, 55.53f, 0.1f));
 	}
 
 	printf("Running TestPhysxBin fighting_new\n");
@@ -74,7 +74,7 @@ void TestPhysxBin()
 
 		ret = query.RayCastQuery(Vector3(Pos.x + 0.01f, Pos.y, Pos.z + 0.01f), -Vector3::UnitY(), Option, &Result);
 		EXPECT(ret);
-		EXPECT(FloatDiff(Result.hitPoint.y, Pos.y) < 0.2f);
+		EXPECT(Maths::FloatDiff(Result.hitPoint.y, Pos.y) < 0.2f);
 		EXPECT(GetGuid(Result.hitGeom) == 2759584952560);
 
 		ret = query.RayCastQuery(Vector3(-2222, 0, -773), -Vector3::UnitY(), Option, &Result);

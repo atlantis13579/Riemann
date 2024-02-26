@@ -49,7 +49,7 @@ namespace Riemann
 		m_error = jv + m_bias;
 		float lambda = m_effectiveMass * (-m_error);
 		float oldTotalLambda = m_totalLambda;
-		m_totalLambda = Clamp(m_totalLambda + lambda, lambdamin, lambdamax);
+		m_totalLambda = Maths::Clamp(m_totalLambda + lambda, lambdamin, lambdamax);
 		lambda = m_totalLambda - oldTotalLambda;
 
 		m_ga->v += m_invmjva * lambda;

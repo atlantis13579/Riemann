@@ -1017,15 +1017,15 @@ namespace Riemann
 
 	int		SparseVoxelField::GetVoxelIdx(const Vector3& pos) const
 	{
-		const int x = Clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
-		const int z = Clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+		const int x = Maths::Clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeZ - 1);
+		const int z = Maths::Clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
 		return z * m_SizeX + x;
 	}
 
 
 	int		SparseVoxelField::VoxelSpaceToWorldSpaceY(float pos_y) const
 	{
-		const int y = Clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
+		const int y = Maths::Clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
 		return y;
 	}
 

@@ -13,7 +13,7 @@ namespace Riemann
 		const float dp = DotProduct(vx0, Axis);
 		if (dp >= -Radius && dp <= Length + Radius)
 		{
-			const float proj = Clamp<float>(dp, 0, Length);
+			const float proj = Maths::Clamp<float>(dp, 0, Length);
 			const Vector3 proj_pos = Axis * proj;
 			const float dist = (vx0 - proj_pos).SquareLength();
 			if (dist <= Radius * Radius)
@@ -152,7 +152,7 @@ namespace Riemann
 		const float denom = ADotA * BDotB - ADotB * ADotB;
 
 		float t = fabsf(denom) < 1e-6f ? 0.0f : (ADotT * BDotB - BDotT * ADotB) / denom;
-		t = Clamp(t, 0.0f, 1.0f);
+		t = Maths::Clamp(t, 0.0f, 1.0f);
 
 		float u = fabsf(BDotB) < 1e-6f ? 0.0f : (t * ADotB - BDotT) / BDotB;
 
@@ -160,13 +160,13 @@ namespace Riemann
 		{
 			u = 0.0f;
 			t = ADotT / ADotA;
-			t = Clamp(t, 0.0f, 1.0f);
+			t = Maths::Clamp(t, 0.0f, 1.0f);
 		}
 		else if (u > 1.0f)
 		{
 			u = 1.0f;
 			t = (ADotB + ADotT) / ADotA;
-			t = Clamp(t, 0.0f, 1.0f);
+			t = Maths::Clamp(t, 0.0f, 1.0f);
 		}
 		return T + b * u - a * t;
 	}
