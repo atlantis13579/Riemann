@@ -26,11 +26,11 @@
 
 HINSTANCE               g_hInst = nullptr;
 HWND                    g_hWnd = nullptr;
-Renderer*               g_Renderer = nullptr;
+Riemann::Renderer*      g_Renderer = nullptr;
 
 LRESULT CALLBACK    WndProc( HWND, UINT, WPARAM, LPARAM );
 
-WorldViewer* g_Viewer;
+Riemann::WorldViewer* g_Viewer;
 
 //--------------------------------------------------------------------------------------
 // Register class and create window
@@ -83,13 +83,13 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
     if( FAILED( InitWindow( hInstance, nCmdShow ) ) )
         return 0;
 
-    g_Renderer = Renderer::CreateDX11Renderer(g_hWnd, "../Renderer/");
+    g_Renderer = Riemann::Renderer::CreateDX11Renderer(g_hWnd, "../Renderer/");
     if (g_Renderer == nullptr)
     {
         return 0;
     }
 
-    g_Viewer = new WorldViewer(g_Renderer);
+    g_Viewer = new Riemann::WorldViewer(g_Renderer);
 
     auto last = std::chrono::steady_clock::now();
 

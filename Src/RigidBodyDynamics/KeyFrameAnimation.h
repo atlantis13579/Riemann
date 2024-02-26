@@ -5,55 +5,58 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Quaternion.h"
 
-template<typename T>
-struct Keyframe
+namespace Riemann
 {
-	Keyframe() {}
-	Keyframe(int _time, T _key)
+	template<typename T>
+	struct Keyframe
 	{
-		time = _time;
-		key = _key;
-	}
-	int time;
-	T	key;
-};
+		Keyframe() {}
+		Keyframe(int _time, T _key)
+		{
+			time = _time;
+			key = _key;
+		}
+		int time;
+		T	key;
+	};
 
-typedef Keyframe<Vector3> KeyframePos;
-typedef Keyframe<Quaternion> KeyframeQuat;
+	typedef Keyframe<Vector3> KeyframePos;
+	typedef Keyframe<Quaternion> KeyframeQuat;
 
-template<typename T>
-struct Timeline
-{
-	void SetTime(float start)
+	template<typename T>
+	struct Timeline
 	{
-		TimeMS = start;
-		Idx = 0;
-		IsFinish = false;
-	}
+		void SetTime(float start)
+		{
+			TimeMS = start;
+			Idx = 0;
+			IsFinish = false;
+		}
 
-	float	TimeMS;
-	int		Idx;
-	bool	IsFinish;
-};
+		float	TimeMS;
+		int		Idx;
+		bool	IsFinish;
+	};
 
-class KeyFrameAnimation
-{
-public:
-	KeyFrameAnimation();
+	class KeyFrameAnimation
+	{
+	public:
+		KeyFrameAnimation();
 
-	void LoadKeyframes(const std::vector<KeyframePos>& frame_pos, const std::vector<KeyframeQuat>& frame_quat, bool is_loop);
-	void LoadRotationY(const Quaternion& quat, float radian, int time_ms);
+		void LoadKeyframes(const std::vector<KeyframePos>& frame_pos, const std::vector<KeyframeQuat>& frame_quat, bool is_loop);
+		void LoadRotationY(const Quaternion& quat, float radian, int time_ms);
 
-	bool CheckAnimData() const;
-	void SetTime(float time);
-	bool IsFinish() const;
-	bool Advance(float elapsed, Vector3* pos, Quaternion* quat);
+		bool CheckAnimData() const;
+		void SetTime(float time);
+		bool IsFinish() const;
+		bool Advance(float elapsed, Vector3* pos, Quaternion* quat);
 
-private:
+	private:
 
-	Timeline<Vector3>			m_TimelinePosition;
-	Timeline<Quaternion>		m_TimelineRotation;
-	std::vector<KeyframePos>	m_FramesPosition;
-	std::vector<KeyframeQuat>	m_FramesRotation;
-	bool						m_IsLoop;
-};
+		Timeline<Vector3>			m_TimelinePosition;
+		Timeline<Quaternion>		m_TimelineRotation;
+		std::vector<KeyframePos>	m_FramesPosition;
+		std::vector<KeyframeQuat>	m_FramesRotation;
+		bool						m_IsLoop;
+	};
+}

@@ -3,49 +3,52 @@
 #include "../CollisionPrimitive/Ray3d.h"
 #include "AABBTreeOffline.h"
 
-struct RayCastOption;
-struct RayCastResult;
-struct IntersectOption;
-struct IntersectResult;
-struct SweepOption;
-struct SweepResult;
-struct CacheFriendlyAABBTree;
-class Geometry;
-
-struct TreeStatistics
+namespace Riemann
 {
-	int MaxStack;
-	int MaxDepth;
-	int MaxGeometriesAtLeaf;
-	int NumNodes;
-	int NumLeafs;
-};
+	struct RayCastOption;
+	struct RayCastResult;
+	struct IntersectOption;
+	struct IntersectResult;
+	struct SweepOption;
+	struct SweepResult;
+	struct CacheFriendlyAABBTree;
+	class Geometry;
 
-class AABBTree
-{
-public:
-	AABBTree();
-	~AABBTree();
+	struct TreeStatistics
+	{
+		int MaxStack;
+		int MaxDepth;
+		int MaxGeometriesAtLeaf;
+		int NumNodes;
+		int NumLeafs;
+	};
 
-public:
-	void	Release();
+	class AABBTree
+	{
+	public:
+		AABBTree();
+		~AABBTree();
 
-	void	StaticBuild(AABBTreeBuildData& params);
-	void	Statistic(TreeStatistics &stat);
+	public:
+		void	Release();
 
-	bool	RayCast(const Ray3d& ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult *Result) const;
-	bool	Intersect(const Geometry *geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult *Result) const;
-	bool	Sweep(const Geometry *geometry, Geometry** ObjectCollection, const Vector3 &Direction, const SweepOption* Option, SweepResult *Result) const;
-	
-	int		IntersectPoint(const Vector3& Point) const;
-	bool	RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const;
+		void	StaticBuild(AABBTreeBuildData& params);
+		void	Statistic(TreeStatistics& stat);
 
-private:
-	void	InitAABBTreeBuild(AABBTreeBuildData& params);
+		bool	RayCast(const Ray3d& ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const;
+		bool	Intersect(const Geometry* geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const;
+		bool	Sweep(const Geometry* geometry, Geometry** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const;
 
-private:
-	int*						m_GeometryIndicesBase;
-	int							m_NumGeometries;
+		int		IntersectPoint(const Vector3& Point) const;
+		bool	RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const;
 
-	CacheFriendlyAABBTree		*m_AABBTreeInference;
-};
+	private:
+		void	InitAABBTreeBuild(AABBTreeBuildData& params);
+
+	private:
+		int* m_GeometryIndicesBase;
+		int							m_NumGeometries;
+
+		CacheFriendlyAABBTree* m_AABBTreeInference;
+	};
+}

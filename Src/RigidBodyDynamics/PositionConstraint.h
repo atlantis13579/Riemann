@@ -1,9 +1,12 @@
 #pragma once
 
-class PositionConstraint
+namespace Riemann
 {
-public:
-	virtual ~PositionConstraint() {}
-	virtual void Setup() = 0;
-	virtual void Solve() = 0;
-};
+	class PositionConstraint
+	{
+	public:
+		virtual ~PositionConstraint() {}
+		virtual void Setup() = 0;
+		virtual void Solve() = 0;
+	};
+}

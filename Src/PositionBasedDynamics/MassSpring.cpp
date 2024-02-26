@@ -97,27 +97,6 @@ private:
 	float m_Length;
 };
 
-class MSSphereCollision : public MSCollision
-{
-public:
-	MSSphereCollision(MSProxy* Proxy, const Vector3 &center, float radius)
-		: MSCollision(Proxy), m_sphere(center, radius)
-	{
-		
-	}
-	virtual ~MSSphereCollision() = 0;
-	virtual void Solve(int Id) override final
-	{
-		Vector3 v;
-		m_Proxy->GetPosition(Id, &v);
-		Vector3 d = (v - m_sphere.Center).SquareLength() > 1e-6f ?
-			(v - m_sphere.Center).Unit() : Vector3::UnitZ();
-		m_Proxy->SetPosition(Id, m_sphere.Center + d * m_sphere.Radius);
-	}
-private:
-	Sphere3d m_sphere;
-};
-
 MassSpringSolver::MassSpringSolver()
 {
 	m_AirFriction = 0.1f;

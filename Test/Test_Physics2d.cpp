@@ -4,6 +4,8 @@
 #include "../Src/Modules/Physics2d/Rect.h"
 #include "../Src/Modules/Physics2d/Circle.h"
 
+// using namespace Riemann;
+
 void TestRect()
 {
 	Rect b1(Point2(0, 0), Point2(1, 1), 0.0f);

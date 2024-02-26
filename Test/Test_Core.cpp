@@ -9,6 +9,8 @@
 #include "../Src/Core/ThreadPool.h"
 #include "../Src/Core/RingBuffer.h"
 
+using namespace Riemann;
+
 void thread_main(int id)
 {
 	printf("tid = %i\n", id);

@@ -273,9 +273,6 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\TriangleMesh.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\VHACD.h">
-      <Filter>Geometry</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\Voronoi2d.h">
       <Filter>Geometry</Filter>
     </ClInclude>
@@ -410,9 +407,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Core\LockFreeHashMap.h">
       <Filter>Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Polyhedron.h">
-      <Filter>CollisionPrimitive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Core\RingBuffer.h">
       <Filter>Core</Filter>
@@ -696,9 +690,6 @@
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Cylinder3d.cpp">
-      <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Polyhedron.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Sphere3d.cpp">

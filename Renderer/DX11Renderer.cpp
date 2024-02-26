@@ -62,7 +62,7 @@ struct DX11StaticMesh
     }
 };
 
-class DX11Renderer : public Renderer
+class DX11Renderer : public Riemann::Renderer
 {
 public:
     DX11Renderer()
@@ -588,14 +588,17 @@ private:
     std::vector<DX11StaticMesh> m_AllMesh;
 };
 
-// static
-Renderer* Renderer::CreateDX11Renderer(void* hWnd, const char* shader_path)
+namespace Riemann
 {
-    DX11Renderer* p = new DX11Renderer();
-    if (p->InitDevice((HWND)hWnd, shader_path) == S_OK)
+    // static
+    Renderer* Renderer::CreateDX11Renderer(void* hWnd, const char* shader_path)
     {
-        return p;
+        DX11Renderer* p = new DX11Renderer();
+        if (p->InitDevice((HWND)hWnd, shader_path) == S_OK)
+        {
+            return p;
+        }
+        delete p;
+        return nullptr;
     }
-    delete p;
-    return nullptr;
 }

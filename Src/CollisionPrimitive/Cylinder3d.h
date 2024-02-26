@@ -6,104 +6,107 @@
 #include "ShapeType.h"
 #include "../Maths/Box3d.h"
 
-class Cylinder3d
+namespace Riemann
 {
-public:
-	float		Radius;
-	float		Height;
-	Vector3		X0, X1;
-
-public:
-	Cylinder3d() {}
-
-	Cylinder3d(const Vector3& _X0, const Vector3& _X1, float _Radius)
+	class Cylinder3d
 	{
-		Init(_X0, _X1, _Radius);
-	}
+	public:
+		float		Radius;
+		float		Height;
+		Vector3		X0, X1;
 
-	void Init(const Vector3& _X0, const Vector3& _X1, float _Radius)
-	{
-		Radius = _Radius;
-		Height = (_X0 - _X1).Length();
-		X0 = _X0;
-		X1 = _X1;
-	}
+	public:
+		Cylinder3d() {}
 
-	static constexpr ShapeType3d	StaticType()
-	{
-		return ShapeType3d::CYLINDER;
-	}
+		Cylinder3d(const Vector3& _X0, const Vector3& _X1, float _Radius)
+		{
+			Init(_X0, _X1, _Radius);
+		}
 
-public:
+		void Init(const Vector3& _X0, const Vector3& _X1, float _Radius)
+		{
+			Radius = _Radius;
+			Height = (_X0 - _X1).Length();
+			X0 = _X0;
+			X1 = _X1;
+		}
 
-	inline Vector3 GetCenter() const
-	{
-		return (X0 + X1) * 0.5f;
-	}
+		static constexpr ShapeType3d	StaticType()
+		{
+			return ShapeType3d::CYLINDER;
+		}
 
-	inline Vector3 GetAxis() const
-	{
-		return X1 - X0;
-	}
+	public:
 
-	inline Vector3	GetUnitAxis() const
-	{
-		return (X1 - X0).Unit();
-	}
+		inline Vector3 GetCenter() const
+		{
+			return (X0 + X1) * 0.5f;
+		}
 
-	inline float GetHeight() const
-	{
-		return Height;
-	}
+		inline Vector3 GetAxis() const
+		{
+			return X1 - X0;
+		}
 
-	inline float GetHalfHeight() const
-	{
-		return Height * 0.5f;
-	}
+		inline Vector3	GetUnitAxis() const
+		{
+			return (X1 - X0).Unit();
+		}
 
-	bool	CalculateVolumeProperties(MassParameters* p, float Density) const
-	{ 
-		p->Volume = CalculateVolume();
-		p->Mass = p->Volume * Density;
-		p->BoundingVolume = CalculateBoundingVolume();
-		p->CenterOfMass = p->BoundingVolume.GetCenter();
-		p->InertiaMat = CalculateInertiaTensor(p->Mass);
-		return true;
-	}
+		inline float GetHeight() const
+		{
+			return Height;
+		}
 
-	float CalculateVolume() const
-	{
-		return CalculateVolume(Radius, Height);
-	}
+		inline float GetHalfHeight() const
+		{
+			return Height * 0.5f;
+		}
 
-	static float CalculateVolume(float Radius, float Height)
-	{
-		return (float)M_PI * Radius * Radius * Height;
-	}
+		bool	CalculateVolumeProperties(MassParameters* p, float Density) const
+		{
+			p->Volume = CalculateVolume();
+			p->Mass = p->Volume * Density;
+			p->BoundingVolume = CalculateBoundingVolume();
+			p->CenterOfMass = p->BoundingVolume.GetCenter();
+			p->InertiaMat = CalculateInertiaTensor(p->Mass);
+			return true;
+		}
 
-	Box3d		CalculateBoundingVolume() const;
+		float CalculateVolume() const
+		{
+			return CalculateVolume(Radius, Height);
+		}
 
-	Matrix3 CalculateInertiaTensor(float Mass) const
-	{
-		return CalculateInertiaTensor(Radius, Height, Mass);
-	}
+		static float CalculateVolume(float Radius, float Height)
+		{
+			return (float)M_PI * Radius * Radius * Height;
+		}
 
-	static Matrix3 CalculateInertiaTensor(float Radius, float Height, float Mass)
-	{
-		// https://www.wolframalpha.com/input/?i=cylinder
-		float RR = Radius * Radius;
-		float Diag12 = Mass / 12.0f * (3.0f * RR + Height * Height);
-		float Diag3 = Mass / 2.0f * RR;
-		return Matrix3(Diag12, Diag12, Diag3);
-	}
-	
-	bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
-	static bool IntersectRayInfinityLength(const Vector3& Origin, const Vector3& Direction, float Radius, float *t);
-	bool		IntersectSegment(const Vector3& P0, const Vector3& P1) const;
+		Box3d		CalculateBoundingVolume() const;
 
-	Vector3		GetSupport(const Vector3& Direction) const;
-	int			GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
+		Matrix3 CalculateInertiaTensor(float Mass) const
+		{
+			return CalculateInertiaTensor(Radius, Height, Mass);
+		}
 
-	void		GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
-	void		GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);
-};
+		static Matrix3 CalculateInertiaTensor(float Radius, float Height, float Mass)
+		{
+			// https://www.wolframalpha.com/input/?i=cylinder
+			float RR = Radius * Radius;
+			float Diag12 = Mass / 12.0f * (3.0f * RR + Height * Height);
+			float Diag3 = Mass / 2.0f * RR;
+			return Matrix3(Diag12, Diag12, Diag3);
+		}
+
+		bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
+		static bool IntersectRayInfinityLength(const Vector3& Origin, const Vector3& Direction, float Radius, float* t);
+		bool		IntersectSegment(const Vector3& P0, const Vector3& P1) const;
+
+		Vector3		GetSupport(const Vector3& Direction) const;
+		int			GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
+
+		void		GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
+		void		GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);
+	};
+}

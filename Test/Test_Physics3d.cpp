@@ -7,6 +7,8 @@
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Modules/Tools/PhysxBinaryParser.h"
 
+using namespace Riemann;
+
 uint64_t GetGuid(Geometry* g)
 {
 	return g->GetParent<RigidBody>()->GetGuid();
@@ -17,7 +19,7 @@ void TestPhysxBin()
 	printf("Running TestPhysxBin Japan\n");
 	std::vector<RigidBody*> collection;
 	std::vector<Geometry*> geometries;
-	bool load_succ = LoadPhysxBinary("data/Japan.xml.bin", nullptr, &geometries);
+	bool load_succ = LoadPhysxBinary("../TestData/Japan.xml.bin", nullptr, &geometries);
 	EXPECT(load_succ);
 	if (load_succ)
 	{
@@ -34,7 +36,7 @@ void TestPhysxBin()
 
 	collection.clear();
 	geometries.clear();
-	load_succ = LoadPhysxBinary("data/fighting_new.xml.bin", &collection, &geometries);
+	load_succ = LoadPhysxBinary("../TestData/fighting_new.xml.bin", &collection, &geometries);
 	EXPECT(load_succ);
 
 	if (load_succ)
@@ -92,7 +94,7 @@ void TestRaycastBenchmark()
 	printf("Running TestRaycastBenchmark\n");
 	std::vector<RigidBody*> collection;
 	std::vector<Geometry*> geometries;
-	bool load_succ = LoadPhysxBinary("data/fighting_new.xml.bin", &collection, &geometries);
+	bool load_succ = LoadPhysxBinary("../TestData/fighting_new.xml.bin", &collection, &geometries);
 	EXPECT(load_succ);
 	
 	if (load_succ)

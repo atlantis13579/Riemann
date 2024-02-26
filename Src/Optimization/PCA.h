@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include "../LinearSystem/DenseMatrix.h"
 
 template<typename T>
@@ -50,7 +51,7 @@ public:
 	
 	void TopKComponents(int k)
 	{
-		std::sort(eigens.begin(), eigens.end(), [](const float a, const float b) {return a > b; });
+		std::sort(eigens.GetData(), eigens.GetData() + eigens.GetSize(), [](const float a, const float b) {return a > b; });
 		
 		for (int i = k; i < eigens.GetSize(); ++i)
 		{

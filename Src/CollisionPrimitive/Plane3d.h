@@ -8,95 +8,98 @@
 #include "../Maths/Matrix3.h"
 #include "../Maths/Box3d.h"
 
-class Plane3d
+namespace Riemann
 {
-public:
-	Vector3 Normal;    //  P * Normal + D = 0
-	float 	D;
-
-public:
-	Plane3d()
+	class Plane3d
 	{
-	}
+	public:
+		Vector3 Normal;    //  P * Normal + D = 0
+		float 	D;
 
-	Plane3d(const Vector3& InNormal, Vector3& InOrigin)
-	{
-		Normal = InNormal.Unit();
-		D = -InOrigin.Dot(Normal);
-	}
+	public:
+		Plane3d()
+		{
+		}
 
-	Plane3d(const Vector3& InNormal, float InD)
-	{
-		Normal = InNormal.Unit();
-		D = InD;
-	}
-	
-	Plane3d(const Vector3& A, const Vector3& B, const Vector3& C)
-	{
-		Normal = (A - C).Cross(B - C);
-		D = -C.Dot(Normal);
-	}
+		Plane3d(const Vector3& InNormal, Vector3& InOrigin)
+		{
+			Normal = InNormal.Unit();
+			D = -InOrigin.Dot(Normal);
+		}
 
-	static constexpr ShapeType3d	StaticType()
-	{
-		return ShapeType3d::PLANE;
-	}
+		Plane3d(const Vector3& InNormal, float InD)
+		{
+			Normal = InNormal.Unit();
+			D = InD;
+		}
 
-public:
-	Vector3			GetOrigin() const
-	{
-		return -Normal * D;
-	}
+		Plane3d(const Vector3& A, const Vector3& B, const Vector3& C)
+		{
+			Normal = (A - C).Cross(B - C);
+			D = -C.Dot(Normal);
+		}
 
-	void			Shift(float margin)
-	{
-		Vector3 p = GetOrigin();
-		D = -margin - p.Dot(Normal);
-	}
+		static constexpr ShapeType3d	StaticType()
+		{
+			return ShapeType3d::PLANE;
+		}
 
-	bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
-	bool			IntersectSegment(const Vector3& P0, const Vector3& P1) const;
-	static bool		RayIntersectPlane(const Vector3& Origin, const Vector3& Direction, const Vector3 & Normal, float D, float* t);
+	public:
+		Vector3			GetOrigin() const
+		{
+			return -Normal * D;
+		}
 
-	bool			IntersectPoint(const Vector3& Point) const;
-	bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
-	bool			IntersectSphere(const Vector3& rCenter, float rRadius) const;
-	bool			IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
-	bool			IntersectPlane(const Vector3& _Normal, float _D) const;
-	bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
+		void			Shift(float margin)
+		{
+			Vector3 p = GetOrigin();
+			D = -margin - p.Dot(Normal);
+		}
 
-	bool			PenetrateSphere(const Vector3 &Center, float Radius, Vector3 *normal, float *depth) const;
-	bool			PenetrateOBB(const Vector3 &rCenter, const Vector3 &rExtent, const Matrix3& rRot, Vector3 *normal, float *depth) const;
-	
-	static bool 	GetIntersection(const Plane3d& p1, const Plane3d& p2, Vector3 &Origin, Vector3 &Dir);
-	static bool 	GetIntersection(const Plane3d& p1, const Plane3d& p2, const Plane3d& p3, Vector3 &p);
-	static float	SignedDistanceToPlane(const Vector3& Point, const Vector3& Normal, const Vector3& Origin);
-	static Vector3	ProjectToPlane(const Vector3& Point, const Vector3& Normal, const Vector3& Origin);
-	static bool		IntersectPlanes(const Plane3d& plane0, const Plane3d& plane1, const Plane3d& plane2, Vector3* intersects);
+		bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
+		bool			IntersectSegment(const Vector3& P0, const Vector3& P1) const;
+		static bool		RayIntersectPlane(const Vector3& Origin, const Vector3& Direction, const Vector3& Normal, float D, float* t);
 
-	float			SignedDistanceTo(const Vector3& Point) const;
-	float			DistanceToPoint(const Vector3& Point) const;
-	Vector3			ClosestPointTo(const Vector3& Point) const;
-	float			DistanceToSegment(const Vector3& P0, const Vector3& P1) const;
-	float			DistanceToTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
+		bool			IntersectPoint(const Vector3& Point) const;
+		bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
+		bool			IntersectSphere(const Vector3& rCenter, float rRadius) const;
+		bool			IntersectCapsule(const Vector3& P0, const Vector3& P1, float Radius) const;
+		bool			IntersectPlane(const Vector3& _Normal, float _D) const;
+		bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
-	float			CalculateVolume() const { return 0.0f; }
-	Box3d			CalculateBoundingVolume() const;
+		bool			PenetrateSphere(const Vector3& Center, float Radius, Vector3* normal, float* depth) const;
+		bool			PenetrateOBB(const Vector3& rCenter, const Vector3& rExtent, const Matrix3& rRot, Vector3* normal, float* depth) const;
 
-	bool			PerpendicularTo(const Vector3& Axis) const;
-	bool			ParallelToXY() const;
-	bool			ParallelToXZ() const;
-	bool			ParallelToYZ() const;
+		static bool 	GetIntersection(const Plane3d& p1, const Plane3d& p2, Vector3& Origin, Vector3& Dir);
+		static bool 	GetIntersection(const Plane3d& p1, const Plane3d& p2, const Plane3d& p3, Vector3& p);
+		static float	SignedDistanceToPlane(const Vector3& Point, const Vector3& Normal, const Vector3& Origin);
+		static Vector3	ProjectToPlane(const Vector3& Point, const Vector3& Normal, const Vector3& Origin);
+		static bool		IntersectPlanes(const Plane3d& plane0, const Plane3d& plane1, const Plane3d& plane2, Vector3* intersects);
 
-	bool			CalculateVolumeProperties(MassParameters* p, float Density) const;
+		float			SignedDistanceTo(const Vector3& Point) const;
+		float			DistanceToPoint(const Vector3& Point) const;
+		Vector3			ClosestPointTo(const Vector3& Point) const;
+		float			DistanceToSegment(const Vector3& P0, const Vector3& P1) const;
+		float			DistanceToTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
-	Vector3			GetSupport(const Vector3& Direction) const;
+		float			CalculateVolume() const { return 0.0f; }
+		Box3d			CalculateBoundingVolume() const;
 
-	int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
+		bool			PerpendicularTo(const Vector3& Axis) const;
+		bool			ParallelToXY() const;
+		bool			ParallelToXZ() const;
+		bool			ParallelToYZ() const;
 
-	void			GetVerties(Vector3 *v, float Radius);
-	void			GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
-	void			GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);
-};
+		bool			CalculateVolumeProperties(MassParameters* p, float Density) const;
 
-static_assert(sizeof(Plane3d) == 16, "sizeof(Plane3d) not right");
+		Vector3			GetSupport(const Vector3& Direction) const;
+
+		int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
+
+		void			GetVerties(Vector3* v, float Radius);
+		void			GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
+		void			GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);
+	};
+
+	static_assert(sizeof(Plane3d) == 16, "sizeof(Plane3d) not right");
+}

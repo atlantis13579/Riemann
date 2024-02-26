@@ -22,6 +22,8 @@
 #include "../Src/Collision/EPAPenetration.h"
 #include "../Src/Maths/Maths.h"
 
+using namespace Riemann;
+
 void TestPlane()
 {
 	Plane3d plane0, plane1, plane2;
@@ -340,7 +342,7 @@ void TestRTree2()
 	printf("Running TestRTree2\n");
 	TriangleMesh mesh;
 
-	bool load_succ = mesh.LoadObj("data/dungeon.obj");
+	bool load_succ = mesh.LoadObj("../TestData/dungeon.obj");
 	EXPECT(load_succ);
 	if (load_succ)
 	{

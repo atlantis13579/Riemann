@@ -12,6 +12,8 @@
 #include "../Src/Optimization/LevenbergMarquardt.h"
 #include "../Src/Optimization/SpecialFunctions.h"
 
+// using namespace Riemann;
+
 class Rosenbrock2DEvalFunction : public LBFGSEvalFunction<double>
 {
 public:

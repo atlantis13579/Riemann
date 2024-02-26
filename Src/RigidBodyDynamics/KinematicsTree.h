@@ -6,47 +6,50 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Quaternion.h"
 
-class AnimTreeData;
-class Geometry;
-class KeyframeKinematics;
-class RigidBodyStatic;
-
-class KinematicsDriver
+namespace Riemann
 {
-public:
-	virtual ~KinematicsDriver() {}
-	virtual void		Simulate(float elapsed) = 0;
+	class AnimTreeData;
+	class Geometry;
+	class KeyframeKinematics;
+	class RigidBodyStatic;
 
-	const std::string&	GetName() const { return m_ResName; }
-	void				SetName(const std::string& Name) { m_ResName = Name; }
+	class KinematicsDriver
+	{
+	public:
+		virtual ~KinematicsDriver() {}
+		virtual void		Simulate(float elapsed) = 0;
 
-private:
-	std::string			m_ResName;
-};
+		const std::string& GetName() const { return m_ResName; }
+		void				SetName(const std::string& Name) { m_ResName = Name; }
 
-class KinematicsTree : public KinematicsDriver
-{
-public:
-	KinematicsTree();
-	virtual ~KinematicsTree();
+	private:
+		std::string			m_ResName;
+	};
 
-	virtual void		Simulate(float elapsed) override final;
-	bool				Deserialize(const std::string& filepath);
+	class KinematicsTree : public KinematicsDriver
+	{
+	public:
+		KinematicsTree();
+		virtual ~KinematicsTree();
 
-	void				SetRootTransform(const Vector3& pos, const Quaternion& rot);
+		virtual void		Simulate(float elapsed) override final;
+		bool				Deserialize(const std::string& filepath);
 
-	void				SetAnimationPlayRate(float play_rate);
-	void				Pause(bool pause);
-	bool				IsPause() const;
+		void				SetRootTransform(const Vector3& pos, const Quaternion& rot);
 
-	bool				BindGeometry(const std::string& node_name, Geometry* geom);
+		void				SetAnimationPlayRate(float play_rate);
+		void				Pause(bool pause);
+		bool				IsPause() const;
 
-private:
-	bool				BuildFlatTree(AnimTreeData* data);
+		bool				BindGeometry(const std::string& node_name, Geometry* geom);
 
-private:
-	float				m_PlayRate;
-	bool				m_Pause;
-	std::string			m_ResPath;
-	std::vector<KeyframeKinematics*>	m_FlatTree;
-};
+	private:
+		bool				BuildFlatTree(AnimTreeData* data);
+
+	private:
+		float				m_PlayRate;
+		bool				m_Pause;
+		std::string			m_ResPath;
+		std::vector<KeyframeKinematics*>	m_FlatTree;
+	};
+}

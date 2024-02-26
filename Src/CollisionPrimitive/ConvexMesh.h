@@ -11,105 +11,108 @@
 
 // #define USE_EDGE_DATA
 
-struct ConvexMeshFace
+namespace Riemann
 {
-	explicit ConvexMeshFace(const Plane3d& pl, uint8_t nVerties, uint16_t first_idx)
+	struct ConvexMeshFace
 	{
-		plane = pl;
-		numVerties = nVerties;
-		first = first_idx;
-	}
-	Plane3d			plane;		// The Noraml always point out of the Convex hull
-	uint16_t		first;		// offset in Indices[] point to the first element
-	uint8_t			numVerties;	// face vertices : Vertices[Indices[first]], Vertices[Indices[first + 1]], ..., Vertices[Indices[first + numVerties - 1]]
-	uint8_t			padding;	// unused, to keep 20 bytes size
-};
+		explicit ConvexMeshFace(const Plane3d& pl, uint8_t nVerties, uint16_t first_idx)
+		{
+			plane = pl;
+			numVerties = nVerties;
+			first = first_idx;
+		}
+		Plane3d			plane;		// The Noraml always point out of the Convex hull
+		uint16_t		first;		// offset in Indices[] point to the first element
+		uint8_t			numVerties;	// face vertices : Vertices[Indices[first]], Vertices[Indices[first + 1]], ..., Vertices[Indices[first + numVerties - 1]]
+		uint8_t			padding;	// unused, to keep 20 bytes size
+	};
 
-struct ConvexMeshEdge
-{
-	explicit ConvexMeshEdge(uint16_t _s, uint16_t _e)
+	struct ConvexMeshEdge
 	{
-		s = _s;
-		e = _e;
-	}
-	uint16_t		s;
-	uint16_t		e;
-};
+		explicit ConvexMeshEdge(uint16_t _s, uint16_t _e)
+		{
+			s = _s;
+			e = _e;
+		}
+		uint16_t		s;
+		uint16_t		e;
+	};
 
-static_assert(sizeof(ConvexMeshEdge) == 4, "sizeof(HullEdge3d) not right");
-static_assert(sizeof(ConvexMeshFace) == 20, "sizeof(HullFace3d) not right");
+	static_assert(sizeof(ConvexMeshEdge) == 4, "sizeof(HullEdge3d) not right");
+	static_assert(sizeof(ConvexMeshFace) == 20, "sizeof(HullFace3d) not right");
 
-class ConvexMesh
-{
-public:
-	Vector3*			Vertices;
-	ConvexMeshEdge*		Edges;
-	ConvexMeshFace*		Faces;
-	uint8_t*			Indices;
-	uint16_t			NumVertices;
-	uint16_t			NumEdges;
-	uint16_t			NumFaces;
-	uint16_t			NumIndices;
-	std::vector<char>	Buffers;
-
-	ConvexMesh()
+	class ConvexMesh
 	{
-		Release();
-	}
+	public:
+		Vector3* Vertices;
+		ConvexMeshEdge* Edges;
+		ConvexMeshFace* Faces;
+		uint8_t* Indices;
+		uint16_t			NumVertices;
+		uint16_t			NumEdges;
+		uint16_t			NumFaces;
+		uint16_t			NumIndices;
+		std::vector<char>	Buffers;
 
-	static constexpr ShapeType3d	StaticType()
-	{
-		return ShapeType3d::CONVEX_MESH;
-	}
+		ConvexMesh()
+		{
+			Release();
+		}
 
-	void		Release()
-	{
-		NumVertices = NumFaces = NumEdges = NumIndices = 0;
-		Buffers.clear();
-	}
+		static constexpr ShapeType3d	StaticType()
+		{
+			return ShapeType3d::CONVEX_MESH;
+		}
 
-	int			EulerNumber() const
-	{
-		return NumVertices - NumEdges + NumFaces;
-	}
-	
-	void 		SetConvexData(Vector3* verts, uint16_t nVerties,
-							  ConvexMeshFace* faces, uint16_t nFaces,
-							  uint16_t* edges, uint16_t nEdges,
-							  uint8_t* indices, uint16_t nIndices,
-							  bool shared_mem);
+		void		Release()
+		{
+			NumVertices = NumFaces = NumEdges = NumIndices = 0;
+			Buffers.clear();
+		}
 
-	uint16_t	GetNumVertices() const
-	{
-		return NumVertices;
-	}
+		int			EulerNumber() const
+		{
+			return NumVertices - NumEdges + NumFaces;
+		}
 
-	uint16_t	GetNumEdges() const
-	{
-		return NumEdges;
-	}
+		void 		SetConvexData(Vector3* verts, uint16_t nVerties,
+			ConvexMeshFace* faces, uint16_t nFaces,
+			uint16_t* edges, uint16_t nEdges,
+			uint8_t* indices, uint16_t nIndices,
+			bool shared_mem);
 
-	uint16_t	GetNumFaces() const
-	{
-		return NumFaces;
-	}
+		uint16_t	GetNumVertices() const
+		{
+			return NumVertices;
+		}
 
-	uint16_t	GetNumIndices() const
-	{
-		return NumIndices;
-	}
+		uint16_t	GetNumEdges() const
+		{
+			return NumEdges;
+		}
 
-	bool		ValidateStructure() const;
-	
-	Box3d		ComputeBoundingVolume(const Vector3& CenterOfMass) const;
+		uint16_t	GetNumFaces() const
+		{
+			return NumFaces;
+		}
 
-	bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
+		uint16_t	GetNumIndices() const
+		{
+			return NumIndices;
+		}
 
-	bool		CalculateVolumeProperties(MassParameters* p, float Density) const;
+		bool		ValidateStructure() const;
 
-	Vector3		GetSupport(const Vector3& Direction) const;
-	int			GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
+		Box3d		ComputeBoundingVolume(const Vector3& CenterOfMass) const;
 
-	void		GetMesh(std::vector<Vector3>& _Vertices, std::vector<uint16_t>& _Indices, std::vector<Vector3>& _Normals);
-	void		GetWireframe(std::vector<Vector3>& _Vertices, std::vector<uint16_t>& _Indices);
-};
+		bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
+
+		bool		CalculateVolumeProperties(MassParameters* p, float Density) const;
+
+		Vector3		GetSupport(const Vector3& Direction) const;
+		int			GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
+
+		void		GetMesh(std::vector<Vector3>& _Vertices, std::vector<uint16_t>& _Indices, std::vector<Vector3>& _Normals);
+		void		GetWireframe(std::vector<Vector3>& _Vertices, std::vector<uint16_t>& _Indices);
+	};
+}

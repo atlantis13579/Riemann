@@ -9,6 +9,8 @@
 #include "../Src/Maths/Float16.h"
 #include "../Src/Geometry/Spline.h"
 
+using namespace Riemann;
+
 void TestMat3()
 {
 	Matrix3 mat, m1, m2;

@@ -74,7 +74,7 @@ class PhysxHelper(object):
 print("test")
 
 physx = PhysxHelper()
-physx.load_scene("data/Japan.xml.bin")
+physx.load_scene("../TestData/Japan.xml.bin")
 hitpos = physx.raycast((-521.23, 55.87, 399.15), (0, -1, 0))
 print(hitpos)
 physx.create_image(200, 200)

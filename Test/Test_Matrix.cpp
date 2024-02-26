@@ -15,6 +15,8 @@
 #include "../Src/LinearSystem/SparseVector.h"
 #include "../Src/LinearSystem/ConjugateGradientSolver.h"
 
+// using namespace Riemann;
+
 void TestMatrix1()
 {
 	printf("Running TestMatrix\n");

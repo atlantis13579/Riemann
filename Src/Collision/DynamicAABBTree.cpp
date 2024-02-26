@@ -4,6 +4,8 @@
 #include "GeometryQuery.h"
 #include "GeometryObject.h"
 
+namespace Riemann
+{
 DynamicAABBTree::DynamicAABBTree()
 {
 	m_root = -1;
@@ -1102,4 +1104,4 @@ bool DynamicAABBTree::ValidateAABBs(int nodeId) const
 	return ValidateAABBs(child1) && ValidateAABBs(child2);
 }
 
-
+}

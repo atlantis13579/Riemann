@@ -1,8 +1,11 @@
 #pragma once
 
-class Renderer;
-class Geometry;
-class Mesh;
+namespace Riemann
+{
+	class Renderer;
+	class Geometry;
+	class Mesh;
 
-void AddGeometry(Renderer* renderer, Geometry* geom);
-void AddTriMesh(Renderer* renderer, Mesh* mesh, void* Trans, bool RenderBV);
+	void AddGeometry(Renderer* renderer, Geometry* geom);
+	void AddTriMesh(Renderer* renderer, Mesh* mesh, void* Trans, bool RenderBV);
+}

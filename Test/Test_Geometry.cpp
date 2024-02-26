@@ -7,12 +7,14 @@
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/DenseTensorField3d.h"
 
+using namespace Riemann;
+
 void TestMeshSimplify()
 {
 	Mesh mesh;
-	mesh.LoadObj("data/bunny.obj");
+	mesh.LoadObj("../TestData/bunny.obj");
 	mesh.Simplify(0.3f);
-	mesh.ExportObj("data/bunny2.obj");
+	mesh.ExportObj("../TestData/bunny2.obj");
 }
 
 void TestClip()
@@ -77,10 +79,10 @@ void TestMesh1()
 	field.AddVoxel(1, 0, 0, 0);
 	field.AddVoxel(2, 0, 1, 0);
 
-	field.SerializeTo("data/test.voxel");
+	field.SerializeTo("../TestData/test.voxel");
 
 	SparseVoxelField inference;
-	inference.SerializeFrom("data/test.voxel");
+	inference.SerializeFrom("../TestData/test.voxel");
 
 	Box3d v = field.GetVoxelBox(Vector3(-0.1f, -0.1f, -0.1f));
 	EXPECT(FloatEqual(v.Min.x, -1.0f));

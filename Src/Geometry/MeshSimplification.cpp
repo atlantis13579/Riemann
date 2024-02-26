@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <string>
 
+namespace Riemann
+{
 const int MAX_VERTEX = 5000;
 const int MAX_PAIR = 50000;
 const int MAX_HEAP_NODE = 50000;
@@ -1142,4 +1144,5 @@ bool SimplifyMesh(const Vector3* pv, const void* pi, int nv, int nt, bool is16bi
 	s.GetNewVertices(new_v, new_i);
 	return true;
 
+}
 }

@@ -4,30 +4,30 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
 
-enum class ShapeType3d : unsigned char
+namespace Riemann
 {
-	UNKNOWN = 0,
-	BOX,
-	PLANE,
-	SPHERE,
-	CAPSULE,
-	CYLINDER,
-	TRIANGLE,
-	POLYHEDRON,
-	HEIGHTFIELD,
-	CONVEX_MESH,
-	TRIANGLE_MESH,
-	TYPE_COUNT,
-};
+	enum class ShapeType3d : unsigned char
+	{
+		UNKNOWN = 0,
+		BOX,
+		PLANE,
+		SPHERE,
+		CAPSULE,
+		CYLINDER,
+		HEIGHTFIELD,
+		CONVEX_MESH,
+		TRIANGLE_MESH,
+		TYPE_COUNT,
+	};
 
-struct MassParameters
-{
-	float Mass;
-	float Volume;
-	Matrix3 InertiaMat;
-	Vector3 CenterOfMass;
-	Box3d	BoundingVolume;
-};
+	struct MassParameters
+	{
+		float Mass;
+		float Volume;
+		Matrix3 InertiaMat;
+		Vector3 CenterOfMass;
+		Box3d	BoundingVolume;
+	};
 
-#define MAX_FACE_POINTS	16
-
+	#define MAX_FACE_POINTS	16
+}

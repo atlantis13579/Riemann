@@ -33,7 +33,6 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\HeightField3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Plane3d.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Polyhedron.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Segment3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Sphere3d.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Triangle3d.cpp" />
@@ -113,7 +112,6 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\Capsule3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\ConvexMesh.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Cylinder3d.h" />
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Polyhedron.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Segment3d.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\ShapeType.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\HeightField3d.h" />
@@ -162,7 +160,6 @@
     <ClInclude Include="..\..\Src\Geometry\Polygon3d.h" />
     <ClInclude Include="..\..\Src\Geometry\Spline.h" />
     <ClInclude Include="..\..\Src\Geometry\TetrahedralMesh.h" />
-    <ClInclude Include="..\..\Src\Geometry\VHACD.h" />
     <ClInclude Include="..\..\Src\Geometry\Voronoi2d.h" />
     <ClInclude Include="..\..\Src\Geometry\VoxelField.h" />
     <ClInclude Include="..\..\Src\LinearSystem\CholeskyDecomposition.h" />

@@ -10,12 +10,14 @@
 #include "../ImageSpace/ImageProcessing.h"
 #include "libPng.h"
 
+
+
 extern "C"
 {
 void* LoadPhysxScene(const char *filepath)
 {
-    RigidBodySimulationParam param;
-    RigidBodySimulation *world = new RigidBodySimulation(param);
+    Riemann::RigidBodySimulationParam param;
+    Riemann::RigidBodySimulation *world = new Riemann::RigidBodySimulation(param);
     assert(world);
     if (!world->LoadPhysxScene(filepath, true))
     {
@@ -29,7 +31,7 @@ void  DeletePhysxScene(void* p)
 {
 	if (p)
 	{
-        RigidBodySimulation* world = (RigidBodySimulation*)p;
+        Riemann::RigidBodySimulation* world = (Riemann::RigidBodySimulation*)p;
         delete world;
 	}
 }
@@ -41,12 +43,12 @@ float RayCast(void *p, float x0, float y0, float z0, float dx, float dy, float d
         return -1.0f;
     }
     
-    RigidBodySimulation* world = (RigidBodySimulation*)p;
+    Riemann::RigidBodySimulation* world = (Riemann::RigidBodySimulation*)p;
     assert(world);
     
-    RayCastOption Option;
-    RayCastResult Result;
-    GeometryQuery* query = world->GetGeometryQuery();
+    Riemann::RayCastOption Option;
+    Riemann::RayCastResult Result;
+    Riemann::GeometryQuery* query = world->GetGeometryQuery();
     assert(query);
     
     bool success = query->RayCastQuery(Vector3(x0, y0, z0), Vector3(dx, dy, dz).Unit(), Option, &Result);
@@ -63,7 +65,7 @@ float RayCast2(void *p, float x0, float y0, float z0, float x1, float y1, float 
     return RayCast(p, x0, y0, z0, Dir.x, Dir.y, Dir.z);
 }
 
-JobSystem* jobSys = nullptr;
+Riemann::JobSystem* jobSys = nullptr;
 
 void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float fov, float nearz, float farz,
                       float x0, float y0, float z0, float dx, float dy, float dz, float ux, float uy, float uz, bool debug_draw)
@@ -80,7 +82,7 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
 
     if (jobSys == nullptr)
     {
-        jobSys = new JobSystem();
+        jobSys = new Riemann::JobSystem();
         jobSys->CreateWorkers(-1);
     }
 
@@ -99,10 +101,10 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
     }
     float* fp = downscale ? &buffer[0] : (float*)ptr;
 
-	RigidBodySimulation* world = (RigidBodySimulation*)world_ptr;
+    Riemann::RigidBodySimulation* world = (Riemann::RigidBodySimulation*)world_ptr;
 	assert(world);
 
-	GeometryQuery* query = world->GetGeometryQuery();
+    Riemann::GeometryQuery* query = world->GetGeometryQuery();
 	assert(query);
 
     Vector3 cameraOrigin(x0, y0, z0);
@@ -117,17 +119,17 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
     Vector3 cameraX = cameraUp.Cross(cameraDirection) * CX;
     Vector3 cameraY = cameraX.Cross(cameraDirection).Unit() * CY;
 
-    JobGraph graph;
+    Riemann::JobGraph graph;
 
 	for (int y = 0; y < h2; ++y)
     {
         graph.AddJob(std::to_string(y).c_str(), [=] {
-            RayCastOption Option;
+            Riemann::RayCastOption Option;
             Option.MaxDist = farz;
             for (int x = 0; x < w2; ++x)
             {
                 Vector3 rayDirection = cameraDirection * nearz + ((y - h2 * 0.5f) / h2) * cameraY + ((x - w2 * 0.5f) / w2) * cameraX;
-                RayCastResult Result;
+                Riemann::RayCastResult Result;
                 bool success = query->RayCastQuery(cameraOrigin, rayDirection.Unit(), Option, &Result);
                 if (success)
                 {
@@ -152,7 +154,7 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
 
     if (debug_draw)
     {
-        LibPNG::WritePNG("data/depth.png", fp, width, height);
+        LibPNG::WritePNG("../TestData/depth.png", fp, width, height);
     }
 }
 

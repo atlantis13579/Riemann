@@ -3,40 +3,42 @@
 #include "../Maths/Maths.h"
 #include "../Maths/Vector3.h"
 
-class	RigidBodyDynamic;
-
-struct ExplosionFieldParam
+namespace Riemann
 {
-	enum class AttenuationType
+	class	RigidBodyDynamic;
+
+	struct ExplosionFieldParam
 	{
-		LINEAR = 0,
-		SQUARE,
-		CUBIC,
-		SQRT,
-		ATTENUATION_COUNT
+		enum class AttenuationType
+		{
+			LINEAR = 0,
+			SQUARE,
+			CUBIC,
+			SQRT,
+			ATTENUATION_COUNT
+		};
+
+		ExplosionFieldParam()
+		{
+			Attenuation = AttenuationType::LINEAR;
+		}
+
+		Vector3		Center;
+		float			Radius;
+		Vector3		ExplosionForce0;
+		Vector3		ExplosionForce1;
+		AttenuationType	Attenuation;
 	};
 
-	ExplosionFieldParam()
+	class ForceField
 	{
-		Attenuation = AttenuationType::LINEAR;
-	}
+	public:
+		virtual ~ForceField() {}
+		virtual void		Update(float dt) {}
+		virtual bool		ApplyForce(RigidBodyDynamic* Rigid) = 0;
 
-	Vector3		Center;
-	float			Radius;
-	Vector3		ExplosionForce0;
-	Vector3		ExplosionForce1;
-	AttenuationType	Attenuation;
-};
-
-class ForceField
-{
-public:
-	virtual ~ForceField() {}
-	virtual void		Update(float dt) {}
-	virtual bool		ApplyForce(RigidBodyDynamic* Rigid) = 0;
-
-public:
-	static ForceField*	CreateGrivityField(const Vector3& Gravity);
-	static ForceField*	CreateExplosionField(const ExplosionFieldParam& param);
-};
-
+	public:
+		static ForceField* CreateGrivityField(const Vector3& Gravity);
+		static ForceField* CreateExplosionField(const ExplosionFieldParam& param);
+	};
+}

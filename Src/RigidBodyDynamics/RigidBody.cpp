@@ -5,303 +5,306 @@
 #include "../Collision/GeometryObject.h"
 #include "../CollisionPrimitive/MassParameters.h"
 
-RigidBody::RigidBody()
+namespace Riemann
 {
-	mMaterialId = 0;
-}
-
-RigidBody::~RigidBody()
-{
-}
-
-void RigidBody::AddGeometry(Geometry* Geom)
-{
-	if (Geom)
+	RigidBody::RigidBody()
 	{
-		mGeometries.push_back(Geom);
-		Geom->SetParent(this);
-
-		UpdateMassParameters();
-	}
-}
-
-void RigidBody::GetGeometries(std::vector<Geometry*>* Geometries)
-{
-	for (Geometry* g : mGeometries)
-	{
-		Geometries->push_back(g);
-	}
-}
-
-size_t RigidBody::GetNumGeometries() const
-{
-	return mGeometries.size();
-}
-
-void RigidBody::ReleaseGeometries()
-{
-	for (Geometry* g : mGeometries)
-	{
-		delete g;
-	}
-	mGeometries.clear();
-}
-
-Matrix3		RigidBody::GetInverseInertia_WorldSpace() const
-{
-	Matrix3 R = Q.ToRotationMatrix3();
-	Matrix3 invInertiaWorld = R * InvInertia * R.Transpose();
-	return invInertiaWorld;
-}
-
-void RigidBody::UpdateGeometries()
-{
-	for (Geometry *g : mGeometries)
-	{
-		const Pose* local_trans = g->GetLocalTransform();
-		Vector3 world_pos = X + Q * (local_trans->pos - CM);
-		Quaternion world_quat = Q * local_trans->quat;
-		g->SetWorldTransform(world_pos, world_quat);
-	}
-}
-
-void RigidBody::UpdateMassParameters()
-{
-	if (mRigidType == RigidType::Static)
-	{
-		return;
+		mMaterialId = 0;
 	}
 
-	std::vector<const Pose*> vPose;
-	std::vector<const MassParameters*> vProperties;
-	MassParameters P;
-
-	for (Geometry* g : mGeometries)
+	RigidBody::~RigidBody()
 	{
-		vPose.emplace_back(g->GetLocalTransform());
-		vProperties.push_back(g->GetMassParameters());
 	}
 
-	ComputeCompositeMassParameters(vPose, vProperties, P);
-
-	CM = P.CenterOfMass;
-	InvMass = 1.0f / P.Mass;
-	InvInertia = P.InertiaMat.Inverse();
-}
-
-float		RigidBody::GetKinematicsEnergy() const
-{
-	float l = GetLinearKinematicsEnergy();
-	float a = GetAngularKinematicsEnergy();
-	return l + a;
-}
-
-float RigidBody::GetLinearKinematicsEnergy() const
-{
-	return InvMass > kMinimumInvMass ? 0.5f * V.SquareLength() / InvMass : 0.0f;
-}
-
-float RigidBody::GetAngularKinematicsEnergy() const
-{
-	return InvInertia.Invertible() ? 0.5f * W.Dot(InvInertia.Inverse() * W) : 0.0f;
-}
-
-void		RigidBody::SetDefaultPhysicsMaterial(uint16_t idx)
-{
-	mMaterialId = idx;
-}
-
-float		RigidBody::GetRestitution() const
-{
-	return PhysicsMaterial::getMaterial(mMaterialId)->Restitution;
-}
-
-float		RigidBody::GetFrictionDynamic() const
-{
-	return PhysicsMaterial::getMaterial(mMaterialId)->FrictionDynamic;
-}
-
-float		RigidBody::GetFrictionStatic() const
-{
-	return PhysicsMaterial::getMaterial(mMaterialId)->FrictionStatic;
-}
-
-// static
-RigidBody* RigidBody::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
-{
-	if (param.rigidType == RigidType::Static)
+	void RigidBody::AddGeometry(Geometry* Geom)
 	{
-		RigidBodyStatic* Rigid = RigidBodyStatic::CreateRigidBody(param, init_pose);
-		return Rigid;
+		if (Geom)
+		{
+			mGeometries.push_back(Geom);
+			Geom->SetParent(this);
+
+			UpdateMassParameters();
+		}
 	}
-	else if (param.rigidType == RigidType::Dynamic)
+
+	void RigidBody::GetGeometries(std::vector<Geometry*>* Geometries)
 	{
-		RigidBodyDynamic* Rigid = RigidBodyDynamic::CreateRigidBody(param, init_pose);
-		return Rigid;
+		for (Geometry* g : mGeometries)
+		{
+			Geometries->push_back(g);
+		}
 	}
-	return nullptr;
-}
 
-RigidBodyStatic* RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
-{
-	return new RigidBodyStatic(param, init_pose);
-}
-
-RigidBodyStatic::RigidBodyStatic(const RigidBodyParam& param, const Pose& init_pose)
-{
-	this->mRigidType = RigidType::Static;
-	this->InvMass = 0.0f;
-	this->InvInertia = Matrix3::Zero();
-	this->X = init_pose.pos;
-	this->Q = init_pose.quat;
-	this->V = Vector3::Zero();
-	this->W = Vector3::Zero();
-}
-
-RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, const Pose& init_pose)
-{
-	this->mRigidType = RigidType::Dynamic;
-	this->mMotionType = param.motionType;
-	this->InvMass = 1.0f;
-	this->InvInertia = Matrix3(1.0f, 1.0f, 1.0f);
-	this->X = init_pose.pos;
-	this->Q = init_pose.quat;
-	this->V = param.linearVelocity;
-	this->W = param.angularVelocity;
-	this->ExtForce = Vector3::Zero();
-	this->ExtTorque = Vector3::Zero();
-	this->LinearDamping = param.linearDamping;
-	this->AngularDamping = param.angularDamping;
-	this->MaxContactImpulse = param.maxContactImpulse;
-	this->SleepThreshold = param.sleepThreshold;
-	this->FreezeThreshold = param.freezeThreshold;
-	this->DisableGravity = param.disableGravity;
-	this->Sleeping = false;
-	this->Freezing = false;
-	this->SolverV = Vector3(INFINITY, INFINITY, INFINITY);
-	this->SolverW = Vector3(INFINITY, INFINITY, INFINITY);
-}
-
-void		RigidBodyDynamic::ApplyForce(const Vector3& Force)
-{
-	this->ExtForce += Force;
-}
-
-void		RigidBodyDynamic::ApplyTorgue(const Vector3& Torque)
-{
-	this->ExtTorque += Torque;
-}
-
-void 		RigidBodyDynamic::ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force)
-{
-	this->ExtTorque += RelativePosToCenterOfMass.Cross(Force);
-}
-
-
-void RigidBodyDynamic::ApplyLinearAcceleration(const Vector3& LinAcc)
-{
-	if (InvMass > kMinimumInvMass)
-		ApplyForce(LinAcc / InvMass);
-}
-
-void RigidBodyDynamic::ApplyAngularAcceleration(const Vector3& AngAcc)
-{
-	if (InvInertia.Invertible())
-		ApplyTorgue(InvInertia.Inverse() * AngAcc);
-}
-
-bool		RigidBodyDynamic::AutoSleep()
-{
-	const float energy = GetKinematicsEnergy();
-	if (energy < SleepThreshold)
+	size_t RigidBody::GetNumGeometries() const
 	{
-		Sleep();
+		return mGeometries.size();
 	}
-	else
-	{
-		Wakeup();
-	}
-	return Sleeping;
-}
 
-void		RigidBodyDynamic::Sleep()
-{
-	if (!Sleeping)
+	void RigidBody::ReleaseGeometries()
 	{
+		for (Geometry* g : mGeometries)
+		{
+			delete g;
+		}
+		mGeometries.clear();
+	}
+
+	Matrix3		RigidBody::GetInverseInertia_WorldSpace() const
+	{
+		Matrix3 R = Q.ToRotationMatrix3();
+		Matrix3 invInertiaWorld = R * InvInertia * R.Transpose();
+		return invInertiaWorld;
+	}
+
+	void RigidBody::UpdateGeometries()
+	{
+		for (Geometry* g : mGeometries)
+		{
+			const Pose* local_trans = g->GetLocalTransform();
+			Vector3 world_pos = X + Q * (local_trans->pos - CM);
+			Quaternion world_quat = Q * local_trans->quat;
+			g->SetWorldTransform(world_pos, world_quat);
+		}
+	}
+
+	void RigidBody::UpdateMassParameters()
+	{
+		if (mRigidType == RigidType::Static)
+		{
+			return;
+		}
+
+		std::vector<const Pose*> vPose;
+		std::vector<const MassParameters*> vProperties;
+		MassParameters P;
+
+		for (Geometry* g : mGeometries)
+		{
+			vPose.emplace_back(g->GetLocalTransform());
+			vProperties.push_back(g->GetMassParameters());
+		}
+
+		ComputeCompositeMassParameters(vPose, vProperties, P);
+
+		CM = P.CenterOfMass;
+		InvMass = 1.0f / P.Mass;
+		InvInertia = P.InertiaMat.Inverse();
+	}
+
+	float		RigidBody::GetKinematicsEnergy() const
+	{
+		float l = GetLinearKinematicsEnergy();
+		float a = GetAngularKinematicsEnergy();
+		return l + a;
+	}
+
+	float RigidBody::GetLinearKinematicsEnergy() const
+	{
+		return InvMass > kMinimumInvMass ? 0.5f * V.SquareLength() / InvMass : 0.0f;
+	}
+
+	float RigidBody::GetAngularKinematicsEnergy() const
+	{
+		return InvInertia.Invertible() ? 0.5f * W.Dot(InvInertia.Inverse() * W) : 0.0f;
+	}
+
+	void		RigidBody::SetDefaultPhysicsMaterial(uint16_t idx)
+	{
+		mMaterialId = idx;
+	}
+
+	float		RigidBody::GetRestitution() const
+	{
+		return PhysicsMaterial::getMaterial(mMaterialId)->Restitution;
+	}
+
+	float		RigidBody::GetFrictionDynamic() const
+	{
+		return PhysicsMaterial::getMaterial(mMaterialId)->FrictionDynamic;
+	}
+
+	float		RigidBody::GetFrictionStatic() const
+	{
+		return PhysicsMaterial::getMaterial(mMaterialId)->FrictionStatic;
+	}
+
+	// static
+	RigidBody* RigidBody::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
+	{
+		if (param.rigidType == RigidType::Static)
+		{
+			RigidBodyStatic* Rigid = RigidBodyStatic::CreateRigidBody(param, init_pose);
+			return Rigid;
+		}
+		else if (param.rigidType == RigidType::Dynamic)
+		{
+			RigidBodyDynamic* Rigid = RigidBodyDynamic::CreateRigidBody(param, init_pose);
+			return Rigid;
+		}
+		return nullptr;
+	}
+
+	RigidBodyStatic* RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
+	{
+		return new RigidBodyStatic(param, init_pose);
+	}
+
+	RigidBodyStatic::RigidBodyStatic(const RigidBodyParam& param, const Pose& init_pose)
+	{
+		this->mRigidType = RigidType::Static;
+		this->InvMass = 0.0f;
+		this->InvInertia = Matrix3::Zero();
+		this->X = init_pose.pos;
+		this->Q = init_pose.quat;
+		this->V = Vector3::Zero();
+		this->W = Vector3::Zero();
+	}
+
+	RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, const Pose& init_pose)
+	{
+		this->mRigidType = RigidType::Dynamic;
+		this->mMotionType = param.motionType;
+		this->InvMass = 1.0f;
+		this->InvInertia = Matrix3(1.0f, 1.0f, 1.0f);
+		this->X = init_pose.pos;
+		this->Q = init_pose.quat;
+		this->V = param.linearVelocity;
+		this->W = param.angularVelocity;
+		this->ExtForce = Vector3::Zero();
+		this->ExtTorque = Vector3::Zero();
+		this->LinearDamping = param.linearDamping;
+		this->AngularDamping = param.angularDamping;
+		this->MaxContactImpulse = param.maxContactImpulse;
+		this->SleepThreshold = param.sleepThreshold;
+		this->FreezeThreshold = param.freezeThreshold;
+		this->DisableGravity = param.disableGravity;
+		this->Sleeping = false;
+		this->Freezing = false;
+		this->SolverV = Vector3(INFINITY, INFINITY, INFINITY);
+		this->SolverW = Vector3(INFINITY, INFINITY, INFINITY);
+	}
+
+	void		RigidBodyDynamic::ApplyForce(const Vector3& Force)
+	{
+		this->ExtForce += Force;
+	}
+
+	void		RigidBodyDynamic::ApplyTorgue(const Vector3& Torque)
+	{
+		this->ExtTorque += Torque;
+	}
+
+	void 		RigidBodyDynamic::ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force)
+	{
+		this->ExtTorque += RelativePosToCenterOfMass.Cross(Force);
+	}
+
+
+	void RigidBodyDynamic::ApplyLinearAcceleration(const Vector3& LinAcc)
+	{
+		if (InvMass > kMinimumInvMass)
+			ApplyForce(LinAcc / InvMass);
+	}
+
+	void RigidBodyDynamic::ApplyAngularAcceleration(const Vector3& AngAcc)
+	{
+		if (InvInertia.Invertible())
+			ApplyTorgue(InvInertia.Inverse() * AngAcc);
+	}
+
+	bool		RigidBodyDynamic::AutoSleep()
+	{
+		const float energy = GetKinematicsEnergy();
+		if (energy < SleepThreshold)
+		{
+			Sleep();
+		}
+		else
+		{
+			Wakeup();
+		}
+		return Sleeping;
+	}
+
+	void		RigidBodyDynamic::Sleep()
+	{
+		if (!Sleeping)
+		{
+			Sleeping = true;
+			SetLinearMomentum(Vector3::Zero());
+			SetAngularMomentum(Vector3::Zero());
+		}
+	}
+
+	void RigidBodyDynamic::Freeze()
+	{
+		Freezing = true;
 		Sleeping = true;
-		SetLinearMomentum(Vector3::Zero());
-		SetAngularMomentum(Vector3::Zero());
 	}
-}
 
-void RigidBodyDynamic::Freeze()
-{
-	Freezing = true;
-	Sleeping = true;
-}
-
-void RigidBodyDynamic::Defreeze()
-{
-	Freezing = false;
-}
-
-void		RigidBodyDynamic::Wakeup()
-{
-	if (!Freezing)
+	void RigidBodyDynamic::Defreeze()
 	{
-		Sleeping = false;
+		Freezing = false;
 	}
-}
 
-RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
-{
-	return new RigidBodyDynamic(param, init_pose);
-}
-
-RigidBodyKinematics::RigidBodyKinematics()
-{
-	mRigidType = RigidType::Kinematic;
-	InvMass = 0.0f;
-	InvInertia = Matrix3::Zero();
-	X = Vector3::Zero();
-	Q = Quaternion::One();
-	V = Vector3::Zero();
-	W = Vector3::Zero();
-}
-
-void RigidBodyKinematics::SetPosition(const Vector3& pos)
-{
-	X = pos;
-	for (Geometry* g : mGeometries)
+	void		RigidBodyDynamic::Wakeup()
 	{
-		g->SetWorldPosition(pos);
+		if (!Freezing)
+		{
+			Sleeping = false;
+		}
 	}
-}
 
-void RigidBodyKinematics::SetRotation(const Quaternion& quat)
-{
-	Q = quat;
-	for (Geometry* g : mGeometries)
+	RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
 	{
-		g->SetWorldRotation(quat);
-		g->UpdateBoundingVolume();
+		return new RigidBodyDynamic(param, init_pose);
 	}
-}
 
-void		RigidBodyKinematics::SetTransform(const Vector3& pos, const Quaternion& quat)
-{
-	X = pos;
-	Q = quat;
-	for (Geometry* g : mGeometries)
+	RigidBodyKinematics::RigidBodyKinematics()
 	{
-		g->SetWorldTransform(pos, quat);
+		mRigidType = RigidType::Kinematic;
+		InvMass = 0.0f;
+		InvInertia = Matrix3::Zero();
+		X = Vector3::Zero();
+		Q = Quaternion::One();
+		V = Vector3::Zero();
+		W = Vector3::Zero();
 	}
-}
 
-void		GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*> *geometries)
-{
-	for (size_t i = 0; i < bodies.size(); ++i)
+	void RigidBodyKinematics::SetPosition(const Vector3& pos)
 	{
-		bodies[i]->GetGeometries(geometries);
+		X = pos;
+		for (Geometry* g : mGeometries)
+		{
+			g->SetWorldPosition(pos);
+		}
+	}
+
+	void RigidBodyKinematics::SetRotation(const Quaternion& quat)
+	{
+		Q = quat;
+		for (Geometry* g : mGeometries)
+		{
+			g->SetWorldRotation(quat);
+			g->UpdateBoundingVolume();
+		}
+	}
+
+	void		RigidBodyKinematics::SetTransform(const Vector3& pos, const Quaternion& quat)
+	{
+		X = pos;
+		Q = quat;
+		for (Geometry* g : mGeometries)
+		{
+			g->SetWorldTransform(pos, quat);
+		}
+	}
+
+	void		GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*>* geometries)
+	{
+		for (size_t i = 0; i < bodies.size(); ++i)
+		{
+			bodies[i]->GetGeometries(geometries);
+		}
 	}
 }

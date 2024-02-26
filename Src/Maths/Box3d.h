@@ -10,7 +10,7 @@
 #define _USE_MATH_DEFINES
 
 #undef max
-#undef min 
+#undef min
 
 template <typename T>
 class TAABB3

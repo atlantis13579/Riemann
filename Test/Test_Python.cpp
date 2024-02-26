@@ -7,10 +7,12 @@
 #include "../Src/Modules/Tools/PhysxBinaryParser.h"
 #include "../Src/Modules/Tools/PythonModule.h"
 
+using namespace Riemann;
+
 void TestDepthImage()
 {
 	printf("Running TestDepthImage\n");
-	void* p = LoadPhysxScene("data/Japan.xml.bin");
+	void* p = LoadPhysxScene("../TestData/Japan.xml.bin");
 	std::vector<float> image;
 	int w = 1024;
 	int h = 768;

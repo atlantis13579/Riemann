@@ -20,23 +20,26 @@ struct Vertex1
 	Vector3 Normal;
 };
 
-class RENDERER_API Renderer
+namespace Riemann
 {
-public:
-	Renderer() {}
-	virtual ~Renderer() {}
 
-	virtual void Render() = 0;
-	virtual void SetCameraLookAt(Vector3 Eye, Vector3 At) = 0;
-	virtual bool AddTriangles(const char* Id, void* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth) = 0;
-	virtual bool AddWireframe(const char* Id, void* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices) = 0;
-	virtual bool UpdateVerties(const char* Id, const Vertex1* pVerties, int nVerties) = 0;
-	virtual bool DeleteMesh(const char* Id) = 0;
-	virtual bool Reset() = 0;
+	class RENDERER_API Renderer
+	{
+	public:
+		Renderer() {}
+		virtual ~Renderer() {}
 
-	virtual void SetFillMode(bool Wireframe) = 0;
-	virtual void SetDepthMode() = 0;
+		virtual void Render() = 0;
+		virtual void SetCameraLookAt(Vector3 Eye, Vector3 At) = 0;
+		virtual bool AddTriangles(const char* Id, void* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth) = 0;
+		virtual bool AddWireframe(const char* Id, void* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices) = 0;
+		virtual bool UpdateVerties(const char* Id, const Vertex1* pVerties, int nVerties) = 0;
+		virtual bool DeleteMesh(const char* Id) = 0;
+		virtual bool Reset() = 0;
 
-	static Renderer* CreateDX11Renderer(void* hWnd, const char* shader_path);
-};
+		virtual void SetFillMode(bool Wireframe) = 0;
+		virtual void SetDepthMode() = 0;
 
+		static Renderer* CreateDX11Renderer(void* hWnd, const char* shader_path);
+	};
+}
