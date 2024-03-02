@@ -14,18 +14,18 @@
 
 // using namespace Riemann;
 
-class Rosenbrock2DEvalFunction : public LBFGSEvalFunction<double>
+class Rosenbrock2DEvalFunction : public Maths::Optimization::LBFGSEvalFunction<double>
 {
 public:
 	virtual ~Rosenbrock2DEvalFunction() {}
 	virtual double Evaluate(const double* X, int Dim, double* Gradient) const override final
 	{
-		return Rosenbrock2D(1.0, 100.0, X, Dim, Gradient);
+		return Maths::Optimization::Rosenbrock2D(1.0, 100.0, X, Dim, Gradient);
 	}
 };
 
 template<typename T>
-class TestEvalFunction : public LBFGSEvalFunction<T>
+class TestEvalFunction : public Maths::Optimization::LBFGSEvalFunction<T>
 {
 public:
 	TestEvalFunction(T c) : c_(c) { }
@@ -55,7 +55,7 @@ void TestLBFGS()
 
 	Rosenbrock2DEvalFunction func1;
 
-	LBFGSMinimizer<double> minimizer;
+	Maths::Optimization::LBFGSMinimizer<double> minimizer;
 	double miny = minimizer.Minimize(&func1, 100);
 	EXPECT(fabs(miny) < 0.0001);
 
@@ -71,7 +71,7 @@ void TestLBFGS()
 void TestNonConvexFunctions()
 {
 	printf("Running TestNonConvexFunctions\n");
-	auto func = Rosenbrock<double>;
+	auto func = Maths::Optimization::Rosenbrock<double>;
 	auto a = func(1.0, 2.0, 1.0, 1.0);
 	EXPECT(a >= 0);
 	return;
@@ -83,8 +83,8 @@ void TestLR()
 
 	const int N = 100;
 	float a = 1.0f, b = 2.0f, c = 0.0f;
-	TDenseMatrix<float> x(N, 2);
-	TDenseVector<float> y(N);
+	Maths::LinearAlgebra::TDenseMatrix<float> x(N, 2);
+	Maths::LinearAlgebra::TDenseVector<float> y(N);
 	for (int i = 0; i < N; ++i)
 	{
 		float x0 = 1.0f * rand() / RAND_MAX;
@@ -94,15 +94,15 @@ void TestLR()
 		y[i] = a * x0 + b * x1 + c + 0.01f * rand() / RAND_MAX;
 	}
 
-	LRParam param;
-	param.solver = LR_solver::NormalEquation;
-	LRModel<float> lr(2);
+	Maths::Optimization::LRParam param;
+	param.solver = Maths::Optimization::LR_solver::NormalEquation;
+	Maths::Optimization::LRModel<float> lr(2);
 	lr.Fit(x.GetData(), y.GetData(), N, param);
 	printf("lr: a = %.2f, b = %.2f, c = %.2f\n", lr.coef[0], lr.coef[1], lr.intercept);
 	return;
 }
 
-class TestSGDLR : public SGDModel<double>
+class TestSGDLR : public Maths::Optimization::SGDModel<double>
 {
 public:
 	virtual ~TestSGDLR() {}
@@ -129,8 +129,8 @@ void TestSGD()
 	
 	const int N = 100000;
 	float a = 1.0f, b = 0.0f;
-	TDenseVector<double> x(N);
-	TDenseVector<double> y(N);
+	Maths::LinearAlgebra::TDenseVector<double> x(N);
+	Maths::LinearAlgebra::TDenseVector<double> y(N);
 	for (int i = 0; i < N; ++i)
 	{
 		double xx = 1.0 * rand() / RAND_MAX;
@@ -139,14 +139,14 @@ void TestSGD()
 	}
 
 	TestSGDLR lr;
-	SGDParam param;
-	SGDLeastSquaresOptimizer<double> solver;
+	Maths::Optimization::SGDParam param;
+	Maths::Optimization::SGDLeastSquaresOptimizer<double> solver;
 	solver.Optimize(&lr, 2, x.GetData(), 1, y.GetData(), N, param);
 	printf("sgd: a = %.2f, b = %.2f\n", lr.a, lr.b);
 	return;
 }
 
-class GDTest : public GradientDescentEvalFunction<float>
+class GDTest : public Maths::Optimization::GradientDescentEvalFunction<float>
 {
 public:
 	virtual ~GDTest() {}
@@ -165,8 +165,8 @@ void TestGD()
 	printf("Running TestGD\n");
 
 	GDTest sqr;
-	GDParam param;
-	GradientDescentMinimizer<float> minimizer;
+	Maths::Optimization::GDParam param;
+	Maths::Optimization::GradientDescentMinimizer<float> minimizer;
 	float x[2] = { 0, 0 };
 	float miny = minimizer.Minimize(&sqr, x, 2, param);
 	EXPECT(fabs(miny) < 0.001);
@@ -179,8 +179,8 @@ void TestPolyfit()
 {
 	printf("Running TestPolyfit\n");
 	const int N = 100;
-	DenseVector x(N);
-	DenseVector y(N);
+	Maths::LinearAlgebra::DenseVector x(N);
+	Maths::LinearAlgebra::DenseVector y(N);
 	float a = 2.0f, b = 1.0f, c = 1.5f, d = 0.5f;
 	for (int i = 0; i < N; ++i)
 	{
@@ -189,7 +189,7 @@ void TestPolyfit()
 		y[i] = a * xx * xx * xx + b * xx * xx + c * xx + d + 0.01f * rand() / RAND_MAX;
 	}
 	
-	CubicFit<float> p3;
+	Maths::Optimization::CubicFit<float> p3;
 	p3.Fit(x.GetData(), y.GetData(), N);
 	
 	printf("polyfit: a = %.2f, b = %.2f, c = %.2f, c = %.3f\n", p3.coef[3], p3.coef[2], p3.coef[1], p3.coef[0]);
@@ -201,7 +201,7 @@ void TestApproximation()
 {
 	printf("Running TestApproximation\n");
 	
-	PolynomialApproximation<float, 2> p2;
+	Maths::Optimization::PolynomialApproximation<float, 2> p2;
 	p2.Approximate(expf, 0.0f, 1.0f);
 	
 	float f0 = p2.Eval(0.0f);
@@ -221,14 +221,14 @@ void TestPCA()
 {
 	printf("Running TestPCA\n");
 	
-	DenseMatrix Data(4, 1000);
+	Maths::LinearAlgebra::DenseMatrix Data(4, 1000);
 	for (int i = 0; i < Data.GetRows(); ++i)
 	for (int j = 0; j < Data.GetCols(); ++j)
 	{
 		Data(i, j) = Maths::RandomFloat(1.0f, 100.0f);
 	}
 	
-	PrincipalComponentAnalysis<float> pca;
+	Maths::Optimization::PrincipalComponentAnalysis<float> pca;
 	pca.Fit(Data);
 	
 	EXPECT(pca.componentsMatrix.GetSize() == 16);

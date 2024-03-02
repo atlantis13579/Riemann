@@ -21,7 +21,7 @@ void TestMatrix1()
 {
 	printf("Running TestMatrix\n");
 
-	TDenseMatrix<float> M(10);
+	Maths::LinearAlgebra::TDenseMatrix<float> M(10);
 	M[0][0] = 2.0f;
 	M[0][1] = 3.0f;
 	M(1, 0) = -1.5f;
@@ -30,8 +30,8 @@ void TestMatrix1()
 	for (int j = 0; j < M.GetRows(); ++j)
 		M(i, j) = 1.0f * rand() / RAND_MAX;
 
-	TDenseMatrix<float> invM = (M+M).Inverse();
-	TDenseMatrix<float> Id = (M+M) * invM;
+	Maths::LinearAlgebra::TDenseMatrix<float> invM = (M+M).Inverse();
+	Maths::LinearAlgebra::TDenseMatrix<float> Id = (M+M) * invM;
 	bool IsId = Id.IsIdentity(1e-5f);
 	EXPECT(IsId);
 
@@ -40,9 +40,9 @@ void TestMatrix1()
 
 	EXPECT(fabsf(det * detI - 0.9999f) < 0.001f);
 
-	TDenseVector<float>	Vec = M * M.GetCol(0);
+	Maths::LinearAlgebra::TDenseVector<float>	Vec = M * M.GetCol(0);
 	float dp = M.GetRow(0).Dot(M.GetCol(0));
-	TDenseMatrix<float>	Mat = M * M.Transpose().Transpose();
+	Maths::LinearAlgebra::TDenseMatrix<float>	Mat = M * M.Transpose().Transpose();
 
 	EXPECT(dp == Vec[0]);
 	EXPECT(dp == Mat[0][0]);
@@ -86,7 +86,7 @@ void TestSparse()
 	printf("Running TestSparse\n");
 	float aaa[] = {0, 1, 0, 1, 0, 0, 0};
 	
-	TSparseVector<float> x(aaa, 7);
+	Maths::LinearAlgebra::TSparseVector<float> x(aaa, 7);
 	
 	return;
 }
@@ -95,7 +95,7 @@ void TestSolve()
 {
 	printf("Running TestSolve\n");
 
-	DenseMatrix A(3);
+	Maths::LinearAlgebra::DenseMatrix A(3);
 	A[0][0] = 12.0f;
 	A[0][1] = 3.0f;
 	A[0][2] = 5.0f;
@@ -106,25 +106,25 @@ void TestSolve()
 	A[2][1] = -10.0f;
 	A[2][2] = 160.1f;
 
-	DenseVector B(3);
+	Maths::LinearAlgebra::DenseVector B(3);
 	B[0] = -10.0f;
 	B[1] = -7.0f;
 	B[2] = 122.0f;
 
-	DenseVector X(3);
+	Maths::LinearAlgebra::DenseVector X(3);
 
 	X.LoadZero();
-	JacobiIteration_CPU<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
-	DenseVector Y = A * X;
+	Maths::LinearAlgebra::JacobiIteration_CPU<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
+	Maths::LinearAlgebra::DenseVector Y = A * X;
 	EXPECT(Y.FuzzyEqual(B, 1e-2f));
 
 	X.LoadZero();
-	GaussSeidelIteration<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
+	Maths::LinearAlgebra::GaussSeidelIteration<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
 	Y = A * X;
 	EXPECT(Y.FuzzyEqual(B, 1e-2f));
 
 	X.LoadZero();
-	ConjugateGradientSolver<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
+	Maths::LinearAlgebra::ConjugateGradientSolver<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
 	Y = A * X;
 	EXPECT(Y.FuzzyEqual(B, 1e-2f));
 
@@ -135,7 +135,7 @@ void TestPGS()
 {
 	printf("Running TestPGS\n");
 
-	DenseMatrix A(3);
+	Maths::LinearAlgebra::DenseMatrix A(3);
 	A[0][0] = 12.0f;
 	A[0][1] = 3.0f;
 	A[0][2] = 5.0f;
@@ -146,22 +146,22 @@ void TestPGS()
 	A[2][1] = -10.0f;
 	A[2][2] = 160.1f;
 
-	DenseVector B(3);
+	Maths::LinearAlgebra::DenseVector B(3);
 	B[0] = -10.0f;
 	B[1] = -7.0f;
 	B[2] = 122.0f;
 
-	DenseVector X(3);
+	Maths::LinearAlgebra::DenseVector X(3);
 
 	X.LoadZero();
-	ProjectedGaussSeidel<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 50, 1e-10f);
-	DenseVector Y = A * X + B;
+	Maths::LinearAlgebra::ProjectedGaussSeidel<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 50, 1e-10f);
+	Maths::LinearAlgebra::DenseVector Y = A * X + B;
 	float dp = X.Dot(Y);
 	EXPECT(X >= -0.00001f);
 	EXPECT(Y >= -0.00001f);
 	EXPECT(dp <= 0.00001f);
 
-	DenseVector X1(3), X2(3);
+	Maths::LinearAlgebra::DenseVector X1(3), X2(3);
 	X1[0] = 0.0f; X1[1] = -15.0f; X1[2] = 1.0f;
 	X2[0] = 1.0f; X2[1] = 10.0f; X2[2] = 3.0f;
 
@@ -169,7 +169,7 @@ void TestPGS()
 	B[0] = 10.5f;
 	B[1] = 17.0f;
 	B[2] = 242.0f;
-	ProjectedGaussSeidel<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), X1.GetData(), X2.GetData(), 50);
+	Maths::LinearAlgebra::ProjectedGaussSeidel<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), X1.GetData(), X2.GetData(), 50);
 	Y = A * X + B;
 	dp = Y.Dot(X);
 	EXPECT(X >= X1);
@@ -204,16 +204,16 @@ void TestSVD()
 	
 	Vector3 s2;
 	Matrix3 u2, v2;
-	SingularValueDecomposition<float>()(A.Data(), 3, 3, u2.Data(), s2.Data(), v2.Data());
+	Maths::LinearAlgebra::SingularValueDecomposition<float>()(A.Data(), 3, 3, u2.Data(), s2.Data(), v2.Data());
 	Matrix3 AA2 = u2 * Matrix3(s2) * v2.Transpose();
 	
 	float me1 = sqrtf((AA - A).L2Norm() / 9);
 	float me2 = sqrtf((AA2 - A).L2Norm() / 9);
 
-	EXPECT(DenseMatrix(u1.Data(), 3, 3).IsOrthogonal(0.2f));	// the algorithm is not good
-	EXPECT(DenseMatrix(v1.Data(), 3, 3).IsOrthogonal(0.2f));	// the algorithm is not good
-	EXPECT(DenseMatrix(u2.Data(), 3, 3).IsOrthogonal());
-	EXPECT(DenseMatrix(v2.Data(), 3, 3).IsOrthogonal());
+	EXPECT(Maths::LinearAlgebra::DenseMatrix(u1.Data(), 3, 3).IsOrthogonal(0.2f));	// the algorithm is not good
+	EXPECT(Maths::LinearAlgebra::DenseMatrix(v1.Data(), 3, 3).IsOrthogonal(0.2f));	// the algorithm is not good
+	EXPECT(Maths::LinearAlgebra::DenseMatrix(u2.Data(), 3, 3).IsOrthogonal());
+	EXPECT(Maths::LinearAlgebra::DenseMatrix(v2.Data(), 3, 3).IsOrthogonal());
 
 	EXPECT(me1 < 3.0f);		// the algorithm is not good
 	EXPECT(me2 < 0.1f);
@@ -225,15 +225,15 @@ void TestPseudoInverse()
 {
 	printf("Running TestPseudoInverse\n");
 	
-	TDenseMatrix<float> A(2);
+	Maths::LinearAlgebra::TDenseMatrix<float> A(2);
 	A[0][0] = 12.0f;
 	A[0][1] = 3.0f;
 	A[1][0] = 5.0f;
 	A[1][1] = 1.0f;
 	
-	TDenseMatrix<float> InvA = A.Inverse();
-	TDenseMatrix<float> pInvA = A.PseudoInverse();
-	TDenseMatrix<float> AA = A * pInvA * A;
+	Maths::LinearAlgebra::TDenseMatrix<float> InvA = A.Inverse();
+	Maths::LinearAlgebra::TDenseMatrix<float> pInvA = A.PseudoInverse();
+	Maths::LinearAlgebra::TDenseMatrix<float> AA = A * pInvA * A;
 	
 	float *p1 = A.GetData(), *p2 = AA.GetData();
 	for (int i = 0; i < 4; ++i)
@@ -286,7 +286,7 @@ void TestQR()
 {
 	printf("Running TestQR\n");
 
-	DenseMatrix A(3, 3);
+	Maths::LinearAlgebra::DenseMatrix A(3, 3);
 	A[0][0] = 12.0f;
 	A[0][1] = -51.0f;
 	A[0][2] = 4.0f;
@@ -297,12 +297,12 @@ void TestQR()
 	A[2][1] = 24.0f;
 	A[2][2] = -41.1f;
 
-	DenseMatrix q, r;
+	Maths::LinearAlgebra::DenseMatrix q, r;
 	A.QRDecompose(q, r);
 	EXPECT(q.IsOrthogonal(0.00001f));
 	EXPECT(r.IsUpperTriangle(0.00001f));
 
-	DenseMatrix A2 = q * r;
+	Maths::LinearAlgebra::DenseMatrix A2 = q * r;
 	EXPECT(A.FuzzyEqual(A2, 0.01f));
 	return;
 }
@@ -311,7 +311,7 @@ void TestEigen()
 {
 	printf("Running TestEigen\n");
 
-	TDenseMatrix<float> A(4, 4);
+	Maths::LinearAlgebra::TDenseMatrix<float> A(4, 4);
 	A[0][0] = 54.0f;
 	A[0][1] = 30.0f;
 	A[0][2] = 49.0f;
@@ -334,21 +334,21 @@ void TestEigen()
 
 	EXPECT(A.IsSymmetric());
 
-	TDenseVector<float> EigenValues;
-	TDenseMatrix<float> EigenVectors;
+	Maths::LinearAlgebra::TDenseVector<float> EigenValues;
+	Maths::LinearAlgebra::TDenseMatrix<float> EigenVectors;
 	A.EigenDecompose(EigenValues, EigenVectors);
 
 	EXPECT(fabsf(EigenValues[0] - 132.0f) < 1.0f);
 
 	for (int i = 0; i < EigenVectors.GetCols(); ++i)
 	{
-		TDenseVector<float> v = EigenVectors.GetCol(i);
-		TDenseVector<float> Av = A * v;
-		TDenseVector<float> Ev = EigenValues[i] * v;
+		Maths::LinearAlgebra::TDenseVector<float> v = EigenVectors.GetCol(i);
+		Maths::LinearAlgebra::TDenseVector<float> Av = A * v;
+		Maths::LinearAlgebra::TDenseVector<float> Ev = EigenValues[i] * v;
 		EXPECT(Av.FuzzyEqual(Ev, 0.001f));
 	}
 	
-	EXPECT((A * EigenVectors).FuzzyEqual(EigenVectors * TDenseMatrix<float>(EigenValues), 0.001f));
+	EXPECT((A * EigenVectors).FuzzyEqual(EigenVectors * Maths::LinearAlgebra::TDenseMatrix<float>(EigenValues), 0.001f));
 
 	return;
 }
@@ -356,7 +356,7 @@ void TestEigen()
 void TestCholesky()
 {
 	printf("Running TestCholesky\n");
-	TDenseMatrix<float> A(3, 3), L;
+	Maths::LinearAlgebra::TDenseMatrix<float> A(3, 3), L;
 	A[0][0] = 1.0f;
 	A[0][1] = 0.0f;
 	A[0][2] = 1.0f;
@@ -372,7 +372,7 @@ void TestCholesky()
 	EXPECT(L.IsLowerTriangle());
 	EXPECT(A.FuzzyEqual(L * L.Transpose()));
 	
-	TDenseVector<float>	B(3), X;
+	Maths::LinearAlgebra::TDenseVector<float>	B(3), X;
 	B[0] = 2.0f;
 	B[1] = 2.0f;
 	B[2] = 4.0f;

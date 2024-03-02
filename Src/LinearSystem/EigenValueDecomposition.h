@@ -14,6 +14,11 @@
 //   EigenVectors <- EigenVectors * Q;
 // EigenValues = diag(X)
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<typename T>
 class SymmetricEigenSolver
 {
@@ -148,3 +153,6 @@ private:
 		return sqrt(sum);
 	}
 };
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

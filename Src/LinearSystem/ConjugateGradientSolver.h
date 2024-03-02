@@ -6,6 +6,11 @@
 // solve ax = b
 // https://en.wikipedia.org/wiki/Conjugate_gradient_method
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<typename T>
 class ConjugateGradientSolver
 {
@@ -84,3 +89,6 @@ public:
 		return dp;
 	}
 };
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

@@ -8,6 +8,11 @@
 #include "SingularValueDecomposition.h"
 #include "EigenValueDecomposition.h"
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<>
 bool TDenseMatrix<float>::GetInverse(TDenseMatrix<float>& InvM) const
 {
@@ -43,7 +48,7 @@ bool TDenseMatrix<float>::SingularValueDecompose(TDenseMatrix<float> &U, TDenseV
 	S.SetSize(std::min(mRows, mCols));
 	U.SetSize(mRows, mRows);
 	V.SetSize(mCols, mCols);
-	if (!::SingularValueDecomposition<float>()(pData, mRows, mCols, U.pData, S.GetData(), V.pData))
+	if (!SingularValueDecomposition<float>()(pData, mRows, mCols, U.pData, S.GetData(), V.pData))
 	{
 		return false;
 	}
@@ -57,7 +62,7 @@ bool TDenseMatrix<float>::PolarDecompose(TDenseMatrix<float> &U, TDenseMatrix<fl
 		return false;
 	U.SetSize(mRows, mRows);
 	P.SetSize(mRows, mRows);
-	return ::PolarDecomposition<float>()(pData, mRows, U.pData, P.pData);
+	return PolarDecomposition<float>()(pData, mRows, U.pData, P.pData);
 }
 
 template<>
@@ -67,7 +72,7 @@ bool TDenseMatrix<float>::QRDecompose(TDenseMatrix<float>& Q, TDenseMatrix<float
 		return false;
 	Q.SetSize(mRows, mRows);
 	R.SetSize(mRows, mCols);
-	return ::QRDecomposition<float>()(pData, mRows, mCols, Q.pData, R.pData);
+	return QRDecomposition<float>()(pData, mRows, mCols, Q.pData, R.pData);
 }
 
 template<>
@@ -81,7 +86,7 @@ bool TDenseMatrix<float>::EigenDecompose(TDenseVector<float>& EigenValues, TDens
 
 	EigenValues.SetSize(mRows);
 	EigenVectors.SetSize(mRows, mRows);
-	::SymmetricEigenSolver<float>()(pData, mRows, EigenValues.GetData(), EigenVectors.GetData());
+	SymmetricEigenSolver<float>()(pData, mRows, EigenValues.GetData(), EigenVectors.GetData());
 	return true;
 }
 
@@ -95,7 +100,7 @@ bool TDenseMatrix<float>::LUDecompose(TDenseMatrix<float>& L, TDenseMatrix<float
 	
 	L.SetSize(mRows, mRows);
 	U.SetSize(mRows, mRows);
-	return ::LUFactorization<float>()(pData, mRows, L.GetData(), U.GetData());
+	return LUFactorization<float>()(pData, mRows, L.GetData(), U.GetData());
 }
 
 template<>
@@ -107,7 +112,7 @@ bool TDenseMatrix<float>::CholeskyDecompose(TDenseMatrix<float>& L) const
 	}
 	
 	L.SetSize(mRows, mRows);
-	return ::CholeskyDecomposition<float>()(pData, mRows, L.GetData());
+	return CholeskyDecomposition<float>()(pData, mRows, L.GetData());
 }
 
 template<>
@@ -120,12 +125,15 @@ bool TDenseMatrix<float>::SolveCholesky(const TDenseVector<float>& B, TDenseVect
 	}
 	
 	TDenseVector<float>	BT(mRows);
-	if (!::LowerTriangularSolver<float>()(L.GetData(), mRows, B.GetData(), BT.GetData()))
+	if (!LowerTriangularSolver<float>()(L.GetData(), mRows, B.GetData(), BT.GetData()))
 	{
 		return false;
 	}
 	
 	X.SetSize(mRows);
 	L.TransposeInPlace();
-	return ::UpperTriangularSolver<float>()(L.GetData(), mRows, BT.GetData(), X.GetData());
+	return UpperTriangularSolver<float>()(L.GetData(), mRows, BT.GetData(), X.GetData());
 }
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

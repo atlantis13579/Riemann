@@ -250,7 +250,7 @@ namespace Maths
 			T					Determinant() const
 		{
 			T Det;
-			if (GaussianElimination<T>()(mData, ROWS, nullptr, &Det))
+			if (Maths::LinearAlgebra::GaussianElimination<T>()(mData, ROWS, nullptr, &Det))
 			{
 				return Det;
 			}
@@ -312,7 +312,7 @@ namespace Maths
 		DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
 			bool				GetInverse(TMatrixMxN<T, ROWS, ROWS>& InvM) const
 		{
-			return GaussianElimination<T>()(mData, ROWS, InvM.Data(), nullptr);
+			return Maths::LinearAlgebra::GaussianElimination<T>()(mData, ROWS, InvM.Data(), nullptr);
 		}
 
 		TMatrixMxN<T, COLS, ROWS>	Transpose() const

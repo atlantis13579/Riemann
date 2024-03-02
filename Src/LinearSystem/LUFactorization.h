@@ -4,6 +4,11 @@
 
 #include <string.h>
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<typename T>
 class LUFactorization
 {
@@ -63,3 +68,6 @@ public:
 		return true;
 	}
 };
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

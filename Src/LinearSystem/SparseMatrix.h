@@ -4,6 +4,11 @@
 #include <vector>
 #include "DenseMatrix.h"
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<typename T>
 class TSparseMatrix
 {
@@ -117,3 +122,6 @@ private:
 };
 
 using SparseMatrix = TSparseMatrix<float>;
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

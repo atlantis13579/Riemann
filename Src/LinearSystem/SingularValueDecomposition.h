@@ -5,6 +5,11 @@
 
 #include <string.h>
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<typename T>
 class SingularValueDecomposition
 {
@@ -320,3 +325,6 @@ private:
 		return(result);
 	}
 };
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

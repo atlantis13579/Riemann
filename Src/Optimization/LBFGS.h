@@ -16,6 +16,11 @@
 
 #include <math.h>
 
+namespace Maths
+{
+namespace Optimization
+{
+
 #ifndef LBFGS_IEEE_FLOAT
 #define LBFGS_IEEE_FLOAT    1
 #endif
@@ -1821,3 +1826,6 @@ public:
 	int iterations;
 	lbfgsfloatval_t mse;
 };
+
+}	// namespace Optimization
+}	// namespace Maths

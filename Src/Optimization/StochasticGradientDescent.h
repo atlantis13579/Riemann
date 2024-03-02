@@ -1,5 +1,10 @@
 #pragma once
 
+namespace Maths
+{
+namespace Optimization
+{
+
 template<typename sgdfloatval_t>
 class SGDModel
 {
@@ -89,3 +94,6 @@ public:
 	int				iterations;
 	sgdfloatval_t	mse;
 };
+
+}	// namespace Optimization
+}	// namespace Maths

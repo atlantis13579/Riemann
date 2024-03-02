@@ -2,6 +2,11 @@
 
 // #define GEMM_USE_SIMD
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<typename T>
 void gemm_block_ref(const T* mat1, const T* mat2, int r1, int c1, int c2, int i0, int i1, int j0, int j1, int k0, int k1, T* m)
 {
@@ -82,3 +87,6 @@ void gema(const T* mat1, const T* mat2, int r, int c, T* mat)
 {
 	gema_block(mat1, mat2, r, c, 0, r - 1, 0, c - 1, mat);
 }
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

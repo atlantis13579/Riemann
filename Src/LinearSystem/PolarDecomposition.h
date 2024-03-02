@@ -6,6 +6,11 @@
 
 // https://en.wikipedia.org/wiki/Polar_decomposition
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<typename T>
 class PolarDecomposition
 {
@@ -27,3 +32,6 @@ public:
 		return true;
 	}
 };
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

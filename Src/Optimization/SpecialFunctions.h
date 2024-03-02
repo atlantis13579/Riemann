@@ -1,5 +1,10 @@
 #pragma once
 
+namespace Maths
+{
+namespace Optimization
+{
+
 template<typename T>
 T Square(T* X, int Dim)
 {
@@ -70,3 +75,6 @@ T Rosenbrock2D(const T a, const T b, const T* x, int dim, T* gradient)
 			_x[i] = tx; \
 			_gradient[i] = (f2 - f1) / (_dx * 2); \
 		}
+
+}	// namespace Optimization
+}	// namespace Maths

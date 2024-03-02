@@ -1,7 +1,13 @@
 #pragma once
 
 // Solve A * X = B , A is square Matrix of size N, B is Vector of size N
+// 
 // https://en.wikipedia.org/wiki/Gauss%E2%80%93Seidel_method
+
+namespace Maths
+{
+namespace LinearAlgebra
+{
 
 template<typename T>
 class GaussSeidelIteration
@@ -45,3 +51,6 @@ public:
 		return false;
 	}
 };
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

@@ -3,11 +3,16 @@
 #include <algorithm>
 #include "../LinearSystem/DenseMatrix.h"
 
+namespace Maths
+{
+namespace Optimization
+{
+
 template<typename T>
 class PrincipalComponentAnalysis
 {
 public:
-	void Fit(const TDenseMatrix<T>& Data)
+	void Fit(const Maths::LinearAlgebra::TDenseMatrix<T>& Data)
 	{
 		int Dim = Data.GetRows();
 		means.SetSize(Dim);
@@ -60,21 +65,21 @@ public:
 		}
 	}
 	
-	void Transform(TDenseMatrix<T>& src)
+	void Transform(Maths::LinearAlgebra::TDenseMatrix<T>& src)
 	{
 		src = componentsMatrix * src;
 	}
 	
-	void Transform(TDenseVector<T>& src)
+	void Transform(Maths::LinearAlgebra::TDenseVector<T>& src)
 	{
 		src = componentsMatrix * src;
 	}
 	
 public:
-	TDenseVector<T> means;
-	TDenseMatrix<T> covariance;
-	TDenseVector<T> eigens;
-	TDenseMatrix<T> componentsMatrix;
+	Maths::LinearAlgebra::TDenseVector<T> means;
+	Maths::LinearAlgebra::TDenseMatrix<T> covariance;
+	Maths::LinearAlgebra::TDenseVector<T> eigens;
+	Maths::LinearAlgebra::TDenseMatrix<T> componentsMatrix;
 };
 
 
@@ -82,7 +87,7 @@ template<typename T>
 class PrincipalComponentAnalysisRowWise
 {
 public:
-	void Fit(const TDenseMatrix<T>& Data)
+	void Fit(const Maths::LinearAlgebra::TDenseMatrix<T>& Data)
 	{
 		int Dim = Data.GetCols();
 		means.SetSize(Dim);
@@ -128,19 +133,22 @@ public:
 		}
 	}
 	
-	void Transform(TDenseMatrix<T>& src)
+	void Transform(Maths::LinearAlgebra::TDenseMatrix<T>& src)
 	{
 		src = src * componentsMatrix;
 	}
 	
-	void Transform(TDenseVector<T>& src)
+	void Transform(Maths::LinearAlgebra::TDenseVector<T>& src)
 	{
 		src = componentsMatrix * src;
 	}
 	
 public:
-	TDenseVector<T> means;
-	TDenseMatrix<T> covariance;
-	TDenseVector<T> eigens;
-	TDenseMatrix<T> componentsMatrix;
+	Maths::LinearAlgebra::TDenseVector<T> means;
+	Maths::LinearAlgebra::TDenseMatrix<T> covariance;
+	Maths::LinearAlgebra::TDenseVector<T> eigens;
+	Maths::LinearAlgebra::TDenseMatrix<T> componentsMatrix;
 };
+
+}	// namespace Optimization
+}	// namespace Maths

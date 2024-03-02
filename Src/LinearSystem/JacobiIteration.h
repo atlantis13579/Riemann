@@ -2,6 +2,11 @@
 
 #include <string.h>
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 // Solve A * X = B , A is square Matrix of size N, B is Vector of size N
 // https://en.wikipedia.org/wiki/Jacobi_method
 template<typename T>
@@ -58,3 +63,6 @@ public:
 		return succ;
 	}
 };
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

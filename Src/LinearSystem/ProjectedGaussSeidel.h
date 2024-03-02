@@ -1,5 +1,10 @@
 #pragma once
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 // Projected Successive Over Relaxation (PSOR)
 // Projected Gauss Seidel (PGS)
 template<typename T>
@@ -91,3 +96,6 @@ public:
 		return a < b ? a : b;
 	}
 };
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

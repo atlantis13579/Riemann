@@ -8,6 +8,11 @@
 
 #include <math.h>
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<typename T>
 class CholeskyDecomposition
 {
@@ -100,3 +105,6 @@ public:
 		return true;
 	}
 };
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

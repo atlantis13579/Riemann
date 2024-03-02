@@ -7,6 +7,11 @@
 #include "../LinearSystem/GaussianElimination.h"
 #endif // USE_PSEUDO_INVERSE
 
+namespace Maths
+{
+namespace Optimization
+{
+
 enum class LR_solver : uint8_t
 {
 	Auto,
@@ -228,9 +233,9 @@ private:
 		T *invXTX = XTX + (dim + 1)*(dim + 1);
 		
 		#ifdef USE_PSEUDO_INVERSE
-		bool succ = MoorePenrosePseudoInverse<T>()(XTX, dim + 1, invXTX);
+		bool succ = Maths::LinearAlgebra::MoorePenrosePseudoInverse<T>()(XTX, dim + 1, invXTX);
 		#else
-		bool succ = GaussianElimination<T>()(XTX, dim + 1, invXTX, nullptr);
+		bool succ = Maths::LinearAlgebra::GaussianElimination<T>()(XTX, dim + 1, invXTX, nullptr);
 		#endif
 		
 		if (!succ)
@@ -273,3 +278,6 @@ public:
 	T* gradient;
 	int dim;
 };
+
+}	// namespace Optimization
+}	// namespace Maths

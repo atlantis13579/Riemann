@@ -7,6 +7,11 @@
 #include <string.h>
 #include "gemm.inl"
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template <typename T>
 class QRDecomposition
 {
@@ -110,3 +115,6 @@ private:
 		return sqrt(sum);
 	}
 };
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

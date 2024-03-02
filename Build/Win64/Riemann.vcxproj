@@ -56,7 +56,6 @@
     <ClCompile Include="..\..\Src\Geometry\Polygon2d.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Polygon3d.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Spline.cpp" />
-    <ClCompile Include="..\..\Src\Geometry\TetrahedralMesh.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Voronoi2d.cpp" />
     <ClCompile Include="..\..\Src\Geometry\VoxelField.cpp" />
     <ClCompile Include="..\..\Src\LinearSystem\DenseMatrix.cpp" />
@@ -159,7 +158,6 @@
     <ClInclude Include="..\..\Src\Geometry\Polygon2d.h" />
     <ClInclude Include="..\..\Src\Geometry\Polygon3d.h" />
     <ClInclude Include="..\..\Src\Geometry\Spline.h" />
-    <ClInclude Include="..\..\Src\Geometry\TetrahedralMesh.h" />
     <ClInclude Include="..\..\Src\Geometry\Voronoi2d.h" />
     <ClInclude Include="..\..\Src\Geometry\VoxelField.h" />
     <ClInclude Include="..\..\Src\LinearSystem\CholeskyDecomposition.h" />
@@ -233,7 +231,6 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MotionIntegration.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h" />
-    <ClInclude Include="..\..\Src\Solver\ConjugateGradientSolver.h" />
     <ClInclude Include="..\..\Src\Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="..\..\Src\Solver\NumericalODESolver.h" />
     <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h" />

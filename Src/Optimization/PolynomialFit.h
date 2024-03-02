@@ -1,5 +1,10 @@
 #pragma once
 
+namespace Maths
+{
+namespace Optimization
+{
+
 template<typename T>
 using SrcFunction = T (*)(T);
 
@@ -153,3 +158,5 @@ using QuinticFit = PolynomialFit<T, 5>;
 template<typename T, int Dim>
 using PolynomialApproximation = PolynomialFit<T, Dim>;
 
+}	// namespace Optimization
+}	// namespace Maths

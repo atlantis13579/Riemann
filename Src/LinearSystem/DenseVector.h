@@ -4,6 +4,11 @@
 #include <memory>
 #include <vector>
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<typename T>
 class TDenseVector
 {
@@ -521,3 +526,6 @@ inline TDenseVector<T> operator* (T s, const TDenseVector<T>& v)
 }
 
 using DenseVector = TDenseVector<float>;
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

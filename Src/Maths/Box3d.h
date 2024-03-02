@@ -2,6 +2,7 @@
 
 #include <float.h>
 #include <algorithm>
+#include <limits>
 
 #include "Vector3.h"
 #include "Matrix4.h"
@@ -318,7 +319,7 @@ namespace Maths
 
 		static TAABB3<T> Empty()
 		{
-			return TAABB3<T>(FLT_MAX * 0.25f, -FLT_MAX * 0.25f);
+			return TAABB3<T>(std::numeric_limits<T>::max(), -std::numeric_limits<T>::max());
 		}
 	};
 
@@ -338,7 +339,7 @@ namespace Maths
 		{
 			TCE3<T> Ret;
 			Ret.Center = TVector3<T>::Zero();
-			Ret.Extent = TVector3<T>(FLT_MAX * 0.25f, FLT_MAX * 0.25f, FLT_MAX * 0.25f);
+			Ret.Extent = TVector3<T>::Zero();
 			return Ret;
 		}
 	};

@@ -30,7 +30,7 @@ public:
 	void InitSparseSolverCompressed3x3(const float* A, int n)
 	{
 		m_Size = n * 3;
-		m_SparseA = new SparseMatrix(A, n, n);
+		m_SparseA = new Maths::LinearAlgebra::SparseMatrix(A, n, n);
 
 		r = new float[m_Size];
 		d = new float[m_Size];
@@ -106,6 +106,6 @@ private:
 	int m_Size;
 	int m_MaxIterations;
 	float m_Epsilon;
-	SparseMatrix* m_SparseA;
+	Maths::LinearAlgebra::SparseMatrix* m_SparseA;
 };
 

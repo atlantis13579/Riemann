@@ -12,6 +12,11 @@
 #include "DenseMatrix.h"
 #include "SingularValueDecomposition.h"
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<typename T>
 class MoorePenrosePseudoInverse
 {
@@ -39,3 +44,5 @@ public:
 	}
 };
 
+}	// namespace LinearAlgebra
+}	// namespace Maths

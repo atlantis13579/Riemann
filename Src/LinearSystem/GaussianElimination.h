@@ -2,6 +2,11 @@
 
 #include <string.h>
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 #define matInvM(i, j)		(InvM[i*nDim + j])
 
 template<typename T>
@@ -160,3 +165,6 @@ public:
 		return true;
 	}
 };
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

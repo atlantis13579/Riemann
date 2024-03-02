@@ -4,6 +4,11 @@
 #include <vector>
 #include "DenseVector.h"
 
+namespace Maths
+{
+namespace LinearAlgebra
+{
+
 template<typename T>
 class TSparseVector
 {
@@ -78,3 +83,6 @@ private:
 };
 
 using SparseVector = TSparseVector<float>;
+
+}	// namespace LinearAlgebra
+}	// namespace Maths

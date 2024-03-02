@@ -1,5 +1,10 @@
 #pragma once
 
+namespace Maths
+{
+namespace Optimization
+{
+
 template<typename gdfloatval_t>
 class GradientDescentEvalFunction
 {
@@ -70,3 +75,6 @@ public:
 	int status;
 	int iterations;
 };
+
+}	// namespace Optimization
+}	// namespace Maths
