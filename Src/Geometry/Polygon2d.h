@@ -2,7 +2,7 @@
 
 #include "../Maths/Vector2.h"
 
-namespace Riemann
+namespace Geometry
 {
 	Vector2 ClosestPointInPolygon2D(const Vector2& pt, const Vector2* polygon, int nvert, bool* inside);
 

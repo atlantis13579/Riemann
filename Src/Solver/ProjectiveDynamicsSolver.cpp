@@ -3,7 +3,7 @@
 
 namespace Riemann
 {
-	ProjectiveDynamicsSolver::ProjectiveDynamicsSolver(TetrahedralMesh* _tetmesh) : m_tetmesh(_tetmesh)
+	ProjectiveDynamicsSolver::ProjectiveDynamicsSolver(Geometry::TetrahedralMesh* _tetmesh) : m_tetmesh(_tetmesh)
 	{
 		m_DT = (1.0f / 60.0f);
 		m_nNodes = m_tetmesh->GetNumNodes();
@@ -59,7 +59,7 @@ namespace Riemann
 	{
 		for (int i = 0; i < m_nTets; ++i)
 		{
-			const TetrahedralNode* t = m_tetmesh->GetTetrahedral(i);
+			const Geometry::TetrahedralNode* t = m_tetmesh->GetTetrahedral(i);
 
 			int i0 = t->node[0];
 			int i1 = t->node[1];
@@ -191,7 +191,7 @@ namespace Riemann
 
 			for (int i = 0; i < m_nTets; ++i)
 			{
-				const TetrahedralNode* t = m_tetmesh->GetTetrahedral(i);
+				const Geometry::TetrahedralNode* t = m_tetmesh->GetTetrahedral(i);
 
 				int i0 = t->node[0];
 				int i1 = t->node[1];

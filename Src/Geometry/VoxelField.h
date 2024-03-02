@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace Riemann
+namespace Geometry
 {
 	class Mesh;
 
@@ -43,7 +43,6 @@ namespace Riemann
 
 	public:
 		void			MakeEmpty(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
-		bool			VoxelizationTrianglesSet(const VoxelizationInfo& info, Mesh* mesh);
 		bool			VoxelizationTri(const Vector3& v0, const Vector3& v1, const Vector3& v2, const VoxelizationInfo& info);
 		bool			VoxelizationYPlane(float world_y);
 		bool			VoxelizationYPlane(float world_y_min, float world_y_max);

@@ -24,6 +24,7 @@
     <ClCompile Include="..\..\Src\Destruction\GeometrySet.cpp" />
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp" />
     <ClCompile Include="..\..\Src\Geometry\MeshSimplification.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\Voronoi3d.cpp" />
     <ClCompile Include="..\..\Src\Modules\AeroDynamics\VonKarmanVortexStreet.cpp" />
     <ClCompile Include="..\..\Src\Modules\AeroDynamics\WindSimulation.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.cpp" />
@@ -98,13 +99,13 @@
   <ItemGroup>
     <ClInclude Include="..\..\Src\CollisionPrimitive\MassParameters.h" />
     <ClInclude Include="..\..\Src\Core\BitSet.h" />
-    <ClInclude Include="..\..\Src\Core\LogSystem.h" />
     <ClInclude Include="..\..\Src\Core\Profiler.h" />
     <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
     <ClInclude Include="..\..\Src\Destruction\GeometrySet.h" />
     <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
     <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h" />
     <ClInclude Include="..\..\Src\Geometry\MeshSimplification.h" />
+    <ClInclude Include="..\..\Src\Geometry\Voronoi3d.h" />
     <ClInclude Include="..\..\Src\LinearSystem\ConjugateGradientSolver.h" />
     <ClInclude Include="..\..\Src\Modules\AeroDynamics\VonKarmanVortexStreet.h" />
     <ClInclude Include="..\..\Src\Modules\AeroDynamics\WindSimulation.h" />
@@ -129,7 +130,6 @@
     <ClInclude Include="..\..\Src\Core\BatchList.h" />
     <ClInclude Include="..\..\Src\Core\Graph.h" />
     <ClInclude Include="..\..\Src\Core\JobSystem.h" />
-    <ClInclude Include="..\..\Src\Core\LockFreeHashMap.h" />
     <ClInclude Include="..\..\Src\Core\RingBuffer.h" />
     <ClInclude Include="..\..\Src\Core\StaticList.h" />
     <ClInclude Include="..\..\Src\Core\StaticPool.h" />

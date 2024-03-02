@@ -3,9 +3,9 @@
 namespace Riemann
 {
 	class Renderer;
-	class Geometry;
+	class GeometryBase;
 	class Mesh;
 
-	void AddGeometry(Renderer* renderer, Geometry* geom);
+	void AddGeometry(Renderer* renderer, GeometryBase* geom);
 	void AddTriMesh(Renderer* renderer, Mesh* mesh, void* Trans, bool RenderBV);
 }

@@ -4,7 +4,7 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
 
-namespace Riemann
+namespace Geometry
 {
 #define MAX_NODES 100000
 #define MAX_TETS 100000

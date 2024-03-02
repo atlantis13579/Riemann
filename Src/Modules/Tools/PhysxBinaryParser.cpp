@@ -61,31 +61,31 @@ namespace Riemann
 	class PhysxBinaryParser
 	{
 	public:
-		static Geometry* CreateSphere(physx::PxSphereGeometry* physxObj)
+		static GeometryBase* CreateSphere(physx::PxSphereGeometry* physxObj)
 		{
 			return GeometryFactory::CreateSphere(Vector3::Zero(), physxObj->radius);
 		}
 
-		static Geometry* CreatePlane(physx::PxPlaneGeometry* physxObj)
+		static GeometryBase* CreatePlane(physx::PxPlaneGeometry* physxObj)
 		{
 			return GeometryFactory::CreatePlane(Vector3::Zero(), Vector3::UnitY());
 		}
 
-		static Geometry* CreateCapsule(physx::PxCapsuleGeometry* physxObj)
+		static GeometryBase* CreateCapsule(physx::PxCapsuleGeometry* physxObj)
 		{
 			return GeometryFactory::CreateCapsule(Vector3::UnitY() * -physxObj->halfHeight, Vector3::UnitY() * physxObj->halfHeight, physxObj->radius);
 		}
 
-		static Geometry* CreateBox(physx::PxBoxGeometry* physxObj)
+		static GeometryBase* CreateBox(physx::PxBoxGeometry* physxObj)
 		{
 			return GeometryFactory::CreateOBB(Vector3::Zero(), physxObj->halfExtents);
 		}
 
-		static Geometry* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj, bool shared_mem)
+		static GeometryBase* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj, bool shared_mem)
 		{
 			const physx::PxRTreeTriangleMesh* Mesh = (const physx::PxRTreeTriangleMesh*)physxObj->triangleMesh;
 
-			Geometry* Geom = GeometryFactory::CreateTriangleMesh();
+			GeometryBase* Geom = GeometryFactory::CreateTriangleMesh();
 			TriangleMesh* TriMesh = Geom->GetShapeObj<TriangleMesh>();
 			TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices(), !shared_mem);
 			TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
@@ -107,7 +107,7 @@ namespace Riemann
 			return Geom;
 		}
 
-		static Geometry* CreateHeightField(const physx::PxHeightFieldGeometry* physxObj, bool shared_mem)
+		static GeometryBase* CreateHeightField(const physx::PxHeightFieldGeometry* physxObj, bool shared_mem)
 		{
 			const physx::HeightField* pxhf = physxObj->heightField;
 			physx::PxHeightFieldSample* samples = pxhf->mData.samples;
@@ -118,7 +118,7 @@ namespace Riemann
 			Vector3 Scale = Vector3(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
 			ce.Center *= Scale;
 			ce.Extent *= Scale;
-			Geometry* Geom = GeometryFactory::CreateHeightField(ce.GetAABB(), nRows, nCols);
+			GeometryBase* Geom = GeometryFactory::CreateHeightField(ce.GetAABB(), nRows, nCols);
 			HeightField3d* HF = Geom->GetShapeObj<HeightField3d>();
 
 			if (shared_mem)
@@ -146,11 +146,11 @@ namespace Riemann
 			return Geom;
 		}
 
-		static Geometry* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj, bool shared_mem)
+		static GeometryBase* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj, bool shared_mem)
 		{
 			physx::GuConvexMesh* Mesh = physxObj->convexMesh;
 
-			Geometry* Geom = GeometryFactory::CreateConvexMesh();
+			GeometryBase* Geom = GeometryFactory::CreateConvexMesh();
 			ConvexMesh* ConvMesh = Geom->GetShapeObj<ConvexMesh>();
 			physx::ConvexHullData& hull = Mesh->mHullData;
 
@@ -181,14 +181,14 @@ namespace Riemann
 			return Geom;
 		}
 
-		static Geometry* CreateShape(const physx::NpShape* shape, bool shared_mem)
+		static GeometryBase* CreateShape(const physx::NpShape* shape, bool shared_mem)
 		{
 			if (shape == nullptr)
 			{
 				return nullptr;
 			}
 
-			Geometry* Geom = nullptr;
+			GeometryBase* Geom = nullptr;
 			int Type = shape->getGeomType();
 			if (Type == physx::eSPHERE)
 			{
@@ -238,7 +238,7 @@ namespace Riemann
 			return Geom;
 		}
 
-		static void CreateRigidBodies(void* px, int classType, uint64_t guid, std::vector<RigidBody*>* bodies, std::vector<Geometry*>* geoms, bool shared_mem)
+		static void CreateRigidBodies(void* px, int classType, uint64_t guid, std::vector<RigidBody*>* bodies, std::vector<GeometryBase*>* geoms, bool shared_mem)
 		{
 			if (classType == physx::PxConcreteType::eMATERIAL)
 			{
@@ -266,7 +266,7 @@ namespace Riemann
 				physx::NpShape* const* pShades = rigid->GetShapes();
 				for (int i = 0; i < nShapes; ++i)
 				{
-					Geometry* g = CreateShape(pShades[i], shared_mem);
+					GeometryBase* g = CreateShape(pShades[i], shared_mem);
 					if (g)
 					{
 						g->SetWorldTransform(rigid->mRigidStatic.mStatic.mCore.body2World.p, rigid->mRigidStatic.mStatic.mCore.body2World.q);
@@ -309,7 +309,7 @@ namespace Riemann
 				physx::NpShape* const* pShades = rigid->GetShapes();
 				for (int i = 0; i < nShapes; ++i)
 				{
-					Geometry* g = CreateShape(pShades[i], shared_mem);
+					GeometryBase* g = CreateShape(pShades[i], shared_mem);
 					if (g)
 					{
 						g->SetWorldTransform(core.body2World.p, core.body2World.q);
@@ -783,7 +783,7 @@ namespace Riemann
 #endif
 	}
 
-	bool	LoadPhysxBinary(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<Geometry*>* geoms)
+	bool	LoadPhysxBinary(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<GeometryBase*>* geoms)
 	{
 		if (bodies) bodies->clear();
 		if (geoms) geoms->clear();
@@ -817,7 +817,7 @@ namespace Riemann
 		return collection.mObjects.size() > 0;
 	}
 
-	void* LoadPhysxBinaryMmap(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<Geometry*>* geoms, size_t& mem_size)
+	void* LoadPhysxBinaryMmap(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<GeometryBase*>* geoms, size_t& mem_size)
 	{
 		if (bodies) bodies->clear();
 		if (geoms) geoms->clear();

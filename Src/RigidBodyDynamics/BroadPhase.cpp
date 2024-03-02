@@ -7,7 +7,7 @@
 
 namespace Riemann
 {
-	static bool IsMovingRigid(Geometry* geom)
+	static bool IsMovingRigid(GeometryBase* geom)
 	{
 		RigidBody* body = geom->GetParent<RigidBody>();
 		if (body == nullptr)
@@ -23,7 +23,7 @@ namespace Riemann
 		return true;
 	}
 
-	static bool IsValidPair(Geometry* geom1, Geometry* geom2)
+	static bool IsValidPair(GeometryBase* geom1, GeometryBase* geom2)
 	{
 		if (geom1->GetParent<void*>() == geom2->GetParent<void*>())
 		{
@@ -37,7 +37,7 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseAllPairsImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(const std::vector<GeometryBase*>& geoms, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 
@@ -56,7 +56,7 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseBruteforceImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(const std::vector<GeometryBase*>& geoms, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 
@@ -64,8 +64,8 @@ namespace Riemann
 			for (int i = 0; i < n; ++i)
 				for (int j = i + 1; j < n; ++j)
 				{
-					Geometry* gi = geoms[i];
-					Geometry* gj = geoms[j];
+					GeometryBase* gi = geoms[i];
+					GeometryBase* gj = geoms[j];
 					if (!IsValidPair(gi, gj))
 						continue;
 
@@ -105,7 +105,7 @@ namespace Riemann
 
 	public:
 
-		virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(const std::vector<GeometryBase*>& geoms, std::vector<OverlapPair>* overlaps) override final
 		{
 			if (geoms.empty())
 			{
@@ -120,8 +120,8 @@ namespace Riemann
 			{
 				int i, j;
 				SAP::UnpackOverlapKey(it, &i, &j);
-				Geometry* gi = geoms[i];
-				Geometry* gj = geoms[j];
+				GeometryBase* gi = geoms[i];
+				GeometryBase* gj = geoms[j];
 				if (!IsValidPair(gi, gj))
 					continue;
 				overlaps->emplace_back(i, j);
@@ -167,7 +167,7 @@ namespace Riemann
 	private:
 		IncrementalSAP* m_SAP;
 		std::set<OverlapKey>			m_Overlaps;
-		const std::vector<Geometry*>* m_pObjects;
+		const std::vector<GeometryBase*>* m_pObjects;
 	};
 
 	class BroadPhaseDynamicAABBImplementation : public BroadPhase
@@ -179,20 +179,20 @@ namespace Riemann
 		}
 		virtual ~BroadPhaseDynamicAABBImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(const std::vector<GeometryBase*>& geoms, std::vector<OverlapPair>* overlaps) override final
 		{
 			std::vector<void*> result;
 			int n = (int)geoms.size();
 			for (int i = 0; i < n; ++i)
 			{
-				Geometry* gi = geoms[i];
+				GeometryBase* gi = geoms[i];
 				if (!IsMovingRigid(gi))
 					continue;
 
 				m_tree->Query(gi->GetBoundingVolume_WorldSpace(), &result);
 				for (int j = 0; j < (int)result.size(); ++j)
 				{
-					Geometry* gj = static_cast<Geometry*>(result[j]);
+					GeometryBase* gj = static_cast<GeometryBase*>(result[j]);
 					if (gj <= gi)
 						continue;
 					overlaps->emplace_back(i, j);

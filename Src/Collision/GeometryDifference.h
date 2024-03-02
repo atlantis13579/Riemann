@@ -9,12 +9,12 @@ namespace Riemann
 	{
 	public:
 		GeometryDifference() {}
-		GeometryDifference(const Geometry* _g1, const Geometry* _g2) : Geom1(_g1), Geom2(_g2)
+		GeometryDifference(const GeometryBase* _g1, const GeometryBase* _g2) : Geom1(_g1), Geom2(_g2)
 		{
 		}
 
-		const Geometry* Geom1;
-		const Geometry* Geom2;
+		const GeometryBase* Geom1;
+		const GeometryBase* Geom2;
 
 		inline Vector3 Support1(const Vector3& Direction) const
 		{

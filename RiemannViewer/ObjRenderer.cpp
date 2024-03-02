@@ -15,7 +15,7 @@
 namespace Riemann
 {
 
-	void AddPlane(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
+	void AddPlane(Renderer* renderer, GeometryBase* geom, bool DrawMesh = true)
 	{
 		std::vector<Vector3> Vertices;
 		std::vector<uint16_t> Indices;
@@ -36,7 +36,7 @@ namespace Riemann
 	}
 
 	template <class TShape>
-	void AddGeometryImpl(Renderer* renderer, Geometry* geom, bool DrawMesh = true)
+	void AddGeometryImpl(Renderer* renderer, GeometryBase* geom, bool DrawMesh = true)
 	{
 		std::vector<Vector3> Vertices;
 		std::vector<uint16_t> Indices;
@@ -95,7 +95,7 @@ namespace Riemann
 		return;
 	}
 
-	void AddGeometry(Renderer* renderer, Geometry* geom)
+	void AddGeometry(Renderer* renderer, GeometryBase* geom)
 	{
 		if (geom->GetShapeType() == ShapeType3d::TRIANGLE_MESH)
 		{

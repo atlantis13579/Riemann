@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string>
 
-namespace Riemann
+namespace Geometry
 {
 const int MAX_VERTEX = 5000;
 const int MAX_PAIR = 50000;

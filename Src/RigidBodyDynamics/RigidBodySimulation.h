@@ -8,7 +8,7 @@
 
 namespace Riemann
 {
-	class Geometry;
+	class GeometryBase;
 	class GeometryQuery;
 	class RigidBody;
 	class RigidBodyStatic;
@@ -102,13 +102,13 @@ namespace Riemann
 		bool				LoadPhysxScene(const char* name, bool shared_mem);
 
 		RigidBody* CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose);
-		RigidBody* CreateRigidBody(Geometry* Geom, const RigidBodyParam& param);
+		RigidBody* CreateRigidBody(GeometryBase* Geom, const RigidBodyParam& param);
 		bool				RemoveRigidBody(RigidBody* Body);
 
 		bool				LoadAnimation(const std::string& resname, const std::string& filepath, float play_rate, bool begin_play);
 		KinematicsDriver* FindKinematics(const std::string& resname);
 
-		void				GetAllGeometries(std::vector<Geometry*>* AllObjects);
+		void				GetAllGeometries(std::vector<GeometryBase*>* AllObjects);
 		GeometryQuery* GetGeometryQuery() { return m_GeometryQuery; }
 		const GeometryQuery* GetGeometryQuery() const { return m_GeometryQuery; }
 

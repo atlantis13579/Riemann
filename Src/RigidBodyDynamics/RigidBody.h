@@ -6,7 +6,7 @@
 
 namespace Riemann
 {
-	class Geometry;
+	class GeometryBase;
 	class RigidBodyStatic;
 	class RigidBodyDynamic;
 	struct PhysicsMaterial;
@@ -61,7 +61,7 @@ namespace Riemann
 	class RigidBody
 	{
 	public:
-		std::vector<Geometry*>	mGeometries;
+		std::vector<GeometryBase*>	mGeometries;
 		RigidType				mRigidType;
 		uint64_t				mGuid;
 
@@ -83,10 +83,10 @@ namespace Riemann
 		RigidBody();
 		virtual ~RigidBody();
 
-		void			AddGeometry(Geometry* Geom);
-		void			GetGeometries(std::vector<Geometry*>* Geometries);
-		inline std::vector<Geometry*>& Geometries() { return mGeometries; }
-		inline const std::vector<Geometry*>& Geometries() const { return mGeometries; }
+		void			AddGeometry(GeometryBase* Geom);
+		void			GetGeometries(std::vector<GeometryBase*>* Geometries);
+		inline std::vector<GeometryBase*>& Geometries() { return mGeometries; }
+		inline const std::vector<GeometryBase*>& Geometries() const { return mGeometries; }
 		size_t			GetNumGeometries() const;
 		void			ReleaseGeometries();
 
@@ -186,5 +186,5 @@ namespace Riemann
 		void	SetTransform(const Vector3& pos, const Quaternion& quat);
 	};
 
-	void	GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*>* geometries);
+	void	GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<GeometryBase*>* geometries);
 }

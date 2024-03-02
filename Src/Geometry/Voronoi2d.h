@@ -1,5 +1,5 @@
 #pragma once
 
-namespace Riemann
+namespace Geometry
 {
 }

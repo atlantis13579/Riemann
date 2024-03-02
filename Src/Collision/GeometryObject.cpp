@@ -18,7 +18,7 @@ namespace Riemann
 	int GeometryFactory::ObjectCount[(int)ShapeType3d::TYPE_COUNT] = { 0 };
 
 	template<class GEOM_TYPE>
-	class TGeometry : public Geometry, public GEOM_TYPE
+	class TGeometry : public GeometryBase, public GEOM_TYPE
 	{
 	public:
 		TGeometry()
@@ -100,20 +100,20 @@ namespace Riemann
 		return Ret;
 	}
 
-	Geometry::Geometry()
+	GeometryBase::GeometryBase()
 	{
 		m_Density = 1.0f;
 		m_Parent = nullptr;
 		m_NodeId = -1;
 	}
 
-	Geometry::~Geometry()
+	GeometryBase::~GeometryBase()
 	{
 
 	}
 
 	// static
-	Pose		Geometry::CalculateCenterOfMassPoseMultibody(const std::vector<Geometry*>& geoms)
+	Pose		GeometryBase::CalculateCenterOfMassPoseMultibody(const std::vector<GeometryBase*>& geoms)
 	{
 		Pose p;
 		p.pos = Vector3::Zero();
@@ -121,7 +121,7 @@ namespace Riemann
 
 		for (size_t i = 0; i < geoms.size(); ++i)
 		{
-			Geometry* g = geoms[i];
+			GeometryBase* g = geoms[i];
 			p.pos += g->GetWorldPosition() * g->GetMassParameters()->Mass;
 			vol += g->GetMassParameters()->Volume;
 		}
@@ -135,7 +135,7 @@ namespace Riemann
 		return p;
 	}
 
-	bool		Geometry::Intersect(const Geometry* Geom) const
+	bool		GeometryBase::Intersect(const GeometryBase* Geom) const
 	{
 		IntersectFunc func = GeometryIntersection::GetIntersectFunc(m_Type, Geom->GetShapeType());
 		if (func)
@@ -153,7 +153,7 @@ namespace Riemann
 		return false;
 	}
 
-	bool		Geometry::Penetration(const Geometry* Geom, Vector3* Normal, float* Depth) const
+	bool		GeometryBase::Penetration(const GeometryBase* Geom, Vector3* Normal, float* Depth) const
 	{
 		PenetrationFunc func = GeometryIntersection::GetPenetrationFunc(m_Type, Geom->GetShapeType());
 		if (func)
@@ -177,26 +177,26 @@ namespace Riemann
 		return false;
 	}
 
-	bool		Geometry::SweepAABB(const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, Vector3* normal, float* t) const
+	bool		GeometryBase::SweepAABB(const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, Vector3* normal, float* t) const
 	{
 		char stack[MAX_GEOMETRY_STACK_SIZE];
-		Geometry* aabb = GeometryFactory::CreateOBB_placement(stack, (Bmin + Bmax) * 0.5f, (Bmax - Bmin) * 0.5f);
+		GeometryBase* aabb = GeometryFactory::CreateOBB_placement(stack, (Bmin + Bmax) * 0.5f, (Bmax - Bmin) * 0.5f);
 		return Sweep(Direction, aabb, normal, t);
 	}
 
-	bool		Geometry::Sweep(const Vector3& Direction, const Geometry* Geom, Vector3* normal, float* t) const
+	bool		GeometryBase::Sweep(const Vector3& Direction, const GeometryBase* Geom, Vector3* normal, float* t) const
 	{
 		SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
 		assert(func);
 		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform(), Direction, normal, t);
 	}
 
-	void 		Geometry::UpdateBoundingVolume()
+	void 		GeometryBase::UpdateBoundingVolume()
 	{
 		m_BoxWorld = m_VolumeProperties.BoundingVolume.Transform(m_WorldTransform.transform.pos, m_WorldTransform.transform.quat);
 	}
 
-	Vector3		Geometry::GetSupport_WorldSpace(const Vector3& Direction) const
+	Vector3		GeometryBase::GetSupport_WorldSpace(const Vector3& Direction) const
 	{
 		Vector3 DirLocal = m_WorldTransform.WorldToLocalDirection(Direction);
 		Vector3 SupportLocal = CalculateSupport_LocalSpace(DirLocal);
@@ -204,7 +204,7 @@ namespace Riemann
 		return SupportWorld;
 	}
 
-	void		Geometry::GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const
+	void		GeometryBase::GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const
 	{
 		Vector3 DirLocal = m_WorldTransform.WorldToLocalDirection(Direction);
 		CalculateSupportFace_LocalSpace(DirLocal, Face);
@@ -214,17 +214,17 @@ namespace Riemann
 		}
 	}
 
-	Matrix3		Geometry::GetInertiaTensor_LocalSpace() const
+	Matrix3		GeometryBase::GetInertiaTensor_LocalSpace() const
 	{
 		return m_VolumeProperties.InertiaMat;
 	}
 
-	void 		GeometryFactory::DeleteGeometry(Geometry* Geom)
+	void 		GeometryFactory::DeleteGeometry(GeometryBase* Geom)
 	{
 		delete Geom;
 	}
 
-	Geometry* GeometryFactory::CreateOBB_placement(void* pBuf, const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot)
+	GeometryBase* GeometryFactory::CreateOBB_placement(void* pBuf, const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot)
 	{
 		TGeometry<AxisAlignedBox3d>* p = pBuf ? new (pBuf) TGeometry<AxisAlignedBox3d>() : new TGeometry<AxisAlignedBox3d>();
 		p->Min = -HalfExtent;
@@ -232,20 +232,20 @@ namespace Riemann
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Center, Rot);
 
-		return (Geometry*)p;
+		return (GeometryBase*)p;
 	}
 
-	Geometry* GeometryFactory::CreateSphere_placement(void* pBuf, const Vector3& Center, float Radius)
+	GeometryBase* GeometryFactory::CreateSphere_placement(void* pBuf, const Vector3& Center, float Radius)
 	{
 		TGeometry<Sphere3d>* p = pBuf ? new (pBuf)TGeometry<Sphere3d>() : new TGeometry<Sphere3d>();
 		p->Center = Vector3::Zero();
 		p->Radius = Radius;
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Center, Quaternion::One());
-		return (Geometry*)p;
+		return (GeometryBase*)p;
 	}
 
-	Geometry* GeometryFactory::CreateCapsule_placement(void* pBuf, const Vector3& X0, const Vector3& X1, float Radius)
+	GeometryBase* GeometryFactory::CreateCapsule_placement(void* pBuf, const Vector3& X0, const Vector3& X1, float Radius)
 	{
 		Quaternion quat = Quaternion::One();
 		if ((X1 - X0).SquareLength() > 1e-6)
@@ -257,16 +257,16 @@ namespace Riemann
 		p->Init(quat.Conjugate() * (X0 - Center), quat.Conjugate() * (X1 - Center), Radius);
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Center, quat);
-		return (Geometry*)p;
+		return (GeometryBase*)p;
 	}
 
-	Geometry* GeometryFactory::CreateOBB(const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot)
+	GeometryBase* GeometryFactory::CreateOBB(const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot)
 	{
 		TGeometry<AxisAlignedBox3d>* p = new TGeometry<AxisAlignedBox3d>();
 		return CreateOBB_placement(p, Center, HalfExtent, Rot);
 	}
 
-	Geometry* GeometryFactory::CreatePlane(const Vector3& Center, const Vector3& Normal)
+	GeometryBase* GeometryFactory::CreatePlane(const Vector3& Center, const Vector3& Normal)
 	{
 		TGeometry<Plane3d>* p = new TGeometry<Plane3d>();
 		p->Normal = Vector3::UnitY();
@@ -275,16 +275,16 @@ namespace Riemann
 		quat.FromTwoAxis(Vector3::UnitY(), Normal);
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Center, quat);
-		return (Geometry*)p;
+		return (GeometryBase*)p;
 	}
 
-	Geometry* GeometryFactory::CreateSphere(const Vector3& Center, float Radius)
+	GeometryBase* GeometryFactory::CreateSphere(const Vector3& Center, float Radius)
 	{
 		TGeometry<Sphere3d>* p = new TGeometry<Sphere3d>();
 		return CreateSphere_placement(p, Center, Radius);
 	}
 
-	Geometry* GeometryFactory::CreateCylinder(const Vector3& X0, const Vector3& X1, float Radius)
+	GeometryBase* GeometryFactory::CreateCylinder(const Vector3& X0, const Vector3& X1, float Radius)
 	{
 		Quaternion quat = Quaternion::One();
 		if ((X1 - X0).SquareLength() > 1e-6)
@@ -296,37 +296,37 @@ namespace Riemann
 		p->Init(quat.Conjugate() * (X0 - Center), quat.Conjugate() * (X1 - Center), Radius);
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Center, quat);
-		return (Geometry*)p;
+		return (GeometryBase*)p;
 	}
 
-	Geometry* GeometryFactory::CreateCapsule(const Vector3& X0, const Vector3& X1, float Radius)
+	GeometryBase* GeometryFactory::CreateCapsule(const Vector3& X0, const Vector3& X1, float Radius)
 	{
 		TGeometry<Capsule3d>* p = new TGeometry<Capsule3d>();
 		return CreateCapsule_placement(p, X0, X1, Radius);
 	}
 
-	Geometry* GeometryFactory::CreateConvexMesh()
+	GeometryBase* GeometryFactory::CreateConvexMesh()
 	{
 		TGeometry<ConvexMesh>* p = new TGeometry<ConvexMesh>();
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Vector3::Zero(), Quaternion::One());
-		return (Geometry*)p;
+		return (GeometryBase*)p;
 	}
 
-	Geometry* GeometryFactory::CreateHeightField(const Box3d& Bv, int nRows, int nCols)
+	GeometryBase* GeometryFactory::CreateHeightField(const Box3d& Bv, int nRows, int nCols)
 	{
 		TGeometry<HeightField3d>* p = new TGeometry<HeightField3d>();
 		p->Init(Bv, nRows, nCols);
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Vector3::Zero(), Quaternion::One());
-		return (Geometry*)p;
+		return (GeometryBase*)p;
 	}
 
-	Geometry* GeometryFactory::CreateTriangleMesh()
+	GeometryBase* GeometryFactory::CreateTriangleMesh()
 	{
 		TGeometry<TriangleMesh>* p = new TGeometry<TriangleMesh>();
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Vector3::Zero(), Quaternion::One());
-		return (Geometry*)p;
+		return (GeometryBase*)p;
 	}
 }

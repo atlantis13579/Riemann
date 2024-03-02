@@ -4,7 +4,7 @@
 #include <vector>
 #include "../Maths/Vector2.h"
 
-namespace Riemann
+namespace Geometry
 {
 	// Find the ConvexHull, O(N*logN) time, O(N) space
 	void ConvexHull_GrahamScan(const std::vector<Vector2>& points, std::vector<Vector2>* hull);

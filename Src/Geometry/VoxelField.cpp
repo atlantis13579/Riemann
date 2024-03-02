@@ -4,9 +4,8 @@
 
 #include "VoxelField.h"
 #include "../Maths/Maths.h"
-#include "../CollisionPrimitive/Mesh.h"
 
-namespace Riemann
+namespace Geometry
 {
 	VoxelField::VoxelField()
 	{
@@ -44,30 +43,6 @@ namespace Riemann
 		int kVoxelBatchSize = vx_clamp(m_SizeX * m_SizeZ / 2, 1024, 1024 * 1024);
 		m_VoxelBatchs.Init(1, kVoxelBatchSize);
 	}
-
-
-	bool VoxelField::VoxelizationTrianglesSet(const VoxelizationInfo& info, Mesh* _mesh)
-	{
-		m_SizeX = (int)(info.BV.GetLengthX() / info.VoxelSize + 0.5f);
-		m_SizeY = (int)(info.BV.GetLengthY() / info.VoxelHeight + 0.5f);
-		m_SizeZ = (int)(info.BV.GetLengthZ() / info.VoxelSize + 0.5f);
-
-		MakeEmpty(info.BV, m_SizeX, m_SizeY, m_SizeZ, info.VoxelSize, info.VoxelHeight);
-
-		const Mesh &mesh = *_mesh;
-		for (uint32_t i = 0; i < mesh.GetNumTriangles(); ++i)
-		{
-			Vector3 v0 = mesh(i, 0);
-			Vector3 v1 = mesh(i, 1);
-			Vector3 v2 = mesh(i, 2);
-			if (!VoxelizationTri(v0, v1, v2, info))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
 
 	bool VoxelField::IntersectYPlane(float y_value, std::vector<int>& output, float Thr)
 	{
@@ -754,40 +729,6 @@ namespace Riemann
 			// output[i] = v ? (int)(v->ymax - v->ymin) : 0;
 			output[i] = v ? 1 : 0;
 		}
-	}
-
-	Mesh* VoxelField::CreateDebugMesh(int x1, int x2, int z1, int z2) const
-	{
-		Mesh* mesh = new Mesh;
-
-		z1 = std::max(z1, 0);
-		z2 = std::min(z2, m_SizeZ - 1);
-		x1 = std::max(x1, 0);
-		x2 = std::min(x2, m_SizeX - 1);
-
-		for (int i = z1; i <= z2; ++i)
-		{
-			Vector3 Bmin, Bmax;
-			Bmin.z = m_BV.Min.z + m_VoxelSize * i;
-			Bmax.z = m_BV.Min.z + m_VoxelSize * (i + 1);
-
-			for (int j = x1; j <= x2; ++j)
-			{
-				Voxel* v = m_Fields[i * m_SizeX + j];
-
-				Bmin.x = m_BV.Min.x + m_VoxelSize * j;
-				Bmax.x = m_BV.Min.x + m_VoxelSize * (j+1);
-				while (v)
-				{
-					Bmin.y = m_BV.Min.y + m_VoxelHeight * v->ymin;
-					Bmax.y = m_BV.Min.y + m_VoxelHeight * (v->ymax + 1);
-					mesh->AddAABB(Bmin, Bmax);
-
-					v = v->next;
-				}
-			}
-		}
-		return mesh;
 	}
 
 	bool	VoxelField::Verify()

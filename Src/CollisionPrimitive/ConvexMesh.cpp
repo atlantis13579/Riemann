@@ -143,7 +143,7 @@ namespace Riemann
 
 	bool ConvexMesh::CalculateVolumeProperties(MassParameters* p, float Density) const
 	{
-		ConvexHull3d hull;
+		Geometry::ConvexHull3d hull;
 		hull.faces.resize(NumFaces);
 		hull.verts.resize(NumVertices);
 
@@ -154,7 +154,7 @@ namespace Riemann
 		for (uint16_t i = 0; i < NumFaces; ++i)
 		{
 			ConvexMeshFace& f = Faces[i];
-			HullFace3d& face = hull.faces[i];
+			Geometry::HullFace3d& face = hull.faces[i];
 			face.norm = f.plane.Normal;
 			face.w = f.plane.D;
 			face.verts.resize(f.numVerties);

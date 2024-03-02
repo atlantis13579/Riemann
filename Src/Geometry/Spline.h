@@ -3,7 +3,7 @@
 #include <vector>
 #include "../Maths/Vector3.h"
 
-namespace Riemann
+namespace Geometry
 {
 	struct SplineNode
 	{

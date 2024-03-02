@@ -9,8 +9,6 @@
 #include "../Src/Maths/Float16.h"
 #include "../Src/Geometry/Spline.h"
 
-using namespace Riemann;
-
 void TestMat3()
 {
 	Matrix3 mat, m1, m2;
@@ -101,7 +99,7 @@ void TestFloat16()
 		float t = 1.0f * i / 20;
 		Vector3 p0 = Vector3(0, 0, 0);
 		Vector3 p1 = Vector3(1, 0, 1);
-		Vector3 t1 = CubicHermite::Calculate(p0, p1, Vector3(1, 0, 1).Unit(), Vector3(1, 0, 1).Unit(), t);
+		Vector3 t1 = Geometry::CubicHermite::Calculate(p0, p1, Vector3(1, 0, 1).Unit(), Vector3(1, 0, 1).Unit(), t);
 		Vector3 t2 = LinearInterp(p0, p1, t);
 		cc.push_back(t1);
 		if (i != 0)

@@ -1,7 +1,7 @@
 
 #include "TetrahedralMesh.h"
 
-namespace Riemann
+namespace Geometry
 {
 	TetrahedralMesh::TetrahedralMesh()
 	{

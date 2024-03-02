@@ -8,7 +8,7 @@ namespace Riemann
 	{
 		std::vector<Vector3> new_v;
 		std::vector<int> new_i;
-		if (!SimplifyMesh((Vector3*)GetVertexBuffer(), GetIndexBuffer(), GetNumVertices(), GetNumTriangles(), Is16bitIndices(), rate, new_v, new_i))
+		if (!Geometry::SimplifyMesh((Vector3*)GetVertexBuffer(), GetIndexBuffer(), GetNumVertices(), GetNumTriangles(), Is16bitIndices(), rate, new_v, new_i))
 		{
 			return false;
 		}

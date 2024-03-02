@@ -109,19 +109,19 @@ void TestDynamicAABB()
 	
 	struct Actor
 	{
-		Actor(Geometry *_geom, int _id)
+		Actor(GeometryBase*_geom, int _id)
 		{
 			p = _geom;
 			id = _id;
 		}
-		Geometry *p;
+		GeometryBase*p;
 		int		id;
 	};
 	
 	std::vector<Actor> geoms;
 	for (int i = 0; i < 128; ++i)
 	{
-		Geometry* obb = GeometryFactory::CreateOBB(Vector3::Random() * 10.0f, Vector3::One(), Quaternion::One());
+		GeometryBase* obb = GeometryFactory::CreateOBB(Vector3::Random() * 10.0f, Vector3::One(), Quaternion::One());
 		int id = tree.Add(obb->GetBoundingVolume_WorldSpace(), obb);
 		EXPECT(tree.Validate());
 		geoms.emplace_back(obb, id);
@@ -167,7 +167,7 @@ void TestDynamicAABB()
 void TestSupport()
 {
 	printf("Running TestSupport\n");
-	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
+	GeometryBase* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 	
 	Vector3 support;
 
@@ -194,7 +194,7 @@ void TestSupport()
 	return;
 }
 
-bool GJK_Solve(Geometry *Geom1, Geometry* Geom2)
+bool GJK_Solve(GeometryBase* Geom1, GeometryBase* Geom2)
 {
 	GeometryDifference shape(Geom1, Geom2);
 	GJKIntersection gjk;
@@ -206,7 +206,7 @@ bool GJK_Solve(Geometry *Geom1, Geometry* Geom2)
 	return false;
 }
 
-float GJK_Solve_Distance(Geometry* Geom1, Geometry* Geom2)
+float GJK_Solve_Distance(GeometryBase* Geom1, GeometryBase* Geom2)
 {
 	GeometryDifference shape(Geom1, Geom2);
 	GJKClosestDistance gjk;
@@ -217,9 +217,9 @@ void TestGJK()
 {
 	printf("Running TestGJK\n");
 	
-	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitY());
-	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
-	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
+	GeometryBase* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitY());
+	GeometryBase* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
+	GeometryBase* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 	EXPECT(GJK_Solve(obb1, obb2));
 
 	obb2->SetWorldPosition(Vector3(0.5f, 0.0f, 0.0f));
@@ -243,8 +243,8 @@ void TestGJK()
 	EXPECT(GJK_Solve(obb2, plane1));
 	EXPECT(GJK_Solve(plane1, obb2));
 	
-	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
-	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
+	GeometryBase* sp1 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
+	GeometryBase* sp2 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
 	EXPECT(GJK_Solve(sp1, sp2));
 	EXPECT(GJK_Solve(sp1, plane1));
 	
@@ -262,9 +262,9 @@ void TestEPA()
 {
 	printf("Running TestEPA\n");
 
-	// Geometry* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, -5.0f, 0.0f), Vector3::UnitY(), 1.0f);
-	Geometry* plane1 = GeometryFactory::CreateOBB(Vector3(0.0f, -5.0f, 0.0f), Vector3(100.0f, 1.0f, 100.0f), Quaternion::One());
-	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One() * 1.0f, Quaternion::One());
+	// GeometryBase* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, -5.0f, 0.0f), Vector3::UnitY(), 1.0f);
+	GeometryBase* plane1 = GeometryFactory::CreateOBB(Vector3(0.0f, -5.0f, 0.0f), Vector3(100.0f, 1.0f, 100.0f), Quaternion::One());
+	GeometryBase* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One() * 1.0f, Quaternion::One());
 	obb1->SetWorldPosition(Vector3(0.0f, -3.7f, 0.0f));
 
 	GJKIntersection gjk;
@@ -293,8 +293,8 @@ void TestEPA()
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
 	
-	Geometry *sp0 = GeometryFactory::CreateSphere(Vector3(1.0f, 1.0f, 0.0f), 1.5f);
-	Geometry *sp1 = GeometryFactory::CreateSphere(Vector3(3.0f, 1.0f, 0.0f), 1.0f);
+	GeometryBase *sp0 = GeometryFactory::CreateSphere(Vector3(1.0f, 1.0f, 0.0f), 1.5f);
+	GeometryBase *sp1 = GeometryFactory::CreateSphere(Vector3(3.0f, 1.0f, 0.0f), 1.0f);
 	shape = GeometryDifference(sp0, sp1);
 	EXPECT(gjk.Solve(&shape) == GJK_status::Intersect);
 	EXPECT(epa.Solve(gjk.result) != EPA_status::Failed);
@@ -425,8 +425,8 @@ void TestOBB()
 	}
 
 	{
-		Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
-		Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(2.5f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
+		GeometryBase* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
+		GeometryBase* obb2 = GeometryFactory::CreateOBB(Vector3(2.5f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 
 		EXPECT(!obb1->Intersect(obb2));
 
@@ -445,9 +445,9 @@ void TestOBB()
 void TestIntersect()
 {
 	printf("Running TestIntersect\n");
-	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitY());
-	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
-	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
+	GeometryBase* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitY());
+	GeometryBase* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
+	GeometryBase* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 	EXPECT(obb1->Intersect(obb2));
 	EXPECT(obb2->Intersect(obb1));
 
@@ -474,8 +474,8 @@ void TestIntersect()
 	EXPECT(plane1->Intersect(obb2));
 	EXPECT(obb2->Intersect(plane1));
 	
-	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
-	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3(1.0f, 0.0, 0.0f), 2.0f);
+	GeometryBase* sp1 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
+	GeometryBase* sp2 = GeometryFactory::CreateSphere(Vector3(1.0f, 0.0, 0.0f), 2.0f);
 	EXPECT(sp1->Intersect(sp2));
 	EXPECT(sp2->Intersect(sp1));
 	EXPECT(sp1->Intersect(plane1));
@@ -583,7 +583,7 @@ void TestGeometryQuery()
 	printf("Running TestGeometryQuery\n");
 	GeometryQuery scene;
 	
-	std::vector<Geometry*> objs;
+	std::vector<GeometryBase*> objs;
 	objs.emplace_back(GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitZ()));
 	objs.emplace_back(GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 10.0f), Vector3::UnitZ()));
 	objs.emplace_back(GeometryFactory::CreateOBB(Vector3::Zero(), Vector3(1, 1, 1)));
@@ -695,7 +695,7 @@ void TestSAP()
 class BVProxy : public SAP::BoundingVolumeProxy
 {
 public:
-	BVProxy(std::vector<Geometry*>* objs)
+	BVProxy(std::vector<GeometryBase*>* objs)
 	{
 		m_objs = objs;
 	}
@@ -724,13 +724,13 @@ public:
 		return 0;
 	}
 
-	std::vector<Geometry*>* m_objs;
+	std::vector<GeometryBase*>* m_objs;
 };
 
 void TestSAPInc()
 {
 	printf("Running TestSAPInc\n");
-	std::vector<Geometry*> boxes;
+	std::vector<GeometryBase*> boxes;
 	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3(0.5f, 0.5f, 0.5f), Vector3(0.5f, 0.5f, 0.5f)));
 	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3(2.5f, 2.5f, 2.5f), Vector3(0.5f, 0.5f, 0.5f)));
 	boxes.emplace_back(GeometryFactory::CreateOBB(Vector3(15, 15, 15), Vector3(5, 5, 5)));

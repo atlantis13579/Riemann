@@ -12,7 +12,7 @@ namespace Riemann
 	class ProjectiveDynamicsSolver
 	{
 	public:
-		ProjectiveDynamicsSolver(TetrahedralMesh* _tetmesh);
+		ProjectiveDynamicsSolver(Geometry::TetrahedralMesh* _tetmesh);
 		~ProjectiveDynamicsSolver();
 
 		void Init();
@@ -30,7 +30,7 @@ namespace Riemann
 		void InitSystemMatrix();
 
 	private:
-		TetrahedralMesh* m_tetmesh;
+		Geometry::TetrahedralMesh* m_tetmesh;
 		float m_DT;
 		int m_nNodes;
 		int m_nTets;

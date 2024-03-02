@@ -22,7 +22,7 @@ namespace Riemann
 		{
 		}
 
-		virtual void	PreResolve(const std::vector<Geometry*>& geoms) override final
+		virtual void	PreResolve(const std::vector<GeometryBase*>& geoms) override final
 		{
 			int n = (int)geoms.size();
 			if (m_Buffer.size() < 2 * n)
@@ -41,7 +41,7 @@ namespace Riemann
 			}
 		}
 
-		virtual void	ResolveContact(const std::vector<Geometry*>& geoms,
+		virtual void	ResolveContact(const std::vector<GeometryBase*>& geoms,
 			std::vector<ContactManifold*>& manifolds,
 			float dt) override final
 		{
@@ -124,7 +124,7 @@ namespace Riemann
 			}
 		}
 
-		virtual void	PostResolve(const std::vector<Geometry*>& geoms) override final
+		virtual void	PostResolve(const std::vector<GeometryBase*>& geoms) override final
 		{
 			int n = (int)geoms.size();
 			for (int i = 0; i < n; ++i)

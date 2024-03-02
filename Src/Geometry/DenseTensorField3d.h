@@ -6,7 +6,7 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Maths.h"
 
-namespace Riemann
+namespace Geometry
 {
 	enum InterpMethod
 	{

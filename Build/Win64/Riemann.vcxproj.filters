@@ -405,9 +405,6 @@
     <ClInclude Include="..\..\Src\Core\StaticPool.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Core\LockFreeHashMap.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Core\RingBuffer.h">
       <Filter>Core</Filter>
     </ClInclude>
@@ -519,9 +516,6 @@
     <ClInclude Include="..\..\Src\LinearSystem\ConjugateGradientSolver.h">
       <Filter>LinearSystem</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Core\LogSystem.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Destruction\GeometrySet.h">
       <Filter>Destruction</Filter>
     </ClInclude>
@@ -539,6 +533,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\CollisionPrimitive\MassParameters.h">
       <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\Voronoi3d.h">
+      <Filter>Geometry</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -754,6 +751,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\MassParameters.cpp">
       <Filter>CollisionPrimitive</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\Voronoi3d.cpp">
+      <Filter>Geometry</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

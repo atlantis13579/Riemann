@@ -3,7 +3,7 @@
 
 #include "Polygon2d.h"
 
-namespace Riemann
+namespace Geometry
 {
 	float Signed2DTriArea(const Vector2& a, const Vector2& b, const Vector2& c)
 	{

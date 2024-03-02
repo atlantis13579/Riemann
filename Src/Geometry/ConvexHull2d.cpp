@@ -3,7 +3,7 @@
 
 #include "../Maths/Maths.h"
 
-namespace Riemann
+namespace Geometry
 {
 	void __convex_points_sort(int* p, int low, int high, int ori, const std::vector<Vector2>& points)
 	{

@@ -1,9 +1,16 @@
 #include "Polygon3d.h"
-#include "../CollisionPrimitive/Triangle3d.h"
 
-namespace Riemann
+namespace Geometry
 {
 #define POLY_STACK_SIZE		64
+
+	static float TriangleArea3D(const Vector3& A, const Vector3& B, const Vector3& C)
+	{
+		float cx = (B.y - A.y) * (C.z - A.z) - (C.y - A.y) * (B.z - A.z);
+		float cy = (B.z - A.z) * (C.x - A.x) - (C.z - A.z) * (B.x - A.x);
+		float cz = (B.x - A.x) * (C.y - A.y) - (C.x - A.x) * (B.y - A.y);
+		return 0.5f * sqrtf(cx * cx + cy * cy + cz * cz);
+	}
 
 	float PolygonArea3D(const Vector3* polygon, int nvert)
 	{
@@ -13,7 +20,7 @@ namespace Riemann
 		float area = 0.0f;
 		for (int i = 1; i < nvert - 1; ++i)
 		{
-			area += Triangle3d::TriangleArea3D(polygon[0], polygon[i], polygon[i + 1]);
+			area += TriangleArea3D(polygon[0], polygon[i], polygon[i + 1]);
 		}
 		return area;
 	}

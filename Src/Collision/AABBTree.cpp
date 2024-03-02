@@ -136,7 +136,7 @@ namespace Riemann
 		return -1;
 	}
 
-	static int RayIntersectGeometries(const Ray3d& Ray, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Box3d& BV, const RayCastOption* Option, RayCastResult* Result)
+	static int RayIntersectGeometries(const Ray3d& Ray, int* Geoms, int NumGeoms, GeometryBase** GeometryCollection, const Box3d& BV, const RayCastOption* Option, RayCastResult* Result)
 	{
 		assert(NumGeoms > 0);
 		if (GeometryCollection == nullptr)
@@ -161,7 +161,7 @@ namespace Riemann
 		for (int i = 0; i < NumGeoms; ++i)
 		{
 			const int index = Geoms[i];
-			Geometry* Geom = GeometryCollection[index];
+			GeometryBase* Geom = GeometryCollection[index];
 			assert(Geom);
 
 			if (Geom == Option->Cache.prevhitGeom)
@@ -231,7 +231,7 @@ namespace Riemann
 		return false;
 	}
 
-	bool  AABBTree::RayCast(const Ray3d& Ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const
+	bool  AABBTree::RayCast(const Ray3d& Ray, GeometryBase** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const
 	{
 		Result->hit = false;
 		Result->hitTestCount = 0;
@@ -344,7 +344,7 @@ namespace Riemann
 		return RayCast(ray, nullptr, &Option, Result);
 	}
 
-	static bool OverlapGeometries(const Geometry* geometry, int* Indices, int NumIndices, Geometry** GeometryCollection, const IntersectOption* Option, IntersectResult* Result)
+	static bool OverlapGeometries(const GeometryBase* geometry, int* Indices, int NumIndices, GeometryBase** GeometryCollection, const IntersectOption* Option, IntersectResult* Result)
 	{
 		assert(NumIndices > 0);
 		if (GeometryCollection == nullptr)
@@ -355,7 +355,7 @@ namespace Riemann
 		for (int i = 0; i < NumIndices; ++i)
 		{
 			const int index = Indices[i];
-			Geometry* candidate = GeometryCollection[index];
+			GeometryBase* candidate = GeometryCollection[index];
 
 			if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, candidate->GetFilterData()))
 			{
@@ -382,7 +382,7 @@ namespace Riemann
 		return Result->overlaps;
 	}
 
-	bool AABBTree::Intersect(const Geometry* geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const
+	bool AABBTree::Intersect(const GeometryBase* geometry, GeometryBase** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const
 	{
 		Result->overlaps = false;
 		Result->overlapGeoms.clear();
@@ -452,7 +452,7 @@ namespace Riemann
 		return Result->overlaps;
 	}
 
-	static int SweepGeometries(const Geometry* geometry, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Vector3& Direction, const Box3d& BV, const SweepOption* Option, SweepResult* Result)
+	static int SweepGeometries(const GeometryBase* geometry, int* Geoms, int NumGeoms, GeometryBase** GeometryCollection, const Vector3& Direction, const Box3d& BV, const SweepOption* Option, SweepResult* Result)
 	{
 		assert(NumGeoms > 0);
 		float t;
@@ -480,7 +480,7 @@ namespace Riemann
 		for (int i = 0; i < NumGeoms; ++i)
 		{
 			const int index = Geoms[i];
-			Geometry* candidate = GeometryCollection[index];
+			GeometryBase* candidate = GeometryCollection[index];
 			assert(candidate);
 
 			bool hit = geometry->Sweep(Direction, candidate, &normal, &t);
@@ -520,7 +520,7 @@ namespace Riemann
 		return min_idx;
 	}
 
-	bool AABBTree::Sweep(const Geometry* geometry, Geometry** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const
+	bool AABBTree::Sweep(const GeometryBase* geometry, GeometryBase** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const
 	{
 		Result->hit = false;
 		Result->hitTestCount = 0;

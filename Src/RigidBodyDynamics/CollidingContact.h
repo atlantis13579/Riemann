@@ -6,7 +6,7 @@
 
 namespace Riemann
 {
-	class Geometry;
+	class GeometryBase;
 
 	struct Contact
 	{
@@ -77,7 +77,7 @@ namespace Riemann
 	class ContactManifoldIslands
 	{
 	public:
-		void BuildIslands(const std::vector<Geometry*>& geoms, const std::vector<ContactManifold*>& manifolds);
+		void BuildIslands(const std::vector<GeometryBase*>& geoms, const std::vector<ContactManifold*>& manifolds);
 
 		std::vector<std::vector<ContactManifold*>> islands;
 	};

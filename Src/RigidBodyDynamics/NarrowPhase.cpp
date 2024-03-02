@@ -10,19 +10,19 @@
 
 namespace Riemann
 {
-	static bool ConstructSupportFace(Geometry* GeomA, Geometry* GeomB, const Vector3& penetration_normal, SupportFace& Face)
+	static bool ConstructSupportFace(GeometryBase* GeomA, GeometryBase* GeomB, const Vector3& penetration_normal, SupportFace& Face)
 	{
 		SupportFace FaceA, FaceB;
 		GeomA->GetSupportFace_WorldSpace(-penetration_normal, FaceA);
 		GeomB->GetSupportFace_WorldSpace(penetration_normal, FaceB);
 
 		const float mSpeculativeContactDistance = 0.02f;
-		bool succ = ClipPolygonAgainPolygon3D(FaceA.GetData(), FaceA.GetSize(), FaceB.GetData(), FaceB.GetSize(), penetration_normal, mSpeculativeContactDistance, Face.GetData(), Face.GetSizeData(), nullptr, nullptr);
+		bool succ = Geometry::ClipPolygonAgainPolygon3D(FaceA.GetData(), FaceA.GetSize(), FaceB.GetData(), FaceB.GetSize(), penetration_normal, mSpeculativeContactDistance, Face.GetData(), Face.GetSizeData(), nullptr, nullptr);
 		return succ;
 	}
 
 
-	static bool PenetrationTest(Geometry* Geom1, Geometry* Geom2, EPAPenetration& epa)
+	static bool PenetrationTest(GeometryBase* Geom1, GeometryBase* Geom2, EPAPenetration& epa)
 	{
 		GeometryDifference shape(Geom1, Geom2);
 		GJKIntersection gjk;
@@ -41,7 +41,7 @@ namespace Riemann
 		return true;
 	}
 
-	static void ConstructManifols(int indexA, int indexB, Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, ContactManifold* manifold)
+	static void ConstructManifols(int indexA, int indexB, GeometryBase* GeomA, GeometryBase* GeomB, EPAPenetration& epa, ContactManifold* manifold)
 	{
 		manifold->Reset();
 
@@ -107,7 +107,7 @@ namespace Riemann
 
 		}
 
-		virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
+		virtual void CollisionDetection(const std::vector<GeometryBase*>& geoms,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{
@@ -116,8 +116,8 @@ namespace Riemann
 			manifolds->clear();
 			for (size_t i = 0; i < overlaps.size(); ++i)
 			{
-				Geometry* geom1 = geoms[overlaps[i].index1];
-				Geometry* geom2 = geoms[overlaps[i].index2];
+				GeometryBase* geom1 = geoms[overlaps[i].index1];
+				GeometryBase* geom2 = geoms[overlaps[i].index2];
 
 				EPAPenetration epa;
 				if (PenetrationTest(geom1, geom2, epa))
@@ -147,7 +147,7 @@ namespace Riemann
 
 		}
 
-		virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
+		virtual void CollisionDetection(const std::vector<GeometryBase*>& geoms,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{
@@ -168,7 +168,7 @@ namespace Riemann
 		{
 		}
 
-		virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
+		virtual void CollisionDetection(const std::vector<GeometryBase*>& geoms,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{
@@ -186,7 +186,7 @@ namespace Riemann
 		{
 		}
 
-		virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
+		virtual void CollisionDetection(const std::vector<GeometryBase*>& geoms,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{

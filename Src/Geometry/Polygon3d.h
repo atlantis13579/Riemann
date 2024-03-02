@@ -2,7 +2,7 @@
 
 #include "../Maths/Vector3.h"
 
-namespace Riemann
+namespace Geometry
 {
 	float PolygonArea3D(const Vector3* polygon, int nvert);
 

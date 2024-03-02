@@ -38,8 +38,8 @@ namespace Riemann
 	bool 	IntersectGJKSolver(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 	{
 		// Hack, see GetShapeObjPtr()
-		const Geometry* Geom1 = reinterpret_cast<const Geometry*>((intptr_t)Obj1 - sizeof(Geometry));
-		const Geometry* Geom2 = reinterpret_cast<const Geometry*>((intptr_t)Obj2 - sizeof(Geometry));
+		const GeometryBase* Geom1 = reinterpret_cast<const GeometryBase*>((intptr_t)Obj1 - sizeof(GeometryBase));
+		const GeometryBase* Geom2 = reinterpret_cast<const GeometryBase*>((intptr_t)Obj2 - sizeof(GeometryBase));
 
 		GeometryDifference shape(Geom1, Geom2);
 		GJKIntersection gjk;
@@ -130,8 +130,8 @@ namespace Riemann
 	bool	PenetrateEPASolver(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
 	{
 		// Hack, see GetShapeObjPtr()
-		const Geometry* Geom1 = reinterpret_cast<const Geometry*>((intptr_t)Obj1 - sizeof(Geometry));
-		const Geometry* Geom2 = reinterpret_cast<const Geometry*>((intptr_t)Obj2 - sizeof(Geometry));
+		const GeometryBase* Geom1 = reinterpret_cast<const GeometryBase*>((intptr_t)Obj1 - sizeof(GeometryBase));
+		const GeometryBase* Geom2 = reinterpret_cast<const GeometryBase*>((intptr_t)Obj2 - sizeof(GeometryBase));
 
 		GeometryDifference shape(Geom1, Geom2);
 		GJKIntersection gjk;
