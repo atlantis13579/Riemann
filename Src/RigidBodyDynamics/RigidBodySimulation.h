@@ -101,7 +101,7 @@ namespace Riemann
 
 		bool				LoadPhysxScene(const char* name, bool shared_mem);
 
-		RigidBody* CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose);
+		RigidBody* CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose);
 		RigidBody* CreateRigidBody(GeometryBase* Geom, const RigidBodyParam& param);
 		bool				RemoveRigidBody(RigidBody* Body);
 

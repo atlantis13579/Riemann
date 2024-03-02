@@ -124,7 +124,7 @@ namespace Riemann
 		float			GetFrictionDynamic() const;
 		float			GetFrictionStatic() const;
 
-		static RigidBody* CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose);
+		static RigidBody* CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose);
 	};
 
 	class RigidBodyStatic : public RigidBody
@@ -132,10 +132,10 @@ namespace Riemann
 	public:
 		virtual ~RigidBodyStatic() {}
 
-		static RigidBodyStatic* CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose);
+		static RigidBodyStatic* CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose);
 
 	private:
-		RigidBodyStatic(const RigidBodyParam& param, const Pose& init_pose);
+		RigidBodyStatic(const RigidBodyParam& param, const Transform& init_pose);
 	};
 
 	class RigidBodyDynamic : public RigidBody
@@ -170,10 +170,10 @@ namespace Riemann
 		void		Freeze();
 		void		Defreeze();
 
-		static RigidBodyDynamic* CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose);
+		static RigidBodyDynamic* CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose);
 
 	private:
-		RigidBodyDynamic(const RigidBodyParam& param, const Pose& init_pose);
+		RigidBodyDynamic(const RigidBodyParam& param, const Transform& init_pose);
 	};
 
 	class RigidBodyKinematics : public RigidBody

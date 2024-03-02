@@ -273,7 +273,7 @@ namespace Riemann
 		return true;
 	}
 
-	RigidBody* RigidBodySimulation::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
+	RigidBody* RigidBodySimulation::CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose)
 	{
 		RigidBody* body = RigidBody::CreateRigidBody(param, init_pose);
 		if (body->mRigidType == RigidType::Static)
@@ -290,7 +290,7 @@ namespace Riemann
 
 	RigidBody* RigidBodySimulation::CreateRigidBody(GeometryBase* Geom, const RigidBodyParam& param)
 	{
-		Pose init_pose(Geom->GetWorldPosition(), Geom->GetWorldRotation());
+		Transform init_pose(Geom->GetWorldPosition(), Geom->GetWorldRotation());
 		RigidBody* body = CreateRigidBody(param, init_pose);
 		body->AddGeometry(Geom);
 

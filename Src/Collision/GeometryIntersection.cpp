@@ -53,7 +53,7 @@ namespace Riemann
 
 	bool	IntersectPlanePlane(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 	{
-		const Geometry2Transform trans(t1, t2);
+		const GeometryTransform2 trans(t1, t2);
 		const Plane3d* plane1 = static_cast<const Plane3d*>(Obj1);
 		const Plane3d* plane2 = static_cast<const Plane3d*>(Obj2);
 		Vector3 Normal = trans.Local1ToLocal2Direction(plane1->Normal);
@@ -73,7 +73,7 @@ namespace Riemann
 
 	bool	IntersectBoxPlane(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 	{
-		const Geometry2Transform trans(t1, t2);
+		const GeometryTransform2 trans(t1, t2);
 		const Plane3d* plane = static_cast<const Plane3d*>(Obj2);
 		Vector3 Normal = trans.Local2ToLocal1Direction(plane->Normal);
 		Vector3 Origin = trans.Local2ToLocal1(plane->GetOrigin());
@@ -85,7 +85,7 @@ namespace Riemann
 	template <class T>
 	bool	IntersectSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 	{
-		const Geometry2Transform trans(t1, t2);
+		const GeometryTransform2 trans(t1, t2);
 		const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj1);
 		float Radius = sphere->Radius;
 		Vector3 Center = trans.Local1ToLocal2(sphere->Center);
@@ -96,7 +96,7 @@ namespace Riemann
 	template <class T>
 	bool	IntersectCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 	{
-		const Geometry2Transform trans(t1, t2);
+		const GeometryTransform2 trans(t1, t2);
 		const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj1);
 		float Radius = capsule->Radius;
 		Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
@@ -108,7 +108,7 @@ namespace Riemann
 	template <class T>
 	bool	IntersectTTriangle(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 	{
-		const Geometry2Transform trans(t1, t2);
+		const GeometryTransform2 trans(t1, t2);
 		const Triangle3d* tri = static_cast<const Triangle3d*>(Obj2);
 		Vector3 A = trans.Local2ToLocal1(tri->A);
 		Vector3 B = trans.Local2ToLocal1(tri->B);
@@ -120,7 +120,7 @@ namespace Riemann
 	template <class T>
 	bool	IntersectBoxT_WS(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 	{
-		const Geometry2Transform trans(t1, t2);
+		const GeometryTransform2 trans(t1, t2);
 		const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
 		const T* p = static_cast<const T*>(Obj2);
 		OrientedBox3d obb1(trans.Local1ToLocal2(box1->GetCenter()), box1->GetExtent(), trans.Local1ToLocal2RotationMatrix());
@@ -170,7 +170,7 @@ namespace Riemann
 	template <class T>
 	bool	PenetrateBoxT_WS(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
 	{
-		const Geometry2Transform trans(t1, t2);
+		const GeometryTransform2 trans(t1, t2);
 		const AxisAlignedBox3d* box1 = static_cast<const AxisAlignedBox3d*>(Obj1);
 		const T* p = static_cast<const T*>(Obj2);
 		OrientedBox3d obb1(trans.Local1ToLocal2(box1->GetCenter()), box1->GetExtent(), trans.Local1ToLocal2RotationMatrix());
@@ -180,7 +180,7 @@ namespace Riemann
 	template <class T>
 	bool	PenetrateSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
 	{
-		const Geometry2Transform trans(t1, t2);
+		const GeometryTransform2 trans(t1, t2);
 		const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj1);
 		float Radius = sphere->Radius;
 		Vector3 Center = trans.Local1ToLocal2(sphere->Center);
@@ -191,7 +191,7 @@ namespace Riemann
 	template <class T>
 	bool	IntersectCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
 	{
-		const Geometry2Transform trans(t1, t2);
+		const GeometryTransform2 trans(t1, t2);
 		const Capsule3d* capsule = static_cast<const Capsule3d*>(Obj1);
 		float Radius = capsule->Radius;
 		Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
@@ -203,7 +203,7 @@ namespace Riemann
 	template <class T>
 	bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
 	{
-		const Geometry2Transform trans(t1, t2);
+		const GeometryTransform2 trans(t1, t2);
 		const Sphere3d* sphere = static_cast<const Sphere3d*>(Obj1);
 		float Radius = sphere->Radius;
 		Vector3 Center = trans.Local1ToLocal2(sphere->Center);

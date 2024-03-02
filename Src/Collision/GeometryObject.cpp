@@ -113,9 +113,9 @@ namespace Riemann
 	}
 
 	// static
-	Pose		GeometryBase::CalculateCenterOfMassPoseMultibody(const std::vector<GeometryBase*>& geoms)
+	Transform		GeometryBase::CalculateCenterOfMassPoseMultibody(const std::vector<GeometryBase*>& geoms)
 	{
-		Pose p;
+		Transform p;
 		p.pos = Vector3::Zero();
 		float vol = 0.0f;
 

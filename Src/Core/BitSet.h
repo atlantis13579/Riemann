@@ -3,60 +3,60 @@
 #include <string>
 #include <vector>
 
-class bit_set
+class BitSet
 {
 public:
-	explicit bit_set(size_t size = 0)
+	explicit BitSet(size_t _size = 0)
 	{
-		m_size = size;
-		m_set.resize((m_size + 63) / 64, 0);
+		size = _size;
+		data.resize((size + 63) / 64, 0);
 	}
 
-	bit_set(const bit_set& rhs)
+	BitSet(const BitSet& rhs)
 	{
-		m_size = rhs.m_size;
-		m_set = rhs.m_set;
+		size = rhs.size;
+		data = rhs.data;
 	}
 
-	bit_set(const std::initializer_list<uint32_t>& list)
+	BitSet(const std::initializer_list<uint32_t>& list)
 	{
-		m_size = 0;
+		size = 0;
 		for (uint32_t i : list)
 		{
-			if (i > m_size)
-				m_size = i;
+			if (i > size)
+				size = i;
 		};
-		m_size = m_size + 1;
-		m_set.resize((m_size + 63) / 64, 0);
+		size = size + 1;
+		data.resize((size + 63) / 64, 0);
 		for (uint32_t i : list)
 		{
-			m_set[i >> 6] |= (1LL << (i & 63));
+			data[i >> 6] |= (1LL << (i & 63));
 		}
 	}
 
-	bit_set(size_t size, const std::vector<uint32_t>& list)
+	BitSet(size_t _size, const std::vector<uint32_t>& list)
 	{
-		m_size = size;
-		m_set.resize((m_size + 63) / 64, 0);
+		size = _size;
+		data.resize((size + 63) / 64, 0);
 		for (uint32_t i : list)
 		{
-			m_set[i >> 6] |= (1LL << (i & 63));
+			data[i >> 6] |= (1LL << (i & 63));
 		}
 	}
 
-	std::string to_string() const
+	std::string ToString() const
 	{
-		if (m_size == 0)
+		if (size == 0)
 			return "";
 		std::string str;
-		for (size_t i = 0; i < m_set.size(); ++i)
+		for (size_t i = 0; i < data.size(); ++i)
 		{
-			if (m_set[i] == 0)
+			if (data[i] == 0)
 				continue;
-			int k = (i < m_set.size() - 1) ? 63 : ((m_size - 1) & 63);
+			int k = (i < data.size() - 1) ? 63 : ((size - 1) & 63);
 			for (int j = 0; j <= k; ++j)
 			{
-				if (m_set[i] & (1LL << j))
+				if (data[i] & (1LL << j))
 				{
 					str += std::to_string(i * 64 + j) + ", ";
 				}
@@ -65,19 +65,19 @@ public:
 		return str;
 	}
 
-	std::vector<uint32_t> to_vector() const
+	std::vector<uint32_t> ToVector() const
 	{
-		if (m_size == 0)
+		if (size == 0)
 			return {};
 		std::vector<uint32_t> ret;
-		for (size_t i = 0; i < m_set.size(); ++i)
+		for (size_t i = 0; i < data.size(); ++i)
 		{
-			if (m_set[i] == 0)
+			if (data[i] == 0)
 				continue;
-			int k = (i < m_set.size() - 1) ? 63 : ((m_size - 1) & 63);
+			int k = (i < data.size() - 1) ? 63 : ((size - 1) & 63);
 			for (int j = 0; j <= k; ++j)
 			{
-				if (m_set[i] & (1LL << j))
+				if (data[i] & (1LL << j))
 				{
 					ret.push_back((uint32_t)(i * 64 + j));
 				}
@@ -86,196 +86,178 @@ public:
 		return ret;
 	}
 
-	size_t size() const
+	size_t GetSize() const
 	{
-		return m_size;
+		return size;
 	}
 
-	void resize(size_t new_size)
+	void Resize(size_t new_size)
 	{
-		if (new_size == m_size)
+		if (new_size == size)
 		{
 			return;
 		}
 
-		m_set.resize((new_size + 63) / 64);
-		if (new_size < m_size)
+		data.resize((new_size + 63) / 64);
+		if (new_size < size)
 		{
-			m_size = new_size;
+			size = new_size;
 		}
 		else
 		{
-			for (size_t i = (m_size + 63) / 64; i < m_set.size(); ++i)
+			for (size_t i = (size + 63) / 64; i < data.size(); ++i)
 			{
-				m_set[i] = 0;
+				data[i] = 0;
 			}
-			if (m_size > 0)
+			if (size > 0)
 			{
-				size_t k = (m_size + 63) / 64 - 1;
-				for (int i = m_size & 63; i < 64; ++i)
+				size_t k = (size + 63) / 64 - 1;
+				for (int i = size & 63; i < 64; ++i)
 				{
-					m_set[k] &= ~(1LL << i);
+					data[k] &= ~(1LL << i);
 				}
 			}
-			m_size = new_size;
+			size = new_size;
 		}
 	}
 
-
-	void clear()
+	void Clear()
 	{
-		for (size_t i = 0; i < m_set.size(); ++i)
+		for (size_t i = 0; i < data.size(); ++i)
 		{
-			m_set[i] = 0;
+			data[i] = 0;
 		}
 	}
 
 	bool operator[](size_t i) const
 	{
-		return m_set[i >> 6] & (1LL << (i & 63)) ? true : false;
+		return data[i >> 6] & (1LL << (i & 63)) ? true : false;
 	}
 
-	const bit_set& operator=(const bit_set& rhs)
+	const BitSet& operator=(const BitSet& rhs)
 	{
-		m_size = rhs.m_size;
-		m_set = rhs.m_set;
+		size = rhs.size;
+		data = rhs.data;
 		return *this;
 	}
 
-	bool get(size_t i) const
+	bool Get(size_t i) const
 	{
-		return m_set[i >> 6] & (1LL << (i & 63)) ? true : false;
+		return data[i >> 6] & (1LL << (i & 63)) ? true : false;
 	}
 
-	void set(size_t i, bool b)
+	void Set(size_t i, bool b)
 	{
 		if (b)
 		{
-			m_set[i >> 6] |= (1LL << (i & 63));
+			data[i >> 6] |= (1LL << (i & 63));
 		}
 		else
 		{
-			m_set[i >> 6] &= ~(1LL << (i & 63));
+			data[i >> 6] &= ~(1LL << (i & 63));
 		}
 	}
 
-	void insert(size_t i)
+	void Insert(size_t i)
 	{
-		m_set[i >> 6] |= (1LL << (i & 63));
+		data[i >> 6] |= (1LL << (i & 63));
 	}
 
-	void erase(size_t i)
+	void Erase(size_t i)
 	{
-		m_set[i >> 6] &= ~(1LL << (i & 63));
+		data[i >> 6] &= ~(1LL << (i & 63));
 	}
 
-	bool get_safe(size_t i) const
+	BitSet operator~() const
 	{
-		if (0 <= i && i < m_size)
+		return SetComplement();
+	}
+
+	BitSet operator-() const
+	{
+		return SetComplement();
+	}
+
+	BitSet operator+(const BitSet& rhs) const
+	{
+		BitSet ret(std::max(data.size(), rhs.data.size()));
+		for (size_t i = 0; i < ret.data.size(); ++i)
 		{
-			return get(i);
-		}
-		return false;
-	}
-
-	void set_safe(size_t i, bool b)
-	{
-		if (0 <= i && i < m_size)
-		{
-			set(i, b);
-		}
-	}
-
-	bit_set operator~() const
-	{
-		return set_complement();
-	}
-
-	bit_set operator-() const
-	{
-		return set_complement();
-	}
-
-	bit_set operator+(const bit_set& rhs) const
-	{
-		bit_set ret(std::max(m_set.size(), rhs.m_set.size()));
-		for (size_t i = 0; i < ret.m_set.size(); ++i)
-		{
-			ret.m_set[i] = (i < m_set.size() ? m_set[i] : 0) | (i < rhs.m_set.size() ? rhs.m_set[i] : 0);
+			ret.data[i] = (i < data.size() ? data[i] : 0) | (i < rhs.data.size() ? rhs.data[i] : 0);
 		}
 		return ret;
 	}
 
-	void operator+=(const bit_set& rhs)
+	void operator+=(const BitSet& rhs)
 	{
-		for (size_t i = 0; i < m_set.size(); ++i)
+		for (size_t i = 0; i < data.size(); ++i)
 		{
-			m_set[i] |= (i < rhs.m_set.size() ? rhs.m_set[i] : 0);
+			data[i] |= (i < rhs.data.size() ? rhs.data[i] : 0);
 		}
 	}
 
-	bit_set operator-(const bit_set& rhs) const
+	BitSet operator-(const BitSet& rhs) const
 	{
-		bit_set ret(std::max(m_size, rhs.m_size));
-		for (size_t i = 0; i < ret.m_set.size(); ++i)
+		BitSet ret(std::max(size, rhs.size));
+		for (size_t i = 0; i < ret.data.size(); ++i)
 		{
-			ret.m_set[i] = (i < m_set.size() ? m_set[i] : 0) & ~(i < rhs.m_set.size() ? rhs.m_set[i] : 0);
-		}
-		return ret;
-	}
-
-	void operator-=(const bit_set& rhs)
-	{
-		for (size_t i = 0; i < m_set.size(); ++i)
-		{
-			m_set[i] &= (~(i < rhs.m_set.size() ? rhs.m_set[i] : 0));
-		}
-	}
-
-	bit_set operator&(const bit_set& rhs) const
-	{
-		bit_set ret(std::max(m_size, rhs.m_size));
-		for (size_t i = 0; i < std::min(m_set.size(), rhs.m_set.size()); ++i)
-		{
-			ret.m_set[i] = m_set[i] & rhs.m_set[i];
+			ret.data[i] = (i < data.size() ? data[i] : 0) & ~(i < rhs.data.size() ? rhs.data[i] : 0);
 		}
 		return ret;
 	}
 
-	void operator&=(const bit_set& rhs)
+	void operator-=(const BitSet& rhs)
 	{
-		for (size_t i = 0; i < m_set.size(); ++i)
+		for (size_t i = 0; i < data.size(); ++i)
 		{
-			m_set[i] &= (i < rhs.m_set.size() ? rhs.m_set[i] : 0);
+			data[i] &= (~(i < rhs.data.size() ? rhs.data[i] : 0));
 		}
 	}
 
-	bit_set set_complement() const
+	BitSet operator&(const BitSet& rhs) const
 	{
-		bit_set ret(m_size);
-		for (size_t i = 0; i < m_set.size(); ++i)
+		BitSet ret(std::max(size, rhs.size));
+		for (size_t i = 0; i < std::min(data.size(), rhs.data.size()); ++i)
 		{
-			ret.m_set[i] = ~m_set[i];
+			ret.data[i] = data[i] & rhs.data[i];
+		}
+		return ret;
+	}
+
+	void operator&=(const BitSet& rhs)
+	{
+		for (size_t i = 0; i < data.size(); ++i)
+		{
+			data[i] &= (i < rhs.data.size() ? rhs.data[i] : 0);
+		}
+	}
+
+	BitSet SetComplement() const
+	{
+		BitSet ret(size);
+		for (size_t i = 0; i < data.size(); ++i)
+		{
+			ret.data[i] = ~data[i];
 		}
 		return ret;
 	}
 
 private:
-	size_t					m_size;
-	std::vector<uint64_t>   m_set;
+	size_t					size;
+	std::vector<uint64_t>   data;
 };
 
-inline bit_set set_union(const bit_set& lhs, const bit_set& rhs)
+inline BitSet SetUnion(const BitSet& lhs, const BitSet& rhs)
 {
 	return lhs + rhs;
 }
 
-inline bit_set set_difference(const bit_set& lhs, const bit_set& rhs)
+inline BitSet SetDifference(const BitSet& lhs, const BitSet& rhs)
 {
 	return lhs - rhs;
 }
 
-inline bit_set set_intersection(const bit_set& lhs, const bit_set& rhs)
+inline BitSet SetIntersection(const BitSet& lhs, const BitSet& rhs)
 {
 	return lhs & rhs;
 }

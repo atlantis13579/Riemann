@@ -37,7 +37,7 @@ namespace Riemann
 
 	struct GeometryTransform
 	{
-		Pose	transform;
+		Transform	transform;
 
 		inline Vector3	LocalToWorld(const Vector3& Point) const
 		{
@@ -61,12 +61,12 @@ namespace Riemann
 	};
 
 	// Transformation between object 1's local space and object 2's local space
-	struct Geometry2Transform
+	struct GeometryTransform2
 	{
-		Pose	transform1;
-		Pose	transform2;
+		Transform	transform1;
+		Transform	transform2;
 
-		Geometry2Transform(const GeometryTransform* t1, const GeometryTransform* t2)
+		GeometryTransform2(const GeometryTransform* t1, const GeometryTransform* t2)
 		{
 			transform1.quat = t1->transform.quat;
 			transform2.quat = t2->transform.quat;
@@ -202,7 +202,7 @@ namespace Riemann
 			m_LocalTransform.quat = Rotation;
 		}
 
-		inline const Pose* GetLocalTransform() const
+		inline const Transform* GetLocalTransform() const
 		{
 			return &m_LocalTransform;
 		}
@@ -271,7 +271,7 @@ namespace Riemann
 		inline void				SetNodeId(int NodeId) { m_NodeId = NodeId; }
 		inline int				GetNodeId() const { return m_NodeId; }
 
-		static Pose				CalculateCenterOfMassPoseMultibody(const std::vector<GeometryBase*>& geoms);
+		static Transform				CalculateCenterOfMassPoseMultibody(const std::vector<GeometryBase*>& geoms);
 
 		virtual bool			RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption* Option, RayCastResult* Result) const = 0;
 		bool					Intersect(const GeometryBase* Geom) const;
@@ -306,7 +306,7 @@ namespace Riemann
 		ShapeType3d				m_Type;
 		Box3d					m_BoxWorld;
 		GeometryTransform		m_WorldTransform;
-		Pose					m_LocalTransform;
+		Transform				m_LocalTransform;
 		CollisionData			m_FilterData;
 		MassParameters			m_VolumeProperties;
 		float					m_Density;

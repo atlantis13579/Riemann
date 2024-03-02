@@ -55,7 +55,7 @@ namespace Riemann
 				rp.rigidType = RigidType::Dynamic;
 				rp.invMass = 0.1f;
 				Vector3 p0 = GetCameraPosition();
-				RigidBodyDynamic* body = m_World->CreateRigidBody(rp, Pose(p0))->CastDynamic();
+				RigidBodyDynamic* body = m_World->CreateRigidBody(rp, Transform(p0))->CastDynamic();
 
 				{
 					GeometryBase* sphere = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);

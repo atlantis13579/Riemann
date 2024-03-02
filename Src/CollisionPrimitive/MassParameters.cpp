@@ -6,7 +6,7 @@ namespace Riemann
 	// Calculating inertia for a multi shape rigid body
 	// https://en.wikipedia.org/wiki/Parallel_axis_theorem
 	// https://stackoverflow.com/questions/13602661/calculating-inertia-for-a-multi-shape-rigid-body
-	void ComputeCompositeMassParameters(const std::vector<Pose>& vPose, const std::vector<MassParameters>& vProperties, MassParameters& P)
+	void ComputeCompositeMassParameters(const std::vector<Transform>& vPose, const std::vector<MassParameters>& vProperties, MassParameters& P)
 	{
 		assert(vPose.size() == vProperties.size());
 
@@ -54,7 +54,7 @@ namespace Riemann
 	// Calculating inertia for a multi shape rigid body
 	// https://en.wikipedia.org/wiki/Parallel_axis_theorem
 	// https://stackoverflow.com/questions/13602661/calculating-inertia-for-a-multi-shape-rigid-body
-	void ComputeCompositeMassParameters(const std::vector<const Pose*>& vPose, const std::vector<const MassParameters*>& vProperties, MassParameters& P)
+	void ComputeCompositeMassParameters(const std::vector<const Transform*>& vPose, const std::vector<const MassParameters*>& vProperties, MassParameters& P)
 	{
 		assert(vPose.size() == vProperties.size());
 

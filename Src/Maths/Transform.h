@@ -8,106 +8,171 @@
 
 namespace Maths
 {
-	struct Pose
+	struct Transform
 	{
-		Pose()
+		Transform()
 		{
 			pos = Vector3::Zero();
 			quat = Quaternion::One();
 		}
 
-		explicit Pose(const Vector3& _pos, const Quaternion& _quat = Quaternion::One())
+		explicit Transform(const Vector3& _pos)
+		{
+			pos = _pos;
+			quat = Quaternion::One();
+		}
+
+		explicit Transform(const Quaternion& _quat)
+		{
+			pos = Vector3::Zero();
+			quat = _quat;
+		}
+
+		Transform(const Vector3& _pos, const Quaternion& _quat)
 		{
 			pos = _pos;
 			quat = _quat;
 		}
 
-		Pose(const Pose& _pose)
+		Transform(const Transform& rhs)
 		{
-			pos = _pose.pos;
-			quat = _pose.quat;
+			pos = rhs.pos;
+			quat = rhs.quat;
+		}
+
+		inline Transform& operator=(const Transform& rhs)
+		{
+			pos = rhs.pos;
+			quat = rhs.quat;
+			return *this;
+		}
+
+		inline Transform operator+(const Transform& rhs)
+		{
+			return Transform(pos + rhs.pos, quat * rhs.quat);
+		}
+
+		inline Transform operator-(const Transform& rhs)
+		{
+			return Transform(pos - rhs.pos, quat * rhs.quat.Conjugate());
+		}
+
+		inline Transform operator*(const Transform& rhs)
+		{
+			return Transform(pos + quat * rhs.pos, quat * rhs.quat);
+		}
+
+		inline Vector3 operator*(const Vector3& v)
+		{
+			return pos + quat * v;
+		}
+
+		inline void	operator+= (const Transform& rhs)
+		{
+			*this = (*this) + rhs;
+		}
+
+		inline void	operator-= (const Transform& rhs)
+		{
+			*this = (*this) - rhs;
+		}
+
+		inline void	operator*= (const Transform& rhs)
+		{
+			*this = (*this) * rhs;
+		}
+
+		inline Transform TransformForward(const Transform& rhs)
+		{
+			return (*this) * rhs;
+		}
+
+		inline Transform TransformInverse(const Transform& rhs)
+		{
+			Quaternion qinv = quat.Conjugate();
+			return Transform(qinv * (rhs.pos - pos), qinv * rhs.quat);
 		}
 
 		Vector3		pos;
 		Quaternion	quat;
 	};
 
-	class Transform
+	class Transform3
 	{
 	public:
-		Transform()
+		Transform3()
 		{
 			LoadIdentity();
 		}
 
 		void				LoadIdentity()
 		{
-			m_bWorldMatrixDirty = true;
-			m_bInvWorldMatrixDirty = true;
-			m_Translation = Vector3::Zero();
-			m_Rotation = Quaternion::One();
-			m_Scale = Vector3::One();
+			world_matrix_is_dirty = true;
+			inv_world_matrix_is_dirty = true;
+			pos = Vector3::Zero();
+			quat = Quaternion::One();
+			scale = Vector3::One();
 		}
 
 		const Vector3& GetTranslation() const
 		{
-			return m_Translation;
+			return pos;
 		}
 
 		Matrix3				GetRotationMatrix() const
 		{
-			return m_Rotation.ToRotationMatrix3();
+			return quat.ToRotationMatrix3();
 		}
 
 		const Quaternion& GetRotation() const
 		{
-			return m_Rotation;
+			return quat;
 		}
 
 		const Vector3& GetScale() const
 		{
-			return m_Scale;
+			return scale;
 		}
 
 		void				SetTranslation(const Vector3& trans)
 		{
-			m_Translation = trans;
-			m_bWorldMatrixDirty = true;
-			m_bInvWorldMatrixDirty = true;
+			pos = trans;
+			world_matrix_is_dirty = true;
+			inv_world_matrix_is_dirty = true;
 		}
 
 		void				SetRotation(const Quaternion& rotation)
 		{
-			m_Rotation = rotation;
-			m_bWorldMatrixDirty = true;
-			m_bInvWorldMatrixDirty = true;
+			quat = rotation;
+			world_matrix_is_dirty = true;
+			inv_world_matrix_is_dirty = true;
 		}
 
-		void				SetScale(const Vector3& scale)
+		void				SetScale(const Vector3& _scale)
 		{
-			m_Scale = scale;
-			m_bWorldMatrixDirty = true;
-			m_bInvWorldMatrixDirty = true;
+			scale = _scale;
+			world_matrix_is_dirty = true;
+			inv_world_matrix_is_dirty = true;
 		}
 
 		const Matrix4& GetWorldMatrix()
 		{
-			if (m_bWorldMatrixDirty)
+			if (world_matrix_is_dirty)
 			{
-				TRSToWorldMatrix(m_WorldMatrix, m_Translation, m_Rotation, m_Scale);
-				m_bWorldMatrixDirty = false;
+				TRSToWorldMatrix(world_matrix, pos, quat, scale);
+				world_matrix_is_dirty = false;
 			}
-			return m_WorldMatrix;
+			return world_matrix;
 		}
 
 		const Matrix4& GetInverseWorldMatrix()
 		{
-			if (m_bInvWorldMatrixDirty)
+			if (inv_world_matrix_is_dirty)
 			{
-				TRSToInverseWorldMatrix(m_InvWorldMatrix, m_Translation, m_Rotation, m_Scale);
-				m_bInvWorldMatrixDirty = false;
+				TRSToInverseWorldMatrix(inv_world_matrix, pos, quat, scale);
+				inv_world_matrix_is_dirty = false;
 			}
-			return m_InvWorldMatrix;
+			return inv_world_matrix;
 		}
 
 		Vector3			LocalToWorld(const Vector3& Point)
@@ -118,12 +183,12 @@ namespace Maths
 
 		Vector3			LocalToWorldEx(const Vector3& Point) const
 		{
-			return m_Rotation * Point + m_Translation;
+			return quat * Point + pos;
 		}
 
 		Vector3			LocalToWorldDirection(const Vector3& Direction) const
 		{
-			return m_Rotation * Direction;
+			return quat * Direction;
 		}
 
 		Vector3			WorldToLocal(const Vector3& Point)
@@ -134,12 +199,12 @@ namespace Maths
 
 		Vector3			WorldToLocalEx(const Vector3& Point) const
 		{
-			return m_Rotation.Conjugate() * (Point - m_Translation);
+			return quat.Conjugate() * (Point - pos);
 		}
 
 		Vector3			WorldToLocalDirection(const Vector3& Direction) const
 		{
-			return m_Rotation.Conjugate() * Direction;
+			return quat.Conjugate() * Direction;
 		}
 
 		static Matrix4		BuildViewMatrix_RHCoordinateSystem(const Vector3& Eye, const Vector3& LookAt, const Vector3& Up)
@@ -373,16 +438,16 @@ namespace Maths
 		}
 
 	private:
-		Vector3		m_Translation;
-		Quaternion	m_Rotation;
-		Vector3		m_Scale;
+		Vector3		pos;
+		Quaternion	quat;
+		Vector3		scale;
 
-		bool		m_bWorldMatrixDirty;
-		bool		m_bInvWorldMatrixDirty;
-		Matrix4		m_WorldMatrix;
-		Matrix4		m_InvWorldMatrix;
+		bool		world_matrix_is_dirty;
+		bool		inv_world_matrix_is_dirty;
+		Matrix4		world_matrix;
+		Matrix4		inv_world_matrix;
 	};
 }
 
-using Pose = Maths::Pose;
 using Transform = Maths::Transform;
+using Transform3 = Maths::Transform3;

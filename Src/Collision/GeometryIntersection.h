@@ -5,7 +5,7 @@
 namespace Riemann
 {
 	struct GeometryTransform;
-	struct Geometry2Transform;
+	struct GeometryTransform2;
 
 	typedef bool (*RayCastFunc)(void*, const Vector3&, const Vector3&, float*);
 	typedef bool (*IntersectFunc)(const void*, const void*, const GeometryTransform*, const GeometryTransform*);

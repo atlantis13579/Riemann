@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+namespace Riemann
+{
 class Profiler
 {
 public:
@@ -71,3 +73,4 @@ private:
 	int		seconds = -1;
 	double	milliseconds = 0.0;
 };
+}

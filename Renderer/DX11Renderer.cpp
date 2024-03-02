@@ -31,7 +31,7 @@ static Matrix4 GetTransfromMatrix(void *p)
     GeometryTransform_t* t = (GeometryTransform_t*)p;
     assert(t);
     Matrix4 mat;
-    Transform::TRToWorldMatrix(mat, t->Translation, t->Rotation);
+    Transform3::TRToWorldMatrix(mat, t->Translation, t->Rotation);
     return mat;
 };
 
@@ -337,7 +337,7 @@ public:
         SetCameraLookAt(Vector3(0.0f, 0.0f, 5.0f), Vector3(0.0f, 0.0f, 0.0f));
 
         // Initialize the projection matrix
-        m_Projection = Transform::BuildPerspectiveMatrix_LHCoordinateSystem(XM_PIDIV2, width / (FLOAT)height, 0.001f, 100000.0f);
+        m_Projection = Transform3::BuildPerspectiveMatrix_LHCoordinateSystem(XM_PIDIV2, width / (FLOAT)height, 0.001f, 100000.0f);
         return S_OK;
     }
 
@@ -376,7 +376,7 @@ public:
     {
         Vector3 Up = Vector3(0.0f, 1.0f, 0.0f);
         m_Eye = Eye;
-        m_View = Transform::BuildViewMatrix_LHCoordinateSystem(Eye, At, Up);
+        m_View = Transform3::BuildViewMatrix_LHCoordinateSystem(Eye, At, Up);
     }
 
     virtual bool AddTriangles(const char* Id, void* pTrans, const Vertex1* pVerties, int nVerties, const void* pIndices, int nIndices, int IndicesWidth) override

@@ -255,7 +255,7 @@ namespace Riemann
 				if (bodies)
 				{
 					RigidBodyParam param;
-					Pose init_pose(rigid->mRigidStatic.mStatic.mCore.body2World.p, rigid->mRigidStatic.mStatic.mCore.body2World.q);
+					Transform init_pose(rigid->mRigidStatic.mStatic.mCore.body2World.p, rigid->mRigidStatic.mStatic.mCore.body2World.q);
 					body = RigidBodyStatic::CreateRigidBody(param, init_pose);
 					assert(body);
 					body->SetGuid(guid);
@@ -298,7 +298,7 @@ namespace Riemann
 					param.freezeThreshold = core.freezeThreshold;
 					param.disableGravity = false;
 
-					Pose init_pose(core.body2World.p, core.body2World.q);
+					Transform init_pose(core.body2World.p, core.body2World.q);
 
 					body = RigidBodyDynamic::CreateRigidBody(param, init_pose);
 					body->SetGuid(guid);

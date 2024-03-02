@@ -4,6 +4,8 @@
 #include <thread>
 #include <vector>
 
+namespace Riemann
+{
 using ThreadFunction = std::function<void(int)>;
 
 class ThreadPool
@@ -60,3 +62,4 @@ public:
 private:
 	std::vector<std::thread> mThreads;
 };
+}

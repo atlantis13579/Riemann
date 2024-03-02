@@ -60,7 +60,7 @@ namespace Riemann
 	{
 		for (GeometryBase* g : mGeometries)
 		{
-			const Pose* local_trans = g->GetLocalTransform();
+			const Transform* local_trans = g->GetLocalTransform();
 			Vector3 world_pos = X + Q * (local_trans->pos - CM);
 			Quaternion world_quat = Q * local_trans->quat;
 			g->SetWorldTransform(world_pos, world_quat);
@@ -74,7 +74,7 @@ namespace Riemann
 			return;
 		}
 
-		std::vector<const Pose*> vPose;
+		std::vector<const Transform*> vPose;
 		std::vector<const MassParameters*> vProperties;
 		MassParameters P;
 
@@ -129,7 +129,7 @@ namespace Riemann
 	}
 
 	// static
-	RigidBody* RigidBody::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
+	RigidBody* RigidBody::CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose)
 	{
 		if (param.rigidType == RigidType::Static)
 		{
@@ -144,12 +144,12 @@ namespace Riemann
 		return nullptr;
 	}
 
-	RigidBodyStatic* RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
+	RigidBodyStatic* RigidBodyStatic::CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose)
 	{
 		return new RigidBodyStatic(param, init_pose);
 	}
 
-	RigidBodyStatic::RigidBodyStatic(const RigidBodyParam& param, const Pose& init_pose)
+	RigidBodyStatic::RigidBodyStatic(const RigidBodyParam& param, const Transform& init_pose)
 	{
 		this->mRigidType = RigidType::Static;
 		this->InvMass = 0.0f;
@@ -160,7 +160,7 @@ namespace Riemann
 		this->W = Vector3::Zero();
 	}
 
-	RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, const Pose& init_pose)
+	RigidBodyDynamic::RigidBodyDynamic(const RigidBodyParam& param, const Transform& init_pose)
 	{
 		this->mRigidType = RigidType::Dynamic;
 		this->mMotionType = param.motionType;
@@ -255,7 +255,7 @@ namespace Riemann
 		}
 	}
 
-	RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param, const Pose& init_pose)
+	RigidBodyDynamic* RigidBodyDynamic::CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose)
 	{
 		return new RigidBodyDynamic(param, init_pose);
 	}
