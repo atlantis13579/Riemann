@@ -22,9 +22,6 @@
     <Filter Include="Maths">
       <UniqueIdentifier>{f038cdef-b6d4-475c-9c6e-b6e57e88699e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="PositionBasedDynamics">
-      <UniqueIdentifier>{03f56ded-b90e-4703-a99d-78775c0fadd9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="RigidBodyDynamics">
       <UniqueIdentifier>{6fbadcf0-e83b-4bfe-8857-7205330415b3}</UniqueIdentifier>
     </Filter>
@@ -189,9 +186,6 @@
     <ClInclude Include="..\..\Src\Geometry\Polygon3d.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\PositionBasedDynamics\PositionBasedDynamicsSolver.h">
-      <Filter>PositionBasedDynamics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h">
       <Filter>Solver</Filter>
     </ClInclude>
@@ -317,12 +311,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Optimization\LevenbergMarquardt.h">
       <Filter>Optimization</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\PositionBasedDynamics\MassSpring.h">
-      <Filter>PositionBasedDynamics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\PositionBasedDynamics\XPBDRigidDynamicsSolver.h">
-      <Filter>PositionBasedDynamics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PositionConstraint.h">
       <Filter>RigidBodyDynamics</Filter>
@@ -531,6 +519,15 @@
     <ClInclude Include="..\..\Src\Geometry\Voronoi3d.h">
       <Filter>Geometry</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\MassSpring.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\PositionBasedDynamicsSolver.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\XPBDRigidDynamicsSolver.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">
@@ -608,9 +605,6 @@
     <ClCompile Include="..\..\Src\Geometry\Polygon3d.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\PositionBasedDynamics\PositionBasedDynamicsSolver.cpp">
-      <Filter>PositionBasedDynamics</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Solver\ProjectiveDynamicsSolver.cpp">
       <Filter>Solver</Filter>
     </ClCompile>
@@ -655,12 +649,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\CollidingContact.cpp">
       <Filter>RigidBodyDynamics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\PositionBasedDynamics\MassSpring.cpp">
-      <Filter>PositionBasedDynamics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\PositionBasedDynamics\XPBDRigidDynamicsSolver.cpp">
-      <Filter>PositionBasedDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PositionConstraint.cpp">
       <Filter>RigidBodyDynamics</Filter>
@@ -745,6 +733,15 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\Voronoi3d.cpp">
       <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\MassSpring.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\PositionBasedDynamicsSolver.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\XPBDRigidDynamicsSolver.cpp">
+      <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

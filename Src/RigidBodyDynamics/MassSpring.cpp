@@ -5,7 +5,8 @@
 #include "MassSpring.h"
 #include "../CollisionPrimitive/Sphere3d.h"
 
-
+namespace Riemann
+{
 class MSProxy
 {
 public:
@@ -152,4 +153,5 @@ void MassSpringSolver::SolveCollisions(int nIter)
 			m_Collisions[i]->Solve((int)i);
 		}
 	}
+}
 }

@@ -2,6 +2,8 @@
 #include <vector>
 #include "../Maths/Vector3.h"
 
+namespace Riemann
+{
 class MSProxy;
 
 class MSConstraint
@@ -52,3 +54,4 @@ private:
 	std::vector<MSConstraint*> m_Constraints;
 	std::vector<MSCollision*>  m_Collisions;
 };
+}
