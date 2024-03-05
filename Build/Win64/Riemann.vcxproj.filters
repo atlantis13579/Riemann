@@ -34,12 +34,6 @@
     <Filter Include="Modules">
       <UniqueIdentifier>{8f91d583-d8e9-44fb-a353-49dfcb073cfe}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Modules\AeroDynamics">
-      <UniqueIdentifier>{ee94a9a4-0d70-49e9-be02-4916e6e0a21f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Modules\FluidDynamics">
-      <UniqueIdentifier>{968cf3a5-ee0c-4da8-9722-0dfd1edb082d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Modules\ImageSpace">
       <UniqueIdentifier>{aa10e6c9-e93c-4124-bab8-6131d48563f2}</UniqueIdentifier>
     </Filter>
@@ -51,9 +45,6 @@
     </Filter>
     <Filter Include="Modules\Physics2d">
       <UniqueIdentifier>{e380079c-bf2d-41b5-bc2a-380c26f896be}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Modules\ContinuumMediaDynamics">
-      <UniqueIdentifier>{517ca349-1b37-4080-a926-52eb2c1c7ba9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -408,20 +399,11 @@
     <ClInclude Include="..\..\Src\Modules\Physics2d\Convex.h">
       <Filter>Modules\Physics2d</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\ContinuumMediaDynamics\FEMSolver.h">
-      <Filter>Modules\ContinuumMediaDynamics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\ContinuumMediaDynamics\MLSMPMSolver.h">
-      <Filter>Modules\ContinuumMediaDynamics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Modules\Physics2d\GJK2d.h">
       <Filter>Modules\Physics2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Modules\ImageSpace\ImageProcessing.h">
       <Filter>Modules\ImageSpace</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\FluidDynamics\Laplace2DSolver.h">
-      <Filter>Modules\FluidDynamics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Modules\Tools\libBmp.h">
       <Filter>Modules\Tools</Filter>
@@ -471,9 +453,6 @@
     <ClInclude Include="..\..\Src\Modules\ImageSpace\Rasterizer.h">
       <Filter>Modules\ImageSpace</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\FluidDynamics\SmoothedParticleHydrodynamics.h">
-      <Filter>Modules\FluidDynamics</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Modules\VehicleDynamics\Vehicle.h">
       <Filter>Modules\VehicleDynamics</Filter>
     </ClInclude>
@@ -482,12 +461,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Modules\Physics2d\Shape2d.h">
       <Filter>Modules\Physics2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\AeroDynamics\VonKarmanVortexStreet.h">
-      <Filter>Modules\AeroDynamics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\AeroDynamics\WindSimulation.h">
-      <Filter>Modules\AeroDynamics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Destruction\Fracture.h">
       <Filter>Destruction</Filter>
@@ -527,6 +500,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\XPBDRigidDynamicsSolver.h">
       <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Destruction\ConnectionGraph.h">
+      <Filter>Destruction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Destruction\StrainSolver.h">
+      <Filter>Destruction</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -683,38 +662,20 @@
     <ClCompile Include="..\..\Src\Modules\VehicleDynamics\AutonomousController.cpp">
       <Filter>Modules\VehicleDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Modules\ContinuumMediaDynamics\FEMSolver.cpp">
-      <Filter>Modules\ContinuumMediaDynamics</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Modules\ImageSpace\ImageProcessing.cpp">
       <Filter>Modules\ImageSpace</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Modules\FluidDynamics\Laplace2DSolver.cpp">
-      <Filter>Modules\FluidDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Modules\Tools\PhysxBinaryParser.cpp">
       <Filter>Modules\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Modules\ContinuumMediaDynamics\MLSMPMSolver.cpp">
-      <Filter>Modules\ContinuumMediaDynamics</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Modules\Tools\PythonModule.cpp">
       <Filter>Modules\Tools</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Modules\FluidDynamics\SmoothedParticleHydrodynamics.cpp">
-      <Filter>Modules\FluidDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Modules\VehicleDynamics\Vehicle.cpp">
       <Filter>Modules\VehicleDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Modules\VehicleDynamics\VehicleDynamics.cpp">
       <Filter>Modules\VehicleDynamics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Modules\AeroDynamics\VonKarmanVortexStreet.cpp">
-      <Filter>Modules\AeroDynamics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Modules\AeroDynamics\WindSimulation.cpp">
-      <Filter>Modules\AeroDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Destruction\GeometrySet.cpp">
       <Filter>Destruction</Filter>
@@ -742,6 +703,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\XPBDRigidDynamicsSolver.cpp">
       <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Destruction\ConnectionGraph.cpp">
+      <Filter>Destruction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Destruction\StrainSolver.cpp">
+      <Filter>Destruction</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
