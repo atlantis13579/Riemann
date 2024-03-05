@@ -390,9 +390,6 @@
     <ClInclude Include="..\..\Src\Modules\VehicleDynamics\AutonomousController.h">
       <Filter>Modules\VehicleDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Tools\ContinuousBitmap.h">
-      <Filter>Modules\ImageSpace</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Modules\Physics2d\Circle.h">
       <Filter>Modules\Physics2d</Filter>
     </ClInclude>
@@ -405,16 +402,7 @@
     <ClInclude Include="..\..\Src\Modules\ImageSpace\ImageProcessing.h">
       <Filter>Modules\ImageSpace</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Tools\libBmp.h">
-      <Filter>Modules\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Tools\libMat.h">
-      <Filter>Modules\Tools</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Modules\Tools\libPng.h">
-      <Filter>Modules\Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Tools\libPPM.h">
       <Filter>Modules\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Modules\Tools\PhysxBinaryParser.h">

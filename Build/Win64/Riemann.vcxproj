@@ -229,16 +229,12 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.h" />
     <ClInclude Include="..\..\Src\Solver\SparseConjugateGradientSolver.h" />
     <ClInclude Include="..\..\Src\Modules\Tools\AnimBinaryParser.h" />
-    <ClInclude Include="..\..\Src\Modules\Tools\ContinuousBitmap.h" />
-    <ClInclude Include="..\..\Src\Modules\Tools\libMat.h" />
     <ClInclude Include="..\..\Src\Modules\Tools\libPng.h" />
-    <ClInclude Include="..\..\Src\Modules\Tools\libPPM.h" />
     <ClInclude Include="..\..\Src\Modules\Tools\PhysxBinaryParser.h" />
     <ClInclude Include="..\..\Src\Modules\Tools\PhysxFormat_34.hpp" />
     <ClInclude Include="..\..\Src\Modules\Tools\PhysxFormat_41.hpp" />
     <ClInclude Include="..\..\Src\Modules\Tools\PythonModule.h" />
     <ClInclude Include="..\..\Src\Modules\Tools\Serialization.h" />
-    <ClInclude Include="..\..\Src\Modules\Tools\libBmp.h" />
     <ClInclude Include="..\..\Src\Modules\VehicleDynamics\AutonomousController.h" />
     <ClInclude Include="..\..\Src\Modules\VehicleDynamics\VehicleDynamics.h" />
     <ClInclude Include="..\..\Src\Modules\VehicleDynamics\LQR.h" />
