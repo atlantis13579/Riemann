@@ -691,7 +691,6 @@ namespace Riemann
 
 		float tMin = 0;
 		float tMax = FLT_MAX;
-		Vector3 Normal(0.0f);
 
 		for (int i = 0; i < 3; ++i)
 		{
@@ -715,22 +714,11 @@ namespace Riemann
 				t1 = b1[i] * InvDir;
 			}
 
-			Vector3 CurNormal = Vector3(0.0f);
-			CurNormal[i] = 1.0f;
-
 			if (t0 > t1)
 			{
 				std::swap(t0, t1);
 			}
-			else
-			{
-				CurNormal[i] = -1.0f;
-			}
 
-			if (t0 > tMin)
-			{
-				Normal = CurNormal;
-			}
 			tMin = std::max(tMin, t0);
 			tMax = std::min(tMax, t1);
 

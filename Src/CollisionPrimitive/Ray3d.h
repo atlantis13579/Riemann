@@ -53,6 +53,11 @@ public:
 			std::swap(t0, t1);
 		}
 
+		if (t0 > *exit || t1 < *enter)
+		{
+			return false;
+		}
+
 		if (t0 > *enter)
 		{
 			*enter = t0;

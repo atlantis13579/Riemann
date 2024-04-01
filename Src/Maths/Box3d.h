@@ -74,6 +74,11 @@ namespace Maths
 			return *this;
 		}
 
+		TAABB3<T> operator+(const TVector3<T>& rhs) const
+		{
+			return TAABB3<T>(*this) += rhs;
+		}
+
 		TAABB3<T>& operator+=(const TVector3<T>& rhs)
 		{
 			Min += rhs;
@@ -81,9 +86,16 @@ namespace Maths
 			return *this;
 		}
 
-		TAABB3<T> operator+(const TVector3<T>& rhs) const
+		TAABB3<T>& operator+=(const TAABB3<T>& rhs)
 		{
-			return TAABB3<T>(*this) += rhs;
+			Min.x = std::min(Min.x, rhs.Min.x);
+			Min.y = std::min(Min.y, rhs.Min.y);
+			Min.z = std::min(Min.z, rhs.Min.z);
+
+			Max.x = std::max(Max.x, rhs.Max.x);
+			Max.y = std::max(Max.y, rhs.Max.y);
+			Max.z = std::max(Max.z, rhs.Max.z);
+			return *this;
 		}
 
 		void SetEmpty()

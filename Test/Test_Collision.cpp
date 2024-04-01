@@ -374,6 +374,23 @@ void TestAABB()
 	EXPECT(intersect1 && intersect2);
 }
 
+void TestRaycast()
+{
+	Vector3 center(-4.19f, 0.43f, -0.46f);
+	Vector3 dir(-0.08f, -0.14f, 0.99f);
+	AxisAlignedBox3d aabb(Vector3(-4.30f, -0.81f, 1.58f), Vector3(-2.70f, 0.80f, 2.59f));
+
+	float t;
+	bool success1 = aabb.IntersectRay(center, dir, &t);
+	// Vector3 p1 = center + dir * t;
+	EXPECT(!success1);
+
+	bool success2 = Ray3d::RayIntersectAABB(center, dir, aabb.Min, aabb.Max, &t);
+	// Vector3 p2 = center + dir * t;
+	EXPECT(!success2);
+
+	return;
+}
 
 void TestBuildOBB()
 {
@@ -402,7 +419,7 @@ void TestBuildOBB()
 	Vector3 dir = obb.Rotation.GetCol(0);
 	float dp = dir.Dot(Vector3::UnitX());
 	EXPECT(dp >= 0.8f);
-	
+
 	return;
 }
 
@@ -793,6 +810,7 @@ void TestSAPInc()
 
 void TestCollision()
 {
+	TestRaycast();
 	TestPlane();
 	TestTriangle();
 	TestSphere();
