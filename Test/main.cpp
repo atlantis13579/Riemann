@@ -17,8 +17,8 @@ void TestAll()
 {
 	// TestCores();
 	// TestMaths();
-	TestCollision();
-	// TestGeometry();
+	// TestCollision();
+	TestGeometry();
 	// TestPhysics3d();
 	// TestPhysics2d();
 	// TestSIMD();

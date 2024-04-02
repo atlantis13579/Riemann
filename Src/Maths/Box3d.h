@@ -34,10 +34,10 @@ namespace Maths
 			, Max(InMax, InMax, InMax)
 		{ }
 
-		explicit TAABB3<T>(const TVector3<T>* v, int Num)
+		explicit TAABB3<T>(const TVector3<T>* v, size_t Num)
 		{
 			Min = Max = v[0];
-			for (int i = 1; i < Num; ++i)
+			for (size_t i = 1; i < Num; ++i)
 			{
 				this->Encapsulate(v[i]);
 			}

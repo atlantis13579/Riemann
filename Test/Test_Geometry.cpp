@@ -5,6 +5,7 @@
 #include "../Src/Geometry/Spline.h"
 #include "../Src/Geometry/Polygon3d.h"
 #include "../Src/Geometry/VoxelField.h"
+#include "../Src/Geometry/Voronoi3d.h"
 #include "../Src/Geometry/DenseTensorField3d.h"
 
 using namespace Riemann;
@@ -63,9 +64,27 @@ void TestCatmullRom()
 	return;
 }
 
+void TestVoronoi3d()
+{
+	std::vector<Vector3> points;
+	Geometry::Voronoi3d::GenerateRandomPoints(Box3d::Unit(), 100, points);
+	Geometry::Voronoi3d v(points, Box3d::Unit(), 1e-3f);
+
+	std::vector<Geometry::Voronoi3d::Cell> cells;
+	v.ComputeAllCells(cells, true);
+
+	Geometry::Voronoi3d::GenerateRandomPoints(Box3d::Unit(), 2, points);
+
+	Geometry::VoronoiMesh3d mesh;
+	mesh.Build(points, Box3d::Unit(), 1e-3f);
+
+	return;
+}
+
 void TestGeometry()
 {
 	TestMeshSimplify();
 	TestClip();
 	TestCatmullRom();
+	TestVoronoi3d();
 }
