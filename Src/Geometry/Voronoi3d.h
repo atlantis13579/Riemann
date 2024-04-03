@@ -11,6 +11,8 @@ namespace voro
 
 namespace Geometry
 {
+	class GeometrySet;
+
 	class Voronoi3d
 	{
 	public:
@@ -20,6 +22,25 @@ namespace Geometry
 			std::vector<int>		Faces;
 			std::vector<int>		Neighbors;
 			std::vector<Vector3>	Normals;
+		};
+
+		// plane X * x + Y * y + Z * z = W.
+		struct Plane
+		{
+			Vector3 GetOrigin() const
+			{
+				return GetNormal() * w;
+			}
+
+			Vector3 GetNormal() const
+			{
+				return Vector3(x, y, z);
+			}
+
+			float x;
+			float y;
+			float z;
+			float w;
 		};
 
 		struct Edge
@@ -35,10 +56,13 @@ namespace Geometry
 		};
 
 		Voronoi3d();
-		Voronoi3d(const std::vector<Vector3>& points, const Box3d& Bounds, const float eps);
+		Voronoi3d(const std::vector<Vector3>& points, const Box3d& bounds, const float eps);
 		~Voronoi3d();
 
 	public:
+
+		void Set(const std::vector<Vector3>& points, const Box3d& bounds, const float eps);
+
 		static void GenerateRandomPoints(const Box3d& Bounds, int numPoints, std::vector<Vector3>& points);
 
 		static Box3d GetVoronoiBounds(const Box3d& Bounds, const std::vector<Vector3>& points);
@@ -49,31 +73,28 @@ namespace Geometry
 
 		void Build();
 
+		int GetNumPoints() const { return (int)mNumPoints; }
+
 	private:
-		size_t mNumPts;
-		voro::container *mContainer { nullptr };
-		Box3d mBounds;
+		size_t								mNumPoints { 0 };
+		voro::container						*mContainer { nullptr };
+		std::vector<Vector3>				mPoints;
+		Box3d								mBounds;
+
+	public:
+		std::vector<Plane>					mPlanes;
+		std::vector<std::pair<int, int>>	mCells;
+		std::vector<std::vector<int>>		mBoundaries;
+		std::vector<Vector3>				mBoundaryVertices;
 	};
 
-	class VoronoiMesh3d
+	class VoronoiMesh
 	{
 	public:
-		// plane X * x + Y * y + Z * z = W.
-		struct Plane
-		{
-			float x;
-			float y;
-			float z;
-			float w;
-		};
+		VoronoiMesh(const std::vector<Vector3>& points, const Box3d& bounds, const float eps);
+		~VoronoiMesh();
 
-		VoronoiMesh3d() {}
-
-		void Build(const std::vector<Vector3>& points, const Box3d& bounds, const float eps);
-
-		std::vector<Plane>					Planes;
-		std::vector<std::pair<int, int>>	Cells;
-		std::vector<std::vector<int>>		Boundaries;
-		std::vector<Vector3>				BoundaryVertices;
+	private:
+		GeometrySet* mSet { nullptr };
 	};
 }

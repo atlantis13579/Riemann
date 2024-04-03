@@ -52,7 +52,7 @@ namespace Riemann
 			}
 		}
 
-		MeshBVH4* CreateEmptyBVH();
+		MeshBVH4*		CreateEmptyBVH();
 		void			BuildBVH();
 
 		bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;

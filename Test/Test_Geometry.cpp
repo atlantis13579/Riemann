@@ -75,8 +75,11 @@ void TestVoronoi3d()
 
 	Geometry::Voronoi3d::GenerateRandomPoints(Box3d::Unit(), 2, points);
 
-	Geometry::VoronoiMesh3d mesh;
-	mesh.Build(points, Box3d::Unit(), 1e-3f);
+	v.Set(points, Box3d::Unit(), 1e-3f);
+	v.Build();
+
+	Geometry::VoronoiMesh mesh(points, Box3d::Unit(), 1e-3f);
+
 
 	return;
 }

@@ -459,9 +459,6 @@
     <ClInclude Include="..\..\Src\LinearSystem\ConjugateGradientSolver.h">
       <Filter>LinearSystem</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Destruction\GeometrySet.h">
-      <Filter>Destruction</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h">
       <Filter>Destruction</Filter>
     </ClInclude>
@@ -494,6 +491,12 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Destruction\StrainSolver.h">
       <Filter>Destruction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\GeometrySet.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Frame3.h">
+      <Filter>Maths</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -665,9 +668,6 @@
     <ClCompile Include="..\..\Src\Modules\VehicleDynamics\VehicleDynamics.cpp">
       <Filter>Modules\VehicleDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Destruction\GeometrySet.cpp">
-      <Filter>Destruction</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp">
       <Filter>Destruction</Filter>
     </ClCompile>
@@ -697,6 +697,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Destruction\StrainSolver.cpp">
       <Filter>Destruction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\GeometrySet.cpp">
+      <Filter>Geometry</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
