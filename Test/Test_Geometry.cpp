@@ -5,6 +5,8 @@
 #include "../Src/Geometry/Spline.h"
 #include "../Src/Geometry/Polygon3d.h"
 #include "../Src/Geometry/VoxelField.h"
+#include "../Src/Geometry/Delaunay.h"
+#include "../Src/Geometry/Voronoi2d.h"
 #include "../Src/Geometry/Voronoi3d.h"
 #include "../Src/Geometry/DenseTensorField3d.h"
 
@@ -64,21 +66,32 @@ void TestCatmullRom()
 	return;
 }
 
+void TestVoronoi2d()
+{
+	std::vector<Vector2> points;
+	Geometry::Voronoi2d::GenerateRandomPoints(Box2::Unit(), 10, points);
+
+	Geometry::Delaunay d;
+	d.Triangulate(points);
+	EXPECT(d.Triangles.size() > 0);
+	return;
+}
+
 void TestVoronoi3d()
 {
 	std::vector<Vector3> points;
-	Geometry::Voronoi3d::GenerateRandomPoints(Box3d::Unit(), 100, points);
-	Geometry::Voronoi3d v(points, Box3d::Unit(), 1e-3f);
+	Geometry::Voronoi3d::GenerateRandomPoints(Box3::Unit(), 100, points);
+	Geometry::Voronoi3d v(points, Box3::Unit(), 1e-3f);
 
 	std::vector<Geometry::Voronoi3d::Cell> cells;
 	v.ComputeAllCells(cells, true);
 
-	Geometry::Voronoi3d::GenerateRandomPoints(Box3d::Unit(), 2, points);
+	Geometry::Voronoi3d::GenerateRandomPoints(Box3::Unit(), 2, points);
 
-	v.Set(points, Box3d::Unit(), 1e-3f);
+	v.Set(points, Box3::Unit(), 1e-3f);
 	v.Build();
 
-	Geometry::VoronoiMesh mesh(points, Box3d::Unit(), 1e-3f);
+	Geometry::VoronoiMesh mesh(points, Box3::Unit(), 1e-3f);
 
 
 	return;
@@ -89,5 +102,6 @@ void TestGeometry()
 	TestMeshSimplify();
 	TestClip();
 	TestCatmullRom();
+	TestVoronoi2d();
 	TestVoronoi3d();
 }

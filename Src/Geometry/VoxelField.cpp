@@ -25,7 +25,7 @@ namespace Geometry
 		return X < Min ? Min : X < Max ? X : Max;
 	}
 
-	void VoxelField::MakeEmpty(const Box3d &Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
+	void VoxelField::MakeEmpty(const Box3 &Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
 	{
 		m_BV = Bv;
 
@@ -138,7 +138,7 @@ namespace Geometry
 		return m_BV.Min.y + (y + 0.5f) * m_VoxelHeight;
 	}
 
-	Box3d	VoxelField::GetVoxelBox(const Vector3& pos) const
+	Box3	VoxelField::GetVoxelBox(const Vector3& pos) const
 	{
 		int idx = WorldSpaceToVoxelIndex(pos);
 		int z = idx / m_SizeX;
@@ -147,14 +147,14 @@ namespace Geometry
 		return GetVoxelBox(x, y, z);
 	}
 
-	Box3d	VoxelField::GetVoxelBox(int x, int y, int z) const
+	Box3	VoxelField::GetVoxelBox(int x, int y, int z) const
 	{
 		if (x < 0 || x >= m_SizeX || z < 0 || z >= m_SizeZ || y < 0 || y >= m_SizeY)
 		{
 			// Error
-			return Box3d::Unit();
+			return Box3::Unit();
 		}
-		Box3d box;
+		Box3 box;
 		box.Min.x = m_BV.Min.x + m_VoxelSize * x;
 		box.Min.y = m_BV.Min.y + m_VoxelHeight * y;
 		box.Min.z = m_BV.Min.z + m_VoxelSize * z;
@@ -328,7 +328,7 @@ namespace Geometry
 		const float ics = 1.0f / m_VoxelSize;
 		const float ich = 1.0f / m_VoxelHeight;
 
-		Box3d tbox(v0, v0);
+		Box3 tbox(v0, v0);
 		tbox.Encapsulate(v1, v2);
 
 		if (!tbox.Intersect(m_BV))
@@ -417,7 +417,7 @@ namespace Geometry
 		return true;
 	}
 
-	bool VoxelField::VoxelizationCube(const Box3d& cube)
+	bool VoxelField::VoxelizationCube(const Box3& cube)
 	{
 		const int x0 = vx_clamp((int)((cube.Min.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
 		const int x1 = vx_clamp((int)((cube.Max.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);

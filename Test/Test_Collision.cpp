@@ -367,8 +367,8 @@ void TestRTree2()
 void TestAABB()
 {
 	printf("Running TestAABB\n");
-	Box3d box1(Vector3(0, 0, 0), Vector3(10, 10, 10));
-	Box3d box2(Vector3(4, 4, 4), Vector3(5, 5, 5));
+	Box3 box1(Vector3(0, 0, 0), Vector3(10, 10, 10));
+	Box3 box2(Vector3(4, 4, 4), Vector3(5, 5, 5));
 	bool intersect1 = box1.Intersect(box2);
 	bool intersect2 = box2.Intersect(box1);
 	EXPECT(intersect1 && intersect2);
@@ -533,7 +533,7 @@ void TestRayAABB()
 void TestAABBTree()
 {
 	printf("Running TestAABBTree\n");
-	std::vector<Box3d> boxes;
+	std::vector<Box3> boxes;
 	boxes.emplace_back(Vector3(0, 0, 0), Vector3(1, 1, 1));
 	boxes.emplace_back(Vector3(0, 0, 0), Vector3(1, 1, 3));
 	boxes.emplace_back(Vector3(1, 1, 1), Vector3(1, 1, 2));
@@ -586,7 +586,7 @@ void TestAABBTree()
 		hit = tree.RayCastBoundingBox(ray, Option, &Result);
 		if (hit)
 		{
-			Box3d bb = boxes[hit];
+			Box3 bb = boxes[hit];
 			// float t;
 			// EXPECT(ray.IntersectAABB(bb.mMin, bb.mMax, &t));		TODO
 		}
@@ -632,7 +632,7 @@ void TestGeometryQuery()
 class BVProxy2 : public SAP::BoundingVolumeProxy
 {
 public:
-	BVProxy2(std::vector<Box3d>* objs)
+	BVProxy2(std::vector<Box3>* objs)
 	{
 		m_objs = objs;
 	}
@@ -644,15 +644,15 @@ public:
 
 	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const override
 	{
-		const Box3d& box = m_objs->at(bv_i);
+		const Box3& box = m_objs->at(bv_i);
 		float* p = (float*)&box;
 		return left ? p + axis : p + 3 + axis;
 	}
 
 	virtual bool	Overlaps(int bv_i, int bv_j) const override
 	{
-		const Box3d& box1 = m_objs->at(bv_i);
-		const Box3d& box2 = m_objs->at(bv_j);
+		const Box3& box1 = m_objs->at(bv_i);
+		const Box3& box2 = m_objs->at(bv_j);
 		return box1.Intersect(box2);
 	}
 
@@ -661,14 +661,14 @@ public:
 		return 0;
 	}
 
-	std::vector<Box3d>* m_objs;
+	std::vector<Box3>* m_objs;
 };
 
 void TestSAP()
 {
 	printf("Running TestSAP\n");
 	std::set<OverlapKey> overlaps;
-	std::vector<Box3d> boxes;
+	std::vector<Box3> boxes;
 	boxes.emplace_back(Vector3(0, 0, 0), Vector3(2, 2, 2));
 	boxes.emplace_back(Vector3(1, 1, 1), Vector3(3, 3, 3));
 	boxes.emplace_back(Vector3(0, 0, 0), Vector3(15, 15, 15));
@@ -679,7 +679,7 @@ void TestSAP()
 	sap.Prune(&overlaps);
 	EXPECT(overlaps.size() == 3);
 
-	boxes[2] = Box3d(Vector3(10, 10, 10), Vector3(15, 15, 15));
+	boxes[2] = Box3(Vector3(10, 10, 10), Vector3(15, 15, 15));
 	sap.Prune(&overlaps);
 	EXPECT(overlaps.size() == 1);
 
@@ -724,15 +724,15 @@ public:
 
 	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const override
 	{
-		const Box3d& box = m_objs->at(bv_i)->GetBoundingVolume_WorldSpace();
+		const Box3& box = m_objs->at(bv_i)->GetBoundingVolume_WorldSpace();
 		float* p = (float*)&box;
 		return left ? p + axis : p + 3 + axis;
 	}
 
 	virtual bool	Overlaps(int bv_i, int bv_j) const override
 	{
-		const Box3d& box1 = m_objs->at(bv_i)->GetBoundingVolume_WorldSpace();
-		const Box3d& box2 = m_objs->at(bv_j)->GetBoundingVolume_WorldSpace();
+		const Box3& box1 = m_objs->at(bv_i)->GetBoundingVolume_WorldSpace();
+		const Box3& box2 = m_objs->at(bv_j)->GetBoundingVolume_WorldSpace();
 		return box1.Intersect(box2);
 	}
 

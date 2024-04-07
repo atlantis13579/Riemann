@@ -6,7 +6,7 @@
 #include "ShapeType.h"
 #include "Plane3d.h"
 #include "../Maths/Vector3.h"
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../Maths/Matrix3.h"
 
 // #define USE_EDGE_DATA
@@ -103,7 +103,7 @@ namespace Riemann
 
 		bool		ValidateStructure() const;
 
-		Box3d		ComputeBoundingVolume(const Vector3& CenterOfMass) const;
+		Box3		ComputeBoundingVolume(const Vector3& CenterOfMass) const;
 
 		bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 

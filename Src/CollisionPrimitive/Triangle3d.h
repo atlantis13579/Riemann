@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <vector>
 
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
 #include "ShapeType.h"
@@ -112,9 +112,9 @@ namespace Riemann
 			return Triangle3d::TriangleArea3D(A, B, C);
 		}
 
-		Box3d			CalculateBoundingVolume() const
+		Box3			CalculateBoundingVolume() const
 		{
-			Box3d box(A, A);
+			Box3 box(A, A);
 			box.Encapsulate(B, C);
 			return box;
 		}

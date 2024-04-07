@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Maths/Tensor.h"
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../Maths/Vector2.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Maths.h"
@@ -86,7 +86,7 @@ namespace Geometry
 	class DenseTensorField3d
 	{
 	public:
-		DenseTensorField3d(const Box3d& BV, int nX, int nY, int nZ) : m_Fields({ nX, nY, nZ })
+		DenseTensorField3d(const Box3& BV, int nX, int nY, int nZ) : m_Fields({ nX, nY, nZ })
 		{
 			m_ConstTensor = ScalerType::Zero();
 
@@ -102,7 +102,7 @@ namespace Geometry
 
 		DenseTensorField3d() : m_Fields({ 1, 1, 1 })
 		{
-			m_BV = Box3d::Unit();
+			m_BV = Box3::Unit();
 			m_Size = Vector3i(1, 1, 1);
 			m_CellSize = m_InvCellSize = Vector3::One();
 		}
@@ -148,7 +148,7 @@ namespace Geometry
 
 	private:
 		ScalerType				m_ConstTensor;
-		Box3d					m_BV;
+		Box3					m_BV;
 		Vector3i				m_Size;
 		Vector3					m_CellSize, m_InvCellSize;
 		Maths::Tensor<ScalerType, 3>	m_Fields;

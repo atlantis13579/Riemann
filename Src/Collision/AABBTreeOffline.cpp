@@ -69,7 +69,7 @@ namespace Riemann
 		int nGeoms = numGeometries;
 
 		Vector3 means = Params.pCenterBuffer[geoms[0]];
-		const Box3d* pAABB = Params.pAABBArray;
+		const Box3* pAABB = Params.pAABBArray;
 
 		Vector3 bMin = pAABB[geoms[0]].Min;
 		Vector3 bMax = pAABB[geoms[0]].Max;
@@ -86,7 +86,7 @@ namespace Riemann
 			bMax = bMax.Max(mMax);
 		}
 
-		aabb = Box3d(bMin, bMax);
+		aabb = Box3(bMin, bMax);
 
 		if (nGeoms <= Params.numGeometriesPerNode)
 			return;

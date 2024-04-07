@@ -20,7 +20,7 @@
 #include "../../CollisionPrimitive/MeshBVH4.h"
 #include "../../RigidBodyDynamics/RigidBody.h"
 #include "../../Core/Base.h"
-#include "../../Maths/Box3d.h"
+#include "../../Maths/Box3.h"
 #include "../../Maths/Transform.h"
 #include "../../Maths/Quaternion.h"
 

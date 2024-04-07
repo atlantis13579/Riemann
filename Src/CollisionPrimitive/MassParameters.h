@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../Maths/Transform.h"
 #include "ShapeType.h"
 

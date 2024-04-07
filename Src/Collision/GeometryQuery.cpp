@@ -38,7 +38,7 @@ namespace Riemann
 		{
 			m_staticGeometry = new AABBTree;
 
-			std::vector<Box3d> boxes;
+			std::vector<Box3> boxes;
 			boxes.resize(Objects.size());
 			for (size_t i = 0; i < Objects.size(); ++i)
 			{

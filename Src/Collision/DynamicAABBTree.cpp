@@ -183,7 +183,7 @@ bool DynamicAABBTree::Intersect(const GeometryBase *geometry, const IntersectOpt
 		return false;
 	}
 
-	const Box3d &aabb = geometry->GetBoundingVolume_WorldSpace();
+	const Box3 &aabb = geometry->GetBoundingVolume_WorldSpace();
 	const Node* p = &m_nodes[m_root];
 	if (p == nullptr || !aabb.Intersect(p->aabb.Min, p->aabb.Max))
 	{
@@ -364,7 +364,7 @@ bool DynamicAABBTree::Sweep(const GeometryBase *geometry, const Vector3& Directi
 	return false;
 }
 
-bool DynamicAABBTree::Query(const Box3d& aabb, std::vector<void*> *Result) const
+bool DynamicAABBTree::Query(const Box3& aabb, std::vector<void*> *Result) const
 {
 	Result->clear();
 	
@@ -427,7 +427,7 @@ bool DynamicAABBTree::Query(const Box3d& aabb, std::vector<void*> *Result) const
 	return !Result->empty();
 }
 
-int DynamicAABBTree::Add(const Box3d& aabb, void* userData)
+int DynamicAABBTree::Add(const Box3& aabb, void* userData)
 {
 	int nodeId = AllocNode();
 
@@ -452,13 +452,13 @@ void DynamicAABBTree::Remove(int nodeId)
 	FreeNode(nodeId);
 }
 
-bool DynamicAABBTree::Update(int nodeId, const Box3d& aabb, const Vector3& displacement)
+bool DynamicAABBTree::Update(int nodeId, const Box3& aabb, const Vector3& displacement)
 {
 	assert(0 <= nodeId && nodeId < m_nodeCapacity);
 	assert(m_nodes[nodeId].IsLeaf());
 
 	Vector3 thickness(kAABBThickness, kAABBThickness, kAABBThickness);
-	Box3d newAABB(aabb.Min - thickness, aabb.Max + thickness);
+	Box3 newAABB(aabb.Min - thickness, aabb.Max + thickness);
 
 	// Predict AABB movement
 	Vector3 dir = kAABBFattenScale * displacement;
@@ -490,10 +490,10 @@ bool DynamicAABBTree::Update(int nodeId, const Box3d& aabb, const Vector3& displ
 		newAABB.Max.z += dir.z;
 	}
 
-	const Box3d& treeAABB = m_nodes[nodeId].aabb;
+	const Box3& treeAABB = m_nodes[nodeId].aabb;
 	if (treeAABB.IsInside(aabb))
 	{
-		Box3d largeAABB(newAABB.Min - kAABBFattenScale * thickness, newAABB.Max + kAABBFattenScale * thickness);
+		Box3 largeAABB(newAABB.Min - kAABBFattenScale * thickness, newAABB.Max + kAABBFattenScale * thickness);
 		if (largeAABB.IsInside(treeAABB))
 		{
 			// The large AABB contains the object AABB, no tree update needed.
@@ -543,12 +543,12 @@ void DynamicAABBTree::Rebuild()
 		int iMin = -1, jMin = -1;
 		for (int i = 0; i < count; ++i)
 		{
-			Box3d aabbi = m_nodes[nodes[i]].aabb;
+			Box3 aabbi = m_nodes[nodes[i]].aabb;
 
 			for (int j = i + 1; j < count; ++j)
 			{
-				Box3d aabbj = m_nodes[nodes[j]].aabb;
-				Box3d b = Box3d(aabbi, aabbj);
+				Box3 aabbj = m_nodes[nodes[j]].aabb;
+				Box3 b = Box3(aabbi, aabbj);
 				float cost = b.CalculateVolume();
 				if (cost < minCost)
 				{
@@ -569,7 +569,7 @@ void DynamicAABBTree::Rebuild()
 		parent->child1 = nodeId1;
 		parent->child2 = nodeId2;
 		parent->height = 1 + std::max(child1->height, child2->height);
-		parent->aabb = Box3d(child1->aabb, child2->aabb);
+		parent->aabb = Box3(child1->aabb, child2->aabb);
 		parent->parent = -1;
 
 		child1->parent = parentIndex;
@@ -661,12 +661,12 @@ void DynamicAABBTree::InsertLeaf(int leaf)
 	}
 
 	// Find the best node from bottom up
-	Box3d leafAABB = m_nodes[leaf].aabb;
+	Box3 leafAABB = m_nodes[leaf].aabb;
 	int nodeId = m_root;
 	while (m_nodes[nodeId].IsLeaf() == false)
 	{
 		float Vol = m_nodes[nodeId].aabb.CalculateVolume();
-		Box3d mergedAABB = Box3d(m_nodes[nodeId].aabb, leafAABB);
+		Box3 mergedAABB = Box3(m_nodes[nodeId].aabb, leafAABB);
 		float mergedVol = mergedAABB.CalculateVolume();
 
 		float cost = 2.0f * mergedVol;
@@ -681,12 +681,12 @@ void DynamicAABBTree::InsertLeaf(int leaf)
 			int c = child[k];
 			if (m_nodes[c].IsLeaf())
 			{
-				Box3d aabb = Box3d(leafAABB, m_nodes[c].aabb);
+				Box3 aabb = Box3(leafAABB, m_nodes[c].aabb);
 				ccost = aabb.CalculateVolume() + inheritanceCost;
 			}
 			else
 			{
-				Box3d aabb = Box3d(leafAABB, m_nodes[c].aabb);
+				Box3 aabb = Box3(leafAABB, m_nodes[c].aabb);
 				float oldVol = m_nodes[c].aabb.CalculateVolume();
 				float newVol = aabb.CalculateVolume();
 				ccost = (newVol - oldVol) + inheritanceCost;
@@ -706,7 +706,7 @@ void DynamicAABBTree::InsertLeaf(int leaf)
 	int newParent = AllocNode();
 	m_nodes[newParent].parent = oldParent;
 	m_nodes[newParent].userData = nullptr;
-	m_nodes[newParent].aabb = Box3d(leafAABB, m_nodes[nodeId].aabb);
+	m_nodes[newParent].aabb = Box3(leafAABB, m_nodes[nodeId].aabb);
 	m_nodes[newParent].height = m_nodes[nodeId].height + 1;
 
 	if (oldParent != -1)
@@ -747,7 +747,7 @@ void DynamicAABBTree::InsertLeaf(int leaf)
 		assert(child2 != -1);
 
 		m_nodes[nodeId].height = 1 + std::max(m_nodes[child1].height, m_nodes[child2].height);
-		m_nodes[nodeId].aabb = Box3d(m_nodes[child1].aabb, m_nodes[child2].aabb);
+		m_nodes[nodeId].aabb = Box3(m_nodes[child1].aabb, m_nodes[child2].aabb);
 
 		nodeId = m_nodes[nodeId].parent;
 	}
@@ -786,7 +786,7 @@ void DynamicAABBTree::RemoveLeaf(int leaf)
 			int child1 = m_nodes[nodeId].child1;
 			int child2 = m_nodes[nodeId].child2;
 
-			m_nodes[nodeId].aabb = Box3d(m_nodes[child1].aabb, m_nodes[child2].aabb);
+			m_nodes[nodeId].aabb = Box3(m_nodes[child1].aabb, m_nodes[child2].aabb);
 			m_nodes[nodeId].height = 1 + std::max(m_nodes[child1].height, m_nodes[child2].height);
 
 			nodeId = m_nodes[nodeId].parent;
@@ -859,8 +859,8 @@ int DynamicAABBTree::Balance(int nodeA)
 			C->child2 = nodeF;
 			A->child2 = nodeG;
 			G->parent = nodeA;
-			A->aabb = Box3d(B->aabb, G->aabb);
-			C->aabb = Box3d(A->aabb, F->aabb);
+			A->aabb = Box3(B->aabb, G->aabb);
+			C->aabb = Box3(A->aabb, F->aabb);
 
 			A->height = 1 + std::max(B->height, G->height);
 			C->height = 1 + std::max(A->height, F->height);
@@ -870,8 +870,8 @@ int DynamicAABBTree::Balance(int nodeA)
 			C->child2 = nodeG;
 			A->child2 = nodeF;
 			F->parent = nodeA;
-			A->aabb = Box3d(B->aabb, F->aabb);
-			C->aabb = Box3d(A->aabb, G->aabb);
+			A->aabb = Box3(B->aabb, F->aabb);
+			C->aabb = Box3(A->aabb, G->aabb);
 
 			A->height = 1 + std::max(B->height, F->height);
 			C->height = 1 + std::max(A->height, G->height);
@@ -919,8 +919,8 @@ int DynamicAABBTree::Balance(int nodeA)
 			B->child2 = nodeD;
 			A->child1 = nodeE;
 			E->parent = nodeA;
-			A->aabb = Box3d(C->aabb, E->aabb);
-			B->aabb = Box3d(A->aabb, D->aabb);
+			A->aabb = Box3(C->aabb, E->aabb);
+			B->aabb = Box3(A->aabb, D->aabb);
 
 			A->height = 1 + std::max(C->height, E->height);
 			B->height = 1 + std::max(A->height, D->height);
@@ -930,8 +930,8 @@ int DynamicAABBTree::Balance(int nodeA)
 			B->child2 = nodeE;
 			A->child1 = nodeD;
 			D->parent = nodeA;
-			A->aabb = Box3d(C->aabb, D->aabb);
-			B->aabb = Box3d(A->aabb, E->aabb);
+			A->aabb = Box3(C->aabb, D->aabb);
+			B->aabb = Box3(A->aabb, E->aabb);
 
 			A->height = 1 + std::max(C->height, D->height);
 			B->height = 1 + std::max(A->height, E->height);
@@ -1093,7 +1093,7 @@ bool DynamicAABBTree::ValidateAABBs(int nodeId) const
 	if (node->height != height)
 		return false;
 
-	Box3d aabb = Box3d(m_nodes[child1].aabb, m_nodes[child2].aabb);
+	Box3 aabb = Box3(m_nodes[child1].aabb, m_nodes[child2].aabb);
 
 	if (aabb.Min != node->aabb.Min)
 		return false;

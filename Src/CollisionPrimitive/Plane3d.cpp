@@ -49,7 +49,7 @@ namespace Riemann
 	bool Plane3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	{
 		Vector3 v[8];
-		Box3d::GetVertices(Bmin, Bmax, v);
+		Box3::GetVertices(Bmin, Bmax, v);
 		int p0 = 0, p1 = 0, p2 = 0;
 		for (int i = 0; i < 8; ++i)
 		{
@@ -270,10 +270,10 @@ namespace Riemann
 		return true;
 	}
 
-	Box3d Plane3d::CalculateBoundingVolume() const
+	Box3 Plane3d::CalculateBoundingVolume() const
 	{
 		const float kMaxBV = kPlaneRadius;
-		Box3d Box(-kMaxBV, kMaxBV);
+		Box3 Box(-kMaxBV, kMaxBV);
 
 		if (ParallelToXY())
 		{
@@ -342,7 +342,7 @@ namespace Riemann
 
 	Vector3 Plane3d::GetSupport(const Vector3& Direction) const
 	{
-		Box3d box = CalculateBoundingVolume();
+		Box3 box = CalculateBoundingVolume();
 		return Vector3(
 			Direction.x > 0 ? box.Max.x : box.Min.x,
 			Direction.y > 0 ? box.Max.y : box.Min.y,
@@ -352,7 +352,7 @@ namespace Riemann
 
 	int Plane3d::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 	{
-		Box3d box = CalculateBoundingVolume();
+		Box3 box = CalculateBoundingVolume();
 		const Vector3& Bmin = box.Min;
 		const Vector3& Bmax = box.Max;
 

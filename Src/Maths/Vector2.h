@@ -260,6 +260,11 @@ namespace Maths
 		{
 			return TVector2<T>(0, (T)1);
 		}
+
+		static TVector2<T> Random()
+		{
+			return TVector2<T>((T)rand() / RAND_MAX, (T)rand() / RAND_MAX);
+		}
 	};
 
 	template <typename T>

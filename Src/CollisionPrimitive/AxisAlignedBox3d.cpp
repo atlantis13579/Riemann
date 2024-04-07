@@ -583,7 +583,7 @@ namespace Riemann
 	void AxisAlignedBox3d::GetMesh2(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
 		Vertices.resize(8);
-		Box3d::GetVertices(Min, Max, &Vertices[0]);
+		Box3::GetVertices(Min, Max, &Vertices[0]);
 
 		Vector3 Center = GetCenterOfMass();
 
@@ -646,7 +646,7 @@ namespace Riemann
 	void AxisAlignedBox3d::GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
 	{
 		Vertices.resize(8);
-		Box3d::GetVertices(Min, Max, &Vertices[0]);
+		Box3::GetVertices(Min, Max, &Vertices[0]);
 		Indices = std::vector<uint16_t>({
 			0, 1, 1, 3, 3, 2, 2, 0,
 			0, 4, 1, 5, 3, 7, 2, 6,

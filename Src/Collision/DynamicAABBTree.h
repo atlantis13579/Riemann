@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../CollisionPrimitive/Ray3d.h"
 
 namespace Riemann
@@ -32,7 +32,7 @@ namespace Riemann
 				int parent;
 				int next;
 			};
-			Box3d aabb;
+			Box3 aabb;
 			int child1;
 			int child2;
 			int height;
@@ -43,14 +43,14 @@ namespace Riemann
 		DynamicAABBTree();
 		~DynamicAABBTree();
 
-		int 	Add(const Box3d& aabb, void* userData);
+		int 	Add(const Box3& aabb, void* userData);
 		void 	Remove(int nodeId);
-		bool 	Update(int nodeId, const Box3d& aabb, const Vector3& displacement);
+		bool 	Update(int nodeId, const Box3& aabb, const Vector3& displacement);
 
 		bool	RayCast(const Ray3d& Ray, const RayCastOption* Option, RayCastResult* Result) const;
 		bool	Intersect(const GeometryBase* geometry, const IntersectOption* Option, IntersectResult* Result) const;
 		bool	Sweep(const GeometryBase* geometry, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const;
-		bool	Query(const Box3d& aabb, std::vector<void*>* Result) const;
+		bool	Query(const Box3& aabb, std::vector<void*>* Result) const;
 
 		void 	Rebuild();
 		bool 	Validate() const;

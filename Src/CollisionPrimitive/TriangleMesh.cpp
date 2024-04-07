@@ -33,14 +33,14 @@ namespace Riemann
 			return;
 		}
 
-		std::vector<Box3d> allBounds;
+		std::vector<Box3> allBounds;
 		allBounds.reserve(NumTriangles);
 
-		Box3d meshBounds = Box3d::Empty();
+		Box3 meshBounds = Box3::Empty();
 
 		for (uint32_t i = 0; i < NumTriangles; ++i)
 		{
-			allBounds.push_back(Box3d(GetVertex(i, 0), GetVertex(i, 1), GetVertex(i, 2)));
+			allBounds.push_back(Box3(GetVertex(i, 0), GetVertex(i, 1), GetVertex(i, 2)));
 			meshBounds.Encapsulate(allBounds.back());
 		}
 
@@ -93,7 +93,7 @@ namespace Riemann
 	template <class Shape>
 	static bool IntersectBVH(const Mesh* mesh, const MeshBVH4* bvh, const Shape& shape)
 	{
-		Box3d bv = shape.CalculateBoundingVolume();
+		Box3 bv = shape.CalculateBoundingVolume();
 		const Vector3& Bmin = bv.Min;
 		const Vector3& Bmax = bv.Max;
 

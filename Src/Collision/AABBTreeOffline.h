@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 
 namespace Riemann
 {
@@ -17,7 +17,7 @@ namespace Riemann
 
 	struct AABBTreeBuildData
 	{
-		AABBTreeBuildData(const Box3d* pArray, int nGeometries = 0, int GeometriesPerNode = 1) :
+		AABBTreeBuildData(const Box3* pArray, int nGeometries = 0, int GeometriesPerNode = 1) :
 			numGeometriesPerNode(GeometriesPerNode),
 			numGeometries(nGeometries),
 			pAABBArray(pArray),
@@ -48,7 +48,7 @@ namespace Riemann
 
 		int							numGeometriesPerNode;
 		int							numGeometries;
-		const Box3d* pAABBArray;
+		const Box3* pAABBArray;
 		Vector3* pCenterBuffer;		// Holds the memory
 		int* pIndicesBase;
 		AABBTreeOffline* pAABBTree;
@@ -83,7 +83,7 @@ namespace Riemann
 		void	BuildHierarchyRecursive(AABBTreeBuildData& Params);
 
 	public:
-		Box3d					aabb;
+		Box3					aabb;
 		AABBTreeNodeOffline* child1;
 		AABBTreeNodeOffline* child2;
 		int						indexOffset;

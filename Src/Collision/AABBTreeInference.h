@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 
 namespace Riemann
 {
@@ -10,7 +10,7 @@ namespace Riemann
 
 	struct CacheFriendlyAABBTree
 	{
-		inline const Box3d& GetBoundingVolume() const
+		inline const Box3& GetBoundingVolume() const
 		{
 			return aabb;
 		}
@@ -65,7 +65,7 @@ namespace Riemann
 			return Base + (Data >> 1) + 1;
 		}
 
-		Box3d				aabb;
+		Box3				aabb;
 		uint32_t			Data;		// 27 bits node index | 4 bits #Geometries | 1 bit leaf
 	};
 

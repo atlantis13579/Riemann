@@ -5,7 +5,7 @@
 #include <vector>
 #include "ShapeType.h"
 #include "../Maths/Matrix3.h"
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 
 namespace Riemann
 {
@@ -56,14 +56,14 @@ namespace Riemann
 		bool			SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const;
 		bool 			SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const;
 
-		static Box3d	CalcBoundingVolume(const Vector3& Center, float Radius)
+		static Box3	CalcBoundingVolume(const Vector3& Center, float Radius)
 		{
-			Box3d Box;
+			Box3 Box;
 			Box.BuildFromCenterAndExtent(Center, Vector3(Radius));
 			return Box;
 		}
 
-		Box3d			CalculateBoundingVolume() const
+		Box3			CalculateBoundingVolume() const
 		{
 			return Sphere3d::CalcBoundingVolume(Center, Radius);
 		}

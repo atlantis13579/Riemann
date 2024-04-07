@@ -2,11 +2,12 @@
 #include "Test.h"
 
 #include "../Src/Maths/Tensor.h"
-#include "../Src/Maths/Box3d.h"
+#include "../Src/Maths/Box3.h"
 #include "../Src/Maths/Maths.h"
 #include "../Src/Maths/Matrix2.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Float16.h"
+#include "../Src/Maths/Frame3.h"
 #include "../Src/Geometry/Spline.h"
 
 void TestMat3()
@@ -111,6 +112,19 @@ void TestFloat16()
 	return;
 }
 
+void TestFrame3()
+{
+	Vector3 Origin(10.0f, 10.0f, 10.0f);
+	Vector3 Normal(0.0f, 1.0f, 0.0f);
+	Maths::Frame3 PlaneFrame(Origin, Normal, true);
+
+	Vector3 X, Y, Z;
+	PlaneFrame.GetAxes(X, Y, Z);
+
+	bool right_handed = PlaneFrame.IsRightHanded();
+	return;
+}
+
 
 void TestMaths()
 {
@@ -118,4 +132,5 @@ void TestMaths()
 	TestBasicMath();
 	TestTensor();
 	TestFloat16();
+	TestFrame3();
 }

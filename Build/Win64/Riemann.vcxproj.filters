@@ -66,7 +66,7 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\Box3d.h">
+    <ClInclude Include="..\..\Src\Maths\Box3.h">
       <Filter>Maths</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\CollisionPrimitive\Capsule3d.h">
@@ -498,6 +498,12 @@
     <ClInclude Include="..\..\Src\Maths\Frame3.h">
       <Filter>Maths</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Box2.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\Delaunay.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">
@@ -699,6 +705,9 @@
       <Filter>Destruction</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\GeometrySet.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\Delaunay.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
   </ItemGroup>

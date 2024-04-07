@@ -6,7 +6,7 @@
 #include "ShapeType.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 
 namespace Riemann
 {
@@ -83,7 +83,7 @@ namespace Riemann
 		float			DistanceToTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
 		float			CalculateVolume() const { return 0.0f; }
-		Box3d			CalculateBoundingVolume() const;
+		Box3			CalculateBoundingVolume() const;
 
 		bool			PerpendicularTo(const Vector3& Axis) const;
 		bool			ParallelToXY() const;

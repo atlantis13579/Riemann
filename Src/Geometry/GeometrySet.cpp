@@ -84,8 +84,16 @@ namespace Geometry
 		return tokens;
 	}
 
+	GeometryData::GeometryData()
+	{
+	}
+
+	GeometryData::~GeometryData()
+	{
+	}
+
 	template<typename T>
-	static void AddVertex(std::vector<T> &Vertices, int &NumVertices, const T& v)
+	static void AddVertex(std::vector<T>& Vertices, int& NumVertices, const T& v)
 	{
 		const int OBJ_BATCH_SIZE = 4096;
 		if (NumVertices >= Vertices.size())
@@ -93,6 +101,81 @@ namespace Geometry
 			Vertices.resize(Vertices.size() + OBJ_BATCH_SIZE * 3);
 		}
 		Vertices[NumVertices++] = v;
+	}
+
+	template<typename T>
+	static void Insert(std::vector<T>& Vertices, size_t index, const T& v)
+	{
+		if (index >= Vertices.size())
+		{
+			Vertices.resize(index + 1);
+		}
+		Vertices[index] = v;
+	}
+
+	int GeometryData::AppendVertex(const VertexInfo& info)
+	{
+		size_t index = VertexPositions.size();
+
+		VertexPositions.push_back(info.Position);
+
+		if (info.bHaveColor)
+		{
+			bHaveVertexColor = true;
+		}
+		if (info.bHaveNormal)
+		{
+			bHaveVertexNormals = true;
+		}
+		if (info.bHaveUV)
+		{
+			bHaveVertexUVs = true;
+		}
+
+		if (HaveVertexColors())
+		{
+			Vector3 val = info.bHaveColor ? info.Color : Vector3::Zero();
+			Insert(VertexColors, index, val);
+		}
+
+		if (HaveVertexNormals())
+		{
+			Vector3 val = info.bHaveNormal ? info.Normal : Vector3::UnitY();
+			Insert(VertexNormals, index, val);
+		}
+
+		if (HaveVertexUVs())
+		{
+			Vector2 val = info.bHaveUV ? info.UV : Vector2::Zero();
+			Insert(VertexUVs, index, val);
+		}
+
+		return (int)index;
+	}
+
+	int GeometryData::AppendTriangle(const Vector3i& tri)
+	{
+		int index = (int)Triangles.size();
+		Triangles.push_back(tri);
+		return index;
+	}
+
+	void GeometryData::SetColor(int idx, const Vector3& val)
+	{
+		bHaveVertexColor = true;
+		Insert(VertexColors, idx, val);
+	}
+
+	void GeometryData::SetNormal(int idx, const Vector3& val)
+	{
+		bHaveVertexNormals = true;
+		Insert(VertexNormals, idx, val);
+	}
+
+	void GeometryData::SetUV(int idx, const Vector2& val, int layer)
+	{
+		bHaveVertexUVs = true;
+		Insert(VertexUVs, idx, val);
 	}
 
 	bool GeometryData::LoadObj(const char* name)
@@ -146,14 +229,14 @@ namespace Geometry
 				{
 					Vector3 v, c;
 					sscanf(row + 1, "%f %f %f %f %f %f", &v.x, &v.y, &v.z, &c.x, &c.y, &c.z);
-					AddVertex(Vertices, NumVertices, v);
+					AddVertex(VertexPositions, NumVertices, v);
 					AddVertex(VertexColors, NumColors, c);
 				}
 				else
 				{
 					Vector3 v;
 					sscanf(row + 1, "%f %f %f", &v.x, &v.y, &v.z);
-					AddVertex(Vertices, NumVertices, v);
+					AddVertex(VertexPositions, NumVertices, v);
 				}
 
 			}
@@ -185,11 +268,11 @@ namespace Geometry
 			}
 		}
 
-		Vertices.resize(NumVertices);
+		VertexPositions.resize(NumVertices);
 
 		delete[] buf;
 
-		Bounds = Box3d(Vertices.data(), Vertices.size());
+		Bounds = Box3(VertexPositions.data(), VertexPositions.size());
 		ResourceName = name;
 		return true;
 	}
@@ -202,23 +285,23 @@ namespace Geometry
 			return false;
 		}
 
-		fprintf(fp, "# %d vertices, %d faces\n", (int)Vertices.size(), (int)Triangles.size());
+		fprintf(fp, "# %d vertices, %d faces\n", (int)VertexPositions.size(), (int)Triangles.size());
 
 		fprintf(fp, "# List of geometric vertices, with (x,y,z[,w]) coordinates, w is optional and defaults to 1.0. \n");
-		if (HasVertexColors())
+		if (!VertexPositions.empty())
 		{
-			for (size_t i = 0; i < Vertices.size(); ++i)
+			for (size_t i = 0; i < VertexPositions.size(); ++i)
 			{
-				const Vector3 v = Vertices[i];
+				const Vector3 v = VertexPositions[i];
 				const Vector3 c = VertexColors[i];
 				fprintf(fp, "v %.3f %.3f %.3f %.3f %.3f %.3f\n", v.x, v.y, v.z, c.x, c.y, c.z);
 			}
 		}
 		else
 		{
-			for (size_t i = 0; i < Vertices.size(); ++i)
+			for (size_t i = 0; i < VertexPositions.size(); ++i)
 			{
-				const Vector3 v = Vertices[i];
+				const Vector3 v = VertexPositions[i];
 				fprintf(fp, "v %.3f %.3f %.3f\n", v.x, v.y, v.z);
 			}
 		}
@@ -230,7 +313,7 @@ namespace Geometry
 			fprintf(fp, "f %d %d %d\n", v.x + 1, v.y + 1, v.z + 1);
 		}
 
-		if (HasVertexNormals())
+		if (!VertexNormals.empty())
 		{
 			fprintf(fp, "# List of vertex normals in (x,y,z) form; normals might not be unit vectors. \n");
 			for (size_t i = 0; i < VertexNormals.size(); ++i)
@@ -240,7 +323,7 @@ namespace Geometry
 			}
 		}
 
-		if (HasVertexUVs())
+		if (!VertexUVs.empty())
 		{
 			fprintf(fp, "# List of texture coordinates, in (u, v [,w]) coordinates, these will vary between 0 and 1, w is optional and defaults to 0. \n");
 			for (size_t i = 0; i < VertexUVs.size(); ++i)
@@ -301,6 +384,15 @@ namespace Geometry
 		}
 
 		return true;
+	}
+
+	void GeometrySet::CreateGeometryData(int NumMeshes)
+	{
+		mMeshs.resize(NumMeshes);
+		for (size_t i = 0; i < mMeshs.size(); ++i)
+		{
+			mMeshs[i] = new GeometryData();
+		}
 	}
 
 }	// namespace Destruction

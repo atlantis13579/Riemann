@@ -7,7 +7,7 @@
 
 #include "../Core/Base.h"
 #include "../Maths/Vector3.h"
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 
 namespace Riemann
 {
@@ -91,7 +91,7 @@ namespace Riemann
 		{
 			return minx[index] > maxx[index];
 		}
-		Box3d		ComputeBounds();
+		Box3		ComputeBounds();
 		uint32_t	IsLeaf(uint32_t index) const
 		{
 			return Data[index] & 1;
@@ -130,7 +130,7 @@ namespace Riemann
 		}
 
 		void			Validate(void* p);
-		void			ValidateRecursive(void* p, uint32_t Depth, const Box3d& parentBounds, BVHNodeBatch* batch);
+		void			ValidateRecursive(void* p, uint32_t Depth, const Box3& parentBounds, BVHNodeBatch* batch);
 
 		void* AllocMemory(int Size, int Width)
 		{
@@ -144,7 +144,7 @@ namespace Riemann
 			return BatchPtr;
 		}
 
-		static void		BuildFromBounds(MeshBVH4& bvh, const std::vector<Box3d>& allBounds, std::vector<uint32_t>& Permute, const Box3d& meshBounds);
+		static void		BuildFromBounds(MeshBVH4& bvh, const std::vector<Box3>& allBounds, std::vector<uint32_t>& Permute, const Box3& meshBounds);
 
 		Vector4			BoundsMin, BoundsMax;
 		uint8_t* Memory;

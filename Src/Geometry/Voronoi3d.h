@@ -2,7 +2,7 @@
 
 #include <vector>
 #include "../Maths/Vector3.h"
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 
 namespace voro
 {
@@ -56,16 +56,16 @@ namespace Geometry
 		};
 
 		Voronoi3d();
-		Voronoi3d(const std::vector<Vector3>& points, const Box3d& bounds, const float eps);
+		Voronoi3d(const std::vector<Vector3>& points, const Box3& bounds, const float eps);
 		~Voronoi3d();
 
 	public:
 
-		void Set(const std::vector<Vector3>& points, const Box3d& bounds, const float eps);
+		void Set(const std::vector<Vector3>& points, const Box3& bounds, const float eps);
 
-		static void GenerateRandomPoints(const Box3d& Bounds, int numPoints, std::vector<Vector3>& points);
+		static void GenerateRandomPoints(const Box3& Bounds, int numPoints, std::vector<Vector3>& points);
 
-		static Box3d GetVoronoiBounds(const Box3d& Bounds, const std::vector<Vector3>& points);
+		static Box3 GetVoronoiBounds(const Box3& Bounds, const std::vector<Vector3>& points);
 
 		void ComputeAllCells(std::vector<Cell>& cells, bool paraller_build);
 		void ComputeAllNeighbors(std::vector<std::vector<int>>& neighbors, bool exclude_bounds, bool paraller_build);
@@ -79,7 +79,7 @@ namespace Geometry
 		size_t								mNumPoints { 0 };
 		voro::container						*mContainer { nullptr };
 		std::vector<Vector3>				mPoints;
-		Box3d								mBounds;
+		Box3								mBounds;
 
 	public:
 		std::vector<Plane>					mPlanes;
@@ -91,7 +91,7 @@ namespace Geometry
 	class VoronoiMesh
 	{
 	public:
-		VoronoiMesh(const std::vector<Vector3>& points, const Box3d& bounds, const float eps);
+		VoronoiMesh(const std::vector<Vector3>& points, const Box3& bounds, const float eps);
 		~VoronoiMesh();
 
 	private:

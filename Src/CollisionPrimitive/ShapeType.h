@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
 
@@ -26,7 +26,7 @@ namespace Riemann
 		float Volume;
 		Matrix3 InertiaMat;
 		Vector3 CenterOfMass;
-		Box3d	BoundingVolume;
+		Box3	BoundingVolume;
 	};
 
 	#define MAX_FACE_POINTS	16

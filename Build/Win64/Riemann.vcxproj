@@ -24,6 +24,7 @@
     <ClCompile Include="..\..\Src\Destruction\ConnectionGraph.cpp" />
     <ClCompile Include="..\..\Src\Destruction\StrainSolver.cpp" />
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\Delaunay.cpp" />
     <ClCompile Include="..\..\Src\Geometry\GeometrySet.cpp" />
     <ClCompile Include="..\..\Src\Geometry\MeshSimplification.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Voronoi3d.cpp" />
@@ -100,6 +101,7 @@
     <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
     <ClInclude Include="..\..\Src\Destruction\StrainSolver.h" />
     <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h" />
+    <ClInclude Include="..\..\Src\Geometry\Delaunay.h" />
     <ClInclude Include="..\..\Src\Geometry\GeometrySet.h" />
     <ClInclude Include="..\..\Src\Geometry\MeshSimplification.h" />
     <ClInclude Include="..\..\Src\Geometry\Voronoi3d.h" />
@@ -168,6 +170,7 @@
     <ClInclude Include="..\..\Src\LinearSystem\SingularValueDecomposition.h" />
     <ClInclude Include="..\..\Src\LinearSystem\SparseMatrix.h" />
     <ClInclude Include="..\..\Src\LinearSystem\SparseVector.h" />
+    <ClInclude Include="..\..\Src\Maths\Box2.h" />
     <ClInclude Include="..\..\Src\Maths\Float16.h" />
     <ClInclude Include="..\..\Src\Maths\Frame3.h" />
     <ClInclude Include="..\..\Src\Maths\Matrix2.h" />
@@ -211,7 +214,7 @@
     <ClInclude Include="..\..\Src\Geometry\ConvexHull2d.h" />
     <ClInclude Include="..\..\Src\Modules\ImageSpace\ImageProcessing.h" />
     <ClInclude Include="..\..\Src\Modules\ImageSpace\Rasterizer.h" />
-    <ClInclude Include="..\..\Src\Maths\Box3d.h" />
+    <ClInclude Include="..\..\Src\Maths\Box3.h" />
     <ClInclude Include="..\..\Src\Maths\Frustum.h" />
     <ClInclude Include="..\..\Src\Maths\Maths.h" />
     <ClInclude Include="..\..\Src\Maths\Matrix3.h" />

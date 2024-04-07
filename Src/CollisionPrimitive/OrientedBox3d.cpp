@@ -58,9 +58,9 @@ namespace Riemann
 		return box;
 	}
 
-	Box3d OrientedBox3d::ComputeBoundingVolume(const Vector3& Center, const Vector3& Extent, const Matrix3& Rot)
+	Box3 OrientedBox3d::ComputeBoundingVolume(const Vector3& Center, const Vector3& Extent, const Matrix3& Rot)
 	{
-		Box3d box;
+		Box3 box;
 		box.SetEmpty();
 		box.Encapsulate(Rot * (Center + Vector3(Extent.x, Extent.y, Extent.z)));
 		box.Encapsulate(Rot * (Center + Vector3(Extent.x, Extent.y, -Extent.z)));
@@ -73,7 +73,7 @@ namespace Riemann
 		return box;
 	}
 
-	Box3d OrientedBox3d::CalculateBoundingVolume() const
+	Box3 OrientedBox3d::CalculateBoundingVolume() const
 	{
 		return OrientedBox3d::ComputeBoundingVolume(Center, Extent, Rotation);
 	}

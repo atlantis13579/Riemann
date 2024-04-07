@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../Maths/Vector3.h"
 #include "ShapeType.h"
 
@@ -22,7 +22,7 @@ namespace Riemann
 		std::vector<Vector3>	mVertices;
 		std::vector<uint16_t>	mIndices;
 		std::vector<Vector3>	mNormals;
-		Box3d					BoundingVolume;
+		Box3					BoundingVolume;
 		uint8_t					Flags;
 		std::string				ResourceId;
 
@@ -222,7 +222,7 @@ namespace Riemann
 
 			if (NumTriangles == 0)
 			{
-				BoundingVolume = Box3d(Vertices[a], Vertices[a]);
+				BoundingVolume = Box3(Vertices[a], Vertices[a]);
 			}
 			BoundingVolume.Encapsulate(Vertices[a], Vertices[b], Vertices[c]);
 
@@ -234,7 +234,7 @@ namespace Riemann
 			int k = NumVertices;
 
 			Vector3 v[8];
-			Box3d::GetVertices(Bmin, Bmax, v);
+			Box3::GetVertices(Bmin, Bmax, v);
 			for (int i = 0; i < 8; ++i)
 			{
 				AddVertex(v[i]);
@@ -546,7 +546,7 @@ namespace Riemann
 				return;
 			}
 
-			BoundingVolume = Box3d(&Vertices[0], NumVertices);
+			BoundingVolume = Box3(&Vertices[0], NumVertices);
 		}
 
 	private:

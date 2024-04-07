@@ -69,8 +69,8 @@ namespace Riemann
 					if (!IsValidPair(gi, gj))
 						continue;
 
-					const Box3d& box1 = gi->GetBoundingVolume_WorldSpace();
-					const Box3d& box2 = gj->GetBoundingVolume_WorldSpace();
+					const Box3& box1 = gi->GetBoundingVolume_WorldSpace();
+					const Box3& box2 = gj->GetBoundingVolume_WorldSpace();
 					if (box1.Intersect(box2))
 					{
 						overlaps->emplace_back(i, j);
@@ -136,15 +136,15 @@ namespace Riemann
 
 		virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const override final
 		{
-			const Box3d& box = m_pObjects->at(bv_i)->GetBoundingVolume_WorldSpace();
+			const Box3& box = m_pObjects->at(bv_i)->GetBoundingVolume_WorldSpace();
 			float* p = (float*)&box;
 			return left ? p + axis : p + 3 + axis;
 		}
 
 		virtual bool    Overlaps(int bv_i, int bv_j) const override final
 		{
-			const Box3d& box1 = m_pObjects->at(bv_i)->GetBoundingVolume_WorldSpace();
-			const Box3d& box2 = m_pObjects->at(bv_j)->GetBoundingVolume_WorldSpace();
+			const Box3& box1 = m_pObjects->at(bv_i)->GetBoundingVolume_WorldSpace();
+			const Box3& box2 = m_pObjects->at(bv_j)->GetBoundingVolume_WorldSpace();
 			return box1.Intersect(box2);
 		}
 

@@ -3,7 +3,7 @@
 #include <vector>
 #include "../Core/StaticArray.h"
 #include "../Maths/Transform.h"
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../CollisionPrimitive/ShapeType.h"
 #include "../CollisionPrimitive/MassParameters.h"
 
@@ -223,17 +223,17 @@ namespace Riemann
 			return &m_VolumeProperties;
 		}
 
-		inline const Box3d& GetBoundingVolume_WorldSpace() const
+		inline const Box3& GetBoundingVolume_WorldSpace() const
 		{
 			return m_BoxWorld;
 		}
 
-		inline const Box3d& GetBoundingVolume_LocalSpace() const
+		inline const Box3& GetBoundingVolume_LocalSpace() const
 		{
 			return m_VolumeProperties.BoundingVolume;
 		}
 
-		inline void				SetBoundingVolume_LocalSpace(const Box3d& box)
+		inline void				SetBoundingVolume_LocalSpace(const Box3& box)
 		{
 			m_VolumeProperties.BoundingVolume = box;
 		}
@@ -304,7 +304,7 @@ namespace Riemann
 
 	protected:
 		ShapeType3d				m_Type;
-		Box3d					m_BoxWorld;
+		Box3					m_BoxWorld;
 		GeometryTransform		m_WorldTransform;
 		Transform				m_LocalTransform;
 		CollisionData			m_FilterData;
@@ -324,7 +324,7 @@ namespace Riemann
 		static GeometryBase* CreateSphere(const Vector3& Center, float Radius);
 		static GeometryBase* CreateCylinder(const Vector3& X0, const Vector3& X1, float Radius);
 		static GeometryBase* CreateCapsule(const Vector3& X0, const Vector3& X1, float Radius);
-		static GeometryBase* CreateHeightField(const Box3d& Bv, int nRows, int nCols);
+		static GeometryBase* CreateHeightField(const Box3& Bv, int nRows, int nCols);
 		static GeometryBase* CreateConvexMesh();
 		static GeometryBase* CreateTriangleMesh();
 

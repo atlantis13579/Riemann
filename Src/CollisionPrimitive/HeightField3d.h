@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "ShapeType.h"
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
 
@@ -43,7 +43,7 @@ namespace Riemann
 
 		uint32_t 				nX;				// X
 		uint32_t 				nZ;				// Z
-		Box3d					BV;
+		Box3					BV;
 		float					DX, DZ;
 		float					InvDX, InvDZ;
 		float 					HeightScale;
@@ -56,7 +56,7 @@ namespace Riemann
 			Cells = nullptr;
 		}
 
-		HeightField3d(const Box3d& _Bv, int _nX, int _nZ)
+		HeightField3d(const Box3& _Bv, int _nX, int _nZ)
 		{
 			Init(_Bv, _nX, _nZ);
 		}
@@ -66,7 +66,7 @@ namespace Riemann
 			return ShapeType3d::HEIGHTFIELD;
 		}
 
-		void    	Init(const Box3d& _Bv, int _nX, int _nZ)
+		void    	Init(const Box3& _Bv, int _nX, int _nZ)
 		{
 			BV = _Bv;
 			nX = _nX;
@@ -126,7 +126,7 @@ namespace Riemann
 			return v;
 		}
 
-		bool	GetCellBV(int i, int j, Box3d& box) const;
+		bool	GetCellBV(int i, int j, Box3& box) const;
 		bool	GetHeightRange(int i, int j, float& minH, float& maxH) const;
 		int		GetCellTriangle(int i, int j, Vector3 Tris[6]) const;
 		int		GetCellTriangle(int i, int j, uint32_t Tris[6]) const;

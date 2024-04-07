@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "ShapeType.h"
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 
 namespace Riemann
 {
@@ -83,7 +83,7 @@ namespace Riemann
 			return (float)M_PI * Radius * Radius * Height;
 		}
 
-		Box3d		CalculateBoundingVolume() const;
+		Box3		CalculateBoundingVolume() const;
 
 		Matrix3 CalculateInertiaTensor(float Mass) const
 		{

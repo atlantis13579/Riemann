@@ -17,9 +17,9 @@ namespace Riemann
 		Vector3(-PI_OVER_4,	1.0f,	PI_OVER_4)
 	};
 
-	Box3d Cylinder3d::CalculateBoundingVolume() const
+	Box3 Cylinder3d::CalculateBoundingVolume() const
 	{
-		Box3d box(Vector3(-Radius, -Height * 0.5f, -Radius), Vector3(Radius, Height * 0.5f, Radius));
+		Box3 box(Vector3(-Radius, -Height * 0.5f, -Radius), Vector3(Radius, Height * 0.5f, Radius));
 		Vector3 center = GetCenter();
 		Vector3 axis = GetAxis();
 		if (!axis.ParallelTo(Vector3::UnitY()) || center.SquareLength() > 1e-6)

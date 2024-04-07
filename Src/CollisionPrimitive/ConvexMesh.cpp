@@ -84,9 +84,9 @@ namespace Riemann
 		return true;
 	}
 
-	Box3d ConvexMesh::ComputeBoundingVolume(const Vector3& CenterOfMass) const
+	Box3 ConvexMesh::ComputeBoundingVolume(const Vector3& CenterOfMass) const
 	{
-		Box3d box;
+		Box3 box;
 		box.SetEmpty();
 		for (uint16_t i = 0; i < NumVertices; ++i)
 		{

@@ -136,7 +136,7 @@ namespace Riemann
 		return -1;
 	}
 
-	static int RayIntersectGeometries(const Ray3d& Ray, int* Geoms, int NumGeoms, GeometryBase** GeometryCollection, const Box3d& BV, const RayCastOption* Option, RayCastResult* Result)
+	static int RayIntersectGeometries(const Ray3d& Ray, int* Geoms, int NumGeoms, GeometryBase** GeometryCollection, const Box3& BV, const RayCastOption* Option, RayCastResult* Result)
 	{
 		assert(NumGeoms > 0);
 		if (GeometryCollection == nullptr)
@@ -273,7 +273,7 @@ namespace Riemann
 				{
 					int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 					int	 nPrimitives = p->GetNumGeometries();
-					const Box3d& Box = p->GetBoundingVolume();
+					const Box3& Box = p->GetBoundingVolume();
 					int HitId = RayIntersectGeometries(Ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
 					if (HitId >= 0)
 					{
@@ -387,7 +387,7 @@ namespace Riemann
 		Result->overlaps = false;
 		Result->overlapGeoms.clear();
 
-		const Box3d& aabb = geometry->GetBoundingVolume_WorldSpace();
+		const Box3& aabb = geometry->GetBoundingVolume_WorldSpace();
 
 		CacheFriendlyAABBTree* p = m_AABBTreeInference;
 		if (p == nullptr || !aabb.Intersect(p->aabb.Min, p->aabb.Max))
@@ -452,7 +452,7 @@ namespace Riemann
 		return Result->overlaps;
 	}
 
-	static int SweepGeometries(const GeometryBase* geometry, int* Geoms, int NumGeoms, GeometryBase** GeometryCollection, const Vector3& Direction, const Box3d& BV, const SweepOption* Option, SweepResult* Result)
+	static int SweepGeometries(const GeometryBase* geometry, int* Geoms, int NumGeoms, GeometryBase** GeometryCollection, const Vector3& Direction, const Box3& BV, const SweepOption* Option, SweepResult* Result)
 	{
 		assert(NumGeoms > 0);
 		float t;
@@ -547,7 +547,7 @@ namespace Riemann
 				{
 					int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 					int	 nPrimitives = p->GetNumGeometries();
-					const Box3d& Box = p->GetBoundingVolume();
+					const Box3& Box = p->GetBoundingVolume();
 					int HitId = SweepGeometries(geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Direction, Box, Option, Result);
 					if (HitId >= 0)
 					{

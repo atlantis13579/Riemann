@@ -361,12 +361,12 @@ namespace Maths
 
 		constexpr static TVector3<T> InfMin()
 		{
-			return TVector3<T>(-std::numeric_limits<T>::max, -std::numeric_limits<T>::max, -std::numeric_limits<T>::max);
+			return TVector3<T>(-std::numeric_limits<T>::max(), -std::numeric_limits<T>::max(), -std::numeric_limits<T>::max());
 		}
 
 		constexpr static TVector3<T> InfMax()
 		{
-			return TVector3<T>(std::numeric_limits<T>::max, std::numeric_limits<T>::max, std::numeric_limits<T>::max);
+			return TVector3<T>(std::numeric_limits<T>::max(), std::numeric_limits<T>::max(), std::numeric_limits<T>::max());
 		}
 
 		constexpr static TVector3<T> Zero()

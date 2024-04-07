@@ -1,6 +1,7 @@
 
 #include <assert.h>
 #include <algorithm>
+#include "Delaunay.h"
 #include "Voronoi3d.h"
 #include "GeometrySet.h"
 #include "../Maths/Maths.h"
@@ -4793,11 +4794,11 @@ namespace voro
 
 namespace Geometry
 {
-	voro::container* CreateVoroContrainer(const std::vector<Vector3>& points, const Box3d& _Bounds, const float eps)
+	voro::container* CreateVoroContrainer(const std::vector<Vector3>& points, const Box3& _Bounds, const float eps)
 	{
 		const double BoundingBoxSlack = 0.01f;
 
-		Box3d Bounds = _Bounds;
+		Box3 Bounds = _Bounds;
 		Bounds = Bounds.Thicken(BoundingBoxSlack);
 		Vector3 BoundingBoxSize = Bounds.GetSize();
 
@@ -4846,7 +4847,7 @@ namespace Geometry
 	{
 	}
 
-	Voronoi3d::Voronoi3d(const std::vector<Vector3>& points, const Box3d& bounds, const float eps)
+	Voronoi3d::Voronoi3d(const std::vector<Vector3>& points, const Box3& bounds, const float eps)
 	{
 		Set(points, bounds, eps);
 	}
@@ -4860,11 +4861,11 @@ namespace Geometry
 		}
 	}
 
-	void Voronoi3d::Set(const std::vector<Vector3>& points, const Box3d& bounds, const float eps)
+	void Voronoi3d::Set(const std::vector<Vector3>& points, const Box3& bounds, const float eps)
 	{
 		mPoints = points;
 		mBounds = bounds;
-		mBounds.Encapsulate(Box3d(points.data(), points.size()));
+		mBounds.Encapsulate(Box3(points.data(), points.size()));
 		mBounds.Thicken(1e-3f);
 		if (mContainer)
 		{
@@ -4968,7 +4969,7 @@ namespace Geometry
 		}
 	}
 
-	void Voronoi3d::GenerateRandomPoints(const Box3d& Bounds, int numPoints, std::vector<Vector3>& points)
+	void Voronoi3d::GenerateRandomPoints(const Box3& Bounds, int numPoints, std::vector<Vector3>& points)
 	{
 		const Vector3 Extent(Bounds.Max - Bounds.Min);
 
@@ -4979,13 +4980,13 @@ namespace Geometry
 		}
 	}
 
-	Box3d Voronoi3d::GetVoronoiBounds(const Box3d& Bounds, const std::vector<Vector3>& sites)
+	Box3 Voronoi3d::GetVoronoiBounds(const Box3& Bounds, const std::vector<Vector3>& sites)
 	{
-		Box3d VoronoiBounds = Bounds;
+		Box3 VoronoiBounds = Bounds;
 
 		if (sites.size() > 0)
 		{
-			VoronoiBounds += Box3d(sites.data(), sites.size());
+			VoronoiBounds += Box3(sites.data(), sites.size());
 		}
 
 		return VoronoiBounds.Thicken(1e-3f);
@@ -5049,7 +5050,12 @@ namespace Geometry
 		}
 	}
 
-	VoronoiMesh::VoronoiMesh(const std::vector<Vector3>& points, const Box3d& bounds, const float eps)
+	static int EncodePlaneToMaterial(int PlaneIdx)
+	{
+		return -(PlaneIdx + 1);
+	}
+
+	VoronoiMesh::VoronoiMesh(const std::vector<Vector3>& points, const Box3& bounds, const float eps)
 	{
 		Voronoi3d v(points, bounds, eps);
 		v.Build();
@@ -5058,13 +5064,12 @@ namespace Geometry
 		const int OutsideCellIndex = -1;
 
 		int NumCells = v.GetNumPoints();
-		mSet->mMeshs.reserve(NumCells);
+		mSet->CreateGeometryData(NumCells);
 
 		for (size_t i = 0; i < v.mCells.size(); ++i)
 		{
-			/*
 			const std::pair<int, int> &p = v.mCells[i];
-			GeometryData* Meshes[2];
+			GeometryData* Meshes[2] = {0};
 			Meshes[0] = mSet->mMeshs[p.first];
 			Meshes[1] = nullptr;
 
@@ -5078,21 +5083,21 @@ namespace Geometry
 			const std::vector<int>& PlaneBoundary = v.mBoundaries[i];
 			Vector3 Origin = v.mPlanes[i].GetOrigin();
 			Vector3 Normal = v.mPlanes[i].GetNormal();
-			// Frame3 PlaneFrame = AxisAlignedFrame(Cells.Planes[i]);		TODO
-			Frame3 PlaneFrame(Origin, Normal);
-			FVertexInfo PlaneVertInfo;
-			PlaneVertInfo.bHaveC = true;
+			Maths::Frame3 PlaneFrame(Origin, Normal);
+
+			VertexInfo PlaneVertInfo;
+			PlaneVertInfo.bHaveColor = true;
 			PlaneVertInfo.bHaveUV = false;
-			PlaneVertInfo.bHaveN = true;
+			PlaneVertInfo.bHaveNormal = true;
 			int VertStart[2]{ -1, -1 };
-			for (int MeshIdx = 0; MeshIdx < NumMeshes; MeshIdx++)
+			for (int j = 0; j < NumMeshes; ++j)
 			{
 				PlaneVertInfo.Normal = Normal;
-				if (MeshIdx == 1 && OtherCell != OutsideCellIndex)
+				if (j == 1 && OtherCell != OutsideCellIndex)
 				{
 					PlaneVertInfo.Normal *= -1.0f;
 				}
-				VertStart[MeshIdx] = Meshes[MeshIdx]->MaxVertexID();
+				VertStart[j] = Meshes[j]->GetVerticesCount();
 				Vector2 MinUV(FLT_MAX, FLT_MAX);
 				for (int BoundaryVertex : PlaneBoundary)
 				{
@@ -5104,33 +5109,32 @@ namespace Geometry
 				for (int BoundaryVertex : PlaneBoundary)
 				{
 					PlaneVertInfo.Position = v.mBoundaryVertices[BoundaryVertex];
-					Vector2 UV = (PlaneFrame.ProjectXZ(PlaneVertInfo.Position) - MinUV) * static_cast<float>(GlobalUVScale);
-					int VID = Meshes[MeshIdx]->AppendVertex(PlaneVertInfo);
-					AugmentedDynamicMesh::SetVertexColor(*Meshes[MeshIdx], VID, AugmentedDynamicMesh::UnsetVertexColor);
-					AugmentedDynamicMesh::SetAllUV(*Meshes[MeshIdx], VID, UV, NumUVLayers);
+					Vector2 UV = PlaneFrame.ProjectXZ(PlaneVertInfo.Position) - MinUV;
+					int idx = Meshes[j]->AppendVertex(PlaneVertInfo);
+					Meshes[j]->SetColor(idx, Vector3::InfMax());
+					Meshes[j]->SetUV(idx, UV, -1);
 				}
 			}
-			*/
 
-			/*
-			int MID = PlaneToMaterial(i);
-			if (Cells.AssumeConvexCells)
+			const bool AssumeConvexCells = true;
+			int MID = EncodePlaneToMaterial((int)i);
+			if (AssumeConvexCells)
 			{
 				// put a fan
-				for (int V0 = 0, V1 = 1, V2 = 2; V2 < PlaneBoundary.Num(); V1 = V2++)
+				for (int V0 = 0, V1 = 1, V2 = 2; V2 < (int)PlaneBoundary.size(); V1 = V2++)
 				{
 					for (int MeshIdx = 0; MeshIdx < NumMeshes; MeshIdx++)
 					{
 						int Offset = VertStart[MeshIdx];
-						FIndex3i Tri(V0 + Offset, V1 + Offset, V2 + Offset);
+						Vector3i Tri(V0 + Offset, V1 + Offset, V2 + Offset);
 						if (MeshIdx == 1 && OtherCell != OutsideCellIndex)
 						{
-							Swap(Tri.B, Tri.C);
+							std::swap(Tri.y, Tri.z);
 						}
 						int TID = Meshes[MeshIdx]->AppendTriangle(Tri);
-						if (ensure(TID > -1))
+						if (TID > -1)
 						{
-							Meshes[MeshIdx]->Attributes()->GetMaterialID()->SetNewValue(TID, MID);
+							Meshes[MeshIdx]->Attributes.MaterialIDAttrib.SetNewValue(TID, MID);
 						}
 					}
 				}
@@ -5138,41 +5142,36 @@ namespace Geometry
 			else // cells may not be convex; cannot triangulate w/ fan
 			{
 				// Delaunay triangulate
-				FPolygon2f Polygon;
-				for (int V = 0; V < PlaneBoundary.Num(); V++)
+				std::vector<Vector2> Polygon;
+				for (int V = 0; V < PlaneBoundary.size(); ++V)
 				{
-					FVector2f UV;
-					AugmentedDynamicMesh::GetUV(*Meshes[0], VertStart[0] + V, UV, 0);
-					Polygon.AppendVertex(UV);
+					Vector2 UV = Meshes[0]->GetUV(VertStart[0] + V, 0);
+					Polygon.push_back(UV);
 				}
 
-				FGeneralPolygon2f GeneralPolygon(Polygon);
-				FConstrainedDelaunay2f Triangulation;
-				Triangulation.FillRule = FConstrainedDelaunay2f::EFillRule::NonZero;
-				Triangulation.Add(GeneralPolygon);
-				Triangulation.Triangulate();
+				Delaunay Triangulation;
+				Triangulation.Triangulate(Polygon);
 
 				for (int MeshIdx = 0; MeshIdx < NumMeshes; MeshIdx++)
 				{
 					int Offset = VertStart[MeshIdx];
-					for (FIndex3i Triangle : Triangulation.Triangles)
+					for (Vector3i& Triangle : Triangulation.Triangles)
 					{
-						Triangle.A += Offset;
-						Triangle.B += Offset;
-						Triangle.C += Offset;
+						Triangle.x += Offset;
+						Triangle.y += Offset;
+						Triangle.z += Offset;
 						if (MeshIdx == 1 && OtherCell != OutsideCellIndex)
 						{
-							Swap(Triangle.B, Triangle.C);
+							std::swap(Triangle.y, Triangle.z);
 						}
 						int TID = Meshes[MeshIdx]->AppendTriangle(Triangle);
-						if (ensure(TID > -1))
+						if (TID > -1)
 						{
-							Meshes[MeshIdx]->Attributes()->GetMaterialID()->SetNewValue(TID, MID);
+							Meshes[MeshIdx]->Attributes.MaterialIDAttrib.SetNewValue(TID, MID);
 						}
 					}
 				}
 			}
-			*/
 		}
 	}
 

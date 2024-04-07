@@ -5,7 +5,7 @@
 
 #include "ShapeType.h"
 #include "../Maths/Matrix3.h"
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 
 namespace Riemann
 {
@@ -55,9 +55,9 @@ namespace Riemann
 			return (Max - Min) * 0.5f;
 		}
 
-		Box3d			CalculateBoundingVolume() const
+		Box3			CalculateBoundingVolume() const
 		{
-			return Box3d(Min, Max);
+			return Box3(Min, Max);
 		}
 
 		float			CalculateVolume() const

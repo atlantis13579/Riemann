@@ -249,8 +249,8 @@ namespace Riemann
 
 	bool HeightField3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	{
-		Box3d Intersect;
-		if (!BV.GetIntersection(Box3d(Bmin, Bmax), Intersect))
+		Box3 Intersect;
+		if (!BV.GetIntersection(Box3(Bmin, Bmax), Intersect))
 		{
 			return false;
 		}
@@ -278,12 +278,12 @@ namespace Riemann
 	template<class Shape>
 	bool IntersectHF(const HeightField3d* hf, const Shape& shape)
 	{
-		const Box3d b = shape.CalculateBoundingVolume();
-		const Box3d& BV = hf->BV;
+		const Box3 b = shape.CalculateBoundingVolume();
+		const Box3& BV = hf->BV;
 		const float InvDX = hf->InvDX;
 		const float InvDZ = hf->InvDZ;
 
-		Box3d Intersect;
+		Box3 Intersect;
 		if (!BV.GetIntersection(b, Intersect))
 		{
 			return false;
@@ -338,7 +338,7 @@ namespace Riemann
 		return true;
 	}
 
-	bool HeightField3d::GetCellBV(int i, int j, Box3d& box) const
+	bool HeightField3d::GetCellBV(int i, int j, Box3& box) const
 	{
 		float minH, maxH;
 		if (!GetHeightRange(i, j, minH, maxH))

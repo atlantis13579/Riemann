@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ShapeType.h"
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
 
@@ -33,8 +33,8 @@ namespace Riemann
 		void				GetVertices(Vector3 v[8]) const;
 
 		static OrientedBox3d	ComputeBoundingOBB_PCA(const Vector3* points, int n);
-		static Box3d			ComputeBoundingVolume(const Vector3& Center, const Vector3& Extent, const Matrix3& Rot);
-		Box3d					CalculateBoundingVolume() const;
+		static Box3			ComputeBoundingVolume(const Vector3& Center, const Vector3& Extent, const Matrix3& Rot);
+		Box3					CalculateBoundingVolume() const;
 
 		bool	IntersectPoint(const Vector3& point) const;
 		bool 	IntersectPlane(const Vector3& normal, const float D) const;

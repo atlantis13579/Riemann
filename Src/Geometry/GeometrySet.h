@@ -2,42 +2,102 @@
 
 #include <string>
 #include <vector>
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../Maths/Vector2.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Transform.h"
 
 namespace Geometry
 {
-	struct GeometryData
+	struct VertexInfo
 	{
+		Vector3 Position { Vector3::Zero() };
+		Vector3 Normal { Vector3::Zero() };
+		Vector3 Color { Vector3::Zero() };
+		Vector2 UV { Vector2::Zero() };
+		bool bHaveNormal { false };
+		bool bHaveColor { false };
+		bool bHaveUV { false };
+	};
+
+	template<typename T>
+	class AttributeBase
+	{
+	public:
+		inline void SetNewValue(int index, const T& val)
+		{
+			mValuse.insert(mValuse.begin() + index, val);
+		}
+
+		inline T GetValue(int index) const
+		{
+			return mValuse[index];
+		}
+
+		inline void SetValue(int index, const T& val)
+		{
+			mValuse[index] = val;
+		}
+
+	private:
+		std::vector<T>	mValuse;
+	};
+
+	struct GeometryAttributeSet
+	{
+		AttributeBase<int> MaterialIDAttrib;
+	};
+
+	class GeometryData
+	{
+	public:
+		GeometryData();
+		~GeometryData();
+
 		bool LoadObj(const char* name);
 		bool ExportObj(const char* name);
 		static GeometryData* CreateFromObj(const char* name);
 
-		bool HasVertexColors() const
+		int GetVerticesCount() const { return (int)VertexPositions.size(); }
+		int AppendVertex(const VertexInfo& info);
+		int AppendTriangle(const Vector3i& tri);
+
+		void SetColor(int idx, const Vector3& val);
+		void SetNormal(int idx, const Vector3& val);
+		void SetUV(int idx, const Vector2& val, int layer);
+
+		Vector2 GetUV(int idx, int layer) const
 		{
-			return !VertexColors.empty();
+			return VertexUVs[idx];
 		}
 
-		bool HasVertexNormals() const
+		bool HaveVertexColors() const
 		{
-			return !VertexNormals.empty();
+			return bHaveVertexColor;
 		}
 
-		bool HasVertexUVs() const
+		bool HaveVertexNormals() const
 		{
-			return !VertexUVs.empty();
+			return bHaveVertexNormals;
 		}
 
-		std::vector<Vector3>	Vertices;
+		bool HaveVertexUVs() const
+		{
+			return bHaveVertexUVs;
+		}
+
+		std::vector<Vector3>	VertexPositions;
 		std::vector<Vector3>	VertexNormals;
 		std::vector<Vector3>	VertexColors;
 		std::vector<Vector2>	VertexUVs;
 		std::vector<Vector3i>	Triangles;
-		Box3d					Bounds;
+		GeometryAttributeSet	Attributes;
+		Box3					Bounds;
 		Transform				Pose;
 		std::string				ResourceName;
+		bool					bHaveVertexColor{ false };
+		bool					bHaveVertexNormals{ false };
+		bool					bHaveVertexUVs{ false };
 	};
 
 	class GeometrySet
@@ -47,10 +107,11 @@ namespace Geometry
 		~GeometrySet();
 
 		bool LoadObj(const char* name, const Transform &pose);
+		void CreateGeometryData(int NumMeshes);
 
 	public:
 		std::vector<GeometryData*>	mMeshs;
-		Box3d						mBounds;
+		Box3						mBounds;
 	};
 
 

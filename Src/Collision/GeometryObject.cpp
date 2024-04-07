@@ -313,7 +313,7 @@ namespace Riemann
 		return (GeometryBase*)p;
 	}
 
-	GeometryBase* GeometryFactory::CreateHeightField(const Box3d& Bv, int nRows, int nCols)
+	GeometryBase* GeometryFactory::CreateHeightField(const Box3& Bv, int nRows, int nCols)
 	{
 		TGeometry<HeightField3d>* p = new TGeometry<HeightField3d>();
 		p->Init(Bv, nRows, nCols);

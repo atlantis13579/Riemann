@@ -69,9 +69,9 @@ namespace Riemann
 			return Length * 0.5f;
 		}
 
-		Box3d			CalculateBoundingVolume() const
+		Box3			CalculateBoundingVolume() const
 		{
-			Box3d box(X0, X0);
+			Box3 box(X0, X0);
 			box.Encapsulate(X1);
 			box.Thicken(Radius);
 			return box;

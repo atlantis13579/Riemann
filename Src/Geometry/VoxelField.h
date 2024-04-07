@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 #include "../Core/BatchList.h"
 
 #include "stdint.h"
@@ -18,7 +18,7 @@ namespace Geometry
 		float	VoxelHeight;
 		float   YMergeThr;
 		int		InterpMethod;
-		Box3d	BV;
+		Box3	BV;
 	};
 
 	struct Voxel
@@ -42,11 +42,11 @@ namespace Geometry
 		~VoxelField();
 
 	public:
-		void			MakeEmpty(const Box3d& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
+		void			MakeEmpty(const Box3& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
 		bool			VoxelizationTri(const Vector3& v0, const Vector3& v1, const Vector3& v2, const VoxelizationInfo& info);
 		bool			VoxelizationYPlane(float world_y);
 		bool			VoxelizationYPlane(float world_y_min, float world_y_max);
-		bool			VoxelizationCube(const Box3d& cube);
+		bool			VoxelizationCube(const Box3& cube);
 		bool			MakeComplementarySet();
 		uint64_t		Separate(const Vector3& pos, uint32_t data, float IntersectThr);
 		int				SolveTopology(float IntersectThr, std::unordered_map<int, uint64_t>* volumes = nullptr);
@@ -65,8 +65,8 @@ namespace Geometry
 		int				WorldSpaceToVoxelIndex(const Vector3& pos) const;
 		int				WorldSpaceToVoxelSpaceY(float pos_y) const;
 		float			VoxelSpaceToWorldSpaceY(uint16_t y) const;
-		Box3d			GetVoxelBox(const Vector3& pos) const;
-		Box3d			GetVoxelBox(int x, int y, int z) const;
+		Box3			GetVoxelBox(const Vector3& pos) const;
+		Box3			GetVoxelBox(int x, int y, int z) const;
 		uint32_t		GetVoxelData(const Vector3& pos);
 
 		bool			SerializeTo(const char* filename);
@@ -82,7 +82,7 @@ namespace Geometry
 			return m_SizeZ;
 		}
 
-		const Box3d& GetBoundingVolume() const
+		const Box3& GetBoundingVolume() const
 		{
 			return m_BV;
 		}
@@ -113,7 +113,7 @@ namespace Geometry
 		int			m_SizeX, m_SizeZ, m_SizeY;
 		float		m_VoxelSize, m_VoxelHeight;
 		float		m_InvVoxelSize, m_InvVoxelHeight;
-		Box3d		m_BV;
+		Box3		m_BV;
 
 		std::vector<Voxel*>			m_Fields;
 		BatchList<Voxel>		m_VoxelBatchs;
@@ -130,7 +130,7 @@ namespace Geometry
 		int				SizeY;
 		float			VoxelSize;
 		float			VoxelHeight;
-		Box3d			BV;
+		Box3			BV;
 	};
 
 	struct VoxelFileField

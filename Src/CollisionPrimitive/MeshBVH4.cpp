@@ -6,7 +6,7 @@ namespace Riemann
 {
 #define INFLATION_EPSILON 5e-4f
 
-	void MeshBVH4::ValidateRecursive(void* p, uint32_t Depth, const Box3d& parentBounds, BVHNodeBatch* batch)
+	void MeshBVH4::ValidateRecursive(void* p, uint32_t Depth, const Box3& parentBounds, BVHNodeBatch* batch)
 	{
 		static uint32_t validateCounter = 0; // this is to suppress a warning that recursive call has no side effects
 		validateCounter++;
@@ -17,7 +17,7 @@ namespace Riemann
 			BVHNode n = batch->GetNode(j);
 			if (batch->IsEmpty(j))
 				continue;
-			Box3d* bounds = (Box3d*)&n.minx;
+			Box3* bounds = (Box3*)&n.minx;
 			assert(parentBounds.IsInside(*bounds));
 			if (!n.IsLeaf())
 			{
@@ -45,7 +45,7 @@ namespace Riemann
 			}
 		}
 
-		Box3d recomputedBounds = batch->ComputeBounds();
+		Box3 recomputedBounds = batch->ComputeBounds();
 		assert((recomputedBounds.Min.x - parentBounds.Min.x) <= INFLATION_EPSILON);
 		assert((recomputedBounds.Min.y - parentBounds.Min.y) <= INFLATION_EPSILON);
 		assert((recomputedBounds.Min.z - parentBounds.Min.z) <= INFLATION_EPSILON);
@@ -58,7 +58,7 @@ namespace Riemann
 	{
 		for (uint32_t j = 0; j < NumRoots; j++)
 		{
-			Box3d BV = BatchPtr[j].ComputeBounds();
+			Box3 BV = BatchPtr[j].ComputeBounds();
 			ValidateRecursive(p, 0, BV, BatchPtr + j);
 		}
 	}
@@ -66,10 +66,10 @@ namespace Riemann
 
 	struct TreeNode
 	{
-		Box3d	bounds;
+		Box3	bounds;
 		int		NextNodeIndex;
 		int		LeafCount;
-		TreeNode() : bounds(Box3d::Empty()), NextNodeIndex(-1), LeafCount(0) {}
+		TreeNode() : bounds(Box3::Empty()), NextNodeIndex(-1), LeafCount(0) {}
 	};
 
 	static const uint32_t NTRADEOFF = 15;
@@ -85,8 +85,8 @@ namespace Riemann
 	struct SortBoundsPredicate
 	{
 		uint32_t coordIndex;
-		const Box3d* allBounds;
-		SortBoundsPredicate(uint32_t coordIndex_, const Box3d* allBounds_) : coordIndex(coordIndex_), allBounds(allBounds_)
+		const Box3* allBounds;
+		SortBoundsPredicate(uint32_t coordIndex_, const Box3* allBounds_) : coordIndex(coordIndex_), allBounds(allBounds_)
 		{}
 
 		bool operator()(const uint32_t& idx1, const uint32_t& idx2) const
@@ -105,7 +105,7 @@ namespace Riemann
 	struct SubSortSAH
 	{
 		uint32_t* permuteStart, * tempPermute;
-		const Box3d* allBounds;
+		const Box3* allBounds;
 		float* metricL;
 		float* metricR;
 		const uint32_t* xOrder, * yOrder, * zOrder;
@@ -116,7 +116,7 @@ namespace Riemann
 
 		// precompute various values used during sort
 		SubSortSAH(
-			uint32_t* permute, const Box3d* allBounds_, uint32_t numBounds,
+			uint32_t* permute, const Box3* allBounds_, uint32_t numBounds,
 			const uint32_t* xOrder_, const uint32_t* yOrder_, const uint32_t* zOrder_,
 			const uint32_t* xRanks_, const uint32_t* yRanks_, const uint32_t* zRanks_, float sizePerfTradeOff01)
 			: permuteStart(permute), allBounds(allBounds_),
@@ -272,7 +272,7 @@ namespace Riemann
 			Vector3 bmx = allBounds[permute[split.start]].Max;
 			for (uint32_t i = 1; i < split.count; i++)
 			{
-				const Box3d& b1 = allBounds[permute[split.start + i]];
+				const Box3& b1 = allBounds[permute[split.start + i]];
 				bmn = bmn.Min(b1.Min);
 				bmx = bmx.Max(b1.Max);
 			}
@@ -371,13 +371,13 @@ namespace Riemann
 				uint32_t splitCount = splitCounts[s];
 				if (splitCount > 0)
 				{
-					Box3d b = allBounds[Permute[splitStarts[s]]];
+					Box3 b = allBounds[Permute[splitStarts[s]]];
 					float sahMin = SAH(b.Max - b.Min);
 					float sahMax = sahMin;
 					for (uint32_t i = 1; i < splitCount; i++)
 					{
 						uint32_t localIndex = i + splitStarts[s];
-						const Box3d& b1 = allBounds[Permute[localIndex]];
+						const Box3& b1 = allBounds[Permute[localIndex]];
 						float sah1 = SAH(b1.Max - b1.Min);
 						sahMin = std::min(sahMin, sah1);
 						sahMax = std::max(sahMax, sah1);
@@ -436,7 +436,7 @@ namespace Riemann
 	};
 
 
-	void MeshBVH4::BuildFromBounds(MeshBVH4& bvh, const std::vector<Box3d>& allBounds, std::vector<uint32_t>& Permute, const Box3d& meshBounds)
+	void MeshBVH4::BuildFromBounds(MeshBVH4& bvh, const std::vector<Box3>& allBounds, std::vector<uint32_t>& Permute, const Box3& meshBounds)
 	{
 		const uint32_t numBounds = (uint32_t)allBounds.size();
 		Permute.resize(numBounds + 1);
@@ -610,7 +610,7 @@ namespace Riemann
 	}
 
 	/////////////////////////////////////////////////////////////////////////
-	Box3d BVHNodeBatch::ComputeBounds()
+	Box3 BVHNodeBatch::ComputeBounds()
 	{
 		float _minx = FLT_MAX, _miny = FLT_MAX, _minz = FLT_MAX, _maxx = -FLT_MAX, _maxy = -FLT_MAX, _maxz = -FLT_MAX;
 		for (uint32_t j = 0; j < SIMD_WIDTH; j++)
@@ -624,7 +624,7 @@ namespace Riemann
 			_maxy = std::max(_maxy, maxy[j]);
 			_maxz = std::max(_maxz, maxz[j]);
 		}
-		return Box3d(Vector3(_minx, _miny, _minz), Vector3(_maxx, _maxy, _maxz));
+		return Box3(Vector3(_minx, _miny, _minz), Vector3(_maxx, _maxy, _maxz));
 	}
 
 	/////////////////////////////////////////////////////////////////////////

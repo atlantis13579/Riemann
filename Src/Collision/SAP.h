@@ -5,7 +5,7 @@
 #include <map>
 #include <set>
 #include <vector>
-#include "../Maths/Box3d.h"
+#include "../Maths/Box3.h"
 
 // Sweep and Prune (SAP) algorithm
 // http://www.codercorner.com/SAP.pdf
