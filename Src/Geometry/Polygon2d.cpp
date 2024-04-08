@@ -5,19 +5,24 @@
 
 namespace Geometry
 {
-	float Signed2DTriArea(const Vector2& a, const Vector2& b, const Vector2& c)
+	float TriangleArea2D(const Vector2& a, const Vector2& b, const Vector2& c)
+	{
+		return fabsf(TriangleArea2D_Signed(a, b, c));
+	}
+
+	float TriangleArea2D_Signed(const Vector2& a, const Vector2& b, const Vector2& c)
 	{
 		return (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
 	}
 
 	int SegmentIntersectSegment2D(const Vector2& a, const Vector2& b, const Vector2& c, const Vector2& d, float* t, Vector2* p)
 	{
-		float a1 = Signed2DTriArea(a, b, d);
-		float a2 = Signed2DTriArea(a, b, c);
+		float a1 = TriangleArea2D_Signed(a, b, d);
+		float a2 = TriangleArea2D_Signed(a, b, c);
 
 		if (a1 * a2 < 0.0f)
 		{
-			float a3 = Signed2DTriArea(c, d, a);
+			float a3 = TriangleArea2D_Signed(c, d, a);
 			float a4 = a3 + a2 - a1;
 			if (a3 * a4 < 0.0f)
 			{
@@ -69,7 +74,8 @@ namespace Geometry
 		edged.resize(nvert);
 		edget.resize(nvert);
 		*inside = SqrDistancePointToPolygon2D(pt, polygon, nvert, &edged[0], &edget[0]);
-		if (*inside) {
+		if (*inside)
+		{
 			// Point is inside the polygon, return the point.
 			return pt;
 		}
@@ -77,8 +83,10 @@ namespace Geometry
 		// Point is outside the polygon, clamp to nearest edge.
 		float dmin = FLT_MAX;
 		int imin = -1;
-		for (int i = 0; i < nvert; ++i) {
-			if (edged[i] < dmin) {
+		for (int i = 0; i < nvert; ++i)
+		{
+			if (edged[i] < dmin)
+			{
 				dmin = edged[i];
 				imin = i;
 			}
@@ -93,7 +101,8 @@ namespace Geometry
 	bool PointInPolygon2D(const Vector2& pt, const Vector2* polygon, int nvert)
 	{
 		bool c = false;
-		for (int i = 0, j = nvert - 1; i < nvert; j = i++) {
+		for (int i = 0, j = nvert - 1; i < nvert; j = i++)
+		{
 			const Vector2* pi = polygon + i;
 			const Vector2* pj = polygon + j;
 			if (((pi->y > pt.y) != (pj->y > pt.y)) &&
@@ -122,19 +131,20 @@ namespace Geometry
 	{
 		Vector2 e = b - a;
 		Vector2 eperp = Vector2(-e.y, e.x);
-		int bestIndex = -1;
+		int min_i = -1;
 		float maxVal = -FLT_MAX, rightMostVal = -FLT_MAX;
 		for (int i = 1; i < nvert; i++)
 		{
 			float d = DotProduct(polygon[i] - a, eperp);
 			float r = DotProduct(polygon[i] - a, e);
-			if (d > maxVal || (d == maxVal && r > rightMostVal)) {
-				bestIndex = i;
+			if (d > maxVal || (d == maxVal && r > rightMostVal))
+			{
+				min_i = i;
 				maxVal = d;
 				rightMostVal = r;
 			}
 		}
-		return bestIndex;
+		return min_i;
 	}
 
 	float MinAreaRect(const Vector2* points, int n, Vector2& center, Vector2 axis[2])

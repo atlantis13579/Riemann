@@ -5085,17 +5085,17 @@ namespace Geometry
 			Vector3 Normal = v.mPlanes[i].GetNormal();
 			Maths::Frame3 PlaneFrame(Origin, Normal);
 
-			VertexInfo PlaneVertInfo;
-			PlaneVertInfo.bHaveColor = true;
-			PlaneVertInfo.bHaveUV = false;
-			PlaneVertInfo.bHaveNormal = true;
+			VertexInfo info;
+			info.bHaveColor = true;
+			info.bHaveUV = true;
+			info.bHaveNormal = true;
 			int VertStart[2]{ -1, -1 };
 			for (int j = 0; j < NumMeshes; ++j)
 			{
-				PlaneVertInfo.Normal = Normal;
+				info.Normal = Normal;
 				if (j == 1 && OtherCell != OutsideCellIndex)
 				{
-					PlaneVertInfo.Normal *= -1.0f;
+					info.Normal *= -1.0f;
 				}
 				VertStart[j] = Meshes[j]->GetVerticesCount();
 				Vector2 MinUV(FLT_MAX, FLT_MAX);
@@ -5108,11 +5108,10 @@ namespace Geometry
 				}
 				for (int BoundaryVertex : PlaneBoundary)
 				{
-					PlaneVertInfo.Position = v.mBoundaryVertices[BoundaryVertex];
-					Vector2 UV = PlaneFrame.ProjectXZ(PlaneVertInfo.Position) - MinUV;
-					int idx = Meshes[j]->AppendVertex(PlaneVertInfo);
-					Meshes[j]->SetColor(idx, Vector3::InfMax());
-					Meshes[j]->SetUV(idx, UV, -1);
+					info.Position = v.mBoundaryVertices[BoundaryVertex];
+					info.Color = Vector3::InfMax();
+					info.UV = PlaneFrame.ProjectXZ(info.Position) - MinUV;
+					Meshes[j]->AppendVertex(info);
 				}
 			}
 
@@ -5155,16 +5154,14 @@ namespace Geometry
 				for (int MeshIdx = 0; MeshIdx < NumMeshes; MeshIdx++)
 				{
 					int Offset = VertStart[MeshIdx];
-					for (Vector3i& Triangle : Triangulation.Triangles)
+					for (DelaunayTriangle& Triangle : Triangulation.Triangles)
 					{
-						Triangle.x += Offset;
-						Triangle.y += Offset;
-						Triangle.z += Offset;
+						Vector3i vt(Triangle.v1 + Offset, Triangle.v2 + Offset, Triangle.v3 + Offset);
 						if (MeshIdx == 1 && OtherCell != OutsideCellIndex)
 						{
-							std::swap(Triangle.y, Triangle.z);
+							std::swap(vt.y, vt.z);
 						}
-						int TID = Meshes[MeshIdx]->AppendTriangle(Triangle);
+						int TID = Meshes[MeshIdx]->AppendTriangle(vt);
 						if (TID > -1)
 						{
 							Meshes[MeshIdx]->Attributes.MaterialIDAttrib.SetNewValue(TID, MID);

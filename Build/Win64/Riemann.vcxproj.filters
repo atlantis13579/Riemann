@@ -504,6 +504,12 @@
     <ClInclude Include="..\..\Src\Geometry\Delaunay.h">
       <Filter>Geometry</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Core\Sorting.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Destruction\GraphPartition.h">
+      <Filter>Destruction</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">
@@ -709,6 +715,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\Delaunay.cpp">
       <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Destruction\GraphPartition.cpp">
+      <Filter>Destruction</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

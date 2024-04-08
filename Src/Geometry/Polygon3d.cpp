@@ -4,7 +4,7 @@ namespace Geometry
 {
 #define POLY_STACK_SIZE		64
 
-	static float TriangleArea3D(const Vector3& A, const Vector3& B, const Vector3& C)
+	float TriangleArea3D(const Vector3& A, const Vector3& B, const Vector3& C)
 	{
 		float cx = (B.y - A.y) * (C.z - A.z) - (C.y - A.y) * (B.z - A.z);
 		float cy = (B.z - A.z) * (C.x - A.x) - (C.z - A.z) * (B.x - A.x);

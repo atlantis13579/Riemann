@@ -4,6 +4,8 @@
 
 namespace Geometry
 {
+	float TriangleArea3D(const Vector3& A, const Vector3& B, const Vector3& C);
+
 	float PolygonArea3D(const Vector3* polygon, int nvert);
 
 	void ClipPolygonByPlane3D(const Vector3* polygon, int n, const Vector3& Origin, const Vector3& Normal, Vector3* clipped, int* nc);

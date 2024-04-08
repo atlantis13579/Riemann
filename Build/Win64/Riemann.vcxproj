@@ -22,6 +22,7 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\MassParameters.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Mesh.cpp" />
     <ClCompile Include="..\..\Src\Destruction\ConnectionGraph.cpp" />
+    <ClCompile Include="..\..\Src\Destruction\GraphPartition.cpp" />
     <ClCompile Include="..\..\Src\Destruction\StrainSolver.cpp" />
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Delaunay.cpp" />
@@ -98,6 +99,7 @@
     <ClInclude Include="..\..\Src\Core\Profiler.h" />
     <ClInclude Include="..\..\Src\Destruction\ConnectionGraph.h" />
     <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
+    <ClInclude Include="..\..\Src\Destruction\GraphPartition.h" />
     <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
     <ClInclude Include="..\..\Src\Destruction\StrainSolver.h" />
     <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h" />

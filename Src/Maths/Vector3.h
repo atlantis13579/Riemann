@@ -445,7 +445,7 @@ namespace Maths
 	typedef TVector3<int>	Vector3i;
 
 	static_assert(sizeof(Vector3) == 12, "sizeof Vector3 is not valid");
-
+	static_assert(sizeof(Vector3i) == 12, "sizeof Vector3 is not valid");
 }
 
 using Vector3 = Maths::Vector3;

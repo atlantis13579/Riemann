@@ -5,22 +5,22 @@
 
 namespace Maths
 {
-#ifndef PI
-#define PI				(3.1415926536f)
-#endif // !PI
+	#ifndef PI
+	#define PI				(3.1415926536f)
+	#endif // !PI
 
-#define PI_2			(6.2831853072f)
-#define PI_OVER_2		(1.5707963268f)
-#define PI_OVER_3		(1.0471975512f)
-#define PI_OVER_4		(0.7853981634f)
-#define PI_OVER_6		(0.5235987756f)
-#define PI_OVER_8		(0.3926990817f)
-#define PI_OVER_180		(0.0174532925f)
-#define RAD_TO_DEG		(57.295779513f)
-#define SQRT_2			(1.4142135624f)
-#define SQRT_3			(1.7320508076f)
-#define SMALL_NUMBER	(1e-3f)
-#define TINY_NUMBER		(1e-6f)
+	#define PI_2			(6.2831853072f)
+	#define PI_OVER_2		(1.5707963268f)
+	#define PI_OVER_3		(1.0471975512f)
+	#define PI_OVER_4		(0.7853981634f)
+	#define PI_OVER_6		(0.5235987756f)
+	#define PI_OVER_8		(0.3926990817f)
+	#define PI_OVER_180		(0.0174532925f)
+	#define RAD_TO_DEG		(57.295779513f)
+	#define SQRT_2			(1.4142135624f)
+	#define SQRT_3			(1.7320508076f)
+	#define SMALL_NUMBER	(1e-3f)
+	#define TINY_NUMBER		(1e-6f)
 
 	inline float ToRadian(float degree)
 	{
@@ -48,6 +48,27 @@ namespace Maths
 		float p = a + (b - a) * RandomFloat01();
 		return p;
 	}
+
+	struct SplitMix64RandGen
+	{
+		typedef unsigned long long uint64;
+		uint64 m_state;
+		explicit SplitMix64RandGen(uint64 seed)
+		{
+			m_state = seed;
+		}
+		explicit SplitMix64RandGen()
+		{
+			m_state = 0;
+		}
+		uint64 operator()()
+		{
+			uint64 z = (m_state += 0x9e3779b97f4a7c15);
+			z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
+			z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
+			return z ^ (z >> 31);
+		}
+	};
 
 	inline float FloatDiff(float v1, float v2)
 	{
@@ -84,6 +105,22 @@ namespace Maths
 		return x >= std::numeric_limits<float>::max() || x == std::numeric_limits<float>::infinity();
 	}
 
+	inline bool IsFloatNan(float f)
+	{
+		return f != f;
+	}
+
+	inline bool IsFloatValid(float f)
+	{
+		return (f == f) && (f != NAN) && (f != INFINITY) && (f != INFINITY);
+	}
+
+	template <typename T>
+	inline T Abs(const T x)
+	{
+		return x >= 0 ? x : -x;
+	}
+
 	template <typename T>
 	inline T Sqr(const T x)
 	{
@@ -94,6 +131,28 @@ namespace Maths
 	inline T Cube(const T x)
 	{
 		return x * x * x;
+	}
+
+	// https://en.wikipedia.org/wiki/Kahan_summation_algorithm
+	template <typename T>
+	inline T KahanBabuskaSummation(const T* px, int n)
+	{
+		if (n <= 0)
+		{
+			return 0;
+		}
+
+		T sum = px[0];
+		T err = 0;
+
+		for (int i = 1; i < n; ++i)
+		{
+			const T k = px[i];
+			const T m = sum + k;
+			err += std::abs(sum) >= std::abs(k) ? sum - m + k : k - m + sum;
+			sum = m;
+		}
+		return sum + err;
 	}
 
 	// http://www.matrix67.com/data/InvSqrt.pdf
@@ -109,10 +168,10 @@ namespace Maths
 	template <typename T>
 	inline int SolveQuadratic(const T a, const T b, const T c, T roots[2])		// ax^2 + bx + c = 0
 	{
-		const T eps = (T)1e-9;
-		if (fabs(a) < eps)
+		const T eps = (T)1e-6;
+		if (std::fabs(a) < eps)
 		{
-			if (fabs(b) < eps)
+			if (std::fabs(b) < eps)
 				return 0;
 			roots[0] = -c / b;
 			return 1;
@@ -124,7 +183,7 @@ namespace Maths
 			return 0;
 		}
 
-		if (fabs(discriminant) < eps)
+		if (std::fabs(discriminant) < eps)
 		{
 			roots[0] = roots[1] = -b / (2 * a);
 			return 1;
@@ -139,9 +198,9 @@ namespace Maths
 	inline T SolveQuadratic(const T a, const T b, const T c)		// ax^2 + bx + c = 0
 	{
 		const T eps = (T)1e-6;
-		if (fabs(a) < eps)
+		if (std::fabs(a) < eps)
 		{
-			if (fabs(b) < eps)
+			if (std::fabs(b) < eps)
 				return std::numeric_limits<T>::max();
 			return -c / b;
 		}
@@ -164,11 +223,11 @@ namespace Maths
 		T val = c + x * (b + x * (a + x));
 		if (val < 0)
 		{
-			x = fabs(c);
-			float t = (T)1 + fabs(b);
+			x = std::abs(c);
+			float t = (T)1 + std::abs(b);
 			if (t > x)
 				x = t;
-			t = (T)1 + fabs(a);
+			t = (T)1 + std::abs(a);
 			if (t > x)
 				x = t;
 		}
@@ -177,7 +236,7 @@ namespace Maths
 		for (int i = 0; i < 16; ++i)
 		{
 			val = c + x * (b + x * (a + x));
-			if (fabs(val) <= eps)
+			if (std::abs(val) <= eps)
 				return x;
 
 			float dev = b + 2 * x * a + 3 * x * x;
@@ -191,7 +250,7 @@ namespace Maths
 	inline T SolveCubic(const T a, const T b, const T c, const T d)		// ax^3 + bx^2 + cx + c = 0
 	{
 		const T eps = (T)1e-6;
-		if (fabs(a) < eps)
+		if (std::abs(a) < eps)
 			return SolveQuadratic(b, c, d);
 		return SolveCubic(b / a, c / a, d / a);
 	}
@@ -209,8 +268,6 @@ namespace Maths
 		return x != 0 && (x & (x - 1)) == 0;
 	}
 
-	static const float kEpsilon = 0.000001f;
-
 	template <typename T>
 	inline T Epsilon()
 	{
@@ -218,22 +275,30 @@ namespace Maths
 	}
 
 	template <>
+	inline double Epsilon()
+	{
+		static const double kEpsilon = 1e-8;
+		return kEpsilon;
+	}
+
+	template <>
 	inline float Epsilon()
 	{
+		static const float kEpsilon = 1e-6f;
 		return kEpsilon;
 	}
 
 	template <typename T>
 	inline constexpr T Epsilon(T a)
 	{
-		const T aa = fabs(a) + (T)1;
+		const T aa = std::abs(a) + (T)1;
 		if (aa == std::numeric_limits<T>::infinity())
 		{
-			return (T)kEpsilon;
+			return Epsilon<T>();
 		}
 		else
 		{
-			return (T)kEpsilon * aa;
+			return Epsilon<T>() * aa;
 		}
 	}
 
@@ -275,6 +340,13 @@ namespace Maths
 		return fabsf(v1 - v2) < 1e-6f;
 	}
 
+	template<>
+	inline bool FuzzyEqual(double v1, double v2)
+	{
+		return fabs(v1 - v2) < 1e-8;
+	}
+
+
 	inline bool FuzzyEqual(float v1, float v2, float eplison)
 	{
 		return fabsf(v1 - v2) < eplison;
@@ -290,5 +362,11 @@ namespace Maths
 	inline bool FuzzyZero(float v1)
 	{
 		return fabsf(v1) < 1e-6f;
+	}
+
+	template<>
+	inline bool FuzzyZero(double v1)
+	{
+		return fabs(v1) < 1e-8;
 	}
 }

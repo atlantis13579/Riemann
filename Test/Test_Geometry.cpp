@@ -69,11 +69,37 @@ void TestCatmullRom()
 void TestVoronoi2d()
 {
 	std::vector<Vector2> points;
-	Geometry::Voronoi2d::GenerateRandomPoints(Box2::Unit(), 10, points);
+	points.emplace_back(0.0f, 0.0f);
+	points.emplace_back(0.0f, -1.0f);
+	points.emplace_back(1.0f, -1.0f);
+	points.emplace_back(1.0f, -2.0f);
+	points.emplace_back(2.0f, -2.0f);
+	points.emplace_back(2.0f, -1.0f);
+	points.emplace_back(3.0f, -1.0f);
+	points.emplace_back(3.0f, 0.0f);
+	points.emplace_back(2.0f, 0.0f);
+	points.emplace_back(1.0f, 0.0f);
 
-	Geometry::Delaunay d;
-	d.Triangulate(points);
-	EXPECT(d.Triangles.size() > 0);
+	std::vector<Geometry::DelaunayEdge> edges;
+	edges.emplace_back(0, 1);
+	edges.emplace_back(1, 2);
+	edges.emplace_back(2, 3);
+	edges.emplace_back(3, 4);
+	edges.emplace_back(4, 5);
+	edges.emplace_back(5, 6);
+	edges.emplace_back(6, 7);
+	edges.emplace_back(7, 8);
+	edges.emplace_back(8, 9);
+	edges.emplace_back(9, 0);
+
+	Geometry::Delaunay d1;
+	EXPECT(d1.Triangulate(points));
+	EXPECT(d1.Triangles.size() == 10);
+
+	Geometry::ConstrainedDelaunay d2;
+	EXPECT(d2.Triangulate(points, edges));
+	EXPECT(d2.Triangles.size() == 8);
+
 	return;
 }
 

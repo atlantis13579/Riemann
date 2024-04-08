@@ -9,10 +9,9 @@
 
 namespace Maths
 {
-#define _USE_MATH_DEFINES
-
-#undef max
-#undef min
+	#define _USE_MATH_DEFINES
+	#undef max
+	#undef min
 
 	template <typename T>
 	class TAABB2
