@@ -20,12 +20,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\CollisionPrimitive\MassParameters.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Mesh.cpp" />
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Triangle2d.cpp" />
     <ClCompile Include="..\..\Src\Destruction\ConnectionGraph.cpp" />
     <ClCompile Include="..\..\Src\Destruction\GraphPartition.cpp" />
     <ClCompile Include="..\..\Src\Destruction\StrainSolver.cpp" />
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Delaunay.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\GeometryBoolean.cpp" />
     <ClCompile Include="..\..\Src\Geometry\GeometrySet.cpp" />
     <ClCompile Include="..\..\Src\Geometry\MeshSimplification.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Voronoi3d.cpp" />
@@ -82,7 +83,6 @@
     <ClCompile Include="..\..\Src\Solver\NumericalODESolver.cpp" />
     <ClCompile Include="..\..\Src\Solver\ProjectiveDynamicsSolver.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.cpp" />
-    <ClCompile Include="..\..\Src\Modules\Tools\AnimBinaryParser.cpp" />
     <ClCompile Include="..\..\Src\Modules\Tools\PhysxBinaryParser.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
@@ -95,6 +95,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Src\CollisionPrimitive\MassParameters.h" />
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Segment2d.h" />
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle2d.h" />
     <ClInclude Include="..\..\Src\Core\BitSet.h" />
     <ClInclude Include="..\..\Src\Core\Profiler.h" />
     <ClInclude Include="..\..\Src\Destruction\ConnectionGraph.h" />
@@ -104,6 +106,7 @@
     <ClInclude Include="..\..\Src\Destruction\StrainSolver.h" />
     <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h" />
     <ClInclude Include="..\..\Src\Geometry\Delaunay.h" />
+    <ClInclude Include="..\..\Src\Geometry\GeometryBoolean.h" />
     <ClInclude Include="..\..\Src\Geometry\GeometrySet.h" />
     <ClInclude Include="..\..\Src\Geometry\MeshSimplification.h" />
     <ClInclude Include="..\..\Src\Geometry\Voronoi3d.h" />
@@ -172,6 +175,7 @@
     <ClInclude Include="..\..\Src\LinearSystem\SingularValueDecomposition.h" />
     <ClInclude Include="..\..\Src\LinearSystem\SparseMatrix.h" />
     <ClInclude Include="..\..\Src\LinearSystem\SparseVector.h" />
+    <ClInclude Include="..\..\Src\Maths\Box1.h" />
     <ClInclude Include="..\..\Src\Maths\Box2.h" />
     <ClInclude Include="..\..\Src\Maths\Float16.h" />
     <ClInclude Include="..\..\Src\Maths\Frame3.h" />
@@ -234,7 +238,6 @@
     <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.h" />
     <ClInclude Include="..\..\Src\Solver\SparseConjugateGradientSolver.h" />
-    <ClInclude Include="..\..\Src\Modules\Tools\AnimBinaryParser.h" />
     <ClInclude Include="..\..\Src\Modules\Tools\libPng.h" />
     <ClInclude Include="..\..\Src\Modules\Tools\PhysxBinaryParser.h" />
     <ClInclude Include="..\..\Src\Modules\Tools\PhysxFormat_34.hpp" />

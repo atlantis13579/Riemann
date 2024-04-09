@@ -26,7 +26,7 @@ namespace Riemann
 		{
 			Quaternion quat;
 			quat.FromTwoAxis(Vector3::UnitY(), axis);
-			box.Transform(center, quat);
+			box = Box3::Transform(box, center, quat);
 		}
 		return box;
 	}

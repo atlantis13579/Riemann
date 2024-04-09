@@ -384,9 +384,6 @@
     <ClInclude Include="..\..\Src\Core\Graph.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Tools\AnimBinaryParser.h">
-      <Filter>Modules\Tools</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Modules\VehicleDynamics\AutonomousController.h">
       <Filter>Modules\VehicleDynamics</Filter>
     </ClInclude>
@@ -504,11 +501,20 @@
     <ClInclude Include="..\..\Src\Geometry\Delaunay.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Core\Sorting.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Destruction\GraphPartition.h">
       <Filter>Destruction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\GeometryBoolean.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Box1.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle2d.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Segment2d.h">
+      <Filter>CollisionPrimitive</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -659,9 +665,6 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\Plane3d.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Modules\Tools\AnimBinaryParser.cpp">
-      <Filter>Modules\Tools</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Modules\VehicleDynamics\AutonomousController.cpp">
       <Filter>Modules\VehicleDynamics</Filter>
     </ClCompile>
@@ -685,9 +688,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\MeshSimplification.cpp">
       <Filter>Geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Mesh.cpp">
-      <Filter>CollisionPrimitive</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\MassParameters.cpp">
       <Filter>CollisionPrimitive</Filter>
@@ -718,6 +718,12 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Destruction\GraphPartition.cpp">
       <Filter>Destruction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\GeometryBoolean.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Triangle2d.cpp">
+      <Filter>CollisionPrimitive</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

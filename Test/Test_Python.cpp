@@ -12,7 +12,7 @@ using namespace Riemann;
 void TestDepthImage()
 {
 	printf("Running TestDepthImage\n");
-	void* p = LoadPhysxScene("../TestData/Japan.xml.bin");
+	void* p = LoadScene("../TestData/test0.bin");
 	std::vector<float> image;
 	int w = 1024;
 	int h = 768;

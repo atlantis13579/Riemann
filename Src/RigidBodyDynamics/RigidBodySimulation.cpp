@@ -234,7 +234,7 @@ namespace Riemann
 		}
 	}
 
-	bool         RigidBodySimulation::LoadPhysxScene(const char* name, bool shared_mem)
+	bool         RigidBodySimulation::LoadScene(const char* name, bool shared_mem)
 	{
 		std::vector<RigidBody*> collection;
 		std::vector<GeometryBase*> geoms;

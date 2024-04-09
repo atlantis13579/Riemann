@@ -5097,7 +5097,7 @@ namespace Geometry
 				{
 					info.Normal *= -1.0f;
 				}
-				VertStart[j] = Meshes[j]->GetVerticesCount();
+				VertStart[j] = Meshes[j]->GetNumVertices();
 				Vector2 MinUV(FLT_MAX, FLT_MAX);
 				for (int BoundaryVertex : PlaneBoundary)
 				{

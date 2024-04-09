@@ -13,7 +13,7 @@ namespace Riemann
 	class Triangle3d
 	{
 	public:
-		Vector3 A, B, C;
+		Vector3 v0, v1, v2;
 
 	public:
 		Triangle3d()
@@ -27,40 +27,29 @@ namespace Riemann
 
 		void	Init(const Vector3& InA, const Vector3& InB, const Vector3& InC)
 		{
-			A = InA;
-			B = InB;
-			C = InC;
+			v0 = InA;
+			v1 = InB;
+			v2 = InC;
 		}
 
-		Vector3 operator[](int i)
+		Vector3& operator[](int i)
 		{
-			return (&A)[i];
+			return (&v0)[i];
 		}
 
 		const Vector3& operator[](int i) const
 		{
-			return (&A)[i];
-		}
-
-		Vector3		GetUnitNormal() const
-		{
-			return GetUnitNormal(A, B, C);
-		}
-
-		static Vector3 GetUnitNormal(const Vector3& A, const Vector3& B, const Vector3& C)
-		{
-			Vector3 cross = (B - A).Cross(C - A);
-			return cross.Unit();
+			return (&v0)[i];
 		}
 
 		Vector3		GetNormal() const
 		{
-			return GetNormal(A, B, C);
+			return GetNormal(v0, v1, v2);
 		}
 
 		Vector3		GetSideLength() const
 		{
-			return Vector3((A - B).Length(), (B - C).Length(), (C - A).Length());
+			return Vector3((v0 - v1).Length(), (v1 - v2).Length(), (v2 - v0).Length());
 		}
 
 		bool		IsValid() const
@@ -74,10 +63,10 @@ namespace Riemann
 
 		static Vector3 GetNormal(const Vector3& A, const Vector3& B, const Vector3& C)
 		{
-			Vector3 BA = B - A;
-			Vector3 CA = C - A;
+			Vector3 BA = (B - A).Unit();
+			Vector3 CA = (C - A).Unit();
 			Vector3 cross = BA.Cross(CA);
-			return cross;
+			return cross.Unit();
 		}
 
 		static bool		RayIntersectTriangle(const Vector3& Origin,
@@ -96,6 +85,7 @@ namespace Riemann
 		static bool		IntersectAABB(const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& Bmin, const Vector3& Bmax);
 		bool			IntersectSphere(const Vector3& Center, float Radius) const;
 		bool			IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const;
+		bool			IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
 		static Vector3	ClosestPointOnTriangleToPoint(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C);
 		static Vector3	ClosestPointOnTriangleToPointEx(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C, unsigned char& mask);
@@ -109,16 +99,25 @@ namespace Riemann
 
 		float			CalcArea() const
 		{
-			return Triangle3d::TriangleArea3D(A, B, C);
+			return Triangle3d::TriangleArea3D(v0, v1, v2);
 		}
 
 		Box3			CalculateBoundingVolume() const
 		{
-			Box3 box(A, A);
-			box.Encapsulate(B, C);
+			Box3 box(v0, v0);
+			box.Encapsulate(v1, v2);
 			return box;
 		}
 	};
+
+	struct Triangle3dTriangle3dIntersectionResult
+	{
+		int			Quantity{ 0 };
+		Vector3		Points[6];
+		IntersectionType Type{ IntersectionType::Empty };
+	};
+
+	bool CalculateIntersectionTriangle3dTriangle3d(const Triangle3d& triangle0, const Triangle3d& triangle1, Triangle3dTriangle3dIntersectionResult &Result);
 
 	Vector3 ClosestPtTetrahedronToPoint(const Vector3& p, const Vector3& a, const Vector3& b, const Vector3& c, const Vector3& d);
 }

@@ -48,11 +48,35 @@ namespace Maths
 			return TVector2<T>(x / m, y / m);
 		}
 
-		void Normalize()
+		TVector2<T> SafeUnit() const
+		{
+			T m = Length();
+			if (m <= std::numeric_limits<T>::epsilon())
+			{
+				return TVector2<T>::Zero();
+			}
+			return TVector2<T>(x / m, y / m);
+		}
+
+		T Normalize()
 		{
 			T m = Length();
 			x /= m;
 			y /= m;
+			return m;
+		}
+
+		T SafeNormalize()
+		{
+			T m = Length();
+			if (m <= std::numeric_limits<T>::epsilon())
+			{
+				x = y = (T)0;
+				return (T)0;
+			}
+			x /= m;
+			y /= m;
+			return m;
 		}
 
 		inline T	Length() const
@@ -210,6 +234,16 @@ namespace Maths
 			return p[i];
 		}
 
+		inline TVector2<T> PerpCCW() const
+		{
+			return TVector2<T>(-y, x);
+		}
+
+		inline TVector2<T> PerpCW() const
+		{
+			return TVector2<T>(y, -x);
+		}
+
 		inline TVector2<T> Min(const TVector2<T>& v) const
 		{
 			return TVector2<T>(std::min(v.x, x), std::min(v.y, y));
@@ -282,11 +316,24 @@ namespace Maths
 	typedef TVector2<float> Vector2;
 	typedef TVector2<int>	Vector2i;
 
-	inline Vector2 Rotate(const Vector2& v, float theta)
+	template <typename T>
+	inline TVector2<T> Rotate(const TVector2<T>& v, T theta)
 	{
-		const float m0 = cosf(theta);
-		const float m1 = sinf(theta);
-		return Vector2(m0 * v.x - m1 * v.y, m1 * v.x + m0 * v.y);
+		const T m0 = cos(theta);
+		const T m1 = sin(theta);
+		return TVector2<T>(m0 * v.x - m1 * v.y, m1 * v.x + m0 * v.y);
+	}
+
+	template <typename T>
+	T DotPerp(const TVector2<T>& v1, const TVector2<T>& v2)
+	{
+		return v1.x * v2.y - v1.y * v2.x;
+	}
+
+	template<typename T>
+	T Orient(const TVector2<T>& A, const TVector2<T> & B, const TVector2<T>& C)
+	{
+		return DotPerp((B - A), (C - A));
 	}
 
 	static_assert(sizeof(Vector2) == 8, "sizeof Vector2 is not valid");

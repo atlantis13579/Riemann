@@ -47,7 +47,7 @@ namespace Riemann
 
 	private:
 		int* m_GeometryIndicesBase;
-		int							m_NumGeometries;
+		int	m_NumGeometries;
 
 		CacheFriendlyAABBTree* m_AABBTreeInference;
 	};

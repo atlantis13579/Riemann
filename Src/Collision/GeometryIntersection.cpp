@@ -110,9 +110,9 @@ namespace Riemann
 	{
 		const GeometryTransform2 trans(t1, t2);
 		const Triangle3d* tri = static_cast<const Triangle3d*>(Obj2);
-		Vector3 A = trans.Local2ToLocal1(tri->A);
-		Vector3 B = trans.Local2ToLocal1(tri->B);
-		Vector3 C = trans.Local2ToLocal1(tri->C);
+		Vector3 A = trans.Local2ToLocal1(tri->v0);
+		Vector3 B = trans.Local2ToLocal1(tri->v1);
+		Vector3 C = trans.Local2ToLocal1(tri->v2);
 		const T* p = static_cast<const T*>(Obj1);
 		return p->IntersectTriangle(A, B, C);
 	}

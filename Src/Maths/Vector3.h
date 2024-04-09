@@ -70,21 +70,35 @@ namespace Maths
 
 		TVector3<T> SafeUnit() const
 		{
-			T m = SquareLength();
+			T m = Length();
 			if (m <= std::numeric_limits<T>::epsilon())
 			{
 				return TVector3<T>::Zero();
 			}
-			m = sqrtf(m);
 			return TVector3<T>(x / m, y / m, z / m);
 		}
 
-		void Normalize()
+		T Normalize()
 		{
 			T m = Length();
 			x /= m;
 			y /= m;
 			z /= m;
+			return m;
+		}
+
+		T SafeNormalize()
+		{
+			T m = Length();
+			if (m <= std::numeric_limits<T>::epsilon())
+			{
+				x = y = z = (T)0;
+				return (T)0;
+			}
+			x /= m;
+			y /= m;
+			z /= m;
+			return m;
 		}
 
 		inline T    Length() const
@@ -322,6 +336,56 @@ namespace Maths
 			return;
 		}
 
+		// Duff et al method, from https://graphics.pixar.com/library/OrthonormalB/paper.pdf
+		inline void GetPerpVectors(TVector3<T>& OutPerp1, TVector3<T>& OutPerp2) const
+		{
+			if (z < (T)0)
+			{
+				T A = (T)1 / ((T)1 - z);
+				T B = x * y * A;
+				OutPerp1.x = (T)1 - x * x * A;
+				OutPerp1.y = -B;
+				OutPerp1.z = x;
+				OutPerp2.x = B;
+				OutPerp2.y = y * y * A - (T)1;
+				OutPerp2.z = -y;
+			}
+			else
+			{
+				T A = (T)1 / ((T)1 + z);
+				T B = -x * y * A;
+				OutPerp1.x = (T)1 - x * x * A;
+				OutPerp1.y = B;
+				OutPerp1.z = -x;
+				OutPerp2.x = B;
+				OutPerp2.y = (T)1 - y * y * A;
+				OutPerp2.z = -y;
+			}
+		}
+
+		// Duff et al method, from https://graphics.pixar.com/library/OrthonormalB/paper.pdf
+		inline TVector3<T> GetPerpVector() const
+		{
+			TVector3<T> OutPerp1;
+			if (z < (T)0)
+			{
+				T A = (T)1 / ((T)1 - z);
+				T B = x * y * A;
+				OutPerp1.x = (T)1 - x * x * A;
+				OutPerp1.y = -B;
+				OutPerp1.z = x;
+			}
+			else
+			{
+				T A = (T)1 / ((T)1 + z);
+				T B = -x * y * A;
+				OutPerp1.x = (T)1 - x * x * A;
+				OutPerp1.y = B;
+				OutPerp1.z = -x;
+			}
+			return OutPerp1;
+		}
+
 		TVector3<T> Abs() const
 		{
 			return TVector3<T>(std::abs(x), std::abs(y), std::abs(z));
@@ -416,6 +480,13 @@ namespace Maths
 	inline TVector3<T> CrossProduct(const TVector3<T>& A, const TVector3<T>& B)
 	{
 		return A.Cross(B);
+	}
+
+	template <typename T>
+	inline TVector3<T> UnitCrossProduct(const TVector3<T>& A, const TVector3<T>& B)
+	{
+		TVector3<T> C = A.Cross(B);
+		return C.Unit();
 	}
 
 	template <typename T>

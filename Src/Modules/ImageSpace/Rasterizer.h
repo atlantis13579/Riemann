@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "../../Maths/Vector2.h"
 
 template<typename T>
 bool RasterizeLineBresenham(T* cell, int nx, int x1, int y1, int x2, int y2, T value) {
@@ -105,16 +106,15 @@ bool RasterizeLineBresenham(T* cell, int nx, int x1, int y1, int x2, int y2, T v
 }
 
 template<typename T>
-void RasterizePolygons(T* cell, int nx, int ny, const std::vector<std::vector<Vector2i>>& polygons, T Value)
+void RasterizePolygon(T* cell, int nx, int ny, const std::vector<Vector2i>& polygons, T Value)
 {
-	for (size_t i = 0; i < polygons.size(); ++i)
-	for (size_t j = 0; j < polygons[i].size(); ++j)
+	for (size_t j = 0; j < polygons.size(); ++j)
 	{
-		int k = (j + 1) % polygons[i].size();
-		int x1 = polygons[i][j].x;
-		int y1 = polygons[i][j].y;
-		int x2 = polygons[i][k].x;
-		int y2 = polygons[i][k].y;
+		int k = (j + 1) % polygons.size();
+		int x1 = polygons[j].x;
+		int y1 = polygons[j].y;
+		int x2 = polygons[k].x;
+		int y2 = polygons[k].y;
 		RasterizeLineBresenham(cell, nx, x1, y1, x2, y2, Value);
 	}
 }

@@ -2,7 +2,10 @@
 #include <assert.h>
 #include "Triangle3d.h"
 #include "Capsule3d.h"
+#include "Plane3d.h"
 #include "Sphere3d.h"
+#include "Segment2d.h"
+#include "Triangle2d.h"
 
 namespace Riemann
 {
@@ -14,7 +17,7 @@ namespace Riemann
 
 	bool Triangle3d::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 	{
-		return RayIntersectTriangle(Origin, Direction, A, B, C, t);
+		return RayIntersectTriangle(Origin, Direction, v0, v1, v2, t);
 	}
 
 	// By Tomas Akenine-Moller
@@ -252,16 +255,16 @@ namespace Riemann
 		if (d <= 0.0f)
 			return false;
 
-		Vector3 ap = P0 - A;
+		Vector3 ap = P0 - v0;
 		float t = ap.Dot(n);
 		if (t > d || t < 0.0f)
 			return false;
 
 		Vector3 e = dir.Cross(ap);
-		float v = (C - A).Dot(e);
+		float v = (v2 - v0).Dot(e);
 		if (v < 0.0f || v > d)
 			return false;
-		float w = -(B - A).Dot(e);
+		float w = -(v1 - v0).Dot(e);
 		if (w < 0.0f || v + w > d)
 			return false;
 
@@ -270,7 +273,7 @@ namespace Riemann
 
 	bool Triangle3d::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	{
-		return IntersectAABB(A, B, C, Bmin, Bmax);
+		return IntersectAABB(v0, v1, v2, Bmin, Bmax);
 	}
 
 	static Vector3 ClosestPointOnEdge(const Vector3& P0, const Vector3& P1, const Vector3& Point)
@@ -362,18 +365,18 @@ namespace Riemann
 
 	float Triangle3d::SqrDistanceToPoint(const Vector3& Point) const
 	{
-		return Triangle3d::SqrDistancePointToTriangle(Point, A, B, C);
+		return Triangle3d::SqrDistancePointToTriangle(Point, v0, v1, v2);
 	}
 
 	Vector3	Triangle3d::ClosestPointToPoint(const Vector3& Point) const
 	{
-		return Triangle3d::ClosestPointOnTriangleToPoint(Point, A, B, C);
+		return Triangle3d::ClosestPointOnTriangleToPoint(Point, v0, v1, v2);
 	}
 
 	bool Triangle3d::IntersectSphere(const Vector3& Center, float Radius) const
 	{
 		// Find point P on triangle ABC closest to sphere center
-		Vector3 p = ClosestPointOnTriangleToPoint(Center, A, B, C);
+		Vector3 p = ClosestPointOnTriangleToPoint(Center, v0, v1, v2);
 
 		// Sphere and triangle intersect if the (squared) distance from sphere
 		// center to point p is less than the (squared) sphere radius
@@ -384,7 +387,119 @@ namespace Riemann
 	bool Triangle3d::IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const
 	{
 		Capsule3d capsule(X0, X1, Radius);
-		return capsule.IntersectTriangle(A, B, C);
+		return capsule.IntersectTriangle(v0, v1, v2);
+	}
+
+	static void ProjectOntoAxis(const Triangle3d& triangle, const Vector3& axis, float& fmin, float& fmax)
+	{
+		float dot0 = axis.Dot(triangle.v0);
+		float dot1 = axis.Dot(triangle.v1);
+		float dot2 = axis.Dot(triangle.v2);
+
+		fmin = dot0;
+		fmax = fmin;
+
+		if (dot1 < fmin)
+		{
+			fmin = dot1;
+		}
+		else if (dot1 > fmax)
+		{
+			fmax = dot1;
+		}
+
+		if (dot2 < fmin)
+		{
+			fmin = dot2;
+		}
+		else if (dot2 > fmax)
+		{
+			fmax = dot2;
+		}
+	}
+
+	bool Triangle3d::IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const
+	{
+		const float Tolerance = 1e-6f;
+		const Triangle3d &Triangle0 = *this;
+		const Triangle3d Triangle1(A, B, C);
+
+		Vector3 E0[3];
+		E0[0] = Triangle0.v1 - Triangle0.v0;
+		E0[1] = Triangle0.v2 - Triangle0.v1;
+		E0[2] = Triangle0.v0 - Triangle0.v2;
+
+		Vector3 N0 = UnitCrossProduct(E0[0], E0[1]);
+
+		float N0dT0V0 = N0.Dot(Triangle0.v0);
+		float min1, max1;
+		ProjectOntoAxis(Triangle1, N0, min1, max1);
+		if (N0dT0V0 < min1 - Tolerance || N0dT0V0 > max1 + Tolerance) {
+			return false;
+		}
+
+		Vector3 E1[3];
+		E1[0] = Triangle1.v1 - Triangle1.v0;
+		E1[1] = Triangle1.v2 - Triangle1.v1;
+		E1[2] = Triangle1.v0 - Triangle1.v2;
+
+		Vector3 N1 = UnitCrossProduct(E1[0], E1[1]);
+
+		Vector3 dir;
+		float min0, max0;
+		int i0, i1;
+
+		Vector3 N0xN1 = UnitCrossProduct(N0, N1);
+		if (N0xN1.Dot(N0xN1) >= Tolerance) 
+		{
+			float N1dT1V0 = N1.Dot(Triangle1.v0);
+			ProjectOntoAxis(Triangle0, N1, min0, max0);
+			if (N1dT1V0 < min0 - Tolerance || N1dT1V0 > max0 + Tolerance)
+			{
+				return false;
+			}
+
+			for (i1 = 0; i1 < 3; ++i1)
+			{
+				for (i0 = 0; i0 < 3; ++i0)
+				{
+					dir = UnitCrossProduct(E0[i0], E1[i1]);
+					ProjectOntoAxis(Triangle0, dir, min0, max0);
+					ProjectOntoAxis(Triangle1, dir, min1, max1);
+					if (max0 < min1 - Tolerance || max1 < min0 - Tolerance)
+					{
+						return false;
+					}
+				}
+			}
+
+		}
+		else
+		{
+			for (i0 = 0; i0 < 3; ++i0)
+			{
+				dir = UnitCrossProduct(N0, E0[i0]);
+				ProjectOntoAxis(Triangle0, dir, min0, max0);
+				ProjectOntoAxis(Triangle1, dir, min1, max1);
+				if (max0 < min1 - Tolerance || max1 < min0 - Tolerance)
+				{
+					return false;
+				}
+			}
+
+			for (i1 = 0; i1 < 3; ++i1)
+			{
+				dir = UnitCrossProduct(N1, E1[i1]);
+				ProjectOntoAxis(Triangle0, dir, min0, max0);
+				ProjectOntoAxis(Triangle1, dir, min1, max1);
+				if (max0 < min1 - Tolerance || max1 < min0 - Tolerance)
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 	// Moller CTrumbore intersection algorithm
@@ -446,8 +561,8 @@ namespace Riemann
 
 	Vector3 Triangle3d::BaryCentric2D(const Vector3& Point) const
 	{
-		float a = ((B.y - C.y) * (Point.x - C.x) + (C.x - B.x) * (Point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y));
-		float b = ((C.y - A.y) * (Point.x - C.x) + (A.x - C.x) * (Point.y - C.y)) / ((B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y));
+		float a = ((v1.y - v2.y) * (Point.x - v2.x) + (v2.x - v1.x) * (Point.y - v2.y)) / ((v1.y - v2.y) * (v0.x - v2.x) + (v2.x - v1.x) * (v0.y - v2.y));
+		float b = ((v2.y - v0.y) * (Point.x - v2.x) + (v0.x - v2.x) * (Point.y - v2.y)) / ((v1.y - v2.y) * (v0.x - v2.x) + (v2.x - v1.x) * (v0.y - v2.y));
 		return Vector3(a, b, 1.0f - a - b);
 	}
 
@@ -458,7 +573,7 @@ namespace Riemann
 
 	Vector3	Triangle3d::BaryCentric3D(const Vector3& Point) const
 	{
-		Vector3 v0 = B - A, v1 = C - A, v2 = Point - A;
+		Vector3 v0 = v1 - v0, v1 = v2 - v0, v2 = Point - v0;
 		float d00 = DotProduct(v0, v0);
 		float d01 = DotProduct(v0, v1);
 		float d11 = DotProduct(v1, v1);
@@ -484,7 +599,7 @@ namespace Riemann
 		return (p - a).Dot((b - a).Cross(c - a)) >= 0.0f; // [AP AB AC] >= 0
 	}
 
-	Vector3 ClosestPtTetrahedronToPoint(const Vector3& p, const Vector3& a, const Vector3& b, const Vector3& c, const Vector3& d)
+	Vector3 ClosestPtTetrahedronToPoint(const Vector3 & p, const Vector3 & a, const Vector3 & b, const Vector3 & c, const Vector3 & d)
 	{
 		Vector3 closestPt = p;
 		float min_dist = FLT_MAX;
@@ -532,5 +647,309 @@ namespace Riemann
 			}
 		}
 		return closestPt;
+	}
+
+	static void TrianglePlaneRelations(const Triangle3d& triangle, const Plane3d& plane,
+		float distance[3], int sign[3], int& positive, int& negative, int& zero,
+		const float Tolerance)
+	{
+		positive = 0;
+		negative = 0;
+		zero = 0;
+		for (int i = 0; i < 3; ++i)
+		{
+			distance[i] = plane.SignedDistanceTo(triangle[i]);
+			if (distance[i] > Tolerance)
+			{
+				sign[i] = 1;
+				positive++;
+			}
+			else if (distance[i] < -Tolerance)
+			{
+				sign[i] = -1;
+				negative++;
+			}
+			else
+			{
+				sign[i] = 0;
+				zero++;
+			}
+		}
+	}
+
+	static bool ContainsPoint(const Triangle3d& triangle, const Vector3& plane_normal, float plane_d, const Vector3& point)
+	{
+		Plane3d plane(plane_normal, plane_d);
+
+		Vector3 U0, U1;
+		plane.Normal.GetPerpVectors(U0, U1);
+
+		Vector3 PmV0 = point - triangle.v0;
+		Vector3 V1mV0 = triangle.v1 - triangle.v0;
+		Vector3 V2mV0 = triangle.v2 - triangle.v0;
+		Vector2 ProjP(U0.Dot(PmV0), U1.Dot(PmV0));
+		Triangle2d ProjT(Vector2::Zero(), Vector2(U0.Dot(V1mV0), U1.Dot(V1mV0)), Vector2(U0.Dot(V2mV0), U1.Dot(V2mV0)));
+		if (ProjT.IsInside(ProjP) <= 0)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	static Vector2 GetXY(const Vector3& v)
+	{
+		return Vector2(v.x, v.y);
+	}
+
+	static Vector2 GetXZ(const Vector3& v)
+	{
+		return Vector2(v.x, v.z);
+	}
+
+	static Vector2 GetYZ(const Vector3& v)
+	{
+		return Vector2(v.y, v.z);
+	}
+
+	static int IntersectTriangleWithCoplanarSegment(
+		const Plane3d& plane, const Triangle3d& triangle, const Vector3& end0, const Vector3& end1,
+		Vector3& OutA, Vector3& OutB, float Tolerance)
+	{
+		int maxNormal = 0;
+		float fmax = fabsf(plane.Normal.x);
+		float absMax = fabsf(plane.Normal.y);
+		if (absMax > fmax)
+		{
+			maxNormal = 1;
+			fmax = absMax;
+		}
+		absMax = fabsf(plane.Normal.z);
+		if (absMax > fmax) {
+			maxNormal = 2;
+		}
+
+		Triangle2d projTri;
+		Vector2 projEnd0, projEnd1;
+		int i;
+
+		if (maxNormal == 0)
+		{
+			// Project onto yz-plane.
+			for (i = 0; i < 3; ++i)
+			{
+				projTri[i] = GetYZ(triangle[i]);
+			}
+			projEnd0.x = end0.y;
+			projEnd0.y = end0.z;
+			projEnd1.x = end1.y;
+			projEnd1.y = end1.z;
+		}
+		else if (maxNormal == 1)
+		{
+			// Project onto xz-plane.
+			for (i = 0; i < 3; ++i)
+			{
+				projTri[i] = GetXZ(triangle[i]);
+			}
+			projEnd0.x = end0.x;
+			projEnd0.y = end0.z;
+			projEnd1.x = end1.x;
+			projEnd1.y = end1.z;
+		}
+		else
+		{
+			// Project onto xy-plane.
+			for (i = 0; i < 3; ++i)
+			{
+				projTri[i] = GetXY(triangle[i]);
+			}
+			projEnd0.x = end0.x;
+			projEnd0.y = end0.y;
+			projEnd1.x = end1.x;
+			projEnd1.y = end1.y;
+		}
+
+		Segment2dTriangle2dIntersectionResult Result;
+		Segment2d projSeg(projEnd0, projEnd1);
+		
+		if (!CalculateIntersectionSegment2dTriangle2d(projSeg, projTri, Result))
+		{
+			return 0;
+		}
+
+		int Quantity = 0;
+
+		Vector2 intr[2];
+		if (Result.Type == IntersectionType::Segment)
+		{
+			Quantity = 2;
+			intr[0] = Result.Point0;
+			intr[1] = Result.Point1;
+		}
+		else
+		{
+			Quantity = 1;
+			intr[0] = Result.Point0;
+		}
+
+		Vector3* OutPts[2]{ &OutA, &OutB };
+
+		// Unproject the segment of intersection.
+		if (maxNormal == 0)
+		{
+			float invNX = ((float)1) / plane.Normal.x;
+			for (i = 0; i < Quantity; ++i)
+			{
+				float y = intr[i].x;
+				float z = intr[i].y;
+				float x = invNX * (plane.MinusConstant() - plane.Normal.y * y - plane.Normal.z * z);
+				*OutPts[i] = Vector3(x, y, z);
+			}
+		}
+		else if (maxNormal == 1)
+		{
+			float invNY = ((float)1) / plane.Normal.y;
+			for (i = 0; i < Quantity; ++i)
+			{
+				float x = intr[i].x;
+				float z = intr[i].y;
+				float y = invNY * (plane.MinusConstant() - plane.Normal.x * x - plane.Normal.z * z);
+				*OutPts[i] = Vector3(x, y, z);
+			}
+		}
+		else
+		{
+			float invNZ = ((float)1) / plane.Normal.z;
+			for (i = 0; i < Quantity; ++i)
+			{
+				float x = intr[i].x;
+				float y = intr[i].y;
+				float z = invNZ * (plane.MinusConstant() - plane.Normal.x * x - plane.Normal.y * y);
+				*OutPts[i] = Vector3(x, y, z);
+			}
+		}
+
+		return Quantity;
+	}
+
+	bool IntersectsSegment(const Vector3& plane_normal, float plane_d, const Triangle3d& triangle, const Vector3& end0, const Vector3& end1, Triangle3dTriangle3dIntersectionResult& Result)
+	{
+		Plane3d plane(plane_normal, plane_d);
+
+		Result.Quantity = IntersectTriangleWithCoplanarSegment(plane, triangle, end0, end1, Result.Points[0], Result.Points[1], 1e-6f);
+		if (Result.Quantity > 0)
+		{
+			Result.Type = Result.Quantity == 2 ? IntersectionType::Segment : IntersectionType::Point;
+			return true;
+		}
+		else
+		{
+			Result.Type = IntersectionType::Empty;
+			return false;
+		}
+	}
+
+	bool CalculateIntersectionTriangle3dTriangle3d(const Triangle3d& triangle0, const Triangle3d& triangle1, Triangle3dTriangle3dIntersectionResult& Result)
+	{
+		int i, iM, iP;
+
+		Plane3d Plane0(triangle0.v0, triangle0.v1, triangle0.v2);
+
+		if (Plane0.Normal == Vector3::Zero())
+		{
+			Plane3d Plane1(triangle1.v0, triangle1.v1, triangle1.v2);
+			if (Plane1.Normal != Vector3::Zero())
+			{
+				return CalculateIntersectionTriangle3dTriangle3d(triangle1, triangle0, Result);
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		int pos1, neg1, zero1;
+		int sign1[3];
+		float dist1[3];
+		TrianglePlaneRelations(triangle1, Plane0, dist1, sign1, pos1, neg1, zero1, 1e-6f);
+
+		if (pos1 == 3 || neg1 == 3)
+		{
+			return false;
+		}
+
+		if (zero1 == 3)
+		{
+			return false;
+		}
+
+		if (pos1 == 0 || neg1 == 0)
+		{
+			if (zero1 == 2)
+			{
+				for (i = 0; i < 3; ++i)
+				{
+					if (sign1[i] != 0)
+					{
+						iM = (i + 2) % 3;
+						iP = (i + 1) % 3;
+						return IntersectsSegment(Plane0.Normal, Plane0.D, triangle0, triangle1[iM], triangle1[iP], Result);
+					}
+				}
+			}
+			else
+			{
+				for (i = 0; i < 3; ++i)
+				{
+					if (sign1[i] == 0)
+					{
+						if (ContainsPoint(triangle0, Plane0.Normal, Plane0.D, triangle1[i]))
+						{
+							Result.Type = IntersectionType::Point;
+							Result.Quantity = 1;
+							Result.Points[0] = triangle1[i];
+							return true;
+						}
+						return false;
+					}
+				}
+			}
+		}
+
+		float t;
+		Vector3 intr0, intr1;
+		if (zero1 == 0)
+		{
+			int iSign = (pos1 == 1 ? +1 : -1);
+			for (i = 0; i < 3; ++i)
+			{
+				if (sign1[i] == iSign)
+				{
+					iM = (i + 2) % 3;
+					iP = (i + 1) % 3;
+					t = dist1[i] / (dist1[i] - dist1[iM]);
+					intr0 = triangle1[i] + t * (triangle1[iM] - triangle1[i]);
+					t = dist1[i] / (dist1[i] - dist1[iP]);
+					intr1 = triangle1[i] + t * (triangle1[iP] - triangle1[i]);
+					return IntersectsSegment(Plane0.Normal, Plane0.D, triangle0, intr0, intr1, Result);
+				}
+			}
+		}
+
+		for (i = 0; i < 3; ++i)
+		{
+			if (sign1[i] == 0)
+			{
+				iM = (i + 2) % 3;
+				iP = (i + 1) % 3;
+				t = dist1[iM] / (dist1[iM] - dist1[iP]);
+				intr0 = triangle1[iM] + t * (triangle1[iP] - triangle1[iM]);
+				return IntersectsSegment(Plane0.Normal, Plane0.D, triangle0, triangle1[i], intr0, Result);
+			}
+		}
+
+		assert(false);
+		return false;
 	}
 }

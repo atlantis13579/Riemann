@@ -14,12 +14,12 @@
 
 extern "C"
 {
-void* LoadPhysxScene(const char *filepath)
+void* LoadScene(const char *filepath)
 {
     Riemann::RigidBodySimulationParam param;
     Riemann::RigidBodySimulation *world = new Riemann::RigidBodySimulation(param);
     assert(world);
-    if (!world->LoadPhysxScene(filepath, true))
+    if (!world->LoadScene(filepath, true))
     {
         delete world;
         return nullptr;
@@ -27,7 +27,7 @@ void* LoadPhysxScene(const char *filepath)
     return world;
 }
 
-void  DeletePhysxScene(void* p)
+void  DeleteScene(void* p)
 {
 	if (p)
 	{

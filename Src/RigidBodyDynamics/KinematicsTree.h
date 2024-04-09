@@ -8,10 +8,29 @@
 
 namespace Riemann
 {
-	class AnimTreeData;
 	class GeometryBase;
 	class KeyframeKinematics;
 	class RigidBodyStatic;
+
+	class AnimTreeData
+	{
+	public:
+		struct  Channel
+		{
+			std::string								name;
+			std::vector<std::pair<int, Vector3>>	scale_frames;
+			std::vector<std::pair<int, Vector3>>	pos_frames;
+			std::vector<std::pair<int, Quaternion>>	quat_frames;
+			int										parent;
+		};
+
+		std::vector<Channel>	channels;
+
+		static AnimTreeData* Deserialize(const char* filepath)
+		{
+			return nullptr;		// TODO
+		}
+	};
 
 	class KinematicsDriver
 	{
@@ -19,7 +38,7 @@ namespace Riemann
 		virtual ~KinematicsDriver() {}
 		virtual void		Simulate(float elapsed) = 0;
 
-		const std::string& GetName() const { return m_ResName; }
+		const std::string&	GetName() const { return m_ResName; }
 		void				SetName(const std::string& Name) { m_ResName = Name; }
 
 	private:

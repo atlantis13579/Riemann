@@ -288,15 +288,16 @@ void ImageUpscale2X(T* src, int w, int h, ScaleMethod method, T* dst)
 
 			int i2 = (i - 1) >> 1;
 			int j2 = (j - 1) >> 1;
-			float fi = (i & 1) ? 0.25f : 0.75f;
-			float fj = (j & 1) ? 0.25f : 0.75f;
-			T	s00 = src[i2 * w + j2];
-			T	s01 = src[i2 * w + j2 + 1];
-			T	s10 = src[(i2 + 1) * w + j2];
-			T	s11 = src[(i2 + 1) * w + j2 + 1];
-			float	s0 = s00 + (s01 - s00) * fj;
-			float	s1 = s10 + (s11 - s10) * fj;
-			float	val = s0 + (s1 - s0) * fi;
+
+			const T	s00 = src[i2 * w + j2];
+			const T	s01 = src[i2 * w + j2 + 1];
+			const T	s10 = src[(i2 + 1) * w + j2];
+			const T	s11 = src[(i2 + 1) * w + j2 + 1];
+			const float fi = (i & 1) ? 0.25f : 0.75f;
+			const float fj = (j & 1) ? 0.25f : 0.75f;
+			const float	s0 = s00 + (s01 - s00) * fj;
+			const float	s1 = s10 + (s11 - s10) * fj;
+			const float	val = s0 + (s1 - s0) * fi;
 			dst[i * nw + j] = (T)val;
 		}
 	}
@@ -313,7 +314,7 @@ void ImageUpscale2X(T* src, int w, int h, ScaleMethod method, T* dst)
 
 			int i2 = i >> 1;
 			int j2 = j >> 1;
-			T L = 4.0f * src[i2 * w + j2] - src[(i2 - 1) * w + j2] - src[(i2 + 1) * w + j2] - src[i2 * w + j2 - 1] - src[i2 * w + j2 + 1];
+			const float L = 4.0f * src[i2 * w + j2] - src[(i2 - 1) * w + j2] - src[(i2 + 1) * w + j2] - src[i2 * w + j2 - 1] - src[i2 * w + j2 + 1];
 			bool is_edge = L > 1.0f;
 
 			if (is_edge)
@@ -324,15 +325,15 @@ void ImageUpscale2X(T* src, int w, int h, ScaleMethod method, T* dst)
 			{
 				i2 = (i - 1) >> 1;
 				j2 = (j - 1) >> 1;
-				float fi = (i & 1) ? 0.25f : 0.75f;
-				float fj = (j & 1) ? 0.25f : 0.75f;
-				T	s00 = src[i2 * w + j2];
-				T	s01 = src[i2 * w + j2 + 1];
-				T	s10 = src[(i2 + 1) * w + j2];
-				T	s11 = src[(i2 + 1) * w + j2 + 1];
-				float	s0 = s00 + (s01 - s00) * fj;
-				float	s1 = s10 + (s11 - s10) * fj;
-				float	val = s0 + (s1 - s0) * fi;
+				const T	s00 = src[i2 * w + j2];
+				const T	s01 = src[i2 * w + j2 + 1];
+				const T	s10 = src[(i2 + 1) * w + j2];
+				const T	s11 = src[(i2 + 1) * w + j2 + 1];
+				const float fi = (i & 1) ? 0.25f : 0.75f;
+				const float fj = (j & 1) ? 0.25f : 0.75f;
+				const float	s0 = s00 + (s01 - s00) * fj;
+				const float	s1 = s10 + (s11 - s10) * fj;
+				const float	val = s0 + (s1 - s0) * fi;
 				dst[i * nw + j] = (T)val;
 			}
 		}

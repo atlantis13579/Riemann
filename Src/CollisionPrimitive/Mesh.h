@@ -446,8 +446,6 @@ namespace Riemann
 			return true;
 		}
 
-		bool Simplify(float rate);
-
 		int FilterTriangle(std::function<bool(const Vector3&, const Vector3&, const Vector3&)> filter_func)
 		{
 			int j = 0;

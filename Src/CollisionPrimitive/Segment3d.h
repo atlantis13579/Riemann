@@ -16,7 +16,7 @@ namespace Riemann
 			P1 = _p1;
 		}
 
-		Vector3		GetDir() const
+		Vector3		GetDirection() const
 		{
 			return (P1 - P0).SafeUnit();
 		}

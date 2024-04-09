@@ -78,9 +78,7 @@ namespace Riemann
 			hitNormal = Vector3::UnitY();
 			hitGeom = nullptr;
 			hitGeometries.clear();
-#ifdef _DEBUG
 			hitTestCount = 0;
-#endif //_DEBUG
 		}
 
 		void Merge(const RayCastResult& rhs)
@@ -97,16 +95,12 @@ namespace Riemann
 			hitTime = hitTime < rhs.hitTime ? hitTime : rhs.hitTime;
 			hitTimeMin = hitTimeMin < rhs.hitTimeMin ? hitTimeMin : rhs.hitTimeMin;
 			hitGeometries.insert(hitGeometries.end(), rhs.hitGeometries.begin(), rhs.hitGeometries.end());
-#ifdef _DEBUG
 			hitTestCount += rhs.hitTestCount;
-#endif //_DEBUG
 		}
 
 		void AddTestCount(int Count)
 		{
-#ifdef _DEBUG
 			hitTestCount += Count;
-#endif // _DEBUG
 		}
 
 		bool					hit;
@@ -142,18 +136,14 @@ namespace Riemann
 
 		void AddTestCount(int Count)
 		{
-#ifdef _DEBUG
 			intersectTestCount += Count;
-#endif // _DEBUG
 		}
 
 		void Reset()
 		{
 			overlaps = true;
 			overlapGeoms.clear();
-#ifdef _DEBUG
 			intersectTestCount = 0;
-#endif // _DEBUG
 		}
 
 		void Merge(const IntersectResult& rhs)
@@ -165,9 +155,7 @@ namespace Riemann
 			}
 			overlaps = overlaps || rhs.overlaps;
 			overlapGeoms.insert(overlapGeoms.end(), rhs.overlapGeoms.begin(), rhs.overlapGeoms.end());
-#ifdef _DEBUG
 			intersectTestCount += rhs.intersectTestCount;
-#endif //_DEBUG
 		}
 
 		bool					overlaps;
@@ -205,9 +193,7 @@ namespace Riemann
 			hitNormal = Vector3::Zero();
 			hitGeom = nullptr;
 			hitGeometries.clear();
-#ifdef _DEBUG
 			hitTestCount = 0;
-#endif //_DEBUG
 		}
 
 		void Merge(const SweepResult& rhs)
@@ -223,16 +209,12 @@ namespace Riemann
 			hitGeometries.insert(hitGeometries.end(), rhs.hitGeometries.begin(), rhs.hitGeometries.end());
 			hitTime = hitTime < rhs.hitTime ? hitTime : rhs.hitTime;
 			hitTimeMin = hitTimeMin < rhs.hitTimeMin ? hitTimeMin : rhs.hitTimeMin;
-#ifdef _DEBUG
 			hitTestCount += rhs.hitTestCount;
-#endif //_DEBUG
 		}
 
 		void AddTestCount(int Count)
 		{
-#ifdef _DEBUG
 			hitTestCount += Count;
-#endif // _DEBUG
 		}
 
 		bool					hit;

@@ -178,8 +178,8 @@ namespace Geometry
 		bool removed;
 	};
 
-	class Delaunator {
-
+	class Delaunator
+	{
 	public:
 		std::vector<Vector2> coords;
 		std::vector<int> triangles;
@@ -243,7 +243,7 @@ namespace Geometry
 			{
 				if (i == i0) continue;
 				const float d = (coords[i0] - coords[i]).SquareLength();
-				if (d < min_dist && d> 0.0)
+				if (d < min_dist && d > 0.0f)
 				{
 					i1 = i;
 					min_dist = d;
@@ -418,7 +418,8 @@ namespace Geometry
 			{
 				hull_area.push_back((coords[e].x - coords[hull_prev[e]].x) * (coords[e].y + coords[hull_prev[e]].y));
 				e = hull_next[e];
-			} while (e != hull_start);
+			}
+			while (e != hull_start);
 			return sum(hull_area);
 		}
 
@@ -598,7 +599,6 @@ namespace Geometry
 				}
 			}
 		}
-
 	};
 
 	bool Delaunay::Triangulate(const std::vector<Vector2>& points)
@@ -628,13 +628,10 @@ namespace Geometry
 		}
 	}
 
-	struct NodeSplitDirection
+	enum class NodeSplitDirection
 	{
-		enum Enum
-		{
-			X,
-			Y,
-		};
+		X,
+		Y,
 	};
 
 	template <int NumVerticesInLeaf, int InitialStackDepth, int StackDepthIncrement>
@@ -702,9 +699,9 @@ namespace Geometry
 			int node = m_root;
 			Vector2 min = m_min;
 			Vector2 max = m_max;
-			NodeSplitDirection::Enum dir = m_rootDir;
+			NodeSplitDirection dir = m_rootDir;
 
-			NodeSplitDirection::Enum newDir(NodeSplitDirection::X);
+			NodeSplitDirection newDir(NodeSplitDirection::X);
 			float mid = 0.0f;
 			Vector2 newMin, newMax;
 			while (true)
@@ -789,7 +786,7 @@ namespace Geometry
 				else
 				{
 					float mid = 0.0f;
-					NodeSplitDirection::Enum newDir;
+					NodeSplitDirection newDir;
 					Vector2 newMin, newMax;
 					calcSplitInfo(t.min, t.max, t.dir, mid, newDir, newMin, newMax);
 
@@ -831,7 +828,7 @@ namespace Geometry
 			return newNodeIndex;
 		}
 
-		std::size_t whichChild(const Vector2& point, const float& split, const NodeSplitDirection::Enum dir) const
+		std::size_t whichChild(const Vector2& point, const float& split, const NodeSplitDirection dir) const
 		{
 			return static_cast<size_t>(
 				dir == NodeSplitDirection::X ? point.x> split : point.y> split);
@@ -840,9 +837,9 @@ namespace Geometry
 		static void calcSplitInfo(
 			const Vector2& min,
 			const Vector2& max,
-			const NodeSplitDirection::Enum dir,
+			const NodeSplitDirection dir,
 			float& midOut,
-			NodeSplitDirection::Enum& newDirOut,
+			NodeSplitDirection& newDirOut,
 			Vector2& newMinOut,
 			Vector2& newMaxOut)
 		{
@@ -927,7 +924,7 @@ namespace Geometry
 	private:
 		int m_root;
 		std::vector<Node> m_nodes;
-		NodeSplitDirection::Enum m_rootDir;
+		NodeSplitDirection m_rootDir;
 		Vector2 m_min;
 		Vector2 m_max;
 		int m_size;
@@ -939,7 +936,7 @@ namespace Geometry
 		{
 			int node;
 			Vector2 min, max;
-			NodeSplitDirection::Enum dir;
+			NodeSplitDirection dir;
 			float distSq;
 			NearestTask()
 			{}
@@ -947,7 +944,7 @@ namespace Geometry
 				const int node_,
 				const Vector2& min_,
 				const Vector2& max_,
-				const NodeSplitDirection::Enum dir_,
+				const NodeSplitDirection dir_,
 				const float distSq_)
 				: node(node_)
 				, min(min_)
@@ -1004,60 +1001,43 @@ namespace Geometry
 		KDTree_t m_kdTree;
 	};
 
-	struct VertexInsertionOrder
+	enum class VertexInsertionOrder
 	{
-		enum Enum
-		{
-			Auto,
-			AsProvided,
-		};
+		Auto,
+		AsProvided,
 	};
 
-	struct SuperGeometryType
+	enum class SuperGeometryType
 	{
-		enum Enum
-		{
-			SuperTriangle,
-			Custom,
-		};
+		SuperTriangle,
+		Custom,
 	};
 
-	struct IntersectingConstraintEdges
+	enum class IntersectingConstraintEdges
 	{
-		enum Enum
-		{
-			NotAllowed,
-			TryResolve,
-			 DontCheck,
-		};
+		NotAllowed,
+		TryResolve,
+		DontCheck,
 	};
 
-    struct PtLineLocation
+	enum class PtLineLocation
     {
-        enum Enum
-        {
-            Left,
-            Right,
-            OnLine,
-        };
+		Left,
+		Right,
+		OnLine,
     };
 
-    struct PtTriLocation
-    {
-        enum Enum
-        {
-            Inside,
-            Outside,
-            OnEdge1,
-            OnEdge2,
-            OnEdge3,
-            OnVertex,
-        };
-    };
-
+	enum class PtTriLocation
+	{
+		Inside,
+		Outside,
+		OnEdge1,
+		OnEdge2,
+		OnEdge3,
+		OnVertex,
+	};
 
 	typedef unsigned short LayerDepth;
-	typedef LayerDepth BoundaryOverlapCount;
 
 	struct Triangle
 	{
@@ -1347,7 +1327,7 @@ namespace Geometry
         return orient2d(v1.x, v1.y, v2.x, v2.y, p.x, p.y);
     }
 
-	static PtLineLocation::Enum classifyOrientation(const float orientation, const float orientationTolerance = 1e-6f)
+	static PtLineLocation classifyOrientation(const float orientation, const float orientationTolerance = 1e-6f)
     {
         if (orientation < -orientationTolerance)
             return PtLineLocation::Right;
@@ -1356,19 +1336,19 @@ namespace Geometry
         return PtLineLocation::OnLine;
     }
 
-	static PtLineLocation::Enum locatePointLine(const Vector2& p, const Vector2& v1, const Vector2& v2, const float orientationTolerance = 1e-6f)
+	static PtLineLocation locatePointLine(const Vector2& p, const Vector2& v1, const Vector2& v2, const float orientationTolerance = 1e-6f)
     {
         return classifyOrientation(orient2d(p, v1, v2), orientationTolerance);
     }
 
-	static PtTriLocation::Enum locatePointTriangle(
+	static PtTriLocation locatePointTriangle(
 		const Vector2& p,
 		const Vector2& v1,
 		const Vector2& v2,
 		const Vector2& v3)
 	{
-		PtTriLocation::Enum result = PtTriLocation::Inside;
-		PtLineLocation::Enum edgeCheck = locatePointLine(p, v1, v2);
+		PtTriLocation result = PtTriLocation::Inside;
+		PtLineLocation edgeCheck = locatePointLine(p, v1, v2);
 		if (edgeCheck == PtLineLocation::Right)
 			return PtTriLocation::Outside;
 		if (edgeCheck == PtLineLocation::OnLine)
@@ -1437,7 +1417,7 @@ namespace Geometry
         return (i + 2) % 3;
     }
 
-	static inline bool isOnEdge(const PtTriLocation::Enum location)
+	static inline bool isOnEdge(const PtTriLocation location)
 	{
 		return location == PtTriLocation::OnEdge1 ||
 			location == PtTriLocation::OnEdge2 ||
@@ -1496,10 +1476,10 @@ namespace Geometry
 		return 1;
 	}
 
-	static inline int edgeNeighbor(const PtTriLocation::Enum location)
+	static inline int edgeNeighbor(const PtTriLocation location)
 	{
 		assert(isOnEdge(location));
-		return (int)(location - PtTriLocation::OnEdge1);
+		return (int)location - (int)PtTriLocation::OnEdge1;
 	}
 
 	static inline int edgeNeighbor(const Triangle& tri, int iVedge1, int iVedge2)
@@ -1552,9 +1532,9 @@ namespace Geometry
     namespace defaults
     {
         const int nTargetVerts = 0;
-        const SuperGeometryType::Enum superGeomType = SuperGeometryType::SuperTriangle;
-        const VertexInsertionOrder::Enum vertexInsertionOrder = VertexInsertionOrder::Auto;
-        const IntersectingConstraintEdges::Enum intersectingEdgesStrategy = IntersectingConstraintEdges::NotAllowed;
+        const SuperGeometryType superGeomType = SuperGeometryType::SuperTriangle;
+        const VertexInsertionOrder vertexInsertionOrder = VertexInsertionOrder::Auto;
+        const IntersectingConstraintEdges intersectingEdgesStrategy = IntersectingConstraintEdges::NotAllowed;
         const float minDistToConstraintEdge = 0;
     }
 
@@ -1682,7 +1662,7 @@ namespace Geometry
 		std::vector<Vector2> vertices;
 		std::vector<Triangle> triangles;
 		std::unordered_set<DelaunayEdge, EdgeHash> fixedEdges;
-		std::unordered_map<DelaunayEdge, BoundaryOverlapCount, EdgeHash> overlapCount;
+		std::unordered_map<DelaunayEdge, LayerDepth, EdgeHash> overlapCount;
 		std::unordered_map<DelaunayEdge, std::vector<DelaunayEdge>, EdgeHash> pieceToOriginals;
 
 		ConstrainedTriangulation()
@@ -1693,7 +1673,7 @@ namespace Geometry
 			, m_minDistToConstraintEdge(defaults::minDistToConstraintEdge)
 		{}
 
-		explicit ConstrainedTriangulation(VertexInsertionOrder::Enum vertexInsertionOrder)
+		explicit ConstrainedTriangulation(VertexInsertionOrder vertexInsertionOrder)
 			: m_nTargetVerts(defaults::nTargetVerts)
 			, m_superGeomType(defaults::superGeomType)
 			, m_vertexInsertionOrder(vertexInsertionOrder)
@@ -1702,8 +1682,8 @@ namespace Geometry
 		{}
 
 		ConstrainedTriangulation(
-			VertexInsertionOrder::Enum vertexInsertionOrder,
-			IntersectingConstraintEdges::Enum intersectingEdgesStrategy,
+			VertexInsertionOrder vertexInsertionOrder,
+			IntersectingConstraintEdges intersectingEdgesStrategy,
 			float minDistToConstraintEdge)
 			: m_nTargetVerts(defaults::nTargetVerts)
 			, m_superGeomType(defaults::superGeomType)
@@ -1713,9 +1693,9 @@ namespace Geometry
 		{}
 
 		ConstrainedTriangulation(
-			VertexInsertionOrder::Enum vertexInsertionOrder,
+			VertexInsertionOrder vertexInsertionOrder,
 			const LocatorKDTree<>& nearPtLocator,
-			IntersectingConstraintEdges::Enum intersectingEdgesStrategy,
+			IntersectingConstraintEdges intersectingEdgesStrategy,
 			float minDistToConstraintEdge)
 			: m_nearPtLocator(nearPtLocator)
 			, m_nTargetVerts(defaults::nTargetVerts)
@@ -2305,7 +2285,7 @@ namespace Geometry
 					break;
 				}
 
-				const PtLineLocation::Enum loc =
+				const PtLineLocation loc =
 					locatePointLine(vertices[iVopo], a, b, distanceTolerance);
 				if (loc == PtLineLocation::Left)
 				{
@@ -2372,9 +2352,9 @@ namespace Geometry
 			}
 		}
 
-		typedef std::tuple<DelaunayEdge, std::vector<DelaunayEdge>, BoundaryOverlapCount> ConformToEdgeTask;
+		typedef std::tuple<DelaunayEdge, std::vector<DelaunayEdge>, LayerDepth> ConformToEdgeTask;
 
-		void conformToEdge(DelaunayEdge edge, std::vector<DelaunayEdge> originals, BoundaryOverlapCount overlaps, std::vector<ConformToEdgeTask>& remaining)
+		void conformToEdge(DelaunayEdge edge, std::vector<DelaunayEdge> originals, LayerDepth overlaps, std::vector<ConformToEdgeTask>& remaining)
 		{
 			// use iteration over recursion to avoid stack overflows
 			remaining.clear();
@@ -2399,7 +2379,7 @@ namespace Geometry
 			return -1;
 		}
 
-		void conformToEdgeIteration(DelaunayEdge edge, const std::vector<DelaunayEdge>& originals, BoundaryOverlapCount overlaps, std::vector<ConformToEdgeTask>& remaining)
+		void conformToEdgeIteration(DelaunayEdge edge, const std::vector<DelaunayEdge>& originals, LayerDepth overlaps, std::vector<ConformToEdgeTask>& remaining)
 		{
 			const int iA = edge.v1;
 			int iB = edge.v2;
@@ -2495,7 +2475,7 @@ namespace Geometry
 				iT = iTopo;
 				t = triangles[iT];
 
-				const PtLineLocation::Enum loc =
+				const PtLineLocation loc =
 					locatePointLine(vOpo, a, b, distanceTolerance);
 				if (loc == PtLineLocation::Left)
 				{
@@ -2539,7 +2519,7 @@ namespace Geometry
 				const DelaunayEdge& flippedFixedEdge = *it;
 				fixedEdges.erase(flippedFixedEdge);
 
-				BoundaryOverlapCount prevOverlaps = 0;
+				LayerDepth prevOverlaps = 0;
 				const auto overlapsIt = overlapCount.find(flippedFixedEdge);
 				if (overlapsIt != overlapCount.end())
 				{
@@ -2567,12 +2547,12 @@ namespace Geometry
 				const int i = vertexInd(t.vertices, iA);
 				const int iP2 = t.vertices[ccw(i)];
 				const float orientP2 = orient2d(vertices[iP2], a, b);
-				const PtLineLocation::Enum locP2 = classifyOrientation(orientP2);
+				const PtLineLocation locP2 = classifyOrientation(orientP2);
 				if (locP2 == PtLineLocation::Right)
 				{
 					const int iP1 = t.vertices[cw(i)];
 					const float orientP1 = orient2d(vertices[iP1], a, b);
-					const PtLineLocation::Enum locP1 = classifyOrientation(orientP1);
+					const PtLineLocation locP1 = classifyOrientation(orientP1);
 					if (locP1 == PtLineLocation::OnLine)
 					{
 						return DelaunayTriangle(-1, iP1, iP1);
@@ -2714,7 +2694,7 @@ namespace Geometry
 				const Vector2& v1 = vertices[t.vertices[0]];
 				const Vector2& v2 = vertices[t.vertices[1]];
 				const Vector2& v3 = vertices[t.vertices[2]];
-				const PtTriLocation::Enum loc = locatePointTriangle(pos, v1, v2, v3);
+				const PtTriLocation loc = locatePointTriangle(pos, v1, v2, v3);
 				if (loc == PtTriLocation::Outside)
 					continue;
 				out[0] = i;
@@ -2735,7 +2715,7 @@ namespace Geometry
 			const Vector2& v1 = vertices[t.vertices[0]];
 			const Vector2& v2 = vertices[t.vertices[1]];
 			const Vector2& v3 = vertices[t.vertices[2]];
-			const PtTriLocation::Enum loc = locatePointTriangle(v, v1, v2, v3);
+			const PtTriLocation loc = locatePointTriangle(v, v1, v2, v3);
 
 			if (loc == PtTriLocation::Outside)
 				assert(false);
@@ -2770,7 +2750,7 @@ namespace Geometry
 					const int i((i_ + offset) % 3);
 					const Vector2& vStart = vertices[t.vertices[i]];
 					const Vector2& vEnd = vertices[t.vertices[ccw(i)]];
-					const PtLineLocation::Enum edgeCheck =
+					const PtLineLocation edgeCheck =
 						locatePointLine(pos, vStart, vEnd);
 					const int iN = t.neighbors[i];
 					if (edgeCheck == PtLineLocation::Right && iN != -1)
@@ -3116,7 +3096,7 @@ namespace Geometry
 
 				// overlap count
 				{
-					std::unordered_map<DelaunayEdge, BoundaryOverlapCount, EdgeHash> updatedOverlapCount;
+					std::unordered_map<DelaunayEdge, LayerDepth, EdgeHash> updatedOverlapCount;
 					for (auto it = overlapCount.begin(); it != overlapCount.end(); ++it)
 					{
 						updatedOverlapCount.insert(std::make_pair(
@@ -3486,9 +3466,9 @@ namespace Geometry
 		std::vector<int> m_dummyTris;
 		LocatorKDTree<> m_nearPtLocator;
 		int m_nTargetVerts;
-		SuperGeometryType::Enum m_superGeomType;
-		VertexInsertionOrder::Enum m_vertexInsertionOrder;
-		IntersectingConstraintEdges::Enum m_intersectingEdgesStrategy;
+		SuperGeometryType m_superGeomType;
+		VertexInsertionOrder m_vertexInsertionOrder;
+		IntersectingConstraintEdges m_intersectingEdgesStrategy;
 		float m_minDistToConstraintEdge;
 		std::vector<int> m_vertTris;
 	};

@@ -29,5 +29,17 @@ namespace Riemann
 		Box3	BoundingVolume;
 	};
 
+	enum class IntersectionType : unsigned char
+	{
+		Empty,
+		Point,
+		Segment,
+		Line,
+		Polygon,
+		Plane,
+		MultiSegment,
+		Unknown
+	};
+
 	#define MAX_FACE_POINTS	16
 }

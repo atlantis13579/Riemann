@@ -1,6 +1,7 @@
 #include <chrono>
 
 #include "Test.h"
+#include "../Src/Core/Profiler.h"
 #include "../Src/Maths/Maths.h"
 #include "../Src/RigidBodyDynamics/RigidBody.h"
 #include "../Src/Collision/AABBTree.h"
@@ -19,7 +20,7 @@ void TestPhysxBin()
 	printf("Running TestPhysxBin Japan\n");
 	std::vector<RigidBody*> collection;
 	std::vector<GeometryBase*> geometries;
-	bool load_succ = LoadPhysxBinary("../TestData/Japan.xml.bin", nullptr, &geometries);
+	bool load_succ = LoadPhysxBinary("../TestData/test0.bin", nullptr, &geometries);
 	EXPECT(load_succ);
 	if (load_succ)
 	{
@@ -36,7 +37,7 @@ void TestPhysxBin()
 
 	collection.clear();
 	geometries.clear();
-	load_succ = LoadPhysxBinary("../TestData/fighting_new.xml.bin", &collection, &geometries);
+	load_succ = LoadPhysxBinary("../TestData/test1.bin", &collection, &geometries);
 	EXPECT(load_succ);
 
 	if (load_succ)
@@ -94,7 +95,7 @@ void TestRaycastBenchmark()
 	printf("Running TestRaycastBenchmark\n");
 	std::vector<RigidBody*> collection;
 	std::vector<GeometryBase*> geometries;
-	bool load_succ = LoadPhysxBinary("../TestData/fighting_new.xml.bin", &collection, &geometries);
+	bool load_succ = LoadPhysxBinary("../TestData/test1.bin", &collection, &geometries);
 	EXPECT(load_succ);
 	
 	if (load_succ)
@@ -108,12 +109,12 @@ void TestRaycastBenchmark()
 		RayCastOption Option;
 		RayCastResult Result;
 
-		bool ret;
-		int rays = 10000;
-		auto t1 = std::chrono::steady_clock::now();
+		const int rays = 10000;
+		Profiler p;
+		p.Begin();
 		for (int i = 0; i < rays; ++i)
 		{
-			ret = query.RayCastQuery(Vector3(-569, 0, 427), Vector3(1, -1, 1).Unit(), Option, &Result);
+			bool ret = query.RayCastQuery(Vector3(-569, 0, 427), Vector3(1, -1, 1).Unit(), Option, &Result);
 			EXPECT(ret);
 			EXPECT(GetGuid(Result.hitGeom) == 2309201640896);
 
@@ -123,15 +124,12 @@ void TestRaycastBenchmark()
 			//    Option.Cache.prevStack.Restore(Result.stack);
 			}
 		}
-		auto t2 = std::chrono::steady_clock::now();
-		auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-		printf("cost Raycast = %lld, rays = %d\n", diff, 10000);
+		float diff = p.End();
+		printf("cost Raycast = %.3f, rays = %d\n", diff, 10000);
 	}
 
 	return;
 }
-
-
 
 void TestPhysics3d()
 {

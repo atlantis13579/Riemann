@@ -32,6 +32,11 @@ namespace Maths
 			, Max(InMax, InMax)
 		{ }
 
+		explicit TAABB2<T>(const TVector2<T>& InCenter, const T extent)
+			: Min(InCenter.x - extent, InCenter.y - extent)
+			, Max(InCenter.x + extent, InCenter.y + extent)
+		{ }
+
 		explicit TAABB2<T>(const TVector2<T>* v, size_t Num)
 		{
 			Min = Max = v[0];
@@ -149,22 +154,22 @@ namespace Maths
 			return *this;
 		}
 
-		TVector2<T> GetCenter() const
+		inline TVector2<T> GetCenter() const
 		{
 			return TVector2<T>((Min + Max) * 0.5f);
 		}
 
-		TVector2<T> GetExtent() const
+		inline TVector2<T> GetExtent() const
 		{
 			return (Max - Min) * 0.5f;
 		}
 
-		TVector2<T> GetSize() const
+		inline TVector2<T> GetSize() const
 		{
 			return Max - Min;
 		}
 
-		T CalculateVolume() const
+		inline T GetArea() const
 		{
 			return (Max.x - Min.x) * (Max.y - Min.y);
 		}

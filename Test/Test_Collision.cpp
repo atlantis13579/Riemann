@@ -63,13 +63,13 @@ void TestTriangle()
 	(void)bc1;
 	(void)bc2;
 	EXPECT(!tri1.IntersectPoint(p));
-	EXPECT(tri1.IntersectPoint(tri1.A));
+	EXPECT(tri1.IntersectPoint(tri1.v0));
 
 	Triangle3d tri2(Vector3(5.09916496f, 8.30379868f, 4.52991295f), Vector3(5.08997154f, 8.29810333f, 4.52174377f), Vector3(5.09456825f, 8.300951f, 4.52582836f));
 	Vector3 length = tri2.GetSideLength();
 	Vector3 normal = tri2.GetNormal();
 	EXPECT(!tri2.IsValid());
-	EXPECT(Triangle3d::IsColinear(tri2.A, tri2.B, tri2.C));
+	EXPECT(Triangle3d::IsColinear(tri2.v0, tri2.v1, tri2.v2));
 	return;
 }
 

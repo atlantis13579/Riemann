@@ -1,8 +1,9 @@
 
 #include "Test.h"
 
-#include "../Src/CollisionPrimitive/Mesh.h"
 #include "../Src/Geometry/Spline.h"
+#include "../Src/Geometry/GeometrySet.h"
+#include "../Src/Geometry/GeometryBoolean.h"
 #include "../Src/Geometry/Polygon3d.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/Delaunay.h"
@@ -10,11 +11,9 @@
 #include "../Src/Geometry/Voronoi3d.h"
 #include "../Src/Geometry/DenseTensorField3d.h"
 
-using namespace Riemann;
-
 void TestMeshSimplify()
 {
-	Mesh mesh;
+	Geometry::GeometryData mesh;
 	mesh.LoadObj("../TestData/bunny.obj");
 	mesh.Simplify(0.3f);
 	mesh.ExportObj("../TestData/bunny2.obj");
@@ -123,11 +122,71 @@ void TestVoronoi3d()
 	return;
 }
 
+void TestGeometrySet()
+{
+	Geometry::GeometryData set1;
+	set1.LoadObj("../TestData/bunny.obj");
+	Box3 box = set1.Bounds;
+	float x = box.GetCenter().x;
+	float y = box.GetCenter().y;
+
+	Geometry::GeometryData set2;
+	set2.VertexPositions.emplace_back(box.Min.x, y, box.Min.z);
+	set2.VertexPositions.emplace_back(box.Min.x, y, box.Max.z);
+	set2.VertexPositions.emplace_back(box.Max.x, y, box.Max.z);
+	set2.VertexPositions.emplace_back(box.Max.x, y, box.Min.z);
+	set2.Triangles.emplace_back(0, 1, 2);
+	set2.Triangles.emplace_back(2, 3, 0);
+	set2.CalculateBounds();
+
+	Geometry::GeometryData set3;
+	set3.VertexPositions.emplace_back(x, box.Min.y, box.Min.z + 0.01f);
+	set3.VertexPositions.emplace_back(x, box.Min.y, box.Max.z + 0.01f);
+	set3.VertexPositions.emplace_back(x, box.Max.y, box.Max.z + 0.01f);
+	set3.Triangles.emplace_back(0, 1, 2);
+	set3.CalculateBounds();
+
+	Geometry::GeometryAABBTree aabb1(&set1);
+	Geometry::GeometryAABBTree aabb2(&set2);
+	Geometry::GeometryAABBTree aabb3(&set3);
+
+	Geometry::GeometryAABBTree::IntersectionsQueryResult Result;
+		
+	Result = aabb1.FindAllIntersections(aabb2);
+	Result = aabb2.FindAllIntersections(aabb3);
+
+	return;
+}
+
+void TestGeometryBoolean()
+{
+	Geometry::GeometryData set1;
+	set1.LoadObj("../TestData/bunny.obj");
+
+	Box3 box = set1.Bounds;
+	float y = box.GetCenter().y;
+	Geometry::GeometryData set2;
+	set2.VertexPositions.emplace_back(box.Min.x, y, box.Min.z);
+	set2.VertexPositions.emplace_back(box.Min.x, y, box.Max.z);
+	set2.VertexPositions.emplace_back(box.Max.x, y, box.Max.z);
+	set2.VertexPositions.emplace_back(box.Max.x, y, box.Min.z);
+	set2.Triangles.emplace_back(0, 1, 2);
+	set2.Triangles.emplace_back(2, 3, 0);
+	set2.CalculateBounds();
+
+	Geometry::GeometryBoolean b(&set1, &set2, Geometry::GeometryBoolean::BooleanOp::Intersect);
+	b.Compute();
+
+	return;
+}
+
 void TestGeometry()
 {
 	TestMeshSimplify();
 	TestClip();
 	TestCatmullRom();
+	TestGeometrySet();
+	TestGeometryBoolean();
 	TestVoronoi2d();
 	TestVoronoi3d();
 }

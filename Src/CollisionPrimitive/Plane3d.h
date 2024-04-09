@@ -21,10 +21,10 @@ namespace Riemann
 		{
 		}
 
-		Plane3d(const Vector3& InNormal, Vector3& InOrigin)
+		Plane3d(const Vector3& _Normal, Vector3& _Origin)
 		{
-			Normal = InNormal.Unit();
-			D = -InOrigin.Dot(Normal);
+			Normal = _Normal.Unit();
+			D = -Normal.Dot(_Origin);
 		}
 
 		Plane3d(const Vector3& InNormal, float InD)
@@ -35,8 +35,10 @@ namespace Riemann
 
 		Plane3d(const Vector3& A, const Vector3& B, const Vector3& C)
 		{
-			Normal = (A - C).Cross(B - C);
-			D = -C.Dot(Normal);
+			Vector3 CA = (C - A).Unit();
+			Vector3 BA = (B - A).Unit();
+			Normal = CA.Cross(BA).Unit();
+			D = -Normal.Dot(A);
 		}
 
 		static constexpr ShapeType3d	StaticType()
@@ -48,6 +50,11 @@ namespace Riemann
 		Vector3			GetOrigin() const
 		{
 			return -Normal * D;
+		}
+
+		float			MinusConstant() const
+		{
+			return -D;
 		}
 
 		void			Shift(float margin)

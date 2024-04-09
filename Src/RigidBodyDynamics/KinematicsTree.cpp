@@ -2,7 +2,6 @@
 #include "KinematicsTree.h"
 #include "KeyFrameAnimation.h"
 #include "RigidBody.h"
-#include "../Modules/Tools/AnimBinaryParser.h"
 
 namespace Riemann
 {
@@ -51,22 +50,22 @@ namespace Riemann
 
 		if (Tree->Idx >= 0)
 		{
-			const BoneChannel& channel = data->channels[Tree->Idx];
+			const AnimTreeData::Channel& channel = data->channels[Tree->Idx];
 			bool is_loop = true;
 
 			frames_pos.clear();
-			for (size_t j = 0; j < channel.positionKeys.size(); ++j)
+			for (size_t j = 0; j < channel.pos_frames.size(); ++j)
 			{
-				frames_pos.emplace_back(channel.positionKeys[j].first, channel.positionKeys[j].second);
+				frames_pos.emplace_back(channel.pos_frames[j].first, channel.pos_frames[j].second);
 			}
 
 			frames_quat.clear();
-			for (size_t j = 0; j < channel.rotationKeys.size(); ++j)
+			for (size_t j = 0; j < channel.quat_frames.size(); ++j)
 			{
-				frames_quat.emplace_back(channel.rotationKeys[j].first, channel.rotationKeys[j].second);
+				frames_quat.emplace_back(channel.quat_frames[j].first, channel.quat_frames[j].second);
 			}
 
-			node->Name = channel.boneName;
+			node->Name = channel.name;
 			node->Anim.LoadKeyframes(frames_pos, frames_quat, is_loop);
 		}
 
@@ -96,18 +95,18 @@ namespace Riemann
 		for (int i = 0; i < nBones; ++i)
 		{
 			Nodes[i] = i;
-			const BoneChannel& c = data->channels[i];
-			if (c.parentPos < 0)
+			const AnimTreeData::Channel& c = data->channels[i];
+			if (c.parent < 0)
 			{
 				Root.Childrens.push_back(&Nodes[i]);
 			}
-			else if (c.parentPos == i || c.parentPos >= nBones)
+			else if (c.parent == i || c.parent >= nBones)
 			{
 				return false;
 			}
 			else
 			{
-				_Node& parent = Nodes[c.parentPos];
+				_Node& parent = Nodes[c.parent];
 				parent.Childrens.push_back(&Nodes[i]);
 			}
 		}

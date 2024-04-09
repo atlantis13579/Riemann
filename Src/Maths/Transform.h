@@ -47,22 +47,22 @@ namespace Maths
 			return *this;
 		}
 
-		inline Transform operator+(const Transform& rhs)
+		inline Transform operator+(const Transform& rhs) const
 		{
 			return Transform(pos + rhs.pos, quat * rhs.quat);
 		}
 
-		inline Transform operator-(const Transform& rhs)
+		inline Transform operator-(const Transform& rhs) const
 		{
 			return Transform(pos - rhs.pos, quat * rhs.quat.Conjugate());
 		}
 
-		inline Transform operator*(const Transform& rhs)
+		inline Transform operator*(const Transform& rhs) const
 		{
 			return Transform(pos + quat * rhs.pos, quat * rhs.quat);
 		}
 
-		inline Vector3 operator*(const Vector3& v)
+		inline Vector3 operator*(const Vector3& v) const
 		{
 			return pos + quat * v;
 		}
@@ -82,15 +82,60 @@ namespace Maths
 			*this = (*this) * rhs;
 		}
 
-		inline Transform TransformForward(const Transform& rhs)
+		inline Transform TransformForward(const Transform& rhs) const
 		{
 			return (*this) * rhs;
 		}
 
-		inline Transform TransformInverse(const Transform& rhs)
+		inline Transform TransformInverse(const Transform& rhs) const
 		{
 			Quaternion qinv = quat.Conjugate();
 			return Transform(qinv * (rhs.pos - pos), qinv * rhs.quat);
+		}
+
+		inline Vector3 LocalToWorld(const Vector3& rhs) const
+		{
+			return quat * rhs + pos;
+		}
+
+		inline Vector3 WorldToLocal(const Vector3& rhs) const
+		{
+			return quat.Conjugate() * rhs - pos;
+		}
+
+		inline Vector3 LocalToWorldDirection(const Vector3& rhs) const
+		{
+			return quat * rhs;
+		}
+
+		inline Vector3 WorldToLocalDirection(const Vector3& rhs) const
+		{
+			return quat.Conjugate() * rhs;
+		}
+
+		const Vector3& GetTranslation() const
+		{
+			return pos;
+		}
+
+		Matrix3			GetRotationMatrix() const
+		{
+			return quat.ToRotationMatrix3();
+		}
+
+		const Quaternion& GetRotation() const
+		{
+			return quat;
+		}
+
+		void				SetTranslation(const Vector3& trans)
+		{
+			pos = trans;
+		}
+
+		void				SetRotation(const Quaternion& rotation)
+		{
+			quat = rotation;
 		}
 
 		Vector3		pos;
@@ -119,7 +164,7 @@ namespace Maths
 			return pos;
 		}
 
-		Matrix3				GetRotationMatrix() const
+		Matrix3			GetRotationMatrix() const
 		{
 			return quat.ToRotationMatrix3();
 		}

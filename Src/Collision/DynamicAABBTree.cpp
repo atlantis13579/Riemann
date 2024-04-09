@@ -549,7 +549,7 @@ void DynamicAABBTree::Rebuild()
 			{
 				Box3 aabbj = m_nodes[nodes[j]].aabb;
 				Box3 b = Box3(aabbi, aabbj);
-				float cost = b.CalculateVolume();
+				float cost = b.GetVolume();
 				if (cost < minCost)
 				{
 					iMin = i;
@@ -665,9 +665,9 @@ void DynamicAABBTree::InsertLeaf(int leaf)
 	int nodeId = m_root;
 	while (m_nodes[nodeId].IsLeaf() == false)
 	{
-		float Vol = m_nodes[nodeId].aabb.CalculateVolume();
+		float Vol = m_nodes[nodeId].aabb.GetVolume();
 		Box3 mergedAABB = Box3(m_nodes[nodeId].aabb, leafAABB);
-		float mergedVol = mergedAABB.CalculateVolume();
+		float mergedVol = mergedAABB.GetVolume();
 
 		float cost = 2.0f * mergedVol;
 		float inheritanceCost = 2.0f * (mergedVol - Vol);
@@ -682,13 +682,13 @@ void DynamicAABBTree::InsertLeaf(int leaf)
 			if (m_nodes[c].IsLeaf())
 			{
 				Box3 aabb = Box3(leafAABB, m_nodes[c].aabb);
-				ccost = aabb.CalculateVolume() + inheritanceCost;
+				ccost = aabb.GetVolume() + inheritanceCost;
 			}
 			else
 			{
 				Box3 aabb = Box3(leafAABB, m_nodes[c].aabb);
-				float oldVol = m_nodes[c].aabb.CalculateVolume();
-				float newVol = aabb.CalculateVolume();
+				float oldVol = m_nodes[c].aabb.GetVolume();
+				float newVol = aabb.GetVolume();
 				ccost = (newVol - oldVol) + inheritanceCost;
 			}
 			costChild[k] = ccost;
@@ -982,7 +982,7 @@ float DynamicAABBTree::CalculateVolumeRatio() const
 	}
 
 	const Node* root = &m_nodes[m_root];
-	float rootVol = root->aabb.CalculateVolume();
+	float rootVol = root->aabb.GetVolume();
 
 	float totalVol = 0.0f;
 	for (int i = 0; i < m_nodeCapacity; ++i)
@@ -993,7 +993,7 @@ float DynamicAABBTree::CalculateVolumeRatio() const
 			continue;
 		}
 
-		totalVol += node->aabb.CalculateVolume();
+		totalVol += node->aabb.GetVolume();
 	}
 
 	return totalVol / rootVol;

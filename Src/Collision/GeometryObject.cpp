@@ -193,7 +193,7 @@ namespace Riemann
 
 	void 		GeometryBase::UpdateBoundingVolume()
 	{
-		m_BoxWorld = m_VolumeProperties.BoundingVolume.Transform(m_WorldTransform.transform.pos, m_WorldTransform.transform.quat);
+		m_BoxWorld = Box3::Transform(m_VolumeProperties.BoundingVolume, m_WorldTransform.transform.pos, m_WorldTransform.transform.quat);
 	}
 
 	Vector3		GeometryBase::GetSupport_WorldSpace(const Vector3& Direction) const

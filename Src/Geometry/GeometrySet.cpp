@@ -1,5 +1,9 @@
 
+#include <assert.h>
 #include "GeometrySet.h"
+#include "MeshSimplification.h"
+#include "../Maths/Box1.h"
+#include "../CollisionPrimitive/Triangle3d.h"
 
 namespace Geometry
 {
@@ -178,6 +182,122 @@ namespace Geometry
 		Insert(VertexUVs, idx, val);
 	}
 
+	void GeometryData::ApplyTransform(const Transform& trans, bool bReverseOrientationIfNeeded)
+	{
+		for (size_t i = 0; i < VertexPositions.size(); ++i)
+		{
+			Vector3 &Position = VertexPositions[i];
+			Position = trans.LocalToWorld(Position);
+		}
+
+		if (bHaveVertexNormals)
+		{
+			for (size_t i = 0; i < VertexNormals.size(); ++i)
+			{
+				Vector3 &Normal = VertexNormals[i];
+				Normal = trans.LocalToWorldDirection(Normal);
+			}
+		}
+
+		if (bReverseOrientationIfNeeded && trans.quat.ToRotationMatrix3().Determinant() < 0)
+		{
+			ReverseOrientation(false);
+		}
+	}
+
+	void GeometryData::ApplyTransform(Transform3& trans, bool bReverseOrientationIfNeeded)
+	{
+		for (size_t i = 0; i < VertexPositions.size(); ++i)
+		{
+			Vector3& Position = VertexPositions[i];
+			Position = trans.LocalToWorld(Position);
+		}
+
+		if (bHaveVertexNormals)
+		{
+			for (size_t i = 0; i < VertexNormals.size(); ++i)
+			{
+				Vector3& Normal = VertexNormals[i];
+				Normal = trans.LocalToWorldDirection(Normal);
+			}
+		}
+
+		if (bReverseOrientationIfNeeded && trans.GetRotationMatrix().Determinant() < 0)
+		{
+			ReverseOrientation(false);
+		}
+	}
+
+	void GeometryData::ReverseOrientation(bool bFlipNormals)
+	{
+		for (size_t i = 0; i < Triangles.size(); ++i)
+		{
+			Vector3i& tri = Triangles[i];
+			std::swap(tri.y, tri.z);
+		}
+
+		if (bFlipNormals && bHaveVertexNormals)
+		{
+			for (size_t i = 0; i < VertexNormals.size(); ++i)
+			{
+				Vector3& Normal = VertexNormals[i];
+				Normal = -Normal;
+			}
+		}
+	}
+
+	Vector3 GeometryData::GetTriangleCentroid(int idx) const
+	{
+		const Vector3i ti = Triangles[idx];
+		const Vector3 centroid = (VertexPositions[ti.x] + VertexPositions[ti.y] + VertexPositions[ti.z]) / 3.0f;
+		return centroid;
+	}
+
+	Box3 GeometryData::GetTriangleBounds(int idx) const
+	{
+		const Vector3i ti = Triangles[idx];
+		Box3 box(VertexPositions[ti.x], VertexPositions[ti.y], VertexPositions[ti.z]);
+		return box;
+	}
+
+	void GeometryData::GetTriangleVertices(int idx, Vector3& a, Vector3& b, Vector3& c) const
+	{
+		const Vector3i ti = Triangles[idx];
+		a = VertexPositions[ti.x];
+		b = VertexPositions[ti.y];
+		c = VertexPositions[ti.z];
+	}
+
+	bool GeometryData::Simplify(float rate)
+	{
+		std::vector<Vector3> new_v;
+		std::vector<int> new_i;
+
+		if (!SimplifyMesh(GetVertexBuffer(), GetIndexBuffer(), GetNumVertices(), GetNumTriangles(), rate, new_v, new_i))
+		{
+			return false;
+		}
+
+		bHaveVertexColor = false;
+		bHaveVertexNormals = false;
+		bHaveVertexUVs = false;
+		VertexColors.clear();
+		VertexNormals.clear();
+		VertexUVs.clear();
+
+		VertexPositions = new_v;
+
+		Triangles.resize(new_i.size() / 3);
+		memcpy(&Triangles[0], &new_i[0], Triangles.size() * sizeof(Triangles[0]));
+
+		return true;
+	}
+
+	void GeometryData::CalculateBounds()
+	{
+		Bounds = Box3(VertexPositions.data(), VertexPositions.size());
+	}
+
 	bool GeometryData::LoadObj(const char* name)
 	{
 		char* buf = 0;
@@ -269,10 +389,14 @@ namespace Geometry
 		}
 
 		VertexPositions.resize(NumVertices);
+		VertexColors.resize(NumColors);
+		VertexUVs.resize(NumUVs);
+		VertexNormals.resize(NumNormals);
+		Triangles.resize(NumTriangles);
 
 		delete[] buf;
 
-		Bounds = Box3(VertexPositions.data(), VertexPositions.size());
+		CalculateBounds();
 		ResourceName = name;
 		return true;
 	}
@@ -288,7 +412,7 @@ namespace Geometry
 		fprintf(fp, "# %d vertices, %d faces\n", (int)VertexPositions.size(), (int)Triangles.size());
 
 		fprintf(fp, "# List of geometric vertices, with (x,y,z[,w]) coordinates, w is optional and defaults to 1.0. \n");
-		if (!VertexPositions.empty())
+		if (!VertexColors.empty())
 		{
 			for (size_t i = 0; i < VertexPositions.size(); ++i)
 			{
@@ -395,4 +519,303 @@ namespace Geometry
 		}
 	}
 
-}	// namespace Destruction
+	GeometryAABBTree::GeometryAABBTree(GeometryData* data)
+	{
+		Mesh = data;
+		Build();
+	}
+
+	GeometryAABBTree::IntersectionsQueryResult GeometryAABBTree::FindAllIntersections(const GeometryAABBTree& OtherTree, const Transform* TransformF) const
+	{
+		IntersectionsQueryResult result;
+		FindIntersections(RootIndex, OtherTree, TransformF, OtherTree.RootIndex, 0, result);
+		return result;
+	}
+
+	static void AddTriTriIntersectionResult(Riemann::Triangle3dTriangle3dIntersectionResult& Intr, int TID_A, int TID_B, GeometryAABBTree::IntersectionsQueryResult& Result)
+	{
+		if (Intr.Quantity == 1)
+		{
+			Result.Points.push_back(GeometryAABBTree::PointIntersection{ {TID_A, TID_B}, Intr.Points[0] });
+		}
+		else if (Intr.Quantity == 2)
+		{
+			Result.Segments.push_back(GeometryAABBTree::SegmentIntersection{ {TID_A, TID_B}, {Intr.Points[0], Intr.Points[1]} });
+		}
+		else if (Intr.Quantity > 2)
+		{
+			if (Intr.Type == Riemann::IntersectionType::MultiSegment)
+			{
+				Result.Segments.push_back(GeometryAABBTree::SegmentIntersection{ {TID_A, TID_B}, {Intr.Points[0], Intr.Points[1]} });
+				Result.Segments.push_back(GeometryAABBTree::SegmentIntersection{ {TID_A, TID_B}, {Intr.Points[2], Intr.Points[3]} });
+				if (Intr.Quantity > 4)
+				{
+					Result.Segments.push_back(GeometryAABBTree::SegmentIntersection{ {TID_A, TID_B}, {Intr.Points[4], Intr.Points[5]} });
+				}
+			}
+			else
+			{
+				Result.Polygons.push_back(GeometryAABBTree::PolygonIntersection{ {TID_A, TID_B},
+					{Intr.Points[0], Intr.Points[1], Intr.Points[2], Intr.Points[3], Intr.Points[4], Intr.Points[5]}, Intr.Quantity });
+			}
+		}
+	}
+
+	void GeometryAABBTree::FindIntersections(int iBox, const GeometryAABBTree& OtherTree, const Transform* TransformF, int oBox, int depth, IntersectionsQueryResult& result) const
+	{
+		int idx = BoxToIndex[iBox];
+		int odx = OtherTree.BoxToIndex[oBox];
+
+		if (idx < TrianglesEnd && odx < OtherTree.TrianglesEnd)
+		{
+			Riemann::Triangle3d Tri, otri;
+			int num_tris = IndexList[idx], onum_tris = OtherTree.IndexList[odx];
+
+			for (int j = 1; j <= onum_tris; ++j)
+			{
+				int tj = OtherTree.IndexList[odx + j];
+				OtherTree.Mesh->GetTriangleVertices(tj, otri.v0, otri.v1, otri.v2);
+				if (TransformF != nullptr)
+				{
+					otri.v0 = TransformF->LocalToWorld(otri.v0);
+					otri.v1 = TransformF->LocalToWorld(otri.v1);
+					otri.v2 = TransformF->LocalToWorld(otri.v2);
+				}
+
+				for (int i = 1; i <= num_tris; ++i)
+				{
+					int ti = IndexList[idx + i];
+					Mesh->GetTriangleVertices(ti, Tri.v0, Tri.v1, Tri.v2);
+
+					Riemann::Triangle3dTriangle3dIntersectionResult intr;
+
+					if (CalculateIntersectionTriangle3dTriangle3d(otri, Tri, intr))
+					{
+						AddTriTriIntersectionResult(intr, ti, tj, result);
+					}
+				}
+			}
+
+			return;
+		}
+
+		bool bDescendOther = (idx < TrianglesEnd || depth % 2 == 0);
+		if (bDescendOther && odx < OtherTree.TrianglesEnd)
+			bDescendOther = false;
+
+		if (bDescendOther)
+		{
+			Box3 bounds = AABB[iBox];
+			bounds.Thicken(1e-3f);
+
+			int oChild1 = OtherTree.IndexList[odx];
+			if (oChild1 < 0)
+			{
+				oChild1 = (-oChild1) - 1;
+				Box3 oChild1Box = OtherTree.GetAABB(oChild1, TransformF);
+				if (oChild1Box.Intersect(bounds))
+					FindIntersections(iBox, OtherTree, TransformF, oChild1, depth + 1, result);
+
+			}
+			else
+			{
+				oChild1 = oChild1 - 1;
+
+				Box3 oChild1Box = OtherTree.GetAABB(oChild1, TransformF);
+				if (oChild1Box.Intersect(bounds))
+				{
+					FindIntersections(iBox, OtherTree, TransformF, oChild1, depth + 1, result);
+				}
+
+				int oChild2 = OtherTree.IndexList[odx + 1] - 1;
+				Box3 oChild2Box = OtherTree.GetAABB(oChild2, TransformF);
+				if (oChild2Box.Intersect(bounds))
+				{
+					FindIntersections(iBox, OtherTree, TransformF, oChild2, depth + 1, result);
+				}
+			}
+		}
+		else
+		{
+			Box3 oBounds = OtherTree.GetAABB(oBox, TransformF);
+
+			int iChild1 = IndexList[idx];
+			if (iChild1 < 0)
+			{
+				iChild1 = (-iChild1) - 1;
+				if (AABB[iChild1].Intersect(oBounds))
+				{
+					FindIntersections(iChild1, OtherTree, TransformF, oBox, depth + 1, result);
+				}
+
+			}
+			else
+			{
+				iChild1 = iChild1 - 1;
+				if (AABB[iChild1].Intersect(oBounds))
+				{
+					FindIntersections(iChild1, OtherTree, TransformF, oBox, depth + 1, result);
+				}
+
+				int iChild2 = IndexList[idx + 1] - 1;
+				if (AABB[iChild2].Intersect(oBounds))
+				{
+					FindIntersections(iChild2, OtherTree, TransformF, oBox, depth + 1, result);
+				}
+			}
+		}
+	}
+
+	Box3 GeometryAABBTree::GetAABB(int idx, const Transform* TransformF) const
+	{
+		Box3 box = AABB[idx];
+		if (TransformF)
+		{
+			box = Box3::Transform(box, TransformF->pos, TransformF->quat);
+		}
+		return box;
+	}
+
+	void GeometryAABBTree::Build()
+	{
+		std::vector<int> Triangles;
+		std::vector<Vector3> Centers;
+		for (int i = 0 ; i < Mesh->Triangles.size(); ++i)
+		{
+			const Vector3 centroid = Mesh->GetTriangleCentroid((int)i);
+			float d2 = centroid.SquareLength();
+			if (d2 > 1e-3f)
+			{
+				Triangles.push_back(i);
+				Centers.push_back(centroid);
+			}
+		}
+
+		Build(Triangles, Centers);
+	}
+
+	void GeometryAABBTree::Build(std::vector<int>& Triangles, std::vector<Vector3>& Centers)
+	{
+		FBoxesSet Tris;
+		FBoxesSet Nodes;
+		Box3 rootBox;
+		const int TopDownLeafMaxTriCount = 3;
+		int rootnode = SplitTriSetMidpoint(Triangles, Centers, 0, (int)Triangles.size(), 0, TopDownLeafMaxTriCount, Tris, Nodes, rootBox);
+
+		BoxToIndex = Tris.BoxToIndex;
+		AABB = Tris.AABB;
+		IndexList = Tris.IndexList;
+		TrianglesEnd = Tris.IIndicesCur;
+		int iIndexShift = TrianglesEnd;
+		int iBoxShift = Tris.IBoxCur;
+
+		for (int i = 0; i < Nodes.IBoxCur; ++i)
+		{
+			const Box3& box = Nodes.AABB[i];
+			AABB.insert(AABB.begin() + iBoxShift + i, box);
+			int NodeBoxIndex = Nodes.BoxToIndex[i];
+			BoxToIndex.insert(BoxToIndex.begin() + iBoxShift + i, iIndexShift + NodeBoxIndex);
+		}
+
+		for (int i = 0; i < Nodes.IIndicesCur; ++i)
+		{
+			int child_box = Nodes.IndexList[i];
+			if (child_box < 0)
+			{
+				child_box = (-child_box) - 1;
+			}
+			else
+			{
+				child_box += iBoxShift;
+			}
+			child_box = child_box + 1;
+			IndexList.insert(IndexList.begin() + iIndexShift + i, child_box);
+		}
+
+		RootIndex = rootnode + iBoxShift;
+	}
+
+	int GeometryAABBTree::SplitTriSetMidpoint(std::vector<int>& Triangles, std::vector<Vector3>& Centers, int IStart, int ICount, int Depth, int MinTriCount, FBoxesSet& Tris, FBoxesSet& Nodes, Box3& Box)
+	{
+		Box = (Triangles.size() > 0) ?
+			Box3::Empty() : Box3(Vector3::Zero(), 0.0);
+		int IBox = -1;
+
+		if (ICount <= MinTriCount)
+		{
+			IBox = Tris.IBoxCur++;
+			Tris.BoxToIndex.insert(Tris.BoxToIndex.begin() + IBox, Tris.IIndicesCur);
+			Tris.IndexList.insert(Tris.IndexList.begin() + (Tris.IIndicesCur++), ICount);
+			for (int i = 0; i < ICount; ++i)
+			{
+				Tris.IndexList.insert(Tris.IndexList.begin() + (Tris.IIndicesCur++), Triangles[IStart + i]);
+				Box.Encapsulate(Mesh->GetTriangleBounds(Triangles[IStart + i]));
+			}
+
+			Tris.AABB.insert(Tris.AABB.begin() + IBox, Box);
+
+			return -(IBox + 1);
+		}
+
+		int axis = (Depth % 3);
+		Box1 interval = Box1::Empty();
+		for (int i = 0; i < ICount; ++i)
+		{
+			interval.Encapsulate(Centers[IStart + i][axis]);
+		}
+		float midpoint = interval.GetCenter();
+
+		int n0, n1;
+		if (interval.GetLength() > 1e-3f)
+		{
+			int l = 0;
+			int r = ICount - 1;
+			while (l < r)
+			{
+				while (Centers[IStart + l][axis] <= midpoint)
+				{
+					l++;
+				}
+				while (Centers[IStart + r][axis] > midpoint)
+				{
+					r--;
+				}
+				if (l >= r)
+				{
+					break;
+				}
+				Vector3 tmpc = Centers[IStart + l];
+				Centers[IStart + l] = Centers[IStart + r];
+				Centers[IStart + r] = tmpc;
+				int tmpt = Triangles[IStart + l];
+				Triangles[IStart + l] = Triangles[IStart + r];
+				Triangles[IStart + r] = tmpt;
+			}
+
+			n0 = l;
+			n1 = ICount - n0;
+			assert(n0 >= 1 && n1 >= 1);
+		}
+		else
+		{
+			n0 = ICount / 2;
+			n1 = ICount - n0;
+		}
+
+		Box3 box1;
+		int child0 = SplitTriSetMidpoint(Triangles, Centers, IStart, n0, Depth + 1, MinTriCount, Tris, Nodes, Box);
+		int child1 = SplitTriSetMidpoint(Triangles, Centers, IStart + n0, n1, Depth + 1, MinTriCount, Tris, Nodes, box1);
+		Box.Encapsulate(box1);
+
+		IBox = Nodes.IBoxCur++;
+		Nodes.BoxToIndex.insert(Nodes.BoxToIndex.begin() + IBox, Nodes.IIndicesCur);
+		Nodes.IndexList.insert(Nodes.IndexList.begin() + Nodes.IIndicesCur++, child0);
+		Nodes.IndexList.insert(Nodes.IndexList.begin() + Nodes.IIndicesCur++, child1);
+
+		Nodes.AABB.insert(Nodes.AABB.begin() + IBox, Box);
+
+		return IBox;
+	}
+
+
+}

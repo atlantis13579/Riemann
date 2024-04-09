@@ -22,9 +22,7 @@ namespace Riemann
 
 		void AddTestCount(int Count)
 		{
-#ifdef _DEBUG
 			hitTestCount += Count;
-#endif // _DEBUG
 		}
 	};
 

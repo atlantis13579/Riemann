@@ -33,6 +33,11 @@ namespace Maths
 			, Max(InMax, InMax, InMax)
 		{ }
 
+		explicit TAABB3<T>(const TVector3<T>& InCenter, const T extent) 
+			: Min(InCenter.x - extent, InCenter.y - extent, InCenter.z - extent)
+			, Max(InCenter.x + extent, InCenter.y + extent, InCenter.z + extent)
+		{ }
+
 		explicit TAABB3<T>(const TVector3<T>* v, size_t Num)
 		{
 			Min = Max = v[0];
@@ -152,22 +157,22 @@ namespace Maths
 			return *this;
 		}
 
-		TVector3<T> GetCenter() const
+		inline TVector3<T> GetCenter() const
 		{
 			return TVector3<T>((Min + Max) * 0.5f);
 		}
 
-		TVector3<T> GetExtent() const
+		inline TVector3<T> GetExtent() const
 		{
 			return (Max - Min) * 0.5f;
 		}
 
-		TVector3<T> GetSize() const
+		inline TVector3<T> GetSize() const
 		{
 			return Max - Min;
 		}
 
-		T CalculateVolume() const
+		inline T GetVolume() const
 		{
 			return (Max.x - Min.x) * (Max.y - Min.y) * (Max.z - Min.z);
 		}
@@ -185,6 +190,16 @@ namespace Maths
 		inline T GetLengthZ() const
 		{
 			return Max.z - Min.z;
+		}
+
+		T MaxDim() const
+		{
+			return std::max(std::max(GetLengthX(), GetLengthY()), GetLengthZ());
+		}
+
+		T MinDim() const
+		{
+			return std::min(std::min(GetLengthX(), GetLengthY()), GetLengthZ());
 		}
 
 		void GetCenterAndExtent(TVector3<T>* center, TVector3<T>* Extent) const
@@ -273,12 +288,12 @@ namespace Maths
 			return GetIntersection(Box.Min, Box.Max, OutBox);
 		}
 
-		TAABB3<T>	Transform(const Matrix4& M) const
+		static TAABB3<T> Transform(const TAABB3<T>& src, const Matrix4& M)
 		{
 			TAABB3<T> Box;
 
-			TVector3<T> Center = GetCenter();
-			TVector3<T> Extent = GetExtent();
+			TVector3<T> Center = src.GetCenter();
+			TVector3<T> Extent = src.GetExtent();
 
 			TVector3<T> m0 = M.Column(0).xyz();
 			TVector3<T> m1 = M.Column(1).xyz();
@@ -293,13 +308,25 @@ namespace Maths
 			return Box;
 		}
 
-		TAABB3<T>	Transform(const Vector3& t, const Quaternion& q) const
+		static TAABB3<T> Transform(const TAABB3<T>& src, const Vector3& t, const Quaternion& q)
 		{
 			Matrix4 mat = q.ToRotationMatrix4();
 			mat[0][3] += t.x;
 			mat[1][3] += t.y;
 			mat[2][3] += t.z;
-			return Transform(mat);
+			return Transform(src, mat);
+		}
+
+		static TAABB3<T> Transform(const TAABB3<T>& src, const Vector3& t, const Quaternion& q, const Vector3& s)
+		{
+			Matrix4 mat = q.ToRotationMatrix4();
+			mat[0] *= s.x;
+			mat[1] *= s.y;
+			mat[2] *= s.z;
+			mat[0][3] += t.x;
+			mat[1][3] += t.y;
+			mat[2][3] += t.z;
+			return Transform(src, mat);
 		}
 
 		static void GetVertices(const TVector3<T>& Bmin, const TVector3<T>& Bmax, TVector3<T>* v)

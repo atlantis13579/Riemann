@@ -706,7 +706,8 @@ public:
 	std::vector<bool> m_inFace;
 
 public:
-	MeshSimplification() {
+	MeshSimplification()
+	{
 		m_vertices.resize(MAX_VERTEX);
 		m_pairs.resize(MAX_PAIR);
 		m_old_vertices.resize(MAX_VERTEX);
@@ -771,61 +772,6 @@ public:
 		}
 	}
 
-	bool ExportOriginalObj(const char *file)
-	{
-		FILE* fp = fopen(file, "w");
-		if (!fp)
-		{
-			return false;
-		}
-
-		fprintf(fp, "# %d vertices, %d faces\n", m_vOffset - 1, m_fOffset - 1);
-
-		for (int index = 1; index < m_vOffset; ++index)
-		{
-			fprintf(fp, "v %.3f %.3f %.3f\n", m_vertices[index].p.x, m_vertices[index].p.y, m_vertices[index].p.z);
-		}
-
-		for (int index = 1; index < m_fOffset; ++index)
-		{
-			fprintf(fp, "f %d %d %d\n", m_old_face[index].indices[0], m_old_face[index].indices[1], m_old_face[index].indices[2]);
-		}
-
-		fclose(fp);
-		return true;
-	}
-
-	bool ExportSimplifiedObj(const char* file)
-	{
-		FILE* fp = fopen(file, "w");
-		if (!fp)
-		{
-			return false;
-		}
-
-		std::vector<Vector3> _vertices;
-		std::vector<int> _indices;
-		GetNewVertices(_vertices, _indices);
-
-		assert((_indices.size() % 3) == 0);
-		size_t nt = _indices.size() / 3;
-
-		fprintf(fp, "# %d vertices, %d faces\n", (int)_vertices.size(), (int)nt);
-
-		for (size_t i = 0; i < _vertices.size(); ++i)
-		{
-			fprintf(fp, "v %.3f %.3f %.3f\n", _vertices[i].x, _vertices[i].y, _vertices[i].z);
-		}
-
-		for (size_t i = 0; i < nt; ++i)
-		{
-			fprintf(fp, "f %d %d %d\n", _indices[i * 3 + 0] + 1, _indices[i * 3 + 1] + 1, _indices[i * 3 + 2] + 1);
-		}
-
-		fclose(fp);
-		return true;
-	}
-
 	int AddVertex(const Vector3& p) {
 		int index = m_vOffset;
 		m_vertices[m_vOffset].SetPos(p);
@@ -849,9 +795,12 @@ public:
 
 	void AddFace(const Face& f)
 	{
-		for (int i = 0; i < 3; ++i) {
-			for (int j = i + 1; j < 3; ++j) {
-				if (!m_vertices[f.indices[i]].IsNeighbor(f.indices[j])) {
+		for (int i = 0; i < 3; ++i)
+		{
+			for (int j = i + 1; j < 3; ++j)
+			{
+				if (!m_vertices[f.indices[i]].IsNeighbor(f.indices[j]))
+				{
 					m_vertices[f.indices[i]].AddNeighbor(f.indices[j]);
 					m_vertices[f.indices[j]].AddNeighbor(f.indices[i]);
 				}
@@ -1105,7 +1054,7 @@ public:
 	}
 };
 
-bool SimplifyMesh(const Vector3* pv, const void* pi, int nv, int nt, bool is16bit, float rate, std::vector<Vector3>& new_v, std::vector<int>& new_i)
+bool SimplifyMesh(const Vector3* pv, const Vector3i* pi, int nv, int nt, float rate, std::vector<Vector3>& new_v, std::vector<int>& new_i)
 {
 	MeshSimplification s;
 
@@ -1116,22 +1065,7 @@ bool SimplifyMesh(const Vector3* pv, const void* pi, int nv, int nt, bool is16bi
 
 	for (int i = 0; i < nt; ++i)
 	{
-		int indices[3];
-		if (is16bit)
-		{
-			const uint16_t* pi16 = static_cast<const uint16_t*>(pi);
-			indices[0] = (int)pi16[i * 3 + 0] + 1;
-			indices[1] = (int)pi16[i * 3 + 1] + 1;
-			indices[2] = (int)pi16[i * 3 + 2] + 1;
-		}
-		else
-		{
-			const uint32_t* pi32 = static_cast<const uint32_t*>(pi);
-			indices[0] = (int)pi32[i * 3 + 0] + 1;
-			indices[1] = (int)pi32[i * 3 + 1] + 1;
-			indices[2] = (int)pi32[i * 3 + 2] + 1;
-		}
-
+		int indices[3] = { pi[i].x + 1, pi[i].y + 1, pi[i].z + 1};
 		Face face(indices);
 		s.AddFace(face);
 	}
