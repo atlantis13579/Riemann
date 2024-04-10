@@ -61,7 +61,7 @@ namespace Riemann
 	{
 		Result->Reset();
 
-		Ray3d ray(Origin, Direction);
+		Ray3 ray(Origin, Direction);
 		bool hit = false;
 
 		if (m_staticGeometry)

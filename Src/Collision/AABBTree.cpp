@@ -136,7 +136,7 @@ namespace Riemann
 		return -1;
 	}
 
-	static int RayIntersectGeometries(const Ray3d& Ray, int* Geoms, int NumGeoms, GeometryBase** GeometryCollection, const Box3& BV, const RayCastOption* Option, RayCastResult* Result)
+	static int RayIntersectGeometries(const Ray3& Ray, int* Geoms, int NumGeoms, GeometryBase** GeometryCollection, const Box3& BV, const RayCastOption* Option, RayCastResult* Result)
 	{
 		assert(NumGeoms > 0);
 		if (GeometryCollection == nullptr)
@@ -203,7 +203,7 @@ namespace Riemann
 		return min_idx;
 	}
 
-	bool RayIntersectCacheObj(const Ray3d& Ray, const RayCastOption* Option, RayCastResult* Result)
+	bool RayIntersectCacheObj(const Ray3& Ray, const RayCastOption* Option, RayCastResult* Result)
 	{
 		const RayCastCache& Cache = Option->Cache;
 		if (Cache.prevhitGeom)
@@ -231,7 +231,7 @@ namespace Riemann
 		return false;
 	}
 
-	bool  AABBTree::RayCast(const Ray3d& Ray, GeometryBase** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const
+	bool  AABBTree::RayCast(const Ray3& Ray, GeometryBase** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const
 	{
 		Result->hit = false;
 		Result->hitTestCount = 0;
@@ -339,7 +339,7 @@ namespace Riemann
 		return false;
 	}
 
-	bool  AABBTree::RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const
+	bool  AABBTree::RayCastBoundingBox(const Ray3& ray, const RayCastOption& Option, RayCastResult* Result) const
 	{
 		return RayCast(ray, nullptr, &Option, Result);
 	}

@@ -157,7 +157,6 @@
     <ClCompile Include="..\..\Test\Test_Matrix.cpp" />
     <ClCompile Include="..\..\Test\Test_Optimization.cpp" />
     <ClCompile Include="..\..\Test\Test_Physics3d.cpp" />
-    <ClCompile Include="..\..\Test\Test_Physics2d.cpp" />
     <ClCompile Include="..\..\Test\Test_Python.cpp" />
     <ClCompile Include="..\..\Test\Test_SIMD.cpp" />
     <ClCompile Include="..\..\Test\Test_Vehicle.cpp" />

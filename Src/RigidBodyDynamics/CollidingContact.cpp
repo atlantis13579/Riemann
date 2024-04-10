@@ -7,8 +7,8 @@
 #include "../Core/Graph.h"
 #include "../Core/StaticArray.h"
 #include "../Collision/GeometryObject.h"
-#include "../CollisionPrimitive/Segment3d.h"
-#include "../CollisionPrimitive/Triangle3d.h"
+#include "../CollisionPrimitive/Segment3.h"
+#include "../CollisionPrimitive/Triangle3.h"
 
 namespace Riemann
 {
@@ -159,7 +159,7 @@ namespace Riemann
 			Contact* contact = &ContactPoints[i];
 			if (contact == c0 || contact == c1)
 				continue;
-			const float dist = Segment3d::SqrDistancePointToSegment(contact->PositionWorldA, c0->PositionWorldA, c1->PositionWorldA);
+			const float dist = Segment3::SqrDistancePointToSegment(contact->PositionWorldA, c0->PositionWorldA, c1->PositionWorldA);
 			if (dist > max_sqr_dist_seq)
 			{
 				max_sqr_dist_seq = dist;
@@ -175,7 +175,7 @@ namespace Riemann
 			Contact* contact = &ContactPoints[i];
 			if (contact == c0 || contact == c1 || contact == c2)
 				continue;
-			const float dist = Triangle3d::SqrDistancePointToTriangle(contact->PositionWorldA, c0->PositionWorldA, c1->PositionWorldA, c2->PositionWorldA);
+			const float dist = Triangle3::SqrDistancePointToTriangle(contact->PositionWorldA, c0->PositionWorldA, c1->PositionWorldA, c2->PositionWorldA);
 			if (dist > max_sqr_dist_tri)
 			{
 				max_sqr_dist_tri = dist;

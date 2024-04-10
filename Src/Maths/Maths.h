@@ -97,7 +97,7 @@ namespace Maths
 	template<typename T>
 	inline T	LinearInterp(const T v1, const T v2, float mix)
 	{
-		return v1 * ((T)1 - mix) + v2 * mix;
+		return v1 * (1.0f - mix) + v2 * mix;
 	}
 
 	inline bool	IsFloatInf(float x)

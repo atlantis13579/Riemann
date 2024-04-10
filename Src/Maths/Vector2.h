@@ -234,6 +234,11 @@ namespace Maths
 			return p[i];
 		}
 
+		inline bool Contains(const T v) const
+		{
+			return x == v || y == v;
+		}
+
 		inline TVector2<T> PerpCCW() const
 		{
 			return TVector2<T>(-y, x);

@@ -159,12 +159,12 @@ namespace Maths
 
 		inline TVector3<T> GetCenter() const
 		{
-			return TVector3<T>((Min + Max) * 0.5f);
+			return (Min + Max) * (T)0.5;
 		}
 
 		inline TVector3<T> GetExtent() const
 		{
-			return (Max - Min) * 0.5f;
+			return (Max - Min) * (T)0.5;
 		}
 
 		inline TVector3<T> GetSize() const

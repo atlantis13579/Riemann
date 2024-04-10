@@ -251,6 +251,11 @@ namespace Maths
 			return reinterpret_cast<T*>(this)[i];
 		}
 
+		inline bool Contains(const T v) const
+		{
+			return x == v || y == v || z == v || w == v;
+		}
+
 		inline TVector4<T> Min(const TVector4<T>& v) const
 		{
 			return TVector4<T>(std::min(v.x, x), std::min(v.y, y), std::min(v.z, z), std::min(v.w, w));

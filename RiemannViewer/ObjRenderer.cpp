@@ -3,24 +3,23 @@
 #include "../Renderer/Renderer.h"
 #include "ObjRenderer.h"
 #include "../Src/Collision/GeometryObject.h"
-#include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
-#include "../Src/CollisionPrimitive/Sphere3d.h"
-#include "../Src/CollisionPrimitive/Plane3d.h"
-#include "../Src/CollisionPrimitive/Cylinder3d.h"
-#include "../Src/CollisionPrimitive/Capsule3d.h"
-#include "../Src/CollisionPrimitive/Mesh.h"
+#include "../Src/CollisionPrimitive/AxisAlignedBox3.h"
+#include "../Src/CollisionPrimitive/Sphere3.h"
+#include "../Src/CollisionPrimitive/Plane3.h"
+#include "../Src/CollisionPrimitive/Cylinder3.h"
+#include "../Src/CollisionPrimitive/Capsule3.h"
+#include "../Src/CollisionPrimitive/StaticMesh.h"
 #include "../Src/CollisionPrimitive/ConvexMesh.h"
-#include "../Src/CollisionPrimitive/HeightField3d.h"
+#include "../Src/CollisionPrimitive/HeightField3.h"
 
 namespace Riemann
 {
-
 	void AddPlane(Renderer* renderer, GeometryBase* geom, bool DrawMesh = true)
 	{
 		std::vector<Vector3> Vertices;
 		std::vector<uint16_t> Indices;
 		std::vector<Vector3> Normals;
-		Plane3d* shape = geom->GetShapeObj<Plane3d>();
+		Plane3* shape = geom->GetShapeObj<Plane3>();
 
 		std::string name = std::to_string((intptr_t)geom);
 		if (DrawMesh)
@@ -66,7 +65,7 @@ namespace Riemann
 		}
 	}
 
-	void AddTriMesh(Renderer* renderer, Mesh* mesh, void* Trans, bool RenderBV)
+	void AddTriMesh(Renderer* renderer, Geometry::StaticMesh* mesh, void* Trans, bool RenderBV)
 	{
 		mesh->CalculateNormals();
 
@@ -82,7 +81,7 @@ namespace Riemann
 		{
 			std::vector<Vector3> Vertices;
 			std::vector<uint16_t> Indices;
-			AxisAlignedBox3d aabb(mesh->BoundingVolume.Min, mesh->BoundingVolume.Max);
+			Geometry::AxisAlignedBox3 aabb(mesh->BoundingVolume.Min, mesh->BoundingVolume.Max);
 			aabb.GetWireframe(Vertices, Indices);
 			vv.clear();
 			for (size_t i = 0; i < Vertices.size(); ++i)
@@ -97,37 +96,37 @@ namespace Riemann
 
 	void AddGeometry(Renderer* renderer, GeometryBase* geom)
 	{
-		if (geom->GetShapeType() == ShapeType3d::TRIANGLE_MESH)
+		if (geom->GetShapeType() == ShapeType::TRIANGLE_MESH)
 		{
-			AddTriMesh(renderer, geom->GetShapeObj<Mesh>(), geom->GetWorldTransform(), true);
+			AddTriMesh(renderer, geom->GetShapeObj<Geometry::StaticMesh>(), geom->GetWorldTransform(), true);
 		}
-		else if (geom->GetShapeType() == ShapeType3d::CONVEX_MESH)
+		else if (geom->GetShapeType() == ShapeType::CONVEX_MESH)
 		{
-			AddGeometryImpl<ConvexMesh>(renderer, geom);
+			AddGeometryImpl<Geometry::ConvexMesh>(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType3d::BOX)
+		else if (geom->GetShapeType() == ShapeType::BOX)
 		{
-			AddGeometryImpl<AxisAlignedBox3d>(renderer, geom);
+			AddGeometryImpl<Geometry::AxisAlignedBox3>(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType3d::PLANE)
+		else if (geom->GetShapeType() == ShapeType::PLANE)
 		{
 			AddPlane(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType3d::SPHERE)
+		else if (geom->GetShapeType() == ShapeType::SPHERE)
 		{
-			AddGeometryImpl <Sphere3d >(renderer, geom);
+			AddGeometryImpl <Geometry::Sphere3 >(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType3d::CAPSULE)
+		else if (geom->GetShapeType() == ShapeType::CAPSULE)
 		{
-			AddGeometryImpl <Capsule3d >(renderer, geom);
+			AddGeometryImpl <Geometry::Capsule3 >(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType3d::CYLINDER)
+		else if (geom->GetShapeType() == ShapeType::CYLINDER)
 		{
-			AddGeometryImpl <Cylinder3d >(renderer, geom);
+			AddGeometryImpl <Geometry::Cylinder3 >(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType3d::HEIGHTFIELD)
+		else if (geom->GetShapeType() == ShapeType::HEIGHTFIELD)
 		{
-			AddGeometryImpl <HeightField3d >(renderer, geom);
+			AddGeometryImpl <Geometry::HeightField3 >(renderer, geom);
 		}
 	}
 }

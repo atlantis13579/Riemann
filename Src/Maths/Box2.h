@@ -156,12 +156,12 @@ namespace Maths
 
 		inline TVector2<T> GetCenter() const
 		{
-			return TVector2<T>((Min + Max) * 0.5f);
+			return (Min + Max) * (T)0.5;
 		}
 
 		inline TVector2<T> GetExtent() const
 		{
-			return (Max - Min) * 0.5f;
+			return (Max - Min) * (T)0.5;
 		}
 
 		inline TVector2<T> GetSize() const

@@ -2,18 +2,18 @@
 #include "Test.h"
 
 #include "../Src/Geometry/Spline.h"
-#include "../Src/Geometry/GeometrySet.h"
+#include "../Src/Geometry/DynamicMesh.h"
 #include "../Src/Geometry/GeometryBoolean.h"
-#include "../Src/Geometry/Polygon3d.h"
+#include "../Src/Geometry/Polygon3.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/Delaunay.h"
-#include "../Src/Geometry/Voronoi2d.h"
-#include "../Src/Geometry/Voronoi3d.h"
-#include "../Src/Geometry/DenseTensorField3d.h"
+#include "../Src/Geometry/Voronoi2.h"
+#include "../Src/Geometry/Voronoi3.h"
+#include "../Src/Geometry/DenseTensorField3.h"
 
 void TestMeshSimplify()
 {
-	Geometry::GeometryData mesh;
+	Geometry::DynamicMesh mesh;
 	mesh.LoadObj("../TestData/bunny.obj");
 	mesh.Simplify(0.3f);
 	mesh.ExportObj("../TestData/bunny2.obj");
@@ -105,13 +105,13 @@ void TestVoronoi2d()
 void TestVoronoi3d()
 {
 	std::vector<Vector3> points;
-	Geometry::Voronoi3d::GenerateRandomPoints(Box3::Unit(), 100, points);
-	Geometry::Voronoi3d v(points, Box3::Unit(), 1e-3f);
+	Geometry::Voronoi3::GenerateRandomPoints(Box3::Unit(), 100, points);
+	Geometry::Voronoi3 v(points, Box3::Unit(), 1e-3f);
 
-	std::vector<Geometry::Voronoi3d::Cell> cells;
+	std::vector<Geometry::Voronoi3::Cell> cells;
 	v.ComputeAllCells(cells, true);
 
-	Geometry::Voronoi3d::GenerateRandomPoints(Box3::Unit(), 2, points);
+	Geometry::Voronoi3::GenerateRandomPoints(Box3::Unit(), 2, points);
 
 	v.Set(points, Box3::Unit(), 1e-3f);
 	v.Build();
@@ -124,33 +124,33 @@ void TestVoronoi3d()
 
 void TestGeometrySet()
 {
-	Geometry::GeometryData set1;
+	Geometry::DynamicMesh set1;
 	set1.LoadObj("../TestData/bunny.obj");
 	Box3 box = set1.Bounds;
 	float x = box.GetCenter().x;
 	float y = box.GetCenter().y;
 
-	Geometry::GeometryData set2;
+	Geometry::DynamicMesh set2;
 	set2.VertexPositions.emplace_back(box.Min.x, y, box.Min.z);
 	set2.VertexPositions.emplace_back(box.Min.x, y, box.Max.z);
 	set2.VertexPositions.emplace_back(box.Max.x, y, box.Max.z);
 	set2.VertexPositions.emplace_back(box.Max.x, y, box.Min.z);
 	set2.Triangles.emplace_back(0, 1, 2);
 	set2.Triangles.emplace_back(2, 3, 0);
-	set2.CalculateBounds();
+	set2.BuildBounds();
 
-	Geometry::GeometryData set3;
+	Geometry::DynamicMesh set3;
 	set3.VertexPositions.emplace_back(x, box.Min.y, box.Min.z + 0.01f);
 	set3.VertexPositions.emplace_back(x, box.Min.y, box.Max.z + 0.01f);
 	set3.VertexPositions.emplace_back(x, box.Max.y, box.Max.z + 0.01f);
 	set3.Triangles.emplace_back(0, 1, 2);
-	set3.CalculateBounds();
+	set3.BuildBounds();
 
-	Geometry::GeometryAABBTree aabb1(&set1);
-	Geometry::GeometryAABBTree aabb2(&set2);
-	Geometry::GeometryAABBTree aabb3(&set3);
+	Geometry::DynamicMeshAABBTree aabb1(&set1);
+	Geometry::DynamicMeshAABBTree aabb2(&set2);
+	Geometry::DynamicMeshAABBTree aabb3(&set3);
 
-	Geometry::GeometryAABBTree::IntersectionsQueryResult Result;
+	Geometry::IntersectionsQueryResult Result;
 		
 	Result = aabb1.FindAllIntersections(aabb2);
 	Result = aabb2.FindAllIntersections(aabb3);
@@ -160,19 +160,19 @@ void TestGeometrySet()
 
 void TestGeometryBoolean()
 {
-	Geometry::GeometryData set1;
+	Geometry::DynamicMesh set1;
 	set1.LoadObj("../TestData/bunny.obj");
 
 	Box3 box = set1.Bounds;
 	float y = box.GetCenter().y;
-	Geometry::GeometryData set2;
+	Geometry::DynamicMesh set2;
 	set2.VertexPositions.emplace_back(box.Min.x, y, box.Min.z);
 	set2.VertexPositions.emplace_back(box.Min.x, y, box.Max.z);
 	set2.VertexPositions.emplace_back(box.Max.x, y, box.Max.z);
 	set2.VertexPositions.emplace_back(box.Max.x, y, box.Min.z);
 	set2.Triangles.emplace_back(0, 1, 2);
 	set2.Triangles.emplace_back(2, 3, 0);
-	set2.CalculateBounds();
+	set2.BuildBounds();
 
 	Geometry::GeometryBoolean b(&set1, &set2, Geometry::GeometryBoolean::BooleanOp::Intersect);
 	b.Compute();

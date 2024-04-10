@@ -292,6 +292,11 @@ namespace Maths
 			return p[i];
 		}
 
+		inline bool Contains(const T v) const
+		{
+			return x == v || y == v || z == v;
+		}
+
 		bool		IsZero() const
 		{
 			return SquareLength() <= std::numeric_limits<T>::epsilon();

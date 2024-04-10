@@ -1,6 +1,5 @@
 #pragma once
 
-#include <float.h>
 #include <algorithm>
 #include <limits>
 
@@ -20,8 +19,8 @@ namespace Maths
 	public:
 		TAABB1<T>() { }
 		explicit TAABB1<T>(const T InMin, const T InMax)
-			: Min(std::min(InMin, InMax))
-			, Max(std::max(InMin, InMax))
+			: Min(InMin)
+			, Max(InMax)
 		{ }
 
 		explicit TAABB1<T>(const T* v, size_t Num)
@@ -129,12 +128,12 @@ namespace Maths
 
 		inline T GetCenter() const
 		{
-			return T((Min + Max) * 0.5f);
+			return (Min + Max) * (T)0.5;
 		}
 
 		inline T GetExtent() const
 		{
-			return (Max - Min) * 0.5f;
+			return (Max - Min) * (T)0.5;
 		}
 
 		inline T GetLength() const

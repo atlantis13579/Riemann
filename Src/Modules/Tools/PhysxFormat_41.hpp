@@ -507,7 +507,7 @@ namespace PhysxFormat_41
 
 	struct GuHullPolygonData
 	{
-		Plane3d			mPlane;
+		Plane3			mPlane;
 		uint16_t	mVRef8;
 		uint8_t	mNbVerts;
 		uint8_t	mMinIndex;

@@ -1,22 +1,701 @@
-
+#include <assert.h>
 #include <vector>
 #include <map>
+#include <set>
+#include "../CollisionPrimitive/Segment3.h"
+#include "../CollisionPrimitive/Triangle3.h"
 #include "../Maths/Maths.h"
 #include "GeometryBoolean.h"
-#include "GeometrySet.h"
+#include "DynamicMesh.h"
 
 namespace Geometry
 {
+	enum class EVertexType
+	{
+		Unknown = -1,
+		Vertex = 0,
+		Edge = 1,
+		Face = 2
+	};
 
-	void GeometryBoolean::Compute()
+	struct FPtOnMesh
+	{
+		Vector3 Pos;
+		EVertexType Type = EVertexType::Unknown;
+		int ElemID = -1;
+	};
+
+	struct FSegmentToElements
+	{
+		int BaseTID;
+		int PtOnMeshIdx[2];
+	};
+
+	enum class ESurfacePointType
+	{
+		Vertex = 0,
+		Edge = 1,
+		Triangle = 2
+	};
+
+	struct FMeshSurfacePoint
+	{
+		int ElementID;
+		Vector3 BaryCoord;
+		ESurfacePointType PointType;
+
+		FMeshSurfacePoint() : ElementID(-1)
+		{
+		}
+		FMeshSurfacePoint(int TriangleID, const Vector3& BaryCoord) : ElementID(TriangleID), BaryCoord(BaryCoord), PointType(ESurfacePointType::Triangle)
+		{
+		}
+		FMeshSurfacePoint(int EdgeID, float FirstCoordWt) : ElementID(EdgeID), BaryCoord(FirstCoordWt, 1 - FirstCoordWt, 0), PointType(ESurfacePointType::Edge)
+		{
+		}
+		FMeshSurfacePoint(int VertexID) : ElementID(VertexID), BaryCoord(1, 0, 0), PointType(ESurfacePointType::Vertex)
+		{
+		}
+
+		Vector3 Pos(const DynamicMesh* Mesh) const
+		{
+			if (PointType == ESurfacePointType::Vertex)
+			{
+				return Mesh->GetVertex(ElementID);
+			}
+			else if (PointType == ESurfacePointType::Edge)
+			{
+				Vector3 EA, EB;
+				Mesh->GetEdgeV(ElementID, EA, EB);
+				return BaryCoord[0] * EA + BaryCoord[1] * EB;
+			}
+			else // PointType == ESurfacePointType::Triangle
+			{
+				Vector3 TA, TB, TC;
+				Mesh->GetTriangleVertices(ElementID, TA, TB, TC);
+				return BaryCoord[0] * TA + BaryCoord[1] * TB + BaryCoord[2] * TC;
+			}
+		}
+	};
+
+	class FMeshSurfacePath
+	{
+	public:
+		DynamicMesh* Mesh;
+		std::vector<std::pair<FMeshSurfacePoint, int>> Path;
+		bool bIsClosed;
+
+	public:
+		FMeshSurfacePath(DynamicMesh* Mesh) : Mesh(Mesh), bIsClosed(false)
+		{
+		}
+		virtual ~FMeshSurfacePath() {}
+
+		bool IsConnected() const
+		{
+			int Idx = 1, LastIdx = 0;
+			if (bIsClosed)
+			{
+				LastIdx = (int)Path.size() - 1;
+				Idx = 0;
+			}
+			for (; Idx < Path.size(); LastIdx = Idx++)
+			{
+				int WalkingOnTri = Path[LastIdx].second;
+				if (!Mesh->IsTriangle(WalkingOnTri))
+				{
+					return false;
+				}
+				int Inds[2] = { LastIdx, Idx };
+				for (int IndIdx = 0; IndIdx < 2; IndIdx++)
+				{
+					const FMeshSurfacePoint& P = Path[Inds[IndIdx]].first;
+					switch (P.PointType)
+					{
+					case ESurfacePointType::Triangle:
+						if (P.ElementID != WalkingOnTri)
+						{
+							return false;
+						}
+						break;
+					case ESurfacePointType::Edge:
+						if (!Mesh->GetEdgeT(P.ElementID).Contains(WalkingOnTri))
+						{
+							return false;
+						}
+						break;
+					case ESurfacePointType::Vertex:
+						if (!Mesh->GetTriangle(WalkingOnTri).Contains(P.ElementID))
+						{
+							return false;
+						}
+						break;
+					}
+				}
+			}
+			return true;
+		}
+
+		bool IsClosed() const
+		{
+			return bIsClosed;
+		}
+
+		void Reset()
+		{
+			Path.clear();
+			bIsClosed = false;
+		}
+
+		/*
+		bool AddViaPlanarWalk(int StartTri, int StartVID, FVector3d StartPt, int EndTri, int EndVertID, FVector3d EndPt,
+			FVector3d WalkPlaneNormal, TFunction<FVector3d(const FDynamicMesh3*, int)> VertexToPosnFn = nullptr,
+			bool bAllowBackwardsSearch = true, double AcceptEndPtOutsideDist = FMathd::ZeroTolerance,
+			double PtOnPlaneThresholdSq = FMathf::ZeroTolerance * 100, double BackwardsTolerance = FMathd::ZeroTolerance * 10);
+
+		bool EmbedSimplePath(bool bUpdatePath, std::vector<int>& PathVertices, bool bDoNotDuplicateFirstVertexID = true, double SnapElementThresholdSq = FMathf::ZeroTolerance * 100);
+		*/
+	};
+
+	struct FCutWorkingInfo
+	{
+		FCutWorkingInfo(DynamicMesh* WorkingMesh, float SnapTolerance) : Mesh(WorkingMesh), SnapToleranceSq(SnapTolerance* SnapTolerance)
+		{
+			Init(WorkingMesh);
+		}
+
+		static Vector3 GetDegenTriangleEdgeDirection(const DynamicMesh* Mesh, int TID, Vector3 DefaultDir = Vector3::UnitZ())
+		{
+			Vector3 V[3];
+			Mesh->GetTriangleVertices(TID, V[0], V[1], V[2]);
+			for (int Prev = 2, Idx = 0; Idx < 3; Prev = Idx++)
+			{
+				Vector3 E = V[Idx] - V[Prev];
+				if (E.Normalize())
+				{
+					return E;
+				}
+			}
+			return DefaultDir;
+		}
+
+		void Init(DynamicMesh* WorkingMesh)
+		{
+			for (int i = 0; i < WorkingMesh->GetNumTriangles(); ++i)
+			{
+				BaseFaceNormals.push_back(WorkingMesh->GetTriangleNormal(i));
+			}
+
+			FaceVertices.clear();
+			EdgeVertices.clear();
+			IntersectionVerts.clear();
+			Segments.clear();
+		}
+
+		DynamicMesh* Mesh;
+		float SnapToleranceSq;
+		std::multimap<int, int> FaceVertices;
+		std::multimap<int, int> EdgeVertices;
+		std::vector<Vector3> BaseFaceNormals;
+		std::vector<FPtOnMesh> IntersectionVerts;
+		std::vector<FSegmentToElements> Segments;
+
+		void AddSegments(const IntersectionsQueryResult& Intersections, int WhichSide)
+		{
+			size_t SegStart = Segments.size();
+			Segments.resize(SegStart + Intersections.Segments.size());
+
+			// classify the points of each intersection segment as on-vertex, on-edge, or on-face
+			for (size_t SegIdx = 0, SegCount = Intersections.Segments.size(); SegIdx < SegCount; SegIdx++)
+			{
+				const IntersectionsQueryResult::SegmentIntersection& Seg = Intersections.Segments[SegIdx];
+				FSegmentToElements& SegToEls = Segments[SegStart + SegIdx];
+				SegToEls.BaseTID = Seg.TriangleID[WhichSide];
+
+				Triangle3 Tri;
+				Mesh->GetTriangleVertices(SegToEls.BaseTID, Tri.v0, Tri.v1, Tri.v2);
+				Vector3i TriVIDs = Mesh->GetTriangle(SegToEls.BaseTID);
+				int PrevOnEdgeIdx = -1;
+				Vector3 PrevOnEdgePos;
+				for (int SegPtIdx = 0; SegPtIdx < 2; SegPtIdx++)
+				{
+					int NewPtIdx = (int)IntersectionVerts.size();
+					IntersectionVerts.push_back({});
+					FPtOnMesh& PtOnMesh = IntersectionVerts.back();
+					PtOnMesh.Pos = Seg.Point[SegPtIdx];
+					SegToEls.PtOnMeshIdx[SegPtIdx] = NewPtIdx;
+
+					// decide whether the point is on a vertex, edge or triangle
+
+					int OnVertexIdx = OnVertex(Tri, PtOnMesh.Pos);
+					if (OnVertexIdx > -1)
+					{
+						PtOnMesh.Type = EVertexType::Vertex;
+						PtOnMesh.ElemID = TriVIDs[OnVertexIdx];
+						continue;
+					}
+
+					// check for an edge match
+					int OnEdgeIdx = OnEdge(Tri, PtOnMesh.Pos);
+					if (OnEdgeIdx > -1)
+					{
+						// if segment is degenerate and stuck to one edge, see if it could cross
+						if (PrevOnEdgeIdx == OnEdgeIdx && (PrevOnEdgePos - PtOnMesh.Pos).SquareLength() < SnapToleranceSq)
+						{
+							int OnEdgeReplaceIdx = OnEdgeWithSkip(Tri, PtOnMesh.Pos, OnEdgeIdx);
+							if (OnEdgeReplaceIdx > -1)
+							{
+								OnEdgeIdx = OnEdgeReplaceIdx;
+							}
+						}
+						PtOnMesh.Type = EVertexType::Edge;
+						PtOnMesh.ElemID = Mesh->GetTriangleEdge(SegToEls.BaseTID, OnEdgeIdx);
+
+						assert(PtOnMesh.ElemID > -1);
+						EdgeVertices.emplace(PtOnMesh.ElemID, NewPtIdx);
+
+						PrevOnEdgeIdx = OnEdgeIdx;
+						PrevOnEdgePos = PtOnMesh.Pos;
+
+						continue;
+					}
+
+					// wasn't vertex or edge, so it's a face vertex
+					PtOnMesh.Type = EVertexType::Face;
+					PtOnMesh.ElemID = SegToEls.BaseTID;
+					FaceVertices.emplace(PtOnMesh.ElemID, NewPtIdx);
+				}
+			}
+		}
+
+		void InsertFaceVertices()
+		{
+			Triangle3 Tri;
+			std::vector<int> PtIndices;
+
+			while (FaceVertices.size() > 0)
+			{
+				int TID = -1, PtIdx = -1;
+
+				for (std::pair<int, int> TIDToPtIdx : FaceVertices)
+				{
+					TID = TIDToPtIdx.first;
+					PtIdx = TIDToPtIdx.second;
+					break;
+				}
+				PtIndices.clear();
+
+				auto it = FaceVertices.find(TID);
+				while (it != FaceVertices.end())
+				{
+					PtIndices.push_back(it->second);
+					++it;
+				}
+
+				FPtOnMesh& Pt = IntersectionVerts[PtIdx];
+
+				Mesh->GetTriangleVertices(TID, Tri.v0, Tri.v1, Tri.v2);
+
+				Vector3 BaryCoords = Tri.BaryCentric3D(Pt.Pos);
+				PokeTriangleInfo PokeInfo;
+				bool success = Mesh->PokeTriangle(TID, BaryCoords, PokeInfo);
+				assert(success);
+				int PokeVID = PokeInfo.NewVertex;
+				Mesh->SetVertex(PokeVID, Pt.Pos);
+				Pt.ElemID = PokeVID;
+				Pt.Type = EVertexType::Vertex;
+
+				FaceVertices.erase(TID);
+				Vector3i PokeTriangles(TID, PokeInfo.NewTriangles.x, PokeInfo.NewTriangles.y);
+				if (PtIndices.size() > 1)
+				{
+					for (int RelocatePtIdx : PtIndices)
+					{
+						if (PtIdx == RelocatePtIdx)
+						{
+							continue;
+						}
+
+						FPtOnMesh& RelocatePt = IntersectionVerts[RelocatePtIdx];
+						UpdateFromPoke(RelocatePt, PokeInfo.NewVertex, PokeInfo.NewEdges, PokeTriangles);
+						if (RelocatePt.Type == EVertexType::Edge)
+						{
+							assert(RelocatePt.ElemID > -1);
+							EdgeVertices.emplace(RelocatePt.ElemID, RelocatePtIdx);
+						}
+						else if (RelocatePt.Type == EVertexType::Face)
+						{
+							assert(RelocatePt.ElemID > -1);
+							FaceVertices.emplace(RelocatePt.ElemID, RelocatePtIdx);
+						}
+					}
+				}
+			}
+		}
+
+		void InsertEdgeVertices()
+		{
+			Triangle3 Tri;
+			std::vector<int> PtIndices;
+
+			while (EdgeVertices.size() > 0)
+			{
+				int EID = -1, PtIdx = -1;
+
+				for (std::pair<int, int> EIDToPtIdx : EdgeVertices)
+				{
+					EID = EIDToPtIdx.first;
+					PtIdx = EIDToPtIdx.second;
+					break;
+				}
+
+				PtIndices.clear();
+
+				auto it = EdgeVertices.find(EID);
+				while (it != EdgeVertices.end())
+				{
+					PtIndices.push_back(it->second);
+					++it;
+				}
+
+				FPtOnMesh& Pt = IntersectionVerts[PtIdx];
+
+				Vector3 EA, EB;
+				Mesh->GetEdgeV(EID, EA, EB);
+				Segment3 Seg(EA, EB);
+				float SplitParam = Seg.ProjectUnitRange(Pt.Pos);
+
+				Vector2i SplitTris = Mesh->GetEdgeT(EID);
+				EdgeSplitInfo SplitInfo;
+				bool success = Mesh->SplitEdge(EID, SplitInfo, SplitParam);
+				assert(success);
+
+				Mesh->SetVertex(SplitInfo.NewVertex, Pt.Pos);
+				Pt.ElemID = SplitInfo.NewVertex;
+				Pt.Type = EVertexType::Vertex;
+
+				EdgeVertices.erase(EID);
+				if (PtIndices.size() > 1)
+				{
+					Vector2i SplitEdges{ SplitInfo.OriginalEdge, SplitInfo.NewEdges.x };
+					for (int RelocatePtIdx : PtIndices)
+					{
+						if (PtIdx == RelocatePtIdx)
+						{
+							continue;
+						}
+
+						FPtOnMesh& RelocatePt = IntersectionVerts[RelocatePtIdx];
+						UpdateFromSplit(RelocatePt, SplitInfo.NewVertex, SplitEdges);
+						if (RelocatePt.Type == EVertexType::Edge)
+						{
+							assert(RelocatePt.ElemID > -1);
+							EdgeVertices.emplace(RelocatePt.ElemID, RelocatePtIdx);
+						}
+					}
+				}
+			}
+		}
+
+		bool ConnectEdges(std::vector<int>* VertexChains = nullptr, std::vector<int>* SegmentToChain = nullptr)
+		{
+			return true;
+			/*
+			std::vector<int> EmbeddedPath;
+
+			bool bSuccess = true; // remains true if we successfully connect all edges
+
+			assert(VertexChains || !SegmentToChain);
+
+			if (SegmentToChain)
+			{
+				SegmentToChain->resize(Segments.size());
+				for (int& ChainIdx : *SegmentToChain)
+				{
+					ChainIdx = -1;
+				}
+			}
+
+			for (size_t SegIdx = 0, NumSegs = Segments.size(); SegIdx < NumSegs; SegIdx++)
+			{
+				FSegmentToElements& Seg = Segments[SegIdx];
+				if (Seg.PtOnMeshIdx[0] == Seg.PtOnMeshIdx[1])
+				{
+					continue; // degenerate case, but OK
+				}
+				FPtOnMesh& PtA = IntersectionVerts[Seg.PtOnMeshIdx[0]];
+				FPtOnMesh& PtB = IntersectionVerts[Seg.PtOnMeshIdx[1]];
+				if (!(PtA.Type == EVertexType::Vertex && PtB.Type == EVertexType::Vertex && PtA.ElemID != -1 && PtB.ElemID != -1))
+				{
+					bSuccess = false;
+					continue;
+				}
+				if (PtA.ElemID == PtB.ElemID)
+				{
+					if (VertexChains)
+					{
+						if (SegmentToChain)
+						{
+							(*SegmentToChain)[SegIdx] = (int)VertexChains->size();
+						}
+						VertexChains->push_back(1);
+						VertexChains->push_back(PtA.ElemID);
+					}
+					continue; // degenerate case, but OK
+				}
+
+
+				int EID = Mesh->FindEdge(PtA.ElemID, PtB.ElemID);
+				if (EID != -1)
+				{
+					if (VertexChains)
+					{
+						if (SegmentToChain)
+						{
+							(*SegmentToChain)[SegIdx] = (int)VertexChains->size();
+						}
+						VertexChains->push_back(2);
+						VertexChains->push_back(PtA.ElemID);
+						VertexChains->push_back(PtB.ElemID);
+					}
+					continue; // already connected
+				}
+
+				FMeshSurfacePath SurfacePath(Mesh);
+				int StartTID = Mesh->GetVtxSingleTriangle(PtA.ElemID);
+				Vector3 WalkPlaneNormal = BaseFaceNormals[Seg.BaseTID].Cross(PtB.Pos - PtA.Pos);
+				if (WalkPlaneNormal.Normalize() == 0)
+				{
+					if ((PtA.Pos - PtB.Pos).SquareLength() > SnapToleranceSq)
+					{
+
+						continue;
+					}
+
+					WalkPlaneNormal = GetDegenTriangleEdgeDirection(Mesh, StartTID);
+					if (!WalkPlaneNormal.Normalize() > 0)
+					{
+
+						continue;
+					}
+				}
+				bool bWalkSuccess = SurfacePath.AddViaPlanarWalk(StartTID, PtA.ElemID,
+					Mesh->GetVertex(PtA.ElemID), -1, PtB.ElemID,
+					Mesh->GetVertex(PtB.ElemID), WalkPlaneNormal, nullptr, false, 1e-6f, SnapToleranceSq, 0.001f);
+				if (!bWalkSuccess)
+				{
+					bSuccess = false;
+				}
+				else
+				{
+					EmbeddedPath.clear();
+					if (SurfacePath.EmbedSimplePath(false, EmbeddedPath, false, SnapToleranceSq))
+					{
+						assert(EmbeddedPath.size() > 0 && EmbeddedPath[0] == PtA.ElemID);
+						if (VertexChains)
+						{
+							if (SegmentToChain)
+							{
+								(*SegmentToChain)[SegIdx] = (int)VertexChains->size();
+							}
+							VertexChains->push_back((int)EmbeddedPath.size());
+							VertexChains->insert(VertexChains->begin(), EmbeddedPath.begin(), EmbeddedPath.end());
+						}
+					}
+					else
+					{
+						bSuccess = false;
+					}
+				}
+			}
+
+			return bSuccess;
+			*/
+		}
+
+		void UpdateFromSplit(FPtOnMesh& Pt, int SplitVertex, const Vector2i& SplitEdges)
+		{
+			if ((Pt.Pos - Mesh->GetVertex(SplitVertex)).SquareLength() < SnapToleranceSq)
+			{
+				Pt.Type = EVertexType::Vertex;
+				Pt.ElemID = SplitVertex;
+				return;
+			}
+
+			int EdgeIdx = ClosestEdge(SplitEdges, Pt.Pos);
+			assert(EdgeIdx > -1 && EdgeIdx < 2 && SplitEdges[EdgeIdx]>-1);
+			Pt.Type = EVertexType::Edge;
+			Pt.ElemID = SplitEdges[EdgeIdx];
+		}
+
+		void UpdateFromPoke(FPtOnMesh& Pt, int PokeVertex, const Vector3i& PokeEdges, const Vector3i& PokeTris)
+		{
+			if ((Pt.Pos - Mesh->GetVertex(PokeVertex)).SquareLength() < SnapToleranceSq)
+			{
+				Pt.Type = EVertexType::Vertex;
+				Pt.ElemID = PokeVertex;
+				return;
+			}
+
+			int EdgeIdx = OnEdge(PokeEdges, Pt.Pos, SnapToleranceSq);
+			if (EdgeIdx > -1)
+			{
+				Pt.Type = EVertexType::Edge;
+				Pt.ElemID = PokeEdges[EdgeIdx];
+				return;
+			}
+
+			for (int j = 0; j < 3; ++j) {
+
+				if (IsInTriangle(PokeTris[j], Pt.Pos))
+				{
+					assert(Pt.Type == EVertexType::Face);
+					Pt.ElemID = PokeTris[j];
+					return;
+				}
+			}
+
+			EdgeIdx = OnEdge(PokeEdges, Pt.Pos, FLT_MAX);
+			Pt.Type = EVertexType::Edge;
+			Pt.ElemID = PokeEdges[EdgeIdx];
+		}
+
+		int OnVertex(const Triangle3& Tri, const Vector3& V)
+		{
+			double BestDSq = SnapToleranceSq;
+			int BestIdx = -1;
+			for (int SubIdx = 0; SubIdx < 3; SubIdx++)
+			{
+				double DSq = (Tri[SubIdx] - V).SquareLength();
+				if (DSq < BestDSq)
+				{
+					BestIdx = SubIdx;
+					BestDSq = DSq;
+				}
+			}
+			return BestIdx;
+		}
+
+		int OnEdge(const Triangle3& Tri, const Vector3& V)
+		{
+			float BestDSq = SnapToleranceSq;
+			int BestIdx = -1;
+			for (int Idx = 0; Idx < 3; Idx++)
+			{
+				Segment3 Seg( Tri[Idx], Tri[(Idx + 1) % 3] );
+				float DSq = Seg.SqrDistanceToPoint(V);
+				if (DSq < BestDSq)
+				{
+					BestDSq = DSq;
+					BestIdx = Idx;
+				}
+			}
+			return BestIdx;
+		}
+
+
+		int OnEdgeWithSkip(const Triangle3& Tri, const Vector3& V, int SkipIdx)
+		{
+			float BestDSq = SnapToleranceSq;
+			int BestIdx = -1;
+			for (int Idx = 0; Idx < 3; Idx++)
+			{
+				if (Idx == SkipIdx)
+				{
+					continue;
+				}
+				Segment3 Seg( Tri[Idx], Tri[(Idx + 1) % 3] );
+				float DSq = Seg.SqrDistanceToPoint(V);
+				if (DSq < BestDSq)
+				{
+					BestDSq = DSq;
+					BestIdx = Idx;
+				}
+			}
+			return BestIdx;
+		}
+
+		int ClosestEdge(Vector2i EIDs, const Vector3& Pos)
+		{
+			int BestIdx = -1;
+			float BestDSq = SnapToleranceSq;
+			for (int Idx = 0; Idx < 2; Idx++)
+			{
+				int EID = EIDs[Idx];
+				Vector2i EVIDs = Mesh->GetEdgeV(EID);
+				Segment3 Seg(Mesh->GetVertex(EVIDs.x), Mesh->GetVertex(EVIDs.y));
+				float DSq = Seg.SqrDistanceToPoint(Pos);
+				if (DSq < BestDSq)
+				{
+					BestDSq = DSq;
+					BestIdx = Idx;
+				}
+			}
+			return BestIdx;
+		}
+
+		int OnEdge(Vector3i EIDs, const Vector3& Pos, double BestDSq)
+		{
+			int BestIdx = -1;
+			for (int Idx = 0; Idx < 3; Idx++)
+			{
+				int EID = EIDs[Idx];
+				Vector2i EVIDs = Mesh->GetEdgeV(EID);
+				Segment3 Seg(Mesh->GetVertex(EVIDs.x), Mesh->GetVertex(EVIDs.y));
+				double DSq = Seg.SqrDistanceToPoint(Pos);
+				if (DSq < BestDSq)
+				{
+					BestDSq = DSq;
+					BestIdx = Idx;
+				}
+			}
+			return BestIdx;
+		}
+
+		bool IsInTriangle(int TID, const Vector3& Pos)
+		{
+			Triangle3 Tri;
+			Mesh->GetTriangleVertices(TID, Tri.v0, Tri.v1, Tri.v2);
+			Vector3 bary = Tri.BaryCentric3D(Pos);
+			return (bary.x >= 0 && bary.y >= 0 && bary.z >= 0
+				&& bary.x < 1 && bary.y <= 1 && bary.z <= 1);
+
+		}
+	};
+
+	bool GeometryCut::Compute()
+	{
+		std::vector<int> VertexChains[2];
+		std::vector<int> SegmentToChain[2];
+
+		bool bSuccess = true;
+
+		for (int MeshIdx = 0; MeshIdx < 2; MeshIdx++)
+		{
+			FCutWorkingInfo WorkingInfo(Meshe[MeshIdx], SnapTolerance);
+			WorkingInfo.AddSegments(Result, MeshIdx);
+			WorkingInfo.InsertFaceVertices();
+			WorkingInfo.InsertEdgeVertices();
+
+			bool bConnected = WorkingInfo.ConnectEdges(&VertexChains[MeshIdx], &SegmentToChain[MeshIdx]);
+			if (!bConnected)
+			{
+				bSuccess = false;
+			}
+		}
+
+		return bSuccess;
+	}
+
+	bool GeometryBoolean::Compute()
 	{
 		// copy meshes
-		GeometryData CutMeshB(*Meshes[1]);
+		DynamicMesh CutMeshB(*Meshes[1]);
 
-		MeshNew = new GeometryData;
+		MeshNew = new DynamicMesh;
 		*MeshNew = *Meshes[0];
 
-		GeometryData* CutMesh[2]{ MeshNew, &CutMeshB };
+		DynamicMesh* CutMesh[2]{ MeshNew, &CutMeshB };
 
 		Box3 CombinedAABB = Box3::Transform(CutMesh[0]->Bounds, Transforms[0].pos, Transforms[0].quat);
 		Box3 MeshB_AABB = Box3::Transform(CutMesh[1]->Bounds, Transforms[1].pos, Transforms[1].quat);
@@ -30,21 +709,21 @@ namespace Geometry
 		TransformNew = Transform(CombinedAABB.GetCenter());
 
 		// build spatial data and use it to find intersections
-		GeometryAABBTree Spatial[2]{ CutMesh[0], CutMesh[1] };
-		GeometryAABBTree::IntersectionsQueryResult Intersections = Spatial[0].FindAllIntersections(Spatial[1], nullptr);
+		DynamicMeshAABBTree Spatial[2]{ CutMesh[0], CutMesh[1] };
+		IntersectionsQueryResult Intersections = Spatial[0].FindAllIntersections(Spatial[1], nullptr);
 
 		bool bOpOnSingleMesh = Operation == BooleanOp::TrimInside || Operation == BooleanOp::TrimOutside || Operation == BooleanOp::NewGroupInside || Operation == BooleanOp::NewGroupOutside;
 
-		/*
 		// cut the meshes
-		FMeshMeshCut Cut(CutMesh[0], CutMesh[1]);
-		Cut.bTrackInsertedVertices = bCollapseDegenerateEdgesOnCut; // to collect candidates to collapse
-		Cut.bMutuallyCut = !bOpOnSingleMesh;
-		Cut.SnapTolerance = SnapTolerance;
-		Cut.Cut(Intersections);
+		GeometryCut Cut(CutMesh[0], CutMesh[1]);
+		Cut.SnapTolerance = Tolerance;
+		Cut.Compute();
+
+		Intersections = Cut.Result;
 
 		int NumMeshesToProcess = bOpOnSingleMesh ? 1 : 2;
 
+		/*
 		// collapse tiny edges along cut boundary
 		if (bCollapseDegenerateEdgesOnCut)
 		{
@@ -115,23 +794,19 @@ namespace Geometry
 			}
 		}
 
-		if (Cancelled())
-		{
-			return false;
-		}
 
 		// edges that will become new boundary edges after the boolean op removes triangles on each mesh
 		std::vector<int> CutBoundaryEdges[2];
 		// Vertices on the cut boundary that *may* not have a corresonding vertex on the other mesh
-		TSet<int> PossUnmatchedBdryVerts[2];
+		std::set<int> PossUnmatchedBdryVerts[2];
 
 		// delete geometry according to boolean rules, tracking the boundary edges
 		{ // (just for scope)
 			// first decide what triangles to delete for both meshes (*before* deleting anything so winding doesn't get messed up!)
-			TArray<bool> KeepTri[2];
+			std::vector<bool> KeepTri[2];
 			// This array is used to double-check the assumption that we will delete the other surface when we keep a coplanar tri
 			// Note we only need it for mesh 0 (i.e., the mesh we try to keep triangles from when we preserve coplanar surfaces)
-			TArray<int> DeleteIfOtherKept;
+			std::vector<int> DeleteIfOtherKept;
 			if (NumMeshesToProcess > 1)
 			{
 				DeleteIfOtherKept.Init(-1, CutMesh[0]->MaxTriangleID());
@@ -244,10 +919,10 @@ namespace Geometry
 
 			for (int MeshIdx = 0; MeshIdx < NumMeshesToProcess; MeshIdx++)
 			{
-				GeometryData& ProcessMesh = *CutMesh[MeshIdx];
+				GeometryMesh& ProcessMesh = *CutMesh[MeshIdx];
 				for (int EID : ProcessMesh.EdgeIndicesItr())
 				{
-					GeometryData::FEdge Edge = ProcessMesh.GetEdge(EID);
+					GeometryMesh::FEdge Edge = ProcessMesh.GetEdge(EID);
 					if (Edge.Tri.B == IndexConstants::InvalidID || KeepTri[MeshIdx][Edge.Tri.A] == KeepTri[MeshIdx][Edge.Tri.B])
 					{
 						continue;
@@ -264,12 +939,12 @@ namespace Geometry
 			std::vector<int> NewGroupTris;
 			if (bRegroupInsteadOfDelete)
 			{
-				ensure(NumMeshesToProcess == 1);
+				assert(NumMeshesToProcess == 1);
 				NewGroupID = CutMesh[0]->AllocateTriangleGroup();
 			}
 			for (int MeshIdx = 0; MeshIdx < NumMeshesToProcess; MeshIdx++)
 			{
-				GeometryData& ProcessMesh = *CutMesh[MeshIdx];
+				GeometryMesh& ProcessMesh = *CutMesh[MeshIdx];
 
 				for (int TID = 0; TID < KeepTri[MeshIdx].Num(); TID++)
 				{
@@ -303,11 +978,6 @@ namespace Geometry
 			}
 		}
 
-		if (Cancelled())
-		{
-			return false;
-		}
-
 		// correspond vertices across both meshes (in cases where both meshes were processed)
 		std::map<int, int> AllVIDMatches; // mapping of matched vertex IDs from cutmesh 0 to cutmesh 1
 		if (NumMeshesToProcess == 2)
@@ -319,7 +989,7 @@ namespace Geometry
 			for (int MeshIdx = 0; MeshIdx < 2; MeshIdx++)
 			{
 				int OtherMeshIdx = 1 - MeshIdx;
-				GeometryData& OtherMesh = *CutMesh[OtherMeshIdx];
+				GeometryMesh& OtherMesh = *CutMesh[OtherMeshIdx];
 
 				TPointHashGrid3d<int> OtherMeshPointHash(OtherMesh.GetBounds(true).MaxDim() / 64, -1);
 				for (int BoundaryVID : PossUnmatchedBdryVerts[OtherMeshIdx])
@@ -332,7 +1002,7 @@ namespace Geometry
 				EdgeOctree.SetMaxTreeDepth(7);
 				auto EdgeBounds = [&OtherMesh](int EID)
 				{
-					GeometryData::FEdge Edge = OtherMesh.GetEdge(EID);
+					GeometryMesh::FEdge Edge = OtherMesh.GetEdge(EID);
 					Vector3 A = OtherMesh.GetVertex(Edge.Vert.A);
 					Vector3 B = OtherMesh.GetVertex(Edge.Vert.B);
 					if (A.X > B.X)
@@ -534,6 +1204,8 @@ namespace Geometry
 
 		return bSuccess;
 		*/
+
+		return true;
 	}
 
 }

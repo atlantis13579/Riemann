@@ -2,7 +2,7 @@
 #include "NarrowPhase.h"
 #include "CollidingContact.h"
 #include "../Core/BatchList.h"
-#include "../Geometry/Polygon3d.h"
+#include "../Geometry/Polygon3.h"
 #include "../Collision/GeometryObject.h"
 #include "../Collision/GeometryDifference.h"
 #include "../Collision/EPAPenetration.h"

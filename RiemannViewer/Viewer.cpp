@@ -3,7 +3,7 @@
 
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Collision/GeometryObject.h"
-#include "../Src/CollisionPrimitive/Mesh.h"
+#include "../Src/CollisionPrimitive/StaticMesh.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/RigidBodyDynamics/PhysicsMaterial.h"
 #include "../Src/RigidBodyDynamics/RigidBodySimulation.h"

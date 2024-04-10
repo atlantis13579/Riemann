@@ -3,19 +3,19 @@
 #include "GeometryQuery.h"
 #include "GeometryIntersection.h"
 
-#include "../CollisionPrimitive/AxisAlignedBox3d.h"
-#include "../CollisionPrimitive/Plane3d.h"
-#include "../CollisionPrimitive/Sphere3d.h"
-#include "../CollisionPrimitive/Triangle3d.h"
-#include "../CollisionPrimitive/HeightField3d.h"
-#include "../CollisionPrimitive/Cylinder3d.h"
-#include "../CollisionPrimitive/Capsule3d.h"
+#include "../CollisionPrimitive/AxisAlignedBox3.h"
+#include "../CollisionPrimitive/Plane3.h"
+#include "../CollisionPrimitive/Sphere3.h"
+#include "../CollisionPrimitive/Triangle3.h"
+#include "../CollisionPrimitive/HeightField3.h"
+#include "../CollisionPrimitive/Cylinder3.h"
+#include "../CollisionPrimitive/Capsule3.h"
 #include "../CollisionPrimitive/ConvexMesh.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
 
 namespace Riemann
 {
-	int GeometryFactory::ObjectCount[(int)ShapeType3d::TYPE_COUNT] = { 0 };
+	int GeometryFactory::ObjectCount[(int)ShapeType::TYPE_COUNT] = { 0 };
 
 	template<class GEOM_TYPE>
 	class TGeometry : public GeometryBase, public GEOM_TYPE
@@ -85,7 +85,7 @@ namespace Riemann
 	}
 
 	template<>
-	bool				TGeometry<HeightField3d>::RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const
+	bool				TGeometry<HeightField3>::RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const
 	{
 		HeightFieldHitOption HitOption;
 		HitOption.maxDist = Option->MaxDist;
@@ -93,7 +93,7 @@ namespace Riemann
 		HeightFieldHitResult HitResult = { 0 };
 		const Vector3 Origin_Local = m_WorldTransform.WorldToLocal(Origin);
 		const Vector3 Dir_Local = m_WorldTransform.WorldToLocalDirection(Direction);
-		const HeightField3d* p = (const HeightField3d*)this;
+		const HeightField3* p = (const HeightField3*)this;
 		bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 		Result->hitTime = HitResult.hitTime;
 		Result->AddTestCount(HitResult.hitTestCount);
@@ -226,7 +226,7 @@ namespace Riemann
 
 	GeometryBase* GeometryFactory::CreateOBB_placement(void* pBuf, const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot)
 	{
-		TGeometry<AxisAlignedBox3d>* p = pBuf ? new (pBuf) TGeometry<AxisAlignedBox3d>() : new TGeometry<AxisAlignedBox3d>();
+		TGeometry<AxisAlignedBox3>* p = pBuf ? new (pBuf) TGeometry<AxisAlignedBox3>() : new TGeometry<AxisAlignedBox3>();
 		p->Min = -HalfExtent;
 		p->Max = HalfExtent;
 		p->UpdateVolumeProperties();
@@ -237,7 +237,7 @@ namespace Riemann
 
 	GeometryBase* GeometryFactory::CreateSphere_placement(void* pBuf, const Vector3& Center, float Radius)
 	{
-		TGeometry<Sphere3d>* p = pBuf ? new (pBuf)TGeometry<Sphere3d>() : new TGeometry<Sphere3d>();
+		TGeometry<Sphere3>* p = pBuf ? new (pBuf)TGeometry<Sphere3>() : new TGeometry<Sphere3>();
 		p->Center = Vector3::Zero();
 		p->Radius = Radius;
 		p->UpdateVolumeProperties();
@@ -253,7 +253,7 @@ namespace Riemann
 			quat.FromTwoAxis(Vector3::UnitY(), X1 - X0);
 		}
 		Vector3 Center = (X0 + X1) * 0.5f;
-		TGeometry<Capsule3d>* p = pBuf ? new (pBuf)TGeometry<Capsule3d>() : new TGeometry<Capsule3d>();
+		TGeometry<Capsule3>* p = pBuf ? new (pBuf)TGeometry<Capsule3>() : new TGeometry<Capsule3>();
 		p->Init(quat.Conjugate() * (X0 - Center), quat.Conjugate() * (X1 - Center), Radius);
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Center, quat);
@@ -262,13 +262,13 @@ namespace Riemann
 
 	GeometryBase* GeometryFactory::CreateOBB(const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot)
 	{
-		TGeometry<AxisAlignedBox3d>* p = new TGeometry<AxisAlignedBox3d>();
+		TGeometry<AxisAlignedBox3>* p = new TGeometry<AxisAlignedBox3>();
 		return CreateOBB_placement(p, Center, HalfExtent, Rot);
 	}
 
 	GeometryBase* GeometryFactory::CreatePlane(const Vector3& Center, const Vector3& Normal)
 	{
-		TGeometry<Plane3d>* p = new TGeometry<Plane3d>();
+		TGeometry<Plane3>* p = new TGeometry<Plane3>();
 		p->Normal = Vector3::UnitY();
 		p->D = 0.0f;
 		Quaternion quat;
@@ -280,7 +280,7 @@ namespace Riemann
 
 	GeometryBase* GeometryFactory::CreateSphere(const Vector3& Center, float Radius)
 	{
-		TGeometry<Sphere3d>* p = new TGeometry<Sphere3d>();
+		TGeometry<Sphere3>* p = new TGeometry<Sphere3>();
 		return CreateSphere_placement(p, Center, Radius);
 	}
 
@@ -292,7 +292,7 @@ namespace Riemann
 			quat.FromTwoAxis(Vector3::UnitY(), X1 - X0);
 		}
 		Vector3 Center = (X0 + X1) * 0.5f;
-		TGeometry<Cylinder3d>* p = new TGeometry<Cylinder3d>();
+		TGeometry<Cylinder3>* p = new TGeometry<Cylinder3>();
 		p->Init(quat.Conjugate() * (X0 - Center), quat.Conjugate() * (X1 - Center), Radius);
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Center, quat);
@@ -301,7 +301,7 @@ namespace Riemann
 
 	GeometryBase* GeometryFactory::CreateCapsule(const Vector3& X0, const Vector3& X1, float Radius)
 	{
-		TGeometry<Capsule3d>* p = new TGeometry<Capsule3d>();
+		TGeometry<Capsule3>* p = new TGeometry<Capsule3>();
 		return CreateCapsule_placement(p, X0, X1, Radius);
 	}
 
@@ -315,7 +315,7 @@ namespace Riemann
 
 	GeometryBase* GeometryFactory::CreateHeightField(const Box3& Bv, int nRows, int nCols)
 	{
-		TGeometry<HeightField3d>* p = new TGeometry<HeightField3d>();
+		TGeometry<HeightField3>* p = new TGeometry<HeightField3>();
 		p->Init(Bv, nRows, nCols);
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Vector3::Zero(), Quaternion::One());

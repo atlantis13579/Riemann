@@ -1,17 +1,17 @@
 
 #include "TriangleMesh.h"
-#include "AxisAlignedBox3d.h"
-#include "OrientedBox3d.h"
-#include "Sphere3d.h"
-#include "Capsule3d.h"
-#include "Triangle3d.h"
+#include "AxisAlignedBox3.h"
+#include "OrientedBox3.h"
+#include "Sphere3.h"
+#include "Capsule3.h"
+#include "Triangle3.h"
 #include "../Maths/SIMD.h"
 
 #include <algorithm>
 #include <array>
 #include <vector>
 
-namespace Riemann
+namespace Geometry
 {
 	MeshBVH4* TriangleMesh::CreateEmptyBVH()
 	{
@@ -52,7 +52,7 @@ namespace Riemann
 		Reorder(Permute);
 
 #if _DEBUG
-		m_BVH->Validate((Mesh*)this);
+		m_BVH->Validate((StaticMesh*)this);
 #endif
 	}
 
@@ -64,7 +64,7 @@ namespace Riemann
 	};
 
 	template <class Shape>
-	static bool IntersectTri(const Mesh* mesh, uint32_t HitNode, const Shape& shape)
+	static bool IntersectTri(const StaticMesh* mesh, uint32_t HitNode, const Shape& shape)
 	{
 		LeafNode currLeaf(HitNode);
 		uint32_t NumLeafTriangles = currLeaf.GetNumTriangles();
@@ -91,7 +91,7 @@ namespace Riemann
 	}
 
 	template <class Shape>
-	static bool IntersectBVH(const Mesh* mesh, const MeshBVH4* bvh, const Shape& shape)
+	static bool IntersectBVH(const StaticMesh* mesh, const MeshBVH4* bvh, const Shape& shape)
 	{
 		Box3 bv = shape.CalculateBoundingVolume();
 		const Vector3& Bmin = bv.Min;
@@ -186,25 +186,25 @@ namespace Riemann
 
 	bool TriangleMesh::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	{
-		AxisAlignedBox3d shape(Bmin, Bmax);
+		AxisAlignedBox3 shape(Bmin, Bmax);
 		return IntersectBVH(this, m_BVH, shape);
 	}
 
 	bool TriangleMesh::IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const
 	{
-		OrientedBox3d shape(Center, Extent, rot);
+		OrientedBox3 shape(Center, Extent, rot);
 		return IntersectBVH(this, m_BVH, shape);
 	}
 
 	bool TriangleMesh::IntersectSphere(const Vector3& Center, float Radius) const
 	{
-		Sphere3d shape(Center, Radius);
+		Sphere3 shape(Center, Radius);
 		return IntersectBVH(this, m_BVH, shape);
 	}
 
 	bool TriangleMesh::IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const
 	{
-		Capsule3d shape(X0, X1, Radius);
+		Capsule3 shape(X0, X1, Radius);
 		return IntersectBVH(this, m_BVH, shape);
 	}
 
@@ -228,7 +228,7 @@ namespace Riemann
 			const Vector3& v2 = Vertices[i2];
 
 			float t;
-			bool intersect = Triangle3d::RayIntersectTriangle(Origin, Direction, v0, v1, v2, &t);
+			bool intersect = Triangle3::RayIntersectTriangle(Origin, Direction, v0, v1, v2, &t);
 			if (!intersect || t > Option.maxDist)
 			{
 				continue;

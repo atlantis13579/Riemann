@@ -1,11 +1,11 @@
 #pragma once
 
 #include <assert.h>
-#include "Mesh.h"
+#include "StaticMesh.h"
 #include "MeshBVH4.h"
 #include "../Maths/Matrix3.h"
 
-namespace Riemann
+namespace Geometry
 {
 	struct TriMeshHitOption
 	{
@@ -27,7 +27,7 @@ namespace Riemann
 	};
 
 
-	class TriangleMesh : public Mesh
+	class TriangleMesh : public StaticMesh
 	{
 	public:
 		TriangleMesh()
@@ -42,7 +42,7 @@ namespace Riemann
 
 		void			Release()
 		{
-			Mesh::Release();
+			StaticMesh::Release();
 			if (m_BVH)
 			{
 				delete m_BVH;

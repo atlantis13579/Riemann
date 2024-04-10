@@ -1,8 +1,8 @@
 
 #include "ConvexMesh.h"
-#include "../Geometry/ConvexHull3d.h"
+#include "../Geometry/ConvexHull3.h"
 
-namespace Riemann
+namespace Geometry
 {
 	void ConvexMesh::SetConvexData(Vector3* verts, uint16_t nVerties,
 		ConvexMeshFace* faces, uint16_t nFaces,
@@ -102,7 +102,7 @@ namespace Riemann
 		float min_t = 0.0f, max_t = 1.0f;
 		for (uint16_t i = 0; i < NumFaces; ++i)
 		{
-			const Plane3d& p = Faces[i].plane;
+			const Plane3& p = Faces[i].plane;
 
 			float dist = Origin.Dot(p.Normal) + p.D;
 			bool is_outside = dist > 0.0f;
@@ -198,7 +198,7 @@ namespace Riemann
 		uint16_t max_idx = 0xFFFF;
 		for (uint16_t i = 0; i < NumFaces; ++i)
 		{
-			const Plane3d& p = Faces[i].plane;
+			const Plane3& p = Faces[i].plane;
 			const float dp = Direction.Dot(p.Normal);
 			if (dp > max_dp)
 			{

@@ -5,7 +5,7 @@
 #include "../Maths/Transform.h"
 #include "ShapeType.h"
 
-namespace Riemann
+namespace Geometry
 {
 	void ComputeCompositeMassParameters(const std::vector<Transform>& vPose, const std::vector<MassParameters>& vProperties, MassParameters& P);
 	void ComputeCompositeMassParameters(const std::vector<const Transform*>& vPose, const std::vector<const MassParameters*>& vProperties, MassParameters& P);

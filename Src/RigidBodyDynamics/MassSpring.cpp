@@ -3,7 +3,7 @@
 #include <cstddef>
 
 #include "MassSpring.h"
-#include "../CollisionPrimitive/Sphere3d.h"
+#include "../CollisionPrimitive/Sphere3.h"
 
 namespace Riemann
 {

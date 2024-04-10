@@ -2,7 +2,7 @@
 
 #include <vector>
 #include "../Maths/Box3.h"
-#include "../CollisionPrimitive/Ray3d.h"
+#include "../CollisionPrimitive/Ray3.h"
 
 namespace Riemann
 {
@@ -47,7 +47,7 @@ namespace Riemann
 		void 	Remove(int nodeId);
 		bool 	Update(int nodeId, const Box3& aabb, const Vector3& displacement);
 
-		bool	RayCast(const Ray3d& Ray, const RayCastOption* Option, RayCastResult* Result) const;
+		bool	RayCast(const Ray3& Ray, const RayCastOption* Option, RayCastResult* Result) const;
 		bool	Intersect(const GeometryBase* geometry, const IntersectOption* Option, IntersectResult* Result) const;
 		bool	Sweep(const GeometryBase* geometry, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const;
 		bool	Query(const Box3& aabb, std::vector<void*>* Result) const;

@@ -29,7 +29,7 @@ DynamicAABBTree::~DynamicAABBTree()
 {
 }
 
-static bool RayIntersectGeometry(const Ray3d& Ray, void* userData, const RayCastOption* Option, RayCastResult* Result)
+static bool RayIntersectGeometry(const Ray3& Ray, void* userData, const RayCastOption* Option, RayCastResult* Result)
 {
 	GeometryBase *Geom = static_cast<GeometryBase*>(userData);
 	
@@ -51,7 +51,7 @@ static bool RayIntersectGeometry(const Ray3d& Ray, void* userData, const RayCast
 	return false;
 }
 
-bool DynamicAABBTree::RayCast(const Ray3d& Ray, const RayCastOption* Option, RayCastResult *Result) const
+bool DynamicAABBTree::RayCast(const Ray3& Ray, const RayCastOption* Option, RayCastResult *Result) const
 {
 	Result->hit = false;
 	Result->hitTestCount = 0;

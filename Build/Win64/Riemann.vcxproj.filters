@@ -43,9 +43,6 @@
     <Filter Include="Modules\VehicleDynamics">
       <UniqueIdentifier>{90bb639e-0555-4b7d-a9f4-92dca0f41676}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Modules\Physics2d">
-      <UniqueIdentifier>{e380079c-bf2d-41b5-bc2a-380c26f896be}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Src\Collision\AABBTree.h">
@@ -63,28 +60,22 @@
     <ClInclude Include="..\..\Src\Core\Base.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Maths\Box3.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Capsule3d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Capsule3.h">
       <Filter>CollisionPrimitive</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\ConvexHull2d.h">
-      <Filter>Geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\ConvexHull3d.h">
-      <Filter>Geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\CollisionPrimitive\ConvexMesh.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Cylinder3d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Cylinder3.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\DenseTensorField3d.h">
+    <ClInclude Include="..\..\Src\Geometry\DenseTensorField3.h">
       <Filter>Geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Collision\DynamicAABBTree.h">
@@ -117,7 +108,7 @@
     <ClInclude Include="..\..\Src\Collision\GJK.h">
       <Filter>Collision</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\HeightField3d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\HeightField3.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Jacobian.h">
@@ -147,9 +138,6 @@
     <ClInclude Include="..\..\Src\Maths\MatrixMxN.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Mesh.h">
-      <Filter>CollisionPrimitive</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\CollisionPrimitive\MeshBVH4.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
@@ -162,20 +150,14 @@
     <ClInclude Include="..\..\Src\Solver\NumericalODESolver.h">
       <Filter>Solver</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\OrientedBox3d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\OrientedBox3.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Plane3d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Plane3.h">
       <Filter>CollisionPrimitive</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\Polygon2d.h">
-      <Filter>Geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\Polygon3d.h">
-      <Filter>Geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h">
       <Filter>Solver</Filter>
@@ -186,7 +168,7 @@
     <ClInclude Include="..\..\Src\Maths\Quaternion.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Ray3d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Ray3.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h">
@@ -201,7 +183,7 @@
     <ClInclude Include="..\..\Src\Collision\SAP_Incremental.h">
       <Filter>Collision</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Segment3d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Segment3.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Optimization\StochasticGradientDescent.h">
@@ -225,7 +207,7 @@
     <ClInclude Include="..\..\Src\Geometry\Spline.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Sphere3d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Sphere3.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Core\StaticStack.h">
@@ -246,13 +228,13 @@
     <ClInclude Include="..\..\Src\Maths\Transform.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle3d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle3.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\CollisionPrimitive\TriangleMesh.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\Voronoi2d.h">
+    <ClInclude Include="..\..\Src\Geometry\Voronoi2.h">
       <Filter>Geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\VoxelField.h">
@@ -387,15 +369,6 @@
     <ClInclude Include="..\..\Src\Modules\VehicleDynamics\AutonomousController.h">
       <Filter>Modules\VehicleDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Physics2d\Circle.h">
-      <Filter>Modules\Physics2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Physics2d\Convex.h">
-      <Filter>Modules\Physics2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Physics2d\GJK2d.h">
-      <Filter>Modules\Physics2d</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Modules\ImageSpace\ImageProcessing.h">
       <Filter>Modules\ImageSpace</Filter>
     </ClInclude>
@@ -423,15 +396,6 @@
     <ClInclude Include="..\..\Src\Modules\Tools\PythonModule.h">
       <Filter>Modules\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Physics2d\Point2d.h">
-      <Filter>Modules\Physics2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Physics2d\Rect.h">
-      <Filter>Modules\Physics2d</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Physics2d\SAT.h">
-      <Filter>Modules\Physics2d</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Modules\Tools\Serialization.h">
       <Filter>Modules\Tools</Filter>
     </ClInclude>
@@ -443,9 +407,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Modules\VehicleDynamics\VehicleDynamics.h">
       <Filter>Modules\VehicleDynamics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Physics2d\Shape2d.h">
-      <Filter>Modules\Physics2d</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Destruction\Fracture.h">
       <Filter>Destruction</Filter>
@@ -471,7 +432,7 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\MassParameters.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\Voronoi3d.h">
+    <ClInclude Include="..\..\Src\Geometry\Voronoi3.h">
       <Filter>Geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MassSpring.h">
@@ -488,9 +449,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Destruction\StrainSolver.h">
       <Filter>Destruction</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\GeometrySet.h">
-      <Filter>Geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Maths\Frame3.h">
       <Filter>Maths</Filter>
@@ -510,10 +468,31 @@
     <ClInclude Include="..\..\Src\Maths\Box1.h">
       <Filter>Maths</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle2d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle2.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\Segment2d.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Segment2.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\ConvexHull2.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\ConvexHull3.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\Polygon2.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\Polygon3.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Destruction\GeometrySet.h">
+      <Filter>Destruction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\DynamicMesh.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\StaticMesh.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
   </ItemGroup>
@@ -524,17 +503,11 @@
     <ClCompile Include="..\..\Src\Collision\AABBTreeOffline.cpp">
       <Filter>Collision</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3d.cpp">
+    <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3d.cpp">
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3.cpp">
       <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Geometry\ConvexHull2d.cpp">
-      <Filter>Geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Geometry\ConvexHull3d.cpp">
-      <Filter>Geometry</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Collision\DynamicAABBTree.cpp">
       <Filter>Collision</Filter>
@@ -554,7 +527,7 @@
     <ClCompile Include="..\..\Src\Collision\GeometryQuery.cpp">
       <Filter>Collision</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\HeightField3d.cpp">
+    <ClCompile Include="..\..\Src\CollisionPrimitive\HeightField3.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Jacobian.cpp">
@@ -578,7 +551,7 @@
     <ClCompile Include="..\..\Src\Solver\NumericalODESolver.cpp">
       <Filter>Solver</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3d.cpp">
+    <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.cpp">
@@ -586,12 +559,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Destruction\PlanarCut.cpp">
       <Filter>Destruction</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Geometry\Polygon2d.cpp">
-      <Filter>Geometry</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\Geometry\Polygon3d.cpp">
-      <Filter>Geometry</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Solver\ProjectiveDynamicsSolver.cpp">
       <Filter>Solver</Filter>
@@ -602,16 +569,13 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Segment3d.cpp">
-      <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\Spline.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\TriangleMesh.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Geometry\Voronoi2d.cpp">
+    <ClCompile Include="..\..\Src\Geometry\Voronoi2.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\VoxelField.cpp">
@@ -653,18 +617,6 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\ConvexMesh.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Cylinder3d.cpp">
-      <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Sphere3d.cpp">
-      <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Triangle3d.cpp">
-      <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Plane3d.cpp">
-      <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Modules\VehicleDynamics\AutonomousController.cpp">
       <Filter>Modules\VehicleDynamics</Filter>
     </ClCompile>
@@ -692,7 +644,7 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\MassParameters.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Geometry\Voronoi3d.cpp">
+    <ClCompile Include="..\..\Src\Geometry\Voronoi3.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MassSpring.cpp">
@@ -710,9 +662,6 @@
     <ClCompile Include="..\..\Src\Destruction\StrainSolver.cpp">
       <Filter>Destruction</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Geometry\GeometrySet.cpp">
-      <Filter>Geometry</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\Delaunay.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
@@ -722,8 +671,23 @@
     <ClCompile Include="..\..\Src\Geometry\GeometryBoolean.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Triangle2d.cpp">
-      <Filter>CollisionPrimitive</Filter>
+    <ClCompile Include="..\..\Src\Geometry\ConvexHull2.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\ConvexHull3.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\Polygon2.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\Polygon3.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Destruction\GeometrySet.cpp">
+      <Filter>Destruction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\DynamicMesh.cpp">
+      <Filter>Geometry</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -4,24 +4,24 @@
 #include <stdint.h>
 #include <vector>
 #include "ShapeType.h"
-#include "Plane3d.h"
+#include "Plane3.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Box3.h"
 #include "../Maths/Matrix3.h"
 
 // #define USE_EDGE_DATA
 
-namespace Riemann
+namespace Geometry
 {
 	struct ConvexMeshFace
 	{
-		explicit ConvexMeshFace(const Plane3d& pl, uint8_t nVerties, uint16_t first_idx)
+		explicit ConvexMeshFace(const Plane3& pl, uint8_t nVerties, uint16_t first_idx)
 		{
 			plane = pl;
 			numVerties = nVerties;
 			first = first_idx;
 		}
-		Plane3d			plane;		// The Noraml always point out of the Convex hull
+		Plane3			plane;		// The Noraml always point out of the Convex hull
 		uint16_t		first;		// offset in Indices[] point to the first element
 		uint8_t			numVerties;	// face vertices : Vertices[Indices[first]], Vertices[Indices[first + 1]], ..., Vertices[Indices[first + numVerties - 1]]
 		uint8_t			padding;	// unused, to keep 20 bytes size
@@ -59,9 +59,9 @@ namespace Riemann
 			Release();
 		}
 
-		static constexpr ShapeType3d	StaticType()
+		static constexpr ShapeType	StaticType()
 		{
-			return ShapeType3d::CONVEX_MESH;
+			return ShapeType::CONVEX_MESH;
 		}
 
 		void		Release()

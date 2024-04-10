@@ -540,7 +540,7 @@ namespace PhysxFormat_34
 
 	struct GuHullPolygonData
 	{
-		Plane3d			mPlane;
+		Plane3			mPlane;
 		PxU16			mVRef8;			//!< Offset of vertex references in hull vertex data (CS: can we assume indices are tightly packed and offsets are ascending?? DrawObjects makes and uses this assumption)
 		PxU8			mNbVerts;		//!< Number of vertices/edges in the polygon
 		PxU8			mMinIndex;		//!< Index of the polygon vertex that has minimal projection along this plane's normal.

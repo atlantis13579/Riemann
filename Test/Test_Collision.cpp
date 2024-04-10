@@ -1,15 +1,15 @@
 
 #include "Test.h"
 
-#include "../Src/CollisionPrimitive/AxisAlignedBox3d.h"
-#include "../Src/CollisionPrimitive/Plane3d.h"
-#include "../Src/CollisionPrimitive/Sphere3d.h"
-#include "../Src/CollisionPrimitive/Ray3d.h"
-#include "../Src/CollisionPrimitive/OrientedBox3d.h"
-#include "../Src/CollisionPrimitive/Triangle3d.h"
-#include "../Src/CollisionPrimitive/Cylinder3d.h"
-#include "../Src/CollisionPrimitive/Capsule3d.h"
-#include "../Src/CollisionPrimitive/Mesh.h"
+#include "../Src/CollisionPrimitive/AxisAlignedBox3.h"
+#include "../Src/CollisionPrimitive/Plane3.h"
+#include "../Src/CollisionPrimitive/Sphere3.h"
+#include "../Src/CollisionPrimitive/Ray3.h"
+#include "../Src/CollisionPrimitive/OrientedBox3.h"
+#include "../Src/CollisionPrimitive/Triangle3.h"
+#include "../Src/CollisionPrimitive/Cylinder3.h"
+#include "../Src/CollisionPrimitive/Capsule3.h"
+#include "../Src/CollisionPrimitive/StaticMesh.h"
 #include "../Src/CollisionPrimitive/MeshBVH4.h"
 #include "../Src/CollisionPrimitive/TriangleMesh.h"
 #include "../Src/Collision/AABBTree.h"
@@ -26,21 +26,21 @@ using namespace Riemann;
 
 void TestPlane()
 {
-	Plane3d plane0, plane1, plane2;
+	Plane3 plane0, plane1, plane2;
 	bool success;
 	Vector3 p;
 
-	plane0 = Plane3d(Vector3(6.51947312e-06f, -0.0494406559f, -0.998777092f), -7.89754963f);
-	plane1 = Plane3d(Vector3(0.0f, 0.0f, -1.0f), -8.10573006f);
-	plane2 = Plane3d(Vector3(7.3720279e-05f, -0.559060335f, -0.829126954f), -4.48326111f);
-	success = Plane3d::IntersectPlanes(plane0, plane1, plane2, &p);
+	plane0 = Plane3(Vector3(6.51947312e-06f, -0.0494406559f, -0.998777092f), -7.89754963f);
+	plane1 = Plane3(Vector3(0.0f, 0.0f, -1.0f), -8.10573006f);
+	plane2 = Plane3(Vector3(7.3720279e-05f, -0.559060335f, -0.829126954f), -4.48326111f);
+	success = Plane3::IntersectPlanes(plane0, plane1, plane2, &p);
 	EXPECT(!success);
 
-	plane0 = Plane3d(Vector3::UnitX(), 0.0f);
-	plane1 = Plane3d(Vector3::UnitY(), 0.0f);
-	plane2 = Plane3d(Vector3::UnitZ(), 0.0f);
+	plane0 = Plane3(Vector3::UnitX(), 0.0f);
+	plane1 = Plane3(Vector3::UnitY(), 0.0f);
+	plane2 = Plane3(Vector3::UnitZ(), 0.0f);
 
-	success = Plane3d::IntersectPlanes(plane0, plane1, plane2, &p);
+	success = Plane3::IntersectPlanes(plane0, plane1, plane2, &p);
 	EXPECT(success);
 	EXPECT((p - Vector3::Zero()).SquareLength() < 1e-6f);
 
@@ -48,7 +48,7 @@ void TestPlane()
 	plane1.Shift(0.1f);
 	plane2.Shift(0.1f);
 
-	success = Plane3d::IntersectPlanes(plane0, plane1, plane2, &p);
+	success = Plane3::IntersectPlanes(plane0, plane1, plane2, &p);
 	EXPECT(success);
 	EXPECT((p - Vector3(0.1f, 0.1f, 0.1f)).SquareLength() < 1e-6f);
 	return;
@@ -56,7 +56,7 @@ void TestPlane()
 
 void TestTriangle()
 {
-	Triangle3d tri1(Vector3::UnitX(), Vector3::UnitY(), Vector3::UnitZ());
+	Triangle3 tri1(Vector3::UnitX(), Vector3::UnitY(), Vector3::UnitZ());
 	Vector3 p = Vector3::One();
 	Vector3 bc1 = tri1.BaryCentric2D(p);
 	Vector3 bc2 = tri1.BaryCentric3D(p);
@@ -65,11 +65,11 @@ void TestTriangle()
 	EXPECT(!tri1.IntersectPoint(p));
 	EXPECT(tri1.IntersectPoint(tri1.v0));
 
-	Triangle3d tri2(Vector3(5.09916496f, 8.30379868f, 4.52991295f), Vector3(5.08997154f, 8.29810333f, 4.52174377f), Vector3(5.09456825f, 8.300951f, 4.52582836f));
+	Triangle3 tri2(Vector3(5.09916496f, 8.30379868f, 4.52991295f), Vector3(5.08997154f, 8.29810333f, 4.52174377f), Vector3(5.09456825f, 8.300951f, 4.52582836f));
 	Vector3 length = tri2.GetSideLength();
 	Vector3 normal = tri2.GetNormal();
 	EXPECT(!tri2.IsValid());
-	EXPECT(Triangle3d::IsColinear(tri2.v0, tri2.v1, tri2.v2));
+	EXPECT(Triangle3::IsColinear(tri2.v0, tri2.v1, tri2.v2));
 	return;
 }
 
@@ -79,7 +79,7 @@ void TestSphere()
 	Vector3 b = Vector3(0, 1, 0);
 	Vector3 c = Vector3(1, 0, 0);
 	Vector3 d = Vector3(1, 1, 0);
-	Sphere3d s(a, b, c, d);
+	Sphere3 s(a, b, c, d);
 
 	EXPECT(s.IntersectPoint(a));
 	EXPECT(s.IntersectPoint(b));
@@ -92,7 +92,7 @@ void TestSphere()
 	{
 		points.push_back(10.0f * Vector3::Random());
 	}
-	Sphere3d s1 = Sphere3d::ComputeBoundingSphere_Welzl(points.data(), n);
+	Sphere3 s1 = Sphere3::ComputeBoundingSphere_Welzl(points.data(), n);
 	for (int i = 0 ;i < n; ++i)
 	{
 		EXPECT(s1.IntersectPoint(points[i]));
@@ -356,7 +356,7 @@ void TestRTree2()
 		float t1, t2;
 		bool success1, success2;
 		Vector3 Dir = Vector3::UnitY();
-		success1 = Triangle3d::RayIntersectTriangle(Center, Dir, mesh(0, 0), mesh(0, 1), mesh(0, 2), &t1);
+		success1 = Triangle3::RayIntersectTriangle(Center, Dir, mesh(0, 0), mesh(0, 1), mesh(0, 2), &t1);
 		success2 = mesh.IntersectRay(Center, Dir, &t2);
 		EXPECT(success1 == success2);
 		EXPECT(Maths::FloatEqual(t1, t2));
@@ -378,14 +378,14 @@ void TestRaycast()
 {
 	Vector3 center(-4.19f, 0.43f, -0.46f);
 	Vector3 dir(-0.08f, -0.14f, 0.99f);
-	AxisAlignedBox3d aabb(Vector3(-4.30f, -0.81f, 1.58f), Vector3(-2.70f, 0.80f, 2.59f));
+	AxisAlignedBox3 aabb(Vector3(-4.30f, -0.81f, 1.58f), Vector3(-2.70f, 0.80f, 2.59f));
 
 	float t;
 	bool success1 = aabb.IntersectRay(center, dir, &t);
 	// Vector3 p1 = center + dir * t;
 	EXPECT(!success1);
 
-	bool success2 = Ray3d::RayIntersectAABB(center, dir, aabb.Min, aabb.Max, &t);
+	bool success2 = Ray3::RayIntersectAABB(center, dir, aabb.Min, aabb.Max, &t);
 	// Vector3 p2 = center + dir * t;
 	EXPECT(!success2);
 
@@ -396,7 +396,7 @@ void TestBuildOBB()
 {
 	printf("Running TestBuildOBB\n");
 	
-	AxisAlignedBox3d aabb(Vector3(-10.0f, -2.5f, -1.0f), Vector3(10.0f, 2.5f, 1.0f));
+	AxisAlignedBox3 aabb(Vector3(-10.0f, -2.5f, -1.0f), Vector3(10.0f, 2.5f, 1.0f));
 	Matrix3 mat;
 	Vector3 center(1, 1, 2);
 	
@@ -410,7 +410,7 @@ void TestBuildOBB()
 		verties[i] = mat * verties[i] + center;
 	}
 	
-	OrientedBox3d obb = OrientedBox3d::ComputeBoundingOBB_PCA(verties.data(), (int)verties.size());
+	OrientedBox3 obb = OrientedBox3::ComputeBoundingOBB_PCA(verties.data(), (int)verties.size());
 	
 	EXPECT(fabsf(obb.Center.x - center.x) < 0.1f);
 	EXPECT(fabsf(obb.Center.y - center.y) < 0.1f);
@@ -428,8 +428,8 @@ void TestOBB()
 	printf("Running TestOBB\n");
 
 	{
-		OrientedBox3d obb1(Vector3(0, 0, 0), Vector3(1, 1, 1), Matrix3::Identity());
-		OrientedBox3d obb2(Vector3(1, 1, 1), Vector3(5, 4, 4), Matrix3::Identity());
+		OrientedBox3 obb1(Vector3(0, 0, 0), Vector3(1, 1, 1), Matrix3::Identity());
+		OrientedBox3 obb2(Vector3(1, 1, 1), Vector3(5, 4, 4), Matrix3::Identity());
 		obb1.Rotation.LoadRotateY(PI_OVER_3);
 		obb2.Rotation.LoadRotateX(PI_OVER_3);
 		bool intersect = obb1.IntersectOBB(obb2);
@@ -512,7 +512,7 @@ void TestRayAABB()
 	Vector3 Dir(1, 0, 0);
 	float t0 = 0, t1 = 0;
 	bool success;
-	EXPECT(Ray3d::RayIntersectAABB2(Origin, Dir, Vector3::Zero(), Vector3(100, 100, 100), 0.00001f, 100000.0f, &t0, &t1));
+	EXPECT(Ray3::RayIntersectAABB2(Origin, Dir, Vector3::Zero(), Vector3(100, 100, 100), 0.00001f, 100000.0f, &t0, &t1));
 
 	// Vector3 InPos = Origin + Dir * t0;
 	// Vector3 OutPos = Origin + Dir * t1;
@@ -520,7 +520,7 @@ void TestRayAABB()
 	// int x0 = (int)(InPos.x / 1.0f);
 	// int x1 = (int)(OutPos.x / 1.0f);
 
-	Triangle3d Tri(Vector3(0, 1, 0), Vector3(0, 0, 0), Vector3(1, 0, 0));
+	Triangle3 Tri(Vector3(0, 1, 0), Vector3(0, 0, 0), Vector3(1, 0, 0));
 	success = Tri.IntersectAABB(Vector3(-1, -1, -1), Vector3(1, 1, 1));
 	EXPECT(success);
 
@@ -554,7 +554,7 @@ void TestAABBTree()
 
 	RayCastOption Option;
 	RayCastResult Result;
-	Ray3d ray(Vector3(0.5f, 0.5f, 100.0f), Vector3(0.0f, 0.0f, -1.0f));
+	Ray3 ray(Vector3(0.5f, 0.5f, 100.0f), Vector3(0.0f, 0.0f, -1.0f));
 	bool hit = tree.RayCastBoundingBox(ray, Option, &Result);
 	EXPECT(hit);
 

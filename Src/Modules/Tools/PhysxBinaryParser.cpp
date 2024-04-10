@@ -15,7 +15,7 @@
 #include "Serialization.h"
 #include "../../Collision/GeometryObject.h"
 #include "../../CollisionPrimitive/ConvexMesh.h"
-#include "../../CollisionPrimitive/HeightField3d.h"
+#include "../../CollisionPrimitive/HeightField3.h"
 #include "../../CollisionPrimitive/TriangleMesh.h"
 #include "../../CollisionPrimitive/MeshBVH4.h"
 #include "../../RigidBodyDynamics/RigidBody.h"
@@ -119,11 +119,11 @@ namespace Riemann
 			ce.Center *= Scale;
 			ce.Extent *= Scale;
 			GeometryBase* Geom = GeometryFactory::CreateHeightField(ce.GetAABB(), nRows, nCols);
-			HeightField3d* HF = Geom->GetShapeObj<HeightField3d>();
+			HeightField3* HF = Geom->GetShapeObj<HeightField3>();
 
 			if (shared_mem)
 			{
-				HF->Cells = (HeightField3d::CellInfo*)samples;
+				HF->Cells = (HeightField3::CellInfo*)samples;
 				HF->HeightScale = physxObj->heightScale;
 			}
 			else

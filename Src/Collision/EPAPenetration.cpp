@@ -8,11 +8,11 @@ namespace Riemann
 	// Expanding Polytope Algorithm
 	// http://allenchou.net/2013/12/game-physics-contact-generation-epa/
 
-#define EPA_ACCURACY (0.0001f)
-#define EPA_PLANE_EPS (0.00001f)
-#define EPA_INSIDE_EPS (0.01f)
-#define EPA_MAX_VERTICES (128)
-#define EPA_MAX_FACES (EPA_MAX_VERTICES * 2)
+	#define EPA_ACCURACY (0.0001f)
+	#define EPA_PLANE_EPS (0.00001f)
+	#define EPA_INSIDE_EPS (0.01f)
+	#define EPA_MAX_VERTICES (128)
+	#define EPA_MAX_FACES (EPA_MAX_VERTICES * 2)
 
 	struct EpaFace
 	{

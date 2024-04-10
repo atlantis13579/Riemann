@@ -17,14 +17,14 @@ namespace Riemann
 	public:
 		GeometryIntersection();
 
-		static RayCastFunc		GetRayCastFunc(ShapeType3d Type);
-		static IntersectFunc	GetIntersectFunc(ShapeType3d Type1, ShapeType3d Type2);
-		static PenetrationFunc	GetPenetrationFunc(ShapeType3d Type1, ShapeType3d Type2);
-		static SweepFunc		GetSweepFunc(ShapeType3d Type1, ShapeType3d Type2);
+		static RayCastFunc		GetRayCastFunc(ShapeType Type);
+		static IntersectFunc	GetIntersectFunc(ShapeType Type1, ShapeType Type2);
+		static PenetrationFunc	GetPenetrationFunc(ShapeType Type1, ShapeType Type2);
+		static SweepFunc		GetSweepFunc(ShapeType Type1, ShapeType Type2);
 
-		static RayCastFunc		raycastTable[(int)ShapeType3d::TYPE_COUNT];
-		static IntersectFunc	intersectTable[(int)ShapeType3d::TYPE_COUNT][(int)ShapeType3d::TYPE_COUNT];
-		static PenetrationFunc	penetrationTable[(int)ShapeType3d::TYPE_COUNT][(int)ShapeType3d::TYPE_COUNT];
-		static SweepFunc		sweepTable[(int)ShapeType3d::TYPE_COUNT][(int)ShapeType3d::TYPE_COUNT];
+		static RayCastFunc		raycastTable[(int)ShapeType::TYPE_COUNT];
+		static IntersectFunc	intersectTable[(int)ShapeType::TYPE_COUNT][(int)ShapeType::TYPE_COUNT];
+		static PenetrationFunc	penetrationTable[(int)ShapeType::TYPE_COUNT][(int)ShapeType::TYPE_COUNT];
+		static SweepFunc		sweepTable[(int)ShapeType::TYPE_COUNT][(int)ShapeType::TYPE_COUNT];
 	};
 }

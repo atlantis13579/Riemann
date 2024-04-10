@@ -1,8 +1,8 @@
 
 #include "MeshBVH4.h"
-#include "Mesh.h"
+#include "StaticMesh.h"
 
-namespace Riemann
+namespace Geometry
 {
 #define INFLATION_EPSILON 5e-4f
 
@@ -34,7 +34,7 @@ namespace Riemann
 				for (uint32_t i = 0; i < nbLeafTris; i++)
 				{
 					const uint32_t triangleIndex = baseLeafTriIndex + i;
-					Mesh* pm = (Mesh*)p;
+					StaticMesh* pm = (StaticMesh*)p;
 					for (int i = 0; i < 3; ++i)
 					{
 						const Vector3& vv = pm->GetVertex(triangleIndex, i);

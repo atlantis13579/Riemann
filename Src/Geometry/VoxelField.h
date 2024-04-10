@@ -10,7 +10,7 @@
 
 namespace Geometry
 {
-	class Mesh;
+	class StaticMesh;
 
 	struct VoxelizationInfo
 	{
@@ -95,7 +95,7 @@ namespace Geometry
 		uint64_t		EstimateMemoryUseage() const;
 		uint64_t		EstimateMemoryUseageEx() const;
 
-		Mesh* CreateDebugMesh(int x1, int x2, int z1, int z2) const;
+		StaticMesh* CreateDebugMesh(int x1, int x2, int z1, int z2) const;
 		bool			Verify();
 		void			GenerateHeightMap(std::vector<float>& heightmap) const;
 		void			GenerateBitmapByLevel(std::vector<int>& levels, int* level_max) const;

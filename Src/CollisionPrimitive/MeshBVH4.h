@@ -9,7 +9,7 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Box3.h"
 
-namespace Riemann
+namespace Geometry
 {
 #define SIMD_WIDTH		4
 

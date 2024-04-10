@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../CollisionPrimitive/Ray3d.h"
+#include "../CollisionPrimitive/Ray3.h"
 #include "AABBTreeOffline.h"
 
 namespace Riemann
@@ -35,12 +35,12 @@ namespace Riemann
 		void	StaticBuild(AABBTreeBuildData& params);
 		void	Statistic(TreeStatistics& stat);
 
-		bool	RayCast(const Ray3d& ray, GeometryBase** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const;
+		bool	RayCast(const Ray3& ray, GeometryBase** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const;
 		bool	Intersect(const GeometryBase* geometry, GeometryBase** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const;
 		bool	Sweep(const GeometryBase* geometry, GeometryBase** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const;
 
 		int		IntersectPoint(const Vector3& Point) const;
-		bool	RayCastBoundingBox(const Ray3d& ray, const RayCastOption& Option, RayCastResult* Result) const;
+		bool	RayCastBoundingBox(const Ray3& ray, const RayCastOption& Option, RayCastResult* Result) const;
 
 	private:
 		void	InitAABBTreeBuild(AABBTreeBuildData& params);
