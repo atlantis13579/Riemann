@@ -2,7 +2,7 @@
 #include "ConvexHull3.h"
 #include "../Maths/Maths.h"
 
-namespace Geometry
+namespace Riemann
 {
 	// http://number-none.com/blow/inertia/deriving_i.html
 	Matrix3 ComputePointCloudInertiaTensor_PCA(const Vector3* Vertices, int NumVertices)

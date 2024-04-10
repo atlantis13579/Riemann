@@ -2,7 +2,7 @@
 
 #include "../Maths/Vector2.h"
 
-namespace Geometry
+namespace Riemann
 {
 	float TriangleArea2D(const Vector2& a, const Vector2& b, const Vector2& c);
 	float TriangleArea2D_Signed(const Vector2& a, const Vector2& b, const Vector2& c);

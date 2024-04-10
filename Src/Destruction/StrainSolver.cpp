@@ -1,7 +1,7 @@
 
 #include "StrainSolver.h"
 
-namespace Destruction
+namespace Riemann
 {
 
-}	// namespace Destruction
+}	// namespace Riemann

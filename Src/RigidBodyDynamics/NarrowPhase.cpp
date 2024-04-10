@@ -17,7 +17,7 @@ namespace Riemann
 		GeomB->GetSupportFace_WorldSpace(penetration_normal, FaceB);
 
 		const float mSpeculativeContactDistance = 0.02f;
-		bool succ = Geometry::ClipPolygonAgainPolygon3D(FaceA.GetData(), FaceA.GetSize(), FaceB.GetData(), FaceB.GetSize(), penetration_normal, mSpeculativeContactDistance, Face.GetData(), Face.GetSizeData(), nullptr, nullptr);
+		bool succ = ClipPolygonAgainPolygon3D(FaceA.GetData(), FaceA.GetSize(), FaceB.GetData(), FaceB.GetSize(), penetration_normal, mSpeculativeContactDistance, Face.GetData(), Face.GetSizeData(), nullptr, nullptr);
 		return succ;
 	}
 

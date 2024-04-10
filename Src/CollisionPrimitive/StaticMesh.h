@@ -8,7 +8,7 @@
 #include "../Maths/Vector3.h"
 #include "ShapeType.h"
 
-namespace Geometry
+namespace Riemann
 {
 	#define TRIANGLE_BATCH			(4096)
 	#define	INDICES_16_BIT			(0x01)

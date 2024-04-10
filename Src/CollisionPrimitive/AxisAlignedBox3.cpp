@@ -2,7 +2,7 @@
 #include "AxisAlignedBox3.h"
 #include "Plane3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	static void face(unsigned int i0, unsigned int i1, unsigned int i2, Vector3& rkPnt, const Vector3& rkDir, const Vector3& extents, const Vector3& rkPmE, float* t, float& rfSqrDistance)
 	{

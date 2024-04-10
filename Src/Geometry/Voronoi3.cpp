@@ -4792,7 +4792,7 @@ namespace voro
 	}
 }
 
-namespace Geometry
+namespace Riemann
 {
 	voro::container* CreateVoroContrainer(const std::vector<Vector3>& points, const Box3& _Bounds, const float eps)
 	{

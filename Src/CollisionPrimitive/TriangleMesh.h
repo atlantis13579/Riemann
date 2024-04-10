@@ -5,7 +5,7 @@
 #include "MeshBVH4.h"
 #include "../Maths/Matrix3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	struct TriMeshHitOption
 	{

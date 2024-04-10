@@ -2,7 +2,7 @@
 
 #include "../Maths/Vector3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	float TriangleArea3D(const Vector3& A, const Vector3& B, const Vector3& C);
 

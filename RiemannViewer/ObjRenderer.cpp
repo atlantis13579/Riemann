@@ -65,7 +65,7 @@ namespace Riemann
 		}
 	}
 
-	void AddTriMesh(Renderer* renderer, Geometry::StaticMesh* mesh, void* Trans, bool RenderBV)
+	void AddTriMesh(Renderer* renderer, StaticMesh* mesh, void* Trans, bool RenderBV)
 	{
 		mesh->CalculateNormals();
 
@@ -81,7 +81,7 @@ namespace Riemann
 		{
 			std::vector<Vector3> Vertices;
 			std::vector<uint16_t> Indices;
-			Geometry::AxisAlignedBox3 aabb(mesh->BoundingVolume.Min, mesh->BoundingVolume.Max);
+			AxisAlignedBox3 aabb(mesh->BoundingVolume.Min, mesh->BoundingVolume.Max);
 			aabb.GetWireframe(Vertices, Indices);
 			vv.clear();
 			for (size_t i = 0; i < Vertices.size(); ++i)
@@ -98,15 +98,15 @@ namespace Riemann
 	{
 		if (geom->GetShapeType() == ShapeType::TRIANGLE_MESH)
 		{
-			AddTriMesh(renderer, geom->GetShapeObj<Geometry::StaticMesh>(), geom->GetWorldTransform(), true);
+			AddTriMesh(renderer, geom->GetShapeObj<StaticMesh>(), geom->GetWorldTransform(), true);
 		}
 		else if (geom->GetShapeType() == ShapeType::CONVEX_MESH)
 		{
-			AddGeometryImpl<Geometry::ConvexMesh>(renderer, geom);
+			AddGeometryImpl<ConvexMesh>(renderer, geom);
 		}
 		else if (geom->GetShapeType() == ShapeType::BOX)
 		{
-			AddGeometryImpl<Geometry::AxisAlignedBox3>(renderer, geom);
+			AddGeometryImpl<AxisAlignedBox3>(renderer, geom);
 		}
 		else if (geom->GetShapeType() == ShapeType::PLANE)
 		{
@@ -114,19 +114,19 @@ namespace Riemann
 		}
 		else if (geom->GetShapeType() == ShapeType::SPHERE)
 		{
-			AddGeometryImpl <Geometry::Sphere3 >(renderer, geom);
+			AddGeometryImpl <Sphere3 >(renderer, geom);
 		}
 		else if (geom->GetShapeType() == ShapeType::CAPSULE)
 		{
-			AddGeometryImpl <Geometry::Capsule3 >(renderer, geom);
+			AddGeometryImpl <Capsule3 >(renderer, geom);
 		}
 		else if (geom->GetShapeType() == ShapeType::CYLINDER)
 		{
-			AddGeometryImpl <Geometry::Cylinder3 >(renderer, geom);
+			AddGeometryImpl <Cylinder3 >(renderer, geom);
 		}
 		else if (geom->GetShapeType() == ShapeType::HEIGHTFIELD)
 		{
-			AddGeometryImpl <Geometry::HeightField3 >(renderer, geom);
+			AddGeometryImpl <HeightField3 >(renderer, geom);
 		}
 	}
 }

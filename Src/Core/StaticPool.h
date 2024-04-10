@@ -2,46 +2,49 @@
 
 #include <mutex>
 
-template<typename T, int Capacity>
-class StaticPool
+namespace Riemann
 {
-public:
-	StaticPool() : size(0) {}
-
-	T* Get()
+	template<typename T, int Capacity>
+	class StaticPool
 	{
-		if (size >= Capacity)
+	public:
+		StaticPool() : size(0) {}
+
+		T* Get()
 		{
-			return nullptr;
+			if (size >= Capacity)
+			{
+				return nullptr;
+			}
+			return &data[size++];
 		}
-		return &data[size++];
-	}
 
-private:
-	T	data[Capacity];
-	int	size;
-};
+	private:
+		T	data[Capacity];
+		int	size;
+	};
 
-template<typename T, int Capacity>
-class ThreadSafeStaticPool
-{
-public:
-	ThreadSafeStaticPool() : size(0) {}
-
-	T* Get()
+	template<typename T, int Capacity>
+	class ThreadSafeStaticPool
 	{
-		T* p = nullptr;
-		lock.lock();
-		if (size < Capacity)
-		{
-			p = &data[size++];
-		}
-		lock.unlock();
-		return p;
-	}
+	public:
+		ThreadSafeStaticPool() : size(0) {}
 
-private:
-	T	data[Capacity];
-	int	size;
-	std::mutex	lock;
-};
+		T* Get()
+		{
+			T* p = nullptr;
+			lock.lock();
+			if (size < Capacity)
+			{
+				p = &data[size++];
+			}
+			lock.unlock();
+			return p;
+		}
+
+	private:
+		T	data[Capacity];
+		int	size;
+		std::mutex	lock;
+	};
+}

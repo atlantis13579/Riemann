@@ -4,7 +4,7 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	struct HullFace3d
 	{

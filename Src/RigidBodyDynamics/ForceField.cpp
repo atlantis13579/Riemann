@@ -28,7 +28,7 @@ namespace Riemann
 		Vector3 m_GravityAcc;
 	};
 
-	class DenseField : public ForceField, Geometry::DenseTensorField3<Vector3>
+	class DenseField : public ForceField, DenseTensorField3<Vector3>
 	{
 	public:
 		DenseField()
@@ -37,7 +37,7 @@ namespace Riemann
 
 		virtual bool ApplyForce(RigidBodyDynamic* Rigid) override final
 		{
-			Vector3 Force = Geometry::DenseTensorField3<Vector3>::GetTensorByPosition(Rigid->X);
+			Vector3 Force = DenseTensorField3<Vector3>::GetTensorByPosition(Rigid->X);
 			Rigid->ApplyForce(Force);
 			return true;
 		}
@@ -88,7 +88,7 @@ namespace Riemann
 
 	private:
 		std::vector<float> m_Frames;
-		std::vector<Geometry::DenseTensorField3<Vector3>> m_Fields;
+		std::vector<DenseTensorField3<Vector3>> m_Fields;
 		float m_curr;
 		int m_curr_idx;
 	};

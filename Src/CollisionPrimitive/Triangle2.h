@@ -4,7 +4,7 @@
 #include "../Maths/Vector2.h"
 #include "Segment2.h"
 
-namespace Geometry
+namespace Riemann
 {
 	class Triangle2
 	{

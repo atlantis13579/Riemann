@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace Geometry
+namespace Riemann
 {
 	class StaticMesh;
 

@@ -1,7 +1,7 @@
 #include "Polygon3.h"
 #include "../CollisionPrimitive/Triangle3.h"
 
-namespace Geometry
+namespace Riemann
 {
 #define POLY_STACK_SIZE		64
 

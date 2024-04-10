@@ -4,7 +4,7 @@
 
 #include "../Solver/NewtonRaphsonIteration.h"
 
-namespace Geometry
+namespace Riemann
 {
 	static float Combination(int n, int m)
 	{

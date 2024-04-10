@@ -11,9 +11,11 @@
 #include "../Src/Geometry/Voronoi3.h"
 #include "../Src/Geometry/DenseTensorField3.h"
 
+using namespace Riemann;
+
 void TestMeshSimplify()
 {
-	Geometry::DynamicMesh mesh;
+	DynamicMesh mesh;
 	mesh.LoadObj("../TestData/bunny.obj");
 	mesh.Simplify(0.3f);
 	mesh.ExportObj("../TestData/bunny2.obj");
@@ -30,20 +32,20 @@ void TestClip()
 	int c1 = 0, c2 = 0;
 	Vector3 clip1[8], clip2[8];
 
-	Geometry::ClipPolygonByPlane3D(poly1, 4, Vector3(1, 1, 0), Vector3::UnitY(), clip1, &c1);
+	ClipPolygonByPlane3D(poly1, 4, Vector3(1, 1, 0), Vector3::UnitY(), clip1, &c1);
 	EXPECT(c1 == 4);
-	Geometry::ClipPolygonByPlane3D(poly1, 4, Vector3(3, 3, 0), Vector3(3, 3, 0), clip1, &c1);
+	ClipPolygonByPlane3D(poly1, 4, Vector3(3, 3, 0), Vector3(3, 3, 0), clip1, &c1);
 	EXPECT(c1 == 3);
-	Geometry::ClipPolygonByPlane3D(poly1, 4, Vector3(3, 3, 0), Vector3(-3, -3, 0), clip1, &c1);
+	ClipPolygonByPlane3D(poly1, 4, Vector3(3, 3, 0), Vector3(-3, -3, 0), clip1, &c1);
 	EXPECT(c1 == 5);
-	Geometry::ClipPolygonByProjectPolygon3D(poly1, 4, poly3, 4, Vector3(3, 3, 0), clip1, &c1);
+	ClipPolygonByProjectPolygon3D(poly1, 4, poly3, 4, Vector3(3, 3, 0), clip1, &c1);
 	EXPECT(c1 == 6);
-	Geometry::ClipPolygonByProjectPolygon3D(poly1, 4, poly3, 4, Vector3(3, 3, 0), clip1, &c1);
+	ClipPolygonByProjectPolygon3D(poly1, 4, poly3, 4, Vector3(3, 3, 0), clip1, &c1);
 	EXPECT(c1 == 6);
-	Geometry::ClipPolygonByAABB3D(poly1, 4, Vector3(2, 2, -1), Vector3(5, 5, 1), clip1, &c1);
+	ClipPolygonByAABB3D(poly1, 4, Vector3(2, 2, -1), Vector3(5, 5, 1), clip1, &c1);
 	EXPECT(c1 == 4);
 
-	bool succ = Geometry::ClipPolygonAgainPolygon3D(poly1, 4, poly2, 4, Vector3::UnitZ(), 0.02f, clip1, &c1, clip2, &c2);
+	bool succ = ClipPolygonAgainPolygon3D(poly1, 4, poly2, 4, Vector3::UnitZ(), 0.02f, clip1, &c1, clip2, &c2);
 	EXPECT(succ);
 	return;
 }
@@ -56,7 +58,7 @@ void TestCatmullRom()
 	paths.emplace_back(0.0f, 1.0f, 0.0f);
 	paths.emplace_back(2.0f, 1.0f, 0.0f);
 
-	std::vector<Geometry::SplineNode> smoothed = Geometry::CatmullRom::Smoothing(paths, 0.2f);
+	std::vector<SplineNode> smoothed = CatmullRom::Smoothing(paths, 0.2f);
 
 	EXPECT(smoothed.size() == 16);
 	EXPECT(smoothed[0].point == paths[0]);
@@ -79,7 +81,7 @@ void TestVoronoi2d()
 	points.emplace_back(2.0f, 0.0f);
 	points.emplace_back(1.0f, 0.0f);
 
-	std::vector<Geometry::DelaunayEdge> edges;
+	std::vector<DelaunayEdge> edges;
 	edges.emplace_back(0, 1);
 	edges.emplace_back(1, 2);
 	edges.emplace_back(2, 3);
@@ -91,11 +93,11 @@ void TestVoronoi2d()
 	edges.emplace_back(8, 9);
 	edges.emplace_back(9, 0);
 
-	Geometry::Delaunay d1;
+	Delaunay d1;
 	EXPECT(d1.Triangulate(points));
 	EXPECT(d1.Triangles.size() == 10);
 
-	Geometry::ConstrainedDelaunay d2;
+	ConstrainedDelaunay d2;
 	EXPECT(d2.Triangulate(points, edges));
 	EXPECT(d2.Triangles.size() == 8);
 
@@ -105,18 +107,18 @@ void TestVoronoi2d()
 void TestVoronoi3d()
 {
 	std::vector<Vector3> points;
-	Geometry::Voronoi3::GenerateRandomPoints(Box3::Unit(), 100, points);
-	Geometry::Voronoi3 v(points, Box3::Unit(), 1e-3f);
+	Voronoi3::GenerateRandomPoints(Box3::Unit(), 100, points);
+	Voronoi3 v(points, Box3::Unit(), 1e-3f);
 
-	std::vector<Geometry::Voronoi3::Cell> cells;
+	std::vector<Voronoi3::Cell> cells;
 	v.ComputeAllCells(cells, true);
 
-	Geometry::Voronoi3::GenerateRandomPoints(Box3::Unit(), 2, points);
+	Voronoi3::GenerateRandomPoints(Box3::Unit(), 2, points);
 
 	v.Set(points, Box3::Unit(), 1e-3f);
 	v.Build();
 
-	Geometry::VoronoiMesh mesh(points, Box3::Unit(), 1e-3f);
+	VoronoiMesh mesh(points, Box3::Unit(), 1e-3f);
 
 
 	return;
@@ -124,13 +126,13 @@ void TestVoronoi3d()
 
 void TestGeometrySet()
 {
-	Geometry::DynamicMesh set1;
+	DynamicMesh set1;
 	set1.LoadObj("../TestData/bunny.obj");
 	Box3 box = set1.Bounds;
 	float x = box.GetCenter().x;
 	float y = box.GetCenter().y;
 
-	Geometry::DynamicMesh set2;
+	DynamicMesh set2;
 	set2.VertexPositions.emplace_back(box.Min.x, y, box.Min.z);
 	set2.VertexPositions.emplace_back(box.Min.x, y, box.Max.z);
 	set2.VertexPositions.emplace_back(box.Max.x, y, box.Max.z);
@@ -139,18 +141,18 @@ void TestGeometrySet()
 	set2.Triangles.emplace_back(2, 3, 0);
 	set2.BuildBounds();
 
-	Geometry::DynamicMesh set3;
+	DynamicMesh set3;
 	set3.VertexPositions.emplace_back(x, box.Min.y, box.Min.z + 0.01f);
 	set3.VertexPositions.emplace_back(x, box.Min.y, box.Max.z + 0.01f);
 	set3.VertexPositions.emplace_back(x, box.Max.y, box.Max.z + 0.01f);
 	set3.Triangles.emplace_back(0, 1, 2);
 	set3.BuildBounds();
 
-	Geometry::DynamicMeshAABBTree aabb1(&set1);
-	Geometry::DynamicMeshAABBTree aabb2(&set2);
-	Geometry::DynamicMeshAABBTree aabb3(&set3);
+	DynamicMeshAABBTree aabb1(&set1);
+	DynamicMeshAABBTree aabb2(&set2);
+	DynamicMeshAABBTree aabb3(&set3);
 
-	Geometry::IntersectionsQueryResult Result;
+	IntersectionsQueryResult Result;
 		
 	Result = aabb1.FindAllIntersections(aabb2);
 	Result = aabb2.FindAllIntersections(aabb3);
@@ -160,12 +162,12 @@ void TestGeometrySet()
 
 void TestGeometryBoolean()
 {
-	Geometry::DynamicMesh set1;
+	DynamicMesh set1;
 	set1.LoadObj("../TestData/bunny.obj");
 
 	Box3 box = set1.Bounds;
 	float y = box.GetCenter().y;
-	Geometry::DynamicMesh set2;
+	DynamicMesh set2;
 	set2.VertexPositions.emplace_back(box.Min.x, y, box.Min.z);
 	set2.VertexPositions.emplace_back(box.Min.x, y, box.Max.z);
 	set2.VertexPositions.emplace_back(box.Max.x, y, box.Max.z);
@@ -174,7 +176,7 @@ void TestGeometryBoolean()
 	set2.Triangles.emplace_back(2, 3, 0);
 	set2.BuildBounds();
 
-	Geometry::GeometryBoolean b(&set1, &set2, Geometry::GeometryBoolean::BooleanOp::Intersect);
+	GeometryBoolean b(&set1, &set2, GeometryBoolean::BooleanOp::Intersect);
 	b.Compute();
 
 	return;

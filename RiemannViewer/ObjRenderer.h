@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Geometry
+namespace Riemann
 {
 	class StaticMesh;
 }
@@ -12,5 +12,5 @@ namespace Riemann
 	class StaticMesh;
 
 	void AddGeometry(Renderer* renderer, GeometryBase* geom);
-	void AddTriMesh(Renderer* renderer, Geometry::StaticMesh* mesh, void* Trans, bool RenderBV);
+	void AddTriMesh(Renderer* renderer, StaticMesh* mesh, void* Trans, bool RenderBV);
 }

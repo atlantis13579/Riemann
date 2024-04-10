@@ -2,7 +2,7 @@
 #include "GeometrySet.h"
 #include "../Geometry/DynamicMesh.h"
 
-namespace Destruction
+namespace Riemann
 {
 	GeometrySet::GeometrySet()
 	{
@@ -20,7 +20,7 @@ namespace Destruction
 
 	bool GeometrySet::LoadObj(const char* name, const Transform& pose)
 	{
-		Geometry::DynamicMesh* p = Geometry::DynamicMesh::CreateFromObj(name);
+		DynamicMesh* p = DynamicMesh::CreateFromObj(name);
 		if (p == nullptr)
 		{
 			return false;
@@ -47,8 +47,8 @@ namespace Destruction
 		mMeshs.resize(NumMeshes);
 		for (size_t i = 0; i < mMeshs.size(); ++i)
 		{
-			mMeshs[i] = new Geometry::DynamicMesh();
+			mMeshs[i] = new DynamicMesh();
 		}
 	}
 
-}	// namespace Destruction
+}	// namespace Riemann

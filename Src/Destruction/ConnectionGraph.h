@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Destruction
+namespace Riemann
 {
 
-}	// namespace Destruction
+}	// namespace Riemann

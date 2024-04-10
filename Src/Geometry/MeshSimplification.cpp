@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string>
 
-namespace Geometry
+namespace Riemann
 {
 const int MAX_VERTEX = 5000;
 const int MAX_PAIR = 50000;
@@ -687,7 +687,7 @@ public:
 	}
 };
 
-class MeshSimplification {
+class MeshQEMOptimizer {
 public:
 	std::vector<Vertex> m_vertices;
 	std::vector<Vector3> m_old_vertices;
@@ -706,7 +706,7 @@ public:
 	std::vector<bool> m_inFace;
 
 public:
-	MeshSimplification()
+	MeshQEMOptimizer()
 	{
 		m_vertices.resize(MAX_VERTEX);
 		m_pairs.resize(MAX_PAIR);
@@ -722,7 +722,7 @@ public:
 		m_inFace.resize(MAX_FACE, false);
 	}
 
-	~MeshSimplification() {
+	~MeshQEMOptimizer() {
 	}
 
 	void GetNewVertices(std::vector<Vector3>& _vertices, std::vector<int>& _indices)
@@ -1056,7 +1056,7 @@ public:
 
 bool SimplifyMesh(const Vector3* pv, const Vector3i* pi, int nv, int nt, float rate, std::vector<Vector3>& new_v, std::vector<int>& new_i)
 {
-	MeshSimplification s;
+	MeshQEMOptimizer s;
 
 	for (int i = 0; i < nv; ++i)
 	{

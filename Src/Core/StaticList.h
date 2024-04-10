@@ -1,76 +1,79 @@
 #pragma once
 
-template<typename T>
-class List
+namespace Riemann
 {
-public:
-	T* root;
-	int count;
-	List() : root(nullptr), count(0) {}
-
-	void Append(T* p)
+	template<typename T>
+	class List
 	{
-		p->prev = nullptr;
-		p->next = root;
-		if (root) root->prev = p;
-		root = p;
-		++count;
-	}
+	public:
+		T* root;
+		int count;
+		List() : root(nullptr), count(0) {}
 
-	void Remove(T* p)
-	{
-		if (p->next) p->next->prev = p->prev;
-		if (p->prev) p->prev->next = p->next;
-		if (p == root) root = p->next;
-		--count;
-	}
-};
-
-
-template<typename T, int Capacity>
-class StaticList
-{
-public:
-	StaticList() : root(nullptr), count(0)
-	{
-		for (int i = 0; i < Capacity; ++i)
+		void Append(T* p)
 		{
-			Append(&m_pool[Capacity - i - 1]);
+			p->prev = nullptr;
+			p->next = root;
+			if (root) root->prev = p;
+			root = p;
+			++count;
 		}
-	}
 
-	void Append(T* p)
+		void Remove(T* p)
+		{
+			if (p->next) p->next->prev = p->prev;
+			if (p->prev) p->prev->next = p->next;
+			if (p == root) root = p->next;
+			--count;
+		}
+	};
+
+
+	template<typename T, int Capacity>
+	class StaticList
 	{
-		p->prev = nullptr;
-		p->next = root;
-		if (root) root->prev = p;
-		root = p;
-		++count;
-	}
+	public:
+		StaticList() : root(nullptr), count(0)
+		{
+			for (int i = 0; i < Capacity; ++i)
+			{
+				Append(&m_pool[Capacity - i - 1]);
+			}
+		}
 
-	void Remove(T* p)
-	{
-		if (p->next) p->next->prev = p->prev;
-		if (p->prev) p->prev->next = p->next;
-		if (p == root) root = p->next;
-		--count;
-	}
+		void Append(T* p)
+		{
+			p->prev = nullptr;
+			p->next = root;
+			if (root) root->prev = p;
+			root = p;
+			++count;
+		}
 
-	inline bool Empty() const
-	{
-		return root == nullptr;
-	}
+		void Remove(T* p)
+		{
+			if (p->next) p->next->prev = p->prev;
+			if (p->prev) p->prev->next = p->next;
+			if (p == root) root = p->next;
+			--count;
+		}
 
-	T* Pop()
-	{
-		if (root == nullptr) return nullptr;
-		T* p = root;
-		Remove(root);
-		return p;
-	}
+		inline bool Empty() const
+		{
+			return root == nullptr;
+		}
 
-private:
-	T*	root;
-	int count;
-	T	m_pool[Capacity];
-};
+		T* Pop()
+		{
+			if (root == nullptr) return nullptr;
+			T* p = root;
+			Remove(root);
+			return p;
+		}
+
+	private:
+		T*	root;
+		int count;
+		T	m_pool[Capacity];
+	};
+}

@@ -2,7 +2,7 @@
 #include "MeshBVH4.h"
 #include "StaticMesh.h"
 
-namespace Geometry
+namespace Riemann
 {
 #define INFLATION_EPSILON 5e-4f
 

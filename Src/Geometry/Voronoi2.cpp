@@ -3,7 +3,7 @@
 #include <cmath>
 #include "Voronoi2.h"
 
-namespace Geometry
+namespace Riemann
 {
 	void Voronoi2::GenerateRandomPoints(const Box2& Bounds, int numPoints, std::vector<Vector2>& points)
 	{

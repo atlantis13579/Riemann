@@ -5,7 +5,7 @@
 #include "Sphere3.h"
 #include "../Maths/Maths.h"
 
-namespace Geometry
+namespace Riemann
 {
 	bool Capsule3::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 	{

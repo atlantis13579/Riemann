@@ -7,7 +7,7 @@
 #include "../Maths/Matrix3.h"
 #include "../Maths/Box3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	class AxisAlignedBox3
 	{

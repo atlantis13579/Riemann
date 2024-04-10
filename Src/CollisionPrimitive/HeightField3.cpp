@@ -7,7 +7,7 @@
 #include "Sphere3.h"
 #include "../Maths/Maths.h"
 
-namespace Geometry
+namespace Riemann
 {
 	#define X_INDEX(_x)		((int)((_x - BV.Min.x) * InvDX))
 	#define Z_INDEX(_z)		((int)((_z - BV.Min.z) * InvDZ))

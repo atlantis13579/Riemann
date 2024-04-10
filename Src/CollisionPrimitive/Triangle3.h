@@ -9,7 +9,7 @@
 #include "Triangle2.h"
 #include "ShapeType.h"
 
-namespace Geometry
+namespace Riemann
 {
 	class Triangle3
 	{

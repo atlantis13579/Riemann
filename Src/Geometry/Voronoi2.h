@@ -5,7 +5,7 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Box2.h"
 
-namespace Geometry
+namespace Riemann
 {
 	class Voronoi2
 	{

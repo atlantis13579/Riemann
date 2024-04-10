@@ -6,60 +6,60 @@
 
 namespace Riemann
 {
-using ThreadFunction = std::function<void(int)>;
+	using ThreadFunction = std::function<void(int)>;
 
-class ThreadPool
-{
-public:
-	ThreadPool()
+	class ThreadPool
 	{
-		
-	}
-	~ThreadPool()
-	{
-		Stop();
-	}
-	
-	int GetMaxHardwareConcurrency() const
-	{
-		return (int)std::thread::hardware_concurrency();
-	}
-
-	void WaitUntilAllThreadExit()
-	{
-		if (mThreads.empty())
-			return;
-
-		for (size_t i = 0; i < mThreads.size(); ++i)
+	public:
+		ThreadPool()
 		{
-			std::thread& t = mThreads[i];
-			if (t.joinable())
-				t.join();
+
+		}
+		~ThreadPool()
+		{
+			Stop();
 		}
 
-		mThreads.clear();
-	}
-	
-	void Start(int num_threads, const ThreadFunction& main)
-	{
-		if (num_threads < 0)
+		int GetMaxHardwareConcurrency() const
 		{
-			num_threads = GetMaxHardwareConcurrency();
+			return (int)std::thread::hardware_concurrency();
 		}
-		mThreads.resize(num_threads);
-		
-		for (int i = 0; i < num_threads; ++i)
+
+		void WaitUntilAllThreadExit()
 		{
-			mThreads[i] = std::thread(main, i + 1);
+			if (mThreads.empty())
+				return;
+
+			for (size_t i = 0; i < mThreads.size(); ++i)
+			{
+				std::thread& t = mThreads[i];
+				if (t.joinable())
+					t.join();
+			}
+
+			mThreads.clear();
 		}
-	}
-	
-	void Stop()
-	{
-		WaitUntilAllThreadExit();
-	}
-	
-private:
-	std::vector<std::thread> mThreads;
-};
+
+		void Start(int num_threads, const ThreadFunction& main)
+		{
+			if (num_threads < 0)
+			{
+				num_threads = GetMaxHardwareConcurrency();
+			}
+			mThreads.resize(num_threads);
+
+			for (int i = 0; i < num_threads; ++i)
+			{
+				mThreads[i] = std::thread(main, i + 1);
+			}
+		}
+
+		void Stop()
+		{
+			WaitUntilAllThreadExit();
+		}
+
+	private:
+		std::vector<std::thread> mThreads;
+	};
 }

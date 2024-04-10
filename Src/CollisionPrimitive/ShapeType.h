@@ -4,7 +4,7 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	enum class ShapeType : unsigned char
 	{
@@ -43,5 +43,3 @@ namespace Geometry
 
 	#define MAX_FACE_POINTS	16
 }
-
-using ShapeType = Geometry::ShapeType;

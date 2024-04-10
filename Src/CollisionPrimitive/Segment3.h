@@ -3,7 +3,7 @@
 #include "../Maths/Vector3.h"
 #include "Plane3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	class Segment3
 	{

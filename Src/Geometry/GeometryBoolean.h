@@ -3,7 +3,7 @@
 #include "../Maths/Transform.h"
 #include "DynamicMesh.h"
 
-namespace Geometry
+namespace Riemann
 {
 	class GeometryCut
 	{

@@ -11,7 +11,7 @@
 #include <array>
 #include <vector>
 
-namespace Geometry
+namespace Riemann
 {
 	MeshBVH4* TriangleMesh::CreateEmptyBVH()
 	{

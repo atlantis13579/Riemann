@@ -3,7 +3,7 @@
 #include "AxisAlignedBox3.h"
 #include "Sphere3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	void OrientedBox3::GetVertices(Vector3 v[8]) const
 	{

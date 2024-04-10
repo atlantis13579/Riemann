@@ -8,7 +8,7 @@
 #include "GeometryBoolean.h"
 #include "DynamicMesh.h"
 
-namespace Geometry
+namespace Riemann
 {
 	enum class EVertexType
 	{

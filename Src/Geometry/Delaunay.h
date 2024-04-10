@@ -3,7 +3,7 @@
 #include <vector>
 #include "../Maths/Vector2.h"
 
-namespace Geometry
+namespace Riemann
 {
 	struct DelaunayEdge
 	{

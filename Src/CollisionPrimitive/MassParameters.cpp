@@ -1,7 +1,7 @@
 #include <assert.h>
 #include "MassParameters.h"
 
-namespace Geometry
+namespace Riemann
 {
 	// Calculating inertia for a multi shape rigid body
 	// https://en.wikipedia.org/wiki/Parallel_axis_theorem

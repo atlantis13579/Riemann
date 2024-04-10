@@ -7,8 +7,6 @@
 #include "../CollisionPrimitive/ShapeType.h"
 #include "../CollisionPrimitive/MassParameters.h"
 
-using namespace Geometry;
-
 namespace Riemann
 {
 	class GeometryFactory;
@@ -220,7 +218,7 @@ namespace Riemann
 			m_Parent = parent;
 		}
 
-		inline Geometry::MassParameters* GetMassParameters()
+		inline MassParameters* GetMassParameters()
 		{
 			return &m_VolumeProperties;
 		}
@@ -240,7 +238,7 @@ namespace Riemann
 			m_VolumeProperties.BoundingVolume = box;
 		}
 
-		inline Geometry::ShapeType		GetShapeType() const
+		inline ShapeType		GetShapeType() const
 		{
 			return m_Type;
 		}
@@ -310,7 +308,7 @@ namespace Riemann
 		GeometryTransform			m_WorldTransform;
 		Transform					m_LocalTransform;
 		CollisionData				m_FilterData;
-		Geometry::MassParameters	m_VolumeProperties;
+		MassParameters	m_VolumeProperties;
 		float						m_Density;
 		void*						m_Parent;
 		int							m_NodeId;		// nodeId from DynamicAABB Tree

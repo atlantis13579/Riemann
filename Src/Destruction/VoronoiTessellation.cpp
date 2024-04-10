@@ -1,7 +1,7 @@
 
 #include "VoronoiTessellation.h"
 
-namespace Destruction
+namespace Riemann
 {
 
-}	// namespace Destruction
+}	// namespace Riemann

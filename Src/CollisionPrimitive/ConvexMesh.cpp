@@ -2,7 +2,7 @@
 #include "ConvexMesh.h"
 #include "../Geometry/ConvexHull3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	void ConvexMesh::SetConvexData(Vector3* verts, uint16_t nVerties,
 		ConvexMeshFace* faces, uint16_t nFaces,
@@ -143,7 +143,7 @@ namespace Geometry
 
 	bool ConvexMesh::CalculateVolumeProperties(MassParameters* p, float Density) const
 	{
-		Geometry::ConvexHull3d hull;
+		ConvexHull3d hull;
 		hull.faces.resize(NumFaces);
 		hull.verts.resize(NumVertices);
 
@@ -154,7 +154,7 @@ namespace Geometry
 		for (uint16_t i = 0; i < NumFaces; ++i)
 		{
 			ConvexMeshFace& f = Faces[i];
-			Geometry::HullFace3d& face = hull.faces[i];
+			HullFace3d& face = hull.faces[i];
 			face.norm = f.plane.Normal;
 			face.w = f.plane.D;
 			face.verts.resize(f.numVerties);

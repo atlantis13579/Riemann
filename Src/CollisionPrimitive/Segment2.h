@@ -2,7 +2,7 @@
 
 #include "../Maths/Vector2.h"
 
-namespace Geometry
+namespace Riemann
 {
 	class Segment2
 	{

@@ -10,7 +10,7 @@
 #include "ShapeType.h"
 #include "../Maths/Matrix3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	// {x | (x - [X0 + (X1 - X0)*t])^2 <= Radius }, 0 <= t <= 1 }
 	class Capsule3

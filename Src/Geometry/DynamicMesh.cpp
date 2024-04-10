@@ -6,7 +6,7 @@
 #include "../Maths/Maths.h"
 #include "../CollisionPrimitive/Triangle3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	static char* ParseRow(char* buf, char* bufEnd, char* row, int len)
 	{

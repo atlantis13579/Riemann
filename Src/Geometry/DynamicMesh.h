@@ -9,7 +9,7 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Transform.h"
 
-namespace Geometry
+namespace Riemann
 {
 	class DynamicMeshAABBTree;
 
@@ -779,4 +779,4 @@ namespace Geometry
 		int TrianglesEnd = -1;
 		int RootIndex = -1;
 	};
-}	// namespace Destruction
+}	// namespace Riemann

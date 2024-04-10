@@ -11,7 +11,7 @@
 #include "../Maths/Box2.h"
 #include "Delaunay.h"
 
-namespace Geometry
+namespace Riemann
 {
 	static inline int fast_mod(const int i, const int c)
 	{

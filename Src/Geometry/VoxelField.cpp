@@ -5,7 +5,7 @@
 #include "VoxelField.h"
 #include "../Maths/Maths.h"
 
-namespace Geometry
+namespace Riemann
 {
 	VoxelField::VoxelField()
 	{

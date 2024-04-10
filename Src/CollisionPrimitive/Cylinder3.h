@@ -6,7 +6,7 @@
 #include "ShapeType.h"
 #include "../Maths/Box3.h"
 
-namespace Geometry
+namespace Riemann
 {
 	class Cylinder3
 	{

@@ -11,7 +11,7 @@
 
 // #define USE_EDGE_DATA
 
-namespace Geometry
+namespace Riemann
 {
 	struct ConvexMeshFace
 	{

@@ -9,7 +9,7 @@ namespace voro
 	class container;
 }
 
-namespace Geometry
+namespace Riemann
 {
 	class DynamicMesh;
 

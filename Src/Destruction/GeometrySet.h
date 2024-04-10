@@ -4,12 +4,12 @@
 #include "../Maths/Box3.h"
 #include "../Maths/Transform.h"
 
-namespace Geometry
+namespace Riemann
 {
 	class DynamicMesh;
 }
 
-namespace Destruction
+namespace Riemann
 {
 	class GeometrySet
 	{
@@ -21,7 +21,7 @@ namespace Destruction
 		void CreateGeometryData(int NumMeshes);
 
 	public:
-		std::vector<Geometry::DynamicMesh*>	mMeshs;
+		std::vector<DynamicMesh*>	mMeshs;
 		Box3									mBounds;
 	};
-}	// namespace Destruction
+}	// namespace Riemann
