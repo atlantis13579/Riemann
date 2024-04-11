@@ -60,7 +60,7 @@ namespace Riemann
 					return m_index != rhs.m_index;
 				}
 
-				inline int index() const
+				inline int key() const
 				{
 					return m_index;
 				}
@@ -82,11 +82,10 @@ namespace Riemann
 				}
 
 			private:
+				ListSet		*m_owner { nullptr };
 				Block		*m_curr_block { nullptr };
 				int			m_curr_block_idx { 0 };
 				int			m_index { 0 };
-
-				ListSet		*m_owner { nullptr };
 			};
 
 			inline T& operator[](int idx)
@@ -162,7 +161,7 @@ namespace Riemann
 				{
 					if (*it == val)
 					{
-						return it.index();
+						return it.key();
 					}
 				}
 
@@ -212,7 +211,7 @@ namespace Riemann
 				{
 					if (*it == val)
 					{
-						int index = it.index();
+						int index = it.key();
 						remove_at(index, false);
 						return index;
 					}
@@ -390,7 +389,7 @@ namespace Riemann
 					return m_index != rhs.m_index;
 				}
 
-				inline int index() const
+				inline int key() const
 				{
 					return m_index;
 				}
@@ -469,7 +468,7 @@ namespace Riemann
 				{
 					if (*it == val)
 					{
-						return it.index();
+						return it.key();
 					}
 				}
 
@@ -552,7 +551,7 @@ namespace Riemann
 			}
 		}
 
-		int add()
+		int append()
 		{
 			int s = size();
 			resize(s + 1);

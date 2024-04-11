@@ -32,11 +32,11 @@ namespace Riemann
 		{
 			if (preserve_order)
 			{
-				this->insert(this->begin() + idx, v);
+				insert(this->begin() + idx, v);
 			}
 			else
 			{
-				this->resize(this->size() + 1);
+				resize(this->size() + 1);
 				T *p = this->data();
 				p[this->size() - 1] = p[idx];
 				p[idx] = v;
@@ -47,19 +47,19 @@ namespace Riemann
 		{
 			if (preserve_order)
 			{
-				this->erase(this->begin() + idx);
+				erase(this->begin() + idx);
 			}
 			else
 			{
 				T* p = this->data();
 				p[idx] = p[this->size() - 1];
-				this->resize(this->size() - 1);
+				resize(this->size() - 1);
 			}
 		}
 
 		inline void append(const DynamicArray<T> &rhs)
 		{
-			this->insert(this->begin(), rhs.begin(), rhs.end());
+			insert(this->begin(), rhs.begin(), rhs.end());
 		}
 	};
 }

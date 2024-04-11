@@ -499,7 +499,7 @@ namespace Riemann
 					VertexPositions.push_back(v);
 				}
 				VertexRefCounts.push_back(1);
-				VertexEdgeLists.add();
+				VertexEdgeLists.append();
 			}
 			else if (row[0] == 'v' && row[1] == 'n')
 			{

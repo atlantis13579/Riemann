@@ -192,7 +192,7 @@ namespace Riemann
 			int index = (int)VertexPositions.size();
 			VertexPositions.push_back(v);
 			VertexRefCounts.push_back(1);
-			VertexEdgeLists.add();
+			VertexEdgeLists.append();
 			return index;
 		}
 
@@ -202,7 +202,7 @@ namespace Riemann
 
 			VertexPositions.push_back(info.Position);
 			VertexRefCounts.push_back(1);
-			VertexEdgeLists.add();
+			VertexEdgeLists.append();
 
 			if (info.bHasColor)
 			{
