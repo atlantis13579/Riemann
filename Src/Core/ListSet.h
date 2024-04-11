@@ -50,7 +50,7 @@ namespace Riemann
 					if (m_curr_block_idx == BlockSize)
 					{
 						m_curr_block_idx = 0;
-						m_curr_block = m_owner->GetBlock(m_curr_block->next_block);
+						m_curr_block = m_owner->get_block(m_curr_block->next_block);
 					}
 					return *this;
 				}
@@ -91,7 +91,7 @@ namespace Riemann
 
 			inline T& operator[](int idx)
 			{
-				Header *head = m_owner->GetHeader(m_index);
+				Header *head = m_owner->get_header(m_index);
 				if (idx < 0 || idx > head->size)
 				{
 					assert(false);
@@ -99,7 +99,7 @@ namespace Riemann
 					return data[idx];
 				}
 
-				Block *block = m_owner->GetBlock(head->first_block);
+				Block *block = m_owner->get_block(head->first_block);
 				assert(block);
 				if (idx < BlockSize)
 				{
@@ -109,7 +109,7 @@ namespace Riemann
 				while (idx >= BlockSize)
 				{
 					idx -= BlockSize;
-					block = m_owner->GetBlock(block->next_block);
+					block = m_owner->get_block(block->next_block);
 					assert(block);
 				}
 				
@@ -118,7 +118,7 @@ namespace Riemann
 
 			inline const T& operator[](int idx) const
 			{
-				const Header* head = m_owner->GetHeader(m_index);
+				const Header* head = m_owner->get_header(m_index);
 				if (idx < 0 || idx > head->size)
 				{
 					assert(false);
@@ -126,7 +126,7 @@ namespace Riemann
 					return data[idx];
 				}
 
-				const Block* block = m_owner->GetBlock(head->first_block);
+				const Block* block = m_owner->get_block(head->first_block);
 				assert(block);
 				if (idx < BlockSize)
 				{
@@ -136,7 +136,7 @@ namespace Riemann
 				while (idx >= BlockSize)
 				{
 					idx -= BlockSize;
-					block = m_owner->GetBlock(block->next_block);
+					block = m_owner->get_block(block->next_block);
 					assert(block);
 				}
 
@@ -145,18 +145,18 @@ namespace Riemann
 
 			ValueIterator begin() const
 			{
-				Header* head = m_owner->GetHeader(m_index);
-				Block* block = head ? m_owner->GetBlock(head->first_block) : nullptr;
+				Header* head = m_owner->get_header(m_index);
+				Block* block = head ? m_owner->get_block(head->first_block) : nullptr;
 				return ValueIterator(m_owner, block, 0);
 			}
 
 			ValueIterator end() const
 			{
-				Header* head = m_owner->GetHeader(m_index);
+				Header* head = m_owner->get_header(m_index);
 				return ValueIterator(m_owner, nullptr, head ? head->size : 0);
 			}
 
-			inline int Find(const T &val) const
+			inline int find(const T &val) const
 			{
 				for (auto it = begin(); it != end(); ++it)
 				{
@@ -169,14 +169,14 @@ namespace Riemann
 				return -1;
 			}
 
-			inline void Add(const T &val)
+			inline void push_back(const T &val)
 			{
-				Header* head = m_owner->GetHeader(m_index);
-				Block* block = m_owner->GetBlock(head->first_block);
+				Header* head = m_owner->get_header(m_index);
+				Block* block = m_owner->get_block(head->first_block);
 				if (block == nullptr)
 				{
-					head->first_block = m_owner->AllocateBlock(nullptr);
-					block = m_owner->GetBlock(head->first_block);
+					head->first_block = m_owner->allocate(nullptr);
+					block = m_owner->get_block(head->first_block);
 				}
 				assert(block);
 
@@ -193,27 +193,27 @@ namespace Riemann
 					idx -= BlockSize;
 					assert(block);
 					prev_block = block;
-					block = m_owner->GetBlock(block->next_block);
+					block = m_owner->get_block(block->next_block);
 				}
 
 				if (block == nullptr)
 				{
 					assert(prev_block);
-					block = m_owner->GetBlock(m_owner->AllocateBlock(prev_block));
+					block = m_owner->get_block(m_owner->allocate(prev_block));
 				}
 
 				block->data[idx] = val;
 				head->size++;
 			}
 
-			int Remove(const T& val)
+			int remove(const T& val)
 			{
 				for (auto it = begin(); it != end(); ++it)
 				{
 					if (*it == val)
 					{
 						int index = it.GetIndex();
-						RemoveAt(index, false);
+						remove_at(index, false);
 						return index;
 					}
 				}
@@ -221,15 +221,15 @@ namespace Riemann
 				return -1;
 			}
 
-			bool RemoveAt(int idx, bool preserve_order = true)
+			bool remove_at(int idx, bool preserve_order = true)
 			{
-				Header* head = m_owner->GetHeader(m_index);
+				Header* head = m_owner->get_header(m_index);
 				if (idx < 0 || idx >= head->size)
 				{
 					return false;
 				}
 
-				Block* block = m_owner->GetBlock(head->first_block);
+				Block* block = m_owner->get_block(head->first_block);
 				assert(block);
 
 				if (head->size <= BlockSize)
@@ -255,7 +255,7 @@ namespace Riemann
 				{
 					idx -= BlockSize;
 					assert(block);
-					block = m_owner->GetBlock(block->next_block);
+					block = m_owner->get_block(block->next_block);
 				}
 
 				if (preserve_order)
@@ -268,13 +268,13 @@ namespace Riemann
 						}
 						else
 						{
-							Block *next_block = m_owner->GetBlock(block->next_block);
+							Block *next_block = m_owner->get_block(block->next_block);
 							assert (next_block);
 							block->data[idx] = next_block->data[0];
 
 							if (i == move_num - 1)
 							{
-								m_owner->ReleaseBlock(block->next_block);
+								m_owner->release(block->next_block);
 								block->next_block = -1;
 								break;
 							}
@@ -289,7 +289,7 @@ namespace Riemann
 					Block *block2 = block;
 					while (block2->next_block >= 0)
 					{
-						block2 = m_owner->GetBlock(block2->next_block);
+						block2 = m_owner->get_block(block2->next_block);
 					}
 
 					int idx2 = (head->size - 1) % BlockSize;
@@ -303,23 +303,23 @@ namespace Riemann
 
 			void operator=(const std::initializer_list<T>& rhs)
 			{
-				Clear();
+				clear();
 				for (const T& i : rhs)
 				{
-					Add(i);
+					push_back(i);
 				}
 			}
 
-			void FromVector(const std::vector<T>& rhs)
+			void from_vector(const std::vector<T>& rhs)
 			{
-				Clear();
+				clear();
 				for (const T& i : rhs)
 				{
-					Add(i);
+					push_back(i);
 				}
 			}
 
-			std::vector<T> ToVector() const
+			std::vector<T> to_vector() const
 			{
 				std::vector<T> v;
 
@@ -331,23 +331,23 @@ namespace Riemann
 				return v;
 			}
 
-			int GetSize() const
+			int size() const
 			{
-				Header* head = m_owner->GetHeader(m_index);
+				Header* head = m_owner->get_header(m_index);
 				return head->size;
 			}
 
-			void Clear()
+			void clear()
 			{
-				Header* head = m_owner->GetHeader(m_index);
-				Block* block = m_owner->GetBlock(head->first_block);
+				Header* head = m_owner->get_header(m_index);
+				Block* block = m_owner->get_block(head->first_block);
 				while (block)
 				{
 					int next = block->next_block;
-					block = m_owner->GetBlock(next);
-					m_owner->ReleaseBlock(next);
+					block = m_owner->get_block(next);
+					m_owner->release(next);
 				}
-				m_owner->ReleaseBlock(head->first_block);
+				m_owner->release(head->first_block);
 				head->size = 0;
 				head->first_block = -1;
 			}
@@ -380,7 +380,7 @@ namespace Riemann
 					if (m_curr_block_idx == BlockSize)
 					{
 						m_curr_block_idx = 0;
-						m_curr_block = m_owner->GetBlock(m_curr_block->next_block);
+						m_curr_block = m_owner->get_block(m_curr_block->next_block);
 					}
 					return *this;
 				}
@@ -419,7 +419,7 @@ namespace Riemann
 
 			inline const T& operator[](int idx) const
 			{
-				const Header* head = m_owner->GetHeader(m_index);
+				const Header* head = m_owner->get_header(m_index);
 				if (idx < 0 || idx > head->size)
 				{
 					assert(false);
@@ -427,7 +427,7 @@ namespace Riemann
 					return data[idx];
 				}
 
-				const Block* block = m_owner->GetBlock(head->first_block);
+				const Block* block = m_owner->get_block(head->first_block);
 				assert(block);
 				if (idx < BlockSize)
 				{
@@ -437,33 +437,33 @@ namespace Riemann
 				while (idx >= BlockSize)
 				{
 					idx -= BlockSize;
-					block = m_owner->GetBlock(block->next_block);
+					block = m_owner->get_block(block->next_block);
 					assert(block);
 				}
 
 				return block->data[idx];
 			}
 
-			int GetSize() const
+			int size() const
 			{
-				const Header* head = m_owner->GetHeader(m_index);
+				const Header* head = m_owner->get_header(m_index);
 				return head->size;
 			}
 
 			ValueIterator begin() const
 			{
-				const Header* head = m_owner->GetHeader(m_index);
-				const Block* block = head ? m_owner->GetBlock(head->first_block) : nullptr;
+				const Header* head = m_owner->get_header(m_index);
+				const Block* block = head ? m_owner->get_block(head->first_block) : nullptr;
 				return ValueIterator(m_owner, block, 0);
 			}
 
 			ValueIterator end() const
 			{
-				const Header* head = m_owner->GetHeader(m_index);
+				const Header* head = m_owner->get_header(m_index);
 				return ValueIterator(m_owner, nullptr, head ? head->size : 0);
 			}
 
-			inline int Find(const T& val) const
+			inline int find(const T& val) const
 			{
 				for (ValueIterator it = begin(); it != end(); ++it)
 				{
@@ -476,7 +476,7 @@ namespace Riemann
 				return -1;
 			}
 
-			std::vector<T> ToVector() const
+			std::vector<T> to_vector() const
 			{
 				std::vector<T> v;
 
@@ -530,7 +530,7 @@ namespace Riemann
 
 		ListSet(int size)
 		{
-			SetSize(size);
+			resize(size);
 		}
 
 		static int GetBlockSize()
@@ -538,7 +538,7 @@ namespace Riemann
 			return BlockSize;
 		}
 
-		void SetSize(int new_size)
+		void resize(int new_size)
 		{
 			int old_size = (int)m_headers.size();
 			m_headers.resize(new_size);
@@ -552,26 +552,26 @@ namespace Riemann
 			}
 		}
 
-		int Add()
+		int add()
 		{
-			int size = GetSize();
-			SetSize(size + 1);
-			return size;
+			int s = size();
+			resize(s + 1);
+			return s;
 		}
 
-		void Clear()
+		void clear()
 		{
 			m_headers.clear();
 			m_blocks.clear();
 			m_freelist.clear();
 		}
 
-		inline int GetSize() const
+		inline int size() const
 		{
 			return (int)m_headers.size();
 		}
 
-		inline int GetMaxElements() const
+		inline int max_elements() const
 		{
 			int max_val = 0;
 			for (size_t i = 0; i < m_headers.size(); ++i)
@@ -606,7 +606,7 @@ namespace Riemann
 		}
 
 	private:
-		int AllocateBlock(Block *prev_block)
+		int allocate(Block *prev_block)
 		{
 			int free_block;
 			if (m_freelist.size() > 0)
@@ -633,7 +633,7 @@ namespace Riemann
 			return free_block;
 		}
 
-		void ReleaseBlock(int block)
+		void release(int block)
 		{
 			if (block >= 0)
 			{
@@ -642,17 +642,17 @@ namespace Riemann
 			}
 		}
 
-		inline Header* GetHeader(int idx)
+		inline Header* get_header(int idx)
 		{
 			return idx < (int)m_headers.size() ? &m_headers[idx] : nullptr;
 		}
 
-		inline const Header* GetHeader(int idx) const
+		inline const Header* get_header(int idx) const
 		{
 			return idx < (int)m_headers.size() ? &m_headers[idx] : nullptr;
 		}
 
-		inline Block* GetBlock(int idx)
+		inline Block* get_block(int idx)
 		{
 			if (idx < 0)
 			{
@@ -661,7 +661,7 @@ namespace Riemann
 			return &m_blocks[idx];
 		}
 
-		inline const Block* GetBlock(int idx) const
+		inline const Block* get_block(int idx) const
 		{
 			if (idx < 0)
 			{

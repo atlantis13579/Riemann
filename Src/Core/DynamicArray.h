@@ -28,43 +28,7 @@ namespace Riemann
 		{
 		}
 
-		inline T* GetData()
-		{
-			return this->data();
-		}
-
-		inline const T* GetData() const
-		{
-			return  this->data();
-		}
-
-		inline T& GetAt(int i)
-		{
-			return this->at(i);
-		}
-
-		inline const T& GetAt(int i) const
-		{
-			return this->at(i);
-		}
-
-		inline void SetAt(int i, const T& v)
-		{
-			this->at(i) = v;
-		}
-
-		inline void Add(const T& v)
-		{
-			this->push_back(v);
-		}
-
-		template<typename ... Ts>
-		inline void Emplace(const Ts &... args)
-		{
-			this->emplace_back(args...);
-		}
-
-		inline void InsertAt(int idx, const T& v, bool preserve_order = true)
+		inline void insert_at(int idx, const T& v, bool preserve_order = true)
 		{
 			if (preserve_order)
 			{
@@ -79,7 +43,7 @@ namespace Riemann
 			}
 		}
 
-		inline void RemoveAt(int idx, bool preserve_order = true)
+		inline void remove_at(int idx, bool preserve_order = true)
 		{
 			if (preserve_order)
 			{
@@ -93,27 +57,7 @@ namespace Riemann
 			}
 		}
 
-		inline void Clear()
-		{
-			this->clear();
-		}
-
-		inline void Reserve(int s)
-		{
-			this->reserve(s);
-		}
-
-		inline void SetSize(int s)
-		{
-			this->resize(s);
-		}
-
-		inline int GetSize() const
-		{
-			return (int)this->size();
-		}
-
-		inline void Append(const DynamicArray<T> &rhs)
+		inline void append(const DynamicArray<T> &rhs)
 		{
 			this->insert(this->begin(), rhs.begin(), rhs.end());
 		}

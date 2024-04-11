@@ -21,7 +21,7 @@ namespace Riemann
 		RayCastCache()
 		{
 			prevhitGeom = nullptr;
-			prevStack.Clear();
+			prevStack.clear();
 		}
 
 		GeometryBase* prevhitGeom;

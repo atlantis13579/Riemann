@@ -41,7 +41,7 @@ namespace Riemann
 		memset(&m_Fields[0], 0, sizeof(m_Fields[0]) * m_SizeX * m_SizeZ);
 
 		int kVoxelBatchSize = vx_clamp(m_SizeX * m_SizeZ / 2, 1024, 1024 * 1024);
-		m_VoxelBatchs.Init(1, kVoxelBatchSize);
+		m_VoxelBatchs.init(1, kVoxelBatchSize);
 	}
 
 	bool VoxelField::IntersectYPlane(float y_value, std::vector<int>& output, float Thr)
@@ -238,12 +238,12 @@ namespace Riemann
 
 	Voxel*	VoxelField::AllocVoxel()
 	{
-		return m_VoxelBatchs.Alloc();
+		return m_VoxelBatchs.allocate();
 	}
 
 	void VoxelField::FreeVoxel(Voxel* p)
 	{
-		m_VoxelBatchs.Free(p);
+		m_VoxelBatchs.free(p);
 	}
 
 	static bool VoxelIntersects(const Voxel* v1, const Voxel* v2, uint16_t Thr)
@@ -677,12 +677,12 @@ namespace Riemann
 
 	uint64_t VoxelField::EstimateMemoryUseage() const
 	{
-		return m_VoxelBatchs.GetCount() * sizeof(Voxel) + m_SizeX * m_SizeZ * sizeof(Voxel*);
+		return m_VoxelBatchs.size() * sizeof(Voxel) + m_SizeX * m_SizeZ * sizeof(Voxel*);
 	}
 
 	uint64_t VoxelField::EstimateMemoryUseageEx() const
 	{
-		return  m_VoxelBatchs.GetCount() * sizeof(VoxelFast) + m_SizeX * m_SizeZ * sizeof(uint32_t);
+		return  m_VoxelBatchs.size() * sizeof(VoxelFast) + m_SizeX * m_SizeZ * sizeof(uint32_t);
 	}
 
 	void	VoxelField::GenerateHeightMap(std::vector<float>& heightmap) const
@@ -754,7 +754,7 @@ namespace Riemann
 	{
 		VoxelFileHeader	header;
 		header.nFields = CalculateNumFields();
-		header.nVoxels = m_VoxelBatchs.GetCount();
+		header.nVoxels = m_VoxelBatchs.size();
 		header.SizeX = m_SizeX;
 		header.SizeY = m_SizeY;
 		header.SizeZ = m_SizeZ;
@@ -790,7 +790,7 @@ namespace Riemann
 			pf->idx = i;
 			while (v)
 			{
-				if (nVoxels == m_VoxelBatchs.GetCount())
+				if (nVoxels == m_VoxelBatchs.size())
 				{
 					assert(false);
 					return false;
@@ -875,8 +875,8 @@ namespace Riemann
 	
 		uint32_t NumVoxels = header.nVoxels;
 
-		m_VoxelBatchs.Init(0, NumVoxels);
-		Voxel* Voxels = m_VoxelBatchs.AllocOneBatch();
+		m_VoxelBatchs.init(0, NumVoxels);
+		Voxel* Voxels = m_VoxelBatchs.allocate_batch();
 
 		{
 			std::vector<VoxelFast> buffer_vx;

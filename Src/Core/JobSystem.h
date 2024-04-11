@@ -205,7 +205,7 @@ namespace Riemann
 			{
 				mSemaphore.Wait(1);
 
-				Job* job = mActiveQueue.Pop();
+				Job* job = mActiveQueue.pop();
 				if (job)
 				{
 					job->Execute();
@@ -220,7 +220,7 @@ namespace Riemann
 		bool Execute(const JobGraph& g)
 		{
 			mJobsReminding += (int)g.nodes.size();
-			mActiveQueue.Clear();
+			mActiveQueue.clear();
 			int count = 0;
 			for (size_t i = 0; i < g.nodes.size(); ++i)
 			{
@@ -228,7 +228,7 @@ namespace Riemann
 				if (job->GetDependencies() == 0)
 				{
 					job->mStatus = Job::Job_status::Queueing;
-					mActiveQueue.Push(job);
+					mActiveQueue.push(job);
 					count++;
 				}
 				else
@@ -250,7 +250,7 @@ namespace Riemann
 				if (job->RemoveDependency())
 				{
 					job->mStatus = Job::Job_status::Queueing;
-					mActiveQueue.Push(job);
+					mActiveQueue.push(job);
 					count++;
 				}
 			}

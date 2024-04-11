@@ -126,11 +126,11 @@ void TestBitSet()
 	BitSet affected(2614);
 	for (int i = 0; i <= 2614; ++i)
 	{
-		affected.Set(i, true);
+		affected.set(i, true);
 	}
-	affected.Clear();
+	affected.clear();
 
-	affected.Resize(100);
+	affected.resize(100);
 	affected[0] = true;
 	affected[10] = true;
 	affected[20] = true;
@@ -139,7 +139,7 @@ void TestBitSet()
 	affected[70] = true;
 	affected[99] = true;
 
-	std::string str = affected.ToString();
+	std::string str = affected.to_string();
 
 	std::vector<uint32_t> v;
 	for (uint32_t i : affected)
@@ -152,35 +152,20 @@ void TestBitSet()
 	return;
 }
 
-void TestDynamicArray()
-{
-	DynamicArray<int> arr1(100);
-	DynamicArray<int> arr2(100, 2);
-	DynamicArray<int> arr3 = {1, 2, 3};
-	EXPECT(arr1.GetSize() == 100);
-	EXPECT(arr2[3] == 2);
-	EXPECT(arr3[2] == 3);
-
-	DynamicArray<Vector3> arr4;
-	arr4.Emplace(1.0f, 2.0f, 3.0f);
-
-	return;
-}
-
 void TestListSet()
 {
 	ListSet<int> s;
-	s.SetSize(5);
-	EXPECT(s.GetSize() == 5);
-	EXPECT(s[0].GetSize() == 0);
+	s.resize(5);
+	EXPECT(s.size() == 5);
+	EXPECT(s[0].size() == 0);
 	const int set_size = 100;
 	for (int i = 0; i < set_size; ++i)
 	{
-		s[0].Add(i);
-		s[1].Add(i);
+		s[0].push_back(i);
+		s[1].push_back(i);
 	}
-	EXPECT(s[0].GetSize() == set_size);
-	EXPECT(s[1].GetSize() == set_size);
+	EXPECT(s[0].size() == set_size);
+	EXPECT(s[1].size() == set_size);
 	for (int i = 0; i < set_size; ++i)
 	{
 		EXPECT(s[0][i] == i);
@@ -191,55 +176,55 @@ void TestListSet()
 
 	for (int i = 0; i < s.GetBlockSize() * 2; ++i)
 	{
-		s[4].Add(i);
+		s[4].push_back(i);
 	}
-	s[4].RemoveAt(s[4].GetSize() - 1);
-	s[4].Clear();
-	EXPECT(s[4].GetSize() == 0);
+	s[4].remove_at(s[4].size() - 1);
+	s[4].clear();
+	EXPECT(s[4].size() == 0);
 
 	for (int i = 0; i < 20; ++i)
 	{
-		EXPECT(s[1].RemoveAt(3));
-		EXPECT(s[1].RemoveAt(30));
-		EXPECT(s[1].RemoveAt(20, false));
+		EXPECT(s[1].remove_at(3));
+		EXPECT(s[1].remove_at(30));
+		EXPECT(s[1].remove_at(20, false));
 	}
-	EXPECT(s[1].GetSize() == set_size - 20 * 3);
+	EXPECT(s[1].size() == set_size - 20 * 3);
 
 
 	for (int i = 0; i < set_size; ++i)
 	{
-		s[2].Add(i);
+		s[2].push_back(i);
 	}
-	EXPECT(s[2].GetSize() == set_size);
+	EXPECT(s[2].size() == set_size);
 
 	for (int i = 0; i < 7; ++i)
 	{
-		s[4].Add(i);
-		s[4].RemoveAt(0);
+		s[4].push_back(i);
+		s[4].remove_at(0);
 	}
-	EXPECT(s[4].GetSize() == 0);
+	EXPECT(s[4].size() == 0);
 
 	std::vector<int> v;
 	for (auto list : s)
 	{
-		v.push_back(list.GetSize());
+		v.push_back(list.size());
 	}
 	EXPECT(v[0] == 100);
 
-	s[0].Clear();
-	s[1].Clear();
-	s[2].Clear();
-	s[3].Clear();
-	s[4].Clear();
+	s[0].clear();
+	s[1].clear();
+	s[2].clear();
+	s[3].clear();
+	s[4].clear();
 
 	auto s0 = s[0];
 	for (int i = 0; i < 10; ++i)
-		s0.Add(i);
-	s0.RemoveAt(0, false);
-	s0.RemoveAt(1, true);
-	s0.RemoveAt(1, true);
+		s0.push_back(i);
+	s0.remove_at(0, false);
+	s0.remove_at(1, true);
+	s0.remove_at(1, true);
 
-	v = s0.ToVector();
+	v = s0.to_vector();
 	s0 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
 	int sum = 0;
@@ -263,6 +248,5 @@ void TestCores()
 	// TestThreadPool();
 	// TestJob();
 	// TestGraph();
-	// TestDynamicArray();
 	TestListSet();
 }

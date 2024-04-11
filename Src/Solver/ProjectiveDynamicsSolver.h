@@ -46,8 +46,8 @@ namespace Riemann
 
 		void AddNode(const Node& node)
 		{
-			m_nodes.Add(node);
-			m_restpos.Add(node.position);
+			m_nodes.add(node);
+			m_restpos.add(node.position);
 		}
 
 		Matrix3 GenerateD(Vector3& v0, Vector3& v1, Vector3& v2, Vector3& v3)
@@ -66,7 +66,7 @@ namespace Riemann
 
 			float vol = 1.0f / 6.0f * fabsf(Dm.Determinant());
 
-			m_tets.Add(TetrahedralNode(t1, t2, t3, t4, weight, vol, Dm));
+			m_tets.add(TetrahedralNode(t1, t2, t3, t4, weight, vol, Dm));
 		}
 
 		void AddTetrahedral(int t[4], float weight)
@@ -77,7 +77,7 @@ namespace Riemann
 
 			float vol = 1.0f / 6.0f * fabsf(Dm.Determinant());
 
-			m_tets.Add(TetrahedralNode(t[0], t[1], t[2], t[3], weight, vol, Dm));
+			m_tets.add(TetrahedralNode(t[0], t[1], t[2], t[3], weight, vol, Dm));
 		}
 
 		const Node& GetNode(int index) const
@@ -103,7 +103,7 @@ namespace Riemann
 
 		const TetrahedralNode* GetTetrahedral(int index) const
 		{
-			if (index >= m_tets.GetSize())
+			if (index >= m_tets.size())
 				return nullptr;
 			return &m_tets[index];
 		}
@@ -115,12 +115,12 @@ namespace Riemann
 
 		int GetNumNodes() const
 		{
-			return m_nodes.GetSize();
+			return m_nodes.size();
 		}
 
 		int GetNumTetrahedrals() const
 		{
-			return m_tets.GetSize();
+			return m_tets.size();
 		}
 
 		void GetTransforms(int tetindex, Matrix3& Ds, Matrix3& F, Matrix3& R, Matrix3& S) const;

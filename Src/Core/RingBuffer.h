@@ -10,52 +10,52 @@ namespace Riemann
 	public:
 		RingBuffer()
 		{
-			Clear();
+			clear();
 		}
 
-		inline bool Full() const
+		inline bool full() const
 		{
-			int next = (write + 1) % Capacity;
-			return next == read;
+			int next = (m_write + 1) % Capacity;
+			return next == m_read;
 		}
 
-		inline bool Clear() const
+		inline bool clear() const
 		{
-			read = write = 0;
+			m_read = m_write = 0;
 		}
 
-		inline bool Empty() const
+		inline bool empty() const
 		{
-			return read == write;
+			return m_read == m_write;
 		}
 
-		inline bool Push(const T& v)
+		inline bool push(const T& v)
 		{
-			int next = (write + 1) % Capacity;
-			if (next != read)
+			int next = (m_write + 1) % Capacity;
+			if (next != m_read)
 			{
-				data[write] = v;
-				write = next;
+				m_data[m_write] = v;
+				m_write = next;
 				return true;
 			}
 			return false;
 		}
 
-		inline T Pop()
+		inline T pop()
 		{
-			if (read != write)
+			if (m_read != m_write)
 			{
-				T item = data[read];
-				read = (read + 1) % Capacity;
+				T item = m_data[m_read];
+				m_read = (m_read + 1) % Capacity;
 				return item;
 			}
 			return T();
 		}
 
 	private:
-		T			data[Capacity];
-		int			write;
-		int			read;
+		T			m_data[Capacity];
+		int			m_write;
+		int			m_read;
 	};
 
 	template <typename T, int Capacity>
@@ -64,57 +64,57 @@ namespace Riemann
 	public:
 		ThreadSafeRingBuffer()
 		{
-			Clear();
+			clear();
 		}
 
-		void	Clear()
+		void	clear()
 		{
-			lock.lock();
-			write = read = 0;
-			lock.unlock();
+			m_lock.lock();
+			m_write = m_read = 0;
+			m_lock.unlock();
 		}
 
-		int		GetSize()
+		int		size()
 		{
-			lock.lock();
-			int n = (write + Capacity - read) % Capacity;
-			lock.unlock();
+			m_lock.lock();
+			int n = (m_write + Capacity - m_read) % Capacity;
+			m_lock.unlock();
 			return n;
 		}
 
-		bool	Push(const T& v)
+		bool	push(const T& v)
 		{
 			bool succ = false;
-			lock.lock();
-			int next = (write + 1) % Capacity;
-			if (next != read)
+			m_lock.lock();
+			int next = (m_write + 1) % Capacity;
+			if (next != m_read)
 			{
-				data[write] = v;
-				write = next;
+				m_data[m_write] = v;
+				m_write = next;
 				succ = true;
 			}
-			lock.unlock();
+			m_lock.unlock();
 			return succ;
 		}
 
-		T		Pop()
+		T		pop()
 		{
 			T ret = T(0);
-			lock.lock();
-			if (read != write)
+			m_lock.lock();
+			if (m_read != m_write)
 			{
-				ret = data[read];
-				read = (read + 1) % Capacity;
+				ret = m_data[m_read];
+				m_read = (m_read + 1) % Capacity;
 			}
-			lock.unlock();
+			m_lock.unlock();
 			return ret;
 		}
 
 	private:
-		T			data[Capacity];
-		int			write;
-		int			read;
-		SpinLock	lock;
+		T			m_data[Capacity];
+		int			m_write;
+		int			m_read;
+		SpinLock	m_lock;
 	};
 
 	template <typename T, int Capacity>

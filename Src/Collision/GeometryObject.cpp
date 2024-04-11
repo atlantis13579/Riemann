@@ -43,7 +43,7 @@ namespace Riemann
 
 		virtual void			CalculateSupportFace_LocalSpace(const Vector3& Direction, SupportFace& Face) const override final
 		{
-			Face.SetSize(GEOM_TYPE::GetSupportFace(Direction, Face.GetData()));
+			Face.resize(GEOM_TYPE::GetSupportFace(Direction, Face.data()));
 		}
 
 		virtual bool			RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const override final
@@ -208,7 +208,7 @@ namespace Riemann
 	{
 		Vector3 DirLocal = m_WorldTransform.WorldToLocalDirection(Direction);
 		CalculateSupportFace_LocalSpace(DirLocal, Face);
-		for (int i = 0; i < Face.GetSize(); ++i)
+		for (int i = 0; i < Face.size(); ++i)
 		{
 			Face[i] = m_WorldTransform.LocalToWorld(Face[i]);
 		}

@@ -8,7 +8,7 @@ namespace Riemann
 	public:
 		StaticArray()
 		{
-			size = 0;
+			m_size = 0;
 		}
 
 		~StaticArray()
@@ -17,124 +17,124 @@ namespace Riemann
 
 		inline T& operator[](int i)
 		{
-			return data[i];
+			return m_data[i];
 		}
 
 		inline const T& operator[](int i) const
 		{
-			return data[i];
+			return m_data[i];
 		}
 
-		inline T* GetData()
+		inline T* data()
 		{
-			return data;
+			return m_data;
 		}
 
-		inline const T* GetData() const
+		inline const T* data() const
 		{
-			return data;
+			return m_data;
 		}
 
 		inline int* GetSizeData()
 		{
-			return &size;
+			return &m_size;
 		}
 
-		inline T* Add()
+		inline T* add()
 		{
-			if (size >= Capacity)
+			if (m_size >= Capacity)
 				return nullptr;
-			return data[size++];
+			return m_data[m_size++];
 		}
 
-		inline bool Add(const T& v)
+		inline bool add(const T& v)
 		{
-			if (size < Capacity)
+			if (m_size < Capacity)
 			{
-				data[size++] = v;
+				m_data[m_size++] = v;
 				return true;
 			}
 			return false;
 		}
 
 		template<typename ... Ts>
-		inline void Emplace(const Ts &... args)
+		inline void emplace(const Ts &... args)
 		{
-			if (size < Capacity)
+			if (m_size < Capacity)
 			{
-				data[size++] = T(args ...);
+				m_data[m_size++] = T(args ...);
 				return true;
 			}
 			return false;
 		}
 
-		inline bool InsertAt(int idx, const T& v, bool preserve_order = true)
+		inline bool insert_at(int idx, const T& v, bool preserve_order = true)
 		{
-			if (size >= Capacity)
+			if (m_size >= Capacity)
 			{
 				return false;
 			}
 
 			if (preserve_order)
 			{
-				for (int i = size; i > idx; --i)
+				for (int i = m_size; i > idx; --i)
 				{
-					data[i] = data[i - 1];
+					m_data[i] = m_data[i - 1];
 				}
-				data[idx] = v;
+				m_data[idx] = v;
 			}
 			else
 			{
-				data[size] = data[idx];
-				data[idx] = v;
+				m_data[m_size] = m_data[idx];
+				m_data[idx] = v;
 			}
 
-			size++;
+			m_size++;
 		}
 
-		inline bool RemoveAt(int idx, bool preserve_order = true)
+		inline bool remove_at(int idx, bool preserve_order = true)
 		{
-			if (idx < 0 || idx >= size)
+			if (idx < 0 || idx >= m_size)
 			{
 				return false;
 			}
 			if (preserve_order)
 			{
-				for (int i = idx; i < size - 1; ++i)
+				for (int i = idx; i < m_size - 1; ++i)
 				{
-					data[i] = data[i + 1];
+					m_data[i] = m_data[i + 1];
 				}
 			}
 			else
 			{
-				data[idx] = data[size - 1];
+				m_data[idx] = m_data[m_size - 1];
 			}
 
-			size--;
+			m_size--;
 		}
 
-		inline void Clear()
+		inline void clear()
 		{
-			size = 0;
+			m_size = 0;
 		}
 
-		inline void SetSize(int s)
+		inline void resize(int s)
 		{
-			size = s;
+			m_size = s;
 		}
 
-		inline int GetSize() const
+		inline int size() const
 		{
-			return size;
+			return m_size;
 		}
 
-		inline int GetCapacity() const
+		inline int capacity() const
 		{
 			return Capacity;
 		}
 
 	private:
-		int		size;
-		T		data[Capacity];
+		int		m_size;
+		T		m_data[Capacity];
 	};
 }

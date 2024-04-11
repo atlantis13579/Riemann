@@ -111,7 +111,7 @@ namespace Riemann
 
 		VertexPositions = new_v;
 		VertexRefCounts.resize(new_v.size(), 1);
-		VertexEdgeLists.SetSize((int)new_v.size());
+		VertexEdgeLists.resize((int)new_v.size());
 
 		for (size_t i = 0; i < new_i.size() / 3; ++i)
 		{
@@ -298,8 +298,8 @@ namespace Riemann
 			ReplaceEdgeTriangle(ebc, t0, t2);
 			int eaf = eab;
 			ReplaceEdgeVertex(eaf, b, f);
-			VertexEdgeLists[b].Remove(eab);
-			VertexEdgeLists[f].Add(eaf);
+			VertexEdgeLists[b].remove(eab);
+			VertexEdgeLists[f].push_back(eaf);
 
 			int efb = AppendEdgeEx(f, b, t2, -1);
 			int efc = AppendEdgeEx(f, c, t0, t2);
@@ -368,8 +368,8 @@ namespace Riemann
 			int eaf = eab;
 			ReplaceEdgeVertex(eaf, b, f);
 
-			VertexEdgeLists[b].Remove(eab);
-			VertexEdgeLists[f].Add(eaf);
+			VertexEdgeLists[b].remove(eab);
+			VertexEdgeLists[f].push_back(eaf);
 
 			int efb = AppendEdgeEx(f, b, t2, t3);
 			int efc = AppendEdgeEx(f, c, t0, t2);
@@ -499,7 +499,7 @@ namespace Riemann
 					VertexPositions.push_back(v);
 				}
 				VertexRefCounts.push_back(1);
-				VertexEdgeLists.Add();
+				VertexEdgeLists.add();
 			}
 			else if (row[0] == 'v' && row[1] == 'n')
 			{

@@ -71,11 +71,11 @@ bool DynamicAABBTree::RayCast(const Ray3& Ray, const RayCastOption* Option, RayC
 	}
 
 	StaticStack<int, TREE_MAX_DEPTH> stack;
-	stack.Push(m_root);
+	stack.push(m_root);
 
-	while (!stack.Empty())
+	while (!stack.empty())
 	{
-		p = &m_nodes[stack.Pop()];
+		p = &m_nodes[stack.pop()];
 		while (p)
 		{
 			if (p->IsLeaf())
@@ -106,17 +106,17 @@ bool DynamicAABBTree::RayCast(const Ray3& Ray, const RayCastOption* Option, RayC
 				hit2 = hit2 && t2 < Result->hitTimeMin && t2 < Option->MaxDist;
 			}
 			
-			assert(!stack.Full());
+			assert(!stack.full());
 			if (hit1 && hit2)
 			{
 				if (t1 < t2)
 				{
-					stack.Push(p->child2);
+					stack.push(p->child2);
 					p = child1;
 				}
 				else
 				{
-					stack.Push(p->child1);
+					stack.push(p->child1);
 					p = child2;
 				}
 				continue;
@@ -191,11 +191,11 @@ bool DynamicAABBTree::Intersect(const GeometryBase *geometry, const IntersectOpt
 	}
 
 	StaticStack<int, TREE_MAX_DEPTH> stack;
-	stack.Push(m_root);
+	stack.push(m_root);
 
-	while (!stack.Empty())
+	while (!stack.empty())
 	{
-		const Node* p = &m_nodes[stack.Pop()];
+		const Node* p = &m_nodes[stack.pop()];
 		while (p)
 		{
 			if (p->IsLeaf())
@@ -220,10 +220,10 @@ bool DynamicAABBTree::Intersect(const GeometryBase *geometry, const IntersectOpt
 
 			Result->AddTestCount(2);
 			
-			assert(!stack.Full());
+			assert(!stack.full());
 			if (intersect1 && intersect2)
 			{
-				stack.Push(p->child2);
+				stack.push(p->child2);
 				p = child1;
 				continue;
 			}
@@ -292,11 +292,11 @@ bool DynamicAABBTree::Sweep(const GeometryBase *geometry, const Vector3& Directi
 	}
 
 	StaticStack<int, TREE_MAX_DEPTH> stack;
-	stack.Push(m_root);
+	stack.push(m_root);
 
-	while (!stack.Empty())
+	while (!stack.empty())
 	{
-		p = &m_nodes[stack.Pop()];
+		p = &m_nodes[stack.pop()];
 		while (p)
 		{
 			if (p->IsLeaf())
@@ -326,17 +326,17 @@ bool DynamicAABBTree::Sweep(const GeometryBase *geometry, const Vector3& Directi
 				hit2 = hit2 && t2 < Result->hitTimeMin && t2 < Option->MaxDist;
 			}
 			
-			assert(!stack.Full());
+			assert(!stack.full());
 			if (hit1 && hit2)
 			{
 				if (t1 < t2)
 				{
-					stack.Push(p->child2);
+					stack.push(p->child2);
 					p = child1;
 				}
 				else
 				{
-					stack.Push(p->child1);
+					stack.push(p->child1);
 					p = child2;
 				}
 				continue;
@@ -380,11 +380,11 @@ bool DynamicAABBTree::Query(const Box3& aabb, std::vector<void*> *Result) const
 	}
 
 	StaticStack<int, TREE_MAX_DEPTH> stack;
-	stack.Push(m_root);
+	stack.push(m_root);
 
-	while (!stack.Empty())
+	while (!stack.empty())
 	{
-		int Id = stack.Pop();
+		int Id = stack.pop();
 		const Node* p = &m_nodes[Id];
 		while (p)
 		{
@@ -401,10 +401,10 @@ bool DynamicAABBTree::Query(const Box3& aabb, std::vector<void*> *Result) const
 			bool intersect1 = aabb.Intersect(child1->aabb.Min, child1->aabb.Max);
 			bool intersect2 = aabb.Intersect(child2->aabb.Min, child2->aabb.Max);
 
-			assert(!stack.Full());
+			assert(!stack.full());
 			if (intersect1 && intersect2)
 			{
-				stack.Push(p->child2);
+				stack.push(p->child2);
 				p = child1;
 				continue;
 			}

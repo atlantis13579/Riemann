@@ -13,7 +13,7 @@ namespace Riemann
 			std::vector<T>	stores;
 			int				current;
 
-			bool			Full() const
+			bool			full() const
 			{
 				return current >= (int)stores.size();
 			}
@@ -25,7 +25,7 @@ namespace Riemann
 			m_freeList = nullptr;
 		}
 
-		void	Init(int nBatchs, int BatchSize)
+		void	init(int nBatchs, int BatchSize)
 		{
 			m_allocCount = 0;
 			m_freeList = nullptr;
@@ -40,12 +40,12 @@ namespace Riemann
 			m_currBatch = nBatchs - 1;
 		}
 
-		int		GetCount() const
+		int		size() const
 		{
 			return m_allocCount;
 		}
 
-		T* Alloc()
+		T* allocate()
 		{
 			m_allocCount++;
 
@@ -57,7 +57,7 @@ namespace Riemann
 			}
 
 			OneBatch* Batch = m_allBatchs.empty() ? nullptr : &m_allBatchs[m_currBatch];
-			if (Batch == nullptr || (Batch->Full() && m_currBatch >= (int)m_allBatchs.size() - 1))
+			if (Batch == nullptr || (Batch->full() && m_currBatch >= (int)m_allBatchs.size() - 1))
 			{
 				m_allBatchs.resize(m_allBatchs.size() + 1);
 				m_currBatch = (int)m_allBatchs.size() - 1;
@@ -65,7 +65,7 @@ namespace Riemann
 				Batch->stores.resize(m_batchSize);
 				Batch->current = 0;
 			}
-			else if (Batch->Full() && m_currBatch < (int)m_allBatchs.size() - 1)
+			else if (Batch->full() && m_currBatch < (int)m_allBatchs.size() - 1)
 			{
 				m_currBatch++;
 				Batch = &m_allBatchs[m_currBatch];
@@ -74,12 +74,12 @@ namespace Riemann
 			return p;
 		}
 
-		T* AllocOneBatch()
+		T* allocate_batch()
 		{
 			m_allocCount += m_batchSize;
 
 			OneBatch* Batch = m_allBatchs.empty() ? nullptr : &m_allBatchs[m_currBatch];
-			if (Batch == nullptr || (Batch->Full() && m_currBatch >= (int)m_allBatchs.size() - 1))
+			if (Batch == nullptr || (Batch->full() && m_currBatch >= (int)m_allBatchs.size() - 1))
 			{
 				m_allBatchs.resize(m_allBatchs.size() + 1);
 				m_currBatch = (int)m_allBatchs.size() - 1;
@@ -87,7 +87,7 @@ namespace Riemann
 				Batch->stores.resize(m_batchSize);
 				Batch->current = 0;
 			}
-			else if (Batch->Full() && m_currBatch < (int)m_allBatchs.size() - 1)
+			else if (Batch->full() && m_currBatch < (int)m_allBatchs.size() - 1)
 			{
 				m_currBatch++;
 				Batch = &m_allBatchs[m_currBatch];
@@ -96,7 +96,7 @@ namespace Riemann
 			return &Batch->stores[0];
 		}
 
-		void	Free(T* p)
+		void	free(T* p)
 		{
 			if (p)
 			{
@@ -107,7 +107,7 @@ namespace Riemann
 			}
 		}
 
-		void	Clear()
+		void	clear()
 		{
 			for (size_t i = 0; i < m_allBatchs.size(); ++i)
 			{

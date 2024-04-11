@@ -146,7 +146,7 @@ namespace Riemann
 			VertexRefCounts.clear();
 			EdgeRefCounts.clear();
 			TriangleRefCounts.clear();
-			VertexEdgeLists.Clear();
+			VertexEdgeLists.clear();
 
 			bHasVertexColor = false;
 			bHasVertexNormals = false;
@@ -192,7 +192,7 @@ namespace Riemann
 			int index = (int)VertexPositions.size();
 			VertexPositions.push_back(v);
 			VertexRefCounts.push_back(1);
-			VertexEdgeLists.Add();
+			VertexEdgeLists.add();
 			return index;
 		}
 
@@ -202,7 +202,7 @@ namespace Riemann
 
 			VertexPositions.push_back(info.Position);
 			VertexRefCounts.push_back(1);
-			VertexEdgeLists.Add();
+			VertexEdgeLists.add();
 
 			if (info.bHasColor)
 			{
@@ -671,8 +671,8 @@ namespace Riemann
 			EdgeRefCounts.push_back(1);
 			VertexRefCounts[v0] += 1;
 			VertexRefCounts[v1] += 1;
-			VertexEdgeLists[v0].Add(eid);
-			VertexEdgeLists[v1].Add(eid);
+			VertexEdgeLists[v0].push_back(eid);
+			VertexEdgeLists[v1].push_back(eid);
 			return eid;
 		}
 

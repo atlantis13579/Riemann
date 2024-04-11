@@ -4,103 +4,103 @@
 
 namespace Riemann
 {
-	template<class TNode, int MaxDepth>
+	template<class T, int MaxDepth>
 	class StaticStack
 	{
 	public:
 		StaticStack()
 		{
-			m_Top = 0;
+			m_top = 0;
 		}
 
-		void Restore(const StaticStack& rhs)
+		void restore(const StaticStack& rhs)
 		{
-			m_Top = rhs.m_Top;
-			memcpy(m_Stack, rhs.m_Stack, sizeof(TNode) * m_Top);
+			m_top = rhs.m_top;
+			memcpy(m_stack, rhs.m_stack, sizeof(T) * m_top);
 		}
 
-		void Push(TNode p)
+		void push(T p)
 		{
-			m_Stack[m_Top++] = p;
+			m_stack[m_top++] = p;
 		}
 
-		TNode Pop()
+		T pop()
 		{
-			return m_Stack[--m_Top];
+			return m_stack[--m_top];
 		}
 
-		TNode Top()
+		T top()
 		{
-			return m_Stack[m_Top - 1];
+			return m_stack[m_top - 1];
 		}
 
-		int	Depth() const
+		int	depth() const
 		{
-			return m_Top;
+			return m_top;
 		}
 	
-		bool Full() const
+		bool full() const
 		{
-			return m_Top >= MaxDepth;
+			return m_top >= MaxDepth;
 		}
 
-		bool Empty() const
+		bool empty() const
 		{
-			return m_Top == 0;
+			return m_top == 0;
 		}
 
-		void Clear()
+		void clear()
 		{
-			m_Top = 0;
+			m_top = 0;
 		}
 
 	private:
-		int		m_Top;
-		TNode	m_Stack[MaxDepth];
+		int	m_top;
+		T	m_stack[MaxDepth];
 	};
 
 
-	template<class TNode>
+	template<class T>
 	class Stack
 	{
 	public:
 		Stack()
 		{
-			m_Top = 0;
+			m_top = 0;
 			m_Stack.resize(32);
 		}
 
-		void Push(TNode* p)
+		void push(T* p)
 		{
-			if (m_Top >= (int)m_Stack.size())
+			if (m_top >= (int)m_Stack.size())
 			{
 				m_Stack.resize(m_Stack.size() + 32);
 			}
-			m_Stack[m_Top++] = p;
+			m_Stack[m_top++] = p;
 		}
 
-		TNode* Pop()
+		T* pop()
 		{
-			return m_Stack[--m_Top];
+			return m_Stack[--m_top];
 		}
 
-		TNode* Top()
+		T* top()
 		{
-			return m_Stack[m_Top - 1];
+			return m_Stack[m_top - 1];
 		}
 
-		int	Depth() const
+		int	depth() const
 		{
-			return m_Top;
+			return m_top;
 		}
 
-		bool Empty() const
+		bool empty() const
 		{
-			return m_Top == 0;
+			return m_top == 0;
 		}
 
 	private:
-		int					m_Top;
-		std::vector<TNode*> m_Stack;
+		int				m_top;
+		std::vector<T*> m_Stack;
 	};
 }

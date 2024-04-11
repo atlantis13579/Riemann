@@ -6,26 +6,38 @@ namespace Riemann
 	class List
 	{
 	public:
-		T* root;
-		int count;
-		List() : root(nullptr), count(0) {}
+		List() : m_root(nullptr), m_count(0) {}
 
-		void Append(T* p)
+		T* back()
 		{
-			p->prev = nullptr;
-			p->next = root;
-			if (root) root->prev = p;
-			root = p;
-			++count;
+			return m_root;
 		}
 
-		void Remove(T* p)
+		int size() const
+		{
+			return m_count;
+		}
+
+		void append(T* p)
+		{
+			p->prev = nullptr;
+			p->next = m_root;
+			if (m_root) m_root->prev = p;
+			m_root = p;
+			++m_count;
+		}
+
+		void remove(T* p)
 		{
 			if (p->next) p->next->prev = p->prev;
 			if (p->prev) p->prev->next = p->next;
-			if (p == root) root = p->next;
-			--count;
+			if (p == m_root) m_root = p->next;
+			--m_count;
 		}
+
+	private:
+		T* m_root;
+		int m_count;
 	};
 
 
@@ -33,47 +45,57 @@ namespace Riemann
 	class StaticList
 	{
 	public:
-		StaticList() : root(nullptr), count(0)
+		StaticList() : m_root(nullptr), m_count(0)
 		{
 			for (int i = 0; i < Capacity; ++i)
 			{
-				Append(&m_pool[Capacity - i - 1]);
+				append(&m_pool[Capacity - i - 1]);
 			}
 		}
 
-		void Append(T* p)
+		T* back()
 		{
-			p->prev = nullptr;
-			p->next = root;
-			if (root) root->prev = p;
-			root = p;
-			++count;
+			return m_root;
 		}
 
-		void Remove(T* p)
+		int size() const
+		{
+			return m_count;
+		}
+
+		void append(T* p)
+		{
+			p->prev = nullptr;
+			p->next = m_root;
+			if (m_root) m_root->prev = p;
+			m_root = p;
+			++m_count;
+		}
+
+		void remove(T* p)
 		{
 			if (p->next) p->next->prev = p->prev;
 			if (p->prev) p->prev->next = p->next;
-			if (p == root) root = p->next;
-			--count;
+			if (p == m_root) m_root = p->next;
+			--m_count;
 		}
 
-		inline bool Empty() const
+		inline bool empty() const
 		{
-			return root == nullptr;
+			return m_root == nullptr;
 		}
 
-		T* Pop()
+		T* pop()
 		{
-			if (root == nullptr) return nullptr;
-			T* p = root;
-			Remove(root);
+			if (m_root == nullptr) return nullptr;
+			T* p = m_root;
+			remove(m_root);
 			return p;
 		}
 
 	private:
-		T*	root;
-		int count;
+		T*	m_root;
+		int m_count;
 		T	m_pool[Capacity];
 	};
 }

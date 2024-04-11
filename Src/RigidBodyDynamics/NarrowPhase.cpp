@@ -17,7 +17,7 @@ namespace Riemann
 		GeomB->GetSupportFace_WorldSpace(penetration_normal, FaceB);
 
 		const float mSpeculativeContactDistance = 0.02f;
-		bool succ = ClipPolygonAgainPolygon3D(FaceA.GetData(), FaceA.GetSize(), FaceB.GetData(), FaceB.GetSize(), penetration_normal, mSpeculativeContactDistance, Face.GetData(), Face.GetSizeData(), nullptr, nullptr);
+		bool succ = ClipPolygonAgainPolygon3D(FaceA.data(), FaceA.size(), FaceB.data(), FaceB.size(), penetration_normal, mSpeculativeContactDistance, Face.data(), Face.GetSizeData(), nullptr, nullptr);
 		return succ;
 	}
 
@@ -65,7 +65,7 @@ namespace Riemann
 		}
 
 		// const Matrix4& invWorldA = GeomA->GetInverseWorldMatrix();
-		for (int i = -1; i < ContactFace.GetSize(); ++i)
+		for (int i = -1; i < ContactFace.size(); ++i)
 		{
 			Vector3 pa = i == -1 ? w0 : ContactFace[i];
 			Contact contact;
@@ -100,7 +100,7 @@ namespace Riemann
 	public:
 		NarrowPhase_GJKEPA()
 		{
-			m_ManifoldPool.Init(1, 256);
+			m_ManifoldPool.init(1, 256);
 		}
 		virtual ~NarrowPhase_GJKEPA()
 		{
@@ -111,7 +111,7 @@ namespace Riemann
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{
-			m_ManifoldPool.Clear();
+			m_ManifoldPool.clear();
 
 			manifolds->clear();
 			for (size_t i = 0; i < overlaps.size(); ++i)
@@ -122,7 +122,7 @@ namespace Riemann
 				EPAPenetration epa;
 				if (PenetrationTest(geom1, geom2, epa))
 				{
-					ContactManifold* manifold = m_ManifoldPool.Alloc();
+					ContactManifold* manifold = m_ManifoldPool.allocate();
 					ConstructManifols(overlaps[i].index1, overlaps[i].index2, geom1, geom2, epa, manifold);
 					manifolds->push_back(manifold);
 				}
@@ -140,7 +140,7 @@ namespace Riemann
 	public:
 		NarrowPhase_PenetrateTable()
 		{
-			m_ManifoldPool.Init(1, 256);
+			m_ManifoldPool.init(1, 256);
 		}
 		virtual ~NarrowPhase_PenetrateTable()
 		{

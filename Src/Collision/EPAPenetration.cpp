@@ -50,14 +50,14 @@ namespace Riemann
 
 		EpaFace* NewFace(Simplex::Vertex* a, Simplex::Vertex* b, Simplex::Vertex* c, EPA_status& result, bool forced)
 		{
-			if (m_face_pool.Empty())
+			if (m_face_pool.empty())
 			{
 				result = EPA_status::OutOfFaces;
 				return nullptr;
 			}
 
-			EpaFace* face = m_face_pool.Pop();
-			m_poly.Append(face);
+			EpaFace* face = m_face_pool.pop();
+			m_poly.append(face);
 			face->pass = 0;
 			face->v[0] = a;
 			face->v[1] = b;
@@ -91,8 +91,8 @@ namespace Riemann
 				result = EPA_status::Degenerated;
 			}
 
-			m_poly.Remove(face);
-			m_face_pool.Append(face);
+			m_poly.remove(face);
+			m_face_pool.append(face);
 			return nullptr;
 		}
 
@@ -125,8 +125,8 @@ namespace Riemann
 				f->pass = pass;
 				if (Expand(pass, w, f->adjacent[e1], f->edge[e1], result, horizon) && Expand(pass, w, f->adjacent[e2], f->edge[e2], result, horizon))
 				{
-					m_poly.Remove(f);
-					m_face_pool.Append(f);
+					m_poly.remove(f);
+					m_face_pool.append(f);
 					return (true);
 				}
 			}
@@ -135,7 +135,7 @@ namespace Riemann
 
 		EpaFace* FindClosestToOrigin()
 		{
-			EpaFace* closest = m_poly.root;
+			EpaFace* closest = m_poly.back();
 			float min_sqrdist = closest->dist * closest->dist;
 			for (EpaFace* f = closest->next; f; f = f->next)
 			{
@@ -151,18 +151,18 @@ namespace Riemann
 
 		int NumFaces() const
 		{
-			return m_poly.count;
+			return m_poly.size();
 		}
 
 		Simplex::Vertex* AddVertex()
 		{
-			return m_vertex_pool.Get();
+			return m_vertex_pool.get();
 		}
 
 		void Remove(EpaFace* f)
 		{
-			m_poly.Remove(f);
-			m_face_pool.Append(f);
+			m_poly.remove(f);
+			m_face_pool.append(f);
 		}
 
 	private:

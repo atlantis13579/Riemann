@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mutex>
+#include "Lock.h"
 
 namespace Riemann
 {
@@ -8,43 +8,43 @@ namespace Riemann
 	class StaticPool
 	{
 	public:
-		StaticPool() : size(0) {}
+		StaticPool() : m_size(0) {}
 
-		T* Get()
+		T* get()
 		{
-			if (size >= Capacity)
+			if (m_size >= Capacity)
 			{
 				return nullptr;
 			}
-			return &data[size++];
+			return &m_data[m_size++];
 		}
 
 	private:
-		T	data[Capacity];
-		int	size;
+		T	m_data[Capacity];
+		int	m_size;
 	};
 
 	template<typename T, int Capacity>
 	class ThreadSafeStaticPool
 	{
 	public:
-		ThreadSafeStaticPool() : size(0) {}
+		ThreadSafeStaticPool() : m_size(0) {}
 
-		T* Get()
+		T* get()
 		{
 			T* p = nullptr;
-			lock.lock();
-			if (size < Capacity)
+			m_lock.lock();
+			if (m_size < Capacity)
 			{
-				p = &data[size++];
+				p = &m_data[m_size++];
 			}
-			lock.unlock();
+			m_lock.unlock();
 			return p;
 		}
 
 	private:
-		T	data[Capacity];
-		int	size;
-		std::mutex	lock;
+		T			m_data[Capacity];
+		int			m_size;
+		SpinLock	m_lock;
 	};
 }

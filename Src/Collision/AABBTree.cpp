@@ -61,16 +61,16 @@ namespace Riemann
 		memset(&stat, 0, sizeof(stat));
 
 		StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
-		stack.Push(0);
+		stack.push(0);
 
 		int curr_depth = 1;
 		StaticStack<uint32_t, TREE_MAX_DEPTH> depth;
-		depth.Push(curr_depth);
+		depth.push(curr_depth);
 
-		while (!stack.Empty())
+		while (!stack.empty())
 		{
-			CacheFriendlyAABBTree* p = m_AABBTreeInference + stack.Pop();
-			curr_depth = depth.Pop();
+			CacheFriendlyAABBTree* p = m_AABBTreeInference + stack.pop();
+			curr_depth = depth.pop();
 			while (p)
 			{
 				stat.NumNodes += 1;
@@ -79,7 +79,7 @@ namespace Riemann
 				{
 					stat.NumLeafs += 1;
 					stat.MaxGeometriesAtLeaf = std::max(stat.MaxGeometriesAtLeaf, p->GetNumGeometries());
-					stat.MaxStack = std::max(stat.MaxStack, stack.Depth());
+					stat.MaxStack = std::max(stat.MaxStack, stack.depth());
 					stat.MaxDepth = std::max(stat.MaxDepth, curr_depth);
 					break;
 				}
@@ -89,11 +89,11 @@ namespace Riemann
 				if (Left && Right)
 				{
 					p = Left;
-					stack.Push((uint32_t)(Right - m_AABBTreeInference));
-					assert(!stack.Full());
+					stack.push((uint32_t)(Right - m_AABBTreeInference));
+					assert(!stack.full());
 
 					curr_depth += 1;
-					depth.Push(curr_depth);
+					depth.push(curr_depth);
 					continue;
 				}
 
@@ -223,9 +223,9 @@ namespace Riemann
 	bool RestoreCacheStack(const RayCastOption* Option, StaticStack<uint32_t, TREE_MAX_DEPTH>* Stack)
 	{
 		const RayCastCache& Cache = Option->Cache;
-		if (!Cache.prevStack.Empty())
+		if (!Cache.prevStack.empty())
 		{
-			Stack->Restore(Option->Cache.prevStack);
+			Stack->restore(Option->Cache.prevStack);
 			return true;
 		}
 		return false;
@@ -261,12 +261,12 @@ namespace Riemann
 		StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
 		if (!RestoreCacheStack(Option, &stack))
 		{
-			stack.Push(0);
+			stack.push(0);
 		}
 
-		while (!stack.Empty())
+		while (!stack.empty())
 		{
-			p = m_AABBTreeInference + stack.Pop();
+			p = m_AABBTreeInference + stack.pop();
 			while (p)
 			{
 				if (p->IsLeaf())
@@ -300,18 +300,18 @@ namespace Riemann
 					hit2 = hit2 && t2 < Result->hitTimeMin&& t2 < Option->MaxDist;
 				}
 
-				assert(!stack.Full());
+				assert(!stack.full());
 				if (hit1 && hit2)
 				{
 					if (t1 < t2)
 					{
 						p = Left;
-						stack.Push((uint32_t)(Right - m_AABBTreeInference));
+						stack.push((uint32_t)(Right - m_AABBTreeInference));
 					}
 					else
 					{
 						p = Right;
-						stack.Push((uint32_t)(Left - m_AABBTreeInference));
+						stack.push((uint32_t)(Left - m_AABBTreeInference));
 					}
 					continue;
 				}
@@ -396,11 +396,11 @@ namespace Riemann
 		}
 
 		StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
-		stack.Push(0);
+		stack.push(0);
 
-		while (!stack.Empty())
+		while (!stack.empty())
 		{
-			p = m_AABBTreeInference + stack.Pop();
+			p = m_AABBTreeInference + stack.pop();
 			while (p)
 			{
 				if (p->IsLeaf())
@@ -426,11 +426,11 @@ namespace Riemann
 				bool intersect1 = aabb.Intersect(Left->aabb.Min, Left->aabb.Max);
 				bool intersect2 = aabb.Intersect(Right->aabb.Min, Right->aabb.Max);
 
-				assert(!stack.Full());
+				assert(!stack.full());
 				if (intersect1 && intersect2)
 				{
 					p = Left;
-					stack.Push((uint32_t)(Right - m_AABBTreeInference));
+					stack.push((uint32_t)(Right - m_AABBTreeInference));
 					continue;
 				}
 				else if (intersect1)
@@ -536,11 +536,11 @@ namespace Riemann
 		}
 
 		StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
-		stack.Push(0);
+		stack.push(0);
 
-		while (!stack.Empty())
+		while (!stack.empty())
 		{
-			p = m_AABBTreeInference + stack.Pop();
+			p = m_AABBTreeInference + stack.pop();
 			while (p)
 			{
 				if (p->IsLeaf())
@@ -573,18 +573,18 @@ namespace Riemann
 					hit2 = hit2 && t2 < Result->hitTimeMin&& t2 < Option->MaxDist;
 				}
 
-				assert(!stack.Full());
+				assert(!stack.full());
 				if (hit1 && hit2)
 				{
 					if (t1 < t2)
 					{
 						p = Left;
-						stack.Push((uint32_t)(Right - m_AABBTreeInference));
+						stack.push((uint32_t)(Right - m_AABBTreeInference));
 					}
 					else
 					{
 						p = Right;
-						stack.Push((uint32_t)(Left - m_AABBTreeInference));
+						stack.push((uint32_t)(Left - m_AABBTreeInference));
 					}
 					continue;
 				}
