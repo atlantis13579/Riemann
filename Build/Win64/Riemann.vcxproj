@@ -94,6 +94,10 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\StaticMesh.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle2.h" />
     <ClInclude Include="..\..\Src\Core\BitSet.h" />
+    <ClInclude Include="..\..\Src\Core\DynamicArray.h" />
+    <ClInclude Include="..\..\Src\Core\ListSet.h" />
+    <ClInclude Include="..\..\Src\Core\Lock.h" />
+    <ClInclude Include="..\..\Src\Core\LogSystem.h" />
     <ClInclude Include="..\..\Src\Core\Profiler.h" />
     <ClInclude Include="..\..\Src\Destruction\ConnectionGraph.h" />
     <ClInclude Include="..\..\Src\Destruction\Fracture.h" />

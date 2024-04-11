@@ -222,7 +222,7 @@ namespace Maths
 			return &x;
 		}
 
-		inline T operator[](int i) const
+		inline const T& operator[](int i) const
 		{
 			const T* p = (const T*)this;
 			return p[i];

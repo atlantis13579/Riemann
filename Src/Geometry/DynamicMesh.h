@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include "../Core/ListSet.h"
 #include "../Maths/Box3.h"
 #include "../Maths/Vector2.h"
 #include "../Maths/Vector3.h"
@@ -145,7 +146,7 @@ namespace Riemann
 			VertexRefCounts.clear();
 			EdgeRefCounts.clear();
 			TriangleRefCounts.clear();
-			VertexToEdge.clear();
+			VertexEdgeLists.Clear();
 
 			bHasVertexColor = false;
 			bHasVertexNormals = false;
@@ -164,31 +165,14 @@ namespace Riemann
 			int v1;
 			int t0;
 			int t1;
-
-			static uint64_t Pack(int id1, int id2)
-			{
-				if (id1 > id2)
-				{
-					int t = id1;
-					id1 = id2;
-					id2 = t;
-				}
-				return ((uint64_t)id1 << 32) | id2;
-			}
-
-			static void Unpack(uint64_t key, int* id1, int* id2)
-			{
-				*id1 = key >> 32;
-				*id2 = key & 0xFFFFFFFF;
-			}
 		};
 
-		int GetNumVertices() const
+		int GetVertexCount() const
 		{
 			return (int)VertexPositions.size();
 		}
 
-		int GetNumTriangles() const
+		int GetTriangleCount() const
 		{
 			return (int)Triangles.size();
 		}
@@ -208,6 +192,7 @@ namespace Riemann
 			int index = (int)VertexPositions.size();
 			VertexPositions.push_back(v);
 			VertexRefCounts.push_back(1);
+			VertexEdgeLists.Add();
 			return index;
 		}
 
@@ -217,6 +202,7 @@ namespace Riemann
 
 			VertexPositions.push_back(info.Position);
 			VertexRefCounts.push_back(1);
+			VertexEdgeLists.Add();
 
 			if (info.bHasColor)
 			{
@@ -270,23 +256,17 @@ namespace Riemann
 					std::swap(v0, v1);
 				}
 
-				uint64_t e = Edge::Pack(v0, v1);
-
-				int edge_idx;
-				if (VertexToEdge.find(e) == VertexToEdge.end())
+				int edge_idx = FindEdge(v0, v1);
+				if (edge_idx == -1)
 				{
-					// new edge
 					edge_idx = AppendEdgeEx(v0, v1, (int)index, -1);
-					VertexToEdge[e] = edge_idx;
 				}
 				else
 				{
-					edge_idx = VertexToEdge[e];
 					assert(Edges[edge_idx].t1 == -1);
 					if (Edges[edge_idx].t1 == -1)
 					{
 						Edges[edge_idx].t1 = (int)index;
-						TriangleRefCounts[index] += 1;
 					}
 				}
 
@@ -295,6 +275,19 @@ namespace Riemann
 
 			AppendTriangleEx(tri.x, tri.y, tri.z, tri_edge.x, tri_edge.y, tri_edge.z);
 			return index;
+		}
+
+		int FindEdge(int v0, int v1)
+		{
+			for (auto it = VertexEdgeLists[v0].begin(); it != VertexEdgeLists[v0].end(); ++it)
+			{
+				int eid = *it;
+				if (Edges[eid].v0 == v1 || Edges[eid].v1 == v1)
+				{
+					return eid;
+				}
+			}
+			return -1;
 		}
 
 		void SetVertex(int idx, const Vector3& val)
@@ -446,6 +439,11 @@ namespace Riemann
 		{
 			return Edges[idx].t1 == -1;
 		}
+
+		inline bool IsVertex(int idx) const
+		{
+			return 0 <= idx && idx < (int)VertexPositions.size() && VertexRefCounts[idx] > 0;
+		}
 				
 		inline bool IsTriangle(int idx) const
 		{
@@ -517,17 +515,6 @@ namespace Riemann
 			return info;
 		}
 
-		int FindEdge(int v0, int v1) const
-		{
-			uint64_t key = Edge::Pack(v0, v1);
-			auto it = VertexToEdge.find(key);
-			if (it != VertexToEdge.end())
-			{
-				return it->second;
-			}
-			return -1;
- 		}
-
 		Vector2i GetEdgeV(int idx) const
 		{
 			return Vector2i(Edges[idx].v0, Edges[idx].v1);
@@ -542,6 +529,11 @@ namespace Riemann
 		Vector2i GetEdgeT(int idx) const
 		{
 			return Vector2i(Edges[idx].t0, Edges[idx].t1);
+		}
+
+		const Edge& GetEdge(int idx) const
+		{
+			return Edges[idx];
 		}
 
 		int GetTriangleEdge(int idx, int j) const
@@ -571,6 +563,8 @@ namespace Riemann
 
 		bool PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, PokeTriangleInfo& PokeResult);
 		bool SplitEdge(int eab, EdgeSplitInfo& SplitInfo, float split_t);
+		int GetVtxTriangleCount(int vID) const;
+		int GetVtxSingleTriangle(int VertexID) const;
 
 		void BuildBounds()
 		{
@@ -578,6 +572,12 @@ namespace Riemann
 		}
 
 	private:
+
+		bool TriHasSequentialVertices(int TriangleID, int vA, int vB) const
+		{
+			const Vector3i& Tri = Triangles[TriangleID];
+			return ((Tri.x == vA && Tri.y == vB) || (Tri.y == vA && Tri.z == vB) || (Tri.z == vA && Tri.x == vB));
+		}
 
 		int ReplaceEdgeTriangle(int idx, int t_old, int t_new)
 		{
@@ -666,20 +666,14 @@ namespace Riemann
 
 		int AppendEdgeEx(int v0, int v1, int t0, int t1)
 		{
-			int index = (int)Edges.size();
+			int eid = (int)Edges.size();
 			Edges.push_back({ v0, v1, t0, t1 });
 			EdgeRefCounts.push_back(1);
 			VertexRefCounts[v0] += 1;
 			VertexRefCounts[v1] += 1;
-			if (t0 >= 0)
-			{
-				TriangleRefCounts[t0] += 1;
-			}
-			if (t1 >= 0)
-			{
-				TriangleRefCounts[t1] += 1;
-			}
-			return index;
+			VertexEdgeLists[v0].Add(eid);
+			VertexEdgeLists[v1].Add(eid);
+			return eid;
 		}
 
 		int AppendTriangleEx(int v0, int v1, int v2, int e0, int e1, int e2)
@@ -711,7 +705,7 @@ namespace Riemann
 		std::vector<uint8_t>				VertexRefCounts;
 		std::vector<uint8_t>				EdgeRefCounts;
 		std::vector<uint8_t>				TriangleRefCounts;
-		std::map<uint64_t, int>				VertexToEdge;
+		ListSet<int>						VertexEdgeLists;
 
 		GeometryAttributeSet	Attributes;
 		Box3					Bounds;

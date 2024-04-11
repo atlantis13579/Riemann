@@ -322,7 +322,7 @@ namespace Maths
 	}
 
 	template<typename T, typename ... Ts>
-	T Min(const T& p0, Ts... args)
+	T Min(const T& p0, const Ts & ... args)
 	{
 		T p1 = Min(args...);
 		return p0 < p1 ? p0 : p1;

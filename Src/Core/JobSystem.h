@@ -13,7 +13,7 @@ namespace Riemann
 	class JobSystem;
 	using JobFunction = std::function<void()>;
 
-#define MAX_JOB_QUEUE_SIZE	(1024)
+	#define MAX_JOB_QUEUE_SIZE	(1024)
 
 	class Job
 	{
@@ -90,6 +90,11 @@ namespace Riemann
 			mStatus = Job_status::Finished;
 		}
 
+		const std::string& GetName() const
+		{
+			return mJobName;
+		}
+
 	private:
 		std::string			mJobName;
 		JobFunction 		mJobFunction;
@@ -138,41 +143,6 @@ namespace Riemann
 				edges.emplace_back(i - 1, i);
 			}
 		}
-	};
-
-	class Semaphore
-	{
-	public:
-		inline			Semaphore()
-		{
-			value = 0;
-		}
-		inline void		Signal(int v)
-		{
-			if (v <= 0)
-				return;
-			std::unique_lock<std::mutex> ulock(lock);
-			value += v;
-			if (v > 1)
-				cv.notify_all();
-			else
-				cv.notify_one();
-		}
-		inline void		Wait(int v)
-		{
-			if (v <= 0)
-				return;
-			std::unique_lock<std::mutex> ulock(lock);
-			while (value < v)
-			{
-				cv.wait(ulock);
-			}
-			value -= v;
-		}
-
-		std::mutex				lock;
-		std::condition_variable	cv;
-		int						value;
 	};
 
 	class JobSystem

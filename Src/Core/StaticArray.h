@@ -47,7 +47,7 @@ namespace Riemann
 			return data[size++];
 		}
 
-		inline bool Push(const T& v)
+		inline bool Add(const T& v)
 		{
 			if (size < Capacity)
 			{
@@ -57,9 +57,60 @@ namespace Riemann
 			return false;
 		}
 
-		inline T Pop()
+		template<typename ... Ts>
+		inline void Emplace(const Ts &... args)
 		{
-			return size > 0 ? data[--size] : T();
+			if (size < Capacity)
+			{
+				data[size++] = T(args ...);
+				return true;
+			}
+			return false;
+		}
+
+		inline bool InsertAt(int idx, const T& v, bool preserve_order = true)
+		{
+			if (size >= Capacity)
+			{
+				return false;
+			}
+
+			if (preserve_order)
+			{
+				for (int i = size; i > idx; --i)
+				{
+					data[i] = data[i - 1];
+				}
+				data[idx] = v;
+			}
+			else
+			{
+				data[size] = data[idx];
+				data[idx] = v;
+			}
+
+			size++;
+		}
+
+		inline bool RemoveAt(int idx, bool preserve_order = true)
+		{
+			if (idx < 0 || idx >= size)
+			{
+				return false;
+			}
+			if (preserve_order)
+			{
+				for (int i = idx; i < size - 1; ++i)
+				{
+					data[i] = data[i + 1];
+				}
+			}
+			else
+			{
+				data[idx] = data[size - 1];
+			}
+
+			size--;
 		}
 
 		inline void Clear()

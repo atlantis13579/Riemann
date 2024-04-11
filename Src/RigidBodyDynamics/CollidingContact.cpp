@@ -37,11 +37,11 @@ namespace Riemann
 			Contact* contact = &ContactPoints[i];
 
 			const Vector3& local1 = contact->PositionLocalA;
-			projected.Push(local1 - local1.Dot(contact->Normal) * contact->Normal);
+			projected.Add(local1 - local1.Dot(contact->Normal) * contact->Normal);
 
 			const Vector3& w1 = contact->PositionWorldA;
 			const Vector3& w2 = contact->PositionWorldB;
-			penetration_depth_sq.Push(std::max(kMinSqrDist, (w1 - w2).SquareLength()));
+			penetration_depth_sq.Add(std::max(kMinSqrDist, (w1 - w2).SquareLength()));
 		}
 
 		int point0 = -1, point1 = -1, point2 = -1, point3 = -1;

@@ -5100,7 +5100,7 @@ namespace Riemann
 				{
 					info.Normal *= -1.0f;
 				}
-				VertStart[j] = Meshes[j]->GetNumVertices();
+				VertStart[j] = Meshes[j]->GetVertexCount();
 				Vector2 MinUV(FLT_MAX, FLT_MAX);
 				for (int BoundaryVertex : PlaneBoundary)
 				{

@@ -102,7 +102,7 @@ namespace Riemann
 		std::vector<Vector3> new_v;
 		std::vector<int> new_i;
 
-		if (!SimplifyMesh(GetVertexBuffer(), GetIndexBuffer(), GetNumVertices(), GetNumTriangles(), rate, new_v, new_i))
+		if (!SimplifyMesh(GetVertexBuffer(), GetIndexBuffer(), GetVertexCount(), GetTriangleCount(), rate, new_v, new_i))
 		{
 			return false;
 		}
@@ -111,6 +111,7 @@ namespace Riemann
 
 		VertexPositions = new_v;
 		VertexRefCounts.resize(new_v.size(), 1);
+		VertexEdgeLists.SetSize((int)new_v.size());
 
 		for (size_t i = 0; i < new_i.size() / 3; ++i)
 		{
@@ -297,8 +298,8 @@ namespace Riemann
 			ReplaceEdgeTriangle(ebc, t0, t2);
 			int eaf = eab;
 			ReplaceEdgeVertex(eaf, b, f);
-			// VertexEdgeLists.Remove(b, eab);
-			// VertexEdgeLists.Insert(f, eaf);
+			VertexEdgeLists[b].Remove(eab);
+			VertexEdgeLists[f].Add(eaf);
 
 			int efb = AppendEdgeEx(f, b, t2, -1);
 			int efc = AppendEdgeEx(f, c, t0, t2);
@@ -367,8 +368,8 @@ namespace Riemann
 			int eaf = eab;
 			ReplaceEdgeVertex(eaf, b, f);
 
-			// VertexEdgeLists.Remove(b, eab);
-			// VertexEdgeLists.Insert(f, eaf);
+			VertexEdgeLists[b].Remove(eab);
+			VertexEdgeLists[f].Add(eaf);
 
 			int efb = AppendEdgeEx(f, b, t2, t3);
 			int efc = AppendEdgeEx(f, c, t0, t2);
@@ -397,6 +398,49 @@ namespace Riemann
 			return true;
 		}
 	}
+
+	int DynamicMesh::GetVtxTriangleCount(int vID) const
+	{
+		if (!IsVertex(vID))
+		{
+			return -1;
+		}
+		int N = 0;
+
+		for (auto it = VertexEdgeLists[vID].begin(); it != VertexEdgeLists[vID].end(); ++it)
+		{
+			int eid = *it;
+			const Edge e = Edges[eid];
+			const int vOther = e.v0 == vID ? e.v1 : e.v0;
+			if (TriHasSequentialVertices(e.t0, vID, vOther))
+			{
+				N++;
+			}
+			const int et1 = e.t1;
+			if (e.t1 != -1 && TriHasSequentialVertices(e.t1, vID, vOther))
+			{
+				N++;
+			}
+		}
+
+		return N;
+	}
+
+	int DynamicMesh::GetVtxSingleTriangle(int VertexID) const
+	{
+		if (!IsVertex(VertexID))
+		{
+			return -1;
+		}
+
+		for (int EID : VertexEdgeLists[VertexID])
+		{
+			return Edges[EID].t0;
+		}
+
+		return -1;
+	}
+
 
 	bool DynamicMesh::LoadObj(const char* name)
 	{
@@ -455,6 +499,7 @@ namespace Riemann
 					VertexPositions.push_back(v);
 				}
 				VertexRefCounts.push_back(1);
+				VertexEdgeLists.Add();
 			}
 			else if (row[0] == 'v' && row[1] == 'n')
 			{

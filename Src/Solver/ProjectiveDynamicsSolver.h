@@ -46,8 +46,8 @@ namespace Riemann
 
 		void AddNode(const Node& node)
 		{
-			m_nodes.Push(node);
-			m_restpos.Push(node.position);
+			m_nodes.Add(node);
+			m_restpos.Add(node.position);
 		}
 
 		Matrix3 GenerateD(Vector3& v0, Vector3& v1, Vector3& v2, Vector3& v3)
@@ -66,7 +66,7 @@ namespace Riemann
 
 			float vol = 1.0f / 6.0f * fabsf(Dm.Determinant());
 
-			m_tets.Push(TetrahedralNode(t1, t2, t3, t4, weight, vol, Dm));
+			m_tets.Add(TetrahedralNode(t1, t2, t3, t4, weight, vol, Dm));
 		}
 
 		void AddTetrahedral(int t[4], float weight)
@@ -77,7 +77,7 @@ namespace Riemann
 
 			float vol = 1.0f / 6.0f * fabsf(Dm.Determinant());
 
-			m_tets.Push(TetrahedralNode(t[0], t[1], t[2], t[3], weight, vol, Dm));
+			m_tets.Add(TetrahedralNode(t[0], t[1], t[2], t[3], weight, vol, Dm));
 		}
 
 		const Node& GetNode(int index) const

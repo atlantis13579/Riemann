@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <vector>
+#include <functional>
 #include <map>
 #include <set>
 #include "../CollisionPrimitive/Segment3.h"
@@ -147,14 +148,342 @@ namespace Riemann
 			bIsClosed = false;
 		}
 
-		/*
-		bool AddViaPlanarWalk(int StartTri, int StartVID, FVector3d StartPt, int EndTri, int EndVertID, FVector3d EndPt,
-			FVector3d WalkPlaneNormal, TFunction<FVector3d(const FDynamicMesh3*, int)> VertexToPosnFn = nullptr,
-			bool bAllowBackwardsSearch = true, double AcceptEndPtOutsideDist = FMathd::ZeroTolerance,
-			double PtOnPlaneThresholdSq = FMathf::ZeroTolerance * 100, double BackwardsTolerance = FMathd::ZeroTolerance * 10);
+		bool AddViaPlanarWalk(int StartTri, int StartVID, Vector3 StartPt, int EndTri, int EndVertID, Vector3 EndPt,
+			Vector3 WalkPlaneNormal, std::function<Vector3(const DynamicMesh*, int)> VertexToPosnFn = nullptr,
+			bool bAllowBackwardsSearch = true, double AcceptEndPtOutsideDist = 1e-6f,
+			double PtOnPlaneThresholdSq = 1e-4f, double BackwardsTolerance = 1e-5f)
+		{
+			if (!VertexToPosnFn)
+			{
+				VertexToPosnFn = [](const DynamicMesh* MeshArg, int VertexID)
+				{
+					return MeshArg->GetVertex(VertexID);
+				};
+			}
+			return WalkMeshPlanar(Mesh, StartTri, StartVID, StartPt, EndTri, EndVertID, EndPt, WalkPlaneNormal, VertexToPosnFn,
+				bAllowBackwardsSearch, AcceptEndPtOutsideDist, PtOnPlaneThresholdSq, Path, BackwardsTolerance);
+		}
 
-		bool EmbedSimplePath(bool bUpdatePath, std::vector<int>& PathVertices, bool bDoNotDuplicateFirstVertexID = true, double SnapElementThresholdSq = FMathf::ZeroTolerance * 100);
-		*/
+		bool EmbedSimplePath(bool bUpdatePath, std::vector<int>& PathVertices, bool bDoNotDuplicateFirstVertexID = true, float SnapElementThresholdSq = 1e-4f)
+		{
+			assert(false);
+			return false;
+		}
+
+
+	private:
+		static bool WalkMeshPlanar(const DynamicMesh* Mesh, int StartTri, int StartVID, Vector3 StartPt, int EndTri, int EndVertID, Vector3 EndPt, Vector3 WalkPlaneNormal, std::function<Vector3(const DynamicMesh*, int)> VertexToPosnFn,
+			bool bAllowBackwardsSearch, double AcceptEndPtOutsideDist, double PtOnPlaneThresholdSq, std::vector<std::pair<FMeshSurfacePoint, int>>& WalkedPath, double BackwardsTolerance)
+		{
+			assert(false);
+			return false;
+			/*
+			* 
+			auto SetTriVertPositions = [&VertexToPosnFn, &Mesh](Vector3i TriVertIDs, Triangle3& Tri)
+			{
+				Tri.v0 = VertexToPosnFn(Mesh, TriVertIDs.x);
+				Tri.v1 = VertexToPosnFn(Mesh, TriVertIDs.y);
+				Tri.v2 = VertexToPosnFn(Mesh, TriVertIDs.z);
+			};
+
+			auto PtInsideTri = [](const Vector3& BaryCoord, double BaryThreshold = 1e-6f)
+			{
+				return BaryCoord[0] >= -BaryThreshold && BaryCoord[1] >= -BaryThreshold && BaryCoord[2] >= -BaryThreshold;
+			};
+
+			struct FWalkIndices
+			{
+				Vector3 Position;
+				int WalkedFromPt;
+				int	WalkingOnTri;
+
+				FWalkIndices() : WalkedFromPt(-1), WalkingOnTri(-1)
+				{}
+
+				FWalkIndices(Vector3 Position, int FromPt, int OnTri) : Position(Position), WalkedFromPt(FromPt), WalkingOnTri(OnTri)
+				{}
+			};
+
+			std::vector<std::pair<FMeshSurfacePoint, FWalkIndices>> ComputedPointsAndSources;
+			std::vector<FIndexDistance> UnexploredEnds;
+
+			std::set<int> ExploredTriangles, CrossedVertices;
+
+			int BestKnownEnd = -1;
+
+			Triangle3 CurrentTri;
+			Vector3i StartTriVertIDs = Mesh->GetTriangle(StartTri);
+			SetTriVertPositions(StartTriVertIDs, CurrentTri);
+			FDistPoint3Triangle3d CurrentTriDist(StartPt, CurrentTri); // heavy duty way to get barycentric coordinates and check if on triangle; should be robust to degenerate triangles unlike VectorUtil's barycentric coordinate function
+			int StartVIDIndex = -1;
+			if (StartVID != -1)
+			{
+				StartVIDIndex = StartTriVertIDs.IndexOf(StartVID);
+			}
+			if (StartVIDIndex == -1)
+			{
+				CurrentTriDist.ComputeResult();
+				ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(StartTri, CurrentTriDist.TriangleBaryCoords), FWalkIndices(StartPt, -1, StartTri));
+			}
+			else
+			{
+				CurrentTriDist.TriangleBaryCoords = Vector3::Zero();
+				CurrentTriDist.TriangleBaryCoords[StartVIDIndex] = 1.0;
+				CurrentTriDist.ClosestTrianglePoint = StartPt;
+				ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(StartTri, CurrentTriDist.TriangleBaryCoords), FWalkIndices(StartPt, -1, StartTri));
+			}
+
+			Vector3 ForwardsDirection = EndPt - StartPt;
+
+			int CurrentEnd = 0;
+			double CurrentPathLength = 0;
+			double CurrentDistanceToEnd = ForwardsDirection.Length();
+
+			UnexploredEnds.push_back({ 0, CurrentPathLength, CurrentDistanceToEnd });
+
+			int IterCountSafety = 0;
+			int NumTriangles = Mesh->GetTriangleCount();
+			while (true)
+			{
+				if (!(IterCountSafety++ < NumTriangles * 2))
+				{
+					return false;
+				}
+				if (UnexploredEnds.size())
+				{
+					FIndexDistance TopEndWithDistance;
+					UnexploredEnds.HeapPop(TopEndWithDistance);
+
+					CurrentEnd = TopEndWithDistance.Index;
+					CurrentPathLength = TopEndWithDistance.PathLength;
+					CurrentDistanceToEnd = TopEndWithDistance.DistanceToEnd;
+				}
+				else
+				{
+					return false; // failed to find path
+				}
+
+				FMeshSurfacePoint FromPt = ComputedPointsAndSources[CurrentEnd].first;
+				FWalkIndices CurrentWalk = ComputedPointsAndSources[CurrentEnd].second;
+				int TriID = CurrentWalk.WalkingOnTri;
+				assert(Mesh->IsTriangle(TriID));
+				Vector3i TriVertIDs = Mesh->GetTriangle(TriID);
+				SetTriVertPositions(TriVertIDs, CurrentTri);
+
+				if (EndVertID >= 0 && TriVertIDs.Contains(EndVertID))
+				{
+					CurrentEnd = ComputedPointsAndSources.Emplace(FMeshSurfacePoint(EndVertID), FWalkIndices(EndPt, CurrentEnd, TriID));
+					BestKnownEnd = CurrentEnd;
+					break;
+				}
+
+				bool OnEndTri = EndTri == TriID;
+				bool ComputedEndPtOnTri = false;
+				if (EndVertID < 0 && EndTri == -1)
+				{
+					CurrentTriDist.Triangle = CurrentTri;
+					CurrentTriDist.Point = EndPt;
+					ComputedEndPtOnTri = true;
+					double DistSq = CurrentTriDist.GetSquared();
+					if (DistSq < AcceptEndPtOutsideDist)
+					{
+						OnEndTri = true;
+					}
+				}
+
+				if (OnEndTri)
+				{
+					if (!ComputedEndPtOnTri)
+					{
+						CurrentTriDist.Triangle = CurrentTri;
+						CurrentTriDist.Point = EndPt;
+						ComputedEndPtOnTri = true;
+						CurrentTriDist.GetSquared();
+					}
+					CurrentEnd = ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(TriID, CurrentTriDist.TriangleBaryCoords), FWalkIndices(EndPt, CurrentEnd, TriID));
+
+					BestKnownEnd = CurrentEnd;
+					break;
+				}
+
+				if (ExploredTriangles.count(TriID) > 0)
+				{
+					continue;
+				}
+				ExploredTriangles.insert(TriID);
+
+				float SignDist[3];
+				int Side[3];
+				int InitialComputedPointsNum = (int)ComputedPointsAndSources.size();
+				for (int TriSubIdx = 0; TriSubIdx < 3; TriSubIdx++)
+				{
+					double SD = (CurrentTri.V[TriSubIdx] - StartPt).Dot(WalkPlaneNormal);
+					SignDist[TriSubIdx] = SD;
+					if (fabs(SD) <= PtOnPlaneThresholdSq)
+					{
+						// Vertex crossing
+						Side[TriSubIdx] = 0;
+						int CandidateVertID = TriVertIDs[TriSubIdx];
+						if (FromPt.PointType != ESurfacePointType::Vertex || CandidateVertID != FromPt.ElementID)
+						{
+							FMeshSurfacePoint SurfPt(CandidateVertID);
+							FWalkIndices WalkInds(CurrentTri.V[TriSubIdx], CurrentEnd, -1);
+							bool bIsForward = ForwardsDirection.Dot(CurrentTri[TriSubIdx] - StartPt) >= -BackwardsTolerance;
+							if ((bAllowBackwardsSearch || bIsForward) && !CrossedVertices.count(CandidateVertID))
+							{
+
+								CrossedVertices.insert(CandidateVertID);
+
+								for (int NbrTriID : Mesh->VtxTrianglesItr(CandidateVertID))
+								{
+									if (NbrTriID != TriID)
+									{
+										Vector3i NbrTriVertIDs = Mesh->GetTriangle(NbrTriID);
+										Triangle3 NbrTri;
+										SetTriVertPositions(NbrTriVertIDs, NbrTri);
+										int SignsMultiplied = 1;
+										for (int NbrTriSubIdx = 0; NbrTriSubIdx < 3; NbrTriSubIdx++)
+										{
+											if (NbrTriVertIDs[NbrTriSubIdx] == CandidateVertID)
+											{
+												continue;
+											}
+											double NbrSD = (NbrTri.V[NbrTriSubIdx] - StartPt).Dot(WalkPlaneNormal);
+											int NbrSign = fabsf(NbrSD) <= PtOnPlaneThresholdSq ? 0 : NbrSD > 0 ? 1 : -1;
+											SignsMultiplied *= NbrSign;
+										}
+										if (SignsMultiplied < 1)
+										{
+											WalkInds.WalkingOnTri = NbrTriID;
+											ComputedPointsAndSources.emplace_back(SurfPt, WalkInds);
+										}
+									}
+								}
+							}
+						}
+					}
+					else
+					{
+						Side[TriSubIdx] = SD > 0 ? 1 : -1;
+					}
+				}
+				Vector3i TriEdgeIDs = Mesh->GetTriangleEdge(TriID);
+				for (int TriSubIdx = 0; TriSubIdx < 3; TriSubIdx++)
+				{
+					int NextSubIdx = (TriSubIdx + 1) % 3;
+					if (Side[TriSubIdx] * Side[NextSubIdx] < 0)
+					{
+						// edge crossing
+						int CandidateEdgeID = TriEdgeIDs[TriSubIdx];
+						if (FromPt.PointType != ESurfacePointType::Edge || CandidateEdgeID != FromPt.ElementID)
+						{
+							float CrossingT = SignDist[TriSubIdx] / (SignDist[TriSubIdx] - SignDist[NextSubIdx]);
+							Vector3 CrossingP = (1.0f - CrossingT) * CurrentTri[TriSubIdx] + CrossingT * CurrentTri[NextSubIdx];
+							const DynamicMesh::Edge edge = Mesh->GetEdge(CandidateEdgeID);
+							if (edge.v0 != TriVertIDs[TriSubIdx])
+							{
+								CrossingT = 1 - CrossingT;
+							}
+							int CrossToTriID = edge.t0;
+							if (CrossToTriID == TriID)
+							{
+								CrossToTriID = edge.t1;
+							}
+							if (CrossToTriID == -1)
+							{
+								continue;
+							}
+							bool bIsForward = ForwardsDirection.Dot(CrossingP - StartPt) >= -BackwardsTolerance;
+							if (!bAllowBackwardsSearch && !bIsForward)
+							{
+								continue;
+							}
+							ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(CandidateEdgeID, CrossingT), FWalkIndices(CrossingP, CurrentEnd, CrossToTriID));
+						}
+					}
+				}
+
+				const Vector3& PreviousPathPoint = ComputedPointsAndSources[CurrentEnd].second.Position;
+				for (int NewComputedPtIdx = InitialComputedPointsNum; NewComputedPtIdx < ComputedPointsAndSources.size(); NewComputedPtIdx++)
+				{
+					const Vector3& CurrentPathPoint = ComputedPointsAndSources[NewComputedPtIdx].second.Position;
+					double PathLength = CurrentPathLength + (PreviousPathPoint - CurrentPathPoint).Length();
+					double DistanceToEnd = (EndPt - CurrentPathPoint).Length();
+
+					bool bIsForward = ForwardsDirection.Dot(CurrentPathPoint - StartPt) >= -BackwardsTolerance;
+					if (bAllowBackwardsSearch || bIsForward)
+					{
+						UnexploredEnds.HeapPush({ NewComputedPtIdx, PathLength, DistanceToEnd });
+					}
+				}
+			}
+
+
+			int TrackedPtIdx = BestKnownEnd;
+			int SafetyIdxBacktrack = 0;
+			std::vector<int> AcceptedIndices;
+			while (TrackedPtIdx > -1)
+			{
+				if (!(SafetyIdxBacktrack++ < 2 * ComputedPointsAndSources.size()))
+				{
+					return false;
+				}
+				AcceptedIndices.push_back(TrackedPtIdx);
+				TrackedPtIdx = ComputedPointsAndSources[TrackedPtIdx].second.WalkedFromPt;
+			}
+			WalkedPath.clear();
+			for (int IdxIdx = AcceptedIndices.size() - 1; IdxIdx >= 0; IdxIdx--)
+			{
+				WalkedPath.emplace_back(ComputedPointsAndSources[AcceptedIndices[IdxIdx]].first, ComputedPointsAndSources[AcceptedIndices[IdxIdx]].second.WalkingOnTri);
+			}
+
+			if (WalkedPath.size() && WalkedPath[0].first.PointType == ESurfacePointType::Triangle)
+			{
+				FMeshSurfacePoint& SurfacePt = WalkedPath[0].first;
+
+				if (StartVIDIndex > -1 && SurfacePt.BaryCoord[StartVIDIndex] == 1.0)
+				{
+					Vector3i TriVertIDs = Mesh->GetTriangle(SurfacePt.ElementID);
+					SurfacePt.ElementID = TriVertIDs[StartVIDIndex];
+					SurfacePt.PointType = ESurfacePointType::Vertex;
+				}
+				else
+				{
+					RefineSurfacePtFromTriangleToSubElement(Mesh, SurfacePt.Pos(Mesh), SurfacePt, PtOnPlaneThresholdSq);
+				}
+				if (WalkedPath.size() > 1 &&
+					SurfacePt.PointType != ESurfacePointType::Triangle &&
+					SurfacePt.PointType == WalkedPath[1].Key.PointType &&
+					SurfacePt.ElementID == WalkedPath[1].Key.ElementID)
+				{
+					if (SurfacePt.PointType == ESurfacePointType::Edge)
+					{
+						WalkedPath[1].Key.BaryCoord = SurfacePt.BaryCoord;
+					}
+					WalkedPath.RemoveAt(0);
+				}
+			}
+			if (WalkedPath.size() && WalkedPath.back().first.PointType == ESurfacePointType::Triangle)
+			{
+				FMeshSurfacePoint& SurfacePt = WalkedPath.back().first;
+				RefineSurfacePtFromTriangleToSubElement(Mesh, SurfacePt.Pos(Mesh), SurfacePt, PtOnPlaneThresholdSq);
+				if (WalkedPath.size() > 1 &&
+					SurfacePt.PointType != ESurfacePointType::Triangle &&
+					SurfacePt.PointType == WalkedPath.Last(1).Key.PointType &&
+					SurfacePt.ElementID == WalkedPath.Last(1).Key.ElementID)
+				{
+					if (SurfacePt.PointType == ESurfacePointType::Edge) // copy closer barycoord
+					{
+						WalkedPath.Last(1).Key.BaryCoord = SurfacePt.BaryCoord;
+					}
+					WalkedPath.Pop();
+				}
+			}
+
+			return true;
+			*/
+		}
+
 	};
 
 	struct FCutWorkingInfo
@@ -181,7 +510,7 @@ namespace Riemann
 
 		void Init(DynamicMesh* WorkingMesh)
 		{
-			for (int i = 0; i < WorkingMesh->GetNumTriangles(); ++i)
+			for (int i = 0; i < WorkingMesh->GetTriangleCount(); ++i)
 			{
 				BaseFaceNormals.push_back(WorkingMesh->GetTriangleNormal(i));
 			}
@@ -399,8 +728,6 @@ namespace Riemann
 
 		bool ConnectEdges(std::vector<int>* VertexChains = nullptr, std::vector<int>* SegmentToChain = nullptr)
 		{
-			return true;
-			/*
 			std::vector<int> EmbeddedPath;
 
 			bool bSuccess = true; // remains true if we successfully connect all edges
@@ -473,12 +800,13 @@ namespace Riemann
 					}
 
 					WalkPlaneNormal = GetDegenTriangleEdgeDirection(Mesh, StartTID);
-					if (!WalkPlaneNormal.Normalize() > 0)
+					if (!(WalkPlaneNormal.Normalize() > 0))
 					{
 
 						continue;
 					}
 				}
+
 				bool bWalkSuccess = SurfacePath.AddViaPlanarWalk(StartTID, PtA.ElemID,
 					Mesh->GetVertex(PtA.ElemID), -1, PtB.ElemID,
 					Mesh->GetVertex(PtB.ElemID), WalkPlaneNormal, nullptr, false, 1e-6f, SnapToleranceSq, 0.001f);
@@ -510,7 +838,6 @@ namespace Riemann
 			}
 
 			return bSuccess;
-			*/
 		}
 
 		void UpdateFromSplit(FPtOnMesh& Pt, int SplitVertex, const Vector2i& SplitEdges)
@@ -732,7 +1059,7 @@ namespace Riemann
 			{
 				// convert vertex chains to edge IDs to simplify logic of finding remaining candidate edges after collapses
 				std::vector<int> EIDs;
-				for (int ChainIdx = 0; ChainIdx < Cut.VertexChains[MeshIdx].Num();)
+				for (int ChainIdx = 0; ChainIdx < Cut.VertexChains[MeshIdx].size();)
 				{
 					int ChainLen = Cut.VertexChains[MeshIdx][ChainIdx];
 					int ChainEnd = ChainIdx + 1 + ChainLen;
@@ -747,7 +1074,7 @@ namespace Riemann
 					ChainIdx = ChainEnd;
 				}
 				TSet<int> AllEIDs(EIDs);
-				for (int Idx = 0; Idx < EIDs.Num(); Idx++)
+				for (int Idx = 0; Idx < EIDs.size(); Idx++)
 				{
 					int EID = EIDs[Idx];
 					if (!CutMesh[MeshIdx]->IsEdge(EID))
@@ -946,7 +1273,7 @@ namespace Riemann
 			{
 				GeometryMesh& ProcessMesh = *CutMesh[MeshIdx];
 
-				for (int TID = 0; TID < KeepTri[MeshIdx].Num(); TID++)
+				for (int TID = 0; TID < KeepTri[MeshIdx].size(); TID++)
 				{
 					if (ProcessMesh.IsTriangle(TID) && !KeepTri[MeshIdx][TID])
 					{
@@ -967,7 +1294,7 @@ namespace Riemann
 				// the new triangle group could include disconnected components; best to give them separate triangle groups
 				FMeshConnectedComponents Components(CutMesh[0]);
 				Components.FindConnectedTriangles(NewGroupTris);
-				for (int ComponentIdx = 1; ComponentIdx < Components.Num(); ComponentIdx++)
+				for (int ComponentIdx = 1; ComponentIdx < Components.size(); ComponentIdx++)
 				{
 					int SplitGroupID = CutMesh[0]->AllocateTriangleGroup();
 					for (int TID : Components.GetComponent(ComponentIdx).Indices)

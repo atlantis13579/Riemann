@@ -241,7 +241,7 @@ namespace Maths
 			return &x;
 		}
 
-		inline T operator[](int i) const
+		inline const T& operator[](int i) const
 		{
 			return reinterpret_cast<const T*>(this)[i];
 		}

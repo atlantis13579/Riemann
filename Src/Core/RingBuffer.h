@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mutex>
+#include "Lock.h"
 
 namespace Riemann
 {
@@ -114,7 +114,7 @@ namespace Riemann
 		T			data[Capacity];
 		int			write;
 		int			read;
-		std::mutex	lock;
+		SpinLock	lock;
 	};
 
 	template <typename T, int Capacity>
