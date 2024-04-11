@@ -1,7 +1,9 @@
 # Introduction
 
 Riemann is a 3D Geometry / Collision Detection / Physics Engine with zero dependencies.
-This is a personal learning project, I want to write my own physics engine to understand some of the cool staff that makes a physics engines works.
+This is a personal learning project, I want to write my own physics engine to understand some of the key algorithm that makes a physics engines works.
+
+This project is named after the 19th-century German mathematician Bernhard Riemann, who invented Riemannian geometry and the concept of manifold.
 
 ## Features
 
@@ -25,7 +27,7 @@ Rigid Body Dynamics Simulation
     * Expanding Polytope algorithm
     
 * Numerical Method
-    * Explicit Euler / Symplectic Euler / Implicit Euler / Verlet Integrator
+    * Symplectic Euler / Implicit Euler / Verlet Integrator
     * Jacobian Matrix
     * Sequential Impulse Solver
     * Global LCP Solver using Projected Gauss-Seidel
