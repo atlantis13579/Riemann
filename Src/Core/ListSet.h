@@ -60,12 +60,12 @@ namespace Riemann
 					return m_index != rhs.m_index;
 				}
 
-				inline int GetIndex() const
+				inline int index() const
 				{
 					return m_index;
 				}
 				
-				inline const T& GetValue() const
+				inline const T& value() const
 				{
 					return m_curr_block->data[m_curr_block_idx];
 				}
@@ -162,7 +162,7 @@ namespace Riemann
 				{
 					if (*it == val)
 					{
-						return it.GetIndex();
+						return it.index();
 					}
 				}
 
@@ -212,7 +212,7 @@ namespace Riemann
 				{
 					if (*it == val)
 					{
-						int index = it.GetIndex();
+						int index = it.index();
 						remove_at(index, false);
 						return index;
 					}
@@ -390,12 +390,12 @@ namespace Riemann
 					return m_index != rhs.m_index;
 				}
 
-				inline int GetIndex() const
+				inline int index() const
 				{
 					return m_index;
 				}
 
-				inline const T& GetValue() const
+				inline const T& value() const
 				{
 					return m_curr_block->data[m_curr_block_idx];
 				}
@@ -469,7 +469,7 @@ namespace Riemann
 				{
 					if (*it == val)
 					{
-						return it.GetIndex();
+						return it.index();
 					}
 				}
 
