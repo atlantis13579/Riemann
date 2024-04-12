@@ -68,7 +68,7 @@ namespace Maths
 
 		int IndexOf(const T v) const
 		{
-			return (a == v) ? 0 : ((b == v) ? 1 : (c == v ? 3 : -1));
+			return (a == v) ? 0 : ((b == v) ? 1 : (c == v ? 2 : -1));
 		}
 
 		inline bool Contains(const T v) const
