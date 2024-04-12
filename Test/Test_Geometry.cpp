@@ -1,6 +1,7 @@
 
 #include "Test.h"
 
+#include "../Src/CollisionPrimitive/StaticMesh.h"
 #include "../Src/Geometry/Spline.h"
 #include "../Src/Geometry/DynamicMesh.h"
 #include "../Src/Geometry/GeometryBoolean.h"
@@ -15,9 +16,9 @@ using namespace Riemann;
 
 void TestMeshSimplify()
 {
-	DynamicMesh mesh;
+	StaticMesh mesh;
 	mesh.LoadObj("../TestData/bunny.obj");
-	mesh.Simplify(0.3f);
+	mesh.Simplify(0.1f);
 	mesh.ExportObj("../TestData/bunny2.obj");
 }
 

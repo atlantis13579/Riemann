@@ -486,9 +486,6 @@
     <ClInclude Include="..\..\Src\Geometry\Polygon3.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Destruction\GeometrySet.h">
-      <Filter>Destruction</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\DynamicMesh.h">
       <Filter>Geometry</Filter>
     </ClInclude>
@@ -507,6 +504,36 @@
     <ClInclude Include="..\..\Src\Core\LogSystem.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Sphere2.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\OrientedBox2.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Convex2.h">
+      <Filter>CollisionPrimitive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Destruction\DestructionSet.h">
+      <Filter>Destruction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\GeometrySet.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\Iterator.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\SmallSet.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\PriorityQueue.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Index2.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\Index3.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">
@@ -516,9 +543,6 @@
       <Filter>Collision</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3.cpp">
-      <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3.cpp">
       <Filter>CollisionPrimitive</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Collision\DynamicAABBTree.cpp">
@@ -562,9 +586,6 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Solver\NumericalODESolver.cpp">
       <Filter>Solver</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3.cpp">
-      <Filter>CollisionPrimitive</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.cpp">
       <Filter>RigidBodyDynamics</Filter>
@@ -695,10 +716,13 @@
     <ClCompile Include="..\..\Src\Geometry\Polygon3.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Destruction\GeometrySet.cpp">
+    <ClCompile Include="..\..\Src\Geometry\DynamicMesh.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Destruction\DestructionSet.cpp">
       <Filter>Destruction</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Geometry\DynamicMesh.cpp">
+    <ClCompile Include="..\..\Src\Geometry\GeometrySet.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
   </ItemGroup>

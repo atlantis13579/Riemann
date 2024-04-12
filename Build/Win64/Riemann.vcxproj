@@ -21,7 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\Src\CollisionPrimitive\MassParameters.cpp" />
     <ClCompile Include="..\..\Src\Destruction\ConnectionGraph.cpp" />
-    <ClCompile Include="..\..\Src\Destruction\GeometrySet.cpp" />
+    <ClCompile Include="..\..\Src\Destruction\DestructionSet.cpp" />
     <ClCompile Include="..\..\Src\Destruction\GraphPartition.cpp" />
     <ClCompile Include="..\..\Src\Destruction\StrainSolver.cpp" />
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp" />
@@ -30,15 +30,14 @@
     <ClCompile Include="..\..\Src\Geometry\Delaunay.cpp" />
     <ClCompile Include="..\..\Src\Geometry\GeometryBoolean.cpp" />
     <ClCompile Include="..\..\Src\Geometry\DynamicMesh.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\GeometrySet.cpp" />
     <ClCompile Include="..\..\Src\Geometry\MeshSimplification.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Polygon2.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Polygon3.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Voronoi3.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\ConvexMesh.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\HeightField3.cpp" />
-    <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3.cpp" />
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp" />
     <ClCompile Include="..\..\Src\Collision\AABBTreeOffline.cpp" />
     <ClCompile Include="..\..\Src\Collision\DynamicAABBTree.cpp" />
@@ -89,19 +88,25 @@
     <ClCompile Include="..\..\Src\Modules\VehicleDynamics\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Convex2.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\MassParameters.h" />
+    <ClInclude Include="..\..\Src\CollisionPrimitive\OrientedBox2.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Segment2.h" />
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Sphere2.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\StaticMesh.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle2.h" />
     <ClInclude Include="..\..\Src\Core\BitSet.h" />
     <ClInclude Include="..\..\Src\Core\DynamicArray.h" />
+    <ClInclude Include="..\..\Src\Core\Iterator.h" />
     <ClInclude Include="..\..\Src\Core\ListSet.h" />
     <ClInclude Include="..\..\Src\Core\Lock.h" />
     <ClInclude Include="..\..\Src\Core\LogSystem.h" />
+    <ClInclude Include="..\..\Src\Core\PriorityQueue.h" />
     <ClInclude Include="..\..\Src\Core\Profiler.h" />
+    <ClInclude Include="..\..\Src\Core\SmallSet.h" />
     <ClInclude Include="..\..\Src\Destruction\ConnectionGraph.h" />
+    <ClInclude Include="..\..\Src\Destruction\DestructionSet.h" />
     <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
-    <ClInclude Include="..\..\Src\Destruction\GeometrySet.h" />
     <ClInclude Include="..\..\Src\Destruction\GraphPartition.h" />
     <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
     <ClInclude Include="..\..\Src\Destruction\StrainSolver.h" />
@@ -111,6 +116,7 @@
     <ClInclude Include="..\..\Src\Geometry\Delaunay.h" />
     <ClInclude Include="..\..\Src\Geometry\GeometryBoolean.h" />
     <ClInclude Include="..\..\Src\Geometry\DynamicMesh.h" />
+    <ClInclude Include="..\..\Src\Geometry\GeometrySet.h" />
     <ClInclude Include="..\..\Src\Geometry\MeshSimplification.h" />
     <ClInclude Include="..\..\Src\Geometry\Polygon2.h" />
     <ClInclude Include="..\..\Src\Geometry\Polygon3.h" />
@@ -180,6 +186,8 @@
     <ClInclude Include="..\..\Src\Maths\Box2.h" />
     <ClInclude Include="..\..\Src\Maths\Float16.h" />
     <ClInclude Include="..\..\Src\Maths\Frame3.h" />
+    <ClInclude Include="..\..\Src\Maths\Index2.h" />
+    <ClInclude Include="..\..\Src\Maths\Index3.h" />
     <ClInclude Include="..\..\Src\Maths\Matrix2.h" />
     <ClInclude Include="..\..\Src\Maths\MatrixMxN.h" />
     <ClInclude Include="..\..\Src\Maths\Tensor.h" />

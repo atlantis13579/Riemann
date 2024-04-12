@@ -7,7 +7,7 @@
 
 const int kMinPolygonPoints = 5;
 
-int triangle_area(const Vector2i &p1, const Vector2i &p2, const Vector2i &p3)
+int triangle_area(const Vector2i&p1, const Vector2i&p2, const Vector2i&p3)
 {
 	return abs((p2 - p1).Cross(p3 - p1));
 }
@@ -39,7 +39,8 @@ void PolygonSimplification_VisvalingamWhyatt(std::vector<Vector2i> &polygon, int
 	}
 }
 
-static int distanceToSegment(const Vector2i &p, const Vector2i &start, const Vector2i &end) {
+static int distanceToSegment(const Vector2i&p, const Vector2i&start, const Vector2i&end)
+{
 	if (end.x == start.x) {
 		return abs(p.x - end.x);
 	}
@@ -92,7 +93,7 @@ void SegmentsSimplification_DouglasPeucker(std::vector<Vector2i> &polygon, int t
 	filtered->push_back(polygon.back());
 }
 
-static float dot_product(const Vector2i&a, const Vector2i&b, const Vector2i&c)
+static float dot_product(const Vector2i& a, const Vector2i& b, const Vector2i& c)
 {
 	Vector2 ab = Vector2((float)(a.x - b.x), (float)(a.y - b.y));
 	Vector2 cb = Vector2((float)(c.x - b.x), (float)(c.y - b.y));

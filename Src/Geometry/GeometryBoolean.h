@@ -15,12 +15,14 @@ namespace Riemann
 		{
 		}
 
-		bool Compute();
+		bool Compute(const IntersectionsQueryResult& Intersections);
 
 		float SnapTolerance = 1e-4f;
 		bool bMutuallyCut = true;
 		bool bCutCoplanar = false;
-		IntersectionsQueryResult	Result;
+
+		std::vector<int> VertexChains[2];
+		std::vector<int> SegmentToChain[2];
 	};
 
 	class GeometryBoolean
@@ -37,7 +39,7 @@ namespace Riemann
 			NewGroupOutside
 		};
 		BooleanOp Operation;
-		float Tolerance = 1e-6f;
+		float SnapTolerance = 1e-6f;
 		bool bCollapseDegenerateEdgesOnCut = true;
 
 		// input

@@ -2,6 +2,7 @@
 #include <assert.h>
 #include "DynamicMesh.h"
 #include "MeshSimplification.h"
+#include "../Core/SmallSet.h"
 #include "../Maths/Box1.h"
 #include "../Maths/Maths.h"
 #include "../CollisionPrimitive/Triangle3.h"
@@ -102,7 +103,7 @@ namespace Riemann
 		std::vector<Vector3> new_v;
 		std::vector<int> new_i;
 
-		if (!SimplifyMesh(GetVertexBuffer(), GetIndexBuffer(), GetVertexCount(), GetTriangleCount(), rate, new_v, new_i))
+		if (!SimplifyMesh(GetVertexBuffer(), (const void*)GetIndexBuffer(), GetVertexCount(), true, GetTriangleCount(), rate, new_v, new_i))
 		{
 			return false;
 		}
@@ -115,12 +116,88 @@ namespace Riemann
 
 		for (size_t i = 0; i < new_i.size() / 3; ++i)
 		{
-			AppendTriangle(Vector3i(new_i[3 * i], new_i[3 * i + 1], new_i[3 * i + 2]));
+			AppendTriangle(Index3(new_i[3 * i], new_i[3 * i + 1], new_i[3 * i + 2]));
 		}
 
 		BuildBounds();
 
 		return true;
+	}
+
+	void DynamicMesh::ApplyTransform(const Transform& trans, bool bReverseOrientationIfNeeded)
+	{
+		for (size_t i = 0; i < VertexPositions.size(); ++i)
+		{
+			Vector3& Position = VertexPositions[i];
+			Position = trans.LocalToWorld(Position);
+		}
+
+		if (bHasVertexNormals)
+		{
+			for (size_t i = 0; i < VertexNormals.size(); ++i)
+			{
+				Vector3& Normal = VertexNormals[i];
+				Normal = trans.LocalToWorldDirection(Normal);
+			}
+		}
+
+		if (bReverseOrientationIfNeeded && trans.quat.ToRotationMatrix3().Determinant() < 0)
+		{
+			ReverseOrientation(false);
+		}
+	}
+
+	void DynamicMesh::ApplyTransform(Transform3& trans, bool bReverseOrientationIfNeeded)
+	{
+		for (size_t i = 0; i < VertexPositions.size(); ++i)
+		{
+			Vector3& Position = VertexPositions[i];
+			Position = trans.LocalToWorld(Position);
+		}
+
+		if (bHasVertexNormals)
+		{
+			for (size_t i = 0; i < VertexNormals.size(); ++i)
+			{
+				Vector3& Normal = VertexNormals[i];
+				Normal = trans.LocalToWorldDirection(Normal);
+			}
+		}
+
+		if (bReverseOrientationIfNeeded && trans.GetRotationMatrix().Determinant() < 0)
+		{
+			ReverseOrientation(false);
+		}
+	}
+
+	void DynamicMesh::ReverseOrientation(bool bFlipNormals)
+	{
+		for (size_t i = 0; i < Triangles.size(); ++i)
+		{
+			Index3& tri = Triangles[i];
+			std::swap(tri.b, tri.c);
+		}
+
+		if (bFlipNormals && bHasVertexNormals)
+		{
+			for (size_t i = 0; i < VertexNormals.size(); ++i)
+			{
+				Vector3& Normal = VertexNormals[i];
+				Normal = -Normal;
+			}
+		}
+	}
+
+	std::vector<int> DynamicMesh::GetVexTriangles(int VertexID) const
+	{
+		SmallSet<int> s;
+		for (int eid : VertexEdgeLists[VertexID])
+		{
+			const Edge e = Edges[eid];
+			s.insert(e.t0);
+			s.insert(e.t1);
+		}
+		return s.to_vector();
 	}
 
 	bool DynamicMesh::PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, PokeTriangleInfo& PokeResult)
@@ -132,8 +209,8 @@ namespace Riemann
 			return false;
 		}
 
-		Vector3i tv = GetTriangle(TriangleID);
-		Vector3i te = GetTriangleEdge(TriangleID);
+		Index3 tv = GetTriangle(TriangleID);
+		Index3 te = GetTriangleEdge(TriangleID);
 
 		VertexInfo vinfo = GetTringleBaryPoint(TriangleID, BaryCoordinates[0], BaryCoordinates[1], BaryCoordinates[2]);
 		int center = AppendVertex(vinfo);
@@ -146,8 +223,8 @@ namespace Riemann
 		VertexRefCounts[tv[2]] += 1;
 		VertexRefCounts[center] += 3;
 
-		SetTriangle(TriangleID, Vector3i(tv[0], tv[1], center));
-		SetTriangleEdge(TriangleID, Vector3i(te[0], ebC, eaC));
+		SetTriangle(TriangleID, Index3(tv[0], tv[1], center));
+		SetTriangleEdge(TriangleID, Index3(te[0], ebC, eaC));
 
 		int t1 = AppendTriangleEx(tv[1], tv[2], center, te[1], ecC, ebC);
 		int t2 = AppendTriangleEx(tv[2], tv[0], center, te[2], eaC, ecC);
@@ -162,8 +239,8 @@ namespace Riemann
 		PokeResult.OriginalTriangle = TriangleID;
 		PokeResult.TriVertices = tv;
 		PokeResult.NewVertex = center;
-		PokeResult.NewTriangles = Vector2i(t1, t2);
-		PokeResult.NewEdges = Vector3i(eaC, ebC, ecC);
+		PokeResult.NewTriangles = Index2(t1, t2);
+		PokeResult.NewEdges = Index3(eaC, ebC, ecC);
 		PokeResult.BaryCoords = BaryCoordinates;
 
 		if (HasAttributes())
@@ -253,7 +330,7 @@ namespace Riemann
 		{
 			return false;
 		}
-		Vector3i T0tv = GetTriangle(t0);
+		Index3 T0tv = GetTriangle(t0);
 		int c = OrientTriEdgeAndFindOtherVtx(a, b, T0tv);
 
 		if (VertexRefCounts[c] > 250)
@@ -267,8 +344,8 @@ namespace Riemann
 		}
 
 		SplitInfo.OriginalEdge = eab;
-		SplitInfo.OriginalVertices = Vector2i(a, b);
-		SplitInfo.OriginalTriangles = Vector2i(t0, -1);
+		SplitInfo.OriginalVertices = Index2(a, b);
+		SplitInfo.OriginalTriangles = Index2(t0, -1);
 		SplitInfo.SplitT = split_t;
 
 		if (IsBoundaryEdge(eab))
@@ -288,7 +365,7 @@ namespace Riemann
 				SetVertexUV(f, Maths::LinearInterp(GetVertexUV(a, i), GetVertexUV(b, i), split_t), i);
 			}
 
-			Vector3i T0te = GetTriangleEdge(t0);
+			Index3 T0te = GetTriangleEdge(t0);
 			int ebc = T0te[FindEdgeIndexInTri(b, c, T0tv)];
 
 			ReplaceTriangleVertex(t0, b, f);
@@ -305,16 +382,16 @@ namespace Riemann
 			int efc = AppendEdgeEx(f, c, t0, t2);
 
 			ReplaceTriangleEdge(t0, ebc, efc);
-			SetTriangleEdge(t2, Vector3i(efb, ebc, efc));
+			SetTriangleEdge(t2, Index3(efb, ebc, efc));
 
 			VertexRefCounts[c] += 1;
 			VertexRefCounts[f] += 2;
 
 			SplitInfo.bIsBoundary = true;
-			SplitInfo.OtherVertices = Vector2i(c, -1);
+			SplitInfo.OtherVertices = Index2(c, -1);
 			SplitInfo.NewVertex = f;
-			SplitInfo.NewEdges = Vector3i(efb, efc, -1);
-			SplitInfo.NewTriangles = Vector2i(t2, -1);
+			SplitInfo.NewEdges = Index3(efb, efc, -1);
+			SplitInfo.NewTriangles = Index2(t2, -1);
 
 			if (HasAttributes())
 			{
@@ -327,8 +404,8 @@ namespace Riemann
 		else
 		{
 			int t1 = Edges[eab].t1;
-			SplitInfo.OriginalTriangles.y = t1;
-			Vector3i T1tv = GetTriangle(t1);
+			SplitInfo.OriginalTriangles.b = t1;
+			Index3 T1tv = GetTriangle(t1);
 			int d = FindTriOtherVtx(a, b, T1tv);
 
 			if (VertexRefCounts[d] > 250)
@@ -351,9 +428,9 @@ namespace Riemann
 				SetVertexUV(f, Maths::LinearInterp(GetVertexUV(a, i), GetVertexUV(b, i), split_t), i);
 			}
 
-			Vector3i T0te = GetTriangleEdge(t0);
+			Index3 T0te = GetTriangleEdge(t0);
 			int ebc = T0te[FindEdgeIndexInTri(b, c, T0tv)];
-			Vector3i T1te = GetTriangleEdge(t1);
+			Index3 T1te = GetTriangleEdge(t1);
 			int edb = T1te[FindEdgeIndexInTri(d, b, T1tv)];
 
 			ReplaceTriangleVertex(t0, b, f);
@@ -377,18 +454,18 @@ namespace Riemann
 
 			ReplaceTriangleEdge(t0, ebc, efc);
 			ReplaceTriangleEdge(t1, edb, edf);
-			SetTriangleEdge(t2, Vector3i(efb, ebc, efc));
-			SetTriangleEdge(t3, Vector3i(edf, edb, efb));
+			SetTriangleEdge(t2, Index3(efb, ebc, efc));
+			SetTriangleEdge(t3, Index3(edf, edb, efb));
 
 			VertexRefCounts[c] += 1;
 			VertexRefCounts[d] += 1;
 			VertexRefCounts[f] += 4;
 
 			SplitInfo.bIsBoundary = false;
-			SplitInfo.OtherVertices = Vector2i(c, d);
+			SplitInfo.OtherVertices = Index2(c, d);
 			SplitInfo.NewVertex = f;
-			SplitInfo.NewEdges = Vector3i(efb, efc, edf);
-			SplitInfo.NewTriangles = Vector2i(t2, t3);
+			SplitInfo.NewEdges = Index3(efb, efc, edf);
+			SplitInfo.NewTriangles = Index2(t2, t3);
 
 			if (HasAttributes())
 			{
@@ -397,6 +474,354 @@ namespace Riemann
 
 			return true;
 		}
+	}
+
+	EMeshResult DynamicMesh::CollapseEdge(int vKeep, int vRemove, float collapse_t, EdgeCollapseInfo& CollapseInfo)
+	{
+		CollapseInfo = EdgeCollapseInfo();
+
+		if (IsVertex(vKeep) == false || IsVertex(vRemove) == false)
+		{
+			return EMeshResult::Failed_NotAnEdge;
+		}
+
+		int b = vKeep;		// renaming for sanity. We remove a and keep b
+		int a = vRemove;
+
+		int eab = FindEdge(a, b);
+		if (eab == -1)
+		{
+			return EMeshResult::Failed_NotAnEdge;
+		}
+
+		const Edge EdgeAB = Edges[eab];
+		int t0 = EdgeAB.v0;
+		if (t0 == -1)
+		{
+			return EMeshResult::Failed_BrokenTopology;
+		}
+		Index3 T0tv = GetTriangle(t0);
+		int c = FindTriOtherVtx(a, b, T0tv);
+
+		// look up opposing triangle/vtx if we are not in boundary case
+		bool bIsBoundaryEdge = false;
+		int d = -1;
+		int t1 = EdgeAB.v1;
+		if (t1 != -1)
+		{
+			Index3 T1tv = GetTriangle(t1);
+			d = FindTriOtherVtx(a, b, T1tv);
+			if (c == d)
+			{
+				return EMeshResult::Failed_FoundDuplicateTriangle;
+			}
+		}
+		else
+		{
+			bIsBoundaryEdge = true;
+		}
+
+		CollapseInfo.OpposingVerts = Index2(c, d);
+
+		// We cannot collapse if edge lists of a and b share vertices other
+		//  than c and d  (because then we will make a triangle [x b b].
+		//  Unfortunately I cannot see a way to do this more efficiently than brute-force search
+		//  [TODO] if we had tri iterator for a, couldn't we check each tri for b  (skipping t0 and t1) ?
+
+		/*
+		int edges_a_count = VertexEdgeLists.GetCount(a);
+		int eac = InvalidID, ead = InvalidID, ebc = InvalidID, ebd = InvalidID;
+		for (int eid_a : VertexEdgeLists.Values(a))
+		{
+			int vax = GetOtherEdgeVertex(eid_a, a);
+			if (vax == c)
+			{
+				eac = eid_a;
+				continue;
+			}
+			if (vax == d)
+			{
+				ead = eid_a;
+				continue;
+			}
+			if (vax == b)
+			{
+				continue;
+			}
+			for (int eid_b : VertexEdgeLists.Values(b))
+			{
+				if (GetOtherEdgeVertex(eid_b, b) == vax)
+				{
+					return EMeshResult::Failed_InvalidNeighbourhood;
+				}
+			}
+		}
+
+		// I am not sure this tetrahedron case will detect bowtie vertices.
+		// But the single-triangle case does
+
+		// We cannot collapse if we have a tetrahedron. In this case a has 3 nbr edges,
+		//  and edge cd exists. But that is not conclusive, we also have to check that
+		//  cd is an internal edge, and that each of its tris contain a or b
+		if (edges_a_count == 3 && bIsBoundaryEdge == false)
+		{
+			int edc = FindEdge(d, c);
+			if (edc != InvalidID)
+			{
+				const FEdge EdgeDC = Edges[edc];
+				if (EdgeDC.Tri[1] != InvalidID)
+				{
+					int edc_t0 = EdgeDC.Tri[0];
+					int edc_t1 = EdgeDC.Tri[1];
+
+					if ((TriangleHasVertex(edc_t0, a) && TriangleHasVertex(edc_t1, b))
+						|| (TriangleHasVertex(edc_t0, b) && TriangleHasVertex(edc_t1, a)))
+					{
+						return EMeshResult::Failed_CollapseTetrahedron;
+					}
+				}
+			}
+		}
+		else if (bIsBoundaryEdge == true && IsBoundaryEdge(eac))
+		{
+			// Cannot collapse edge if we are down to a single triangle
+			ebc = FindEdgeFromTri(b, c, t0);
+			if (IsBoundaryEdge(ebc))
+			{
+				return EMeshResult::Failed_CollapseTriangle;
+			}
+		}
+
+		// TODO: it's unclear how this case would ever be encountered; check if it is needed
+		//
+		// cannot collapse an edge where both vertices are boundary vertices
+		// because that would create a bowtie
+		//
+		// NOTE: potentially scanning all edges here...couldn't we
+		//  pick up eac/bc/ad/bd as we go? somehow?
+		if (bIsBoundaryEdge == false && IsBoundaryVertex(a) && IsBoundaryVertex(b))
+		{
+			return EMeshResult::Failed_InvalidNeighbourhood;
+		}
+
+		// save vertex positions before we delete removed (can defer kept?)
+		FVector3d KeptPos = GetVertex(vKeep);
+		FVector3d RemovedPos = GetVertex(vRemove);
+		FVector2f RemovedUV;
+		if (HasVertexUVs())
+		{
+			RemovedUV = GetVertexUV(vRemove);
+		}
+		FVector3f RemovedNormal;
+		if (HasVertexNormals())
+		{
+			RemovedNormal = GetVertexNormal(vRemove);
+		}
+		FVector3f RemovedColor;
+		if (HasVertexColors())
+		{
+			RemovedColor = GetVertexColor(vRemove);
+		}
+
+		// 1) remove edge ab from vtx b
+		// 2) find edges ad and ac, and tris tad, tac across those edges  (will use later)
+		// 3) for other edges, replace a with b, and add that edge to b
+		// 4) replace a with b in all triangles connected to a
+		int tad = InvalidID, tac = InvalidID;
+		for (int eid : VertexEdgeLists.Values(a))
+		{
+			int o = GetOtherEdgeVertex(eid, a);
+			if (o == b)
+			{
+				if (VertexEdgeLists.Remove(b, eid) != true)
+				{
+					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at remove case o == b"));
+					return EMeshResult::Failed_UnrecoverableError;
+				}
+			}
+			else if (o == c)
+			{
+				if (VertexEdgeLists.Remove(c, eid) != true)
+				{
+					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at remove case o == c"));
+					return EMeshResult::Failed_UnrecoverableError;
+				}
+				tac = GetOtherEdgeTriangle(eid, t0);
+			}
+			else if (o == d)
+			{
+				if (VertexEdgeLists.Remove(d, eid) != true)
+				{
+					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at remove case o == c, step 1"));
+					return EMeshResult::Failed_UnrecoverableError;
+				}
+				tad = GetOtherEdgeTriangle(eid, t1);
+			}
+			else
+			{
+				if (ReplaceEdgeVertex(eid, a, b) == -1)
+				{
+					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at remove case else"));
+					return EMeshResult::Failed_UnrecoverableError;
+				}
+				VertexEdgeLists.Insert(b, eid);
+			}
+
+			// [TODO] perhaps we can already have unique tri list because of the manifold-nbrhood check we need to do...
+			const FEdge Edge = Edges[eid];
+			for (int j = 0; j < 2; ++j)
+			{
+				int t_j = Edge.Tri[j];
+				if (t_j != InvalidID && t_j != t0 && t_j != t1)
+				{
+					if (TriangleHasVertex(t_j, a))
+					{
+						if (ReplaceTriangleVertex(t_j, a, b) == -1)
+						{
+							checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at remove last check"));
+							return EMeshResult::Failed_UnrecoverableError;
+						}
+						VertexRefCounts.Increment(b);
+						VertexRefCounts.Decrement(a);
+					}
+				}
+			}
+		}
+
+		if (bIsBoundaryEdge == false)
+		{
+			// remove all edges from vtx a, then remove vtx a
+			VertexEdgeLists.Clear(a);
+			checkSlow(VertexRefCounts.GetRefCount(a) == 3);		// in t0,t1, and initial ref
+			VertexRefCounts.Decrement(a, 3);
+			checkSlow(VertexRefCounts.IsValid(a) == false);
+
+			// remove triangles T0 and T1, and update b/c/d refcounts
+			TriangleRefCounts.Decrement(t0);
+			TriangleRefCounts.Decrement(t1);
+			VertexRefCounts.Decrement(c);
+			VertexRefCounts.Decrement(d);
+			VertexRefCounts.Decrement(b, 2);
+			checkSlow(TriangleRefCounts.IsValid(t0) == false);
+			checkSlow(TriangleRefCounts.IsValid(t1) == false);
+
+			// remove edges ead, eab, eac
+			EdgeRefCounts.Decrement(ead);
+			EdgeRefCounts.Decrement(eab);
+			EdgeRefCounts.Decrement(eac);
+			checkSlow(EdgeRefCounts.IsValid(ead) == false);
+			checkSlow(EdgeRefCounts.IsValid(eab) == false);
+			checkSlow(EdgeRefCounts.IsValid(eac) == false);
+
+			// replace t0 and t1 in edges ebd and ebc that we kept
+			ebd = FindEdgeFromTri(b, d, t1);
+			if (ebc == InvalidID)   // we may have already looked this up
+			{
+				ebc = FindEdgeFromTri(b, c, t0);
+			}
+
+			if (ReplaceEdgeTriangle(ebd, t1, tad) == -1)
+			{
+				checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=false branch, ebd replace triangle"));
+				return EMeshResult::Failed_UnrecoverableError;
+			}
+
+			if (ReplaceEdgeTriangle(ebc, t0, tac) == -1)
+			{
+				checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=false branch, ebc replace triangle"));
+				return EMeshResult::Failed_UnrecoverableError;
+			}
+
+			// update tri-edge-nbrs in tad and tac
+			if (tad != InvalidID)
+			{
+				if (ReplaceTriangleEdge(tad, ead, ebd) == -1)
+				{
+					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=false branch, ebd replace triangle"));
+					return EMeshResult::Failed_UnrecoverableError;
+				}
+			}
+			if (tac != InvalidID)
+			{
+				if (ReplaceTriangleEdge(tac, eac, ebc) == -1)
+				{
+					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=false branch, ebd replace triangle"));
+					return EMeshResult::Failed_UnrecoverableError;
+				}
+			}
+
+		}
+		else
+		{
+			//  boundary-edge path. this is basically same code as above, just not referencing t1/d
+
+			// remove all edges from vtx a, then remove vtx a
+			VertexEdgeLists.Clear(a);
+			checkSlow(VertexRefCounts.GetRefCount(a) == 2);		// in t0 and initial ref
+			VertexRefCounts.Decrement(a, 2);
+			checkSlow(VertexRefCounts.IsValid(a) == false);
+
+			// remove triangle T0 and update b/c refcounts
+			TriangleRefCounts.Decrement(t0);
+			VertexRefCounts.Decrement(c);
+			VertexRefCounts.Decrement(b);
+			checkSlow(TriangleRefCounts.IsValid(t0) == false);
+
+			// remove edges eab and eac
+			EdgeRefCounts.Decrement(eab);
+			EdgeRefCounts.Decrement(eac);
+			checkSlow(EdgeRefCounts.IsValid(eab) == false);
+			checkSlow(EdgeRefCounts.IsValid(eac) == false);
+
+			// replace t0 in edge ebc that we kept
+			ebc = FindEdgeFromTri(b, c, t0);
+			if (ReplaceEdgeTriangle(ebc, t0, tac) == -1)
+			{
+				checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=false branch, ebc replace triangle"));
+				return EMeshResult::Failed_UnrecoverableError;
+			}
+
+			// update tri-edge-nbrs in tac
+			if (tac != InvalidID)
+			{
+				if (ReplaceTriangleEdge(tac, eac, ebc) == -1)
+				{
+					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=true branch, ebd replace triangle"));
+					return EMeshResult::Failed_UnrecoverableError;
+				}
+			}
+		}
+
+		// set kept vertex to interpolated collapse position
+		SetVertex(vKeep, Lerp(KeptPos, RemovedPos, collapse_t));
+		if (HasVertexUVs())
+		{
+			SetVertexUV(vKeep, Lerp(GetVertexUV(vKeep), RemovedUV, (float)collapse_t));
+		}
+		if (HasVertexNormals())
+		{
+			SetVertexNormal(vKeep, Normalized(Lerp(GetVertexNormal(vKeep), RemovedNormal, (float)collapse_t)));
+		}
+		if (HasVertexColors())
+		{
+			SetVertexColor(vKeep, Lerp(GetVertexColor(vKeep), RemovedColor, (float)collapse_t));
+		}
+
+		CollapseInfo.KeptVertex = vKeep;
+		CollapseInfo.RemovedVertex = vRemove;
+		CollapseInfo.bIsBoundary = bIsBoundaryEdge;
+		CollapseInfo.CollapsedEdge = eab;
+		CollapseInfo.RemovedTris = FIndex2i(t0, t1);
+		CollapseInfo.RemovedEdges = FIndex2i(eac, ead);
+		CollapseInfo.KeptEdges = FIndex2i(ebc, ebd);
+		CollapseInfo.CollapseT = collapse_t;
+
+		if (HasAttributes())
+		{
+			Attributes()->OnCollapseEdge(CollapseInfo);
+		}
+		*/
+		return EMeshResult::Ok;
 	}
 
 	int DynamicMesh::GetVtxTriangleCount(int vID) const
@@ -441,6 +866,11 @@ namespace Riemann
 		return -1;
 	}
 
+
+	void DynamicMesh::BuildBounds()
+	{
+		Bounds = Box3(VertexPositions.data(), VertexPositions.size());
+	}
 
 	bool DynamicMesh::LoadObj(const char* name)
 	{
@@ -528,7 +958,7 @@ namespace Riemann
 					const int c = face[i];
 					if (a < 0 || a >= NumVertices || b < 0 || b >= NumVertices || c < 0 || c >= NumVertices)
 						continue;
-					AppendTriangle(Vector3i(a, b, c));
+					AppendTriangle(Index3(a, b, c));
 				}
 			}
 		}
@@ -573,8 +1003,8 @@ namespace Riemann
 		fprintf(fp, "# Polygonal face element (see below) \n");
 		for (size_t i = 0; i < Triangles.size(); ++i)
 		{
-			const Vector3i v = Triangles[i];
-			fprintf(fp, "f %d %d %d\n", v.x + 1, v.y + 1, v.z + 1);
+			const Index3 v = Triangles[i];
+			fprintf(fp, "f %d %d %d\n", v.a + 1, v.b + 1, v.c + 1);
 		}
 
 		if (!VertexNormals.empty())

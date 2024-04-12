@@ -10,6 +10,8 @@
 #include "../Src/Core/JobSystem.h"
 #include "../Src/Core/ThreadPool.h"
 #include "../Src/Core/RingBuffer.h"
+#include "../Src/Core/PriorityQueue.h"
+#include "../Src/Maths/Maths.h"
 #include "../Src/Maths/Vector3.h"
 
 using namespace Riemann;
@@ -242,6 +244,31 @@ void TestListSet()
 	return;
 }
 
+void TestPriorityQueue()
+{
+	PriorityQueue<int> q;
+
+	std::vector<int> v;
+	for (int i = 1; i <= 100; ++i)
+	{
+		v.push_back(i);
+	}
+	Maths::RandomShuffe(v.data(), (int)v.size());
+
+	for (size_t i = 0; i < v.size(); ++i)
+	{
+		q.push(v[i]);
+	}
+	v.clear();
+
+	while (!q.empty())
+	{
+		v.push_back(q.pop());
+	}
+
+	EXPECT(Maths::IsAscendingOrder(v.data(), (int)v.size()));
+}
+
 void TestCores()
 {
 	TestBitSet();
@@ -249,4 +276,5 @@ void TestCores()
 	// TestJob();
 	// TestGraph();
 	TestListSet();
+	TestPriorityQueue();
 }

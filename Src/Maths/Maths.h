@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <random>
 
 namespace Maths
 {
@@ -49,6 +50,14 @@ namespace Maths
 		return p;
 	}
 
+	template<typename T>
+	inline void RandomShuffe(T *v, int size)
+	{
+		std::random_device rd;
+		std::mt19937 g(rd());
+		std::shuffle(v, v + size, g);
+	}
+
 	struct SplitMix64RandGen
 	{
 		typedef unsigned long long uint64;
@@ -69,6 +78,40 @@ namespace Maths
 			return z ^ (z >> 31);
 		}
 	};
+
+	template<typename T>
+	bool IsAscendingOrder(T* v, int size)
+	{
+		if (size <= 1)
+		{
+			return true;
+		}
+		for (int i = 1; i < size; ++i)
+		{
+			if (v[i - 1] > v[i])
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	template<typename T>
+	bool IsDescendingOrder(T* v, int size)
+	{
+		if (size <= 1)
+		{
+			return true;
+		}
+		for (int i = 1; i < size; ++i)
+		{
+			if (v[i - 1] < v[i])
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 
 	inline float FloatDiff(float v1, float v2)
 	{

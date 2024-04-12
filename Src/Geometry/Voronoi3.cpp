@@ -5127,10 +5127,10 @@ namespace Riemann
 					for (int MeshIdx = 0; MeshIdx < NumMeshes; MeshIdx++)
 					{
 						int Offset = VertStart[MeshIdx];
-						Vector3i Tri(V0 + Offset, V1 + Offset, V2 + Offset);
+						Index3 Tri(V0 + Offset, V1 + Offset, V2 + Offset);
 						if (MeshIdx == 1 && OtherCell != OutsideCellIndex)
 						{
-							std::swap(Tri.y, Tri.z);
+							std::swap(Tri.b, Tri.c);
 						}
 						int TID = Meshes[MeshIdx]->AppendTriangle(Tri);
 						if (TID > -1)
@@ -5158,10 +5158,10 @@ namespace Riemann
 					int Offset = VertStart[MeshIdx];
 					for (DelaunayTriangle& Triangle : Triangulation.Triangles)
 					{
-						Vector3i vt(Triangle.v1 + Offset, Triangle.v2 + Offset, Triangle.v3 + Offset);
+						Index3 vt(Triangle.v1 + Offset, Triangle.v2 + Offset, Triangle.v3 + Offset);
 						if (MeshIdx == 1 && OtherCell != OutsideCellIndex)
 						{
-							std::swap(vt.y, vt.z);
+							std::swap(vt.b, vt.c);
 						}
 						int TID = Meshes[MeshIdx]->AppendTriangle(vt);
 						if (TID > -1)

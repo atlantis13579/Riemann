@@ -11,6 +11,7 @@ extern void TestPython();
 extern void TestSIMD();
 extern void TestMatrix();
 extern void TestVehicle();
+extern void TestDestruction();
 extern void TestOptimization();
 
 void TestAll()
@@ -25,6 +26,7 @@ void TestAll()
 	// TestMatrix();
 	// TestVehicle();
 	// TestOptimization();
+	// TestDestruction();
 }
 
 #include "../Src/Maths/Matrix3.h"

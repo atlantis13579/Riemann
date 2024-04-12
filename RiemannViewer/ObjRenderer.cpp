@@ -70,12 +70,12 @@ namespace Riemann
 		mesh->CalculateNormals();
 
 		std::vector<Vertex1> vv;
-		for (uint32_t i = 0; i < mesh->GetNumVertices(); ++i)
+		for (uint32_t i = 0; i < mesh->GetVertexCount(); ++i)
 		{
 			vv.emplace_back(mesh->Vertices[i], mesh->mNormals[i]);
 		}
 
-		renderer->AddTriangles(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetNumTriangles() * 3, mesh->GetIndicesWidth() * 2);
+		renderer->AddTriangles(mesh->ResourceId.c_str(), Trans, &vv[0], (int)vv.size(), mesh->GetIndexBuffer(), mesh->GetTriangleCount() * 3, mesh->GetIndicesWidth() * 2);
 
 		if (RenderBV)
 		{

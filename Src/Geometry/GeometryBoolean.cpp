@@ -5,6 +5,7 @@
 #include <set>
 #include "../CollisionPrimitive/Segment3.h"
 #include "../CollisionPrimitive/Triangle3.h"
+#include "../Core/PriorityQueue.h"
 #include "../Maths/Maths.h"
 #include "GeometryBoolean.h"
 #include "DynamicMesh.h"
@@ -150,8 +151,8 @@ namespace Riemann
 
 		bool AddViaPlanarWalk(int StartTri, int StartVID, Vector3 StartPt, int EndTri, int EndVertID, Vector3 EndPt,
 			Vector3 WalkPlaneNormal, std::function<Vector3(const DynamicMesh*, int)> VertexToPosnFn = nullptr,
-			bool bAllowBackwardsSearch = true, double AcceptEndPtOutsideDist = 1e-6f,
-			double PtOnPlaneThresholdSq = 1e-4f, double BackwardsTolerance = 1e-5f)
+			bool bAllowBackwardsSearch = true, float AcceptEndPtOutsideDist = 1e-6f,
+			float PtOnPlaneThresholdSq = 1e-4f, float BackwardsTolerance = 1e-5f)
 		{
 			if (!VertexToPosnFn)
 			{
@@ -166,24 +167,130 @@ namespace Riemann
 
 		bool EmbedSimplePath(bool bUpdatePath, std::vector<int>& PathVertices, bool bDoNotDuplicateFirstVertexID = true, float SnapElementThresholdSq = 1e-4f)
 		{
-			assert(false);
-			return false;
+			int InitialPathIdx = (int)PathVertices.size();
+			if (Path.empty())
+			{
+				return true;
+			}
+
+			int PathNum = (int)Path.size();
+			const FMeshSurfacePoint& OrigEndPt = Path[PathNum - 1].first;
+
+			int StartProcessIdx = 0, EndSimpleProcessIdx = PathNum - 1;
+			bool bEndPointSpecialProcess = false;
+			if (PathNum > 1 && OrigEndPt.PointType == ESurfacePointType::Triangle)
+			{
+				EndSimpleProcessIdx = PathNum - 2;
+				bEndPointSpecialProcess = true;
+			}
+			bool bNeedFinalRelocate = false;
+			FMeshSurfacePoint EndPtUpdated = Path.back().first;
+			Vector3 EndPtPos = OrigEndPt.Pos(Mesh);
+
+			if (Path[0].first.PointType == ESurfacePointType::Triangle)
+			{
+				PokeTriangleInfo PokeInfo;
+				Mesh->PokeTriangle(Path[0].first.ElementID, Path[0].first.BaryCoord, PokeInfo);
+				if (EndPtUpdated.PointType == ESurfacePointType::Triangle && Path[0].first.ElementID == EndPtUpdated.ElementID)
+				{
+					EndPtUpdated = RelocateTrianglePointAfterRefinement(Mesh, EndPtPos, { PokeInfo.NewTriangles.a, PokeInfo.NewTriangles.b, PokeInfo.OriginalTriangle }, SnapElementThresholdSq);
+				}
+				PathVertices.push_back(PokeInfo.NewVertex);
+				StartProcessIdx = 1;
+			}
+			for (int PathIdx = StartProcessIdx; PathIdx <= EndSimpleProcessIdx; PathIdx++)
+			{
+				if (!(Path[PathIdx].first.PointType != ESurfacePointType::Triangle))
+				{
+					return false;
+				}
+				const FMeshSurfacePoint& Pt = Path[PathIdx].first;
+				if (Pt.PointType == ESurfacePointType::Edge)
+				{
+					assert(Mesh->IsEdge(Pt.ElementID));
+					EdgeSplitInfo SplitInfo;
+					Mesh->SplitEdge(Pt.ElementID, SplitInfo, Pt.BaryCoord[0]);
+					PathVertices.push_back(SplitInfo.NewVertex);
+					if (EndPtUpdated.PointType == ESurfacePointType::Triangle && SplitInfo.OriginalTriangles.Contains(EndPtUpdated.ElementID))
+					{
+						std::vector<int> TriInds = { EndPtUpdated.ElementID };
+						if (SplitInfo.OriginalTriangles.a == EndPtUpdated.ElementID)
+						{
+							TriInds.push_back(SplitInfo.NewTriangles.a);
+						}
+						else
+						{
+							TriInds.push_back(SplitInfo.NewTriangles.b);
+						}
+						EndPtUpdated = RelocateTrianglePointAfterRefinement(Mesh, EndPtPos, TriInds, SnapElementThresholdSq);
+					}
+					else if (PathIdx != PathNum - 1 && EndPtUpdated.PointType == ESurfacePointType::Edge && Pt.ElementID == EndPtUpdated.ElementID)
+					{
+						assert(false);
+					}
+				}
+				else
+				{
+					assert(Pt.PointType == ESurfacePointType::Vertex);
+					assert(Mesh->IsVertex(Pt.ElementID));
+					if (!bDoNotDuplicateFirstVertexID || PathVertices.size() != InitialPathIdx || 0 == PathVertices.size() || PathVertices.back() != Pt.ElementID)
+					{
+						PathVertices.push_back(Pt.ElementID);
+					}
+				}
+			}
+
+			if (bEndPointSpecialProcess)
+			{
+				if (EndPtUpdated.PointType == ESurfacePointType::Triangle)
+				{
+					PokeTriangleInfo PokeInfo;
+					Mesh->PokeTriangle(EndPtUpdated.ElementID, EndPtUpdated.BaryCoord, PokeInfo);
+					PathVertices.push_back(PokeInfo.NewVertex);
+				}
+				else if (EndPtUpdated.PointType == ESurfacePointType::Edge)
+				{
+					EdgeSplitInfo SplitInfo;
+					Mesh->SplitEdge(EndPtUpdated.ElementID, SplitInfo, EndPtUpdated.BaryCoord[0]);
+					PathVertices.push_back(SplitInfo.NewVertex);
+				}
+				else
+				{
+					if (PathVertices.size() == 0 || PathVertices.back() != EndPtUpdated.ElementID)
+					{
+						PathVertices.push_back(EndPtUpdated.ElementID);
+					}
+				}
+			}
+
+			if (bUpdatePath)
+			{
+				assert(false);
+			}
+
+			return true;
 		}
 
-
 	private:
-		static bool WalkMeshPlanar(const DynamicMesh* Mesh, int StartTri, int StartVID, Vector3 StartPt, int EndTri, int EndVertID, Vector3 EndPt, Vector3 WalkPlaneNormal, std::function<Vector3(const DynamicMesh*, int)> VertexToPosnFn,
-			bool bAllowBackwardsSearch, double AcceptEndPtOutsideDist, double PtOnPlaneThresholdSq, std::vector<std::pair<FMeshSurfacePoint, int>>& WalkedPath, double BackwardsTolerance)
+		struct FIndexDistance
 		{
-			assert(false);
-			return false;
-			/*
-			* 
-			auto SetTriVertPositions = [&VertexToPosnFn, &Mesh](Vector3i TriVertIDs, Triangle3& Tri)
+			int Index;
+			float PathLength;
+			float DistanceToEnd;
+			bool operator<(const FIndexDistance& Other) const
 			{
-				Tri.v0 = VertexToPosnFn(Mesh, TriVertIDs.x);
-				Tri.v1 = VertexToPosnFn(Mesh, TriVertIDs.y);
-				Tri.v2 = VertexToPosnFn(Mesh, TriVertIDs.z);
+				return PathLength + DistanceToEnd < Other.PathLength + Other.DistanceToEnd;
+			}
+		};
+
+		static bool WalkMeshPlanar(const DynamicMesh* Mesh, int StartTri, int StartVID, Vector3 StartPt, int EndTri, int EndVertID, Vector3 EndPt, Vector3 WalkPlaneNormal, std::function<Vector3(const DynamicMesh*, int)> VertexToPosnFn,
+			bool bAllowBackwardsSearch, float AcceptEndPtOutsideDist, float PtOnPlaneThresholdSq, std::vector<std::pair<FMeshSurfacePoint, int>>& WalkedPath, float BackwardsTolerance)
+		{
+			auto SetTriVertPositions = [&VertexToPosnFn, &Mesh](Index3 TriVertIDs, Triangle3& Tri)
+			{
+				Tri.v0 = VertexToPosnFn(Mesh, TriVertIDs.a);
+				Tri.v1 = VertexToPosnFn(Mesh, TriVertIDs.b);
+				Tri.v2 = VertexToPosnFn(Mesh, TriVertIDs.c);
 			};
 
 			auto PtInsideTri = [](const Vector3& BaryCoord, double BaryThreshold = 1e-6f)
@@ -205,16 +312,16 @@ namespace Riemann
 			};
 
 			std::vector<std::pair<FMeshSurfacePoint, FWalkIndices>> ComputedPointsAndSources;
-			std::vector<FIndexDistance> UnexploredEnds;
+			PriorityQueue<FIndexDistance> UnexploredEnds;
 
 			std::set<int> ExploredTriangles, CrossedVertices;
 
 			int BestKnownEnd = -1;
 
 			Triangle3 CurrentTri;
-			Vector3i StartTriVertIDs = Mesh->GetTriangle(StartTri);
+			Index3 StartTriVertIDs = Mesh->GetTriangle(StartTri);
 			SetTriVertPositions(StartTriVertIDs, CurrentTri);
-			FDistPoint3Triangle3d CurrentTriDist(StartPt, CurrentTri); // heavy duty way to get barycentric coordinates and check if on triangle; should be robust to degenerate triangles unlike VectorUtil's barycentric coordinate function
+			Triangle3::BaryCentric3DDecomposionResult CurrentTriDist;
 			int StartVIDIndex = -1;
 			if (StartVID != -1)
 			{
@@ -222,24 +329,24 @@ namespace Riemann
 			}
 			if (StartVIDIndex == -1)
 			{
-				CurrentTriDist.ComputeResult();
-				ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(StartTri, CurrentTriDist.TriangleBaryCoords), FWalkIndices(StartPt, -1, StartTri));
+				Triangle3::BaryCentric3DDecomposionResult info = CurrentTri.BaryCentric3DDecomposion(StartPt);
+				ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(StartTri, CurrentTriDist.BaryCoords), FWalkIndices(StartPt, -1, StartTri));
 			}
 			else
 			{
-				CurrentTriDist.TriangleBaryCoords = Vector3::Zero();
-				CurrentTriDist.TriangleBaryCoords[StartVIDIndex] = 1.0;
-				CurrentTriDist.ClosestTrianglePoint = StartPt;
-				ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(StartTri, CurrentTriDist.TriangleBaryCoords), FWalkIndices(StartPt, -1, StartTri));
+				CurrentTriDist.BaryCoords = Vector3::Zero();
+				CurrentTriDist.BaryCoords[StartVIDIndex] = 1.0;
+				CurrentTriDist.ClosestPoint = StartPt;
+				ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(StartTri, CurrentTriDist.BaryCoords), FWalkIndices(StartPt, -1, StartTri));
 			}
 
 			Vector3 ForwardsDirection = EndPt - StartPt;
 
 			int CurrentEnd = 0;
-			double CurrentPathLength = 0;
-			double CurrentDistanceToEnd = ForwardsDirection.Length();
+			float CurrentPathLength = 0;
+			float CurrentDistanceToEnd = ForwardsDirection.Length();
 
-			UnexploredEnds.push_back({ 0, CurrentPathLength, CurrentDistanceToEnd });
+			UnexploredEnds.push({ 0, CurrentPathLength, CurrentDistanceToEnd });
 
 			int IterCountSafety = 0;
 			int NumTriangles = Mesh->GetTriangleCount();
@@ -251,8 +358,7 @@ namespace Riemann
 				}
 				if (UnexploredEnds.size())
 				{
-					FIndexDistance TopEndWithDistance;
-					UnexploredEnds.HeapPop(TopEndWithDistance);
+					FIndexDistance TopEndWithDistance = UnexploredEnds.pop();
 
 					CurrentEnd = TopEndWithDistance.Index;
 					CurrentPathLength = TopEndWithDistance.PathLength;
@@ -267,12 +373,13 @@ namespace Riemann
 				FWalkIndices CurrentWalk = ComputedPointsAndSources[CurrentEnd].second;
 				int TriID = CurrentWalk.WalkingOnTri;
 				assert(Mesh->IsTriangle(TriID));
-				Vector3i TriVertIDs = Mesh->GetTriangle(TriID);
+				Index3 TriVertIDs = Mesh->GetTriangle(TriID);
 				SetTriVertPositions(TriVertIDs, CurrentTri);
 
 				if (EndVertID >= 0 && TriVertIDs.Contains(EndVertID))
 				{
-					CurrentEnd = ComputedPointsAndSources.Emplace(FMeshSurfacePoint(EndVertID), FWalkIndices(EndPt, CurrentEnd, TriID));
+					CurrentEnd = (int)ComputedPointsAndSources.size();
+					ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(EndVertID), FWalkIndices(EndPt, CurrentEnd, TriID));
 					BestKnownEnd = CurrentEnd;
 					break;
 				}
@@ -281,10 +388,9 @@ namespace Riemann
 				bool ComputedEndPtOnTri = false;
 				if (EndVertID < 0 && EndTri == -1)
 				{
-					CurrentTriDist.Triangle = CurrentTri;
-					CurrentTriDist.Point = EndPt;
+					CurrentTriDist = CurrentTri.BaryCentric3DDecomposion(EndPt);
 					ComputedEndPtOnTri = true;
-					double DistSq = CurrentTriDist.GetSquared();
+					double DistSq = CurrentTriDist.SqrDistance;
 					if (DistSq < AcceptEndPtOutsideDist)
 					{
 						OnEndTri = true;
@@ -295,12 +401,11 @@ namespace Riemann
 				{
 					if (!ComputedEndPtOnTri)
 					{
-						CurrentTriDist.Triangle = CurrentTri;
-						CurrentTriDist.Point = EndPt;
 						ComputedEndPtOnTri = true;
-						CurrentTriDist.GetSquared();
+						CurrentTriDist = CurrentTri.BaryCentric3DDecomposion(EndPt);
 					}
-					CurrentEnd = ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(TriID, CurrentTriDist.TriangleBaryCoords), FWalkIndices(EndPt, CurrentEnd, TriID));
+					CurrentEnd = (int)ComputedPointsAndSources.size();
+					ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(TriID, CurrentTriDist.BaryCoords), FWalkIndices(EndPt, CurrentEnd, TriID));
 
 					BestKnownEnd = CurrentEnd;
 					break;
@@ -317,7 +422,7 @@ namespace Riemann
 				int InitialComputedPointsNum = (int)ComputedPointsAndSources.size();
 				for (int TriSubIdx = 0; TriSubIdx < 3; TriSubIdx++)
 				{
-					double SD = (CurrentTri.V[TriSubIdx] - StartPt).Dot(WalkPlaneNormal);
+					float SD = (CurrentTri[TriSubIdx] - StartPt).Dot(WalkPlaneNormal);
 					SignDist[TriSubIdx] = SD;
 					if (fabs(SD) <= PtOnPlaneThresholdSq)
 					{
@@ -327,18 +432,19 @@ namespace Riemann
 						if (FromPt.PointType != ESurfacePointType::Vertex || CandidateVertID != FromPt.ElementID)
 						{
 							FMeshSurfacePoint SurfPt(CandidateVertID);
-							FWalkIndices WalkInds(CurrentTri.V[TriSubIdx], CurrentEnd, -1);
+							FWalkIndices WalkInds(CurrentTri[TriSubIdx], CurrentEnd, -1);
 							bool bIsForward = ForwardsDirection.Dot(CurrentTri[TriSubIdx] - StartPt) >= -BackwardsTolerance;
 							if ((bAllowBackwardsSearch || bIsForward) && !CrossedVertices.count(CandidateVertID))
 							{
 
 								CrossedVertices.insert(CandidateVertID);
 
-								for (int NbrTriID : Mesh->VtxTrianglesItr(CandidateVertID))
+								std::vector<int> VtxTriangles = Mesh->GetVexTriangles(CandidateVertID);
+								for (int NbrTriID : VtxTriangles)
 								{
 									if (NbrTriID != TriID)
 									{
-										Vector3i NbrTriVertIDs = Mesh->GetTriangle(NbrTriID);
+										Index3 NbrTriVertIDs = Mesh->GetTriangle(NbrTriID);
 										Triangle3 NbrTri;
 										SetTriVertPositions(NbrTriVertIDs, NbrTri);
 										int SignsMultiplied = 1;
@@ -348,7 +454,7 @@ namespace Riemann
 											{
 												continue;
 											}
-											double NbrSD = (NbrTri.V[NbrTriSubIdx] - StartPt).Dot(WalkPlaneNormal);
+											float NbrSD = (NbrTri[NbrTriSubIdx] - StartPt).Dot(WalkPlaneNormal);
 											int NbrSign = fabsf(NbrSD) <= PtOnPlaneThresholdSq ? 0 : NbrSD > 0 ? 1 : -1;
 											SignsMultiplied *= NbrSign;
 										}
@@ -367,7 +473,7 @@ namespace Riemann
 						Side[TriSubIdx] = SD > 0 ? 1 : -1;
 					}
 				}
-				Vector3i TriEdgeIDs = Mesh->GetTriangleEdge(TriID);
+				Index3 TriEdgeIDs = Mesh->GetTriangleEdge(TriID);
 				for (int TriSubIdx = 0; TriSubIdx < 3; TriSubIdx++)
 				{
 					int NextSubIdx = (TriSubIdx + 1) % 3;
@@ -407,13 +513,13 @@ namespace Riemann
 				for (int NewComputedPtIdx = InitialComputedPointsNum; NewComputedPtIdx < ComputedPointsAndSources.size(); NewComputedPtIdx++)
 				{
 					const Vector3& CurrentPathPoint = ComputedPointsAndSources[NewComputedPtIdx].second.Position;
-					double PathLength = CurrentPathLength + (PreviousPathPoint - CurrentPathPoint).Length();
-					double DistanceToEnd = (EndPt - CurrentPathPoint).Length();
+					float PathLength = CurrentPathLength + (PreviousPathPoint - CurrentPathPoint).Length();
+					float DistanceToEnd = (EndPt - CurrentPathPoint).Length();
 
 					bool bIsForward = ForwardsDirection.Dot(CurrentPathPoint - StartPt) >= -BackwardsTolerance;
 					if (bAllowBackwardsSearch || bIsForward)
 					{
-						UnexploredEnds.HeapPush({ NewComputedPtIdx, PathLength, DistanceToEnd });
+						UnexploredEnds.push({ NewComputedPtIdx, PathLength, DistanceToEnd });
 					}
 				}
 			}
@@ -432,7 +538,7 @@ namespace Riemann
 				TrackedPtIdx = ComputedPointsAndSources[TrackedPtIdx].second.WalkedFromPt;
 			}
 			WalkedPath.clear();
-			for (int IdxIdx = AcceptedIndices.size() - 1; IdxIdx >= 0; IdxIdx--)
+			for (int IdxIdx = (int)AcceptedIndices.size() - 1; IdxIdx >= 0; IdxIdx--)
 			{
 				WalkedPath.emplace_back(ComputedPointsAndSources[AcceptedIndices[IdxIdx]].first, ComputedPointsAndSources[AcceptedIndices[IdxIdx]].second.WalkingOnTri);
 			}
@@ -443,7 +549,7 @@ namespace Riemann
 
 				if (StartVIDIndex > -1 && SurfacePt.BaryCoord[StartVIDIndex] == 1.0)
 				{
-					Vector3i TriVertIDs = Mesh->GetTriangle(SurfacePt.ElementID);
+					Index3 TriVertIDs = Mesh->GetTriangle(SurfacePt.ElementID);
 					SurfacePt.ElementID = TriVertIDs[StartVIDIndex];
 					SurfacePt.PointType = ESurfacePointType::Vertex;
 				}
@@ -453,14 +559,14 @@ namespace Riemann
 				}
 				if (WalkedPath.size() > 1 &&
 					SurfacePt.PointType != ESurfacePointType::Triangle &&
-					SurfacePt.PointType == WalkedPath[1].Key.PointType &&
-					SurfacePt.ElementID == WalkedPath[1].Key.ElementID)
+					SurfacePt.PointType == WalkedPath[1].first.PointType &&
+					SurfacePt.ElementID == WalkedPath[1].first.ElementID)
 				{
 					if (SurfacePt.PointType == ESurfacePointType::Edge)
 					{
-						WalkedPath[1].Key.BaryCoord = SurfacePt.BaryCoord;
+						WalkedPath[1].first.BaryCoord = SurfacePt.BaryCoord;
 					}
-					WalkedPath.RemoveAt(0);
+					WalkedPath.erase(WalkedPath.begin());
 				}
 			}
 			if (WalkedPath.size() && WalkedPath.back().first.PointType == ESurfacePointType::Triangle)
@@ -469,20 +575,102 @@ namespace Riemann
 				RefineSurfacePtFromTriangleToSubElement(Mesh, SurfacePt.Pos(Mesh), SurfacePt, PtOnPlaneThresholdSq);
 				if (WalkedPath.size() > 1 &&
 					SurfacePt.PointType != ESurfacePointType::Triangle &&
-					SurfacePt.PointType == WalkedPath.Last(1).Key.PointType &&
-					SurfacePt.ElementID == WalkedPath.Last(1).Key.ElementID)
+					SurfacePt.PointType == WalkedPath[WalkedPath.size() - 2].first.PointType &&
+					SurfacePt.ElementID == WalkedPath[WalkedPath.size() - 2].first.ElementID)
 				{
 					if (SurfacePt.PointType == ESurfacePointType::Edge) // copy closer barycoord
 					{
-						WalkedPath.Last(1).Key.BaryCoord = SurfacePt.BaryCoord;
+						WalkedPath[WalkedPath.size() - 2].first.BaryCoord = SurfacePt.BaryCoord;
 					}
-					WalkedPath.Pop();
+					WalkedPath.pop_back();
 				}
 			}
 
 			return true;
-			*/
 		}
+
+		static void RefineSurfacePtFromTriangleToSubElement(const DynamicMesh* Mesh, Vector3 Pos, FMeshSurfacePoint& SurfacePt, float SnapElementThresholdSq)
+		{
+			if (!(SurfacePt.PointType == ESurfacePointType::Triangle))
+			{
+				return;
+			}
+			int TriID = SurfacePt.ElementID;
+
+			Index3 TriVertIDs = Mesh->GetTriangle(TriID);
+			int BestSubIdx = -1;
+			double BestElementDistSq = 0;
+			for (int VertSubIdx = 0; VertSubIdx < 3; VertSubIdx++)
+			{
+				double DistSq = (Pos - Mesh->GetVertex(TriVertIDs[VertSubIdx])).SquareLength();
+				if (DistSq <= SnapElementThresholdSq && (BestSubIdx == -1 || DistSq < BestElementDistSq))
+				{
+					BestSubIdx = VertSubIdx;
+					BestElementDistSq = DistSq;
+				}
+			}
+
+			if (BestSubIdx > -1)
+			{
+				SurfacePt.ElementID = TriVertIDs[BestSubIdx];
+				SurfacePt.PointType = ESurfacePointType::Vertex;
+				return;
+			}
+
+			Index3 TriEdgeIDs = Mesh->GetTriangleEdge(TriID);
+
+			assert(BestSubIdx == -1);
+			float BestEdgeParam = 0;
+			for (int EdgeSubIdx = 0; EdgeSubIdx < 3; EdgeSubIdx++)
+			{
+				int EdgeID = TriEdgeIDs[EdgeSubIdx];
+				Vector3 EPosA, EPosB;
+				Mesh->GetEdgeV(EdgeID, EPosA, EPosB);
+				Segment3 EdgeSeg(EPosA, EPosB);
+				float DistSq = EdgeSeg.SqrDistanceToPoint(Pos);
+				if (DistSq <= SnapElementThresholdSq && (BestSubIdx == -1 || DistSq < BestElementDistSq))
+				{
+					BestSubIdx = EdgeSubIdx;
+					BestElementDistSq = DistSq;
+					BestEdgeParam = EdgeSeg.ProjectUnitRange(Pos);
+				}
+			}
+
+			if (BestSubIdx > -1)
+			{
+				SurfacePt.ElementID = TriEdgeIDs[BestSubIdx];
+				SurfacePt.PointType = ESurfacePointType::Edge;
+				SurfacePt.BaryCoord = Vector3(BestEdgeParam, 1 - BestEdgeParam, 0);
+				return;
+			}
+		}
+
+		static FMeshSurfacePoint RelocateTrianglePointAfterRefinement(const DynamicMesh* Mesh, const Vector3& PosInVertexCoordSpace, const std::vector<int>& TriIDs, float SnapElementThresholdSq)
+		{
+			double BestTriDistSq = 0;
+			Vector3 BestBaryCoords;
+			int BestTriID = -1;
+			for (int TriID : TriIDs)
+			{
+				assert(Mesh->IsTriangle(TriID));
+				Index3 TriVertIDs = Mesh->GetTriangle(TriID);
+				Triangle3 Tri(Mesh->GetVertex(TriVertIDs.a), Mesh->GetVertex(TriVertIDs.b), Mesh->GetVertex(TriVertIDs.c));
+				Triangle3::BaryCentric3DDecomposionResult info = Tri.BaryCentric3DDecomposion(PosInVertexCoordSpace);
+				double DistSq = info.SqrDistance;
+				if (BestTriID == -1 || DistSq < BestTriDistSq)
+				{
+					BestTriID = TriID;
+					BestTriDistSq = DistSq;
+					BestBaryCoords = info.BaryCoords;
+				}
+			}
+
+			assert(Mesh->IsTriangle(BestTriID));
+			FMeshSurfacePoint SurfacePt(BestTriID, BestBaryCoords);
+			RefineSurfacePtFromTriangleToSubElement(Mesh, PosInVertexCoordSpace, SurfacePt, SnapElementThresholdSq);
+			return SurfacePt;
+		}
+
 
 	};
 
@@ -543,7 +731,7 @@ namespace Riemann
 
 				Triangle3 Tri;
 				Mesh->GetTriangleVertices(SegToEls.BaseTID, Tri.v0, Tri.v1, Tri.v2);
-				Vector3i TriVIDs = Mesh->GetTriangle(SegToEls.BaseTID);
+				Index3 TriVIDs = Mesh->GetTriangle(SegToEls.BaseTID);
 				int PrevOnEdgeIdx = -1;
 				Vector3 PrevOnEdgePos;
 				for (int SegPtIdx = 0; SegPtIdx < 2; SegPtIdx++)
@@ -635,7 +823,7 @@ namespace Riemann
 				Pt.Type = EVertexType::Vertex;
 
 				FaceVertices.erase(TID);
-				Vector3i PokeTriangles(TID, PokeInfo.NewTriangles.x, PokeInfo.NewTriangles.y);
+				Index3 PokeTriangles(TID, PokeInfo.NewTriangles.a, PokeInfo.NewTriangles.b);
 				if (PtIndices.size() > 1)
 				{
 					for (int RelocatePtIdx : PtIndices)
@@ -694,7 +882,7 @@ namespace Riemann
 				Segment3 Seg(EA, EB);
 				float SplitParam = Seg.ProjectUnitRange(Pt.Pos);
 
-				Vector2i SplitTris = Mesh->GetEdgeT(EID);
+				Index2 SplitTris = Mesh->GetEdgeT(EID);
 				EdgeSplitInfo SplitInfo;
 				bool success = Mesh->SplitEdge(EID, SplitInfo, SplitParam);
 				assert(success);
@@ -706,7 +894,7 @@ namespace Riemann
 				EdgeVertices.erase(EID);
 				if (PtIndices.size() > 1)
 				{
-					Vector2i SplitEdges{ SplitInfo.OriginalEdge, SplitInfo.NewEdges.x };
+					Index2 SplitEdges{ SplitInfo.OriginalEdge, SplitInfo.NewEdges.a };
 					for (int RelocatePtIdx : PtIndices)
 					{
 						if (PtIdx == RelocatePtIdx)
@@ -840,7 +1028,7 @@ namespace Riemann
 			return bSuccess;
 		}
 
-		void UpdateFromSplit(FPtOnMesh& Pt, int SplitVertex, const Vector2i& SplitEdges)
+		void UpdateFromSplit(FPtOnMesh& Pt, int SplitVertex, const Index2& SplitEdges)
 		{
 			if ((Pt.Pos - Mesh->GetVertex(SplitVertex)).SquareLength() < SnapToleranceSq)
 			{
@@ -855,7 +1043,7 @@ namespace Riemann
 			Pt.ElemID = SplitEdges[EdgeIdx];
 		}
 
-		void UpdateFromPoke(FPtOnMesh& Pt, int PokeVertex, const Vector3i& PokeEdges, const Vector3i& PokeTris)
+		void UpdateFromPoke(FPtOnMesh& Pt, int PokeVertex, const Index3& PokeEdges, const Index3& PokeTris)
 		{
 			if ((Pt.Pos - Mesh->GetVertex(PokeVertex)).SquareLength() < SnapToleranceSq)
 			{
@@ -872,8 +1060,8 @@ namespace Riemann
 				return;
 			}
 
-			for (int j = 0; j < 3; ++j) {
-
+			for (int j = 0; j < 3; ++j)
+			{
 				if (IsInTriangle(PokeTris[j], Pt.Pos))
 				{
 					assert(Pt.Type == EVertexType::Face);
@@ -942,15 +1130,15 @@ namespace Riemann
 			return BestIdx;
 		}
 
-		int ClosestEdge(Vector2i EIDs, const Vector3& Pos)
+		int ClosestEdge(Index2 EIDs, const Vector3& Pos)
 		{
 			int BestIdx = -1;
 			float BestDSq = SnapToleranceSq;
 			for (int Idx = 0; Idx < 2; Idx++)
 			{
 				int EID = EIDs[Idx];
-				Vector2i EVIDs = Mesh->GetEdgeV(EID);
-				Segment3 Seg(Mesh->GetVertex(EVIDs.x), Mesh->GetVertex(EVIDs.y));
+				Index2 EVIDs = Mesh->GetEdgeV(EID);
+				Segment3 Seg(Mesh->GetVertex(EVIDs.a), Mesh->GetVertex(EVIDs.b));
 				float DSq = Seg.SqrDistanceToPoint(Pos);
 				if (DSq < BestDSq)
 				{
@@ -961,14 +1149,14 @@ namespace Riemann
 			return BestIdx;
 		}
 
-		int OnEdge(Vector3i EIDs, const Vector3& Pos, double BestDSq)
+		int OnEdge(Index3 EIDs, const Vector3& Pos, double BestDSq)
 		{
 			int BestIdx = -1;
 			for (int Idx = 0; Idx < 3; Idx++)
 			{
 				int EID = EIDs[Idx];
-				Vector2i EVIDs = Mesh->GetEdgeV(EID);
-				Segment3 Seg(Mesh->GetVertex(EVIDs.x), Mesh->GetVertex(EVIDs.y));
+				Index2 EVIDs = Mesh->GetEdgeV(EID);
+				Segment3 Seg(Mesh->GetVertex(EVIDs.a), Mesh->GetVertex(EVIDs.b));
 				double DSq = Seg.SqrDistanceToPoint(Pos);
 				if (DSq < BestDSq)
 				{
@@ -990,17 +1178,14 @@ namespace Riemann
 		}
 	};
 
-	bool GeometryCut::Compute()
+	bool GeometryCut::Compute(const IntersectionsQueryResult& Intersections)
 	{
-		std::vector<int> VertexChains[2];
-		std::vector<int> SegmentToChain[2];
-
 		bool bSuccess = true;
 
 		for (int MeshIdx = 0; MeshIdx < 2; MeshIdx++)
 		{
 			FCutWorkingInfo WorkingInfo(Meshe[MeshIdx], SnapTolerance);
-			WorkingInfo.AddSegments(Result, MeshIdx);
+			WorkingInfo.AddSegments(Intersections, MeshIdx);
 			WorkingInfo.InsertFaceVertices();
 			WorkingInfo.InsertEdgeVertices();
 
@@ -1041,23 +1226,18 @@ namespace Riemann
 
 		bool bOpOnSingleMesh = Operation == BooleanOp::TrimInside || Operation == BooleanOp::TrimOutside || Operation == BooleanOp::NewGroupInside || Operation == BooleanOp::NewGroupOutside;
 
-		// cut the meshes
 		GeometryCut Cut(CutMesh[0], CutMesh[1]);
-		Cut.SnapTolerance = Tolerance;
-		Cut.Compute();
-
-		Intersections = Cut.Result;
+		Cut.SnapTolerance = SnapTolerance;
+		Cut.Compute(Intersections);
 
 		int NumMeshesToProcess = bOpOnSingleMesh ? 1 : 2;
+		float DegenerateEdgeTolFactor = 1.5f;
 
-		/*
-		// collapse tiny edges along cut boundary
 		if (bCollapseDegenerateEdgesOnCut)
 		{
 			double DegenerateEdgeTolSq = DegenerateEdgeTolFactor * DegenerateEdgeTolFactor * SnapTolerance * SnapTolerance;
 			for (int MeshIdx = 0; MeshIdx < NumMeshesToProcess; MeshIdx++)
 			{
-				// convert vertex chains to edge IDs to simplify logic of finding remaining candidate edges after collapses
 				std::vector<int> EIDs;
 				for (int ChainIdx = 0; ChainIdx < Cut.VertexChains[MeshIdx].size();)
 				{
@@ -1066,14 +1246,14 @@ namespace Riemann
 					for (int ChainSubIdx = ChainIdx + 1; ChainSubIdx + 1 < ChainEnd; ChainSubIdx++)
 					{
 						int VID[2]{ Cut.VertexChains[MeshIdx][ChainSubIdx], Cut.VertexChains[MeshIdx][ChainSubIdx + 1] };
-						if (DistanceSquared(CutMesh[MeshIdx]->GetVertex(VID[0]), CutMesh[MeshIdx]->GetVertex(VID[1])) < DegenerateEdgeTolSq)
+						if ((CutMesh[MeshIdx]->GetVertex(VID[0]) - CutMesh[MeshIdx]->GetVertex(VID[1])).SquareLength() < DegenerateEdgeTolSq)
 						{
-							EIDs.Add(CutMesh[MeshIdx]->FindEdge(VID[0], VID[1]));
+							EIDs.push_back(CutMesh[MeshIdx]->FindEdge(VID[0], VID[1]));
 						}
 					}
 					ChainIdx = ChainEnd;
 				}
-				TSet<int> AllEIDs(EIDs);
+				std::set<int> AllEIDs(EIDs.begin(), EIDs.end());
 				for (int Idx = 0; Idx < EIDs.size(); Idx++)
 				{
 					int EID = EIDs[Idx];
@@ -1083,36 +1263,38 @@ namespace Riemann
 					}
 					Vector3 A, B;
 					CutMesh[MeshIdx]->GetEdgeV(EID, A, B);
-					if (DistanceSquared(A, B) > DegenerateEdgeTolSq)
+					if ((A, B).SquareLength() > DegenerateEdgeTolSq)
 					{
 						continue;
 					}
-					FIndex2i EV = CutMesh[MeshIdx]->GetEdgeV(EID);
+					Index2 EV = CutMesh[MeshIdx]->GetEdgeV(EID);
 
 					// if the vertex we'd remove is on a seam, try removing the other one instead
-					if (CutMesh[MeshIdx]->HasAttributes() && CutMesh[MeshIdx]->Attributes()->IsSeamVertex(EV.B, false))
-					{
-						Swap(EV.A, EV.B);
-						// if they were both on seams, then collapse should not happen?  (& would break OnCollapseEdge assumptions in overlay)
-						if (CutMesh[MeshIdx]->HasAttributes() && CutMesh[MeshIdx]->Attributes()->IsSeamVertex(EV.B, false))
-						{
-							continue;
-						}
-					}
-					GeometryData::FEdgeCollapseInfo CollapseInfo;
-					EMeshResult CollapseResult = CutMesh[MeshIdx]->CollapseEdge(EV.A, EV.B, .5, CollapseInfo);
-					if (CollapseResult == EMeshResult::Ok)
+					// TODO
+					//if (CutMesh[MeshIdx]->HasAttributes() && CutMesh[MeshIdx]->Attributes()->IsSeamVertex(EV.B, false))
+					//{
+					//	Swap(EV.a, EV.b);
+					//	// if they were both on seams, then collapse should not happen?  (& would break OnCollapseEdge assumptions in overlay)
+					//	if (CutMesh[MeshIdx]->HasAttributes() && CutMesh[MeshIdx]->Attributes()->IsSeamVertex(EV.B, false))
+					//	{
+					//		continue;
+					//	}
+					//}
+
+					EdgeCollapseInfo CollapseInfo;
+					EMeshResult Result = CutMesh[MeshIdx]->CollapseEdge(EV.a, EV.b, .5, CollapseInfo);
+					if (Result != EMeshResult::Ok)
 					{
 						for (int i = 0; i < 2; i++)
 						{
-							if (AllEIDs.Contains(CollapseInfo.RemovedEdges[i]))
+							if (AllEIDs.count(CollapseInfo.RemovedEdges[i]) > 0)
 							{
 								int ToAdd = CollapseInfo.KeptEdges[i];
-								bool bWasPresent;
-								AllEIDs.Add(ToAdd, &bWasPresent);
+								bool bWasPresent = AllEIDs.count(ToAdd) > 0;
 								if (!bWasPresent)
 								{
-									EIDs.Add(ToAdd);
+									AllEIDs.insert(ToAdd);
+									EIDs.push_back(ToAdd);
 								}
 							}
 						}
@@ -1121,7 +1303,7 @@ namespace Riemann
 			}
 		}
 
-
+		/*
 		// edges that will become new boundary edges after the boolean op removes triangles on each mesh
 		std::vector<int> CutBoundaryEdges[2];
 		// Vertices on the cut boundary that *may* not have a corresonding vertex on the other mesh

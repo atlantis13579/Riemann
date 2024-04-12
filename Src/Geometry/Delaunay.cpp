@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include "../Maths/Maths.h"
 #include "../Maths/Box2.h"
+#include "../Maths/Index2.h"
 #include "Delaunay.h"
 
 namespace Riemann
@@ -2114,7 +2115,7 @@ namespace Riemann
 
 		void insertVertex(int iVert, int walkStart)
 		{
-			const Vector2i trisAt = walkingSearchTrianglesAt(iVert, walkStart);
+			const Index2 trisAt = walkingSearchTrianglesAt(iVert, walkStart);
 			std::stack<int> triStack =
 				trisAt[1] == -1
 				? insertVertexInsideTriangle(iVert, trisAt[0])
@@ -2147,7 +2148,7 @@ namespace Riemann
 
 			const Vector2& v1 = vertices[iV1];
 			const int startVertex = m_nearPtLocator.nearPoint(v1, vertices);
-			Vector2i trisAt = walkingSearchTrianglesAt(iV1, startVertex);
+			Index2 trisAt = walkingSearchTrianglesAt(iV1, startVertex);
 			std::stack<int> triStack =
 				trisAt[1] == -1 ? insertVertexInsideTriangle(iV1, trisAt[0])
 				: insertVertexOnEdge(iV1, trisAt[0], trisAt[1]);
@@ -2685,9 +2686,9 @@ namespace Riemann
             return newTriangles;
         }
 
-		Vector2i trianglesAt(const Vector2& pos) const
+		Index2 trianglesAt(const Vector2& pos) const
 		{
-			Vector2i out(-1, -1);
+			Index2 out(-1, -1);
 			for (int i = 0; i < int(triangles.size()); ++i)
 			{
 				const Triangle& t = triangles[i];
@@ -2705,10 +2706,10 @@ namespace Riemann
 			assert(false);
 		}
 
-		Vector2i walkingSearchTrianglesAt(const int iV, const int startVertex) const
+		Index2 walkingSearchTrianglesAt(const int iV, const int startVertex) const
 		{
 			const Vector2 v = vertices[iV];
-			Vector2i out(-1, -1);
+			Index2 out(-1, -1);
 			const int iT = walkTriangles(startVertex, v);
 			// Finished walk, locate point in current triangle
 			const Triangle& t = triangles[iT];
@@ -3306,7 +3307,7 @@ namespace Riemann
 			std::size_t vertexCount = vertices.size() - superGeomVertCount;
 			std::vector<int> ii(vertexCount);
 			iota(ii.begin(), ii.end(), superGeomVertCount);
-			random_shuffle(ii.begin(), ii.end());
+			Maths::RandomShuffe(ii.data(), (int)ii.size());
 			for (std::vector<int>::iterator it = ii.begin(); it != ii.end(); ++it)
 			{
 				insertVertex(*it);

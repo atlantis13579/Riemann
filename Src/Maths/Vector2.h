@@ -89,6 +89,13 @@ namespace Maths
 			return x * x + y * y;
 		}
 
+		TVector2<T> Rotate(float theta) const
+		{
+			const T m0 = cosf(theta);
+			const T m1 = sinf(theta);
+			return TVector2<T>(m0 * x - m1 * y, m1 * x + m0 * y);
+		}
+
 		inline TVector2<T>& operator=(const TVector2<T>& v)
 		{
 			x = v.x;
@@ -234,11 +241,6 @@ namespace Maths
 			return p[i];
 		}
 
-		inline bool Contains(const T v) const
-		{
-			return x == v || y == v;
-		}
-
 		inline TVector2<T> PerpCCW() const
 		{
 			return TVector2<T>(-y, x);
@@ -318,9 +320,6 @@ namespace Maths
 		return a.Dot(b);
 	}
 
-	typedef TVector2<float> Vector2;
-	typedef TVector2<int>	Vector2i;
-
 	template <typename T>
 	inline TVector2<T> Rotate(const TVector2<T>& v, T theta)
 	{
@@ -340,6 +339,9 @@ namespace Maths
 	{
 		return DotPerp((B - A), (C - A));
 	}
+
+	typedef TVector2<float> Vector2;
+	typedef TVector2<int>	Vector2i;
 
 	static_assert(sizeof(Vector2) == 8, "sizeof Vector2 is not valid");
 	static_assert(sizeof(Vector2i) == 8, "sizeof Vector2i is not valid");

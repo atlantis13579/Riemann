@@ -4,15 +4,51 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <functional>
 #include "../Core/ListSet.h"
 #include "../Maths/Box3.h"
 #include "../Maths/Vector2.h"
 #include "../Maths/Vector3.h"
+#include "../Maths/Index2.h"
+#include "../Maths/Index3.h"
 #include "../Maths/Transform.h"
 
 namespace Riemann
 {
 	class DynamicMeshAABBTree;
+
+	enum class EMeshResult
+	{
+		Ok = 0,
+		Failed_NotAVertex = 1,
+		Failed_NotATriangle = 2,
+		Failed_NotAnEdge = 3,
+
+		Failed_BrokenTopology = 10,
+		Failed_HitValenceLimit = 11,
+
+		Failed_IsBoundaryEdge = 20,
+		Failed_FlippedEdgeExists = 21,
+		Failed_IsBowtieVertex = 22,
+		Failed_InvalidNeighbourhood = 23,       // these are all failures for CollapseEdge
+		Failed_FoundDuplicateTriangle = 24,
+		Failed_CollapseTetrahedron = 25,
+		Failed_CollapseTriangle = 26,
+		Failed_NotABoundaryEdge = 27,
+		Failed_SameOrientation = 28,
+
+		Failed_WouldCreateBowtie = 30,
+		Failed_VertexAlreadyExists = 31,
+		Failed_CannotAllocateVertex = 32,
+		Failed_VertexStillReferenced = 33,
+
+		Failed_WouldCreateNonmanifoldEdge = 50,
+		Failed_TriangleAlreadyExists = 51,
+		Failed_CannotAllocateTriangle = 52,
+
+		Failed_UnrecoverableError = 1000,
+		Failed_Unsupported = 1001
+	};
 
 	#define MAX_UV_CHANNEL	(8)
 	struct VertexInfo
@@ -29,24 +65,37 @@ namespace Riemann
 	struct EdgeSplitInfo
 	{
 		int OriginalEdge;
-		Vector2i OriginalVertices;
-		Vector2i OtherVertices;
-		Vector2i OriginalTriangles;
+		Index2 OriginalVertices;
+		Index2 OtherVertices;
+		Index2 OriginalTriangles;
 		bool bIsBoundary;
 		int NewVertex;
-		Vector2i NewTriangles;
-		Vector3i NewEdges;
+		Index2 NewTriangles;
+		Index3 NewEdges;
 		float SplitT;
 	};
 
 	struct PokeTriangleInfo
 	{
 		int OriginalTriangle;
-		Vector3i TriVertices;
+		Index3 TriVertices;
 		int NewVertex;
-		Vector2i NewTriangles;
-		Vector3i NewEdges;
+		Index2 NewTriangles;
+		Index3 NewEdges;
 		Vector3 BaryCoords;
+	};
+
+	struct EdgeCollapseInfo
+	{
+		int KeptVertex;
+		int RemovedVertex;
+		Index2 OpposingVerts;
+		bool bIsBoundary;
+		int CollapsedEdge;
+		Index2 RemovedTris;
+		Index2 RemovedEdges;
+		Index2 KeptEdges;
+		float CollapseT;
 	};
 
 	template<typename T>
@@ -182,7 +231,7 @@ namespace Riemann
 			return VertexPositions.data();
 		}
 
-		Vector3i* GetIndexBuffer()
+		Index3* GetIndexBuffer()
 		{
 			return Triangles.data();
 		}
@@ -241,11 +290,11 @@ namespace Riemann
 			return (int)index;
 		}
 
-		int AppendTriangle(const Vector3i& tri)
+		int AppendTriangle(const Index3& tri)
 		{
 			int index = (int)Triangles.size();
 
-			Vector3i tri_edge;
+			Index3 tri_edge;
 
 			for (int j = 0; j < 3; ++j)
 			{
@@ -273,7 +322,7 @@ namespace Riemann
 				tri_edge[j] = edge_idx;
 			}
 
-			AppendTriangleEx(tri.x, tri.y, tri.z, tri_edge.x, tri_edge.y, tri_edge.z);
+			AppendTriangleEx(tri.a, tri.b, tri.c, tri_edge.a, tri_edge.b, tri_edge.c);
 			return index;
 		}
 
@@ -326,81 +375,21 @@ namespace Riemann
 			VectorSetSafe(VertexUVs[channel], idx, val);
 		}
 
-		void SetTriangle(int idx, const Vector3i& val)
+		void SetTriangle(int idx, const Index3& val)
 		{
 			VectorSetSafe(Triangles, idx, val);
 		}
 
-		void SetTriangleEdge(int idx, const Vector3i& val)
+		void SetTriangleEdge(int idx, const Index3& val)
 		{
 			VectorSetSafe(TriangleEdges, idx, val);
 		}
 
 		bool Simplify(float rate);
 
-		void ApplyTransform(const Transform& trans, bool bReverseOrientationIfNeeded)
-		{
-			for (size_t i = 0; i < VertexPositions.size(); ++i)
-			{
-				Vector3& Position = VertexPositions[i];
-				Position = trans.LocalToWorld(Position);
-			}
-
-			if (bHasVertexNormals)
-			{
-				for (size_t i = 0; i < VertexNormals.size(); ++i)
-				{
-					Vector3& Normal = VertexNormals[i];
-					Normal = trans.LocalToWorldDirection(Normal);
-				}
-			}
-
-			if (bReverseOrientationIfNeeded && trans.quat.ToRotationMatrix3().Determinant() < 0)
-			{
-				ReverseOrientation(false);
-			}
-		}
-
-		void ApplyTransform(Transform3& trans, bool bReverseOrientationIfNeeded)
-		{
-			for (size_t i = 0; i < VertexPositions.size(); ++i)
-			{
-				Vector3& Position = VertexPositions[i];
-				Position = trans.LocalToWorld(Position);
-			}
-
-			if (bHasVertexNormals)
-			{
-				for (size_t i = 0; i < VertexNormals.size(); ++i)
-				{
-					Vector3& Normal = VertexNormals[i];
-					Normal = trans.LocalToWorldDirection(Normal);
-				}
-			}
-
-			if (bReverseOrientationIfNeeded && trans.GetRotationMatrix().Determinant() < 0)
-			{
-				ReverseOrientation(false);
-			}
-		}
-
-		void ReverseOrientation(bool bFlipNormals)
-		{
-			for (size_t i = 0; i < Triangles.size(); ++i)
-			{
-				Vector3i& tri = Triangles[i];
-				std::swap(tri.y, tri.z);
-			}
-
-			if (bFlipNormals && bHasVertexNormals)
-			{
-				for (size_t i = 0; i < VertexNormals.size(); ++i)
-				{
-					Vector3& Normal = VertexNormals[i];
-					Normal = -Normal;
-				}
-			}
-		}
+		void ApplyTransform(const Transform& trans, bool bReverseOrientationIfNeeded);
+		void ApplyTransform(Transform3& trans, bool bReverseOrientationIfNeeded);
+		void ReverseOrientation(bool bFlipNormals);
 
 		inline Vector3 GetVertex(int idx) const
 		{
@@ -450,20 +439,20 @@ namespace Riemann
 			return 0 <= idx && idx < (int)Triangles.size() && TriangleRefCounts[idx] > 0;
 		}
 
-		inline Vector3i GetTriangle(int idx) const
+		inline Index3 GetTriangle(int idx) const
 		{
 			return Triangles[idx];
 		}
 
-		inline Vector3i GetTriangleEdge(int idx) const
+		inline Index3 GetTriangleEdge(int idx) const
 		{
 			return TriangleEdges[idx];
 		}
 
 		Vector3 GetTriangleCentroid(int idx) const
 		{
-			const Vector3i ti = Triangles[idx];
-			const Vector3 centroid = (VertexPositions[ti.x] + VertexPositions[ti.y] + VertexPositions[ti.z]) / 3.0f;
+			const Index3 ti = Triangles[idx];
+			const Vector3 centroid = (VertexPositions[ti.a] + VertexPositions[ti.b] + VertexPositions[ti.c]) / 3.0f;
 			return centroid;
 		}
 
@@ -478,23 +467,23 @@ namespace Riemann
 
 		Box3 GetTriangleBounds(int idx) const
 		{
-			const Vector3i ti = Triangles[idx];
-			Box3 box(VertexPositions[ti.x], VertexPositions[ti.y], VertexPositions[ti.z]);
+			const Index3 ti = Triangles[idx];
+			Box3 box(VertexPositions[ti.a], VertexPositions[ti.b], VertexPositions[ti.c]);
 			return box;
 		}
 
 		void GetTriangleVertices(int idx, Vector3& a, Vector3& b, Vector3& c) const
 		{
-			const Vector3i ti = Triangles[idx];
-			a = VertexPositions[ti.x];
-			b = VertexPositions[ti.y];
-			c = VertexPositions[ti.z];
+			const Index3 ti = Triangles[idx];
+			a = VertexPositions[ti.a];
+			b = VertexPositions[ti.b];
+			c = VertexPositions[ti.c];
 		}
 
 		VertexInfo GetTringleBaryPoint(int idx, float bary0, float bary1, float bary2) const
 		{
 			VertexInfo info;
-			const Vector3i& t = Triangles[idx];
+			const Index3& t = Triangles[idx];
 			info.Position = bary0 * VertexPositions[t[0]] + bary1 * VertexPositions[t[1]] + bary2 * VertexPositions[t[2]];
 			info.bHasNormal = HasVertexNormals();
 			if (info.bHasNormal)
@@ -515,9 +504,9 @@ namespace Riemann
 			return info;
 		}
 
-		Vector2i GetEdgeV(int idx) const
+		Index2 GetEdgeV(int idx) const
 		{
-			return Vector2i(Edges[idx].v0, Edges[idx].v1);
+			return Index2(Edges[idx].v0, Edges[idx].v1);
 		}
 
 		void GetEdgeV(int idx, Vector3& a, Vector3& b) const
@@ -526,9 +515,9 @@ namespace Riemann
 			b = VertexPositions[Edges[idx].v0];
 		}
 
-		Vector2i GetEdgeT(int idx) const
+		Index2 GetEdgeT(int idx) const
 		{
-			return Vector2i(Edges[idx].t0, Edges[idx].t1);
+			return Index2(Edges[idx].t0, Edges[idx].t1);
 		}
 
 		const Edge& GetEdge(int idx) const
@@ -561,22 +550,39 @@ namespace Riemann
 			return Attributes.MaterialIDAttrib.size() > 0;
 		}
 
+		inline int GetOtherEdgeVertex(int EdgeID, int VertexID) const
+		{
+			const Edge& e = Edges[EdgeID];
+			return (e.v0 == VertexID) ? e.v1 : ((e.v1 == VertexID) ? e.v0 : -1);
+		}
+
+		inline Index2 GetOrderedOneRingEdgeTris(int VertexID, int EdgeID) const
+		{
+			const Index2 Tris(Edges[EdgeID].t0, Edges[EdgeID].t1);
+
+			int vOther = GetOtherEdgeVertex(EdgeID, VertexID);
+			int et1 = Tris[1];
+			et1 = (et1 != -1 && TriHasSequentialVertices(et1, VertexID, vOther)) ? et1 : -1;
+			int et0 = Tris[0];
+			return TriHasSequentialVertices(et0, VertexID, vOther) ? Index2(et0, et1) : Index2(et1, -1);
+		}
+
+		std::vector<int> GetVexTriangles(int VertexID) const;
+
 		bool PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, PokeTriangleInfo& PokeResult);
 		bool SplitEdge(int eab, EdgeSplitInfo& SplitInfo, float split_t);
+		EMeshResult CollapseEdge(int vKeep, int vRemove, float collapse_t, EdgeCollapseInfo& CollapseInfo);
+
 		int GetVtxTriangleCount(int vID) const;
 		int GetVtxSingleTriangle(int VertexID) const;
-
-		void BuildBounds()
-		{
-			Bounds = Box3(VertexPositions.data(), VertexPositions.size());
-		}
+		void BuildBounds();
 
 	private:
 
 		bool TriHasSequentialVertices(int TriangleID, int vA, int vB) const
 		{
-			const Vector3i& Tri = Triangles[TriangleID];
-			return ((Tri.x == vA && Tri.y == vB) || (Tri.y == vA && Tri.z == vB) || (Tri.z == vA && Tri.x == vB));
+			const Index3& Tri = Triangles[TriangleID];
+			return ((Tri.a == vA && Tri.b == vB) || (Tri.b == vA && Tri.c == vB) || (Tri.c == vA && Tri.a == vB));
 		}
 
 		int ReplaceEdgeTriangle(int idx, int t_old, int t_new)
@@ -610,7 +616,7 @@ namespace Riemann
 
 		int ReplaceTriangleVertex(int idx, int v_old, int v_new)
 		{
-			Vector3i& Triangle = Triangles[idx];
+			Index3& Triangle = Triangles[idx];
 			for (int i = 0; i < 3; ++i)
 			{
 				if (Triangle[i] == v_old)
@@ -624,7 +630,7 @@ namespace Riemann
 
 		int ReplaceTriangleEdge(int idx, int v_old, int v_new)
 		{
-			Vector3i& Triangle = TriangleEdges[idx];
+			Index3& Triangle = TriangleEdges[idx];
 			for (int i = 0; i < 3; ++i)
 			{
 				if (Triangle[i] == v_old)
@@ -678,34 +684,39 @@ namespace Riemann
 
 		int AppendTriangleEx(int v0, int v1, int v2, int e0, int e1, int e2)
 		{
-			const Vector3i tri(v0, v1, v2);
-			const Vector3i tri_edge(e0, e1, e2);
+			const Index3 tri(v0, v1, v2);
+			const Index3 tri_edge(e0, e1, e2);
 
 			int index = (int)Triangles.size();
 			Triangles.push_back(tri);
 			TriangleRefCounts.push_back(1);
-			VertexRefCounts[tri.x] += 1;
-			VertexRefCounts[tri.y] += 1;
-			VertexRefCounts[tri.z] += 1;
+			VertexRefCounts[tri.a] += 1;
+			VertexRefCounts[tri.b] += 1;
+			VertexRefCounts[tri.c] += 1;
 			TriangleEdges.push_back(tri_edge);
-			EdgeRefCounts[tri_edge.x] += 1;
-			EdgeRefCounts[tri_edge.y] += 1;
-			EdgeRefCounts[tri_edge.z] += 1;
+			EdgeRefCounts[tri_edge.a] += 1;
+			EdgeRefCounts[tri_edge.b] += 1;
+			EdgeRefCounts[tri_edge.c] += 1;
 			return index;
 		}
 
 	public:
+		// vertex
 		std::vector<Vector3>				VertexPositions;
 		std::vector<Vector3>				VertexNormals;
 		std::vector<Vector3>				VertexColors;
 		std::vector<std::vector<Vector2>>	VertexUVs;
-		std::vector<Vector3i>				Triangles;
-		std::vector<Vector3i>				TriangleEdges;
-		std::vector<Edge>					Edges;
 		std::vector<uint8_t>				VertexRefCounts;
-		std::vector<uint8_t>				EdgeRefCounts;
-		std::vector<uint8_t>				TriangleRefCounts;
 		ListSet<int>						VertexEdgeLists;
+
+		// face
+		std::vector<Index3>					Triangles;
+		std::vector<Index3>					TriangleEdges;
+		std::vector<uint8_t>				TriangleRefCounts;
+
+		// edge
+		std::vector<Edge>					Edges;
+		std::vector<uint8_t>				EdgeRefCounts;
 
 		GeometryAttributeSet	Attributes;
 		Box3					Bounds;

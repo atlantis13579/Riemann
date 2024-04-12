@@ -4,7 +4,8 @@
 #include "../../Maths/Vector2.h"
 
 template<typename T>
-bool RasterizeLineBresenham(T* cell, int nx, int x1, int y1, int x2, int y2, T value) {
+bool RasterizeLineBresenham(T* cell, int nx, int x1, int y1, int x2, int y2, T value)
+{
 	int F, x, y;
 	if (x1 > x2) {
 		std::swap(x1, x2);

@@ -42,7 +42,7 @@ namespace Riemann
 
 		void			Release()
 		{
-			StaticMesh::Release();
+			StaticMesh::Clear();
 			if (m_BVH)
 			{
 				delete m_BVH;

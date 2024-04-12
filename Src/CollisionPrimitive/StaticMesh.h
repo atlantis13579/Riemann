@@ -6,6 +6,7 @@
 
 #include "../Maths/Box3.h"
 #include "../Maths/Vector3.h"
+#include "../Geometry/MeshSimplification.h"
 #include "ShapeType.h"
 
 namespace Riemann
@@ -30,7 +31,7 @@ namespace Riemann
 
 		StaticMesh()
 		{
-			Release();
+			Clear();
 		}
 
 		static constexpr ShapeType	StaticType()
@@ -38,7 +39,7 @@ namespace Riemann
 			return ShapeType::TRIANGLE_MESH;
 		}
 
-		void Release()
+		void Clear()
 		{
 			mVertices.clear();
 			mIndices.clear();
@@ -68,7 +69,7 @@ namespace Riemann
 			Indices = &mIndices[0];
 		}
 
-		void* GetVertexBuffer()
+		Vector3* GetVertexBuffer()
 		{
 			return Vertices;
 		}
@@ -131,12 +132,12 @@ namespace Riemann
 			}
 		}
 
-		inline uint32_t GetNumVertices() const
+		inline uint32_t GetVertexCount() const
 		{
 			return NumVertices;
 		}
 
-		inline uint32_t GetNumTriangles() const
+		inline uint32_t GetTriangleCount() const
 		{
 			return NumTriangles;
 		}
@@ -161,7 +162,7 @@ namespace Riemann
 
 		void SetData(void* Verts, void* Tris, uint32_t Nv, uint32_t Nt, bool Is16bit, bool OwnMemory)
 		{
-			Release();
+			Clear();
 
 			if (Is16bit)
 				Flags |= (INDICES_16_BIT);
@@ -352,8 +353,8 @@ namespace Riemann
 				return false;
 			}
 
-			int nv = (int)GetNumVertices();
-			int nt = (int)GetNumTriangles();
+			int nv = (int)GetVertexCount();
+			int nt = (int)GetTriangleCount();
 
 			fprintf(fp, "# %d vertices, %d faces\n", nv, nt);
 
@@ -482,7 +483,6 @@ namespace Riemann
 				}
 			}
 
-
 			int nFiltered = NumTriangles - j;
 			NumTriangles = j;
 			return nFiltered;
@@ -534,6 +534,23 @@ namespace Riemann
 				mNormals[i] *= 1.0f / Count[i];
 				mNormals[i].Normalize();
 			}
+		}
+
+		bool Simplify(float rate)
+		{
+			std::vector<Vector3> new_v;
+			std::vector<int> new_i;
+
+			if (!SimplifyMesh(GetVertexBuffer(), (const void*)GetIndexBuffer(), GetVertexCount(), GetTriangleCount(), Is16bitIndices(), rate, new_v, new_i))
+			{
+				return false;
+			}
+
+			Clear();
+			SetData(new_v.data(), new_i.data(), (int)new_v.size(), (int)new_i.size() / 3, false, true);
+			CalculateBoundingBox();
+			Compact();
+			return true;
 		}
 
 		void CalculateBoundingBox()

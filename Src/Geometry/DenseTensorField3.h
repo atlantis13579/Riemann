@@ -4,6 +4,8 @@
 #include "../Maths/Box3.h"
 #include "../Maths/Vector2.h"
 #include "../Maths/Vector3.h"
+#include "../Maths/Index2.h"
+#include "../Maths/Index3.h"
 #include "../Maths/Maths.h"
 
 namespace Riemann
@@ -24,10 +26,10 @@ namespace Riemann
 
 			m_Bmin = Bmin;
 			m_Bmax = Bmax;
-			m_Size = Vector2i(nX, nY);
+			m_Size = Index2(nX, nY);
 			m_CellSize = (m_Bmax - m_Bmin);
-			m_CellSize.x /= m_Size.x;
-			m_CellSize.y /= m_Size.y;
+			m_CellSize.x /= m_Size.a;
+			m_CellSize.y /= m_Size.b;
 			m_InvCellSize = Vector2(1.0f / m_CellSize.x, 1.0f / m_CellSize.y);
 			m_InterpMethod = InterpMethod::BILINEAR;
 		}
@@ -36,7 +38,7 @@ namespace Riemann
 		{
 			m_Bmin = Vector2::Zero();
 			m_Bmax = Vector2::One();
-			m_Size = Vector2i(1, 1);
+			m_Size = Index2(1, 1);
 			m_CellSize = m_InvCellSize = Vector2::One();
 		}
 
@@ -51,14 +53,14 @@ namespace Riemann
 			const float fy = (pos.y - m_Bmin.y) * m_InvCellSize.y - 0.5f;
 			const int nx = (int)(fx);
 			const int ny = (int)(fy);
-			if (nx < 0 || nx >= m_Size.x || ny < 0 || ny >= m_Size.y)
+			if (nx < 0 || nx >= m_Size.a || ny < 0 || ny >= m_Size.b)
 			{
 				return m_ConstTensor;
 			}
 
 			if (m_InterpMethod == InterpMethod::BILINEAR)
 			{
-				if (nx == m_Size.x - 1 || ny == m_Size.y - 1)
+				if (nx == m_Size.a - 1 || ny == m_Size.b - 1)
 				{
 					return m_Fields(nx, ny);
 				}
@@ -75,7 +77,7 @@ namespace Riemann
 	private:
 		ScalerType				m_ConstTensor;
 		Vector2					m_Bmin, m_Bmax;
-		Vector2i				m_Size;
+		Index2				m_Size;
 		Vector2					m_CellSize, m_InvCellSize;
 		Maths::Tensor<ScalerType, 2>	m_Fields;
 		InterpMethod			m_InterpMethod;
@@ -91,11 +93,11 @@ namespace Riemann
 			m_ConstTensor = ScalerType::Zero();
 
 			m_BV = BV;
-			m_Size = Vector3i(nX, nY, nZ);
+			m_Size = Index3(nX, nY, nZ);
 			m_CellSize = (BV.Max - BV.Min);
-			m_CellSize.x /= m_Size.x;
-			m_CellSize.y /= m_Size.y;
-			m_CellSize.z /= m_Size.z;
+			m_CellSize.x /= m_Size.a;
+			m_CellSize.y /= m_Size.b;
+			m_CellSize.z /= m_Size.c;
 			m_InvCellSize = Vector3(1.0f / m_CellSize.x, 1.0f / m_CellSize.y, 1.0f / m_CellSize.z);
 			m_InterpMethod = InterpMethod::BILINEAR;
 		}
@@ -103,7 +105,7 @@ namespace Riemann
 		DenseTensorField3() : m_Fields({ 1, 1, 1 })
 		{
 			m_BV = Box3::Unit();
-			m_Size = Vector3i(1, 1, 1);
+			m_Size = Index3(1, 1, 1);
 			m_CellSize = m_InvCellSize = Vector3::One();
 		}
 
@@ -120,14 +122,14 @@ namespace Riemann
 			const int nx = (int)(fx);
 			const int ny = (int)(fy);
 			const int nz = (int)(fz);
-			if (nx < 0 || nx >= m_Size.x || ny < 0 || ny >= m_Size.y || nz < 0 || nz >= m_Size.z)
+			if (nx < 0 || nx >= m_Size.a || ny < 0 || ny >= m_Size.b || nz < 0 || nz >= m_Size.c)
 			{
 				return m_ConstTensor;
 			}
 
 			if (m_InterpMethod == InterpMethod::BILINEAR)
 			{
-				if (nx == m_Size.x - 1 || ny == m_Size.y - 1 || nz == m_Size.z - 1)
+				if (nx == m_Size.a - 1 || ny == m_Size.b - 1 || nz == m_Size.c - 1)
 				{
 					return m_Fields(nx, ny, nz);
 				}
@@ -149,7 +151,7 @@ namespace Riemann
 	private:
 		ScalerType				m_ConstTensor;
 		Box3					m_BV;
-		Vector3i				m_Size;
+		Index3					m_Size;
 		Vector3					m_CellSize, m_InvCellSize;
 		Maths::Tensor<ScalerType, 3>	m_Fields;
 		InterpMethod			m_InterpMethod;

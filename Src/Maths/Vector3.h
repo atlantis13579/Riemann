@@ -39,14 +39,6 @@ namespace Maths
 			z = v.z;
 		}
 
-		template<typename N>
-		inline TVector3<T>(const TVector3<N>& v)
-		{
-			x = (T)v.x;
-			y = (T)v.y;
-			z = (T)v.z;
-		}
-
 		inline void	SetZero()
 		{
 			x = y = z = 0.0f;
@@ -292,11 +284,6 @@ namespace Maths
 			return p[i];
 		}
 
-		inline bool Contains(const T v) const
-		{
-			return x == v || y == v || z == v;
-		}
-
 		bool		IsZero() const
 		{
 			return SquareLength() <= std::numeric_limits<T>::epsilon();
@@ -518,11 +505,8 @@ namespace Maths
 	}
 
 	typedef TVector3<float> Vector3;
-	typedef TVector3<int>	Vector3i;
 
 	static_assert(sizeof(Vector3) == 12, "sizeof Vector3 is not valid");
-	static_assert(sizeof(Vector3i) == 12, "sizeof Vector3 is not valid");
 }
 
 using Vector3 = Maths::Vector3;
-using Vector3i = Maths::Vector3i;

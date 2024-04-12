@@ -364,7 +364,7 @@ namespace Riemann
 				m_index = _index;
 			}
 
-			class ValueIterator
+			class Iterator
 			{
 			public:
 				inline const T& operator*() const
@@ -372,7 +372,7 @@ namespace Riemann
 					return m_curr_block->data[m_curr_block_idx];
 				}
 
-				inline const ValueIterator& operator++()
+				inline const Iterator& operator++()
 				{
 					m_index++;
 					m_curr_block_idx++;
@@ -384,7 +384,7 @@ namespace Riemann
 					return *this;
 				}
 
-				inline bool operator != (const ValueIterator& rhs) const
+				inline bool operator != (const Iterator& rhs) const
 				{
 					return m_index != rhs.m_index;
 				}
@@ -402,7 +402,7 @@ namespace Riemann
 			private:
 				friend class ValueEnumerable;
 
-				ValueIterator(const ListSet* _owner, const Block* _curr_block, int _index) : m_owner(_owner), m_curr_block(_curr_block)
+				Iterator(const ListSet* _owner, const Block* _curr_block, int _index) : m_owner(_owner), m_curr_block(_curr_block)
 				{
 					m_index = _index;
 					m_curr_block_idx = 0;
@@ -449,22 +449,22 @@ namespace Riemann
 				return head->size;
 			}
 
-			ValueIterator begin() const
+			Iterator begin() const
 			{
 				const Header* head = m_owner->get_header(m_index);
 				const Block* block = head ? m_owner->get_block(head->first_block) : nullptr;
-				return ValueIterator(m_owner, block, 0);
+				return Iterator(m_owner, block, 0);
 			}
 
-			ValueIterator end() const
+			Iterator end() const
 			{
 				const Header* head = m_owner->get_header(m_index);
-				return ValueIterator(m_owner, nullptr, head ? head->size : 0);
+				return Iterator(m_owner, nullptr, head ? head->size : 0);
 			}
 
 			inline int find(const T& val) const
 			{
-				for (ValueIterator it = begin(); it != end(); ++it)
+				for (Iterator it = begin(); it != end(); ++it)
 				{
 					if (*it == val)
 					{

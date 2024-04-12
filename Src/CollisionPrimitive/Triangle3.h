@@ -548,79 +548,6 @@ namespace Riemann
 			return ClosestPointOnTriangleToPointEx(Point, A, B, C, mask);
 		}
 
-		static Vector3 ClosestPointOnTriangleToPointEx(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C, unsigned char& mask)
-		{
-			const Vector3 BA = A - B;
-			const Vector3 AC = C - A;
-			const Vector3 CB = B - C;
-			const Vector3 Normal = BA.Cross(CB);
-
-			const Vector3 V[3] = { B, A, C };
-			const Vector3 N[3] = { Normal.Cross(BA), Normal.Cross(AC), Normal.Cross(CB) };
-
-			mask = 0;
-			for (int i = 0; i < 3; ++i)
-			{
-				if ((Point - V[i]).Dot(N[i]) > 0.0f)
-				{
-					mask += (1 << i);
-				}
-			}
-
-			if (mask == 0b0000)
-			{
-				float signedDist = (Point - A).Dot(Normal);
-				return Point - signedDist * Normal;
-			}
-			else if (mask == 0b0001)
-			{
-				return ClosestPointOnEdge(B, A, Point);
-			}
-			else if (mask == 0b0010)
-			{
-				return ClosestPointOnEdge(A, C, Point);
-			}
-			else if (mask == 0b0011)
-			{
-				return A;
-			}
-			else if (mask == 0b0100)
-			{
-				return ClosestPointOnEdge(C, B, Point);
-			}
-			else if (mask == 0b0101)
-			{
-				return B;
-			}
-			else if (mask == 0b0110)
-			{
-				return C;
-			}
-
-			// assert(false);		// Should never comes here
-			return A;
-		}
-
-		static Vector3 ClosestPointOnEdge(const Vector3& P0, const Vector3& P1, const Vector3& Point)
-		{
-			const Vector3 V1 = P1 - P0;
-			const Vector3 V2 = Point - P0;
-
-			const float dp1 = V2.Dot(V1);
-			if (dp1 <= 0)
-			{
-				return P0;
-			}
-
-			const float dp2 = V1.Dot(V1);
-			if (dp2 <= dp1)
-			{
-				return P1;
-			}
-
-			return P0 + V1 * (dp2 / dp2);
-		}
-
 		static float SqrDistancePointToTriangle(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C)
 		{
 			Vector3 Closest = ClosestPointOnTriangleToPoint(Point, A, B, C);
@@ -639,19 +566,29 @@ namespace Riemann
 
 		Vector3 BaryCentric2D(const Vector3& Point) const
 		{
+			return BaryCentric2D(Point, v0, v1, v2);
+		}
+
+		Vector3 BaryCentric3D(const Vector3& Point) const
+		{
+			return BaryCentric3D(Point, v0, v1, v2);
+		}
+
+		static Vector3 BaryCentric2D(const Vector3& Point, const Vector3& v0, const Vector3& v1, const Vector3& v2)
+		{
 			float a = ((v1.y - v2.y) * (Point.x - v2.x) + (v2.x - v1.x) * (Point.y - v2.y)) / ((v1.y - v2.y) * (v0.x - v2.x) + (v2.x - v1.x) * (v0.y - v2.y));
 			float b = ((v2.y - v0.y) * (Point.x - v2.x) + (v0.x - v2.x) * (Point.y - v2.y)) / ((v1.y - v2.y) * (v0.x - v2.x) + (v2.x - v1.x) * (v0.y - v2.y));
 			return Vector3(a, b, 1.0f - a - b);
 		}
 
-		Vector3 BaryCentric3D(const Vector3& Point) const
+		static Vector3 BaryCentric3D(const Vector3& Point, const Vector3& v0, const Vector3& v1, const Vector3& v2)
 		{
-			Vector3 v0 = v1 - v0, v1 = v2 - v0, v2 = Point - v0;
-			float d00 = DotProduct(v0, v0);
-			float d01 = DotProduct(v0, v1);
-			float d11 = DotProduct(v1, v1);
-			float d20 = DotProduct(v2, v0);
-			float d21 = DotProduct(v2, v1);
+			Vector3 v10 = v1 - v0, v20 = v2 - v0, vp0 = Point - v0;
+			float d00 = DotProduct(v10, v10);
+			float d01 = DotProduct(v10, v20);
+			float d11 = DotProduct(v20, v20);
+			float d20 = DotProduct(vp0, v10);
+			float d21 = DotProduct(vp0, v20);
 			float denom = d00 * d11 - d01 * d01;
 			float v = (d11 * d20 - d01 * d21) / denom;
 			float w = (d00 * d21 - d01 * d20) / denom;
@@ -659,7 +596,152 @@ namespace Riemann
 			return Vector3(u, v, w);
 		}
 
-		void	CalculateRelationsToPlane(const Plane3& plane, float distance[3], int sign[3], int& positive, int& negative, int& zero) const
+		struct BaryCentric3DDecomposionResult
+		{
+			float	SqrDistance;
+			Vector3	ClosestPoint;
+			Vector3	BaryCoords;
+		};
+
+		BaryCentric3DDecomposionResult BaryCentric3DDecomposion(const Vector3 &Point) const
+		{
+			Vector3 diff = Point - v0;
+			Vector3 edge0 = v1 - v0;
+			Vector3 edge1 = v1 - v0;;
+			float a00 = edge0.SquareLength();
+			float a01 = edge0.Dot(edge1);
+			float a11 = edge1.SquareLength();
+			float b0 = -diff.Dot(edge0);
+			float b1 = -diff.Dot(edge1);
+
+			float f00 = b0;
+			float f10 = b0 + a00;
+			float f01 = b0 + a01;
+
+			Vector2 p0, p1, p;
+			float dt1, h0, h1;
+
+			if (f00 >= 0.0f)
+			{
+				if (f01 >= 0.0f)
+				{
+					p = GetMinEdge02(a11, b1);
+				}
+				else
+				{
+					p0[0] = 0.0f;
+					p0[1] = f00 / (f00 - f01);
+					p1[0] = f01 / (f01 - f10);
+					p1[1] = (float)1 - p1[0];
+					dt1 = p1[1] - p0[1];
+					h0 = dt1 * (a11 * p0[1] + b1);
+					if (h0 >= 0.0f)
+					{
+						p = GetMinEdge02(a11, b1);
+					}
+					else
+					{
+						h1 = dt1 * (a01 * p1[0] + a11 * p1[1] + b1);
+						if (h1 <= 0.0f)
+						{
+							p = GetMinEdge12(a01, a11, b1, f10, f01);
+						}
+						else
+						{
+							p = GetMinInterior(p0, h0, p1, h1);
+						}
+					}
+				}
+			}
+			else if (f01 <= 0.0f)
+			{
+				if (f10 <= 0.0f)
+				{
+					p = GetMinEdge12(a01, a11, b1, f10, f01);
+				}
+				else
+				{
+					p0[0] = f00 / (f00 - f10);
+					p0[1] = 0.0f;
+					p1[0] = f01 / (f01 - f10);
+					p1[1] = (float)1 - p1[0];
+					h0 = p1[1] * (a01 * p0[0] + b1);
+					if (h0 >= 0.0f)
+					{
+						p = p0;
+					}
+					else
+					{
+						h1 = p1[1] * (a01 * p1[0] + a11 * p1[1] + b1);
+						if (h1 <= 0.0f)
+						{
+							p = GetMinEdge12(a01, a11, b1, f10, f01);
+						}
+						else
+						{
+							p = GetMinInterior(p0, h0, p1, h1);
+						}
+					}
+				}
+			}
+			else if (f10 <= 0.0f)
+			{
+				p0[0] = 0.0f;
+				p0[1] = f00 / (f00 - f01);
+				p1[0] = f01 / (f01 - f10);
+				p1[1] = (float)1 - p1[0];
+				dt1 = p1[1] - p0[1];
+				h0 = dt1 * (a11 * p0[1] + b1);
+				if (h0 >= 0.0f)
+				{
+					p = GetMinEdge02(a11, b1);
+				}
+				else
+				{
+					h1 = dt1 * (a01 * p1[0] + a11 * p1[1] + b1);
+					if (h1 <= 0.0f)
+					{
+						p = GetMinEdge12(a01, a11, b1, f10, f01);
+					}
+					else
+					{
+						p = GetMinInterior(p0, h0, p1, h1);
+					}
+				}
+			}
+			else
+			{
+				p0[0] = f00 / (f00 - f10);
+				p0[1] = 0.0f;
+				p1[0] = 0.0f;
+				p1[1] = f00 / (f00 - f01);
+				h0 = p1[1] * (a01 * p0[0] + b1);
+				if (h0 >= 0.0f)
+				{
+					p = p0;
+				}
+				else
+				{
+					h1 = p1[1] * (a11 * p1[1] + b1);
+					if (h1 <= 0.0f)
+					{
+						p = GetMinEdge02(a11, b1);
+					}
+					else
+					{
+						p = GetMinInterior(p0, h0, p1, h1);
+					}
+				}
+			}
+
+			BaryCentric3DDecomposionResult info;
+			info.BaryCoords = Vector3(1.0f - p[0] - p[1], p[0], p[1]);
+			info.ClosestPoint = v0 + p[0] * edge0 + p[1] * edge1;
+			info.SqrDistance = (Point - info.ClosestPoint).SquareLength();
+			return info;
+		}
+
+		void CalculateRelationsToPlane(const Plane3& plane, float distance[3], int sign[3], int& positive, int& negative, int& zero) const
 		{
 			const float Tolerance = 1e-6f;
 			const Triangle3& triangle = *this;
@@ -710,8 +792,8 @@ namespace Riemann
 
 		struct Triangle3IntersectionResult
 		{
-			int			Quantity{ 0 };
-			Vector3		Points[6];
+			int				Quantity{ 0 };
+			Vector3			Points[6];
 			IntersectionType Type{ IntersectionType::Empty };
 		};
 
@@ -952,6 +1034,128 @@ namespace Riemann
 			}
 
 			return Quantity;
+		}
+
+		static Vector3 ClosestPointOnEdge(const Vector3& P0, const Vector3& P1, const Vector3& Point)
+		{
+			const Vector3 V1 = P1 - P0;
+			const Vector3 V2 = Point - P0;
+
+			const float dp1 = V2.Dot(V1);
+			if (dp1 <= 0)
+			{
+				return P0;
+			}
+
+			const float dp2 = V1.Dot(V1);
+			if (dp2 <= dp1)
+			{
+				return P1;
+			}
+
+			return P0 + V1 * (dp2 / dp2);
+		}
+
+		static Vector3 ClosestPointOnTriangleToPointEx(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C, unsigned char& mask)
+		{
+			const Vector3 BA = A - B;
+			const Vector3 AC = C - A;
+			const Vector3 CB = B - C;
+			const Vector3 Normal = BA.Cross(CB);
+
+			const Vector3 V[3] = { B, A, C };
+			const Vector3 N[3] = { Normal.Cross(BA), Normal.Cross(AC), Normal.Cross(CB) };
+
+			mask = 0;
+			for (int i = 0; i < 3; ++i)
+			{
+				if ((Point - V[i]).Dot(N[i]) > 0.0f)
+				{
+					mask += (1 << i);
+				}
+			}
+
+			if (mask == 0b0000)
+			{
+				float signedDist = (Point - A).Dot(Normal);
+				return Point - signedDist * Normal;
+			}
+			else if (mask == 0b0001)
+			{
+				return ClosestPointOnEdge(B, A, Point);
+			}
+			else if (mask == 0b0010)
+			{
+				return ClosestPointOnEdge(A, C, Point);
+			}
+			else if (mask == 0b0011)
+			{
+				return A;
+			}
+			else if (mask == 0b0100)
+			{
+				return ClosestPointOnEdge(C, B, Point);
+			}
+			else if (mask == 0b0101)
+			{
+				return B;
+			}
+			else if (mask == 0b0110)
+			{
+				return C;
+			}
+
+			// assert(false);		// Should never comes here
+			return A;
+		}
+
+		static Vector2 GetMinEdge02(float a11, float b1)
+		{
+			Vector2 p;
+			p[0] = 0.0f;
+			if (b1 >= 0.0f)
+			{
+				p[1] = 0.0f;
+			}
+			else if (a11 + b1 <= 0.0f)
+			{
+				p[1] = 1.0f;
+			}
+			else
+			{
+				p[1] = -b1 / a11;
+			}
+			return p;
+		}
+
+		static Vector2 GetMinEdge12(float a01, float a11, float b1, float f10, float f01)
+		{
+			Vector2 p;
+			float h0 = a01 + b1 - f10;
+			if (h0 >= 0.0f)
+			{
+				p[1] = 0.0f;
+			}
+			else
+			{
+				float h1 = a11 + b1 - f01;
+				if (h1 <= 0.0f)
+				{
+					p[1] = 1.0f;
+				}
+				else
+				{
+					p[1] = h0 / (h0 - h1);
+				}
+			}
+			p[0] = 1.0f - p[1];
+			return p;
+		}
+
+		static Vector2 GetMinInterior(const Vector2 p0, float h0, const Vector2& p1, float h1)
+		{
+			float z = h0 / (h0 - h1);
+			return (1.0f - z) * p0 + z * p1;
 		}
 	};
 }

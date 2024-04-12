@@ -151,6 +151,7 @@
     <ClCompile Include="..\..\Test\main.cpp" />
     <ClCompile Include="..\..\Test\Test_Collision.cpp" />
     <ClCompile Include="..\..\Test\Test_Core.cpp" />
+    <ClCompile Include="..\..\Test\Test_Destruction.cpp" />
     <ClCompile Include="..\..\Test\Test_Geometry.cpp" />
     <ClCompile Include="..\..\Test\Test_Image.cpp" />
     <ClCompile Include="..\..\Test\Test_Maths.cpp" />
