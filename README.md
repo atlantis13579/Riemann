@@ -1,6 +1,6 @@
 # Introduction
 
-Riemann is a 3D Geometry / Collision Detection / Physics Engine with zero dependencies.
+Riemann is a 3D Geometry Processing / Collision Detection / Physics Engine with zero dependencies.
 This is a personal learning project, I want to write my own physics engine to understand some of the key algorithm that makes a physics engines works.
 
 This project is named after the 19th-century German mathematician Bernhard Riemann, who invented Riemannian geometry and the concept of manifold.
