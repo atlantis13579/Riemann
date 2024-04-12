@@ -53,3 +53,7 @@ Vehicle Dynamics / Autonomous Driving Simulation
 
 ![stack](https://user-images.githubusercontent.com/29682318/180676472-73c80918-6daa-44b0-a34f-e3fcffebdd1e.gif)
 
+#### Mesh QEM Optimizer
+
+![qem](https://github.com/atlantis13579/Riemann/assets/29682318/ffdb88ea-a114-43a5-8864-8b5ab22fd282)
+
