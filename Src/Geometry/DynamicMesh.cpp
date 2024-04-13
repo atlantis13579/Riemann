@@ -1112,7 +1112,7 @@ namespace Riemann
 
 					Triangle3::Triangle3IntersectionResult intr;
 
-					if (otri.IntersectTriangleEx(Tri, intr))
+					if (otri.IntersectTriangle(Tri, intr))
 					{
 						AddTriTriIntersectionResult(intr, ti, tj, result);
 					}

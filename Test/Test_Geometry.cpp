@@ -16,6 +16,8 @@ using namespace Riemann;
 
 void TestMeshSimplify()
 {
+	printf("Running TestMeshSimplify\n");
+
 	StaticMesh mesh;
 	mesh.LoadObj("../TestData/bunny.obj");
 	mesh.Simplify(0.1f);
@@ -54,6 +56,7 @@ void TestClip()
 void TestCatmullRom()
 {
 	printf("Running TestCatmullRom\n");
+
 	std::vector<Vector3> paths;
 	paths.emplace_back(0.0f, 0.0f, 0.0f);
 	paths.emplace_back(0.0f, 1.0f, 0.0f);
@@ -70,6 +73,8 @@ void TestCatmullRom()
 
 void TestVoronoi2d()
 {
+	printf("Running TestVoronoi2d\n");
+
 	std::vector<Vector2> points;
 	points.emplace_back(0.0f, 0.0f);
 	points.emplace_back(0.0f, -1.0f);
@@ -107,6 +112,8 @@ void TestVoronoi2d()
 
 void TestVoronoi3d()
 {
+	printf("Running TestVoronoi3d\n");
+
 	std::vector<Vector3> points;
 	Voronoi3::GenerateRandomPoints(Box3::Unit(), 100, points);
 	Voronoi3 v(points, Box3::Unit(), 1e-3f);
@@ -127,6 +134,8 @@ void TestVoronoi3d()
 
 void TestGeometrySet()
 {
+	printf("Running TestGeometrySet\n");
+
 	DynamicMesh set1;
 	set1.LoadObj("../TestData/bunny.obj");
 	Box3 box = set1.Bounds;
@@ -163,6 +172,8 @@ void TestGeometrySet()
 
 void TestGeometryBoolean()
 {
+	printf("Running TestGeometryBoolean\n");
+
 	DynamicMesh set1;
 	set1.LoadObj("../TestData/bunny.obj");
 

@@ -2,7 +2,6 @@
 
 #include "../Maths/Box1.h"
 #include "../Maths/Vector2.h"
-#include "Segment2.h"
 
 namespace Riemann
 {
@@ -65,19 +64,19 @@ namespace Riemann
 
 		int IsInside(const Vector2& p) const
 		{
-			float Sign1 = Orient(v0, v1, p);
+			int Sign1 = Orient(v0, v1, p);
 			if (Sign1 > 0)
 			{
 				return 1;
 			}
 
-			float Sign2 = Orient(v1, v2, p);
+			int Sign2 = Orient(v1, v2, p);
 			if (Sign2 > 0)
 			{
 				return 1;
 			}
 
-			float Sign3 = Orient(v0, v2, p);
+			int Sign3 = Orient(v0, v2, p);
 			if (Sign3 < 0)
 			{
 				return 1;
@@ -117,28 +116,35 @@ namespace Riemann
 			return Vector3(u, v, w);
 		}
 
-		bool CalculateIntersectionSegment2(const Segment2& segment, Segment2IntersectionResult& Result) const
+		bool IntersectSegment(const Vector2& P0, const Vector2 &P1) const
+		{
+			// TODO
+			return false;
+		}
+
+		bool IntersectSegment(const Vector2& P0, const Vector2& P1, Segment2IntersectionResult& Result) const
 		{
 			const Triangle2& triangle = *this;
 
 			const float Tolerance = 1e-6f;
-			Vector2 Center = segment.GetCenter();
-			float Extent = segment.GetExtent();
 
-			if (segment.GetLength() < 1e-6f)				// segment is a point
+			Vector2 Center = (P1 + P0) * 0.5f;
+			float Extent = (P1 - P0).Length() * 0.5f;
+
+			if (Extent < 1e-6f)				// segment is a point
 			{
 				int pos = 0, neg = 0;
-				for (int TriPrev = 2, TriIdx = 0; TriIdx < 3; TriPrev = TriIdx++)
+				for (int i = 2, j = 0; j < 3; i = j++)
 				{
-					Vector2 ToPt = Center - triangle[TriIdx];
-					Vector2 EdgePerp = (triangle[TriIdx] - triangle[TriPrev]).PerpCW();
-					float EdgeLen = EdgePerp.SafeNormalize();
-					if (EdgeLen == 0)
+					Vector2 p = Center - triangle[j];
+					Vector2 perp = (triangle[j] - triangle[i]).PerpCW();
+					float len = perp.SafeNormalize();
+					if (len == 0)
 					{
-						Vector2 OtherV = triangle[(TriIdx + 1) % 3];
-						EdgePerp = OtherV - triangle[TriIdx];
-						EdgeLen = EdgePerp.SafeNormalize();
-						if (EdgeLen == 0)
+						Vector2 other = triangle[(j + 1) % 3];
+						perp = other - triangle[j];
+						len = perp.SafeNormalize();
+						if (len == 0)
 						{
 							if ((triangle[0] - Center).SquareLength() <= Tolerance * Tolerance)
 							{
@@ -152,26 +158,26 @@ namespace Riemann
 						}
 						else
 						{
-							Vector2 ToPtFromOther = Center - OtherV;
-							Vector2 BackwardsEdgePerp = -EdgePerp;
-							float OtherSideSign = BackwardsEdgePerp.Dot(ToPtFromOther);
-							if (OtherSideSign < -Tolerance)
+							Vector2 p_other = Center - other;
+							Vector2 minus_perp = -perp;
+							float dp = minus_perp.Dot(p_other);
+							if (dp < -Tolerance)
 							{
 								neg++;
 							}
-							else if (OtherSideSign > Tolerance)
+							else if (dp > Tolerance)
 							{
 								pos++;
 							}
 						}
 					}
 
-					float SideSign = EdgePerp.Dot(ToPt);
-					if (SideSign < -Tolerance)
+					float dp = perp.Dot(p);
+					if (dp < -Tolerance)
 					{
 						neg++;
 					}
-					else if (SideSign > Tolerance)
+					else if (dp > Tolerance)
 					{
 						pos++;
 					}
@@ -192,7 +198,7 @@ namespace Riemann
 				}
 			}
 
-			Vector2 Direction = segment.GetDirection();
+			Vector2 Direction = (P1 - P0).Unit();
 
 			float dist[3];
 			int sign[3];

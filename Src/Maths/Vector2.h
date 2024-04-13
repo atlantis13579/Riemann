@@ -335,9 +335,18 @@ namespace Maths
 	}
 
 	template<typename T>
-	T Orient(const TVector2<T>& A, const TVector2<T> & B, const TVector2<T>& C)
+	int Orient(const TVector2<T>& A, const TVector2<T> & B, const TVector2<T>& C)
 	{
-		return DotPerp((B - A), (C - A));
+		T dp = DotPerp((B - A), (C - A));
+		if (dp > std::numeric_limits<T>::epsilon())
+		{
+			return 1;
+		}
+		else if (dp < -std::numeric_limits<T>::epsilon())
+		{
+			return -1;
+		}
+		return 0;
 	}
 
 	typedef TVector2<float> Vector2;

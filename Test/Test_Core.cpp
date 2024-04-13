@@ -84,6 +84,8 @@ void TestJob()
 
 void TestGraph()
 {
+	printf("Running TestGraph\n");
+
 	GraphNE<int, const char*> gr;
 	for (int i = 0; i < 9; ++i)
 		gr.nodes.push_back(i);
@@ -125,6 +127,8 @@ void TestGraph()
 
 void TestBitSet()
 {
+	printf("Running TestBitSet\n");
+
 	BitSet affected(2614);
 	for (int i = 0; i <= 2614; ++i)
 	{
@@ -156,6 +160,8 @@ void TestBitSet()
 
 void TestListSet()
 {
+	printf("Running TestListSet\n");
+
 	ListSet<int> s;
 	s.resize(5);
 	EXPECT(s.size() == 5);
@@ -246,6 +252,8 @@ void TestListSet()
 
 void TestPriorityQueue()
 {
+	printf("Running TestPriorityQueue\n");
+
 	PriorityQueue<int> q;
 
 	std::vector<int> v;

@@ -203,9 +203,9 @@ namespace Riemann
 				return false;
 			}
 
-			Vector3 Points[2];
-			int Quantity = IntersectSegment_Coplanar(plane, P0, P1, Points);
-			return Quantity > 0;
+			float t;
+			Vector3 Direction = (P1 - P0).Unit();
+			return IntersectRay(P0, Direction, &t);
 		}
 
 		struct Segment3IntersectionResult
@@ -215,10 +215,8 @@ namespace Riemann
 			IntersectionType Type{ IntersectionType::Empty };
 		};
 
-		Segment3IntersectionResult IntersectSegmentEx(const Vector3& P0, const Vector3& P1) const
+		bool IntersectSegmentEx(const Vector3& P0, const Vector3& P1, Segment3IntersectionResult &Result) const
 		{
-			Segment3IntersectionResult Result;
-
 			Plane3 plane(v0, v1, v2);
 			int sign0 = plane.CalculateRelationsToPoint(P0);
 			int sign1 = plane.CalculateRelationsToPoint(P1);
@@ -226,23 +224,23 @@ namespace Riemann
 			{
 				Result.Quantity = 0;
 				Result.Type = IntersectionType::Empty;
-				return Result;
+				return false;
 			}
 
 			Result.Quantity = IntersectSegment_Coplanar(plane, P0, P1, Result.Points);
 			if (Result.Quantity == 2)
 			{
 				Result.Type = IntersectionType::Segment;
+				return true;
 			}
 			else if (Result.Quantity == 1)
 			{
 				Result.Type = IntersectionType::Point;
+				return true;
 			}
-			else
-			{
-				Result.Type = IntersectionType::Empty;
-			}
-			return Result;
+			
+			Result.Type = IntersectionType::Empty;
+			return true;
 		}
 
 		// By Tomas Akenine-Moller
@@ -584,7 +582,7 @@ namespace Riemann
 			IntersectionType Type{ IntersectionType::Empty };
 		};
 
-		bool IntersectTriangleEx(const Triangle3& triangle1, Triangle3IntersectionResult& Result) const
+		bool IntersectTriangle(const Triangle3& triangle1, Triangle3IntersectionResult& Result) const
 		{
 			const Triangle3& triangle0 = *this;
 			Plane3 Plane0(triangle0.v0, triangle0.v1, triangle0.v2);
@@ -594,7 +592,7 @@ namespace Riemann
 				Plane3 Plane1(triangle1.v0, triangle1.v1, triangle1.v2);
 				if (Plane1.Normal != Vector3::Zero())
 				{
-					return triangle1.IntersectTriangleEx(triangle0, Result);
+					return triangle1.IntersectTriangle(triangle0, Result);
 				}
 				else
 				{
@@ -1045,9 +1043,7 @@ namespace Riemann
 			}
 
 			Triangle2::Segment2IntersectionResult Result;
-			Segment2 proj_seg(proj0, proj1);
-
-			if (!proj_tri.CalculateIntersectionSegment2(proj_seg, Result))
+			if (!proj_tri.IntersectSegment(proj0, proj1, Result))
 			{
 				return 0;
 			}

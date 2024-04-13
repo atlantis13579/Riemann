@@ -26,6 +26,8 @@ using namespace Riemann;
 
 void TestPlane()
 {
+	printf("Running TestPlane\n");
+
 	Plane3 plane0, plane1, plane2;
 	bool success;
 	Vector3 p;
@@ -56,6 +58,8 @@ void TestPlane()
 
 void TestTriangle()
 {
+	printf("Running TestTriangle\n");
+
 	Triangle3 tri1(Vector3::Zero(), Vector3::UnitX(), Vector3::UnitY());
 	Vector3 p = Vector3::One();
 	Vector3 pp = tri1.GetCenter();
@@ -97,6 +101,8 @@ void TestTriangle()
 
 void TestSphere()
 {
+	printf("Running TestSphere\n");
+
 	Vector3 a = Vector3(0, 0, 0);
 	Vector3 b = Vector3(0, 1, 0);
 	Vector3 c = Vector3(1, 0, 0);
@@ -398,6 +404,8 @@ void TestAABB()
 
 void TestRaycast()
 {
+	printf("Running TestRaycast\n");
+
 	Vector3 center(-4.19f, 0.43f, -0.46f);
 	Vector3 dir(-0.08f, -0.14f, 0.99f);
 	AxisAlignedBox3 aabb(Vector3(-4.30f, -0.81f, 1.58f), Vector3(-2.70f, 0.80f, 2.59f));

@@ -12,6 +12,8 @@
 
 void TestMat3()
 {
+	printf("Running TestMat3\n");
+
 	Matrix3 mat, m1, m2;
 	m1.LoadRotateY(1.0f);
 	m2.LoadRotateZ(2.0f);
@@ -114,6 +116,8 @@ void TestFloat16()
 
 void TestFrame3()
 {
+	printf("Running TestFrame3\n");
+
 	Vector3 Origin(10.0f, 10.0f, 10.0f);
 	Vector3 Normal(0.0f, 1.0f, 0.0f);
 	Maths::Frame3 PlaneFrame(Origin, Normal, true);
