@@ -36,6 +36,21 @@ namespace Riemann
 		const Vector2& operator[](int i) const
 		{
 			return (&v0)[i];
+		}		
+
+		const Vector2* GetVertex() const
+		{
+			return &v0;
+		}
+
+		Vector2* GetVertex()
+		{
+			return &v0;
+		}
+
+		Vector2		GetCenter() const
+		{
+			return (v0 + v1 + v2) / 3.0f;
 		}
 
 		static float Area2D(float x1, float y1, float x2, float y2, float x3, float y3)
@@ -79,6 +94,28 @@ namespace Riemann
 			Vector2 Point0;
 			Vector2 Point1;
 		};
+
+		Vector3 BarycentricCoods(const Vector2& Point) const
+		{
+			return BarycentricCoods(Point, v0, v1, v2);
+		}
+
+		static Vector3 BarycentricCoods(const Vector2& Point, const Vector2& v0, const Vector2& v1, const Vector2& v2)
+		{
+			Vector2 v02 = v0 - v2;
+			Vector2 v12 = v1 - v2;
+			Vector2 vp2 = Point - v2;
+			float d00 = v02.Dot(v02);
+			float d01 = v02.Dot(v12);
+			float d11 = v12.Dot(v12);
+			float d20 = v02.Dot(vp2);
+			float d21 = v12.Dot(vp2);
+			float denom = d00 * d11 - d01 * d01;
+			float u = (d11 * d20 - d01 * d21) / denom;
+			float v = (d00 * d21 - d01 * d20) / denom;
+			float w = 1.0f - u - v;
+			return Vector3(u, v, w);
+		}
 
 		bool CalculateIntersectionSegment2(const Segment2& segment, Segment2IntersectionResult& Result) const
 		{

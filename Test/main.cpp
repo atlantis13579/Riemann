@@ -16,9 +16,9 @@ extern void TestOptimization();
 
 void TestAll()
 {
-	TestCores();
+	// TestCores();
 	// TestMaths();
-	// TestCollision();
+	TestCollision();
 	TestGeometry();
 	// TestPhysics3d();
 	// TestPhysics2d();

@@ -321,7 +321,7 @@ namespace Riemann
 			Triangle3 CurrentTri;
 			Index3 StartTriVertIDs = Mesh->GetTriangle(StartTri);
 			SetTriVertPositions(StartTriVertIDs, CurrentTri);
-			Triangle3::BaryCentric3DDecomposionResult CurrentTriDist;
+			Triangle3::BaryCentricQueryResult CurrentTriDist;
 			int StartVIDIndex = -1;
 			if (StartVID != -1)
 			{
@@ -329,7 +329,7 @@ namespace Riemann
 			}
 			if (StartVIDIndex == -1)
 			{
-				Triangle3::BaryCentric3DDecomposionResult info = CurrentTri.BaryCentric3DDecomposion(StartPt);
+				Triangle3::BaryCentricQueryResult info = CurrentTri.BarycentricCoodsEx(StartPt);
 				ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(StartTri, CurrentTriDist.BaryCoords), FWalkIndices(StartPt, -1, StartTri));
 			}
 			else
@@ -388,7 +388,7 @@ namespace Riemann
 				bool ComputedEndPtOnTri = false;
 				if (EndVertID < 0 && EndTri == -1)
 				{
-					CurrentTriDist = CurrentTri.BaryCentric3DDecomposion(EndPt);
+					CurrentTriDist = CurrentTri.BarycentricCoodsEx(EndPt);
 					ComputedEndPtOnTri = true;
 					double DistSq = CurrentTriDist.SqrDistance;
 					if (DistSq < AcceptEndPtOutsideDist)
@@ -402,7 +402,7 @@ namespace Riemann
 					if (!ComputedEndPtOnTri)
 					{
 						ComputedEndPtOnTri = true;
-						CurrentTriDist = CurrentTri.BaryCentric3DDecomposion(EndPt);
+						CurrentTriDist = CurrentTri.BarycentricCoodsEx(EndPt);
 					}
 					CurrentEnd = (int)ComputedPointsAndSources.size();
 					ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(TriID, CurrentTriDist.BaryCoords), FWalkIndices(EndPt, CurrentEnd, TriID));
@@ -655,7 +655,7 @@ namespace Riemann
 				assert(Mesh->IsTriangle(TriID));
 				Index3 TriVertIDs = Mesh->GetTriangle(TriID);
 				Triangle3 Tri(Mesh->GetVertex(TriVertIDs.a), Mesh->GetVertex(TriVertIDs.b), Mesh->GetVertex(TriVertIDs.c));
-				Triangle3::BaryCentric3DDecomposionResult info = Tri.BaryCentric3DDecomposion(PosInVertexCoordSpace);
+				Triangle3::BaryCentricQueryResult info = Tri.BarycentricCoodsEx(PosInVertexCoordSpace);
 				double DistSq = info.SqrDistance;
 				if (BestTriID == -1 || DistSq < BestTriDistSq)
 				{
@@ -813,7 +813,7 @@ namespace Riemann
 
 				Mesh->GetTriangleVertices(TID, Tri.v0, Tri.v1, Tri.v2);
 
-				Vector3 BaryCoords = Tri.BaryCentric3D(Pt.Pos);
+				Vector3 BaryCoords = Tri.BarycentricCoods(Pt.Pos);
 				PokeTriangleInfo PokeInfo;
 				bool success = Mesh->PokeTriangle(TID, BaryCoords, PokeInfo);
 				assert(success);
@@ -1171,7 +1171,7 @@ namespace Riemann
 		{
 			Triangle3 Tri;
 			Mesh->GetTriangleVertices(TID, Tri.v0, Tri.v1, Tri.v2);
-			Vector3 bary = Tri.BaryCentric3D(Pos);
+			Vector3 bary = Tri.BarycentricCoods(Pos);
 			return (bary.x >= 0 && bary.y >= 0 && bary.z >= 0
 				&& bary.x < 1 && bary.y <= 1 && bary.z <= 1);
 

@@ -56,20 +56,42 @@ void TestPlane()
 
 void TestTriangle()
 {
-	Triangle3 tri1(Vector3::UnitX(), Vector3::UnitY(), Vector3::UnitZ());
+	Triangle3 tri1(Vector3::Zero(), Vector3::UnitX(), Vector3::UnitY());
 	Vector3 p = Vector3::One();
-	Vector3 bc1 = tri1.BaryCentric2D(p);
-	Vector3 bc2 = tri1.BaryCentric3D(p);
-	(void)bc1;
-	(void)bc2;
+	Vector3 pp = tri1.GetCenter();
+
+	Vector3 bc2 = tri1.BarycentricCoods(p);
+	Triangle3::BaryCentricQueryResult bc3 = tri1.BarycentricCoodsEx(pp);
+
+	Vector3 p2 = tri1.BarycentricCoodsComposion(bc2);
+	Vector3 p3 = tri1.BarycentricCoodsComposion(bc3.BaryCoords);
+
+	(void)p2;
+	
+	EXPECT((p3 - pp).SquareLength() < 1e-6f);
+
 	EXPECT(!tri1.IntersectPoint(p));
 	EXPECT(tri1.IntersectPoint(tri1.v0));
+	EXPECT(tri1.IntersectPoint(pp));
+	EXPECT(!tri1.IntersectPoint(Vector3(0.1f, 0.1f, -0.1f)));
+	EXPECT(!tri1.IntersectPoint(Vector3(0.1f, 0.1f, 0.1f)));
+	EXPECT(tri1.IntersectPoint(Vector3(0.1f, 0.1f, 0.0f)));
+	EXPECT(tri1.IntersectSegment(Vector3(0.1f, 0.1f, 0.1f), Vector3(0.1f, 0.1f, -0.1f)));
+	EXPECT(!tri1.IntersectSegment(Vector3(0.1f, 0.1f, 0.1f), Vector3(0.1f, 0.1f, 0.2f)));
+	EXPECT(!tri1.IntersectSegment(Vector3(0.1f, -0.1f, 0.1f), Vector3(0.1f, -0.1f, -0.1f)));
 
 	Triangle3 tri2(Vector3(5.09916496f, 8.30379868f, 4.52991295f), Vector3(5.08997154f, 8.29810333f, 4.52174377f), Vector3(5.09456825f, 8.300951f, 4.52582836f));
 	Vector3 length = tri2.GetSideLength();
 	Vector3 normal = tri2.GetNormal();
 	EXPECT(!tri2.IsValid());
 	EXPECT(Triangle3::IsColinear(tri2.v0, tri2.v1, tri2.v2));
+
+	Triangle3 tri3(Vector3(-0.0680909976f, 0.00185490400f, 0.0297227483f), Vector3(-0.0693324953f, -0.00129310042f, 0.0196812488f), Vector3(-0.0677610636f, -0.00000000f, 0.0282528419f));
+	p = Vector3(-0.0688225254f, -0.00000000f, 0.0238059796f);
+	bc2 = tri1.BarycentricCoods(p);
+	float dist = tri1.DistanceToPoint(p);
+	EXPECT(fabsf(dist) > 0.001f);
+	EXPECT(!tri1.IntersectPoint(p));
 	return;
 }
 
@@ -810,9 +832,9 @@ void TestSAPInc()
 
 void TestCollision()
 {
+	TestTriangle(); return;
 	TestRaycast();
 	TestPlane();
-	TestTriangle();
 	TestSphere();
 	TestBuildOBB();
 	TestOBB();

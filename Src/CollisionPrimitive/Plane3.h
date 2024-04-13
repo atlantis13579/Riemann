@@ -35,9 +35,19 @@ namespace Riemann
 
 		Plane3(const Vector3& A, const Vector3& B, const Vector3& C)
 		{
-			Vector3 CA = (C - A).Unit();
-			Vector3 BA = (B - A).Unit();
-			Normal = CA.Cross(BA).Unit();
+			const bool bHighPrecisionNormal = true;
+			if (bHighPrecisionNormal)
+			{
+				Vector3 CA = (C - A).Unit();
+				Vector3 BA = (B - A).Unit();
+				Normal = CA.Cross(BA).Unit();
+			}
+			else
+			{
+				Vector3 CA = C - A;
+				Vector3 BA = B - A;
+				Normal = CA.Cross(BA).Unit();
+			}
 			D = -Normal.Dot(A);
 		}
 
@@ -160,7 +170,7 @@ namespace Riemann
 
 		bool PenetrateSphere(const Vector3& Center, float Radius, Vector3* normal, float* depth) const
 		{
-			const float d = SignedDistanceTo(Center);
+			const float d = SignedDistanceToPoint(Center);
 			if (d > Radius)
 			{
 				return false;
@@ -282,7 +292,22 @@ namespace Riemann
 			return true;
 		}
 
-		float SignedDistanceTo(const Vector3& Point) const
+		int CalculateRelationsToPoint(const Vector3& Point) const
+		{
+			Vector3 Origin = GetOrigin();
+			const float dist = SignedDistanceToPlane(Point, Normal, Origin);
+			if (dist > kEpsilonPlane)
+			{
+				return 1;
+			}
+			else if (dist < kEpsilonPlane)
+			{
+				return -1;
+			}
+			return 0;
+		}
+
+		float SignedDistanceToPoint(const Vector3& Point) const
 		{
 			Vector3 Origin = GetOrigin();
 			return SignedDistanceToPlane(Point, Normal, Origin);
@@ -290,20 +315,20 @@ namespace Riemann
 
 		float DistanceToPoint(const Vector3& Point) const
 		{
-			float Dist = SignedDistanceTo(Point);
+			float Dist = SignedDistanceToPoint(Point);
 			return fabsf(Dist);
 		}
 
 		Vector3 ClosestPointTo(const Vector3& Point) const
 		{
-			float SignedDist = SignedDistanceTo(Point);
+			float SignedDist = SignedDistanceToPoint(Point);
 			return Point - SignedDist * Normal;
 		}
 
 		float DistanceToSegment(const Vector3& P0, const Vector3& P1) const
 		{
-			float SignedDist0 = SignedDistanceTo(P0);
-			float SignedDist1 = SignedDistanceTo(P1);
+			float SignedDist0 = SignedDistanceToPoint(P0);
+			float SignedDist1 = SignedDistanceToPoint(P1);
 			if (SignedDist0 * SignedDist1 <= 0.0f)
 			{
 				return 0.0f;
@@ -313,9 +338,9 @@ namespace Riemann
 
 		float DistanceToTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const
 		{
-			float sA = SignedDistanceTo(A);
-			float sB = SignedDistanceTo(B);
-			float sC = SignedDistanceTo(C);
+			float sA = SignedDistanceToPoint(A);
+			float sB = SignedDistanceToPoint(B);
+			float sC = SignedDistanceToPoint(C);
 			if ((sA > 0.0f && sB > 0.0f && sC > 0.0f) || (sA < 0.0f && sB < 0.0f && sC < 0.0f))
 			{
 				return std::min(fabsf(sA), std::min(fabsf(sB), fabsf(sC)));
