@@ -148,6 +148,16 @@ namespace Riemann
 			assert(false);
 		}
 
+		void OnRemoveTriangle(int tid)
+		{
+			assert(false);
+		}
+
+		void OnCollapseEdge(const EdgeCollapseInfo& info)
+		{
+			assert(false);
+		}
+
 		AttributeBase<int> MaterialIDAttrib;
 	};
 
@@ -216,25 +226,11 @@ namespace Riemann
 			int t1;
 		};
 
-		int GetVertexCount() const
-		{
-			return (int)VertexPositions.size();
-		}
-
-		int GetTriangleCount() const
-		{
-			return (int)Triangles.size();
-		}
-
-		Vector3* GetVertexBuffer()
-		{
-			return VertexPositions.data();
-		}
-
-		Index3* GetIndexBuffer()
-		{
-			return Triangles.data();
-		}
+		int GetVertexCount() const { return (int)VertexPositions.size(); }
+		int GetTriangleCount() const { return (int)Triangles.size(); }
+		int GetEdgeCount() const { return (int)Edges.size(); }
+		Vector3* GetVertexBuffer() { return VertexPositions.data(); }
+		Index3* GetIndexBuffer() { return Triangles.data(); }
 
 		int AppendVertex(const Vector3& v)
 		{
@@ -290,58 +286,50 @@ namespace Riemann
 			return (int)index;
 		}
 
-		int AppendTriangle(const Index3& tri)
+		inline bool HasVertexColors() const { return bHasVertexColor; }
+		inline bool HasVertexNormals() const { return bHasVertexNormals; }
+		inline bool HasVertexUVs() const { return VertexUVs.size() > 0; }
+		inline bool HasAttributes() const { return Attributes.MaterialIDAttrib.size() > 0; }
+
+		inline bool IsVertex(int idx) const
 		{
-			int index = (int)Triangles.size();
-
-			Index3 tri_edge;
-
-			for (int j = 0; j < 3; ++j)
-			{
-				int v0 = tri[j];
-				int v1 = tri[(j + 1) % 3];
-				if (v0 > v1)
-				{
-					std::swap(v0, v1);
-				}
-
-				int edge_idx = FindEdge(v0, v1);
-				if (edge_idx == -1)
-				{
-					edge_idx = AppendEdgeEx(v0, v1, (int)index, -1);
-				}
-				else
-				{
-					assert(Edges[edge_idx].t1 == -1);
-					if (Edges[edge_idx].t1 == -1)
-					{
-						Edges[edge_idx].t1 = (int)index;
-					}
-				}
-
-				tri_edge[j] = edge_idx;
-			}
-
-			AppendTriangleEx(tri.a, tri.b, tri.c, tri_edge.a, tri_edge.b, tri_edge.c);
-			return index;
+			return 0 <= idx && idx < (int)VertexPositions.size() && VertexRefCounts[idx] > 0;
 		}
 
-		int FindEdge(int v0, int v1)
+		inline bool IsBoundaryVertex(int vID) const
 		{
-			for (auto it = VertexEdgeLists[v0].begin(); it != VertexEdgeLists[v0].end(); ++it)
+			assert(IsVertex(vID));
+			if (IsVertex(vID))
 			{
-				int eid = *it;
-				if (Edges[eid].v0 == v1 || Edges[eid].v1 == v1)
+				for (int eid : VertexEdgeLists[vID])
 				{
-					return eid;
+					if (Edges[eid].t1 == -1)
+					{
+						return true;
+					}
 				}
 			}
-			return -1;
+			return false;
+		}
+
+
+		inline Vector3 GetVertex(int idx) const
+		{
+			return VertexPositions[idx];
 		}
 
 		void SetVertex(int idx, const Vector3& val)
 		{
 			VectorSetSafe(VertexPositions, idx, val);
+		}
+
+		Vector3 GetVertexColor(int idx) const
+		{
+			if (!HasVertexColors())
+			{
+				return Vector3::Zero();
+			}
+			return VertexColors[idx];
 		}
 
 		void SetVertexColor(int idx, const Vector3& val)
@@ -350,10 +338,28 @@ namespace Riemann
 			VectorSetSafe(VertexColors, idx, val);
 		}
 
+		Vector3 GetVertexNormal(int idx) const
+		{
+			if (!HasVertexNormals())
+			{
+				return Vector3::UnitY();
+			}
+			return VertexNormals[idx];
+		}
+
 		void SetVertexNormal(int idx, const Vector3& val)
 		{
 			bHasVertexNormals = true;
 			VectorSetSafe(VertexNormals, idx, val);
+		}
+
+		Vector2 GetVertexUV(int idx, int layer) const
+		{
+			if (!HasVertexUVs())
+			{
+				return Vector2::Zero();
+			}
+			return VertexUVs[layer][idx];
 		}
 
 		void SetVertexUV(int idx, const Vector2& val, int channel)
@@ -375,78 +381,175 @@ namespace Riemann
 			VectorSetSafe(VertexUVs[channel], idx, val);
 		}
 
-		void SetTriangle(int idx, const Index3& val)
-		{
-			VectorSetSafe(Triangles, idx, val);
-		}
+		inline Index3 GetTriangle(int idx) const { return Triangles[idx]; }
 
-		void SetTriangleEdge(int idx, const Index3& val)
-		{
-			VectorSetSafe(TriangleEdges, idx, val);
-		}
-
-		bool Simplify(float rate);
-
-		void ApplyTransform(const Transform& trans, bool bReverseOrientationIfNeeded);
-		void ApplyTransform(Transform3& trans, bool bReverseOrientationIfNeeded);
-		void ReverseOrientation(bool bFlipNormals);
-
-		inline Vector3 GetVertex(int idx) const
-		{
-			return VertexPositions[idx];
-		}
-
-		inline Vector3 GetVertexColor(int idx) const
-		{
-			if (!HasVertexColors())
-			{
-				return Vector3::Zero();
-			}
-			return VertexColors[idx];
-		}
-
-		inline Vector3 GetVertexNormal(int idx) const
-		{
-			if (!HasVertexNormals())
-			{
-				return Vector3::UnitY();
-			}
-			return VertexNormals[idx];
-		}
-
-		inline Vector2 GetVertexUV(int idx, int layer) const
-		{
-			return VertexUVs[layer][idx];
-		}
-
-		inline bool IsEdge(int idx) const
-		{
-			return 0 <= idx && idx < (int)Edges.size() && EdgeRefCounts[idx] > 0;
-		}
-
-		inline bool IsBoundaryEdge(int idx) const
-		{
-			return Edges[idx].t1 == -1;
-		}
-
-		inline bool IsVertex(int idx) const
-		{
-			return 0 <= idx && idx < (int)VertexPositions.size() && VertexRefCounts[idx] > 0;
-		}
-				
 		inline bool IsTriangle(int idx) const
 		{
 			return 0 <= idx && idx < (int)Triangles.size() && TriangleRefCounts[idx] > 0;
 		}
 
-		inline Index3 GetTriangle(int idx) const
+		int AppendTriangle(const Index3& tri)
 		{
-			return Triangles[idx];
+			int index = (int)Triangles.size();
+
+			Index3 tri_edge;
+
+			for (int j = 0; j < 3; ++j)
+			{
+				int v0 = tri[j];
+				int v1 = tri[(j + 1) % 3];
+				if (v0 > v1)
+				{
+					std::swap(v0, v1);
+				}
+
+				int edge_idx = FindEdge(v0, v1);
+				if (edge_idx == -1)
+				{
+					edge_idx = AddEdgeEx(v0, v1, (int)index, -1);
+				}
+				else
+				{
+					assert(Edges[edge_idx].t1 == -1);
+					if (Edges[edge_idx].t1 == -1)
+					{
+						Edges[edge_idx].t1 = (int)index;
+					}
+				}
+
+				tri_edge[j] = edge_idx;
+			}
+
+			AddTriangleEx(tri.a, tri.b, tri.c, tri_edge.a, tri_edge.b, tri_edge.c);
+			return index;
 		}
 
-		inline Index3 GetTriangleEdge(int idx) const
+		EMeshResult RemoveTriangle(int tID, bool bRemoveIsolatedVertices, bool bPreserveManifold);
+
+
+		EMeshResult SetTriangle(int tID, const Index3& newv)
 		{
-			return TriangleEdges[idx];
+			// if (HasAttributes() == false)
+			//{
+			//	assert(false);
+			//	return EMeshResult::Failed_Unsupported;
+			//}
+
+			const  bool bRemoveIsolatedVertices = true;
+			Index3 tv = GetTriangle(tID);
+			Index3 te = GetTriangleEdge(tID);
+			if (tv[0] == newv[0] && tv[1] == newv[1])
+			{
+				te[0] = -1;
+			}
+			if (tv[1] == newv[1] && tv[2] == newv[2])
+			{
+				te[1] = -1;
+			}
+			if (tv[2] == newv[2] && tv[0] == newv[0])
+			{
+				te[2] = -1;
+			}
+
+			if (TriangleRefCounts[tID] <= 0)
+			{
+				assert(false);
+				return EMeshResult::Failed_NotATriangle;
+			}
+			if (IsVertex(newv[0]) == false || IsVertex(newv[1]) == false || IsVertex(newv[2]) == false)
+			{
+				assert(false);
+				return EMeshResult::Failed_NotAVertex;
+			}
+			if (newv[0] == newv[1] || newv[0] == newv[2] || newv[1] == newv[2])
+			{
+				assert(false);
+				return EMeshResult::Failed_BrokenTopology;
+			}
+			// look up edges. if any already have two triangles, this would
+			// create non-manifold geometry and so we do not allow it
+			int e0 = FindEdge(newv[0], newv[1]);
+			int e1 = FindEdge(newv[1], newv[2]);
+			int e2 = FindEdge(newv[2], newv[0]);
+			if ((te[0] != -1 && e0 != -1 && IsBoundaryEdge(e0) == false)
+				|| (te[1] != -1 && e1 != -1 && IsBoundaryEdge(e1) == false)
+				|| (te[2] != -1 && e2 != -1 && IsBoundaryEdge(e2) == false))
+			{
+				return EMeshResult::Failed_BrokenTopology;
+			}
+
+			for (int j = 0; j < 3; ++j)
+			{
+				int eid = te[j];
+				if (eid == -1)
+				{
+					continue;
+				}
+				ReplaceEdgeTriangle(eid, tID, -1);
+				const Edge& e = GetEdge(eid);
+				if (e.t0 == -1)
+				{
+					int a = e.v0;
+					VertexEdgeLists[a].remove(eid);
+
+					int b = e.v1;
+					VertexEdgeLists[b].remove(eid);
+
+					assert(EdgeRefCounts[eid] >= 1);
+					EdgeRefCounts[eid]--;
+				}
+			}
+
+			// Decrement vertex refcounts. If any hit 1 and we got remove-isolated flag,
+			// we need to remove that vertex
+			for (int j = 0; j < 3; ++j)
+			{
+				int vid = tv[j];
+				if (vid == newv[j])     // we don't need to modify this vertex
+				{
+					continue;
+				}
+				assert(VertexRefCounts[vid] >= 1);
+				VertexRefCounts[vid]--;
+				if (bRemoveIsolatedVertices && VertexRefCounts[vid] == 1)
+				{
+					VertexRefCounts[vid]--;
+					assert(VertexRefCounts[vid] == 0);
+					VertexEdgeLists[vid].clear();
+				}
+			}
+
+
+			// ok now re-insert with vertices
+			for (int j = 0; j < 3; ++j)
+			{
+				if (newv[j] != tv[j])
+				{
+					Triangles[tID][j] = newv[j];
+					VertexRefCounts[newv[j]]++;
+				}
+			}
+
+			if (te[0] != -1)
+			{
+				AddTriangleEdge(tID, newv[0], newv[1], 0, e0);
+			}
+			if (te[1] != -1)
+			{
+				AddTriangleEdge(tID, newv[1], newv[2], 1, e1);
+			}
+			if (te[2] != -1)
+			{
+				AddTriangleEdge(tID, newv[2], newv[0], 2, e2);
+			}
+
+			UpdateChangeStamps();
+			return EMeshResult::Ok;
+		}
+
+		void SetTriangleEdge(int idx, const Index3& val)
+		{
+			VectorSetSafe(TriangleEdges, idx, val);
 		}
 
 		Vector3 GetTriangleCentroid(int idx) const
@@ -504,56 +607,58 @@ namespace Riemann
 			return info;
 		}
 
-		Index2 GetEdgeV(int idx) const
+		inline bool TriangleHasVertex(int TriangleID, int VertexID) const
 		{
-			return Index2(Edges[idx].v0, Edges[idx].v1);
+			const Index3& tri = Triangles[TriangleID];
+			return tri[0] == VertexID || tri[1] == VertexID || tri[2] == VertexID;
 		}
 
-		void GetEdgeV(int idx, Vector3& a, Vector3& b) const
+		inline bool IsEdge(int idx) const 
 		{
-			a = VertexPositions[Edges[idx].v0];
-			b = VertexPositions[Edges[idx].v0];
+			return 0 <= idx && idx < (int)Edges.size() && EdgeRefCounts[idx] > 0;
 		}
 
-		Index2 GetEdgeT(int idx) const
+		inline bool IsBoundaryEdge(int idx) const {	return Edges[idx].t1 == -1; }
+		inline const Edge& GetEdge(int idx) const { return Edges[idx]; }
+		inline Index2 GetEdgeV(int idx) const { return Index2(Edges[idx].v0, Edges[idx].v1); }
+		inline void GetEdgeV(int idx, Vector3& a, Vector3& b) const { a = VertexPositions[Edges[idx].v0]; b = VertexPositions[Edges[idx].v1]; }
+		inline Index2 GetEdgeT(int idx) const { return Index2(Edges[idx].t0, Edges[idx].t1); }
+		inline Index3 GetTriangleEdge(int idx) const { return TriangleEdges[idx]; }
+		inline int GetTriangleEdge(int idx, int j) const {	return TriangleEdges[idx][j]; }
+
+		int FindEdge(int v0, int v1)
 		{
-			return Index2(Edges[idx].t0, Edges[idx].t1);
+			for (auto it = VertexEdgeLists[v0].begin(); it != VertexEdgeLists[v0].end(); ++it)
+			{
+				int eid = *it;
+				if (Edges[eid].v0 == v1 || Edges[eid].v1 == v1)
+				{
+					return eid;
+				}
+			}
+			return -1;
 		}
 
-		const Edge& GetEdge(int idx) const
-		{
-			return Edges[idx];
-		}
+		void BuildBounds();
+		inline const Box3& GetBounds() const { return Bounds; }
 
-		int GetTriangleEdge(int idx, int j) const
-		{
-			return TriangleEdges[idx][j];
-		}
+		inline const Transform& GetPose() const { return Pose; }
+		inline void SetPose(const Transform& t) { Pose = t; }
 
-		bool HasVertexColors() const
-		{
-			return bHasVertexColor;
-		}
+		inline uint64_t GetChangeStamps() const { return MeshChangeStamp; }
 
-		bool HasVertexNormals() const
-		{
-			return bHasVertexNormals;
-		}
-
-		bool HasVertexUVs() const
-		{
-			return VertexUVs.size() > 0;
-		}
-
-		bool HasAttributes() const
-		{
-			return Attributes.MaterialIDAttrib.size() > 0;
-		}
+		GeometryAttributeSet& GetAttributes() { return Attributes; }
 
 		inline int GetOtherEdgeVertex(int EdgeID, int VertexID) const
 		{
 			const Edge& e = Edges[EdgeID];
 			return (e.v0 == VertexID) ? e.v1 : ((e.v1 == VertexID) ? e.v0 : -1);
+		}
+
+		inline int GetOtherEdgeTriangle(int EdgeID, int TriangleID) const
+		{
+			const Edge&e = Edges[EdgeID];
+			return (e.t0 == -1) ? e.t1 : ((e.t1 == TriangleID) ? e.t0 : -1);
 		}
 
 		inline Index2 GetOrderedOneRingEdgeTris(int VertexID, int EdgeID) const
@@ -569,13 +674,20 @@ namespace Riemann
 
 		std::vector<int> GetVexTriangles(int VertexID) const;
 
-		bool PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, PokeTriangleInfo& PokeResult);
-		bool SplitEdge(int eab, EdgeSplitInfo& SplitInfo, float split_t);
+		bool Simplify(float rate);
+
+		void ApplyTransform(const Transform& trans, bool bReverseOrientationIfNeeded);
+		void ApplyTransform(Transform3& trans, bool bReverseOrientationIfNeeded);
+		void ReverseOrientation(bool bFlipNormals);
+
+		EMeshResult PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, PokeTriangleInfo& PokeResult);
+		EMeshResult SplitEdge(int eab, EdgeSplitInfo& SplitInfo, float split_t);
 		EMeshResult CollapseEdge(int vKeep, int vRemove, float collapse_t, EdgeCollapseInfo& CollapseInfo);
 
+		int FindEdgeFromTriangle(int vA, int vB, int tID) const;
+		int FindEdgeFromTrianglePair(int TriA, int TriB) const;
 		int GetVtxTriangleCount(int vID) const;
 		int GetVtxSingleTriangle(int VertexID) const;
-		void BuildBounds();
 
 	private:
 
@@ -587,7 +699,7 @@ namespace Riemann
 
 		int ReplaceEdgeTriangle(int idx, int t_old, int t_new)
 		{
-			Edge e = Edges[idx];
+			Edge& e = Edges[idx];
 			int a = e.t0;
 			int b = e.t1;
 			if (a == t_old)
@@ -670,7 +782,7 @@ namespace Riemann
 			Edges[idx].t1 = t1;
 		}
 
-		int AppendEdgeEx(int v0, int v1, int t0, int t1)
+		int AddEdgeEx(int v0, int v1, int t0, int t1)
 		{
 			int eid = (int)Edges.size();
 			Edges.push_back({ v0, v1, t0, t1 });
@@ -682,7 +794,21 @@ namespace Riemann
 			return eid;
 		}
 
-		int AppendTriangleEx(int v0, int v1, int v2, int e0, int e1, int e2)
+		void AddTriangleEdge(int TriangleID, int v0, int v1, int j, int EdgeID)
+		{
+			Index3& TriEdges = TriangleEdges[TriangleID];
+			if (EdgeID != -1)
+			{
+				Edges[EdgeID].t1 = TriangleID;
+				TriEdges[j] = EdgeID;
+			}
+			else
+			{
+				TriEdges[j] = AddEdgeEx(v0, v1, TriangleID, -1);
+			}
+		}
+
+		int AddTriangleEx(int v0, int v1, int v2, int e0, int e1, int e2)
 		{
 			const Index3 tri(v0, v1, v2);
 			const Index3 tri_edge(e0, e1, e2);
@@ -694,13 +820,15 @@ namespace Riemann
 			VertexRefCounts[tri.b] += 1;
 			VertexRefCounts[tri.c] += 1;
 			TriangleEdges.push_back(tri_edge);
-			EdgeRefCounts[tri_edge.a] += 1;
-			EdgeRefCounts[tri_edge.b] += 1;
-			EdgeRefCounts[tri_edge.c] += 1;
 			return index;
 		}
 
-	public:
+		void UpdateChangeStamps()
+		{
+			MeshChangeStamp++;
+		}
+
+	private:
 		// vertex
 		std::vector<Vector3>				VertexPositions;
 		std::vector<Vector3>				VertexNormals;
@@ -721,20 +849,20 @@ namespace Riemann
 		GeometryAttributeSet	Attributes;
 		Box3					Bounds;
 		Transform				Pose;
+		uint64_t				MeshChangeStamp = 0;
 
-	private:
 		std::string				ResourceName;
 		bool					bHasVertexColor{ false };
 		bool					bHasVertexNormals{ false };
 
 		template<typename T>
-		static void VectorSetSafe(std::vector<T>& Vertices, size_t index, const T& v)
+		static void VectorSetSafe(std::vector<T>& vec, size_t index, const T& v)
 		{
-			if (index >= Vertices.size())
+			if (index >= vec.size())
 			{
-				Vertices.resize(index + 1);
+				vec.resize(index + 1);
 			}
-			Vertices[index] = v;
+			vec[index] = v;
 		}
 
 		template<typename T>
@@ -744,15 +872,37 @@ namespace Riemann
 		}
 	};
 
+	struct FQueryOptions
+	{
+		float MaxDistance = FLT_MAX;
+
+		std::function<bool(int)> TriangleFilterF = nullptr;
+
+		FQueryOptions() {}
+		FQueryOptions(float _MaxDistance, std::function<bool(int)> TriangleFilterF = nullptr) : MaxDistance(_MaxDistance), TriangleFilterF(TriangleFilterF) {}
+	};
+
 	class DynamicMeshAABBTree
 	{
 	public:
 		DynamicMeshAABBTree(DynamicMesh* data);
 
 		IntersectionsQueryResult FindAllIntersections(const DynamicMeshAABBTree& OtherTree, const Transform * TransformF = nullptr) const;
+		
+		int FindNearestTriangle(const Vector3& P, float& NearestDistSqr, const FQueryOptions& Options = FQueryOptions()) const;
 
-	private:
 		void Build();
+
+		Box3 GetBoxEps(int IBox, float Epsilon = 1e-6f) const
+		{
+			Box3 box = AABB[IBox];
+			box.Thicken(Epsilon);
+			return box;
+		}
+
+		bool IsValid() const { return RootIndex >= 0; }
+
+	public:
 		void Build(std::vector<int> &Triangles, std::vector<Vector3> &Centers);
 
 		struct FBoxesSet
@@ -772,11 +922,15 @@ namespace Riemann
 
 		Box3 GetAABB(int idx, const Transform* TransformF) const;
 
+		float BoxDistanceSqr(int IBox, const Vector3& V) const;
+
 		void FindIntersections(
 			int iBox, const DynamicMeshAABBTree& OtherTree, const Transform* TransformF,
 			int oBox, int depth, IntersectionsQueryResult& result) const;
 
-	private:
+		bool find_nearest_tri(int IBox, const Vector3& P, float& NearestDistSqr, int& TID, const FQueryOptions& Options) const;
+
+	public:
 		DynamicMesh	 *Mesh { nullptr };
 		std::vector<int> BoxToIndex;
 		std::vector<Box3> AABB;

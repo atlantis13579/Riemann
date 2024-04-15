@@ -2,101 +2,123 @@
 
 #include <set>
 
-template<typename T, int BufferSize = 16>
-class SmallSet
+namespace Riemann
 {
-public:
-	SmallSet()
+	template<typename T, int BufferSize = 16>
+	class SmallSet
 	{
-		m_size = 0;				// use buffer
-	}
-
-	void insert(const T& v)
-	{
-		if (m_size == BufferSize - 1)
+	public:
+		SmallSet()
 		{
-			for (int i = 0; i < m_size; ++i)
-			{
-				m_set.insert(m_buffer[i]);
-			}
-			m_size = -1;		// use set
+			m_size = 0;				// use buffer
 		}
 
-		if (m_size >= 0)
+		void insert(const T& v)
 		{
-			for (int i = 0; i < m_size; ++i)
+			if (m_size == BufferSize - 1)
 			{
-				if (m_buffer[i] == v)
+				for (int i = 0; i < m_size; ++i)
 				{
-					return;
+					m_set.insert(m_buffer[i]);
+				}
+				m_size = -1;		// use set
+			}
+
+			if (m_size >= 0)
+			{
+				for (int i = 0; i < m_size; ++i)
+				{
+					if (m_buffer[i] == v)
+					{
+						return;
+					}
+				}
+				m_buffer[m_size++] = v;
+			}
+			else
+			{
+				m_set.insert(v);
+			}
+		}
+
+		void erase(const T& v)
+		{
+			if (m_size >= 0)
+			{
+				for (int i = 0; i < m_size; ++i)
+				{
+					if (m_buffer[i] == v)
+					{
+						m_buffer[i] = m_buffer[m_size - 1];
+						m_size--;
+						return;
+					}
 				}
 			}
-			m_buffer[m_size++] = v;
-		}
-		else
-		{
-			m_set.insert(v);
-		}
-	}
-
-	void erase(const T& v)
-	{
-		if (m_size >= 0)
-		{
-			for (int i = 0; i < m_size; ++i)
+			else
 			{
-				if (m_buffer[i] == v)
+				m_set.erase(v);
+			}
+		}
+
+		size_t count(const T& v) const
+		{
+			if (m_size >= 0)
+			{
+				for (int i = 0; i < m_size; ++i)
 				{
-					m_buffer[i] = m_buffer[m_size - 1];
-					m_size--;
-					return;
+					if (m_buffer[i] == v)
+					{
+						return 1;
+					}
+				}
+				return 0;
+			}
+			else
+			{
+				return m_set.count(v);
+			}
+		}
+
+		void clear()
+		{
+			m_size = 0;
+			m_set.clear();
+		}
+
+		size_t size() const
+		{
+			return m_size >= 0 ? (size_t)m_size : m_set.size();
+		}
+
+		bool empty() const
+		{
+			return m_size >= 0 ? m_size == 0 : m_set.empty();
+		}
+
+		std::vector<T> to_vector() const
+		{
+			std::vector<T> ret;
+			if (m_size >= 0)
+			{
+				for (int i = 0; i < m_size; ++i)
+				{
+					ret.push_back(m_buffer[i]);
 				}
 			}
-		}
-		else
-		{
-			m_set.erase(v);
-		}
-	}
-
-	void clear()
-	{
-		m_size = 0;
-		m_set.clear();
-	}
-
-	int size() const
-	{
-		return m_size >= 0 ? m_size : (int)m_set.size();
-	}
-
-	bool empty() const
-	{
-		return m_size >= 0 ? m_size == 0 : m_set.empty();
-	}
-
-	std::vector<T> to_vector() const
-	{
-		std::vector<T> ret;
-		if (m_size >= 0)
-		{
-			for (int i = 0; i < m_size; ++i)
+			else
 			{
-				ret.push_back(m_buffer[i]);
+				for (T v : m_set)
+				{
+					ret.push_back(v);
+				}
 			}
+			return ret;
 		}
-		else
-		{
-			for (T v : m_set)
-			{
-				ret.push_back(v);
-			}
-		}
-		return ret;
-	}
 
-private:
-	int			m_size;			//  = -1 use m_set 
-	T			m_buffer[BufferSize];
-	std::set<T>	m_set;
-};
+	private:
+		int			m_size;			//  = -1 use m_set 
+		T			m_buffer[BufferSize];
+		std::set<T>	m_set;
+	};
+}

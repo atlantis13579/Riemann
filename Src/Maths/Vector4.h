@@ -38,12 +38,12 @@ namespace Maths
 			w = _w;
 		}
 
-		explicit TVector4<T>(const TVector3<T>& v, float vw)
+		explicit TVector4<T>(const TVector3<T>& v, float _w)
 		{
 			x = v.x;
 			y = v.y;
 			z = v.z;
-			w = vw;
+			w = _w;
 		}
 
 		TVector4<T>(const TVector4<T>& v)

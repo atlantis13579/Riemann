@@ -263,6 +263,5 @@ namespace Riemann
 
 		AABBTree* m_staticGeometry;
 		DynamicAABBTree* m_dynamicPruner;
-		SparseSpatialHash* m_SpatialHash;
 	};
 }

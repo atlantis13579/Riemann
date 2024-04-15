@@ -1,0 +1,152 @@
+#pragma once
+
+#include <map>
+
+namespace Riemann
+{
+	template<typename K, typename V, int BufferSize = 16>
+	class SmallMap
+	{
+	public:
+		struct Pair
+		{
+			K key;
+			V value;
+		};
+
+		SmallMap()
+		{
+			m_size = 0;				// use buffer
+		}
+
+		void insert(const K &k, const V& v)
+		{
+			if (m_size == BufferSize - 1)
+			{
+				for (int i = 0; i < m_size; ++i)
+				{
+					m_map.insert(m_buffer[i].key, m_buffer[i].value);
+				}
+				m_size = -1;		// use set
+			}
+
+			if (m_size >= 0)
+			{
+				for (int i = 0; i < m_size; ++i)
+				{
+					if (m_buffer[i] == k)
+					{
+						return;
+					}
+				}
+				m_buffer[m_size].key = k;
+				m_buffer[m_size].value = v;
+				m_size++;
+			}
+			else
+			{
+				m_map.insert(k, v);
+			}
+		}
+
+		void erase(const K& key)
+		{
+			if (m_size >= 0)
+			{
+				for (int i = 0; i < m_size; ++i)
+				{
+					if (m_buffer[i] == key)
+					{
+						m_buffer[i] = m_buffer[m_size - 1];
+						m_size--;
+						return;
+					}
+				}
+			}
+			else
+			{
+				m_map.erase(key);
+			}
+		}
+
+		const V& operator[](const K& k) const
+		{
+			if (m_size >= 0)
+			{
+				for (int i = 0; i < m_size; ++i)
+				{
+					if (m_buffer[i] == k)
+					{
+						return m_buffer.value;
+					}
+				}
+				const V *ptr = nullptr;
+				return ptr[0];
+			}
+			else
+			{
+				m_map[k];
+			}
+		}
+
+		V& operator[](const K& k)
+		{
+			if (m_size >= 0)
+			{
+				for (int i = 0; i < m_size; ++i)
+				{
+					if (m_buffer[i] == k)
+					{
+						return m_buffer.value;
+					}
+				}
+				const V* ptr = nullptr;
+				return ptr[0];
+			}
+			else
+			{
+				m_map[k];
+			}
+		}
+
+		size_t count(const K& k) const
+		{
+			if (m_size >= 0)
+			{
+				for (int i = 0; i < m_size; ++i)
+				{
+					if (m_buffer[i] == k)
+					{
+						return 1;
+					}
+				}
+				return 0;
+			}
+			else
+			{
+				return m_map.count(k);
+			}
+		}
+
+		void clear()
+		{
+			m_size = 0;
+			m_map.clear();
+		}
+
+		size_t size() const
+		{
+			return m_size >= 0 ? (size_t)m_size : m_map.size();
+		}
+
+		bool empty() const
+		{
+			return m_size >= 0 ? m_size == 0 : m_map.empty();
+		}
+
+	private:
+		int				m_size;			//  = -1 use m_set 
+		Pair			m_buffer[BufferSize];
+		std::map<K, V>	m_map;
+	};
+}

@@ -11,6 +11,7 @@ namespace Maths
 	#endif // !PI
 
 	#define PI_2			(6.2831853072f)
+	#define PI_4			(12.566370614f)
 	#define PI_OVER_2		(1.5707963268f)
 	#define PI_OVER_3		(1.0471975512f)
 	#define PI_OVER_4		(0.7853981634f)

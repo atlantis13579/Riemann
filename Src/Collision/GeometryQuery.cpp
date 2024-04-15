@@ -7,7 +7,6 @@
 #include "../Core/Base.h"
 #include "AABBTree.h"
 #include "DynamicAABBTree.h"
-#include "SparseSpatialHash.h"
 
 namespace Riemann
 {
@@ -15,14 +14,12 @@ namespace Riemann
 	{
 		m_staticGeometry = nullptr;
 		m_dynamicPruner = nullptr;
-		m_SpatialHash = nullptr;
 	}
 
 	GeometryQuery::~GeometryQuery()
 	{
 		SAFE_DELETE(m_staticGeometry);
 		SAFE_DELETE(m_dynamicPruner);
-		SAFE_DELETE(m_SpatialHash);
 
 		for (size_t i = 0; i < m_Objects.size(); ++i)
 		{

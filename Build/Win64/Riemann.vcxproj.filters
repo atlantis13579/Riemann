@@ -162,9 +162,6 @@
     <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h">
       <Filter>Solver</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Collision\QuadTree.h">
-      <Filter>Collision</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Maths\Quaternion.h">
       <Filter>Maths</Filter>
     </ClInclude>
@@ -200,9 +197,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Solver\SparseConjugateGradientSolver.h">
       <Filter>Solver</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\Collision\SparseSpatialHash.h">
-      <Filter>Collision</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\Spline.h">
       <Filter>Geometry</Filter>
@@ -534,6 +528,18 @@
     <ClInclude Include="..\..\Src\Maths\Index3.h">
       <Filter>Maths</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\QuadTree.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\SparseOctree.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\SparseSpatialHash.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Core\SmallMap.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">
@@ -723,6 +729,9 @@
       <Filter>Destruction</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\GeometrySet.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\SparseOctree.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
   </ItemGroup>

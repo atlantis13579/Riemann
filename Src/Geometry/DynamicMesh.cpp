@@ -200,13 +200,13 @@ namespace Riemann
 		return s.to_vector();
 	}
 
-	bool DynamicMesh::PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, PokeTriangleInfo& PokeResult)
+	EMeshResult DynamicMesh::PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, PokeTriangleInfo& PokeResult)
 	{
 		PokeResult = PokeTriangleInfo();
 
 		if (!IsTriangle(TriangleID))
 		{
-			return false;
+			return EMeshResult::Failed_NotATriangle;
 		}
 
 		Index3 tv = GetTriangle(TriangleID);
@@ -215,9 +215,9 @@ namespace Riemann
 		VertexInfo vinfo = GetTringleBaryPoint(TriangleID, BaryCoordinates[0], BaryCoordinates[1], BaryCoordinates[2]);
 		int center = AppendVertex(vinfo);
 
-		int eaC = AppendEdgeEx(tv[0], center, -1, -1);
-		int ebC = AppendEdgeEx(tv[1], center, -1, -1);
-		int ecC = AppendEdgeEx(tv[2], center, -1, -1);
+		int eaC = AddEdgeEx(tv[0], center, -1, -1);
+		int ebC = AddEdgeEx(tv[1], center, -1, -1);
+		int ecC = AddEdgeEx(tv[2], center, -1, -1);
 		VertexRefCounts[tv[0]] += 1;
 		VertexRefCounts[tv[1]] += 1;
 		VertexRefCounts[tv[2]] += 1;
@@ -226,8 +226,8 @@ namespace Riemann
 		SetTriangle(TriangleID, Index3(tv[0], tv[1], center));
 		SetTriangleEdge(TriangleID, Index3(te[0], ebC, eaC));
 
-		int t1 = AppendTriangleEx(tv[1], tv[2], center, te[1], ecC, ebC);
-		int t2 = AppendTriangleEx(tv[2], tv[0], center, te[2], eaC, ecC);
+		int t1 = AddTriangleEx(tv[1], tv[2], center, te[1], ecC, ebC);
+		int t2 = AddTriangleEx(tv[2], tv[0], center, te[2], eaC, ecC);
 
 		ReplaceEdgeTriangle(te[1], TriangleID, t1);
 		ReplaceEdgeTriangle(te[2], TriangleID, t2);
@@ -248,7 +248,8 @@ namespace Riemann
 			Attributes.OnPokeTriangle(PokeResult);
 		}
 
-		return true;
+		UpdateChangeStamps();
+		return EMeshResult::Ok;
 	}
 
 	template<typename T>
@@ -314,29 +315,67 @@ namespace Riemann
 		return -1;
 	}
 
-	bool DynamicMesh::SplitEdge(int eab, EdgeSplitInfo& SplitInfo, float split_t)
+	int DynamicMesh::FindEdgeFromTriangle(int vA, int vB, int tID) const
+	{
+		const Index3& Triangle = Triangles[tID];
+		const Index3& TriangleEdgeIDs = TriangleEdges[tID];
+		if (SamePairUnordered(vA, vB, Triangle[0], Triangle[1]))
+		{
+			return TriangleEdgeIDs[0];
+		}
+		if (SamePairUnordered(vA, vB, Triangle[1], Triangle[2]))
+		{
+			return TriangleEdgeIDs[1];
+		}
+		if (SamePairUnordered(vA, vB, Triangle[2], Triangle[0]))
+		{
+			return TriangleEdgeIDs[2];
+		}
+		return -1;
+	}
+
+	int DynamicMesh::FindEdgeFromTrianglePair(int TriA, int TriB) const
+	{
+		if (TriangleRefCounts[TriA] > 0 && TriangleRefCounts[TriB] > 0)
+		{
+			for (int j = 0; j < 3; ++j)
+			{
+				int EdgeID = TriangleEdges[TriA][j];
+				const Edge e = Edges[EdgeID];
+				int NbrT = (e.t0 == TriA) ? e.t1 : e.t0;
+				if (NbrT == TriB)
+				{
+					return EdgeID;
+				}
+			}
+		}
+		return -1;
+	}
+
+	EMeshResult DynamicMesh::SplitEdge(int eab, EdgeSplitInfo& SplitInfo, float split_t)
 	{
 		SplitInfo = EdgeSplitInfo();
 
 		if (!IsEdge(eab))
 		{
-			return false;
+			return EMeshResult::Failed_NotAnEdge;
 		}
 
-		const Edge e = Edges[eab];
+		const Edge& e = Edges[eab];
 		int a = e.v0, b = e.v1;
 		int t0 = e.t0;
 		if (t0 == -1)
 		{
-			return false;
+			return EMeshResult::Failed_BrokenTopology;
 		}
 		Index3 T0tv = GetTriangle(t0);
 		int c = OrientTriEdgeAndFindOtherVtx(a, b, T0tv);
 
+		assert(c >= 0);
 		if (VertexRefCounts[c] > 250)
 		{
 			assert(false);
-			return false;
+			return EMeshResult::Failed_HitValenceLimit;
 		}
 		if (a != e.v0)
 		{
@@ -370,7 +409,7 @@ namespace Riemann
 
 			ReplaceTriangleVertex(t0, b, f);
 
-			int t2 = AppendTriangleEx(f, b, c, -1, -1, -1);
+			int t2 = AddTriangleEx(f, b, c, -1, -1, -1);
 
 			ReplaceEdgeTriangle(ebc, t0, t2);
 			int eaf = eab;
@@ -378,8 +417,8 @@ namespace Riemann
 			VertexEdgeLists[b].remove(eab);
 			VertexEdgeLists[f].push_back(eaf);
 
-			int efb = AppendEdgeEx(f, b, t2, -1);
-			int efc = AppendEdgeEx(f, c, t0, t2);
+			int efb = AddEdgeEx(f, b, t2, -1);
+			int efc = AddEdgeEx(f, c, t0, t2);
 
 			ReplaceTriangleEdge(t0, ebc, efc);
 			SetTriangleEdge(t2, Index3(efb, ebc, efc));
@@ -398,7 +437,8 @@ namespace Riemann
 				Attributes.OnSplitEdge(SplitInfo);
 			}
 
-			return true;
+			UpdateChangeStamps();
+			return EMeshResult::Ok;
 
 		}
 		else
@@ -410,7 +450,7 @@ namespace Riemann
 
 			if (VertexRefCounts[d] > 250)
 			{
-				return false;
+				return EMeshResult::Failed_HitValenceLimit;
 			}
 
 			Vector3 vNew = Maths::LinearInterp(GetVertex(a), GetVertex(b), split_t);
@@ -436,8 +476,8 @@ namespace Riemann
 			ReplaceTriangleVertex(t0, b, f);
 			ReplaceTriangleVertex(t1, b, f);
 
-			int t2 = AppendTriangleEx(f, b, c, -1, -1, -1);
-			int t3 = AppendTriangleEx(f, d, b, -1, -1, -1);
+			int t2 = AddTriangleEx(f, b, c, -1, -1, -1);
+			int t3 = AddTriangleEx(f, d, b, -1, -1, -1);
 
 			ReplaceEdgeTriangle(ebc, t0, t2);
 			ReplaceEdgeTriangle(edb, t1, t3);
@@ -448,9 +488,9 @@ namespace Riemann
 			VertexEdgeLists[b].remove(eab);
 			VertexEdgeLists[f].push_back(eaf);
 
-			int efb = AppendEdgeEx(f, b, t2, t3);
-			int efc = AppendEdgeEx(f, c, t0, t2);
-			int edf = AppendEdgeEx(d, f, t1, t3);
+			int efb = AddEdgeEx(f, b, t2, t3);
+			int efc = AddEdgeEx(f, c, t0, t2);
+			int edf = AddEdgeEx(d, f, t1, t3);
 
 			ReplaceTriangleEdge(t0, ebc, efc);
 			ReplaceTriangleEdge(t1, edb, edf);
@@ -472,7 +512,8 @@ namespace Riemann
 				Attributes.OnSplitEdge(SplitInfo);
 			}
 
-			return true;
+			UpdateChangeStamps();
+			return EMeshResult::Ok;
 		}
 	}
 
@@ -528,10 +569,9 @@ namespace Riemann
 		//  Unfortunately I cannot see a way to do this more efficiently than brute-force search
 		//  [TODO] if we had tri iterator for a, couldn't we check each tri for b  (skipping t0 and t1) ?
 
-		/*
-		int edges_a_count = VertexEdgeLists.GetCount(a);
-		int eac = InvalidID, ead = InvalidID, ebc = InvalidID, ebd = InvalidID;
-		for (int eid_a : VertexEdgeLists.Values(a))
+		int edges_a_count = VertexEdgeLists[a].size();
+		int eac = -1, ead = -1, ebc = -1, ebd = -1;
+		for (int eid_a : VertexEdgeLists[a])
 		{
 			int vax = GetOtherEdgeVertex(eid_a, a);
 			if (vax == c)
@@ -548,7 +588,7 @@ namespace Riemann
 			{
 				continue;
 			}
-			for (int eid_b : VertexEdgeLists.Values(b))
+			for (int eid_b : VertexEdgeLists[b])
 			{
 				if (GetOtherEdgeVertex(eid_b, b) == vax)
 				{
@@ -566,13 +606,13 @@ namespace Riemann
 		if (edges_a_count == 3 && bIsBoundaryEdge == false)
 		{
 			int edc = FindEdge(d, c);
-			if (edc != InvalidID)
+			if (edc != -1)
 			{
-				const FEdge EdgeDC = Edges[edc];
-				if (EdgeDC.Tri[1] != InvalidID)
+				const Edge& EdgeDC = Edges[edc];
+				if (EdgeDC.t1 != -1)
 				{
-					int edc_t0 = EdgeDC.Tri[0];
-					int edc_t1 = EdgeDC.Tri[1];
+					int edc_t0 = EdgeDC.t0;
+					int edc_t1 = EdgeDC.t1;
 
 					if ((TriangleHasVertex(edc_t0, a) && TriangleHasVertex(edc_t1, b))
 						|| (TriangleHasVertex(edc_t0, b) && TriangleHasVertex(edc_t1, a)))
@@ -585,7 +625,7 @@ namespace Riemann
 		else if (bIsBoundaryEdge == true && IsBoundaryEdge(eac))
 		{
 			// Cannot collapse edge if we are down to a single triangle
-			ebc = FindEdgeFromTri(b, c, t0);
+			ebc = FindEdgeFromTriangle(b, c, t0);
 			if (IsBoundaryEdge(ebc))
 			{
 				return EMeshResult::Failed_CollapseTriangle;
@@ -605,19 +645,19 @@ namespace Riemann
 		}
 
 		// save vertex positions before we delete removed (can defer kept?)
-		FVector3d KeptPos = GetVertex(vKeep);
-		FVector3d RemovedPos = GetVertex(vRemove);
-		FVector2f RemovedUV;
-		if (HasVertexUVs())
+		Vector3 KeptPos = GetVertex(vKeep);
+		Vector3 RemovedPos = GetVertex(vRemove);
+		std::vector<Vector2> RemovedUV;
+		for (int i = 0; i < (int)VertexUVs.size(); ++i)
 		{
-			RemovedUV = GetVertexUV(vRemove);
+			RemovedUV.push_back(GetVertexUV(vRemove, i));
 		}
-		FVector3f RemovedNormal;
+		Vector3 RemovedNormal;
 		if (HasVertexNormals())
 		{
 			RemovedNormal = GetVertexNormal(vRemove);
 		}
-		FVector3f RemovedColor;
+		Vector3 RemovedColor;
 		if (HasVertexColors())
 		{
 			RemovedColor = GetVertexColor(vRemove);
@@ -627,32 +667,32 @@ namespace Riemann
 		// 2) find edges ad and ac, and tris tad, tac across those edges  (will use later)
 		// 3) for other edges, replace a with b, and add that edge to b
 		// 4) replace a with b in all triangles connected to a
-		int tad = InvalidID, tac = InvalidID;
-		for (int eid : VertexEdgeLists.Values(a))
+		int tad = -1, tac = -1;
+		for (int eid : VertexEdgeLists[a])
 		{
 			int o = GetOtherEdgeVertex(eid, a);
 			if (o == b)
 			{
-				if (VertexEdgeLists.Remove(b, eid) != true)
+				if (VertexEdgeLists[b].remove(eid) == -1)
 				{
-					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at remove case o == b"));
+					assert(false);
 					return EMeshResult::Failed_UnrecoverableError;
 				}
 			}
 			else if (o == c)
 			{
-				if (VertexEdgeLists.Remove(c, eid) != true)
+				if (VertexEdgeLists[c].remove(eid) == -1)
 				{
-					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at remove case o == c"));
+					assert(false);
 					return EMeshResult::Failed_UnrecoverableError;
 				}
 				tac = GetOtherEdgeTriangle(eid, t0);
 			}
 			else if (o == d)
 			{
-				if (VertexEdgeLists.Remove(d, eid) != true)
+				if (VertexEdgeLists[d].remove(eid) == -1)
 				{
-					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at remove case o == c, step 1"));
+					assert(false);
 					return EMeshResult::Failed_UnrecoverableError;
 				}
 				tad = GetOtherEdgeTriangle(eid, t1);
@@ -661,28 +701,29 @@ namespace Riemann
 			{
 				if (ReplaceEdgeVertex(eid, a, b) == -1)
 				{
-					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at remove case else"));
+					assert(false);
 					return EMeshResult::Failed_UnrecoverableError;
 				}
-				VertexEdgeLists.Insert(b, eid);
+				VertexEdgeLists[b].push_back(eid);
 			}
 
 			// [TODO] perhaps we can already have unique tri list because of the manifold-nbrhood check we need to do...
-			const FEdge Edge = Edges[eid];
+			const Edge e = Edges[eid];
 			for (int j = 0; j < 2; ++j)
 			{
-				int t_j = Edge.Tri[j];
-				if (t_j != InvalidID && t_j != t0 && t_j != t1)
+				int t_j = j == 0 ? e.t0 : e.t1;
+				if (t_j != -1 && t_j != t0 && t_j != t1)
 				{
 					if (TriangleHasVertex(t_j, a))
 					{
 						if (ReplaceTriangleVertex(t_j, a, b) == -1)
 						{
-							checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at remove last check"));
+							assert(false);
 							return EMeshResult::Failed_UnrecoverableError;
 						}
-						VertexRefCounts.Increment(b);
-						VertexRefCounts.Decrement(a);
+						VertexRefCounts[b]++;
+						assert(VertexRefCounts[a] > 0);
+						VertexRefCounts[a]--;
 					}
 				}
 			}
@@ -691,61 +732,61 @@ namespace Riemann
 		if (bIsBoundaryEdge == false)
 		{
 			// remove all edges from vtx a, then remove vtx a
-			VertexEdgeLists.Clear(a);
-			checkSlow(VertexRefCounts.GetRefCount(a) == 3);		// in t0,t1, and initial ref
-			VertexRefCounts.Decrement(a, 3);
-			checkSlow(VertexRefCounts.IsValid(a) == false);
+			VertexEdgeLists[a].clear();
+			assert(VertexRefCounts[a] == 3);		// in t0,t1, and initial ref
+			VertexRefCounts[a] -= 3;
+			assert(VertexRefCounts[a] == 0);
 
 			// remove triangles T0 and T1, and update b/c/d refcounts
-			TriangleRefCounts.Decrement(t0);
-			TriangleRefCounts.Decrement(t1);
-			VertexRefCounts.Decrement(c);
-			VertexRefCounts.Decrement(d);
-			VertexRefCounts.Decrement(b, 2);
-			checkSlow(TriangleRefCounts.IsValid(t0) == false);
-			checkSlow(TriangleRefCounts.IsValid(t1) == false);
+			TriangleRefCounts[t0]--;
+			TriangleRefCounts[t1]--;
+			VertexRefCounts[c]--;
+			VertexRefCounts[d]--;
+			VertexRefCounts[b] -= 2;
+			assert(TriangleRefCounts[t0] == 0);
+			assert(TriangleRefCounts[t1] == 0);
 
 			// remove edges ead, eab, eac
-			EdgeRefCounts.Decrement(ead);
-			EdgeRefCounts.Decrement(eab);
-			EdgeRefCounts.Decrement(eac);
-			checkSlow(EdgeRefCounts.IsValid(ead) == false);
-			checkSlow(EdgeRefCounts.IsValid(eab) == false);
-			checkSlow(EdgeRefCounts.IsValid(eac) == false);
+			EdgeRefCounts[ead]--;
+			EdgeRefCounts[eab]--;
+			EdgeRefCounts[eac]--;
+			assert(EdgeRefCounts[ead] == 0);
+			assert(EdgeRefCounts[eab] == 0);
+			assert(EdgeRefCounts[eac] == 0);
 
 			// replace t0 and t1 in edges ebd and ebc that we kept
-			ebd = FindEdgeFromTri(b, d, t1);
-			if (ebc == InvalidID)   // we may have already looked this up
+			ebd = FindEdgeFromTriangle(b, d, t1);
+			if (ebc == -1)   // we may have already looked this up
 			{
-				ebc = FindEdgeFromTri(b, c, t0);
+				ebc = FindEdgeFromTriangle(b, c, t0);
 			}
 
 			if (ReplaceEdgeTriangle(ebd, t1, tad) == -1)
 			{
-				checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=false branch, ebd replace triangle"));
+				assert(false);
 				return EMeshResult::Failed_UnrecoverableError;
 			}
 
 			if (ReplaceEdgeTriangle(ebc, t0, tac) == -1)
 			{
-				checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=false branch, ebc replace triangle"));
+				assert(false);
 				return EMeshResult::Failed_UnrecoverableError;
 			}
 
 			// update tri-edge-nbrs in tad and tac
-			if (tad != InvalidID)
+			if (tad != -1)
 			{
 				if (ReplaceTriangleEdge(tad, ead, ebd) == -1)
 				{
-					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=false branch, ebd replace triangle"));
+					assert(false);
 					return EMeshResult::Failed_UnrecoverableError;
 				}
 			}
-			if (tac != InvalidID)
+			if (tac != -1)
 			{
 				if (ReplaceTriangleEdge(tac, eac, ebc) == -1)
 				{
-					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=false branch, ebd replace triangle"));
+					assert(false);
 					return EMeshResult::Failed_UnrecoverableError;
 				}
 			}
@@ -756,71 +797,72 @@ namespace Riemann
 			//  boundary-edge path. this is basically same code as above, just not referencing t1/d
 
 			// remove all edges from vtx a, then remove vtx a
-			VertexEdgeLists.Clear(a);
-			checkSlow(VertexRefCounts.GetRefCount(a) == 2);		// in t0 and initial ref
-			VertexRefCounts.Decrement(a, 2);
-			checkSlow(VertexRefCounts.IsValid(a) == false);
+			VertexEdgeLists[a].clear();
+			assert(VertexRefCounts[a] == 2);		// in t0 and initial ref
+			VertexRefCounts[a] -= 2;
+			assert(VertexRefCounts[a] == 0);
 
 			// remove triangle T0 and update b/c refcounts
-			TriangleRefCounts.Decrement(t0);
-			VertexRefCounts.Decrement(c);
-			VertexRefCounts.Decrement(b);
-			checkSlow(TriangleRefCounts.IsValid(t0) == false);
+			TriangleRefCounts[t0]--;
+			VertexRefCounts[c]--;
+			VertexRefCounts[b]--;
+			assert(TriangleRefCounts[t0] > 0);
 
 			// remove edges eab and eac
-			EdgeRefCounts.Decrement(eab);
-			EdgeRefCounts.Decrement(eac);
-			checkSlow(EdgeRefCounts.IsValid(eab) == false);
-			checkSlow(EdgeRefCounts.IsValid(eac) == false);
+			EdgeRefCounts[eab]--;
+			EdgeRefCounts[eac]--;
+			assert(EdgeRefCounts[eab] == 0);
+			assert(EdgeRefCounts[eac] == 0);
 
 			// replace t0 in edge ebc that we kept
-			ebc = FindEdgeFromTri(b, c, t0);
+			ebc = FindEdgeFromTriangle(b, c, t0);
 			if (ReplaceEdgeTriangle(ebc, t0, tac) == -1)
 			{
-				checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=false branch, ebc replace triangle"));
+				assert(false);
 				return EMeshResult::Failed_UnrecoverableError;
 			}
 
 			// update tri-edge-nbrs in tac
-			if (tac != InvalidID)
+			if (tac != -1)
 			{
 				if (ReplaceTriangleEdge(tac, eac, ebc) == -1)
 				{
-					checkfSlow(false, TEXT("FDynamicMesh3::CollapseEdge: failed at isboundary=true branch, ebd replace triangle"));
+					assert(false);
 					return EMeshResult::Failed_UnrecoverableError;
 				}
 			}
 		}
 
 		// set kept vertex to interpolated collapse position
-		SetVertex(vKeep, Lerp(KeptPos, RemovedPos, collapse_t));
-		if (HasVertexUVs())
+		SetVertex(vKeep, LinearInterp(KeptPos, RemovedPos, collapse_t));
+		for (int i = 0; i < RemovedUV.size(); ++i)
 		{
-			SetVertexUV(vKeep, Lerp(GetVertexUV(vKeep), RemovedUV, (float)collapse_t));
+			SetVertexUV(vKeep, LinearInterp(GetVertexUV(vKeep, i), RemovedUV[i], collapse_t), i);
 		}
 		if (HasVertexNormals())
 		{
-			SetVertexNormal(vKeep, Normalized(Lerp(GetVertexNormal(vKeep), RemovedNormal, (float)collapse_t)));
+			SetVertexNormal(vKeep, LinearInterp(GetVertexNormal(vKeep), RemovedNormal, collapse_t).Unit());
 		}
 		if (HasVertexColors())
 		{
-			SetVertexColor(vKeep, Lerp(GetVertexColor(vKeep), RemovedColor, (float)collapse_t));
+			SetVertexColor(vKeep, LinearInterp(GetVertexColor(vKeep), RemovedColor, collapse_t));
 		}
 
 		CollapseInfo.KeptVertex = vKeep;
 		CollapseInfo.RemovedVertex = vRemove;
 		CollapseInfo.bIsBoundary = bIsBoundaryEdge;
 		CollapseInfo.CollapsedEdge = eab;
-		CollapseInfo.RemovedTris = FIndex2i(t0, t1);
-		CollapseInfo.RemovedEdges = FIndex2i(eac, ead);
-		CollapseInfo.KeptEdges = FIndex2i(ebc, ebd);
+		CollapseInfo.RemovedTris = Index2(t0, t1);
+		CollapseInfo.RemovedEdges = Index2(eac, ead);
+		CollapseInfo.KeptEdges = Index2(ebc, ebd);
 		CollapseInfo.CollapseT = collapse_t;
 
 		if (HasAttributes())
 		{
-			Attributes()->OnCollapseEdge(CollapseInfo);
+			Attributes.OnCollapseEdge(CollapseInfo);
 		}
-		*/
+
+		UpdateChangeStamps();
 		return EMeshResult::Ok;
 	}
 
@@ -866,6 +908,81 @@ namespace Riemann
 		return -1;
 	}
 
+	Riemann::EMeshResult DynamicMesh::RemoveTriangle(int tID, bool bRemoveIsolatedVertices, bool bPreserveManifold)
+	{
+		if (TriangleRefCounts[tID] <= 0)
+		{
+			assert(false);
+			return EMeshResult::Failed_NotATriangle;
+		}
+
+		Index3 tv = GetTriangle(tID);
+		Index3 te = GetTriangleEdge(tID);
+
+		// if any tri vtx is a boundary vtx connected to two interior edges, then
+		// we cannot remove this triangle because it would create a bowtie vertex!
+		// (that vtx already has 2 boundary edges, and we would add two more)
+		if (bPreserveManifold)
+		{
+			for (int j = 0; j < 3; ++j)
+			{
+				if (IsBoundaryVertex(tv[j]))
+				{
+					if (IsBoundaryEdge(te[j]) == false && IsBoundaryEdge(te[(j + 2) % 3]) == false)
+					{
+						return EMeshResult::Failed_WouldCreateBowtie;
+					}
+				}
+			}
+		}
+
+		// Remove triangle from its edges. if edge has no triangles left,
+		// then it is removed.
+		for (int j = 0; j < 3; ++j)
+		{
+			int eid = te[j];
+			ReplaceEdgeTriangle(eid, tID, -1);
+			const Edge& e = Edges[eid];
+			if (e.t0 == -1)
+			{
+				int a = e.v0;
+				VertexEdgeLists[a].remove(eid);
+
+				int b = e.v1;
+				VertexEdgeLists[b].remove(eid);
+
+				assert(EdgeRefCounts[eid] >= 0);
+				EdgeRefCounts[eid]--;
+			}
+		}
+
+		// free this triangle
+		TriangleRefCounts[tID]--;
+		assert(TriangleRefCounts[tID] > 0);
+
+		// Decrement vertex refcounts. If any hit 1 and we got remove-isolated flag,
+		// we need to remove that vertex
+		for (int j = 0; j < 3; ++j)
+		{
+			int vid = tv[j];
+			assert(VertexRefCounts[vid] >= 1);
+			VertexRefCounts[vid]--;
+			if (bRemoveIsolatedVertices && VertexRefCounts[vid] == 1)
+			{
+				VertexRefCounts[vid]--;
+				assert(VertexRefCounts[vid] > 0);
+				VertexEdgeLists[vid].clear();
+			}
+		}
+
+		if (HasAttributes())
+		{
+			Attributes.OnRemoveTriangle(tID);
+		}
+
+		UpdateChangeStamps();
+		return EMeshResult::Ok;
+	}
 
 	void DynamicMesh::BuildBounds()
 	{
@@ -1055,6 +1172,14 @@ namespace Riemann
 		return result;
 	}
 
+	int DynamicMeshAABBTree::FindNearestTriangle(const Vector3& P, float& NearestDistSqr, const FQueryOptions& Options /*= FQueryOptions()*/) const
+	{
+		NearestDistSqr = (Options.MaxDistance < FLT_MAX) ? Options.MaxDistance * Options.MaxDistance : FLT_MAX;
+		int tNearID = -1;
+		find_nearest_tri(RootIndex, P, NearestDistSqr, tNearID, Options);
+		return tNearID;
+	}
+
 	static void AddTriTriIntersectionResult(Triangle3::Triangle3IntersectionResult& Intr, int TID_A, int TID_B, IntersectionsQueryResult& Result)
 	{
 		if (Intr.Quantity == 1)
@@ -1128,8 +1253,7 @@ namespace Riemann
 
 		if (bDescendOther)
 		{
-			Box3 bounds = AABB[iBox];
-			bounds.Thicken(1e-3f);
+			Box3 bounds = GetBoxEps(iBox);
 
 			int oChild1 = OtherTree.IndexList[odx];
 			if (oChild1 < 0)
@@ -1189,6 +1313,107 @@ namespace Riemann
 		}
 	}
 
+	static float TriDistanceSqr(const DynamicMesh& Mesh, int TriIdx, const Vector3& Point)
+	{
+		Triangle3 Triangle;
+		Mesh.GetTriangleVertices(TriIdx, Triangle[0], Triangle[1], Triangle[2]);
+
+		Triangle3::PointDistanceQueryResult Result = Triangle.PointDistanceQuery(Point);
+		return Result.SqrDistance;
+	}
+
+	bool DynamicMeshAABBTree::find_nearest_tri(int IBox, const Vector3& P, float& NearestDistSqr, int& TID, const FQueryOptions& Options) const
+	{
+		const bool bEarlyStop = false;
+		int idx = BoxToIndex[IBox];
+		if (idx < TrianglesEnd)
+		{ // triangle-list case, array is [N t1 t2 ... tN]
+			int num_tris = IndexList[idx];
+			for (int i = 1; i <= num_tris; ++i)
+			{
+				int ti = IndexList[idx + i];
+				if (Options.TriangleFilterF != nullptr && Options.TriangleFilterF(ti) == false)
+				{
+					continue;
+				}
+				float fTriDistSqr = TriDistanceSqr(*Mesh, ti, P);
+				if (fTriDistSqr < NearestDistSqr)
+				{
+					NearestDistSqr = fTriDistSqr;
+					TID = ti;
+					if (bEarlyStop)
+					{
+						return true;
+					}
+				}
+			}
+		}
+		else
+		{ // internal node, either 1 or 2 child boxes
+			int iChild1 = IndexList[idx];
+			if (iChild1 < 0)
+			{ // 1 child, descend if nearer than cur min-dist
+				iChild1 = (-iChild1) - 1;
+				float fChild1DistSqr = BoxDistanceSqr(iChild1, P);
+				if (fChild1DistSqr <= NearestDistSqr)
+				{
+					bool bFoundEarly = find_nearest_tri(iChild1, P, NearestDistSqr, TID, Options);
+					if (bEarlyStop && bFoundEarly)
+					{
+						return true;
+					}
+				}
+			}
+			else
+			{ // 2 children, descend closest first
+				iChild1 = iChild1 - 1;
+				int iChild2 = IndexList[idx + 1] - 1;
+
+				float fChild1DistSqr = BoxDistanceSqr(iChild1, P);
+				float fChild2DistSqr = BoxDistanceSqr(iChild2, P);
+				if (fChild1DistSqr < fChild2DistSqr)
+				{
+					if (fChild1DistSqr < NearestDistSqr)
+					{
+						bool bFoundEarly1 = find_nearest_tri(iChild1, P, NearestDistSqr, TID, Options);
+						if (bEarlyStop && bFoundEarly1)
+						{
+							return true;
+						}
+						if (fChild2DistSqr < NearestDistSqr)
+						{
+							bool bFoundEarly2 = find_nearest_tri(iChild2, P, NearestDistSqr, TID, Options);
+							if (bEarlyStop && bFoundEarly2)
+							{
+								return true;
+							}
+						}
+					}
+				}
+				else
+				{
+					if (fChild2DistSqr < NearestDistSqr)
+					{
+						bool bFoundEarly1 = find_nearest_tri(iChild2, P, NearestDistSqr, TID, Options);
+						if (bEarlyStop && bFoundEarly1)
+						{
+							return true;
+						}
+						if (fChild1DistSqr < NearestDistSqr)
+						{
+							bool bFoundEarly2 = find_nearest_tri(iChild1, P, NearestDistSqr, TID, Options);
+							if (bEarlyStop && bFoundEarly2)
+							{
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 	Box3 DynamicMeshAABBTree::GetAABB(int idx, const Transform* TransformF) const
 	{
 		Box3 box = AABB[idx];
@@ -1199,11 +1424,23 @@ namespace Riemann
 		return box;
 	}
 
+	float DynamicMeshAABBTree::BoxDistanceSqr(int IBox, const Vector3& V) const
+	{
+		const Vector3& c = AABB[IBox].GetCenter();
+		const Vector3& e = AABB[IBox].GetExtent();
+
+		const float dx = std::max(fabs(V.x - c.x) - e.x, 0.0f);
+		const float dy = std::max(fabs(V.y - c.y) - e.y, 0.0f);
+		const float dz = std::max(fabs(V.z - c.z) - e.z, 0.0f);
+		return dx * dx + dy * dy + dz * dz;
+	}
+
 	void DynamicMeshAABBTree::Build()
 	{
 		std::vector<int> Triangles;
 		std::vector<Vector3> Centers;
-		for (int i = 0 ; i < Mesh->Triangles.size(); ++i)
+		int numTris = Mesh->GetTriangleCount();
+		for (int i = 0 ; i < numTris; ++i)
 		{
 			const Vector3 centroid = Mesh->GetTriangleCentroid((int)i);
 			float d2 = centroid.SquareLength();

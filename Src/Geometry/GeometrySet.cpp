@@ -26,17 +26,17 @@ namespace Riemann
 			return false;
 		}
 
-		p->Pose = pose;
+		p->SetPose(pose);
 
 		mMeshs.push_back(p);
 
 		if (mMeshs.size() == 1)
 		{
-			mBounds = p->Bounds;
+			mBounds = p->GetBounds();
 		}
 		else
 		{
-			mBounds.Encapsulate(p->Bounds);
+			mBounds.Encapsulate(p->GetBounds());
 		}
 
 		return true;

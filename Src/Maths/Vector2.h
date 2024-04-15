@@ -26,6 +26,11 @@ namespace Maths
 			y = _y;
 		}
 
+		explicit inline TVector2<T>(T k)
+		{
+			x = y = k;
+		}
+
 		TVector2(const TVector2<T>& v)
 		{
 			x = v.x;

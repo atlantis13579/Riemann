@@ -9,9 +9,445 @@
 #include "../Maths/Maths.h"
 #include "GeometryBoolean.h"
 #include "DynamicMesh.h"
+#include "SparseOctree.h"
+#include "SparseSpatialHash.h"
 
 namespace Riemann
 {
+	namespace WindingTree
+	{
+		struct FMeshTriInfoCache
+		{
+			std::vector<Vector3> Centroids;
+			std::vector<Vector3> Normals;
+			std::vector<float> Areas;
+
+			void GetCache(int TriangleID, Vector3& NormalOut, float& AreaOut, Vector3& CentroidOut) const
+			{
+				NormalOut = Normals[TriangleID];
+				AreaOut = Areas[TriangleID];
+				CentroidOut = Centroids[TriangleID];
+			}
+
+			void Build(const DynamicMesh& Mesh)
+			{
+				int nt = Mesh.GetTriangleCount();
+				Centroids.resize(nt);
+				Normals.resize(nt);
+				Areas.resize(nt);
+
+				for (int i = 0; i < nt; ++i)
+				{
+					Triangle3 Triangle;
+					Mesh.GetTriangleVertices(i, Triangle.v0, Triangle.v1, Triangle.v2);
+
+					Centroids[i] = Triangle.GetCenter();
+					Normals[i] = Triangle.GetNormal();
+					Areas[i] = Triangle.GetArea();
+				}
+			}
+		};
+
+		void ComputeCoeffs(const DynamicMesh& Mesh,
+			const std::set<int>& Triangles,
+			const FMeshTriInfoCache& TriCache,
+			Vector3& P,
+			float& R,
+			Vector3& Order1,
+			Matrix3& Order2)
+		{
+			P = Vector3::Zero();
+			Order1 = Vector3::Zero();
+			Order2 = Matrix3::Zero();
+			R = 0;
+
+			Vector3 P0 = Vector3::Zero(), P1 = Vector3::Zero(), P2 = Vector3::Zero();
+			float sum_area = 0;
+			for (int tid : Triangles)
+			{
+				float Area = TriCache.Areas[tid];
+				sum_area += Area;
+				P += Area * TriCache.Centroids[tid];
+			}
+			P /= sum_area;
+
+			Vector3 n, c;
+			float a = 0;
+			float RSq = 0;
+			for (int tid : Triangles)
+			{
+				Mesh.GetTriangleVertices(tid, P0, P1, P2);
+				TriCache.GetCache(tid, n, a, c);
+
+				Order1 += a * n;
+
+				Vector3 dcp = c - P;
+				Order2 += a * Matrix3::OuterProduct(dcp, n);
+
+				// update max radius R (as squared value in loop)
+				float MaxDistSq = Maths::Max((P0 - P).SquareLength(), (P1 - P).SquareLength(), (P2 - P).SquareLength());
+				RSq = Maths::Max(RSq, MaxDistSq);
+			}
+			R = sqrtf(RSq);
+		}
+
+		inline float EvaluateOrder1Approx(const Vector3& Center, const Vector3& Order1Coeff, const Vector3& Q)
+		{
+			Vector3 dpq = (Center - Q);
+			float len = dpq.Length();
+
+			return (1.0f / PI_4) * Order1Coeff.Dot(dpq / (len * len * len));
+		}
+
+		inline float EvaluateOrder2Approx(const Vector3& Center, const Vector3& Order1Coeff, const Matrix3& Order2Coeff, const Vector3& Q)
+		{
+			Vector3 dpq = (Center - Q);
+			float len = dpq.Length();
+			float len3 = len * len * len;
+			float fourPi_len3 = 1.0f / (PI_4 * len3);
+
+			float Order1 = fourPi_len3 * Order1Coeff.Dot(dpq);
+
+			// second-order hessian \grad^2(G)
+			float c = -3.0f / (PI_4 * len3 * len * len);
+
+			// expanded-out version below avoids extra constructors
+			//Matrix3 xqxq(dpq, dpq);
+			//Matrix3 hessian(fourPi_len3, fourPi_len3, fourPi_len3) - c * xqxq;
+			Matrix3 hessian(
+				fourPi_len3 + c * dpq.x * dpq.x, c * dpq.x * dpq.y, c * dpq.x * dpq.z,
+				c * dpq.y * dpq.x, fourPi_len3 + c * dpq.y * dpq.y, c * dpq.y * dpq.z,
+				c * dpq.z * dpq.x, c * dpq.z * dpq.y, fourPi_len3 + c * dpq.z * dpq.z);
+
+			float Order2 = Order2Coeff.InnerProduct(hessian, true);
+
+			return Order1 + Order2;
+		}
+
+		template <class T>
+		class Optional
+		{
+		public:
+			T& GetValue()
+			{
+				return data;
+			}
+
+			bool IsSet() const
+			{
+				return is_set;
+			}
+
+			void Set()
+			{
+				is_set = true;
+			}
+
+			void Clear()
+			{
+				is_set = false;
+			}
+
+		private:
+			bool	is_set = false;
+			T		data;
+		};
+
+		class TFastWindingTree
+		{
+			DynamicMeshAABBTree* Tree;
+
+			struct FWNInfo
+			{
+				Vector3 Center;
+				float R;
+				Vector3 Order1Vec;
+				Matrix3 Order2Mat;
+			};
+
+			std::map<int, FWNInfo> FastWindingCache;
+
+		public:
+			float FWNBeta = 2.0f;
+			int FWNApproxOrder = 2;
+			uint64_t MeshChangeStamp = 0;
+
+			TFastWindingTree(DynamicMeshAABBTree* TreeToRef)
+			{
+				this->Tree = TreeToRef;
+				Build(true);
+			}
+
+			void Build(bool force_build)
+			{
+				if (!Tree->IsValid())
+				{
+					Tree->Build();
+				}
+				if (force_build || MeshChangeStamp != Tree->Mesh->GetChangeStamps())
+				{
+					MeshChangeStamp = Tree->Mesh->GetChangeStamps();
+					build_fast_winding_cache();
+				}
+			}
+
+			DynamicMeshAABBTree* GetTree() const
+			{
+				return Tree;
+			}
+
+			float FastWindingNumber(const Vector3& P)
+			{
+				Build(false);
+				float sum = branch_fast_winding_num(Tree->RootIndex, P);
+				return sum;
+			}
+
+			float FastWindingNumber(const Vector3& P) const
+			{
+				assert(Tree->IsValid());
+				float sum = branch_fast_winding_num(Tree->RootIndex, P);
+				return sum;
+			}
+
+			bool IsInside(const Vector3& P, float WindingIsoThreshold = 0.5) const
+			{
+				return FastWindingNumber(P) > WindingIsoThreshold;
+			}
+
+		private:
+			static float TriSolidAngle(Vector3 A, Vector3 B, Vector3 C, const Vector3& P)
+			{
+				// Formula from https://igl.ethz.ch/projects/winding-number/
+				A -= P;
+				B -= P;
+				C -= P;
+				float la = A.Length(), lb = B.Length(), lc = C.Length();
+				float top = (la * lb * lc) + A.Dot(B) * lc + B.Dot(C) * la + C.Dot(A) * lb;
+				float bottom = A.x * (B.y * C.z - C.y * B.z) - A.y * (B.x * C.z - C.x * B.z) + A.z * (B.x * C.y - C.x * B.y);
+				// -2 instead of 2 to account for UE winding
+				return -2.0f * atan2f(bottom, top);
+			}
+
+			float branch_fast_winding_num(int IBox, Vector3 P) const
+			{
+				float branch_sum = 0;
+
+				int idx = Tree->BoxToIndex[IBox];
+				if (idx < Tree->TrianglesEnd)
+				{
+					int num_tris = Tree->IndexList[idx];
+					for (int i = 1; i <= num_tris; ++i)
+					{
+						Vector3 a, b, c;
+						int ti = Tree->IndexList[idx + i];
+						Tree->Mesh->GetTriangleVertices(ti, a, b, c);
+						float angle = TriSolidAngle(a, b, c, P);
+						branch_sum += angle / PI_4;
+					}
+				}
+				else
+				{
+					int iChild1 = Tree->IndexList[idx];
+					if (iChild1 < 0)
+					{
+						iChild1 = (-iChild1) - 1;
+
+						bool contained = Tree->GetBoxEps(iChild1).IsInside(P);
+						if (contained == false && can_use_fast_winding_cache(iChild1, P))
+						{
+							branch_sum += evaluate_box_fast_winding_cache(iChild1, P);
+						}
+						else
+						{
+							branch_sum += branch_fast_winding_num(iChild1, P);
+						}
+					}
+					else
+					{
+						iChild1 = iChild1 - 1;
+						int iChild2 = Tree->IndexList[idx + 1] - 1;
+
+						bool contained1 = Tree->GetBoxEps(iChild1).IsInside(P);
+						if (contained1 == false && can_use_fast_winding_cache(iChild1, P))
+						{
+							branch_sum += evaluate_box_fast_winding_cache(iChild1, P);
+						}
+						else
+						{
+							branch_sum += branch_fast_winding_num(iChild1, P);
+						}
+
+						bool contained2 = Tree->GetBoxEps(iChild2).IsInside(P);
+						if (contained2 == false && can_use_fast_winding_cache(iChild2, P))
+						{
+							branch_sum += evaluate_box_fast_winding_cache(iChild2, P);
+						}
+						else
+						{
+							branch_sum += branch_fast_winding_num(iChild2, P);
+						}
+					}
+				}
+
+				return branch_sum;
+			}
+
+			void build_fast_winding_cache()
+			{
+				int WINDING_CACHE_THRESH = 1;
+
+				FMeshTriInfoCache TriCache;
+				TriCache.Build(*Tree->Mesh);
+
+				FastWindingCache.clear();
+				Optional<std::set<int>> root_hash;
+				build_fast_winding_cache(Tree->RootIndex, 0, WINDING_CACHE_THRESH, root_hash, TriCache);
+			}
+
+			int build_fast_winding_cache(int IBox, int Depth, int TriCountThresh, Optional<std::set<int>>& TriHash, const FMeshTriInfoCache& TriCache)
+			{
+				TriHash.Clear();
+
+				int idx = Tree->BoxToIndex[IBox];
+				if (idx < Tree->TrianglesEnd)
+				{
+					int num_tris = Tree->IndexList[idx];
+					return num_tris;
+				}
+				else
+				{
+					int iChild1 = Tree->IndexList[idx];
+					if (iChild1 < 0)
+					{
+						iChild1 = (-iChild1) - 1;
+						int num_child_tris = build_fast_winding_cache(iChild1, Depth + 1, TriCountThresh, TriHash, TriCache);
+						return num_child_tris;
+					}
+					else
+					{
+						iChild1 = iChild1 - 1;
+						int iChild2 = Tree->IndexList[idx + 1] - 1;
+
+						Optional<std::set<int>> child2_hash;
+						int num_tris_1 = build_fast_winding_cache(iChild1, Depth + 1, TriCountThresh, TriHash, TriCache);
+						int num_tris_2 = build_fast_winding_cache(iChild2, Depth + 1, TriCountThresh, child2_hash, TriCache);
+						bool build_cache = (num_tris_1 + num_tris_2 > TriCountThresh);
+
+						if (Depth == 0)
+						{
+							return num_tris_1 + num_tris_2;
+						}
+
+						if (TriHash.IsSet() || child2_hash.IsSet() || build_cache)
+						{
+							if (!TriHash.IsSet() && child2_hash.IsSet())
+							{
+								collect_triangles(iChild1, child2_hash.GetValue());
+								TriHash = child2_hash;
+							}
+							else
+							{
+								if (!TriHash.IsSet())
+								{
+									TriHash.Set();
+									collect_triangles(iChild1, TriHash.GetValue());
+								}
+								if (!child2_hash.IsSet())
+								{
+									collect_triangles(iChild2, TriHash.GetValue());
+								}
+								else
+								{
+									TriHash.GetValue().insert(child2_hash.GetValue().begin(), child2_hash.GetValue().end());
+								}
+							}
+						}
+						if (build_cache)
+						{
+							assert(TriHash.IsSet());
+							make_box_fast_winding_cache(IBox, TriHash.GetValue(), TriCache);
+						}
+
+						return (num_tris_1 + num_tris_2);
+					}
+				}
+			}
+
+			bool can_use_fast_winding_cache(int IBox, const Vector3& Q) const
+			{
+				auto it = FastWindingCache.find(IBox);
+				if (it == FastWindingCache.end())
+				{
+					return false;
+				}
+
+				const FWNInfo& cacheInfo = it->second;
+
+				float dist_qp = (cacheInfo.Center - Q).Length();
+				if (dist_qp > FWNBeta * cacheInfo.R)
+				{
+					return true;
+				}
+
+				return false;
+			}
+
+			void make_box_fast_winding_cache(int IBox, const std::set<int>& Triangles, const FMeshTriInfoCache& TriCache)
+			{
+				assert(FastWindingCache.find(IBox) == FastWindingCache.end());
+
+				FWNInfo cacheInfo;
+				ComputeCoeffs(*Tree->Mesh, Triangles, TriCache, cacheInfo.Center, cacheInfo.R, cacheInfo.Order1Vec, cacheInfo.Order2Mat);
+
+				FastWindingCache[IBox] = cacheInfo;
+			}
+
+			float evaluate_box_fast_winding_cache(int IBox, const Vector3& Q) const
+			{
+				auto it = FastWindingCache.find(IBox);
+				assert(it != FastWindingCache.end());
+
+				const FWNInfo& cacheInfo = it->second;
+
+				if (FWNApproxOrder == 2)
+				{
+					return EvaluateOrder2Approx(cacheInfo.Center, cacheInfo.Order1Vec, cacheInfo.Order2Mat, Q);
+				}
+				else
+				{
+					return EvaluateOrder1Approx(cacheInfo.Center, cacheInfo.Order1Vec, Q);
+				}
+			}
+
+			void collect_triangles(int IBox, std::set<int>& Triangles)
+			{
+				int idx = Tree->BoxToIndex[IBox];
+				if (idx < Tree->TrianglesEnd)
+				{
+					int num_tris = Tree->IndexList[idx];
+					for (int i = 1; i <= num_tris; ++i)
+					{
+						Triangles.insert(Tree->IndexList[idx + i]);
+					}
+				}
+				else
+				{
+					int iChild1 = Tree->IndexList[idx];
+					if (iChild1 < 0)
+					{
+						collect_triangles((-iChild1) - 1, Triangles);
+					}
+					else
+					{
+						collect_triangles(iChild1 - 1, Triangles);
+						collect_triangles(Tree->IndexList[idx + 1] - 1, Triangles);
+					}
+				}
+			}
+		};
+	}
+
 	enum class EVertexType
 	{
 		Unknown = -1,
@@ -321,7 +757,7 @@ namespace Riemann
 			Triangle3 CurrentTri;
 			Index3 StartTriVertIDs = Mesh->GetTriangle(StartTri);
 			SetTriVertPositions(StartTriVertIDs, CurrentTri);
-			Triangle3::BaryCentricQueryResult CurrentTriDist;
+			Triangle3::PointDistanceQueryResult CurrentTriDist;
 			int StartVIDIndex = -1;
 			if (StartVID != -1)
 			{
@@ -329,7 +765,7 @@ namespace Riemann
 			}
 			if (StartVIDIndex == -1)
 			{
-				Triangle3::BaryCentricQueryResult info = CurrentTri.BarycentricCoodsEx(StartPt);
+				Triangle3::PointDistanceQueryResult info = CurrentTri.PointDistanceQuery(StartPt);
 				ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(StartTri, CurrentTriDist.BaryCoords), FWalkIndices(StartPt, -1, StartTri));
 			}
 			else
@@ -388,7 +824,7 @@ namespace Riemann
 				bool ComputedEndPtOnTri = false;
 				if (EndVertID < 0 && EndTri == -1)
 				{
-					CurrentTriDist = CurrentTri.BarycentricCoodsEx(EndPt);
+					CurrentTriDist = CurrentTri.PointDistanceQuery(EndPt);
 					ComputedEndPtOnTri = true;
 					double DistSq = CurrentTriDist.SqrDistance;
 					if (DistSq < AcceptEndPtOutsideDist)
@@ -402,7 +838,7 @@ namespace Riemann
 					if (!ComputedEndPtOnTri)
 					{
 						ComputedEndPtOnTri = true;
-						CurrentTriDist = CurrentTri.BarycentricCoodsEx(EndPt);
+						CurrentTriDist = CurrentTri.PointDistanceQuery(EndPt);
 					}
 					CurrentEnd = (int)ComputedPointsAndSources.size();
 					ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(TriID, CurrentTriDist.BaryCoords), FWalkIndices(EndPt, CurrentEnd, TriID));
@@ -655,7 +1091,7 @@ namespace Riemann
 				assert(Mesh->IsTriangle(TriID));
 				Index3 TriVertIDs = Mesh->GetTriangle(TriID);
 				Triangle3 Tri(Mesh->GetVertex(TriVertIDs.a), Mesh->GetVertex(TriVertIDs.b), Mesh->GetVertex(TriVertIDs.c));
-				Triangle3::BaryCentricQueryResult info = Tri.BarycentricCoodsEx(PosInVertexCoordSpace);
+				Triangle3::PointDistanceQueryResult info = Tri.PointDistanceQuery(PosInVertexCoordSpace);
 				double DistSq = info.SqrDistance;
 				if (BestTriID == -1 || DistSq < BestTriDistSq)
 				{
@@ -802,8 +1238,9 @@ namespace Riemann
 				}
 				PtIndices.clear();
 
+				int nums = (int)FaceVertices.count(TID);
 				auto it = FaceVertices.find(TID);
-				while (it != FaceVertices.end())
+				while (nums--)
 				{
 					PtIndices.push_back(it->second);
 					++it;
@@ -815,8 +1252,8 @@ namespace Riemann
 
 				Vector3 BaryCoords = Tri.BarycentricCoods(Pt.Pos);
 				PokeTriangleInfo PokeInfo;
-				bool success = Mesh->PokeTriangle(TID, BaryCoords, PokeInfo);
-				assert(success);
+				EMeshResult Result = Mesh->PokeTriangle(TID, BaryCoords, PokeInfo);
+				assert(Result == EMeshResult::Ok);
 				int PokeVID = PokeInfo.NewVertex;
 				Mesh->SetVertex(PokeVID, Pt.Pos);
 				Pt.ElemID = PokeVID;
@@ -868,8 +1305,9 @@ namespace Riemann
 
 				PtIndices.clear();
 
+				int nums = (int)FaceVertices.count(EID);
 				auto it = EdgeVertices.find(EID);
-				while (it != EdgeVertices.end())
+				while (nums--)
 				{
 					PtIndices.push_back(it->second);
 					++it;
@@ -884,8 +1322,8 @@ namespace Riemann
 
 				Index2 SplitTris = Mesh->GetEdgeT(EID);
 				EdgeSplitInfo SplitInfo;
-				bool success = Mesh->SplitEdge(EID, SplitInfo, SplitParam);
-				assert(success);
+				EMeshResult Result = Mesh->SplitEdge(EID, SplitInfo, SplitParam);
+				assert(Result == EMeshResult::Ok);
 
 				Mesh->SetVertex(SplitInfo.NewVertex, Pt.Pos);
 				Pt.ElemID = SplitInfo.NewVertex;
@@ -1120,7 +1558,7 @@ namespace Riemann
 					continue;
 				}
 				Segment3 Seg( Tri[Idx], Tri[(Idx + 1) % 3] );
-				float DSq = Seg.SqrDistanceToPoint(V);
+				const float DSq = Seg.SqrDistanceToPoint(V);
 				if (DSq < BestDSq)
 				{
 					BestDSq = DSq;
@@ -1139,7 +1577,7 @@ namespace Riemann
 				int EID = EIDs[Idx];
 				Index2 EVIDs = Mesh->GetEdgeV(EID);
 				Segment3 Seg(Mesh->GetVertex(EVIDs.a), Mesh->GetVertex(EVIDs.b));
-				float DSq = Seg.SqrDistanceToPoint(Pos);
+				const float DSq = Seg.SqrDistanceToPoint(Pos);
 				if (DSq < BestDSq)
 				{
 					BestDSq = DSq;
@@ -1157,7 +1595,7 @@ namespace Riemann
 				int EID = EIDs[Idx];
 				Index2 EVIDs = Mesh->GetEdgeV(EID);
 				Segment3 Seg(Mesh->GetVertex(EVIDs.a), Mesh->GetVertex(EVIDs.b));
-				double DSq = Seg.SqrDistanceToPoint(Pos);
+				float DSq = Seg.SqrDistanceToPoint(Pos);
 				if (DSq < BestDSq)
 				{
 					BestDSq = DSq;
@@ -1174,7 +1612,6 @@ namespace Riemann
 			Vector3 bary = Tri.BarycentricCoods(Pos);
 			return (bary.x >= 0 && bary.y >= 0 && bary.z >= 0
 				&& bary.x < 1 && bary.y <= 1 && bary.z <= 1);
-
 		}
 	};
 
@@ -1184,7 +1621,7 @@ namespace Riemann
 
 		for (int MeshIdx = 0; MeshIdx < 2; MeshIdx++)
 		{
-			FCutWorkingInfo WorkingInfo(Meshe[MeshIdx], SnapTolerance);
+			FCutWorkingInfo WorkingInfo(Mesh[MeshIdx], SnapTolerance);
 			WorkingInfo.AddSegments(Intersections, MeshIdx);
 			WorkingInfo.InsertFaceVertices();
 			WorkingInfo.InsertEdgeVertices();
@@ -1199,6 +1636,25 @@ namespace Riemann
 		return bSuccess;
 	}
 
+	static int FindNearestEdge(const DynamicMesh& OnMesh, const std::vector<int>& EIDs, const Vector3& Pos)
+	{
+		int NearEID = -1;
+		float NearSqr = 1e-6f;
+		Vector3 EdgePts[2];
+		for (int EID : EIDs) {
+			OnMesh.GetEdgeV(EID, EdgePts[0], EdgePts[1]);
+
+			Segment3 Seg(EdgePts[0], EdgePts[1]);
+			float DSqr = Seg.SqrDistanceToPoint(Pos);
+			if (DSqr < NearSqr)
+			{
+				NearEID = EID;
+				NearSqr = DSqr;
+			}
+		}
+		return NearEID;
+	}
+
 	bool GeometryBoolean::Compute()
 	{
 		// copy meshes
@@ -1209,8 +1665,8 @@ namespace Riemann
 
 		DynamicMesh* CutMesh[2]{ MeshNew, &CutMeshB };
 
-		Box3 CombinedAABB = Box3::Transform(CutMesh[0]->Bounds, Transforms[0].pos, Transforms[0].quat);
-		Box3 MeshB_AABB = Box3::Transform(CutMesh[1]->Bounds, Transforms[1].pos, Transforms[1].quat);
+		Box3 CombinedAABB = Box3::Transform(CutMesh[0]->GetBounds(), Transforms[0].pos, Transforms[0].quat);
+		Box3 MeshB_AABB = Box3::Transform(CutMesh[1]->GetBounds(), Transforms[1].pos, Transforms[1].quat);
 		CombinedAABB.Encapsulate(MeshB_AABB);
 		for (int MeshIdx = 0; MeshIdx < 2; MeshIdx++)
 		{
@@ -1235,7 +1691,7 @@ namespace Riemann
 
 		if (bCollapseDegenerateEdgesOnCut)
 		{
-			double DegenerateEdgeTolSq = DegenerateEdgeTolFactor * DegenerateEdgeTolFactor * SnapTolerance * SnapTolerance;
+			float DegenerateEdgeTolSq = DegenerateEdgeTolFactor * DegenerateEdgeTolFactor * SnapTolerance * SnapTolerance;
 			for (int MeshIdx = 0; MeshIdx < NumMeshesToProcess; MeshIdx++)
 			{
 				std::vector<int> EIDs;
@@ -1303,12 +1759,12 @@ namespace Riemann
 			}
 		}
 
-		/*
 		// edges that will become new boundary edges after the boolean op removes triangles on each mesh
 		std::vector<int> CutBoundaryEdges[2];
 		// Vertices on the cut boundary that *may* not have a corresonding vertex on the other mesh
 		std::set<int> PossUnmatchedBdryVerts[2];
 
+		const float WindingThreshold = 0.5f;
 		// delete geometry according to boolean rules, tracking the boundary edges
 		{ // (just for scope)
 			// first decide what triangles to delete for both meshes (*before* deleting anything so winding doesn't get messed up!)
@@ -1318,105 +1774,109 @@ namespace Riemann
 			std::vector<int> DeleteIfOtherKept;
 			if (NumMeshesToProcess > 1)
 			{
-				DeleteIfOtherKept.Init(-1, CutMesh[0]->MaxTriangleID());
+				DeleteIfOtherKept.resize(CutMesh[0]->GetTriangleCount(), -1);
 			}
 			for (int MeshIdx = 0; MeshIdx < NumMeshesToProcess; MeshIdx++)
 			{
-				TFastWindingTree<GeometryData> Winding(&Spatial[1 - MeshIdx]);
-				FDynamicMeshAABBTree3& OtherSpatial = Spatial[1 - MeshIdx];
-				GeometryData& ProcessMesh = *CutMesh[MeshIdx];
-				int MaxTriID = ProcessMesh.MaxTriangleID();
-				KeepTri[MeshIdx].SetNumUninitialized(MaxTriID);
+				WindingTree::TFastWindingTree Winding(&Spatial[1 - MeshIdx]);
+				DynamicMeshAABBTree& OtherSpatial = Spatial[1 - MeshIdx];
+				DynamicMesh& ProcessMesh = *CutMesh[MeshIdx];
+				int MaxTriID = ProcessMesh.GetTriangleCount();
+				KeepTri[MeshIdx].resize(MaxTriID);
 				bool bCoplanarKeepSameDir = (Operation != BooleanOp::Difference && Operation != BooleanOp::TrimInside && Operation != BooleanOp::NewGroupInside);
-				bool bRemoveInside = 1; // whether to remove the inside triangles (e.g. for union) or the outside ones (e.g. for intersection)
+				bool bRemoveInside = 1;
 				if (Operation == BooleanOp::NewGroupOutside || Operation == BooleanOp::TrimOutside || Operation == BooleanOp::Intersect || (Operation == BooleanOp::Difference && MeshIdx == 1))
 				{
 					bRemoveInside = 0;
 				}
-				FMeshNormals OtherNormals(OtherSpatial.GetMesh());
-				OtherNormals.ComputeTriangleNormals();
-				const double OnPlaneTolerance = SnapTolerance;
-				IMeshSpatial::FQueryOptions NonDegenCoplanarCandidateFilter(OnPlaneTolerance,
-					[&OtherNormals](int TID) -> bool // filter degenerate triangles from matching
+				std::vector<Vector3> OtherNormals(OtherSpatial.Mesh->GetTriangleCount());			// <-- OtherSpatial
+				for (size_t ii = 0; ii < OtherNormals.size(); ++ii)
+				{
+					OtherNormals[ii] = OtherSpatial.Mesh->GetTriangleNormal((int)ii);
+				}
+
+				const float OnPlaneTolerance = SnapTolerance;
+				FQueryOptions NonDegenCoplanarCandidateFilter(OnPlaneTolerance,
+					[&OtherNormals](int TID) -> bool
 					{
-						// By convention, the normal for degenerate triangles is the zero vector
 						return !OtherNormals[TID].IsZero();
 					});
-				ParallelFor(MaxTriID, [&](int TID)
+
+				for (int TID = 0; TID < MaxTriID; ++TID)
+				{
+					if (!ProcessMesh.IsTriangle(TID))
 					{
-						if (!ProcessMesh.IsTriangle(TID))
-						{
-							return;
-						}
+						continue;
+					}
 
-						FTriangle3d Tri;
-						ProcessMesh.GetTriVertices(TID, Tri.V[0], Tri.V[1], Tri.V[2]);
-						Vector3 Centroid = Tri.Centroid();
+					Triangle3 Tri;
+					ProcessMesh.GetTriangleVertices(TID, Tri.v0, Tri.v1, Tri.v2);
+					Vector3 Centroid = Tri.GetCenter();
 
-						// first check for the coplanar case
+					// first check for the coplanar case
+					{
+						float DSq;
+						int OtherTID = OtherSpatial.FindNearestTriangle(Centroid, DSq, NonDegenCoplanarCandidateFilter);
+						if (OtherTID > -1)
 						{
-							double DSq;
-							int OtherTID = OtherSpatial.FindNearestTriangle(Centroid, DSq, NonDegenCoplanarCandidateFilter);
-							if (OtherTID > -1) // only consider it coplanar if there is a matching tri
+
+							Vector3 OtherNormal = OtherNormals[OtherTID];
+							Vector3 Normal = ProcessMesh.GetTriangleNormal(TID);
+							float DotNormals = OtherNormal.Dot(Normal);
+
+							//if (FMath::Abs(DotNormals) > .9) // TODO: do we actually want to check for a normal match? coplanar vertex check below is more robust?
 							{
+								// To be extra sure it's a coplanar match, check the vertices are *also* on the other mesh (w/in SnapTolerance)
 
-								Vector3 OtherNormal = OtherNormals[OtherTID];
-								Vector3 Normal = ProcessMesh.GetTriNormal(TID);
-								double DotNormals = OtherNormal.Dot(Normal);
-
-								//if (FMath::Abs(DotNormals) > .9) // TODO: do we actually want to check for a normal match? coplanar vertex check below is more robust?
+								bool bAllTrisOnOtherMesh = true;
+								for (int Idx = 0; Idx < 3; Idx++)
 								{
-									// To be extra sure it's a coplanar match, check the vertices are *also* on the other mesh (w/in SnapTolerance)
-
-									bool bAllTrisOnOtherMesh = true;
-									for (int Idx = 0; Idx < 3; Idx++)
+									// use a slightly more forgiving tolerance to account for the likelihood that these vertices were mesh-cut right to the boundary of the coplanar region and have some additional error
+									if (OtherSpatial.FindNearestTriangle(Tri[Idx], DSq, OnPlaneTolerance * 2) == -1)
 									{
-										// use a slightly more forgiving tolerance to account for the likelihood that these vertices were mesh-cut right to the boundary of the coplanar region and have some additional error
-										if (OtherSpatial.FindNearestTriangle(Tri.V[Idx], DSq, OnPlaneTolerance * 2) == GeometryData::InvalidID)
-										{
-											bAllTrisOnOtherMesh = false;
-											break;
-										}
+										bAllTrisOnOtherMesh = false;
+										break;
 									}
-									if (bAllTrisOnOtherMesh)
+								}
+								if (bAllTrisOnOtherMesh)
+								{
+									// for coplanar tris favor the first mesh; just delete from the other mesh
+									// for fully degenerate tris, favor deletion also
+									//  (Note: For degenerate tris we have no orientation info, so we are choosing between
+									//         potentially leaving 'cracks' in solid regions or 'spikes' in empty regions)
+									if (MeshIdx != 0 || Normal.IsZero())
 									{
-										// for coplanar tris favor the first mesh; just delete from the other mesh
-										// for fully degenerate tris, favor deletion also
-										//  (Note: For degenerate tris we have no orientation info, so we are choosing between
-										//         potentially leaving 'cracks' in solid regions or 'spikes' in empty regions)
-										if (MeshIdx != 0 || Normal.IsZero())
+										KeepTri[MeshIdx][TID] = false;
+										continue;
+									}
+									else // for the first mesh, & with a valid normal, logic depends on orientation of matching tri
+									{
+										bool bKeep = DotNormals > 0 == bCoplanarKeepSameDir;
+										KeepTri[MeshIdx][TID] = bKeep;
+										if (NumMeshesToProcess > 1 && bKeep)
 										{
-											KeepTri[MeshIdx][TID] = false;
-											return;
+											// If we kept this tri, remember the coplanar pair we expect to be deleted, in case
+											// it isn't deleted (e.g. because it wasn't coplanar); to then delete this one instead.
+											// This can help clean up sliver triangles near a cut boundary that look locally coplanar
+											DeleteIfOtherKept[TID] = OtherTID;
 										}
-										else // for the first mesh, & with a valid normal, logic depends on orientation of matching tri
-										{
-											bool bKeep = DotNormals > 0 == bCoplanarKeepSameDir;
-											KeepTri[MeshIdx][TID] = bKeep;
-											if (NumMeshesToProcess > 1 && bKeep)
-											{
-												// If we kept this tri, remember the coplanar pair we expect to be deleted, in case
-												// it isn't deleted (e.g. because it wasn't coplanar); to then delete this one instead.
-												// This can help clean up sliver triangles near a cut boundary that look locally coplanar
-												DeleteIfOtherKept[TID] = OtherTID;
-											}
-											return;
-										}
+										continue;
 									}
 								}
 							}
 						}
+					}
 
-						// didn't already return a coplanar result; use the winding number
-						double WindingNum = Winding.FastWindingNumber(Centroid);
-						KeepTri[MeshIdx][TID] = (WindingNum > WindingThreshold) != bRemoveInside;
-					});
+					// didn't already return a coplanar result; use the winding number
+					float WindingNum = Winding.FastWindingNumber(Centroid);
+					KeepTri[MeshIdx][TID] = (WindingNum > WindingThreshold) != bRemoveInside;
+				};
 			}
 
 			// Don't keep coplanar tris if the matched, second-mesh tri that we expected to delete was actually kept
 			if (NumMeshesToProcess > 1)
 			{
-				for (int TID : CutMesh[0]->TriangleIndicesItr())
+				for (int TID = 0; TID < CutMesh[0]->GetTriangleCount(); ++TID)
 				{
 					int DeleteIfOtherKeptTID = DeleteIfOtherKept[TID];
 					if (DeleteIfOtherKeptTID > -1 && KeepTri[1][DeleteIfOtherKeptTID])
@@ -1428,60 +1888,30 @@ namespace Riemann
 
 			for (int MeshIdx = 0; MeshIdx < NumMeshesToProcess; MeshIdx++)
 			{
-				GeometryMesh& ProcessMesh = *CutMesh[MeshIdx];
-				for (int EID : ProcessMesh.EdgeIndicesItr())
+				DynamicMesh& ProcessMesh = *CutMesh[MeshIdx];
+				for (int EID = 0; EID < ProcessMesh.GetEdgeCount(); ++EID)
 				{
-					GeometryMesh::FEdge Edge = ProcessMesh.GetEdge(EID);
-					if (Edge.Tri.B == IndexConstants::InvalidID || KeepTri[MeshIdx][Edge.Tri.A] == KeepTri[MeshIdx][Edge.Tri.B])
+					const DynamicMesh::Edge& e = ProcessMesh.GetEdge(EID);
+					if (e.t1 == -1 || KeepTri[MeshIdx][e.t0] == KeepTri[MeshIdx][e.t1])
 					{
 						continue;
 					}
 
-					CutBoundaryEdges[MeshIdx].Add(EID);
-					PossUnmatchedBdryVerts[MeshIdx].Add(Edge.Vert.A);
-					PossUnmatchedBdryVerts[MeshIdx].Add(Edge.Vert.B);
+					CutBoundaryEdges[MeshIdx].push_back(EID);
+					PossUnmatchedBdryVerts[MeshIdx].insert(e.v0);
+					PossUnmatchedBdryVerts[MeshIdx].insert(e.v1);
 				}
 			}
-			// now go ahead and delete from both meshes
-			bool bRegroupInsteadOfDelete = Operation == BooleanOp::NewGroupInside || Operation == BooleanOp::NewGroupOutside;
-			int NewGroupID = -1;
-			std::vector<int> NewGroupTris;
-			if (bRegroupInsteadOfDelete)
-			{
-				assert(NumMeshesToProcess == 1);
-				NewGroupID = CutMesh[0]->AllocateTriangleGroup();
-			}
+
 			for (int MeshIdx = 0; MeshIdx < NumMeshesToProcess; MeshIdx++)
 			{
-				GeometryMesh& ProcessMesh = *CutMesh[MeshIdx];
+				DynamicMesh& ProcessMesh = *CutMesh[MeshIdx];
 
 				for (int TID = 0; TID < KeepTri[MeshIdx].size(); TID++)
 				{
 					if (ProcessMesh.IsTriangle(TID) && !KeepTri[MeshIdx][TID])
 					{
-						if (bRegroupInsteadOfDelete)
-						{
-							ProcessMesh.SetTriangleGroup(TID, NewGroupID);
-							NewGroupTris.Add(TID);
-						}
-						else
-						{
-							ProcessMesh.RemoveTriangle(TID, true, false);
-						}
-					}
-				}
-			}
-			if (bRegroupInsteadOfDelete)
-			{
-				// the new triangle group could include disconnected components; best to give them separate triangle groups
-				FMeshConnectedComponents Components(CutMesh[0]);
-				Components.FindConnectedTriangles(NewGroupTris);
-				for (int ComponentIdx = 1; ComponentIdx < Components.size(); ComponentIdx++)
-				{
-					int SplitGroupID = CutMesh[0]->AllocateTriangleGroup();
-					for (int TID : Components.GetComponent(ComponentIdx).Indices)
-					{
-						CutMesh[0]->SetTriangleGroup(TID, SplitGroupID);
+						ProcessMesh.RemoveTriangle(TID, true, false);
 					}
 				}
 			}
@@ -1492,39 +1922,39 @@ namespace Riemann
 		if (NumMeshesToProcess == 2)
 		{
 			std::map<int, int> FoundMatchesMaps[2]; // mappings of matched vertex IDs from mesh 1->0 and mesh 0->1
-			double SnapToleranceSq = SnapTolerance * SnapTolerance;
+			float SnapToleranceSq = SnapTolerance * SnapTolerance;
 
 			// ensure segments that are now on boundaries have 1:1 vertex correspondence across meshes
 			for (int MeshIdx = 0; MeshIdx < 2; MeshIdx++)
 			{
 				int OtherMeshIdx = 1 - MeshIdx;
-				GeometryMesh& OtherMesh = *CutMesh[OtherMeshIdx];
+				DynamicMesh& OtherMesh = *CutMesh[OtherMeshIdx];
 
-				TPointHashGrid3d<int> OtherMeshPointHash(OtherMesh.GetBounds(true).MaxDim() / 64, -1);
+				SparseSpatialHash3<int> OtherMeshPointHash(OtherMesh.GetBounds().MaxDim() / 64, 1024);
 				for (int BoundaryVID : PossUnmatchedBdryVerts[OtherMeshIdx])
 				{
-					OtherMeshPointHash.InsertPointUnsafe(BoundaryVID, OtherMesh.GetVertex(BoundaryVID));
+					OtherMeshPointHash.Insert(OtherMesh.GetVertex(BoundaryVID), BoundaryVID);
 				}
 
-				FSparseDynamicOctree3 EdgeOctree;
-				EdgeOctree.RootDimension = .25;
+				SparseOctree3 EdgeOctree;
+				EdgeOctree.RootDimension = 0.25f;
 				EdgeOctree.SetMaxTreeDepth(7);
 				auto EdgeBounds = [&OtherMesh](int EID)
 				{
-					GeometryMesh::FEdge Edge = OtherMesh.GetEdge(EID);
-					Vector3 A = OtherMesh.GetVertex(Edge.Vert.A);
-					Vector3 B = OtherMesh.GetVertex(Edge.Vert.B);
-					if (A.X > B.X)
+					const DynamicMesh::Edge& e = OtherMesh.GetEdge(EID);
+					Vector3 A = OtherMesh.GetVertex(e.v0);
+					Vector3 B = OtherMesh.GetVertex(e.v1);
+					if (A.x > B.x)
 					{
-						Swap(A.X, B.X);
+						std::swap(A.x, B.x);
 					}
-					if (A.Y > B.Y)
+					if (A.y > B.y)
 					{
-						Swap(A.Y, B.Y);
+						std::swap(A.y, B.y);
 					}
-					if (A.Z > B.Z)
+					if (A.z > B.z)
 					{
-						Swap(A.Z, B.Z);
+						std::swap(A.z, B.z);
 					}
 					return Box3(A, B);
 				};
@@ -1549,30 +1979,25 @@ namespace Riemann
 
 				for (int BoundaryVID : PossUnmatchedBdryVerts[MeshIdx])
 				{
-					if (MeshIdx == 1 && FoundMatchesMaps[0].Contains(BoundaryVID))
+					if (MeshIdx == 1 && FoundMatchesMaps[0].count(BoundaryVID) > 0)
 					{
 						continue; // was already snapped to a vertex
 					}
 
 					Vector3 Pos = CutMesh[MeshIdx]->GetVertex(BoundaryVID);
-					TPair<int, double> VIDDist = OtherMeshPointHash.FindNearestInRadius(Pos, SnapTolerance, [&Pos, &OtherMesh](int VID)
-						{
-							return DistanceSquared(Pos, OtherMesh.GetVertex(VID));
-						});
-					int NearestVID = VIDDist.Key; // ID of nearest vertex on other mesh
-					double DSq = VIDDist.Value;   // square distance to that vertex
-
-					if (NearestVID != GeometryData::InvalidID)
+					int NearestVID = -1;
+					if (OtherMeshPointHash.FindNearest(Pos, SnapTolerance, NearestVID))
 					{
-
-						int* Match = FoundMatches.Find(NearestVID);
-						if (Match)
+						float DSq = (OtherMesh.GetVertex(NearestVID) - Pos).SquareLength();
+						auto it = FoundMatches.find(NearestVID);
+						if (it != FoundMatches.end())
 						{
-							double OldDSq = DistanceSquared(CutMesh[MeshIdx]->GetVertex(*Match), OtherMesh.GetVertex(NearestVID));
+							int Match = it->second;
+							float OldDSq = (CutMesh[MeshIdx]->GetVertex(Match) - OtherMesh.GetVertex(NearestVID)).SquareLength();
 							if (DSq < OldDSq) // new vertex is a better match than the old one
 							{
-								int OldVID = *Match; // copy old VID out of match before updating the std::map
-								FoundMatches.Add(NearestVID, BoundaryVID); // new VID is recorded as best match
+								int OldVID = Match; // copy old VID out of match before updating the std::map
+								FoundMatches.emplace(NearestVID, BoundaryVID); // new VID is recorded as best match
 
 								// old VID is swapped in as the one to consider as unmatched
 								// it will now be matched below
@@ -1580,40 +2005,40 @@ namespace Riemann
 								Pos = CutMesh[MeshIdx]->GetVertex(BoundaryVID);
 								DSq = OldDSq;
 							}
-							NearestVID = GeometryData::InvalidID; // one of these vertices will be unmatched
+							NearestVID = -1; // one of these vertices will be unmatched
 						}
 						else
 						{
-							FoundMatches.Add(NearestVID, BoundaryVID);
+							FoundMatches.emplace(NearestVID, BoundaryVID);
 						}
 					}
 
 					// if we didn't find a valid match, try to split the nearest edge to create a match
-					if (NearestVID == GeometryData::InvalidID)
+					if (NearestVID == -1)
 					{
 						// vertex had no match -- try to split edge to match it
 						Box3 QueryBox(Pos, SnapTolerance);
-						EdgesInRange.Reset();
+						EdgesInRange.clear();
 						EdgeOctree.RangeQuery(QueryBox, EdgesInRange);
 
 						int OtherEID = FindNearestEdge(OtherMesh, EdgesInRange, Pos);
-						if (OtherEID != GeometryData::InvalidID)
+						if (OtherEID != -1)
 						{
 							Vector3 EdgePts[2];
 							OtherMesh.GetEdgeV(OtherEID, EdgePts[0], EdgePts[1]);
 							// only accept the match if it's not going to create a degenerate edge -- TODO: filter already-matched edges from the FindNearestEdge query!
-							if (DistanceSquared(EdgePts[0], Pos) > SnapToleranceSq && DistanceSquared(EdgePts[1], Pos) > SnapToleranceSq)
+							if ((EdgePts[0] - Pos).SquareLength() > SnapToleranceSq && (EdgePts[1] - Pos).SquareLength() > SnapToleranceSq)
 							{
-								FSegment3d Seg(EdgePts[0], EdgePts[1]);
-								double Along = Seg.ProjectUnitRange(Pos);
-								GeometryData::FEdgeSplitInfo SplitInfo;
-								if (ensure(EMeshResult::Ok == OtherMesh.SplitEdge(OtherEID, SplitInfo, Along)))
+								Segment3 Seg(EdgePts[0], EdgePts[1]);
+								float Along = Seg.ProjectUnitRange(Pos);
+								EdgeSplitInfo SplitInfo;
+								if (EMeshResult::Ok == OtherMesh.SplitEdge(OtherEID, SplitInfo, Along))
 								{
-									FoundMatches.Add(SplitInfo.NewVertex, BoundaryVID);
+									FoundMatches.emplace(SplitInfo.NewVertex, BoundaryVID);
 									OtherMesh.SetVertex(SplitInfo.NewVertex, Pos);
-									CutBoundaryEdges[OtherMeshIdx].Add(SplitInfo.NewEdges.A);
+									CutBoundaryEdges[OtherMeshIdx].push_back(SplitInfo.NewEdges.a);
 									UpdateEdge(OtherEID);
-									AddEdge(SplitInfo.NewEdges.A);
+									AddEdge(SplitInfo.NewEdges.a);
 									// Note: Do not update PossUnmatchedBdryVerts with the new vertex, because it is already matched by construction
 									// Likewise do not update the pointhash -- we don't want it to find vertices that were already perfectly matched
 								}
@@ -1623,17 +2048,18 @@ namespace Riemann
 				}
 
 				// actually snap the positions together for final matches
-				for (TPair<int, int>& Match : FoundMatches)
+				for (auto& Match : FoundMatches)
 				{
-					CutMesh[MeshIdx]->SetVertex(Match.Value, OtherMesh.GetVertex(Match.Key));
+					CutMesh[MeshIdx]->SetVertex(Match.second, OtherMesh.GetVertex(Match.first));
 
 					// Copy match to AllVIDMatches; note this is always mapping from CutMesh 0 to 1
-					int VIDs[2]{ Match.Key, Match.Value }; // just so we can access by index
-					AllVIDMatches.Add(VIDs[1 - MeshIdx], VIDs[MeshIdx]);
+					int VIDs[2]{ Match.first, Match.second }; // just so we can access by index
+					AllVIDMatches.emplace(VIDs[1 - MeshIdx], VIDs[MeshIdx]);
 				}
 			}
 		}
 
+		/*
 		if (bSimplifyAlongNewEdges)
 		{
 			SimplifyAlongNewEdges(NumMeshesToProcess, CutMesh, CutBoundaryEdges, AllVIDMatches);
@@ -1649,11 +2075,6 @@ namespace Riemann
 			}
 			FDynamicMeshEditor FlipEditor(CutMesh[1]);
 			FlipEditor.ReverseTriangleOrientations(AllTID, true);
-		}
-
-		if (Cancelled())
-		{
-			return false;
 		}
 
 		bool bSuccess = true;

@@ -63,6 +63,11 @@ namespace Riemann
 			return (v0 + v1 + v2) / 3.0f;
 		}
 
+		float		GetArea() const
+		{
+			return Triangle3::CalculateArea3D(v0, v1, v2);
+		}
+
 		Vector3		GetSideLength() const
 		{
 			return Vector3((v0 - v1).Length(), (v1 - v2).Length(), (v2 - v0).Length());
@@ -100,11 +105,6 @@ namespace Riemann
 			float cy = (B.z - A.z) * (C.x - A.x) - (C.z - A.z) * (B.x - A.x);
 			float cz = (B.x - A.x) * (C.y - A.y) - (C.x - A.x) * (B.y - A.y);
 			return 0.5f * sqrtf(cx * cx + cy * cy + cz * cz);
-		}
-
-		float			CalculateArea() const
-		{
-			return Triangle3::CalculateArea3D(v0, v1, v2);
 		}
 
 		Box3			CalculateBoundingVolume() const
@@ -771,14 +771,14 @@ namespace Riemann
 			return Vector3(u, v, w);
 		}
 
-		struct BaryCentricQueryResult
+		struct PointDistanceQueryResult
 		{
 			float	SqrDistance;
 			Vector3	ClosestPoint;
 			Vector3	BaryCoords;
 		};
 
-		BaryCentricQueryResult BarycentricCoodsEx(const Vector3 &Point) const
+		PointDistanceQueryResult PointDistanceQuery(const Vector3 &Point) const
 		{
 			Vector3 diff = Point - v0;
 			Vector3 edge0 = v1 - v0;
@@ -909,7 +909,7 @@ namespace Riemann
 				}
 			}
 
-			BaryCentricQueryResult info;
+			PointDistanceQueryResult info;
 			info.BaryCoords = Vector3(1.0f - p[0] - p[1], p[0], p[1]);
 			info.ClosestPoint = v0 + p[0] * edge0 + p[1] * edge1;
 			info.SqrDistance = (Point - info.ClosestPoint).SquareLength();

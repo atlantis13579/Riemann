@@ -185,9 +185,9 @@ namespace Riemann
 		{
 			Vector3 v[8];
 
-			const Vector3 base0 = rRot.GetCol(0);
-			const Vector3 base1 = rRot.GetCol(1);
-			const Vector3 base2 = rRot.GetCol(2);
+			const Vector3 base0 = rRot.Column(0);
+			const Vector3 base1 = rRot.Column(1);
+			const Vector3 base2 = rRot.Column(2);
 
 			const Vector3 axis0 = base0 * rExtent.x;
 			const Vector3 axis1 = base1 * rExtent.y;

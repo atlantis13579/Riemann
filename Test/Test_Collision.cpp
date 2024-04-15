@@ -65,7 +65,7 @@ void TestTriangle()
 	Vector3 pp = tri1.GetCenter();
 
 	Vector3 bc2 = tri1.BarycentricCoods(p);
-	Triangle3::BaryCentricQueryResult bc3 = tri1.BarycentricCoodsEx(pp);
+	Triangle3::PointDistanceQueryResult bc3 = tri1.PointDistanceQuery(pp);
 
 	Vector3 p2 = tri1.BarycentricCoodsComposion(bc2);
 	Vector3 p3 = tri1.BarycentricCoodsComposion(bc3.BaryCoords);
@@ -446,7 +446,7 @@ void TestBuildOBB()
 	EXPECT(fabsf(obb.Center.y - center.y) < 0.1f);
 	EXPECT(fabsf(obb.Center.z - center.z) < 0.1f);
 	
-	Vector3 dir = obb.Rotation.GetCol(0);
+	Vector3 dir = obb.Rotation.Column(0);
 	float dp = dir.Dot(Vector3::UnitX());
 	EXPECT(dp >= 0.8f);
 

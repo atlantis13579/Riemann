@@ -29,7 +29,7 @@ namespace Riemann
 
 		inline Vector3		GetAxis(int i) const
 		{
-			return Rotation.GetCol(i);
+			return Rotation.Column(i);
 		}
 
 		void GetVertices(Vector3 v[8]) const
@@ -113,9 +113,9 @@ namespace Riemann
 
 		bool IntersectPlane(const Vector3& normal, const float D) const
 		{
-			float r = Extent.x * fabsf(DotProduct(normal, Rotation.GetCol(0))) +
-				Extent.y * fabsf(DotProduct(normal, Rotation.GetCol(1))) +
-				Extent.z * fabsf(DotProduct(normal, Rotation.GetCol(2)));
+			float r =	Extent.x * fabsf(DotProduct(normal, Rotation.Column(0))) +
+						Extent.y * fabsf(DotProduct(normal, Rotation.Column(1))) +
+						Extent.z * fabsf(DotProduct(normal, Rotation.Column(2)));
 			float s = normal.Dot(Center) + D;
 			return fabsf(s) <= r;
 		}
@@ -166,16 +166,16 @@ namespace Riemann
 			float d = FLT_MAX;
 			for (int i = 0; i < 3; ++i)
 			{
-				if (!testBoxBoxAxis(*this, obb, Rotation.GetCol(i), &n, &d))
+				if (!testBoxBoxAxis(*this, obb, Rotation.Column(i), &n, &d))
 					return false;
-				if (!testBoxBoxAxis(*this, obb, obb.Rotation.GetCol(i), &n, &d))
+				if (!testBoxBoxAxis(*this, obb, obb.Rotation.Column(i), &n, &d))
 					return false;
 			}
 
 			for (int j = 0; j < 3; ++j)
 				for (int i = 0; i < 3; ++i)
 				{
-					Vector3 cross = Rotation.GetRow(i).Cross(obb.Rotation.GetRow(j));
+					Vector3 cross = Rotation.Row(i).Cross(obb.Rotation.Row(j));
 					if (cross.SquareLength() > 1e-6f)
 					{
 						cross.Normalize();
@@ -236,9 +236,10 @@ namespace Riemann
 		void ProjectAxis(const Vector3& Axis, float* t0, float* t1) const
 		{
 			const float c = Center.Dot(Axis);
-			const float e = fabsf(Rotation.GetCol(0).Dot(Axis)) * Extent.x
-				+ fabsf(Rotation.GetCol(1).Dot(Axis)) * Extent.y
-				+ fabsf(Rotation.GetCol(2).Dot(Axis)) * Extent.z;
+			const float e = fabsf(
+				Rotation.Column(0).Dot(Axis)) * Extent.x
+				+ fabsf(Rotation.Column(1).Dot(Axis)) * Extent.y
+				+ fabsf(Rotation.Column(2).Dot(Axis)) * Extent.z;
 			*t0 = c - e;
 			*t1 = c + e;
 		}
@@ -249,12 +250,12 @@ namespace Riemann
 			Vector3 closestPt = Center;
 			for (int i = 0; i < 3; i++)
 			{
-				float dist = d.Dot(Rotation.GetCol(i));
+				float dist = d.Dot(Rotation.Column(i));
 				if (dist > -Extent[i])
 					dist = -Extent[i];
 				if (dist < -Extent[i])
 					dist = -Extent[i];
-				closestPt += dist * Rotation.GetCol(i);
+				closestPt += dist * Rotation.Column(i);
 			}
 			return closestPt;
 		}

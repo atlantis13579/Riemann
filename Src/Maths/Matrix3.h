@@ -217,21 +217,40 @@ namespace Maths
 			return mat[0];
 		}
 
-		inline const Vector3& GetRow(int i) const
+		inline const Vector3& Row(int i) const
 		{
 			const Vector3 *row = static_cast<const Vector3*>((const void*)mat);
 			return row[i];
 		}
 
-		inline Vector3& GetRow(int i)
+		inline Vector3& Row(int i)
 		{
 			Vector3 *row = static_cast<Vector3*>((void*)mat);
 			return row[i];
 		}
 
-		inline Vector3 GetCol(int i) const
+		inline Vector3 Column(int i) const
 		{
 			return Vector3(mat[0][i], mat[1][i], mat[2][i]);
+		}
+
+		float InnerProduct(const Matrix3 &rhs, bool row) const
+		{
+			if (row)
+			{
+				return Row(0).Dot(rhs.Row(0)) + Row(1).Dot(rhs.Row(1)) + Row(2).Dot(rhs.Row(2));
+			}
+			else
+			{
+				return Column(0).Dot(rhs.Column(0)) + Column(1).Dot(rhs.Column(1)) + Column(2).Dot(rhs.Column(2));
+			}
+		}
+
+		static Matrix3 OuterProduct(const Vector3& v0, const Vector3& v1)
+		{
+			return Matrix3(	v0.x * v1.x, v0.x * v1.y, v0.x * v1.x,
+							v0.y * v1.x, v0.y * v1.y, v0.y * v1.x,
+							v0.z * v1.x, v0.z * v1.y, v0.z * v1.x);
 		}
 
 		inline float	Trace() const
@@ -268,7 +287,8 @@ namespace Maths
 			float d = Determinant();
 			// Warning!!! Assume d != 0
 			d = 1.0f / d;
-			return Matrix3((mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) * d, -(mat[0][1] * mat[2][2] - mat[0][2] * mat[2][1]) * d, (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) * d,
+			return Matrix3(
+				(mat[1][1] * mat[2][2] - mat[1][2] * mat[2][1]) * d, -(mat[0][1] * mat[2][2] - mat[0][2] * mat[2][1]) * d, (mat[0][1] * mat[1][2] - mat[0][2] * mat[1][1]) * d,
 				-(mat[1][0] * mat[2][2] - mat[1][2] * mat[2][0]) * d, (mat[0][0] * mat[2][2] - mat[0][2] * mat[2][0]) * d, -(mat[0][0] * mat[1][2] - mat[0][2] * mat[1][0]) * d,
 				(mat[1][0] * mat[2][1] - mat[1][1] * mat[2][0]) * d, -(mat[0][0] * mat[2][1] - mat[0][1] * mat[2][0]) * d, (mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]) * d);
 		}
@@ -346,28 +366,28 @@ namespace Maths
 
 		Matrix3& FromAxisAngle(const Vector3& Axis, float Radian)
 		{
-			float fCos = cosf(Radian);
-			float fSin = sinf(Radian);
-			float fOneMinusCos = 1.0f - fCos;
-			float fX2 = Axis.x * Axis.x;
-			float fY2 = Axis.y * Axis.y;
-			float fZ2 = Axis.z * Axis.z;
-			float fXYM = Axis.x * Axis.y * fOneMinusCos;
-			float fXZM = Axis.x * Axis.z * fOneMinusCos;
-			float fYZM = Axis.y * Axis.z * fOneMinusCos;
-			float fXSin = Axis.x * fSin;
-			float fYSin = Axis.y * fSin;
-			float fZSin = Axis.z * fSin;
+			float c = cosf(Radian);
+			float s = sinf(Radian);
+			float one_minus_c = 1.0f - c;
+			float x2 = Axis.x * Axis.x;
+			float y2 = Axis.y * Axis.y;
+			float z2 = Axis.z * Axis.z;
+			float xy = Axis.x * Axis.y * one_minus_c;
+			float xz = Axis.x * Axis.z * one_minus_c;
+			float yz = Axis.y * Axis.z * one_minus_c;
+			float xs = Axis.x * s;
+			float ys = Axis.y * s;
+			float zs = Axis.z * s;
 
-			mat[0][0] = fX2 * fOneMinusCos + fCos;
-			mat[0][1] = fXYM - fZSin;
-			mat[0][2] = fXZM + fYSin;
-			mat[1][0] = fXYM + fZSin;
-			mat[1][1] = fY2 * fOneMinusCos + fCos;
-			mat[1][2] = fYZM - fXSin;
-			mat[2][0] = fXZM - fYSin;
-			mat[2][1] = fYZM + fXSin;
-			mat[2][2] = fZ2 * fOneMinusCos + fCos;
+			mat[0][0] = x2 * one_minus_c + c;
+			mat[0][1] = xy - zs;
+			mat[0][2] = xz + ys;
+			mat[1][0] = xy + zs;
+			mat[1][1] = y2 * one_minus_c + c;
+			mat[1][2] = yz - xs;
+			mat[2][0] = xz - ys;
+			mat[2][1] = yz + xs;
+			mat[2][2] = z2 * one_minus_c + c;
 			return *this;
 		}
 

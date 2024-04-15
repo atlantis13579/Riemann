@@ -5135,7 +5135,7 @@ namespace Riemann
 						int TID = Meshes[MeshIdx]->AppendTriangle(Tri);
 						if (TID > -1)
 						{
-							Meshes[MeshIdx]->Attributes.MaterialIDAttrib.SetNewValue(TID, MID);
+							Meshes[MeshIdx]->GetAttributes().MaterialIDAttrib.SetNewValue(TID, MID);
 						}
 					}
 				}
@@ -5166,7 +5166,7 @@ namespace Riemann
 						int TID = Meshes[MeshIdx]->AppendTriangle(vt);
 						if (TID > -1)
 						{
-							Meshes[MeshIdx]->Attributes.MaterialIDAttrib.SetNewValue(TID, MID);
+							Meshes[MeshIdx]->GetAttributes().MaterialIDAttrib.SetNewValue(TID, MID);
 						}
 					}
 				}

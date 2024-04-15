@@ -8,10 +8,10 @@ namespace Riemann
 	class GeometryCut
 	{
 	public:
-		DynamicMesh* Meshe[2];
+		DynamicMesh* Mesh[2];
 
 		GeometryCut(DynamicMesh* MeshA, DynamicMesh* MeshB)
-			: Meshe{ MeshA, MeshB }
+			: Mesh{ MeshA, MeshB }
 		{
 		}
 

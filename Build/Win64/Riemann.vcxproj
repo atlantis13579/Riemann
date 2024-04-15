@@ -34,6 +34,7 @@
     <ClCompile Include="..\..\Src\Geometry\MeshSimplification.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Polygon2.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Polygon3.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\SparseOctree.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Voronoi3.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\ConvexMesh.cpp" />
@@ -103,6 +104,7 @@
     <ClInclude Include="..\..\Src\Core\LogSystem.h" />
     <ClInclude Include="..\..\Src\Core\PriorityQueue.h" />
     <ClInclude Include="..\..\Src\Core\Profiler.h" />
+    <ClInclude Include="..\..\Src\Core\SmallMap.h" />
     <ClInclude Include="..\..\Src\Core\SmallSet.h" />
     <ClInclude Include="..\..\Src\Destruction\ConnectionGraph.h" />
     <ClInclude Include="..\..\Src\Destruction\DestructionSet.h" />
@@ -120,6 +122,9 @@
     <ClInclude Include="..\..\Src\Geometry\MeshSimplification.h" />
     <ClInclude Include="..\..\Src\Geometry\Polygon2.h" />
     <ClInclude Include="..\..\Src\Geometry\Polygon3.h" />
+    <ClInclude Include="..\..\Src\Geometry\QuadTree.h" />
+    <ClInclude Include="..\..\Src\Geometry\SparseOctree.h" />
+    <ClInclude Include="..\..\Src\Geometry\SparseSpatialHash.h" />
     <ClInclude Include="..\..\Src\Geometry\Voronoi3.h" />
     <ClInclude Include="..\..\Src\LinearSystem\ConjugateGradientSolver.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3.h" />
@@ -152,11 +157,9 @@
     <ClInclude Include="..\..\Src\Collision\GeometryQuery.h" />
     <ClInclude Include="..\..\Src\Collision\GJK.h" />
     <ClInclude Include="..\..\Src\Collision\MinkowskiSum.h" />
-    <ClInclude Include="..\..\Src\Collision\QuadTree.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\MeshBVH4.h" />
     <ClInclude Include="..\..\Src\Collision\SAP_Incremental.h" />
     <ClInclude Include="..\..\Src\Collision\Simplex.h" />
-    <ClInclude Include="..\..\Src\Collision\SparseSpatialHash.h" />
     <ClInclude Include="..\..\Src\Collision\SAP.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\TriangleMesh.h" />
     <ClInclude Include="..\..\Src\Core\StaticArray.h" />

@@ -138,24 +138,24 @@ void TestGeometrySet()
 
 	DynamicMesh set1;
 	set1.LoadObj("../TestData/bunny.obj");
-	Box3 box = set1.Bounds;
+	Box3 box = set1.GetBounds();
 	float x = box.GetCenter().x;
 	float y = box.GetCenter().y;
 
 	DynamicMesh set2;
-	set2.VertexPositions.emplace_back(box.Min.x, y, box.Min.z);
-	set2.VertexPositions.emplace_back(box.Min.x, y, box.Max.z);
-	set2.VertexPositions.emplace_back(box.Max.x, y, box.Max.z);
-	set2.VertexPositions.emplace_back(box.Max.x, y, box.Min.z);
-	set2.Triangles.emplace_back(0, 1, 2);
-	set2.Triangles.emplace_back(2, 3, 0);
+	set2.AppendVertex(Vector3(box.Min.x, y, box.Min.z));
+	set2.AppendVertex(Vector3(box.Min.x, y, box.Max.z));
+	set2.AppendVertex(Vector3(box.Max.x, y, box.Max.z));
+	set2.AppendVertex(Vector3(box.Max.x, y, box.Min.z));
+	set2.AppendTriangle(Index3(0, 1, 2));
+	set2.AppendTriangle(Index3(2, 3, 0));
 	set2.BuildBounds();
 
 	DynamicMesh set3;
-	set3.VertexPositions.emplace_back(x, box.Min.y, box.Min.z + 0.01f);
-	set3.VertexPositions.emplace_back(x, box.Min.y, box.Max.z + 0.01f);
-	set3.VertexPositions.emplace_back(x, box.Max.y, box.Max.z + 0.01f);
-	set3.Triangles.emplace_back(0, 1, 2);
+	set3.AppendVertex(Vector3(x, box.Min.y, box.Min.z + 0.01f));
+	set3.AppendVertex(Vector3(x, box.Min.y, box.Max.z + 0.01f));
+	set3.AppendVertex(Vector3(x, box.Max.y, box.Max.z + 0.01f));
+	set3.AppendTriangle(Index3(0, 1, 2));
 	set3.BuildBounds();
 
 	DynamicMeshAABBTree aabb1(&set1);
@@ -177,15 +177,16 @@ void TestGeometryBoolean()
 	DynamicMesh set1;
 	set1.LoadObj("../TestData/bunny.obj");
 
-	Box3 box = set1.Bounds;
+	Box3 box = set1.GetBounds();
 	float y = box.GetCenter().y;
 	DynamicMesh set2;
-	set2.VertexPositions.emplace_back(box.Min.x, y, box.Min.z);
-	set2.VertexPositions.emplace_back(box.Min.x, y, box.Max.z);
-	set2.VertexPositions.emplace_back(box.Max.x, y, box.Max.z);
-	set2.VertexPositions.emplace_back(box.Max.x, y, box.Min.z);
-	set2.Triangles.emplace_back(0, 1, 2);
-	set2.Triangles.emplace_back(2, 3, 0);
+
+	set2.AppendVertex(Vector3(box.Min.x, y, box.Min.z));
+	set2.AppendVertex(Vector3(box.Min.x, y, box.Max.z));
+	set2.AppendVertex(Vector3(box.Max.x, y, box.Max.z));
+	set2.AppendVertex(Vector3(box.Max.x, y, box.Min.z));
+	set2.AppendTriangle(Index3(0, 1, 2));
+	set2.AppendTriangle(Index3(2, 3, 0));
 	set2.BuildBounds();
 
 	GeometryBoolean b(&set1, &set2, GeometryBoolean::BooleanOp::Intersect);
