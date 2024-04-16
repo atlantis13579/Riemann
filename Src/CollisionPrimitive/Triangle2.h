@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Maths/Box1.h"
+#include "../Maths/Box2.h"
 #include "../Maths/Vector2.h"
 
 namespace Riemann
@@ -42,7 +43,7 @@ namespace Riemann
 			return &v0;
 		}
 
-		Vector2* GetVertex()
+		Vector2*	GetVertex()
 		{
 			return &v0;
 		}
@@ -57,9 +58,16 @@ namespace Riemann
 			return (x1 - x2) * (y2 - y3) - (x2 - x3) * (y1 - y2);
 		}
 
-		float CalculateArea() const
+		float		GetArea() const
 		{
 			return Area2D(v0.x, v0.y, v1.x, v1.y, v2.x, v2.y);
+		}
+
+		Box2		GetBounds() const
+		{
+			Box2 box(v0, v1);
+			box.Encapsulate(v2);
+			return box;
 		}
 
 		int IsInside(const Vector2& p) const

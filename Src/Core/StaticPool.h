@@ -19,6 +19,16 @@ namespace Riemann
 			return &m_data[m_size++];
 		}
 
+		int size() const
+		{
+			return m_size;
+		}
+
+		bool empty() const
+		{
+			return m_size == 0;
+		}
+
 	private:
 		T	m_data[Capacity];
 		int	m_size;
@@ -40,6 +50,16 @@ namespace Riemann
 			}
 			m_lock.unlock();
 			return p;
+		}
+
+		int size() const
+		{
+			return m_size;
+		}
+
+		bool empty() const
+		{
+			return m_size == 0;
 		}
 
 	private:

@@ -6,9 +6,10 @@
 #include <set>
 #include <map>
 #include <string>
+#include <unordered_map>
 
+#include "../Core/BitSet.h"
 #include "../Core/ListSet.h"
-#include "../Core/StaticArray.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Box3.h"
 
@@ -18,124 +19,125 @@ namespace Riemann
 	class SparseGrid3
 	{
 	protected:
-		std::map<Vector3i, T*>	mElements;
-		Box3					mBounds;
+		std::map<Vector3i, T>	m_Elements;
 
 	public:
 		SparseGrid3()
 		{
-			mBounds = Box3::Empty();
 		}
 
 		~SparseGrid3()
 		{
-			clear();
+		}
+
+		void Clear()
+		{
+			m_Elements.clear();
 		}
 
 		bool Has(const Vector3i& Index) const
 		{
-			auto it = mElements.find(Index);
-			return it != mElements.end();
+			auto it = m_Elements.find(Index);
+			return it != m_Elements.end();
 		}
 
-		const T* Get(const Vector3i& Index) const
+		const T* Find(const Vector3i& Index) const
 		{
-			auto it = mElements.find(Index);
-			return it->second;
-		}
-
-		T* Get(const Vector3i& Index, bool alloc)
-		{
-			auto it = mElements.find(Index);
-			if (it != mElements.end())
+			auto it = m_Elements.find(Index);
+			if (it != m_Elements.end())
 			{
-				return it->second;
-			}
-			if (alloc)
-			{
-				return allocate(Index);
+				return &it->second;
 			}
 			return nullptr;
 		}
 
-		bool release(const Vector3& Index)
+		T* Get(const Vector3i& Index, bool alloc_if_missing, const T& default_val)
 		{
-			auto it = mElements.find(Index);
-			if (it != mElements.end())
+			auto it = m_Elements.find(Index);
+			if (it != m_Elements.end())
 			{
-				delete it->second;
-				mElements.erase(Index);
-				return true;
+				return &it->second;
 			}
-			return false;
-		}
-
-		void clear()
-		{
-			for (auto it : mElements)
+			if (alloc_if_missing)
 			{
-				delete it.second;
+				m_Elements.emplace(Index, default_val);
+				return &m_Elements[Index];
 			}
-			mElements.clear();
+			return nullptr;
 		}
 
-		int size() const
+		int GetSize() const
 		{
-			return mElements.size();
+			return (int)m_Elements.size();
 		}
 
-	protected:
-		T* allocate(const Vector3i& index)
+		void AllIteration(std::function<void(const T &value)> func) const
 		{
-			T* p = new T();
-			mElements.Add(index, p);
-			mBounds.Encapsulate(index);
-			return p;
+			for (auto it : m_Elements)
+			{
+				func(it.second);
+			}
+		}
+
+		void RangeIteration(const Vector3i& MinIndex, const Vector3i& MaxIndex, std::function<void(const T& value)> func) const
+		{
+			for (int z = MinIndex.z; z <= MaxIndex.z; ++z)
+			for (int y = MinIndex.y; y <= MaxIndex.y; ++y)
+			for (int x = MinIndex.x; x <= MaxIndex.x; ++x)
+			{
+				const T* item = Find(Vector3i(x, y, z));
+				if (item)
+				{
+					func(*item);
+				}
+			}
 		}
 	};
 
+	#define MAX_TREE_DEPTH		(31)
 
-	class SparseOctree3
+	class SparseOctree
 	{
 	public:
 		struct Cell
 		{
-			int CellID;
-			int Level;
-
+			int			Id;
+			int			Level;
 			Vector3i	Index;
-			int			Children[8];
+			int			Childrens[8];
 
-			Cell()
-				: CellID(-1), Level(0), Index(Vector3i::Zero())
+			Cell() : Id(-1), Level(0), Index(Vector3i::Zero())
 			{
-				Children[0] = Children[1] = Children[2] = Children[3] = -1;
-				Children[4] = Children[5] = Children[6] = Children[7] = -1;
+				for (int i = 0; i < 8; ++i)
+				{
+					Childrens[i] = -1;
+				}
 			}
 
-			Cell(unsigned char LevelIn, const Vector3i& IndexIn)
-				: CellID(-1), Level(LevelIn), Index(IndexIn)
+			Cell(int _level, const Vector3i& _index) : Id(-1), Level(_level), Index(_index)
 			{
-				Children[0] = Children[1] = Children[2] = Children[3] = -1;
-				Children[4] = Children[5] = Children[6] = Children[7] = -1;
+				for (int i = 0; i < 8; ++i)
+				{
+					Childrens[i] = -1;
+				}
 			}
 
-			inline bool IsExistingCell() const
+			inline bool IsExist() const
 			{
-				return CellID != -1;
+				return Id != -1;
 			}
 
 			inline bool HasChild(int index) const
 			{
-				return Children[index] != -1;
+				return Childrens[index] != -1;
 			}
 
-			inline int GetChildCellID(int index) const
+			inline int GetChildID(int index) const
 			{
-				return Children[index];
+				return Childrens[index];
 			}
 
-			inline Cell MakeChildCell(int index)
+			inline Cell MakeChild(int index)
 			{
 				Vector3i IndexOffset(
 					((index & 1) != 0) ? 1 : 0,
@@ -146,238 +148,55 @@ namespace Riemann
 
 			inline void SetChild(int index, const Cell& cell)
 			{
-				Children[index] = cell.CellID;
+				Childrens[index] = cell.Id;
 			}
-
 		};
-
-		float RootDimension = 1000.0;
-		float MaxExpandFactor = 0.25;
-
-		static constexpr int MaxSupportedTreeDepth = 0x1F;
-
-		int GetMaxTreeDepth()
-		{
-			return MaxTreeDepth;
-		}
-
-		void SetMaxTreeDepth(int MaxTreeDepthIn)
-		{
-			if (!((int)MaxTreeDepthIn <= MaxSupportedTreeDepth))
-			{
-				MaxTreeDepthIn = (int)MaxSupportedTreeDepth;
-			}
-
-			MaxTreeDepth = MaxTreeDepthIn;
-		}
-	protected:
-		int MaxTreeDepth = 10;
 
 	public:
+		SparseOctree(const Vector3 &_center = Vector3::Zero(), float _dimention = 1000.0f, int max_tree_depth = 10);
+		~SparseOctree() {}
 
-		bool ContainsObject(int ObjectID) const;
+		void	Clear();
+		bool	HasObject(int Id) const;
+		bool	InsertObject(int Id, const Box3& Bounds);
+		bool	RemoveObject(int Id);
+		bool	ReinsertObject(int Id, const Box3& NewBounds);
+		void	RangeQuery(const Box3& Bounds, std::vector<int>& Results) const;
+		int		RaycastCell(const Vector3& Origin, const Vector3& Direction, std::function<float(int, const Vector3&, const Vector3&)> HitObjectDistFunc, float *Distance) const;
 
-		void InsertObject(int ObjectID, const Box3& Bounds);
+	private:
+		float	GetCellWidth(int Level) const;
+		Box3	GetBox(int Level, const Vector3i& Index, float ExpandFactor) const;
+		Box3	GetCellBox(const Cell& c, float ExpandFactor = 0) const;
+		Vector3 GetCellCenter(const Cell& c) const;
+		int		GetCellForObject(int Id) const;
 
-		bool RemoveObject(int ObjectID);
+		Vector3i PointToIndex(int Level, const Vector3& Position) const;
 
-		bool ReinsertObject(int ObjectID, const Box3& NewBounds, int CellIDHint = InvalidCellID);
+		int GetChildIndex(const Cell& c, const Vector3& Position) const;
 
-		bool CheckIfObjectNeedsReinsert(int ObjectID, const Box3& NewBounds, int& CellIDOut) const;
-
-		int FindNearestHitObject(const Vector3& Origin, const Vector3 &Direction,
-			std::function<Box3(int)> GetObjectBoundsFunc,
-			std::function<float(int, const Vector3&, const Vector3&)> HitObjectDistFunc,
-			float MaxDistance = std::numeric_limits<float>::max()) const;
-
-		void ContainmentQuery(const Vector3& Point,
-			std::function<void(int)> ObjectIDFunc) const;
-
-		bool ContainmentQueryCancellable(const Vector3& Point,
-			std::function<bool(int)> ObjectIDFunc) const;
-
-		void RangeQuery(const Box3& Bounds,
-			std::function<void(int)> ObjectIDFunc) const;
-
-		void RangeQuery(const Box3& Bounds,
-			std::vector<int>& ObjectIDsOut) const;
-
-		void ParallelRangeQuery(const Box3& Bounds,
-			std::vector<int>& ObjectIDsOut) const;
-
-		struct FStatistics
-		{
-			int Levels;
-			std::vector<int> LevelBoxCounts;
-			std::vector<int> LevelObjCounts;
-			int SpillObjCount;
-			std::string ToString() const;
-		};
-
-		void ComputeStatistics(FStatistics& StatsOut) const;
-
-	protected:
-		static constexpr int InvalidCellID = -1;
-		static constexpr int SpillCellID = InvalidCellID - 1;
-
-		// FRefCountVector CellRefCounts;
-
-		std::vector<Cell> Cells;
-
-		ListSet<int> CellObjectLists;
-		std::set<int> SpillObjectSet;
-
-		std::vector<int> ObjectIDToCellMap;
-		// FDynamicFlagArray ValidObjectIDs;
-
-		SparseGrid3<int> RootCells;
-
-		inline float GetCellWidth(int Level) const
-		{
-			assert(Level <= MaxSupportedTreeDepth);
-			float Divisor = (float)((uint64_t)1 << (Level & MaxSupportedTreeDepth));
-			float CellWidth = RootDimension / Divisor;
-			return CellWidth;
-		}
-
-		Box3 GetBox(int Level, const Vector3i& Index, float ExpandFactor) const
-		{
-			float CellWidth = GetCellWidth(Level);
-			float ExpandDelta = CellWidth * ExpandFactor;
-			float MinX = (CellWidth * (float)Index.x) - ExpandDelta;
-			float MinY = (CellWidth * (float)Index.y) - ExpandDelta;
-			float MinZ = (CellWidth * (float)Index.z) - ExpandDelta;
-			CellWidth += 2.0f * ExpandDelta;
-			return Box3(
-				Vector3(MinX, MinY, MinZ),
-				Vector3(MinX + CellWidth, MinY + CellWidth, MinZ + CellWidth));
-		}
-		inline Box3 GetCellBox(const Cell& Cell, float ExpandFactor = 0) const
-		{
-			return GetBox(Cell.Level, Cell.Index, ExpandFactor);
-		}
-		Vector3 GetCellCenter(const Cell& Cell) const
-		{
-			float CellWidth = GetCellWidth(Cell.Level);
-			float MinX = CellWidth * (float)Cell.Index.x;
-			float MinY = CellWidth * (float)Cell.Index.y;
-			float MinZ = CellWidth * (float)Cell.Index.z;
-			CellWidth *= 0.5;
-			return Vector3(MinX + CellWidth, MinY + CellWidth, MinZ + CellWidth);
-		}
-
-		Vector3i PointToIndex(int Level, const Vector3& Position) const
-		{
-			float CellWidth = GetCellWidth(Level);
-			int i = (int)floorf(Position.x / CellWidth);
-			int j = (int)floorf(Position.y / CellWidth);
-			int k = (int)floorf(Position.z / CellWidth);
-			return Vector3i(i, j, k);
-		}
-
-		int ToChildCellIndex(const Cell& Cell, const Vector3& Position) const
-		{
-			Vector3 Center = GetCellCenter(Cell);
-			int ChildIndex =
-				((Position.x < Center.x) ? 0 : 1) +
-				((Position.y < Center.y) ? 0 : 2) +
-				((Position.z < Center.z) ? 0 : 4);
-			return ChildIndex;
-		}
-
-		bool CanFit(const Cell& Cell, const Box3& Bounds) const
-		{
-			Box3 CellBox = GetCellBox(Cell, MaxExpandFactor);
-			return CellBox.IsInside(Bounds);
-		}
-
-		int GetCellForObject(int ObjectID) const
-		{
-			if (ObjectID >= 0 && static_cast<size_t>(ObjectID) < ObjectIDToCellMap.size())
-			{
-				return ObjectIDToCellMap[ObjectID];
-			}
-			return InvalidCellID;
-		}
+		bool IsFit(const Cell& c, const Box3& Bounds) const;
 
 		Cell FindCurrentContainingCell(const Box3& Bounds) const;
 
-		void Insert_Spill(int ObjectID, const Box3& Bounds);
-		void Insert_NewRoot(int ObjectID, const Box3& Bounds, Cell NewRootCell);
-		void Insert_ToCell(int ObjectID, const Box3& Bounds, const Cell& ExistingCell);
-		void Insert_NewChildCell(int ObjectID, const Box3& Bounds, int ParentCellID, Cell NewChildCell, int ChildIdx);
+		void InsertNewRoot(int Id, const Box3& Bounds, Cell NewRootCell);
+		void InsertToCell(int Id, const Box3& Bounds, const Cell& ExistingCell);
+		void InsertNewChildCell(int Id, const Box3& Bounds, int ParentCellID, Cell NewChildCell, int ChildIdx);
 
-		float FindNearestRayCellIntersection(const Cell& Cell, const Vector3& Origin, const Vector3 &Direction) const;
+		float RaycastCell(const Cell& c, const Vector3& Origin, const Vector3 &Direction) const;
 
-		void BranchRangeQuery(const Cell* ParentCell,
-			const Box3& Bounds,
-			std::vector<int>& ObjectIDs) const;
+		std::vector<const Cell*> InitializeQueryQueue(const Vector3& Point) const;
+		std::vector<const Cell*> InitializeQueryQueue(const Box3& Bounds) const;
 
 	private:
-		/*
-		std::vector<const FSparseOctreeCell*, TInlineAllocator<32>> InitializeQueryQueue(const Vector3& Point) const
-		{
-			std::vector<const FSparseOctreeCell*, TInlineAllocator<32>> Queue;
+		std::vector<Cell>				m_Cells;
+		SparseGrid3<int>				m_RootCells;
+		ListSet<int>					m_Objects;
+		std::unordered_map<int, int>	m_CellsLookup;
 
-			constexpr int MinCountForRangeQuery = 10;
-			if (RootCells.GetCount() > MinCountForRangeQuery)
-			{
-				Vector3 RootBoundExpand(RootDimension * MaxExpandFactor);
-				Vector3i RootMinIndex = PointToIndex(0, Point - RootBoundExpand);
-				Vector3i RootMaxIndex = PointToIndex(0, Point + RootBoundExpand);
-				Vector3i QuerySize = RootMaxIndex - RootMinIndex + Vector3i(1, 1, 1);
-				if (RootCells.GetCount() > QuerySize.x * QuerySize.y * QuerySize.z)
-				{
-					RootCells.RangeIteration(RootMinIndex, RootMaxIndex, [&](int RootCellID)
-						{
-							Queue.Add(&Cells[RootCellID]);
-						});
-					return Queue;
-				}
-			}
-
-			RootCells.AllocatedIteration([&](const int* RootCellID)
-				{
-					const FSparseOctreeCell* RootCell = &Cells[*RootCellID];
-					if (GetCellBox(*RootCell, MaxExpandFactor).Contains(Point))
-					{
-						Queue.Add(&Cells[*RootCellID]);
-					}
-				});
-			return Queue;
-		}
-
-		std::vector<const FSparseOctreeCell*, TInlineAllocator<32>> InitializeQueryQueue(const Box3& Bounds) const
-		{
-			std::vector<const FSparseOctreeCell*, TInlineAllocator<32>> Queue;
-
-			constexpr int MinCountForRangeQuery = 10;
-			if (RootCells.GetCount() > MinCountForRangeQuery)
-			{
-				Vector3 RootBoundExpand(RootDimension * MaxExpandFactor);
-				Vector3i RootMinIndex = PointToIndex(0, Bounds.Min - RootBoundExpand);
-				Vector3i RootMaxIndex = PointToIndex(0, Bounds.Max + RootBoundExpand);
-				Vector3i QuerySize = RootMaxIndex - RootMinIndex + Vector3i(1, 1, 1);
-				if (RootCells.GetCount() > QuerySize.x * QuerySize.y * QuerySize.z)
-				{
-					RootCells.RangeIteration(RootMinIndex, RootMaxIndex, [&](int RootCellID)
-						{
-							Queue.Add(&Cells[RootCellID]);
-						});
-					return Queue;
-				}
-			}
-
-			RootCells.AllocatedIteration([&](const int* RootCellID)
-				{
-					const FSparseOctreeCell* RootCell = &Cells[*RootCellID];
-					if (GetCellBox(*RootCell, MaxExpandFactor).Intersects(Bounds))
-					{
-						Queue.Add(&Cells[*RootCellID]);
-					}
-				});
-			return Queue;
-		}
-		*/
+		Vector3	Center = Vector3::Zero();
+		float	RootDimension = 1000.0f;
+		float	MaxExpandFactor = 0.25f;
+		int		MaxTreeDepth = 10;
 	};
 }

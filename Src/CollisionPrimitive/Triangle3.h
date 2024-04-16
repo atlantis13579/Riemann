@@ -68,6 +68,13 @@ namespace Riemann
 			return Triangle3::CalculateArea3D(v0, v1, v2);
 		}
 
+		Box3		GetBounds() const
+		{
+			Box3 box(v0, v1);
+			box.Encapsulate(v2);
+			return box;
+		}
+
 		Vector3		GetSideLength() const
 		{
 			return Vector3((v0 - v1).Length(), (v1 - v2).Length(), (v2 - v0).Length());
@@ -105,13 +112,6 @@ namespace Riemann
 			float cy = (B.z - A.z) * (C.x - A.x) - (C.z - A.z) * (B.x - A.x);
 			float cz = (B.x - A.x) * (C.y - A.y) - (C.x - A.x) * (B.y - A.y);
 			return 0.5f * sqrtf(cx * cx + cy * cy + cz * cz);
-		}
-
-		Box3			CalculateBoundingVolume() const
-		{
-			Box3 box(v0, v0);
-			box.Encapsulate(v1, v2);
-			return box;
 		}
 
 		// Moller CTrumbore intersection algorithm

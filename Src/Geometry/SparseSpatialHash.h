@@ -1,9 +1,9 @@
-
 #pragma once
 
 #include <math.h>
 #include <vector>
 
+#include "../Maths/Vector2.h"
 #include "../Maths/Vector3.h"
 
 namespace Riemann
@@ -24,12 +24,12 @@ namespace Riemann
 	public:
 		struct Element
 		{
-			Element(const Vector3& _pos, const T& _value)
+			Element(const Vector2& _pos, const T& _value)
 			{
 				pos = _pos;
 				value = _value;
 			}
-			Vector3	pos;
+			Vector2	pos;
 			T		value;
 		};
 
@@ -52,7 +52,7 @@ namespace Riemann
 		}
 
 
-		void Insert(const Vector3& pos, const T& val)
+		void Insert(const Vector2& pos, const T& val)
 		{
 			uint32_t idx = ComputeHashBucketIndex2D(pos);
 			m_Buckets[idx].emplace_back(pos, val);
@@ -73,44 +73,69 @@ namespace Riemann
 			return false;
 		}
 
-		bool FindNearest(const Vector3& center, float radius, T& val)
+		void AllIteration(std::function<void(const Vector2&, const T&)> func) const
+		{
+			for (size_t j = 0; j < m_Buckets.size(); ++j)
+			{
+				std::vector<Element>& bucket = m_Buckets[j];
+				for (size_t i = 0; i < bucket.size(); ++i)
+				{
+					const Element& e = bucket[i];
+					func(e.pos, e.value);
+				}
+			}
+		}
+
+		void RangeIteration(const Vector2& center, float radius, std::function<void(const Vector2&, const T&)> func) const
 		{
 			const int x1 = static_cast<int>(floorf((center.x - radius) * m_InvCellSize.x));
 			const int y1 = static_cast<int>(floorf((center.y - radius) * m_InvCellSize.y));
 			const int x2 = static_cast<int>(floorf((center.x + radius) * m_InvCellSize.x));
 			const int y2 = static_cast<int>(floorf((center.y + radius) * m_InvCellSize.y));
 			const float radius2 = radius * radius;
-			float sqr_min = FLT_MAX;
-			size_t min_idx = -1;
-			size_t min_i = -1;
 			for (int x = x1; x <= x2; ++x)
 			for (int y = y1; y <= y2; ++y)
 			{
-				Vector2 p = Vector2(m_CellSize.x * x, m_CellSize.y * y);
-				if (p.SquareLength() > radius2)
-				{
-					continue;
-				}
 				uint32_t idx = hash_id_2d(x, y, GetBucketSize());
-				std::vector<Element>& bucket = m_Buckets[idx];
+				const std::vector<Element>& bucket = m_Buckets[idx];
 				for (size_t i = 0; i < bucket.size(); ++i)
 				{
-					const float sqr = (bucket[i].pos - center).SquareLength();
-					if (sqr < sqr_min)
+					const Element &e = bucket[i];
+					const float sqr = (e.pos - center).SquareLength();
+					if (sqr <= radius2)
 					{
-						min_idx = idx;
-						min_i = i;
-						sqr_min = sqr;
+						func(e.pos, e.value);
 					}
 				}
 			}
+		}
 
-			if (sqr_min != FLT_MAX)
-			{
-				val = m_Buckets[min_idx][min_i].value;
-				return true;
-			}
-			return false;
+		bool RangeQuery(const Vector2& center, float radius, std::vector<T>& Results) const
+		{
+			RangeIteration(center, radius,
+				[&](const Vector2& pos, const T& value)
+				{
+					Results.push_back(value);
+				}
+			);
+			return Results.size() > 0;
+		}
+
+		bool FindNearest(const Vector2& center, float radius, T& val)
+		{
+			float sqr_min = FLT_MAX;
+			RangeIteration(center, radius,
+				[&](const Vector2& pos, const T& value)
+				{
+					const float sqr = (pos - center).SquareLength();
+					if (sqr < sqr_min)
+					{
+						sqr_min = sqr;
+						val = value;
+					}
+				}
+			);
+			return sqr_min != FLT_MAX;
 		}
 
 		uint32_t ComputeHashBucketIndex2D(const Vector2& Pos) const
@@ -192,7 +217,20 @@ namespace Riemann
 			return false;
 		}
 
-		bool FindNearest(const Vector3& center, float radius, T &val)
+		void AllIteration(std::function<void(const Vector3&, const T&)> func) const
+		{
+			for (size_t j = 0; j < m_Buckets.size(); ++j)
+			{
+				std::vector<Element>& bucket = m_Buckets[j];
+				for (size_t i = 0; i < bucket.size(); ++i)
+				{
+					const Element& e = bucket[i];
+					func(e.pos, e.value);
+				}
+			}
+		}
+
+		void RangeIteration(const Vector3& center, float radius, std::function<void(const Vector3&, const T&)> func) const
 		{
 			const int x1 = static_cast<int>(floorf((center.x - radius) * m_InvCellSize.x));
 			const int y1 = static_cast<int>(floorf((center.y - radius) * m_InvCellSize.y));
@@ -201,38 +239,50 @@ namespace Riemann
 			const int y2 = static_cast<int>(floorf((center.y + radius) * m_InvCellSize.y));
 			const int z2 = static_cast<int>(floorf((center.z + radius) * m_InvCellSize.z));
 			const float radius2 = radius * radius;
-			float sqr_min = FLT_MAX;
-			size_t min_idx = 0;
-			size_t min_i = 0;
 			for (int x = x1; x <= x2; ++x)
 			for (int y = y1; y <= y2; ++y)
 			for (int z = z1; z <= z2; ++z)
 			{
-				Vector3 p = Vector3(m_CellSize.x * x, m_CellSize.y * y, m_CellSize.z * z);
-				if (p.SquareLength() > radius2)
-				{
-					continue;
-				}
 				uint32_t idx = hash_id_3d(x, y, z, GetBucketSize());
-				std::vector<Element>& bucket = m_Buckets[idx];
+				const std::vector<Element>& bucket = m_Buckets[idx];
 				for (size_t i = 0; i < bucket.size(); ++i)
 				{
-					const float sqr = (bucket[i].pos - center).SquareLength();
-					if (sqr < sqr_min)
+					const Element& e = bucket[i];
+					const float sqr = (e.pos - center).SquareLength();
+					if (sqr <= radius2)
 					{
-						min_idx = idx;
-						min_i = i;
-						sqr_min = sqr;
+						func(e.pos, e.value);
 					}
 				}
 			}
+		}
 
-			if (sqr_min != FLT_MAX)
-			{
-				val = m_Buckets[min_idx][min_i].value;
-				return true;
-			}
-			return false;
+		bool RangeQuery(const Vector3& center, float radius, std::vector<T> &Results) const
+		{
+			RangeIteration(center, radius,
+				[&](const Vector3& pos, const T& value)
+				{
+					Results.push_back(value);
+				}
+			);
+			return Results.size() > 0;
+		}
+
+		bool FindNearest(const Vector3& center, float radius, T &val)
+		{
+			float sqr_min = FLT_MAX;
+			RangeIteration(center, radius,
+				[&](const Vector3& pos, const T& value)
+				{
+					const float sqr = (pos - center).SquareLength();
+					if (sqr < sqr_min)
+					{
+						sqr_min = sqr;
+						val = value;
+					}
+				}
+			);
+			return sqr_min != FLT_MAX;
 		}
 
 		uint32_t ComputeHashBucketIndex3D(const Vector3& Pos) const

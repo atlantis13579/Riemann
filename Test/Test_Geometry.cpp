@@ -11,6 +11,8 @@
 #include "../Src/Geometry/Voronoi2.h"
 #include "../Src/Geometry/Voronoi3.h"
 #include "../Src/Geometry/DenseTensorField3.h"
+#include "../Src/Geometry/SparseSpatialHash.h"
+#include "../Src/Geometry/SparseOctree.h"
 
 using namespace Riemann;
 
@@ -195,13 +197,62 @@ void TestGeometryBoolean()
 	return;
 }
 
+void TestHashGrid()
+{
+	printf("Running TestHashGrid\n");
+
+	SparseSpatialHash2<int> s(1.0f, 1024);
+	s.Insert(Vector2(0.0f, 0.0f), 1);
+	s.Insert(Vector2(0.0f, 1.0f), 2);
+	s.Insert(Vector2(1.0f, 1.0f), 3);
+	s.Insert(Vector2(1.0f, 0.0f), 4);
+	
+	int v;
+	EXPECT(s.FindNearest(Vector2(1.01f, 1.01f), 0.1f, v));
+	EXPECT(v == 3);
+
+	int sum_i = 0;
+	s.RangeIteration(Vector2(0.00f, 0.00f), 1.1f, [&](const Vector2 &p, const int& i) { sum_i += i; });
+	EXPECT(sum_i == 7);
+
+	return;
+}
+
+void TestOctree()
+{
+	printf("Running TestOctree\n");
+
+	SparseOctree tree;
+
+	EXPECT(tree.InsertObject(1, Box3(Vector3(0.0f, 0.0f, 0.0f), 0.1f)));
+	EXPECT(tree.InsertObject(2, Box3(Vector3(0.0f, 1.0f, 0.0f), 0.1f)));
+	EXPECT(tree.InsertObject(3, Box3(Vector3(1.0f, 0.0f, 0.0f), 0.1f)));
+	EXPECT(tree.InsertObject(4, Box3(Vector3(1.0f, 1.0f, 0.0f), 0.1f)));
+
+	std::vector<int> Result;
+	tree.RangeQuery(Box3(Vector3(1.0f, 1.0f, 0.0f), 0.1f), Result);
+	EXPECT(Result.size() == 4);
+
+	tree.Clear();
+	EXPECT(tree.InsertObject(1, Box3(Vector3(0.0f, 0.0f, 0.0f), Vector3(2.0f, 2.0f, 0.0f))));
+	EXPECT(tree.InsertObject(2, Box3(Vector3(1.0f, 1.0f, 0.0f), Vector3(3.0f, 3.0f, 0.0f))));
+	EXPECT(tree.InsertObject(3, Box3(Vector3(2.0f, 2.0f, 0.0f), Vector3(4.0f, 4.0f, 0.0f))));
+
+	Result.clear();
+	tree.RangeQuery(Box3(Vector3(0.0f, 0.0f, 0.0f), 0.1f), Result);
+
+	return;
+}
+
 void TestGeometry()
 {
+	TestHashGrid();
+	TestOctree();
 	TestMeshSimplify();
 	TestClip();
 	TestCatmullRom();
-	TestGeometrySet();
-	TestGeometryBoolean();
 	TestVoronoi2d();
 	TestVoronoi3d();
+	TestGeometrySet();
+	TestGeometryBoolean();
 }

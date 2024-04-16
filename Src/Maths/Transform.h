@@ -138,6 +138,11 @@ namespace Maths
 			quat = rotation;
 		}
 
+		static Transform	Identity()
+		{
+			return Transform(Vector3::Zero(), Quaternion::One());
+		}
+
 		Vector3		pos;
 		Quaternion	quat;
 	};
@@ -157,6 +162,14 @@ namespace Maths
 			pos = Vector3::Zero();
 			quat = Quaternion::One();
 			scale = Vector3::One();
+		}
+
+		void				LoadIdentityEx()
+		{
+			LoadIdentity();
+
+			GetWorldMatrix();
+			GetInverseWorldMatrix();
 		}
 
 		const Vector3& GetTranslation() const
@@ -480,6 +493,13 @@ namespace Maths
 		static Vector3		UpVector(const Quaternion& quat)
 		{
 			return quat * Vector3::UnitY();
+		}
+
+		static Transform3	Identity()
+		{
+			Transform3 trans;
+			trans.LoadIdentity();
+			return trans;
 		}
 
 	private:

@@ -383,8 +383,11 @@ namespace Maths
 	};
 
 	typedef TAABB3<float> Box3;
+	typedef TAABB3<int> Box3i;
 
 	static_assert(sizeof(Box3) == 24, "sizeof Box3 is not valid");
+	static_assert(sizeof(Box3i) == 24, "sizeof Box3i is not valid");
 }
 
 using Box3 = Maths::Box3;
+using Box3i = Maths::Box3i;

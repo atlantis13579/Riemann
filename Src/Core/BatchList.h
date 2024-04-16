@@ -45,6 +45,11 @@ namespace Riemann
 			return m_allocCount;
 		}
 
+		bool	empty() const
+		{
+			return m_allocCount == 0;
+		}
+
 		T* allocate()
 		{
 			m_allocCount++;

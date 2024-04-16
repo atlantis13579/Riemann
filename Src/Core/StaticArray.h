@@ -128,6 +128,11 @@ namespace Riemann
 			return m_size;
 		}
 
+		bool empty() const
+		{
+			return m_size  == 0;
+		}
+
 		inline int capacity() const
 		{
 			return Capacity;

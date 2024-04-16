@@ -513,9 +513,6 @@
     <ClInclude Include="..\..\Src\Geometry\GeometrySet.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Core\Iterator.h">
-      <Filter>Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Core\SmallSet.h">
       <Filter>Core</Filter>
     </ClInclude>

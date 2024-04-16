@@ -333,7 +333,12 @@ namespace Riemann
 			int size() const
 			{
 				Header* head = m_owner->get_header(m_index);
-				return head->size;
+				return head ? head->size : 0;
+			}
+
+			bool empty() const
+			{
+				return size() == 0;
 			}
 
 			void clear()
@@ -447,6 +452,11 @@ namespace Riemann
 			{
 				const Header* head = m_owner->get_header(m_index);
 				return head->size;
+			}
+
+			bool empty() const
+			{
+				return size() == 0;
 			}
 
 			Iterator begin() const
@@ -568,6 +578,11 @@ namespace Riemann
 		inline int size() const
 		{
 			return (int)m_headers.size();
+		}
+
+		inline bool empty() const
+		{
+			return m_headers.empty();
 		}
 
 		inline int max_elements() const

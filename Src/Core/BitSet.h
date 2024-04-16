@@ -196,6 +196,11 @@ namespace Riemann
 			return m_size;
 		}
 
+		bool	empty() const
+		{
+			return m_size == 0;
+		}
+
 		void resize(size_t new_size)
 		{
 			if (new_size == m_size)
@@ -251,12 +256,21 @@ namespace Riemann
 			return *this;
 		}
 
-		bool get(size_t i) const
+		inline bool get(size_t i) const
 		{
 			return m_data[i >> 6] & (1LL << (i & 63)) ? true : false;
 		}
 
-		void set(size_t i, bool b)
+		inline bool get_safe(size_t i) const
+		{
+			if (i < m_size)
+			{
+				return get(i);
+			}
+			return false;
+		}
+
+		inline void set(size_t i, bool b)
 		{
 			if (b)
 			{
@@ -268,12 +282,27 @@ namespace Riemann
 			}
 		}
 
-		void insert(size_t i)
+		inline void set_safe(size_t i, bool b)
+		{
+			if (i < m_size)
+			{
+				set(i, b);
+				return;
+			}
+
+			if (b)
+			{
+				resize(i + 1);
+				set(i, b);
+			}
+		}
+
+		inline void insert(size_t i)
 		{
 			m_data[i >> 6] |= (1LL << (i & 63));
 		}
 
-		void erase(size_t i)
+		inline void erase(size_t i)
 		{
 			m_data[i >> 6] &= ~(1LL << (i & 63));
 		}

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <set>
+#include <vector>
+
 #include "../Maths/Transform.h"
 #include "DynamicMesh.h"
 
@@ -33,14 +36,14 @@ namespace Riemann
 			Union,
 			Difference,
 			Intersect,
-			TrimInside,
-			TrimOutside,
-			NewGroupInside,
-			NewGroupOutside
 		};
 		BooleanOp Operation;
 		float SnapTolerance = 1e-6f;
 		bool bCollapseDegenerateEdgesOnCut = true;
+		bool bSimplifyAlongNewEdges = false;
+		bool bWeldSharedEdges = true;
+		bool bTrackAllNewEdges = false;
+		bool bPutResultInInputSpace = true;
 
 		// input
 		const DynamicMesh* Meshes[2];
@@ -49,6 +52,8 @@ namespace Riemann
 		// output
 		DynamicMesh* MeshNew { nullptr };
 		Transform TransformNew;
+		std::vector<int> CreatedBoundaryEdges;
+		std::set<int> AllNewEdges;
 
 		GeometryBoolean(const DynamicMesh* MeshA, const Transform& TransformA, const DynamicMesh* MeshB, const Transform& TransformB, BooleanOp Operation)
 			: Meshes{ MeshA, MeshB }, Transforms{ TransformA, TransformB }, Operation(Operation)

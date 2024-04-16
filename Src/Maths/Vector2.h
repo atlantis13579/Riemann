@@ -128,6 +128,11 @@ namespace Maths
 			return TVector2<T>(x * k, y * k);
 		}
 
+		inline TVector2<T> operator/(const TVector2<T>& v) const
+		{
+			return TVector2<T>(x / v.x, y / v.y);
+		}
+
 		inline TVector2<T> operator/(T k) const
 		{
 			return TVector2<T>(x / k, y / k);

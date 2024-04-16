@@ -6,7 +6,7 @@ namespace Riemann
 	class List
 	{
 	public:
-		List() : m_root(nullptr), m_count(0) {}
+		List() : m_root(nullptr), m_size(0) {}
 
 		T* back()
 		{
@@ -15,7 +15,12 @@ namespace Riemann
 
 		int size() const
 		{
-			return m_count;
+			return m_size;
+		}
+
+		bool empty() const
+		{
+			return m_root == nullptr;
 		}
 
 		void append(T* p)
@@ -24,7 +29,7 @@ namespace Riemann
 			p->next = m_root;
 			if (m_root) m_root->prev = p;
 			m_root = p;
-			++m_count;
+			++m_size;
 		}
 
 		void remove(T* p)
@@ -32,12 +37,12 @@ namespace Riemann
 			if (p->next) p->next->prev = p->prev;
 			if (p->prev) p->prev->next = p->next;
 			if (p == m_root) m_root = p->next;
-			--m_count;
+			--m_size;
 		}
 
 	private:
 		T* m_root;
-		int m_count;
+		int m_size;
 	};
 
 
@@ -45,7 +50,7 @@ namespace Riemann
 	class StaticList
 	{
 	public:
-		StaticList() : m_root(nullptr), m_count(0)
+		StaticList() : m_root(nullptr), m_size(0)
 		{
 			for (int i = 0; i < Capacity; ++i)
 			{
@@ -60,7 +65,7 @@ namespace Riemann
 
 		int size() const
 		{
-			return m_count;
+			return m_size;
 		}
 
 		void append(T* p)
@@ -69,7 +74,7 @@ namespace Riemann
 			p->next = m_root;
 			if (m_root) m_root->prev = p;
 			m_root = p;
-			++m_count;
+			++m_size;
 		}
 
 		void remove(T* p)
@@ -77,7 +82,7 @@ namespace Riemann
 			if (p->next) p->next->prev = p->prev;
 			if (p->prev) p->prev->next = p->next;
 			if (p == m_root) m_root = p->next;
-			--m_count;
+			--m_size;
 		}
 
 		inline bool empty() const
@@ -95,7 +100,7 @@ namespace Riemann
 
 	private:
 		T*	m_root;
-		int m_count;
+		int m_size;
 		T	m_pool[Capacity];
 	};
 }

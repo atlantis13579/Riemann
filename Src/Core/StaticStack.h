@@ -44,6 +44,11 @@ namespace Riemann
 			return m_top >= MaxDepth;
 		}
 
+		int size() const
+		{
+			return m_top;
+		}
+
 		bool empty() const
 		{
 			return m_top == 0;
@@ -90,6 +95,11 @@ namespace Riemann
 		}
 
 		int	depth() const
+		{
+			return m_top;
+		}
+
+		int size() const
 		{
 			return m_top;
 		}

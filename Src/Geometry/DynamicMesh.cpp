@@ -98,6 +98,27 @@ namespace Riemann
 	{
 	}
 
+	void DynamicMesh::Clear()
+	{
+		VertexPositions.clear();
+		VertexNormals.clear();
+		VertexColors.clear();
+		VertexUVs.clear();
+		Triangles.clear();
+		TriangleEdges.clear();
+		Edges.clear();
+		VertexRefCounts.clear();
+		EdgeRefCounts.clear();
+		TriangleRefCounts.clear();
+		VertexEdgeLists.clear();
+
+		bHasVertexColor = false;
+		bHasVertexNormals = false;
+
+		Attributes.clear();
+		ResourceName = "";
+	}
+
 	bool DynamicMesh::Simplify(float rate)
 	{
 		std::vector<Vector3> new_v;
@@ -215,19 +236,19 @@ namespace Riemann
 		VertexInfo vinfo = GetTringleBaryPoint(TriangleID, BaryCoordinates[0], BaryCoordinates[1], BaryCoordinates[2]);
 		int center = AppendVertex(vinfo);
 
-		int eaC = AddEdgeEx(tv[0], center, -1, -1);
-		int ebC = AddEdgeEx(tv[1], center, -1, -1);
-		int ecC = AddEdgeEx(tv[2], center, -1, -1);
+		int eaC = AddEdgeInternal(tv[0], center, -1, -1);
+		int ebC = AddEdgeInternal(tv[1], center, -1, -1);
+		int ecC = AddEdgeInternal(tv[2], center, -1, -1);
 		VertexRefCounts[tv[0]] += 1;
 		VertexRefCounts[tv[1]] += 1;
 		VertexRefCounts[tv[2]] += 1;
 		VertexRefCounts[center] += 3;
 
-		SetTriangle(TriangleID, Index3(tv[0], tv[1], center));
-		SetTriangleEdge(TriangleID, Index3(te[0], ebC, eaC));
+		SetTriangleInternal(TriangleID, tv[0], tv[1], center);
+		SetTriangleEdgesInternal(TriangleID, te[0], ebC, eaC);
 
-		int t1 = AddTriangleEx(tv[1], tv[2], center, te[1], ecC, ebC);
-		int t2 = AddTriangleEx(tv[2], tv[0], center, te[2], eaC, ecC);
+		int t1 = AddTriangleInternal(tv[1], tv[2], center, te[1], ecC, ebC);
+		int t2 = AddTriangleInternal(tv[2], tv[0], center, te[2], eaC, ecC);
 
 		ReplaceEdgeTriangle(te[1], TriangleID, t1);
 		ReplaceEdgeTriangle(te[2], TriangleID, t2);
@@ -409,7 +430,7 @@ namespace Riemann
 
 			ReplaceTriangleVertex(t0, b, f);
 
-			int t2 = AddTriangleEx(f, b, c, -1, -1, -1);
+			int t2 = AddTriangleInternal(f, b, c, -1, -1, -1);
 
 			ReplaceEdgeTriangle(ebc, t0, t2);
 			int eaf = eab;
@@ -417,11 +438,11 @@ namespace Riemann
 			VertexEdgeLists[b].remove(eab);
 			VertexEdgeLists[f].push_back(eaf);
 
-			int efb = AddEdgeEx(f, b, t2, -1);
-			int efc = AddEdgeEx(f, c, t0, t2);
+			int efb = AddEdgeInternal(f, b, t2, -1);
+			int efc = AddEdgeInternal(f, c, t0, t2);
 
 			ReplaceTriangleEdge(t0, ebc, efc);
-			SetTriangleEdge(t2, Index3(efb, ebc, efc));
+			SetTriangleEdgesInternal(t2, efb, ebc, efc);
 
 			VertexRefCounts[c] += 1;
 			VertexRefCounts[f] += 2;
@@ -476,8 +497,8 @@ namespace Riemann
 			ReplaceTriangleVertex(t0, b, f);
 			ReplaceTriangleVertex(t1, b, f);
 
-			int t2 = AddTriangleEx(f, b, c, -1, -1, -1);
-			int t3 = AddTriangleEx(f, d, b, -1, -1, -1);
+			int t2 = AddTriangleInternal(f, b, c, -1, -1, -1);
+			int t3 = AddTriangleInternal(f, d, b, -1, -1, -1);
 
 			ReplaceEdgeTriangle(ebc, t0, t2);
 			ReplaceEdgeTriangle(edb, t1, t3);
@@ -488,14 +509,14 @@ namespace Riemann
 			VertexEdgeLists[b].remove(eab);
 			VertexEdgeLists[f].push_back(eaf);
 
-			int efb = AddEdgeEx(f, b, t2, t3);
-			int efc = AddEdgeEx(f, c, t0, t2);
-			int edf = AddEdgeEx(d, f, t1, t3);
+			int efb = AddEdgeInternal(f, b, t2, t3);
+			int efc = AddEdgeInternal(f, c, t0, t2);
+			int edf = AddEdgeInternal(d, f, t1, t3);
 
 			ReplaceTriangleEdge(t0, ebc, efc);
 			ReplaceTriangleEdge(t1, edb, edf);
-			SetTriangleEdge(t2, Index3(efb, ebc, efc));
-			SetTriangleEdge(t3, Index3(edf, edb, efb));
+			SetTriangleEdgesInternal(t2, efb, ebc, efc);
+			SetTriangleEdgesInternal(t3, edf, edb, efb);
 
 			VertexRefCounts[c] += 1;
 			VertexRefCounts[d] += 1;
@@ -908,6 +929,62 @@ namespace Riemann
 		return -1;
 	}
 
+	int DynamicMesh::AppendTriangle(const Index3& tv)
+	{
+		if (IsVertex(tv[0]) == false || IsVertex(tv[1]) == false || IsVertex(tv[2]) == false)
+		{
+			assert(false);
+			return -1;
+		}
+		if (tv[0] == tv[1] || tv[0] == tv[2] || tv[1] == tv[2])
+		{
+			assert(false);
+			return -1;
+		}
+
+		bool boundary0, boundary1, boundary2;
+		int e0 = FindEdgeEx(tv[0], tv[1], boundary0);
+		int e1 = FindEdgeEx(tv[1], tv[2], boundary1);
+		int e2 = FindEdgeEx(tv[2], tv[0], boundary2);
+		if ((e0 != -1 && boundary0 == false)
+			|| (e1 != -1 && boundary1 == false)
+			|| (e2 != -1 && boundary2 == false))
+		{
+			return NonManifoldID;
+		}
+
+		if (e0 != -1 && e1 != -1 && e2 != -1)
+		{
+			int ti = Edges[e0].t0;
+			if (Triangles[ti][0] == tv[2] || Triangles[ti][1] == tv[2] || Triangles[ti][2] == tv[2])
+			{
+				return DuplicateTriangleID;
+			}
+			assert(Edges[e0].t1 == -1);
+		}
+
+		// now safe to insert triangle
+		int tid = (int)Triangles.size();
+		Triangles.push_back(tv);
+		TriangleRefCounts.push_back(1);
+
+		VertexRefCounts[tv[0]]++;
+		VertexRefCounts[tv[1]]++;
+		VertexRefCounts[tv[2]]++;
+
+		AddTriangleEdge(tid, tv[0], tv[1], 0, e0);
+		AddTriangleEdge(tid, tv[1], tv[2], 1, e1);
+		AddTriangleEdge(tid, tv[2], tv[0], 2, e2);
+
+		if (HasAttributes())
+		{
+			Attributes.OnNewTriangle(tid, false);
+		}
+
+		UpdateChangeStamps();
+		return tid;
+	}
+
 	Riemann::EMeshResult DynamicMesh::RemoveTriangle(int tID, bool bRemoveIsolatedVertices, bool bPreserveManifold)
 	{
 		if (TriangleRefCounts[tID] <= 0)
@@ -958,7 +1035,7 @@ namespace Riemann
 
 		// free this triangle
 		TriangleRefCounts[tID]--;
-		assert(TriangleRefCounts[tID] > 0);
+		assert(TriangleRefCounts[tID] == 0);
 
 		// Decrement vertex refcounts. If any hit 1 and we got remove-isolated flag,
 		// we need to remove that vertex
@@ -970,7 +1047,7 @@ namespace Riemann
 			if (bRemoveIsolatedVertices && VertexRefCounts[vid] == 1)
 			{
 				VertexRefCounts[vid]--;
-				assert(VertexRefCounts[vid] > 0);
+				assert(VertexRefCounts[vid] == 0);
 				VertexEdgeLists[vid].clear();
 			}
 		}
@@ -978,6 +1055,126 @@ namespace Riemann
 		if (HasAttributes())
 		{
 			Attributes.OnRemoveTriangle(tID);
+		}
+
+		UpdateChangeStamps();
+		return EMeshResult::Ok;
+	}
+
+	Riemann::EMeshResult DynamicMesh::SetTriangle(int tID, const Index3& newv)
+	{
+		// if (HasAttributes() == false)
+		//{
+		//	assert(false);
+		//	return EMeshResult::Failed_Unsupported;
+		//}
+
+		const  bool bRemoveIsolatedVertices = true;
+		Index3 tv = GetTriangle(tID);
+		Index3 te = GetTriangleEdge(tID);
+		if (tv[0] == newv[0] && tv[1] == newv[1])
+		{
+			te[0] = -1;
+		}
+		if (tv[1] == newv[1] && tv[2] == newv[2])
+		{
+			te[1] = -1;
+		}
+		if (tv[2] == newv[2] && tv[0] == newv[0])
+		{
+			te[2] = -1;
+		}
+
+		if (TriangleRefCounts[tID] <= 0)
+		{
+			assert(false);
+			return EMeshResult::Failed_NotATriangle;
+		}
+		if (IsVertex(newv[0]) == false || IsVertex(newv[1]) == false || IsVertex(newv[2]) == false)
+		{
+			assert(false);
+			return EMeshResult::Failed_NotAVertex;
+		}
+		if (newv[0] == newv[1] || newv[0] == newv[2] || newv[1] == newv[2])
+		{
+			assert(false);
+			return EMeshResult::Failed_BrokenTopology;
+		}
+		// look up edges. if any already have two triangles, this would
+		// create non-manifold geometry and so we do not allow it
+		int e0 = FindEdge(newv[0], newv[1]);
+		int e1 = FindEdge(newv[1], newv[2]);
+		int e2 = FindEdge(newv[2], newv[0]);
+		if ((te[0] != -1 && e0 != -1 && IsBoundaryEdge(e0) == false)
+			|| (te[1] != -1 && e1 != -1 && IsBoundaryEdge(e1) == false)
+			|| (te[2] != -1 && e2 != -1 && IsBoundaryEdge(e2) == false))
+		{
+			return EMeshResult::Failed_BrokenTopology;
+		}
+
+		for (int j = 0; j < 3; ++j)
+		{
+			int eid = te[j];
+			if (eid == -1)
+			{
+				continue;
+			}
+			ReplaceEdgeTriangle(eid, tID, -1);
+			const Edge& e = GetEdge(eid);
+			if (e.t0 == -1)
+			{
+				int a = e.v0;
+				VertexEdgeLists[a].remove(eid);
+
+				int b = e.v1;
+				VertexEdgeLists[b].remove(eid);
+
+				assert(EdgeRefCounts[eid] >= 1);
+				EdgeRefCounts[eid]--;
+			}
+		}
+
+		// Decrement vertex refcounts. If any hit 1 and we got remove-isolated flag,
+		// we need to remove that vertex
+		for (int j = 0; j < 3; ++j)
+		{
+			int vid = tv[j];
+			if (vid == newv[j])     // we don't need to modify this vertex
+			{
+				continue;
+			}
+			assert(VertexRefCounts[vid] >= 1);
+			VertexRefCounts[vid]--;
+			if (bRemoveIsolatedVertices && VertexRefCounts[vid] == 1)
+			{
+				VertexRefCounts[vid]--;
+				assert(VertexRefCounts[vid] == 0);
+				VertexEdgeLists[vid].clear();
+			}
+		}
+
+
+		// ok now re-insert with vertices
+		for (int j = 0; j < 3; ++j)
+		{
+			if (newv[j] != tv[j])
+			{
+				Triangles[tID][j] = newv[j];
+				VertexRefCounts[newv[j]]++;
+			}
+		}
+
+		if (te[0] != -1)
+		{
+			AddTriangleEdge(tID, newv[0], newv[1], 0, e0);
+		}
+		if (te[1] != -1)
+		{
+			AddTriangleEdge(tID, newv[1], newv[2], 1, e1);
+		}
+		if (te[2] != -1)
+		{
+			AddTriangleEdge(tID, newv[2], newv[0], 2, e2);
 		}
 
 		UpdateChangeStamps();
@@ -1157,6 +1354,60 @@ namespace Riemann
 			return nullptr;
 		}
 		return p;
+	}
+
+	int DynamicMesh::AppendVertex(const Vector3& v)
+	{
+		int index = (int)VertexPositions.size();
+		VertexPositions.push_back(v);
+		VertexRefCounts.push_back(1);
+		VertexEdgeLists.append();
+		return index;
+	}
+
+	int DynamicMesh::AppendVertex(const VertexInfo& info)
+	{
+		size_t index = VertexPositions.size();
+
+		VertexPositions.push_back(info.Position);
+		VertexRefCounts.push_back(1);
+		VertexEdgeLists.append();
+
+		if (info.bHasColor)
+		{
+			bHasVertexColor = true;
+		}
+
+		if (info.bHasNormal)
+		{
+			bHasVertexNormals = true;
+		}
+
+		if (info.NumUVs > 0)
+		{
+			if (info.NumUVs > (int)VertexUVs.size())
+				VertexUVs.resize(info.NumUVs);
+		}
+
+		if (HasVertexColors())
+		{
+			Vector3 val = info.bHasColor ? info.Color : Vector3::Zero();
+			VectorSetSafe(VertexColors, index, val);
+		}
+
+		if (HasVertexNormals())
+		{
+			Vector3 val = info.bHasNormal ? info.Normal : Vector3::UnitY();
+			VectorSetSafe(VertexNormals, index, val);
+		}
+
+		for (size_t i = 0; i < VertexUVs.size(); ++i)
+		{
+			Vector2 val = i < info.NumUVs ? info.UVs[i] : Vector2::Zero();
+			VectorSetSafe(VertexUVs[i], index, val);
+		}
+
+		return (int)index;
 	}
 
 	DynamicMeshAABBTree::DynamicMeshAABBTree(DynamicMesh* data)

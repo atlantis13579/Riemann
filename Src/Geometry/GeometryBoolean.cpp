@@ -1680,7 +1680,7 @@ namespace Riemann
 		DynamicMeshAABBTree Spatial[2]{ CutMesh[0], CutMesh[1] };
 		IntersectionsQueryResult Intersections = Spatial[0].FindAllIntersections(Spatial[1], nullptr);
 
-		bool bOpOnSingleMesh = Operation == BooleanOp::TrimInside || Operation == BooleanOp::TrimOutside || Operation == BooleanOp::NewGroupInside || Operation == BooleanOp::NewGroupOutside;
+		const bool bOpOnSingleMesh = false;
 
 		GeometryCut Cut(CutMesh[0], CutMesh[1]);
 		Cut.SnapTolerance = SnapTolerance;
@@ -1783,9 +1783,9 @@ namespace Riemann
 				DynamicMesh& ProcessMesh = *CutMesh[MeshIdx];
 				int MaxTriID = ProcessMesh.GetTriangleCount();
 				KeepTri[MeshIdx].resize(MaxTriID);
-				bool bCoplanarKeepSameDir = (Operation != BooleanOp::Difference && Operation != BooleanOp::TrimInside && Operation != BooleanOp::NewGroupInside);
+				bool bCoplanarKeepSameDir = (Operation != BooleanOp::Difference);
 				bool bRemoveInside = 1;
-				if (Operation == BooleanOp::NewGroupOutside || Operation == BooleanOp::TrimOutside || Operation == BooleanOp::Intersect || (Operation == BooleanOp::Difference && MeshIdx == 1))
+				if (Operation == BooleanOp::Intersect || (Operation == BooleanOp::Difference && MeshIdx == 1))
 				{
 					bRemoveInside = 0;
 				}
@@ -1936,9 +1936,7 @@ namespace Riemann
 					OtherMeshPointHash.Insert(OtherMesh.GetVertex(BoundaryVID), BoundaryVID);
 				}
 
-				SparseOctree3 EdgeOctree;
-				EdgeOctree.RootDimension = 0.25f;
-				EdgeOctree.SetMaxTreeDepth(7);
+				SparseOctree EdgeOctree(Vector3::Zero(), 0.25f, 7);
 				auto EdgeBounds = [&OtherMesh](int EID)
 				{
 					const DynamicMesh::Edge& e = OtherMesh.GetEdge(EID);
@@ -2059,6 +2057,8 @@ namespace Riemann
 			}
 		}
 
+		bool bSuccess = true;
+
 		/*
 		if (bSimplifyAlongNewEdges)
 		{
@@ -2067,17 +2067,14 @@ namespace Riemann
 
 		if (Operation == BooleanOp::Difference)
 		{
-			// TODO: implement a way to flip all the triangles in the mesh without building this AllTID array
 			std::vector<int> AllTID;
-			for (int TID : CutMesh[1]->TriangleIndicesItr())
+			for (int TID  = 0; TID < CutMesh[1]->GetTriangleCount(); ++TID)
 			{
-				AllTID.Add(TID);
+				AllTID.push_back(TID);
 			}
 			FDynamicMeshEditor FlipEditor(CutMesh[1]);
 			FlipEditor.ReverseTriangleOrientations(AllTID, true);
 		}
-
-		bool bSuccess = true;
 
 		if (NumMeshesToProcess > 1)
 		{
@@ -2102,18 +2099,17 @@ namespace Riemann
 				{
 					if (!CutMesh[1]->IsEdge(OldMeshEID))
 					{
-						ensure(false);
+						assert(false);
 						continue;
 					}
-					FIndex2i OtherEV = CutMesh[1]->GetEdgeV(OldMeshEID);
-					int MappedEID = MeshNew->FindEdge(IndexMaps.GetNewVertex(OtherEV.A), IndexMaps.GetNewVertex(OtherEV.B));
-					checkSlow(MeshNew->IsBoundaryEdge(MappedEID));
-					CreatedBoundaryEdges.Add(MappedEID);
+					Index2 OtherEV = CutMesh[1]->GetEdgeV(OldMeshEID);
+					int MappedEID = MeshNew->FindEdge(IndexMaps.GetNewVertex(OtherEV.a), IndexMaps.GetNewVertex(OtherEV.b));
+					assert(MeshNew->IsBoundaryEdge(MappedEID));
+					CreatedBoundaryEdges.push_back(MappedEID);
 				}
 			}
 		}
-		// For NewGroupInside and NewGroupOutside, the cut doesn't create boundary edges.
-		else if (Operation != BooleanOp::NewGroupInside && Operation != BooleanOp::NewGroupOutside)
+		else
 		{
 			CreatedBoundaryEdges = CutBoundaryEdges[0];
 		}
@@ -2122,20 +2118,18 @@ namespace Riemann
 		{
 			for (int eid : CreatedBoundaryEdges)
 			{
-				AllNewEdges.Add(eid);
+				AllNewEdges.insert(eid);
 			}
 		}
 
 		if (bPutResultInInputSpace)
 		{
-			MeshTransforms::ApplyTransform(*MeshNew, ResultTransform);
-			ResultTransform = Transform::Identity();
+			MeshNew->ApplyTransform(TransformNew, false);
+			TransformNew = Transform::Identity();
 		}
-
-		return bSuccess;
 		*/
 
-		return true;
+		return bSuccess;
 	}
 
 }
