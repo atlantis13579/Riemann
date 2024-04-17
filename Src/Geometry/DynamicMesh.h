@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 #include <functional>
+#include "GeometryOperation.h"
+#include "GeometryAttributes.h"
 #include "../Core/ListSet.h"
 #include "../Maths/Box3.h"
 #include "../Maths/Vector2.h"
@@ -15,160 +17,71 @@
 
 namespace Riemann
 {
-	class DynamicMeshAABBTree;
-
-	enum class EMeshResult
+	template<typename T>
+	static void VectorSetSafe(std::vector<T>& vec, size_t index, const T& v, const T& default_val)
 	{
-		Ok = 0,
-		Failed_NotAVertex = 1,
-		Failed_NotATriangle = 2,
-		Failed_NotAnEdge = 3,
-
-		Failed_BrokenTopology = 10,
-		Failed_HitValenceLimit = 11,
-
-		Failed_IsBoundaryEdge = 20,
-		Failed_FlippedEdgeExists = 21,
-		Failed_IsBowtieVertex = 22,
-		Failed_InvalidNeighbourhood = 23,       // these are all failures for CollapseEdge
-		Failed_FoundDuplicateTriangle = 24,
-		Failed_CollapseTetrahedron = 25,
-		Failed_CollapseTriangle = 26,
-		Failed_NotABoundaryEdge = 27,
-		Failed_SameOrientation = 28,
-
-		Failed_WouldCreateBowtie = 30,
-		Failed_VertexAlreadyExists = 31,
-		Failed_CannotAllocateVertex = 32,
-		Failed_VertexStillReferenced = 33,
-
-		Failed_WouldCreateNonmanifoldEdge = 50,
-		Failed_TriangleAlreadyExists = 51,
-		Failed_CannotAllocateTriangle = 52,
-
-		Failed_UnrecoverableError = 1000,
-		Failed_Unsupported = 1001
-	};
-
-	constexpr static int InvalidID = -1;
-	constexpr static int NonManifoldID = -2;
-	constexpr static int DuplicateTriangleID = -3;
-
-	#define MAX_UV_CHANNEL	(8)
-	struct VertexInfo
-	{
-		Vector3 Position { Vector3::Zero() };
-		Vector3 Normal { Vector3::Zero() };
-		Vector3 Color { Vector3::Zero() };
-		Vector2 UVs[MAX_UV_CHANNEL];
-		bool bHasNormal { false };
-		bool bHasColor { false };
-		int NumUVs { 0 };
-	};
-
-	struct EdgeSplitInfo
-	{
-		int OriginalEdge;
-		Index2 OriginalVertices;
-		Index2 OtherVertices;
-		Index2 OriginalTriangles;
-		bool bIsBoundary;
-		int NewVertex;
-		Index2 NewTriangles;
-		Index3 NewEdges;
-		float SplitT;
-	};
-
-	struct PokeTriangleInfo
-	{
-		int OriginalTriangle;
-		Index3 TriVertices;
-		int NewVertex;
-		Index2 NewTriangles;
-		Index3 NewEdges;
-		Vector3 BaryCoords;
-	};
-
-	struct EdgeCollapseInfo
-	{
-		int KeptVertex;
-		int RemovedVertex;
-		Index2 OpposingVerts;
-		bool bIsBoundary;
-		int CollapsedEdge;
-		Index2 RemovedTris;
-		Index2 RemovedEdges;
-		Index2 KeptEdges;
-		float CollapseT;
-	};
+		if (index >= vec.size())
+		{
+			vec.resize(index + 1, default_val);
+		}
+		vec[index] = v;
+	}
 
 	template<typename T>
-	class AttributeBase
+	static void VectorSet(std::vector<T>& Vertices, size_t index, const T& v)
 	{
-	public:
-		inline void SetNewValue(int index, const T& val)
-		{
-			mValues.insert(mValues.begin() + index, val);
-		}
+		Vertices[index] = v;
+	}
+	template<typename T>
+	static bool SamePairUnordered(T a0, T a1, T b0, T b1)
+	{
+		return (a0 == b0) ?
+			(a1 == b1) :
+			(a0 == b1 && a1 == b0);
+	}
 
-		inline T GetValue(int index) const
-		{
-			return mValues[index];
-		}
+	template<typename T, typename Vec>
+	static int FindTriIndex(T VertexID, const Vec& TriangleVerts)
+	{
+		if (TriangleVerts[0] == VertexID) return 0;
+		if (TriangleVerts[1] == VertexID) return 1;
+		if (TriangleVerts[2] == VertexID) return 2;
+		return -1;
+	}
 
-		inline void SetValue(int index, const T& val)
+	template<typename T, typename Vec>
+	static int FindTriOtherVtx(T VertexID1, T VertexID2, const Vec& TriangleVerts)
+	{
+		for (int j = 0; j < 3; ++j)
 		{
-			mValues[index] = val;
+			if (SamePairUnordered(VertexID1, VertexID2, TriangleVerts[j], TriangleVerts[(j + 1) % 3]))
+			{
+				return TriangleVerts[(j + 2) % 3];
+			}
 		}
+		return -1;
+	}
 
-		void clear()
-		{
-			mValues.clear();
-		}
+	inline int GetOtherTriIndex(int i0, int i1)
+	{
+		// @todo can we do this with a formula? I don't see it right now.
+		static const int values[4] = { 0, 2, 1, 0 };
+		return values[i0 + i1];
+	}
 
-		size_t size() const
-		{
-			return mValues.size();
-		}
-
-	private:
-		std::vector<T>	mValues;
+	struct VertexInfo
+	{
+		Vector3 Position{ Vector3::Zero() };
+		Vector3 Normal{ Vector3::Zero() };
+		Vector3 Color{ Vector3::Zero() };
+		Vector2 UVs{ Vector2::Zero() };
+		bool bHasNormal{ false };
+		bool bHasColor{ false };
+		bool bHasUV{ false };
 	};
 
-	struct GeometryAttributeSet
-	{
-		void clear()
-		{
-			MaterialIDAttrib.clear();
-		}
 
-		void OnPokeTriangle(const PokeTriangleInfo& PokeResult)
-		{
-			// assert(false);
-		}
-
-		void OnSplitEdge(const EdgeSplitInfo& info)
-		{
-			// assert(false);
-		}
-
-		void OnRemoveTriangle(int tid)
-		{
-			// assert(false);
-		}
-
-		void OnCollapseEdge(const EdgeCollapseInfo& info)
-		{
-			// assert(false);
-		}
-
-		void OnNewTriangle(int tid, bool b)
-		{
-			// assert(false);
-		}
-
-		AttributeBase<int> MaterialIDAttrib;
-	};
+	class DynamicMeshAABBTree;
 
 	struct IntersectionsQueryResult
 	{
@@ -210,10 +123,8 @@ namespace Riemann
 
 		struct Edge
 		{
-			int v0;
-			int v1;
-			int t0;
-			int t1;
+			Index2 Vert;
+			Index2 Tri;
 		};
 
 		int GetVertexCount() const { return (int)VertexPositions.size(); }
@@ -228,7 +139,8 @@ namespace Riemann
 		inline bool HasVertexColors() const { return bHasVertexColor; }
 		inline bool HasVertexNormals() const { return bHasVertexNormals; }
 		inline bool HasVertexUVs() const { return VertexUVs.size() > 0; }
-		inline bool HasAttributes() const { return Attributes.MaterialIDAttrib.size() > 0; }
+		inline bool HasTriangleGroups() const { return bHasTriangleGroups; }
+		inline bool HasAttributes() const { return mAttributes != nullptr; }
 		inline bool IsVertex(int idx) const { return 0 <= idx && idx < (int)VertexPositions.size() && VertexRefCounts[idx] > 0;	}
 
 		inline bool IsBoundaryVertex(int vID) const
@@ -238,7 +150,7 @@ namespace Riemann
 			{
 				for (int eid : VertexEdgeLists[vID])
 				{
-					if (Edges[eid].t1 == -1)
+					if (Edges[eid].Tri[1] == -1)
 					{
 						return true;
 					}
@@ -250,64 +162,63 @@ namespace Riemann
 		inline Vector3 GetVertex(int idx) const	{ return VertexPositions[idx]; }
 		inline Vector3 GetVertexColor(int idx) const { return HasVertexColors() ? VertexColors[idx] : Vector3::Zero(); }
 		Vector3 GetVertexNormal(int idx) const { return HasVertexNormals() ? VertexNormals[idx] : Vector3::UnitY(); }
-		inline Vector2 GetVertexUV(int idx, int layer) const { return HasVertexUVs() ? VertexUVs[layer][idx] : Vector2::Zero(); }
+		inline Vector2 GetVertexUV(int idx) const { return HasVertexUVs() ? VertexUVs[idx] : Vector2::Zero(); }
 		inline Index3 GetTriangle(int idx) const { return Triangles[idx]; }
 
-		inline void SetVertex(int idx, const Vector3& val)	{ VectorSetSafe(VertexPositions, idx, val);	}
-		inline void SetVertexColor(int idx, const Vector3& val)	{ bHasVertexColor = true; VectorSetSafe(VertexColors, idx, val); }
-		inline void SetVertexNormal(int idx, const Vector3& val) { bHasVertexNormals = true; VectorSetSafe(VertexNormals, idx, val); }
+		inline void SetVertex(int idx, const Vector3& val)	{ VectorSetSafe(VertexPositions, idx, val, Vector3::Zero());	}
+		inline void SetVertexColor(int idx, const Vector3& val)	{ bHasVertexColor = true; VectorSetSafe(VertexColors, idx, val, Vector3::Zero()); }
+		inline void SetVertexNormal(int idx, const Vector3& val) { bHasVertexNormals = true; VectorSetSafe(VertexNormals, idx, val, Vector3::UnitY()); }
+		inline void SetVertexUV(int idx, const Vector2& val) {	VectorSetSafe(VertexUVs, idx, val, Vector2::Zero()); }
 
-		inline void SetVertexUV(int idx, const Vector2& val, int channel)
-		{
-			if (channel < 0)
-			{
-				for (size_t i = 0; i < VertexUVs.size(); ++i)
-				{
-					VectorSetSafe(VertexUVs[i], idx, val);
-				}
-				return;
-			}
-
-			if (channel >= (int)VertexUVs.size())
-			{
-				VertexUVs.resize(channel);
-			}
-
-			VectorSetSafe(VertexUVs[channel], idx, val);
-		}
-
-		inline bool IsTriangle(int idx) const {	return 0 <= idx && idx < (int)Triangles.size() && TriangleRefCounts[idx] > 0; }
-		int AppendTriangle(const Index3& tv);
+		int AppendTriangle(const Index3& tv, int gid = 0);
+		EMeshResult InsertTriangle(int tid, const Index3& tv, int gid = 0, bool bUnsafe = false);
 		EMeshResult RemoveTriangle(int tID, bool bRemoveIsolatedVertices, bool bPreserveManifold);
+		inline bool IsTriangle(int idx) const {	return 0 <= idx && idx < (int)Triangles.size() && TriangleRefCounts[idx] > 0; }
 		void  SetTriangleInternal(int TriangleID, int v0, int v1, int v2) {	Triangles[TriangleID] = Index3(v0, v1, v2); }
 		void SetTriangleEdgesInternal(int TriangleID, int e0, int e1, int e2) {	TriangleEdges[TriangleID] = Index3(e0, e1, e2);	}
 
 		EMeshResult SetTriangle(int tID, const Index3& newv);
 
-		Vector3 GetTriangleCentroid(int idx) const
+		int GetTriangleGroup(int tID) const
+		{
+			return (HasTriangleGroups() == false) ? -1 :
+				(TriangleRefCounts[tID] > 0 ? TriangleGroups[tID] : 0);
+		}
+
+		void SetTriangleGroup(int tid, int group_id)
+		{
+			if (HasTriangleGroups())
+			{
+				assert(IsTriangle(tid));
+				TriangleGroups[tid] = group_id;
+				GroupIDCounter = std::max(GroupIDCounter, group_id + 1);
+			}
+		}
+
+		Vector3 GetTriCentroid(int idx) const
 		{
 			const Index3 ti = Triangles[idx];
 			const Vector3 centroid = (VertexPositions[ti.a] + VertexPositions[ti.b] + VertexPositions[ti.c]) / 3.0f;
 			return centroid;
 		}
 
-		Vector3 GetTriangleNormal(int idx) const
+		Vector3 GetTriNormal(int idx) const
 		{
 			Vector3 A, B, C;
-			GetTriangleVertices(idx, A, B, C);
+			GetTriVertices(idx, A, B, C);
 			Vector3 CA = (C - A).Unit();
 			Vector3 BA = (B - A).Unit();
 			return CA.Cross(BA).Unit();
 		}
 
-		Box3 GetTriangleBounds(int idx) const
+		Box3 GetTriBounds(int idx) const
 		{
 			const Index3 ti = Triangles[idx];
 			Box3 box(VertexPositions[ti.a], VertexPositions[ti.b], VertexPositions[ti.c]);
 			return box;
 		}
 
-		void GetTriangleVertices(int idx, Vector3& a, Vector3& b, Vector3& c) const
+		void GetTriVertices(int idx, Vector3& a, Vector3& b, Vector3& c) const
 		{
 			const Index3 ti = Triangles[idx];
 			a = VertexPositions[ti.a];
@@ -331,10 +242,10 @@ namespace Riemann
 			{
 				info.Color = bary0 * VertexColors[t[0]] + bary1 * VertexColors[t[1]] + bary2 * VertexColors[t[2]];
 			}
-			info.NumUVs = (int)VertexUVs.size();
-			for (size_t i = 0; i < VertexUVs.size(); ++i)
+			info.bHasUV = HasVertexUVs();
+			if (info.bHasColor)
 			{
-				info.UVs[i] = bary0 * VertexUVs[i][t[0]] + bary1 * VertexUVs[i][t[1]] + bary2 * VertexUVs[i][t[2]];
+				info.UVs = bary0 * VertexUVs[t[0]] + bary1 * VertexUVs[t[1]] + bary2 * VertexUVs[t[2]];
 			}
 			return info;
 		}
@@ -346,15 +257,16 @@ namespace Riemann
 		}
 
 		inline bool IsEdge(int idx) const {	return 0 <= idx && idx < (int)Edges.size() && EdgeRefCounts[idx] > 0; }
-		inline bool IsBoundaryEdge(int idx) const {	return Edges[idx].t1 == -1; }
+		inline bool IsBoundaryEdge(int idx) const {	return Edges[idx].Tri[1] == -1; }
 		inline const Edge& GetEdge(int idx) const { return Edges[idx]; }
-		inline Index2 GetEdgeV(int idx) const { return Index2(Edges[idx].v0, Edges[idx].v1); }
-		inline void GetEdgeV(int idx, Vector3& a, Vector3& b) const { a = VertexPositions[Edges[idx].v0]; b = VertexPositions[Edges[idx].v1]; }
-		inline Index2 GetEdgeT(int idx) const { return Index2(Edges[idx].t0, Edges[idx].t1); }
-		inline Index3 GetTriangleEdge(int idx) const { return TriangleEdges[idx]; }
-		inline int GetTriangleEdge(int idx, int j) const {	return TriangleEdges[idx][j]; }
+		inline Edge& GetEdge(int idx) { return Edges[idx]; }
+		inline Index2 GetEdgeV(int idx) const { return Index2(Edges[idx].Vert[0], Edges[idx].Vert[1]); }
+		inline void GetEdgeV(int idx, Vector3& a, Vector3& b) const { a = VertexPositions[Edges[idx].Vert[0]]; b = VertexPositions[Edges[idx].Vert[1]]; }
+		inline Index2 GetEdgeT(int idx) const { return Index2(Edges[idx].Tri[0], Edges[idx].Tri[1]); }
+		inline Index3 GetTriEdges(int idx) const { return TriangleEdges[idx]; }
+		inline int GetTriEdges(int idx, int j) const {	return TriangleEdges[idx][j]; }
 
-		int FindEdge(int v0, int v1)
+		int FindEdge(int v0, int v1) const
 		{
 			if (v0 == v1)
 			{
@@ -369,7 +281,7 @@ namespace Riemann
 			{
 				for (int eid : VertexEdgeLists[v0])
 				{
-					if (Edges[eid].v1 == v1)
+					if (Edges[eid].Vert[1] == v1)
 					{
 						return eid;
 					}
@@ -379,25 +291,27 @@ namespace Riemann
 			return -1;
 		}
 
-		int FindEdgeEx(int vA, int vB, bool& bIsBoundary) const
+		int FindEdgeEx(int v0, int v1, bool& bIsBoundary) const
 		{
-			int vMax = vA, vMin = vB;
-			if (vB > vA)
+			int vMax = v0, vMin = v1;
+			if (v1 > v0)
 			{
-				vMax = vB; vMin = vA;
+				vMax = v1; vMin = v0;
 			}
 			for (int eid : VertexEdgeLists[vMin])
 			{
 				const Edge& e = Edges[eid];
-				if (e.v1 == vMax)
+				if (e.Vert[1] == vMax)
 				{
-					bIsBoundary = (e.t1 == -1);
+					bIsBoundary = (e.Tri[1] == -1);
 					return eid;
 				}
 			}
 
 			return -1;
 		}
+
+		Index2 GetEdgeOpposingV(int EdgeID) const;
 
 		void BuildBounds();
 		inline const Box3& GetBounds() const { return Bounds; }
@@ -407,23 +321,24 @@ namespace Riemann
 
 		inline uint64_t GetChangeStamps() const { return MeshChangeStamp; }
 
-		GeometryAttributeSet& GetAttributes() { return Attributes; }
+		DynamicMeshAttributeSet* Attributes() { return mAttributes; }
+		const DynamicMeshAttributeSet* Attributes() const { return mAttributes; }
 
 		inline int GetOtherEdgeVertex(int EdgeID, int VertexID) const
 		{
 			const Edge& e = Edges[EdgeID];
-			return (e.v0 == VertexID) ? e.v1 : ((e.v1 == VertexID) ? e.v0 : -1);
+			return (e.Vert[0] == VertexID) ? e.Vert[1] : ((e.Vert[1] == VertexID) ? e.Vert[0] : -1);
 		}
 
 		inline int GetOtherEdgeTriangle(int EdgeID, int TriangleID) const
 		{
 			const Edge&e = Edges[EdgeID];
-			return (e.t0 == -1) ? e.t1 : ((e.t1 == TriangleID) ? e.t0 : -1);
+			return (e.Tri[0] == -1) ? e.Tri[1] : ((e.Tri[1] == TriangleID) ? e.Tri[0] : -1);
 		}
 
 		inline Index2 GetOrderedOneRingEdgeTris(int VertexID, int EdgeID) const
 		{
-			const Index2 Tris(Edges[EdgeID].t0, Edges[EdgeID].t1);
+			const Index2 Tris(Edges[EdgeID].Tri[0], Edges[EdgeID].Tri[1]);
 
 			int vOther = GetOtherEdgeVertex(EdgeID, VertexID);
 			int et1 = Tris[1];
@@ -432,7 +347,49 @@ namespace Riemann
 			return TriHasSequentialVertices(et0, VertexID, vOther) ? Index2(et0, et1) : Index2(et1, -1);
 		}
 
+		std::vector<int> GetVexVertices(int VertexID) const;
+		std::vector<int> GetVexEdges(int VertexID) const;
 		std::vector<int> GetVexTriangles(int VertexID) const;
+
+		template<typename TFunction>
+		void EnumerateVertexVertices(int VertexID, TFunction func) const
+		{
+			VertexEdgeLists[VertexID].all_iteration(
+				[this, &func, VertexID](int eid)
+				{
+					func(GetOtherEdgeVertex(eid, VertexID));
+				});
+		}
+
+		template<typename TFunction>
+		void EnumerateVertexEdges(int VertexID, TFunction func) const
+		{
+			VertexEdgeLists[VertexID].all_iteration(func);
+		}
+
+		template<typename TFunction>
+		void EnumerateVertexTriangles(int VertexID, TFunction func) const
+		{
+			if (!IsVertex(VertexID))
+			{
+				return;
+			}
+
+			VertexEdgeLists[VertexID].all_iteration(
+				[&](int eid)
+				{
+					const Edge e = Edges[eid];
+					const int vOther = e.Vert.a == VertexID ? e.Vert.b : e.Vert.a;
+					if (TriHasSequentialVertices(e.Tri[0], VertexID, vOther))
+					{
+						func(e.Tri[0]);
+					}
+					if (e.Tri[1] != InvalidID && TriHasSequentialVertices(e.Tri[1], VertexID, vOther))
+					{
+						func(e.Tri[1]);
+					}
+				});
+		}
 
 		bool Simplify(float rate);
 
@@ -440,14 +397,38 @@ namespace Riemann
 		void ApplyTransform(Transform3& trans, bool bReverseOrientationIfNeeded);
 		void ReverseOrientation(bool bFlipNormals);
 
-		EMeshResult PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, PokeTriangleInfo& PokeResult);
-		EMeshResult SplitEdge(int eab, EdgeSplitInfo& SplitInfo, float split_t);
-		EMeshResult CollapseEdge(int vKeep, int vRemove, float collapse_t, EdgeCollapseInfo& CollapseInfo);
+		EMeshResult MergeEdges(int eKeep, int eDiscard, FMergeEdgesInfo& MergeInfo, bool bCheckValidOrientation);
+		EMeshResult PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, FPokeTriangleInfo& PokeResult);
+		EMeshResult SplitEdge(int eab, FEdgeSplitInfo& SplitInfo, float split_t);
+		EMeshResult CollapseEdge(int vKeep, int vRemove, float collapse_t, FEdgeCollapseInfo& CollapseInfo);
 
 		int FindEdgeFromTriangle(int vA, int vB, int tID) const;
 		int FindEdgeFromTrianglePair(int TriA, int TriB) const;
 		int GetVtxTriangleCount(int vID) const;
 		int GetVtxSingleTriangle(int VertexID) const;
+
+		EMeshResult ReverseTriOrientation(int tID)
+		{
+			if (!IsTriangle(tID))
+			{
+				return EMeshResult::Failed_NotATriangle;
+			}
+			ReverseTriOrientationInternal(tID);
+			UpdateChangeStamps();
+			return EMeshResult::Ok;
+		}
+
+		void ReverseTriOrientationInternal(int tID)
+		{
+			Index3 t = GetTriangle(tID);
+			SetTriangleInternal(tID, t[1], t[0], t[2]);
+			Index3 te = GetTriEdges(tID);
+			SetTriangleEdgesInternal(tID, te[0], te[2], te[1]);
+			if (HasAttributes())
+			{
+				mAttributes->OnReverseTriOrientation(tID);
+			}
+		}
 
 	private:
 
@@ -460,24 +441,24 @@ namespace Riemann
 		int ReplaceEdgeTriangle(int idx, int t_old, int t_new)
 		{
 			Edge& e = Edges[idx];
-			int a = e.t0;
-			int b = e.t1;
+			int a = e.Tri[0];
+			int b = e.Tri[1];
 			if (a == t_old)
 			{
 				if (t_new == -1)
 				{
-					e.t0 = b;
-					e.t1 = -1;
+					e.Tri[0] = b;
+					e.Tri[1] = -1;
 				}
 				else
 				{
-					e.t0 = t_new;
+					e.Tri[0] = t_new;
 				}
 				return 0;
 			}
 			else if (b == t_old)
 			{
-				e.t1 = t_new;
+				e.Tri[1] = t_new;
 				return 1;
 			}
 			else
@@ -517,17 +498,17 @@ namespace Riemann
 		int ReplaceEdgeVertex(int idx, int v_old, int v_new)
 		{
 			Edge& e = Edges[idx];
-			int a = e.v0, b = e.v1;
+			int a = e.Vert[0], b = e.Vert[1];
 			if (a == v_old)
 			{
-				e.v0 = std::min(b, v_new);
-				e.v1 = std::max(b, v_new);
+				e.Vert[0] = std::min(b, v_new);
+				e.Vert[1] = std::max(b, v_new);
 				return 0;
 			}
 			else if (b == v_old)
 			{
-				e.v0 = std::min(a, v_new);
-				e.v1 = std::max(a, v_new);
+				e.Vert[0] = std::min(a, v_new);
+				e.Vert[1] = std::max(a, v_new);
 				return 1;
 			}
 			else
@@ -536,10 +517,20 @@ namespace Riemann
 			}
 		}
 
-		void SetEdgeTriangleEx(int idx, int t0, int t1)
+		inline void SetEdgeVerticesInternal(int idx, int a, int b)
 		{
-			Edges[idx].t0 = t0;
-			Edges[idx].t1 = t1;
+			if (a > b)
+			{
+				std::swap(a, b);
+			}
+			Edges[idx].Vert[0] = a;
+			Edges[idx].Vert[1] = b;
+		}
+
+		void SetEdgeTrianglesInternal(int idx, int t0, int t1)
+		{
+			Edges[idx].Tri[0] = t0;
+			Edges[idx].Tri[1] = t1;
 		}
 
 		int AddEdgeInternal(int v0, int v1, int t0, int t1)
@@ -549,7 +540,10 @@ namespace Riemann
 				std::swap(v0, v1);
 			}
 			int eid = (int)Edges.size();
-			Edges.push_back({ v0, v1, t0, t1 });
+			Edge e;
+			e.Vert = Index2(v0, v1);
+			e.Tri = Index2(t0, t1);
+			Edges.push_back(e);
 			EdgeRefCounts.push_back(1);
 			VertexEdgeLists[v0].push_back(eid);
 			VertexEdgeLists[v1].push_back(eid);
@@ -565,7 +559,7 @@ namespace Riemann
 			Index3& TriEdges = TriangleEdges[TriangleID];
 			if (EdgeID != -1)
 			{
-				Edges[EdgeID].t1 = TriangleID;
+				Edges[EdgeID].Tri[1] = TriangleID;
 				TriEdges[j] = EdgeID;
 			}
 			else
@@ -593,23 +587,25 @@ namespace Riemann
 
 	private:
 		// vertex
-		std::vector<Vector3>				VertexPositions;
-		std::vector<Vector3>				VertexNormals;
-		std::vector<Vector3>				VertexColors;
-		std::vector<std::vector<Vector2>>	VertexUVs;
-		std::vector<uint8_t>				VertexRefCounts;
-		ListSet<int>						VertexEdgeLists;
-
+		std::vector<Vector3>	VertexPositions;
+		std::vector<Vector3>	VertexNormals;
+		std::vector<Vector3>	VertexColors;
+		std::vector<Vector2>	VertexUVs;
+		std::vector<uint8_t>	VertexRefCounts;
+		ListSet<int>			VertexEdgeLists;
+		
 		// face
-		std::vector<Index3>					Triangles;
-		std::vector<Index3>					TriangleEdges;
-		std::vector<uint8_t>				TriangleRefCounts;
+		std::vector<Index3>		Triangles;
+		std::vector<Index3>		TriangleEdges;
+		std::vector<uint8_t>	TriangleRefCounts;
+		std::vector<int>		TriangleGroups;
+		int						GroupIDCounter;
 
 		// edge
-		std::vector<Edge>					Edges;
-		std::vector<uint8_t>				EdgeRefCounts;
+		std::vector<Edge>		Edges;
+		std::vector<uint8_t>	EdgeRefCounts;
 
-		GeometryAttributeSet	Attributes;
+		DynamicMeshAttributeSet	*mAttributes { nullptr };
 		Box3					Bounds;
 		Transform				Pose;
 		uint64_t				MeshChangeStamp = 0;
@@ -617,22 +613,8 @@ namespace Riemann
 		std::string				ResourceName;
 		bool					bHasVertexColor{ false };
 		bool					bHasVertexNormals{ false };
-
-		template<typename T>
-		static void VectorSetSafe(std::vector<T>& vec, size_t index, const T& v)
-		{
-			if (index >= vec.size())
-			{
-				vec.resize(index + 1);
-			}
-			vec[index] = v;
-		}
-
-		template<typename T>
-		static void VectorSet(std::vector<T>& Vertices, size_t index, const T& v)
-		{
-			Vertices[index] = v;
-		}
+		bool					bHasVertexUVs{ false };
+		bool					bHasTriangleGroups{ false };
 	};
 
 	struct FQueryOptions
@@ -700,5 +682,342 @@ namespace Riemann
 		std::vector<int> IndexList;
 		int TrianglesEnd = -1;
 		int RootIndex = -1;
+	};
+
+
+	struct FIndexMapi
+	{
+	protected:
+		std::map<int, int> ForwardMap;
+		std::map<int, int> ReverseMap;
+		bool bWantForward;
+		bool bWantReverse;
+
+	public:
+
+		FIndexMapi()
+		{
+			bWantForward = bWantReverse = true;
+		}
+
+		void Reset()
+		{
+			ForwardMap.clear();
+			ReverseMap.clear();
+		}
+
+		constexpr int UnmappedID() const { return -1; }
+
+		std::map<int, int>& GetForwardMap() { return ForwardMap; }
+		const std::map<int, int>& GetForwardMap() const { return ForwardMap; }
+
+		std::map<int, int>& GetReverseMap() { return ReverseMap; }
+		const std::map<int, int>& GetReverseMap() const { return ReverseMap; }
+
+		inline void Add(int FromID, int ToID)
+		{
+			assert(FromID >= 0 && ToID >= 0);
+			ForwardMap.emplace(FromID, ToID);
+			ReverseMap.emplace(ToID, FromID);
+		}
+
+		inline bool ContainsFrom(int FromID) const
+		{
+			assert(FromID >= 0);
+			assert(bWantForward);
+			return ForwardMap.count(FromID) > 0;
+		}
+
+		inline bool ContainsTo(int ToID) const
+		{
+			assert(ToID >= 0);
+			assert(bWantReverse);
+			return ReverseMap.count(ToID) > 0;
+		}
+
+
+		inline int GetTo(int FromID) const
+		{
+			assert(FromID >= 0);
+			assert(bWantForward);
+			auto it = ForwardMap.find(FromID);
+			if (it == ForwardMap.end())
+			{
+				return UnmappedID();
+			}
+			return it->second;
+		}
+
+		inline int GetFrom(int ToID) const
+		{
+			assert(ToID >= 0);
+			assert(bWantReverse);
+			auto it = ReverseMap.find(ToID);
+			if (it == ReverseMap.end())
+			{
+				return UnmappedID();
+			}
+			return it->second;
+		}
+
+		inline const int* FindTo(int FromID) const
+		{
+			assert(FromID >= 0);
+			assert(bWantForward);
+			auto it = ForwardMap.find(FromID);
+			if (it == ForwardMap.end())
+			{
+				return nullptr;
+			}
+			return &it->second;
+		}
+
+		inline const int* FindFrom(int ToID) const
+		{
+			assert(ToID >= 0);
+			assert(bWantReverse);
+			auto it = ReverseMap.find(ToID);
+			if (it == ReverseMap.end())
+			{
+				return nullptr;
+			}
+			return &it->second;
+		}
+
+		void Reserve(int NumElements)
+		{
+		}
+	};
+
+	class FMeshIndexMappings
+	{
+	protected:
+		FIndexMapi VertexMap;
+		FIndexMapi TriangleMap;
+		FIndexMapi GroupMap;
+
+		FIndexMapi ColorMap;
+		std::vector<FIndexMapi> UVMaps;
+		std::vector<FIndexMapi> NormalMaps;
+
+	public:
+		constexpr int InvalidID() const { return VertexMap.UnmappedID(); }
+
+		void Reset()
+		{
+			VertexMap.Reset();
+			TriangleMap.Reset();
+			GroupMap.Reset();
+			ColorMap.Reset();
+			for (FIndexMapi& UVMap : UVMaps)
+			{
+				UVMap.Reset();
+			}
+			for (FIndexMapi& NormalMap : NormalMaps)
+			{
+				NormalMap.Reset();
+			}
+		}
+
+		void ResetTriangleMap()
+		{
+			TriangleMap.Reset();
+		}
+
+		FIndexMapi& GetVertexMap() { return VertexMap; }
+		const FIndexMapi& GetVertexMap() const { return VertexMap; }
+		inline void SetVertex(int FromID, int ToID) { VertexMap.Add(FromID, ToID); }
+		inline int GetNewVertex(int FromID) const { return VertexMap.GetTo(FromID); }
+		inline bool ContainsVertex(int FromID) const { return VertexMap.ContainsFrom(FromID); }
+
+		FIndexMapi& GetTriangleMap() { return TriangleMap; }
+		const FIndexMapi& GetTriangleMap() const { return TriangleMap; }
+		void SetTriangle(int FromID, int ToID) { TriangleMap.Add(FromID, ToID); }
+		int GetNewTriangle(int FromID) const { return TriangleMap.GetTo(FromID); }
+		inline bool ContainsTriangle(int FromID) const { return TriangleMap.ContainsFrom(FromID); }
+
+		FIndexMapi& GetGroupMap() { return GroupMap; }
+		const FIndexMapi& GetGroupMap() const { return GroupMap; }
+		void SetGroup(int FromID, int ToID) { GroupMap.Add(FromID, ToID); }
+		int GetNewGroup(int FromID) const { return GroupMap.GetTo(FromID); }
+		inline bool ContainsGroup(int FromID) const { return GroupMap.ContainsFrom(FromID); }
+
+		FIndexMapi& GetUVMap(int UVLayer) { return UVMaps[UVLayer]; }
+		void SetUV(int UVLayer, int FromID, int ToID) { UVMaps[UVLayer].Add(FromID, ToID); }
+		int GetNewUV(int UVLayer, int FromID) const { return UVMaps[UVLayer].GetTo(FromID); }
+		inline bool ContainsUV(int UVLayer, int FromID) const { return UVMaps[UVLayer].ContainsFrom(FromID); }
+
+		FIndexMapi& GetNormalMap(int NormalLayer) { return NormalMaps[NormalLayer]; }
+		void SetNormal(int NormalLayer, int FromID, int ToID) { NormalMaps[NormalLayer].Add(FromID, ToID); }
+		int GetNewNormal(int NormalLayer, int FromID) const { return NormalMaps[NormalLayer].GetTo(FromID); }
+		inline bool ContainsNormal(int NormalLayer, int FromID) const { return NormalMaps[NormalLayer].ContainsFrom(FromID); }
+
+		FIndexMapi& GetColorMap() { return ColorMap; }
+		void SetColor(int FromID, int ToID) { ColorMap.Add(FromID, ToID); }
+		int GetNewColor(int FromID) const { return ColorMap.GetTo(FromID); }
+		inline bool ContainsColor(int FromID) const { return ColorMap.ContainsFrom(FromID); }
+
+	};
+
+
+	struct FDynamicMeshEditResult
+	{
+		std::vector<int> NewVertices;
+		std::vector<int> NewTriangles;
+		std::vector<Index2> NewQuads;
+		std::vector<std::vector<int>> NewPolygons;
+		std::vector<int> NewGroups;
+		std::vector<std::vector<int>> NewNormalOverlayElements;
+		std::vector<int> NewColorOverlayElements;
+
+		void Reset()
+		{
+			NewVertices.clear();
+			NewTriangles.clear();
+			NewQuads.clear();
+			NewPolygons.clear();
+			NewGroups.clear();
+			NewNormalOverlayElements.clear();
+			NewColorOverlayElements.clear();
+		}
+
+		void GetAllTriangles(std::vector<int>& TrianglesOut) const;
+	};
+
+	class FDynamicMeshEditor
+	{
+	public:
+		DynamicMesh* Mesh;
+
+		FDynamicMeshEditor(DynamicMesh* MeshIn)
+		{
+			Mesh = MeshIn;
+		}
+
+		void ReverseTriangleOrientations(const std::vector<int>& Triangles, bool bInvertNormals);
+
+		void InvertTriangleNormals(const std::vector<int>& Triangles);
+
+		void AppendMesh(const DynamicMesh* AppendMesh, FMeshIndexMappings& IndexMapsOut,
+			std::function<Vector3(int, const Vector3&)> PositionTransform = nullptr,
+			std::function<Vector3(int, const Vector3&)> NormalTransform = nullptr);
+
+		/*
+		bool RemoveIsolatedVertices();
+
+		bool StitchVertexLoopsMinimal(const std::vector<int>& VertexLoop1, const std::vector<int>& VertexLoop2, FDynamicMeshEditResult& ResultOut);
+
+		bool StitchVertexLoopToTriVidPairSequence(
+			const std::vector<std::pair<int, std::pair<char, char>>>& TriVidPairs1,
+			const std::vector<int>& VertexLoop2, FDynamicMeshEditResult& ResultOut);
+
+		static bool ConvertLoopToTriVidPairSequence(const DynamicMesh& Mesh,
+			const std::vector<int>& VidLoop, const std::vector<int>& EdgeLoop,
+			std::vector<std::pair<int, std::pair<char, char>>>& TriVertPairsOut);
+
+		bool StitchSparselyCorrespondedVertexLoops(const std::vector<int>& VertexIDs1, const std::vector<int>& MatchedIndices1, const std::vector<int>& VertexIDs2, const std::vector<int>& MatchedIndices2, FDynamicMeshEditResult& ResultOut, bool bReverseOrientation = false);
+
+		bool WeldVertexLoops(const std::vector<int>& VertexLoop1, const std::vector<int>& VertexLoop2);
+
+		bool AddTriangleFan_OrderedVertexLoop(int CenterVertex, const std::vector<int>& VertexLoop, int GroupID, FDynamicMeshEditResult& ResultOut);
+
+		void DuplicateTriangles(const std::vector<int>& Triangles, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut);
+
+		struct FLoopPairSet
+		{
+			std::vector<int> OuterVertices;
+			std::vector<int> OuterEdges;
+
+			std::vector<int> InnerVertices;
+			std::vector<int> InnerEdges;
+
+			bool bOuterIncludesIsolatedVertices;
+		};
+
+		bool DisconnectTriangles(const std::vector<int>& Triangles, std::vector<FLoopPairSet>& LoopSetOut, bool bHandleBoundaryVertices);
+
+		bool DisconnectTriangles(const TSet<int>& TriangleSet, const std::vector<FEdgeLoop>& BoundaryLoops, std::vector<FLoopPairSet>& LoopSetOut, bool bAllowBoundaryVertices);
+
+		void DisconnectTriangles(const std::vector<int>& Triangles, bool bPreventBowties = true);
+
+		void SplitBowties(FDynamicMeshEditResult& ResultOut);
+
+		void SplitBowties(int VertexID, FDynamicMeshEditResult& ResultOut);
+
+		void SplitBowtiesAtTriangles(const std::vector<int>& TriangleIDs, FDynamicMeshEditResult& ResultOut);
+
+		enum class EDuplicateTriBehavior : unsigned char
+		{
+			EnsureContinue,
+			EnsureAbort, UseExisting, Replace
+		};
+
+		bool ReinsertSubmesh(const FDynamicSubmesh3& Submesh, FOptionallySparseIndexMap& SubToNewV, std::vector<int>* NewTris = nullptr,
+			EDuplicateTriBehavior DuplicateBehavior = EDuplicateTriBehavior::EnsureAbort);
+
+		bool RemoveTriangles(const std::vector<int>& Triangles, bool bRemoveIsolatedVerts);
+
+		int RemoveSmallComponents(double MinVolume, double MinArea = 0.0, int MinTriangleCount = 0);
+
+		bool RemoveTriangles(const std::vector<int>& Triangles, bool bRemoveIsolatedVerts, TFunctionRef<void(int)> OnRemoveTriFunc);
+
+		Vector3 ComputeAndSetQuadNormal(const Index2& QuadTris, bool bIsPlanar = false);
+
+		void SetQuadNormals(const Index2& QuadTris, const Vector3& Normal);
+
+		void SetTriangleNormals(const std::vector<int>& Triangles, const Vector3& Normal);
+
+		void SetTriangleNormals(const std::vector<int>& Triangles);
+
+		void SetTubeNormals(const std::vector<int>& Triangles, const std::vector<int>& VertexIDs1, const std::vector<int>& MatchedIndices1, const std::vector<int>& VertexIDs2, const std::vector<int>& MatchedIndices2);
+
+		void SetQuadUVsFromProjection(const Index2& QuadTris, const FFrame3d& ProjectionFrame, float UVScaleFactor = 1.0f, const Vector2& UVTranslation = Vector2::Zero(), int UVLayerIndex = 0);
+
+		void SetTriangleUVsFromProjection(const std::vector<int>& Triangles, const FFrame3d& ProjectionFrame,
+			float UVScaleFactor = 1.0f, const Vector2& UVTranslation = Vector2::Zero(), bool bShiftToOrigin = true, int UVLayerIndex = 0);
+
+		void SetTriangleUVsFromProjection(const std::vector<int>& Triangles, const FFrame3d& ProjectionFrame,
+			const Vector2& UVScale = Vector2::One(), const Vector2& UVTranslation = Vector2::Zero(), int UVLayerIndex = 0,
+			bool bShiftToOrigin = true, bool bNormalizeBeforeScaling = false);
+
+		void SetGeneralTubeUVs(const std::vector<int>& Triangles, const std::vector<int>& VertexIDs1, const std::vector<int>& MatchedIndices1, const std::vector<int>& VertexIDs2, const std::vector<int>& MatchedIndices2, const std::vector<float>& UValues, const Vector3& VDir, float UVScaleFactor = 1.0f, const Vector2& UVTranslation = Vector2::Zero(), int UVLayerIndex = 0);
+
+		void RescaleAttributeUVs(float UVScale = 1.0f, bool bWorldSpace = false, int UVLayerIndex = 0, TOptional<FTransformSRT3d> ToWorld = TOptional<FTransformSRT3d>());
+
+		int FindOrCreateDuplicateVertex(int VertexID, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut);
+
+		int FindOrCreateDuplicateGroup(int TriangleID, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut);
+
+		int FindOrCreateDuplicateUV(int ElementID, int UVLayerIndex, FMeshIndexMappings& IndexMaps);
+
+		int FindOrCreateDuplicateNormal(int ElementID, int NormalLayerIndex, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult* ResultOut = nullptr);
+
+		int FindOrCreateDuplicateColor(int ElementID, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult* ResultOut);
+
+		void CopyAttributes(int FromTriangleID, int ToTriangleID, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut);
+
+		void AppendMesh(const TTriangleMeshAdapter<double>* AppendMesh, FMeshIndexMappings& IndexMapsOut,
+			std::function<Vector3(int, const Vector3&)> PositionTransform = nullptr);
+
+		void AppendNormals(const DynamicMesh* AppendMesh,
+			const FDynamicMeshNormalOverlay* FromNormals, FDynamicMeshNormalOverlay* ToNormals,
+			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
+			std::function<Vector3(int, const Vector3&)> NormalTransform,
+			FIndexMapi& NormalMapOut);
+
+		void AppendUVs(const DynamicMesh* AppendMesh,
+			const FDynamicMeshUVOverlay* FromUVs, FDynamicMeshUVOverlay* ToUVs,
+			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
+			FIndexMapi& UVMapOut);
+
+		void AppendColors(const DynamicMesh* AppendMesh,
+			const FDynamicMeshColorOverlay* FromOverlay, FDynamicMeshColorOverlay* ToOverlay,
+			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
+			FIndexMapi& ColorMapOut);
+
+		void AppendTriangles(const DynamicMesh* SourceMesh, const std::vector<int>& SourceTriangles, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut, bool bComputeTriangleMap = true);
+
+		static bool SplitMesh(const DynamicMesh* SourceMesh, std::vector<DynamicMesh>& SplitMeshes, TFunctionRef<int(int)> TriIDToMeshID, int DeleteMeshID = -1);
+		*/
 	};
 }	// namespace Riemann

@@ -32,11 +32,11 @@ namespace Riemann
 		{
 			if (preserve_order)
 			{
-				insert(this->begin() + idx, v);
+				this->insert(this->begin() + idx, v);
 			}
 			else
 			{
-				resize(this->size() + 1);
+				this->resize(this->size() + 1);
 				T *p = this->data();
 				p[this->size() - 1] = p[idx];
 				p[idx] = v;
@@ -47,19 +47,28 @@ namespace Riemann
 		{
 			if (preserve_order)
 			{
-				erase(this->begin() + idx);
+				this->erase(this->begin() + idx);
 			}
 			else
 			{
 				T* p = this->data();
 				p[idx] = p[this->size() - 1];
-				resize(this->size() - 1);
+				this->resize(this->size() - 1);
 			}
+		}
+
+		template<typename Pred>
+		inline size_t remove_if(Pred p)
+		{
+			size_t old_size = this->size();
+			auto it = std::remove_if(this->begin(), this->end(), p);
+			this->resize(it - this->begin());
+			return this->size() - old_size;
 		}
 
 		inline void append(const DynamicArray<T> &rhs)
 		{
-			insert(this->begin(), rhs.begin(), rhs.end());
+			this->insert(this->begin(), rhs.begin(), rhs.end());
 		}
 	};
 }

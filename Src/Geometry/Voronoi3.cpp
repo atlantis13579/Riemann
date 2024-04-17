@@ -5091,7 +5091,7 @@ namespace Riemann
 			VertexInfo info;
 			info.bHasColor = true;
 			info.bHasNormal = true;
-			info.NumUVs = 1;
+			info.bHasUV = true;
 			int VertStart[2]{ -1, -1 };
 			for (int j = 0; j < NumMeshes; ++j)
 			{
@@ -5113,7 +5113,7 @@ namespace Riemann
 				{
 					info.Position = v.mBoundaryVertices[BoundaryVertex];
 					info.Color = Vector3::InfMax();
-					info.UVs[0] = PlaneFrame.ProjectXZ(info.Position) - MinUV;
+					info.UVs = PlaneFrame.ProjectXZ(info.Position) - MinUV;
 					Meshes[j]->AppendVertex(info);
 				}
 			}
@@ -5135,7 +5135,7 @@ namespace Riemann
 						int TID = Meshes[MeshIdx]->AppendTriangle(Tri);
 						if (TID > -1)
 						{
-							Meshes[MeshIdx]->GetAttributes().MaterialIDAttrib.SetNewValue(TID, MID);
+							Meshes[MeshIdx]->Attributes()->GetMaterialID()->SetNewValue(TID, MID);
 						}
 					}
 				}
@@ -5146,7 +5146,7 @@ namespace Riemann
 				std::vector<Vector2> Polygon;
 				for (int V = 0; V < PlaneBoundary.size(); ++V)
 				{
-					Vector2 UV = Meshes[0]->GetVertexUV(VertStart[0] + V, 0);
+					Vector2 UV = Meshes[0]->GetVertexUV(VertStart[0] + V);
 					Polygon.push_back(UV);
 				}
 
@@ -5166,7 +5166,7 @@ namespace Riemann
 						int TID = Meshes[MeshIdx]->AppendTriangle(vt);
 						if (TID > -1)
 						{
-							Meshes[MeshIdx]->GetAttributes().MaterialIDAttrib.SetNewValue(TID, MID);
+							Meshes[MeshIdx]->Attributes()->GetMaterialID()->SetNewValue(TID, MID);
 						}
 					}
 				}

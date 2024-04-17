@@ -300,6 +300,28 @@ namespace Riemann
 				return true;
 			}
 
+			template<typename TFunction>
+			void all_iteration(TFunction func)
+			{
+				Header* head = m_owner->get_header(m_index);
+				if (head->size == 0)
+				{
+					return;
+				}
+
+				Block* curr_block = m_owner->get_block(head->first_block);
+				for (int i = 0, j = 0; i < head->size; ++i, ++j)
+				{
+					if (j == BlockSize)
+					{
+						j = 0;
+						curr_block = m_owner->get_block(curr_block->next_block);
+					}
+
+					func(curr_block->data[j]);
+				}
+			}
+
 			void operator=(const std::initializer_list<T>& rhs)
 			{
 				clear();
@@ -457,6 +479,28 @@ namespace Riemann
 			bool empty() const
 			{
 				return size() == 0;
+			}
+
+			template<typename TFunction>
+			void all_iteration(TFunction func)
+			{
+				const Header* head = m_owner->get_header(m_index);
+				if (head->size == 0)
+				{
+					return;
+				}
+
+				const Block* curr_block = m_owner->get_block(head->first_block);
+				for (int i = 0, j = 0; i < head->size; ++i, ++j)
+				{
+					if (j == BlockSize)
+					{
+						j = 0;
+						curr_block = m_owner->get_block(curr_block->next_block);
+					}
+
+					func(curr_block->data[j]);
+				}
 			}
 
 			Iterator begin() const

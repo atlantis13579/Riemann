@@ -5,6 +5,8 @@
 #include <set>
 #include "../CollisionPrimitive/Segment3.h"
 #include "../CollisionPrimitive/Triangle3.h"
+#include "../Core/Base.h"
+#include "../Core/DynamicArray.h"
 #include "../Core/PriorityQueue.h"
 #include "../Maths/Maths.h"
 #include "GeometryBoolean.h"
@@ -39,7 +41,7 @@ namespace Riemann
 				for (int i = 0; i < nt; ++i)
 				{
 					Triangle3 Triangle;
-					Mesh.GetTriangleVertices(i, Triangle.v0, Triangle.v1, Triangle.v2);
+					Mesh.GetTriVertices(i, Triangle.v0, Triangle.v1, Triangle.v2);
 
 					Centroids[i] = Triangle.GetCenter();
 					Normals[i] = Triangle.GetNormal();
@@ -76,7 +78,7 @@ namespace Riemann
 			float RSq = 0;
 			for (int tid : Triangles)
 			{
-				Mesh.GetTriangleVertices(tid, P0, P1, P2);
+				Mesh.GetTriVertices(tid, P0, P1, P2);
 				TriCache.GetCache(tid, n, a, c);
 
 				Order1 += a * n;
@@ -241,7 +243,7 @@ namespace Riemann
 					{
 						Vector3 a, b, c;
 						int ti = Tree->IndexList[idx + i];
-						Tree->Mesh->GetTriangleVertices(ti, a, b, c);
+						Tree->Mesh->GetTriVertices(ti, a, b, c);
 						float angle = TriSolidAngle(a, b, c, P);
 						branch_sum += angle / PI_4;
 					}
@@ -469,7 +471,7 @@ namespace Riemann
 		int PtOnMeshIdx[2];
 	};
 
-	enum class ESurfacePointType
+	enum class ESurfacePoint
 	{
 		Vertex = 0,
 		Edge = 1,
@@ -480,37 +482,37 @@ namespace Riemann
 	{
 		int ElementID;
 		Vector3 BaryCoord;
-		ESurfacePointType PointType;
+		ESurfacePoint Point;
 
 		FMeshSurfacePoint() : ElementID(-1)
 		{
 		}
-		FMeshSurfacePoint(int TriangleID, const Vector3& BaryCoord) : ElementID(TriangleID), BaryCoord(BaryCoord), PointType(ESurfacePointType::Triangle)
+		FMeshSurfacePoint(int TriangleID, const Vector3& BaryCoord) : ElementID(TriangleID), BaryCoord(BaryCoord), Point(ESurfacePoint::Triangle)
 		{
 		}
-		FMeshSurfacePoint(int EdgeID, float FirstCoordWt) : ElementID(EdgeID), BaryCoord(FirstCoordWt, 1 - FirstCoordWt, 0), PointType(ESurfacePointType::Edge)
+		FMeshSurfacePoint(int EdgeID, float FirstCoordWt) : ElementID(EdgeID), BaryCoord(FirstCoordWt, 1 - FirstCoordWt, 0), Point(ESurfacePoint::Edge)
 		{
 		}
-		FMeshSurfacePoint(int VertexID) : ElementID(VertexID), BaryCoord(1, 0, 0), PointType(ESurfacePointType::Vertex)
+		FMeshSurfacePoint(int VertexID) : ElementID(VertexID), BaryCoord(1, 0, 0), Point(ESurfacePoint::Vertex)
 		{
 		}
 
 		Vector3 Pos(const DynamicMesh* Mesh) const
 		{
-			if (PointType == ESurfacePointType::Vertex)
+			if (Point == ESurfacePoint::Vertex)
 			{
 				return Mesh->GetVertex(ElementID);
 			}
-			else if (PointType == ESurfacePointType::Edge)
+			else if (Point == ESurfacePoint::Edge)
 			{
 				Vector3 EA, EB;
 				Mesh->GetEdgeV(ElementID, EA, EB);
 				return BaryCoord[0] * EA + BaryCoord[1] * EB;
 			}
-			else // PointType == ESurfacePointType::Triangle
+			else // Point == ESurfacePoint::Triangle
 			{
 				Vector3 TA, TB, TC;
-				Mesh->GetTriangleVertices(ElementID, TA, TB, TC);
+				Mesh->GetTriVertices(ElementID, TA, TB, TC);
 				return BaryCoord[0] * TA + BaryCoord[1] * TB + BaryCoord[2] * TC;
 			}
 		}
@@ -548,21 +550,21 @@ namespace Riemann
 				for (int IndIdx = 0; IndIdx < 2; IndIdx++)
 				{
 					const FMeshSurfacePoint& P = Path[Inds[IndIdx]].first;
-					switch (P.PointType)
+					switch (P.Point)
 					{
-					case ESurfacePointType::Triangle:
+					case ESurfacePoint::Triangle:
 						if (P.ElementID != WalkingOnTri)
 						{
 							return false;
 						}
 						break;
-					case ESurfacePointType::Edge:
+					case ESurfacePoint::Edge:
 						if (!Mesh->GetEdgeT(P.ElementID).Contains(WalkingOnTri))
 						{
 							return false;
 						}
 						break;
-					case ESurfacePointType::Vertex:
+					case ESurfacePoint::Vertex:
 						if (!Mesh->GetTriangle(WalkingOnTri).Contains(P.ElementID))
 						{
 							return false;
@@ -614,7 +616,7 @@ namespace Riemann
 
 			int StartProcessIdx = 0, EndSimpleProcessIdx = PathNum - 1;
 			bool bEndPointSpecialProcess = false;
-			if (PathNum > 1 && OrigEndPt.PointType == ESurfacePointType::Triangle)
+			if (PathNum > 1 && OrigEndPt.Point == ESurfacePoint::Triangle)
 			{
 				EndSimpleProcessIdx = PathNum - 2;
 				bEndPointSpecialProcess = true;
@@ -623,11 +625,11 @@ namespace Riemann
 			FMeshSurfacePoint EndPtUpdated = Path.back().first;
 			Vector3 EndPtPos = OrigEndPt.Pos(Mesh);
 
-			if (Path[0].first.PointType == ESurfacePointType::Triangle)
+			if (Path[0].first.Point == ESurfacePoint::Triangle)
 			{
-				PokeTriangleInfo PokeInfo;
+				FPokeTriangleInfo PokeInfo;
 				Mesh->PokeTriangle(Path[0].first.ElementID, Path[0].first.BaryCoord, PokeInfo);
-				if (EndPtUpdated.PointType == ESurfacePointType::Triangle && Path[0].first.ElementID == EndPtUpdated.ElementID)
+				if (EndPtUpdated.Point == ESurfacePoint::Triangle && Path[0].first.ElementID == EndPtUpdated.ElementID)
 				{
 					EndPtUpdated = RelocateTrianglePointAfterRefinement(Mesh, EndPtPos, { PokeInfo.NewTriangles.a, PokeInfo.NewTriangles.b, PokeInfo.OriginalTriangle }, SnapElementThresholdSq);
 				}
@@ -636,18 +638,18 @@ namespace Riemann
 			}
 			for (int PathIdx = StartProcessIdx; PathIdx <= EndSimpleProcessIdx; PathIdx++)
 			{
-				if (!(Path[PathIdx].first.PointType != ESurfacePointType::Triangle))
+				if (!(Path[PathIdx].first.Point != ESurfacePoint::Triangle))
 				{
 					return false;
 				}
 				const FMeshSurfacePoint& Pt = Path[PathIdx].first;
-				if (Pt.PointType == ESurfacePointType::Edge)
+				if (Pt.Point == ESurfacePoint::Edge)
 				{
 					assert(Mesh->IsEdge(Pt.ElementID));
-					EdgeSplitInfo SplitInfo;
+					FEdgeSplitInfo SplitInfo;
 					Mesh->SplitEdge(Pt.ElementID, SplitInfo, Pt.BaryCoord[0]);
 					PathVertices.push_back(SplitInfo.NewVertex);
-					if (EndPtUpdated.PointType == ESurfacePointType::Triangle && SplitInfo.OriginalTriangles.Contains(EndPtUpdated.ElementID))
+					if (EndPtUpdated.Point == ESurfacePoint::Triangle && SplitInfo.OriginalTriangles.Contains(EndPtUpdated.ElementID))
 					{
 						std::vector<int> TriInds = { EndPtUpdated.ElementID };
 						if (SplitInfo.OriginalTriangles.a == EndPtUpdated.ElementID)
@@ -660,14 +662,14 @@ namespace Riemann
 						}
 						EndPtUpdated = RelocateTrianglePointAfterRefinement(Mesh, EndPtPos, TriInds, SnapElementThresholdSq);
 					}
-					else if (PathIdx != PathNum - 1 && EndPtUpdated.PointType == ESurfacePointType::Edge && Pt.ElementID == EndPtUpdated.ElementID)
+					else if (PathIdx != PathNum - 1 && EndPtUpdated.Point == ESurfacePoint::Edge && Pt.ElementID == EndPtUpdated.ElementID)
 					{
 						assert(false);
 					}
 				}
 				else
 				{
-					assert(Pt.PointType == ESurfacePointType::Vertex);
+					assert(Pt.Point == ESurfacePoint::Vertex);
 					assert(Mesh->IsVertex(Pt.ElementID));
 					if (!bDoNotDuplicateFirstVertexID || PathVertices.size() != InitialPathIdx || 0 == PathVertices.size() || PathVertices.back() != Pt.ElementID)
 					{
@@ -678,15 +680,15 @@ namespace Riemann
 
 			if (bEndPointSpecialProcess)
 			{
-				if (EndPtUpdated.PointType == ESurfacePointType::Triangle)
+				if (EndPtUpdated.Point == ESurfacePoint::Triangle)
 				{
-					PokeTriangleInfo PokeInfo;
+					FPokeTriangleInfo PokeInfo;
 					Mesh->PokeTriangle(EndPtUpdated.ElementID, EndPtUpdated.BaryCoord, PokeInfo);
 					PathVertices.push_back(PokeInfo.NewVertex);
 				}
-				else if (EndPtUpdated.PointType == ESurfacePointType::Edge)
+				else if (EndPtUpdated.Point == ESurfacePoint::Edge)
 				{
-					EdgeSplitInfo SplitInfo;
+					FEdgeSplitInfo SplitInfo;
 					Mesh->SplitEdge(EndPtUpdated.ElementID, SplitInfo, EndPtUpdated.BaryCoord[0]);
 					PathVertices.push_back(SplitInfo.NewVertex);
 				}
@@ -729,7 +731,7 @@ namespace Riemann
 				Tri.v2 = VertexToPosnFn(Mesh, TriVertIDs.c);
 			};
 
-			auto PtInsideTri = [](const Vector3& BaryCoord, double BaryThreshold = 1e-6f)
+			auto PtInsideTri = [](const Vector3& BaryCoord, float BaryThreshold = 1e-6f)
 			{
 				return BaryCoord[0] >= -BaryThreshold && BaryCoord[1] >= -BaryThreshold && BaryCoord[2] >= -BaryThreshold;
 			};
@@ -826,7 +828,7 @@ namespace Riemann
 				{
 					CurrentTriDist = CurrentTri.PointDistanceQuery(EndPt);
 					ComputedEndPtOnTri = true;
-					double DistSq = CurrentTriDist.SqrDistance;
+					float DistSq = CurrentTriDist.SqrDistance;
 					if (DistSq < AcceptEndPtOutsideDist)
 					{
 						OnEndTri = true;
@@ -865,7 +867,7 @@ namespace Riemann
 						// Vertex crossing
 						Side[TriSubIdx] = 0;
 						int CandidateVertID = TriVertIDs[TriSubIdx];
-						if (FromPt.PointType != ESurfacePointType::Vertex || CandidateVertID != FromPt.ElementID)
+						if (FromPt.Point != ESurfacePoint::Vertex || CandidateVertID != FromPt.ElementID)
 						{
 							FMeshSurfacePoint SurfPt(CandidateVertID);
 							FWalkIndices WalkInds(CurrentTri[TriSubIdx], CurrentEnd, -1);
@@ -909,7 +911,7 @@ namespace Riemann
 						Side[TriSubIdx] = SD > 0 ? 1 : -1;
 					}
 				}
-				Index3 TriEdgeIDs = Mesh->GetTriangleEdge(TriID);
+				Index3 TriEdgeIDs = Mesh->GetTriEdges(TriID);
 				for (int TriSubIdx = 0; TriSubIdx < 3; TriSubIdx++)
 				{
 					int NextSubIdx = (TriSubIdx + 1) % 3;
@@ -917,19 +919,19 @@ namespace Riemann
 					{
 						// edge crossing
 						int CandidateEdgeID = TriEdgeIDs[TriSubIdx];
-						if (FromPt.PointType != ESurfacePointType::Edge || CandidateEdgeID != FromPt.ElementID)
+						if (FromPt.Point != ESurfacePoint::Edge || CandidateEdgeID != FromPt.ElementID)
 						{
 							float CrossingT = SignDist[TriSubIdx] / (SignDist[TriSubIdx] - SignDist[NextSubIdx]);
 							Vector3 CrossingP = (1.0f - CrossingT) * CurrentTri[TriSubIdx] + CrossingT * CurrentTri[NextSubIdx];
 							const DynamicMesh::Edge edge = Mesh->GetEdge(CandidateEdgeID);
-							if (edge.v0 != TriVertIDs[TriSubIdx])
+							if (edge.Vert[0] != TriVertIDs[TriSubIdx])
 							{
 								CrossingT = 1 - CrossingT;
 							}
-							int CrossToTriID = edge.t0;
+							int CrossToTriID = edge.Tri[0];
 							if (CrossToTriID == TriID)
 							{
-								CrossToTriID = edge.t1;
+								CrossToTriID = edge.Tri[1];
 							}
 							if (CrossToTriID == -1)
 							{
@@ -979,7 +981,7 @@ namespace Riemann
 				WalkedPath.emplace_back(ComputedPointsAndSources[AcceptedIndices[IdxIdx]].first, ComputedPointsAndSources[AcceptedIndices[IdxIdx]].second.WalkingOnTri);
 			}
 
-			if (WalkedPath.size() && WalkedPath[0].first.PointType == ESurfacePointType::Triangle)
+			if (WalkedPath.size() && WalkedPath[0].first.Point == ESurfacePoint::Triangle)
 			{
 				FMeshSurfacePoint& SurfacePt = WalkedPath[0].first;
 
@@ -987,34 +989,34 @@ namespace Riemann
 				{
 					Index3 TriVertIDs = Mesh->GetTriangle(SurfacePt.ElementID);
 					SurfacePt.ElementID = TriVertIDs[StartVIDIndex];
-					SurfacePt.PointType = ESurfacePointType::Vertex;
+					SurfacePt.Point = ESurfacePoint::Vertex;
 				}
 				else
 				{
 					RefineSurfacePtFromTriangleToSubElement(Mesh, SurfacePt.Pos(Mesh), SurfacePt, PtOnPlaneThresholdSq);
 				}
 				if (WalkedPath.size() > 1 &&
-					SurfacePt.PointType != ESurfacePointType::Triangle &&
-					SurfacePt.PointType == WalkedPath[1].first.PointType &&
+					SurfacePt.Point != ESurfacePoint::Triangle &&
+					SurfacePt.Point == WalkedPath[1].first.Point &&
 					SurfacePt.ElementID == WalkedPath[1].first.ElementID)
 				{
-					if (SurfacePt.PointType == ESurfacePointType::Edge)
+					if (SurfacePt.Point == ESurfacePoint::Edge)
 					{
 						WalkedPath[1].first.BaryCoord = SurfacePt.BaryCoord;
 					}
 					WalkedPath.erase(WalkedPath.begin());
 				}
 			}
-			if (WalkedPath.size() && WalkedPath.back().first.PointType == ESurfacePointType::Triangle)
+			if (WalkedPath.size() && WalkedPath.back().first.Point == ESurfacePoint::Triangle)
 			{
 				FMeshSurfacePoint& SurfacePt = WalkedPath.back().first;
 				RefineSurfacePtFromTriangleToSubElement(Mesh, SurfacePt.Pos(Mesh), SurfacePt, PtOnPlaneThresholdSq);
 				if (WalkedPath.size() > 1 &&
-					SurfacePt.PointType != ESurfacePointType::Triangle &&
-					SurfacePt.PointType == WalkedPath[WalkedPath.size() - 2].first.PointType &&
+					SurfacePt.Point != ESurfacePoint::Triangle &&
+					SurfacePt.Point == WalkedPath[WalkedPath.size() - 2].first.Point &&
 					SurfacePt.ElementID == WalkedPath[WalkedPath.size() - 2].first.ElementID)
 				{
-					if (SurfacePt.PointType == ESurfacePointType::Edge) // copy closer barycoord
+					if (SurfacePt.Point == ESurfacePoint::Edge) // copy closer barycoord
 					{
 						WalkedPath[WalkedPath.size() - 2].first.BaryCoord = SurfacePt.BaryCoord;
 					}
@@ -1027,7 +1029,7 @@ namespace Riemann
 
 		static void RefineSurfacePtFromTriangleToSubElement(const DynamicMesh* Mesh, Vector3 Pos, FMeshSurfacePoint& SurfacePt, float SnapElementThresholdSq)
 		{
-			if (!(SurfacePt.PointType == ESurfacePointType::Triangle))
+			if (!(SurfacePt.Point == ESurfacePoint::Triangle))
 			{
 				return;
 			}
@@ -1035,10 +1037,10 @@ namespace Riemann
 
 			Index3 TriVertIDs = Mesh->GetTriangle(TriID);
 			int BestSubIdx = -1;
-			double BestElementDistSq = 0;
+			float BestElementDistSq = 0;
 			for (int VertSubIdx = 0; VertSubIdx < 3; VertSubIdx++)
 			{
-				double DistSq = (Pos - Mesh->GetVertex(TriVertIDs[VertSubIdx])).SquareLength();
+				float DistSq = (Pos - Mesh->GetVertex(TriVertIDs[VertSubIdx])).SquareLength();
 				if (DistSq <= SnapElementThresholdSq && (BestSubIdx == -1 || DistSq < BestElementDistSq))
 				{
 					BestSubIdx = VertSubIdx;
@@ -1049,11 +1051,11 @@ namespace Riemann
 			if (BestSubIdx > -1)
 			{
 				SurfacePt.ElementID = TriVertIDs[BestSubIdx];
-				SurfacePt.PointType = ESurfacePointType::Vertex;
+				SurfacePt.Point = ESurfacePoint::Vertex;
 				return;
 			}
 
-			Index3 TriEdgeIDs = Mesh->GetTriangleEdge(TriID);
+			Index3 TriEdgeIDs = Mesh->GetTriEdges(TriID);
 
 			assert(BestSubIdx == -1);
 			float BestEdgeParam = 0;
@@ -1075,7 +1077,7 @@ namespace Riemann
 			if (BestSubIdx > -1)
 			{
 				SurfacePt.ElementID = TriEdgeIDs[BestSubIdx];
-				SurfacePt.PointType = ESurfacePointType::Edge;
+				SurfacePt.Point = ESurfacePoint::Edge;
 				SurfacePt.BaryCoord = Vector3(BestEdgeParam, 1 - BestEdgeParam, 0);
 				return;
 			}
@@ -1083,7 +1085,7 @@ namespace Riemann
 
 		static FMeshSurfacePoint RelocateTrianglePointAfterRefinement(const DynamicMesh* Mesh, const Vector3& PosInVertexCoordSpace, const std::vector<int>& TriIDs, float SnapElementThresholdSq)
 		{
-			double BestTriDistSq = 0;
+			float BestTriDistSq = 0;
 			Vector3 BestBaryCoords;
 			int BestTriID = -1;
 			for (int TriID : TriIDs)
@@ -1092,7 +1094,7 @@ namespace Riemann
 				Index3 TriVertIDs = Mesh->GetTriangle(TriID);
 				Triangle3 Tri(Mesh->GetVertex(TriVertIDs.a), Mesh->GetVertex(TriVertIDs.b), Mesh->GetVertex(TriVertIDs.c));
 				Triangle3::PointDistanceQueryResult info = Tri.PointDistanceQuery(PosInVertexCoordSpace);
-				double DistSq = info.SqrDistance;
+				float DistSq = info.SqrDistance;
 				if (BestTriID == -1 || DistSq < BestTriDistSq)
 				{
 					BestTriID = TriID;
@@ -1120,7 +1122,7 @@ namespace Riemann
 		static Vector3 GetDegenTriangleEdgeDirection(const DynamicMesh* Mesh, int TID, Vector3 DefaultDir = Vector3::UnitZ())
 		{
 			Vector3 V[3];
-			Mesh->GetTriangleVertices(TID, V[0], V[1], V[2]);
+			Mesh->GetTriVertices(TID, V[0], V[1], V[2]);
 			for (int Prev = 2, Idx = 0; Idx < 3; Prev = Idx++)
 			{
 				Vector3 E = V[Idx] - V[Prev];
@@ -1136,7 +1138,7 @@ namespace Riemann
 		{
 			for (int i = 0; i < WorkingMesh->GetTriangleCount(); ++i)
 			{
-				BaseFaceNormals.push_back(WorkingMesh->GetTriangleNormal(i));
+				BaseFaceNormals.push_back(WorkingMesh->GetTriNormal(i));
 			}
 
 			FaceVertices.clear();
@@ -1166,7 +1168,7 @@ namespace Riemann
 				SegToEls.BaseTID = Seg.TriangleID[WhichSide];
 
 				Triangle3 Tri;
-				Mesh->GetTriangleVertices(SegToEls.BaseTID, Tri.v0, Tri.v1, Tri.v2);
+				Mesh->GetTriVertices(SegToEls.BaseTID, Tri.v0, Tri.v1, Tri.v2);
 				Index3 TriVIDs = Mesh->GetTriangle(SegToEls.BaseTID);
 				int PrevOnEdgeIdx = -1;
 				Vector3 PrevOnEdgePos;
@@ -1188,7 +1190,7 @@ namespace Riemann
 						continue;
 					}
 
-					// check for an edge match
+					// assert for an edge match
 					int OnEdgeIdx = OnEdge(Tri, PtOnMesh.Pos);
 					if (OnEdgeIdx > -1)
 					{
@@ -1202,7 +1204,7 @@ namespace Riemann
 							}
 						}
 						PtOnMesh.Type = EVertexType::Edge;
-						PtOnMesh.ElemID = Mesh->GetTriangleEdge(SegToEls.BaseTID, OnEdgeIdx);
+						PtOnMesh.ElemID = Mesh->GetTriEdges(SegToEls.BaseTID, OnEdgeIdx);
 
 						assert(PtOnMesh.ElemID > -1);
 						EdgeVertices.emplace(PtOnMesh.ElemID, NewPtIdx);
@@ -1248,10 +1250,10 @@ namespace Riemann
 
 				FPtOnMesh& Pt = IntersectionVerts[PtIdx];
 
-				Mesh->GetTriangleVertices(TID, Tri.v0, Tri.v1, Tri.v2);
+				Mesh->GetTriVertices(TID, Tri.v0, Tri.v1, Tri.v2);
 
 				Vector3 BaryCoords = Tri.BarycentricCoods(Pt.Pos);
-				PokeTriangleInfo PokeInfo;
+				FPokeTriangleInfo PokeInfo;
 				EMeshResult Result = Mesh->PokeTriangle(TID, BaryCoords, PokeInfo);
 				assert(Result == EMeshResult::Ok);
 				int PokeVID = PokeInfo.NewVertex;
@@ -1321,7 +1323,7 @@ namespace Riemann
 				float SplitParam = Seg.ProjectUnitRange(Pt.Pos);
 
 				Index2 SplitTris = Mesh->GetEdgeT(EID);
-				EdgeSplitInfo SplitInfo;
+				FEdgeSplitInfo SplitInfo;
 				EMeshResult Result = Mesh->SplitEdge(EID, SplitInfo, SplitParam);
 				assert(Result == EMeshResult::Ok);
 
@@ -1515,11 +1517,11 @@ namespace Riemann
 
 		int OnVertex(const Triangle3& Tri, const Vector3& V)
 		{
-			double BestDSq = SnapToleranceSq;
+			float BestDSq = SnapToleranceSq;
 			int BestIdx = -1;
 			for (int SubIdx = 0; SubIdx < 3; SubIdx++)
 			{
-				double DSq = (Tri[SubIdx] - V).SquareLength();
+				float DSq = (Tri[SubIdx] - V).SquareLength();
 				if (DSq < BestDSq)
 				{
 					BestIdx = SubIdx;
@@ -1587,7 +1589,7 @@ namespace Riemann
 			return BestIdx;
 		}
 
-		int OnEdge(Index3 EIDs, const Vector3& Pos, double BestDSq)
+		int OnEdge(Index3 EIDs, const Vector3& Pos, float BestDSq)
 		{
 			int BestIdx = -1;
 			for (int Idx = 0; Idx < 3; Idx++)
@@ -1608,40 +1610,576 @@ namespace Riemann
 		bool IsInTriangle(int TID, const Vector3& Pos)
 		{
 			Triangle3 Tri;
-			Mesh->GetTriangleVertices(TID, Tri.v0, Tri.v1, Tri.v2);
+			Mesh->GetTriVertices(TID, Tri.v0, Tri.v1, Tri.v2);
 			Vector3 bary = Tri.BarycentricCoods(Pos);
 			return (bary.x >= 0 && bary.y >= 0 && bary.z >= 0
 				&& bary.x < 1 && bary.y <= 1 && bary.z <= 1);
 		}
 	};
 
-	bool GeometryCut::Compute(const IntersectionsQueryResult& Intersections)
+	class GeometryCut
 	{
-		bool bSuccess = true;
+	public:
+		DynamicMesh* Mesh[2];
 
-		for (int MeshIdx = 0; MeshIdx < 2; MeshIdx++)
+		GeometryCut(DynamicMesh* MeshA, DynamicMesh* MeshB)
+			: Mesh{ MeshA, MeshB }
 		{
-			FCutWorkingInfo WorkingInfo(Mesh[MeshIdx], SnapTolerance);
-			WorkingInfo.AddSegments(Intersections, MeshIdx);
-			WorkingInfo.InsertFaceVertices();
-			WorkingInfo.InsertEdgeVertices();
-
-			bool bConnected = WorkingInfo.ConnectEdges(&VertexChains[MeshIdx], &SegmentToChain[MeshIdx]);
-			if (!bConnected)
-			{
-				bSuccess = false;
-			}
 		}
 
-		return bSuccess;
-	}
+		bool Compute(const IntersectionsQueryResult& Intersections)
+		{
+			bool bSuccess = true;
+
+			for (int MeshIdx = 0; MeshIdx < 2; MeshIdx++)
+			{
+				FCutWorkingInfo WorkingInfo(Mesh[MeshIdx], SnapTolerance);
+				WorkingInfo.AddSegments(Intersections, MeshIdx);
+				WorkingInfo.InsertFaceVertices();
+				WorkingInfo.InsertEdgeVertices();
+
+				bool bConnected = WorkingInfo.ConnectEdges(&VertexChains[MeshIdx], &SegmentToChain[MeshIdx]);
+				if (!bConnected)
+				{
+					bSuccess = false;
+				}
+			}
+
+			return bSuccess;
+		}
+
+		float SnapTolerance = 1e-4f;
+		bool bMutuallyCut = true;
+		bool bCutCoplanar = false;
+
+		std::vector<int> VertexChains[2];
+		std::vector<int> SegmentToChain[2];
+	};
+
+	class FLocalPlanarSimplify
+	{
+	public:
+		float SimplificationAngleTolerance = 0.1f;
+		float TryToImproveTriQualityThreshold = 0.25f;
+		bool bPreserveTriangleGroups = true;
+		bool bPreserveVertexUVs = true;
+		bool bPreserveOverlayUVs = true;
+		float UVDistortTolerance = 1e-6f;
+		bool bPreserveVertexNormals = true;
+		float NormalDistortTolerance = .01f;
+
+		void SimplifyAlongEdges(DynamicMesh& Mesh, std::set<int>& InOutEdges, std::function<void(const FEdgeCollapseInfo&)> ProcessCollapse = nullptr) const
+		{
+			float DotTolerance = cosf(SimplificationAngleTolerance * DEG_TO_RAD);
+
+			// For some simplification passes we can safely only consider locally-flat vertices for simplification, ignoring "straight crease" cases because
+			// the new edges that we consider simplifying were generated by cutting across flat triangles. This makes the simplification logic a bit simpler.
+			// You can use this variable to toggle that path.
+			// TODO: We could consider exposing this variable as a parameter (but it does not seem likely to affect performance enough to really be worth doing so)
+			const bool bOnlySimplifyWhereFlat = false;
+
+			// Save the input list of edges to iterate over, so we can edit the set w/ new edges while safely iterating over the old ones
+			std::vector<int> CutBoundaryEdgesArray = ToVector<int>(InOutEdges);
+
+			int NumCollapses = 0, CollapseIters = 0;
+			int MaxCollapseIters = 1; // TODO: is there a case where we need more iterations?  Perhaps if we add some triangle quality criteria?
+			while (CollapseIters < MaxCollapseIters)
+			{
+				int LastNumCollapses = NumCollapses;
+				for (int EID : CutBoundaryEdgesArray)
+				{
+					// this can happen if a collapse removes another cut boundary edge
+					// (which can happen e.g. if you have a degenerate (colinear) tri flat on the cut boundary)
+					if (!Mesh.IsEdge(EID))
+					{
+						continue;
+					}
+
+					DynamicMesh::Edge& e = Mesh.GetEdge(EID);
+
+					// track whether the neighborhood of the vertex is flat
+					bool Developable[2]{ false, false };
+					// normals for each flat vertex
+					Vector3 FlatNormals[2]{ Vector3::Zero(), Vector3::Zero() };
+					bool Flat[2]{ false, false };
+					int NumDevelopable = 0;
+					for (int VIdx = 0; VIdx < 2; VIdx++)
+					{
+						if (bOnlySimplifyWhereFlat)
+						{
+							Flat[VIdx] = Developable[VIdx] = IsFlat(Mesh, e.Vert[VIdx], DotTolerance, FlatNormals[VIdx]);
+						}
+						else
+						{
+							Developable[VIdx] = IsDevelopableAlongEdge(Mesh, EID, e.Vert[VIdx], DotTolerance, FlatNormals[VIdx], Flat[VIdx]);
+						}
+
+						if (Developable[VIdx])
+						{
+							NumDevelopable++;
+						}
+					}
+
+					if (NumDevelopable == 0)
+					{
+						continue;
+					}
+
+					// see if we can collapse to remove either vertex
+					for (int RemoveVIdx = 0; RemoveVIdx < 2; RemoveVIdx++)
+					{
+						if (!Developable[RemoveVIdx])
+						{
+							continue;
+						}
+						int KeepVIdx = 1 - RemoveVIdx;
+						Vector3 RemoveVPos = Mesh.GetVertex(e.Vert[RemoveVIdx]);
+						Vector3 KeepVPos = Mesh.GetVertex(e.Vert[KeepVIdx]);
+						Vector3 EdgeDir = KeepVPos - RemoveVPos;
+						if (EdgeDir.SafeNormalize() == 0) // 0 is returned as a special case when the edge was too short to normalize
+						{
+							// This case is often avoided by collapsing degenerate edges in a separate pre-pass, so we just skip over it here for now
+							// TODO: Consider adding degenerate edge-collapse logic here
+							break; // break instead of continue to skip the whole edge
+						}
+
+						bool bHasBadEdge = false; // will be set if either mesh can't collapse the edge
+						int RemoveV = e.Vert[RemoveVIdx];
+						int KeepV = e.Vert[KeepVIdx];
+						int SourceEID = EID;
+
+						bHasBadEdge = bHasBadEdge || CollapseWouldHurtTriangleQuality(
+							Mesh, FlatNormals[RemoveVIdx], RemoveV, RemoveVPos, KeepV, KeepVPos, TryToImproveTriQualityThreshold, !Flat[RemoveVIdx]);
+
+						bHasBadEdge = bHasBadEdge || CollapseWouldChangeShapeOrUVs(
+							Mesh, InOutEdges, DotTolerance,
+							SourceEID, RemoveV, RemoveVPos, KeepV, KeepVPos, EdgeDir, bPreserveTriangleGroups,
+							true, bPreserveVertexUVs, bPreserveOverlayUVs, UVDistortTolerance * UVDistortTolerance,
+							bPreserveVertexNormals, cosf(NormalDistortTolerance * DEG_TO_RAD));
+
+						if (bHasBadEdge)
+						{
+							continue;
+						}
+
+						FEdgeCollapseInfo CollapseInfo;
+						EMeshResult CollapseResult = Mesh.CollapseEdge(KeepV, RemoveV, 0, CollapseInfo);
+						if (CollapseResult == EMeshResult::Ok)
+						{
+							if (ProcessCollapse)
+							{
+								ProcessCollapse(CollapseInfo);
+							}
+							NumCollapses++;
+							InOutEdges.erase(CollapseInfo.CollapsedEdge);
+							InOutEdges.erase(CollapseInfo.RemovedEdges[0]);
+							if (CollapseInfo.RemovedEdges[1] != -1)
+							{
+								InOutEdges.erase(CollapseInfo.RemovedEdges[1]);
+							}
+						}
+						break; // if we got through to trying to collapse the edge, don't try to collapse from the other vertex.
+					}
+				}
+
+				CutBoundaryEdgesArray = ToVector<int>(InOutEdges);
+
+				if (NumCollapses == LastNumCollapses)
+				{
+					break;
+				}
+
+				CollapseIters++;
+			}
+
+		}
+
+		static bool IsFlat(const DynamicMesh& Mesh, int VID, float DotTolerance, Vector3& OutFirstNormal)
+		{
+			bool bHasFirst = false;
+			bool bIsFlat = true;
+			Mesh.EnumerateVertexTriangles(VID, [&Mesh, DotTolerance, &OutFirstNormal, &bHasFirst, &bIsFlat](int TID)
+				{
+					if (!bIsFlat)
+					{
+						return;
+					}
+					Vector3 Normal = Mesh.GetTriNormal(TID);
+					if (!bHasFirst)
+					{
+						OutFirstNormal = Normal;
+						bHasFirst = true;
+					}
+					else
+					{
+						bIsFlat = bIsFlat && Normal.Dot(OutFirstNormal) >= DotTolerance;
+					}
+				});
+			return bIsFlat;
+		}
+
+		static bool IsDevelopableAlongEdge(const DynamicMesh& Mesh, int EID, int VID, float DotTolerance, Vector3& NormalA, bool& bIsFlat)
+		{
+			Index2 EdgeT = Mesh.GetEdgeT(EID);
+			NormalA = Mesh.GetTriNormal(EdgeT.a);
+			bIsFlat = true;
+			Vector3 NormalB;
+			if (EdgeT.b != -1)
+			{
+				NormalB = Mesh.GetTriNormal(EdgeT.b);
+				// Only consider a second normal if the across-edge triangle normal doesn't match the first normal
+				if (NormalA.Dot(NormalB) < DotTolerance)
+				{
+					bIsFlat = false;
+				}
+			}
+			bool bIsDevelopable = true;
+			Mesh.EnumerateVertexTriangles(VID, [&bIsDevelopable, EdgeT, &Mesh, NormalA, NormalB, DotTolerance, bIsFlat](int TID)
+				{
+					if (!bIsDevelopable || EdgeT.Contains(TID))
+					{
+						return;
+					}
+					Vector3 Normal = Mesh.GetTriNormal(TID);
+					bIsDevelopable = Normal.Dot(NormalA) >= DotTolerance;
+					if (!bIsDevelopable && !bIsFlat) // if we didn't match first normal, test the second normal (if we have one)
+					{
+						bIsDevelopable = Normal.Dot(NormalB) >= DotTolerance;
+					}
+				});
+			bIsFlat = bIsFlat && bIsDevelopable;
+
+			return bIsDevelopable;
+		}
+
+		static bool CollapseWouldHurtTriangleQuality(
+			const DynamicMesh& Mesh, const Vector3& RemoveVNormal,
+			int RemoveV, const Vector3& RemoveVPos, int KeepV, const Vector3& KeepVPos,
+			float TryToImproveTriQualityThreshold, bool bHasMultipleNormals = false)
+		{
+			float WorstQualityNewTriangle = FLT_MAX;
+
+			bool bIsHurt = false;
+			Mesh.EnumerateVertexTriangles(RemoveV,
+				[&Mesh, &bIsHurt, &KeepVPos, RemoveV, KeepV, &RemoveVNormal,
+				TryToImproveTriQualityThreshold, &WorstQualityNewTriangle, bHasMultipleNormals](int TID)
+				{
+					if (bIsHurt)
+					{
+						return;
+					}
+					Index3 Tri = Mesh.GetTriangle(TID);
+					// Skip re-computing the triangle normal for flat surfaces
+					Vector3 TriNormal = bHasMultipleNormals ? Mesh.GetTriNormal(TID) : RemoveVNormal;
+					Vector3 Verts[3];
+					for (int Idx = 0; Idx < 3; Idx++)
+					{
+						int VID = Tri[Idx];
+						if (VID == KeepV)
+						{
+							// this tri has both RemoveV and KeepV, so it'll be removed and we don't need to consider it
+							return;
+						}
+						else if (VID == RemoveV)
+						{
+							// anything at RemoveV is reconnected to KeepV's position
+							Verts[Idx] = KeepVPos;
+						}
+						else
+						{
+							// it's not on the collapsed edge so it stays still
+							Verts[Idx] = Mesh.GetVertex(Tri[Idx]);
+						}
+					}
+					Vector3 Edge1(Verts[1] - Verts[0]);
+					Vector3 Edge2(Verts[2] - Verts[0]);
+					Vector3 VCross(Edge2.Cross(Edge1));
+
+					float EdgeFlipTolerance = 1e-5f;
+					float Area2 = VCross.Normalize();
+					if (TryToImproveTriQualityThreshold > 0)
+					{
+						Vector3 Edge3(Verts[2] - Verts[1]);
+						float MaxLenSq = Maths::Max(Edge1.SquareLength(), Edge2.SquareLength(), Edge3.SquareLength());
+						float Quality = Area2 / (MaxLenSq + 1e-6f);
+						WorstQualityNewTriangle = Maths::Min(Quality, WorstQualityNewTriangle);
+					}
+
+					bIsHurt = VCross.Dot(TriNormal) <= EdgeFlipTolerance;
+				}
+			);
+
+			// note tri quality was computed as 2*Area / MaxEdgeLenSquared
+			//  so need to multiply it by 2/sqrt(3) to get actual aspect ratio
+			if (!bIsHurt && WorstQualityNewTriangle * 2.0f * INV_SQRT_3 < TryToImproveTriQualityThreshold)
+			{
+				// we found a bad tri; tentatively switch to rejecting this edge collapse
+				bIsHurt = true;
+				// but if there was an even worse tri in the original neighborhood, accept the collapse after all
+				Mesh.EnumerateVertexTriangles(RemoveV, [&Mesh, &bIsHurt, WorstQualityNewTriangle](int TID)
+					{
+						if (!bIsHurt) // early out if we already found an originally-worse tri
+						{
+							return;
+						}
+						Vector3 A, B, C;
+						Mesh.GetTriVertices(TID, A, B, C);
+						Vector3 E1 = B - A, E2 = C - A, E3 = C - B;
+						float Area2 = E1.Cross(E2).Length();
+						float MaxLenSq = Maths::Max(E1.SquareLength(), E2.SquareLength(), E3.SquareLength());
+						float Quality = Area2 / (MaxLenSq + 1e-6f);
+						if (Quality < WorstQualityNewTriangle)
+						{
+							bIsHurt = false;
+						}
+					}
+				);
+			}
+			return bIsHurt;
+		}
+
+		static int FindEdgeOtherVertex(const Index2& EdgeVerts, int VertexID)
+		{
+			if (EdgeVerts.a == VertexID)		return EdgeVerts.b;
+			else if (EdgeVerts.b == VertexID)	return EdgeVerts.a;
+			else								return -1;
+		}
+
+		static bool CollapseWouldChangeShapeOrUVs(
+			const DynamicMesh& Mesh, const std::set<int>& PathEdgeSet, float DotTolerance, int SourceEID,
+			int RemoveV, const Vector3& RemoveVPos, int KeepV, const Vector3& KeepVPos, const Vector3& EdgeDir,
+			bool bPreserveTriangleGroups, bool bPreserveUVsForMesh, bool bPreserveVertexUVs, bool bPreserveOverlayUVs,
+			float UVEqualThresholdSq, bool bPreserveVertexNormals, float NormalEqualCosThreshold)
+		{
+			// Search the edges connected to the vertex to find one in the boundary set that points in the opposite direction
+			// If we don't find that edge, or if there are other boundary/seam edges attached, we can't remove this vertex
+			// We also can't remove the vertex if doing so would distort the UVs
+			bool bHasBadEdge = false;
+
+			int OpposedEdge = -1;
+			Index2 EdgeT = Mesh.GetEdgeT(SourceEID);
+			int SourceGroupID = Mesh.GetTriangleGroup(EdgeT.a);
+			int OtherGroupID = -1;
+			// Note: In many cases (e.g. plane cut, new edge insertions) we know there will be only one group,
+			// so we could use a slightly faster path with bAllowTwoGroups==false. But this is probably not
+			// a significant performance difference, so for now we just expose the allows-two-group path.
+			constexpr bool bAllowTwoGroups = true;
+			if (bAllowTwoGroups && EdgeT.b != -1)
+			{
+				OtherGroupID = Mesh.GetTriangleGroup(EdgeT.b);
+			}
+
+			Mesh.EnumerateVertexEdges(RemoveV,
+				[&](int VertEID)
+				{
+					if (bHasBadEdge || VertEID == SourceEID)
+					{
+						return;
+					}
+
+					DynamicMesh::Edge e = Mesh.GetEdge(VertEID);
+					if (bPreserveTriangleGroups && Mesh.HasTriangleGroups())
+					{
+						int GroupA = Mesh.GetTriangleGroup(e.Tri.a);
+						int GroupB = e.Tri.b == -1 ? SourceGroupID : Mesh.GetTriangleGroup(e.Tri.b);
+
+						if (
+							(GroupA != SourceGroupID && (!bAllowTwoGroups || GroupA != OtherGroupID)) ||
+							(GroupB != SourceGroupID && (!bAllowTwoGroups || GroupB != OtherGroupID))
+							)
+						{
+							// RemoveV is bordering too many groups, so the edge collapse would change the shape of the groups
+							bHasBadEdge = true;
+							return;
+						}
+					}
+
+					// it's a path edge; check if it's the opposite-facing one we need
+					if (PathEdgeSet.count(VertEID) > 0)
+					{
+						if (OpposedEdge != -1)
+						{
+							bHasBadEdge = true;
+							return;
+						}
+						Index2 OtherEdgeV = e.Vert;
+						int OtherV = FindEdgeOtherVertex(OtherEdgeV, RemoveV);
+						Vector3 OtherVPos = Mesh.GetVertex(OtherV);
+						Vector3 OtherEdgeDir = OtherVPos - RemoveVPos;
+						if (OtherEdgeDir.SafeNormalize() == 0)
+						{
+							// collapsing degenerate edges above should prevent this
+							bHasBadEdge = true;
+							return; // break instead of continue to skip the whole edge
+						}
+						if (OtherEdgeDir.Dot(EdgeDir) <= -DotTolerance)
+						{
+							OpposedEdge = VertEID;
+						}
+						else
+						{
+							bHasBadEdge = true;
+							return;
+						}
+
+						// LerpT used for vertex normal and UV interpolation
+						float LerpT = float((OtherVPos - RemoveVPos).Dot(OtherEdgeDir) / (OtherVPos - KeepVPos).Dot(OtherEdgeDir));
+
+						if (bPreserveVertexNormals && Mesh.HasVertexNormals())
+						{
+							Vector3 OtherN = Mesh.GetVertexNormal(OtherV);
+							Vector3 RemoveN = Mesh.GetVertexNormal(RemoveV);
+							Vector3 KeepN = Mesh.GetVertexNormal(KeepV);
+							if (Maths::LinearInterp(OtherN, KeepN, LerpT).Unit().Dot(RemoveN.Unit()) < NormalEqualCosThreshold)
+							{
+								bHasBadEdge = true;
+								return;
+							}
+						}
+
+						// Controls whether any UV distortion is tested
+						if (!bPreserveUVsForMesh)
+						{
+							return;
+						}
+
+						if (bPreserveVertexUVs && Mesh.HasVertexUVs())
+						{
+							Vector2 OtherUV = Mesh.GetVertexUV(OtherV);
+							Vector2 RemoveUV = Mesh.GetVertexUV(RemoveV);
+							Vector2 KeepUV = Mesh.GetVertexUV(KeepV);
+							if ((Maths::LinearInterp(OtherUV, KeepUV, LerpT) - RemoveUV).SquareLength() > UVEqualThresholdSq)
+							{
+								bHasBadEdge = true;
+								return;
+							}
+						}
+						if (bPreserveOverlayUVs && Mesh.HasAttributes())
+						{
+							int NumLayers = Mesh.Attributes()->NumUVLayers();
+							Index2 SourceEdgeTris = Mesh.GetEdgeT(SourceEID);
+							Index2 OppEdgeTris = e.Tri;
+
+							// returns true if collapse will result in acceptable overlay UVs
+							auto CanCollapseOverlayUVs = [&Mesh, KeepV, RemoveV, OtherV, NumLayers, LerpT, UVEqualThresholdSq](int SourceEdgeTID, int OppEdgeTID) -> bool
+							{
+								Index3 SourceBaseTri = Mesh.GetTriangle(SourceEdgeTID);
+								Index3 OppBaseTri = Mesh.GetTriangle(OppEdgeTID);
+								int KeepSourceIdx = FindTriIndex(KeepV, SourceBaseTri);
+								int RemoveSourceIdx = FindTriIndex(RemoveV, SourceBaseTri);
+								int OtherOppIdx = FindTriIndex(OtherV, OppBaseTri);
+								if (!(KeepSourceIdx != -1 && RemoveSourceIdx != -1 && OtherOppIdx != -1))
+								{
+									return false;
+								}
+
+								// get the UVs per overlay off the triangle(s) attached the two edges
+								for (int UVLayerIdx = 0; UVLayerIdx < NumLayers; UVLayerIdx++)
+								{
+									const FDynamicMeshUVOverlay* UVs = Mesh.Attributes()->GetUVLayer(UVLayerIdx);
+									if (UVs->ElementCount() < 3)
+									{
+										// overlay is not actually in use; skip it
+										continue;
+									}
+									Index3 SourceT = UVs->GetTriangle(SourceEdgeTID);
+									Index3 OppT = UVs->GetTriangle(OppEdgeTID);
+									int KeepE = SourceT[KeepSourceIdx];
+									int RemoveE = SourceT[RemoveSourceIdx];
+									int OtherE = OppT[OtherOppIdx];
+									if (KeepE == -1 || RemoveE == -1 || OtherE == -1)
+									{
+										// overlay is not set on relevant triangles; skip it
+										continue;
+									}
+									Vector2 OtherUV = UVs->GetElement(OtherE);
+									Vector2 RemoveUV = UVs->GetElement(RemoveE);
+									Vector2 KeepUV = UVs->GetElement(KeepE);
+									if ((Maths::LinearInterp(OtherUV, KeepUV, LerpT) -  RemoveUV).SquareLength() > UVEqualThresholdSq)
+									{
+										return false;
+									}
+								}
+
+								return true;
+							};
+
+							// If we're not on a boundary, check if we're on a seam -- and if so, test that
+							// the collapse won't change the UVs on the other side of the seam
+							if (SourceEdgeTris.b != -1 || OppEdgeTris.b != -1)
+							{
+								// the edges must be both boundary or neither
+								if (SourceEdgeTris.b == -1 || OppEdgeTris.b == -1)
+								{
+									bHasBadEdge = true;
+									return;
+								}
+								// likewise must be both seam or neither
+								bool bSourceIsSeam = Mesh.Attributes()->IsSeamEdge(SourceEID);
+								bool bOtherIsSeam = Mesh.Attributes()->IsSeamEdge(VertEID);
+								if (bSourceIsSeam != bOtherIsSeam)
+								{
+									bHasBadEdge = true;
+									return;
+								}
+								// if both are seam, make sure that the A and B sides are consistent,
+								// then test the UVs on the other side of the seam
+								if (bSourceIsSeam)
+								{
+									// test whether the A/B sides are consistent for SourceEdgeTris and OppEdgeTris,
+									// based on the ordering of the remove and keep/other vertices in each triangle
+									Index3 SourceBaseTri = Mesh.GetTriangle(SourceEdgeTris.a);
+									Index3 OppBaseTri = Mesh.GetTriangle(OppEdgeTris.a);
+									int SrcTriRmVSubIdx = FindTriIndex(RemoveV, SourceBaseTri);
+									int OppTriRmVSubIdx = FindTriIndex(RemoveV, OppBaseTri);
+									// Test whether the Triangle "A" for the Source Edge is wound such that the 'Remove' Vertex is before the 'Keep' Vertex
+									bool bSrcAOrderIsRmThenKeep = SourceBaseTri[(SrcTriRmVSubIdx + 1) % 3] == KeepV;
+									// Test whether the Triangle "A" for the Opposite Edge is wound such that the 'Remove' Vertex is before the 'Other' Vertex
+									bool bOppAOrderIsRmThenOther = OppBaseTri[(OppTriRmVSubIdx + 1) % 3] == OtherV;
+									// If the two "A" sides are on the same side of the seam, we expect these two vertex ordering bools *not* to match --
+									// i.e., the oriented edges should be "Keep Remove, then Remove Other" or "Other Remove, then Remove Keep"
+									// If the bools match, we swap the A and B of the Opposite Edge Triangles, to move the A side back to the same side of the seam
+									// as its Source Edge Triangle counterpart.
+									if (bSrcAOrderIsRmThenKeep == bOppAOrderIsRmThenOther)
+									{
+										std::swap(OppEdgeTris.a, OppEdgeTris.b);
+									}
+									if (!CanCollapseOverlayUVs(SourceEdgeTris.b, OppEdgeTris.b))
+									{
+										bHasBadEdge = true;
+										return;
+									}
+								}
+							}
+
+							if (!CanCollapseOverlayUVs(SourceEdgeTris.a, OppEdgeTris.a))
+							{
+								bHasBadEdge = true;
+								return;
+							}
+						}
+					}
+					else // it wasn't in the boundary edge set; check if it's one that would prevent us from safely removing the vertex
+					{
+						bool b = false;
+						if (Mesh.IsBoundaryEdge(VertEID) || (Mesh.HasAttributes() && Mesh.Attributes()->IsSeamEdge(VertEID)))
+						{
+							bHasBadEdge = true;
+						}
+					}
+				});
+
+			return bHasBadEdge;
+		}
+	};
 
 	static int FindNearestEdge(const DynamicMesh& OnMesh, const std::vector<int>& EIDs, const Vector3& Pos)
 	{
 		int NearEID = -1;
 		float NearSqr = 1e-6f;
 		Vector3 EdgePts[2];
-		for (int EID : EIDs) {
+		for (int EID : EIDs)
+		{
 			OnMesh.GetEdgeV(EID, EdgePts[0], EdgePts[1]);
 
 			Segment3 Seg(EdgePts[0], EdgePts[1]);
@@ -1653,6 +2191,401 @@ namespace Riemann
 			}
 		}
 		return NearEID;
+	}
+
+	bool MergeEdges(const FMeshIndexMappings& IndexMaps, DynamicMesh* CutMesh[2], const std::vector<int> CutBoundaryEdges[2], const std::map<int, int>& AllVIDMatches, GeometryBoolean* Geom)
+	{
+		// translate the edge IDs from CutMesh[1] over to Result mesh edge IDs
+		DynamicMesh *Result = Geom->MeshNew;
+
+		DynamicArray<int> OtherMeshEdges;
+		for (int OldMeshEID : CutBoundaryEdges[1])
+		{
+			if (!(CutMesh[1]->IsEdge(OldMeshEID)))
+			{
+				continue;
+			}
+			Index2 OtherEV = CutMesh[1]->GetEdgeV(OldMeshEID);
+			int MappedEID = Result->FindEdge(IndexMaps.GetNewVertex(OtherEV.a), IndexMaps.GetNewVertex(OtherEV.b));
+			if (Result->IsBoundaryEdge(MappedEID))
+			{
+				OtherMeshEdges.push_back(MappedEID);
+			}
+		}
+
+		// find "easy" match candidates using the already-made vertex correspondence
+		DynamicArray<Index2> CandidateMatches;
+		DynamicArray<int> UnmatchedEdges;
+		for (int EID : CutBoundaryEdges[0])
+		{
+			if (!Result->IsBoundaryEdge(EID))
+			{
+				continue;
+			}
+			Index2 VIDs = Result->GetEdgeV(EID);
+			const int* OtherA = MapFind<int, int>(AllVIDMatches, VIDs.a);
+			const int* OtherB = MapFind<int, int>(AllVIDMatches, VIDs.b);
+			bool bAddedCandidate = false;
+			if (OtherA && OtherB)
+			{
+				int MapOtherA = IndexMaps.GetNewVertex(*OtherA);
+				int MapOtherB = IndexMaps.GetNewVertex(*OtherB);
+				int OtherEID = Result->FindEdge(MapOtherA, MapOtherB);
+				if (OtherEID != -1)
+				{
+					CandidateMatches.push_back(Index2(EID, OtherEID));
+					bAddedCandidate = true;
+				}
+			}
+			if (!bAddedCandidate)
+			{
+				UnmatchedEdges.push_back(EID);
+			}
+		}
+
+		// merge the easy matches
+		for (Index2 Candidate : CandidateMatches)
+		{
+			if (!Result->IsEdge(Candidate.a) || !Result->IsBoundaryEdge(Candidate.a))
+			{
+				continue;
+			}
+
+			FMergeEdgesInfo MergeInfo;
+			EMeshResult EdgeMergeResult = Result->MergeEdges(Candidate.a, Candidate.b, MergeInfo, true);
+			if (EdgeMergeResult != EMeshResult::Ok)
+			{
+				UnmatchedEdges.push_back(Candidate.a);
+			}
+			else
+			{
+				if (Geom->bTrackAllNewEdges)
+				{
+					Geom->AllNewEdges.insert(Candidate.a);
+				}
+			}
+		}
+
+		// filter matched edges from the edge array for the other mesh
+		OtherMeshEdges.remove_if(
+			[Result = Geom->MeshNew](int EID)
+			{
+				return !Result->IsEdge(EID) || !Result->IsBoundaryEdge(EID);
+			});
+
+		// see if we can match anything else
+		bool bAllMatched = true;
+		if (UnmatchedEdges.size() > 0)
+		{
+			// greedily match within snap tolerance
+			float SnapToleranceSq = Geom->SnapTolerance * Geom->SnapTolerance;
+			for (int OtherEID : OtherMeshEdges)
+			{
+				if (!Result->IsEdge(OtherEID) || !Result->IsBoundaryEdge(OtherEID))
+				{
+					continue;
+				}
+				Vector3 OA, OB;
+				Result->GetEdgeV(OtherEID, OA, OB);
+				for (int UnmatchedIdx = 0; UnmatchedIdx < (int)UnmatchedEdges.size(); UnmatchedIdx++)
+				{
+					int EID = UnmatchedEdges[UnmatchedIdx];
+					if (!Result->IsEdge(EID) || !Result->IsBoundaryEdge(EID))
+					{
+						UnmatchedEdges.remove_at(UnmatchedIdx, false);
+						UnmatchedIdx--;
+						continue;
+					}
+					Vector3 A, B;
+					Result->GetEdgeV(EID, A, B);
+					if ((OA - A).SquareLength() < SnapToleranceSq && (OB - B).SquareLength() < SnapToleranceSq)
+					{
+						FMergeEdgesInfo MergeInfo;
+						EMeshResult EdgeMergeResult = Result->MergeEdges(EID, OtherEID, MergeInfo, true);
+						if (EdgeMergeResult == EMeshResult::Ok)
+						{
+							UnmatchedEdges.remove_at(UnmatchedIdx, false);
+							if (Geom->bTrackAllNewEdges)
+							{
+								Geom->AllNewEdges.insert(EID);
+							}
+							break;
+						}
+					}
+				}
+			}
+
+			// store the failure cases from the first mesh's array
+			for (int EID : UnmatchedEdges)
+			{
+				if (Result->IsEdge(EID) && Result->IsBoundaryEdge(EID))
+				{
+					Geom->CreatedBoundaryEdges.push_back(EID);
+					bAllMatched = false;
+				}
+			}
+		}
+		// store the failure cases from the second mesh's array
+		for (int OtherEID : OtherMeshEdges)
+		{
+			if (Result->IsEdge(OtherEID) && Result->IsBoundaryEdge(OtherEID))
+			{
+				Geom->CreatedBoundaryEdges.push_back(OtherEID);
+				bAllMatched = false;
+			}
+		}
+		return bAllMatched;
+	}
+	
+	void SimplifyAlongNewEdges(int NumMeshesToProcess, DynamicMesh* CutMesh[2], std::vector<int> CutBoundaryEdges[2], std::map<int, int>& AllVIDMatches, GeometryBoolean* Geom)
+	{
+		float DotTolerance = cosf(Geom->SimplificationAngleTolerance * DEG_TO_RAD);
+
+		std::set<int> CutBoundaryEdgeSets[2]; // set versions of CutBoundaryEdges, for faster membership tests
+		for (int MeshIdx = 0; MeshIdx < NumMeshesToProcess; MeshIdx++)
+		{
+			CutBoundaryEdgeSets[MeshIdx] = std::set<int>(CutBoundaryEdges[MeshIdx].begin(), CutBoundaryEdges[MeshIdx].end());
+		}
+
+		int NumCollapses = 0, CollapseIters = 0;
+		int MaxCollapseIters = 1; // TODO: is there a case where we need more iterations?  Perhaps if we add some triangle quality criteria?
+		while (CollapseIters < MaxCollapseIters)
+		{
+			int LastNumCollapses = NumCollapses;
+			for (int EID : CutBoundaryEdges[0])
+			{
+				// this can happen if a collapse removes another cut boundary edge
+				// (which can happen e.g. if you have a degenerate (colinear) tri flat on the cut boundary)
+				if (!CutMesh[0]->IsEdge(EID))
+				{
+					continue;
+				}
+				// don't allow collapses if we somehow get down to our last triangle on either mesh
+				if (CutMesh[0]->GetTriangleCount() <= 1 || (NumMeshesToProcess == 2 && CutMesh[1]->GetTriangleCount() <= 1))
+				{
+					break;
+				}
+
+				const DynamicMesh::Edge& e = CutMesh[0]->GetEdge(EID);
+				int Matches[2]{ -1, -1 };
+				bool bHasMatches = NumMeshesToProcess == 2;
+				if (bHasMatches)
+				{
+					for (int MatchIdx = 0; MatchIdx < 2; MatchIdx++)
+					{
+						int* Match = MapFind<int, int>(AllVIDMatches, e.Vert[MatchIdx]);
+						if (Match)
+						{
+							Matches[MatchIdx] = *Match;
+						}
+						else
+						{
+							bHasMatches = false;
+							// TODO: if we switch to allow collapse on unmatched edges, we shouldn't break here
+							//        b/c we may be partially matched, and need to track which is matched.
+							break;
+						}
+					}
+					if (!bHasMatches)
+					{
+						continue; // edge wasn't matched up on the other mesh; can't collapse it?
+						// TODO: consider supporting collapses in this case?
+					}
+				}
+				// if we have matched vertices, we also need a matched edge to collapse
+				int OtherEID = -1;
+				if (bHasMatches)
+				{
+					OtherEID = CutMesh[1]->FindEdge(Matches[0], Matches[1]);
+					if (OtherEID == -1)
+					{
+						continue;
+					}
+				}
+				// track whether the neighborhood of the vertex is flat (and likewise its matched pair's neighborhood, if present)
+				bool Flat[2]{ false, false };
+				// normals for each flat vertex, and each "side" (mesh 0 and mesh 1, if mesh 1 is present)
+				Vector3 FlatNormals[2][2]{ {Vector3::Zero(), Vector3::Zero()}, {Vector3::Zero(), Vector3::Zero()} };
+				int NumFlat = 0;
+				for (int VIdx = 0; VIdx < 2; VIdx++)
+				{
+					if (FLocalPlanarSimplify::IsFlat(*CutMesh[0], e.Vert[VIdx], DotTolerance, FlatNormals[VIdx][0]))
+					{
+						Flat[VIdx] = (Matches[VIdx] == -1) || FLocalPlanarSimplify::IsFlat(*CutMesh[1], Matches[VIdx], DotTolerance, FlatNormals[VIdx][1]);
+					}
+
+					if (Flat[VIdx])
+					{
+						NumFlat++;
+					}
+				}
+
+				if (NumFlat == 0)
+				{
+					continue;
+				}
+
+				// see if we can collapse to remove either vertex
+				for (int RemoveVIdx = 0; RemoveVIdx < 2; RemoveVIdx++)
+				{
+					if (!Flat[RemoveVIdx])
+					{
+						continue;
+					}
+					int KeepVIdx = 1 - RemoveVIdx;
+					Vector3 RemoveVPos = CutMesh[0]->GetVertex(e.Vert[RemoveVIdx]);
+					Vector3 KeepVPos = CutMesh[0]->GetVertex(e.Vert[KeepVIdx]);
+					Vector3 EdgeDir = KeepVPos - RemoveVPos;
+					if (EdgeDir.SafeNormalize() == 0) // 0 is returned as a special case when the edge was too short to normalize
+					{
+						// collapsing degenerate edges above should prevent this
+						assert(!Geom->bCollapseDegenerateEdgesOnCut);
+						// Just skip these edges, because in practice we generally have bCollapseDegenerateEdgesOnCut enabled
+						break; // break instead of continue to skip the whole edge
+					}
+
+					bool bHasBadEdge = false; // will be set if either mesh can't collapse the edge
+					for (int MeshIdx = 0; !bHasBadEdge && MeshIdx < NumMeshesToProcess; MeshIdx++)
+					{
+						int RemoveV = MeshIdx == 0 ? e.Vert[RemoveVIdx] : Matches[RemoveVIdx];
+						int KeepV = MeshIdx == 0 ? e.Vert[KeepVIdx] : Matches[KeepVIdx];
+						int SourceEID = MeshIdx == 0 ? EID : OtherEID;
+
+						bHasBadEdge = bHasBadEdge || FLocalPlanarSimplify::CollapseWouldHurtTriangleQuality(*CutMesh[MeshIdx],
+							FlatNormals[RemoveVIdx][MeshIdx], RemoveV, RemoveVPos, KeepV, KeepVPos, Geom->TryToImproveTriQualityThreshold);
+
+						bHasBadEdge = bHasBadEdge || FLocalPlanarSimplify::CollapseWouldChangeShapeOrUVs(
+							*CutMesh[MeshIdx], CutBoundaryEdgeSets[MeshIdx], DotTolerance,
+							SourceEID, RemoveV, RemoveVPos, KeepV, KeepVPos, EdgeDir, Geom->bPreserveTriangleGroups,
+							Geom->PreserveUVsOnlyForMesh == -1 || MeshIdx == Geom->PreserveUVsOnlyForMesh,
+							Geom->bPreserveVertexUVs, Geom->bPreserveOverlayUVs, Geom->UVDistortTolerance * Geom->UVDistortTolerance,
+							Geom->bPreserveVertexNormals, cosf(Geom->NormalDistortTolerance * DEG_TO_RAD));
+					};
+
+					if (bHasBadEdge)
+					{
+						continue;
+					}
+
+					// do some pre-collapse sanity asserts on the matched edge (if present) to see if it will fail to collapse
+					bool bAttemptCollapse = true;
+					if (bHasMatches)
+					{
+						int OtherRemoveV = Matches[RemoveVIdx];
+						int OtherKeepV = Matches[KeepVIdx];
+
+						int a = OtherRemoveV, b = OtherKeepV;
+						int eab = CutMesh[1]->FindEdge(OtherRemoveV, OtherKeepV);
+
+						const DynamicMesh::Edge& EdgeAB = CutMesh[1]->GetEdge(eab);
+						int t0 = EdgeAB.Tri[0];
+						if (t0 == -1)
+						{
+							bAttemptCollapse = false;
+						}
+						else
+						{
+							Index3 T0tv = CutMesh[1]->GetTriangle(t0);
+							int c = FindTriOtherVtx(a, b, T0tv);
+							assert(EdgeAB.Tri[1] == -1);
+							// We cannot collapse if edge lists of a and b share vertices other
+							//  than c and d  (because then we will make a triangle [x b b].
+							//  Brute-force search logic adapted from DynamicMesh::CollapseEdge implementation.
+							//  (simplified because we know this is a boundary edge)
+							CutMesh[1]->EnumerateVertexVertices(a, [&](int VID)
+								{
+									if (!bAttemptCollapse || VID == c || VID == b)
+									{
+										return;
+									}
+									CutMesh[1]->EnumerateVertexVertices(b, [&](int VID2)
+										{
+											bAttemptCollapse &= (VID != VID2);
+										});
+								});
+						}
+					}
+					if (!bAttemptCollapse)
+					{
+						break; // don't try starting from other vertex if the match edge couldn't be collapsed
+					}
+
+					FEdgeCollapseInfo CollapseInfo;
+					int RemoveV = e.Vert[RemoveVIdx];
+					int KeepV = e.Vert[KeepVIdx];
+					// Detect the case of a triangle with two boundary edges, where collapsing 
+					// the target boundary edge would keep the non-boundary edge.
+					// This collapse will remove the triangle, so we add the
+					// (formerly) non-boundary edge as our new boundary edge.
+					auto WouldRemoveTwoBoundaryEdges = [](const DynamicMesh& Mesh, int EID, int RemoveV)
+					{
+						assert(Mesh.IsEdge(EID));
+						int OppV = Mesh.GetEdgeOpposingV(EID).a;
+						int NextOnTri = Mesh.FindEdge(RemoveV, OppV);
+						return Mesh.IsBoundaryEdge(NextOnTri);
+					};
+					bool bWouldRemoveNext = WouldRemoveTwoBoundaryEdges(*CutMesh[0], EID, RemoveV);
+					EMeshResult CollapseResult = CutMesh[0]->CollapseEdge(KeepV, RemoveV, 0, CollapseInfo);
+					if (CollapseResult == EMeshResult::Ok)
+					{
+						if (bWouldRemoveNext && CutMesh[0]->IsBoundaryEdge(CollapseInfo.KeptEdges.a))
+						{
+							CutBoundaryEdgeSets[0].insert(CollapseInfo.KeptEdges.a);
+						}
+
+						if (bHasMatches)
+						{
+							int OtherRemoveV = Matches[RemoveVIdx];
+							int OtherKeepV = Matches[KeepVIdx];
+							bool bOtherWouldRemoveNext = WouldRemoveTwoBoundaryEdges(*CutMesh[1], OtherEID, OtherRemoveV);
+							FEdgeCollapseInfo OtherCollapseInfo;
+							EMeshResult OtherCollapseResult = CutMesh[1]->CollapseEdge(OtherKeepV, OtherRemoveV, 0, OtherCollapseInfo);
+							if (OtherCollapseResult != EMeshResult::Ok)
+							{
+								// if we get here, we've somehow managed to collapse the first edge but failed on the second (matched) edge
+								// which will leave a crack in the result unless we can somehow undo the first collapse, which would require a bunch of extra work
+								// but the only case where I could see this happen is if the second edge is on an isolated triangle, which means there is a hole anyway
+								// or if the mesh topology is somehow invalid
+								assert(OtherCollapseResult == EMeshResult::Failed_CollapseTriangle);
+							}
+							else
+							{
+								if (bOtherWouldRemoveNext && CutMesh[1]->IsBoundaryEdge(OtherCollapseInfo.KeptEdges.a))
+								{
+									CutBoundaryEdgeSets[1].insert(OtherCollapseInfo.KeptEdges.a);
+								}
+								AllVIDMatches.erase(RemoveV);
+								CutBoundaryEdgeSets[1].erase(OtherCollapseInfo.CollapsedEdge);
+								CutBoundaryEdgeSets[1].erase(OtherCollapseInfo.RemovedEdges[0]);
+								if (OtherCollapseInfo.RemovedEdges[1] != -1)
+								{
+									CutBoundaryEdgeSets[1].erase(OtherCollapseInfo.RemovedEdges[1]);
+								}
+							}
+						}
+
+						NumCollapses++;
+						CutBoundaryEdgeSets[0].erase(CollapseInfo.CollapsedEdge);
+						CutBoundaryEdgeSets[0].erase(CollapseInfo.RemovedEdges[0]);
+						if (CollapseInfo.RemovedEdges[1] != -1)
+						{
+							CutBoundaryEdgeSets[0].erase(CollapseInfo.RemovedEdges[1]);
+						}
+					}
+					break; // if we got through to trying to collapse the edge, don't try to collapse from the other vertex.
+				}
+			}
+
+			CutBoundaryEdges[0] = ToVector<int>(CutBoundaryEdgeSets[0]);
+			CutBoundaryEdges[1] = ToVector<int>(CutBoundaryEdgeSets[1]);
+
+			if (NumCollapses == LastNumCollapses)
+			{
+				break;
+			}
+
+			CollapseIters++;
+		}
 	}
 
 	bool GeometryBoolean::Compute()
@@ -1726,18 +2659,17 @@ namespace Riemann
 					Index2 EV = CutMesh[MeshIdx]->GetEdgeV(EID);
 
 					// if the vertex we'd remove is on a seam, try removing the other one instead
-					// TODO
-					//if (CutMesh[MeshIdx]->HasAttributes() && CutMesh[MeshIdx]->Attributes()->IsSeamVertex(EV.B, false))
-					//{
-					//	Swap(EV.a, EV.b);
-					//	// if they were both on seams, then collapse should not happen?  (& would break OnCollapseEdge assumptions in overlay)
-					//	if (CutMesh[MeshIdx]->HasAttributes() && CutMesh[MeshIdx]->Attributes()->IsSeamVertex(EV.B, false))
-					//	{
-					//		continue;
-					//	}
-					//}
+					if (CutMesh[MeshIdx]->HasAttributes() && CutMesh[MeshIdx]->Attributes()->IsSeamVertex(EV.b, false))
+					{
+						std::swap(EV.a, EV.b);
+						// if they were both on seams, then collapse should not happen?  (& would break OnCollapseEdge assumptions in overlay)
+						if (CutMesh[MeshIdx]->HasAttributes() && CutMesh[MeshIdx]->Attributes()->IsSeamVertex(EV.b, false))
+						{
+							continue;
+						}
+					}
 
-					EdgeCollapseInfo CollapseInfo;
+					FEdgeCollapseInfo CollapseInfo;
 					EMeshResult Result = CutMesh[MeshIdx]->CollapseEdge(EV.a, EV.b, .5, CollapseInfo);
 					if (Result != EMeshResult::Ok)
 					{
@@ -1769,7 +2701,7 @@ namespace Riemann
 		{ // (just for scope)
 			// first decide what triangles to delete for both meshes (*before* deleting anything so winding doesn't get messed up!)
 			std::vector<bool> KeepTri[2];
-			// This array is used to double-check the assumption that we will delete the other surface when we keep a coplanar tri
+			// This array is used to float-assert the assumption that we will delete the other surface when we keep a coplanar tri
 			// Note we only need it for mesh 0 (i.e., the mesh we try to keep triangles from when we preserve coplanar surfaces)
 			std::vector<int> DeleteIfOtherKept;
 			if (NumMeshesToProcess > 1)
@@ -1792,7 +2724,7 @@ namespace Riemann
 				std::vector<Vector3> OtherNormals(OtherSpatial.Mesh->GetTriangleCount());			// <-- OtherSpatial
 				for (size_t ii = 0; ii < OtherNormals.size(); ++ii)
 				{
-					OtherNormals[ii] = OtherSpatial.Mesh->GetTriangleNormal((int)ii);
+					OtherNormals[ii] = OtherSpatial.Mesh->GetTriNormal((int)ii);
 				}
 
 				const float OnPlaneTolerance = SnapTolerance;
@@ -1810,10 +2742,10 @@ namespace Riemann
 					}
 
 					Triangle3 Tri;
-					ProcessMesh.GetTriangleVertices(TID, Tri.v0, Tri.v1, Tri.v2);
+					ProcessMesh.GetTriVertices(TID, Tri.v0, Tri.v1, Tri.v2);
 					Vector3 Centroid = Tri.GetCenter();
 
-					// first check for the coplanar case
+					// first assert for the coplanar case
 					{
 						float DSq;
 						int OtherTID = OtherSpatial.FindNearestTriangle(Centroid, DSq, NonDegenCoplanarCandidateFilter);
@@ -1821,12 +2753,12 @@ namespace Riemann
 						{
 
 							Vector3 OtherNormal = OtherNormals[OtherTID];
-							Vector3 Normal = ProcessMesh.GetTriangleNormal(TID);
+							Vector3 Normal = ProcessMesh.GetTriNormal(TID);
 							float DotNormals = OtherNormal.Dot(Normal);
 
-							//if (FMath::Abs(DotNormals) > .9) // TODO: do we actually want to check for a normal match? coplanar vertex check below is more robust?
+							//if (FMath::Abs(DotNormals) > .9) // TODO: do we actually want to assert for a normal match? coplanar vertex assert below is more robust?
 							{
-								// To be extra sure it's a coplanar match, check the vertices are *also* on the other mesh (w/in SnapTolerance)
+								// To be extra sure it's a coplanar match, assert the vertices are *also* on the other mesh (w/in SnapTolerance)
 
 								bool bAllTrisOnOtherMesh = true;
 								for (int Idx = 0; Idx < 3; Idx++)
@@ -1892,14 +2824,14 @@ namespace Riemann
 				for (int EID = 0; EID < ProcessMesh.GetEdgeCount(); ++EID)
 				{
 					const DynamicMesh::Edge& e = ProcessMesh.GetEdge(EID);
-					if (e.t1 == -1 || KeepTri[MeshIdx][e.t0] == KeepTri[MeshIdx][e.t1])
+					if (e.Tri[1] == -1 || KeepTri[MeshIdx][e.Tri[0]] == KeepTri[MeshIdx][e.Tri[1]])
 					{
 						continue;
 					}
 
 					CutBoundaryEdges[MeshIdx].push_back(EID);
-					PossUnmatchedBdryVerts[MeshIdx].insert(e.v0);
-					PossUnmatchedBdryVerts[MeshIdx].insert(e.v1);
+					PossUnmatchedBdryVerts[MeshIdx].insert(e.Vert[0]);
+					PossUnmatchedBdryVerts[MeshIdx].insert(e.Vert[1]);
 				}
 			}
 
@@ -1940,8 +2872,8 @@ namespace Riemann
 				auto EdgeBounds = [&OtherMesh](int EID)
 				{
 					const DynamicMesh::Edge& e = OtherMesh.GetEdge(EID);
-					Vector3 A = OtherMesh.GetVertex(e.v0);
-					Vector3 B = OtherMesh.GetVertex(e.v1);
+					Vector3 A = OtherMesh.GetVertex(e.Vert[0]);
+					Vector3 B = OtherMesh.GetVertex(e.Vert[1]);
 					if (A.x > B.x)
 					{
 						std::swap(A.x, B.x);
@@ -2029,7 +2961,7 @@ namespace Riemann
 							{
 								Segment3 Seg(EdgePts[0], EdgePts[1]);
 								float Along = Seg.ProjectUnitRange(Pos);
-								EdgeSplitInfo SplitInfo;
+								FEdgeSplitInfo SplitInfo;
 								if (EMeshResult::Ok == OtherMesh.SplitEdge(OtherEID, SplitInfo, Along))
 								{
 									FoundMatches.emplace(SplitInfo.NewVertex, BoundaryVID);
@@ -2059,10 +2991,9 @@ namespace Riemann
 
 		bool bSuccess = true;
 
-		/*
 		if (bSimplifyAlongNewEdges)
 		{
-			SimplifyAlongNewEdges(NumMeshesToProcess, CutMesh, CutBoundaryEdges, AllVIDMatches);
+			SimplifyAlongNewEdges(NumMeshesToProcess, CutMesh, CutBoundaryEdges, AllVIDMatches, this);
 		}
 
 		if (Operation == BooleanOp::Difference)
@@ -2089,7 +3020,7 @@ namespace Riemann
 
 			if (bWeldSharedEdges)
 			{
-				bool bWeldSuccess = MergeEdges(IndexMaps, CutMesh, CutBoundaryEdges, AllVIDMatches);
+				bool bWeldSuccess = MergeEdges(IndexMaps, CutMesh, CutBoundaryEdges, AllVIDMatches, this);
 				bSuccess = bSuccess && bWeldSuccess;
 			}
 			else
@@ -2127,7 +3058,6 @@ namespace Riemann
 			MeshNew->ApplyTransform(TransformNew, false);
 			TransformNew = Transform::Identity();
 		}
-		*/
 
 		return bSuccess;
 	}

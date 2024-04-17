@@ -19,14 +19,17 @@ namespace Maths
 	#define PI_OVER_8		(0.3926990817f)
 	#define PI_OVER_180		(0.0174532925f)
 	#define RAD_TO_DEG		(57.295779513f)
+	#define DEG_TO_RAD		(PI_OVER_180)
 	#define SQRT_2			(1.4142135624f)
 	#define SQRT_3			(1.7320508076f)
+	#define	INV_SQRT_2		(0.7071067812f)
+	#define	INV_SQRT_3		(0.5773502692f)
 	#define SMALL_NUMBER	(1e-3f)
 	#define TINY_NUMBER		(1e-6f)
 
 	inline float ToRadian(float degree)
 	{
-		return degree * PI_OVER_180;
+		return degree * DEG_TO_RAD;
 	}
 
 	inline float ToDegree(float radian)
