@@ -560,8 +560,8 @@ namespace Riemann
 		bvh.NumBatches = bvh.NumNodes / SIMD_WIDTH;
 		bvh.Memory = new uint8_t[sizeof(BVHNodeBatch) * bvh.NumBatches + 127];
 		bvh.BatchPtr = (BVHNodeBatch*)AlignMemory(bvh.Memory, 128);
-		bvh.BoundsMin = Vector4(meshBounds.Min, 0.0f);
-		bvh.BoundsMax = Vector4(meshBounds.Max, 0.0f);
+		bvh.BoundsMin = Vector4(meshBounds.Min.x, meshBounds.Min.y, meshBounds.Min.z, 0.0f);
+		bvh.BoundsMax = Vector4(meshBounds.Max.x, meshBounds.Max.y, meshBounds.Max.z, 0.0f);
 		bvh.BatchSize = SIMD_WIDTH;
 		bvh.MaxDepth = maxDepth;
 		assert(bvh.NumNodes % SIMD_WIDTH == 0);

@@ -236,7 +236,8 @@ namespace Maths
 		Vector3			LocalToWorld(const Vector3& Point)
 		{
 			const Matrix4& mat = GetWorldMatrix();
-			return mat * Point;
+			Vector4 v = mat * Vector4(Point.x, Point.y, Point.z, 1.0f);
+			return Vector3(v.x, v.y, v.z);
 		}
 
 		Vector3			LocalToWorldEx(const Vector3& Point) const
@@ -252,7 +253,8 @@ namespace Maths
 		Vector3			WorldToLocal(const Vector3& Point)
 		{
 			const Matrix4& mat = GetInverseWorldMatrix();
-			return mat * Point;
+			Vector4 v = mat * Vector4(Point.x, Point.y, Point.z, 1.0f);
+			return Vector3(v.x, v.y, v.z);
 		}
 
 		Vector3			WorldToLocalEx(const Vector3& Point) const

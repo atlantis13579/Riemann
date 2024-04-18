@@ -591,6 +591,7 @@ namespace Riemann
 		for (int i = 0; i < 8; ++i)
 		{
 			Normals[i] = Vertices[i] - Center;
+			Normals[i].Normalize();
 		}
 
 		Indices = std::vector<uint16_t>({

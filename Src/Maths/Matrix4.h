@@ -296,14 +296,6 @@ namespace Maths
 			mm.mat[3][0] * vec.x + mm.mat[3][1] * vec.y + mm.mat[3][2] * vec.z + mm.mat[3][3] * vec.w);
 	}
 
-	template <typename T>
-	inline TVector3<T> operator *(const Matrix4& mat, const TVector3<T>& Point)
-	{
-		TVector4<T> hSpace = Vector4(Point.x, Point.y, Point.z, (T)1);
-		TVector4<T> t = mat * hSpace;
-		return t.xyz();
-	}
-
 	static_assert(sizeof(Matrix4) == 64, "sizeof Matrix4 is not valid");
 }
 

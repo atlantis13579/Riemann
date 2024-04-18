@@ -11,8 +11,6 @@ namespace voro
 
 namespace Riemann
 {
-	class DynamicMesh;
-
 	class Voronoi3
 	{
 	public:
@@ -75,6 +73,11 @@ namespace Riemann
 
 		int GetNumPoints() const { return (int)mNumPoints; }
 
+		bool IsInfinitePlane() const
+		{
+			return mCells.size() == 2 && mPlanes.size() == 1 && mBoundaries[0].size() == 0;
+		}
+
 	private:
 		size_t								mNumPoints { 0 };
 		voro::container						*mContainer { nullptr };
@@ -86,16 +89,5 @@ namespace Riemann
 		std::vector<std::pair<int, int>>	mCells;
 		std::vector<std::vector<int>>		mBoundaries;
 		std::vector<Vector3>				mBoundaryVertices;
-	};
-
-	class VoronoiMesh
-	{
-	public:
-		VoronoiMesh(const std::vector<Vector3>& points, const Box3& bounds, const float eps);
-		~VoronoiMesh();
-
-	private:
-		std::vector<DynamicMesh*> mMeshs;
-		bool AssumeConvexCells { true };
 	};
 }

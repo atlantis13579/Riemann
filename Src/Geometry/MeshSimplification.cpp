@@ -82,7 +82,7 @@ namespace Riemann
 				{
 					Vector3 norm = (vertices[m_neighbors[i]].p - p).Cross(vertices[m_neighbors[j]].p - p).SafeUnit();
 					float w = -(p.Dot(norm));
-					Vector4 v4(norm, w);
+					Vector4 v4(norm.x, norm.y, norm.z, w);
 					Q += dp_matrix(v4);
 				}
 			}
@@ -139,7 +139,8 @@ namespace Riemann
 		Vector3 minBound;
 		Vector3 maxBound;
 		int dim;
-		Node() {
+		Node()
+		{
 			index = 0;
 			left = 0;
 			right = 0;
@@ -160,7 +161,8 @@ namespace Riemann
 		int index;
 		int v[2];
 
-		Pair() {
+		Pair()
+		{
 			cost = 0.0;
 			optPos = Vector3::Zero();
 			heapIndex = 0;
@@ -168,7 +170,8 @@ namespace Riemann
 			v[0] = v[1] = 0;
 		}
 
-		Pair(int v0, int v1) {
+		Pair(int v0, int v1)
+		{
 			cost = 0.0;
 			optPos = Vector3::Zero();
 			heapIndex = 0;
@@ -177,7 +180,8 @@ namespace Riemann
 			v[1] = v1;
 		}
 
-		Vector3 OptimalPos() const {
+		Vector3 OptimalPos() const
+		{
 			return optPos;
 		}
 
@@ -245,7 +249,7 @@ namespace Riemann
 
 		void updateCost(const std::vector<Vertex>& vertices)
 		{
-			Vector4 y(optPos, 1.0);
+			Vector4 y(optPos.x, optPos.y, optPos.z, 1.0);
 			Matrix4 A = vertices[v[0]].Q + vertices[v[1]].Q;
 			Vector4 Ay = A * y;
 			cost = y.Dot(Ay);

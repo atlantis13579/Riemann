@@ -2,6 +2,7 @@
 #include "Test.h"
 #include <vector>
 #include "../Src/Destruction/GraphPartition.h"
+#include "../Src/Destruction/VoronoiTessellation.h"
 
 using namespace Riemann;
 
@@ -24,8 +25,21 @@ void TestMetis()
 	return ;
 }
 
+void TestVoronoiMesh()
+{
+	printf("Running TestVoronoiMesh\n");
+
+	std::vector<Vector3> points;
+	Voronoi3::GenerateRandomPoints(Box3::Unit(), 100, points);
+
+	VoronoiMesh mesh(points, Box3::Unit(), 1e-3f);
+
+	return;
+}
+
 void TestDestruction()
 {
 	TestMetis();
+	TestVoronoiMesh();
 	return;
 }

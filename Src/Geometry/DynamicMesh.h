@@ -18,7 +18,7 @@
 namespace Riemann
 {
 	template<typename T>
-	static void VectorSetSafe(std::vector<T>& vec, size_t index, const T& v, const T& default_val)
+	static void VectorSetSafe(std::vector<T>& vec, int index, const T& v, const T& default_val)
 	{
 		if (index >= vec.size())
 		{
@@ -28,7 +28,7 @@ namespace Riemann
 	}
 
 	template<typename T>
-	static void VectorSet(std::vector<T>& Vertices, size_t index, const T& v)
+	static void VectorSet(std::vector<T>& Vertices, int index, const T& v)
 	{
 		Vertices[index] = v;
 	}
@@ -118,7 +118,7 @@ namespace Riemann
 		void Clear();
 
 		bool LoadObj(const char* name);
-		bool ExportObj(const char* name);
+		bool ExportObj(const char* name) const;
 		static DynamicMesh* CreateFromObj(const char* name);
 
 		struct Edge
@@ -127,21 +127,22 @@ namespace Riemann
 			Index2 Tri;
 		};
 
+		void SetData(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
+
 		int GetVertexCount() const { return (int)VertexPositions.size(); }
-		int GetTriangleCount() const { return (int)Triangles.size(); }
-		int GetEdgeCount() const { return (int)Edges.size(); }
 		Vector3* GetVertexBuffer() { return VertexPositions.data(); }
 		Index3* GetIndexBuffer() { return Triangles.data(); }
 
 		int AppendVertex(const Vector3& v);
 		int AppendVertex(const VertexInfo& info);
+		int AppendVertex(const DynamicMesh& SourceMesh, int SourceVertexID);
 
 		inline bool HasVertexColors() const { return bHasVertexColor; }
 		inline bool HasVertexNormals() const { return bHasVertexNormals; }
 		inline bool HasVertexUVs() const { return VertexUVs.size() > 0; }
 		inline bool HasTriangleGroups() const { return bHasTriangleGroups; }
-		inline bool HasAttributes() const { return mAttributes != nullptr; }
 		inline bool IsVertex(int idx) const { return 0 <= idx && idx < (int)VertexPositions.size() && VertexRefCounts[idx] > 0;	}
+		inline bool IsVertexFast(int idx) const { return VertexRefCounts[idx] > 0; }
 
 		inline bool IsBoundaryVertex(int vID) const
 		{
@@ -170,10 +171,35 @@ namespace Riemann
 		inline void SetVertexNormal(int idx, const Vector3& val) { bHasVertexNormals = true; VectorSetSafe(VertexNormals, idx, val, Vector3::UnitY()); }
 		inline void SetVertexUV(int idx, const Vector2& val) {	VectorSetSafe(VertexUVs, idx, val, Vector2::Zero()); }
 
+		void EnableVertexNormals(const Vector3& InitialNormal)
+		{
+			if (HasVertexNormals())
+			{
+				return;
+			}
+
+			std::vector<Vector3> NewNormals;
+			int NV = GetVertexCount();
+			NewNormals.resize(NV);
+			for (int i = 0; i < NV; ++i)
+			{
+				NewNormals[i] = InitialNormal;
+			}
+			VertexNormals = NewNormals;
+		}
+
+		void DiscardVertexNormals()
+		{
+			VertexNormals.clear();
+		}
+
+		int GetTriangleCount() const { return (int)Triangles.size(); }
 		int AppendTriangle(const Index3& tv, int gid = 0);
+		int AppendTriangle(int i0, int i1, int i2, int gid = 0) { return AppendTriangle(Index3(i0, i1, i2), gid); }
 		EMeshResult InsertTriangle(int tid, const Index3& tv, int gid = 0, bool bUnsafe = false);
 		EMeshResult RemoveTriangle(int tID, bool bRemoveIsolatedVertices, bool bPreserveManifold);
 		inline bool IsTriangle(int idx) const {	return 0 <= idx && idx < (int)Triangles.size() && TriangleRefCounts[idx] > 0; }
+		inline bool IsTriangleFast(int idx) const { return TriangleRefCounts[idx] > 0; }
 		void  SetTriangleInternal(int TriangleID, int v0, int v1, int v2) {	Triangles[TriangleID] = Index3(v0, v1, v2); }
 		void SetTriangleEdgesInternal(int TriangleID, int e0, int e1, int e2) {	TriangleEdges[TriangleID] = Index3(e0, e1, e2);	}
 
@@ -193,6 +219,11 @@ namespace Riemann
 				TriangleGroups[tid] = group_id;
 				GroupIDCounter = std::max(GroupIDCounter, group_id + 1);
 			}
+		}
+
+		int AllocateTriangleGroup()
+		{
+			return GroupIDCounter++;
 		}
 
 		Vector3 GetTriCentroid(int idx) const
@@ -256,7 +287,9 @@ namespace Riemann
 			return tri[0] == VertexID || tri[1] == VertexID || tri[2] == VertexID;
 		}
 
+		int GetEdgeCount() const { return (int)Edges.size(); }
 		inline bool IsEdge(int idx) const {	return 0 <= idx && idx < (int)Edges.size() && EdgeRefCounts[idx] > 0; }
+		inline bool IsEdgeFast(int idx) const { return EdgeRefCounts[idx] > 0; }
 		inline bool IsBoundaryEdge(int idx) const {	return Edges[idx].Tri[1] == -1; }
 		inline const Edge& GetEdge(int idx) const { return Edges[idx]; }
 		inline Edge& GetEdge(int idx) { return Edges[idx]; }
@@ -321,8 +354,19 @@ namespace Riemann
 
 		inline uint64_t GetChangeStamps() const { return MeshChangeStamp; }
 
+		inline bool HasAttributes() const { return mAttributes != nullptr; }
 		DynamicMeshAttributeSet* Attributes() { return mAttributes; }
 		const DynamicMeshAttributeSet* Attributes() const { return mAttributes; }
+
+		void EnableAttributes()
+		{
+			if (HasAttributes())
+			{
+				return;
+			}
+			mAttributes = new DynamicMeshAttributeSet(this);
+			mAttributes->Initialize(GetVertexCount(), GetTriangleCount());
+		}
 
 		inline int GetOtherEdgeVertex(int EdgeID, int VertexID) const
 		{
@@ -384,7 +428,7 @@ namespace Riemann
 					{
 						func(e.Tri[0]);
 					}
-					if (e.Tri[1] != InvalidID && TriHasSequentialVertices(e.Tri[1], VertexID, vOther))
+					if (e.Tri[1] != -1 && TriHasSequentialVertices(e.Tri[1], VertexID, vOther))
 					{
 						func(e.Tri[1]);
 					}
@@ -802,6 +846,7 @@ namespace Riemann
 
 	public:
 		constexpr int InvalidID() const { return VertexMap.UnmappedID(); }
+		void Initialize(DynamicMesh* Mesh);
 
 		void Reset()
 		{
@@ -902,6 +947,25 @@ namespace Riemann
 			std::function<Vector3(int, const Vector3&)> PositionTransform = nullptr,
 			std::function<Vector3(int, const Vector3&)> NormalTransform = nullptr);
 
+		void AppendNormals(const DynamicMesh* AppendMesh,
+			const FDynamicMeshNormalOverlay* FromNormals, FDynamicMeshNormalOverlay* ToNormals,
+			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
+			std::function<Vector3(int, const Vector3&)> NormalTransform,
+			FIndexMapi& NormalMapOut);
+
+		void AppendUVs(const DynamicMesh* AppendMesh,
+			const FDynamicMeshUVOverlay* FromUVs, FDynamicMeshUVOverlay* ToUVs,
+			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
+			FIndexMapi& UVMapOut);
+
+		void AppendColors(const DynamicMesh* AppendMesh,
+			const FDynamicMeshColorOverlay* FromOverlay, FDynamicMeshColorOverlay* ToOverlay,
+			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
+			FIndexMapi& ColorMapOut);
+
+		void AppendTriangles(const DynamicMesh* SourceMesh, const std::vector<int>& SourceTriangles,
+			FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut, bool bComputeTriangleMap = true);
+
 		/*
 		bool RemoveIsolatedVertices();
 
@@ -998,24 +1062,6 @@ namespace Riemann
 
 		void AppendMesh(const TTriangleMeshAdapter<double>* AppendMesh, FMeshIndexMappings& IndexMapsOut,
 			std::function<Vector3(int, const Vector3&)> PositionTransform = nullptr);
-
-		void AppendNormals(const DynamicMesh* AppendMesh,
-			const FDynamicMeshNormalOverlay* FromNormals, FDynamicMeshNormalOverlay* ToNormals,
-			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
-			std::function<Vector3(int, const Vector3&)> NormalTransform,
-			FIndexMapi& NormalMapOut);
-
-		void AppendUVs(const DynamicMesh* AppendMesh,
-			const FDynamicMeshUVOverlay* FromUVs, FDynamicMeshUVOverlay* ToUVs,
-			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
-			FIndexMapi& UVMapOut);
-
-		void AppendColors(const DynamicMesh* AppendMesh,
-			const FDynamicMeshColorOverlay* FromOverlay, FDynamicMeshColorOverlay* ToOverlay,
-			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
-			FIndexMapi& ColorMapOut);
-
-		void AppendTriangles(const DynamicMesh* SourceMesh, const std::vector<int>& SourceTriangles, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut, bool bComputeTriangleMap = true);
 
 		static bool SplitMesh(const DynamicMesh* SourceMesh, std::vector<DynamicMesh>& SplitMeshes, TFunctionRef<int(int)> TriIDToMeshID, int DeleteMeshID = -1);
 		*/

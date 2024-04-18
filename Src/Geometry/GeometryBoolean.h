@@ -40,7 +40,7 @@ namespace Riemann
 		const Transform Transforms[2];
 
 		// output
-		DynamicMesh* MeshNew { nullptr };
+		DynamicMesh* Result { nullptr };
 		Transform TransformNew;
 		std::vector<int> CreatedBoundaryEdges;
 		std::set<int> AllNewEdges;

@@ -4,13 +4,32 @@
 
 namespace Riemann
 {
+	std::string ColorAttribName = "ColorAttrib";
+	std::string TangentUAttribName = "TangentUAttrib";
+	std::string TangentVAttribName = "TangentVAttrib";
+	std::string VisibleAttribName = "VisibleAttrib";
+	std::string InternalAttribName = "InternalAttrib";
+
+	#define MAX_NUM_UV_CHANNELS			(8)
+	std::string UVChannelNames[MAX_NUM_UV_CHANNELS] = {
+		"UVAttrib0",
+		"UVAttrib1",
+		"UVAttrib2",
+		"UVAttrib3",
+		"UVAttrib4",
+		"UVAttrib5",
+		"UVAttrib6",
+		"UVAttrib7"
+	};
+
 	template<typename AttribValueType, int AttribDimension>
 	void TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>::SetNewValue(int NewTriangleID, const AttribValueType* Data)
 	{
+		AttribValueType default_val = GetDefaultAttributeValue();
 		int k = NewTriangleID * AttribDimension;
 		for (int i = 0; i < AttribDimension; ++i)
 		{
-			VectorSetSafe(AttribValues, k + i, Data[i], (AttribValueType)0);
+			VectorSetSafe(AttribValues, k + i, Data[i], default_val);
 		}
 	}
 
@@ -27,21 +46,24 @@ namespace Riemann
 	template<typename AttribValueType, int AttribDimension>
 	void TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>::SetValue(int TriangleID, const AttribValueType* Data)
 	{
+		AttribValueType default_val = GetDefaultAttributeValue();
 		int k = TriangleID * AttribDimension;
 		for (int i = 0; i < AttribDimension; ++i)
 		{
-			VectorSetSafe(AttribValues, k + i, Data[i], (AttribValueType)0);
+			VectorSetSafe(AttribValues, k + i, Data[i], default_val);
 		}
 	}
 
 	template<typename AttribValueType, int AttribDimension>
 	void TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>::CopyValue(int FromTriangleID, int ToTriangleID)
 	{
+		AttribValueType default_val = GetDefaultAttributeValue();
 		int kA = FromTriangleID * AttribDimension;
 		int kB = ToTriangleID * AttribDimension;
 		for (int i = 0; i < AttribDimension; ++i)
 		{
-			VectorSetSafe(AttribValues, kB + i, AttribValues[kA + i], (AttribValueType)0);
+			AttribValueType Value = AttribValues[kA + i];
+			VectorSetSafe(AttribValues, kB + i, Value, default_val);
 		}
 	}
 
@@ -64,6 +86,15 @@ namespace Riemann
 		}
 		assert(false);
 		return false;
+	}
+
+	template<typename RealType, int ElementSize>
+	void TDynamicMeshOverlay<RealType, ElementSize>::ClearElements()
+	{
+		Elements.clear();
+		ElementsRefCounts.Clear();
+		ParentVertices.clear();
+		InitializeTriangles(ParentMesh->GetTriangleCount());
 	}
 
 	template<typename RealType, int ElementSize>
@@ -103,7 +134,6 @@ namespace Riemann
 
 		//updateTimeStamp(true);
 	}
-
 
 	template<typename RealType, int ElementSize>
 	bool TDynamicMeshOverlay<RealType, ElementSize>::IsSeamEdge(int eid, bool* bIsNonIntersecting) const
@@ -255,8 +285,13 @@ namespace Riemann
 	template<typename RealType, int ElementSize>
 	bool TDynamicMeshOverlay<RealType, ElementSize>::HasInteriorSeamEdges() const
 	{
-		for (int eid = 0; eid <= ParentMesh->GetEdgeCount(); ++eid)
+		for (int eid = 0; eid < ParentMesh->GetEdgeCount(); ++eid)
 		{
+			if (!ParentMesh->IsEdgeFast(eid))
+			{
+				continue;
+			}
+
 			Index2 et = ParentMesh->GetEdgeT(eid);
 			if (et.b != -1)
 			{
@@ -419,6 +454,11 @@ namespace Riemann
 		{
 			for (int tid = 0; tid <= ParentMesh->GetTriangleCount(); ++tid)
 			{
+				if (!ParentMesh->IsTriangleFast(tid))
+				{
+					continue;
+				}
+
 				if (GetTriangleIfValid(tid, Triangle))
 				{
 					for (int j = 0; j < 3; ++j)
@@ -435,6 +475,10 @@ namespace Riemann
 		{
 			for (int tid = 0; tid <= ParentMesh->GetTriangleCount(); ++tid)
 			{
+				if (!ParentMesh->IsTriangleFast(tid))
+				{
+					continue;
+				}
 				if (GetTriangleIfValid(tid, Triangle))
 				{
 					for (int j = 0; j < 3; ++j)
@@ -449,6 +493,26 @@ namespace Riemann
 		}
 
 		return (int)VertexElements.size();
+	}
+
+	template<typename RealType, int ElementSize>
+	EMeshResult TDynamicMeshOverlay<RealType, ElementSize>::SetTriangle(int tid, const Index3& tv, bool bAllowElementFreeing)
+	{
+		if (IsElement(tv[0]) == false || IsElement(tv[1]) == false || IsElement(tv[2]) == false)
+		{
+			assert(false);
+			return EMeshResult::Failed_NotAVertex;
+		}
+		if (tv[0] == tv[1] || tv[0] == tv[2] || tv[1] == tv[2])
+		{
+			assert(false);
+			return EMeshResult::Failed_InvalidNeighbourhood;
+		}
+
+		InternalSetTriangle(tid, tv, true, bAllowElementFreeing);
+
+		//updateTimeStamp(true);
+		return EMeshResult::Ok;
 	}
 
 	template<typename RealType, int ElementSize>
@@ -964,8 +1028,8 @@ namespace Riemann
 
 	DynamicMeshAttributeSet::~DynamicMeshAttributeSet()
 	{
-
 		DisableMaterialID();
+		DisablePrimaryColors();
 	}
 
 	bool DynamicMeshAttributeSet::IsSeamEdge(int eid) const
@@ -986,10 +1050,10 @@ namespace Riemann
 			}
 		}
 
-		//if (ColorLayer && ColorLayer->IsSeamEdge(eid))
-		//{
-		//	return true;
-		//}
+		if (ColorLayer && ColorLayer->IsSeamEdge(eid))
+		{
+			return true;
+		}
 
 		return false;
 	}
@@ -1012,10 +1076,10 @@ namespace Riemann
 			}
 		}
 
-		//if (ColorLayer && ColorLayer->IsSeamEndEdge(eid))
-		//{
-		//	return true;
-		//}
+		if (ColorLayer && ColorLayer->IsSeamEndEdge(eid))
+		{
+			return true;
+		}
 		return false;
 	}
 
@@ -1042,10 +1106,10 @@ namespace Riemann
 		}
 
 		bIsColorSeamOut = false;
-		//if (ColorLayer && ColorLayer->IsSeamEdge(EdgeID))
-		//{
-		//	bIsColorSeamOut = true;
-		//}
+		if (ColorLayer && ColorLayer->IsSeamEdge(EdgeID))
+		{
+			bIsColorSeamOut = true;
+		}
 		return (bIsUVSeamOut || bIsNormalSeamOut || bIsColorSeamOut || bIsTangentSeamOut);
 	}
 
@@ -1066,10 +1130,10 @@ namespace Riemann
 				return true;
 			}
 		}
-		//if (ColorLayer && ColorLayer->IsSeamVertex(VID, bBoundaryIsSeam))
-		//{
-		//	return true;
-		//}
+		if (ColorLayer && ColorLayer->IsSeamVertex(VID, bBoundaryIsSeam))
+		{
+			return true;
+		}
 		return false;
 	}
 
@@ -1124,7 +1188,7 @@ namespace Riemann
 		{
 			for (int i = (int)UVLayers.size(); i < Num; ++i)
 			{
-				FDynamicMeshUVOverlay NewUVLayer;
+				FDynamicMeshUVOverlay NewUVLayer(ParentMesh);
 				NewUVLayer.InitializeTriangles(ParentMesh->GetTriangleCount());
 				UVLayers.push_back(NewUVLayer);
 			}
@@ -1138,15 +1202,15 @@ namespace Riemann
 
 	void DynamicMeshAttributeSet::SetNumNormalLayers(int Num)
 	{
-		if ((int)UVLayers.size() == Num)
+		if ((int)NormalLayers.size() == Num)
 		{
 			return;
 		}
-		if (Num >= (int)UVLayers.size())
+		if (Num >= (int)NormalLayers.size())
 		{
-			for (int i = (int)UVLayers.size(); i < Num; ++i)
+			for (int i = (int)NormalLayers.size(); i < Num; ++i)
 			{
-				FDynamicMeshNormalOverlay NewNormalLayer;
+				FDynamicMeshNormalOverlay NewNormalLayer(ParentMesh);
 				NewNormalLayer.InitializeTriangles(ParentMesh->GetTriangleCount());
 				NormalLayers.push_back(NewNormalLayer);
 			}
@@ -1158,26 +1222,43 @@ namespace Riemann
 		assert((int)NormalLayers.size() == Num);
 	}
 
+	void DynamicMeshAttributeSet::EnablePrimaryColors()
+	{
+		if (HasPrimaryColors() == false)
+		{
+			ColorLayer = new FDynamicMeshColorOverlay(ParentMesh);
+			ColorLayer->InitializeTriangles(ParentMesh->GetTriangleCount());
+		}
+	}
+
 	void DynamicMeshAttributeSet::OnNewVertex(int VertexID, bool bInserted)
 	{
-		//FDynamicMeshAttributeSetBase::OnNewVertex(VertexID, bInserted);
+		for (auto pair : GenericAttributes)
+		{
+			FDynamicMeshAttributeBase *attrib = pair.second;
+			attrib->OnNewTriangle(VertexID, bInserted);
+		}
 
-		//for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
-		//{
-		//	float NewWeight = 0.0f;
-		//	WeightLayer.SetNewValue(VertexID, &NewWeight);
-		//}
+		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		{
+			float NewWeight = 0.0f;
+			WeightLayer.SetNewValue(VertexID, &NewWeight);
+		}
 	}
 
 
 	void DynamicMeshAttributeSet::OnRemoveVertex(int VertexID)
 	{
-		//FDynamicMeshAttributeSetBase::OnRemoveVertex(VertexID);
+		for (auto pair : GenericAttributes)
+		{
+			FDynamicMeshAttributeBase* attrib = pair.second;
+			attrib->OnRemoveVertex(VertexID);
+		}
 
-		//for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
-		//{
-		//	WeightLayer.OnRemoveVertex(VertexID);
-		//}
+		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		{
+			WeightLayer.OnRemoveVertex(VertexID);
+		}
 	}
 
 	void DynamicMeshAttributeSet::Initialize(int MaxVertexID, int MaxTriangleID)
@@ -1194,7 +1275,11 @@ namespace Riemann
 
 	void DynamicMeshAttributeSet::OnNewTriangle(int TriangleID, bool bInserted)
 	{
-		//FDynamicMeshAttributeSetBase::OnNewTriangle(TriangleID, bInserted);
+		for (auto pair : GenericAttributes)
+		{
+			FDynamicMeshAttributeBase* attrib = pair.second;
+			attrib->OnNewTriangle(TriangleID, bInserted);
+		}
 
 		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
@@ -1204,10 +1289,10 @@ namespace Riemann
 		{
 			NormalLayer.InitializeNewTriangle(TriangleID);
 		}
-		//if (ColorLayer)
-		//{
-		//	ColorLayer->InitializeNewTriangle(TriangleID);
-		//}
+		if (ColorLayer)
+		{
+			ColorLayer->InitializeNewTriangle(TriangleID);
+		}
 		if (MaterialIDAttrib)
 		{
 			int NewValue = 0;
@@ -1216,7 +1301,7 @@ namespace Riemann
 
 		//for (FDynamicMeshPolygroupAttribute& PolygroupLayer : PolygroupLayers)
 		//{
-		//	int32 NewGroup = 0;
+		//	int NewGroup = 0;
 		//	PolygroupLayer.SetNewValue(TriangleID, &NewGroup);
 		//}
 	}
@@ -1224,7 +1309,11 @@ namespace Riemann
 
 	void DynamicMeshAttributeSet::OnRemoveTriangle(int TriangleID)
 	{
-		//FDynamicMeshAttributeSetBase::OnRemoveTriangle(TriangleID);
+		for (auto pair : GenericAttributes)
+		{
+			FDynamicMeshAttributeBase* attrib = pair.second;
+			attrib->OnRemoveTriangle(TriangleID);
+		}
 
 		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
@@ -1234,17 +1323,21 @@ namespace Riemann
 		{
 			NormalLayer.OnRemoveTriangle(TriangleID);
 		}
-		//if (ColorLayer)
-		//{
-		//	ColorLayer->OnRemoveTriangle(TriangleID);
-		//}
+		if (ColorLayer)
+		{
+			ColorLayer->OnRemoveTriangle(TriangleID);
+		}
 
 		// has no effect on MaterialIDAttrib
 	}
 
 	void DynamicMeshAttributeSet::OnReverseTriOrientation(int TriangleID)
 	{
-		//FDynamicMeshAttributeSetBase::OnReverseTriOrientation(TriangleID);
+		for (auto pair : GenericAttributes)
+		{
+			FDynamicMeshAttributeBase* attrib = pair.second;
+			attrib->OnReverseTriOrientation(TriangleID);
+		}
 
 		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
@@ -1254,16 +1347,20 @@ namespace Riemann
 		{
 			NormalLayer.OnReverseTriOrientation(TriangleID);
 		}
-		//if (ColorLayer)
-		//{
-		//	ColorLayer->OnReverseTriOrientation(TriangleID);
-		//}
+		if (ColorLayer)
+		{
+			ColorLayer->OnReverseTriOrientation(TriangleID);
+		}
 		// has no effect on MaterialIDAttrib
 	}
 
 	void DynamicMeshAttributeSet::OnSplitEdge(const FEdgeSplitInfo& SplitInfo)
 	{
-		//FDynamicMeshAttributeSetBase::OnSplitEdge(SplitInfo);
+		for (auto pair : GenericAttributes)
+		{
+			FDynamicMeshAttributeBase* attrib = pair.second;
+			attrib->OnSplitEdge(SplitInfo);
+		}
 
 		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
@@ -1273,10 +1370,10 @@ namespace Riemann
 		{
 			NormalLayer.OnSplitEdge(SplitInfo);
 		}
-		//if (ColorLayer)
-		//{
-		//	ColorLayer->OnSplitEdge(SplitInfo);
-		//}
+		if (ColorLayer)
+		{
+			ColorLayer->OnSplitEdge(SplitInfo);
+		}
 		if (MaterialIDAttrib)
 		{
 			MaterialIDAttrib->OnSplitEdge(SplitInfo);
@@ -1287,16 +1384,19 @@ namespace Riemann
 		//	PolygroupLayer.OnSplitEdge(SplitInfo);
 		//}
 
-		//for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
-		//{
-		//	WeightLayer.OnSplitEdge(SplitInfo);
-		//}
-
+		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		{
+			WeightLayer.OnSplitEdge(SplitInfo);
+		}
 	}
 
 	void DynamicMeshAttributeSet::OnFlipEdge(const FEdgeFlipInfo& flipInfo)
 	{
-		//FDynamicMeshAttributeSetBase::OnFlipEdge(flipInfo);
+		for (auto pair : GenericAttributes)
+		{
+			FDynamicMeshAttributeBase* attrib = pair.second;
+			attrib->OnFlipEdge(flipInfo);
+		}
 
 		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
@@ -1306,10 +1406,10 @@ namespace Riemann
 		{
 			NormalLayer.OnFlipEdge(flipInfo);
 		}
-		//if (ColorLayer)
-		//{
-		//	ColorLayer->OnFlipEdge(flipInfo);
-		//}
+		if (ColorLayer)
+		{
+			ColorLayer->OnFlipEdge(flipInfo);
+		}
 		if (MaterialIDAttrib)
 		{
 			MaterialIDAttrib->OnFlipEdge(flipInfo);
@@ -1320,17 +1420,20 @@ namespace Riemann
 		//	PolygroupLayer.OnFlipEdge(flipInfo);
 		//}
 
-		//for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
-		//{
-		//	WeightLayer.OnFlipEdge(flipInfo);
-		//}
-
+		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		{
+			WeightLayer.OnFlipEdge(flipInfo);
+		}
 	}
 
 
 	void DynamicMeshAttributeSet::OnCollapseEdge(const FEdgeCollapseInfo& collapseInfo)
 	{
-		//FDynamicMeshAttributeSetBase::OnCollapseEdge(collapseInfo);
+		for (auto pair : GenericAttributes)
+		{
+			FDynamicMeshAttributeBase* attrib = pair.second;
+			attrib->OnCollapseEdge(collapseInfo);
+		}
 
 		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
@@ -1340,10 +1443,10 @@ namespace Riemann
 		{
 			NormalLayer.OnCollapseEdge(collapseInfo);
 		}
-		//if (ColorLayer)
-		//{
-		//	ColorLayer->OnCollapseEdge(collapseInfo);
-		//}
+		if (ColorLayer)
+		{
+			ColorLayer->OnCollapseEdge(collapseInfo);
+		}
 		if (MaterialIDAttrib)
 		{
 			MaterialIDAttrib->OnCollapseEdge(collapseInfo);
@@ -1354,16 +1457,20 @@ namespace Riemann
 		//	PolygroupLayer.OnCollapseEdge(collapseInfo);
 		//}
 
-		//for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
-		//{
-		//	WeightLayer.OnCollapseEdge(collapseInfo);
-		//}
+		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		{
+			WeightLayer.OnCollapseEdge(collapseInfo);
+		}
 
 	}
 
 	void DynamicMeshAttributeSet::OnPokeTriangle(const FPokeTriangleInfo& pokeInfo)
 	{
-		//FDynamicMeshAttributeSetBase::OnPokeTriangle(pokeInfo);
+		for (auto pair : GenericAttributes)
+		{
+			FDynamicMeshAttributeBase* attrib = pair.second;
+			attrib->OnPokeTriangle(pokeInfo);
+		}
 
 		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
@@ -1373,10 +1480,10 @@ namespace Riemann
 		{
 			NormalLayer.OnPokeTriangle(pokeInfo);
 		}
-		//if (ColorLayer)
-		//{
-		//	ColorLayer->OnPokeTriangle(pokeInfo);
-		//}
+		if (ColorLayer)
+		{
+			ColorLayer->OnPokeTriangle(pokeInfo);
+		}
 		if (MaterialIDAttrib)
 		{
 			MaterialIDAttrib->OnPokeTriangle(pokeInfo);
@@ -1387,15 +1494,19 @@ namespace Riemann
 		//	PolygroupLayer.OnPokeTriangle(pokeInfo);
 		//}
 
-		//for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
-		//{
-		//	WeightLayer.OnPokeTriangle(pokeInfo);
-		//}
+		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		{
+			WeightLayer.OnPokeTriangle(pokeInfo);
+		}
 	}
 
 	void DynamicMeshAttributeSet::OnMergeEdges(const FMergeEdgesInfo& mergeInfo)
 	{
-		//FDynamicMeshAttributeSetBase::OnMergeEdges(mergeInfo);
+		for (auto pair : GenericAttributes)
+		{
+			FDynamicMeshAttributeBase* attrib = pair.second;
+			attrib->OnMergeEdges(mergeInfo);
+		}
 
 		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
@@ -1405,10 +1516,10 @@ namespace Riemann
 		{
 			NormalLayer.OnMergeEdges(mergeInfo);
 		}
-		//if (ColorLayer)
-		//{
-		//	ColorLayer->OnMergeEdges(mergeInfo);
-		//}
+		if (ColorLayer)
+		{
+			ColorLayer->OnMergeEdges(mergeInfo);
+		}
 		if (MaterialIDAttrib)
 		{
 			MaterialIDAttrib->OnMergeEdges(mergeInfo);
@@ -1419,15 +1530,19 @@ namespace Riemann
 		//	PolygroupLayer.OnMergeEdges(mergeInfo);
 		//}
 
-		//for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
-		//{
-		//	WeightLayer.OnMergeEdges(mergeInfo);
-		//}
+		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		{
+			WeightLayer.OnMergeEdges(mergeInfo);
+		}
 	}
 
 	void DynamicMeshAttributeSet::OnSplitVertex(const FVertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate)
 	{
-		//FDynamicMeshAttributeSetBase::OnSplitVertex(SplitInfo, TrianglesToUpdate);
+		for (auto pair : GenericAttributes)
+		{
+			FDynamicMeshAttributeBase* attrib = pair.second;
+			attrib->OnSplitVertex(SplitInfo, TrianglesToUpdate);
+		}
 
 		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
@@ -1437,10 +1552,10 @@ namespace Riemann
 		{
 			NormalLayer.OnSplitVertex(SplitInfo, TrianglesToUpdate);
 		}
-		//if (ColorLayer)
-		//{
-		//	ColorLayer->OnSplitVertex(SplitInfo, TrianglesToUpdate);
-		//}
+		if (ColorLayer)
+		{
+			ColorLayer->OnSplitVertex(SplitInfo, TrianglesToUpdate);
+		}
 		if (MaterialIDAttrib)
 		{
 			MaterialIDAttrib->OnSplitVertex(SplitInfo, TrianglesToUpdate);
@@ -1451,14 +1566,213 @@ namespace Riemann
 		//	PolygroupLayer.OnSplitVertex(SplitInfo, TrianglesToUpdate);
 		//}
 
-		//for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
-		//{
-		//	WeightLayer.OnSplitVertex(SplitInfo, TrianglesToUpdate);
-		//}
+		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		{
+			WeightLayer.OnSplitVertex(SplitInfo, TrianglesToUpdate);
+		}
 	}
 
+	template<typename AttribValueType, int AttribDimension>
+	void TDynamicVertexAttribute<AttribValueType, AttribDimension>::SetNewValue(int NewVertexID, const AttribValueType* Data)
+	{
+		AttribValueType default_val = GetDefaultAttributeValue();
+		int k = NewVertexID * AttribDimension;
+		for (int i = 0; i < AttribDimension; ++i)
+		{
+			VectorSetSafe(AttribValues, k + i, Data[i], default_val);
+		}
+	}
+
+	template<typename AttribValueType, int AttribDimension>
+	void TDynamicVertexAttribute<AttribValueType, AttribDimension>::CopyValue(int FromVertexID, int ToVertexID)
+	{
+		AttribValueType default_val = GetDefaultAttributeValue();
+		int kA = FromVertexID * AttribDimension;
+		int kB = ToVertexID * AttribDimension;
+		for (int i = 0; i < AttribDimension; ++i)
+		{
+			VectorSetSafe(AttribValues, kB + i, AttribValues[kA + i], default_val);
+		}
+	}
+
+	// static
+	void DynamicMeshAttributeSet::EnableUVChannels(DynamicMesh* Mesh, int NumUVChannels, bool bResetExisting, bool bDisablePrevious)
+	{
+		Mesh->EnableAttributes();
+		if (!(NumUVChannels <= MAX_NUM_UV_CHANNELS))
+		{
+			NumUVChannels = MAX_NUM_UV_CHANNELS;
+		}
+		for (int UVIdx = 0; UVIdx < NumUVChannels; UVIdx++)
+		{
+			if (!bResetExisting && Mesh->Attributes()->HasAttachedAttribute(UVChannelNames[UVIdx]))
+			{
+				continue;
+			}
+			Mesh->Attributes()->AttachAttribute(UVChannelNames[UVIdx], new TDynamicMeshVertexAttribute<float, 2>(Mesh));
+		}
+		if (bDisablePrevious)
+		{
+			for (int UVIdx = NumUVChannels; UVIdx < MAX_NUM_UV_CHANNELS; UVIdx++)
+			{
+				Mesh->Attributes()->RemoveAttribute(UVChannelNames[UVIdx]);
+			}
+		}
+	}
+
+	// static
+	int DynamicMeshAttributeSet::NumEnabledUVChannels(DynamicMesh* Mesh)
+	{
+		if (!Mesh->Attributes())
+		{
+			return 0;
+		}
+		for (int UVIdx = 0; UVIdx < MAX_NUM_UV_CHANNELS; UVIdx++)
+		{
+			if (!Mesh->Attributes()->HasAttachedAttribute(UVChannelNames[UVIdx]))
+			{
+				return UVIdx;
+			}
+		}
+		return MAX_NUM_UV_CHANNELS;
+	}
+
+	// static
+	void DynamicMeshAttributeSet::Augment(DynamicMesh* Mesh, int NumUVChannels)
+	{
+		Mesh->EnableVertexNormals(Vector3::UnitZ());
+		Mesh->EnableAttributes();
+		Mesh->Attributes()->EnableMaterialID();
+		Mesh->Attributes()->AttachAttribute(ColorAttribName, new TDynamicMeshVertexAttribute<float, 4>(Mesh));
+		Mesh->Attributes()->AttachAttribute(TangentUAttribName, new TDynamicMeshVertexAttribute<float, 3>(Mesh));
+		Mesh->Attributes()->AttachAttribute(TangentVAttribName, new TDynamicMeshVertexAttribute<float, 3>(Mesh));
+		TDynamicMeshScalarTriangleAttribute<bool>* VisAttrib = new TDynamicMeshScalarTriangleAttribute<bool>(Mesh);
+		VisAttrib->Initialize(true);
+		Mesh->Attributes()->AttachAttribute(VisibleAttribName, VisAttrib);
+		TDynamicMeshScalarTriangleAttribute<bool>* InternalAttrib = new TDynamicMeshScalarTriangleAttribute<bool>(Mesh);
+		InternalAttrib->Initialize(true);
+		Mesh->Attributes()->AttachAttribute(InternalAttribName, InternalAttrib);
+
+		EnableUVChannels(Mesh, NumUVChannels);
+	}
+
+	// static
+	void DynamicMeshAttributeSet::AddVertexColorAttribute(DynamicMesh* Mesh)
+	{
+		Mesh->Attributes()->AttachAttribute(ColorAttribName, new TDynamicMeshVertexAttribute<float, 4>(Mesh));
+	}
+
+	// static
+	bool DynamicMeshAttributeSet::IsAugmented(const DynamicMesh* Mesh)
+	{
+		return Mesh->HasAttributes()
+			&& Mesh->Attributes()->HasAttachedAttribute(ColorAttribName)
+			&& Mesh->Attributes()->HasAttachedAttribute(TangentUAttribName)
+			&& Mesh->Attributes()->HasAttachedAttribute(TangentVAttribName)
+			&& Mesh->Attributes()->HasAttachedAttribute(VisibleAttribName)
+			&& Mesh->Attributes()->HasMaterialID()
+			&& Mesh->HasVertexNormals();
+	}
+
+	// static
+	void DynamicMeshAttributeSet::SetUV(DynamicMesh* Mesh, int VID, Vector2 UV, int UVLayer)
+	{
+		if (!(UVLayer < MAX_NUM_UV_CHANNELS))
+		{
+			return;
+		}
+		TDynamicMeshVertexAttribute<float, 2>* UVs =
+			static_cast<TDynamicMeshVertexAttribute<float, 2>*>(Mesh->Attributes()->GetAttachedAttribute(UVChannelNames[UVLayer]));
+		if ((UVs))
+		{
+			UVs->SetValue(VID, UV);
+		}
+	}
+
+	// static
+	void DynamicMeshAttributeSet::SetAllUV(DynamicMesh* Mesh, int VID, Vector2 UV, int NumUVLayers)
+	{
+		if (!(NumUVLayers <= MAX_NUM_UV_CHANNELS))
+		{
+			NumUVLayers = MAX_NUM_UV_CHANNELS;
+		}
+		for (int Layer = 0; Layer < NumUVLayers; Layer++)
+		{
+			TDynamicMeshVertexAttribute<float, 2>* UVs =
+				static_cast<TDynamicMeshVertexAttribute<float, 2>*>(Mesh->Attributes()->GetAttachedAttribute(UVChannelNames[Layer]));
+			if (UVs)
+			{
+				UVs->SetValue(VID, UV);
+			}
+		}
+	}
+
+	// static
+	void DynamicMeshAttributeSet::GetUV(const DynamicMesh* Mesh, int VID, Vector2& UV, int UVLayer)
+	{
+		if (!(UVLayer < MAX_NUM_UV_CHANNELS))
+		{
+			UV = Vector2::Zero();
+			return;
+		}
+		const TDynamicMeshVertexAttribute<float, 2>* UVs =
+			static_cast<const TDynamicMeshVertexAttribute<float, 2>*>(Mesh->Attributes()->GetAttachedAttribute(UVChannelNames[UVLayer]));
+		if (UVs)
+		{
+			UVs->GetValue(VID, UV);
+		}
+	}
+
+	// static
+	void DynamicMeshAttributeSet::SetTangent(DynamicMesh* Mesh, int VID, Vector3 Normal, Vector3 TangentU, Vector3 TangentV)
+	{
+		assert(IsAugmented(Mesh));
+		TDynamicMeshVertexAttribute<float, 3>* Us =
+			static_cast<TDynamicMeshVertexAttribute<float, 3>*>(Mesh->Attributes()->GetAttachedAttribute(TangentUAttribName));
+		TDynamicMeshVertexAttribute<float, 3>* Vs =
+			static_cast<TDynamicMeshVertexAttribute<float, 3>*>(Mesh->Attributes()->GetAttachedAttribute(TangentVAttribName));
+		Us->SetValue(VID, TangentU);
+		Vs->SetValue(VID, TangentV);
+	}
+
+	// static
+	void DynamicMeshAttributeSet::GetTangent(const DynamicMesh* Mesh, int VID, Vector3& U, Vector3& V)
+	{
+		assert(IsAugmented(Mesh));
+		const TDynamicMeshVertexAttribute<float, 3>* Us =
+			static_cast<const TDynamicMeshVertexAttribute<float, 3>*>(Mesh->Attributes()->GetAttachedAttribute(TangentUAttribName));
+		const TDynamicMeshVertexAttribute<float, 3>* Vs =
+			static_cast<const TDynamicMeshVertexAttribute<float, 3>*>(Mesh->Attributes()->GetAttachedAttribute(TangentVAttribName));
+		Vector3 Normal = Mesh->GetVertexNormal(VID);
+		Us->GetValue(VID, U);
+		Vs->GetValue(VID, V);
+	}
+
+	// static
+	Vector4 DynamicMeshAttributeSet::GetVertexColor(const DynamicMesh* Mesh, int VID)
+	{
+		assert(IsAugmented(Mesh));
+		const TDynamicMeshVertexAttribute<float, 4>* Colors =
+			static_cast<const TDynamicMeshVertexAttribute<float, 4>*>(Mesh->Attributes()->GetAttachedAttribute(ColorAttribName));
+		Vector4 Color;
+		Colors->GetValue(VID, Color);
+		return Color;
+	}
+
+	// static
+	void DynamicMeshAttributeSet::SetVertexColor(DynamicMesh* Mesh, int VID, Vector4 Color)
+	{
+		assert(IsAugmented(Mesh));
+		TDynamicMeshVertexAttribute<float, 4>* Colors =
+			static_cast<TDynamicMeshVertexAttribute<float, 4>*>(Mesh->Attributes()->GetAttachedAttribute(ColorAttribName));
+		Colors->SetValue(VID, Color);
+	}
+
+
 	template class TDynamicMeshOverlay<float, 2>;
-	template class TDynamicMeshOverlay<float, 2>;
+	template class TDynamicMeshOverlay<float, 3>;
+	template class TDynamicMeshOverlay<float, 4>;
 	template class TDynamicMeshTriangleAttribute<float, 1>;
 
+	template class TDynamicVertexAttribute<float, 1>;
 }	// namespace Riemann

@@ -1,6 +1,7 @@
 
 #include "Test.h"
 
+#include "../Src/CollisionPrimitive/AxisAlignedBox3.h"
 #include "../Src/CollisionPrimitive/StaticMesh.h"
 #include "../Src/Geometry/Spline.h"
 #include "../Src/Geometry/DynamicMesh.h"
@@ -127,10 +128,6 @@ void TestVoronoi3d()
 
 	v.Set(points, Box3::Unit(), 1e-3f);
 	v.Build();
-
-	VoronoiMesh mesh(points, Box3::Unit(), 1e-3f);
-
-
 	return;
 }
 
@@ -172,27 +169,52 @@ void TestGeometrySet()
 	return;
 }
 
-void TestGeometryBoolean()
+void TestGeometryBoolean2()
 {
-	printf("Running TestGeometryBoolean\n");
+	printf("Running TestGeometryBoolean2\n");
 
-	DynamicMesh set1;
-	set1.LoadObj("../TestData/bunny.obj");
+	DynamicMesh mesh1;
+	mesh1.LoadObj("../TestData/bunny.obj");
 
-	Box3 box = set1.GetBounds();
-	float y = box.GetCenter().y;
-	DynamicMesh set2;
+	DynamicMesh mesh2;
+	Box3 box = mesh1.GetBounds();
+	box.Max.y = box.GetCenter().y;
+	AxisAlignedBox3 aabb(box.Min, box.Max);
+	std::vector<Vector3> Vertices;
+	std::vector<uint16_t> Indices;
+	std::vector<Vector3> Normals;
+	aabb.GetMesh2(Vertices, Indices, Normals);
+	mesh2.SetData(Vertices, Indices, Normals);
 
-	set2.AppendVertex(Vector3(box.Min.x, y, box.Min.z));
-	set2.AppendVertex(Vector3(box.Min.x, y, box.Max.z));
-	set2.AppendVertex(Vector3(box.Max.x, y, box.Max.z));
-	set2.AppendVertex(Vector3(box.Max.x, y, box.Min.z));
-	set2.AppendTriangle(Index3(0, 1, 2));
-	set2.AppendTriangle(Index3(2, 3, 0));
-	set2.BuildBounds();
-
-	GeometryBoolean b(&set1, &set2, GeometryBoolean::BooleanOp::Intersect);
+	GeometryBoolean b(&mesh2, &mesh1, GeometryBoolean::BooleanOp::Intersect);
 	b.Compute();
+	b.Result->ExportObj("../TestData/bunny_intersect.obj");
+
+	return;
+}
+
+void TestGeometryBoolean1()
+{
+	printf("Running TestGeometryBoolean1\n");
+
+	AxisAlignedBox3 box1(Vector3(0.0f), Vector3(2.0f));
+	AxisAlignedBox3 box2(Vector3(1.0f), Vector3(3.0f));
+	std::vector<Vector3> Vertices;
+	std::vector<uint16_t> Indices;
+	std::vector<Vector3> Normals;
+
+	DynamicMesh mesh1;
+	box1.GetMesh2(Vertices, Indices, Normals);
+	mesh1.SetData(Vertices, Indices, Normals);
+
+	DynamicMesh mesh2;
+	box2.GetMesh2(Vertices, Indices, Normals);
+	mesh2.SetData(Vertices, Indices, Normals);
+
+	GeometryBoolean b(&mesh1, &mesh2, GeometryBoolean::BooleanOp::Intersect);
+	b.Compute();
+
+	b.Result->ExportObj("../TestData/box_intersect.obj");
 
 	return;
 }
@@ -254,5 +276,6 @@ void TestGeometry()
 	TestVoronoi2d();
 	TestVoronoi3d();
 	TestGeometrySet();
-	TestGeometryBoolean();
+	TestGeometryBoolean1();
+	TestGeometryBoolean2();
 }

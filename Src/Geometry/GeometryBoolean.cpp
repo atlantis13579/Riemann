@@ -47,6 +47,8 @@ namespace Riemann
 					Normals[i] = Triangle.GetNormal();
 					Areas[i] = Triangle.GetArea();
 				}
+
+				return;
 			}
 		};
 
@@ -1138,6 +1140,11 @@ namespace Riemann
 		{
 			for (int i = 0; i < WorkingMesh->GetTriangleCount(); ++i)
 			{
+				if (!WorkingMesh->IsTriangleFast(i))
+				{
+					continue;
+				}
+
 				BaseFaceNormals.push_back(WorkingMesh->GetTriNormal(i));
 			}
 
@@ -1631,7 +1638,8 @@ namespace Riemann
 		{
 			bool bSuccess = true;
 
-			for (int MeshIdx = 0; MeshIdx < 2; MeshIdx++)
+			int MeshesToProcess = bMutuallyCut ? 2 : 1;
+			for (int MeshIdx = 0; MeshIdx < MeshesToProcess; MeshIdx++)
 			{
 				FCutWorkingInfo WorkingInfo(Mesh[MeshIdx], SnapTolerance);
 				WorkingInfo.AddSegments(Intersections, MeshIdx);
@@ -2196,7 +2204,7 @@ namespace Riemann
 	bool MergeEdges(const FMeshIndexMappings& IndexMaps, DynamicMesh* CutMesh[2], const std::vector<int> CutBoundaryEdges[2], const std::map<int, int>& AllVIDMatches, GeometryBoolean* Geom)
 	{
 		// translate the edge IDs from CutMesh[1] over to Result mesh edge IDs
-		DynamicMesh *Result = Geom->MeshNew;
+		DynamicMesh *Result = Geom->Result;
 
 		DynamicArray<int> OtherMeshEdges;
 		for (int OldMeshEID : CutBoundaryEdges[1])
@@ -2268,7 +2276,7 @@ namespace Riemann
 
 		// filter matched edges from the edge array for the other mesh
 		OtherMeshEdges.remove_if(
-			[Result = Geom->MeshNew](int EID)
+			[Result = Geom->Result](int EID)
 			{
 				return !Result->IsEdge(EID) || !Result->IsBoundaryEdge(EID);
 			});
@@ -2593,10 +2601,10 @@ namespace Riemann
 		// copy meshes
 		DynamicMesh CutMeshB(*Meshes[1]);
 
-		MeshNew = new DynamicMesh;
-		*MeshNew = *Meshes[0];
+		Result = new DynamicMesh;
+		*Result = *Meshes[0];
 
-		DynamicMesh* CutMesh[2]{ MeshNew, &CutMeshB };
+		DynamicMesh* CutMesh[2]{ Result, &CutMeshB };
 
 		Box3 CombinedAABB = Box3::Transform(CutMesh[0]->GetBounds(), Transforms[0].pos, Transforms[0].quat);
 		Box3 MeshB_AABB = Box3::Transform(CutMesh[1]->GetBounds(), Transforms[1].pos, Transforms[1].quat);
@@ -2617,6 +2625,7 @@ namespace Riemann
 
 		GeometryCut Cut(CutMesh[0], CutMesh[1]);
 		Cut.SnapTolerance = SnapTolerance;
+		Cut.bMutuallyCut = !bOpOnSingleMesh;
 		Cut.Compute(Intersections);
 
 		int NumMeshesToProcess = bOpOnSingleMesh ? 1 : 2;
@@ -2716,11 +2725,12 @@ namespace Riemann
 				int MaxTriID = ProcessMesh.GetTriangleCount();
 				KeepTri[MeshIdx].resize(MaxTriID);
 				bool bCoplanarKeepSameDir = (Operation != BooleanOp::Difference);
-				bool bRemoveInside = 1;
+				bool bRemoveInside = true;
 				if (Operation == BooleanOp::Intersect || (Operation == BooleanOp::Difference && MeshIdx == 1))
 				{
-					bRemoveInside = 0;
+					bRemoveInside = false;
 				}
+
 				std::vector<Vector3> OtherNormals(OtherSpatial.Mesh->GetTriangleCount());			// <-- OtherSpatial
 				for (size_t ii = 0; ii < OtherNormals.size(); ++ii)
 				{
@@ -2810,6 +2820,11 @@ namespace Riemann
 			{
 				for (int TID = 0; TID < CutMesh[0]->GetTriangleCount(); ++TID)
 				{
+					if (!CutMesh[0]->IsTriangleFast(TID))
+					{
+						continue;
+					}
+
 					int DeleteIfOtherKeptTID = DeleteIfOtherKept[TID];
 					if (DeleteIfOtherKeptTID > -1 && KeepTri[1][DeleteIfOtherKeptTID])
 					{
@@ -2823,6 +2838,11 @@ namespace Riemann
 				DynamicMesh& ProcessMesh = *CutMesh[MeshIdx];
 				for (int EID = 0; EID < ProcessMesh.GetEdgeCount(); ++EID)
 				{
+					if (!ProcessMesh.IsEdgeFast(EID))
+					{
+						continue;
+					}
+
 					const DynamicMesh::Edge& e = ProcessMesh.GetEdge(EID);
 					if (e.Tri[1] == -1 || KeepTri[MeshIdx][e.Tri[0]] == KeepTri[MeshIdx][e.Tri[1]])
 					{
@@ -3001,6 +3021,11 @@ namespace Riemann
 			std::vector<int> AllTID;
 			for (int TID  = 0; TID < CutMesh[1]->GetTriangleCount(); ++TID)
 			{
+				if (!CutMesh[1]->IsTriangleFast(TID))
+				{
+					continue;
+				}
+
 				AllTID.push_back(TID);
 			}
 			FDynamicMeshEditor FlipEditor(CutMesh[1]);
@@ -3009,7 +3034,7 @@ namespace Riemann
 
 		if (NumMeshesToProcess > 1)
 		{
-			FDynamicMeshEditor Editor(MeshNew);
+			FDynamicMeshEditor Editor(Result);
 			FMeshIndexMappings IndexMaps;
 			Editor.AppendMesh(CutMesh[1], IndexMaps);
 
@@ -3034,8 +3059,8 @@ namespace Riemann
 						continue;
 					}
 					Index2 OtherEV = CutMesh[1]->GetEdgeV(OldMeshEID);
-					int MappedEID = MeshNew->FindEdge(IndexMaps.GetNewVertex(OtherEV.a), IndexMaps.GetNewVertex(OtherEV.b));
-					assert(MeshNew->IsBoundaryEdge(MappedEID));
+					int MappedEID = Result->FindEdge(IndexMaps.GetNewVertex(OtherEV.a), IndexMaps.GetNewVertex(OtherEV.b));
+					assert(Result->IsBoundaryEdge(MappedEID));
 					CreatedBoundaryEdges.push_back(MappedEID);
 				}
 			}
@@ -3055,7 +3080,7 @@ namespace Riemann
 
 		if (bPutResultInInputSpace)
 		{
-			MeshNew->ApplyTransform(TransformNew, false);
+			Result->ApplyTransform(TransformNew, false);
 			TransformNew = Transform::Identity();
 		}
 

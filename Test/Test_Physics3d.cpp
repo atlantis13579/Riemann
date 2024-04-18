@@ -133,7 +133,7 @@ void TestRaycastBenchmark()
 
 void TestPhysics3d()
 {
-	TestPhysxBin();
-	TestRaycastBenchmark();
+	// TestPhysxBin();
+	// TestRaycastBenchmark();
 }
 

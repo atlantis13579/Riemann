@@ -9,6 +9,10 @@
 
 namespace Riemann
 {
+	constexpr static int InvalidID = -1;
+	constexpr static int NonManifoldID = -2;
+	constexpr static int DuplicateTriangleID = -3;
+
 	static char* ParseRow(char* buf, char* bufEnd, char* row, int len)
 	{
 		bool start = true;
@@ -140,6 +144,16 @@ namespace Riemann
 		}
 	}
 
+	void FMeshIndexMappings::Initialize(DynamicMesh* Mesh)
+	{
+		if (Mesh->HasAttributes())
+		{
+			DynamicMeshAttributeSet* Attribs = Mesh->Attributes();
+			UVMaps.resize(Attribs->NumUVLayers());
+			NormalMaps.resize(Attribs->NumNormalLayers());
+		}
+	}
+
 	DynamicMesh::DynamicMesh() : mAttributes(new DynamicMeshAttributeSet(this))
 	{
 	}
@@ -169,6 +183,329 @@ namespace Riemann
 		mAttributes = new DynamicMeshAttributeSet(this);
 		ResourceName = "";
 	}
+
+
+	bool DynamicMesh::LoadObj(const char* name)
+	{
+		Clear();
+
+		char* buf = 0;
+		FILE* fp = fopen(name, "rb");
+		if (!fp)
+		{
+			return false;
+		}
+		fseek(fp, 0, SEEK_END);
+		size_t bufSize = (size_t)ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+		buf = new char[bufSize];
+		if (!buf)
+		{
+			fclose(fp);
+			return false;
+		}
+		uint64_t readLen = fread(buf, bufSize, 1, fp);
+		fclose(fp);
+
+		if (readLen != 1)
+		{
+			delete[] buf;
+			return false;
+		}
+
+		int VectexTokens = 0;
+
+		char* p = buf, * pEnd = buf + bufSize;
+		while (p < pEnd)
+		{
+			char row[512];
+			row[0] = '\0';
+			p = ParseRow(p, pEnd, row, sizeof(row) / sizeof(char));
+			if (row[0] == '#') continue;
+			if (row[0] == 'v' && row[1] != 'n' && row[1] != 't')
+			{
+				if (VectexTokens == 0)
+				{
+					VectexTokens = ParseNumTokens(row + 1);
+				}
+
+				if (VectexTokens == 6)
+				{
+					Vector3 v, c;
+					sscanf(row + 1, "%f %f %f %f %f %f", &v.x, &v.y, &v.z, &c.x, &c.y, &c.z);
+					VertexPositions.push_back(v);
+					VertexColors.push_back(c);
+					bHasVertexColor = true;
+				}
+				else
+				{
+					Vector3 v;
+					sscanf(row + 1, "%f %f %f", &v.x, &v.y, &v.z);
+					VertexPositions.push_back(v);
+				}
+				VertexRefCounts.push_back(1);
+				VertexEdgeLists.append();
+			}
+			else if (row[0] == 'v' && row[1] == 'n')
+			{
+				Vector3 v;
+				sscanf(row + 2, "%f %f %f", &v.x, &v.y, &v.z);
+				VertexNormals.push_back(v);
+				bHasVertexNormals = true;
+			}
+			else if (row[0] == 'v' && row[1] == 't')
+			{
+				Vector2 v;
+				sscanf(row + 2, "%f %f", &v.x, &v.y);
+				VertexUVs.push_back(v);
+				bHasVertexUVs = true;
+			}
+			else if (row[0] == 'f')
+			{
+				int face[32];
+				int NumVertices = (int)VertexPositions.size();
+				int nv = ParseFace(NumVertices, row + 1, face, 32);
+				for (int i = 2; i < nv; ++i)
+				{
+					const int a = face[0];
+					const int b = face[i - 1];
+					const int c = face[i];
+					if (a < 0 || a >= NumVertices || b < 0 || b >= NumVertices || c < 0 || c >= NumVertices)
+						continue;
+					AppendTriangle(Index3(a, b, c));
+				}
+			}
+		}
+
+		delete[] buf;
+
+		BuildBounds();
+
+		ResourceName = name;
+		return true;
+	}
+
+	bool DynamicMesh::ExportObj(const char* name) const
+	{
+		FILE* fp = fopen(name, "w");
+		if (!fp)
+		{
+			return false;
+		}
+
+		fprintf(fp, "# %d vertices, %d faces\n", (int)VertexPositions.size(), (int)Triangles.size());
+
+		fprintf(fp, "# List of geometric vertices, with (x,y,z[,w]) coordinates, w is optional and defaults to 1.0. \n");
+		if (!VertexColors.empty())
+		{
+			for (size_t i = 0; i < VertexPositions.size(); ++i)
+			{
+				const Vector3 v = VertexPositions[i];
+				const Vector3 c = VertexColors[i];
+				fprintf(fp, "v %.3f %.3f %.3f %.3f %.3f %.3f\n", v.x, v.y, v.z, c.x, c.y, c.z);
+			}
+		}
+		else
+		{
+			for (size_t i = 0; i < VertexPositions.size(); ++i)
+			{
+				const Vector3& v = VertexPositions[i];
+				fprintf(fp, "v %.3f %.3f %.3f\n", v.x, v.y, v.z);
+			}
+		}
+
+		fprintf(fp, "# Polygonal face element (see below) \n");
+		for (size_t i = 0; i < Triangles.size(); ++i)
+		{
+			//if (TriangleRefCounts[i] == 0)
+			//{
+			//	continue;
+			//}
+			const Index3& v = Triangles[i];
+			fprintf(fp, "f %d %d %d\n", v.a + 1, v.b + 1, v.c + 1);
+		}
+
+		if (!VertexNormals.empty())
+		{
+			fprintf(fp, "# List of vertex normals in (x,y,z) form; normals might not be unit vectors. \n");
+			for (size_t i = 0; i < VertexNormals.size(); ++i)
+			{
+				const Vector3& v = VertexNormals[i];
+				fprintf(fp, "vn %.3f %.3f %.3f\n", v.x, v.y, v.z);
+			}
+		}
+
+		if (!VertexUVs.empty())
+		{
+			fprintf(fp, "# List of texture coordinates, in (u, v [,w]) coordinates, these will vary between 0 and 1, w is optional and defaults to 0. \n");
+			for (size_t i = 0; i < VertexUVs.size(); ++i)
+			{
+				const Vector2& v = VertexUVs[i];
+				fprintf(fp, "vt %.3f %.3f\n", v.x, v.y);
+			}
+		}
+
+		fclose(fp);
+		return true;
+	}
+
+	DynamicMesh* DynamicMesh::CreateFromObj(const char* name)
+	{
+		DynamicMesh* p = new DynamicMesh;
+		if (!p->LoadObj(name))
+		{
+			delete p;
+			return nullptr;
+		}
+		return p;
+	}
+
+	void DynamicMesh::SetData(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
+	{
+		Clear();
+
+		int nv = (int)Vertices.size();
+		int nt = (int)Indices.size() / 3;
+
+		VertexInfo info;
+		info.bHasColor = false;
+		info.bHasNormal = true;
+		info.bHasUV = false;
+
+		for (int i = 0; i < nv; ++i)
+		{
+			info.Position = Vertices[i];
+			info.Normal = Normals[i];
+			AppendVertex(info);
+		}
+
+		for (int i = 0; i < nt; ++i)
+		{
+			AppendTriangle((int)Indices[3*i], (int)Indices[3 * i + 1], (int)Indices[3 * i + 2]);
+		}
+	}
+
+	int DynamicMesh::AppendVertex(const Vector3& v)
+	{
+		int index = (int)VertexPositions.size();
+		VertexPositions.push_back(v);
+		VertexRefCounts.push_back(1);
+		VertexEdgeLists.append();
+
+		if (HasAttributes())
+		{
+			Attributes()->OnNewVertex(index, false);
+		}
+
+		UpdateChangeStamps();
+		return index;
+	}
+
+	int DynamicMesh::AppendVertex(const VertexInfo& info)
+	{
+		int index = (int)VertexPositions.size();
+
+		VertexPositions.push_back(info.Position);
+		VertexRefCounts.push_back(1);
+		VertexEdgeLists.append();
+
+		if (info.bHasColor)
+		{
+			bHasVertexColor = true;
+		}
+
+		if (info.bHasNormal)
+		{
+			bHasVertexNormals = true;
+		}
+
+		if (info.bHasUV)
+		{
+			bHasVertexUVs = true;
+		}
+
+		if (HasVertexColors())
+		{
+			Vector3 val = info.bHasColor ? info.Color : Vector3::Zero();
+			VectorSetSafe(VertexColors, index, val, Vector3::Zero());
+		}
+
+		if (HasVertexNormals())
+		{
+			Vector3 val = info.bHasNormal ? info.Normal : Vector3::UnitY();
+			VectorSetSafe(VertexNormals, index, val, Vector3::UnitY());
+		}
+
+		if (HasVertexUVs())
+		{
+			Vector2 val = info.bHasUV ? info.UVs : Vector2::Zero();
+			VectorSetSafe(VertexUVs, index, val, Vector2::Zero());
+		}
+
+		if (HasAttributes())
+		{
+			Attributes()->OnNewVertex(index, false);
+		}
+
+		UpdateChangeStamps();
+		return index;
+	}
+
+	int DynamicMesh::AppendVertex(const DynamicMesh& from, int fromVID)
+	{
+		const int vid = (int)VertexPositions.size();
+		VertexPositions.push_back(from.VertexPositions[fromVID]);
+
+		if (HasVertexNormals())
+		{
+			if (from.HasVertexNormals())
+			{
+				const std::vector<Vector3>&FromNormals = from.VertexNormals;
+				VertexNormals.push_back(FromNormals[fromVID]);
+			}
+			else
+			{
+				VertexNormals.push_back(Vector3::UnitY());
+			}
+		}
+
+		if (HasVertexColors())
+		{
+			if (from.HasVertexColors())
+			{
+				const std::vector<Vector3>& FromColors = from.VertexColors;
+				VertexColors.push_back(FromColors[fromVID]);
+			}
+			else
+			{
+				VertexColors.push_back(Vector3::Zero());
+			}
+		}
+
+		if (HasVertexUVs())
+		{
+			if (from.HasVertexUVs())
+			{
+				const std::vector<Vector2>& FromUVs = from.VertexUVs;
+				VertexUVs.push_back(FromUVs[fromVID]);
+			}
+			else
+			{
+				VertexUVs.push_back(Vector2::Zero());
+			}
+		}
+
+		VertexEdgeLists.resize(VertexEdgeLists.size() + 1);
+
+		if (HasAttributes())
+		{
+			Attributes()->OnNewVertex(vid, false);
+		}
+
+		UpdateChangeStamps();
+		return vid;
+	}
+
 
 	bool DynamicMesh::Simplify(float rate)
 	{
@@ -1593,228 +1930,6 @@ namespace Riemann
 		Bounds = Box3(VertexPositions.data(), VertexPositions.size());
 	}
 
-	bool DynamicMesh::LoadObj(const char* name)
-	{
-		char* buf = 0;
-		FILE* fp = fopen(name, "rb");
-		if (!fp)
-		{
-			return false;
-		}
-		fseek(fp, 0, SEEK_END);
-		size_t bufSize = (size_t)ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-		buf = new char[bufSize];
-		if (!buf)
-		{
-			fclose(fp);
-			return false;
-		}
-		uint64_t readLen = fread(buf, bufSize, 1, fp);
-		fclose(fp);
-
-		if (readLen != 1)
-		{
-			delete[] buf;
-			return false;
-		}
-
-		int VectexTokens = 0;
-
-		char* p = buf, * pEnd = buf + bufSize;
-		while (p < pEnd)
-		{
-			char row[512];
-			row[0] = '\0';
-			p = ParseRow(p, pEnd, row, sizeof(row) / sizeof(char));
-			if (row[0] == '#') continue;
-			if (row[0] == 'v' && row[1] != 'n' && row[1] != 't')
-			{
-				if (VectexTokens == 0)
-				{
-					VectexTokens = ParseNumTokens(row + 1);
-				}
-
-				if (VectexTokens == 6)
-				{
-					Vector3 v, c;
-					sscanf(row + 1, "%f %f %f %f %f %f", &v.x, &v.y, &v.z, &c.x, &c.y, &c.z);
-					VertexPositions.push_back(v);
-					VertexColors.push_back(c);
-					bHasVertexColor = true;
-				}
-				else
-				{
-					Vector3 v;
-					sscanf(row + 1, "%f %f %f", &v.x, &v.y, &v.z);
-					VertexPositions.push_back(v);
-				}
-				VertexRefCounts.push_back(1);
-				VertexEdgeLists.append();
-			}
-			else if (row[0] == 'v' && row[1] == 'n')
-			{
-				Vector3 v;
-				sscanf(row + 2, "%f %f %f", &v.x, &v.y, &v.z);
-				VertexNormals.push_back(v);
-				bHasVertexNormals = true;
-			}
-			else if (row[0] == 'v' && row[1] == 't')
-			{
-				Vector2 v;
-				sscanf(row + 2, "%f %f", &v.x, &v.y);
-				VertexUVs.push_back(v);
-				bHasVertexUVs = true;
-			}
-			else if (row[0] == 'f')
-			{
-				int face[32];
-				int NumVertices = (int)VertexPositions.size();
-				int nv = ParseFace(NumVertices, row + 1, face, 32);
-				for (int i = 2; i < nv; ++i)
-				{
-					const int a = face[0];
-					const int b = face[i - 1];
-					const int c = face[i];
-					if (a < 0 || a >= NumVertices || b < 0 || b >= NumVertices || c < 0 || c >= NumVertices)
-						continue;
-					AppendTriangle(Index3(a, b, c));
-				}
-			}
-		}
-
-		delete[] buf;
-
-		BuildBounds();
-
-		ResourceName = name;
-		return true;
-	}
-
-	bool DynamicMesh::ExportObj(const char* name)
-	{
-		FILE* fp = fopen(name, "w");
-		if (!fp)
-		{
-			return false;
-		}
-
-		fprintf(fp, "# %d vertices, %d faces\n", (int)VertexPositions.size(), (int)Triangles.size());
-
-		fprintf(fp, "# List of geometric vertices, with (x,y,z[,w]) coordinates, w is optional and defaults to 1.0. \n");
-		if (!VertexColors.empty())
-		{
-			for (size_t i = 0; i < VertexPositions.size(); ++i)
-			{
-				const Vector3 v = VertexPositions[i];
-				const Vector3 c = VertexColors[i];
-				fprintf(fp, "v %.3f %.3f %.3f %.3f %.3f %.3f\n", v.x, v.y, v.z, c.x, c.y, c.z);
-			}
-		}
-		else
-		{
-			for (size_t i = 0; i < VertexPositions.size(); ++i)
-			{
-				const Vector3 v = VertexPositions[i];
-				fprintf(fp, "v %.3f %.3f %.3f\n", v.x, v.y, v.z);
-			}
-		}
-
-		fprintf(fp, "# Polygonal face element (see below) \n");
-		for (size_t i = 0; i < Triangles.size(); ++i)
-		{
-			const Index3 v = Triangles[i];
-			fprintf(fp, "f %d %d %d\n", v.a + 1, v.b + 1, v.c + 1);
-		}
-
-		if (!VertexNormals.empty())
-		{
-			fprintf(fp, "# List of vertex normals in (x,y,z) form; normals might not be unit vectors. \n");
-			for (size_t i = 0; i < VertexNormals.size(); ++i)
-			{
-				const Vector3 v = VertexNormals[i];
-				fprintf(fp, "vn %.3f %.3f %.3f\n", v.x, v.y, v.z);
-			}
-		}
-
-		if (!VertexUVs.empty())
-		{
-			fprintf(fp, "# List of texture coordinates, in (u, v [,w]) coordinates, these will vary between 0 and 1, w is optional and defaults to 0. \n");
-			for (size_t i = 0; i < VertexUVs.size(); ++i)
-			{
-				const Vector2 v = VertexUVs[i];
-				fprintf(fp, "vt %.3f %.3f\n", v.x, v.y);
-			}
-		}
-
-		fclose(fp);
-		return true;
-	}
-
-	DynamicMesh* DynamicMesh::CreateFromObj(const char* name)
-	{
-		DynamicMesh *p = new DynamicMesh;
-		if (!p->LoadObj(name))
-		{
-			delete p;
-			return nullptr;
-		}
-		return p;
-	}
-
-	int DynamicMesh::AppendVertex(const Vector3& v)
-	{
-		int index = (int)VertexPositions.size();
-		VertexPositions.push_back(v);
-		VertexRefCounts.push_back(1);
-		VertexEdgeLists.append();
-		return index;
-	}
-
-	int DynamicMesh::AppendVertex(const VertexInfo& info)
-	{
-		size_t index = VertexPositions.size();
-
-		VertexPositions.push_back(info.Position);
-		VertexRefCounts.push_back(1);
-		VertexEdgeLists.append();
-
-		if (info.bHasColor)
-		{
-			bHasVertexColor = true;
-		}
-
-		if (info.bHasNormal)
-		{
-			bHasVertexNormals = true;
-		}
-
-		if (info.bHasUV)
-		{
-			bHasVertexUVs = true;
-		}
-
-		if (HasVertexColors())
-		{
-			Vector3 val = info.bHasColor ? info.Color : Vector3::Zero();
-			VectorSetSafe(VertexColors, index, val, Vector3::Zero());
-		}
-
-		if (HasVertexNormals())
-		{
-			Vector3 val = info.bHasNormal ? info.Normal : Vector3::UnitY();
-			VectorSetSafe(VertexNormals, index, val, Vector3::UnitY());
-		}
-
-		if (HasVertexUVs())
-		{
-			Vector2 val = info.bHasUV ? info.UVs : Vector2::Zero();
-			VectorSetSafe(VertexUVs, index, val, Vector2::Zero());
-		}
-
-		return (int)index;
-	}
-
 	DynamicMeshAABBTree::DynamicMeshAABBTree(DynamicMesh* data)
 	{
 		Mesh = data;
@@ -2098,6 +2213,11 @@ namespace Riemann
 		int numTris = Mesh->GetTriangleCount();
 		for (int i = 0 ; i < numTris; ++i)
 		{
+			if (!Mesh->IsTriangleFast(i))
+			{
+				continue;
+			}
+
 			const Vector3 centroid = Mesh->GetTriCentroid((int)i);
 			float d2 = centroid.SquareLength();
 			if (d2 > 1e-3f)
@@ -2297,8 +2417,6 @@ namespace Riemann
 		std::function<Vector3(int, const Vector3&)> PositionTransform,
 		std::function<Vector3(int, const Vector3&)> NormalTransform)
 	{
-		assert(false);
-		/*
 		// todo: handle this case by making a copy?
 		assert(AppendMesh != Mesh);
 
@@ -2306,9 +2424,14 @@ namespace Riemann
 		IndexMapsOut.Initialize(Mesh);
 
 		FIndexMapi& VertexMap = IndexMapsOut.GetVertexMap();
-		VertexMap.Reserve(AppendMesh->VertexCount());
-		for (int VertID : AppendMesh->VertexIndicesItr())
+		VertexMap.Reserve(AppendMesh->GetVertexCount());
+		for (int VertID = 0; VertID < AppendMesh->GetVertexCount(); ++VertID)
 		{
+			if (!AppendMesh->IsVertexFast(VertID))
+			{
+				continue;
+			}
+
 			Vector3 Position = AppendMesh->GetVertex(VertID);
 			if (PositionTransform != nullptr)
 			{
@@ -2329,7 +2452,7 @@ namespace Riemann
 
 			if (AppendMesh->HasVertexUVs() && Mesh->HasVertexUVs())
 			{
-				FVector2f UV = AppendMesh->GetVertexUV(VertID);
+				Vector2 UV = AppendMesh->GetVertexUV(VertID);
 				Mesh->SetVertexUV(NewVertID, UV);
 			}
 
@@ -2343,14 +2466,20 @@ namespace Riemann
 		FIndexMapi& TriangleMap = IndexMapsOut.GetTriangleMap();
 		bool bAppendGroups = AppendMesh->HasTriangleGroups() && Mesh->HasTriangleGroups();
 		FIndexMapi& GroupsMap = IndexMapsOut.GetGroupMap();
-		for (int TriID : AppendMesh->TriangleIndicesItr())
+
+		for (int TriID = 0; TriID < AppendMesh->GetTriangleCount(); ++TriID)
 		{
+			if (!AppendMesh->IsTriangleFast(TriID))
+			{
+				continue;
+			}
+
 			// append trigroup
-			int GroupID = DynamicMesh::InvalidID;
+			int GroupID = -1;
 			if (bAppendGroups)
 			{
 				GroupID = AppendMesh->GetTriangleGroup(TriID);
-				if (GroupID != DynamicMesh::InvalidID)
+				if (GroupID != -1)
 				{
 					const int* FoundNewGroupID = GroupsMap.FindTo(GroupID);
 					if (FoundNewGroupID == nullptr)
@@ -2367,8 +2496,8 @@ namespace Riemann
 			}
 
 			Index3 Tri = AppendMesh->GetTriangle(TriID);
-			int NewTriID = Mesh->AppendTriangle(VertexMap.GetTo(Tri.a), VertexMap.GetTo(Tri.b), VertexMap.GetTo(Tri.c), GroupID);
-			if ((NewTriID >= 0))
+			int NewTriID = Mesh->AppendTriangle(Index3(VertexMap.GetTo(Tri.a), VertexMap.GetTo(Tri.b), VertexMap.GetTo(Tri.c)), GroupID);
+			if (NewTriID >= 0)
 			{
 				TriangleMap.Add(TriID, NewTriID);
 			}
@@ -2378,7 +2507,7 @@ namespace Riemann
 
 		if (AppendMesh->HasAttributes() && Mesh->HasAttributes())
 		{
-			int NumNormalLayers = FMath::Min(Mesh->Attributes()->NumNormalLayers(), AppendMesh->Attributes()->NumNormalLayers());
+			int NumNormalLayers = std::min(Mesh->Attributes()->NumNormalLayers(), AppendMesh->Attributes()->NumNormalLayers());
 			for (int NormalLayerIndex = 0; NormalLayerIndex < NumNormalLayers; NormalLayerIndex++)
 			{
 				const FDynamicMeshNormalOverlay* FromNormals = AppendMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
@@ -2392,7 +2521,7 @@ namespace Riemann
 				}
 			}
 
-			int NumUVLayers = FMath::Min(Mesh->Attributes()->NumUVLayers(), AppendMesh->Attributes()->NumUVLayers());
+			int NumUVLayers = std::min(Mesh->Attributes()->NumUVLayers(), AppendMesh->Attributes()->NumUVLayers());
 			for (int UVLayerIndex = 0; UVLayerIndex < NumUVLayers; UVLayerIndex++)
 			{
 				const FDynamicMeshUVOverlay* FromUVs = AppendMesh->Attributes()->GetUVLayer(UVLayerIndex);
@@ -2403,6 +2532,16 @@ namespace Riemann
 					UVMap.Reserve(FromUVs->ElementCount());
 					AppendUVs(AppendMesh, FromUVs, ToUVs,
 						VertexMap, TriangleMap, UVMap);
+				}
+			}
+
+			if (AppendMesh->Attributes()->HasMaterialID() && Mesh->Attributes()->HasMaterialID())
+			{
+				const FDynamicMeshMaterialAttribute* FromMaterialIDs = AppendMesh->Attributes()->GetMaterialID();
+				FDynamicMeshMaterialAttribute* ToMaterialIDs = Mesh->Attributes()->GetMaterialID();
+				for (const std::pair<int, int>& MapTID : TriangleMap.GetForwardMap())
+				{
+					ToMaterialIDs->SetValue(MapTID.second, FromMaterialIDs->GetValue(MapTID.first));
 				}
 			}
 
@@ -2419,38 +2558,29 @@ namespace Riemann
 				}
 			}
 
-			if (AppendMesh->Attributes()->HasMaterialID() && Mesh->Attributes()->HasMaterialID())
+			int NumWeightLayers = std::min(Mesh->Attributes()->NumWeightLayers(), AppendMesh->Attributes()->NumWeightLayers());
+			for (int WeightLayerIndex = 0; WeightLayerIndex < NumWeightLayers; WeightLayerIndex++)
 			{
-				const FDynamicMeshMaterialAttribute* FromMaterialIDs = AppendMesh->Attributes()->GetMaterialID();
-				FDynamicMeshMaterialAttribute* ToMaterialIDs = Mesh->Attributes()->GetMaterialID();
-				for (const TPair<int, int>& MapTID : TriangleMap.GetForwardMap())
+				const FDynamicMeshWeightAttribute* FromWeights = AppendMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
+				FDynamicMeshWeightAttribute* ToWeights = Mesh->Attributes()->GetWeightLayer(WeightLayerIndex);
+				for (const std::pair<int, int>& MapVID : VertexMap.GetForwardMap())
 				{
-					ToMaterialIDs->SetValue(MapTID.Value, FromMaterialIDs->GetValue(MapTID.Key));
+					float Weight;
+					FromWeights->GetValue(MapVID.first, &Weight);
+					ToWeights->SetValue(MapVID.second, &Weight);
 				}
 			}
 
-			int NumPolygroupLayers = FMath::Min(Mesh->Attributes()->NumPolygroupLayers(), AppendMesh->Attributes()->NumPolygroupLayers());
+			/*
+			int NumPolygroupLayers = std::min(Mesh->Attributes()->NumPolygroupLayers(), AppendMesh->Attributes()->NumPolygroupLayers());
 			for (int PolygroupLayerIndex = 0; PolygroupLayerIndex < NumPolygroupLayers; PolygroupLayerIndex++)
 			{
 				// TODO: remap groups? this will be somewhat expensive...
 				const FDynamicMeshPolygroupAttribute* FromPolygroups = AppendMesh->Attributes()->GetPolygroupLayer(PolygroupLayerIndex);
 				FDynamicMeshPolygroupAttribute* ToPolygroups = Mesh->Attributes()->GetPolygroupLayer(PolygroupLayerIndex);
-				for (const TPair<int, int>& MapTID : TriangleMap.GetForwardMap())
+				for (const std::pair<int, int>& MapTID : TriangleMap.GetForwardMap())
 				{
-					ToPolygroups->SetValue(MapTID.Value, FromPolygroups->GetValue(MapTID.Key));
-				}
-			}
-
-			int NumWeightLayers = FMath::Min(Mesh->Attributes()->NumWeightLayers(), AppendMesh->Attributes()->NumWeightLayers());
-			for (int WeightLayerIndex = 0; WeightLayerIndex < NumWeightLayers; WeightLayerIndex++)
-			{
-				const FDynamicMeshWeightAttribute* FromWeights = AppendMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
-				FDynamicMeshWeightAttribute* ToWeights = Mesh->Attributes()->GetWeightLayer(WeightLayerIndex);
-				for (const TPair<int, int>& MapVID : VertexMap.GetForwardMap())
-				{
-					float Weight;
-					FromWeights->GetValue(MapVID.Key, &Weight);
-					ToWeights->SetValue(MapVID.Value, &Weight);
+					ToPolygroups->SetValue(MapTID.second, FromPolygroups->GetValue(MapTID.first));
 				}
 			}
 
@@ -2463,21 +2593,21 @@ namespace Riemann
 					Mesh->Attributes()->AppendBonesUnique(*AppendMesh->Attributes());
 				}
 
-				for (const TPair<FName, TUniquePtr<FDynamicMeshVertexSkinWeightsAttribute>>& AttribPair : AppendMesh->Attributes()->GetSkinWeightsAttributes())
+				for (const std::pair<std::string, TUniquePtr<FDynamicMeshVertexSkinWeightsAttribute>>& AttribPair : AppendMesh->Attributes()->GetSkinWeightsAttributes())
 				{
-					FDynamicMeshVertexSkinWeightsAttribute* ToAttrib = Mesh->Attributes()->GetSkinWeightsAttribute(AttribPair.Key);
+					FDynamicMeshVertexSkinWeightsAttribute* ToAttrib = Mesh->Attributes()->GetSkinWeightsAttribute(AttribPair.first);
 					if (ToAttrib)
 					{
 						if (bSameSkeletons)
 						{
 							// If the skeletons are the same then we do not need to re-index and we simply copy
-							ToAttrib->CopyThroughMapping(AttribPair.Value.Get(), IndexMapsOut);
+							ToAttrib->CopyThroughMapping(AttribPair.second.Get(), IndexMapsOut);
 						}
 						else
 						{
 							// Make a copy of the append mesh skinning weights and reindex them with respect to the new skeleton
 							FDynamicMeshVertexSkinWeightsAttribute CopyAppendMeshAttrib;
-							CopyAppendMeshAttrib.Copy(*AttribPair.Value.Get());
+							CopyAppendMeshAttrib.Copy(*AttribPair.second.Get());
 							CopyAppendMeshAttrib.ReindexBoneIndicesToSkeleton(AppendMesh->Attributes()->GetBoneNames()->GetAttribValues(),
 								Mesh->Attributes()->GetBoneNames()->GetAttribValues());
 
@@ -2489,38 +2619,372 @@ namespace Riemann
 			}
 			else
 			{
-				for (const TPair<FName, TUniquePtr<FDynamicMeshVertexSkinWeightsAttribute>>& AttribPair : AppendMesh->Attributes()->GetSkinWeightsAttributes())
+				for (const std::pair<std::string, TUniquePtr<FDynamicMeshVertexSkinWeightsAttribute>>& AttribPair : AppendMesh->Attributes()->GetSkinWeightsAttributes())
 				{
-					FDynamicMeshVertexSkinWeightsAttribute* ToAttrib = Mesh->Attributes()->GetSkinWeightsAttribute(AttribPair.Key);
+					FDynamicMeshVertexSkinWeightsAttribute* ToAttrib = Mesh->Attributes()->GetSkinWeightsAttribute(AttribPair.first);
 					if (ToAttrib)
 					{
-						ToAttrib->CopyThroughMapping(AttribPair.Value.Get(), IndexMapsOut);
+						ToAttrib->CopyThroughMapping(AttribPair.second.Get(), IndexMapsOut);
 					}
 				}
 			}
 
-			for (const TPair<FName, TUniquePtr<FDynamicMeshAttributeBase>>& AttribPair : AppendMesh->Attributes()->GetAttachedAttributes())
+			for (const std::pair<std::string, TUniquePtr<FDynamicMeshAttributeBase>>& AttribPair : AppendMesh->Attributes()->GetAttachedAttributes())
 			{
-				if (Mesh->Attributes()->HasAttachedAttribute(AttribPair.Key))
+				if (Mesh->Attributes()->HasAttachedAttribute(AttribPair.first))
 				{
-					FDynamicMeshAttributeBase* ToAttrib = Mesh->Attributes()->GetAttachedAttribute(AttribPair.Key);
-					ToAttrib->CopyThroughMapping(AttribPair.Value.Get(), IndexMapsOut);
+					FDynamicMeshAttributeBase* ToAttrib = Mesh->Attributes()->GetAttachedAttribute(AttribPair.first);
+					ToAttrib->CopyThroughMapping(AttribPair.second.Get(), IndexMapsOut);
 				}
+			}
+			*/
+		}
+	}
+
+
+	void FDynamicMeshEditor::AppendNormals(const DynamicMesh* AppendMesh,
+		const FDynamicMeshNormalOverlay* FromNormals, FDynamicMeshNormalOverlay* ToNormals,
+		const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
+		std::function<Vector3(int, const Vector3&)> NormalTransform,
+		FIndexMapi& NormalMapOut)
+	{
+		// copy over normals
+		for (int ElemID = 0; ElemID < FromNormals->ElementCount(); ++ElemID)
+		{
+			if (!FromNormals->IsElement(ElemID))
+			{
+				continue;
+			}
+
+			int ParentVertID = FromNormals->GetParentVertex(ElemID);
+			Vector3 Normal = FromNormals->GetElement(ElemID);
+			if (NormalTransform != nullptr)
+			{
+				Normal = (Vector3)NormalTransform(ParentVertID, (Vector3)Normal);
+			}
+			int NewElemID = ToNormals->AppendElement(Normal);
+			NormalMapOut.Add(ElemID, NewElemID);
+		}
+
+		// now set new triangles
+		for (const std::pair<int, int>& MapTID : TriangleMap.GetForwardMap())
+		{
+			if (FromNormals->IsSetTriangle(MapTID.first))
+			{
+				Index3 ElemTri = FromNormals->GetTriangle(MapTID.first);
+				for (int j = 0; j < 3; ++j)
+				{
+					ElemTri[j] = FromNormals->IsElement(ElemTri[j]) ? NormalMapOut.GetTo(ElemTri[j]) : -1;
+				}
+				ToNormals->SetTriangle(MapTID.second, ElemTri);
+			}
+		}
+	}
+
+
+	void FDynamicMeshEditor::AppendUVs(const DynamicMesh* AppendMesh,
+		const FDynamicMeshUVOverlay* FromUVs, FDynamicMeshUVOverlay* ToUVs,
+		const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
+		FIndexMapi& UVMapOut)
+	{
+		// copy over uv elements		
+		for (int ElemID = 0; ElemID < FromUVs->ElementCount(); ++ElemID)
+		{
+			if (!FromUVs->IsElement(ElemID))
+			{
+				continue;
+			}
+
+			Vector2 UV = FromUVs->GetElement(ElemID);
+			int NewElemID = ToUVs->AppendElement(UV);
+			UVMapOut.Add(ElemID, NewElemID);
+		}
+
+		// now set new triangles
+		for (const std::pair<int, int>& MapTID : TriangleMap.GetForwardMap())
+		{
+			if (FromUVs->IsSetTriangle(MapTID.first))
+			{
+				Index3 ElemTri = FromUVs->GetTriangle(MapTID.first);
+				for (int j = 0; j < 3; ++j)
+				{
+					ElemTri[j] = FromUVs->IsElement(ElemTri[j]) ? UVMapOut.GetTo(ElemTri[j]) : -1;
+				}
+				ToUVs->SetTriangle(MapTID.second, ElemTri);
+			}
+		}
+	}
+
+
+	void FDynamicMeshEditor::AppendColors(const DynamicMesh* AppendMesh,
+		const FDynamicMeshColorOverlay* FromOverlay, FDynamicMeshColorOverlay* ToOverlay,
+		const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
+		FIndexMapi& MapOut)
+	{
+		// copy over color elements
+		for (int ElemID = 0; ElemID < FromOverlay->ElementCount(); ++ElemID)
+		{
+			if (!FromOverlay->IsElement(ElemID))
+			{
+				continue;
+			}
+			int NewElemID = ToOverlay->AppendElement(FromOverlay->GetElement(ElemID));
+			MapOut.Add(ElemID, NewElemID);
+		}
+
+		// now set new triangles
+		for (const std::pair<int, int>& MapTID : TriangleMap.GetForwardMap())
+		{
+			if (FromOverlay->IsSetTriangle(MapTID.first))
+			{
+				Index3 ElemTri = FromOverlay->GetTriangle(MapTID.first);
+				for (int j = 0; j < 3; ++j)
+				{
+					ElemTri[j] = FromOverlay->IsElement(ElemTri[j]) ? MapOut.GetTo(ElemTri[j]) : -1;
+				}
+				ToOverlay->SetTriangle(MapTID.second, ElemTri);
+			}
+		}
+	}
+
+	static int AppendTriangleUVAttribute(const DynamicMesh* FromMesh, int FromElementID, DynamicMesh* ToMesh, int UVLayerIndex, FMeshIndexMappings& IndexMaps)
+	{
+		int NewElementID = IndexMaps.GetNewUV(UVLayerIndex, FromElementID);
+		if (NewElementID == IndexMaps.InvalidID())
+		{
+			const FDynamicMeshUVOverlay* FromUVOverlay = FromMesh->Attributes()->GetUVLayer(UVLayerIndex);
+			FDynamicMeshUVOverlay* ToUVOverlay = ToMesh->Attributes()->GetUVLayer(UVLayerIndex);
+			NewElementID = ToUVOverlay->AppendElement(FromUVOverlay->GetElement(FromElementID));
+			IndexMaps.SetUV(UVLayerIndex, FromElementID, NewElementID);
+		}
+		return NewElementID;
+	}
+
+	static int AppendTriangleNormalAttribute(const DynamicMesh* FromMesh, int FromElementID, DynamicMesh* ToMesh, int NormalLayerIndex, FMeshIndexMappings& IndexMaps)
+	{
+		int NewElementID = IndexMaps.GetNewNormal(NormalLayerIndex, FromElementID);
+		if (NewElementID == IndexMaps.InvalidID())
+		{
+			const FDynamicMeshNormalOverlay* FromNormalOverlay = FromMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+			FDynamicMeshNormalOverlay* ToNormalOverlay = ToMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+			NewElementID = ToNormalOverlay->AppendElement(FromNormalOverlay->GetElement(FromElementID));
+			IndexMaps.SetNormal(NormalLayerIndex, FromElementID, NewElementID);
+		}
+		return NewElementID;
+	}
+
+	static int AppendTriangleColorAttribute(const DynamicMesh* FromMesh, int FromElementID, DynamicMesh* ToMesh, FMeshIndexMappings& IndexMaps)
+	{
+		int NewElementID = IndexMaps.GetNewColor(FromElementID);
+		if (NewElementID == IndexMaps.InvalidID())
+		{
+			const FDynamicMeshColorOverlay* FromOverlay = FromMesh->Attributes()->PrimaryColors();
+			FDynamicMeshColorOverlay* ToOverlay = ToMesh->Attributes()->PrimaryColors();
+			NewElementID = ToOverlay->AppendElement(FromOverlay->GetElement(FromElementID));
+			IndexMaps.SetColor(FromElementID, NewElementID);
+		}
+		return NewElementID;
+	}
+
+	static void AppendTriangleAttributes(const DynamicMesh* FromMesh, int FromTriangleID, DynamicMesh* ToMesh, int ToTriangleID, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut)
+	{
+		if (FromMesh->HasAttributes() == false || ToMesh->HasAttributes() == false)
+		{
+			return;
+		}
+
+		for (int UVLayerIndex = 0; UVLayerIndex < std::min(FromMesh->Attributes()->NumUVLayers(), ToMesh->Attributes()->NumUVLayers()); UVLayerIndex++)
+		{
+			const FDynamicMeshUVOverlay* FromUVOverlay = FromMesh->Attributes()->GetUVLayer(UVLayerIndex);
+			FDynamicMeshUVOverlay* ToUVOverlay = ToMesh->Attributes()->GetUVLayer(UVLayerIndex);
+			if (FromUVOverlay->IsSetTriangle(FromTriangleID))
+			{
+				Index3 FromElemTri = FromUVOverlay->GetTriangle(FromTriangleID);
+				Index3 ToElemTri = ToUVOverlay->GetTriangle(ToTriangleID);
+				for (int j = 0; j < 3; ++j)
+				{
+					assert(FromElemTri[j] != -1);
+					int NewElemID = AppendTriangleUVAttribute(FromMesh, FromElemTri[j], ToMesh, UVLayerIndex, IndexMaps);
+					ToElemTri[j] = NewElemID;
+				}
+				ToUVOverlay->SetTriangle(ToTriangleID, ToElemTri);
+			}
+		}
+
+		for (int NormalLayerIndex = 0; NormalLayerIndex < std::min(FromMesh->Attributes()->NumNormalLayers(), ToMesh->Attributes()->NumNormalLayers()); NormalLayerIndex++)
+		{
+			const FDynamicMeshNormalOverlay* FromNormalOverlay = FromMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+			FDynamicMeshNormalOverlay* ToNormalOverlay = ToMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+			if (FromNormalOverlay->IsSetTriangle(FromTriangleID))
+			{
+				Index3 FromElemTri = FromNormalOverlay->GetTriangle(FromTriangleID);
+				Index3 ToElemTri = ToNormalOverlay->GetTriangle(ToTriangleID);
+				for (int j = 0; j < 3; ++j)
+				{
+					assert(FromElemTri[j] != -1);
+					int NewElemID = AppendTriangleNormalAttribute(FromMesh, FromElemTri[j], ToMesh, NormalLayerIndex, IndexMaps);
+					ToElemTri[j] = NewElemID;
+				}
+				ToNormalOverlay->SetTriangle(ToTriangleID, ToElemTri);
+			}
+		}
+
+		if (FromMesh->Attributes()->HasPrimaryColors() && ToMesh->Attributes()->HasPrimaryColors())
+		{
+			const FDynamicMeshColorOverlay* FromOverlay = FromMesh->Attributes()->PrimaryColors();
+			FDynamicMeshColorOverlay* ToOverlay = ToMesh->Attributes()->PrimaryColors();
+			if (FromOverlay->IsSetTriangle(FromTriangleID))
+			{
+				Index3 FromElemTri = FromOverlay->GetTriangle(FromTriangleID);
+				Index3 ToElemTri = ToOverlay->GetTriangle(ToTriangleID);
+				for (int j = 0; j < 3; ++j)
+				{
+					assert(FromElemTri[j] != -1);
+					int NewElemID = AppendTriangleColorAttribute(FromMesh, FromElemTri[j], ToMesh, IndexMaps);
+					ToElemTri[j] = NewElemID;
+				}
+				ToOverlay->SetTriangle(ToTriangleID, ToElemTri);
+			}
+		}
+
+		if (FromMesh->Attributes()->HasMaterialID() && ToMesh->Attributes()->HasMaterialID())
+		{
+			const FDynamicMeshMaterialAttribute* FromMaterialIDs = FromMesh->Attributes()->GetMaterialID();
+			FDynamicMeshMaterialAttribute* ToMaterialIDs = ToMesh->Attributes()->GetMaterialID();
+			ToMaterialIDs->SetValue(ToTriangleID, FromMaterialIDs->GetValue(FromTriangleID));
+		}
+
+		//int NumPolygroupLayers = std::min(FromMesh->Attributes()->NumPolygroupLayers(), ToMesh->Attributes()->NumPolygroupLayers());
+		//for (int PolygroupLayerIndex = 0; PolygroupLayerIndex < NumPolygroupLayers; PolygroupLayerIndex++)
+		//{
+		//	// TODO: remap groups? this will be somewhat expensive...
+		//	const FDynamicMeshPolygroupAttribute* FromPolygroups = FromMesh->Attributes()->GetPolygroupLayer(PolygroupLayerIndex);
+		//	FDynamicMeshPolygroupAttribute* ToPolygroups = ToMesh->Attributes()->GetPolygroupLayer(PolygroupLayerIndex);
+		//	ToPolygroups->SetValue(ToTriangleID, FromPolygroups->GetValue(FromTriangleID));
+		//}
+	}
+
+	static void AppendVertexAttributes(const DynamicMesh* FromMesh, DynamicMesh* ToMesh, FMeshIndexMappings& IndexMaps)
+	{
+		if (FromMesh->HasAttributes() == false || ToMesh->HasAttributes() == false)
+		{
+			return;
+		}
+
+		int NumWeightLayers = std::min(FromMesh->Attributes()->NumWeightLayers(), ToMesh->Attributes()->NumWeightLayers());
+		for (int WeightLayerIndex = 0; WeightLayerIndex < NumWeightLayers; WeightLayerIndex++)
+		{
+			const FDynamicMeshWeightAttribute* FromWeights = FromMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
+			FDynamicMeshWeightAttribute* ToWeights = ToMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
+			for (const std::pair<int, int>& MapVID : IndexMaps.GetVertexMap().GetForwardMap())
+			{
+				float Weight;
+				FromWeights->GetValue(MapVID.first, &Weight);
+				ToWeights->SetValue(MapVID.second, &Weight);
+			}
+		}
+
+		/*
+		// Copy skin weight and generic attributes after full IndexMaps have been created. 	
+		for (const std::pair<std::string, TUniquePtr<FDynamicMeshVertexSkinWeightsAttribute>>& AttribPair : FromMesh->Attributes()->GetSkinWeightsAttributes())
+		{
+			FDynamicMeshVertexSkinWeightsAttribute* ToAttrib = ToMesh->Attributes()->GetSkinWeightsAttribute(AttribPair.first);
+			if (ToAttrib)
+			{
+				ToAttrib->CopyThroughMapping(AttribPair.second.Get(), IndexMaps);
+			}
+		}
+
+		for (const std::pair<std::string, TUniquePtr<FDynamicMeshAttributeBase>>& AttribPair : FromMesh->Attributes()->GetAttachedAttributes())
+		{
+			if (ToMesh->Attributes()->HasAttachedAttribute(AttribPair.first))
+			{
+				FDynamicMeshAttributeBase* ToAttrib = ToMesh->Attributes()->GetAttachedAttribute(AttribPair.first);
+				ToAttrib->CopyThroughMapping(AttribPair.second.Get(), IndexMaps);
 			}
 		}
 		*/
 	}
 
-	/*
-	void FMeshIndexMappings::Initialize(DynamicMesh* Mesh)
+	void FDynamicMeshEditor::AppendTriangles(const DynamicMesh* SourceMesh, const std::vector<int>& SourceTriangles, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut, bool bComputeTriangleMap)
 	{
-		if (Mesh->HasAttributes())
+		ResultOut.Reset();
+		IndexMaps.Initialize(Mesh);
+
+		int DefaultGroupID = -1;
+		for (int SourceTriangleID : SourceTriangles)
 		{
-			FDynamicMeshAttributeSet* Attribs = Mesh->Attributes();
-			UVMaps.SetNum(Attribs->NumUVLayers());
-			NormalMaps.SetNum(Attribs->NumNormalLayers());
+			assert(SourceMesh->IsTriangle(SourceTriangleID));
+			if (SourceMesh->IsTriangle(SourceTriangleID) == false)
+			{
+				continue;	// ignore missing triangles
+			}
+
+			Index3 Tri = SourceMesh->GetTriangle(SourceTriangleID);
+
+			// FindOrCreateDuplicateGroup
+			int NewGroupID = -1;
+			if (Mesh->HasTriangleGroups())
+			{
+				if (SourceMesh->HasTriangleGroups())
+				{
+					int SourceGroupID = SourceMesh->GetTriangleGroup(SourceTriangleID);
+					if (SourceGroupID >= 0)
+					{
+						NewGroupID = IndexMaps.GetNewGroup(SourceGroupID);
+						if (NewGroupID == IndexMaps.InvalidID())
+						{
+							NewGroupID = Mesh->AllocateTriangleGroup();
+							IndexMaps.SetGroup(SourceGroupID, NewGroupID);
+							ResultOut.NewGroups.push_back(NewGroupID);
+						}
+					}
+				}
+				else
+				{
+					// If the source mesh does not have triangle groups, but the destination
+					// mesh does, create a default group for all triangles.
+					if (DefaultGroupID == -1)
+					{
+						DefaultGroupID = Mesh->AllocateTriangleGroup();
+						ResultOut.NewGroups.push_back(DefaultGroupID);
+					}
+					NewGroupID = DefaultGroupID;
+				}
+			}
+
+			// FindOrCreateDuplicateVertex
+			Index3 NewTri;
+			for (int j = 0; j < 3; ++j)
+			{
+				int SourceVertexID = Tri[j];
+				int NewVertexID = IndexMaps.GetNewVertex(SourceVertexID);
+				if (NewVertexID == IndexMaps.InvalidID())
+				{
+					NewVertexID = Mesh->AppendVertex(*SourceMesh, SourceVertexID);
+					IndexMaps.SetVertex(SourceVertexID, NewVertexID);
+					ResultOut.NewVertices.push_back(NewVertexID);
+				}
+				NewTri[j] = NewVertexID;
+			}
+
+			int NewTriangleID = Mesh->AppendTriangle(NewTri, NewGroupID);
+			if (bComputeTriangleMap)
+			{
+				IndexMaps.SetTriangle(SourceTriangleID, NewTriangleID);
+			}
+			ResultOut.NewTriangles.push_back(NewTriangleID);
+
+			AppendTriangleAttributes(SourceMesh, SourceTriangleID, Mesh, NewTriangleID, IndexMaps, ResultOut);
+
+			//Mesh->CheckValidity(true);
 		}
+
+		AppendVertexAttributes(SourceMesh, Mesh, IndexMaps);
+
 	}
+
+	/*
 
 	void FDynamicMeshEditResult::GetAllTriangles(std::vector<int>& TrianglesOut) const
 	{
@@ -2623,7 +3087,7 @@ namespace Riemann
 	}
 
 	bool FDynamicMeshEditor::StitchVertexLoopToTriVidPairSequence(
-		const std::vector<TPair<int, TPair<int8, int8>>>& TriVidPairs,
+		const std::vector<std::pair<int, std::pair<int8, int8>>>& TriVidPairs,
 		const std::vector<int>& VertexLoop, FDynamicMeshEditResult& ResultOut)
 	{
 		int N = TriVidPairs.size();
@@ -2633,9 +3097,9 @@ namespace Riemann
 		}
 		return DynamicMeshEditorLocals::StitchLoopsInternal(*this, N, [this, N, &TriVidPairs, &VertexLoop]
 		(int Index, int& VertA, int& VertB, int& VertC, int& VertD) {
-				Index3 TriVids1 = Mesh->GetTriangle(TriVidPairs[Index].Key);
-				VertA = TriVids1[TriVidPairs[Index].Value.Key];
-				VertB = TriVids1[TriVidPairs[Index].Value.Value];
+				Index3 TriVids1 = Mesh->GetTriangle(TriVidPairs[Index].first);
+				VertA = TriVids1[TriVidPairs[Index].second.first];
+				VertB = TriVids1[TriVidPairs[Index].second.second];
 
 				VertC = VertexLoop[Index];
 				VertD = VertexLoop[(Index + 1) % N];
@@ -2643,7 +3107,7 @@ namespace Riemann
 	}
 
 	bool FDynamicMeshEditor::ConvertLoopToTriVidPairSequence(const DynamicMesh& Mesh, const std::vector<int>& VidLoop,
-		const std::vector<int>& EdgeLoop, std::vector<TPair<int, TPair<int8, int8>>>& TriVertPairsOut)
+		const std::vector<int>& EdgeLoop, std::vector<std::pair<int, std::pair<int8, int8>>>& TriVerstd::pairsOut)
 	{
 		if (!(EdgeLoop.size() == VidLoop.size()))
 		{
@@ -2661,8 +3125,8 @@ namespace Riemann
 			int8 SubIdx2 = (int8)IndexUtil::FindTriIndex(SecondVid, TriVids);
 			if ((SubIdx1 >= 0 && SubIdx2 >= 0))
 			{
-				TriVertPairsOut.Emplace(Tid,
-					TPair<int8, int8>(SubIdx1, SubIdx2));
+				TriVerstd::pairsOut.Emplace(Tid,
+					std::pair<int8, int8>(SubIdx1, SubIdx2));
 			}
 			else
 			{
@@ -2695,7 +3159,7 @@ namespace Riemann
 			int a = Loop1[i];
 			int b = Loop1[(i + 1) % N];
 			Edges1[i] = Mesh->FindEdge(a, b);
-			if (Edges1[i] == DynamicMesh::InvalidID)
+			if (Edges1[i] == -1)
 			{
 				return false;
 			}
@@ -2703,7 +3167,7 @@ namespace Riemann
 			int c = Loop2[i];
 			int d = Loop2[(i + 1) % N];
 			Edges2[i] = Mesh->FindEdge(c, d);
-			if (Edges2[i] == DynamicMesh::InvalidID)
+			if (Edges2[i] == -1)
 			{
 				return false;
 			}
@@ -2729,11 +3193,11 @@ namespace Riemann
 			}
 			else
 			{
-				if (MergeInfo.ExtraRemovedEdges.a != DynamicMesh::InvalidID)
+				if (MergeInfo.ExtraRemovedEdges.a != -1)
 				{
 					SkipEdges.Add(MergeInfo.ExtraRemovedEdges.a);
 				}
-				if (MergeInfo.ExtraRemovedEdges.b != DynamicMesh::InvalidID)
+				if (MergeInfo.ExtraRemovedEdges.b != -1)
 				{
 					SkipEdges.Add(MergeInfo.ExtraRemovedEdges.b);
 				}
@@ -3017,8 +3481,8 @@ namespace Riemann
 					{
 						// The isolated vertex should be in the outer loop
 						LoopPair.OuterVertices[vi] = *ExistingNewVertID;
-						LoopPair.OuterEdges[vi] = DynamicMesh::InvalidID;
-						LoopPair.OuterEdges[(vi == 0) ? NumVertices - 1 : vi - 1] = DynamicMesh::InvalidID;
+						LoopPair.OuterEdges[vi] = -1;
+						LoopPair.OuterEdges[(vi == 0) ? NumVertices - 1 : vi - 1] = -1;
 						NewVertexLoop[vi] = VertID;
 					}
 					else
@@ -3064,8 +3528,8 @@ namespace Riemann
 					int NewVertID = Mesh->AppendVertex(*Mesh, VertID);
 					OldVidsToNewVids.Add(VertID, NewVertID);
 					LoopPair.OuterVertices[vi] = NewVertID;
-					LoopPair.OuterEdges[vi] = DynamicMesh::InvalidID;
-					LoopPair.OuterEdges[(vi == 0) ? NumVertices - 1 : vi - 1] = DynamicMesh::InvalidID;
+					LoopPair.OuterEdges[vi] = -1;
+					LoopPair.OuterEdges[(vi == 0) ? NumVertices - 1 : vi - 1] = -1;
 					NewVertexLoop[vi] = VertID;
 					bSawBoundaryInLoop = true;
 				}
@@ -3190,7 +3654,7 @@ namespace Riemann
 				// is bowtie
 				for (int GroupIdx = 1, GroupStartIdx = ContiguousGroupLengths[0]; GroupIdx < ContiguousGroupLengths.size(); GroupStartIdx += ContiguousGroupLengths[GroupIdx++])
 				{
-					(EMeshResult::Ok == Mesh->SplitVertex(VertexID, std::vectorView<const int>(TrianglesOut.GetData() + GroupStartIdx, ContiguousGroupLengths[GroupIdx]), SplitInfo));
+					(EMeshResult::Ok == Mesh->SplitVertex(VertexID, std::vector<const int>(TrianglesOut.GetData() + GroupStartIdx, ContiguousGroupLengths[GroupIdx]), SplitInfo));
 					ResultOut.NewVertices.Add(SplitInfo.NewVertex);
 				}
 			}
@@ -3279,12 +3743,12 @@ namespace Riemann
 			// try to handle duplicate-tri case
 			if (DuplicateBehavior == EDuplicateTriBehavior::EnsureContinue)
 			{
-				(Mesh->FindTriangle(new_t.a, new_t.b, new_t.c) == DynamicMesh::InvalidID);
+				(Mesh->FindTriangle(new_t.a, new_t.b, new_t.c) == -1);
 			}
 			else
 			{
 				int existing_tid = Mesh->FindTriangle(new_t.a, new_t.b, new_t.c);
-				if (existing_tid != DynamicMesh::InvalidID)
+				if (existing_tid != -1)
 				{
 					if (DuplicateBehavior == EDuplicateTriBehavior::EnsureAbort)
 					{
@@ -3547,7 +4011,7 @@ namespace Riemann
 	void FDynamicMeshEditor::SetGeneralTubeUVs(const std::vector<int>& Triangles,
 		const std::vector<int>& VertexIDs1, const std::vector<int>& MatchedIndices1, const std::vector<int>& VertexIDs2, const std::vector<int>& MatchedIndices2,
 		const std::vector<float>& UValues, const Vector3& VDir,
-		float UVScaleFactor, const FVector2f& UVTranslation, int UVLayerIndex)
+		float UVScaleFactor, const Vector2& UVTranslation, int UVLayerIndex)
 	{
 		// not really a valid tube if only two vertices on either side
 		if (!(VertexIDs1.size() >= 3 && VertexIDs2.size() >= 3))
@@ -3565,10 +4029,10 @@ namespace Riemann
 		Vector3 RefPos = Mesh->GetVertex(VertexIDs1[0]);
 		auto GetUV = [this, &VDir, &UVScaleFactor, &UVTranslation, &RefPos](int MeshIdx, float UStart, float UEnd, float Param)
 		{
-			return FVector2f(float((Mesh->GetVertex(MeshIdx) - RefPos).Dot((Vector3)VDir)), FMath::Lerp(UStart, UEnd, Param)) * UVScaleFactor + UVTranslation;
+			return Vector2(float((Mesh->GetVertex(MeshIdx) - RefPos).Dot((Vector3)VDir)), FMath::Lerp(UStart, UEnd, Param)) * UVScaleFactor + UVTranslation;
 		};
 
-		std::vector<FVector2f> VertUVs[2];
+		std::vector<Vector2> VertUVs[2];
 		VertUVs[0].SetNum(VertexIDs1.size() + 1);
 		VertUVs[1].SetNum(VertexIDs2.size() + 1);
 
@@ -3642,13 +4106,13 @@ namespace Riemann
 	}
 
 
-	void FDynamicMeshEditor::SetTriangleUVsFromProjection(const std::vector<int>& Triangles, const FFrame3d& ProjectionFrame, float UVScaleFactor, const FVector2f& UVTranslation, bool bShiftToOrigin, int UVLayerIndex)
+	void FDynamicMeshEditor::SetTriangleUVsFromProjection(const std::vector<int>& Triangles, const FFrame3d& ProjectionFrame, float UVScaleFactor, const Vector2& UVTranslation, bool bShiftToOrigin, int UVLayerIndex)
 	{
-		SetTriangleUVsFromProjection(Triangles, ProjectionFrame, FVector2f(UVScaleFactor, UVScaleFactor), UVTranslation, UVLayerIndex, bShiftToOrigin, false);
+		SetTriangleUVsFromProjection(Triangles, ProjectionFrame, Vector2(UVScaleFactor, UVScaleFactor), UVTranslation, UVLayerIndex, bShiftToOrigin, false);
 	}
 
-	void FDynamicMeshEditor::SetTriangleUVsFromProjection(const std::vector<int>& Triangles, const FFrame3d& ProjectionFrame, const FVector2f& UVScale,
-		const FVector2f& UVTranslation, int UVLayerIndex, bool bShiftToOrigin, bool bNormalizeBeforeScaling)
+	void FDynamicMeshEditor::SetTriangleUVsFromProjection(const std::vector<int>& Triangles, const FFrame3d& ProjectionFrame, const Vector2& UVScale,
+		const Vector2& UVTranslation, int UVLayerIndex, bool bShiftToOrigin, bool bNormalizeBeforeScaling)
 	{
 		if (!Triangles.size())
 		{
@@ -3677,7 +4141,7 @@ namespace Riemann
 				const int* FoundElementID = BaseToOverlayVIDMap.Find(BaseTri[j]);
 				if (FoundElementID == nullptr)
 				{
-					FVector2f UV = (FVector2f)ProjectionFrame.ToPlaneUV(Mesh->GetVertex(BaseTri[j]), 2);
+					Vector2 UV = (Vector2)ProjectionFrame.ToPlaneUV(Mesh->GetVertex(BaseTri[j]), 2);
 					UVBounds.Contain(UV);
 					ElemTri[j] = UVs->AppendElement(UV);
 					AllUVIndices.Add(ElemTri[j]);
@@ -3691,34 +4155,34 @@ namespace Riemann
 			UVs->SetTriangle(TID, ElemTri);
 		}
 
-		FVector2f UvScaleToUse = bNormalizeBeforeScaling ? FVector2f(UVScale[0] / UVBounds.Width(), UVScale[1] / UVBounds.Height())
+		Vector2 UvScaleToUse = bNormalizeBeforeScaling ? Vector2(UVScale[0] / UVBounds.Width(), UVScale[1] / UVBounds.Height())
 			: UVScale;
 
 		// shift UVs so that their bbox min-corner is at origin and scaled by external scale factor
 		for (int UVID : AllUVIndices)
 		{
-			FVector2f UV = UVs->GetElement(UVID);
-			FVector2f TransformedUV = (bShiftToOrigin) ? ((UV - UVBounds.Min) * UvScaleToUse) : (UV * UvScaleToUse);
+			Vector2 UV = UVs->GetElement(UVID);
+			Vector2 TransformedUV = (bShiftToOrigin) ? ((UV - UVBounds.Min) * UvScaleToUse) : (UV * UvScaleToUse);
 			TransformedUV += UVTranslation;
 			UVs->SetElement(UVID, TransformedUV);
 		}
 	}
 
 
-	void FDynamicMeshEditor::SetQuadUVsFromProjection(const Index2& QuadTris, const FFrame3d& ProjectionFrame, float UVScaleFactor, const FVector2f& UVTranslation, int UVLayerIndex)
+	void FDynamicMeshEditor::SetQuadUVsFromProjection(const Index2& QuadTris, const FFrame3d& ProjectionFrame, float UVScaleFactor, const Vector2& UVTranslation, int UVLayerIndex)
 	{
 		assert(Mesh->HasAttributes() && Mesh->Attributes()->NumUVLayers() > UVLayerIndex);
 		FDynamicMeshUVOverlay* UVs = Mesh->Attributes()->GetUVLayer(UVLayerIndex);
 
 		FIndex4i AllUVIndices(-1, -1, -1, -1);
-		FVector2f AllUVs[4];
+		Vector2 AllUVs[4];
 
 		// project first triangle
 		Index3 Triangle1 = Mesh->GetTriangle(QuadTris.a);
 		Index3 UVTriangle1;
 		for (int j = 0; j < 3; ++j)
 		{
-			FVector2f UV = (FVector2f)ProjectionFrame.ToPlaneUV(Mesh->GetVertex(Triangle1[j]), 2);
+			Vector2 UV = (Vector2)ProjectionFrame.ToPlaneUV(Mesh->GetVertex(Triangle1[j]), 2);
 			UVTriangle1[j] = UVs->AppendElement(UV);
 			AllUVs[j] = UV;
 			AllUVIndices[j] = UVTriangle1[j];
@@ -3735,7 +4199,7 @@ namespace Riemann
 				int i = Triangle1.IndexOf(Triangle2[j]);
 				if (i == -1)
 				{
-					FVector2f UV = (FVector2f)ProjectionFrame.ToPlaneUV(Mesh->GetVertex(Triangle2[j]), 2);
+					Vector2 UV = (Vector2)ProjectionFrame.ToPlaneUV(Mesh->GetVertex(Triangle2[j]), 2);
 					UVTriangle2[j] = UVs->AppendElement(UV);
 					AllUVs[3] = UV;
 					AllUVIndices[3] = UVTriangle2[j];
@@ -3759,7 +4223,7 @@ namespace Riemann
 		{
 			if (AllUVIndices[j] != -1)
 			{
-				FVector2f TransformedUV = (AllUVs[j] - UVBounds.Min) * UVScaleFactor;
+				Vector2 TransformedUV = (AllUVs[j] - UVBounds.Min) * UVScaleFactor;
 				TransformedUV += UVTranslation;
 				UVs->SetElement(AllUVIndices[j], TransformedUV);
 			}
@@ -3774,7 +4238,7 @@ namespace Riemann
 
 		if (bWorldSpace)
 		{
-			FVector2f TriUVs[3];
+			Vector2 TriUVs[3];
 			Vector3 TriVs[3];
 			float TotalEdgeUVLen = 0;
 			double TotalEdgeLen = 0;
@@ -3808,7 +4272,7 @@ namespace Riemann
 
 		for (int UVID : UVs->ElementIndicesItr())
 		{
-			FVector2f UV;
+			Vector2 UV;
 			UVs->GetElement(UVID, UV);
 			UVs->SetElement(UVID, UV * UVScale);
 		}
@@ -3983,7 +4447,7 @@ namespace Riemann
 
 	void FDynamicMeshEditor::AppendMesh(const TTriangleMeshAdapter<double>* AppendMesh,
 		FMeshIndexMappings& IndexMapsOut,
-		TFunction<Vector3(int, const Vector3&)> PositionTransform)
+		std::function<Vector3(int, const Vector3&)> PositionTransform)
 	{
 		IndexMapsOut.Reset();
 		//IndexMapsOut.Initialize(Mesh);		// not supported
@@ -4013,7 +4477,7 @@ namespace Riemann
 		{
 			if (AppendMesh->IsTriangle(TriID) == false) continue;
 
-			int GroupID = DynamicMesh::InvalidID;
+			int GroupID = -1;
 			Index3 Tri = AppendMesh->GetTriangle(TriID);
 			Index3 NewTri = Index3(VertexMap.GetTo(Tri.a), VertexMap.GetTo(Tri.b), VertexMap.GetTo(Tri.c));
 			int NewTriID = Mesh->AppendTriangle(NewTri.a, NewTri.b, NewTri.c, GroupID);
@@ -4032,377 +4496,6 @@ namespace Riemann
 			}
 		}
 	}
-
-
-
-
-
-
-	void FDynamicMeshEditor::AppendNormals(const DynamicMesh* AppendMesh,
-		const FDynamicMeshNormalOverlay* FromNormals, FDynamicMeshNormalOverlay* ToNormals,
-		const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
-		TFunction<Vector3(int, const Vector3&)> NormalTransform,
-		FIndexMapi& NormalMapOut)
-	{
-		// copy over normals
-		for (int ElemID : FromNormals->ElementIndicesItr())
-		{
-			int ParentVertID = FromNormals->GetParentVertex(ElemID);
-			Vector3 Normal = FromNormals->GetElement(ElemID);
-			if (NormalTransform != nullptr)
-			{
-				Normal = (Vector3)NormalTransform(ParentVertID, (Vector3)Normal);
-			}
-			int NewElemID = ToNormals->AppendElement(Normal);
-			NormalMapOut.Add(ElemID, NewElemID);
-		}
-
-		// now set new triangles
-		for (const TPair<int, int>& MapTID : TriangleMap.GetForwardMap())
-		{
-			if (FromNormals->IsSetTriangle(MapTID.Key))
-			{
-				Index3 ElemTri = FromNormals->GetTriangle(MapTID.Key);
-				for (int j = 0; j < 3; ++j)
-				{
-					ElemTri[j] = FromNormals->IsElement(ElemTri[j]) ? NormalMapOut.GetTo(ElemTri[j]) : DynamicMesh::InvalidID;
-				}
-				ToNormals->SetTriangle(MapTID.Value, ElemTri);
-			}
-		}
-	}
-
-
-	void FDynamicMeshEditor::AppendUVs(const DynamicMesh* AppendMesh,
-		const FDynamicMeshUVOverlay* FromUVs, FDynamicMeshUVOverlay* ToUVs,
-		const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
-		FIndexMapi& UVMapOut)
-	{
-		// copy over uv elements
-		for (int ElemID : FromUVs->ElementIndicesItr())
-		{
-			FVector2f UV = FromUVs->GetElement(ElemID);
-			int NewElemID = ToUVs->AppendElement(UV);
-			UVMapOut.Add(ElemID, NewElemID);
-		}
-
-		// now set new triangles
-		for (const TPair<int, int>& MapTID : TriangleMap.GetForwardMap())
-		{
-			if (FromUVs->IsSetTriangle(MapTID.Key))
-			{
-				Index3 ElemTri = FromUVs->GetTriangle(MapTID.Key);
-				for (int j = 0; j < 3; ++j)
-				{
-					ElemTri[j] = FromUVs->IsElement(ElemTri[j]) ? UVMapOut.GetTo(ElemTri[j]) : DynamicMesh::InvalidID;
-				}
-				ToUVs->SetTriangle(MapTID.Value, ElemTri);
-			}
-		}
-	}
-
-	void FDynamicMeshEditor::AppendColors(const DynamicMesh* AppendMesh,
-		const FDynamicMeshColorOverlay* FromOverlay, FDynamicMeshColorOverlay* ToOverlay,
-		const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
-		FIndexMapi& MapOut)
-	{
-		// copy over color elements
-		for (int ElemID : FromOverlay->ElementIndicesItr())
-		{
-			int NewElemID = ToOverlay->AppendElement(FromOverlay->GetElement(ElemID));
-			MapOut.Add(ElemID, NewElemID);
-		}
-
-		// now set new triangles
-		for (const TPair<int, int>& MapTID : TriangleMap.GetForwardMap())
-		{
-			if (FromOverlay->IsSetTriangle(MapTID.Key))
-			{
-				Index3 ElemTri = FromOverlay->GetTriangle(MapTID.Key);
-				for (int j = 0; j < 3; ++j)
-				{
-					ElemTri[j] = FromOverlay->IsElement(ElemTri[j]) ? MapOut.GetTo(ElemTri[j]) : DynamicMesh::InvalidID;
-				}
-				ToOverlay->SetTriangle(MapTID.Value, ElemTri);
-			}
-		}
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-	// can these be replaced w/ template function?
-
-
-	namespace UE
-	{
-		namespace DynamicMeshEditorInternals
-		{
-
-
-			// Utility function for ::AppendTriangles()
-			static int AppendTriangleUVAttribute(const DynamicMesh* FromMesh, int FromElementID, DynamicMesh* ToMesh, int UVLayerIndex, FMeshIndexMappings& IndexMaps)
-			{
-				int NewElementID = IndexMaps.GetNewUV(UVLayerIndex, FromElementID);
-				if (NewElementID == IndexMaps.InvalidID())
-				{
-					const FDynamicMeshUVOverlay* FromUVOverlay = FromMesh->Attributes()->GetUVLayer(UVLayerIndex);
-					FDynamicMeshUVOverlay* ToUVOverlay = ToMesh->Attributes()->GetUVLayer(UVLayerIndex);
-					NewElementID = ToUVOverlay->AppendElement(FromUVOverlay->GetElement(FromElementID));
-					IndexMaps.SetUV(UVLayerIndex, FromElementID, NewElementID);
-				}
-				return NewElementID;
-			}
-
-
-			// Utility function for ::AppendTriangles()
-			static int AppendTriangleNormalAttribute(const DynamicMesh* FromMesh, int FromElementID, DynamicMesh* ToMesh, int NormalLayerIndex, FMeshIndexMappings& IndexMaps)
-			{
-				int NewElementID = IndexMaps.GetNewNormal(NormalLayerIndex, FromElementID);
-				if (NewElementID == IndexMaps.InvalidID())
-				{
-					const FDynamicMeshNormalOverlay* FromNormalOverlay = FromMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
-					FDynamicMeshNormalOverlay* ToNormalOverlay = ToMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
-					NewElementID = ToNormalOverlay->AppendElement(FromNormalOverlay->GetElement(FromElementID));
-					IndexMaps.SetNormal(NormalLayerIndex, FromElementID, NewElementID);
-				}
-				return NewElementID;
-			}
-
-			// Utility function for ::AppendTriangles()
-			static int AppendTriangleColorAttribute(const DynamicMesh* FromMesh, int FromElementID, DynamicMesh* ToMesh, FMeshIndexMappings& IndexMaps)
-			{
-				int NewElementID = IndexMaps.GetNewColor(FromElementID);
-				if (NewElementID == IndexMaps.InvalidID())
-				{
-					const FDynamicMeshColorOverlay* FromOverlay = FromMesh->Attributes()->PrimaryColors();
-					FDynamicMeshColorOverlay* ToOverlay = ToMesh->Attributes()->PrimaryColors();
-					NewElementID = ToOverlay->AppendElement(FromOverlay->GetElement(FromElementID));
-					IndexMaps.SetColor(FromElementID, NewElementID);
-				}
-				return NewElementID;
-			}
-
-
-
-			// Utility function for ::AppendTriangles()
-			static void AppendTriangleAttributes(const DynamicMesh* FromMesh, int FromTriangleID, DynamicMesh* ToMesh, int ToTriangleID, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut)
-			{
-				if (FromMesh->HasAttributes() == false || ToMesh->HasAttributes() == false)
-				{
-					return;
-				}
-
-
-				for (int UVLayerIndex = 0; UVLayerIndex < FMath::Min(FromMesh->Attributes()->NumUVLayers(), ToMesh->Attributes()->NumUVLayers()); UVLayerIndex++)
-				{
-					const FDynamicMeshUVOverlay* FromUVOverlay = FromMesh->Attributes()->GetUVLayer(UVLayerIndex);
-					FDynamicMeshUVOverlay* ToUVOverlay = ToMesh->Attributes()->GetUVLayer(UVLayerIndex);
-					if (FromUVOverlay->IsSetTriangle(FromTriangleID))
-					{
-						Index3 FromElemTri = FromUVOverlay->GetTriangle(FromTriangleID);
-						Index3 ToElemTri = ToUVOverlay->GetTriangle(ToTriangleID);
-						for (int j = 0; j < 3; ++j)
-						{
-							assert(FromElemTri[j] != DynamicMesh::InvalidID);
-							int NewElemID = AppendTriangleUVAttribute(FromMesh, FromElemTri[j], ToMesh, UVLayerIndex, IndexMaps);
-							ToElemTri[j] = NewElemID;
-						}
-						ToUVOverlay->SetTriangle(ToTriangleID, ToElemTri);
-					}
-				}
-
-
-				for (int NormalLayerIndex = 0; NormalLayerIndex < FMath::Min(FromMesh->Attributes()->NumNormalLayers(), ToMesh->Attributes()->NumNormalLayers()); NormalLayerIndex++)
-				{
-					const FDynamicMeshNormalOverlay* FromNormalOverlay = FromMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
-					FDynamicMeshNormalOverlay* ToNormalOverlay = ToMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
-					if (FromNormalOverlay->IsSetTriangle(FromTriangleID))
-					{
-						Index3 FromElemTri = FromNormalOverlay->GetTriangle(FromTriangleID);
-						Index3 ToElemTri = ToNormalOverlay->GetTriangle(ToTriangleID);
-						for (int j = 0; j < 3; ++j)
-						{
-							assert(FromElemTri[j] != DynamicMesh::InvalidID);
-							int NewElemID = AppendTriangleNormalAttribute(FromMesh, FromElemTri[j], ToMesh, NormalLayerIndex, IndexMaps);
-							ToElemTri[j] = NewElemID;
-						}
-						ToNormalOverlay->SetTriangle(ToTriangleID, ToElemTri);
-					}
-				}
-
-				if (FromMesh->Attributes()->HasPrimaryColors() && ToMesh->Attributes()->HasPrimaryColors())
-				{
-					const FDynamicMeshColorOverlay* FromOverlay = FromMesh->Attributes()->PrimaryColors();
-					FDynamicMeshColorOverlay* ToOverlay = ToMesh->Attributes()->PrimaryColors();
-					if (FromOverlay->IsSetTriangle(FromTriangleID))
-					{
-						Index3 FromElemTri = FromOverlay->GetTriangle(FromTriangleID);
-						Index3 ToElemTri = ToOverlay->GetTriangle(ToTriangleID);
-						for (int j = 0; j < 3; ++j)
-						{
-							assert(FromElemTri[j] != DynamicMesh::InvalidID);
-							int NewElemID = AppendTriangleColorAttribute(FromMesh, FromElemTri[j], ToMesh, IndexMaps);
-							ToElemTri[j] = NewElemID;
-						}
-						ToOverlay->SetTriangle(ToTriangleID, ToElemTri);
-					}
-				}
-
-				if (FromMesh->Attributes()->HasMaterialID() && ToMesh->Attributes()->HasMaterialID())
-				{
-					const FDynamicMeshMaterialAttribute* FromMaterialIDs = FromMesh->Attributes()->GetMaterialID();
-					FDynamicMeshMaterialAttribute* ToMaterialIDs = ToMesh->Attributes()->GetMaterialID();
-					ToMaterialIDs->SetValue(ToTriangleID, FromMaterialIDs->GetValue(FromTriangleID));
-				}
-
-				int NumPolygroupLayers = FMath::Min(FromMesh->Attributes()->NumPolygroupLayers(), ToMesh->Attributes()->NumPolygroupLayers());
-				for (int PolygroupLayerIndex = 0; PolygroupLayerIndex < NumPolygroupLayers; PolygroupLayerIndex++)
-				{
-					// TODO: remap groups? this will be somewhat expensive...
-					const FDynamicMeshPolygroupAttribute* FromPolygroups = FromMesh->Attributes()->GetPolygroupLayer(PolygroupLayerIndex);
-					FDynamicMeshPolygroupAttribute* ToPolygroups = ToMesh->Attributes()->GetPolygroupLayer(PolygroupLayerIndex);
-					ToPolygroups->SetValue(ToTriangleID, FromPolygroups->GetValue(FromTriangleID));
-				}
-			}
-
-
-
-			// Utility function for ::AppendTriangles()
-			static void AppendVertexAttributes(const DynamicMesh* FromMesh, DynamicMesh* ToMesh, FMeshIndexMappings& IndexMaps)
-			{
-
-				if (FromMesh->HasAttributes() == false || ToMesh->HasAttributes() == false)
-				{
-					return;
-				}
-
-				int NumWeightLayers = FMath::Min(FromMesh->Attributes()->NumWeightLayers(), ToMesh->Attributes()->NumWeightLayers());
-				for (int WeightLayerIndex = 0; WeightLayerIndex < NumWeightLayers; WeightLayerIndex++)
-				{
-					const FDynamicMeshWeightAttribute* FromWeights = FromMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
-					FDynamicMeshWeightAttribute* ToWeights = ToMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
-					for (const TPair<int, int>& MapVID : IndexMaps.GetVertexMap().GetForwardMap())
-					{
-						float Weight;
-						FromWeights->GetValue(MapVID.Key, &Weight);
-						ToWeights->SetValue(MapVID.Value, &Weight);
-					}
-				}
-
-				// Copy skin weight and generic attributes after full IndexMaps have been created. 	
-				for (const TPair<FName, TUniquePtr<FDynamicMeshVertexSkinWeightsAttribute>>& AttribPair : FromMesh->Attributes()->GetSkinWeightsAttributes())
-				{
-					FDynamicMeshVertexSkinWeightsAttribute* ToAttrib = ToMesh->Attributes()->GetSkinWeightsAttribute(AttribPair.Key);
-					if (ToAttrib)
-					{
-						ToAttrib->CopyThroughMapping(AttribPair.Value.Get(), IndexMaps);
-					}
-				}
-
-				for (const TPair<FName, TUniquePtr<FDynamicMeshAttributeBase>>& AttribPair : FromMesh->Attributes()->GetAttachedAttributes())
-				{
-					if (ToMesh->Attributes()->HasAttachedAttribute(AttribPair.Key))
-					{
-						FDynamicMeshAttributeBase* ToAttrib = ToMesh->Attributes()->GetAttachedAttribute(AttribPair.Key);
-						ToAttrib->CopyThroughMapping(AttribPair.Value.Get(), IndexMaps);
-					}
-				}
-			}
-
-
-
-		}
-	} // namespace UE::DynamicMeshEditorInternals
-
-	void FDynamicMeshEditor::AppendTriangles(const DynamicMesh* SourceMesh, const std::vectorView<const int>& SourceTriangles, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut, bool bComputeTriangleMap)
-	{
-		using namespace UE::DynamicMeshEditorInternals;
-
-		ResultOut.Reset();
-		IndexMaps.Initialize(Mesh);
-
-		int DefaultGroupID = DynamicMesh::InvalidID;
-		for (int SourceTriangleID : SourceTriangles)
-		{
-			assert(SourceMesh->IsTriangle(SourceTriangleID));
-			if (SourceMesh->IsTriangle(SourceTriangleID) == false)
-			{
-				continue;	// ignore missing triangles
-			}
-
-			Index3 Tri = SourceMesh->GetTriangle(SourceTriangleID);
-
-			// FindOrCreateDuplicateGroup
-			int NewGroupID = DynamicMesh::InvalidID;
-			if (Mesh->HasTriangleGroups())
-			{
-				if (SourceMesh->HasTriangleGroups())
-				{
-					int SourceGroupID = SourceMesh->GetTriangleGroup(SourceTriangleID);
-					if (SourceGroupID >= 0)
-					{
-						NewGroupID = IndexMaps.GetNewGroup(SourceGroupID);
-						if (NewGroupID == IndexMaps.InvalidID())
-						{
-							NewGroupID = Mesh->AllocateTriangleGroup();
-							IndexMaps.SetGroup(SourceGroupID, NewGroupID);
-							ResultOut.NewGroups.Add(NewGroupID);
-						}
-					}
-				}
-				else
-				{
-					// If the source mesh does not have triangle groups, but the destination
-					// mesh does, create a default group for all triangles.
-					if (DefaultGroupID == DynamicMesh::InvalidID)
-					{
-						DefaultGroupID = Mesh->AllocateTriangleGroup();
-						ResultOut.NewGroups.Add(DefaultGroupID);
-					}
-					NewGroupID = DefaultGroupID;
-				}
-			}
-
-			// FindOrCreateDuplicateVertex
-			Index3 NewTri;
-			for (int j = 0; j < 3; ++j)
-			{
-				int SourceVertexID = Tri[j];
-				int NewVertexID = IndexMaps.GetNewVertex(SourceVertexID);
-				if (NewVertexID == IndexMaps.InvalidID())
-				{
-					NewVertexID = Mesh->AppendVertex(*SourceMesh, SourceVertexID);
-					IndexMaps.SetVertex(SourceVertexID, NewVertexID);
-					ResultOut.NewVertices.Add(NewVertexID);
-				}
-				NewTri[j] = NewVertexID;
-			}
-
-			int NewTriangleID = Mesh->AppendTriangle(NewTri, NewGroupID);
-			if (bComputeTriangleMap)
-			{
-				IndexMaps.SetTriangle(SourceTriangleID, NewTriangleID);
-			}
-			ResultOut.NewTriangles.Add(NewTriangleID);
-
-			AppendTriangleAttributes(SourceMesh, SourceTriangleID, Mesh, NewTriangleID, IndexMaps, ResultOut);
-
-			//Mesh->CheckValidity(true);
-		}
-
-		AppendVertexAttributes(SourceMesh, Mesh, IndexMaps);
-
-	}
-
 
 	bool FDynamicMeshEditor::SplitMesh(const DynamicMesh* SourceMesh, std::vector<DynamicMesh>& SplitMeshes, TFunctionRef<int(int)> TriIDToMeshID, int DeleteMeshID)
 	{
@@ -4470,7 +4563,7 @@ namespace Riemann
 			Index3 Tri = SourceMesh->GetTriangle(SourceTID);
 
 			// Find or create corresponding triangle group
-			int NewGID = DynamicMesh::InvalidID;
+			int NewGID = -1;
 			if (SourceMesh->HasTriangleGroups())
 			{
 				int SourceGroupID = SourceMesh->GetTriangleGroup(SourceTID);
@@ -4538,4 +4631,5 @@ namespace Riemann
 		return true;
 	}
 	*/
+
 }
