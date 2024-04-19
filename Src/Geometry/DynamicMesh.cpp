@@ -115,6 +115,46 @@ namespace Riemann
 		return -1;
 	}
 
+	static inline int FindTriOrientation(const Index3& tri1, const Index3& tr12)
+	{
+		if (FindTriOrderedEdge(tri1[0], tri1[1], tr12) >= 0)
+			return -1;
+		if (FindTriOrderedEdge(tri1[1], tri1[2], tr12) >= 0)
+			return -1;
+		if (FindTriOrderedEdge(tri1[2], tri1[0], tr12) >= 0)
+			return -1;
+
+		if (FindTriOrderedEdge(tri1[1], tri1[0], tr12) >= 0)
+			return 1;
+		if (FindTriOrderedEdge(tri1[2], tri1[1], tr12) >= 0)
+			return 1;
+		if (FindTriOrderedEdge(tri1[0], tri1[2], tr12) >= 0)
+			return 1;
+
+		return 0;
+	}
+
+	static inline void ReverseOrientation(Index3& dst, int a, int b)
+	{
+		int t = dst[a];
+		dst[a] = dst[b];
+		dst[b] = t;
+	}
+
+	static inline bool ApplyTriOrientation(const Index3& tri1, Index3& tr12)
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			if (FindTriOrderedEdge(tri1[i], tri1[(i + 1) % 3], tr12) >= 0)
+			{
+				ReverseOrientation(tr12, i, (i + 1) % 3);
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	template<typename T, typename Vec>
 	static int OrientTriEdgeAndFindOtherVtx(T& Vertex1, T& Vertex2, const Vec& TriangleVerts)
 	{
@@ -1994,43 +2034,34 @@ namespace Riemann
 		}
 	}
 
+
+
 	int DynamicMesh::FixTriangleOrientation(bool right_handed)
 	{
-		// TODO
 		int fix_count = 0;
 		float sign = right_handed ? 1.0f : -1.0f;
 
 		std::vector<std::vector<int>> islands;
-		std::vector<std::vector<int>> triangles;
 
 		BitSet processed(Triangles.size());
 
-		BuildIslands(islands, triangles);
+		BuildIslands(islands);
 
-		assert(islands.size() == triangles.size());
 		for (size_t i = 0; i < islands.size(); ++i)
 		{
 			const std::vector<int>& island = islands[i];
-			const std::vector<int>& triangle = triangles[i];
 
-			if (triangle.size() <= 1)
+			if (island.size() <= 1)
 			{
 				continue;
 			}
 
-			int seed_tid = -1;
-			float max_y = -FLT_MAX;
-			for (int tid : triangle)
-			{
-				Triangle3 tri;
-				GetTriVertices(tid, tri.v0, tri.v1, tri.v2);
+			Vector3 SeedNormal;
+			int seed_tid = FindIslandSeedNormal(island, SeedNormal);
 
-				const float y = tri.GetCenter().y;
-				if (max_y < y)
-				{
-					max_y = y;
-					seed_tid = tid;
-				}
+			if (seed_tid == -1)
+			{
+				continue;
 			}
 
 			assert(seed_tid != -1);
@@ -2038,7 +2069,7 @@ namespace Riemann
 			GetTriVertices(seed_tid, tri.v0, tri.v1, tri.v2);
 			Vector3 TriNormal = tri.GetNormal(true);
 
-			if (TriNormal.Dot(Vector3::UnitY()) * sign < 0)
+			if (TriNormal.Dot(SeedNormal) * sign < 0)
 			{
 				ReverseTriOrientation(seed_tid);
 				fix_count += 1;
@@ -2068,7 +2099,10 @@ namespace Riemann
 
 				if (node.parent != -1)
 				{
-					ApplyTriangleOrientation(Triangles[node.parent], Triangles[node.id]);
+					if (FindTriOrientation(Triangles[node.parent], Triangles[node.id]) < 0)
+					{
+						ReverseTriOrientation(node.id);
+					}
 				}
 
 				const Index3& te = TriangleEdges[node.id];
@@ -2081,10 +2115,16 @@ namespace Riemann
 					}
 
 					int next = e.Tri[0] == node.id ? e.Tri[1] : e.Tri[0];
+					if (next == -1)
+					{
+						continue;
+					}
+
 					if (processed.get(next))
 					{
 						continue;
 					}
+					processed.set(next, true);
 
 					qu.emplace_back(next, node.id);
 				}
@@ -2094,17 +2134,17 @@ namespace Riemann
 		return fix_count;
 	}
 
-	void DynamicMesh::BuildIslands(std::vector<std::vector<int>>& islands, std::vector<std::vector<int>>& triangles)
+	void DynamicMesh::BuildIslands(std::vector<std::vector<int>>& islands)
 	{
 		islands.clear();
 
-		int NumVertices = GetVertexCount();
+		int NumTriangles = GetTriangleCount();
 
-		BitSet processed((size_t)NumVertices);
+		BitSet processed((size_t)NumTriangles);
 
-		for (int vid = 0; vid < NumVertices; ++vid)
+		for (int tid = 0; tid < NumTriangles; ++tid)
 		{
-			int seed = vid;
+			int seed = tid;
 
 			if (processed.get(seed))
 			{
@@ -2114,7 +2154,6 @@ namespace Riemann
 
 			std::vector<int> island;
 			std::vector<int> queue;
-			std::set<int> triangle;
 
 			island.push_back(seed);
 			queue.push_back(seed);
@@ -2124,43 +2163,115 @@ namespace Riemann
 				int next = queue.back();
 				queue.pop_back();
 
-				std::vector<int> circle_v = GetVexVertices(next);
-				for (int v : circle_v)
-				{
-					if (processed.get(v))
-					{
-						continue;
-					}
-					processed.set(v, true);
+				Index3 te = TriangleEdges[next];
 
-					island.push_back(v);
-					queue.push_back(v);
-				}
-
-				std::vector<int> circle_t = GetVexTriangles(next);
-				for (int t : circle_t)
+				for (int i = 0; i < 3; ++i)
 				{
-					if (t != -1)
+					const Edge &e = Edges[te[i]];
+
+					for (int j = 0; j < 2; ++j)
 					{
-						triangle.insert(t);
+						int t_next = e.Tri[j];
+
+						if (t_next == -1 || t_next == next || processed.get(t_next))
+						{
+							continue;
+						}
+
+						processed.set(t_next, true);
+						island.push_back(t_next);
+						queue.push_back(t_next);
 					}
 				}
 			}
 
 			islands.push_back(island);
-			triangles.push_back(ToVector<int>(triangle));
 		}
+	}
+
+	int DynamicMesh::FindIslandSeedNormal(const std::vector<int>& island, Vector3 &normal)
+	{
+		if (island.empty())
+		{
+			return -1;
+		}
+
+		BuildBounds();
+
+		int i = -1, j = -1, max_axis = -1;
+
+		Vector3 Origin;
+		Vector3 Direction;
+
+		{
+			Triangle3 tri;
+			GetTriVertices(island[0], tri.v0, tri.v1, tri.v2);
+
+			Vector3 Nor = tri.GetNormal();
+
+			max_axis = 0;
+			float max_val = fabsf(Nor.x);
+			float val = fabsf(Nor.y);
+			if (val > max_val)
+			{
+				max_axis = 1;
+				max_val = val;
+			}
+			val = fabsf(Nor.z);
+			if (val > max_val)
+			{
+				max_axis = 2;
+			}
+
+			j = (max_axis + 1) % 3;
+			i = (j + 1) % 3;
+
+			Direction = Vector3::Zero();
+			Direction[max_axis] = -1.0;
+
+			Origin = tri.GetCenter();
+			Origin[max_axis] = Bounds.Max[max_axis] + 1.0f;
+		}
+
+		int seed_tid = -1;
+		float min_dist = FLT_MAX;
+		for (int tid : island)
+		{
+			Triangle3 tri;
+			GetTriVertices(tid, tri.v0, tri.v1, tri.v2);
+
+			Box3 box = tri.GetBounds();
+
+			if (Origin[i] < box.Min[i] || Origin[i] > box.Max[i] || Origin[j] < box.Min[j] || Origin[j] > box.Max[j])
+			{
+				continue;
+			}
+
+			float t;
+			if (tri.IntersectRay(Origin, Direction, &t))
+			{
+				min_dist = t;
+				seed_tid = tid;
+				// normal = tri.GetNormal();
+			}
+		}
+
+		normal = -Direction;
+		return seed_tid;
 	}
 
 	Vector3 DynamicMesh::CalculateIslandCenter(const std::vector<int>& island)
 	{
 		Vector3 Center = Vector3::Zero();
-
 		if (island.size() > 0)
 		{
-			for (int vid : island)
+			for (int tid : island)
 			{
-				Center += VertexPositions[vid];
+				Triangle3 tri;
+				GetTriVertices(tid, tri.v0, tri.v1, tri.v2);
+
+				Vector3 c = tri.GetCenter();
+				Center += c;
 			}
 			Center *= (1.0f / island.size());
 		}

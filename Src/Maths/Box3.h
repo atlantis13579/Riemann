@@ -254,14 +254,29 @@ namespace Maths
 			return true;
 		}
 
-		inline bool IsInside(const TVector3<T>& rhs) const
+		inline bool IsInside(const TVector3<T>& v) const
 		{
-			return ((rhs.x >= Min.x) && (rhs.x <= Max.x) && (rhs.y >= Min.y) && (rhs.y <= Max.y) && (rhs.z >= Min.z) && (rhs.z <= Max.z));
+			return (v.x >= Min.x) && (v.x <= Max.x) && (v.y >= Min.y) && (v.y <= Max.y) && (v.z >= Min.z) && (v.z <= Max.z);
+		}
+
+		inline bool IsInsideXZ(const TVector3<T>& v) const
+		{
+			return (v.x >= Min.x) && (v.x <= Max.x) && (v.z >= Min.z) && (v.z <= Max.z);
+		}
+
+		inline bool IsInsideXY(const TVector3<T>& v) const
+		{
+			return (v.x >= Min.x) && (v.x <= Max.x) && (v.y >= Min.y) && (v.y <= Max.y);
+		}
+
+		inline bool IsInsideYZ(const TVector3<T>& v) const
+		{
+			return (v.y >= Min.y) && (v.y <= Max.y) && (v.z >= Min.z) && (v.z <= Max.z);
 		}
 
 		inline bool IsInside(const TAABB3<T>& rhs) const
 		{
-			return ((Min.x <= rhs.Min.x) && (Max.x >= rhs.Max.x) && (Min.y <= rhs.Min.y) && (Max.y >= rhs.Max.y) && (Min.z <= rhs.Min.z) && (Max.z >= rhs.Max.z));
+			return (Min.x <= rhs.Min.x) && (Max.x >= rhs.Max.x) && (Min.y <= rhs.Min.y) && (Max.y >= rhs.Max.y) && (Min.z <= rhs.Min.z) && (Max.z >= rhs.Max.z);
 		}
 
 		bool		GetIntersection(const TVector3<T>& Bmin, const TVector3<T>& Bmax, TAABB3<T>& OutBox) const

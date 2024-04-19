@@ -17,19 +17,6 @@
 
 namespace Riemann
 {
-	inline bool IsTriangleSameOrientation(const Index3& src, Index3& dst)
-	{
-		return true;
-	}
-
-	inline void ApplyTriangleOrientation(const Index3& src, Index3& dst)
-	{
-		for (int i = 0; i < 3; ++i)
-		{
-			;
-		}
-	}
-
 	template<typename T>
 	static void VectorSetSafe(std::vector<T>& vec, int index, const T& v, const T& default_val)
 	{
@@ -486,8 +473,9 @@ namespace Riemann
 
 		inline uint64_t GetChangeStamps() const { return MeshChangeStamp; }
 
-		void BuildIslands(std::vector<std::vector<int>> &islands, std::vector<std::vector<int>>& triangles);
+		void BuildIslands(std::vector<std::vector<int>> &islands);
 		Vector3 CalculateIslandCenter(const std::vector<int>& island);
+		int FindIslandSeedNormal(const std::vector<int>& island, Vector3& normal);
 		void CalculateWeightAverageNormals();
 		int FixTriangleOrientation(bool right_handed);
 
@@ -660,7 +648,7 @@ namespace Riemann
 		std::vector<Index3>		TriangleEdges;
 		std::vector<uint8_t>	TriangleRefCounts;
 		std::vector<int>		TriangleGroups;
-		int						GroupIDCounter;
+		int						GroupIDCounter = 0;
 
 		// edge
 		std::vector<Edge>		Edges;
