@@ -2888,7 +2888,7 @@ namespace Riemann
 					OtherMeshPointHash.Insert(OtherMesh.GetVertex(BoundaryVID), BoundaryVID);
 				}
 
-				SparseOctree EdgeOctree(Vector3::Zero(), 0.25f, 7);
+				SparseOctree EdgeOctree(OtherMesh.GetBounds().Min, OtherMesh.GetBounds().Max, 7);
 				auto EdgeBounds = [&OtherMesh](int EID)
 				{
 					const DynamicMesh::Edge& e = OtherMesh.GetEdge(EID);

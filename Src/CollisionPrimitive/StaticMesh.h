@@ -488,7 +488,7 @@ namespace Riemann
 			return nFiltered;
 		}
 
-		void CalculateNormals()
+		void CalculateWeightAverageNormals()
 		{
 			if (NumTriangles == 0)
 			{
@@ -500,8 +500,8 @@ namespace Riemann
 				return;
 			}
 
-			std::vector<int> Count;
-			Count.resize(NumVertices, 0);
+			std::vector<float> Weight;
+			Weight.resize(NumVertices, 0.0f);
 			mNormals.resize(NumVertices);
 			memset(&mNormals[0], 0, sizeof(mNormals[0]) * mNormals.size());
 			for (uint32_t i = 0; i < NumTriangles; ++i)
@@ -520,18 +520,33 @@ namespace Riemann
 					i1 = Indices32[3 * i + 1];
 					i2 = Indices32[3 * i + 2];
 				}
+
 				const Vector3& v0 = Vertices[i0];
 				const Vector3& v1 = Vertices[i1];
 				const Vector3& v2 = Vertices[i2];
-				Vector3 Nor = (v1 - v0).Cross(v2 - v0);
-				mNormals[i0] += Nor.Unit(); Count[i0]++;
-				mNormals[i1] += Nor.Unit(); Count[i1]++;
-				mNormals[i2] += Nor.Unit(); Count[i2]++;
+
+				const Vector3 v20 = (v2 - v0).Unit();
+				const Vector3 v10 = (v1 - v0).Unit();
+				const Vector3 v21 = (v2 - v1).Unit();
+				Vector3 Nor = v20.Cross(v10).Unit();
+				
+				const float w0 = acosf(v20.Dot(v10));
+				const float w1 = acosf(v21.Dot(-v10));
+				const float w2 = acosf(v21.Dot(v20));
+
+				mNormals[i0] += w0 * Nor;
+				Weight[i0] += w0;
+				
+				mNormals[i1] += w1 * Nor;
+				Weight[i1] += w1;
+				
+				mNormals[i2] += w2 * Nor;
+				Weight[i2] += w2;
 			}
 
 			for (size_t i = 0; i < mNormals.size(); ++i)
 			{
-				mNormals[i] *= 1.0f / Count[i];
+				mNormals[i] *= 1.0f / Weight[i];
 				mNormals[i].Normalize();
 			}
 		}

@@ -2,14 +2,17 @@
 
 #include "SparseOctree.h"
 #include "../CollisionPrimitive/AxisAlignedBox3.h"
+#include "../Maths/Maths.h"
 
 namespace Riemann
 {
 
-	SparseOctree::SparseOctree(const Vector3& _center, float _dimention, int _max_depth)
+	SparseOctree::SparseOctree(const Vector3& _min, const Vector3& _max, int _max_depth)
 	{
-		Center = _center;
-		RootDimension = _dimention;
+		const float expand_factor = 0.25f;
+		Min = _min - expand_factor * (_max - _min);
+		Vector3 dims = (_max - _min) * (1.0f + 2.0f * expand_factor);
+		RootDimension = Maths::Max(dims.x, dims.y, dims.z);
 		MaxTreeDepth = std::min(_max_depth, MAX_TREE_DEPTH);
 	}
 
@@ -24,7 +27,7 @@ namespace Riemann
 	bool SparseOctree::HasObject(int Id) const
 	{
 		int cellId = GetCellForObject(Id);
-		return cellId != -1;
+		return cellId >= 0;
 	}
 
 	bool SparseOctree::InsertObject(int Id, const Box3& Bounds)
@@ -35,7 +38,8 @@ namespace Riemann
 
 		if (c.Level == -1)
 		{
-			assert(false);
+			// assert(false);
+			InsertSpill(Id, Bounds);
 			return false;
 		}
 		assert(IsFit(c, Bounds));
@@ -69,7 +73,14 @@ namespace Riemann
 		}
 
 		int cellId = GetCellForObject(Id);
-		if (cellId == -1)
+		if (cellId == SPILL_CELL_ID)
+		{
+			int RemovedCount = (int)m_SpillObjects.count(Id);
+			m_SpillObjects.erase(Id);
+			assert(RemovedCount > 0);
+			return (RemovedCount > 0);
+		}
+		else if (cellId == INVALID_CELL_ID)
 		{
 			return false;
 		}
@@ -83,10 +94,12 @@ namespace Riemann
 
 	bool SparseOctree::ReinsertObject(int Id, const Box3& NewBounds)
 	{
+		int cellId = INVALID_CELL_ID;
+
 		if (HasObject(Id))
 		{
-			int cellId = GetCellForObject(Id);
-			if (cellId != -1)
+			cellId = GetCellForObject(Id);
+			if (cellId != INVALID_CELL_ID && cellId != SPILL_CELL_ID)
 			{
 				SparseOctree::Cell& CurrentCell = m_Cells[cellId];
 				if (IsFit(CurrentCell, NewBounds))
@@ -99,11 +112,30 @@ namespace Riemann
 			}
 		}
 
+		// remove object
+		if (cellId != INVALID_CELL_ID)
+		{
+			if (cellId == SPILL_CELL_ID)
+			{
+				m_SpillObjects.erase(Id);
+			}
+			else
+			{
+				m_CellsLookup[Id] = INVALID_CELL_ID;
+				m_Objects[Id].remove(cellId);
+			}
+		}
+
 		return InsertObject(Id, NewBounds);
 	}
 
 	void SparseOctree::RangeQuery(const Box3& Bounds, std::vector<int>& Result) const
 	{
+		for (int Id : m_SpillObjects)
+		{
+			Result.push_back(Id);
+		}
+
 		std::vector<const SparseOctree::Cell*> Queue = InitializeQueryQueue(Bounds);
 
 		while (Queue.size() > 0)
@@ -121,7 +153,7 @@ namespace Riemann
 				if (CurCell->HasChild(k))
 				{
 					const SparseOctree::Cell* ChildCell = &m_Cells[CurCell->GetChildID(k)];
-					if (GetCellBox(*ChildCell, MaxExpandFactor).Intersect(Bounds))
+					if (GetCellBox(*ChildCell).Intersect(Bounds))
 					{
 						Queue.push_back(ChildCell);
 					}
@@ -134,6 +166,16 @@ namespace Riemann
 	{
 		float MaxDistance = FLT_MAX;
 		int HitObjectID = -1;
+
+		for (int id : m_SpillObjects)
+		{
+			const float HitDist = HitObjectDistFunc(id, Origin, Direction);
+			if (HitDist < MaxDistance)
+			{
+				MaxDistance = HitDist;
+				HitObjectID = id;
+			}
+		}
 
 		std::vector<const SparseOctree::Cell*> Queue;
 		Queue.reserve(64);
@@ -190,30 +232,28 @@ namespace Riemann
 		return width;
 	}
 
-	Box3 SparseOctree::GetBox(int Level, const Vector3i& Index, float ExpandFactor) const
+	Box3 SparseOctree::GetBox(int Level, const Vector3i& Index) const
 	{
 		float width = GetCellWidth(Level);
-		float ExpandDelta = width * ExpandFactor;
-		float minx = (width * (float)Index.x) - ExpandDelta - Center.x;
-		float miny = (width * (float)Index.y) - ExpandDelta - Center.y;
-		float minz = (width * (float)Index.z) - ExpandDelta - Center.z;
-		width += 2.0f * ExpandDelta;
+		float minx = width * (float)Index.x + Min.x;
+		float miny = width * (float)Index.y + Min.y;
+		float minz = width * (float)Index.z + Min.z;
 		return Box3(Vector3(minx, miny, minz),
 					Vector3(minx + width, miny + width, minz + width));
 	}
 
-	Box3 SparseOctree::GetCellBox(const Cell& c, float ExpandFactor /*= 0*/) const
+	Box3 SparseOctree::GetCellBox(const Cell& c) const
 	{
-		Box3 box = GetBox(c.Level, c.Index, ExpandFactor);
+		Box3 box = GetBox(c.Level, c.Index);
 		return box;
 	}
 
 	Vector3 SparseOctree::GetCellCenter(const Cell& c) const
 	{
 		float width = GetCellWidth(c.Level);
-		float minx = width * (float)c.Index.x - Center.x;
-		float miny = width * (float)c.Index.y - Center.y;
-		float minz = width * (float)c.Index.z - Center.z;
+		float minx = width * (float)c.Index.x + Min.x;
+		float miny = width * (float)c.Index.y + Min.y;
+		float minz = width * (float)c.Index.z + Min.z;
 		width *= 0.5;
 		return Vector3(minx + width, miny + width, minz + width);
 	}
@@ -239,7 +279,7 @@ namespace Riemann
 
 	bool SparseOctree::IsFit(const Cell& c, const Box3& Bounds) const
 	{
-		Box3 box = GetCellBox(c, MaxExpandFactor);
+		Box3 box = GetCellBox(c);
 		return box.IsInside(Bounds);
 	}
 
@@ -351,9 +391,15 @@ namespace Riemann
 		assert(IsFit(NewChildCell, Bounds));
 	}
 
+	void SparseOctree::InsertSpill(int ID, const Box3& Bounds)
+	{
+		m_SpillObjects.insert(ID);
+		m_CellsLookup[ID] = SPILL_CELL_ID;
+	}
+
 	float SparseOctree::RaycastCell(const SparseOctree::Cell& Cell, const Vector3& Origin, const Vector3& Direction) const
 	{
-		Box3 box = GetCellBox(Cell, MaxExpandFactor);
+		Box3 box = GetCellBox(Cell);
 		float dist = FLT_MAX;
 		AxisAlignedBox3 aabb(box.Min, box.Max);
 		if (aabb.IntersectRay(Origin, Direction, &dist))
@@ -373,9 +419,8 @@ namespace Riemann
 		constexpr int MinCountForRangeQuery = 10;
 		if (m_RootCells.GetSize() > MinCountForRangeQuery)
 		{
-			Vector3 RootBoundExpand(RootDimension * MaxExpandFactor);
-			Vector3i RootMinIndex = PointToIndex(0, Point - RootBoundExpand);
-			Vector3i RootMaxIndex = PointToIndex(0, Point + RootBoundExpand);
+			Vector3i RootMinIndex = PointToIndex(0, Point);
+			Vector3i RootMaxIndex = PointToIndex(0, Point);
 			Vector3i QuerySize = RootMaxIndex - RootMinIndex + Vector3i(1, 1, 1);
 			if (m_RootCells.GetSize() > QuerySize.x * QuerySize.y * QuerySize.z)
 			{
@@ -392,7 +437,7 @@ namespace Riemann
 			[&](const int& RootCellID)
 			{
 				const SparseOctree::Cell* RootCell = &m_Cells[RootCellID];
-				if (GetCellBox(*RootCell, MaxExpandFactor).IsInside(Point))
+				if (GetCellBox(*RootCell).IsInside(Point))
 				{
 					Queue.push_back(&m_Cells[RootCellID]);
 				}
@@ -407,9 +452,8 @@ namespace Riemann
 		constexpr int MinCountForRangeQuery = 10;
 		if (m_RootCells.GetSize() > MinCountForRangeQuery)
 		{
-			Vector3 RootBoundExpand(RootDimension * MaxExpandFactor);
-			Vector3i RootMinIndex = PointToIndex(0, Bounds.Min - RootBoundExpand);
-			Vector3i RootMaxIndex = PointToIndex(0, Bounds.Max + RootBoundExpand);
+			Vector3i RootMinIndex = PointToIndex(0, Bounds.Min);
+			Vector3i RootMaxIndex = PointToIndex(0, Bounds.Max);
 			Vector3i QuerySize = RootMaxIndex - RootMinIndex + Vector3i(1, 1, 1);
 			if (m_RootCells.GetSize() > QuerySize.x * QuerySize.y * QuerySize.z)
 			{
@@ -426,7 +470,7 @@ namespace Riemann
 			[&](const int& RootCellID)
 			{
 				const SparseOctree::Cell* RootCell = &m_Cells[RootCellID];
-				if (GetCellBox(*RootCell, MaxExpandFactor).Intersect(Bounds))
+				if (GetCellBox(*RootCell).Intersect(Bounds))
 				{
 					Queue.push_back(&m_Cells[RootCellID]);
 				}

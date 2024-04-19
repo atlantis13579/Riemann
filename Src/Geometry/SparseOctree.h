@@ -95,6 +95,8 @@ namespace Riemann
 	};
 
 	#define MAX_TREE_DEPTH		(31)
+	#define	INVALID_CELL_ID		(-1)
+	#define	SPILL_CELL_ID		(-2)
 
 	class SparseOctree
 	{
@@ -153,7 +155,7 @@ namespace Riemann
 		};
 
 	public:
-		SparseOctree(const Vector3 &_center = Vector3::Zero(), float _dimention = 1000.0f, int max_tree_depth = 10);
+		SparseOctree(const Vector3 &_min, const Vector3& _max, int max_tree_depth = 10);
 		~SparseOctree() {}
 
 		void	Clear();
@@ -166,8 +168,8 @@ namespace Riemann
 
 	private:
 		float	GetCellWidth(int Level) const;
-		Box3	GetBox(int Level, const Vector3i& Index, float ExpandFactor) const;
-		Box3	GetCellBox(const Cell& c, float ExpandFactor = 0) const;
+		Box3	GetBox(int Level, const Vector3i& Index) const;
+		Box3	GetCellBox(const Cell& c) const;
 		Vector3 GetCellCenter(const Cell& c) const;
 		int		GetCellForObject(int Id) const;
 
@@ -182,7 +184,7 @@ namespace Riemann
 		void InsertNewRoot(int Id, const Box3& Bounds, Cell NewRootCell);
 		void InsertToCell(int Id, const Box3& Bounds, const Cell& ExistingCell);
 		void InsertNewChildCell(int Id, const Box3& Bounds, int ParentCellID, Cell NewChildCell, int ChildIdx);
-
+		void InsertSpill(int ID, const Box3& Bounds);
 		float RaycastCell(const Cell& c, const Vector3& Origin, const Vector3 &Direction) const;
 
 		std::vector<const Cell*> InitializeQueryQueue(const Vector3& Point) const;
@@ -192,11 +194,11 @@ namespace Riemann
 		std::vector<Cell>				m_Cells;
 		SparseGrid3<int>				m_RootCells;
 		ListSet<int>					m_Objects;
+		std::set<int>					m_SpillObjects;
 		std::unordered_map<int, int>	m_CellsLookup;
 
-		Vector3	Center = Vector3::Zero();
+		Vector3	Min = Vector3::Zero();
 		float	RootDimension = 1000.0f;
-		float	MaxExpandFactor = 0.25f;
 		int		MaxTreeDepth = 10;
 	};
 }

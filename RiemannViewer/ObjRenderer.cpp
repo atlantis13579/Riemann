@@ -67,7 +67,7 @@ namespace Riemann
 
 	void AddTriMesh(Renderer* renderer, StaticMesh* mesh, void* Trans, bool RenderBV)
 	{
-		mesh->CalculateNormals();
+		mesh->CalculateWeightAverageNormals();
 
 		std::vector<Vertex1> vv;
 		for (uint32_t i = 0; i < mesh->GetVertexCount(); ++i)

@@ -17,6 +17,19 @@
 
 namespace Riemann
 {
+	inline bool IsTriangleSameOrientation(const Index3& src, Index3& dst)
+	{
+		return true;
+	}
+
+	inline void ApplyTriangleOrientation(const Index3& src, Index3& dst)
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			;
+		}
+	}
+
 	template<typename T>
 	static void VectorSetSafe(std::vector<T>& vec, int index, const T& v, const T& default_val)
 	{
@@ -79,7 +92,6 @@ namespace Riemann
 		bool bHasColor{ false };
 		bool bHasUV{ false };
 	};
-
 
 	class DynamicMeshAABBTree;
 
@@ -324,7 +336,7 @@ namespace Riemann
 			return -1;
 		}
 
-		int FindEdgeEx(int v0, int v1, bool& bIsBoundary) const
+		int FindEdgeInternal(int v0, int v1, bool& bIsBoundary) const
 		{
 			int vMax = v0, vMin = v1;
 			if (v1 > v0)
@@ -345,14 +357,6 @@ namespace Riemann
 		}
 
 		Index2 GetEdgeOpposingV(int EdgeID) const;
-
-		void BuildBounds();
-		inline const Box3& GetBounds() const { return Bounds; }
-
-		inline const Transform& GetPose() const { return Pose; }
-		inline void SetPose(const Transform& t) { Pose = t; }
-
-		inline uint64_t GetChangeStamps() const { return MeshChangeStamp; }
 
 		inline bool HasAttributes() const { return mAttributes != nullptr; }
 		DynamicMeshAttributeSet* Attributes() { return mAttributes; }
@@ -446,7 +450,7 @@ namespace Riemann
 		EMeshResult SplitEdge(int eab, FEdgeSplitInfo& SplitInfo, float split_t);
 		EMeshResult CollapseEdge(int vKeep, int vRemove, float collapse_t, FEdgeCollapseInfo& CollapseInfo);
 
-		int FindEdgeFromTriangle(int vA, int vB, int tID) const;
+		int FindEdgeFromTri(int vA, int vB, int tID) const;
 		int FindEdgeFromTrianglePair(int TriA, int TriB) const;
 		int GetVtxTriangleCount(int vID) const;
 		int GetVtxSingleTriangle(int VertexID) const;
@@ -473,6 +477,19 @@ namespace Riemann
 				mAttributes->OnReverseTriOrientation(tID);
 			}
 		}
+
+		void BuildBounds();
+		inline const Box3& GetBounds() const { return Bounds; }
+
+		inline const Transform& GetPose() const { return Pose; }
+		inline void SetPose(const Transform& t) { Pose = t; }
+
+		inline uint64_t GetChangeStamps() const { return MeshChangeStamp; }
+
+		void BuildIslands(std::vector<std::vector<int>> &islands, std::vector<std::vector<int>>& triangles);
+		Vector3 CalculateIslandCenter(const std::vector<int>& island);
+		void CalculateWeightAverageNormals();
+		int FixTriangleOrientation(bool right_handed);
 
 	private:
 

@@ -175,6 +175,7 @@ void TestGeometryBoolean2()
 
 	DynamicMesh mesh1;
 	mesh1.LoadObj("../TestData/bunny.obj");
+	mesh1.FixTriangleOrientation(false);
 
 	DynamicMesh mesh2;
 	Box3 box = mesh1.GetBounds();
@@ -185,9 +186,11 @@ void TestGeometryBoolean2()
 	std::vector<Vector3> Normals;
 	aabb.GetMesh2(Vertices, Indices, Normals);
 	mesh2.SetData(Vertices, Indices, Normals);
+	mesh2.FixTriangleOrientation(false);
 
 	GeometryBoolean b(&mesh2, &mesh1, GeometryBoolean::BooleanOp::Intersect);
 	b.Compute();
+	b.Result->FixTriangleOrientation(false);
 	b.Result->ExportObj("../TestData/bunny_intersect.obj");
 
 	return;
@@ -206,14 +209,16 @@ void TestGeometryBoolean1()
 	DynamicMesh mesh1;
 	box1.GetMesh2(Vertices, Indices, Normals);
 	mesh1.SetData(Vertices, Indices, Normals);
+	mesh1.FixTriangleOrientation(true);
 
 	DynamicMesh mesh2;
 	box2.GetMesh2(Vertices, Indices, Normals);
 	mesh2.SetData(Vertices, Indices, Normals);
+	mesh1.FixTriangleOrientation(true);
 
 	GeometryBoolean b(&mesh1, &mesh2, GeometryBoolean::BooleanOp::Intersect);
 	b.Compute();
-
+	b.Result->FixTriangleOrientation(false);
 	b.Result->ExportObj("../TestData/box_intersect.obj");
 
 	return;
@@ -244,7 +249,7 @@ void TestOctree()
 {
 	printf("Running TestOctree\n");
 
-	SparseOctree tree;
+	SparseOctree tree(Vector3(0.0f), Vector3(4.0f));
 
 	EXPECT(tree.InsertObject(1, Box3(Vector3(0.0f, 0.0f, 0.0f), 0.1f)));
 	EXPECT(tree.InsertObject(2, Box3(Vector3(0.0f, 1.0f, 0.0f), 0.1f)));

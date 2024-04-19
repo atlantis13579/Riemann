@@ -53,9 +53,9 @@ namespace Riemann
 			return &v0;
 		}
 
-		Vector3		GetNormal() const
+		Vector3		GetNormal(bool bHighPrecisionNormal = false) const
 		{
-			return GetNormal(v0, v1, v2);
+			return CalculateNormal(v0, v1, v2, bHighPrecisionNormal);
 		}
 
 		Vector3		GetCenter() const
@@ -89,9 +89,8 @@ namespace Riemann
 			return v;
 		}
 
-		static Vector3 GetNormal(const Vector3& A, const Vector3& B, const Vector3& C)
+		static Vector3 CalculateNormal(const Vector3& A, const Vector3& B, const Vector3& C, bool bHighPrecisionNormal)
 		{
-			const bool bHighPrecisionNormal = false;
 			if (bHighPrecisionNormal)
 			{
 				Vector3 CA = (C - A).Unit();
@@ -947,7 +946,7 @@ namespace Riemann
 
 		bool ContainsPoint(const Vector3& point) const
 		{
-			Vector3 Normal = GetNormal(v0, v1, v2);
+			Vector3 Normal = GetNormal();
 
 			Vector3 u0, u1;
 			Normal.GetPerpVectors(u0, u1);

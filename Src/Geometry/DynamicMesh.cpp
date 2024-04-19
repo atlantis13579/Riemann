@@ -1,7 +1,10 @@
 
 #include <assert.h>
+#include <deque>
 #include "DynamicMesh.h"
 #include "MeshSimplification.h"
+#include "../Core/Base.h"
+#include "../Core/BitSet.h"
 #include "../Core/SmallSet.h"
 #include "../Maths/Box1.h"
 #include "../Maths/Maths.h"
@@ -383,6 +386,8 @@ namespace Riemann
 		{
 			AppendTriangle((int)Indices[3*i], (int)Indices[3 * i + 1], (int)Indices[3 * i + 2]);
 		}
+
+		BuildBounds();
 	}
 
 	int DynamicMesh::AppendVertex(const Vector3& v)
@@ -769,8 +774,7 @@ namespace Riemann
 				VertexEdgeLists[a].push_back(eid);
 				if (rc > 0)
 				{
-					assert(VertexRefCounts[a] >= rc);
-					VertexRefCounts[a] -= rc;
+					VertexRefCounts[a] += rc;
 					assert(VertexRefCounts[c] >= rc);
 					VertexRefCounts[c] -= rc;
 				}
@@ -813,8 +817,7 @@ namespace Riemann
 				VertexEdgeLists[b].push_back(eid);
 				if (rc > 0)
 				{
-					assert(VertexRefCounts[b] >= rc);
-					VertexRefCounts[b] -= rc;
+					VertexRefCounts[b] += rc;
 					assert(VertexRefCounts[d] >= rc);
 					VertexRefCounts[d] -= rc;
 				}
@@ -979,7 +982,7 @@ namespace Riemann
 	}
 
 
-	int DynamicMesh::FindEdgeFromTriangle(int vA, int vB, int tID) const
+	int DynamicMesh::FindEdgeFromTri(int vA, int vB, int tID) const
 	{
 		const Index3& Triangle = Triangles[tID];
 		const Index3& TriangleEdgeIDs = TriangleEdges[tID];
@@ -1211,8 +1214,8 @@ namespace Riemann
 			return EMeshResult::Failed_NotAnEdge;
 		}
 
-		const Edge EdgeAB = Edges[eab];
-		int t0 = EdgeAB.Vert[0];
+		const Edge& EdgeAB = Edges[eab];
+		int t0 = EdgeAB.Tri[0];
 		if (t0 == -1)
 		{
 			return EMeshResult::Failed_BrokenTopology;
@@ -1223,7 +1226,7 @@ namespace Riemann
 		// look up opposing triangle/vtx if we are not in boundary case
 		bool bIsBoundaryEdge = false;
 		int d = -1;
-		int t1 = EdgeAB.Vert[1];
+		int t1 = EdgeAB.Tri[1];
 		if (t1 != -1)
 		{
 			Index3 T1tv = GetTriangle(t1);
@@ -1301,7 +1304,7 @@ namespace Riemann
 		else if (bIsBoundaryEdge == true && IsBoundaryEdge(eac))
 		{
 			// Cannot collapse edge if we are down to a single triangle
-			ebc = FindEdgeFromTriangle(b, c, t0);
+			ebc = FindEdgeFromTri(b, c, t0);
 			if (IsBoundaryEdge(ebc))
 			{
 				return EMeshResult::Failed_CollapseTriangle;
@@ -1384,10 +1387,10 @@ namespace Riemann
 			}
 
 			// [TODO] perhaps we can already have unique tri list because of the manifold-nbrhood assert we need to do...
-			const Edge e = Edges[eid];
+			const Edge& e = Edges[eid];
 			for (int j = 0; j < 2; ++j)
 			{
-				int t_j = j == 0 ? e.Tri[0] : e.Tri[1];
+				int t_j = e.Tri[j];
 				if (t_j != -1 && t_j != t0 && t_j != t1)
 				{
 					if (TriangleHasVertex(t_j, a))
@@ -1431,10 +1434,10 @@ namespace Riemann
 			assert(EdgeRefCounts[eac] == 0);
 
 			// replace t0 and t1 in edges ebd and ebc that we kept
-			ebd = FindEdgeFromTriangle(b, d, t1);
+			ebd = FindEdgeFromTri(b, d, t1);
 			if (ebc == -1)   // we may have already looked this up
 			{
-				ebc = FindEdgeFromTriangle(b, c, t0);
+				ebc = FindEdgeFromTri(b, c, t0);
 			}
 
 			if (ReplaceEdgeTriangle(ebd, t1, tad) == -1)
@@ -1491,7 +1494,7 @@ namespace Riemann
 			assert(EdgeRefCounts[eac] == 0);
 
 			// replace t0 in edge ebc that we kept
-			ebc = FindEdgeFromTriangle(b, c, t0);
+			ebc = FindEdgeFromTri(b, c, t0);
 			if (ReplaceEdgeTriangle(ebc, t0, tac) == -1)
 			{
 				assert(false);
@@ -1598,9 +1601,9 @@ namespace Riemann
 		}
 
 		bool boundary0, boundary1, boundary2;
-		int e0 = FindEdgeEx(tv[0], tv[1], boundary0);
-		int e1 = FindEdgeEx(tv[1], tv[2], boundary1);
-		int e2 = FindEdgeEx(tv[2], tv[0], boundary2);
+		int e0 = FindEdgeInternal(tv[0], tv[1], boundary0);
+		int e1 = FindEdgeInternal(tv[1], tv[2], boundary1);
+		int e2 = FindEdgeInternal(tv[2], tv[0], boundary2);
 		if ((e0 != -1 && boundary0 == false)
 			|| (e1 != -1 && boundary1 == false)
 			|| (e2 != -1 && boundary2 == false))
@@ -1753,12 +1756,13 @@ namespace Riemann
 				int b = e.Vert[1];
 				VertexEdgeLists[b].remove(eid);
 
-				assert(EdgeRefCounts[eid] >= 0);
+				assert(EdgeRefCounts[eid] > 0);
 				EdgeRefCounts[eid]--;
 			}
 		}
 
 		// free this triangle
+
 		TriangleRefCounts[tID]--;
 		assert(TriangleRefCounts[tID] == 0);
 
@@ -1767,7 +1771,7 @@ namespace Riemann
 		for (int j = 0; j < 3; ++j)
 		{
 			int vid = tv[j];
-			assert(VertexRefCounts[vid] >= 1);
+			assert(VertexRefCounts[vid] > 0);
 			VertexRefCounts[vid]--;
 			if (bRemoveIsolatedVertices && VertexRefCounts[vid] == 1)
 			{
@@ -1927,7 +1931,241 @@ namespace Riemann
 
 	void DynamicMesh::BuildBounds()
 	{
-		Bounds = Box3(VertexPositions.data(), VertexPositions.size());
+		Bounds = Box3::Empty();
+		for (int tid = 0; tid < GetTriangleCount(); ++tid)
+		{
+			if (!IsTriangleFast(tid))
+			{
+				continue;
+			}
+
+			Index3 tri = GetTriangle(tid);
+			Bounds.Encapsulate(VertexPositions[tri[0]], VertexPositions[tri[1]], VertexPositions[tri[2]]);
+		}
+	}
+
+	void DynamicMesh::CalculateWeightAverageNormals()
+	{
+		if (Triangles.empty())
+		{
+			return;
+		}
+
+		int NumVertices = GetVertexCount();
+		int NumTriangles = GetTriangleCount();
+
+		bHasVertexNormals = true;
+
+		std::vector<float> Weight;
+		Weight.resize(NumVertices, 0.0f);
+		VertexNormals.resize(NumVertices);
+		memset(VertexNormals.data(), 0, sizeof(VertexNormals[0]) * VertexNormals.size());
+		for (int tid = 0; tid < NumTriangles; ++tid)
+		{
+			Index3 tv = GetTriangle(tid);
+
+			Triangle3 tri;
+			GetTriVertices(tid, tri.v0, tri.v1, tri.v2);
+
+			Vector3 Nor =  tri.GetNormal(true);
+
+			const Vector3 v20 = (tri.v2 - tri.v0).Unit();
+			const Vector3 v10 = (tri.v1 - tri.v0).Unit();
+			const Vector3 v21 = (tri.v2 - tri.v1).Unit();
+
+			const float w0 = acosf(v20.Dot(v10));
+			const float w1 = acosf(v21.Dot(-v10));
+			const float w2 = acosf(v21.Dot(v20));
+
+			VertexNormals[tv.a] += w0 * Nor;
+			Weight[tv.a] += w0;
+
+			VertexNormals[tv.b] += w1 * Nor;
+			Weight[tv.b] += w1;
+
+			VertexNormals[tv.c] += w2 * Nor;
+			Weight[tv.c] += w2;
+		}
+
+		for (size_t i = 0; i < VertexNormals.size(); ++i)
+		{
+			VertexNormals[i] *= 1.0f / Weight[i];
+			VertexNormals[i].Normalize();
+		}
+	}
+
+	int DynamicMesh::FixTriangleOrientation(bool right_handed)
+	{
+		// TODO
+		int fix_count = 0;
+		float sign = right_handed ? 1.0f : -1.0f;
+
+		std::vector<std::vector<int>> islands;
+		std::vector<std::vector<int>> triangles;
+
+		BitSet processed(Triangles.size());
+
+		BuildIslands(islands, triangles);
+
+		assert(islands.size() == triangles.size());
+		for (size_t i = 0; i < islands.size(); ++i)
+		{
+			const std::vector<int>& island = islands[i];
+			const std::vector<int>& triangle = triangles[i];
+
+			if (triangle.size() <= 1)
+			{
+				continue;
+			}
+
+			int seed_tid = -1;
+			float max_y = -FLT_MAX;
+			for (int tid : triangle)
+			{
+				Triangle3 tri;
+				GetTriVertices(tid, tri.v0, tri.v1, tri.v2);
+
+				const float y = tri.GetCenter().y;
+				if (max_y < y)
+				{
+					max_y = y;
+					seed_tid = tid;
+				}
+			}
+
+			assert(seed_tid != -1);
+			Triangle3 tri;
+			GetTriVertices(seed_tid, tri.v0, tri.v1, tri.v2);
+			Vector3 TriNormal = tri.GetNormal(true);
+
+			if (TriNormal.Dot(Vector3::UnitY()) * sign < 0)
+			{
+				ReverseTriOrientation(seed_tid);
+				fix_count += 1;
+			}
+
+			struct TriLink
+			{
+				TriLink(int _id, int _parent)
+				{
+					id = _id;
+					parent = _parent;
+				}
+
+				int id;
+				int parent;
+			};
+
+			std::deque<TriLink> qu;
+			qu.emplace_back(seed_tid, -1);
+
+			processed.set(seed_tid, true);
+
+			while (!qu.empty())
+			{
+				TriLink node = qu.front();
+				qu.pop_front();
+
+				if (node.parent != -1)
+				{
+					ApplyTriangleOrientation(Triangles[node.parent], Triangles[node.id]);
+				}
+
+				const Index3& te = TriangleEdges[node.id];
+				for (int j = 0; j < 3; ++j)
+				{
+					const Edge& e = Edges[te[j]];
+					if (e.Tri[0] == node.parent || e.Tri[1] == node.parent)
+					{
+						continue;
+					}
+
+					int next = e.Tri[0] == node.id ? e.Tri[1] : e.Tri[0];
+					if (processed.get(next))
+					{
+						continue;
+					}
+
+					qu.emplace_back(next, node.id);
+				}
+			}
+		}
+
+		return fix_count;
+	}
+
+	void DynamicMesh::BuildIslands(std::vector<std::vector<int>>& islands, std::vector<std::vector<int>>& triangles)
+	{
+		islands.clear();
+
+		int NumVertices = GetVertexCount();
+
+		BitSet processed((size_t)NumVertices);
+
+		for (int vid = 0; vid < NumVertices; ++vid)
+		{
+			int seed = vid;
+
+			if (processed.get(seed))
+			{
+				continue;
+			}
+			processed.set(seed, true);
+
+			std::vector<int> island;
+			std::vector<int> queue;
+			std::set<int> triangle;
+
+			island.push_back(seed);
+			queue.push_back(seed);
+
+			while (!queue.empty())
+			{
+				int next = queue.back();
+				queue.pop_back();
+
+				std::vector<int> circle_v = GetVexVertices(next);
+				for (int v : circle_v)
+				{
+					if (processed.get(v))
+					{
+						continue;
+					}
+					processed.set(v, true);
+
+					island.push_back(v);
+					queue.push_back(v);
+				}
+
+				std::vector<int> circle_t = GetVexTriangles(next);
+				for (int t : circle_t)
+				{
+					if (t != -1)
+					{
+						triangle.insert(t);
+					}
+				}
+			}
+
+			islands.push_back(island);
+			triangles.push_back(ToVector<int>(triangle));
+		}
+	}
+
+	Vector3 DynamicMesh::CalculateIslandCenter(const std::vector<int>& island)
+	{
+		Vector3 Center = Vector3::Zero();
+
+		if (island.size() > 0)
+		{
+			for (int vid : island)
+			{
+				Center += VertexPositions[vid];
+			}
+			Center *= (1.0f / island.size());
+		}
+
+		return Center;
 	}
 
 	DynamicMeshAABBTree::DynamicMeshAABBTree(DynamicMesh* data)
