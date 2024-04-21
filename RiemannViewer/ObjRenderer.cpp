@@ -96,35 +96,35 @@ namespace Riemann
 
 	void AddGeometry(Renderer* renderer, GeometryBase* geom)
 	{
-		if (geom->GetShapeType() == ShapeType::TRIANGLE_MESH)
+		if (geom->GetShapeType() == PrimitiveType::TRIANGLE_MESH)
 		{
 			AddTriMesh(renderer, geom->GetShapeObj<StaticMesh>(), geom->GetWorldTransform(), true);
 		}
-		else if (geom->GetShapeType() == ShapeType::CONVEX_MESH)
+		else if (geom->GetShapeType() == PrimitiveType::CONVEX_MESH)
 		{
 			AddGeometryImpl<ConvexMesh>(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType::BOX)
+		else if (geom->GetShapeType() == PrimitiveType::BOX)
 		{
 			AddGeometryImpl<AxisAlignedBox3>(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType::PLANE)
+		else if (geom->GetShapeType() == PrimitiveType::PLANE)
 		{
 			AddPlane(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType::SPHERE)
+		else if (geom->GetShapeType() == PrimitiveType::SPHERE)
 		{
 			AddGeometryImpl <Sphere3 >(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType::CAPSULE)
+		else if (geom->GetShapeType() == PrimitiveType::CAPSULE)
 		{
 			AddGeometryImpl <Capsule3 >(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType::CYLINDER)
+		else if (geom->GetShapeType() == PrimitiveType::CYLINDER)
 		{
 			AddGeometryImpl <Cylinder3 >(renderer, geom);
 		}
-		else if (geom->GetShapeType() == ShapeType::HEIGHTFIELD)
+		else if (geom->GetShapeType() == PrimitiveType::HEIGHTFIELD)
 		{
 			AddGeometryImpl <HeightField3 >(renderer, geom);
 		}

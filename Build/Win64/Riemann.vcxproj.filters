@@ -186,7 +186,7 @@
     <ClInclude Include="..\..\Src\Optimization\StochasticGradientDescent.h">
       <Filter>Optimization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\ShapeType.h">
+    <ClInclude Include="..\..\Src\CollisionPrimitive\PrimitiveType.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Maths\SIMD.h">
@@ -423,9 +423,6 @@
     <ClInclude Include="..\..\Src\Core\BitSet.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\CollisionPrimitive\MassParameters.h">
-      <Filter>CollisionPrimitive</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\Voronoi3.h">
       <Filter>Geometry</Filter>
     </ClInclude>
@@ -541,6 +538,12 @@
       <Filter>Geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\GeometryAttributes.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\MassParameters.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\WindingNumber.h">
       <Filter>Geometry</Filter>
     </ClInclude>
   </ItemGroup>
@@ -683,9 +686,6 @@
     <ClCompile Include="..\..\Src\Geometry\MeshSimplification.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\CollisionPrimitive\MassParameters.cpp">
-      <Filter>CollisionPrimitive</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\Voronoi3.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
@@ -738,6 +738,12 @@
       <Filter>Geometry</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\GeometryAttributes.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\MassParameters.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\WindingNumber.cpp">
       <Filter>Geometry</Filter>
     </ClCompile>
   </ItemGroup>

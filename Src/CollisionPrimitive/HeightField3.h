@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <vector>
 
-#include "ShapeType.h"
+#include "PrimitiveType.h"
 #include "../Maths/Box3.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Matrix3.h"
@@ -59,9 +59,9 @@ namespace Riemann
 			Init(_Bv, _nX, _nZ);
 		}
 
-		static constexpr ShapeType	StaticType()
+		static constexpr PrimitiveType	StaticType()
 		{
-			return ShapeType::HEIGHTFIELD;
+			return PrimitiveType::HEIGHTFIELD;
 		}
 
 		void    	Init(const Box3& _Bv, int _nX, int _nZ)

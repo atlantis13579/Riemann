@@ -15,7 +15,7 @@
 
 namespace Riemann
 {
-	int GeometryFactory::ObjectCount[(int)ShapeType::TYPE_COUNT] = { 0 };
+	int GeometryFactory::ObjectCount[(int)PrimitiveType::TYPE_COUNT] = { 0 };
 
 	template<class GEOM_TYPE>
 	class TGeometry : public GeometryBase, public GEOM_TYPE

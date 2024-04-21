@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ShapeType.h"
+#include "PrimitiveType.h"
 #include "AxisAlignedBox3.h"
 #include "Sphere3.h"
 #include "../Maths/Box3.h"

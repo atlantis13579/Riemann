@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <vector>
-#include "ShapeType.h"
+#include "PrimitiveType.h"
 #include "Plane3.h"
 #include "../Maths/Vector3.h"
 #include "../Maths/Box3.h"
@@ -59,9 +59,9 @@ namespace Riemann
 			Release();
 		}
 
-		static constexpr ShapeType	StaticType()
+		static constexpr PrimitiveType	StaticType()
 		{
-			return ShapeType::CONVEX_MESH;
+			return PrimitiveType::CONVEX_MESH;
 		}
 
 		void		Release()

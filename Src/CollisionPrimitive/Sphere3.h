@@ -3,7 +3,7 @@
 #include <math.h>
 #include <random>
 #include <vector>
-#include "ShapeType.h"
+#include "PrimitiveType.h"
 #include "Segment3.h"
 #include "../Maths/Matrix3.h"
 #include "../Maths/Box3.h"
@@ -99,9 +99,9 @@ namespace Riemann
 			Radius = (Center - A).Length() + kSphereEnlargeFactor;
 		}
 
-		static constexpr ShapeType	StaticType()
+		static constexpr PrimitiveType	StaticType()
 		{
-			return ShapeType::SPHERE;
+			return PrimitiveType::SPHERE;
 		}
 
 	public:

@@ -7,7 +7,7 @@
 #include "Plane3.h"
 #include "Capsule3.h"
 #include "Triangle2.h"
-#include "ShapeType.h"
+#include "PrimitiveType.h"
 
 namespace Riemann
 {

@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <vector>
 
-#include "ShapeType.h"
+#include "PrimitiveType.h"
 #include "../Maths/Matrix3.h"
 #include "../Maths/Box3.h"
 
@@ -26,9 +26,9 @@ namespace Riemann
 			Max = Bmax;
 		}
 
-		static constexpr ShapeType	StaticType()
+		static constexpr PrimitiveType	StaticType()
 		{
-			return ShapeType::BOX;
+			return PrimitiveType::BOX;
 		}
 
 	public:

@@ -4,8 +4,7 @@
 #include "../Core/StaticArray.h"
 #include "../Maths/Transform.h"
 #include "../Maths/Box3.h"
-#include "../CollisionPrimitive/ShapeType.h"
-#include "../CollisionPrimitive/MassParameters.h"
+#include "../CollisionPrimitive/PrimitiveType.h"
 
 namespace Riemann
 {
@@ -238,7 +237,7 @@ namespace Riemann
 			m_VolumeProperties.BoundingVolume = box;
 		}
 
-		inline ShapeType		GetShapeType() const
+		inline PrimitiveType		GetShapeType() const
 		{
 			return m_Type;
 		}
@@ -303,7 +302,7 @@ namespace Riemann
 		}
 
 	protected:
-		ShapeType					m_Type;
+		PrimitiveType					m_Type;
 		Box3						m_BoxWorld;
 		GeometryTransform			m_WorldTransform;
 		Transform					m_LocalTransform;
@@ -332,6 +331,6 @@ namespace Riemann
 		static GeometryBase* CreateSphere_placement(void* pBuf, const Vector3& Center, float Radius);
 		static GeometryBase* CreateCapsule_placement(void* pBuf, const Vector3& X0, const Vector3& X1, float Radius);
 
-		static int		ObjectCount[(int)ShapeType::TYPE_COUNT];
+		static int		ObjectCount[(int)PrimitiveType::TYPE_COUNT];
 	};
 }

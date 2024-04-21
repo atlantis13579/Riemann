@@ -3,7 +3,7 @@
 #include <math.h>
 #include <vector>
 
-#include "ShapeType.h"
+#include "PrimitiveType.h"
 #include "../Maths/Box3.h"
 
 namespace Riemann
@@ -31,9 +31,9 @@ namespace Riemann
 			X1 = _X1;
 		}
 
-		static constexpr ShapeType	StaticType()
+		static constexpr PrimitiveType	StaticType()
 		{
-			return ShapeType::CYLINDER;
+			return PrimitiveType::CYLINDER;
 		}
 
 	public:

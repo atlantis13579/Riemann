@@ -18,10 +18,10 @@
 
 namespace Riemann
 {
-	RayCastFunc		GeometryIntersection::raycastTable[(int)ShapeType::TYPE_COUNT] = { 0 };
-	IntersectFunc	GeometryIntersection::intersectTable[(int)ShapeType::TYPE_COUNT][(int)ShapeType::TYPE_COUNT] = { 0 };
-	PenetrationFunc	GeometryIntersection::penetrationTable[(int)ShapeType::TYPE_COUNT][(int)ShapeType::TYPE_COUNT] = { 0 };
-	SweepFunc		GeometryIntersection::sweepTable[(int)ShapeType::TYPE_COUNT][(int)ShapeType::TYPE_COUNT] = { 0 };
+	RayCastFunc		GeometryIntersection::raycastTable[(int)PrimitiveType::TYPE_COUNT] = { 0 };
+	IntersectFunc	GeometryIntersection::intersectTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT] = { 0 };
+	PenetrationFunc	GeometryIntersection::penetrationTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT] = { 0 };
+	SweepFunc		GeometryIntersection::sweepTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT] = { 0 };
 
 	template <class T>
 	inline bool			RayCastT(void* Obj, const Vector3& Origin, const Vector3& Direction, float* t)
@@ -225,104 +225,104 @@ namespace Riemann
 
 	GeometryIntersection::GeometryIntersection()
 	{
-		REG_RAYCAST_FUNC(ShapeType::BOX, AxisAlignedBox3)
-		REG_RAYCAST_FUNC(ShapeType::PLANE, Plane3)
-		REG_RAYCAST_FUNC(ShapeType::SPHERE, Sphere3)
-		REG_RAYCAST_FUNC(ShapeType::CYLINDER, Cylinder3)
-		REG_RAYCAST_FUNC(ShapeType::CAPSULE, Capsule3)
-		REG_RAYCAST_FUNC(ShapeType::HEIGHTFIELD, HeightField3)
-		REG_RAYCAST_FUNC(ShapeType::CONVEX_MESH, ConvexMesh)
-		REG_RAYCAST_FUNC(ShapeType::TRIANGLE_MESH, TriangleMesh)
+		REG_RAYCAST_FUNC(PrimitiveType::BOX, AxisAlignedBox3)
+		REG_RAYCAST_FUNC(PrimitiveType::PLANE, Plane3)
+		REG_RAYCAST_FUNC(PrimitiveType::SPHERE, Sphere3)
+		REG_RAYCAST_FUNC(PrimitiveType::CYLINDER, Cylinder3)
+		REG_RAYCAST_FUNC(PrimitiveType::CAPSULE, Capsule3)
+		REG_RAYCAST_FUNC(PrimitiveType::HEIGHTFIELD, HeightField3)
+		REG_RAYCAST_FUNC(PrimitiveType::CONVEX_MESH, ConvexMesh)
+		REG_RAYCAST_FUNC(PrimitiveType::TRIANGLE_MESH, TriangleMesh)
 
-		REG_INTERSECT_FUNC(ShapeType::BOX, ShapeType::BOX, IntersectBoxBox);
-		REG_INTERSECT_FUNC(ShapeType::BOX, ShapeType::PLANE, IntersectBoxPlane);
-		REG_INTERSECT_FUNC(ShapeType::BOX, ShapeType::HEIGHTFIELD, IntersectBoxT_WS<HeightField3>);
-		REG_INTERSECT_FUNC(ShapeType::BOX, ShapeType::TRIANGLE_MESH, IntersectBoxT_WS<TriangleMesh>);
-		REG_INTERSECT_FUNC(ShapeType::PLANE, ShapeType::PLANE, IntersectPlanePlane);
-		REG_INTERSECT_FUNC(ShapeType::PLANE, ShapeType::HEIGHTFIELD, IntersectNotSupport);
-		REG_INTERSECT_FUNC(ShapeType::PLANE, ShapeType::TRIANGLE_MESH, IntersectNotSupport);
-		REG_INTERSECT_FUNC(ShapeType::SPHERE, ShapeType::BOX, IntersectSphereT<AxisAlignedBox3>);
-		REG_INTERSECT_FUNC(ShapeType::SPHERE, ShapeType::PLANE, IntersectSphereT<Plane3>);
-		REG_INTERSECT_FUNC(ShapeType::SPHERE, ShapeType::SPHERE, IntersectSphereT<Sphere3>);
-		REG_INTERSECT_FUNC(ShapeType::SPHERE, ShapeType::CAPSULE, IntersectSphereT<Sphere3>);
-		REG_INTERSECT_FUNC(ShapeType::SPHERE, ShapeType::HEIGHTFIELD, IntersectSphereT<HeightField3>);
-		REG_INTERSECT_FUNC(ShapeType::SPHERE, ShapeType::TRIANGLE_MESH, IntersectSphereT<TriangleMesh>);
-		REG_INTERSECT_FUNC(ShapeType::CYLINDER, ShapeType::BOX, IntersectGJKSolver);
-		REG_INTERSECT_FUNC(ShapeType::CYLINDER, ShapeType::PLANE, IntersectGJKSolver);
-		REG_INTERSECT_FUNC(ShapeType::CYLINDER, ShapeType::SPHERE, IntersectGJKSolver);
-		REG_INTERSECT_FUNC(ShapeType::CYLINDER, ShapeType::CYLINDER, IntersectGJKSolver);
-		REG_INTERSECT_FUNC(ShapeType::CYLINDER, ShapeType::CAPSULE, IntersectGJKSolver);
-		REG_INTERSECT_FUNC(ShapeType::CYLINDER, ShapeType::HEIGHTFIELD, IntersectNotSupport);
-		REG_INTERSECT_FUNC(ShapeType::CYLINDER, ShapeType::TRIANGLE_MESH, IntersectNotSupport);
-		REG_INTERSECT_FUNC(ShapeType::CAPSULE, ShapeType::BOX, IntersectCapsuleT<AxisAlignedBox3>);
-		REG_INTERSECT_FUNC(ShapeType::CAPSULE, ShapeType::PLANE, IntersectCapsuleT<Plane3>);
-		REG_INTERSECT_FUNC(ShapeType::CAPSULE, ShapeType::CAPSULE, IntersectCapsuleT<Capsule3>);
-		REG_INTERSECT_FUNC(ShapeType::CAPSULE, ShapeType::HEIGHTFIELD, IntersectCapsuleT<HeightField3>);
-		REG_INTERSECT_FUNC(ShapeType::CAPSULE, ShapeType::TRIANGLE_MESH, IntersectCapsuleT<TriangleMesh>);
-		REG_INTERSECT_FUNC(ShapeType::CONVEX_MESH, ShapeType::BOX, IntersectGJKSolver);
-		REG_INTERSECT_FUNC(ShapeType::CONVEX_MESH, ShapeType::PLANE, IntersectGJKSolver);
-		REG_INTERSECT_FUNC(ShapeType::CONVEX_MESH, ShapeType::SPHERE, IntersectGJKSolver);
-		REG_INTERSECT_FUNC(ShapeType::CONVEX_MESH, ShapeType::CYLINDER, IntersectGJKSolver);
-		REG_INTERSECT_FUNC(ShapeType::CONVEX_MESH, ShapeType::CAPSULE, IntersectGJKSolver);
-		REG_INTERSECT_FUNC(ShapeType::CONVEX_MESH, ShapeType::CONVEX_MESH, IntersectGJKSolver);
-		REG_INTERSECT_FUNC(ShapeType::HEIGHTFIELD, ShapeType::HEIGHTFIELD, IntersectNotSupport);
-		REG_INTERSECT_FUNC(ShapeType::HEIGHTFIELD, ShapeType::TRIANGLE_MESH, IntersectNotSupport);
-		REG_INTERSECT_FUNC(ShapeType::TRIANGLE_MESH, ShapeType::TRIANGLE_MESH, IntersectNotSupport);
+		REG_INTERSECT_FUNC(PrimitiveType::BOX, PrimitiveType::BOX, IntersectBoxBox);
+		REG_INTERSECT_FUNC(PrimitiveType::BOX, PrimitiveType::PLANE, IntersectBoxPlane);
+		REG_INTERSECT_FUNC(PrimitiveType::BOX, PrimitiveType::HEIGHTFIELD, IntersectBoxT_WS<HeightField3>);
+		REG_INTERSECT_FUNC(PrimitiveType::BOX, PrimitiveType::TRIANGLE_MESH, IntersectBoxT_WS<TriangleMesh>);
+		REG_INTERSECT_FUNC(PrimitiveType::PLANE, PrimitiveType::PLANE, IntersectPlanePlane);
+		REG_INTERSECT_FUNC(PrimitiveType::PLANE, PrimitiveType::HEIGHTFIELD, IntersectNotSupport);
+		REG_INTERSECT_FUNC(PrimitiveType::PLANE, PrimitiveType::TRIANGLE_MESH, IntersectNotSupport);
+		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::BOX, IntersectSphereT<AxisAlignedBox3>);
+		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::PLANE, IntersectSphereT<Plane3>);
+		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::SPHERE, IntersectSphereT<Sphere3>);
+		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::CAPSULE, IntersectSphereT<Sphere3>);
+		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::HEIGHTFIELD, IntersectSphereT<HeightField3>);
+		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::TRIANGLE_MESH, IntersectSphereT<TriangleMesh>);
+		REG_INTERSECT_FUNC(PrimitiveType::CYLINDER, PrimitiveType::BOX, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::CYLINDER, PrimitiveType::PLANE, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::CYLINDER, PrimitiveType::SPHERE, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::CYLINDER, PrimitiveType::CYLINDER, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::CYLINDER, PrimitiveType::CAPSULE, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::CYLINDER, PrimitiveType::HEIGHTFIELD, IntersectNotSupport);
+		REG_INTERSECT_FUNC(PrimitiveType::CYLINDER, PrimitiveType::TRIANGLE_MESH, IntersectNotSupport);
+		REG_INTERSECT_FUNC(PrimitiveType::CAPSULE, PrimitiveType::BOX, IntersectCapsuleT<AxisAlignedBox3>);
+		REG_INTERSECT_FUNC(PrimitiveType::CAPSULE, PrimitiveType::PLANE, IntersectCapsuleT<Plane3>);
+		REG_INTERSECT_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CAPSULE, IntersectCapsuleT<Capsule3>);
+		REG_INTERSECT_FUNC(PrimitiveType::CAPSULE, PrimitiveType::HEIGHTFIELD, IntersectCapsuleT<HeightField3>);
+		REG_INTERSECT_FUNC(PrimitiveType::CAPSULE, PrimitiveType::TRIANGLE_MESH, IntersectCapsuleT<TriangleMesh>);
+		REG_INTERSECT_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::BOX, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::PLANE, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::SPHERE, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::CYLINDER, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::CAPSULE, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::CONVEX_MESH, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::HEIGHTFIELD, IntersectNotSupport);
+		REG_INTERSECT_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::TRIANGLE_MESH, IntersectNotSupport);
+		REG_INTERSECT_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::TRIANGLE_MESH, IntersectNotSupport);
 
-		REG_PENETRATE_FUNC(ShapeType::BOX, ShapeType::BOX, PenetrateBoxBox);
-		REG_PENETRATE_FUNC(ShapeType::BOX, ShapeType::SPHERE, PenetrateBoxT_WS<Sphere3>);
-		REG_PENETRATE_FUNC(ShapeType::BOX, ShapeType::PLANE, PenetrateBoxT_WS<Plane3>);
-		REG_PENETRATE_FUNC(ShapeType::BOX, ShapeType::CONVEX_MESH, nullptr);
-		REG_PENETRATE_FUNC(ShapeType::BOX, ShapeType::HEIGHTFIELD, nullptr);
-		REG_PENETRATE_FUNC(ShapeType::BOX, ShapeType::TRIANGLE_MESH, nullptr);
-		REG_PENETRATE_FUNC(ShapeType::SPHERE, ShapeType::SPHERE, PenetrateSphereT<Sphere3>);
-		REG_PENETRATE_FUNC(ShapeType::SPHERE, ShapeType::PLANE, PenetrateSphereT<Plane3>);
-		REG_PENETRATE_FUNC(ShapeType::SPHERE, ShapeType::CAPSULE, PenetrateSphereT<Capsule3>);
-		REG_PENETRATE_FUNC(ShapeType::SPHERE, ShapeType::CONVEX_MESH, nullptr);
-		REG_PENETRATE_FUNC(ShapeType::SPHERE, ShapeType::HEIGHTFIELD, nullptr);
-		REG_PENETRATE_FUNC(ShapeType::SPHERE, ShapeType::TRIANGLE_MESH, nullptr);
-		REG_PENETRATE_FUNC(ShapeType::CAPSULE, ShapeType::CAPSULE, IntersectCapsuleT<Capsule3>);
-		REG_PENETRATE_FUNC(ShapeType::CAPSULE, ShapeType::PLANE, nullptr);
-		REG_PENETRATE_FUNC(ShapeType::CAPSULE, ShapeType::CONVEX_MESH, nullptr);
-		REG_PENETRATE_FUNC(ShapeType::CAPSULE, ShapeType::HEIGHTFIELD, nullptr);
-		REG_PENETRATE_FUNC(ShapeType::CAPSULE, ShapeType::TRIANGLE_MESH, nullptr);
-		REG_PENETRATE_FUNC(ShapeType::CYLINDER, ShapeType::BOX, PenetrateEPASolver);
-		REG_PENETRATE_FUNC(ShapeType::CYLINDER, ShapeType::PLANE, PenetrateEPASolver);
-		REG_PENETRATE_FUNC(ShapeType::CYLINDER, ShapeType::SPHERE, PenetrateEPASolver);
-		REG_PENETRATE_FUNC(ShapeType::CYLINDER, ShapeType::CYLINDER, PenetrateEPASolver);
-		REG_PENETRATE_FUNC(ShapeType::CYLINDER, ShapeType::CAPSULE, PenetrateEPASolver);
-		REG_PENETRATE_FUNC(ShapeType::CYLINDER, ShapeType::HEIGHTFIELD, PenetrateNotSupport);
-		REG_PENETRATE_FUNC(ShapeType::CYLINDER, ShapeType::TRIANGLE_MESH, PenetrateNotSupport);
-		REG_PENETRATE_FUNC(ShapeType::CONVEX_MESH, ShapeType::PLANE, nullptr);
-		REG_PENETRATE_FUNC(ShapeType::HEIGHTFIELD, ShapeType::HEIGHTFIELD, PenetrateNotSupport);
-		REG_PENETRATE_FUNC(ShapeType::HEIGHTFIELD, ShapeType::TRIANGLE_MESH, PenetrateNotSupport);
-		REG_PENETRATE_FUNC(ShapeType::TRIANGLE_MESH, ShapeType::TRIANGLE_MESH, PenetrateNotSupport);
+		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::BOX, PenetrateBoxBox);
+		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::SPHERE, PenetrateBoxT_WS<Sphere3>);
+		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::PLANE, PenetrateBoxT_WS<Plane3>);
+		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::CONVEX_MESH, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::HEIGHTFIELD, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::TRIANGLE_MESH, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::SPHERE, PenetrateSphereT<Sphere3>);
+		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::PLANE, PenetrateSphereT<Plane3>);
+		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::CAPSULE, PenetrateSphereT<Capsule3>);
+		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::CONVEX_MESH, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::HEIGHTFIELD, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::TRIANGLE_MESH, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CAPSULE, IntersectCapsuleT<Capsule3>);
+		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::PLANE, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CONVEX_MESH, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::HEIGHTFIELD, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::TRIANGLE_MESH, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::BOX, PenetrateEPASolver);
+		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::PLANE, PenetrateEPASolver);
+		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::SPHERE, PenetrateEPASolver);
+		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::CYLINDER, PenetrateEPASolver);
+		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::CAPSULE, PenetrateEPASolver);
+		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::HEIGHTFIELD, PenetrateNotSupport);
+		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::TRIANGLE_MESH, PenetrateNotSupport);
+		REG_PENETRATE_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::PLANE, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::HEIGHTFIELD, PenetrateNotSupport);
+		REG_PENETRATE_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::TRIANGLE_MESH, PenetrateNotSupport);
+		REG_PENETRATE_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::TRIANGLE_MESH, PenetrateNotSupport);
 
-		REG_SWEEP_FUNC(ShapeType::SPHERE, ShapeType::SPHERE, SweepSphereT<Sphere3>);
+		REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::SPHERE, SweepSphereT<Sphere3>);
 	}
 
 	GeometryIntersection s_geom_registration;
 
-	RayCastFunc GeometryIntersection::GetRayCastFunc(ShapeType Type)
+	RayCastFunc GeometryIntersection::GetRayCastFunc(PrimitiveType Type)
 	{
 		RayCastFunc func = GeometryIntersection::raycastTable[(int)Type];
 		assert(func);
 		return func;
 	}
 
-	IntersectFunc GeometryIntersection::GetIntersectFunc(ShapeType Type1, ShapeType Type2)
+	IntersectFunc GeometryIntersection::GetIntersectFunc(PrimitiveType Type1, PrimitiveType Type2)
 	{
 		IntersectFunc func = GeometryIntersection::intersectTable[(int)Type1][(int)Type2];
 		return func;
 	}
 
-	PenetrationFunc GeometryIntersection::GetPenetrationFunc(ShapeType Type1, ShapeType Type2)
+	PenetrationFunc GeometryIntersection::GetPenetrationFunc(PrimitiveType Type1, PrimitiveType Type2)
 	{
 		PenetrationFunc func = GeometryIntersection::penetrationTable[(int)Type1][(int)Type2];
 		return func;
 	}
 
-	SweepFunc GeometryIntersection::GetSweepFunc(ShapeType Type1, ShapeType Type2)
+	SweepFunc GeometryIntersection::GetSweepFunc(PrimitiveType Type1, PrimitiveType Type2)
 	{
 		SweepFunc func = GeometryIntersection::sweepTable[(int)Type1][(int)Type2];
 		return func;

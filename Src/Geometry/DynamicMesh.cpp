@@ -134,27 +134,6 @@ namespace Riemann
 		return 0;
 	}
 
-	static inline void ReverseOrientation(Index3& dst, int a, int b)
-	{
-		int t = dst[a];
-		dst[a] = dst[b];
-		dst[b] = t;
-	}
-
-	static inline bool ApplyTriOrientation(const Index3& tri1, Index3& tr12)
-	{
-		for (int i = 0; i < 3; ++i)
-		{
-			if (FindTriOrderedEdge(tri1[i], tri1[(i + 1) % 3], tr12) >= 0)
-			{
-				ReverseOrientation(tr12, i, (i + 1) % 3);
-				return true;
-			}
-		}
-
-		return false;
-	}
-
 	template<typename T, typename Vec>
 	static int OrientTriEdgeAndFindOtherVtx(T& Vertex1, T& Vertex2, const Vec& TriangleVerts)
 	{
@@ -2102,6 +2081,7 @@ namespace Riemann
 					if (FindTriOrientation(Triangles[node.parent], Triangles[node.id]) < 0)
 					{
 						ReverseTriOrientation(node.id);
+						fix_count += 1;
 					}
 				}
 

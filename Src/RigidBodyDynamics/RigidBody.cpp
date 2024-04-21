@@ -2,8 +2,8 @@
 #include <assert.h>
 #include "RigidBody.h"
 #include "PhysicsMaterial.h"
+#include "MassParameters.h"
 #include "../Collision/GeometryObject.h"
-#include "../CollisionPrimitive/MassParameters.h"
 
 namespace Riemann
 {

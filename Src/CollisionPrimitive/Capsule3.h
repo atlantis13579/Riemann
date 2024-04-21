@@ -7,7 +7,7 @@
 #undef max
 #undef min
 
-#include "ShapeType.h"
+#include "PrimitiveType.h"
 #include "AxisAlignedBox3.h"
 #include "Sphere3.h"
 #include "../Maths/Matrix3.h"
@@ -31,9 +31,9 @@ namespace Riemann
 			Init(_X0, _X1, _Radius);
 		}
 
-		static constexpr ShapeType	StaticType()
+		static constexpr PrimitiveType	StaticType()
 		{
-			return ShapeType::CAPSULE;
+			return PrimitiveType::CAPSULE;
 		}
 
 		inline void		Init(const Vector3& _X0, const Vector3& _X1, float _Radius)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../CollisionPrimitive/ShapeType.h"
+#include "../CollisionPrimitive/PrimitiveType.h"
 
 namespace Riemann
 {
@@ -17,14 +17,14 @@ namespace Riemann
 	public:
 		GeometryIntersection();
 
-		static RayCastFunc		GetRayCastFunc(ShapeType Type);
-		static IntersectFunc	GetIntersectFunc(ShapeType Type1, ShapeType Type2);
-		static PenetrationFunc	GetPenetrationFunc(ShapeType Type1, ShapeType Type2);
-		static SweepFunc		GetSweepFunc(ShapeType Type1, ShapeType Type2);
+		static RayCastFunc		GetRayCastFunc(PrimitiveType Type);
+		static IntersectFunc	GetIntersectFunc(PrimitiveType Type1, PrimitiveType Type2);
+		static PenetrationFunc	GetPenetrationFunc(PrimitiveType Type1, PrimitiveType Type2);
+		static SweepFunc		GetSweepFunc(PrimitiveType Type1, PrimitiveType Type2);
 
-		static RayCastFunc		raycastTable[(int)ShapeType::TYPE_COUNT];
-		static IntersectFunc	intersectTable[(int)ShapeType::TYPE_COUNT][(int)ShapeType::TYPE_COUNT];
-		static PenetrationFunc	penetrationTable[(int)ShapeType::TYPE_COUNT][(int)ShapeType::TYPE_COUNT];
-		static SweepFunc		sweepTable[(int)ShapeType::TYPE_COUNT][(int)ShapeType::TYPE_COUNT];
+		static RayCastFunc		raycastTable[(int)PrimitiveType::TYPE_COUNT];
+		static IntersectFunc	intersectTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT];
+		static PenetrationFunc	penetrationTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT];
+		static SweepFunc		sweepTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT];
 	};
 }

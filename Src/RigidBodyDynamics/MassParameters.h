@@ -3,7 +3,7 @@
 #include <vector>
 #include "../Maths/Box3.h"
 #include "../Maths/Transform.h"
-#include "ShapeType.h"
+#include "../CollisionPrimitive/PrimitiveType.h"
 
 namespace Riemann
 {

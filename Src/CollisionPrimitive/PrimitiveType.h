@@ -6,7 +6,7 @@
 
 namespace Riemann
 {
-	enum class ShapeType : unsigned char
+	enum class PrimitiveType : unsigned char
 	{
 		UNKNOWN = 0,
 		BOX,
@@ -22,8 +22,8 @@ namespace Riemann
 
 	struct MassParameters
 	{
-		float Mass;
-		float Volume;
+		float	Mass;
+		float	Volume;
 		Matrix3 InertiaMat;
 		Vector3 CenterOfMass;
 		Box3	BoundingVolume;

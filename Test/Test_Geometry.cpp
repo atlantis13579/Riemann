@@ -208,8 +208,11 @@ void TestGeometryBoolean1()
 
 	DynamicMesh mesh1;
 	box1.GetMesh2(Vertices, Indices, Normals);
+	std::swap(Indices[1], Indices[2]);
+	std::swap(Indices[4], Indices[5]);
 	mesh1.SetData(Vertices, Indices, Normals);
-	mesh1.FixTriangleOrientation(true);
+	EXPECT(2 == mesh1.FixTriangleOrientation(true));
+	mesh1.CalculateWeightAverageNormals();
 
 	DynamicMesh mesh2;
 	box2.GetMesh2(Vertices, Indices, Normals);

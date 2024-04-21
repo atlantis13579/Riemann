@@ -7,7 +7,7 @@
 #include "../Maths/Box3.h"
 #include "../Maths/Vector3.h"
 #include "../Geometry/MeshSimplification.h"
-#include "ShapeType.h"
+#include "PrimitiveType.h"
 
 namespace Riemann
 {
@@ -34,9 +34,9 @@ namespace Riemann
 			Clear();
 		}
 
-		static constexpr ShapeType	StaticType()
+		static constexpr PrimitiveType	StaticType()
 		{
-			return ShapeType::TRIANGLE_MESH;
+			return PrimitiveType::TRIANGLE_MESH;
 		}
 
 		void Clear()
