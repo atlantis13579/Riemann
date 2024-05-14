@@ -120,7 +120,7 @@ namespace Riemann
 
 		inline void resize(int s)
 		{
-			m_size = s;
+			m_size = s < Capacity ? s : Capacity;
 		}
 
 		inline int size() const
@@ -137,6 +137,48 @@ namespace Riemann
 		{
 			return Capacity;
 		}
+
+		class Iterator
+		{
+		public:
+			inline const T& operator*() const
+			{
+				return m_owner->m_data[m_index];
+			}
+
+			inline const Iterator& operator++()
+			{
+				m_index++;
+				return *this;
+			}
+
+			inline bool operator != (const Iterator& rhs) const
+			{
+				return m_index != rhs.m_index;
+			}
+
+		private:
+			friend class StaticArray;
+
+			Iterator(StaticArray* _owner, int _index) : m_owner(_owner), m_index(_index)
+			{
+			}
+
+		public:
+			const StaticArray*	m_owner{ nullptr };
+			int					m_index{ 0 };
+		};
+
+		Iterator begin()
+		{
+			return Iterator(this, 0);
+		}
+
+		Iterator end()
+		{
+			return Iterator(this, m_size);
+		}
+
 
 	private:
 		int		m_size;

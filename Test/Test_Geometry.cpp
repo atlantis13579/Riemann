@@ -131,6 +131,25 @@ void TestVoronoi3d()
 	return;
 }
 
+void TestDynamicMesh()
+{
+	printf("Running TestDynamicMesh\n");
+
+	AxisAlignedBox3 box1(Vector3(0.0f), Vector3(2.0f));
+	AxisAlignedBox3 box2(Vector3(1.0f), Vector3(3.0f));
+	std::vector<Vector3> Vertices;
+	std::vector<uint16_t> Indices;
+	std::vector<Vector3> Normals;
+
+	DynamicMesh mesh1;
+	box1.GetMesh2(Vertices, Indices, Normals);
+	std::swap(Indices[1], Indices[2]);
+	std::swap(Indices[4], Indices[5]);
+	mesh1.SetData(Vertices, Indices, Normals);
+	EXPECT(2 == mesh1.FixTriangleOrientation(true));
+	mesh1.CalculateWeightAverageNormals();
+}
+
 void TestGeometrySet()
 {
 	printf("Running TestGeometrySet\n");
@@ -169,32 +188,6 @@ void TestGeometrySet()
 	return;
 }
 
-void TestGeometryBoolean2()
-{
-	printf("Running TestGeometryBoolean2\n");
-
-	DynamicMesh mesh1;
-	mesh1.LoadObj("../TestData/bunny.obj");
-	mesh1.FixTriangleOrientation(false);
-
-	DynamicMesh mesh2;
-	Box3 box = mesh1.GetBounds();
-	box.Max.y = box.GetCenter().y;
-	AxisAlignedBox3 aabb(box.Min, box.Max);
-	std::vector<Vector3> Vertices;
-	std::vector<uint16_t> Indices;
-	std::vector<Vector3> Normals;
-	aabb.GetMesh2(Vertices, Indices, Normals);
-	mesh2.SetData(Vertices, Indices, Normals);
-	mesh2.FixTriangleOrientation(false);
-
-	GeometryBoolean b(&mesh2, &mesh1, GeometryBoolean::BooleanOp::Intersect);
-	b.Compute();
-	b.Result->FixTriangleOrientation(false);
-	b.Result->ExportObj("../TestData/bunny_intersect.obj");
-
-	return;
-}
 
 void TestGeometryBoolean1()
 {
@@ -208,21 +201,41 @@ void TestGeometryBoolean1()
 
 	DynamicMesh mesh1;
 	box1.GetMesh2(Vertices, Indices, Normals);
-	std::swap(Indices[1], Indices[2]);
-	std::swap(Indices[4], Indices[5]);
 	mesh1.SetData(Vertices, Indices, Normals);
-	EXPECT(2 == mesh1.FixTriangleOrientation(true));
-	mesh1.CalculateWeightAverageNormals();
 
 	DynamicMesh mesh2;
 	box2.GetMesh2(Vertices, Indices, Normals);
 	mesh2.SetData(Vertices, Indices, Normals);
-	mesh1.FixTriangleOrientation(true);
 
 	GeometryBoolean b(&mesh1, &mesh2, GeometryBoolean::BooleanOp::Intersect);
 	b.Compute();
 	b.Result->FixTriangleOrientation(false);
 	b.Result->ExportObj("../TestData/box_intersect.obj");
+
+	return;
+}
+
+void TestGeometryBoolean2()
+{
+	printf("Running TestGeometryBoolean2\n");
+
+	DynamicMesh mesh1;
+	mesh1.LoadObj("../TestData/bunny.obj");
+
+	DynamicMesh mesh2;
+	Box3 box = mesh1.GetBounds();
+	box.Max.y = box.GetCenter().y;
+	AxisAlignedBox3 aabb(box.Min, box.Max);
+	std::vector<Vector3> Vertices;
+	std::vector<uint16_t> Indices;
+	std::vector<Vector3> Normals;
+	aabb.GetMesh2(Vertices, Indices, Normals);
+	mesh2.SetData(Vertices, Indices, Normals);
+
+	GeometryBoolean b(&mesh2, &mesh1, GeometryBoolean::BooleanOp::Intersect);
+	b.Compute();
+	b.Result->FixTriangleOrientation(false);
+	b.Result->ExportObj("../TestData/bunny_intersect.obj");
 
 	return;
 }
@@ -283,6 +296,7 @@ void TestGeometry()
 	TestCatmullRom();
 	TestVoronoi2d();
 	TestVoronoi3d();
+	TestDynamicMesh();
 	TestGeometrySet();
 	TestGeometryBoolean1();
 	TestGeometryBoolean2();

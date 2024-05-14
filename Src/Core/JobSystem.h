@@ -228,7 +228,7 @@ namespace Riemann
 				if (job->GetDependencies() == 0)
 				{
 					job->mStatus = Job::Job_status::Queueing;
-					mActiveQueue.push(job);
+					mActiveQueue.push(job, false);
 					count++;
 				}
 				else
@@ -250,7 +250,7 @@ namespace Riemann
 				if (job->RemoveDependency())
 				{
 					job->mStatus = Job::Job_status::Queueing;
-					mActiveQueue.push(job);
+					mActiveQueue.push(job, false);
 					count++;
 				}
 			}

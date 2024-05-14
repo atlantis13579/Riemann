@@ -250,6 +250,46 @@ void TestListSet()
 	return;
 }
 
+void TestRingBuffer()
+{
+	printf("Running TestRingBuffer\n");
+
+	RingBuffer<int, 10> buffer; 
+	EXPECT(buffer.empty());
+	for (int i = 1; i <= 20; ++i)
+		buffer.push(i, false);
+	EXPECT(buffer.full());
+	int sum = 0;
+	for (int v : buffer)
+		sum += v;
+	EXPECT(sum == 55);
+	for (int i = 1; i <= 15; ++i)
+		buffer.push(i, true);
+	EXPECT(buffer.full());
+	EXPECT(buffer.size() == 10);
+	sum = 0;
+	for (int v : buffer)
+		sum += v;
+	EXPECT(sum == 105);
+	for (int i = 1; i <= 6; ++i)
+		buffer.pop();
+	EXPECT(buffer.size() == 4);
+	sum = 0;
+	for (int v : buffer)
+		sum += v;
+	EXPECT(sum == 54);
+	buffer.clear();
+	buffer.push(1, false);
+	buffer.push(2, false);
+	buffer.pop();
+	buffer.pop();
+	buffer.pop();
+	buffer.push(3, false);
+	buffer.push(4, false);
+	EXPECT(buffer.size() == 2);
+	return;
+}
+
 void TestPriorityQueue()
 {
 	printf("Running TestPriorityQueue\n");
@@ -284,5 +324,6 @@ void TestCores()
 	// TestJob();
 	// TestGraph();
 	TestListSet();
+	TestRingBuffer();
 	TestPriorityQueue();
 }

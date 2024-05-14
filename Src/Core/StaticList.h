@@ -40,6 +40,44 @@ namespace Riemann
 			--m_size;
 		}
 
+		class Iterator
+		{
+		public:
+			inline const T& operator*() const
+			{
+				return *m_item;
+			}
+
+			inline const Iterator& operator++()
+			{
+				m_item = m_item->next;
+				return *this;
+			}
+
+			inline bool operator != (const Iterator& rhs) const
+			{
+				return m_item != rhs.m_item;
+			}
+
+		private:
+			Iterator(T* item) : m_item(item)
+			{
+			}
+
+		public:
+			const T* m_item{ nullptr };
+		};
+
+		Iterator begin()
+		{
+			return Iterator(m_root);
+		}
+
+		Iterator end()
+		{
+			return Iterator(nullptr);
+		}
+
 	private:
 		T* m_root;
 		int m_size;
@@ -96,6 +134,44 @@ namespace Riemann
 			T* p = m_root;
 			remove(m_root);
 			return p;
+		}
+
+		class Iterator
+		{
+		public:
+			inline const T& operator*() const
+			{
+				return *m_item;
+			}
+
+			inline const Iterator& operator++()
+			{
+				m_item = m_item->next;
+				return *this;
+			}
+
+			inline bool operator != (const Iterator& rhs) const
+			{
+				return m_item != rhs.m_item;
+			}
+
+		private:
+			Iterator(T* item) : m_item(item)
+			{
+			}
+
+		public:
+			const T* m_item{ nullptr };
+		};
+
+		Iterator begin()
+		{
+			return Iterator(m_root);
+		}
+
+		Iterator end()
+		{
+			return Iterator(nullptr);
 		}
 
 	private:

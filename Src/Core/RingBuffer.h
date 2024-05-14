@@ -15,27 +15,37 @@ namespace Riemann
 
 		inline bool full() const
 		{
-			int next = (m_write + 1) % Capacity;
-			return next == m_read;
+			return m_size == Capacity;
 		}
 
-		inline bool clear() const
+		inline void clear()
 		{
-			m_read = m_write = 0;
+			m_head = 0;
+			m_size = 0;
 		}
 
 		inline bool empty() const
 		{
-			return m_read == m_write;
+			return m_size == 0;
 		}
 
-		inline bool push(const T& v)
+		inline size_t size() const
 		{
-			int next = (m_write + 1) % Capacity;
-			if (next != m_read)
+			return (size_t)m_size;
+		}
+
+		inline bool push(const T& v, bool replace_on_full)
+		{
+			if (m_size < Capacity)
 			{
-				m_data[m_write] = v;
-				m_write = next;
+				m_data[(m_head + m_size) % Capacity] = v;
+				m_size++;
+				return true;
+			}
+			if (replace_on_full)
+			{
+				m_data[(m_head + m_size) % Capacity] = v;
+				m_head = (m_head + 1) % Capacity;
 				return true;
 			}
 			return false;
@@ -43,19 +53,61 @@ namespace Riemann
 
 		inline T pop()
 		{
-			if (m_read != m_write)
+			if (m_size > 0)
 			{
-				T item = m_data[m_read];
-				m_read = (m_read + 1) % Capacity;
+				T item = m_data[(m_head + m_size) % Capacity];
+				m_head = (m_head + 1) % Capacity;
+				m_size--;
 				return item;
 			}
 			return T();
 		}
 
+		class Iterator
+		{
+		public:
+			inline const T& operator*() const
+			{
+				return m_owner->m_data[(m_owner->m_head + m_index) % Capacity];
+			}
+
+			inline const Iterator& operator++()
+			{
+				m_index++;
+				return *this;
+			}
+
+			inline bool operator != (const Iterator& rhs) const
+			{
+				return m_index != rhs.m_index;
+			}
+
+		private:
+			friend class RingBuffer;
+
+			Iterator(RingBuffer* _owner, int _index) : m_owner(_owner), m_index(_index)
+			{
+			}
+
+		public:
+			const RingBuffer*	m_owner{ nullptr };
+			int					m_index { 0 };
+		};
+
+		Iterator begin()
+		{
+			return Iterator(this, 0);
+		}
+
+		Iterator end()
+		{
+			return Iterator(this, m_size);
+		}
+
 	private:
 		T			m_data[Capacity];
-		int			m_write;
-		int			m_read;
+		int			m_head;
+		int			m_size;
 	};
 
 	template <typename T, int Capacity>
@@ -67,58 +119,116 @@ namespace Riemann
 			clear();
 		}
 
-		void	clear()
+		inline bool full() const
 		{
-			m_lock.lock();
-			m_write = m_read = 0;
-			m_lock.unlock();
+			return m_size == Capacity;
 		}
 
-		int		size()
+		inline void clear()
 		{
-			m_lock.lock();
-			int n = (m_write + Capacity - m_read) % Capacity;
-			m_lock.unlock();
-			return n;
+			m_head = 0;
+			m_size = 0;
 		}
 
-		bool	push(const T& v)
+		inline bool empty() const
 		{
+			return m_size == 0;
+		}
+
+		inline size_t size() const
+		{
+			return (size_t)m_size;
+		}
+
+		inline bool push(const T& v, bool replace_on_full)
+		{
+			lock();
 			bool succ = false;
-			m_lock.lock();
-			int next = (m_write + 1) % Capacity;
-			if (next != m_read)
+			if (m_size < Capacity)
 			{
-				m_data[m_write] = v;
-				m_write = next;
+				m_data[(m_head + m_size) % Capacity] = v;
+				m_size++;
 				succ = true;
 			}
-			m_lock.unlock();
+			else if (replace_on_full)
+			{
+				m_data[(m_head + m_size) % Capacity] = v;
+				m_head = (m_head + 1) % Capacity;
+				succ = true;
+			}
+			unlock();
 			return succ;
 		}
 
-		T		pop()
+		inline T pop()
 		{
-			T ret = T(0);
-			m_lock.lock();
-			if (m_read != m_write)
+			T item = T(0);
+			lock();
+			if (m_size > 0)
 			{
-				ret = m_data[m_read];
-				m_read = (m_read + 1) % Capacity;
+				item = m_data[(m_head + m_size) % Capacity];
+				m_head = (m_head + 1) % Capacity;
+				m_size--;
 			}
+			unlock();
+			return item;
+		}
+
+		class Iterator
+		{
+		public:
+			inline const T& operator*() const
+			{
+				return m_owner->m_data[(m_owner->m_head + m_index) % Capacity];
+			}
+
+			inline const Iterator& operator++()
+			{
+				m_index++;
+				return *this;
+			}
+
+			inline bool operator != (const Iterator& rhs) const
+			{
+				return m_index != rhs.m_index;
+			}
+
+		private:
+			friend class ThreadSafeRingBuffer;
+
+			Iterator(ThreadSafeRingBuffer* _owner, int _index) : m_owner(_owner), m_index(_index)
+			{
+			}
+
+		public:
+			const ThreadSafeRingBuffer*	m_owner{ nullptr };
+			int							m_index{ 0 };
+		};
+
+		Iterator begin()
+		{
+			return Iterator(this, 0);
+		}
+
+		Iterator end()
+		{
+			return Iterator(this, m_size);
+		}
+
+		inline void lock()
+		{
+			m_lock.lock();
+		}
+
+		inline void unlock()
+		{
 			m_lock.unlock();
-			return ret;
 		}
 
 	private:
 		T			m_data[Capacity];
-		int			m_write;
-		int			m_read;
+		int			m_head;
+		int			m_size;
 		SpinLock	m_lock;
-	};
-
-	template <typename T, int Capacity>
-	class LockFreeRingBuffer
-	{
 	};
 }
