@@ -25,6 +25,11 @@ void TestMat3()
 	Vector3 v1 = invMat * v, v2 = v * mat, v3 = transpose * v;
 	EXPECT((v1 - v2).SquareLength() < 1e-6f);
 	EXPECT((v1 - v3).SquareLength() < 1e-6f);
+
+	mat.Column(1) = v;
+	Vector3 c = mat.Column(1);
+	EXPECT((c - v).SquareLength() < 1e-6f);
+
 	return;
 }
 

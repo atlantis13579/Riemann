@@ -41,6 +41,11 @@ namespace Maths
 			w = q.w;
 		}
 
+		Quaternion(const Matrix3& mat)
+		{
+			FromRotationMatrix3(mat);
+		}
+
 		inline Quaternion& operator=(const Quaternion& q)
 		{
 			x = q.x;
@@ -164,8 +169,16 @@ namespace Maths
 		}
 
 		// https://d3cw3dd2w32x2b.cloudfront.net/wp-content/uploads/2015/01/matrix-to-quat.pdf
-		Quaternion& FromRotationMatrix3(const Matrix3& mat)
+		Quaternion& FromRotationMatrix3(const Matrix3& _m)
 		{
+			Matrix3 mat = _m;
+			if (mat.Determinant() < 0)
+			{
+				mat[0][2] = -mat[0][2];
+				mat[1][2] = -mat[1][2];
+				mat[2][2] = -mat[2][2];
+			}
+
 			float t;
 			Quaternion q;
 			if (mat[2][2] < 0)

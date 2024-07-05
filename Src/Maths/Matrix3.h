@@ -229,6 +229,38 @@ namespace Maths
 			return row[i];
 		}
 
+		class ColumnProxy
+		{
+		public:
+			operator Vector3() const
+			{
+				const Matrix3& mat = *m_mat;
+				return Vector3(mat[0][m_index], mat[1][m_index], mat[2][m_index]);
+			}
+
+			const Vector3& operator=(const Vector3 &c)
+			{
+				Matrix3 &mat = *m_mat;
+				mat[0][m_index] = c.x;
+				mat[1][m_index] = c.y;
+				mat[2][m_index] = c.z;
+				return c;
+			}
+
+		private:
+			friend class Matrix3;
+
+			ColumnProxy(Matrix3* _owner, int idx) : m_mat(_owner), m_index(idx) {}
+
+			Matrix3*	m_mat{ nullptr };
+			int			m_index;
+		};
+
+		inline ColumnProxy Column(int i)
+		{
+			return ColumnProxy(this, i);
+		}
+
 		inline Vector3 Column(int i) const
 		{
 			return Vector3(mat[0][i], mat[1][i], mat[2][i]);

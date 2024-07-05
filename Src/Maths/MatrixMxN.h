@@ -215,7 +215,7 @@ namespace Maths
 		}
 
 		DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
-			void		LoadIdentity()
+		void		LoadIdentity()
 		{
 			LoadZero();
 			for (int i = 0; i < ROWS; ++i)
@@ -225,7 +225,7 @@ namespace Maths
 		}
 
 		DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
-			bool		IsIdentity(T eps = Epsilon<T>()) const
+		bool		IsIdentity(T eps = Epsilon<T>()) const
 		{
 			int n = ROWS;
 			for (int i = 0; i < n; ++i)
@@ -247,7 +247,7 @@ namespace Maths
 		}
 
 		DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
-			T					Determinant() const
+		T					Determinant() const
 		{
 			T Det;
 			if (Maths::LinearAlgebra::GaussianElimination<T>()(mData, ROWS, nullptr, &Det))
@@ -258,7 +258,7 @@ namespace Maths
 		}
 
 		DIASBLE_DECLARATION_FOR_NON_SQUARE_MATRIX
-			TMatrixMxN<T, ROWS, ROWS>	Inverse() const
+		TMatrixMxN<T, ROWS, ROWS>	Inverse() const
 		{
 			TMatrixMxN<T, ROWS, ROWS> InvM;
 			bool success = GetInverse(InvM);

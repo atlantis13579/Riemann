@@ -117,17 +117,58 @@ namespace Maths
 			return row[i];
 		}
 
+		class ColumnProxy
+		{
+		public:
+			operator Vector4() const
+			{
+				const Matrix4& mat = *m_mat;
+				return Vector4(mat[0][m_index], mat[1][m_index], mat[2][m_index], mat[3][m_index]);
+			}
+
+			const Vector4& operator=(const Vector4& c)
+			{
+				Matrix4& mat = *m_mat;
+				mat[0][m_index] = c.x;
+				mat[1][m_index] = c.y;
+				mat[2][m_index] = c.z;
+				mat[3][m_index] = c.w;
+				return c;
+			}
+
+		private:
+			friend class Matrix4;
+
+			ColumnProxy(Matrix4* _owner, int idx) : m_mat(_owner), m_index(idx) {}
+
+			Matrix4*	m_mat{ nullptr };
+			int			m_index;
+		};
+
+		inline ColumnProxy Column(int i)
+		{
+			return ColumnProxy(this, i);
+		}
+
 		inline Vector4 Column(int i) const
 		{
 			return Vector4(mat[0][i], mat[1][i], mat[2][i], mat[3][i]);
 		}
 
+		inline void SetColumn(int i, const Vector4& c)
+		{
+			mat[0][i] = c.x;
+			mat[1][i] = c.y;
+			mat[2][i] = c.z;
+			mat[3][i] = c.w;
+		}
+
 		Matrix4 Transpose() const
 		{
-			return Matrix4(mat[0][0], mat[1][0], mat[2][0], mat[3][0],
-				mat[0][1], mat[1][1], mat[2][1], mat[3][1],
-				mat[0][2], mat[1][2], mat[2][2], mat[3][2],
-				mat[0][3], mat[1][3], mat[2][3], mat[3][3]);
+			return Matrix4(	mat[0][0], mat[1][0], mat[2][0], mat[3][0],
+							mat[0][1], mat[1][1], mat[2][1], mat[3][1],
+							mat[0][2], mat[1][2], mat[2][2], mat[3][2],
+							mat[0][3], mat[1][3], mat[2][3], mat[3][3]);
 		}
 
 		bool Invertible() const
@@ -157,8 +198,8 @@ namespace Maths
 			result[3][3] = -mat[0][1] * mat[2][2] * mat[1][0] + mat[0][0] * mat[2][2] * mat[1][1] - mat[0][2] * mat[1][1] * mat[2][0] + mat[0][1] * mat[1][2] * mat[2][0] + mat[0][2] * mat[1][0] * mat[2][1] - mat[0][0] * mat[1][2] * mat[2][1];
 			float d = 1.0f / (mat[0][0] * result[0][0] + mat[0][1] * result[1][0] + mat[0][2] * result[2][0] + mat[0][3] * result[3][0]);
 			for (int i = 0; i < 4; i++)
-				for (int j = 0; j < 4; j++)
-					result[i][j] *= d;
+			for (int j = 0; j < 4; j++)
+				result[i][j] *= d;
 			return Matrix4(result);
 		}
 

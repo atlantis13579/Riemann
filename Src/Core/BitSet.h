@@ -92,6 +92,11 @@ namespace Riemann
 		class ValueProxy
 		{
 		public:
+			operator bool() const
+			{
+				return m_owner->get(m_index);
+			}
+
 			bool operator=(bool val)
 			{
 				m_owner->set(m_index, val);
