@@ -8769,14 +8769,14 @@ namespace Riemann
         if (num_part >= 8)
         {
             int ret = metis::METIS_PartGraphKway(&nVertices, &nCon, xadj.data(), adjncy.data(),
-                NULL, NULL, (adjwgt > 0 ? adjwgt->data() : NULL), &num_part, NULL,
+                NULL, NULL, (adjwgt ? adjwgt->data() : NULL), &num_part, NULL,
                 NULL, NULL, &objval, result.data(), default_error_handler);
             success = ret != 0;
         }
         else
         {
             int ret = metis::METIS_PartGraphRecursive(&nVertices, &nCon, xadj.data(), adjncy.data(),
-                NULL, NULL, (adjwgt > 0 ? adjwgt->data() : NULL), &num_part, NULL,
+                NULL, NULL, (adjwgt ? adjwgt->data() : NULL), &num_part, NULL,
                 NULL, NULL, &objval, result.data(), default_error_handler);
             success = ret != 0;
         }
