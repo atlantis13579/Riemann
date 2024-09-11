@@ -40,4 +40,11 @@ public:
 		std::string str = sss;
 		return str;
 	}
+
+	void Log(const char* file, long line_no, const char* format, ...)
+	{
+		
+	}
 };
+
+#define LOG(_format, ...)		Logger::Log(__FILE__, __LINE__, _format, __VA_ARGS__)
