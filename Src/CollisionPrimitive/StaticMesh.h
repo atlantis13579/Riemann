@@ -57,11 +57,9 @@ namespace Riemann
 			{
 				uint16_t* pDst = GetIndices16();
 				uint32_t* pSrc = GetIndices32();
-				uint32_t  t = pSrc[0];
-				pDst[0] = (uint16_t)t;
-				for (uint32_t i = 1; i < 3 * NumTriangles; ++i)
+				for (uint32_t i = 0; i < 3 * NumTriangles; ++i)
 				{
-					*pDst++ = *pSrc++;
+					*pDst++ = (uint16_t)(*pSrc++);
 				}
 				Flags |= INDICES_16_BIT;
 			}

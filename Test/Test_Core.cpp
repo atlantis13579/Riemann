@@ -307,6 +307,13 @@ void TestPriorityQueue()
 	{
 		q.push(v[i]);
 	}
+
+	q.remove(35);
+	q.remove(11);
+	q.remove(82);
+	q.remove(89);
+	q.remove(23);
+
 	v.clear();
 
 	while (!q.empty())
@@ -319,11 +326,11 @@ void TestPriorityQueue()
 
 void TestCores()
 {
+	TestPriorityQueue();
 	TestBitSet();
 	// TestThreadPool();
 	// TestJob();
 	// TestGraph();
 	TestListSet();
 	TestRingBuffer();
-	TestPriorityQueue();
 }

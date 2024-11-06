@@ -479,6 +479,18 @@ namespace Riemann
 		void CalculateWeightAverageNormals();
 		int FixTriangleOrientation(bool right_handed);
 
+		void ReverseZ()
+		{
+			for (size_t i = 0; i < VertexPositions.size(); ++i)
+			{
+				VertexPositions[i].z *= -1.0f;
+			}
+			for (size_t i = 0; i < VertexNormals.size(); ++i)
+			{
+				VertexNormals[i].z *= -1.0f;
+			}
+		}
+
 	private:
 
 		bool TriHasSequentialVertices(int TriangleID, int vA, int vB) const

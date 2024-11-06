@@ -11,7 +11,7 @@ namespace Riemann
 		explicit PriorityPool(int n = 128)
 		{
 			m_size = 0;
-			m_heap.resize(n + 1);
+			m_heap.resize(n);
 		}
 
 		~PriorityPool()
@@ -70,13 +70,28 @@ namespace Riemann
 			bubbleUp(m_size - 1, node);
 		}
 
-		inline void modify(T* node)
+		inline void update(T* node)
 		{
 			for (int i = 0; i < m_size; ++i)
 			{
 				if (m_heap[i] == node)
 				{
-					bubbleUp(i, node);
+					modify(i, node);
+					return;
+				}
+			}
+		}
+
+		inline void remove(T* node)
+		{
+			for (int i = 0; i < m_size; ++i)
+			{
+				if (m_heap[i] == node)
+				{
+					m_heap[i] = m_heap[m_size - 1];
+					m_size--;
+
+					modify(i, m_heap[i]);
 					return;
 				}
 			}
@@ -93,6 +108,19 @@ namespace Riemann
 		}
 
 	private:
+		void modify(int i, T* node)
+		{
+			int parent = (i - 1) / 2;
+			if (node < m_heap[parent])
+			{
+				bubbleUp(i, node);
+			}
+			else
+			{
+				trickleDown(i, node);
+			}
+		}
+
 		void bubbleUp(int i, T* node)
 		{
 			int parent = (i - 1) / 2;
@@ -132,7 +160,7 @@ namespace Riemann
 		explicit PriorityQueue(int n = 128)
 		{
 			m_size = 0;
-			m_heap.resize(n + 1);
+			m_heap.resize(n);
 		}
 
 		~PriorityQueue()
@@ -183,13 +211,28 @@ namespace Riemann
 			bubbleUp(m_size - 1, node);
 		}
 
-		inline void modify(const T& node)
+		inline void update(const T& node)
 		{
 			for (int i = 0; i < m_size; ++i)
 			{
 				if (m_heap[i] == node)
 				{
-					bubbleUp(i, node);
+					modify(i, node);
+					return;
+				}
+			}
+		}
+
+		inline void remove(const T& node)
+		{
+			for (int i = 0; i < m_size; ++i)
+			{
+				if (m_heap[i] == node)
+				{
+					m_heap[i] = m_heap[m_size-1];
+					m_size--;
+
+					modify(i, m_heap[i]);
 					return;
 				}
 			}
@@ -206,6 +249,19 @@ namespace Riemann
 		}
 
 	private:
+		void modify(int i, const T& node)
+		{
+			int parent = (i - 1) / 2;
+			if (node < m_heap[parent])
+			{
+				bubbleUp(i, node);
+			}
+			else
+			{
+				trickleDown(i, node);
+			}
+		}
+
 		void bubbleUp(int i, const T& node)
 		{
 			int parent = (i - 1) / 2;
