@@ -5,7 +5,6 @@
 #include "../Core/PriorityQueue.h"
 #include "../Core/SmallSet.h"
 #include "../CollisionPrimitive/StaticMesh.h"
-#include "KDTree.h"
 #include "MeshSimplification.h"
 
 #include <assert.h>
@@ -33,12 +32,14 @@ namespace Riemann
 		{
 			pos = Vector3::Zero();
 			Q = Matrix4::Zero();
+			newIndex = 0;
 		}
 
 		Vertex(const Vector3 &p)
 		{
 			pos = p;
 			Q = Matrix4::Zero();
+			newIndex = 0;
 		}
 
 		bool IsNeighbor(int index) const
@@ -130,7 +131,7 @@ namespace Riemann
 
 		Edge()
 		{
-			cost = 0.0;
+			cost = cost1 = 0.0f;
 			optPos = Vector3::Zero();
 			index = 0;
 			num_faces = 0;
@@ -139,7 +140,7 @@ namespace Riemann
 
 		Edge(int v0, int v1)
 		{
-			cost = 0.0;
+			cost = cost1 = 0.0f;
 			optPos = Vector3::Zero();
 			index = 0;
 			num_faces = 0;
@@ -489,18 +490,8 @@ namespace Riemann
 			}
 		}
 
-		void BuildEdges(float t)
+		void BuildEdges()
 		{
-			std::vector<Vector3> vb(m_vertices.size());
-			for (size_t i = 0; i < m_vertices.size(); ++i)
-			{
-				vb[i] = m_vertices[i].pos;
-			}
-
-			KDTree tree;
-			tree.Build(vb, m_vertexCount, t);
-			vb.clear();
-
 			std::vector<bool> processed(m_vertexCount, false);
 			for (int i = 0; i < m_vertexCount; ++i)
 			{
@@ -512,21 +503,6 @@ namespace Riemann
 						int index = AddEdge(i, neighborIndex);
 						m_edges[index].ComputeOptimalPos(m_vertices);
 						m_edges[index].ComputeCost(m_vertices);
-					}
-				}
-
-				if (t > 0.0f)
-				{
-					std::vector<int> v_hit;
-					tree.Query(m_vertices[i].pos, t, v_hit);
-					for (size_t j = 0; j < v_hit.size(); ++j)
-					{
-						if ((v_hit[j] != i) && !processed[v_hit[j]] && !m_vertices[i].HasEdge(Edge(i, v_hit[j]), m_edges))
-						{
-							int index = AddEdge(i, v_hit[j]);
-							m_edges[index].ComputeOptimalPos(m_vertices);
-							m_edges[index].ComputeCost(m_vertices);
-						}
 					}
 				}
 
@@ -598,7 +574,7 @@ namespace Riemann
 			}
 
 			ComputeQEM();
-			BuildEdges(cfg.t);
+			BuildEdges();
 			BuildFaceEdges();
 			BuildHeap(m_edges, m_edgeCount);
 
