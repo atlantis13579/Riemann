@@ -840,7 +840,7 @@ void TestSAPInc()
 
 void TestCollision()
 {
-	TestTriangle(); return;
+	TestTriangle();
 	TestRaycast();
 	TestPlane();
 	TestSphere();

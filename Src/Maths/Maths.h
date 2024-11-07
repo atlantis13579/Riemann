@@ -37,20 +37,21 @@ namespace Maths
 		return radian * RAD_TO_DEG;
 	}
 
-	inline float RandomFloat01()
+
+	inline float Random01()
 	{
 		return (float)rand() / RAND_MAX;
 	}
 
 	inline int RandomInt(int a, int b)
 	{
-		int p = a + (int)((b - a) * RandomFloat01());
+		int p = a + (int)((b - a) * Random01());
 		return p;
 	}
 
 	inline float RandomFloat(float a, float b)
 	{
-		float p = a + (b - a) * RandomFloat01();
+		float p = a + (b - a) * Random01();
 		return p;
 	}
 
@@ -115,6 +116,12 @@ namespace Maths
 			}
 		}
 		return true;
+	}
+
+	template<typename T>
+	inline bool IsBetween(const T& val, const T& v0, const T& v1)
+	{
+		return v0 <= val && val <= v1;
 	}
 
 	inline float FloatDiff(float v1, float v2)

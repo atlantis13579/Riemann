@@ -48,26 +48,52 @@ namespace Riemann
 		return buf;
 	}
 
-	static int ParseFace(int NumVertices, char* row, int* data, int n)
+	static int ParseFace(int NumVertices, char* row, int* v, int* vt, int* vn, int n)
 	{
-		int j = 0;
+		int num = 0, pos = 0;
+		char buf[32];
 		while (*row != '\0')
 		{
 			while (*row != '\0' && (*row == ' ' || *row == '\t'))
-				row++;
-			char* s = row;
-			while (*row != '\0' && *row != ' ' && *row != '\t')
 			{
-				if (*row == '/') *row = '\0';
+				pos = 0;
 				row++;
 			}
-			if (*s == '\0')
+			char* s = buf;
+			bool slash = false;
+			while (*row != '\0' && *row != ' ' && *row != '\t')
+			{
+				if (*row == '/')
+				{
+					slash = true;
+					row++;
+					break;
+				}
+				*s++ = *row++;
+			}
+			if (s == buf)
 				continue;
-			int vi = atoi(s);
-			data[j++] = vi < 0 ? vi + NumVertices : vi - 1;
-			if (j >= n) return j;
+			*s = '\0';
+
+			int value = atoi(buf);
+			int *pv = (pos == 0) ? v : ((pos == 1) ? vt : vn);
+			pv[num] = value < 0 ? value + NumVertices : value - 1;
+
+			if (slash)
+			{
+				pos++;
+				assert(pos <= 2);
+				continue;
+			}
+
+			num++;
+			if (num >= n)
+			{
+				assert(false);
+				return num;
+			}
 		}
-		return j;
+		return num;
 	}
 
 	static int ParseNumTokens(const char* str)
@@ -212,6 +238,7 @@ namespace Riemann
 		Clear();
 
 		char* buf = 0;
+		int error = 0;
 		FILE* fp = fopen(name, "rb");
 		if (!fp)
 		{
@@ -284,14 +311,21 @@ namespace Riemann
 			}
 			else if (row[0] == 'f')
 			{
-				int face[32];
+				int v[32];
+				int vt[32];
+				int vn[32];
 				int NumVertices = (int)VertexPositions.size();
-				int nv = ParseFace(NumVertices, row + 1, face, 32);
+				int nv = ParseFace(NumVertices, row + 1, v, vt, vn, 32);
 				for (int i = 2; i < nv; ++i)
 				{
-					const int a = face[0];
-					const int b = face[i - 1];
-					const int c = face[i];
+					const int a = v[0];
+					const int b = v[i - 1];
+					const int c = v[i];
+					if (a == b || a == c || b == c)
+					{
+						error = 1;
+						continue;
+					}
 					if (a < 0 || a >= NumVertices || b < 0 || b >= NumVertices || c < 0 || c >= NumVertices)
 						continue;
 					AppendTriangle(Index3(a, b, c));
@@ -531,12 +565,12 @@ namespace Riemann
 	}
 
 
-	bool DynamicMesh::Simplify(float rate)
+	bool DynamicMesh::Simplify(const SimplificationConfig *cfg)
 	{
 		std::vector<Vector3> new_v;
 		std::vector<int> new_i;
 
-		if (!SimplifyMesh(GetVertexBuffer(), (const void*)GetIndexBuffer(), GetVertexCount(), true, GetTriangleCount(), rate, new_v, new_i))
+		if (!SimplifyMesh(GetVertexBuffer(), (const void*)GetIndexBuffer(), GetVertexCount(), true, GetTriangleCount(), *cfg, new_v, new_i))
 		{
 			return false;
 		}

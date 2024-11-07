@@ -17,6 +17,8 @@
 
 namespace Riemann
 {
+	struct SimplificationConfig;
+
 	template<typename T>
 	static void VectorSetSafe(std::vector<T>& vec, int index, const T& v, const T& default_val)
 	{
@@ -426,7 +428,7 @@ namespace Riemann
 				});
 		}
 
-		bool Simplify(float rate);
+		bool Simplify(const SimplificationConfig* cfg);
 
 		void ApplyTransform(const Transform& trans, bool bReverseOrientationIfNeeded);
 		void ApplyTransform(Transform3& trans, bool bReverseOrientationIfNeeded);

@@ -55,7 +55,7 @@ namespace Riemann
 			{
 				for (int i = 0; i < m_size; ++i)
 				{
-					if (m_buffer[i] == key)
+					if (m_buffer[i].key == key)
 					{
 						m_buffer[i] = m_buffer[m_size - 1];
 						m_size--;
@@ -95,18 +95,23 @@ namespace Riemann
 			{
 				for (int i = 0; i < m_size; ++i)
 				{
-					if (m_buffer[i] == k)
+					if (m_buffer[i].key == k)
 					{
-						return m_buffer.value;
+						return m_buffer[i].value;
 					}
 				}
-				const V* ptr = nullptr;
+				V* ptr = nullptr;
 				return ptr[0];
 			}
 			else
 			{
-				m_map[k];
+				return m_map[k];
 			}
+		}
+
+		bool haskey(const K& k) const
+		{
+			return count(k) > 0;
 		}
 
 		size_t count(const K& k) const
@@ -115,7 +120,7 @@ namespace Riemann
 			{
 				for (int i = 0; i < m_size; ++i)
 				{
-					if (m_buffer[i] == k)
+					if (m_buffer[i].key == k)
 					{
 						return 1;
 					}
@@ -143,6 +148,83 @@ namespace Riemann
 		{
 			return m_size >= 0 ? m_size == 0 : m_map.empty();
 		}
+
+
+		class Iterator
+		{
+		public:
+			inline Pair operator*() const
+			{
+				if (m_owner->m_size >= 0)
+				{
+					return m_owner->m_buffer[m_index];
+				}
+				else
+				{
+					Pair p;
+					p.key = m_map_it->first;
+					p.value = m_map_it->second;
+					return p;
+				}
+			}
+
+			inline const Iterator& operator++()
+			{
+				if (m_owner->m_size >= 0)
+				{
+					m_index++;
+				}
+				else
+				{
+					m_map_it++;
+				}
+				return *this;
+			}
+
+			inline bool operator != (const Iterator& rhs) const
+			{
+				if (m_owner->m_size >= 0)
+				{
+					return m_index != rhs.m_index;
+				}
+				else
+				{
+					return m_map_it != rhs.m_map_it;
+				}
+			}
+
+		private:
+			friend class SmallMap;
+
+			Iterator(const SmallMap<K, V>* _owner, bool is_end) : m_owner(_owner)
+			{
+				if (is_end)
+				{
+					m_index = m_owner->m_size;
+					m_map_it = m_owner->m_map.end();
+				}
+				else
+				{
+					m_index = 0;
+					m_map_it = m_owner->m_map.begin();
+				}
+			}
+
+			const SmallMap<K, V>*					m_owner;
+			int										m_index;
+			typename std::map<K, V>::const_iterator	m_map_it;
+		};
+
+		Iterator begin() const
+		{
+			return Iterator(this, false);
+		}
+
+		Iterator end() const
+		{
+			return Iterator(this, true);
+		}
+
 
 	private:
 		int				m_size;			//  = -1 use m_set 

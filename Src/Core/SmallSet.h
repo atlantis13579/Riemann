@@ -61,6 +61,11 @@ namespace Riemann
 			}
 		}
 
+		bool contains(const T& v) const
+		{
+			return count(v) > 0;
+		}
+
 		size_t count(const T& v) const
 		{
 			if (m_size >= 0)
@@ -114,6 +119,78 @@ namespace Riemann
 				}
 			}
 			return ret;
+		}
+
+		class Iterator
+		{
+		public:
+			inline const T& operator*() const
+			{
+				if (m_owner->m_size >= 0)
+				{
+					return m_owner->m_buffer[m_index];
+				}
+				else
+				{
+					return *m_set_it;
+				}
+			}
+
+			inline const Iterator& operator++()
+			{
+				if (m_owner->m_size >= 0)
+				{
+					m_index++;
+				}
+				else
+				{
+					m_set_it++;
+				}
+				return *this;
+			}
+
+			inline bool operator != (const Iterator& rhs) const
+			{
+				if (m_owner->m_size >= 0)
+				{
+					return m_index != rhs.m_index;
+				}
+				else
+				{
+					return m_set_it != rhs.m_set_it;
+				}
+			}
+
+		private:
+			friend class SmallSet;
+
+			Iterator(const SmallSet<T>* _owner, bool is_end) : m_owner(_owner)
+			{
+				if (is_end)
+				{
+					m_index = m_owner->m_size;
+					m_set_it = m_owner->m_set.end();
+				}
+				else
+				{
+					m_index = 0;
+					m_set_it = m_owner->m_set.begin();
+				}
+			}
+
+			const SmallSet<T>*						m_owner;
+			int										m_index;
+			typename std::set<T>::const_iterator	m_set_it;
+		};
+
+		Iterator begin() const
+		{
+			return Iterator(this, false);
+		}
+
+		Iterator end() const
+		{
+			return Iterator(this, true);
 		}
 
 	private:

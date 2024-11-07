@@ -11,6 +11,8 @@
 #include "../Src/Core/ThreadPool.h"
 #include "../Src/Core/RingBuffer.h"
 #include "../Src/Core/PriorityQueue.h"
+#include "../Src/Core/SmallSet.h"
+#include "../Src/Core/SmallMap.h"
 #include "../Src/Maths/Maths.h"
 #include "../Src/Maths/Vector3.h"
 
@@ -324,6 +326,57 @@ void TestPriorityQueue()
 	EXPECT(Maths::IsAscendingOrder(v.data(), (int)v.size()));
 }
 
+void TestSmallSet()
+{
+	SmallSet<int> s;
+	s.insert(1);
+	s.insert(2);
+	s.insert(3);
+	s.insert(1);
+	s.erase(1);
+	s.insert(2);
+
+	EXPECT(!s.contains(1));
+	EXPECT(s.contains(2));
+	EXPECT(s.contains(3));
+	EXPECT(s.count(1) == 0);
+	EXPECT(s.count(2) == 1);
+	EXPECT(s.count(3) == 1);
+
+	int sum = 0;
+	for (int i : s)
+	{
+		sum += i;
+	}
+	EXPECT(sum == 5);
+}
+
+void TestSmallMap()
+{
+	SmallMap<int, int> m;
+	m[1] = 10;
+	m[1] = 11;
+	m[2] = 20;
+	m[3] = 30;
+	m.erase(2);
+
+	EXPECT(m.haskey(1));
+	EXPECT(!m.haskey(2));
+	EXPECT(m.haskey(3));
+	EXPECT(m.count(1) == 1);
+	EXPECT(m.count(2) == 0);
+	EXPECT(m.count(3) == 1);
+	EXPECT(m[1] == 11);
+	EXPECT(m[3] == 30);
+
+	int sum = 0;
+	for (auto it : m)
+	{
+	//	sum += it.;
+	}
+	EXPECT(sum == 5);
+}
+
 void TestCores()
 {
 	TestPriorityQueue();
@@ -332,5 +385,7 @@ void TestCores()
 	// TestJob();
 	// TestGraph();
 	TestListSet();
+	TestSmallSet();
+	TestSmallMap();
 	TestRingBuffer();
 }

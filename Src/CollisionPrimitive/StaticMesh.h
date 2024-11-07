@@ -1,5 +1,6 @@
 #pragma once
 
+#include <assert.h>
 #include <functional>
 #include <string>
 #include <vector>
@@ -22,6 +23,7 @@ namespace Riemann
 		std::vector<Vector3>	mVertices;
 		std::vector<uint16_t>	mIndices;
 		std::vector<Vector3>	mNormals;
+		std::vector<Vector3>	mUV3s;
 		Box3					BoundingVolume;
 		uint8_t					Flags;
 		std::string				ResourceId;
@@ -196,6 +198,16 @@ namespace Riemann
 			Vertices[NumVertices++] = v;
 		}
 
+		void AddNormal(const Vector3& v)
+		{
+			mNormals.push_back(v);
+		}
+
+		void AddUV3(const Vector3& v)
+		{
+			mUV3s.push_back(v);
+		}
+
 		void AddTriangle(uint32_t a, uint32_t b, uint32_t c)
 		{
 			if ((NumTriangles * 3 + 2) * GetIndicesWidth() >= mIndices.size())
@@ -284,6 +296,7 @@ namespace Riemann
 		bool LoadObj(const char* name)
 		{
 			char* buf = 0;
+			int error = 0;
 			FILE* fp = fopen(name, "rb");
 			if (!fp)
 			{
@@ -308,7 +321,6 @@ namespace Riemann
 			}
 
 			char* p = buf, * pEnd = buf + bufSize;
-			Vector3 v;
 			while (p < pEnd)
 			{
 				char row[512];
@@ -317,19 +329,39 @@ namespace Riemann
 				if (row[0] == '#') continue;
 				if (row[0] == 'v' && row[1] != 'n' && row[1] != 't')
 				{
+					Vector3 v;
 					sscanf(row + 1, "%f %f %f", &v.x, &v.y, &v.z);
 					AddVertex(v);
 				}
+				else if (row[0] == 'v' && row[1] == 'n')
+				{
+					Vector3 v;
+					sscanf(row + 2, "%f %f %f", &v.x, &v.y, &v.z);
+					AddNormal(v);
+				}
+				else if (row[0] == 'v' && row[1] == 't')
+				{
+					Vector3 v;
+					sscanf(row + 2, "%f %f %f", &v.x, &v.y, &v.z);
+					AddUV3(v);
+				}
 				else if (row[0] == 'f')
 				{
-					uint32_t face[32];
-					int nv = ParseFace(row + 1, face, 32);
+					int v[32];
+					int vt[32];
+					int vn[32];
+					int nv = ParseFace(row + 1, v, vt, vn, 32);
 					for (int i = 2; i < nv; ++i)
 					{
-						const uint32_t a = face[0];
-						const uint32_t b = face[i - 1];
-						const uint32_t c = face[i];
-						if (a < 0 || a >= NumVertices || b < 0 || b >= NumVertices || c < 0 || c >= NumVertices)
+						const int a = v[0];
+						const int b = v[i - 1];
+						const int c = v[i];
+						if (a == b || a == c || b == c)
+						{
+							error = 1;
+							continue;
+						}
+						if (a < 0 || a >= (int)NumVertices || b < 0 || b >= (int)NumVertices || c < 0 || c >= (int)NumVertices)
 							continue;
 						AddTriangle(a, b, c);
 					}
@@ -549,12 +581,12 @@ namespace Riemann
 			}
 		}
 
-		bool Simplify(float rate)
+		bool Simplify(const SimplificationConfig& cfg)
 		{
 			std::vector<Vector3> new_v;
 			std::vector<int> new_i;
 
-			if (!SimplifyMesh(GetVertexBuffer(), (const void*)GetIndexBuffer(), GetVertexCount(), GetTriangleCount(), Is16bitIndices(), rate, new_v, new_i))
+			if (!SimplifyMesh(GetVertexBuffer(), (const void*)GetIndexBuffer(), GetVertexCount(), GetTriangleCount(), Is16bitIndices(), cfg, new_v, new_i))
 			{
 				return false;
 			}
@@ -574,6 +606,54 @@ namespace Riemann
 			}
 
 			BoundingVolume = Box3(&Vertices[0], NumVertices);
+		}
+
+		int ParseFace(const char* row, int* v, int* vt, int* vn, int n)
+		{
+			int num = 0, pos = 0;
+			char buf[32];
+			while (*row != '\0')
+			{
+				while (*row != '\0' && (*row == ' ' || *row == '\t'))
+				{
+					pos = 0;
+					row++;
+				}
+				char* s = buf;
+				bool slash = false;
+				while (*row != '\0' && *row != ' ' && *row != '\t')
+				{
+					if (*row == '/')
+					{
+						slash = true;
+						row++;
+						break;
+					}
+					*s++ = *row++;
+				}
+				if (s == buf)
+					continue;
+				*s = '\0';
+
+				int value = atoi(buf);
+				int* pv = (pos == 0) ? v : ((pos == 1) ? vt : vn);
+				pv[num] = value < 0 ? value + NumVertices : value - 1;
+
+				if (slash)
+				{
+					pos++;
+					assert(pos <= 2);
+					continue;
+				}
+
+				num++;
+				if (num >= n)
+				{
+					assert(false);
+					return num;
+				}
+			}
+			return num;
 		}
 
 	private:
@@ -607,28 +687,6 @@ namespace Riemann
 			}
 			row[n] = '\0';
 			return buf;
-		}
-
-		int ParseFace(char* row, uint32_t* data, int n)
-		{
-			int j = 0;
-			while (*row != '\0')
-			{
-				while (*row != '\0' && (*row == ' ' || *row == '\t'))
-					row++;
-				char* s = row;
-				while (*row != '\0' && *row != ' ' && *row != '\t')
-				{
-					if (*row == '/') *row = '\0';
-					row++;
-				}
-				if (*s == '\0')
-					continue;
-				uint32_t vi = atoi(s);
-				data[j++] = vi < 0 ? vi + NumVertices : vi - 1;
-				if (j >= n) return j;
-			}
-			return j;
 		}
 	};
 }

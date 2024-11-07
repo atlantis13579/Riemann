@@ -17,13 +17,55 @@
 
 using namespace Riemann;
 
+void TestParseObj()
+{
+	printf("Running TestParseObj\n");
+
+	int num;
+	int v[32], vt[32], vn[32];
+	StaticMesh mesh;
+
+	num = mesh.ParseFace(" 1 2 3", v, vt, vn, 32);
+	EXPECT(num == 3);
+	EXPECT(v[0] == 0 && v[1] == 1 && v[2] == 2);
+
+	num = mesh.ParseFace(" 1 23 3 4333", v, vt, vn, 32);
+	EXPECT(num == 4);
+	EXPECT(v[0] == 0 && v[1] == 22 && v[2] == 2 && v[3] == 4332);
+
+	num = mesh.ParseFace(" 1 23 3 4333 22", v, vt, vn, 32);
+	EXPECT(num == 5);
+	EXPECT(v[0] == 0 && v[1] == 22 && v[2] == 2 && v[3] == 4332 && v[4] == 21);
+
+	num = mesh.ParseFace(" 1/1/1 22/21/2 33/3/34", v, vt, vn, 32);
+	EXPECT(num == 3);
+	EXPECT(v[0] == 0 && v[1] == 21 && v[2] == 32);
+	EXPECT(vt[0] == 0 && vt[1] == 20 && vt[2] == 2);
+	EXPECT(vn[0] == 0 && vn[1] == 1 && vn[2] == 33);
+
+	num = mesh.ParseFace(" 1/1/1 22/21/2 33/3/34 4/4/5", v, vt, vn, 32);
+	EXPECT(num == 4);
+	EXPECT(v[0] == 0 && v[1] == 21 && v[2] == 32 && v[3] == 3);
+	EXPECT(vt[0] == 0 && vt[1] == 20 && vt[2] == 2 && vt[3] == 3);
+	EXPECT(vn[0] == 0 && vn[1] == 1 && vn[2] == 33 && vn[3] == 4);
+
+	num = mesh.ParseFace(" 1/1 22/21 33/3 4/4", v, vt, vn, 32);
+	EXPECT(num == 4);
+	EXPECT(v[0] == 0 && v[1] == 21 && v[2] == 32 && v[3] == 3);
+	EXPECT(vt[0] == 0 && vt[1] == 20 && vt[2] == 2 && vt[3] == 3);
+
+	return;
+}
+
 void TestMeshSimplify()
 {
 	printf("Running TestMeshSimplify\n");
 
 	StaticMesh mesh;
+	SimplificationConfig cfg;
+	cfg.rate = 0.1f;
 	mesh.LoadObj("../TestData/bunny.obj");
-	mesh.Simplify(0.1f);
+	mesh.Simplify(cfg);
 	mesh.ExportObj("../TestData/bunny2.obj");
 }
 
@@ -291,6 +333,7 @@ void TestGeometry()
 {
 	TestHashGrid();
 	TestOctree();
+	TestParseObj();
 	TestMeshSimplify();
 	TestClip();
 	TestCatmullRom();

@@ -121,6 +121,7 @@
     <ClInclude Include="..\..\Src\Geometry\DynamicMesh.h" />
     <ClInclude Include="..\..\Src\Geometry\GeometryOperation.h" />
     <ClInclude Include="..\..\Src\Geometry\GeometrySet.h" />
+    <ClInclude Include="..\..\Src\Geometry\KDTree.h" />
     <ClInclude Include="..\..\Src\Geometry\MeshSimplification.h" />
     <ClInclude Include="..\..\Src\Geometry\Polygon2.h" />
     <ClInclude Include="..\..\Src\Geometry\Polygon3.h" />
