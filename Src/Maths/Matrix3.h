@@ -161,6 +161,7 @@ namespace Maths
 			for (int j = 0; j < 3; j++)
 				m[i][j] = mat[i][0] * mm.mat[0][j] + mat[i][1] * mm.mat[1][j] + mat[i][2] * mm.mat[2][j];
 			memcpy(mat, m, sizeof(mat));
+            return *this;
 		}
 	
 		inline Matrix3& operator*=(float k)

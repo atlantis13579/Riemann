@@ -131,6 +131,7 @@ void TestFrame3()
 	PlaneFrame.GetAxes(X, Y, Z);
 
 	bool right_handed = PlaneFrame.IsRightHanded();
+    (void)right_handed;
 	return;
 }
 

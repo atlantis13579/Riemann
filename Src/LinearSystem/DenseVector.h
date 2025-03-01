@@ -450,8 +450,8 @@ public:
 
 	static TDenseVector<T> Lerp(const TDenseVector<T>& start, const TDenseVector<T>& end, float t)
 	{
-		TDenseVector<T> Ret(mSize);
-		for (int i = 0; i < GetSize(); ++i)
+		TDenseVector<T> Ret(start.mSize);
+        for (int i = 0; i < start.mSize; ++i)
 		{
 			Ret[i] = start[i] * (1.0f - t) + end[i] * t;
 		}

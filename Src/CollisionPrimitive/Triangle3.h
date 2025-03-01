@@ -986,7 +986,7 @@ namespace Riemann
 		{
 			const Triangle3 triangle = *this;
 
-			const float Tolerance = 1e-6f;
+			// const float Tolerance = 1e-6f;
 			int max_axis = 0;
 			float max_val = fabsf(plane.Normal.x);
 			float val = fabsf(plane.Normal.y);

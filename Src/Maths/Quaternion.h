@@ -137,7 +137,7 @@ namespace Maths
 			return *this;
 		}
 
-		Vector3 ToEuler(float& yaw, float& roll, float& pitch) const
+		void ToEuler(float& yaw, float& roll, float& pitch) const
 		{
 			float sqx = x * x;
 			float sqy = y * y;

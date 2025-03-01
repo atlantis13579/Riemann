@@ -58,7 +58,7 @@ namespace Riemann
 		}
 
 		template<typename ... Ts>
-		inline void emplace(const Ts &... args)
+		inline bool emplace(const Ts &... args)
 		{
 			if (m_size < Capacity)
 			{

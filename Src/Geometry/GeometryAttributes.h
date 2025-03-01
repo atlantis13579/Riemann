@@ -582,7 +582,7 @@ namespace Riemann
 			ParentMesh = ParentMeshIn;
 			if (bAutoInit)
 			{
-				Initialize();
+				// Initialize();
 			}
 		}
 
@@ -600,8 +600,8 @@ namespace Riemann
 
 		void Initialize(AttribValueType InitialValue = (AttribValueType)0)
 		{
-			assert(ParentMesh != nullptr);
-			AttribValues.resize(ParentMesh->GetTriangleCount() * AttribDimension, InitialValue);
+			//assert(ParentMesh != nullptr);
+			//AttribValues.resize(ParentMesh->GetTriangleCount() * AttribDimension, InitialValue);
 		}
 
 		void SetNewValue(int NewTriangleID, const AttribValueType* Data);
@@ -936,9 +936,9 @@ namespace Riemann
 
 		void Initialize(AttribValueType InitialValue = (AttribValueType)0)
 		{
-			assert(Parent != nullptr);
-			AttribValues.resize(0);
-			AttribValues.resize(Parent->GetVertexCount() * AttribDimension, InitialValue);
+            //assert(Parent != nullptr);
+			//AttribValues.resize(0);
+			//AttribValues.resize(Parent->GetVertexCount() * AttribDimension, InitialValue);
 		}
 
 		void SetNewValue(int NewVertexID, const AttribValueType* Data);

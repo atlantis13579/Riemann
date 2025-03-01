@@ -127,6 +127,7 @@ namespace Maths
 				for (int j = 0; j < 2; j++)
 					m[i][j] = mat[i][0] * mm.mat[0][j] + mat[i][1] * mm.mat[1][j];
 			memcpy(mat, m, sizeof(mat));
+            return *this;
 		}
 
 		inline Matrix2& operator*=(float k)

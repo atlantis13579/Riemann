@@ -51,14 +51,13 @@ namespace Riemann
 			return (int)m_Buckets.size();
 		}
 
-
 		void Insert(const Vector2& pos, const T& val)
 		{
 			uint32_t idx = ComputeHashBucketIndex2D(pos);
 			m_Buckets[idx].emplace_back(pos, val);
 		}
 
-		void Reomve(const Vector3& pos, const T& val)
+		bool Reomve(const Vector3& pos, const T& val)
 		{
 			uint32_t idx = ComputeHashBucketIndex2D(pos);
 			std::vector<Element>& bucket = m_Buckets[idx];
@@ -202,7 +201,7 @@ namespace Riemann
 			m_Buckets[idx].emplace_back(pos, val);
 		}
 
-		void Reomve(const Vector3& pos, const T& val)
+		bool Reomve(const Vector3& pos, const T& val)
 		{
 			uint32_t idx = ComputeHashBucketIndex3D(pos);
 			std::vector<Element> &bucket = m_Buckets[idx];
