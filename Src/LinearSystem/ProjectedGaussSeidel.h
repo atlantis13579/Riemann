@@ -34,11 +34,11 @@ public:
 				T denom = A[i * N + i];
 				if (-kEps < denom && denom < kEps)
 					denom = kEps;
-				T X0 = (-B[i] - beta) / denom;
-				X0 = X[i] + Relaxation * (X0 - X[i]);
-				X0 = pmax(T(0), X0);
-				Norm += (X[i] - X0) * (X[i] - X0);
-				X[i] = X0;
+				T x0 = (-B[i] - beta) / denom;
+				x0 = X[i] + Relaxation * (x0 - X[i]);
+				x0 = pmax(T(0), x0);
+				Norm += (X[i] - x0) * (X[i] - x0);
+				X[i] = x0;
 			}
 
 			if (Norm < kEps)
@@ -49,9 +49,9 @@ public:
 		return false;
 	}
 	
-	// Solve X, Y, X2 >= X >= X1, Y == A * X + B and (X_i == X1_i and Y_i > 0) or (X_i == X2_i and Y_i < 0) or (X1_i < X_i < X2_i and Y_i == 0)
+	// Solve X, Y, X2 >= X >= x1, Y == A * X + B and (X_i == X1_i and Y_i > 0) or (X_i == X2_i and Y_i < 0) or (X1_i < X_i < X2_i and Y_i == 0)
 	// A is square Matrix of size N, B is Vector of size N
-	static bool Solve(const T* A, const T* B, int N, T* X, const T* X1, const T* X2, const int MaxIteration, const T kEps = (T)0.00001, const T Relaxation = (T)1)
+	static bool Solve(const T* A, const T* B, int N, T* X, const T* x1, const T* X2, const int MaxIteration, const T kEps = (T)0.00001, const T Relaxation = (T)1)
 	{
 		int Iter = 0;
 		while (Iter++ < MaxIteration)
@@ -71,11 +71,11 @@ public:
 				T denom = A[i * N + i];
 				if (-kEps < denom && denom < kEps)
 					denom = kEps;
-				T X0 = (-B[i] - beta) / denom;
-				X0 = X[i] + Relaxation * (X0 - X[i]);
-				X0 = pmin(pmax(X1[i], X0), X2[i]);
-				Norm += (X[i] - X0) * (X[i] - X0);
-				X[i] = X0;
+				T x0 = (-B[i] - beta) / denom;
+				x0 = X[i] + Relaxation * (x0 - X[i]);
+				x0 = pmin(pmax(x1[i], x0), X2[i]);
+				Norm += (X[i] - x0) * (X[i] - x0);
+				X[i] = x0;
 			}
 
 			if (Norm < kEps)

@@ -121,10 +121,10 @@ namespace Riemann
 		return IntersectTest_Impl(Sphere, Option, Result);
 	}
 
-	bool GeometryQuery::IntersectQueryCapsule(const Vector3& X0, const Vector3& X1, float Radius, const IntersectOption& Option, IntersectResult* Result)
+	bool GeometryQuery::IntersectQueryCapsule(const Vector3& x0, const Vector3& x1, float Radius, const IntersectOption& Option, IntersectResult* Result)
 	{
 		char stack[MAX_GEOMETRY_STACK_SIZE];
-		GeometryBase* Capsule = GeometryFactory::CreateCapsule_placement(stack, X0, X1, Radius);
+		GeometryBase* Capsule = GeometryFactory::CreateCapsule_placement(stack, x0, x1, Radius);
 		return IntersectTest_Impl(Capsule, Option, Result);
 	}
 

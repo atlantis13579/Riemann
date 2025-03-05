@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Simplex.h"
+#include "../CollisionPrimitive/Simplex.h"
 
 namespace Riemann
 {

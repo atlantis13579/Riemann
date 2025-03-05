@@ -10,6 +10,17 @@
 #include "../Src/Maths/Frame3.h"
 #include "../Src/Geometry/Spline.h"
 
+void TestVector3()
+{
+	printf("Running Vector3\n");
+
+	Vector3 A = Vector3(1.0f, 1.0f, 0.0f);
+	Vector3 B = Vector3(0.0f, 1.0f, 0.0f);
+	Vector3 C = A.Perp(B);
+	Vector3 D = Vector3(1.0f, 0.0f, 0.0f);
+	EXPECT_SAME(C, D);
+}
+
 void TestMat3()
 {
 	printf("Running TestMat3\n");
@@ -23,12 +34,12 @@ void TestMat3()
 	EXPECT(fabsf((invMat - transpose).L2Norm()) < 1e-6f);
 	Vector3 v(1.0f, 20.0f, -5.0f);
 	Vector3 v1 = invMat * v, v2 = v * mat, v3 = transpose * v;
-	EXPECT((v1 - v2).SquareLength() < 1e-6f);
-	EXPECT((v1 - v3).SquareLength() < 1e-6f);
+	EXPECT_SAME(v1, v2);
+	EXPECT_SAME(v1, v3);
 
 	mat.Column(1) = v;
 	Vector3 c = mat.Column(1);
-	EXPECT((c - v).SquareLength() < 1e-6f);
+	EXPECT_SAME(c, v);
 
 	return;
 }
@@ -138,6 +149,7 @@ void TestFrame3()
 
 void TestMaths()
 {
+	TestVector3();
 	TestMat3();
 	TestBasicMath();
 	TestTensor();

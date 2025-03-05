@@ -321,15 +321,15 @@ namespace Riemann
 		static GeometryBase* CreateOBB(const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot = Quaternion::One());
 		static GeometryBase* CreatePlane(const Vector3& Center, const Vector3& Normal);
 		static GeometryBase* CreateSphere(const Vector3& Center, float Radius);
-		static GeometryBase* CreateCylinder(const Vector3& X0, const Vector3& X1, float Radius);
-		static GeometryBase* CreateCapsule(const Vector3& X0, const Vector3& X1, float Radius);
+		static GeometryBase* CreateCylinder(const Vector3& x0, const Vector3& x1, float Radius);
+		static GeometryBase* CreateCapsule(const Vector3& x0, const Vector3& x1, float Radius);
 		static GeometryBase* CreateHeightField(const Box3& Bv, int nRows, int nCols);
 		static GeometryBase* CreateConvexMesh();
 		static GeometryBase* CreateTriangleMesh();
 
 		static GeometryBase* CreateOBB_placement(void* pBuf, const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot = Quaternion::One());
 		static GeometryBase* CreateSphere_placement(void* pBuf, const Vector3& Center, float Radius);
-		static GeometryBase* CreateCapsule_placement(void* pBuf, const Vector3& X0, const Vector3& X1, float Radius);
+		static GeometryBase* CreateCapsule_placement(void* pBuf, const Vector3& x0, const Vector3& x1, float Radius);
 
 		static int		ObjectCount[(int)PrimitiveType::TYPE_COUNT];
 	};

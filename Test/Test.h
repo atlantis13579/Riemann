@@ -20,6 +20,10 @@ inline void BreakPoint(const char *src_path, long line_no)
 		BreakPoint(__FILE__, __LINE__);		\
 	}
 
+#define EXPECT_TRUE(_expr)				EXPECT(_expr)
+#define EXPECT_FALSE(_expr)				EXPECT(!(_expr))
+#define EXPECT_SAME(_v1, _v2)		EXPECT((_v1 - _v2).SquareLength() < 1e-6f)
+
 #define EXPECT1(_expr, _expect)		\
 	if (!(_expr)) {			\
 		printf("Test FAILED at %s Line %d, expect = %s\n", __FILE__, __LINE__, std::to_string(_expect).c_str());	\

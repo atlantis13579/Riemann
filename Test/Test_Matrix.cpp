@@ -161,22 +161,22 @@ void TestPGS()
 	EXPECT(Y >= -0.00001f);
 	EXPECT(dp <= 0.00001f);
 
-	Maths::LinearAlgebra::DenseVector X1(3), X2(3);
-	X1[0] = 0.0f; X1[1] = -15.0f; X1[2] = 1.0f;
+	Maths::LinearAlgebra::DenseVector x1(3), X2(3);
+	x1[0] = 0.0f; x1[1] = -15.0f; x1[2] = 1.0f;
 	X2[0] = 1.0f; X2[1] = 10.0f; X2[2] = 3.0f;
 
 	X.LoadZero();
 	B[0] = 10.5f;
 	B[1] = 17.0f;
 	B[2] = 242.0f;
-	Maths::LinearAlgebra::ProjectedGaussSeidel<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), X1.GetData(), X2.GetData(), 50);
+	Maths::LinearAlgebra::ProjectedGaussSeidel<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), x1.GetData(), X2.GetData(), 50);
 	Y = A * X + B;
 	dp = Y.Dot(X);
-	EXPECT(X >= X1);
+	EXPECT(X >= x1);
 	EXPECT(X <= X2);
 	for (int i = 0; i < X.GetSize(); ++i)
 	{
-		EXPECT((X[i] == X1[i] && Y[i] > 0) || (X[i] == X2[i] && Y[i] < 0) || (X1[i] < X[i] && X[i] < X2[i] && Y[i] == 0));
+		EXPECT((X[i] == x1[i] && Y[i] > 0) || (X[i] == X2[i] && Y[i] < 0) || (x1[i] < X[i] && X[i] < X2[i] && Y[i] == 0));
 	}
 
 	return;

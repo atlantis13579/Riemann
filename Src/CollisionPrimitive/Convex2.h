@@ -23,12 +23,12 @@ public:
 	{
 		Vector2 DirLocal = Dir.Rotate(-Rot);
 		float max_proj = -FLT_MAX;
-		int   max_i = -1;
+		int   max_i = 0;
 		for (int i = 0; i < NumVertices; ++i)
 		{
 			const Vector2& pt = Vertices[i];
 			float proj = (Dir.Dot(pt)) * (pt.Length());
-			if (proj > max_proj)
+			if (proj >= max_proj)
 			{
 				max_proj = proj;
 				max_i = i;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GeometryObject.h"
-#include "MinkowskiSum.h"
+#include "../CollisionPrimitive/MinkowskiSum.h"
 
 namespace Riemann
 {

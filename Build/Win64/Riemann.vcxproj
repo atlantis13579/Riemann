@@ -19,6 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3.cpp" />
+    <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3.cpp" />
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Sphere3.cpp" />
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Triangle3.cpp" />
     <ClCompile Include="..\..\Src\Destruction\ConnectionGraph.cpp" />
     <ClCompile Include="..\..\Src\Destruction\DestructionSet.cpp" />
     <ClCompile Include="..\..\Src\Destruction\GraphPartition.cpp" />
@@ -92,8 +96,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Src\CollisionPrimitive\Convex2.h" />
+    <ClInclude Include="..\..\Src\CollisionPrimitive\GJK.h" />
+    <ClInclude Include="..\..\Src\CollisionPrimitive\MinkowskiSum.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\OrientedBox2.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Segment2.h" />
+    <ClInclude Include="..\..\Src\CollisionPrimitive\Simplex.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Sphere2.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\StaticMesh.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle2.h" />
@@ -159,11 +166,8 @@
     <ClInclude Include="..\..\Src\Collision\GeometryIntersection.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryObject.h" />
     <ClInclude Include="..\..\Src\Collision\GeometryQuery.h" />
-    <ClInclude Include="..\..\Src\Collision\GJK.h" />
-    <ClInclude Include="..\..\Src\Collision\MinkowskiSum.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\MeshBVH4.h" />
     <ClInclude Include="..\..\Src\Collision\SAP_Incremental.h" />
-    <ClInclude Include="..\..\Src\Collision\Simplex.h" />
     <ClInclude Include="..\..\Src\Collision\SAP.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\TriangleMesh.h" />
     <ClInclude Include="..\..\Src\Core\StaticArray.h" />

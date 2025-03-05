@@ -245,16 +245,16 @@ namespace Riemann
 		return (GeometryBase*)p;
 	}
 
-	GeometryBase* GeometryFactory::CreateCapsule_placement(void* pBuf, const Vector3& X0, const Vector3& X1, float Radius)
+	GeometryBase* GeometryFactory::CreateCapsule_placement(void* pBuf, const Vector3& x0, const Vector3& x1, float Radius)
 	{
 		Quaternion quat = Quaternion::One();
-		if ((X1 - X0).SquareLength() > 1e-6)
+		if ((x1 - x0).SquareLength() > 1e-6)
 		{
-			quat.FromTwoAxis(Vector3::UnitY(), X1 - X0);
+			quat.FromTwoAxis(Vector3::UnitY(), x1 - x0);
 		}
-		Vector3 Center = (X0 + X1) * 0.5f;
+		Vector3 Center = (x0 + x1) * 0.5f;
 		TGeometry<Capsule3>* p = pBuf ? new (pBuf)TGeometry<Capsule3>() : new TGeometry<Capsule3>();
-		p->Init(quat.Conjugate() * (X0 - Center), quat.Conjugate() * (X1 - Center), Radius);
+		p->Init(quat.Conjugate() * (x0 - Center), quat.Conjugate() * (x1 - Center), Radius);
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Center, quat);
 		return (GeometryBase*)p;
@@ -284,25 +284,25 @@ namespace Riemann
 		return CreateSphere_placement(p, Center, Radius);
 	}
 
-	GeometryBase* GeometryFactory::CreateCylinder(const Vector3& X0, const Vector3& X1, float Radius)
+	GeometryBase* GeometryFactory::CreateCylinder(const Vector3& x0, const Vector3& x1, float Radius)
 	{
 		Quaternion quat = Quaternion::One();
-		if ((X1 - X0).SquareLength() > 1e-6)
+		if ((x1 - x0).SquareLength() > 1e-6)
 		{
-			quat.FromTwoAxis(Vector3::UnitY(), X1 - X0);
+			quat.FromTwoAxis(Vector3::UnitY(), x1 - x0);
 		}
-		Vector3 Center = (X0 + X1) * 0.5f;
+		Vector3 Center = (x0 + x1) * 0.5f;
 		TGeometry<Cylinder3>* p = new TGeometry<Cylinder3>();
-		p->Init(quat.Conjugate() * (X0 - Center), quat.Conjugate() * (X1 - Center), Radius);
+		p->Init(quat.Conjugate() * (x0 - Center), quat.Conjugate() * (x1 - Center), Radius);
 		p->UpdateVolumeProperties();
 		p->SetWorldTransform(Center, quat);
 		return (GeometryBase*)p;
 	}
 
-	GeometryBase* GeometryFactory::CreateCapsule(const Vector3& X0, const Vector3& X1, float Radius)
+	GeometryBase* GeometryFactory::CreateCapsule(const Vector3& x0, const Vector3& x1, float Radius)
 	{
 		TGeometry<Capsule3>* p = new TGeometry<Capsule3>();
-		return CreateCapsule_placement(p, X0, X1, Radius);
+		return CreateCapsule_placement(p, x0, x1, Radius);
 	}
 
 	GeometryBase* GeometryFactory::CreateConvexMesh()

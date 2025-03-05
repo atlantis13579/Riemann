@@ -44,15 +44,16 @@ namespace Riemann
 	class ConvexMesh
 	{
 	public:
-		Vector3* Vertices;
-		ConvexMeshEdge* Edges;
-		ConvexMeshFace* Faces;
-		uint8_t* Indices;
+		Vector3*			Vertices;
+		ConvexMeshEdge*		Edges;
+		ConvexMeshFace*		Faces;
+		uint8_t*			Indices;
 		uint16_t			NumVertices;
 		uint16_t			NumEdges;
 		uint16_t			NumFaces;
 		uint16_t			NumIndices;
 		std::vector<char>	Buffers;
+		Box3				Bounds;
 
 		ConvexMesh()
 		{
@@ -103,11 +104,20 @@ namespace Riemann
 
 		bool		ValidateStructure() const;
 
-		Box3		ComputeBoundingVolume(const Vector3& CenterOfMass) const;
+		Box3		ComputeBoundingVolume() const;
 
 		bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
+		bool		IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
+		bool		IntersectSphere(const Vector3& _Center, float _Radius) const;
+		bool		IntersectCapsule(const Vector3& X0, const Vector3& X1, float rRadius) const;
+		bool		IntersectConvex(const ConvexMesh* convex) const;
 
 		bool		CalculateVolumeProperties(MassParameters* p, float Density) const;
+
+		Vector3		GetCenter() const
+		{
+			return Bounds.GetCenter();
+		}
 
 		Vector3		GetSupport(const Vector3& Direction) const;
 		int			GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;

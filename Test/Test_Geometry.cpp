@@ -1,4 +1,4 @@
-
+﻿
 #include "Test.h"
 
 #include "../Src/CollisionPrimitive/AxisAlignedBox3.h"
@@ -57,16 +57,41 @@ void TestParseObj()
 	return;
 }
 
-void TestMeshSimplify()
+void TestMeshSimplify1()
 {
-	printf("Running TestMeshSimplify\n");
+	printf("Running TestMeshSimplify1\n");
 
-	StaticMesh mesh;
 	SimplificationConfig cfg;
 	cfg.rate = 0.1f;
+
+	StaticMesh mesh;
 	mesh.LoadObj("../TestData/bunny.obj");
 	mesh.Simplify(cfg);
 	mesh.ExportObj("../TestData/bunny2.obj");
+}
+
+void TestMeshSimplify2()
+{
+	printf("Running TestMeshSimplify2\n");
+
+	SimplificationConfig cfg;
+	cfg.rate = 0.1f;
+
+	StaticMesh mesh;
+	mesh.LoadObj("../TestData/dungeon.obj");
+	mesh.Simplify(cfg);
+	mesh.ExportObj("../TestData/dungeon2.obj");
+}
+
+void TestMeshSimplify3()
+{
+	SimplificationConfig cfg;
+	cfg.faces = 20000;
+
+	StaticMesh mesh;
+	mesh.LoadObj("F:/Downloads/simplemesh/car_1.obj");
+	mesh.Simplify(cfg);
+	mesh.ExportObj("F:/Downloads/simplemesh/car_sim.obj");
 }
 
 void TestClip()
@@ -334,7 +359,9 @@ void TestGeometry()
 	TestHashGrid();
 	TestOctree();
 	TestParseObj();
-	TestMeshSimplify();
+	TestMeshSimplify1();
+	TestMeshSimplify2();
+	TestMeshSimplify3();
 	TestClip();
 	TestCatmullRom();
 	TestVoronoi2d();

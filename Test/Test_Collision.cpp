@@ -12,13 +12,13 @@
 #include "../Src/CollisionPrimitive/StaticMesh.h"
 #include "../Src/CollisionPrimitive/MeshBVH4.h"
 #include "../Src/CollisionPrimitive/TriangleMesh.h"
+#include "../Src/CollisionPrimitive/GJK.h"
 #include "../Src/Collision/AABBTree.h"
 #include "../Src/Collision/DynamicAABBTree.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Collision/SAP.h"
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GeometryDifference.h"
-#include "../Src/Collision/GJK.h"
 #include "../Src/Collision/EPAPenetration.h"
 #include "../Src/Maths/Maths.h"
 
@@ -87,7 +87,7 @@ void TestTriangle()
 	Triangle3 tri2(Vector3(5.09916496f, 8.30379868f, 4.52991295f), Vector3(5.08997154f, 8.29810333f, 4.52174377f), Vector3(5.09456825f, 8.300951f, 4.52582836f));
 	Vector3 length = tri2.GetSideLength();
 	Vector3 normal = tri2.GetNormal();
-	EXPECT(!tri2.IsValid());
+	EXPECT(tri2.IsDegenerate());
 	EXPECT(Triangle3::IsColinear(tri2.v0, tri2.v1, tri2.v2));
 
 	Triangle3 tri3(Vector3(-0.0680909976f, 0.00185490400f, 0.0297227483f), Vector3(-0.0693324953f, -0.00129310042f, 0.0196812488f), Vector3(-0.0677610636f, -0.00000000f, 0.0282528419f));

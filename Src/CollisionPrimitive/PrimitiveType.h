@@ -8,15 +8,14 @@ namespace Riemann
 {
 	enum class PrimitiveType : unsigned char
 	{
-		UNKNOWN = 0,
-		BOX,
-		PLANE,
-		SPHERE,
-		CAPSULE,
-		CYLINDER,
-		HEIGHTFIELD,
-		CONVEX_MESH,
-		TRIANGLE_MESH,
+		BOX = 0,
+		PLANE = 1,
+		SPHERE = 2,
+		CAPSULE = 3,
+		CYLINDER = 4,
+		HEIGHTFIELD = 5,
+		CONVEX_MESH = 6,
+		TRIANGLE_MESH = 7,
 		TYPE_COUNT,
 	};
 

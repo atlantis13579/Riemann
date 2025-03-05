@@ -6,7 +6,7 @@
 #include "../Collision/GeometryObject.h"
 #include "../Collision/GeometryDifference.h"
 #include "../Collision/EPAPenetration.h"
-#include "../Collision/GJK.h"
+#include "../CollisionPrimitive/GJK.h"
 
 namespace Riemann
 {

@@ -316,6 +316,14 @@ namespace Maths
 			return to * (n / d);
 		}
 
+		// Given A B, find C such that A and B are perpendicular and A, B and C are coplanar
+		inline TVector3<T> Perp(const TVector3<T>& B) const
+		{
+			TVector3<T> D = Cross(B);
+			TVector3<T> C = B.Cross(D);
+			return C.SafeUnit();
+		}
+
 		void DecomposeOrthonormalFrame(TVector3<T>& v0, TVector3<T>& v1, TVector3<T>& v2) const
 		{
 			v0 = Unit();
@@ -353,29 +361,6 @@ namespace Maths
 				OutPerp2.y = (T)1 - y * y * A;
 				OutPerp2.z = -y;
 			}
-		}
-
-		// Duff et al method, from https://graphics.pixar.com/library/OrthonormalB/paper.pdf
-		inline TVector3<T> GetPerpVector() const
-		{
-			TVector3<T> OutPerp1;
-			if (z < (T)0)
-			{
-				T A = (T)1 / ((T)1 - z);
-				T B = x * y * A;
-				OutPerp1.x = (T)1 - x * x * A;
-				OutPerp1.y = -B;
-				OutPerp1.z = x;
-			}
-			else
-			{
-				T A = (T)1 / ((T)1 + z);
-				T B = -x * y * A;
-				OutPerp1.x = (T)1 - x * x * A;
-				OutPerp1.y = B;
-				OutPerp1.z = -x;
-			}
-			return OutPerp1;
 		}
 
 		TVector3<T> Abs() const

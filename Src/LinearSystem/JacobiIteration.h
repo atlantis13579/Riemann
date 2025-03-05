@@ -21,7 +21,7 @@ public:
 		{
 			heap_mem = new T[N];
 		}
-		T* X0 = heap_mem ? heap_mem : stack_mem;
+		T* x0 = heap_mem ? heap_mem : stack_mem;
 
 		bool succ = false;
 		int Iter = 0;
@@ -41,16 +41,16 @@ public:
 				T denom = A[i * N + i];
 				if (-kEps < denom && denom < kEps)
 					denom = kEps;
-				X0[i] = (B[i] - beta) / denom;
+				x0[i] = (B[i] - beta) / denom;
 			}
 
 			T Norm = (T)0;
 			for (int i = 0; i < N; i++)
 			{
-				Norm += (X[i] - X0[i]) * (X[i] - X0[i]);
+				Norm += (X[i] - x0[i]) * (X[i] - x0[i]);
 			}
 
-			memcpy(X, &X0[0], sizeof(X[0]) * N);
+			memcpy(X, &x0[0], sizeof(X[0]) * N);
 
 			if (Norm < kEps)
 			{

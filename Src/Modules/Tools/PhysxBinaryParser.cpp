@@ -822,7 +822,7 @@ namespace Riemann
 		if (bodies) bodies->clear();
 		if (geoms) geoms->clear();
 
-#if defined(__linux__)
+#if defined(__linux__) && !defined(__android__)
 		int fd = open(Filename, O_RDONLY);
 		if (fd == -1)
 		{
@@ -859,7 +859,7 @@ namespace Riemann
 		PhysxCollections collection;
 		if (!DeserializeFromBuffer(p128, collection))
 		{
-#if defined(__linux__)
+#if defined(__linux__) && !defined(__android__)
 			close(fd);
 #endif
 			ReleaseSharedMem(addr, mem_size);

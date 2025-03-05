@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <vector>
 
@@ -41,13 +41,12 @@ template<typename T, typename ADT>
 std::vector<T> ToVector(const ADT& Enumerables)
 {
 	std::vector<T> Result;
-	for (T i : Enumerables)
+	for (const T& i : Enumerables)
 	{
 		Result.push_back(i);
 	}
 	return Result;
 }
-
 
 template<typename T, typename Pred>
 void VectorRemove(std::vector<T>& vec, Pred p)

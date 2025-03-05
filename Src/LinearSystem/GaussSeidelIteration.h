@@ -15,7 +15,7 @@ class GaussSeidelIteration
 public:
 	// Relaxation:
 	// In numerical linear algebra, the method of successive over - relaxation(SOR)
-	// is a variant of the Gauss¨CSeidel method for solving a linear system of equations,
+	// is a variant of the Gauss Seidel method for solving a linear system of equations,
 	// resulting in faster convergence.
 	// http://www.gamedev.ru/community/gd_physcomm/articles/?id=709
 	static bool Solve(const T* A, const T* B, int N, T* X, const int MaxIteration, const T kEps = (T)0.00001, const float Relaxation = (T)1.0)

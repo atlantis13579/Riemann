@@ -161,7 +161,7 @@ namespace Riemann
 			cacheTopValid = false;
 			for (uint32_t i = 0; i < SIMD_WIDTH; i++)
 			{
-				uint32_t ptr = Data[i] & ~1; // clear the isLeaf bit
+				uint32_t ptr = Data[i] & ~1;
 				if (resa[i])
 					continue;
 				if (tn->Data[i] & 1)

@@ -133,6 +133,7 @@ namespace Riemann
 		}
 
 		std::vector<GeometryBase*> geoms;
+		geoms.reserve(m_StaticBodies.size() + m_DynamicBodies.size());
 		for (size_t i = 0; i < m_StaticBodies.size(); ++i)
 		{
 			m_StaticBodies[i]->GetGeometries(&geoms);

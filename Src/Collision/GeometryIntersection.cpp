@@ -2,7 +2,6 @@
 #include "GeometryObject.h"
 #include "GeometryIntersection.h"
 #include "GeometryDifference.h"
-#include "GJK.h"
 #include "EPAPenetration.h"
 
 #include "../CollisionPrimitive/AxisAlignedBox3.h"
@@ -15,6 +14,7 @@
 #include "../CollisionPrimitive/Capsule3.h"
 #include "../CollisionPrimitive/ConvexMesh.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
+#include "../CollisionPrimitive/GJK.h"
 
 namespace Riemann
 {
@@ -201,6 +201,30 @@ namespace Riemann
 	}
 
 	template <class T>
+	bool	SweepBoxT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+	{
+		const GeometryTransform2 trans(t1, t2);
+		const Plane3* plane = static_cast<const Plane3*>(Obj1);
+		Vector3 Origin = trans.Local1ToLocal2(plane->GetOrigin());
+		Vector3 Normal = trans.Local1ToLocal2Direction(plane->Normal);
+		const T* obj = static_cast<const T*>(Obj2);
+		Plane3 NewPlane(Normal, Origin);
+		return obj->SweepPlane(Dir, NewPlane.Normal, NewPlane.D, n, t);
+	}
+
+	template <class T>
+	bool	SweepPlaneT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+	{
+		const GeometryTransform2 trans(t1, t2);
+		const Plane3* plane = static_cast<const Plane3*>(Obj1);
+		Vector3 Origin = trans.Local1ToLocal2(plane->GetOrigin());
+		Vector3 Normal = trans.Local1ToLocal2Direction(plane->Normal);
+		const T* obj = static_cast<const T*>(Obj2);
+		Plane3 NewPlane(Normal, Origin);
+		return obj->SweepPlane(Dir, NewPlane.Normal, NewPlane.D, n, t);
+	}
+
+	template <class T>
 	bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
 	{
 		const GeometryTransform2 trans(t1, t2);
@@ -209,6 +233,18 @@ namespace Riemann
 		Vector3 Center = trans.Local1ToLocal2(sphere->Center);
 		const T* obj = static_cast<const T*>(Obj2);
 		return obj->SweepSphere(Dir, Center, Radius, n, t);
+	}
+
+	template <class T>
+	bool	SweepCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+	{
+		const GeometryTransform2 trans(t1, t2);
+		const Capsule3* capsule = static_cast<const Capsule3*>(Obj1);
+		float Radius = capsule->Radius;
+		Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
+		Vector3 P1 = trans.Local1ToLocal2(capsule->X1);
+		const T* obj = static_cast<const T*>(Obj2);
+		return obj->SweepCapsule(Dir, P0, P1, Radius, n, t);
 	}
 
 #define	REG_RAYCAST_FUNC(_type, _name)					\
@@ -270,35 +306,47 @@ namespace Riemann
 		REG_INTERSECT_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::TRIANGLE_MESH, IntersectNotSupport);
 
 		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::BOX, PenetrateBoxBox);
-		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::SPHERE, PenetrateBoxT_WS<Sphere3>);
 		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::PLANE, PenetrateBoxT_WS<Plane3>);
-		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::CONVEX_MESH, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::SPHERE, PenetrateBoxT_WS<Sphere3>);
+		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::CONVEX_MESH, PenetrateEPASolver);
 		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::HEIGHTFIELD, nullptr);
 		REG_PENETRATE_FUNC(PrimitiveType::BOX, PrimitiveType::TRIANGLE_MESH, nullptr);
-		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::SPHERE, PenetrateSphereT<Sphere3>);
 		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::PLANE, PenetrateSphereT<Plane3>);
+		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::SPHERE, PenetrateSphereT<Sphere3>);
 		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::CAPSULE, PenetrateSphereT<Capsule3>);
-		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::CONVEX_MESH, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::CONVEX_MESH, PenetrateEPASolver);
 		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::HEIGHTFIELD, nullptr);
 		REG_PENETRATE_FUNC(PrimitiveType::SPHERE, PrimitiveType::TRIANGLE_MESH, nullptr);
-		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CAPSULE, IntersectCapsuleT<Capsule3>);
 		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::PLANE, nullptr);
-		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CONVEX_MESH, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CAPSULE, IntersectCapsuleT<Capsule3>);
+		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CONVEX_MESH, PenetrateEPASolver);
 		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::HEIGHTFIELD, nullptr);
 		REG_PENETRATE_FUNC(PrimitiveType::CAPSULE, PrimitiveType::TRIANGLE_MESH, nullptr);
-		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::BOX, PenetrateEPASolver);
 		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::PLANE, PenetrateEPASolver);
+		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::BOX, PenetrateEPASolver);
 		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::SPHERE, PenetrateEPASolver);
 		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::CYLINDER, PenetrateEPASolver);
 		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::CAPSULE, PenetrateEPASolver);
+		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::CONVEX_MESH, PenetrateEPASolver);
 		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::HEIGHTFIELD, PenetrateNotSupport);
 		REG_PENETRATE_FUNC(PrimitiveType::CYLINDER, PrimitiveType::TRIANGLE_MESH, PenetrateNotSupport);
 		REG_PENETRATE_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::PLANE, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::CONVEX_MESH, PenetrateEPASolver);
+		REG_PENETRATE_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::HEIGHTFIELD, nullptr);
+		REG_PENETRATE_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::TRIANGLE_MESH, nullptr);
 		REG_PENETRATE_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::HEIGHTFIELD, PenetrateNotSupport);
 		REG_PENETRATE_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::TRIANGLE_MESH, PenetrateNotSupport);
 		REG_PENETRATE_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::TRIANGLE_MESH, PenetrateNotSupport);
 
+		REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::PLANE, SweepPlaneT<AxisAlignedBox3>);
+		REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::SPHERE, SweepSphereT<AxisAlignedBox3>);
+		REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::CAPSULE, SweepCapsuleT<AxisAlignedBox3>);
+		REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::PLANE, SweepPlaneT<Sphere3>);
 		REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::SPHERE, SweepSphereT<Sphere3>);
+		REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::CAPSULE, SweepCapsuleT<Sphere3>);
+		REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::PLANE, SweepPlaneT<Capsule3>);
+		REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::SPHERE, SweepSphereT<Capsule3>);
+		REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CAPSULE, SweepCapsuleT<Capsule3>);
 	}
 
 	GeometryIntersection s_geom_registration;

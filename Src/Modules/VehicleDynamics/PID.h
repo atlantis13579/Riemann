@@ -3,7 +3,7 @@
 #include <float.h>
 #include <algorithm>
 
-// Proportional¨CIntegral¨CDerivative Controller
+// Proportional Integral Derivative Controller
 // https://en.wikipedia.org/wiki/PID_controller
 
 struct PID_Calibration

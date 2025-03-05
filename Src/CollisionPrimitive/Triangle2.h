@@ -126,8 +126,8 @@ namespace Riemann
 
 		bool IntersectSegment(const Vector2& P0, const Vector2 &P1) const
 		{
-			// TODO
-			return false;
+			Segment2IntersectionResult Result;
+			return IntersectSegment(P0, P1, Result);
 		}
 
 		bool IntersectSegment(const Vector2& P0, const Vector2& P1, Segment2IntersectionResult& Result) const

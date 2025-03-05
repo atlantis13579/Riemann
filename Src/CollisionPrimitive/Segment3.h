@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../Maths/Vector3.h"
-#include "Plane3.h"
 
 namespace Riemann
 {
@@ -149,11 +148,23 @@ namespace Riemann
 
 		float DistanceToPlane(const Vector3& Normal, float D) const
 		{
-			Plane3 plane(Normal, D);
-			return plane.DistanceToSegment(P0, P1);
+			float SignedDist0 = SignedDistancePointToPlane(P0, Normal, D);
+			float SignedDist1 = SignedDistancePointToPlane(P1, Normal, D);
+			if (SignedDist0 * SignedDist1 <= 0.0f)
+			{
+				return 0.0f;
+			}
+			return std::min(fabsf(SignedDist0), fabsf(SignedDist1));
 		}
 
 	private:
+		static float SignedDistancePointToPlane(const Vector3& Point, const Vector3& Normal, float D)
+		{
+			Vector3 Origin = -Normal * D;
+			float signedDist = (Point - Origin).Dot(Normal);
+			return signedDist;
+		}
+
 		static 	void SolveClosestPointsOnSegment(const Vector3& A0, const Vector3& A1, const Vector3& B0, const Vector3& B1, Vector3& P0, Vector3& P1, bool bNearlyParallel)
 		{
 			const float kTorSegment = 1e-4f;
