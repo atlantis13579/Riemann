@@ -150,9 +150,8 @@ bool ConvexMesh::IntersectRay(const Vector3& Origin, const Vector3& Direction, f
 template<class Shape>
 static bool IntersectConvexMesh(const Shape *shape, const ConvexMesh *convex)
 {
-	MinkowskiSumTwoShape<Shape, ConvexMesh> m(shape, convex);
 	GJKIntersection gjk;
-	GJK_status gjk_status = gjk.Solve(&m);
+	GJK_status gjk_status = gjk.Solve(shape, convex);
 	if (gjk_status != GJK_status::Intersect)
 	{
 		return false;

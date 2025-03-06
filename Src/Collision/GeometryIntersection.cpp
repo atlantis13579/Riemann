@@ -201,7 +201,7 @@ namespace Riemann
 	}
 
 	template <class T>
-	bool	SweepBoxT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+	bool	SweepBoxT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
 	{
 		const GeometryTransform2 trans(t1, t2);
 		const Plane3* plane = static_cast<const Plane3*>(Obj1);
@@ -209,34 +209,34 @@ namespace Riemann
 		Vector3 Normal = trans.Local1ToLocal2Direction(plane->Normal);
 		const T* obj = static_cast<const T*>(Obj2);
 		Plane3 NewPlane(Normal, Origin);
-		return obj->SweepPlane(Dir, NewPlane.Normal, NewPlane.D, n, t);
+		return obj->SweepPlane(Origin, Dir, NewPlane.Normal, NewPlane.D, n, t);
 	}
 
 	template <class T>
-	bool	SweepPlaneT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+	bool	SweepPlaneT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
 	{
 		const GeometryTransform2 trans(t1, t2);
 		const Plane3* plane = static_cast<const Plane3*>(Obj1);
-		Vector3 Origin = trans.Local1ToLocal2(plane->GetOrigin());
-		Vector3 Normal = trans.Local1ToLocal2Direction(plane->Normal);
+		Vector3 Origin2 = trans.Local1ToLocal2(plane->GetOrigin());
+		Vector3 Normal2 = trans.Local1ToLocal2Direction(plane->Normal);
 		const T* obj = static_cast<const T*>(Obj2);
-		Plane3 NewPlane(Normal, Origin);
-		return obj->SweepPlane(Dir, NewPlane.Normal, NewPlane.D, n, t);
+		Plane3 NewPlane(Normal2, Origin2);
+		return obj->SweepPlane(Origin, Dir, NewPlane.Normal, NewPlane.D, n, t);
 	}
 
 	template <class T>
-	bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+	bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
 	{
 		const GeometryTransform2 trans(t1, t2);
 		const Sphere3* sphere = static_cast<const Sphere3*>(Obj1);
 		float Radius = sphere->Radius;
 		Vector3 Center = trans.Local1ToLocal2(sphere->Center);
 		const T* obj = static_cast<const T*>(Obj2);
-		return obj->SweepSphere(Dir, Center, Radius, n, t);
+		return obj->SweepSphere(Origin, Dir, Center, Radius, n, t);
 	}
 
 	template <class T>
-	bool	SweepCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+	bool	SweepCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
 	{
 		const GeometryTransform2 trans(t1, t2);
 		const Capsule3* capsule = static_cast<const Capsule3*>(Obj1);
@@ -244,7 +244,7 @@ namespace Riemann
 		Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
 		Vector3 P1 = trans.Local1ToLocal2(capsule->X1);
 		const T* obj = static_cast<const T*>(Obj2);
-		return obj->SweepCapsule(Dir, P0, P1, Radius, n, t);
+		return obj->SweepCapsule(Origin, Dir, P0, P1, Radius, n, t);
 	}
 
 #define	REG_RAYCAST_FUNC(_type, _name)					\
@@ -374,5 +374,52 @@ namespace Riemann
 	{
 		SweepFunc func = GeometryIntersection::sweepTable[(int)Type1][(int)Type2];
 		return func;
+	}
+
+	bool GJK_Solve(GeometryBase* Geom1, GeometryBase* Geom2)
+	{
+		GeometryDifference shape(Geom1, Geom2);
+		GJKIntersection gjk;
+		GJK_status gjk_status = gjk.Solve(&shape);
+		if (gjk_status == GJK_status::Intersect)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	float GJK_Solve_Distance(GeometryBase* Geom1, GeometryBase* Geom2)
+	{
+		GeometryDifference shape(Geom1, Geom2);
+		GJKClosestDistance gjk;
+		bool distance = gjk.Solve(&shape);
+		return distance;
+	}
+
+	bool GJK_Solve_Raycast(const Vector3& Origin, const Vector3& Direction, GeometryBase* Geom1, float* t)
+	{
+		TransformedGeometry shape(Geom1);
+		GJKRaycast gjk;
+		GJK_status gjk_status = gjk.Solve(Origin, Direction, &shape);
+		if (gjk_status == GJK_status::Intersect)
+		{
+			*t = gjk.time;
+			return true;
+		}
+		return false;
+	}
+
+	bool GJK_Solve_Shapecast(const Vector3& Origin, const Vector3& Direction, GeometryBase* castGeom, GeometryBase* Geom, Vector3* n, float* t)
+	{
+		TransformedGeometry cast_shape(castGeom);
+		TransformedGeometry shape(Geom);
+		GJKShapecast gjk;
+		bool success = gjk.Solve(Origin, Direction, &cast_shape, &shape, n, t);
+		if (success)
+		{
+			// TODO, local to world
+			return true;
+		}
+		return false;
 	}
 }

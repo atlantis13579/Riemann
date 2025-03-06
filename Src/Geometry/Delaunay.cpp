@@ -1389,11 +1389,9 @@ namespace Riemann
 		static size_t hashEdge(const DelaunayEdge& vv)
 		{
 			size_t seed1(0);
-			hashCombine(seed1, vv.v1);
-			hashCombine(seed1, vv.v2);
+			Maths::Hash::HashCombine(seed1, vv.v1, vv.v2);
 			size_t seed2(0);
-			hashCombine(seed2, vv.v2);
-			hashCombine(seed2, vv.v1);
+			Maths::Hash::HashCombine(seed2, vv.v2, vv.v1);
 			return std::min(seed1, seed2);
 		}
 	};

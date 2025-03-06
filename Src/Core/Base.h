@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <assert.h>
 #include <vector>
 
 #define UNUSED(_x)			(void)(_x)
@@ -22,6 +23,16 @@
 #else
 #define DEBUG_CODE(_expr)
 #endif //_DEBUG
+
+inline void AssertBreakPoint()
+{
+	int __nbp = 0;
+	(void)__nbp;
+}
+
+#define	ASSERT(_expr)		if(!(_expr)) AssertBreakPoint();
+#define	ASSERT_TRUE(_expr)	ASSERT(_expr)
+#define	ASSERT_FALSE(_expr)	ASSERT(!(_expr))
 
 inline void* AlignMemory(void* Memory, int Width)
 {

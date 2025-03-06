@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3.cpp" />
+    <ClCompile Include="..\..\Src\CollisionPrimitive\Cylinder3.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Sphere3.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Triangle3.cpp" />
@@ -111,6 +112,7 @@
     <ClInclude Include="..\..\Src\Core\LogSystem.h" />
     <ClInclude Include="..\..\Src\Core\PriorityQueue.h" />
     <ClInclude Include="..\..\Src\Core\Profiler.h" />
+    <ClInclude Include="..\..\Src\Core\Ref.h" />
     <ClInclude Include="..\..\Src\Core\SmallMap.h" />
     <ClInclude Include="..\..\Src\Core\SmallSet.h" />
     <ClInclude Include="..\..\Src\Destruction\ConnectionGraph.h" />

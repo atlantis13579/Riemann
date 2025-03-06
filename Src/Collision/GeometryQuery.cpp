@@ -63,8 +63,8 @@ namespace Riemann
 
 		if (m_staticGeometry)
 		{
-			GeometryBase** pp = &m_Objects[0];
-			hit = m_staticGeometry->RayCast(ray, pp, &Option, Result);
+			GeometryBase** pp = m_Objects.data();
+			hit = pp && m_staticGeometry->RayCast(ray, pp, &Option, Result);
 
 			if (Option.Type == RayCastOption::RAYCAST_ANY && hit)
 			{
@@ -89,22 +89,22 @@ namespace Riemann
 	bool GeometryQuery::BoxCastQuery(const Vector3& Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 	{
 		char stack[MAX_GEOMETRY_STACK_SIZE];
-		GeometryBase* Box = GeometryFactory::CreateOBB_placement(stack, Center, Extent);
-		return SweepTest_Impl(Box, Direction, Option, Result);
+		GeometryBase* Box = GeometryFactory::CreateOBB_placement(stack, Vector3::Zero(), Extent);
+		return SweepTest_Impl(Box, Center, Direction, Option, Result);
 	}
 
 	bool GeometryQuery::SphereCastQuery(const Vector3& Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 	{
 		char stack[MAX_GEOMETRY_STACK_SIZE];
 		GeometryBase* Sphere = GeometryFactory::CreateSphere_placement(stack, Center, Radius);
-		return SweepTest_Impl(Sphere, Direction, Option, Result);
+		return SweepTest_Impl(Sphere, Center, Direction, Option, Result);
 	}
 
 	bool GeometryQuery::CapsuleCastQuery(const Vector3& Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 	{
 		char stack[MAX_GEOMETRY_STACK_SIZE];
-		GeometryBase* Capsule = GeometryFactory::CreateCapsule_placement(stack, Center - Vector3(0, HalfH, 0), Center + Vector3(0, HalfH, 0), Radius);
-		return SweepTest_Impl(Capsule, Direction, Option, Result);
+		GeometryBase* Capsule = GeometryFactory::CreateCapsule_placement(stack, -Vector3(0, HalfH, 0), Vector3(0, HalfH, 0), Radius);
+		return SweepTest_Impl(Capsule, Center, Direction, Option, Result);
 	}
 
 	bool GeometryQuery::IntersectQueryBox(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result)
@@ -136,8 +136,8 @@ namespace Riemann
 
 		if (m_staticGeometry)
 		{
-			GeometryBase** pp = &m_Objects[0];
-			hit = m_staticGeometry->Intersect(geom, pp, &Option, Result);
+			GeometryBase** pp = m_Objects.data();
+			hit = pp && m_staticGeometry->Intersect(geom, pp, &Option, Result);
 			if (hit && Result->overlapGeoms.size() >= Option.maxOverlaps)
 			{
 				return true;
@@ -158,16 +158,18 @@ namespace Riemann
 		return hit;
 	}
 
-	bool GeometryQuery::SweepTest_Impl(const GeometryBase* geom, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
+	bool GeometryQuery::SweepTest_Impl(const GeometryBase* geom, const Vector3& Origin, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 	{
 		Result->Reset();
 
 		bool hit = false;
 
+		Ray3 ray(Origin, Direction);
+
 		if (m_staticGeometry)
 		{
-			GeometryBase** pp = &m_Objects[0];
-			hit = m_staticGeometry->Sweep(geom, pp, Direction, &Option, Result);
+			GeometryBase** pp = m_Objects.data();
+			hit = pp && m_staticGeometry->Sweep(geom, pp, ray, &Option, Result);
 			if (hit)
 			{
 				return true;
@@ -177,7 +179,7 @@ namespace Riemann
 		if (m_dynamicPruner)
 		{
 			SweepResult Result2;
-			bool hit_dynamic = m_dynamicPruner->Sweep(geom, Direction, &Option, &Result2);
+			bool hit_dynamic = m_dynamicPruner->Sweep(geom, ray, &Option, &Result2);
 			if (hit_dynamic)
 			{
 				Result->Merge(Result2);
@@ -205,6 +207,7 @@ namespace Riemann
 	public:
 		CollisionTableFilter(unsigned int n, unsigned char* pLayerData)
 		{
+			nLayers = n;
 			collisionTable.resize(n * n);
 			memset(&collisionTable[0], 0, sizeof(collisionTable[0]) * n * n);
 			if (pLayerData)

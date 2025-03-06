@@ -30,7 +30,7 @@ void TestAll()
 int main()
 {
 	printf("Running ...\n");
-	TestMaths();
+	TestAll();
 	printf("All Test Done\n");
 	return 0;
 }

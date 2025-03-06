@@ -101,15 +101,15 @@ namespace Riemann
 
 		bool				LoadScene(const char* name, bool shared_mem);
 
-		RigidBody* CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose);
-		RigidBody* CreateRigidBody(GeometryBase* Geom, const RigidBodyParam& param);
+		RigidBody*			CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose);
+		RigidBody*			CreateRigidBody(GeometryBase* Geom, const RigidBodyParam& param);
 		bool				RemoveRigidBody(RigidBody* Body);
 
 		bool				LoadAnimation(const std::string& resname, const std::string& filepath, float play_rate, bool begin_play);
-		KinematicsDriver* FindKinematics(const std::string& resname);
+		KinematicsDriver*	FindKinematics(const std::string& resname);
 
 		void				GetAllGeometries(std::vector<GeometryBase*>* AllObjects);
-		GeometryQuery* GetGeometryQuery() { return m_GeometryQuery; }
+		GeometryQuery*		GetGeometryQuery() { return m_GeometryQuery; }
 		const GeometryQuery* GetGeometryQuery() const { return m_GeometryQuery; }
 
 		float				GetSystemTotalEnergy() const;
@@ -129,15 +129,15 @@ namespace Riemann
 		std::vector<RigidBodyDynamic*>	m_DynamicBodies;
 		std::vector<KinematicsDriver*>	m_Kinematics;
 
-		JobSystem* m_Jobsystem;
-		GeometryQuery* m_GeometryQuery;
-		BroadPhase* m_BPhase;
-		NarrowPhase* m_NPhase;
-		ConstraintSolver* m_Solver;
+		JobSystem*						m_Jobsystem;
+		GeometryQuery*					m_GeometryQuery;
+		BroadPhase*						m_BPhase;
+		NarrowPhase*					m_NPhase;
+		ConstraintSolver*				m_Solver;
 		IntegrateMethod					m_IntegrateMethod;
 		std::vector<ForceField*>		m_Fields;
 		WorldClock						m_Clock;
-		void* m_SharedMem;
+		void*							m_SharedMem;
 		size_t							m_SharedMemSize;
 	};
 }

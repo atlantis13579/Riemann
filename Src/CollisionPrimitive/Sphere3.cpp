@@ -1,12 +1,14 @@
 
 #include <random>
 
+#include "AxisAlignedBox3.h"
 #include "Sphere3.h"
 #include "Capsule3.h"
 #include "Segment3.h"
 #include "ConvexMesh.h"
 #include "HeightField3.h"
 #include "TriangleMesh.h"
+#include "GJK.h"
 
 namespace Riemann
 {
@@ -314,13 +316,14 @@ bool Sphere3::PenetrateOBB(const Vector3& rCenter, const Vector3& rExtent, const
 	return true;
 }
 
-bool Sphere3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const
+bool Sphere3::SweepAABB(const Vector3& Origin, const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const
 {
-	// TODO
-	return false;
+	AxisAlignedBox3 box(bmin, bmax);
+	GJKShapecast gjk;
+	return gjk.Solve(Origin, Direction, this, &box, n, t);
 }
 
-bool Sphere3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const
+bool Sphere3::SweepSphere(const Vector3& Origin, const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const
 {
 	Sphere3 s1(rCenter, rRadius + Radius);
 	if (s1.IntersectRay(Center, Direction, t))
@@ -340,7 +343,7 @@ bool Sphere3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, floa
 	return false;
 }
 
-bool Sphere3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const
+bool Sphere3::SweepPlane(const Vector3& Origin, const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const
 {
 	float dist = Normal.Dot(Center) + D;
 	if (fabsf(dist) <= Radius)
@@ -366,9 +369,10 @@ bool Sphere3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float 
 	}
 }
 
-bool Sphere3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+bool Sphere3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
 {
-	if (IntersectCapsule(X0, X1, rRadius))
+	Sphere3 sp2(Center + (Origin - Center), Radius);
+	if (sp2.IntersectCapsule(X0, X1, rRadius))
 	{
 		*t = 0.0f;
 		*n = -Direction;
@@ -377,7 +381,7 @@ bool Sphere3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Ve
 
 	if (fabsf((X0 - X1).SquareLength()) < 1e-3f)
 	{
-		return SweepSphere(Direction, X0, rRadius, n, t);
+		return SweepSphere(Origin, Direction, X0, rRadius, n, t);
 	}
 
 	Capsule3 capsule(X0, X1, Radius + rRadius);
@@ -400,19 +404,19 @@ bool Sphere3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Ve
 	return false;
 }
 
-bool Sphere3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const
+bool Sphere3::SweepConvex(const Vector3& Origin, const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const
+{
+	GJKShapecast gjk;
+	return gjk.Solve(Origin, Direction, this, convex, n, t);
+}
+
+bool Sphere3::SweepHeightField(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
 {
 	// TODO
 	return false;
 }
 
-bool Sphere3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
-{
-	// TODO
-	return false;
-}
-
-bool Sphere3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const
+bool Sphere3::SweepTriangleMesh(const Vector3& Origin, const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const
 {
 	// TODO
 	return false;
@@ -605,5 +609,115 @@ Sphere3 Sphere3::ComputeBoundingSphere_Welzl(const Vector3* _points, int n)
 	return s;
 }
 
+
+void Sphere3::GetVertices(int stackCount, int sliceCount, std::vector<Vector3>* Vertices, std::vector<Vector3>* Normals)
+{
+	const float mPI = 2.0f * asinf(1.0f);
+
+	float phiStep = mPI / stackCount;
+	float thetaStep = 2.0f * mPI / sliceCount;
+
+	Vertices->push_back(Center + Vector3(0, Radius, 0));
+	if (Normals) Normals->push_back(Vector3::UnitY());
+
+	for (int i = 1; i < stackCount; i++)
+	{
+		float phi = i * phiStep;
+		for (int j = 0; j <= sliceCount; j++)
+		{
+			float theta = j * thetaStep;
+			Vector3 p = Vector3(sinf(phi) * cosf(theta), cosf(phi), sinf(phi) * sinf(theta)) * Radius;
+			Vertices->push_back(Center + p);
+			if (Normals) Normals->push_back(p);
+		}
+	}
+	Vertices->push_back(Center + Vector3(0, -Radius, 0));
+	if (Normals) Normals->push_back(-Vector3::UnitY());
+}
+
+
+void Sphere3::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
+{
+	const int stackCount = 8;
+	const int sliceCount = 12;
+
+	GetVertices(stackCount, sliceCount, &Vertices, &Normals);
+
+	for (int i = 1; i <= sliceCount; i++)
+	{
+		Indices.push_back(0);
+		Indices.push_back(i + 1);
+		Indices.push_back(i);
+	}
+
+	int baseIndex = 1;
+	int Count = sliceCount + 1;
+	for (int i = 0; i < stackCount - 2; i++)
+	{
+		for (int j = 0; j < sliceCount; j++)
+		{
+			Indices.push_back(baseIndex + i * Count + j);
+			Indices.push_back(baseIndex + i * Count + j + 1);
+			Indices.push_back(baseIndex + (i + 1) * Count + j);
+
+			Indices.push_back(baseIndex + (i + 1) * Count + j);
+			Indices.push_back(baseIndex + i * Count + j + 1);
+			Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+		}
+	}
+	int PoleIndex = (int)Vertices.size() - 1;
+	baseIndex = PoleIndex - Count;
+	for (int i = 0; i < sliceCount; i++)
+	{
+		Indices.push_back(PoleIndex);
+		Indices.push_back(baseIndex + i);
+		Indices.push_back(baseIndex + i + 1);
+	}
+}
+
+
+void Sphere3::GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
+{
+	const int stackCount = 6;
+	const int sliceCount = 8;
+
+	GetVertices(stackCount, sliceCount, &Vertices, nullptr);
+
+	for (int i = 1; i <= sliceCount; i++)
+	{
+		Indices.push_back(0);
+		Indices.push_back(i);
+
+		Indices.push_back(i);
+		Indices.push_back(i + 1);
+	}
+
+	int baseIndex = 1;
+	int Count = sliceCount + 1;
+	for (int i = 0; i < stackCount - 2; i++)
+	{
+		for (int j = 0; j < sliceCount; j++)
+		{
+			Indices.push_back(baseIndex + i * Count + j);
+			Indices.push_back(baseIndex + i * Count + j + 1);
+
+			Indices.push_back(baseIndex + i * Count + j + 1);
+			Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+
+			Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+			Indices.push_back(baseIndex + i * Count + j + 1);
+
+			Indices.push_back(baseIndex + i * Count + j + 1);
+			Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+		}
+	}
+	int PoleIndex = (int)Vertices.size() - 1;
+	baseIndex = PoleIndex - Count;
+	for (int i = 0; i < sliceCount; i++)
+	{
+		Indices.push_back(PoleIndex);
+		Indices.push_back(baseIndex + i);
+	}
+}
 
 }

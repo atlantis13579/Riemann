@@ -3,6 +3,7 @@
 #include <string>
 #include <chrono>
 #include "Test.h"
+#include "../Src/Core/Ref.h"
 #include "../Src/Core/Graph.h"
 #include "../Src/Core/BitSet.h"
 #include "../Src/Core/DynamicArray.h"

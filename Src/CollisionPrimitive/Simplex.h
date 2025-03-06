@@ -22,7 +22,7 @@ namespace Riemann
 		Vertex			v[4];
 		float			w[4];			// barycentric coordinate
 		int				dimension;
-		MinkowskiSum*	m_shape;
+		const GjkShape*	m_shape;
 
 	public:
 		Simplex()
@@ -30,7 +30,7 @@ namespace Riemann
 			Init(nullptr);
 		}
 
-		void Init(MinkowskiSum* _shape)
+		void Init(const GjkShape* _shape)
 		{
 			m_shape = _shape;
 			dimension = 0;
@@ -45,6 +45,16 @@ namespace Riemann
 		const Vector3& LastPoint() const
 		{
 			return v[dimension - 1].pos;
+		}
+
+		void SetPoints(int n, Vector3 p[4])
+		{
+			dimension = n;
+			for (int i = 0; i < n; ++i)
+			{
+				v[i].dir = Vector3::Zero();
+				v[i].pos = p[i];
+			}
 		}
 
 		void AddPoint(const Vector3& dir)
@@ -76,18 +86,18 @@ namespace Riemann
 			return;
 		}
 
-		bool ProjectOrigin(Vector3& proj, int& mask)
+		bool GetClosestToOrigin(Vector3& proj, unsigned int& mask)
 		{
 			switch (dimension)
 			{
 			case 4:
-				return ProjectOrigin_Tetrahedral(v[0].pos, v[1].pos, v[2].pos, v[3].pos, proj, mask);
+				return GetClosestToOrigin_Tetrahedral(v[0].pos, v[1].pos, v[2].pos, v[3].pos, proj, mask);
 			case 3:
-				return ProjectOrigin_Triangle(v[0].pos, v[1].pos, v[2].pos, proj, mask);
+				return GetClosestToOrigin_Triangle(v[0].pos, v[1].pos, v[2].pos, proj, mask);
 			case 2:
-				return ProjectOrigin_Segment(v[0].pos, v[1].pos, proj, mask);
+				return GetClosestToOrigin_Segment(v[0].pos, v[1].pos, proj, mask);
 			case 1:
-				return ProjectOrigin_Point(v[0].pos, proj, mask);
+				return GetClosestToOrigin_Point(v[0].pos, proj, mask);
 			default:
 				assert(false);
 				break;
@@ -166,7 +176,7 @@ namespace Riemann
 		}
 
 	private:
-		static bool ProjectOrigin_Point(const Vector3& a, Vector3& proj, int& mask)
+		static bool GetClosestToOrigin_Point(const Vector3& a, Vector3& proj, unsigned int& mask)
 		{
 			float l = a.SquareLength();
 			if (l <= SIMPLEX1_EPS)
@@ -179,7 +189,7 @@ namespace Riemann
 			return true;
 		}
 
-		static bool ProjectOrigin_Segment(const Vector3& a, const Vector3& b, Vector3& proj, int& mask)
+		static bool GetClosestToOrigin_Segment(const Vector3& a, const Vector3& b, Vector3& proj, unsigned int& mask)
 		{
 			Vector3 d = b - a;
 			float l = d.SquareLength();
@@ -207,7 +217,7 @@ namespace Riemann
 			return true;
 		}
 
-		static bool ProjectOrigin_Triangle(const Vector3& a, const Vector3& b, const Vector3& c, Vector3& proj, int& mask)
+		static bool GetClosestToOrigin_Triangle(const Vector3& a, const Vector3& b, const Vector3& c, Vector3& proj, unsigned int& mask)
 		{
 			Vector3	v[] = { a, b, c };
 			Vector3	dl[] = { a - b, b - c, c - a };
@@ -220,7 +230,7 @@ namespace Riemann
 			}
 
 			Vector3 subpos;
-			int submask = 0;
+			unsigned int submask = 0;
 			float min_sqr_dist = FLT_MAX;
 			for (int i = 0; i < 3; ++i)
 			{
@@ -229,7 +239,7 @@ namespace Riemann
 				if (dp > 0)
 				{
 					int j = (i + 1) % 3;
-					if (ProjectOrigin_Segment(v[i], v[j], subpos, submask) && subpos.SquareLength() < min_sqr_dist)
+					if (GetClosestToOrigin_Segment(v[i], v[j], subpos, submask) && subpos.SquareLength() < min_sqr_dist)
 					{
 						min_sqr_dist = subpos.SquareLength();
 						proj = subpos;
@@ -246,7 +256,7 @@ namespace Riemann
 			return true;
 		}
 
-		static bool ProjectOrigin_Tetrahedral(const Vector3& a, const Vector3& b, const Vector3& c, const Vector3& d, Vector3& proj, int& mask)
+		static bool GetClosestToOrigin_Tetrahedral(const Vector3& a, const Vector3& b, const Vector3& c, const Vector3& d, Vector3& proj, unsigned int& mask)
 		{
 			const Vector3* vt[] = { &a, &b, &c, &d };
 			Vector3 dl[] = { a - d, b - d, c - d };
@@ -259,7 +269,7 @@ namespace Riemann
 			}
 
 			Vector3 subpos;
-			int submask = 0;
+			unsigned int submask = 0;
 			float min_sqr_dist = FLT_MAX;
 			for (int i = 0; i < 3; ++i)
 			{
@@ -267,7 +277,7 @@ namespace Riemann
 				float s = vl * DotProduct(d, CrossProduct(dl[i], dl[j]));
 				if (s > 0)
 				{
-					if (ProjectOrigin_Triangle(*vt[i], *vt[j], d, subpos, submask) && subpos.SquareLength() < min_sqr_dist)
+					if (GetClosestToOrigin_Triangle(*vt[i], *vt[j], d, subpos, submask) && subpos.SquareLength() < min_sqr_dist)
 					{
 						min_sqr_dist = subpos.SquareLength();
 						proj = subpos;

@@ -256,7 +256,7 @@ namespace Riemann
 
 	private:
 		bool		IntersectTest_Impl(const GeometryBase* geom, const IntersectOption& Option, IntersectResult* Result);
-		bool		SweepTest_Impl(const GeometryBase* geom, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
+		bool		SweepTest_Impl(const GeometryBase* geom, const Vector3& Origin, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 
 	private:
 		std::vector<GeometryBase*>	m_Objects;

@@ -5,10 +5,39 @@
 
 namespace Riemann
 {
-	class GeometryDifference : public MinkowskiSum
+	class TransformedGeometry : public GjkShape
 	{
 	public:
-		GeometryDifference() {}
+		TransformedGeometry(const GeometryBase* _g1) : Geom1(_g1)
+		{
+		}
+
+		const GeometryBase* Geom1;
+
+		virtual Vector3 Center() const override
+		{
+			return Geom1->GetBoundingVolume_WorldSpace().GetCenter();
+		}
+
+		virtual Vector3 Support(const Vector3& Direction) const override
+		{
+			return Geom1->GetSupport_WorldSpace(Direction);
+		}
+
+		Vector3 GetCenter() const
+		{
+			return Geom1->GetBoundingVolume_WorldSpace().GetCenter();
+		}
+
+		Vector3 GetSupport(const Vector3& Direction) const
+		{
+			return Geom1->GetSupport_WorldSpace(Direction);
+		}
+	};
+
+	class GeometryDifference : public GjkShape
+	{
+	public:
 		GeometryDifference(const GeometryBase* _g1, const GeometryBase* _g2) : Geom1(_g1), Geom2(_g2)
 		{
 		}

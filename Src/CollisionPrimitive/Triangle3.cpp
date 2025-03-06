@@ -840,6 +840,35 @@ bool Triangle3::IntersectTriangle(const Triangle3& triangle1, Triangle3Intersect
 	return false;
 }
 
+
+void Triangle3::ProjectOntoAxis(const Vector3& axis, float& fmin, float& fmax) const
+{
+	float dot0 = axis.Dot(v0);
+	float dot1 = axis.Dot(v1);
+	float dot2 = axis.Dot(v2);
+
+	fmin = dot0;
+	fmax = fmin;
+
+	if (dot1 < fmin)
+	{
+		fmin = dot1;
+	}
+	else if (dot1 > fmax)
+	{
+		fmax = dot1;
+	}
+
+	if (dot2 < fmin)
+	{
+		fmin = dot2;
+	}
+	else if (dot2 > fmax)
+	{
+		fmax = dot2;
+	}
+}
+
 // static
 Vector3 Triangle3::ClosestPointOnTriangleToPoint(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C)
 {

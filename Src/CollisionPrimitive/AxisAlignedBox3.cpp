@@ -1,8 +1,11 @@
 #include "AxisAlignedBox3.h"
+#include "Capsule3.h"
 #include "Plane3.h"
+#include "Sphere3.h"
 #include "ConvexMesh.h"
 #include "HeightField3.h"
 #include "TriangleMesh.h"
+#include "GJK.h"
 
 namespace Riemann
 {
@@ -838,43 +841,46 @@ bool AxisAlignedBox3::IntersectTriangle(const Vector3& A, const Vector3& B, cons
 	return true;
 }
 
-bool AxisAlignedBox3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepAABB(const Vector3& Origin, const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const
+{
+	AxisAlignedBox3 box(bmin, bmax);
+	GJKShapecast gjk;
+	return gjk.Solve(Origin, Direction, this, &box, n, t);
+}
+
+bool AxisAlignedBox3::SweepSphere(const Vector3& Origin, const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const
+{
+	Sphere3 sp(rCenter, rRadius);
+	GJKShapecast gjk;
+	return gjk.Solve(Origin, Direction, this, &sp, n, t);
+}
+
+bool AxisAlignedBox3::SweepPlane(const Vector3& Origin, const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const
 {
 	// TODO
 	return false;
 }
 
-bool AxisAlignedBox3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+{
+	Capsule3 capsule(X0, X1, rRadius);
+	GJKShapecast gjk;
+	return gjk.Solve(Origin, Direction, this, &capsule, n, t);
+}
+
+bool AxisAlignedBox3::SweepConvex(const Vector3& Origin, const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const
+{
+	GJKShapecast gjk;
+	return gjk.Solve(Origin, Direction, this, convex, n, t);
+}
+
+bool AxisAlignedBox3::SweepHeightField(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
 {
 	// TODO
 	return false;
 }
 
-bool AxisAlignedBox3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const
-{
-	// TODO
-	return false;
-}
-
-bool AxisAlignedBox3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
-{
-	// TODO
-	return false;
-}
-
-bool AxisAlignedBox3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const
-{
-	// TODO
-	return false;
-}
-
-bool AxisAlignedBox3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
-{
-	// TODO
-	return false;
-}
-
-bool AxisAlignedBox3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepTriangleMesh(const Vector3& Origin, const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const
 {
 	// TODO
 	return false;

@@ -270,13 +270,13 @@ namespace Riemann
 		inline void				SetNodeId(int NodeId) { m_NodeId = NodeId; }
 		inline int				GetNodeId() const { return m_NodeId; }
 
-		static Transform				CalculateCenterOfMassPoseMultibody(const std::vector<GeometryBase*>& geoms);
+		static Transform		CalculateCenterOfMassPoseMultibody(const std::vector<GeometryBase*>& geoms);
 
 		virtual bool			RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption* Option, RayCastResult* Result) const = 0;
 		bool					Intersect(const GeometryBase* Geom) const;
 		bool					Penetration(const GeometryBase* Geom, Vector3* Normal, float* Depth) const;
-		bool					SweepAABB(const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, Vector3* Normal, float* t) const;
-		bool					Sweep(const Vector3& Direction, const GeometryBase* Geom, Vector3* normal, float* t) const;
+		bool					SweepTestFast(const Vector3& Origin, const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const;
+		bool					Sweep(const Vector3& Origin, const Vector3& Direction, const GeometryBase* Geom, Vector3* normal, float* t) const;
 
 		virtual void			UpdateVolumeProperties() = 0;
 		void					UpdateBoundingVolume();

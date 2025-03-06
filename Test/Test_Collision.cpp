@@ -19,6 +19,7 @@
 #include "../Src/Collision/SAP.h"
 #include "../Src/Collision/SAP_Incremental.h"
 #include "../Src/Collision/GeometryDifference.h"
+#include "../Src/Collision/GeometryIntersection.h"
 #include "../Src/Collision/EPAPenetration.h"
 #include "../Src/Maths/Maths.h"
 
@@ -222,25 +223,6 @@ void TestSupport()
 	return;
 }
 
-bool GJK_Solve(GeometryBase* Geom1, GeometryBase* Geom2)
-{
-	GeometryDifference shape(Geom1, Geom2);
-	GJKIntersection gjk;
-	GJK_status gjk_status = gjk.Solve(&shape);
-	if (gjk_status == GJK_status::Intersect)
-	{
-		return true;
-	}
-	return false;
-}
-
-float GJK_Solve_Distance(GeometryBase* Geom1, GeometryBase* Geom2)
-{
-	GeometryDifference shape(Geom1, Geom2);
-	GJKClosestDistance gjk;
-	return gjk.Solve(&shape);
-}
-
 void TestGJK()
 {
 	printf("Running TestGJK\n");
@@ -283,6 +265,18 @@ void TestGJK()
 	float dist = GJK_Solve_Distance(sp1, sp2);
 	EXPECT(fabsf(dist - 1.0f) < 0.01f);
 
+	return;
+}
+
+void TestGJKRaycast()
+{
+	printf("Running TestGJKRaycast\n");
+
+	float t = -1.0f;
+	GeometryBase* obb1 = GeometryFactory::CreateOBB(Vector3(2.0f, 1.0, 0.0f), Vector3(1.0f, 1.0f, 1.0f), Quaternion::One());
+	EXPECT(GJK_Solve_Raycast(Vector3(-5.0f, 1.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), obb1, &t) && Maths::FloatEqual(t, 6.0f));
+	EXPECT(!GJK_Solve_Raycast(Vector3(0.0f, 2.01f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), obb1, &t));
+	EXPECT(GJK_Solve_Raycast(Vector3(0.0f, 1.99f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), obb1, &t));
 	return;
 }
 
@@ -850,6 +844,7 @@ void TestCollision()
 	TestDynamicAABB();
 	TestSupport();
 	TestGJK();
+	TestGJKRaycast();
 	TestEPA();
 	TestAABB();
 	TestRayAABB();

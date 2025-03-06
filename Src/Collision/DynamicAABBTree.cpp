@@ -145,7 +145,7 @@ bool DynamicAABBTree::RayCast(const Ray3& Ray, const RayCastOption* Option, RayC
 	return false;
 }
 
-static bool OverlapGeometry(const GeometryBase *geometry, void* userData, const IntersectOption* Option, IntersectResult* Result)
+static bool OverlapGeometry(const GeometryBase *intersect_geometry, void* userData, const IntersectOption* Option, IntersectResult* Result)
 {
 	GeometryBase *candidate = static_cast<GeometryBase*>(userData);
 
@@ -156,7 +156,7 @@ static bool OverlapGeometry(const GeometryBase *geometry, void* userData, const 
 	
 	Result->AddTestCount(1);
 	
-	bool overlap = geometry->Intersect(candidate);
+	bool overlap = intersect_geometry->Intersect(candidate);
 	if (overlap)
 	{
 		Result->overlaps = true;
@@ -173,7 +173,7 @@ static bool OverlapGeometry(const GeometryBase *geometry, void* userData, const 
 	return Result->overlaps;
 }
 
-bool DynamicAABBTree::Intersect(const GeometryBase *geometry, const IntersectOption* Option, IntersectResult *Result) const
+bool DynamicAABBTree::Intersect(const GeometryBase *intersect_geometry, const IntersectOption* Option, IntersectResult *Result) const
 {
 	Result->overlaps = false;
 	Result->overlapGeoms.clear();
@@ -183,7 +183,7 @@ bool DynamicAABBTree::Intersect(const GeometryBase *geometry, const IntersectOpt
 		return false;
 	}
 
-	const Box3 &aabb = geometry->GetBoundingVolume_WorldSpace();
+	const Box3 &aabb = intersect_geometry->GetBoundingVolume_WorldSpace();
 	const Node* p = &m_nodes[m_root];
 	if (p == nullptr || !aabb.Intersect(p->aabb.Min, p->aabb.Max))
 	{
@@ -200,7 +200,7 @@ bool DynamicAABBTree::Intersect(const GeometryBase *geometry, const IntersectOpt
 		{
 			if (p->IsLeaf())
 			{
-				bool overlap = OverlapGeometry(geometry, p->userData, Option, Result);
+				bool overlap = OverlapGeometry(intersect_geometry, p->userData, Option, Result);
 				if (overlap)
 				{
 					if (Result->overlapGeoms.size() >= Option->maxOverlaps)
@@ -246,13 +246,13 @@ bool DynamicAABBTree::Intersect(const GeometryBase *geometry, const IntersectOpt
 	return Result->overlaps;
 }
 
-static bool SweepGeometry(const GeometryBase *geometry, const Vector3& Direction, void* userData, const SweepOption* Option, SweepResult* Result)
+static bool SweepGeometry(const GeometryBase *sweep_geometry, const Vector3& Origin, const Vector3& Direction, void* userData, const SweepOption* Option, SweepResult* Result)
 {
 	GeometryBase *canditate = static_cast<GeometryBase*>(userData);
 	
 	float t;
 	Vector3 normal;
-	bool hit = geometry->Sweep(Direction, canditate, &normal, &t);
+	bool hit = sweep_geometry->Sweep(Origin, Direction, canditate, &normal, &t);
 	if (hit)
 	{
 		if (Option->Type == SweepOption::SWEEP_PENETRATE)
@@ -271,7 +271,7 @@ static bool SweepGeometry(const GeometryBase *geometry, const Vector3& Direction
 	return false;
 }
 
-bool DynamicAABBTree::Sweep(const GeometryBase *geometry, const Vector3& Direction, const SweepOption* Option, SweepResult *Result) const
+bool DynamicAABBTree::Sweep(const GeometryBase *sweep_geometry, const Ray3& Ray, const SweepOption* Option, SweepResult *Result) const
 {
 	Result->hit = false;
 	Result->hitTestCount = 0;
@@ -286,7 +286,7 @@ bool DynamicAABBTree::Sweep(const GeometryBase *geometry, const Vector3& Directi
 	float t1, t2;
 	Vector3 normal;
 	const Node* p = &m_nodes[m_root];
-	if (p == nullptr || !geometry->SweepAABB(Direction, p->aabb.Min, p->aabb.Max, &normal, &t1) || t1 >= Option->MaxDist)
+	if (p == nullptr || !sweep_geometry->SweepTestFast(Ray.Origin, Ray.Dir, p->aabb.Min, p->aabb.Max, &t1) || t1 >= Option->MaxDist)
 	{
 		return false;
 	}
@@ -301,7 +301,7 @@ bool DynamicAABBTree::Sweep(const GeometryBase *geometry, const Vector3& Directi
 		{
 			if (p->IsLeaf())
 			{
-				if (SweepGeometry(geometry, Direction, p->userData, Option, Result))
+				if (SweepGeometry(sweep_geometry, Ray.Origin, Ray.Dir, p->userData, Option, Result))
 				{
 					if (Option->Type == SweepOption::SWEEP_ANY)
 					{
@@ -317,8 +317,8 @@ bool DynamicAABBTree::Sweep(const GeometryBase *geometry, const Vector3& Directi
 
 			Result->AddTestCount(2);
 
-			bool hit1 = geometry->SweepAABB(Direction, child1->aabb.Min, child1->aabb.Max, &normal, &t1);
-			bool hit2 = geometry->SweepAABB(Direction, child2->aabb.Min, child2->aabb.Max, &normal, &t2);
+			bool hit1 = sweep_geometry->SweepTestFast(Ray.Origin, Ray.Dir, child1->aabb.Min, child1->aabb.Max, &t1);
+			bool hit2 = sweep_geometry->SweepTestFast(Ray.Origin, Ray.Dir, child2->aabb.Min, child2->aabb.Max, &t2);
 
 			if (Option->Type != SweepOption::SWEEP_PENETRATE)
 			{
@@ -341,12 +341,14 @@ bool DynamicAABBTree::Sweep(const GeometryBase *geometry, const Vector3& Directi
 				}
 				continue;
 			}
-			else if (hit1)
+
+			if (hit1)
 			{
 				p = child1;
 				continue;
 			}
-			else if (hit2)
+
+			if (hit2)
 			{
 				p = child2;
 				continue;
@@ -408,12 +410,14 @@ bool DynamicAABBTree::Query(const Box3& aabb, std::vector<void*> *Result) const
 				p = child1;
 				continue;
 			}
-			else if (intersect1)
+			
+			if (intersect1)
 			{
 				p = child1;
 				continue;
 			}
-			else if (intersect2)
+			
+			if (intersect2)
 			{
 				p = child2;
 				continue;

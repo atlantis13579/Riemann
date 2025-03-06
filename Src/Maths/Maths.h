@@ -84,6 +84,66 @@ namespace Maths
 		}
 	};
 
+	struct Hash
+	{
+		typedef unsigned long long uint64;
+
+		// the FNV-1a hash algorithm
+		// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+		static uint64 HashBytes(const unsigned char* data, int size, uint64 inSeed = 0xcbf29ce484222325UL)
+		{
+			uint64 hash = inSeed;
+			for (int i = 0; i < size; ++i)
+			{
+				hash = hash ^ uint64(data[i]);
+				hash = hash * 0x100000001b3UL;
+			}
+			return hash;
+		}
+
+		// A 64 bit hash function by Thomas Wang, Jan 1997
+		// http://web.archive.org/web/20071223173210/http://www.concentric.net/~Ttwang/tech/inthash.htm
+		static uint64 Hash64(uint64 val)
+		{
+			uint64 hash = val;
+			hash = (~hash) + (hash << 21); // hash = (hash << 21) - hash - 1;
+			hash = hash ^ (hash >> 24);
+			hash = (hash + (hash << 3)) + (hash << 8); // hash * 265
+			hash = hash ^ (hash >> 14);
+			hash = (hash + (hash << 2)) + (hash << 4); // hash * 21
+			hash = hash ^ (hash >> 28);
+			hash = hash + (hash << 31);
+			return hash;
+		}
+
+		uint64 HashStr(const char* str)
+		{
+			uint64 hash = 14695981039346656037UL;
+			for (const char* c = str; *c != 0; ++c)
+			{
+				hash ^= *c;
+				hash = hash * 1099511628211UL;
+			}
+			return hash;
+		}
+
+		template <typename T>
+		static void HashCombine(size_t& seed, const T& t)
+		{
+			std::hash<T> hasher;
+			seed ^= hasher(t) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+		}
+
+		template <typename T, typename... Ts>
+		static void HashCombine(std::size_t& seed, const T& t, Ts... val)
+		{
+			std::hash<T> hasher;
+			seed ^= hasher(t) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+			HashCombine(seed, val...);
+		}
+	};
+
 	template<typename T>
 	bool IsAscendingOrder(T* v, int size)
 	{
@@ -146,6 +206,27 @@ namespace Maths
 	inline T	Clamp(const T X, const T Min, const T Max)
 	{
 		return X < Min ? Min : X < Max ? X : Max;
+	}
+
+	template<typename T>
+	inline int	Sign(const T x)
+	{
+		T eps = std::numeric_limits<T>::epsilon();
+		return x > eps ? 1 : (x < -eps ? -1 : 0);
+	}
+
+	inline float ClampAngle(float angle)
+	{
+		angle = fmodf(angle, PI_2);
+		if (angle < 0.0f)
+			angle += PI_2;
+		return angle;
+	}
+
+	inline float AngleDiff(float angle1, float angle2)
+	{
+		float diff = fmodf(angle1 - angle2, PI_2);
+		return diff;
 	}
 
 	template<typename T>

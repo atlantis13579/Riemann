@@ -123,13 +123,13 @@ namespace Riemann
 		bool PenetrateCapsule(const Vector3& X0, const Vector3& X1, float rRadius, Vector3* Normal, float* Depth) const;
 		bool PenetrateOBB(const Vector3& rCenter, const Vector3& rExtent, const Matrix3& rRot, Vector3* Normal, float* Depth) const;
 
-		bool SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const;
-		bool SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const;
-		bool SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const;
-		bool SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const;
-		bool SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const;
-		bool SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const;
-		bool SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const;
+		bool SweepAABB(const Vector3& Origin, const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const;
+		bool SweepSphere(const Vector3& Origin, const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const;
+		bool SweepPlane(const Vector3& Origin, const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const;
+		bool SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const;
+		bool SweepConvex(const Vector3& Origin, const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const;
+		bool SweepHeightField(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const;
+		bool SweepTriangleMesh(const Vector3& Origin, const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const;
 
 		static Box3	CalcBoundingVolume(const Vector3& Center, float Radius)
 		{
@@ -250,113 +250,11 @@ namespace Riemann
 			return 0;
 		}
 
-		void GetVertices(int stackCount, int sliceCount, std::vector<Vector3>* Vertices, std::vector<Vector3>* Normals)
-		{
-			const float mPI = 2.0f * asinf(1.0f);
+		void GetVertices(int stackCount, int sliceCount, std::vector<Vector3>* Vertices, std::vector<Vector3>* Normals);
 
-			float phiStep = mPI / stackCount;
-			float thetaStep = 2.0f * mPI / sliceCount;
+		void GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
 
-			Vertices->push_back(Center + Vector3(0, Radius, 0));
-			if (Normals) Normals->push_back(Vector3::UnitY());
-
-			for (int i = 1; i < stackCount; i++)
-			{
-				float phi = i * phiStep;
-				for (int j = 0; j <= sliceCount; j++)
-				{
-					float theta = j * thetaStep;
-					Vector3 p = Vector3(sinf(phi) * cosf(theta), cosf(phi), sinf(phi) * sinf(theta)) * Radius;
-					Vertices->push_back(Center + p);
-					if (Normals) Normals->push_back(p);
-				}
-			}
-			Vertices->push_back(Center + Vector3(0, -Radius, 0));
-			if (Normals) Normals->push_back(-Vector3::UnitY());
-		}
-
-		void GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
-		{
-			const int stackCount = 8;
-			const int sliceCount = 12;
-
-			GetVertices(stackCount, sliceCount, &Vertices, &Normals);
-
-			for (int i = 1; i <= sliceCount; i++)
-			{
-				Indices.push_back(0);
-				Indices.push_back(i + 1);
-				Indices.push_back(i);
-			}
-
-			int baseIndex = 1;
-			int Count = sliceCount + 1;
-			for (int i = 0; i < stackCount - 2; i++)
-			{
-				for (int j = 0; j < sliceCount; j++)
-				{
-					Indices.push_back(baseIndex + i * Count + j);
-					Indices.push_back(baseIndex + i * Count + j + 1);
-					Indices.push_back(baseIndex + (i + 1) * Count + j);
-
-					Indices.push_back(baseIndex + (i + 1) * Count + j);
-					Indices.push_back(baseIndex + i * Count + j + 1);
-					Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
-				}
-			}
-			int PoleIndex = (int)Vertices.size() - 1;
-			baseIndex = PoleIndex - Count;
-			for (int i = 0; i < sliceCount; i++)
-			{
-				Indices.push_back(PoleIndex);
-				Indices.push_back(baseIndex + i);
-				Indices.push_back(baseIndex + i + 1);
-			}
-		}
-
-		void GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
-		{
-			const int stackCount = 6;
-			const int sliceCount = 8;
-
-			GetVertices(stackCount, sliceCount, &Vertices, nullptr);
-
-			for (int i = 1; i <= sliceCount; i++)
-			{
-				Indices.push_back(0);
-				Indices.push_back(i);
-
-				Indices.push_back(i);
-				Indices.push_back(i + 1);
-			}
-
-			int baseIndex = 1;
-			int Count = sliceCount + 1;
-			for (int i = 0; i < stackCount - 2; i++)
-			{
-				for (int j = 0; j < sliceCount; j++)
-				{
-					Indices.push_back(baseIndex + i * Count + j);
-					Indices.push_back(baseIndex + i * Count + j + 1);
-
-					Indices.push_back(baseIndex + i * Count + j + 1);
-					Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
-
-					Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
-					Indices.push_back(baseIndex + i * Count + j + 1);
-
-					Indices.push_back(baseIndex + i * Count + j + 1);
-					Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
-				}
-			}
-			int PoleIndex = (int)Vertices.size() - 1;
-			baseIndex = PoleIndex - Count;
-			for (int i = 0; i < sliceCount; i++)
-			{
-				Indices.push_back(PoleIndex);
-				Indices.push_back(baseIndex + i);
-			}
-		}
+		void GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);
 
 	private:
 

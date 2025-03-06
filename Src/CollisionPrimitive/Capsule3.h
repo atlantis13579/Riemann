@@ -92,13 +92,13 @@ namespace Riemann
 		bool PenetrateSphere(const Vector3& rCenter, float rRadius, Vector3* Normal, float* Depth) const;
 		bool PenetrateCapsule(const Vector3& P0, const Vector3& P1, float rRadius, Vector3* Normal, float* Depth) const;
 
-		bool SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const;
-		bool SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const;
-		bool SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const;
-		bool SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const;
-		bool SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const;
-		bool SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const;
-		bool SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const;
+		bool SweepAABB(const Vector3& Origin, const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const;
+		bool SweepSphere(const Vector3& Origin, const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const;
+		bool SweepPlane(const Vector3& Origin, const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const;
+		bool SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const;
+		bool SweepConvex(const Vector3& Origin, const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const;
+		bool SweepHeightField(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const;
+		bool SweepTriangleMesh(const Vector3& Origin, const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const;
 
 		bool			CalculateVolumeProperties(MassParameters* p, float Density) const
 		{
@@ -159,201 +159,19 @@ namespace Riemann
 			return cap + Direction.Unit() * Radius;
 		}
 
-		int GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
-		{
-			Vector3 DirectionXZ = Vector3(Direction.x, 0.0f, Direction.z);
+		int GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
 
-			// hit  top/bottom
-			float len = DirectionXZ.Length();
-			if (len == 0.0f)
-			{
-				FacePoints[0] = GetSupport(Direction);
-				return 1;
-			}
+		void GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals);
 
-			Vector3 support = (Radius / len) * DirectionXZ;
-			Vector3 support_top = Vector3(0, Length * 0.5f, 0) - support;
-			Vector3 support_bottom = Vector3(0, -Length * 0.5f, 0) - support;
-
-			float proj_top = support_top.Dot(Direction);
-			float proj_bottom = support_bottom.Dot(Direction);
-
-			// near parallel, hit edge
-			if (fabsf(proj_top - proj_bottom) < 0.02f * Direction.Length())
-			{
-				FacePoints[0] = support_top;
-				FacePoints[1] = support_bottom;
-				return 2;
-			}
-
-			FacePoints[0] = GetSupport(Direction);
-			return 1;
-		}
-
-		void GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
-		{
-			const int stackCount = 5;
-			const int sliceCount = 8;
-
-			GetVertices(stackCount, sliceCount, Vertices, &Normals);
-
-			for (int i = 1; i <= sliceCount; i++)
-			{
-				Indices.push_back(0);
-				Indices.push_back(i + 1);
-				Indices.push_back(i);
-			}
-
-			int baseIndex = 1;
-			int Count = sliceCount + 1;
-			for (int i = 0; i < stackCount - 2; i++)
-			{
-				for (int j = 0; j < sliceCount; j++)
-				{
-					Indices.push_back(baseIndex + i * Count + j);
-					Indices.push_back(baseIndex + i * Count + j + 1);
-					Indices.push_back(baseIndex + (i + 1) * Count + j);
-
-					Indices.push_back(baseIndex + (i + 1) * Count + j);
-					Indices.push_back(baseIndex + i * Count + j + 1);
-					Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
-				}
-			}
-			int PoleIndex = (int)Vertices.size() - 1;
-			baseIndex = PoleIndex - Count;
-			for (int i = 0; i < sliceCount; i++)
-			{
-				Indices.push_back(PoleIndex);
-				Indices.push_back(baseIndex + i);
-				Indices.push_back(baseIndex + i + 1);
-			}
-		}
-
-		void GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
-		{
-			const int stackCount = 5;
-			const int sliceCount = 8;
-
-			GetVertices(stackCount, sliceCount, Vertices, nullptr);
-
-			for (int i = 1; i <= sliceCount; i++)
-			{
-				Indices.push_back(0);
-				Indices.push_back(i);
-
-				Indices.push_back(i);
-				Indices.push_back(i + 1);
-			}
-
-			int baseIndex = 1;
-			int Count = sliceCount + 1;
-			for (int i = 0; i < stackCount - 2; i++)
-			{
-				for (int j = 0; j < sliceCount; j++)
-				{
-					Indices.push_back(baseIndex + i * Count + j);
-					Indices.push_back(baseIndex + i * Count + j + 1);
-
-					Indices.push_back(baseIndex + i * Count + j + 1);
-					Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
-
-					Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
-					Indices.push_back(baseIndex + i * Count + j + 1);
-
-					Indices.push_back(baseIndex + i * Count + j + 1);
-					Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
-				}
-			}
-			int PoleIndex = (int)Vertices.size() - 1;
-			baseIndex = PoleIndex - Count;
-			for (int i = 0; i < sliceCount; i++)
-			{
-				Indices.push_back(PoleIndex);
-				Indices.push_back(baseIndex + i);
-			}
-		}
+		void GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);
 
 	private:
 
-		void GetVertices(int stackCount, int sliceCount, std::vector<Vector3>& Vertices, std::vector<Vector3>* Normals)
-		{
-			const float mPI = 2.0f * asinf(1.0f);
-
-			float phiStep = mPI / stackCount;
-			float thetaStep = 2.0f * mPI / sliceCount;
-			float Length = (X1 - X0).Length();
-
-			Vertices.push_back(Vector3(0, Length * 0.5f + Radius, 0));
-			if (Normals) Normals->push_back(Vector3::UnitY());
-
-			for (int i = 1; i < stackCount; i++)
-			{
-				float phi = i * phiStep;
-				float height = i <= stackCount / 2 ? Length * 0.5f : -Length * 0.5f;
-				for (int j = 0; j <= sliceCount; j++)
-				{
-					float theta = j * thetaStep;
-					Vector3 p = Vector3(Radius * sinf(phi) * cosf(theta), height + Radius * cosf(phi), Radius * sinf(phi) * sinf(theta));
-					Vertices.push_back(p);
-					if (Normals) Normals->push_back(p);
-				}
-			}
-			Vertices.push_back(Vector3(0, -Length * 0.5f - Radius, 0));
-			if (Normals) Normals->push_back(-Vector3::UnitY());
-
-			if (!IsYAxisAligned())
-			{
-				Matrix3 Rot;
-				Rot.FromTwoAxis(Vector3::UnitY(), X1 - X0);
-
-				Vector3* pV = Vertices.data();
-				for (size_t i = 0; i < Vertices.size(); ++i)
-				{
-					pV[i] = Rot * pV[i];
-				}
-
-				if (Normals)
-				{
-					Vector3* pN = Normals->data();
-					for (size_t i = 0; i < Normals->size(); ++i)
-					{
-						pN[i] = Rot * pN[i];
-					}
-				}
-			}
-
-			Vector3 Center = GetCenter();
-			if (Center.SquareLength() > 0.001f)
-			{
-				Vector3* pV = Vertices.data();
-				for (size_t i = 0; i < Vertices.size(); ++i)
-				{
-					pV[i] = pV[i] + Center;
-				}
-			}
-		}
+		void GetVertices(int stackCount, int sliceCount, std::vector<Vector3>& Vertices, std::vector<Vector3>* Normals);
 
 	private:
 		// projections of capsule & triangle overlap on given axis
-		static bool intersectAxis(const Capsule3& capsule, const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& axis)
-		{
-			float min0 = capsule.X0.Dot(axis);
-			float max0 = capsule.X1.Dot(axis);
-			if (min0 > max0)
-				std::swap(min0, max0);
-
-			const float MR = axis.SquareLength() * capsule.Radius;
-			min0 -= MR;
-			max0 += MR;
-
-			float min1 = std::min(A.Dot(axis), std::min(B.Dot(axis), C.Dot(axis)));
-			float max1 = std::max(A.Dot(axis), std::max(B.Dot(axis), C.Dot(axis)));
-
-			if (max0 < min1 || max1 < min0)
-				return false;
-
-			return true;
-		}
+		static bool intersectAxis(const Capsule3& capsule, const Vector3& A, const Vector3& B, const Vector3& C, const Vector3& axis);
 
 	};
 }

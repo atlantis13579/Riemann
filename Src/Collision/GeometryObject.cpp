@@ -6,6 +6,7 @@
 #include "../CollisionPrimitive/AxisAlignedBox3.h"
 #include "../CollisionPrimitive/Plane3.h"
 #include "../CollisionPrimitive/Sphere3.h"
+#include "../CollisionPrimitive/Ray3.h"
 #include "../CollisionPrimitive/Triangle3.h"
 #include "../CollisionPrimitive/HeightField3.h"
 #include "../CollisionPrimitive/Cylinder3.h"
@@ -177,18 +178,20 @@ namespace Riemann
 		return false;
 	}
 
-	bool		GeometryBase::SweepAABB(const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, Vector3* normal, float* t) const
+	bool		GeometryBase::SweepTestFast(const Vector3& Origin, const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const
 	{
-		char stack[MAX_GEOMETRY_STACK_SIZE];
-		GeometryBase* aabb = GeometryFactory::CreateOBB_placement(stack, (Bmin + Bmax) * 0.5f, (Bmax - Bmin) * 0.5f);
-		return Sweep(Direction, aabb, normal, t);
+		Box3 box = GetBoundingVolume_WorldSpace();
+		Vector3 extend = box.GetExtent();
+		Vector3 BminExtend = Bmin - extend;
+		Vector3 BmaxExtend = Bmax + extend;
+		return Ray3::RayIntersectAABB(Origin, Direction, BminExtend, BmaxExtend, t);
 	}
 
-	bool		GeometryBase::Sweep(const Vector3& Direction, const GeometryBase* Geom, Vector3* normal, float* t) const
+	bool		GeometryBase::Sweep(const Vector3& Origin, const Vector3& Direction, const GeometryBase* Geom, Vector3* normal, float* t) const
 	{
 		SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
 		assert(func);
-		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform(), Direction, normal, t);
+		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform(), Origin, Direction, normal, t);
 	}
 
 	void 		GeometryBase::UpdateBoundingVolume()
