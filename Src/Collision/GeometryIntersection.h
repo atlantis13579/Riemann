@@ -4,7 +4,7 @@
 
 namespace Riemann
 {
-	class GeometryBase;
+	class Geometry;
 	struct GeometryTransform;
 	struct GeometryTransform2;
 
@@ -29,8 +29,8 @@ namespace Riemann
 		static SweepFunc		sweepTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT];
 	};
 
-	bool	GJK_Solve(GeometryBase* Geom1, GeometryBase* Geom2);
-	float	GJK_Solve_Distance(GeometryBase* Geom1, GeometryBase* Geom2);
-	bool	GJK_Solve_Raycast(const Vector3& Origin, const Vector3& Direction, GeometryBase* Geom1, float* t);
-	bool	GJK_Solve_Shapecast(const Vector3& Origin, const Vector3& Direction, GeometryBase* castGeom, GeometryBase* Geom, Vector3* n, float* t);
+	bool	GJK_Solve(Geometry* Geom1, Geometry* Geom2);
+	float	GJK_Solve_Distance(Geometry* Geom1, Geometry* Geom2);
+	bool	GJK_Solve_Raycast(const Vector3& Origin, const Vector3& Direction, Geometry* Geom1, float* t);
+	bool	GJK_Solve_Shapecast(const Vector3& Origin, const Vector3& Direction, Geometry* castGeom, Geometry* Geom, Vector3* n, float* t);
 }

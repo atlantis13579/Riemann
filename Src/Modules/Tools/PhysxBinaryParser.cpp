@@ -61,31 +61,31 @@ namespace Riemann
 	class PhysxBinaryParser
 	{
 	public:
-		static GeometryBase* CreateSphere(physx::PxSphereGeometry* physxObj)
+		static Geometry* CreateSphere(physx::PxSphereGeometry* physxObj)
 		{
 			return GeometryFactory::CreateSphere(Vector3::Zero(), physxObj->radius);
 		}
 
-		static GeometryBase* CreatePlane(physx::PxPlaneGeometry* physxObj)
+		static Geometry* CreatePlane(physx::PxPlaneGeometry* physxObj)
 		{
 			return GeometryFactory::CreatePlane(Vector3::Zero(), Vector3::UnitY());
 		}
 
-		static GeometryBase* CreateCapsule(physx::PxCapsuleGeometry* physxObj)
+		static Geometry* CreateCapsule(physx::PxCapsuleGeometry* physxObj)
 		{
 			return GeometryFactory::CreateCapsule(Vector3::UnitY() * -physxObj->halfHeight, Vector3::UnitY() * physxObj->halfHeight, physxObj->radius);
 		}
 
-		static GeometryBase* CreateBox(physx::PxBoxGeometry* physxObj)
+		static Geometry* CreateBox(physx::PxBoxGeometry* physxObj)
 		{
 			return GeometryFactory::CreateOBB(Vector3::Zero(), physxObj->halfExtents);
 		}
 
-		static GeometryBase* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj, bool shared_mem)
+		static Geometry* CreateTriangleMesh(const physx::PxTriangleMeshGeometry* physxObj, bool shared_mem)
 		{
 			const physx::PxRTreeTriangleMesh* Mesh = (const physx::PxRTreeTriangleMesh*)physxObj->triangleMesh;
 
-			GeometryBase* Geom = GeometryFactory::CreateTriangleMesh();
+			Geometry* Geom = GeometryFactory::CreateTriangleMesh();
 			TriangleMesh* TriMesh = Geom->GetShapeObj<TriangleMesh>();
 			TriMesh->SetData(Mesh->mVertices, Mesh->mTriangles, Mesh->mNbVertices, Mesh->mNbTriangles, Mesh->Is16BitIndices(), !shared_mem);
 			TriMesh->BoundingVolume = Mesh->mAABB.GetAABB();
@@ -107,7 +107,7 @@ namespace Riemann
 			return Geom;
 		}
 
-		static GeometryBase* CreateHeightField(const physx::PxHeightFieldGeometry* physxObj, bool shared_mem)
+		static Geometry* CreateHeightField(const physx::PxHeightFieldGeometry* physxObj, bool shared_mem)
 		{
 			const physx::HeightField* pxhf = physxObj->heightField;
 			physx::PxHeightFieldSample* samples = pxhf->mData.samples;
@@ -118,7 +118,7 @@ namespace Riemann
 			Vector3 Scale = Vector3(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
 			ce.Center *= Scale;
 			ce.Extent *= Scale;
-			GeometryBase* Geom = GeometryFactory::CreateHeightField(ce.GetAABB(), nRows, nCols);
+			Geometry* Geom = GeometryFactory::CreateHeightField(ce.GetAABB(), nRows, nCols);
 			HeightField3* HF = Geom->GetShapeObj<HeightField3>();
 
 			if (shared_mem)
@@ -131,26 +131,26 @@ namespace Riemann
 				HF->AllocMemory();
 				HF->HeightScale = physxObj->heightScale;
 				for (uint32_t i = 0; i < nRows; i++)
-					for (uint32_t j = 0; j < nCols; j++)
-					{
-						uint8_t* cell = (uint8_t*)(HF->Cells + (i * nCols + j));
-						int16_t* height = (int16_t*)cell;
-						uint8_t* Tess = cell + 2;
+				for (uint32_t j = 0; j < nCols; j++)
+				{
+					uint8_t* cell = (uint8_t*)(HF->Cells + (i * nCols + j));
+					int16_t* height = (int16_t*)cell;
+					uint8_t* Tess = cell + 2;
 
-						height[0] = samples[i * nCols + j].height;
-						Tess[0] = samples[i * nCols + j].materialIndex0;
-						Tess[1] = samples[i * nCols + j].materialIndex1;
-					}
+					height[0] = samples[i * nCols + j].height;
+					Tess[0] = samples[i * nCols + j].materialIndex0;
+					Tess[1] = samples[i * nCols + j].materialIndex1;
+				}
 			}
 
 			return Geom;
 		}
 
-		static GeometryBase* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj, bool shared_mem)
+		static Geometry* CreateConvexMesh(const physx::PxConvexMeshGeometry* physxObj, bool shared_mem)
 		{
 			physx::GuConvexMesh* Mesh = physxObj->convexMesh;
 
-			GeometryBase* Geom = GeometryFactory::CreateConvexMesh();
+			Geometry* Geom = GeometryFactory::CreateConvexMesh();
 			ConvexMesh* ConvMesh = Geom->GetShapeObj<ConvexMesh>();
 			physx::ConvexHullData& hull = Mesh->mHullData;
 
@@ -181,14 +181,14 @@ namespace Riemann
 			return Geom;
 		}
 
-		static GeometryBase* CreateShape(const physx::NpShape* shape, bool shared_mem)
+		static Geometry* CreateShape(const physx::NpShape* shape, bool shared_mem)
 		{
 			if (shape == nullptr)
 			{
 				return nullptr;
 			}
 
-			GeometryBase* Geom = nullptr;
+			Geometry* Geom = nullptr;
 			int Type = shape->getGeomType();
 			if (Type == physx::eSPHERE)
 			{
@@ -238,7 +238,7 @@ namespace Riemann
 			return Geom;
 		}
 
-		static void CreateRigidBodies(void* px, int classType, uint64_t guid, std::vector<RigidBody*>* bodies, std::vector<GeometryBase*>* geoms, bool shared_mem)
+		static void CreateRigidBodies(void* px, int classType, uint64_t guid, std::vector<RigidBody*>* bodies, std::vector<Geometry*>* geoms, bool shared_mem)
 		{
 			if (classType == physx::PxConcreteType::eMATERIAL)
 			{
@@ -266,7 +266,7 @@ namespace Riemann
 				physx::NpShape* const* pShades = rigid->GetShapes();
 				for (int i = 0; i < nShapes; ++i)
 				{
-					GeometryBase* g = CreateShape(pShades[i], shared_mem);
+					Geometry* g = CreateShape(pShades[i], shared_mem);
 					if (g)
 					{
 						g->SetWorldTransform(rigid->mRigidStatic.mStatic.mCore.body2World.p, rigid->mRigidStatic.mStatic.mCore.body2World.q);
@@ -309,7 +309,7 @@ namespace Riemann
 				physx::NpShape* const* pShades = rigid->GetShapes();
 				for (int i = 0; i < nShapes; ++i)
 				{
-					GeometryBase* g = CreateShape(pShades[i], shared_mem);
+					Geometry* g = CreateShape(pShades[i], shared_mem);
 					if (g)
 					{
 						g->SetWorldTransform(core.body2World.p, core.body2World.q);
@@ -367,10 +367,12 @@ namespace Riemann
 
 				physx::PxTriangleMeshGeometry* pxMesh = (physx::PxTriangleMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.mesh;
 				const physx::PxRTreeTriangleMesh* Mesh = (const physx::PxRTreeTriangleMesh*)pxMesh->triangleMesh;
+				const physx::PxMeshScale pxScale = pxMesh->scale;
 
 				for (PxU32 i = 0; i < Mesh->mNbVertices; ++i)
 				{
-					vertices.push_back(q * Mesh->mVertices[i] + p);
+					Vector3 v = pxScale.rotation.Conjugate() * (pxScale.scale * (pxScale.rotation * Mesh->mVertices[i]));
+					vertices.push_back(q * v + p);
 				}
 
 				if (Mesh->Is16BitIndices())
@@ -419,40 +421,40 @@ namespace Riemann
 				int indices_begin = (int)vertices.size();
 
 				for (PxU32 i = 0; i < nRows; i++)
-					for (PxU32 j = 0; j < nCols; j++)
-					{
-						Vector3 v = Vector3(BV.Min.x + DX * i, samples[i * nCols + j].height * Scale.y, BV.Min.z + DZ * j);
-						vertices.push_back(q * v + p);
-					}
+				for (PxU32 j = 0; j < nCols; j++)
+				{
+					Vector3 v = Vector3(BV.Min.x + DX * i, samples[i * nCols + j].height * Scale.y, BV.Min.z + DZ * j);
+					vertices.push_back(q * v + p);
+				}
 
 				for (PxU32 i = 0; i < nRows - 1; i++)
-					for (PxU32 j = 0; j < nCols - 1; j++)
-					{
-						bool tessFlag = samples[j + i * nCols].materialIndex0 & 0x80;
-						uint16_t i0 = i * nCols + j;
-						uint16_t i1 = i * nCols + j + 1;
-						uint16_t i2 = (i + 1) * nCols + j;
-						uint16_t i3 = (i + 1) * nCols + j + 1;
-						// i2---i3
-						// |    |
-						// |    |
-						// i0---i1
-						uint8_t Hole0 = samples[j + i * nCols].materialIndex0;
-						uint8_t Hole1 = samples[j + i * nCols].materialIndex1;
+				for (PxU32 j = 0; j < nCols - 1; j++)
+				{
+					bool tessFlag = samples[j + i * nCols].materialIndex0 & 0x80;
+					uint16_t i0 = i * nCols + j;
+					uint16_t i1 = i * nCols + j + 1;
+					uint16_t i2 = (i + 1) * nCols + j;
+					uint16_t i3 = (i + 1) * nCols + j + 1;
+					// i2---i3
+					// |    |
+					// |    |
+					// i0---i1
+					uint8_t Hole0 = samples[j + i * nCols].materialIndex0;
+					uint8_t Hole1 = samples[j + i * nCols].materialIndex1;
 
-						if (Hole0 != 0x7F)
-						{
-							indices.push_back(indices_begin + i2);
-							indices.push_back(indices_begin + i0);
-							indices.push_back(indices_begin + (tessFlag ? i3 : i1));
-						}
-						if (Hole1 != 0x7F)
-						{
-							indices.push_back(indices_begin + i3);
-							indices.push_back(indices_begin + (tessFlag ? i0 : i2));
-							indices.push_back(indices_begin + i1);
-						}
+					if (Hole0 != 0x7F)
+					{
+						indices.push_back(indices_begin + i2);
+						indices.push_back(indices_begin + i0);
+						indices.push_back(indices_begin + (tessFlag ? i3 : i1));
 					}
+					if (Hole1 != 0x7F)
+					{
+						indices.push_back(indices_begin + i3);
+						indices.push_back(indices_begin + (tessFlag ? i0 : i2));
+						indices.push_back(indices_begin + i1);
+					}
+				}
 			}
 			else if (Type == physx::eBOX)
 			{
@@ -776,14 +778,14 @@ namespace Riemann
 		if (addr == nullptr)
 			return;
 
-#if defined(__linux__)
+#if defined(__linux__) && !defined(__android__)
 		munmap(addr, size);
 #else
 		delete[](char*)addr;
 #endif
 	}
 
-	bool	LoadPhysxBinary(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<GeometryBase*>* geoms)
+	bool	LoadPhysxBinary(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<Geometry*>* geoms)
 	{
 		if (bodies) bodies->clear();
 		if (geoms) geoms->clear();
@@ -817,7 +819,7 @@ namespace Riemann
 		return collection.mObjects.size() > 0;
 	}
 
-	void* LoadPhysxBinaryMmap(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<GeometryBase*>* geoms, size_t& mem_size)
+	void* LoadPhysxBinaryMmap(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<Geometry*>* geoms, size_t& mem_size)
 	{
 		if (bodies) bodies->clear();
 		if (geoms) geoms->clear();

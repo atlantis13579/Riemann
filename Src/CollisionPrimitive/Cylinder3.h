@@ -20,7 +20,10 @@ namespace Riemann
 		Vector3		X0, X1;
 
 	public:
-		Cylinder3() {}
+		Cylinder3()
+		{
+			Init(Vector3(0.0f, -1.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), 1.0f);
+		}
 
 		Cylinder3(const Vector3& _X0, const Vector3& _X1, float _Radius)
 		{
@@ -124,6 +127,7 @@ namespace Riemann
 		bool SweepPlane(const Vector3& Origin, const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const;
 		bool SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const;
 		bool SweepConvex(const Vector3& Origin, const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const;
+		bool SweepTriangle(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const;
 		bool SweepHeightField(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const;
 		bool SweepTriangleMesh(const Vector3& Origin, const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const;
 

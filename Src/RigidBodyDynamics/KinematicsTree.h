@@ -8,7 +8,7 @@
 
 namespace Riemann
 {
-	class GeometryBase;
+	class Geometry;
 	class KeyframeKinematics;
 	class RigidBodyStatic;
 
@@ -60,7 +60,7 @@ namespace Riemann
 		void				Pause(bool pause);
 		bool				IsPause() const;
 
-		bool				BindGeometry(const std::string& node_name, GeometryBase* geom);
+		bool				BindGeometry(const std::string& node_name, Geometry* geom);
 
 	private:
 		bool				BuildFlatTree(AnimTreeData* data);

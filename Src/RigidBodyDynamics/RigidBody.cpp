@@ -16,7 +16,7 @@ namespace Riemann
 	{
 	}
 
-	void RigidBody::AddGeometry(GeometryBase* Geom)
+	void RigidBody::AddGeometry(Geometry* Geom)
 	{
 		if (Geom)
 		{
@@ -27,9 +27,9 @@ namespace Riemann
 		}
 	}
 
-	void RigidBody::GetGeometries(std::vector<GeometryBase*>* Geometries)
+	void RigidBody::GetGeometries(std::vector<Geometry*>* Geometries)
 	{
-		for (GeometryBase* g : mGeometries)
+		for (Geometry* g : mGeometries)
 		{
 			Geometries->push_back(g);
 		}
@@ -42,7 +42,7 @@ namespace Riemann
 
 	void RigidBody::ReleaseGeometries()
 	{
-		for (GeometryBase* g : mGeometries)
+		for (Geometry* g : mGeometries)
 		{
 			delete g;
 		}
@@ -58,7 +58,7 @@ namespace Riemann
 
 	void RigidBody::UpdateGeometries()
 	{
-		for (GeometryBase* g : mGeometries)
+		for (Geometry* g : mGeometries)
 		{
 			const Transform* local_trans = g->GetLocalTransform();
 			Vector3 world_pos = X + Q * (local_trans->pos - CM);
@@ -78,7 +78,7 @@ namespace Riemann
 		std::vector<const MassParameters*> vProperties;
 		MassParameters P;
 
-		for (GeometryBase* g : mGeometries)
+		for (Geometry* g : mGeometries)
 		{
 			vPose.emplace_back(g->GetLocalTransform());
 			vProperties.push_back(g->GetMassParameters());
@@ -274,7 +274,7 @@ namespace Riemann
 	void RigidBodyKinematics::SetPosition(const Vector3& pos)
 	{
 		X = pos;
-		for (GeometryBase* g : mGeometries)
+		for (Geometry* g : mGeometries)
 		{
 			g->SetWorldPosition(pos);
 		}
@@ -283,7 +283,7 @@ namespace Riemann
 	void RigidBodyKinematics::SetRotation(const Quaternion& quat)
 	{
 		Q = quat;
-		for (GeometryBase* g : mGeometries)
+		for (Geometry* g : mGeometries)
 		{
 			g->SetWorldRotation(quat);
 			g->UpdateBoundingVolume();
@@ -294,13 +294,13 @@ namespace Riemann
 	{
 		X = pos;
 		Q = quat;
-		for (GeometryBase* g : mGeometries)
+		for (Geometry* g : mGeometries)
 		{
 			g->SetWorldTransform(pos, quat);
 		}
 	}
 
-	void		GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<GeometryBase*>* geometries)
+	void		GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*>* geometries)
 	{
 		for (size_t i = 0; i < bodies.size(); ++i)
 		{

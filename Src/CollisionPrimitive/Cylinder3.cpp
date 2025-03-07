@@ -146,6 +146,12 @@ bool Cylinder3::SweepConvex(const Vector3& Origin, const Vector3& Direction, con
 	return gjk.Solve(Origin, Direction, this, convex, n, t);
 }
 
+bool Cylinder3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
+{
+	// TODO
+	return false;
+}
+
 bool Cylinder3::SweepHeightField(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
 {
 	// TODO
@@ -157,7 +163,6 @@ bool Cylinder3::SweepTriangleMesh(const Vector3& Origin, const Vector3& Directio
 	// TODO
 	return false;
 }
-
 
 int Cylinder3::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 {

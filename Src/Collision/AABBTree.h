@@ -12,7 +12,7 @@ namespace Riemann
 	struct SweepOption;
 	struct SweepResult;
 	struct CacheFriendlyAABBTree;
-	class GeometryBase;
+	class Geometry;
 
 	struct TreeStatistics
 	{
@@ -35,9 +35,9 @@ namespace Riemann
 		void	StaticBuild(AABBTreeBuildData& params);
 		void	Statistic(TreeStatistics& stat);
 
-		bool	RayCast(const Ray3& Ray, GeometryBase** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const;
-		bool	Intersect(const GeometryBase* intersect_geometry, GeometryBase** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const;
-		bool	Sweep(const GeometryBase* sweep_geometry, GeometryBase** ObjectCollection, const Ray3& Ray, const SweepOption* Option, SweepResult* Result) const;
+		bool	RayCast(const Ray3& Ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const;
+		bool	Intersect(const Geometry* intersect_geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const;
+		bool	Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Ray3& Ray, const SweepOption* Option, SweepResult* Result) const;
 
 		int		IntersectPoint(const Vector3& Point) const;
 		bool	RayCastBoundingBox(const Ray3& ray, const RayCastOption& Option, RayCastResult* Result) const;

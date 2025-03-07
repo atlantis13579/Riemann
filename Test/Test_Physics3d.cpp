@@ -10,7 +10,7 @@
 
 using namespace Riemann;
 
-uint64_t GetGuid(GeometryBase* g)
+uint64_t GetGuid(Geometry* g)
 {
 	return g->GetParent<RigidBody>()->GetGuid();
 }
@@ -19,7 +19,7 @@ void TestPhysxBin()
 {
 	printf("Running TestPhysxBin Japan\n");
 	std::vector<RigidBody*> collection;
-	std::vector<GeometryBase*> geometries;
+	std::vector<Geometry*> geometries;
 	bool load_succ = LoadPhysxBinary("../TestData/test0.bin", nullptr, &geometries);
 	EXPECT(load_succ);
 	if (load_succ)
@@ -94,7 +94,7 @@ void TestRaycastBenchmark()
 {
 	printf("Running TestRaycastBenchmark\n");
 	std::vector<RigidBody*> collection;
-	std::vector<GeometryBase*> geometries;
+	std::vector<Geometry*> geometries;
 	bool load_succ = LoadPhysxBinary("../TestData/test1.bin", &collection, &geometries);
 	EXPECT(load_succ);
 	

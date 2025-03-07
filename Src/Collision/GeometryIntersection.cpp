@@ -38,8 +38,8 @@ namespace Riemann
 	bool 	IntersectGJKSolver(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
 	{
 		// Hack, see GetShapeObjPtr()
-		const GeometryBase* Geom1 = reinterpret_cast<const GeometryBase*>((intptr_t)Obj1 - sizeof(GeometryBase));
-		const GeometryBase* Geom2 = reinterpret_cast<const GeometryBase*>((intptr_t)Obj2 - sizeof(GeometryBase));
+		const Geometry* Geom1 = reinterpret_cast<const Geometry*>((intptr_t)Obj1 - sizeof(Geometry));
+		const Geometry* Geom2 = reinterpret_cast<const Geometry*>((intptr_t)Obj2 - sizeof(Geometry));
 
 		GeometryDifference shape(Geom1, Geom2);
 		GJKIntersection gjk;
@@ -130,8 +130,8 @@ namespace Riemann
 	bool	PenetrateEPASolver(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
 	{
 		// Hack, see GetShapeObjPtr()
-		const GeometryBase* Geom1 = reinterpret_cast<const GeometryBase*>((intptr_t)Obj1 - sizeof(GeometryBase));
-		const GeometryBase* Geom2 = reinterpret_cast<const GeometryBase*>((intptr_t)Obj2 - sizeof(GeometryBase));
+		const Geometry* Geom1 = reinterpret_cast<const Geometry*>((intptr_t)Obj1 - sizeof(Geometry));
+		const Geometry* Geom2 = reinterpret_cast<const Geometry*>((intptr_t)Obj2 - sizeof(Geometry));
 
 		GeometryDifference shape(Geom1, Geom2);
 		GJKIntersection gjk;
@@ -376,7 +376,7 @@ namespace Riemann
 		return func;
 	}
 
-	bool GJK_Solve(GeometryBase* Geom1, GeometryBase* Geom2)
+	bool GJK_Solve(Geometry* Geom1, Geometry* Geom2)
 	{
 		GeometryDifference shape(Geom1, Geom2);
 		GJKIntersection gjk;
@@ -388,7 +388,7 @@ namespace Riemann
 		return false;
 	}
 
-	float GJK_Solve_Distance(GeometryBase* Geom1, GeometryBase* Geom2)
+	float GJK_Solve_Distance(Geometry* Geom1, Geometry* Geom2)
 	{
 		GeometryDifference shape(Geom1, Geom2);
 		GJKClosestDistance gjk;
@@ -396,7 +396,7 @@ namespace Riemann
 		return distance;
 	}
 
-	bool GJK_Solve_Raycast(const Vector3& Origin, const Vector3& Direction, GeometryBase* Geom1, float* t)
+	bool GJK_Solve_Raycast(const Vector3& Origin, const Vector3& Direction, Geometry* Geom1, float* t)
 	{
 		TransformedGeometry shape(Geom1);
 		GJKRaycast gjk;
@@ -409,7 +409,7 @@ namespace Riemann
 		return false;
 	}
 
-	bool GJK_Solve_Shapecast(const Vector3& Origin, const Vector3& Direction, GeometryBase* castGeom, GeometryBase* Geom, Vector3* n, float* t)
+	bool GJK_Solve_Shapecast(const Vector3& Origin, const Vector3& Direction, Geometry* castGeom, Geometry* Geom, Vector3* n, float* t)
 	{
 		TransformedGeometry cast_shape(castGeom);
 		TransformedGeometry shape(Geom);

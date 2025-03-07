@@ -12,7 +12,7 @@ namespace PhysxFormat_41
 		{
 			eUNDEFINED,
 
-			e_HEIGHTFIELD,
+			eHEIGHTFIELD,
 			eCONVEX_MESH,
 			eTRIANGLE_MESH_BVH33,
 			eTRIANGLE_MESH_BVH34,
@@ -178,7 +178,7 @@ namespace PhysxFormat_41
 	PX_DEFINE_TYPEINFO(PxTriangleMesh, PxConcreteType::eUNDEFINED)
 	PX_DEFINE_TYPEINFO(PxBVH33TriangleMesh, PxConcreteType::eTRIANGLE_MESH_BVH33)
 	PX_DEFINE_TYPEINFO(PxBVH34TriangleMesh, PxConcreteType::eTRIANGLE_MESH_BVH34)
-	PX_DEFINE_TYPEINFO(HeightField, PxConcreteType::e_HEIGHTFIELD)
+	PX_DEFINE_TYPEINFO(HeightField, PxConcreteType::eHEIGHTFIELD)
 	PX_DEFINE_TYPEINFO(PxActor, PxConcreteType::eUNDEFINED)
 	PX_DEFINE_TYPEINFO(PxRigidActor, PxConcreteType::eUNDEFINED)
 	PX_DEFINE_TYPEINFO(PxRigidBody, PxConcreteType::eUNDEFINED)
@@ -1534,7 +1534,7 @@ namespace PhysxFormat_41
 		{
 			instance = DeserializePhysxObj<GuConvexMesh>(address, context);
 		}
-		else if (classType == PxConcreteType::e_HEIGHTFIELD)
+		else if (classType == PxConcreteType::eHEIGHTFIELD)
 		{
 			instance = DeserializePhysxObj<HeightField>(address, context);
 		}

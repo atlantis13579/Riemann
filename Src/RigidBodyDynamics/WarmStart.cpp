@@ -8,7 +8,7 @@
 
 namespace Riemann
 {
-    void WarmStart::ApplyVelocityConstraint(const std::vector<GeometryBase*>& geoms, std::vector<ContactManifold*>& manifolds, float dt)
+    void WarmStart::ApplyVelocityConstraint(const std::vector<Geometry*>& geoms, std::vector<ContactManifold*>& manifolds, float dt)
     {
         for (size_t i = 0; i < manifolds.size(); ++i)
         {

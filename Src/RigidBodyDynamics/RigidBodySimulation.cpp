@@ -132,7 +132,7 @@ namespace Riemann
 			m_Kinematics[i]->Simulate(dt);
 		}
 
-		std::vector<GeometryBase*> geoms;
+		std::vector<Geometry*> geoms;
 		geoms.reserve(m_StaticBodies.size() + m_DynamicBodies.size());
 		for (size_t i = 0; i < m_StaticBodies.size(); ++i)
 		{
@@ -227,7 +227,7 @@ namespace Riemann
 			Body->AutoSleep();
 			if (tree)
 			{
-				for (GeometryBase* g : Body->Geometries())
+				for (Geometry* g : Body->Geometries())
 				{
 					tree->Update(g->GetNodeId(), g->GetBoundingVolume_WorldSpace(), Body->GetLinearVelocity());
 				}
@@ -238,7 +238,7 @@ namespace Riemann
 	bool         RigidBodySimulation::LoadScene(const char* name, bool shared_mem)
 	{
 		std::vector<RigidBody*> collection;
-		std::vector<GeometryBase*> geoms;
+		std::vector<Geometry*> geoms;
 		if (shared_mem)
 		{
 			m_SharedMem = Riemann::LoadPhysxBinaryMmap(name, nullptr, &geoms, m_SharedMemSize);
@@ -289,7 +289,7 @@ namespace Riemann
 		return body;
 	}
 
-	RigidBody* RigidBodySimulation::CreateRigidBody(GeometryBase* Geom, const RigidBodyParam& param)
+	RigidBody* RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
 	{
 		Transform init_pose(Geom->GetWorldPosition(), Geom->GetWorldRotation());
 		RigidBody* body = CreateRigidBody(param, init_pose);
@@ -315,7 +315,7 @@ namespace Riemann
 					m_StaticBodies.erase(m_StaticBodies.begin() + i);
 					if (m_GeometryQuery->GetDynamicTree())
 					{
-						for (GeometryBase* g : Body->Geometries())
+						for (Geometry* g : Body->Geometries())
 						{
 							m_GeometryQuery->GetDynamicTree()->Remove(g->GetNodeId());
 						}
@@ -333,7 +333,7 @@ namespace Riemann
 					m_DynamicBodies.erase(m_DynamicBodies.begin() + i);
 					if (m_GeometryQuery->GetDynamicTree())
 					{
-						for (GeometryBase* g : Body->Geometries())
+						for (Geometry* g : Body->Geometries())
 						{
 							m_GeometryQuery->GetDynamicTree()->Remove(g->GetNodeId());
 						}
@@ -382,7 +382,7 @@ namespace Riemann
 		return nullptr;
 	}
 
-	void RigidBodySimulation::GetAllGeometries(std::vector<GeometryBase*>* geoms)
+	void RigidBodySimulation::GetAllGeometries(std::vector<Geometry*>* geoms)
 	{
 		for (size_t i = 0; i < m_StaticBodies.size(); ++i)
 		{

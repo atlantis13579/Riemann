@@ -11,7 +11,7 @@ namespace Riemann
 	class AABBTree;
 	class DynamicAABBTree;
 	class SparseSpatialHash;
-	class GeometryBase;
+	class Geometry;
 
 #define TREE_MAX_DEPTH			(32)
 #define MAX_GEOMETRY_STACK_SIZE	(128)
@@ -24,7 +24,7 @@ namespace Riemann
 			prevStack.clear();
 		}
 
-		GeometryBase* prevhitGeom;
+		Geometry* prevhitGeom;
 		StaticStack<uint32_t, TREE_MAX_DEPTH>	prevStack;
 	};
 
@@ -108,8 +108,8 @@ namespace Riemann
 		float					hitTimeMin;         // result
 		Vector3					hitPoint;
 		Vector3					hitNormal;
-		GeometryBase* hitGeom;
-		std::vector<GeometryBase*>  hitGeometries;
+		Geometry* hitGeom;
+		std::vector<Geometry*>  hitGeometries;
 
 		int						hitTestCount;       // debug
 	};
@@ -159,7 +159,7 @@ namespace Riemann
 		}
 
 		bool					overlaps;
-		std::vector<GeometryBase*>	overlapGeoms;
+		std::vector<Geometry*>	overlapGeoms;
 
 		int						intersectTestCount;       // debug
 	};
@@ -221,8 +221,8 @@ namespace Riemann
 		float					hitTime;            // temp val
 		float					hitTimeMin;         // result
 		Vector3					hitNormal;
-		GeometryBase* hitGeom;
-		std::vector<GeometryBase*>  hitGeometries;
+		Geometry* hitGeom;
+		std::vector<Geometry*>  hitGeometries;
 		int						hitTestCount;       // debug
 	};
 
@@ -233,7 +233,7 @@ namespace Riemann
 		~GeometryQuery();
 
 	public:
-		void		BuildStaticGeometry(const std::vector<GeometryBase*>& Objects, int nPrimitivePerNode);
+		void		BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
 		void		CreateDynamicGeometry();
 
 		bool		RayCastQuery(const Vector3& Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult* Result);
@@ -255,11 +255,11 @@ namespace Riemann
 		}
 
 	private:
-		bool		IntersectTest_Impl(const GeometryBase* geom, const IntersectOption& Option, IntersectResult* Result);
-		bool		SweepTest_Impl(const GeometryBase* geom, const Vector3& Origin, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
+		bool		IntersectTest_Impl(const Geometry* geom, const IntersectOption& Option, IntersectResult* Result);
+		bool		SweepTest_Impl(const Geometry* geom, const Vector3& Origin, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 
 	private:
-		std::vector<GeometryBase*>	m_Objects;
+		std::vector<Geometry*>	m_Objects;
 
 		AABBTree* m_staticGeometry;
 		DynamicAABBTree* m_dynamicPruner;

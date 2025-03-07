@@ -9,6 +9,11 @@ namespace Riemann
 	class RefCount
 	{
 	public:
+		enum
+		{
+			HOLDS_MEMORY = 0x01,
+		};
+
 		RefCount() {}
 		RefCount(const RefCount& rhs) {}
 		~RefCount()
@@ -24,7 +29,14 @@ namespace Riemann
 
 		void SetHoldsMemory(bool val)
 		{
-			mHoldsMemory = val;
+			if (val)
+			{
+				mFlags |= HOLDS_MEMORY;
+			}
+			else
+			{
+				mFlags &= ~HOLDS_MEMORY;
+			}
 		}
 
 		inline int	GetRefcount() const
@@ -42,7 +54,7 @@ namespace Riemann
 			if (mRefCount.fetch_sub(1, std::memory_order_release) == 1)
 			{
 				atomic_thread_fence(std::memory_order_acquire);
-				if (mHoldsMemory)
+				if (mFlags & HOLDS_MEMORY)
 				{
 					delete static_cast<const T*>(this);
 				}
@@ -50,7 +62,7 @@ namespace Riemann
 		}
 
 	protected:
-		bool						mHoldsMemory = true;
+		unsigned char				mFlags = HOLDS_MEMORY;
 		mutable std::atomic<int>	mRefCount = 0;
 	};
 

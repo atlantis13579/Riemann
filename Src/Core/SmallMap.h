@@ -25,7 +25,7 @@ namespace Riemann
 			{
 				for (int i = 0; i < m_size; ++i)
 				{
-					m_map.insert(m_buffer[i].key, m_buffer[i].value);
+					m_map[m_buffer[i].key] = m_buffer[i].value;
 				}
 				m_size = -1;		// use set
 			}
@@ -45,7 +45,7 @@ namespace Riemann
 			}
 			else
 			{
-				m_map.insert(k, v);
+				m_map[k] = v;
 			}
 		}
 
@@ -100,8 +100,20 @@ namespace Riemann
 						return m_buffer[i].value;
 					}
 				}
-				V* ptr = nullptr;
-				return ptr[0];
+
+				if (m_size == BufferSize - 1)
+				{
+					for (int i = 0; i < m_size; ++i)
+					{
+						m_map[m_buffer[i].key] = m_buffer[i].value;
+					}
+					m_size = -1;		// use set
+					return m_map[k];
+				}
+
+				m_size++;
+				m_buffer[m_size - 1].key = k;
+				return m_buffer[m_size - 1].value;
 			}
 			else
 			{
@@ -227,7 +239,7 @@ namespace Riemann
 
 
 	private:
-		int				m_size;			//  = -1 use m_set 
+		int				m_size;			//  = -1 use m_map 
 		Pair			m_buffer[BufferSize];
 		std::map<K, V>	m_map;
 	};

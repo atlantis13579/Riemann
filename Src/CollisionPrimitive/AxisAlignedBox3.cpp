@@ -874,6 +874,12 @@ bool AxisAlignedBox3::SweepConvex(const Vector3& Origin, const Vector3& Directio
 	return gjk.Solve(Origin, Direction, this, convex, n, t);
 }
 
+bool AxisAlignedBox3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
+{
+	// TODO
+	return false;
+}
+
 bool AxisAlignedBox3::SweepHeightField(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
 {
 	// TODO

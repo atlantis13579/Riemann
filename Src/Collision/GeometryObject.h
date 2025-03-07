@@ -138,13 +138,13 @@ namespace Riemann
 		}
 	};
 
-	class GeometryBase
+	class Geometry
 	{
 		friend class GeometryFactory;
 		friend class GeometryRegistration;
 	public:
-		GeometryBase();
-		virtual ~GeometryBase();
+		Geometry();
+		virtual ~Geometry();
 
 		inline const Vector3& GetWorldPosition() const
 		{
@@ -270,13 +270,13 @@ namespace Riemann
 		inline void				SetNodeId(int NodeId) { m_NodeId = NodeId; }
 		inline int				GetNodeId() const { return m_NodeId; }
 
-		static Transform		CalculateCenterOfMassPoseMultibody(const std::vector<GeometryBase*>& geoms);
+		static Transform		CalculateCenterOfMassPoseMultibody(const std::vector<Geometry*>& geoms);
 
 		virtual bool			RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption* Option, RayCastResult* Result) const = 0;
-		bool					Intersect(const GeometryBase* Geom) const;
-		bool					Penetration(const GeometryBase* Geom, Vector3* Normal, float* Depth) const;
+		bool					Intersect(const Geometry* Geom) const;
+		bool					Penetration(const Geometry* Geom, Vector3* Normal, float* Depth) const;
 		bool					SweepTestFast(const Vector3& Origin, const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const;
-		bool					Sweep(const Vector3& Origin, const Vector3& Direction, const GeometryBase* Geom, Vector3* normal, float* t) const;
+		bool					Sweep(const Vector3& Origin, const Vector3& Direction, const Geometry* Geom, Vector3* normal, float* t) const;
 
 		virtual void			UpdateVolumeProperties() = 0;
 		void					UpdateBoundingVolume();
@@ -292,44 +292,44 @@ namespace Riemann
 		const void* GetShapeObjPtr() const
 		{
 			const unsigned char* p = reinterpret_cast<const unsigned char*>(this);
-			return static_cast<const void*>(p + sizeof(GeometryBase));
+			return static_cast<const void*>(p + sizeof(Geometry));
 		}
 
 		void* GetShapeObjPtr()
 		{
 			unsigned char* p = reinterpret_cast<unsigned char*>(this);
-			return static_cast<void*>(p + sizeof(GeometryBase));
+			return static_cast<void*>(p + sizeof(Geometry));
 		}
 
 	protected:
-		PrimitiveType					m_Type;
-		Box3						m_BoxWorld;
-		GeometryTransform			m_WorldTransform;
-		Transform					m_LocalTransform;
-		CollisionData				m_FilterData;
-		MassParameters	m_VolumeProperties;
-		float						m_Density;
-		void*						m_Parent;
-		int							m_NodeId;		// nodeId from DynamicAABB Tree
+		PrimitiveType		m_Type;
+		Box3				m_BoxWorld;
+		GeometryTransform	m_WorldTransform;
+		Transform			m_LocalTransform;
+		CollisionData		m_FilterData;
+		MassParameters		m_VolumeProperties;
+		float				m_Density;
+		void*				m_Parent;
+		int					m_NodeId;		// nodeId from DynamicAABB Tree
 	};
 
 	class GeometryFactory
 	{
 	public:
-		static void		 DeleteGeometry(GeometryBase* Geom);
+		static void		 DeleteGeometry(Geometry* Geom);
 
-		static GeometryBase* CreateOBB(const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot = Quaternion::One());
-		static GeometryBase* CreatePlane(const Vector3& Center, const Vector3& Normal);
-		static GeometryBase* CreateSphere(const Vector3& Center, float Radius);
-		static GeometryBase* CreateCylinder(const Vector3& x0, const Vector3& x1, float Radius);
-		static GeometryBase* CreateCapsule(const Vector3& x0, const Vector3& x1, float Radius);
-		static GeometryBase* CreateHeightField(const Box3& Bv, int nRows, int nCols);
-		static GeometryBase* CreateConvexMesh();
-		static GeometryBase* CreateTriangleMesh();
+		static Geometry* CreateOBB(const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot = Quaternion::One());
+		static Geometry* CreatePlane(const Vector3& Center, const Vector3& Normal);
+		static Geometry* CreateSphere(const Vector3& Center, float Radius);
+		static Geometry* CreateCylinder(const Vector3& x0, const Vector3& x1, float Radius);
+		static Geometry* CreateCapsule(const Vector3& x0, const Vector3& x1, float Radius);
+		static Geometry* CreateHeightField(const Box3& Bv, int nRows, int nCols);
+		static Geometry* CreateConvexMesh();
+		static Geometry* CreateTriangleMesh();
 
-		static GeometryBase* CreateOBB_placement(void* pBuf, const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot = Quaternion::One());
-		static GeometryBase* CreateSphere_placement(void* pBuf, const Vector3& Center, float Radius);
-		static GeometryBase* CreateCapsule_placement(void* pBuf, const Vector3& x0, const Vector3& x1, float Radius);
+		static Geometry* CreateOBB_placement(void* pBuf, const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot = Quaternion::One());
+		static Geometry* CreateSphere_placement(void* pBuf, const Vector3& Center, float Radius);
+		static Geometry* CreateCapsule_placement(void* pBuf, const Vector3& x0, const Vector3& x1, float Radius);
 
 		static int		ObjectCount[(int)PrimitiveType::TYPE_COUNT];
 	};

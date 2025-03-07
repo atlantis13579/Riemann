@@ -215,9 +215,9 @@ namespace Riemann
 
 	}
 
-	void ContactManifoldIslands::BuildIslands(const std::vector<GeometryBase*>& geoms, const std::vector<ContactManifold*>& manifolds)
+	void ContactManifoldIslands::BuildIslands(const std::vector<Geometry*>& geoms, const std::vector<ContactManifold*>& manifolds)
 	{
-		GraphNE<GeometryBase*, ContactManifold*> graph;
+		GraphNE<Geometry*, ContactManifold*> graph;
 		graph.nodes = geoms;
 		for (size_t i = 0; i < manifolds.size(); ++i)
 		{

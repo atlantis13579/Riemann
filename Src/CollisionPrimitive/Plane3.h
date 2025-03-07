@@ -18,6 +18,8 @@ namespace Riemann
 	public:
 		Plane3()
 		{
+			Normal = Vector3::UnitY();
+			D = 0.0f;
 		}
 
 		Plane3(const Vector3& _Normal, Vector3& _Origin)

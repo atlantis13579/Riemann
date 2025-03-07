@@ -382,7 +382,7 @@ namespace Maths
 	}
 
 	template<typename T>
-	inline T SolveCubic(const T a, const T b, const T c, const T d)		// ax^3 + bx^2 + cx + c = 0
+	inline T SolveCubic(const T a, const T b, const T c, const T d)		// ax^3 + bx^2 + cx + d = 0
 	{
 		const T eps = (T)1e-6;
 		if (std::abs(a) < eps)

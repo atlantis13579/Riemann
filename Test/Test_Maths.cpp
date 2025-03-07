@@ -146,6 +146,10 @@ void TestFrame3()
 	return;
 }
 
+void TestQuaternion()
+{
+	return;
+}
 
 void TestMaths()
 {
@@ -155,4 +159,5 @@ void TestMaths()
 	TestTensor();
 	TestFloat16();
 	TestFrame3();
+	TestQuaternion();
 }

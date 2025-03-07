@@ -173,7 +173,7 @@ namespace Riemann
 		m_PlayRate = play_rate;
 	}
 
-	bool KinematicsTree::BindGeometry(const std::string& node_name, GeometryBase* geom)
+	bool KinematicsTree::BindGeometry(const std::string& node_name, Geometry* geom)
 	{
 		for (size_t i = 0; i < m_FlatTree.size(); ++i)
 		{

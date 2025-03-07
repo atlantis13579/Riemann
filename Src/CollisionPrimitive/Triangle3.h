@@ -83,7 +83,7 @@ namespace Riemann
 			bool v = sides.x + sides.y > sides.z &&
 				sides.y + sides.z > sides.x &&
 				sides.z + sides.x > sides.y;
-			return v;
+			return !v;
 		}
 
 		static Vector3 CalculateNormal(const Vector3& A, const Vector3& B, const Vector3& C, bool bHighPrecisionNormal)

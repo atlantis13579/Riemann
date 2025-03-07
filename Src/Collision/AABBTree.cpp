@@ -136,17 +136,33 @@ namespace Riemann
 		return -1;
 	}
 
-	static int RayIntersectGeometries(const Ray3& Ray, int* Geoms, int NumGeoms, GeometryBase** GeometryCollection, const Box3& BV, const RayCastOption* Option, RayCastResult* Result)
+	static int RayIntersectGeometries(const Ray3& Ray, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Box3& BV, const RayCastOption* Option, RayCastResult* Result)
 	{
 		assert(NumGeoms > 0);
-		assert(GeometryCollection);
+
+		if (GeometryCollection == nullptr)
+		{
+			float t;
+			if (Ray.IntersectAABB(BV.Min, BV.Max, &t) && t < Option->MaxDist)
+			{
+				Result->hit = true;
+				if (t < Result->hitTimeMin)
+				{
+					Result->hitGeom = nullptr;
+					Result->hitTimeMin = t;
+				}
+				return *Geoms;
+			}
+
+			return -1;
+		}
 
 		int min_idx = -1;
 		float min_t = FLT_MAX;
 		for (int i = 0; i < NumGeoms; ++i)
 		{
 			const int index = Geoms[i];
-			GeometryBase* Geom = GeometryCollection[index];
+			Geometry* Geom = GeometryCollection[index];
 			assert(Geom);
 
 			if (Geom == Option->Cache.prevhitGeom)
@@ -216,7 +232,7 @@ namespace Riemann
 		return false;
 	}
 
-	bool  AABBTree::RayCast(const Ray3& Ray, GeometryBase** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const
+	bool  AABBTree::RayCast(const Ray3& Ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const
 	{
 		Result->hit = false;
 		Result->hitTestCount = 0;
@@ -329,15 +345,18 @@ namespace Riemann
 		return RayCast(ray, nullptr, &Option, Result);
 	}
 
-	static bool OverlapGeometries(const GeometryBase* geometry, int* Indices, int NumIndices, GeometryBase** GeometryCollection, const IntersectOption* Option, IntersectResult* Result)
+	static bool OverlapGeometries(const Geometry* geometry, int* Indices, int NumIndices, Geometry** GeometryCollection, const IntersectOption* Option, IntersectResult* Result)
 	{
 		assert(NumIndices > 0);
-		assert(GeometryCollection);
+		if (GeometryCollection == nullptr)
+		{
+			return true;
+		}
 
 		for (int i = 0; i < NumIndices; ++i)
 		{
 			const int index = Indices[i];
-			GeometryBase* candidate = GeometryCollection[index];
+			Geometry* candidate = GeometryCollection[index];
 
 			if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, candidate->GetFilterData()))
 			{
@@ -364,7 +383,7 @@ namespace Riemann
 		return Result->overlaps;
 	}
 
-	bool AABBTree::Intersect(const GeometryBase* intersect_geometry, GeometryBase** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const
+	bool AABBTree::Intersect(const Geometry* intersect_geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const
 	{
 		Result->overlaps = false;
 		Result->overlapGeoms.clear();
@@ -434,10 +453,13 @@ namespace Riemann
 		return Result->overlaps;
 	}
 
-	static int SweepGeometries(const GeometryBase* sweep_geometry, int* Geoms, int NumGeoms, GeometryBase** GeometryCollection, const Vector3& Origin, const Vector3& Direction, const Box3& BV, const SweepOption* Option, SweepResult* Result)
+	static int SweepGeometries(const Geometry* sweep_geometry, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Vector3& Origin, const Vector3& Direction, const Box3& BV, const SweepOption* Option, SweepResult* Result)
 	{
 		assert(NumGeoms > 0);
-		assert(GeometryCollection);
+		if (GeometryCollection == nullptr)
+		{
+			return -1;
+		}
 
 		float t;
 		Vector3 normal;
@@ -447,7 +469,7 @@ namespace Riemann
 		for (int i = 0; i < NumGeoms; ++i)
 		{
 			const int index = Geoms[i];
-			GeometryBase* candidate = GeometryCollection[index];
+			Geometry* candidate = GeometryCollection[index];
 			assert(candidate);
 
 			bool hit = sweep_geometry->Sweep(Origin, Direction, candidate, &normal, &t);
@@ -487,7 +509,7 @@ namespace Riemann
 		return min_idx;
 	}
 
-	bool AABBTree::Sweep(const GeometryBase* sweep_geometry, GeometryBase** ObjectCollection, const Ray3& Ray, const SweepOption* Option, SweepResult* Result) const
+	bool AABBTree::Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Ray3& Ray, const SweepOption* Option, SweepResult* Result) const
 	{
 		Result->hit = false;
 		Result->hitTestCount = 0;

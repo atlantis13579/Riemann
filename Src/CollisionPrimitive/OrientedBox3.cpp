@@ -8,7 +8,7 @@ namespace Riemann
 // static
 OrientedBox3 OrientedBox3::ComputeBoundingOBB_PCA(const Vector3* points, int n)
 {
-	Vector3 CenterOfMass;
+	Vector3 CenterOfMass = Vector3::Zero();
 	for (int i = 0; i < n; ++i)
 	{
 		CenterOfMass += points[i];

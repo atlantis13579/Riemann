@@ -14,6 +14,8 @@
 #include "../Src/Core/PriorityQueue.h"
 #include "../Src/Core/SmallSet.h"
 #include "../Src/Core/SmallMap.h"
+#include "../Src/Core/LinearMap.h"
+#include "../Src/Core/LinearSety.h"
 #include "../Src/Maths/Maths.h"
 #include "../Src/Maths/Vector3.h"
 
@@ -329,6 +331,8 @@ void TestPriorityQueue()
 
 void TestSmallSet()
 {
+	printf("Running TestPriorityQueue\n");
+
 	SmallSet<int> s;
 	s.insert(1);
 	s.insert(2);
@@ -354,6 +358,8 @@ void TestSmallSet()
 
 void TestSmallMap()
 {
+	printf("Running TestSmallMap\n");
+
 	SmallMap<int, int> m;
 	m[1] = 10;
 	m[1] = 11;
@@ -373,9 +379,64 @@ void TestSmallMap()
 	int sum = 0;
 	for (auto it : m)
 	{
-	//	sum += it.;
+		sum += it.key;
+	}
+	EXPECT(sum == 4);
+}
+
+void TestLinearSet()
+{
+	printf("Running TestLinearSet\n");
+
+	LinearSet<int> s;
+	s.insert(1);
+	s.insert(2);
+	s.insert(3);
+	s.insert(1);
+	s.erase(1);
+	s.insert(2);
+
+	EXPECT(!s.contains(1));
+	EXPECT(s.contains(2));
+	EXPECT(s.contains(3));
+	EXPECT(s.count(1) == 0);
+	EXPECT(s.count(2) == 1);
+	EXPECT(s.count(3) == 1);
+
+	int sum = 0;
+	for (int i : s)
+	{
+		sum += i;
 	}
 	EXPECT(sum == 5);
+}
+
+void TestLinearMap()
+{
+	printf("Running TestLinearMap\n");
+
+	LinearMap<int, int> m;
+	m[1] = 10;
+	m[1] = 11;
+	m[2] = 20;
+	m[3] = 30;
+	m.erase(2);
+
+	EXPECT(m.haskey(1));
+	EXPECT(!m.haskey(2));
+	EXPECT(m.haskey(3));
+	EXPECT(m.count(1) == 1);
+	EXPECT(m.count(2) == 0);
+	EXPECT(m.count(3) == 1);
+	EXPECT(m[1] == 11);
+	EXPECT(m[3] == 30);
+
+	int sum = 0;
+	for (auto it : m)
+	{
+		sum += it.key;
+	}
+	EXPECT(sum == 4);
 }
 
 void TestCores()
@@ -388,5 +449,7 @@ void TestCores()
 	TestListSet();
 	TestSmallSet();
 	TestSmallMap();
+	TestLinearSet();
+	TestLinearMap();
 	TestRingBuffer();
 }

@@ -33,7 +33,7 @@ namespace Riemann
 	{
 		RigidBodyParam rp;
 		rp.rigidType = RigidType::Static;
-		GeometryBase* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3(0.0f, 1.0f, 0.0f));
+		Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -5.0f, 0), Vector3(0.0f, 1.0f, 0.0f));
 		m_World->CreateRigidBody(plane, rp);
 
 		rp.rigidType = RigidType::Dynamic;
@@ -41,7 +41,7 @@ namespace Riemann
 			for (int j = 0; j < 1; ++j)
 				for (int k = 0; k < 1; ++k)
 				{
-					GeometryBase* aabb = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 0.01f - 4.0f + i * 2.01f, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
+					Geometry* aabb = GeometryFactory::CreateOBB(Vector3(j * 2.1f, 0.01f - 4.0f + i * 2.01f, k * 2.1f), Vector3(1.0f, 1.0f, 1.0f));
 					RigidBodyDynamic* p = m_World->CreateRigidBody(aabb, rp)->CastDynamic();
 				}
 
@@ -58,7 +58,7 @@ namespace Riemann
 				RigidBodyDynamic* body = m_World->CreateRigidBody(rp, Transform(p0))->CastDynamic();
 
 				{
-					GeometryBase* sphere = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
+					Geometry* sphere = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
 					sphere->SetLocalPosition(Vector3::Zero());
 					body->AddGeometry(sphere);
 					AddGeometry(m_Renderer, sphere);
@@ -77,14 +77,14 @@ namespace Riemann
 
 		RigidBodyParam rp;
 		rp.rigidType = RigidType::Static;
-		GeometryBase* plane = GeometryFactory::CreatePlane(Vector3(0, -4.0f, 0), Vector3::UnitY());
+		Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, -4.0f, 0), Vector3::UnitY());
 		m_World->CreateRigidBody(plane, rp);
 
 		rp.rigidType = RigidType::Dynamic;
 		for (int i = 0; i < 10; ++i)
 			for (int j = 0; j < 10 - i; ++j)
 			{
-				GeometryBase* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, i * 3.0f, -10.0f + (j + i * 0.5f) * 2.1f), Vector3::One());
+				Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, i * 3.0f, -10.0f + (j + i * 0.5f) * 2.1f), Vector3::One());
 				m_World->CreateRigidBody(aabb, rp);
 			}
 
@@ -98,23 +98,23 @@ namespace Riemann
 
 		RigidBodyParam rp;
 		rp.rigidType = RigidType::Static;
-		GeometryBase* plane = GeometryFactory::CreatePlane(Vector3(0, 0, 0), Vector3::UnitY());
+		Geometry* plane = GeometryFactory::CreatePlane(Vector3(0, 0, 0), Vector3::UnitY());
 		m_World->CreateRigidBody(plane, rp);
 
 		{
 			Quaternion q;
 			q.FromRotationAxis(Vector3::UnitX(), 0.4f);
-			GeometryBase* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, 2.5f, -18.0f), Vector3(2.0f, 2.0f, 6.0f), q);
+			Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, 2.5f, -18.0f), Vector3(2.0f, 2.0f, 6.0f), q);
 			m_World->CreateRigidBody(aabb, rp)->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
 
 			rp.rigidType = RigidType::Dynamic;
-			GeometryBase* sp = GeometryFactory::CreateSphere(Vector3(0.0f, 20.0f, -20.0f), 1.0f);
+			Geometry* sp = GeometryFactory::CreateSphere(Vector3(0.0f, 20.0f, -20.0f), 1.0f);
 			m_World->CreateRigidBody(sp, rp)->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
 		}
 
 		for (int i = 0; i < 10; ++i)
 		{
-			GeometryBase* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, 3.0f, -10.0f + i * 2.0f), Vector3(2.0f, 3.0f, 0.25f));
+			Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, 3.0f, -10.0f + i * 2.0f), Vector3(2.0f, 3.0f, 0.25f));
 			m_World->CreateRigidBody(aabb, rp);
 		}
 
@@ -122,13 +122,13 @@ namespace Riemann
 		{
 			Quaternion q;
 			q.FromRotationAxis(Vector3::UnitY(), i * 30 * (3.14f / 180));
-			GeometryBase* aabb = GeometryFactory::CreateOBB(Vector3(2.0f * i, 3.0f, 10.0f + 1.5f * (i < 4 ? i : 6 - i)), Vector3(2.0f, 3.0f, 0.25f), q);
+			Geometry* aabb = GeometryFactory::CreateOBB(Vector3(2.0f * i, 3.0f, 10.0f + 1.5f * (i < 4 ? i : 6 - i)), Vector3(2.0f, 3.0f, 0.25f), q);
 			m_World->CreateRigidBody(aabb, rp);
 		}
 
 		for (int i = 0; i < 10; ++i)
 		{
-			GeometryBase* aabb = GeometryFactory::CreateOBB(Vector3(12.0f, 3.0f, 10.0f - (i + 1) * 2.0f), Vector3(2.0f, 3.0f, 0.25f));
+			Geometry* aabb = GeometryFactory::CreateOBB(Vector3(12.0f, 3.0f, 10.0f - (i + 1) * 2.0f), Vector3(2.0f, 3.0f, 0.25f));
 			m_World->CreateRigidBody(aabb, rp);
 		}
 
@@ -139,7 +139,7 @@ namespace Riemann
 	{
 		RigidBodyParam rp;
 		rp.rigidType = RigidType::Static;
-		GeometryBase* box = GeometryFactory::CreatePlane(Vector3(0, 0, 0), Vector3::UnitY());
+		Geometry* box = GeometryFactory::CreatePlane(Vector3(0, 0, 0), Vector3::UnitY());
 		m_World->CreateRigidBody(box, rp);
 
 		box = GeometryFactory::CreateOBB(Vector3(3, 0, 0), Vector3(1, 1, 1), Quaternion().FromRotateZ(0.7f));
@@ -176,7 +176,7 @@ namespace Riemann
 
 		for (size_t i = 1; i < nodes.size(); ++i)
 		{
-			GeometryBase* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, (float)i, 0.0f), Vector3(1.0f, 3.0f, 1.0f));
+			Geometry* aabb = GeometryFactory::CreateOBB(Vector3(0.0f, (float)i, 0.0f), Vector3(1.0f, 3.0f, 1.0f));
 
 			const std::string& name = nodes[i];
 
@@ -187,10 +187,10 @@ namespace Riemann
 
 	void WorldViewer::LoadPhysxScene(const std::string& file_name)
 	{
-		std::vector<GeometryBase*> geometries;
+		std::vector<Geometry*> geometries;
 		LoadPhysxBinary(file_name.c_str(), nullptr, &geometries);
 
-		for (GeometryBase* Geom : geometries)
+		for (Geometry* Geom : geometries)
 		{
 			AddGeometry(m_Renderer, Geom);
 		}
@@ -323,7 +323,7 @@ namespace Riemann
 
 	void WorldViewer::AddToRender()
 	{
-		std::vector<GeometryBase*> geoms;
+		std::vector<Geometry*> geoms;
 		m_World->GetAllGeometries(&geoms);
 		for (size_t i = 0; i < geoms.size(); ++i)
 		{

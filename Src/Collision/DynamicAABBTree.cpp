@@ -31,7 +31,7 @@ DynamicAABBTree::~DynamicAABBTree()
 
 static bool RayIntersectGeometry(const Ray3& Ray, void* userData, const RayCastOption* Option, RayCastResult* Result)
 {
-	GeometryBase *Geom = static_cast<GeometryBase*>(userData);
+	Geometry *Geom = static_cast<Geometry*>(userData);
 	
 	bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, Option, Result);
 	if (hit)
@@ -145,9 +145,9 @@ bool DynamicAABBTree::RayCast(const Ray3& Ray, const RayCastOption* Option, RayC
 	return false;
 }
 
-static bool OverlapGeometry(const GeometryBase *intersect_geometry, void* userData, const IntersectOption* Option, IntersectResult* Result)
+static bool OverlapGeometry(const Geometry *intersect_geometry, void* userData, const IntersectOption* Option, IntersectResult* Result)
 {
-	GeometryBase *candidate = static_cast<GeometryBase*>(userData);
+	Geometry *candidate = static_cast<Geometry*>(userData);
 
 	if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, candidate->GetFilterData()))
 	{
@@ -173,7 +173,7 @@ static bool OverlapGeometry(const GeometryBase *intersect_geometry, void* userDa
 	return Result->overlaps;
 }
 
-bool DynamicAABBTree::Intersect(const GeometryBase *intersect_geometry, const IntersectOption* Option, IntersectResult *Result) const
+bool DynamicAABBTree::Intersect(const Geometry *intersect_geometry, const IntersectOption* Option, IntersectResult *Result) const
 {
 	Result->overlaps = false;
 	Result->overlapGeoms.clear();
@@ -246,9 +246,9 @@ bool DynamicAABBTree::Intersect(const GeometryBase *intersect_geometry, const In
 	return Result->overlaps;
 }
 
-static bool SweepGeometry(const GeometryBase *sweep_geometry, const Vector3& Origin, const Vector3& Direction, void* userData, const SweepOption* Option, SweepResult* Result)
+static bool SweepGeometry(const Geometry *sweep_geometry, const Vector3& Origin, const Vector3& Direction, void* userData, const SweepOption* Option, SweepResult* Result)
 {
-	GeometryBase *canditate = static_cast<GeometryBase*>(userData);
+	Geometry *canditate = static_cast<Geometry*>(userData);
 	
 	float t;
 	Vector3 normal;
@@ -271,7 +271,7 @@ static bool SweepGeometry(const GeometryBase *sweep_geometry, const Vector3& Ori
 	return false;
 }
 
-bool DynamicAABBTree::Sweep(const GeometryBase *sweep_geometry, const Ray3& Ray, const SweepOption* Option, SweepResult *Result) const
+bool DynamicAABBTree::Sweep(const Geometry *sweep_geometry, const Ray3& Ray, const SweepOption* Option, SweepResult *Result) const
 {
 	Result->hit = false;
 	Result->hitTestCount = 0;

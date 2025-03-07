@@ -46,7 +46,7 @@ namespace Riemann
 		float					InvDX, InvDZ;
 		float 					HeightScale;
 		std::vector<CellInfo>	mCells;
-		CellInfo* Cells;
+		CellInfo*				Cells;
 
 		HeightField3()
 		{
