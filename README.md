@@ -21,6 +21,7 @@ Rigid Body Dynamics Simulation
 * Collision detection
     * Raycast Test
     * Overlap Test
+    * Sweep Test
     * Bounding Volume Hierarchy
     * Sweep and Prune
     * Gilbert–Johnson–Keerthi algorithm
