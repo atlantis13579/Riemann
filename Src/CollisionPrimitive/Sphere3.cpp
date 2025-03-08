@@ -417,11 +417,186 @@ bool Sphere3::SweepConvex(const Vector3& Origin, const Vector3& Direction, const
 	return gjk.Solve(Origin, Direction, this, convex, n, t);
 }
 
-
-bool Sphere3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
+static bool EdgeOrVertexTest(const Vector3& IntersectPoint, const Vector3* tri, int vertIntersectCandidate, int vert0, int vert1, int& secondEdgeVert)
 {
-	// TODO
-	return false;
+    const Vector3 edge0 = tri[vertIntersectCandidate] - tri[vert0];
+    const float edge0_length_sq = edge0.Dot(edge0);
+    Vector3 diff = IntersectPoint - tri[vert0];
+    if (edge0.Dot(diff) < edge0_length_sq)
+    {
+        secondEdgeVert = vert0;
+        return false;
+    }
+
+    const Vector3 edge1 = tri[vertIntersectCandidate] - tri[vert1];
+    const float edge1_length_sq = edge1.Dot(edge1);
+    diff = IntersectPoint - tri[vert1];
+    if (edge1.Dot(diff) < edge1_length_sq)
+    {
+        secondEdgeVert = vert1;
+        return false;
+    }
+    
+    return true;
+}
+
+static int RayIntersectTriSpecial(const Vector3& Origin, const Vector3& Direction, const Vector3& vert0, const Vector3& edge1, const Vector3& edge2, float *t, float *u, float *v)
+{
+    const Vector3 pvec = Direction.Cross(edge2);
+    const float det = edge1.Dot(pvec);
+
+    const float eps = 0.00001f;
+    if (det > -eps && det < eps)
+        return 0;
+    const float InvDet = 1.0f / det;
+
+    const Vector3 tvec = Origin - vert0;
+    *u = (tvec.Dot(pvec)) * InvDet;
+    
+    const Vector3 qvec = tvec.Cross(edge1);
+    *v = (Direction.Dot(qvec)) * InvDet;
+
+    if (*u < 0.0f || *u > 1.0f)
+        return 1;
+    if (*v < 0.0f || *u + *v > 1.0f)
+        return 1;
+
+    *t = (edge2.Dot(qvec)) * InvDet;
+    return 2;
+}
+
+bool Sphere3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const
+{
+    const Vector3 center = Center + Origin;
+    
+    const bool testInitialOverlap = true;
+    if (testInitialOverlap)
+    {
+        const Vector3 cp = ClosestPtPointTriangle(center, A, B, C);
+        if ((cp - center).SquareLength() <= Radius * Radius)
+        {
+            *n = -Direction;
+            *t = 0.0f;
+            return true;
+        }
+    }
+    
+    const Vector3 BA = B - A;
+    const Vector3 CA = C - A;
+    const Vector3 Normal = CA.Cross(BA).Unit();
+    Vector3 R = Normal * Radius;
+    if (Direction.Dot(R) >= 0.0f)
+        R = -R;
+
+    float uu, vv, tt;
+    const int r = RayIntersectTriSpecial(center - R, Direction, A, BA, CA, &tt, &uu, &vv);
+    if (!r)
+        return false;
+    if (r == 2)
+    {
+        if (tt < 0.0f)
+            return false;
+        *t = tt;
+        return true;
+    }
+
+    // The triangle gets divided into the following areas (based on the barycentric coordinates (u,v)):
+    //
+    //               \   A0    /
+    //                 \      /
+    //                   \   /
+    //                     \/ 0
+    //            A02      *      A01
+    //   u /              /   \          \ v
+    //    *              /      \         *
+    //                  /         \                        .
+    //               2 /            \ 1
+    //          ------*--------------*-------
+    //               /                 \                .
+    //        A2    /        A12         \   A1
+    //
+    //
+    // Based on the area where the computed triangle plane intersection point lies in, a different sweep test will be applied.
+    //
+    // A) A01, A02, A12  : Test sphere against the corresponding edge
+    // B) A0, A1, A2     : Test sphere against the corresponding vertex
+    
+    bool TestSphere;
+    int e0,e1;
+    Vector3 verts[3] = {A, B, C};
+    if (uu < 0.0f)
+    {
+        if (vv < 0.0f)
+        {
+            // 0 or 0-1 or 0-2
+            e0 = 0;
+            const Vector3 intersectPoint = A * (1.0f - uu - vv) + B * uu + C * vv;
+            TestSphere = EdgeOrVertexTest(intersectPoint, verts, 0, 1, 2, e1);
+        }
+        else if (uu + vv > 1.0f)
+        {
+            // 2 or 2-0 or 2-1
+            e0 = 2;
+            const Vector3 intersectPoint = A * (1.0f - uu - vv) + B * uu + C * vv;
+            TestSphere = EdgeOrVertexTest(intersectPoint, verts, 2, 0, 1, e1);
+        }
+        else
+        {
+            // 0-2
+            TestSphere = false;
+            e0 = 0;
+            e1 = 2;
+        }
+    }
+    else
+    {
+        if (vv < 0.0f)
+        {
+            if (uu + vv > 1.0f)
+            {
+                // 1 or 1-0 or 1-2
+                e0 = 1;
+                const Vector3 intersectPoint = A * (1.0f - uu - vv) + B * uu + C * vv;
+                TestSphere = EdgeOrVertexTest(intersectPoint, verts, 1, 0, 2, e1);
+            }
+            else
+            {
+                // 0-1
+                TestSphere = false;
+                e0 = 0;
+                e1 = 1;
+            }
+        }
+        else
+        {
+            assert(uu + vv >= 1.0f);    // Else hit triangle
+            // 1-2
+            TestSphere = false;
+            e0 = 1;
+            e1 = 2;
+        }
+    }
+    
+    if (TestSphere)
+    {
+        Sphere3 sp(verts[e0], Radius);
+        if (sp.IntersectRay(center, Direction, &tt))
+        {
+            *t = tt;
+            return true;
+        }
+    }
+    else
+    {
+        Capsule3 cap(verts[e0], verts[e1], Radius);
+        if (cap.IntersectRay(center, Direction, &tt))
+        {
+            *t = tt;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool Sphere3::SweepHeightField(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const

@@ -171,7 +171,7 @@ bool Cylinder3::SweepConvex(const Vector3& Origin, const Vector3& Direction, con
 	return gjk.Solve(Origin, Direction, this, convex, n, t);
 }
 
-bool Cylinder3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
+bool Cylinder3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const
 {
 	// TODO
 	return false;
