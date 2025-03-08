@@ -1,6 +1,7 @@
 #pragma once
 
 #include <math.h>
+#include <array>
 #include <vector>
 
 #include "PrimitiveType.h"
@@ -69,6 +70,11 @@ namespace Riemann
 		{
 			return Height * 0.5f;
 		}
+        
+        inline float IsCircle() const
+        {
+            return Height < 1e-6f;
+        }
 
 		bool	CalculateVolumeProperties(MassParameters* p, float Density) const
 		{
@@ -144,10 +150,10 @@ namespace Riemann
 			return Vector3(0.0f, sy * Height * 0.5f, 0.0f);
 		}
 
-		static const Vector3* GetCylinderFaces()
+		static const std::array<Vector3, 8>& GetCylinderFaces()
 		{
 			// Approximation of top faces
-			static const Vector3 CylinderFaces[] =
+			static const std::array<Vector3, 8> CylinderFaces =
 			{
 				Vector3(0.0f,		1.0f,	1.0f),
 				Vector3(PI_OVER_4,	1.0f,	PI_OVER_4),

@@ -5,95 +5,95 @@
 namespace voro
 {
 	// These constants set the initial memory allocation for the Voronoi cell
-	/** The initial memory allocation for the number of vertices. */
+	/* The initial memory allocation for the number of vertices. */
 	const int init_vertices = 256;
-	/** The initial memory allocation for the maximum vertex order. */
+	/* The initial memory allocation for the maximum vertex order. */
 	const int init_vertex_order = 64;
-	/** The initial memory allocation for the number of regular vertices of order
+	/* The initial memory allocation for the number of regular vertices of order
 	 * 3. */
 	const int init_3_vertices = 256;
-	/** The initial memory allocation for the number of vertices of higher order.
+	/* The initial memory allocation for the number of vertices of higher order.
 	 */
 	const int init_n_vertices = 8;
-	/** The initial buffer size for marginal cases used by the suretest class. */
+	/* The initial buffer size for marginal cases used by the suretest class. */
 	const int init_marginal = 64;
-	/** The initial size for the delete stack. */
+	/* The initial size for the delete stack. */
 	const int init_delete_size = 256;
-	/** The initial size for the auxiliary delete stack. */
+	/* The initial size for the auxiliary delete stack. */
 	const int init_delete2_size = 256;
-	/** The initial size for the wall pointer array. */
+	/* The initial size for the wall pointer array. */
 	const int init_wall_size = 32;
-	/** The default initial size for the ordering class. */
+	/* The default initial size for the ordering class. */
 	const int init_ordering_size = 4096;
-	/** The initial size of the pre_container chunk index. */
+	/* The initial size of the pre_container chunk index. */
 	const int init_chunk_size = 256;
 
 	// If the initial memory is too small, the program dynamically allocates more.
 	// However, if the limits below are reached, then the program bails out.
-	/** The maximum memory allocation for the number of vertices. */
+	/* The maximum memory allocation for the number of vertices. */
 	const int max_vertices = 16777216;
-	/** The maximum memory allocation for the maximum vertex order. */
+	/* The maximum memory allocation for the maximum vertex order. */
 	const int max_vertex_order = 16777216;
-	/** The maximum memory allocation for the any particular order of vertex. */
+	/* The maximum memory allocation for the any particular order of vertex. */
 	const int max_n_vertices = 16777216;
-	/** The maximum buffer size for marginal cases used by the suretest class. */
+	/* The maximum buffer size for marginal cases used by the suretest class. */
 	const int max_marginal = 16777216;
-	/** The maximum size for the delete stack. */
+	/* The maximum size for the delete stack. */
 	const int max_delete_size = 16777216;
-	/** The maximum size for the auxiliary delete stack. */
+	/* The maximum size for the auxiliary delete stack. */
 	const int max_delete2_size = 16777216;
-	/** The maximum amount of particle memory allocated for a single region. */
+	/* The maximum amount of particle memory allocated for a single region. */
 	const int max_particle_memory = 16777216;
-	/** The maximum size for the wall pointer array. */
+	/* The maximum size for the wall pointer array. */
 	const int max_wall_size = 2048;
-	/** The maximum size for the ordering class. */
+	/* The maximum size for the ordering class. */
 	const int max_ordering_size = 67108864;
-	/** The maximum size for the pre_container chunk index. */
+	/* The maximum size for the pre_container chunk index. */
 	const int max_chunk_size = 65536;
 
-	/** The chunk size in the pre_container classes. */
+	/* The chunk size in the pre_container classes. */
 	const int pre_container_chunk_size = 1024;
 
-	/** Each region is divided into a grid of subregions, and a worklist is
+	/* Each region is divided into a grid of subregions, and a worklist is
 	# constructed for each. This parameter sets is set to half the number of
 	# subregions that the block is divided into. */
 	const int wl_hgrid = 4;
-	/** The number of subregions that a block is subdivided into, which is twice
+	/* The number of subregions that a block is subdivided into, which is twice
 	the value of hgrid. */
 	const int wl_fgrid = 8;
-	/** The total number of worklists, set to the cube of hgrid. */
+	/* The total number of worklists, set to the cube of hgrid. */
 	const int wl_hgridcu = 64;
-	/** The number of elements in each worklist. */
+	/* The number of elements in each worklist. */
 	const int wl_seq_length = 64;
 
-	/** If a point is within this distance of a cutting plane, then the code
+	/* If a point is within this distance of a cutting plane, then the code
 	 * assumes that point exactly lies on the plane. */
 	const double tolerance = 1e-11;
 
-	/** If a point is within this distance of a cutting plane, then the code stores
+	/* If a point is within this distance of a cutting plane, then the code stores
 	 * whether this point is inside, outside, or exactly on the cutting plane in
 	 * the marginal cases buffer, to prevent the test giving a different result on
 	 * a subsequent evaluation due to floating point rounding errors. */
 	const double tolerance2 = 2e-11;
 
-	/** The square of the tolerance, used when deciding whether some squared
+	/* The square of the tolerance, used when deciding whether some squared
 	 * quantities are large enough to be used. */
 	const double tolerance_sq = tolerance * tolerance;
 
-	/** A large number that is used in the computation. */
+	/* A large number that is used in the computation. */
 	const double large_number = 1e30;
 
-	/** A radius to use as a placeholder when no other information is available. */
+	/* A radius to use as a placeholder when no other information is available. */
 	const double default_radius = 0.5;
 
-	/** The maximum number of shells of periodic images to test over. */
+	/* The maximum number of shells of periodic images to test over. */
 	const int max_unit_voro_shells = 10;
 
-	/** A guess for the optimal number of particles per block, used to set up the
+	/* A guess for the optimal number of particles per block, used to set up the
 	 * container grid. */
 	const float optimal_particles = 5.6f;
 
-	/** \brief Class containing data structures common across all particle container classes.
+	/* \brief Class containing data structures common across all particle container classes.
 	 *
 	 * This class contains constants and data structures that are common across all
 	 * particle container classes. It contains constants setting the size of the
@@ -103,36 +103,36 @@ namespace voro
 	 * all container classes. */
 	class voro_base {
 	public:
-		/** The number of blocks in the x direction. */
+		/* The number of blocks in the x direction. */
 		const int nx;
-		/** The number of blocks in the y direction. */
+		/* The number of blocks in the y direction. */
 		const int ny;
-		/** The number of blocks in the z direction. */
+		/* The number of blocks in the z direction. */
 		const int nz;
-		/** A constant, set to the value of nx multiplied by ny, which
+		/* A constant, set to the value of nx multiplied by ny, which
 		 * is used in the routines that step through blocks in
 		 * sequence. */
 		const int nxy;
-		/** A constant, set to the value of nx*ny*nz, which is used in
+		/* A constant, set to the value of nx*ny*nz, which is used in
 		 * the routines that step through blocks in sequence. */
 		const int nxyz;
-		/** The size of a computational block in the x direction. */
+		/* The size of a computational block in the x direction. */
 		const double boxx;
-		/** The size of a computational block in the y direction. */
+		/* The size of a computational block in the y direction. */
 		const double boxy;
-		/** The size of a computational block in the z direction. */
+		/* The size of a computational block in the z direction. */
 		const double boxz;
-		/** The inverse box length in the x direction. */
+		/* The inverse box length in the x direction. */
 		const double xsp;
-		/** The inverse box length in the y direction. */
+		/* The inverse box length in the y direction. */
 		const double ysp;
-		/** The inverse box length in the z direction. */
+		/* The inverse box length in the z direction. */
 		const double zsp;
-		/** An array to hold the minimum distances associated with the
+		/* An array to hold the minimum distances associated with the
 		 * worklists. This array is initialized during container
 		 * construction, by the initialize_radii() routine. */
 		double* mrad;
-		/** The pre-computed block worklists. */
+		/* The pre-computed block worklists. */
 		static const unsigned int wl[wl_seq_length * wl_hgridcu];
 		bool contains_neighbor(const char* format) const
 		{
@@ -214,20 +214,20 @@ namespace voro
 		~voro_base() { delete[] mrad; }
 
 	protected:
-		/** A custom int function that returns consistent stepping
+		/* A custom int function that returns consistent stepping
 		 * for negative numbers, so that (-1.5, -0.5, 0.5, 1.5) maps
 		 * to (-2,-1,0,1).
 		 * \param[in] a the number to consider.
 		 * \return The value of the custom int operation. */
 		inline int step_int(double a) const { return a < 0 ? int(a) - 1 : int(a); }
-		/** A custom modulo function that returns consistent stepping
+		/* A custom modulo function that returns consistent stepping
 		 * for negative numbers. For example, (-2,-1,0,1,2) step_mod 2
 		 * is (0,1,0,1,0).
 		 * \param[in] (a,b) the input integers.
 		 * \return The value of a modulo b, consistent for negative
 		 * numbers. */
 		inline int step_mod(int a, int b) const { return a >= 0 ? a % b : b - 1 - (b - 1 - a) % b; }
-		/** A custom integer division function that returns consistent
+		/* A custom integer division function that returns consistent
 		 * stepping for negative numbers. For example, (-2,-1,0,1,2)
 		 * step_div 2 is (-1,-1,0,0,1).
 		 * \param[in] (a,b) the input integers.
@@ -319,7 +319,7 @@ namespace voro
 	16,0x10203f,0x101fc0,0xfe040,0x102041,0x1020c0,0x106040,0x101fbf,0xfe03f,0xfdfc0,0x101fc1,0x105fc0,0x10603f,0x1020bf,0xfe0c0,0xfe041,0xfdfbf,0x1020c1,0x106041,0x1060c0,0x105fbf,0xfe0bf,0xfdfc1,0x105fc1,0x1060bf,0xfe0c1,0x83060c1,0x70203e,0x3101f40,0x180fa040,0x180fa03f,0x186fe03e,0x701fbe,0x3701f3f,0x30fdf40,0x1b0f9fc0,0x180fa041,0x180fa0c0,0x7020be,0x70603e,0x3105f40,0xb101f41,0x9302042,0x1102140,0x930a040,0x6fdfbe,0x36fdf3f,0x1b6f9fbf,0x190fa0bf,0x196fe0be,0x170213f,0x196fe140,0x182f9fc1,0x1b2fdf41,0xb301fc2,0x1a2fe042,0x192fa0c1,0x8705fbe,0xb705f3f,0xb309fc0,0xa70a03f,0x97060be,0x9706140,0x11302141
 	};
 
-	/** \brief A class representing a single Voronoi cell.
+	/* \brief A class representing a single Voronoi cell.
 	 *
 	 * This class represents a single Voronoi cell, as a collection of vertices
 	 * that are connected by edges. The class contains routines for initializing
@@ -334,25 +334,25 @@ namespace voro
 	 * whether neighboring particle ID information needs to be tracked. */
 	class voronoicell_base {
 	public:
-		/** This holds the current size of the arrays ed and nu, which
+		/* This holds the current size of the arrays ed and nu, which
 		 * hold the vertex information. If more vertices are created
 		 * than can fit in this array, then it is dynamically extended
 		 * using the add_memory_vertices routine. */
 		int current_vertices;
-		/** This holds the current maximum allowed order of a vertex,
+		/* This holds the current maximum allowed order of a vertex,
 		 * which sets the size of the mem, mep, and mec arrays. If a
 		 * vertex is created with more vertices than this, the arrays
 		 * are dynamically extended using the add_memory_vorder routine.
 		 */
 		int current_vertex_order;
-		/** This sets the size of the main delete stack. */
+		/* This sets the size of the main delete stack. */
 		int current_delete_size;
-		/** This sets the size of the auxiliary delete stack. */
+		/* This sets the size of the auxiliary delete stack. */
 		int current_delete2_size;
-		/** This sets the total number of vertices in the current cell.
+		/* This sets the total number of vertices in the current cell.
 		 */
 		int p;
-		/** This is the index of particular point in the cell, which is
+		/* This is the index of particular point in the cell, which is
 		 * used to start the tracing routines for plane intersection
 		 * and cutting. These routines will work starting from any
 		 * point, but it's often most efficient to start from the last
@@ -360,7 +360,7 @@ namespace voro
 		 * algorithm may consider many planes with similar vectors
 		 * concurrently. */
 		int up;
-		/** This is a two dimensional array that holds information
+		/* This is a two dimensional array that holds information
 		 * about the edge connections of the vertices that make up the
 		 * cell. The two dimensional array is not allocated in the
 		 * usual method. To account for the fact the different vertices
@@ -378,11 +378,11 @@ namespace voro
 		 * pointer, so that ed[i+2*m]=i. The back pointers are used
 		 * when rearranging the memory. */
 		int** ed;
-		/** This array holds the order of the vertices in the Voronoi
+		/* This array holds the order of the vertices in the Voronoi
 		 * cell. This array is dynamically allocated, with its current
 		 * size held by current_vertices. */
 		int* nu;
-		/** This in an array with size 3*current_vertices for holding
+		/* This in an array with size 3*current_vertices for holding
 		 * the positions of the vertices. */
 		double* pts;
 		voronoicell_base() :
@@ -1669,39 +1669,39 @@ namespace voro
 		}
 
 		void print_edges();
-		/** Returns a list of IDs of neighboring particles
+		/* Returns a list of IDs of neighboring particles
 		 * corresponding to each face.
 		 * \param[out] v a reference to a vector in which to return the
 		 *               results. If no neighbor information is
 		 *               available, a blank vector is returned. */
 		virtual void neighbors(std::vector<int>& v) { v.clear(); }
-		/** This a virtual function that is overridden by a routine to
+		/* This a virtual function that is overridden by a routine to
 		 * print the neighboring particle IDs for a given vertex. By
 		 * default, when no neighbor information is available, the
 		 * routine does nothing.
 		 * \param[in] i the vertex to consider. */
 		virtual void print_edges_neighbors(int i) {};
-		/** This is a simple inline function for picking out the index
+		/* This is a simple inline function for picking out the index
 		 * of the next edge counterclockwise at the current vertex.
 		 * \param[in] a the index of an edge of the current vertex.
 		 * \param[in] p the number of the vertex.
 		 * \return 0 if a=nu[p]-1, or a+1 otherwise. */
 		inline int cycle_up(int a, int vertexIndex) { return a == nu[vertexIndex] - 1 ? 0 : a + 1; }
-		/** This is a simple inline function for picking out the index
+		/* This is a simple inline function for picking out the index
 		 * of the next edge clockwise from the current vertex.
 		 * \param[in] a the index of an edge of the current vertex.
 		 * \param[in] p the number of the vertex.
 		 * \return nu[p]-1 if a=0, or a-1 otherwise. */
 		inline int cycle_down(int a, int vertexIndex) { return a == 0 ? nu[vertexIndex] - 1 : a - 1; }
 	protected:
-		/** This a one dimensional array that holds the current sizes
+		/* This a one dimensional array that holds the current sizes
 		 * of the memory allocations for them mep array.*/
 		int* mem;
-		/** This is a one dimensional array that holds the current
+		/* This is a one dimensional array that holds the current
 		 * number of vertices of order p that are stored in the mep[p]
 		 * array. */
 		int* mec;
-		/** This is a two dimensional array for holding the information
+		/* This is a two dimensional array for holding the information
 		 * about the edges of the Voronoi cell. mep[p] is a
 		 * one-dimensional array for holding the edge information about
 		 * all vertices of order p, with each vertex holding 2*p+1
@@ -1743,29 +1743,29 @@ namespace voro
 			for (i = 0; i < 3 * p; i++) pts[i] = vb->pts[i];
 		}
 	private:
-		/** This is the delete stack, used to store the vertices which
+		/* This is the delete stack, used to store the vertices which
 		 * are going to be deleted during the plane cutting procedure.
 		 */
 		int* ds, * stacke;
-		/** This is the auxiliary delete stack, which has size set by
+		/* This is the auxiliary delete stack, which has size set by
 		 * current_delete2_size. */
 		int* ds2, * stacke2;
-		/** This stores the current memory allocation for the marginal
+		/* This stores the current memory allocation for the marginal
 		 * cases. */
 		int current_marginal;
-		/** This stores the total number of marginal points which are
+		/* This stores the total number of marginal points which are
 		 * currently in the buffer. */
 		int n_marg;
-		/** This array contains a list of the marginal points, and also
+		/* This array contains a list of the marginal points, and also
 		 * the outcomes of the marginal tests. */
 		int* marg;
-		/** The x coordinate of the normal vector to the test plane. */
+		/* The x coordinate of the normal vector to the test plane. */
 		double px;
-		/** The y coordinate of the normal vector to the test plane. */
+		/* The y coordinate of the normal vector to the test plane. */
 		double py;
-		/** The z coordinate of the normal vector to the test plane. */
+		/* The z coordinate of the normal vector to the test plane. */
 		double pz;
-		/** The magnitude of the normal vector to the test plane. */
+		/* The magnitude of the normal vector to the test plane. */
 		double prsq;
 		template<class vc_class>
 		void add_memory(vc_class& vc, int i, int* stackp2)
@@ -2219,7 +2219,7 @@ namespace voro
 		friend class voronoicell_neighbor;
 	};
 
-	/** \brief Extension of the voronoicell_base class to represent a Voronoi
+	/* \brief Extension of the voronoicell_base class to represent a Voronoi
 	 * cell without neighbor information.
 	 *
 	 * This class is an extension of the voronoicell_base class, in cases when
@@ -2228,14 +2228,14 @@ namespace voro
 	class voronoicell : public voronoicell_base {
 	public:
 		using voronoicell_base::nplane;
-		/** Copies the information from another voronoicell class into
+		/* Copies the information from another voronoicell class into
 		 * this class, extending memory allocation if necessary.
 		 * \param[in] c the class to copy. */
 		inline void operator=(voronoicell& c) {
 			voronoicell_base* vb((voronoicell_base*)&c);
 			check_memory_for_copy(*this, vb); copy(vb);
 		}
-		/** Cuts a Voronoi cell using by the plane corresponding to the
+		/* Cuts a Voronoi cell using by the plane corresponding to the
 		 * perpendicular bisector of a particle.
 		 * \param[in] (x,y,z) the position of the particle.
 		 * \param[in] rsq the modulus squared of the vector.
@@ -2246,7 +2246,7 @@ namespace voro
 		inline bool nplane(double x, double y, double z, double rsq, int p_id) {
 			return nplane(*this, x, y, z, rsq, 0);
 		}
-		/** Cuts a Voronoi cell using by the plane corresponding to the
+		/* Cuts a Voronoi cell using by the plane corresponding to the
 		 * perpendicular bisector of a particle.
 		 * \param[in] (x,y,z) the position of the particle.
 		 * \param[in] p_id the plane ID, ignored for this case where no
@@ -2257,7 +2257,7 @@ namespace voro
 			double rsq = x * x + y * y + z * z;
 			return nplane(*this, x, y, z, rsq, 0);
 		}
-		/** Cuts a Voronoi cell using by the plane corresponding to the
+		/* Cuts a Voronoi cell using by the plane corresponding to the
 		 * perpendicular bisector of a particle.
 		 * \param[in] (x,y,z) the position of the particle.
 		 * \param[in] rsq the modulus squared of the vector.
@@ -2266,7 +2266,7 @@ namespace voro
 		inline bool plane(double x, double y, double z, double rsq) {
 			return nplane(*this, x, y, z, rsq, 0);
 		}
-		/** Cuts a Voronoi cell using by the plane corresponding to the
+		/* Cuts a Voronoi cell using by the plane corresponding to the
 		 * perpendicular bisector of a particle.
 		 * \param[in] (x,y,z) the position of the particle.
 		 * \return False if the plane cut deleted the cell entirely,
@@ -2275,7 +2275,7 @@ namespace voro
 			double rsq = x * x + y * y + z * z;
 			return nplane(*this, x, y, z, rsq, 0);
 		}
-		/** Initializes the Voronoi cell to be rectangular box with the
+		/* Initializes the Voronoi cell to be rectangular box with the
 		 * given dimensions.
 		 * \param[in] (xmin,xmax) the minimum and maximum x coordinates.
 		 * \param[in] (ymin,ymax) the minimum and maximum y coordinates.
@@ -2283,14 +2283,14 @@ namespace voro
 		inline void init(double xmin, double xmax, double ymin, double ymax, double zmin, double zmax) {
 			init_base(xmin, xmax, ymin, ymax, zmin, zmax);
 		}
-		/** Initializes the cell to be an octahedron with vertices at
+		/* Initializes the cell to be an octahedron with vertices at
 		 * (l,0,0), (-l,0,0), (0,l,0), (0,-l,0), (0,0,l), and (0,0,-l).
 		 * \param[in] l a parameter setting the size of the octahedron.
 		 */
 		inline void init_octahedron(double l) {
 			init_octahedron_base(l);
 		}
-		/** Initializes the cell to be a tetrahedron.
+		/* Initializes the cell to be a tetrahedron.
 		 * \param[in] (x0,y0,z0) the coordinates of the first vertex.
 		 * \param[in] (x1,y1,z1) the coordinates of the second vertex.
 		 * \param[in] (x2,y2,z2) the coordinates of the third vertex.
@@ -2361,7 +2361,7 @@ namespace voro
 		friend class voronoicell_base;
 	};
 
-	/** \brief Extension of the voronoicell_base class to represent a Voronoi cell
+	/* \brief Extension of the voronoicell_base class to represent a Voronoi cell
 	 * with neighbor information.
 	 *
 	 * This class is an extension of the voronoicell_base class, in cases when the
@@ -2371,12 +2371,12 @@ namespace voro
 	class voronoicell_neighbor : public voronoicell_base {
 	public:
 		using voronoicell_base::nplane;
-		/** This two dimensional array holds the neighbor information
+		/* This two dimensional array holds the neighbor information
 		 * associated with each vertex. mne[p] is a one dimensional
 		 * array which holds all of the neighbor information for
 		 * vertices of order p. */
 		int** mne;
-		/** This is a two dimensional array that holds the neighbor
+		/* This is a two dimensional array that holds the neighbor
 		 * information associated with each vertex. ne[i] points to a
 		 * one-dimensional array in mne[nu[i]]. ne[i][j] holds the
 		 * neighbor information associated with the jth edge of vertex
@@ -2422,7 +2422,7 @@ namespace voro
 				for (j = 0; j < c.mec[i]; j++) ne[c.mep[i][(2 * i + 1) * j + 2 * i]] = mne[i] + (j * i);
 			}
 		}
-		/** Cuts the Voronoi cell by a particle whose center is at a
+		/* Cuts the Voronoi cell by a particle whose center is at a
 		 * separation of (x,y,z) from the cell center. The value of rsq
 		 * should be initially set to \f$x^2+y^2+z^2\f$.
 		 * \param[in] (x,y,z) the normal vector to the plane.
@@ -2433,7 +2433,7 @@ namespace voro
 		inline bool nplane(double x, double y, double z, double rsq, int p_id) {
 			return nplane(*this, x, y, z, rsq, p_id);
 		}
-		/** This routine calculates the modulus squared of the vector
+		/* This routine calculates the modulus squared of the vector
 		 * before passing it to the main nplane() routine with full
 		 * arguments.
 		 * \param[in] (x,y,z) the vector to cut the cell by.
@@ -2444,7 +2444,7 @@ namespace voro
 			double rsq = x * x + y * y + z * z;
 			return nplane(*this, x, y, z, rsq, p_id);
 		}
-		/** This version of the plane routine just makes up the plane
+		/* This version of the plane routine just makes up the plane
 		 * ID to be zero. It will only be referenced if neighbor
 		 * tracking is enabled.
 		 * \param[in] (x,y,z) the vector to cut the cell by.
@@ -2454,7 +2454,7 @@ namespace voro
 		inline bool plane(double x, double y, double z, double rsq) {
 			return nplane(*this, x, y, z, rsq, 0);
 		}
-		/** Cuts a Voronoi cell using the influence of a particle at
+		/* Cuts a Voronoi cell using the influence of a particle at
 		 * (x,y,z), first calculating the modulus squared of this
 		 * vector before passing it to the main nplane() routine. Zero
 		 * is supplied as the plane ID, which will be ignored unless
@@ -2698,7 +2698,7 @@ namespace voro
 		friend class voronoicell_base;
 	};
 
-	/** \brief Class containing all of the routines that are specific to computing
+	/* \brief Class containing all of the routines that are specific to computing
 	 * the regular Voronoi tessellation.
 	 *
 	 * The container and container_periodic classes are derived from this class,
@@ -2710,44 +2710,44 @@ namespace voro
 		{
 		};
 	protected:
-		/** This is called prior to computing a Voronoi cell for a
+		/* This is called prior to computing a Voronoi cell for a
 		 * given particle to initialize any required constants.
 		 * \param[in] ijk the block that the particle is within.
 		 * \param[in] s the index of the particle within the block. */
 		inline void r_init(int ijk, int s, radius_info& radius_out) const {}
-		/** Sets a required constant to be used when carrying out a
+		/* Sets a required constant to be used when carrying out a
 		 * plane bounds check. */
 		inline void r_prime(double rv, radius_info& radius_out) const {}
-		/** Carries out a radius bounds check.
+		/* Carries out a radius bounds check.
 		 * \param[in] crs the radius squared to be tested.
 		 * \param[in] mrs the current maximum distance to a Voronoi
 		 *                vertex multiplied by two.
 		 * \return True if particles at this radius could not possibly
 		 * cut the cell, false otherwise. */
 		inline bool r_ctest(double crs, double mrs, const radius_info& rad_info) const { return crs > mrs; }
-		/** Scales a plane displacement during a plane bounds check.
+		/* Scales a plane displacement during a plane bounds check.
 		 * \param[in] lrs the plane displacement.
 		 * \return The scaled value. */
 		inline double r_cutoff(double lrs, const radius_info& rad_info) const { return lrs; }
-		/** Adds the maximum radius squared to a given value.
+		/* Adds the maximum radius squared to a given value.
 		 * \param[in] rs the value to consider.
 		 * \return The value with the radius squared added. */
 		inline double r_max_add(double rs) const { return rs; }
-		/** Subtracts the radius squared of a particle from a given
+		/* Subtracts the radius squared of a particle from a given
 		 * value.
 		 * \param[in] rs the value to consider.
 		 * \param[in] ijk the block that the particle is within.
 		 * \param[in] q the index of the particle within the block.
 		 * \return The value with the radius squared subtracted. */
 		inline double r_current_sub(double rs, int ijk, int q) const { return rs; }
-		/** Scales a plane displacement prior to use in the plane cutting
+		/* Scales a plane displacement prior to use in the plane cutting
 		 * algorithm.
 		 * \param[in] rs the initial plane displacement.
 		 * \param[in] ijk the block that the particle is within.
 		 * \param[in] q the index of the particle within the block.
 		 * \return The scaled plane displacement. */
 		inline double r_scale(double rs, int ijk, int q, const radius_info& rad_info) const { return rs; }
-		/** Scales a plane displacement prior to use in the plane
+		/* Scales a plane displacement prior to use in the plane
 		 * cutting algorithm, and also checks if it could possibly cut
 		 * the cell.
 		 * \param[in,out] rs the plane displacement to be scaled.
@@ -2760,7 +2760,7 @@ namespace voro
 		inline bool r_scale_check(double& rs, double mrs, int ijk, int q, const radius_info& rad_info) const { return rs < mrs; }
 	};
 
-	/**  \brief Class containing all of the routines that are specific to computing
+	/*  \brief Class containing all of the routines that are specific to computing
 	 * the radical Voronoi tessellation.
 	 *
 	 * The container_poly and container_periodic_poly classes are derived from this
@@ -2772,17 +2772,17 @@ namespace voro
 		{
 			double r_rad, r_mul, r_val;
 		};
-		/** A two-dimensional array holding particle positions and radii. */
+		/* A two-dimensional array holding particle positions and radii. */
 		double** ppr;
-		/** The current maximum radius of any particle, used to
+		/* The current maximum radius of any particle, used to
 		 * determine when to cut off the radical Voronoi computation.
 		 * */
 		double max_radius;
-		/** The class constructor sets the maximum particle radius to
+		/* The class constructor sets the maximum particle radius to
 		 * be zero. */
 		radius_poly() : max_radius(0), ppr(nullptr) {}
 	protected:
-		/** This is called prior to computing a Voronoi cell for a
+		/* This is called prior to computing a Voronoi cell for a
 		 * given particle to initialize any required constants.
 		 * \param[in] ijk the block that the particle is within.
 		 * \param[in] s the index of the particle within the block. */
@@ -2790,27 +2790,27 @@ namespace voro
 			radius_out.r_rad = ppr[ijk][4 * s + 3] * ppr[ijk][4 * s + 3];
 			radius_out.r_mul = radius_out.r_rad - max_radius * max_radius;
 		}
-		/** Sets a required constant to be used when carrying out a
+		/* Sets a required constant to be used when carrying out a
 		 * plane bounds check. */
 		inline void r_prime(double rv, radius_info& radius_out) const {
 			radius_out.r_val = 1 + radius_out.r_mul / rv;
 		}
-		/** Carries out a radius bounds check.
+		/* Carries out a radius bounds check.
 		 * \param[in] crs the radius squared to be tested.
 		 * \param[in] mrs the current maximum distance to a Voronoi
 		 *                vertex multiplied by two.
 		 * \return True if particles at this radius could not possibly
 		 * cut the cell, false otherwise. */
 		inline bool r_ctest(double crs, double mrs, const radius_info& rad_info) const { return crs + rad_info.r_mul > sqrt(mrs * crs); }
-		/** Scales a plane displacement during a plane bounds check.
+		/* Scales a plane displacement during a plane bounds check.
 		 * \param[in] lrs the plane displacement.
 		 * \return The scaled value. */
 		inline double r_cutoff(double lrs, const radius_info& rad_info) const { return lrs * rad_info.r_val; }
-		/** Adds the maximum radius squared to a given value.
+		/* Adds the maximum radius squared to a given value.
 		 * \param[in] rs the value to consider.
 		 * \return The value with the radius squared added. */
 		inline double r_max_add(double rs) const { return rs + max_radius * max_radius; }
-		/** Subtracts the radius squared of a particle from a given
+		/* Subtracts the radius squared of a particle from a given
 		 * value.
 		 * \param[in] rs the value to consider.
 		 * \param[in] ijk the block that the particle is within.
@@ -2819,7 +2819,7 @@ namespace voro
 		inline double r_current_sub(double rs, int ijk, int q) const {
 			return rs - ppr[ijk][4 * q + 3] * ppr[ijk][4 * q + 3];
 		}
-		/** Scales a plane displacement prior to use in the plane cutting
+		/* Scales a plane displacement prior to use in the plane cutting
 		 * algorithm.
 		 * \param[in] rs the initial plane displacement.
 		 * \param[in] ijk the block that the particle is within.
@@ -2828,7 +2828,7 @@ namespace voro
 		inline double r_scale(double rs, int ijk, int q, const radius_info& rad_info) const {
 			return rs + rad_info.r_rad - ppr[ijk][4 * q + 3] * ppr[ijk][4 * q + 3];
 		}
-		/** Scales a plane displacement prior to use in the plane
+		/* Scales a plane displacement prior to use in the plane
 		 * cutting algorithm, and also checks if it could possibly cut
 		 * the cell.
 		 * \param[in,out] rs the plane displacement to be scaled.
@@ -2845,74 +2845,74 @@ namespace voro
 		}
 	};
 
-	/** \brief Structure for holding information about a particle.
+	/* \brief Structure for holding information about a particle.
  *
  * This small structure holds information about a single particle, and is used
  * by several of the routines in the voro_compute template for passing
  * information by reference between functions. */
 	struct particle_record {
-		/** The index of the block that the particle is within. */
+		/* The index of the block that the particle is within. */
 		int ijk;
-		/** The number of particle within its block. */
+		/* The number of particle within its block. */
 		int l;
-		/** The x-index of the block. */
+		/* The x-index of the block. */
 		int di;
-		/** The y-index of the block. */
+		/* The y-index of the block. */
 		int dj;
-		/** The z-index of the block. */
+		/* The z-index of the block. */
 		int dk;
 	};
 
-	/** \brief Template for carrying out Voronoi cell computations. */
+	/* \brief Template for carrying out Voronoi cell computations. */
 	template <class c_class>
 	class voro_compute {
 	public:
-		/** A reference to the container class on which to carry out*/
+		/* A reference to the container class on which to carry out*/
 		const c_class& con;
-		/** The size of an internal computational block in the x
+		/* The size of an internal computational block in the x
 		 * direction. */
 		const double boxx;
-		/** The size of an internal computational block in the y
+		/* The size of an internal computational block in the y
 		 * direction. */
 		const double boxy;
-		/** The size of an internal computational block in the z
+		/* The size of an internal computational block in the z
 		 * direction. */
 		const double boxz;
-		/** The inverse box length in the x direction, set to
+		/* The inverse box length in the x direction, set to
 		 * nx/(bx-ax). */
 		const double xsp;
-		/** The inverse box length in the y direction, set to
+		/* The inverse box length in the y direction, set to
 		 * ny/(by-ay). */
 		const double ysp;
-		/** The inverse box length in the z direction, set to
+		/* The inverse box length in the z direction, set to
 		 * nz/(bz-az). */
 		const double zsp;
-		/** The number of boxes in the x direction for the searching mask. */
+		/* The number of boxes in the x direction for the searching mask. */
 		const int hx;
-		/** The number of boxes in the y direction for the searching mask. */
+		/* The number of boxes in the y direction for the searching mask. */
 		const int hy;
-		/** The number of boxes in the z direction for the searching mask. */
+		/* The number of boxes in the z direction for the searching mask. */
 		const int hz;
-		/** A constant, set to the value of hx multiplied by hy, which
+		/* A constant, set to the value of hx multiplied by hy, which
 		 * is used in the routines which step through mask boxes in
 		 * sequence. */
 		const int hxy;
-		/** A constant, set to the value of hx*hy*hz, which is used in
+		/* A constant, set to the value of hx*hy*hz, which is used in
 		 * the routines which step through mask boxes in sequence. */
 		const int hxyz;
-		/** The number of floating point entries to store for each
+		/* The number of floating point entries to store for each
 		 * particle. */
 		const int ps;
 
 		// TODO: these are all things we could just access via the container ref con, above? no reason for them to live on this class?
-		/** This array holds the numerical IDs of each particle in each
+		/* This array holds the numerical IDs of each particle in each
 		 * computational box. */
 		int** id;
-		/** A two dimensional array holding particle positions. For the
+		/* A two dimensional array holding particle positions. For the
 		 * derived container_poly class, this also holds particle
 		 * radii. */
 		double** p;
-		/** An array holding the number of particles within each
+		/* An array holding the number of particles within each
 		 * computational box of the container. */
 		int* co;
 
@@ -2925,7 +2925,7 @@ namespace voro
 			mask(new unsigned int[hxyz]), qu(new int[qu_size]), qu_l(qu + qu_size) {
 			reset_mask();
 		}
-		/** The class destructor frees the dynamically allocated memory
+		/* The class destructor frees the dynamically allocated memory
 		 * for the mask and queue. */
 		~voro_compute() {
 			delete[] qu;
@@ -3458,28 +3458,28 @@ namespace voro
 			}
 		}
 	private:
-		/** A constant set to boxx*boxx+boxy*boxy+boxz*boxz, which is
+		/* A constant set to boxx*boxx+boxy*boxy+boxz*boxz, which is
 		 * frequently used in the computation. */
 		const double bxsq;
-		/** This sets the current value being used to mark tested blocks
+		/* This sets the current value being used to mark tested blocks
 		 * in the mask. */
 		unsigned int mv;
-		/** The current size of the search list. */
+		/* The current size of the search list. */
 		int qu_size;
 
 		// TODO: can get via 'con' -- no reason for wl to live on this class?
-		/** A pointer to the array of worklists. */
+		/* A pointer to the array of worklists. */
 		const unsigned int* wl;
-		/** An pointer to the array holding the minimum distances
+		/* An pointer to the array holding the minimum distances
 		 * associated with the worklists. */
 		double* mrad;
-		/** This array is used during the cell computation to determine
+		/* This array is used during the cell computation to determine
 		 * which blocks have been considered. */
 		unsigned int* mask;
-		/** An array is used to store the queue of blocks to test
+		/* An array is used to store the queue of blocks to test
 		 * during the Voronoi cell computation. */
 		int* qu;
-		/** A pointer to the end of the queue array, used to determine
+		/* A pointer to the end of the queue array, used to determine
 		 * when the queue is full. */
 		int* qu_l;
 		template<class v_cell>
@@ -3801,7 +3801,7 @@ namespace voro
 				rs = con.r_current_sub(x1 * x1 + y1 * y1 + z1 * z1, ijk, l);
 				if (rs < mrs) { mrs = rs; w.l = l; in_block = true; }
 			}
-			if (in_block) { w.ijk = ijk; w.di = di; w.dj = dj, w.dk = dk; }
+            if (in_block) { w.ijk = ijk; w.di = di; w.dj = dj; w.dk = dk; }
 		}
 
 		void add_list_memory(int*& qu_s, int*& qu_e)
@@ -3821,14 +3821,14 @@ namespace voro
 			qu_e = qu_c;
 		}
 
-		/** Resets the mask in cases where the mask counter wraps
+		/* Resets the mask in cases where the mask counter wraps
 		 * around. */
 		inline void reset_mask() {
 			for (unsigned int* mp(mask); mp < mask + hxyz; mp++) *mp = 0;
 		}
 	};
 
-	/** A type associated with a c_loop_subset class, determining what type of
+	/* A type associated with a c_loop_subset class, determining what type of
  * geometrical region to loop over. */
 	enum c_loop_subset_mode {
 		sphere,
@@ -3836,7 +3836,7 @@ namespace voro
 		no_check
 	};
 
-	/** \brief A class for storing ordering information when particles are added to
+	/* \brief A class for storing ordering information when particles are added to
 	 * a container.
 	 *
 	 * When particles are added to a container class, they are sorted into an
@@ -3850,26 +3850,26 @@ namespace voro
 	 * within it. */
 	class particle_order {
 	public:
-		/** A pointer to the array holding the ordering. */
+		/* A pointer to the array holding the ordering. */
 		int* o;
-		/** A pointer to the next position in the ordering array in
+		/* A pointer to the next position in the ordering array in
 		 * which to store an entry. */
 		int* op;
-		/** The current memory allocation for the class, set to the
+		/* The current memory allocation for the class, set to the
 		 * number of entries which can be stored. */
 		int size;
-		/** The particle_order constructor allocates memory to store the
+		/* The particle_order constructor allocates memory to store the
 		 * ordering information.
 		 * \param[in] init_size the initial amount of memory to
 		 *                      allocate. */
 		particle_order(int init_size = init_ordering_size)
 			: o(new int[size_t(init_size) << 1]), op(o), size(init_size) {}
-		/** The particle_order destructor frees the dynamically allocated
+		/* The particle_order destructor frees the dynamically allocated
 		 * memory used to store the ordering information. */
 		~particle_order() {
 			delete[] o;
 		}
-		/** Adds a record to the order, corresponding to the memory
+		/* Adds a record to the order, corresponding to the memory
 		 * address of where a particle was placed into the container.
 		 * \param[in] ijk the block into which the particle was placed.
 		 * \param[in] q the position within the block where the
@@ -3890,61 +3890,61 @@ namespace voro
 
 	class c_loop_base {
 	public:
-		/** The number of blocks in the x direction. */
+		/* The number of blocks in the x direction. */
 		const int nx;
-		/** The number of blocks in the y direction. */
+		/* The number of blocks in the y direction. */
 		const int ny;
-		/** The number of blocks in the z direction. */
+		/* The number of blocks in the z direction. */
 		const int nz;
-		/** A constant, set to the value of nx multiplied by ny, which
+		/* A constant, set to the value of nx multiplied by ny, which
 		 * is used in the routines that step through blocks in
 		 * sequence. */
 		const int nxy;
-		/** A constant, set to the value of nx*ny*nz, which is used in
+		/* A constant, set to the value of nx*ny*nz, which is used in
 		 * the routines that step through blocks in sequence. */
 		const int nxyz;
-		/** The number of floating point numbers per particle in the
+		/* The number of floating point numbers per particle in the
 		 * associated container data structure. */
 		const int ps;
-		/** A pointer to the particle position information in the
+		/* A pointer to the particle position information in the
 		 * associated container data structure. */
 		double** p;
-		/** A pointer to the particle ID information in the associated
+		/* A pointer to the particle ID information in the associated
 		 * container data structure. */
 		int** id;
-		/** A pointer to the particle counts in the associated
+		/* A pointer to the particle counts in the associated
 		 * container data structure. */
 		int* co;
-		/** The current x-index of the block under consideration by the
+		/* The current x-index of the block under consideration by the
 		 * loop. */
 		int i;
-		/** The current y-index of the block under consideration by the
+		/* The current y-index of the block under consideration by the
 		 * loop. */
 		int j;
-		/** The current z-index of the block under consideration by the
+		/* The current z-index of the block under consideration by the
 		 * loop. */
 		int k;
-		/** The current index of the block under consideration by the
+		/* The current index of the block under consideration by the
 		 * loop. */
 		int ijk;
-		/** The index of the particle under consideration within the current
+		/* The index of the particle under consideration within the current
 		 * block. */
 		int q;
-		/** The constructor copies several necessary constants from the
+		/* The constructor copies several necessary constants from the
 		 * base container class.
 		 * \param[in] con the container class to use. */
 		template<class c_class>
 		c_loop_base(c_class& con) : nx(con.nx), ny(con.ny), nz(con.nz),
 			nxy(con.nxy), nxyz(con.nxyz), ps(con.ps),
 			p(con.p), id(con.id), co(con.co) {}
-		/** Returns the position vector of the particle currently being
+		/* Returns the position vector of the particle currently being
 		 * considered by the loop.
 		 * \param[out] (x,y,z) the position vector of the particle. */
 		inline void pos(double& x, double& y, double& z) {
 			double* pp = p[ijk] + ps * q;
 			x = *(pp++); y = *(pp++); z = *pp;
 		}
-		/** Returns the ID, position vector, and radius of the particle
+		/* Returns the ID, position vector, and radius of the particle
 		 * currently being considered by the loop.
 		 * \param[out] pid the particle ID.
 		 * \param[out] (x,y,z) the position vector of the particle.
@@ -3957,32 +3957,32 @@ namespace voro
 			x = *(pp++); y = *(pp++); z = *pp;
 			r = ps == 3 ? default_radius : *(++pp);
 		}
-		/** Returns the x position of the particle currently being
+		/* Returns the x position of the particle currently being
 		 * considered by the loop. */
 		inline double x() { return p[ijk][ps * q]; }
-		/** Returns the y position of the particle currently being
+		/* Returns the y position of the particle currently being
 		 * considered by the loop. */
 		inline double y() { return p[ijk][ps * q + 1]; }
-		/** Returns the z position of the particle currently being
+		/* Returns the z position of the particle currently being
 		 * considered by the loop. */
 		inline double z() { return p[ijk][ps * q + 2]; }
-		/** Returns the ID of the particle currently being considered
+		/* Returns the ID of the particle currently being considered
 		 * by the loop. */
 		inline int pid() { return id[ijk][q]; }
 	};
 
-	/** \brief Class for looping over all of the particles in a container.
+	/* \brief Class for looping over all of the particles in a container.
 	 *
 	 * This is one of the simplest loop classes, that scans the computational
 	 * blocks in order, and scans all the particles within each block in order. */
 	class c_loop_all : public c_loop_base {
 	public:
-		/** The constructor copies several necessary constants from the
+		/* The constructor copies several necessary constants from the
 		 * base container class.
 		 * \param[in] con the container class to use. */
 		template<class c_class>
 		c_loop_all(c_class& con) : c_loop_base(con) {}
-		/** Sets the class to consider the first particle.
+		/* Sets the class to consider the first particle.
 		 * \return True if there is any particle to consider, false
 		 * otherwise. */
 		inline bool start() {
@@ -3990,7 +3990,7 @@ namespace voro
 			while (co[ijk] == 0) if (!next_block()) return false;
 			return true;
 		}
-		/** Finds the next particle to test.
+		/* Finds the next particle to test.
 		 * \return True if there is another particle, false if no more
 		 * particles are available. */
 		inline bool inc() {
@@ -4004,7 +4004,7 @@ namespace voro
 			return true;
 		}
 	private:
-		/** Updates the internal variables to find the next
+		/* Updates the internal variables to find the next
 		 * computational block with any particles.
 		 * \return True if another block is found, false if there are
 		 * no more blocks. */
@@ -4022,17 +4022,17 @@ namespace voro
 		}
 	};
 
-	/** \brief Class for looping over the particles in a range of blocks within a container.
+	/* \brief Class for looping over the particles in a range of blocks within a container.
  *
  * This scans the computational blocks in order, and scans all the particles within each block in order. */
 	class c_loop_block_range : public c_loop_base {
 	public:
-		/** The constructor copies several necessary constants from the
+		/* The constructor copies several necessary constants from the
 		 * base container class.  Defaults to full range.
 		 * \param[in] con the container class to use. */
 		template<class c_class>
 		c_loop_block_range(c_class& con) : c_loop_base(con) {}
-		/** Sets the class to consider the first particle.
+		/* Sets the class to consider the first particle.
 		 * \return True if there is any particle to consider, false
 		 * otherwise. */
 		inline bool start() {
@@ -4054,7 +4054,7 @@ namespace voro
 			assert(ijk_start >= 0 && ijk_start < nxyz&& ijk_stop >= 0 && ijk_stop <= nxyz);
 			assert(ijk_start < ijk_stop);
 		}
-		/** Finds the next particle to test.
+		/* Finds the next particle to test.
 		 * \return True if there is another particle, false if no more
 		 * particles are available. */
 		inline bool inc() {
@@ -4070,7 +4070,7 @@ namespace voro
 	private:
 		int ijk_start = 0, ijk_stop = 0;
 
-		/** Updates the internal variables to find the next
+		/* Updates the internal variables to find the next
 		 * computational block with any particles.
 		 * \return True if another block is found, false if there are
 		 * no more blocks. */
@@ -4088,7 +4088,7 @@ namespace voro
 		}
 	};
 
-	/** \brief Pure virtual class from which wall objects are derived.
+	/* \brief Pure virtual class from which wall objects are derived.
 	 *
 	 * This is a pure virtual class for a generic wall object. A wall object
 	 * can be specified by deriving a new class from this and specifying the
@@ -4096,18 +4096,18 @@ namespace voro
 	class wall {
 	public:
 		virtual ~wall() {}
-		/** A pure virtual function for testing whether a point is
+		/* A pure virtual function for testing whether a point is
 		 * inside the wall object. */
 		virtual bool point_inside(double x, double y, double z) const = 0;
-		/** A pure virtual function for cutting a cell without
+		/* A pure virtual function for cutting a cell without
 		 * neighbor-tracking with a wall. */
 		virtual bool cut_cell(voronoicell& c, double x, double y, double z) const = 0;
-		/** A pure virtual function for cutting a cell with
+		/* A pure virtual function for cutting a cell with
 		 * neighbor-tracking enabled with a wall. */
 		virtual bool cut_cell(voronoicell_neighbor& c, double x, double y, double z) const = 0;
 	};
 
-	/** \brief A class for storing a list of pointers to walls.
+	/* \brief A class for storing a list of pointers to walls.
 	 *
 	 * This class stores a list of pointers to wall classes. It contains several
 	 * simple routines that make use of the wall classes (such as telling whether a
@@ -4116,9 +4116,9 @@ namespace voro
 	 * class. */
 	class wall_list {
 	public:
-		/** An array holding pointers to wall objects. */
+		/* An array holding pointers to wall objects. */
 		wall** walls;
-		/** A pointer to the next free position to add a wall pointer.
+		/* A pointer to the next free position to add a wall pointer.
 		 */
 		wall** wep;
 		wall_list()
@@ -4146,19 +4146,19 @@ namespace voro
 		{
 			delete[] walls;
 		}
-		/** Adds a wall to the list.
+		/* Adds a wall to the list.
 		 * \param[in] w the wall to add. */
 		inline void add_wall(wall* w) {
 			if (wep == wel) increase_wall_memory();
 			*(wep++) = w;
 		}
-		/** Adds a wall to the list.
+		/* Adds a wall to the list.
 		 * \param[in] w a reference to the wall to add. */
 		inline void add_wall(wall& w) { add_wall(&w); }
 
 		void add_wall(wall_list& wl) { for (wall** wp = wl.walls; wp < wl.wep; wp++) add_wall(*wp); }
 
-		/** Determines whether a given position is inside all of the
+		/* Determines whether a given position is inside all of the
 		 * walls on the list.
 		 * \param[in] (x,y,z) the position to test.
 		 * \return True if it is inside, false if it is outside. */
@@ -4167,7 +4167,7 @@ namespace voro
 			return true;
 		}
 
-		/** Cuts a Voronoi cell by all of the walls currently on
+		/* Cuts a Voronoi cell by all of the walls currently on
 		 * the list.
 		 * \param[in] c a reference to the Voronoi cell class.
 		 * \param[in] (x,y,z) the position of the cell.
@@ -4195,14 +4195,14 @@ namespace voro
 			walls = nwalls; wel = walls + current_wall_size; wep = nwp;
 		}
 
-		/** A pointer to the limit of the walls array, used to
+		/* A pointer to the limit of the walls array, used to
 		 * determine when array is full. */
 		wall** wel;
-		/** The current amount of memory allocated for walls. */
+		/* The current amount of memory allocated for walls. */
 		int current_wall_size;
 	};
 
-	/** \brief Class for representing a particle system in a three-dimensional
+	/* \brief Class for representing a particle system in a three-dimensional
 	 * rectangular box.
 	 *
 	 * This class represents a system of particles in a three-dimensional
@@ -4219,44 +4219,44 @@ namespace voro
 	 * encapsulates routines about the underlying computational grid. */
 	class container_base : public voro_base, public wall_list {
 	public:
-		/** The minimum x coordinate of the container. */
+		/* The minimum x coordinate of the container. */
 		const double ax;
-		/** The maximum x coordinate of the container. */
+		/* The maximum x coordinate of the container. */
 		const double bx;
-		/** The minimum y coordinate of the container. */
+		/* The minimum y coordinate of the container. */
 		const double ay;
-		/** The maximum y coordinate of the container. */
+		/* The maximum y coordinate of the container. */
 		const double by;
-		/** The minimum z coordinate of the container. */
+		/* The minimum z coordinate of the container. */
 		const double az;
-		/** The maximum z coordinate of the container. */
+		/* The maximum z coordinate of the container. */
 		const double bz;
-		/** A boolean value that determines if the x coordinate in
+		/* A boolean value that determines if the x coordinate in
 		 * periodic or not. */
 		const bool xperiodic;
-		/** A boolean value that determines if the y coordinate in
+		/* A boolean value that determines if the y coordinate in
 		 * periodic or not. */
 		const bool yperiodic;
-		/** A boolean value that determines if the z coordinate in
+		/* A boolean value that determines if the z coordinate in
 		 * periodic or not. */
 		const bool zperiodic;
-		/** This array holds the numerical IDs of each particle in each
+		/* This array holds the numerical IDs of each particle in each
 		 * computational box. */
 		int** id;
-		/** A two dimensional array holding particle positions. For the
+		/* A two dimensional array holding particle positions. For the
 		 * derived container_poly class, this also holds particle
 		 * radii. */
 		double** p;
-		/** This array holds the number of particles within each
+		/* This array holds the number of particles within each
 		 * computational box of the container. */
 		int* co;
-		/** This array holds the maximum amount of particle memory for
+		/* This array holds the maximum amount of particle memory for
 		 * each computational box of the container. If the number of
 		 * particles in a particular box ever approaches this limit,
 		 * more is allocated using the add_particle_memory() function.
 		 */
 		int* mem;
-		/** The amount of memory in the array structure for each
+		/* The amount of memory in the array structure for each
 		 * particle. This is set to 3 when the basic class is
 		 * initialized, so that the array holds (x,y,z) positions. If
 		 * the container class is initialized as part of the derived
@@ -4322,7 +4322,7 @@ namespace voro
 				printf("Region (%d,%d,%d): %d particles\n", i, j, k, *(cop++));
 		}
 
-		/** Initializes the Voronoi cell prior to a compute_cell
+		/* Initializes the Voronoi cell prior to a compute_cell
 		 * operation for a specific particle being carried out by a
 		 * voro_compute class. The cell is initialized to fill the
 		 * entire container. For non-periodic coordinates, this is set
@@ -4360,7 +4360,7 @@ namespace voro
 			return true;
 		}
 
-		/** Initializes parameters for a find_voronoi_cell call within
+		/* Initializes parameters for a find_voronoi_cell call within
 		 * the voro_compute template.
 		 * \param[in] (ci,cj,ck) the coordinates of the test block in
 		 * 			 the container coordinate system.
@@ -4377,7 +4377,7 @@ namespace voro
 			disp = ijk - i - nx * (j + ny * k);
 		}
 
-		/** Returns the position of a particle currently being computed
+		/* Returns the position of a particle currently being computed
 		 * relative to the computational block that it is within. It is
 		 * used to select the optimal worklist entry to use.
 		 * \param[in] (x,y,z) the position of the particle.
@@ -4391,7 +4391,7 @@ namespace voro
 			fz = z - az - boxz * ck;
 		}
 
-		/** Calculates the index of block in the container structure
+		/* Calculates the index of block in the container structure
 		 * corresponding to given coordinates.
 		 * \param[in] (ci,cj,ck) the coordinates of the original block
 		 * 			 in the current computation, relative
@@ -4411,7 +4411,7 @@ namespace voro
 			return disp + ei + nx * (ej + ny * ek);
 		}
 
-		/** Sums up the total number of stored particles.
+		/* Sums up the total number of stored particles.
 		 * \return The number of particles. */
 		inline int total_particles() const {
 			int tp = *co;
@@ -4499,7 +4499,7 @@ namespace voro
 		}
 	};
 
-	/** \brief Extension of the container_base class for computing regular Voronoi
+	/* \brief Extension of the container_base class for computing regular Voronoi
 	 * tessellations.
 	 *
 	 * This class is an extension of the container_base class that has routines
@@ -4587,7 +4587,7 @@ namespace voro
 			return false;
 		}
 
-		/** Computes the Voronoi cell for a particle currently being
+		/* Computes the Voronoi cell for a particle currently being
 		 * referenced by a loop class.
 		 * \param[out] c a Voronoi cell class in which to store the
 		 * 		 computed cell.
@@ -4599,7 +4599,7 @@ namespace voro
 		inline bool compute_cell(v_cell& c, c_loop& vl, voro_compute<container>& vc) const {
 			return vc.compute_cell(c, vl.ijk, vl.q, vl.i, vl.j, vl.k);
 		}
-		/** Computes the Voronoi cell for given particle.
+		/* Computes the Voronoi cell for given particle.
 		 * \param[out] c a Voronoi cell class in which to store the
 		 * 		 computed cell.
 		 * \param[in] ijk the block that the particle is within.
@@ -4612,7 +4612,7 @@ namespace voro
 			int k = ijk / nxy, ijkt = ijk - nxy * k, j = ijkt / nx, i = ijkt - j * nx;
 			return vc.compute_cell(c, ijk, q, i, j, k);
 		}
-		/** Computes the Voronoi cell for a ghost particle at a given
+		/* Computes the Voronoi cell for a ghost particle at a given
 		 * location. NOT thread-safe; temporarily places particle into the container!
 		 * \param[out] c a Voronoi cell class in which to store the
 		 * 		 computed cell.
@@ -4636,7 +4636,7 @@ namespace voro
 		friend class voro_compute<container>;
 	};
 
-	/** \brief Extension of the container_base class for computing radical Voronoi
+	/* \brief Extension of the container_base class for computing radical Voronoi
 	 * tessellations.
 	 *
 	 * This class is an extension of container_base class that has routines
@@ -4698,7 +4698,7 @@ namespace voro
 			if (vl.start()) do if (compute_cell(c, vl, vc)) vol += c.volume(); while (vl.inc());
 			return vol;
 		}
-		/** Computes the Voronoi cell for a particle currently being
+		/* Computes the Voronoi cell for a particle currently being
 		 * referenced by a loop class.
 		 * \param[out] c a Voronoi cell class in which to store the
 		 * 		 computed cell.
@@ -4710,7 +4710,7 @@ namespace voro
 		inline bool compute_cell(v_cell& c, c_loop& vl, voro_compute<container>& vc) const {
 			return vc.compute_cell(c, vl.ijk, vl.q, vl.i, vl.j, vl.k);
 		}
-		/** Computes the Voronoi cell for given particle.
+		/* Computes the Voronoi cell for given particle.
 		 * \param[out] c a Voronoi cell class in which to store the
 		 * 		 computed cell.
 		 * \param[in] ijk the block that the particle is within.
@@ -4723,7 +4723,7 @@ namespace voro
 			int k = ijk / nxy, ijkt = ijk - nxy * k, j = ijkt / nx, i = ijkt - j * nx;
 			return vc.compute_cell(c, ijk, q, i, j, k);
 		}
-		/** Computes the Voronoi cell for a ghost particle at a given
+		/* Computes the Voronoi cell for a ghost particle at a given
 		 * location.
 		 * \param[out] c a Voronoi cell class in which to store the
 		 * 		 computed cell. NOT thread-safe; temporarily places particle into the container!

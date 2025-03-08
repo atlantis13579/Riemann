@@ -152,10 +152,34 @@ namespace Riemann
 			float Dist = DistanceToSegment(P0, P1);
 			return Dist <= Radius;
 		}
+        
+        bool IntersectDisk(const Vector3& P0, const Vector3& DiskNormal, float Radius) const
+        {
+            const float cos_theta = DiskNormal.Dot(Normal);
+            const float dist = DistanceToPoint(P0);
+            const float proj_radius = sqrtf(1.0f - cos_theta * cos_theta) * Radius;
+            return dist <= proj_radius;
+        }
 
 		bool IntersectCylinder(const Vector3& P0, const Vector3& P1, float Radius) const
 		{
-			// TODO
+            const Vector3 DiskNormal = (P1 - P0).Unit();
+            const float dp = DiskNormal.Dot(Normal);
+            if (fabsf(dp) < 1e-6f)
+            {
+                const float dist = DistanceToPoint(P0);
+                return dist <= Radius;
+            }
+            else if (fabsf(1.0f - fabsf(dp)) < 1e-6f )
+            {
+                const float sign0 = SignedDistanceToPoint(P0);
+                const float sign1 = SignedDistanceToPoint(P1);
+                return sign0 * sign1 <= 0.0f;
+            }
+            else
+            {
+                return IntersectDisk(P0, DiskNormal, Radius) || IntersectDisk(P1, DiskNormal, Radius);
+            }
 			return false;
 		}
 

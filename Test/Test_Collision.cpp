@@ -88,6 +88,8 @@ void TestTriangle()
 	Triangle3 tri2(Vector3(5.09916496f, 8.30379868f, 4.52991295f), Vector3(5.08997154f, 8.29810333f, 4.52174377f), Vector3(5.09456825f, 8.300951f, 4.52582836f));
 	Vector3 length = tri2.GetSideLength();
 	Vector3 normal = tri2.GetNormal();
+    (void)length;
+    (void)normal;
 	EXPECT(tri2.IsDegenerate());
 	EXPECT(Triangle3::IsColinear(tri2.v0, tri2.v1, tri2.v2));
 

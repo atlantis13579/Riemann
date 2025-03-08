@@ -295,7 +295,7 @@ namespace Riemann
 
 	SparseOctree::Cell SparseOctree::FindCurrentContainingCell(const Box3& Bounds) const
 	{
-		float BoxWidth = Bounds.MaxDim();
+		// float BoxWidth = Bounds.MaxDim();
 		Vector3 BoxCenter = Bounds.GetCenter();
 
 		Vector3i RootIndex = PointToIndex(0, BoxCenter);

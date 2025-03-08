@@ -1743,7 +1743,7 @@ namespace Riemann
 			static_cast<const TDynamicMeshVertexAttribute<float, 3>*>(Mesh->Attributes()->GetAttachedAttribute(TangentUAttribName));
 		const TDynamicMeshVertexAttribute<float, 3>* Vs =
 			static_cast<const TDynamicMeshVertexAttribute<float, 3>*>(Mesh->Attributes()->GetAttachedAttribute(TangentVAttribName));
-		Vector3 Normal = Mesh->GetVertexNormal(VID);
+		// Vector3 Normal = Mesh->GetVertexNormal(VID);
 		Us->GetValue(VID, U);
 		Vs->GetValue(VID, V);
 	}

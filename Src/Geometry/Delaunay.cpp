@@ -346,7 +346,7 @@ namespace Riemann
 				int e = start;
 				int q;
 
-				while (q = hull_next[e], !orient(x, y, coords[e].x, coords[e].y, coords[q].x, coords[q].y))
+                while (static_cast<void>(q = hull_next[e]), !orient(x, y, coords[e].x, coords[e].y, coords[q].x, coords[q].y))
 				{
 					e = q;
 					if (e == start)
@@ -374,7 +374,7 @@ namespace Riemann
 
 				int next = hull_next[e];
 				while (
-					q = hull_next[next],
+                       static_cast<void>(q = hull_next[next]),
 					orient(x, y, coords[next].x, coords[next].y, coords[q].x, coords[q].y))
 				{
 					t = add_triangle(next, i, q, hull_tri[i], -1, hull_tri[next]);
@@ -387,7 +387,7 @@ namespace Riemann
 				if (e == start)
 				{
 					while (
-						q = hull_prev[e],
+                           static_cast<void>(q = hull_prev[e]),
 						orient(x, y, coords[q].x, coords[q].y, coords[e].x, coords[e].y))
 					{
 						t = add_triangle(q, i, e, -1, hull_tri[e], hull_tri[q]);
@@ -2723,6 +2723,7 @@ namespace Riemann
 				const int iDupe = v1 == v ? t.vertices[0]
 					: v2 == v ? t.vertices[1]
 					: t.vertices[2];
+                (void)iDupe;
 				assert(false);
 			}
 
@@ -3488,7 +3489,8 @@ namespace Riemann
 		}
 
 		bool succ = d.verifyTopology();
-
+        (void)succ;
+        
 		Points = d.vertices;
 		Triangles.clear();
 		for (size_t i = 0; i < d.triangles.size(); ++i)

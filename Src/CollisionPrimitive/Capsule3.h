@@ -71,6 +71,11 @@ namespace Riemann
 		{
 			return Length * 0.5f;
 		}
+        
+        inline float IsSphere() const
+        {
+            return Length < 1e-6f;
+        }
 
 		Box3 CalculateBoundingVolume() const
 		{

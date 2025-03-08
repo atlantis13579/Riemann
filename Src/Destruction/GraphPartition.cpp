@@ -2990,7 +2990,7 @@ namespace metis
         {
             /* Common variables to all types of kway-refinement/balancing routines */
             idx_t i, ii, iii, j, k, pass, nvtxs, ncon, nparts, gain;
-            idx_t from, me, to, cto, oldcut;
+            idx_t from, me, to = 0, cto, oldcut;
             idx_t* xadj, * vwgt, * adjncy, * adjwgt;
             idx_t* where, * pwgts, * bndptr, * bndind;
             idx_t nmoved, nupd;
@@ -3668,7 +3668,7 @@ namespace metis
         {
             /* Common variables to all types of kway-refinement/balancing routines */
             idx_t i, ii, iii, j, k, pass, nvtxs, ncon, nparts, gain;
-            idx_t from, me, to, cto, oldcut;
+            idx_t from, me, to = 0, cto, oldcut;
             idx_t* xadj, * vwgt, * adjncy;
             idx_t* where, * pwgts, * bndind;
             idx_t nmoved, nupd;
@@ -8506,7 +8506,7 @@ namespace metis
         {
             idx_t i, j, k, l;
             idx_t nvtxs, err = 0;
-            idx_t minedge, maxedge, minewgt, maxewgt;
+            idx_t minedge = 0, maxedge = 0, minewgt = 0, maxewgt = 0;
             idx_t* xadj, * adjncy, * adjwgt;
             std::vector<idx_t> htable;
 

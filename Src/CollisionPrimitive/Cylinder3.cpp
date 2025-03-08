@@ -134,7 +134,7 @@ bool Cylinder3::SweepPlane(const Vector3& Origin, const Vector3& Direction, cons
 	const float dp = Direction.Dot(Normal);
 	if (fabsf(dp) < 1e-6f)
 	{
-		if (p.IntersectCylinder(X0 + Origin, X1 + Origin, Radius))
+        if (p.IntersectCylinder(X0 + Origin, X1 + Origin, Radius))
 		{
 			*n = -Direction;
 			*t = 0.0f;
@@ -184,7 +184,7 @@ bool Cylinder3::SweepTriangleMesh(const Vector3& Origin, const Vector3& Directio
 
 int Cylinder3::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
 {
-	const Vector3* CylinderFaces = GetCylinderFaces();
+	const auto& CylinderFaces = GetCylinderFaces();
 
 	const float HalfHeight = Height * 0.5f;
 	const float o = sqrtf(Direction.x * Direction.x + Direction.z * Direction.z);
@@ -200,19 +200,18 @@ int Cylinder3::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) con
 	// top or bottom
 	const float sy = Direction.y > 0 ? 1.0f : -1.0f;
 	Vector3 s(Radius, HalfHeight * sy, Radius);
-	int nPts = sizeof(CylinderFaces) / sizeof(CylinderFaces[0]);
-	for (int i = 0; i < nPts; ++i)
+	for (size_t i = 0; i < CylinderFaces.size(); ++i)
 	{
 		FacePoints[i] = Vector3(CylinderFaces[i].x * s.x, CylinderFaces[i].y * s.y, CylinderFaces[i].z * s.z);
 	}
-	return nPts;
+	return (int)CylinderFaces.size();
 }
 
 void Cylinder3::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 {
-	const Vector3* CylinderFaces = GetCylinderFaces();
+    const auto& CylinderFaces = GetCylinderFaces();
 
-	int nPts = sizeof(CylinderFaces) / sizeof(CylinderFaces[0]);
+	int nPts = (int)CylinderFaces.size();
 	Vector3 s = Vector3(Radius, Height * 0.5f, Radius);
 	Vertices.resize(nPts * 2 + 2);
 	Normals.resize(nPts * 2 + 2);
@@ -254,9 +253,9 @@ void Cylinder3::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& I
 
 void Cylinder3::GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)
 {
-	const Vector3* CylinderFaces = GetCylinderFaces();
+    const auto& CylinderFaces = GetCylinderFaces();
 
-	int nPts = sizeof(CylinderFaces) / sizeof(CylinderFaces[0]);
+	int nPts = (int)CylinderFaces.size();
 	Vector3 s = Vector3(Radius, Height * 0.5f, Radius);
 	Vertices.resize(nPts * 2 + 2);
 	Vertices[2 * nPts] = Vector3(0.0f, Height * 0.5f, 0.0f);

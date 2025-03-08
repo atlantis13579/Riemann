@@ -190,6 +190,7 @@ namespace Riemann
 				bEndPointSpecialProcess = true;
 			}
 			bool bNeedFinalRelocate = false;
+            (void)bNeedFinalRelocate;
 			FMeshSurfacePoint EndPtUpdated = Path.back().first;
 			Vector3 EndPtPos = OrigEndPt.Pos(Mesh);
 
@@ -303,6 +304,7 @@ namespace Riemann
 			{
 				return BaryCoord[0] >= -BaryThreshold && BaryCoord[1] >= -BaryThreshold && BaryCoord[2] >= -BaryThreshold;
 			};
+            (void)PtInsideTri;
 
 			struct FWalkIndices
 			{
@@ -336,6 +338,7 @@ namespace Riemann
 			if (StartVIDIndex == -1)
 			{
 				Triangle3::PointDistanceQueryResult info = CurrentTri.PointDistanceQuery(StartPt);
+                (void)info;
 				ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(StartTri, CurrentTriDist.BaryCoords), FWalkIndices(StartPt, -1, StartTri));
 			}
 			else
@@ -896,6 +899,7 @@ namespace Riemann
 				float SplitParam = Seg.ProjectUnitRange(Pt.Pos);
 
 				Index2 SplitTris = Mesh->GetEdgeT(EID);
+                (void)SplitTris;
 				FEdgeSplitInfo SplitInfo;
 				EMeshResult Result = Mesh->SplitEdge(EID, SplitInfo, SplitParam);
 				assert(Result == EMeshResult::Ok);
@@ -1735,7 +1739,7 @@ namespace Riemann
 					}
 					else // it wasn't in the boundary edge set; check if it's one that would prevent us from safely removing the vertex
 					{
-						bool b = false;
+						// bool b = false;
 						if (Mesh.IsBoundaryEdge(VertEID) || (Mesh.HasAttributes() && Mesh.Attributes()->IsSeamEdge(VertEID)))
 						{
 							bHasBadEdge = true;
@@ -2227,7 +2231,7 @@ namespace Riemann
 					}
 					Vector3 A, B;
 					CutMesh[MeshIdx]->GetEdgeV(EID, A, B);
-					if ((A, B).SquareLength() > DegenerateEdgeTolSq)
+					if ((A - B).SquareLength() > DegenerateEdgeTolSq)
 					{
 						continue;
 					}

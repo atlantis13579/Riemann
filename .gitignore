@@ -363,3 +363,4 @@ Test/Test.xcodeproj/xcshareddata/xcschemes/Test.xcscheme
 *.timestamp
 *.modulevalidation
 *.so
+.DS_Store

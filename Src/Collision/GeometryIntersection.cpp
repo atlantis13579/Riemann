@@ -205,10 +205,10 @@ namespace Riemann
 	{
 		const GeometryTransform2 trans(t1, t2);
 		const Plane3* plane = static_cast<const Plane3*>(Obj1);
-		Vector3 Origin = trans.Local1ToLocal2(plane->GetOrigin());
-		Vector3 Normal = trans.Local1ToLocal2Direction(plane->Normal);
+		Vector3 OriginNew = trans.Local1ToLocal2(plane->GetOrigin());
+		Vector3 NormalNew = trans.Local1ToLocal2Direction(plane->Normal);
 		const T* obj = static_cast<const T*>(Obj2);
-		Plane3 NewPlane(Normal, Origin);
+		Plane3 NewPlane(NormalNew, OriginNew);
 		return obj->SweepPlane(Origin, Dir, NewPlane.Normal, NewPlane.D, n, t);
 	}
 

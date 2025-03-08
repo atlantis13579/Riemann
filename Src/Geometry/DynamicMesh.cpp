@@ -1616,7 +1616,7 @@ namespace Riemann
 				N++;
 			}
 			const int et1 = e.Tri[1];
-			if (e.Tri[1] != -1 && TriHasSequentialVertices(e.Tri[1], vID, vOther))
+			if (et1 != -1 && TriHasSequentialVertices(et1, vID, vOther))
 			{
 				N++;
 			}

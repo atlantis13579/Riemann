@@ -28,12 +28,13 @@ namespace Riemann
 			{
 				if (m_buffer[i] == k)
 				{
-					return;
+					return false;
 				}
 			}
 			m_buffer[m_size].key = k;
 			m_buffer[m_size].value = v;
 			m_size++;
+            return true;
 		}
 
 		bool erase(const K& key)
