@@ -129,7 +129,25 @@ bool Cylinder3::SweepSphere(const Vector3& Origin, const Vector3& Direction, con
 
 bool Cylinder3::SweepPlane(const Vector3& Origin, const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const
 {
-	// TODO
+	Plane3 p(Normal, D);
+
+	const float dp = Direction.Dot(Normal);
+	if (fabsf(dp) < 1e-6f)
+	{
+		if (p.IntersectCylinder(X0 + Origin, X1 + Origin, Radius))
+		{
+			*n = -Direction;
+			*t = 0.0f;
+			return true;
+		}
+	}
+
+	const Vector3 RelativeOrigin = Origin + GetSupport(Direction);
+	if (p.IntersectRay(RelativeOrigin, Direction, t))
+	{
+		*n = dp < 0.0f ? Normal : -Normal;
+		return true;
+	}
 	return false;
 }
 

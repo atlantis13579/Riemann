@@ -153,6 +153,12 @@ namespace Riemann
 			return Dist <= Radius;
 		}
 
+		bool IntersectCylinder(const Vector3& P0, const Vector3& P1, float Radius) const
+		{
+			// TODO
+			return false;
+		}
+
 		bool IntersectPlane(const Vector3& _Normal, float _D) const
 		{
 			bool Parallel = Normal.ParallelTo(_Normal);
