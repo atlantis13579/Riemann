@@ -127,6 +127,18 @@ namespace Riemann
 		return p->IntersectOBB(obb1.Center, obb1.Extent, obb1.Rotation);
 	}
 
+    template <class T>
+    bool IntersectCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
+    {
+        const GeometryTransform2 trans(t1, t2);
+        const Capsule3* capsule = static_cast<const Capsule3*>(Obj1);
+        float Radius = capsule->Radius;
+        Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
+        Vector3 P1 = trans.Local1ToLocal2(capsule->X1);
+        const T* p = static_cast<const T*>(Obj2);
+        return p->PenetrateCapsule(P0, P1, Radius, n, d);
+    }
+
 	bool	PenetrateEPASolver(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
 	{
 		// Hack, see GetShapeObjPtr()
@@ -189,63 +201,91 @@ namespace Riemann
 	}
 
 	template <class T>
-	bool	IntersectCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
+	bool	SweepTBox(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
 	{
-		const GeometryTransform2 trans(t1, t2);
-		const Capsule3* capsule = static_cast<const Capsule3*>(Obj1);
-		float Radius = capsule->Radius;
-		Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
-		Vector3 P1 = trans.Local1ToLocal2(capsule->X1);
-		const T* p = static_cast<const T*>(Obj2);
-		return p->PenetrateCapsule(P0, P1, Radius, n, d);
+        // TODO
+        return false;
 	}
 
 	template <class T>
-	bool	SweepBoxT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
+	bool	SweepTPlane(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
 	{
-		const GeometryTransform2 trans(t1, t2);
-		const Plane3* plane = static_cast<const Plane3*>(Obj1);
+		const GeometryTransform2 trans(t2, t1);
+		const Plane3* plane = static_cast<const Plane3*>(Obj2);
 		Vector3 OriginNew = trans.Local1ToLocal2(plane->GetOrigin());
 		Vector3 NormalNew = trans.Local1ToLocal2Direction(plane->Normal);
-		const T* obj = static_cast<const T*>(Obj2);
+		const T* obj = static_cast<const T*>(Obj1);
 		Plane3 NewPlane(NormalNew, OriginNew);
 		return obj->SweepPlane(Origin, Dir, NewPlane.Normal, NewPlane.D, n, t);
 	}
 
 	template <class T>
-	bool	SweepPlaneT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
+	bool	SweepTSphere(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
 	{
-		const GeometryTransform2 trans(t1, t2);
-		const Plane3* plane = static_cast<const Plane3*>(Obj1);
-		Vector3 Origin2 = trans.Local1ToLocal2(plane->GetOrigin());
-		Vector3 Normal2 = trans.Local1ToLocal2Direction(plane->Normal);
-		const T* obj = static_cast<const T*>(Obj2);
-		Plane3 NewPlane(Normal2, Origin2);
-		return obj->SweepPlane(Origin, Dir, NewPlane.Normal, NewPlane.D, n, t);
-	}
-
-	template <class T>
-	bool	SweepSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
-	{
-		const GeometryTransform2 trans(t1, t2);
-		const Sphere3* sphere = static_cast<const Sphere3*>(Obj1);
+		const GeometryTransform2 trans(t2, t1);
+		const Sphere3* sphere = static_cast<const Sphere3*>(Obj2);
 		float Radius = sphere->Radius;
 		Vector3 Center = trans.Local1ToLocal2(sphere->Center);
-		const T* obj = static_cast<const T*>(Obj2);
+		const T* obj = static_cast<const T*>(Obj1);
 		return obj->SweepSphere(Origin, Dir, Center, Radius, n, t);
 	}
 
-	template <class T>
-	bool	SweepCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
-	{
-		const GeometryTransform2 trans(t1, t2);
-		const Capsule3* capsule = static_cast<const Capsule3*>(Obj1);
-		float Radius = capsule->Radius;
-		Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
-		Vector3 P1 = trans.Local1ToLocal2(capsule->X1);
-		const T* obj = static_cast<const T*>(Obj2);
-		return obj->SweepCapsule(Origin, Dir, P0, P1, Radius, n, t);
-	}
+    template <class T>
+    bool    SweepTCylinder(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
+    {
+        const GeometryTransform2 trans(t2, t1);
+        const Cylinder3* cy = static_cast<const Cylinder3*>(Obj2);
+        float Radius = cy->Radius;
+        Vector3 P0 = trans.Local1ToLocal2(cy->X0);
+        Vector3 P1 = trans.Local1ToLocal2(cy->X1);
+        const T* obj = static_cast<const T*>(Obj1);
+        return obj->SweepCylinder(Origin, Dir, P0, P1, Radius, n, t);
+    }
+
+    template <class T>
+    bool    SweepTCapsule(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
+    {
+        const GeometryTransform2 trans(t2, t1);
+        const Capsule3* capsule = static_cast<const Capsule3*>(Obj2);
+        float Radius = capsule->Radius;
+        Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
+        Vector3 P1 = trans.Local1ToLocal2(capsule->X1);
+        const T* obj = static_cast<const T*>(Obj1);
+        return obj->SweepCapsule(Origin, Dir, P0, P1, Radius, n, t);
+        return false;
+    }
+
+    template <class T>
+    bool    SweepTConvexmesh(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
+    {
+        const GeometryTransform2 trans(t2, t1);
+        const ConvexMesh* convex = static_cast<const ConvexMesh*>(Obj2);
+        const T* obj = static_cast<const T*>(Obj1);
+        return obj->SweepConvex(Origin, Dir, convex, n, t);
+    }
+
+    template <class T>
+    bool    SweepTHeightfield(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
+    {
+        const GeometryTransform2 trans(t2, t1);
+        const HeightField3* hf = static_cast<const HeightField3*>(Obj2);
+        const T* obj = static_cast<const T*>(Obj1);
+        return obj->SweepHeightField(Origin, Dir, hf, n, t);
+    }
+
+    template <class T>
+    bool    SweepTTriangleMesh(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
+    {
+        const GeometryTransform2 trans(t2, t1);
+        const TriangleMesh* trimesh = static_cast<const TriangleMesh*>(Obj2);
+        const T* obj = static_cast<const T*>(Obj1);
+        return obj->SweepTriangleMesh(Origin, Dir, trimesh, n, t);
+    }
+
+    bool SweepNotSuppoer(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Origin, const Vector3& Dir, Vector3* n, float* t)
+    {
+        return true;
+    }
 
 #define	REG_RAYCAST_FUNC(_type, _name)					\
 	raycastTable[(int)_type] = RayCastT<_name>;
@@ -338,15 +378,62 @@ namespace Riemann
 		REG_PENETRATE_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::TRIANGLE_MESH, PenetrateNotSupport);
 		REG_PENETRATE_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::TRIANGLE_MESH, PenetrateNotSupport);
 
-		REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::PLANE, SweepPlaneT<AxisAlignedBox3>);
-		REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::SPHERE, SweepSphereT<AxisAlignedBox3>);
-		REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::CAPSULE, SweepCapsuleT<AxisAlignedBox3>);
-		REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::PLANE, SweepPlaneT<Sphere3>);
-		REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::SPHERE, SweepSphereT<Sphere3>);
-		REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::CAPSULE, SweepCapsuleT<Sphere3>);
-		REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::PLANE, SweepPlaneT<Capsule3>);
-		REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::SPHERE, SweepSphereT<Capsule3>);
-		REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CAPSULE, SweepCapsuleT<Capsule3>);
+        REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::BOX, SweepTBox<AxisAlignedBox3>);
+        REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::PLANE, SweepTPlane<AxisAlignedBox3>);
+        REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::SPHERE, SweepTSphere<AxisAlignedBox3>);
+        REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::CYLINDER, SweepTCylinder<AxisAlignedBox3>);
+        REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::CAPSULE, SweepTCapsule<AxisAlignedBox3>);
+        REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::HEIGHTFIELD, SweepTHeightfield<AxisAlignedBox3>);
+        REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::CONVEX_MESH, SweepTConvexmesh<AxisAlignedBox3>);
+        REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::TRIANGLE_MESH, SweepTTriangleMesh<AxisAlignedBox3>);
+        REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::BOX, SweepTBox<Sphere3>);
+        REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::PLANE, SweepTPlane<Sphere3>);
+        REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::SPHERE, SweepTSphere<Sphere3>);
+        REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::CYLINDER, SweepTCylinder<Sphere3>);
+        REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::CAPSULE, SweepTCapsule<Sphere3>);
+        REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::HEIGHTFIELD, SweepTHeightfield<Sphere3>);
+        REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::CONVEX_MESH, SweepTConvexmesh<Sphere3>);
+        REG_SWEEP_FUNC(PrimitiveType::SPHERE, PrimitiveType::TRIANGLE_MESH, SweepTTriangleMesh<Sphere3>);
+        REG_SWEEP_FUNC(PrimitiveType::CYLINDER, PrimitiveType::BOX, SweepTBox<Cylinder3>);
+        REG_SWEEP_FUNC(PrimitiveType::CYLINDER, PrimitiveType::PLANE, SweepTPlane<Cylinder3>);
+        REG_SWEEP_FUNC(PrimitiveType::CYLINDER, PrimitiveType::SPHERE, SweepTSphere<Cylinder3>);
+        REG_SWEEP_FUNC(PrimitiveType::CYLINDER, PrimitiveType::CYLINDER, SweepTCylinder<Cylinder3>);
+        REG_SWEEP_FUNC(PrimitiveType::CYLINDER, PrimitiveType::CAPSULE, SweepTCapsule<Cylinder3>);
+        REG_SWEEP_FUNC(PrimitiveType::CYLINDER, PrimitiveType::HEIGHTFIELD, SweepTHeightfield<Cylinder3>);
+        REG_SWEEP_FUNC(PrimitiveType::CYLINDER, PrimitiveType::CONVEX_MESH, SweepTConvexmesh<Cylinder3>);
+        REG_SWEEP_FUNC(PrimitiveType::CYLINDER, PrimitiveType::TRIANGLE_MESH, SweepTTriangleMesh<Cylinder3>);
+        REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::BOX, SweepTBox<Capsule3>);
+		REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::PLANE, SweepTPlane<Capsule3>);
+		REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::SPHERE, SweepTSphere<Capsule3>);
+		REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CYLINDER, SweepTCylinder<Capsule3>);
+        REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CAPSULE, SweepTCapsule<Capsule3>);
+        REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::HEIGHTFIELD, SweepTHeightfield<Capsule3>);
+        REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::CONVEX_MESH, SweepTConvexmesh<Capsule3>);
+        REG_SWEEP_FUNC(PrimitiveType::CAPSULE, PrimitiveType::TRIANGLE_MESH, SweepTTriangleMesh<Capsule3>);
+        REG_SWEEP_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::BOX, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::PLANE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::SPHERE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::CYLINDER, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::CAPSULE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::HEIGHTFIELD, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::CONVEX_MESH, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::TRIANGLE_MESH, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::BOX, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::PLANE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::SPHERE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::CYLINDER, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::CAPSULE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::HEIGHTFIELD, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::CONVEX_MESH, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::TRIANGLE_MESH, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::BOX, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::PLANE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::SPHERE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::CYLINDER, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::CAPSULE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::HEIGHTFIELD, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::CONVEX_MESH, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::TRIANGLE_MESH, SweepNotSuppoer);
 	}
 
 	GeometryIntersection s_geom_registration;

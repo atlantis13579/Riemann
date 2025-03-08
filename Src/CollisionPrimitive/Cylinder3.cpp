@@ -151,6 +151,13 @@ bool Cylinder3::SweepPlane(const Vector3& Origin, const Vector3& Direction, cons
 	return false;
 }
 
+bool Cylinder3::SweepCylinder(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+{
+    Cylinder3 cylinder(X0, X1, rRadius);
+    GJKShapecast gjk;
+    return gjk.Solve(Origin, Direction, this, &cylinder, n, t);
+}
+
 bool Cylinder3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
 {
 	Capsule3 capsule(X0, X1, rRadius);

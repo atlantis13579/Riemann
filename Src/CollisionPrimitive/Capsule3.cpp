@@ -1,5 +1,6 @@
-#include "Capsule3.h"
 #include "AxisAlignedBox3.h"
+#include "Capsule3.h"
+#include "Cylinder3.h"
 #include "Sphere3.h"
 #include "Segment3.h"
 #include "ConvexMesh.h"
@@ -287,6 +288,13 @@ bool Capsule3::SweepPlane(const Vector3& Origin, const Vector3& Direction, const
 		return true;
 	}
 	return false;
+}
+
+bool Capsule3::SweepCylinder(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+{
+    Cylinder3 cylinder(X0, X1, rRadius);
+    GJKShapecast gjk;
+    return gjk.Solve(Origin, Direction, this, &cylinder, n, t);
 }
 
 bool Capsule3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
