@@ -53,7 +53,7 @@ namespace Riemann
 			return (Point - Closest).SquareLength();
 		}
 
-		static Vector3 	ClosestPointOnSegmentToPoint(const Vector3& Point, const Vector3& P0, const Vector3& P1)
+		static Vector3 ClosestPointOnSegmentToPoint(const Vector3& Point, const Vector3& P0, const Vector3& P1)
 		{
 			const Vector3 V1 = P1 - P0;
 			const Vector3 V2 = Point - P0;

@@ -118,6 +118,7 @@
 		6AC3722D2D7320BE00B88518 /* Box2.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC3722B2D7320BE00B88518 /* Box2.h */; };
 		6AC3722E2D7320BE00B88518 /* Box1.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC3722A2D7320BE00B88518 /* Box1.h */; };
 		6AC3722F2D7320BE00B88518 /* Box3.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC3722C2D7320BE00B88518 /* Box3.h */; };
+		6AF66CE02D7D31B100B6D49D /* Quad3.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AF66CDF2D7D31B100B6D49D /* Quad3.h */; };
 		AD02FE47289AAB06004D13D9 /* CollidingContact.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE45289AAB06004D13D9 /* CollidingContact.h */; };
 		AD02FE48289AAB06004D13D9 /* CollidingContact.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD02FE46289AAB06004D13D9 /* CollidingContact.cpp */; };
 		AD02FE4C289AAFBB004D13D9 /* QuadraticProgramming.h in Headers */ = {isa = PBXBuildFile; fileRef = AD02FE4B289AAFBB004D13D9 /* QuadraticProgramming.h */; };
@@ -352,6 +353,7 @@
 		6AC3722A2D7320BE00B88518 /* Box1.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Box1.h; path = /Volumes/ext/src/Riemann/Src/Maths/Box1.h; sourceTree = "<absolute>"; };
 		6AC3722B2D7320BE00B88518 /* Box2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Box2.h; path = /Volumes/ext/src/Riemann/Src/Maths/Box2.h; sourceTree = "<absolute>"; };
 		6AC3722C2D7320BE00B88518 /* Box3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Box3.h; path = /Volumes/ext/src/Riemann/Src/Maths/Box3.h; sourceTree = "<absolute>"; };
+		6AF66CDF2D7D31B100B6D49D /* Quad3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Quad3.h; path = /Volumes/ext/src/Riemann/Src/CollisionPrimitive/Quad3.h; sourceTree = "<absolute>"; };
 		AD02FE45289AAB06004D13D9 /* CollidingContact.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CollidingContact.h; path = ../../Src/RigidBodyDynamics/CollidingContact.h; sourceTree = "<group>"; };
 		AD02FE46289AAB06004D13D9 /* CollidingContact.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CollidingContact.cpp; path = ../../Src/RigidBodyDynamics/CollidingContact.cpp; sourceTree = "<group>"; };
 		AD02FE4B289AAFBB004D13D9 /* QuadraticProgramming.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = QuadraticProgramming.h; path = ../../Src/Optimization/QuadraticProgramming.h; sourceTree = "<group>"; };
@@ -803,6 +805,7 @@
 				6A6AEEC22D7C305D00692025 /* OrientedBox3.cpp */,
 				6A6AEEC32D7C305D00692025 /* Plane3.h */,
 				6A6AEEC42D7C305D00692025 /* PrimitiveType.h */,
+				6AF66CDF2D7D31B100B6D49D /* Quad3.h */,
 				6A6AEEC52D7C305D00692025 /* Ray3.h */,
 				6A6AEEC62D7C305D00692025 /* Segment2.h */,
 				6A6AEEC72D7C305D00692025 /* Segment3.h */,
@@ -952,6 +955,7 @@
 				AD02FE52289AB031004D13D9 /* SpecialFunctions.h in Headers */,
 				ADD23C9F288762C000A849BE /* SparseConjugateGradientSolver.h in Headers */,
 				AD1B176728ABC396003E024E /* ImageProcessing.h in Headers */,
+				6AF66CE02D7D31B100B6D49D /* Quad3.h in Headers */,
 				ADD23CC2288762CC00A849BE /* WarmStart.h in Headers */,
 				AD02FE47289AAB06004D13D9 /* CollidingContact.h in Headers */,
 				AD1B174B28ABC384003E024E /* PhysxFormat_41.hpp in Headers */,

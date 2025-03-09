@@ -57,6 +57,32 @@ bool Triangle3::RayIntersectTriangle(const Vector3& Origin, const Vector3& Direc
 	return false;
 }
 
+// static
+int Triangle3::RayIntersectTriangle2(const Vector3& Origin, const Vector3& Direction, const Vector3& vert0, const Vector3& edge1, const Vector3& edge2, float *t, float *u, float *v)
+{
+    const Vector3 pvec = Direction.Cross(edge2);
+    const float det = edge1.Dot(pvec);
+
+    const float eps = 0.00001f;
+    if (det > -eps && det < eps)
+        return 0;
+    const float InvDet = 1.0f / det;
+
+    const Vector3 tvec = Origin - vert0;
+    *u = (tvec.Dot(pvec)) * InvDet;
+    
+    const Vector3 qvec = tvec.Cross(edge1);
+    *v = (Direction.Dot(qvec)) * InvDet;
+
+    if (*u < 0.0f || *u > 1.0f)
+        return 1;
+    if (*v < 0.0f || *u + *v > 1.0f)
+        return 1;
+
+    *t = (edge2.Dot(qvec)) * InvDet;
+    return 2;
+}
+
 // https://math.stackexchange.com/questions/4322/check-whether-a-point-is-within-a-3d-triangle
 bool Triangle3::IntersectPoint(const Vector3& Point) const
 {

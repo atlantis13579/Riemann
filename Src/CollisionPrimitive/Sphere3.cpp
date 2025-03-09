@@ -5,6 +5,7 @@
 #include "Capsule3.h"
 #include "Cylinder3.h"
 #include "Segment3.h"
+#include "Triangle3.h"
 #include "ConvexMesh.h"
 #include "HeightField3.h"
 #include "TriangleMesh.h"
@@ -440,30 +441,7 @@ static bool EdgeOrVertexTest(const Vector3& IntersectPoint, const Vector3* tri, 
     return true;
 }
 
-static int RayIntersectTriSpecial(const Vector3& Origin, const Vector3& Direction, const Vector3& vert0, const Vector3& edge1, const Vector3& edge2, float *t, float *u, float *v)
-{
-    const Vector3 pvec = Direction.Cross(edge2);
-    const float det = edge1.Dot(pvec);
 
-    const float eps = 0.00001f;
-    if (det > -eps && det < eps)
-        return 0;
-    const float InvDet = 1.0f / det;
-
-    const Vector3 tvec = Origin - vert0;
-    *u = (tvec.Dot(pvec)) * InvDet;
-    
-    const Vector3 qvec = tvec.Cross(edge1);
-    *v = (Direction.Dot(qvec)) * InvDet;
-
-    if (*u < 0.0f || *u > 1.0f)
-        return 1;
-    if (*v < 0.0f || *u + *v > 1.0f)
-        return 1;
-
-    *t = (edge2.Dot(qvec)) * InvDet;
-    return 2;
-}
 
 bool Sphere3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const
 {
@@ -481,15 +459,15 @@ bool Sphere3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, con
         }
     }
     
-    const Vector3 BA = B - A;
-    const Vector3 CA = C - A;
-    const Vector3 Normal = CA.Cross(BA).Unit();
+    const Vector3 Normal = Triangle3::CalculateNormal(A, B, C, false);
     Vector3 R = Normal * Radius;
     if (Direction.Dot(R) >= 0.0f)
         R = -R;
 
     float uu, vv, tt;
-    const int r = RayIntersectTriSpecial(center - R, Direction, A, BA, CA, &tt, &uu, &vv);
+    const Vector3 BA = B - A;
+    const Vector3 CA = C - A;
+    const int r = Triangle3::RayIntersectTriangle2(center - R, Direction, A, BA, CA, &tt, &uu, &vv);
     if (!r)
         return false;
     if (r == 2)

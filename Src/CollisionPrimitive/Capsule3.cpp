@@ -2,7 +2,9 @@
 #include "Capsule3.h"
 #include "Cylinder3.h"
 #include "Sphere3.h"
+#include "Quad3.h"
 #include "Segment3.h"
+#include "Triangle3.h"
 #include "ConvexMesh.h"
 #include "HeightField3.h"
 #include "TriangleMesh.h"
@@ -290,18 +292,221 @@ bool Capsule3::SweepPlane(const Vector3& Origin, const Vector3& Direction, const
 	return false;
 }
 
-bool Capsule3::SweepCylinder(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+bool Capsule3::SweepCylinder(const Vector3& Origin, const Vector3& Direction, const Vector3& _X0, const Vector3& _X1, float _Radius, Vector3* n, float* t) const
 {
-    Cylinder3 cylinder(X0, X1, rRadius);
+    Cylinder3 cylinder(_X0, _X1, _Radius);
     GJKShapecast gjk;
     return gjk.Solve(Origin, Direction, this, &cylinder, n, t);
 }
 
-bool Capsule3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+static void computeEdgeEdgeDist(const Vector3& p, const Vector3& a, const Vector3& q, const Vector3& b, Vector3* x, Vector3* y)
 {
-	Capsule3 capsule(X0, X1, rRadius);
-	GJKShapecast gjk;
-	return gjk.Solve(Origin, Direction, this, &capsule, n, t);
+    const Vector3 T = q - p;
+    const float ADotA = a.Dot(a);
+    const float BDotB = b.Dot(b);
+    const float ADotB = a.Dot(b);
+    const float ADotT = a.Dot(T);
+    const float BDotT = b.Dot(T);
+
+    // t parameterizes ray (p, a)
+    // u parameterizes ray (q, b)
+    // Compute t for the closest point on ray (p, a) to ray (q, b)
+    const float Denom = ADotA * BDotB - ADotB * ADotB;
+
+    float t;
+    if (Denom != 0.0f)
+    {
+        t = (ADotT * BDotB - BDotT * ADotB) / Denom;
+
+        // Clamp result so t is on the segment (p, a)
+        if (t < 0.0f)
+            t = 0.0f;
+        else if (t > 1.0f)
+            t = 1.0f;
+    }
+    else
+    {
+        t = 0.0f;
+    }
+
+    // find u for point on ray (q, b) closest to point at t
+    float u;
+    if (BDotB != 0.0f)
+    {
+        u = (t * ADotB - BDotT) / BDotB;
+        if (u < 0.0f)
+        {
+            u = 0.0f;
+            if (ADotA != 0.0f)
+            {
+                t = ADotT / ADotA;
+                if (t < 0.0f)
+                    t = 0.0f;
+                else if (t > 1.0f)
+                    t = 1.0f;
+            }
+            else
+            {
+                t = 0.0f;
+            }
+        }
+        else if (u > 1.0f)
+        {
+            u = 1.0f;
+            if (ADotA != 0.0f)
+            {
+                t = (ADotB + ADotT) / ADotA;
+                if (t < 0.0f)
+                    t = 0.0f;
+                else if (t > 1.0f)
+                    t = 1.0f;
+            }
+            else
+            {
+                t = 0.0f;
+            }
+        }
+    }
+    else
+    {
+        u = 0.0f;
+        if (ADotA != 0.0f)
+        {
+            t = ADotT / ADotA;
+            if (t < 0.0f)
+                t = 0.0f;
+            else if (t > 1.0f)
+                t = 1.0f;
+        }
+        else
+        {
+            t = 0.0f;
+        }
+    }
+
+    *x = p + a * t;
+    *y = q + b * u;
+}
+
+bool Capsule3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& _X0, const Vector3& _X1, float _Radius, Vector3* n, float* t) const
+{
+    const float r2 = Radius + _Radius;
+
+    const bool testInitialOverlap = true;
+    if(testInitialOverlap)
+    {
+        bool dist;
+        if ((X0 - X1).IsZero())
+        {
+            dist = Segment3::SqrDistancePointToSegment(X0, _X0, _X1) < r2*  r2;
+        }
+        else if ((_X0 - _X1).IsZero())
+        {
+            dist = Segment3::SqrDistancePointToSegment(_X0, X0, X1) < r2 * r2;
+        }
+        else
+        {
+            dist = Segment3::SqrDistanceSegmentToSegment(X0, X1, _X0, _X1) < r2 * r2;
+        }
+
+        assert(dist >= 0.0f);
+        if (dist > 1e-6f)
+        {
+            *t = 0.0f;
+            *n = -Direction;
+            return true;
+        }
+    }
+    
+    // 1. Extrude capsule0 by capsule1's length
+    // 2. Inflate extruded shape by capsule1's radius
+    // 3. Raycast against resulting shape
+
+    const Vector3 D = (_X1 - _X0) * 0.5f;
+    const Vector3 p0 = X0 - D;
+    const Vector3 p1 = X1 - D;
+    const Vector3 p0b = X0 + D;
+    const Vector3 p1b = X1 + D;
+
+    Vector3 Normal = Triangle3::CalculateNormal(p0b, p1b, p1, false);
+    const float sweepDist = FLT_MAX;
+    float minDist =  sweepDist;
+    bool success = false;
+
+    Vector3 pa,pb,pc;
+    if ((Normal.Dot(Direction)) >= 0)  // Same direction
+    {
+        Normal *= r2;
+        pc = p0 - Normal;
+        pa = p1 - Normal;
+        pb = p1b - Normal;
+    }
+    else
+    {
+        Normal *= r2;
+        pb = p0 + Normal;
+        pa = p1 + Normal;
+        pc = p1b + Normal;
+    }
+    
+    float tt, uu, vv;
+    const Vector3 center = (X0 + X1) * 0.5f + Origin;
+    if (Quad3::RayIntersectQuad2(center, Direction, pa, pb, pc, &tt, &uu, &vv) && tt >= 0.0f && tt < minDist)
+    {
+        minDist = tt;
+        success = true;
+    }
+    
+    if (!success)
+    {
+        Capsule3 capsules[4];
+        capsules[0] = Capsule3(p0, p1, r2);
+        capsules[1] = Capsule3(p1, p1b, r2);
+        capsules[2] = Capsule3(p1b, p0b, r2);
+        capsules[3] = Capsule3(p0, p0b, r2);
+
+        for (int i=0; i<4; i++)
+        {
+            float w;
+            if (capsules[i].IntersectRay(center, Direction, &w))
+            {
+                if (w >= 0.0f && w <= minDist)
+                {
+                    minDist = w;
+                    success = true;
+                }
+            }
+        }
+    }
+    
+    if (success)
+    {
+        const Vector3 p00 = X0 - minDist * Direction;
+        const Vector3 p01 = X1 - minDist * Direction;
+
+        const Vector3 edge0 = p01 - p00;
+        const Vector3 edge1 = (_X1 - _X0);
+
+        Vector3 x, y;
+        computeEdgeEdgeDist(p00, edge0, _X0, edge1, &x, &y);
+
+        *n = (x - y);
+        const float epsilon = 0.001f;
+        if (n->Normalize() < epsilon)
+        {
+            *n = edge1.Cross(edge0);
+            if (n->Normalize() < epsilon)
+            {
+                computeEdgeEdgeDist(X0, X1 - X0, _X0, edge1, &x, &y);
+                *n = (x - y);
+                n->Normalize();
+            }
+        }
+
+        // Hit Position = (_Radius * x + Radius * y) / r2;
+    }
+
+    return success;
 }
 
 bool Capsule3::SweepConvex(const Vector3& Origin, const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const

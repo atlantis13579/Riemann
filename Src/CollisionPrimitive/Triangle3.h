@@ -117,6 +117,7 @@ namespace Riemann
 		}
 
 		static bool RayIntersectTriangle(const Vector3& Origin, const Vector3& Direction, const Vector3& A, const Vector3& B, const Vector3& C, float* t);
+        static int RayIntersectTriangle2(const Vector3& Origin, const Vector3& Direction, const Vector3& vert0, const Vector3& edge1, const Vector3& edge2, float *t, float *u, float *v);
 		bool IntersectPoint(const Vector3& Point) const;
 		bool IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 		bool IntersectSegment(const Vector3& P0, const Vector3& P1) const;
