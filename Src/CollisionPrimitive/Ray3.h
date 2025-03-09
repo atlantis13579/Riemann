@@ -116,4 +116,42 @@ public:
 		return *t0 < *t1;
 	}
 
+    bool    IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C, float* t)
+    {
+        const float kEpsilon = 0.0000001f;
+
+        const Vector3 BA = B - A;
+        const Vector3 CA = C - A;
+        const Vector3 P = Dir.Cross(CA);
+        const float det = BA.Dot(P);
+
+        if (det > -kEpsilon && det < kEpsilon)
+        {
+            return false;
+        }
+        const float inv_det = 1.f / det;
+
+        const Vector3 T = Origin - A;
+        const float u = T.Dot(P) * inv_det;
+        if (u < 0.f || u > 1.f)
+        {
+            return false;
+        }
+
+        const Vector3 Q = T.Cross(BA);
+        const float v = Dir.Dot(Q) * inv_det;
+        if (v < 0.f || u + v  > 1.f)
+        {
+            return false;
+        }
+
+        const float w = CA.Dot(Q) * inv_det;
+        if (w > kEpsilon)
+        {
+            *t = w;
+            return true;
+        }
+
+        return false;
+    }
 };

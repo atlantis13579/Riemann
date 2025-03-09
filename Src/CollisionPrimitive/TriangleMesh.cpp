@@ -3,6 +3,7 @@
 #include "AxisAlignedBox3.h"
 #include "OrientedBox3.h"
 #include "Sphere3.h"
+#include "Segment3.h"
 #include "Capsule3.h"
 #include "Triangle3.h"
 #include "../Maths/SIMD.h"
@@ -252,6 +253,158 @@ namespace Riemann
 
 		return hit;
 	}
+
+static void computeSphereTriangleSweepResult(const Vector3& center, const Vector3& dir, float t, const Vector3& A, const Vector3& B, const Vector3& C, TriMeshSweepResult *Result)
+    {
+        const Vector3 newSphereCenter = center + dir * t;
+        const Vector3 localHit = Triangle3::ClosestPointOnTriangleToPoint(newSphereCenter, A, B, C);
+        
+        Vector3 localNormal = newSphereCenter - localHit;
+        const float m = localNormal.Normalize();
+        if (m < 1e-3f)
+        {
+            localNormal = Triangle3::CalculateNormal(A, B, C, false);
+        }
+
+        Result->hitTime = t;
+        Result->hitPosition = localHit;
+        Result->hitNormal = localNormal;
+    }
+
+    static bool cullTriangle1(const Vector3& center, const Vector3& dir, float t, float radius, const Vector3 &A, const Vector3 &B, const Vector3 &C)
+    {
+        const Vector3 triCenter = (A + B + C) / 3.0f;
+        float d = sqrtf(Segment3::SqrDistancePointToSegment(triCenter, center, center + dir * t)) - radius - 0.0001f;
+        
+        if (d < 0.0f)
+        {
+            return true;    // The triangle center lies inside the swept sphere
+        }
+
+        d = d * d;
+        if (d <= (triCenter - A).SquareLength())
+            return true;
+        if (d <= (triCenter - B).SquareLength())
+            return true;
+        if (d <= (triCenter - C).SquareLength())
+            return true;
+        return false;
+    }
+
+    static bool cullTriangle2(const Vector3& Direction, float radius, float t, float dpc0, const Vector3 &A, const Vector3 &B, const Vector3 &C)
+    {
+        const float dp0 = A.Dot(Direction);
+        const float dp1 = B.Dot(Direction);
+        const float dp2 = C.Dot(Direction);
+        const float dp = std::min(std::min(dp0, dp1), dp1);
+
+        const float kEps = 1e-3f;
+        radius += 0.001f + kEps;
+
+        if (dp > dpc0 + t + radius)
+        {
+            return false;
+        }
+
+        const float dpc1 = dpc0 - radius;
+        if (dp0 < dpc1 && dp1 < dpc1 && dp2 < dpc1)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool TriangleMesh::SphereSweepTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Direction, float Radius, const TriMeshSweepOption& Option, TriMeshSweepResult* Result)
+    {
+        const bool isDoubleSided = true;
+        const bool testBothSides = Option.testBothSides;
+        const float max_distance = Option.maxDist;
+        const bool anyHit = !Option.hitNearest;
+        const bool doBackfaceCulling = !isDoubleSided && !testBothSides;
+        
+        const Vector3 center = Origin;
+        float bestDistance = max_distance;
+        const float dpc0 = center.Dot(Direction);
+
+        float bestAlignmentValue = 2.0f;
+        Vector3 bestTriNormal = Vector3::Zero();
+        int index = -1;
+        Vector3 bestTri[3];
+
+        LeafNode currLeaf(HitNode);
+        uint32_t NumLeafTriangles = currLeaf.GetNumTriangles();
+        uint32_t BaseTriIndex = currLeaf.GetTriangleIndex();
+
+        Sphere3 sp(Origin, Radius);
+        
+        for (int i = 0; i < NumLeafTriangles; i++)
+        {
+            Result->AddTestCount(1);
+
+            uint32_t i0, i1, i2;
+            const uint32_t triangleIndex = BaseTriIndex + i;
+            GetVertIndices(triangleIndex, i0, i1, i2);
+
+            const Vector3& v0 = Vertices[i0];
+            const Vector3& v1 = Vertices[i1];
+            const Vector3& v2 = Vertices[i2];
+
+            if (!cullTriangle1(center, Direction, bestDistance, Radius, v0, v1, v2))
+                continue;
+            if (!cullTriangle2(Direction, Radius, bestDistance, dpc0, v0, v1, v2))
+                continue;
+
+            Vector3 triNormal = Triangle3::CalculateNormal(v0, v1, v2, false);
+
+            // Backface culling
+            if (doBackfaceCulling && (triNormal.Dot(Direction) > 0.0f))
+                continue;
+
+            const float magnitude = triNormal.Length();
+            if (magnitude == 0.0f)
+                continue;
+            triNormal /= magnitude;
+
+            float currentDistance;
+            Vector3 hit_normal;
+            if (!sp.SweepTriangle(Direction, v0, v1, v2, &hit_normal, &currentDistance))
+                continue;
+
+            if (currentDistance > max_distance)
+                continue;
+            
+            const float hitDot = Triangle3::ComputeAlignmentValue(triNormal, Direction);
+            if (!Triangle3::IsBetterTriangle(currentDistance, hitDot, bestDistance, bestAlignmentValue))
+                continue;
+
+            if (currentDistance == 0.0f)
+            {
+                Result->hitPosition = Origin;
+                Result->hitNormal = -Direction;
+                Result->hitTime = 0.0f;
+                return true;
+            }
+            
+            index = i;
+            bestDistance = currentDistance;
+            bestAlignmentValue = hitDot;
+            bestTriNormal = triNormal;
+            bestTri[0] = v0;
+            bestTri[1] = v1;
+            bestTri[2] = v2;
+            if (anyHit)
+                break;
+        }
+
+        if (index < 0)
+        {
+            return false;
+        }
+        
+        computeSphereTriangleSweepResult(center, Direction, bestDistance, bestTri[0], bestTri[1], bestTri[2], Result);
+        return true;
+    }
 
 	bool TriangleMesh::IntersectRay(const Vector3& Origin, const Vector3& Direction, const TriMeshHitOption& Option, TriMeshHitResult* Result) const
 	{

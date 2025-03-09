@@ -5,6 +5,7 @@
 #include "Capsule3.h"
 #include "Cylinder3.h"
 #include "Segment3.h"
+#include "Quad3.h"
 #include "Triangle3.h"
 #include "ConvexMesh.h"
 #include "HeightField3.h"
@@ -317,14 +318,15 @@ bool Sphere3::PenetrateOBB(const Vector3& rCenter, const Vector3& rExtent, const
 	return true;
 }
 
-bool Sphere3::SweepAABB(const Vector3& Origin, const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const
+bool Sphere3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const
 {
 	AxisAlignedBox3 box(bmin, bmax);
+    Sphere3 sp(Vector3::Zero(), Radius);
 	GJKShapecast gjk;
-	return gjk.Solve(Origin, Direction, this, &box, n, t);
+    return gjk.Solve(Center, Direction, &sp, &box, n, t);
 }
 
-bool Sphere3::SweepSphere(const Vector3& Origin, const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const
+bool Sphere3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const
 {
 	Sphere3 s1(rCenter, rRadius + Radius);
 	if (s1.IntersectRay(Center, Direction, t))
@@ -344,7 +346,7 @@ bool Sphere3::SweepSphere(const Vector3& Origin, const Vector3& Direction, const
 	return false;
 }
 
-bool Sphere3::SweepPlane(const Vector3& Origin, const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const
+bool Sphere3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const
 {
 	float dist = Normal.Dot(Center) + D;
 	if (fabsf(dist) <= Radius)
@@ -370,16 +372,17 @@ bool Sphere3::SweepPlane(const Vector3& Origin, const Vector3& Direction, const 
 	}
 }
 
-bool Sphere3::SweepCylinder(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+bool Sphere3::SweepCylinder(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
 {
     Cylinder3 cylinder(X0, X1, rRadius);
+    Sphere3 sp(Vector3::Zero(), Radius);
     GJKShapecast gjk;
-    return gjk.Solve(Origin, Direction, this, &cylinder, n, t);
+    return gjk.Solve(Center, Direction, &sp, &cylinder, n, t);
 }
 
-bool Sphere3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+bool Sphere3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
 {
-	Sphere3 sp2(Center + (Origin - Center), Radius);
+	Sphere3 sp2(Center, Radius);
 	if (sp2.IntersectCapsule(X0, X1, rRadius))
 	{
 		*t = 0.0f;
@@ -389,7 +392,7 @@ bool Sphere3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, cons
 
 	if (fabsf((X0 - X1).SquareLength()) < 1e-3f)
 	{
-		return SweepSphere(Origin, Direction, X0, rRadius, n, t);
+        return sp2.SweepSphere(Direction, X0, rRadius, n, t);
 	}
 
 	Capsule3 capsule(X0, X1, Radius + rRadius);
@@ -412,40 +415,40 @@ bool Sphere3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, cons
 	return false;
 }
 
-bool Sphere3::SweepConvex(const Vector3& Origin, const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const
+bool Sphere3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const
 {
 	GJKShapecast gjk;
-	return gjk.Solve(Origin, Direction, this, convex, n, t);
+    Sphere3 sp(Vector3::Zero(), Radius);
+    return gjk.Solve(Center, Direction, &sp, convex, n, t);
 }
 
-static bool EdgeOrVertexTest(const Vector3& IntersectPoint, const Vector3* tri, int vertIntersectCandidate, int vert0, int vert1, int& secondEdgeVert)
+// Returns true if sphere can be tested against triangle vertex, false if edge test should be performed
+static bool EdgeOrVertexTest(const Vector3& IntersectPoint, const Vector3* p, int v0, int v1, int v2, int *edge)
 {
-    const Vector3 edge0 = tri[vertIntersectCandidate] - tri[vert0];
+    const Vector3 edge0 = p[v0] - p[v1];
     const float edge0_length_sq = edge0.Dot(edge0);
-    Vector3 diff = IntersectPoint - tri[vert0];
+    Vector3 diff = IntersectPoint - p[v1];
     if (edge0.Dot(diff) < edge0_length_sq)
     {
-        secondEdgeVert = vert0;
+        *edge = v1;
         return false;
     }
 
-    const Vector3 edge1 = tri[vertIntersectCandidate] - tri[vert1];
+    const Vector3 edge1 = p[v0] - p[v2];
     const float edge1_length_sq = edge1.Dot(edge1);
-    diff = IntersectPoint - tri[vert1];
+    diff = IntersectPoint - p[v2];
     if (edge1.Dot(diff) < edge1_length_sq)
     {
-        secondEdgeVert = vert1;
+        *edge = v2;
         return false;
     }
     
     return true;
 }
 
-
-
-bool Sphere3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const
+bool Sphere3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const
 {
-    const Vector3 center = Center + Origin;
+    const Vector3 &center = Center;
     
     const bool testInitialOverlap = true;
     if (testInitialOverlap)
@@ -509,14 +512,14 @@ bool Sphere3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, con
             // 0 or 0-1 or 0-2
             e0 = 0;
             const Vector3 intersectPoint = A * (1.0f - uu - vv) + B * uu + C * vv;
-            TestSphere = EdgeOrVertexTest(intersectPoint, verts, 0, 1, 2, e1);
+            TestSphere = EdgeOrVertexTest(intersectPoint, verts, 0, 1, 2, &e1);
         }
         else if (uu + vv > 1.0f)
         {
             // 2 or 2-0 or 2-1
             e0 = 2;
             const Vector3 intersectPoint = A * (1.0f - uu - vv) + B * uu + C * vv;
-            TestSphere = EdgeOrVertexTest(intersectPoint, verts, 2, 0, 1, e1);
+            TestSphere = EdgeOrVertexTest(intersectPoint, verts, 2, 0, 1, &e1);
         }
         else
         {
@@ -535,7 +538,7 @@ bool Sphere3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, con
                 // 1 or 1-0 or 1-2
                 e0 = 1;
                 const Vector3 intersectPoint = A * (1.0f - uu - vv) + B * uu + C * vv;
-                TestSphere = EdgeOrVertexTest(intersectPoint, verts, 1, 0, 2, e1);
+                TestSphere = EdgeOrVertexTest(intersectPoint, verts, 1, 0, 2, &e1);
             }
             else
             {
@@ -577,13 +580,155 @@ bool Sphere3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, con
     return false;
 }
 
-bool Sphere3::SweepHeightField(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
+bool Sphere3::SweepQuad(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, const Vector3 &D, Vector3* n, float* t) const
+{
+    //    Quad:
+    //    A----C
+    //    |   /|
+    //    |  / |
+    //    | /  |
+    //    |/   |
+    //    B----D
+
+    const Vector3 BA = B - A;
+    const Vector3 CA = C - A;
+    const Vector3& center = Center;
+
+    const float r2 = Radius * Radius;
+    Vector3 Cp = Triangle3::ClosestPointOnTriangleToPoint(center, A, B, C);
+    if ((Cp - center).SquareLength() <= r2)
+    {
+        *t = 0.0f;
+        return true;
+    }
+
+    Cp = Triangle3::ClosestPointOnTriangleToPoint(center, D, C, B);
+    if((Cp - center).SquareLength() <= r2)
+    {
+        *t = 0.0f;
+        return true;
+    }
+
+    Vector3 normal = Triangle3::CalculateNormal(A, B, C, false);
+    Vector3 R = normal * Radius;
+    if (Direction.Dot(R) >= 0.0f)
+        R = -R;
+
+    // The first point of the sphere to hit the quad plane is the point of the sphere nearest to
+    // the quad plane. Hence, we use center - (normal*radius) below.
+    float tt, uu, vv;
+    int r = Quad3::RayIntersectQuad2(center - R, Direction, A, BA, CA, &tt, &vv, &uu);
+    if (r == 0)
+    {
+        return false;
+    }
+    if (r == 2)
+    {
+        if (tt < 0.0f)
+            return false;
+        *t = tt;
+        return true;
+    }
+
+    bool TestSphere;
+    int e0, e1;
+    Vector3 quadVerts[] = {A, B, C, D};
+    if (uu < 0.0f)
+    {
+        if (vv < 0.0f)
+        {
+            // 0 or 0-1 or 0-2
+            e0 = 0;
+            const Vector3 intersectPoint = A * (1.0f - uu - vv) + B * uu + C * vv;
+            TestSphere = EdgeOrVertexTest(intersectPoint, quadVerts, 0, 1, 2, &e1);
+        }
+        else if(vv > 1.0f)
+        {
+            // 1 or 1-0 or 1-3
+            e0 = 1;
+            const Vector3 intersectPoint = A * (1.0f - uu - vv) + B * uu + C * vv;
+            TestSphere = EdgeOrVertexTest(intersectPoint, quadVerts, 1, 0, 3, &e1);
+        }
+        else
+        {
+            // 0-1
+            TestSphere = false;
+            e0 = 0;
+            e1 = 1;
+        }
+    }
+    else if (uu > 1.0f)
+    {
+        if (vv < 0.0f)
+        {
+            // 2 or 2-0 or 2-3
+            e0 = 2;
+            const Vector3 intersectPoint = A * (1.0f - uu - vv) + B * uu + C * vv;
+            TestSphere = EdgeOrVertexTest(intersectPoint, quadVerts, 2, 0, 3, &e1);
+        }
+        else if (vv > 1.0f)
+        {
+            // 3 or 3-1 or 3-2
+            e0 = 3;
+            const Vector3 intersectPoint = A * (1.0f - uu - vv) + B * uu + C * vv;
+            TestSphere = EdgeOrVertexTest(intersectPoint, quadVerts, 3, 1, 2, &e1);
+        }
+        else
+        {
+            // 2-3
+            TestSphere = false;
+            e0 = 2;
+            e1 = 3;
+        }
+    }
+    else
+    {
+        if (vv < 0.0f)
+        {
+            // 0-2
+            TestSphere = false;
+            e0 = 0;
+            e1 = 2;
+        }
+        else
+        {
+            assert(vv >= 1.0f);    // Else hit quad
+            // 1-3
+            TestSphere = false;
+            e0 = 1;
+            e1 = 3;
+        }
+    }
+    
+    if (TestSphere)
+    {
+        Sphere3 sp(quadVerts[e0], Radius);
+        if (sp.IntersectRay(center, Direction, &tt))
+        {
+            *t = tt;
+            return true;
+        }
+    }
+    else
+    {
+        Capsule3 cap(quadVerts[e0], quadVerts[e1], Radius);
+        if (cap.IntersectRay(center, Direction, &tt))
+        {
+            *t = tt;
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+bool Sphere3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
 {
 	// TODO
 	return false;
 }
 
-bool Sphere3::SweepTriangleMesh(const Vector3& Origin, const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const
+bool Sphere3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const
 {
 	// TODO
 	return false;

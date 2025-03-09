@@ -8,6 +8,7 @@
 
 namespace Riemann
 {
+    class Triangle3;
 	class ConvexMesh;
 	class HeightField3;
 	class TriangleMesh;
@@ -108,7 +109,61 @@ namespace Riemann
 			return PrimitiveType::SPHERE;
 		}
 
-	public:
+        static Box3    CalcBoundingVolume(const Vector3& Center, float Radius)
+        {
+            Box3 Box;
+            Box.BuildFromCenterAndExtent(Center, Vector3(Radius));
+            return Box;
+        }
+
+        Box3            CalculateBoundingVolume() const
+        {
+            return Sphere3::CalcBoundingVolume(Center, Radius);
+        }
+
+        void Enlarge(float d)
+        {
+            Radius += d;
+        }
+
+        Sphere3& Encapsulate(const Vector3& p)
+        {
+            Vector3 d = p - Center;
+            float sqrdist = d.SquareLength();
+            if (sqrdist > Radius * Radius)
+            {
+                float dist = sqrtf(sqrdist);
+                float newRadius = (Radius + dist) * 0.5f;
+                float k = (newRadius - Radius) / dist;
+                Radius = newRadius;
+                Center = Center + d * k;
+            }
+            return *this;
+        }
+
+        Sphere3& Encapsulate(const Sphere3& s1)
+        {
+            Vector3 d = s1.Center - Center;
+            float dist2 = d.Dot(d);
+
+            if ((s1.Radius - Radius) * (s1.Radius - Radius) >= dist2)
+            {
+                if (s1.Radius >= Radius)
+                {
+                    Radius = s1.Radius;
+                    Center = s1.Center;
+                }
+            }
+            else
+            {
+                float dist = sqrtf(dist2);
+                float r = (dist + Radius + s1.Radius) * 0.5f;
+                if (dist > 1e-6f)
+                    Center += ((r - Radius) / dist) * d;
+                Radius = r;
+            }
+            return *this;
+        }
 
 		bool IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 		bool IntersectPoint(const Vector3& Point) const;
@@ -125,71 +180,16 @@ namespace Riemann
 		bool PenetrateCapsule(const Vector3& X0, const Vector3& X1, float rRadius, Vector3* Normal, float* Depth) const;
 		bool PenetrateOBB(const Vector3& rCenter, const Vector3& rExtent, const Matrix3& rRot, Vector3* Normal, float* Depth) const;
 
-		bool SweepAABB(const Vector3& Origin, const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const;
-		bool SweepSphere(const Vector3& Origin, const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const;
-		bool SweepPlane(const Vector3& Origin, const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const;
-        bool SweepCylinder(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const;
-        bool SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const;
-		bool SweepConvex(const Vector3& Origin, const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const;
-		bool SweepTriangle(const Vector3& Origin, const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const;
-		bool SweepHeightField(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const;
-		bool SweepTriangleMesh(const Vector3& Origin, const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const;
-
-		static Box3	CalcBoundingVolume(const Vector3& Center, float Radius)
-		{
-			Box3 Box;
-			Box.BuildFromCenterAndExtent(Center, Vector3(Radius));
-			return Box;
-		}
-
-		Box3			CalculateBoundingVolume() const
-		{
-			return Sphere3::CalcBoundingVolume(Center, Radius);
-		}
-
-		void Enlarge(float d)
-		{
-			Radius += d;
-		}
-
-		Sphere3& Encapsulate(const Vector3& p)
-		{
-			Vector3 d = p - Center;
-			float sqrdist = d.SquareLength();
-			if (sqrdist > Radius * Radius)
-			{
-				float dist = sqrtf(sqrdist);
-				float newRadius = (Radius + dist) * 0.5f;
-				float k = (newRadius - Radius) / dist;
-				Radius = newRadius;
-				Center = Center + d * k;
-			}
-			return *this;
-		}
-
-		Sphere3& Encapsulate(const Sphere3& s1)
-		{
-			Vector3 d = s1.Center - Center;
-			float dist2 = d.Dot(d);
-
-			if ((s1.Radius - Radius) * (s1.Radius - Radius) >= dist2)
-			{
-				if (s1.Radius >= Radius)
-				{
-					Radius = s1.Radius;
-					Center = s1.Center;
-				}
-			}
-			else
-			{
-				float dist = sqrtf(dist2);
-				float r = (dist + Radius + s1.Radius) * 0.5f;
-				if (dist > 1e-6f)
-					Center += ((r - Radius) / dist) * d;
-				Radius = r;
-			}
-			return *this;
-		}
+		bool SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const;
+		bool SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const;
+		bool SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const;
+        bool SweepCylinder(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const;
+        bool SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const;
+		bool SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const;
+		bool SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const;
+        bool SweepQuad(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, const Vector3 &D, Vector3* n, float* t) const;
+		bool SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const;
+		bool SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const;
 
 		static Sphere3 ComputeBoundingSphere_MostSeparated(const Vector3* points, int n);
 		static Sphere3 ComputeBoundingSphere_Eigen(const Vector3* points, int n);

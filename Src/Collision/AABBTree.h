@@ -37,7 +37,7 @@ namespace Riemann
 
 		bool	RayCast(const Ray3& Ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const;
 		bool	Intersect(const Geometry* intersect_geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const;
-		bool	Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Ray3& Ray, const SweepOption* Option, SweepResult* Result) const;
+		bool	Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const;
 
 		int		IntersectPoint(const Vector3& Point) const;
 		bool	RayCastBoundingBox(const Ray3& ray, const RayCastOption& Option, RayCastResult* Result) const;

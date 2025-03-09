@@ -49,7 +49,7 @@ namespace Riemann
 
 		bool	RayCast(const Ray3& Ray, const RayCastOption* Option, RayCastResult* Result) const;
 		bool	Intersect(const Geometry* geometry, const IntersectOption* Option, IntersectResult* Result) const;
-		bool	Sweep(const Geometry* geometry, const Ray3& Ray, const SweepOption* Option, SweepResult* Result) const;
+        bool	Sweep(const Geometry* geometry, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const;
 		bool	Query(const Box3& aabb, std::vector<void*>* Result) const;
 
 		void 	Rebuild();

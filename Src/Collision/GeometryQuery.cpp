@@ -169,7 +169,7 @@ namespace Riemann
 		if (m_staticGeometry)
 		{
 			Geometry** pp = m_Objects.data();
-			hit = pp && m_staticGeometry->Sweep(geom, pp, ray, &Option, Result);
+			hit = pp && m_staticGeometry->Sweep(geom, pp, Direction, &Option, Result);
 			if (hit)
 			{
 				return true;
@@ -179,7 +179,7 @@ namespace Riemann
 		if (m_dynamicPruner)
 		{
 			SweepResult Result2;
-			bool hit_dynamic = m_dynamicPruner->Sweep(geom, ray, &Option, &Result2);
+			bool hit_dynamic = m_dynamicPruner->Sweep(geom, Direction, &Option, &Result2);
 			if (hit_dynamic)
 			{
 				Result->Merge(Result2);

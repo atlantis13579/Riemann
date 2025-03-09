@@ -453,7 +453,7 @@ namespace Riemann
 		return Result->overlaps;
 	}
 
-	static int SweepGeometries(const Geometry* sweep_geometry, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Vector3& Origin, const Vector3& Direction, const Box3& BV, const SweepOption* Option, SweepResult* Result)
+	static int SweepGeometries(const Geometry* sweep_geometry, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Vector3& Direction, const Box3& BV, const SweepOption* Option, SweepResult* Result)
 	{
 		assert(NumGeoms > 0);
 		if (GeometryCollection == nullptr)
@@ -472,7 +472,7 @@ namespace Riemann
 			Geometry* candidate = GeometryCollection[index];
 			assert(candidate);
 
-			bool hit = sweep_geometry->Sweep(Origin, Direction, candidate, &normal, &t);
+			bool hit = sweep_geometry->Sweep(Direction, candidate, &normal, &t);
 			if (hit)
 			{
 				if (Option->Type == SweepOption::SWEEP_ANY)
@@ -509,7 +509,7 @@ namespace Riemann
 		return min_idx;
 	}
 
-	bool AABBTree::Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Ray3& Ray, const SweepOption* Option, SweepResult* Result) const
+	bool AABBTree::Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const
 	{
 		Result->hit = false;
 		Result->hitTestCount = 0;
@@ -519,7 +519,7 @@ namespace Riemann
 		float t1, t2;
 		Vector3 normal;
 		CacheFriendlyAABBTree* p = m_AABBTreeInference;
-		if (p == nullptr || !sweep_geometry->SweepTestFast(Ray.Origin, Ray.Dir, p->aabb.Min, p->aabb.Max, &t1))
+		if (p == nullptr || !sweep_geometry->SweepTestFast(Direction, p->aabb.Min, p->aabb.Max, &t1))
 		{
 			return false;
 		}
@@ -537,7 +537,7 @@ namespace Riemann
 					int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 					int	 nPrimitives = p->GetNumGeometries();
 					const Box3& Box = p->GetBoundingVolume();
-					int HitId = SweepGeometries(sweep_geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Ray.Origin, Ray.Dir, Box, Option, Result);
+					int HitId = SweepGeometries(sweep_geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Direction, Box, Option, Result);
 					if (HitId >= 0)
 					{
 						if (Option->Type == SweepOption::SWEEP_ANY)
@@ -553,8 +553,8 @@ namespace Riemann
 
 				Result->AddTestCount(2);
 
-				bool hit1 = sweep_geometry->SweepTestFast(Ray.Origin, Ray.Dir, Left->aabb.Min, Left->aabb.Max, &t1);
-				bool hit2 = sweep_geometry->SweepTestFast(Ray.Origin, Ray.Dir, Right->aabb.Min, Right->aabb.Max, &t2);
+				bool hit1 = sweep_geometry->SweepTestFast(Direction, Left->aabb.Min, Left->aabb.Max, &t1);
+				bool hit2 = sweep_geometry->SweepTestFast(Direction, Right->aabb.Min, Right->aabb.Max, &t2);
 
 				if (Option->Type != SweepOption::SWEEP_PENETRATE)
 				{

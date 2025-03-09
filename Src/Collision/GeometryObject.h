@@ -275,15 +275,15 @@ namespace Riemann
 		virtual bool			RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption* Option, RayCastResult* Result) const = 0;
 		bool					Intersect(const Geometry* Geom) const;
 		bool					Penetration(const Geometry* Geom, Vector3* Normal, float* Depth) const;
-		bool					SweepTestFast(const Vector3& Origin, const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const;
-		bool					Sweep(const Vector3& Origin, const Vector3& Direction, const Geometry* Geom, Vector3* normal, float* t) const;
+		bool					SweepTestFast(const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const;
+		bool					Sweep(const Vector3& Direction, const Geometry* Geom, Vector3* normal, float* t) const;
 
 		virtual void			UpdateVolumeProperties() = 0;
 		void					UpdateBoundingVolume();
 
-		Vector3					GetSupport_WorldSpace(const Vector3& Direction) const;
+		Vector3				GetSupport_WorldSpace(const Vector3& Direction) const;
 		void					GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const;
-		Matrix3					GetInertiaTensor_LocalSpace() const;
+		Matrix3				GetInertiaTensor_LocalSpace() const;
 
 	private:
 		virtual Vector3			CalculateSupport_LocalSpace(const Vector3& Direction) const = 0;

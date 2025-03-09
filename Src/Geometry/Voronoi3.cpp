@@ -26,7 +26,7 @@ namespace voro
 	/* The default initial size for the ordering class. */
 	const int init_ordering_size = 4096;
 	/* The initial size of the pre_container chunk index. */
-	const int init_chunk_size = 256;
+	// const int init_chunk_size = 256;
 
 	// If the initial memory is too small, the program dynamically allocates more.
 	// However, if the limits below are reached, then the program bails out.
@@ -47,7 +47,7 @@ namespace voro
 	/* The maximum size for the wall pointer array. */
 	const int max_wall_size = 2048;
 	/* The maximum size for the ordering class. */
-	const int max_ordering_size = 67108864;
+	// const int max_ordering_size = 67108864;
 	/* The maximum size for the pre_container chunk index. */
 	const int max_chunk_size = 65536;
 

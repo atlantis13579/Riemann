@@ -115,6 +115,33 @@ namespace Riemann
 			Vector3 n = (b - a).Cross(c - a);
 			return n.SquareLength() < 1e-6f;
 		}
+        
+        static float ComputeAlignmentValue(const Vector3& triNormal, const Vector3& unitDir)
+        {
+            return -fabsf(triNormal.Dot(unitDir));
+        }
+        
+        // determines if a newly touched triangle is "better" than best one so far.
+        // In this context "better" means either clearly smaller impact distance, or a similar impact
+        //  distance but a normal more aligned with the sweep direction.
+        static bool IsBetterTriangle(float Distance, float AlignmentValue, float bestDistance, float bestAlignmentValue)
+        {
+            const float distEpsilon = 1e-3f * std::max(1.0f, std::max(Distance, bestDistance));
+
+            if (Distance < bestDistance - distEpsilon)
+                return true;
+
+            if (Distance < bestDistance+distEpsilon && AlignmentValue < bestAlignmentValue)
+                return true;
+
+            if (AlignmentValue == bestAlignmentValue && Distance < bestDistance)
+                return true;
+
+            if (Distance == 0.0f)
+                return true;
+
+            return false;
+        }
 
 		static bool RayIntersectTriangle(const Vector3& Origin, const Vector3& Direction, const Vector3& A, const Vector3& B, const Vector3& C, float* t);
         static int RayIntersectTriangle2(const Vector3& Origin, const Vector3& Direction, const Vector3& vert0, const Vector3& edge1, const Vector3& edge2, float *t, float *u, float *v);

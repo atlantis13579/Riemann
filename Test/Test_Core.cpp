@@ -388,7 +388,16 @@ void TestLinearSet()
 {
 	printf("Running TestLinearSet\n");
 
+    int sum = 0;
+    
 	LinearSet<int> s;
+    for (int i : s)
+    {
+        (void)i;
+        sum += 1;
+    }
+    EXPECT(sum == 0);
+    
 	s.insert(1);
 	s.insert(2);
 	s.insert(3);
@@ -403,7 +412,7 @@ void TestLinearSet()
 	EXPECT(s.count(2) == 1);
 	EXPECT(s.count(3) == 1);
 
-	int sum = 0;
+	sum = 0;
 	for (int i : s)
 	{
 		sum += i;

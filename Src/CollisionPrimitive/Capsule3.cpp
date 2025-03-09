@@ -254,24 +254,25 @@ bool Capsule3::PenetrateCapsule(const Vector3& P0, const Vector3& P1, float rRad
 	return true;
 }
 
-bool Capsule3::SweepAABB(const Vector3& Origin, const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const
+bool Capsule3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const
 {
 	AxisAlignedBox3 box(bmin, bmax);
 	GJKShapecast gjk;
-	return gjk.Solve(Origin, Direction, this, &box, n, t);
+	return gjk.Solve(GetCenter(), Direction, this, &box, n, t);
 }
 
-bool Capsule3::SweepSphere(const Vector3& Origin, const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const
+bool Capsule3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const
 {
 	Sphere3 sp(rCenter, rRadius);
 	GJKShapecast gjk;
-	return gjk.Solve(Origin, Direction, this, &sp, n, t);
+	return gjk.Solve(GetCenter(), Direction, this, &sp, n, t);
 }
 
-bool Capsule3::SweepPlane(const Vector3& Origin, const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const
+bool Capsule3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const
 {
 	Plane3 p(Normal, D);
-
+    
+    const Vector3 Origin = GetCenter();
 	const float dp = Direction.Dot(Normal);
 	if (fabsf(dp) < 1e-6f)
 	{
@@ -292,11 +293,11 @@ bool Capsule3::SweepPlane(const Vector3& Origin, const Vector3& Direction, const
 	return false;
 }
 
-bool Capsule3::SweepCylinder(const Vector3& Origin, const Vector3& Direction, const Vector3& _X0, const Vector3& _X1, float _Radius, Vector3* n, float* t) const
+bool Capsule3::SweepCylinder(const Vector3& Direction, const Vector3& _X0, const Vector3& _X1, float _Radius, Vector3* n, float* t) const
 {
     Cylinder3 cylinder(_X0, _X1, _Radius);
     GJKShapecast gjk;
-    return gjk.Solve(Origin, Direction, this, &cylinder, n, t);
+    return gjk.Solve(GetCenter(), Direction, this, &cylinder, n, t);
 }
 
 static void computeEdgeEdgeDist(const Vector3& p, const Vector3& a, const Vector3& q, const Vector3& b, Vector3* x, Vector3* y)
@@ -388,7 +389,7 @@ static void computeEdgeEdgeDist(const Vector3& p, const Vector3& a, const Vector
     *y = q + b * u;
 }
 
-bool Capsule3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, const Vector3& _X0, const Vector3& _X1, float _Radius, Vector3* n, float* t) const
+bool Capsule3::SweepCapsule(const Vector3& Direction, const Vector3& _X0, const Vector3& _X1, float _Radius, Vector3* n, float* t) const
 {
     const float r2 = Radius + _Radius;
 
@@ -450,8 +451,8 @@ bool Capsule3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, con
     }
     
     float tt, uu, vv;
-    const Vector3 center = (X0 + X1) * 0.5f + Origin;
-    if (Quad3::RayIntersectQuad2(center, Direction, pa, pb, pc, &tt, &uu, &vv) && tt >= 0.0f && tt < minDist)
+    const Vector3 center = GetCenter();
+    if (Quad3::RayIntersectQuad(center, Direction, pa, pb, pc, &tt, &uu, &vv) && tt >= 0.0f && tt < minDist)
     {
         minDist = tt;
         success = true;
@@ -509,25 +510,25 @@ bool Capsule3::SweepCapsule(const Vector3& Origin, const Vector3& Direction, con
     return success;
 }
 
-bool Capsule3::SweepConvex(const Vector3& Origin, const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const
+bool Capsule3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const
 {
 	GJKShapecast gjk;
-	return gjk.Solve(Origin, Direction, this, convex, n, t);
+	return gjk.Solve(GetCenter(), Direction, this, convex, n, t);
 }
 
-bool Capsule3::SweepTriangle(const Vector3& Origin, const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const
+bool Capsule3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const
 {
 	// TODO
 	return false;
 }
 
-bool Capsule3::SweepHeightField(const Vector3& Origin, const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
+bool Capsule3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
 {
 	// TODO
 	return false;
 }
 
-bool Capsule3::SweepTriangleMesh(const Vector3& Origin, const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const
+bool Capsule3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const
 {
 	// TODO
 	return false;

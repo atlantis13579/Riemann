@@ -9,7 +9,7 @@ namespace Riemann
 {
 	struct TriMeshHitOption
 	{
-		bool	hitNearest;
+		bool	    hitNearest;
 		float	maxDist;
 	};
 
@@ -26,6 +26,26 @@ namespace Riemann
 		}
 	};
 
+    struct TriMeshSweepOption
+    {
+        bool    hitNearest;
+        float   maxDist;
+        bool    testBothSides;
+    };
+
+    struct TriMeshSweepResult
+    {
+        float       hitTime;
+        Vector3     hitPosition;
+        Vector3     hitNormal;
+        uint32_t    hitIndex;
+        int         hitTestCount;
+
+        void AddTestCount(int Count)
+        {
+            hitTestCount += Count;
+        }
+    };
 
 	class TriangleMesh : public StaticMesh
 	{
@@ -60,7 +80,9 @@ namespace Riemann
 		bool			IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const;
 		bool			IntersectSphere(const Vector3& Center, float Radius) const;
 		bool			IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const;
-
+        
+        bool        SphereSweepTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Direction, float Radius, const TriMeshSweepOption& Option, TriMeshSweepResult* Result);
+        
 		bool CalculateVolumeProperties(MassParameters* p, float Density) const
 		{
 			p->Volume = 0.0f;

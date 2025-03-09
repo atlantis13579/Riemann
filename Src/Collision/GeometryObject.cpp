@@ -188,20 +188,20 @@ namespace Riemann
 		return false;
 	}
 
-	bool		Geometry::SweepTestFast(const Vector3& Origin, const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const
+	bool		Geometry::SweepTestFast(const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const
 	{
 		Box3 box = GetBoundingVolume_WorldSpace();
 		Vector3 extend = box.GetExtent();
 		Vector3 BminExtend = Bmin - extend;
 		Vector3 BmaxExtend = Bmax + extend;
-		return Ray3::RayIntersectAABB(Origin, Direction, BminExtend, BmaxExtend, t);
+        return Ray3::RayIntersectAABB(box.GetCenter(), Direction, BminExtend, BmaxExtend, t);
 	}
 
-	bool		Geometry::Sweep(const Vector3& Origin, const Vector3& Direction, const Geometry* Geom, Vector3* normal, float* t) const
+	bool		Geometry::Sweep(const Vector3& Direction, const Geometry* Geom, Vector3* normal, float* t) const
 	{
 		SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
 		assert(func);
-		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform(), Origin, Direction, normal, t);
+		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform(), Direction, normal, t);
 	}
 
 	void 		Geometry::UpdateBoundingVolume()
