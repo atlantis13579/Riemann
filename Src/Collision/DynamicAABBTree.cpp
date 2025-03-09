@@ -251,8 +251,9 @@ static bool SweepGeometry(const Geometry *sweep_geometry, const Vector3& Directi
 	Geometry *canditate = static_cast<Geometry*>(userData);
 	
 	float t;
+	Vector3 position;
 	Vector3 normal;
-	bool hit = sweep_geometry->Sweep(Direction, canditate, &normal, &t);
+	bool hit = sweep_geometry->Sweep(Direction, canditate, &position, &normal, &t);
 	if (hit)
 	{
 		if (Option->Type == SweepOption::SWEEP_PENETRATE)
@@ -264,6 +265,7 @@ static bool SweepGeometry(const Geometry *sweep_geometry, const Vector3& Directi
 		{
 			Result->hitTimeMin = Result->hitTime;
 			Result->hitNormal = normal;
+			Result->hitPosition = position;
 			Result->hitGeom = canditate;
 		}
 		return true;
@@ -284,7 +286,6 @@ bool DynamicAABBTree::Sweep(const Geometry *sweep_geometry, const Vector3& Direc
 	}
 
 	float t1, t2;
-	Vector3 normal;
 	const Node* p = &m_nodes[m_root];
 	if (p == nullptr || !sweep_geometry->SweepTestFast(Direction, p->aabb.Min, p->aabb.Max, &t1) || t1 >= Option->MaxDist)
 	{

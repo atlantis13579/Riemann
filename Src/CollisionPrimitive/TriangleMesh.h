@@ -9,7 +9,8 @@ namespace Riemann
 {
 	struct TriMeshHitOption
 	{
-		bool	    hitNearest;
+		bool	hitNearest;
+		bool	hitBothSides;
 		float	maxDist;
 	};
 
@@ -28,9 +29,9 @@ namespace Riemann
 
     struct TriMeshSweepOption
     {
+		bool    hitBothSides;
         bool    hitNearest;
         float   maxDist;
-        bool    testBothSides;
     };
 
     struct TriMeshSweepResult
@@ -75,14 +76,11 @@ namespace Riemann
 
 		bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 		bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;
-		bool			RayIntersectTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Direction, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;
 		bool			IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 		bool			IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const;
 		bool			IntersectSphere(const Vector3& Center, float Radius) const;
 		bool			IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const;
-        
-        bool        SphereSweepTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Direction, float Radius, const TriMeshSweepOption& Option, TriMeshSweepResult* Result);
-        
+
 		bool CalculateVolumeProperties(MassParameters* p, float Density) const
 		{
 			p->Volume = 0.0f;
@@ -95,6 +93,10 @@ namespace Riemann
 
 		Vector3			GetSupport(const Vector3& Direction) const;
 		int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
+
+	private:
+		bool			RayIntersectTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Direction, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;
+		bool			SphereSweepTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Direction, float Radius, const TriMeshSweepOption& Option, TriMeshSweepResult* Result);
 
 	private:
 		MeshBVH4* m_BVH;

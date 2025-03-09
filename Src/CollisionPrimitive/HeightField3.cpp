@@ -236,6 +236,7 @@ namespace Riemann
 	bool HeightField3::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 	{
 		HeightFieldHitOption Option;
+		Option.hitBothSides = true;
 		Option.maxDist = FLT_MAX;
 
 		HeightFieldHitResult Result = { 0 };

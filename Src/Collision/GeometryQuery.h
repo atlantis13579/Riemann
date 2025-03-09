@@ -56,6 +56,7 @@ namespace Riemann
 
 		RayCastType		Type;
 		RayCastCache	Cache;
+		bool			HitBothSides;
 		float			MaxDist;
 		int             MaxObjects;
 		CollisionData 	FilterData;
@@ -173,6 +174,7 @@ namespace Riemann
 			SWEEP_PENETRATE = 2,
 		};
 		SweepType		Type;
+		bool			HitBothSides;
 		float			MaxDist;
 		CollisionData 	FilterData;
 		CollisionFilter* Filter;
@@ -221,7 +223,8 @@ namespace Riemann
 		float					hitTime;            // temp val
 		float					hitTimeMin;         // result
 		Vector3					hitNormal;
-		Geometry* hitGeom;
+		Vector3					hitPosition;
+		Geometry*				hitGeom;
 		std::vector<Geometry*>  hitGeometries;
 		int						hitTestCount;       // debug
 	};

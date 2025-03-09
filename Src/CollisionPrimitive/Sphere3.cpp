@@ -318,15 +318,14 @@ bool Sphere3::PenetrateOBB(const Vector3& rCenter, const Vector3& rExtent, const
 	return true;
 }
 
-bool Sphere3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const
+bool Sphere3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* p, Vector3* n, float* t) const
 {
 	AxisAlignedBox3 box(bmin, bmax);
-    Sphere3 sp(Vector3::Zero(), Radius);
 	GJKShapecast gjk;
-    return gjk.Solve(Center, Direction, &sp, &box, n, t);
+    return gjk.Solve(Direction, this, &box, p, n, t);
 }
 
-bool Sphere3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const
+bool Sphere3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
 	Sphere3 s1(rCenter, rRadius + Radius);
 	if (s1.IntersectRay(Center, Direction, t))
@@ -346,7 +345,7 @@ bool Sphere3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, floa
 	return false;
 }
 
-bool Sphere3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const
+bool Sphere3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* p, Vector3* n, float* t) const
 {
 	float dist = Normal.Dot(Center) + D;
 	if (fabsf(dist) <= Radius)
@@ -372,15 +371,14 @@ bool Sphere3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float 
 	}
 }
 
-bool Sphere3::SweepCylinder(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+bool Sphere3::SweepCylinder(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
     Cylinder3 cylinder(X0, X1, rRadius);
-    Sphere3 sp(Vector3::Zero(), Radius);
     GJKShapecast gjk;
-    return gjk.Solve(Center, Direction, &sp, &cylinder, n, t);
+    return gjk.Solve(Direction, this, &cylinder, p, n, t);
 }
 
-bool Sphere3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+bool Sphere3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
 	Sphere3 sp2(Center, Radius);
 	if (sp2.IntersectCapsule(X0, X1, rRadius))
@@ -392,7 +390,7 @@ bool Sphere3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Ve
 
 	if (fabsf((X0 - X1).SquareLength()) < 1e-3f)
 	{
-        return sp2.SweepSphere(Direction, X0, rRadius, n, t);
+        return sp2.SweepSphere(Direction, X0, rRadius, p, n, t);
 	}
 
 	Capsule3 capsule(X0, X1, Radius + rRadius);
@@ -415,11 +413,10 @@ bool Sphere3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Ve
 	return false;
 }
 
-bool Sphere3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const
+bool Sphere3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* p, Vector3* n, float* t) const
 {
 	GJKShapecast gjk;
-    Sphere3 sp(Vector3::Zero(), Radius);
-    return gjk.Solve(Center, Direction, &sp, convex, n, t);
+    return gjk.Solve(Direction, this, convex, p, n, t);
 }
 
 // Returns true if sphere can be tested against triangle vertex, false if edge test should be performed
@@ -446,7 +443,7 @@ static bool EdgeOrVertexTest(const Vector3& IntersectPoint, const Vector3* p, in
     return true;
 }
 
-bool Sphere3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const
+bool Sphere3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* p, Vector3* n, float* t) const
 {
     const Vector3 &center = Center;
     
@@ -580,7 +577,7 @@ bool Sphere3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Ve
     return false;
 }
 
-bool Sphere3::SweepQuad(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, const Vector3 &D, Vector3* n, float* t) const
+bool Sphere3::SweepQuad(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, const Vector3 &D, Vector3* p, Vector3* n, float* t) const
 {
     //    Quad:
     //    A----C
@@ -722,13 +719,13 @@ bool Sphere3::SweepQuad(const Vector3& Direction, const Vector3 &A, const Vector
     return false;
 }
 
-bool Sphere3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
+bool Sphere3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* p, Vector3* n, float* t) const
 {
 	// TODO
 	return false;
 }
 
-bool Sphere3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const
+bool Sphere3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* p, Vector3* n, float* t) const
 {
 	// TODO
 	return false;

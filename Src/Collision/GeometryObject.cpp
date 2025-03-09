@@ -77,6 +77,7 @@ namespace Riemann
 		}
 
 		TriMeshHitOption HitOption;
+		HitOption.hitBothSides = Option->HitBothSides;
 		HitOption.hitNearest = Option->Type == RayCastOption::RAYCAST_NEAREST;
 		HitOption.maxDist = Option->MaxDist;
 
@@ -99,6 +100,7 @@ namespace Riemann
 		}
 
 		HeightFieldHitOption HitOption;
+		HitOption.hitBothSides = Option->HitBothSides;
 		HitOption.maxDist = Option->MaxDist;
 
 		HeightFieldHitResult HitResult = { 0 };
@@ -197,11 +199,11 @@ namespace Riemann
         return Ray3::RayIntersectAABB(box.GetCenter(), Direction, BminExtend, BmaxExtend, t);
 	}
 
-	bool		Geometry::Sweep(const Vector3& Direction, const Geometry* Geom, Vector3* normal, float* t) const
+	bool		Geometry::Sweep(const Vector3& Direction, const Geometry* Geom, Vector3* position, Vector3* normal, float* t) const
 	{
 		SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
 		assert(func);
-		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform(), Direction, normal, t);
+		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform(), Direction, position, normal, t);
 	}
 
 	void 		Geometry::UpdateBoundingVolume()

@@ -201,14 +201,14 @@ namespace Riemann
 	}
 
 	template <class T>
-	bool	SweepTBox(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+	bool	SweepTBox(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
 	{
         // TODO
         return false;
 	}
 
 	template <class T>
-	bool	SweepTPlane(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+	bool	SweepTPlane(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
 	{
 		const GeometryTransform2 trans(t2, t1);
 		const Plane3* plane = static_cast<const Plane3*>(Obj2);
@@ -216,22 +216,22 @@ namespace Riemann
 		Vector3 NormalNew = trans.Local1ToLocal2Direction(plane->Normal);
 		const T* obj = static_cast<const T*>(Obj1);
 		Plane3 NewPlane(NormalNew, OriginNew);
-		return obj->SweepPlane(Dir, NewPlane.Normal, NewPlane.D, n, t);
+		return obj->SweepPlane(Dir, NewPlane.Normal, NewPlane.D, p, n, t);
 	}
 
 	template <class T>
-	bool	SweepTSphere(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+	bool	SweepTSphere(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
 	{
 		const GeometryTransform2 trans(t2, t1);
 		const Sphere3* sphere = static_cast<const Sphere3*>(Obj2);
 		float Radius = sphere->Radius;
         Vector3 Center = trans.Local1ToLocal2(sphere->Center);
 		const T* obj = static_cast<const T*>(Obj1);
-		return obj->SweepSphere(Dir, Center, Radius, n, t);
+		return obj->SweepSphere(Dir, Center, Radius, p, n, t);
 	}
 
     template <class T>
-    bool    SweepTCylinder(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+    bool    SweepTCylinder(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
         const GeometryTransform2 trans(t2, t1);
         const Cylinder3* cy = static_cast<const Cylinder3*>(Obj2);
@@ -239,11 +239,11 @@ namespace Riemann
         Vector3 P0 = trans.Local1ToLocal2(cy->X0);
         Vector3 P1 = trans.Local1ToLocal2(cy->X1);
         const T* obj = static_cast<const T*>(Obj1);
-        return obj->SweepCylinder(Dir, P0, P1, Radius, n, t);
+        return obj->SweepCylinder(Dir, P0, P1, Radius, p, n, t);
     }
 
     template <class T>
-    bool    SweepTCapsule(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+    bool    SweepTCapsule(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
         const GeometryTransform2 trans(t2, t1);
         const Capsule3* capsule = static_cast<const Capsule3*>(Obj2);
@@ -251,38 +251,38 @@ namespace Riemann
         Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
         Vector3 P1 = trans.Local1ToLocal2(capsule->X1);
         const T* obj = static_cast<const T*>(Obj1);
-        return obj->SweepCapsule(Dir, P0, P1, Radius, n, t);
+        return obj->SweepCapsule(Dir, P0, P1, Radius, p, n, t);
         return false;
     }
 
     template <class T>
-    bool    SweepTConvexmesh(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+    bool    SweepTConvexmesh(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
         const GeometryTransform2 trans(t2, t1);
         const ConvexMesh* convex = static_cast<const ConvexMesh*>(Obj2);
         const T* obj = static_cast<const T*>(Obj1);
-        return obj->SweepConvex(Dir, convex, n, t);
+        return obj->SweepConvex(Dir, convex, p, n, t);
     }
 
     template <class T>
-    bool    SweepTHeightfield(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+    bool    SweepTHeightfield(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
         const GeometryTransform2 trans(t2, t1);
         const HeightField3* hf = static_cast<const HeightField3*>(Obj2);
         const T* obj = static_cast<const T*>(Obj1);
-        return obj->SweepHeightField(Dir, hf, n, t);
+        return obj->SweepHeightField(Dir, hf, p, n, t);
     }
 
     template <class T>
-    bool    SweepTTriangleMesh(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+    bool    SweepTTriangleMesh(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
         const GeometryTransform2 trans(t2, t1);
         const TriangleMesh* trimesh = static_cast<const TriangleMesh*>(Obj2);
         const T* obj = static_cast<const T*>(Obj1);
-        return obj->SweepTriangleMesh(Dir, trimesh, n, t);
+        return obj->SweepTriangleMesh(Dir, trimesh, p, n, t);
     }
 
-    bool SweepNotSuppoer(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* n, float* t)
+    bool SweepNotSuppoer(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
         return true;
     }
@@ -496,12 +496,12 @@ namespace Riemann
 		return false;
 	}
 
-	bool GJK_Solve_Shapecast(const Vector3& Origin, const Vector3& Direction, Geometry* castGeom, Geometry* Geom, Vector3* n, float* t)
+	bool GJK_Solve_Shapecast(const Vector3& Direction, Geometry* castGeom, Geometry* Geom, Vector3 *p, Vector3* n, float* t)
 	{
 		TransformedGeometry cast_shape(castGeom);
 		TransformedGeometry shape(Geom);
 		GJKShapecast gjk;
-		bool success = gjk.Solve(Origin, Direction, &cast_shape, &shape, n, t);
+		bool success = gjk.Solve(Direction, &cast_shape, &shape, p, n, t);
 		if (success)
 		{
 			// TODO, local to world

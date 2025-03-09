@@ -128,15 +128,15 @@ namespace Riemann
 		static bool IntersectRayInfinityLength(const Vector3& Origin, const Vector3& Direction, float Radius, float* t);
 		bool IntersectSegment(const Vector3& P0, const Vector3& P1) const;
 
-		bool SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const;
-		bool SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const;
-		bool SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const;
-        bool SweepCylinder(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const;
-        bool SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const;
-		bool SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const;
-		bool SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const;
-		bool SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const;
-		bool SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const;
+		bool SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* p, Vector3* n, float* t) const;
+		bool SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* p, Vector3* n, float* t) const;
+		bool SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* p, Vector3* n, float* t) const;
+        bool SweepCylinder(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* p, Vector3* n, float* t) const;
+        bool SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* p, Vector3* n, float* t) const;
+		bool SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* p, Vector3* n, float* t) const;
+		bool SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* p, Vector3* n, float* t) const;
+		bool SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* p, Vector3* n, float* t) const;
+		bool SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* p, Vector3* n, float* t) const;
 
 		// A Fast and Robust GJK Implementation for Collision Detection of Convex Objects - Gino van den Bergen, page 8
 		Vector3 GetSupport(const Vector3& Direction) const

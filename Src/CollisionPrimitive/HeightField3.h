@@ -13,6 +13,7 @@ namespace Riemann
 {
 	struct HeightFieldHitOption
 	{
+		bool	hitBothSides;
 		float	maxDist;
 	};
 

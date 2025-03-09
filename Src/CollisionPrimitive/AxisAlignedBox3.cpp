@@ -842,29 +842,29 @@ bool AxisAlignedBox3::IntersectTriangle(const Vector3& A, const Vector3& B, cons
 	return true;
 }
 
-bool AxisAlignedBox3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* p, Vector3* n, float* t) const
 {
 	AxisAlignedBox3 box(bmin, bmax);
 	GJKShapecast gjk;
-    return gjk.Solve(GetCenter(), Direction, this, &box, n, t);
+    return gjk.Solve(Direction, this, &box, p, n, t);
 }
 
-bool AxisAlignedBox3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
 	Sphere3 sp(rCenter, rRadius);
 	GJKShapecast gjk;
-	return gjk.Solve(GetCenter(), Direction, this, &sp, n, t);
+	return gjk.Solve(Direction, this, &sp, p, n, t);
 }
 
-bool AxisAlignedBox3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* p, Vector3* n, float* t) const
 {
-	Plane3 p(Normal, D);
+	Plane3 plane(Normal, D);
 
     const Vector3 Origin = GetCenter();
 	const float dp = Direction.Dot(Normal);
 	if (fabsf(dp) < 1e-6f)
 	{
-		if (p.IntersectAABB(Min + Origin, Max + Origin))
+		if (plane.IntersectAABB(Min + Origin, Max + Origin))
 		{
 			*n = -Direction;
 			*t = 0.0f;
@@ -873,7 +873,7 @@ bool AxisAlignedBox3::SweepPlane(const Vector3& Direction, const Vector3& Normal
 	}
 
 	const Vector3 RelativeOrigin = Origin + GetSupport(Direction);
-	if (p.IntersectRay(RelativeOrigin, Direction, t))
+	if (plane.IntersectRay(RelativeOrigin, Direction, t))
 	{
 		*n = dp < 0.0f ? Normal : -Normal;
 		return true;
@@ -881,39 +881,39 @@ bool AxisAlignedBox3::SweepPlane(const Vector3& Direction, const Vector3& Normal
 	return false;
 }
 
-bool AxisAlignedBox3::SweepCylinder(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepCylinder(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
     Cylinder3 cylinder(X0, X1, rRadius);
     GJKShapecast gjk;
-    return gjk.Solve(GetCenter(), Direction, this, &cylinder, n, t);
+    return gjk.Solve(Direction, this, &cylinder, p, n, t);
 }
 
-bool AxisAlignedBox3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
 	Capsule3 capsule(X0, X1, rRadius);
 	GJKShapecast gjk;
-	return gjk.Solve(GetCenter(), Direction, this, &capsule, n, t);
+	return gjk.Solve(Direction, this, &capsule, p, n, t);
 }
 
-bool AxisAlignedBox3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* p, Vector3* n, float* t) const
 {
 	GJKShapecast gjk;
-	return gjk.Solve(GetCenter(), Direction, this, convex, n, t);
+	return gjk.Solve(Direction, this, convex, p, n, t);
 }
 
-bool AxisAlignedBox3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* p, Vector3* n, float* t) const
 {
 	// TODO
 	return false;
 }
 
-bool AxisAlignedBox3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* p, Vector3* n, float* t) const
 {
 	// TODO
 	return false;
 }
 
-bool AxisAlignedBox3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* n, float* t) const
+bool AxisAlignedBox3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* p, Vector3* n, float* t) const
 {
 	// TODO
 	return false;

@@ -149,6 +149,7 @@ namespace Riemann
 	public:
 		float	time;
 		Vector3	normal;
+		Vector3 position;
 
 		GJK_status Solve(const Vector3& Origin, const Vector3& Direction, const GjkShape* shape)
 		{
@@ -256,15 +257,16 @@ namespace Riemann
 	{
 	public:
 		template<class CastShape, class Shape>
-		bool Solve(const Vector3& Origin, const Vector3& Direction, const CastShape* cast_shape, const Shape* shape, Vector3* n, float* t)
+		bool Solve(const Vector3& Direction, const CastShape* cast_shape, const Shape* shape, Vector3* p, Vector3* n, float* t)
 		{
 			MinkowskiSum<Shape, CastShape> sum(shape, cast_shape);
 			GJKRaycast gjk;
-			GJK_status status = gjk.Solve(Origin, Direction, &sum);
+			GJK_status status = gjk.Solve(Vector3::Zero(), Direction, &sum);
 			if (status == GJK_status::Intersect)
 			{
 				*t = gjk.time;
 				*n = gjk.normal;
+				*p = gjk.position;
 				return true;
 			}
 			return false;

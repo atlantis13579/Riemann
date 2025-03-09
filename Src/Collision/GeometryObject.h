@@ -276,7 +276,7 @@ namespace Riemann
 		bool					Intersect(const Geometry* Geom) const;
 		bool					Penetration(const Geometry* Geom, Vector3* Normal, float* Depth) const;
 		bool					SweepTestFast(const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const;
-		bool					Sweep(const Vector3& Direction, const Geometry* Geom, Vector3* normal, float* t) const;
+		bool					Sweep(const Vector3& Direction, const Geometry* Geom, Vector3* position, Vector3* normal, float* t) const;
 
 		virtual void			UpdateVolumeProperties() = 0;
 		void					UpdateBoundingVolume();

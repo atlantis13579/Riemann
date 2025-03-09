@@ -462,24 +462,27 @@ namespace Riemann
 		}
 
 		float t;
+		Vector3 position;
 		Vector3 normal;
 		int min_idx = -1;
 		float min_t = FLT_MAX;
 		Vector3 min_p;
+		Vector3 min_n;
 		for (int i = 0; i < NumGeoms; ++i)
 		{
 			const int index = Geoms[i];
 			Geometry* candidate = GeometryCollection[index];
 			assert(candidate);
 
-			bool hit = sweep_geometry->Sweep(Direction, candidate, &normal, &t);
+			bool hit = sweep_geometry->Sweep(Direction, candidate, &position, &normal, &t);
 			if (hit)
 			{
 				if (Option->Type == SweepOption::SWEEP_ANY)
 				{
 					min_idx = index;
 					min_t = Result->hitTime;
-					min_p = normal;
+					min_p = position;
+					min_n = normal;
 					break;
 				}
 				else if (Option->Type == SweepOption::SWEEP_PENETRATE)
@@ -491,7 +494,8 @@ namespace Riemann
 				{
 					min_idx = index;
 					min_t = Result->hitTime;
-					min_p = normal;
+					min_p = position;
+					min_n = normal;
 				}
 			}
 		}
@@ -503,7 +507,8 @@ namespace Riemann
 			{
 				Result->hitGeom = GeometryCollection[min_idx];
 				Result->hitTimeMin = min_t;
-				Result->hitNormal = min_p;
+				Result->hitNormal = min_n;
+				Result->hitPosition = min_p;
 			}
 		}
 		return min_idx;

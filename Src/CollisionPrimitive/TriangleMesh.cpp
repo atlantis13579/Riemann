@@ -318,7 +318,7 @@ static void computeSphereTriangleSweepResult(const Vector3& center, const Vector
     bool TriangleMesh::SphereSweepTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Direction, float Radius, const TriMeshSweepOption& Option, TriMeshSweepResult* Result)
     {
         const bool isDoubleSided = true;
-        const bool testBothSides = Option.testBothSides;
+        const bool testBothSides = Option.hitBothSides;
         const float max_distance = Option.maxDist;
         const bool anyHit = !Option.hitNearest;
         const bool doBackfaceCulling = !isDoubleSided && !testBothSides;
@@ -333,7 +333,7 @@ static void computeSphereTriangleSweepResult(const Vector3& center, const Vector
         Vector3 bestTri[3];
 
         LeafNode currLeaf(HitNode);
-        uint32_t NumLeafTriangles = currLeaf.GetNumTriangles();
+        int NumLeafTriangles = (int)currLeaf.GetNumTriangles();
         uint32_t BaseTriIndex = currLeaf.GetTriangleIndex();
 
         Sphere3 sp(Origin, Radius);
@@ -367,8 +367,9 @@ static void computeSphereTriangleSweepResult(const Vector3& center, const Vector
             triNormal /= magnitude;
 
             float currentDistance;
+			Vector3 hit_position;
             Vector3 hit_normal;
-            if (!sp.SweepTriangle(Direction, v0, v1, v2, &hit_normal, &currentDistance))
+            if (!sp.SweepTriangle(Direction, v0, v1, v2, &hit_position, &hit_normal, &currentDistance))
                 continue;
 
             if (currentDistance > max_distance)
@@ -554,6 +555,7 @@ static void computeSphereTriangleSweepResult(const Vector3& center, const Vector
 	bool	TriangleMesh::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 	{
 		TriMeshHitOption Option;
+		Option.hitBothSides = true;
 		Option.hitNearest = true;
 		Option.maxDist = FLT_MAX;
 
