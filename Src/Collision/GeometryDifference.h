@@ -16,7 +16,7 @@ namespace Riemann
 
 		virtual Vector3 Center() const override
 		{
-			return Geom1->GetBoundingVolume_WorldSpace().GetCenter();
+			return Geom1->GetCenter_WorldSpace();
 		}
 
 		virtual Vector3 Support(const Vector3& Direction) const override
@@ -26,7 +26,7 @@ namespace Riemann
 
 		Vector3 GetCenter() const
 		{
-			return Geom1->GetBoundingVolume_WorldSpace().GetCenter();
+			return Geom1->GetCenter_WorldSpace();
 		}
 
 		Vector3 GetSupport(const Vector3& Direction) const
@@ -57,8 +57,8 @@ namespace Riemann
 
 		virtual Vector3 Center() const override
 		{
-			Vector3 position1 = Geom1->GetBoundingVolume_WorldSpace().GetCenter();
-			Vector3 position2 = Geom2->GetBoundingVolume_WorldSpace().GetCenter();
+			Vector3 position1 = Geom1->GetCenter_WorldSpace();
+			Vector3 position2 = Geom2->GetCenter_WorldSpace();
 			return position1 - position2;
 		}
 

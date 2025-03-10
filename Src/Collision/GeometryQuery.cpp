@@ -89,22 +89,22 @@ namespace Riemann
 	bool GeometryQuery::BoxCastQuery(const Vector3& Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 	{
 		char stack[MAX_GEOMETRY_STACK_SIZE];
-		Geometry* Box = GeometryFactory::CreateOBB_placement(stack, Vector3::Zero(), Extent);
-		return SweepTest_Impl(Box, Center, Direction, Option, Result);
+		Geometry* Box = GeometryFactory::CreateOBB_placement(stack, Center, Extent);
+		return SweepTest_Impl(Box, Direction, Option, Result);
 	}
 
 	bool GeometryQuery::SphereCastQuery(const Vector3& Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 	{
 		char stack[MAX_GEOMETRY_STACK_SIZE];
 		Geometry* Sphere = GeometryFactory::CreateSphere_placement(stack, Center, Radius);
-		return SweepTest_Impl(Sphere, Center, Direction, Option, Result);
+		return SweepTest_Impl(Sphere, Direction, Option, Result);
 	}
 
 	bool GeometryQuery::CapsuleCastQuery(const Vector3& Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 	{
 		char stack[MAX_GEOMETRY_STACK_SIZE];
-		Geometry* Capsule = GeometryFactory::CreateCapsule_placement(stack, -Vector3(0, HalfH, 0), Vector3(0, HalfH, 0), Radius);
-		return SweepTest_Impl(Capsule, Center, Direction, Option, Result);
+		Geometry* Capsule = GeometryFactory::CreateCapsule_placement(stack, Center - Vector3(0, HalfH, 0), Center + Vector3(0, HalfH, 0), Radius);
+		return SweepTest_Impl(Capsule, Direction, Option, Result);
 	}
 
 	bool GeometryQuery::IntersectQueryBox(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result)
@@ -158,13 +158,11 @@ namespace Riemann
 		return hit;
 	}
 
-	bool GeometryQuery::SweepTest_Impl(const Geometry* geom, const Vector3& Origin, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
+	bool GeometryQuery::SweepTest_Impl(const Geometry* geom, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 	{
 		Result->Reset();
 
 		bool hit = false;
-
-		Ray3 ray(Origin, Direction);
 
 		if (m_staticGeometry)
 		{

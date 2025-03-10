@@ -4,6 +4,7 @@
 #include "GeometryDifference.h"
 #include "EPAPenetration.h"
 
+#include "../Maths/Transform.h"
 #include "../CollisionPrimitive/AxisAlignedBox3.h"
 #include "../CollisionPrimitive/Plane3.h"
 #include "../CollisionPrimitive/Sphere3.h"
@@ -30,12 +31,12 @@ namespace Riemann
 		return p->IntersectRay(Origin, Direction, t);
 	}
 
-	bool 	IntersectNotSupport(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
+	bool 	IntersectNotSupport(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2)
 	{
 		return false;
 	}
 
-	bool 	IntersectGJKSolver(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
+	bool 	IntersectGJKSolver(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2)
 	{
 		// Hack, see GetShapeObjPtr()
 		const Geometry* Geom1 = reinterpret_cast<const Geometry*>((intptr_t)Obj1 - sizeof(Geometry));
@@ -51,9 +52,9 @@ namespace Riemann
 		return false;
 	}
 
-	bool	IntersectPlanePlane(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
+	bool	IntersectPlanePlane(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2)
 	{
-		const GeometryTransform2 trans(t1, t2);
+		const Transform2 trans(t1, t2);
 		const Plane3* plane1 = static_cast<const Plane3*>(Obj1);
 		const Plane3* plane2 = static_cast<const Plane3*>(Obj2);
 		Vector3 Normal = trans.Local1ToLocal2Direction(plane1->Normal);
@@ -62,18 +63,18 @@ namespace Riemann
 		return plane2->IntersectPlane(plane_new.Normal, plane_new.D);
 	}
 
-	bool	IntersectBoxBox(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
+	bool	IntersectBoxBox(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2)
 	{
 		const AxisAlignedBox3* box1 = static_cast<const AxisAlignedBox3*>(Obj1);
 		const AxisAlignedBox3* box2 = static_cast<const AxisAlignedBox3*>(Obj2);
-		OrientedBox3 obb1(t1->LocalToWorld(box1->GetCenter()), box1->GetExtent(), t1->transform.quat.ToRotationMatrix3());
-		OrientedBox3 obb2(t2->LocalToWorld(box2->GetCenter()), box2->GetExtent(), t2->transform.quat.ToRotationMatrix3());
+		OrientedBox3 obb1(t1->LocalToWorld(box1->GetCenter()), box1->GetExtent(), t1->quat.ToRotationMatrix3());
+		OrientedBox3 obb2(t2->LocalToWorld(box2->GetCenter()), box2->GetExtent(), t2->quat.ToRotationMatrix3());
 		return obb1.IntersectOBB(obb2);
 	}
 
-	bool	IntersectBoxPlane(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
+	bool	IntersectBoxPlane(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2)
 	{
-		const GeometryTransform2 trans(t1, t2);
+		const Transform2 trans(t1, t2);
 		const Plane3* plane = static_cast<const Plane3*>(Obj2);
 		Vector3 Normal = trans.Local2ToLocal1Direction(plane->Normal);
 		Vector3 Origin = trans.Local2ToLocal1(plane->GetOrigin());
@@ -83,9 +84,9 @@ namespace Riemann
 	}
 
 	template <class T>
-	bool	IntersectSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
+	bool	IntersectSphereT(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2)
 	{
-		const GeometryTransform2 trans(t1, t2);
+		const Transform2 trans(t1, t2);
 		const Sphere3* sphere = static_cast<const Sphere3*>(Obj1);
 		float Radius = sphere->Radius;
 		Vector3 Center = trans.Local1ToLocal2(sphere->Center);
@@ -94,9 +95,9 @@ namespace Riemann
 	}
 
 	template <class T>
-	bool	IntersectCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
+	bool	IntersectCapsuleT(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2)
 	{
-		const GeometryTransform2 trans(t1, t2);
+		const Transform2 trans(t1, t2);
 		const Capsule3* capsule = static_cast<const Capsule3*>(Obj1);
 		float Radius = capsule->Radius;
 		Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
@@ -106,9 +107,9 @@ namespace Riemann
 	}
 
 	template <class T>
-	bool	IntersectTTriangle(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
+	bool	IntersectTTriangle(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2)
 	{
-		const GeometryTransform2 trans(t1, t2);
+		const Transform2 trans(t1, t2);
 		const Triangle3* tri = static_cast<const Triangle3*>(Obj2);
 		Vector3 A = trans.Local2ToLocal1(tri->v0);
 		Vector3 B = trans.Local2ToLocal1(tri->v1);
@@ -118,9 +119,9 @@ namespace Riemann
 	}
 
 	template <class T>
-	bool	IntersectBoxT_WS(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2)
+	bool	IntersectBoxT_WS(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2)
 	{
-		const GeometryTransform2 trans(t1, t2);
+		const Transform2 trans(t1, t2);
 		const AxisAlignedBox3* box1 = static_cast<const AxisAlignedBox3*>(Obj1);
 		const T* p = static_cast<const T*>(Obj2);
 		OrientedBox3 obb1(trans.Local1ToLocal2(box1->GetCenter()), box1->GetExtent(), trans.Local1ToLocal2RotationMatrix());
@@ -128,9 +129,9 @@ namespace Riemann
 	}
 
     template <class T>
-    bool IntersectCapsuleT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
+    bool IntersectCapsuleT(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, Vector3* n, float* d)
     {
-        const GeometryTransform2 trans(t1, t2);
+        const Transform2 trans(t1, t2);
         const Capsule3* capsule = static_cast<const Capsule3*>(Obj1);
         float Radius = capsule->Radius;
         Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
@@ -139,7 +140,7 @@ namespace Riemann
         return p->PenetrateCapsule(P0, P1, Radius, n, d);
     }
 
-	bool	PenetrateEPASolver(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
+	bool	PenetrateEPASolver(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, Vector3* n, float* d)
 	{
 		// Hack, see GetShapeObjPtr()
 		const Geometry* Geom1 = reinterpret_cast<const Geometry*>((intptr_t)Obj1 - sizeof(Geometry));
@@ -165,24 +166,24 @@ namespace Riemann
 		return  true;
 	}
 
-	bool 	PenetrateNotSupport(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
+	bool 	PenetrateNotSupport(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, Vector3* n, float* d)
 	{
 		return false;
 	}
 
-	bool	PenetrateBoxBox(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
+	bool	PenetrateBoxBox(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, Vector3* n, float* d)
 	{
 		const AxisAlignedBox3* box1 = static_cast<const AxisAlignedBox3*>(Obj1);
 		const AxisAlignedBox3* box2 = static_cast<const AxisAlignedBox3*>(Obj2);
-		OrientedBox3 obb1(t1->LocalToWorld(box1->GetCenter()), box1->GetExtent(), t1->transform.quat.ToRotationMatrix3());
-		OrientedBox3 obb2(t2->LocalToWorld(box2->GetCenter()), box2->GetExtent(), t2->transform.quat.ToRotationMatrix3());
+		OrientedBox3 obb1(t1->LocalToWorld(box1->GetCenter()), box1->GetExtent(), t1->quat.ToRotationMatrix3());
+		OrientedBox3 obb2(t2->LocalToWorld(box2->GetCenter()), box2->GetExtent(), t2->quat.ToRotationMatrix3());
 		return obb1.PenetrateOBB(obb2, n, d);
 	}
 
 	template <class T>
-	bool	PenetrateBoxT_WS(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
+	bool	PenetrateBoxT_WS(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, Vector3* n, float* d)
 	{
-		const GeometryTransform2 trans(t1, t2);
+		const Transform2 trans(t1, t2);
 		const AxisAlignedBox3* box1 = static_cast<const AxisAlignedBox3*>(Obj1);
 		const T* p = static_cast<const T*>(Obj2);
 		OrientedBox3 obb1(trans.Local1ToLocal2(box1->GetCenter()), box1->GetExtent(), trans.Local1ToLocal2RotationMatrix());
@@ -190,9 +191,9 @@ namespace Riemann
 	}
 
 	template <class T>
-	bool	PenetrateSphereT(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, Vector3* n, float* d)
+	bool	PenetrateSphereT(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, Vector3* n, float* d)
 	{
-		const GeometryTransform2 trans(t1, t2);
+		const Transform2 trans(t1, t2);
 		const Sphere3* sphere = static_cast<const Sphere3*>(Obj1);
 		float Radius = sphere->Radius;
 		Vector3 Center = trans.Local1ToLocal2(sphere->Center);
@@ -201,16 +202,16 @@ namespace Riemann
 	}
 
 	template <class T>
-	bool	SweepTBox(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
+	bool	SweepTBox(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
 	{
         // TODO
         return false;
 	}
 
 	template <class T>
-	bool	SweepTPlane(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
+	bool	SweepTPlane(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
 	{
-		const GeometryTransform2 trans(t2, t1);
+		const Transform2 trans(t2, t1);
 		const Plane3* plane = static_cast<const Plane3*>(Obj2);
 		Vector3 OriginNew = trans.Local1ToLocal2(plane->GetOrigin());
 		Vector3 NormalNew = trans.Local1ToLocal2Direction(plane->Normal);
@@ -220,9 +221,9 @@ namespace Riemann
 	}
 
 	template <class T>
-	bool	SweepTSphere(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
+	bool	SweepTSphere(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
 	{
-		const GeometryTransform2 trans(t2, t1);
+		const Transform2 trans(t2, t1);
 		const Sphere3* sphere = static_cast<const Sphere3*>(Obj2);
 		float Radius = sphere->Radius;
         Vector3 Center = trans.Local1ToLocal2(sphere->Center);
@@ -231,9 +232,9 @@ namespace Riemann
 	}
 
     template <class T>
-    bool    SweepTCylinder(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
+    bool    SweepTCylinder(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
-        const GeometryTransform2 trans(t2, t1);
+        const Transform2 trans(t2, t1);
         const Cylinder3* cy = static_cast<const Cylinder3*>(Obj2);
         float Radius = cy->Radius;
         Vector3 P0 = trans.Local1ToLocal2(cy->X0);
@@ -243,9 +244,9 @@ namespace Riemann
     }
 
     template <class T>
-    bool    SweepTCapsule(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
+    bool    SweepTCapsule(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
-        const GeometryTransform2 trans(t2, t1);
+        const Transform2 trans(t2, t1);
         const Capsule3* capsule = static_cast<const Capsule3*>(Obj2);
         float Radius = capsule->Radius;
         Vector3 P0 = trans.Local1ToLocal2(capsule->X0);
@@ -256,33 +257,33 @@ namespace Riemann
     }
 
     template <class T>
-    bool    SweepTConvexmesh(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
+    bool    SweepTConvexmesh(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
-        const GeometryTransform2 trans(t2, t1);
+        const Transform2 trans(t2, t1);
         const ConvexMesh* convex = static_cast<const ConvexMesh*>(Obj2);
         const T* obj = static_cast<const T*>(Obj1);
         return obj->SweepConvex(Dir, convex, p, n, t);
     }
 
     template <class T>
-    bool    SweepTHeightfield(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
+    bool    SweepTHeightfield(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
-        const GeometryTransform2 trans(t2, t1);
+        const Transform2 trans(t2, t1);
         const HeightField3* hf = static_cast<const HeightField3*>(Obj2);
         const T* obj = static_cast<const T*>(Obj1);
         return obj->SweepHeightField(Dir, hf, p, n, t);
     }
 
     template <class T>
-    bool    SweepTTriangleMesh(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
+    bool    SweepTTriangleMesh(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
-        const GeometryTransform2 trans(t2, t1);
+        const Transform2 trans(t2, t1);
         const TriangleMesh* trimesh = static_cast<const TriangleMesh*>(Obj2);
         const T* obj = static_cast<const T*>(Obj1);
         return obj->SweepTriangleMesh(Dir, trimesh, p, n, t);
     }
 
-    bool SweepNotSuppoer(const void* Obj1, const void* Obj2, const GeometryTransform* t1, const GeometryTransform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
+    bool SweepNotSuppoer(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
         return true;
     }

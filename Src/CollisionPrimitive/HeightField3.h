@@ -88,6 +88,11 @@ namespace Riemann
 			return Cells[idx].HeightSample * HeightScale;
 		}
 
+		Vector3			GetCenter() const
+		{
+			return BV.GetCenter();
+		}
+
 		uint8_t			GetTessellationFlag0(int idx) const
 		{
 			return Cells[idx].Tessellation0;

@@ -42,6 +42,11 @@ namespace Riemann
 			return GEOM_TYPE::GetSupport(Direction);
 		}
 
+		virtual Vector3			GetCenter_LocalSpace() const override final
+		{
+			return GEOM_TYPE::GetCenter();
+		}
+
 		virtual void			CalculateSupportFace_LocalSpace(const Vector3& Direction, SupportFace& Face) const override final
 		{
 			Face.resize(GEOM_TYPE::GetSupportFace(Direction, Face.data()));
@@ -193,9 +198,9 @@ namespace Riemann
 	bool		Geometry::SweepTestFast(const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const
 	{
 		Box3 box = GetBoundingVolume_WorldSpace();
-		Vector3 extend = box.GetExtent();
-		Vector3 BminExtend = Bmin - extend;
-		Vector3 BmaxExtend = Bmax + extend;
+		Vector3 size = box.GetSize();
+		Vector3 BminExtend = Bmin - size;
+		Vector3 BmaxExtend = Bmax + size;
         return Ray3::RayIntersectAABB(box.GetCenter(), Direction, BminExtend, BmaxExtend, t);
 	}
 
@@ -208,7 +213,14 @@ namespace Riemann
 
 	void 		Geometry::UpdateBoundingVolume()
 	{
-		m_BoxWorld = Box3::Transform(m_VolumeProperties.BoundingVolume, m_WorldTransform.transform.pos, m_WorldTransform.transform.quat);
+		m_BoxWorld = Box3::Transform(m_VolumeProperties.BoundingVolume, m_WorldTransform.pos, m_WorldTransform.quat);
+	}
+
+	Vector3		Geometry::GetCenter_WorldSpace() const
+	{
+		Vector3 CenterLocal = GetCenter_LocalSpace();
+		Vector3 CenterWorld = m_WorldTransform.LocalToWorld(CenterLocal);
+		return CenterLocal;
 	}
 
 	Vector3		Geometry::GetSupport_WorldSpace(const Vector3& Direction) const

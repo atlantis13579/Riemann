@@ -34,110 +34,6 @@ namespace Riemann
 
 	typedef	StaticArray<Vector3, MAX_FACE_POINTS> SupportFace;
 
-	struct GeometryTransform
-	{
-		Transform	transform;
-
-		inline Vector3	LocalToWorld(const Vector3& Point) const
-		{
-			return transform.quat * Point + transform.pos;
-		}
-
-		inline Vector3	LocalToWorldDirection(const Vector3& Direction) const
-		{
-			return transform.quat * Direction;
-		}
-
-		inline Vector3	WorldToLocal(const Vector3& Point) const
-		{
-			return transform.quat.Conjugate() * (Point - transform.pos);
-		}
-
-		inline Vector3	WorldToLocalDirection(const Vector3& Direction) const
-		{
-			return transform.quat.Conjugate() * Direction;
-		}
-	};
-
-	// Transformation between object 1's local space and object 2's local space
-	struct GeometryTransform2
-	{
-		Transform	transform1;
-		Transform	transform2;
-
-		GeometryTransform2(const GeometryTransform* t1, const GeometryTransform* t2)
-		{
-			transform1.quat = t1->transform.quat;
-			transform2.quat = t2->transform.quat;
-			transform1.pos = t1->transform.pos;
-			transform2.pos = t2->transform.pos;
-		}
-
-		Vector3		Local1ToLocal2(const Vector3& Point) const
-		{
-			return transform2.quat.Conjugate() * (transform1.quat * Point + transform1.pos - transform2.pos);
-		}
-
-		Vector3		Local1ToLocal2Direction(const Vector3& Direction) const
-		{
-			Quaternion quat = transform1.quat * transform2.quat.Conjugate();
-			return quat * Direction;
-		}
-
-		Matrix3		Local1ToLocal2RotationMatrix() const
-		{
-			Quaternion quat = transform1.quat * transform2.quat.Conjugate();
-			return quat.ToRotationMatrix3();
-		}
-
-		Vector3		Local2ToLocal1(const Vector3& Point) const
-		{
-			return transform1.quat.Conjugate() * (transform2.quat * Point + transform2.pos - transform1.pos);
-		}
-
-		Vector3		Local2ToLocal1Direction(const Vector3& Direction) const
-		{
-			Quaternion quat = transform2.quat * transform1.quat.Conjugate();
-			return quat * Direction;
-		}
-
-		Matrix3		Local2ToLocal1RotationMatrix() const
-		{
-			Quaternion quat = transform2.quat * transform1.quat.Conjugate();
-			return quat.ToRotationMatrix3();
-		}
-
-		Vector3		Local1ToWorld(const Vector3& Point) const
-		{
-			return transform1.quat * Point + transform1.pos;
-		}
-
-		Vector3		Local1ToWorldDirection(const Vector3& Direction) const
-		{
-			return transform1.quat * Direction;
-		}
-
-		Matrix3		Local1ToWorldRotationMatrix() const
-		{
-			return transform1.quat.ToRotationMatrix3();
-		}
-
-		Vector3		Local2ToWorld(const Vector3& Point) const
-		{
-			return transform2.quat * Point + transform2.pos;
-		}
-
-		Vector3		Local2ToWorldDirection(const Vector3& Direction) const
-		{
-			return transform2.quat * Direction;
-		}
-
-		Matrix3		Local2ToWorldRotationMatrix() const
-		{
-			return transform2.quat.ToRotationMatrix3();
-		}
-	};
-
 	class Geometry
 	{
 		friend class GeometryFactory;
@@ -148,40 +44,40 @@ namespace Riemann
 
 		inline const Vector3& GetWorldPosition() const
 		{
-			return m_WorldTransform.transform.pos;
+			return m_WorldTransform.pos;
 		}
 
 		inline const Quaternion& GetWorldRotation() const
 		{
-			return m_WorldTransform.transform.quat;
+			return m_WorldTransform.quat;
 		}
 
-		inline const GeometryTransform* GetWorldTransform() const
+		inline const Transform* GetWorldTransform() const
 		{
 			return &m_WorldTransform;
 		}
 
-		inline GeometryTransform* GetWorldTransform()
+		inline Transform* GetWorldTransform()
 		{
 			return &m_WorldTransform;
 		}
 
 		inline void				SetWorldPosition(const Vector3& Position)
 		{
-			m_WorldTransform.transform.pos = Position;
+			m_WorldTransform.pos = Position;
 			UpdateBoundingVolume();
 		}
 
 		inline void				SetWorldRotation(const Quaternion& Rotation)
 		{
-			m_WorldTransform.transform.quat = Rotation;
+			m_WorldTransform.quat = Rotation;
 			UpdateBoundingVolume();
 		}
 
 		inline void				SetWorldTransform(const Vector3& Position, const Quaternion& Rotation)
 		{
-			m_WorldTransform.transform.pos = Position;
-			m_WorldTransform.transform.quat = Rotation;
+			m_WorldTransform.pos = Position;
+			m_WorldTransform.quat = Rotation;
 			UpdateBoundingVolume();
 		}
 
@@ -281,13 +177,15 @@ namespace Riemann
 		virtual void			UpdateVolumeProperties() = 0;
 		void					UpdateBoundingVolume();
 
-		Vector3				GetSupport_WorldSpace(const Vector3& Direction) const;
+		Vector3					GetCenter_WorldSpace() const;
+		Vector3					GetSupport_WorldSpace(const Vector3& Direction) const;
 		void					GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const;
-		Matrix3				GetInertiaTensor_LocalSpace() const;
+		Matrix3					GetInertiaTensor_LocalSpace() const;
 
 	private:
 		virtual Vector3			CalculateSupport_LocalSpace(const Vector3& Direction) const = 0;
 		virtual void			CalculateSupportFace_LocalSpace(const Vector3& Direction, SupportFace& Face) const = 0;
+		virtual Vector3			GetCenter_LocalSpace() const = 0;
 
 		const void* GetShapeObjPtr() const
 		{
@@ -304,7 +202,7 @@ namespace Riemann
 	protected:
 		PrimitiveType		m_Type;
 		Box3				m_BoxWorld;
-		GeometryTransform	m_WorldTransform;
+		Transform	m_WorldTransform;
 		Transform			m_LocalTransform;
 		CollisionData		m_FilterData;
 		MassParameters		m_VolumeProperties;

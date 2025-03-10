@@ -2182,7 +2182,7 @@ namespace Riemann
 		for (int MeshIdx = 0; MeshIdx < 2; MeshIdx++)
 		{
 			Transform CenteredTransform = Transforms[MeshIdx];
-			CenteredTransform.SetTranslation(CenteredTransform.GetTranslation() - CombinedAABB.GetCenter());
+			CenteredTransform.pos = CenteredTransform.pos - CombinedAABB.GetCenter();
 			CutMesh[MeshIdx]->ApplyTransform(CenteredTransform, true);
 		}
 		TransformNew = Transform(CombinedAABB.GetCenter());

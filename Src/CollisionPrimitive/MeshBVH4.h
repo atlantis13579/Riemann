@@ -147,7 +147,7 @@ namespace Riemann
 		static void		BuildFromBounds(MeshBVH4& bvh, const std::vector<Box3>& allBounds, std::vector<uint32_t>& Permute, const Box3& meshBounds);
 
 		Vector4			BoundsMin, BoundsMax;
-		uint8_t* Memory;
+		uint8_t*		Memory;
 		float			____Unuse1[6];
 		uint32_t		BatchSize;
 		uint32_t		NumRoots;
@@ -155,7 +155,7 @@ namespace Riemann
 		uint32_t		NumNodes;
 		uint32_t		NumBatches;
 		uint32_t		Flags;
-		BVHNodeBatch* BatchPtr;
+		BVHNodeBatch*	BatchPtr;
 
 	protected:
 		typedef uint32_t NodeHandle;

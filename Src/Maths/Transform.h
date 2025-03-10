@@ -10,6 +10,9 @@ namespace Maths
 {
 	struct Transform
 	{
+		Vector3		pos;
+		Quaternion	quat;
+
 		Transform()
 		{
 			pos = Vector3::Zero();
@@ -87,35 +90,50 @@ namespace Maths
 			return (*this) * rhs;
 		}
 
-		inline Transform TransformInverse(const Transform& rhs) const
+		inline Transform TransformInv(const Transform& rhs) const
 		{
 			Quaternion qinv = quat.Conjugate();
 			return Transform(qinv * (rhs.pos - pos), qinv * rhs.quat);
 		}
 
-		inline Vector3 LocalToWorld(const Vector3& rhs) const
+		inline Vector3	TransformPos(const Vector3& Point) const
 		{
-			return quat * rhs + pos;
+			return LocalToWorld(Point);
 		}
 
-		inline Vector3 WorldToLocal(const Vector3& rhs) const
+		inline Vector3	TransformDirection(const Vector3& Direction) const
 		{
-			return quat.Conjugate() * rhs - pos;
+			return LocalToWorldDirection(Direction);
 		}
 
-		inline Vector3 LocalToWorldDirection(const Vector3& rhs) const
+		inline Vector3	TransformPosInv(const Vector3& Point) const
 		{
-			return quat * rhs;
+			return WorldToLocal(Point);
 		}
 
-		inline Vector3 WorldToLocalDirection(const Vector3& rhs) const
+		inline Vector3	TransformDirectionInv(const Vector3& Direction) const
 		{
-			return quat.Conjugate() * rhs;
+			return WorldToLocalDirection(Direction);
 		}
 
-		const Vector3& GetTranslation() const
+		inline Vector3	LocalToWorld(const Vector3& Point) const
 		{
-			return pos;
+			return quat * Point + pos;
+		}
+
+		inline Vector3	LocalToWorldDirection(const Vector3& Direction) const
+		{
+			return quat * Direction;
+		}
+
+		inline Vector3	WorldToLocal(const Vector3& Point) const
+		{
+			return quat.Conjugate() * (Point - pos);
+		}
+
+		inline Vector3	WorldToLocalDirection(const Vector3& Direction) const
+		{
+			return quat.Conjugate() * Direction;
 		}
 
 		Matrix3			GetRotationMatrix() const
@@ -123,28 +141,110 @@ namespace Maths
 			return quat.ToRotationMatrix3();
 		}
 
-		const Quaternion& GetRotation() const
+		inline Vector3	GetForwardVector() const
 		{
-			return quat;
+			return quat * Vector3::UnitZ();
 		}
 
-		void				SetTranslation(const Vector3& trans)
+		inline Vector3	GetUpVector() const
 		{
-			pos = trans;
+			return quat * Vector3::UnitY();
 		}
 
-		void				SetRotation(const Quaternion& rotation)
+		inline Vector3	GetLeftVector() const
 		{
-			quat = rotation;
+			return quat * Vector3::UnitX();
 		}
+
+		inline Vector3	GetRightVector() const
+		{
+			return quat * -Vector3::UnitX();
+		}
+
 
 		static Transform	Identity()
 		{
 			return Transform(Vector3::Zero(), Quaternion::One());
 		}
+	};
 
-		Vector3		pos;
-		Quaternion	quat;
+	// Transformation between object 1's local space and object 2's local space
+	struct Transform2
+	{
+		Transform	transform1;
+		Transform	transform2;
+
+		Transform2(const Transform* t1, const Transform* t2)
+		{
+			transform1.quat = t1->quat;
+			transform2.quat = t2->quat;
+			transform1.pos = t1->pos;
+			transform2.pos = t2->pos;
+		}
+
+		Vector3		Local1ToLocal2(const Vector3& Point) const
+		{
+			return transform2.quat.Conjugate() * (transform1.quat * Point + transform1.pos - transform2.pos);
+		}
+
+		Vector3		Local1ToLocal2Direction(const Vector3& Direction) const
+		{
+			Quaternion quat = transform1.quat * transform2.quat.Conjugate();
+			return quat * Direction;
+		}
+
+		Matrix3		Local1ToLocal2RotationMatrix() const
+		{
+			Quaternion quat = transform1.quat * transform2.quat.Conjugate();
+			return quat.ToRotationMatrix3();
+		}
+
+		Vector3		Local2ToLocal1(const Vector3& Point) const
+		{
+			return transform1.quat.Conjugate() * (transform2.quat * Point + transform2.pos - transform1.pos);
+		}
+
+		Vector3		Local2ToLocal1Direction(const Vector3& Direction) const
+		{
+			Quaternion quat = transform2.quat * transform1.quat.Conjugate();
+			return quat * Direction;
+		}
+
+		Matrix3		Local2ToLocal1RotationMatrix() const
+		{
+			Quaternion quat = transform2.quat * transform1.quat.Conjugate();
+			return quat.ToRotationMatrix3();
+		}
+
+		Vector3		Local1ToWorld(const Vector3& Point) const
+		{
+			return transform1.quat * Point + transform1.pos;
+		}
+
+		Vector3		Local1ToWorldDirection(const Vector3& Direction) const
+		{
+			return transform1.quat * Direction;
+		}
+
+		Matrix3		Local1ToWorldRotationMatrix() const
+		{
+			return transform1.quat.ToRotationMatrix3();
+		}
+
+		Vector3		Local2ToWorld(const Vector3& Point) const
+		{
+			return transform2.quat * Point + transform2.pos;
+		}
+
+		Vector3		Local2ToWorldDirection(const Vector3& Direction) const
+		{
+			return transform2.quat * Direction;
+		}
+
+		Matrix3		Local2ToWorldRotationMatrix() const
+		{
+			return transform2.quat.ToRotationMatrix3();
+		}
 	};
 
 	class Transform3
@@ -240,9 +340,20 @@ namespace Maths
 			return Vector3(v.x, v.y, v.z);
 		}
 
+		Vector3			TransformScale(const Vector3& Point) const
+		{
+			return quat.Conjugate() * (scale * (quat * Point));
+		}
+
+		Vector3			TransformScaleInv(const Vector3& Point) const
+		{
+			return quat * (Vector3(1.0f / scale.x, 1.0f / scale.y, 1.0f / scale.z) * (quat.Conjugate() * Point));
+		}
+
 		Vector3			LocalToWorldEx(const Vector3& Point) const
 		{
-			return quat * Point + pos;
+			Vector3 scaled_point = TransformScale(Point);
+			return quat * scaled_point + pos;
 		}
 
 		Vector3			LocalToWorldDirection(const Vector3& Direction) const
@@ -259,7 +370,8 @@ namespace Maths
 
 		Vector3			WorldToLocalEx(const Vector3& Point) const
 		{
-			return quat.Conjugate() * (Point - pos);
+			Vector3 scaled_point = TransformScaleInv(Point);
+			return quat.Conjugate() * (scaled_point - pos);
 		}
 
 		Vector3			WorldToLocalDirection(const Vector3& Direction) const
@@ -497,6 +609,16 @@ namespace Maths
 			return quat * Vector3::UnitY();
 		}
 
+		static Vector3		LeftVector(const Quaternion& quat)
+		{
+			return quat * Vector3::UnitX();
+		}
+
+		static Vector3		RightVector(const Quaternion& quat)
+		{
+			return quat * -Vector3::UnitX();
+		}
+
 		static Transform3	Identity()
 		{
 			Transform3 trans;
@@ -517,4 +639,5 @@ namespace Maths
 }
 
 using Transform = Maths::Transform;
+using Transform2 = Maths::Transform2;
 using Transform3 = Maths::Transform3;

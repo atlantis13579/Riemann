@@ -68,6 +68,11 @@ namespace Riemann
 			return -D;
 		}
 
+		inline Vector3	GetCenter() const
+		{
+			return -Normal * D;
+		}
+
 		void			Shift(float margin)
 		{
 			Vector3 p = GetOrigin();

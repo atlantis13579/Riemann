@@ -3,7 +3,7 @@
 #include "../Maths/Vector4.h"
 #include "../Maths/Matrix4.h"
 #include "../Core/PriorityQueue.h"
-#include "../Core/SmallSet.h"
+#include "../Core/LinearSet.h"
 #include "../CollisionPrimitive/StaticMesh.h"
 #include "MeshSimplification.h"
 
@@ -516,7 +516,7 @@ namespace Riemann
 
 			for (const Face& face : m_faces)
 			{
-				SmallSet<int> set, set2;
+				LinearSet<int> set, set2;
 				set.insert(face.indices[0]);
 				set.insert(face.indices[1]);
 				set.insert(face.indices[2]);

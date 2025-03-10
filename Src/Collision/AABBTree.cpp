@@ -292,8 +292,8 @@ namespace Riemann
 
 				Result->AddTestCount(2);
 
-				bool hit1 = Ray.IntersectAABB(Left->aabb.Min, Left->aabb.Max, &t1);
-				bool hit2 = Ray.IntersectAABB(Right->aabb.Min, Right->aabb.Max, &t2);
+				bool hit1 = Left && Ray.IntersectAABB(Left->aabb.Min, Left->aabb.Max, &t1);
+				bool hit2 = Right && Ray.IntersectAABB(Right->aabb.Min, Right->aabb.Max, &t2);
 
 				if (Option->Type != RayCastOption::RAYCAST_PENETRATE)
 				{
@@ -461,9 +461,6 @@ namespace Riemann
 			return -1;
 		}
 
-		float t;
-		Vector3 position;
-		Vector3 normal;
 		int min_idx = -1;
 		float min_t = FLT_MAX;
 		Vector3 min_p;
@@ -474,6 +471,9 @@ namespace Riemann
 			Geometry* candidate = GeometryCollection[index];
 			assert(candidate);
 
+			float t;
+			Vector3 position;
+			Vector3 normal;
 			bool hit = sweep_geometry->Sweep(Direction, candidate, &position, &normal, &t);
 			if (hit)
 			{
@@ -516,10 +516,7 @@ namespace Riemann
 
 	bool AABBTree::Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const
 	{
-		Result->hit = false;
-		Result->hitTestCount = 0;
-		Result->hitTimeMin = FLT_MAX;
-		Result->hitGeom = nullptr;
+		Result->Reset();
 
 		float t1, t2;
 		Vector3 normal;
@@ -563,8 +560,8 @@ namespace Riemann
 
 				if (Option->Type != SweepOption::SWEEP_PENETRATE)
 				{
-					hit1 = hit1 && t1 < Result->hitTimeMin&& t1 < Option->MaxDist;
-					hit2 = hit2 && t2 < Result->hitTimeMin&& t2 < Option->MaxDist;
+					hit1 = hit1 && t1 < Result->hitTimeMin && t1 < Option->MaxDist;
+					hit2 = hit2 && t2 < Result->hitTimeMin && t2 < Option->MaxDist;
 				}
 
 				assert(!stack.full());

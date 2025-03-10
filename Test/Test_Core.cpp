@@ -15,7 +15,7 @@
 #include "../Src/Core/SmallSet.h"
 #include "../Src/Core/SmallMap.h"
 #include "../Src/Core/LinearMap.h"
-#include "../Src/Core/LinearSety.h"
+#include "../Src/Core/LinearSet.h"
 #include "../Src/Maths/Maths.h"
 #include "../Src/Maths/Vector3.h"
 

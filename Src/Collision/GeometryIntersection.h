@@ -1,17 +1,16 @@
 #pragma once
 
 #include "../CollisionPrimitive/PrimitiveType.h"
+#include "../Maths/Transform.h"
 
 namespace Riemann
 {
 	class Geometry;
-	struct GeometryTransform;
-	struct GeometryTransform2;
 
 	typedef bool (*RayCastFunc)(void*, const Vector3&, const Vector3&, float*);
-	typedef bool (*IntersectFunc)(const void*, const void*, const GeometryTransform*, const GeometryTransform*);
-	typedef bool (*PenetrationFunc)(const void*, const void*, const GeometryTransform*, const GeometryTransform*, Vector3*, float*);
-	typedef bool (*SweepFunc)(const void*, const void*, const GeometryTransform*, const GeometryTransform*, const Vector3&, Vector3*, Vector3*, float*);
+	typedef bool (*IntersectFunc)(const void*, const void*, const Transform*, const Transform*);
+	typedef bool (*PenetrationFunc)(const void*, const void*, const Transform*, const Transform*, Vector3*, float*);
+	typedef bool (*SweepFunc)(const void*, const void*, const Transform*, const Transform*, const Vector3&, Vector3*, Vector3*, float*);
 
 	class GeometryIntersection
 	{

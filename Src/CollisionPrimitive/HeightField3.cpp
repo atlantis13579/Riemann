@@ -102,16 +102,16 @@ namespace Riemann
 	{
 		float min_dist = FLT_MAX;
 		for (uint32_t i = 0; i < nX - 1; ++i)
-			for (uint32_t j = 0; j < nZ - 1; ++j)
+		for (uint32_t j = 0; j < nZ - 1; ++j)
+		{
+			if (IntersectRayCell(Origin, Direction, i, j, Option, Result))
 			{
-				if (IntersectRayCell(Origin, Direction, i, j, Option, Result))
+				if (Result->hitTime < min_dist)
 				{
-					if (Result->hitTime < min_dist)
-					{
-						min_dist = Result->hitTime;
-					}
+					min_dist = Result->hitTime;
 				}
 			}
+		}
 		Result->hitTime = min_dist;
 		return min_dist != FLT_MAX;
 	}
@@ -264,14 +264,14 @@ namespace Riemann
 		const int i1 = X_INDEX(Intersect.Max.x);
 		const int j1 = Z_INDEX(Intersect.Max.z);
 		for (int i = i0; i <= i1; ++i)
-			for (int j = j0; j <= j1; ++j)
+		for (int j = j0; j <= j1; ++j)
+		{
+			float H = GetHeight(i * nZ + j);
+			if (minH <= H && H <= maxH)
 			{
-				float H = GetHeight(i * nZ + j);
-				if (minH <= H && H <= maxH)
-				{
-					return true;
-				}
+				return true;
 			}
+		}
 
 		return true;
 	}
@@ -295,18 +295,18 @@ namespace Riemann
 		const int i1 = X_INDEX(Intersect.Max.x);
 		const int j1 = Z_INDEX(Intersect.Max.z);
 		for (int i = i0; i <= i1; ++i)
-			for (int j = j0; j <= j1; ++j)
+		for (int j = j0; j <= j1; ++j)
+		{
+			Vector3 Tris[6];
+			int n = hf->GetCellTriangle(i, j, Tris);
+			for (int k = 0; k < n; k += 3)
 			{
-				Vector3 Tris[6];
-				int n = hf->GetCellTriangle(i, j, Tris);
-				for (int k = 0; k < n; k += 3)
+				if (shape.IntersectTriangle(Tris[k], Tris[k + 1], Tris[k + 2]))
 				{
-					if (shape.IntersectTriangle(Tris[k], Tris[k + 1], Tris[k + 2]))
-					{
-						return true;
-					}
+					return true;
 				}
 			}
+		}
 
 		return false;
 	}
@@ -484,10 +484,10 @@ namespace Riemann
 
 		Vertices.resize(nX * nZ);
 		for (uint32_t i = 0; i < nX; i++)
-			for (uint32_t j = 0; j < nZ; j++)
-			{
-				Vertices[i * nZ + j] = Vector3(BV.Min.x + DX * i, GetHeight(i * nZ + j), BV.Min.z + DZ * j);
-			}
+		for (uint32_t j = 0; j < nZ; j++)
+		{
+			Vertices[i * nZ + j] = Vector3(BV.Min.x + DX * i, GetHeight(i * nZ + j), BV.Min.z + DZ * j);
+		}
 
 		assert(Vertices.size() < 65535);
 		Indices.resize((nZ - 1) * (nX - 1) * 2 * 3);
@@ -495,17 +495,17 @@ namespace Riemann
 		uint32_t Tris[6];
 
 		for (uint32_t i = 0; i < (nZ - 1); ++i)
-			for (uint32_t j = 0; j < (nX - 1); ++j)
+		for (uint32_t j = 0; j < (nX - 1); ++j)
+		{
+			int nT = GetCellTriangle(i, j, Tris);
+			for (int k = 0; k < nT; k += 3)
 			{
-				int nT = GetCellTriangle(i, j, Tris);
-				for (int k = 0; k < nT; k += 3)
-				{
-					Indices[3 * nTris + 0] = Tris[k + 0];
-					Indices[3 * nTris + 1] = Tris[k + 1];
-					Indices[3 * nTris + 2] = Tris[k + 2];
-					nTris++;
-				}
+				Indices[3 * nTris + 0] = Tris[k + 0];
+				Indices[3 * nTris + 1] = Tris[k + 1];
+				Indices[3 * nTris + 2] = Tris[k + 2];
+				nTris++;
 			}
+		}
 
 		std::vector<int> Count;
 		Count.resize(Vertices.size(), 0);

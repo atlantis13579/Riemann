@@ -13,11 +13,6 @@ namespace Riemann
 
 		bool insert(const T& v)
 		{
-			if (m_size == BufferSize - 1)
-			{
-				return false;
-			}
-
 			for (int i = 0; i < m_size; ++i)
 			{
 				if (m_buffer[i] == v)
@@ -25,6 +20,12 @@ namespace Riemann
 					return true;
 				}
 			}
+
+			if (m_size == BufferSize - 1)
+			{
+				return false;
+			}
+
 			m_buffer[m_size++] = v;
 			return true;
 		}

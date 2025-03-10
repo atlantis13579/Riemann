@@ -91,6 +91,10 @@ namespace Riemann
 			return true;
 		}
 
+		Vector3			GetCenter() const
+		{
+			return BoundingVolume.GetCenter();
+		}
 		Vector3			GetSupport(const Vector3& Direction) const;
 		int				GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
 
