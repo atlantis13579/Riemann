@@ -339,25 +339,29 @@ namespace Riemann
 			if (Type == physx::eCONVEXMESH)
 			{
 				physx::PxConvexMeshGeometry* convex = (physx::PxConvexMeshGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.convex;
+				const physx::PxMeshScale pxScale = convex->scale;
 				physx::ConvexHullData& hull = convex->convexMesh->mHullData;
 
 				Vector3* v = (Vector3*)hull.getHullVertices();
-				PxU8* ind = hull.getVertexData8();
+				PxU8* buffer = hull.getVertexData8();
+
+				int indices_begin = (int)vertices.size();
 
 				for (PxU8 i = 0; i < hull.mNbHullVertices; ++i)
 				{
-					vertices.push_back(q * v[i] + p);
+					Vector3 vs = pxScale.transform(v[i]);
+					vertices.push_back(q * vs + p);
 				}
 
-				int indices_begin = (int)vertices.size();
 				for (PxU8 i = 0; i < hull.mNbPolygons; ++i)
 				{
 					const physx::GuHullPolygonData& poly = hull.mPolygons[i];
+					const PxU8* ind = buffer + poly.mVRef8;
 					for (PxU8 j = 1; j < poly.mNbVerts - 1; ++j)
 					{
-						indices.push_back(indices_begin + ind[poly.mVRef8]);
-						indices.push_back(indices_begin + ind[poly.mVRef8 + j]);
-						indices.push_back(indices_begin + ind[poly.mVRef8 + j + 1]);
+						indices.push_back(indices_begin + ind[0]);
+						indices.push_back(indices_begin + ind[j]);
+						indices.push_back(indices_begin + ind[j+1]);
 					}
 				}
 			}
@@ -371,7 +375,7 @@ namespace Riemann
 
 				for (PxU32 i = 0; i < Mesh->mNbVertices; ++i)
 				{
-					Vector3 v = pxScale.rotation.Conjugate() * (pxScale.scale * (pxScale.rotation * Mesh->mVertices[i]));
+					Vector3 v = pxScale.transform(Mesh->mVertices[i]);
 					vertices.push_back(q * v + p);
 				}
 

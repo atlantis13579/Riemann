@@ -551,6 +551,7 @@ namespace PhysxFormat_34
 		PxU16		mCount;
 		PxU16		mOffset;
 	};
+	static_assert(sizeof(Valency) == 4, "Wrong size of Valency");
 
 	struct BigConvexRawData
 	{
@@ -586,6 +587,22 @@ namespace PhysxFormat_34
 	class PxBigConvexData
 	{
 	public:
+		PxBigConvexData(int Empty) {}
+
+		PxBigConvexData()
+		{
+			mData.mSubdiv = 0;
+			mData.mNbSamples = 0;
+			mData.mSamples = NULL;
+			mData.mNbVerts = 0;
+			mData.mNbAdjVerts = 0;
+			mData.mValencies = NULL;
+			mData.mAdjacentVerts = NULL;
+		}
+		~PxBigConvexData()
+		{
+		}
+
 		void importExtraData(PxDeserializationContext& context)
 		{
 			if (mData.mSamples)
@@ -697,7 +714,7 @@ namespace PhysxFormat_34
 			if (mBigConvexData)
 			{
 				mBigConvexData = context.readExtraData<PxBigConvexData, 16>();
-				new(mBigConvexData)PxBigConvexData();
+				new(mBigConvexData)PxBigConvexData(0);
 				mBigConvexData->importExtraData(context);
 				mHullData.mBigConvexRawData = &mBigConvexData->mData;
 			}
@@ -899,8 +916,13 @@ namespace PhysxFormat_34
 	class PxMeshScale
 	{
 	public:
-		PxVec3		scale;
-		Quaternion		rotation;
+		Vector3		scale;
+		Quaternion	rotation;
+
+		Vector3		transform(const Vector3& v) const
+		{
+			return rotation.Conjugate() * (scale * (rotation * v));
+		}
 	};
 
 	class PxConvexMeshGeometry : public PxGeometry
