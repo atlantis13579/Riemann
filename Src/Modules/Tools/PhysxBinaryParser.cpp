@@ -464,20 +464,25 @@ namespace Riemann
 			{
 				physx::PxBoxGeometry* box = (physx::PxBoxGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.box;
 				const PxVec3& ext = box->halfExtents;
-				PxVec3 v[8];
-				v[0] = p + q * PxVec3(-ext.x, -ext.y, -ext.z);
-				v[1] = p + q * PxVec3(ext.x, -ext.y, -ext.z);
-				v[2] = p + q * PxVec3(-ext.x, ext.y, -ext.z);
-				v[3] = p + q * PxVec3(ext.x, ext.y, -ext.z);
-				v[4] = p + q * PxVec3(-ext.x, -ext.y, ext.z);
-				v[5] = p + q * PxVec3(ext.x, -ext.y, ext.z);
-				v[6] = p + q * PxVec3(-ext.x, ext.y, ext.z);
-				v[7] = p + q * PxVec3(ext.x, ext.y, ext.z);
+
+				int indices_begin = (int)vertices.size();
+
+				Vector3 v[8];
+				v[0] = Vector3(-ext.x, -ext.y, -ext.z);
+				v[1] = Vector3(ext.x, -ext.y, -ext.z);
+				v[2] = Vector3(-ext.x, ext.y, -ext.z);
+				v[3] = Vector3(ext.x, ext.y, -ext.z);
+				v[4] = Vector3(-ext.x, -ext.y, ext.z);
+				v[5] = Vector3(ext.x, -ext.y, ext.z);
+				v[6] = Vector3(-ext.x, ext.y, ext.z);
+				v[7] = Vector3(ext.x, ext.y, ext.z);
 				for (int j = 0; j < 8; j++)
 				{
-					vertices.push_back(v[j]);
+					vertices.push_back(p + q * v[j]);
 				}
-				const int ind[] = {
+
+				int ind[] =
+				{
 					0, 1, 2,
 					1, 3, 2,
 					4, 5, 6,
@@ -493,7 +498,7 @@ namespace Riemann
 				};
 				for (int j = 0; j < sizeof(ind) / sizeof(ind[0]); j++)
 				{
-					indices.push_back(ind[j]);
+					indices.push_back(indices_begin + ind[j]);
 				}
 			}
 			else if (Type == physx::eSPHERE)
@@ -506,6 +511,8 @@ namespace Riemann
 				const float phiStep = mPI / stackCount;
 				const float thetaStep = 2.0f * mPI / sliceCount;
 				const float radius = sphere->radius;
+
+				int indices_begin = (int)vertices.size();
 
 				vertices.push_back(q * Vector3(0, radius, 0) + p);
 				for (int i = 1; i < stackCount; i++)
@@ -522,9 +529,9 @@ namespace Riemann
 
 				for (int i = 1; i <= sliceCount; i++)
 				{
-					indices.push_back(0);
-					indices.push_back(i + 1);
-					indices.push_back(i);
+					indices.push_back(indices_begin + 0);
+					indices.push_back(indices_begin + i + 1);
+					indices.push_back(indices_begin + i);
 				}
 
 				int baseIndex = 1;
@@ -533,22 +540,22 @@ namespace Riemann
 				{
 					for (int j = 0; j < sliceCount; j++)
 					{
-						indices.push_back(baseIndex + i * Count + j);
-						indices.push_back(baseIndex + i * Count + j + 1);
-						indices.push_back(baseIndex + (i + 1) * Count + j);
+						indices.push_back(indices_begin + baseIndex + i * Count + j);
+						indices.push_back(indices_begin + baseIndex + i * Count + j + 1);
+						indices.push_back(indices_begin + baseIndex + (i + 1) * Count + j);
 
-						indices.push_back(baseIndex + (i + 1) * Count + j);
-						indices.push_back(baseIndex + i * Count + j + 1);
-						indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+						indices.push_back(indices_begin + baseIndex + (i + 1) * Count + j);
+						indices.push_back(indices_begin + baseIndex + i * Count + j + 1);
+						indices.push_back(indices_begin + baseIndex + (i + 1) * Count + j + 1);
 					}
 				}
 				int PoleIndex = (stackCount - 1) * (sliceCount + 1) + 1;
 				baseIndex = PoleIndex - Count;
 				for (int i = 0; i < sliceCount; i++)
 				{
-					indices.push_back(PoleIndex);
-					indices.push_back(baseIndex + i);
-					indices.push_back(baseIndex + i + 1);
+					indices.push_back(indices_begin + PoleIndex);
+					indices.push_back(indices_begin + baseIndex + i);
+					indices.push_back(indices_begin + baseIndex + i + 1);
 				}
 			}
 			else
