@@ -551,6 +551,75 @@ namespace Riemann
 					indices.push_back(indices_begin + baseIndex + i + 1);
 				}
 			}
+			else if (Type == physx::eCAPSULE)
+			{
+				// https://docs.nvidia.com/gameworks/content/gameworkslibrary/physx/guide/Manual/Geometry.html
+				// A PxCapsuleGeometry is centered at the origin.
+				// It is specified by a radius and a half-height value by which its axis extends along the positive and negative X-axis.
+
+				physx::PxCapsuleGeometry* capsule = (physx::PxCapsuleGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.capsule;
+				float radius = capsule->radius;
+				float halfHeight = capsule->halfHeight;
+
+				const int stackCount = 5;
+				const int sliceCount = 8;
+				const float mPI = 2.0f * asinf(1.0f);
+				float phiStep = mPI / stackCount;
+				float thetaStep = 2.0f * mPI / sliceCount;
+
+				int indices_begin = (int)vertices.size();
+
+				vertices.push_back(p + q * Vector3(halfHeight + radius, 0, 0));
+
+				for (int i = 1; i < stackCount; i++)
+				{
+					float phi = i * phiStep;
+					float height = i <= stackCount / 2 ? halfHeight : -halfHeight;
+					for (int j = 0; j <= sliceCount; j++)
+					{
+						float theta = j * thetaStep;
+						Vector3 v = Vector3(height + radius * cosf(phi), radius * sinf(phi) * sinf(theta), radius * sinf(phi) * cosf(theta));
+						vertices.push_back(p + q * v);
+					}
+				}
+				vertices.push_back(p + q * Vector3(-halfHeight - radius, 0, 0));
+
+				for (int i = 1; i <= sliceCount; i++)
+				{
+					indices.push_back(indices_begin + 0);
+					indices.push_back(indices_begin + i + 1);
+					indices.push_back(indices_begin + i);
+				}
+
+				int baseIndex = indices_begin + 1;
+				int Count = sliceCount + 1;
+				for (int i = 0; i < stackCount - 2; i++)
+				{
+					for (int j = 0; j < sliceCount; j++)
+					{
+						indices.push_back(baseIndex + i * Count + j);
+						indices.push_back(baseIndex + i * Count + j + 1);
+						indices.push_back(baseIndex + (i + 1) * Count + j);
+
+						indices.push_back(baseIndex + (i + 1) * Count + j);
+						indices.push_back(baseIndex + i * Count + j + 1);
+						indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+					}
+				}
+				int PoleIndex = (int)vertices.size() - 1 - indices_begin;
+				baseIndex = PoleIndex - Count;
+				for (int i = 0; i < sliceCount; i++)
+				{
+					indices.push_back(PoleIndex);
+					indices.push_back(baseIndex + i);
+					indices.push_back(baseIndex + i + 1);
+				}
+			}
+			else if (Type == physx::ePLANE)
+			{
+				physx::PxPlaneGeometry* plane = (physx::PxPlaneGeometry*)shape->mShape.mShape.mCore.geometry.mGeometry.plane;
+				(void)plane;
+			}
 			else
 			{
 				//	assert(false);
