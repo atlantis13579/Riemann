@@ -414,21 +414,14 @@ namespace Riemann
 				const uint32_t					nCols = pxhf->mData.columns;
 				const uint32_t					nRows = pxhf->mData.rows;
 
-				Maths::TCE3<float>	ce = pxhf->mData.mAABB;
-				Vector3 Scale = Vector3(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
-				ce.Center *= Scale;
-				ce.Extent *= Scale;
-				Maths::TAABB3<float> BV = ce.GetAABB();
-				float DX = (BV.Max.x - BV.Min.x) / (nRows - 1);
-				float DZ = (BV.Max.z - BV.Min.z) / (nCols - 1);
-
 				int indices_begin = (int)vertices.size();
 
+				Vector3 Scale = Vector3(physxObj->rowScale, physxObj->heightScale, physxObj->columnScale);
 				for (PxU32 i = 0; i < nRows; i++)
 				for (PxU32 j = 0; j < nCols; j++)
 				{
-					Vector3 v = Vector3(BV.Min.x + DX * i, samples[i * nCols + j].height * Scale.y, BV.Min.z + DZ * j);
-					vertices.push_back(q * v + p);
+					Vector3 v = Vector3(Scale.x * i, samples[i * nCols + j].height * Scale.y, Scale.z * j);
+					vertices.push_back(p + q * v);
 				}
 
 				for (PxU32 i = 0; i < nRows - 1; i++)
@@ -576,12 +569,16 @@ namespace Riemann
 			else if (classType == physx::PxConcreteType::eRIGID_STATIC)
 			{
 				physx::NpRigidStatic* rigid = (physx::NpRigidStatic*)px;
-
 				int nShapes = rigid->GetNumShapes();
 				physx::NpShape* const* pShades = rigid->GetShapes();
 				for (int i = 0; i < nShapes; ++i)
 				{
-					GenerateShapeTriangles(pShades[i], vertices, indices, rigid->mRigidStatic.mStatic.mCore.body2World.p, rigid->mRigidStatic.mStatic.mCore.body2World.q);
+					const physx::PxTransform &actor_pose = rigid->mRigidStatic.mStatic.mCore.body2World;
+					const physx::PxTransform &shape_local_pose = pShades[i]->mShape.mShape.mCore.transform;
+
+					Vector3 p = actor_pose.q * shape_local_pose.p + actor_pose.p;
+					Quaternion q = actor_pose.q * shape_local_pose.q;
+					GenerateShapeTriangles(pShades[i], vertices, indices, p, q);
 				}
 
 				return;
@@ -589,13 +586,16 @@ namespace Riemann
 			else if (classType == physx::PxConcreteType::eRIGID_DYNAMIC)
 			{
 				physx::NpRigidDynamic* rigid = (physx::NpRigidDynamic*)px;
-				const physx::PxsBodyCore& core = rigid->mBody.mBodyCore.mCore;
-
 				int nShapes = rigid->GetNumShapes();
 				physx::NpShape* const* pShades = rigid->GetShapes();
 				for (int i = 0; i < nShapes; ++i)
 				{
-					GenerateShapeTriangles(pShades[i], vertices, indices, core.body2World.p, core.body2World.q);
+					const physx::PxTransform& actor_pose = rigid->mBody.mBodyCore.mCore.body2World;
+					const physx::PxTransform& shape_local_pose = pShades[i]->mShape.mShape.mCore.transform;
+
+					Vector3 p = actor_pose.q * shape_local_pose.p + actor_pose.p;
+					Quaternion q = actor_pose.q * shape_local_pose.q;
+					GenerateShapeTriangles(pShades[i], vertices, indices, p, q);
 				}
 
 				return;
