@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		6A6AEEAD2D7C302A00692025 /* LinearMap.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A6AEEAB2D7C302A00692025 /* LinearMap.h */; };
-		6A6AEEAE2D7C302A00692025 /* LinearSety.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A6AEEAC2D7C302A00692025 /* LinearSety.h */; };
 		6A6AEEB02D7C303300692025 /* Ref.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A6AEEAF2D7C303300692025 /* Ref.h */; };
 		6A6AEED22D7C305D00692025 /* AxisAlignedBox3.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A6AEEB12D7C305D00692025 /* AxisAlignedBox3.h */; };
 		6A6AEED32D7C305D00692025 /* Plane3.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A6AEEC32D7C305D00692025 /* Plane3.h */; };
@@ -43,6 +42,7 @@
 		6A6AEEF02D7C305D00692025 /* Triangle3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A6AEECF2D7C305D00692025 /* Triangle3.cpp */; };
 		6A6AEEF12D7C305D00692025 /* TriangleMesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A6AEED12D7C305D00692025 /* TriangleMesh.cpp */; };
 		6A6AEEF22D7C305D00692025 /* HeightField3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A6AEEBC2D7C305D00692025 /* HeightField3.cpp */; };
+		6A93914A2D84623C0053340F /* LinearSet.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A9391492D84623C0053340F /* LinearSet.h */; };
 		6AA94E572D732449005C6B3C /* MassParameters.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AA94E552D732449005C6B3C /* MassParameters.h */; };
 		6AA94E582D732449005C6B3C /* MassParameters.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AA94E562D732449005C6B3C /* MassParameters.cpp */; };
 		6AC371B12D73207600B88518 /* StaticArray.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371AC2D73207600B88518 /* StaticArray.h */; };
@@ -243,7 +243,6 @@
 
 /* Begin PBXFileReference section */
 		6A6AEEAB2D7C302A00692025 /* LinearMap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LinearMap.h; path = /Volumes/ext/src/Riemann/Src/Core/LinearMap.h; sourceTree = "<absolute>"; };
-		6A6AEEAC2D7C302A00692025 /* LinearSety.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LinearSety.h; path = /Volumes/ext/src/Riemann/Src/Core/LinearSety.h; sourceTree = "<absolute>"; };
 		6A6AEEAF2D7C303300692025 /* Ref.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Ref.h; path = /Volumes/ext/src/Riemann/Src/Core/Ref.h; sourceTree = "<absolute>"; };
 		6A6AEEB12D7C305D00692025 /* AxisAlignedBox3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AxisAlignedBox3.h; path = /Volumes/ext/src/Riemann/Src/CollisionPrimitive/AxisAlignedBox3.h; sourceTree = "<absolute>"; };
 		6A6AEEB22D7C305D00692025 /* AxisAlignedBox3.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AxisAlignedBox3.cpp; path = /Volumes/ext/src/Riemann/Src/CollisionPrimitive/AxisAlignedBox3.cpp; sourceTree = "<absolute>"; };
@@ -278,6 +277,7 @@
 		6A6AEECF2D7C305D00692025 /* Triangle3.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Triangle3.cpp; path = /Volumes/ext/src/Riemann/Src/CollisionPrimitive/Triangle3.cpp; sourceTree = "<absolute>"; };
 		6A6AEED02D7C305D00692025 /* TriangleMesh.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = TriangleMesh.h; path = /Volumes/ext/src/Riemann/Src/CollisionPrimitive/TriangleMesh.h; sourceTree = "<absolute>"; };
 		6A6AEED12D7C305D00692025 /* TriangleMesh.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = TriangleMesh.cpp; path = /Volumes/ext/src/Riemann/Src/CollisionPrimitive/TriangleMesh.cpp; sourceTree = "<absolute>"; };
+		6A9391492D84623C0053340F /* LinearSet.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LinearSet.h; path = /Volumes/ext/src/Riemann/Src/Core/LinearSet.h; sourceTree = "<absolute>"; };
 		6AA94E552D732449005C6B3C /* MassParameters.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MassParameters.h; path = /Volumes/ext/src/Riemann/Src/RigidBodyDynamics/MassParameters.h; sourceTree = "<absolute>"; };
 		6AA94E562D732449005C6B3C /* MassParameters.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = MassParameters.cpp; path = /Volumes/ext/src/Riemann/Src/RigidBodyDynamics/MassParameters.cpp; sourceTree = "<absolute>"; };
 		6AC3719E2D73207600B88518 /* Base.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Base.h; path = /Volumes/ext/src/Riemann/Src/Core/Base.h; sourceTree = "<absolute>"; };
@@ -765,7 +765,7 @@
 				6AC371A42D73207600B88518 /* ListSet.h */,
 				6AC371A52D73207600B88518 /* Lock.h */,
 				6A6AEEAB2D7C302A00692025 /* LinearMap.h */,
-				6A6AEEAC2D7C302A00692025 /* LinearSety.h */,
+				6A9391492D84623C0053340F /* LinearSet.h */,
 				6AC371A62D73207600B88518 /* LogSystem.h */,
 				6AC371A72D73207600B88518 /* PriorityQueue.h */,
 				6A6AEEAF2D7C303300692025 /* Ref.h */,
@@ -880,6 +880,7 @@
 				6A6AEED42D7C305D00692025 /* Triangle2.h in Headers */,
 				6A6AEED52D7C305D00692025 /* Capsule3.h in Headers */,
 				6A6AEED62D7C305D00692025 /* Sphere3.h in Headers */,
+				6A93914A2D84623C0053340F /* LinearSet.h in Headers */,
 				6A6AEED72D7C305D00692025 /* StaticMesh.h in Headers */,
 				6A6AEED82D7C305D00692025 /* Convex2.h in Headers */,
 				6A6AEED92D7C305D00692025 /* Ray3.h in Headers */,
@@ -1010,7 +1011,6 @@
 				6AC371D62D73209400B88518 /* Fracture.h in Headers */,
 				6AC371D72D73209400B88518 /* DestructionSet.h in Headers */,
 				6A6AEEAD2D7C302A00692025 /* LinearMap.h in Headers */,
-				6A6AEEAE2D7C302A00692025 /* LinearSety.h in Headers */,
 				6AC371D82D73209400B88518 /* GraphPartition.h in Headers */,
 				ADD23BD42887614E00A849BE /* GeometryQuery.h in Headers */,
 				ADD23D2C288762F900A849BE /* DenseVector.h in Headers */,

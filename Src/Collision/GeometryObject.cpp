@@ -220,7 +220,7 @@ namespace Riemann
 	{
 		Vector3 CenterLocal = GetCenter_LocalSpace();
 		Vector3 CenterWorld = m_WorldTransform.LocalToWorld(CenterLocal);
-		return CenterLocal;
+		return CenterWorld;
 	}
 
 	Vector3		Geometry::GetSupport_WorldSpace(const Vector3& Direction) const
