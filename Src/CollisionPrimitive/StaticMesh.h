@@ -425,7 +425,7 @@ namespace Riemann
 				return false;
 			}
 
-			uint32_t Magic = 0xF34D9017;
+			uint32_t Magic = 0xF24D8017;
 			fwrite(&Magic, sizeof(Magic), 1, fp);
 			fwrite(&Flags, sizeof(Flags), 1, fp);
 			fwrite(&NumVertices, sizeof(NumVertices), 1, fp);
@@ -455,7 +455,7 @@ namespace Riemann
 
 			uint32_t Magic;
 			fread(&Magic, sizeof(Magic), 1, fp);
-			if (Magic != 0xF34D9017)
+			if (Magic != 0xF24D8017)
 			{
 				return false;
 			}

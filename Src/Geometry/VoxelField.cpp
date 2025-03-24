@@ -3,6 +3,7 @@
 #include <queue>
 
 #include "VoxelField.h"
+#include "../Core/File.h"
 #include "../Maths/Maths.h"
 
 namespace Riemann
@@ -821,52 +822,48 @@ namespace Riemann
 			return false;
 		}
 
-		FILE* fp = fopen(filename, "wb");
-		if (!fp)
+		FileWriter file(filename);
+		if (!file.IsLoaded())
 		{
 			return false;
 		}
 
 		uint32_t Magic = VOXEL_FILE_MAGIC;
-		fwrite(&Magic, sizeof(Magic), 1, fp);
-		fwrite(&header, sizeof(header), 1, fp);
-		fwrite(&buffer_vx[0], sizeof(VoxelFast), buffer_vx.size(), fp);
-		fwrite(&buffer_field[0], sizeof(VoxelFileField), buffer_field.size(), fp);
-		fclose(fp);
+		file.Write(&Magic, sizeof(Magic));
+		file.Write(&header, sizeof(header));
+		file.Write(&buffer_vx[0], sizeof(VoxelFast) * buffer_vx.size());
+		file.Write(&buffer_field[0], sizeof(VoxelFileField) * buffer_field.size());
+		file.Close();
 
 		return true;
 	}
 
 	bool	VoxelField::SerializeFrom(const char* filename)
 	{
-		FILE* fp = fopen(filename, "rb");
-		if (!fp)
+		FileReader file(filename);
+		if (!file.IsLoaded())
 		{
 			return false;
 		}
 
-		fseek(fp, 0, SEEK_END);
-		size_t fileSize = ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-
-		if (fileSize < 4 + sizeof(VoxelFileHeader))
+		if (file.GetFileSize() < 4 + sizeof(VoxelFileHeader))
 		{
 			return false;
 		}
 
 		uint32_t Magic;
-		fread(&Magic, sizeof(Magic), 1, fp);
+		file.Read(&Magic, sizeof(Magic));
 		if (Magic != VOXEL_FILE_MAGIC)
 		{
 			return false;
 		}
 
 		VoxelFileHeader	header;
-		fread(&header, sizeof(header), 1, fp);
+		file.Read(&header, sizeof(header));
 		uint64_t nExpectedSize = 4 + sizeof(VoxelFileHeader);
 		nExpectedSize += sizeof(VoxelFileField) * header.nFields;
 		nExpectedSize += sizeof(VoxelFast) * header.nVoxels;
-		if (fileSize != nExpectedSize)
+		if (file.GetFileSize() != nExpectedSize)
 		{
 			return false;
 		}
@@ -881,7 +878,7 @@ namespace Riemann
 		{
 			std::vector<VoxelFast> buffer_vx;
 			buffer_vx.resize(header.nVoxels);
-			fread(&buffer_vx[0], sizeof(VoxelFast), buffer_vx.size(), fp);
+			file.Read(&buffer_vx[0], sizeof(VoxelFast) * buffer_vx.size());
 			for (uint32_t i = 0; i < header.nVoxels; ++i)
 			{
 				Voxel* vx = &Voxels[i];
@@ -897,7 +894,7 @@ namespace Riemann
 		{
 			std::vector<VoxelFileField> buffer_field;
 			buffer_field.resize(header.nFields);
-			fread(&buffer_field[0], sizeof(VoxelFileField), buffer_field.size(), fp);
+			file.Read(&buffer_field[0], sizeof(VoxelFileField) * buffer_field.size());
 
 			uint32_t curr = 0;
 			for (uint32_t i = 0; i < header.nFields; ++i)

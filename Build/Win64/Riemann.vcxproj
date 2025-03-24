@@ -108,6 +108,7 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle2.h" />
     <ClInclude Include="..\..\Src\Core\BitSet.h" />
     <ClInclude Include="..\..\Src\Core\DynamicArray.h" />
+    <ClInclude Include="..\..\Src\Core\File.h" />
     <ClInclude Include="..\..\Src\Core\LinearMap.h" />
     <ClInclude Include="..\..\Src\Core\LinearSet.h" />
     <ClInclude Include="..\..\Src\Core\ListSet.h" />

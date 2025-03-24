@@ -36,11 +36,7 @@ inline void AssertBreakPoint()
 
 inline void* AlignMemory(void* Memory, int Width)
 {
-#if INTPTR_MAX == INT32_MAX
-	return = (void*)((((uint32_t)(Memory + Width - 1) / Width) * Width);
-#else
-	return (void*)((((uint64_t)Memory + Width - 1) / Width) * Width);
-#endif
+	return (void*)((((size_t)Memory + Width - 1) / Width) * Width);
 }
 
 inline bool IsAlign(void* Memory, int Width)

@@ -561,6 +561,9 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\Quad3.h">
       <Filter>CollisionPrimitive</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Core\File.h">
+      <Filter>Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp">

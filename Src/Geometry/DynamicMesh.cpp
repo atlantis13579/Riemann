@@ -5,6 +5,7 @@
 #include "MeshSimplification.h"
 #include "../Core/Base.h"
 #include "../Core/BitSet.h"
+#include "../Core/File.h"
 #include "../Core/SmallSet.h"
 #include "../Maths/Box1.h"
 #include "../Maths/Maths.h"
@@ -237,34 +238,17 @@ namespace Riemann
 	{
 		Clear();
 
-		char* buf = 0;
 		int error = 0;
-		FILE* fp = fopen(name, "rb");
-		if (!fp)
+		MemoryFile file(name);
+		if (file.GetSize() <= 0)
 		{
-			return false;
-		}
-		fseek(fp, 0, SEEK_END);
-		size_t bufSize = (size_t)ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-		buf = new char[bufSize];
-		if (!buf)
-		{
-			fclose(fp);
-			return false;
-		}
-		uint64_t readLen = fread(buf, bufSize, 1, fp);
-		fclose(fp);
-
-		if (readLen != 1)
-		{
-			delete[] buf;
 			return false;
 		}
 
 		int VectexTokens = 0;
 
-		char* p = buf, * pEnd = buf + bufSize;
+		char* p = (char*)file.GetData();
+		char* pEnd = p + file.GetSize();
 		while (p < pEnd)
 		{
 			char row[512];
@@ -332,8 +316,6 @@ namespace Riemann
 				}
 			}
 		}
-
-		delete[] buf;
 
 		BuildBounds();
 

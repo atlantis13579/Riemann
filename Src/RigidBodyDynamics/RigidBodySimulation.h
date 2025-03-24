@@ -19,6 +19,7 @@ namespace Riemann
 	class ForceField;
 	class KinematicsDriver;
 	class JobSystem;
+	class IBinaryData;
 
 	enum class ThreadMode : uint8_t
 	{
@@ -137,7 +138,6 @@ namespace Riemann
 		IntegrateMethod					m_IntegrateMethod;
 		std::vector<ForceField*>		m_Fields;
 		WorldClock						m_Clock;
-		void*							m_SharedMem;
-		size_t							m_SharedMemSize;
+		IBinaryData*							m_SceneResource;
 	};
 }

@@ -3,6 +3,7 @@
 #include "RigidBodySimulation.h"
 
 #include "../Core/Base.h"
+#include "../Core/File.h"
 #include "../Core/LogSystem.h"
 #include "../Core/JobSystem.h"
 #include "../Collision/DynamicAABBTree.h"
@@ -48,8 +49,7 @@ namespace Riemann
 		{
 			m_Jobsystem->CreateWorkers(param.workerThreads);
 		}
-		m_SharedMem = nullptr;
-		m_SharedMemSize = 0;
+		m_SceneResource = nullptr;
 	}
 
 	RigidBodySimulation::~RigidBodySimulation()
@@ -89,9 +89,10 @@ namespace Riemann
 			delete m_Jobsystem;
 		}
 
-		if (m_SharedMem)
+		if (m_SceneResource)
 		{
-			ReleaseSharedMem(m_SharedMem, m_SharedMemSize);
+			delete m_SceneResource;
+			m_SceneResource = nullptr;
 		}
 	}
 
@@ -241,8 +242,8 @@ namespace Riemann
 		std::vector<Geometry*> geoms;
 		if (shared_mem)
 		{
-			m_SharedMem = Riemann::LoadPhysxBinaryMmap(name, nullptr, &geoms, m_SharedMemSize);
-			if (!m_SharedMem)
+			m_SceneResource = Riemann::LoadPhysxBinaryMmap(name, nullptr, &geoms);
+			if (!m_SceneResource)
 			{
 				return false;
 			}

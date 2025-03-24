@@ -20,6 +20,7 @@
 #include "../../CollisionPrimitive/MeshBVH4.h"
 #include "../../RigidBodyDynamics/RigidBody.h"
 #include "../../Core/Base.h"
+#include "../../Core/File.h"
 #include "../../Maths/Box3.h"
 #include "../../Maths/Transform.h"
 #include "../../Maths/Quaternion.h"
@@ -250,13 +251,13 @@ namespace Riemann
 			else if (classType == physx::PxConcreteType::eRIGID_STATIC)
 			{
 				physx::NpRigidStatic* rigid = (physx::NpRigidStatic*)px;
+				Transform actor_pose(rigid->mRigidStatic.mStatic.mCore.body2World.p, rigid->mRigidStatic.mStatic.mCore.body2World.q);
 
 				RigidBodyStatic* body = nullptr;
 				if (bodies)
 				{
 					RigidBodyParam param;
-					Transform init_pose(rigid->mRigidStatic.mStatic.mCore.body2World.p, rigid->mRigidStatic.mStatic.mCore.body2World.q);
-					body = RigidBodyStatic::CreateRigidBody(param, init_pose);
+					body = RigidBodyStatic::CreateRigidBody(param, actor_pose);
 					assert(body);
 					body->SetGuid(guid);
 					bodies->push_back(body);
@@ -266,6 +267,11 @@ namespace Riemann
 				physx::NpShape* const* pShades = rigid->GetShapes();
 				for (int i = 0; i < nShapes; ++i)
 				{
+					const physx::NpShape* shape = pShades[i];
+					const physx::PxTransform& shape_local_pose = shape->mShape.mShape.mCore.transform;
+					Vector3 p = actor_pose.quat * shape_local_pose.p + actor_pose.pos;
+					Quaternion q = actor_pose.quat * shape_local_pose.q;
+
 					Geometry* g = CreateShape(pShades[i], shared_mem);
 					if (g)
 					{
@@ -281,6 +287,7 @@ namespace Riemann
 			{
 				physx::NpRigidDynamic* rigid = (physx::NpRigidDynamic*)px;
 				const physx::PxsBodyCore& core = rigid->mBody.mBodyCore.mCore;
+				Transform actor_pose(core.body2World.p, core.body2World.q);
 
 				RigidBodyDynamic* body = nullptr;
 				if (bodies)
@@ -298,9 +305,7 @@ namespace Riemann
 					param.freezeThreshold = core.freezeThreshold;
 					param.disableGravity = false;
 
-					Transform init_pose(core.body2World.p, core.body2World.q);
-
-					body = RigidBodyDynamic::CreateRigidBody(param, init_pose);
+					body = RigidBodyDynamic::CreateRigidBody(param, actor_pose);
 					body->SetGuid(guid);
 					bodies->push_back(body);
 				}
@@ -309,10 +314,15 @@ namespace Riemann
 				physx::NpShape* const* pShades = rigid->GetShapes();
 				for (int i = 0; i < nShapes; ++i)
 				{
+					const physx::NpShape* shape = pShades[i];
+					const physx::PxTransform& shape_local_pose = shape->mShape.mShape.mCore.transform;
+					Vector3 p = actor_pose.quat * shape_local_pose.p + actor_pose.pos;
+					Quaternion q = actor_pose.quat * shape_local_pose.q;
+
 					Geometry* g = CreateShape(pShades[i], shared_mem);
 					if (g)
 					{
-						g->SetWorldTransform(core.body2World.p, core.body2World.q);
+						g->SetWorldTransform(p, q);
 						if (geoms) geoms->push_back(g);
 						if (bodies) body->AddGeometry(g);
 					}
@@ -853,40 +863,19 @@ namespace Riemann
 		return success;
 	}
 
-	void	ReleaseSharedMem(void* addr, size_t size)
-	{
-		if (addr == nullptr)
-			return;
-
-#if defined(__linux__) && !defined(__android__)
-		munmap(addr, size);
-#else
-		delete[](char*)addr;
-#endif
-	}
-
 	bool	LoadPhysxBinary(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<Geometry*>* geoms)
 	{
 		if (bodies) bodies->clear();
 		if (geoms) geoms->clear();
 
-		FILE* fp = fopen(Filename, "rb");
-		if (fp == nullptr)
+		MemoryFileAligned<128> file(Filename);
+		if (file.GetSize() <= 0)
 		{
 			return false;
 		}
 
-		std::vector<char> buffer;
-		fseek(fp, 0, SEEK_END);
-		uint64_t filesize = (uint64_t)ftell(fp);
-		fseek(fp, 0, 0);
-		buffer.resize(filesize + 127);
-		void* p = AlignMemory(&buffer[0], 128);
-		fread(p, 1, filesize, fp);
-		fclose(fp);
-
 		PhysxCollections collection;
-		if (!DeserializeFromBuffer(p, collection))
+		if (!DeserializeFromBuffer(file.GetData(), collection))
 		{
 			return false;
 		}
@@ -899,52 +888,26 @@ namespace Riemann
 		return collection.mObjects.size() > 0;
 	}
 
-	void* LoadPhysxBinaryMmap(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<Geometry*>* geoms, size_t& mem_size)
+	IBinaryData* LoadPhysxBinaryMmap(const char* Filename, std::vector<RigidBody*>* bodies, std::vector<Geometry*>* geoms)
 	{
 		if (bodies) bodies->clear();
 		if (geoms) geoms->clear();
 
 #if defined(__linux__) && !defined(__android__)
-		int fd = open(Filename, O_RDONLY);
-		if (fd == -1)
-		{
-			return nullptr;
-		}
-
-		struct stat st;
-		fstat(fd, &st);
-		mem_size = st.st_size;
-		void* addr = mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-		if (addr == MAP_FAILED)
-		{
-			close(fd);
-			return nullptr;
-		}
-		void* p128 = AlignMemory(addr, 128);
-		assert(p128 == addr);
+		IBinaryData* file = new MmapFile(Filename);
 #else
-		FILE* fp = fopen(Filename, "rb");
-		if (fp == nullptr)
+		IBinaryData* file = new MemoryFileAligned<128>(Filename);
+#endif
+		if (file->GetSize() <= 0)
 		{
+			delete file;
 			return nullptr;
 		}
-		fseek(fp, 0, SEEK_END);
-		size_t bytes = (size_t)ftell(fp);
-		fseek(fp, 0, 0);
-		void* addr = new char[bytes + 127];
-		mem_size = bytes + 127;
-		void* p128 = AlignMemory(addr, 128);
-		fread(p128, 1, bytes, fp);
-		fclose(fp);
-#endif
 
 		PhysxCollections collection;
-		if (!DeserializeFromBuffer(p128, collection))
+		if (!DeserializeFromBuffer(file->GetData(), collection))
 		{
-#if defined(__linux__) && !defined(__android__)
-			close(fd);
-#endif
-			ReleaseSharedMem(addr, mem_size);
+			delete file;
 			return nullptr;
 		}
 
@@ -953,7 +916,7 @@ namespace Riemann
 			PhysxBinaryParser::CreateRigidBodies(it.first, it.second, collection.mObjects[it.first], bodies, geoms, true);
 		}
 
-		return addr;
+		return file;
 	}
 
 	bool	LoadPhysxBinaryTriangles(const char* Filename, std::vector<Vector3>& vertices, std::vector<int>& indices)
@@ -961,23 +924,14 @@ namespace Riemann
 		vertices.clear();
 		indices.clear();
 
-		FILE* fp = fopen(Filename, "rb");
-		if (fp == nullptr)
+		MemoryFileAligned<128> file(Filename);
+		if (file.GetSize() <= 0)
 		{
 			return false;
 		}
 
-		std::vector<char> buffer;
-		fseek(fp, 0, SEEK_END);
-		uint64_t filesize = (uint64_t)ftell(fp);
-		fseek(fp, 0, 0);
-		buffer.resize(filesize + 127);
-		void* p = AlignMemory(&buffer[0], 128);
-		fread(p, 1, filesize, fp);
-		fclose(fp);
-
 		PhysxCollections collection;
-		if (!DeserializeFromBuffer(p, collection))
+		if (!DeserializeFromBuffer(file.GetData(), collection))
 		{
 			return false;
 		}
