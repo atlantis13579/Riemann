@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Box3d.h"
+#include "Box3.h"
 
 namespace Maths
 {
@@ -42,68 +42,77 @@ namespace Maths
 			clip[14] = modelView[12] * projMat[2] + modelView[13] * projMat[6] + modelView[14] * projMat[10] + modelView[15] * projMat[14];
 			clip[15] = modelView[12] * projMat[3] + modelView[13] * projMat[7] + modelView[14] * projMat[11] + modelView[15] * projMat[15];
 
-			m_Frustum[RIGHT][0] = clip[3] - clip[0];
-			m_Frustum[RIGHT][1] = clip[7] - clip[4];
-			m_Frustum[RIGHT][2] = clip[11] - clip[8];
-			m_Frustum[RIGHT][3] = clip[15] - clip[12];
+			m_Planes[RIGHT][0] = clip[3] - clip[0];
+			m_Planes[RIGHT][1] = clip[7] - clip[4];
+			m_Planes[RIGHT][2] = clip[11] - clip[8];
+			m_Planes[RIGHT][3] = clip[15] - clip[12];
 
-			NormalizePlane(m_Frustum, RIGHT);
+			NormalizePlane(m_Planes[RIGHT]);
 
-			m_Frustum[LEFT][0] = clip[3] + clip[0];
-			m_Frustum[LEFT][1] = clip[7] + clip[4];
-			m_Frustum[LEFT][2] = clip[11] + clip[8];
-			m_Frustum[LEFT][3] = clip[15] + clip[12];
+			m_Planes[LEFT][0] = clip[3] + clip[0];
+			m_Planes[LEFT][1] = clip[7] + clip[4];
+			m_Planes[LEFT][2] = clip[11] + clip[8];
+			m_Planes[LEFT][3] = clip[15] + clip[12];
 
-			NormalizePlane(m_Frustum, LEFT);
+			NormalizePlane(m_Planes[LEFT]);
 
-			m_Frustum[BOTTOM][0] = clip[3] + clip[1];
-			m_Frustum[BOTTOM][1] = clip[7] + clip[5];
-			m_Frustum[BOTTOM][2] = clip[11] + clip[9];
-			m_Frustum[BOTTOM][3] = clip[15] + clip[13];
+			m_Planes[BOTTOM][0] = clip[3] + clip[1];
+			m_Planes[BOTTOM][1] = clip[7] + clip[5];
+			m_Planes[BOTTOM][2] = clip[11] + clip[9];
+			m_Planes[BOTTOM][3] = clip[15] + clip[13];
 
-			NormalizePlane(m_Frustum, BOTTOM);
+			NormalizePlane(m_Planes[BOTTOM]);
 
-			m_Frustum[TOP][0] = clip[3] - clip[1];
-			m_Frustum[TOP][1] = clip[7] - clip[5];
-			m_Frustum[TOP][2] = clip[11] - clip[9];
-			m_Frustum[TOP][3] = clip[15] - clip[13];
+			m_Planes[TOP][0] = clip[3] - clip[1];
+			m_Planes[TOP][1] = clip[7] - clip[5];
+			m_Planes[TOP][2] = clip[11] - clip[9];
+			m_Planes[TOP][3] = clip[15] - clip[13];
 
-			NormalizePlane(m_Frustum, TOP);
+			NormalizePlane(m_Planes[TOP]);
 
-			m_Frustum[BACK][0] = clip[3] - clip[2];
-			m_Frustum[BACK][1] = clip[7] - clip[6];
-			m_Frustum[BACK][2] = clip[11] - clip[10];
-			m_Frustum[BACK][3] = clip[15] - clip[14];
+			m_Planes[BACK][0] = clip[3] - clip[2];
+			m_Planes[BACK][1] = clip[7] - clip[6];
+			m_Planes[BACK][2] = clip[11] - clip[10];
+			m_Planes[BACK][3] = clip[15] - clip[14];
 
-			NormalizePlane(m_Frustum, BACK);
+			NormalizePlane(m_Planes[BACK]);
 
-			m_Frustum[FRONT][0] = clip[3] + clip[2];
-			m_Frustum[FRONT][1] = clip[7] + clip[6];
-			m_Frustum[FRONT][2] = clip[11] + clip[10];
-			m_Frustum[FRONT][3] = clip[15] + clip[14];
+			m_Planes[FRONT][0] = clip[3] + clip[2];
+			m_Planes[FRONT][1] = clip[7] + clip[6];
+			m_Planes[FRONT][2] = clip[11] + clip[10];
+			m_Planes[FRONT][3] = clip[15] + clip[14];
 
-			NormalizePlane(m_Frustum, FRONT);
+			NormalizePlane(m_Planes[FRONT]);
+
+			m_Points[0] = IntersectPlanes(m_Planes[LEFT], m_Planes[BOTTOM], m_Planes[FRONT]);
+			m_Points[1] = IntersectPlanes(m_Planes[RIGHT], m_Planes[BOTTOM], m_Planes[FRONT]);
+			m_Points[2] = IntersectPlanes(m_Planes[RIGHT], m_Planes[TOP], m_Planes[FRONT]);
+			m_Points[3] = IntersectPlanes(m_Planes[LEFT], m_Planes[TOP], m_Planes[FRONT]);
+			m_Points[4] = IntersectPlanes(m_Planes[LEFT], m_Planes[BOTTOM], m_Planes[BACK]);
+			m_Points[5] = IntersectPlanes(m_Planes[RIGHT], m_Planes[BOTTOM], m_Planes[BACK]);
+			m_Points[6] = IntersectPlanes(m_Planes[RIGHT], m_Planes[TOP], m_Planes[BACK]);
+			m_Points[7] = IntersectPlanes(m_Planes[LEFT], m_Planes[TOP], m_Planes[BACK]);
 		}
 
-		bool FrustumIntersectAABB(const Vector3& mMin, const Vector3& mMax) const
+		bool FrustumIntersectAABB_Fast(const Vector3& mMin, const Vector3& mMax) const
 		{
 			for (int i = 0; i < 6; i++)
 			{
-				if (m_Frustum[i][0] * mMin.x + m_Frustum[i][1] * mMin.y + m_Frustum[i][2] * mMin.z + m_Frustum[i][3] > 0)
+				if (m_Planes[i][0] * mMin.x + m_Planes[i][1] * mMin.y + m_Planes[i][2] * mMin.z + m_Planes[i][3] > 0)
 					continue;
-				if (m_Frustum[i][0] * mMax.x + m_Frustum[i][1] * mMin.y + m_Frustum[i][2] * mMin.z + m_Frustum[i][3] > 0)
+				if (m_Planes[i][0] * mMax.x + m_Planes[i][1] * mMin.y + m_Planes[i][2] * mMin.z + m_Planes[i][3] > 0)
 					continue;
-				if (m_Frustum[i][0] * mMin.x + m_Frustum[i][1] * mMax.y + m_Frustum[i][2] * mMin.z + m_Frustum[i][3] > 0)
+				if (m_Planes[i][0] * mMin.x + m_Planes[i][1] * mMax.y + m_Planes[i][2] * mMin.z + m_Planes[i][3] > 0)
 					continue;
-				if (m_Frustum[i][0] * mMax.x + m_Frustum[i][1] * mMax.y + m_Frustum[i][2] * mMin.z + m_Frustum[i][3] > 0)
+				if (m_Planes[i][0] * mMax.x + m_Planes[i][1] * mMax.y + m_Planes[i][2] * mMin.z + m_Planes[i][3] > 0)
 					continue;
-				if (m_Frustum[i][0] * mMin.x + m_Frustum[i][1] * mMin.y + m_Frustum[i][2] * mMax.z + m_Frustum[i][3] > 0)
+				if (m_Planes[i][0] * mMin.x + m_Planes[i][1] * mMin.y + m_Planes[i][2] * mMax.z + m_Planes[i][3] > 0)
 					continue;
-				if (m_Frustum[i][0] * mMax.x + m_Frustum[i][1] * mMin.y + m_Frustum[i][2] * mMax.z + m_Frustum[i][3] > 0)
+				if (m_Planes[i][0] * mMax.x + m_Planes[i][1] * mMin.y + m_Planes[i][2] * mMax.z + m_Planes[i][3] > 0)
 					continue;
-				if (m_Frustum[i][0] * mMin.x + m_Frustum[i][1] * mMax.y + m_Frustum[i][2] * mMax.z + m_Frustum[i][3] > 0)
+				if (m_Planes[i][0] * mMin.x + m_Planes[i][1] * mMax.y + m_Planes[i][2] * mMax.z + m_Planes[i][3] > 0)
 					continue;
-				if (m_Frustum[i][0] * mMax.x + m_Frustum[i][1] * mMax.y + m_Frustum[i][2] * mMax.z + m_Frustum[i][3] > 0)
+				if (m_Planes[i][0] * mMax.x + m_Planes[i][1] * mMax.y + m_Planes[i][2] * mMax.z + m_Planes[i][3] > 0)
 					continue;
 				return false;
 			}
@@ -111,16 +120,30 @@ namespace Maths
 			return true;
 		}
 
-		bool FrustumIntersectAABB(const Box3d& box) const
+		// https://iquilezles.org/articles/frustumcorrect/
+		bool FrustumIntersectAABB(const Vector3& mMin, const Vector3& mMax) const
 		{
-			return FrustumIntersectAABB(box.Min, box.Max);
+			if (!FrustumIntersectAABB_Fast(mMin, mMax))
+			{
+				return false;
+			}
+
+			int out;
+			out = 0; for (int i = 0; i < 8; i++) out += ((m_Points[i].x > mMax.x) ? 1 : 0); if (out == 8) return false;
+			out = 0; for (int i = 0; i < 8; i++) out += ((m_Points[i].x < mMin.x) ? 1 : 0); if (out == 8) return false;
+			out = 0; for (int i = 0; i < 8; i++) out += ((m_Points[i].y > mMax.y) ? 1 : 0); if (out == 8) return false;
+			out = 0; for (int i = 0; i < 8; i++) out += ((m_Points[i].y < mMin.y) ? 1 : 0); if (out == 8) return false;
+			out = 0; for (int i = 0; i < 8; i++) out += ((m_Points[i].z > mMax.z) ? 1 : 0); if (out == 8) return false;
+			out = 0; for (int i = 0; i < 8; i++) out += ((m_Points[i].z < mMin.z) ? 1 : 0); if (out == 8) return false;
+
+			return true;
 		}
 
 		bool PointInFrustum(const Vector3& vec) const
 		{
 			for (int i = 0; i < 6; i++)
 			{
-				if (m_Frustum[i][0] * vec.x + m_Frustum[i][1] * vec.y + m_Frustum[i][2] * vec.z + m_Frustum[i][3] <= 0)
+				if (m_Planes[i][0] * vec.x + m_Planes[i][1] * vec.y + m_Planes[i][2] * vec.z + m_Planes[i][3] <= 0)
 				{
 					return false;
 				}
@@ -130,19 +153,41 @@ namespace Maths
 		}
 
 	private:
-		static void NormalizePlane(float frustum[6][4], int side)
+		static void NormalizePlane(float plane[4])
 		{
-			float magnitude = (float)sqrtf(frustum[side][0] * frustum[side][0] +
-				frustum[side][1] * frustum[side][1] +
-				frustum[side][2] * frustum[side][2]);
+			const float magnitude = (float)sqrtf(plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]);
 
-			frustum[side][0] /= magnitude;
-			frustum[side][1] /= magnitude;
-			frustum[side][2] /= magnitude;
-			frustum[side][3] /= magnitude;
+			plane[0] /= magnitude;
+			plane[1] /= magnitude;
+			plane[2] /= magnitude;
+			plane[3] /= magnitude;
 		}
 
-		float m_Frustum[6][4];
+		static Vector3 IntersectPlanes(const float plane1[4], const float plane2[4], const float plane3[4])
+		{
+			float det = plane1[0] * (plane2[1] * plane3[2] - plane2[2] * plane3[1]) -
+						plane1[1] * (plane2[0] * plane3[2] - plane2[2] * plane3[0]) +
+						plane1[2] * (plane2[0] * plane3[1] - plane2[1] * plane3[0]);
+
+			// check det == 0
+
+			float x = -(plane1[3] * (plane2[1] * plane3[2] - plane2[2] * plane3[1]) -
+						plane2[3] * (plane1[1] * plane3[2] - plane1[2] * plane3[1]) +
+						plane3[3] * (plane1[1] * plane2[2] - plane1[2] * plane2[1])) / det;
+
+			float y = -(plane1[0] * (plane2[3] * plane3[2] - plane2[2] * plane3[3]) -
+						plane2[0] * (plane1[3] * plane3[2] - plane1[2] * plane3[3]) +
+						plane3[0] * (plane1[3] * plane2[2] - plane1[2] * plane2[3])) / det;
+
+			float z = -(plane1[0] * (plane2[1] * plane3[3] - plane2[3] * plane3[1]) -
+						plane2[0] * (plane1[1] * plane3[3] - plane1[3] * plane3[1]) +
+						plane3[0] * (plane1[1] * plane2[3] - plane1[3] * plane2[1])) / det;
+
+			return Vector3(x, y, z);
+		}
+
+		float	m_Planes[6][4];
+		Vector3	m_Points[8];
 	};
 }
 
