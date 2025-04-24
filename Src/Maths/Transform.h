@@ -250,6 +250,13 @@ namespace Maths
 	class Transform3
 	{
 	public:
+		enum 
+		{
+			FLAG_MIRROR_X				= 0x01,
+			FLAG_WORLD_MATRIX_DIRTY		= 0x02,
+			FLAG_INV_WORLD_MATRIX_DIRTY = 0x04,
+		};
+
 		Transform3()
 		{
 			LoadIdentity();
@@ -257,8 +264,7 @@ namespace Maths
 
 		void				LoadIdentity()
 		{
-			world_matrix_is_dirty = true;
-			inv_world_matrix_is_dirty = true;
+			flags = FLAG_WORLD_MATRIX_DIRTY | FLAG_INV_WORLD_MATRIX_DIRTY;
 			pos = Vector3::Zero();
 			quat = Quaternion::One();
 			scale = Vector3::One();
@@ -295,40 +301,42 @@ namespace Maths
 		void				SetTranslation(const Vector3& trans)
 		{
 			pos = trans;
-			world_matrix_is_dirty = true;
-			inv_world_matrix_is_dirty = true;
+			flags |= (FLAG_WORLD_MATRIX_DIRTY | FLAG_INV_WORLD_MATRIX_DIRTY);
 		}
 
 		void				SetRotation(const Quaternion& rotation)
 		{
 			quat = rotation;
-			world_matrix_is_dirty = true;
-			inv_world_matrix_is_dirty = true;
+			flags |= (FLAG_WORLD_MATRIX_DIRTY | FLAG_INV_WORLD_MATRIX_DIRTY);
 		}
 
 		void				SetScale(const Vector3& _scale)
 		{
 			scale = _scale;
-			world_matrix_is_dirty = true;
-			inv_world_matrix_is_dirty = true;
+			flags |= (FLAG_WORLD_MATRIX_DIRTY | FLAG_INV_WORLD_MATRIX_DIRTY);
+		}
+
+		static bool			IsNegativeScale(const Vector3& _scale)
+		{
+			return _scale.x * _scale.y * _scale.z < 0.0f;
 		}
 
 		const Matrix4& GetWorldMatrix()
 		{
-			if (world_matrix_is_dirty)
+			if (flags & FLAG_WORLD_MATRIX_DIRTY)
 			{
-				TRSToWorldMatrix(world_matrix, pos, quat, scale);
-				world_matrix_is_dirty = false;
+				world_matrix = Compose(pos, quat, scale);
+				flags &= (~FLAG_WORLD_MATRIX_DIRTY);
 			}
 			return world_matrix;
 		}
 
 		const Matrix4& GetInverseWorldMatrix()
 		{
-			if (inv_world_matrix_is_dirty)
+			if (flags & FLAG_INV_WORLD_MATRIX_DIRTY)
 			{
-				TRSToInverseWorldMatrix(inv_world_matrix, pos, quat, scale);
-				inv_world_matrix_is_dirty = false;
+				inv_world_matrix = ComposeInv(pos, quat, scale);
+				flags &= (~FLAG_INV_WORLD_MATRIX_DIRTY);
 			}
 			return inv_world_matrix;
 		}
@@ -543,59 +551,141 @@ namespace Maths
 			);
 		}
 
-		static void			TRSToWorldMatrix(Matrix4& World, const Vector3& Translation, const Quaternion& Rotation, const Vector3& Scale)
+		static Matrix4		Compose(const Vector3& Translation, const Quaternion& Rotation, const Vector3& Scale)
 		{
 			Matrix4 matTrans = BuildTranslationMatrix(Translation);
 			Matrix4 matScale = BuildScaleMatrix(Scale);
 			Matrix4 matRot = Rotation.ToRotationMatrix4();
 
-			World = matTrans * matRot * matScale;			// make sure Translation Matrix go first.
+			Matrix4 World = matTrans * matRot * matScale;			// make sure Translation Matrix go first.
+			return World;
 		}
 
-		static void			TRToWorldMatrix(Matrix4& World, const Vector3& Translation, const Quaternion& Rotation)
+		static Matrix4		Compose(const Vector3& Translation, const Quaternion& Rotation)
 		{
-			World = Rotation.ToRotationMatrix4();
+			Matrix4 World = Rotation.ToRotationMatrix4();
 			World[0][3] += Translation.x;
 			World[1][3] += Translation.y;
 			World[2][3] += Translation.z;
+			return World;
 		}
 
-		static void			TRSToInverseWorldMatrix(Matrix4& InvWorld, const Vector3& Translation, const Quaternion& Rotation, const Vector3& Scale)
+		static Matrix4		ComposeInv(const Vector3& Translation, const Quaternion& Rotation, const Vector3& Scale)
 		{
 			Matrix4 matTrans = BuildTranslationMatrix(-Translation);
 			Matrix4 matScale = BuildScaleMatrix(Vector3::One() / Scale);
 			Matrix4 matRot = Rotation.ToRotationMatrix4().Transpose();
 
-			InvWorld = matScale * matRot * matTrans;		// make sure Scale Matrix go first.
+			Matrix4 InvWorld = matScale * matRot * matTrans;		// make sure Scale Matrix go first.
+			return InvWorld;
 		}
 
-		static void			TRToInverseWorldMatrix(Matrix4& InvWorld, const Vector3& Translation, const Quaternion& Rotation)
+		static Matrix4		ComposeInv(const Vector3& Translation, const Quaternion& Rotation)
 		{
-			InvWorld = Rotation.ToRotationMatrix4().Transpose();
+			Matrix4 InvWorld = Rotation.ToRotationMatrix4().Transpose();
 			InvWorld[0][3] -= Translation.x;
 			InvWorld[1][3] -= Translation.y;
 			InvWorld[2][3] -= Translation.z;
+			return InvWorld;
 		}
 
-		static void			WorldMatrixToTR(const Matrix4& World, Vector3& Translation, Quaternion& Rotation)
+		static void			Decompose(const Matrix4& mat, Vector3& t, Quaternion& r)
 		{
-			Translation = Vector3(World[0][3], World[1][3], World[2][3]);
-			Matrix3 mat3(World[0][0], World[0][1], World[0][2], World[1][0], World[1][1], World[1][2], World[2][0], World[2][1], World[2][2]);
-			Rotation.FromRotationMatrix3(mat3);
+			t = Vector3(mat[0][3], mat[1][3], mat[2][3]);
+			Matrix3 mat3(mat[0][0], mat[0][1], mat[0][2], mat[1][0], mat[1][1], mat[1][2], mat[2][0], mat[2][1], mat[2][2]);
+			r.FromRotationMatrix3(mat3);
 		}
 
-		// For only non-composite scale transform
-		static void			WorldMatrixToTRS(const Matrix4& World, Vector3& Translation, Quaternion& Rotation, Vector3& Scale)
+		static void			Decompose(const Matrix4& mat, Vector3& t, Quaternion& r, Vector3& s)
 		{
-			Translation = Vector3(World[0][3], World[1][3], World[2][3]);
-			float sx = Vector3(World[0][0], World[1][0], World[2][0]).Length();
-			float sy = Vector3(World[0][1], World[1][1], World[2][1]).Length();
-			float sz = Vector3(World[0][2], World[1][2], World[2][2]).Length();
-			Matrix3 matRot(World[0][0] / sx, World[0][1] / sy, World[0][2] / sz,
-				World[1][0] / sx, World[1][1] / sy, World[1][2] / sz,
-				World[2][0] / sx, World[2][1] / sy, World[2][2] / sz);
-			Rotation.FromRotationMatrix3(matRot);
-			Scale = Vector3(sx, sy, sz);
+			t = Vector3(mat[0][3], mat[1][3], mat[2][3]);
+			Matrix3 mat3(mat[0][0], mat[0][1], mat[0][2], mat[1][0], mat[1][1], mat[1][2], mat[2][0], mat[2][1], mat[2][2]);
+			bool mirror_x;
+			Decompose(mat3, r, s, mirror_x);
+		}
+
+		static void			Decompose(const Matrix4& mat, Vector3& t, Quaternion& r, Vector3& s, bool& mirror_x)
+		{
+			t = Vector3(mat[0][3], mat[1][3], mat[2][3]);
+			Matrix3 mat3(mat[0][0], mat[0][1], mat[0][2], mat[1][0], mat[1][1], mat[1][2], mat[2][0], mat[2][1], mat[2][2]);
+			Decompose(mat3, r, s, mirror_x);
+		}
+
+		static void			Decompose(const Matrix3& mat, Quaternion& q, Vector3& scale, bool& mirror_x)
+		{
+			Vector3 xAxis(mat[0][0], mat[0][1], mat[0][2]);
+			Vector3 yAxis(mat[1][0], mat[1][1], mat[1][2]);
+			Vector3 zAxis(mat[2][0], mat[2][1], mat[2][2]);
+
+			scale.x = xAxis.Length();
+			scale.y = yAxis.Length();
+			scale.z = zAxis.Length();
+
+			Matrix3 rotMatrix(
+				mat[0][0] / scale.x, mat[0][1] / scale.x, mat[0][2] / scale.x,
+				mat[1][0] / scale.y, mat[1][1] / scale.y, mat[1][2] / scale.y,
+				mat[2][0] / scale.z, mat[2][1] / scale.z, mat[2][2] / scale.z);
+
+			mirror_x = false;
+			if (rotMatrix.Determinant() < 0.0f)
+			{
+				rotMatrix[0][0] = -rotMatrix[0][0];
+				rotMatrix[0][1] = -rotMatrix[0][1];
+				rotMatrix[0][2] = -rotMatrix[0][2];
+				mirror_x = true;
+			}
+
+			q.FromRotationMatrix3(rotMatrix);
+		}
+
+		static void			DecomposeNegativeScale(const Vector3& scale, Vector3& s, Quaternion &q, bool& mirror_x)
+		{
+			s = scale.Abs();
+			mirror_x = false;
+
+			if (scale.x > 0 && scale.y > 0 && scale.z > 0)
+			{
+				q = Quaternion::One();
+				return;
+			}
+
+			if (scale.x * scale.y * scale.z > 0)
+			{
+				if (scale.x < 0 && scale.y < 0)
+				{
+					q.FromRotationAxis(Vector3(0.0f, 0.0f, 1.0f), PI);
+				}
+				else if (scale.x < 0 && scale.z < 0)
+				{
+					q.FromRotationAxis(Vector3(0.0f, 1.0f, 0.0f), PI);
+				}
+				else if (scale.y < 0 && scale.z < 0)
+				{
+					q.FromRotationAxis(Vector3(1.0f, 0.0f, 0.0f), PI);
+				}
+
+				return;
+			}
+
+			mirror_x = true;
+
+			if (scale.x < 0 && scale.y < 0 && scale.z < 0)
+			{
+				q.FromRotationAxis(Vector3(1.0f, 0.0f, 0.0f), PI);
+			}
+			else if (scale.x < 0)
+			{
+
+			}
+			else if (scale.y < 0)
+			{
+				q.FromRotationAxis(Vector3(0.0f, 0.0f, 1.0f), PI);
+			}
+			else if (scale.z < 0)
+			{
+				q.FromRotationAxis(Vector3(00.0f, 1.0f, 0.0f), PI);
+			}
+
 			return;
 		}
 
@@ -630,9 +720,7 @@ namespace Maths
 		Vector3		pos;
 		Quaternion	quat;
 		Vector3		scale;
-
-		bool		world_matrix_is_dirty;
-		bool		inv_world_matrix_is_dirty;
+		uint8_t		flags;
 		Matrix4		world_matrix;
 		Matrix4		inv_world_matrix;
 	};

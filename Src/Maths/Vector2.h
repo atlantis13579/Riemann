@@ -229,6 +229,16 @@ namespace Maths
 			return x != rhs.x || y != rhs.y;
 		}
 
+		inline operator const T* () const
+		{
+			return (const T*)this;
+		}
+
+		inline operator T* ()
+		{
+			return (T*)this;
+		}
+
 		inline const T* Data() const
 		{
 			return &x;

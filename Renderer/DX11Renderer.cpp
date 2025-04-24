@@ -30,8 +30,7 @@ static Matrix4 GetTransfromMatrix(void *p)
 {
     GeometryTransform_t* t = (GeometryTransform_t*)p;
     assert(t);
-    Matrix4 mat;
-    Transform3::TRToWorldMatrix(mat, t->Translation, t->Rotation);
+    Matrix4 mat = Transform3::Compose(t->Translation, t->Rotation);
     return mat;
 };
 

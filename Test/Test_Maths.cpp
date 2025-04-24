@@ -9,6 +9,7 @@
 #include "../Src/Maths/Float16.h"
 #include "../Src/Maths/Frame3.h"
 #include "../Src/Geometry/Spline.h"
+#include "../Src/Maths/Frustum.h"
 
 void TestVector3()
 {
@@ -70,7 +71,7 @@ void TestBasicMath()
 	Transform3 trans;
 	trans.SetRotation(q1);
 	trans.SetTranslation(v1);
-	Transform3::WorldMatrixToTR(trans.GetWorldMatrix(), v2, q2);
+	Transform3::Decompose(trans.GetWorldMatrix(), v2, q2);
 
 	EXPECT1((v1 - v2).SquareLength() < 0.000001f, (v1 - v2).SquareLength());
 	EXPECT1((q1 - q2).SquareLength() < 0.000001f, (q1 - q2).SquareLength());
@@ -78,14 +79,14 @@ void TestBasicMath()
 	s1 = Vector3(2.0f, 1.0f, 3.0f);
 	trans.SetScale(s1);
 	
-	Transform3::WorldMatrixToTRS(trans.GetWorldMatrix(), v2, q2, s2);
+	Transform3::Decompose(trans.GetWorldMatrix(), v2, q2, s2);
 
 	EXPECT((v1 - v2).SquareLength() < 0.0001f);
 	EXPECT((q1 - q2).SquareLength() < 0.0001f);
 	EXPECT((s1 - s2).SquareLength() < 0.0001f);
 
 	trans.SetScale(Vector3::One());
-	Transform3::WorldMatrixToTRS(trans.GetWorldMatrix() * trans.GetWorldMatrix(), v2, q2, s2);
+	Transform3::Decompose(trans.GetWorldMatrix() * trans.GetWorldMatrix(), v2, q2, s2);
 
 	EXPECT((v1 + v1 - v2).SquareLength() < 0.00001f);
 	EXPECT((q1 * q1 - q2).SquareLength() < 0.001f);

@@ -37,6 +37,16 @@ namespace Maths
 			memcpy(mData, v.mData, sizeof(T) * DIM);
 		}
 
+		inline operator const T* () const
+		{
+			return (const T*)this;
+		}
+
+		inline operator T* ()
+		{
+			return (T*)this;
+		}
+
 		inline const T* Data() const
 		{
 			return mData;

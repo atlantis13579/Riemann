@@ -367,6 +367,7 @@ namespace Maths
 			mat[2][0] = 1.0f;	mat[2][1] = -s; 	mat[2][2] = c;
 			return *this;
 		}
+
 		Matrix3& LoadRotateY(float angle)
 		{
 			float c, s;
@@ -377,6 +378,7 @@ namespace Maths
 			mat[2][0] = s;		mat[2][1] = 0.0f;	mat[2][2] = c;
 			return *this;
 		}
+
 		Matrix3& LoadRotateZ(float angle)
 		{
 			float c, s;
@@ -387,6 +389,7 @@ namespace Maths
 			mat[2][0] = 0.0f;	mat[2][1] = 0.0f;	mat[2][2] = 1.0f;
 			return *this;
 		}
+
 		Matrix3& Load2DOrthogonalTransform(float dx, float dy, float angle) {
 			float c, s;
 			c = cosf(angle);
@@ -525,6 +528,7 @@ namespace Maths
 
 			return Angle;
 		}
+
 		void		FromEulerAngles(float Yaw, float Pitch, float Roll)
 		{
 			const float sy = sinf(Yaw);
@@ -544,6 +548,7 @@ namespace Maths
 			mat[2][1] = (-sp);
 			mat[2][2] = (cp * cy);
 		}
+
 		bool		ToEulerAngles(float& Yaw, float& Pitch, float& Roll) const
 		{
 			// rot =  cy*cz          -cy*sz           sy
@@ -627,9 +632,8 @@ namespace Maths
 			}
 			return norm;
 		}
-	
-		// A = U * S * V^T
 
+		// A = U * S * V^T
 		void		Bidiagonalize(Matrix3& L, Matrix3& R)
 		{
 			float v[3], w[3];
