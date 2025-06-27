@@ -33,7 +33,7 @@ namespace Riemann
 
 		void Init(const Vector3& iX0, const Vector3& iX1, float iRadius)
 		{
-			Radius = _Radius;
+			Radius = iRadius;
 			Height = (iX0 - iX1).Length();
 			X0 = iX0;
 			X1 = iX1;
