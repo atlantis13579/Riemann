@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <assert.h>
+#include <codecvt>
 #include <vector>
 
 #define UNUSED(_x)			(void)(_x)
@@ -26,8 +27,8 @@
 
 inline void AssertBreakPoint()
 {
-	int __nbp = 0;
-	(void)__nbp;
+	int _nbp = 0;
+	(void)_nbp;
 }
 
 #define	ASSERT(_expr)		if(!(_expr)) AssertBreakPoint();
@@ -60,6 +61,20 @@ void VectorRemove(std::vector<T>& vec, Pred p)
 {
 	auto it = std::remove_if(vec.begin(), vec.end(), p);
 	vec.resize(it - vec.begin());
+}
+
+template<typename T>
+void VectorRemove(std::vector<T>& vec, const T& val)
+{
+	for (size_t i = 0; i < vec.size(); ++i)
+	{
+		if (vec[i] == val)
+		{
+			vec[i] = vec.back();
+			vec.pop_back();
+			return;
+		}
+	}
 }
 
 template<typename K, typename V, typename ADT>

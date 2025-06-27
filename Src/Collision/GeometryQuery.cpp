@@ -3,7 +3,6 @@
 
 #include <assert.h>
 #include <algorithm>
-#include <string.h>
 #include "../Core/Base.h"
 #include "AABBTree.h"
 #include "DynamicAABBTree.h"
@@ -214,9 +213,9 @@ namespace Riemann
 			}
 		}
 
-		virtual ~CollisionTableFilter() {}
+		virtual ~CollisionTableFilter() override {}
 
-		virtual bool IsCollidable(const CollisionData& data0, const CollisionData& data1)
+		virtual bool IsCollidable(const CollisionData& data0, const CollisionData& data1) override
 		{
 			assert(0 <= data0.v0 && data0.v0 < nLayers);
 			assert(0 <= data1.v0 && data1.v0 < nLayers);

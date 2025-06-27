@@ -85,7 +85,7 @@ namespace Riemann
 			}
 			else
 			{
-				m_map[k];
+				return m_map[k];
 			}
 		}
 
@@ -139,10 +139,8 @@ namespace Riemann
 				}
 				return 0;
 			}
-			else
-			{
-				return m_map.count(k);
-			}
+
+			return m_map.count(k);
 		}
 
 		void clear()
@@ -188,7 +186,7 @@ namespace Riemann
 				}
 				else
 				{
-					m_map_it++;
+					++m_map_it;
 				}
 				return *this;
 			}

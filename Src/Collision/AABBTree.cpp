@@ -70,7 +70,7 @@ namespace Riemann
 		while (!stack.empty())
 		{
 			CacheFriendlyAABBTree* p = m_AABBTreeInference + stack.pop();
-			curr_depth = depth.pop();
+			curr_depth = static_cast<int>(depth.pop());
 			while (p)
 			{
 				stat.NumNodes += 1;
@@ -170,7 +170,7 @@ namespace Riemann
 				continue;
 			}
 
-			bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, Option, Result);
+			const bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, Option, Result);
 			if (hit)
 			{
 				if (Option->Type == RayCastOption::RAYCAST_ANY)
@@ -273,9 +273,9 @@ namespace Riemann
 				if (p->IsLeaf())
 				{
 					int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
-					int	 nPrimitives = p->GetNumGeometries();
+					const int	 nPrimitives = p->GetNumGeometries();
 					const Box3& Box = p->GetBoundingVolume();
-					int HitId = RayIntersectGeometries(Ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
+					const int HitId = RayIntersectGeometries(Ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
 					if (HitId >= 0)
 					{
 						if (Option->Type == RayCastOption::RAYCAST_ANY)
@@ -453,7 +453,7 @@ namespace Riemann
 		return Result->overlaps;
 	}
 
-	static int SweepGeometries(const Geometry* sweep_geometry, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Vector3& Direction, const Box3& BV, const SweepOption* Option, SweepResult* Result)
+	static int SweepGeometries(const Geometry* sweep_geometry, int* Geoms, const int NumGeoms, Geometry** GeometryCollection, const Vector3& Direction, const Box3& BV, const SweepOption* Option, SweepResult* Result)
 	{
 		assert(NumGeoms > 0);
 		if (GeometryCollection == nullptr)

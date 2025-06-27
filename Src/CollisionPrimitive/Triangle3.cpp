@@ -659,7 +659,7 @@ static Vector3 ClosestPointOnEdge(const Vector3& P0, const Vector3& P1, const Ve
 		return P1;
 	}
 
-	return P0 + V1 * (dp2 / dp2);
+	return P0 + V1 * (dp1 / dp2);
 }
 
 static Vector3 ClosestPointOnTriangleToPointEx(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C, unsigned char& mask)
@@ -683,7 +683,7 @@ static Vector3 ClosestPointOnTriangleToPointEx(const Vector3& Point, const Vecto
 
 	if (mask == 0b0000)
 	{
-		float signedDist = (Point - A).Dot(Normal);
+		const float signedDist = (Point - A).Dot(Normal);
 		return Point - signedDist * Normal;
 	}
 	else if (mask == 0b0001)

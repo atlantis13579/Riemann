@@ -12,7 +12,7 @@ namespace Riemann
 		{
 		}
 
-		DynamicArray(int i) : std::vector<T>(i)
+		explicit DynamicArray(int i) : std::vector<T>(i)
 		{
 		}
 

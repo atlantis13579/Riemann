@@ -71,7 +71,7 @@ namespace Riemann
 			assert(dimension >= 1);
 		}
 
-		void Update(int mask)
+		void Update(const int mask)
 		{
 			int new_dimension = 0;
 			for (int i = 0; i < dimension; ++i)

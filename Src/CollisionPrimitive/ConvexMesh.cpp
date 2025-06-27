@@ -109,8 +109,8 @@ bool ConvexMesh::IntersectRay(const Vector3& Origin, const Vector3& Direction, f
 	{
 		const Plane3& p = Faces[i].plane;
 
-		float dist = Origin.Dot(p.Normal) + p.D;
-		bool is_outside = dist > 0.0f;
+		const float dist = Origin.Dot(p.Normal) + p.D;
+		const bool is_outside = dist > 0.0f;
 		if (is_outside)
 		{
 			all_inside = false;
@@ -165,9 +165,9 @@ bool ConvexMesh::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
 	return IntersectConvexMesh(&box, this);
 }
 
-bool ConvexMesh::IntersectSphere(const Vector3& _Center, float _Radius) const
+bool ConvexMesh::IntersectSphere(const Vector3& iCenter, float iRadius) const
 {
-	Sphere3 sp(_Center, _Radius);
+	Sphere3 sp(iCenter, iRadius);
 	return IntersectConvexMesh(&sp, this);
 }
 
@@ -261,7 +261,7 @@ int ConvexMesh::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) co
 	return 0;
 }
 
-void ConvexMesh::GetMesh(std::vector<Vector3>& _Vertices, std::vector<uint16_t>& _Indices, std::vector<Vector3>& _Normals)
+void ConvexMesh::GetMesh(std::vector<Vector3>& iVertices, std::vector<uint16_t>& iIndices, std::vector<Vector3>& _Normals)
 {
 	if (NumVertices < 3)
 	{
@@ -278,7 +278,7 @@ void ConvexMesh::GetMesh(std::vector<Vector3>& _Vertices, std::vector<uint16_t>&
 
 	for (uint16_t i = 0; i < NumVertices; ++i)
 	{
-		_Vertices.push_back(Vertices[i]);
+		iVertices.push_back(Vertices[i]);
 		_Normals.push_back((Vertices[i] - Center).Unit());
 	}
 
@@ -287,23 +287,23 @@ void ConvexMesh::GetMesh(std::vector<Vector3>& _Vertices, std::vector<uint16_t>&
 		const ConvexMeshFace& face = Faces[i];
 		for (uint8_t j = 1; j < face.numVerties - 1; ++j)
 		{
-			_Indices.push_back(Indices[face.first]);
-			_Indices.push_back(Indices[face.first + j]);
-			_Indices.push_back(Indices[face.first + j + 1]);
+			iIndices.push_back(Indices[face.first]);
+			iIndices.push_back(Indices[face.first + j]);
+			iIndices.push_back(Indices[face.first + j + 1]);
 		}
 	}
 }
 
-void ConvexMesh::GetWireframe(std::vector<Vector3>& _Vertices, std::vector<uint16_t>& _Indices)
+void ConvexMesh::GetWireframe(std::vector<Vector3>& iVertices, std::vector<uint16_t>& iIndices)
 {
 	for (uint16_t i = 0; i < NumVertices; ++i)
 	{
-		_Vertices.push_back(Vertices[i]);
+		iVertices.push_back(Vertices[i]);
 	}
 	for (uint16_t i = 0; i < NumEdges; ++i)
 	{
-		_Indices.push_back(Edges[i].s);
-		_Indices.push_back(Edges[i].e);
+		iIndices.push_back(Edges[i].s);
+		iIndices.push_back(Edges[i].e);
 	}
 }
 }

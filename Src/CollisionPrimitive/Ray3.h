@@ -116,7 +116,7 @@ public:
 		return *t0 < *t1;
 	}
 
-    bool    IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C, float* t)
+    bool    IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C, float* t) const
     {
         const float kEpsilon = 0.0000001f;
 

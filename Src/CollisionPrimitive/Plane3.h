@@ -22,10 +22,10 @@ namespace Riemann
 			D = 0.0f;
 		}
 
-		Plane3(const Vector3& _Normal, Vector3& _Origin)
+		Plane3(const Vector3& iNormal, Vector3& iOrigin)
 		{
-			Normal = _Normal.Unit();
-			D = -Normal.Dot(_Origin);
+			Normal = iNormal.Unit();
+			D = -Normal.Dot(iOrigin);
 		}
 
 		Plane3(const Vector3& InNormal, float InD)
@@ -188,12 +188,12 @@ namespace Riemann
 			return false;
 		}
 
-		bool IntersectPlane(const Vector3& _Normal, float _D) const
+		bool IntersectPlane(const Vector3& iNormal, float iD) const
 		{
-			bool Parallel = Normal.ParallelTo(_Normal);
+			const bool Parallel = Normal.ParallelTo(iNormal);
 			if (Parallel)
 			{
-				return D == _D;
+				return D == iD;
 			}
 			return true;
 		}
@@ -472,7 +472,7 @@ namespace Riemann
 			const Vector3& Bmin = box.Min;
 			const Vector3& Bmax = box.Max;
 
-			int axis = Direction.Abs().LargestAxis();
+			const int axis = Direction.Abs().LargestAxis();
 			if (Direction[axis] < 0.0f)
 			{
 				switch (axis)
@@ -537,10 +537,10 @@ namespace Riemann
 				v0 = Vector3::UnitX();
 			}
 
-			Vector3 v1 = Normal.Cross(v0);
-			Vector3 v2 = Normal.Cross(v1);
+			const Vector3 v1 = Normal.Cross(v0);
+			const Vector3 v2 = Normal.Cross(v1);
 
-			Vector3 Origin = GetOrigin();
+			const Vector3 Origin = GetOrigin();
 			v[0] = Origin + v1 * Radius;
 			v[1] = Origin + v2 * Radius;
 			v[2] = Origin + v1 * -Radius;

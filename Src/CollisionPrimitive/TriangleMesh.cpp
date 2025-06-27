@@ -41,7 +41,7 @@ namespace Riemann
 
 		for (uint32_t i = 0; i < NumTriangles; ++i)
 		{
-			allBounds.push_back(Box3(GetVertex(i, 0), GetVertex(i, 1), GetVertex(i, 2)));
+			allBounds.emplace_back(GetVertex(i, 0), GetVertex(i, 1), GetVertex(i, 2));
 			meshBounds.Encapsulate(allBounds.back());
 		}
 

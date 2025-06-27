@@ -108,7 +108,7 @@ namespace Riemann
 
 		bool		IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 		bool		IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
-		bool		IntersectSphere(const Vector3& _Center, float _Radius) const;
+		bool		IntersectSphere(const Vector3& iCenter, float iRadius) const;
 		bool		IntersectCapsule(const Vector3& X0, const Vector3& X1, float rRadius) const;
 		bool		IntersectConvex(const ConvexMesh* convex) const;
 
@@ -122,7 +122,7 @@ namespace Riemann
 		Vector3		GetSupport(const Vector3& Direction) const;
 		int			GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const;
 
-		void		GetMesh(std::vector<Vector3>& _Vertices, std::vector<uint16_t>& _Indices, std::vector<Vector3>& _Normals);
-		void		GetWireframe(std::vector<Vector3>& _Vertices, std::vector<uint16_t>& _Indices);
+		void		GetMesh(std::vector<Vector3>& iVertices, std::vector<uint16_t>& iIndices, std::vector<Vector3>& _Normals);
+		void		GetWireframe(std::vector<Vector3>& iVertices, std::vector<uint16_t>& iIndices);
 	};
 }

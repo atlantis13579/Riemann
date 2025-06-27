@@ -104,9 +104,9 @@ namespace Riemann
 
 		static float CalculateArea3D(const Vector3& A, const Vector3& B, const Vector3& C)
 		{
-			float cx = (B.y - A.y) * (C.z - A.z) - (C.y - A.y) * (B.z - A.z);
-			float cy = (B.z - A.z) * (C.x - A.x) - (C.z - A.z) * (B.x - A.x);
-			float cz = (B.x - A.x) * (C.y - A.y) - (C.x - A.x) * (B.y - A.y);
+			const float cx = (B.y - A.y) * (C.z - A.z) - (C.y - A.y) * (B.z - A.z);
+			const float cy = (B.z - A.z) * (C.x - A.x) - (C.z - A.z) * (B.x - A.x);
+			const float cz = (B.x - A.x) * (C.y - A.y) - (C.x - A.x) * (B.y - A.y);
 			return 0.5f * sqrtf(cx * cx + cy * cy + cz * cz);
 		}
 

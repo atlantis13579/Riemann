@@ -48,7 +48,7 @@ namespace Riemann
 		}
 
 	private:
-		void InsertionSort(std::vector<SAP::SweepPoint>& axis, std::set<OverlapKey>* overlaps)
+		void InsertionSort(std::vector<SAP::SweepPoint>& axis, std::set<OverlapKey>* overlaps) const
 		{
 			int nsize = (int)axis.size();
 			for (int j = 1; j < nsize; j++)

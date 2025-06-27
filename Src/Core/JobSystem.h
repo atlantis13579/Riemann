@@ -190,7 +190,7 @@ namespace Riemann
 		}
 
 	private:
-		void WaitOneExecution()
+		void WaitOneExecution() const
 		{
 			while (!mTerminate && mJobsReminding > 0)
 			{

@@ -20,7 +20,7 @@ namespace Riemann
 			Stop();
 		}
 
-		int GetMaxHardwareConcurrency() const
+		static int GetMaxHardwareConcurrency()
 		{
 			return (int)std::thread::hardware_concurrency();
 		}

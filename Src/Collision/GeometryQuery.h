@@ -50,6 +50,7 @@ namespace Riemann
 		{
 			Type = RAYCAST_NEAREST;
 			MaxDist = FLT_MAX;
+			HitBothSides = false;
 			MaxObjects = INT_MAX;
 			Filter = nullptr;
 		}

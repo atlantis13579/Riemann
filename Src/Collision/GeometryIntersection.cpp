@@ -19,10 +19,10 @@
 
 namespace Riemann
 {
-	RayCastFunc		GeometryIntersection::raycastTable[(int)PrimitiveType::TYPE_COUNT] = { 0 };
-	IntersectFunc	GeometryIntersection::intersectTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT] = { 0 };
-	PenetrationFunc	GeometryIntersection::penetrationTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT] = { 0 };
-	SweepFunc		GeometryIntersection::sweepTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT] = { 0 };
+	RayCastFunc		GeometryIntersection::raycastTable[(int)PrimitiveType::TYPE_COUNT] = { nullptr };
+	IntersectFunc	GeometryIntersection::intersectTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT] = { nullptr };
+	PenetrationFunc	GeometryIntersection::penetrationTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT] = { nullptr };
+	SweepFunc		GeometryIntersection::sweepTable[(int)PrimitiveType::TYPE_COUNT][(int)PrimitiveType::TYPE_COUNT] = { nullptr };
 
 	template <class T>
 	inline bool			RayCastT(void* Obj, const Vector3& Origin, const Vector3& Direction, float* t)
@@ -253,13 +253,12 @@ namespace Riemann
         Vector3 P1 = trans.Local1ToLocal2(capsule->X1);
         const T* obj = static_cast<const T*>(Obj1);
         return obj->SweepCapsule(Dir, P0, P1, Radius, p, n, t);
-        return false;
     }
 
     template <class T>
     bool    SweepTConvexmesh(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
-        const Transform2 trans(t2, t1);
+        const Transform2 trans(t2, t1);		// TODO
         const ConvexMesh* convex = static_cast<const ConvexMesh*>(Obj2);
         const T* obj = static_cast<const T*>(Obj1);
         return obj->SweepConvex(Dir, convex, p, n, t);
@@ -268,7 +267,7 @@ namespace Riemann
     template <class T>
     bool    SweepTHeightfield(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
-        const Transform2 trans(t2, t1);
+        const Transform2 trans(t2, t1);		// TODO
         const HeightField3* hf = static_cast<const HeightField3*>(Obj2);
         const T* obj = static_cast<const T*>(Obj1);
         return obj->SweepHeightField(Dir, hf, p, n, t);
@@ -277,7 +276,7 @@ namespace Riemann
     template <class T>
     bool    SweepTTriangleMesh(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
-        const Transform2 trans(t2, t1);
+        const Transform2 trans(t2, t1);		// TODO
         const TriangleMesh* trimesh = static_cast<const TriangleMesh*>(Obj2);
         const T* obj = static_cast<const T*>(Obj1);
         return obj->SweepTriangleMesh(Dir, trimesh, p, n, t);
@@ -488,7 +487,7 @@ namespace Riemann
 	{
 		TransformedGeometry shape(Geom1);
 		GJKRaycast gjk;
-		GJK_status gjk_status = gjk.Solve(Origin, Direction, &shape);
+		const GJK_status gjk_status = gjk.Solve(Origin, Direction, &shape);
 		if (gjk_status == GJK_status::Intersect)
 		{
 			*t = gjk.time;
@@ -499,10 +498,10 @@ namespace Riemann
 
 	bool GJK_Solve_Shapecast(const Vector3& Direction, Geometry* castGeom, Geometry* Geom, Vector3 *p, Vector3* n, float* t)
 	{
-		TransformedGeometry cast_shape(castGeom);
-		TransformedGeometry shape(Geom);
+		const TransformedGeometry cast_shape(castGeom);
+		const TransformedGeometry shape(Geom);
 		GJKShapecast gjk;
-		bool success = gjk.Solve(Direction, &cast_shape, &shape, p, n, t);
+		const bool success = gjk.Solve(Direction, &cast_shape, &shape, p, n, t);
 		if (success)
 		{
 			// TODO, local to world

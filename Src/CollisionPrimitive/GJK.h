@@ -125,7 +125,7 @@ namespace Riemann
 	class GJKClosestDistance
 	{
 	public:
-		float Solve(GjkShape* Shape)
+		static float Solve(GjkShape* Shape)
 		{
 			GJKIntersection gjk;
 			GJK_status status = gjk.Solve(Shape);
@@ -210,7 +210,7 @@ namespace Riemann
 
 				result.SetPoints(dimension, mY);
 
-				float prev_sq_length = v.SquareLength();
+				const float prev_sq_length = v.SquareLength();
 				unsigned int mask = 0;
 				if (!result.GetClosestToOrigin(v, mask))
 				{

@@ -12,11 +12,11 @@ public:
     
     Quad3() {}
 
-    Quad3(const Vector3& _A, const Vector3& _B, const Vector3& _C)
+    Quad3(const Vector3& iA, const Vector3& iB, const Vector3& iC)
 	{
-        A = _A;
-        B = _B;
-        C = _C;
+        A = iA;
+        B = iB;
+        C = iC;
         D = CalculateD(A, B, C);
 	}
     

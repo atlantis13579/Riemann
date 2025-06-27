@@ -149,9 +149,9 @@ namespace Riemann
 			float HH = H * H;
 
 			// (5H^3 + 20*H^2R + 45HR^2 + 32R^3) / (60H + 80R)
-			float Diag12 = Mass * (5.0f * HH * H + 20.0f * HH * R + 45.0f * H * RR + 32.0f * RR * R) / (60.0f * H + 80.0f * R);
+			const float Diag12 = Mass * (5.0f * HH * H + 20.0f * HH * R + 45.0f * H * RR + 32.0f * RR * R) / (60.0f * H + 80.0f * R);
 			// (R^2 * (15H + 16R) / (30H +40R))
-			float Diag3 = Mass * (RR * (15.0f * H + 16.0f * R)) / (30.0f * H + 40.0f * R);
+			const float Diag3 = Mass * (RR * (15.0f * H + 16.0f * R)) / (30.0f * H + 40.0f * R);
 
 			return Matrix3(Diag12, Diag12, Diag3);
 		}
@@ -163,9 +163,9 @@ namespace Riemann
 
 		static Vector3 GetSupport(const Vector3& X0, const Vector3& X1, float Radius, const Vector3& Direction)
 		{
-			Vector3 Axis = X1 - X0;
-			float dp = DotProduct(Direction, Axis);
-			Vector3 cap = dp >= 0 ? X1 : X0;
+			const Vector3 Axis = X1 - X0;
+			const float dp = DotProduct(Direction, Axis);
+			const Vector3 cap = dp >= 0 ? X1 : X0;
 			return cap + Direction.Unit() * Radius;
 		}
 

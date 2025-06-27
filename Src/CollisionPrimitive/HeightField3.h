@@ -55,9 +55,9 @@ namespace Riemann
 			Cells = nullptr;
 		}
 
-		HeightField3(const Box3& _Bv, int _nX, int _nZ)
+		HeightField3(const Box3& iBv, int inX, int inZ)
 		{
-			Init(_Bv, _nX, _nZ);
+			Init(iBv, inX, inZ);
 		}
 
 		static constexpr PrimitiveType	StaticType()
@@ -65,11 +65,11 @@ namespace Riemann
 			return PrimitiveType::HEIGHTFIELD;
 		}
 
-		void    	Init(const Box3& _Bv, int _nX, int _nZ)
+		void    	Init(const Box3& iBv, int inX, int inZ)
 		{
-			BV = _Bv;
-			nX = _nX;
-			nZ = _nZ;
+			BV = iBv;
+			nX = inX;
+			nZ = inZ;
 			DX = BV.GetLengthX() / (nX - 1);
 			DZ = BV.GetLengthZ() / (nZ - 1);
 			InvDX = 1.0f / DX;
@@ -83,9 +83,9 @@ namespace Riemann
 			memset(Cells, 0, mCells.size() * sizeof(mCells[0]));
 		}
 
-		float 			GetHeight(int idx) const
+		float 			GetHeight(const int idx) const
 		{
-			return Cells[idx].HeightSample * HeightScale;
+			return (float)Cells[idx].HeightSample * HeightScale;
 		}
 
 		Vector3			GetCenter() const

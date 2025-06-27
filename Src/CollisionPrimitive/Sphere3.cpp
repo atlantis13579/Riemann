@@ -330,8 +330,8 @@ bool Sphere3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, floa
 	Sphere3 s1(rCenter, rRadius + Radius);
 	if (s1.IntersectRay(Center, Direction, t))
 	{
-		Vector3 p = Center + Direction * (*t);
-		Vector3 dir = p - s1.Center;
+		const Vector3 pt = Center + Direction * (*t);
+		const Vector3 dir = pt - s1.Center;
 		if (dir.SquareLength() > 1e-6f)
 		{
 			*n = dir.Unit();
@@ -356,14 +356,14 @@ bool Sphere3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float 
 	}
 	else
 	{
-		float denom = Normal.Dot(Direction);
+		const float denom = Normal.Dot(Direction);
 		if (denom * dist >= 0.0f)
 		{
 			return false;
 		}
 		else
 		{
-			float r = dist > 0.0f ? Radius : -Radius;
+			const float r = dist > 0.0f ? Radius : -Radius;
 			*t = (r - dist) / denom;
 			*n = Normal;
 			return true;

@@ -81,7 +81,7 @@ namespace Riemann
 		private:
 			friend class StaticStack;
 
-			Iterator(StaticStack* _owner, int _index) : m_owner(_owner), m_index(_index)
+			Iterator(const StaticStack* _owner, const int _index) : m_owner(_owner), m_index(_index)
 			{
 			}
 
@@ -172,7 +172,7 @@ namespace Riemann
 		private:
 			friend class Stack;
 
-			Iterator(Stack* _owner, int _index) : m_owner(_owner), m_index(_index)
+			Iterator(const Stack* _owner, const int _index) : m_owner(_owner), m_index(_index)
 			{
 			}
 

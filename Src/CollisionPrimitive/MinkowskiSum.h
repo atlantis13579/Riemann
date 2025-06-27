@@ -8,6 +8,7 @@ namespace Riemann
 	class GjkShape
 	{
 	public:
+		virtual ~GjkShape() = default;
 		virtual Vector3 Center() const = 0;
 		virtual Vector3 Support(const Vector3& Dir) const = 0;
 	};

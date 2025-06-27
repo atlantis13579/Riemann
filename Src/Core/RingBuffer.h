@@ -34,7 +34,7 @@ namespace Riemann
 			return (size_t)m_size;
 		}
 
-		inline bool push(const T& v, bool replace_on_full)
+		inline bool push(const T& v, const bool replace_on_full)
 		{
 			if (m_size < Capacity)
 			{
@@ -106,8 +106,8 @@ namespace Riemann
 
 	private:
 		T			m_data[Capacity];
-		int			m_head;
-		int			m_size;
+		int			m_head = 0;
+		int			m_size = 0;
 	};
 
 	template <typename T, int Capacity>
@@ -227,8 +227,8 @@ namespace Riemann
 
 	private:
 		T			m_data[Capacity];
-		int			m_head;
-		int			m_size;
+		int			m_head = 0;
+		int			m_size = 0;
 		SpinLock	m_lock;
 	};
 }

@@ -66,7 +66,7 @@ namespace Riemann
 	void AABBTreeNodeOffline::SubDivideAABBArray(AABBTreeBuildData& Params)
 	{
 		int* geoms = Params.pIndicesBase + this->indexOffset;
-		int nGeoms = numGeometries;
+		const int nGeoms = numGeometries;
 
 		Vector3 means = Params.pCenterBuffer[geoms[0]];
 		const Box3* pAABB = Params.pAABBArray;
@@ -96,7 +96,7 @@ namespace Riemann
 		Vector3 vars = Vector3::Zero();
 		for (int i = 0; i < nGeoms; ++i)
 		{
-			int index = geoms[i];
+			const int index = geoms[i];
 			Vector3 center = Params.pCenterBuffer[index];
 			vars = vars + (center - means) * (center - means);
 		}

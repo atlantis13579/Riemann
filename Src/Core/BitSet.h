@@ -92,15 +92,15 @@ namespace Riemann
 		class ValueProxy
 		{
 		public:
-			operator bool() const
+			explicit operator bool() const
 			{
 				return m_owner->get(m_index);
 			}
 
-			bool operator=(bool val)
+			ValueProxy& operator=(const bool val)
 			{
 				m_owner->set(m_index, val);
-				return val;
+				return *this;
 			}
 
 		private:
@@ -254,7 +254,7 @@ namespace Riemann
 			return ValueProxy(this, i);
 		}
 
-		const BitSet& operator=(const BitSet& rhs)
+		BitSet& operator=(const BitSet& rhs)
 		{
 			m_size = rhs.m_size;
 			m_data = rhs.m_data;

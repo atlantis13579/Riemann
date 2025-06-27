@@ -168,7 +168,7 @@ namespace Riemann
 						{
 							Vector2 p_other = Center - other;
 							Vector2 minus_perp = -perp;
-							float dp = minus_perp.Dot(p_other);
+							const float dp = minus_perp.Dot(p_other);
 							if (dp < -Tolerance)
 							{
 								neg++;

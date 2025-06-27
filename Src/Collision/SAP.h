@@ -22,6 +22,7 @@ namespace Riemann
 		class BoundingVolumeProxy
 		{
 		public:
+			virtual ~BoundingVolumeProxy() = default;
 			virtual int			GetBoundingVolumeCount() const = 0;
 			virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const = 0;
 			virtual bool		Overlaps(int bv_i, int bv_j) const = 0;

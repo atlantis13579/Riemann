@@ -17,7 +17,7 @@ namespace Riemann
 			BVHNode n = batch->GetNode(j);
 			if (batch->IsEmpty(j))
 				continue;
-			Box3* bounds = (Box3*)&n.minx;
+			const Box3* bounds = (Box3*)&n.minx;
 			assert(parentBounds.IsInside(*bounds));
 			if (!n.IsLeaf())
 			{

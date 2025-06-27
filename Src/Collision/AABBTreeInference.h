@@ -50,7 +50,7 @@ namespace Riemann
 			return Base + (Data >> 1);
 		}
 
-		inline CacheFriendlyAABBTree* GetLeftNode(CacheFriendlyAABBTree* Base)
+		inline CacheFriendlyAABBTree* GetLeftNode(CacheFriendlyAABBTree* Base) const
 		{
 			return Base + (Data >> 1);
 		}
@@ -60,7 +60,7 @@ namespace Riemann
 			return Base + (Data >> 1) + 1;
 		}
 
-		inline CacheFriendlyAABBTree* GetRightNode(CacheFriendlyAABBTree* Base)
+		inline CacheFriendlyAABBTree* GetRightNode(CacheFriendlyAABBTree* Base) const
 		{
 			return Base + (Data >> 1) + 1;
 		}

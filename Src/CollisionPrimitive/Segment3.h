@@ -75,11 +75,11 @@ namespace Riemann
 
 		float ProjectUnitRange(const Vector3& Point) const
 		{
-			Vector3 Center = GetCenter();
-			float Extent = GetExtent();
-			Vector3 Direction = GetDirection();
-			float ProjT = (Point - Center).Dot(Direction);
-			float Alpha = ((ProjT / Extent) + 1.0f) * 0.5f;
+			const Vector3 Center = GetCenter();
+			const float Extent = GetExtent();
+			const Vector3 Direction = GetDirection();
+			const float ProjT = (Point - Center).Dot(Direction);
+			const float Alpha = ((ProjT / Extent) + 1.0f) * 0.5f;
 			return Alpha < 0.0f ? 0.0f : (Alpha > 1.0f ? 1.0f : Alpha);
 		}
 

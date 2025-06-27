@@ -60,7 +60,7 @@ namespace Riemann
 			}
 
 		private:
-			Iterator(T* item) : m_item(item)
+			explicit Iterator(T* item) : m_item(item)
 			{
 			}
 
@@ -156,7 +156,7 @@ namespace Riemann
 			}
 
 		private:
-			Iterator(T* item) : m_item(item)
+			explicit Iterator(T* item) : m_item(item)
 			{
 			}
 

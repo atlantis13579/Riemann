@@ -18,10 +18,10 @@ namespace Riemann
 		{
 		}
 
-		OrientedBox3(const Vector3& _Center, const Vector3& _Extent, const Matrix3& _Rot)
+		OrientedBox3(const Vector3& iCenter, const Vector3& iExtent, const Matrix3& _Rot)
 		{
-			Center = _Center;
-			Extent = _Extent;
+			Center = iCenter;
+			Extent = iExtent;
 			Rotation = _Rot;
 		}
 
@@ -69,13 +69,13 @@ namespace Riemann
 		bool IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 		bool IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
 		bool IntersectOBB(const OrientedBox3& obb) const;
-		bool IntersectOBB(const Vector3& _Center, const Vector3& _Extent, const Matrix3& _Rot) const;
-		bool IntersectSphere(const Vector3& _Center, float _Radius) const;
+		bool IntersectOBB(const Vector3& iCenter, const Vector3& iExtent, const Matrix3& iRot) const;
+		bool IntersectSphere(const Vector3& iCenter, float iRadius) const;
 		bool IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const;
 		bool IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 
 		bool PenetrateOBB(const OrientedBox3& obb, Vector3* Normal, float* Depth) const;
-		bool PenetrateOBB(const Vector3& _Center, const Vector3& _Extent, const Matrix3& _Rot, Vector3* Normal, float* Depth) const;
+		bool PenetrateOBB(const Vector3& iCenter, const Vector3& iExtent, const Matrix3& iRot, Vector3* Normal, float* Depth) const;
 		bool PenetrateSphere(const Vector3& rCenter, float rRadius, Vector3* Normal, float* Depth) const;
 		bool PenetratePlane(const Vector3& pNormal, float D, Vector3* Normal, float* Depth) const;
 

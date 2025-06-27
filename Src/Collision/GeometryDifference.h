@@ -8,7 +8,7 @@ namespace Riemann
 	class TransformedGeometry : public GjkShape
 	{
 	public:
-		TransformedGeometry(const Geometry* _g1) : Geom1(_g1)
+		explicit TransformedGeometry(const Geometry* _g1) : Geom1(_g1)
 		{
 		}
 
@@ -57,15 +57,15 @@ namespace Riemann
 
 		virtual Vector3 Center() const override
 		{
-			Vector3 position1 = Geom1->GetCenter_WorldSpace();
-			Vector3 position2 = Geom2->GetCenter_WorldSpace();
+			const Vector3 position1 = Geom1->GetCenter_WorldSpace();
+			const Vector3 position2 = Geom2->GetCenter_WorldSpace();
 			return position1 - position2;
 		}
 
 		virtual Vector3 Support(const Vector3& Direction) const override
 		{
-			Vector3 support1 = Support1(Direction);
-			Vector3 support2 = Support2(-Direction);
+			const Vector3 support1 = Support1(Direction);
+			const Vector3 support2 = Support2(-Direction);
 			Vector3 diff = support1 - support2;
 			return diff;
 		}

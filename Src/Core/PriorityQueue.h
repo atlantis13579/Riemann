@@ -18,10 +18,11 @@ namespace Riemann
 		{
 		}
 
-		inline void operator=(PriorityPool& rhs)
+		inline PriorityPool& operator=(PriorityPool& rhs)
 		{
 			m_size = rhs.m_size;
 			m_heap = rhs.m_heap;
+			return *this;
 		}
 
 		int size() const
@@ -167,10 +168,11 @@ namespace Riemann
 		{
 		}
 
-		inline void operator=(PriorityQueue& rhs)
+		inline PriorityQueue& operator=(PriorityQueue& rhs)
 		{
 			m_size = rhs.m_size;
 			m_heap = rhs.m_heap;
+			return *this;
 		}
 
 		int size() const

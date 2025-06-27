@@ -968,8 +968,8 @@ int DynamicAABBTree::ComputeHeight(int nodeId) const
 		return 0;
 	}
 
-	int height1 = ComputeHeight(node->child1);
-	int height2 = ComputeHeight(node->child2);
+	const int height1 = ComputeHeight(node->child1);
+	const int height2 = ComputeHeight(node->child2);
 	return 1 + std::max(height1, height2);
 }
 

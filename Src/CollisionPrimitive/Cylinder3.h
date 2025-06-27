@@ -26,17 +26,17 @@ namespace Riemann
 			Init(Vector3(0.0f, -1.0f, 0.0f), Vector3(0.0f, 1.0f, 0.0f), 1.0f);
 		}
 
-		Cylinder3(const Vector3& _X0, const Vector3& _X1, float _Radius)
+		Cylinder3(const Vector3& iX0, const Vector3& iX1, float iRadius)
 		{
-			Init(_X0, _X1, _Radius);
+			Init(iX0, iX1, iRadius);
 		}
 
-		void Init(const Vector3& _X0, const Vector3& _X1, float _Radius)
+		void Init(const Vector3& iX0, const Vector3& iX1, float iRadius)
 		{
 			Radius = _Radius;
-			Height = (_X0 - _X1).Length();
-			X0 = _X0;
-			X1 = _X1;
+			Height = (iX0 - iX1).Length();
+			X0 = iX0;
+			X1 = iX1;
 		}
 
 		static constexpr PrimitiveType	StaticType()

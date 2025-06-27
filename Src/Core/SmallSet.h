@@ -144,7 +144,7 @@ namespace Riemann
 				}
 				else
 				{
-					m_set_it++;
+					++m_set_it;
 				}
 				return *this;
 			}

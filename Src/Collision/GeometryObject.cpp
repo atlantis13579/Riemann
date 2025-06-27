@@ -27,7 +27,7 @@ namespace Riemann
 			m_Type = GEOM_TYPE::StaticType();
 			GeometryFactory::ObjectCount[(int)m_Type]++;
 		}
-		virtual ~TGeometry()
+		virtual ~TGeometry() override
 		{
 			GeometryFactory::ObjectCount[(int)m_Type]--;
 		}
@@ -112,7 +112,7 @@ namespace Riemann
 		const Vector3 Origin_Local = m_WorldTransform.WorldToLocal(Origin);
 		const Vector3 Dir_Local = m_WorldTransform.WorldToLocalDirection(Direction);
 		const HeightField3* p = (const HeightField3*)this;
-		bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
+		const bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
 		Result->hitTime = HitResult.hitTime;
 		Result->AddTestCount(HitResult.hitTestCount);
 		return Ret;

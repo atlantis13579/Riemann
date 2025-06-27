@@ -1,6 +1,5 @@
 #pragma once
 
-#include <math.h>
 #include "../Maths/Vector2.h"
 
 class Sphere2
@@ -18,12 +17,12 @@ public:
 public:
 	Vector2 Support(const Vector2& Dir) const
 	{
-		float distSqr = Dir.SquareLength();
+		const float distSqr = Dir.SquareLength();
 		if (distSqr <= 1e-6)
 		{
 			return Center;
 		}
-		Vector2 Normalized = Dir / sqrtf(distSqr);
+		const Vector2 Normalized = Dir / sqrtf(distSqr);
 		return Center + Normalized * Radius;
 	}
 };

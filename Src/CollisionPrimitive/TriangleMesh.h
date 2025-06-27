@@ -1,6 +1,5 @@
 #pragma once
 
-#include <assert.h>
 #include "StaticMesh.h"
 #include "MeshBVH4.h"
 #include "../Maths/Matrix3.h"
@@ -21,7 +20,7 @@ namespace Riemann
 		uint32_t	hitIndex;
 		int		    hitTestCount;
 
-		void AddTestCount(int Count)
+		void AddTestCount(const int Count)
 		{
 			hitTestCount += Count;
 		}

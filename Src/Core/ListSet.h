@@ -322,13 +322,14 @@ namespace Riemann
 				}
 			}
 
-			void operator=(const std::initializer_list<T>& rhs)
+			ListProxy& operator=(const std::initializer_list<T>& rhs)
 			{
 				clear();
 				for (const T& i : rhs)
 				{
 					push_back(i);
 				}
+				return *this;
 			}
 
 			void from_vector(const std::vector<T>& rhs)
@@ -581,7 +582,7 @@ namespace Riemann
 		{
 		}
 
-		ListSet(int size)
+		explicit ListSet(const int size)
 		{
 			resize(size);
 		}

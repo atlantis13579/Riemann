@@ -50,15 +50,15 @@ namespace Riemann
 
 	struct LeafNode
 	{
-		LeafNode(uint32_t nb, uint32_t index)
+		LeafNode(const uint32_t nb, const uint32_t index)
 		{
 			assert(nb > 0 && nb <= 16); assert(index < (1 << 27));
 			Data = (index << 5) | (((nb - 1) & 15) << 1) | 1;
 		}
 
-		LeafNode(uint32_t _Data)
+		explicit LeafNode(uint32_t iData)
 		{
-			Data = _Data;
+			Data = iData;
 		}
 
 		uint32_t			Data;
@@ -148,7 +148,7 @@ namespace Riemann
 
 		Vector4			BoundsMin, BoundsMax;
 		uint8_t*		Memory;
-		float			____Unuse1[6];
+		float			____unuse1[6];
 		uint32_t		BatchSize;
 		uint32_t		NumRoots;
 		uint32_t		MaxDepth;

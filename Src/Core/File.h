@@ -88,7 +88,7 @@ namespace Riemann
 					unsigned char* aligned_data = reinterpret_cast<unsigned char*>(
 						(reinterpret_cast<size_t>(data_) + AlignSize1) & ~static_cast<size_t>(AlignSize1)
 						);
-					fseek(file, offset, SEEK_SET);
+					fseek(file, (long)offset, SEEK_SET);
 					fread(aligned_data, size_, 1, file);
 					data_ = aligned_data;
 				}
@@ -266,7 +266,7 @@ namespace Riemann
 	class FileWriter : public IFile
 	{
 	public:
-		FileWriter(const char* filename) : fp_(nullptr)
+		explicit FileWriter(const char* filename) : fp_(nullptr)
 		{
 			fp_ = fopen(filename, "wb");
 		}

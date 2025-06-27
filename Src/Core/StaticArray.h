@@ -90,6 +90,7 @@ namespace Riemann
 			}
 
 			m_size++;
+			return true;
 		}
 
 		inline bool remove_at(int idx, bool preserve_order = true)
@@ -111,6 +112,7 @@ namespace Riemann
 			}
 
 			m_size--;
+			return true;
 		}
 
 		inline void clear()
@@ -133,7 +135,7 @@ namespace Riemann
 			return m_size  == 0;
 		}
 
-		inline int capacity() const
+		static inline int capacity()
 		{
 			return Capacity;
 		}
@@ -160,7 +162,7 @@ namespace Riemann
 		private:
 			friend class StaticArray;
 
-			Iterator(StaticArray* _owner, int _index) : m_owner(_owner), m_index(_index)
+			Iterator(const StaticArray* _owner, const int _index) : m_owner(_owner), m_index(_index)
 			{
 			}
 

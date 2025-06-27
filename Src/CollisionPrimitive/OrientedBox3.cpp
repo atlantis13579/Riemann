@@ -15,7 +15,7 @@ OrientedBox3 OrientedBox3::ComputeBoundingOBB_PCA(const Vector3* points, int n)
 	}
 	CenterOfMass *= (1.0f / n);
 
-	Matrix3 covariance_matrix = Matrix3::ComputeCovarianceMatrix(points, n);
+	const Matrix3 covariance_matrix = Matrix3::ComputeCovarianceMatrix(points, n);
 
 	float eigens[3];
 	Vector3 v[3];
@@ -165,15 +165,15 @@ bool OrientedBox3::IntersectOBB(const OrientedBox3& obb) const
 	return OBBIntersectOBB(Center, Extent, Rotation, obb.Center, obb.Extent, obb.Rotation);
 }
 
-bool OrientedBox3::IntersectOBB(const Vector3& _Center, const Vector3& _Extent, const Matrix3& _Rot) const
+bool OrientedBox3::IntersectOBB(const Vector3& iCenter, const Vector3& iExtent, const Matrix3& iRot) const
 {
-	return OBBIntersectOBB(Center, Extent, Rotation, _Center, _Extent, _Rot);
+	return OBBIntersectOBB(Center, Extent, Rotation, iCenter, iExtent, iRot);
 }
 
-bool OrientedBox3::IntersectSphere(const Vector3& _Center, float _Radius) const
+bool OrientedBox3::IntersectSphere(const Vector3& iCenter, float iRadius) const
 {
 	AxisAlignedBox3 aabb(Center - Extent, Center + Extent);
-	return aabb.IntersectSphere(_Center * Rotation, _Radius);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
+	return aabb.IntersectSphere(iCenter * Rotation, iRadius);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
 }
 
 bool OrientedBox3::IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const
@@ -199,7 +199,7 @@ static bool testBoxBoxAxis(const OrientedBox3& obb0, const OrientedBox3& obb1, c
 	if (max0 < min1 || max1 < min0)
 		return false;
 
-	float d = std::min(max0 - min1, max1 - min0);
+	const float d = std::min(max0 - min1, max1 - min0);
 	if (d < *depth)
 	{
 		*depth = d;
@@ -240,15 +240,15 @@ bool OrientedBox3::PenetrateOBB(const OrientedBox3& obb, Vector3* Normal, float*
 	return true;
 }
 
-bool OrientedBox3::PenetrateOBB(const Vector3& _Center, const Vector3& _Extent, const Matrix3& _Rot, Vector3* Normal, float* Depth) const
+bool OrientedBox3::PenetrateOBB(const Vector3& iCenter, const Vector3& iExtent, const Matrix3& iRot, Vector3* Normal, float* Depth) const
 {
-	OrientedBox3 obb(_Center, _Extent, _Rot);
+	OrientedBox3 obb(iCenter, iExtent, iRot);
 	return PenetrateOBB(obb, Normal, Depth);
 }
 
-bool OrientedBox3::PenetrateSphere(const Vector3& rCenter, float rRadius, Vector3* Normal, float* Depth) const
+bool OrientedBox3::PenetrateSphere(const Vector3& iCenter, float iRadius, Vector3* Normal, float* Depth) const
 {
-	Sphere3 sphere(rCenter, rRadius);
+	Sphere3 sphere(iCenter, iRadius);
 	if (sphere.PenetrateOBB(Center, Extent, Rotation, Normal, Depth))
 	{
 		*Normal = -*Normal;

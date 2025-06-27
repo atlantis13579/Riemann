@@ -26,13 +26,13 @@ namespace Riemann
 			Radius = 1.0f;
 		}
 
-		Sphere3(const Vector3& _Center, float _Radius)
+		Sphere3(const Vector3& iCenter, float iRadius)
 		{
-			Center = _Center;
-			Radius = _Radius;
+			Center = iCenter;
+			Radius = iRadius;
 		}
 
-		Sphere3(const Vector3& A)
+		explicit Sphere3(const Vector3& A)
 		{
 			Center = A;
 			Radius = 0.0f;
@@ -47,20 +47,23 @@ namespace Riemann
 		// https://en.wikipedia.org/wiki/Circumscribed_circle#Cartesian_coordinates_from_cross-_and_dot-products
 		Sphere3(const Vector3& A, const Vector3& B, const Vector3& C)
 		{
-			Vector3 BA = B - A, CA = C - A;
-			float a = BA.Dot(BA), b = BA.Dot(CA), c = CA.Dot(CA);
-			float d = a * c - b * b;
+			const Vector3 BA = B - A;
+			const Vector3 CA = C - A;
+			const float a = BA.Dot(BA);
+			const float b = BA.Dot(CA);
+			const float c = CA.Dot(CA);
+			const float d = a * c - b * b;
 			if (fabsf(d) < 1e-6f)
 			{
-				Vector3 p[3] = { A, B, C };
+				const Vector3 p[3] = { A, B, C };
 				int max_i = -1;
 				float max_dist = FLT_MAX;
 				for (int i = 0; i < 3; ++i)
 				{
-					const float d = (p[i] - p[(i + 1) % 3]).SquareLength();
-					if (d > max_dist)
+					const float dd = (p[i] - p[(i + 1) % 3]).SquareLength();
+					if (dd > max_dist)
 					{
-						max_dist = d;
+						max_dist = dd;
 						max_i = i;
 					}
 				}
@@ -97,7 +100,9 @@ namespace Riemann
 				Radius = min.Radius;
 				return;
 			}
-			float d1 = BA.SquareLength(), d2 = CA.SquareLength(), d3 = DA.SquareLength();
+			const float d1 = BA.SquareLength();
+			const float d2 = CA.SquareLength();
+			const float d3 = DA.SquareLength();
 			Center.x = (A.x + ((CA.y * DA.z - DA.y * CA.z) * d1 - (BA.y * DA.z - DA.y * BA.z) * d2 + (BA.y * CA.z - CA.y * BA.z) * d3) / (n * 2.0f));
 			Center.y = (A.y + (-(CA.x * DA.z - DA.x * CA.z) * d1 + (BA.x * DA.z - DA.x * BA.z) * d2 - (BA.x * CA.z - CA.x * BA.z) * d3) / (n * 2.0f));
 			Center.z = (A.z + ((CA.x * DA.y - DA.x * CA.y) * d1 - (BA.x * DA.y - DA.x * BA.y) * d2 + (BA.x * CA.y - CA.x * BA.y) * d3) / (n * 2.0f));
@@ -168,7 +173,7 @@ namespace Riemann
 		bool IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 		bool IntersectPoint(const Vector3& Point) const;
 		bool IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const;
-		bool IntersectSphere(const Vector3& _Center, float _Radius) const;
+		bool IntersectSphere(const Vector3& iCenter, float iRadius) const;
 		bool IntersectCapsule(const Vector3& X0, const Vector3& X1, float rRadius) const;
 		bool IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const;
 		bool IntersectConvex(const ConvexMesh *convex) const;
@@ -265,8 +270,8 @@ namespace Riemann
 		// weather a if sphere with radius r moving from a to b intersects with a plane
 		static bool TestMovingSpherePlane(const Vector3& a, const Vector3& b, float r, const Vector3& Normal, float D)
 		{
-			float adist = a.Dot(Normal) + D;
-			float bdist = b.Dot(Normal) + D;
+			const float adist = a.Dot(Normal) + D;
+			const float bdist = b.Dot(Normal) + D;
 			if (adist * bdist < 0.0f)
 				return true;
 			if (fabsf(adist) <= r || fabsf(bdist) <= r)

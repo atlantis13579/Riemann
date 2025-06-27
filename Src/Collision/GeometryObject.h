@@ -202,7 +202,7 @@ namespace Riemann
 	protected:
 		PrimitiveType		m_Type;
 		Box3				m_BoxWorld;
-		Transform	m_WorldTransform;
+		Transform			m_WorldTransform;
 		Transform			m_LocalTransform;
 		CollisionData		m_FilterData;
 		MassParameters		m_VolumeProperties;

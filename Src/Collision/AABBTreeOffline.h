@@ -17,7 +17,7 @@ namespace Riemann
 
 	struct AABBTreeBuildData
 	{
-		AABBTreeBuildData(const Box3* pArray, int nGeometries = 0, int GeometriesPerNode = 1) :
+		AABBTreeBuildData(const Box3* pArray, const int nGeometries = 0, const int GeometriesPerNode = 1) :
 			numGeometriesPerNode(GeometriesPerNode),
 			numGeometries(nGeometries),
 			pAABBArray(pArray),
@@ -84,10 +84,10 @@ namespace Riemann
 
 	public:
 		Box3					aabb;
-		AABBTreeNodeOffline* child1;
-		AABBTreeNodeOffline* child2;
-		int						indexOffset;
-		int						numGeometries;
+		AABBTreeNodeOffline*	child1;
+		AABBTreeNodeOffline*	child2;
+		int						indexOffset = 0;
+		int						numGeometries = 0;
 	};
 
 
@@ -115,8 +115,11 @@ namespace Riemann
 
 		struct NodeBlock
 		{
-			NodeBlock() {}
-			NodeBlock(AABBTreeNodeOffline* p, int UsedNodes, int maxNodes) :
+			NodeBlock()  :
+				pMem(nullptr),
+				nUsedNodes(0),
+				nMaxNodes(0) {}
+			NodeBlock(AABBTreeNodeOffline* p, const int UsedNodes, const int maxNodes) :
 				pMem(p),
 				nUsedNodes(UsedNodes),
 				nMaxNodes(maxNodes) {}

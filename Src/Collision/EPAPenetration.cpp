@@ -317,7 +317,6 @@ namespace Riemann
 			penetration_normal = Vector3(1, 0, 0);
 		penetration_depth = 0;
 		result.dimension = 1;
-		result.v[0] = result.v[0];
 		result.w[0] = 1;
 		return status;
 	}
