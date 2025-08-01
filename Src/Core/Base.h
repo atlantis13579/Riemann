@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <assert.h>
 #include <codecvt>
@@ -34,6 +34,12 @@ inline void AssertBreakPoint()
 #define	ASSERT(_expr)		if(!(_expr)) AssertBreakPoint();
 #define	ASSERT_TRUE(_expr)	ASSERT(_expr)
 #define	ASSERT_FALSE(_expr)	ASSERT(!(_expr))
+
+template<size_t Width, class T>
+inline T Align(T value)
+{
+	return (value + (Width - 1)) & (~(Width - 1));
+}
 
 inline void* AlignMemory(void* Memory, int Width)
 {
@@ -97,4 +103,19 @@ V* MapFind(ADT& map, const K& key)
 		return &it->second;
 	}
 	return nullptr;
+}
+
+// Branchless binary search
+template <class ForwardIt, class T, class Compare>
+ForwardIt BranchlessLowerBound(ForwardIt first, ForwardIt last, const T& value, Compare comp)
+{
+	auto length = last - first;
+	while (length > 0)
+	{
+		auto half = length / 2;
+		// multiplication (by 1) is needed for GCC to generate CMOW
+		first += comp(first[half], value) * (length - half);
+		length = half;
+	}
+	return first;
 }
