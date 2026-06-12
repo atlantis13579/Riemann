@@ -1,6 +1,7 @@
 #pragma once
 
 #include <assert.h>
+#include <algorithm>
 #include <queue>
 #include <set>
 #include <vector>

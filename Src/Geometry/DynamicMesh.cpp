@@ -209,6 +209,8 @@ namespace Riemann
 
 	DynamicMesh::~DynamicMesh()
 	{
+		delete mAttributes;
+		mAttributes = nullptr;
 	}
 
 	void DynamicMesh::Clear()
@@ -219,6 +221,7 @@ namespace Riemann
 		VertexUVs.clear();
 		Triangles.clear();
 		TriangleEdges.clear();
+		TriangleGroups.clear();
 		Edges.clear();
 		VertexRefCounts.clear();
 		EdgeRefCounts.clear();
@@ -227,6 +230,9 @@ namespace Riemann
 
 		bHasVertexColor = false;
 		bHasVertexNormals = false;
+		bHasVertexUVs = false;
+		bHasTriangleGroups = false;
+		GroupIDCounter = 0;
 
 		delete mAttributes;
 		mAttributes = new DynamicMeshAttributeSet(this);
@@ -331,7 +337,16 @@ namespace Riemann
 			return false;
 		}
 
-		fprintf(fp, "# %d vertices, %d faces\n", (int)VertexPositions.size(), (int)Triangles.size());
+		int NumFaces = 0;
+		for (size_t i = 0; i < Triangles.size(); ++i)
+		{
+			if (IsTriangleFast((int)i))
+			{
+				NumFaces++;
+			}
+		}
+
+		fprintf(fp, "# %d vertices, %d faces\n", (int)VertexPositions.size(), NumFaces);
 
 		fprintf(fp, "# List of geometric vertices, with (x,y,z[,w]) coordinates, w is optional and defaults to 1.0. \n");
 		if (!VertexColors.empty())
@@ -355,10 +370,10 @@ namespace Riemann
 		fprintf(fp, "# Polygonal face element (see below) \n");
 		for (size_t i = 0; i < Triangles.size(); ++i)
 		{
-			//if (TriangleRefCounts[i] == 0)
-			//{
-			//	continue;
-			//}
+			if (!IsTriangleFast((int)i))
+			{
+				continue;
+			}
 			const Index3& v = Triangles[i];
 			fprintf(fp, "f %d %d %d\n", v.a + 1, v.b + 1, v.c + 1);
 		}
@@ -432,6 +447,19 @@ namespace Riemann
 		VertexRefCounts.push_back(1);
 		VertexEdgeLists.append();
 
+		if (HasVertexColors())
+		{
+			VectorSetSafe(VertexColors, index, Vector3::Zero(), Vector3::Zero());
+		}
+		if (HasVertexNormals())
+		{
+			VectorSetSafe(VertexNormals, index, Vector3::UnitY(), Vector3::UnitY());
+		}
+		if (HasVertexUVs())
+		{
+			VectorSetSafe(VertexUVs, index, Vector2::Zero(), Vector2::Zero());
+		}
+
 		if (HasAttributes())
 		{
 			Attributes()->OnNewVertex(index, false);
@@ -493,8 +521,15 @@ namespace Riemann
 
 	int DynamicMesh::AppendVertex(const DynamicMesh& from, int fromVID)
 	{
+		if (!from.IsVertex(fromVID))
+		{
+			assert(false);
+			return -1;
+		}
+
 		const int vid = (int)VertexPositions.size();
 		VertexPositions.push_back(from.VertexPositions[fromVID]);
+		VertexRefCounts.push_back(1);
 
 		if (HasVertexNormals())
 		{
@@ -535,7 +570,7 @@ namespace Riemann
 			}
 		}
 
-		VertexEdgeLists.resize(VertexEdgeLists.size() + 1);
+		VertexEdgeLists.append();
 
 		if (HasAttributes())
 		{
@@ -621,10 +656,12 @@ namespace Riemann
 
 	void DynamicMesh::ReverseOrientation(bool bFlipNormals)
 	{
-		for (size_t i = 0; i < Triangles.size(); ++i)
+		for (int tid = 0; tid < GetTriangleCount(); ++tid)
 		{
-			Index3& tri = Triangles[i];
-			std::swap(tri.b, tri.c);
+			if (IsTriangleFast(tid))
+			{
+				ReverseTriOrientationInternal(tid);
+			}
 		}
 
 		if (bFlipNormals && bHasVertexNormals)
@@ -635,6 +672,23 @@ namespace Riemann
 				Normal = -Normal;
 			}
 		}
+
+		if (bFlipNormals && HasAttributes())
+		{
+			for (int NormalLayerIndex = 0; NormalLayerIndex < mAttributes->NumNormalLayers(); ++NormalLayerIndex)
+			{
+				FDynamicMeshNormalOverlay* NormalOverlay = mAttributes->GetNormalLayer(NormalLayerIndex);
+				for (int ElementID = 0; ElementID < NormalOverlay->MaxElementID(); ++ElementID)
+				{
+					if (NormalOverlay->IsElement(ElementID))
+					{
+						NormalOverlay->SetElement(ElementID, -NormalOverlay->GetElement(ElementID));
+					}
+				}
+			}
+		}
+
+		UpdateChangeStamps();
 	}
 
 	std::vector<int> DynamicMesh::GetVexVertices(int VertexID) const
@@ -1688,7 +1742,13 @@ namespace Riemann
 
 	EMeshResult DynamicMesh::InsertTriangle(int tid, const Index3& tv, int gid, bool bUnsafe)
 	{
-		if (TriangleRefCounts[tid] > 0)
+		if (tid < 0)
+		{
+			assert(false);
+			return EMeshResult::Failed_CannotAllocateTriangle;
+		}
+
+		if (tid < (int)TriangleRefCounts.size() && TriangleRefCounts[tid] > 0)
 		{
 			return EMeshResult::Failed_TriangleAlreadyExists;
 		}
@@ -1716,9 +1776,9 @@ namespace Riemann
 			return EMeshResult::Failed_WouldCreateNonmanifoldEdge;
 		}
 
-		if (tid >= TriangleRefCounts.size())
+		if (tid >= (int)TriangleRefCounts.size())
 		{
-			TriangleRefCounts.resize(tid, 0);
+			TriangleRefCounts.resize((size_t)tid + 1, 0);
 		}
 		TriangleRefCounts[tid] = 1;
 
@@ -1994,23 +2054,42 @@ namespace Riemann
 		std::vector<float> Weight;
 		Weight.resize(NumVertices, 0.0f);
 		VertexNormals.resize(NumVertices);
-		memset(VertexNormals.data(), 0, sizeof(VertexNormals[0]) * VertexNormals.size());
+		std::fill(VertexNormals.begin(), VertexNormals.end(), Vector3::Zero());
+
+		auto SafeAcos = [](float Value)
+		{
+			return acosf(std::max(-1.0f, std::min(1.0f, Value)));
+		};
+
 		for (int tid = 0; tid < NumTriangles; ++tid)
 		{
+			if (!IsTriangleFast(tid))
+			{
+				continue;
+			}
+
 			Index3 tv = GetTriangle(tid);
 
 			Triangle3 tri;
 			GetTriVertices(tid, tri.v0, tri.v1, tri.v2);
 
-			Vector3 Nor =  tri.GetNormal(true);
+			const Vector3 v20Raw = tri.v2 - tri.v0;
+			const Vector3 v10Raw = tri.v1 - tri.v0;
+			const Vector3 v21Raw = tri.v2 - tri.v1;
+			const Vector3 Cross = v20Raw.Cross(v10Raw);
+			if (Cross.SquareLength() <= 1e-12f)
+			{
+				continue;
+			}
 
-			const Vector3 v20 = (tri.v2 - tri.v0).Unit();
-			const Vector3 v10 = (tri.v1 - tri.v0).Unit();
-			const Vector3 v21 = (tri.v2 - tri.v1).Unit();
+			Vector3 Nor = Cross.SafeUnit();
+			const Vector3 v20 = v20Raw.SafeUnit();
+			const Vector3 v10 = v10Raw.SafeUnit();
+			const Vector3 v21 = v21Raw.SafeUnit();
 
-			const float w0 = acosf(v20.Dot(v10));
-			const float w1 = acosf(v21.Dot(-v10));
-			const float w2 = acosf(v21.Dot(v20));
+			const float w0 = SafeAcos(v20.Dot(v10));
+			const float w1 = SafeAcos(v21.Dot(-v10));
+			const float w2 = SafeAcos(v21.Dot(v20));
 
 			VertexNormals[tv.a] += w0 * Nor;
 			Weight[tv.a] += w0;
@@ -2024,8 +2103,15 @@ namespace Riemann
 
 		for (size_t i = 0; i < VertexNormals.size(); ++i)
 		{
-			VertexNormals[i] *= 1.0f / Weight[i];
-			VertexNormals[i].Normalize();
+			if (Weight[i] > 1e-12f)
+			{
+				VertexNormals[i] *= 1.0f / Weight[i];
+				VertexNormals[i].SafeNormalize();
+			}
+			else
+			{
+				VertexNormals[i] = Vector3::UnitY();
+			}
 		}
 	}
 
@@ -2564,12 +2650,8 @@ namespace Riemann
 			}
 
 			const Vector3 centroid = Mesh->GetTriCentroid((int)i);
-			float d2 = centroid.SquareLength();
-			if (d2 > 1e-3f)
-			{
-				Triangles.push_back(i);
-				Centers.push_back(centroid);
-			}
+			Triangles.push_back(i);
+			Centers.push_back(centroid);
 		}
 
 		Build(Triangles, Centers);

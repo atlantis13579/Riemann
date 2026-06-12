@@ -142,16 +142,40 @@ namespace Riemann
 			return NumTriangles;
 		}
 
-		inline const Vector3& GetVertex(int i, int j) const
+		inline bool GetTriangle(uint32_t index, Vector3 *A, Vector3 *B, Vector3 *C) const
 		{
+			if (index >= NumTriangles)
+			{
+				return false;
+			}
+
 			if (Is16bitIndices())
 			{
-				return Vertices[Indices[3 * i + j]];
+				*A = Vertices[Indices[3 * index + 0]];
+				*B = Vertices[Indices[3 * index + 1]];
+				*C = Vertices[Indices[3 * index + 2]];
 			}
 			else
 			{
 				const uint32_t* Indices32 = GetIndices32();
-				return Vertices[Indices32[3 * i + j]];
+				*A = Vertices[Indices[3 * index + 0]];
+				*B = Vertices[Indices[3 * index + 1]];
+				*C = Vertices[Indices[3 * index + 2]];
+			}
+
+			return true;
+		}
+
+		inline const Vector3& GetVertex(int index, int j) const
+		{
+			if (Is16bitIndices())
+			{
+				return Vertices[Indices[3 * index + j]];
+			}
+			else
+			{
+				const uint32_t* Indices32 = GetIndices32();
+				return Vertices[Indices32[3 * index + j]];
 			}
 		}
 
@@ -579,6 +603,13 @@ namespace Riemann
 				mNormals[i] *= 1.0f / Weight[i];
 				mNormals[i].Normalize();
 			}
+		}
+
+		bool Simplify(const float rate)
+		{
+			SimplificationConfig cfg;
+			cfg.rate = rate;
+			return Simplify(cfg);
 		}
 
 		bool Simplify(const SimplificationConfig& cfg)

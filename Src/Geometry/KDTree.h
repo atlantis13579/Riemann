@@ -31,16 +31,39 @@ namespace Riemann
 				indices[i] = i;
 			}
 			m_nodes.resize(vpNum);
-			m_root = _build(indices.data(), 0, m_size, 0, eps);
+			m_root = _Build(indices.data(), 0, m_size, 0, eps);
 		}
 
 		void Query(const Vector3& center, float radius, std::vector<int>& v_hit) const
 		{
-			_query(m_root, center, radius * radius, v_hit);
+			_Query(m_root, center, radius * radius, v_hit);
+		}
+
+		Vector3 FindNearest_Bruteforce(const Vector3 &center)
+		{
+			float min_sqr = FLT_MAX;
+			int idx = -1;
+			for (size_t i = 0; i < m_vb.size(); ++i)
+			{
+				const float sqr = (center - m_vb[i]).SquareLength();
+				if (sqr < min_sqr)
+				{
+					min_sqr = sqr;
+					idx = (int)i;
+				}
+			}
+
+			if (idx >= 0)
+			{
+				return m_vb[idx];
+			}
+
+			// should never comes here
+			return center;
 		}
 
 	private:
-		void _query(int node, const Vector3& center, float sqr_radius, std::vector<int>& v_hit) const
+		void _Query(int node, const Vector3& center, float sqr_radius, std::vector<int>& v_hit) const
 		{
 			if (center.x > m_nodes[node].maxBound.x || center.x < m_nodes[node].minBound.x ||
 				center.y > m_nodes[node].maxBound.y || center.y < m_nodes[node].minBound.y ||
@@ -56,10 +79,10 @@ namespace Riemann
 			}
 
 			if (m_nodes[node].left)
-				_query(m_nodes[node].left, center, sqr_radius, v_hit);
+				_Query(m_nodes[node].left, center, sqr_radius, v_hit);
 
 			if (m_nodes[node].right)
-				_query(m_nodes[node].right, center, sqr_radius, v_hit);
+				_Query(m_nodes[node].right, center, sqr_radius, v_hit);
 		}
 
 
@@ -80,7 +103,7 @@ namespace Riemann
 			}
 		};
 
-		int _build(int* indices, int l, int r, int dim, float eps)
+		int _Build(int* indices, int l, int r, int dim, float eps)
 		{
 			if (l >= r) return 0;
 			int mid = (l + r) >> 1;
@@ -92,13 +115,13 @@ namespace Riemann
 			m_nodes[tIndex].dim = dim;
 			m_nodes[tIndex].maxBound = m_vb[midIndex] + eps;
 			m_nodes[tIndex].minBound = m_vb[midIndex] - eps;
-			m_nodes[tIndex].left = _build(indices, l, mid, (dim + 1) % 3, eps);
+			m_nodes[tIndex].left = _Build(indices, l, mid, (dim + 1) % 3, eps);
 			if (m_nodes[tIndex].left)
 			{
 				m_nodes[tIndex].maxBound = ElementMax(m_nodes[m_nodes[tIndex].left].maxBound, m_nodes[tIndex].maxBound);
 				m_nodes[tIndex].minBound = ElementMin(m_nodes[m_nodes[tIndex].left].minBound, m_nodes[tIndex].minBound);
 			}
-			m_nodes[tIndex].right = _build(indices, mid + 1, r, (dim + 1) % 3, eps);
+			m_nodes[tIndex].right = _Build(indices, mid + 1, r, (dim + 1) % 3, eps);
 			if (m_nodes[tIndex].right)
 			{
 				m_nodes[tIndex].maxBound = ElementMax(m_nodes[m_nodes[tIndex].right].maxBound, m_nodes[tIndex].maxBound);

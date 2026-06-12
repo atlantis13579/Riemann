@@ -176,6 +176,8 @@ namespace Riemann
 
 		static float SqrDistancePointToTriangle(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C);
 
+		static float DistancePointToTriangle(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C);
+
 		float SqrDistanceToPoint(const Vector3& Point) const
 		{
 			return Triangle3::SqrDistancePointToTriangle(Point, v0, v1, v2);

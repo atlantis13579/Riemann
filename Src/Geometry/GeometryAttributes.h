@@ -1501,7 +1501,7 @@ namespace Riemann
 		std::vector<FDynamicMeshUVOverlay> UVLayers;
 		std::vector<FDynamicMeshNormalOverlay> NormalLayers;
 
-		FDynamicMeshColorOverlay* ColorLayer;
+		FDynamicMeshColorOverlay* ColorLayer = nullptr;
 
 		std::vector<FDynamicMeshWeightAttribute> WeightLayers;
 		// std::vector<FDynamicMeshPolygroupAttribute> PolygroupLayers;

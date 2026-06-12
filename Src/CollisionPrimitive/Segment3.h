@@ -47,30 +47,30 @@ namespace Riemann
 			return Segment3::ClosestPointOnSegmentToPoint(P0, P1, Point);
 		}
 
-		static float	SqrDistancePointToSegment(const Vector3& Point, const Vector3& P0, const Vector3& P1)
+		static float	SqrDistancePointToSegment(const Vector3& Point, const Vector3& X0, const Vector3& X1)
 		{
-			Vector3 Closest = Segment3::ClosestPointOnSegmentToPoint(Point, P0, P1);
+			Vector3 Closest = Segment3::ClosestPointOnSegmentToPoint(Point, X0, X1);
 			return (Point - Closest).SquareLength();
 		}
 
-		static Vector3 ClosestPointOnSegmentToPoint(const Vector3& Point, const Vector3& P0, const Vector3& P1)
+		static Vector3 ClosestPointOnSegmentToPoint(const Vector3& Point, const Vector3& X0, const Vector3& X1)
 		{
-			const Vector3 V1 = P1 - P0;
-			const Vector3 V2 = Point - P0;
+			const Vector3 V1 = X1 - X0;
+			const Vector3 V2 = Point - X0;
 
 			const float dp1 = V2.Dot(V1);
 			if (dp1 <= 0)
 			{
-				return P0;
+				return X0;
 			}
 
 			const float dp2 = V1.Dot(V1);
 			if (dp2 <= dp1)
 			{
-				return P1;
+				return X1;
 			}
 
-			return P0 + V1 * (dp2 / dp2);
+			return X0 + V1 * (dp2 / dp2);
 		}
 
 		float ProjectUnitRange(const Vector3& Point) const

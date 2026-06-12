@@ -140,7 +140,7 @@ namespace Riemann
 
 		inline bool HasVertexColors() const { return bHasVertexColor; }
 		inline bool HasVertexNormals() const { return bHasVertexNormals; }
-		inline bool HasVertexUVs() const { return VertexUVs.size() > 0; }
+		inline bool HasVertexUVs() const { return bHasVertexUVs; }
 		inline bool HasTriangleGroups() const { return bHasTriangleGroups; }
 		inline bool IsVertex(int idx) const { return 0 <= idx && idx < (int)VertexPositions.size() && VertexRefCounts[idx] > 0;	}
 		inline bool IsVertexFast(int idx) const { return VertexRefCounts[idx] > 0; }
@@ -170,7 +170,7 @@ namespace Riemann
 		inline void SetVertex(int idx, const Vector3& val)	{ VectorSetSafe(VertexPositions, idx, val, Vector3::Zero());	}
 		inline void SetVertexColor(int idx, const Vector3& val)	{ bHasVertexColor = true; VectorSetSafe(VertexColors, idx, val, Vector3::Zero()); }
 		inline void SetVertexNormal(int idx, const Vector3& val) { bHasVertexNormals = true; VectorSetSafe(VertexNormals, idx, val, Vector3::UnitY()); }
-		inline void SetVertexUV(int idx, const Vector2& val) {	VectorSetSafe(VertexUVs, idx, val, Vector2::Zero()); }
+		inline void SetVertexUV(int idx, const Vector2& val) { bHasVertexUVs = true; VectorSetSafe(VertexUVs, idx, val, Vector2::Zero()); }
 
 		void EnableVertexNormals(const Vector3& InitialNormal)
 		{
@@ -187,11 +187,13 @@ namespace Riemann
 				NewNormals[i] = InitialNormal;
 			}
 			VertexNormals = NewNormals;
+			bHasVertexNormals = true;
 		}
 
 		void DiscardVertexNormals()
 		{
 			VertexNormals.clear();
+			bHasVertexNormals = false;
 		}
 
 		int GetTriangleCount() const { return (int)Triangles.size(); }
@@ -275,7 +277,7 @@ namespace Riemann
 				info.Color = bary0 * VertexColors[t[0]] + bary1 * VertexColors[t[1]] + bary2 * VertexColors[t[2]];
 			}
 			info.bHasUV = HasVertexUVs();
-			if (info.bHasColor)
+			if (info.bHasUV)
 			{
 				info.UVs = bary0 * VertexUVs[t[0]] + bary1 * VertexUVs[t[1]] + bary2 * VertexUVs[t[2]];
 			}

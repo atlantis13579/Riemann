@@ -909,6 +909,13 @@ float Triangle3::SqrDistancePointToTriangle(const Vector3& Point, const Vector3&
 	return (Closest - Point).SquareLength();
 }
 
+// static
+float Triangle3::DistancePointToTriangle(const Vector3& Point, const Vector3& A, const Vector3& B, const Vector3& C)
+{
+	Vector3 Closest = ClosestPointOnTriangleToPoint(Point, A, B, C);
+	return (Closest - Point).Length();
+}
+
 Triangle3::PointDistanceQueryResult Triangle3::PointDistanceQuery(const Vector3& Point) const
 {
 	Vector3 diff = Point - v0;
