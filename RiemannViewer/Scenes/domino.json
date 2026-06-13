@@ -1,0 +1,74 @@
+{
+  "name": "domino",
+  "physics": {
+    "gravity": [0.0, -9.8, 0.0]
+  },
+  "camera": {
+    "center": [0.0, 3.0, 0.0],
+    "orbit": [1.55, 0.55, 28.0],
+    "near": 0.001,
+    "far": 100000.0
+  },
+  "light": {
+    "direction": [-0.50, -1.0, 0.25],
+    "color": [1.0, 0.96, 0.84],
+    "ambient": 0.20,
+    "shadowCenter": [0.0, 4.0, 0.0],
+    "shadowDistance": 95.0,
+    "shadowSize": 100.0
+  },
+  "objects": [
+    {
+      "id": "ground",
+      "type": "plane",
+      "body": "static",
+      "position": [0.0, 0.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "color": [0.48, 0.53, 0.56, 1.0]
+    },
+    {
+      "id": "ramp",
+      "type": "box",
+      "body": "static",
+      "position": [0.0, 2.5, -18.0],
+      "halfExtent": [2.0, 2.0, 6.0],
+      "rotationAxis": [1.0, 0.0, 0.0],
+      "rotationDegrees": 23.0,
+      "color": [0.56, 0.60, 0.65, 1.0]
+    },
+    {
+      "id": "starter_sphere",
+      "type": "sphere",
+      "body": "dynamic",
+      "position": [0.0, 20.0, -20.0],
+      "radius": 1.0,
+      "color": [0.94, 0.58, 0.22, 1.0]
+    },
+    {
+      "id": "domino_line",
+      "type": "box",
+      "body": "dynamic",
+      "position": [0.0, 3.0, -10.0],
+      "halfExtent": [2.0, 3.0, 0.25],
+      "color": [0.30, 0.55, 0.92, 1.0],
+      "repeat": {
+        "count": [1, 1, 14],
+        "spacing": [0.0, 0.0, 1.65]
+      }
+    },
+    {
+      "id": "domino_cross",
+      "type": "box",
+      "body": "dynamic",
+      "position": [6.0, 3.0, 10.0],
+      "halfExtent": [2.0, 3.0, 0.25],
+      "rotationAxis": [0.0, 1.0, 0.0],
+      "rotationDegrees": 90.0,
+      "color": [0.40, 0.70, 0.62, 1.0],
+      "repeat": {
+        "count": [6, 1, 1],
+        "spacing": [1.65, 0.0, 0.0]
+      }
+    }
+  ]
+}

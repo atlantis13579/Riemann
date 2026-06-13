@@ -3,10 +3,20 @@
   <ItemGroup>
     <ClCompile Include="..\..\RiemannViewer\WinApplication.cpp" />
     <ClCompile Include="..\..\RiemannViewer\Viewer.cpp" />
+    <ClCompile Include="..\..\RiemannViewer\SceneWorld.cpp" />
+    <ClCompile Include="..\..\RiemannViewer\RenderThread.cpp" />
     <ClCompile Include="..\..\RiemannViewer\ObjRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\RiemannViewer\Viewer.h" />
+    <ClInclude Include="..\..\RiemannViewer\SceneWorld.h" />
+    <ClInclude Include="..\..\RiemannViewer\RenderThread.h" />
     <ClInclude Include="..\..\RiemannViewer\ObjRenderer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\RiemannViewer\Scenes\demo.json" />
+    <None Include="..\..\RiemannViewer\Scenes\domino.json" />
+    <None Include="..\..\RiemannViewer\Scenes\see_saw.json" />
+    <None Include="..\..\RiemannViewer\Scenes\stack_boxes.json" />
   </ItemGroup>
 </Project>

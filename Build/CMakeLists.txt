@@ -38,6 +38,61 @@ target_include_directories(Riemann PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
+set(RENDERER_SOURCES
+    "${CMAKE_SOURCE_DIR}/../Renderer/Renderer.cpp"
+)
+
+set(RENDERER_HEADERS
+    "${CMAKE_SOURCE_DIR}/../Renderer/Renderer.h"
+    "${CMAKE_SOURCE_DIR}/../Renderer/DX11Renderer.h"
+    "${CMAKE_SOURCE_DIR}/../Renderer/MetalRenderer.h"
+)
+
+if(WIN32)
+    list(APPEND RENDERER_SOURCES "${CMAKE_SOURCE_DIR}/../Renderer/DX11Renderer.cpp")
+elseif(APPLE)
+    enable_language(OBJCXX)
+    list(APPEND RENDERER_SOURCES "${CMAKE_SOURCE_DIR}/../Renderer/MetalRenderer.cpp")
+    set_source_files_properties("${CMAKE_SOURCE_DIR}/../Renderer/MetalRenderer.cpp" PROPERTIES LANGUAGE OBJCXX)
+endif()
+
+add_library(Renderer STATIC ${RENDERER_SOURCES} ${RENDERER_HEADERS})
+target_compile_definitions(Renderer PUBLIC RENDERER_STATIC)
+target_include_directories(Renderer PUBLIC
+    ${CMAKE_SOURCE_DIR}/..
+    ${CMAKE_SOURCE_DIR}/../Src
+)
+
+if(WIN32)
+    target_link_libraries(Renderer PRIVATE d3d11 d3dcompiler dxguid winmm comctl32)
+elseif(APPLE)
+    find_library(METAL_FRAMEWORK Metal REQUIRED)
+    find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
+    find_library(COCOA_FRAMEWORK Cocoa REQUIRED)
+    target_link_libraries(Renderer PRIVATE ${METAL_FRAMEWORK} ${QUARTZCORE_FRAMEWORK} ${COCOA_FRAMEWORK})
+endif()
+
+set(RIEMANN_VIEWER_CORE_SOURCES
+    "${CMAKE_SOURCE_DIR}/../RiemannViewer/ObjRenderer.cpp"
+    "${CMAKE_SOURCE_DIR}/../RiemannViewer/RenderThread.cpp"
+    "${CMAKE_SOURCE_DIR}/../RiemannViewer/SceneWorld.cpp"
+    "${CMAKE_SOURCE_DIR}/../RiemannViewer/Viewer.cpp"
+)
+
+set(RIEMANN_VIEWER_CORE_HEADERS
+    "${CMAKE_SOURCE_DIR}/../RiemannViewer/ObjRenderer.h"
+    "${CMAKE_SOURCE_DIR}/../RiemannViewer/RenderThread.h"
+    "${CMAKE_SOURCE_DIR}/../RiemannViewer/SceneWorld.h"
+    "${CMAKE_SOURCE_DIR}/../RiemannViewer/Viewer.h"
+)
+
+add_library(RiemannViewerCore STATIC ${RIEMANN_VIEWER_CORE_SOURCES} ${RIEMANN_VIEWER_CORE_HEADERS})
+target_include_directories(RiemannViewerCore PUBLIC
+    ${CMAKE_SOURCE_DIR}/..
+    ${CMAKE_SOURCE_DIR}/../Src
+)
+target_link_libraries(RiemannViewerCore PUBLIC Riemann Renderer)
+
 add_executable(Test ${TEST_SOURCES})
 
 target_link_libraries(Test PRIVATE Riemann)
@@ -50,6 +105,16 @@ target_include_directories(Test PRIVATE
 if(WIN32)
     # Windows
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Test)
+
+    add_executable(RiemannViewer WIN32
+        "${CMAKE_SOURCE_DIR}/../RiemannViewer/WinApplication.cpp"
+        "${CMAKE_SOURCE_DIR}/../RiemannViewer/RiemannViewer.rc"
+    )
+    target_include_directories(RiemannViewer PRIVATE
+        ${CMAKE_SOURCE_DIR}/..
+        ${CMAKE_SOURCE_DIR}/../Src
+    )
+    target_link_libraries(RiemannViewer PRIVATE RiemannViewerCore Renderer Riemann shell32)
     
     # Visual Studio
     set_property(TARGET Test PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")

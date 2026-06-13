@@ -20,12 +20,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Renderer\DX11Renderer.cpp" />
+    <ClCompile Include="..\..\Renderer\Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Renderer\DX11Renderer.h" />
+    <ClInclude Include="..\..\Renderer\MetalRenderer.h" />
     <ClInclude Include="..\..\Renderer\Renderer.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\Renderer\MetalRenderer.cpp" />
     <None Include="..\..\Renderer\simple.fxh" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -1,0 +1,75 @@
+{
+  "name": "see_saw",
+  "physics": {
+    "gravity": [0.0, -9.8, 0.0]
+  },
+  "camera": {
+    "center": [2.5, 2.0, 0.0],
+    "orbit": [1.15, 0.45, 22.0],
+    "near": 0.001,
+    "far": 100000.0
+  },
+  "light": {
+    "direction": [-0.42, -1.0, 0.36],
+    "color": [1.0, 0.95, 0.84],
+    "ambient": 0.23,
+    "shadowCenter": [2.5, 3.0, 0.0],
+    "shadowDistance": 80.0,
+    "shadowSize": 70.0
+  },
+  "objects": [
+    {
+      "id": "ground",
+      "type": "plane",
+      "body": "static",
+      "position": [0.0, 0.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "color": [0.50, 0.55, 0.58, 1.0]
+    },
+    {
+      "id": "fulcrum",
+      "type": "box",
+      "body": "static",
+      "position": [3.0, 0.0, 0.0],
+      "halfExtent": [1.0, 1.0, 1.0],
+      "rotationAxis": [0.0, 0.0, 1.0],
+      "rotationDegrees": 40.0,
+      "color": [0.58, 0.61, 0.66, 1.0]
+    },
+    {
+      "id": "plank",
+      "type": "box",
+      "body": "dynamic",
+      "position": [2.0, 1.7, 0.0],
+      "halfExtent": [5.0, 0.25, 1.0],
+      "color": [0.31, 0.55, 0.86, 1.0]
+    },
+    {
+      "id": "ball",
+      "type": "sphere",
+      "body": "dynamic",
+      "position": [-1.0, 4.0, 0.0],
+      "radius": 0.5,
+      "color": [0.94, 0.60, 0.20, 1.0]
+    },
+    {
+      "id": "weight",
+      "type": "box",
+      "body": "dynamic",
+      "position": [-2.0, 4.0, 0.0],
+      "halfExtent": [0.5, 0.5, 0.5],
+      "invMass": 0.5,
+      "color": [0.80, 0.45, 0.38, 1.0]
+    },
+    {
+      "id": "roller",
+      "type": "cylinder",
+      "body": "dynamic",
+      "x0": [7.0, 10.0, -1.0],
+      "x1": [7.0, 10.0, 3.0],
+      "radius": 0.5,
+      "invMass": 0.01,
+      "color": [0.42, 0.72, 0.62, 1.0]
+    }
+  ]
+}

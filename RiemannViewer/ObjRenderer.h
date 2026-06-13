@@ -1,16 +1,15 @@
 #pragma once
 
-namespace Riemann
-{
-	class StaticMesh;
-}
+#include <string>
+#include <vector>
+
+#include "../Renderer/Renderer.h"
 
 namespace Riemann
 {
-	class Renderer;
 	class Geometry;
 	class StaticMesh;
 
-	void AddGeometry(Renderer* renderer, Geometry* geom);
-	void AddTriMesh(Renderer* renderer, StaticMesh* mesh, void* Trans, bool RenderBV);
+	void BuildGeometryMeshes(Geometry* geometry, const std::string& id, const Vector4& color, bool renderBounds, std::vector<RenderMeshDesc>* meshes);
+	void BuildTriMeshMeshes(StaticMesh* mesh, const Transform& transform, const std::string& id, const Vector4& color, bool renderBounds, std::vector<RenderMeshDesc>* meshes);
 }

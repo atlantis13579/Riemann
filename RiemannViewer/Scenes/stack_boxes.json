@@ -1,0 +1,42 @@
+{
+  "name": "stack_boxes",
+  "physics": {
+    "gravity": [0.0, -9.8, 0.0]
+  },
+  "camera": {
+    "center": [0.0, 4.0, 0.0],
+    "orbit": [1.0, 0.45, 32.0],
+    "near": 0.001,
+    "far": 100000.0
+  },
+  "light": {
+    "direction": [-0.35, -1.0, 0.25],
+    "color": [1.0, 0.95, 0.86],
+    "ambient": 0.22,
+    "shadowCenter": [0.0, 4.0, 0.0],
+    "shadowDistance": 90.0,
+    "shadowSize": 90.0
+  },
+  "objects": [
+    {
+      "id": "ground",
+      "type": "plane",
+      "body": "static",
+      "position": [0.0, -5.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "color": [0.50, 0.55, 0.58, 1.0]
+    },
+    {
+      "id": "stack_box",
+      "type": "box",
+      "body": "dynamic",
+      "position": [-3.15, -3.9, -3.15],
+      "halfExtent": [0.95, 0.95, 0.95],
+      "color": [0.35, 0.62, 0.86, 1.0],
+      "repeat": {
+        "count": [4, 6, 4],
+        "spacing": [2.1, 2.05, 2.1]
+      }
+    }
+  ]
+}

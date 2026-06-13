@@ -1,0 +1,42 @@
+{
+  "name": "demo",
+  "physics": {
+    "gravity": [0.0, -9.8, 0.0]
+  },
+  "camera": {
+    "center": [0.0, 0.0, 0.0],
+    "orbit": [1.0, 0.6, 15.0],
+    "near": 0.001,
+    "far": 100000.0
+  },
+  "light": {
+    "direction": [-0.45, -1.0, 0.35],
+    "color": [1.0, 0.96, 0.86],
+    "ambient": 0.24,
+    "shadowCenter": [0.0, 2.0, 0.0],
+    "shadowDistance": 70.0,
+    "shadowSize": 80.0
+  },
+  "objects": [
+    {
+      "id": "ground",
+      "type": "plane",
+      "body": "static",
+      "position": [0.0, -5.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "color": [0.52, 0.56, 0.60, 1.0]
+    },
+    {
+      "id": "box_stack",
+      "type": "box",
+      "body": "dynamic",
+      "position": [0.0, -4.0, 0.0],
+      "halfExtent": [1.0, 1.0, 1.0],
+      "color": [0.28, 0.52, 0.95, 1.0],
+      "repeat": {
+        "count": [1, 5, 1],
+        "spacing": [0.0, 2.01, 0.0]
+      }
+    }
+  ]
+}
