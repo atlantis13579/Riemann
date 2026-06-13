@@ -184,6 +184,16 @@ bool ConvexMesh::IntersectConvex(const ConvexMesh* convex) const
 
 bool ConvexMesh::CalculateVolumeProperties(MassParameters* p, float Density) const
 {
+	if (NumVertices == 0 || NumFaces == 0)
+	{
+		p->Volume = 0.0f;
+		p->Mass = 0.0f;
+		p->CenterOfMass = Vector3::Zero();
+		p->BoundingVolume = Box3::Empty();
+		p->InertiaMat = Matrix3::Identity();
+		return true;
+	}
+
 	ConvexHull3d hull;
 	hull.faces.resize(NumFaces);
 	hull.verts.resize(NumVertices);

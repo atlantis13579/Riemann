@@ -44,7 +44,7 @@ namespace Riemann
 
 		Vector3		ClosestPointToPoint(const Vector3& Point) const
 		{
-			return Segment3::ClosestPointOnSegmentToPoint(P0, P1, Point);
+			return Segment3::ClosestPointOnSegmentToPoint(Point, P0, P1);
 		}
 
 		static float	SqrDistancePointToSegment(const Vector3& Point, const Vector3& X0, const Vector3& X1)
@@ -70,7 +70,7 @@ namespace Riemann
 				return X1;
 			}
 
-			return X0 + V1 * (dp2 / dp2);
+			return X0 + V1 * (dp1 / dp2);
 		}
 
 		float ProjectUnitRange(const Vector3& Point) const

@@ -154,7 +154,7 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
 
     if (debug_draw)
     {
-        LibPNG::WritePNG("../TestData/depth.png", fp, width, height);
+        LibPNG::WritePNG("../Contents/TestData/depth.png", fp, width, height);
     }
 }
 

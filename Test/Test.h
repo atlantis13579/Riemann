@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <fstream>
 #include <string>
 
 inline void BreakPoint()
@@ -27,6 +28,43 @@ inline int& TestFailureCount()
 inline void TestResetFailures()
 {
 	TestFailureCount() = 0;
+}
+
+inline bool TestFileExists(const std::string& fileName)
+{
+	std::ifstream file(fileName.c_str(), std::ios::in | std::ios::binary);
+	return !!file;
+}
+
+inline std::string TestDataPath(const char* fileName)
+{
+	const char* directories[] =
+	{
+		"Contents/TestData/",
+		"../Contents/TestData/",
+		"../../Contents/TestData/",
+		"../../../Contents/TestData/",
+		"../../../../Contents/TestData/",
+	};
+
+	for (const char* directory : directories)
+	{
+		const std::string path = std::string(directory) + fileName;
+		if (TestFileExists(path))
+		{
+			return path;
+		}
+	}
+
+	for (const char* directory : directories)
+	{
+		if (TestFileExists(std::string(directory) + "bunny.obj"))
+		{
+			return std::string(directory) + fileName;
+		}
+	}
+
+	return std::string("../Contents/TestData/") + fileName;
 }
 
 inline void TestRecordFailure(const char* expr, const char* file, int line)

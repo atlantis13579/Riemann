@@ -8,6 +8,8 @@
 #include "TriangleMesh.h"
 #include "GJK.h"
 
+#include <algorithm>
+
 namespace Riemann
 {
 static void face(unsigned int i0, unsigned int i1, unsigned int i2, Vector3& rkPnt, const Vector3& rkDir, const Vector3& extents, const Vector3& rkPmE, float* t, float& rfSqrDistance)
@@ -488,23 +490,88 @@ float AxisAlignedBox3::SqrDistanceToLine(const Vector3& P0, const Vector3& tDir,
 
 float AxisAlignedBox3::SqrDistanceToSegment(const Vector3& P0, const Vector3& P1) const
 {
-	float t;
-	float sqrDistance = SqrDistanceToLine(P0, P1 - P0, &t);
-	if (t >= 0.0f)
-	{
-		if (t <= 1.0f)
-		{
-			return sqrDistance;
-		}
-		else
-		{
-			return SqrDistanceToPoint(P1);
-		}
-	}
-	else
+	const Vector3 Dir = P1 - P0;
+	if (Dir.SquareLength() < TINY_NUMBER)
 	{
 		return SqrDistanceToPoint(P0);
 	}
+
+	float ts[8];
+	int numTs = 0;
+	auto addT = [&ts, &numTs](float t)
+	{
+		if (t < 0.0f || t > 1.0f)
+		{
+			return;
+		}
+		for (int i = 0; i < numTs; ++i)
+		{
+			if (fabsf(ts[i] - t) < 1e-6f)
+			{
+				return;
+			}
+		}
+		ts[numTs++] = t;
+	};
+
+	addT(0.0f);
+	addT(1.0f);
+	for (int axis = 0; axis < 3; ++axis)
+	{
+		if (fabsf(Dir[axis]) > TINY_NUMBER)
+		{
+			addT((Min[axis] - P0[axis]) / Dir[axis]);
+			addT((Max[axis] - P0[axis]) / Dir[axis]);
+		}
+	}
+	std::sort(ts, ts + numTs);
+
+	auto sqrDistanceAt = [this, &P0, &Dir](float t)
+	{
+		return SqrDistanceToPoint(P0 + Dir * t);
+	};
+
+	float minSqrDistance = std::min(sqrDistanceAt(0.0f), sqrDistanceAt(1.0f));
+	for (int i = 0; i + 1 < numTs; ++i)
+	{
+		const float t0 = ts[i];
+		const float t1 = ts[i + 1];
+		if (t1 - t0 < 1e-6f)
+		{
+			continue;
+		}
+
+		const float mid = (t0 + t1) * 0.5f;
+		float a = 0.0f;
+		float b = 0.0f;
+		for (int axis = 0; axis < 3; ++axis)
+		{
+			const float value = P0[axis] + Dir[axis] * mid;
+			if (value < Min[axis])
+			{
+				a += Dir[axis] * Dir[axis];
+				b += Dir[axis] * (P0[axis] - Min[axis]);
+			}
+			else if (value > Max[axis])
+			{
+				a += Dir[axis] * Dir[axis];
+				b += Dir[axis] * (P0[axis] - Max[axis]);
+			}
+		}
+
+		float t = mid;
+		if (a > TINY_NUMBER)
+		{
+			t = std::max(t0, std::min(t1, -b / a));
+		}
+		minSqrDistance = std::min(minSqrDistance, sqrDistanceAt(t));
+	}
+	for (int i = 0; i < numTs; ++i)
+	{
+		minSqrDistance = std::min(minSqrDistance, sqrDistanceAt(ts[i]));
+	}
+
+	return minSqrDistance;
 }
 
 Vector3 AxisAlignedBox3::GetSupport(const Vector3& Direction) const

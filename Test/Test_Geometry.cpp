@@ -68,9 +68,9 @@ void TestMeshSimplify1()
 	cfg.rate = 0.1f;
 
 	StaticMesh mesh;
-	mesh.LoadObj("../TestData/bunny.obj");
+	mesh.LoadObj(TestDataPath("bunny.obj").c_str());
 	mesh.Simplify(cfg);
-	mesh.ExportObj("../TestData/bunny2.obj");
+	mesh.ExportObj(TestDataPath("bunny2.obj").c_str());
 }
 
 void TestMeshSimplify2()
@@ -81,9 +81,9 @@ void TestMeshSimplify2()
 	cfg.rate = 0.1f;
 
 	StaticMesh mesh;
-	mesh.LoadObj("../TestData/dungeon.obj");
+	mesh.LoadObj(TestDataPath("dungeon.obj").c_str());
 	mesh.Simplify(cfg);
-	mesh.ExportObj("../TestData/dungeon2.obj");
+	mesh.ExportObj(TestDataPath("dungeon2.obj").c_str());
 }
 
 void TestMeshSimplify3()
@@ -230,7 +230,7 @@ void TestGeometrySet()
 	printf("Running TestGeometrySet\n");
 
 	DynamicMesh set1;
-	set1.LoadObj("../TestData/bunny.obj");
+	set1.LoadObj(TestDataPath("bunny.obj").c_str());
 	Box3 box = set1.GetBounds();
 	float x = box.GetCenter().x;
 	float y = box.GetCenter().y;
@@ -292,7 +292,7 @@ void TestGeometryBoolean1()
 		return;
 	}
 	b.Result->FixTriangleOrientation(false);
-	b.Result->ExportObj("../TestData/box_intersect.obj");
+	b.Result->ExportObj(TestDataPath("box_intersect.obj").c_str());
 	delete b.Result;
 	b.Result = nullptr;
 
@@ -308,7 +308,7 @@ void TestGeometryBoolean2()
 	}
 
 	DynamicMesh mesh1;
-	mesh1.LoadObj("../TestData/bunny.obj");
+	mesh1.LoadObj(TestDataPath("bunny.obj").c_str());
 
 	DynamicMesh mesh2;
 	Box3 box = mesh1.GetBounds();
@@ -329,7 +329,7 @@ void TestGeometryBoolean2()
 		return;
 	}
 	b.Result->FixTriangleOrientation(false);
-	b.Result->ExportObj("../TestData/bunny_intersect.obj");
+	b.Result->ExportObj(TestDataPath("bunny_intersect.obj").c_str());
 	delete b.Result;
 	b.Result = nullptr;
 

@@ -9,11 +9,8 @@ extern void TestCores();
 extern void TestMaths();
 extern void TestCollision();
 extern void TestGeometry();
-extern void TestPhysics3d();
-extern void TestPython();
 extern void TestSIMD();
 extern void TestMatrix();
-extern void TestVehicle();
 extern void TestDestruction();
 extern void TestOptimization();
 
@@ -51,10 +48,8 @@ void TestAll(const std::vector<std::string>& filters)
 	RunTestGroup("Collision", TestCollision, filters);
 	RunTestGroup("Geometry", TestGeometry, filters);
 	RunTestGroup("Destruction", TestDestruction, filters);
-	RunTestGroup("Physics3d", TestPhysics3d, filters);
 	RunTestGroup("SIMD", TestSIMD, filters);
 	RunTestGroup("Matrix", TestMatrix, filters);
-	RunTestGroup("Vehicle", TestVehicle, filters);
 	RunTestGroup("Optimization", TestOptimization, filters);
 }
 

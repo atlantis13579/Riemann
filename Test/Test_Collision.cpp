@@ -1,6 +1,8 @@
 
 #include "Test.h"
 
+#include <vector>
+
 #include "../Src/CollisionPrimitive/AxisAlignedBox3.h"
 #include "../Src/CollisionPrimitive/Plane3.h"
 #include "../Src/CollisionPrimitive/Sphere3.h"
@@ -9,6 +11,8 @@
 #include "../Src/CollisionPrimitive/Triangle3.h"
 #include "../Src/CollisionPrimitive/Cylinder3.h"
 #include "../Src/CollisionPrimitive/Capsule3.h"
+#include "../Src/CollisionPrimitive/ConvexMesh.h"
+#include "../Src/CollisionPrimitive/HeightField3.h"
 #include "../Src/CollisionPrimitive/StaticMesh.h"
 #include "../Src/CollisionPrimitive/MeshBVH4.h"
 #include "../Src/CollisionPrimitive/TriangleMesh.h"
@@ -24,6 +28,172 @@
 #include "../Src/Maths/Maths.h"
 
 using namespace Riemann;
+
+namespace
+{
+	struct CollisionSample
+	{
+		const char* Name;
+		PrimitiveType Type;
+		Geometry* Geom;
+	};
+
+	struct RaySpec
+	{
+		Vector3 Origin;
+		Vector3 Direction;
+	};
+
+	Geometry* CreateConvexCube(const Vector3& Center)
+	{
+		static Vector3 Vertices[] =
+		{
+			Vector3(-0.5f, -0.5f, -0.5f),
+			Vector3( 0.5f, -0.5f, -0.5f),
+			Vector3( 0.5f,  0.5f, -0.5f),
+			Vector3(-0.5f,  0.5f, -0.5f),
+			Vector3(-0.5f, -0.5f,  0.5f),
+			Vector3( 0.5f, -0.5f,  0.5f),
+			Vector3( 0.5f,  0.5f,  0.5f),
+			Vector3(-0.5f,  0.5f,  0.5f),
+		};
+		static ConvexMeshFace Faces[] =
+		{
+			ConvexMeshFace(Plane3(Vector3(-1.0f,  0.0f,  0.0f), -0.5f), 4,  0),
+			ConvexMeshFace(Plane3(Vector3( 1.0f,  0.0f,  0.0f), -0.5f), 4,  4),
+			ConvexMeshFace(Plane3(Vector3( 0.0f, -1.0f,  0.0f), -0.5f), 4,  8),
+			ConvexMeshFace(Plane3(Vector3( 0.0f,  1.0f,  0.0f), -0.5f), 4, 12),
+			ConvexMeshFace(Plane3(Vector3( 0.0f,  0.0f, -1.0f), -0.5f), 4, 16),
+			ConvexMeshFace(Plane3(Vector3( 0.0f,  0.0f,  1.0f), -0.5f), 4, 20),
+		};
+		static uint8_t Indices[] =
+		{
+			0, 3, 7, 4,
+			1, 5, 6, 2,
+			0, 4, 5, 1,
+			3, 2, 6, 7,
+			0, 1, 2, 3,
+			4, 7, 6, 5,
+		};
+
+		Geometry* geom = GeometryFactory::CreateConvexMesh();
+		ConvexMesh* convex = geom->GetShapeObj<ConvexMesh>();
+		convex->SetConvexData(Vertices, 8, Faces, 6, nullptr, 0, Indices, 24, true);
+		geom->SetBoundingVolume_LocalSpace(convex->Bounds);
+		geom->SetWorldTransform(Center, Quaternion::One());
+		return geom;
+	}
+
+	Geometry* CreateTriangleMeshBox(const Vector3& Center)
+	{
+		Geometry* geom = GeometryFactory::CreateTriangleMesh();
+		TriangleMesh* mesh = geom->GetShapeObj<TriangleMesh>();
+		mesh->AddAABB(Vector3(-0.5f), Vector3(0.5f));
+		mesh->Compact();
+		mesh->BuildBVH();
+		geom->SetBoundingVolume_LocalSpace(mesh->BoundingVolume);
+		geom->SetWorldTransform(Center, Quaternion::One());
+		return geom;
+	}
+
+	Geometry* CreateHeightFieldPatch(const Vector3& Center)
+	{
+		Geometry* geom = GeometryFactory::CreateHeightField(Box3(Vector3(-1.0f, -0.1f, -1.0f), Vector3(1.0f, 0.1f, 1.0f)), 3, 3);
+		HeightField3* hf = geom->GetShapeObj<HeightField3>();
+		hf->AllocMemory();
+		geom->SetBoundingVolume_LocalSpace(hf->BV);
+		geom->SetWorldTransform(Center, Quaternion::One());
+		return geom;
+	}
+
+	void CreateCollisionSamples(const Vector3& Center, std::vector<CollisionSample>& Samples)
+	{
+		Samples.emplace_back(CollisionSample{ "box", PrimitiveType::BOX, GeometryFactory::CreateOBB(Center, Vector3(0.5f), Quaternion::One()) });
+		Samples.emplace_back(CollisionSample{ "plane", PrimitiveType::PLANE, GeometryFactory::CreatePlane(Center, Vector3::UnitY()) });
+		Samples.emplace_back(CollisionSample{ "sphere", PrimitiveType::SPHERE, GeometryFactory::CreateSphere(Center, 0.5f) });
+		Samples.emplace_back(CollisionSample{ "capsule", PrimitiveType::CAPSULE, GeometryFactory::CreateCapsule(Center + Vector3(0.0f, -0.5f, 0.0f), Center + Vector3(0.0f, 0.5f, 0.0f), 0.35f) });
+		Samples.emplace_back(CollisionSample{ "cylinder", PrimitiveType::CYLINDER, GeometryFactory::CreateCylinder(Center + Vector3(0.0f, -0.5f, 0.0f), Center + Vector3(0.0f, 0.5f, 0.0f), 0.35f) });
+		Samples.emplace_back(CollisionSample{ "heightfield", PrimitiveType::HEIGHTFIELD, CreateHeightFieldPatch(Center) });
+		Samples.emplace_back(CollisionSample{ "convex", PrimitiveType::CONVEX_MESH, CreateConvexCube(Center) });
+		Samples.emplace_back(CollisionSample{ "triangle_mesh", PrimitiveType::TRIANGLE_MESH, CreateTriangleMeshBox(Center) });
+	}
+
+	void DeleteCollisionSamples(std::vector<CollisionSample>& Samples)
+	{
+		for (CollisionSample& Sample : Samples)
+		{
+			GeometryFactory::DeleteGeometry(Sample.Geom);
+			Sample.Geom = nullptr;
+		}
+		Samples.clear();
+	}
+
+	bool SameTypePair(PrimitiveType A, PrimitiveType B, PrimitiveType X, PrimitiveType Y)
+	{
+		return (A == X && B == Y) || (A == Y && B == X);
+	}
+
+	bool ExpectIntersectHit(PrimitiveType A, PrimitiveType B)
+	{
+		if (SameTypePair(A, B, PrimitiveType::PLANE, PrimitiveType::HEIGHTFIELD)) return false;
+		if (SameTypePair(A, B, PrimitiveType::PLANE, PrimitiveType::TRIANGLE_MESH)) return false;
+		if (SameTypePair(A, B, PrimitiveType::CYLINDER, PrimitiveType::HEIGHTFIELD)) return false;
+		if (SameTypePair(A, B, PrimitiveType::CYLINDER, PrimitiveType::TRIANGLE_MESH)) return false;
+		if (SameTypePair(A, B, PrimitiveType::CONVEX_MESH, PrimitiveType::HEIGHTFIELD)) return false;
+		if (SameTypePair(A, B, PrimitiveType::CONVEX_MESH, PrimitiveType::TRIANGLE_MESH)) return false;
+		if (SameTypePair(A, B, PrimitiveType::HEIGHTFIELD, PrimitiveType::HEIGHTFIELD)) return false;
+		if (SameTypePair(A, B, PrimitiveType::HEIGHTFIELD, PrimitiveType::TRIANGLE_MESH)) return false;
+		if (SameTypePair(A, B, PrimitiveType::TRIANGLE_MESH, PrimitiveType::TRIANGLE_MESH)) return false;
+		return true;
+	}
+
+	bool ExpectSweepHit(PrimitiveType Type)
+	{
+		return Type == PrimitiveType::BOX ||
+			Type == PrimitiveType::SPHERE ||
+			Type == PrimitiveType::CAPSULE ||
+			Type == PrimitiveType::CYLINDER;
+	}
+
+	RaySpec GetRaySpec(PrimitiveType Type)
+	{
+		if (Type == PrimitiveType::PLANE || Type == PrimitiveType::HEIGHTFIELD)
+		{
+			return RaySpec{ Vector3(0.0f, 3.0f, 0.0f), -Vector3::UnitY() };
+		}
+		if (Type == PrimitiveType::CONVEX_MESH)
+		{
+			return RaySpec{ Vector3(-1.0f, 0.0f, 0.0f), Vector3::UnitX() };
+		}
+		return RaySpec{ Vector3(-3.0f, 0.0f, 0.0f), Vector3::UnitX() };
+	}
+
+	RaySpec GetMissRaySpec(PrimitiveType Type)
+	{
+		if (Type == PrimitiveType::PLANE)
+		{
+			return RaySpec{ Vector3(0.0f, 3.0f, 0.0f), Vector3::UnitY() };
+		}
+		if (Type == PrimitiveType::HEIGHTFIELD)
+		{
+			return RaySpec{ Vector3(3.0f, 3.0f, 0.0f), -Vector3::UnitY() };
+		}
+		return RaySpec{ Vector3(-3.0f, 2.5f, 0.0f), Vector3::UnitX() };
+	}
+
+	bool CanRunFiniteBoundaryCase(PrimitiveType A, PrimitiveType B)
+	{
+		if (SameTypePair(A, B, PrimitiveType::CAPSULE, PrimitiveType::TRIANGLE_MESH))
+		{
+			return false;
+		}
+		return ExpectIntersectHit(A, B) &&
+			A != PrimitiveType::PLANE &&
+			B != PrimitiveType::PLANE &&
+			A != PrimitiveType::HEIGHTFIELD &&
+			B != PrimitiveType::HEIGHTFIELD;
+	}
+}
 
 void TestPlane()
 {
@@ -366,7 +536,7 @@ void TestRTree2()
 	printf("Running TestRTree2\n");
 	TriangleMesh mesh;
 
-	bool load_succ = mesh.LoadObj("../TestData/dungeon.obj");
+	bool load_succ = mesh.LoadObj(TestDataPath("dungeon.obj").c_str());
 	EXPECT(load_succ);
 	if (load_succ)
 	{
@@ -529,6 +699,189 @@ void TestIntersect()
 	EXPECT(!sp2->Intersect(sp1));
 	EXPECT(!plane1->Intersect(sp2));
 	EXPECT(!sp2->Intersect(plane1));
+}
+
+void TestGeometryRaycastTypes()
+{
+	printf("Running TestGeometryRaycastTypes\n");
+
+	std::vector<CollisionSample> samples;
+	CreateCollisionSamples(Vector3::Zero(), samples);
+
+	RayCastOption option;
+	option.HitBothSides = true;
+	option.MaxDist = 100.0f;
+
+	for (const CollisionSample& sample : samples)
+	{
+		EXPECT(GeometryIntersection::GetRayCastFunc(sample.Type) != nullptr);
+
+		RaySpec spec = GetRaySpec(sample.Type);
+		RayCastResult result;
+		const bool hit = sample.Geom->RayCast(spec.Origin, spec.Direction, &option, &result);
+		if (!hit || !(result.hitTime >= 0.0f && result.hitTime < option.MaxDist))
+		{
+			printf("Raycast mismatch: %s hit=%d t=%f\n", sample.Name, hit ? 1 : 0, result.hitTime);
+		}
+		EXPECT(hit);
+		EXPECT(result.hitTime >= 0.0f && result.hitTime < option.MaxDist);
+
+		RayCastOption clippedOption = option;
+		clippedOption.MaxDist = result.hitTime * 0.5f;
+		RayCastResult clippedResult;
+		const bool clippedHit = sample.Geom->RayCast(spec.Origin, spec.Direction, &clippedOption, &clippedResult);
+		if (clippedHit)
+		{
+			printf("Raycast MaxDist boundary mismatch: %s t=%f max=%f\n", sample.Name, clippedResult.hitTime, clippedOption.MaxDist);
+		}
+		EXPECT(!clippedHit);
+
+		RaySpec missSpec = GetMissRaySpec(sample.Type);
+		RayCastResult missResult;
+		const bool missHit = sample.Geom->RayCast(missSpec.Origin, missSpec.Direction, &option, &missResult);
+		if (missHit)
+		{
+			printf("Raycast miss mismatch: %s t=%f\n", sample.Name, missResult.hitTime);
+		}
+		EXPECT(!missHit);
+	}
+
+	DeleteCollisionSamples(samples);
+}
+
+void TestGeometryIntersectMatrix()
+{
+	printf("Running TestGeometryIntersectMatrix\n");
+
+	std::vector<CollisionSample> lhsSamples;
+	std::vector<CollisionSample> overlapSamples;
+	std::vector<CollisionSample> separatedSamples;
+	CreateCollisionSamples(Vector3::Zero(), lhsSamples);
+	CreateCollisionSamples(Vector3::Zero(), overlapSamples);
+	CreateCollisionSamples(Vector3(0.0f, 10.0f, 0.0f), separatedSamples);
+
+	for (const CollisionSample& lhs : lhsSamples)
+	{
+		for (size_t rhsIndex = 0; rhsIndex < overlapSamples.size(); ++rhsIndex)
+		{
+			const CollisionSample& rhs = overlapSamples[rhsIndex];
+			IntersectFunc func = GeometryIntersection::GetIntersectFunc(lhs.Type, rhs.Type);
+			IntersectFunc reverseFunc = GeometryIntersection::GetIntersectFunc(rhs.Type, lhs.Type);
+			EXPECT(func != nullptr || reverseFunc != nullptr);
+
+			const bool hit = lhs.Geom->Intersect(rhs.Geom);
+			const bool expected = ExpectIntersectHit(lhs.Type, rhs.Type);
+			if (hit != expected)
+			{
+				printf("Intersect mismatch: %s vs %s hit=%d expected=%d\n", lhs.Name, rhs.Name, hit ? 1 : 0, expected ? 1 : 0);
+			}
+			EXPECT(hit == expected);
+
+			const CollisionSample& separated = separatedSamples[rhsIndex];
+			const bool separatedHit = lhs.Geom->Intersect(separated.Geom);
+			if (separatedHit)
+			{
+				printf("Intersect separated mismatch: %s vs %s\n", lhs.Name, separated.Name);
+			}
+			EXPECT(!separatedHit);
+		}
+	}
+
+	const float boundaryEps = 0.05f;
+	for (const CollisionSample& lhs : lhsSamples)
+	{
+		for (CollisionSample& rhs : overlapSamples)
+		{
+			if (!CanRunFiniteBoundaryCase(lhs.Type, rhs.Type))
+			{
+				continue;
+			}
+
+			const Box3& lhsBox = lhs.Geom->GetBoundingVolume_WorldSpace();
+			const Box3& rhsLocalBox = rhs.Geom->GetBoundingVolume_LocalSpace();
+			const float touchY = lhsBox.Max.y - rhsLocalBox.Min.y;
+
+			rhs.Geom->SetWorldPosition(Vector3(0.0f, touchY + boundaryEps, 0.0f));
+			const bool nearMiss = lhs.Geom->Intersect(rhs.Geom);
+			if (nearMiss)
+			{
+				printf("Intersect boundary gap mismatch: %s vs %s\n", lhs.Name, rhs.Name);
+			}
+			EXPECT(!nearMiss);
+
+			rhs.Geom->SetWorldPosition(Vector3(0.0f, touchY - boundaryEps, 0.0f));
+			const bool nearHit = lhs.Geom->Intersect(rhs.Geom);
+			if (!nearHit)
+			{
+				printf("Intersect boundary overlap mismatch: %s vs %s\n", lhs.Name, rhs.Name);
+			}
+			EXPECT(nearHit);
+
+			rhs.Geom->SetWorldPosition(Vector3::Zero());
+		}
+	}
+
+	DeleteCollisionSamples(separatedSamples);
+	DeleteCollisionSamples(overlapSamples);
+	DeleteCollisionSamples(lhsSamples);
+}
+
+void TestGeometrySweepTypes()
+{
+	printf("Running TestGeometrySweepTypes\n");
+
+	std::vector<CollisionSample> samples;
+	CreateCollisionSamples(Vector3::Zero(), samples);
+	Geometry* target = GeometryFactory::CreatePlane(Vector3::Zero(), Vector3::UnitY());
+
+	for (const CollisionSample& sample : samples)
+	{
+		EXPECT(GeometryIntersection::GetSweepFunc(sample.Type, target->GetShapeType()) != nullptr);
+
+		Vector3 position = Vector3::Zero();
+		Vector3 normal = Vector3::Zero();
+		float t = -1.0f;
+		const bool expected = ExpectSweepHit(sample.Type);
+		sample.Geom->SetWorldPosition(Vector3(0.0f, 5.0f, 0.0f));
+		const bool hit = sample.Geom->Sweep(-Vector3::UnitY(), target, &position, &normal, &t);
+		if (hit != expected)
+		{
+			printf("Sweep mismatch: %s hit=%d expected=%d t=%f normal2=%f\n", sample.Name, hit ? 1 : 0, expected ? 1 : 0, t, normal.SquareLength());
+		}
+		EXPECT(hit == expected);
+		if (expected)
+		{
+			EXPECT(t >= 0.0f && t < 100.0f);
+			EXPECT(normal.SquareLength() > 0.0f);
+
+			position = Vector3::Zero();
+			normal = Vector3::Zero();
+			t = -1.0f;
+			const bool awayHit = sample.Geom->Sweep(Vector3::UnitY(), target, &position, &normal, &t);
+			if (awayHit)
+			{
+				printf("Sweep away mismatch: %s t=%f\n", sample.Name, t);
+			}
+			EXPECT(!awayHit);
+
+			const float touchY = -sample.Geom->GetBoundingVolume_LocalSpace().Min.y;
+			sample.Geom->SetWorldPosition(Vector3(0.0f, touchY, 0.0f));
+			position = Vector3::Zero();
+			normal = Vector3::Zero();
+			t = -1.0f;
+			const bool touchHit = sample.Geom->Sweep(-Vector3::UnitY(), target, &position, &normal, &t);
+			if (!touchHit || fabsf(t) > 0.001f)
+			{
+				printf("Sweep touch mismatch: %s hit=%d t=%f\n", sample.Name, touchHit ? 1 : 0, t);
+			}
+			EXPECT(touchHit);
+			EXPECT(fabsf(t) <= 0.001f);
+			EXPECT(normal.SquareLength() > 0.0f);
+		}
+	}
+
+	GeometryFactory::DeleteGeometry(target);
+	DeleteCollisionSamples(samples);
 }
 
 void TestRayAABB()
@@ -843,6 +1196,9 @@ void TestCollision()
 	TestBuildOBB();
 	TestOBB();
 	TestIntersect();
+	TestGeometryRaycastTypes();
+	TestGeometryIntersectMatrix();
+	TestGeometrySweepTypes();
 	TestDynamicAABB();
 	TestSupport();
 	TestGJK();

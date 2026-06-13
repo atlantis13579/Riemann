@@ -284,7 +284,7 @@ namespace Riemann
 
     bool SweepNotSuppoer(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {
-        return true;
+        return false;
     }
 
 #define	REG_RAYCAST_FUNC(_type, _name)					\
@@ -320,7 +320,7 @@ namespace Riemann
 		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::BOX, IntersectSphereT<AxisAlignedBox3>);
 		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::PLANE, IntersectSphereT<Plane3>);
 		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::SPHERE, IntersectSphereT<Sphere3>);
-		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::CAPSULE, IntersectSphereT<Sphere3>);
+		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::CAPSULE, IntersectSphereT<Capsule3>);
 		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::HEIGHTFIELD, IntersectSphereT<HeightField3>);
 		REG_INTERSECT_FUNC(PrimitiveType::SPHERE, PrimitiveType::TRIANGLE_MESH, IntersectSphereT<TriangleMesh>);
 		REG_INTERSECT_FUNC(PrimitiveType::CYLINDER, PrimitiveType::BOX, IntersectGJKSolver);
@@ -341,6 +341,8 @@ namespace Riemann
 		REG_INTERSECT_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::CYLINDER, IntersectGJKSolver);
 		REG_INTERSECT_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::CAPSULE, IntersectGJKSolver);
 		REG_INTERSECT_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::CONVEX_MESH, IntersectGJKSolver);
+		REG_INTERSECT_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::HEIGHTFIELD, IntersectNotSupport);
+		REG_INTERSECT_FUNC(PrimitiveType::CONVEX_MESH, PrimitiveType::TRIANGLE_MESH, IntersectNotSupport);
 		REG_INTERSECT_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::HEIGHTFIELD, IntersectNotSupport);
 		REG_INTERSECT_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::TRIANGLE_MESH, IntersectNotSupport);
 		REG_INTERSECT_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::TRIANGLE_MESH, IntersectNotSupport);
@@ -378,6 +380,14 @@ namespace Riemann
 		REG_PENETRATE_FUNC(PrimitiveType::HEIGHTFIELD, PrimitiveType::TRIANGLE_MESH, PenetrateNotSupport);
 		REG_PENETRATE_FUNC(PrimitiveType::TRIANGLE_MESH, PrimitiveType::TRIANGLE_MESH, PenetrateNotSupport);
 
+        REG_SWEEP_FUNC(PrimitiveType::PLANE, PrimitiveType::BOX, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::PLANE, PrimitiveType::PLANE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::PLANE, PrimitiveType::SPHERE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::PLANE, PrimitiveType::CYLINDER, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::PLANE, PrimitiveType::CAPSULE, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::PLANE, PrimitiveType::HEIGHTFIELD, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::PLANE, PrimitiveType::CONVEX_MESH, SweepNotSuppoer);
+        REG_SWEEP_FUNC(PrimitiveType::PLANE, PrimitiveType::TRIANGLE_MESH, SweepNotSuppoer);
         REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::BOX, SweepTBox<AxisAlignedBox3>);
         REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::PLANE, SweepTPlane<AxisAlignedBox3>);
         REG_SWEEP_FUNC(PrimitiveType::BOX, PrimitiveType::SPHERE, SweepTSphere<AxisAlignedBox3>);

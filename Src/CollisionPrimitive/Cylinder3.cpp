@@ -13,7 +13,7 @@ namespace Riemann
 
 bool Cylinder3::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 {
-	if (IntersectRayInfinityLength(Origin, Direction, Radius, t))
+	if (!IntersectRayInfinityLength(Origin, Direction, Radius, t))
 	{
 		return false;
 	}
@@ -54,7 +54,7 @@ bool Cylinder3::IntersectRayInfinityLength(const Vector3& Origin, const Vector3&
 		float c = sqr - Radius * Radius;
 
 		float roots[2];
-		if (Maths::SolveQuadratic(a, b, c) == 0)
+		if (Maths::SolveQuadratic(a, b, c, roots) == 0)
 		{
 			return false;
 		}
