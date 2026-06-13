@@ -37,8 +37,6 @@ Position Based Dynamics
 
 Fluid Dynamics Solver
 
-Vehicle Dynamics / Autonomous Driving Simulation
-
 
 ## Examples
 
@@ -57,4 +55,3 @@ Vehicle Dynamics / Autonomous Driving Simulation
 #### Mesh QEM Optimizer
 
 ![qem](https://github.com/atlantis13579/Riemann/assets/29682318/ffdb88ea-a114-43a5-8864-8b5ab22fd282)
-

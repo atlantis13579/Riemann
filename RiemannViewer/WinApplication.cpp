@@ -10,7 +10,7 @@
 #include "RenderThread.h"
 #include "Viewer.h"
 #include "resource.h"
-#include "../Renderer/Renderer.h"
+#include "../RiemannRenderer/RiemannRenderer.h"
 
 HINSTANCE g_hInst = nullptr;
 HWND g_hWnd = nullptr;
@@ -22,6 +22,14 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 namespace
 {
+	const unsigned char kImguiMouseLeft = 0x01;
+	const unsigned char kImguiMouseRight = 0x02;
+
+	int g_MouseX = 0;
+	int g_MouseY = 0;
+	unsigned char g_ImguiMouseButtons = 0;
+	bool g_ImguiMouseCapture = false;
+
 	bool FileExists(const std::string& fileName)
 	{
 		std::ifstream file(fileName.c_str(), std::ios::in | std::ios::binary);
@@ -69,11 +77,11 @@ namespace
 	{
 		const char* candidates[] =
 		{
-			"Renderer/",
-			"../Renderer/",
-			"../../Renderer/",
-			"../../../Renderer/",
-			"../../../../Renderer/",
+			"RiemannRenderer/",
+			"../RiemannRenderer/",
+			"../../RiemannRenderer/",
+			"../../../RiemannRenderer/",
+			"../../../../RiemannRenderer/",
 		};
 
 		for (const char* candidate : candidates)
@@ -84,7 +92,34 @@ namespace
 			}
 		}
 
-		return "../Renderer/";
+		return "../RiemannRenderer/";
+	}
+
+	bool IsMouseOverImgui(int x, int y)
+	{
+		if (g_Viewer == nullptr || g_hWnd == nullptr)
+		{
+			return false;
+		}
+
+		RECT rc = {};
+		GetClientRect(g_hWnd, &rc);
+		return g_Viewer->IsImguiPanelHovered(x, y, rc.right - rc.left, rc.bottom - rc.top);
+	}
+
+	void SubmitImguiInput(int wheel)
+	{
+		if (g_Renderer == nullptr)
+		{
+			return;
+		}
+
+		Riemann::ImguiInputState input;
+		input.MouseX = g_MouseX;
+		input.MouseY = g_MouseY;
+		input.MouseButtons = g_ImguiMouseButtons;
+		input.MouseWheel = wheel;
+		g_Renderer->UpdateImguiInput(input);
 	}
 }
 
@@ -106,12 +141,13 @@ HRESULT InitWindow(HINSTANCE hInstance, int nCmdShow)
 	}
 
 	g_hInst = hInstance;
+	const DWORD windowStyle = WS_OVERLAPPEDWINDOW;
 	RECT rc = { 0, 0, 1280, 800 };
-	AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
+	AdjustWindowRect(&rc, windowStyle, FALSE);
 	g_hWnd = CreateWindowW(
 		L"RiemannViewerWindowClass",
 		L"Riemann Viewer",
-		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+		windowStyle,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
 		rc.right - rc.left,
@@ -145,6 +181,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	{
 		return 0;
 	}
+	SubmitImguiInput(0);
 
 	g_RenderThread = new Riemann::RenderThread(g_Renderer);
 	g_RenderThread->Start();
@@ -204,6 +241,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_DESTROY:
+		if (g_RenderThread)
+		{
+			g_RenderThread->Stop();
+		}
+
 		delete g_Viewer;
 		g_Viewer = nullptr;
 
@@ -224,18 +266,91 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_MOUSEMOVE:
+		g_MouseX = GET_X_LPARAM(lParam);
+		g_MouseY = GET_Y_LPARAM(lParam);
+		g_ImguiMouseButtons = 0;
+		if ((MK_LBUTTON & wParam) != 0)
+		{
+			g_ImguiMouseButtons |= kImguiMouseLeft;
+		}
+		if ((MK_RBUTTON & wParam) != 0)
+		{
+			g_ImguiMouseButtons |= kImguiMouseRight;
+		}
+		SubmitImguiInput(0);
+
 		if (g_Viewer)
 		{
-			g_Viewer->MouseMsg(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), (MK_LBUTTON & wParam) != 0);
+			const bool imguiActive = g_ImguiMouseCapture || IsMouseOverImgui(g_MouseX, g_MouseY);
+			g_Viewer->MouseMsg(g_MouseX, g_MouseY, !imguiActive && (MK_LBUTTON & wParam) != 0);
+		}
+		break;
+
+	case WM_LBUTTONDOWN:
+		g_MouseX = GET_X_LPARAM(lParam);
+		g_MouseY = GET_Y_LPARAM(lParam);
+		g_ImguiMouseButtons |= kImguiMouseLeft;
+		g_ImguiMouseCapture = IsMouseOverImgui(g_MouseX, g_MouseY);
+		SetCapture(hWnd);
+		SubmitImguiInput(0);
+		if (g_Viewer)
+		{
+			g_Viewer->MouseMsg(g_MouseX, g_MouseY, !g_ImguiMouseCapture);
+		}
+		break;
+
+	case WM_LBUTTONUP:
+		g_MouseX = GET_X_LPARAM(lParam);
+		g_MouseY = GET_Y_LPARAM(lParam);
+		g_ImguiMouseButtons &= ~kImguiMouseLeft;
+		SubmitImguiInput(0);
+		if (g_Viewer)
+		{
+			g_Viewer->MouseMsg(g_MouseX, g_MouseY, false);
+		}
+		g_ImguiMouseCapture = false;
+		if (g_ImguiMouseButtons == 0)
+		{
+			ReleaseCapture();
+		}
+		break;
+
+	case WM_RBUTTONDOWN:
+		g_MouseX = GET_X_LPARAM(lParam);
+		g_MouseY = GET_Y_LPARAM(lParam);
+		g_ImguiMouseButtons |= kImguiMouseRight;
+		SubmitImguiInput(0);
+		break;
+
+	case WM_RBUTTONUP:
+		g_MouseX = GET_X_LPARAM(lParam);
+		g_MouseY = GET_Y_LPARAM(lParam);
+		g_ImguiMouseButtons &= ~kImguiMouseRight;
+		SubmitImguiInput(0);
+		if (g_ImguiMouseButtons == 0)
+		{
+			ReleaseCapture();
 		}
 		break;
 
 	case WM_MOUSEWHEEL:
+	{
+		POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+		ScreenToClient(hWnd, &pt);
+		g_MouseX = pt.x;
+		g_MouseY = pt.y;
+		const int zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+		SubmitImguiInput(zDelta > 0 ? -1 : 1);
+
 		if (g_Viewer)
 		{
-			g_Viewer->MouseWheel(GET_WHEEL_DELTA_WPARAM(wParam), (wParam & MK_CONTROL) != 0);
+			if (!IsMouseOverImgui(g_MouseX, g_MouseY))
+			{
+				g_Viewer->MouseWheel(zDelta, (wParam & MK_CONTROL) != 0);
+			}
 		}
 		break;
+	}
 
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);

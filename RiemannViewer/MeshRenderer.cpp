@@ -1,4 +1,4 @@
-#include "ObjRenderer.h"
+#include "MeshRenderer.h"
 
 #include <stdint.h>
 #include <string>

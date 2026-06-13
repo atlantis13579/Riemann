@@ -19,23 +19,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\Renderer\DX11Renderer.cpp" />
-    <ClCompile Include="..\..\Renderer\Renderer.cpp" />
+    <ClCompile Include="..\..\RiemannRenderer\DX11Renderer.cpp" />
+    <ClCompile Include="..\..\RiemannRenderer\imgui.cpp" />
+    <ClCompile Include="..\..\RiemannRenderer\ImguiRenderDX11.cpp" />
+    <ClCompile Include="..\..\RiemannRenderer\RiemannRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Renderer\DX11Renderer.h" />
-    <ClInclude Include="..\..\Renderer\MetalRenderer.h" />
-    <ClInclude Include="..\..\Renderer\Renderer.h" />
+    <ClInclude Include="..\..\RiemannRenderer\DX11Renderer.h" />
+    <ClInclude Include="..\..\RiemannRenderer\imgui.h" />
+    <ClInclude Include="..\..\RiemannRenderer\ImguiRenderDX11.h" />
+    <ClInclude Include="..\..\RiemannRenderer\MetalRenderer.h" />
+    <ClInclude Include="..\..\RiemannRenderer\RiemannRenderer.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Renderer\MetalRenderer.cpp" />
-    <None Include="..\..\Renderer\simple.fxh" />
+    <None Include="..\..\RiemannRenderer\MetalRenderer.cpp" />
+    <None Include="..\..\RiemannRenderer\simple.fxh" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{ea62df3f-dac5-40d8-aec3-a13ea4b8911f}</ProjectGuid>
-    <RootNamespace>Renderer</RootNamespace>
+    <RootNamespace>RiemannRenderer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -134,7 +138,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;RENDERER_EXPORT;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;RIEMANN_RENDERER_EXPORT;IMGUI_EXPORT;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <Optimization>Disabled</Optimization>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
@@ -142,7 +146,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -151,7 +155,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;RENDERER_EXPORT;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;RIEMANN_RENDERER_EXPORT;IMGUI_EXPORT;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -159,7 +163,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;gdi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\RiemannRenderer\DX11Renderer.cpp" />
+    <ClCompile Include="..\..\RiemannRenderer\imgui.cpp" />
+    <ClCompile Include="..\..\RiemannRenderer\ImguiRenderDX11.cpp" />
+    <ClCompile Include="..\..\RiemannRenderer\RiemannRenderer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\RiemannRenderer\DX11Renderer.h" />
+    <ClInclude Include="..\..\RiemannRenderer\imgui.h" />
+    <ClInclude Include="..\..\RiemannRenderer\ImguiRenderDX11.h" />
+    <ClInclude Include="..\..\RiemannRenderer\MetalRenderer.h" />
+    <ClInclude Include="..\..\RiemannRenderer\RiemannRenderer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\RiemannRenderer\MetalRenderer.cpp" />
+    <None Include="..\..\RiemannRenderer\simple.fxh" />
+  </ItemGroup>
+</Project>

@@ -1,4 +1,4 @@
-#include "Renderer.h"
+#include "RiemannRenderer.h"
 
 #include <algorithm>
 #include <map>

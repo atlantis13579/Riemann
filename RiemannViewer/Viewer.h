@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -27,16 +28,13 @@ namespace Riemann
 		void LoadPhysxScene(const std::string& fileName);
 		void LoadVoxelField(const std::string& fileName, const Vector3& c, std::vector<Vector3>& waterList);
 
-		void CreateDemo();
-		void CreateStackBoxesDemo();
-		void CreateDominoDemo();
-		void CreateSeeSawDemo();
-
 		Vector3 GetCameraPosition() const;
 		void UpdateCamera();
 		void KeyboardMsg(char c);
 		void MouseMsg(int x, int y, bool leftButtonDown);
 		void MouseWheel(int zDelta, bool ctrlButtonDown);
+		bool IsImguiPanelHovered(int x, int y, int width, int height) const;
+		void DrawImgui(int width, int height);
 
 		void AddToRender();
 
@@ -51,7 +49,11 @@ namespace Riemann
 		void AddGeometryToRender(const std::string& id, Geometry* geometry, const Vector4& color, bool renderBounds);
 		void SubmitTransforms();
 		std::string ResolveSceneFile(const char* fileName) const;
+		void RefreshSceneList();
 		void ApplySceneCamera();
+		void ApplyImguiCommands();
+		void UpdateImguiState();
+		static void DrawImguiCallback(int width, int height, void* userData);
 
 	private:
 		std::unique_ptr<SceneWorld> m_World;
@@ -60,7 +62,19 @@ namespace Riemann
 		std::function<void(char)> m_KeyboardEvent;
 
 		std::string m_SceneDirectory;
+		std::vector<std::string> m_SceneFiles;
+		std::string m_CurrentSceneName;
 		Vector3 m_CamCenter;
 		Vector3 m_CamParam;
+
+		mutable std::mutex m_ImguiMutex;
+		std::string m_ImguiSceneName;
+		std::vector<std::string> m_ImguiSceneFiles;
+		size_t m_ImguiObjectCount;
+		float m_ImguiCameraDistance;
+		int m_ImguiScroll;
+		std::string m_ImguiPendingSceneFile;
+		bool m_ImguiPendingCameraDistance;
+		float m_ImguiPendingCameraDistanceValue;
 	};
 }

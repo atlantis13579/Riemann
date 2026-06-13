@@ -73,6 +73,10 @@ float4 PS(VS_OUTPUT input) : SV_Target
 	float3 lightToScene = normalize(LightDir.xyz);
 	float3 toLight = -lightToScene;
 	float3 toEye = normalize(EyePos.xyz - input.PosWorld);
+	if (dot(normal, toEye) < 0.0f)
+	{
+		normal = -normal;
+	}
 	float3 halfVector = normalize(toLight + toEye);
 
 	float ndotl = saturate(dot(normal, toLight));

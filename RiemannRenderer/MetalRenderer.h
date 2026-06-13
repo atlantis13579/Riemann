@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Renderer.h"
+#include "RiemannRenderer.h"
 
 namespace Riemann
 {
@@ -23,6 +23,8 @@ namespace Riemann
 
 		void SetFillMode(bool wireframe) override;
 		void SetDepthMode() override;
+		void SetImguiDrawCallback(ImguiDrawCallback callback, void* userData) override;
+		void UpdateImguiInput(const ImguiInputState& input) override;
 
 	private:
 		struct Impl;

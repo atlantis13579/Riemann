@@ -1,5 +1,10 @@
 #include "Viewer.h"
 
+#if defined(_WIN32) && !defined(NOMINMAX)
+#define NOMINMAX
+#endif
+
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 
@@ -8,10 +13,17 @@
 #include <memory>
 #include <sstream>
 
-#include "ObjRenderer.h"
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <dirent.h>
+#endif
+
+#include "MeshRenderer.h"
 #include "RenderThread.h"
 #include "SceneWorld.h"
-#include "../Renderer/Renderer.h"
+#include "../RiemannRenderer/imgui.h"
+#include "../RiemannRenderer/RiemannRenderer.h"
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/Modules/Tools/PhysxBinaryParser.h"
@@ -38,6 +50,123 @@ namespace Riemann
 			return fileName.substr(0, pos + 1);
 		}
 
+		std::string FileNameOf(const std::string& fileName)
+		{
+			const size_t pos = fileName.find_last_of("/\\");
+			if (pos == std::string::npos)
+			{
+				return fileName;
+			}
+			return fileName.substr(pos + 1);
+		}
+
+		std::string EnsureTrailingSlash(const std::string& directory)
+		{
+			if (directory.empty())
+			{
+				return directory;
+			}
+
+			const char last = directory[directory.size() - 1];
+			if (last == '/' || last == '\\')
+			{
+				return directory;
+			}
+			return directory + "/";
+		}
+
+		std::string JoinPath(const std::string& directory, const std::string& fileName)
+		{
+			if (directory.empty())
+			{
+				return fileName;
+			}
+			return EnsureTrailingSlash(directory) + fileName;
+		}
+
+		bool DirectoryExists(const std::string& directory)
+		{
+#if defined(_WIN32)
+			const DWORD attributes = GetFileAttributesA(directory.c_str());
+			return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+#else
+			DIR* dir = opendir(directory.c_str());
+			if (dir == nullptr)
+			{
+				return false;
+			}
+			closedir(dir);
+			return true;
+#endif
+		}
+
+		bool HasJsonExtension(const std::string& fileName)
+		{
+			if (fileName.size() < 5)
+			{
+				return false;
+			}
+
+			const size_t offset = fileName.size() - 5;
+			return fileName[offset] == '.' &&
+				tolower(static_cast<unsigned char>(fileName[offset + 1])) == 'j' &&
+				tolower(static_cast<unsigned char>(fileName[offset + 2])) == 's' &&
+				tolower(static_cast<unsigned char>(fileName[offset + 3])) == 'o' &&
+				tolower(static_cast<unsigned char>(fileName[offset + 4])) == 'n';
+		}
+
+		std::vector<std::string> ListJsonFiles(const std::string& directory)
+		{
+			std::vector<std::string> files;
+#if defined(_WIN32)
+			const std::string searchPath = JoinPath(directory, "*.json");
+			WIN32_FIND_DATAA findData;
+			HANDLE findHandle = FindFirstFileA(searchPath.c_str(), &findData);
+			if (findHandle != INVALID_HANDLE_VALUE)
+			{
+				do
+				{
+					if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+					{
+						files.push_back(findData.cFileName);
+					}
+				} while (FindNextFileA(findHandle, &findData));
+				FindClose(findHandle);
+			}
+#else
+			DIR* dir = opendir(directory.c_str());
+			if (dir != nullptr)
+			{
+				struct dirent* entry = nullptr;
+				while ((entry = readdir(dir)) != nullptr)
+				{
+					if (HasJsonExtension(entry->d_name))
+					{
+						files.push_back(entry->d_name);
+					}
+				}
+				closedir(dir);
+			}
+#endif
+			std::sort(files.begin(), files.end());
+			return files;
+		}
+
+		std::vector<std::string> SceneDirectoryCandidates(const std::string& currentDirectory)
+		{
+			std::vector<std::string> candidates;
+			if (!currentDirectory.empty())
+			{
+				candidates.push_back(EnsureTrailingSlash(currentDirectory));
+			}
+			candidates.push_back("Contents/Scenes/");
+			candidates.push_back("../Contents/Scenes/");
+			candidates.push_back("../../Contents/Scenes/");
+			candidates.push_back("../../../Contents/Scenes/");
+			candidates.push_back("../../../../Contents/Scenes/");
+			return candidates;
+		}
+
 		Vector3 SafeUnitVector(const Vector3& value, const Vector3& fallback)
 		{
 			const float lenSq = value.SquareLength();
@@ -54,10 +183,22 @@ namespace Riemann
 		, m_RenderThread(renderThread)
 		, m_CamCenter(Vector3::Zero())
 		, m_CamParam(Vector3(1.0f, 0.6f, 15.0f))
+		, m_ImguiObjectCount(0)
+		, m_ImguiCameraDistance(15.0f)
+		, m_ImguiScroll(0)
+		, m_ImguiPendingCameraDistance(false)
+		, m_ImguiPendingCameraDistanceValue(15.0f)
 	{
-		if (!LoadScene(sceneFile))
+		RefreshSceneList();
+		std::string initialScene = sceneFile;
+		if (initialScene.empty() && !m_SceneFiles.empty())
 		{
-			LoadScene(ResolveSceneFile("demo.json"));
+			initialScene = m_SceneFiles.front();
+		}
+
+		if (!LoadScene(initialScene))
+		{
+			LoadScene(m_SceneFiles.empty() ? ResolveSceneFile("demo.json") : m_SceneFiles.front());
 		}
 
 		m_KeyboardEvent = [this](char c)
@@ -78,8 +219,16 @@ namespace Riemann
 			{
 				const SceneObjectInstance& instance = m_World->GetObjects().back();
 				AddGeometryToRender(instance.Id, geometry, instance.Color, instance.RenderBounds);
+				UpdateImguiState();
 			}
 		};
+
+		if (m_RenderThread)
+		{
+			m_RenderThread->Submit([this](Renderer& renderer) {
+				renderer.SetImguiDrawCallback(&WorldViewer::DrawImguiCallback, this);
+			});
+		}
 	}
 
 	WorldViewer::~WorldViewer()
@@ -87,6 +236,7 @@ namespace Riemann
 		if (m_RenderThread)
 		{
 			m_RenderThread->Submit([](Renderer& renderer) {
+				renderer.SetImguiDrawCallback(nullptr, nullptr);
 				renderer.Reset();
 			});
 		}
@@ -108,8 +258,11 @@ namespace Riemann
 		}
 
 		m_SceneDirectory = DirectoryOf(resolved);
+		m_CurrentSceneName = FileNameOf(resolved);
+		RefreshSceneList();
 		ApplySceneCamera();
 		RebuildRenderScene();
+		UpdateImguiState();
 		return true;
 	}
 
@@ -122,8 +275,10 @@ namespace Riemann
 
 	void WorldViewer::UpdateSimulator(float dt)
 	{
+		ApplyImguiCommands();
 		m_World->Step(dt);
 		SubmitTransforms();
+		UpdateImguiState();
 	}
 
 	void WorldViewer::LoadAnimation(const std::string& animName, const std::vector<std::string>& nodes)
@@ -185,26 +340,6 @@ namespace Riemann
 		waterList.clear();
 	}
 
-	void WorldViewer::CreateDemo()
-	{
-		LoadScene(ResolveSceneFile("demo.json"));
-	}
-
-	void WorldViewer::CreateStackBoxesDemo()
-	{
-		LoadScene(ResolveSceneFile("stack_boxes.json"));
-	}
-
-	void WorldViewer::CreateDominoDemo()
-	{
-		LoadScene(ResolveSceneFile("domino.json"));
-	}
-
-	void WorldViewer::CreateSeeSawDemo()
-	{
-		LoadScene(ResolveSceneFile("see_saw.json"));
-	}
-
 	Vector3 WorldViewer::GetCameraPosition() const
 	{
 		return m_CamCenter + Vector3(sinf(m_CamParam.x) * cosf(m_CamParam.y), sinf(m_CamParam.y), cosf(m_CamParam.x) * cosf(m_CamParam.y)) * m_CamParam.z;
@@ -227,24 +362,6 @@ namespace Riemann
 
 	void WorldViewer::KeyboardMsg(char c)
 	{
-		if ('1' <= c && c <= '9')
-		{
-			typedef void (WorldViewer::*DemoFunc)();
-			DemoFunc demos[] = {
-				&WorldViewer::CreateDemo,
-				&WorldViewer::CreateStackBoxesDemo,
-				&WorldViewer::CreateDominoDemo,
-				&WorldViewer::CreateSeeSawDemo,
-			};
-
-			const int idx = c - '1';
-			if (idx >= 0 && idx < static_cast<int>(sizeof(demos) / sizeof(demos[0])))
-			{
-				(this->*demos[idx])();
-				return;
-			}
-		}
-
 		const float scale = 5.0f;
 		Vector3 dir = m_CamCenter - GetCameraPosition();
 		dir.y = 0.0f;
@@ -327,6 +444,67 @@ namespace Riemann
 		}
 		m_CamParam.z *= scale;
 		UpdateCamera();
+	}
+
+	bool WorldViewer::IsImguiPanelHovered(int x, int y, int width, int height) const
+	{
+		if (width <= 0 || height <= 0)
+		{
+			return false;
+		}
+
+		const int panelLeft = 10;
+		const int panelTop = 10;
+		const int panelRight = std::min(width - 10, panelLeft + 250);
+		const int panelBottom = height - 10;
+		return x >= panelLeft && x <= panelRight && y >= panelTop && y <= panelBottom;
+	}
+
+	void WorldViewer::DrawImgui(int width, int height)
+	{
+		(void)width;
+
+		std::string sceneName;
+		std::vector<std::string> sceneFiles;
+		size_t objectCount = 0;
+		float cameraDistance = 0.0f;
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			sceneName = m_ImguiSceneName;
+			sceneFiles = m_ImguiSceneFiles;
+			objectCount = m_ImguiObjectCount;
+			cameraDistance = m_ImguiCameraDistance;
+		}
+
+		const int panelHeight = std::max(120, height - 20);
+		imguiBeginScrollArea("", 10, 10, 150, panelHeight, &m_ImguiScroll);
+
+		imguiValue(sceneName.empty() ? "unknown" : sceneName.c_str());
+
+		char text[128];
+		snprintf(text, sizeof(text), "Objects: %u", static_cast<unsigned int>(objectCount));
+		imguiValue(text);
+
+		imguiSeparatorLine();
+		imguiLabel("Scenes");
+		if (sceneFiles.empty())
+		{
+			imguiValue("No scenes found");
+		}
+		else
+		{
+			for (const std::string& sceneFile : sceneFiles)
+			{
+				const bool selected = sceneFile == sceneName;
+				if (imguiCheck(sceneFile.c_str(), selected))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingSceneFile = sceneFile;
+				}
+			}
+		}
+
+		imguiEndScrollArea();
 	}
 
 	void WorldViewer::AddToRender()
@@ -428,6 +606,49 @@ namespace Riemann
 		});
 	}
 
+	void WorldViewer::ApplyImguiCommands()
+	{
+		std::string pendingSceneFile;
+		bool pendingDistance = false;
+		float pendingDistanceValue = 0.0f;
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			pendingSceneFile.swap(m_ImguiPendingSceneFile);
+			pendingDistance = m_ImguiPendingCameraDistance;
+			pendingDistanceValue = m_ImguiPendingCameraDistanceValue;
+			m_ImguiPendingCameraDistance = false;
+		}
+
+		if (!pendingSceneFile.empty())
+		{
+			LoadScene(pendingSceneFile);
+		}
+
+		if (pendingDistance)
+		{
+			m_CamParam.z = std::max(1.0f, pendingDistanceValue);
+			UpdateCamera();
+		}
+	}
+
+	void WorldViewer::UpdateImguiState()
+	{
+		std::lock_guard<std::mutex> lock(m_ImguiMutex);
+		m_ImguiSceneName = m_CurrentSceneName;
+		m_ImguiSceneFiles = m_SceneFiles;
+		m_ImguiObjectCount = m_World ? m_World->GetObjects().size() : 0;
+		m_ImguiCameraDistance = m_CamParam.z;
+	}
+
+	void WorldViewer::DrawImguiCallback(int width, int height, void* userData)
+	{
+		WorldViewer* viewer = static_cast<WorldViewer*>(userData);
+		if (viewer)
+		{
+			viewer->DrawImgui(width, height);
+		}
+	}
+
 	std::string WorldViewer::ResolveSceneFile(const char* fileName) const
 	{
 		if (fileName == nullptr || fileName[0] == '\0')
@@ -442,15 +663,11 @@ namespace Riemann
 		}
 
 		std::vector<std::string> candidates;
-		if (!m_SceneDirectory.empty())
+		const std::vector<std::string> sceneDirectories = SceneDirectoryCandidates(m_SceneDirectory);
+		for (const std::string& directory : sceneDirectories)
 		{
-			candidates.push_back(m_SceneDirectory + requested);
+			candidates.push_back(JoinPath(directory, requested));
 		}
-		candidates.push_back("RiemannViewer/Scenes/" + requested);
-		candidates.push_back("../RiemannViewer/Scenes/" + requested);
-		candidates.push_back("../../RiemannViewer/Scenes/" + requested);
-		candidates.push_back("../../../RiemannViewer/Scenes/" + requested);
-		candidates.push_back("../../../../RiemannViewer/Scenes/" + requested);
 
 		for (const std::string& candidate : candidates)
 		{
@@ -461,6 +678,34 @@ namespace Riemann
 		}
 
 		return requested;
+	}
+
+	void WorldViewer::RefreshSceneList()
+	{
+		std::vector<std::string> sceneFiles;
+		std::string sceneDirectory;
+
+		const std::vector<std::string> sceneDirectories = SceneDirectoryCandidates(m_SceneDirectory);
+		for (const std::string& directory : sceneDirectories)
+		{
+			if (!DirectoryExists(directory))
+			{
+				continue;
+			}
+
+			sceneFiles = ListJsonFiles(directory);
+			if (!sceneFiles.empty())
+			{
+				sceneDirectory = EnsureTrailingSlash(directory);
+				break;
+			}
+		}
+
+		if (!sceneDirectory.empty())
+		{
+			m_SceneDirectory = sceneDirectory;
+		}
+		m_SceneFiles.swap(sceneFiles);
 	}
 
 	void WorldViewer::ApplySceneCamera()

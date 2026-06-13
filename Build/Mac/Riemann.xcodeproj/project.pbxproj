@@ -127,15 +127,6 @@
 		AD088369289E42E30008AB04 /* PolynomialFit.h in Headers */ = {isa = PBXBuildFile; fileRef = AD088368289E42E30008AB04 /* PolynomialFit.h */; };
 		AD08836B289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h in Headers */ = {isa = PBXBuildFile; fileRef = AD08836A289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h */; };
 		AD08836D289EA4C30008AB04 /* CholeskyDecomposition.h in Headers */ = {isa = PBXBuildFile; fileRef = AD08836C289EA4C30008AB04 /* CholeskyDecomposition.h */; };
-		AD1B173128ABC379003E024E /* AutonomousController.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1B172828ABC379003E024E /* AutonomousController.h */; };
-		AD1B173228ABC379003E024E /* Vehicle.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1B172928ABC379003E024E /* Vehicle.h */; };
-		AD1B173328ABC379003E024E /* AutonomousController.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD1B172A28ABC379003E024E /* AutonomousController.cpp */; };
-		AD1B173428ABC379003E024E /* VehicleDynamics.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1B172B28ABC379003E024E /* VehicleDynamics.h */; };
-		AD1B173528ABC379003E024E /* Vehicle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD1B172C28ABC379003E024E /* Vehicle.cpp */; };
-		AD1B173628ABC379003E024E /* LQR.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1B172D28ABC379003E024E /* LQR.h */; };
-		AD1B173728ABC379003E024E /* MPC.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1B172E28ABC379003E024E /* MPC.h */; };
-		AD1B173828ABC379003E024E /* VehicleDynamics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD1B172F28ABC379003E024E /* VehicleDynamics.cpp */; };
-		AD1B173928ABC379003E024E /* PID.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1B173028ABC379003E024E /* PID.h */; };
 		AD1B174928ABC384003E024E /* libPng.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1B173B28ABC383003E024E /* libPng.h */; };
 		AD1B174A28ABC384003E024E /* Serialization.h in Headers */ = {isa = PBXBuildFile; fileRef = AD1B173C28ABC383003E024E /* Serialization.h */; };
 		AD1B174B28ABC384003E024E /* PhysxFormat_41.hpp in Headers */ = {isa = PBXBuildFile; fileRef = AD1B173D28ABC383003E024E /* PhysxFormat_41.hpp */; };
@@ -362,15 +353,6 @@
 		AD088368289E42E30008AB04 /* PolynomialFit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PolynomialFit.h; path = ../../Src/Optimization/PolynomialFit.h; sourceTree = "<group>"; };
 		AD08836A289E5A5E0008AB04 /* MoorePenrosePseudoInverse.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MoorePenrosePseudoInverse.h; path = ../../Src/LinearSystem/MoorePenrosePseudoInverse.h; sourceTree = "<group>"; };
 		AD08836C289EA4C30008AB04 /* CholeskyDecomposition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CholeskyDecomposition.h; path = ../../Src/LinearSystem/CholeskyDecomposition.h; sourceTree = "<group>"; };
-		AD1B172828ABC379003E024E /* AutonomousController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AutonomousController.h; path = ../../Src/Modules/VehicleDynamics/AutonomousController.h; sourceTree = "<group>"; };
-		AD1B172928ABC379003E024E /* Vehicle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Vehicle.h; path = ../../Src/Modules/VehicleDynamics/Vehicle.h; sourceTree = "<group>"; };
-		AD1B172A28ABC379003E024E /* AutonomousController.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AutonomousController.cpp; path = ../../Src/Modules/VehicleDynamics/AutonomousController.cpp; sourceTree = "<group>"; };
-		AD1B172B28ABC379003E024E /* VehicleDynamics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VehicleDynamics.h; path = ../../Src/Modules/VehicleDynamics/VehicleDynamics.h; sourceTree = "<group>"; };
-		AD1B172C28ABC379003E024E /* Vehicle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Vehicle.cpp; path = ../../Src/Modules/VehicleDynamics/Vehicle.cpp; sourceTree = "<group>"; };
-		AD1B172D28ABC379003E024E /* LQR.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LQR.h; path = ../../Src/Modules/VehicleDynamics/LQR.h; sourceTree = "<group>"; };
-		AD1B172E28ABC379003E024E /* MPC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MPC.h; path = ../../Src/Modules/VehicleDynamics/MPC.h; sourceTree = "<group>"; };
-		AD1B172F28ABC379003E024E /* VehicleDynamics.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = VehicleDynamics.cpp; path = ../../Src/Modules/VehicleDynamics/VehicleDynamics.cpp; sourceTree = "<group>"; };
-		AD1B173028ABC379003E024E /* PID.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PID.h; path = ../../Src/Modules/VehicleDynamics/PID.h; sourceTree = "<group>"; };
 		AD1B173B28ABC383003E024E /* libPng.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = libPng.h; path = ../../Src/Modules/Tools/libPng.h; sourceTree = "<group>"; };
 		AD1B173C28ABC383003E024E /* Serialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Serialization.h; path = ../../Src/Modules/Tools/Serialization.h; sourceTree = "<group>"; };
 		AD1B173D28ABC383003E024E /* PhysxFormat_41.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = PhysxFormat_41.hpp; path = ../../Src/Modules/Tools/PhysxFormat_41.hpp; sourceTree = "<group>"; };
@@ -494,7 +476,6 @@
 			children = (
 				ADD23B92288760DA00A849BE /* ImageSpace */,
 				ADD23B8A2887609600A849BE /* Tools */,
-				ADD23B892887608C00A849BE /* VehicleDynamics */,
 			);
 			name = Modules;
 			sourceTree = "<group>";
@@ -522,22 +503,6 @@
 				ADD23BA82887614E00A849BE /* SAP.h */,
 			);
 			name = Collision;
-			sourceTree = "<group>";
-		};
-		ADD23B892887608C00A849BE /* VehicleDynamics */ = {
-			isa = PBXGroup;
-			children = (
-				AD1B172A28ABC379003E024E /* AutonomousController.cpp */,
-				AD1B172828ABC379003E024E /* AutonomousController.h */,
-				AD1B172D28ABC379003E024E /* LQR.h */,
-				AD1B172E28ABC379003E024E /* MPC.h */,
-				AD1B173028ABC379003E024E /* PID.h */,
-				AD1B172C28ABC379003E024E /* Vehicle.cpp */,
-				AD1B172928ABC379003E024E /* Vehicle.h */,
-				AD1B172F28ABC379003E024E /* VehicleDynamics.cpp */,
-				AD1B172B28ABC379003E024E /* VehicleDynamics.h */,
-			);
-			name = VehicleDynamics;
 			sourceTree = "<group>";
 		};
 		ADD23B8A2887609600A849BE /* Tools */ = {
@@ -962,7 +927,6 @@
 				AD1B174B28ABC384003E024E /* PhysxFormat_41.hpp in Headers */,
 				AD1B173928ABC379003E024E /* PID.h in Headers */,
 				ADD23BD02887614E00A849BE /* GeometryObject.h in Headers */,
-				AD1B173428ABC379003E024E /* VehicleDynamics.h in Headers */,
 				ADBBEE16288C41A300C3D6CD /* Vector2.h in Headers */,
 				ADD23BC92887614E00A849BE /* GeometryIntersection.h in Headers */,
 				ADAA4C4128898D6000E8AE2E /* BroadPhase.h in Headers */,
@@ -1016,7 +980,6 @@
 				ADD23D2C288762F900A849BE /* DenseVector.h in Headers */,
 				ADBBEE13288C41A300C3D6CD /* Matrix3.h in Headers */,
 				ADD23CC5288762CC00A849BE /* ForceField.h in Headers */,
-				AD1B173228ABC379003E024E /* Vehicle.h in Headers */,
 				ADD23CC4288762CC00A849BE /* Jacobian.h in Headers */,
 				ADD23CC8288762CC00A849BE /* MotionIntegration.h in Headers */,
 				ADBBEE12288C41A300C3D6CD /* Vector3.h in Headers */,
@@ -1099,7 +1062,6 @@
 				ADD23C9B288762C000A849BE /* NewtonRaphsonIteration.cpp in Sources */,
 				ADD23C99288762C000A849BE /* NumericalODESolver.cpp in Sources */,
 				AD1B174E28ABC384003E024E /* PhysxBinaryParser.cpp in Sources */,
-				AD1B173528ABC379003E024E /* Vehicle.cpp in Sources */,
 				ADD23CBC288762CC00A849BE /* ForceField.cpp in Sources */,
 				6AC371D92D73209400B88518 /* StrainSolver.cpp in Sources */,
 				6AC371DA2D73209400B88518 /* DestructionSet.cpp in Sources */,
@@ -1126,7 +1088,6 @@
 				6AC372272D7320A900B88518 /* GeometryBoolean.cpp in Sources */,
 				6AC372282D7320A900B88518 /* Polygon3.cpp in Sources */,
 				6AC372292D7320A900B88518 /* VoxelField.cpp in Sources */,
-				AD1B173828ABC379003E024E /* VehicleDynamics.cpp in Sources */,
 				ADD23CBF288762CC00A849BE /* RigidBody.cpp in Sources */,
 				ADD23BBD2887614E00A849BE /* GeometryIntersection.cpp in Sources */,
 				AD1B176828ABC396003E024E /* ImageProcessing.cpp in Sources */,

@@ -8,14 +8,14 @@
 #include "../Src/Maths/Vector3.h"
 #include "../Src/Maths/Vector4.h"
 
-#if defined(_WIN32) && !defined(RENDERER_STATIC)
-#  ifdef RENDERER_EXPORT
-#    define RENDERER_API __declspec(dllexport)
+#if defined(_WIN32) && !defined(RIEMANN_RENDERER_STATIC)
+#  ifdef RIEMANN_RENDERER_EXPORT
+#    define RIEMANN_RENDERER_API __declspec(dllexport)
 #  else
-#    define RENDERER_API __declspec(dllimport)
+#    define RIEMANN_RENDERER_API __declspec(dllimport)
 #  endif
 #else
-#  define RENDERER_API
+#  define RIEMANN_RENDERER_API
 #endif
 
 struct Vertex1
@@ -62,8 +62,8 @@ namespace Riemann
 		Vector3 At = Vector3::Zero();
 		Vector3 Up = Vector3::UnitY();
 		float FovY = 1.57079632679f;
-		float NearPlane = 0.001f;
-		float FarPlane = 100000.0f;
+		float NearPlane = 0.05f;
+		float FarPlane = 1000.0f;
 	};
 
 	struct DirectionalLightDesc
@@ -85,7 +85,17 @@ namespace Riemann
 		int Height = 768;
 	};
 
-	class RENDERER_API Renderer
+	struct ImguiInputState
+	{
+		int MouseX = 0;
+		int MouseY = 0;
+		unsigned char MouseButtons = 0;
+		int MouseWheel = 0;
+	};
+
+	typedef void (*ImguiDrawCallback)(int width, int height, void* userData);
+
+	class RIEMANN_RENDERER_API Renderer
 	{
 	public:
 		Renderer() {}
@@ -102,6 +112,9 @@ namespace Riemann
 
 		virtual void SetFillMode(bool wireframe) = 0;
 		virtual void SetDepthMode() = 0;
+
+		virtual void SetImguiDrawCallback(ImguiDrawCallback callback, void* userData) { (void)callback; (void)userData; }
+		virtual void UpdateImguiInput(const ImguiInputState& input) { (void)input; }
 
 		static Renderer* CreatePlatformRenderer(const RendererCreateInfo& createInfo);
 		static Renderer* CreateDX11Renderer(void* hWnd, const char* shaderPath);

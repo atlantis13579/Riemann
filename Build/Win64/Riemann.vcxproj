@@ -95,9 +95,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\Src\Modules\Tools\PythonModule.cpp" />
-    <ClCompile Include="..\..\Src\Modules\VehicleDynamics\AutonomousController.cpp" />
-    <ClCompile Include="..\..\Src\Modules\VehicleDynamics\VehicleDynamics.cpp" />
-    <ClCompile Include="..\..\Src\Modules\VehicleDynamics\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Src\CollisionPrimitive\Convex2.h" />
@@ -271,12 +268,6 @@
     <ClInclude Include="..\..\Src\Modules\Tools\PhysxFormat_41.hpp" />
     <ClInclude Include="..\..\Src\Modules\Tools\PythonModule.h" />
     <ClInclude Include="..\..\Src\Modules\Tools\Serialization.h" />
-    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\AutonomousController.h" />
-    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\VehicleDynamics.h" />
-    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\LQR.h" />
-    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\MPC.h" />
-    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\PID.h" />
-    <ClInclude Include="..\..\Src\Modules\VehicleDynamics\Vehicle.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

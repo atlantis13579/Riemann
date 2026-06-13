@@ -3,6 +3,7 @@
 #if defined(_WIN32)
 
 #include <assert.h>
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -16,6 +17,8 @@
 #include "../Src/Maths/Quaternion.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Vector4.h"
+#include "imgui.h"
+#include "ImguiRenderDX11.h"
 
 using namespace DirectX;
 
@@ -147,6 +150,7 @@ public:
 
 	~DX11Renderer() override
 	{
+		m_ImguiRenderer.Shutdown();
 		m_AllMesh.clear();
 
 		if (m_pImmediateContext)
@@ -177,6 +181,7 @@ public:
 	HRESULT InitDevice(HWND hWnd, const char* shaderPath)
 	{
 		HRESULT hr = S_OK;
+		m_hWnd = hWnd;
 
 		RECT rc;
 		GetClientRect(hWnd, &rc);
@@ -329,6 +334,7 @@ public:
 
 		SetCamera(Riemann::CameraDesc());
 		SetLight(Riemann::DirectionalLightDesc());
+		m_ImguiReady = m_ImguiRenderer.Init(m_pd3dDevice, m_pImmediateContext);
 		return S_OK;
 	}
 
@@ -338,19 +344,28 @@ public:
 		{
 			return;
 		}
+		if (!EnsureBackBufferSize())
+		{
+			return;
+		}
 
 		RenderShadowPass();
 		RenderMainPass();
+		RenderImgui();
 		m_pSwapChain->Present(0, 0);
 	}
 
 	void SetCamera(const Riemann::CameraDesc& camera) override
 	{
 		m_Camera = camera;
+		const float nearPlane = camera.NearPlane > 0.05f ? camera.NearPlane : 0.05f;
+		const float farPlane = camera.FarPlane > nearPlane + 1.0f ? camera.FarPlane : nearPlane + 1.0f;
+		m_Camera.NearPlane = nearPlane;
+		m_Camera.FarPlane = farPlane;
 		m_Eye = camera.Eye;
 		m_View = Transform3::BuildViewMatrix_LHCoordinateSystem(camera.Eye, camera.At, camera.Up);
 		const float aspect = m_Height != 0 ? m_Width / static_cast<float>(m_Height) : 1.0f;
-		m_Projection = Transform3::BuildPerspectiveMatrix_LHCoordinateSystem(camera.FovY, aspect, camera.NearPlane, camera.FarPlane);
+		m_Projection = Transform3::BuildPerspectiveMatrix_LHCoordinateSystem(camera.FovY, aspect, nearPlane, farPlane);
 	}
 
 	void SetLight(const Riemann::DirectionalLightDesc& light) override
@@ -520,6 +535,22 @@ public:
 		{
 			m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
 		}
+	}
+
+	void SetImguiDrawCallback(Riemann::ImguiDrawCallback callback, void* userData) override
+	{
+		std::lock_guard<std::mutex> lock(m_ImguiMutex);
+		m_ImguiCallback = callback;
+		m_ImguiUserData = userData;
+	}
+
+	void UpdateImguiInput(const Riemann::ImguiInputState& input) override
+	{
+		std::lock_guard<std::mutex> lock(m_ImguiMutex);
+		m_ImguiInput.MouseX = input.MouseX;
+		m_ImguiInput.MouseY = input.MouseY;
+		m_ImguiInput.MouseButtons = input.MouseButtons;
+		m_ImguiScroll += input.MouseWheel;
 	}
 
 private:
@@ -731,11 +762,64 @@ private:
 		return S_OK;
 	}
 
+	bool EnsureBackBufferSize()
+	{
+		if (m_hWnd == nullptr || m_pSwapChain == nullptr)
+		{
+			return true;
+		}
+
+		RECT rc = {};
+		if (!GetClientRect(m_hWnd, &rc))
+		{
+			return true;
+		}
+
+		const UINT width = rc.right > rc.left ? static_cast<UINT>(rc.right - rc.left) : 0;
+		const UINT height = rc.bottom > rc.top ? static_cast<UINT>(rc.bottom - rc.top) : 0;
+		if (width == 0 || height == 0)
+		{
+			return false;
+		}
+
+		if (width == m_Width && height == m_Height && m_pRenderTargetView != nullptr && m_pDepthBuffer != nullptr)
+		{
+			return true;
+		}
+
+		m_pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
+		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
+		m_pImmediateContext->PSSetShaderResources(0, 1, nullSRV);
+		SafeRelease(m_pRenderTargetView);
+		SafeRelease(m_pDepthBuffer);
+
+		HRESULT hr = m_pSwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
+		if (FAILED(hr))
+		{
+			return false;
+		}
+
+		m_Width = width;
+		m_Height = height;
+		hr = CreateBackBuffer();
+		if (FAILED(hr))
+		{
+			return false;
+		}
+
+		SetupViewports();
+		SetCamera(m_Camera);
+		return true;
+	}
+
 	void RenderShadowPass()
 	{
 		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
 		m_pImmediateContext->PSSetShaderResources(0, 1, nullSRV);
 
+		const float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
+		m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
 		m_pImmediateContext->RSSetState(m_pRasterizerState);
 		m_pImmediateContext->RSSetViewports(1, &m_ShadowViewport);
 		m_pImmediateContext->OMSetRenderTargets(0, nullptr, m_pShadowDepthView);
@@ -751,11 +835,14 @@ private:
 	void RenderMainPass()
 	{
 		const float clearColor[4] = { 0.015f, 0.018f, 0.024f, 1.0f };
+		const float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
+		m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
 		m_pImmediateContext->RSSetState(m_pRasterizerState);
 		m_pImmediateContext->RSSetViewports(1, &m_BackBufferViewport);
 		m_pImmediateContext->OMSetRenderTargets(1, &m_pRenderTargetView, m_pDepthBuffer);
 		m_pImmediateContext->ClearRenderTargetView(m_pRenderTargetView, clearColor);
-		m_pImmediateContext->ClearDepthStencilView(m_pDepthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+		m_pImmediateContext->ClearDepthStencilView(m_pDepthBuffer, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 		m_pImmediateContext->IASetInputLayout(m_pVertexLayout);
 		m_pImmediateContext->VSSetShader(m_pVertexShader, nullptr, 0);
@@ -767,6 +854,37 @@ private:
 
 		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
 		m_pImmediateContext->PSSetShaderResources(0, 1, nullSRV);
+	}
+
+	void RenderImgui()
+	{
+		if (!m_ImguiReady)
+		{
+			return;
+		}
+
+		Riemann::ImguiDrawCallback callback = nullptr;
+		void* userData = nullptr;
+		Riemann::ImguiInputState input;
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			callback = m_ImguiCallback;
+			userData = m_ImguiUserData;
+			input = m_ImguiInput;
+			input.MouseWheel = m_ImguiScroll;
+			m_ImguiScroll = 0;
+		}
+
+		if (callback == nullptr)
+		{
+			return;
+		}
+
+		input.MouseY = static_cast<int>(m_Height) - 1 - input.MouseY;
+		imguiBeginFrame(input.MouseX, input.MouseY, input.MouseButtons, input.MouseWheel);
+		callback(static_cast<int>(m_Width), static_cast<int>(m_Height), userData);
+		imguiEndFrame();
+		m_ImguiRenderer.Draw(static_cast<int>(m_Width), static_cast<int>(m_Height));
 	}
 
 	void DrawScene(bool shadowPass)
@@ -811,6 +929,7 @@ private:
 	ID3D11DeviceContext1* m_pImmediateContext1 = nullptr;
 	IDXGISwapChain* m_pSwapChain = nullptr;
 	IDXGISwapChain1* m_pSwapChain1 = nullptr;
+	HWND m_hWnd = nullptr;
 	ID3D11RenderTargetView* m_pRenderTargetView = nullptr;
 	ID3D11DepthStencilView* m_pDepthBuffer = nullptr;
 	ID3D11VertexShader* m_pVertexShader = nullptr;
@@ -823,6 +942,7 @@ private:
 	ID3D11DepthStencilView* m_pShadowDepthView = nullptr;
 	ID3D11ShaderResourceView* m_pShadowSRV = nullptr;
 	ID3D11SamplerState* m_pShadowSampler = nullptr;
+	Riemann::ImguiRenderDX11 m_ImguiRenderer;
 
 	UINT m_Width = 0;
 	UINT m_Height = 0;
@@ -839,6 +959,12 @@ private:
 	Vector3 m_Eye;
 
 	std::vector<DX11StaticMesh> m_AllMesh;
+	std::mutex m_ImguiMutex;
+	Riemann::ImguiInputState m_ImguiInput;
+	Riemann::ImguiDrawCallback m_ImguiCallback = nullptr;
+	void* m_ImguiUserData = nullptr;
+	int m_ImguiScroll = 0;
+	bool m_ImguiReady = false;
 };
 
 namespace Riemann
