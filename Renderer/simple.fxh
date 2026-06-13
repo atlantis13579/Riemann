@@ -1,54 +1,89 @@
-//--------------------------------------------------------------------------------------
-// File: Tutorial04.fx
-//
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License (MIT).
-//--------------------------------------------------------------------------------------
-
-//--------------------------------------------------------------------------------------
-// Constant Buffer Variables
-//--------------------------------------------------------------------------------------
-cbuffer ConstantBuffer : register( b0 )
+cbuffer ConstantBuffer : register(b0)
 {
 	matrix World;
 	matrix View;
 	matrix Projection;
-    float4 EyePos;
+	matrix LightView;
+	matrix LightProjection;
+	float4 EyePos;
+	float4 LightDir;
+	float4 LightColor;
+	float4 MaterialColor;
 }
 
-//--------------------------------------------------------------------------------------
+Texture2D<float> ShadowMap : register(t0);
+SamplerComparisonState ShadowSampler : register(s0);
+
 struct VS_OUTPUT
 {
-    float4 Pos : SV_POSITION;
-    float3 PosWorld : COLOR0;
-    float3 Diffuse : COLOR1;
-    float3 Normal : NORMAL;
+	float4 Pos : SV_POSITION;
+	float3 PosWorld : TEXCOORD0;
+	float3 Normal : TEXCOORD1;
+	float4 PosLight : TEXCOORD2;
 };
 
-//--------------------------------------------------------------------------------------
-// Vertex Shader
-//--------------------------------------------------------------------------------------
+struct SHADOW_OUTPUT
+{
+	float4 Pos : SV_POSITION;
+};
+
 VS_OUTPUT VS(float4 Pos : POSITION, float3 Normal : NORMAL)
 {
-    VS_OUTPUT output = (VS_OUTPUT)0;
-    output.Pos = mul( Pos, World );
-    output.Pos = mul( output.Pos, View );
-    output.Pos = mul( output.Pos, Projection );
-    output.PosWorld = mul(Pos, World).xyz;
-    output.Diffuse = float3(0.5 + 0.5 * Normal.x, 0.5 + 0.5 * Normal.y, 0.5 + 0.5 * Normal.z);
-    output.Normal = mul(Normal, World);
-    return output;
+	VS_OUTPUT output = (VS_OUTPUT)0;
+
+	float4 worldPos = mul(Pos, World);
+	output.PosWorld = worldPos.xyz;
+
+	output.Pos = mul(worldPos, View);
+	output.Pos = mul(output.Pos, Projection);
+
+	output.PosLight = mul(worldPos, LightView);
+	output.PosLight = mul(output.PosLight, LightProjection);
+
+	output.Normal = mul(float4(Normal, 0.0f), World).xyz;
+	return output;
 }
 
+SHADOW_OUTPUT ShadowVS(float4 Pos : POSITION, float3 Normal : NORMAL)
+{
+	SHADOW_OUTPUT output = (SHADOW_OUTPUT)0;
+	float4 worldPos = mul(Pos, World);
+	output.Pos = mul(worldPos, LightView);
+	output.Pos = mul(output.Pos, LightProjection);
+	return output;
+}
 
-//--------------------------------------------------------------------------------------
-// Pixel Shader
-//--------------------------------------------------------------------------------------
+float SampleShadow(float4 lightPos)
+{
+	float3 projected = lightPos.xyz / lightPos.w;
+	float2 uv = float2(projected.x * 0.5f + 0.5f, -projected.y * 0.5f + 0.5f);
+
+	if (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f || projected.z < 0.0f || projected.z > 1.0f)
+	{
+		return 1.0f;
+	}
+
+	const float bias = 0.0015f;
+	return ShadowMap.SampleCmpLevelZero(ShadowSampler, uv, projected.z - bias);
+}
+
 float4 PS(VS_OUTPUT input) : SV_Target
 {
-    float3 normal = normalize(input.Normal);
-    float3 eyeVec = normalize(EyePos.xyz - input.PosWorld);
-    float cosTh = clamp(dot(normal, eyeVec), 0, 1);
-    float3 Color = 0.7 * input.Diffuse + 0.5 * input.Diffuse * cosTh + input.Diffuse * pow(cosTh, 100);
-    return float4(Color.x, Color.y, Color.z, 1.0);
+	float3 normal = normalize(input.Normal);
+	float3 lightToScene = normalize(LightDir.xyz);
+	float3 toLight = -lightToScene;
+	float3 toEye = normalize(EyePos.xyz - input.PosWorld);
+	float3 halfVector = normalize(toLight + toEye);
+
+	float ndotl = saturate(dot(normal, toLight));
+	float specular = pow(saturate(dot(normal, halfVector)), 64.0f);
+	float shadow = SampleShadow(input.PosLight);
+
+	float3 baseColor = MaterialColor.rgb;
+	float ambient = LightDir.w;
+	float3 diffuse = baseColor * LightColor.rgb * ndotl * shadow;
+	float3 spec = LightColor.rgb * specular * shadow * 0.35f;
+	float3 color = baseColor * ambient + diffuse + spec;
+
+	return float4(color, MaterialColor.a);
 }
