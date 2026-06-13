@@ -9,7 +9,6 @@
 *.user
 *.userosscache
 *.sln.docstates
-TestData/*
 Build/Mac/DerivedData/*
 
 # User-specific files (MonoDevelop/Xamarin Studio)
@@ -73,7 +72,7 @@ StyleCopReport.xml
 *_h.h
 *.ilk
 *.meta
-*.obj
+# *.obj
 *.iobj
 *.pch
 *.pdb
