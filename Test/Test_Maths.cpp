@@ -11,6 +11,11 @@
 #include "../Src/Geometry/Spline.h"
 #include "../Src/Maths/Frustum.h"
 
+static bool SameRotation(const Quaternion& a, const Quaternion& b, float eps = 1e-4f)
+{
+	return (a.ToRotationMatrix3() - b.ToRotationMatrix3()).L1Norm() < eps;
+}
+
 void TestVector3()
 {
 	printf("Running Vector3\n");
@@ -20,6 +25,10 @@ void TestVector3()
 	Vector3 C = A.Perp(B);
 	Vector3 D = Vector3(1.0f, 0.0f, 0.0f);
 	EXPECT_SAME(C, D);
+
+	Vector3 zero = Vector3::Zero();
+	EXPECT_SAME(zero.SafeUnit(), zero);
+	EXPECT_NEAR(Vector3(3.0f, 4.0f, 0.0f).Length(), 5.0f, 1e-6f);
 }
 
 void TestMat3()
@@ -74,7 +83,7 @@ void TestBasicMath()
 	Transform3::Decompose(trans.GetWorldMatrix(), v2, q2);
 
 	EXPECT1((v1 - v2).SquareLength() < 0.000001f, (v1 - v2).SquareLength());
-	EXPECT1((q1 - q2).SquareLength() < 0.000001f, (q1 - q2).SquareLength());
+	EXPECT1(SameRotation(q1, q2, 0.000001f), (q1 - q2).SquareLength());
 
 	s1 = Vector3(2.0f, 1.0f, 3.0f);
 	trans.SetScale(s1);
@@ -82,16 +91,42 @@ void TestBasicMath()
 	Transform3::Decompose(trans.GetWorldMatrix(), v2, q2, s2);
 
 	EXPECT((v1 - v2).SquareLength() < 0.0001f);
-	EXPECT((q1 - q2).SquareLength() < 0.0001f);
+	EXPECT(SameRotation(q1, q2));
 	EXPECT((s1 - s2).SquareLength() < 0.0001f);
 
 	trans.SetScale(Vector3::One());
 	Transform3::Decompose(trans.GetWorldMatrix() * trans.GetWorldMatrix(), v2, q2, s2);
 
 	EXPECT((v1 + v1 - v2).SquareLength() < 0.00001f);
-	EXPECT((q1 * q1 - q2).SquareLength() < 0.001f);
+	EXPECT(SameRotation(q1 * q1, q2, 0.001f));
 
 	return;
+}
+
+void TestTransformDecompose()
+{
+	printf("Running TestTransformDecompose\n");
+
+	Vector3 translation(1.0f, -2.0f, 3.0f);
+	Vector3 scale(2.0f, 3.0f, 4.0f);
+	Quaternion rotation;
+	rotation.FromRotationAxis(Vector3(1.0f, 2.0f, 3.0f).Unit(), Maths::ToRadian(37.0f));
+
+	Matrix4 composed = Transform3::Compose(translation, rotation, scale);
+	Vector3 decomposed_translation;
+	Vector3 decomposed_scale;
+	Quaternion decomposed_rotation;
+	Transform3::Decompose(composed, decomposed_translation, decomposed_rotation, decomposed_scale);
+
+	EXPECT((translation - decomposed_translation).SquareLength() < 1e-6f);
+	EXPECT((scale - decomposed_scale).SquareLength() < 1e-5f);
+	EXPECT(SameRotation(rotation, decomposed_rotation));
+
+	Matrix4 norm_test;
+	norm_test.LoadZero();
+	norm_test[3][3] = 2.0f;
+	EXPECT_NEAR(norm_test.L1Norm(), 2.0f, 1e-6f);
+	EXPECT_NEAR(norm_test.L2Norm(), 4.0f, 1e-6f);
 }
 
 void TestTensor()
@@ -149,7 +184,16 @@ void TestFrame3()
 
 void TestQuaternion()
 {
-	return;
+	printf("Running TestQuaternion\n");
+
+	Quaternion qx;
+	qx.FromRotateX(PI_OVER_2);
+	Quaternion qy;
+	qy.FromRotateY(PI_OVER_2);
+
+	EXPECT_NEAR(qx.Dot(qx), 1.0f, 1e-6f);
+	EXPECT_NEAR(qx.Dot(qy), 0.5f, 1e-6f);
+	EXPECT(SameRotation(Quaternion::Nlerp(qx, qx, 0.5f), qx));
 }
 
 void TestMaths()
@@ -157,6 +201,7 @@ void TestMaths()
 	TestVector3();
 	TestMat3();
 	TestBasicMath();
+	TestTransformDecompose();
 	TestTensor();
 	TestFloat16();
 	TestFrame3();

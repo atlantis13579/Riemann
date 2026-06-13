@@ -2,6 +2,8 @@
 
 // https://en.wikipedia.org/wiki/Eigenvalue_algorithm
 
+#include <algorithm>
+#include <math.h>
 #include <string.h>
 #include "gemm.inl"
 
@@ -37,108 +39,94 @@ private:
 			EigenVectors[i*n + i] = (T)1;
 		}
 
-		T stack_mem[4 * 32 * 32];
+		T stack_mem[32 * 32];
 		T* heap_mem = nullptr;
-		if ((4 * n * n + n) > sizeof(stack_mem) / sizeof(stack_mem[0]))
+		if (n * n > sizeof(stack_mem) / sizeof(stack_mem[0]))
 		{
-			heap_mem = new T[4 * n * n + n];
+			heap_mem = new T[n * n];
 		}
 
 		T* x = heap_mem ? heap_mem : stack_mem;
-		T* q = x + n * n;
-		T* r = x + 2 * n * n;
-		T* h = x + 3 * n * n;
-		T* v = x + 4 * n * n;
-
 		memcpy(x, A, sizeof(T) * n * n);
 
-		T prev_norm = (T)0;
-
-		const int maxIterations = 32;
+		const int maxIterations = std::max(32, n * n * 32);
 		const T convergeEps = (T)(1e-6);
 
-		int it = 0;
-		while (it++ < maxIterations)
+		for (int it = 0; it < maxIterations; ++it)
 		{
-			// Q, R <- QRDecompose(X) , householder method
-
-			memset(q, 0, sizeof(T) * n * n);
+			int p = 0;
+			int q = 1;
+			T maxOffDiag = (T)0;
 			for (int i = 0; i < n; ++i)
+			for (int j = i + 1; j < n; ++j)
 			{
-				q[i * n + i] = (T)1;
-			}
-
-			memcpy(r, x, sizeof(T) * n * n);
-
-			for (int i = 0; i < n; ++i)
-			{
-				for (int j = 0; j < n - i; ++j)
+				T v = (T)fabs(x[i * n + j]);
+				if (v > maxOffDiag)
 				{
-					v[j] = r[(j + i) * n + i];
-				}
-				T norn = compute_norm(v, n - i);
-
-				v[0] += v[0] > 0 ? norn : -norn;
-				norn = compute_norm(v, n - i);
-
-				for (int j = 0; j < n - i; ++j)
-				{
-					v[j] /= norn;
-				}
-
-				memset(h, 0, sizeof(T) * n * n);
-				for (int j = i; j < n; ++j)
-				for (int k = i; k < n; ++k)
-				{
-					h[j * n + k] = -2 * v[j - i] * v[k - i];
-				}
-
-				// R += H * R;
-				gemm_block(h, r, n, n, n, i, n - 1, 0, n - 1, 0, n - 1, x);
-				gema_block(r, x, n, n, i, n - 1, 0, n - 1, r);
-
-				// Q += Q * H;
-				gemm_block(q, h, n, n, n, 0, n - 1, i, n - 1, i, n - 1, x);
-				gema_block(q, x, n, n, 0, n - 1, i, n - 1, q);
-			}
-
-			for (int i = 0; i < n; ++i)
-			{
-				if (r[i * n + i] >= 0)
-					continue;
-
-				for (int j = 0; j < n; ++j)
-				{
-					r[i * n + j] = -r[i * n + j];
-					q[j * n + i] = -q[j * n + i];
+					maxOffDiag = v;
+					p = i;
+					q = j;
 				}
 			}
 
-			// EigenVectors = EigenVectors * Q;
-			gemm(EigenVectors, q, n, n, n, x);
-			memcpy(EigenVectors, x, sizeof(T) * n * n);
-
-			// X = R * Q;
-			gemm(r, q, n, n, n, x);
-
-			// check converge
-			T norm = (T)0;
-			for (int i = 0; i < n; ++i)
-			{
-				norm += x[i * n + i] * x[i * n + i];
-			}
-			norm /= n;
-
-			if (fabs(norm - prev_norm) < convergeEps)
+			if (maxOffDiag < convergeEps)
 			{
 				break;
 			}
-			prev_norm = norm;
+
+			T app = x[p * n + p];
+			T aqq = x[q * n + q];
+			T apq = x[p * n + q];
+			T theta = (T)0.5 * (T)atan2((T)2 * apq, aqq - app);
+			T c = (T)cos(theta);
+			T s = (T)sin(theta);
+
+			for (int k = 0; k < n; ++k)
+			{
+				if (k == p || k == q)
+				{
+					continue;
+				}
+				T akp = x[k * n + p];
+				T akq = x[k * n + q];
+				T new_kp = c * akp - s * akq;
+				T new_kq = s * akp + c * akq;
+				x[k * n + p] = new_kp;
+				x[p * n + k] = new_kp;
+				x[k * n + q] = new_kq;
+				x[q * n + k] = new_kq;
+			}
+
+			x[p * n + p] = c * c * app - (T)2 * s * c * apq + s * s * aqq;
+			x[q * n + q] = s * s * app + (T)2 * s * c * apq + c * c * aqq;
+			x[p * n + q] = (T)0;
+			x[q * n + p] = (T)0;
+
+			for (int k = 0; k < n; ++k)
+			{
+				T vkp = EigenVectors[k * n + p];
+				T vkq = EigenVectors[k * n + q];
+				EigenVectors[k * n + p] = c * vkp - s * vkq;
+				EigenVectors[k * n + q] = s * vkp + c * vkq;
+			}
 		}
 
 		for (int i = 0; i < n; ++i)
 		{
 			EigenValues[i] = x[i * n + i];
+		}
+
+		for (int i = 0; i < n - 1; ++i)
+		for (int j = i + 1; j < n; ++j)
+		{
+			if (EigenValues[j] > EigenValues[i])
+			{
+				std::swap(EigenValues[i], EigenValues[j]);
+				for (int k = 0; k < n; ++k)
+				{
+					std::swap(EigenVectors[k * n + i], EigenVectors[k * n + j]);
+				}
+			}
 		}
 
 		if (heap_mem) delete[]heap_mem;

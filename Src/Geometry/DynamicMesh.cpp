@@ -207,6 +207,46 @@ namespace Riemann
 	{
 	}
 
+	DynamicMesh::DynamicMesh(const DynamicMesh& rhs) : mAttributes(nullptr)
+	{
+		*this = rhs;
+	}
+
+	DynamicMesh& DynamicMesh::operator=(const DynamicMesh& rhs)
+	{
+		if (this == &rhs)
+		{
+			return *this;
+		}
+
+		VertexPositions = rhs.VertexPositions;
+		VertexNormals = rhs.VertexNormals;
+		VertexColors = rhs.VertexColors;
+		VertexUVs = rhs.VertexUVs;
+		Triangles = rhs.Triangles;
+		TriangleEdges = rhs.TriangleEdges;
+		TriangleGroups = rhs.TriangleGroups;
+		Edges = rhs.Edges;
+		VertexRefCounts = rhs.VertexRefCounts;
+		EdgeRefCounts = rhs.EdgeRefCounts;
+		TriangleRefCounts = rhs.TriangleRefCounts;
+		VertexEdgeLists = rhs.VertexEdgeLists;
+		GroupIDCounter = rhs.GroupIDCounter;
+		Bounds = rhs.Bounds;
+		Pose = rhs.Pose;
+		MeshChangeStamp = rhs.MeshChangeStamp;
+		ResourceName = rhs.ResourceName;
+		bHasVertexColor = rhs.bHasVertexColor;
+		bHasVertexNormals = rhs.bHasVertexNormals;
+		bHasVertexUVs = rhs.bHasVertexUVs;
+		bHasTriangleGroups = rhs.bHasTriangleGroups;
+
+		delete mAttributes;
+		mAttributes = new DynamicMeshAttributeSet(this);
+		mAttributes->Initialize(GetVertexCount(), GetTriangleCount());
+		return *this;
+	}
+
 	DynamicMesh::~DynamicMesh()
 	{
 		delete mAttributes;

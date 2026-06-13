@@ -613,25 +613,43 @@ namespace Maths
 
 		static void			Decompose(const Matrix3& mat, Quaternion& q, Vector3& scale, bool& mirror_x)
 		{
-			Vector3 xAxis(mat[0][0], mat[0][1], mat[0][2]);
-			Vector3 yAxis(mat[1][0], mat[1][1], mat[1][2]);
-			Vector3 zAxis(mat[2][0], mat[2][1], mat[2][2]);
+			Vector3 xAxis(mat[0][0], mat[1][0], mat[2][0]);
+			Vector3 yAxis(mat[0][1], mat[1][1], mat[2][1]);
+			Vector3 zAxis(mat[0][2], mat[1][2], mat[2][2]);
 
 			scale.x = xAxis.Length();
 			scale.y = yAxis.Length();
 			scale.z = zAxis.Length();
 
 			Matrix3 rotMatrix(
-				mat[0][0] / scale.x, mat[0][1] / scale.x, mat[0][2] / scale.x,
-				mat[1][0] / scale.y, mat[1][1] / scale.y, mat[1][2] / scale.y,
-				mat[2][0] / scale.z, mat[2][1] / scale.z, mat[2][2] / scale.z);
+				1.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 1.0f);
+			if (scale.x > 1e-8f)
+			{
+				rotMatrix[0][0] = mat[0][0] / scale.x;
+				rotMatrix[1][0] = mat[1][0] / scale.x;
+				rotMatrix[2][0] = mat[2][0] / scale.x;
+			}
+			if (scale.y > 1e-8f)
+			{
+				rotMatrix[0][1] = mat[0][1] / scale.y;
+				rotMatrix[1][1] = mat[1][1] / scale.y;
+				rotMatrix[2][1] = mat[2][1] / scale.y;
+			}
+			if (scale.z > 1e-8f)
+			{
+				rotMatrix[0][2] = mat[0][2] / scale.z;
+				rotMatrix[1][2] = mat[1][2] / scale.z;
+				rotMatrix[2][2] = mat[2][2] / scale.z;
+			}
 
 			mirror_x = false;
 			if (rotMatrix.Determinant() < 0.0f)
 			{
 				rotMatrix[0][0] = -rotMatrix[0][0];
-				rotMatrix[0][1] = -rotMatrix[0][1];
-				rotMatrix[0][2] = -rotMatrix[0][2];
+				rotMatrix[1][0] = -rotMatrix[1][0];
+				rotMatrix[2][0] = -rotMatrix[2][0];
 				mirror_x = true;
 			}
 

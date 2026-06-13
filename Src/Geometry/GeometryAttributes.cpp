@@ -1,4 +1,3 @@
-
 #include "GeometryAttributes.h"
 #include "DynamicMesh.h"
 
@@ -60,10 +59,12 @@ namespace Riemann
 		AttribValueType default_val = GetDefaultAttributeValue();
 		int kA = FromTriangleID * AttribDimension;
 		int kB = ToTriangleID * AttribDimension;
+		ResizeAttribStoreIfNeeded(ToTriangleID);
 		for (int i = 0; i < AttribDimension; ++i)
 		{
-			AttribValueType Value = AttribValues[kA + i];
-			VectorSetSafe(AttribValues, kB + i, Value, default_val);
+			size_t FromIdx = (size_t)kA + i;
+			AttribValueType Value = FromIdx < AttribValues.size() ? AttribValues[FromIdx] : default_val;
+			AttribValues[(size_t)kB + i] = Value;
 		}
 	}
 

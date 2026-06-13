@@ -2,12 +2,22 @@
 #include <assert.h>
 #include <string>
 #include <chrono>
+#include <algorithm>
+#include <map>
+#include <vector>
 #include "Test.h"
+#include "../Src/Core/Base.h"
 #include "../Src/Core/Ref.h"
 #include "../Src/Core/Graph.h"
 #include "../Src/Core/BitSet.h"
 #include "../Src/Core/DynamicArray.h"
 #include "../Src/Core/ListSet.h"
+#include "../Src/Core/StaticArray.h"
+#include "../Src/Core/StaticList.h"
+#include "../Src/Core/StaticPool.h"
+#include "../Src/Core/StaticStack.h"
+#include "../Src/Core/BatchList.h"
+#include "../Src/Core/File.h"
 #include "../Src/Core/JobSystem.h"
 #include "../Src/Core/ThreadPool.h"
 #include "../Src/Core/RingBuffer.h"
@@ -20,6 +30,23 @@
 #include "../Src/Maths/Vector3.h"
 
 using namespace Riemann;
+
+struct TestListNode
+{
+	int value = 0;
+	TestListNode* prev = nullptr;
+	TestListNode* next = nullptr;
+};
+
+struct TestPriorityNode
+{
+	int value = 0;
+
+	bool operator<(const TestPriorityNode& rhs) const
+	{
+		return value < rhs.value;
+	}
+};
 
 void thread_main(int id)
 {
@@ -163,6 +190,169 @@ void TestBitSet()
 	return;
 }
 
+void TestBitSetOperations()
+{
+	printf("Running TestBitSetOperations\n");
+
+	BitSet a(130);
+	a.set(0, true);
+	a.set(64, true);
+	a.set(129, true);
+
+	BitSet b(200);
+	b.set(129, true);
+	b.set(199, true);
+
+	BitSet u = a + b;
+	std::vector<uint32_t> uv = u.to_vector();
+	EXPECT(u.size() == 200);
+	EXPECT((uv == std::vector<uint32_t>{0, 64, 129, 199}));
+
+	BitSet i = a & b;
+	EXPECT((i.to_vector() == std::vector<uint32_t>{129}));
+
+	BitSet d = a - b;
+	EXPECT((d.to_vector() == std::vector<uint32_t>{0, 64}));
+
+	a += b;
+	EXPECT(a.size() == 200);
+	EXPECT(a.get(199));
+
+	BitSet c(3);
+	c.set(1, true);
+	EXPECT(((~c).to_vector() == std::vector<uint32_t>{0, 2}));
+
+	c.set_safe(10, true);
+	EXPECT(c.size() == 11);
+	EXPECT(c.get_safe(10));
+	EXPECT(!c.get_safe(100));
+}
+
+void TestDynamicArray()
+{
+	printf("Running TestDynamicArray\n");
+
+	DynamicArray<int> a = { 1, 3 };
+	a.insert_at(1, 2);
+	EXPECT((std::vector<int>(a.begin(), a.end()) == std::vector<int>{1, 2, 3}));
+
+	a.insert_at(1, 9, false);
+	EXPECT(a.size() == 4);
+	EXPECT(a[1] == 9);
+
+	a.remove_at(1, false);
+	EXPECT(a.size() == 3);
+	EXPECT((std::find(a.begin(), a.end(), 9) == a.end()));
+
+	DynamicArray<int> b = { 4, 5 };
+	a.append(b);
+	EXPECT((std::vector<int>(a.begin(), a.end()) == std::vector<int>{1, 2, 3, 4, 5}));
+
+	size_t removed = a.remove_if([](int v) { return (v % 2) == 0; });
+	EXPECT(removed == 2);
+	EXPECT((std::vector<int>(a.begin(), a.end()) == std::vector<int>{1, 3, 5}));
+}
+
+void TestStaticContainers()
+{
+	printf("Running TestStaticContainers\n");
+
+	StaticArray<int, 3> array;
+	int* slot = array.add();
+	EXPECT(slot != nullptr);
+	*slot = 1;
+	EXPECT(array.add(2));
+	EXPECT(array.emplace(3));
+	EXPECT(!array.add(4));
+	EXPECT(array.add() == nullptr);
+	EXPECT(array.size() == 3);
+	EXPECT(!array.empty());
+
+	EXPECT(array.remove_at(1));
+	EXPECT(array.size() == 2);
+	EXPECT(array.insert_at(1, 9));
+	EXPECT((array[0] == 1 && array[1] == 9 && array[2] == 3));
+
+	int sum = 0;
+	for (int v : array)
+	{
+		sum += v;
+	}
+	EXPECT(sum == 13);
+
+	StaticStack<int, 3> stack;
+	EXPECT(stack.empty());
+	stack.push(1);
+	stack.push(2);
+	StaticStack<int, 3> saved;
+	saved.restore(stack);
+	stack.push(3);
+	EXPECT(stack.full());
+	EXPECT(stack.pop() == 3);
+	EXPECT(stack.pop() == 2);
+	stack.restore(saved);
+	EXPECT(stack.depth() == 2);
+	EXPECT(stack.top() == 2);
+
+	StaticPool<int, 2> pool;
+	int* p0 = pool.get();
+	int* p1 = pool.get();
+	int* p2 = pool.get();
+	EXPECT(p0 != nullptr);
+	EXPECT(p1 != nullptr);
+	EXPECT(p2 == nullptr);
+	EXPECT(pool.size() == 2);
+}
+
+void TestListAndBatchContainers()
+{
+	printf("Running TestListAndBatchContainers\n");
+
+	TestListNode n1;
+	TestListNode n2;
+	n1.value = 1;
+	n2.value = 2;
+
+	List<TestListNode> list;
+	EXPECT(list.empty());
+	list.append(&n1);
+	list.append(&n2);
+	EXPECT(list.size() == 2);
+	EXPECT(list.back() == &n2);
+	list.remove(&n2);
+	EXPECT(list.size() == 1);
+	EXPECT(list.back() == &n1);
+
+	StaticList<TestListNode, 2> static_list;
+	EXPECT(static_list.size() == 2);
+	TestListNode* s0 = static_list.pop();
+	TestListNode* s1 = static_list.pop();
+	TestListNode* s2 = static_list.pop();
+	EXPECT(s0 != nullptr);
+	EXPECT(s1 != nullptr);
+	EXPECT(s2 == nullptr);
+	EXPECT(static_list.empty());
+	static_list.append(s0);
+	EXPECT(static_list.size() == 1);
+
+	BatchList<TestListNode> batch;
+	batch.init(1, 2);
+	TestListNode* b0 = batch.allocate();
+	TestListNode* b1 = batch.allocate();
+	TestListNode* b2 = batch.allocate();
+	EXPECT(b0 != nullptr);
+	EXPECT(b1 != nullptr);
+	EXPECT(b2 != nullptr);
+	EXPECT(batch.size() == 3);
+	batch.free(b1);
+	EXPECT(batch.size() == 2);
+	TestListNode* b3 = batch.allocate();
+	EXPECT(b3 == b1);
+	EXPECT(batch.size() == 3);
+	batch.clear();
+	EXPECT(batch.empty());
+}
+
 void TestListSet()
 {
 	printf("Running TestListSet\n");
@@ -261,6 +451,7 @@ void TestRingBuffer()
 
 	RingBuffer<int, 10> buffer; 
 	EXPECT(buffer.empty());
+	EXPECT(buffer.pop() == 0);
 	for (int i = 1; i <= 20; ++i)
 		buffer.push(i, false);
 	EXPECT(buffer.full());
@@ -277,7 +468,7 @@ void TestRingBuffer()
 		sum += v;
 	EXPECT(sum == 105);
 	for (int i = 1; i <= 6; ++i)
-		buffer.pop();
+		EXPECT(buffer.pop() == i + 5);
 	EXPECT(buffer.size() == 4);
 	sum = 0;
 	for (int v : buffer)
@@ -300,6 +491,8 @@ void TestPriorityQueue()
 	printf("Running TestPriorityQueue\n");
 
 	PriorityQueue<int> q;
+	EXPECT(q.top() == 0);
+	EXPECT(q.pop() == 0);
 
 	std::vector<int> v;
 	for (int i = 1; i <= 100; ++i)
@@ -327,6 +520,125 @@ void TestPriorityQueue()
 	}
 
 	EXPECT(Maths::IsAscendingOrder(v.data(), (int)v.size()));
+
+	q.push(2);
+	q.push(1);
+	q.remove(1);
+	EXPECT(q.size() == 1);
+	EXPECT(q.pop() == 2);
+	q.push(3);
+	q.remove(3);
+	EXPECT(q.empty());
+
+	TestPriorityNode n0{ 3 };
+	TestPriorityNode n1{ 1 };
+	PriorityPool<TestPriorityNode> pool;
+	pool.push(&n0);
+	pool.push(&n1);
+	EXPECT(pool.top() == &n1);
+	EXPECT(pool.pop() == &n1);
+	pool.remove(&n0);
+	EXPECT(pool.empty());
+}
+
+void TestMapAndSetCapacity()
+{
+	printf("Running TestMapAndSetCapacity\n");
+
+	SmallSet<int, 2> small_set;
+	small_set.insert(1);
+	small_set.insert(2);
+	small_set.insert(3);
+	EXPECT(small_set.size() == 3);
+	EXPECT(small_set.contains(1));
+	EXPECT(small_set.contains(2));
+	EXPECT(small_set.contains(3));
+
+	LinearSet<int, 2> linear_set;
+	EXPECT(linear_set.insert(1));
+	EXPECT(linear_set.insert(2));
+	EXPECT(!linear_set.insert(3));
+	EXPECT(linear_set.size() == 2);
+
+	SmallMap<int, int, 2> small_map;
+	small_map.insert(1, 10);
+	small_map.insert(2, 20);
+	small_map.insert(3, 30);
+	EXPECT(small_map.size() == 3);
+	EXPECT(small_map[1] == 10);
+	EXPECT(small_map[2] == 20);
+	EXPECT(small_map[3] == 30);
+	const SmallMap<int, int, 2>& const_small_map = small_map;
+	EXPECT(const_small_map[7] == 0);
+
+	LinearMap<int, int, 2> linear_map;
+	EXPECT(linear_map.insert(1, 10));
+	EXPECT(linear_map.insert(2, 20));
+	EXPECT(!linear_map.insert(3, 30));
+	EXPECT(linear_map.size() == 2);
+	const LinearMap<int, int, 2>& const_linear_map = linear_map;
+	EXPECT(const_linear_map[1] == 10);
+	EXPECT(const_linear_map[7] == 0);
+}
+
+void TestFileAndBaseUtilities()
+{
+	printf("Running TestFileAndBaseUtilities\n");
+
+	EXPECT(Align<8>(5u) == 8u);
+	char storage[32];
+	void* aligned = AlignMemory(storage + 1, 8);
+	EXPECT(IsAlign(aligned, 8));
+
+	std::vector<int> src = { 1, 2, 3, 4 };
+	VectorRemove(src, 3);
+	EXPECT((src == std::vector<int>{1, 2, 4}));
+	VectorRemove(src, [](int v) { return v % 2 == 0; });
+	EXPECT((src == std::vector<int>{1}));
+
+	std::map<int, int> m;
+	m[4] = 40;
+	int* found_value = MapFind<int, int>(m, 4);
+	int* missing_value = MapFind<int, int>(m, 5);
+	EXPECT(found_value != nullptr);
+	EXPECT(*found_value == 40);
+	EXPECT(missing_value == nullptr);
+
+	int sorted[] = { 1, 3, 5, 7 };
+	int* lb = BranchlessLowerBound(sorted, sorted + 4, 4, [](int lhs, int rhs) { return lhs < rhs; });
+	EXPECT(lb == sorted + 2);
+
+	const char* path = "codex_core_file_test.bin";
+	const unsigned char data[] = { 1, 2, 3, 4, 5 };
+	{
+		FileWriter writer(path);
+		EXPECT(writer.IsLoaded());
+		EXPECT(writer.Write(data, sizeof(data)) == sizeof(data));
+		EXPECT(writer.Tell() == sizeof(data));
+		writer.Close();
+		writer.Close();
+	}
+	{
+		FileReader reader(path);
+		EXPECT(reader.IsLoaded());
+		EXPECT(reader.GetFileSize() == sizeof(data));
+		unsigned char read_data[sizeof(data)] = {};
+		EXPECT(reader.Read(read_data, sizeof(read_data)) == sizeof(read_data));
+		EXPECT(std::equal(read_data, read_data + sizeof(read_data), data));
+		reader.Close();
+		reader.Close();
+	}
+	{
+		MemoryFile memory(path);
+		EXPECT(memory.GetSize() == sizeof(data));
+		EXPECT(std::equal(memory.GetData(), memory.GetData() + memory.GetSize(), data));
+
+		MemoryFileAligned<16> aligned_memory(path, 1);
+		EXPECT(aligned_memory.GetSize() == sizeof(data) - 1);
+		EXPECT(IsAlign(aligned_memory.GetData(), 16));
+		EXPECT(aligned_memory.GetData()[0] == data[1]);
+	}
+	std::remove(path);
 }
 
 void TestSmallSet()
@@ -450,12 +762,18 @@ void TestLinearMap()
 
 void TestCores()
 {
+	TestFileAndBaseUtilities();
+	TestDynamicArray();
+	TestStaticContainers();
+	TestListAndBatchContainers();
 	TestPriorityQueue();
 	TestBitSet();
+	TestBitSetOperations();
 	// TestThreadPool();
 	// TestJob();
-	// TestGraph();
+	TestGraph();
 	TestListSet();
+	TestMapAndSetCapacity();
 	TestSmallSet();
 	TestSmallMap();
 	TestLinearSet();

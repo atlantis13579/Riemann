@@ -1,6 +1,7 @@
 #pragma once
 
 #include <set>
+#include <vector>
 
 namespace Riemann
 {
@@ -15,7 +16,7 @@ namespace Riemann
 
 		void insert(const T& v)
 		{
-			if (m_size == BufferSize - 1)
+			if (m_size == BufferSize)
 			{
 				for (int i = 0; i < m_size; ++i)
 				{

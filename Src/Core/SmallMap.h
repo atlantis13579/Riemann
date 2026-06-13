@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <vector>
 
 namespace Riemann
 {
@@ -21,7 +22,7 @@ namespace Riemann
 
 		void insert(const K &k, const V& v)
 		{
-			if (m_size == BufferSize - 1)
+			if (m_size == BufferSize)
 			{
 				for (int i = 0; i < m_size; ++i)
 				{
@@ -34,7 +35,7 @@ namespace Riemann
 			{
 				for (int i = 0; i < m_size; ++i)
 				{
-					if (m_buffer[i] == k)
+					if (m_buffer[i].key == k)
 					{
 						return;
 					}
@@ -75,17 +76,23 @@ namespace Riemann
 			{
 				for (int i = 0; i < m_size; ++i)
 				{
-					if (m_buffer[i] == k)
+					if (m_buffer[i].key == k)
 					{
-						return m_buffer.value;
+						return m_buffer[i].value;
 					}
 				}
-				const V *ptr = nullptr;
-				return ptr[0];
+				static const V default_value = V();
+				return default_value;
 			}
 			else
 			{
-				return m_map[k];
+				typename std::map<K, V>::const_iterator it = m_map.find(k);
+				if (it != m_map.end())
+				{
+					return it->second;
+				}
+				static const V default_value = V();
+				return default_value;
 			}
 		}
 
@@ -101,7 +108,7 @@ namespace Riemann
 					}
 				}
 
-				if (m_size == BufferSize - 1)
+				if (m_size == BufferSize)
 				{
 					for (int i = 0; i < m_size; ++i)
 					{

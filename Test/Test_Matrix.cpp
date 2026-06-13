@@ -123,12 +123,56 @@ void TestSolve()
 	Y = A * X;
 	EXPECT(Y.FuzzyEqual(B, 1e-2f));
 
+	Maths::LinearAlgebra::DenseMatrix SPD(3);
+	SPD[0][0] = 4.0f;
+	SPD[0][1] = 1.0f;
+	SPD[0][2] = 0.0f;
+	SPD[1][0] = 1.0f;
+	SPD[1][1] = 3.0f;
+	SPD[1][2] = 1.0f;
+	SPD[2][0] = 0.0f;
+	SPD[2][1] = 1.0f;
+	SPD[2][2] = 2.0f;
+
+	Maths::LinearAlgebra::DenseVector BB(3);
+	BB[0] = 1.0f;
+	BB[1] = 2.0f;
+	BB[2] = 3.0f;
+
 	X.LoadZero();
-	Maths::LinearAlgebra::ConjugateGradientSolver<float>::Solve(A.GetData(), B.GetData(), X.GetSize(), X.GetData(), 100);
-	Y = A * X;
-	EXPECT(Y.FuzzyEqual(B, 1e-2f));
+	Maths::LinearAlgebra::ConjugateGradientSolver<float>::Solve(SPD.GetData(), BB.GetData(), X.GetSize(), X.GetData(), 100);
+	Y = SPD * X;
+	EXPECT(Y.FuzzyEqual(BB, 1e-2f));
 
 	return;
+}
+
+void TestDenseMatrixUtilities()
+{
+	printf("Running TestDenseMatrixUtilities\n");
+
+	Maths::LinearAlgebra::DenseMatrix M(2, 2);
+	M[0][0] = -2.0f;
+	M[0][1] = 0.0f;
+	M[1][0] = 0.0f;
+	M[1][1] = 3.0f;
+	EXPECT_NEAR(M.L1Norm(), 5.0f, 1e-6f);
+	EXPECT_NEAR(M.L2Norm(), sqrtf(13.0f), 1e-6f);
+	EXPECT_NEAR(M.LpNorm(2), sqrtf(13.0f), 1e-6f);
+
+	float upper_data[] = { 1.0f, 2.0f, 0.0f, 3.0f };
+	Maths::LinearAlgebra::TDenseMatrix<float> upper(upper_data, 2, 2);
+	EXPECT(upper.IsUpperTriangle());
+	EXPECT(!upper.IsLowerTriangle());
+
+	float lower_data[] = { 1.0f, 0.0f, 2.0f, 3.0f };
+	Maths::LinearAlgebra::TDenseMatrix<float> lower(lower_data, 2, 2);
+	EXPECT(lower.IsLowerTriangle());
+	EXPECT(!lower.IsUpperTriangle());
+
+	Maths::LinearAlgebra::DenseMatrix zero(2, 3);
+	zero.LoadZero();
+	EXPECT(zero.IsZero());
 }
 
 void TestPGS()
@@ -387,6 +431,7 @@ void TestMatrix()
 {
 	TestMatrix1();
 	TestMatrix2();
+	TestDenseMatrixUtilities();
 	TestSparse();
 	TestSolve();
 	TestPGS();

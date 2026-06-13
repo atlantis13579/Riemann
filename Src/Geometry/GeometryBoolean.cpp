@@ -387,8 +387,9 @@ namespace Riemann
 
 				if (EndVertID >= 0 && TriVertIDs.Contains(EndVertID))
 				{
+					int FromEnd = CurrentEnd;
 					CurrentEnd = (int)ComputedPointsAndSources.size();
-					ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(EndVertID), FWalkIndices(EndPt, CurrentEnd, TriID));
+					ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(EndVertID), FWalkIndices(EndPt, FromEnd, TriID));
 					BestKnownEnd = CurrentEnd;
 					break;
 				}
@@ -413,8 +414,9 @@ namespace Riemann
 						ComputedEndPtOnTri = true;
 						CurrentTriDist = CurrentTri.PointDistanceQuery(EndPt);
 					}
+					int FromEnd = CurrentEnd;
 					CurrentEnd = (int)ComputedPointsAndSources.size();
-					ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(TriID, CurrentTriDist.BaryCoords), FWalkIndices(EndPt, CurrentEnd, TriID));
+					ComputedPointsAndSources.emplace_back(FMeshSurfacePoint(TriID, CurrentTriDist.BaryCoords), FWalkIndices(EndPt, FromEnd, TriID));
 
 					BestKnownEnd = CurrentEnd;
 					break;
@@ -883,7 +885,7 @@ namespace Riemann
 
 				PtIndices.clear();
 
-				int nums = (int)FaceVertices.count(EID);
+				int nums = (int)EdgeVertices.count(EID);
 				auto it = EdgeVertices.find(EID);
 				while (nums--)
 				{
@@ -1014,7 +1016,14 @@ namespace Riemann
 
 				bool bWalkSuccess = SurfacePath.AddViaPlanarWalk(StartTID, PtA.ElemID,
 					Mesh->GetVertex(PtA.ElemID), -1, PtB.ElemID,
-					Mesh->GetVertex(PtB.ElemID), WalkPlaneNormal, nullptr, false, 1e-6f, SnapToleranceSq, 0.001f);
+					Mesh->GetVertex(PtB.ElemID), WalkPlaneNormal, nullptr, false, 1e-6f, sqrtf(SnapToleranceSq), 0.001f);
+				if (!bWalkSuccess)
+				{
+					SurfacePath.Reset();
+					bWalkSuccess = SurfacePath.AddViaPlanarWalk(StartTID, PtA.ElemID,
+						Mesh->GetVertex(PtA.ElemID), -1, PtB.ElemID,
+						Mesh->GetVertex(PtB.ElemID), WalkPlaneNormal, nullptr, true, 1e-6f, sqrtf(SnapToleranceSq), 0.001f);
+				}
 				if (!bWalkSuccess)
 				{
 					bSuccess = false;
@@ -1032,7 +1041,7 @@ namespace Riemann
 								(*SegmentToChain)[SegIdx] = (int)VertexChains->size();
 							}
 							VertexChains->push_back((int)EmbeddedPath.size());
-							VertexChains->insert(VertexChains->begin(), EmbeddedPath.begin(), EmbeddedPath.end());
+							VertexChains->insert(VertexChains->end(), EmbeddedPath.begin(), EmbeddedPath.end());
 						}
 					}
 					else
@@ -2196,7 +2205,7 @@ namespace Riemann
 		GeometryCut Cut(CutMesh[0], CutMesh[1]);
 		Cut.SnapTolerance = SnapTolerance;
 		Cut.bMutuallyCut = !bOpOnSingleMesh;
-		Cut.Compute(Intersections);
+		bool bSuccess = Cut.Compute(Intersections);
 
 		int NumMeshesToProcess = bOpOnSingleMesh ? 1 : 2;
 		float DegenerateEdgeTolFactor = 1.5f;
@@ -2578,8 +2587,6 @@ namespace Riemann
 				}
 			}
 		}
-
-		bool bSuccess = true;
 
 		if (bSimplifyAlongNewEdges)
 		{

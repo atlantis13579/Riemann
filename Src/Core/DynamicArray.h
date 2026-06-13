@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <vector>
 
 namespace Riemann
@@ -63,12 +64,12 @@ namespace Riemann
 			size_t old_size = this->size();
 			auto it = std::remove_if(this->begin(), this->end(), p);
 			this->resize(it - this->begin());
-			return this->size() - old_size;
+			return old_size - this->size();
 		}
 
 		inline void append(const DynamicArray<T> &rhs)
 		{
-			this->insert(this->begin(), rhs.begin(), rhs.end());
+			this->insert(this->end(), rhs.begin(), rhs.end());
 		}
 	};
 }

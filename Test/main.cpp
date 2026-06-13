@@ -1,5 +1,9 @@
 
 #include "stdio.h"
+#include <string>
+#include <vector>
+
+#include "Test.h"
 
 extern void TestCores();
 extern void TestMaths();
@@ -13,24 +17,68 @@ extern void TestVehicle();
 extern void TestDestruction();
 extern void TestOptimization();
 
-void TestAll()
+static bool ShouldRun(const char* name, const std::vector<std::string>& filters)
 {
-	TestCores();
-	TestMaths();
-	TestCollision();
-	TestGeometry();
-	TestDestruction();
-	TestPhysics3d();
-	TestSIMD();
-	TestMatrix();
-	TestVehicle();
-	TestOptimization();
+	if (filters.empty())
+	{
+		return true;
+	}
+	for (const std::string& filter : filters)
+	{
+		if (filter == name || filter == "All")
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
-int main()
+static void RunTestGroup(const char* name, void (*func)(), const std::vector<std::string>& filters)
 {
-	printf("Running ...\n");
-	TestAll();
-	printf("All Test Done\n");
-	return 0;
+	if (!ShouldRun(name, filters))
+	{
+		return;
+	}
+
+	printf("Running %s\n", name);
+	func();
+}
+
+void TestAll(const std::vector<std::string>& filters)
+{
+	RunTestGroup("Core", TestCores, filters);
+	RunTestGroup("Maths", TestMaths, filters);
+	RunTestGroup("Collision", TestCollision, filters);
+	RunTestGroup("Geometry", TestGeometry, filters);
+	RunTestGroup("Destruction", TestDestruction, filters);
+	RunTestGroup("Physics3d", TestPhysics3d, filters);
+	RunTestGroup("SIMD", TestSIMD, filters);
+	RunTestGroup("Matrix", TestMatrix, filters);
+	RunTestGroup("Vehicle", TestVehicle, filters);
+	RunTestGroup("Optimization", TestOptimization, filters);
+}
+
+int main(int argc, char** argv)
+{
+	setvbuf(stdout, nullptr, _IONBF, 0);
+	TestResetFailures();
+
+	std::vector<std::string> filters;
+	for (int i = 1; i < argc; ++i)
+	{
+		filters.push_back(argv[i]);
+	}
+
+	printf("Running tests ...\n");
+	TestAll(filters);
+
+	const int failures = TestFailureCount();
+	if (failures == 0)
+	{
+		printf("All Test Done\n");
+		return 0;
+	}
+
+	printf("Tests FAILED: %d\n", failures);
+	return 1;
 }

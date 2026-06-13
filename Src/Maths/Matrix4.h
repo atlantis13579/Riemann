@@ -221,7 +221,7 @@ namespace Maths
 		{
 			float l1_norm = 0.0f;
 			const float* p = (const float*)this;
-			for (int i = 0; i < 4; ++i)
+			for (int i = 0; i < 16; ++i)
 				l1_norm += fabsf(p[i]);
 			return l1_norm;
 		}
@@ -230,7 +230,7 @@ namespace Maths
 		{
 			float l2_norm = 0.0f;
 			const float* p = (const float*)this;
-			for (int i = 0; i < 4; ++i)
+			for (int i = 0; i < 16; ++i)
 				l2_norm += p[i] * p[i];
 			return l2_norm;
 		}

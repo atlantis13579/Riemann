@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 namespace Riemann
 {
 	template<typename T, int BufferSize = 16>
@@ -21,7 +23,7 @@ namespace Riemann
 				}
 			}
 
-			if (m_size == BufferSize - 1)
+			if (m_size == BufferSize)
 			{
 				return false;
 			}

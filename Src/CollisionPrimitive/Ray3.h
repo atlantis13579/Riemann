@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cfloat>
 #include "../Maths/Vector3.h"
 
 class Ray3
@@ -73,7 +74,7 @@ public:
 
 	static bool		RayIntersectAABB(const Vector3& Origin, const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t)
 	{
-		float enter = 0.0f, exit = 1.0f;
+		float enter = 0.0f, exit = FLT_MAX;
 
 		for (int i = 0; i < 3; ++i)
 		{

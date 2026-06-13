@@ -424,7 +424,7 @@ public:
 		for (int i = 1; i < mRows; ++i)
 		for (int j = 0; j < i; ++j)
 		{
-			T a = mData[i * mRows + j];
+			T a = pData[i * mCols + j];
 			if (!FloatEqual(a, (T)0, Eplison))
 				return false;
 		}
@@ -439,7 +439,7 @@ public:
 		for (int i = 0; i < mRows - 1; ++i)
 		for (int j = i + 1; j < mRows; ++j)
 		{
-			T a = mData[i * mRows + j];
+			T a = pData[i * mCols + j];
 			if (!FloatEqual(a, (T)0, Eplison))
 				return false;
 		}
@@ -562,7 +562,7 @@ public:
 	T			L1Norm() const
 	{
 		T sum = (T)0;
-		for (int i = 1; i < mRows * mCols; ++i)
+		for (int i = 0; i < mRows * mCols; ++i)
 		{
 			sum += std::abs(pData[i]);
 		}
@@ -572,7 +572,7 @@ public:
 	T			L2Norm() const
 	{
 		T sum = (T)0;
-		for (int i = 1; i < mRows * mCols; ++i)
+		for (int i = 0; i < mRows * mCols; ++i)
 		{
 			sum += pData[i] * pData[i];
 		}
@@ -582,7 +582,7 @@ public:
 	T			LpNorm(int p) const
 	{
 		T sum = (T)0;
-		for (int i = 1; i < mRows * mCols; ++i)
+		for (int i = 0; i < mRows * mCols; ++i)
 		{
 			sum += std::pow(pData[i], p);
 		}

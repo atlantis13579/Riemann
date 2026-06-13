@@ -92,7 +92,10 @@ namespace Riemann
 					m_heap[i] = m_heap[m_size - 1];
 					m_size--;
 
-					modify(i, m_heap[i]);
+					if (i < m_size)
+					{
+						modify(i, m_heap[i]);
+					}
 					return;
 				}
 			}
@@ -187,14 +190,25 @@ namespace Riemann
 
 		inline T top()
 		{
+			if (m_size == 0)
+			{
+				return T();
+			}
 			return m_heap[0];
 		}
 
 		inline T pop()
 		{
+			if (m_size == 0)
+			{
+				return T();
+			}
 			T result = m_heap[0];
 			--m_size;
-			trickleDown(0, m_heap[m_size]);
+			if (m_size > 0)
+			{
+				trickleDown(0, m_heap[m_size]);
+			}
 			return result;
 		}
 
@@ -234,7 +248,10 @@ namespace Riemann
 					m_heap[i] = m_heap[m_size-1];
 					m_size--;
 
-					modify(i, m_heap[i]);
+					if (i < m_size)
+					{
+						modify(i, m_heap[i]);
+					}
 					return;
 				}
 			}

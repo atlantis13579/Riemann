@@ -44,7 +44,7 @@ namespace Riemann
 		{
 			if (m_size >= Capacity)
 				return nullptr;
-			return m_data[m_size++];
+			return &m_data[m_size++];
 		}
 
 		inline bool add(const T& v)

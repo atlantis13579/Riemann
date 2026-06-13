@@ -19,14 +19,14 @@ namespace Riemann
 
 		bool insert(const K &k, const V& v)
 		{
-			if (m_size == BufferSize - 1)
+			if (m_size == BufferSize)
 			{
 				return false;
 			}
 
 			for (int i = 0; i < m_size; ++i)
 			{
-				if (m_buffer[i] == k)
+				if (m_buffer[i].key == k)
 				{
 					return false;
 				}
@@ -55,13 +55,13 @@ namespace Riemann
 		{
 			for (int i = 0; i < m_size; ++i)
 			{
-				if (m_buffer[i] == k)
+				if (m_buffer[i].key == k)
 				{
-					return m_buffer.value;
+					return m_buffer[i].value;
 				}
 			}
-			const V *ptr = nullptr;
-			return ptr[0];
+			static const V default_value = V();
+			return default_value;
 		}
 
 		V& operator[](const K& k)
@@ -74,10 +74,10 @@ namespace Riemann
 				}
 			}
 
-			if (m_size == BufferSize - 1)
+			if (m_size == BufferSize)
 			{
-				V* ptr = nullptr;
-				return ptr[0];
+				static V default_value = V();
+				return default_value;
 			}
 
 			m_size++;

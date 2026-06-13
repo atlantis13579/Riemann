@@ -324,7 +324,7 @@ namespace Riemann
 
 		BitSet operator+(const BitSet& rhs) const
 		{
-			BitSet ret(std::max(m_data.size(), rhs.m_data.size()));
+			BitSet ret(std::max(m_size, rhs.m_size));
 			for (size_t i = 0; i < ret.m_data.size(); ++i)
 			{
 				ret.m_data[i] = (i < m_data.size() ? m_data[i] : 0) | (i < rhs.m_data.size() ? rhs.m_data[i] : 0);
@@ -334,6 +334,10 @@ namespace Riemann
 
 		void operator+=(const BitSet& rhs)
 		{
+			if (rhs.m_size > m_size)
+			{
+				resize(rhs.m_size);
+			}
 			for (size_t i = 0; i < m_data.size(); ++i)
 			{
 				m_data[i] |= (i < rhs.m_data.size() ? rhs.m_data[i] : 0);

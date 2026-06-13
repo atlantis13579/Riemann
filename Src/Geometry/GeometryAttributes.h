@@ -600,8 +600,8 @@ namespace Riemann
 
 		void Initialize(AttribValueType InitialValue = (AttribValueType)0)
 		{
-			//assert(ParentMesh != nullptr);
-			//AttribValues.resize(ParentMesh->GetTriangleCount() * AttribDimension, InitialValue);
+			assert(ParentMesh != nullptr);
+			AttribValues.resize((size_t)ParentMesh->GetTriangleCount() * AttribDimension, InitialValue);
 		}
 
 		void SetNewValue(int NewTriangleID, const AttribValueType* Data);

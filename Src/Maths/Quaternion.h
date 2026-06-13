@@ -74,7 +74,7 @@ namespace Maths
 
 		inline float Dot(const Quaternion& rhs) const
 		{
-			return w * w + x * x + y * y + z * z;
+			return w * rhs.w + x * rhs.x + y * rhs.y + z * rhs.z;
 		}
 
 		inline float Length() const

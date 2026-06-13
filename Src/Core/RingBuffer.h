@@ -55,7 +55,7 @@ namespace Riemann
 		{
 			if (m_size > 0)
 			{
-				T item = m_data[(m_head + m_size) % Capacity];
+				T item = m_data[m_head];
 				m_head = (m_head + 1) % Capacity;
 				m_size--;
 				return item;
@@ -166,7 +166,7 @@ namespace Riemann
 			lock();
 			if (m_size > 0)
 			{
-				item = m_data[(m_head + m_size) % Capacity];
+				item = m_data[m_head];
 				m_head = (m_head + 1) % Capacity;
 				m_size--;
 			}

@@ -114,6 +114,8 @@ namespace Riemann
 	{
 	public:
 		DynamicMesh();
+		DynamicMesh(const DynamicMesh& rhs);
+		DynamicMesh& operator=(const DynamicMesh& rhs);
 		~DynamicMesh();
 
 		void Clear();

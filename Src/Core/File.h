@@ -229,7 +229,10 @@ namespace Riemann
 		virtual void	Close() override final
 		{
 			if (fp_)
+			{
 				fclose(fp_);
+				fp_ = nullptr;
+			}
 		}
 
 		virtual size_t	Tell() const override final
@@ -239,7 +242,7 @@ namespace Riemann
 
 		virtual size_t	Read(void* buf, size_t size) override final
 		{
-			return fp_ ? fread(buf, size, 1, fp_) : 0;
+			return fp_ ? fread(buf, 1, size, fp_) : 0;
 		}
 
 		virtual size_t	Write(const void* buf, size_t size) override final
@@ -284,7 +287,10 @@ namespace Riemann
 		virtual void	Close() override final
 		{
 			if (fp_)
+			{
 				fclose(fp_);
+				fp_ = nullptr;
+			}
 		}
 
 		virtual size_t	Tell() const override final
@@ -301,7 +307,7 @@ namespace Riemann
 		{
 			if (fp_)
 			{
-				return fwrite(buf, size, 1, fp_);
+				return fwrite(buf, 1, size, fp_);
 			}
 			return 0;
 		}
