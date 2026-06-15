@@ -320,6 +320,24 @@ bool Sphere3::PenetrateOBB(const Vector3& rCenter, const Vector3& rExtent, const
 
 bool Sphere3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* p, Vector3* n, float* t) const
 {
+	if (IntersectAABB(bmin, bmax))
+	{
+		if (p)
+		{
+			*p = Center;
+		}
+		if (n)
+		{
+			*n = -Direction;
+			n->SafeNormalize();
+		}
+		if (t)
+		{
+			*t = 0.0f;
+		}
+		return true;
+	}
+
 	AxisAlignedBox3 box(bmin, bmax);
 	GJKShapecast gjk;
     return gjk.Solve(Direction, this, &box, p, n, t);
@@ -327,6 +345,24 @@ bool Sphere3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vec
 
 bool Sphere3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
+	if (IntersectSphere(rCenter, rRadius))
+	{
+		if (p)
+		{
+			*p = Center;
+		}
+		if (n)
+		{
+			*n = -Direction;
+			n->SafeNormalize();
+		}
+		if (t)
+		{
+			*t = 0.0f;
+		}
+		return true;
+	}
+
 	Sphere3 s1(rCenter, rRadius + Radius);
 	if (s1.IntersectRay(Center, Direction, t))
 	{
@@ -365,7 +401,7 @@ bool Sphere3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float 
 		{
 			const float r = dist > 0.0f ? Radius : -Radius;
 			*t = (r - dist) / denom;
-			*n = Normal;
+			*n = denom < 0.0f ? Normal : -Normal;
 			return true;
 		}
 	}
@@ -374,6 +410,25 @@ bool Sphere3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float 
 bool Sphere3::SweepCylinder(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
     Cylinder3 cylinder(X0, X1, rRadius);
+	GJKIntersection gjkIntersect;
+	if (gjkIntersect.Solve(this, &cylinder) == GJK_status::Intersect)
+	{
+		if (p)
+		{
+			*p = Center;
+		}
+		if (n)
+		{
+			*n = -Direction;
+			n->SafeNormalize();
+		}
+		if (t)
+		{
+			*t = 0.0f;
+		}
+		return true;
+	}
+
     GJKShapecast gjk;
     return gjk.Solve(Direction, this, &cylinder, p, n, t);
 }
@@ -415,6 +470,28 @@ bool Sphere3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Ve
 
 bool Sphere3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* p, Vector3* n, float* t) const
 {
+	if (convex)
+	{
+		GJKIntersection gjkIntersect;
+		if (gjkIntersect.Solve(this, convex) == GJK_status::Intersect)
+		{
+			if (p)
+			{
+				*p = Center;
+			}
+			if (n)
+			{
+				*n = -Direction;
+				n->SafeNormalize();
+			}
+			if (t)
+			{
+				*t = 0.0f;
+			}
+			return true;
+		}
+	}
+
 	GJKShapecast gjk;
     return gjk.Solve(Direction, this, convex, p, n, t);
 }
@@ -443,6 +520,38 @@ static bool EdgeOrVertexTest(const Vector3& IntersectPoint, const Vector3* p, in
     return true;
 }
 
+static void FillSphereTriangleSweepHit(const Vector3& center, const Vector3& direction, float hitTime, const Vector3& A, const Vector3& B, const Vector3& C, Vector3* p, Vector3* n, float* t)
+{
+	if (t)
+	{
+		*t = hitTime;
+	}
+
+	const Vector3 movedCenter = center + direction * hitTime;
+	const Vector3 localHit = Triangle3::ClosestPointOnTriangleToPoint(movedCenter, A, B, C);
+	if (p)
+	{
+		*p = localHit;
+	}
+	if (n)
+	{
+		*n = movedCenter - localHit;
+		if (n->SafeNormalize() <= 1.0e-3f)
+		{
+			*n = Triangle3::CalculateNormal(A, B, C, false);
+			if (n->SafeNormalize() <= 1.0e-6f)
+			{
+				*n = -direction;
+				n->SafeNormalize();
+			}
+		}
+		if (n->Dot(direction) > 0.0f)
+		{
+			*n = -*n;
+		}
+	}
+}
+
 bool Sphere3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* p, Vector3* n, float* t) const
 {
     const Vector3 &center = Center;
@@ -453,8 +562,7 @@ bool Sphere3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Ve
         const Vector3 cp = ClosestPtPointTriangle(center, A, B, C);
         if ((cp - center).SquareLength() <= Radius * Radius)
         {
-            *n = -Direction;
-            *t = 0.0f;
+			FillSphereTriangleSweepHit(center, Direction, 0.0f, A, B, C, p, n, t);
             return true;
         }
     }
@@ -474,7 +582,7 @@ bool Sphere3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Ve
     {
         if (tt < 0.0f)
             return false;
-        *t = tt;
+		FillSphereTriangleSweepHit(center, Direction, tt, A, B, C, p, n, t);
         return true;
     }
 
@@ -560,7 +668,7 @@ bool Sphere3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Ve
         Sphere3 sp(verts[e0], Radius);
         if (sp.IntersectRay(center, Direction, &tt))
         {
-            *t = tt;
+			FillSphereTriangleSweepHit(center, Direction, tt, A, B, C, p, n, t);
             return true;
         }
     }
@@ -569,7 +677,7 @@ bool Sphere3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Ve
         Capsule3 cap(verts[e0], verts[e1], Radius);
         if (cap.IntersectRay(center, Direction, &tt))
         {
-            *t = tt;
+			FillSphereTriangleSweepHit(center, Direction, tt, A, B, C, p, n, t);
             return true;
         }
     }
@@ -719,16 +827,229 @@ bool Sphere3::SweepQuad(const Vector3& Direction, const Vector3 &A, const Vector
     return false;
 }
 
+static bool SphereSweepMovingAABBAABBInterval(const Vector3& movingMin, const Vector3& movingMax, const Vector3& direction, const Vector3& staticMin, const Vector3& staticMax, float maxDist, float& enter, float& exit)
+{
+	Box3 movingBox(movingMin, movingMax);
+	if (movingBox.Intersect(staticMin, staticMax))
+	{
+		enter = 0.0f;
+		exit = maxDist;
+		return true;
+	}
+
+	const Vector3 center = (movingMin + movingMax) * 0.5f;
+	const Vector3 extents = (movingMax - movingMin) * 0.5f;
+	const Vector3 expandedMin = staticMin - extents;
+	const Vector3 expandedMax = staticMax + extents;
+
+	enter = 0.0f;
+	exit = maxDist;
+	for (int i = 0; i < 3; ++i)
+	{
+		if (fabsf(direction[i]) < 1.0e-8f)
+		{
+			if (center[i] < expandedMin[i] || center[i] > expandedMax[i])
+			{
+				return false;
+			}
+			continue;
+		}
+
+		const float invDir = 1.0f / direction[i];
+		float t0 = (expandedMin[i] - center[i]) * invDir;
+		float t1 = (expandedMax[i] - center[i]) * invDir;
+		if (t0 > t1)
+		{
+			std::swap(t0, t1);
+		}
+
+		enter = std::max(enter, t0);
+		exit = std::min(exit, t1);
+		if (enter > exit)
+		{
+			return false;
+		}
+	}
+
+	if (exit < 0.0f || enter > maxDist)
+	{
+		return false;
+	}
+
+	enter = std::max(enter, 0.0f);
+	return true;
+}
+
+static bool SphereSweepMovingAABBAABB(const Vector3& movingMin, const Vector3& movingMax, const Vector3& direction, const Vector3& staticMin, const Vector3& staticMax, float maxDist, float& toi)
+{
+	float enter, exit;
+	if (!SphereSweepMovingAABBAABBInterval(movingMin, movingMax, direction, staticMin, staticMax, maxDist, enter, exit))
+	{
+		return false;
+	}
+	toi = std::max(enter, 0.0f);
+	return true;
+}
+
+static void ComputeSphereTriangleSweepResult(const Vector3& center, const Vector3& direction, float hitTime, const Vector3& A, const Vector3& B, const Vector3& C, Vector3* p, Vector3* n, float* t)
+{
+	FillSphereTriangleSweepHit(center, direction, hitTime, A, B, C, p, n, t);
+}
+
+static void TestSphereTriangleForBestSweep(const Sphere3& sphere, const Vector3& direction, const Vector3& unitDir, const Vector3& A, const Vector3& B, const Vector3& C, float& bestDistance, float& bestAlignment, Vector3 bestTri[3], bool& hit)
+{
+	float currentDistance;
+	Vector3 unusedP, unusedN;
+	if (!sphere.SweepTriangle(direction, A, B, C, &unusedP, &unusedN, &currentDistance))
+	{
+		return;
+	}
+
+	if (currentDistance > bestDistance)
+	{
+		return;
+	}
+
+	Vector3 triNormal = (B - A).Cross(C - A);
+	if (triNormal.SafeNormalize() <= 1.0e-6f)
+	{
+		triNormal = -unitDir;
+	}
+
+	const float alignment = Triangle3::ComputeAlignmentValue(triNormal, unitDir);
+	if (!hit || Triangle3::IsBetterTriangle(currentDistance, alignment, bestDistance, bestAlignment))
+	{
+		bestDistance = currentDistance;
+		bestAlignment = alignment;
+		bestTri[0] = A;
+		bestTri[1] = B;
+		bestTri[2] = C;
+		hit = true;
+	}
+}
+
 bool Sphere3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* p, Vector3* n, float* t) const
 {
-	// TODO
-	return false;
+	if (hf == nullptr || hf->Cells == nullptr || hf->nX < 2 || hf->nZ < 2 || Direction.SquareLength() <= 1.0e-12f)
+	{
+		return false;
+	}
+
+	const Vector3 movingMin = Center - Vector3(Radius);
+	const Vector3 movingMax = Center + Vector3(Radius);
+
+	float hfEnter, hfExit;
+	if (!SphereSweepMovingAABBAABBInterval(movingMin, movingMax, Direction, hf->BV.Min, hf->BV.Max, FLT_MAX, hfEnter, hfExit))
+	{
+		return false;
+	}
+
+	Box3 overlap;
+	if (hfExit == FLT_MAX)
+	{
+		overlap = hf->BV;
+	}
+	else
+	{
+		Box3 sweptBox(movingMin + Direction * hfEnter, movingMax + Direction * hfEnter);
+		sweptBox.Encapsulate(movingMin + Direction * hfExit);
+		sweptBox.Encapsulate(movingMax + Direction * hfExit);
+		if (!sweptBox.GetIntersection(hf->BV, overlap))
+		{
+			return false;
+		}
+	}
+
+	const int i0 = std::max(0, std::min((int)hf->nX - 2, (int)((overlap.Min.x - hf->BV.Min.x) * hf->InvDX)));
+	const int j0 = std::max(0, std::min((int)hf->nZ - 2, (int)((overlap.Min.z - hf->BV.Min.z) * hf->InvDZ)));
+	const int i1 = std::max(0, std::min((int)hf->nX - 2, (int)((overlap.Max.x - hf->BV.Min.x) * hf->InvDX)));
+	const int j1 = std::max(0, std::min((int)hf->nZ - 2, (int)((overlap.Max.z - hf->BV.Min.z) * hf->InvDZ)));
+
+	bool hit = false;
+	float bestDistance = FLT_MAX;
+	float bestAlignment = 2.0f;
+	Vector3 bestTri[3];
+	const Vector3 unitDir = Direction.SafeUnit();
+
+	for (int i = i0; i <= i1; ++i)
+	{
+		for (int j = j0; j <= j1; ++j)
+		{
+			Box3 cellBox;
+			if (!hf->GetCellBV(i, j, cellBox))
+			{
+				continue;
+			}
+
+			float cellToi;
+			if (!SphereSweepMovingAABBAABB(movingMin, movingMax, Direction, cellBox.Min, cellBox.Max, bestDistance, cellToi))
+			{
+				continue;
+			}
+
+			Vector3 tris[6];
+			const int numTriVerts = hf->GetCellTriangle(i, j, tris);
+			for (int k = 0; k < numTriVerts; k += 3)
+			{
+				TestSphereTriangleForBestSweep(*this, Direction, unitDir, tris[k], tris[k + 1], tris[k + 2], bestDistance, bestAlignment, bestTri, hit);
+			}
+		}
+	}
+
+	if (!hit)
+	{
+		return false;
+	}
+
+	ComputeSphereTriangleSweepResult(Center, Direction, bestDistance, bestTri[0], bestTri[1], bestTri[2], p, n, t);
+	return true;
 }
 
 bool Sphere3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* p, Vector3* n, float* t) const
 {
-	// TODO
-	return false;
+	if (trimesh == nullptr || trimesh->NumTriangles == 0 || Direction.SquareLength() <= 1.0e-12f)
+	{
+		return false;
+	}
+
+	const Vector3 movingMin = Center - Vector3(Radius);
+	const Vector3 movingMax = Center + Vector3(Radius);
+
+	float meshToi;
+	if (!SphereSweepMovingAABBAABB(movingMin, movingMax, Direction, trimesh->BoundingVolume.Min, trimesh->BoundingVolume.Max, FLT_MAX, meshToi))
+	{
+		return false;
+	}
+
+	bool hit = false;
+	float bestDistance = FLT_MAX;
+	float bestAlignment = 2.0f;
+	Vector3 bestTri[3];
+	const Vector3 unitDir = Direction.SafeUnit();
+
+	for (uint32_t i = 0; i < trimesh->NumTriangles; ++i)
+	{
+		const Vector3 A = trimesh->GetVertex(i, 0);
+		const Vector3 B = trimesh->GetVertex(i, 1);
+		const Vector3 C = trimesh->GetVertex(i, 2);
+		const Box3 triBounds(A, B, C);
+
+		float triToi;
+		if (!SphereSweepMovingAABBAABB(movingMin, movingMax, Direction, triBounds.Min, triBounds.Max, bestDistance, triToi))
+		{
+			continue;
+		}
+
+		TestSphereTriangleForBestSweep(*this, Direction, unitDir, A, B, C, bestDistance, bestAlignment, bestTri, hit);
+	}
+
+	if (!hit)
+	{
+		return false;
+	}
+
+	ComputeSphereTriangleSweepResult(Center, Direction, bestDistance, bestTri[0], bestTri[1], bestTri[2], p, n, t);
+	return true;
 }
 
 static void MostSeparatedPointsOnAABB(const Vector3* points, int n, int& min, int& max)

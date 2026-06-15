@@ -8,6 +8,7 @@
 extern void TestCores();
 extern void TestMaths();
 extern void TestCollision();
+extern void TestCollisionPrimitive();
 extern void TestGeometry();
 extern void TestSIMD();
 extern void TestMatrix();
@@ -46,6 +47,7 @@ void TestAll(const std::vector<std::string>& filters)
 	RunTestGroup("Core", TestCores, filters);
 	RunTestGroup("Maths", TestMaths, filters);
 	RunTestGroup("Collision", TestCollision, filters);
+	RunTestGroup("CollisionPrimitive", TestCollisionPrimitive, filters);
 	RunTestGroup("Geometry", TestGeometry, filters);
 	RunTestGroup("Destruction", TestDestruction, filters);
 	RunTestGroup("SIMD", TestSIMD, filters);

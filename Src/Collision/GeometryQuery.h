@@ -265,7 +265,7 @@ namespace Riemann
 	private:
 		std::vector<Geometry*>	m_Objects;
 
-		AABBTree* m_staticGeometry;
-		DynamicAABBTree* m_dynamicPruner;
+		AABBTree*			m_staticGeometry;
+		DynamicAABBTree*	m_dynamicPruner;
 	};
 }

@@ -684,7 +684,8 @@ static Vector3 ClosestPointOnTriangleToPointEx(const Vector3& Point, const Vecto
 	if (mask == 0b0000)
 	{
 		const float signedDist = (Point - A).Dot(Normal);
-		return Point - signedDist * Normal;
+		const float normalLenSq = Normal.SquareLength();
+		return normalLenSq > 1.0e-12f ? Point - Normal * (signedDist / normalLenSq) : A;
 	}
 	else if (mask == 0b0001)
 	{

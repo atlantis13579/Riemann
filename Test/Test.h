@@ -4,6 +4,11 @@
 #include <cstdio>
 #include <fstream>
 #include <string>
+#include <sys/stat.h>
+
+#if defined(_WIN32)
+#include <direct.h>
+#endif
 
 inline void BreakPoint()
 {
@@ -36,35 +41,99 @@ inline bool TestFileExists(const std::string& fileName)
 	return !!file;
 }
 
+inline bool TestDirectoryExists(const std::string& directoryName)
+{
+	struct stat info;
+	if (stat(directoryName.c_str(), &info) != 0)
+	{
+		return false;
+	}
+#if defined(_WIN32)
+	return (info.st_mode & _S_IFDIR) != 0;
+#else
+	return S_ISDIR(info.st_mode);
+#endif
+}
+
+inline bool TestCreateDirectory(const std::string& directoryName)
+{
+	if (TestDirectoryExists(directoryName))
+	{
+		return true;
+	}
+#if defined(_WIN32)
+	return _mkdir(directoryName.c_str()) == 0 || TestDirectoryExists(directoryName);
+#else
+	return mkdir(directoryName.c_str(), 0755) == 0 || TestDirectoryExists(directoryName);
+#endif
+}
+
+inline const std::string& TestContentsPath()
+{
+	static const std::string contentsPath = []() -> std::string
+	{
+		const char* directories[] =
+		{
+			"Contents/",
+			"../Contents/",
+			"../../Contents/",
+			"../../../Contents/",
+			"../../../../Contents/",
+		};
+
+		for (const char* directory : directories)
+		{
+			if (TestFileExists(std::string(directory) + "TestData/bunny.obj"))
+			{
+				return directory;
+			}
+		}
+
+		return "../Contents/";
+	}();
+
+	return contentsPath;
+}
+
 inline std::string TestDataPath(const char* fileName)
 {
-	const char* directories[] =
-	{
-		"Contents/TestData/",
-		"../Contents/TestData/",
-		"../../Contents/TestData/",
-		"../../../Contents/TestData/",
-		"../../../../Contents/TestData/",
-	};
+	return TestContentsPath() + "TestData/" + fileName;
+}
 
-	for (const char* directory : directories)
+inline const std::string& TestRepositoryPath()
+{
+	static const std::string repositoryPath = []() -> std::string
 	{
-		const std::string path = std::string(directory) + fileName;
-		if (TestFileExists(path))
+		const char* directories[] =
 		{
-			return path;
-		}
-	}
+			"",
+			"../",
+			"../../",
+			"../../../",
+			"../../../../",
+		};
 
-	for (const char* directory : directories)
-	{
-		if (TestFileExists(std::string(directory) + "bunny.obj"))
+		for (const char* directory : directories)
 		{
-			return std::string(directory) + fileName;
+			if (TestDirectoryExists(std::string(directory) + "Src") &&
+				TestDirectoryExists(std::string(directory) + "Test") &&
+				TestDirectoryExists(std::string(directory) + "Contents"))
+			{
+				return directory;
+			}
 		}
-	}
 
-	return std::string("../Contents/TestData/") + fileName;
+		return "../";
+	}();
+
+	return repositoryPath;
+}
+
+inline std::string TestOutputPath(const char* fileName)
+{
+	const std::string directory = TestRepositoryPath() + "TestOutput/";
+	TestCreateDirectory(directory);
+	return directory + fileName;
 }
 
 inline void TestRecordFailure(const char* expr, const char* file, int line)

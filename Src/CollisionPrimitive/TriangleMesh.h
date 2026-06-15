@@ -72,6 +72,10 @@ namespace Riemann
 
 		MeshBVH4*		CreateEmptyBVH();
 		void			BuildBVH();
+		const MeshBVH4*	GetBVH() const
+		{
+			return m_BVH;
+		}
 
 		bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const;
 		bool			IntersectRay(const Vector3& Origin, const Vector3& Direction, const TriMeshHitOption& Option, TriMeshHitResult* Result) const;

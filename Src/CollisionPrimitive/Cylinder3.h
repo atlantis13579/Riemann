@@ -141,14 +141,23 @@ namespace Riemann
 		// A Fast and Robust GJK Implementation for Collision Detection of Convex Objects - Gino van den Bergen, page 8
 		Vector3 GetSupport(const Vector3& Direction) const
 		{
-			const float sy = Direction.y > 0 ? 1.0f : -1.0f;
-			const float o = sqrtf(Direction.x * Direction.x + Direction.z * Direction.z);
-			if (o > 1e-6f)
+			Vector3 axis = X1 - X0;
+			const float axisLen = axis.SafeNormalize();
+			if (axisLen <= 1.0e-6f)
 			{
-				Vector3 support(Radius * Direction.x / o, sy * Height * 0.5f, Radius * Direction.z / o);
-				return support;
+				const float dirLen = Direction.Length();
+				return X0 + (dirLen > 1.0e-6f ? Direction * (Radius / dirLen) : Vector3::Zero());
 			}
-			return Vector3(0.0f, sy * Height * 0.5f, 0.0f);
+
+			const Vector3 center = GetCenter();
+			const float axialSign = Direction.Dot(axis) >= 0.0f ? 1.0f : -1.0f;
+			const Vector3 axialSupport = axis * (axisLen * 0.5f * axialSign);
+			Vector3 radialDir = Direction - axis * Direction.Dot(axis);
+			if (radialDir.SafeNormalize() > 1.0e-6f)
+			{
+				radialDir *= Radius;
+			}
+			return center + axialSupport + radialDir;
 		}
 
 		static const std::array<Vector3, 8>& GetCylinderFaces()

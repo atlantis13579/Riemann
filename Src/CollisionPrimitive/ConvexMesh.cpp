@@ -6,6 +6,8 @@
 #include "GJK.h"
 #include "../Geometry/ConvexHull3.h"
 
+#include <cstring>
+
 namespace Riemann
 {
 void ConvexMesh::SetConvexData(Vector3* verts, uint16_t nVerties,
@@ -37,6 +39,23 @@ void ConvexMesh::SetConvexData(Vector3* verts, uint16_t nVerties,
 		Faces = (ConvexMeshFace*)(Vertices + nVerties);
 		Edges = (ConvexMeshEdge*)(Faces + nFaces);
 		Indices = (uint8_t*)(Edges + nEdges);
+
+		if (verts && nVerties)
+		{
+			std::memcpy(Vertices, verts, sizeof(Vector3) * nVerties);
+		}
+		if (faces && nFaces)
+		{
+			std::memcpy(Faces, faces, sizeof(ConvexMeshFace) * nFaces);
+		}
+		if (edges && nEdges)
+		{
+			std::memcpy(Edges, edges, sizeof(ConvexMeshEdge) * nEdges);
+		}
+		if (indices && nIndices)
+		{
+			std::memcpy(Indices, indices, sizeof(uint8_t) * nIndices);
+		}
 	}
 	else
 	{

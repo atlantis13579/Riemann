@@ -5,6 +5,7 @@
 #include "Segment3.h"
 #include "ConvexMesh.h"
 #include "HeightField3.h"
+#include "Triangle3.h"
 #include "TriangleMesh.h"
 #include "GJK.h"
 
@@ -116,6 +117,25 @@ bool Cylinder3::IntersectSegment(const Vector3& P0, const Vector3& P1) const
 bool Cylinder3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* p, Vector3* n, float* t) const
 {
 	AxisAlignedBox3 box(bmin, bmax);
+	GJKIntersection gjkIntersect;
+	if (gjkIntersect.Solve(this, &box) == GJK_status::Intersect)
+	{
+		if (p)
+		{
+			*p = GetCenter();
+		}
+		if (n)
+		{
+			*n = -Direction;
+			n->SafeNormalize();
+		}
+		if (t)
+		{
+			*t = 0.0f;
+		}
+		return true;
+	}
+
 	GJKShapecast gjk;
 	return gjk.Solve(Direction, this, &box, p, n, t);
 }
@@ -123,6 +143,25 @@ bool Cylinder3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const V
 bool Cylinder3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
 	Sphere3 sp(rCenter, rRadius);
+	GJKIntersection gjkIntersect;
+	if (gjkIntersect.Solve(this, &sp) == GJK_status::Intersect)
+	{
+		if (p)
+		{
+			*p = GetCenter();
+		}
+		if (n)
+		{
+			*n = -Direction;
+			n->SafeNormalize();
+		}
+		if (t)
+		{
+			*t = 0.0f;
+		}
+		return true;
+	}
+
 	GJKShapecast gjk;
 	return gjk.Solve(Direction, this, &sp, p, n, t);
 }
@@ -135,7 +174,7 @@ bool Cylinder3::SweepPlane(const Vector3& Direction, const Vector3& Normal, floa
 	const float dp = Direction.Dot(Normal);
 	if (fabsf(dp) < 1e-6f)
 	{
-        if (plane.IntersectCylinder(X0 + Origin, X1 + Origin, Radius))
+        if (plane.IntersectCylinder(X0, X1, Radius))
 		{
 			*n = -Direction;
 			*t = 0.0f;
@@ -143,7 +182,7 @@ bool Cylinder3::SweepPlane(const Vector3& Direction, const Vector3& Normal, floa
 		}
 	}
 
-	const Vector3 RelativeOrigin = Origin + GetSupport(Direction);
+	const Vector3 RelativeOrigin = GetSupport(Direction);
 	if (plane.IntersectRay(RelativeOrigin, Direction, t))
 	{
 		*n = dp < 0.0f ? Normal : -Normal;
@@ -155,6 +194,25 @@ bool Cylinder3::SweepPlane(const Vector3& Direction, const Vector3& Normal, floa
 bool Cylinder3::SweepCylinder(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
     Cylinder3 cylinder(X0, X1, rRadius);
+	GJKIntersection gjkIntersect;
+	if (gjkIntersect.Solve(this, &cylinder) == GJK_status::Intersect)
+	{
+		if (p)
+		{
+			*p = GetCenter();
+		}
+		if (n)
+		{
+			*n = -Direction;
+			n->SafeNormalize();
+		}
+		if (t)
+		{
+			*t = 0.0f;
+		}
+		return true;
+	}
+
     GJKShapecast gjk;
     return gjk.Solve(Direction, this, &cylinder, p, n, t);
 }
@@ -162,32 +220,358 @@ bool Cylinder3::SweepCylinder(const Vector3& Direction, const Vector3& X0, const
 bool Cylinder3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
 	Capsule3 capsule(X0, X1, rRadius);
+	GJKIntersection gjkIntersect;
+	if (gjkIntersect.Solve(this, &capsule) == GJK_status::Intersect)
+	{
+		if (p)
+		{
+			*p = GetCenter();
+		}
+		if (n)
+		{
+			*n = -Direction;
+			n->SafeNormalize();
+		}
+		if (t)
+		{
+			*t = 0.0f;
+		}
+		return true;
+	}
+
 	GJKShapecast gjk;
 	return gjk.Solve(Direction, this, &capsule, p, n, t);
 }
 
 bool Cylinder3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* p, Vector3* n, float* t) const
 {
+	if (convex)
+	{
+		GJKIntersection gjkIntersect;
+		if (gjkIntersect.Solve(this, convex) == GJK_status::Intersect)
+		{
+			if (p)
+			{
+				*p = GetCenter();
+			}
+			if (n)
+			{
+				*n = -Direction;
+				n->SafeNormalize();
+			}
+			if (t)
+			{
+				*t = 0.0f;
+			}
+			return true;
+		}
+	}
+
 	GJKShapecast gjk;
 	return gjk.Solve(Direction, this, convex, p, n, t);
 }
 
+struct CylinderSweepTriangleShape
+{
+	Vector3 A, B, C;
+
+	Vector3 GetCenter() const
+	{
+		return (A + B + C) * (1.0f / 3.0f);
+	}
+
+	Vector3 GetSupport(const Vector3& Direction) const
+	{
+		const float da = A.Dot(Direction);
+		const float db = B.Dot(Direction);
+		const float dc = C.Dot(Direction);
+		if (da >= db && da >= dc)
+		{
+			return A;
+		}
+		return db >= dc ? B : C;
+	}
+};
+
+static bool CylinderSweepMovingAABBAABBInterval(const Vector3& movingMin, const Vector3& movingMax, const Vector3& direction, const Vector3& staticMin, const Vector3& staticMax, float maxDist, float& enter, float& exit)
+{
+	Box3 movingBox(movingMin, movingMax);
+	if (movingBox.Intersect(staticMin, staticMax))
+	{
+		enter = 0.0f;
+		exit = maxDist;
+		return true;
+	}
+
+	const Vector3 center = (movingMin + movingMax) * 0.5f;
+	const Vector3 extents = (movingMax - movingMin) * 0.5f;
+	const Vector3 expandedMin = staticMin - extents;
+	const Vector3 expandedMax = staticMax + extents;
+
+	enter = 0.0f;
+	exit = maxDist;
+	for (int i = 0; i < 3; ++i)
+	{
+		if (fabsf(direction[i]) < 1.0e-8f)
+		{
+			if (center[i] < expandedMin[i] || center[i] > expandedMax[i])
+			{
+				return false;
+			}
+			continue;
+		}
+
+		const float invDir = 1.0f / direction[i];
+		float t0 = (expandedMin[i] - center[i]) * invDir;
+		float t1 = (expandedMax[i] - center[i]) * invDir;
+		if (t0 > t1)
+		{
+			std::swap(t0, t1);
+		}
+
+		enter = std::max(enter, t0);
+		exit = std::min(exit, t1);
+		if (enter > exit)
+		{
+			return false;
+		}
+	}
+
+	if (exit < 0.0f || enter > maxDist)
+	{
+		return false;
+	}
+
+	enter = std::max(enter, 0.0f);
+	return true;
+}
+
+static bool CylinderSweepMovingAABBAABB(const Vector3& movingMin, const Vector3& movingMax, const Vector3& direction, const Vector3& staticMin, const Vector3& staticMax, float maxDist, float& toi)
+{
+	float enter, exit;
+	if (!CylinderSweepMovingAABBAABBInterval(movingMin, movingMax, direction, staticMin, staticMax, maxDist, enter, exit))
+	{
+		return false;
+	}
+	toi = std::max(enter, 0.0f);
+	return true;
+}
+
+static void ComputeCylinderTriangleSweepResult(const Cylinder3& cylinder, const Vector3& direction, float hitTime, const Vector3& A, const Vector3& B, const Vector3& C, Vector3* p, Vector3* n, float* t)
+{
+	if (t)
+	{
+		*t = hitTime;
+	}
+
+	const Vector3 movedCenter = cylinder.GetCenter() + direction * hitTime;
+	const Vector3 localHit = Triangle3::ClosestPointOnTriangleToPoint(movedCenter, A, B, C);
+	if (p)
+	{
+		*p = localHit;
+	}
+	if (n)
+	{
+		*n = movedCenter - localHit;
+		if (n->SafeNormalize() <= 1.0e-4f)
+		{
+			*n = Triangle3::CalculateNormal(A, B, C, false);
+			if (n->SafeNormalize() <= 1.0e-6f)
+			{
+				*n = -direction;
+				n->SafeNormalize();
+			}
+		}
+		if (n->Dot(direction) > 0.0f)
+		{
+			*n = -*n;
+		}
+	}
+}
+
+static void TestCylinderTriangleForBestSweep(const Cylinder3& cylinder, const Vector3& direction, const Vector3& unitDir, const Vector3& A, const Vector3& B, const Vector3& C, float& bestDistance, float& bestAlignment, Vector3 bestTri[3], bool& hit)
+{
+	Vector3 unusedP, unusedN;
+	float currentDistance;
+	if (!cylinder.SweepTriangle(direction, A, B, C, &unusedP, &unusedN, &currentDistance))
+	{
+		return;
+	}
+	if (currentDistance > bestDistance)
+	{
+		return;
+	}
+
+	Vector3 triNormal = (B - A).Cross(C - A);
+	if (triNormal.SafeNormalize() <= 1.0e-6f)
+	{
+		triNormal = -unitDir;
+	}
+
+	const float alignment = Triangle3::ComputeAlignmentValue(triNormal, unitDir);
+	if (!hit || Triangle3::IsBetterTriangle(currentDistance, alignment, bestDistance, bestAlignment))
+	{
+		bestDistance = currentDistance;
+		bestAlignment = alignment;
+		bestTri[0] = A;
+		bestTri[1] = B;
+		bestTri[2] = C;
+		hit = true;
+	}
+}
+
 bool Cylinder3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* p, Vector3* n, float* t) const
 {
-	// TODO
-	return false;
+	if (Direction.SquareLength() <= 1.0e-12f)
+	{
+		return false;
+	}
+
+	CylinderSweepTriangleShape tri = { A, B, C };
+	GJKIntersection gjkIntersect;
+	if (gjkIntersect.Solve(this, &tri) == GJK_status::Intersect)
+	{
+		ComputeCylinderTriangleSweepResult(*this, Direction, 0.0f, A, B, C, p, n, t);
+		return true;
+	}
+
+	const Box3 bounds = CalculateBoundingVolume();
+	AxisAlignedBox3 boundBox(bounds.Min, bounds.Max);
+	if (boundBox.SweepTriangle(Direction, A, B, C, p, n, t))
+	{
+		return true;
+	}
+
+	GJKShapecast gjk;
+	Vector3 gjkP, gjkN;
+	float hitTime;
+	if (!gjk.Solve(Direction, this, &tri, &gjkP, &gjkN, &hitTime))
+	{
+		return false;
+	}
+
+	ComputeCylinderTriangleSweepResult(*this, Direction, hitTime, A, B, C, p, n, t);
+	return true;
 }
 
 bool Cylinder3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* p, Vector3* n, float* t) const
 {
-	// TODO
-	return false;
+	if (hf == nullptr || hf->Cells == nullptr || hf->nX < 2 || hf->nZ < 2 || Direction.SquareLength() <= 1.0e-12f)
+	{
+		return false;
+	}
+
+	const Box3 movingBounds = CalculateBoundingVolume();
+	float hfEnter, hfExit;
+	if (!CylinderSweepMovingAABBAABBInterval(movingBounds.Min, movingBounds.Max, Direction, hf->BV.Min, hf->BV.Max, FLT_MAX, hfEnter, hfExit))
+	{
+		return false;
+	}
+
+	Box3 overlap;
+	if (hfExit == FLT_MAX)
+	{
+		overlap = hf->BV;
+	}
+	else
+	{
+		Box3 sweptBox(movingBounds.Min + Direction * hfEnter, movingBounds.Max + Direction * hfEnter);
+		sweptBox.Encapsulate(movingBounds.Min + Direction * hfExit);
+		sweptBox.Encapsulate(movingBounds.Max + Direction * hfExit);
+		if (!sweptBox.GetIntersection(hf->BV, overlap))
+		{
+			return false;
+		}
+	}
+
+	const int i0 = std::max(0, std::min((int)hf->nX - 2, (int)((overlap.Min.x - hf->BV.Min.x) * hf->InvDX)));
+	const int j0 = std::max(0, std::min((int)hf->nZ - 2, (int)((overlap.Min.z - hf->BV.Min.z) * hf->InvDZ)));
+	const int i1 = std::max(0, std::min((int)hf->nX - 2, (int)((overlap.Max.x - hf->BV.Min.x) * hf->InvDX)));
+	const int j1 = std::max(0, std::min((int)hf->nZ - 2, (int)((overlap.Max.z - hf->BV.Min.z) * hf->InvDZ)));
+
+	bool hit = false;
+	float bestDistance = FLT_MAX;
+	float bestAlignment = 2.0f;
+	Vector3 bestTri[3];
+	const Vector3 unitDir = Direction.SafeUnit();
+
+	for (int i = i0; i <= i1; ++i)
+	{
+		for (int j = j0; j <= j1; ++j)
+		{
+			Box3 cellBox;
+			if (!hf->GetCellBV(i, j, cellBox))
+			{
+				continue;
+			}
+
+			float cellToi;
+			if (!CylinderSweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, cellBox.Min, cellBox.Max, bestDistance, cellToi))
+			{
+				continue;
+			}
+
+			Vector3 tris[6];
+			const int numTriVerts = hf->GetCellTriangle(i, j, tris);
+			for (int k = 0; k < numTriVerts; k += 3)
+			{
+				TestCylinderTriangleForBestSweep(*this, Direction, unitDir, tris[k], tris[k + 1], tris[k + 2], bestDistance, bestAlignment, bestTri, hit);
+			}
+		}
+	}
+
+	if (!hit)
+	{
+		return false;
+	}
+
+	ComputeCylinderTriangleSweepResult(*this, Direction, bestDistance, bestTri[0], bestTri[1], bestTri[2], p, n, t);
+	return true;
 }
 
 bool Cylinder3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* p, Vector3* n, float* t) const
 {
-	// TODO
-	return false;
+	if (trimesh == nullptr || trimesh->NumTriangles == 0 || Direction.SquareLength() <= 1.0e-12f)
+	{
+		return false;
+	}
+
+	const Box3 movingBounds = CalculateBoundingVolume();
+	float meshToi;
+	if (!CylinderSweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, trimesh->BoundingVolume.Min, trimesh->BoundingVolume.Max, FLT_MAX, meshToi))
+	{
+		return false;
+	}
+
+	bool hit = false;
+	float bestDistance = FLT_MAX;
+	float bestAlignment = 2.0f;
+	Vector3 bestTri[3];
+	const Vector3 unitDir = Direction.SafeUnit();
+
+	for (uint32_t i = 0; i < trimesh->NumTriangles; ++i)
+	{
+		const Vector3 A = trimesh->GetVertex(i, 0);
+		const Vector3 B = trimesh->GetVertex(i, 1);
+		const Vector3 C = trimesh->GetVertex(i, 2);
+		const Box3 triBounds(A, B, C);
+
+		float triToi;
+		if (!CylinderSweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, triBounds.Min, triBounds.Max, bestDistance, triToi))
+		{
+			continue;
+		}
+
+		TestCylinderTriangleForBestSweep(*this, Direction, unitDir, A, B, C, bestDistance, bestAlignment, bestTri, hit);
+	}
+
+	if (!hit)
+	{
+		return false;
+	}
+
+	ComputeCylinderTriangleSweepResult(*this, Direction, bestDistance, bestTri[0], bestTri[1], bestTri[2], p, n, t);
+	return true;
 }
 
 int Cylinder3::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const

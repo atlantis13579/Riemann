@@ -256,6 +256,24 @@ bool Capsule3::PenetrateCapsule(const Vector3& P0, const Vector3& P1, float rRad
 
 bool Capsule3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* p, Vector3* n, float* t) const
 {
+	if (IntersectAABB(bmin, bmax))
+	{
+		if (p)
+		{
+			*p = GetCenter();
+		}
+		if (n)
+		{
+			*n = -Direction;
+			n->SafeNormalize();
+		}
+		if (t)
+		{
+			*t = 0.0f;
+		}
+		return true;
+	}
+
 	AxisAlignedBox3 box(bmin, bmax);
 	GJKShapecast gjk;
 	return gjk.Solve(Direction, this, &box, p, n, t);
@@ -263,6 +281,24 @@ bool Capsule3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Ve
 
 bool Capsule3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* p, Vector3* n, float* t) const
 {
+	if (IntersectSphere(rCenter, rRadius))
+	{
+		if (p)
+		{
+			*p = GetCenter();
+		}
+		if (n)
+		{
+			*n = -Direction;
+			n->SafeNormalize();
+		}
+		if (t)
+		{
+			*t = 0.0f;
+		}
+		return true;
+	}
+
 	Sphere3 sp(rCenter, rRadius);
 	GJKShapecast gjk;
 	return gjk.Solve(Direction, this, &sp, p, n, t);
@@ -276,7 +312,7 @@ bool Capsule3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float
 	const float dp = Direction.Dot(Normal);
 	if (fabsf(dp) < 1e-6f)
 	{
-		if (plane.IntersectCapsule(X0 + Origin, X1 + Origin, Radius))
+		if (plane.IntersectCapsule(X0, X1, Radius))
 		{
 			*n = -Direction;
 			*t = 0.0f;
@@ -284,7 +320,7 @@ bool Capsule3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float
 		}
 	}
 
-	const Vector3 RelativeOrigin = Origin + GetSupport(Direction);
+	const Vector3 RelativeOrigin = GetSupport(Direction);
 	if (plane.IntersectRay(RelativeOrigin, Direction, t))
 	{
 		*n = dp < 0.0f ? Normal : -Normal;
@@ -296,6 +332,25 @@ bool Capsule3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float
 bool Capsule3::SweepCylinder(const Vector3& Direction, const Vector3& _X0, const Vector3& _X1, float _Radius, Vector3* p, Vector3* n, float* t) const
 {
     Cylinder3 cylinder(_X0, _X1, _Radius);
+	GJKIntersection gjkIntersect;
+	if (gjkIntersect.Solve(this, &cylinder) == GJK_status::Intersect)
+	{
+		if (p)
+		{
+			*p = GetCenter();
+		}
+		if (n)
+		{
+			*n = -Direction;
+			n->SafeNormalize();
+		}
+		if (t)
+		{
+			*t = 0.0f;
+		}
+		return true;
+	}
+
     GJKShapecast gjk;
     return gjk.Solve(Direction, this, &cylinder, p, n, t);
 }
@@ -512,28 +567,425 @@ bool Capsule3::SweepCapsule(const Vector3& Direction, const Vector3& _X0, const 
     return success;
 }
 
-bool Capsule3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* n, Vector3* p, float* t) const
+bool Capsule3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* p, Vector3* n, float* t) const
 {
+	if (convex)
+	{
+		GJKIntersection gjkIntersect;
+		if (gjkIntersect.Solve(this, convex) == GJK_status::Intersect)
+		{
+			if (p)
+			{
+				*p = GetCenter();
+			}
+			if (n)
+			{
+				*n = -Direction;
+				n->SafeNormalize();
+			}
+			if (t)
+			{
+				*t = 0.0f;
+			}
+			return true;
+		}
+	}
+
 	GJKShapecast gjk;
 	return gjk.Solve(Direction, this, convex, p, n, t);
 }
 
+static bool CapsuleSweepMovingAABBAABBInterval(const Vector3& movingMin, const Vector3& movingMax, const Vector3& direction, const Vector3& staticMin, const Vector3& staticMax, float maxDist, float& enter, float& exit)
+{
+	Box3 movingBox(movingMin, movingMax);
+	if (movingBox.Intersect(staticMin, staticMax))
+	{
+		enter = 0.0f;
+		exit = maxDist;
+		return true;
+	}
+
+	const Vector3 center = (movingMin + movingMax) * 0.5f;
+	const Vector3 extents = (movingMax - movingMin) * 0.5f;
+	const Vector3 expandedMin = staticMin - extents;
+	const Vector3 expandedMax = staticMax + extents;
+
+	enter = 0.0f;
+	exit = maxDist;
+	for (int i = 0; i < 3; ++i)
+	{
+		if (fabsf(direction[i]) < 1.0e-8f)
+		{
+			if (center[i] < expandedMin[i] || center[i] > expandedMax[i])
+			{
+				return false;
+			}
+			continue;
+		}
+
+		const float invDir = 1.0f / direction[i];
+		float t0 = (expandedMin[i] - center[i]) * invDir;
+		float t1 = (expandedMax[i] - center[i]) * invDir;
+		if (t0 > t1)
+		{
+			std::swap(t0, t1);
+		}
+
+		enter = std::max(enter, t0);
+		exit = std::min(exit, t1);
+		if (enter > exit)
+		{
+			return false;
+		}
+	}
+
+	if (exit < 0.0f || enter > maxDist)
+	{
+		return false;
+	}
+
+	enter = std::max(enter, 0.0f);
+	return true;
+}
+
+static bool CapsuleSweepMovingAABBAABB(const Vector3& movingMin, const Vector3& movingMax, const Vector3& direction, const Vector3& staticMin, const Vector3& staticMax, float maxDist, float& toi)
+{
+	float enter, exit;
+	if (!CapsuleSweepMovingAABBAABBInterval(movingMin, movingMax, direction, staticMin, staticMax, maxDist, enter, exit))
+	{
+		return false;
+	}
+	toi = std::max(enter, 0.0f);
+	return true;
+}
+
+static void ClosestSegmentTrianglePoints(const Vector3& s0, const Vector3& s1, const Vector3& A, const Vector3& B, const Vector3& C, Vector3& pointOnSegment, Vector3& pointOnTriangle)
+{
+	pointOnSegment = s0;
+	pointOnTriangle = Triangle3::ClosestPointOnTriangleToPoint(s0, A, B, C);
+	float bestSqr = (pointOnSegment - pointOnTriangle).SquareLength();
+
+	const Vector3 triFromS1 = Triangle3::ClosestPointOnTriangleToPoint(s1, A, B, C);
+	float sqr = (s1 - triFromS1).SquareLength();
+	if (sqr < bestSqr)
+	{
+		bestSqr = sqr;
+		pointOnSegment = s1;
+		pointOnTriangle = triFromS1;
+	}
+
+	const Vector3 edges[3][2] =
+	{
+		{ A, B },
+		{ B, C },
+		{ C, A },
+	};
+	for (int i = 0; i < 3; ++i)
+	{
+		Vector3 segPoint, edgePoint;
+		Segment3::ClosestPointsBetweenSegmentsEx(s0, s1, edges[i][0], edges[i][1], segPoint, edgePoint);
+		sqr = (segPoint - edgePoint).SquareLength();
+		if (sqr < bestSqr)
+		{
+			bestSqr = sqr;
+			pointOnSegment = segPoint;
+			pointOnTriangle = edgePoint;
+		}
+	}
+}
+
+static void ComputeCapsuleTriangleSweepResult(const Capsule3& capsule, const Vector3& direction, float hitTime, const Vector3& A, const Vector3& B, const Vector3& C, Vector3* p, Vector3* n, float* t)
+{
+	if (t)
+	{
+		*t = hitTime;
+	}
+
+	const Vector3 movedX0 = capsule.X0 + direction * hitTime;
+	const Vector3 movedX1 = capsule.X1 + direction * hitTime;
+	Vector3 pointOnSegment, pointOnTriangle;
+	ClosestSegmentTrianglePoints(movedX0, movedX1, A, B, C, pointOnSegment, pointOnTriangle);
+
+	if (p)
+	{
+		*p = pointOnTriangle;
+	}
+	if (n)
+	{
+		*n = pointOnSegment - pointOnTriangle;
+		if (n->SafeNormalize() <= 1.0e-4f)
+		{
+			*n = Triangle3::CalculateNormal(A, B, C, false);
+			if (n->SafeNormalize() <= 1.0e-6f)
+			{
+				*n = -direction;
+				n->SafeNormalize();
+			}
+		}
+		if (n->Dot(direction) > 0.0f)
+		{
+			*n = -*n;
+		}
+	}
+}
+
+static void AddExtrudedTriangle(Vector3 outTris[21], int& numVerts, const Vector3& a, const Vector3& b, const Vector3& c, const Vector3& direction)
+{
+	Vector3 n = (b - a).Cross(c - a);
+	if (n.Dot(direction) > 0.0f)
+	{
+		outTris[numVerts++] = a;
+		outTris[numVerts++] = c;
+		outTris[numVerts++] = b;
+	}
+	else
+	{
+		outTris[numVerts++] = a;
+		outTris[numVerts++] = b;
+		outTris[numVerts++] = c;
+	}
+}
+
+static bool SweepCapsuleTriangleTOI(const Capsule3& capsule, const Vector3& direction, const Vector3& A, const Vector3& B, const Vector3& C, float maxDistance, float& hitTime)
+{
+	if (direction.SquareLength() <= 1.0e-12f)
+	{
+		return false;
+	}
+
+	if (capsule.IntersectTriangle(A, B, C))
+	{
+		hitTime = 0.0f;
+		return true;
+	}
+
+	const Vector3 unitDir = direction.SafeUnit();
+	const Vector3 extrusionDir = (capsule.X0 - capsule.X1) * 0.5f;
+	const float halfHeight = extrusionDir.Length();
+	if (halfHeight <= 1.0e-6f)
+	{
+		Sphere3 sphere(capsule.X0, capsule.Radius);
+		Vector3 unusedP, unusedN;
+		return sphere.SweepTriangle(direction, A, B, C, &unusedP, &unusedN, &hitTime) && hitTime <= maxDistance;
+	}
+
+	const Vector3 capsuleAxis = extrusionDir / halfHeight;
+	if (fabsf(capsuleAxis.Dot(unitDir)) >= 1.0f - 1.0e-5f)
+	{
+		const Vector3 sphereCenter = capsule.GetCenter() + unitDir * halfHeight;
+		Sphere3 sphere(sphereCenter, capsule.Radius);
+		Vector3 unusedP, unusedN;
+		return sphere.SweepTriangle(direction, A, B, C, &unusedP, &unusedN, &hitTime) && hitTime <= maxDistance;
+	}
+
+	Vector3 extrudedTris[21];
+	int numVerts = 0;
+
+	const Vector3 triNormal = (B - A).Cross(C - A);
+	const Vector3 p0 = A - extrusionDir;
+	const Vector3 p1 = B - extrusionDir;
+	const Vector3 p2 = C - extrusionDir;
+	const Vector3 p0b = A + extrusionDir;
+	const Vector3 p1b = B + extrusionDir;
+	const Vector3 p2b = C + extrusionDir;
+
+	if (triNormal.Dot(extrusionDir) >= 0.0f)
+	{
+		AddExtrudedTriangle(extrudedTris, numVerts, p0b, p1b, p2b, direction);
+	}
+	else
+	{
+		AddExtrudedTriangle(extrudedTris, numVerts, p0, p1, p2, direction);
+	}
+
+	AddExtrudedTriangle(extrudedTris, numVerts, p1, p1b, p2b, direction);
+	AddExtrudedTriangle(extrudedTris, numVerts, p1, p2b, p2, direction);
+	AddExtrudedTriangle(extrudedTris, numVerts, p0, p2, p2b, direction);
+	AddExtrudedTriangle(extrudedTris, numVerts, p0, p2b, p0b, direction);
+	AddExtrudedTriangle(extrudedTris, numVerts, p0b, p1b, p1, direction);
+	AddExtrudedTriangle(extrudedTris, numVerts, p0b, p1, p0, direction);
+
+	Sphere3 sphere(capsule.GetCenter(), capsule.Radius);
+	bool hit = false;
+	float bestDistance = maxDistance;
+	for (int i = 0; i < numVerts; i += 3)
+	{
+		Vector3 unusedP, unusedN;
+		float currentDistance;
+		if (sphere.SweepTriangle(direction, extrudedTris[i], extrudedTris[i + 1], extrudedTris[i + 2], &unusedP, &unusedN, &currentDistance) && currentDistance <= bestDistance)
+		{
+			bestDistance = currentDistance;
+			hit = true;
+		}
+	}
+
+	if (!hit)
+	{
+		return false;
+	}
+
+	hitTime = bestDistance;
+	return true;
+}
+
+static void TestCapsuleTriangleForBestSweep(const Capsule3& capsule, const Vector3& direction, const Vector3& unitDir, const Vector3& A, const Vector3& B, const Vector3& C, float& bestDistance, float& bestAlignment, Vector3 bestTri[3], bool& hit)
+{
+	float currentDistance;
+	if (!SweepCapsuleTriangleTOI(capsule, direction, A, B, C, bestDistance, currentDistance))
+	{
+		return;
+	}
+
+	Vector3 triNormal = (B - A).Cross(C - A);
+	if (triNormal.SafeNormalize() <= 1.0e-6f)
+	{
+		triNormal = -unitDir;
+	}
+
+	const float alignment = Triangle3::ComputeAlignmentValue(triNormal, unitDir);
+	if (!hit || Triangle3::IsBetterTriangle(currentDistance, alignment, bestDistance, bestAlignment))
+	{
+		bestDistance = currentDistance;
+		bestAlignment = alignment;
+		bestTri[0] = A;
+		bestTri[1] = B;
+		bestTri[2] = C;
+		hit = true;
+	}
+}
+
 bool Capsule3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* p, Vector3* n, float* t) const
 {
-	// TODO
-	return false;
+	float hitTime;
+	if (!SweepCapsuleTriangleTOI(*this, Direction, A, B, C, FLT_MAX, hitTime))
+	{
+		return false;
+	}
+
+	ComputeCapsuleTriangleSweepResult(*this, Direction, hitTime, A, B, C, p, n, t);
+	return true;
 }
 
 bool Capsule3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* p, Vector3* n, float* t) const
 {
-	// TODO
-	return false;
+	if (hf == nullptr || hf->Cells == nullptr || hf->nX < 2 || hf->nZ < 2 || Direction.SquareLength() <= 1.0e-12f)
+	{
+		return false;
+	}
+
+	const Box3 movingBounds = CalculateBoundingVolume();
+
+	float hfEnter, hfExit;
+	if (!CapsuleSweepMovingAABBAABBInterval(movingBounds.Min, movingBounds.Max, Direction, hf->BV.Min, hf->BV.Max, FLT_MAX, hfEnter, hfExit))
+	{
+		return false;
+	}
+
+	Box3 overlap;
+	if (hfExit == FLT_MAX)
+	{
+		overlap = hf->BV;
+	}
+	else
+	{
+		Box3 sweptBox(movingBounds.Min + Direction * hfEnter, movingBounds.Max + Direction * hfEnter);
+		sweptBox.Encapsulate(movingBounds.Min + Direction * hfExit);
+		sweptBox.Encapsulate(movingBounds.Max + Direction * hfExit);
+		if (!sweptBox.GetIntersection(hf->BV, overlap))
+		{
+			return false;
+		}
+	}
+
+	const int i0 = std::max(0, std::min((int)hf->nX - 2, (int)((overlap.Min.x - hf->BV.Min.x) * hf->InvDX)));
+	const int j0 = std::max(0, std::min((int)hf->nZ - 2, (int)((overlap.Min.z - hf->BV.Min.z) * hf->InvDZ)));
+	const int i1 = std::max(0, std::min((int)hf->nX - 2, (int)((overlap.Max.x - hf->BV.Min.x) * hf->InvDX)));
+	const int j1 = std::max(0, std::min((int)hf->nZ - 2, (int)((overlap.Max.z - hf->BV.Min.z) * hf->InvDZ)));
+
+	bool hit = false;
+	float bestDistance = FLT_MAX;
+	float bestAlignment = 2.0f;
+	Vector3 bestTri[3];
+	const Vector3 unitDir = Direction.SafeUnit();
+
+	for (int i = i0; i <= i1; ++i)
+	{
+		for (int j = j0; j <= j1; ++j)
+		{
+			Box3 cellBox;
+			if (!hf->GetCellBV(i, j, cellBox))
+			{
+				continue;
+			}
+
+			float cellToi;
+			if (!CapsuleSweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, cellBox.Min, cellBox.Max, bestDistance, cellToi))
+			{
+				continue;
+			}
+
+			Vector3 tris[6];
+			const int numTriVerts = hf->GetCellTriangle(i, j, tris);
+			for (int k = 0; k < numTriVerts; k += 3)
+			{
+				TestCapsuleTriangleForBestSweep(*this, Direction, unitDir, tris[k], tris[k + 1], tris[k + 2], bestDistance, bestAlignment, bestTri, hit);
+			}
+		}
+	}
+
+	if (!hit)
+	{
+		return false;
+	}
+
+	ComputeCapsuleTriangleSweepResult(*this, Direction, bestDistance, bestTri[0], bestTri[1], bestTri[2], p, n, t);
+	return true;
 }
 
 bool Capsule3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* p, Vector3* n, float* t) const
 {
-	// TODO
-	return false;
+	if (trimesh == nullptr || trimesh->NumTriangles == 0 || Direction.SquareLength() <= 1.0e-12f)
+	{
+		return false;
+	}
+
+	const Box3 movingBounds = CalculateBoundingVolume();
+
+	float meshToi;
+	if (!CapsuleSweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, trimesh->BoundingVolume.Min, trimesh->BoundingVolume.Max, FLT_MAX, meshToi))
+	{
+		return false;
+	}
+
+	bool hit = false;
+	float bestDistance = FLT_MAX;
+	float bestAlignment = 2.0f;
+	Vector3 bestTri[3];
+	const Vector3 unitDir = Direction.SafeUnit();
+
+	for (uint32_t i = 0; i < trimesh->NumTriangles; ++i)
+	{
+		const Vector3 A = trimesh->GetVertex(i, 0);
+		const Vector3 B = trimesh->GetVertex(i, 1);
+		const Vector3 C = trimesh->GetVertex(i, 2);
+		const Box3 triBounds(A, B, C);
+
+		float triToi;
+		if (!CapsuleSweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, triBounds.Min, triBounds.Max, bestDistance, triToi))
+		{
+			continue;
+		}
+
+		TestCapsuleTriangleForBestSweep(*this, Direction, unitDir, A, B, C, bestDistance, bestAlignment, bestTri, hit);
+	}
+
+	if (!hit)
+	{
+		return false;
+	}
+
+	ComputeCapsuleTriangleSweepResult(*this, Direction, bestDistance, bestTri[0], bestTri[1], bestTri[2], p, n, t);
+	return true;
 }
 
 int Capsule3::GetSupportFace(const Vector3& Direction, Vector3* FacePoints) const
@@ -719,7 +1171,7 @@ bool Capsule3::intersectAxis(const Capsule3& capsule, const Vector3& A, const Ve
 	if (min0 > max0)
 		std::swap(min0, max0);
 
-	const float MR = axis.SquareLength() * capsule.Radius;
+	const float MR = axis.Length() * capsule.Radius;
 	min0 -= MR;
 	max0 += MR;
 

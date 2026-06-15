@@ -1,6 +1,13 @@
 #include "OrientedBox3.h"
 #include "AxisAlignedBox3.h"
+#include "Capsule3.h"
+#include "ConvexMesh.h"
+#include "Cylinder3.h"
+#include "GJK.h"
+#include "HeightField3.h"
 #include "Sphere3.h"
+#include "Triangle3.h"
+#include "TriangleMesh.h"
 
 namespace Riemann
 {
@@ -278,6 +285,461 @@ bool OrientedBox3::PenetratePlane(const Vector3& pNormal, float D, Vector3* Norm
 
 	*Normal = pNormal;
 	*Depth = -dmin;
+	return true;
+}
+
+static Vector3 OBBWorldToLocalPoint(const OrientedBox3& box, const Vector3& point)
+{
+	return (point - box.Center) * box.Rotation;
+}
+
+static Vector3 OBBWorldToLocalDirection(const OrientedBox3& box, const Vector3& direction)
+{
+	return direction * box.Rotation;
+}
+
+static Vector3 OBBLocalToWorldPoint(const OrientedBox3& box, const Vector3& point)
+{
+	return box.Center + box.Rotation * point;
+}
+
+static Vector3 OBBLocalToWorldDirection(const OrientedBox3& box, const Vector3& direction)
+{
+	return box.Rotation * direction;
+}
+
+static void TransformOBBSweepResultToWorld(const OrientedBox3& box, bool hit, Vector3* p, Vector3* n)
+{
+	if (!hit)
+	{
+		return;
+	}
+	if (p)
+	{
+		*p = OBBLocalToWorldPoint(box, *p);
+	}
+	if (n)
+	{
+		*n = OBBLocalToWorldDirection(box, *n);
+		n->SafeNormalize();
+	}
+}
+
+static Box3 ComputeOBBWorldBounds(const OrientedBox3& box)
+{
+	Vector3 vertices[8];
+	box.GetVertices(vertices);
+
+	Box3 bounds;
+	bounds.SetEmpty();
+	for (int i = 0; i < 8; ++i)
+	{
+		bounds.Encapsulate(vertices[i]);
+	}
+	return bounds;
+}
+
+static bool SweepMovingAABBAABBInterval(const Vector3& movingMin, const Vector3& movingMax, const Vector3& direction, const Vector3& staticMin, const Vector3& staticMax, float maxDist, float& enter, float& exit)
+{
+	Box3 movingBox(movingMin, movingMax);
+	if (movingBox.Intersect(staticMin, staticMax))
+	{
+		enter = 0.0f;
+		exit = maxDist;
+		return true;
+	}
+
+	const Vector3 center = (movingMin + movingMax) * 0.5f;
+	const Vector3 extents = (movingMax - movingMin) * 0.5f;
+	const Vector3 expandedMin = staticMin - extents;
+	const Vector3 expandedMax = staticMax + extents;
+
+	enter = 0.0f;
+	exit = maxDist;
+	for (int i = 0; i < 3; ++i)
+	{
+		if (fabsf(direction[i]) < 1.0e-8f)
+		{
+			if (center[i] < expandedMin[i] || center[i] > expandedMax[i])
+			{
+				return false;
+			}
+			continue;
+		}
+
+		const float invDir = 1.0f / direction[i];
+		float t0 = (expandedMin[i] - center[i]) * invDir;
+		float t1 = (expandedMax[i] - center[i]) * invDir;
+		if (t0 > t1)
+		{
+			std::swap(t0, t1);
+		}
+
+		enter = std::max(enter, t0);
+		exit = std::min(exit, t1);
+		if (enter > exit)
+		{
+			return false;
+		}
+	}
+
+	if (exit < 0.0f || enter > maxDist)
+	{
+		return false;
+	}
+
+	enter = std::max(enter, 0.0f);
+	return true;
+}
+
+static bool SweepMovingAABBAABB(const Vector3& movingMin, const Vector3& movingMax, const Vector3& direction, const Vector3& staticMin, const Vector3& staticMax, float maxDist, float& toi)
+{
+	float enter, exit;
+	if (!SweepMovingAABBAABBInterval(movingMin, movingMax, direction, staticMin, staticMax, maxDist, enter, exit))
+	{
+		return false;
+	}
+	toi = std::max(enter, 0.0f);
+	return true;
+}
+
+static bool SetOBBInitialSweepHit(const OrientedBox3& box, const Vector3& Direction, Vector3* p, Vector3* n, float* t)
+{
+	if (t)
+	{
+		*t = 0.0f;
+	}
+	if (n)
+	{
+		*n = -Direction;
+		n->SafeNormalize();
+	}
+	if (p)
+	{
+		*p = box.GetSupport(Direction);
+	}
+	return true;
+}
+
+Vector3 OrientedBox3::GetSupport(const Vector3& Direction) const
+{
+	const Vector3 localDir = OBBWorldToLocalDirection(*this, Direction);
+	const Vector3 localSupport(
+		localDir.x >= 0.0f ? Extent.x : -Extent.x,
+		localDir.y >= 0.0f ? Extent.y : -Extent.y,
+		localDir.z >= 0.0f ? Extent.z : -Extent.z);
+	return OBBLocalToWorldPoint(*this, localSupport);
+}
+
+bool OrientedBox3::SweepAABB(const Vector3& Direction, const Vector3& bmin, const Vector3& bmax, Vector3* p, Vector3* n, float* t) const
+{
+	if (IntersectAABB(bmin, bmax))
+	{
+		return SetOBBInitialSweepHit(*this, Direction, p, n, t);
+	}
+
+	AxisAlignedBox3 box(bmin, bmax);
+	GJKShapecast gjk;
+	return gjk.Solve(Direction, this, &box, p, n, t);
+}
+
+bool OrientedBox3::SweepSphere(const Vector3& Direction, const Vector3& rCenter, float rRadius, Vector3* p, Vector3* n, float* t) const
+{
+	AxisAlignedBox3 localBox(-Extent, Extent);
+	if (localBox.IntersectSphere(OBBWorldToLocalPoint(*this, rCenter), rRadius))
+	{
+		return SetOBBInitialSweepHit(*this, Direction, p, n, t);
+	}
+
+	Sphere3 sp(rCenter, rRadius);
+	GJKShapecast gjk;
+	return gjk.Solve(Direction, this, &sp, p, n, t);
+}
+
+bool OrientedBox3::SweepPlane(const Vector3& Direction, const Vector3& Normal, float D, Vector3* p, Vector3* n, float* t) const
+{
+	AxisAlignedBox3 localBox(-Extent, Extent);
+	const Vector3 localDir = OBBWorldToLocalDirection(*this, Direction);
+	const Vector3 localNormal = OBBWorldToLocalDirection(*this, Normal);
+	const float localD = Normal.Dot(Center) + D;
+
+	Vector3 localPosition = Vector3::Zero();
+	Vector3 localHitNormal = Vector3::Zero();
+	float localT = 0.0f;
+	const bool hit = localBox.SweepPlane(localDir, localNormal, localD, &localPosition, &localHitNormal, &localT);
+	if (!hit)
+	{
+		return false;
+	}
+
+	if (t)
+	{
+		*t = localT;
+	}
+	if (n)
+	{
+		*n = OBBLocalToWorldDirection(*this, localHitNormal);
+		n->SafeNormalize();
+	}
+	if (p)
+	{
+		const Vector3 support = localBox.GetSupport(localDir);
+		*p = OBBLocalToWorldPoint(*this, support + localDir * localT);
+	}
+	return true;
+}
+
+bool OrientedBox3::SweepCylinder(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* p, Vector3* n, float* t) const
+{
+	Cylinder3 cylinder(X0, X1, rRadius);
+	GJKIntersection gjkIntersect;
+	if (gjkIntersect.Solve(this, &cylinder) == GJK_status::Intersect)
+	{
+		return SetOBBInitialSweepHit(*this, Direction, p, n, t);
+	}
+
+	GJKShapecast gjk;
+	return gjk.Solve(Direction, this, &cylinder, p, n, t);
+}
+
+bool OrientedBox3::SweepCapsule(const Vector3& Direction, const Vector3& X0, const Vector3& X1, float rRadius, Vector3* p, Vector3* n, float* t) const
+{
+	AxisAlignedBox3 localBox(-Extent, Extent);
+	if (localBox.IntersectCapsule(OBBWorldToLocalPoint(*this, X0), OBBWorldToLocalPoint(*this, X1), rRadius))
+	{
+		return SetOBBInitialSweepHit(*this, Direction, p, n, t);
+	}
+
+	Capsule3 capsule(X0, X1, rRadius);
+	GJKShapecast gjk;
+	return gjk.Solve(Direction, this, &capsule, p, n, t);
+}
+
+bool OrientedBox3::SweepConvex(const Vector3& Direction, const ConvexMesh* convex, Vector3* p, Vector3* n, float* t) const
+{
+	if (convex != nullptr)
+	{
+		GJKIntersection gjkIntersect;
+		if (gjkIntersect.Solve(this, convex) == GJK_status::Intersect)
+		{
+			return SetOBBInitialSweepHit(*this, Direction, p, n, t);
+		}
+	}
+
+	GJKShapecast gjk;
+	return gjk.Solve(Direction, this, convex, p, n, t);
+}
+
+bool OrientedBox3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* p, Vector3* n, float* t) const
+{
+	AxisAlignedBox3 localBox(-Extent, Extent);
+	const Vector3 localDir = OBBWorldToLocalDirection(*this, Direction);
+	const Vector3 localA = OBBWorldToLocalPoint(*this, A);
+	const Vector3 localB = OBBWorldToLocalPoint(*this, B);
+	const Vector3 localC = OBBWorldToLocalPoint(*this, C);
+
+	const bool hit = localBox.SweepTriangle(localDir, localA, localB, localC, p, n, t);
+	TransformOBBSweepResultToWorld(*this, hit, p, n);
+	return hit;
+}
+
+bool OrientedBox3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* p, Vector3* n, float* t) const
+{
+	if (hf == nullptr || hf->Cells == nullptr || hf->nX < 2 || hf->nZ < 2 || Direction.SquareLength() <= 1.0e-12f)
+	{
+		return false;
+	}
+
+	AxisAlignedBox3 localBox(-Extent, Extent);
+	const Vector3 localDir = OBBWorldToLocalDirection(*this, Direction);
+	const Vector3 localUnitDir = localDir.SafeUnit();
+	const Box3 movingBounds = ComputeOBBWorldBounds(*this);
+
+	float hfEnter, hfExit;
+	if (!SweepMovingAABBAABBInterval(movingBounds.Min, movingBounds.Max, Direction, hf->BV.Min, hf->BV.Max, FLT_MAX, hfEnter, hfExit))
+	{
+		return false;
+	}
+
+	Box3 overlap;
+	if (hfExit == FLT_MAX)
+	{
+		overlap = hf->BV;
+	}
+	else
+	{
+		Box3 sweptBox(movingBounds.Min + Direction * hfEnter, movingBounds.Max + Direction * hfEnter);
+		sweptBox.Encapsulate(movingBounds.Min + Direction * hfExit);
+		sweptBox.Encapsulate(movingBounds.Max + Direction * hfExit);
+		if (!sweptBox.GetIntersection(hf->BV, overlap))
+		{
+			return false;
+		}
+	}
+
+	const int i0 = std::max(0, std::min((int)hf->nX - 2, (int)((overlap.Min.x - hf->BV.Min.x) * hf->InvDX)));
+	const int j0 = std::max(0, std::min((int)hf->nZ - 2, (int)((overlap.Min.z - hf->BV.Min.z) * hf->InvDZ)));
+	const int i1 = std::max(0, std::min((int)hf->nX - 2, (int)((overlap.Max.x - hf->BV.Min.x) * hf->InvDX)));
+	const int j1 = std::max(0, std::min((int)hf->nZ - 2, (int)((overlap.Max.z - hf->BV.Min.z) * hf->InvDZ)));
+
+	bool hit = false;
+	float bestDistance = FLT_MAX;
+	float bestAlignment = 2.0f;
+	Vector3 bestPosition = Vector3::Zero();
+	Vector3 bestNormal = Vector3::Zero();
+
+	for (int i = i0; i <= i1; ++i)
+	{
+		for (int j = j0; j <= j1; ++j)
+		{
+			Box3 cellBox;
+			if (!hf->GetCellBV(i, j, cellBox))
+			{
+				continue;
+			}
+
+			float cellToi;
+			if (!SweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, cellBox.Min, cellBox.Max, bestDistance, cellToi))
+			{
+				continue;
+			}
+
+			Vector3 tris[6];
+			const int numTriVerts = hf->GetCellTriangle(i, j, tris);
+			for (int k = 0; k < numTriVerts; k += 3)
+			{
+				const Vector3 localA = OBBWorldToLocalPoint(*this, tris[k]);
+				const Vector3 localB = OBBWorldToLocalPoint(*this, tris[k + 1]);
+				const Vector3 localC = OBBWorldToLocalPoint(*this, tris[k + 2]);
+
+				Vector3 localPosition, localNormal;
+				float localT;
+				if (!localBox.SweepTriangle(localDir, localA, localB, localC, &localPosition, &localNormal, &localT))
+				{
+					continue;
+				}
+
+				Vector3 triNormal = (localB - localA).Cross(localC - localA);
+				if (triNormal.SafeNormalize() <= 1.0e-6f)
+				{
+					triNormal = -localUnitDir;
+				}
+				const float alignment = Triangle3::ComputeAlignmentValue(triNormal, localUnitDir);
+				if (!hit || Triangle3::IsBetterTriangle(localT, alignment, bestDistance, bestAlignment))
+				{
+					hit = true;
+					bestDistance = localT;
+					bestAlignment = alignment;
+					bestPosition = localPosition;
+					bestNormal = localNormal;
+				}
+			}
+		}
+	}
+
+	if (!hit)
+	{
+		return false;
+	}
+
+	if (t)
+	{
+		*t = bestDistance;
+	}
+	if (p)
+	{
+		*p = bestPosition;
+	}
+	if (n)
+	{
+		*n = bestNormal;
+	}
+	TransformOBBSweepResultToWorld(*this, true, p, n);
+	return true;
+}
+
+bool OrientedBox3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* p, Vector3* n, float* t) const
+{
+	if (trimesh == nullptr || trimesh->NumTriangles == 0 || Direction.SquareLength() <= 1.0e-12f)
+	{
+		return false;
+	}
+
+	AxisAlignedBox3 localBox(-Extent, Extent);
+	const Vector3 localDir = OBBWorldToLocalDirection(*this, Direction);
+	const Vector3 localUnitDir = localDir.SafeUnit();
+	const Box3 movingBounds = ComputeOBBWorldBounds(*this);
+
+	float meshToi;
+	if (!SweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, trimesh->BoundingVolume.Min, trimesh->BoundingVolume.Max, FLT_MAX, meshToi))
+	{
+		return false;
+	}
+
+	bool hit = false;
+	float bestDistance = FLT_MAX;
+	float bestAlignment = 2.0f;
+	Vector3 bestPosition = Vector3::Zero();
+	Vector3 bestNormal = Vector3::Zero();
+
+	for (uint32_t i = 0; i < trimesh->NumTriangles; ++i)
+	{
+		const Vector3 worldA = trimesh->GetVertex(i, 0);
+		const Vector3 worldB = trimesh->GetVertex(i, 1);
+		const Vector3 worldC = trimesh->GetVertex(i, 2);
+		const Box3 triBounds(worldA, worldB, worldC);
+
+		float triToi;
+		if (!SweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, triBounds.Min, triBounds.Max, bestDistance, triToi))
+		{
+			continue;
+		}
+
+		const Vector3 localA = OBBWorldToLocalPoint(*this, worldA);
+		const Vector3 localB = OBBWorldToLocalPoint(*this, worldB);
+		const Vector3 localC = OBBWorldToLocalPoint(*this, worldC);
+
+		Vector3 localPosition, localNormal;
+		float localT;
+		if (!localBox.SweepTriangle(localDir, localA, localB, localC, &localPosition, &localNormal, &localT))
+		{
+			continue;
+		}
+
+		Vector3 triNormal = (localB - localA).Cross(localC - localA);
+		if (triNormal.SafeNormalize() <= 1.0e-6f)
+		{
+			triNormal = -localUnitDir;
+		}
+		const float alignment = Triangle3::ComputeAlignmentValue(triNormal, localUnitDir);
+		if (!hit || Triangle3::IsBetterTriangle(localT, alignment, bestDistance, bestAlignment))
+		{
+			hit = true;
+			bestDistance = localT;
+			bestAlignment = alignment;
+			bestPosition = localPosition;
+			bestNormal = localNormal;
+		}
+	}
+
+	if (!hit)
+	{
+		return false;
+	}
+
+	if (t)
+	{
+		*t = bestDistance;
+	}
+	if (p)
+	{
+		*p = bestPosition;
+	}
+	if (n)
+	{
+		*n = bestNormal;
+	}
+	TransformOBBSweepResultToWorld(*this, true, p, n);
 	return true;
 }
 

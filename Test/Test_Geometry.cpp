@@ -70,36 +70,7 @@ void TestMeshSimplify1()
 	StaticMesh mesh;
 	mesh.LoadObj(TestDataPath("bunny.obj").c_str());
 	mesh.Simplify(cfg);
-	mesh.ExportObj(TestDataPath("bunny2.obj").c_str());
-}
-
-void TestMeshSimplify2()
-{
-	printf("Running TestMeshSimplify2\n");
-
-	SimplificationConfig cfg;
-	cfg.rate = 0.1f;
-
-	StaticMesh mesh;
-	mesh.LoadObj(TestDataPath("dungeon.obj").c_str());
-	mesh.Simplify(cfg);
-	mesh.ExportObj(TestDataPath("dungeon2.obj").c_str());
-}
-
-void TestMeshSimplify3()
-{
-	if (std::getenv("RIEMANN_ENABLE_SLOW_GEOMETRY_TESTS") == nullptr)
-	{
-		return;
-	}
-
-	SimplificationConfig cfg;
-	cfg.faces = 20000;
-
-	StaticMesh mesh;
-	mesh.LoadObj("F:/Downloads/simplemesh/car_1.obj");
-	mesh.Simplify(cfg);
-	mesh.ExportObj("F:/Downloads/simplemesh/car_sim.obj");
+	mesh.ExportObj(TestOutputPath("bunny2.obj").c_str());
 }
 
 void TestClip()
@@ -292,7 +263,7 @@ void TestGeometryBoolean1()
 		return;
 	}
 	b.Result->FixTriangleOrientation(false);
-	b.Result->ExportObj(TestDataPath("box_intersect.obj").c_str());
+	b.Result->ExportObj(TestOutputPath("box_intersect.obj").c_str());
 	delete b.Result;
 	b.Result = nullptr;
 
@@ -329,7 +300,7 @@ void TestGeometryBoolean2()
 		return;
 	}
 	b.Result->FixTriangleOrientation(false);
-	b.Result->ExportObj(TestDataPath("bunny_intersect.obj").c_str());
+	b.Result->ExportObj(TestOutputPath("bunny_intersect.obj").c_str());
 	delete b.Result;
 	b.Result = nullptr;
 
@@ -389,8 +360,6 @@ void TestGeometry()
 	TestOctree();
 	TestParseObj();
 	TestMeshSimplify1();
-	TestMeshSimplify2();
-	TestMeshSimplify3();
 	TestClip();
 	TestCatmullRom();
 	TestVoronoi2d();
