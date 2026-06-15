@@ -25,6 +25,8 @@
 #include "../Src/Collision/GeometryDifference.h"
 #include "../Src/Collision/GeometryIntersection.h"
 #include "../Src/Collision/EPAPenetration.h"
+#include "../Src/RigidBodyDynamics/BroadPhase.h"
+#include "../Src/RigidBodyDynamics/RigidBody.h"
 #include "../Src/Maths/Maths.h"
 
 using namespace Riemann;
@@ -1186,6 +1188,87 @@ void TestSAPInc()
 	return;
 }
 
+static std::set<OverlapKey> ToBroadPhasePairSet(const std::vector<OverlapPair>& pairs)
+{
+	std::set<OverlapKey> result;
+	for (const OverlapPair& pair : pairs)
+	{
+		result.insert(SAP::PackOverlapKey(pair.index1, pair.index2));
+	}
+	return result;
+}
+
+void TestPhysXBroadPhasePorts()
+{
+	printf("Running TestPhysXBroadPhasePorts\n");
+	std::vector<RigidBody*> bodies;
+	std::vector<Geometry*> geoms;
+
+	for (int i = 0; i < 650; ++i)
+	{
+		const float x = (float)(i % 25) * 0.75f;
+		const float y = (float)((i / 25) % 13) * 0.75f;
+		const float z = (float)(i / 325) * 0.75f;
+		const Vector3 center(x, y, z);
+
+		RigidBodyParam param;
+		param.rigidType = (i % 3) == 0 ? RigidType::Dynamic : RigidType::Static;
+		RigidBody* body = RigidBody::CreateRigidBody(param, Transform(center));
+		body->AddGeometry(GeometryFactory::CreateOBB(center, Vector3(0.42f)));
+		bodies.push_back(body);
+		body->GetGeometries(&geoms);
+	}
+
+	RigidBodyParam dynamicParam;
+	dynamicParam.rigidType = RigidType::Dynamic;
+	RigidBody* largeBody = RigidBody::CreateRigidBody(dynamicParam, Transform(Vector3(9.0f, 4.0f, 0.4f)));
+	largeBody->AddGeometry(GeometryFactory::CreateOBB(Vector3(9.0f, 4.0f, 0.4f), Vector3(2.5f, 2.0f, 0.8f)));
+	bodies.push_back(largeBody);
+	largeBody->GetGeometries(&geoms);
+
+	DynamicAABBTree dynamicTree;
+	for (Geometry* geom : geoms)
+	{
+		const int nodeId = dynamicTree.Add(geom->GetBoundingVolume_WorldSpace(), geom);
+		geom->SetNodeId(nodeId);
+	}
+
+	BroadPhase* bruteforce = BroadPhase::Create_Bruteforce();
+	BroadPhase* sap = BroadPhase::Create_SAP();
+	BroadPhase* abp = BroadPhase::Create_ABP();
+	BroadPhase* mbp = BroadPhase::Create_MBP();
+	BroadPhase* dynamicAABB = BroadPhase::Create_DynamicAABB(&dynamicTree);
+
+	std::vector<OverlapPair> brutePairs;
+	std::vector<OverlapPair> sapPairs;
+	std::vector<OverlapPair> abpPairs;
+	std::vector<OverlapPair> mbpPairs;
+	std::vector<OverlapPair> dynamicAABBPairs;
+	bruteforce->ProduceOverlaps(geoms, &brutePairs);
+	sap->ProduceOverlaps(geoms, &sapPairs);
+	abp->ProduceOverlaps(geoms, &abpPairs);
+	mbp->ProduceOverlaps(geoms, &mbpPairs);
+	dynamicAABB->ProduceOverlaps(geoms, &dynamicAABBPairs);
+
+	const std::set<OverlapKey> bruteSet = ToBroadPhasePairSet(brutePairs);
+	EXPECT(ToBroadPhasePairSet(sapPairs) == bruteSet);
+	EXPECT(ToBroadPhasePairSet(abpPairs) == bruteSet);
+	EXPECT(ToBroadPhasePairSet(mbpPairs) == bruteSet);
+	EXPECT(ToBroadPhasePairSet(dynamicAABBPairs) == bruteSet);
+
+	delete bruteforce;
+	delete sap;
+	delete abp;
+	delete mbp;
+	delete dynamicAABB;
+
+	for (RigidBody* body : bodies)
+	{
+		body->ReleaseGeometries();
+		delete body;
+	}
+}
+
 
 void TestCollision()
 {
@@ -1212,5 +1295,6 @@ void TestCollision()
 	TestGeometryQuery();
 	TestSAP();
 	TestSAPInc();
+	TestPhysXBroadPhasePorts();
 	return;
 }

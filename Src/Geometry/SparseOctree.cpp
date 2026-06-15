@@ -21,6 +21,7 @@ namespace Riemann
 		m_Cells.clear();
 		m_RootCells.Clear();
 		m_Objects.clear();
+		m_SpillObjects.clear();
 		m_CellsLookup.clear();
 	}
 
@@ -94,36 +95,27 @@ namespace Riemann
 
 	bool SparseOctree::ReinsertObject(int Id, const Box3& NewBounds)
 	{
-		int cellId = INVALID_CELL_ID;
-
-		if (HasObject(Id))
+		int cellId = GetCellForObject(Id);
+		if (cellId == INVALID_CELL_ID)
 		{
-			cellId = GetCellForObject(Id);
-			if (cellId != INVALID_CELL_ID && cellId != SPILL_CELL_ID)
-			{
-				SparseOctree::Cell& CurrentCell = m_Cells[cellId];
-				if (IsFit(CurrentCell, NewBounds))
-				{
-					return false;
-				}
-
-				m_CellsLookup.erase(Id);
-				m_Objects[cellId].remove(Id);
-			}
+			return InsertObject(Id, NewBounds);
 		}
 
-		// remove object
-		if (cellId != INVALID_CELL_ID)
+		if (cellId == SPILL_CELL_ID)
 		{
-			if (cellId == SPILL_CELL_ID)
+			m_SpillObjects.erase(Id);
+			m_CellsLookup.erase(Id);
+		}
+		else
+		{
+			SparseOctree::Cell& CurrentCell = m_Cells[cellId];
+			if (IsFit(CurrentCell, NewBounds))
 			{
-				m_SpillObjects.erase(Id);
+				return true;
 			}
-			else
-			{
-				m_CellsLookup[Id] = INVALID_CELL_ID;
-				m_Objects[Id].remove(cellId);
-			}
+
+			m_Objects[cellId].remove(Id);
+			m_CellsLookup.erase(Id);
 		}
 
 		return InsertObject(Id, NewBounds);

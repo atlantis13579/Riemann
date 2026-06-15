@@ -5,6 +5,9 @@
 #include <cstdlib>
 
 #include "../Src/CollisionPrimitive/AxisAlignedBox3.h"
+#include "../Src/CollisionPrimitive/Capsule3.h"
+#include "../Src/CollisionPrimitive/OrientedBox3.h"
+#include "../Src/CollisionPrimitive/Sphere3.h"
 #include "../Src/CollisionPrimitive/StaticMesh.h"
 #include "../Src/Geometry/Spline.h"
 #include "../Src/Geometry/DynamicMesh.h"
@@ -235,74 +238,283 @@ void TestGeometrySet()
 }
 
 
-void TestGeometryBoolean1()
+static Matrix3 TestRotationX(float angle)
 {
-	printf("Running TestGeometryBoolean1\n");
-
-	AxisAlignedBox3 box1(Vector3(0.0f), Vector3(2.0f));
-	AxisAlignedBox3 box2(Vector3(1.0f), Vector3(3.0f));
-	std::vector<Vector3> Vertices;
-	std::vector<uint16_t> Indices;
-	std::vector<Vector3> Normals;
-
-	DynamicMesh mesh1;
-	box1.GetMesh2(Vertices, Indices, Normals);
-	mesh1.SetData(Vertices, Indices, Normals);
-
-	DynamicMesh mesh2;
-	box2.GetMesh2(Vertices, Indices, Normals);
-	mesh2.SetData(Vertices, Indices, Normals);
-
-	GeometryBoolean b(&mesh1, &mesh2, GeometryBoolean::BooleanOp::Intersect);
-	b.bWeldSharedEdges = false;
-	bool computed = b.Compute();
-	EXPECT(computed);
-	EXPECT(b.Result != nullptr);
-	if (!computed || b.Result == nullptr)
-	{
-		return;
-	}
-	b.Result->FixTriangleOrientation(false);
-	b.Result->ExportObj(TestOutputPath("box_intersect.obj").c_str());
-	delete b.Result;
-	b.Result = nullptr;
-
-	return;
+	const float c = (float)std::cos(angle);
+	const float s = (float)std::sin(angle);
+	return Matrix3(1.0f, 0.0f, 0.0f,
+		0.0f, c, -s,
+		0.0f, s, c);
 }
 
-void TestGeometryBoolean2()
+static Matrix3 TestRotationZ(float angle)
 {
-	printf("Running TestGeometryBoolean2\n");
-	if (std::getenv("RIEMANN_ENABLE_GEOMETRY_BOOLEAN_TESTS") == nullptr)
-	{
-		return;
-	}
+	const float c = (float)std::cos(angle);
+	const float s = (float)std::sin(angle);
+	return Matrix3(c, -s, 0.0f,
+		s, c, 0.0f,
+		0.0f, 0.0f, 1.0f);
+}
 
-	DynamicMesh mesh1;
-	mesh1.LoadObj(TestDataPath("bunny.obj").c_str());
-
-	DynamicMesh mesh2;
-	Box3 box = mesh1.GetBounds();
-	box.Max.y = box.GetCenter().y;
-	AxisAlignedBox3 aabb(box.Min, box.Max);
+static DynamicMesh MakeAABBMesh(const Vector3& bmin, const Vector3& bmax)
+{
 	std::vector<Vector3> Vertices;
 	std::vector<uint16_t> Indices;
 	std::vector<Vector3> Normals;
-	aabb.GetMesh2(Vertices, Indices, Normals);
-	mesh2.SetData(Vertices, Indices, Normals);
 
-	GeometryBoolean b(&mesh2, &mesh1, GeometryBoolean::BooleanOp::Intersect);
-	bool computed = b.Compute();
-	EXPECT(computed);
-	EXPECT(b.Result != nullptr);
-	if (!computed || b.Result == nullptr)
+	AxisAlignedBox3 box(bmin, bmax);
+	box.GetMesh2(Vertices, Indices, Normals);
+
+	DynamicMesh mesh;
+	mesh.SetData(Vertices, Indices, Normals);
+	return mesh;
+}
+
+static DynamicMesh MakeOBBMesh(const Vector3& center, const Vector3& extent, const Matrix3& rotation)
+{
+	std::vector<Vector3> Vertices;
+	std::vector<uint16_t> Indices;
+	std::vector<Vector3> Normals;
+
+	OrientedBox3 obb(center, extent, rotation);
+	AxisAlignedBox3 box(-obb.Extent, obb.Extent);
+	box.GetMesh2(Vertices, Indices, Normals);
+	for (size_t i = 0; i < Vertices.size(); ++i)
+	{
+		Vertices[i] = obb.Center + obb.Rotation * Vertices[i];
+		Normals[i] = obb.Rotation * Normals[i];
+	}
+
+	DynamicMesh mesh;
+	mesh.SetData(Vertices, Indices, Normals);
+	return mesh;
+}
+
+static DynamicMesh MakeSphereMesh(const Vector3& center, float radius)
+{
+	std::vector<Vector3> Vertices;
+	std::vector<uint16_t> Indices;
+	std::vector<Vector3> Normals;
+
+	Sphere3 sphere(center, radius);
+	sphere.GetMesh(Vertices, Indices, Normals);
+
+	DynamicMesh mesh;
+	mesh.SetData(Vertices, Indices, Normals);
+	return mesh;
+}
+
+static DynamicMesh MakeCapsuleMesh(const Vector3& x0, const Vector3& x1, float radius)
+{
+	std::vector<Vector3> Vertices;
+	std::vector<uint16_t> Indices;
+	std::vector<Vector3> Normals;
+
+	Capsule3 capsule(x0, x1, radius);
+	capsule.GetMesh(Vertices, Indices, Normals);
+
+	DynamicMesh mesh;
+	mesh.SetData(Vertices, Indices, Normals);
+	return mesh;
+}
+
+static float GetBoundsMaxSize(const Box3& bounds)
+{
+	Vector3 size = bounds.Max - bounds.Min;
+	return std::max(size.x, std::max(size.y, size.z));
+}
+
+static bool IsPointOnMeshVertex(const DynamicMesh& mesh, const Vector3& point, float tolerance)
+{
+	const float toleranceSqr = tolerance * tolerance;
+	for (int i = 0; i < mesh.GetVertexCount(); ++i)
+	{
+		if (mesh.IsVertexFast(i) && (mesh.GetVertex(i) - point).SquareLength() <= toleranceSqr)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool IntersectionsAvoidInputVertices(DynamicMesh& mesh1, DynamicMesh& mesh2, float tolerance = 1e-5f)
+{
+	DynamicMeshAABBTree aabb1(&mesh1);
+	DynamicMeshAABBTree aabb2(&mesh2);
+	IntersectionsQueryResult result = aabb1.FindAllIntersections(aabb2);
+	bool hasIntersection = !result.Points.empty() || !result.Segments.empty() || !result.Polygons.empty();
+	bool hitInputVertex = false;
+
+	auto testPoint = [&](const Vector3& point)
+	{
+		if (IsPointOnMeshVertex(mesh1, point, tolerance) || IsPointOnMeshVertex(mesh2, point, tolerance))
+		{
+			hitInputVertex = true;
+		}
+	};
+
+	for (const auto& intersection : result.Points)
+	{
+		testPoint(intersection.Point);
+	}
+	for (const auto& intersection : result.Segments)
+	{
+		testPoint(intersection.Point[0]);
+		testPoint(intersection.Point[1]);
+	}
+	for (const auto& intersection : result.Polygons)
+	{
+		for (int i = 0; i < intersection.Quantity; ++i)
+		{
+			testPoint(intersection.Point[i]);
+		}
+	}
+
+	return hasIntersection && !hitInputVertex;
+}
+
+static void AppendResultMeshToOutput(
+	DynamicMesh& mergedResult,
+	const DynamicMesh& resultMesh,
+	int caseIndex,
+	float outputScale = 1.0f,
+	const Vector3& outputPivot = Vector3::Zero(),
+	const Vector3& outputCenter = Vector3::Zero())
+{
+	FDynamicMeshEditor editor(&mergedResult);
+	FMeshIndexMappings mappings;
+	const Vector3 offset((float)caseIndex * 5.0f, 0.0f, 0.0f);
+	editor.AppendMesh(&resultMesh, mappings,
+		[offset, outputScale, outputPivot, outputCenter](int, const Vector3& position)
+		{
+			return outputCenter + (position - outputPivot) * outputScale + offset;
+	});
+}
+
+static void TestGeometryBooleanAABB(DynamicMesh& mergedResult)
+{
+	DynamicMesh box = MakeAABBMesh(Vector3(0.0f), Vector3(2.0f));
+	DynamicMesh aabb = MakeAABBMesh(Vector3(1.0f), Vector3(3.0f));
+	EXPECT(IntersectionsAvoidInputVertices(box, aabb));
+
+	GeometryBoolean boxAabbBoolean(&box, &aabb, GeometryBoolean::BooleanOp::Intersect);
+	boxAabbBoolean.WeldSharedEdges = false;
+	bool boxAabbComputed = boxAabbBoolean.Compute();
+	EXPECT(boxAabbComputed);
+	EXPECT(boxAabbBoolean.Result != nullptr);
+	if (boxAabbComputed && boxAabbBoolean.Result != nullptr)
+	{
+		boxAabbBoolean.Result->FixTriangleOrientation(false);
+		AppendResultMeshToOutput(mergedResult, *boxAabbBoolean.Result, 0);
+	}
+	delete boxAabbBoolean.Result;
+	boxAabbBoolean.Result = nullptr;
+}
+
+static void TestGeometryBooleanOBB(DynamicMesh& mergedResult)
+{
+	DynamicMesh box = MakeAABBMesh(Vector3(0.0f), Vector3(2.0f));
+	DynamicMesh obb = MakeOBBMesh(Vector3(1.45f, 1.2f, 1.15f), Vector3(0.95f, 0.75f, 0.85f), TestRotationZ(0.43f) * TestRotationX(0.29f));
+	EXPECT(IntersectionsAvoidInputVertices(box, obb));
+
+	GeometryBoolean boxObbBoolean(&box, &obb, GeometryBoolean::BooleanOp::Intersect);
+	boxObbBoolean.WeldSharedEdges = false;
+	bool boxObbComputed = boxObbBoolean.Compute();
+	EXPECT(boxObbComputed);
+	EXPECT(boxObbBoolean.Result != nullptr);
+	if (boxObbComputed && boxObbBoolean.Result != nullptr)
+	{
+		boxObbBoolean.Result->FixTriangleOrientation(false);
+		AppendResultMeshToOutput(mergedResult, *boxObbBoolean.Result, 1);
+	}
+	delete boxObbBoolean.Result;
+	boxObbBoolean.Result = nullptr;
+}
+
+static void TestGeometryBooleanSphere(DynamicMesh& mergedResult)
+{
+	DynamicMesh box = MakeAABBMesh(Vector3(0.0f), Vector3(2.0f));
+	DynamicMesh sphere = MakeSphereMesh(Vector3(1.23f, 1.07f, 1.31f), 1.18f);
+	EXPECT(IntersectionsAvoidInputVertices(box, sphere));
+
+	GeometryBoolean boxSphereBoolean(&box, &sphere, GeometryBoolean::BooleanOp::Intersect);
+	boxSphereBoolean.WeldSharedEdges = false;
+	bool boxSphereComputed = boxSphereBoolean.Compute();
+	EXPECT(boxSphereComputed);
+	EXPECT(boxSphereBoolean.Result != nullptr);
+	if (boxSphereComputed && boxSphereBoolean.Result != nullptr)
+	{
+		boxSphereBoolean.Result->FixTriangleOrientation(false);
+		AppendResultMeshToOutput(mergedResult, *boxSphereBoolean.Result, 2);
+	}
+	delete boxSphereBoolean.Result;
+	boxSphereBoolean.Result = nullptr;
+}
+
+static void TestGeometryBooleanCapsule(DynamicMesh& mergedResult)
+{
+	DynamicMesh box = MakeAABBMesh(Vector3(0.0f), Vector3(2.0f));
+	DynamicMesh capsule = MakeCapsuleMesh(Vector3(0.31f, -0.19f, 0.42f), Vector3(2.63f, 2.38f, 1.67f), 0.42f);
+	EXPECT(IntersectionsAvoidInputVertices(box, capsule));
+
+	GeometryBoolean boxCapsuleBoolean(&box, &capsule, GeometryBoolean::BooleanOp::Intersect);
+	boxCapsuleBoolean.WeldSharedEdges = false;
+	bool boxCapsuleComputed = boxCapsuleBoolean.Compute();
+	EXPECT(boxCapsuleComputed);
+	EXPECT(boxCapsuleBoolean.Result != nullptr);
+	if (boxCapsuleComputed && boxCapsuleBoolean.Result != nullptr)
+	{
+		boxCapsuleBoolean.Result->FixTriangleOrientation(false);
+		AppendResultMeshToOutput(mergedResult, *boxCapsuleBoolean.Result, 3);
+	}
+	delete boxCapsuleBoolean.Result;
+	boxCapsuleBoolean.Result = nullptr;
+}
+
+static void TestGeometryBooleanBunny(DynamicMesh& mergedResult)
+{
+	DynamicMesh bunny;
+	bool loaded = bunny.LoadObj(TestDataPath("bunny.obj").c_str());
+	EXPECT(loaded);
+	if (!loaded)
 	{
 		return;
 	}
-	b.Result->FixTriangleOrientation(false);
-	b.Result->ExportObj(TestOutputPath("bunny_intersect.obj").c_str());
-	delete b.Result;
-	b.Result = nullptr;
+
+	Box3 clipBox = bunny.GetBounds();
+	clipBox.Max.y = clipBox.GetCenter().y;
+	DynamicMesh bunnyClip = MakeAABBMesh(clipBox.Min, clipBox.Max);
+	float bunnyOutputScale = 2.0f / GetBoundsMaxSize(bunny.GetBounds());
+	EXPECT(IntersectionsAvoidInputVertices(bunnyClip, bunny));
+	GeometryBoolean bunnyAabbBoolean(&bunnyClip, &bunny, GeometryBoolean::BooleanOp::Intersect);
+	bunnyAabbBoolean.WeldSharedEdges = false;
+	bool bunnyAabbComputed = bunnyAabbBoolean.Compute();
+	EXPECT(bunnyAabbComputed);
+	EXPECT(bunnyAabbBoolean.Result != nullptr);
+	if (bunnyAabbComputed && bunnyAabbBoolean.Result != nullptr)
+	{
+		bunnyAabbBoolean.Result->FixTriangleOrientation(false);
+		AppendResultMeshToOutput(mergedResult, *bunnyAabbBoolean.Result, 4,
+			bunnyOutputScale, bunny.GetBounds().GetCenter(), Vector3(1.0f, 1.0f, 1.0f));
+	}
+	delete bunnyAabbBoolean.Result;
+	bunnyAabbBoolean.Result = nullptr;
+}
+
+void TestGeometryBoolean()
+{
+	printf("Running TestGeometryBoolean\n");
+
+	DynamicMesh mergedResult;
+
+	TestGeometryBooleanAABB(mergedResult);
+	TestGeometryBooleanOBB(mergedResult);
+	TestGeometryBooleanSphere(mergedResult);
+	TestGeometryBooleanCapsule(mergedResult);
+	TestGeometryBooleanBunny(mergedResult);
+
+	mergedResult.BuildBounds();
+	EXPECT(mergedResult.ExportObj(TestOutputPath("boolean_intersect.obj").c_str()));
 
 	return;
 }
@@ -366,6 +578,5 @@ void TestGeometry()
 	TestVoronoi3d();
 	TestDynamicMesh();
 	TestGeometrySet();
-	TestGeometryBoolean1();
-	TestGeometryBoolean2();
+	TestGeometryBoolean();
 }

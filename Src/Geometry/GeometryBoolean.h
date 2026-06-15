@@ -17,50 +17,48 @@ namespace Riemann
 			Difference,
 			Intersect,
 		};
-		BooleanOp Operation;
+		BooleanOp Operation = BooleanOp::Union;
 
 		float SnapTolerance = 1e-6f;
-		bool bCollapseDegenerateEdgesOnCut = true;
-		bool bSimplifyAlongNewEdges = false;
-		bool bWeldSharedEdges = true;
-		bool bTrackAllNewEdges = false;
-		bool bPutResultInInputSpace = true;
+		bool CollapseDegenerateEdgesOnCut = true;
+		bool SimplifyAlongNewEdges = false;
+		bool WeldSharedEdges = true;
+		bool TrackAllNewEdges = false;
+		bool PutResultInInputSpace = true;
 		float SimplificationAngleTolerance = 0.1f;
 		float TryToImproveTriQualityThreshold = 0.5f;
-		bool bPreserveTriangleGroups = true;
-		bool bPreserveVertexUVs = true;
-		bool bPreserveOverlayUVs = true;
+		bool PreserveTriangleGroups = true;
+		bool PreserveVertexUVs = true;
+		bool PreserveOverlayUVs = true;
 		float UVDistortTolerance = 1e-6f;
-		bool bPreserveVertexNormals = true;
+		bool PreserveVertexNormals = true;
 		float NormalDistortTolerance = 0.01f;
 		int PreserveUVsOnlyForMesh = -1;
 
-		// input
-		const DynamicMesh* Meshes[2];
+		// Inputs
+		const DynamicMesh* Meshes[2]{ nullptr, nullptr };
 		const Transform Transforms[2];
 
-		// output
+		// Outputs
 		DynamicMesh* Result { nullptr };
-		Transform TransformNew;
+		Transform ResultTransform;
 		std::vector<int> CreatedBoundaryEdges;
 		std::set<int> AllNewEdges;
 		
-		bool bPopulateSecondMeshGroupMap = false;
+		bool PopulateSecondMeshGroupMap = false;
 		FIndexMapi SecondMeshGroupMap;
 
-		GeometryBoolean(const DynamicMesh* MeshA, const Transform& TransformA, const DynamicMesh* MeshB, const Transform& TransformB, BooleanOp Operation)
-			: Meshes{ MeshA, MeshB }, Transforms{ TransformA, TransformB }, Operation(Operation)
+		GeometryBoolean(const DynamicMesh* MeshA, const Transform& TransformA, const DynamicMesh* MeshB, const Transform& TransformB, BooleanOp Op)
+			: Operation(Op), Meshes{ MeshA, MeshB }, Transforms{ TransformA, TransformB }
 		{
 		}
 
-		GeometryBoolean(const DynamicMesh* MeshA, const DynamicMesh* MeshB, BooleanOp Operation)
-			: Meshes{ MeshA, MeshB }, Operation(Operation)
+		GeometryBoolean(const DynamicMesh* MeshA, const DynamicMesh* MeshB, BooleanOp Op)
+			: Operation(Op), Meshes{ MeshA, MeshB }
 		{
 		}
 
-		~GeometryBoolean()
-		{
-		}
+		~GeometryBoolean() = default;
 
 		bool Compute();
 

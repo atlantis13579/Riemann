@@ -407,18 +407,20 @@ namespace Riemann
 			}
 		}
 
-		fprintf(fp, "# Polygonal face element (see below) \n");
-		for (size_t i = 0; i < Triangles.size(); ++i)
+		const bool bWriteVertexNormals = HasVertexNormals() && VertexNormals.size() == VertexPositions.size();
+		const bool bWriteVertexUVs = HasVertexUVs() && VertexUVs.size() == VertexPositions.size();
+
+		if (bWriteVertexUVs)
 		{
-			if (!IsTriangleFast((int)i))
+			fprintf(fp, "# List of texture coordinates, in (u, v [,w]) coordinates, these will vary between 0 and 1, w is optional and defaults to 0. \n");
+			for (size_t i = 0; i < VertexUVs.size(); ++i)
 			{
-				continue;
+				const Vector2& v = VertexUVs[i];
+				fprintf(fp, "vt %.3f %.3f\n", v.x, v.y);
 			}
-			const Index3& v = Triangles[i];
-			fprintf(fp, "f %d %d %d\n", v.a + 1, v.b + 1, v.c + 1);
 		}
 
-		if (!VertexNormals.empty())
+		if (bWriteVertexNormals)
 		{
 			fprintf(fp, "# List of vertex normals in (x,y,z) form; normals might not be unit vectors. \n");
 			for (size_t i = 0; i < VertexNormals.size(); ++i)
@@ -428,13 +430,32 @@ namespace Riemann
 			}
 		}
 
-		if (!VertexUVs.empty())
+		fprintf(fp, "# Polygonal face element (see below) \n");
+		for (size_t i = 0; i < Triangles.size(); ++i)
 		{
-			fprintf(fp, "# List of texture coordinates, in (u, v [,w]) coordinates, these will vary between 0 and 1, w is optional and defaults to 0. \n");
-			for (size_t i = 0; i < VertexUVs.size(); ++i)
+			if (!IsTriangleFast((int)i))
 			{
-				const Vector2& v = VertexUVs[i];
-				fprintf(fp, "vt %.3f %.3f\n", v.x, v.y);
+				continue;
+			}
+			const Index3& v = Triangles[i];
+			const int i0 = v.a + 1;
+			const int i1 = v.b + 1;
+			const int i2 = v.c + 1;
+			if (bWriteVertexUVs && bWriteVertexNormals)
+			{
+				fprintf(fp, "f %d/%d/%d %d/%d/%d %d/%d/%d\n", i0, i0, i0, i1, i1, i1, i2, i2, i2);
+			}
+			else if (bWriteVertexUVs)
+			{
+				fprintf(fp, "f %d/%d %d/%d %d/%d\n", i0, i0, i1, i1, i2, i2);
+			}
+			else if (bWriteVertexNormals)
+			{
+				fprintf(fp, "f %d//%d %d//%d %d//%d\n", i0, i0, i1, i1, i2, i2);
+			}
+			else
+			{
+				fprintf(fp, "f %d %d %d\n", i0, i1, i2);
 			}
 		}
 
@@ -757,8 +778,14 @@ namespace Riemann
 		for (int eid : VertexEdgeLists[VertexID])
 		{
 			const Edge& e = Edges[eid];
-			s.insert(e.Tri[0]);
-			s.insert(e.Tri[1]);
+			if (e.Tri[0] != InvalidID)
+			{
+				s.insert(e.Tri[0]);
+			}
+			if (e.Tri[1] != InvalidID)
+			{
+				s.insert(e.Tri[1]);
+			}
 		}
 		return s.to_vector();
 	}
