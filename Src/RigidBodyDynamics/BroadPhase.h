@@ -27,6 +27,8 @@ namespace Riemann
 		static BroadPhase* Create_AllPairs();		// Slow, debug purpose
 		static BroadPhase* Create_Bruteforce();		// Slow, debug purpose
 		static BroadPhase* Create_SAP();
+		static BroadPhase* Create_ABP();
+		static BroadPhase* Create_MBP();
 		static BroadPhase* Create_DynamicAABB(DynamicAABBTree* tree);
 	};
 }

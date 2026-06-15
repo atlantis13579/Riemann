@@ -31,6 +31,8 @@ namespace Riemann
 	enum class BroadPhaseSolver : uint8_t
 	{
 		SAP,
+		ABP,
+		MBP,
 		AllPairs,
 		Bruteforce,
 		DynamicAABB,
@@ -138,6 +140,6 @@ namespace Riemann
 		IntegrateMethod					m_IntegrateMethod;
 		std::vector<ForceField*>		m_Fields;
 		WorldClock						m_Clock;
-		IBinaryData*					m_SceneResource;
+		IBinaryData*							m_SceneResource;
 	};
 }

@@ -23,19 +23,28 @@ namespace Riemann
 	RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
 	{
 		m_GeometryQuery = new GeometryQuery;
+		m_BPhase = nullptr;
 		if (param.broadphase == BroadPhaseSolver::SAP)
 		{
 			m_BPhase = BroadPhase::Create_SAP();
+		}
+		else if (param.broadphase == BroadPhaseSolver::ABP)
+		{
+			m_BPhase = BroadPhase::Create_ABP();
+		}
+		else if (param.broadphase == BroadPhaseSolver::MBP)
+		{
+			m_BPhase = BroadPhase::Create_MBP();
 		}
 		else if (param.broadphase == BroadPhaseSolver::Bruteforce)
 		{
 			m_BPhase = BroadPhase::Create_Bruteforce();
 		}
-		if (param.broadphase == BroadPhaseSolver::AllPairs)
+		else if (param.broadphase == BroadPhaseSolver::AllPairs)
 		{
 			m_BPhase = BroadPhase::Create_AllPairs();
 		}
-		if (param.broadphase == BroadPhaseSolver::DynamicAABB)
+		else if (param.broadphase == BroadPhaseSolver::DynamicAABB)
 		{
 			m_GeometryQuery->CreateDynamicGeometry();
 			m_BPhase = BroadPhase::Create_DynamicAABB(m_GeometryQuery->GetDynamicTree());
