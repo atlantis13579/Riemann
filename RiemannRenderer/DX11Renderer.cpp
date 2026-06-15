@@ -76,6 +76,8 @@ namespace
 		Vector4 LightDir;
 		Vector4 LightColor;
 		Vector4 MaterialColor;
+		Vector4 OutlineColor;
+		Vector4 RenderParams;
 	};
 
 	struct DX11StaticMesh
@@ -123,6 +125,9 @@ namespace
 			IndexFormat = rhs.IndexFormat;
 			Topology = rhs.Topology;
 			CastShadow = rhs.CastShadow;
+			OutlineEnabled = rhs.OutlineEnabled;
+			OutlineColor = rhs.OutlineColor;
+			OutlineThickness = rhs.OutlineThickness;
 
 			rhs.pVertexBuffer = nullptr;
 			rhs.pIndexBuffer = nullptr;
@@ -140,6 +145,9 @@ namespace
 		DXGI_FORMAT IndexFormat = DXGI_FORMAT_R32_UINT;
 		D3D11_PRIMITIVE_TOPOLOGY Topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		bool CastShadow = true;
+		bool OutlineEnabled = false;
+		Vector4 OutlineColor = Vector4(1.0f, 0.82f, 0.18f, 1.0f);
+		float OutlineThickness = 0.06f;
 	};
 }
 
@@ -162,10 +170,14 @@ public:
 		SafeRelease(m_pShadowSRV);
 		SafeRelease(m_pShadowDepthView);
 		SafeRelease(m_pShadowTexture);
+		SafeRelease(m_pOutlineDepthStencilState);
 		SafeRelease(m_pDepthStencilState);
+		SafeRelease(m_pOutlineRasterizerState);
 		SafeRelease(m_pRasterizerState);
 		SafeRelease(m_pVertexLayout);
+		SafeRelease(m_pOutlinePixelShader);
 		SafeRelease(m_pShadowVertexShader);
+		SafeRelease(m_pOutlineVertexShader);
 		SafeRelease(m_pVertexShader);
 		SafeRelease(m_pPixelShader);
 		SafeRelease(m_pDepthBuffer);
@@ -324,6 +336,11 @@ public:
 
 		SetFillMode(false);
 		SetDepthMode();
+		hr = CreateOutlineStates();
+		if (FAILED(hr))
+		{
+			return hr;
+		}
 		SetupViewports();
 
 		hr = CreateShaders(shaderPath);
@@ -498,6 +515,26 @@ public:
 		return false;
 	}
 
+	bool SetMeshOutline(const char* id, bool enabled, const Vector4& color, float thickness) override
+	{
+		if (id == nullptr)
+		{
+			return false;
+		}
+
+		for (DX11StaticMesh& mesh : m_AllMesh)
+		{
+			if (mesh.Id == id)
+			{
+				mesh.OutlineEnabled = enabled;
+				mesh.OutlineColor = color;
+				mesh.OutlineThickness = thickness > 0.0f ? thickness : 0.0f;
+				return true;
+			}
+		}
+		return false;
+	}
+
 	bool Reset() override
 	{
 		m_AllMesh.clear();
@@ -647,6 +684,32 @@ private:
 		return m_pd3dDevice->CreateSamplerState(&samplerDesc, &m_pShadowSampler);
 	}
 
+	HRESULT CreateOutlineStates()
+	{
+		SafeRelease(m_pOutlineRasterizerState);
+		SafeRelease(m_pOutlineDepthStencilState);
+
+		D3D11_RASTERIZER_DESC rasterDesc = {};
+		rasterDesc.FillMode = D3D11_FILL_SOLID;
+		rasterDesc.CullMode = D3D11_CULL_FRONT;
+		rasterDesc.DepthClipEnable = TRUE;
+		rasterDesc.MultisampleEnable = FALSE;
+		rasterDesc.AntialiasedLineEnable = FALSE;
+
+		HRESULT hr = m_pd3dDevice->CreateRasterizerState(&rasterDesc, &m_pOutlineRasterizerState);
+		if (FAILED(hr))
+		{
+			return hr;
+		}
+
+		D3D11_DEPTH_STENCIL_DESC depthDesc = {};
+		depthDesc.DepthEnable = TRUE;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+		depthDesc.StencilEnable = FALSE;
+		return m_pd3dDevice->CreateDepthStencilState(&depthDesc, &m_pOutlineDepthStencilState);
+	}
+
 	void SetupViewports()
 	{
 		m_BackBufferViewport = {};
@@ -677,10 +740,10 @@ private:
 				shaderFile.push_back(L'/');
 			}
 		}
-		shaderFile += L"simple.fxh";
+		shaderFile += L"dx11_shader.hlsl";
 
 		ID3DBlob* pVSBlob = nullptr;
-		HRESULT hr = CompileShaderFromFile(shaderFile.c_str(), "VS", "vs_4_0", &pVSBlob);
+		HRESULT hr = CompileShaderFromFile(shaderFile.c_str(), "MainVS", "vs_4_0", &pVSBlob);
 		if (FAILED(hr))
 		{
 			MessageBoxA(nullptr, "Compile VS Error", "Renderer", MB_OK);
@@ -722,8 +785,23 @@ private:
 			return hr;
 		}
 
+		ID3DBlob* pOutlineVSBlob = nullptr;
+		hr = CompileShaderFromFile(shaderFile.c_str(), "OutlineVS", "vs_4_0", &pOutlineVSBlob);
+		if (FAILED(hr))
+		{
+			MessageBoxA(nullptr, "Compile Outline VS Error", "Renderer", MB_OK);
+			return hr;
+		}
+
+		hr = m_pd3dDevice->CreateVertexShader(pOutlineVSBlob->GetBufferPointer(), pOutlineVSBlob->GetBufferSize(), nullptr, &m_pOutlineVertexShader);
+		pOutlineVSBlob->Release();
+		if (FAILED(hr))
+		{
+			return hr;
+		}
+
 		ID3DBlob* pPSBlob = nullptr;
-		hr = CompileShaderFromFile(shaderFile.c_str(), "PS", "ps_4_0", &pPSBlob);
+		hr = CompileShaderFromFile(shaderFile.c_str(), "MainPS", "ps_4_0", &pPSBlob);
 		if (FAILED(hr))
 		{
 			MessageBoxA(nullptr, "Compile PS Error", "Renderer", MB_OK);
@@ -732,6 +810,21 @@ private:
 
 		hr = m_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &m_pPixelShader);
 		pPSBlob->Release();
+		if (FAILED(hr))
+		{
+			return hr;
+		}
+
+		ID3DBlob* pOutlinePSBlob = nullptr;
+		hr = CompileShaderFromFile(shaderFile.c_str(), "OutlinePS", "ps_4_0", &pOutlinePSBlob);
+		if (FAILED(hr))
+		{
+			MessageBoxA(nullptr, "Compile Outline PS Error", "Renderer", MB_OK);
+			return hr;
+		}
+
+		hr = m_pd3dDevice->CreatePixelShader(pOutlinePSBlob->GetBufferPointer(), pOutlinePSBlob->GetBufferSize(), nullptr, &m_pOutlinePixelShader);
+		pOutlinePSBlob->Release();
 		return hr;
 	}
 
@@ -851,9 +944,55 @@ private:
 		m_pImmediateContext->PSSetSamplers(0, 1, &m_pShadowSampler);
 
 		DrawScene(false);
+		RenderOutlinePass();
 
 		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
 		m_pImmediateContext->PSSetShaderResources(0, 1, nullSRV);
+	}
+
+	void RenderOutlinePass()
+	{
+		if (m_pOutlineVertexShader == nullptr || m_pOutlinePixelShader == nullptr)
+		{
+			return;
+		}
+
+		bool hasOutline = false;
+		for (const DX11StaticMesh& mesh : m_AllMesh)
+		{
+			if (mesh.OutlineEnabled && mesh.Topology == D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
+			{
+				hasOutline = true;
+				break;
+			}
+		}
+		if (!hasOutline)
+		{
+			return;
+		}
+
+		const float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
+		m_pImmediateContext->OMSetDepthStencilState(m_pOutlineDepthStencilState, 0);
+		m_pImmediateContext->RSSetState(m_pOutlineRasterizerState);
+		m_pImmediateContext->IASetInputLayout(m_pVertexLayout);
+		m_pImmediateContext->VSSetShader(m_pOutlineVertexShader, nullptr, 0);
+		m_pImmediateContext->PSSetShader(m_pOutlinePixelShader, nullptr, 0);
+
+		for (DX11StaticMesh& mesh : m_AllMesh)
+		{
+			if (!mesh.OutlineEnabled || mesh.Topology != D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
+			{
+				continue;
+			}
+
+			DrawMesh(mesh, false, true);
+		}
+
+		m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
+		m_pImmediateContext->RSSetState(m_pRasterizerState);
+		m_pImmediateContext->VSSetShader(m_pVertexShader, nullptr, 0);
+		m_pImmediateContext->PSSetShader(m_pPixelShader, nullptr, 0);
 	}
 
 	void RenderImgui()
@@ -896,28 +1035,38 @@ private:
 				continue;
 			}
 
-			ConstantBuffer cb = {};
-			cb.World = GetTransformMatrix(mesh.WorldTransform);
-			cb.View = m_View;
-			cb.Projection = m_Projection;
-			cb.LightView = m_LightView;
-			cb.LightProjection = m_LightProjection;
-			cb.EyePos = Vector4(m_Eye.x, m_Eye.y, m_Eye.z, 1.0f);
-			cb.LightDir = Vector4(m_Light.Direction.x, m_Light.Direction.y, m_Light.Direction.z, m_Light.Ambient);
-			cb.LightColor = Vector4(m_Light.Color.x, m_Light.Color.y, m_Light.Color.z, 1.0f);
-			cb.MaterialColor = mesh.Color;
-
-			m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
-			m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
-			m_pImmediateContext->PSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
-
-			UINT stride = sizeof(Vertex1);
-			UINT offset = 0;
-			m_pImmediateContext->IASetVertexBuffers(0, 1, &mesh.pVertexBuffer, &stride, &offset);
-			m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, mesh.IndexFormat, 0);
-			m_pImmediateContext->IASetPrimitiveTopology(mesh.Topology);
-			m_pImmediateContext->DrawIndexed(mesh.IndexCount, 0, 0);
+			DrawMesh(mesh, shadowPass, false);
 		}
+	}
+
+	void DrawMesh(DX11StaticMesh& mesh, bool shadowPass, bool outlinePass)
+	{
+		ConstantBuffer cb = {};
+		cb.World = GetTransformMatrix(mesh.WorldTransform);
+		cb.View = m_View;
+		cb.Projection = m_Projection;
+		cb.LightView = m_LightView;
+		cb.LightProjection = m_LightProjection;
+		cb.EyePos = Vector4(m_Eye.x, m_Eye.y, m_Eye.z, 1.0f);
+		cb.LightDir = Vector4(m_Light.Direction.x, m_Light.Direction.y, m_Light.Direction.z, m_Light.Ambient);
+		cb.LightColor = Vector4(m_Light.Color.x, m_Light.Color.y, m_Light.Color.z, 1.0f);
+		cb.MaterialColor = mesh.Color;
+		cb.OutlineColor = mesh.OutlineColor;
+		cb.RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f, 0.0f, 0.0f, 0.0f);
+
+		m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
+		m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
+		if (!shadowPass)
+		{
+			m_pImmediateContext->PSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
+		}
+
+		UINT stride = sizeof(Vertex1);
+		UINT offset = 0;
+		m_pImmediateContext->IASetVertexBuffers(0, 1, &mesh.pVertexBuffer, &stride, &offset);
+		m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, mesh.IndexFormat, 0);
+		m_pImmediateContext->IASetPrimitiveTopology(mesh.Topology);
+		m_pImmediateContext->DrawIndexed(mesh.IndexCount, 0, 0);
 	}
 
 private:
@@ -935,9 +1084,13 @@ private:
 	ID3D11VertexShader* m_pVertexShader = nullptr;
 	ID3D11VertexShader* m_pShadowVertexShader = nullptr;
 	ID3D11PixelShader* m_pPixelShader = nullptr;
+	ID3D11VertexShader* m_pOutlineVertexShader = nullptr;
+	ID3D11PixelShader* m_pOutlinePixelShader = nullptr;
 	ID3D11InputLayout* m_pVertexLayout = nullptr;
 	ID3D11RasterizerState* m_pRasterizerState = nullptr;
+	ID3D11RasterizerState* m_pOutlineRasterizerState = nullptr;
 	ID3D11DepthStencilState* m_pDepthStencilState = nullptr;
+	ID3D11DepthStencilState* m_pOutlineDepthStencilState = nullptr;
 	ID3D11Texture2D* m_pShadowTexture = nullptr;
 	ID3D11DepthStencilView* m_pShadowDepthView = nullptr;
 	ID3D11ShaderResourceView* m_pShadowSRV = nullptr;

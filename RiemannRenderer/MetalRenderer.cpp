@@ -10,9 +10,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <fstream>
 #include <math.h>
 #include <mutex>
 #include <stdint.h>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,176 +24,6 @@
 
 namespace
 {
-	const char* kMetalShaderSource = R"MSL(
-#include <metal_stdlib>
-using namespace metal;
-
-struct MetalVertex
-{
-	packed_float3 position;
-	packed_float3 normal;
-};
-
-struct Uniforms
-{
-	float4x4 world;
-	float4x4 view;
-	float4x4 projection;
-	float4x4 lightView;
-	float4x4 lightProjection;
-	float4 eyePos;
-	float4 lightDir;
-	float4 lightColor;
-	float4 materialColor;
-};
-
-struct VSOut
-{
-	float4 position [[position]];
-	float3 positionWorld;
-	float3 normal;
-	float4 positionLight;
-};
-
-struct ShadowOut
-{
-	float4 position [[position]];
-};
-
-float4 MulRow(float4 value, float4x4 matrixValue)
-{
-	return float4(
-		dot(value, matrixValue[0]),
-		dot(value, matrixValue[1]),
-		dot(value, matrixValue[2]),
-		dot(value, matrixValue[3]));
-}
-
-vertex VSOut RiemannMainVS(
-	uint vertexId [[vertex_id]],
-	const device MetalVertex* vertices [[buffer(0)]],
-	constant Uniforms& uniforms [[buffer(1)]])
-{
-	MetalVertex vertex = vertices[vertexId];
-
-	float4 localPosition = float4(float3(vertex.position), 1.0);
-	float4 worldPosition = MulRow(localPosition, uniforms.world);
-
-	VSOut out;
-	out.positionWorld = worldPosition.xyz;
-	out.position = MulRow(MulRow(worldPosition, uniforms.view), uniforms.projection);
-	out.positionLight = MulRow(MulRow(worldPosition, uniforms.lightView), uniforms.lightProjection);
-	out.normal = normalize(MulRow(float4(float3(vertex.normal), 0.0), uniforms.world).xyz);
-	return out;
-}
-
-vertex ShadowOut RiemannShadowVS(
-	uint vertexId [[vertex_id]],
-	const device MetalVertex* vertices [[buffer(0)]],
-	constant Uniforms& uniforms [[buffer(1)]])
-{
-	MetalVertex vertex = vertices[vertexId];
-	float4 localPosition = float4(float3(vertex.position), 1.0);
-	float4 worldPosition = MulRow(localPosition, uniforms.world);
-
-	ShadowOut out;
-	out.position = MulRow(MulRow(worldPosition, uniforms.lightView), uniforms.lightProjection);
-	return out;
-}
-
-float SampleShadow(float4 lightPosition, depth2d<float> shadowMap, sampler shadowSampler)
-{
-	if (fabs(lightPosition.w) < 1.0e-6)
-	{
-		return 1.0;
-	}
-
-	float3 projected = lightPosition.xyz / lightPosition.w;
-	float2 uv = float2(projected.x * 0.5 + 0.5, 0.5 - projected.y * 0.5);
-	if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0 || projected.z < 0.0 || projected.z > 1.0)
-	{
-		return 1.0;
-	}
-
-	const float bias = 0.0015;
-	return shadowMap.sample_compare(shadowSampler, uv, projected.z - bias);
-}
-
-fragment float4 RiemannMainFS(
-	VSOut in [[stage_in]],
-	constant Uniforms& uniforms [[buffer(1)]],
-	depth2d<float> shadowMap [[texture(0)]],
-	sampler shadowSampler [[sampler(0)]])
-{
-	float3 normal = normalize(in.normal);
-	float3 lightToScene = normalize(uniforms.lightDir.xyz);
-	float3 toLight = -lightToScene;
-	float3 toEye = normalize(uniforms.eyePos.xyz - in.positionWorld);
-	if (dot(normal, toEye) < 0.0)
-	{
-		normal = -normal;
-	}
-	float3 halfVector = normalize(toLight + toEye);
-
-	float ndotl = saturate(dot(normal, toLight));
-	float specular = pow(saturate(dot(normal, halfVector)), 64.0);
-	float shadow = SampleShadow(in.positionLight, shadowMap, shadowSampler);
-
-	float3 baseColor = uniforms.materialColor.rgb;
-	float ambient = uniforms.lightDir.w;
-	float3 diffuse = baseColor * uniforms.lightColor.rgb * ndotl * shadow;
-	float3 spec = uniforms.lightColor.rgb * specular * shadow * 0.35;
-	return float4(baseColor * ambient + diffuse + spec, uniforms.materialColor.a);
-}
-
-struct ImguiVertex
-{
-	packed_float2 position;
-	packed_float2 texCoord;
-	uint color;
-};
-
-struct ImguiUniforms
-{
-	float2 screenSize;
-	float2 padding;
-};
-
-struct ImguiVSOut
-{
-	float4 position [[position]];
-	float2 texCoord;
-	float4 color;
-};
-
-vertex ImguiVSOut RiemannImguiVS(
-	uint vertexId [[vertex_id]],
-	const device ImguiVertex* vertices [[buffer(0)]],
-	constant ImguiUniforms& uniforms [[buffer(1)]])
-{
-	ImguiVertex vertex = vertices[vertexId];
-	float2 p = vertex.position / uniforms.screenSize;
-
-	ImguiVSOut out;
-	out.position = float4(p.x * 2.0 - 1.0, 1.0 - p.y * 2.0, 0.0, 1.0);
-	out.texCoord = vertex.texCoord;
-	out.color = float4(
-		float(vertex.color & 255u) / 255.0,
-		float((vertex.color >> 8u) & 255u) / 255.0,
-		float((vertex.color >> 16u) & 255u) / 255.0,
-		float((vertex.color >> 24u) & 255u) / 255.0);
-	return out;
-}
-
-fragment float4 RiemannImguiFS(
-	ImguiVSOut in [[stage_in]],
-	texture2d<float> colorTexture [[texture(0)]],
-	sampler colorSampler [[sampler(0)]])
-{
-	return in.color * colorTexture.sample(colorSampler, in.texCoord);
-}
-)MSL";
-
 	struct MetalUniforms
 	{
 		Matrix4 World;
@@ -203,6 +35,8 @@ fragment float4 RiemannImguiFS(
 		Vector4 LightDir;
 		Vector4 LightColor;
 		Vector4 MaterialColor;
+		Vector4 OutlineColor;
+		Vector4 RenderParams;
 	};
 
 	struct MetalImguiUniforms
@@ -239,6 +73,67 @@ fragment float4 RiemannImguiFS(
 		{
 			[object release];
 		}
+	}
+
+	std::string JoinPath(const std::string& directory, const char* fileName)
+	{
+		if (directory.empty())
+		{
+			return fileName;
+		}
+
+		const char last = directory[directory.size() - 1];
+		if (last == '/' || last == '\\')
+		{
+			return directory + fileName;
+		}
+		return directory + "/" + fileName;
+	}
+
+	std::string ReadTextFile(const std::string& fileName)
+	{
+		std::ifstream file(fileName.c_str(), std::ios::in | std::ios::binary);
+		if (!file)
+		{
+			return std::string();
+		}
+
+		std::ostringstream ss;
+		ss << file.rdbuf();
+		return ss.str();
+	}
+
+	std::string LoadRendererShaderSource(const std::string& shaderPath)
+	{
+		const char* shaderFileName = "metal_shader.metal";
+		if (!shaderPath.empty())
+		{
+			std::string source = ReadTextFile(JoinPath(shaderPath, shaderFileName));
+			if (!source.empty())
+			{
+				return source;
+			}
+		}
+
+		const char* candidates[] =
+		{
+			"RiemannRenderer/",
+			"../RiemannRenderer/",
+			"../../RiemannRenderer/",
+			"../../../RiemannRenderer/",
+			"../../../../RiemannRenderer/",
+		};
+
+		for (const char* candidate : candidates)
+		{
+			std::string source = ReadTextFile(JoinPath(candidate, shaderFileName));
+			if (!source.empty())
+			{
+				return source;
+			}
+		}
+
+		return std::string();
 	}
 
 	Vector3 SafeUnit(const Vector3& value, const Vector3& fallback)
@@ -304,6 +199,9 @@ fragment float4 RiemannImguiFS(
 			WorldTransform = rhs.WorldTransform;
 			Color = rhs.Color;
 			CastShadow = rhs.CastShadow;
+			OutlineEnabled = rhs.OutlineEnabled;
+			OutlineColor = rhs.OutlineColor;
+			OutlineThickness = rhs.OutlineThickness;
 
 			rhs.VertexBuffer = nil;
 			rhs.IndexBuffer = nil;
@@ -322,6 +220,9 @@ fragment float4 RiemannImguiFS(
 		Transform WorldTransform;
 		Vector4 Color = Vector4(0.72f, 0.76f, 0.82f, 1.0f);
 		bool CastShadow = true;
+		bool OutlineEnabled = false;
+		Vector4 OutlineColor = Vector4(1.0f, 0.82f, 0.18f, 1.0f);
+		float OutlineThickness = 0.06f;
 	};
 }
 
@@ -338,7 +239,9 @@ namespace Riemann
 			ReleaseObject(ImguiWhiteTexture);
 			ReleaseObject(ImguiFontTexture);
 			ReleaseObject(ShadowSampler);
+			ReleaseObject(OutlineDepthState);
 			ReleaseObject(DepthState);
+			ReleaseObject(OutlinePipeline);
 			ReleaseObject(MainPipeline);
 			ReleaseObject(ShadowPipeline);
 			ReleaseObject(DepthTexture);
@@ -370,7 +273,7 @@ namespace Riemann
 				return false;
 			}
 
-			if (!CreatePipelineStates())
+			if (!CreatePipelineStates(createInfo.ShaderPath))
 			{
 				return false;
 			}
@@ -443,10 +346,16 @@ namespace Riemann
 			return true;
 		}
 
-		bool CreatePipelineStates()
+		bool CreatePipelineStates(const std::string& shaderPath)
 		{
+			const std::string shaderSource = LoadRendererShaderSource(shaderPath);
+			if (shaderSource.empty())
+			{
+				return false;
+			}
+
 			NSError* error = nil;
-			NSString* source = [NSString stringWithUTF8String:kMetalShaderSource];
+			NSString* source = [NSString stringWithUTF8String:shaderSource.c_str()];
 			id<MTLLibrary> library = [Device newLibraryWithSource:source options:nil error:&error];
 			if (library == nil)
 			{
@@ -456,13 +365,17 @@ namespace Riemann
 			id<MTLFunction> mainVS = [library newFunctionWithName:@"RiemannMainVS"];
 			id<MTLFunction> mainFS = [library newFunctionWithName:@"RiemannMainFS"];
 			id<MTLFunction> shadowVS = [library newFunctionWithName:@"RiemannShadowVS"];
+			id<MTLFunction> outlineVS = [library newFunctionWithName:@"RiemannOutlineVS"];
+			id<MTLFunction> outlineFS = [library newFunctionWithName:@"RiemannOutlineFS"];
 			id<MTLFunction> imguiVS = [library newFunctionWithName:@"RiemannImguiVS"];
 			id<MTLFunction> imguiFS = [library newFunctionWithName:@"RiemannImguiFS"];
-			if (mainVS == nil || mainFS == nil || shadowVS == nil || imguiVS == nil || imguiFS == nil)
+			if (mainVS == nil || mainFS == nil || shadowVS == nil || outlineVS == nil || outlineFS == nil || imguiVS == nil || imguiFS == nil)
 			{
 				ReleaseObject(mainVS);
 				ReleaseObject(mainFS);
 				ReleaseObject(shadowVS);
+				ReleaseObject(outlineVS);
+				ReleaseObject(outlineFS);
 				ReleaseObject(imguiVS);
 				ReleaseObject(imguiFS);
 				ReleaseObject(library);
@@ -482,6 +395,14 @@ namespace Riemann
 			[shadowDesc setDepthAttachmentPixelFormat:DepthPixelFormat];
 			ShadowPipeline = [Device newRenderPipelineStateWithDescriptor:shadowDesc error:&error];
 
+			MTLRenderPipelineDescriptor* outlineDesc = [[MTLRenderPipelineDescriptor alloc] init];
+			[outlineDesc setVertexFunction:outlineVS];
+			[outlineDesc setFragmentFunction:outlineFS];
+			MTLRenderPipelineColorAttachmentDescriptor* outlineColor = [[outlineDesc colorAttachments] objectAtIndexedSubscript:0];
+			[outlineColor setPixelFormat:ColorPixelFormat];
+			[outlineDesc setDepthAttachmentPixelFormat:DepthPixelFormat];
+			OutlinePipeline = [Device newRenderPipelineStateWithDescriptor:outlineDesc error:&error];
+
 			MTLRenderPipelineDescriptor* imguiDesc = [[MTLRenderPipelineDescriptor alloc] init];
 			[imguiDesc setVertexFunction:imguiVS];
 			[imguiDesc setFragmentFunction:imguiFS];
@@ -498,28 +419,43 @@ namespace Riemann
 
 			ReleaseObject(mainDesc);
 			ReleaseObject(shadowDesc);
+			ReleaseObject(outlineDesc);
 			ReleaseObject(imguiDesc);
 			ReleaseObject(mainVS);
 			ReleaseObject(mainFS);
 			ReleaseObject(shadowVS);
+			ReleaseObject(outlineVS);
+			ReleaseObject(outlineFS);
 			ReleaseObject(imguiVS);
 			ReleaseObject(imguiFS);
 			ReleaseObject(library);
 
-			return MainPipeline != nil && ShadowPipeline != nil && ImguiPipeline != nil;
+			return MainPipeline != nil && ShadowPipeline != nil && OutlinePipeline != nil && ImguiPipeline != nil;
 		}
 
 		bool CreateDepthState()
 		{
 			ReleaseObject(DepthState);
+			ReleaseObject(OutlineDepthState);
 			DepthState = nil;
+			OutlineDepthState = nil;
 
 			MTLDepthStencilDescriptor* desc = [[MTLDepthStencilDescriptor alloc] init];
 			[desc setDepthCompareFunction:MTLCompareFunctionLess];
 			[desc setDepthWriteEnabled:YES];
 			DepthState = [Device newDepthStencilStateWithDescriptor:desc];
 			ReleaseObject(desc);
-			return DepthState != nil;
+			if (DepthState == nil)
+			{
+				return false;
+			}
+
+			MTLDepthStencilDescriptor* outlineDesc = [[MTLDepthStencilDescriptor alloc] init];
+			[outlineDesc setDepthCompareFunction:MTLCompareFunctionLessEqual];
+			[outlineDesc setDepthWriteEnabled:NO];
+			OutlineDepthState = [Device newDepthStencilStateWithDescriptor:outlineDesc];
+			ReleaseObject(outlineDesc);
+			return OutlineDepthState != nil;
 		}
 
 		bool CreateShadowResources()
@@ -875,7 +811,27 @@ namespace Riemann
 			return false;
 		}
 
-		void UpdateUniforms(MetalMesh& mesh)
+		bool SetMeshOutline(const char* id, bool enabled, const Vector4& color, float thickness)
+		{
+			if (id == nullptr)
+			{
+				return false;
+			}
+
+			for (MetalMesh& mesh : Meshes)
+			{
+				if (mesh.Id == id)
+				{
+					mesh.OutlineEnabled = enabled;
+					mesh.OutlineColor = color;
+					mesh.OutlineThickness = thickness > 0.0f ? thickness : 0.0f;
+					return true;
+				}
+			}
+			return false;
+		}
+
+		void UpdateUniforms(MetalMesh& mesh, bool outlinePass)
 		{
 			MetalUniforms* uniforms = static_cast<MetalUniforms*>([mesh.UniformBuffer contents]);
 			uniforms->World = GetTransformMatrix(mesh.WorldTransform);
@@ -887,16 +843,18 @@ namespace Riemann
 			uniforms->LightDir = Vector4(Light.Direction.x, Light.Direction.y, Light.Direction.z, Light.Ambient);
 			uniforms->LightColor = Vector4(Light.Color.x, Light.Color.y, Light.Color.z, 1.0f);
 			uniforms->MaterialColor = mesh.Color;
+			uniforms->OutlineColor = mesh.OutlineColor;
+			uniforms->RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f, 0.0f, 0.0f, 0.0f);
 		}
 
-		void DrawMesh(id<MTLRenderCommandEncoder> encoder, MetalMesh& mesh, bool shadowPass)
+		void DrawMesh(id<MTLRenderCommandEncoder> encoder, MetalMesh& mesh, bool shadowPass, bool outlinePass)
 		{
 			if (shadowPass && !mesh.CastShadow)
 			{
 				return;
 			}
 
-			UpdateUniforms(mesh);
+			UpdateUniforms(mesh, outlinePass);
 			[encoder setVertexBuffer:mesh.VertexBuffer offset:0 atIndex:0];
 			[encoder setVertexBuffer:mesh.UniformBuffer offset:0 atIndex:1];
 			if (!shadowPass)
@@ -1294,9 +1252,45 @@ namespace Riemann
 			SetImguiScissor(encoder, 0, 0, Width, Height);
 		}
 
+		void RenderOutline(id<MTLRenderCommandEncoder> encoder)
+		{
+			if (OutlinePipeline == nil || OutlineDepthState == nil)
+			{
+				return;
+			}
+
+			bool hasOutline = false;
+			for (const MetalMesh& mesh : Meshes)
+			{
+				if (mesh.OutlineEnabled && mesh.PrimitiveType == MTLPrimitiveTypeTriangle)
+				{
+					hasOutline = true;
+					break;
+				}
+			}
+			if (!hasOutline)
+			{
+				return;
+			}
+
+			[encoder setRenderPipelineState:OutlinePipeline];
+			[encoder setDepthStencilState:OutlineDepthState];
+			[encoder setCullMode:MTLCullModeFront];
+			[encoder setTriangleFillMode:MTLTriangleFillModeFill];
+			for (MetalMesh& mesh : Meshes)
+			{
+				if (!mesh.OutlineEnabled || mesh.PrimitiveType != MTLPrimitiveTypeTriangle)
+				{
+					continue;
+				}
+
+				DrawMesh(encoder, mesh, false, true);
+			}
+		}
+
 		void Render()
 		{
-			if (Layer == nil || CommandQueue == nil || MainPipeline == nil || ShadowPipeline == nil || ShadowTexture == nil)
+			if (Layer == nil || CommandQueue == nil || MainPipeline == nil || ShadowPipeline == nil || OutlinePipeline == nil || ShadowTexture == nil)
 			{
 				return;
 			}
@@ -1333,7 +1327,7 @@ namespace Riemann
 				[shadowEncoder setTriangleFillMode:Wireframe ? MTLTriangleFillModeLines : MTLTriangleFillModeFill];
 				for (MetalMesh& mesh : Meshes)
 				{
-					DrawMesh(shadowEncoder, mesh, true);
+					DrawMesh(shadowEncoder, mesh, true, false);
 				}
 				[shadowEncoder endEncoding];
 
@@ -1357,8 +1351,9 @@ namespace Riemann
 				[mainEncoder setFragmentSamplerState:ShadowSampler atIndex:0];
 				for (MetalMesh& mesh : Meshes)
 				{
-					DrawMesh(mainEncoder, mesh, false);
+					DrawMesh(mainEncoder, mesh, false, false);
 				}
+				RenderOutline(mainEncoder);
 				RenderImgui(mainEncoder);
 				[mainEncoder endEncoding];
 
@@ -1376,8 +1371,10 @@ namespace Riemann
 		CAMetalLayer* Layer = nil;
 		id<MTLRenderPipelineState> MainPipeline = nil;
 		id<MTLRenderPipelineState> ShadowPipeline = nil;
+		id<MTLRenderPipelineState> OutlinePipeline = nil;
 		id<MTLRenderPipelineState> ImguiPipeline = nil;
 		id<MTLDepthStencilState> DepthState = nil;
+		id<MTLDepthStencilState> OutlineDepthState = nil;
 		id<MTLDepthStencilState> ImguiDepthState = nil;
 		id<MTLTexture> DepthTexture = nil;
 		id<MTLTexture> ShadowTexture = nil;
@@ -1454,6 +1451,11 @@ namespace Riemann
 	bool MetalRenderer::UpdateVertices(const char* id, const Vertex1* vertices, int vertexCount)
 	{
 		return m_Impl->UpdateVertices(id, vertices, vertexCount);
+	}
+
+	bool MetalRenderer::SetMeshOutline(const char* id, bool enabled, const Vector4& color, float thickness)
+	{
+		return m_Impl->SetMeshOutline(id, enabled, color, thickness);
 	}
 
 	bool MetalRenderer::DeleteMesh(const char* id)

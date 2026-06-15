@@ -48,6 +48,12 @@ set(RIEMANN_RENDERER_HEADERS
     "${CMAKE_SOURCE_DIR}/../RiemannRenderer/MetalRenderer.h"
 )
 
+set(RIEMANN_RENDERER_SHADERS
+    "${CMAKE_SOURCE_DIR}/../RiemannRenderer/dx11_shader.hlsl"
+    "${CMAKE_SOURCE_DIR}/../RiemannRenderer/metal_shader.metal"
+)
+set_source_files_properties(${RIEMANN_RENDERER_SHADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
+
 set(IMGUI_SOURCES
     "${CMAKE_SOURCE_DIR}/../RiemannRenderer/imgui.cpp"
 )
@@ -82,7 +88,7 @@ elseif(APPLE)
     set_source_files_properties("${CMAKE_SOURCE_DIR}/../RiemannRenderer/MetalRenderer.cpp" PROPERTIES LANGUAGE OBJCXX)
 endif()
 
-add_library(RiemannRenderer STATIC ${RIEMANN_RENDERER_SOURCES} ${RIEMANN_RENDERER_HEADERS})
+add_library(RiemannRenderer STATIC ${RIEMANN_RENDERER_SOURCES} ${RIEMANN_RENDERER_HEADERS} ${RIEMANN_RENDERER_SHADERS})
 target_compile_definitions(RiemannRenderer PUBLIC RIEMANN_RENDERER_STATIC)
 target_include_directories(RiemannRenderer PUBLIC
     ${CMAKE_SOURCE_DIR}/..
@@ -161,7 +167,7 @@ endif()
 
 source_group(TREE "${CMAKE_SOURCE_DIR}/../Src" PREFIX "Source Files" FILES ${RIEMANN_SOURCES} ${RIEMANN_HEADERS})
 source_group(TREE "${CMAKE_SOURCE_DIR}/../Test" PREFIX "Test Files" FILES ${TEST_SOURCES})
-source_group(TREE "${CMAKE_SOURCE_DIR}/../RiemannRenderer" PREFIX "RiemannRenderer" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS})
+source_group(TREE "${CMAKE_SOURCE_DIR}/../RiemannRenderer" PREFIX "RiemannRenderer" FILES ${IMGUI_SOURCES} ${IMGUI_HEADERS} ${RIEMANN_RENDERER_SHADERS})
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")

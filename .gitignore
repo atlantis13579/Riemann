@@ -10,6 +10,7 @@
 *.userosscache
 *.sln.docstates
 Build/Mac/DerivedData/*
+TestOutput/*
 */TestOutput/*
 
 # User-specific files (MonoDevelop/Xamarin Studio)

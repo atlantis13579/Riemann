@@ -15,6 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\RiemannRenderer\MetalRenderer.cpp" />
-    <None Include="..\..\RiemannRenderer\simple.fxh" />
+    <None Include="..\..\RiemannRenderer\dx11_shader.hlsl" />
+    <None Include="..\..\RiemannRenderer\metal_shader.metal" />
   </ItemGroup>
 </Project>

@@ -26,6 +26,7 @@
 #include "../RiemannRenderer/RiemannRenderer.h"
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/Collision/GeometryQuery.h"
+#include "../Src/CollisionPrimitive/PrimitiveType.h"
 #include "../Src/Modules/Tools/PhysxBinaryParser.h"
 #include "../Src/RigidBodyDynamics/KinematicsTree.h"
 #include "../Src/RigidBodyDynamics/RigidBodySimulation.h"
@@ -176,19 +177,40 @@ namespace Riemann
 			}
 			return value / sqrtf(lenSq);
 		}
+
+		bool IsHighlightableGeometry(const Geometry* geometry)
+		{
+			if (geometry == nullptr || geometry->GetShapeType() == PrimitiveType::PLANE)
+			{
+				return false;
+			}
+
+			const Box3& bounds = geometry->GetBoundingVolume_WorldSpace();
+			return bounds.MaxDim() < 200.0f;
+		}
 	}
 
 	WorldViewer::WorldViewer(RenderThread* renderThread, const std::string& sceneFile)
 		: m_World(new SceneWorld())
 		, m_RenderThread(renderThread)
+		, m_HighlightedGeometry(nullptr)
 		, m_CamCenter(Vector3::Zero())
 		, m_CamParam(Vector3(1.0f, 0.6f, 15.0f))
 		, m_ImguiObjectCount(0)
 		, m_ImguiCameraDistance(15.0f)
+		, m_ImguiPhysicsFps(0.0)
 		, m_ImguiScroll(0)
 		, m_ImguiPendingCameraDistance(false)
 		, m_ImguiPendingCameraDistanceValue(15.0f)
+		, m_PhysicsFpsTime(std::chrono::steady_clock::now())
+		, m_PhysicsFrameCount(0)
+		, m_PhysicsFps(0.0)
 	{
+		for (bool& key : m_MovementKeys)
+		{
+			key = false;
+		}
+
 		RefreshSceneList();
 		std::string initialScene = sceneFile;
 		if (initialScene.empty() && !m_SceneFiles.empty())
@@ -261,6 +283,7 @@ namespace Riemann
 		m_CurrentSceneName = FileNameOf(resolved);
 		RefreshSceneList();
 		ApplySceneCamera();
+		m_HighlightedGeometry = nullptr;
 		RebuildRenderScene();
 		UpdateImguiState();
 		return true;
@@ -270,6 +293,7 @@ namespace Riemann
 	{
 		m_World->Reset();
 		m_RenderBindings.clear();
+		m_HighlightedGeometry = nullptr;
 		RebuildRenderScene();
 	}
 
@@ -278,6 +302,7 @@ namespace Riemann
 		ApplyImguiCommands();
 		m_World->Step(dt);
 		SubmitTransforms();
+		UpdatePhysicsFps();
 		UpdateImguiState();
 	}
 
@@ -362,32 +387,18 @@ namespace Riemann
 
 	void WorldViewer::KeyboardMsg(char c)
 	{
+		c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+		if (c == 'a' || c == 'd' || c == 'w' || c == 's')
+		{
+			return;
+		}
+
 		const float scale = 5.0f;
 		Vector3 dir = m_CamCenter - GetCameraPosition();
 		dir.y = 0.0f;
 		dir = SafeUnitVector(dir, Vector3::UnitZ()) * scale;
 
-		if (c == 'a')
-		{
-			m_CamCenter.x -= dir.z;
-			m_CamCenter.z += dir.x;
-		}
-		else if (c == 'd')
-		{
-			m_CamCenter.x += dir.z;
-			m_CamCenter.z -= dir.x;
-		}
-		else if (c == 'w')
-		{
-			m_CamCenter.x += dir.x;
-			m_CamCenter.z += dir.z;
-		}
-		else if (c == 's')
-		{
-			m_CamCenter.x -= dir.x;
-			m_CamCenter.z -= dir.z;
-		}
-		else if (c == 'q')
+		if (c == 'q')
 		{
 			m_CamCenter.y -= scale;
 		}
@@ -403,11 +414,69 @@ namespace Riemann
 		}
 	}
 
-	void WorldViewer::MouseMsg(int x, int y, bool leftButtonDown)
+	void WorldViewer::SetMovementKey(char c, bool down)
+	{
+		c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+		if (c == 'w')
+		{
+			m_MovementKeys[0] = down;
+		}
+		else if (c == 'a')
+		{
+			m_MovementKeys[1] = down;
+		}
+		else if (c == 's')
+		{
+			m_MovementKeys[2] = down;
+		}
+		else if (c == 'd')
+		{
+			m_MovementKeys[3] = down;
+		}
+	}
+
+	void WorldViewer::UpdateCameraMovement(float dt)
+	{
+		Vector3 dir = m_CamCenter - GetCameraPosition();
+		dir.y = 0.0f;
+		dir = SafeUnitVector(dir, Vector3::UnitZ());
+
+		Vector3 movement = Vector3::Zero();
+		if (m_MovementKeys[0])
+		{
+			movement += dir;
+		}
+		if (m_MovementKeys[2])
+		{
+			movement -= dir;
+		}
+		if (m_MovementKeys[1])
+		{
+			movement.x -= dir.z;
+			movement.z += dir.x;
+		}
+		if (m_MovementKeys[3])
+		{
+			movement.x += dir.z;
+			movement.z -= dir.x;
+		}
+
+		if (movement.SquareLength() <= 1e-8f)
+		{
+			return;
+		}
+
+		const float cameraSpeed = 25.0f;
+		movement = SafeUnitVector(movement, Vector3::Zero()) * (cameraSpeed * dt);
+		m_CamCenter += movement;
+		UpdateCamera();
+	}
+
+	void WorldViewer::MouseMsg(int x, int y, bool rotateButtonDown)
 	{
 		static int xPosPrev = 0;
 		static int yPosPrev = 0;
-		if (leftButtonDown)
+		if (rotateButtonDown)
 		{
 			if (xPosPrev * yPosPrev != 0)
 			{
@@ -432,6 +501,17 @@ namespace Riemann
 			xPosPrev = 0;
 			yPosPrev = 0;
 		}
+	}
+
+	void WorldViewer::SceneRayMsg(int x, int y, int width, int height)
+	{
+		if (width <= 0 || height <= 0)
+		{
+			return;
+		}
+
+		const Ray3 ray = BuildSceneRay(x, y, width, height);
+		HandleSceneRay(ray);
 	}
 
 	void WorldViewer::MouseWheel(int zDelta, bool ctrlButtonDown)
@@ -468,13 +548,22 @@ namespace Riemann
 		std::vector<std::string> sceneFiles;
 		size_t objectCount = 0;
 		float cameraDistance = 0.0f;
+		double physicsFps = 0.0;
 		{
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			sceneName = m_ImguiSceneName;
 			sceneFiles = m_ImguiSceneFiles;
 			objectCount = m_ImguiObjectCount;
 			cameraDistance = m_ImguiCameraDistance;
+			physicsFps = m_ImguiPhysicsFps;
 		}
+
+		char fpsText[128];
+		const double renderFps = m_RenderThread ? m_RenderThread->GetRenderFps() : 0.0;
+		snprintf(fpsText, sizeof(fpsText), "Physics: %.1f FPS", physicsFps);
+		imguiDrawText(width - 10, 12, IMGUI_ALIGN_RIGHT, fpsText, imguiRGBA(230, 235, 240, 255));
+		snprintf(fpsText, sizeof(fpsText), "Render: %.1f FPS", renderFps);
+		imguiDrawText(width - 10, 30, IMGUI_ALIGN_RIGHT, fpsText, imguiRGBA(230, 235, 240, 255));
 
 		const int panelHeight = std::max(120, height - 20);
 		imguiBeginScrollArea("", 10, 10, 150, panelHeight, &m_ImguiScroll);
@@ -638,6 +727,110 @@ namespace Riemann
 		m_ImguiSceneFiles = m_SceneFiles;
 		m_ImguiObjectCount = m_World ? m_World->GetObjects().size() : 0;
 		m_ImguiCameraDistance = m_CamParam.z;
+		m_ImguiPhysicsFps = m_PhysicsFps;
+	}
+
+	void WorldViewer::UpdatePhysicsFps()
+	{
+		++m_PhysicsFrameCount;
+		const auto curr = std::chrono::steady_clock::now();
+		const std::chrono::duration<double> elapsed = curr - m_PhysicsFpsTime;
+		if (elapsed.count() < 1.0)
+		{
+			return;
+		}
+
+		m_PhysicsFps = m_PhysicsFrameCount / elapsed.count();
+		m_PhysicsFrameCount = 0;
+		m_PhysicsFpsTime = curr;
+	}
+
+	Ray3 WorldViewer::BuildSceneRay(int x, int y, int width, int height) const
+	{
+		CameraDesc camera = m_World ? m_World->GetCamera() : CameraDesc();
+		camera.Eye = GetCameraPosition();
+		camera.At = m_CamCenter;
+
+		const float aspect = static_cast<float>(width) / static_cast<float>(height);
+		const float ndcX = (2.0f * (static_cast<float>(x) + 0.5f) / static_cast<float>(width)) - 1.0f;
+		const float ndcY = 1.0f - (2.0f * (static_cast<float>(y) + 0.5f) / static_cast<float>(height));
+		const float tanHalfFovY = tanf(camera.FovY * 0.5f);
+
+		const Vector3 forward = SafeUnitVector(camera.At - camera.Eye, Vector3::UnitZ());
+		const Vector3 right = SafeUnitVector(camera.Up.Cross(forward), Vector3::UnitX());
+		const Vector3 up = SafeUnitVector(forward.Cross(right), Vector3::UnitY());
+		const Vector3 direction = SafeUnitVector(
+			forward + right * (ndcX * aspect * tanHalfFovY) + up * (ndcY * tanHalfFovY),
+			forward);
+
+		return Ray3(camera.Eye, direction);
+	}
+
+	void WorldViewer::HandleSceneRay(const Ray3& ray)
+	{
+		RigidBodySimulation* simulation = m_World ? m_World->GetSimulation() : nullptr;
+		if (simulation == nullptr)
+		{
+			return;
+		}
+
+		GeometryQuery* geometryQuery = simulation->GetGeometryQuery();
+		if (geometryQuery == nullptr)
+		{
+			return;
+		}
+
+		RayCastOption option;
+		option.Type = RayCastOption::RAYCAST_NEAREST;
+		option.HitBothSides = true;
+		option.MaxDist = 1000.0f;
+
+		RayCastResult result;
+		const bool hit = geometryQuery->RayCastQuery(ray.Origin, ray.Dir, option, &result);
+		SetHighlightedGeometry(hit && IsHighlightableGeometry(result.hitGeom) ? result.hitGeom : nullptr);
+	}
+
+	void WorldViewer::SetHighlightedGeometry(Geometry* geometry)
+	{
+		if (m_HighlightedGeometry == geometry)
+		{
+			return;
+		}
+
+		Geometry* previous = m_HighlightedGeometry;
+		m_HighlightedGeometry = geometry;
+
+		if (m_RenderThread == nullptr)
+		{
+			return;
+		}
+
+		std::vector<std::string> disableMeshIds;
+		std::vector<std::string> enableMeshIds;
+		for (const RenderBinding& binding : m_RenderBindings)
+		{
+			if (binding.GeometryPtr == previous)
+			{
+				disableMeshIds.insert(disableMeshIds.end(), binding.MeshIds.begin(), binding.MeshIds.end());
+			}
+			if (binding.GeometryPtr == geometry)
+			{
+				enableMeshIds.insert(enableMeshIds.end(), binding.MeshIds.begin(), binding.MeshIds.end());
+			}
+		}
+
+		std::shared_ptr<std::vector<std::string> > renderDisableMeshIds(new std::vector<std::string>(std::move(disableMeshIds)));
+		std::shared_ptr<std::vector<std::string> > renderEnableMeshIds(new std::vector<std::string>(std::move(enableMeshIds)));
+		m_RenderThread->Submit([renderDisableMeshIds, renderEnableMeshIds](Renderer& renderer) {
+			for (const std::string& meshId : *renderDisableMeshIds)
+			{
+				renderer.SetMeshOutline(meshId.c_str(), false, Vector4(0.0f, 0.0f, 0.0f, 1.0f), 0.0f);
+			}
+			for (const std::string& meshId : *renderEnableMeshIds)
+			{
+				renderer.SetMeshOutline(meshId.c_str(), true, Vector4(1.0f, 0.82f, 0.18f, 1.0f), 0.08f);
+			}
+		});
 	}
 
 	void WorldViewer::DrawImguiCallback(int width, int height, void* userData)

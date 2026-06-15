@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -21,6 +22,7 @@ namespace Riemann
 		void Start();
 		void Stop();
 		void Submit(Command command);
+		double GetRenderFps() const;
 
 	private:
 		void ThreadMain();
@@ -32,6 +34,7 @@ namespace Riemann
 		std::mutex m_Mutex;
 		std::condition_variable m_Condition;
 		std::vector<Command> m_Pending;
+		std::atomic<double> m_RenderFps;
 		bool m_Running;
 		bool m_Started;
 	};

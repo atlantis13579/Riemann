@@ -86,7 +86,7 @@ namespace
 
 		for (const char* candidate : candidates)
 		{
-			if (FileExists(std::string(candidate) + "simple.fxh"))
+			if (FileExists(std::string(candidate) + "dx11_shader.hlsl"))
 			{
 				return candidate;
 			}
@@ -209,9 +209,11 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 			}
 			else
 			{
+				const float fixedDt = 0.016f;
 				if (g_Viewer)
 				{
-					g_Viewer->UpdateSimulator(0.016f);
+					g_Viewer->UpdateCameraMovement(fixedDt);
+					g_Viewer->UpdateSimulator(fixedDt);
 				}
 				last = curr;
 			}
@@ -265,6 +267,30 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
+	case WM_KEYDOWN:
+		if (g_Viewer)
+		{
+			g_Viewer->SetMovementKey(static_cast<char>(wParam), true);
+		}
+		break;
+
+	case WM_KEYUP:
+		if (g_Viewer)
+		{
+			g_Viewer->SetMovementKey(static_cast<char>(wParam), false);
+		}
+		break;
+
+	case WM_KILLFOCUS:
+		if (g_Viewer)
+		{
+			g_Viewer->SetMovementKey('w', false);
+			g_Viewer->SetMovementKey('a', false);
+			g_Viewer->SetMovementKey('s', false);
+			g_Viewer->SetMovementKey('d', false);
+		}
+		break;
+
 	case WM_MOUSEMOVE:
 		g_MouseX = GET_X_LPARAM(lParam);
 		g_MouseY = GET_Y_LPARAM(lParam);
@@ -282,7 +308,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (g_Viewer)
 		{
 			const bool imguiActive = g_ImguiMouseCapture || IsMouseOverImgui(g_MouseX, g_MouseY);
-			g_Viewer->MouseMsg(g_MouseX, g_MouseY, !imguiActive && (MK_LBUTTON & wParam) != 0);
+			g_Viewer->MouseMsg(g_MouseX, g_MouseY, !imguiActive && (MK_RBUTTON & wParam) != 0);
 		}
 		break;
 
@@ -295,7 +321,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		SubmitImguiInput(0);
 		if (g_Viewer)
 		{
-			g_Viewer->MouseMsg(g_MouseX, g_MouseY, !g_ImguiMouseCapture);
+			g_Viewer->MouseMsg(g_MouseX, g_MouseY, false);
+			if (!g_ImguiMouseCapture)
+			{
+				RECT rc = {};
+				GetClientRect(hWnd, &rc);
+				g_Viewer->SceneRayMsg(g_MouseX, g_MouseY, rc.right - rc.left, rc.bottom - rc.top);
+			}
 		}
 		break;
 
@@ -319,7 +351,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		g_MouseX = GET_X_LPARAM(lParam);
 		g_MouseY = GET_Y_LPARAM(lParam);
 		g_ImguiMouseButtons |= kImguiMouseRight;
+		g_ImguiMouseCapture = IsMouseOverImgui(g_MouseX, g_MouseY);
+		SetCapture(hWnd);
 		SubmitImguiInput(0);
+		if (g_Viewer)
+		{
+			g_Viewer->MouseMsg(g_MouseX, g_MouseY, !g_ImguiMouseCapture);
+		}
 		break;
 
 	case WM_RBUTTONUP:
@@ -327,6 +365,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		g_MouseY = GET_Y_LPARAM(lParam);
 		g_ImguiMouseButtons &= ~kImguiMouseRight;
 		SubmitImguiInput(0);
+		if (g_Viewer)
+		{
+			g_Viewer->MouseMsg(g_MouseX, g_MouseY, false);
+		}
+		g_ImguiMouseCapture = false;
 		if (g_ImguiMouseButtons == 0)
 		{
 			ReleaseCapture();

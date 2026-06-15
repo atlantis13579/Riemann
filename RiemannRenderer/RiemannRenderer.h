@@ -107,6 +107,7 @@ namespace Riemann
 		virtual bool AddMesh(const RenderMeshDesc& mesh) = 0;
 		virtual bool UpdateTransform(const RenderTransformUpdate& transform) = 0;
 		virtual bool UpdateVertices(const char* id, const Vertex1* vertices, int vertexCount) = 0;
+		virtual bool SetMeshOutline(const char* id, bool enabled, const Vector4& color, float thickness) { (void)id; (void)enabled; (void)color; (void)thickness; return false; }
 		virtual bool DeleteMesh(const char* id) = 0;
 		virtual bool Reset() = 0;
 

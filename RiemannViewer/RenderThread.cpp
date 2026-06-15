@@ -9,6 +9,7 @@ namespace Riemann
 {
 	RenderThread::RenderThread(Renderer* renderer)
 		: m_Renderer(renderer)
+		, m_RenderFps(0.0)
 		, m_Running(false)
 		, m_Started(false)
 	{
@@ -74,8 +75,16 @@ namespace Riemann
 		m_Condition.notify_one();
 	}
 
+	double RenderThread::GetRenderFps() const
+	{
+		return m_RenderFps.load();
+	}
+
 	void RenderThread::ThreadMain()
 	{
+		auto fpsTime = std::chrono::steady_clock::now();
+		int frameCount = 0;
+
 		while (true)
 		{
 			{
@@ -90,6 +99,16 @@ namespace Riemann
 			if (m_Renderer)
 			{
 				m_Renderer->Render();
+				++frameCount;
+
+				const auto curr = std::chrono::steady_clock::now();
+				const std::chrono::duration<double> elapsed = curr - fpsTime;
+				if (elapsed.count() >= 1.0)
+				{
+					m_RenderFps.store(frameCount / elapsed.count());
+					frameCount = 0;
+					fpsTime = curr;
+				}
 			}
 
 			std::unique_lock<std::mutex> lock(m_Mutex);

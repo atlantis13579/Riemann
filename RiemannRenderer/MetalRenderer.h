@@ -18,6 +18,7 @@ namespace Riemann
 		bool AddMesh(const RenderMeshDesc& mesh) override;
 		bool UpdateTransform(const RenderTransformUpdate& transform) override;
 		bool UpdateVertices(const char* id, const Vertex1* vertices, int vertexCount) override;
+		bool SetMeshOutline(const char* id, bool enabled, const Vector4& color, float thickness) override;
 		bool DeleteMesh(const char* id) override;
 		bool Reset() override;
 
