@@ -8,10 +8,20 @@ namespace Riemann
 {
 DynamicAABBTree::DynamicAABBTree()
 {
+	Clear();
+}
+
+DynamicAABBTree::~DynamicAABBTree()
+{
+}
+
+void DynamicAABBTree::Clear()
+{
 	m_root = -1;
 
 	m_nodeCapacity = 16;
 	m_nodeCount = 0;
+	m_nodes.clear();
 	m_nodes.resize(m_nodeCapacity);
 	memset(&m_nodes[0], 0, m_nodeCapacity * sizeof(Node));
 
@@ -20,13 +30,9 @@ DynamicAABBTree::DynamicAABBTree()
 		m_nodes[i].next = i + 1;
 		m_nodes[i].height = -1;
 	}
-	m_nodes[m_nodeCapacity-1].next = -1;
-	m_nodes[m_nodeCapacity-1].height = -1;
+	m_nodes[m_nodeCapacity - 1].next = -1;
+	m_nodes[m_nodeCapacity - 1].height = -1;
 	m_freeList = 0;
-}
-
-DynamicAABBTree::~DynamicAABBTree()
-{
 }
 
 static bool RayIntersectGeometry(const Ray3& Ray, void* userData, const RayCastOption* Option, RayCastResult* Result)
@@ -36,6 +42,7 @@ static bool RayIntersectGeometry(const Ray3& Ray, void* userData, const RayCastO
 	bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, Option, Result);
 	if (hit)
 	{
+		Result->hit = true;
 		if (Option->Type == RayCastOption::RAYCAST_PENETRATE)
 		{
 			Result->hitGeometries.push_back(Geom);
@@ -53,10 +60,7 @@ static bool RayIntersectGeometry(const Ray3& Ray, void* userData, const RayCastO
 
 bool DynamicAABBTree::RayCast(const Ray3& Ray, const RayCastOption* Option, RayCastResult *Result) const
 {
-	Result->hit = false;
-	Result->hitTestCount = 0;
-	Result->hitTimeMin = FLT_MAX;
-	Result->hitGeom = nullptr;
+	Result->Reset();
 	
 	if (m_root == -1)
 	{
@@ -430,6 +434,41 @@ bool DynamicAABBTree::Query(const Box3& aabb, std::vector<void*> *Result) const
 	}
 
 	return !Result->empty();
+}
+
+void DynamicAABBTree::CollectAABBs(std::vector<Box3>* aabbs) const
+{
+	if (aabbs == nullptr || m_root == -1)
+	{
+		return;
+	}
+
+	std::vector<int> stack;
+	stack.reserve(static_cast<size_t>(m_nodeCount));
+	stack.push_back(m_root);
+
+	while (!stack.empty())
+	{
+		const int nodeId = stack.back();
+		stack.pop_back();
+		if (nodeId < 0 || nodeId >= m_nodeCapacity)
+		{
+			continue;
+		}
+
+		const Node& node = m_nodes[nodeId];
+		if (node.height < 0)
+		{
+			continue;
+		}
+
+		aabbs->push_back(node.aabb);
+		if (!node.IsLeaf())
+		{
+			stack.push_back(node.child1);
+			stack.push_back(node.child2);
+		}
+	}
 }
 
 int DynamicAABBTree::Add(const Box3& aabb, void* userData)

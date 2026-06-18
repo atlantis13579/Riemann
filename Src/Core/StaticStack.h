@@ -1,5 +1,6 @@
 #pragma once
 
+#include <assert.h>
 #include <string.h>
 #include <vector>
 
@@ -22,16 +23,31 @@ namespace Riemann
 
 		void push(T p)
 		{
+			if (m_top >= MaxDepth)
+			{
+				assert(false);
+				return;
+			}
 			m_stack[m_top++] = p;
 		}
 
 		T pop()
 		{
+			if (m_top <= 0)
+			{
+				assert(false);
+				return T();
+			}
 			return m_stack[--m_top];
 		}
 
 		T top()
 		{
+			if (m_top <= 0)
+			{
+				assert(false);
+				return T();
+			}
 			return m_stack[m_top - 1];
 		}
 

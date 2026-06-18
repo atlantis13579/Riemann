@@ -297,28 +297,48 @@ void ConvexMesh::GetMesh(std::vector<Vector3>& iVertices, std::vector<uint16_t>&
 		return;
 	}
 
-	Vector3 Center = Vector3::Zero();
-
-	for (uint16_t i = 0; i < NumVertices; ++i)
-	{
-		Center += Vertices[i];
-	}
-	Center = Center / NumVertices;
-
-	for (uint16_t i = 0; i < NumVertices; ++i)
-	{
-		iVertices.push_back(Vertices[i]);
-		_Normals.push_back((Vertices[i] - Center).Unit());
-	}
+	iVertices.clear();
+	iIndices.clear();
+	_Normals.clear();
 
 	for (uint16_t i = 0; i < NumFaces; ++i)
 	{
 		const ConvexMeshFace& face = Faces[i];
+		if (face.numVerties < 3)
+		{
+			continue;
+		}
+
+		Vector3 normal = face.plane.Normal;
+		if (normal.SafeNormalize() == 0.0f)
+		{
+			normal = Vector3::UnitY();
+		}
+
+		const uint16_t base = (uint16_t)iVertices.size();
+		for (uint8_t j = 0; j < face.numVerties; ++j)
+		{
+			iVertices.push_back(Vertices[Indices[face.first + j]]);
+			_Normals.push_back(normal);
+		}
+
 		for (uint8_t j = 1; j < face.numVerties - 1; ++j)
 		{
-			iIndices.push_back(Indices[face.first]);
-			iIndices.push_back(Indices[face.first + j]);
-			iIndices.push_back(Indices[face.first + j + 1]);
+			const uint16_t i0 = base;
+			const uint16_t i1 = (uint16_t)(base + j);
+			const uint16_t i2 = (uint16_t)(base + j + 1);
+			const Vector3 triNormal = (iVertices[i1] - iVertices[i0]).Cross(iVertices[i2] - iVertices[i0]);
+			iIndices.push_back(i0);
+			if (triNormal.Dot(normal) >= 0.0f)
+			{
+				iIndices.push_back(i1);
+				iIndices.push_back(i2);
+			}
+			else
+			{
+				iIndices.push_back(i2);
+				iIndices.push_back(i1);
+			}
 		}
 	}
 }

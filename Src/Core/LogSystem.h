@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdarg.h>
+#include <stdio.h>
 #include <string>
 
 #ifdef _WIN32
@@ -41,9 +42,11 @@ public:
 		return str;
 	}
 
-	void Log(const char* file, long line_no, const char* format, ...)
+	static void Log(const char* file, long line_no, const char* format, ...)
 	{
-		
+		(void)file;
+		(void)line_no;
+		(void)format;
 	}
 };
 

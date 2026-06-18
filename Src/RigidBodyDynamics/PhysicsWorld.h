@@ -38,6 +38,12 @@ namespace Riemann
 		DynamicAABB,
 	};
 
+	enum class SceneQueryAABBTree : uint8_t
+	{
+		StaticAABB,
+		DynamicAABB,
+	};
+
 	enum class NarrowPhaseSolver : uint8_t
 	{
 		GJKEPA,
@@ -71,13 +77,14 @@ namespace Riemann
 		float		deltatime;
 	};
 
-	struct RigidBodySimulationParam
+	struct PhysicsWorldParam
 	{
-		RigidBodySimulationParam()
+		PhysicsWorldParam()
 		{
 			gravityAcc = Vector3::Zero();
 			threadMode = ThreadMode::SingleThread;
 			broadphase = BroadPhaseSolver::SAP;
+			sceneQueryTree = SceneQueryAABBTree::DynamicAABB;
 			narrowphase = NarrowPhaseSolver::GJKEPA;
 			resolutionSolver = ResolutionPhaseSolver::SequentialImpulse;
 			integrateMethod = IntegrateMethod::ExplicitEuler;
@@ -86,17 +93,18 @@ namespace Riemann
 		Vector3 				gravityAcc;		// gravity acc
 		ThreadMode				threadMode;
 		BroadPhaseSolver		broadphase;
+		SceneQueryAABBTree		sceneQueryTree;
 		NarrowPhaseSolver		narrowphase;
 		ResolutionPhaseSolver	resolutionSolver;
 		IntegrateMethod 		integrateMethod;
 		int						workerThreads;
 	};
 
-	class RigidBodySimulation
+	class PhysicsWorld
 	{
 	public:
-		RigidBodySimulation(const RigidBodySimulationParam& param);
-		~RigidBodySimulation();
+		PhysicsWorld(const PhysicsWorldParam& param);
+		~PhysicsWorld();
 
 	public:
 		void				Simulate();
@@ -106,6 +114,7 @@ namespace Riemann
 
 		RigidBody*			CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose);
 		RigidBody*			CreateRigidBody(Geometry* Geom, const RigidBodyParam& param);
+		RigidBody*			CreateRigidBody(const std::vector<Geometry*>& Geoms, const RigidBodyParam& param, const Transform& init_transform);
 		bool				RemoveRigidBody(RigidBody* Body);
 
 		bool				LoadAnimation(const std::string& resname, const std::string& filepath, float play_rate, bool begin_play);
@@ -126,6 +135,10 @@ namespace Riemann
 
 		void				PreIntegrate(float dt);
 		void				PostIntegrate(float dt);
+		void				BuildSceneQueryTree(const std::vector<Geometry*>& Objects);
+		void				AddGeometryToSceneQueryTree(Geometry* Object);
+		void				RemoveGeometryFromSceneQueryTree(Geometry* Object);
+		void				UpdateSceneQueryTree(RigidBodyDynamic* Body);
 
 	private:
 		std::vector<RigidBodyStatic*>	m_StaticBodies;
@@ -137,6 +150,7 @@ namespace Riemann
 		BroadPhase*						m_BPhase;
 		NarrowPhase*					m_NPhase;
 		ConstraintSolver*				m_Solver;
+		SceneQueryAABBTree				m_SceneQueryTree;
 		IntegrateMethod					m_IntegrateMethod;
 		std::vector<ForceField*>		m_Fields;
 		WorldClock						m_Clock;

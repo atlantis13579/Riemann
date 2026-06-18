@@ -1,6 +1,8 @@
 #pragma once
 
-#include<string.h>
+#include <algorithm>
+#include <cmath>
+#include <string.h>
 
 namespace Maths
 {
@@ -26,9 +28,9 @@ namespace Maths
 			int i = 0;
 			for (const T& vv : v)
 			{
-				mData[i] = vv;
-				if (i++ >= DIM)
+				if (i >= DIM)
 					break;
+				mData[i++] = vv;
 			}
 		}
 
@@ -226,7 +228,7 @@ namespace Maths
 		T			L1Norm() const
 		{
 			T sum = (T)0;
-			for (int i = 1; i < DIM; ++i)
+			for (int i = 0; i < DIM; ++i)
 			{
 				sum += std::abs(mData[i]);
 			}
@@ -236,7 +238,7 @@ namespace Maths
 		T			L2Norm() const
 		{
 			T sum = (T)0;
-			for (int i = 1; i < DIM; ++i)
+			for (int i = 0; i < DIM; ++i)
 			{
 				sum += mData[i] * mData[i];
 			}
@@ -246,19 +248,19 @@ namespace Maths
 		T			LpNorm(int p) const
 		{
 			T sum = (T)0;
-			for (int i = 1; i < DIM; ++i)
+			for (int i = 0; i < DIM; ++i)
 			{
-				sum += std::pow(mData[i], p);
+				sum += (T)std::pow(std::abs(mData[i]), (T)p);
 			}
-			return std::pow(sum, (T)1 / p);
+			return (T)std::pow(sum, (T)1 / (T)p);
 		}
 
 		T			LInfinityNorm() const
 		{
-			T maxVal = mData[0];
+			T maxVal = std::abs(mData[0]);
 			for (int i = 1; i < DIM; ++i)
 			{
-				maxVal = std::max(maxVal, mData[i]);
+				maxVal = std::max(maxVal, std::abs(mData[i]));
 			}
 			return maxVal;
 		}

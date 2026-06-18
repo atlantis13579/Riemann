@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <stdint.h>
 #include <string>
 #include <vector>
 
@@ -56,7 +58,7 @@ namespace Riemann
 					int k = (m_curr_i < buf_size - 1) ? 63 : ((m_owner->m_size - 1) & 63);
 					for (; m_curr_j <= k; ++m_curr_j)
 					{
-						if (m_owner->m_data[m_curr_i] & (1LL << m_curr_j))
+						if (m_owner->m_data[m_curr_i] & (1ULL << m_curr_j))
 						{
 							m_index = (uint32_t)(m_curr_i * 64 + m_curr_j);
 
@@ -187,7 +189,7 @@ namespace Riemann
 				int k = (i < m_data.size() - 1) ? 63 : ((m_size - 1) & 63);
 				for (int j = 0; j <= k; ++j)
 				{
-					if (m_data[i] & (1LL << j))
+					if (m_data[i] & (1ULL << j))
 					{
 						ret.push_back((uint32_t)(i * 64 + j));
 					}
@@ -246,7 +248,7 @@ namespace Riemann
 
 		bool operator[](size_t i) const
 		{
-			return m_data[i >> 6] & (1LL << (i & 63)) ? true : false;
+			return m_data[i >> 6] & (1ULL << (i & 63)) ? true : false;
 		}
 
 		ValueProxy operator[](size_t i)
@@ -263,7 +265,7 @@ namespace Riemann
 
 		inline bool get(size_t i) const
 		{
-			return m_data[i >> 6] & (1LL << (i & 63)) ? true : false;
+			return m_data[i >> 6] & (1ULL << (i & 63)) ? true : false;
 		}
 
 		inline bool get_safe(size_t i) const
@@ -279,11 +281,11 @@ namespace Riemann
 		{
 			if (b)
 			{
-				m_data[i >> 6] |= (1LL << (i & 63));
+				m_data[i >> 6] |= (1ULL << (i & 63));
 			}
 			else
 			{
-				m_data[i >> 6] &= ~(1LL << (i & 63));
+				m_data[i >> 6] &= ~(1ULL << (i & 63));
 			}
 		}
 
@@ -304,12 +306,12 @@ namespace Riemann
 
 		inline void insert(size_t i)
 		{
-			m_data[i >> 6] |= (1LL << (i & 63));
+			m_data[i >> 6] |= (1ULL << (i & 63));
 		}
 
 		inline void erase(size_t i)
 		{
-			m_data[i >> 6] &= ~(1LL << (i & 63));
+			m_data[i >> 6] &= ~(1ULL << (i & 63));
 		}
 
 		BitSet operator~() const
@@ -401,6 +403,21 @@ namespace Riemann
 		}
 
 	private:
+		void trim_unused_bits()
+		{
+			if (m_size == 0 || m_data.empty())
+			{
+				return;
+			}
+
+			size_t used_bits = m_size & 63;
+			if (used_bits != 0)
+			{
+				uint64_t mask = (1ULL << used_bits) - 1;
+				m_data.back() &= mask;
+			}
+		}
+
 		size_t					m_size;
 		std::vector<uint64_t>   m_data;
 	};

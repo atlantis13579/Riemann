@@ -239,6 +239,11 @@ namespace Riemann
 	public:
 		void		BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
 		void		CreateDynamicGeometry();
+		void		ClearDynamicGeometry();
+		void		BuildDynamicGeometry(const std::vector<Geometry*>& Objects);
+		int			AddDynamicGeometry(Geometry* Object);
+		void		RemoveDynamicGeometry(Geometry* Object);
+		bool		UpdateDynamicGeometry(Geometry* Object, const Vector3& displacement);
 
 		bool		RayCastQuery(const Vector3& Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult* Result);
 		bool		IntersectQueryBox(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result);
@@ -247,15 +252,26 @@ namespace Riemann
 		bool		BoxCastQuery(const Vector3& Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 		bool		SphereCastQuery(const Vector3& Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 		bool		CapsuleCastQuery(const Vector3& Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
+		void		CollectAABBs(std::vector<Box3>* aabbs) const;
 
 		AABBTree* GetStaticTree()
 		{
 			return m_staticGeometry;
 		}
 
+		const AABBTree* GetStaticTree() const
+		{
+			return m_staticGeometry;
+		}
+
 		DynamicAABBTree* GetDynamicTree()
 		{
-			return m_dynamicPruner;
+			return m_dynamicGeometry;
+		}
+
+		const DynamicAABBTree* GetDynamicTree() const
+		{
+			return m_dynamicGeometry;
 		}
 
 	private:
@@ -266,6 +282,6 @@ namespace Riemann
 		std::vector<Geometry*>	m_Objects;
 
 		AABBTree*			m_staticGeometry;
-		DynamicAABBTree*	m_dynamicPruner;
+		DynamicAABBTree*	m_dynamicGeometry;
 	};
 }

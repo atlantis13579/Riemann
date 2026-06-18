@@ -103,8 +103,14 @@ namespace Riemann
 	
 		void BuildSparseAdjacencyMatrix(std::vector<int>& entry, std::vector<int>& adjs)
 		{
-			std::vector<Edge>	&edges1 = edges;
+			std::vector<Edge>	edges1 = edges;
 			std::vector<Edge>	edges2 = edges;
+
+			auto sort = [](const Edge& a, const Edge& b) {
+				if (a.n0 == b.n0)
+					return a.n1 < b.n1;
+				return a.n0 < b.n0;
+			};
 		
 			// Make Edge Ascending
 			for (size_t i = 0; i < edges1.size(); ++i)
@@ -116,18 +122,18 @@ namespace Riemann
 				}
 			}
 		
-			std::sort(edges1.begin(), edges1.end());
+			std::sort(edges1.begin(), edges1.end(), sort);
 		
 			// Make Edge Descending
 			for (size_t i = 0; i < edges2.size(); ++i)
 			{
-				Edge& a = edges1[i];
+				Edge& a = edges2[i];
 				if (a.n0 < a.n1)
 				{
 					std::swap(a.n0, a.n1);
 				}
 			}
-			std::sort(edges2.begin(), edges2.end());
+			std::sort(edges2.begin(), edges2.end(), sort);
 		
 			entry.resize(nodes.size());
 			adjs.clear();
@@ -217,7 +223,7 @@ namespace Riemann
 
 		void BuildSparseAdjacencyMatrix(std::vector<int>& entry, std::vector<EdgeAdj>& adjs)
 		{
-			std::vector<Edge>& edges1 = edges;
+			std::vector<Edge>  edges1 = edges;
 			std::vector<Edge>  edges2 = edges;
 
 			// Make Edge Ascending

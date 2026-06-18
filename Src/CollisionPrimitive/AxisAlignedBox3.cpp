@@ -2151,37 +2151,48 @@ void AxisAlignedBox3::GetMesh2(std::vector<Vector3>& Vertices, std::vector<uint1
 
 void AxisAlignedBox3::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 {
-	Vertices.resize(36);
-	Indices.resize(36);
-	Normals.resize(36);
+	Vertices.clear();
+	Indices.clear();
+	Normals.clear();
+	Vertices.reserve(36);
+	Indices.reserve(36);
+	Normals.reserve(36);
 
-	Vector3 BV[] = { Min, Max };
+	const Vector3 v000(Min.x, Min.y, Min.z);
+	const Vector3 v100(Max.x, Min.y, Min.z);
+	const Vector3 v010(Min.x, Max.y, Min.z);
+	const Vector3 v110(Max.x, Max.y, Min.z);
+	const Vector3 v001(Min.x, Min.y, Max.z);
+	const Vector3 v101(Max.x, Min.y, Max.z);
+	const Vector3 v011(Min.x, Max.y, Max.z);
+	const Vector3 v111(Max.x, Max.y, Max.z);
 
-	#define SET_VERTICES(_idx, _x, _y, _z)	\
-		Vertices[_idx] = Vector3(BV[_x].x, BV[_y].y, BV[_z].z);	\
-		Indices[_idx] = (_idx);	\
-		Normals[_idx] = (_z == 0) ? -Vector3::UnitZ() : Vector3::UnitZ();	\
-		Vertices[_idx + 12] = Vector3(BV[_y].x, BV[_z].y, BV[_x].z);	\
-		Indices[_idx + 12] = (_idx + 12);	\
-		Normals[_idx + 12] = (_z == 0) ? -Vector3::UnitY() : Vector3::UnitY();	\
-		Vertices[_idx + 24] = Vector3(BV[_z].x, BV[_x].y, BV[_y].z);	\
-		Indices[_idx + 24] = (_idx + 24);	\
-		Normals[_idx + 24] = (_z == 0) ? -Vector3::UnitX() : Vector3::UnitX();	\
+	auto addTriangle = [&](const Vector3& a, const Vector3& b, const Vector3& c, const Vector3& normal)
+	{
+		const uint16_t base = (uint16_t)Vertices.size();
+		Vertices.push_back(a);
+		Vertices.push_back(b);
+		Vertices.push_back(c);
+		Normals.push_back(normal);
+		Normals.push_back(normal);
+		Normals.push_back(normal);
+		Indices.push_back(base);
+		Indices.push_back((uint16_t)(base + 1));
+		Indices.push_back((uint16_t)(base + 2));
+	};
 
-	SET_VERTICES(0, 0, 0, 0);
-	SET_VERTICES(1, 1, 0, 0);
-	SET_VERTICES(2, 0, 1, 0);
-	SET_VERTICES(3, 1, 0, 0);
-	SET_VERTICES(4, 0, 1, 0);
-	SET_VERTICES(5, 1, 1, 0);
-	SET_VERTICES(6, 0, 0, 1);
-	SET_VERTICES(7, 1, 0, 1);
-	SET_VERTICES(8, 0, 1, 1);
-	SET_VERTICES(9, 1, 0, 1);
-	SET_VERTICES(10, 0, 1, 1);
-	SET_VERTICES(11, 1, 1, 1);
+	auto addFace = [&](const Vector3& v0, const Vector3& v1, const Vector3& v2, const Vector3& v3, const Vector3& normal)
+	{
+		addTriangle(v0, v1, v2, normal);
+		addTriangle(v2, v1, v3, normal);
+	};
 
-	#undef SET_VERTICES
+	addFace(v000, v010, v100, v110, -Vector3::UnitZ());
+	addFace(v001, v101, v011, v111, Vector3::UnitZ());
+	addFace(v000, v100, v001, v101, -Vector3::UnitY());
+	addFace(v010, v011, v110, v111, Vector3::UnitY());
+	addFace(v000, v001, v010, v011, -Vector3::UnitX());
+	addFace(v100, v110, v101, v111, Vector3::UnitX());
 }
 
 void AxisAlignedBox3::GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)

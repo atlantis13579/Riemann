@@ -25,6 +25,7 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\Sphere3.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Triangle3.cpp" />
     <ClCompile Include="..\..\Src\Destruction\ConnectionGraph.cpp" />
+    <ClCompile Include="..\..\Src\Destruction\DestructionCluster.cpp" />
     <ClCompile Include="..\..\Src\Destruction\DestructionSet.cpp" />
     <ClCompile Include="..\..\Src\Destruction\GraphPartition.cpp" />
     <ClCompile Include="..\..\Src\Destruction\StrainSolver.cpp" />
@@ -81,7 +82,7 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Ragdoll.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\WarmStart.cpp" />
     <ClCompile Include="..\..\Src\Modules\ImageSpace\ImageProcessing.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsWorld.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MotionIntegration.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBody.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\XPBDRigidDynamicsSolver.cpp" />
@@ -121,6 +122,7 @@
     <ClInclude Include="..\..\Src\Core\SmallMap.h" />
     <ClInclude Include="..\..\Src\Core\SmallSet.h" />
     <ClInclude Include="..\..\Src\Destruction\ConnectionGraph.h" />
+    <ClInclude Include="..\..\Src\Destruction\DestructionCluster.h" />
     <ClInclude Include="..\..\Src\Destruction\DestructionSet.h" />
     <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
     <ClInclude Include="..\..\Src\Destruction\GraphPartition.h" />
@@ -254,7 +256,7 @@
     <ClInclude Include="..\..\Src\Maths\Vector3.h" />
     <ClInclude Include="..\..\Src\Maths\Vector4.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MotionIntegration.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.h" />
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsWorld.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\XPBDRigidDynamicsSolver.h" />
     <ClInclude Include="..\..\Src\Solver\NewtonRaphsonIteration.h" />
@@ -332,12 +334,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>..\..\Binaries\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>..\..\Binaries\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\Binaries\Win64\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>..\..\Binaries\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>..\..\Binaries\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\Binaries\Win64\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

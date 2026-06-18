@@ -189,9 +189,9 @@
 		ADD23CBB288762CC00A849BE /* KeyFrameAnimation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23CA7288762CC00A849BE /* KeyFrameAnimation.cpp */; };
 		ADD23CBC288762CC00A849BE /* ForceField.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23CA8288762CC00A849BE /* ForceField.cpp */; };
 		ADD23CBD288762CC00A849BE /* PhysicsMaterial.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CA9288762CC00A849BE /* PhysicsMaterial.h */; };
-		ADD23CBE288762CC00A849BE /* RigidBodySimulation.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CAA288762CC00A849BE /* RigidBodySimulation.h */; };
+		ADD23CBE288762CC00A849BE /* PhysicsWorld.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CAA288762CC00A849BE /* PhysicsWorld.h */; };
 		ADD23CBF288762CC00A849BE /* RigidBody.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23CAB288762CC00A849BE /* RigidBody.cpp */; };
-		ADD23CC0288762CC00A849BE /* RigidBodySimulation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23CAC288762CC00A849BE /* RigidBodySimulation.cpp */; };
+		ADD23CC0288762CC00A849BE /* PhysicsWorld.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23CAC288762CC00A849BE /* PhysicsWorld.cpp */; };
 		ADD23CC1288762CC00A849BE /* MotionIntegration.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23CAD288762CC00A849BE /* MotionIntegration.cpp */; };
 		ADD23CC2288762CC00A849BE /* WarmStart.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23CAE288762CC00A849BE /* WarmStart.h */; };
 		ADD23CC3288762CC00A849BE /* Jacobian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23CAF288762CC00A849BE /* Jacobian.cpp */; };
@@ -230,6 +230,27 @@
 		ADF8622D2891876C00DBC516 /* LBFGS.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF862282891876B00DBC516 /* LBFGS.h */; };
 		ADF8622E2891876C00DBC516 /* GaussNewton.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF862292891876B00DBC516 /* GaussNewton.h */; };
 		ADF8622F2891876C00DBC516 /* StochasticGradientDescent.h in Headers */ = {isa = PBXBuildFile; fileRef = ADF8622A2891876B00DBC516 /* StochasticGradientDescent.h */; };
+		D3C1326DB3B962678FE5BE8D /* File.h in Headers */ = {isa = PBXBuildFile; fileRef = D5C070BCF36C661FF3562AE9 /* File.h */; };
+		410D7E8C42EBA8BADC6E15D5 /* DestructionCluster.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4346E8731ED941D2625A8117 /* DestructionCluster.cpp */; };
+		10F2E1AFF370C72362B4951D /* DestructionCluster.h in Headers */ = {isa = PBXBuildFile; fileRef = 0671B6F58455A0ABACF5859A /* DestructionCluster.h */; };
+		0B81C95743BB1538260A0CB0 /* MeshDistance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FA4D37933C004B44AEBE15B5 /* MeshDistance.cpp */; };
+		006B81530FB7EB63A1A3B105 /* MeshDistance.h in Headers */ = {isa = PBXBuildFile; fileRef = 105EC99B3DA7DD46B1A1E10B /* MeshDistance.h */; };
+		6C0AC4E0EC3773ED487F529E /* MeshRepair.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B4D7D01119BBE35D3D5BB435 /* MeshRepair.cpp */; };
+		C5FEA1AD5B78B51981B6446B /* MeshRepair.h in Headers */ = {isa = PBXBuildFile; fileRef = 26C7B30B2288BFB1AD7D7B4D /* MeshRepair.h */; };
+		7764F16C5DDF73C739FE827A /* MeshValidator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6503A051DCE30E06B2D193D4 /* MeshValidator.cpp */; };
+		EF3070B5FFCD7365F1302A8C /* MeshValidator.h in Headers */ = {isa = PBXBuildFile; fileRef = ACBB459232103B5EDF7AE58C /* MeshValidator.h */; };
+		647F28BC8D394D4D58DCCD3B /* SignedDistanceField.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B9B99A2EC6521DADDD984DBD /* SignedDistanceField.cpp */; };
+		CA47904B5D05BC553A31A834 /* SignedDistanceField.h in Headers */ = {isa = PBXBuildFile; fileRef = FEAD0CF1C5F753A8B0E3AA68 /* SignedDistanceField.h */; };
+		9E1E4EF339EEE22DD98000B6 /* ConjugateGradientSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = 0F6BDABBE6615CD9AFF01BCB /* ConjugateGradientSolver.h */; };
+		066AB7E82548BC6E28B40889 /* Frame3.h in Headers */ = {isa = PBXBuildFile; fileRef = 54A6D6B51B2F751283D61D7E /* Frame3.h */; };
+		52768F2CC7AE56558F37AA66 /* Index2.h in Headers */ = {isa = PBXBuildFile; fileRef = 9B0B8826158508317D570B41 /* Index2.h */; };
+		3C8B487887D920B90463FC33 /* Index3.h in Headers */ = {isa = PBXBuildFile; fileRef = 914118228AEFC91B7345D04B /* Index3.h */; };
+		BFE87CE7B0997BC288513497 /* MassSpring.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279D791074ECCE26B2DBBAB1 /* MassSpring.cpp */; };
+		335F1FD1D64FF10DA238C738 /* MassSpring.h in Headers */ = {isa = PBXBuildFile; fileRef = F4E68592ED3A278A72934CBD /* MassSpring.h */; };
+		15212EDE0F52CF5D846DF939 /* PositionBasedDynamicsSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A5AED4A2F4B5F1B9BD48525E /* PositionBasedDynamicsSolver.cpp */; };
+		C1027C825DAC4A50B4252B14 /* PositionBasedDynamicsSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = EB7093FFA1118085CB145FD9 /* PositionBasedDynamicsSolver.h */; };
+		CF17B16EBFCF1519A0584FF5 /* XPBDRigidDynamicsSolver.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DF7143CAF0EA21E0A06BDDDD /* XPBDRigidDynamicsSolver.cpp */; };
+		7E33E20C36B0245AE6975DB3 /* XPBDRigidDynamicsSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = B396F9D37D89544E366DF967 /* XPBDRigidDynamicsSolver.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -416,9 +437,9 @@
 		ADD23CA7288762CC00A849BE /* KeyFrameAnimation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = KeyFrameAnimation.cpp; path = ../../Src/RigidBodyDynamics/KeyFrameAnimation.cpp; sourceTree = "<group>"; };
 		ADD23CA8288762CC00A849BE /* ForceField.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ForceField.cpp; path = ../../Src/RigidBodyDynamics/ForceField.cpp; sourceTree = "<group>"; };
 		ADD23CA9288762CC00A849BE /* PhysicsMaterial.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PhysicsMaterial.h; path = ../../Src/RigidBodyDynamics/PhysicsMaterial.h; sourceTree = "<group>"; };
-		ADD23CAA288762CC00A849BE /* RigidBodySimulation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RigidBodySimulation.h; path = ../../Src/RigidBodyDynamics/RigidBodySimulation.h; sourceTree = "<group>"; };
+		ADD23CAA288762CC00A849BE /* PhysicsWorld.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PhysicsWorld.h; path = ../../Src/RigidBodyDynamics/PhysicsWorld.h; sourceTree = "<group>"; };
 		ADD23CAB288762CC00A849BE /* RigidBody.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = RigidBody.cpp; path = ../../Src/RigidBodyDynamics/RigidBody.cpp; sourceTree = "<group>"; };
-		ADD23CAC288762CC00A849BE /* RigidBodySimulation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = RigidBodySimulation.cpp; path = ../../Src/RigidBodyDynamics/RigidBodySimulation.cpp; sourceTree = "<group>"; };
+		ADD23CAC288762CC00A849BE /* PhysicsWorld.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PhysicsWorld.cpp; path = ../../Src/RigidBodyDynamics/PhysicsWorld.cpp; sourceTree = "<group>"; };
 		ADD23CAD288762CC00A849BE /* MotionIntegration.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MotionIntegration.cpp; path = ../../Src/RigidBodyDynamics/MotionIntegration.cpp; sourceTree = "<group>"; };
 		ADD23CAE288762CC00A849BE /* WarmStart.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = WarmStart.h; path = ../../Src/RigidBodyDynamics/WarmStart.h; sourceTree = "<group>"; };
 		ADD23CAF288762CC00A849BE /* Jacobian.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Jacobian.cpp; path = ../../Src/RigidBodyDynamics/Jacobian.cpp; sourceTree = "<group>"; };
@@ -458,6 +479,27 @@
 		ADF862282891876B00DBC516 /* LBFGS.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LBFGS.h; path = ../../Src/Optimization/LBFGS.h; sourceTree = "<group>"; };
 		ADF862292891876B00DBC516 /* GaussNewton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GaussNewton.h; path = ../../Src/Optimization/GaussNewton.h; sourceTree = "<group>"; };
 		ADF8622A2891876B00DBC516 /* StochasticGradientDescent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = StochasticGradientDescent.h; path = ../../Src/Optimization/StochasticGradientDescent.h; sourceTree = "<group>"; };
+		D5C070BCF36C661FF3562AE9 /* File.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = File.h; path = /Volumes/ext/src/Riemann/Src/Core/File.h; sourceTree = "<absolute>"; };
+		4346E8731ED941D2625A8117 /* DestructionCluster.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DestructionCluster.cpp; path = /Volumes/ext/src/Riemann/Src/Destruction/DestructionCluster.cpp; sourceTree = "<absolute>"; };
+		0671B6F58455A0ABACF5859A /* DestructionCluster.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DestructionCluster.h; path = /Volumes/ext/src/Riemann/Src/Destruction/DestructionCluster.h; sourceTree = "<absolute>"; };
+		FA4D37933C004B44AEBE15B5 /* MeshDistance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MeshDistance.cpp; path = /Volumes/ext/src/Riemann/Src/Geometry/MeshDistance.cpp; sourceTree = "<absolute>"; };
+		105EC99B3DA7DD46B1A1E10B /* MeshDistance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MeshDistance.h; path = /Volumes/ext/src/Riemann/Src/Geometry/MeshDistance.h; sourceTree = "<absolute>"; };
+		B4D7D01119BBE35D3D5BB435 /* MeshRepair.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MeshRepair.cpp; path = /Volumes/ext/src/Riemann/Src/Geometry/MeshRepair.cpp; sourceTree = "<absolute>"; };
+		26C7B30B2288BFB1AD7D7B4D /* MeshRepair.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MeshRepair.h; path = /Volumes/ext/src/Riemann/Src/Geometry/MeshRepair.h; sourceTree = "<absolute>"; };
+		6503A051DCE30E06B2D193D4 /* MeshValidator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MeshValidator.cpp; path = /Volumes/ext/src/Riemann/Src/Geometry/MeshValidator.cpp; sourceTree = "<absolute>"; };
+		ACBB459232103B5EDF7AE58C /* MeshValidator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MeshValidator.h; path = /Volumes/ext/src/Riemann/Src/Geometry/MeshValidator.h; sourceTree = "<absolute>"; };
+		B9B99A2EC6521DADDD984DBD /* SignedDistanceField.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SignedDistanceField.cpp; path = /Volumes/ext/src/Riemann/Src/Geometry/SignedDistanceField.cpp; sourceTree = "<absolute>"; };
+		FEAD0CF1C5F753A8B0E3AA68 /* SignedDistanceField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SignedDistanceField.h; path = /Volumes/ext/src/Riemann/Src/Geometry/SignedDistanceField.h; sourceTree = "<absolute>"; };
+		0F6BDABBE6615CD9AFF01BCB /* ConjugateGradientSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConjugateGradientSolver.h; path = /Volumes/ext/src/Riemann/Src/LinearSystem/ConjugateGradientSolver.h; sourceTree = "<absolute>"; };
+		54A6D6B51B2F751283D61D7E /* Frame3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Frame3.h; path = /Volumes/ext/src/Riemann/Src/Maths/Frame3.h; sourceTree = "<absolute>"; };
+		9B0B8826158508317D570B41 /* Index2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Index2.h; path = /Volumes/ext/src/Riemann/Src/Maths/Index2.h; sourceTree = "<absolute>"; };
+		914118228AEFC91B7345D04B /* Index3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Index3.h; path = /Volumes/ext/src/Riemann/Src/Maths/Index3.h; sourceTree = "<absolute>"; };
+		279D791074ECCE26B2DBBAB1 /* MassSpring.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MassSpring.cpp; path = /Volumes/ext/src/Riemann/Src/RigidBodyDynamics/MassSpring.cpp; sourceTree = "<absolute>"; };
+		F4E68592ED3A278A72934CBD /* MassSpring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MassSpring.h; path = /Volumes/ext/src/Riemann/Src/RigidBodyDynamics/MassSpring.h; sourceTree = "<absolute>"; };
+		A5AED4A2F4B5F1B9BD48525E /* PositionBasedDynamicsSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PositionBasedDynamicsSolver.cpp; path = /Volumes/ext/src/Riemann/Src/RigidBodyDynamics/PositionBasedDynamicsSolver.cpp; sourceTree = "<absolute>"; };
+		EB7093FFA1118085CB145FD9 /* PositionBasedDynamicsSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PositionBasedDynamicsSolver.h; path = /Volumes/ext/src/Riemann/Src/RigidBodyDynamics/PositionBasedDynamicsSolver.h; sourceTree = "<absolute>"; };
+		DF7143CAF0EA21E0A06BDDDD /* XPBDRigidDynamicsSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = XPBDRigidDynamicsSolver.cpp; path = /Volumes/ext/src/Riemann/Src/RigidBodyDynamics/XPBDRigidDynamicsSolver.cpp; sourceTree = "<absolute>"; };
+		B396F9D37D89544E366DF967 /* XPBDRigidDynamicsSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XPBDRigidDynamicsSolver.h; path = /Volumes/ext/src/Riemann/Src/RigidBodyDynamics/XPBDRigidDynamicsSolver.h; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -564,14 +606,20 @@
 				ADD23CB6288762CC00A849BE /* Ragdoll.h */,
 				ADD23CAB288762CC00A849BE /* RigidBody.cpp */,
 				ADD23CA4288762CC00A849BE /* RigidBody.h */,
-				ADD23CAC288762CC00A849BE /* RigidBodySimulation.cpp */,
-				ADD23CAA288762CC00A849BE /* RigidBodySimulation.h */,
+				ADD23CAC288762CC00A849BE /* PhysicsWorld.cpp */,
+				ADD23CAA288762CC00A849BE /* PhysicsWorld.h */,
 				ADAA4C3928898D6000E8AE2E /* SequentialImpulseSolver.cpp */,
 				ADAA4C3628898D6000E8AE2E /* SequentialImpulseSolver.h */,
 				ADD23CA5288762CC00A849BE /* WarmStart.cpp */,
 				ADD23CAE288762CC00A849BE /* WarmStart.h */,
 				6AA94E552D732449005C6B3C /* MassParameters.h */,
 				6AA94E562D732449005C6B3C /* MassParameters.cpp */,
+				279D791074ECCE26B2DBBAB1 /* MassSpring.cpp */,
+				F4E68592ED3A278A72934CBD /* MassSpring.h */,
+				A5AED4A2F4B5F1B9BD48525E /* PositionBasedDynamicsSolver.cpp */,
+				EB7093FFA1118085CB145FD9 /* PositionBasedDynamicsSolver.h */,
+				DF7143CAF0EA21E0A06BDDDD /* XPBDRigidDynamicsSolver.cpp */,
+				B396F9D37D89544E366DF967 /* XPBDRigidDynamicsSolver.h */,
 			);
 			name = RigidBodyDynamics;
 			sourceTree = "<group>";
@@ -614,6 +662,9 @@
 				6AC3722A2D7320BE00B88518 /* Box1.h */,
 				6AC3722B2D7320BE00B88518 /* Box2.h */,
 				6AC3722C2D7320BE00B88518 /* Box3.h */,
+				54A6D6B51B2F751283D61D7E /* Frame3.h */,
+				9B0B8826158508317D570B41 /* Index2.h */,
+				914118228AEFC91B7345D04B /* Index3.h */,
 			);
 			name = Maths;
 			sourceTree = "<group>";
@@ -639,6 +690,7 @@
 				ADD23D13288762F900A849BE /* SingularValueDecomposition.h */,
 				ADD23D10288762F900A849BE /* SparseMatrix.h */,
 				AD1DD0B1289F60770085AA67 /* SparseVector.h */,
+				0F6BDABBE6615CD9AFF01BCB /* ConjugateGradientSolver.h */,
 			);
 			name = LinearSystem;
 			sourceTree = "<group>";
@@ -693,6 +745,14 @@
 				6AC372022D7320A900B88518 /* VoxelField.cpp */,
 				6AC372032D7320A900B88518 /* WindingNumber.h */,
 				6AC372042D7320A900B88518 /* WindingNumber.cpp */,
+				FA4D37933C004B44AEBE15B5 /* MeshDistance.cpp */,
+				105EC99B3DA7DD46B1A1E10B /* MeshDistance.h */,
+				B4D7D01119BBE35D3D5BB435 /* MeshRepair.cpp */,
+				26C7B30B2288BFB1AD7D7B4D /* MeshRepair.h */,
+				6503A051DCE30E06B2D193D4 /* MeshValidator.cpp */,
+				ACBB459232103B5EDF7AE58C /* MeshValidator.h */,
+				B9B99A2EC6521DADDD984DBD /* SignedDistanceField.cpp */,
+				FEAD0CF1C5F753A8B0E3AA68 /* SignedDistanceField.h */,
 			);
 			name = Geometry;
 			sourceTree = "<group>";
@@ -714,6 +774,8 @@
 				6AC371CF2D73209400B88518 /* StrainSolver.cpp */,
 				6AC371D02D73209400B88518 /* VoronoiTessellation.h */,
 				6AC371D12D73209400B88518 /* VoronoiTessellation.cpp */,
+				4346E8731ED941D2625A8117 /* DestructionCluster.cpp */,
+				0671B6F58455A0ABACF5859A /* DestructionCluster.h */,
 			);
 			name = Destruction;
 			sourceTree = "<group>";
@@ -743,6 +805,7 @@
 				6AC371AE2D73207600B88518 /* StaticPool.h */,
 				6AC371AF2D73207600B88518 /* StaticStack.h */,
 				6AC371B02D73207600B88518 /* ThreadPool.h */,
+				D5C070BCF36C661FF3562AE9 /* File.h */,
 			);
 			name = Core;
 			sourceTree = "<group>";
@@ -821,7 +884,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AD1B173128ABC379003E024E /* AutonomousController.h in Headers */,
 				ADD23CA1288762C000A849BE /* NewtonRaphsonIteration.h in Headers */,
 				ADBBEE15288C41A300C3D6CD /* Matrix4.h in Headers */,
 				AD1B176928ABC396003E024E /* Rasterizer.h in Headers */,
@@ -864,7 +926,7 @@
 				6A6AEEE62D7C305D00692025 /* Simplex.h in Headers */,
 				6A6AEEE72D7C305D00692025 /* Sphere2.h in Headers */,
 				6A6AEEE82D7C305D00692025 /* TriangleMesh.h in Headers */,
-				ADD23CBE288762CC00A849BE /* RigidBodySimulation.h in Headers */,
+				ADD23CBE288762CC00A849BE /* PhysicsWorld.h in Headers */,
 				ADAA4C3F28898D6000E8AE2E /* SequentialImpulseSolver.h in Headers */,
 				ADD23D03288762ED00A849BE /* SIMD.h in Headers */,
 				ADF862252891875A00DBC516 /* FeatherstoneSolver.h in Headers */,
@@ -901,7 +963,6 @@
 				6AC371C22D73207600B88518 /* Profiler.h in Headers */,
 				6AC371C32D73207600B88518 /* BitSet.h in Headers */,
 				ADBBEE1F288C486800C3D6CD /* PositionConstraint.h in Headers */,
-				AD1B173728ABC379003E024E /* MPC.h in Headers */,
 				ADA2A25F28A2A18F009EDBE2 /* LCPSolver.h in Headers */,
 				ADD23D24288762F900A849BE /* GaussSeidelIteration.h in Headers */,
 				ADD23D06288762ED00A849BE /* Tensor.h in Headers */,
@@ -916,7 +977,6 @@
 				ADAA4C4528898D6000E8AE2E /* NarrowPhase.h in Headers */,
 				ADF8622C2891876C00DBC516 /* LevenbergMarquardt.h in Headers */,
 				ADD23D28288762F900A849BE /* ProjectedGaussSeidel.h in Headers */,
-				AD1B173628ABC379003E024E /* LQR.h in Headers */,
 				ADD23BD82887614E00A849BE /* EPAPenetration.h in Headers */,
 				AD02FE52289AB031004D13D9 /* SpecialFunctions.h in Headers */,
 				ADD23C9F288762C000A849BE /* SparseConjugateGradientSolver.h in Headers */,
@@ -925,7 +985,6 @@
 				ADD23CC2288762CC00A849BE /* WarmStart.h in Headers */,
 				AD02FE47289AAB06004D13D9 /* CollidingContact.h in Headers */,
 				AD1B174B28ABC384003E024E /* PhysxFormat_41.hpp in Headers */,
-				AD1B173928ABC379003E024E /* PID.h in Headers */,
 				ADD23BD02887614E00A849BE /* GeometryObject.h in Headers */,
 				ADBBEE16288C41A300C3D6CD /* Vector2.h in Headers */,
 				ADD23BC92887614E00A849BE /* GeometryIntersection.h in Headers */,
@@ -983,6 +1042,19 @@
 				ADD23CC4288762CC00A849BE /* Jacobian.h in Headers */,
 				ADD23CC8288762CC00A849BE /* MotionIntegration.h in Headers */,
 				ADBBEE12288C41A300C3D6CD /* Vector3.h in Headers */,
+				D3C1326DB3B962678FE5BE8D /* File.h in Headers */,
+				10F2E1AFF370C72362B4951D /* DestructionCluster.h in Headers */,
+				006B81530FB7EB63A1A3B105 /* MeshDistance.h in Headers */,
+				C5FEA1AD5B78B51981B6446B /* MeshRepair.h in Headers */,
+				EF3070B5FFCD7365F1302A8C /* MeshValidator.h in Headers */,
+				CA47904B5D05BC553A31A834 /* SignedDistanceField.h in Headers */,
+				9E1E4EF339EEE22DD98000B6 /* ConjugateGradientSolver.h in Headers */,
+				066AB7E82548BC6E28B40889 /* Frame3.h in Headers */,
+				52768F2CC7AE56558F37AA66 /* Index2.h in Headers */,
+				3C8B487887D920B90463FC33 /* Index3.h in Headers */,
+				335F1FD1D64FF10DA238C738 /* MassSpring.h in Headers */,
+				C1027C825DAC4A50B4252B14 /* PositionBasedDynamicsSolver.h in Headers */,
+				7E33E20C36B0245AE6975DB3 /* XPBDRigidDynamicsSolver.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1043,7 +1115,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AD1B173328ABC379003E024E /* AutonomousController.cpp in Sources */,
 				ADD23BC42887614E00A849BE /* GeometryQuery.cpp in Sources */,
 				ADD23D1E288762F900A849BE /* DenseMatrix.cpp in Sources */,
 				6A6AEEE92D7C305D00692025 /* ConvexMesh.cpp in Sources */,
@@ -1058,7 +1129,7 @@
 				6A6AEEF22D7C305D00692025 /* HeightField3.cpp in Sources */,
 				ADAA4C4328898D6000E8AE2E /* BroadPhase.cpp in Sources */,
 				ADA2A26028A2A18F009EDBE2 /* LCPSolver.cpp in Sources */,
-				ADD23CC0288762CC00A849BE /* RigidBodySimulation.cpp in Sources */,
+				ADD23CC0288762CC00A849BE /* PhysicsWorld.cpp in Sources */,
 				ADD23C9B288762C000A849BE /* NewtonRaphsonIteration.cpp in Sources */,
 				ADD23C99288762C000A849BE /* NumericalODESolver.cpp in Sources */,
 				AD1B174E28ABC384003E024E /* PhysxBinaryParser.cpp in Sources */,
@@ -1109,6 +1180,14 @@
 				6AA94E582D732449005C6B3C /* MassParameters.cpp in Sources */,
 				ADD23CBB288762CC00A849BE /* KeyFrameAnimation.cpp in Sources */,
 				ADD23CC6288762CC00A849BE /* Ragdoll.cpp in Sources */,
+				410D7E8C42EBA8BADC6E15D5 /* DestructionCluster.cpp in Sources */,
+				0B81C95743BB1538260A0CB0 /* MeshDistance.cpp in Sources */,
+				6C0AC4E0EC3773ED487F529E /* MeshRepair.cpp in Sources */,
+				7764F16C5DDF73C739FE827A /* MeshValidator.cpp in Sources */,
+				647F28BC8D394D4D58DCCD3B /* SignedDistanceField.cpp in Sources */,
+				BFE87CE7B0997BC288513497 /* MassSpring.cpp in Sources */,
+				15212EDE0F52CF5D846DF939 /* PositionBasedDynamicsSolver.cpp in Sources */,
+				CF17B16EBFCF1519A0584FF5 /* XPBDRigidDynamicsSolver.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1118,6 +1197,7 @@
 		ADE742E32820A994007DEEB3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/../../Binaries/Mac/$(CONFIGURATION)";
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1182,6 +1262,7 @@
 		ADE742E42820A994007DEEB3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/../../Binaries/Mac/$(CONFIGURATION)";
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -1236,6 +1317,7 @@
 		ADE742E62820A994007DEEB3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/../../Binaries/Mac/$(CONFIGURATION)";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILER_INDEX_STORE_ENABLE = NO;
@@ -1249,6 +1331,7 @@
 		ADE742E72820A994007DEEB3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/../../Binaries/Mac/$(CONFIGURATION)";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CODE_SIGN_STYLE = Automatic;
 				COMPILER_INDEX_STORE_ENABLE = NO;

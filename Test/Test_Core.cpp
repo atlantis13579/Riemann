@@ -48,6 +48,23 @@ struct TestPriorityNode
 	}
 };
 
+struct TestRefObject : public RefCount<TestRefObject>
+{
+	~TestRefObject()
+	{
+		destruct_count++;
+	}
+
+	static int destruct_count;
+};
+
+int TestRefObject::destruct_count = 0;
+
+struct TestRingItem
+{
+	int value = 0;
+};
+
 void thread_main(int id)
 {
 	printf("tid = %i\n", id);
@@ -154,6 +171,30 @@ void TestGraph()
 	EXPECT(islands2[0].size() == 3);	// a, b, c
 	EXPECT(islands2[1].size() == 2);	// d, e
 	EXPECT(islands2[2].size() == 1);	// f
+
+	Graph<int> sparse;
+	for (int i = 0; i < 3; ++i)
+	{
+		sparse.AddNode(i);
+	}
+	sparse.AddEdge(2, 1);
+	sparse.AddEdge(0, 2);
+	std::vector<int> entry;
+	std::vector<int> adjs;
+	sparse.BuildSparseAdjacencyMatrix(entry, adjs);
+	EXPECT(sparse.edges[0].n0 == 2 && sparse.edges[0].n1 == 1);
+	EXPECT(sparse.edges[1].n0 == 0 && sparse.edges[1].n1 == 2);
+
+	int j0 = 0;
+	int j1 = 0;
+	EXPECT(Graph<int>::GetAdjacencyList(entry, (int)adjs.size(), 0, &j0, &j1));
+	EXPECT(j0 == j1 && adjs[j0] == 2);
+	EXPECT(Graph<int>::GetAdjacencyList(entry, (int)adjs.size(), 1, &j0, &j1));
+	EXPECT(j0 == j1 && adjs[j0] == 2);
+	EXPECT(Graph<int>::GetAdjacencyList(entry, (int)adjs.size(), 2, &j0, &j1));
+	EXPECT(j1 - j0 + 1 == 2);
+	EXPECT((adjs[j0] == 0 || adjs[j0 + 1] == 0));
+	EXPECT((adjs[j0] == 1 || adjs[j0 + 1] == 1));
 	return;
 }
 
@@ -226,6 +267,18 @@ void TestBitSetOperations()
 	EXPECT(c.size() == 11);
 	EXPECT(c.get_safe(10));
 	EXPECT(!c.get_safe(100));
+
+	BitSet shrink(100);
+	shrink.set(99, true);
+	shrink.resize(10);
+	shrink.resize(100);
+	EXPECT(!shrink.get(99));
+
+	BitSet masked(3);
+	masked.set(1, true);
+	BitSet complement = ~masked;
+	complement.resize(65);
+	EXPECT((complement.to_vector() == std::vector<uint32_t>{0, 2}));
 }
 
 void TestDynamicArray()
@@ -539,6 +592,18 @@ void TestPriorityQueue()
 	EXPECT(pool.pop() == &n1);
 	pool.remove(&n0);
 	EXPECT(pool.empty());
+
+	TestPriorityNode nodes[4] = { {10}, {1}, {20}, {30} };
+	pool.push(&nodes[1]);
+	pool.push(&nodes[0]);
+	pool.push(&nodes[2]);
+	pool.push(&nodes[3]);
+	nodes[0].value = 100;
+	pool.update(&nodes[0]);
+	EXPECT(pool.pop() == &nodes[1]);
+	EXPECT(pool.pop() == &nodes[2]);
+	EXPECT(pool.pop() == &nodes[3]);
+	EXPECT(pool.pop() == &nodes[0]);
 }
 
 void TestMapAndSetCapacity()
@@ -639,6 +704,28 @@ void TestFileAndBaseUtilities()
 		EXPECT(aligned_memory.GetData()[0] == data[1]);
 	}
 	std::remove(path);
+
+	TestRefObject::destruct_count = 0;
+	{
+		Ref<TestRefObject> ref(new TestRefObject());
+		EXPECT(ref->GetRefcount() == 1);
+		{
+			Ref<TestRefObject> ref_copy = ref;
+			EXPECT(ref->GetRefcount() == 2);
+			ConstRef<TestRefObject> const_ref(ref);
+			EXPECT(ref->GetRefcount() == 3);
+		}
+		EXPECT(ref->GetRefcount() == 1);
+	}
+	EXPECT(TestRefObject::destruct_count == 1);
+
+	ThreadSafeRingBuffer<TestRingItem, 2> safe_buffer;
+	TestRingItem empty_item = safe_buffer.pop();
+	EXPECT(empty_item.value == 0);
+	TestRingItem queued_item;
+	queued_item.value = 7;
+	EXPECT(safe_buffer.push(queued_item, false));
+	EXPECT(safe_buffer.pop().value == 7);
 }
 
 void TestSmallSet()

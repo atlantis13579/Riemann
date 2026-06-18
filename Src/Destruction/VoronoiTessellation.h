@@ -16,6 +16,10 @@ namespace Riemann
 		VoronoiMesh(const std::vector<Vector3>& points, const Box3& bounds, const float eps);
 		~VoronoiMesh();
 
+		int GetMeshCount() const { return (int)mMeshs.size(); }
+		const DynamicMesh* GetMesh(int index) const;
+		int GetTotalTriangleCount() const;
+
 	private:
 		void BuildMesh_SinglePlane(const Voronoi3& v);
 		void BuildMesh_WithoutNoise(const Voronoi3& v);
@@ -27,5 +31,6 @@ namespace Riemann
 
 		int OutsideCellIndex = -1;
 		int NumUVLayers = 1;
+		Box3 mDomainBounds;
 	};
 }	// namespace Riemann

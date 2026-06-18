@@ -553,7 +553,7 @@ namespace Riemann
 			Vertices.resize(4);
 			GetVerties(&Vertices[0], 100.0f);
 			Normals = { Normal , Normal , Normal , Normal };
-			Indices = { 2,1,0, 2,3,0 };
+			Indices = { 0,1,2, 0,2,3 };
 		}
 
 		void GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices)

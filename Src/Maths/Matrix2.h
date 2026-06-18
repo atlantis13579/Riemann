@@ -55,9 +55,11 @@ namespace Maths
 
 		void		LoadRotation(float angle)
 		{
-			mat[0][1] = cosf(angle);
-			mat[1][0] = sinf(angle);
-			mat[0][1] = -mat[1][0];
+			const float c = cosf(angle);
+			const float s = sinf(angle);
+			mat[0][0] = c;
+			mat[0][1] = -s;
+			mat[1][0] = s;
 			mat[1][1] = mat[0][0];
 		}
 
@@ -272,8 +274,8 @@ namespace Maths
 			// Warning!!! Assume d != 0
 			d = 1.0f / d;
 			return Matrix2(
-				mat[0][0] * d, mat[0][1] * d,
-				mat[1][0] * d, mat[1][1] * d);
+				mat[1][1] * d, -mat[0][1] * d,
+				-mat[1][0] * d, mat[0][0] * d);
 		}
 
 		Matrix2		Transpose() const
@@ -334,7 +336,7 @@ namespace Maths
 
 			float trace = Trace();
 			float diff = mat[0][0] - mat[1][1];
-			float delta = sqrtf(diff * diff + 4.0f * mat[1][1] * mat[1][1]);
+			float delta = sqrtf(diff * diff + 4.0f * mat[0][1] * mat[0][1]);
 			EigenValue[0] = (trace - delta) * 0.5f;
 			EigenValue[1] = (trace + delta) * 0.5f;
 

@@ -39,6 +39,13 @@ namespace Riemann
 		Lines,
 	};
 
+	enum class RenderFillMode : uint8_t
+	{
+		RendererDefault,
+		Solid,
+		Wireframe,
+	};
+
 	struct RenderMeshDesc
 	{
 		std::string Id;
@@ -47,6 +54,7 @@ namespace Riemann
 		Transform WorldTransform;
 		Vector4 Color = Vector4(0.72f, 0.76f, 0.82f, 1.0f);
 		RenderPrimitiveTopology Topology = RenderPrimitiveTopology::Triangles;
+		RenderFillMode FillMode = RenderFillMode::RendererDefault;
 		bool CastShadow = true;
 	};
 

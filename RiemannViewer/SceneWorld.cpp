@@ -12,7 +12,7 @@
 #include <sstream>
 
 #include "../Src/Collision/GeometryObject.h"
-#include "../Src/RigidBodyDynamics/RigidBodySimulation.h"
+#include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 
 namespace Riemann
 {
@@ -439,6 +439,8 @@ namespace Riemann
 		bool HasX1 = false;
 		bool DisableGravity = false;
 		bool RenderBounds = false;
+		bool QueryEnabled = true;
+		bool SimulationEnabled = true;
 		int RepeatCount[3] = { 1, 1, 1 };
 		Vector3 RepeatSpacing = Vector3::Zero();
 		std::string MeshFile;
@@ -564,6 +566,12 @@ namespace Riemann
 			desc.LinearVelocity = ReadVector3(object.Find("linearVelocity"), desc.LinearVelocity);
 			desc.AngularVelocity = ReadVector3(object.Find("angularVelocity"), desc.AngularVelocity);
 			desc.DisableGravity = ReadBool(object.Find("disableGravity"), desc.DisableGravity);
+			desc.QueryEnabled = ReadBool(object.Find("query"), desc.QueryEnabled);
+			desc.SimulationEnabled = ReadBool(object.Find("simulation"), desc.SimulationEnabled);
+			if (object.Find("query") == nullptr && desc.Id == "ground" && desc.Type == "plane")
+			{
+				desc.QueryEnabled = false;
+			}
 			desc.RenderBounds = ReadBool(object.Find("renderBounds"), desc.RenderBounds);
 			desc.Color = ReadColor(object.Find("color"), desc.BodyType == RigidType::Dynamic
 				? Vector4(0.28f, 0.52f, 0.95f, 1.0f)
@@ -608,9 +616,10 @@ namespace Riemann
 	{
 		m_Objects.clear();
 
-		RigidBodySimulationParam param;
+		PhysicsWorldParam param;
 		param.gravityAcc = gravity;
-		m_World.reset(new RigidBodySimulation(param));
+		param.sceneQueryTree = SceneQueryAABBTree::DynamicAABB;
+		m_World.reset(new PhysicsWorld(param));
 
 		m_Camera = CameraDesc();
 		m_Light = DirectionalLightDesc();
@@ -771,6 +780,8 @@ namespace Riemann
 		{
 			return false;
 		}
+		geometry->SetQueryEnabled(desc.QueryEnabled);
+		geometry->SetSimulationEnabled(desc.SimulationEnabled);
 
 		RigidBodyParam bodyParam;
 		bodyParam.rigidType = desc.BodyType;

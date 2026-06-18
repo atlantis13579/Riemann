@@ -24,6 +24,10 @@ namespace Riemann
 	template<typename AttribValueType, int AttribDimension>
 	void TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>::SetNewValue(int NewTriangleID, const AttribValueType* Data)
 	{
+		if (NewTriangleID < 0)
+		{
+			return;
+		}
 		AttribValueType default_val = GetDefaultAttributeValue();
 		int k = NewTriangleID * AttribDimension;
 		for (int i = 0; i < AttribDimension; ++i)
@@ -45,6 +49,10 @@ namespace Riemann
 	template<typename AttribValueType, int AttribDimension>
 	void TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>::SetValue(int TriangleID, const AttribValueType* Data)
 	{
+		if (TriangleID < 0)
+		{
+			return;
+		}
 		AttribValueType default_val = GetDefaultAttributeValue();
 		int k = TriangleID * AttribDimension;
 		for (int i = 0; i < AttribDimension; ++i)
@@ -56,6 +64,10 @@ namespace Riemann
 	template<typename AttribValueType, int AttribDimension>
 	void TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>::CopyValue(int FromTriangleID, int ToTriangleID)
 	{
+		if (ToTriangleID < 0)
+		{
+			return;
+		}
 		AttribValueType default_val = GetDefaultAttributeValue();
 		int kA = FromTriangleID * AttribDimension;
 		int kB = ToTriangleID * AttribDimension;
@@ -78,14 +90,18 @@ namespace Riemann
 		}
 		int kA = EdgeTris.a * AttribDimension;
 		int kB = EdgeTris.b * AttribDimension;
+		AttribValueType DefaultValue = GetDefaultAttributeValue();
 		for (int i = 0; i < AttribDimension; ++i)
 		{
-			if (AttribValues[kA + i] != AttribValues[kB + i])
+			size_t IndexA = (size_t)kA + i;
+			size_t IndexB = (size_t)kB + i;
+			AttribValueType ValueA = IndexA < AttribValues.size() ? AttribValues[IndexA] : DefaultValue;
+			AttribValueType ValueB = IndexB < AttribValues.size() ? AttribValues[IndexB] : DefaultValue;
+			if (ValueA != ValueB)
 			{
 				return true;
 			}
 		}
-		assert(false);
 		return false;
 	}
 
@@ -451,45 +467,41 @@ namespace Riemann
 	{
 		std::set<int> VertexElements;
 		Index3 Triangle;
-		if (bBruteForce)
+		if (ParentMesh == nullptr)
 		{
-			for (int tid = 0; tid <= ParentMesh->GetTriangleCount(); ++tid)
-			{
-				if (!ParentMesh->IsTriangleFast(tid))
-				{
-					continue;
-				}
+			return 0;
+		}
 
-				if (GetTriangleIfValid(tid, Triangle))
+		auto CountTriangleElements = [this, vid, &VertexElements, &Triangle](int tid)
+		{
+			if (GetTriangleIfValid(tid, Triangle))
+			{
+				for (int j = 0; j < 3; ++j)
 				{
-					for (int j = 0; j < 3; ++j)
+					int ElementID = Triangle[j];
+					if (ElementID >= 0 && ElementID < (int)ParentVertices.size() && ParentVertices[ElementID] == vid)
 					{
-						if (ParentVertices[Triangle[j]] == vid)
-						{
-							VertexElements.insert(Triangle[j]);
-						}
+						VertexElements.insert(ElementID);
 					}
+				}
+			}
+		};
+
+		if (bBruteForce || !ParentMesh->IsVertex(vid))
+		{
+			for (int tid = 0; tid < ParentMesh->GetTriangleCount(); ++tid)
+			{
+				if (ParentMesh->IsTriangleFast(tid))
+				{
+					CountTriangleElements(tid);
 				}
 			}
 		}
 		else
 		{
-			for (int tid = 0; tid <= ParentMesh->GetTriangleCount(); ++tid)
+			for (int tid : ParentMesh->GetVexTriangles(vid))
 			{
-				if (!ParentMesh->IsTriangleFast(tid))
-				{
-					continue;
-				}
-				if (GetTriangleIfValid(tid, Triangle))
-				{
-					for (int j = 0; j < 3; ++j)
-					{
-						if (ParentVertices[Triangle[j]] == vid)
-						{
-							VertexElements.insert(Triangle[j]);
-						}
-					}
-				}
+				CountTriangleElements(tid);
 			}
 		}
 
@@ -1031,6 +1043,11 @@ namespace Riemann
 	{
 		DisableMaterialID();
 		DisablePrimaryColors();
+		for (auto& Pair : GenericAttributes)
+		{
+			delete Pair.second;
+		}
+		GenericAttributes.clear();
 	}
 
 	bool DynamicMeshAttributeSet::IsSeamEdge(int eid) const
@@ -1234,10 +1251,13 @@ namespace Riemann
 
 	void DynamicMeshAttributeSet::OnNewVertex(int VertexID, bool bInserted)
 	{
-		for (auto pair : GenericAttributes)
+		for (auto& Pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase *attrib = pair.second;
-			attrib->OnNewTriangle(VertexID, bInserted);
+			FDynamicMeshAttributeBase* Attrib = Pair.second;
+			if (Attrib)
+			{
+				Attrib->OnNewVertex(VertexID, bInserted);
+			}
 		}
 
 		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
@@ -1576,6 +1596,10 @@ namespace Riemann
 	template<typename AttribValueType, int AttribDimension>
 	void TDynamicVertexAttribute<AttribValueType, AttribDimension>::SetNewValue(int NewVertexID, const AttribValueType* Data)
 	{
+		if (NewVertexID < 0)
+		{
+			return;
+		}
 		AttribValueType default_val = GetDefaultAttributeValue();
 		int k = NewVertexID * AttribDimension;
 		for (int i = 0; i < AttribDimension; ++i)
@@ -1587,12 +1611,19 @@ namespace Riemann
 	template<typename AttribValueType, int AttribDimension>
 	void TDynamicVertexAttribute<AttribValueType, AttribDimension>::CopyValue(int FromVertexID, int ToVertexID)
 	{
+		if (ToVertexID < 0)
+		{
+			return;
+		}
 		AttribValueType default_val = GetDefaultAttributeValue();
 		int kA = FromVertexID * AttribDimension;
 		int kB = ToVertexID * AttribDimension;
+		ResizeAttribStoreIfNeeded(ToVertexID);
 		for (int i = 0; i < AttribDimension; ++i)
 		{
-			VectorSetSafe(AttribValues, kB + i, AttribValues[kA + i], default_val);
+			size_t FromIndex = (size_t)kA + i;
+			AttribValueType Value = FromIndex < AttribValues.size() ? AttribValues[FromIndex] : default_val;
+			AttribValues[(size_t)kB + i] = Value;
 		}
 	}
 
@@ -1774,6 +1805,13 @@ namespace Riemann
 	template class TDynamicMeshOverlay<float, 3>;
 	template class TDynamicMeshOverlay<float, 4>;
 	template class TDynamicMeshTriangleAttribute<float, 1>;
+	template class TDynamicMeshTriangleAttribute<int, 1>;
+	template class TDynamicMeshTriangleAttribute<bool, 1>;
+	template class TDynamicMeshScalarTriangleAttribute<int>;
+	template class TDynamicMeshScalarTriangleAttribute<bool>;
 
 	template class TDynamicVertexAttribute<float, 1>;
+	template class TDynamicVertexAttribute<float, 2>;
+	template class TDynamicVertexAttribute<float, 3>;
+	template class TDynamicVertexAttribute<float, 4>;
 }	// namespace Riemann

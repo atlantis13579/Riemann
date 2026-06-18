@@ -100,7 +100,7 @@ namespace Riemann
 			meshes->push_back(MakeMeshDesc(id, *geometry->GetWorldTransform(), vertices, indices, color, RenderPrimitiveTopology::Triangles, true));
 		}
 
-		void BuildAabbWireMesh(const AxisAlignedBox3& aabb, const Transform& transform, const std::string& id, std::vector<RenderMeshDesc>* meshes)
+		void AppendAabbWireMesh(const AxisAlignedBox3& aabb, const Transform& transform, const std::string& id, const Vector4& color, std::vector<RenderMeshDesc>* meshes)
 		{
 			std::vector<Vector3> positions;
 			std::vector<uint16_t> indices16;
@@ -116,7 +116,7 @@ namespace Riemann
 
 			std::vector<uint32_t> indices;
 			AppendIndices(indices16, &indices);
-			meshes->push_back(MakeMeshDesc(id, transform, vertices, indices, Vector4(1.0f, 1.0f, 1.0f, 1.0f), RenderPrimitiveTopology::Lines, false));
+			meshes->push_back(MakeMeshDesc(id, transform, vertices, indices, color, RenderPrimitiveTopology::Lines, false));
 		}
 
 		void AppendStaticMeshIndices(StaticMesh* mesh, std::vector<uint32_t>* indices)
@@ -165,8 +165,18 @@ namespace Riemann
 
 		if (renderBounds)
 		{
-			BuildAabbWireMesh(AxisAlignedBox3(mesh->BoundingVolume.Min, mesh->BoundingVolume.Max), transform, id + ".bounds", meshes);
+			AppendAabbWireMesh(AxisAlignedBox3(mesh->BoundingVolume.Min, mesh->BoundingVolume.Max), transform, id + ".bounds", Vector4(1.0f, 1.0f, 1.0f, 1.0f), meshes);
 		}
+	}
+
+	void BuildAabbWireMesh(const Box3& aabb, const std::string& id, const Vector4& color, std::vector<RenderMeshDesc>* meshes)
+	{
+		if (meshes == nullptr)
+		{
+			return;
+		}
+
+		AppendAabbWireMesh(AxisAlignedBox3(aabb.Min, aabb.Max), Transform(), id, color, meshes);
 	}
 
 	void BuildGeometryMeshes(Geometry* geometry, const std::string& id, const Vector4& color, bool renderBounds, std::vector<RenderMeshDesc>* meshes)

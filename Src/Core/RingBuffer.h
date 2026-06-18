@@ -162,7 +162,7 @@ namespace Riemann
 
 		inline T pop()
 		{
-			T item = T(0);
+			T item = T();
 			lock();
 			if (m_size > 0)
 			{

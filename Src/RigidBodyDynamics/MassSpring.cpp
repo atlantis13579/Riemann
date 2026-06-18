@@ -130,7 +130,7 @@ void MassSpringSolver::VerletIntegration(float dt)
 		m_p0[i] = t;
 	}
 
-	memset(&m_f_ext[0], 0, sizeof(m_f_ext[0]) * m_f_ext.size());
+	memset((void*)&m_f_ext[0], 0, sizeof(m_f_ext[0]) * m_f_ext.size());
 }
 
 void MassSpringSolver::SolveConstraints(int nIter)

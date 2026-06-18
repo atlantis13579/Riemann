@@ -124,6 +124,7 @@ namespace
 			IndexCount = rhs.IndexCount;
 			IndexFormat = rhs.IndexFormat;
 			Topology = rhs.Topology;
+			FillMode = rhs.FillMode;
 			CastShadow = rhs.CastShadow;
 			OutlineEnabled = rhs.OutlineEnabled;
 			OutlineColor = rhs.OutlineColor;
@@ -144,6 +145,7 @@ namespace
 		int IndexCount = 0;
 		DXGI_FORMAT IndexFormat = DXGI_FORMAT_R32_UINT;
 		D3D11_PRIMITIVE_TOPOLOGY Topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		Riemann::RenderFillMode FillMode = Riemann::RenderFillMode::RendererDefault;
 		bool CastShadow = true;
 		bool OutlineEnabled = false;
 		Vector4 OutlineColor = Vector4(1.0f, 0.82f, 0.18f, 1.0f);
@@ -170,10 +172,13 @@ public:
 		SafeRelease(m_pShadowSRV);
 		SafeRelease(m_pShadowDepthView);
 		SafeRelease(m_pShadowTexture);
+		SafeRelease(m_pColorWriteOffBlendState);
+		SafeRelease(m_pOutlineMaskDepthStencilState);
 		SafeRelease(m_pOutlineDepthStencilState);
 		SafeRelease(m_pDepthStencilState);
 		SafeRelease(m_pOutlineRasterizerState);
-		SafeRelease(m_pRasterizerState);
+		SafeRelease(m_pWireframeRasterizerState);
+		SafeRelease(m_pSolidRasterizerState);
 		SafeRelease(m_pVertexLayout);
 		SafeRelease(m_pOutlinePixelShader);
 		SafeRelease(m_pShadowVertexShader);
@@ -334,6 +339,11 @@ public:
 			return hr;
 		}
 
+		hr = CreateRasterizerStates();
+		if (FAILED(hr))
+		{
+			return hr;
+		}
 		SetFillMode(false);
 		SetDepthMode();
 		hr = CreateOutlineStates();
@@ -423,6 +433,7 @@ public:
 		mesh.Topology = meshDesc.Topology == Riemann::RenderPrimitiveTopology::Lines
 			? D3D11_PRIMITIVE_TOPOLOGY_LINELIST
 			: D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		mesh.FillMode = meshDesc.FillMode;
 		mesh.CastShadow = meshDesc.CastShadow && meshDesc.Topology == Riemann::RenderPrimitiveTopology::Triangles;
 
 		HRESULT hr = S_OK;
@@ -543,24 +554,19 @@ public:
 
 	void SetFillMode(bool wireframe) override
 	{
-		SafeRelease(m_pRasterizerState);
-
-		D3D11_RASTERIZER_DESC desc = {};
-		desc.FillMode = wireframe ? D3D11_FILL_WIREFRAME : D3D11_FILL_SOLID;
-		desc.CullMode = D3D11_CULL_NONE;
-		desc.DepthClipEnable = TRUE;
-		desc.MultisampleEnable = FALSE;
-		desc.AntialiasedLineEnable = FALSE;
-
-		if (SUCCEEDED(m_pd3dDevice->CreateRasterizerState(&desc, &m_pRasterizerState)))
+		m_DefaultWireframe = wireframe;
+		if (m_pImmediateContext)
 		{
-			m_pImmediateContext->RSSetState(m_pRasterizerState);
+			m_pImmediateContext->RSSetState(GetRasterizerState(Riemann::RenderFillMode::RendererDefault));
 		}
 	}
 
 	void SetDepthMode() override
 	{
 		SafeRelease(m_pDepthStencilState);
+		SafeRelease(m_pOutlineMaskDepthStencilState);
+		SafeRelease(m_pOutlineDepthStencilState);
+		SafeRelease(m_pColorWriteOffBlendState);
 
 		D3D11_DEPTH_STENCIL_DESC desc = {};
 		desc.DepthEnable = TRUE;
@@ -572,6 +578,39 @@ public:
 		{
 			m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
 		}
+
+		D3D11_DEPTH_STENCIL_DESC maskDesc = {};
+		maskDesc.DepthEnable = FALSE;
+		maskDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		maskDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+		maskDesc.StencilEnable = TRUE;
+		maskDesc.StencilReadMask = 0xff;
+		maskDesc.StencilWriteMask = 0xff;
+		maskDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		maskDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+		maskDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
+		maskDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		maskDesc.BackFace = maskDesc.FrontFace;
+		(void)m_pd3dDevice->CreateDepthStencilState(&maskDesc, &m_pOutlineMaskDepthStencilState);
+
+		D3D11_DEPTH_STENCIL_DESC outlineDesc = {};
+		outlineDesc.DepthEnable = FALSE;
+		outlineDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		outlineDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+		outlineDesc.StencilEnable = TRUE;
+		outlineDesc.StencilReadMask = 0xff;
+		outlineDesc.StencilWriteMask = 0x00;
+		outlineDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+		outlineDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+		outlineDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+		outlineDesc.FrontFace.StencilFunc = D3D11_COMPARISON_NOT_EQUAL;
+		outlineDesc.BackFace = outlineDesc.FrontFace;
+		(void)m_pd3dDevice->CreateDepthStencilState(&outlineDesc, &m_pOutlineDepthStencilState);
+
+		D3D11_BLEND_DESC blendDesc = {};
+		blendDesc.RenderTarget[0].BlendEnable = FALSE;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = 0;
+		(void)m_pd3dDevice->CreateBlendState(&blendDesc, &m_pColorWriteOffBlendState);
 	}
 
 	void SetImguiDrawCallback(Riemann::ImguiDrawCallback callback, void* userData) override
@@ -613,7 +652,7 @@ private:
 		depthTextureDesc.MipLevels = 1;
 		depthTextureDesc.ArraySize = 1;
 		depthTextureDesc.SampleDesc.Count = 1;
-		depthTextureDesc.Format = DXGI_FORMAT_D32_FLOAT;
+		depthTextureDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 
 		ID3D11Texture2D* depthStencilTexture = nullptr;
@@ -684,10 +723,39 @@ private:
 		return m_pd3dDevice->CreateSamplerState(&samplerDesc, &m_pShadowSampler);
 	}
 
+	HRESULT CreateRasterizerStates()
+	{
+		SafeRelease(m_pSolidRasterizerState);
+		SafeRelease(m_pWireframeRasterizerState);
+
+		D3D11_RASTERIZER_DESC desc = {};
+		desc.CullMode = D3D11_CULL_NONE;
+		desc.DepthClipEnable = TRUE;
+		desc.MultisampleEnable = FALSE;
+		desc.AntialiasedLineEnable = FALSE;
+
+		desc.FillMode = D3D11_FILL_SOLID;
+		HRESULT hr = m_pd3dDevice->CreateRasterizerState(&desc, &m_pSolidRasterizerState);
+		if (FAILED(hr))
+		{
+			return hr;
+		}
+
+		desc.FillMode = D3D11_FILL_WIREFRAME;
+		return m_pd3dDevice->CreateRasterizerState(&desc, &m_pWireframeRasterizerState);
+	}
+
+	ID3D11RasterizerState* GetRasterizerState(Riemann::RenderFillMode fillMode) const
+	{
+		const bool wireframe =
+			fillMode == Riemann::RenderFillMode::Wireframe ||
+			(fillMode == Riemann::RenderFillMode::RendererDefault && m_DefaultWireframe);
+		return wireframe ? m_pWireframeRasterizerState : m_pSolidRasterizerState;
+	}
+
 	HRESULT CreateOutlineStates()
 	{
 		SafeRelease(m_pOutlineRasterizerState);
-		SafeRelease(m_pOutlineDepthStencilState);
 
 		D3D11_RASTERIZER_DESC rasterDesc = {};
 		rasterDesc.FillMode = D3D11_FILL_SOLID;
@@ -696,18 +764,7 @@ private:
 		rasterDesc.MultisampleEnable = FALSE;
 		rasterDesc.AntialiasedLineEnable = FALSE;
 
-		HRESULT hr = m_pd3dDevice->CreateRasterizerState(&rasterDesc, &m_pOutlineRasterizerState);
-		if (FAILED(hr))
-		{
-			return hr;
-		}
-
-		D3D11_DEPTH_STENCIL_DESC depthDesc = {};
-		depthDesc.DepthEnable = TRUE;
-		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-		depthDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
-		depthDesc.StencilEnable = FALSE;
-		return m_pd3dDevice->CreateDepthStencilState(&depthDesc, &m_pOutlineDepthStencilState);
+		return m_pd3dDevice->CreateRasterizerState(&rasterDesc, &m_pOutlineRasterizerState);
 	}
 
 	void SetupViewports()
@@ -913,7 +970,7 @@ private:
 		const float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
 		m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
-		m_pImmediateContext->RSSetState(m_pRasterizerState);
+		m_pImmediateContext->RSSetState(GetRasterizerState(Riemann::RenderFillMode::RendererDefault));
 		m_pImmediateContext->RSSetViewports(1, &m_ShadowViewport);
 		m_pImmediateContext->OMSetRenderTargets(0, nullptr, m_pShadowDepthView);
 		m_pImmediateContext->ClearDepthStencilView(m_pShadowDepthView, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -931,11 +988,11 @@ private:
 		const float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
 		m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
-		m_pImmediateContext->RSSetState(m_pRasterizerState);
+		m_pImmediateContext->RSSetState(GetRasterizerState(Riemann::RenderFillMode::RendererDefault));
 		m_pImmediateContext->RSSetViewports(1, &m_BackBufferViewport);
 		m_pImmediateContext->OMSetRenderTargets(1, &m_pRenderTargetView, m_pDepthBuffer);
 		m_pImmediateContext->ClearRenderTargetView(m_pRenderTargetView, clearColor);
-		m_pImmediateContext->ClearDepthStencilView(m_pDepthBuffer, D3D11_CLEAR_DEPTH, 1.0f, 0);
+		m_pImmediateContext->ClearDepthStencilView(m_pDepthBuffer, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 		m_pImmediateContext->IASetInputLayout(m_pVertexLayout);
 		m_pImmediateContext->VSSetShader(m_pVertexShader, nullptr, 0);
@@ -952,7 +1009,9 @@ private:
 
 	void RenderOutlinePass()
 	{
-		if (m_pOutlineVertexShader == nullptr || m_pOutlinePixelShader == nullptr)
+		if (m_pOutlineVertexShader == nullptr || m_pOutlinePixelShader == nullptr ||
+			m_pOutlineMaskDepthStencilState == nullptr || m_pOutlineDepthStencilState == nullptr ||
+			m_pColorWriteOffBlendState == nullptr)
 		{
 			return;
 		}
@@ -972,10 +1031,26 @@ private:
 		}
 
 		const float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-		m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
-		m_pImmediateContext->OMSetDepthStencilState(m_pOutlineDepthStencilState, 0);
-		m_pImmediateContext->RSSetState(m_pOutlineRasterizerState);
+		m_pImmediateContext->OMSetBlendState(m_pColorWriteOffBlendState, blendFactor, 0xffffffffu);
+		m_pImmediateContext->OMSetDepthStencilState(m_pOutlineMaskDepthStencilState, 1);
+		m_pImmediateContext->RSSetState(GetRasterizerState(Riemann::RenderFillMode::Solid));
 		m_pImmediateContext->IASetInputLayout(m_pVertexLayout);
+		m_pImmediateContext->VSSetShader(m_pVertexShader, nullptr, 0);
+		m_pImmediateContext->PSSetShader(nullptr, nullptr, 0);
+
+		for (DX11StaticMesh& mesh : m_AllMesh)
+		{
+			if (!mesh.OutlineEnabled || mesh.Topology != D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
+			{
+				continue;
+			}
+
+			DrawMesh(mesh, false, true);
+		}
+
+		m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
+		m_pImmediateContext->OMSetDepthStencilState(m_pOutlineDepthStencilState, 1);
+		m_pImmediateContext->RSSetState(m_pOutlineRasterizerState);
 		m_pImmediateContext->VSSetShader(m_pOutlineVertexShader, nullptr, 0);
 		m_pImmediateContext->PSSetShader(m_pOutlinePixelShader, nullptr, 0);
 
@@ -990,9 +1065,10 @@ private:
 		}
 
 		m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
-		m_pImmediateContext->RSSetState(m_pRasterizerState);
+		m_pImmediateContext->RSSetState(GetRasterizerState(Riemann::RenderFillMode::RendererDefault));
 		m_pImmediateContext->VSSetShader(m_pVertexShader, nullptr, 0);
 		m_pImmediateContext->PSSetShader(m_pPixelShader, nullptr, 0);
+		m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
 	}
 
 	void RenderImgui()
@@ -1060,6 +1136,10 @@ private:
 		{
 			m_pImmediateContext->PSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
 		}
+		if (!outlinePass)
+		{
+			m_pImmediateContext->RSSetState(GetRasterizerState(mesh.FillMode));
+		}
 
 		UINT stride = sizeof(Vertex1);
 		UINT offset = 0;
@@ -1087,10 +1167,13 @@ private:
 	ID3D11VertexShader* m_pOutlineVertexShader = nullptr;
 	ID3D11PixelShader* m_pOutlinePixelShader = nullptr;
 	ID3D11InputLayout* m_pVertexLayout = nullptr;
-	ID3D11RasterizerState* m_pRasterizerState = nullptr;
+	ID3D11RasterizerState* m_pSolidRasterizerState = nullptr;
+	ID3D11RasterizerState* m_pWireframeRasterizerState = nullptr;
 	ID3D11RasterizerState* m_pOutlineRasterizerState = nullptr;
 	ID3D11DepthStencilState* m_pDepthStencilState = nullptr;
+	ID3D11DepthStencilState* m_pOutlineMaskDepthStencilState = nullptr;
 	ID3D11DepthStencilState* m_pOutlineDepthStencilState = nullptr;
+	ID3D11BlendState* m_pColorWriteOffBlendState = nullptr;
 	ID3D11Texture2D* m_pShadowTexture = nullptr;
 	ID3D11DepthStencilView* m_pShadowDepthView = nullptr;
 	ID3D11ShaderResourceView* m_pShadowSRV = nullptr;
@@ -1118,6 +1201,7 @@ private:
 	void* m_ImguiUserData = nullptr;
 	int m_ImguiScroll = 0;
 	bool m_ImguiReady = false;
+	bool m_DefaultWireframe = false;
 };
 
 namespace Riemann

@@ -42,7 +42,7 @@ public:
 		{
 			seconds += (int)milliseconds;
 			milliseconds = fmod(milliseconds, 1.0);
-			if (fabs(milliseconds < 1e-6))
+			if (fabs(milliseconds) < 1e-6)
 			{
 				milliseconds = 0.0;
 			}

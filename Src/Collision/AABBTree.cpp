@@ -340,6 +340,34 @@ namespace Riemann
 		return false;
 	}
 
+	void AABBTree::CollectAABBs(std::vector<Box3>* aabbs) const
+	{
+		if (aabbs == nullptr || m_AABBTreeInference == nullptr)
+		{
+			return;
+		}
+
+		std::vector<const CacheFriendlyAABBTree*> stack;
+		stack.push_back(m_AABBTreeInference);
+
+		while (!stack.empty())
+		{
+			const CacheFriendlyAABBTree* node = stack.back();
+			stack.pop_back();
+			if (node == nullptr)
+			{
+				continue;
+			}
+
+			aabbs->push_back(node->GetBoundingVolume());
+			if (!node->IsLeaf())
+			{
+				stack.push_back(node->GetLeftNode(m_AABBTreeInference));
+				stack.push_back(node->GetRightNode(m_AABBTreeInference));
+			}
+		}
+	}
+
 	bool  AABBTree::RayCastBoundingBox(const Ray3& ray, const RayCastOption& Option, RayCastResult* Result) const
 	{
 		return RayCast(ray, nullptr, &Option, Result);

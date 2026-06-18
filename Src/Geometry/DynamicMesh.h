@@ -1,6 +1,7 @@
 #pragma once
 
 #include "assert.h"
+#include <cstdint>
 #include <string>
 #include <map>
 #include <vector>
@@ -13,6 +14,7 @@
 #include "../Maths/Vector3.h"
 #include "../Maths/Index2.h"
 #include "../Maths/Index3.h"
+#include "../Maths/Frame3.h"
 #include "../Maths/Transform.h"
 
 namespace Riemann
@@ -146,6 +148,7 @@ namespace Riemann
 		inline bool HasTriangleGroups() const { return bHasTriangleGroups; }
 		inline bool IsVertex(int idx) const { return 0 <= idx && idx < (int)VertexPositions.size() && VertexRefCounts[idx] > 0;	}
 		inline bool IsVertexFast(int idx) const { return VertexRefCounts[idx] > 0; }
+		inline bool IsReferencedVertex(int idx) const { return IsVertex(idx) && VertexRefCounts[idx] > 1; }
 
 		inline bool IsBoundaryVertex(int vID) const
 		{
@@ -202,6 +205,7 @@ namespace Riemann
 		int AppendTriangle(const Index3& tv, int gid = 0);
 		int AppendTriangle(int i0, int i1, int i2, int gid = 0) { return AppendTriangle(Index3(i0, i1, i2), gid); }
 		EMeshResult InsertTriangle(int tid, const Index3& tv, int gid = 0, bool bUnsafe = false);
+		EMeshResult RemoveVertex(int vID, bool bPreserveManifold = false);
 		EMeshResult RemoveTriangle(int tID, bool bRemoveIsolatedVertices, bool bPreserveManifold);
 		inline bool IsTriangle(int idx) const {	return 0 <= idx && idx < (int)Triangles.size() && TriangleRefCounts[idx] > 0; }
 		inline bool IsTriangleFast(int idx) const { return TriangleRefCounts[idx] > 0; }
@@ -373,8 +377,8 @@ namespace Riemann
 
 		inline int GetOtherEdgeTriangle(int EdgeID, int TriangleID) const
 		{
-			const Edge&e = Edges[EdgeID];
-			return (e.Tri[0] == -1) ? e.Tri[1] : ((e.Tri[1] == TriangleID) ? e.Tri[0] : -1);
+			const Edge& e = Edges[EdgeID];
+			return (e.Tri[0] == TriangleID) ? e.Tri[1] : ((e.Tri[1] == TriangleID) ? e.Tri[0] : -1);
 		}
 
 		inline Index2 GetOrderedOneRingEdgeTris(int VertexID, int EdgeID) const
@@ -438,7 +442,7 @@ namespace Riemann
 		void ApplyTransform(Transform3& trans, bool bReverseOrientationIfNeeded);
 		void ReverseOrientation(bool bFlipNormals);
 
-		EMeshResult MergeEdges(int eKeep, int eDiscard, FMergeEdgesInfo& MergeInfo, bool bCheckValidOrientation);
+		EMeshResult MergeEdges(int eKeep, int eDiscard, FMergeEdgesInfo& MergeInfo, bool bCheckValidOrientation = true);
 		EMeshResult PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, FPokeTriangleInfo& PokeResult);
 		EMeshResult SplitEdge(int eab, FEdgeSplitInfo& SplitInfo, float split_t);
 		EMeshResult CollapseEdge(int vKeep, int vRemove, float collapse_t, FEdgeCollapseInfo& CollapseInfo);
@@ -989,18 +993,17 @@ namespace Riemann
 		void AppendTriangles(const DynamicMesh* SourceMesh, const std::vector<int>& SourceTriangles,
 			FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut, bool bComputeTriangleMap = true);
 
-		/*
 		bool RemoveIsolatedVertices();
 
 		bool StitchVertexLoopsMinimal(const std::vector<int>& VertexLoop1, const std::vector<int>& VertexLoop2, FDynamicMeshEditResult& ResultOut);
 
 		bool StitchVertexLoopToTriVidPairSequence(
-			const std::vector<std::pair<int, std::pair<char, char>>>& TriVidPairs1,
+			const std::vector<std::pair<int, std::pair<int8_t, int8_t>>>& TriVidPairs1,
 			const std::vector<int>& VertexLoop2, FDynamicMeshEditResult& ResultOut);
 
 		static bool ConvertLoopToTriVidPairSequence(const DynamicMesh& Mesh,
 			const std::vector<int>& VidLoop, const std::vector<int>& EdgeLoop,
-			std::vector<std::pair<int, std::pair<char, char>>>& TriVertPairsOut);
+			std::vector<std::pair<int, std::pair<int8_t, int8_t>>>& TriVertPairsOut);
 
 		bool StitchSparselyCorrespondedVertexLoops(const std::vector<int>& VertexIDs1, const std::vector<int>& MatchedIndices1, const std::vector<int>& VertexIDs2, const std::vector<int>& MatchedIndices2, FDynamicMeshEditResult& ResultOut, bool bReverseOrientation = false);
 
@@ -1021,6 +1024,7 @@ namespace Riemann
 			bool bOuterIncludesIsolatedVertices;
 		};
 
+		/*
 		bool DisconnectTriangles(const std::vector<int>& Triangles, std::vector<FLoopPairSet>& LoopSetOut, bool bHandleBoundaryVertices);
 
 		bool DisconnectTriangles(const TSet<int>& TriangleSet, const std::vector<FEdgeLoop>& BoundaryLoops, std::vector<FLoopPairSet>& LoopSetOut, bool bAllowBoundaryVertices);
@@ -1041,12 +1045,13 @@ namespace Riemann
 
 		bool ReinsertSubmesh(const FDynamicSubmesh3& Submesh, FOptionallySparseIndexMap& SubToNewV, std::vector<int>* NewTris = nullptr,
 			EDuplicateTriBehavior DuplicateBehavior = EDuplicateTriBehavior::EnsureAbort);
+		*/
 
 		bool RemoveTriangles(const std::vector<int>& Triangles, bool bRemoveIsolatedVerts);
 
 		int RemoveSmallComponents(double MinVolume, double MinArea = 0.0, int MinTriangleCount = 0);
 
-		bool RemoveTriangles(const std::vector<int>& Triangles, bool bRemoveIsolatedVerts, TFunctionRef<void(int)> OnRemoveTriFunc);
+		bool RemoveTriangles(const std::vector<int>& Triangles, bool bRemoveIsolatedVerts, const std::function<void(int)>& OnRemoveTriFunc);
 
 		Vector3 ComputeAndSetQuadNormal(const Index2& QuadTris, bool bIsPlanar = false);
 
@@ -1058,18 +1063,18 @@ namespace Riemann
 
 		void SetTubeNormals(const std::vector<int>& Triangles, const std::vector<int>& VertexIDs1, const std::vector<int>& MatchedIndices1, const std::vector<int>& VertexIDs2, const std::vector<int>& MatchedIndices2);
 
-		void SetQuadUVsFromProjection(const Index2& QuadTris, const FFrame3d& ProjectionFrame, float UVScaleFactor = 1.0f, const Vector2& UVTranslation = Vector2::Zero(), int UVLayerIndex = 0);
+		void SetQuadUVsFromProjection(const Index2& QuadTris, const Maths::Frame3& ProjectionFrame, float UVScaleFactor = 1.0f, const Vector2& UVTranslation = Vector2::Zero(), int UVLayerIndex = 0);
 
-		void SetTriangleUVsFromProjection(const std::vector<int>& Triangles, const FFrame3d& ProjectionFrame,
+		void SetTriangleUVsFromProjection(const std::vector<int>& Triangles, const Maths::Frame3& ProjectionFrame,
 			float UVScaleFactor = 1.0f, const Vector2& UVTranslation = Vector2::Zero(), bool bShiftToOrigin = true, int UVLayerIndex = 0);
 
-		void SetTriangleUVsFromProjection(const std::vector<int>& Triangles, const FFrame3d& ProjectionFrame,
+		void SetTriangleUVsFromProjection(const std::vector<int>& Triangles, const Maths::Frame3& ProjectionFrame,
 			const Vector2& UVScale = Vector2::One(), const Vector2& UVTranslation = Vector2::Zero(), int UVLayerIndex = 0,
 			bool bShiftToOrigin = true, bool bNormalizeBeforeScaling = false);
 
 		void SetGeneralTubeUVs(const std::vector<int>& Triangles, const std::vector<int>& VertexIDs1, const std::vector<int>& MatchedIndices1, const std::vector<int>& VertexIDs2, const std::vector<int>& MatchedIndices2, const std::vector<float>& UValues, const Vector3& VDir, float UVScaleFactor = 1.0f, const Vector2& UVTranslation = Vector2::Zero(), int UVLayerIndex = 0);
 
-		void RescaleAttributeUVs(float UVScale = 1.0f, bool bWorldSpace = false, int UVLayerIndex = 0, TOptional<FTransformSRT3d> ToWorld = TOptional<FTransformSRT3d>());
+		void RescaleAttributeUVs(float UVScale = 1.0f, bool bWorldSpace = false, int UVLayerIndex = 0, const Transform* ToWorld = nullptr);
 
 		int FindOrCreateDuplicateVertex(int VertexID, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut);
 
@@ -1083,6 +1088,7 @@ namespace Riemann
 
 		void CopyAttributes(int FromTriangleID, int ToTriangleID, FMeshIndexMappings& IndexMaps, FDynamicMeshEditResult& ResultOut);
 
+		/*
 		void AppendMesh(const TTriangleMeshAdapter<double>* AppendMesh, FMeshIndexMappings& IndexMapsOut,
 			std::function<Vector3(int, const Vector3&)> PositionTransform = nullptr);
 

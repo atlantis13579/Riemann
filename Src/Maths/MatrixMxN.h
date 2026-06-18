@@ -42,9 +42,9 @@ namespace Maths
 			int i = 0;
 			for (const T& vv : v)
 			{
-				mData[i] = vv;
-				if (i++ >= ROWS * COLS)
+				if (i >= ROWS * COLS)
 					break;
+				mData[i++] = vv;
 			}
 		}
 
@@ -220,7 +220,7 @@ namespace Maths
 			LoadZero();
 			for (int i = 0; i < ROWS; ++i)
 			{
-				mData[i * ROWS + i] = (T)1;
+				mData[i * COLS + i] = (T)1;
 			}
 		}
 
@@ -272,7 +272,7 @@ namespace Maths
 		T					L1Norm() const
 		{
 			T sum = (T)0;
-			for (int i = 1; i < ROWS * COLS; ++i)
+			for (int i = 0; i < ROWS * COLS; ++i)
 			{
 				sum += std::abs(mData[i]);
 			}
@@ -282,7 +282,7 @@ namespace Maths
 		T					L2Norm() const
 		{
 			T sum = (T)0;
-			for (int i = 1; i < ROWS * COLS; ++i)
+			for (int i = 0; i < ROWS * COLS; ++i)
 			{
 				sum += mData[i] * mData[i];
 			}
@@ -292,19 +292,19 @@ namespace Maths
 		T					LpNorm(int p) const
 		{
 			T sum = (T)0;
-			for (int i = 1; i < ROWS * COLS; ++i)
+			for (int i = 0; i < ROWS * COLS; ++i)
 			{
-				sum += std::pow(mData[i], p);
+				sum += (T)std::pow(std::abs(mData[i]), (T)p);
 			}
-			return std::pow(sum, (T)1 / p);
+			return (T)std::pow(sum, (T)1 / (T)p);
 		}
 
 		T					LInfinityNorm() const
 		{
-			T maxVal = mData[0];
+			T maxVal = std::abs(mData[0]);
 			for (int i = 1; i < ROWS * COLS; ++i)
 			{
-				maxVal = std::max(maxVal, mData[i]);
+				maxVal = std::max(maxVal, std::abs(mData[i]));
 			}
 			return maxVal;
 		}

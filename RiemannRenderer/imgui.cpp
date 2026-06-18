@@ -320,6 +320,7 @@ static int g_focusTop = 0;
 static int g_focusBottom = 0;
 static unsigned int g_scrollId = 0;
 static bool g_insideScrollArea = false;
+static unsigned int g_openComboId = 0;
 
 bool imguiBeginScrollArea(const char* name, int x, int y, int w, int h, int* scroll)
 {
@@ -536,6 +537,80 @@ bool imguiCollapse(const char* text, const char* subtext, bool checked, bool ena
 		addGfxCmdText(x+w-BUTTON_HEIGHT/2, y+BUTTON_HEIGHT/2-TEXT_HEIGHT/2, IMGUI_ALIGN_RIGHT, subtext, imguiRGBA(255,255,255,128));
 	
 	return res;
+}
+
+bool imguiCombo(const char* text, int* selected, const char** items, int itemCount, bool enabled)
+{
+	if (selected == 0 || items == 0 || itemCount <= 0)
+	{
+		return false;
+	}
+
+	if (*selected < 0)
+	{
+		*selected = 0;
+	}
+	if (*selected >= itemCount)
+	{
+		*selected = itemCount - 1;
+	}
+
+	g_state.widgetId++;
+	unsigned int id = (g_state.areaId << 16) | g_state.widgetId;
+
+	const int x = g_state.widgetX;
+	const int y = g_state.widgetY - BUTTON_HEIGHT;
+	const int w = g_state.widgetW;
+	const int h = BUTTON_HEIGHT;
+	g_state.widgetY -= BUTTON_HEIGHT + DEFAULT_SPACING;
+
+	bool over = enabled && inRect(x, y, w, h);
+	bool pressed = buttonLogic(id, over);
+	if (pressed)
+	{
+		g_openComboId = (g_openComboId == id) ? 0 : id;
+	}
+
+	addGfxCmdRoundedRect((float)x, (float)y, (float)w, (float)h, 4.0f, imguiRGBA(0, 0, 0, 160));
+	const unsigned int textColor = enabled
+		? (isHot(id) ? imguiRGBA(255, 196, 0, 255) : imguiRGBA(255, 255, 255, 220))
+		: imguiRGBA(128, 128, 128, 200);
+	addGfxCmdText(x + BUTTON_HEIGHT / 2, y + BUTTON_HEIGHT / 2 - TEXT_HEIGHT / 2, IMGUI_ALIGN_LEFT, text, textColor);
+	addGfxCmdText(x + w - BUTTON_HEIGHT * 2, y + BUTTON_HEIGHT / 2 - TEXT_HEIGHT / 2, IMGUI_ALIGN_RIGHT, items[*selected], textColor);
+
+	const int arrowX = x + w - BUTTON_HEIGHT;
+	const int arrowY = y + BUTTON_HEIGHT / 2 - CHECK_SIZE / 2;
+	addGfxCmdTriangle(arrowX, arrowY, CHECK_SIZE, CHECK_SIZE, g_openComboId == id ? 2 : 1, imguiRGBA(255, 255, 255, enabled ? 200 : 96));
+
+	bool changed = false;
+	if (g_openComboId == id)
+	{
+		for (int itemIndex = 0; itemIndex < itemCount; ++itemIndex)
+		{
+			g_state.widgetId++;
+			unsigned int itemId = (g_state.areaId << 16) | g_state.widgetId;
+			const int itemY = g_state.widgetY - BUTTON_HEIGHT;
+			g_state.widgetY -= BUTTON_HEIGHT + DEFAULT_SPACING;
+
+			bool itemOver = enabled && inRect(x, itemY, w, BUTTON_HEIGHT);
+			bool itemPressed = buttonLogic(itemId, itemOver);
+			const bool isSelected = itemIndex == *selected;
+			const unsigned int bg = isSelected ? imguiRGBA(255, 196, 0, 96) : imguiRGBA(32, 32, 32, 220);
+			addGfxCmdRoundedRect((float)x, (float)itemY, (float)w, (float)BUTTON_HEIGHT, 3.0f,
+				isHot(itemId) ? imguiRGBA(255, 196, 0, isActive(itemId) ? 160 : 112) : bg);
+			addGfxCmdText(x + BUTTON_HEIGHT / 2, itemY + BUTTON_HEIGHT / 2 - TEXT_HEIGHT / 2, IMGUI_ALIGN_LEFT,
+				items[itemIndex], isSelected ? imguiRGBA(255, 255, 255, 255) : imguiRGBA(255, 255, 255, 200));
+
+			if (itemPressed)
+			{
+				*selected = itemIndex;
+				g_openComboId = 0;
+				changed = true;
+			}
+		}
+	}
+
+	return changed;
 }
 
 void imguiLabel(const char* text)

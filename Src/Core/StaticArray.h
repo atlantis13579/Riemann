@@ -1,5 +1,7 @@
 #pragma once
 
+#include <assert.h>
+
 namespace Riemann
 {
 	template<class T, int Capacity>
@@ -122,6 +124,11 @@ namespace Riemann
 
 		inline void resize(int s)
 		{
+			if (s < 0)
+			{
+				m_size = 0;
+				return;
+			}
 			m_size = s < Capacity ? s : Capacity;
 		}
 

@@ -281,9 +281,9 @@ namespace Maths
 
 		static Matrix3 OuterProduct(const Vector3& v0, const Vector3& v1)
 		{
-			return Matrix3(	v0.x * v1.x, v0.x * v1.y, v0.x * v1.x,
-							v0.y * v1.x, v0.y * v1.y, v0.y * v1.x,
-							v0.z * v1.x, v0.z * v1.y, v0.z * v1.x);
+			return Matrix3(	v0.x * v1.x, v0.x * v1.y, v0.x * v1.z,
+					v0.y * v1.x, v0.y * v1.y, v0.y * v1.z,
+					v0.z * v1.x, v0.z * v1.y, v0.z * v1.z);
 		}
 
 		inline float	Trace() const
@@ -363,8 +363,8 @@ namespace Maths
 			c = cosf(angle);
 			s = sinf(angle);
 			mat[0][0] = 1.0f;	mat[0][1] = 0.0f;	mat[0][2] = 0.0f;
-			mat[1][0] = 1.0f;	mat[1][1] = c;		mat[1][2] = s;
-			mat[2][0] = 1.0f;	mat[2][1] = -s; 	mat[2][2] = c;
+			mat[1][0] = 0.0f;	mat[1][1] = c;		mat[1][2] = s;
+			mat[2][0] = 0.0f;	mat[2][1] = -s; 	mat[2][2] = c;
 			return *this;
 		}
 
@@ -431,8 +431,22 @@ namespace Maths
 		{
 			Vector3 UnitAxisFrom = AxisFrom.Unit();
 			Vector3 UnitAxisTo = AxisTo.Unit();
+			float dot = std::min(std::max(UnitAxisFrom.Dot(UnitAxisTo), -1.0f), 1.0f);
+			if (dot > 1.0f - 1e-6f)
+			{
+				LoadIdentiry();
+				return *this;
+			}
 			Vector3 Axis = UnitAxisFrom.Cross(UnitAxisTo);
-			float Angle = acosf(UnitAxisFrom.Dot(UnitAxisTo));
+			if (dot < -1.0f + 1e-6f)
+			{
+				UnitAxisFrom.GetPerpVectors(Axis, UnitAxisTo);
+			}
+			else
+			{
+				Axis = Axis.Unit();
+			}
+			float Angle = acosf(dot);
 			return FromAxisAngle(Axis, Angle);
 		}
 
@@ -604,7 +618,7 @@ namespace Maths
 				c22 += (v[i].z - mean.z) * (v[i].z - mean.z);
 			}
 
-			Matrix3 covariance_matrix = Matrix3(c00, c01, c11, c01, c11, c12, c02, c12, c22);
+			Matrix3 covariance_matrix = Matrix3(c00, c01, c02, c01, c11, c12, c02, c12, c22);
 			covariance_matrix *= (1.0f / n);
 			return covariance_matrix;
 		}

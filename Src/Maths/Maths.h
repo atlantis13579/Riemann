@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cmath>
+#include <algorithm>
+#include <cstring>
+#include <cstdint>
 #include <limits>
 #include <random>
 

@@ -99,13 +99,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>..\..\Binaries\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>..\..\Binaries\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\Binaries\Win64\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath)</IncludePath>
     <IntDir>..\..\Binaries\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>..\..\Binaries\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\Binaries\Win64\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

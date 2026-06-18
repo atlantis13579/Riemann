@@ -30,7 +30,7 @@ namespace Riemann
 	{
 		RigidBodyParam()
 		{
-			memset(this, 0, sizeof(RigidBodyParam));
+			memset((void*)this, 0, sizeof(RigidBodyParam));
 			invMass = 1.0f;
 			linearDamping = 0.999f;
 			angularDamping = 0.999f;

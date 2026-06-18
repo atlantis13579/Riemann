@@ -95,13 +95,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>..\..\Binaries\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>..\..\Binaries\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\Binaries\Win64\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(IncludePath)</IncludePath>
     <IntDir>..\..\Binaries\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>..\..\Binaries\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>..\..\Binaries\Win64\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -141,7 +141,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;..\..\Binaries\x64\Debug\Riemann.lib;..\..\Binaries\x64\Debug\RiemannRenderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;..\..\Binaries\Win64\Debug\Riemann.lib;..\..\Binaries\Win64\Debug\RiemannRenderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -158,7 +158,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;..\..\Binaries\x64\Release\Riemann.lib;..\..\Binaries\x64\Release\RiemannRenderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;..\..\Binaries\Win64\Release\Riemann.lib;..\..\Binaries\Win64\Release\RiemannRenderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

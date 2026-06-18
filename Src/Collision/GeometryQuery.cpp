@@ -12,13 +12,13 @@ namespace Riemann
 	GeometryQuery::GeometryQuery()
 	{
 		m_staticGeometry = nullptr;
-		m_dynamicPruner = nullptr;
+		m_dynamicGeometry = nullptr;
 	}
 
 	GeometryQuery::~GeometryQuery()
 	{
 		SAFE_DELETE(m_staticGeometry);
-		SAFE_DELETE(m_dynamicPruner);
+		SAFE_DELETE(m_dynamicGeometry);
 
 		for (size_t i = 0; i < m_Objects.size(); ++i)
 		{
@@ -29,18 +29,33 @@ namespace Riemann
 	void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode)
 	{
 		SAFE_DELETE(m_staticGeometry);
+		m_Objects.clear();
 
-		if (Objects.size() > 0)
+		std::vector<Geometry*> queryObjects;
+		queryObjects.reserve(Objects.size());
+		for (Geometry* Object : Objects)
+		{
+			if (Object && Object->IsQueryEnabled())
+			{
+				queryObjects.push_back(Object);
+			}
+			else if (Object)
+			{
+				Object->SetNodeId(-1);
+			}
+		}
+
+		if (queryObjects.size() > 0)
 		{
 			m_staticGeometry = new AABBTree;
 
 			std::vector<Box3> boxes;
-			boxes.resize(Objects.size());
-			for (size_t i = 0; i < Objects.size(); ++i)
+			boxes.resize(queryObjects.size());
+			for (size_t i = 0; i < queryObjects.size(); ++i)
 			{
-				boxes[i] = Objects[i]->GetBoundingVolume_WorldSpace();
+				boxes[i] = queryObjects[i]->GetBoundingVolume_WorldSpace();
 			}
-			m_Objects = Objects;
+			m_Objects = queryObjects;
 
 			AABBTreeBuildData param(&boxes[0], (int)boxes.size(), nPrimitivePerNode);
 			m_staticGeometry->StaticBuild(param);
@@ -49,8 +64,92 @@ namespace Riemann
 
 	void GeometryQuery::CreateDynamicGeometry()
 	{
-		SAFE_DELETE(m_dynamicPruner);
-		m_dynamicPruner = new DynamicAABBTree;
+		if (m_dynamicGeometry)
+		{
+			m_dynamicGeometry->Clear();
+			return;
+		}
+
+		m_dynamicGeometry = new DynamicAABBTree;
+	}
+
+	void GeometryQuery::ClearDynamicGeometry()
+	{
+		if (m_dynamicGeometry)
+		{
+			m_dynamicGeometry->Clear();
+		}
+	}
+
+	void GeometryQuery::BuildDynamicGeometry(const std::vector<Geometry*>& Objects)
+	{
+		m_Objects.clear();
+
+		if (!m_dynamicGeometry)
+		{
+			m_dynamicGeometry = new DynamicAABBTree;
+		}
+		else
+		{
+			m_dynamicGeometry->Clear();
+		}
+
+		for (Geometry* Object : Objects)
+		{
+			if (AddDynamicGeometry(Object) >= 0)
+			{
+				m_Objects.push_back(Object);
+			}
+		}
+	}
+
+	int GeometryQuery::AddDynamicGeometry(Geometry* Object)
+	{
+		if (m_dynamicGeometry == nullptr || Object == nullptr || !Object->IsQueryEnabled())
+		{
+			if (Object)
+			{
+				Object->SetNodeId(-1);
+			}
+			return -1;
+		}
+
+		const int nodeId = m_dynamicGeometry->Add(Object->GetBoundingVolume_WorldSpace(), Object);
+		Object->SetNodeId(nodeId);
+		return nodeId;
+	}
+
+	void GeometryQuery::RemoveDynamicGeometry(Geometry* Object)
+	{
+		if (m_dynamicGeometry == nullptr || Object == nullptr)
+		{
+			return;
+		}
+
+		const int nodeId = Object->GetNodeId();
+		if (nodeId < 0)
+		{
+			return;
+		}
+
+		m_dynamicGeometry->Remove(nodeId);
+		Object->SetNodeId(-1);
+	}
+
+	bool GeometryQuery::UpdateDynamicGeometry(Geometry* Object, const Vector3& displacement)
+	{
+		if (m_dynamicGeometry == nullptr || Object == nullptr || !Object->IsQueryEnabled())
+		{
+			return false;
+		}
+
+		const int nodeId = Object->GetNodeId();
+		if (nodeId < 0)
+		{
+			return false;
+		}
+
+		return m_dynamicGeometry->Update(nodeId, Object->GetBoundingVolume_WorldSpace(), displacement);
 	}
 
 	bool GeometryQuery::RayCastQuery(const Vector3& Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult* Result)
@@ -71,10 +170,10 @@ namespace Riemann
 			}
 		}
 
-		if (m_dynamicPruner)
+		if (m_dynamicGeometry)
 		{
 			RayCastResult Result2;
-			bool hit_dynamic = m_dynamicPruner->RayCast(ray, &Option, &Result2);
+			bool hit_dynamic = m_dynamicGeometry->RayCast(ray, &Option, &Result2);
 			if (hit_dynamic)
 			{
 				Result->Merge(Result2);
@@ -104,6 +203,23 @@ namespace Riemann
 		char stack[MAX_GEOMETRY_STACK_SIZE];
 		Geometry* Capsule = GeometryFactory::CreateCapsule_placement(stack, Center - Vector3(0, HalfH, 0), Center + Vector3(0, HalfH, 0), Radius);
 		return SweepTest_Impl(Capsule, Direction, Option, Result);
+	}
+
+	void GeometryQuery::CollectAABBs(std::vector<Box3>* aabbs) const
+	{
+		if (aabbs == nullptr)
+		{
+			return;
+		}
+
+		if (m_staticGeometry)
+		{
+			m_staticGeometry->CollectAABBs(aabbs);
+		}
+		if (m_dynamicGeometry)
+		{
+			m_dynamicGeometry->CollectAABBs(aabbs);
+		}
 	}
 
 	bool GeometryQuery::IntersectQueryBox(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result)
@@ -143,10 +259,10 @@ namespace Riemann
 			}
 		}
 
-		if (m_dynamicPruner)
+		if (m_dynamicGeometry)
 		{
 			IntersectResult Result2;
-			bool hit_dynamic = m_dynamicPruner->Intersect(geom, &Option, &Result2);
+			bool hit_dynamic = m_dynamicGeometry->Intersect(geom, &Option, &Result2);
 			if (hit_dynamic)
 			{
 				Result->Merge(Result2);
@@ -173,10 +289,10 @@ namespace Riemann
 			}
 		}
 
-		if (m_dynamicPruner)
+		if (m_dynamicGeometry)
 		{
 			SweepResult Result2;
-			bool hit_dynamic = m_dynamicPruner->Sweep(geom, Direction, &Option, &Result2);
+			bool hit_dynamic = m_dynamicGeometry->Sweep(geom, Direction, &Option, &Result2);
 			if (hit_dynamic)
 			{
 				Result->Merge(Result2);

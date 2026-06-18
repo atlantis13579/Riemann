@@ -112,17 +112,17 @@ namespace Maths
 
 		TAABB1<T>& Encapsulate(const TAABB1<T>& aabb)
 		{
-			Min = Min.Min(aabb.Min);
-			Max = Max.Max(aabb.Max);
+			Min = std::min(Min, aabb.Min);
+			Max = std::max(Max, aabb.Max);
 			return *this;
 		}
 
 		TAABB1<T>& Encapsulate(const TAABB1<T>& aabb1, const TAABB1<T>& aabb2)
 		{
-			Min = Min.Min(aabb1.Min);
-			Max = Max.Max(aabb1.Max);
-			Min = Min.Min(aabb2.Min);
-			Max = Max.Max(aabb2.Max);
+			Min = std::min(Min, aabb1.Min);
+			Max = std::max(Max, aabb1.Max);
+			Min = std::min(Min, aabb2.Min);
+			Max = std::max(Max, aabb2.Max);
 			return *this;
 		}
 

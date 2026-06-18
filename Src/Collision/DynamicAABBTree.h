@@ -43,6 +43,7 @@ namespace Riemann
 		DynamicAABBTree();
 		~DynamicAABBTree();
 
+		void	Clear();
 		int 	Add(const Box3& aabb, void* userData);
 		void 	Remove(int nodeId);
 		bool 	Update(int nodeId, const Box3& aabb, const Vector3& displacement);
@@ -51,6 +52,7 @@ namespace Riemann
 		bool	Intersect(const Geometry* geometry, const IntersectOption* Option, IntersectResult* Result) const;
         bool	Sweep(const Geometry* geometry, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const;
 		bool	Query(const Box3& aabb, std::vector<void*>* Result) const;
+		void	CollectAABBs(std::vector<Box3>* aabbs) const;
 
 		void 	Rebuild();
 		bool 	Validate() const;

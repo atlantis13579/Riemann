@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "GeometryOperation.h"
+#include "DynamicMesh.h"
 #include "../Maths/Index2.h"
 #include "../Maths/Index3.h"
 #include "../Maths/Vector2.h"
@@ -326,10 +327,15 @@ namespace Riemann
 
 		bool IsSetTriangle(int TID) const
 		{
-			bool bIsSet = ElementTriangles[3 * TID] >= 0;
+			int i = 3 * TID;
+			if (TID < 0 || i + 2 >= (int)ElementTriangles.size())
+			{
+				return false;
+			}
+			bool bIsSet = ElementTriangles[i] >= 0;
 			// we require that triangle elements either be all set or all unset
-			assert(ElementTriangles[3 * TID + 1] >= 0 == bIsSet);
-			assert(ElementTriangles[3 * TID + 2] >= 0 == bIsSet);
+			assert((ElementTriangles[i + 1] >= 0) == bIsSet);
+			assert((ElementTriangles[i + 2] >= 0) == bIsSet);
 			return bIsSet;
 		}
 
@@ -376,6 +382,10 @@ namespace Riemann
 		inline bool GetTriangleIfValid(int TriangleID, Index3& TriangleOut) const
 		{
 			int i = 3 * TriangleID;
+			if (TriangleID < 0 || i + 2 >= (int)ElementTriangles.size())
+			{
+				return false;
+			}
 			int a = ElementTriangles[i];
 			if (a >= 0)
 			{
@@ -431,11 +441,15 @@ namespace Riemann
 
 		int GetElementIDAtVertex(int TriangleID, int VertexID) const
 		{
-			Index3 Triangle = GetTriangle(TriangleID);
+			Index3 Triangle;
+			if (!GetTriangleIfValid(TriangleID, Triangle))
+			{
+				return -1;
+			}
 			for (int IDX = 0; IDX < 3; ++IDX)
 			{
 				int ElementID = Triangle[IDX];
-				if (ParentVertices[ElementID] == VertexID)
+				if (ElementID >= 0 && ElementID < (int)ParentVertices.size() && ParentVertices[ElementID] == VertexID)
 				{
 					return ElementID;
 				}
@@ -519,19 +533,27 @@ namespace Riemann
 
 		inline void GetElement(int ElementID, VectorType& V) const
 		{
-			BaseType::GetElement(ElementID, V);
+			BaseType::GetElement(ElementID, (RealType*)&V);
 		}
 
 		inline VectorType GetElementAtVertex(int TriangleID, int VertexID) const
 		{
-			VectorType V;
-			BaseType::GetElementAtVertex(TriangleID, VertexID, V);
+			VectorType V = VectorType::Zero();
+			int ElementID = BaseType::GetElementIDAtVertex(TriangleID, VertexID);
+			if (ElementID >= 0)
+			{
+				BaseType::GetElement(ElementID, (RealType*)&V);
+			}
 			return V;
 		}
 
 		inline void GetElementAtVertex(int TriangleID, int VertexID, VectorType& V) const
 		{
-			BaseType::GetElementAtVertex(TriangleID, VertexID, V);
+			int ElementID = BaseType::GetElementIDAtVertex(TriangleID, VertexID);
+			if (ElementID >= 0)
+			{
+				BaseType::GetElement(ElementID, (RealType*)&V);
+			}
 		}
 
 		inline void GetTriElement(int TriangleID, int TriVertexIndex, VectorType& Value) const
@@ -693,9 +715,11 @@ namespace Riemann
 			}
 			AttribValueType* BufferData = static_cast<AttribValueType*>(Buffer);
 			int k = RawID * AttribDimension;
+			AttribValueType DefaultValue = GetDefaultAttributeValue();
 			for (int i = 0; i < AttribDimension; ++i)
 			{
-				BufferData[i] = AttribValues[k + i];
+				size_t Index = (size_t)k + i;
+				BufferData[i] = Index < AttribValues.size() ? AttribValues[Index] : DefaultValue;
 			}
 			return true;
 		}
@@ -706,8 +730,13 @@ namespace Riemann
 			{
 				return false;
 			}
+			if (RawID < 0)
+			{
+				return false;
+			}
 			AttribValueType* BufferData = static_cast<AttribValueType*>(Buffer);
-			int k = RawID * AttribDimension;
+			ResizeAttribStoreIfNeeded(RawID);
+			size_t k = (size_t)RawID * AttribDimension;
 			for (int i = 0; i < AttribDimension; ++i)
 			{
 				AttribValues[k + i] = BufferData[i];
@@ -718,9 +747,11 @@ namespace Riemann
 		inline void GetValue(int TriangleID, AttribValueType* Data) const
 		{
 			int k = TriangleID * AttribDimension;
+			AttribValueType DefaultValue = GetDefaultAttributeValue();
 			for (int i = 0; i < AttribDimension; ++i)
 			{
-				Data[i] = AttribValues[k + i];
+				size_t Index = (size_t)k + i;
+				Data[i] = Index < AttribValues.size() ? AttribValues[Index] : DefaultValue;
 			}
 		}
 
@@ -803,6 +834,10 @@ namespace Riemann
 
 		inline void SetNewValue(int NewTriangleID, RealType Value)
 		{
+			if (NewTriangleID < 0)
+			{
+				return;
+			}
 			if (NewTriangleID >= (int)this->AttribValues.size())
 			{
 				this->AttribValues.resize(NewTriangleID + 1, 0);
@@ -812,11 +847,23 @@ namespace Riemann
 
 		inline RealType GetValue(int TriangleID) const
 		{
+			if (TriangleID < 0 || TriangleID >= (int)this->AttribValues.size())
+			{
+				return this->GetDefaultAttributeValue();
+			}
 			return this->AttribValues[TriangleID];
 		}
 
 		inline void SetValue(int TriangleID, RealType Value)
 		{
+			if (TriangleID < 0)
+			{
+				return;
+			}
+			if (TriangleID >= (int)this->AttribValues.size())
+			{
+				this->AttribValues.resize(TriangleID + 1, this->GetDefaultAttributeValue());
+			}
 			this->AttribValues[TriangleID] = Value;
 		}
 	};
@@ -936,9 +983,12 @@ namespace Riemann
 
 		void Initialize(AttribValueType InitialValue = (AttribValueType)0)
 		{
-            //assert(Parent != nullptr);
-			//AttribValues.resize(0);
-			//AttribValues.resize(Parent->GetVertexCount() * AttribDimension, InitialValue);
+			assert(Parent != nullptr);
+			AttribValues.clear();
+			if (Parent != nullptr)
+			{
+				AttribValues.resize((size_t)Parent->GetVertexCount() * AttribDimension, InitialValue);
+			}
 		}
 
 		void SetNewValue(int NewVertexID, const AttribValueType* Data);
@@ -951,9 +1001,11 @@ namespace Riemann
 			}
 			AttribValueType* BufferData = static_cast<AttribValueType*>(Buffer);
 			int k = RawID * AttribDimension;
+			AttribValueType DefaultValue = GetDefaultAttributeValue();
 			for (int i = 0; i < AttribDimension; ++i)
 			{
-				BufferData[i] = AttribValues[k + i];
+				size_t Index = (size_t)k + i;
+				BufferData[i] = Index < AttribValues.size() ? AttribValues[Index] : DefaultValue;
 			}
 			return true;
 		}
@@ -964,8 +1016,13 @@ namespace Riemann
 			{
 				return false;
 			}
+			if (RawID < 0)
+			{
+				return false;
+			}
 			AttribValueType* BufferData = static_cast<AttribValueType*>(Buffer);
-			int k = RawID * AttribDimension;
+			ResizeAttribStoreIfNeeded(RawID);
+			size_t k = (size_t)RawID * AttribDimension;
 			for (int i = 0; i < AttribDimension; ++i)
 			{
 				AttribValues[k + i] = BufferData[i];
@@ -976,9 +1033,11 @@ namespace Riemann
 		inline void GetValue(int VertexID, AttribValueType* Data) const
 		{
 			int k = VertexID * AttribDimension;
+			AttribValueType DefaultValue = GetDefaultAttributeValue();
 			for (int i = 0; i < AttribDimension; ++i)
 			{
-				Data[i] = AttribValues[k + i];
+				size_t Index = (size_t)k + i;
+				Data[i] = Index < AttribValues.size() ? AttribValues[Index] : DefaultValue;
 			}
 		}
 
@@ -986,15 +1045,22 @@ namespace Riemann
 		void GetValue(int VertexID, AsType& Data) const
 		{
 			int k = VertexID * AttribDimension;
+			AttribValueType DefaultValue = GetDefaultAttributeValue();
 			for (int i = 0; i < AttribDimension; ++i)
 			{
-				Data[i] = AttribValues[k + i];
+				size_t Index = (size_t)k + i;
+				Data[i] = Index < AttribValues.size() ? AttribValues[Index] : DefaultValue;
 			}
 		}
 
 		inline void SetValue(int VertexID, const AttribValueType* Data)
 		{
-			int k = VertexID * AttribDimension;
+			if (VertexID < 0)
+			{
+				return;
+			}
+			ResizeAttribStoreIfNeeded(VertexID);
+			size_t k = (size_t)VertexID * AttribDimension;
 			for (int i = 0; i < AttribDimension; ++i)
 			{
 				AttribValues[k + i] = Data[i];
@@ -1004,7 +1070,12 @@ namespace Riemann
 		template<typename AsType>
 		void SetValue(int VertexID, const AsType& Data)
 		{
-			int k = VertexID * AttribDimension;
+			if (VertexID < 0)
+			{
+				return;
+			}
+			ResizeAttribStoreIfNeeded(VertexID);
+			size_t k = (size_t)VertexID * AttribDimension;
 			for (int i = 0; i < AttribDimension; ++i)
 			{
 				AttribValues[k + i] = Data[i];
@@ -1029,6 +1100,15 @@ namespace Riemann
 			{
 				AttribValues.resize(NeededSize, GetDefaultAttributeValue());
 			}
+		}
+
+		inline AttribValueType GetStoredValue(int Index) const
+		{
+			if (Index < 0 || Index >= (int)AttribValues.size())
+			{
+				return GetDefaultAttributeValue();
+			}
+			return AttribValues[Index];
 		}
 
 	public:
@@ -1080,18 +1160,28 @@ namespace Riemann
 	protected:
 		virtual void SetAttributeFromLerp(int SetAttribute, int AttributeA, int AttributeB, double Alpha)
 		{
+			if (SetAttribute < 0)
+			{
+				return;
+			}
+			ResizeAttribStoreIfNeeded(SetAttribute);
 			int IndexSet = AttribDimension * SetAttribute;
 			int IndexA = AttribDimension * AttributeA;
 			int IndexB = AttribDimension * AttributeB;
 			double Beta = (1. - Alpha);
 			for (int i = 0; i < AttribDimension; ++i)
 			{
-				AttribValues[IndexSet + i] = AttribValueType(Beta * AttribValues[IndexA + i] + Alpha * AttribValues[IndexB + i]);
+				AttribValues[IndexSet + i] = AttribValueType(Beta * GetStoredValue(IndexA + i) + Alpha * GetStoredValue(IndexB + i));
 			}
 		}
 
 		virtual void SetAttributeFromBary(int SetAttribute, int AttributeA, int AttributeB, int AttributeC, const Vector3& BaryCoords)
 		{
+			if (SetAttribute < 0)
+			{
+				return;
+			}
+			ResizeAttribStoreIfNeeded(SetAttribute);
 			int IndexSet = AttribDimension * SetAttribute;
 			int IndexA = AttribDimension * AttributeA;
 			int IndexB = AttribDimension * AttributeB;
@@ -1099,7 +1189,7 @@ namespace Riemann
 			for (int i = 0; i < AttribDimension; ++i)
 			{
 				AttribValues[IndexSet + i] = AttribValueType(
-					BaryCoords.x * AttribValues[IndexA + i] + BaryCoords.y * AttribValues[IndexB + i] + BaryCoords.z * AttribValues[IndexC + i]);
+					BaryCoords.x * GetStoredValue(IndexA + i) + BaryCoords.y * GetStoredValue(IndexB + i) + BaryCoords.z * GetStoredValue(IndexC + i));
 			}
 		}
 	};
@@ -1435,24 +1525,36 @@ namespace Riemann
 
 		void AttachAttribute(std::string AttribName, FDynamicMeshAttributeBase* Attribute)
 		{
-			if (GenericAttributes.find(AttribName) != GenericAttributes.end())
+			if (Attribute == nullptr)
 			{
 				RemoveAttribute(AttribName);
+				return;
+			}
+			Attribute->SetName(AttribName);
+			auto Found = GenericAttributes.find(AttribName);
+			if (Found != GenericAttributes.end())
+			{
+				delete Found->second;
+				Found->second = Attribute;
+				return;
 			}
 			GenericAttributes.emplace(AttribName, Attribute);
 		}
 
 		void RemoveAttribute(std::string AttribName)
 		{
-			if (GenericAttributes.find(AttribName) != GenericAttributes.end())
+			auto Found = GenericAttributes.find(AttribName);
+			if (Found != GenericAttributes.end())
 			{
-				GenericAttributes.erase(AttribName);
+				delete Found->second;
+				GenericAttributes.erase(Found);
 			}
 		}
 
 		FDynamicMeshAttributeBase* GetAttachedAttribute(const std::string& AttribName)
 		{
-			return GenericAttributes[AttribName];
+			auto Found = GenericAttributes.find(AttribName);
+			return Found != GenericAttributes.end() ? Found->second : nullptr;
 		}
 
 		const FDynamicMeshAttributeBase* GetAttachedAttribute(const std::string& AttribName) const

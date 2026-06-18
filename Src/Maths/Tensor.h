@@ -52,16 +52,22 @@ namespace Maths
 			Size = 1;
 		}
 
-		~Tensor<DataType, Rank>()
+		Tensor<DataType, Rank>(const Tensor<DataType, Rank>& rhs)
 		{
-			if (pData && HoldMemory)
-			{
-				delete[]pData;
-				pData = nullptr;
-			}
+			_CopyFrom(rhs);
 		}
 
-		void 	Load(DataType* p)
+		Tensor<DataType, Rank>(Tensor<DataType, Rank>&& rhs)
+		{
+			_MoveFrom(rhs);
+		}
+
+		~Tensor<DataType, Rank>()
+		{
+			_Release();
+		}
+
+		void 	Load(const DataType* p)
 		{
 			memcpy(pData, p, sizeof(DataType) * Size);
 		}
@@ -98,12 +104,22 @@ namespace Maths
 			return Size;
 		}
 
-		inline const Tensor<DataType, Rank>& operator=(const Tensor<DataType, Rank>& rhs)
+		inline Tensor<DataType, Rank>& operator=(const Tensor<DataType, Rank>& rhs)
 		{
-			if (SameDimension(rhs))
+			if (this != &rhs)
 			{
-				if (pData)
-					Load(rhs.pData);
+				_Release();
+				_CopyFrom(rhs);
+			}
+			return *this;
+		}
+
+		inline Tensor<DataType, Rank>& operator=(Tensor<DataType, Rank>&& rhs)
+		{
+			if (this != &rhs)
+			{
+				_Release();
+				_MoveFrom(rhs);
 			}
 			return *this;
 		}
@@ -155,6 +171,52 @@ namespace Maths
 		}
 
 	protected:
+		void	_Release()
+		{
+			if (pData && HoldMemory)
+			{
+				delete[]pData;
+			}
+			pData = nullptr;
+			HoldMemory = false;
+		}
+
+		void	_CopyFrom(const Tensor<DataType, Rank>& rhs)
+		{
+			Size = rhs.Size;
+			for (int i = 0; i < Rank; ++i)
+			{
+				Dimensions[i] = rhs.Dimensions[i];
+				SubDimensions[i] = rhs.SubDimensions[i];
+			}
+			if (rhs.HoldMemory && rhs.pData)
+			{
+				pData = new DataType[Size];
+				HoldMemory = true;
+				Load(rhs.pData);
+			}
+			else
+			{
+				pData = rhs.pData;
+				HoldMemory = false;
+			}
+		}
+
+		void	_MoveFrom(Tensor<DataType, Rank>& rhs)
+		{
+			Size = rhs.Size;
+			for (int i = 0; i < Rank; ++i)
+			{
+				Dimensions[i] = rhs.Dimensions[i];
+				SubDimensions[i] = rhs.SubDimensions[i];
+			}
+			pData = rhs.pData;
+			HoldMemory = rhs.HoldMemory;
+			rhs.pData = nullptr;
+			rhs.HoldMemory = false;
+			rhs.Size = 1;
+		}
+
 		template<typename... IndexTypes>
 		void    _InitTensor(int Dim, IndexTypes ...OtherDims)
 		{

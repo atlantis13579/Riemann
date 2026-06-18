@@ -8742,13 +8742,19 @@ namespace Riemann
 		}
 
         const ListSet<Bond>& bonds = graph->GetBonds();
-		for (size_t i = 0; i < bonds.size(); ++i)
+		for (size_t i = 0; i < nodes.size(); ++i)
 		{
 			uint32_t node = nodes[i];
 			xadj.push_back((metis::idx_t)adjncy.size());
 			for (const Bond& b : bonds[node])
 			{
-				adjncy.push_back(node_to_index[b.v0]);
+				const int other_node = b.GetOther((int)node);
+				std::map<int, int>::const_iterator it = node_to_index.find(other_node);
+				if (it == node_to_index.end())
+				{
+					continue;
+				}
+				adjncy.push_back(it->second);
 				adjwgt.push_back(NormalizeWeight(b.strength, 100.0f, 1, 1000));
 			}
 		}

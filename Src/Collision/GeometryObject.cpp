@@ -123,6 +123,7 @@ namespace Riemann
 		m_Density = 1.0f;
 		m_Parent = nullptr;
 		m_NodeId = -1;
+		m_Flags = GeometryFlag_Query | GeometryFlag_Simulation;
 	}
 
 	Geometry::~Geometry()

@@ -2,7 +2,7 @@
 #include <assert.h>
 #include "MotionIntegration.h"
 #include "RigidBody.h"
-#include "RigidBodySimulation.h"
+#include "PhysicsWorld.h"
 #include "../Collision/GeometryObject.h"
 #include "../Solver/NumericalODESolver.h"
 

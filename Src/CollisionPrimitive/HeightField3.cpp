@@ -477,40 +477,43 @@ namespace Riemann
 
 	void HeightField3::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices, std::vector<Vector3>& Normals)
 	{
-		if (nZ * nZ == 0)
+		Vertices.clear();
+		Indices.clear();
+		Normals.clear();
+
+		if (Cells == nullptr || nX < 2 || nZ < 2)
 		{
 			return;
 		}
 
 		Vertices.resize(nX * nZ);
-		for (uint32_t i = 0; i < nX; i++)
 		for (uint32_t j = 0; j < nZ; j++)
+		for (uint32_t i = 0; i < nX; i++)
 		{
-			Vertices[i * nZ + j] = Vector3(BV.Min.x + DX * i, GetHeight(i * nZ + j), BV.Min.z + DZ * j);
+			const uint32_t idx = j * nX + i;
+			Vertices[idx] = Vector3(BV.Min.x + DX * i, GetHeight(idx), BV.Min.z + DZ * j);
 		}
 
 		assert(Vertices.size() < 65535);
-		Indices.resize((nZ - 1) * (nX - 1) * 2 * 3);
-		int nTris = 0;
+		Indices.reserve((nZ - 1) * (nX - 1) * 2 * 3);
 		uint32_t Tris[6];
 
-		for (uint32_t i = 0; i < (nZ - 1); ++i)
-		for (uint32_t j = 0; j < (nX - 1); ++j)
+		for (uint32_t j = 0; j < (nZ - 1); ++j)
+		for (uint32_t i = 0; i < (nX - 1); ++i)
 		{
 			int nT = GetCellTriangle(i, j, Tris);
 			for (int k = 0; k < nT; k += 3)
 			{
-				Indices[3 * nTris + 0] = Tris[k + 0];
-				Indices[3 * nTris + 1] = Tris[k + 1];
-				Indices[3 * nTris + 2] = Tris[k + 2];
-				nTris++;
+				Indices.push_back((uint16_t)Tris[k + 0]);
+				Indices.push_back((uint16_t)Tris[k + 2]);
+				Indices.push_back((uint16_t)Tris[k + 1]);
 			}
 		}
 
 		std::vector<int> Count;
 		Count.resize(Vertices.size(), 0);
-		Normals.resize(Vertices.size());
-		memset(&Normals[0], 0, sizeof(Normals[0]) * Normals.size());
+		Normals.resize(Vertices.size(), Vector3::Zero());
+		const int nTris = (int)Indices.size() / 3;
 		for (int i = 0; i < nTris; ++i)
 		{
 			uint16_t i0 = Indices[3 * i + 0];
@@ -520,15 +523,26 @@ namespace Riemann
 			const Vector3& v1 = Vertices[i1];
 			const Vector3& v2 = Vertices[i2];
 			Vector3 Nor = (v1 - v0).Cross(v2 - v0);
-			Normals[i0] += Nor.Unit(); Count[i0]++;
-			Normals[i1] += Nor.Unit(); Count[i1]++;
-			Normals[i2] += Nor.Unit(); Count[i2]++;
+			if (Nor.SafeNormalize() == 0.0f)
+			{
+				continue;
+			}
+			Normals[i0] += Nor; Count[i0]++;
+			Normals[i1] += Nor; Count[i1]++;
+			Normals[i2] += Nor; Count[i2]++;
 		}
 
 		for (size_t i = 0; i < Normals.size(); ++i)
 		{
-			Normals[i] *= 1.0f / Count[i];
-			Normals[i].Normalize();
+			if (Count[i] > 0)
+			{
+				Normals[i] *= 1.0f / Count[i];
+				if (Normals[i].SafeNormalize() > 0.0f)
+				{
+					continue;
+				}
+			}
+			Normals[i] = Vector3::UnitY();
 		}
 	}
 

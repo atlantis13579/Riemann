@@ -513,7 +513,7 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MotionIntegration.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.h">
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsWorld.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h">
@@ -554,6 +554,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Modules\Tools\Serialization.h">
       <Filter>Modules\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Destruction\DestructionCluster.h">
+      <Filter>Destruction</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -743,7 +746,7 @@
     <ClCompile Include="..\..\Src\Modules\ImageSpace\ImageProcessing.cpp">
       <Filter>Modules\ImageSpace</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBodySimulation.cpp">
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsWorld.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MotionIntegration.cpp">
@@ -772,6 +775,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Modules\Tools\PythonModule.cpp">
       <Filter>Modules\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Destruction\DestructionCluster.cpp">
+      <Filter>Destruction</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

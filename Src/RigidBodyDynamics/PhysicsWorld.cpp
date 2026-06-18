@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include "RigidBodySimulation.h"
+#include "PhysicsWorld.h"
 
 #include "../Core/Base.h"
 #include "../Core/File.h"
@@ -20,10 +20,16 @@
 
 namespace Riemann
 {
-	RigidBodySimulation::RigidBodySimulation(const RigidBodySimulationParam& param)
+	PhysicsWorld::PhysicsWorld(const PhysicsWorldParam& param)
 	{
 		m_GeometryQuery = new GeometryQuery;
 		m_BPhase = nullptr;
+		m_SceneQueryTree = param.sceneQueryTree;
+		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
+		{
+			m_GeometryQuery->CreateDynamicGeometry();
+		}
+
 		if (param.broadphase == BroadPhaseSolver::SAP)
 		{
 			m_BPhase = BroadPhase::Create_SAP();
@@ -46,8 +52,12 @@ namespace Riemann
 		}
 		else if (param.broadphase == BroadPhaseSolver::DynamicAABB)
 		{
-			m_GeometryQuery->CreateDynamicGeometry();
-			m_BPhase = BroadPhase::Create_DynamicAABB(m_GeometryQuery->GetDynamicTree());
+			DynamicAABBTree* tree = m_GeometryQuery->GetDynamicTree();
+			m_BPhase = tree ? BroadPhase::Create_DynamicAABB(tree) : BroadPhase::Create_SAP();
+		}
+		if (m_BPhase == nullptr)
+		{
+			m_BPhase = BroadPhase::Create_SAP();
 		}
 		m_NPhase = NarrowPhase::Create_GJKEPA();
 		m_Solver = ConstraintSolver::CreateSequentialImpulseSolver();
@@ -61,10 +71,10 @@ namespace Riemann
 		m_SceneResource = nullptr;
 	}
 
-	RigidBodySimulation::~RigidBodySimulation()
+	PhysicsWorld::~PhysicsWorld()
 	{
-		SAFE_DELETE(m_GeometryQuery);
 		SAFE_DELETE(m_BPhase);
+		SAFE_DELETE(m_GeometryQuery);
 		SAFE_DELETE(m_NPhase);
 		SAFE_DELETE(m_Solver);
 
@@ -105,14 +115,14 @@ namespace Riemann
 		}
 	}
 
-	void		RigidBodySimulation::Simulate()
+	void		PhysicsWorld::Simulate()
 	{
 		m_Clock.tick++;
 
 		SimulateST(m_Clock.deltatime);
 	}
 
-	void		RigidBodySimulation::Reset()
+	void		PhysicsWorld::Reset()
 	{
 		for (size_t i = 0; i < m_StaticBodies.size(); ++i)
 		{
@@ -133,9 +143,14 @@ namespace Riemann
 			delete m_Kinematics[i];
 		}
 		m_Kinematics.clear();
+
+		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
+		{
+			m_GeometryQuery->ClearDynamicGeometry();
+		}
 	}
 
-	void		RigidBodySimulation::SimulateST(float dt)
+	void		PhysicsWorld::SimulateST(float dt)
 	{
 		for (size_t i = 0; i < m_Kinematics.size(); ++i)
 		{
@@ -146,11 +161,23 @@ namespace Riemann
 		geoms.reserve(m_StaticBodies.size() + m_DynamicBodies.size());
 		for (size_t i = 0; i < m_StaticBodies.size(); ++i)
 		{
-			m_StaticBodies[i]->GetGeometries(&geoms);
+			for (Geometry* geom : m_StaticBodies[i]->Geometries())
+			{
+				if (geom && geom->IsSimulationEnabled())
+				{
+					geoms.push_back(geom);
+				}
+			}
 		}
 		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 		{
-			m_DynamicBodies[i]->GetGeometries(&geoms);
+			for (Geometry* geom : m_DynamicBodies[i]->Geometries())
+			{
+				if (geom && geom->IsSimulationEnabled())
+				{
+					geoms.push_back(geom);
+				}
+			}
 		}
 
 		std::vector<OverlapPair> overlaps;
@@ -198,7 +225,7 @@ namespace Riemann
 		return;
 	}
 
-	void		RigidBodySimulation::PreIntegrate(float dt)
+	void		PhysicsWorld::PreIntegrate(float dt)
 	{
 		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 		{
@@ -224,9 +251,9 @@ namespace Riemann
 		}
 	}
 
-	void		RigidBodySimulation::PostIntegrate(float dt)
+	void		PhysicsWorld::PostIntegrate(float dt)
 	{
-		DynamicAABBTree* tree = m_GeometryQuery->GetDynamicTree();
+		(void)dt;
 		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
 		{
 			RigidBodyDynamic* Body = m_DynamicBodies[i];
@@ -235,17 +262,63 @@ namespace Riemann
 			if (Body->Sleeping)
 				continue;
 			Body->AutoSleep();
-			if (tree)
-			{
-				for (Geometry* g : Body->Geometries())
-				{
-					tree->Update(g->GetNodeId(), g->GetBoundingVolume_WorldSpace(), Body->GetLinearVelocity());
-				}
-			}
+			UpdateSceneQueryTree(Body);
 		}
 	}
 
-	bool         RigidBodySimulation::LoadScene(const char* name, bool shared_mem)
+	void PhysicsWorld::BuildSceneQueryTree(const std::vector<Geometry*>& Objects)
+	{
+		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
+		{
+			m_GeometryQuery->BuildDynamicGeometry(Objects);
+			return;
+		}
+
+		m_GeometryQuery->BuildStaticGeometry(Objects, 5);
+	}
+
+	void PhysicsWorld::AddGeometryToSceneQueryTree(Geometry* Object)
+	{
+		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
+		{
+			m_GeometryQuery->AddDynamicGeometry(Object);
+			return;
+		}
+
+		// TODO: Queue or rebuild the static AABBTree when runtime objects are added.
+	}
+
+	void PhysicsWorld::RemoveGeometryFromSceneQueryTree(Geometry* Object)
+	{
+		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
+		{
+			m_GeometryQuery->RemoveDynamicGeometry(Object);
+			return;
+		}
+
+		// TODO: Rebuild the static AABBTree when runtime objects are removed.
+	}
+
+	void PhysicsWorld::UpdateSceneQueryTree(RigidBodyDynamic* Body)
+	{
+		if (Body == nullptr)
+		{
+			return;
+		}
+
+		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
+		{
+			for (Geometry* g : Body->Geometries())
+			{
+				m_GeometryQuery->UpdateDynamicGeometry(g, Body->GetLinearVelocity());
+			}
+			return;
+		}
+
+		// TODO: Static AABBTree is built offline; decide whether to rebuild it per step or keep moving bodies out of it.
+	}
+
+	bool         PhysicsWorld::LoadScene(const char* name, bool shared_mem)
 	{
 		std::vector<RigidBody*> collection;
 		std::vector<Geometry*> geoms;
@@ -280,11 +353,11 @@ namespace Riemann
 		}
 
 		assert(m_GeometryQuery);
-		m_GeometryQuery->BuildStaticGeometry(geoms, 5);
+		BuildSceneQueryTree(geoms);
 		return true;
 	}
 
-	RigidBody* RigidBodySimulation::CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose)
+	RigidBody* PhysicsWorld::CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose)
 	{
 		RigidBody* body = RigidBody::CreateRigidBody(param, init_pose);
 		if (body->mRigidType == RigidType::Static)
@@ -299,22 +372,49 @@ namespace Riemann
 		return body;
 	}
 
-	RigidBody* RigidBodySimulation::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
+	RigidBody* PhysicsWorld::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
 	{
 		Transform init_pose(Geom->GetWorldPosition(), Geom->GetWorldRotation());
 		RigidBody* body = CreateRigidBody(param, init_pose);
 		body->AddGeometry(Geom);
 
-		if (m_GeometryQuery->GetDynamicTree())
+		AddGeometryToSceneQueryTree(Geom);
+
+		return body;
+	}
+
+	RigidBody* PhysicsWorld::CreateRigidBody(const std::vector<Geometry*>& Geoms, const RigidBodyParam& param, const Transform& init_transform)
+	{
+		if (Geoms.empty())
 		{
-			int NodeId = m_GeometryQuery->GetDynamicTree()->Add(Geom->GetBoundingVolume_WorldSpace(), Geom);
-			Geom->SetNodeId(NodeId);
+			return nullptr;
+		}
+
+		RigidBody* body = CreateRigidBody(param, init_transform);
+		if (!body)
+		{
+			return nullptr;
+		}
+
+		for (Geometry* Geom : Geoms)
+		{
+			if (!Geom)
+			{
+				continue;
+			}
+
+			const Transform world_transform = *Geom->GetWorldTransform();
+			const Transform local_transform = init_transform.TransformInv(world_transform);
+			Geom->SetLocalTransform(local_transform.pos, local_transform.quat);
+			body->AddGeometry(Geom);
+
+			AddGeometryToSceneQueryTree(Geom);
 		}
 
 		return body;
 	}
 
-	bool RigidBodySimulation::RemoveRigidBody(RigidBody* Body)
+	bool PhysicsWorld::RemoveRigidBody(RigidBody* Body)
 	{
 		if (Body->mRigidType == RigidType::Static)
 		{
@@ -323,12 +423,9 @@ namespace Riemann
 				if (m_StaticBodies[i] == Body)
 				{
 					m_StaticBodies.erase(m_StaticBodies.begin() + i);
-					if (m_GeometryQuery->GetDynamicTree())
+					for (Geometry* g : Body->Geometries())
 					{
-						for (Geometry* g : Body->Geometries())
-						{
-							m_GeometryQuery->GetDynamicTree()->Remove(g->GetNodeId());
-						}
+						RemoveGeometryFromSceneQueryTree(g);
 					}
 					return true;
 				}
@@ -341,12 +438,9 @@ namespace Riemann
 				if (m_DynamicBodies[i] == Body)
 				{
 					m_DynamicBodies.erase(m_DynamicBodies.begin() + i);
-					if (m_GeometryQuery->GetDynamicTree())
+					for (Geometry* g : Body->Geometries())
 					{
-						for (Geometry* g : Body->Geometries())
-						{
-							m_GeometryQuery->GetDynamicTree()->Remove(g->GetNodeId());
-						}
+						RemoveGeometryFromSceneQueryTree(g);
 					}
 					return true;
 				}
@@ -355,7 +449,7 @@ namespace Riemann
 		return false;
 	}
 
-	bool RigidBodySimulation::LoadAnimation(const std::string& resname, const std::string& filepath, float play_rate, bool begin_play)
+	bool PhysicsWorld::LoadAnimation(const std::string& resname, const std::string& filepath, float play_rate, bool begin_play)
 	{
 		for (size_t i = 0; i < m_Kinematics.size(); ++i)
 		{
@@ -380,7 +474,7 @@ namespace Riemann
 		return true;
 	}
 
-	KinematicsDriver* RigidBodySimulation::FindKinematics(const std::string& resname)
+	KinematicsDriver* PhysicsWorld::FindKinematics(const std::string& resname)
 	{
 		for (size_t i = 0; i < m_Kinematics.size(); ++i)
 		{
@@ -392,7 +486,7 @@ namespace Riemann
 		return nullptr;
 	}
 
-	void RigidBodySimulation::GetAllGeometries(std::vector<Geometry*>* geoms)
+	void PhysicsWorld::GetAllGeometries(std::vector<Geometry*>* geoms)
 	{
 		for (size_t i = 0; i < m_StaticBodies.size(); ++i)
 		{
@@ -404,7 +498,7 @@ namespace Riemann
 		}
 	}
 
-	float RigidBodySimulation::GetSystemTotalEnergy() const
+	float PhysicsWorld::GetSystemTotalEnergy() const
 	{
 		float Energy = 0.0f;
 		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
@@ -414,7 +508,7 @@ namespace Riemann
 		return Energy;
 	}
 
-	float RigidBodySimulation::GetSystemTotalLinearKinematicsEnergy() const
+	float PhysicsWorld::GetSystemTotalLinearKinematicsEnergy() const
 	{
 		float Energy = 0.0f;
 		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
@@ -424,7 +518,7 @@ namespace Riemann
 		return Energy;
 	}
 
-	float RigidBodySimulation::GetSystemTotalAngularKinematicsEnergy() const
+	float PhysicsWorld::GetSystemTotalAngularKinematicsEnergy() const
 	{
 		float Energy = 0.0f;
 		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
@@ -434,7 +528,7 @@ namespace Riemann
 		return Energy;
 	}
 
-	Vector3 RigidBodySimulation::GetSystemTotalLinearMomentum() const
+	Vector3 PhysicsWorld::GetSystemTotalLinearMomentum() const
 	{
 		Vector3 Momentum(0.0f);
 		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
@@ -444,7 +538,7 @@ namespace Riemann
 		return Momentum;
 	}
 
-	Vector3 RigidBodySimulation::GetSystemTotalAngularMomentum() const
+	Vector3 PhysicsWorld::GetSystemTotalAngularMomentum() const
 	{
 		Vector3 Momentum(0.0f);
 		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)

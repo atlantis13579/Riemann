@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stdio.h"
+#include <assert.h>
 #include <vector>
 
 #if defined(__linux__) && !defined(__android__)
@@ -131,22 +132,33 @@ namespace Riemann
 	public:
 		MmapFile(const char* filename) : addr_(nullptr), size_(0), aligned_data_(nullptr)
 		{
-			int fd = open(Filename, O_RDONLY);
+			int fd = open(filename, O_RDONLY);
 			if (fd == -1)
 			{
-				return nullptr;
+				return;
 			}
 
 			struct stat st;
-			fstat(fd, &st);
-			size_ = st.st_size;
-
-			addr_ = mmap(nullptr, size_, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-			if (addr_ == MAP_FAILED)
+			if (fstat(fd, &st) != 0)
 			{
 				close(fd);
 				return;
 			}
+			size_ = st.st_size;
+			if (size_ == 0)
+			{
+				close(fd);
+				return;
+			}
+
+			void* mapped = mmap(nullptr, size_, PROT_READ, MAP_PRIVATE, fd, 0);
+			if (mapped == MAP_FAILED)
+			{
+				size_ = 0;
+				close(fd);
+				return;
+			}
+			addr_ = reinterpret_cast<unsigned char*>(mapped);
 
 			unsigned char* aligned_data = reinterpret_cast<unsigned char*>(
 				(reinterpret_cast<size_t>(addr_) + 127) & ~static_cast<size_t>(127)
@@ -157,7 +169,7 @@ namespace Riemann
 			close(fd);
 		}
 
-		virtual ~MemoryFile() override final
+		virtual ~MmapFile() override final
 		{
 			if (addr_)
 			{
@@ -187,7 +199,7 @@ namespace Riemann
 		unsigned char* addr_;
 		size_t size_;
 
-		void* aligned_data_;
+		unsigned char* aligned_data_;
 	};
 #endif
 

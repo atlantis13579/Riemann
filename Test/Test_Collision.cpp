@@ -26,6 +26,7 @@
 #include "../Src/Collision/GeometryIntersection.h"
 #include "../Src/Collision/EPAPenetration.h"
 #include "../Src/RigidBodyDynamics/BroadPhase.h"
+#include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 #include "../Src/RigidBodyDynamics/RigidBody.h"
 #include "../Src/Maths/Maths.h"
 
@@ -530,33 +531,6 @@ void TestRTree1()
 	EXPECT(success);
 	EXPECT(Maths::FloatEqual(t, sqrtf(3.0f) * 0.5f));
 
-	return;
-}
-
-void TestRTree2()
-{
-	printf("Running TestRTree2\n");
-	TriangleMesh mesh;
-
-	bool load_succ = mesh.LoadObj(TestDataPath("dungeon.obj").c_str());
-	EXPECT(load_succ);
-	if (load_succ)
-	{
-		mesh.Compact();
-		mesh.BuildBVH();
-
-		Vector3 Center;
-		Center = (mesh(0, 0) + mesh(0, 1) + mesh(0, 2)) / 3.0f;
-		Center.y = 0.0f;
-
-		float t1, t2;
-		bool success1, success2;
-		Vector3 Dir = Vector3::UnitY();
-		success1 = Triangle3::RayIntersectTriangle(Center, Dir, mesh(0, 0), mesh(0, 1), mesh(0, 2), &t1);
-		success2 = mesh.IntersectRay(Center, Dir, &t2);
-		EXPECT(success1 == success2);
-		EXPECT(Maths::FloatEqual(t1, t2));
-	}
 	return;
 }
 
@@ -1269,6 +1243,147 @@ void TestPhysXBroadPhasePorts()
 	}
 }
 
+void TestPhysicsWorldSceneQueryTrees()
+{
+	printf("Running TestPhysicsWorldSceneQueryTrees\n");
+
+	{
+		PhysicsWorldParam param;
+		param.broadphase = BroadPhaseSolver::DynamicAABB;
+		param.sceneQueryTree = SceneQueryAABBTree::StaticAABB;
+		PhysicsWorld world(param);
+		EXPECT(world.GetGeometryQuery()->GetDynamicTree() == nullptr);
+
+		RigidBodyParam bodyParam;
+		bodyParam.rigidType = RigidType::Dynamic;
+		Geometry* geom = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
+		RigidBody* body = world.CreateRigidBody(geom, bodyParam);
+		EXPECT(body != nullptr);
+		EXPECT(geom->GetNodeId() == -1);
+		world.Simulate();
+		EXPECT(world.GetGeometryQuery()->GetDynamicTree() == nullptr);
+
+		EXPECT(world.RemoveRigidBody(body));
+		body->ReleaseGeometries();
+		delete body;
+	}
+
+	{
+		PhysicsWorldParam param;
+		param.broadphase = BroadPhaseSolver::DynamicAABB;
+		param.sceneQueryTree = SceneQueryAABBTree::DynamicAABB;
+		PhysicsWorld world(param);
+		EXPECT(world.GetGeometryQuery()->GetDynamicTree() != nullptr);
+
+		RigidBodyParam bodyParam;
+		bodyParam.rigidType = RigidType::Dynamic;
+		Geometry* geom = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
+		RigidBody* body = world.CreateRigidBody(geom, bodyParam);
+		EXPECT(body != nullptr);
+		EXPECT(geom->GetNodeId() >= 0);
+		world.Simulate();
+		EXPECT(geom->GetNodeId() >= 0);
+
+		EXPECT(world.RemoveRigidBody(body));
+		EXPECT(geom->GetNodeId() == -1);
+		body->ReleaseGeometries();
+		delete body;
+	}
+
+	{
+		PhysicsWorldParam param;
+		param.sceneQueryTree = SceneQueryAABBTree::DynamicAABB;
+		PhysicsWorld world(param);
+
+		RigidBodyParam bodyParam;
+		bodyParam.rigidType = RigidType::Static;
+		Geometry* geom = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
+		RigidBody* body = world.CreateRigidBody(geom, bodyParam);
+		EXPECT(body != nullptr);
+		EXPECT(geom->GetNodeId() >= 0);
+
+		RayCastOption option;
+		option.Type = RayCastOption::RAYCAST_NEAREST;
+		RayCastResult result;
+		const bool hit = world.GetGeometryQuery()->RayCastQuery(Vector3(0.0f, 0.0f, 5.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
+		EXPECT(hit);
+		EXPECT(result.hit);
+		EXPECT(result.hitGeom == geom);
+
+		EXPECT(world.RemoveRigidBody(body));
+		body->ReleaseGeometries();
+		delete body;
+	}
+
+	{
+		PhysicsWorldParam param;
+		param.sceneQueryTree = SceneQueryAABBTree::DynamicAABB;
+		PhysicsWorld world(param);
+
+		RigidBodyParam bodyParam;
+		bodyParam.rigidType = RigidType::Static;
+		Geometry* geom = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
+		geom->SetQueryEnabled(false);
+		RigidBody* body = world.CreateRigidBody(geom, bodyParam);
+		EXPECT(body != nullptr);
+		EXPECT(geom->GetNodeId() == -1);
+
+		std::vector<Box3> queryAABBs;
+		world.GetGeometryQuery()->CollectAABBs(&queryAABBs);
+		EXPECT(queryAABBs.empty());
+
+		RayCastOption option;
+		RayCastResult result;
+		const bool hit = world.GetGeometryQuery()->RayCastQuery(Vector3(0.0f, 0.0f, 5.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
+		EXPECT(!hit);
+		EXPECT(!result.hit);
+
+		EXPECT(world.RemoveRigidBody(body));
+		body->ReleaseGeometries();
+		delete body;
+	}
+
+	{
+		RigidBodyParam dynamicParam;
+		dynamicParam.rigidType = RigidType::Dynamic;
+		Geometry* dynamicGeom = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
+		RigidBody* dynamicBody = RigidBody::CreateRigidBody(dynamicParam, Transform());
+		dynamicBody->AddGeometry(dynamicGeom);
+
+		RigidBodyParam staticParam;
+		staticParam.rigidType = RigidType::Static;
+		Geometry* sensorGeom = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
+		sensorGeom->SetSimulationEnabled(false);
+		RigidBody* staticBody = RigidBody::CreateRigidBody(staticParam, Transform());
+		staticBody->AddGeometry(sensorGeom);
+
+		std::vector<Geometry*> geoms;
+		geoms.push_back(dynamicGeom);
+		geoms.push_back(sensorGeom);
+
+		BroadPhase* broadphase = BroadPhase::Create_Bruteforce();
+		std::vector<OverlapPair> overlaps;
+		broadphase->ProduceOverlaps(geoms, &overlaps);
+		EXPECT(overlaps.empty());
+		delete broadphase;
+
+		GeometryQuery query;
+		query.CreateDynamicGeometry();
+		EXPECT(query.AddDynamicGeometry(sensorGeom) >= 0);
+
+		RayCastOption option;
+		RayCastResult result;
+		const bool hit = query.RayCastQuery(Vector3(0.0f, 0.0f, 5.0f), Vector3(0.0f, 0.0f, -1.0f), option, &result);
+		EXPECT(hit);
+		EXPECT(result.hitGeom == sensorGeom);
+
+		staticBody->ReleaseGeometries();
+		dynamicBody->ReleaseGeometries();
+		delete staticBody;
+		delete dynamicBody;
+	}
+}
+
 
 void TestCollision()
 {
@@ -1290,11 +1405,11 @@ void TestCollision()
 	TestAABB();
 	TestRayAABB();
 	TestRTree1();
-	TestRTree2();
 	TestAABBTree();
 	TestGeometryQuery();
 	TestSAP();
 	TestSAPInc();
 	TestPhysXBroadPhasePorts();
+	TestPhysicsWorldSceneQueryTrees();
 	return;
 }

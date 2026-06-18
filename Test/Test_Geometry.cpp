@@ -197,6 +197,72 @@ void TestDynamicMesh()
 	mesh1.SetData(Vertices, Indices, Normals);
 	EXPECT(2 == mesh1.FixTriangleOrientation(true));
 	mesh1.CalculateWeightAverageNormals();
+
+	DynamicMesh square;
+	square.AppendVertex(Vector3(0.0f, 0.0f, 0.0f));
+	square.AppendVertex(Vector3(1.0f, 0.0f, 0.0f));
+	square.AppendVertex(Vector3(1.0f, 1.0f, 0.0f));
+	square.AppendVertex(Vector3(0.0f, 1.0f, 0.0f));
+	square.AppendTriangle(0, 1, 2);
+	square.AppendTriangle(0, 2, 3);
+
+	FEdgeCollapseInfo collapseInfo;
+	EXPECT(square.CollapseEdge(1, 0, 0.0f, collapseInfo) == EMeshResult::Ok);
+	EXPECT(!square.IsTriangle(0));
+	EXPECT(square.IsTriangle(1));
+	Index3 collapsedTri = square.GetTriangle(1);
+	EXPECT(collapsedTri.Contains(1) && collapsedTri.Contains(2) && collapsedTri.Contains(3));
+
+	DynamicMesh isolatedVertexMesh;
+	isolatedVertexMesh.AppendVertex(Vector3(0.0f, 0.0f, 0.0f));
+	FDynamicMeshEditor isolatedEditor(&isolatedVertexMesh);
+	EXPECT(isolatedEditor.RemoveIsolatedVertices());
+	EXPECT(!isolatedVertexMesh.IsVertex(0));
+
+	class CountingAttribute : public FDynamicMeshAttributeBase
+	{
+	public:
+		void OnNewVertex(int, bool) override { ++NewVertexCount; }
+		void OnNewTriangle(int, bool) override { ++NewTriangleCount; }
+
+		int NewVertexCount = 0;
+		int NewTriangleCount = 0;
+	};
+
+	DynamicMesh eventMesh;
+	eventMesh.EnableAttributes();
+	CountingAttribute* Counter = new CountingAttribute();
+	eventMesh.Attributes()->AttachAttribute("counter", Counter);
+	EXPECT(eventMesh.Attributes()->GetAttachedAttribute("missing") == nullptr);
+	EXPECT(eventMesh.Attributes()->NumAttachedAttributes() == 1);
+	eventMesh.AppendVertex(Vector3(0.0f, 0.0f, 0.0f));
+	EXPECT(Counter->NewVertexCount == 1);
+	EXPECT(Counter->NewTriangleCount == 0);
+
+	DynamicMesh weightMesh;
+	weightMesh.AppendVertex(Vector3(0.0f, 0.0f, 0.0f));
+	weightMesh.AppendVertex(Vector3(1.0f, 0.0f, 0.0f));
+	weightMesh.EnableAttributes();
+	weightMesh.Attributes()->SetNumWeightLayers(1);
+	float Weight = -1.0f;
+	weightMesh.Attributes()->GetWeightLayer(0)->GetValue(1, &Weight);
+	EXPECT(Weight == 0.0f);
+
+	DynamicMesh uvMesh;
+	uvMesh.AppendVertex(Vector3(0.0f, 0.0f, 0.0f));
+	uvMesh.AppendVertex(Vector3(1.0f, 0.0f, 0.0f));
+	uvMesh.AppendVertex(Vector3(0.0f, 1.0f, 0.0f));
+	int TriID = uvMesh.AppendTriangle(0, 1, 2);
+	uvMesh.EnableAttributes();
+	FDynamicMeshUVOverlay* UVs = uvMesh.Attributes()->PrimaryUV();
+	int UV0 = UVs->AppendElement(Vector2(0.0f, 0.0f));
+	int UV1 = UVs->AppendElement(Vector2(1.0f, 0.0f));
+	int UV2 = UVs->AppendElement(Vector2(0.0f, 1.0f));
+	EXPECT(UVs->SetTriangle(TriID, Index3(UV0, UV1, UV2)) == EMeshResult::Ok);
+	EXPECT(UVs->CountVertexElements(0) == 1);
+	EXPECT(UVs->CountVertexElements(0, true) == 1);
+	Vector2 VertexUV = UVs->GetElementAtVertex(TriID, 1);
+	EXPECT(VertexUV.x == 1.0f && VertexUV.y == 0.0f);
 }
 
 void TestGeometrySet()
@@ -373,18 +439,28 @@ static bool IntersectionsAvoidInputVertices(DynamicMesh& mesh1, DynamicMesh& mes
 	return hasIntersection && !hitInputVertex;
 }
 
-static void AppendResultMeshToOutput(
+static void AppendBooleanMeshToOutput(
 	DynamicMesh& mergedResult,
-	const DynamicMesh& resultMesh,
+	const DynamicMesh& sourceMesh,
 	int caseIndex,
+	int rowIndex,
 	float outputScale = 1.0f,
 	const Vector3& outputPivot = Vector3::Zero(),
-	const Vector3& outputCenter = Vector3::Zero())
+	const Vector3& outputCenter = Vector3::Zero(),
+	bool reverseOrientationForOutput = false)
 {
+	DynamicMesh outputMesh(sourceMesh);
+	if (reverseOrientationForOutput)
+	{
+		outputMesh.ReverseOrientation(false);
+	}
+
 	FDynamicMeshEditor editor(&mergedResult);
 	FMeshIndexMappings mappings;
-	const Vector3 offset((float)caseIndex * 5.0f, 0.0f, 0.0f);
-	editor.AppendMesh(&resultMesh, mappings,
+	constexpr float CaseSpacing = 2.5f;
+	constexpr float RowSpacing = 5.0f;
+	const Vector3 offset((float)caseIndex * CaseSpacing, (float)rowIndex * RowSpacing, 0.0f);
+	editor.AppendMesh(&outputMesh, mappings,
 		[offset, outputScale, outputPivot, outputCenter](int, const Vector3& position)
 		{
 			return outputCenter + (position - outputPivot) * outputScale + offset;
@@ -396,6 +472,8 @@ static void TestGeometryBooleanAABB(DynamicMesh& mergedResult)
 	DynamicMesh box = MakeAABBMesh(Vector3(0.0f), Vector3(2.0f));
 	DynamicMesh aabb = MakeAABBMesh(Vector3(1.0f), Vector3(3.0f));
 	EXPECT(IntersectionsAvoidInputVertices(box, aabb));
+	AppendBooleanMeshToOutput(mergedResult, box, 0, 0, 1.0f, Vector3::Zero(), Vector3::Zero(), true);
+	AppendBooleanMeshToOutput(mergedResult, aabb, 0, 1, 1.0f, Vector3::Zero(), Vector3::Zero(), true);
 
 	GeometryBoolean boxAabbBoolean(&box, &aabb, GeometryBoolean::BooleanOp::Intersect);
 	boxAabbBoolean.WeldSharedEdges = false;
@@ -405,7 +483,8 @@ static void TestGeometryBooleanAABB(DynamicMesh& mergedResult)
 	if (boxAabbComputed && boxAabbBoolean.Result != nullptr)
 	{
 		boxAabbBoolean.Result->FixTriangleOrientation(false);
-		AppendResultMeshToOutput(mergedResult, *boxAabbBoolean.Result, 0);
+		boxAabbBoolean.Result->ReverseOrientation(false);
+		AppendBooleanMeshToOutput(mergedResult, *boxAabbBoolean.Result, 0, 2);
 	}
 	delete boxAabbBoolean.Result;
 	boxAabbBoolean.Result = nullptr;
@@ -416,6 +495,8 @@ static void TestGeometryBooleanOBB(DynamicMesh& mergedResult)
 	DynamicMesh box = MakeAABBMesh(Vector3(0.0f), Vector3(2.0f));
 	DynamicMesh obb = MakeOBBMesh(Vector3(1.45f, 1.2f, 1.15f), Vector3(0.95f, 0.75f, 0.85f), TestRotationZ(0.43f) * TestRotationX(0.29f));
 	EXPECT(IntersectionsAvoidInputVertices(box, obb));
+	AppendBooleanMeshToOutput(mergedResult, box, 1, 0, 1.0f, Vector3::Zero(), Vector3::Zero(), true);
+	AppendBooleanMeshToOutput(mergedResult, obb, 1, 1, 1.0f, Vector3::Zero(), Vector3::Zero(), true);
 
 	GeometryBoolean boxObbBoolean(&box, &obb, GeometryBoolean::BooleanOp::Intersect);
 	boxObbBoolean.WeldSharedEdges = false;
@@ -425,7 +506,8 @@ static void TestGeometryBooleanOBB(DynamicMesh& mergedResult)
 	if (boxObbComputed && boxObbBoolean.Result != nullptr)
 	{
 		boxObbBoolean.Result->FixTriangleOrientation(false);
-		AppendResultMeshToOutput(mergedResult, *boxObbBoolean.Result, 1);
+		boxObbBoolean.Result->ReverseOrientation(false);
+		AppendBooleanMeshToOutput(mergedResult, *boxObbBoolean.Result, 1, 2);
 	}
 	delete boxObbBoolean.Result;
 	boxObbBoolean.Result = nullptr;
@@ -436,6 +518,8 @@ static void TestGeometryBooleanSphere(DynamicMesh& mergedResult)
 	DynamicMesh box = MakeAABBMesh(Vector3(0.0f), Vector3(2.0f));
 	DynamicMesh sphere = MakeSphereMesh(Vector3(1.23f, 1.07f, 1.31f), 1.18f);
 	EXPECT(IntersectionsAvoidInputVertices(box, sphere));
+	AppendBooleanMeshToOutput(mergedResult, box, 2, 0, 1.0f, Vector3::Zero(), Vector3::Zero(), true);
+	AppendBooleanMeshToOutput(mergedResult, sphere, 2, 1);
 
 	GeometryBoolean boxSphereBoolean(&box, &sphere, GeometryBoolean::BooleanOp::Intersect);
 	boxSphereBoolean.WeldSharedEdges = false;
@@ -445,7 +529,7 @@ static void TestGeometryBooleanSphere(DynamicMesh& mergedResult)
 	if (boxSphereComputed && boxSphereBoolean.Result != nullptr)
 	{
 		boxSphereBoolean.Result->FixTriangleOrientation(false);
-		AppendResultMeshToOutput(mergedResult, *boxSphereBoolean.Result, 2);
+		AppendBooleanMeshToOutput(mergedResult, *boxSphereBoolean.Result, 2, 2);
 	}
 	delete boxSphereBoolean.Result;
 	boxSphereBoolean.Result = nullptr;
@@ -456,6 +540,8 @@ static void TestGeometryBooleanCapsule(DynamicMesh& mergedResult)
 	DynamicMesh box = MakeAABBMesh(Vector3(0.0f), Vector3(2.0f));
 	DynamicMesh capsule = MakeCapsuleMesh(Vector3(0.31f, -0.19f, 0.42f), Vector3(2.63f, 2.38f, 1.67f), 0.42f);
 	EXPECT(IntersectionsAvoidInputVertices(box, capsule));
+	AppendBooleanMeshToOutput(mergedResult, box, 3, 0, 1.0f, Vector3::Zero(), Vector3::Zero(), true);
+	AppendBooleanMeshToOutput(mergedResult, capsule, 3, 1);
 
 	GeometryBoolean boxCapsuleBoolean(&box, &capsule, GeometryBoolean::BooleanOp::Intersect);
 	boxCapsuleBoolean.WeldSharedEdges = false;
@@ -465,7 +551,7 @@ static void TestGeometryBooleanCapsule(DynamicMesh& mergedResult)
 	if (boxCapsuleComputed && boxCapsuleBoolean.Result != nullptr)
 	{
 		boxCapsuleBoolean.Result->FixTriangleOrientation(false);
-		AppendResultMeshToOutput(mergedResult, *boxCapsuleBoolean.Result, 3);
+		AppendBooleanMeshToOutput(mergedResult, *boxCapsuleBoolean.Result, 3, 2);
 	}
 	delete boxCapsuleBoolean.Result;
 	boxCapsuleBoolean.Result = nullptr;
@@ -485,7 +571,13 @@ static void TestGeometryBooleanBunny(DynamicMesh& mergedResult)
 	clipBox.Max.y = clipBox.GetCenter().y;
 	DynamicMesh bunnyClip = MakeAABBMesh(clipBox.Min, clipBox.Max);
 	float bunnyOutputScale = 2.0f / GetBoundsMaxSize(bunny.GetBounds());
+	const Vector3 bunnyOutputPivot = bunny.GetBounds().GetCenter();
+	const Vector3 bunnyOutputCenter(1.0f, 1.0f, 1.0f);
 	EXPECT(IntersectionsAvoidInputVertices(bunnyClip, bunny));
+	AppendBooleanMeshToOutput(mergedResult, bunnyClip, 4, 0,
+		bunnyOutputScale, bunnyOutputPivot, bunnyOutputCenter, true);
+	AppendBooleanMeshToOutput(mergedResult, bunny, 4, 1,
+		bunnyOutputScale, bunnyOutputPivot, bunnyOutputCenter);
 	GeometryBoolean bunnyAabbBoolean(&bunnyClip, &bunny, GeometryBoolean::BooleanOp::Intersect);
 	bunnyAabbBoolean.WeldSharedEdges = false;
 	bool bunnyAabbComputed = bunnyAabbBoolean.Compute();
@@ -494,8 +586,8 @@ static void TestGeometryBooleanBunny(DynamicMesh& mergedResult)
 	if (bunnyAabbComputed && bunnyAabbBoolean.Result != nullptr)
 	{
 		bunnyAabbBoolean.Result->FixTriangleOrientation(false);
-		AppendResultMeshToOutput(mergedResult, *bunnyAabbBoolean.Result, 4,
-			bunnyOutputScale, bunny.GetBounds().GetCenter(), Vector3(1.0f, 1.0f, 1.0f));
+		AppendBooleanMeshToOutput(mergedResult, *bunnyAabbBoolean.Result, 4, 2,
+			bunnyOutputScale, bunnyOutputPivot, bunnyOutputCenter);
 	}
 	delete bunnyAabbBoolean.Result;
 	bunnyAabbBoolean.Result = nullptr;

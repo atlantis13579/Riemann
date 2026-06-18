@@ -335,9 +335,15 @@ namespace Maths
 		static TAABB3<T> Transform(const TAABB3<T>& src, const Vector3& t, const Quaternion& q, const Vector3& s)
 		{
 			Matrix4 mat = q.ToRotationMatrix4();
-			mat[0] *= s.x;
-			mat[1] *= s.y;
-			mat[2] *= s.z;
+			mat[0][0] *= s.x;
+			mat[1][0] *= s.x;
+			mat[2][0] *= s.x;
+			mat[0][1] *= s.y;
+			mat[1][1] *= s.y;
+			mat[2][1] *= s.y;
+			mat[0][2] *= s.z;
+			mat[1][2] *= s.z;
+			mat[2][2] *= s.z;
 			mat[0][3] += t.x;
 			mat[1][3] += t.y;
 			mat[2][3] += t.z;

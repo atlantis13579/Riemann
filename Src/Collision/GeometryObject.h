@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #include <vector>
 #include "../Core/StaticArray.h"
 #include "../Maths/Transform.h"
@@ -33,6 +34,12 @@ namespace Riemann
 	};
 
 	typedef	StaticArray<Vector3, MAX_FACE_POINTS> SupportFace;
+
+	enum GeometryFlagBits : uint32_t
+	{
+		GeometryFlag_Query = 1u << 0,
+		GeometryFlag_Simulation = 1u << 1,
+	};
 
 	class Geometry
 	{
@@ -165,6 +172,24 @@ namespace Riemann
 
 		inline void				SetNodeId(int NodeId) { m_NodeId = NodeId; }
 		inline int				GetNodeId() const { return m_NodeId; }
+		inline uint32_t			GetFlags() const { return m_Flags; }
+		inline void				SetFlags(uint32_t Flags) { m_Flags = Flags; }
+		inline bool				HasFlag(uint32_t Flag) const { return (m_Flags & Flag) != 0; }
+		inline void				SetFlag(uint32_t Flag, bool Enabled)
+		{
+			if (Enabled)
+			{
+				m_Flags |= Flag;
+			}
+			else
+			{
+				m_Flags &= ~Flag;
+			}
+		}
+		inline bool				IsQueryEnabled() const { return HasFlag(GeometryFlag_Query); }
+		inline void				SetQueryEnabled(bool Enabled) { SetFlag(GeometryFlag_Query, Enabled); }
+		inline bool				IsSimulationEnabled() const { return HasFlag(GeometryFlag_Simulation); }
+		inline void				SetSimulationEnabled(bool Enabled) { SetFlag(GeometryFlag_Simulation, Enabled); }
 
 		static Transform		CalculateCenterOfMassPoseMultibody(const std::vector<Geometry*>& geoms);
 
@@ -209,6 +234,7 @@ namespace Riemann
 		float				m_Density;
 		void*				m_Parent;
 		int					m_NodeId;		// nodeId from DynamicAABB Tree
+		uint32_t			m_Flags;
 	};
 
 	class GeometryFactory

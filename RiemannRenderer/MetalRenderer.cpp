@@ -196,6 +196,7 @@ namespace
 			VertexCount = rhs.VertexCount;
 			IndexCount = rhs.IndexCount;
 			PrimitiveType = rhs.PrimitiveType;
+			FillMode = rhs.FillMode;
 			WorldTransform = rhs.WorldTransform;
 			Color = rhs.Color;
 			CastShadow = rhs.CastShadow;
@@ -217,6 +218,7 @@ namespace
 		NSUInteger VertexCount = 0;
 		NSUInteger IndexCount = 0;
 		MTLPrimitiveType PrimitiveType = MTLPrimitiveTypeTriangle;
+		Riemann::RenderFillMode FillMode = Riemann::RenderFillMode::RendererDefault;
 		Transform WorldTransform;
 		Vector4 Color = Vector4(0.72f, 0.76f, 0.82f, 1.0f);
 		bool CastShadow = true;
@@ -239,8 +241,10 @@ namespace Riemann
 			ReleaseObject(ImguiWhiteTexture);
 			ReleaseObject(ImguiFontTexture);
 			ReleaseObject(ShadowSampler);
+			ReleaseObject(OutlineMaskDepthState);
 			ReleaseObject(OutlineDepthState);
 			ReleaseObject(DepthState);
+			ReleaseObject(OutlineMaskPipeline);
 			ReleaseObject(OutlinePipeline);
 			ReleaseObject(MainPipeline);
 			ReleaseObject(ShadowPipeline);
@@ -387,20 +391,31 @@ namespace Riemann
 			[mainDesc setFragmentFunction:mainFS];
 			MTLRenderPipelineColorAttachmentDescriptor* mainColor = [[mainDesc colorAttachments] objectAtIndexedSubscript:0];
 			[mainColor setPixelFormat:ColorPixelFormat];
-			[mainDesc setDepthAttachmentPixelFormat:DepthPixelFormat];
+			[mainDesc setDepthAttachmentPixelFormat:MainDepthStencilPixelFormat];
+			[mainDesc setStencilAttachmentPixelFormat:MainDepthStencilPixelFormat];
 			MainPipeline = [Device newRenderPipelineStateWithDescriptor:mainDesc error:&error];
 
 			MTLRenderPipelineDescriptor* shadowDesc = [[MTLRenderPipelineDescriptor alloc] init];
 			[shadowDesc setVertexFunction:shadowVS];
-			[shadowDesc setDepthAttachmentPixelFormat:DepthPixelFormat];
+			[shadowDesc setDepthAttachmentPixelFormat:ShadowDepthPixelFormat];
 			ShadowPipeline = [Device newRenderPipelineStateWithDescriptor:shadowDesc error:&error];
+
+			MTLRenderPipelineDescriptor* outlineMaskDesc = [[MTLRenderPipelineDescriptor alloc] init];
+			[outlineMaskDesc setVertexFunction:mainVS];
+			MTLRenderPipelineColorAttachmentDescriptor* outlineMaskColor = [[outlineMaskDesc colorAttachments] objectAtIndexedSubscript:0];
+			[outlineMaskColor setPixelFormat:ColorPixelFormat];
+			[outlineMaskColor setWriteMask:MTLColorWriteMaskNone];
+			[outlineMaskDesc setDepthAttachmentPixelFormat:MainDepthStencilPixelFormat];
+			[outlineMaskDesc setStencilAttachmentPixelFormat:MainDepthStencilPixelFormat];
+			OutlineMaskPipeline = [Device newRenderPipelineStateWithDescriptor:outlineMaskDesc error:&error];
 
 			MTLRenderPipelineDescriptor* outlineDesc = [[MTLRenderPipelineDescriptor alloc] init];
 			[outlineDesc setVertexFunction:outlineVS];
 			[outlineDesc setFragmentFunction:outlineFS];
 			MTLRenderPipelineColorAttachmentDescriptor* outlineColor = [[outlineDesc colorAttachments] objectAtIndexedSubscript:0];
 			[outlineColor setPixelFormat:ColorPixelFormat];
-			[outlineDesc setDepthAttachmentPixelFormat:DepthPixelFormat];
+			[outlineDesc setDepthAttachmentPixelFormat:MainDepthStencilPixelFormat];
+			[outlineDesc setStencilAttachmentPixelFormat:MainDepthStencilPixelFormat];
 			OutlinePipeline = [Device newRenderPipelineStateWithDescriptor:outlineDesc error:&error];
 
 			MTLRenderPipelineDescriptor* imguiDesc = [[MTLRenderPipelineDescriptor alloc] init];
@@ -419,6 +434,7 @@ namespace Riemann
 
 			ReleaseObject(mainDesc);
 			ReleaseObject(shadowDesc);
+			ReleaseObject(outlineMaskDesc);
 			ReleaseObject(outlineDesc);
 			ReleaseObject(imguiDesc);
 			ReleaseObject(mainVS);
@@ -430,14 +446,16 @@ namespace Riemann
 			ReleaseObject(imguiFS);
 			ReleaseObject(library);
 
-			return MainPipeline != nil && ShadowPipeline != nil && OutlinePipeline != nil && ImguiPipeline != nil;
+			return MainPipeline != nil && ShadowPipeline != nil && OutlineMaskPipeline != nil && OutlinePipeline != nil && ImguiPipeline != nil;
 		}
 
 		bool CreateDepthState()
 		{
 			ReleaseObject(DepthState);
+			ReleaseObject(OutlineMaskDepthState);
 			ReleaseObject(OutlineDepthState);
 			DepthState = nil;
+			OutlineMaskDepthState = nil;
 			OutlineDepthState = nil;
 
 			MTLDepthStencilDescriptor* desc = [[MTLDepthStencilDescriptor alloc] init];
@@ -450,11 +468,43 @@ namespace Riemann
 				return false;
 			}
 
+			MTLStencilDescriptor* maskStencil = [[MTLStencilDescriptor alloc] init];
+			[maskStencil setStencilCompareFunction:MTLCompareFunctionAlways];
+			[maskStencil setStencilFailureOperation:MTLStencilOperationKeep];
+			[maskStencil setDepthFailureOperation:MTLStencilOperationKeep];
+			[maskStencil setDepthStencilPassOperation:MTLStencilOperationReplace];
+			[maskStencil setReadMask:0xff];
+			[maskStencil setWriteMask:0xff];
+
+			MTLDepthStencilDescriptor* maskDesc = [[MTLDepthStencilDescriptor alloc] init];
+			[maskDesc setDepthCompareFunction:MTLCompareFunctionAlways];
+			[maskDesc setDepthWriteEnabled:NO];
+			[maskDesc setFrontFaceStencil:maskStencil];
+			[maskDesc setBackFaceStencil:maskStencil];
+			OutlineMaskDepthState = [Device newDepthStencilStateWithDescriptor:maskDesc];
+			ReleaseObject(maskDesc);
+			ReleaseObject(maskStencil);
+			if (OutlineMaskDepthState == nil)
+			{
+				return false;
+			}
+
+			MTLStencilDescriptor* outlineStencil = [[MTLStencilDescriptor alloc] init];
+			[outlineStencil setStencilCompareFunction:MTLCompareFunctionNotEqual];
+			[outlineStencil setStencilFailureOperation:MTLStencilOperationKeep];
+			[outlineStencil setDepthFailureOperation:MTLStencilOperationKeep];
+			[outlineStencil setDepthStencilPassOperation:MTLStencilOperationKeep];
+			[outlineStencil setReadMask:0xff];
+			[outlineStencil setWriteMask:0x00];
+
 			MTLDepthStencilDescriptor* outlineDesc = [[MTLDepthStencilDescriptor alloc] init];
-			[outlineDesc setDepthCompareFunction:MTLCompareFunctionLessEqual];
+			[outlineDesc setDepthCompareFunction:MTLCompareFunctionAlways];
 			[outlineDesc setDepthWriteEnabled:NO];
+			[outlineDesc setFrontFaceStencil:outlineStencil];
+			[outlineDesc setBackFaceStencil:outlineStencil];
 			OutlineDepthState = [Device newDepthStencilStateWithDescriptor:outlineDesc];
 			ReleaseObject(outlineDesc);
+			ReleaseObject(outlineStencil);
 			return OutlineDepthState != nil;
 		}
 
@@ -465,7 +515,7 @@ namespace Riemann
 			ShadowTexture = nil;
 			ShadowSampler = nil;
 
-			MTLTextureDescriptor* textureDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:DepthPixelFormat width:ShadowMapSize height:ShadowMapSize mipmapped:NO];
+			MTLTextureDescriptor* textureDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:ShadowDepthPixelFormat width:ShadowMapSize height:ShadowMapSize mipmapped:NO];
 			[textureDesc setUsage:MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead];
 			[textureDesc setStorageMode:MTLStorageModePrivate];
 			ShadowTexture = [Device newTextureWithDescriptor:textureDesc];
@@ -649,7 +699,7 @@ namespace Riemann
 			ReleaseObject(DepthTexture);
 			DepthTexture = nil;
 
-			MTLTextureDescriptor* textureDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:DepthPixelFormat width:Width height:Height mipmapped:NO];
+			MTLTextureDescriptor* textureDesc = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MainDepthStencilPixelFormat width:Width height:Height mipmapped:NO];
 			[textureDesc setUsage:MTLTextureUsageRenderTarget];
 			[textureDesc setStorageMode:MTLStorageModePrivate];
 			DepthTexture = [Device newTextureWithDescriptor:textureDesc];
@@ -739,6 +789,7 @@ namespace Riemann
 			mesh.VertexCount = static_cast<NSUInteger>(meshDesc.Vertices.size());
 			mesh.IndexCount = static_cast<NSUInteger>(meshDesc.Indices.size());
 			mesh.PrimitiveType = meshDesc.Topology == RenderPrimitiveTopology::Lines ? MTLPrimitiveTypeLine : MTLPrimitiveTypeTriangle;
+			mesh.FillMode = meshDesc.FillMode;
 			mesh.WorldTransform = meshDesc.WorldTransform;
 			mesh.Color = meshDesc.Color;
 			mesh.CastShadow = meshDesc.CastShadow && meshDesc.Topology == RenderPrimitiveTopology::Triangles;
@@ -831,6 +882,14 @@ namespace Riemann
 			return false;
 		}
 
+		MTLTriangleFillMode ResolveTriangleFillMode(RenderFillMode fillMode) const
+		{
+			const bool wireframe =
+				fillMode == RenderFillMode::Wireframe ||
+				(fillMode == RenderFillMode::RendererDefault && Wireframe);
+			return wireframe ? MTLTriangleFillModeLines : MTLTriangleFillModeFill;
+		}
+
 		void UpdateUniforms(MetalMesh& mesh, bool outlinePass)
 		{
 			MetalUniforms* uniforms = static_cast<MetalUniforms*>([mesh.UniformBuffer contents]);
@@ -860,6 +919,10 @@ namespace Riemann
 			if (!shadowPass)
 			{
 				[encoder setFragmentBuffer:mesh.UniformBuffer offset:0 atIndex:1];
+			}
+			if (!outlinePass)
+			{
+				[encoder setTriangleFillMode:ResolveTriangleFillMode(mesh.FillMode)];
 			}
 
 			[encoder drawIndexedPrimitives:mesh.PrimitiveType
@@ -1254,7 +1317,7 @@ namespace Riemann
 
 		void RenderOutline(id<MTLRenderCommandEncoder> encoder)
 		{
-			if (OutlinePipeline == nil || OutlineDepthState == nil)
+			if (OutlineMaskPipeline == nil || OutlinePipeline == nil || OutlineMaskDepthState == nil || OutlineDepthState == nil)
 			{
 				return;
 			}
@@ -1273,8 +1336,24 @@ namespace Riemann
 				return;
 			}
 
+			[encoder setRenderPipelineState:OutlineMaskPipeline];
+			[encoder setDepthStencilState:OutlineMaskDepthState];
+			[encoder setStencilReferenceValue:1];
+			[encoder setCullMode:MTLCullModeNone];
+			[encoder setTriangleFillMode:MTLTriangleFillModeFill];
+			for (MetalMesh& mesh : Meshes)
+			{
+				if (!mesh.OutlineEnabled || mesh.PrimitiveType != MTLPrimitiveTypeTriangle)
+				{
+					continue;
+				}
+
+				DrawMesh(encoder, mesh, false, true);
+			}
+
 			[encoder setRenderPipelineState:OutlinePipeline];
 			[encoder setDepthStencilState:OutlineDepthState];
+			[encoder setStencilReferenceValue:1];
 			[encoder setCullMode:MTLCullModeFront];
 			[encoder setTriangleFillMode:MTLTriangleFillModeFill];
 			for (MetalMesh& mesh : Meshes)
@@ -1290,7 +1369,7 @@ namespace Riemann
 
 		void Render()
 		{
-			if (Layer == nil || CommandQueue == nil || MainPipeline == nil || ShadowPipeline == nil || OutlinePipeline == nil || ShadowTexture == nil)
+			if (Layer == nil || CommandQueue == nil || MainPipeline == nil || ShadowPipeline == nil || OutlineMaskPipeline == nil || OutlinePipeline == nil || ShadowTexture == nil)
 			{
 				return;
 			}
@@ -1324,7 +1403,7 @@ namespace Riemann
 				[shadowEncoder setRenderPipelineState:ShadowPipeline];
 				[shadowEncoder setDepthStencilState:DepthState];
 				[shadowEncoder setCullMode:MTLCullModeNone];
-				[shadowEncoder setTriangleFillMode:Wireframe ? MTLTriangleFillModeLines : MTLTriangleFillModeFill];
+				[shadowEncoder setTriangleFillMode:ResolveTriangleFillMode(RenderFillMode::RendererDefault)];
 				for (MetalMesh& mesh : Meshes)
 				{
 					DrawMesh(shadowEncoder, mesh, true, false);
@@ -1341,12 +1420,16 @@ namespace Riemann
 				[[mainPass depthAttachment] setLoadAction:MTLLoadActionClear];
 				[[mainPass depthAttachment] setStoreAction:MTLStoreActionDontCare];
 				[[mainPass depthAttachment] setClearDepth:1.0];
+				[[mainPass stencilAttachment] setTexture:DepthTexture];
+				[[mainPass stencilAttachment] setLoadAction:MTLLoadActionClear];
+				[[mainPass stencilAttachment] setStoreAction:MTLStoreActionDontCare];
+				[[mainPass stencilAttachment] setClearStencil:0];
 
 				id<MTLRenderCommandEncoder> mainEncoder = [commandBuffer renderCommandEncoderWithDescriptor:mainPass];
 				[mainEncoder setRenderPipelineState:MainPipeline];
 				[mainEncoder setDepthStencilState:DepthState];
 				[mainEncoder setCullMode:MTLCullModeNone];
-				[mainEncoder setTriangleFillMode:Wireframe ? MTLTriangleFillModeLines : MTLTriangleFillModeFill];
+				[mainEncoder setTriangleFillMode:ResolveTriangleFillMode(RenderFillMode::RendererDefault)];
 				[mainEncoder setFragmentTexture:ShadowTexture atIndex:0];
 				[mainEncoder setFragmentSamplerState:ShadowSampler atIndex:0];
 				for (MetalMesh& mesh : Meshes)
@@ -1363,7 +1446,8 @@ namespace Riemann
 		}
 
 		MTLPixelFormat ColorPixelFormat = MTLPixelFormatBGRA8Unorm;
-		MTLPixelFormat DepthPixelFormat = MTLPixelFormatDepth32Float;
+		MTLPixelFormat MainDepthStencilPixelFormat = MTLPixelFormatDepth32Float_Stencil8;
+		MTLPixelFormat ShadowDepthPixelFormat = MTLPixelFormatDepth32Float;
 		NSUInteger ShadowMapSize = 2048;
 
 		id<MTLDevice> Device = nil;
@@ -1371,9 +1455,11 @@ namespace Riemann
 		CAMetalLayer* Layer = nil;
 		id<MTLRenderPipelineState> MainPipeline = nil;
 		id<MTLRenderPipelineState> ShadowPipeline = nil;
+		id<MTLRenderPipelineState> OutlineMaskPipeline = nil;
 		id<MTLRenderPipelineState> OutlinePipeline = nil;
 		id<MTLRenderPipelineState> ImguiPipeline = nil;
 		id<MTLDepthStencilState> DepthState = nil;
+		id<MTLDepthStencilState> OutlineMaskDepthState = nil;
 		id<MTLDepthStencilState> OutlineDepthState = nil;
 		id<MTLDepthStencilState> ImguiDepthState = nil;
 		id<MTLTexture> DepthTexture = nil;

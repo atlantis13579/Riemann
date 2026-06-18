@@ -15,13 +15,15 @@ namespace Maths
 
 			if (normal_as_z_axis)
 			{
-				Binormal = _normal;
+				Binormal = _normal.Unit();
 				Normal = Binormal.Cross(Vector3::UnitX());
 				if (Normal.SquareLength() < 1e-6f)
 				{
 					Normal = Binormal.Cross(Vector3::UnitY());
 				}
+				Normal = Normal.Unit();
 				Tangent = Normal.Cross(Binormal);
+				Tangent = Tangent.Unit();
 			}
 			else
 			{
@@ -31,7 +33,9 @@ namespace Maths
 				{
 					Tangent = Normal.Cross(Vector3::UnitY());
 				}
+				Tangent = Tangent.Unit();
 				Binormal = Normal.Cross(Tangent);
+				Binormal = Binormal.Unit();
 			}
 		}
 
@@ -48,10 +52,9 @@ namespace Maths
 		Vector3 OrthogonalDecompose(const Vector3& p) const
 		{
 			Vector3 v = p - Origin;
-			const float m = v.Length();
-			const float x = m * v.Dot(Tangent);
-			const float y = m * v.Dot(Normal);
-			const float z = m * v.Dot(Binormal);
+			const float x = v.Dot(Tangent);
+			const float y = v.Dot(Normal);
+			const float z = v.Dot(Binormal);
 			return Vector3(x, y, z);
 		}
 

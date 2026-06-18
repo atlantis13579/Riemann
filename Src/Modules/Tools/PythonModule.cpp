@@ -5,7 +5,7 @@
 
 #include <assert.h>
 #include "../../Core/JobSystem.h"
-#include "../../RigidBodyDynamics/RigidBodySimulation.h"
+#include "../../RigidBodyDynamics/PhysicsWorld.h"
 #include "../../Collision/GeometryQuery.h"
 #include "../ImageSpace/ImageProcessing.h"
 #include "libPng.h"
@@ -16,8 +16,8 @@ extern "C"
 {
 void* LoadScene(const char *filepath)
 {
-    Riemann::RigidBodySimulationParam param;
-    Riemann::RigidBodySimulation *world = new Riemann::RigidBodySimulation(param);
+    Riemann::PhysicsWorldParam param;
+    Riemann::PhysicsWorld *world = new Riemann::PhysicsWorld(param);
     assert(world);
     if (!world->LoadScene(filepath, true))
     {
@@ -31,7 +31,7 @@ void  DeleteScene(void* p)
 {
 	if (p)
 	{
-        Riemann::RigidBodySimulation* world = (Riemann::RigidBodySimulation*)p;
+        Riemann::PhysicsWorld* world = (Riemann::PhysicsWorld*)p;
         delete world;
 	}
 }
@@ -43,7 +43,7 @@ float RayCast(void *p, float x0, float y0, float z0, float dx, float dy, float d
         return -1.0f;
     }
     
-    Riemann::RigidBodySimulation* world = (Riemann::RigidBodySimulation*)p;
+    Riemann::PhysicsWorld* world = (Riemann::PhysicsWorld*)p;
     assert(world);
     
     Riemann::RayCastOption Option;
@@ -101,7 +101,7 @@ void RenderDepthImage(void* world_ptr, void* ptr, int width, int height, float f
     }
     float* fp = downscale ? &buffer[0] : (float*)ptr;
 
-    Riemann::RigidBodySimulation* world = (Riemann::RigidBodySimulation*)world_ptr;
+    Riemann::PhysicsWorld* world = (Riemann::PhysicsWorld*)world_ptr;
 	assert(world);
 
     Riemann::GeometryQuery* query = world->GetGeometryQuery();

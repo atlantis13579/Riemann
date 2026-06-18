@@ -2,10 +2,13 @@
 #include "Test.h"
 
 #include "../Src/Maths/Tensor.h"
+#include "../Src/Maths/Box1.h"
 #include "../Src/Maths/Box3.h"
 #include "../Src/Maths/Maths.h"
 #include "../Src/Maths/Matrix2.h"
+#include "../Src/Maths/MatrixMxN.h"
 #include "../Src/Maths/Transform.h"
+#include "../Src/Maths/VectorN.h"
 #include "../Src/Maths/Float16.h"
 #include "../Src/Maths/Frame3.h"
 #include "../Src/Geometry/Spline.h"
@@ -27,7 +30,7 @@ void TestVector3()
 	EXPECT_SAME(C, D);
 
 	Vector3 zero = Vector3::Zero();
-	EXPECT_SAME(zero.SafeUnit(), zero);
+	EXPECT(zero.IsZero());
 	EXPECT_NEAR(Vector3(3.0f, 4.0f, 0.0f).Length(), 5.0f, 1e-6f);
 }
 
@@ -51,7 +54,45 @@ void TestMat3()
 	Vector3 c = mat.Column(1);
 	EXPECT_SAME(c, v);
 
+	Matrix3 outer = Matrix3::OuterProduct(Vector3(1.0f, 2.0f, 3.0f), Vector3(4.0f, 5.0f, 6.0f));
+	EXPECT_NEAR(outer[0][2], 6.0f, 1e-6f);
+	EXPECT_NEAR(outer[1][2], 12.0f, 1e-6f);
+	EXPECT_NEAR(outer[2][2], 18.0f, 1e-6f);
+
+	Matrix3 rx;
+	rx.LoadRotateX(PI_OVER_2);
+	EXPECT_SAME(rx * Vector3::UnitX(), Vector3::UnitX());
+
+	Vector3 points[] = { Vector3(1.0f, 2.0f, 3.0f), Vector3(-1.0f, -2.0f, -3.0f) };
+	Matrix3 covariance = Matrix3::ComputeCovarianceMatrix(points, 2);
+	EXPECT_NEAR(covariance[0][2], 3.0f, 1e-6f);
+	EXPECT_NEAR(covariance[2][0], 3.0f, 1e-6f);
+
+	Matrix3 twoAxis;
+	twoAxis.FromTwoAxis(Vector3::UnitY(), -Vector3::UnitY());
+	EXPECT_SAME(twoAxis * Vector3::UnitY(), -Vector3::UnitY());
+
 	return;
+}
+
+void TestMathsMatrix2()
+{
+	printf("Running TestMathsMatrix2\n");
+
+	Matrix2 rot;
+	rot.LoadRotation(PI_OVER_2);
+	EXPECT_SAME(rot * Vector2::UnitX(), Vector2::UnitY());
+
+	Matrix2 m(1.0f, 2.0f, 3.0f, 4.0f);
+	Matrix2 id = m * m.Inverse();
+	EXPECT_NEAR((id - Matrix2::Identity()).L1Norm(), 0.0f, 1e-5f);
+
+	Matrix2 symmetric(2.0f, 1.0f, 1.0f, 2.0f);
+	float eigenValues[2];
+	Vector2 eigenVectors[2];
+	symmetric.SolveEigenSymmetric(eigenValues, eigenVectors);
+	EXPECT_NEAR(eigenValues[0], 1.0f, 1e-6f);
+	EXPECT_NEAR(eigenValues[1], 3.0f, 1e-6f);
 }
 
 void TestBasicMath()
@@ -127,6 +168,18 @@ void TestTransformDecompose()
 	norm_test[3][3] = 2.0f;
 	EXPECT_NEAR(norm_test.L1Norm(), 2.0f, 1e-6f);
 	EXPECT_NEAR(norm_test.L2Norm(), 4.0f, 1e-6f);
+
+	Quaternion inv_rotation;
+	inv_rotation.FromRotateZ(PI_OVER_2);
+	Matrix4 world = Transform3::Compose(translation, inv_rotation);
+	Matrix4 inv_world = Transform3::ComposeInv(translation, inv_rotation);
+	EXPECT((inv_world * world - Matrix4::Identity()).L1Norm() < 1e-5f);
+
+	Box3 src_box(Vector3(-1.0f), Vector3(1.0f));
+	Box3 scaled_box = Box3::Transform(src_box, translation, inv_rotation, scale);
+	Box3 expected_box = Box3::Transform(src_box, Transform3::Compose(translation, inv_rotation, scale));
+	EXPECT_SAME(scaled_box.Min, expected_box.Min);
+	EXPECT_SAME(scaled_box.Max, expected_box.Max);
 }
 
 void TestTensor()
@@ -140,6 +193,20 @@ void TestTensor()
 
 	EXPECT(t2[39] == 2.0f);
 	EXPECT(t.GetRank() == 4);
+
+	Maths::Tensor<float, 2> a(2, 2);
+	a(0, 0) = 1.0f;
+	a(1, 1) = 4.0f;
+	Maths::Tensor<float, 2> b = a;
+	b(0, 0) = 2.0f;
+	EXPECT(a(0, 0) == 1.0f);
+	EXPECT(b(1, 1) == 4.0f);
+
+	Maths::Tensor<float, 2> c;
+	c = a;
+	c(1, 1) = 8.0f;
+	EXPECT(a(1, 1) == 4.0f);
+	EXPECT(c(0, 0) == 1.0f);
 }
 
 void TestFloat16()
@@ -179,6 +246,10 @@ void TestFrame3()
 
 	bool right_handed = PlaneFrame.IsRightHanded();
     (void)right_handed;
+
+	Vector3 local(2.0f, 3.0f, 4.0f);
+	Vector3 world = Origin + PlaneFrame.OrthogonalCompose(local);
+	EXPECT_SAME(PlaneFrame.OrthogonalDecompose(world), local);
 	return;
 }
 
@@ -194,16 +265,56 @@ void TestQuaternion()
 	EXPECT_NEAR(qx.Dot(qx), 1.0f, 1e-6f);
 	EXPECT_NEAR(qx.Dot(qy), 0.5f, 1e-6f);
 	EXPECT(SameRotation(Quaternion::Nlerp(qx, qx, 0.5f), qx));
+	EXPECT(SameRotation(Quaternion::Nlerp(qx, -qx, 0.5f), qx));
+
+	Quaternion scaled = qx * 2.0f;
+	Quaternion identity = scaled * scaled.Inverse();
+	EXPECT_NEAR(identity.x, 0.0f, 1e-6f);
+	EXPECT_NEAR(identity.y, 0.0f, 1e-6f);
+	EXPECT_NEAR(identity.z, 0.0f, 1e-6f);
+	EXPECT_NEAR(identity.w, 1.0f, 1e-6f);
+
+	Quaternion twoAxis;
+	twoAxis.FromTwoAxis(Vector3::UnitY(), -Vector3::UnitY());
+	EXPECT_SAME(twoAxis * Vector3::UnitY(), -Vector3::UnitY());
+
+	Quaternion dir = Maths::DirectionToQuat(Vector3::UnitY());
+	EXPECT_SAME(dir * Vector3::UnitX(), Vector3::UnitY());
+}
+
+void TestMathUtilities()
+{
+	printf("Running TestMathUtilities\n");
+
+	Maths::VectorN<3> v{ 3.0f, 4.0f, 0.0f };
+	EXPECT_NEAR(v.L1Norm(), 7.0f, 1e-6f);
+	EXPECT_NEAR(v.L2Norm(), 5.0f, 1e-6f);
+	EXPECT_NEAR(v.LpNorm(2), 5.0f, 1e-6f);
+
+	Maths::MatrixMxN<2, 2> m{ 3.0f, 4.0f, 0.0f, 0.0f };
+	EXPECT_NEAR(m.L1Norm(), 7.0f, 1e-6f);
+	EXPECT_NEAR(m.L2Norm(), 5.0f, 1e-6f);
+	EXPECT_NEAR(m.LpNorm(2), 5.0f, 1e-6f);
+
+	Box1 interval(0.0f, 1.0f);
+	interval.Encapsulate(Box1(-1.0f, 2.0f));
+	EXPECT_NEAR(interval.Min, -1.0f, 1e-6f);
+	EXPECT_NEAR(interval.Max, 2.0f, 1e-6f);
+
+	Vector3 triple = Maths::VectorTripleProduct(Vector3::UnitX(), Vector3::UnitX(), Vector3::UnitY());
+	EXPECT_SAME(triple, -Vector3::UnitY());
 }
 
 void TestMaths()
 {
 	TestVector3();
 	TestMat3();
+	TestMathsMatrix2();
 	TestBasicMath();
 	TestTransformDecompose();
 	TestTensor();
 	TestFloat16();
 	TestFrame3();
 	TestQuaternion();
+	TestMathUtilities();
 }

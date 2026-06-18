@@ -18,6 +18,7 @@
 		ADD23D482887634D00A849BE /* Test_Geometry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D3D2887634C00A849BE /* Test_Geometry.cpp */; };
 		ADD23D492887634D00A849BE /* Test_Maths.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23D3E2887634C00A849BE /* Test_Maths.cpp */; };
 		ADDE14AA2820B0EE00809D36 /* libRiemann.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADDE14A92820B0EE00809D36 /* libRiemann.a */; };
+		E2918DC99E664479FC99715C /* Test_CollisionPrimitive.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 89A4D311366B99D8373BE550 /* Test_CollisionPrimitive.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -34,6 +35,7 @@
 
 /* Begin PBXFileReference section */
 		6AA94E532D7323DB005C6B3C /* Test_Destruction.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Destruction.cpp; path = /Volumes/ext/src/Riemann/Test/Test_Destruction.cpp; sourceTree = "<absolute>"; };
+		89A4D311366B99D8373BE550 /* Test_CollisionPrimitive.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_CollisionPrimitive.cpp; path = ../../Test/Test_CollisionPrimitive.cpp; sourceTree = "<group>"; };
 		AD2C31C82820AB10007157B6 /* Test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Test; sourceTree = BUILT_PRODUCTS_DIR; };
 		AD689BA22895EA2C0054B238 /* Test_Optimization.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Optimization.cpp; path = ../../Test/Test_Optimization.cpp; sourceTree = "<group>"; };
 		AD80071A28A462B8001387F3 /* Test_Core.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Test_Core.cpp; path = ../../Test/Test_Core.cpp; sourceTree = "<group>"; };
@@ -66,6 +68,8 @@
 				ADD23D392887634C00A849BE /* main.cpp */,
 				AD80071A28A462B8001387F3 /* Test_Core.cpp */,
 				ADD23D372887634C00A849BE /* Test_Collision.cpp */,
+				89A4D311366B99D8373BE550 /* Test_CollisionPrimitive.cpp */,
+				6AA94E532D7323DB005C6B3C /* Test_Destruction.cpp */,
 				ADD23D3D2887634C00A849BE /* Test_Geometry.cpp */,
 				ADD23D3A2887634C00A849BE /* Test_Image.cpp */,
 				ADD23D3E2887634C00A849BE /* Test_Maths.cpp */,
@@ -75,7 +79,6 @@
 				ADD23D342887634C00A849BE /* Test.h */,
 				AD2C31C92820AB10007157B6 /* Products */,
 				ADDE14A82820B0EE00809D36 /* Frameworks */,
-				6AA94E532D7323DB005C6B3C /* Test_Destruction.cpp */,
 			);
 			sourceTree = "<group>";
 		};
@@ -162,6 +165,7 @@
 				6AA94E542D7323DB005C6B3C /* Test_Destruction.cpp in Sources */,
 				ADD23D482887634D00A849BE /* Test_Geometry.cpp in Sources */,
 				ADD23D452887634D00A849BE /* Test_Image.cpp in Sources */,
+				E2918DC99E664479FC99715C /* Test_CollisionPrimitive.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -200,6 +204,7 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/../../Binaries/Mac/$(CONFIGURATION)";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -258,6 +263,7 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/../../Binaries/Mac/$(CONFIGURATION)";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -281,6 +287,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/../../Binaries/Mac/$(CONFIGURATION)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -289,6 +296,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				CONFIGURATION_BUILD_DIR = "$(PROJECT_DIR)/../../Binaries/Mac/$(CONFIGURATION)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

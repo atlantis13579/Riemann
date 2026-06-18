@@ -331,7 +331,7 @@ namespace Maths
 		{
 			TVector3<T> D = Cross(B);
 			TVector3<T> C = B.Cross(D);
-			return C.SafeUnit();
+			return C.Unit();
 		}
 
 		void DecomposeOrthonormalFrame(TVector3<T>& v0, TVector3<T>& v1, TVector3<T>& v2) const
@@ -494,7 +494,7 @@ namespace Maths
 
 	// A x (B x C)
 	template <typename T>
-	inline T VectorTripleProduct(const TVector3<T>& A, const TVector3<T>& B, const TVector3<T>& C)
+	inline TVector3<T> VectorTripleProduct(const TVector3<T>& A, const TVector3<T>& B, const TVector3<T>& C)
 	{
 		return (A.Dot(C)) * B - (A.Dot(B)) * C;
 	}

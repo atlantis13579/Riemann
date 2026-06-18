@@ -1027,11 +1027,12 @@ void Capsule3::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& In
 
 	GetVertices(stackCount, sliceCount, Vertices, &Normals);
 
+	const auto u16 = [](int value) { return static_cast<uint16_t>(value); };
 	for (int i = 1; i <= sliceCount; i++)
 	{
 		Indices.push_back(0);
-		Indices.push_back(i + 1);
-		Indices.push_back(i);
+		Indices.push_back(u16(i + 1));
+		Indices.push_back(u16(i));
 	}
 
 	int baseIndex = 1;
@@ -1040,22 +1041,22 @@ void Capsule3::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& In
 	{
 		for (int j = 0; j < sliceCount; j++)
 		{
-			Indices.push_back(baseIndex + i * Count + j);
-			Indices.push_back(baseIndex + i * Count + j + 1);
-			Indices.push_back(baseIndex + (i + 1) * Count + j);
+			Indices.push_back(u16(baseIndex + i * Count + j));
+			Indices.push_back(u16(baseIndex + i * Count + j + 1));
+			Indices.push_back(u16(baseIndex + (i + 1) * Count + j));
 
-			Indices.push_back(baseIndex + (i + 1) * Count + j);
-			Indices.push_back(baseIndex + i * Count + j + 1);
-			Indices.push_back(baseIndex + (i + 1) * Count + j + 1);
+			Indices.push_back(u16(baseIndex + (i + 1) * Count + j));
+			Indices.push_back(u16(baseIndex + i * Count + j + 1));
+			Indices.push_back(u16(baseIndex + (i + 1) * Count + j + 1));
 		}
 	}
 	int PoleIndex = (int)Vertices.size() - 1;
 	baseIndex = PoleIndex - Count;
 	for (int i = 0; i < sliceCount; i++)
 	{
-		Indices.push_back(PoleIndex);
-		Indices.push_back(baseIndex + i);
-		Indices.push_back(baseIndex + i + 1);
+		Indices.push_back(u16(PoleIndex));
+		Indices.push_back(u16(baseIndex + i));
+		Indices.push_back(u16(baseIndex + i + 1));
 	}
 }
 
@@ -1123,9 +1124,10 @@ void Capsule3::GetVertices(int stackCount, int sliceCount, std::vector<Vector3>&
 		for (int j = 0; j <= sliceCount; j++)
 		{
 			float theta = j * thetaStep;
-			Vector3 p = Vector3(Radius * sinf(phi) * cosf(theta), height + Radius * cosf(phi), Radius * sinf(phi) * sinf(theta));
+			Vector3 normal = Vector3(sinf(phi) * cosf(theta), cosf(phi), sinf(phi) * sinf(theta));
+			Vector3 p = Vector3(Radius * normal.x, height + Radius * normal.y, Radius * normal.z);
 			Vertices.push_back(p);
-			if (Normals) Normals->push_back(p);
+			if (Normals) Normals->push_back(normal);
 		}
 	}
 	Vertices.push_back(Vector3(0, -Length * 0.5f - Radius, 0));

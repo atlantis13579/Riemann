@@ -1,7 +1,9 @@
 #pragma once
 
 #include <assert.h>
+#include <algorithm>
 #include <codecvt>
+#include <stdint.h>
 #include <vector>
 
 #define UNUSED(_x)			(void)(_x)

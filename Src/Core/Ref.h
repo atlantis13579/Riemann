@@ -91,8 +91,10 @@ namespace Riemann
 		inline bool			operator != (const Ref<T>& r) const { return m_ptr != r.m_ptr; }
 
 	private:
+		template <class> friend class ConstRef;
+
 		inline void			AddRefcount() { if (m_ptr != nullptr) m_ptr->AddRefcount(); }
-		inline void			DecRefcount() { if (m_ptr != nullptr) m_ptr->Release(); }
+		inline void			DecRefcount() { if (m_ptr != nullptr) m_ptr->DecRefcount(); }
 
 		T* m_ptr;
 	};
@@ -128,8 +130,8 @@ namespace Riemann
 		inline bool			operator != (const Ref<T>& r) const { return m_ptr != r.m_ptr; }
 
 	private:
-		inline void			AddRefcount() { if (m_ptr != nullptr) m_ptr->AddRefcount(); }
-		inline void			DecRefcount() { if (m_ptr != nullptr) m_ptr->DecRefcount(); }
+		inline void			AddRefcount() { if (m_ptr != nullptr) const_cast<T*>(m_ptr)->AddRefcount(); }
+		inline void			DecRefcount() { if (m_ptr != nullptr) const_cast<T*>(m_ptr)->DecRefcount(); }
 
 		const T* m_ptr;
 	};

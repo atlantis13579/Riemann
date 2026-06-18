@@ -605,41 +605,61 @@ void Cylinder3::GetMesh(std::vector<Vector3>& Vertices, std::vector<uint16_t>& I
 
 	int nPts = (int)CylinderFaces.size();
 	Vector3 s = Vector3(Radius, Height * 0.5f, Radius);
-	Vertices.resize(nPts * 2 + 2);
-	Normals.resize(nPts * 2 + 2);
+	const int sideTop = 0;
+	const int sideBottom = sideTop + nPts;
+	const int topCap = sideBottom + nPts;
+	const int bottomCap = topCap + nPts;
+	const int topCenter = bottomCap + nPts;
+	const int bottomCenter = topCenter + 1;
+	Vertices.resize(nPts * 4 + 2);
+	Normals.resize(nPts * 4 + 2);
 
-	Vertices[2 * nPts] = Vector3(0.0f, Height * 0.5f, 0.0f);
-	Vertices[2 * nPts + 1] = Vector3(0.0f, -Height * 0.5f, 0.0f);
-	Normals[2 * nPts] = Vector3::UnitY();
-	Normals[2 * nPts + 1] = -Vector3::UnitY();
+	Vertices[topCenter] = Vector3(0.0f, Height * 0.5f, 0.0f);
+	Vertices[bottomCenter] = Vector3(0.0f, -Height * 0.5f, 0.0f);
+	Normals[topCenter] = Vector3::UnitY();
+	Normals[bottomCenter] = -Vector3::UnitY();
 	for (int i = 0; i < nPts; ++i)
 	{
 		Vector3 p = Vector3(CylinderFaces[i].x * s.x, CylinderFaces[i].y * s.y, CylinderFaces[i].z * s.z);
-		Vertices[i] = p;
-		Vertices[i + nPts] = Vector3(p.x, -p.y, p.z);
-		Normals[i] = (Vertices[2 * i] - Vertices[2 * nPts]).Unit();
-		Normals[i + nPts] = (Vertices[2 * i + 1] - Vertices[2 * nPts + 1]).Unit();
+		Vector3 top = p;
+		Vector3 bottom = Vector3(p.x, -p.y, p.z);
+		Vector3 sideNormal = Vector3(p.x, 0.0f, p.z);
+		if (sideNormal.SafeNormalize() == 0.0f)
+		{
+			sideNormal = Vector3::UnitX();
+		}
+
+		Vertices[sideTop + i] = top;
+		Vertices[sideBottom + i] = bottom;
+		Normals[sideTop + i] = sideNormal;
+		Normals[sideBottom + i] = sideNormal;
+
+		Vertices[topCap + i] = top;
+		Vertices[bottomCap + i] = bottom;
+		Normals[topCap + i] = Vector3::UnitY();
+		Normals[bottomCap + i] = -Vector3::UnitY();
 	}
 
 	Indices.resize(3 * 4 * nPts);
+	const auto u16 = [](int value) { return static_cast<uint16_t>(value); };
 	for (int i = 0; i < nPts; ++i)
 	{
 		int j = (i + 1) % nPts;
-		Indices[12 * i + 0] = j;
-		Indices[12 * i + 1] = i;
-		Indices[12 * i + 2] = i + nPts;
+		Indices[12 * i + 0] = u16(sideTop + j);
+		Indices[12 * i + 1] = u16(sideTop + i);
+		Indices[12 * i + 2] = u16(sideBottom + i);
 
-		Indices[12 * i + 3] = j + nPts;
-		Indices[12 * i + 4] = j;
-		Indices[12 * i + 5] = i + nPts;
+		Indices[12 * i + 3] = u16(sideBottom + j);
+		Indices[12 * i + 4] = u16(sideTop + j);
+		Indices[12 * i + 5] = u16(sideBottom + i);
 
-		Indices[12 * i + 6] = i;
-		Indices[12 * i + 7] = j;
-		Indices[12 * i + 8] = 2 * nPts;
+		Indices[12 * i + 6] = u16(topCap + i);
+		Indices[12 * i + 7] = u16(topCap + j);
+		Indices[12 * i + 8] = u16(topCenter);
 
-		Indices[12 * i + 9] = i + nPts;
-		Indices[12 * i + 10] = j + nPts;
-		Indices[12 * i + 11] = 2 * nPts + 1;
+		Indices[12 * i + 9] = u16(bottomCap + j);
+		Indices[12 * i + 10] = u16(bottomCap + i);
+		Indices[12 * i + 11] = u16(bottomCenter);
 	}
 }
 

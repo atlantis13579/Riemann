@@ -50,14 +50,28 @@ namespace Riemann
 			std::vector<std::string> MeshIds;
 		};
 
+		struct FractureRenderPiece
+		{
+			std::string MeshId;
+			Vector3 Direction = Vector3::Zero();
+		};
+
 		void RebuildRenderScene();
 		void AddGeometryToRender(const std::string& id, Geometry* geometry, const Vector4& color, bool renderBounds);
+		bool LoadBunnyFractureDemo();
+		void UpdateFractureSeparation(float separation);
+		void SubmitFractureTransforms();
 		void SubmitTransforms();
+		void SubmitGeometryQueryBounds();
+		void ClearGeometryQueryBounds();
+		void SetShowGeometryQueryBounds(bool show);
 		std::string ResolveSceneFile(const char* fileName) const;
+		std::string ResolveTestDataFile(const char* fileName) const;
 		void RefreshSceneList();
 		void ApplySceneCamera();
 		void ApplyImguiCommands();
 		void UpdateImguiState();
+		int GetCurrentSceneDemoIndex() const;
 		void UpdatePhysicsFps();
 		Ray3 BuildSceneRay(int x, int y, int width, int height) const;
 		void HandleSceneRay(const Ray3& ray);
@@ -77,17 +91,33 @@ namespace Riemann
 		Vector3 m_CamCenter;
 		Vector3 m_CamParam;
 		bool m_MovementKeys[4];
+		bool m_BunnyFractureDemoActive;
+		std::vector<FractureRenderPiece> m_FracturePieces;
+		std::vector<std::string> m_GeometryQueryBoundsMeshIds;
+		float m_FractureSeparation;
+		float m_FractureMaxSeparation;
+		bool m_ShowGeometryQueryBounds;
 
 		mutable std::mutex m_ImguiMutex;
 		std::string m_ImguiSceneName;
 		std::vector<std::string> m_ImguiSceneFiles;
+		int m_ImguiDemoIndex;
 		size_t m_ImguiObjectCount;
 		float m_ImguiCameraDistance;
+		bool m_ImguiBunnyFractureActive;
+		float m_ImguiFractureSeparation;
+		bool m_ImguiShowGeometryQueryBounds;
+		size_t m_ImguiGeometryQueryBoundsCount;
 		double m_ImguiPhysicsFps;
 		int m_ImguiScroll;
+		int m_ImguiPendingDemoIndex;
 		std::string m_ImguiPendingSceneFile;
 		bool m_ImguiPendingCameraDistance;
 		float m_ImguiPendingCameraDistanceValue;
+		bool m_ImguiPendingFractureSeparation;
+		float m_ImguiPendingFractureSeparationValue;
+		bool m_ImguiPendingShowGeometryQueryBounds;
+		bool m_ImguiPendingShowGeometryQueryBoundsValue;
 
 		std::chrono::steady_clock::time_point m_PhysicsFpsTime;
 		int m_PhysicsFrameCount;

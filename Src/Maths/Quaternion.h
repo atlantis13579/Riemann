@@ -62,7 +62,7 @@ namespace Maths
 
 		inline Quaternion Inverse() const
 		{
-			float m = Length();
+			float m = SquareLength();
 			return Quaternion(w / m, Vector3(-x / m, -y / m, -z / m));
 		}
 
@@ -107,7 +107,8 @@ namespace Maths
 
 		Quaternion& FromRotationAxis(const Vector3& axis, float radian)
 		{
-			*this = Quaternion(cosf(radian / 2), axis * sinf(radian / 2));
+			Vector3 unitAxis = axis.Unit();
+			*this = Quaternion(cosf(radian / 2), unitAxis * sinf(radian / 2));
 			return *this;
 		}
 
@@ -115,8 +116,22 @@ namespace Maths
 		{
 			Vector3 UnitAxisFrom = AxisFrom.Unit();
 			Vector3 UnitAxisTo = AxisTo.Unit();
+			float dot = std::min(std::max(UnitAxisFrom.Dot(UnitAxisTo), -1.0f), 1.0f);
+			if (dot > 1.0f - 1e-6f)
+			{
+				*this = Quaternion::One();
+				return *this;
+			}
 			Vector3 Axis = UnitAxisFrom.Cross(UnitAxisTo);
-			float Angle = acosf(UnitAxisFrom.Dot(UnitAxisTo));
+			if (dot < -1.0f + 1e-6f)
+			{
+				UnitAxisFrom.GetPerpVectors(Axis, UnitAxisTo);
+			}
+			else
+			{
+				Axis = Axis.Unit();
+			}
+			float Angle = acosf(dot);
 			return FromRotationAxis(Axis, Angle);
 		}
 
@@ -336,11 +351,22 @@ namespace Maths
 
 		static Quaternion Nlerp(const Quaternion& start, const Quaternion& end, float t)
 		{
-			return Lerp(start, end, t).Unit();
+			Quaternion target = end;
+			if (start.Dot(target) < 0.0f)
+			{
+				target = -target;
+			}
+			return Lerp(start, target, t).Unit();
 		}
 
 		static Quaternion Slerp(const Quaternion& start, const Quaternion& end, float t)
 		{
+			Quaternion target = end;
+			if (start.Dot(target) < 0.0f)
+			{
+				target = -target;
+			}
+
 			auto sinx_over_x = [](float x)
 			{
 				if (x * x < 1e-12f)
@@ -353,15 +379,15 @@ namespace Maths
 				}
 			};
 
-			Quaternion q1 = start - end;
+			Quaternion q1 = start - target;
 			float lengthD = sqrtf(q1.Dot(q1));
 
-			Quaternion q2 = start + end;
+			Quaternion q2 = start + target;
 			float lengthS = sqrtf(q2.Dot(q2));
 
 			float a = 2.0f * atan2f(lengthD, lengthS);
 			float s = 1.0f - t;
-			Quaternion q = start * (sinx_over_x(s * a) / sinx_over_x(a) * s) + end * (sinx_over_x(t * a) / sinx_over_x(a) * t);
+			Quaternion q = start * (sinx_over_x(s * a) / sinx_over_x(a) * s) + target * (sinx_over_x(t * a) / sinx_over_x(a) * t);
 			return q.Unit();
 		}
 
@@ -410,7 +436,8 @@ namespace Maths
 	inline Quaternion DirectionToQuat(const Vector3& dir)
 	{
 		Vector3 axis_x = Vector3::UnitX();
-		float dp = axis_x.Dot(dir);
+		Vector3 unitDir = dir.Unit();
+		float dp = std::min(std::max(axis_x.Dot(unitDir), -1.0f), 1.0f);
 		if (dp > 0.99f)
 		{
 			return Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
@@ -422,8 +449,9 @@ namespace Maths
 		else
 		{
 			float radian = acosf(dp);
-			Vector3 axis = axis_x.Cross(dir);
-			return Quaternion(radian, axis);
+			Vector3 axis = axis_x.Cross(unitDir);
+			Quaternion q;
+			return q.FromRotationAxis(axis, radian);
 		}
 	}
 

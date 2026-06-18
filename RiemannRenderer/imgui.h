@@ -64,6 +64,7 @@ IMGUI_API bool imguiButton(const char* text, bool enabled = true);
 IMGUI_API bool imguiItem(const char* text, bool enabled = true);
 IMGUI_API bool imguiCheck(const char* text, bool checked, bool enabled = true);
 IMGUI_API bool imguiCollapse(const char* text, const char* subtext, bool checked, bool enabled = true);
+IMGUI_API bool imguiCombo(const char* text, int* selected, const char** items, int itemCount, bool enabled = true);
 IMGUI_API void imguiLabel(const char* text);
 IMGUI_API void imguiValue(const char* text);
 IMGUI_API bool imguiSlider(const char* text, float* val, float vmin, float vmax, float vinc, bool enabled = true);

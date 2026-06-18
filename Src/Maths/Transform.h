@@ -583,9 +583,10 @@ namespace Maths
 		static Matrix4		ComposeInv(const Vector3& Translation, const Quaternion& Rotation)
 		{
 			Matrix4 InvWorld = Rotation.ToRotationMatrix4().Transpose();
-			InvWorld[0][3] -= Translation.x;
-			InvWorld[1][3] -= Translation.y;
-			InvWorld[2][3] -= Translation.z;
+			Vector3 InvTranslation = Rotation.Conjugate() * (-Translation);
+			InvWorld[0][3] = InvTranslation.x;
+			InvWorld[1][3] = InvTranslation.y;
+			InvWorld[2][3] = InvTranslation.z;
 			return InvWorld;
 		}
 
