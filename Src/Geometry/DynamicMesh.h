@@ -442,10 +442,10 @@ namespace Riemann
 		void ApplyTransform(Transform3& trans, bool bReverseOrientationIfNeeded);
 		void ReverseOrientation(bool bFlipNormals);
 
-		EMeshResult MergeEdges(int eKeep, int eDiscard, FMergeEdgesInfo& MergeInfo, bool bCheckValidOrientation = true);
-		EMeshResult PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, FPokeTriangleInfo& PokeResult);
-		EMeshResult SplitEdge(int eab, FEdgeSplitInfo& SplitInfo, float split_t);
-		EMeshResult CollapseEdge(int vKeep, int vRemove, float collapse_t, FEdgeCollapseInfo& CollapseInfo);
+		EMeshResult MergeEdges(int eKeep, int eDiscard, MergeEdgesInfo& MergeInfo, bool bCheckValidOrientation = true);
+		EMeshResult PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, PokeTriangleInfo& PokeResult);
+		EMeshResult SplitEdge(int eab, EdgeSplitInfo& SplitInfo, float split_t);
+		EMeshResult CollapseEdge(int vKeep, int vRemove, float collapse_t, EdgeCollapseInfo& CollapseInfo);
 
 		int FindEdgeFromTri(int vA, int vB, int tID) const;
 		int FindEdgeFromTrianglePair(int TriA, int TriB) const;
@@ -975,18 +975,18 @@ namespace Riemann
 			std::function<Vector3(int, const Vector3&)> NormalTransform = nullptr);
 
 		void AppendNormals(const DynamicMesh* AppendMesh,
-			const FDynamicMeshNormalOverlay* FromNormals, FDynamicMeshNormalOverlay* ToNormals,
+			const DynamicMeshNormalOverlay* FromNormals, DynamicMeshNormalOverlay* ToNormals,
 			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
 			std::function<Vector3(int, const Vector3&)> NormalTransform,
 			FIndexMapi& NormalMapOut);
 
 		void AppendUVs(const DynamicMesh* AppendMesh,
-			const FDynamicMeshUVOverlay* FromUVs, FDynamicMeshUVOverlay* ToUVs,
+			const DynamicMeshUVOverlay* FromUVs, DynamicMeshUVOverlay* ToUVs,
 			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
 			FIndexMapi& UVMapOut);
 
 		void AppendColors(const DynamicMesh* AppendMesh,
-			const FDynamicMeshColorOverlay* FromOverlay, FDynamicMeshColorOverlay* ToOverlay,
+			const DynamicMeshColorOverlay* FromOverlay, DynamicMeshColorOverlay* ToOverlay,
 			const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
 			FIndexMapi& ColorMapOut);
 

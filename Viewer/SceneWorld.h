@@ -12,6 +12,7 @@ namespace Riemann
 {
 	class Geometry;
 	class PhysicsWorld;
+	class StaticMesh;
 
 	struct SceneObjectInstance
 	{
@@ -40,6 +41,7 @@ namespace Riemann
 		const CameraDesc& GetCamera() const { return m_Camera; }
 		const DirectionalLightDesc& GetLight() const { return m_Light; }
 		PhysicsWorld* GetSimulation() { return m_World.get(); }
+		Geometry* AddTriangleMeshObject(const std::string& id, const StaticMesh& mesh, const Transform& transform, RigidType bodyType, const Vector4& color, bool renderBounds);
 
 	private:
 		bool LoadParsedScene(const class JsonValue& root, const std::string& sourceName, std::string* errorMessage);

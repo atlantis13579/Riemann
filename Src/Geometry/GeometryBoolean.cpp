@@ -198,7 +198,7 @@ namespace Riemann
 
 			if (Path[0].first.Point == SurfacePointType::Triangle)
 			{
-				FPokeTriangleInfo PokeInfo;
+				PokeTriangleInfo PokeInfo;
 				Mesh->PokeTriangle(Path[0].first.ElementID, Path[0].first.BaryCoord, PokeInfo);
 				if (EndPtUpdated.Point == SurfacePointType::Triangle && Path[0].first.ElementID == EndPtUpdated.ElementID)
 				{
@@ -217,7 +217,7 @@ namespace Riemann
 				if (Pt.Point == SurfacePointType::Edge)
 				{
 					assert(Mesh->IsEdge(Pt.ElementID));
-					FEdgeSplitInfo SplitInfo;
+					EdgeSplitInfo SplitInfo;
 					Mesh->SplitEdge(Pt.ElementID, SplitInfo, Pt.BaryCoord[0]);
 					PathVertices.push_back(SplitInfo.NewVertex);
 					if (EndPtUpdated.Point == SurfacePointType::Triangle && SplitInfo.OriginalTriangles.Contains(EndPtUpdated.ElementID))
@@ -253,13 +253,13 @@ namespace Riemann
 			{
 				if (EndPtUpdated.Point == SurfacePointType::Triangle)
 				{
-					FPokeTriangleInfo PokeInfo;
+					PokeTriangleInfo PokeInfo;
 					Mesh->PokeTriangle(EndPtUpdated.ElementID, EndPtUpdated.BaryCoord, PokeInfo);
 					PathVertices.push_back(PokeInfo.NewVertex);
 				}
 				else if (EndPtUpdated.Point == SurfacePointType::Edge)
 				{
-					FEdgeSplitInfo SplitInfo;
+					EdgeSplitInfo SplitInfo;
 					Mesh->SplitEdge(EndPtUpdated.ElementID, SplitInfo, EndPtUpdated.BaryCoord[0]);
 					PathVertices.push_back(SplitInfo.NewVertex);
 				}
@@ -829,7 +829,7 @@ namespace Riemann
 				Mesh->GetTriVertices(TID, Tri.v0, Tri.v1, Tri.v2);
 
 				Vector3 BaryCoords = Tri.BarycentricCoods(Pt.Pos);
-				FPokeTriangleInfo PokeInfo;
+				PokeTriangleInfo PokeInfo;
 				EMeshResult Result = Mesh->PokeTriangle(TID, BaryCoords, PokeInfo);
 				assert(Result == EMeshResult::Ok);
 				int PokeVID = PokeInfo.NewVertex;
@@ -900,7 +900,7 @@ namespace Riemann
 
 				Index2 SplitTris = Mesh->GetEdgeT(EID);
                 (void)SplitTris;
-				FEdgeSplitInfo SplitInfo;
+				EdgeSplitInfo SplitInfo;
 				EMeshResult Result = Mesh->SplitEdge(EID, SplitInfo, SplitParam);
 				assert(Result == EMeshResult::Ok);
 
@@ -1253,7 +1253,7 @@ namespace Riemann
 		bool PreserveVertexNormals = true;
 		float NormalDistortTolerance = .01f;
 
-		void SimplifyAlongEdges(DynamicMesh& Mesh, std::set<int>& InOutEdges, std::function<void(const FEdgeCollapseInfo&)> ProcessCollapse = nullptr) const
+		void SimplifyAlongEdges(DynamicMesh& Mesh, std::set<int>& InOutEdges, std::function<void(const EdgeCollapseInfo&)> ProcessCollapse = nullptr) const
 		{
 			float DotTolerance = cosf(SimplificationAngleTolerance * DEG_TO_RAD);
 
@@ -1337,7 +1337,7 @@ namespace Riemann
 							continue;
 						}
 
-						FEdgeCollapseInfo CollapseInfo;
+						EdgeCollapseInfo CollapseInfo;
 						EMeshResult CollapseResult = Mesh.CollapseEdge(KeepV, RemoveV, 0, CollapseInfo);
 						if (CollapseResult == EMeshResult::Ok)
 						{
@@ -1631,7 +1631,7 @@ namespace Riemann
 
 								for (int UVLayerIdx = 0; UVLayerIdx < NumLayers; UVLayerIdx++)
 								{
-									const FDynamicMeshUVOverlay* UVs = Mesh.Attributes()->GetUVLayer(UVLayerIdx);
+									const DynamicMeshUVOverlay* UVs = Mesh.Attributes()->GetUVLayer(UVLayerIdx);
 									if (UVs->ElementCount() < 3)
 									{
 										continue;
@@ -1791,7 +1791,7 @@ namespace Riemann
 				continue;
 			}
 
-			FMergeEdgesInfo MergeInfo;
+			MergeEdgesInfo MergeInfo;
 			EMeshResult EdgeMergeResult = Result->MergeEdges(Candidate.a, Candidate.b, MergeInfo, true);
 			if (EdgeMergeResult != EMeshResult::Ok)
 			{
@@ -1837,7 +1837,7 @@ namespace Riemann
 					Result->GetEdgeV(EID, A, B);
 					if ((OA - A).SquareLength() < SnapToleranceSq && (OB - B).SquareLength() < SnapToleranceSq)
 					{
-						FMergeEdgesInfo MergeInfo;
+						MergeEdgesInfo MergeInfo;
 						EMeshResult EdgeMergeResult = Result->MergeEdges(EID, OtherEID, MergeInfo, true);
 						if (EdgeMergeResult == EMeshResult::Ok)
 						{
@@ -2029,7 +2029,7 @@ namespace Riemann
 						break;
 					}
 
-					FEdgeCollapseInfo CollapseInfo;
+					EdgeCollapseInfo CollapseInfo;
 					int RemoveV = e.Vert[RemoveVIdx];
 					int KeepV = e.Vert[KeepVIdx];
 					// Preserve the boundary when a collapse removes a triangle with two boundary edges.
@@ -2054,7 +2054,7 @@ namespace Riemann
 							int OtherRemoveV = Matches[RemoveVIdx];
 							int OtherKeepV = Matches[KeepVIdx];
 							bool OtherWouldRemoveNext = WouldRemoveTwoBoundaryEdges(*CutMesh[1], OtherEID, OtherRemoveV);
-							FEdgeCollapseInfo OtherCollapseInfo;
+							EdgeCollapseInfo OtherCollapseInfo;
 							EMeshResult OtherCollapseResult = CutMesh[1]->CollapseEdge(OtherKeepV, OtherRemoveV, 0, OtherCollapseInfo);
 							if (OtherCollapseResult != EMeshResult::Ok)
 							{
@@ -2182,7 +2182,7 @@ namespace Riemann
 						}
 					}
 
-					FEdgeCollapseInfo CollapseInfo;
+					EdgeCollapseInfo CollapseInfo;
 					EMeshResult CollapseResult = CutMesh[MeshIdx]->CollapseEdge(EV.a, EV.b, .5, CollapseInfo);
 					if (CollapseResult != EMeshResult::Ok)
 					{
@@ -2466,7 +2466,7 @@ namespace Riemann
 							{
 								Segment3 Seg(EdgePts[0], EdgePts[1]);
 								float Along = Seg.ProjectUnitRange(Pos);
-								FEdgeSplitInfo SplitInfo;
+								EdgeSplitInfo SplitInfo;
 								if (EMeshResult::Ok == OtherMesh.SplitEdge(OtherEID, SplitInfo, Along))
 								{
 									FoundMatches.emplace(SplitInfo.NewVertex, BoundaryVID);

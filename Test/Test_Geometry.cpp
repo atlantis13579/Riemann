@@ -1,4 +1,4 @@
-﻿
+
 #include "Test.h"
 
 #include <algorithm>
@@ -206,7 +206,7 @@ void TestDynamicMesh()
 	square.AppendTriangle(0, 1, 2);
 	square.AppendTriangle(0, 2, 3);
 
-	FEdgeCollapseInfo collapseInfo;
+	EdgeCollapseInfo collapseInfo;
 	EXPECT(square.CollapseEdge(1, 0, 0.0f, collapseInfo) == EMeshResult::Ok);
 	EXPECT(!square.IsTriangle(0));
 	EXPECT(square.IsTriangle(1));
@@ -219,7 +219,7 @@ void TestDynamicMesh()
 	EXPECT(isolatedEditor.RemoveIsolatedVertices());
 	EXPECT(!isolatedVertexMesh.IsVertex(0));
 
-	class CountingAttribute : public FDynamicMeshAttributeBase
+	class CountingAttribute : public DynamicMeshAttributeBase
 	{
 	public:
 		void OnNewVertex(int, bool) override { ++NewVertexCount; }
@@ -254,7 +254,7 @@ void TestDynamicMesh()
 	uvMesh.AppendVertex(Vector3(0.0f, 1.0f, 0.0f));
 	int TriID = uvMesh.AppendTriangle(0, 1, 2);
 	uvMesh.EnableAttributes();
-	FDynamicMeshUVOverlay* UVs = uvMesh.Attributes()->PrimaryUV();
+	DynamicMeshUVOverlay* UVs = uvMesh.Attributes()->PrimaryUV();
 	int UV0 = UVs->AppendElement(Vector2(0.0f, 0.0f));
 	int UV1 = UVs->AppendElement(Vector2(1.0f, 0.0f));
 	int UV2 = UVs->AppendElement(Vector2(0.0f, 1.0f));

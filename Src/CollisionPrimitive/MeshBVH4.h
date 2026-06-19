@@ -108,7 +108,7 @@ namespace Riemann
 
 		MeshBVH4()
 		{
-			memset(this, 0, sizeof(MeshBVH4));
+			memset((void*)this, 0, sizeof(MeshBVH4));
 			BatchSize = SIMD_WIDTH;
 			BatchPtr = nullptr;
 			Memory = nullptr;

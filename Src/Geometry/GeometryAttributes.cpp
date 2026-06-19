@@ -22,6 +22,27 @@ namespace Riemann
 	};
 
 	template<typename AttribValueType, int AttribDimension>
+	TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>::TDynamicMeshTriangleAttribute(DynamicMesh* ParentMeshIn, bool bAutoInit)
+		: ParentMesh(ParentMeshIn)
+	{
+		if (bAutoInit && ParentMesh != nullptr)
+		{
+			Initialize();
+		}
+	}
+
+	template<typename AttribValueType, int AttribDimension>
+	void TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>::Initialize(AttribValueType InitialValue)
+	{
+		assert(ParentMesh != nullptr);
+		AttribValues.clear();
+		if (ParentMesh != nullptr)
+		{
+			AttribValues.resize((size_t)ParentMesh->GetTriangleCount() * AttribDimension, InitialValue);
+		}
+	}
+
+	template<typename AttribValueType, int AttribDimension>
 	void TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>::SetNewValue(int NewTriangleID, const AttribValueType* Data)
 	{
 		if (NewTriangleID < 0)
@@ -41,7 +62,7 @@ namespace Riemann
 	{
 		Index3 Triangle = GetTriangle(TriangleID);
 		int i = 3 * TriangleID;
-		ElementTriangles[i] = Triangle[1];			// mirrors order in FDynamicMesh3::ReverseTriOrientationInternal
+		ElementTriangles[i] = Triangle[1];			// mirrors DynamicMesh reverse orientation order
 		ElementTriangles[i + 1] = Triangle[0];
 		ElementTriangles[i + 2] = Triangle[2];
 	}
@@ -599,7 +620,7 @@ namespace Riemann
 	}
 
 	template<typename RealType, int ElementSize>
-	void TDynamicMeshOverlay<RealType, ElementSize>::OnSplitEdge(const FEdgeSplitInfo& splitInfo)
+	void TDynamicMeshOverlay<RealType, ElementSize>::OnSplitEdge(const EdgeSplitInfo& splitInfo)
 	{
 		int orig_t0 = splitInfo.OriginalTriangles.a;
 		int orig_t1 = splitInfo.OriginalTriangles.b;
@@ -691,7 +712,7 @@ namespace Riemann
 	}
 
 	template<typename RealType, int ElementSize>
-	void TDynamicMeshOverlay<RealType, ElementSize>::OnFlipEdge(const FEdgeFlipInfo& FlipInfo)
+	void TDynamicMeshOverlay<RealType, ElementSize>::OnFlipEdge(const EdgeFlipInfo& FlipInfo)
 	{
 		int orig_t0 = FlipInfo.Triangles.a;
 		int orig_t1 = FlipInfo.Triangles.b;
@@ -734,7 +755,7 @@ namespace Riemann
 		int C = Triangle0[idx_base_c];
 		int D = Triangle1[idx_base_d];
 
-		// set triangles to same index order as in FDynamicMesh::FlipEdge
+		// set triangles to same index order as DynamicMesh::FlipEdge
 		int i0 = 3 * orig_t0;
 		ElementTriangles[i0] = C; ElementTriangles[i0 + 1] = D; ElementTriangles[i0 + 2] = B;
 		int i1 = 3 * orig_t1;
@@ -748,7 +769,7 @@ namespace Riemann
 	}
 
 	template<typename RealType, int ElementSize>
-	void TDynamicMeshOverlay<RealType, ElementSize>::OnPokeTriangle(const FPokeTriangleInfo& PokeInfo)
+	void TDynamicMeshOverlay<RealType, ElementSize>::OnPokeTriangle(const PokeTriangleInfo& PokeInfo)
 	{
 		if (!IsSetTriangle(PokeInfo.OriginalTriangle))
 		{
@@ -763,7 +784,7 @@ namespace Riemann
 		int CenterElemID = AppendElement((RealType)0);
 		SetElementFromBary(CenterElemID, Triangle[0], Triangle[1], Triangle[2], PokeInfo.BaryCoords);
 
-		// update orig triangle and two new ones. Winding orders here mirror FDynamicMesh3::PokeTriangle
+		// update original triangle and two new ones, matching DynamicMesh::PokeTriangle winding
 		InternalSetTriangle(PokeInfo.OriginalTriangle, Index3(Triangle[0], Triangle[1], CenterElemID), false);
 		InternalSetTriangle(PokeInfo.NewTriangles.a, Index3(Triangle[1], Triangle[2], CenterElemID), false);
 		InternalSetTriangle(PokeInfo.NewTriangles.b, Index3(Triangle[2], Triangle[0], CenterElemID), false);
@@ -775,7 +796,7 @@ namespace Riemann
 	}
 
 	template<typename RealType, int ElementSize>
-	void TDynamicMeshOverlay<RealType, ElementSize>::OnMergeEdges(const FMergeEdgesInfo& MergeInfo)
+	void TDynamicMeshOverlay<RealType, ElementSize>::OnMergeEdges(const MergeEdgesInfo& MergeInfo)
 	{
 		// MergeEdges just merges vertices. For now we will not also merge UVs. So all we need to
 		// do is rewrite the UV parent vertices
@@ -810,7 +831,7 @@ namespace Riemann
 	}
 
 	template<typename RealType, int ElementSize>
-	void TDynamicMeshOverlay<RealType, ElementSize>::OnCollapseEdge(const FEdgeCollapseInfo& collapseInfo)
+	void TDynamicMeshOverlay<RealType, ElementSize>::OnCollapseEdge(const EdgeCollapseInfo& collapseInfo)
 	{
 		int tid_removed0 = collapseInfo.RemovedTris.a;
 		int tid_removed1 = collapseInfo.RemovedTris.b;
@@ -992,7 +1013,7 @@ namespace Riemann
 	}
 
 	template<typename RealType, int ElementSize>
-	void TDynamicMeshOverlay<RealType, ElementSize>::OnSplitVertex(const FVertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate)
+	void TDynamicMeshOverlay<RealType, ElementSize>::OnSplitVertex(const VertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate)
 	{
 		std::set<int> OutElements;
 
@@ -1052,7 +1073,7 @@ namespace Riemann
 
 	bool DynamicMeshAttributeSet::IsSeamEdge(int eid) const
 	{
-		for (const FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (const DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			if (UVLayer.IsSeamEdge(eid))
 			{
@@ -1060,7 +1081,7 @@ namespace Riemann
 			}
 		}
 
-		for (const FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (const DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			if (NormalLayer.IsSeamEdge(eid))
 			{
@@ -1078,7 +1099,7 @@ namespace Riemann
 
 	bool DynamicMeshAttributeSet::IsSeamEndEdge(int eid) const
 	{
-		for (const FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (const DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			if (UVLayer.IsSeamEndEdge(eid))
 			{
@@ -1086,7 +1107,7 @@ namespace Riemann
 			}
 		}
 
-		for (const FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (const DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			if (NormalLayer.IsSeamEndEdge(eid))
 			{
@@ -1104,7 +1125,7 @@ namespace Riemann
 	bool DynamicMeshAttributeSet::IsSeamEdge(int EdgeID, bool& bIsUVSeamOut, bool& bIsNormalSeamOut, bool& bIsColorSeamOut, bool& bIsTangentSeamOut) const
 	{
 		bIsUVSeamOut = false;
-		for (const FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (const DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			if (UVLayer.IsSeamEdge(EdgeID))
 			{
@@ -1116,7 +1137,7 @@ namespace Riemann
 		bIsTangentSeamOut = false;
 		for (size_t LayerIdx = 1; LayerIdx < NormalLayers.size(); ++LayerIdx)
 		{
-			const FDynamicMeshNormalOverlay& NormalLayer = NormalLayers[LayerIdx];
+			const DynamicMeshNormalOverlay& NormalLayer = NormalLayers[LayerIdx];
 			if (NormalLayer.IsSeamEdge(EdgeID))
 			{
 				bIsTangentSeamOut = true;
@@ -1134,14 +1155,14 @@ namespace Riemann
 
 	bool DynamicMeshAttributeSet::IsSeamVertex(int VID, bool bBoundaryIsSeam) const
 	{
-		for (const FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (const DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			if (UVLayer.IsSeamVertex(VID, bBoundaryIsSeam))
 			{
 				return true;
 			}
 		}
-		for (const FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (const DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			if (NormalLayer.IsSeamVertex(VID, bBoundaryIsSeam))
 			{
@@ -1182,7 +1203,7 @@ namespace Riemann
 	{
 		if (HasMaterialID() == false)
 		{
-			MaterialIDAttrib = new FDynamicMeshMaterialAttribute(ParentMesh);
+			MaterialIDAttrib = new DynamicMeshMaterialAttribute(ParentMesh);
 			MaterialIDAttrib->Initialize(0);
 		}
 	}
@@ -1206,7 +1227,7 @@ namespace Riemann
 		{
 			for (int i = (int)UVLayers.size(); i < Num; ++i)
 			{
-				FDynamicMeshUVOverlay NewUVLayer(ParentMesh);
+				DynamicMeshUVOverlay NewUVLayer(ParentMesh);
 				NewUVLayer.InitializeTriangles(ParentMesh->GetTriangleCount());
 				UVLayers.push_back(NewUVLayer);
 			}
@@ -1228,7 +1249,7 @@ namespace Riemann
 		{
 			for (int i = (int)NormalLayers.size(); i < Num; ++i)
 			{
-				FDynamicMeshNormalOverlay NewNormalLayer(ParentMesh);
+				DynamicMeshNormalOverlay NewNormalLayer(ParentMesh);
 				NewNormalLayer.InitializeTriangles(ParentMesh->GetTriangleCount());
 				NormalLayers.push_back(NewNormalLayer);
 			}
@@ -1244,7 +1265,7 @@ namespace Riemann
 	{
 		if (HasPrimaryColors() == false)
 		{
-			ColorLayer = new FDynamicMeshColorOverlay(ParentMesh);
+			ColorLayer = new DynamicMeshColorOverlay(ParentMesh);
 			ColorLayer->InitializeTriangles(ParentMesh->GetTriangleCount());
 		}
 	}
@@ -1253,14 +1274,14 @@ namespace Riemann
 	{
 		for (auto& Pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase* Attrib = Pair.second;
+			DynamicMeshAttributeBase* Attrib = Pair.second;
 			if (Attrib)
 			{
 				Attrib->OnNewVertex(VertexID, bInserted);
 			}
 		}
 
-		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		for (DynamicMeshWeightAttribute& WeightLayer : WeightLayers)
 		{
 			float NewWeight = 0.0f;
 			WeightLayer.SetNewValue(VertexID, &NewWeight);
@@ -1272,11 +1293,11 @@ namespace Riemann
 	{
 		for (auto pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase* attrib = pair.second;
+			DynamicMeshAttributeBase* attrib = pair.second;
 			attrib->OnRemoveVertex(VertexID);
 		}
 
-		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		for (DynamicMeshWeightAttribute& WeightLayer : WeightLayers)
 		{
 			WeightLayer.OnRemoveVertex(VertexID);
 		}
@@ -1284,11 +1305,11 @@ namespace Riemann
 
 	void DynamicMeshAttributeSet::Initialize(int MaxVertexID, int MaxTriangleID)
 	{
-		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			UVLayer.InitializeTriangles(MaxTriangleID);
 		}
-		for (FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			NormalLayer.InitializeTriangles(MaxTriangleID);
 		}
@@ -1298,15 +1319,15 @@ namespace Riemann
 	{
 		for (auto pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase* attrib = pair.second;
+			DynamicMeshAttributeBase* attrib = pair.second;
 			attrib->OnNewTriangle(TriangleID, bInserted);
 		}
 
-		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			UVLayer.InitializeNewTriangle(TriangleID);
 		}
-		for (FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			NormalLayer.InitializeNewTriangle(TriangleID);
 		}
@@ -1320,11 +1341,6 @@ namespace Riemann
 			MaterialIDAttrib->SetNewValue(TriangleID, &NewValue);
 		}
 
-		//for (FDynamicMeshPolygroupAttribute& PolygroupLayer : PolygroupLayers)
-		//{
-		//	int NewGroup = 0;
-		//	PolygroupLayer.SetNewValue(TriangleID, &NewGroup);
-		//}
 	}
 
 
@@ -1332,15 +1348,15 @@ namespace Riemann
 	{
 		for (auto pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase* attrib = pair.second;
+			DynamicMeshAttributeBase* attrib = pair.second;
 			attrib->OnRemoveTriangle(TriangleID);
 		}
 
-		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			UVLayer.OnRemoveTriangle(TriangleID);
 		}
-		for (FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			NormalLayer.OnRemoveTriangle(TriangleID);
 		}
@@ -1356,15 +1372,15 @@ namespace Riemann
 	{
 		for (auto pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase* attrib = pair.second;
+			DynamicMeshAttributeBase* attrib = pair.second;
 			attrib->OnReverseTriOrientation(TriangleID);
 		}
 
-		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			UVLayer.OnReverseTriOrientation(TriangleID);
 		}
-		for (FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			NormalLayer.OnReverseTriOrientation(TriangleID);
 		}
@@ -1375,19 +1391,19 @@ namespace Riemann
 		// has no effect on MaterialIDAttrib
 	}
 
-	void DynamicMeshAttributeSet::OnSplitEdge(const FEdgeSplitInfo& SplitInfo)
+	void DynamicMeshAttributeSet::OnSplitEdge(const EdgeSplitInfo& SplitInfo)
 	{
 		for (auto pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase* attrib = pair.second;
+			DynamicMeshAttributeBase* attrib = pair.second;
 			attrib->OnSplitEdge(SplitInfo);
 		}
 
-		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			UVLayer.OnSplitEdge(SplitInfo);
 		}
-		for (FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			NormalLayer.OnSplitEdge(SplitInfo);
 		}
@@ -1400,30 +1416,25 @@ namespace Riemann
 			MaterialIDAttrib->OnSplitEdge(SplitInfo);
 		}
 
-		//for (FDynamicMeshPolygroupAttribute& PolygroupLayer : PolygroupLayers)
-		//{
-		//	PolygroupLayer.OnSplitEdge(SplitInfo);
-		//}
-
-		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		for (DynamicMeshWeightAttribute& WeightLayer : WeightLayers)
 		{
 			WeightLayer.OnSplitEdge(SplitInfo);
 		}
 	}
 
-	void DynamicMeshAttributeSet::OnFlipEdge(const FEdgeFlipInfo& flipInfo)
+	void DynamicMeshAttributeSet::OnFlipEdge(const EdgeFlipInfo& flipInfo)
 	{
 		for (auto pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase* attrib = pair.second;
+			DynamicMeshAttributeBase* attrib = pair.second;
 			attrib->OnFlipEdge(flipInfo);
 		}
 
-		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			UVLayer.OnFlipEdge(flipInfo);
 		}
-		for (FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			NormalLayer.OnFlipEdge(flipInfo);
 		}
@@ -1436,31 +1447,26 @@ namespace Riemann
 			MaterialIDAttrib->OnFlipEdge(flipInfo);
 		}
 
-		//for (FDynamicMeshPolygroupAttribute& PolygroupLayer : PolygroupLayers)
-		//{
-		//	PolygroupLayer.OnFlipEdge(flipInfo);
-		//}
-
-		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		for (DynamicMeshWeightAttribute& WeightLayer : WeightLayers)
 		{
 			WeightLayer.OnFlipEdge(flipInfo);
 		}
 	}
 
 
-	void DynamicMeshAttributeSet::OnCollapseEdge(const FEdgeCollapseInfo& collapseInfo)
+	void DynamicMeshAttributeSet::OnCollapseEdge(const EdgeCollapseInfo& collapseInfo)
 	{
 		for (auto pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase* attrib = pair.second;
+			DynamicMeshAttributeBase* attrib = pair.second;
 			attrib->OnCollapseEdge(collapseInfo);
 		}
 
-		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			UVLayer.OnCollapseEdge(collapseInfo);
 		}
-		for (FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			NormalLayer.OnCollapseEdge(collapseInfo);
 		}
@@ -1473,31 +1479,26 @@ namespace Riemann
 			MaterialIDAttrib->OnCollapseEdge(collapseInfo);
 		}
 
-		//for (FDynamicMeshPolygroupAttribute& PolygroupLayer : PolygroupLayers)
-		//{
-		//	PolygroupLayer.OnCollapseEdge(collapseInfo);
-		//}
-
-		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		for (DynamicMeshWeightAttribute& WeightLayer : WeightLayers)
 		{
 			WeightLayer.OnCollapseEdge(collapseInfo);
 		}
 
 	}
 
-	void DynamicMeshAttributeSet::OnPokeTriangle(const FPokeTriangleInfo& pokeInfo)
+	void DynamicMeshAttributeSet::OnPokeTriangle(const PokeTriangleInfo& pokeInfo)
 	{
 		for (auto pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase* attrib = pair.second;
+			DynamicMeshAttributeBase* attrib = pair.second;
 			attrib->OnPokeTriangle(pokeInfo);
 		}
 
-		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			UVLayer.OnPokeTriangle(pokeInfo);
 		}
-		for (FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			NormalLayer.OnPokeTriangle(pokeInfo);
 		}
@@ -1510,30 +1511,25 @@ namespace Riemann
 			MaterialIDAttrib->OnPokeTriangle(pokeInfo);
 		}
 
-		//for (FDynamicMeshPolygroupAttribute& PolygroupLayer : PolygroupLayers)
-		//{
-		//	PolygroupLayer.OnPokeTriangle(pokeInfo);
-		//}
-
-		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		for (DynamicMeshWeightAttribute& WeightLayer : WeightLayers)
 		{
 			WeightLayer.OnPokeTriangle(pokeInfo);
 		}
 	}
 
-	void DynamicMeshAttributeSet::OnMergeEdges(const FMergeEdgesInfo& mergeInfo)
+	void DynamicMeshAttributeSet::OnMergeEdges(const MergeEdgesInfo& mergeInfo)
 	{
 		for (auto pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase* attrib = pair.second;
+			DynamicMeshAttributeBase* attrib = pair.second;
 			attrib->OnMergeEdges(mergeInfo);
 		}
 
-		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			UVLayer.OnMergeEdges(mergeInfo);
 		}
-		for (FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			NormalLayer.OnMergeEdges(mergeInfo);
 		}
@@ -1546,30 +1542,25 @@ namespace Riemann
 			MaterialIDAttrib->OnMergeEdges(mergeInfo);
 		}
 
-		//for (FDynamicMeshPolygroupAttribute& PolygroupLayer : PolygroupLayers)
-		//{
-		//	PolygroupLayer.OnMergeEdges(mergeInfo);
-		//}
-
-		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		for (DynamicMeshWeightAttribute& WeightLayer : WeightLayers)
 		{
 			WeightLayer.OnMergeEdges(mergeInfo);
 		}
 	}
 
-	void DynamicMeshAttributeSet::OnSplitVertex(const FVertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate)
+	void DynamicMeshAttributeSet::OnSplitVertex(const VertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate)
 	{
 		for (auto pair : GenericAttributes)
 		{
-			FDynamicMeshAttributeBase* attrib = pair.second;
+			DynamicMeshAttributeBase* attrib = pair.second;
 			attrib->OnSplitVertex(SplitInfo, TrianglesToUpdate);
 		}
 
-		for (FDynamicMeshUVOverlay& UVLayer : UVLayers)
+		for (DynamicMeshUVOverlay& UVLayer : UVLayers)
 		{
 			UVLayer.OnSplitVertex(SplitInfo, TrianglesToUpdate);
 		}
-		for (FDynamicMeshNormalOverlay& NormalLayer : NormalLayers)
+		for (DynamicMeshNormalOverlay& NormalLayer : NormalLayers)
 		{
 			NormalLayer.OnSplitVertex(SplitInfo, TrianglesToUpdate);
 		}
@@ -1582,14 +1573,20 @@ namespace Riemann
 			MaterialIDAttrib->OnSplitVertex(SplitInfo, TrianglesToUpdate);
 		}
 
-		//for (FDynamicMeshPolygroupAttribute& PolygroupLayer : PolygroupLayers)
-		//{
-		//	PolygroupLayer.OnSplitVertex(SplitInfo, TrianglesToUpdate);
-		//}
-
-		for (FDynamicMeshWeightAttribute& WeightLayer : WeightLayers)
+		for (DynamicMeshWeightAttribute& WeightLayer : WeightLayers)
 		{
 			WeightLayer.OnSplitVertex(SplitInfo, TrianglesToUpdate);
+		}
+	}
+
+	template<typename AttribValueType, int AttribDimension>
+	void TDynamicVertexAttribute<AttribValueType, AttribDimension>::Initialize(AttribValueType InitialValue)
+	{
+		assert(Parent != nullptr);
+		AttribValues.clear();
+		if (Parent != nullptr)
+		{
+			AttribValues.resize((size_t)Parent->GetVertexCount() * AttribDimension, InitialValue);
 		}
 	}
 

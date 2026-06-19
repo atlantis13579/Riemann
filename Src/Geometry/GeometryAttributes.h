@@ -84,12 +84,12 @@ namespace Riemann
 		virtual void OnNewTriangle(int TriangleID, bool bInserted) {}
 		virtual void OnRemoveTriangle(int TriangleID) {}
 		virtual void OnReverseTriOrientation(int TriangleID) {}
-		virtual void OnSplitEdge(const FEdgeSplitInfo& SplitInfo) {}
-		virtual void OnFlipEdge(const FEdgeFlipInfo& FlipInfo) {}
-		virtual void OnCollapseEdge(const FEdgeCollapseInfo& CollapseInfo) {}
-		virtual void OnPokeTriangle(const FPokeTriangleInfo& PokeInfo) {}
-		virtual void OnMergeEdges(const FMergeEdgesInfo& MergeInfo) {}
-		virtual void OnSplitVertex(const FVertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate) {}
+		virtual void OnSplitEdge(const EdgeSplitInfo& SplitInfo) {}
+		virtual void OnFlipEdge(const EdgeFlipInfo& FlipInfo) {}
+		virtual void OnCollapseEdge(const EdgeCollapseInfo& CollapseInfo) {}
+		virtual void OnPokeTriangle(const PokeTriangleInfo& PokeInfo) {}
+		virtual void OnMergeEdges(const MergeEdgesInfo& MergeInfo) {}
+		virtual void OnSplitVertex(const VertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate) {}
 
 	protected:
 		std::string Name;
@@ -132,167 +132,6 @@ namespace Riemann
 		{
 			ElementTriangles.resize(MaxTriangleID * 3, -1);
 		}
-
-		/*
-		void Copy(const TDynamicMeshOverlay<RealType, ElementSize>& Copy)
-		{
-			ElementsRefCounts = FRefCountVector(Copy.ElementsRefCounts);
-			Elements = Copy.Elements;
-			ParentVertices = Copy.ParentVertices;
-			ElementTriangles = Copy.ElementTriangles;
-		}
-
-		void CompactCopy(const FCompactMaps& CompactMaps, const TDynamicMeshOverlay<RealType, ElementSize>& Copy)
-		{
-			ClearElements();
-
-			// map of element IDs
-			std::vector<int> MapE; MapE.SetNumUninitialized(Copy.MaxElementID());
-
-			// copy elements across
-			RealType Data[ElementSize];
-			for (int EID = 0; EID < Copy.MaxElementID(); EID++)
-			{
-				if (Copy.IsElement(EID))
-				{
-					Copy.GetElement(EID, Data);
-					MapE[EID] = AppendElement(Data);
-				}
-				else
-				{
-					MapE[EID] = -1;
-				}
-			}
-
-			// copy triangles across
-			assert(CompactMaps.NumTriangleMappings() == Copy.GetParentMesh()->MaxTriangleID()); // must have valid triangle map
-			for (int FromTID : Copy.GetParentMesh()->TriangleIndicesItr())
-			{
-				if (!Copy.IsSetTriangle(FromTID))
-				{
-					continue;
-				}
-				const int ToTID = CompactMaps.GetTriangleMapping(FromTID);
-				Index3 FromTriElements = Copy.GetTriangle(FromTID);
-				SetTriangle(ToTID, Index3(MapE[FromTriElements.a], MapE[FromTriElements.b], MapE[FromTriElements.c]));
-			}
-		}
-
-		void CompactInPlace(const FCompactMaps& CompactMaps)
-		{
-			int iLastE = MaxElementID() - 1, iCurE = 0;
-			while (iLastE >= 0 && ElementsRefCounts.IsValidUnsafe(iLastE) == false)
-			{
-				iLastE--;
-			}
-			while (iCurE < iLastE && ElementsRefCounts.IsValidUnsafe(iCurE))
-			{
-				iCurE++;
-			}
-
-			std::vector<int> MapE; MapE.SetNumUninitialized(MaxElementID());
-			for (int ID = 0; ID < MapE.size(); ID++)
-			{
-				// mapping is 1:1 by default; sparsely re-mapped below
-				MapE[ID] = ID;
-				// remap all parents
-				if (ParentVertices[ID] >= 0)
-				{
-					ParentVertices[ID] = CompactMaps.GetVertexMapping(ParentVertices[ID]);
-				}
-			}
-
-			std::vector<unsigned short>& ERef = ElementsRefCounts.GetRawRefCountsUnsafe();
-			RealType Data[ElementSize];
-			while (iCurE < iLastE)
-			{
-				// remap the element data
-				GetElement(iLastE, Data);
-				SetElement(iCurE, Data);
-				ParentVertices[iCurE] = ParentVertices[iLastE];
-				ERef[iCurE] = ERef[iLastE];
-				ERef[iLastE] = FRefCountVector::INVALID_REF_COUNT;
-				MapE[iLastE] = iCurE;
-
-				// move cur forward one, last back one, and  then search for next valid
-				iLastE--; iCurE++;
-				while (iLastE >= 0 && ElementsRefCounts.IsValidUnsafe(iLastE) == false)
-				{
-					iLastE--;
-				}
-				while (iCurE < iLastE && ElementsRefCounts.IsValidUnsafe(iCurE))
-				{
-					iCurE++;
-				}
-			}
-			ElementsRefCounts.Trim(ElementCount());
-			Elements.Resize(ElementCount() * ElementSize);
-			ParentVertices.Resize(ElementCount());
-
-			// Remap and compact triangle element indices.
-			int MaxNewTID = 0;
-			for (int TID = 0, OldMaxTID = ElementTriangles.size() / 3; TID < OldMaxTID; TID++)
-			{
-				const int OldStart = TID * 3;
-				const int NewTID = CompactMaps.GetTriangleMapping(TID);
-				if (NewTID == -1)
-				{
-					// skip if there's no mapping
-					continue;
-				}
-
-				MaxNewTID = FMath::Max(NewTID, MaxNewTID);
-
-				const int NewStart = NewTID * 3;
-				if (ElementTriangles[OldStart] == -1)
-				{
-					// triangle was not set; copy back InvalidID
-					for (int SubIdx = 0; SubIdx < 3; SubIdx++)
-					{
-						ElementTriangles[NewStart + SubIdx] = -1;
-					}
-				}
-				else
-				{
-					for (int SubIdx = 0; SubIdx < 3; SubIdx++)
-					{
-						ElementTriangles[NewStart + SubIdx] = MapE[ElementTriangles[OldStart + SubIdx]];
-					}
-				}
-			}
-
-			assert(ElementTriangles.size() >= (MaxNewTID + 1) * 3);
-			ElementTriangles.Resize((MaxNewTID + 1) * 3);
-
-			assert(IsCompact());
-		}
-
-		bool IsCompact() const { return ElementsRefCounts.IsDense(); }
-
-		typedef typename FRefCountVector::IndexEnumerable element_iterator;
-
-		element_iterator ElementIndicesItr() const { return ElementsRefCounts.Indices(); }
-
-
-		void FreeUnusedElements(const TSet<int>* ElementsToCheck = nullptr);
-
-
-		void CreateFromPredicate(std::function<bool(int ParentVertexIdx, int TriIDA, int TriIDB)> TrisCanShareVertexPredicate, RealType InitElementValue);
-
-		void SplitVerticesWithPredicate(std::function<bool(int ElementIdx, int TriID)> ShouldSplitOutVertex, std::function<void(int ElementIdx, int TriID, RealType* FillVect)> GetNewElementValue);
-
-		bool MergeElement(int SourceElementID, int TargetElementID);
-
-		int SplitElement(int ElementID, const std::vector<const int>& TrianglesToUpdate);
-
-
-		void SplitBowtiesAtVertex(int Vid, std::vector<int>* NewElementIDs = nullptr);
-
-		void SplitBowties();
-
-		EMeshResult InsertElement(int ElementID, const RealType* Value, bool bUnsafe = false);
-
-		*/
 
 		void SetParentVertex(int ElementIndex, int ParentVertexIndex)
 		{
@@ -428,14 +267,6 @@ namespace Riemann
 
 		bool HasInteriorSeamEdges() const;
 
-		//bool IsBowtieInOverlay(int VertexID) const;
-
-		//bool AreTrianglesConnected(int TriangleID0, int TriangleID1) const;
-
-		//void GetVertexElements(int VertexID, std::vector<int>& OutElements) const;
-
-		//void GetElementTriangles(int ElementID, std::vector<int>& OutTriangles) const;
-
 		int CountVertexElements(int vid, bool bBruteForce = false) const;
 
 		int GetElementIDAtVertex(int TriangleID, int VertexID) const
@@ -479,17 +310,17 @@ namespace Riemann
 
 		void OnReverseTriOrientation(int TriangleID);
 
-		void OnSplitEdge(const FEdgeSplitInfo& splitInfo);
+		void OnSplitEdge(const EdgeSplitInfo& splitInfo);
 
-		void OnFlipEdge(const FEdgeFlipInfo& FlipInfo);
+		void OnFlipEdge(const EdgeFlipInfo& FlipInfo);
 
-		void OnCollapseEdge(const FEdgeCollapseInfo& collapseInfo);
+		void OnCollapseEdge(const EdgeCollapseInfo& collapseInfo);
 
-		void OnPokeTriangle(const FPokeTriangleInfo& PokeInfo);
+		void OnPokeTriangle(const PokeTriangleInfo& PokeInfo);
 
-		void OnMergeEdges(const FMergeEdgesInfo& MergeInfo);
+		void OnMergeEdges(const MergeEdgesInfo& MergeInfo);
 
-		void OnSplitVertex(const FVertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate);
+		void OnSplitVertex(const VertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate);
 
 	protected:
 		void SetElementFromLerp(int SetElement, int ElementA, int ElementB, double Alpha);
@@ -573,11 +404,6 @@ namespace Riemann
 		{
 			BaseType::SetElement(ElementID, Value);
 		}
-
-		//bool EnumerateVertexElements(
-		//	int VertexID,
-		//	std::function<bool(int TriangleID, int ElementID, const VectorType& Value)> ProcessFunc,
-		//	bool bFindUniqueElements = true) const;
 	};
 
 	template<typename AttribValueType, int AttribDimension>
@@ -598,14 +424,7 @@ namespace Riemann
 			ParentMesh = nullptr;
 		}
 
-		TDynamicMeshTriangleAttribute(DynamicMesh* ParentMeshIn, bool bAutoInit = true)
-		{
-			ParentMesh = ParentMeshIn;
-			if (bAutoInit)
-			{
-				// Initialize();
-			}
-		}
+		TDynamicMeshTriangleAttribute(DynamicMesh* ParentMeshIn, bool bAutoInit = true);
 
 		AttribValueType GetDefaultAttributeValue() const { return (AttribValueType)0; }
 
@@ -619,92 +438,9 @@ namespace Riemann
 		const DynamicMesh* GetParentMesh() const { return ParentMesh; }
 		DynamicMesh* GetParentMesh() { return ParentMesh; }
 
-		void Initialize(AttribValueType InitialValue = (AttribValueType)0)
-		{
-			assert(ParentMesh != nullptr);
-			AttribValues.resize((size_t)ParentMesh->GetTriangleCount() * AttribDimension, InitialValue);
-		}
+		void Initialize(AttribValueType InitialValue = (AttribValueType)0);
 
 		void SetNewValue(int NewTriangleID, const AttribValueType* Data);
-
-		/*
-		virtual FDynamicMeshAttributeBase* MakeNew(DynamicMesh* ParentMeshIn) const
-		{
-			TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>* Matching = new TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>(ParentMeshIn);
-			Matching->Initialize();
-			return Matching;
-		}
-
-		virtual FDynamicMeshAttributeBase* MakeCopy(DynamicMesh* ParentMeshIn) const
-		{
-			TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>* ToFill = new TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>(ParentMeshIn);
-			ToFill->Copy(*this);
-			return ToFill;
-		}
-
-		void Copy(const TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>& Copy)
-		{
-			CopyParentClassData(Copy);
-			AttribValues = Copy.AttribValues;
-		}
-
-		virtual FDynamicMeshAttributeBase* MakeCompactCopy(const FCompactMaps& CompactMaps, DynamicMesh* ParentMeshIn) const
-		{
-			TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>* ToFill = new TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>(ParentMeshIn);
-			ToFill->Initialize();
-			ToFill->CompactCopy(CompactMaps, *this);
-			return ToFill;
-		}
-
-		void CompactInPlace(const FCompactMaps& CompactMaps)
-		{
-			for (int TID = 0, NumTID = CompactMaps.NumTriangleMappings(); TID < NumTID; TID++)
-			{
-				const int ToTID = CompactMaps.GetTriangleMapping(TID);
-				if (ToTID == FCompactMaps::InvalidID)
-				{
-					continue;
-				}
-				if (ensure(ToTID <= TID))
-				{
-					CopyValue(TID, ToTID);
-				}
-			}
-			AttribValues.Resize(ParentMesh->MaxTriangleID() * AttribDimension);
-		}
-
-		void CompactCopy(const FCompactMaps& CompactMaps, const TDynamicMeshTriangleAttribute<AttribValueType, AttribDimension>& ToCopy)
-		{
-			CopyParentClassData(ToCopy);
-			assert(CompactMaps.NumTriangleMappings() <= int(ToCopy.AttribValues.Num() / AttribDimension));
-			AttribValueType Data[AttribDimension];
-			for (int TID = 0, NumTID = CompactMaps.NumTriangleMappings(); TID < NumTID; TID++)
-			{
-				const int ToTID = CompactMaps.GetTriangleMapping(TID);
-				if (ToTID == FCompactMaps::InvalidID)
-				{
-					continue;
-				}
-				ToCopy.GetValue(TID, Data);
-				SetValue(ToTID, Data);
-			}
-		}
-
-		virtual bool CopyThroughMapping(const TDynamicAttributeBase<DynamicMesh>* Source, const FMeshIndexMappings& Mapping)
-		{
-			AttribValueType BufferData[AttribDimension];
-			int BufferSize = sizeof(BufferData);
-			for (const TPair<int, int>& MapTID : Mapping.GetTriangleMap().GetForwardMap())
-			{
-				if (!(Source->CopyOut(MapTID.Key, BufferData, BufferSize)))
-				{
-					return false;
-				}
-				SetValue(MapTID.Value, BufferData);
-			}
-			return true;
-		}
-		*/
 
 		bool CopyOut(int RawID, void* Buffer, int BufferSize) const
 		{
@@ -774,7 +510,7 @@ namespace Riemann
 		}
 
 	public:
-		virtual void OnSplitEdge(const FEdgeSplitInfo& SplitInfo) override
+		virtual void OnSplitEdge(const EdgeSplitInfo& SplitInfo) override
 		{
 			CopyValue(SplitInfo.OriginalTriangles.a, SplitInfo.NewTriangles.a);
 			if (SplitInfo.OriginalTriangles.b != -1)
@@ -783,28 +519,28 @@ namespace Riemann
 			}
 		}
 
-		virtual void OnFlipEdge(const FEdgeFlipInfo& FlipInfo) override
+		virtual void OnFlipEdge(const EdgeFlipInfo& FlipInfo) override
 		{
 			// yikes! triangles did not actually change so we will leave attrib unmodified
 		}
 
-		virtual void OnCollapseEdge(const FEdgeCollapseInfo& CollapseInfo) override
+		virtual void OnCollapseEdge(const EdgeCollapseInfo& CollapseInfo) override
 		{
 			// nothing to do here, triangles were only deleted
 		}
 
-		virtual void OnPokeTriangle(const FPokeTriangleInfo& PokeInfo) override
+		virtual void OnPokeTriangle(const PokeTriangleInfo& PokeInfo) override
 		{
 			CopyValue(PokeInfo.OriginalTriangle, PokeInfo.NewTriangles.a);
 			CopyValue(PokeInfo.OriginalTriangle, PokeInfo.NewTriangles.b);
 		}
 
-		virtual void OnMergeEdges(const FMergeEdgesInfo& MergeInfo) override
+		virtual void OnMergeEdges(const MergeEdgesInfo& MergeInfo) override
 		{
 			// nothing to do here because triangles did not change
 		}
 
-		virtual void OnSplitVertex(const FVertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate) override
+		virtual void OnSplitVertex(const VertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate) override
 		{
 			// nothing to do here because triangles did not change
 		}
@@ -901,94 +637,7 @@ namespace Riemann
 	private:
 		void Reparent(DynamicMesh* NewParent) { Parent = NewParent; }
 	public:
-		/*
-		virtual TDynamicAttributeBase<ParentType>* MakeNew(ParentType* ParentIn) const
-		{
-			TDynamicVertexAttribute<AttribValueType, AttribDimension, ParentType>* Matching = new TDynamicVertexAttribute<AttribValueType, AttribDimension, ParentType>(ParentIn);
-			Matching->Initialize();
-			return Matching;
-		}
-		virtual TDynamicAttributeBase<ParentType>* MakeCopy(ParentType* ParentIn) const
-		{
-			TDynamicVertexAttribute<AttribValueType, AttribDimension, ParentType>* ToFill = new TDynamicVertexAttribute<AttribValueType, AttribDimension, ParentType>(ParentIn);
-			ToFill->Copy(*this);
-			return ToFill;
-		}
-
-		void Copy(const TDynamicVertexAttribute<AttribValueType, AttribDimension, ParentType>& Copy)
-		{
-			TDynamicAttributeBase<ParentType>::CopyParentClassData(Copy);
-			AttribValues = Copy.AttribValues;
-		}
-
-		virtual TDynamicAttributeBase<ParentType>* MakeCompactCopy(const FCompactMaps& CompactMaps, ParentType* ParentTypeIn) const
-		{
-			TDynamicVertexAttribute<AttribValueType, AttribDimension, ParentType>* ToFill = new TDynamicVertexAttribute<AttribValueType, AttribDimension, ParentType>(ParentTypeIn);
-			ToFill->Initialize();
-			ToFill->CompactCopy(CompactMaps, *this);
-			return ToFill;
-		}
-
-		void CompactInPlace(const FCompactMaps& CompactMaps)
-		{
-			for (int VID = 0, NumVID = CompactMaps.NumVertexMappings(); VID < NumVID; VID++)
-			{
-				const int ToVID = CompactMaps.GetVertexMapping(VID);
-				if (ToVID == FCompactMaps::InvalidID)
-				{
-					continue;
-				}
-				if (ensure(ToVID <= VID))
-				{
-					CopyValue(VID, ToVID);
-				}
-			}
-			AttribValues.Resize(Parent->MaxVertexID() * AttribDimension);
-		}
-
-		void CompactCopy(const FCompactMaps& CompactMaps, const TDynamicVertexAttribute<AttribValueType, AttribDimension, ParentType>& ToCopy)
-		{
-			TDynamicAttributeBase<ParentType>::CopyParentClassData(ToCopy);
-			check(CompactMaps.NumVertexMappings() <= int(ToCopy.AttribValues.Num() / AttribDimension));
-
-			AttribValueType Data[AttribDimension];
-			for (int VID = 0, NumVID = CompactMaps.NumVertexMappings(); VID < NumVID; VID++)
-			{
-				int ToVID = CompactMaps.GetVertexMapping(VID);
-				if (ToVID == FCompactMaps::InvalidID)
-				{
-					continue;
-				}
-				ToCopy.GetValue(VID, Data);
-				SetValue(ToVID, Data);
-			}
-		}
-
-		bool CopyThroughMapping(const TDynamicAttributeBase<DynamicMesh>* Source, const FMeshIndexMappings& Mapping)
-		{
-			AttribValueType BufferData[AttribDimension];
-			int BufferSize = sizeof(BufferData);
-			for (const TPair<int, int>& MapVID : Mapping.GetVertexMap().GetForwardMap())
-			{
-				if (!(Source->CopyOut(MapVID.Key, BufferData, BufferSize)))
-				{
-					return false;
-				}
-				SetValue(MapVID.Value, BufferData);
-			}
-			return true;
-		}
-		*/
-
-		void Initialize(AttribValueType InitialValue = (AttribValueType)0)
-		{
-			assert(Parent != nullptr);
-			AttribValues.clear();
-			if (Parent != nullptr)
-			{
-				AttribValues.resize((size_t)Parent->GetVertexCount() * AttribDimension, InitialValue);
-			}
-		}
+		void Initialize(AttribValueType InitialValue = (AttribValueType)0);
 
 		void SetNewValue(int NewVertexID, const AttribValueType* Data);
 
@@ -1111,18 +760,18 @@ namespace Riemann
 		}
 
 	public:
-		virtual void OnSplitEdge(const FEdgeSplitInfo& SplitInfo) override
+		virtual void OnSplitEdge(const EdgeSplitInfo& SplitInfo) override
 		{
 			ResizeAttribStoreIfNeeded(SplitInfo.NewVertex);
 			SetAttributeFromLerp(SplitInfo.NewVertex, SplitInfo.OriginalVertices.a, SplitInfo.OriginalVertices.b, SplitInfo.SplitT);
 		}
 
-		virtual void OnFlipEdge(const FEdgeFlipInfo& FlipInfo) override
+		virtual void OnFlipEdge(const EdgeFlipInfo& FlipInfo) override
 		{
 			// vertices unchanged
 		}
 
-		virtual void OnCollapseEdge(const FEdgeCollapseInfo& CollapseInfo) override
+		virtual void OnCollapseEdge(const EdgeCollapseInfo& CollapseInfo) override
 		{
 			SetAttributeFromLerp(CollapseInfo.KeptVertex, CollapseInfo.KeptVertex, CollapseInfo.RemovedVertex, CollapseInfo.CollapseT);
 		}
@@ -1132,14 +781,14 @@ namespace Riemann
 			ResizeAttribStoreIfNeeded(VertexID);
 		}
 
-		virtual void OnPokeTriangle(const FPokeTriangleInfo& PokeInfo) override
+		virtual void OnPokeTriangle(const PokeTriangleInfo& PokeInfo) override
 		{
 			Index3 Tri = PokeInfo.TriVertices;
 			ResizeAttribStoreIfNeeded(PokeInfo.NewVertex);
 			SetAttributeFromBary(PokeInfo.NewVertex, Tri.a, Tri.b, Tri.c, PokeInfo.BaryCoords);
 		}
 
-		virtual void OnMergeEdges(const FMergeEdgesInfo& MergeInfo) override
+		virtual void OnMergeEdges(const MergeEdgesInfo& MergeInfo) override
 		{
 			if (MergeInfo.RemovedVerts.a != -1)
 			{
@@ -1151,7 +800,7 @@ namespace Riemann
 			}
 		}
 
-		virtual void OnSplitVertex(const FVertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate) override
+		virtual void OnSplitVertex(const VertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate) override
 		{
 			CopyValue(SplitInfo.OriginalVertex, SplitInfo.NewVertex);
 		}
@@ -1194,16 +843,16 @@ namespace Riemann
 	};
 
 
-	typedef TDynamicMeshVectorOverlay<float, 2, Vector2>	FDynamicMeshUVOverlay;
-	typedef TDynamicMeshVectorOverlay<float, 3, Vector3>	FDynamicMeshNormalOverlay;
-	typedef TDynamicMeshVectorOverlay<float, 4, Vector4>	FDynamicMeshColorOverlay;
-	typedef TDynamicMeshScalarTriangleAttribute<int>		FDynamicMeshMaterialAttribute;
+	using DynamicMeshUVOverlay = TDynamicMeshVectorOverlay<float, 2, Vector2>;
+	using DynamicMeshNormalOverlay = TDynamicMeshVectorOverlay<float, 3, Vector3>;
+	using DynamicMeshColorOverlay = TDynamicMeshVectorOverlay<float, 4, Vector4>;
+	using DynamicMeshMaterialAttribute = TDynamicMeshScalarTriangleAttribute<int>;
 
 	template<typename AttribValueType, int AttribDimension>
 	using TDynamicMeshVertexAttribute = TDynamicVertexAttribute<AttribValueType, AttribDimension>;
 
-	typedef TDynamicAttributeBase FDynamicMeshAttributeBase;
-	typedef TDynamicMeshVertexAttribute<float, 1> FDynamicMeshWeightAttribute;
+	using DynamicMeshAttributeBase = TDynamicAttributeBase;
+	using DynamicMeshWeightAttribute = TDynamicMeshVertexAttribute<float, 1>;
 
 	class DynamicMeshAttributeSet
 	{
@@ -1237,12 +886,12 @@ namespace Riemann
 			return !!MaterialIDAttrib;
 		}
 
-		FDynamicMeshMaterialAttribute* GetMaterialID()
+		DynamicMeshMaterialAttribute* GetMaterialID()
 		{
 			return MaterialIDAttrib;
 		}
 
-		const FDynamicMeshMaterialAttribute* GetMaterialID() const
+		const DynamicMeshMaterialAttribute* GetMaterialID() const
 		{
 			return MaterialIDAttrib;
 		}
@@ -1258,7 +907,7 @@ namespace Riemann
 
 		void SetNumUVLayers(int Num);
 
-		FDynamicMeshUVOverlay* GetUVLayer(int Index)
+		DynamicMeshUVOverlay* GetUVLayer(int Index)
 		{
 			if (Index < UVLayers.size() && Index > -1)
 			{
@@ -1267,7 +916,7 @@ namespace Riemann
 			return nullptr;
 		}
 
-		const FDynamicMeshUVOverlay* GetUVLayer(int Index) const
+		const DynamicMeshUVOverlay* GetUVLayer(int Index) const
 		{
 			if (Index < UVLayers.size() && Index > -1)
 			{
@@ -1276,11 +925,11 @@ namespace Riemann
 			return nullptr;
 		}
 
-		FDynamicMeshUVOverlay* PrimaryUV()
+		DynamicMeshUVOverlay* PrimaryUV()
 		{
 			return GetUVLayer(0);
 		}
-		const FDynamicMeshUVOverlay* PrimaryUV() const
+		const DynamicMeshUVOverlay* PrimaryUV() const
 		{
 			return GetUVLayer(0);
 		}
@@ -1292,7 +941,7 @@ namespace Riemann
 
 		void SetNumNormalLayers(int Num);
 
-		FDynamicMeshNormalOverlay* GetNormalLayer(int Index)
+		DynamicMeshNormalOverlay* GetNormalLayer(int Index)
 		{
 			if (Index < NormalLayers.size() && Index > -1)
 			{
@@ -1301,7 +950,7 @@ namespace Riemann
 			return nullptr;
 		}
 
-		const FDynamicMeshNormalOverlay* GetNormalLayer(int Index) const
+		const DynamicMeshNormalOverlay* GetNormalLayer(int Index) const
 		{
 			if (Index < NormalLayers.size() && Index > -1)
 			{
@@ -1310,12 +959,12 @@ namespace Riemann
 			return nullptr;
 		}
 
-		FDynamicMeshNormalOverlay* PrimaryNormals()
+		DynamicMeshNormalOverlay* PrimaryNormals()
 		{
 			return GetNormalLayer(0);
 		}
 
-		const FDynamicMeshNormalOverlay* PrimaryNormals() const
+		const DynamicMeshNormalOverlay* PrimaryNormals() const
 		{
 			return GetNormalLayer(0);
 		}
@@ -1330,22 +979,22 @@ namespace Riemann
 			SetNumNormalLayers(1);
 		}
 
-		FDynamicMeshNormalOverlay* PrimaryTangents()
+		DynamicMeshNormalOverlay* PrimaryTangents()
 		{
 			return GetNormalLayer(1);
 		}
 
-		const FDynamicMeshNormalOverlay* PrimaryTangents() const
+		const DynamicMeshNormalOverlay* PrimaryTangents() const
 		{
 			return GetNormalLayer(1);
 		}
 
-		FDynamicMeshNormalOverlay* PrimaryBiTangents()
+		DynamicMeshNormalOverlay* PrimaryBiTangents()
 		{
 			return GetNormalLayer(2);
 		}
 
-		const FDynamicMeshNormalOverlay* PrimaryBiTangents() const
+		const DynamicMeshNormalOverlay* PrimaryBiTangents() const
 		{
 			return GetNormalLayer(2);
 		}
@@ -1360,12 +1009,12 @@ namespace Riemann
 			return !!ColorLayer;
 		}
 
-		FDynamicMeshColorOverlay* PrimaryColors()
+		DynamicMeshColorOverlay* PrimaryColors()
 		{
 			return ColorLayer;
 		}
 
-		const FDynamicMeshColorOverlay* PrimaryColors() const
+		const DynamicMeshColorOverlay* PrimaryColors() const
 		{
 			return ColorLayer;
 		}
@@ -1396,7 +1045,7 @@ namespace Riemann
 			{
 				for (int i = (int)WeightLayers.size(); i < Num; ++i)
 				{
-					WeightLayers.push_back(FDynamicMeshWeightAttribute(ParentMesh));
+					WeightLayers.push_back(DynamicMeshWeightAttribute(ParentMesh));
 				}
 			}
 			else
@@ -1411,118 +1060,17 @@ namespace Riemann
 			WeightLayers.erase(WeightLayers.begin() + Index);
 		}
 
-		FDynamicMeshWeightAttribute* GetWeightLayer(int Index)
+		DynamicMeshWeightAttribute* GetWeightLayer(int Index)
 		{
 			return &WeightLayers[Index];
 		}
 
-		const FDynamicMeshWeightAttribute* GetWeightLayer(int Index) const
+		const DynamicMeshWeightAttribute* GetWeightLayer(int Index) const
 		{
 			return &WeightLayers[Index];
 		}
 
-		/*
-		* 
-		* 
-		int NumPolygroupLayers() const;
-
-		void SetNumPolygroupLayers(int Num);
-
-		FDynamicMeshPolygroupAttribute* GetPolygroupLayer(int Index);
-
-		const FDynamicMeshPolygroupAttribute* GetPolygroupLayer(int Index) const;
-
-
-
-		void AttachSkinWeightsAttribute(std::string InProfileName, FDynamicMeshVertexSkinWeightsAttribute* InAttribute);
-
-		void RemoveSkinWeightsAttribute(std::string InProfileName);
-
-		bool HasSkinWeightsAttribute(std::string InProfileName) const
-		{
-			return SkinWeightAttributes->Contains(InProfileName);
-		}
-
-		FDynamicMeshVertexSkinWeightsAttribute* GetSkinWeightsAttribute(std::string InProfileName) const
-		{
-			if (SkinWeightAttributes->Contains(InProfileName))
-			{
-				return SkinWeightAttributes[InProfileName].Get();
-			}
-			else
-			{
-				return nullptr;
-			}
-		}
-
-		const TMap<std::string, TUniquePtr<FDynamicMeshVertexSkinWeightsAttribute>>& GetSkinWeightsAttributes() const
-		{
-			return SkinWeightAttributes;
-		}
-
-		void CopyBoneAttributes(const FDynamicMeshAttributeSet& Copy);
-
-		void EnableMatchingBoneAttributes(const FDynamicMeshAttributeSet& ToMatch, bool bClearExisting, bool bDiscardExtraAttributes);
-
-		bool IsSameBoneAttributesAs(const FDynamicMeshAttributeSet& Other) const;
-
-		bool CheckBoneValidity(EValidityCheckFailMode FailMode) const;
-
-		bool AppendBonesUnique(const FDynamicMeshAttributeSet& Other);
-
-		void EnableBones(const int InBonesNum);
-
-		void DisableBones();
-
-		int GetNumBones() const;
-
-		bool HasBones() const
-		{
-			return !!BoneNameAttrib;
-		}
-
-		FDynamicMeshBoneNameAttribute* GetBoneNames()
-		{
-			return BoneNameAttrib.Get();
-		}
-
-		const FDynamicMeshBoneNameAttribute* GetBoneNames() const
-		{
-			return BoneNameAttrib.Get();
-		}
-
-		FDynamicMeshBoneParentIndexAttribute* GetBoneParentIndices()
-		{
-			return BoneParentIndexAttrib.Get();
-		}
-
-		const FDynamicMeshBoneParentIndexAttribute* GetBoneParentIndices() const
-		{
-			return BoneParentIndexAttrib.Get();
-		}
-
-		FDynamicMeshBonePoseAttribute* GetBonePoses()
-		{
-			return BonePoseAttrib.Get();
-		}
-
-		const FDynamicMeshBonePoseAttribute* GetBonePoses() const
-		{
-			return BonePoseAttrib.Get();
-		}
-
-		FDynamicMeshBoneColorAttribute* GetBoneColors()
-		{
-			return BoneColorAttrib.Get();
-		}
-
-		const FDynamicMeshBoneColorAttribute* GetBoneColors() const
-		{
-			return BoneColorAttrib.Get();
-		}
-		*/
-
-		void AttachAttribute(std::string AttribName, FDynamicMeshAttributeBase* Attribute)
+		void AttachAttribute(std::string AttribName, DynamicMeshAttributeBase* Attribute)
 		{
 			if (Attribute == nullptr)
 			{
@@ -1550,13 +1098,13 @@ namespace Riemann
 			}
 		}
 
-		FDynamicMeshAttributeBase* GetAttachedAttribute(const std::string& AttribName)
+		DynamicMeshAttributeBase* GetAttachedAttribute(const std::string& AttribName)
 		{
 			auto Found = GenericAttributes.find(AttribName);
 			return Found != GenericAttributes.end() ? Found->second : nullptr;
 		}
 
-		const FDynamicMeshAttributeBase* GetAttachedAttribute(const std::string& AttribName) const
+		const DynamicMeshAttributeBase* GetAttachedAttribute(const std::string& AttribName) const
 		{
 			auto it = GenericAttributes.find(AttribName);
 			if (it != GenericAttributes.end())
@@ -1576,7 +1124,7 @@ namespace Riemann
 			return GenericAttributes.find(AttribName) != GenericAttributes.end();
 		}
 
-		const std::map<std::string, FDynamicMeshAttributeBase*>& GetAttachedAttributes() const
+		const std::map<std::string, DynamicMeshAttributeBase*>& GetAttachedAttributes() const
 		{
 			return GenericAttributes;
 		}
@@ -1597,26 +1145,16 @@ namespace Riemann
 	protected:
 		DynamicMesh* ParentMesh;
 
-		FDynamicMeshMaterialAttribute* MaterialIDAttrib = nullptr;
+		DynamicMeshMaterialAttribute* MaterialIDAttrib = nullptr;
 
-		std::vector<FDynamicMeshUVOverlay> UVLayers;
-		std::vector<FDynamicMeshNormalOverlay> NormalLayers;
+		std::vector<DynamicMeshUVOverlay> UVLayers;
+		std::vector<DynamicMeshNormalOverlay> NormalLayers;
 
-		FDynamicMeshColorOverlay* ColorLayer = nullptr;
+		DynamicMeshColorOverlay* ColorLayer = nullptr;
 
-		std::vector<FDynamicMeshWeightAttribute> WeightLayers;
-		// std::vector<FDynamicMeshPolygroupAttribute> PolygroupLayers;
+		std::vector<DynamicMeshWeightAttribute> WeightLayers;
 
-		// using SkinWeightAttributesMap = TMap<std::string, TUniquePtr<FDynamicMeshVertexSkinWeightsAttribute>>;
-		// SkinWeightAttributesMap SkinWeightAttributes;
-
-		// Bone attributes
-		// TUniquePtr<FDynamicMeshBoneNameAttribute> BoneNameAttrib;
-		// TUniquePtr<FDynamicMeshBoneParentIndexAttribute> BoneParentIndexAttrib;
-		// TUniquePtr<FDynamicMeshBonePoseAttribute> BonePoseAttrib;
-		// TUniquePtr<FDynamicMeshBoneColorAttribute> BoneColorAttrib;
-
-		std::map<std::string, FDynamicMeshAttributeBase*> GenericAttributes;
+		std::map<std::string, DynamicMeshAttributeBase*> GenericAttributes;
 
 		std::vector<TDynamicAttributeBase*> RegisteredAttributes;
 
@@ -1630,12 +1168,12 @@ namespace Riemann
 		void OnRemoveTriangle(int TriangleID);
 		void OnRemoveVertex(int VertexID);
 		void OnReverseTriOrientation(int TriangleID);
-		void OnSplitEdge(const FEdgeSplitInfo& splitInfo);
-		void OnFlipEdge(const FEdgeFlipInfo& flipInfo);
-		void OnCollapseEdge(const FEdgeCollapseInfo& collapseInfo);
-		void OnPokeTriangle(const FPokeTriangleInfo& pokeInfo);
-		void OnMergeEdges(const FMergeEdgesInfo& mergeInfo);
-		void OnSplitVertex(const FVertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate);
+		void OnSplitEdge(const EdgeSplitInfo& splitInfo);
+		void OnFlipEdge(const EdgeFlipInfo& flipInfo);
+		void OnCollapseEdge(const EdgeCollapseInfo& collapseInfo);
+		void OnPokeTriangle(const PokeTriangleInfo& pokeInfo);
+		void OnMergeEdges(const MergeEdgesInfo& mergeInfo);
+		void OnSplitVertex(const VertexSplitInfo& SplitInfo, const std::vector<int>& TrianglesToUpdate);
 	};
 
 }	// namespace Riemann

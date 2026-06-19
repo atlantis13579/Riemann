@@ -15,10 +15,15 @@
 
 #if defined(_WIN32)
 #include <windows.h>
+#include <commdlg.h>
+#if defined(_MSC_VER)
+#pragma comment(lib, "Comdlg32.lib")
+#endif
 #else
 #include <dirent.h>
 #endif
 
+#include "MeshCuttingPanel.h"
 #include "MeshRenderer.h"
 #include "RenderThread.h"
 #include "SceneWorld.h"
@@ -27,8 +32,6 @@
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/CollisionPrimitive/PrimitiveType.h"
-#include "../Src/Destruction/Fracture.h"
-#include "../Src/Geometry/DynamicMesh.h"
 #include "../Src/Modules/Tools/PhysxBinaryParser.h"
 #include "../Src/RigidBodyDynamics/KinematicsTree.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
@@ -118,6 +121,20 @@ namespace Riemann
 				tolower(static_cast<unsigned char>(fileName[offset + 4])) == 'n';
 		}
 
+		bool HasObjExtension(const std::string& fileName)
+		{
+			if (fileName.size() < 4)
+			{
+				return false;
+			}
+
+			const size_t offset = fileName.size() - 4;
+			return fileName[offset] == '.' &&
+				tolower(static_cast<unsigned char>(fileName[offset + 1])) == 'o' &&
+				tolower(static_cast<unsigned char>(fileName[offset + 2])) == 'b' &&
+				tolower(static_cast<unsigned char>(fileName[offset + 3])) == 'j';
+		}
+
 		std::vector<std::string> ListJsonFiles(const std::string& directory)
 		{
 			std::vector<std::string> files;
@@ -146,6 +163,43 @@ namespace Riemann
 					if (HasJsonExtension(entry->d_name))
 					{
 						files.push_back(entry->d_name);
+					}
+				}
+				closedir(dir);
+			}
+#endif
+			std::sort(files.begin(), files.end());
+			return files;
+		}
+
+		std::vector<std::string> ListObjFiles(const std::string& directory)
+		{
+			std::vector<std::string> files;
+#if defined(_WIN32)
+			const std::string searchPath = JoinPath(directory, "*.obj");
+			WIN32_FIND_DATAA findData;
+			HANDLE findHandle = FindFirstFileA(searchPath.c_str(), &findData);
+			if (findHandle != INVALID_HANDLE_VALUE)
+			{
+				do
+				{
+					if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+					{
+						files.push_back(JoinPath(directory, findData.cFileName));
+					}
+				} while (FindNextFileA(findHandle, &findData));
+				FindClose(findHandle);
+			}
+#else
+			DIR* dir = opendir(directory.c_str());
+			if (dir != nullptr)
+			{
+				struct dirent* entry = nullptr;
+				while ((entry = readdir(dir)) != nullptr)
+				{
+					if (HasObjExtension(entry->d_name))
+					{
+						files.push_back(JoinPath(directory, entry->d_name));
 					}
 				}
 				closedir(dir);
@@ -185,6 +239,18 @@ namespace Riemann
 			return candidates;
 		}
 
+		void AddUniqueFile(std::vector<std::string>* files, const std::string& fileName)
+		{
+			if (files == nullptr || fileName.empty())
+			{
+				return;
+			}
+			if (std::find(files->begin(), files->end(), fileName) == files->end())
+			{
+				files->push_back(fileName);
+			}
+		}
+
 		Vector3 SafeUnitVector(const Vector3& value, const Vector3& fallback)
 		{
 			const float lenSq = value.SquareLength();
@@ -193,12 +259,6 @@ namespace Riemann
 				return fallback;
 			}
 			return value / sqrtf(lenSq);
-		}
-
-		float BoundsMaxDim(const Box3& bounds)
-		{
-			const Vector3 size = bounds.Max - bounds.Min;
-			return std::max(size.x, std::max(size.y, size.z));
 		}
 
 		Vector4 PieceColor(size_t index)
@@ -215,50 +275,6 @@ namespace Riemann
 				Vector4(0.72f, 0.78f, 0.86f, 1.0f),
 			};
 			return colors[index % (sizeof(colors) / sizeof(colors[0]))];
-		}
-
-		RenderMeshDesc BuildDynamicMeshRenderMesh(const DynamicMesh& mesh, const std::string& id, const Vector4& color)
-		{
-			RenderMeshDesc desc;
-			desc.Id = id;
-			desc.Color = color;
-			desc.Topology = RenderPrimitiveTopology::Triangles;
-			desc.CastShadow = true;
-
-			std::vector<int> vertexMap(mesh.GetVertexCount(), -1);
-			for (int tid = 0; tid < mesh.GetTriangleCount(); ++tid)
-			{
-				if (!mesh.IsTriangleFast(tid))
-				{
-					continue;
-				}
-
-				const Index3 tri = mesh.GetTriangle(tid);
-				const Vector3 p0 = mesh.GetVertex(tri.a);
-				const Vector3 p1 = mesh.GetVertex(tri.b);
-				const Vector3 p2 = mesh.GetVertex(tri.c);
-				const Vector3 faceNormal = SafeUnitVector((p1 - p0).Cross(p2 - p0), Vector3::UnitY());
-
-				for (int corner = 0; corner < 3; ++corner)
-				{
-					const int sourceVertex = tri[corner];
-					if (sourceVertex < 0 || sourceVertex >= mesh.GetVertexCount())
-					{
-						continue;
-					}
-
-					if (vertexMap[sourceVertex] < 0)
-					{
-						const int newIndex = (int)desc.Vertices.size();
-						vertexMap[sourceVertex] = newIndex;
-						const Vector3 normal = mesh.HasVertexNormals() ? mesh.GetVertexNormal(sourceVertex) : faceNormal;
-						desc.Vertices.push_back(Vertex1(mesh.GetVertex(sourceVertex), SafeUnitVector(normal, faceNormal)));
-					}
-					desc.Indices.push_back((uint32_t)vertexMap[sourceVertex]);
-				}
-			}
-
-			return desc;
 		}
 
 		bool IsHighlightableGeometry(const Geometry* geometry)
@@ -279,15 +295,25 @@ namespace Riemann
 		, m_HighlightedGeometry(nullptr)
 		, m_CamCenter(Vector3::Zero())
 		, m_CamParam(Vector3(1.0f, 0.6f, 15.0f))
-		, m_BunnyFractureDemoActive(false)
-		, m_FractureSeparation(0.0f)
-		, m_FractureMaxSeparation(1.0f)
+		, m_CuttingPanelActive(false)
+		, m_CuttingObjIndex(0)
+		, m_CuttingMode(MeshCuttingMode_VoronoiFracture)
+		, m_CuttingPieceCount(16)
+		, m_CuttingSeed(7)
+		, m_CuttingGrout(0.0f)
+		, m_CuttingSeparation(0.0f)
+		, m_CuttingMaxSeparation(1.0f)
 		, m_ShowGeometryQueryBounds(false)
 		, m_ImguiDemoIndex(0)
 		, m_ImguiObjectCount(0)
 		, m_ImguiCameraDistance(15.0f)
-		, m_ImguiBunnyFractureActive(false)
-		, m_ImguiFractureSeparation(0.0f)
+		, m_ImguiCuttingPanelActive(false)
+		, m_ImguiCuttingObjIndex(0)
+		, m_ImguiCuttingMode(MeshCuttingMode_VoronoiFracture)
+		, m_ImguiCuttingPieceCount(16)
+		, m_ImguiCuttingSeed(7)
+		, m_ImguiCuttingGrout(0.0f)
+		, m_ImguiCuttingSeparation(0.0f)
 		, m_ImguiShowGeometryQueryBounds(false)
 		, m_ImguiGeometryQueryBoundsCount(0)
 		, m_ImguiPhysicsFps(0.0)
@@ -295,8 +321,19 @@ namespace Riemann
 		, m_ImguiPendingDemoIndex(-1)
 		, m_ImguiPendingCameraDistance(false)
 		, m_ImguiPendingCameraDistanceValue(15.0f)
-		, m_ImguiPendingFractureSeparation(false)
-		, m_ImguiPendingFractureSeparationValue(0.0f)
+		, m_ImguiPendingCuttingSeparation(false)
+		, m_ImguiPendingCuttingSeparationValue(0.0f)
+		, m_ImguiPendingCuttingObjIndex(-1)
+		, m_ImguiPendingBrowseCuttingObj(false)
+		, m_ImguiPendingApplyCutting(false)
+		, m_ImguiPendingCuttingMode(false)
+		, m_ImguiPendingCuttingModeValue(MeshCuttingMode_VoronoiFracture)
+		, m_ImguiPendingCuttingPieceCount(false)
+		, m_ImguiPendingCuttingPieceCountValue(16)
+		, m_ImguiPendingCuttingSeed(false)
+		, m_ImguiPendingCuttingSeedValue(7)
+		, m_ImguiPendingCuttingGrout(false)
+		, m_ImguiPendingCuttingGroutValue(0.0f)
 		, m_ImguiPendingShowGeometryQueryBounds(false)
 		, m_ImguiPendingShowGeometryQueryBoundsValue(false)
 		, m_PhysicsFpsTime(std::chrono::steady_clock::now())
@@ -309,6 +346,7 @@ namespace Riemann
 		}
 
 		RefreshSceneList();
+		RefreshObjList();
 		std::string initialScene = sceneFile;
 		if (initialScene.empty() && !m_SceneFiles.empty())
 		{
@@ -326,7 +364,7 @@ namespace Riemann
 			{
 				return;
 			}
-			if (m_BunnyFractureDemoActive)
+			if (m_CuttingPanelActive)
 			{
 				return;
 			}
@@ -382,10 +420,11 @@ namespace Riemann
 
 		m_SceneDirectory = DirectoryOf(resolved);
 		m_CurrentSceneName = FileNameOf(resolved);
-		m_BunnyFractureDemoActive = false;
-		m_FracturePieces.clear();
-		m_FractureSeparation = 0.0f;
+		m_CuttingPanelActive = false;
+		m_CuttingPieces.clear();
+		m_CuttingSeparation = 0.0f;
 		RefreshSceneList();
+		RefreshObjList();
 		ApplySceneCamera();
 		m_HighlightedGeometry = nullptr;
 		RebuildRenderScene();
@@ -397,6 +436,8 @@ namespace Riemann
 	{
 		m_World->Reset();
 		m_RenderBindings.clear();
+		m_CuttingPanelActive = false;
+		m_CuttingPieces.clear();
 		m_HighlightedGeometry = nullptr;
 		RebuildRenderScene();
 	}
@@ -654,8 +695,14 @@ namespace Riemann
 		int demoIndex = 0;
 		size_t objectCount = 0;
 		float cameraDistance = 0.0f;
-		bool bunnyFractureActive = false;
-		float fractureSeparation = 0.0f;
+		bool cuttingPanelActive = false;
+		std::string cuttingObjPath;
+		std::string cuttingStatus;
+		int cuttingMode = 0;
+		int cuttingPieceCount = 0;
+		int cuttingSeed = 0;
+		float cuttingGrout = 0.0f;
+		float cuttingSeparation = 0.0f;
 		bool showGeometryQueryBounds = false;
 		size_t geometryQueryBoundsCount = 0;
 		double physicsFps = 0.0;
@@ -666,8 +713,14 @@ namespace Riemann
 			demoIndex = m_ImguiDemoIndex;
 			objectCount = m_ImguiObjectCount;
 			cameraDistance = m_ImguiCameraDistance;
-			bunnyFractureActive = m_ImguiBunnyFractureActive;
-			fractureSeparation = m_ImguiFractureSeparation;
+			cuttingPanelActive = m_ImguiCuttingPanelActive;
+			cuttingObjPath = m_ImguiCuttingObjPath;
+			cuttingStatus = m_ImguiCuttingStatus;
+			cuttingMode = m_ImguiCuttingMode;
+			cuttingPieceCount = m_ImguiCuttingPieceCount;
+			cuttingSeed = m_ImguiCuttingSeed;
+			cuttingGrout = m_ImguiCuttingGrout;
+			cuttingSeparation = m_ImguiCuttingSeparation;
 			showGeometryQueryBounds = m_ImguiShowGeometryQueryBounds;
 			geometryQueryBoundsCount = m_ImguiGeometryQueryBoundsCount;
 			physicsFps = m_ImguiPhysicsFps;
@@ -691,7 +744,7 @@ namespace Riemann
 
 		imguiSeparatorLine();
 		imguiLabel("Debug");
-		if (imguiCheck("Geometry Query AABB", showGeometryQueryBounds, !bunnyFractureActive))
+		if (imguiCheck("Geometry Query AABB", showGeometryQueryBounds, true))
 		{
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			m_ImguiPendingShowGeometryQueryBounds = true;
@@ -706,7 +759,7 @@ namespace Riemann
 		imguiSeparatorLine();
 		imguiLabel("Demo");
 		std::vector<std::string> demoNames = sceneFiles;
-		demoNames.push_back("Bunny Fracture");
+		demoNames.push_back("Mesh Cutting");
 		if (demoNames.empty())
 		{
 			imguiValue("No demos found");
@@ -736,15 +789,75 @@ namespace Riemann
 				m_ImguiPendingDemoIndex = selectedDemo;
 			}
 
-			if (bunnyFractureActive)
+			if (cuttingPanelActive)
 			{
 				imguiSeparatorLine();
-				float separation = fractureSeparation;
+				imguiLabel("Mesh Cutting");
+
+				const std::string objValue = cuttingObjPath.empty()
+					? std::string("OBJ: bunny.obj")
+					: std::string("OBJ: ") + FileNameOf(cuttingObjPath);
+				imguiValue(objValue.c_str());
+
+				if (imguiButton("Browse OBJ..."))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingBrowseCuttingObj = true;
+				}
+
+				const char* modes[] = { "Parallel X", "Parallel Y", "Parallel Z", "Voronoi Fracture" };
+				int selectedMode = std::max(0, std::min(cuttingMode, 3));
+				if (imguiCombo("Mode", &selectedMode, modes, 4))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingCuttingMode = true;
+					m_ImguiPendingCuttingModeValue = selectedMode;
+				}
+
+				float pieces = static_cast<float>(std::max(2, cuttingPieceCount));
+				if (imguiSlider("Pieces", &pieces, 2.0f, 64.0f, 1.0f))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingCuttingPieceCount = true;
+					m_ImguiPendingCuttingPieceCountValue = std::max(2, static_cast<int>(pieces + 0.5f));
+				}
+
+				if (selectedMode == MeshCuttingMode_VoronoiFracture)
+				{
+					float seed = static_cast<float>(cuttingSeed);
+					if (imguiSlider("Seed", &seed, 0.0f, 999.0f, 1.0f))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_ImguiPendingCuttingSeed = true;
+						m_ImguiPendingCuttingSeedValue = static_cast<int>(seed + 0.5f);
+					}
+				}
+
+				float grout = cuttingGrout;
+				if (imguiSlider("Grout", &grout, 0.0f, 0.08f, 0.001f))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingCuttingGrout = true;
+					m_ImguiPendingCuttingGroutValue = grout;
+				}
+
+				float separation = cuttingSeparation;
 				if (imguiSlider("Separation", &separation, 0.0f, 1.0f, 0.01f))
 				{
 					std::lock_guard<std::mutex> lock(m_ImguiMutex);
-					m_ImguiPendingFractureSeparation = true;
-					m_ImguiPendingFractureSeparationValue = separation;
+					m_ImguiPendingCuttingSeparation = true;
+					m_ImguiPendingCuttingSeparationValue = separation;
+				}
+
+				if (imguiButton("Apply Cut"))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingApplyCutting = true;
+				}
+
+				if (!cuttingStatus.empty())
+				{
+					imguiValue(cuttingStatus.c_str());
 				}
 			}
 		}
@@ -820,125 +933,93 @@ namespace Riemann
 		}
 	}
 
-	bool WorldViewer::LoadBunnyFractureDemo()
+	bool WorldViewer::LoadCuttingPanel()
 	{
-		const std::string bunnyPath = ResolveTestDataFile("bunny.obj");
-		if (bunnyPath.empty())
+		RefreshObjList();
+		if (m_CuttingObjPath.empty())
 		{
+			m_CuttingObjPath = ResolveTestDataFile("bunny.obj");
+		}
+		if (m_CuttingObjPath.empty() && !m_CuttingObjFiles.empty())
+		{
+			m_CuttingObjPath = m_CuttingObjFiles.front();
+		}
+		if (m_CuttingObjPath.empty())
+		{
+			m_World->Reset(Vector3::Zero());
+			m_RenderBindings.clear();
+			m_HighlightedGeometry = nullptr;
+			m_CuttingPieces.clear();
+			m_CuttingPanelActive = true;
+			m_CurrentSceneName = "Mesh Cutting";
+			m_CuttingStatus = "Missing OBJ: bunny.obj";
+			RebuildRenderScene();
+			UpdateImguiState();
 			return false;
 		}
 
-		DynamicMesh bunny;
-		if (!bunny.LoadObj(bunnyPath.c_str()))
+		MeshCuttingSource source;
+		if (!LoadMeshCuttingSource(m_CuttingObjPath, &source))
 		{
+			m_World->Reset(Vector3::Zero());
+			m_RenderBindings.clear();
+			m_HighlightedGeometry = nullptr;
+			m_CuttingPieces.clear();
+			m_CuttingPanelActive = true;
+			m_CurrentSceneName = "Mesh Cutting";
+			m_CuttingStatus = source.Status.empty() ? "Failed to read OBJ" : source.Status;
+			RebuildRenderScene();
+			UpdateImguiState();
 			return false;
 		}
 
-		const Box3 bounds = bunny.GetBounds();
+		const Box3 bounds = source.Bounds;
 		const Vector3 center = bounds.GetCenter();
-		const Vector3 extent = bounds.GetExtent();
-		const float maxSize = std::max(BoundsMaxDim(bounds), 1e-3f);
-
-		std::vector<Vector3> sites;
-		sites.push_back(center + Vector3( extent.x * 0.42f,  extent.y * 0.10f,  extent.z * 0.12f));
-		sites.push_back(center + Vector3(-extent.x * 0.38f, -extent.y * 0.08f, -extent.z * 0.16f));
-		sites.push_back(center + Vector3( extent.x * 0.08f,  extent.y * 0.45f, -extent.z * 0.12f));
-		sites.push_back(center + Vector3(-extent.x * 0.10f, -extent.y * 0.42f,  extent.z * 0.10f));
-		sites.push_back(center + Vector3( extent.x * 0.10f, -extent.y * 0.04f,  extent.z * 0.42f));
-		sites.push_back(center + Vector3(-extent.x * 0.12f,  extent.y * 0.08f, -extent.z * 0.40f));
-		sites.push_back(center + Vector3( extent.x * 0.28f, -extent.y * 0.30f, -extent.z * 0.22f));
-		sites.push_back(center + Vector3(-extent.x * 0.26f,  extent.y * 0.30f,  extent.z * 0.22f));
-		sites.push_back(center + Vector3( extent.x * 0.34f,  extent.y * 0.28f, -extent.z * 0.06f));
-		sites.push_back(center + Vector3(-extent.x * 0.32f, -extent.y * 0.26f,  extent.z * 0.08f));
-		sites.push_back(center + Vector3( extent.x * 0.20f, -extent.y * 0.18f,  extent.z * 0.32f));
-		sites.push_back(center + Vector3(-extent.x * 0.22f,  extent.y * 0.16f, -extent.z * 0.34f));
-		sites.push_back(center + Vector3( extent.x * 0.02f,  extent.y * 0.34f,  extent.z * 0.30f));
-		sites.push_back(center + Vector3(-extent.x * 0.04f, -extent.y * 0.36f, -extent.z * 0.28f));
-		sites.push_back(center + Vector3( extent.x * 0.40f, -extent.y * 0.02f, -extent.z * 0.34f));
-		sites.push_back(center + Vector3(-extent.x * 0.40f,  extent.y * 0.02f,  extent.z * 0.34f));
-
-		FractureOptions options;
-		options.SnapTolerance = std::max(maxSize * 1e-5f, 1e-6f);
-		options.BoundsPaddingScale = 0.20f;
-		options.Grout = 0.0f;
-		options.WeldSharedEdges = true;
-		options.MinTriangleCount = 4;
-
-		std::vector<FracturePiece> pieces;
-		if (!Fracture::VoronoiFracture(bunny, sites, pieces, options) || pieces.empty())
-		{
-			return false;
-		}
+		m_CuttingMode = std::max(0, std::min(m_CuttingMode, 3));
+		m_CuttingPieceCount = std::max(2, std::min(m_CuttingPieceCount, 64));
+		m_CuttingSeed = std::max(0, std::min(m_CuttingSeed, 999));
+		m_CuttingGrout = std::max(0.0f, std::min(m_CuttingGrout, 0.08f));
+		m_CuttingSeparation = 0.0f;
+		m_CuttingMaxSeparation = source.MaxSeparation;
 
 		m_World->Reset(Vector3::Zero());
 		m_RenderBindings.clear();
 		m_HighlightedGeometry = nullptr;
-		m_FracturePieces.clear();
-		m_FractureMaxSeparation = maxSize * 1.15f;
-		m_FractureSeparation = 0.0f;
-		m_BunnyFractureDemoActive = true;
-		m_CurrentSceneName = "Bunny Fracture";
+		m_CuttingPieces.clear();
+		m_CuttingPanelActive = true;
+		m_CurrentSceneName = "Mesh Cutting";
 
-		std::vector<RenderMeshDesc> renderMeshes;
-		renderMeshes.reserve(pieces.size());
-		for (size_t pieceIndex = 0; pieceIndex < pieces.size(); ++pieceIndex)
+		Geometry* geometry = m_World->AddTriangleMeshObject("mesh_source", source.Mesh, Transform(Vector3::Zero()), RigidType::Static, Vector4(0.72f, 0.76f, 0.82f, 1.0f), false);
+		if (geometry == nullptr)
 		{
-			FracturePiece& piece = pieces[pieceIndex];
-			piece.Mesh.CalculateWeightAverageNormals();
-
-			std::ostringstream id;
-			id << "bunny_fracture_" << pieceIndex;
-			RenderMeshDesc mesh = BuildDynamicMeshRenderMesh(piece.Mesh, id.str(), PieceColor(pieceIndex));
-			if (mesh.Vertices.empty() || mesh.Indices.empty())
-			{
-				continue;
-			}
-
-			Vector3 direction = piece.Center - center;
-			if (direction.SafeNormalize() == 0.0f)
-			{
-				const float angle = (float)pieceIndex * 2.39996323f;
-				direction = Vector3(cosf(angle), 0.25f * ((pieceIndex & 1) ? 1.0f : -1.0f), sinf(angle)).SafeUnit();
-			}
-
-			FractureRenderPiece renderPiece;
-			renderPiece.MeshId = mesh.Id;
-			renderPiece.Direction = direction;
-			m_FracturePieces.push_back(renderPiece);
-			renderMeshes.push_back(mesh);
-		}
-
-		if (renderMeshes.empty())
-		{
-			m_BunnyFractureDemoActive = false;
+			m_CuttingStatus = "No renderable mesh";
+			RebuildRenderScene();
+			UpdateImguiState();
 			return false;
 		}
 
 		m_CamCenter = center;
-		m_CamParam = Vector3(1.05f, 0.45f, maxSize * 4.0f);
+		m_CamParam = Vector3(1.05f, 0.45f, std::max(1.0f, m_CuttingMaxSeparation * 3.5f));
+		m_CuttingStatus = source.Status + ". Click Apply Cut";
+
+		RebuildRenderScene();
 
 		if (m_RenderThread)
 		{
 			CameraDesc camera = m_World->GetCamera();
 			camera.At = m_CamCenter;
 			camera.Eye = GetCameraPosition();
-			camera.NearPlane = std::max(0.01f, maxSize * 0.01f);
-			camera.FarPlane = std::max(1000.0f, maxSize * 20.0f);
+			camera.NearPlane = std::max(0.01f, m_CuttingMaxSeparation * 0.01f);
+			camera.FarPlane = std::max(1000.0f, m_CuttingMaxSeparation * 20.0f);
 
 			DirectionalLightDesc light = m_World->GetLight();
 			light.ShadowCenter = center;
-			light.ShadowDistance = maxSize * 6.0f;
-			light.ShadowSize = maxSize * 4.0f;
+			light.ShadowDistance = m_CuttingMaxSeparation * 6.0f;
+			light.ShadowSize = m_CuttingMaxSeparation * 4.0f;
 
-			std::shared_ptr<std::vector<RenderMeshDesc> > meshes(new std::vector<RenderMeshDesc>(std::move(renderMeshes)));
-			m_RenderThread->Submit([meshes, camera, light](Renderer& renderer) {
-				renderer.Reset();
+			m_RenderThread->Submit([camera, light](Renderer& renderer) {
 				renderer.SetCamera(camera);
 				renderer.SetLight(light);
-				for (const RenderMeshDesc& mesh : *meshes)
-				{
-					renderer.AddMesh(mesh);
-				}
 			});
 		}
 
@@ -946,45 +1027,201 @@ namespace Riemann
 		return true;
 	}
 
-	void WorldViewer::UpdateFractureSeparation(float separation)
+	bool WorldViewer::ApplyCuttingPanel()
 	{
-		m_FractureSeparation = std::max(0.0f, std::min(separation, 1.0f));
-		SubmitFractureTransforms();
+		const Vector3 cameraCenter = m_CamCenter;
+		const Vector3 cameraParam = m_CamParam;
+
+		RefreshObjList();
+		if (m_CuttingObjPath.empty())
+		{
+			m_CuttingObjPath = ResolveTestDataFile("bunny.obj");
+		}
+		if (m_CuttingObjPath.empty() && !m_CuttingObjFiles.empty())
+		{
+			m_CuttingObjPath = m_CuttingObjFiles.front();
+		}
+		if (m_CuttingObjPath.empty())
+		{
+			m_CuttingStatus = "Missing OBJ: bunny.obj";
+			UpdateImguiState();
+			return false;
+		}
+
+		MeshCuttingParams params;
+		params.ObjPath = m_CuttingObjPath;
+		params.Mode = m_CuttingMode;
+		params.PieceCount = m_CuttingPieceCount;
+		params.Seed = m_CuttingSeed;
+		params.Grout = m_CuttingGrout;
+
+		MeshCuttingResult cuttingResult;
+		if (!BuildMeshCuttingPanel(params, &cuttingResult))
+		{
+			m_CuttingPanelActive = true;
+			m_CuttingStatus = cuttingResult.Status.empty() ? "Cut failed" : cuttingResult.Status;
+			UpdateImguiState();
+			return false;
+		}
+
+		const Box3 bounds = cuttingResult.SourceBounds;
+		const Vector3 center = bounds.GetCenter();
+		m_CuttingMode = std::max(0, std::min(m_CuttingMode, 3));
+		m_CuttingPieceCount = std::max(2, std::min(m_CuttingPieceCount, 64));
+		m_CuttingSeed = std::max(0, std::min(m_CuttingSeed, 999));
+		m_CuttingGrout = std::max(0.0f, std::min(m_CuttingGrout, 0.08f));
+		m_CuttingMaxSeparation = cuttingResult.MaxSeparation;
+		m_CamCenter = cameraCenter;
+		m_CamParam = cameraParam;
+
+		m_World->Reset(Vector3::Zero());
+		m_RenderBindings.clear();
+		m_HighlightedGeometry = nullptr;
+		m_CuttingPieces.clear();
+		m_CuttingPanelActive = true;
+		m_CurrentSceneName = "Mesh Cutting";
+
+		for (size_t pieceIndex = 0; pieceIndex < cuttingResult.Pieces.size(); ++pieceIndex)
+		{
+			const MeshCuttingPiece& piece = cuttingResult.Pieces[pieceIndex];
+
+			std::ostringstream id;
+			id << "mesh_cut_" << pieceIndex;
+			const Transform transform(piece.Center + piece.Direction * (m_CuttingSeparation * m_CuttingMaxSeparation));
+			Geometry* geometry = m_World->AddTriangleMeshObject(id.str(), piece.Mesh, transform, RigidType::Static, PieceColor(pieceIndex), false);
+			if (geometry == nullptr)
+			{
+				continue;
+			}
+
+			CuttingRenderPiece renderPiece;
+			renderPiece.GeometryPtr = geometry;
+			renderPiece.MeshId = id.str();
+			renderPiece.Center = piece.Center;
+			renderPiece.Direction = piece.Direction;
+			m_CuttingPieces.push_back(renderPiece);
+		}
+
+		if (m_CuttingPieces.empty())
+		{
+			m_CuttingPanelActive = true;
+			m_CuttingStatus = "No renderable pieces";
+			RebuildRenderScene();
+			UpdateImguiState();
+			return false;
+		}
+
+		m_CuttingStatus = cuttingResult.Status;
+
+		RebuildRenderScene();
+		SubmitCuttingTransforms();
+
+		if (m_RenderThread)
+		{
+			CameraDesc camera = m_World->GetCamera();
+			camera.At = m_CamCenter;
+			camera.Eye = GetCameraPosition();
+			camera.NearPlane = std::max(0.01f, m_CuttingMaxSeparation * 0.01f);
+			camera.FarPlane = std::max(1000.0f, m_CuttingMaxSeparation * 20.0f);
+
+			DirectionalLightDesc light = m_World->GetLight();
+			light.ShadowCenter = center;
+			light.ShadowDistance = m_CuttingMaxSeparation * 6.0f;
+			light.ShadowSize = m_CuttingMaxSeparation * 4.0f;
+
+			m_RenderThread->Submit([camera, light](Renderer& renderer) {
+				renderer.SetCamera(camera);
+				renderer.SetLight(light);
+			});
+		}
+
 		UpdateImguiState();
+		return true;
 	}
 
-	void WorldViewer::SubmitFractureTransforms()
+	void WorldViewer::RefreshObjList()
 	{
-		if (!m_BunnyFractureDemoActive || m_RenderThread == nullptr)
+		std::vector<std::string> objFiles;
+		const std::string defaultBunny = ResolveTestDataFile("bunny.obj");
+		AddUniqueFile(&objFiles, defaultBunny);
+
+		const std::vector<std::string> dataDirectories = TestDataDirectoryCandidates(m_SceneDirectory);
+		for (const std::string& directory : dataDirectories)
+		{
+			if (!DirectoryExists(directory))
+			{
+				continue;
+			}
+			std::vector<std::string> files = ListObjFiles(directory);
+			for (const std::string& file : files)
+			{
+				AddUniqueFile(&objFiles, file);
+			}
+		}
+
+		if (!m_SceneDirectory.empty() && DirectoryExists(m_SceneDirectory))
+		{
+			std::vector<std::string> files = ListObjFiles(m_SceneDirectory);
+			for (const std::string& file : files)
+			{
+				AddUniqueFile(&objFiles, file);
+			}
+		}
+
+		AddUniqueFile(&objFiles, m_CuttingObjPath);
+		m_CuttingObjFiles.swap(objFiles);
+
+		m_CuttingObjIndex = 0;
+		for (size_t i = 0; i < m_CuttingObjFiles.size(); ++i)
+		{
+			if (m_CuttingObjFiles[i] == m_CuttingObjPath)
+			{
+				m_CuttingObjIndex = (int)i;
+				break;
+			}
+		}
+		if (m_CuttingObjPath.empty() && !m_CuttingObjFiles.empty())
+		{
+			m_CuttingObjPath = m_CuttingObjFiles.front();
+			m_CuttingObjIndex = 0;
+		}
+	}
+
+	void WorldViewer::SubmitCuttingTransforms()
+	{
+		if (!m_CuttingPanelActive)
 		{
 			return;
 		}
 
-		std::shared_ptr<std::vector<RenderTransformUpdate> > updates(new std::vector<RenderTransformUpdate>());
-		updates->reserve(m_FracturePieces.size());
-		for (const FractureRenderPiece& piece : m_FracturePieces)
+		GeometryQuery* geometryQuery = nullptr;
+		PhysicsWorld* simulation = m_World ? m_World->GetSimulation() : nullptr;
+		if (simulation)
 		{
-			RenderTransformUpdate update;
-			update.Id = piece.MeshId;
-			update.WorldTransform = Transform(piece.Direction * (m_FractureSeparation * m_FractureMaxSeparation));
-			updates->push_back(update);
+			geometryQuery = simulation->GetGeometryQuery();
 		}
 
-		m_RenderThread->Submit([updates](Renderer& renderer) {
-			for (const RenderTransformUpdate& update : *updates)
+		for (const CuttingRenderPiece& piece : m_CuttingPieces)
+		{
+			if (piece.GeometryPtr == nullptr)
 			{
-				renderer.UpdateTransform(update);
+				continue;
 			}
-		});
+			const Vector3 oldPosition = piece.GeometryPtr->GetWorldPosition();
+			const Vector3 newPosition = piece.Center + piece.Direction * (m_CuttingSeparation * m_CuttingMaxSeparation);
+			piece.GeometryPtr->SetWorldPosition(newPosition);
+			if (geometryQuery)
+			{
+				geometryQuery->UpdateGeometry(piece.GeometryPtr, newPosition - oldPosition);
+			}
+		}
+
+		SubmitTransforms();
+		SubmitGeometryQueryBounds();
 	}
 
 	void WorldViewer::SubmitTransforms()
 	{
-		if (m_BunnyFractureDemoActive)
-		{
-			return;
-		}
-
 		std::vector<RenderTransformUpdate> updates;
 		for (const RenderBinding& binding : m_RenderBindings)
 		{
@@ -1023,7 +1260,7 @@ namespace Riemann
 			return;
 		}
 
-		if (m_BunnyFractureDemoActive || m_RenderThread == nullptr)
+		if (m_RenderThread == nullptr)
 		{
 			ClearGeometryQueryBounds();
 			return;
@@ -1118,8 +1355,19 @@ namespace Riemann
 		int pendingDemoIndex = -1;
 		bool pendingDistance = false;
 		float pendingDistanceValue = 0.0f;
-		bool pendingFractureSeparation = false;
-		float pendingFractureSeparationValue = 0.0f;
+		bool pendingCuttingSeparation = false;
+		float pendingCuttingSeparationValue = 0.0f;
+		int pendingCuttingObjIndex = -1;
+		bool pendingBrowseCuttingObj = false;
+		bool pendingApplyCutting = false;
+		bool pendingCuttingMode = false;
+		int pendingCuttingModeValue = 0;
+		bool pendingCuttingPieceCount = false;
+		int pendingCuttingPieceCountValue = 0;
+		bool pendingCuttingSeed = false;
+		int pendingCuttingSeedValue = 0;
+		bool pendingCuttingGrout = false;
+		float pendingCuttingGroutValue = 0.0f;
 		bool pendingGeometryQueryBounds = false;
 		bool pendingGeometryQueryBoundsValue = false;
 		{
@@ -1130,9 +1378,27 @@ namespace Riemann
 			pendingDistance = m_ImguiPendingCameraDistance;
 			pendingDistanceValue = m_ImguiPendingCameraDistanceValue;
 			m_ImguiPendingCameraDistance = false;
-			pendingFractureSeparation = m_ImguiPendingFractureSeparation;
-			pendingFractureSeparationValue = m_ImguiPendingFractureSeparationValue;
-			m_ImguiPendingFractureSeparation = false;
+			pendingCuttingSeparation = m_ImguiPendingCuttingSeparation;
+			pendingCuttingSeparationValue = m_ImguiPendingCuttingSeparationValue;
+			m_ImguiPendingCuttingSeparation = false;
+			pendingCuttingObjIndex = m_ImguiPendingCuttingObjIndex;
+			m_ImguiPendingCuttingObjIndex = -1;
+			pendingBrowseCuttingObj = m_ImguiPendingBrowseCuttingObj;
+			m_ImguiPendingBrowseCuttingObj = false;
+			pendingApplyCutting = m_ImguiPendingApplyCutting;
+			m_ImguiPendingApplyCutting = false;
+			pendingCuttingMode = m_ImguiPendingCuttingMode;
+			pendingCuttingModeValue = m_ImguiPendingCuttingModeValue;
+			m_ImguiPendingCuttingMode = false;
+			pendingCuttingPieceCount = m_ImguiPendingCuttingPieceCount;
+			pendingCuttingPieceCountValue = m_ImguiPendingCuttingPieceCountValue;
+			m_ImguiPendingCuttingPieceCount = false;
+			pendingCuttingSeed = m_ImguiPendingCuttingSeed;
+			pendingCuttingSeedValue = m_ImguiPendingCuttingSeedValue;
+			m_ImguiPendingCuttingSeed = false;
+			pendingCuttingGrout = m_ImguiPendingCuttingGrout;
+			pendingCuttingGroutValue = m_ImguiPendingCuttingGroutValue;
+			m_ImguiPendingCuttingGrout = false;
 			pendingGeometryQueryBounds = m_ImguiPendingShowGeometryQueryBounds;
 			pendingGeometryQueryBoundsValue = m_ImguiPendingShowGeometryQueryBoundsValue;
 			m_ImguiPendingShowGeometryQueryBounds = false;
@@ -1146,7 +1412,7 @@ namespace Riemann
 			}
 			else if (pendingDemoIndex == (int)m_SceneFiles.size())
 			{
-				LoadBunnyFractureDemo();
+				LoadCuttingPanel();
 			}
 		}
 
@@ -1161,9 +1427,74 @@ namespace Riemann
 			UpdateCamera();
 		}
 
-		if (pendingFractureSeparation)
+		bool pendingLoadCuttingSource = false;
+		const bool hadCuttingPieces = !m_CuttingPieces.empty();
+		if (pendingCuttingObjIndex >= 0 && pendingCuttingObjIndex < (int)m_CuttingObjFiles.size())
 		{
-			UpdateFractureSeparation(pendingFractureSeparationValue);
+			m_CuttingObjIndex = pendingCuttingObjIndex;
+			m_CuttingObjPath = m_CuttingObjFiles[(size_t)pendingCuttingObjIndex];
+			pendingLoadCuttingSource = true;
+		}
+
+		if (pendingBrowseCuttingObj)
+		{
+			const std::string selectedObj = OpenObjFileDialog();
+			if (!selectedObj.empty())
+			{
+				m_CuttingObjPath = selectedObj;
+				RefreshObjList();
+				pendingLoadCuttingSource = true;
+			}
+		}
+
+		bool pendingCuttingParams = false;
+		if (pendingCuttingMode)
+		{
+			m_CuttingMode = std::max(0, std::min(pendingCuttingModeValue, 3));
+			pendingCuttingParams = true;
+		}
+		if (pendingCuttingPieceCount)
+		{
+			m_CuttingPieceCount = std::max(2, std::min(pendingCuttingPieceCountValue, 64));
+			pendingCuttingParams = true;
+		}
+		if (pendingCuttingSeed)
+		{
+			m_CuttingSeed = std::max(0, std::min(pendingCuttingSeedValue, 999));
+			pendingCuttingParams = true;
+		}
+		if (pendingCuttingGrout)
+		{
+			m_CuttingGrout = std::max(0.0f, std::min(pendingCuttingGroutValue, 0.08f));
+			pendingCuttingParams = true;
+		}
+		if (pendingCuttingSeparation)
+		{
+			m_CuttingSeparation = std::max(0.0f, std::min(pendingCuttingSeparationValue, 1.0f));
+		}
+
+		if (pendingCuttingParams && m_CuttingPanelActive && hadCuttingPieces)
+		{
+			pendingLoadCuttingSource = true;
+		}
+
+		if (pendingApplyCutting && m_CuttingPanelActive)
+		{
+			ApplyCuttingPanel();
+		}
+		else if (pendingLoadCuttingSource && m_CuttingPanelActive)
+		{
+			LoadCuttingPanel();
+		}
+		else if (pendingCuttingSeparation)
+		{
+			SubmitCuttingTransforms();
+			UpdateImguiState();
+		}
+		else if (pendingCuttingParams && m_CuttingPanelActive)
+		{
+			m_CuttingStatus = "Ready. Click Apply Cut";
+			UpdateImguiState();
 		}
 
 		if (pendingGeometryQueryBounds)
@@ -1177,11 +1508,19 @@ namespace Riemann
 		std::lock_guard<std::mutex> lock(m_ImguiMutex);
 		m_ImguiSceneName = m_CurrentSceneName;
 		m_ImguiSceneFiles = m_SceneFiles;
-		m_ImguiDemoIndex = m_BunnyFractureDemoActive ? (int)m_SceneFiles.size() : GetCurrentSceneDemoIndex();
-		m_ImguiObjectCount = m_BunnyFractureDemoActive ? m_FracturePieces.size() : (m_World ? m_World->GetObjects().size() : 0);
+		m_ImguiCuttingObjFiles = m_CuttingObjFiles;
+		m_ImguiCuttingObjPath = m_CuttingObjPath;
+		m_ImguiCuttingStatus = m_CuttingStatus;
+		m_ImguiDemoIndex = m_CuttingPanelActive ? (int)m_SceneFiles.size() : GetCurrentSceneDemoIndex();
+		m_ImguiObjectCount = m_World ? m_World->GetObjects().size() : 0;
 		m_ImguiCameraDistance = m_CamParam.z;
-		m_ImguiBunnyFractureActive = m_BunnyFractureDemoActive;
-		m_ImguiFractureSeparation = m_FractureSeparation;
+		m_ImguiCuttingPanelActive = m_CuttingPanelActive;
+		m_ImguiCuttingObjIndex = m_CuttingObjIndex;
+		m_ImguiCuttingMode = m_CuttingMode;
+		m_ImguiCuttingPieceCount = m_CuttingPieceCount;
+		m_ImguiCuttingSeed = m_CuttingSeed;
+		m_ImguiCuttingGrout = m_CuttingGrout;
+		m_ImguiCuttingSeparation = m_CuttingSeparation;
 		m_ImguiShowGeometryQueryBounds = m_ShowGeometryQueryBounds;
 		m_ImguiGeometryQueryBoundsCount = m_GeometryQueryBoundsMeshIds.size();
 		m_ImguiPhysicsFps = m_PhysicsFps;
@@ -1237,12 +1576,6 @@ namespace Riemann
 
 	void WorldViewer::HandleSceneRay(const Ray3& ray)
 	{
-		if (m_BunnyFractureDemoActive)
-		{
-			SetHighlightedGeometry(nullptr);
-			return;
-		}
-
 		PhysicsWorld* simulation = m_World ? m_World->GetSimulation() : nullptr;
 		if (simulation == nullptr)
 		{
@@ -1262,7 +1595,28 @@ namespace Riemann
 
 		RayCastResult result;
 		const bool hit = geometryQuery->RayCastQuery(ray.Origin, ray.Dir, option, &result);
-		SetHighlightedGeometry(hit && IsHighlightableGeometry(result.hitGeom) ? result.hitGeom : nullptr);
+		Geometry* hitGeometry = hit ? result.hitGeom : nullptr;
+		if (m_CuttingPanelActive && !m_CuttingPieces.empty() && !IsCurrentCuttingGeometry(hitGeometry))
+		{
+			hitGeometry = nullptr;
+		}
+		SetHighlightedGeometry(hitGeometry && IsHighlightableGeometry(hitGeometry) ? hitGeometry : nullptr);
+	}
+
+	bool WorldViewer::IsCurrentCuttingGeometry(const Geometry* geometry) const
+	{
+		if (geometry == nullptr)
+		{
+			return false;
+		}
+		for (const CuttingRenderPiece& piece : m_CuttingPieces)
+		{
+			if (piece.GeometryPtr == geometry)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	void WorldViewer::SetHighlightedGeometry(Geometry* geometry)
@@ -1315,6 +1669,27 @@ namespace Riemann
 		{
 			viewer->DrawImgui(width, height);
 		}
+	}
+
+	std::string WorldViewer::OpenObjFileDialog() const
+	{
+#if defined(_WIN32)
+		char fileName[MAX_PATH] = {};
+		if (!m_CuttingObjPath.empty())
+		{
+			snprintf(fileName, sizeof(fileName), "%s", m_CuttingObjPath.c_str());
+		}
+		OPENFILENAMEA ofn = {};
+		ofn.lStructSize = sizeof(ofn);
+		ofn.lpstrFile = fileName;
+		ofn.nMaxFile = sizeof(fileName);
+		ofn.lpstrFilter = "OBJ Files\0*.obj\0All Files\0*.*\0";
+		ofn.lpstrDefExt = "obj";
+		ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+		return GetOpenFileNameA(&ofn) ? std::string(fileName) : std::string();
+#else
+		return std::string();
+#endif
 	}
 
 	std::string WorldViewer::ResolveSceneFile(const char* fileName) const

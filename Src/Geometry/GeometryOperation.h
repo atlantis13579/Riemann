@@ -40,7 +40,7 @@ namespace Riemann
 		Failed_Unsupported = 1001
 	};
 
-	struct FEdgeSplitInfo
+	struct EdgeSplitInfo
 	{
 		int OriginalEdge;
 		Index2 OriginalVertices;
@@ -53,7 +53,7 @@ namespace Riemann
 		float SplitT;
 	};
 
-	struct FEdgeFlipInfo
+	struct EdgeFlipInfo
 	{
 		int EdgeID;
 		Index2 OriginalVerts;
@@ -61,7 +61,7 @@ namespace Riemann
 		Index2 Triangles;
 	};
 
-	struct FMergeEdgesInfo
+	struct MergeEdgesInfo
 	{
 		int KeptEdge;
 		int RemovedEdge;
@@ -72,7 +72,7 @@ namespace Riemann
 		std::vector<int> BowtiesRemovedEdges, BowtiesKeptEdges;
 	};
 
-	struct FPokeTriangleInfo
+	struct PokeTriangleInfo
 	{
 		int OriginalTriangle;
 		Index3 TriVertices;
@@ -82,7 +82,7 @@ namespace Riemann
 		Vector3 BaryCoords;
 	};
 
-	struct FEdgeCollapseInfo
+	struct EdgeCollapseInfo
 	{
 		int KeptVertex;
 		int RemovedVertex;
@@ -95,7 +95,7 @@ namespace Riemann
 		float CollapseT;
 	};
 
-	struct FVertexSplitInfo
+	struct VertexSplitInfo
 	{
 		int OriginalVertex;
 		int NewVertex;

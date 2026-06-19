@@ -158,9 +158,9 @@ namespace Riemann
 			else
 			{
 				const uint32_t* Indices32 = GetIndices32();
-				*A = Vertices[Indices[3 * index + 0]];
-				*B = Vertices[Indices[3 * index + 1]];
-				*C = Vertices[Indices[3 * index + 2]];
+				*A = Vertices[Indices32[3 * index + 0]];
+				*B = Vertices[Indices32[3 * index + 1]];
+				*C = Vertices[Indices32[3 * index + 2]];
 			}
 
 			return true;
@@ -198,8 +198,7 @@ namespace Riemann
 			if (OwnMemory)
 			{
 				mVertices.resize(Nv);
-				Vertices = &mVertices[0];
-				memcpy(&Vertices[0], Verts, sizeof(Vertices[0]) * Nv);
+				memcpy((void*)mVertices.data(), Verts, sizeof(mVertices[0]) * Nv);
 
 				mIndices.resize(Nt * 3 * GetIndicesWidth());
 				Indices = &mIndices[0];
@@ -557,7 +556,7 @@ namespace Riemann
 			std::vector<float> Weight;
 			Weight.resize(NumVertices, 0.0f);
 			mNormals.resize(NumVertices);
-			memset(&mNormals[0], 0, sizeof(mNormals[0]) * mNormals.size());
+			memset((void*)mNormals.data(), 0, sizeof(mNormals[0]) * mNormals.size());
 			for (uint32_t i = 0; i < NumTriangles; ++i)
 			{
 				int i0, i1, i2;

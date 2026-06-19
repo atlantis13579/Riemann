@@ -12,6 +12,8 @@
 #include <sstream>
 
 #include "../Src/Collision/GeometryObject.h"
+#include "../Src/CollisionPrimitive/StaticMesh.h"
+#include "../Src/CollisionPrimitive/TriangleMesh.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 
 namespace Riemann
@@ -895,6 +897,56 @@ namespace Riemann
 		instance.GeometryPtr = geometry;
 		instance.Color = color;
 		instance.RenderBounds = false;
+		m_Objects.push_back(instance);
+		return geometry;
+	}
+
+	Geometry* SceneWorld::AddTriangleMeshObject(const std::string& id, const StaticMesh& mesh, const Transform& transform, RigidType bodyType, const Vector4& color, bool renderBounds)
+	{
+		if (m_World == nullptr || mesh.GetVertexCount() == 0 || mesh.GetTriangleCount() == 0)
+		{
+			return nullptr;
+		}
+
+		Geometry* geometry = GeometryFactory::CreateTriangleMesh();
+		TriangleMesh* triangleMesh = geometry ? geometry->GetShapeObj<TriangleMesh>() : nullptr;
+		if (triangleMesh == nullptr)
+		{
+			delete geometry;
+			return nullptr;
+		}
+
+		triangleMesh->Release();
+		triangleMesh->SetData(
+			const_cast<Vector3*>(mesh.mVertices.data()),
+			const_cast<uint16_t*>(mesh.mIndices.data()),
+			mesh.GetVertexCount(),
+			mesh.GetTriangleCount(),
+			mesh.Is16bitIndices(),
+			true);
+		triangleMesh->CalculateBoundingBox();
+		triangleMesh->CalculateWeightAverageNormals();
+		triangleMesh->BuildBVH();
+
+		geometry->UpdateVolumeProperties();
+		geometry->SetWorldTransform(transform.pos, transform.quat);
+		geometry->SetQueryEnabled(true);
+		geometry->SetSimulationEnabled(bodyType != RigidType::Static);
+
+		RigidBodyParam bodyParam;
+		bodyParam.rigidType = bodyType;
+		RigidBody* body = m_World->CreateRigidBody(geometry, bodyParam);
+		if (body == nullptr)
+		{
+			delete geometry;
+			return nullptr;
+		}
+
+		SceneObjectInstance instance;
+		instance.Id = id;
+		instance.GeometryPtr = geometry;
+		instance.Color = color;
+		instance.RenderBounds = renderBounds;
 		m_Objects.push_back(instance);
 		return geometry;
 	}

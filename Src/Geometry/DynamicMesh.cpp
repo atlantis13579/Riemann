@@ -741,7 +741,7 @@ namespace Riemann
 		{
 			for (int NormalLayerIndex = 0; NormalLayerIndex < mAttributes->NumNormalLayers(); ++NormalLayerIndex)
 			{
-				FDynamicMeshNormalOverlay* NormalOverlay = mAttributes->GetNormalLayer(NormalLayerIndex);
+				DynamicMeshNormalOverlay* NormalOverlay = mAttributes->GetNormalLayer(NormalLayerIndex);
 				for (int ElementID = 0; ElementID < NormalOverlay->MaxElementID(); ++ElementID)
 				{
 					if (NormalOverlay->IsElement(ElementID))
@@ -793,9 +793,9 @@ namespace Riemann
 		return s.to_vector();
 	}
 
-	EMeshResult DynamicMesh::MergeEdges(int eKeep, int eDiscard, FMergeEdgesInfo& MergeInfo, bool bCheckValidOrientation)
+	EMeshResult DynamicMesh::MergeEdges(int eKeep, int eDiscard, MergeEdgesInfo& MergeInfo, bool bCheckValidOrientation)
 	{
-		MergeInfo = FMergeEdgesInfo();
+		MergeInfo = MergeEdgesInfo();
 
 		if (IsEdge(eKeep) == false || IsEdge(eDiscard) == false)
 		{
@@ -1081,9 +1081,9 @@ namespace Riemann
 		return EMeshResult::Ok;
 	}
 
-	EMeshResult DynamicMesh::PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, FPokeTriangleInfo& PokeResult)
+	EMeshResult DynamicMesh::PokeTriangle(int TriangleID, const Vector3& BaryCoordinates, PokeTriangleInfo& PokeResult)
 	{
-		PokeResult = FPokeTriangleInfo();
+		PokeResult = PokeTriangleInfo();
 
 		if (!IsTriangle(TriangleID))
 		{
@@ -1178,9 +1178,9 @@ namespace Riemann
 		return -1;
 	}
 
-	EMeshResult DynamicMesh::SplitEdge(int eab, FEdgeSplitInfo& SplitInfo, float split_t)
+	EMeshResult DynamicMesh::SplitEdge(int eab, EdgeSplitInfo& SplitInfo, float split_t)
 	{
-		SplitInfo = FEdgeSplitInfo();
+		SplitInfo = EdgeSplitInfo();
 
 		if (!IsEdge(eab))
 		{
@@ -1355,9 +1355,9 @@ namespace Riemann
 		}
 	}
 
-	EMeshResult DynamicMesh::CollapseEdge(int vKeep, int vRemove, float collapse_t, FEdgeCollapseInfo& CollapseInfo)
+	EMeshResult DynamicMesh::CollapseEdge(int vKeep, int vRemove, float collapse_t, EdgeCollapseInfo& CollapseInfo)
 	{
-		CollapseInfo = FEdgeCollapseInfo();
+		CollapseInfo = EdgeCollapseInfo();
 
 		if (IsVertex(vKeep) == false || IsVertex(vRemove) == false)
 		{
@@ -2949,7 +2949,7 @@ namespace Riemann
 		{
 			for (int NormalLayerIndex = 0; NormalLayerIndex < Mesh->Attributes()->NumNormalLayers(); NormalLayerIndex++)
 			{
-				FDynamicMeshNormalOverlay* NormalOverlay = Mesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+				DynamicMeshNormalOverlay* NormalOverlay = Mesh->Attributes()->GetNormalLayer(NormalLayerIndex);
 				std::vector<bool> DoneNormals(NormalOverlay->MaxElementID());
 				for (int TriangleID : Triangles)
 				{
@@ -3066,8 +3066,8 @@ namespace Riemann
 			int NumNormalLayers = std::min(Mesh->Attributes()->NumNormalLayers(), AppendMesh->Attributes()->NumNormalLayers());
 			for (int NormalLayerIndex = 0; NormalLayerIndex < NumNormalLayers; NormalLayerIndex++)
 			{
-				const FDynamicMeshNormalOverlay* FromNormals = AppendMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
-				FDynamicMeshNormalOverlay* ToNormals = Mesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+				const DynamicMeshNormalOverlay* FromNormals = AppendMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+				DynamicMeshNormalOverlay* ToNormals = Mesh->Attributes()->GetNormalLayer(NormalLayerIndex);
 				if (FromNormals != nullptr && ToNormals != nullptr)
 				{
 					FIndexMapi& NormalMap = IndexMapsOut.GetNormalMap(NormalLayerIndex);
@@ -3080,8 +3080,8 @@ namespace Riemann
 			int NumUVLayers = std::min(Mesh->Attributes()->NumUVLayers(), AppendMesh->Attributes()->NumUVLayers());
 			for (int UVLayerIndex = 0; UVLayerIndex < NumUVLayers; UVLayerIndex++)
 			{
-				const FDynamicMeshUVOverlay* FromUVs = AppendMesh->Attributes()->GetUVLayer(UVLayerIndex);
-				FDynamicMeshUVOverlay* ToUVs = Mesh->Attributes()->GetUVLayer(UVLayerIndex);
+				const DynamicMeshUVOverlay* FromUVs = AppendMesh->Attributes()->GetUVLayer(UVLayerIndex);
+				DynamicMeshUVOverlay* ToUVs = Mesh->Attributes()->GetUVLayer(UVLayerIndex);
 				if (FromUVs != nullptr && ToUVs != nullptr)
 				{
 					FIndexMapi& UVMap = IndexMapsOut.GetUVMap(UVLayerIndex);
@@ -3093,8 +3093,8 @@ namespace Riemann
 
 			if (AppendMesh->Attributes()->HasMaterialID() && Mesh->Attributes()->HasMaterialID())
 			{
-				const FDynamicMeshMaterialAttribute* FromMaterialIDs = AppendMesh->Attributes()->GetMaterialID();
-				FDynamicMeshMaterialAttribute* ToMaterialIDs = Mesh->Attributes()->GetMaterialID();
+				const DynamicMeshMaterialAttribute* FromMaterialIDs = AppendMesh->Attributes()->GetMaterialID();
+				DynamicMeshMaterialAttribute* ToMaterialIDs = Mesh->Attributes()->GetMaterialID();
 				for (const std::pair<int, int>& MapTID : TriangleMap.GetForwardMap())
 				{
 					ToMaterialIDs->SetValue(MapTID.second, FromMaterialIDs->GetValue(MapTID.first));
@@ -3103,8 +3103,8 @@ namespace Riemann
 
 			if (AppendMesh->Attributes()->HasPrimaryColors() && Mesh->Attributes()->HasPrimaryColors())
 			{
-				const FDynamicMeshColorOverlay* FromColors = AppendMesh->Attributes()->PrimaryColors();
-				FDynamicMeshColorOverlay* ToColors = Mesh->Attributes()->PrimaryColors();
+				const DynamicMeshColorOverlay* FromColors = AppendMesh->Attributes()->PrimaryColors();
+				DynamicMeshColorOverlay* ToColors = Mesh->Attributes()->PrimaryColors();
 				if (FromColors != nullptr && ToColors != nullptr)
 				{
 					FIndexMapi& ColorMap = IndexMapsOut.GetColorMap();
@@ -3117,8 +3117,8 @@ namespace Riemann
 			int NumWeightLayers = std::min(Mesh->Attributes()->NumWeightLayers(), AppendMesh->Attributes()->NumWeightLayers());
 			for (int WeightLayerIndex = 0; WeightLayerIndex < NumWeightLayers; WeightLayerIndex++)
 			{
-				const FDynamicMeshWeightAttribute* FromWeights = AppendMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
-				FDynamicMeshWeightAttribute* ToWeights = Mesh->Attributes()->GetWeightLayer(WeightLayerIndex);
+				const DynamicMeshWeightAttribute* FromWeights = AppendMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
+				DynamicMeshWeightAttribute* ToWeights = Mesh->Attributes()->GetWeightLayer(WeightLayerIndex);
 				for (const std::pair<int, int>& MapVID : VertexMap.GetForwardMap())
 				{
 					float Weight;
@@ -3185,11 +3185,11 @@ namespace Riemann
 				}
 			}
 
-			for (const std::pair<std::string, TUniquePtr<FDynamicMeshAttributeBase>>& AttribPair : AppendMesh->Attributes()->GetAttachedAttributes())
+			for (const std::pair<std::string, TUniquePtr<DynamicMeshAttributeBase>>& AttribPair : AppendMesh->Attributes()->GetAttachedAttributes())
 			{
 				if (Mesh->Attributes()->HasAttachedAttribute(AttribPair.first))
 				{
-					FDynamicMeshAttributeBase* ToAttrib = Mesh->Attributes()->GetAttachedAttribute(AttribPair.first);
+					DynamicMeshAttributeBase* ToAttrib = Mesh->Attributes()->GetAttachedAttribute(AttribPair.first);
 					ToAttrib->CopyThroughMapping(AttribPair.second.Get(), IndexMapsOut);
 				}
 			}
@@ -3199,7 +3199,7 @@ namespace Riemann
 
 
 	void FDynamicMeshEditor::AppendNormals(const DynamicMesh* AppendMesh,
-		const FDynamicMeshNormalOverlay* FromNormals, FDynamicMeshNormalOverlay* ToNormals,
+		const DynamicMeshNormalOverlay* FromNormals, DynamicMeshNormalOverlay* ToNormals,
 		const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
 		std::function<Vector3(int, const Vector3&)> NormalTransform,
 		FIndexMapi& NormalMapOut)
@@ -3239,7 +3239,7 @@ namespace Riemann
 
 
 	void FDynamicMeshEditor::AppendUVs(const DynamicMesh* AppendMesh,
-		const FDynamicMeshUVOverlay* FromUVs, FDynamicMeshUVOverlay* ToUVs,
+		const DynamicMeshUVOverlay* FromUVs, DynamicMeshUVOverlay* ToUVs,
 		const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
 		FIndexMapi& UVMapOut)
 	{
@@ -3273,7 +3273,7 @@ namespace Riemann
 
 
 	void FDynamicMeshEditor::AppendColors(const DynamicMesh* AppendMesh,
-		const FDynamicMeshColorOverlay* FromOverlay, FDynamicMeshColorOverlay* ToOverlay,
+		const DynamicMeshColorOverlay* FromOverlay, DynamicMeshColorOverlay* ToOverlay,
 		const FIndexMapi& VertexMap, const FIndexMapi& TriangleMap,
 		FIndexMapi& MapOut)
 	{
@@ -3308,8 +3308,8 @@ namespace Riemann
 		int NewElementID = IndexMaps.GetNewUV(UVLayerIndex, FromElementID);
 		if (NewElementID == IndexMaps.InvalidID())
 		{
-			const FDynamicMeshUVOverlay* FromUVOverlay = FromMesh->Attributes()->GetUVLayer(UVLayerIndex);
-			FDynamicMeshUVOverlay* ToUVOverlay = ToMesh->Attributes()->GetUVLayer(UVLayerIndex);
+			const DynamicMeshUVOverlay* FromUVOverlay = FromMesh->Attributes()->GetUVLayer(UVLayerIndex);
+			DynamicMeshUVOverlay* ToUVOverlay = ToMesh->Attributes()->GetUVLayer(UVLayerIndex);
 			NewElementID = ToUVOverlay->AppendElement(FromUVOverlay->GetElement(FromElementID));
 			IndexMaps.SetUV(UVLayerIndex, FromElementID, NewElementID);
 		}
@@ -3321,8 +3321,8 @@ namespace Riemann
 		int NewElementID = IndexMaps.GetNewNormal(NormalLayerIndex, FromElementID);
 		if (NewElementID == IndexMaps.InvalidID())
 		{
-			const FDynamicMeshNormalOverlay* FromNormalOverlay = FromMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
-			FDynamicMeshNormalOverlay* ToNormalOverlay = ToMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+			const DynamicMeshNormalOverlay* FromNormalOverlay = FromMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+			DynamicMeshNormalOverlay* ToNormalOverlay = ToMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
 			NewElementID = ToNormalOverlay->AppendElement(FromNormalOverlay->GetElement(FromElementID));
 			IndexMaps.SetNormal(NormalLayerIndex, FromElementID, NewElementID);
 		}
@@ -3334,8 +3334,8 @@ namespace Riemann
 		int NewElementID = IndexMaps.GetNewColor(FromElementID);
 		if (NewElementID == IndexMaps.InvalidID())
 		{
-			const FDynamicMeshColorOverlay* FromOverlay = FromMesh->Attributes()->PrimaryColors();
-			FDynamicMeshColorOverlay* ToOverlay = ToMesh->Attributes()->PrimaryColors();
+			const DynamicMeshColorOverlay* FromOverlay = FromMesh->Attributes()->PrimaryColors();
+			DynamicMeshColorOverlay* ToOverlay = ToMesh->Attributes()->PrimaryColors();
 			NewElementID = ToOverlay->AppendElement(FromOverlay->GetElement(FromElementID));
 			IndexMaps.SetColor(FromElementID, NewElementID);
 		}
@@ -3351,8 +3351,8 @@ namespace Riemann
 
 		for (int UVLayerIndex = 0; UVLayerIndex < std::min(FromMesh->Attributes()->NumUVLayers(), ToMesh->Attributes()->NumUVLayers()); UVLayerIndex++)
 		{
-			const FDynamicMeshUVOverlay* FromUVOverlay = FromMesh->Attributes()->GetUVLayer(UVLayerIndex);
-			FDynamicMeshUVOverlay* ToUVOverlay = ToMesh->Attributes()->GetUVLayer(UVLayerIndex);
+			const DynamicMeshUVOverlay* FromUVOverlay = FromMesh->Attributes()->GetUVLayer(UVLayerIndex);
+			DynamicMeshUVOverlay* ToUVOverlay = ToMesh->Attributes()->GetUVLayer(UVLayerIndex);
 			if (FromUVOverlay->IsSetTriangle(FromTriangleID))
 			{
 				Index3 FromElemTri = FromUVOverlay->GetTriangle(FromTriangleID);
@@ -3369,8 +3369,8 @@ namespace Riemann
 
 		for (int NormalLayerIndex = 0; NormalLayerIndex < std::min(FromMesh->Attributes()->NumNormalLayers(), ToMesh->Attributes()->NumNormalLayers()); NormalLayerIndex++)
 		{
-			const FDynamicMeshNormalOverlay* FromNormalOverlay = FromMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
-			FDynamicMeshNormalOverlay* ToNormalOverlay = ToMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+			const DynamicMeshNormalOverlay* FromNormalOverlay = FromMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+			DynamicMeshNormalOverlay* ToNormalOverlay = ToMesh->Attributes()->GetNormalLayer(NormalLayerIndex);
 			if (FromNormalOverlay->IsSetTriangle(FromTriangleID))
 			{
 				Index3 FromElemTri = FromNormalOverlay->GetTriangle(FromTriangleID);
@@ -3387,8 +3387,8 @@ namespace Riemann
 
 		if (FromMesh->Attributes()->HasPrimaryColors() && ToMesh->Attributes()->HasPrimaryColors())
 		{
-			const FDynamicMeshColorOverlay* FromOverlay = FromMesh->Attributes()->PrimaryColors();
-			FDynamicMeshColorOverlay* ToOverlay = ToMesh->Attributes()->PrimaryColors();
+			const DynamicMeshColorOverlay* FromOverlay = FromMesh->Attributes()->PrimaryColors();
+			DynamicMeshColorOverlay* ToOverlay = ToMesh->Attributes()->PrimaryColors();
 			if (FromOverlay->IsSetTriangle(FromTriangleID))
 			{
 				Index3 FromElemTri = FromOverlay->GetTriangle(FromTriangleID);
@@ -3405,8 +3405,8 @@ namespace Riemann
 
 		if (FromMesh->Attributes()->HasMaterialID() && ToMesh->Attributes()->HasMaterialID())
 		{
-			const FDynamicMeshMaterialAttribute* FromMaterialIDs = FromMesh->Attributes()->GetMaterialID();
-			FDynamicMeshMaterialAttribute* ToMaterialIDs = ToMesh->Attributes()->GetMaterialID();
+			const DynamicMeshMaterialAttribute* FromMaterialIDs = FromMesh->Attributes()->GetMaterialID();
+			DynamicMeshMaterialAttribute* ToMaterialIDs = ToMesh->Attributes()->GetMaterialID();
 			ToMaterialIDs->SetValue(ToTriangleID, FromMaterialIDs->GetValue(FromTriangleID));
 		}
 
@@ -3430,8 +3430,8 @@ namespace Riemann
 		int NumWeightLayers = std::min(FromMesh->Attributes()->NumWeightLayers(), ToMesh->Attributes()->NumWeightLayers());
 		for (int WeightLayerIndex = 0; WeightLayerIndex < NumWeightLayers; WeightLayerIndex++)
 		{
-			const FDynamicMeshWeightAttribute* FromWeights = FromMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
-			FDynamicMeshWeightAttribute* ToWeights = ToMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
+			const DynamicMeshWeightAttribute* FromWeights = FromMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
+			DynamicMeshWeightAttribute* ToWeights = ToMesh->Attributes()->GetWeightLayer(WeightLayerIndex);
 			for (const std::pair<int, int>& MapVID : IndexMaps.GetVertexMap().GetForwardMap())
 			{
 				float Weight;
@@ -3451,11 +3451,11 @@ namespace Riemann
 			}
 		}
 
-		for (const std::pair<std::string, TUniquePtr<FDynamicMeshAttributeBase>>& AttribPair : FromMesh->Attributes()->GetAttachedAttributes())
+		for (const std::pair<std::string, TUniquePtr<DynamicMeshAttributeBase>>& AttribPair : FromMesh->Attributes()->GetAttachedAttributes())
 		{
 			if (ToMesh->Attributes()->HasAttachedAttribute(AttribPair.first))
 			{
-				FDynamicMeshAttributeBase* ToAttrib = ToMesh->Attributes()->GetAttachedAttribute(AttribPair.first);
+				DynamicMeshAttributeBase* ToAttrib = ToMesh->Attributes()->GetAttachedAttribute(AttribPair.first);
 				ToAttrib->CopyThroughMapping(AttribPair.second.Get(), IndexMaps);
 			}
 		}
@@ -3620,7 +3620,7 @@ namespace Riemann
 			return (double)a.Dot(b.Cross(c)) / 6.0;
 		}
 
-		static FDynamicMeshNormalOverlay* EnsureNormalOverlay(DynamicMesh* Mesh)
+		static DynamicMeshNormalOverlay* EnsureNormalOverlay(DynamicMesh* Mesh)
 		{
 			Mesh->EnableAttributes();
 			if (Mesh->Attributes()->NumNormalLayers() == 0)
@@ -3630,7 +3630,7 @@ namespace Riemann
 			return Mesh->Attributes()->PrimaryNormals();
 		}
 
-		static FDynamicMeshUVOverlay* EnsureUVOverlay(DynamicMesh* Mesh, int UVLayerIndex)
+		static DynamicMeshUVOverlay* EnsureUVOverlay(DynamicMesh* Mesh, int UVLayerIndex)
 		{
 			Mesh->EnableAttributes();
 			if (Mesh->Attributes()->NumUVLayers() <= UVLayerIndex)
@@ -3757,7 +3757,7 @@ namespace Riemann
 				continue;
 			}
 
-			FMergeEdgesInfo MergeInfo;
+			MergeEdgesInfo MergeInfo;
 			const EMeshResult Result = Mesh->MergeEdges(Edge1, Edge2, MergeInfo);
 			if (Result != EMeshResult::Ok)
 			{
@@ -4013,7 +4013,7 @@ namespace Riemann
 
 	void FDynamicMeshEditor::SetQuadNormals(const Index2& QuadTris, const Vector3& Normal)
 	{
-		FDynamicMeshNormalOverlay* Normals = DynamicMeshEditorLocal::EnsureNormalOverlay(Mesh);
+		DynamicMeshNormalOverlay* Normals = DynamicMeshEditorLocal::EnsureNormalOverlay(Mesh);
 		std::map<int, int> VertToElement;
 
 		auto SetTriangleNormal = [&](int TriangleID)
@@ -4051,7 +4051,7 @@ namespace Riemann
 
 	void FDynamicMeshEditor::SetTriangleNormals(const std::vector<int>& Triangles, const Vector3& Normal)
 	{
-		FDynamicMeshNormalOverlay* Normals = DynamicMeshEditorLocal::EnsureNormalOverlay(Mesh);
+		DynamicMeshNormalOverlay* Normals = DynamicMeshEditorLocal::EnsureNormalOverlay(Mesh);
 		std::map<int, int> VertToElement;
 		for (int TriangleID : Triangles)
 		{
@@ -4110,7 +4110,7 @@ namespace Riemann
 			}
 		}
 
-		FDynamicMeshNormalOverlay* Normals = DynamicMeshEditorLocal::EnsureNormalOverlay(Mesh);
+		DynamicMeshNormalOverlay* Normals = DynamicMeshEditorLocal::EnsureNormalOverlay(Mesh);
 		std::map<int, int> VertToElement;
 		for (int TriangleID : Triangles)
 		{
@@ -4224,7 +4224,7 @@ namespace Riemann
 			}
 		}
 
-		FDynamicMeshNormalOverlay* Normals = DynamicMeshEditorLocal::EnsureNormalOverlay(Mesh);
+		DynamicMeshNormalOverlay* Normals = DynamicMeshEditorLocal::EnsureNormalOverlay(Mesh);
 		std::map<int, int> VertToElID;
 		for (int Side = 0; Side < 2; Side++)
 		{
@@ -4271,7 +4271,7 @@ namespace Riemann
 			return;
 		}
 
-		FDynamicMeshUVOverlay* UVs = DynamicMeshEditorLocal::EnsureUVOverlay(Mesh, UVLayerIndex);
+		DynamicMeshUVOverlay* UVs = DynamicMeshEditorLocal::EnsureUVOverlay(Mesh, UVLayerIndex);
 		const Vector3 RefPos = Mesh->GetVertex(VertexIDs1[0]);
 		auto GetUV = [this, &VDir, UVScaleFactor, &UVTranslation, &RefPos](int MeshIdx, float UStart, float UEnd, float Param)
 		{
@@ -4386,7 +4386,7 @@ namespace Riemann
 			return;
 		}
 
-		FDynamicMeshUVOverlay* UVs = DynamicMeshEditorLocal::EnsureUVOverlay(Mesh, UVLayerIndex);
+		DynamicMeshUVOverlay* UVs = DynamicMeshEditorLocal::EnsureUVOverlay(Mesh, UVLayerIndex);
 		std::map<int, int> BaseToOverlayVIDMap;
 		std::vector<int> AllUVIndices;
 		Box2 UVBounds = Box2::Empty();
@@ -4464,7 +4464,7 @@ namespace Riemann
 			return;
 		}
 
-		FDynamicMeshUVOverlay* UVs = Mesh->Attributes()->GetUVLayer(UVLayerIndex);
+		DynamicMeshUVOverlay* UVs = Mesh->Attributes()->GetUVLayer(UVLayerIndex);
 		if (bWorldSpace)
 		{
 			float TotalEdgeUVLen = 0.0f;
@@ -4513,7 +4513,7 @@ namespace Riemann
 		int NewElementID = IndexMaps.GetNewUV(UVLayerIndex, ElementID);
 		if (NewElementID == IndexMaps.InvalidID())
 		{
-			FDynamicMeshUVOverlay* UVOverlay = Mesh->Attributes()->GetUVLayer(UVLayerIndex);
+			DynamicMeshUVOverlay* UVOverlay = Mesh->Attributes()->GetUVLayer(UVLayerIndex);
 			NewElementID = UVOverlay->AppendElement(UVOverlay->GetElement(ElementID));
 			UVOverlay->SetParentVertex(NewElementID, UVOverlay->GetParentVertex(ElementID));
 			IndexMaps.SetUV(UVLayerIndex, ElementID, NewElementID);
@@ -4526,7 +4526,7 @@ namespace Riemann
 		int NewElementID = IndexMaps.GetNewNormal(NormalLayerIndex, ElementID);
 		if (NewElementID == IndexMaps.InvalidID())
 		{
-			FDynamicMeshNormalOverlay* NormalOverlay = Mesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+			DynamicMeshNormalOverlay* NormalOverlay = Mesh->Attributes()->GetNormalLayer(NormalLayerIndex);
 			NewElementID = NormalOverlay->AppendElement(NormalOverlay->GetElement(ElementID));
 			NormalOverlay->SetParentVertex(NewElementID, NormalOverlay->GetParentVertex(ElementID));
 			IndexMaps.SetNormal(NormalLayerIndex, ElementID, NewElementID);
@@ -4547,7 +4547,7 @@ namespace Riemann
 		int NewElementID = IndexMaps.GetNewColor(ElementID);
 		if (NewElementID == IndexMaps.InvalidID())
 		{
-			FDynamicMeshColorOverlay* ColorOverlay = Mesh->Attributes()->PrimaryColors();
+			DynamicMeshColorOverlay* ColorOverlay = Mesh->Attributes()->PrimaryColors();
 			NewElementID = ColorOverlay->AppendElement(ColorOverlay->GetElement(ElementID));
 			ColorOverlay->SetParentVertex(NewElementID, ColorOverlay->GetParentVertex(ElementID));
 			IndexMaps.SetColor(ElementID, NewElementID);
@@ -4572,7 +4572,7 @@ namespace Riemann
 			{
 				for (int WeightLayerIndex = 0; WeightLayerIndex < Mesh->Attributes()->NumWeightLayers(); ++WeightLayerIndex)
 				{
-					FDynamicMeshWeightAttribute* WeightAttr = Mesh->Attributes()->GetWeightLayer(WeightLayerIndex);
+					DynamicMeshWeightAttribute* WeightAttr = Mesh->Attributes()->GetWeightLayer(WeightLayerIndex);
 					float Val;
 					WeightAttr->GetValue(VertexID, &Val);
 					WeightAttr->SetNewValue(NewVertexID, &Val);
@@ -4609,7 +4609,7 @@ namespace Riemann
 
 		for (int UVLayerIndex = 0; UVLayerIndex < Mesh->Attributes()->NumUVLayers(); UVLayerIndex++)
 		{
-			FDynamicMeshUVOverlay* UVOverlay = Mesh->Attributes()->GetUVLayer(UVLayerIndex);
+			DynamicMeshUVOverlay* UVOverlay = Mesh->Attributes()->GetUVLayer(UVLayerIndex);
 			if (UVOverlay->IsSetTriangle(FromTriangleID))
 			{
 				const Index3 FromElemTri = UVOverlay->GetTriangle(FromTriangleID);
@@ -4628,7 +4628,7 @@ namespace Riemann
 		}
 		for (int NormalLayerIndex = 0; NormalLayerIndex < Mesh->Attributes()->NumNormalLayers(); NormalLayerIndex++)
 		{
-			FDynamicMeshNormalOverlay* NormalOverlay = Mesh->Attributes()->GetNormalLayer(NormalLayerIndex);
+			DynamicMeshNormalOverlay* NormalOverlay = Mesh->Attributes()->GetNormalLayer(NormalLayerIndex);
 			if (NormalOverlay->IsSetTriangle(FromTriangleID))
 			{
 				const Index3 FromElemTri = NormalOverlay->GetTriangle(FromTriangleID);
@@ -4643,7 +4643,7 @@ namespace Riemann
 
 		if (Mesh->Attributes()->HasPrimaryColors())
 		{
-			FDynamicMeshColorOverlay* ColorOverlay = Mesh->Attributes()->PrimaryColors();
+			DynamicMeshColorOverlay* ColorOverlay = Mesh->Attributes()->PrimaryColors();
 			if (ColorOverlay->IsSetTriangle(FromTriangleID))
 			{
 				const Index3 FromElemTri = ColorOverlay->GetTriangle(FromTriangleID);
@@ -4658,7 +4658,7 @@ namespace Riemann
 
 		if (Mesh->Attributes()->HasMaterialID())
 		{
-			FDynamicMeshMaterialAttribute* MaterialIDs = Mesh->Attributes()->GetMaterialID();
+			DynamicMeshMaterialAttribute* MaterialIDs = Mesh->Attributes()->GetMaterialID();
 			MaterialIDs->SetValue(ToTriangleID, MaterialIDs->GetValue(FromTriangleID));
 		}
 	}

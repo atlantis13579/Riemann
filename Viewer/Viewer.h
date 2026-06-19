@@ -43,28 +43,32 @@ namespace Riemann
 
 		void AddToRender();
 
-	private:
+private:
 		struct RenderBinding
 		{
 			Geometry* GeometryPtr = nullptr;
 			std::vector<std::string> MeshIds;
 		};
 
-		struct FractureRenderPiece
+		struct CuttingRenderPiece
 		{
+			Geometry* GeometryPtr = nullptr;
 			std::string MeshId;
+			Vector3 Center = Vector3::Zero();
 			Vector3 Direction = Vector3::Zero();
 		};
 
 		void RebuildRenderScene();
 		void AddGeometryToRender(const std::string& id, Geometry* geometry, const Vector4& color, bool renderBounds);
-		bool LoadBunnyFractureDemo();
-		void UpdateFractureSeparation(float separation);
-		void SubmitFractureTransforms();
+		bool LoadCuttingPanel();
+		bool ApplyCuttingPanel();
+		void RefreshObjList();
+		void SubmitCuttingTransforms();
 		void SubmitTransforms();
 		void SubmitGeometryQueryBounds();
 		void ClearGeometryQueryBounds();
 		void SetShowGeometryQueryBounds(bool show);
+		std::string OpenObjFileDialog() const;
 		std::string ResolveSceneFile(const char* fileName) const;
 		std::string ResolveTestDataFile(const char* fileName) const;
 		void RefreshSceneList();
@@ -75,6 +79,7 @@ namespace Riemann
 		void UpdatePhysicsFps();
 		Ray3 BuildSceneRay(int x, int y, int width, int height) const;
 		void HandleSceneRay(const Ray3& ray);
+		bool IsCurrentCuttingGeometry(const Geometry* geometry) const;
 		void SetHighlightedGeometry(Geometry* geometry);
 		static void DrawImguiCallback(int width, int height, void* userData);
 
@@ -91,21 +96,37 @@ namespace Riemann
 		Vector3 m_CamCenter;
 		Vector3 m_CamParam;
 		bool m_MovementKeys[4];
-		bool m_BunnyFractureDemoActive;
-		std::vector<FractureRenderPiece> m_FracturePieces;
+		bool m_CuttingPanelActive;
+		std::vector<CuttingRenderPiece> m_CuttingPieces;
+		std::vector<std::string> m_CuttingObjFiles;
+		std::string m_CuttingObjPath;
+		std::string m_CuttingStatus;
 		std::vector<std::string> m_GeometryQueryBoundsMeshIds;
-		float m_FractureSeparation;
-		float m_FractureMaxSeparation;
+		int m_CuttingObjIndex;
+		int m_CuttingMode;
+		int m_CuttingPieceCount;
+		int m_CuttingSeed;
+		float m_CuttingGrout;
+		float m_CuttingSeparation;
+		float m_CuttingMaxSeparation;
 		bool m_ShowGeometryQueryBounds;
 
 		mutable std::mutex m_ImguiMutex;
 		std::string m_ImguiSceneName;
 		std::vector<std::string> m_ImguiSceneFiles;
+		std::vector<std::string> m_ImguiCuttingObjFiles;
+		std::string m_ImguiCuttingObjPath;
+		std::string m_ImguiCuttingStatus;
 		int m_ImguiDemoIndex;
 		size_t m_ImguiObjectCount;
 		float m_ImguiCameraDistance;
-		bool m_ImguiBunnyFractureActive;
-		float m_ImguiFractureSeparation;
+		bool m_ImguiCuttingPanelActive;
+		int m_ImguiCuttingObjIndex;
+		int m_ImguiCuttingMode;
+		int m_ImguiCuttingPieceCount;
+		int m_ImguiCuttingSeed;
+		float m_ImguiCuttingGrout;
+		float m_ImguiCuttingSeparation;
 		bool m_ImguiShowGeometryQueryBounds;
 		size_t m_ImguiGeometryQueryBoundsCount;
 		double m_ImguiPhysicsFps;
@@ -114,8 +135,19 @@ namespace Riemann
 		std::string m_ImguiPendingSceneFile;
 		bool m_ImguiPendingCameraDistance;
 		float m_ImguiPendingCameraDistanceValue;
-		bool m_ImguiPendingFractureSeparation;
-		float m_ImguiPendingFractureSeparationValue;
+		bool m_ImguiPendingCuttingSeparation;
+		float m_ImguiPendingCuttingSeparationValue;
+		int m_ImguiPendingCuttingObjIndex;
+		bool m_ImguiPendingBrowseCuttingObj;
+		bool m_ImguiPendingApplyCutting;
+		bool m_ImguiPendingCuttingMode;
+		int m_ImguiPendingCuttingModeValue;
+		bool m_ImguiPendingCuttingPieceCount;
+		int m_ImguiPendingCuttingPieceCountValue;
+		bool m_ImguiPendingCuttingSeed;
+		int m_ImguiPendingCuttingSeedValue;
+		bool m_ImguiPendingCuttingGrout;
+		float m_ImguiPendingCuttingGroutValue;
 		bool m_ImguiPendingShowGeometryQueryBounds;
 		bool m_ImguiPendingShowGeometryQueryBoundsValue;
 
