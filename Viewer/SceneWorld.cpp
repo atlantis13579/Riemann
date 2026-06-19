@@ -618,7 +618,7 @@ namespace Riemann
 
 		PhysicsWorldParam param;
 		param.gravityAcc = gravity;
-		param.sceneQueryTree = SceneQueryAABBTree::DynamicAABB;
+		param.sceneQueryType = SceneQueryType::DynamicAABB;
 		m_World.reset(new PhysicsWorld(param));
 
 		m_Camera = CameraDesc();

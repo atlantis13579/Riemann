@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "GeometryOperation.h"
-#include "DynamicMesh.h"
 #include "../Maths/Index2.h"
 #include "../Maths/Index3.h"
 #include "../Maths/Vector2.h"

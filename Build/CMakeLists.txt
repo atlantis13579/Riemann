@@ -69,33 +69,33 @@ target_include_directories(Riemann PUBLIC
 )
 
 set(RIEMANN_RENDERER_SOURCES
-    "${CMAKE_SOURCE_DIR}/../RiemannRenderer/RiemannRenderer.cpp"
-    "${CMAKE_SOURCE_DIR}/../RiemannRenderer/imgui.cpp"
+    "${CMAKE_SOURCE_DIR}/../Renderer/RiemannRenderer.cpp"
+    "${CMAKE_SOURCE_DIR}/../Renderer/imgui.cpp"
 )
 
 set(RIEMANN_RENDERER_HEADERS
-    "${CMAKE_SOURCE_DIR}/../RiemannRenderer/RiemannRenderer.h"
-    "${CMAKE_SOURCE_DIR}/../RiemannRenderer/DX11Renderer.h"
-    "${CMAKE_SOURCE_DIR}/../RiemannRenderer/MetalRenderer.h"
-    "${CMAKE_SOURCE_DIR}/../RiemannRenderer/imgui.h"
+    "${CMAKE_SOURCE_DIR}/../Renderer/RiemannRenderer.h"
+    "${CMAKE_SOURCE_DIR}/../Renderer/DX11Renderer.h"
+    "${CMAKE_SOURCE_DIR}/../Renderer/MetalRenderer.h"
+    "${CMAKE_SOURCE_DIR}/../Renderer/imgui.h"
 )
 
 set(RIEMANN_RENDERER_SHADERS
-    "${CMAKE_SOURCE_DIR}/../RiemannRenderer/dx11_shader.hlsl"
-    "${CMAKE_SOURCE_DIR}/../RiemannRenderer/metal_shader.metal"
+    "${CMAKE_SOURCE_DIR}/../Renderer/dx11_shader.hlsl"
+    "${CMAKE_SOURCE_DIR}/../Renderer/metal_shader.metal"
 )
 set_source_files_properties(${RIEMANN_RENDERER_SHADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
 
 if(WIN32)
     list(APPEND RIEMANN_RENDERER_SOURCES
-        "${CMAKE_SOURCE_DIR}/../RiemannRenderer/DX11Renderer.cpp"
-        "${CMAKE_SOURCE_DIR}/../RiemannRenderer/ImguiRenderDX11.cpp"
+        "${CMAKE_SOURCE_DIR}/../Renderer/DX11Renderer.cpp"
+        "${CMAKE_SOURCE_DIR}/../Renderer/ImguiRenderDX11.cpp"
     )
-    list(APPEND RIEMANN_RENDERER_HEADERS "${CMAKE_SOURCE_DIR}/../RiemannRenderer/ImguiRenderDX11.h")
+    list(APPEND RIEMANN_RENDERER_HEADERS "${CMAKE_SOURCE_DIR}/../Renderer/ImguiRenderDX11.h")
 elseif(APPLE)
     enable_language(OBJCXX)
-    list(APPEND RIEMANN_RENDERER_SOURCES "${CMAKE_SOURCE_DIR}/../RiemannRenderer/MetalRenderer.cpp")
-    set_source_files_properties("${CMAKE_SOURCE_DIR}/../RiemannRenderer/MetalRenderer.cpp" PROPERTIES LANGUAGE OBJCXX)
+    list(APPEND RIEMANN_RENDERER_SOURCES "${CMAKE_SOURCE_DIR}/../Renderer/MetalRenderer.cpp")
+    set_source_files_properties("${CMAKE_SOURCE_DIR}/../Renderer/MetalRenderer.cpp" PROPERTIES LANGUAGE OBJCXX)
 endif()
 
 if(WIN32)
@@ -104,39 +104,39 @@ else()
     set(RIEMANN_RENDERER_LIBRARY_TYPE STATIC)
 endif()
 
-add_library(RiemannRenderer ${RIEMANN_RENDERER_LIBRARY_TYPE} ${RIEMANN_RENDERER_SOURCES} ${RIEMANN_RENDERER_HEADERS} ${RIEMANN_RENDERER_SHADERS})
+add_library(Renderer ${RIEMANN_RENDERER_LIBRARY_TYPE} ${RIEMANN_RENDERER_SOURCES} ${RIEMANN_RENDERER_HEADERS} ${RIEMANN_RENDERER_SHADERS})
 if(WIN32)
-    target_compile_definitions(RiemannRenderer PRIVATE RIEMANN_RENDERER_EXPORT IMGUI_EXPORT _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(Renderer PRIVATE RIEMANN_RENDERER_EXPORT IMGUI_EXPORT _CRT_SECURE_NO_WARNINGS)
 else()
-    target_compile_definitions(RiemannRenderer PUBLIC RIEMANN_RENDERER_STATIC IMGUI_STATIC)
+    target_compile_definitions(Renderer PUBLIC RIEMANN_RENDERER_STATIC IMGUI_STATIC)
 endif()
-target_include_directories(RiemannRenderer PUBLIC
+target_include_directories(Renderer PUBLIC
     ${CMAKE_SOURCE_DIR}/..
     ${CMAKE_SOURCE_DIR}/../Src
 )
 
 if(WIN32)
-    target_link_libraries(RiemannRenderer PRIVATE d3d11 d3dcompiler dxguid winmm comctl32 gdi32)
+    target_link_libraries(Renderer PRIVATE d3d11 d3dcompiler dxguid winmm comctl32 gdi32)
 elseif(APPLE)
     find_library(METAL_FRAMEWORK Metal REQUIRED)
     find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
     find_library(COCOA_FRAMEWORK Cocoa REQUIRED)
     find_library(COREGRAPHICS_FRAMEWORK CoreGraphics REQUIRED)
-    target_link_libraries(RiemannRenderer PRIVATE ${METAL_FRAMEWORK} ${QUARTZCORE_FRAMEWORK} ${COCOA_FRAMEWORK} ${COREGRAPHICS_FRAMEWORK})
+    target_link_libraries(Renderer PRIVATE ${METAL_FRAMEWORK} ${QUARTZCORE_FRAMEWORK} ${COCOA_FRAMEWORK} ${COREGRAPHICS_FRAMEWORK})
 endif()
 
 set(RIEMANN_VIEWER_CORE_SOURCES
-    "${CMAKE_SOURCE_DIR}/../RiemannViewer/MeshRenderer.cpp"
-    "${CMAKE_SOURCE_DIR}/../RiemannViewer/RenderThread.cpp"
-    "${CMAKE_SOURCE_DIR}/../RiemannViewer/SceneWorld.cpp"
-    "${CMAKE_SOURCE_DIR}/../RiemannViewer/Viewer.cpp"
+    "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.cpp"
+    "${CMAKE_SOURCE_DIR}/../Viewer/RenderThread.cpp"
+    "${CMAKE_SOURCE_DIR}/../Viewer/SceneWorld.cpp"
+    "${CMAKE_SOURCE_DIR}/../Viewer/Viewer.cpp"
 )
 
 set(RIEMANN_VIEWER_CORE_HEADERS
-    "${CMAKE_SOURCE_DIR}/../RiemannViewer/MeshRenderer.h"
-    "${CMAKE_SOURCE_DIR}/../RiemannViewer/RenderThread.h"
-    "${CMAKE_SOURCE_DIR}/../RiemannViewer/SceneWorld.h"
-    "${CMAKE_SOURCE_DIR}/../RiemannViewer/Viewer.h"
+    "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.h"
+    "${CMAKE_SOURCE_DIR}/../Viewer/RenderThread.h"
+    "${CMAKE_SOURCE_DIR}/../Viewer/SceneWorld.h"
+    "${CMAKE_SOURCE_DIR}/../Viewer/Viewer.h"
 )
 
 add_executable(Test ${TEST_SOURCES})
@@ -156,24 +156,24 @@ if(WIN32)
     # Windows
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT Test)
 
-    add_executable(RiemannViewer WIN32
+    add_executable(Viewer WIN32
         ${RIEMANN_VIEWER_CORE_SOURCES}
         ${RIEMANN_VIEWER_CORE_HEADERS}
-        "${CMAKE_SOURCE_DIR}/../RiemannViewer/WinApplication.cpp"
+        "${CMAKE_SOURCE_DIR}/../Viewer/WinApplication.cpp"
     )
-    target_compile_definitions(RiemannViewer PRIVATE _CRT_SECURE_NO_WARNINGS)
-    target_include_directories(RiemannViewer PRIVATE
+    target_compile_definitions(Viewer PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_include_directories(Viewer PRIVATE
         ${CMAKE_SOURCE_DIR}/..
         ${CMAKE_SOURCE_DIR}/../Src
     )
-    target_link_libraries(RiemannViewer PRIVATE
+    target_link_libraries(Viewer PRIVATE
         d3d11
         d3dcompiler
         dxguid
         winmm
         comctl32
         shell32
-        RiemannRenderer
+        Renderer
         Riemann
     )
     
@@ -194,8 +194,8 @@ endif()
 
 source_group(TREE "${CMAKE_SOURCE_DIR}/../Src" PREFIX "Source Files" FILES ${RIEMANN_SOURCES} ${RIEMANN_HEADERS})
 source_group(TREE "${CMAKE_SOURCE_DIR}/../Test" PREFIX "Test Files" FILES ${TEST_SOURCES})
-source_group(TREE "${CMAKE_SOURCE_DIR}/../RiemannRenderer" PREFIX "RiemannRenderer" FILES ${RIEMANN_RENDERER_SOURCES} ${RIEMANN_RENDERER_HEADERS} ${RIEMANN_RENDERER_SHADERS})
-source_group(TREE "${CMAKE_SOURCE_DIR}/../RiemannViewer" PREFIX "RiemannViewer" FILES ${RIEMANN_VIEWER_CORE_SOURCES} ${RIEMANN_VIEWER_CORE_HEADERS})
+source_group(TREE "${CMAKE_SOURCE_DIR}/../Renderer" PREFIX "Renderer" FILES ${RIEMANN_RENDERER_SOURCES} ${RIEMANN_RENDERER_HEADERS} ${RIEMANN_RENDERER_SHADERS})
+source_group(TREE "${CMAKE_SOURCE_DIR}/../Viewer" PREFIX "Viewer" FILES ${RIEMANN_VIEWER_CORE_SOURCES} ${RIEMANN_VIEWER_CORE_HEADERS})
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")

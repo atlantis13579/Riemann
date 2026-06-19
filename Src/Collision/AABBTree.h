@@ -35,6 +35,8 @@ namespace Riemann
 		void	Release();
 
 		void	StaticBuild(AABBTreeBuildData& params);
+		void	SetDirty(bool dirty = true);
+		bool	IsDirty() const;
 		void	Statistic(TreeStatistics& stat);
 
 		bool	RayCast(const Ray3& Ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const;
@@ -51,6 +53,7 @@ namespace Riemann
 	private:
 		int* m_GeometryIndicesBase;
 		int	m_NumGeometries;
+		bool m_Dirty;
 
 		CacheFriendlyAABBTree* m_AABBTreeInference;
 	};

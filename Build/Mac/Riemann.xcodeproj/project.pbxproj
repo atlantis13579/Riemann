@@ -66,7 +66,7 @@
 		6AC371C32D73207600B88518 /* BitSet.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371A02D73207600B88518 /* BitSet.h */; };
 		6AC371D22D73209400B88518 /* VoronoiTessellation.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371D02D73209400B88518 /* VoronoiTessellation.h */; };
 		6AC371D32D73209400B88518 /* ConnectionGraph.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371C42D73209400B88518 /* ConnectionGraph.h */; };
-		6AC371D42D73209400B88518 /* PlanarCut.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371CC2D73209400B88518 /* PlanarCut.h */; };
+		6AC371D42D73209400B88518 /* MeshCut.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371CC2D73209400B88518 /* MeshCut.h */; };
 		6AC371D52D73209400B88518 /* StrainSolver.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371CE2D73209400B88518 /* StrainSolver.h */; };
 		6AC371D62D73209400B88518 /* Fracture.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371C82D73209400B88518 /* Fracture.h */; };
 		6AC371D72D73209400B88518 /* DestructionSet.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371C62D73209400B88518 /* DestructionSet.h */; };
@@ -77,7 +77,7 @@
 		6AC371DC2D73209400B88518 /* Fracture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AC371C92D73209400B88518 /* Fracture.cpp */; };
 		6AC371DD2D73209400B88518 /* GraphPartition.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AC371CB2D73209400B88518 /* GraphPartition.cpp */; };
 		6AC371DE2D73209400B88518 /* ConnectionGraph.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AC371C52D73209400B88518 /* ConnectionGraph.cpp */; };
-		6AC371DF2D73209400B88518 /* PlanarCut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AC371CD2D73209400B88518 /* PlanarCut.cpp */; };
+		6AC371DF2D73209400B88518 /* MeshCut.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6AC371CD2D73209400B88518 /* MeshCut.cpp */; };
 		6AC372052D7320A900B88518 /* SparseSpatialHash.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371FA2D7320A900B88518 /* SparseSpatialHash.h */; };
 		6AC372062D7320A900B88518 /* DynamicMesh.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371E72D7320A900B88518 /* DynamicMesh.h */; };
 		6AC372072D7320A900B88518 /* Polygon3.h in Headers */ = {isa = PBXBuildFile; fileRef = 6AC371F52D7320A900B88518 /* Polygon3.h */; };
@@ -157,6 +157,8 @@
 		ADBBEE18288C41A300C3D6CD /* VectorN.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE10288C41A300C3D6CD /* VectorN.h */; };
 		ADBBEE1F288C486800C3D6CD /* PositionConstraint.h in Headers */ = {isa = PBXBuildFile; fileRef = ADBBEE1D288C486800C3D6CD /* PositionConstraint.h */; };
 		ADBBEE20288C486800C3D6CD /* PositionConstraint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADBBEE1E288C486800C3D6CD /* PositionConstraint.cpp */; };
+		6A51AA102E00000100AABBCC /* AABBPruner.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A51AA122E00000100AABBCC /* AABBPruner.h */; };
+		6A51AA112E00000100AABBCC /* AABBPruner.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6A51AA132E00000100AABBCC /* AABBPruner.cpp */; };
 		ADD23BBC2887614E00A849BE /* AABBTree.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23B9D2887614E00A849BE /* AABBTree.h */; };
 		ADD23BBD2887614E00A849BE /* GeometryIntersection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ADD23B9E2887614E00A849BE /* GeometryIntersection.cpp */; };
 		ADD23BBE2887614E00A849BE /* SAP_Incremental.h in Headers */ = {isa = PBXBuildFile; fileRef = ADD23B9F2887614E00A849BE /* SAP_Incremental.h */; };
@@ -319,8 +321,8 @@
 		6AC371C92D73209400B88518 /* Fracture.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Fracture.cpp; path = /Volumes/ext/src/Riemann/Src/Destruction/Fracture.cpp; sourceTree = "<absolute>"; };
 		6AC371CA2D73209400B88518 /* GraphPartition.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = GraphPartition.h; path = /Volumes/ext/src/Riemann/Src/Destruction/GraphPartition.h; sourceTree = "<absolute>"; };
 		6AC371CB2D73209400B88518 /* GraphPartition.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = GraphPartition.cpp; path = /Volumes/ext/src/Riemann/Src/Destruction/GraphPartition.cpp; sourceTree = "<absolute>"; };
-		6AC371CC2D73209400B88518 /* PlanarCut.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = PlanarCut.h; path = /Volumes/ext/src/Riemann/Src/Destruction/PlanarCut.h; sourceTree = "<absolute>"; };
-		6AC371CD2D73209400B88518 /* PlanarCut.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = PlanarCut.cpp; path = /Volumes/ext/src/Riemann/Src/Destruction/PlanarCut.cpp; sourceTree = "<absolute>"; };
+		6AC371CC2D73209400B88518 /* MeshCut.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MeshCut.h; path = /Volumes/ext/src/Riemann/Src/Geometry/MeshCut.h; sourceTree = "<absolute>"; };
+		6AC371CD2D73209400B88518 /* MeshCut.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = MeshCut.cpp; path = /Volumes/ext/src/Riemann/Src/Geometry/MeshCut.cpp; sourceTree = "<absolute>"; };
 		6AC371CE2D73209400B88518 /* StrainSolver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = StrainSolver.h; path = /Volumes/ext/src/Riemann/Src/Destruction/StrainSolver.h; sourceTree = "<absolute>"; };
 		6AC371CF2D73209400B88518 /* StrainSolver.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = StrainSolver.cpp; path = /Volumes/ext/src/Riemann/Src/Destruction/StrainSolver.cpp; sourceTree = "<absolute>"; };
 		6AC371D02D73209400B88518 /* VoronoiTessellation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = VoronoiTessellation.h; path = /Volumes/ext/src/Riemann/Src/Destruction/VoronoiTessellation.h; sourceTree = "<absolute>"; };
@@ -405,6 +407,8 @@
 		ADBBEE10288C41A300C3D6CD /* VectorN.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VectorN.h; path = ../../Src/Maths/VectorN.h; sourceTree = "<group>"; };
 		ADBBEE1D288C486800C3D6CD /* PositionConstraint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PositionConstraint.h; path = ../../Src/RigidBodyDynamics/PositionConstraint.h; sourceTree = "<group>"; };
 		ADBBEE1E288C486800C3D6CD /* PositionConstraint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PositionConstraint.cpp; path = ../../Src/RigidBodyDynamics/PositionConstraint.cpp; sourceTree = "<group>"; };
+		6A51AA122E00000100AABBCC /* AABBPruner.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AABBPruner.h; path = ../../Src/Collision/AABBPruner.h; sourceTree = "<group>"; };
+		6A51AA132E00000100AABBCC /* AABBPruner.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AABBPruner.cpp; path = ../../Src/Collision/AABBPruner.cpp; sourceTree = "<group>"; };
 		ADD23B9D2887614E00A849BE /* AABBTree.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AABBTree.h; path = ../../Src/Collision/AABBTree.h; sourceTree = "<group>"; };
 		ADD23B9E2887614E00A849BE /* GeometryIntersection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = GeometryIntersection.cpp; path = ../../Src/Collision/GeometryIntersection.cpp; sourceTree = "<group>"; };
 		ADD23B9F2887614E00A849BE /* SAP_Incremental.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SAP_Incremental.h; path = ../../Src/Collision/SAP_Incremental.h; sourceTree = "<group>"; };
@@ -525,6 +529,8 @@
 		ADD23B882887606900A849BE /* Collision */ = {
 			isa = PBXGroup;
 			children = (
+				6A51AA132E00000100AABBCC /* AABBPruner.cpp */,
+				6A51AA122E00000100AABBCC /* AABBPruner.h */,
 				ADD23BAB2887614E00A849BE /* AABBTree.cpp */,
 				ADD23B9D2887614E00A849BE /* AABBTree.h */,
 				ADD23BA12887614E00A849BE /* AABBTreeInference.h */,
@@ -725,6 +731,8 @@
 				6AC371EE2D7320A900B88518 /* GeometrySet.h */,
 				6AC371EF2D7320A900B88518 /* GeometrySet.cpp */,
 				6AC371F02D7320A900B88518 /* KDTree.h */,
+				6AC371CC2D73209400B88518 /* MeshCut.h */,
+				6AC371CD2D73209400B88518 /* MeshCut.cpp */,
 				6AC371F12D7320A900B88518 /* MeshSimplification.h */,
 				6AC371F22D7320A900B88518 /* MeshSimplification.cpp */,
 				6AC371F32D7320A900B88518 /* Polygon2.h */,
@@ -768,8 +776,6 @@
 				6AC371C92D73209400B88518 /* Fracture.cpp */,
 				6AC371CA2D73209400B88518 /* GraphPartition.h */,
 				6AC371CB2D73209400B88518 /* GraphPartition.cpp */,
-				6AC371CC2D73209400B88518 /* PlanarCut.h */,
-				6AC371CD2D73209400B88518 /* PlanarCut.cpp */,
 				6AC371CE2D73209400B88518 /* StrainSolver.h */,
 				6AC371CF2D73209400B88518 /* StrainSolver.cpp */,
 				6AC371D02D73209400B88518 /* VoronoiTessellation.h */,
@@ -895,6 +901,7 @@
 				ADD23CA0288762C000A849BE /* ProjectiveDynamicsSolver.h in Headers */,
 				ADD23CA2288762C000A849BE /* NumericalODESolver.h in Headers */,
 				ADD23D2A288762F900A849BE /* JacobiIteration.h in Headers */,
+				6A51AA102E00000100AABBCC /* AABBPruner.h in Headers */,
 				ADD23BBC2887614E00A849BE /* AABBTree.h in Headers */,
 				ADD23D01288762ED00A849BE /* MatrixMxN.h in Headers */,
 				6AA94E572D732449005C6B3C /* MassParameters.h in Headers */,
@@ -1029,7 +1036,7 @@
 				6AC371D22D73209400B88518 /* VoronoiTessellation.h in Headers */,
 				6A6AEEB02D7C303300692025 /* Ref.h in Headers */,
 				6AC371D32D73209400B88518 /* ConnectionGraph.h in Headers */,
-				6AC371D42D73209400B88518 /* PlanarCut.h in Headers */,
+				6AC371D42D73209400B88518 /* MeshCut.h in Headers */,
 				6AC371D52D73209400B88518 /* StrainSolver.h in Headers */,
 				6AC371D62D73209400B88518 /* Fracture.h in Headers */,
 				6AC371D72D73209400B88518 /* DestructionSet.h in Headers */,
@@ -1115,6 +1122,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6A51AA112E00000100AABBCC /* AABBPruner.cpp in Sources */,
 				ADD23BC42887614E00A849BE /* GeometryQuery.cpp in Sources */,
 				ADD23D1E288762F900A849BE /* DenseMatrix.cpp in Sources */,
 				6A6AEEE92D7C305D00692025 /* ConvexMesh.cpp in Sources */,
@@ -1140,7 +1148,7 @@
 				6AC371DC2D73209400B88518 /* Fracture.cpp in Sources */,
 				6AC371DD2D73209400B88518 /* GraphPartition.cpp in Sources */,
 				6AC371DE2D73209400B88518 /* ConnectionGraph.cpp in Sources */,
-				6AC371DF2D73209400B88518 /* PlanarCut.cpp in Sources */,
+				6AC371DF2D73209400B88518 /* MeshCut.cpp in Sources */,
 				ADD23D21288762F900A849BE /* DenseVector.cpp in Sources */,
 				ADD23CC3288762CC00A849BE /* Jacobian.cpp in Sources */,
 				6AC3721A2D7320A900B88518 /* Spline.cpp in Sources */,

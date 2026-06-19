@@ -10,7 +10,7 @@
 #include "RenderThread.h"
 #include "Viewer.h"
 #include "resource.h"
-#include "../RiemannRenderer/RiemannRenderer.h"
+#include "../Renderer/RiemannRenderer.h"
 
 HINSTANCE g_hInst = nullptr;
 HWND g_hWnd = nullptr;
@@ -77,11 +77,11 @@ namespace
 	{
 		const char* candidates[] =
 		{
-			"RiemannRenderer/",
-			"../RiemannRenderer/",
-			"../../RiemannRenderer/",
-			"../../../RiemannRenderer/",
-			"../../../../RiemannRenderer/",
+			"Renderer/",
+			"../Renderer/",
+			"../../Renderer/",
+			"../../../Renderer/",
+			"../../../../Renderer/",
 		};
 
 		for (const char* candidate : candidates)
@@ -92,7 +92,7 @@ namespace
 			}
 		}
 
-		return "../RiemannRenderer/";
+		return "../Renderer/";
 	}
 
 	bool IsMouseOverImgui(int x, int y)

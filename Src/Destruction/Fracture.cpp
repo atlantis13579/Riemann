@@ -4,7 +4,7 @@
 #include <algorithm>
 
 #include "../Geometry/GeometryBoolean.h"
-#include "PlanarCut.h"
+#include "../Geometry/MeshCut.h"
 
 namespace Riemann
 {
@@ -152,7 +152,7 @@ namespace Riemann
 		CutOptions.MinTriangleCount = Options.MinTriangleCount;
 
 		std::vector<PlanarCutPiece> CutPieces;
-		if (!PlanarCut::CutWithPlanarCells(SourceMesh, Cells, CutPieces, CutOptions))
+		if (!MeshCut::CutWithPlanarCells(SourceMesh, Cells, CutPieces, CutOptions))
 		{
 			return false;
 		}

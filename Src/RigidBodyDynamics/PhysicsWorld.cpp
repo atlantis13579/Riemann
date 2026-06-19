@@ -24,8 +24,8 @@ namespace Riemann
 	{
 		m_GeometryQuery = new GeometryQuery;
 		m_BPhase = nullptr;
-		m_SceneQueryTree = param.sceneQueryTree;
-		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
+		m_SceneQuery = param.sceneQueryType;
+		if (m_SceneQuery == SceneQueryType::DynamicAABB)
 		{
 			m_GeometryQuery->CreateDynamicGeometry();
 		}
@@ -144,9 +144,13 @@ namespace Riemann
 		}
 		m_Kinematics.clear();
 
-		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
+		if (m_SceneQuery == SceneQueryType::DynamicAABB)
 		{
 			m_GeometryQuery->ClearDynamicGeometry();
+		}
+		else
+		{
+			m_GeometryQuery->ClearStaticGeometry();
 		}
 	}
 
@@ -262,13 +266,13 @@ namespace Riemann
 			if (Body->Sleeping)
 				continue;
 			Body->AutoSleep();
-			UpdateSceneQueryTree(Body);
+			UpdateSceneQuery(Body);
 		}
 	}
 
-	void PhysicsWorld::BuildSceneQueryTree(const std::vector<Geometry*>& Objects)
+	void PhysicsWorld::BuildSceneQuery(const std::vector<Geometry*>& Objects)
 	{
-		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
+		if (m_SceneQuery == SceneQueryType::DynamicAABB)
 		{
 			m_GeometryQuery->BuildDynamicGeometry(Objects);
 			return;
@@ -277,45 +281,27 @@ namespace Riemann
 		m_GeometryQuery->BuildStaticGeometry(Objects, 5);
 	}
 
-	void PhysicsWorld::AddGeometryToSceneQueryTree(Geometry* Object)
+	void PhysicsWorld::AddGeometryToSceneQuery(Geometry* Object)
 	{
-		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
-		{
-			m_GeometryQuery->AddDynamicGeometry(Object);
-			return;
-		}
-
-		// TODO: Queue or rebuild the static AABBTree when runtime objects are added.
+		m_GeometryQuery->AddGeometry(Object);
 	}
 
-	void PhysicsWorld::RemoveGeometryFromSceneQueryTree(Geometry* Object)
+	void PhysicsWorld::RemoveGeometryFromSceneQuery(Geometry* Object)
 	{
-		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
-		{
-			m_GeometryQuery->RemoveDynamicGeometry(Object);
-			return;
-		}
-
-		// TODO: Rebuild the static AABBTree when runtime objects are removed.
+		m_GeometryQuery->RemoveGeometry(Object);
 	}
 
-	void PhysicsWorld::UpdateSceneQueryTree(RigidBodyDynamic* Body)
+	void PhysicsWorld::UpdateSceneQuery(RigidBodyDynamic* Body)
 	{
 		if (Body == nullptr)
 		{
 			return;
 		}
 
-		if (m_SceneQueryTree == SceneQueryAABBTree::DynamicAABB)
+		for (Geometry* g : Body->Geometries())
 		{
-			for (Geometry* g : Body->Geometries())
-			{
-				m_GeometryQuery->UpdateDynamicGeometry(g, Body->GetLinearVelocity());
-			}
-			return;
+			m_GeometryQuery->UpdateGeometry(g, Body->GetLinearVelocity());
 		}
-
-		// TODO: Static AABBTree is built offline; decide whether to rebuild it per step or keep moving bodies out of it.
 	}
 
 	bool         PhysicsWorld::LoadScene(const char* name, bool shared_mem)
@@ -353,7 +339,7 @@ namespace Riemann
 		}
 
 		assert(m_GeometryQuery);
-		BuildSceneQueryTree(geoms);
+		BuildSceneQuery(geoms);
 		return true;
 	}
 
@@ -378,7 +364,7 @@ namespace Riemann
 		RigidBody* body = CreateRigidBody(param, init_pose);
 		body->AddGeometry(Geom);
 
-		AddGeometryToSceneQueryTree(Geom);
+		AddGeometryToSceneQuery(Geom);
 
 		return body;
 	}
@@ -408,7 +394,7 @@ namespace Riemann
 			Geom->SetLocalTransform(local_transform.pos, local_transform.quat);
 			body->AddGeometry(Geom);
 
-			AddGeometryToSceneQueryTree(Geom);
+			AddGeometryToSceneQuery(Geom);
 		}
 
 		return body;
@@ -425,7 +411,7 @@ namespace Riemann
 					m_StaticBodies.erase(m_StaticBodies.begin() + i);
 					for (Geometry* g : Body->Geometries())
 					{
-						RemoveGeometryFromSceneQueryTree(g);
+						RemoveGeometryFromSceneQuery(g);
 					}
 					return true;
 				}
@@ -440,7 +426,7 @@ namespace Riemann
 					m_DynamicBodies.erase(m_DynamicBodies.begin() + i);
 					for (Geometry* g : Body->Geometries())
 					{
-						RemoveGeometryFromSceneQueryTree(g);
+						RemoveGeometryFromSceneQuery(g);
 					}
 					return true;
 				}

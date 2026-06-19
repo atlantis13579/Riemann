@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "../RiemannRenderer/RiemannRenderer.h"
+#include "../Renderer/RiemannRenderer.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/RigidBodyDynamics/RigidBody.h"
 

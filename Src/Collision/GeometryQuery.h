@@ -9,6 +9,7 @@
 namespace Riemann
 {
 	class AABBTree;
+	class AABBPruner;
 	class DynamicAABBTree;
 	class SparseSpatialHash;
 	class Geometry;
@@ -238,12 +239,13 @@ namespace Riemann
 
 	public:
 		void		BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
+		void		ClearStaticGeometry();
 		void		CreateDynamicGeometry();
 		void		ClearDynamicGeometry();
 		void		BuildDynamicGeometry(const std::vector<Geometry*>& Objects);
-		int			AddDynamicGeometry(Geometry* Object);
-		void		RemoveDynamicGeometry(Geometry* Object);
-		bool		UpdateDynamicGeometry(Geometry* Object, const Vector3& displacement);
+		bool		AddGeometry(Geometry* Object);
+		bool		RemoveGeometry(Geometry* Object);
+		bool		UpdateGeometry(Geometry* Object, const Vector3& displacement = Vector3::Zero());
 
 		bool		RayCastQuery(const Vector3& Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult* Result);
 		bool		IntersectQueryBox(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result);
@@ -254,15 +256,8 @@ namespace Riemann
 		bool		CapsuleCastQuery(const Vector3& Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 		void		CollectAABBs(std::vector<Box3>* aabbs) const;
 
-		AABBTree* GetStaticTree()
-		{
-			return m_staticGeometry;
-		}
-
-		const AABBTree* GetStaticTree() const
-		{
-			return m_staticGeometry;
-		}
+		AABBTree* GetStaticTree();
+		const AABBTree* GetStaticTree() const;
 
 		DynamicAABBTree* GetDynamicTree()
 		{
@@ -275,13 +270,25 @@ namespace Riemann
 		}
 
 	private:
+		bool		AddToStatic(Geometry* Object);
+		bool		RemoveFromStatic(Geometry* Object);
+		bool		UpdateStaticObject(Geometry* Object);
+		int			AddToDynamic(Geometry* Object);
+		void		RemoveFromDynamic(Geometry* Object);
+		bool		UpdateDynamicObject(Geometry* Object, const Vector3& displacement);
+		bool		CommitStaticGeometry();
+		void		MarkStaticGeometryDirty();
+		bool		ContainsStaticGeometry(const Geometry* Object) const;
 		bool		IntersectTest_Impl(const Geometry* geom, const IntersectOption& Option, IntersectResult* Result);
 		bool		SweepTest_Impl(const Geometry* geom, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 
 	private:
 		std::vector<Geometry*>	m_Objects;
+		std::vector<Geometry*>	m_staticObjects;
 
 		AABBTree*			m_staticGeometry;
+		AABBPruner*			m_staticBucket;
+		int					m_staticPrimitivesPerNode;
 		DynamicAABBTree*	m_dynamicGeometry;
 	};
 }

@@ -14,6 +14,7 @@ namespace Riemann
 	{
 		m_GeometryIndicesBase = nullptr;
 		m_NumGeometries = 0;
+		m_Dirty = false;
 		m_AABBTreeInference = nullptr;
 	}
 
@@ -25,6 +26,7 @@ namespace Riemann
 	void AABBTree::Release()
 	{
 		m_NumGeometries = 0;
+		m_Dirty = false;
 		if (m_GeometryIndicesBase)
 		{
 			delete[]m_GeometryIndicesBase;
@@ -32,13 +34,19 @@ namespace Riemann
 		}
 		if (m_AABBTreeInference)
 		{
-			delete[]m_AABBTreeInference;
+			delete[]reinterpret_cast<char*>(m_AABBTreeInference);
 			m_AABBTreeInference = nullptr;
 		}
 	}
 
 	void AABBTree::StaticBuild(AABBTreeBuildData& params)
 	{
+		Release();
+		if (params.pAABBArray == nullptr || params.numGeometries <= 0)
+		{
+			return;
+		}
+
 		InitAABBTreeBuild(params);
 
 		params.pAABBTree->Build(params);
@@ -50,6 +58,17 @@ namespace Riemann
 
 		delete  params.pAABBTree;
 		params.pAABBTree = nullptr;
+		m_Dirty = false;
+	}
+
+	void AABBTree::SetDirty(bool dirty)
+	{
+		m_Dirty = dirty;
+	}
+
+	bool AABBTree::IsDirty() const
+	{
+		return m_Dirty;
 	}
 
 #define	GET_INDEX(_p)	(*_p->GetGeometryIndices(m_GeometryIndicesBase))
@@ -59,6 +78,10 @@ namespace Riemann
 	void AABBTree::Statistic(TreeStatistics& stat)
 	{
 		memset(&stat, 0, sizeof(stat));
+		if (m_Dirty || m_AABBTreeInference == nullptr)
+		{
+			return;
+		}
 
 		StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
 		stack.push(0);
@@ -104,6 +127,11 @@ namespace Riemann
 
 	int AABBTree::IntersectPoint(const Vector3& Point) const
 	{
+		if (m_Dirty)
+		{
+			return -1;
+		}
+
 		CacheFriendlyAABBTree* p = m_AABBTreeInference;
 		if (p == nullptr || !p->aabb.IsInside(Point))
 		{
@@ -238,6 +266,10 @@ namespace Riemann
 		Result->hitTestCount = 0;
 		Result->hitTimeMin = FLT_MAX;
 		Result->hitGeom = nullptr;
+		if (m_Dirty)
+		{
+			return false;
+		}
 
 		if (RayIntersectCacheObj(Ray, Option, Result))
 		{
@@ -342,7 +374,7 @@ namespace Riemann
 
 	void AABBTree::CollectAABBs(std::vector<Box3>* aabbs) const
 	{
-		if (aabbs == nullptr || m_AABBTreeInference == nullptr)
+		if (aabbs == nullptr || m_Dirty || m_AABBTreeInference == nullptr)
 		{
 			return;
 		}
@@ -415,6 +447,10 @@ namespace Riemann
 	{
 		Result->overlaps = false;
 		Result->overlapGeoms.clear();
+		if (m_Dirty)
+		{
+			return false;
+		}
 
 		const Box3& aabb = intersect_geometry->GetBoundingVolume_WorldSpace();
 
@@ -545,6 +581,10 @@ namespace Riemann
 	bool AABBTree::Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const
 	{
 		Result->Reset();
+		if (m_Dirty)
+		{
+			return false;
+		}
 
 		float t1, t2;
 		Vector3 normal;
@@ -632,9 +672,6 @@ namespace Riemann
 
 	void AABBTree::InitAABBTreeBuild(AABBTreeBuildData& params)
 	{
-		if (m_GeometryIndicesBase)
-			return;
-
 		m_NumGeometries = params.numGeometries;
 		m_GeometryIndicesBase = new int[params.numGeometries];
 		for (int i = 0; i < params.numGeometries; ++i)

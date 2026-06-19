@@ -108,10 +108,10 @@ namespace Riemann
 	template<typename RealType, int ElementSize>
 	void TDynamicMeshOverlay<RealType, ElementSize>::ClearElements()
 	{
-		Elements.clear();
-		ElementsRefCounts.Clear();
-		ParentVertices.clear();
-		InitializeTriangles(ParentMesh->GetTriangleCount());
+		this->Elements.clear();
+		this->ElementsRefCounts.Clear();
+		this->ParentVertices.clear();
+		this->InitializeTriangles(this->ParentMesh->GetTriangleCount());
 	}
 
 	template<typename RealType, int ElementSize>

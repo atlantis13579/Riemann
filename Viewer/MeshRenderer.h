@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "../RiemannRenderer/RiemannRenderer.h"
+#include "../Renderer/RiemannRenderer.h"
 #include "../Src/Maths/Box3.h"
 
 namespace Riemann

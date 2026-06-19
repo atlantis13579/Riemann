@@ -117,11 +117,11 @@ namespace
 
 		const char* candidates[] =
 		{
-			"RiemannRenderer/",
-			"../RiemannRenderer/",
-			"../../RiemannRenderer/",
-			"../../../RiemannRenderer/",
-			"../../../../RiemannRenderer/",
+			"Renderer/",
+			"../Renderer/",
+			"../../Renderer/",
+			"../../../Renderer/",
+			"../../../../Renderer/",
 		};
 
 		for (const char* candidate : candidates)

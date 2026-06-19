@@ -3,7 +3,7 @@
 #include <chrono>
 #include <utility>
 
-#include "../RiemannRenderer/RiemannRenderer.h"
+#include "../Renderer/RiemannRenderer.h"
 
 namespace Riemann
 {

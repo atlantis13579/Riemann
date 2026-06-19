@@ -1250,7 +1250,7 @@ void TestPhysicsWorldSceneQueryTrees()
 	{
 		PhysicsWorldParam param;
 		param.broadphase = BroadPhaseSolver::DynamicAABB;
-		param.sceneQueryTree = SceneQueryAABBTree::StaticAABB;
+		param.sceneQueryType = SceneQueryType::StaticAABB;
 		PhysicsWorld world(param);
 		EXPECT(world.GetGeometryQuery()->GetDynamicTree() == nullptr);
 
@@ -1271,7 +1271,7 @@ void TestPhysicsWorldSceneQueryTrees()
 	{
 		PhysicsWorldParam param;
 		param.broadphase = BroadPhaseSolver::DynamicAABB;
-		param.sceneQueryTree = SceneQueryAABBTree::DynamicAABB;
+		param.sceneQueryType = SceneQueryType::DynamicAABB;
 		PhysicsWorld world(param);
 		EXPECT(world.GetGeometryQuery()->GetDynamicTree() != nullptr);
 
@@ -1292,7 +1292,7 @@ void TestPhysicsWorldSceneQueryTrees()
 
 	{
 		PhysicsWorldParam param;
-		param.sceneQueryTree = SceneQueryAABBTree::DynamicAABB;
+		param.sceneQueryType = SceneQueryType::DynamicAABB;
 		PhysicsWorld world(param);
 
 		RigidBodyParam bodyParam;
@@ -1317,7 +1317,7 @@ void TestPhysicsWorldSceneQueryTrees()
 
 	{
 		PhysicsWorldParam param;
-		param.sceneQueryTree = SceneQueryAABBTree::DynamicAABB;
+		param.sceneQueryType = SceneQueryType::DynamicAABB;
 		PhysicsWorld world(param);
 
 		RigidBodyParam bodyParam;
@@ -1369,7 +1369,7 @@ void TestPhysicsWorldSceneQueryTrees()
 
 		GeometryQuery query;
 		query.CreateDynamicGeometry();
-		EXPECT(query.AddDynamicGeometry(sensorGeom) >= 0);
+		EXPECT(query.AddGeometry(sensorGeom));
 
 		RayCastOption option;
 		RayCastResult result;

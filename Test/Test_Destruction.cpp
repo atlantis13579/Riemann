@@ -5,7 +5,7 @@
 #include "../Src/Destruction/Fracture.h"
 #include "../Src/Destruction/GraphPartition.h"
 #include "../Src/Destruction/DestructionSet.h"
-#include "../Src/Destruction/PlanarCut.h"
+#include "../Src/Geometry/MeshCut.h"
 #include "../Src/Destruction/StrainSolver.h"
 #include "../Src/Destruction/VoronoiTessellation.h"
 #include "../Src/Collision/GeometryObject.h"
@@ -311,7 +311,7 @@ void TestPlanarCutBunny()
 
 	DynamicMesh negativeSide;
 	DynamicMesh positiveSide;
-	bool cut = PlanarCut::Cut(bunny, center, normal, &negativeSide, &positiveSide, options);
+	bool cut = MeshCut::Cut(bunny, center, normal, &negativeSide, &positiveSide, options);
 	EXPECT(cut);
 	EXPECT(CountValidTriangles(negativeSide) > 0);
 	EXPECT(CountValidTriangles(positiveSide) > 0);
@@ -412,7 +412,7 @@ void TestPlanarCellsBunny()
 	options.WeldSharedEdges = true;
 
 	std::vector<PlanarCutPiece> pieces;
-	bool cut = PlanarCut::CutWithPlanarCells(bunny, planarCells, pieces, options);
+	bool cut = MeshCut::CutWithPlanarCells(bunny, planarCells, pieces, options);
 	EXPECT(cut);
 	EXPECT(pieces.size() == 2);
 
@@ -430,7 +430,7 @@ void TestPlanarCellsBunny()
 	EXPECT(merged.ExportObj(TestOutputPath("planar_cells_boxes.obj").c_str()));
 
 	DynamicMesh preview;
-	bool previewBuilt = PlanarCut::CreateCuttingSurfacePreview(planarCells, bounds, preview, options);
+	bool previewBuilt = MeshCut::CreateCuttingSurfacePreview(planarCells, bounds, preview, options);
 	EXPECT(previewBuilt);
 	EXPECT(CountValidTriangles(preview) > 0);
 	EXPECT(preview.ExportObj(TestOutputPath("planar_cells_preview.obj").c_str()));

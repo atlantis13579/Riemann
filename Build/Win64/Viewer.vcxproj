@@ -19,25 +19,25 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\RiemannViewer\MeshRenderer.cpp" />
-    <ClCompile Include="..\..\RiemannViewer\RenderThread.cpp" />
-    <ClCompile Include="..\..\RiemannViewer\SceneWorld.cpp" />
-    <ClCompile Include="..\..\RiemannViewer\Viewer.cpp" />
-    <ClCompile Include="..\..\RiemannViewer\WinApplication.cpp" />
+    <ClCompile Include="..\..\Viewer\MeshRenderer.cpp" />
+    <ClCompile Include="..\..\Viewer\RenderThread.cpp" />
+    <ClCompile Include="..\..\Viewer\SceneWorld.cpp" />
+    <ClCompile Include="..\..\Viewer\Viewer.cpp" />
+    <ClCompile Include="..\..\Viewer\WinApplication.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\RiemannViewer\MeshRenderer.h" />
-    <ClInclude Include="..\..\RiemannViewer\RenderThread.h" />
-    <ClInclude Include="..\..\RiemannViewer\SceneWorld.h" />
-    <ClInclude Include="..\..\RiemannViewer\Viewer.h" />
+    <ClInclude Include="..\..\Viewer\MeshRenderer.h" />
+    <ClInclude Include="..\..\Viewer\RenderThread.h" />
+    <ClInclude Include="..\..\Viewer\SceneWorld.h" />
+    <ClInclude Include="..\..\Viewer\Viewer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{ea62df3f-dac5-41d8-aec3-a13ea4b8911f}</ProjectGuid>
-    <RootNamespace>RiemannViewer</RootNamespace>
+    <RootNamespace>Viewer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>RiemannViewer</ProjectName>
+    <ProjectName>Viewer</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -141,7 +141,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;..\..\Binaries\Win64\Debug\Riemann.lib;..\..\Binaries\Win64\Debug\RiemannRenderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;..\..\Binaries\Win64\Debug\Riemann.lib;..\..\Binaries\Win64\Debug\Renderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -158,7 +158,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;..\..\Binaries\Win64\Release\Riemann.lib;..\..\Binaries\Win64\Release\RiemannRenderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;..\..\Binaries\Win64\Release\Riemann.lib;..\..\Binaries\Win64\Release\Renderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

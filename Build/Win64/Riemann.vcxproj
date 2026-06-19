@@ -49,6 +49,7 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\AxisAlignedBox3.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\ConvexMesh.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\HeightField3.cpp" />
+    <ClCompile Include="..\..\Src\Collision\AABBPruner.cpp" />
     <ClCompile Include="..\..\Src\Collision\AABBTree.cpp" />
     <ClCompile Include="..\..\Src\Collision\AABBTreeOffline.cpp" />
     <ClCompile Include="..\..\Src\Collision\DynamicAABBTree.cpp" />
@@ -59,7 +60,7 @@
     <ClCompile Include="..\..\Src\CollisionPrimitive\MeshBVH4.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\TriangleMesh.cpp" />
     <ClCompile Include="..\..\Src\Destruction\Fracture.cpp" />
-    <ClCompile Include="..\..\Src\Destruction\PlanarCut.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\MeshCut.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Spline.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Voronoi2.cpp" />
     <ClCompile Include="..\..\Src\Geometry\VoxelField.cpp" />
@@ -126,7 +127,7 @@
     <ClInclude Include="..\..\Src\Destruction\DestructionSet.h" />
     <ClInclude Include="..\..\Src\Destruction\Fracture.h" />
     <ClInclude Include="..\..\Src\Destruction\GraphPartition.h" />
-    <ClInclude Include="..\..\Src\Destruction\PlanarCut.h" />
+    <ClInclude Include="..\..\Src\Geometry\MeshCut.h" />
     <ClInclude Include="..\..\Src\Destruction\StrainSolver.h" />
     <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h" />
     <ClInclude Include="..\..\Src\Geometry\ConvexHull2.h" />
@@ -163,6 +164,7 @@
     <ClInclude Include="..\..\Src\CollisionPrimitive\Ray3.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Sphere3.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\Triangle3.h" />
+    <ClInclude Include="..\..\Src\Collision\AABBPruner.h" />
     <ClInclude Include="..\..\Src\Collision\AABBTree.h" />
     <ClInclude Include="..\..\Src\Collision\AABBTreeInference.h" />
     <ClInclude Include="..\..\Src\Collision\AABBTreeOffline.h" />

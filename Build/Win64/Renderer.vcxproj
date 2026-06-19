@@ -19,29 +19,30 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\RiemannRenderer\DX11Renderer.cpp" />
-    <ClCompile Include="..\..\RiemannRenderer\imgui.cpp" />
-    <ClCompile Include="..\..\RiemannRenderer\ImguiRenderDX11.cpp" />
-    <ClCompile Include="..\..\RiemannRenderer\RiemannRenderer.cpp" />
+    <ClCompile Include="..\..\Renderer\DX11Renderer.cpp" />
+    <ClCompile Include="..\..\Renderer\imgui.cpp" />
+    <ClCompile Include="..\..\Renderer\ImguiRenderDX11.cpp" />
+    <ClCompile Include="..\..\Renderer\RiemannRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\RiemannRenderer\DX11Renderer.h" />
-    <ClInclude Include="..\..\RiemannRenderer\imgui.h" />
-    <ClInclude Include="..\..\RiemannRenderer\ImguiRenderDX11.h" />
-    <ClInclude Include="..\..\RiemannRenderer\MetalRenderer.h" />
-    <ClInclude Include="..\..\RiemannRenderer\RiemannRenderer.h" />
+    <ClInclude Include="..\..\Renderer\DX11Renderer.h" />
+    <ClInclude Include="..\..\Renderer\imgui.h" />
+    <ClInclude Include="..\..\Renderer\ImguiRenderDX11.h" />
+    <ClInclude Include="..\..\Renderer\MetalRenderer.h" />
+    <ClInclude Include="..\..\Renderer\RiemannRenderer.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\RiemannRenderer\MetalRenderer.cpp" />
-    <None Include="..\..\RiemannRenderer\dx11_shader.hlsl" />
-    <None Include="..\..\RiemannRenderer\metal_shader.metal" />
+    <None Include="..\..\Renderer\MetalRenderer.cpp" />
+    <None Include="..\..\Renderer\dx11_shader.hlsl" />
+    <None Include="..\..\Renderer\metal_shader.metal" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{ea62df3f-dac5-40d8-aec3-a13ea4b8911f}</ProjectGuid>
-    <RootNamespace>RiemannRenderer</RootNamespace>
+    <RootNamespace>Renderer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>Renderer</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
