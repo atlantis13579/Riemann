@@ -3,15 +3,18 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <vector>
 
 #include "../Src/CollisionPrimitive/AxisAlignedBox3.h"
 #include "../Src/CollisionPrimitive/Capsule3.h"
 #include "../Src/CollisionPrimitive/OrientedBox3.h"
 #include "../Src/CollisionPrimitive/Sphere3.h"
 #include "../Src/CollisionPrimitive/StaticMesh.h"
+#include "../Src/Destruction/Fracture.h"
 #include "../Src/Geometry/Spline.h"
 #include "../Src/Geometry/DynamicMesh.h"
 #include "../Src/Geometry/GeometryBoolean.h"
+#include "../Src/Geometry/MeshCut.h"
 #include "../Src/Geometry/Polygon3.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/Delaunay.h"
@@ -390,6 +393,77 @@ static float GetBoundsMaxSize(const Box3& bounds)
 	return std::max(size.x, std::max(size.y, size.z));
 }
 
+static int CountValidTriangles(const DynamicMesh& mesh)
+{
+	int count = 0;
+	for (int tid = 0; tid < mesh.GetTriangleCount(); ++tid)
+	{
+		if (mesh.IsTriangleFast(tid))
+		{
+			++count;
+		}
+	}
+	return count;
+}
+
+static bool HasRenderablePieces(const std::vector<FracturePiece>& pieces)
+{
+	for (const FracturePiece& piece : pieces)
+	{
+		if (CountValidTriangles(piece.Mesh) > 0)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool PiecesMoveInPlane(const std::vector<FracturePiece>& pieces, const Vector3& normal)
+{
+	const Vector3 planeNormal = normal.SafeUnit();
+	for (const FracturePiece& piece : pieces)
+	{
+		if (piece.Direction.SquareLength() > 1e-8f && std::fabs(piece.Direction.Dot(planeNormal)) > 1e-4f)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool PiecesUseXYAxisSeparation(const std::vector<FracturePiece>& pieces, const Box3& bounds)
+{
+	const Vector3 center = bounds.GetCenter();
+	const float halfX = std::max((bounds.Max.x - bounds.Min.x) * 0.5f, 1e-3f);
+	const float halfY = std::max((bounds.Max.y - bounds.Min.y) * 0.5f, 1e-3f);
+	bool foundNonUnitOffset = false;
+
+	for (const FracturePiece& piece : pieces)
+	{
+		if (CountValidTriangles(piece.Mesh) == 0)
+		{
+			continue;
+		}
+
+		const float expectedX = std::max(-1.0f, std::min((piece.Center.x - center.x) / halfX, 1.0f));
+		const float expectedY = std::max(-1.0f, std::min((piece.Center.y - center.y) / halfY, 1.0f));
+		if (std::fabs(piece.Direction.x - expectedX) > 1e-3f ||
+			std::fabs(piece.Direction.y - expectedY) > 1e-3f ||
+			std::fabs(piece.Direction.z) > 1e-4f)
+		{
+			return false;
+		}
+
+		const float length = piece.Direction.Length();
+		if (length > 1e-4f && std::fabs(length - 1.0f) > 1e-3f)
+		{
+			foundNonUnitOffset = true;
+		}
+	}
+
+	return foundNonUnitOffset;
+}
+
 static bool IsPointOnMeshVertex(const DynamicMesh& mesh, const Vector3& point, float tolerance)
 {
 	const float toleranceSqr = tolerance * tolerance;
@@ -611,6 +685,69 @@ void TestGeometryBoolean()
 	return;
 }
 
+void TestMeshCutAlgorithms()
+{
+	printf("Running TestMeshCutAlgorithms\n");
+
+	DynamicMesh wall;
+	const bool loaded = wall.LoadObj(TestDataPath("wall_box.obj").c_str());
+	EXPECT(loaded);
+	if (!loaded)
+	{
+		return;
+	}
+
+	FractureOptions options;
+	options.PieceCount = 6;
+	options.PiecesX = 4;
+	options.PiecesY = 3;
+	options.PiecesZ = 2;
+	options.Seed = 11;
+	options.Normal = Vector3::UnitZ();
+
+	std::vector<FracturePiece> pieces;
+	EXPECT(Fracture::VoronoiFracture2D(wall, Vector3::UnitZ(), pieces, options));
+	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(PiecesMoveInPlane(pieces, Vector3::UnitZ()));
+	EXPECT(PiecesUseXYAxisSeparation(pieces, wall.GetBounds()));
+
+	pieces.clear();
+	EXPECT(Fracture::ClusterVoronoiFracture(wall, pieces, options));
+	EXPECT(HasRenderablePieces(pieces));
+
+	pieces.clear();
+	EXPECT(Fracture::Voxel2D(wall, Vector3::UnitZ(), pieces, options));
+	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(PiecesMoveInPlane(pieces, Vector3::UnitZ()));
+	EXPECT(PiecesUseXYAxisSeparation(pieces, wall.GetBounds()));
+
+	const Index2 voxel2DCounts[] =
+	{
+		Index2(1, 1),
+		Index2(2, 2),
+		Index2(4, 3),
+		Index2(7, 5),
+		Index2(10, 6),
+	};
+	for (const Index2& counts : voxel2DCounts)
+	{
+		FractureOptions stressOptions = options;
+		stressOptions.PiecesX = counts.a;
+		stressOptions.PiecesY = counts.b;
+		stressOptions.PiecesZ = 1;
+		stressOptions.Normal = Vector3::Zero();
+
+		pieces.clear();
+		EXPECT(Fracture::Voxel2D(wall, Vector3::Zero(), pieces, stressOptions));
+		EXPECT(HasRenderablePieces(pieces));
+		EXPECT(PiecesMoveInPlane(pieces, Vector3::UnitZ()));
+	}
+
+	pieces.clear();
+	EXPECT(Fracture::Voxel3D(wall, pieces, options));
+	EXPECT(HasRenderablePieces(pieces));
+}
+
 void TestHashGrid()
 {
 	printf("Running TestHashGrid\n");
@@ -671,4 +808,5 @@ void TestGeometry()
 	TestDynamicMesh();
 	TestGeometrySet();
 	TestGeometryBoolean();
+	TestMeshCutAlgorithms();
 }

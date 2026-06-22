@@ -105,8 +105,10 @@ private:
 		int m_CuttingObjIndex;
 		int m_CuttingMode;
 		int m_CuttingPieceCount;
+		int m_CuttingPiecesX;
+		int m_CuttingPiecesY;
+		int m_CuttingPiecesZ;
 		int m_CuttingSeed;
-		float m_CuttingGrout;
 		float m_CuttingSeparation;
 		float m_CuttingMaxSeparation;
 		bool m_ShowGeometryQueryBounds;
@@ -124,8 +126,10 @@ private:
 		int m_ImguiCuttingObjIndex;
 		int m_ImguiCuttingMode;
 		int m_ImguiCuttingPieceCount;
+		int m_ImguiCuttingPiecesX;
+		int m_ImguiCuttingPiecesY;
+		int m_ImguiCuttingPiecesZ;
 		int m_ImguiCuttingSeed;
-		float m_ImguiCuttingGrout;
 		float m_ImguiCuttingSeparation;
 		bool m_ImguiShowGeometryQueryBounds;
 		size_t m_ImguiGeometryQueryBoundsCount;
@@ -144,10 +148,14 @@ private:
 		int m_ImguiPendingCuttingModeValue;
 		bool m_ImguiPendingCuttingPieceCount;
 		int m_ImguiPendingCuttingPieceCountValue;
+		bool m_ImguiPendingCuttingPiecesX;
+		int m_ImguiPendingCuttingPiecesXValue;
+		bool m_ImguiPendingCuttingPiecesY;
+		int m_ImguiPendingCuttingPiecesYValue;
+		bool m_ImguiPendingCuttingPiecesZ;
+		int m_ImguiPendingCuttingPiecesZValue;
 		bool m_ImguiPendingCuttingSeed;
 		int m_ImguiPendingCuttingSeedValue;
-		bool m_ImguiPendingCuttingGrout;
-		float m_ImguiPendingCuttingGroutValue;
 		bool m_ImguiPendingShowGeometryQueryBounds;
 		bool m_ImguiPendingShowGeometryQueryBoundsValue;
 

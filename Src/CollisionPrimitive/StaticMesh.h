@@ -198,11 +198,12 @@ namespace Riemann
 			if (OwnMemory)
 			{
 				mVertices.resize(Nv);
-				memcpy((void*)mVertices.data(), Verts, sizeof(mVertices[0]) * Nv);
+				Vertices = mVertices.data();
+				memcpy((void*)Vertices, Verts, sizeof(mVertices[0]) * Nv);
 
 				mIndices.resize(Nt * 3 * GetIndicesWidth());
-				Indices = &mIndices[0];
-				memcpy(&Indices[0], Tris, mIndices.size() * sizeof(Indices[0]));
+				Indices = mIndices.data();
+				memcpy((void*)Indices, Tris, mIndices.size() * sizeof(Indices[0]));
 			}
 			else
 			{

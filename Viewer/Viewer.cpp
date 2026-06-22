@@ -297,10 +297,12 @@ namespace Riemann
 		, m_CamParam(Vector3(1.0f, 0.6f, 15.0f))
 		, m_CuttingPanelActive(false)
 		, m_CuttingObjIndex(0)
-		, m_CuttingMode(MeshCuttingMode_VoronoiFracture)
+		, m_CuttingMode(MeshCuttingMode_VoronoiFracture3D)
 		, m_CuttingPieceCount(16)
+		, m_CuttingPiecesX(4)
+		, m_CuttingPiecesY(3)
+		, m_CuttingPiecesZ(2)
 		, m_CuttingSeed(7)
-		, m_CuttingGrout(0.0f)
 		, m_CuttingSeparation(0.0f)
 		, m_CuttingMaxSeparation(1.0f)
 		, m_ShowGeometryQueryBounds(false)
@@ -309,10 +311,12 @@ namespace Riemann
 		, m_ImguiCameraDistance(15.0f)
 		, m_ImguiCuttingPanelActive(false)
 		, m_ImguiCuttingObjIndex(0)
-		, m_ImguiCuttingMode(MeshCuttingMode_VoronoiFracture)
+		, m_ImguiCuttingMode(MeshCuttingMode_VoronoiFracture3D)
 		, m_ImguiCuttingPieceCount(16)
+		, m_ImguiCuttingPiecesX(4)
+		, m_ImguiCuttingPiecesY(3)
+		, m_ImguiCuttingPiecesZ(2)
 		, m_ImguiCuttingSeed(7)
-		, m_ImguiCuttingGrout(0.0f)
 		, m_ImguiCuttingSeparation(0.0f)
 		, m_ImguiShowGeometryQueryBounds(false)
 		, m_ImguiGeometryQueryBoundsCount(0)
@@ -327,13 +331,17 @@ namespace Riemann
 		, m_ImguiPendingBrowseCuttingObj(false)
 		, m_ImguiPendingApplyCutting(false)
 		, m_ImguiPendingCuttingMode(false)
-		, m_ImguiPendingCuttingModeValue(MeshCuttingMode_VoronoiFracture)
+		, m_ImguiPendingCuttingModeValue(MeshCuttingMode_VoronoiFracture3D)
 		, m_ImguiPendingCuttingPieceCount(false)
 		, m_ImguiPendingCuttingPieceCountValue(16)
+		, m_ImguiPendingCuttingPiecesX(false)
+		, m_ImguiPendingCuttingPiecesXValue(4)
+		, m_ImguiPendingCuttingPiecesY(false)
+		, m_ImguiPendingCuttingPiecesYValue(3)
+		, m_ImguiPendingCuttingPiecesZ(false)
+		, m_ImguiPendingCuttingPiecesZValue(2)
 		, m_ImguiPendingCuttingSeed(false)
 		, m_ImguiPendingCuttingSeedValue(7)
-		, m_ImguiPendingCuttingGrout(false)
-		, m_ImguiPendingCuttingGroutValue(0.0f)
 		, m_ImguiPendingShowGeometryQueryBounds(false)
 		, m_ImguiPendingShowGeometryQueryBoundsValue(false)
 		, m_PhysicsFpsTime(std::chrono::steady_clock::now())
@@ -700,8 +708,10 @@ namespace Riemann
 		std::string cuttingStatus;
 		int cuttingMode = 0;
 		int cuttingPieceCount = 0;
+		int cuttingPiecesX = 0;
+		int cuttingPiecesY = 0;
+		int cuttingPiecesZ = 0;
 		int cuttingSeed = 0;
-		float cuttingGrout = 0.0f;
 		float cuttingSeparation = 0.0f;
 		bool showGeometryQueryBounds = false;
 		size_t geometryQueryBoundsCount = 0;
@@ -718,8 +728,10 @@ namespace Riemann
 			cuttingStatus = m_ImguiCuttingStatus;
 			cuttingMode = m_ImguiCuttingMode;
 			cuttingPieceCount = m_ImguiCuttingPieceCount;
+			cuttingPiecesX = m_ImguiCuttingPiecesX;
+			cuttingPiecesY = m_ImguiCuttingPiecesY;
+			cuttingPiecesZ = m_ImguiCuttingPiecesZ;
 			cuttingSeed = m_ImguiCuttingSeed;
-			cuttingGrout = m_ImguiCuttingGrout;
 			cuttingSeparation = m_ImguiCuttingSeparation;
 			showGeometryQueryBounds = m_ImguiShowGeometryQueryBounds;
 			geometryQueryBoundsCount = m_ImguiGeometryQueryBoundsCount;
@@ -805,24 +817,69 @@ namespace Riemann
 					m_ImguiPendingBrowseCuttingObj = true;
 				}
 
-				const char* modes[] = { "Parallel X", "Parallel Y", "Parallel Z", "Voronoi Fracture" };
-				int selectedMode = std::max(0, std::min(cuttingMode, 3));
-				if (imguiCombo("Mode", &selectedMode, modes, 4))
+				const char* modes[] =
+				{
+					"Parallel X",
+					"Parallel Y",
+					"Parallel Z",
+					"Voronoi 2D",
+					"Voronoi 3D",
+					"Cluster",
+					"Voxel2D",
+					"Voxel3D",
+				};
+				int selectedMode = std::max(0, std::min(cuttingMode, (int)MeshCuttingMode_Count - 1));
+				if (imguiCombo("Mode", &selectedMode, modes, (int)MeshCuttingMode_Count))
 				{
 					std::lock_guard<std::mutex> lock(m_ImguiMutex);
 					m_ImguiPendingCuttingMode = true;
 					m_ImguiPendingCuttingModeValue = selectedMode;
 				}
 
-				float pieces = static_cast<float>(std::max(2, cuttingPieceCount));
-				if (imguiSlider("Pieces", &pieces, 2.0f, 64.0f, 1.0f))
+				if (selectedMode == MeshCuttingMode_Voxel2D || selectedMode == MeshCuttingMode_Voxel3D)
 				{
-					std::lock_guard<std::mutex> lock(m_ImguiMutex);
-					m_ImguiPendingCuttingPieceCount = true;
-					m_ImguiPendingCuttingPieceCountValue = std::max(2, static_cast<int>(pieces + 0.5f));
+					const float gridMax = selectedMode == MeshCuttingMode_Voxel3D ? 8.0f : 32.0f;
+					float piecesX = static_cast<float>(std::max(1, cuttingPiecesX));
+					if (imguiSlider("Blocks X", &piecesX, 1.0f, gridMax, 1.0f))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_ImguiPendingCuttingPiecesX = true;
+						m_ImguiPendingCuttingPiecesXValue = std::max(1, static_cast<int>(piecesX + 0.5f));
+					}
+
+					float piecesY = static_cast<float>(std::max(1, cuttingPiecesY));
+					if (imguiSlider("Blocks Y", &piecesY, 1.0f, gridMax, 1.0f))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_ImguiPendingCuttingPiecesY = true;
+						m_ImguiPendingCuttingPiecesYValue = std::max(1, static_cast<int>(piecesY + 0.5f));
+					}
+
+					if (selectedMode == MeshCuttingMode_Voxel3D)
+					{
+						float piecesZ = static_cast<float>(std::max(1, cuttingPiecesZ));
+						if (imguiSlider("Blocks Z", &piecesZ, 1.0f, gridMax, 1.0f))
+						{
+							std::lock_guard<std::mutex> lock(m_ImguiMutex);
+							m_ImguiPendingCuttingPiecesZ = true;
+							m_ImguiPendingCuttingPiecesZValue = std::max(1, static_cast<int>(piecesZ + 0.5f));
+						}
+					}
+				}
+				else
+				{
+					float pieces = static_cast<float>(std::max(2, cuttingPieceCount));
+					if (imguiSlider("Pieces", &pieces, 2.0f, 64.0f, 1.0f))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_ImguiPendingCuttingPieceCount = true;
+						m_ImguiPendingCuttingPieceCountValue = std::max(2, static_cast<int>(pieces + 0.5f));
+					}
 				}
 
-				if (selectedMode == MeshCuttingMode_VoronoiFracture)
+				if (selectedMode == MeshCuttingMode_VoronoiFracture2D ||
+					selectedMode == MeshCuttingMode_VoronoiFracture3D ||
+					selectedMode == MeshCuttingMode_Cluster)
 				{
 					float seed = static_cast<float>(cuttingSeed);
 					if (imguiSlider("Seed", &seed, 0.0f, 999.0f, 1.0f))
@@ -831,14 +888,6 @@ namespace Riemann
 						m_ImguiPendingCuttingSeed = true;
 						m_ImguiPendingCuttingSeedValue = static_cast<int>(seed + 0.5f);
 					}
-				}
-
-				float grout = cuttingGrout;
-				if (imguiSlider("Grout", &grout, 0.0f, 0.08f, 0.001f))
-				{
-					std::lock_guard<std::mutex> lock(m_ImguiMutex);
-					m_ImguiPendingCuttingGrout = true;
-					m_ImguiPendingCuttingGroutValue = grout;
 				}
 
 				float separation = cuttingSeparation;
@@ -975,10 +1024,12 @@ namespace Riemann
 
 		const Box3 bounds = source.Bounds;
 		const Vector3 center = bounds.GetCenter();
-		m_CuttingMode = std::max(0, std::min(m_CuttingMode, 3));
+		m_CuttingMode = std::max(0, std::min(m_CuttingMode, (int)MeshCuttingMode_Count - 1));
 		m_CuttingPieceCount = std::max(2, std::min(m_CuttingPieceCount, 64));
+		m_CuttingPiecesX = std::max(1, std::min(m_CuttingPiecesX, 64));
+		m_CuttingPiecesY = std::max(1, std::min(m_CuttingPiecesY, 64));
+		m_CuttingPiecesZ = std::max(1, std::min(m_CuttingPiecesZ, 64));
 		m_CuttingSeed = std::max(0, std::min(m_CuttingSeed, 999));
-		m_CuttingGrout = std::max(0.0f, std::min(m_CuttingGrout, 0.08f));
 		m_CuttingSeparation = 0.0f;
 		m_CuttingMaxSeparation = source.MaxSeparation;
 
@@ -1052,8 +1103,10 @@ namespace Riemann
 		params.ObjPath = m_CuttingObjPath;
 		params.Mode = m_CuttingMode;
 		params.PieceCount = m_CuttingPieceCount;
+		params.PiecesX = m_CuttingPiecesX;
+		params.PiecesY = m_CuttingPiecesY;
+		params.PiecesZ = m_CuttingPiecesZ;
 		params.Seed = m_CuttingSeed;
-		params.Grout = m_CuttingGrout;
 
 		MeshCuttingResult cuttingResult;
 		if (!BuildMeshCuttingPanel(params, &cuttingResult))
@@ -1066,10 +1119,12 @@ namespace Riemann
 
 		const Box3 bounds = cuttingResult.SourceBounds;
 		const Vector3 center = bounds.GetCenter();
-		m_CuttingMode = std::max(0, std::min(m_CuttingMode, 3));
+		m_CuttingMode = std::max(0, std::min(m_CuttingMode, (int)MeshCuttingMode_Count - 1));
 		m_CuttingPieceCount = std::max(2, std::min(m_CuttingPieceCount, 64));
+		m_CuttingPiecesX = std::max(1, std::min(m_CuttingPiecesX, 64));
+		m_CuttingPiecesY = std::max(1, std::min(m_CuttingPiecesY, 64));
+		m_CuttingPiecesZ = std::max(1, std::min(m_CuttingPiecesZ, 64));
 		m_CuttingSeed = std::max(0, std::min(m_CuttingSeed, 999));
-		m_CuttingGrout = std::max(0.0f, std::min(m_CuttingGrout, 0.08f));
 		m_CuttingMaxSeparation = cuttingResult.MaxSeparation;
 		m_CamCenter = cameraCenter;
 		m_CamParam = cameraParam;
@@ -1364,10 +1419,14 @@ namespace Riemann
 		int pendingCuttingModeValue = 0;
 		bool pendingCuttingPieceCount = false;
 		int pendingCuttingPieceCountValue = 0;
+		bool pendingCuttingPiecesX = false;
+		int pendingCuttingPiecesXValue = 0;
+		bool pendingCuttingPiecesY = false;
+		int pendingCuttingPiecesYValue = 0;
+		bool pendingCuttingPiecesZ = false;
+		int pendingCuttingPiecesZValue = 0;
 		bool pendingCuttingSeed = false;
 		int pendingCuttingSeedValue = 0;
-		bool pendingCuttingGrout = false;
-		float pendingCuttingGroutValue = 0.0f;
 		bool pendingGeometryQueryBounds = false;
 		bool pendingGeometryQueryBoundsValue = false;
 		{
@@ -1393,12 +1452,18 @@ namespace Riemann
 			pendingCuttingPieceCount = m_ImguiPendingCuttingPieceCount;
 			pendingCuttingPieceCountValue = m_ImguiPendingCuttingPieceCountValue;
 			m_ImguiPendingCuttingPieceCount = false;
+			pendingCuttingPiecesX = m_ImguiPendingCuttingPiecesX;
+			pendingCuttingPiecesXValue = m_ImguiPendingCuttingPiecesXValue;
+			m_ImguiPendingCuttingPiecesX = false;
+			pendingCuttingPiecesY = m_ImguiPendingCuttingPiecesY;
+			pendingCuttingPiecesYValue = m_ImguiPendingCuttingPiecesYValue;
+			m_ImguiPendingCuttingPiecesY = false;
+			pendingCuttingPiecesZ = m_ImguiPendingCuttingPiecesZ;
+			pendingCuttingPiecesZValue = m_ImguiPendingCuttingPiecesZValue;
+			m_ImguiPendingCuttingPiecesZ = false;
 			pendingCuttingSeed = m_ImguiPendingCuttingSeed;
 			pendingCuttingSeedValue = m_ImguiPendingCuttingSeedValue;
 			m_ImguiPendingCuttingSeed = false;
-			pendingCuttingGrout = m_ImguiPendingCuttingGrout;
-			pendingCuttingGroutValue = m_ImguiPendingCuttingGroutValue;
-			m_ImguiPendingCuttingGrout = false;
 			pendingGeometryQueryBounds = m_ImguiPendingShowGeometryQueryBounds;
 			pendingGeometryQueryBoundsValue = m_ImguiPendingShowGeometryQueryBoundsValue;
 			m_ImguiPendingShowGeometryQueryBounds = false;
@@ -1428,7 +1493,6 @@ namespace Riemann
 		}
 
 		bool pendingLoadCuttingSource = false;
-		const bool hadCuttingPieces = !m_CuttingPieces.empty();
 		if (pendingCuttingObjIndex >= 0 && pendingCuttingObjIndex < (int)m_CuttingObjFiles.size())
 		{
 			m_CuttingObjIndex = pendingCuttingObjIndex;
@@ -1450,7 +1514,7 @@ namespace Riemann
 		bool pendingCuttingParams = false;
 		if (pendingCuttingMode)
 		{
-			m_CuttingMode = std::max(0, std::min(pendingCuttingModeValue, 3));
+			m_CuttingMode = std::max(0, std::min(pendingCuttingModeValue, (int)MeshCuttingMode_Count - 1));
 			pendingCuttingParams = true;
 		}
 		if (pendingCuttingPieceCount)
@@ -1458,24 +1522,29 @@ namespace Riemann
 			m_CuttingPieceCount = std::max(2, std::min(pendingCuttingPieceCountValue, 64));
 			pendingCuttingParams = true;
 		}
+		if (pendingCuttingPiecesX)
+		{
+			m_CuttingPiecesX = std::max(1, std::min(pendingCuttingPiecesXValue, 64));
+			pendingCuttingParams = true;
+		}
+		if (pendingCuttingPiecesY)
+		{
+			m_CuttingPiecesY = std::max(1, std::min(pendingCuttingPiecesYValue, 64));
+			pendingCuttingParams = true;
+		}
+		if (pendingCuttingPiecesZ)
+		{
+			m_CuttingPiecesZ = std::max(1, std::min(pendingCuttingPiecesZValue, 64));
+			pendingCuttingParams = true;
+		}
 		if (pendingCuttingSeed)
 		{
 			m_CuttingSeed = std::max(0, std::min(pendingCuttingSeedValue, 999));
 			pendingCuttingParams = true;
 		}
-		if (pendingCuttingGrout)
-		{
-			m_CuttingGrout = std::max(0.0f, std::min(pendingCuttingGroutValue, 0.08f));
-			pendingCuttingParams = true;
-		}
 		if (pendingCuttingSeparation)
 		{
 			m_CuttingSeparation = std::max(0.0f, std::min(pendingCuttingSeparationValue, 1.0f));
-		}
-
-		if (pendingCuttingParams && m_CuttingPanelActive && hadCuttingPieces)
-		{
-			pendingLoadCuttingSource = true;
 		}
 
 		if (pendingApplyCutting && m_CuttingPanelActive)
@@ -1518,8 +1587,10 @@ namespace Riemann
 		m_ImguiCuttingObjIndex = m_CuttingObjIndex;
 		m_ImguiCuttingMode = m_CuttingMode;
 		m_ImguiCuttingPieceCount = m_CuttingPieceCount;
+		m_ImguiCuttingPiecesX = m_CuttingPiecesX;
+		m_ImguiCuttingPiecesY = m_CuttingPiecesY;
+		m_ImguiCuttingPiecesZ = m_CuttingPiecesZ;
 		m_ImguiCuttingSeed = m_CuttingSeed;
-		m_ImguiCuttingGrout = m_CuttingGrout;
 		m_ImguiCuttingSeparation = m_CuttingSeparation;
 		m_ImguiShowGeometryQueryBounds = m_ShowGeometryQueryBounds;
 		m_ImguiGeometryQueryBoundsCount = m_GeometryQueryBoundsMeshIds.size();

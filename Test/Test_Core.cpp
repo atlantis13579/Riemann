@@ -494,6 +494,26 @@ void TestListSet()
 	}
 	EXPECT(sum == 110);
 
+	ListSet<int, 1> realloc_s;
+	realloc_s.resize(2);
+	const int realloc_count = 64;
+	for (int i = 0; i < realloc_count; ++i)
+	{
+		realloc_s[0].push_back(i);
+	}
+
+	std::vector<int> iterated;
+	for (int value : realloc_s[0])
+	{
+		iterated.push_back(value);
+		realloc_s[1].push_back(value + 1000);
+	}
+	EXPECT(iterated.size() == realloc_count);
+	for (int i = 0; i < realloc_count; ++i)
+	{
+		EXPECT(iterated[i] == i);
+	}
+
 
 	return;
 }

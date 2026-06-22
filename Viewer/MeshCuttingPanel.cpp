@@ -1,14 +1,11 @@
 #include "MeshCuttingPanel.h"
 
 #include <algorithm>
-#include <math.h>
-#include <random>
 #include <sstream>
 #include <utility>
 
-#include "../Src/Destruction/Fracture.h"
 #include "../Src/Geometry/DynamicMesh.h"
-#include "../Src/Geometry/MeshCut.h"
+#include "../Src/Destruction/Fracture.h"
 
 namespace Riemann
 {
@@ -28,32 +25,6 @@ namespace Riemann
 			}
 			mesh->Vertices = mesh->mVertices.empty() ? nullptr : mesh->mVertices.data();
 			mesh->Indices = mesh->mIndices.empty() ? nullptr : mesh->mIndices.data();
-		}
-
-		float AxisValue(const Vector3& value, int axis)
-		{
-			return axis == 0 ? value.x : (axis == 1 ? value.y : value.z);
-		}
-
-		void SetAxisValue(Vector3* value, int axis, float axisValue)
-		{
-			if (axis == 0)
-			{
-				value->x = axisValue;
-			}
-			else if (axis == 1)
-			{
-				value->y = axisValue;
-			}
-			else
-			{
-				value->z = axisValue;
-			}
-		}
-
-		Vector3 AxisVector(int axis)
-		{
-			return axis == 0 ? Vector3(1.0f, 0.0f, 0.0f) : (axis == 1 ? Vector3(0.0f, 1.0f, 0.0f) : Vector3(0.0f, 0.0f, 1.0f));
 		}
 
 		int CountValidTriangles(const DynamicMesh& mesh)
@@ -141,139 +112,6 @@ namespace Riemann
 			return true;
 		}
 
-		struct DynamicCutPiece
-		{
-			DynamicMesh Mesh;
-			Vector3 Center = Vector3::Zero();
-			Vector3 Direction = Vector3::Zero();
-		};
-
-		bool BuildParallelCutPieces(const DynamicMesh& sourceMesh, int axis, int pieceCount, float groutScale, std::vector<DynamicCutPiece>* pieces)
-		{
-			if (pieces == nullptr)
-			{
-				return false;
-			}
-			pieces->clear();
-
-			const Box3 bounds = sourceMesh.GetBounds();
-			const Vector3 center = bounds.GetCenter();
-			const float maxSize = std::max(BoundsMaxDim(bounds), 1e-3f);
-			const float minAxis = AxisValue(bounds.Min, axis);
-			const float maxAxis = AxisValue(bounds.Max, axis);
-			const float axisSize = std::max(maxAxis - minAxis, 1e-3f);
-			const int count = std::max(2, std::min(pieceCount, 64));
-			const float padding = std::max(maxSize * 0.01f, 1e-4f);
-
-			std::vector<Box3> cells;
-			cells.reserve(count);
-			for (int i = 0; i < count; ++i)
-			{
-				Vector3 cellMin = bounds.Min - Vector3(padding, padding, padding);
-				Vector3 cellMax = bounds.Max + Vector3(padding, padding, padding);
-				const float t0 = static_cast<float>(i) / static_cast<float>(count);
-				const float t1 = static_cast<float>(i + 1) / static_cast<float>(count);
-				SetAxisValue(&cellMin, axis, minAxis + axisSize * t0 - (i == 0 ? padding : 0.0f));
-				SetAxisValue(&cellMax, axis, minAxis + axisSize * t1 + (i == count - 1 ? padding : 0.0f));
-				cells.emplace_back(cellMin, cellMax);
-			}
-
-			PlanarCells planarCells(cells);
-			PlanarCutOptions options;
-			options.SnapTolerance = std::max(maxSize * 1e-5f, 1e-6f);
-			options.BoundsPaddingScale = 0.08f;
-			options.Grout = std::max(0.0f, groutScale) * maxSize;
-			options.WeldSharedEdges = true;
-			options.MinTriangleCount = 4;
-
-			std::vector<PlanarCutPiece> cutPieces;
-			if (!MeshCut::CutWithPlanarCells(sourceMesh, planarCells, cutPieces, options))
-			{
-				return false;
-			}
-
-			const Vector3 axisDir = AxisVector(axis);
-			for (const PlanarCutPiece& piece : cutPieces)
-			{
-				if (CountValidTriangles(piece.Mesh) == 0)
-				{
-					continue;
-				}
-
-				const float relative = (AxisValue(piece.Center, axis) - AxisValue(center, axis)) / std::max(axisSize * 0.5f, 1e-3f);
-				DynamicCutPiece data;
-				data.Mesh = piece.Mesh;
-				data.Center = piece.Center;
-				data.Direction = axisDir * std::max(-1.0f, std::min(1.0f, relative));
-				pieces->push_back(data);
-			}
-
-			return !pieces->empty();
-		}
-
-		bool BuildVoronoiCutPieces(const DynamicMesh& sourceMesh, int pieceCount, int seed, float groutScale, std::vector<DynamicCutPiece>* pieces)
-		{
-			if (pieces == nullptr)
-			{
-				return false;
-			}
-			pieces->clear();
-
-			const Box3 bounds = sourceMesh.GetBounds();
-			const Vector3 center = bounds.GetCenter();
-			const Vector3 extent = bounds.GetExtent();
-			const float maxSize = std::max(BoundsMaxDim(bounds), 1e-3f);
-			const int count = std::max(2, std::min(pieceCount, 64));
-
-			std::mt19937 rng(static_cast<unsigned int>(seed));
-			std::uniform_real_distribution<float> random01(0.0f, 1.0f);
-			std::vector<Vector3> sites;
-			sites.reserve(count);
-			for (int i = 0; i < count; ++i)
-			{
-				const float rx = random01(rng) * 2.0f - 1.0f;
-				const float ry = random01(rng) * 2.0f - 1.0f;
-				const float rz = random01(rng) * 2.0f - 1.0f;
-				sites.push_back(center + Vector3(rx * extent.x, ry * extent.y, rz * extent.z) * 0.78f);
-			}
-
-			FractureOptions options;
-			options.SnapTolerance = std::max(maxSize * 1e-5f, 1e-6f);
-			options.BoundsPaddingScale = 0.20f;
-			options.Grout = std::max(0.0f, groutScale) * maxSize;
-			options.WeldSharedEdges = true;
-			options.MinTriangleCount = 4;
-
-			std::vector<FracturePiece> fracturePieces;
-			if (!Fracture::VoronoiFracture(sourceMesh, sites, fracturePieces, options))
-			{
-				return false;
-			}
-
-			for (size_t i = 0; i < fracturePieces.size(); ++i)
-			{
-				const FracturePiece& piece = fracturePieces[i];
-				if (CountValidTriangles(piece.Mesh) == 0)
-				{
-					continue;
-				}
-
-				Vector3 direction = piece.Center - center;
-				if (direction.SafeNormalize() == 0.0f)
-				{
-					const float angle = static_cast<float>(i) * 2.39996323f;
-					direction = Vector3(cosf(angle), 0.25f * ((i & 1) ? 1.0f : -1.0f), sinf(angle)).SafeUnit();
-				}
-
-				DynamicCutPiece data;
-				data.Mesh = piece.Mesh;
-				data.Center = piece.Center;
-				data.Direction = direction;
-				pieces->push_back(data);
-			}
-
-			return !pieces->empty();
-		}
 	}
 
 	bool LoadMeshCuttingSource(const std::string& objPath, MeshCuttingSource* source)
@@ -341,19 +179,25 @@ namespace Riemann
 
 		const Box3 bounds = sourceMesh.GetBounds();
 		const float maxSize = std::max(BoundsMaxDim(bounds), 1e-3f);
-		const int mode = std::max((int)MeshCuttingMode_ParallelX, std::min(params.Mode, (int)MeshCuttingMode_VoronoiFracture));
+		const int mode = std::max((int)MeshCuttingMode_ParallelX, std::min(params.Mode, (int)MeshCuttingMode_Count - 1));
 		const int pieceCount = std::max(2, std::min(params.PieceCount, 64));
+		const int piecesX = std::max(1, std::min(params.PiecesX, 64));
+		const int piecesY = std::max(1, std::min(params.PiecesY, 64));
+		const int piecesZ = std::max(1, std::min(params.PiecesZ, 64));
 		const int seed = std::max(0, std::min(params.Seed, 999));
-		const float grout = std::max(0.0f, std::min(params.Grout, 0.08f));
 
-		std::vector<DynamicCutPiece> dynamicPieces;
-		const bool built = mode == MeshCuttingMode_ParallelX
-			? BuildParallelCutPieces(sourceMesh, 0, pieceCount, grout, &dynamicPieces)
-			: (mode == MeshCuttingMode_ParallelY
-				? BuildParallelCutPieces(sourceMesh, 1, pieceCount, grout, &dynamicPieces)
-				: (mode == MeshCuttingMode_ParallelZ
-					? BuildParallelCutPieces(sourceMesh, 2, pieceCount, grout, &dynamicPieces)
-					: BuildVoronoiCutPieces(sourceMesh, pieceCount, seed, grout, &dynamicPieces)));
+		FractureOptions options;
+		options.Mode = mode;
+		options.PieceCount = pieceCount;
+		options.PiecesX = piecesX;
+		options.PiecesY = piecesY;
+		options.PiecesZ = piecesZ;
+		options.Seed = seed;
+		options.WeldSharedEdges = true;
+		options.MinTriangleCount = 4;
+
+		std::vector<FracturePiece> dynamicPieces;
+		bool built = Fracture::CutByMode(sourceMesh, dynamicPieces, options);
 
 		if (!built || dynamicPieces.empty())
 		{
@@ -364,7 +208,7 @@ namespace Riemann
 		result->SourceBounds = bounds;
 		result->MaxSeparation = maxSize * 1.15f;
 		result->Pieces.reserve(dynamicPieces.size());
-		for (const DynamicCutPiece& dynamicPiece : dynamicPieces)
+		for (const FracturePiece& dynamicPiece : dynamicPieces)
 		{
 			MeshCuttingPiece piece;
 			piece.Center = dynamicPiece.Center;

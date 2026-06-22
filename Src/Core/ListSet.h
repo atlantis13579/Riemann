@@ -35,12 +35,16 @@ namespace Riemann
 			public:
 				inline const T& operator*() const
 				{
-					return m_curr_block->data[m_curr_block_idx];
+					const Block* curr_block = m_owner->get_block(m_curr_block);
+					assert(curr_block);
+					return curr_block->data[m_curr_block_idx];
 				}
 
 				inline T& operator*()
 				{
-					return m_curr_block->data[m_curr_block_idx];
+					Block* curr_block = m_owner->get_block(m_curr_block);
+					assert(curr_block);
+					return curr_block->data[m_curr_block_idx];
 				}
 
 				inline const ValueIterator& operator++()
@@ -50,7 +54,8 @@ namespace Riemann
 					if (m_curr_block_idx == BlockSize)
 					{
 						m_curr_block_idx = 0;
-						m_curr_block = m_owner->get_block(m_curr_block->next_block);
+						const Block* curr_block = m_owner->get_block(m_curr_block);
+						m_curr_block = curr_block ? curr_block->next_block : -1;
 					}
 					return *this;
 				}
@@ -67,13 +72,15 @@ namespace Riemann
 				
 				inline const T& value() const
 				{
-					return m_curr_block->data[m_curr_block_idx];
+					const Block* curr_block = m_owner->get_block(m_curr_block);
+					assert(curr_block);
+					return curr_block->data[m_curr_block_idx];
 				}
 
 			private:
 				friend class ListProxy;
 
-				ValueIterator(ListSet *_owner, Block *_curr_block, int _index)
+				ValueIterator(ListSet *_owner, int _curr_block, int _index)
 				{
 					m_owner = _owner;
 					m_index = _index;
@@ -83,7 +90,7 @@ namespace Riemann
 
 			private:
 				ListSet		*m_owner { nullptr };
-				Block		*m_curr_block { nullptr };
+				int			m_curr_block { -1 };
 				int			m_curr_block_idx { 0 };
 				int			m_index { 0 };
 			};
@@ -91,11 +98,11 @@ namespace Riemann
 			inline T& operator[](int idx)
 			{
 				Header *head = m_owner->get_header(m_index);
-				if (idx < 0 || idx > head->size)
+				if (head == nullptr || idx < 0 || idx >= head->size)
 				{
 					assert(false);
 					T *data = nullptr;		// out of index, make it crash
-					return data[idx];
+					return data[0];
 				}
 
 				Block *block = m_owner->get_block(head->first_block);
@@ -118,11 +125,11 @@ namespace Riemann
 			inline const T& operator[](int idx) const
 			{
 				const Header* head = m_owner->get_header(m_index);
-				if (idx < 0 || idx > head->size)
+				if (head == nullptr || idx < 0 || idx >= head->size)
 				{
 					assert(false);
-					T* data = nullptr;		// out of index, make it crash
-					return data[idx];
+					const T* data = nullptr;		// out of index, make it crash
+					return data[0];
 				}
 
 				const Block* block = m_owner->get_block(head->first_block);
@@ -145,14 +152,13 @@ namespace Riemann
 			ValueIterator begin() const
 			{
 				Header* head = m_owner->get_header(m_index);
-				Block* block = head ? m_owner->get_block(head->first_block) : nullptr;
-				return ValueIterator(m_owner, block, 0);
+				return ValueIterator(m_owner, head ? head->first_block : -1, 0);
 			}
 
 			ValueIterator end() const
 			{
 				Header* head = m_owner->get_header(m_index);
-				return ValueIterator(m_owner, nullptr, head ? head->size : 0);
+				return ValueIterator(m_owner, -1, head ? head->size : 0);
 			}
 
 			inline int find(const T &val) const
@@ -171,6 +177,11 @@ namespace Riemann
 			inline void push_back(const T &val)
 			{
 				Header* head = m_owner->get_header(m_index);
+				if (head == nullptr)
+				{
+					assert(false);
+					return;
+				}
 				Block* block = m_owner->get_block(head->first_block);
 				if (block == nullptr)
 				{
@@ -223,7 +234,7 @@ namespace Riemann
 			bool remove_at(int idx, bool preserve_order = true)
 			{
 				Header* head = m_owner->get_header(m_index);
-				if (idx < 0 || idx >= head->size)
+				if (head == nullptr || idx < 0 || idx >= head->size)
 				{
 					return false;
 				}
@@ -304,20 +315,24 @@ namespace Riemann
 			void all_iteration(TFunction func)
 			{
 				Header* head = m_owner->get_header(m_index);
-				if (head->size == 0)
+				if (head == nullptr || head->size == 0)
 				{
 					return;
 				}
 
-				Block* curr_block = m_owner->get_block(head->first_block);
+				int curr_block_index = head->first_block;
 				for (int i = 0, j = 0; i < head->size; ++i, ++j)
 				{
 					if (j == BlockSize)
 					{
 						j = 0;
-						curr_block = m_owner->get_block(curr_block->next_block);
+						const Block* curr_block = m_owner->get_block(curr_block_index);
+						assert(curr_block);
+						curr_block_index = curr_block ? curr_block->next_block : -1;
 					}
 
+					Block* curr_block = m_owner->get_block(curr_block_index);
+					assert(curr_block);
 					func(curr_block->data[j]);
 				}
 			}
@@ -367,14 +382,24 @@ namespace Riemann
 			void clear()
 			{
 				Header* head = m_owner->get_header(m_index);
-				Block* block = m_owner->get_block(head->first_block);
-				while (block)
+				if (head == nullptr)
 				{
-					int next = block->next_block;
-					block = m_owner->get_block(next);
-					m_owner->release(next);
+					assert(false);
+					return;
 				}
-				m_owner->release(head->first_block);
+				int block_index = head->first_block;
+				while (block_index >= 0)
+				{
+					Block* block = m_owner->get_block(block_index);
+					assert(block);
+					if (block == nullptr)
+					{
+						break;
+					}
+					int next = block->next_block;
+					m_owner->release(block_index);
+					block_index = next;
+				}
 				head->size = 0;
 				head->first_block = -1;
 			}
@@ -397,7 +422,9 @@ namespace Riemann
 			public:
 				inline const T& operator*() const
 				{
-					return m_curr_block->data[m_curr_block_idx];
+					const Block* curr_block = m_owner->get_block(m_curr_block);
+					assert(curr_block);
+					return curr_block->data[m_curr_block_idx];
 				}
 
 				inline const Iterator& operator++()
@@ -407,7 +434,8 @@ namespace Riemann
 					if (m_curr_block_idx == BlockSize)
 					{
 						m_curr_block_idx = 0;
-						m_curr_block = m_owner->get_block(m_curr_block->next_block);
+						const Block* curr_block = m_owner->get_block(m_curr_block);
+						m_curr_block = curr_block ? curr_block->next_block : -1;
 					}
 					return *this;
 				}
@@ -424,20 +452,22 @@ namespace Riemann
 
 				inline const T& value() const
 				{
-					return m_curr_block->data[m_curr_block_idx];
+					const Block* curr_block = m_owner->get_block(m_curr_block);
+					assert(curr_block);
+					return curr_block->data[m_curr_block_idx];
 				}
 
 			private:
 				friend class ValueEnumerable;
 
-				Iterator(const ListSet* _owner, const Block* _curr_block, int _index) : m_owner(_owner), m_curr_block(_curr_block)
+				Iterator(const ListSet* _owner, int _curr_block, int _index) : m_owner(_owner), m_curr_block(_curr_block)
 				{
 					m_index = _index;
 					m_curr_block_idx = 0;
 				}
 
 			private:
-				const Block*	m_curr_block{ nullptr };
+				int				m_curr_block{ -1 };
 				int				m_curr_block_idx{ 0 };
 				int				m_index{ 0 };
 
@@ -447,11 +477,11 @@ namespace Riemann
 			inline const T& operator[](int idx) const
 			{
 				const Header* head = m_owner->get_header(m_index);
-				if (idx < 0 || idx > head->size)
+				if (head == nullptr || idx < 0 || idx >= head->size)
 				{
 					assert(false);
-					T* data = nullptr;		// out of index, make it crash
-					return data[idx];
+					const T* data = nullptr;		// out of index, make it crash
+					return data[0];
 				}
 
 				const Block* block = m_owner->get_block(head->first_block);
@@ -474,7 +504,7 @@ namespace Riemann
 			int size() const
 			{
 				const Header* head = m_owner->get_header(m_index);
-				return head->size;
+				return head ? head->size : 0;
 			}
 
 			bool empty() const
@@ -486,20 +516,24 @@ namespace Riemann
 			void all_iteration(TFunction func)
 			{
 				const Header* head = m_owner->get_header(m_index);
-				if (head->size == 0)
+				if (head == nullptr || head->size == 0)
 				{
 					return;
 				}
 
-				const Block* curr_block = m_owner->get_block(head->first_block);
+				int curr_block_index = head->first_block;
 				for (int i = 0, j = 0; i < head->size; ++i, ++j)
 				{
 					if (j == BlockSize)
 					{
 						j = 0;
-						curr_block = m_owner->get_block(curr_block->next_block);
+						const Block* curr_block = m_owner->get_block(curr_block_index);
+						assert(curr_block);
+						curr_block_index = curr_block ? curr_block->next_block : -1;
 					}
 
+					const Block* curr_block = m_owner->get_block(curr_block_index);
+					assert(curr_block);
 					func(curr_block->data[j]);
 				}
 			}
@@ -507,14 +541,13 @@ namespace Riemann
 			Iterator begin() const
 			{
 				const Header* head = m_owner->get_header(m_index);
-				const Block* block = head ? m_owner->get_block(head->first_block) : nullptr;
-				return Iterator(m_owner, block, 0);
+				return Iterator(m_owner, head ? head->first_block : -1, 0);
 			}
 
 			Iterator end() const
 			{
 				const Header* head = m_owner->get_header(m_index);
-				return Iterator(m_owner, nullptr, head ? head->size : 0);
+				return Iterator(m_owner, -1, head ? head->size : 0);
 			}
 
 			inline int find(const T& val) const
@@ -703,17 +736,17 @@ namespace Riemann
 
 		inline Header* get_header(int idx)
 		{
-			return idx < (int)m_headers.size() ? &m_headers[idx] : nullptr;
+			return idx >= 0 && idx < (int)m_headers.size() ? &m_headers[idx] : nullptr;
 		}
 
 		inline const Header* get_header(int idx) const
 		{
-			return idx < (int)m_headers.size() ? &m_headers[idx] : nullptr;
+			return idx >= 0 && idx < (int)m_headers.size() ? &m_headers[idx] : nullptr;
 		}
 
 		inline Block* get_block(int idx)
 		{
-			if (idx < 0)
+			if (idx < 0 || idx >= (int)m_blocks.size())
 			{
 				return nullptr;
 			}
@@ -722,7 +755,7 @@ namespace Riemann
 
 		inline const Block* get_block(int idx) const
 		{
-			if (idx < 0)
+			if (idx < 0 || idx >= (int)m_blocks.size())
 			{
 				return nullptr;
 			}

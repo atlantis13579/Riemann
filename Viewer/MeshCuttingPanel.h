@@ -14,16 +14,23 @@ namespace Riemann
 		MeshCuttingMode_ParallelX = 0,
 		MeshCuttingMode_ParallelY,
 		MeshCuttingMode_ParallelZ,
-		MeshCuttingMode_VoronoiFracture,
+		MeshCuttingMode_VoronoiFracture2D,
+		MeshCuttingMode_VoronoiFracture3D,
+		MeshCuttingMode_Cluster,
+		MeshCuttingMode_Voxel2D,
+		MeshCuttingMode_Voxel3D,
+		MeshCuttingMode_Count
 	};
 
 	struct MeshCuttingParams
 	{
 		std::string ObjPath;
-		int Mode = MeshCuttingMode_VoronoiFracture;
+		int Mode = MeshCuttingMode_VoronoiFracture3D;
 		int PieceCount = 16;
+		int PiecesX = 4;
+		int PiecesY = 3;
+		int PiecesZ = 2;
 		int Seed = 7;
-		float Grout = 0.0f;
 	};
 
 	struct MeshCuttingPiece

@@ -5,6 +5,7 @@
 #include <cfloat>
 #include <cmath>
 #include <map>
+#include <random>
 
 #include "DynamicMesh.h"
 #include "GeometryBoolean.h"
