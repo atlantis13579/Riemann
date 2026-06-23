@@ -3,42 +3,12 @@
 #include <vector>
 
 #include "../Geometry/DynamicMesh.h"
+#include "../Geometry/MeshCut.h"
 #include "../Geometry/Voronoi3.h"
 #include "../Maths/Vector3.h"
 
 namespace Riemann
 {
-	enum FractureMode
-	{
-		FractureMode_ParallelX = 0,
-		FractureMode_ParallelY,
-		FractureMode_ParallelZ,
-		FractureMode_VoronoiFracture2D,
-		FractureMode_VoronoiFracture3D,
-		FractureMode_Cluster,
-		FractureMode_Voxel2D,
-		FractureMode_Voxel3D,
-		FractureMode_Count
-	};
-
-	struct FractureOptions
-	{
-		int Mode = FractureMode_VoronoiFracture3D;
-		int PieceCount = 16;
-		int PiecesX = 0;
-		int PiecesY = 0;
-		int PiecesZ = 0;
-		int Seed = 7;
-		float SnapTolerance = 1e-5f;
-		float BoundsPaddingScale = 0.10f;
-		float Grout = 0.0f;
-		float GroutScale = 0.0f;
-		bool WeldSharedEdges = true;
-		bool SimplifyAlongCut = false;
-		int MinTriangleCount = 1;
-		Vector3 Normal = Vector3::Zero();
-	};
-
 	struct FracturePiece
 	{
 		DynamicMesh Mesh;
@@ -47,69 +17,81 @@ namespace Riemann
 		Vector3 Direction = Vector3::Zero();
 		int SiteIndex = -1;
 		int CellIndex = -1;
+		std::vector<int> NeighborPieceIndices;
 	};
 
 	class Fracture
 	{
 	public:
-		static bool CutByMode(
-			const DynamicMesh& SourceMesh,
-			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options = FractureOptions());
-
 		static bool ParallelCutX(
 			const DynamicMesh& SourceMesh,
 			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options = FractureOptions());
+			int PieceCount,
+			const PlanarCutOptions& CutOptions);
 
 		static bool ParallelCutY(
 			const DynamicMesh& SourceMesh,
 			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options = FractureOptions());
+			int PieceCount,
+			const PlanarCutOptions& CutOptions);
 
 		static bool ParallelCutZ(
 			const DynamicMesh& SourceMesh,
 			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options = FractureOptions());
+			int PieceCount,
+			const PlanarCutOptions& CutOptions);
 
 		static bool VoronoiFracture3D(
 			const DynamicMesh& SourceMesh,
 			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options = FractureOptions());
+			int PieceCount,
+			int Seed,
+			const PlanarCutOptions& CutOptions);
 
 		static bool VoronoiFracture2D(
 			const DynamicMesh& SourceMesh,
 			const Vector3& Normal,
 			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options = FractureOptions());
+			int PieceCount,
+			int Seed,
+			const PlanarCutOptions& CutOptions);
 
 		static bool ClusterVoronoiFracture(
 			const DynamicMesh& SourceMesh,
 			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options = FractureOptions());
+			int PieceCount,
+			int Seed,
+			const PlanarCutOptions& CutOptions);
 
 		static bool Voxel2D(
 			const DynamicMesh& SourceMesh,
 			const Vector3& Normal,
 			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options = FractureOptions());
+			int PiecesX,
+			int PiecesY,
+			int PieceCount,
+			const PlanarCutOptions& CutOptions);
 
 		static bool Voxel3D(
 			const DynamicMesh& SourceMesh,
 			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options = FractureOptions());
+			int PiecesX,
+			int PiecesY,
+			int PiecesZ,
+			int PieceCount,
+			const PlanarCutOptions& CutOptions);
 
 		static bool VoronoiFracture(
 			const DynamicMesh& SourceMesh,
 			const std::vector<Vector3>& Sites,
 			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options = FractureOptions());
+			const PlanarCutOptions& CutOptions);
 
 		static bool VoronoiFracture(
 			const DynamicMesh& SourceMesh,
 			const std::vector<Vector3>& Sites,
 			std::vector<DynamicMesh>& Pieces,
-			const FractureOptions& Options = FractureOptions());
+			const PlanarCutOptions& CutOptions);
 
 		static bool BuildVoronoiCellMesh(
 			const Voronoi3::Cell& Cell,

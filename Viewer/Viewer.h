@@ -112,6 +112,7 @@ private:
 		float m_CuttingSeparation;
 		float m_CuttingMaxSeparation;
 		bool m_ShowGeometryQueryBounds;
+		uint32_t m_RenderRevision;
 
 		mutable std::mutex m_ImguiMutex;
 		std::string m_ImguiSceneName;

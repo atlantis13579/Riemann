@@ -1054,14 +1054,18 @@ namespace Riemann
 
 		void UpdateFromSplit(PointOnMesh& Pt, int SplitVertex, const Index2& SplitEdges)
 		{
-			if ((Pt.Pos - Mesh->GetVertex(SplitVertex)).SquareLength() < SnapToleranceSq)
+			if ((Pt.Pos - Mesh->GetVertex(SplitVertex)).SquareLength() <= SnapToleranceSq)
 			{
 				Pt.Type = VertexLocationType::Vertex;
 				Pt.ElemID = SplitVertex;
 				return;
 			}
 
-			int EdgeIdx = ClosestEdge(SplitEdges, Pt.Pos);
+			int EdgeIdx = ClosestEdge(SplitEdges, Pt.Pos, SnapToleranceSq);
+			if (EdgeIdx < 0)
+			{
+				EdgeIdx = ClosestEdge(SplitEdges, Pt.Pos, FLT_MAX);
+			}
 			assert(EdgeIdx > -1 && EdgeIdx < 2 && SplitEdges[EdgeIdx]>-1);
 			Pt.Type = VertexLocationType::Edge;
 			Pt.ElemID = SplitEdges[EdgeIdx];
@@ -1154,13 +1158,16 @@ namespace Riemann
 			return BestIdx;
 		}
 
-		int ClosestEdge(Index2 EIDs, const Vector3& Pos)
+		int ClosestEdge(Index2 EIDs, const Vector3& Pos, float BestDSq)
 		{
 			int BestIdx = -1;
-			float BestDSq = SnapToleranceSq;
 			for (int Idx = 0; Idx < 2; Idx++)
 			{
 				int EID = EIDs[Idx];
+				if (!Mesh->IsEdge(EID))
+				{
+					continue;
+				}
 				Index2 EVIDs = Mesh->GetEdgeV(EID);
 				Segment3 Seg(Mesh->GetVertex(EVIDs.a), Mesh->GetVertex(EVIDs.b));
 				const float DSq = Seg.SqrDistanceToPoint(Pos);

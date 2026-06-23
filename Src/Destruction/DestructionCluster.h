@@ -19,7 +19,7 @@ namespace Riemann
 	{
 	public:
 		DestructionCluster() = default;
-		DestructionCluster(uint32_t InID, int InLevel, const std::vector<int>& InSourceIndices);
+		DestructionCluster(DestructionSet* InDestructSet, int InLevel, const std::vector<int>& InSourceIndices);
 
 		static DestructionCluster Create(DestructionSet& DestructSet, int Level, const std::vector<int>& Indices);
 
@@ -34,7 +34,7 @@ namespace Riemann
 		const Box3& GetLocalBounds() const { return mLocalBounds; }
 		const Vector3& GetCenterOfMass() const { return mCenterOfMass; }
 		RigidBodyDynamic* GetRigidBody() const { return mRigidBody; }
-		const std::vector<Geometry*>& GetGeometries() const { return mGeometries; }
+		const std::vector<Geometry*>& GetGeometries() const;
 
 		bool Contains(int ChunkIndex) const;
 		bool GetLocalTransform(int ChunkIndex, Maths::Transform& OutTransform) const;
@@ -43,6 +43,7 @@ namespace Riemann
 		Geometry* GetGeometryByChunkIndex(int ChunkIndex) const;
 		int GetChunkIndexByGeometry(const Geometry* Geom) const;
 		Maths::Transform GetClusterWorldTransform() const;
+		DestructionSet* GetDestructionSet() const { return mDestructSet; }
 
 		RigidBodyDynamic* BuildRigidBody(PhysicsWorld& Simulation, const RigidBodyParam& Param, const std::vector<Geometry*>& Geometries);
 		RigidBodyDynamic* BuildRigidBodyFromChunkBounds(PhysicsWorld& Simulation, const DestructionSet& DestructSet, const RigidBodyParam& Param);
@@ -60,13 +61,13 @@ namespace Riemann
 		uint32_t mID = 0;
 		int mLevel = 0;
 		bool bIsStatic = false;
+		DestructionSet* mDestructSet = nullptr;
 		Box3 mLocalBounds = Box3::Empty();
 		Vector3 mCenterOfMass = Vector3::Zero();
 		std::vector<int> mSourceIndices;
 		int mSourceIndexMin = -1;
 		std::vector<Maths::Transform> mLocalTransforms;
 		RigidBodyDynamic* mRigidBody = nullptr;
-		std::vector<Geometry*> mGeometries;
 	};
 
 }	// namespace Riemann

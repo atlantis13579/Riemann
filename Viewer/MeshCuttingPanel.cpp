@@ -112,6 +112,17 @@ namespace Riemann
 			return true;
 		}
 
+		PlanarCutOptions BuildMeshCuttingOptions(int seed)
+		{
+			PlanarCutOptions options;
+			options.SnapTolerance = 1e-5f;
+			options.BoundsPaddingScale = 0.10f;
+			options.RandomSeed = seed;
+			options.WeldSharedEdges = true;
+			options.MinTriangleCount = 4;
+			return options;
+		}
+
 	}
 
 	bool LoadMeshCuttingSource(const std::string& objPath, MeshCuttingSource* source)
@@ -186,18 +197,38 @@ namespace Riemann
 		const int piecesZ = std::max(1, std::min(params.PiecesZ, 64));
 		const int seed = std::max(0, std::min(params.Seed, 999));
 
-		FractureOptions options;
-		options.Mode = mode;
-		options.PieceCount = pieceCount;
-		options.PiecesX = piecesX;
-		options.PiecesY = piecesY;
-		options.PiecesZ = piecesZ;
-		options.Seed = seed;
-		options.WeldSharedEdges = true;
-		options.MinTriangleCount = 4;
-
 		std::vector<FracturePiece> dynamicPieces;
-		bool built = Fracture::CutByMode(sourceMesh, dynamicPieces, options);
+		bool built = false;
+		const PlanarCutOptions cutOptions = BuildMeshCuttingOptions(seed);
+		switch (mode)
+		{
+		case MeshCuttingMode_ParallelX:
+			built = Fracture::ParallelCutX(sourceMesh, dynamicPieces, pieceCount, cutOptions);
+			break;
+		case MeshCuttingMode_ParallelY:
+			built = Fracture::ParallelCutY(sourceMesh, dynamicPieces, pieceCount, cutOptions);
+			break;
+		case MeshCuttingMode_ParallelZ:
+			built = Fracture::ParallelCutZ(sourceMesh, dynamicPieces, pieceCount, cutOptions);
+			break;
+		case MeshCuttingMode_VoronoiFracture2D:
+			built = Fracture::VoronoiFracture2D(sourceMesh, Vector3::Zero(), dynamicPieces, pieceCount, seed, cutOptions);
+			break;
+		case MeshCuttingMode_VoronoiFracture3D:
+			built = Fracture::VoronoiFracture3D(sourceMesh, dynamicPieces, pieceCount, seed, cutOptions);
+			break;
+		case MeshCuttingMode_Cluster:
+			built = Fracture::ClusterVoronoiFracture(sourceMesh, dynamicPieces, pieceCount, seed, cutOptions);
+			break;
+		case MeshCuttingMode_Voxel2D:
+			built = Fracture::Voxel2D(sourceMesh, Vector3::Zero(), dynamicPieces, piecesX, piecesY, pieceCount, cutOptions);
+			break;
+		case MeshCuttingMode_Voxel3D:
+			built = Fracture::Voxel3D(sourceMesh, dynamicPieces, piecesX, piecesY, piecesZ, pieceCount, cutOptions);
+			break;
+		default:
+			break;
+		}
 
 		if (!built || dynamicPieces.empty())
 		{

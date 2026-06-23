@@ -78,20 +78,18 @@ namespace Riemann
 		}
 	}
 
-	DestructionCluster::DestructionCluster(uint32_t InID, int InLevel, const std::vector<int>& InSourceIndices)
-		: mID(InID)
-		, mLevel(InLevel)
+	DestructionCluster::DestructionCluster(DestructionSet* InDestructSet, int InLevel, const std::vector<int>& InSourceIndices)
+		: mLevel(InLevel)
+		, mDestructSet(InDestructSet)
 	{
+		mID = InDestructSet->AllocClusterID();
 		SetSourceIndices(InSourceIndices);
 	}
 
 	DestructionCluster DestructionCluster::Create(DestructionSet& DestructSet, int Level, const std::vector<int>& Indices)
 	{
-		DestructionCluster Cluster(DestructSet.AllocClusterID(), Level, Indices);
-		if (Indices.empty())
-		{
-			return Cluster;
-		}
+		assert(!Indices.empty());
+		DestructionCluster Cluster(&DestructSet, Level, Indices);
 
 		const std::vector<DestructionChunk>& Chunks = DestructSet.GetChunks();
 		Box3 Bounds = Box3::Empty();
@@ -187,11 +185,12 @@ namespace Riemann
 
 	Geometry* DestructionCluster::GetGeometryByChunkIndex(int ChunkIndex) const
 	{
+		const std::vector<Geometry*>& Geometries = GetGeometries();
 		for (size_t Index = 0; Index < mSourceIndices.size(); ++Index)
 		{
 			if (mSourceIndices[Index] == ChunkIndex)
 			{
-				return Index < mGeometries.size() ? mGeometries[Index] : nullptr;
+				return Index < Geometries.size() ? Geometries[Index] : nullptr;
 			}
 		}
 		return nullptr;
@@ -204,14 +203,21 @@ namespace Riemann
 			return -1;
 		}
 
-		for (size_t Index = 0; Index < mGeometries.size() && Index < mSourceIndices.size(); ++Index)
+		const std::vector<Geometry*>& Geometries = GetGeometries();
+		for (size_t Index = 0; Index < Geometries.size() && Index < mSourceIndices.size(); ++Index)
 		{
-			if (mGeometries[Index] == Geom)
+			if (Geometries[Index] == Geom)
 			{
 				return mSourceIndices[Index];
 			}
 		}
 		return -1;
+	}
+
+	const std::vector<Geometry*>& DestructionCluster::GetGeometries() const
+	{
+		static const std::vector<Geometry*> EmptyGeometries;
+		return mRigidBody ? mRigidBody->Geometries() : EmptyGeometries;
 	}
 
 	Maths::Transform DestructionCluster::GetClusterWorldTransform() const
@@ -240,7 +246,6 @@ namespace Riemann
 
 		Maths::Transform ClusterWorldTransform = CalculateGeometryClusterWorldTransform(Geometries, mCenterOfMass);
 		mCenterOfMass = ClusterWorldTransform.pos;
-		mGeometries = Geometries;
 		mLocalTransforms.clear();
 		mLocalTransforms.reserve(Geometries.size());
 
@@ -257,6 +262,10 @@ namespace Riemann
 		ClusterParam.rigidType = RigidType::Dynamic;
 		RigidBody* Body = Simulation.CreateRigidBody(Geometries, ClusterParam, ClusterWorldTransform);
 		mRigidBody = Body ? Body->CastDynamic() : nullptr;
+		if (mRigidBody)
+		{
+			mRigidBody->Parent = mDestructSet;
+		}
 		if (mRigidBody && bIsStatic)
 		{
 			mRigidBody->Freeze();
@@ -306,8 +315,11 @@ namespace Riemann
 
 	void DestructionCluster::ReleaseRigidBodyBinding()
 	{
+		if (mRigidBody && mRigidBody->Parent == mDestructSet)
+		{
+			mRigidBody->Parent = nullptr;
+		}
 		mRigidBody = nullptr;
-		mGeometries.clear();
 	}
 
 	void DestructionCluster::SetSourceIndices(const std::vector<int>& Indices)

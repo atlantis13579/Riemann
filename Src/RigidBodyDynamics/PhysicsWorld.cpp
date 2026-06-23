@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <algorithm>
 
 #include "PhysicsWorld.h"
 
@@ -9,6 +10,7 @@
 #include "../Collision/DynamicAABBTree.h"
 #include "../Collision/GeometryQuery.h"
 #include "../Collision/GeometryObject.h"
+#include "../Destruction/DestructionSet.h"
 #include "../Modules/Tools/PhysxBinaryParser.h"
 #include "BroadPhase.h"
 #include "CollidingContact.h"
@@ -20,6 +22,20 @@
 
 namespace Riemann
 {
+	void DefaultOnContact(const PhysicsContactInfo& ContactInfo)
+	{
+		GeometryAggregate* ParentA = ContactInfo.BodyA ? ContactInfo.BodyA->Parent : nullptr;
+		GeometryAggregate* ParentB = ContactInfo.BodyB ? ContactInfo.BodyB->Parent : nullptr;
+		if (ParentA)
+		{
+			ParentA->OnContact(ContactInfo);
+		}
+		if (ParentB && ParentB != ParentA)
+		{
+			ParentB->OnContact(ContactInfo);
+		}
+	}
+
 	PhysicsWorld::PhysicsWorld(const PhysicsWorldParam& param)
 	{
 		m_GeometryQuery = new GeometryQuery;
@@ -62,6 +78,7 @@ namespace Riemann
 		m_NPhase = NarrowPhase::Create_GJKEPA();
 		m_Solver = ConstraintSolver::CreateSequentialImpulseSolver();
 		m_IntegrateMethod = param.integrateMethod;
+		m_OnContact = param.onContact ? param.onContact : OnContactCallback(DefaultOnContact);
 		m_Fields.push_back(ForceField::CreateGrivityField(param.gravityAcc));
 		m_Jobsystem = new JobSystem;
 		if (param.workerThreads != 0)
@@ -73,6 +90,16 @@ namespace Riemann
 
 	PhysicsWorld::~PhysicsWorld()
 	{
+		for (DestructionSet* DestructSet : m_DestructionSets)
+		{
+			if (DestructSet)
+			{
+				DestructSet->ClearClusters();
+				DestructSet->SetPhysicsWorld(nullptr);
+			}
+		}
+		m_DestructionSets.clear();
+
 		SAFE_DELETE(m_BPhase);
 		SAFE_DELETE(m_GeometryQuery);
 		SAFE_DELETE(m_NPhase);
@@ -122,8 +149,72 @@ namespace Riemann
 		SimulateST(m_Clock.deltatime);
 	}
 
+	void PhysicsWorld::DispatchContactCallbacks(const std::vector<Geometry*>& geoms, const std::vector<ContactManifold*>& manifolds)
+	{
+		if (!m_OnContact)
+		{
+			return;
+		}
+
+		for (size_t i = 0; i < manifolds.size(); ++i)
+		{
+			ContactManifold* manifold = manifolds[i];
+			if (manifold == nullptr || manifold->NumContactPointCount <= 0)
+			{
+				continue;
+			}
+
+			Geometry* geomA = geoms[manifold->indexA];
+			Geometry* geomB = geoms[manifold->indexB];
+			RigidBody* bodyA = geomA->GetParent<RigidBody>();
+			RigidBody* bodyB = geomB->GetParent<RigidBody>();
+
+			PhysicsContactPoint contactPoints[MAX_CONTACT_POINTS];
+			const int contactPointCount = std::min(manifold->NumContactPointCount, MAX_CONTACT_POINTS);
+			for (int j = 0; j < contactPointCount; ++j)
+			{
+				const Contact& contact = manifold->ContactPoints[j];
+				PhysicsContactPoint& point = contactPoints[j];
+				point.Position = (contact.PositionWorldA + contact.PositionWorldB) * 0.5f;
+				point.PositionWorldA = contact.PositionWorldA;
+				point.PositionWorldB = contact.PositionWorldB;
+				point.PositionLocalA = contact.PositionLocalA;
+				point.PositionLocalB = contact.PositionLocalB;
+				point.Normal = contact.Normal;
+				point.Tangent = contact.Tangent;
+				point.Binormal = contact.Binormal;
+				point.PenetrationDepth = contact.PenetrationDepth;
+				point.NormalImpulse = contact.totalImpulseNormal;
+				point.TangentImpulse = contact.totalImpulseTangent;
+				point.BinormalImpulse = contact.totalImpulseBinormal;
+				point.Impulse = contact.Normal * point.NormalImpulse
+					+ contact.Tangent * point.TangentImpulse
+					+ contact.Binormal * point.BinormalImpulse;
+			}
+
+			PhysicsContactInfo contactInfo;
+			contactInfo.BodyA = bodyA;
+			contactInfo.BodyB = bodyB;
+			contactInfo.GeomA = geomA;
+			contactInfo.GeomB = geomB;
+			contactInfo.ContactPoints = contactPoints;
+			contactInfo.NumContactPoints = contactPointCount;
+			m_OnContact(contactInfo);
+		}
+	}
+
 	void		PhysicsWorld::Reset()
 	{
+		for (DestructionSet* DestructSet : m_DestructionSets)
+		{
+			if (DestructSet)
+			{
+				DestructSet->ClearClusters();
+				DestructSet->SetPhysicsWorld(nullptr);
+			}
+		}
+		m_DestructionSets.clear();
+
 		for (size_t i = 0; i < m_StaticBodies.size(); ++i)
 		{
 			m_StaticBodies[i]->ReleaseGeometries();
@@ -196,28 +287,37 @@ namespace Riemann
 			m_NPhase->CollisionDetection(geoms, overlaps, &manifolds);
 		}
 
-		if (m_Solver && !manifolds.empty())
+		if (!manifolds.empty())
 		{
-			m_Solver->PreResolve(geoms);
-
-			const bool BuildIslands = true;
-			if (BuildIslands)
+			if (m_Solver)
 			{
-				ContactManifoldIslands manifold_islands;
-				manifold_islands.BuildIslands(geoms, manifolds);
-				manifolds.clear();
+				m_Solver->PreResolve(geoms);
 
-				for (size_t i = 0; i < manifold_islands.islands.size(); ++i)
+				const bool BuildIslands = true;
+				if (BuildIslands)
 				{
-					m_Solver->ResolveContact(geoms, manifold_islands.islands[i], dt);
+					ContactManifoldIslands manifold_islands;
+					manifold_islands.BuildIslands(geoms, manifolds);
+					manifolds.clear();
+
+					for (size_t i = 0; i < manifold_islands.islands.size(); ++i)
+					{
+						m_Solver->ResolveContact(geoms, manifold_islands.islands[i], dt);
+						DispatchContactCallbacks(geoms, manifold_islands.islands[i]);
+					}
 				}
+				else
+				{
+					m_Solver->ResolveContact(geoms, manifolds, dt);
+					DispatchContactCallbacks(geoms, manifolds);
+				}
+
+				m_Solver->PostResolve(geoms);
 			}
 			else
 			{
-				m_Solver->ResolveContact(geoms, manifolds, dt);
+				DispatchContactCallbacks(geoms, manifolds);
 			}
-
-			m_Solver->PostResolve(geoms);
 		}
 
 		PreIntegrate(dt);
@@ -225,8 +325,17 @@ namespace Riemann
 		MotionIntegration::Integrate(m_DynamicBodies, dt, (uint8_t)m_IntegrateMethod);
 
 		PostIntegrate(dt);
+		UpdateDestructionSets(dt);
 
 		return;
+	}
+
+	void PhysicsWorld::UpdateDestructionSets(float dt)
+	{
+		for (DestructionSet* DestructSet : m_DestructionSets)
+		{
+			DestructSet->Update(dt);
+		}
 	}
 
 	void		PhysicsWorld::PreIntegrate(float dt)
@@ -433,6 +542,24 @@ namespace Riemann
 			}
 		}
 		return false;
+	}
+
+	void PhysicsWorld::AddDestructionSet(DestructionSet* DestructSet)
+	{
+		if (DestructSet == nullptr)
+		{
+			return;
+		}
+		if (std::find(m_DestructionSets.begin(), m_DestructionSets.end(), DestructSet) == m_DestructionSets.end())
+		{
+			m_DestructionSets.push_back(DestructSet);
+		}
+		DestructSet->SetPhysicsWorld(this);
+	}
+
+	void PhysicsWorld::RemoveDestructionSet(DestructionSet* DestructSet)
+	{
+		m_DestructionSets.erase(std::remove(m_DestructionSets.begin(), m_DestructionSets.end(), DestructSet), m_DestructionSets.end());
 	}
 
 	bool PhysicsWorld::LoadAnimation(const std::string& resname, const std::string& filepath, float play_rate, bool begin_play)

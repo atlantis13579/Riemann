@@ -23,11 +23,8 @@ namespace Riemann
 		SAFE_DELETE(m_staticGeometry);
 		SAFE_DELETE(m_staticBucket);
 		SAFE_DELETE(m_dynamicGeometry);
-
-		for (size_t i = 0; i < m_Objects.size(); ++i)
-		{
-			delete m_Objects[i];
-		}
+		m_Objects.clear();
+		m_staticObjects.clear();
 	}
 
 	void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode)

@@ -10,9 +10,17 @@
 #include "../Core/BitSet.h"
 #include "../Maths/Box3.h"
 #include "../Maths/Vector3.h"
+#include "../RigidBodyDynamics/RigidBody.h"
 
 namespace Riemann
 {
+	class Geometry;
+	class PhysicsWorld;
+	struct PhysicsContactInfo;
+	struct PhysicsContactPoint;
+	class RigidBody;
+	class RigidBodyDynamic;
+
 	enum class DestructionEventType : int
 	{
 		Broken = -1,
@@ -96,9 +104,14 @@ namespace Riemann
 		std::vector<int> BondFractures;
 	};
 
-	class DestructionSet
+	class DestructionSet : public GeometryAggregate
 	{
 	public:
+		DestructionSet() = default;
+		explicit DestructionSet(PhysicsWorld* Simulation);
+		explicit DestructionSet(PhysicsWorld& Simulation);
+		virtual ~DestructionSet();
+
 		struct Stats
 		{
 			uint32_t NormalCount = 0;
@@ -125,6 +138,7 @@ namespace Riemann
 		DestructionCluster* GetCluster(uint32_t ClusterID);
 		const DestructionCluster* GetCluster(uint32_t ClusterID) const;
 		std::vector<DestructionCluster*> GetClusters();
+		uint32_t GetClusterRevision() const;
 
 		void BreakBondEx(int Index);
 		bool ApplyMomentum(int Index, const Vector3& Momentum, const Vector3& Position, const Vector3& Normal);
@@ -134,6 +148,8 @@ namespace Riemann
 		void AddDestructionInfo(DestructionEventType Type, const std::vector<int>& Indices);
 		uint32_t ProcessDestructionInfo();
 		void DoFractures(const DestructionFractureBuffer& Commands);
+		virtual void OnContact(const PhysicsContactInfo& ContactInfo) override;
+		void Update(float DeltaTime);
 
 		BitSet FindUnsupported() const;
 		std::vector<int> PruneUnsupported();
@@ -142,6 +158,8 @@ namespace Riemann
 		void RecalculateBounds();
 		Stats GetStats() const;
 		uint32_t AllocClusterID() { return mNextClusterID++; }
+		void SetPhysicsWorld(PhysicsWorld* Simulation) { mPhysicsWorld = Simulation; }
+		PhysicsWorld* GetPhysicsWorld() const { return mPhysicsWorld; }
 
 		std::vector<float> GetMasses() const;
 		float GetVolume(int Index) const;
@@ -159,8 +177,14 @@ namespace Riemann
 		Box3 mBounds = Box3::Empty();
 
 	private:
+		void BuildClusterRigidBody(DestructionCluster& Cluster);
+		void ReleaseClusterRigidBody(DestructionCluster& Cluster, bool bReleaseGeometries);
+		void ReleaseClusterRigidBodies(bool bReleaseGeometries);
 		void MarkFree(int Index);
 		bool BreakBondByIndex(int BondIndex);
+		bool HasClusterRigidBodies() const;
+		DestructionCluster* FindClusterByRigidBody(const RigidBody* Body);
+		void QueueContactMomentum(RigidBody* Body, Geometry* Geom, const PhysicsContactPoint& Point, const Vector3& Momentum, const Vector3& Normal);
 
 	private:
 		std::vector<DestructionChunk> mChunks;
@@ -170,6 +194,7 @@ namespace Riemann
 		BitSet mDestructionInfo[(int)DestructionEventType::Count];
 		bool bHasDestructionInfo = false;
 		uint32_t mNextClusterID = 1;
+		PhysicsWorld* mPhysicsWorld = nullptr;
 		DestructionConstants mConstants;
 	};
 

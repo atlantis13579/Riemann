@@ -10,6 +10,7 @@ namespace Riemann
 	RigidBody::RigidBody()
 	{
 		mMaterialId = 0;
+		Parent = nullptr;
 	}
 
 	RigidBody::~RigidBody()

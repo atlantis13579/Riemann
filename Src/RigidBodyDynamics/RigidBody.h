@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <vector>
+#include "../Collision/GeometryAggregate.h"
 #include "../Maths/Transform.h"
 
 namespace Riemann
@@ -75,6 +76,7 @@ namespace Riemann
 		Vector3		CM;				// Center of mass of multiple Geometries
 		float		InvMass;		// Inverse of Total Mass
 		Matrix3		InvInertia;		// Inverse of Inertia Tensor
+		GeometryAggregate* Parent;	// Parent aggregate, e.g. destruction, cloth, deformable body
 
 	private:
 		short		mMaterialId;

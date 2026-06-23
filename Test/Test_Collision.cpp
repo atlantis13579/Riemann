@@ -1158,6 +1158,25 @@ void TestSAPInc()
 		}
 	}
 
+	std::vector<Box3> degenerateBoxes;
+	degenerateBoxes.emplace_back(Vector3(-1.0f, -1.0f, -1.0f), Vector3(1.0f, 1.0f, 1.0f));
+	degenerateBoxes.emplace_back(Vector3(1.0f, -1.0f, -1.0f), Vector3(1.0f, 1.0f, 1.0f));
+	degenerateBoxes.emplace_back(Vector3(3.0f, -1.0f, -1.0f), Vector3(3.0f, 1.0f, 1.0f));
+
+	BVProxy2 DegenerateProxy(&degenerateBoxes);
+	IncrementalSAP degenerateSap(&DegenerateProxy, { 0, 1, 2 });
+	overlaps.clear();
+	degenerateSap.IncrementalPrune(&overlaps);
+	EXPECT(overlaps.count(SAP::PackOverlapKey(0, 1)) == 1);
+	EXPECT(overlaps.count(SAP::PackOverlapKey(0, 2)) == 0);
+	EXPECT(overlaps.count(SAP::PackOverlapKey(1, 2)) == 0);
+
+	degenerateBoxes[2] = Box3(Vector3(1.0f, -1.0f, -1.0f), Vector3(1.0f, 1.0f, 1.0f));
+	degenerateSap.IncrementalPrune(&overlaps);
+	EXPECT(overlaps.count(SAP::PackOverlapKey(0, 1)) == 1);
+	EXPECT(overlaps.count(SAP::PackOverlapKey(0, 2)) == 1);
+	EXPECT(overlaps.count(SAP::PackOverlapKey(1, 2)) == 1);
+
 
 	return;
 }

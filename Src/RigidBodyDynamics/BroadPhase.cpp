@@ -27,6 +27,10 @@ namespace Riemann
 
 	static bool IsValidPair(Geometry* geom1, Geometry* geom2)
 	{
+		if (geom1 == nullptr || geom2 == nullptr || !geom1->IsSimulationEnabled() || !geom2->IsSimulationEnabled())
+		{
+			return false;
+		}
 		if (geom1->GetParent<void*>() == geom2->GetParent<void*>())
 		{
 			return false;
@@ -86,6 +90,8 @@ namespace Riemann
 	{
 	public:
 		BroadPhaseSAPImplementation()
+			: m_SAP(nullptr)
+			, m_pObjects(nullptr)
 		{
 			m_SAP = new IncrementalSAP(this, { 0, 1, 2 });
 		}

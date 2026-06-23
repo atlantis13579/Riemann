@@ -306,6 +306,7 @@ namespace Riemann
 		, m_CuttingSeparation(0.0f)
 		, m_CuttingMaxSeparation(1.0f)
 		, m_ShowGeometryQueryBounds(false)
+		, m_RenderRevision(0)
 		, m_ImguiDemoIndex(0)
 		, m_ImguiObjectCount(0)
 		, m_ImguiCameraDistance(15.0f)
@@ -454,8 +455,15 @@ namespace Riemann
 	{
 		ApplyImguiCommands();
 		m_World->Step(dt);
-		SubmitTransforms();
-		SubmitGeometryQueryBounds();
+		if (m_RenderRevision != m_World->GetRenderRevision())
+		{
+			RebuildRenderScene();
+		}
+		else
+		{
+			SubmitTransforms();
+			SubmitGeometryQueryBounds();
+		}
 		UpdatePhysicsFps();
 		UpdateImguiState();
 	}
@@ -922,6 +930,7 @@ namespace Riemann
 	void WorldViewer::RebuildRenderScene()
 	{
 		m_RenderBindings.clear();
+		m_RenderRevision = m_World ? m_World->GetRenderRevision() : 0;
 
 		std::vector<RenderMeshDesc> meshes;
 		for (const SceneObjectInstance& object : m_World->GetObjects())

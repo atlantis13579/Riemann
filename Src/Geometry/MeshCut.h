@@ -90,6 +90,7 @@ namespace Riemann
 		DynamicMesh Mesh;
 		int CellIndex = -1;
 		Vector3 Center = Vector3::Zero();
+		std::vector<int> NeighborPieceIndices;
 	};
 
 	struct PlanarCutOptions

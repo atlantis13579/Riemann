@@ -14,6 +14,8 @@
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/CollisionPrimitive/StaticMesh.h"
 #include "../Src/CollisionPrimitive/TriangleMesh.h"
+#include "../Src/Destruction/DestructionSet.h"
+#include "../Src/Destruction/Fracture.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 
 namespace Riemann
@@ -35,6 +37,75 @@ namespace Riemann
 		float ToRadians(float degrees)
 		{
 			return degrees * kPi / 180.0f;
+		}
+
+		void ResolveVoxelGridCounts(int& PiecesX, int& PiecesY, int& PiecesZ)
+		{
+			PiecesX = std::max(1, std::min(PiecesX, 32));
+			PiecesY = std::max(1, std::min(PiecesY, 32));
+			PiecesZ = std::max(1, std::min(PiecesZ, 32));
+			while (PiecesX * PiecesY * PiecesZ > 512)
+			{
+				if (PiecesX >= PiecesY && PiecesX >= PiecesZ && PiecesX > 1)
+				{
+					--PiecesX;
+				}
+				else if (PiecesY >= PiecesZ && PiecesY > 1)
+				{
+					--PiecesY;
+				}
+				else if (PiecesZ > 1)
+				{
+					--PiecesZ;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+
+		bool BuildBoxDynamicMesh(const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rotation, DynamicMesh* Mesh)
+		{
+			if (Mesh == nullptr || HalfExtent.x <= 0.0f || HalfExtent.y <= 0.0f || HalfExtent.z <= 0.0f)
+			{
+				return false;
+			}
+
+			Mesh->Clear();
+			const Vector3 Corners[8] =
+			{
+				Vector3(-HalfExtent.x, -HalfExtent.y, -HalfExtent.z),
+				Vector3( HalfExtent.x, -HalfExtent.y, -HalfExtent.z),
+				Vector3( HalfExtent.x,  HalfExtent.y, -HalfExtent.z),
+				Vector3(-HalfExtent.x,  HalfExtent.y, -HalfExtent.z),
+				Vector3(-HalfExtent.x, -HalfExtent.y,  HalfExtent.z),
+				Vector3( HalfExtent.x, -HalfExtent.y,  HalfExtent.z),
+				Vector3( HalfExtent.x,  HalfExtent.y,  HalfExtent.z),
+				Vector3(-HalfExtent.x,  HalfExtent.y,  HalfExtent.z),
+			};
+			for (const Vector3& Corner : Corners)
+			{
+				Mesh->AppendVertex(Center + Rotation * Corner);
+			}
+
+			const int Triangles[12][3] =
+			{
+				{ 0, 2, 1 }, { 0, 3, 2 },
+				{ 4, 5, 6 }, { 4, 6, 7 },
+				{ 0, 4, 7 }, { 0, 7, 3 },
+				{ 1, 2, 6 }, { 1, 6, 5 },
+				{ 0, 1, 5 }, { 0, 5, 4 },
+				{ 3, 7, 6 }, { 3, 6, 2 },
+			};
+			for (const int* Triangle : Triangles)
+			{
+				Mesh->AppendTriangle(Triangle[0], Triangle[1], Triangle[2]);
+			}
+
+			Mesh->BuildBounds();
+			Mesh->CalculateWeightAverageNormals();
+			return true;
 		}
 
 		Vector3 SafeUnitVector(const Vector3& value, const Vector3& fallback)
@@ -444,6 +515,14 @@ namespace Riemann
 		bool QueryEnabled = true;
 		bool SimulationEnabled = true;
 		int RepeatCount[3] = { 1, 1, 1 };
+		int DestructionPiecesX = 5;
+		int DestructionPiecesY = 1;
+		int DestructionPiecesZ = 5;
+		float DestructionBondStrength = 1.0f;
+		float DestructionBreakThreshold = 2.0f;
+		int DestructionPartitionSize = 2;
+		float DestructionMinClusterVolume = 0.0f;
+		float DestructionImpulseRadius = 2.0f;
 		Vector3 RepeatSpacing = Vector3::Zero();
 		std::string MeshFile;
 	};
@@ -453,6 +532,11 @@ namespace Riemann
 		float ReadFloat(const JsonValue* value, float fallback)
 		{
 			return value && value->IsNumber() ? static_cast<float>(value->numberValue) : fallback;
+		}
+
+		int ReadInt(const JsonValue* value, int fallback)
+		{
+			return value && value->IsNumber() ? static_cast<int>(value->numberValue) : fallback;
 		}
 
 		bool ReadBool(const JsonValue* value, bool fallback)
@@ -574,6 +658,24 @@ namespace Riemann
 			{
 				desc.QueryEnabled = false;
 			}
+			desc.DestructionPiecesX = std::max(1, ReadInt(object.Find("piecesX"), desc.DestructionPiecesX));
+			desc.DestructionPiecesY = std::max(1, ReadInt(object.Find("piecesY"), desc.DestructionPiecesY));
+			desc.DestructionPiecesZ = std::max(1, ReadInt(object.Find("piecesZ"), desc.DestructionPiecesZ));
+			const JsonValue* pieces = object.Find("pieces");
+			if (pieces != nullptr && pieces->IsArray() && pieces->arrayValue.size() >= 2)
+			{
+				desc.DestructionPiecesX = std::max(1, ReadInt(&pieces->arrayValue[0], desc.DestructionPiecesX));
+				desc.DestructionPiecesZ = std::max(1, ReadInt(&pieces->arrayValue[1], desc.DestructionPiecesZ));
+				if (pieces->arrayValue.size() >= 3)
+				{
+					desc.DestructionPiecesY = std::max(1, ReadInt(&pieces->arrayValue[2], desc.DestructionPiecesY));
+				}
+			}
+			desc.DestructionBondStrength = ReadFloat(object.Find("bondStrength"), desc.DestructionBondStrength);
+			desc.DestructionBreakThreshold = ReadFloat(object.Find("breakThreshold"), desc.DestructionBreakThreshold);
+			desc.DestructionPartitionSize = std::max(2, ReadInt(object.Find("partitionSize"), desc.DestructionPartitionSize));
+			desc.DestructionMinClusterVolume = ReadFloat(object.Find("minClusterVolume"), desc.DestructionMinClusterVolume);
+			desc.DestructionImpulseRadius = ReadFloat(object.Find("impulseRadius"), desc.DestructionImpulseRadius);
 			desc.RenderBounds = ReadBool(object.Find("renderBounds"), desc.RenderBounds);
 			desc.Color = ReadColor(object.Find("color"), desc.BodyType == RigidType::Dynamic
 				? Vector4(0.28f, 0.52f, 0.95f, 1.0f)
@@ -616,11 +718,15 @@ namespace Riemann
 
 	void SceneWorld::Reset(const Vector3& gravity)
 	{
+		m_DestructionRenderStates.clear();
+		m_DestructionSets.clear();
 		m_Objects.clear();
+		TouchRenderRevision();
 
 		PhysicsWorldParam param;
 		param.gravityAcc = gravity;
 		param.sceneQueryType = SceneQueryType::DynamicAABB;
+		param.broadphase = BroadPhaseSolver::SAP;
 		m_World.reset(new PhysicsWorld(param));
 
 		m_Camera = CameraDesc();
@@ -777,6 +883,11 @@ namespace Riemann
 
 	bool SceneWorld::CreateObject(const SceneObjectDesc& desc, std::string* errorMessage)
 	{
+		if (desc.Type == "destructionBox")
+		{
+			return CreateDestructionBox(desc, errorMessage);
+		}
+
 		Geometry* geometry = CreateGeometry(desc, errorMessage);
 		if (geometry == nullptr)
 		{
@@ -813,6 +924,135 @@ namespace Riemann
 		instance.Color = desc.Color;
 		instance.RenderBounds = desc.RenderBounds;
 		m_Objects.push_back(instance);
+		TouchRenderRevision();
+		return true;
+	}
+
+	bool SceneWorld::CreateDestructionBox(const SceneObjectDesc& desc, std::string* errorMessage)
+	{
+		if (m_World == nullptr)
+		{
+			return false;
+		}
+
+		std::unique_ptr<DestructionSet> destructSet(new DestructionSet(m_World.get()));
+		int piecesX = desc.DestructionPiecesX;
+		int piecesY = desc.DestructionPiecesY;
+		int piecesZ = desc.DestructionPiecesZ;
+		ResolveVoxelGridCounts(piecesX, piecesY, piecesZ);
+
+		DynamicMesh sourceMesh;
+		if (!BuildBoxDynamicMesh(desc.Position, desc.HalfExtent, desc.Rotation, &sourceMesh))
+		{
+			if (errorMessage)
+			{
+				*errorMessage = "failed to build destruction source box for object " + desc.Id;
+			}
+			return false;
+		}
+
+		PlanarCutOptions cutOptions;
+		cutOptions.SnapTolerance = 1e-5f;
+		cutOptions.BoundsPaddingScale = 0.10f;
+		cutOptions.WeldSharedEdges = true;
+		cutOptions.MinTriangleCount = 4;
+
+		std::vector<FracturePiece> pieces;
+		const int targetPieceCount = piecesX * piecesY * piecesZ;
+		if (!Fracture::Voxel3D(sourceMesh, pieces, piecesX, piecesY, piecesZ, targetPieceCount, cutOptions) || pieces.empty())
+		{
+			if (errorMessage)
+			{
+				*errorMessage = "voxel fracture failed for object " + desc.Id;
+			}
+			return false;
+		}
+
+		const Vector3 fullSize = desc.HalfExtent * 2.0f;
+		const float sourceVolume = std::max(fullSize.x * fullSize.y * fullSize.z, 1e-3f);
+		const float totalMass = desc.HasInvMass && desc.InvMass > 1e-6f ? 1.0f / desc.InvMass : sourceVolume;
+		float totalPieceVolume = 0.0f;
+		for (const FracturePiece& piece : pieces)
+		{
+			if (piece.CellIndex >= 0 && piece.CellIndex < targetPieceCount)
+			{
+				totalPieceVolume += std::max(piece.Mesh.GetBounds().GetVolume(), 1e-3f);
+			}
+		}
+		if (totalPieceVolume <= 0.0f)
+		{
+			if (errorMessage)
+			{
+				*errorMessage = "voxel fracture produced no valid chunks for object " + desc.Id;
+			}
+			return false;
+		}
+
+		std::vector<int> pieceToChunk(pieces.size(), -1);
+		for (size_t pieceIndex = 0; pieceIndex < pieces.size(); ++pieceIndex)
+		{
+			const FracturePiece& piece = pieces[pieceIndex];
+			if (piece.CellIndex < 0 || piece.CellIndex >= targetPieceCount)
+			{
+				continue;
+			}
+
+			const Box3 chunkBounds = piece.Mesh.GetBounds();
+			const float chunkVolume = std::max(chunkBounds.GetVolume(), 1e-3f);
+			const float chunkMass = std::max(totalMass * chunkVolume / totalPieceVolume, 1e-3f);
+
+			std::ostringstream chunkName;
+			chunkName << desc.Id << "_cell_" << piece.CellIndex;
+			pieceToChunk[pieceIndex] = destructSet->AddChunk(chunkBounds, chunkMass, desc.BodyType == RigidType::Static, chunkName.str());
+		}
+
+		int bondIndex = 0;
+		for (size_t pieceIndex = 0; pieceIndex < pieces.size(); ++pieceIndex)
+		{
+			const int chunkA = pieceToChunk[pieceIndex];
+			if (chunkA < 0)
+			{
+				continue;
+			}
+
+			for (int neighborPieceIndex : pieces[pieceIndex].NeighborPieceIndices)
+			{
+				if (neighborPieceIndex < 0 || neighborPieceIndex <= (int)pieceIndex || neighborPieceIndex >= (int)pieceToChunk.size())
+				{
+					continue;
+				}
+
+				const int chunkB = pieceToChunk[(size_t)neighborPieceIndex];
+				if (chunkB >= 0 && destructSet->AddBond(chunkA, chunkB, DestructionBondType::Connect, desc.DestructionBondStrength, bondIndex))
+				{
+					++bondIndex;
+				}
+			}
+		}
+
+		DestructionConstants& constants = destructSet->GetDestructionConstants();
+		constants.ImpulseProcessPerTick = 4;
+		constants.ImpulseRadius = std::max(desc.DestructionImpulseRadius, 0.01f);
+		constants.MinClusterVolume = std::max(desc.DestructionMinClusterVolume, 0.0f);
+		for (int level = 0; level < 8; ++level)
+		{
+			constants.Levels[level].BreakThreshold = std::max(desc.DestructionBreakThreshold, 0.0f);
+			constants.Levels[level].PartitionSize = std::max(desc.DestructionPartitionSize, 2);
+		}
+
+		destructSet->RebuildClustersFromGraph();
+
+		DestructionSet* rawSet = destructSet.get();
+
+		m_DestructionSets.push_back(std::move(destructSet));
+
+		DestructionRenderState renderState;
+		renderState.Set = rawSet;
+		renderState.Id = desc.Id;
+		renderState.Color = desc.Color;
+		renderState.RenderBounds = desc.RenderBounds;
+		m_DestructionRenderStates.push_back(renderState);
+		SyncDestructionObjects(true);
 		return true;
 	}
 
@@ -854,6 +1094,84 @@ namespace Riemann
 		return nullptr;
 	}
 
+	bool SceneWorld::SyncDestructionObjects(bool force)
+	{
+		bool changed = false;
+		for (DestructionRenderState& state : m_DestructionRenderStates)
+		{
+			if (state.Set == nullptr)
+			{
+				continue;
+			}
+
+			const uint32_t revision = state.Set->GetClusterRevision();
+			if (!force && state.LastRevision == revision)
+			{
+				continue;
+			}
+
+			m_Objects.erase(std::remove_if(m_Objects.begin(), m_Objects.end(),
+				[&state](const SceneObjectInstance& object)
+				{
+					return object.DestructSet == state.Set;
+				}), m_Objects.end());
+
+			std::vector<DestructionCluster*> clusters = state.Set->GetClusters();
+			for (DestructionCluster* cluster : clusters)
+			{
+				if (cluster == nullptr)
+				{
+					continue;
+				}
+
+				RigidBodyDynamic* body = cluster->GetRigidBody();
+				if (body == nullptr)
+				{
+					continue;
+				}
+
+				const std::vector<Geometry*>& geometries = body->Geometries();
+				const std::vector<int>& sourceIndices = cluster->GetSourceIndices();
+				for (size_t geometryIndex = 0; geometryIndex < geometries.size(); ++geometryIndex)
+				{
+					Geometry* geometry = geometries[geometryIndex];
+					if (geometry == nullptr)
+					{
+						continue;
+					}
+
+					std::ostringstream id;
+					id << state.Id << "_cluster_" << cluster->GetID() << "_geom_";
+					if (geometryIndex < sourceIndices.size())
+					{
+						id << sourceIndices[geometryIndex];
+					}
+					else
+					{
+						id << geometryIndex;
+					}
+
+					SceneObjectInstance instance;
+					instance.Id = id.str();
+					instance.GeometryPtr = geometry;
+					instance.DestructSet = state.Set;
+					instance.Color = state.Color;
+					instance.RenderBounds = state.RenderBounds;
+					m_Objects.push_back(instance);
+				}
+			}
+
+			state.LastRevision = revision;
+			changed = true;
+		}
+
+		if (changed)
+		{
+			TouchRenderRevision();
+		}
+		return changed;
+	}
+
 	void SceneWorld::Step(float dt)
 	{
 		(void)dt;
@@ -861,6 +1179,7 @@ namespace Riemann
 		{
 			m_World->Simulate();
 		}
+		SyncDestructionObjects(false);
 	}
 
 	Geometry* SceneWorld::AddProjectileSphere(const std::string& id, const Vector3& position, float radius, const Vector3& acceleration, const Vector4& color)
@@ -898,6 +1217,7 @@ namespace Riemann
 		instance.Color = color;
 		instance.RenderBounds = false;
 		m_Objects.push_back(instance);
+		TouchRenderRevision();
 		return geometry;
 	}
 
@@ -948,6 +1268,7 @@ namespace Riemann
 		instance.Color = color;
 		instance.RenderBounds = renderBounds;
 		m_Objects.push_back(instance);
+		TouchRenderRevision();
 		return geometry;
 	}
 }

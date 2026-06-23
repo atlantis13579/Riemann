@@ -137,18 +137,15 @@ namespace Riemann
 
 		static PlanarCutOptions MakePlanarOptions(
 			const DynamicMesh& SourceMesh,
-			const FractureOptions& Options,
+			const PlanarCutOptions& Options,
 			float DefaultBoundsPaddingScale)
 		{
 			const float MaxSize = std::max(BoundsMaxDim(SourceMesh.GetBounds()), 1e-3f);
 
-			PlanarCutOptions CutOptions;
+			PlanarCutOptions CutOptions = Options;
 			CutOptions.SnapTolerance = Options.SnapTolerance > 0.0f ? Options.SnapTolerance : std::max(MaxSize * 1e-5f, 1e-6f);
 			CutOptions.BoundsPaddingScale = Options.BoundsPaddingScale > 0.0f ? Options.BoundsPaddingScale : DefaultBoundsPaddingScale;
-			CutOptions.Grout = Options.Grout > 0.0f ? Options.Grout : std::max(0.0f, Options.GroutScale) * MaxSize;
-			CutOptions.RandomSeed = Options.Seed;
-			CutOptions.WeldSharedEdges = Options.WeldSharedEdges;
-			CutOptions.SimplifyAlongCut = Options.SimplifyAlongCut;
+			CutOptions.Grout = std::max(0.0f, Options.Grout);
 			CutOptions.MinTriangleCount = std::max(1, Options.MinTriangleCount);
 			return CutOptions;
 		}
@@ -192,13 +189,50 @@ namespace Riemann
 			}
 		}
 
+		static void CopyCutPieceConnectivity(
+			const std::vector<PlanarCutPiece>& CutPieces,
+			const std::vector<int>& CutPieceToPiece,
+			std::vector<FracturePiece>& Pieces)
+		{
+			for (size_t CutPieceIdx = 0; CutPieceIdx < CutPieces.size(); ++CutPieceIdx)
+			{
+				if (CutPieceIdx >= CutPieceToPiece.size())
+				{
+					continue;
+				}
+
+				const int PieceIdx = CutPieceToPiece[CutPieceIdx];
+				if (PieceIdx < 0 || PieceIdx >= (int)Pieces.size())
+				{
+					continue;
+				}
+
+				std::vector<int>& Neighbors = Pieces[(size_t)PieceIdx].NeighborPieceIndices;
+				Neighbors.clear();
+				for (int NeighborCutPieceIdx : CutPieces[CutPieceIdx].NeighborPieceIndices)
+				{
+					if (NeighborCutPieceIdx >= 0 && NeighborCutPieceIdx < (int)CutPieceToPiece.size())
+					{
+						const int NeighborPieceIdx = CutPieceToPiece[(size_t)NeighborCutPieceIdx];
+						if (NeighborPieceIdx >= 0 && NeighborPieceIdx != PieceIdx &&
+							std::find(Neighbors.begin(), Neighbors.end(), NeighborPieceIdx) == Neighbors.end())
+						{
+							Neighbors.push_back(NeighborPieceIdx);
+						}
+					}
+				}
+			}
+		}
+
 		static void AppendCutPiecesRadial(
 			const std::vector<PlanarCutPiece>& CutPieces,
 			const Vector3& SourceCenter,
 			std::vector<FracturePiece>& Pieces)
 		{
-			for (const PlanarCutPiece& CutPiece : CutPieces)
+			std::vector<int> CutPieceToPiece(CutPieces.size(), -1);
+			for (size_t CutPieceIdx = 0; CutPieceIdx < CutPieces.size(); ++CutPieceIdx)
 			{
+				const PlanarCutPiece& CutPiece = CutPieces[CutPieceIdx];
 				if (CountValidTriangles(CutPiece.Mesh) == 0)
 				{
 					continue;
@@ -214,8 +248,11 @@ namespace Riemann
 				{
 					Piece.Direction = FallbackPieceDirection(Pieces.size());
 				}
+				CutPieceToPiece[CutPieceIdx] = (int)Pieces.size();
 				Pieces.push_back(Piece);
 			}
+
+			CopyCutPieceConnectivity(CutPieces, CutPieceToPiece, Pieces);
 		}
 
 		static void ApplyPlanarAxisSeparationDirections(
@@ -254,8 +291,10 @@ namespace Riemann
 			const Vector3& Normal,
 			std::vector<FracturePiece>& Pieces)
 		{
-			for (const PlanarCutPiece& CutPiece : CutPieces)
+			std::vector<int> CutPieceToPiece(CutPieces.size(), -1);
+			for (size_t CutPieceIdx = 0; CutPieceIdx < CutPieces.size(); ++CutPieceIdx)
 			{
+				const PlanarCutPiece& CutPiece = CutPieces[CutPieceIdx];
 				if (CountValidTriangles(CutPiece.Mesh) == 0)
 				{
 					continue;
@@ -266,23 +305,27 @@ namespace Riemann
 				Piece.Center = CutPiece.Center;
 				Piece.CellIndex = CutPiece.CellIndex;
 				Piece.SiteIndex = CutPiece.CellIndex;
+				CutPieceToPiece[CutPieceIdx] = (int)Pieces.size();
 				Pieces.push_back(Piece);
 			}
+
+			CopyCutPieceConnectivity(CutPieces, CutPieceToPiece, Pieces);
 			ApplyPlanarAxisSeparationDirections(SourceBounds, Normal, Pieces);
 		}
 
 		static void GenerateUniformVoronoiSites3D(
 			const DynamicMesh& SourceMesh,
-			const FractureOptions& Options,
+			int PieceCount,
+			int Seed,
 			std::vector<Vector3>& Sites)
 		{
 			Sites.clear();
-			const int Count = ClampInt(Options.PieceCount, 2, 512);
+			const int Count = ClampInt(PieceCount, 2, 512);
 			const Box3 Bounds = SourceMesh.GetBounds();
 			const Vector3 Center = Bounds.GetCenter();
 			const Vector3 Extent = Bounds.GetExtent();
 
-			std::mt19937 Rng(static_cast<unsigned int>(std::max(0, Options.Seed)));
+			std::mt19937 Rng(static_cast<unsigned int>(std::max(0, Seed)));
 			std::uniform_real_distribution<float> Random01(0.0f, 1.0f);
 
 			Sites.reserve(Count);
@@ -298,7 +341,8 @@ namespace Riemann
 		static bool GenerateUniformVoronoiSites2D(
 			const DynamicMesh& SourceMesh,
 			const Vector3& NormalIn,
-			const FractureOptions& Options,
+			int PieceCount,
+			int Seed,
 			std::vector<Vector3>& Sites)
 		{
 			Sites.clear();
@@ -308,13 +352,13 @@ namespace Riemann
 				return false;
 			}
 
-			const int Count = ClampInt(Options.PieceCount, 2, 512);
+			const int Count = ClampInt(PieceCount, 2, 512);
 			const Box3 Bounds = SourceMesh.GetBounds();
 			const Vector3 Origin = Bounds.GetCenter();
 			float MinU, MaxU, MinV, MaxV, MinN, MaxN;
 			ComputePlaneRanges(Bounds, Origin, Tangent, Normal, Binormal, MinU, MaxU, MinV, MaxV, MinN, MaxN);
 
-			std::mt19937 Rng(static_cast<unsigned int>(std::max(0, Options.Seed)));
+			std::mt19937 Rng(static_cast<unsigned int>(std::max(0, Seed)));
 			std::uniform_real_distribution<float> Random01(0.0f, 1.0f);
 
 			Sites.reserve(Count);
@@ -329,11 +373,12 @@ namespace Riemann
 
 		static void GenerateClusterVoronoiSites(
 			const DynamicMesh& SourceMesh,
-			const FractureOptions& Options,
+			int PieceCount,
+			int Seed,
 			std::vector<Vector3>& Sites)
 		{
 			Sites.clear();
-			const int TotalSites = ClampInt(Options.PieceCount, 2, 512);
+			const int TotalSites = ClampInt(PieceCount, 2, 512);
 			const int ClusterCount = ClampInt((int)(std::sqrt((float)TotalSites) + 0.5f), 1, TotalSites);
 
 			const Box3 Bounds = SourceMesh.GetBounds();
@@ -342,7 +387,7 @@ namespace Riemann
 			const float MinRadius = MaxExtent * 0.10f;
 			const float MaxRadius = MaxExtent * 0.22f;
 
-			std::mt19937 Rng(static_cast<unsigned int>(std::max(0, Options.Seed)));
+			std::mt19937 Rng(static_cast<unsigned int>(std::max(0, Seed)));
 			std::uniform_real_distribution<float> Random01(0.0f, 1.0f);
 
 			std::vector<Vector3> Centers;
@@ -394,16 +439,18 @@ namespace Riemann
 		}
 
 		static void ResolveGridCounts2D(
-			const FractureOptions& Options,
+			int RequestedPiecesX,
+			int RequestedPiecesY,
+			int TargetPieceCount,
 			float SizeU,
 			float SizeV,
 			int& CountU,
 			int& CountV)
 		{
-			if (Options.PiecesX > 0 || Options.PiecesY > 0)
+			if (RequestedPiecesX > 0 || RequestedPiecesY > 0)
 			{
-				CountU = ClampInt(Options.PiecesX > 0 ? Options.PiecesX : 1, 1, 64);
-				CountV = ClampInt(Options.PiecesY > 0 ? Options.PiecesY : 1, 1, 64);
+				CountU = ClampInt(RequestedPiecesX > 0 ? RequestedPiecesX : 1, 1, 64);
+				CountV = ClampInt(RequestedPiecesY > 0 ? RequestedPiecesY : 1, 1, 64);
 				while (CountU * CountV > 512)
 				{
 					if (CountU >= CountV && CountU > 1)
@@ -422,7 +469,7 @@ namespace Riemann
 				return;
 			}
 
-			ComputeGridCounts2D(SizeU, SizeV, Options.PieceCount, CountU, CountV);
+			ComputeGridCounts2D(SizeU, SizeV, TargetPieceCount, CountU, CountV);
 		}
 
 		static void ComputeGridCounts3D(const Box3& Bounds, int TargetCount, int& PiecesX, int& PiecesY, int& PiecesZ)
@@ -452,16 +499,19 @@ namespace Riemann
 
 		static void ResolveGridCounts3D(
 			const Box3& Bounds,
-			const FractureOptions& Options,
+			int RequestedPiecesX,
+			int RequestedPiecesY,
+			int RequestedPiecesZ,
+			int TargetPieceCount,
 			int& PiecesX,
 			int& PiecesY,
 			int& PiecesZ)
 		{
-			if (Options.PiecesX > 0 || Options.PiecesY > 0 || Options.PiecesZ > 0)
+			if (RequestedPiecesX > 0 || RequestedPiecesY > 0 || RequestedPiecesZ > 0)
 			{
-				PiecesX = ClampInt(Options.PiecesX > 0 ? Options.PiecesX : 1, 1, 32);
-				PiecesY = ClampInt(Options.PiecesY > 0 ? Options.PiecesY : 1, 1, 32);
-				PiecesZ = ClampInt(Options.PiecesZ > 0 ? Options.PiecesZ : 1, 1, 32);
+				PiecesX = ClampInt(RequestedPiecesX > 0 ? RequestedPiecesX : 1, 1, 32);
+				PiecesY = ClampInt(RequestedPiecesY > 0 ? RequestedPiecesY : 1, 1, 32);
+				PiecesZ = ClampInt(RequestedPiecesZ > 0 ? RequestedPiecesZ : 1, 1, 32);
 				while (PiecesX * PiecesY * PiecesZ > 512)
 				{
 					if (PiecesX >= PiecesY && PiecesX >= PiecesZ && PiecesX > 1)
@@ -484,12 +534,16 @@ namespace Riemann
 				return;
 			}
 
-			ComputeGridCounts3D(Bounds, Options.PieceCount, PiecesX, PiecesY, PiecesZ);
+			ComputeGridCounts3D(Bounds, TargetPieceCount, PiecesX, PiecesY, PiecesZ);
 		}
 
 		static void AppendOrientedBoxCell(
 			PlanarCells& Cells,
 			int CellIdx,
+			int UIdx,
+			int VIdx,
+			int CountU,
+			int CountV,
 			const Vector3& Center,
 			const Vector3& AxisU,
 			const Vector3& AxisV,
@@ -517,17 +571,25 @@ namespace Riemann
 			const std::vector<Vector3>& V = Cells.PlaneBoundaryVertices;
 			Cells.AddPlane(PlanarCutPlane(-AxisN, V[VertexStart + 0]), CellIdx, -1, { VertexStart + 0, VertexStart + 1, VertexStart + 2, VertexStart + 3 });
 			Cells.AddPlane(PlanarCutPlane(AxisN, V[VertexStart + 4]), CellIdx, -1, { VertexStart + 4, VertexStart + 7, VertexStart + 6, VertexStart + 5 });
-			Cells.AddPlane(PlanarCutPlane(-BoxAxisV, V[VertexStart + 0]), CellIdx, -1, { VertexStart + 0, VertexStart + 4, VertexStart + 5, VertexStart + 1 });
-			Cells.AddPlane(PlanarCutPlane(BoxAxisV, V[VertexStart + 3]), CellIdx, -1, { VertexStart + 3, VertexStart + 2, VertexStart + 6, VertexStart + 7 });
-			Cells.AddPlane(PlanarCutPlane(-AxisU, V[VertexStart + 0]), CellIdx, -1, { VertexStart + 0, VertexStart + 3, VertexStart + 7, VertexStart + 4 });
-			Cells.AddPlane(PlanarCutPlane(AxisU, V[VertexStart + 1]), CellIdx, -1, { VertexStart + 1, VertexStart + 5, VertexStart + 6, VertexStart + 2 });
+
+			if (VIdx == 0)
+			{
+				Cells.AddPlane(PlanarCutPlane(-BoxAxisV, V[VertexStart + 0]), CellIdx, -1, { VertexStart + 0, VertexStart + 4, VertexStart + 5, VertexStart + 1 });
+			}
+			Cells.AddPlane(PlanarCutPlane(BoxAxisV, V[VertexStart + 3]), CellIdx, VIdx + 1 < CountV ? CellIdx + CountU : -1, { VertexStart + 3, VertexStart + 2, VertexStart + 6, VertexStart + 7 });
+
+			if (UIdx == 0)
+			{
+				Cells.AddPlane(PlanarCutPlane(-AxisU, V[VertexStart + 0]), CellIdx, -1, { VertexStart + 0, VertexStart + 3, VertexStart + 7, VertexStart + 4 });
+			}
+			Cells.AddPlane(PlanarCutPlane(AxisU, V[VertexStart + 1]), CellIdx, UIdx + 1 < CountU ? CellIdx + 1 : -1, { VertexStart + 1, VertexStart + 5, VertexStart + 6, VertexStart + 2 });
 		}
 
 		static bool BuildVoronoiPiecesFromSites(
 			const DynamicMesh& SourceMesh,
 			const std::vector<Vector3>& Sites,
 			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options,
+			const PlanarCutOptions& Options,
 			float DefaultBoundsPaddingScale)
 		{
 			Pieces.clear();
@@ -565,7 +627,8 @@ namespace Riemann
 			const DynamicMesh& SourceMesh,
 			int Axis,
 			std::vector<FracturePiece>& Pieces,
-			const FractureOptions& Options)
+			int PieceCount,
+			const PlanarCutOptions& Options)
 		{
 			Pieces.clear();
 			Axis = ClampInt(Axis, 0, 2);
@@ -576,7 +639,7 @@ namespace Riemann
 			const float MinAxis = AxisValue(Bounds.Min, Axis);
 			const float MaxAxis = AxisValue(Bounds.Max, Axis);
 			const float AxisSize = std::max(MaxAxis - MinAxis, 1e-3f);
-			const int Count = ClampInt(Options.PieceCount, 2, 512);
+			const int Count = ClampInt(PieceCount, 2, 512);
 			const float Padding = std::max(MaxSize * 0.01f, 1e-4f);
 
 			std::vector<Box3> Cells;
@@ -592,7 +655,7 @@ namespace Riemann
 				Cells.emplace_back(CellMin, CellMax);
 			}
 
-			PlanarCells PlanarCellsIn(Cells);
+			PlanarCells PlanarCellsIn(Cells, true);
 			PlanarCutOptions CutOptions = MakePlanarOptions(SourceMesh, Options, 0.08f);
 
 			std::vector<PlanarCutPiece> CutPieces;
@@ -602,8 +665,10 @@ namespace Riemann
 			}
 
 			const Vector3 AxisDir = AxisVector(Axis);
-			for (const PlanarCutPiece& CutPiece : CutPieces)
+			std::vector<int> CutPieceToPiece(CutPieces.size(), -1);
+			for (size_t CutPieceIdx = 0; CutPieceIdx < CutPieces.size(); ++CutPieceIdx)
 			{
+				const PlanarCutPiece& CutPiece = CutPieces[CutPieceIdx];
 				if (CountValidTriangles(CutPiece.Mesh) == 0)
 				{
 					continue;
@@ -620,9 +685,11 @@ namespace Riemann
 				{
 					Piece.Direction = AxisDir;
 				}
+				CutPieceToPiece[CutPieceIdx] = (int)Pieces.size();
 				Pieces.push_back(Piece);
 			}
 
+			CopyCutPieceConnectivity(CutPieces, CutPieceToPiece, Pieces);
 			return !Pieces.empty();
 		}
 
@@ -661,85 +728,68 @@ namespace Riemann
 		}
 	}
 
-	bool Fracture::CutByMode(
-		const DynamicMesh& SourceMesh,
-		std::vector<FracturePiece>& Pieces,
-		const FractureOptions& Options)
-	{
-		switch (ClampInt(Options.Mode, (int)FractureMode_ParallelX, (int)FractureMode_Count - 1))
-		{
-		case FractureMode_ParallelX:
-			return ParallelCutX(SourceMesh, Pieces, Options);
-		case FractureMode_ParallelY:
-			return ParallelCutY(SourceMesh, Pieces, Options);
-		case FractureMode_ParallelZ:
-			return ParallelCutZ(SourceMesh, Pieces, Options);
-		case FractureMode_VoronoiFracture2D:
-			return VoronoiFracture2D(SourceMesh, Options.Normal, Pieces, Options);
-		case FractureMode_VoronoiFracture3D:
-			return VoronoiFracture3D(SourceMesh, Pieces, Options);
-		case FractureMode_Cluster:
-			return ClusterVoronoiFracture(SourceMesh, Pieces, Options);
-		case FractureMode_Voxel2D:
-			return Voxel2D(SourceMesh, Options.Normal, Pieces, Options);
-		case FractureMode_Voxel3D:
-			return Voxel3D(SourceMesh, Pieces, Options);
-		default:
-			Pieces.clear();
-			return false;
-		}
-	}
-
 	bool Fracture::ParallelCutX(
 		const DynamicMesh& SourceMesh,
 		std::vector<FracturePiece>& Pieces,
-		const FractureOptions& Options)
+		int PieceCount,
+		const PlanarCutOptions& CutOptions)
 	{
-		return BuildParallelCutPieces(SourceMesh, 0, Pieces, Options);
+		return BuildParallelCutPieces(SourceMesh, 0, Pieces, PieceCount, CutOptions);
 	}
 
 	bool Fracture::ParallelCutY(
 		const DynamicMesh& SourceMesh,
 		std::vector<FracturePiece>& Pieces,
-		const FractureOptions& Options)
+		int PieceCount,
+		const PlanarCutOptions& CutOptions)
 	{
-		return BuildParallelCutPieces(SourceMesh, 1, Pieces, Options);
+		return BuildParallelCutPieces(SourceMesh, 1, Pieces, PieceCount, CutOptions);
 	}
 
 	bool Fracture::ParallelCutZ(
 		const DynamicMesh& SourceMesh,
 		std::vector<FracturePiece>& Pieces,
-		const FractureOptions& Options)
+		int PieceCount,
+		const PlanarCutOptions& CutOptions)
 	{
-		return BuildParallelCutPieces(SourceMesh, 2, Pieces, Options);
+		return BuildParallelCutPieces(SourceMesh, 2, Pieces, PieceCount, CutOptions);
 	}
 
 	bool Fracture::VoronoiFracture3D(
 		const DynamicMesh& SourceMesh,
 		std::vector<FracturePiece>& Pieces,
-		const FractureOptions& Options)
+		int PieceCount,
+		int Seed,
+		const PlanarCutOptions& CutOptions)
 	{
+		PlanarCutOptions UseCutOptions = CutOptions;
+		UseCutOptions.RandomSeed = Seed;
+
 		std::vector<Vector3> Sites;
-		GenerateUniformVoronoiSites3D(SourceMesh, Options, Sites);
-		return BuildVoronoiPiecesFromSites(SourceMesh, Sites, Pieces, Options, 0.20f);
+		GenerateUniformVoronoiSites3D(SourceMesh, PieceCount, Seed, Sites);
+		return BuildVoronoiPiecesFromSites(SourceMesh, Sites, Pieces, UseCutOptions, 0.20f);
 	}
 
 	bool Fracture::VoronoiFracture2D(
 		const DynamicMesh& SourceMesh,
 		const Vector3& Normal,
 		std::vector<FracturePiece>& Pieces,
-		const FractureOptions& Options)
+		int PieceCount,
+		int Seed,
+		const PlanarCutOptions& CutOptions)
 	{
-		const Vector3 UseNormal = ResolveCutNormal(SourceMesh, Normal.IsZero() ? Options.Normal : Normal);
+		const Vector3 UseNormal = ResolveCutNormal(SourceMesh, Normal);
+		PlanarCutOptions UseCutOptions = CutOptions;
+		UseCutOptions.RandomSeed = Seed;
 
 		std::vector<Vector3> Sites;
-		if (!GenerateUniformVoronoiSites2D(SourceMesh, UseNormal, Options, Sites))
+		if (!GenerateUniformVoronoiSites2D(SourceMesh, UseNormal, PieceCount, Seed, Sites))
 		{
 			Pieces.clear();
 			return false;
 		}
 
-		const bool bBuilt = BuildVoronoiPiecesFromSites(SourceMesh, Sites, Pieces, Options, 0.20f);
+		const bool bBuilt = BuildVoronoiPiecesFromSites(SourceMesh, Sites, Pieces, UseCutOptions, 0.20f);
 		if (bBuilt)
 		{
 			ApplyPlanarAxisSeparationDirections(SourceMesh.GetBounds(), UseNormal, Pieces);
@@ -750,22 +800,30 @@ namespace Riemann
 	bool Fracture::ClusterVoronoiFracture(
 		const DynamicMesh& SourceMesh,
 		std::vector<FracturePiece>& Pieces,
-		const FractureOptions& Options)
+		int PieceCount,
+		int Seed,
+		const PlanarCutOptions& CutOptions)
 	{
+		PlanarCutOptions UseCutOptions = CutOptions;
+		UseCutOptions.RandomSeed = Seed;
+
 		std::vector<Vector3> Sites;
-		GenerateClusterVoronoiSites(SourceMesh, Options, Sites);
-		return BuildVoronoiPiecesFromSites(SourceMesh, Sites, Pieces, Options, 0.20f);
+		GenerateClusterVoronoiSites(SourceMesh, PieceCount, Seed, Sites);
+		return BuildVoronoiPiecesFromSites(SourceMesh, Sites, Pieces, UseCutOptions, 0.20f);
 	}
 
 	bool Fracture::Voxel2D(
 		const DynamicMesh& SourceMesh,
 		const Vector3& Normal,
 		std::vector<FracturePiece>& Pieces,
-		const FractureOptions& Options)
+		int RequestedPiecesX,
+		int RequestedPiecesY,
+		int PieceCount,
+		const PlanarCutOptions& CutOptions)
 	{
 		Pieces.clear();
 
-		const Vector3 UseNormal = ResolveCutNormal(SourceMesh, Normal.IsZero() ? Options.Normal : Normal);
+		const Vector3 UseNormal = ResolveCutNormal(SourceMesh, Normal);
 		Vector3 Tangent, PlaneNormal, Binormal;
 		if (!BuildPlaneBasis(UseNormal, Tangent, PlaneNormal, Binormal))
 		{
@@ -789,7 +847,7 @@ namespace Riemann
 
 			int CountU = 1;
 			int CountV = 1;
-			ResolveGridCounts2D(Options, MaxU - MinU, MaxV - MinV, CountU, CountV);
+			ResolveGridCounts2D(RequestedPiecesX, RequestedPiecesY, PieceCount, MaxU - MinU, MaxV - MinV, CountU, CountV);
 
 			std::vector<Box3> Cells;
 			Cells.reserve(CountU * CountV);
@@ -812,10 +870,10 @@ namespace Riemann
 				}
 			}
 
-			PlanarCells PlanarCellsIn(Cells);
-			PlanarCutOptions CutOptions = MakePlanarOptions(SourceMesh, Options, 0.08f);
+			PlanarCells PlanarCellsIn(Cells, true);
+			PlanarCutOptions UseCutOptions = MakePlanarOptions(SourceMesh, CutOptions, 0.08f);
 			std::vector<PlanarCutPiece> CutPieces;
-			if (!MeshCut::CutWithPlanarCells(SourceMesh, PlanarCellsIn, CutPieces, CutOptions))
+			if (!MeshCut::CutWithPlanarCells(SourceMesh, PlanarCellsIn, CutPieces, UseCutOptions))
 			{
 				return false;
 			}
@@ -835,7 +893,7 @@ namespace Riemann
 
 		int CountU = 1;
 		int CountV = 1;
-		ResolveGridCounts2D(Options, MaxU - MinU, MaxV - MinV, CountU, CountV);
+		ResolveGridCounts2D(RequestedPiecesX, RequestedPiecesY, PieceCount, MaxU - MinU, MaxV - MinV, CountU, CountV);
 
 		PlanarCells Cells;
 		Cells.NumCells = CountU * CountV;
@@ -856,16 +914,16 @@ namespace Riemann
 					+ Tangent * ((U0 + U1) * 0.5f)
 					+ Binormal * ((V0 + V1) * 0.5f)
 					+ PlaneNormal * ((N0 + N1) * 0.5f);
-				AppendOrientedBoxCell(Cells, CellIdx++, CellCenter, Tangent, Binormal, PlaneNormal,
+				AppendOrientedBoxCell(Cells, CellIdx++, UIdx, VIdx, CountU, CountV, CellCenter, Tangent, Binormal, PlaneNormal,
 					std::max((U1 - U0) * 0.5f, 1e-4f),
 					std::max((V1 - V0) * 0.5f, 1e-4f),
 					std::max((N1 - N0) * 0.5f, 1e-4f));
 			}
 		}
 
-		PlanarCutOptions CutOptions = MakePlanarOptions(SourceMesh, Options, 0.08f);
+		PlanarCutOptions UseCutOptions = MakePlanarOptions(SourceMesh, CutOptions, 0.08f);
 		std::vector<PlanarCutPiece> CutPieces;
-		if (!MeshCut::CutWithPlanarCells(SourceMesh, Cells, CutPieces, CutOptions))
+		if (!MeshCut::CutWithPlanarCells(SourceMesh, Cells, CutPieces, UseCutOptions))
 		{
 			return false;
 		}
@@ -877,7 +935,11 @@ namespace Riemann
 	bool Fracture::Voxel3D(
 		const DynamicMesh& SourceMesh,
 		std::vector<FracturePiece>& Pieces,
-		const FractureOptions& Options)
+		int RequestedPiecesX,
+		int RequestedPiecesY,
+		int RequestedPiecesZ,
+		int PieceCount,
+		const PlanarCutOptions& CutOptions)
 	{
 		Pieces.clear();
 
@@ -886,42 +948,42 @@ namespace Riemann
 		const float Padding = std::max(MaxSize * 0.01f, 1e-4f);
 		const Vector3 Size = Bounds.Max - Bounds.Min;
 
-		int PiecesX = 1;
-		int PiecesY = 1;
-		int PiecesZ = 1;
-		ResolveGridCounts3D(Bounds, Options, PiecesX, PiecesY, PiecesZ);
+		int CountX = 1;
+		int CountY = 1;
+		int CountZ = 1;
+		ResolveGridCounts3D(Bounds, RequestedPiecesX, RequestedPiecesY, RequestedPiecesZ, PieceCount, CountX, CountY, CountZ);
 
 		std::vector<Box3> Cells;
-		Cells.reserve(PiecesX * PiecesY * PiecesZ);
-		for (int ZIdx = 0; ZIdx < PiecesZ; ++ZIdx)
+		Cells.reserve(CountX * CountY * CountZ);
+		for (int ZIdx = 0; ZIdx < CountZ; ++ZIdx)
 		{
-			for (int YIdx = 0; YIdx < PiecesY; ++YIdx)
+			for (int YIdx = 0; YIdx < CountY; ++YIdx)
 			{
-				for (int XIdx = 0; XIdx < PiecesX; ++XIdx)
+				for (int XIdx = 0; XIdx < CountX; ++XIdx)
 				{
-					const float X0 = Bounds.Min.x + Size.x * ((float)XIdx / (float)PiecesX);
-					const float X1 = Bounds.Min.x + Size.x * ((float)(XIdx + 1) / (float)PiecesX);
-					const float Y0 = Bounds.Min.y + Size.y * ((float)YIdx / (float)PiecesY);
-					const float Y1 = Bounds.Min.y + Size.y * ((float)(YIdx + 1) / (float)PiecesY);
-					const float Z0 = Bounds.Min.z + Size.z * ((float)ZIdx / (float)PiecesZ);
-					const float Z1 = Bounds.Min.z + Size.z * ((float)(ZIdx + 1) / (float)PiecesZ);
+					const float X0 = Bounds.Min.x + Size.x * ((float)XIdx / (float)CountX);
+					const float X1 = Bounds.Min.x + Size.x * ((float)(XIdx + 1) / (float)CountX);
+					const float Y0 = Bounds.Min.y + Size.y * ((float)YIdx / (float)CountY);
+					const float Y1 = Bounds.Min.y + Size.y * ((float)(YIdx + 1) / (float)CountY);
+					const float Z0 = Bounds.Min.z + Size.z * ((float)ZIdx / (float)CountZ);
+					const float Z1 = Bounds.Min.z + Size.z * ((float)(ZIdx + 1) / (float)CountZ);
 					Vector3 CellMin(X0, Y0, Z0);
 					Vector3 CellMax(X1, Y1, Z1);
 					if (XIdx == 0) { CellMin.x -= Padding; }
 					if (YIdx == 0) { CellMin.y -= Padding; }
 					if (ZIdx == 0) { CellMin.z -= Padding; }
-					if (XIdx == PiecesX - 1) { CellMax.x += Padding; }
-					if (YIdx == PiecesY - 1) { CellMax.y += Padding; }
-					if (ZIdx == PiecesZ - 1) { CellMax.z += Padding; }
+					if (XIdx == CountX - 1) { CellMax.x += Padding; }
+					if (YIdx == CountY - 1) { CellMax.y += Padding; }
+					if (ZIdx == CountZ - 1) { CellMax.z += Padding; }
 					Cells.emplace_back(CellMin, CellMax);
 				}
 			}
 		}
 
-		PlanarCells PlanarCellsIn(Cells);
-		PlanarCutOptions CutOptions = MakePlanarOptions(SourceMesh, Options, 0.08f);
+		PlanarCells PlanarCellsIn(Cells, true);
+		PlanarCutOptions UseCutOptions = MakePlanarOptions(SourceMesh, CutOptions, 0.08f);
 		std::vector<PlanarCutPiece> CutPieces;
-		if (!MeshCut::CutWithPlanarCells(SourceMesh, PlanarCellsIn, CutPieces, CutOptions))
+		if (!MeshCut::CutWithPlanarCells(SourceMesh, PlanarCellsIn, CutPieces, UseCutOptions))
 		{
 			return false;
 		}
@@ -991,7 +1053,7 @@ namespace Riemann
 		const DynamicMesh& SourceMesh,
 		const std::vector<Vector3>& Sites,
 		std::vector<FracturePiece>& Pieces,
-		const FractureOptions& Options)
+		const PlanarCutOptions& CutOptions)
 	{
 		Pieces.clear();
 		if (Sites.empty() || CountValidTriangles(SourceMesh) == 0)
@@ -999,43 +1061,42 @@ namespace Riemann
 			return false;
 		}
 
+		const PlanarCutOptions UseCutOptions = MakePlanarOptions(SourceMesh, CutOptions, 0.20f);
 		Box3 VoronoiBounds = SourceMesh.GetBounds();
 		float MaxDim = BoundsMaxDim(VoronoiBounds);
 		if (MaxDim <= 0.0f)
 		{
 			MaxDim = 1.0f;
 		}
-		VoronoiBounds.Thicken(std::max(MaxDim * Options.BoundsPaddingScale, Options.SnapTolerance * 16.0f));
+		VoronoiBounds.Thicken(std::max(MaxDim * UseCutOptions.BoundsPaddingScale, UseCutOptions.SnapTolerance * 16.0f));
 		VoronoiBounds = Voronoi3::GetVoronoiBounds(VoronoiBounds, Sites);
 
-		PlanarCells Cells(Sites, VoronoiBounds, Options.SnapTolerance);
-		PlanarCutOptions CutOptions;
-		CutOptions.SnapTolerance = Options.SnapTolerance;
-		CutOptions.BoundsPaddingScale = Options.BoundsPaddingScale;
-		CutOptions.Grout = Options.Grout;
-		CutOptions.WeldSharedEdges = Options.WeldSharedEdges;
-		CutOptions.SimplifyAlongCut = Options.SimplifyAlongCut;
-		CutOptions.MinTriangleCount = Options.MinTriangleCount;
+		PlanarCells Cells(Sites, VoronoiBounds, UseCutOptions.SnapTolerance);
 
 		std::vector<PlanarCutPiece> CutPieces;
-		if (!MeshCut::CutWithPlanarCells(SourceMesh, Cells, CutPieces, CutOptions))
+		if (!MeshCut::CutWithPlanarCells(SourceMesh, Cells, CutPieces, UseCutOptions))
 		{
 			return false;
 		}
 
-		for (const PlanarCutPiece& CutPiece : CutPieces)
+		std::vector<int> CutPieceToPiece(CutPieces.size(), -1);
+		for (size_t CutPieceIdx = 0; CutPieceIdx < CutPieces.size(); ++CutPieceIdx)
 		{
+			const PlanarCutPiece& CutPiece = CutPieces[CutPieceIdx];
 			if (CutPiece.CellIndex >= 0 && CutPiece.CellIndex < (int)Sites.size())
 			{
 				FracturePiece Piece;
 				Piece.Mesh = CutPiece.Mesh;
 				Piece.Site = Sites[CutPiece.CellIndex];
+				Piece.CellIndex = CutPiece.CellIndex;
 				Piece.SiteIndex = CutPiece.CellIndex;
 				Piece.Center = CutPiece.Center;
+				CutPieceToPiece[CutPieceIdx] = (int)Pieces.size();
 				Pieces.push_back(Piece);
 			}
 		}
 
+		CopyCutPieceConnectivity(CutPieces, CutPieceToPiece, Pieces);
 		return !Pieces.empty();
 	}
 
@@ -1043,12 +1104,12 @@ namespace Riemann
 		const DynamicMesh& SourceMesh,
 		const std::vector<Vector3>& Sites,
 		std::vector<DynamicMesh>& Pieces,
-		const FractureOptions& Options)
+		const PlanarCutOptions& CutOptions)
 	{
 		Pieces.clear();
 
 		std::vector<FracturePiece> FracturePieces;
-		const bool bSuccess = VoronoiFracture(SourceMesh, Sites, FracturePieces, Options);
+		const bool bSuccess = VoronoiFracture(SourceMesh, Sites, FracturePieces, CutOptions);
 		for (const FracturePiece& Piece : FracturePieces)
 		{
 			Pieces.push_back(Piece.Mesh);

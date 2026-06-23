@@ -418,6 +418,43 @@ static bool HasRenderablePieces(const std::vector<FracturePiece>& pieces)
 	return false;
 }
 
+static int CountValidConnectivityEdges(const std::vector<FracturePiece>& pieces, bool& valid)
+{
+	valid = true;
+	int edgeCount = 0;
+	for (size_t pieceIndex = 0; pieceIndex < pieces.size(); ++pieceIndex)
+	{
+		const std::vector<int>& neighbors = pieces[pieceIndex].NeighborPieceIndices;
+		for (int neighborPieceIndex : neighbors)
+		{
+			if (neighborPieceIndex < 0 || neighborPieceIndex >= (int)pieces.size() || neighborPieceIndex == (int)pieceIndex)
+			{
+				valid = false;
+				continue;
+			}
+
+			const std::vector<int>& neighborList = pieces[(size_t)neighborPieceIndex].NeighborPieceIndices;
+			if (std::find(neighborList.begin(), neighborList.end(), (int)pieceIndex) == neighborList.end())
+			{
+				valid = false;
+			}
+
+			if ((int)pieceIndex < neighborPieceIndex)
+			{
+				++edgeCount;
+			}
+		}
+	}
+	return edgeCount;
+}
+
+static bool HasValidPieceConnectivity(const std::vector<FracturePiece>& pieces)
+{
+	bool valid = true;
+	const int edgeCount = CountValidConnectivityEdges(pieces, valid);
+	return valid && (pieces.size() < 2 || edgeCount > 0);
+}
+
 static bool PiecesMoveInPlane(const std::vector<FracturePiece>& pieces, const Vector3& normal)
 {
 	const Vector3 planeNormal = normal.SafeUnit();
@@ -697,29 +734,75 @@ void TestMeshCutAlgorithms()
 		return;
 	}
 
-	FractureOptions options;
-	options.PieceCount = 6;
-	options.PiecesX = 4;
-	options.PiecesY = 3;
-	options.PiecesZ = 2;
-	options.Seed = 11;
-	options.Normal = Vector3::UnitZ();
+	const int pieceCount = 6;
+	const int piecesX = 4;
+	const int piecesY = 3;
+	const int piecesZ = 2;
+	const int seed = 11;
+	PlanarCutOptions cutOptions;
+	cutOptions.BoundsPaddingScale = 0.10f;
+	cutOptions.RandomSeed = seed;
 
 	std::vector<FracturePiece> pieces;
-	EXPECT(Fracture::VoronoiFracture2D(wall, Vector3::UnitZ(), pieces, options));
+	EXPECT(Fracture::ParallelCutX(wall, pieces, pieceCount, cutOptions));
 	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(HasValidPieceConnectivity(pieces));
+
+	pieces.clear();
+	EXPECT(Fracture::ParallelCutY(wall, pieces, pieceCount, cutOptions));
+	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(HasValidPieceConnectivity(pieces));
+
+	pieces.clear();
+	EXPECT(Fracture::ParallelCutZ(wall, pieces, pieceCount, cutOptions));
+	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(HasValidPieceConnectivity(pieces));
+
+	pieces.clear();
+	EXPECT(Fracture::VoronoiFracture2D(wall, Vector3::UnitZ(), pieces, pieceCount, seed, cutOptions));
+	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(HasValidPieceConnectivity(pieces));
 	EXPECT(PiecesMoveInPlane(pieces, Vector3::UnitZ()));
 	EXPECT(PiecesUseXYAxisSeparation(pieces, wall.GetBounds()));
 
 	pieces.clear();
-	EXPECT(Fracture::ClusterVoronoiFracture(wall, pieces, options));
+	EXPECT(Fracture::VoronoiFracture3D(wall, pieces, pieceCount, seed, cutOptions));
 	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(HasValidPieceConnectivity(pieces));
 
 	pieces.clear();
-	EXPECT(Fracture::Voxel2D(wall, Vector3::UnitZ(), pieces, options));
+	EXPECT(Fracture::ClusterVoronoiFracture(wall, pieces, pieceCount, seed, cutOptions));
 	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(HasValidPieceConnectivity(pieces));
+
+	const Box3 wallBounds = wall.GetBounds();
+	const Vector3 wallCenter = wallBounds.GetCenter();
+	const Vector3 wallExtent = wallBounds.GetExtent();
+	std::vector<Vector3> explicitSites;
+	explicitSites.push_back(wallCenter + Vector3( wallExtent.x * 0.35f, 0.0f, 0.0f));
+	explicitSites.push_back(wallCenter + Vector3(-wallExtent.x * 0.35f, 0.0f, 0.0f));
+	explicitSites.push_back(wallCenter + Vector3(0.0f,  wallExtent.y * 0.35f, 0.0f));
+	explicitSites.push_back(wallCenter + Vector3(0.0f, -wallExtent.y * 0.35f, 0.0f));
+	explicitSites.push_back(wallCenter + Vector3(0.0f, 0.0f,  wallExtent.z * 0.35f));
+	explicitSites.push_back(wallCenter + Vector3(0.0f, 0.0f, -wallExtent.z * 0.35f));
+	pieces.clear();
+	EXPECT(Fracture::VoronoiFracture(wall, explicitSites, pieces, cutOptions));
+	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(HasValidPieceConnectivity(pieces));
+
+	pieces.clear();
+	EXPECT(Fracture::Voxel2D(wall, Vector3::UnitZ(), pieces, piecesX, piecesY, pieceCount, cutOptions));
+	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(HasValidPieceConnectivity(pieces));
 	EXPECT(PiecesMoveInPlane(pieces, Vector3::UnitZ()));
 	EXPECT(PiecesUseXYAxisSeparation(pieces, wall.GetBounds()));
+
+	const Vector3 angledNormal(0.23f, 0.37f, 0.90f);
+	pieces.clear();
+	EXPECT(Fracture::Voxel2D(wall, angledNormal, pieces, piecesX, piecesY, pieceCount, cutOptions));
+	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(HasValidPieceConnectivity(pieces));
+	EXPECT(PiecesMoveInPlane(pieces, angledNormal));
 
 	const Index2 voxel2DCounts[] =
 	{
@@ -731,21 +814,17 @@ void TestMeshCutAlgorithms()
 	};
 	for (const Index2& counts : voxel2DCounts)
 	{
-		FractureOptions stressOptions = options;
-		stressOptions.PiecesX = counts.a;
-		stressOptions.PiecesY = counts.b;
-		stressOptions.PiecesZ = 1;
-		stressOptions.Normal = Vector3::Zero();
-
 		pieces.clear();
-		EXPECT(Fracture::Voxel2D(wall, Vector3::Zero(), pieces, stressOptions));
+		EXPECT(Fracture::Voxel2D(wall, Vector3::Zero(), pieces, counts.a, counts.b, pieceCount, cutOptions));
 		EXPECT(HasRenderablePieces(pieces));
+		EXPECT(HasValidPieceConnectivity(pieces));
 		EXPECT(PiecesMoveInPlane(pieces, Vector3::UnitZ()));
 	}
 
 	pieces.clear();
-	EXPECT(Fracture::Voxel3D(wall, pieces, options));
+	EXPECT(Fracture::Voxel3D(wall, pieces, piecesX, piecesY, piecesZ, pieceCount, cutOptions));
 	EXPECT(HasRenderablePieces(pieces));
+	EXPECT(HasValidPieceConnectivity(pieces));
 }
 
 void TestHashGrid()

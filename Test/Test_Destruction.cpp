@@ -259,6 +259,72 @@ void TestDestructionMomentum()
 	EXPECT(!destructSet.GetGraph().GetBrokenBonds().empty());
 }
 
+void TestDestructionClusterSplitKeepsWorldTransform()
+{
+	printf("Running TestDestructionClusterSplitKeepsWorldTransform\n");
+
+	PhysicsWorldParam simParam;
+	PhysicsWorld simulation(simParam);
+	DestructionSet destructSet(simulation);
+	destructSet.AddChunk(MakeChunkBounds(0.0f, 1.0f), 1.0f, false);
+	destructSet.AddChunk(MakeChunkBounds(1.0f, 2.0f), 1.0f, false);
+	destructSet.AddBond(0, 1, DestructionBondType::Connect, 1.0f, 0);
+	destructSet.GetDestructionConstants().MinClusterVolume = 0.0f;
+	destructSet.GetDestructionConstants().Levels[0].BreakThreshold = 1.0f;
+	destructSet.GetDestructionConstants().Levels[0].PartitionSize = 2;
+	destructSet.RebuildClustersFromGraph();
+
+	std::vector<DestructionCluster*> clusters = destructSet.GetClusters();
+	EXPECT(clusters.size() == 1);
+	EXPECT(clusters[0]->GetRigidBody() != nullptr);
+
+	RigidBodyDynamic* body = clusters[0]->GetRigidBody();
+	const Vector3 offset(0.0f, -3.0f, 0.0f);
+	body->X += offset;
+	body->UpdateGeometries();
+
+	const bool changed = destructSet.ApplyMomentum(0, Vector3(5.0f, 0.0f, 0.0f), body->X, Vector3::UnitY());
+	EXPECT(changed);
+	destructSet.Update(0.0f);
+	int bodyCount = 0;
+	for (DestructionCluster* cluster : destructSet.GetClusters())
+	{
+		if (cluster->GetRigidBody())
+		{
+			++bodyCount;
+		}
+	}
+	EXPECT(bodyCount == 2);
+
+	for (DestructionCluster* cluster : destructSet.GetClusters())
+	{
+		for (int chunkIndex : cluster->GetSourceIndices())
+		{
+			Geometry* geom = cluster->GetGeometryByChunkIndex(chunkIndex);
+			EXPECT(geom != nullptr);
+			const Vector3 expected = destructSet.GetChunks()[(size_t)chunkIndex].Centroid + offset;
+			EXPECT_SAME(geom->GetWorldPosition(), expected);
+		}
+	}
+
+	const bool changedFinal = destructSet.ApplyMomentum(0, Vector3(50.0f, 0.0f, 0.0f), destructSet.GetChunks()[0].Centroid + offset, Vector3::UnitY());
+	EXPECT(!changedFinal);
+	destructSet.Update(0.0f);
+	bodyCount = 0;
+	for (DestructionCluster* cluster : destructSet.GetClusters())
+	{
+		if (cluster->GetRigidBody())
+		{
+			++bodyCount;
+		}
+	}
+	EXPECT(bodyCount == 2);
+
+	DestructionSet::Stats stats = destructSet.GetStats();
+	EXPECT(stats.FreeCount == 0);
+	EXPECT(stats.SmashedCount == 0);
+}
+
 void TestStrainSolverDestruction()
 {
 	printf("Running TestStrainSolverDestruction\n");
@@ -349,7 +415,7 @@ void TestVoronoiFractureBunny()
 	sites.push_back(center + Vector3(0.0f, 0.0f,  extent.z * 0.35f));
 	sites.push_back(center + Vector3(0.0f, 0.0f, -extent.z * 0.35f));
 
-	FractureOptions options;
+	PlanarCutOptions options;
 	options.SnapTolerance = std::max(maxSize * 1e-5f, 1e-6f);
 	options.BoundsPaddingScale = 0.2f;
 	options.Grout = maxSize * 0.015f;
@@ -445,6 +511,7 @@ void TestDestruction()
 	TestDestructionSetAndCluster();
 	TestDestructionEvents();
 	TestDestructionMomentum();
+	TestDestructionClusterSplitKeepsWorldTransform();
 	TestStrainSolverDestruction();
 	TestPlanarCutBunny();
 	TestVoronoiFractureBunny();

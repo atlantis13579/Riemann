@@ -1,0 +1,53 @@
+{
+  "name": "destruction",
+  "physics": {
+    "gravity": [0.0, -9.8, 0.0]
+  },
+  "camera": {
+    "center": [0.0, 1.0, 0.0],
+    "orbit": [0.85, 0.42, 16.0],
+    "near": 0.05,
+    "far": 1000.0
+  },
+  "light": {
+    "direction": [-0.45, -1.0, 0.35],
+    "color": [1.0, 0.96, 0.86],
+    "ambient": 0.24,
+    "shadowCenter": [0.0, 2.0, 0.0],
+    "shadowDistance": 70.0,
+    "shadowSize": 80.0
+  },
+  "objects": [
+    {
+      "id": "ground",
+      "type": "box",
+      "body": "static",
+      "position": [0.0, -0.55, 0.0],
+      "halfExtent": [8.0, 0.5, 8.0],
+      "color": [0.52, 0.56, 0.60, 1.0]
+    },
+    {
+      "id": "sphere0",
+      "type": "sphere",
+      "body": "static",
+      "position": [0.0, 0.5, 0.0],
+      "radius": 1.0,
+      "color": [0.52, 0.56, 0.60, 1.0]
+    },
+    {
+      "id": "destruction_box",
+      "type": "destructionBox",
+      "body": "dynamic",
+      "position": [0.0, 10.0, 0.0],
+      "halfExtent": [1.6, 1.2, 1.6],
+      "pieces": [5, 5],
+      "invMass": 0.08,
+      "bondStrength": 0.35,
+      "breakThreshold": 1.0,
+      "partitionSize": 2,
+      "minClusterVolume": 0.0,
+      "impulseRadius": 3.5,
+      "color": [0.28, 0.52, 0.95, 1.0]
+    }
+  ]
+}

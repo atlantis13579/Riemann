@@ -120,6 +120,11 @@ namespace Riemann
 					}
 				}
 
+				for (size_t k = 0; k < velocityConstraints.size(); ++k)
+				{
+					velocityConstraints[k].Finalize();
+				}
+
 				return;
 			}
 		}

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <initializer_list>
 #include <map>
 #include <random>
 
@@ -62,10 +63,142 @@ namespace Riemann
 			return Count;
 		}
 
+		static void AddPlanarCutPieceNeighbor(std::vector<PlanarCutPiece>& Pieces, int PieceA, int PieceB)
+		{
+			if (PieceA < 0 || PieceB < 0 || PieceA == PieceB ||
+				PieceA >= (int)Pieces.size() || PieceB >= (int)Pieces.size())
+			{
+				return;
+			}
+
+			std::vector<int>& NeighborsA = Pieces[(size_t)PieceA].NeighborPieceIndices;
+			if (std::find(NeighborsA.begin(), NeighborsA.end(), PieceB) == NeighborsA.end())
+			{
+				NeighborsA.push_back(PieceB);
+			}
+
+			std::vector<int>& NeighborsB = Pieces[(size_t)PieceB].NeighborPieceIndices;
+			if (std::find(NeighborsB.begin(), NeighborsB.end(), PieceA) == NeighborsB.end())
+			{
+				NeighborsB.push_back(PieceA);
+			}
+		}
+
+		static void BuildPlanarCutPieceConnectivity(const PlanarCells& Cells, std::vector<PlanarCutPiece>& Pieces)
+		{
+			for (PlanarCutPiece& Piece : Pieces)
+			{
+				Piece.NeighborPieceIndices.clear();
+			}
+
+			if (Cells.NumCells <= 0)
+			{
+				return;
+			}
+
+			std::vector<int> CellToPiece((size_t)Cells.NumCells, -1);
+			for (size_t PieceIndex = 0; PieceIndex < Pieces.size(); ++PieceIndex)
+			{
+				const int CellIndex = Pieces[PieceIndex].CellIndex;
+				if (CellIndex >= 0 && CellIndex < Cells.NumCells)
+				{
+					CellToPiece[(size_t)CellIndex] = (int)PieceIndex;
+				}
+			}
+
+			for (const Index2& CellPair : Cells.PlaneCells)
+			{
+				if (CellPair.a < 0 || CellPair.a >= Cells.NumCells ||
+					CellPair.b < 0 || CellPair.b >= Cells.NumCells)
+				{
+					continue;
+				}
+
+				AddPlanarCutPieceNeighbor(Pieces, CellToPiece[(size_t)CellPair.a], CellToPiece[(size_t)CellPair.b]);
+			}
+		}
+
 		static float BoundsMaxDim(const Box3& Bounds)
 		{
 			const Vector3 Size = Bounds.Max - Bounds.Min;
 			return std::max(Size.x, std::max(Size.y, Size.z));
+		}
+
+		static float BoxAxisMin(const Box3& Bounds, int Axis)
+		{
+			switch (Axis)
+			{
+			case 0:
+				return Bounds.Min.x;
+			case 1:
+				return Bounds.Min.y;
+			default:
+				return Bounds.Min.z;
+			}
+		}
+
+		static float BoxAxisMax(const Box3& Bounds, int Axis)
+		{
+			switch (Axis)
+			{
+			case 0:
+				return Bounds.Max.x;
+			case 1:
+				return Bounds.Max.y;
+			default:
+				return Bounds.Max.z;
+			}
+		}
+
+		static bool BoxFacesMatchOnOtherAxes(const Box3& BoxA, const Box3& BoxB, int FaceAxis, float Tolerance)
+		{
+			for (int Axis = 0; Axis < 3; ++Axis)
+			{
+				if (Axis == FaceAxis)
+				{
+					continue;
+				}
+
+				if (std::fabs(BoxAxisMin(BoxA, Axis) - BoxAxisMin(BoxB, Axis)) > Tolerance ||
+					std::fabs(BoxAxisMax(BoxA, Axis) - BoxAxisMax(BoxB, Axis)) > Tolerance)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		static int FindAdjacentBoxFace(
+			const std::vector<Box3>& Boxes,
+			int BoxIdx,
+			int FaceAxis,
+			bool bPositiveFace,
+			float Tolerance)
+		{
+			if (BoxIdx < 0 || BoxIdx >= (int)Boxes.size())
+			{
+				return -1;
+			}
+
+			const Box3& Box = Boxes[(size_t)BoxIdx];
+			const float FaceValue = bPositiveFace ? BoxAxisMax(Box, FaceAxis) : BoxAxisMin(Box, FaceAxis);
+			for (int OtherIdx = 0; OtherIdx < (int)Boxes.size(); ++OtherIdx)
+			{
+				if (OtherIdx == BoxIdx)
+				{
+					continue;
+				}
+
+				const Box3& Other = Boxes[(size_t)OtherIdx];
+				const float OtherFaceValue = bPositiveFace ? BoxAxisMin(Other, FaceAxis) : BoxAxisMax(Other, FaceAxis);
+				if (std::fabs(OtherFaceValue - FaceValue) <= Tolerance &&
+					BoxFacesMatchOnOtherAxes(Box, Other, FaceAxis, Tolerance))
+				{
+					return OtherIdx;
+				}
+			}
+
+			return -1;
 		}
 
 		static bool BuildPlaneBasis(const Vector3& PlaneNormal, Vector3& Tangent, Vector3& Normal, Vector3& Binormal)
@@ -362,9 +495,15 @@ namespace Riemann
 
 	PlanarCells::PlanarCells(const std::vector<Box3>& Boxes, bool ResolveAdjacencies)
 	{
-		(void)ResolveAdjacencies;
 		NumCells = (int)Boxes.size();
 		AssumeConvexCells = true;
+
+		float MaxDim = 1.0f;
+		for (const Box3& Box : Boxes)
+		{
+			MaxDim = std::max(MaxDim, BoundsMaxDim(Box));
+		}
+		const float AdjacencyTolerance = std::max(MaxDim * 1e-5f, 1e-6f);
 
 		for (int BoxIdx = 0; BoxIdx < (int)Boxes.size(); ++BoxIdx)
 		{
@@ -382,12 +521,23 @@ namespace Riemann
 			PlaneBoundaryVertices.push_back(Max);
 			PlaneBoundaryVertices.push_back(Vector3(Min.x, Max.y, Max.z));
 
-			AddPlane(PlanarCutPlane(Vector3(0.0f, 0.0f, -1.0f), -Min.z), BoxIdx, -1, { VertexStart + 0, VertexStart + 1, VertexStart + 2, VertexStart + 3 });
-			AddPlane(PlanarCutPlane(Vector3(0.0f, 0.0f, 1.0f), Max.z), BoxIdx, -1, { VertexStart + 4, VertexStart + 7, VertexStart + 6, VertexStart + 5 });
-			AddPlane(PlanarCutPlane(Vector3(0.0f, -1.0f, 0.0f), -Min.y), BoxIdx, -1, { VertexStart + 0, VertexStart + 4, VertexStart + 5, VertexStart + 1 });
-			AddPlane(PlanarCutPlane(Vector3(0.0f, 1.0f, 0.0f), Max.y), BoxIdx, -1, { VertexStart + 3, VertexStart + 2, VertexStart + 6, VertexStart + 7 });
-			AddPlane(PlanarCutPlane(Vector3(-1.0f, 0.0f, 0.0f), -Min.x), BoxIdx, -1, { VertexStart + 0, VertexStart + 3, VertexStart + 7, VertexStart + 4 });
-			AddPlane(PlanarCutPlane(Vector3(1.0f, 0.0f, 0.0f), Max.x), BoxIdx, -1, { VertexStart + 1, VertexStart + 5, VertexStart + 6, VertexStart + 2 });
+			const auto AddBoxFace = [&](const PlanarCutPlane& Plane, int FaceAxis, bool bPositiveFace, std::initializer_list<int> Boundary)
+			{
+				const int NeighborCell = ResolveAdjacencies ? FindAdjacentBoxFace(Boxes, BoxIdx, FaceAxis, bPositiveFace, AdjacencyTolerance) : -1;
+				if (NeighborCell >= 0 && BoxIdx > NeighborCell)
+				{
+					return;
+				}
+
+				AddPlane(Plane, BoxIdx, NeighborCell, std::vector<int>(Boundary));
+			};
+
+			AddBoxFace(PlanarCutPlane(Vector3(0.0f, 0.0f, -1.0f), -Min.z), 2, false, { VertexStart + 0, VertexStart + 1, VertexStart + 2, VertexStart + 3 });
+			AddBoxFace(PlanarCutPlane(Vector3(0.0f, 0.0f, 1.0f), Max.z), 2, true, { VertexStart + 4, VertexStart + 7, VertexStart + 6, VertexStart + 5 });
+			AddBoxFace(PlanarCutPlane(Vector3(0.0f, -1.0f, 0.0f), -Min.y), 1, false, { VertexStart + 0, VertexStart + 4, VertexStart + 5, VertexStart + 1 });
+			AddBoxFace(PlanarCutPlane(Vector3(0.0f, 1.0f, 0.0f), Max.y), 1, true, { VertexStart + 3, VertexStart + 2, VertexStart + 6, VertexStart + 7 });
+			AddBoxFace(PlanarCutPlane(Vector3(-1.0f, 0.0f, 0.0f), -Min.x), 0, false, { VertexStart + 0, VertexStart + 3, VertexStart + 7, VertexStart + 4 });
+			AddBoxFace(PlanarCutPlane(Vector3(1.0f, 0.0f, 0.0f), Max.x), 0, true, { VertexStart + 1, VertexStart + 5, VertexStart + 6, VertexStart + 2 });
 		}
 	}
 
@@ -790,6 +940,7 @@ namespace Riemann
 			}
 		}
 
+		BuildPlanarCutPieceConnectivity(Cells, Pieces);
 		return !Pieces.empty();
 	}
 

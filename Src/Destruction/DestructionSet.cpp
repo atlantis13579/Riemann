@@ -4,10 +4,28 @@
 #include <algorithm>
 #include <queue>
 
+#include "../Collision/GeometryObject.h"
+#include "../RigidBodyDynamics/PhysicsWorld.h"
+
 namespace Riemann
 {
 	namespace
 	{
+		uint32_t HashClusterRevisionValue(uint32_t Hash, uint32_t Value)
+		{
+			Hash ^= Value;
+			Hash *= 16777619u;
+			return Hash;
+		}
+
+		uint32_t HashClusterRevisionPointer(uint32_t Hash, const void* Ptr)
+		{
+			const uint64_t Value = (uint64_t)reinterpret_cast<uintptr_t>(Ptr);
+			Hash = HashClusterRevisionValue(Hash, (uint32_t)Value);
+			Hash = HashClusterRevisionValue(Hash, (uint32_t)(Value >> 32));
+			return Hash;
+		}
+
 		bool IntersectSphereAABB(const Vector3& Center, float Radius, const Box3& Bounds)
 		{
 			float DistanceSquared = 0.0f;
@@ -31,6 +49,30 @@ namespace Riemann
 		}
 	}
 
+	static float GetBodyMassForContact(const RigidBody* Body)
+	{
+		if (Body == nullptr || Body->GetInverseMass() <= kMinimumInvMass)
+		{
+			return 1.0f;
+		}
+		return 1.0f / Body->GetInverseMass();
+	}
+
+	static Vector3 BuildContactMomentum(const PhysicsContactInfo& ContactInfo, const PhysicsContactPoint& Point)
+	{
+		Vector3 Momentum = Point.Impulse;
+		if (Momentum.SquareLength() > 1e-6f)
+		{
+			return Momentum;
+		}
+
+		const Vector3 VelocityA = ContactInfo.BodyA ? ContactInfo.BodyA->GetLinearVelocity() : Vector3::Zero();
+		const Vector3 VelocityB = ContactInfo.BodyB ? ContactInfo.BodyB->GetLinearVelocity() : Vector3::Zero();
+		const float ClosingSpeed = std::max(0.0f, -(VelocityB - VelocityA).Dot(Point.Normal));
+		const float EffectiveMass = std::min(GetBodyMassForContact(ContactInfo.BodyA), GetBodyMassForContact(ContactInfo.BodyB));
+		return Point.Normal * (ClosingSpeed * EffectiveMass);
+	}
+
 	DestructionConstants::DestructionConstants()
 	{
 		Levels[0] = { 10.0f, 3 };
@@ -41,6 +83,29 @@ namespace Riemann
 		Levels[5] = { 1000.0f, 2 };
 		Levels[6] = { 1000.0f, 2 };
 		Levels[7] = { 1000.0f, 2 };
+	}
+
+	DestructionSet::DestructionSet(PhysicsWorld* Simulation)
+	{
+		if (Simulation)
+		{
+			Simulation->AddDestructionSet(this);
+		}
+	}
+
+	DestructionSet::DestructionSet(PhysicsWorld& Simulation)
+	{
+		Simulation.AddDestructionSet(this);
+	}
+
+	DestructionSet::~DestructionSet()
+	{
+		ClearClusters();
+		if (mPhysicsWorld)
+		{
+			mPhysicsWorld->RemoveDestructionSet(this);
+			mPhysicsWorld = nullptr;
+		}
 	}
 
 	int DestructionSet::AddChunk(const Box3& Bounds, float Mass, bool bStatic, const std::string& Name)
@@ -86,10 +151,10 @@ namespace Riemann
 
 	void DestructionSet::Clear()
 	{
+		ClearClusters();
 		mGraph.Clear();
 		mBounds = Box3::Empty();
 		mChunks.clear();
-		mClusters.clear();
 		mMomentumQueue.clear();
 		mBrokenIndices.clear();
 		for (int Type = 0; Type < (int)DestructionEventType::Count; ++Type)
@@ -116,26 +181,102 @@ namespace Riemann
 		mGraph.Resize(mChunks.size());
 	}
 
+	void DestructionSet::BuildClusterRigidBody(DestructionCluster& Cluster)
+	{
+		if (mPhysicsWorld == nullptr)
+		{
+			return;
+		}
+
+		RigidBodyParam Param;
+		Param.rigidType = RigidType::Dynamic;
+		Cluster.BuildRigidBodyFromChunkBounds(*mPhysicsWorld, *this, Param);
+	}
+
+	void DestructionSet::ReleaseClusterRigidBody(DestructionCluster& Cluster, bool bReleaseGeometries)
+	{
+		RigidBodyDynamic* Body = Cluster.GetRigidBody();
+		if (Body == nullptr)
+		{
+			return;
+		}
+
+		if (mPhysicsWorld == nullptr)
+		{
+			Cluster.ReleaseRigidBodyBinding();
+			return;
+		}
+
+		mPhysicsWorld->RemoveRigidBody(Body);
+		Cluster.ReleaseRigidBodyBinding();
+		if (bReleaseGeometries)
+		{
+			Body->ReleaseGeometries();
+		}
+		else
+		{
+			Body->mGeometries.clear();
+		}
+		delete Body;
+	}
+
+	void DestructionSet::ReleaseClusterRigidBodies(bool bReleaseGeometries)
+	{
+		for (std::map<uint32_t, DestructionCluster>::value_type& Entry : mClusters)
+		{
+			ReleaseClusterRigidBody(Entry.second, bReleaseGeometries);
+		}
+	}
+
 	uint32_t DestructionSet::AddCluster(int Level, const std::vector<int>& Indices)
 	{
 		DestructionCluster Cluster = DestructionCluster::Create(*this, Level, Indices);
 		const uint32_t ID = Cluster.GetID();
+		BuildClusterRigidBody(Cluster);
 		mClusters[ID] = Cluster;
 		return ID;
 	}
 
 	bool DestructionSet::RemoveCluster(uint32_t ClusterID)
 	{
-		return mClusters.erase(ClusterID) > 0;
+		std::map<uint32_t, DestructionCluster>::iterator It = mClusters.find(ClusterID);
+		if (It == mClusters.end())
+		{
+			return false;
+		}
+		ReleaseClusterRigidBody(It->second, true);
+		mClusters.erase(It);
+		return true;
 	}
 
 	void DestructionSet::ClearClusters()
 	{
+		ReleaseClusterRigidBodies(true);
 		mClusters.clear();
 	}
 
 	void DestructionSet::RebuildClustersFromGraph()
 	{
+		std::map<int, Geometry*> ExistingGeometries;
+		if (mPhysicsWorld != nullptr)
+		{
+			for (std::map<uint32_t, DestructionCluster>::value_type& Entry : mClusters)
+			{
+				DestructionCluster& Cluster = Entry.second;
+				const std::vector<int>& SourceIndices = Cluster.GetSourceIndices();
+				const std::vector<Geometry*>& Geometries = Cluster.GetGeometries();
+				const size_t Count = std::min(SourceIndices.size(), Geometries.size());
+				for (size_t Index = 0; Index < Count; ++Index)
+				{
+					if (Geometries[Index] != nullptr)
+					{
+						ExistingGeometries[SourceIndices[Index]] = Geometries[Index];
+					}
+				}
+			}
+		}
+
+		ReleaseClusterRigidBodies(false);
 		mClusters.clear();
 		BitSet Visited(mChunks.size());
 
@@ -172,8 +313,45 @@ namespace Riemann
 
 			if (!Component.empty())
 			{
-				AddCluster(-1, Component);
+				DestructionCluster Cluster = DestructionCluster::Create(*this, -1, Component);
+				const uint32_t ID = Cluster.GetID();
+				if (mPhysicsWorld != nullptr)
+				{
+					std::vector<Geometry*> Geometries;
+					Geometries.reserve(Component.size());
+					bool bHasExistingGeometries = true;
+					for (int ChunkIndex : Component)
+					{
+						std::map<int, Geometry*>::iterator It = ExistingGeometries.find(ChunkIndex);
+						if (It == ExistingGeometries.end() || It->second == nullptr)
+						{
+							bHasExistingGeometries = false;
+							break;
+						}
+						Geometries.push_back(It->second);
+					}
+
+					RigidBodyParam Param;
+					Param.rigidType = RigidType::Dynamic;
+					if (bHasExistingGeometries && Cluster.BuildRigidBody(*mPhysicsWorld, Param, Geometries))
+					{
+						for (int ChunkIndex : Component)
+						{
+							ExistingGeometries.erase(ChunkIndex);
+						}
+					}
+					else
+					{
+						Cluster.BuildRigidBodyFromChunkBounds(*mPhysicsWorld, *this, Param);
+					}
+				}
+				mClusters[ID] = Cluster;
 			}
+		}
+
+		for (std::map<int, Geometry*>::value_type& Entry : ExistingGeometries)
+		{
+			GeometryFactory::DeleteGeometry(Entry.second);
 		}
 	}
 
@@ -224,6 +402,46 @@ namespace Riemann
 		return Clusters;
 	}
 
+	uint32_t DestructionSet::GetClusterRevision() const
+	{
+		uint32_t Hash = 2166136261u;
+		Hash = HashClusterRevisionValue(Hash, (uint32_t)mChunks.size());
+		Hash = HashClusterRevisionValue(Hash, (uint32_t)mClusters.size());
+
+		for (size_t Index = 0; Index < mChunks.size(); ++Index)
+		{
+			const DestructionChunk& Chunk = mChunks[Index];
+			uint32_t Flags = 0;
+			Flags |= Chunk.IsStatic ? 1u : 0u;
+			Flags |= Chunk.IsFree ? 2u : 0u;
+			Flags |= Chunk.IsSmashed ? 4u : 0u;
+			Hash = HashClusterRevisionValue(Hash, (uint32_t)Index);
+			Hash = HashClusterRevisionValue(Hash, Flags);
+		}
+
+		for (std::map<uint32_t, DestructionCluster>::const_reference Entry : mClusters)
+		{
+			const DestructionCluster& Cluster = Entry.second;
+			Hash = HashClusterRevisionValue(Hash, Entry.first);
+			Hash = HashClusterRevisionValue(Hash, Cluster.GetID());
+			Hash = HashClusterRevisionValue(Hash, (uint32_t)Cluster.GetLevel());
+			Hash = HashClusterRevisionValue(Hash, Cluster.IsStatic() ? 1u : 0u);
+			Hash = HashClusterRevisionValue(Hash, (uint32_t)Cluster.GetSourceIndexMin());
+			Hash = HashClusterRevisionPointer(Hash, Cluster.GetRigidBody());
+
+			const std::vector<int>& SourceIndices = Cluster.GetSourceIndices();
+			const std::vector<Geometry*>& Geometries = Cluster.GetGeometries();
+			Hash = HashClusterRevisionValue(Hash, (uint32_t)SourceIndices.size());
+			Hash = HashClusterRevisionValue(Hash, (uint32_t)Geometries.size());
+			for (size_t Index = 0; Index < SourceIndices.size(); ++Index)
+			{
+				Hash = HashClusterRevisionValue(Hash, (uint32_t)SourceIndices[Index]);
+				Hash = HashClusterRevisionPointer(Hash, Index < Geometries.size() ? Geometries[Index] : nullptr);
+			}
+		}
+		return Hash;
+	}
+
 	void DestructionSet::BreakBondEx(int Index)
 	{
 		if (!mGraph.IsValidNode(Index) || mGraph.IsBroken(Index))
@@ -233,6 +451,7 @@ namespace Riemann
 
 		mGraph.BreakBonds(Index);
 		MarkFree(Index);
+		RebuildClustersFromGraph();
 	}
 
 	bool DestructionSet::ApplyMomentum(int Index, const Vector3& Momentum, const Vector3& Position, const Vector3& Normal)
@@ -246,6 +465,10 @@ namespace Riemann
 		const float Strength = Momentum.Length();
 		bool bChanged = false;
 		DestructionCluster* Cluster = FindClusterContaining(Index);
+		if (Cluster && Cluster->Size() <= 1)
+		{
+			return false;
+		}
 		if (Cluster && mConstants.PartitionAlgorithm == DestructionPartitionAlgorithm::Metis)
 		{
 			const int Level = Cluster->GetLevel();
@@ -418,6 +641,22 @@ namespace Riemann
 		}
 	}
 
+	void DestructionSet::OnContact(const PhysicsContactInfo& ContactInfo)
+	{
+		for (int PointIndex = 0; PointIndex < ContactInfo.NumContactPoints; ++PointIndex)
+		{
+			const PhysicsContactPoint& Point = ContactInfo.ContactPoints[PointIndex];
+			const Vector3 Momentum = BuildContactMomentum(ContactInfo, Point);
+			if (Momentum.SquareLength() <= 1e-6f)
+			{
+				continue;
+			}
+
+			QueueContactMomentum(ContactInfo.BodyA, ContactInfo.GeomA, Point, -Momentum, -Point.Normal);
+			QueueContactMomentum(ContactInfo.BodyB, ContactInfo.GeomB, Point, Momentum, Point.Normal);
+		}
+	}
+
 	BitSet DestructionSet::FindUnsupported() const
 	{
 		BitSet Supported(mChunks.size());
@@ -462,6 +701,68 @@ namespace Riemann
 			RebuildClustersFromGraph();
 		}
 		return Result;
+	}
+
+	void DestructionSet::Update(float DeltaTime)
+	{
+		(void)DeltaTime;
+		ProcessMomentumQueue();
+		ProcessDestructionInfo();
+	}
+
+	bool DestructionSet::HasClusterRigidBodies() const
+	{
+		for (std::map<uint32_t, DestructionCluster>::const_reference Entry : mClusters)
+		{
+			if (Entry.second.GetRigidBody())
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	DestructionCluster* DestructionSet::FindClusterByRigidBody(const RigidBody* Body)
+	{
+		if (Body == nullptr || Body->Parent != this)
+		{
+			return nullptr;
+		}
+
+		for (std::map<uint32_t, DestructionCluster>::value_type& Entry : mClusters)
+		{
+			if (Entry.second.GetRigidBody() == Body)
+			{
+				return &Entry.second;
+			}
+		}
+		return nullptr;
+	}
+
+	void DestructionSet::QueueContactMomentum(RigidBody* Body, Geometry* Geom, const PhysicsContactPoint& Point, const Vector3& Momentum, const Vector3& Normal)
+	{
+		if (Geom == nullptr)
+		{
+			return;
+		}
+
+		DestructionCluster* Cluster = FindClusterByRigidBody(Body);
+		if (Cluster == nullptr)
+		{
+			return;
+		}
+
+		int ChunkIndex = Cluster->GetChunkIndexByGeometry(Geom);
+		if (ChunkIndex < 0 && !Cluster->GetSourceIndices().empty())
+		{
+			ChunkIndex = Cluster->GetSourceIndices().front();
+		}
+		if (ChunkIndex < 0)
+		{
+			return;
+		}
+
+		AddMomentumQueue(ChunkIndex, Momentum, Point.Position, Normal);
 	}
 
 	std::vector<int> DestructionSet::QueryChunksRadius(const Vector3& Center, float Radius) const
