@@ -132,6 +132,9 @@
     <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h">
       <Filter>Destruction</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Geometry\ConvexDecomposition.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\ConvexHull2.h">
       <Filter>Geometry</Filter>
     </ClInclude>
@@ -561,6 +564,9 @@
     <ClInclude Include="..\..\Src\Destruction\DestructionCluster.h">
       <Filter>Destruction</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Maths\SobolSequences.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3.cpp">
@@ -592,6 +598,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp">
       <Filter>Destruction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Geometry\ConvexDecomposition.cpp">
+      <Filter>Geometry</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Geometry\ConvexHull2.cpp">
       <Filter>Geometry</Filter>

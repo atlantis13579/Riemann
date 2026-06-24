@@ -1249,7 +1249,7 @@ namespace Riemann
 		triangleMesh->BuildBVH();
 
 		geometry->UpdateVolumeProperties();
-		geometry->SetWorldTransform(transform.pos, transform.quat);
+		geometry->SetTransform(transform.pos, transform.quat);
 		geometry->SetQueryEnabled(true);
 		geometry->SetSimulationEnabled(bodyType != RigidType::Static);
 

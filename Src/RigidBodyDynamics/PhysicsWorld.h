@@ -3,8 +3,10 @@
 #include <stdint.h>
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
+#include "GeometryWorldState.h"
 #include "RigidBody.h"
 
 namespace Riemann
@@ -171,6 +173,9 @@ namespace Riemann
 	private:
 		void				SimulateST(float dt);
 
+		GeometryWorldState	UpdateGeometryWorldState(Geometry* Object, uint64_t FrameId);
+		void				UpdateGeometryWorldStates(const std::vector<Geometry*>& Objects);
+		void				RemoveGeometryWorldState(Geometry* Object);
 		void				PreIntegrate(float dt);
 		void				PostIntegrate(float dt);
 		void				DispatchContactCallbacks(const std::vector<Geometry*>& geoms, const std::vector<ContactManifold*>& manifolds);
@@ -195,6 +200,8 @@ namespace Riemann
 		OnContactCallback				m_OnContact;
 		std::vector<DestructionSet*>	m_DestructionSets;
 		std::vector<ForceField*>		m_Fields;
+		std::vector<GeometryWorldState> m_GeometryWorldStates;
+		std::unordered_map<Geometry*, GeometryWorldState> m_GeometryWorldStateCache;
 		WorldClock						m_Clock;
 		IBinaryData*							m_SceneResource;
 	};

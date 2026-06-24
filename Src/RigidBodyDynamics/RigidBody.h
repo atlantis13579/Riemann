@@ -4,6 +4,7 @@
 #include <vector>
 #include "../Collision/GeometryAggregate.h"
 #include "../Maths/Transform.h"
+#include "../Maths/Box3.h"
 
 namespace Riemann
 {
@@ -110,6 +111,13 @@ namespace Riemann
 		void			AddAngularVelocity(const Vector3& dw) { W += dw; }
 		void			AddLinearMomentum(const Vector3& dp) { V += InvMass * dp; }
 		void			AddAngularMomentum(const Vector3& dl) { W += InvInertia * dl; }
+
+		Vector3			BodyLocalToWorld(const Vector3& Position) const;
+		Vector3			BodyLocalToWorldDirection(const Vector3& Direction) const;
+		Vector3			WorldToBodyLocal(const Vector3& Position) const;
+		Vector3			WorldToBodyLocalDirection(const Vector3& Direction) const;
+		Transform		GetGeometryTransform(const Geometry* Geom) const;
+		Box3			GetGeometryBounds(const Geometry* Geom) const;
 
 		void			UpdateGeometries();
 		void			UpdateMassParameters();

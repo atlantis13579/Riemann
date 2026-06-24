@@ -348,7 +348,14 @@ namespace Riemann
 				{
 					if (Geometries[Index] != nullptr)
 					{
-						ExistingGeometries[SourceIndices[Index]] = Geometries[Index];
+						Geometry* Geom = Geometries[Index];
+						if (RigidBodyDynamic* Body = Cluster.GetRigidBody())
+						{
+							const Transform WorldTransform = Body->GetGeometryTransform(Geom);
+							Geom->SetTransform(WorldTransform.pos, WorldTransform.quat);
+						}
+						Geom->SetParent(nullptr);
+						ExistingGeometries[SourceIndices[Index]] = Geom;
 					}
 				}
 			}

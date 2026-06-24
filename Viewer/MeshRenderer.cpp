@@ -13,6 +13,7 @@
 #include "../Src/CollisionPrimitive/Plane3.h"
 #include "../Src/CollisionPrimitive/Sphere3.h"
 #include "../Src/CollisionPrimitive/StaticMesh.h"
+#include "../Src/RigidBodyDynamics/RigidBody.h"
 
 namespace Riemann
 {
@@ -47,6 +48,17 @@ namespace Riemann
 			return mesh;
 		}
 
+		Transform GetGeometryWorldTransform(Geometry* geometry)
+		{
+			if (geometry == nullptr)
+			{
+				return Transform::Identity();
+			}
+
+			RigidBody* body = geometry->GetParent<RigidBody>();
+			return body ? body->GetGeometryTransform(geometry) : *geometry->GetTransform();
+		}
+
 		void BuildPlaneMesh(Geometry* geometry, const std::string& id, const Vector4& color, std::vector<RenderMeshDesc>* meshes)
 		{
 			Plane3* shape = geometry->GetShapeObj<Plane3>();
@@ -70,7 +82,7 @@ namespace Riemann
 
 			std::vector<uint32_t> indices;
 			AppendIndices(indices16, &indices);
-			meshes->push_back(MakeMeshDesc(id, *geometry->GetWorldTransform(), vertices, indices, color, RenderPrimitiveTopology::Triangles, true));
+			meshes->push_back(MakeMeshDesc(id, GetGeometryWorldTransform(geometry), vertices, indices, color, RenderPrimitiveTopology::Triangles, true));
 		}
 
 		template <class TShape>
@@ -97,7 +109,7 @@ namespace Riemann
 
 			std::vector<uint32_t> indices;
 			AppendIndices(indices16, &indices);
-			meshes->push_back(MakeMeshDesc(id, *geometry->GetWorldTransform(), vertices, indices, color, RenderPrimitiveTopology::Triangles, true));
+			meshes->push_back(MakeMeshDesc(id, GetGeometryWorldTransform(geometry), vertices, indices, color, RenderPrimitiveTopology::Triangles, true));
 		}
 
 		void AppendAabbWireMesh(const AxisAlignedBox3& aabb, const Transform& transform, const std::string& id, const Vector4& color, std::vector<RenderMeshDesc>* meshes)
@@ -188,7 +200,7 @@ namespace Riemann
 
 		if (geometry->GetShapeType() == PrimitiveType::TRIANGLE_MESH)
 		{
-			BuildTriMeshMeshes(geometry->GetShapeObj<StaticMesh>(), *geometry->GetWorldTransform(), id, color, renderBounds, meshes);
+			BuildTriMeshMeshes(geometry->GetShapeObj<StaticMesh>(), GetGeometryWorldTransform(geometry), id, color, renderBounds, meshes);
 		}
 		else if (geometry->GetShapeType() == PrimitiveType::CONVEX_MESH)
 		{

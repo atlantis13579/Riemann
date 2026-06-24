@@ -243,6 +243,80 @@ namespace Riemann
 		{
 			m_GeometryQuery->ClearStaticGeometry();
 		}
+
+		m_GeometryWorldStates.clear();
+		m_GeometryWorldStateCache.clear();
+	}
+
+	GeometryWorldState PhysicsWorld::UpdateGeometryWorldState(Geometry* Object, uint64_t FrameId)
+	{
+		GeometryWorldState State;
+		State.Geom = Object;
+		State.FrameId = FrameId;
+		State.WorldBounds = Box3::Empty();
+
+		if (Object == nullptr)
+		{
+			return State;
+		}
+
+		State.Body = Object->GetParent<RigidBody>();
+		if (State.Body)
+		{
+			State.BodyToWorld = Transform(State.Body->BodyLocalToWorld(Vector3::Zero()), State.Body->Q);
+			State.ShapeToWorld = State.Body->GetGeometryTransform(Object);
+			State.WorldBounds = Box3::Transform(Object->GetShapeBounds(), State.ShapeToWorld.pos, State.ShapeToWorld.quat);
+			State.MovingRigid = State.Body->mRigidType != RigidType::Static;
+		}
+		else
+		{
+			State.BodyToWorld = Transform::Identity();
+			State.ShapeToWorld = *Object->GetTransform();
+			State.WorldBounds = Object->GetBounds();
+			State.MovingRigid = false;
+		}
+
+		auto It = m_GeometryWorldStateCache.find(Object);
+		if (It == m_GeometryWorldStateCache.end())
+		{
+			State.Version = 1;
+			State.Moved = true;
+			State.Displacement = Vector3::Zero();
+		}
+		else
+		{
+			const GeometryWorldState& Prev = It->second;
+			State.Displacement = State.ShapeToWorld.pos - Prev.ShapeToWorld.pos;
+			State.Moved = State.Body != Prev.Body
+				|| State.BodyToWorld != Prev.BodyToWorld
+				|| State.ShapeToWorld != Prev.ShapeToWorld
+				|| !(State.WorldBounds == Prev.WorldBounds)
+				|| State.MovingRigid != Prev.MovingRigid;
+			State.Version = State.Moved ? Prev.Version + 1 : Prev.Version;
+		}
+
+		m_GeometryWorldStateCache[Object] = State;
+		return State;
+	}
+
+	void PhysicsWorld::UpdateGeometryWorldStates(const std::vector<Geometry*>& Objects)
+	{
+		m_GeometryWorldStates.clear();
+		m_GeometryWorldStates.reserve(Objects.size());
+		for (Geometry* Object : Objects)
+		{
+			m_GeometryWorldStates.push_back(UpdateGeometryWorldState(Object, m_Clock.tick));
+		}
+	}
+
+	void PhysicsWorld::RemoveGeometryWorldState(Geometry* Object)
+	{
+		if (Object == nullptr)
+		{
+			return;
+		}
+
+		m_GeometryWorldStateCache.erase(Object);
 	}
 
 	void		PhysicsWorld::SimulateST(float dt)
@@ -275,16 +349,18 @@ namespace Riemann
 			}
 		}
 
+		UpdateGeometryWorldStates(geoms);
+
 		std::vector<OverlapPair> overlaps;
 		if (m_BPhase)
 		{
-			m_BPhase->ProduceOverlaps(geoms, &overlaps);
+			m_BPhase->ProduceOverlaps(m_GeometryWorldStates, &overlaps);
 		}
 
 		std::vector<ContactManifold*> manifolds;
 		if (m_NPhase && !overlaps.empty())
 		{
-			m_NPhase->CollisionDetection(geoms, overlaps, &manifolds);
+			m_NPhase->CollisionDetection(m_GeometryWorldStates, overlaps, &manifolds);
 		}
 
 		if (!manifolds.empty())
@@ -383,21 +459,49 @@ namespace Riemann
 	{
 		if (m_SceneQuery == SceneQueryType::DynamicAABB)
 		{
-			m_GeometryQuery->BuildDynamicGeometry(Objects);
+			std::vector<Box3> Bounds;
+			std::vector<Transform> ShapeToWorld;
+			std::vector<RigidBody*> Bodies;
+			Bounds.reserve(Objects.size());
+			ShapeToWorld.reserve(Objects.size());
+			Bodies.reserve(Objects.size());
+			for (Geometry* Object : Objects)
+			{
+				const GeometryWorldState State = UpdateGeometryWorldState(Object, m_Clock.tick);
+				Bounds.push_back(State.WorldBounds);
+				ShapeToWorld.push_back(State.ShapeToWorld);
+				Bodies.push_back(State.Body);
+			}
+			m_GeometryQuery->BuildDynamicGeometry(Objects, Bounds, ShapeToWorld, Bodies);
 			return;
 		}
 
-		m_GeometryQuery->BuildStaticGeometry(Objects, 5);
+		std::vector<Box3> Bounds;
+		std::vector<Transform> ShapeToWorld;
+		std::vector<RigidBody*> Bodies;
+		Bounds.reserve(Objects.size());
+		ShapeToWorld.reserve(Objects.size());
+		Bodies.reserve(Objects.size());
+		for (Geometry* Object : Objects)
+		{
+			const GeometryWorldState State = UpdateGeometryWorldState(Object, m_Clock.tick);
+			Bounds.push_back(State.WorldBounds);
+			ShapeToWorld.push_back(State.ShapeToWorld);
+			Bodies.push_back(State.Body);
+		}
+		m_GeometryQuery->BuildStaticGeometry(Objects, Bounds, ShapeToWorld, Bodies, 5);
 	}
 
 	void PhysicsWorld::AddGeometryToSceneQuery(Geometry* Object)
 	{
-		m_GeometryQuery->AddGeometry(Object);
+		const GeometryWorldState State = UpdateGeometryWorldState(Object, m_Clock.tick);
+		m_GeometryQuery->AddGeometry(Object, State.WorldBounds, State.ShapeToWorld, State.Body);
 	}
 
 	void PhysicsWorld::RemoveGeometryFromSceneQuery(Geometry* Object)
 	{
 		m_GeometryQuery->RemoveGeometry(Object);
+		RemoveGeometryWorldState(Object);
 	}
 
 	void PhysicsWorld::UpdateSceneQuery(RigidBodyDynamic* Body)
@@ -409,7 +513,11 @@ namespace Riemann
 
 		for (Geometry* g : Body->Geometries())
 		{
-			m_GeometryQuery->UpdateGeometry(g, Body->GetLinearVelocity());
+			const GeometryWorldState State = UpdateGeometryWorldState(g, m_Clock.tick);
+			if (State.Moved)
+			{
+				m_GeometryQuery->UpdateGeometry(g, State.WorldBounds, State.ShapeToWorld, State.Body, State.Displacement);
+			}
 		}
 	}
 
@@ -469,7 +577,8 @@ namespace Riemann
 
 	RigidBody* PhysicsWorld::CreateRigidBody(Geometry* Geom, const RigidBodyParam& param)
 	{
-		Transform init_pose(Geom->GetWorldPosition(), Geom->GetWorldRotation());
+		Transform init_pose(*Geom->GetTransform());
+		Geom->SetTransform(Vector3::Zero(), Quaternion::One());
 		RigidBody* body = CreateRigidBody(param, init_pose);
 		body->AddGeometry(Geom);
 
@@ -498,9 +607,9 @@ namespace Riemann
 				continue;
 			}
 
-			const Transform world_transform = *Geom->GetWorldTransform();
-			const Transform local_transform = init_transform.TransformInv(world_transform);
-			Geom->SetLocalTransform(local_transform.pos, local_transform.quat);
+			const Transform current_transform = *Geom->GetTransform();
+			const Transform local_transform = init_transform.TransformInv(current_transform);
+			Geom->SetTransform(local_transform.pos, local_transform.quat);
 			body->AddGeometry(Geom);
 
 			AddGeometryToSceneQuery(Geom);

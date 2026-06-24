@@ -55,6 +55,16 @@ namespace Maths
 			return *this;
 		}
 
+		inline bool operator==(const Quaternion& q) const
+		{
+			return x == q.x && y == q.y && z == q.z && w == q.w;
+		}
+
+		inline bool operator!=(const Quaternion& q) const
+		{
+			return !(*this == q);
+		}
+
 		inline Quaternion Conjugate() const
 		{
 			return Quaternion(-x, -y, -z, w);

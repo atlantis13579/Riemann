@@ -179,6 +179,7 @@ namespace Riemann
 			vp->InertiaMat = Mesh->mInertia;
 			vp->CenterOfMass = hull.mCenterOfMass;
 			vp->BoundingVolume = hull.mAABB.GetAABB();
+			Geom->UpdateBounds();
 			return Geom;
 		}
 
@@ -275,7 +276,14 @@ namespace Riemann
 					Geometry* g = CreateShape(pShades[i], shared_mem);
 					if (g)
 					{
-						g->SetWorldTransform(rigid->mRigidStatic.mStatic.mCore.body2World.p, rigid->mRigidStatic.mStatic.mCore.body2World.q);
+						if (bodies)
+						{
+							g->SetTransform(shape_local_pose.p, shape_local_pose.q);
+						}
+						else
+						{
+							g->SetTransform(p, q);
+						}
 						if (geoms) geoms->push_back(g);
 						if (bodies) body->AddGeometry(g);
 					}
@@ -322,7 +330,14 @@ namespace Riemann
 					Geometry* g = CreateShape(pShades[i], shared_mem);
 					if (g)
 					{
-						g->SetWorldTransform(p, q);
+						if (bodies)
+						{
+							g->SetTransform(shape_local_pose.p, shape_local_pose.q);
+						}
+						else
+						{
+							g->SetTransform(p, q);
+						}
 						if (geoms) geoms->push_back(g);
 						if (bodies) body->AddGeometry(g);
 					}

@@ -46,6 +46,17 @@ namespace Riemann
 			return !!file;
 		}
 
+		Transform GetGeometryWorldTransform(Geometry* geometry)
+		{
+			if (geometry == nullptr)
+			{
+				return Transform::Identity();
+			}
+
+			RigidBody* body = geometry->GetParent<RigidBody>();
+			return body ? body->GetGeometryTransform(geometry) : *geometry->GetTransform();
+		}
+
 		std::string DirectoryOf(const std::string& fileName)
 		{
 			const size_t pos = fileName.find_last_of("/\\");
@@ -284,7 +295,7 @@ namespace Riemann
 				return false;
 			}
 
-			const Box3& bounds = geometry->GetBoundingVolume_WorldSpace();
+			const Box3& bounds = geometry->GetBounds();
 			return bounds.MaxDim() < 200.0f;
 		}
 
@@ -1303,9 +1314,9 @@ namespace Riemann
 			{
 				continue;
 			}
-			const Vector3 oldPosition = piece.GeometryPtr->GetWorldPosition();
+			const Vector3 oldPosition = piece.GeometryPtr->GetPosition();
 			const Vector3 newPosition = piece.Center + piece.Direction * (m_CuttingSeparation * m_CuttingMaxSeparation);
-			piece.GeometryPtr->SetWorldPosition(newPosition);
+			piece.GeometryPtr->SetPosition(newPosition);
 			if (geometryQuery)
 			{
 				geometryQuery->UpdateGeometry(piece.GeometryPtr, newPosition - oldPosition);
@@ -1327,7 +1338,7 @@ namespace Riemann
 			}
 
 			RenderTransformUpdate update;
-			update.WorldTransform = *binding.GeometryPtr->GetWorldTransform();
+			update.WorldTransform = GetGeometryWorldTransform(binding.GeometryPtr);
 			for (const std::string& meshId : binding.MeshIds)
 			{
 				update.Id = meshId;
@@ -1708,14 +1719,7 @@ namespace Riemann
 
 	void WorldViewer::HandleSceneRay(const Ray3& ray)
 	{
-		PhysicsWorld* simulation = m_World ? m_World->GetSimulation() : nullptr;
-		if (simulation == nullptr)
-		{
-			return;
-		}
-
-		GeometryQuery* geometryQuery = simulation->GetGeometryQuery();
-		if (geometryQuery == nullptr)
+		if (m_World == nullptr)
 		{
 			return;
 		}
@@ -1726,7 +1730,14 @@ namespace Riemann
 		option.MaxDist = 1000.0f;
 
 		RayCastResult result;
-		const bool hit = geometryQuery->RayCastQuery(ray.Origin, ray.Dir, option, &result);
+		bool hit = false;
+		PhysicsWorld* simulation = m_World->GetSimulation();
+		GeometryQuery* geometryQuery = simulation ? simulation->GetGeometryQuery() : nullptr;
+		if (geometryQuery)
+		{
+			hit = geometryQuery->RayCastQuery(ray.Origin, ray.Dir, option, &result);
+		}
+
 		Geometry* hitGeometry = hit ? result.hitGeom : nullptr;
 		if (m_CuttingPanelActive && !m_CuttingPieces.empty() && !IsCurrentCuttingGeometry(hitGeometry))
 		{

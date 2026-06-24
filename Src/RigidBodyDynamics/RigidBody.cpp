@@ -11,6 +11,7 @@ namespace Riemann
 	{
 		mMaterialId = 0;
 		Parent = nullptr;
+		CM = Vector3::Zero();
 	}
 
 	RigidBody::~RigidBody()
@@ -57,15 +58,50 @@ namespace Riemann
 		return invInertiaWorld;
 	}
 
+	Vector3		RigidBody::BodyLocalToWorld(const Vector3& Position) const
+	{
+		return X + Q * (Position - CM);
+	}
+
+	Vector3		RigidBody::BodyLocalToWorldDirection(const Vector3& Direction) const
+	{
+		return Q * Direction;
+	}
+
+	Vector3		RigidBody::WorldToBodyLocal(const Vector3& Position) const
+	{
+		return Q.Conjugate() * (Position - X) + CM;
+	}
+
+	Vector3		RigidBody::WorldToBodyLocalDirection(const Vector3& Direction) const
+	{
+		return Q.Conjugate() * Direction;
+	}
+
+	Transform	RigidBody::GetGeometryTransform(const Geometry* Geom) const
+	{
+		if (Geom == nullptr)
+		{
+			return Transform::Identity();
+		}
+
+		const Transform* localTransform = Geom->GetTransform();
+		return Transform(BodyLocalToWorld(localTransform->pos), Q * localTransform->quat);
+	}
+
+	Box3		RigidBody::GetGeometryBounds(const Geometry* Geom) const
+	{
+		if (Geom == nullptr)
+		{
+			return Box3::Empty();
+		}
+
+		const Transform transform = GetGeometryTransform(Geom);
+		return Box3::Transform(Geom->GetShapeBounds(), transform.pos, transform.quat);
+	}
+
 	void RigidBody::UpdateGeometries()
 	{
-		for (Geometry* g : mGeometries)
-		{
-			const Transform* local_trans = g->GetLocalTransform();
-			Vector3 world_pos = X + Q * (local_trans->pos - CM);
-			Quaternion world_quat = Q * local_trans->quat;
-			g->SetWorldTransform(world_pos, world_quat);
-		}
 	}
 
 	void RigidBody::UpdateMassParameters()
@@ -81,7 +117,7 @@ namespace Riemann
 
 		for (Geometry* g : mGeometries)
 		{
-			vPose.emplace_back(g->GetLocalTransform());
+			vPose.emplace_back(g->GetTransform());
 			vProperties.push_back(g->GetMassParameters());
 		}
 
@@ -275,30 +311,17 @@ namespace Riemann
 	void RigidBodyKinematics::SetPosition(const Vector3& pos)
 	{
 		X = pos;
-		for (Geometry* g : mGeometries)
-		{
-			g->SetWorldPosition(pos);
-		}
 	}
 
 	void RigidBodyKinematics::SetRotation(const Quaternion& quat)
 	{
 		Q = quat;
-		for (Geometry* g : mGeometries)
-		{
-			g->SetWorldRotation(quat);
-			g->UpdateBoundingVolume();
-		}
 	}
 
 	void		RigidBodyKinematics::SetTransform(const Vector3& pos, const Quaternion& quat)
 	{
 		X = pos;
 		Q = quat;
-		for (Geometry* g : mGeometries)
-		{
-			g->SetWorldTransform(pos, quat);
-		}
 	}
 
 	void		GetAllGeometries(std::vector<RigidBody*> bodies, std::vector<Geometry*>* geometries)

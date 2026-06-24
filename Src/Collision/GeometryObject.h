@@ -49,70 +49,55 @@ namespace Riemann
 		Geometry();
 		virtual ~Geometry();
 
-		inline const Vector3& GetWorldPosition() const
+		inline const Vector3& GetPosition() const
 		{
-			return m_WorldTransform.pos;
+			return m_Transform.pos;
 		}
 
-		inline const Quaternion& GetWorldRotation() const
+		inline const Quaternion& GetRotation() const
 		{
-			return m_WorldTransform.quat;
+			return m_Transform.quat;
 		}
 
-		inline const Transform* GetWorldTransform() const
+		inline const Transform* GetTransform() const
 		{
-			return &m_WorldTransform;
+			return &m_Transform;
 		}
 
-		inline Transform* GetWorldTransform()
+		inline Transform* GetTransform()
 		{
-			return &m_WorldTransform;
+			return &m_Transform;
 		}
 
-		inline void				SetWorldPosition(const Vector3& Position)
+		inline void				SetPosition(const Vector3& Position)
 		{
-			m_WorldTransform.pos = Position;
-			UpdateBoundingVolume();
+			m_Transform.pos = Position;
+			UpdateBounds();
 		}
 
-		inline void				SetWorldRotation(const Quaternion& Rotation)
+		inline void				SetRotation(const Quaternion& Rotation)
 		{
-			m_WorldTransform.quat = Rotation;
-			UpdateBoundingVolume();
+			m_Transform.quat = Rotation;
+			UpdateBounds();
 		}
 
-		inline void				SetWorldTransform(const Vector3& Position, const Quaternion& Rotation)
+		inline void				SetTransform(const Vector3& Position, const Quaternion& Rotation)
 		{
-			m_WorldTransform.pos = Position;
-			m_WorldTransform.quat = Rotation;
-			UpdateBoundingVolume();
-		}
-
-		inline void				SetLocalPosition(const Vector3& Position)
-		{
-			m_LocalTransform.pos = Position;
-		}
-
-		inline void				SetLocalRotation(const Quaternion& Rotation)
-		{
-			m_LocalTransform.quat = Rotation;
-		}
-
-		inline void				SetLocalTransform(const Vector3& Position, const Quaternion& Rotation)
-		{
-			m_LocalTransform.pos = Position;
-			m_LocalTransform.quat = Rotation;
-		}
-
-		inline const Transform* GetLocalTransform() const
-		{
-			return &m_LocalTransform;
+			m_Transform.pos = Position;
+			m_Transform.quat = Rotation;
+			UpdateBounds();
 		}
 
 		template<class T>
 		inline T* GetParent()
 		{
 			return static_cast<T*>(m_Parent);
+		}
+
+		template<class T>
+		inline const T* GetParent() const
+		{
+			return static_cast<const T*>(m_Parent);
 		}
 
 		inline void				SetParent(void* parent)
@@ -125,19 +110,20 @@ namespace Riemann
 			return &m_VolumeProperties;
 		}
 
-		inline const Box3& GetBoundingVolume_WorldSpace() const
+		inline const Box3& GetBounds() const
 		{
-			return m_BoxWorld;
+			return m_Bounds;
 		}
 
-		inline const Box3& GetBoundingVolume_LocalSpace() const
+		inline const Box3& GetShapeBounds() const
 		{
 			return m_VolumeProperties.BoundingVolume;
 		}
 
-		inline void				SetBoundingVolume_LocalSpace(const Box3& box)
+		inline void				SetShapeBounds(const Box3& box)
 		{
 			m_VolumeProperties.BoundingVolume = box;
+			UpdateBounds();
 		}
 
 		inline PrimitiveType		GetShapeType() const
@@ -193,18 +179,22 @@ namespace Riemann
 
 		static Transform		CalculateCenterOfMassPoseMultibody(const std::vector<Geometry*>& geoms);
 
+		virtual bool			RayCast(const Transform& ShapeTransform, const Vector3& Origin, const Vector3& Dir, const RayCastOption* Option, RayCastResult* Result) const = 0;
 		virtual bool			RayCast(const Vector3& Origin, const Vector3& Dir, const RayCastOption* Option, RayCastResult* Result) const = 0;
+		bool					Intersect(const Transform& ShapeTransform, const Geometry* Geom, const Transform& GeomTransform) const;
 		bool					Intersect(const Geometry* Geom) const;
 		bool					Penetration(const Geometry* Geom, Vector3* Normal, float* Depth) const;
+		bool					SweepTestFast(const Transform& ShapeTransform, const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const;
 		bool					SweepTestFast(const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const;
+		bool					Sweep(const Transform& ShapeTransform, const Vector3& Direction, const Geometry* Geom, const Transform& GeomTransform, Vector3* position, Vector3* normal, float* t) const;
 		bool					Sweep(const Vector3& Direction, const Geometry* Geom, Vector3* position, Vector3* normal, float* t) const;
 
 		virtual void			UpdateVolumeProperties() = 0;
-		void					UpdateBoundingVolume();
+		void					UpdateBounds();
 
-		Vector3					GetCenter_WorldSpace() const;
-		Vector3					GetSupport_WorldSpace(const Vector3& Direction) const;
-		void					GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const;
+		Vector3					GetCenter() const;
+		Vector3					GetSupport(const Vector3& Direction) const;
+		void					GetSupportFace(const Vector3& Direction, SupportFace& Face) const;
 		Matrix3					GetInertiaTensor_LocalSpace() const;
 
 	private:
@@ -226,9 +216,8 @@ namespace Riemann
 
 	protected:
 		PrimitiveType		m_Type;
-		Box3				m_BoxWorld;
-		Transform			m_WorldTransform;
-		Transform			m_LocalTransform;
+		Box3				m_Bounds;
+		Transform			m_Transform;
 		CollisionData		m_FilterData;
 		MassParameters		m_VolumeProperties;
 		float				m_Density;

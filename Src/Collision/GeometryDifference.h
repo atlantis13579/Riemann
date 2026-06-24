@@ -16,22 +16,22 @@ namespace Riemann
 
 		virtual Vector3 Center() const override
 		{
-			return Geom1->GetCenter_WorldSpace();
+			return Geom1->GetCenter();
 		}
 
 		virtual Vector3 Support(const Vector3& Direction) const override
 		{
-			return Geom1->GetSupport_WorldSpace(Direction);
+			return Geom1->GetSupport(Direction);
 		}
 
 		Vector3 GetCenter() const
 		{
-			return Geom1->GetCenter_WorldSpace();
+			return Geom1->GetCenter();
 		}
 
 		Vector3 GetSupport(const Vector3& Direction) const
 		{
-			return Geom1->GetSupport_WorldSpace(Direction);
+			return Geom1->GetSupport(Direction);
 		}
 	};
 
@@ -47,18 +47,18 @@ namespace Riemann
 
 		inline Vector3 Support1(const Vector3& Direction) const
 		{
-			return Geom1->GetSupport_WorldSpace(Direction);
+			return Geom1->GetSupport(Direction);
 		}
 
 		inline Vector3 Support2(const Vector3& Direction) const
 		{
-			return Geom2->GetSupport_WorldSpace(Direction);
+			return Geom2->GetSupport(Direction);
 		}
 
 		virtual Vector3 Center() const override
 		{
-			const Vector3 position1 = Geom1->GetCenter_WorldSpace();
-			const Vector3 position2 = Geom2->GetCenter_WorldSpace();
+			const Vector3 position1 = Geom1->GetCenter();
+			const Vector3 position2 = Geom2->GetCenter();
 			return position1 - position2;
 		}
 

@@ -30,6 +30,7 @@
     <ClCompile Include="..\..\Src\Destruction\GraphPartition.cpp" />
     <ClCompile Include="..\..\Src\Destruction\StrainSolver.cpp" />
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\ConvexDecomposition.cpp" />
     <ClCompile Include="..\..\Src\Geometry\ConvexHull2.cpp" />
     <ClCompile Include="..\..\Src\Geometry\ConvexHull3.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Delaunay.cpp" />
@@ -130,6 +131,7 @@
     <ClInclude Include="..\..\Src\Geometry\MeshCut.h" />
     <ClInclude Include="..\..\Src\Destruction\StrainSolver.h" />
     <ClInclude Include="..\..\Src\Destruction\VoronoiTessellation.h" />
+    <ClInclude Include="..\..\Src\Geometry\ConvexDecomposition.h" />
     <ClInclude Include="..\..\Src\Geometry\ConvexHull2.h" />
     <ClInclude Include="..\..\Src\Geometry\ConvexHull3.h" />
     <ClInclude Include="..\..\Src\Geometry\Delaunay.h" />
@@ -216,6 +218,7 @@
     <ClInclude Include="..\..\Src\Maths\Index3.h" />
     <ClInclude Include="..\..\Src\Maths\Matrix2.h" />
     <ClInclude Include="..\..\Src\Maths\MatrixMxN.h" />
+    <ClInclude Include="..\..\Src\Maths\SobolSequences.h" />
     <ClInclude Include="..\..\Src\Maths\Tensor.h" />
     <ClInclude Include="..\..\Src\Maths\SIMD.h" />
     <ClInclude Include="..\..\Src\Maths\Vector2.h" />

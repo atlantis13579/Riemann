@@ -47,14 +47,14 @@ namespace Riemann
 
 				const MassParameters* Mass = Geom->GetMassParameters();
 				const float ShapeMass = Mass ? std::max(Mass->Mass, 1e-3f) : 1.0f;
-				const Vector3 ShapeCenter = Geom->GetWorldTransform()->LocalToWorld(Mass ? Mass->CenterOfMass : Vector3::Zero());
+				const Vector3 ShapeCenter = Geom->GetTransform()->LocalToWorld(Mass ? Mass->CenterOfMass : Vector3::Zero());
 				Center += ShapeCenter * ShapeMass;
 				TotalMass += ShapeMass;
 			}
 
 			Maths::Transform WorldTransform;
 			WorldTransform.pos = TotalMass > 1e-6f ? Center / TotalMass : FallbackCenter;
-			WorldTransform.quat = Geometries.size() == 1 && FirstGeometry ? FirstGeometry->GetWorldRotation() : Quaternion::One();
+			WorldTransform.quat = Geometries.size() == 1 && FirstGeometry ? FirstGeometry->GetRotation() : Quaternion::One();
 			return WorldTransform;
 		}
 
@@ -93,7 +93,7 @@ namespace Riemann
 						Chunk.CollisionConvex->Indices, Chunk.CollisionConvex->NumIndices,
 						false);
 					Geom->UpdateVolumeProperties();
-					Geom->SetWorldTransform(Chunk.Centroid, Quaternion::One());
+					Geom->SetTransform(Chunk.Centroid, Quaternion::One());
 					return Geom;
 				}
 
@@ -278,9 +278,9 @@ namespace Riemann
 		Box3 Bounds = Box3::Empty();
 		for (Geometry* Geom : Geometries)
 		{
-			const Maths::Transform LocalTransform = ClusterWorldTransform.TransformInv(*Geom->GetWorldTransform());
+			const Maths::Transform LocalTransform = ClusterWorldTransform.TransformInv(*Geom->GetTransform());
 			mLocalTransforms.push_back(LocalTransform);
-			Bounds.Encapsulate(Geom->GetBoundingVolume_WorldSpace());
+			Bounds.Encapsulate(Geom->GetBounds());
 		}
 		mLocalBounds = Bounds;
 

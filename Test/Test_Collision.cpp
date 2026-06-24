@@ -82,8 +82,8 @@ namespace
 		Geometry* geom = GeometryFactory::CreateConvexMesh();
 		ConvexMesh* convex = geom->GetShapeObj<ConvexMesh>();
 		convex->SetConvexData(Vertices, 8, Faces, 6, nullptr, 0, Indices, 24, true);
-		geom->SetBoundingVolume_LocalSpace(convex->Bounds);
-		geom->SetWorldTransform(Center, Quaternion::One());
+		geom->SetShapeBounds(convex->Bounds);
+		geom->SetTransform(Center, Quaternion::One());
 		return geom;
 	}
 
@@ -94,8 +94,8 @@ namespace
 		mesh->AddAABB(Vector3(-0.5f), Vector3(0.5f));
 		mesh->Compact();
 		mesh->BuildBVH();
-		geom->SetBoundingVolume_LocalSpace(mesh->BoundingVolume);
-		geom->SetWorldTransform(Center, Quaternion::One());
+		geom->SetShapeBounds(mesh->BoundingVolume);
+		geom->SetTransform(Center, Quaternion::One());
 		return geom;
 	}
 
@@ -104,8 +104,8 @@ namespace
 		Geometry* geom = GeometryFactory::CreateHeightField(Box3(Vector3(-1.0f, -0.1f, -1.0f), Vector3(1.0f, 0.1f, 1.0f)), 3, 3);
 		HeightField3* hf = geom->GetShapeObj<HeightField3>();
 		hf->AllocMemory();
-		geom->SetBoundingVolume_LocalSpace(hf->BV);
-		geom->SetWorldTransform(Center, Quaternion::One());
+		geom->SetShapeBounds(hf->BV);
+		geom->SetTransform(Center, Quaternion::One());
 		return geom;
 	}
 
@@ -326,7 +326,7 @@ void TestDynamicAABB()
 	for (int i = 0; i < 128; ++i)
 	{
 		Geometry* obb = GeometryFactory::CreateOBB(Vector3::Random() * 10.0f, Vector3::One(), Quaternion::One());
-		int id = tree.Add(obb->GetBoundingVolume_WorldSpace(), obb);
+		int id = tree.Add(obb->GetBounds(), obb);
 		EXPECT(tree.Validate());
 		geoms.emplace_back(obb, id);
 		
@@ -341,7 +341,7 @@ void TestDynamicAABB()
 			{
 				if (r == 0)
 				{
-					geoms[i].id = tree.Add(geoms[i].p->GetBoundingVolume_WorldSpace(), geoms[i].p);
+					geoms[i].id = tree.Add(geoms[i].p->GetBounds(), geoms[i].p);
 				}
 			}
 			else
@@ -353,9 +353,9 @@ void TestDynamicAABB()
 				}
 				else
 				{
-					geoms[i].p->SetWorldPosition(Vector3::Random() * 10.0f);
-					geoms[i].p->UpdateBoundingVolume();
-					tree.Update(geoms[i].id, geoms[i].p->GetBoundingVolume_WorldSpace(), Vector3::UnitY());
+					geoms[i].p->SetPosition(Vector3::Random() * 10.0f);
+					geoms[i].p->UpdateBounds();
+					tree.Update(geoms[i].id, geoms[i].p->GetBounds(), Vector3::UnitY());
 				}
 			}
 			
@@ -375,25 +375,25 @@ void TestSupport()
 	
 	Vector3 support;
 
-	support = obb2->GetSupport_WorldSpace(Vector3::UnitX());
+	support = obb2->GetSupport(Vector3::UnitX());
 	EXPECT(fabsf(support.x - 1.0f) < 0.1f);
 	
-	support = obb2->GetSupport_WorldSpace(-Vector3::UnitX());
+	support = obb2->GetSupport(-Vector3::UnitX());
 	EXPECT(fabsf(support.x + 1.0f) < 0.1f);
 	
-	support = obb2->GetSupport_WorldSpace(Vector3::UnitY());
+	support = obb2->GetSupport(Vector3::UnitY());
 	EXPECT(fabsf(support.y - 1.0f) < 0.1f);
 	
-	obb2->SetWorldPosition(Vector3(5.0f, 0.0f, 0.0f));
-	support = obb2->GetSupport_WorldSpace(Vector3::UnitX());
+	obb2->SetPosition(Vector3(5.0f, 0.0f, 0.0f));
+	support = obb2->GetSupport(Vector3::UnitX());
 	EXPECT(fabsf(support.x - 6.0f) < 0.1f);
 	
 	Quaternion quat;
 	quat.FromRotationAxis(Vector3::UnitZ(), PI_OVER_4);
-	obb2->SetWorldRotation(quat);
-	support = obb2->GetSupport_WorldSpace(Vector3::UnitX());
+	obb2->SetRotation(quat);
+	support = obb2->GetSupport(Vector3::UnitX());
 	EXPECT(fabsf(support.x - (5.0f + SQRT_2)) < 0.1f);
-	support = obb2->GetSupport_WorldSpace(Vector3::UnitY());
+	support = obb2->GetSupport(Vector3::UnitY());
 	EXPECT(fabsf(support.y - SQRT_2) < 0.1f);
 	return;
 }
@@ -407,10 +407,10 @@ void TestGJK()
 	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 	EXPECT(GJK_Solve(obb1, obb2));
 
-	obb2->SetWorldPosition(Vector3(0.5f, 0.0f, 0.0f));
+	obb2->SetPosition(Vector3(0.5f, 0.0f, 0.0f));
 	EXPECT(GJK_Solve(obb1, obb2));
 	
-	obb2->SetWorldPosition(Vector3(0.0f, 2.1f, 0.0f));
+	obb2->SetPosition(Vector3(0.0f, 2.1f, 0.0f));
 	EXPECT(!GJK_Solve(obb1, obb2));
 	
 	EXPECT(GJK_Solve(obb1, plane1));
@@ -420,11 +420,11 @@ void TestGJK()
 	
 	Quaternion quat;
 	quat.FromRotationAxis(Vector3::UnitX(), PI_OVER_4);
-	obb2->SetWorldRotation(quat);
+	obb2->SetRotation(quat);
 	EXPECT(GJK_Solve(obb2, obb1));
 	EXPECT(GJK_Solve(obb1, obb2));
 	
-	obb2->SetWorldPosition(Vector3(0.0f, 1.1f, 0.0f));
+	obb2->SetPosition(Vector3(0.0f, 1.1f, 0.0f));
 	EXPECT(GJK_Solve(obb2, plane1));
 	EXPECT(GJK_Solve(plane1, obb2));
 	
@@ -433,7 +433,7 @@ void TestGJK()
 	EXPECT(GJK_Solve(sp1, sp2));
 	EXPECT(GJK_Solve(sp1, plane1));
 	
-	sp2->SetWorldPosition(Vector3(0.0f, 5.0f, 0.0f));
+	sp2->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
 	EXPECT(!GJK_Solve(sp1, sp2));
 	EXPECT(!GJK_Solve(plane1, sp2));
 
@@ -462,7 +462,7 @@ void TestEPA()
 	// GeometryBase* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, -5.0f, 0.0f), Vector3::UnitY(), 1.0f);
 	Geometry* plane1 = GeometryFactory::CreateOBB(Vector3(0.0f, -5.0f, 0.0f), Vector3(100.0f, 1.0f, 100.0f), Quaternion::One());
 	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One() * 1.0f, Quaternion::One());
-	obb1->SetWorldPosition(Vector3(0.0f, -3.7f, 0.0f));
+	obb1->SetPosition(Vector3(0.0f, -3.7f, 0.0f));
 
 	GJKIntersection gjk;
 	GJK_status gjk_status;
@@ -478,13 +478,13 @@ void TestEPA()
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
 
-	obb1->SetWorldPosition(Vector3(20.0f, -3.7f, 0.0f));
+	obb1->SetPosition(Vector3(20.0f, -3.7f, 0.0f));
 	gjk_status = gjk.Solve(&shape);
 	EXPECT(gjk_status == GJK_status::Intersect);
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
 
-	obb1->SetWorldPosition(Vector3(-20.0f, -3.7f, 0.0f));
+	obb1->SetPosition(Vector3(-20.0f, -3.7f, 0.0f));
 	gjk_status = gjk.Solve(&shape);
 	EXPECT(gjk_status == GJK_status::Intersect);
 	epa_status = epa.Solve(gjk.result);
@@ -621,10 +621,10 @@ void TestOBB()
 
 		Quaternion quat;
 		quat.FromRotateZ(PI_OVER_4);
-		obb2->SetWorldRotation(quat);
+		obb2->SetRotation(quat);
 		EXPECT(!obb1->Intersect(obb2));
 
-		obb1->SetWorldRotation(quat);
+		obb1->SetRotation(quat);
 		EXPECT(obb1->Intersect(obb2));
 	}
 
@@ -640,11 +640,11 @@ void TestIntersect()
 	EXPECT(obb1->Intersect(obb2));
 	EXPECT(obb2->Intersect(obb1));
 
-	obb2->SetWorldPosition(Vector3(0.5f, 0.0f, 0.0f));
+	obb2->SetPosition(Vector3(0.5f, 0.0f, 0.0f));
 	EXPECT(obb1->Intersect(obb2));
 	EXPECT(obb2->Intersect(obb1));
 	
-	obb2->SetWorldPosition(Vector3(0.0f, 2.1f, 0.0f));
+	obb2->SetPosition(Vector3(0.0f, 2.1f, 0.0f));
 	EXPECT(!obb1->Intersect(obb2));
 	EXPECT(!obb2->Intersect(obb1));
 	
@@ -655,11 +655,11 @@ void TestIntersect()
 	
 	Quaternion quat;
 	quat.FromRotationAxis(Vector3::UnitX(), PI_OVER_4);
-	obb2->SetWorldRotation(quat);
+	obb2->SetRotation(quat);
 	EXPECT(obb1->Intersect(obb2));
 	EXPECT(obb2->Intersect(obb1));
 	
-	obb2->SetWorldPosition(Vector3(0.0f, 1.1f, 0.0f));
+	obb2->SetPosition(Vector3(0.0f, 1.1f, 0.0f));
 	EXPECT(plane1->Intersect(obb2));
 	EXPECT(obb2->Intersect(plane1));
 	
@@ -670,7 +670,7 @@ void TestIntersect()
 	EXPECT(sp1->Intersect(plane1));
 	EXPECT(plane1->Intersect(sp1));
 	
-	sp2->SetWorldPosition(Vector3(0.0f, 5.0f, 0.0f));
+	sp2->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
 	EXPECT(!sp1->Intersect(sp2));
 	EXPECT(!sp2->Intersect(sp1));
 	EXPECT(!plane1->Intersect(sp2));
@@ -773,11 +773,11 @@ void TestGeometryIntersectMatrix()
 				continue;
 			}
 
-			const Box3& lhsBox = lhs.Geom->GetBoundingVolume_WorldSpace();
-			const Box3& rhsLocalBox = rhs.Geom->GetBoundingVolume_LocalSpace();
+			const Box3& lhsBox = lhs.Geom->GetBounds();
+			const Box3& rhsLocalBox = rhs.Geom->GetShapeBounds();
 			const float touchY = lhsBox.Max.y - rhsLocalBox.Min.y;
 
-			rhs.Geom->SetWorldPosition(Vector3(0.0f, touchY + boundaryEps, 0.0f));
+			rhs.Geom->SetPosition(Vector3(0.0f, touchY + boundaryEps, 0.0f));
 			const bool nearMiss = lhs.Geom->Intersect(rhs.Geom);
 			if (nearMiss)
 			{
@@ -785,7 +785,7 @@ void TestGeometryIntersectMatrix()
 			}
 			EXPECT(!nearMiss);
 
-			rhs.Geom->SetWorldPosition(Vector3(0.0f, touchY - boundaryEps, 0.0f));
+			rhs.Geom->SetPosition(Vector3(0.0f, touchY - boundaryEps, 0.0f));
 			const bool nearHit = lhs.Geom->Intersect(rhs.Geom);
 			if (!nearHit)
 			{
@@ -793,7 +793,7 @@ void TestGeometryIntersectMatrix()
 			}
 			EXPECT(nearHit);
 
-			rhs.Geom->SetWorldPosition(Vector3::Zero());
+			rhs.Geom->SetPosition(Vector3::Zero());
 		}
 	}
 
@@ -818,7 +818,7 @@ void TestGeometrySweepTypes()
 		Vector3 normal = Vector3::Zero();
 		float t = -1.0f;
 		const bool expected = ExpectSweepHit(sample.Type);
-		sample.Geom->SetWorldPosition(Vector3(0.0f, 5.0f, 0.0f));
+		sample.Geom->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
 		const bool hit = sample.Geom->Sweep(-Vector3::UnitY(), target, &position, &normal, &t);
 		if (hit != expected)
 		{
@@ -840,8 +840,8 @@ void TestGeometrySweepTypes()
 			}
 			EXPECT(!awayHit);
 
-			const float touchY = -sample.Geom->GetBoundingVolume_LocalSpace().Min.y;
-			sample.Geom->SetWorldPosition(Vector3(0.0f, touchY, 0.0f));
+			const float touchY = -sample.Geom->GetShapeBounds().Min.y;
+			sample.Geom->SetPosition(Vector3(0.0f, touchY, 0.0f));
 			position = Vector3::Zero();
 			normal = Vector3::Zero();
 			t = -1.0f;
@@ -1079,15 +1079,15 @@ public:
 
 	virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const override
 	{
-		const Box3& box = m_objs->at(bv_i)->GetBoundingVolume_WorldSpace();
+		const Box3& box = m_objs->at(bv_i)->GetBounds();
 		float* p = (float*)&box;
 		return left ? p + axis : p + 3 + axis;
 	}
 
 	virtual bool	Overlaps(int bv_i, int bv_j) const override
 	{
-		const Box3& box1 = m_objs->at(bv_i)->GetBoundingVolume_WorldSpace();
-		const Box3& box2 = m_objs->at(bv_j)->GetBoundingVolume_WorldSpace();
+		const Box3& box1 = m_objs->at(bv_i)->GetBounds();
+		const Box3& box2 = m_objs->at(bv_j)->GetBounds();
 		return box1.Intersect(box2);
 	}
 
@@ -1115,16 +1115,16 @@ void TestSAPInc()
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 0);
 
-	boxes[2]->SetWorldPosition(boxes[2]->GetWorldPosition() + Vector3(-10, -10, -10));
-	boxes[2]->UpdateBoundingVolume();
+	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3(-10, -10, -10));
+	boxes[2]->UpdateBounds();
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 2);
 
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 2);
 
-	boxes[2]->SetWorldPosition(boxes[2]->GetWorldPosition() + Vector3(10, 10, 10));
-	boxes[2]->UpdateBoundingVolume();
+	boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3(10, 10, 10));
+	boxes[2]->UpdateBounds();
 	sap.IncrementalPrune(&overlaps);
 	EXPECT(overlaps.size() == 0);
 
@@ -1138,8 +1138,8 @@ void TestSAPInc()
 
 	for (int k = 0; k < 10; ++k)
 	{
-		boxes[2]->SetWorldPosition(boxes[2]->GetWorldPosition() + Vector3::Random() * 20.0f);
-		boxes[2]->UpdateBoundingVolume();
+		boxes[2]->SetPosition(boxes[2]->GetPosition() + Vector3::Random() * 20.0f);
+		boxes[2]->UpdateBounds();
 		sap.IncrementalPrune(&overlaps);
 
 		for (size_t i = 0; i < boxes.size(); ++i)
@@ -1147,7 +1147,7 @@ void TestSAPInc()
 		{
 			if (i == j) continue;
 			OverlapKey key = SAP::PackOverlapKey((int)i, (int)j);
-			if (boxes[i]->GetBoundingVolume_WorldSpace().Intersect(boxes[j]->GetBoundingVolume_WorldSpace()))
+			if (boxes[i]->GetBounds().Intersect(boxes[j]->GetBounds()))
 			{
 				EXPECT(overlaps.count(key) == 1);
 			}
@@ -1191,6 +1191,48 @@ static std::set<OverlapKey> ToBroadPhasePairSet(const std::vector<OverlapPair>& 
 	return result;
 }
 
+static GeometryWorldState MakeGeometryWorldState(Geometry* geom)
+{
+	GeometryWorldState state;
+	state.Geom = geom;
+	state.FrameId = 1;
+	state.Version = 1;
+	state.Moved = true;
+	state.WorldBounds = Box3::Empty();
+	if (geom == nullptr)
+	{
+		return state;
+	}
+
+	state.Body = geom->GetParent<RigidBody>();
+	if (state.Body)
+	{
+		state.BodyToWorld = Transform(state.Body->BodyLocalToWorld(Vector3::Zero()), state.Body->Q);
+		state.ShapeToWorld = state.Body->GetGeometryTransform(geom);
+		state.WorldBounds = Box3::Transform(geom->GetShapeBounds(), state.ShapeToWorld.pos, state.ShapeToWorld.quat);
+		state.MovingRigid = state.Body->mRigidType != RigidType::Static;
+	}
+	else
+	{
+		state.BodyToWorld = Transform::Identity();
+		state.ShapeToWorld = *geom->GetTransform();
+		state.WorldBounds = geom->GetBounds();
+		state.MovingRigid = false;
+	}
+	return state;
+}
+
+static std::vector<GeometryWorldState> MakeGeometryWorldStates(const std::vector<Geometry*>& geoms)
+{
+	std::vector<GeometryWorldState> states;
+	states.reserve(geoms.size());
+	for (Geometry* geom : geoms)
+	{
+		states.push_back(MakeGeometryWorldState(geom));
+	}
+	return states;
+}
+
 void TestPhysXBroadPhasePorts()
 {
 	printf("Running TestPhysXBroadPhasePorts\n");
@@ -1219,11 +1261,13 @@ void TestPhysXBroadPhasePorts()
 	bodies.push_back(largeBody);
 	largeBody->GetGeometries(&geoms);
 
+	std::vector<GeometryWorldState> states = MakeGeometryWorldStates(geoms);
+
 	DynamicAABBTree dynamicTree;
-	for (Geometry* geom : geoms)
+	for (size_t i = 0; i < geoms.size(); ++i)
 	{
-		const int nodeId = dynamicTree.Add(geom->GetBoundingVolume_WorldSpace(), geom);
-		geom->SetNodeId(nodeId);
+		const int nodeId = dynamicTree.Add(states[i].WorldBounds, geoms[i]);
+		geoms[i]->SetNodeId(nodeId);
 	}
 
 	BroadPhase* bruteforce = BroadPhase::Create_Bruteforce();
@@ -1237,11 +1281,11 @@ void TestPhysXBroadPhasePorts()
 	std::vector<OverlapPair> abpPairs;
 	std::vector<OverlapPair> mbpPairs;
 	std::vector<OverlapPair> dynamicAABBPairs;
-	bruteforce->ProduceOverlaps(geoms, &brutePairs);
-	sap->ProduceOverlaps(geoms, &sapPairs);
-	abp->ProduceOverlaps(geoms, &abpPairs);
-	mbp->ProduceOverlaps(geoms, &mbpPairs);
-	dynamicAABB->ProduceOverlaps(geoms, &dynamicAABBPairs);
+	bruteforce->ProduceOverlaps(states, &brutePairs);
+	sap->ProduceOverlaps(states, &sapPairs);
+	abp->ProduceOverlaps(states, &abpPairs);
+	mbp->ProduceOverlaps(states, &mbpPairs);
+	dynamicAABB->ProduceOverlaps(states, &dynamicAABBPairs);
 
 	const std::set<OverlapKey> bruteSet = ToBroadPhasePairSet(brutePairs);
 	EXPECT(ToBroadPhasePairSet(sapPairs) == bruteSet);
@@ -1381,8 +1425,9 @@ void TestPhysicsWorldSceneQueryTrees()
 		geoms.push_back(sensorGeom);
 
 		BroadPhase* broadphase = BroadPhase::Create_Bruteforce();
+		std::vector<GeometryWorldState> states = MakeGeometryWorldStates(geoms);
 		std::vector<OverlapPair> overlaps;
-		broadphase->ProduceOverlaps(geoms, &overlaps);
+		broadphase->ProduceOverlaps(states, &overlaps);
 		EXPECT(overlaps.empty());
 		delete broadphase;
 
@@ -1400,6 +1445,45 @@ void TestPhysicsWorldSceneQueryTrees()
 		dynamicBody->ReleaseGeometries();
 		delete staticBody;
 		delete dynamicBody;
+	}
+}
+
+void TestPhysicsWorldSceneQueryRigidBodyShapeTransform()
+{
+	printf("Running TestPhysicsWorldSceneQueryRigidBodyShapeTransform\n");
+
+	for (int i = 0; i < 2; ++i)
+	{
+		PhysicsWorldParam param;
+		param.sceneQueryType = i == 0 ? SceneQueryType::StaticAABB : SceneQueryType::DynamicAABB;
+		PhysicsWorld world(param);
+
+		RigidBodyParam bodyParam;
+		bodyParam.rigidType = RigidType::Static;
+		Geometry* geom = GeometryFactory::CreateSphere(Vector3(11.0f, 0.0f, 0.0f), 1.0f);
+		std::vector<Geometry*> geoms;
+		geoms.push_back(geom);
+
+		RigidBody* body = world.CreateRigidBody(geoms, bodyParam, Transform(Vector3(10.0f, 0.0f, 0.0f), Quaternion::One()));
+		EXPECT(body != nullptr);
+		EXPECT(geom->GetPosition() == Vector3(1.0f, 0.0f, 0.0f));
+
+		RayCastOption option;
+		option.Type = RayCastOption::RAYCAST_NEAREST;
+		option.HitBothSides = true;
+
+		RayCastResult worldResult;
+		const bool worldHit = world.GetGeometryQuery()->RayCastQuery(Vector3(11.0f, 0.0f, 5.0f), Vector3(0.0f, 0.0f, -1.0f), option, &worldResult);
+		EXPECT(worldHit);
+		EXPECT(worldResult.hitGeom == geom);
+
+		RayCastResult localResult;
+		const bool localHit = world.GetGeometryQuery()->RayCastQuery(Vector3(1.0f, 0.0f, 5.0f), Vector3(0.0f, 0.0f, -1.0f), option, &localResult);
+		EXPECT(!localHit);
+
+		EXPECT(world.RemoveRigidBody(body));
+		body->ReleaseGeometries();
+		delete body;
 	}
 }
 
@@ -1430,5 +1514,6 @@ void TestCollision()
 	TestSAPInc();
 	TestPhysXBroadPhasePorts();
 	TestPhysicsWorldSceneQueryTrees();
+	TestPhysicsWorldSceneQueryRigidBodyShapeTransform();
 	return;
 }

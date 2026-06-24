@@ -164,7 +164,7 @@ namespace Riemann
 		return -1;
 	}
 
-	static int RayIntersectGeometries(const Ray3& Ray, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Box3& BV, const RayCastOption* Option, RayCastResult* Result)
+	static int RayIntersectGeometries(const Ray3& Ray, int* Geoms, int NumGeoms, Geometry** GeometryCollection, const Box3& BV, const RayCastOption* Option, RayCastResult* Result, AABBRayCastCallback Callback, void* Context)
 	{
 		assert(NumGeoms > 0);
 
@@ -198,7 +198,9 @@ namespace Riemann
 				continue;
 			}
 
-			const bool hit = Geom->RayCast(Ray.Origin, Ray.Dir, Option, Result);
+			const bool hit = Callback
+				? Callback(Ray, Geom, Option, Result, Context)
+				: Geom->RayCast(Ray.Origin, Ray.Dir, Option, Result);
 			if (hit)
 			{
 				if (Option->Type == RayCastOption::RAYCAST_ANY)
@@ -232,12 +234,14 @@ namespace Riemann
 		return min_idx;
 	}
 
-	bool RayIntersectCacheObj(const Ray3& Ray, const RayCastOption* Option, RayCastResult* Result)
+	bool RayIntersectCacheObj(const Ray3& Ray, const RayCastOption* Option, RayCastResult* Result, AABBRayCastCallback Callback, void* Context)
 	{
 		const RayCastCache& Cache = Option->Cache;
 		if (Cache.prevhitGeom)
 		{
-			bool hit = Cache.prevhitGeom->RayCast(Ray.Origin, Ray.Dir, Option, Result);
+			bool hit = Callback
+				? Callback(Ray, Cache.prevhitGeom, Option, Result, Context)
+				: Cache.prevhitGeom->RayCast(Ray.Origin, Ray.Dir, Option, Result);
 			if (hit)
 			{
 				Result->hit = true;
@@ -262,6 +266,11 @@ namespace Riemann
 
 	bool  AABBTree::RayCast(const Ray3& Ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const
 	{
+		return RayCast(Ray, ObjectCollection, Option, Result, nullptr, nullptr);
+	}
+
+	bool  AABBTree::RayCast(const Ray3& Ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult* Result, AABBRayCastCallback Callback, void* Context) const
+	{
 		Result->hit = false;
 		Result->hitTestCount = 0;
 		Result->hitTimeMin = FLT_MAX;
@@ -271,7 +280,7 @@ namespace Riemann
 			return false;
 		}
 
-		if (RayIntersectCacheObj(Ray, Option, Result))
+		if (RayIntersectCacheObj(Ray, Option, Result, Callback, Context))
 		{
 			if (Option->Type == RayCastOption::RAYCAST_ANY)
 			{
@@ -307,7 +316,7 @@ namespace Riemann
 					int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 					const int	 nPrimitives = p->GetNumGeometries();
 					const Box3& Box = p->GetBoundingVolume();
-					const int HitId = RayIntersectGeometries(Ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result);
+					const int HitId = RayIntersectGeometries(Ray, PrimitiveIndices, nPrimitives, ObjectCollection, Box, Option, Result, Callback, Context);
 					if (HitId >= 0)
 					{
 						if (Option->Type == RayCastOption::RAYCAST_ANY)
@@ -405,7 +414,7 @@ namespace Riemann
 		return RayCast(ray, nullptr, &Option, Result);
 	}
 
-	static bool OverlapGeometries(const Geometry* geometry, int* Indices, int NumIndices, Geometry** GeometryCollection, const IntersectOption* Option, IntersectResult* Result)
+	static bool OverlapGeometries(const Geometry* geometry, int* Indices, int NumIndices, Geometry** GeometryCollection, const IntersectOption* Option, IntersectResult* Result, AABBIntersectCallback Callback, void* Context)
 	{
 		assert(NumIndices > 0);
 		if (GeometryCollection == nullptr)
@@ -425,7 +434,9 @@ namespace Riemann
 
 			Result->AddTestCount(1);
 
-			bool overlap = geometry->Intersect(candidate);
+			bool overlap = Callback
+				? Callback(geometry, candidate, Option, Result, Context)
+				: geometry->Intersect(candidate);
 			if (overlap)
 			{
 				Result->overlaps = true;
@@ -445,6 +456,11 @@ namespace Riemann
 
 	bool AABBTree::Intersect(const Geometry* intersect_geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const
 	{
+		return Intersect(intersect_geometry, ObjectCollection, Option, Result, nullptr, nullptr);
+	}
+
+	bool AABBTree::Intersect(const Geometry* intersect_geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult* Result, AABBIntersectCallback Callback, void* Context) const
+	{
 		Result->overlaps = false;
 		Result->overlapGeoms.clear();
 		if (m_Dirty)
@@ -452,7 +468,7 @@ namespace Riemann
 			return false;
 		}
 
-		const Box3& aabb = intersect_geometry->GetBoundingVolume_WorldSpace();
+		const Box3& aabb = intersect_geometry->GetBounds();
 
 		CacheFriendlyAABBTree* p = m_AABBTreeInference;
 		if (p == nullptr || !aabb.Intersect(p->aabb.Min, p->aabb.Max))
@@ -472,7 +488,7 @@ namespace Riemann
 				{
 					int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 					int	 nPrimitives = p->GetNumGeometries();
-					bool overlap = OverlapGeometries(intersect_geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Option, Result);
+					bool overlap = OverlapGeometries(intersect_geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Option, Result, Callback, Context);
 					if (overlap)
 					{
 						if (Result->overlapGeoms.size() >= Option->maxOverlaps)
@@ -517,7 +533,7 @@ namespace Riemann
 		return Result->overlaps;
 	}
 
-	static int SweepGeometries(const Geometry* sweep_geometry, int* Geoms, const int NumGeoms, Geometry** GeometryCollection, const Vector3& Direction, const Box3& BV, const SweepOption* Option, SweepResult* Result)
+	static int SweepGeometries(const Geometry* sweep_geometry, int* Geoms, const int NumGeoms, Geometry** GeometryCollection, const Vector3& Direction, const Box3& BV, const SweepOption* Option, SweepResult* Result, AABBSweepCallback Callback, void* Context)
 	{
 		assert(NumGeoms > 0);
 		if (GeometryCollection == nullptr)
@@ -538,13 +554,21 @@ namespace Riemann
 			float t;
 			Vector3 position;
 			Vector3 normal;
-			bool hit = sweep_geometry->Sweep(Direction, candidate, &position, &normal, &t);
+			bool hit = Callback
+				? Callback(sweep_geometry, candidate, Direction, Option, Result, Context)
+				: sweep_geometry->Sweep(Direction, candidate, &position, &normal, &t);
+			if (Callback && hit)
+			{
+				t = Result->hitTime;
+				position = Result->hitPosition;
+				normal = Result->hitNormal;
+			}
 			if (hit)
 			{
 				if (Option->Type == SweepOption::SWEEP_ANY)
 				{
 					min_idx = index;
-					min_t = Result->hitTime;
+					min_t = t;
 					min_p = position;
 					min_n = normal;
 					break;
@@ -554,10 +578,10 @@ namespace Riemann
 					Result->hitGeometries.push_back(candidate);
 				}
 
-				if (Result->hitTime < min_t)
+				if (t < min_t)
 				{
 					min_idx = index;
-					min_t = Result->hitTime;
+					min_t = t;
 					min_p = position;
 					min_n = normal;
 				}
@@ -579,6 +603,11 @@ namespace Riemann
 	}
 
 	bool AABBTree::Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const
+	{
+		return Sweep(sweep_geometry, ObjectCollection, Direction, Option, Result, nullptr, nullptr);
+	}
+
+	bool AABBTree::Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result, AABBSweepCallback Callback, void* Context) const
 	{
 		Result->Reset();
 		if (m_Dirty)
@@ -607,7 +636,7 @@ namespace Riemann
 					int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 					int	 nPrimitives = p->GetNumGeometries();
 					const Box3& Box = p->GetBoundingVolume();
-					int HitId = SweepGeometries(sweep_geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Direction, Box, Option, Result);
+					int HitId = SweepGeometries(sweep_geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Direction, Box, Option, Result, Callback, Context);
 					if (HitId >= 0)
 					{
 						if (Option->Type == SweepOption::SWEEP_ANY)

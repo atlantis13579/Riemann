@@ -50,6 +50,16 @@ namespace Maths
 			return *this;
 		}
 
+		inline bool operator==(const Transform& rhs) const
+		{
+			return pos == rhs.pos && quat == rhs.quat;
+		}
+
+		inline bool operator!=(const Transform& rhs) const
+		{
+			return !(*this == rhs);
+		}
+
 		inline Transform operator+(const Transform& rhs) const
 		{
 			return Transform(pos + rhs.pos, quat * rhs.quat);

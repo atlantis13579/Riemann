@@ -1,20 +1,69 @@
 
 #include "NarrowPhase.h"
 #include "CollidingContact.h"
+#include "RigidBody.h"
 #include "../Core/BatchList.h"
 #include "../Geometry/Polygon3.h"
 #include "../Collision/GeometryObject.h"
 #include "../Collision/GeometryDifference.h"
 #include "../Collision/EPAPenetration.h"
 #include "../CollisionPrimitive/GJK.h"
+#include "../CollisionPrimitive/MinkowskiSum.h"
 
 namespace Riemann
 {
-	static bool ConstructSupportFace(Geometry* GeomA, Geometry* GeomB, const Vector3& penetration_normal, SupportFace& Face)
+	static Vector3 GetGeometrySupport(const GeometryWorldState& State, const Vector3& Direction)
+	{
+		if (State.Geom == nullptr)
+		{
+			return Vector3::Zero();
+		}
+
+		if (State.Body == nullptr)
+		{
+			return State.Geom->GetSupport(Direction);
+		}
+
+		const Vector3 LocalDirection = State.BodyToWorld.WorldToLocalDirection(Direction);
+		const Vector3 LocalSupport = State.Geom->GetSupport(LocalDirection);
+		return State.BodyToWorld.LocalToWorld(LocalSupport);
+	}
+
+	static void GetGeometrySupportFace(const GeometryWorldState& State, const Vector3& Direction, SupportFace& Face)
+	{
+		if (State.Geom == nullptr)
+		{
+			return;
+		}
+
+		if (State.Body == nullptr)
+		{
+			State.Geom->GetSupportFace(Direction, Face);
+			return;
+		}
+
+		const Vector3 LocalDirection = State.BodyToWorld.WorldToLocalDirection(Direction);
+		State.Geom->GetSupportFace(LocalDirection, Face);
+		for (int i = 0; i < Face.size(); ++i)
+		{
+			Face[i] = State.BodyToWorld.LocalToWorld(Face[i]);
+		}
+	}
+
+	static Vector3 GetContactRelativePosition(const GeometryWorldState& State, const Vector3& Position)
+	{
+		if (State.Body)
+		{
+			return Position - State.Body->X;
+		}
+		return State.Geom ? Position - State.Geom->GetPosition() : Position;
+	}
+
+	static bool ConstructSupportFace(const GeometryWorldState& StateA, const GeometryWorldState& StateB, const Vector3& penetration_normal, SupportFace& Face)
 	{
 		SupportFace FaceA, FaceB;
-		GeomA->GetSupportFace_WorldSpace(-penetration_normal, FaceA);
-		GeomB->GetSupportFace_WorldSpace(penetration_normal, FaceB);
+		GetGeometrySupportFace(StateA, -penetration_normal, FaceA);
+		GetGeometrySupportFace(StateB, penetration_normal, FaceB);
 
 		const float mSpeculativeContactDistance = 0.02f;
 		bool succ = ClipPolygonAgainPolygon3D(FaceA.data(), FaceA.size(), FaceB.data(), FaceB.size(), penetration_normal, mSpeculativeContactDistance, Face.data(), Face.GetSizeData(), nullptr, nullptr);
@@ -22,9 +71,11 @@ namespace Riemann
 	}
 
 
-	static bool PenetrationTest(Geometry* Geom1, Geometry* Geom2, EPAPenetration& epa)
+	static bool PenetrationTest(const GeometryWorldState& State1, const GeometryWorldState& State2, EPAPenetration& epa)
 	{
-		GeometryDifference shape(Geom1, Geom2);
+		TransformedMinkowskiSum<Geometry, Geometry> shape(
+			State1.Geom, State1.BodyToWorld,
+			State2.Geom, State2.BodyToWorld);
 		GJKIntersection gjk;
 		GJK_status gjk_status = gjk.Solve(&shape);
 		if (gjk_status != GJK_status::Intersect)
@@ -41,7 +92,7 @@ namespace Riemann
 		return true;
 	}
 
-	static void ConstructManifols(int indexA, int indexB, Geometry* GeomA, Geometry* GeomB, EPAPenetration& epa, ContactManifold* manifold)
+	static void ConstructManifols(int indexA, int indexB, const GeometryWorldState& StateA, const GeometryWorldState& StateB, EPAPenetration& epa, ContactManifold* manifold)
 	{
 		manifold->Reset();
 
@@ -49,7 +100,7 @@ namespace Riemann
 		Vector3 w0 = Vector3::Zero();
 		for (int i = 0; i < epa.result.dimension; ++i)
 		{
-			Vector3 pi = GeomA->GetSupport_WorldSpace(epa.result.v[i].dir) * epa.result.w[i];
+			Vector3 pi = GetGeometrySupport(StateA, epa.result.v[i].dir) * epa.result.w[i];
 			w0 = w0 + pi;
 		}
 
@@ -57,21 +108,20 @@ namespace Riemann
 		SupportFace ContactFace;
 		if (UseContactFace)
 		{
-			bool succ = ConstructSupportFace(GeomA, GeomB, epa.penetration_normal, ContactFace);
+			bool succ = ConstructSupportFace(StateA, StateB, epa.penetration_normal, ContactFace);
 			if (!succ)
 			{
-				succ = ConstructSupportFace(GeomB, GeomA, -epa.penetration_normal, ContactFace);
+				succ = ConstructSupportFace(StateB, StateA, -epa.penetration_normal, ContactFace);
 			}
 		}
 
-		// const Matrix4& invWorldA = GeomA->GetInverseWorldMatrix();
 		for (int i = -1; i < ContactFace.size(); ++i)
 		{
 			Vector3 pa = i == -1 ? w0 : ContactFace[i];
 			Contact contact;
-			contact.PositionLocalA = pa - GeomA->GetWorldPosition();
+			contact.PositionLocalA = GetContactRelativePosition(StateA, pa);
 			Vector3 pb = pa - epa.penetration_normal * epa.penetration_depth;
-			contact.PositionLocalB = pb - GeomB->GetWorldPosition();
+			contact.PositionLocalB = GetContactRelativePosition(StateB, pb);
 			contact.PositionWorldA = pa;
 			contact.PositionWorldB = pb;
 			contact.Normal = epa.penetration_normal;
@@ -107,7 +157,7 @@ namespace Riemann
 
 		}
 
-		virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
+		virtual void CollisionDetection(const std::vector<GeometryWorldState>& states,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{
@@ -116,14 +166,18 @@ namespace Riemann
 			manifolds->clear();
 			for (size_t i = 0; i < overlaps.size(); ++i)
 			{
-				Geometry* geom1 = geoms[overlaps[i].index1];
-				Geometry* geom2 = geoms[overlaps[i].index2];
+				const GeometryWorldState& state1 = states[overlaps[i].index1];
+				const GeometryWorldState& state2 = states[overlaps[i].index2];
+				if (state1.Geom == nullptr || state2.Geom == nullptr)
+				{
+					continue;
+				}
 
 				EPAPenetration epa;
-				if (PenetrationTest(geom1, geom2, epa))
+				if (PenetrationTest(state1, state2, epa))
 				{
 					ContactManifold* manifold = m_ManifoldPool.allocate();
-					ConstructManifols(overlaps[i].index1, overlaps[i].index2, geom1, geom2, epa, manifold);
+					ConstructManifols(overlaps[i].index1, overlaps[i].index2, state1, state2, epa, manifold);
 					manifolds->push_back(manifold);
 				}
 			}
@@ -147,7 +201,7 @@ namespace Riemann
 
 		}
 
-		virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
+		virtual void CollisionDetection(const std::vector<GeometryWorldState>& states,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{
@@ -168,7 +222,7 @@ namespace Riemann
 		{
 		}
 
-		virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
+		virtual void CollisionDetection(const std::vector<GeometryWorldState>& states,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{
@@ -186,7 +240,7 @@ namespace Riemann
 		{
 		}
 
-		virtual void CollisionDetection(const std::vector<Geometry*>& geoms,
+		virtual void CollisionDetection(const std::vector<GeometryWorldState>& states,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{

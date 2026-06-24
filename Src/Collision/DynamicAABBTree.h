@@ -14,6 +14,10 @@ namespace Riemann
 	struct SweepResult;
 	class Geometry;
 
+	typedef bool (*DynamicRayCastCallback)(const Ray3& Ray, void* userData, const RayCastOption* Option, RayCastResult* Result, void* Context);
+	typedef bool (*DynamicIntersectCallback)(const Geometry* geometry, void* userData, const IntersectOption* Option, IntersectResult* Result, void* Context);
+	typedef bool (*DynamicSweepCallback)(const Geometry* geometry, const Vector3& Direction, void* userData, const SweepOption* Option, SweepResult* Result, void* Context);
+
 	class DynamicAABBTree
 	{
 	public:
@@ -49,8 +53,11 @@ namespace Riemann
 		bool 	Update(int nodeId, const Box3& aabb, const Vector3& displacement);
 
 		bool	RayCast(const Ray3& Ray, const RayCastOption* Option, RayCastResult* Result) const;
+		bool	RayCast(const Ray3& Ray, const RayCastOption* Option, RayCastResult* Result, DynamicRayCastCallback Callback, void* Context) const;
 		bool	Intersect(const Geometry* geometry, const IntersectOption* Option, IntersectResult* Result) const;
+		bool	Intersect(const Geometry* geometry, const IntersectOption* Option, IntersectResult* Result, DynamicIntersectCallback Callback, void* Context) const;
         bool	Sweep(const Geometry* geometry, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const;
+		bool	Sweep(const Geometry* geometry, const Vector3& Direction, const SweepOption* Option, SweepResult* Result, DynamicSweepCallback Callback, void* Context) const;
 		bool	Query(const Box3& aabb, std::vector<void*>* Result) const;
 		void	CollectAABBs(std::vector<Box3>* aabbs) const;
 

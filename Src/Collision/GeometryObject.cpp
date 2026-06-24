@@ -19,6 +19,67 @@ namespace Riemann
 	int GeometryFactory::ObjectCount[(int)PrimitiveType::TYPE_COUNT] = { 0 };
 
 	template<class GEOM_TYPE>
+	static bool RayCastShape(const Geometry* GeometryObject, const GEOM_TYPE* Shape, const Transform& ShapeTransform, const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result)
+	{
+		if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, GeometryObject->GetFilterData()))
+		{
+			return false;
+		}
+		Result->AddTestCount(1);
+
+		const Vector3 OriginLocal = ShapeTransform.WorldToLocal(Origin);
+		const Vector3 DirLocal = ShapeTransform.WorldToLocalDirection(Direction);
+		float t;
+		if (Shape->IntersectRay(OriginLocal, DirLocal, &t) && t < Option->MaxDist)
+		{
+			Result->hitTime = t;
+			return true;
+		}
+		return false;
+	}
+
+	static bool RayCastShape(const Geometry* GeometryObject, const TriangleMesh* Shape, const Transform& ShapeTransform, const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result)
+	{
+		if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, GeometryObject->GetFilterData()))
+		{
+			return false;
+		}
+
+		TriMeshHitOption HitOption;
+		HitOption.hitBothSides = Option->HitBothSides;
+		HitOption.hitNearest = Option->Type == RayCastOption::RAYCAST_NEAREST;
+		HitOption.maxDist = Option->MaxDist;
+
+		TriMeshHitResult HitResult = { 0 };
+		const Vector3 OriginLocal = ShapeTransform.WorldToLocal(Origin);
+		const Vector3 DirLocal = ShapeTransform.WorldToLocalDirection(Direction);
+		const bool Ret = Shape->IntersectRay(OriginLocal, DirLocal, HitOption, &HitResult);
+		Result->hitTime = HitResult.hitTime;
+		Result->AddTestCount(HitResult.hitTestCount);
+		return Ret;
+	}
+
+	static bool RayCastShape(const Geometry* GeometryObject, const HeightField3* Shape, const Transform& ShapeTransform, const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result)
+	{
+		if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, GeometryObject->GetFilterData()))
+		{
+			return false;
+		}
+
+		HeightFieldHitOption HitOption;
+		HitOption.hitBothSides = Option->HitBothSides;
+		HitOption.maxDist = Option->MaxDist;
+
+		HeightFieldHitResult HitResult = { 0 };
+		const Vector3 OriginLocal = ShapeTransform.WorldToLocal(Origin);
+		const Vector3 DirLocal = ShapeTransform.WorldToLocalDirection(Direction);
+		const bool Ret = Shape->IntersectRay(OriginLocal, DirLocal, HitOption, &HitResult);
+		Result->hitTime = HitResult.hitTime;
+		Result->AddTestCount(HitResult.hitTestCount);
+		return Ret;
+	}
+
+	template<class GEOM_TYPE>
 	class TGeometry : public Geometry, public GEOM_TYPE
 	{
 	public:
@@ -35,6 +96,7 @@ namespace Riemann
 		virtual void			UpdateVolumeProperties() override final
 		{
 			GEOM_TYPE::CalculateVolumeProperties(&m_VolumeProperties, m_Density);
+			UpdateBounds();
 		}
 
 		virtual Vector3			CalculateSupport_LocalSpace(const Vector3& Direction) const override final
@@ -52,70 +114,27 @@ namespace Riemann
 			Face.resize(GEOM_TYPE::GetSupportFace(Direction, Face.data()));
 		}
 
+		virtual bool			RayCast(const Transform& ShapeTransform, const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const override final
+		{
+			return RayCastShape(this, static_cast<const GEOM_TYPE*>(this), ShapeTransform, Origin, Direction, Option, Result);
+		}
+
 		virtual bool			RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const override final
 		{
-			if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, this->GetFilterData()))
-			{
-				return false;
-			}
-			Result->AddTestCount(1);
-
-			const Vector3 Origin_Local = m_WorldTransform.WorldToLocal(Origin);
-			const Vector3 Dir_Local = m_WorldTransform.WorldToLocalDirection(Direction);
-			const GEOM_TYPE* p = (const GEOM_TYPE*)this;
-			float t;
-			if (p->IntersectRay(Origin_Local, Dir_Local, &t) && t < Option->MaxDist)
-			{
-				Result->hitTime = t;
-				return true;
-			}
-			return false;
+			return RayCast(m_Transform, Origin, Direction, Option, Result);
 		}
 	};
 
 	template<>
 	bool				TGeometry<TriangleMesh>::RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const
 	{
-		if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, this->GetFilterData()))
-		{
-			return false;
-		}
-
-		TriMeshHitOption HitOption;
-		HitOption.hitBothSides = Option->HitBothSides;
-		HitOption.hitNearest = Option->Type == RayCastOption::RAYCAST_NEAREST;
-		HitOption.maxDist = Option->MaxDist;
-
-		TriMeshHitResult HitResult = { 0 };
-		const Vector3 Origin_Local = m_WorldTransform.WorldToLocal(Origin);
-		const Vector3 Dir_Local = m_WorldTransform.WorldToLocalDirection(Direction);
-		const TriangleMesh* p = (const TriangleMesh*)this;
-		bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
-		Result->hitTime = HitResult.hitTime;
-		Result->AddTestCount(HitResult.hitTestCount);
-		return Ret;
+		return RayCast(m_Transform, Origin, Direction, Option, Result);
 	}
 
 	template<>
 	bool				TGeometry<HeightField3>::RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const
 	{
-		if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, this->GetFilterData()))
-		{
-			return false;
-		}
-
-		HeightFieldHitOption HitOption;
-		HitOption.hitBothSides = Option->HitBothSides;
-		HitOption.maxDist = Option->MaxDist;
-
-		HeightFieldHitResult HitResult = { 0 };
-		const Vector3 Origin_Local = m_WorldTransform.WorldToLocal(Origin);
-		const Vector3 Dir_Local = m_WorldTransform.WorldToLocalDirection(Direction);
-		const HeightField3* p = (const HeightField3*)this;
-		const bool Ret = p->IntersectRay(Origin_Local, Dir_Local, HitOption, &HitResult);
-		Result->hitTime = HitResult.hitTime;
-		Result->AddTestCount(HitResult.hitTestCount);
-		return Ret;
+		return RayCast(m_Transform, Origin, Direction, Option, Result);
 	}
 
 	Geometry::Geometry()
@@ -141,7 +160,7 @@ namespace Riemann
 		for (size_t i = 0; i < geoms.size(); ++i)
 		{
 			Geometry* g = geoms[i];
-			p.pos += g->GetWorldPosition() * g->GetMassParameters()->Mass;
+			p.pos += g->GetPosition() * g->GetMassParameters()->Mass;
 			vol += g->GetMassParameters()->Volume;
 		}
 		if (vol > 1e-6f)
@@ -149,23 +168,28 @@ namespace Riemann
 			p.pos = p.pos / vol;
 		}
 
-		p.quat = (geoms.size() == 1) ? geoms[1]->GetWorldRotation() : Quaternion::One();
+		p.quat = (geoms.size() == 1) ? geoms[0]->GetRotation() : Quaternion::One();
 
 		return p;
 	}
 
 	bool		Geometry::Intersect(const Geometry* Geom) const
 	{
+		return Intersect(m_Transform, Geom, *Geom->GetTransform());
+	}
+
+	bool		Geometry::Intersect(const Transform& ShapeTransform, const Geometry* Geom, const Transform& GeomTransform) const
+	{
 		IntersectFunc func = GeometryIntersection::GetIntersectFunc(m_Type, Geom->GetShapeType());
 		if (func)
 		{
-			return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform());
+			return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &ShapeTransform, &GeomTransform);
 		}
 
 		func = GeometryIntersection::GetIntersectFunc(Geom->GetShapeType(), m_Type);
 		if (func)
 		{
-			return func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), Geom->GetWorldTransform(), &m_WorldTransform);
+			return func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), &GeomTransform, &ShapeTransform);
 		}
 
 		assert(false);
@@ -177,13 +201,13 @@ namespace Riemann
 		PenetrationFunc func = GeometryIntersection::GetPenetrationFunc(m_Type, Geom->GetShapeType());
 		if (func)
 		{
-			return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform(), Normal, Depth);
+			return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_Transform, Geom->GetTransform(), Normal, Depth);
 		}
 
 		func = GeometryIntersection::GetPenetrationFunc(Geom->GetShapeType(), m_Type);
 		if (func)
 		{
-			bool succ = func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), Geom->GetWorldTransform(), &m_WorldTransform, Normal, Depth);
+			bool succ = func(Geom->GetShapeObjPtr(), GetShapeObjPtr(), Geom->GetTransform(), &m_Transform, Normal, Depth);
 			if (succ)
 			{
 				*Normal = -*Normal;
@@ -198,47 +222,57 @@ namespace Riemann
 
 	bool		Geometry::SweepTestFast(const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const
 	{
-		Box3 box = GetBoundingVolume_WorldSpace();
+		return SweepTestFast(m_Transform, Direction, Bmin, Bmax, t);
+	}
+
+	bool		Geometry::SweepTestFast(const Transform& ShapeTransform, const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const
+	{
+		Box3 box = Box3::Transform(m_VolumeProperties.BoundingVolume, ShapeTransform.pos, ShapeTransform.quat);
 		Vector3 size = box.GetSize();
 		Vector3 BminExtend = Bmin - size;
 		Vector3 BmaxExtend = Bmax + size;
-        return Ray3::RayIntersectAABB(box.GetCenter(), Direction, BminExtend, BmaxExtend, t);
+		return Ray3::RayIntersectAABB(box.GetCenter(), Direction, BminExtend, BmaxExtend, t);
 	}
 
 	bool		Geometry::Sweep(const Vector3& Direction, const Geometry* Geom, Vector3* position, Vector3* normal, float* t) const
 	{
+		return Sweep(m_Transform, Direction, Geom, *Geom->GetTransform(), position, normal, t);
+	}
+
+	bool		Geometry::Sweep(const Transform& ShapeTransform, const Vector3& Direction, const Geometry* Geom, const Transform& GeomTransform, Vector3* position, Vector3* normal, float* t) const
+	{
 		SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
 		assert(func);
-		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &m_WorldTransform, Geom->GetWorldTransform(), Direction, position, normal, t);
+		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &ShapeTransform, &GeomTransform, Direction, position, normal, t);
 	}
 
-	void 		Geometry::UpdateBoundingVolume()
+	void 		Geometry::UpdateBounds()
 	{
-		m_BoxWorld = Box3::Transform(m_VolumeProperties.BoundingVolume, m_WorldTransform.pos, m_WorldTransform.quat);
+		m_Bounds = Box3::Transform(m_VolumeProperties.BoundingVolume, m_Transform.pos, m_Transform.quat);
 	}
 
-	Vector3		Geometry::GetCenter_WorldSpace() const
+	Vector3		Geometry::GetCenter() const
 	{
 		Vector3 CenterLocal = GetCenter_LocalSpace();
-		Vector3 CenterWorld = m_WorldTransform.LocalToWorld(CenterLocal);
-		return CenterWorld;
+		Vector3 Center = m_Transform.LocalToWorld(CenterLocal);
+		return Center;
 	}
 
-	Vector3		Geometry::GetSupport_WorldSpace(const Vector3& Direction) const
+	Vector3		Geometry::GetSupport(const Vector3& Direction) const
 	{
-		Vector3 DirLocal = m_WorldTransform.WorldToLocalDirection(Direction);
+		Vector3 DirLocal = m_Transform.WorldToLocalDirection(Direction);
 		Vector3 SupportLocal = CalculateSupport_LocalSpace(DirLocal);
-		Vector3 SupportWorld = m_WorldTransform.LocalToWorld(SupportLocal);
-		return SupportWorld;
+		Vector3 Support = m_Transform.LocalToWorld(SupportLocal);
+		return Support;
 	}
 
-	void		Geometry::GetSupportFace_WorldSpace(const Vector3& Direction, SupportFace& Face) const
+	void		Geometry::GetSupportFace(const Vector3& Direction, SupportFace& Face) const
 	{
-		Vector3 DirLocal = m_WorldTransform.WorldToLocalDirection(Direction);
+		Vector3 DirLocal = m_Transform.WorldToLocalDirection(Direction);
 		CalculateSupportFace_LocalSpace(DirLocal, Face);
 		for (int i = 0; i < Face.size(); ++i)
 		{
-			Face[i] = m_WorldTransform.LocalToWorld(Face[i]);
+			Face[i] = m_Transform.LocalToWorld(Face[i]);
 		}
 	}
 
@@ -258,7 +292,7 @@ namespace Riemann
 		p->Min = -HalfExtent;
 		p->Max = HalfExtent;
 		p->UpdateVolumeProperties();
-		p->SetWorldTransform(Center, Rot);
+		p->SetTransform(Center, Rot);
 
 		return (Geometry*)p;
 	}
@@ -269,7 +303,7 @@ namespace Riemann
 		p->Center = Vector3::Zero();
 		p->Radius = Radius;
 		p->UpdateVolumeProperties();
-		p->SetWorldTransform(Center, Quaternion::One());
+		p->SetTransform(Center, Quaternion::One());
 		return (Geometry*)p;
 	}
 
@@ -285,7 +319,7 @@ namespace Riemann
 		TGeometry<Capsule3>* p = pBuf ? new (pBuf)TGeometry<Capsule3>() : new TGeometry<Capsule3>();
 		p->Init(Vector3(0.0f, -HalfHeight, 0.0f), Vector3(0.0f, HalfHeight, 0.0f), Radius);
 		p->UpdateVolumeProperties();
-		p->SetWorldTransform(Center, quat);
+		p->SetTransform(Center, quat);
 		return (Geometry*)p;
 	}
 
@@ -303,7 +337,7 @@ namespace Riemann
 		Quaternion quat;
 		quat.FromTwoAxis(Vector3::UnitY(), Normal);
 		p->UpdateVolumeProperties();
-		p->SetWorldTransform(Center, quat);
+		p->SetTransform(Center, quat);
 		return (Geometry*)p;
 	}
 
@@ -325,7 +359,7 @@ namespace Riemann
 		TGeometry<Cylinder3>* p = new TGeometry<Cylinder3>();
 		p->Init(Vector3(0.0f, -HalfHeight, 0.0f), Vector3(0.0f, HalfHeight, 0.0f), Radius);
 		p->UpdateVolumeProperties();
-		p->SetWorldTransform(Center, quat);
+		p->SetTransform(Center, quat);
 		return (Geometry*)p;
 	}
 
@@ -339,7 +373,7 @@ namespace Riemann
 	{
 		TGeometry<ConvexMesh>* p = new TGeometry<ConvexMesh>();
 		p->UpdateVolumeProperties();
-		p->SetWorldTransform(Vector3::Zero(), Quaternion::One());
+		p->SetTransform(Vector3::Zero(), Quaternion::One());
 		return (Geometry*)p;
 	}
 
@@ -348,7 +382,7 @@ namespace Riemann
 		TGeometry<HeightField3>* p = new TGeometry<HeightField3>();
 		p->Init(Bv, nRows, nCols);
 		p->UpdateVolumeProperties();
-		p->SetWorldTransform(Vector3::Zero(), Quaternion::One());
+		p->SetTransform(Vector3::Zero(), Quaternion::One());
 		return (Geometry*)p;
 	}
 
@@ -356,7 +390,7 @@ namespace Riemann
 	{
 		TGeometry<TriangleMesh>* p = new TGeometry<TriangleMesh>();
 		p->UpdateVolumeProperties();
-		p->SetWorldTransform(Vector3::Zero(), Quaternion::One());
+		p->SetTransform(Vector3::Zero(), Quaternion::One());
 		return (Geometry*)p;
 	}
 }

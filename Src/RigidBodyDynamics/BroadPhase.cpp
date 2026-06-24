@@ -1,6 +1,5 @@
 
 #include "BroadPhase.h"
-#include "RigidBody.h"
 #include "../Collision/DynamicAABBTree.h"
 #include "../Collision/GeometryObject.h"
 #include "../Collision/SAP_Incremental.h"
@@ -15,18 +14,15 @@
 
 namespace Riemann
 {
-	static bool IsMovingRigid(Geometry* geom)
+	static bool IsMovingRigid(const GeometryWorldState& state)
 	{
-		RigidBody* body = geom->GetParent<RigidBody>();
-		if (body == nullptr)
-		{
-			return false;
-		}
-		return body->mRigidType != RigidType::Static;
+		return state.MovingRigid;
 	}
 
-	static bool IsValidPair(Geometry* geom1, Geometry* geom2)
+	static bool IsValidPair(const GeometryWorldState& state1, const GeometryWorldState& state2)
 	{
+		Geometry* geom1 = state1.Geom;
+		Geometry* geom2 = state2.Geom;
 		if (geom1 == nullptr || geom2 == nullptr || !geom1->IsSimulationEnabled() || !geom2->IsSimulationEnabled())
 		{
 			return false;
@@ -35,7 +31,7 @@ namespace Riemann
 		{
 			return false;
 		}
-		return IsMovingRigid(geom1) || IsMovingRigid(geom2);
+		return IsMovingRigid(state1) || IsMovingRigid(state2);
 	}
 
 	class BroadPhaseAllPairsImplementation : public BroadPhase
@@ -43,11 +39,11 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseAllPairsImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 
-			int n = (int)geoms.size();
+			int n = (int)states.size();
 			for (int i = 0; i < n; ++i)
 			for (int j = 0; j < n; ++j)
 			{
@@ -62,22 +58,20 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseBruteforceImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 
-			int n = (int)geoms.size();
+			int n = (int)states.size();
 			for (int i = 0; i < n; ++i)
 			for (int j = i + 1; j < n; ++j)
 			{
-				Geometry* gi = geoms[i];
-				Geometry* gj = geoms[j];
-				if (!IsValidPair(gi, gj))
+				const GeometryWorldState& state1 = states[i];
+				const GeometryWorldState& state2 = states[j];
+				if (!IsValidPair(state1, state2))
 					continue;
 
-				const Box3& box1 = gi->GetBoundingVolume_WorldSpace();
-				const Box3& box2 = gj->GetBoundingVolume_WorldSpace();
-				if (box1.Intersect(box2))
+				if (state1.WorldBounds.Intersect(state2.WorldBounds))
 				{
 					overlaps->emplace_back(i, j);
 				}
@@ -91,7 +85,7 @@ namespace Riemann
 	public:
 		BroadPhaseSAPImplementation()
 			: m_SAP(nullptr)
-			, m_pObjects(nullptr)
+			, m_pStates(nullptr)
 		{
 			m_SAP = new IncrementalSAP(this, { 0, 1, 2 });
 		}
@@ -114,24 +108,22 @@ namespace Riemann
 
 	public:
 
-		virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
 		{
-			if (geoms.empty())
+			overlaps->clear();
+			if (states.empty())
 			{
 				return;
 			}
 
-			m_pObjects = &geoms;
+			m_pStates = &states;
 			m_SAP->IncrementalPrune(&m_Overlaps);
 
-			overlaps->clear();
 			for (auto it : m_Overlaps)
 			{
 				int i, j;
 				SAP::UnpackOverlapKey(it, &i, &j);
-				Geometry* gi = geoms[i];
-				Geometry* gj = geoms[j];
-				if (!IsValidPair(gi, gj))
+				if (!IsValidPair(states[i], states[j]))
 					continue;
 				overlaps->emplace_back(i, j);
 			}
@@ -140,34 +132,34 @@ namespace Riemann
 	private:
 		virtual int     GetBoundingVolumeCount() const override final
 		{
-			return (int)m_pObjects->size();
+			return (int)m_pStates->size();
 		}
 
 		virtual float* GetBoundingVolumeCoordinate(int bv_i, bool left, int axis) const override final
 		{
-			const Box3& box = m_pObjects->at(bv_i)->GetBoundingVolume_WorldSpace();
+			const Box3& box = m_pStates->at(bv_i).WorldBounds;
 			float* p = (float*)&box;
 			return left ? p + axis : p + 3 + axis;
 		}
 
 		virtual bool    Overlaps(int bv_i, int bv_j) const override final
 		{
-			const Box3& box1 = m_pObjects->at(bv_i)->GetBoundingVolume_WorldSpace();
-			const Box3& box2 = m_pObjects->at(bv_j)->GetBoundingVolume_WorldSpace();
+			const Box3& box1 = m_pStates->at(bv_i).WorldBounds;
+			const Box3& box2 = m_pStates->at(bv_j).WorldBounds;
 			return box1.Intersect(box2);
 		}
 
 		virtual uint64_t	CalculateBoundingVolumeHash() const override final
 		{
-			if (m_pObjects == nullptr || m_pObjects->empty())
+			if (m_pStates == nullptr || m_pStates->empty())
 			{
 				return 0;
 			}
 
 			uint64_t hash = 0;
-			for (size_t i = 0; i < m_pObjects->size(); ++i)
+			for (size_t i = 0; i < m_pStates->size(); ++i)
 			{
-				hash ^= reinterpret_cast<uint64_t>(m_pObjects->at(i));
+				hash ^= reinterpret_cast<uint64_t>(m_pStates->at(i).Geom);
 				hash *= static_cast<uint64_t>(1099511628211ULL);
 			}
 			return hash;
@@ -176,7 +168,7 @@ namespace Riemann
 	private:
 		IncrementalSAP* m_SAP;
 		std::set<OverlapKey>			m_Overlaps;
-		const std::vector<Geometry*>* m_pObjects;
+		const std::vector<GeometryWorldState>* m_pStates;
 	};
 
 	class BroadPhaseABPImplementation : public BroadPhase
@@ -184,21 +176,21 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseABPImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
-			m_Geoms = &geoms;
+			m_States = &states;
 			m_Overlaps = overlaps;
 			m_UniquePairs.clear();
 
-			if (geoms.size() < 2)
+			if (states.size() < 2)
 			{
 				return;
 			}
 
 			std::vector<int> sortedObjects;
-			sortedObjects.reserve(geoms.size());
-			for (size_t i = 0; i < geoms.size(); ++i)
+			sortedObjects.reserve(states.size());
+			for (size_t i = 0; i < states.size(); ++i)
 			{
 				sortedObjects.push_back((int)i);
 			}
@@ -233,8 +225,8 @@ namespace Riemann
 		{
 			std::sort(indices->begin(), indices->end(), [this](int lhs, int rhs)
 				{
-					const Box3& box1 = m_Geoms->at(lhs)->GetBoundingVolume_WorldSpace();
-					const Box3& box2 = m_Geoms->at(rhs)->GetBoundingVolume_WorldSpace();
+					const Box3& box1 = m_States->at(lhs).WorldBounds;
+					const Box3& box2 = m_States->at(rhs).WorldBounds;
 					if (box1.Min.x == box2.Min.x)
 					{
 						return lhs < rhs;
@@ -255,15 +247,15 @@ namespace Riemann
 				std::swap(id1, id2);
 			}
 
-			Geometry* geom1 = m_Geoms->at(id1);
-			Geometry* geom2 = m_Geoms->at(id2);
-			if (!IsValidPair(geom1, geom2))
+			const GeometryWorldState& state1 = m_States->at(id1);
+			const GeometryWorldState& state2 = m_States->at(id2);
+			if (!IsValidPair(state1, state2))
 			{
 				return;
 			}
 
-			const Box3& box1 = geom1->GetBoundingVolume_WorldSpace();
-			const Box3& box2 = geom2->GetBoundingVolume_WorldSpace();
+			const Box3& box1 = state1.WorldBounds;
+			const Box3& box2 = state2.WorldBounds;
 			if (!box1.Intersect(box2))
 			{
 				return;
@@ -284,12 +276,12 @@ namespace Riemann
 			for (size_t i = 0; i < n; ++i)
 			{
 				const int id1 = sortedObjects[i];
-				const Box3& box1 = m_Geoms->at(id1)->GetBoundingVolume_WorldSpace();
+				const Box3& box1 = m_States->at(id1).WorldBounds;
 
 				for (size_t j = i + 1; j < n; ++j)
 				{
 					const int id2 = sortedObjects[j];
-					const Box3& box2 = m_Geoms->at(id2)->GetBoundingVolume_WorldSpace();
+					const Box3& box2 = m_States->at(id2).WorldBounds;
 					if (box2.Min.x > box1.Max.x)
 					{
 						break;
@@ -316,8 +308,8 @@ namespace Riemann
 			for (size_t i = 0; i < n1 && running2 < n2; ++i)
 			{
 				const int id1 = sortedObjects1[i];
-				const Box3& box1 = m_Geoms->at(id1)->GetBoundingVolume_WorldSpace();
-				while (running2 < n2 && m_Geoms->at(sortedObjects2[running2])->GetBoundingVolume_WorldSpace().Min.x < box1.Min.x)
+				const Box3& box1 = m_States->at(id1).WorldBounds;
+				while (running2 < n2 && m_States->at(sortedObjects2[running2]).WorldBounds.Min.x < box1.Min.x)
 				{
 					++running2;
 				}
@@ -325,7 +317,7 @@ namespace Riemann
 				for (size_t j = running2; j < n2; ++j)
 				{
 					const int id2 = sortedObjects2[j];
-					const Box3& box2 = m_Geoms->at(id2)->GetBoundingVolume_WorldSpace();
+					const Box3& box2 = m_States->at(id2).WorldBounds;
 					if (box2.Min.x > box1.Max.x)
 					{
 						break;
@@ -342,8 +334,8 @@ namespace Riemann
 			for (size_t i = 0; i < n2 && running1 < n1; ++i)
 			{
 				const int id2 = sortedObjects2[i];
-				const Box3& box2 = m_Geoms->at(id2)->GetBoundingVolume_WorldSpace();
-				while (running1 < n1 && m_Geoms->at(sortedObjects1[running1])->GetBoundingVolume_WorldSpace().Min.x <= box2.Min.x)
+				const Box3& box2 = m_States->at(id2).WorldBounds;
+				while (running1 < n1 && m_States->at(sortedObjects1[running1]).WorldBounds.Min.x <= box2.Min.x)
 				{
 					++running1;
 				}
@@ -351,7 +343,7 @@ namespace Riemann
 				for (size_t j = running1; j < n1; ++j)
 				{
 					const int id1 = sortedObjects1[j];
-					const Box3& box1 = m_Geoms->at(id1)->GetBoundingVolume_WorldSpace();
+					const Box3& box1 = m_States->at(id1).WorldBounds;
 					if (box1.Min.x > box2.Max.x)
 					{
 						break;
@@ -393,7 +385,7 @@ namespace Riemann
 
 			for (int id : sortedObjects)
 			{
-				const Box3& box = m_Geoms->at(id)->GetBoundingVolume_WorldSpace();
+				const Box3& box = m_States->at(id).WorldBounds;
 				minY = std::min(minY, box.Min.y);
 				minZ = std::min(minZ, box.Min.z);
 				maxY = std::max(maxY, box.Max.y);
@@ -409,7 +401,7 @@ namespace Riemann
 
 			for (int id : sortedObjects)
 			{
-				const Box3& box = m_Geoms->at(id)->GetBoundingVolume_WorldSpace();
+				const Box3& box = m_States->at(id).WorldBounds;
 				(*buckets)[ClassifyBox(box, limitY, limitZ)].push_back(id);
 			}
 
@@ -458,7 +450,7 @@ namespace Riemann
 		}
 
 	private:
-		const std::vector<Geometry*>* m_Geoms = nullptr;
+		const std::vector<GeometryWorldState>* m_States = nullptr;
 		std::vector<OverlapPair>* m_Overlaps = nullptr;
 		std::set<OverlapKey> m_UniquePairs;
 	};
@@ -468,14 +460,14 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseMBPImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
-			m_Geoms = &geoms;
+			m_States = &states;
 			m_Overlaps = overlaps;
 			m_UniquePairs.clear();
 
-			if (geoms.size() < 2)
+			if (states.size() < 2)
 			{
 				return;
 			}
@@ -490,9 +482,9 @@ namespace Riemann
 			const Vector3 step(sceneSize.x / (float)AxisDivisions, sceneSize.y / (float)AxisDivisions, sceneSize.z / (float)AxisDivisions);
 
 			std::array<std::vector<int>, RegionCount> regions;
-			for (int i = 0; i < (int)geoms.size(); ++i)
+			for (int i = 0; i < (int)states.size(); ++i)
 			{
-				const Box3& box = geoms[i]->GetBoundingVolume_WorldSpace();
+				const Box3& box = states[i].WorldBounds;
 				const int minX = AxisCell(box.Min.x, sceneBounds.Min.x, step.x);
 				const int maxX = AxisCell(box.Max.x, sceneBounds.Min.x, step.x);
 				const int minY = AxisCell(box.Min.y, sceneBounds.Min.y, step.y);
@@ -550,8 +542,8 @@ namespace Riemann
 		{
 			std::sort(indices->begin(), indices->end(), [this](int lhs, int rhs)
 				{
-					const Box3& box1 = m_Geoms->at(lhs)->GetBoundingVolume_WorldSpace();
-					const Box3& box2 = m_Geoms->at(rhs)->GetBoundingVolume_WorldSpace();
+					const Box3& box1 = m_States->at(lhs).WorldBounds;
+					const Box3& box2 = m_States->at(rhs).WorldBounds;
 					if (box1.Min.x == box2.Min.x)
 					{
 						return lhs < rhs;
@@ -572,15 +564,15 @@ namespace Riemann
 				std::swap(id1, id2);
 			}
 
-			Geometry* geom1 = m_Geoms->at(id1);
-			Geometry* geom2 = m_Geoms->at(id2);
-			if (!IsValidPair(geom1, geom2))
+			const GeometryWorldState& state1 = m_States->at(id1);
+			const GeometryWorldState& state2 = m_States->at(id2);
+			if (!IsValidPair(state1, state2))
 			{
 				return;
 			}
 
-			const Box3& box1 = geom1->GetBoundingVolume_WorldSpace();
-			const Box3& box2 = geom2->GetBoundingVolume_WorldSpace();
+			const Box3& box1 = state1.WorldBounds;
+			const Box3& box2 = state2.WorldBounds;
 			if (!box1.Intersect(box2))
 			{
 				return;
@@ -601,12 +593,12 @@ namespace Riemann
 			for (size_t i = 0; i < n; ++i)
 			{
 				const int id1 = sortedObjects[i];
-				const Box3& box1 = m_Geoms->at(id1)->GetBoundingVolume_WorldSpace();
+				const Box3& box1 = m_States->at(id1).WorldBounds;
 
 				for (size_t j = i + 1; j < n; ++j)
 				{
 					const int id2 = sortedObjects[j];
-					const Box3& box2 = m_Geoms->at(id2)->GetBoundingVolume_WorldSpace();
+					const Box3& box2 = m_States->at(id2).WorldBounds;
 					if (box2.Min.x > box1.Max.x)
 					{
 						break;
@@ -622,15 +614,15 @@ namespace Riemann
 
 		bool BuildSceneBounds(Box3* bounds) const
 		{
-			if (m_Geoms->empty())
+			if (m_States->empty())
 			{
 				return false;
 			}
 
-			*bounds = m_Geoms->at(0)->GetBoundingVolume_WorldSpace();
-			for (size_t i = 1; i < m_Geoms->size(); ++i)
+			*bounds = m_States->at(0).WorldBounds;
+			for (size_t i = 1; i < m_States->size(); ++i)
 			{
-				bounds->Encapsulate(m_Geoms->at(i)->GetBoundingVolume_WorldSpace());
+				bounds->Encapsulate(m_States->at(i).WorldBounds);
 			}
 			return true;
 		}
@@ -663,7 +655,7 @@ namespace Riemann
 		}
 
 	private:
-		const std::vector<Geometry*>* m_Geoms = nullptr;
+		const std::vector<GeometryWorldState>* m_States = nullptr;
 		std::vector<OverlapPair>* m_Overlaps = nullptr;
 		std::set<OverlapKey> m_UniquePairs;
 	};
@@ -677,30 +669,36 @@ namespace Riemann
 		}
 		virtual ~BroadPhaseDynamicAABBImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<Geometry*>& geoms, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
-			if (m_tree == nullptr || geoms.empty())
+			if (m_tree == nullptr || states.empty())
 			{
 				return;
 			}
 
+			SyncMovedProxies(states);
+
 			std::unordered_map<Geometry*, int> geomToIndex;
-			geomToIndex.reserve(geoms.size());
-			for (int i = 0; i < (int)geoms.size(); ++i)
+			geomToIndex.reserve(states.size());
+			for (int i = 0; i < (int)states.size(); ++i)
 			{
-				geomToIndex[geoms[i]] = i;
+				if (states[i].Geom)
+				{
+					geomToIndex[states[i].Geom] = i;
+				}
 			}
 
 			std::vector<void*> result;
-			int n = (int)geoms.size();
+			int n = (int)states.size();
 			for (int i = 0; i < n; ++i)
 			{
-				Geometry* gi = geoms[i];
-				if (!IsMovingRigid(gi))
+				const GeometryWorldState& state1 = states[i];
+				Geometry* gi = state1.Geom;
+				if (!IsMovingRigid(state1))
 					continue;
 
-				m_tree->Query(gi->GetBoundingVolume_WorldSpace(), &result);
+				m_tree->Query(state1.WorldBounds, &result);
 				for (int j = 0; j < (int)result.size(); ++j)
 				{
 					Geometry* gj = static_cast<Geometry*>(result[j]);
@@ -711,22 +709,23 @@ namespace Riemann
 					}
 
 					const int index2 = it->second;
+					const GeometryWorldState& state2 = states[index2];
 					if (index2 == i)
 					{
 						continue;
 					}
 
-					if (!IsValidPair(gi, gj))
+					if (!IsValidPair(state1, state2))
 					{
 						continue;
 					}
 
-					if (IsMovingRigid(gj) && index2 < i)
+					if (IsMovingRigid(state2) && index2 < i)
 					{
 						continue;
 					}
 
-					if (!gi->GetBoundingVolume_WorldSpace().Intersect(gj->GetBoundingVolume_WorldSpace()))
+					if (!state1.WorldBounds.Intersect(state2.WorldBounds))
 					{
 						continue;
 					}
@@ -737,6 +736,25 @@ namespace Riemann
 		}
 
 	private:
+		void SyncMovedProxies(const std::vector<GeometryWorldState>& states)
+		{
+			for (const GeometryWorldState& state : states)
+			{
+				if (!state.Moved || state.Geom == nullptr)
+				{
+					continue;
+				}
+
+				const int nodeId = state.Geom->GetNodeId();
+				if (nodeId < 0)
+				{
+					continue;
+				}
+
+				m_tree->Update(nodeId, state.WorldBounds, state.Displacement);
+			}
+		}
+
 		DynamicAABBTree* m_tree;
 	};
 

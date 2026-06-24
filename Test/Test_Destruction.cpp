@@ -33,6 +33,12 @@ static float GetBoundsMaxSize(const Box3& bounds)
 	return std::max(size.x, std::max(size.y, size.z));
 }
 
+static Vector3 GetGeometryPosition(const Geometry* geom)
+{
+	const RigidBody* body = geom ? geom->GetParent<RigidBody>() : nullptr;
+	return body ? body->GetGeometryTransform(geom).pos : geom->GetPosition();
+}
+
 static void AppendMeshWithOffset(DynamicMesh& merged, const DynamicMesh& source, const Vector3& offset)
 {
 	FDynamicMeshEditor editor(&merged);
@@ -228,7 +234,7 @@ void TestDestructionSetAndCluster()
 	EXPECT(clusters[0]->GetGeometryByChunkIndex(2) == geometries[2]);
 	EXPECT(clusters[0]->GetChunkIndexByGeometry(geometries[2]) == 2);
 	EXPECT(geometries[2]->GetParent<RigidBody>() == clusterBody);
-	EXPECT_SAME(geometries[2]->GetWorldPosition(), destructSet.GetChunks()[2].Centroid);
+	EXPECT_SAME(GetGeometryPosition(geometries[2]), destructSet.GetChunks()[2].Centroid);
 	EXPECT(clusterBody->Freezing);
 	clusterBody->ReleaseGeometries();
 
@@ -267,7 +273,7 @@ void TestDestructionChunkConvexCollision()
 		EXPECT(geom == nullptr || geom->GetShapeType() == PrimitiveType::CONVEX_MESH);
 		if (geom)
 		{
-			EXPECT_SAME(geom->GetWorldPosition(), bounds.GetCenter());
+			EXPECT_SAME(GetGeometryPosition(geom), bounds.GetCenter());
 		}
 	}
 }
@@ -359,7 +365,7 @@ void TestDestructionClusterSplitKeepsWorldTransform()
 			Geometry* geom = cluster->GetGeometryByChunkIndex(chunkIndex);
 			EXPECT(geom != nullptr);
 			const Vector3 expected = destructSet.GetChunks()[(size_t)chunkIndex].Centroid + offset;
-			EXPECT_SAME(geom->GetWorldPosition(), expected);
+			EXPECT_SAME(GetGeometryPosition(geom), expected);
 		}
 	}
 

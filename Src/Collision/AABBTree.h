@@ -16,6 +16,10 @@ namespace Riemann
 	struct CacheFriendlyAABBTree;
 	class Geometry;
 
+	typedef bool (*AABBRayCastCallback)(const Ray3& Ray, Geometry* GeometryObject, const RayCastOption* Option, RayCastResult* Result, void* Context);
+	typedef bool (*AABBIntersectCallback)(const Geometry* QueryGeometry, Geometry* GeometryObject, const IntersectOption* Option, IntersectResult* Result, void* Context);
+	typedef bool (*AABBSweepCallback)(const Geometry* QueryGeometry, Geometry* GeometryObject, const Vector3& Direction, const SweepOption* Option, SweepResult* Result, void* Context);
+
 	struct TreeStatistics
 	{
 		int MaxStack;
@@ -40,8 +44,11 @@ namespace Riemann
 		void	Statistic(TreeStatistics& stat);
 
 		bool	RayCast(const Ray3& Ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult* Result) const;
+		bool	RayCast(const Ray3& Ray, Geometry** ObjectCollection, const RayCastOption* Option, RayCastResult* Result, AABBRayCastCallback Callback, void* Context) const;
 		bool	Intersect(const Geometry* intersect_geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const;
+		bool	Intersect(const Geometry* intersect_geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult* Result, AABBIntersectCallback Callback, void* Context) const;
 		bool	Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const;
+		bool	Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result, AABBSweepCallback Callback, void* Context) const;
 		void	CollectAABBs(std::vector<Box3>* aabbs) const;
 
 		int		IntersectPoint(const Vector3& Point) const;

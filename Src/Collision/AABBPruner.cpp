@@ -50,7 +50,7 @@ namespace Riemann
 			}
 
 			float t;
-			const Box3& box = object->GetBoundingVolume_WorldSpace();
+			const Box3& box = object->GetBounds();
 			if (!ray.IntersectAABB(box.Min, box.Max, &t) || t >= option->MaxDist)
 			{
 				continue;
@@ -103,7 +103,7 @@ namespace Riemann
 	static bool IntersectObjectRange(const Geometry* geometry, Geometry* const* objects, int count, const IntersectOption* option, IntersectResult* result)
 	{
 		bool hit = false;
-		const Box3& queryBox = geometry->GetBoundingVolume_WorldSpace();
+		const Box3& queryBox = geometry->GetBounds();
 
 		for (int i = 0; i < count; ++i)
 		{
@@ -113,7 +113,7 @@ namespace Riemann
 				continue;
 			}
 
-			if (!queryBox.Intersect(object->GetBoundingVolume_WorldSpace()))
+			if (!queryBox.Intersect(object->GetBounds()))
 			{
 				continue;
 			}
@@ -158,7 +158,7 @@ namespace Riemann
 			}
 
 			float fastT;
-			const Box3& box = object->GetBoundingVolume_WorldSpace();
+			const Box3& box = object->GetBounds();
 			if (!geometry->SweepTestFast(direction, box.Min, box.Max, &fastT))
 			{
 				continue;
@@ -322,7 +322,7 @@ namespace Riemann
 			{
 				if (object && object->IsQueryEnabled())
 				{
-					aabbs->push_back(object->GetBoundingVolume_WorldSpace());
+					aabbs->push_back(object->GetBounds());
 				}
 			}
 		}
@@ -498,7 +498,7 @@ namespace Riemann
 			BuildBuckets();
 
 			bool hit = false;
-			const Box3& queryBox = geometry->GetBoundingVolume_WorldSpace();
+			const Box3& queryBox = geometry->GetBounds();
 			for (const Bucket& bucket : m_Buckets)
 			{
 				if (!queryBox.Intersect(bucket.bounds))
@@ -609,7 +609,7 @@ namespace Riemann
 					continue;
 				}
 
-				const Box3& bounds = object->GetBoundingVolume_WorldSpace();
+				const Box3& bounds = object->GetBounds();
 				globalBox.Encapsulate(bounds);
 				m_SortedObjects.push_back(object);
 			}
@@ -624,8 +624,8 @@ namespace Riemann
 			std::sort(m_SortedObjects.begin(), m_SortedObjects.end(),
 				[sortAxis](Geometry* a, Geometry* b)
 				{
-					const float ca = a->GetBoundingVolume_WorldSpace().GetCenter()[sortAxis];
-					const float cb = b->GetBoundingVolume_WorldSpace().GetCenter()[sortAxis];
+					const float ca = a->GetBounds().GetCenter()[sortAxis];
+					const float cb = b->GetBounds().GetCenter()[sortAxis];
 					return ca < cb;
 				});
 
@@ -640,7 +640,7 @@ namespace Riemann
 
 				for (size_t i = 0; i < count; ++i)
 				{
-					bucket.bounds.Encapsulate(m_SortedObjects[first + i]->GetBoundingVolume_WorldSpace());
+					bucket.bounds.Encapsulate(m_SortedObjects[first + i]->GetBounds());
 				}
 				m_Buckets.push_back(bucket);
 			}
