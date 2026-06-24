@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -15,6 +16,8 @@
 namespace Riemann
 {
 	class Geometry;
+	class ConvexMesh;
+	class DynamicMesh;
 	class PhysicsWorld;
 	struct PhysicsContactInfo;
 	struct PhysicsContactPoint;
@@ -89,6 +92,7 @@ namespace Riemann
 		bool IsStatic = false;
 		bool IsFree = false;
 		bool IsSmashed = false;
+		std::shared_ptr<ConvexMesh> CollisionConvex;
 	};
 
 	struct DestructionMomentum
@@ -121,6 +125,7 @@ namespace Riemann
 		};
 
 		int AddChunk(const Box3& Bounds, float Mass = 1.0f, bool bStatic = false, const std::string& Name = std::string());
+		int AddChunk(const DynamicMesh& Mesh, float Mass = 1.0f, bool bStatic = false, const std::string& Name = std::string());
 		void SetChunks(const std::vector<DestructionChunk>& Chunks);
 		void Clear();
 

@@ -287,6 +287,16 @@ namespace Riemann
 			const Box3& bounds = geometry->GetBoundingVolume_WorldSpace();
 			return bounds.MaxDim() < 200.0f;
 		}
+
+		bool IsConvexDecompositionMode(int mode)
+		{
+			return mode == MeshCuttingMode_VHACD || mode == MeshCuttingMode_COACD;
+		}
+
+		const char* CuttingPanelName(int mode)
+		{
+			return IsConvexDecompositionMode(mode) ? "Convex Decomposition" : "Mesh Cutting";
+		}
 	}
 
 	WorldViewer::WorldViewer(RenderThread* renderThread, const std::string& sceneFile)
@@ -780,6 +790,7 @@ namespace Riemann
 		imguiLabel("Demo");
 		std::vector<std::string> demoNames = sceneFiles;
 		demoNames.push_back("Mesh Cutting");
+		demoNames.push_back("Convex Decomposition");
 		if (demoNames.empty())
 		{
 			imguiValue("No demos found");
@@ -812,7 +823,8 @@ namespace Riemann
 			if (cuttingPanelActive)
 			{
 				imguiSeparatorLine();
-				imguiLabel("Mesh Cutting");
+				const bool convexDecompositionDemo = IsConvexDecompositionMode(cuttingMode) || demoIndex == (int)sceneFiles.size() + 1;
+				imguiLabel(convexDecompositionDemo ? "Convex Decomposition" : "Mesh Cutting");
 
 				const std::string objValue = cuttingObjPath.empty()
 					? std::string("OBJ: bunny.obj")
@@ -825,23 +837,43 @@ namespace Riemann
 					m_ImguiPendingBrowseCuttingObj = true;
 				}
 
-				const char* modes[] =
-				{
-					"Parallel X",
-					"Parallel Y",
-					"Parallel Z",
-					"Voronoi 2D",
-					"Voronoi 3D",
-					"Cluster",
-					"Voxel2D",
-					"Voxel3D",
-				};
 				int selectedMode = std::max(0, std::min(cuttingMode, (int)MeshCuttingMode_Count - 1));
-				if (imguiCombo("Mode", &selectedMode, modes, (int)MeshCuttingMode_Count))
+				if (convexDecompositionDemo)
 				{
-					std::lock_guard<std::mutex> lock(m_ImguiMutex);
-					m_ImguiPendingCuttingMode = true;
-					m_ImguiPendingCuttingModeValue = selectedMode;
+					const char* modes[] =
+					{
+						"VHACD",
+						"COACD",
+					};
+					int selectedAlgorithm = selectedMode == MeshCuttingMode_COACD ? 1 : 0;
+					if (imguiCombo("Algorithm", &selectedAlgorithm, modes, 2))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_ImguiPendingCuttingMode = true;
+						m_ImguiPendingCuttingModeValue = selectedAlgorithm == 0 ? MeshCuttingMode_VHACD : MeshCuttingMode_COACD;
+					}
+					selectedMode = selectedAlgorithm == 0 ? MeshCuttingMode_VHACD : MeshCuttingMode_COACD;
+				}
+				else
+				{
+					const char* modes[] =
+					{
+						"Parallel X",
+						"Parallel Y",
+						"Parallel Z",
+						"Voronoi 2D",
+						"Voronoi 3D",
+						"Cluster",
+						"Voxel2D",
+						"Voxel3D",
+					};
+					selectedMode = std::max(0, std::min(selectedMode, (int)MeshCuttingMode_Voxel3D));
+					if (imguiCombo("Mode", &selectedMode, modes, (int)MeshCuttingMode_Voxel3D + 1))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_ImguiPendingCuttingMode = true;
+						m_ImguiPendingCuttingModeValue = selectedMode;
+					}
 				}
 
 				if (selectedMode == MeshCuttingMode_Voxel2D || selectedMode == MeshCuttingMode_Voxel3D)
@@ -906,7 +938,7 @@ namespace Riemann
 					m_ImguiPendingCuttingSeparationValue = separation;
 				}
 
-				if (imguiButton("Apply Cut"))
+				if (imguiButton(convexDecompositionDemo ? "Apply" : "Apply Cut"))
 				{
 					std::lock_guard<std::mutex> lock(m_ImguiMutex);
 					m_ImguiPendingApplyCutting = true;
@@ -1009,7 +1041,7 @@ namespace Riemann
 			m_HighlightedGeometry = nullptr;
 			m_CuttingPieces.clear();
 			m_CuttingPanelActive = true;
-			m_CurrentSceneName = "Mesh Cutting";
+			m_CurrentSceneName = CuttingPanelName(m_CuttingMode);
 			m_CuttingStatus = "Missing OBJ: bunny.obj";
 			RebuildRenderScene();
 			UpdateImguiState();
@@ -1024,7 +1056,7 @@ namespace Riemann
 			m_HighlightedGeometry = nullptr;
 			m_CuttingPieces.clear();
 			m_CuttingPanelActive = true;
-			m_CurrentSceneName = "Mesh Cutting";
+			m_CurrentSceneName = CuttingPanelName(m_CuttingMode);
 			m_CuttingStatus = source.Status.empty() ? "Failed to read OBJ" : source.Status;
 			RebuildRenderScene();
 			UpdateImguiState();
@@ -1047,7 +1079,7 @@ namespace Riemann
 		m_HighlightedGeometry = nullptr;
 		m_CuttingPieces.clear();
 		m_CuttingPanelActive = true;
-		m_CurrentSceneName = "Mesh Cutting";
+		m_CurrentSceneName = CuttingPanelName(m_CuttingMode);
 
 		Geometry* geometry = m_World->AddTriangleMeshObject("mesh_source", source.Mesh, Transform(Vector3::Zero()), RigidType::Static, Vector4(0.72f, 0.76f, 0.82f, 1.0f), false);
 		if (geometry == nullptr)
@@ -1060,7 +1092,7 @@ namespace Riemann
 
 		m_CamCenter = center;
 		m_CamParam = Vector3(1.05f, 0.45f, std::max(1.0f, m_CuttingMaxSeparation * 3.5f));
-		m_CuttingStatus = source.Status + ". Click Apply Cut";
+		m_CuttingStatus = source.Status + (IsConvexDecompositionMode(m_CuttingMode) ? ". Click Apply" : ". Click Apply Cut");
 
 		RebuildRenderScene();
 
@@ -1143,7 +1175,7 @@ namespace Riemann
 		m_HighlightedGeometry = nullptr;
 		m_CuttingPieces.clear();
 		m_CuttingPanelActive = true;
-		m_CurrentSceneName = "Mesh Cutting";
+		m_CurrentSceneName = CuttingPanelName(m_CuttingMode);
 
 		for (size_t pieceIndex = 0; pieceIndex < cuttingResult.Pieces.size(); ++pieceIndex)
 		{
@@ -1480,12 +1512,26 @@ namespace Riemann
 
 		if (pendingDemoIndex >= 0)
 		{
-			if (pendingDemoIndex < (int)m_SceneFiles.size())
+			const int meshCuttingDemoIndex = (int)m_SceneFiles.size();
+			const int convexDecompositionDemoIndex = meshCuttingDemoIndex + 1;
+			if (pendingDemoIndex < meshCuttingDemoIndex)
 			{
 				LoadScene(m_SceneFiles[(size_t)pendingDemoIndex]);
 			}
-			else if (pendingDemoIndex == (int)m_SceneFiles.size())
+			else if (pendingDemoIndex == meshCuttingDemoIndex)
 			{
+				if (IsConvexDecompositionMode(m_CuttingMode))
+				{
+					m_CuttingMode = MeshCuttingMode_VoronoiFracture3D;
+				}
+				LoadCuttingPanel();
+			}
+			else if (pendingDemoIndex == convexDecompositionDemoIndex)
+			{
+				if (!IsConvexDecompositionMode(m_CuttingMode))
+				{
+					m_CuttingMode = MeshCuttingMode_VHACD;
+				}
 				LoadCuttingPanel();
 			}
 		}
@@ -1524,6 +1570,10 @@ namespace Riemann
 		if (pendingCuttingMode)
 		{
 			m_CuttingMode = std::max(0, std::min(pendingCuttingModeValue, (int)MeshCuttingMode_Count - 1));
+			if (m_CuttingPanelActive)
+			{
+				m_CurrentSceneName = CuttingPanelName(m_CuttingMode);
+			}
 			pendingCuttingParams = true;
 		}
 		if (pendingCuttingPieceCount)
@@ -1571,7 +1621,7 @@ namespace Riemann
 		}
 		else if (pendingCuttingParams && m_CuttingPanelActive)
 		{
-			m_CuttingStatus = "Ready. Click Apply Cut";
+			m_CuttingStatus = IsConvexDecompositionMode(m_CuttingMode) ? "Ready. Click Apply" : "Ready. Click Apply Cut";
 			UpdateImguiState();
 		}
 
@@ -1589,7 +1639,9 @@ namespace Riemann
 		m_ImguiCuttingObjFiles = m_CuttingObjFiles;
 		m_ImguiCuttingObjPath = m_CuttingObjPath;
 		m_ImguiCuttingStatus = m_CuttingStatus;
-		m_ImguiDemoIndex = m_CuttingPanelActive ? (int)m_SceneFiles.size() : GetCurrentSceneDemoIndex();
+		m_ImguiDemoIndex = m_CuttingPanelActive
+			? ((int)m_SceneFiles.size() + (IsConvexDecompositionMode(m_CuttingMode) ? 1 : 0))
+			: GetCurrentSceneDemoIndex();
 		m_ImguiObjectCount = m_World ? m_World->GetObjects().size() : 0;
 		m_ImguiCameraDistance = m_CamParam.z;
 		m_ImguiCuttingPanelActive = m_CuttingPanelActive;

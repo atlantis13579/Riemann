@@ -5,6 +5,8 @@
 #include <queue>
 
 #include "../Collision/GeometryObject.h"
+#include "../CollisionPrimitive/ConvexMesh.h"
+#include "../Geometry/DynamicMesh.h"
 #include "../RigidBodyDynamics/PhysicsWorld.h"
 
 namespace Riemann
@@ -46,6 +48,70 @@ namespace Riemann
 				DistanceSquared += Delta * Delta;
 			}
 			return DistanceSquared <= Radius * Radius;
+		}
+
+		bool IsValidBounds(const Box3& Bounds)
+		{
+			return Bounds.Min.x <= Bounds.Max.x && Bounds.Min.y <= Bounds.Max.y && Bounds.Min.z <= Bounds.Max.z;
+		}
+
+		Box3 CalculateMeshBounds(const DynamicMesh& Mesh)
+		{
+			Box3 Bounds = Box3::Empty();
+			for (int VertexIndex = 0; VertexIndex < Mesh.GetVertexCount(); ++VertexIndex)
+			{
+				if (Mesh.IsVertexFast(VertexIndex))
+				{
+					Bounds.Encapsulate(Mesh.GetVertex(VertexIndex));
+				}
+			}
+			return Bounds;
+		}
+
+		std::vector<Vector3> CollectMeshPoints(const DynamicMesh& Mesh)
+		{
+			std::vector<Vector3> Points;
+			Points.reserve(Mesh.GetVertexCount());
+			for (int VertexIndex = 0; VertexIndex < Mesh.GetVertexCount(); ++VertexIndex)
+			{
+				if (Mesh.IsVertexFast(VertexIndex))
+				{
+					Points.push_back(Mesh.GetVertex(VertexIndex));
+				}
+			}
+			return Points;
+		}
+
+		void InitializeChunkFromBounds(DestructionChunk& Chunk, const Box3& Bounds, float Mass, bool bStatic, const std::string& Name)
+		{
+			Chunk.Name = Name;
+			Chunk.Bounds = Bounds;
+			Chunk.Centroid = Bounds.GetCenter();
+			Chunk.Volume = std::max(Bounds.GetVolume(), 1e-3f);
+			Chunk.Mass = std::max(Mass, 1e-3f);
+			Chunk.Density = Chunk.Mass / Chunk.Volume;
+			Chunk.IsStatic = bStatic;
+
+			DestructionBondList TempList;
+			TempList.InitCollapseStrength(Bounds);
+			Chunk.CollapseStrength = TempList.Strength;
+		}
+
+		std::shared_ptr<ConvexMesh> BuildChunkCollisionConvex(const DynamicMesh& Mesh, const Vector3& LocalOrigin, const Box3& Bounds)
+		{
+			std::vector<Vector3> Points = CollectMeshPoints(Mesh);
+			if (Points.size() < 4)
+			{
+				return std::shared_ptr<ConvexMesh>();
+			}
+
+			const float Tolerance = std::max(Bounds.MaxDim() * 1e-5f, 1e-6f);
+			std::shared_ptr<ConvexMesh> Convex(new ConvexMesh());
+			if (!Convex->BuildFromPoints(Points.data(), (int)Points.size(), LocalOrigin, Tolerance))
+			{
+				return std::shared_ptr<ConvexMesh>();
+			}
+			return Convex;
 		}
 	}
 
@@ -111,17 +177,29 @@ namespace Riemann
 	int DestructionSet::AddChunk(const Box3& Bounds, float Mass, bool bStatic, const std::string& Name)
 	{
 		DestructionChunk Chunk;
-		Chunk.Name = Name;
-		Chunk.Bounds = Bounds;
-		Chunk.Centroid = Bounds.GetCenter();
-		Chunk.Volume = std::max(Bounds.GetVolume(), 1e-3f);
-		Chunk.Mass = std::max(Mass, 1e-3f);
-		Chunk.Density = Chunk.Mass / Chunk.Volume;
-		Chunk.IsStatic = bStatic;
+		InitializeChunkFromBounds(Chunk, Bounds, Mass, bStatic, Name);
 
-		DestructionBondList TempList;
-		TempList.InitCollapseStrength(Bounds);
-		Chunk.CollapseStrength = TempList.Strength;
+		const int Index = (int)mChunks.size();
+		mChunks.push_back(Chunk);
+		mGraph.Resize(mChunks.size());
+		RecalculateBounds();
+		return Index;
+	}
+
+	int DestructionSet::AddChunk(const DynamicMesh& Mesh, float Mass, bool bStatic, const std::string& Name)
+	{
+		Box3 Bounds = CalculateMeshBounds(Mesh);
+		if (!IsValidBounds(Bounds))
+		{
+			Bounds = Mesh.GetBounds();
+		}
+
+		DestructionChunk Chunk;
+		InitializeChunkFromBounds(Chunk, Bounds, Mass, bStatic, Name);
+		if (IsValidBounds(Bounds))
+		{
+			Chunk.CollisionConvex = BuildChunkCollisionConvex(Mesh, Chunk.Centroid, Bounds);
+		}
 
 		const int Index = (int)mChunks.size();
 		mChunks.push_back(Chunk);

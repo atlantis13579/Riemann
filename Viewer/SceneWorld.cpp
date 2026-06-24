@@ -516,7 +516,7 @@ namespace Riemann
 		bool SimulationEnabled = true;
 		int RepeatCount[3] = { 1, 1, 1 };
 		int DestructionPiecesX = 5;
-		int DestructionPiecesY = 1;
+		int DestructionPiecesY = 5;
 		int DestructionPiecesZ = 5;
 		float DestructionBondStrength = 1.0f;
 		float DestructionBreakThreshold = 2.0f;
@@ -1003,7 +1003,7 @@ namespace Riemann
 
 			std::ostringstream chunkName;
 			chunkName << desc.Id << "_cell_" << piece.CellIndex;
-			pieceToChunk[pieceIndex] = destructSet->AddChunk(chunkBounds, chunkMass, desc.BodyType == RigidType::Static, chunkName.str());
+			pieceToChunk[pieceIndex] = destructSet->AddChunk(piece.Mesh, chunkMass, desc.BodyType == RigidType::Static, chunkName.str());
 		}
 
 		int bondIndex = 0;

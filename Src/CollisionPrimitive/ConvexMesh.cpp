@@ -6,7 +6,9 @@
 #include "GJK.h"
 #include "../Geometry/ConvexHull3.h"
 
+#include <algorithm>
 #include <cstring>
+#include <limits>
 
 namespace Riemann
 {
@@ -65,6 +67,79 @@ void ConvexMesh::SetConvexData(Vector3* verts, uint16_t nVerties,
 		Indices = indices;
 	}
 	Bounds = ComputeBoundingVolume();
+}
+
+bool ConvexMesh::BuildFromPoints(const Vector3* points, int numPoints, const Vector3& localOrigin, float distanceTolerance)
+{
+	Release();
+	if (points == nullptr || numPoints < 4)
+	{
+		return false;
+	}
+
+	std::vector<Vector3> localPoints;
+	localPoints.reserve(numPoints);
+	for (int pointIndex = 0; pointIndex < numPoints; ++pointIndex)
+	{
+		localPoints.push_back(points[pointIndex] - localOrigin);
+	}
+
+	ConvexHull3Options options;
+	options.DistanceTolerance = distanceTolerance;
+
+	ConvexHull3d hull;
+	if (!BuildConvexHull3(localPoints, hull, options))
+	{
+		return false;
+	}
+
+	if (hull.verts.size() < 4 || hull.verts.size() > std::numeric_limits<uint8_t>::max() ||
+		hull.faces.empty() || hull.faces.size() > std::numeric_limits<uint16_t>::max())
+	{
+		return false;
+	}
+
+	std::vector<ConvexMeshFace> faces;
+	std::vector<uint8_t> indices;
+	faces.reserve(hull.faces.size());
+	indices.reserve(hull.faces.size() * 3);
+
+	for (const HullFace3d& sourceFace : hull.faces)
+	{
+		if (sourceFace.verts.size() < 3 || sourceFace.verts.size() > std::numeric_limits<uint8_t>::max())
+		{
+			continue;
+		}
+		if (indices.size() + sourceFace.verts.size() > std::numeric_limits<uint16_t>::max())
+		{
+			return false;
+		}
+
+		const uint16_t first = (uint16_t)indices.size();
+		for (short sourceIndex : sourceFace.verts)
+		{
+			if (sourceIndex < 0 || sourceIndex >= (short)hull.verts.size())
+			{
+				return false;
+			}
+			indices.push_back((uint8_t)sourceIndex);
+		}
+
+		faces.emplace_back(Plane3(sourceFace.norm, sourceFace.w), (uint8_t)sourceFace.verts.size(), first);
+	}
+
+	if (faces.size() < 4)
+	{
+		return false;
+	}
+
+	SetConvexData(
+		hull.verts.data(), (uint16_t)hull.verts.size(),
+		faces.data(), (uint16_t)faces.size(),
+		nullptr, 0,
+		indices.data(), (uint16_t)indices.size(),
+		false);
+	return NumVertices >= 4 && NumFaces >= 4;
 }
 
 bool ConvexMesh::ValidateStructure() const

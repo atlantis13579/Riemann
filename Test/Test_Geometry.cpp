@@ -7,10 +7,12 @@
 
 #include "../Src/CollisionPrimitive/AxisAlignedBox3.h"
 #include "../Src/CollisionPrimitive/Capsule3.h"
+#include "../Src/CollisionPrimitive/ConvexMesh.h"
 #include "../Src/CollisionPrimitive/OrientedBox3.h"
 #include "../Src/CollisionPrimitive/Sphere3.h"
 #include "../Src/CollisionPrimitive/StaticMesh.h"
 #include "../Src/Destruction/Fracture.h"
+#include "../Src/Geometry/ConvexDecomposition.h"
 #include "../Src/Geometry/Spline.h"
 #include "../Src/Geometry/DynamicMesh.h"
 #include "../Src/Geometry/GeometryBoolean.h"
@@ -501,6 +503,18 @@ static bool PiecesUseXYAxisSeparation(const std::vector<FracturePiece>& pieces, 
 	return foundNonUnitOffset;
 }
 
+static bool HasValidConvexMeshes(const std::vector<ConvexMesh>& convexMeshes)
+{
+	for (const ConvexMesh& convexMesh : convexMeshes)
+	{
+		if (convexMesh.GetNumVertices() >= 4 && convexMesh.GetNumFaces() >= 4)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 static bool IsPointOnMeshVertex(const DynamicMesh& mesh, const Vector3& point, float tolerance)
 {
 	const float toleranceSqr = tolerance * tolerance;
@@ -827,6 +841,28 @@ void TestMeshCutAlgorithms()
 	EXPECT(HasValidPieceConnectivity(pieces));
 }
 
+void TestConvexDecompositionAlgorithms()
+{
+	printf("Running TestConvexDecompositionAlgorithms\n");
+
+	StaticMesh box;
+	box.Flags = 0;
+	box.AddAABB(Vector3(-1.0f, -1.0f, -1.0f), Vector3(1.0f, 1.0f, 1.0f));
+	box.CalculateBoundingBox();
+
+	std::vector<ConvexMesh> convexMeshes;
+	ConvexDecomposition::VHACDParameters vhacdParameters;
+	vhacdParameters.MaxPieceCount = 4;
+	EXPECT(ConvexDecomposition::DecomposeVHACD(box, vhacdParameters, convexMeshes));
+	EXPECT(HasValidConvexMeshes(convexMeshes));
+
+	convexMeshes.clear();
+	ConvexDecomposition::COACDParameters coacdParameters;
+	coacdParameters.MaxPieceCount = 4;
+	EXPECT(ConvexDecomposition::DecomposeCOACD(box, coacdParameters, convexMeshes));
+	EXPECT(HasValidConvexMeshes(convexMeshes));
+}
+
 void TestHashGrid()
 {
 	printf("Running TestHashGrid\n");
@@ -888,4 +924,5 @@ void TestGeometry()
 	TestGeometrySet();
 	TestGeometryBoolean();
 	TestMeshCutAlgorithms();
+	TestConvexDecompositionAlgorithms();
 }

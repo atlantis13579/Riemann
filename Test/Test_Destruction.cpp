@@ -54,6 +54,33 @@ static Geometry* MakeChunkGeometry(const Box3& bounds)
 	return GeometryFactory::CreateOBB(bounds.GetCenter(), bounds.GetExtent());
 }
 
+static DynamicMesh MakeChunkMesh(const Box3& bounds)
+{
+	Vector3 vertices[8];
+	Box3::GetVertices(bounds.Min, bounds.Max, vertices);
+
+	DynamicMesh mesh;
+	for (int vertexIndex = 0; vertexIndex < 8; ++vertexIndex)
+	{
+		mesh.AppendVertex(vertices[vertexIndex]);
+	}
+
+	mesh.AppendTriangle(0, 2, 1);
+	mesh.AppendTriangle(1, 2, 3);
+	mesh.AppendTriangle(4, 5, 6);
+	mesh.AppendTriangle(5, 7, 6);
+	mesh.AppendTriangle(0, 1, 4);
+	mesh.AppendTriangle(1, 5, 4);
+	mesh.AppendTriangle(2, 6, 3);
+	mesh.AppendTriangle(3, 6, 7);
+	mesh.AppendTriangle(0, 4, 2);
+	mesh.AppendTriangle(2, 4, 6);
+	mesh.AppendTriangle(1, 3, 5);
+	mesh.AppendTriangle(3, 7, 5);
+	mesh.BuildBounds();
+	return mesh;
+}
+
 void TestMetis()
 {
 	int nVertices = 8;
@@ -214,6 +241,35 @@ void TestDestructionSetAndCluster()
 	DestructionSet::Stats stats = destructSet.GetStats();
 	EXPECT(stats.StaticCount == 1);
 	EXPECT(stats.FreeCount == 3);
+}
+
+void TestDestructionChunkConvexCollision()
+{
+	printf("Running TestDestructionChunkConvexCollision\n");
+
+	PhysicsWorldParam simParam;
+	PhysicsWorld simulation(simParam);
+	DestructionSet destructSet(simulation);
+
+	const Box3 bounds = MakeChunkBounds(0.0f, 1.0f);
+	DynamicMesh mesh = MakeChunkMesh(bounds);
+	const int chunkIndex = destructSet.AddChunk(mesh, 1.0f, false, "convex");
+	EXPECT(chunkIndex == 0);
+	EXPECT(destructSet.GetChunks()[0].CollisionConvex != nullptr);
+
+	destructSet.RebuildClustersFromGraph();
+	std::vector<DestructionCluster*> clusters = destructSet.GetClusters();
+	EXPECT(clusters.size() == 1);
+	if (!clusters.empty())
+	{
+		Geometry* geom = clusters[0]->GetGeometryByChunkIndex(0);
+		EXPECT(geom != nullptr);
+		EXPECT(geom == nullptr || geom->GetShapeType() == PrimitiveType::CONVEX_MESH);
+		if (geom)
+		{
+			EXPECT_SAME(geom->GetWorldPosition(), bounds.GetCenter());
+		}
+	}
 }
 
 void TestDestructionEvents()
@@ -492,14 +548,18 @@ void TestPlanarCellsBunny()
 		}
 		AppendMeshWithOffset(merged, piece.Mesh, direction * maxSize * 0.55f);
 	}
-	merged.BuildBounds();
-	EXPECT(merged.ExportObj(TestOutputPath("planar_cells_boxes.obj").c_str()));
 
 	DynamicMesh preview;
 	bool previewBuilt = MeshCut::CreateCuttingSurfacePreview(planarCells, bounds, preview, options);
 	EXPECT(previewBuilt);
 	EXPECT(CountValidTriangles(preview) > 0);
-	EXPECT(preview.ExportObj(TestOutputPath("planar_cells_preview.obj").c_str()));
+	if (previewBuilt)
+	{
+		AppendMeshWithOffset(merged, preview, Vector3(0.0f, 0.0f, maxSize * 0.85f));
+	}
+
+	merged.BuildBounds();
+	EXPECT(merged.ExportObj(TestOutputPath("planar_cells.obj").c_str()));
 }
 
 void TestDestruction()
@@ -509,6 +569,7 @@ void TestDestruction()
 	TestConnectionGraphDestruction();
 	TestConnectionGraphPartition();
 	TestDestructionSetAndCluster();
+	TestDestructionChunkConvexCollision();
 	TestDestructionEvents();
 	TestDestructionMomentum();
 	TestDestructionClusterSplitKeepsWorldTransform();

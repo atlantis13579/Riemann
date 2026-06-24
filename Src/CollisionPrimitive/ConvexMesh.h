@@ -82,6 +82,8 @@ namespace Riemann
 			uint8_t* indices, uint16_t nIndices,
 			bool shared_mem);
 
+		bool		BuildFromPoints(const Vector3* points, int numPoints, const Vector3& localOrigin = Vector3::Zero(), float distanceTolerance = 1e-5f);
+
 		uint16_t	GetNumVertices() const
 		{
 			return NumVertices;

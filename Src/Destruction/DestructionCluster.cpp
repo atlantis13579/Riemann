@@ -6,6 +6,7 @@
 
 #include "DestructionSet.h"
 #include "../Collision/GeometryObject.h"
+#include "../CollisionPrimitive/ConvexMesh.h"
 #include "../RigidBodyDynamics/RigidBody.h"
 #include "../RigidBodyDynamics/PhysicsWorld.h"
 
@@ -75,6 +76,31 @@ namespace Riemann
 			Mass->InertiaMat *= NewMass / OldMass;
 			Mass->Mass = NewMass;
 			Mass->Volume = std::max(Chunk.Volume, 1e-3f);
+		}
+
+		Geometry* CreateGeometryForChunk(const DestructionChunk& Chunk)
+		{
+			if (Chunk.CollisionConvex && Chunk.CollisionConvex->GetNumVertices() >= 4 && Chunk.CollisionConvex->GetNumFaces() >= 4)
+			{
+				Geometry* Geom = GeometryFactory::CreateConvexMesh();
+				ConvexMesh* Convex = Geom ? Geom->GetShapeObj<ConvexMesh>() : nullptr;
+				if (Convex)
+				{
+					Convex->SetConvexData(
+						Chunk.CollisionConvex->Vertices, Chunk.CollisionConvex->NumVertices,
+						Chunk.CollisionConvex->Faces, Chunk.CollisionConvex->NumFaces,
+						nullptr, 0,
+						Chunk.CollisionConvex->Indices, Chunk.CollisionConvex->NumIndices,
+						false);
+					Geom->UpdateVolumeProperties();
+					Geom->SetWorldTransform(Chunk.Centroid, Quaternion::One());
+					return Geom;
+				}
+
+				GeometryFactory::DeleteGeometry(Geom);
+			}
+
+			return GeometryFactory::CreateOBB(Chunk.Bounds.GetCenter(), Chunk.Bounds.GetExtent());
 		}
 	}
 
@@ -297,7 +323,7 @@ namespace Riemann
 			}
 
 			const DestructionChunk& Chunk = Chunks[(size_t)Index];
-			Geometry* Geom = GeometryFactory::CreateOBB(Chunk.Bounds.GetCenter(), Chunk.Bounds.GetExtent());
+			Geometry* Geom = CreateGeometryForChunk(Chunk);
 			OverrideGeometryMass(Geom, Chunk);
 			Geometries.push_back(Geom);
 		}
