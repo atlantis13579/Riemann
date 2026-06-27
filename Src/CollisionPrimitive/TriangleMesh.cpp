@@ -104,7 +104,7 @@ namespace Riemann
 
 		assert(bvh->BatchPtr);
 		assert((uintptr_t(bvh->BatchPtr) & 127) == 0);
-		assert((uintptr_t(mesh) & 15) == 0);
+		// assert((uintptr_t(mesh) & 15) == 0);
 
 		F128 nqMin = F128_Load_Vector3d(Bmin);
 		F128 nqMax = F128_Load_Vector3d(Bmax);

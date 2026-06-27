@@ -234,6 +234,52 @@ namespace Riemann
 		return min_idx;
 	}
 
+	static int RayIntersectPayloads(const Ray3& Ray, int* Indices, int NumIndices, const AABBTreePayloadId* PayloadIds, const Box3& BV, const RayCastOption* Option, RayCastResult* Result, AABBRayCastPayloadCallback Callback, void* Context)
+	{
+		assert(NumIndices > 0);
+
+		if (PayloadIds == nullptr || Callback == nullptr)
+		{
+			float t;
+			if (Ray.IntersectAABB(BV.Min, BV.Max, &t) && t < Option->MaxDist)
+			{
+				Result->hit = true;
+				if (t < Result->hitTimeMin)
+				{
+					Result->hitGeom = nullptr;
+					Result->hitTimeMin = t;
+				}
+				return *Indices;
+			}
+
+			return -1;
+		}
+
+		int min_idx = -1;
+		float min_t = FLT_MAX;
+		for (int i = 0; i < NumIndices; ++i)
+		{
+			const int index = Indices[i];
+			const AABBTreePayloadId payloadId = PayloadIds[index];
+			if (Callback(Ray, payloadId, Option, Result, Context))
+			{
+				if (Option->Type == RayCastOption::RAYCAST_ANY)
+				{
+					min_idx = index;
+					break;
+				}
+
+				if (Result->hitTime < min_t)
+				{
+					min_idx = index;
+					min_t = Result->hitTime;
+				}
+			}
+		}
+
+		return min_idx;
+	}
+
 	bool RayIntersectCacheObj(const Ray3& Ray, const RayCastOption* Option, RayCastResult* Result, AABBRayCastCallback Callback, void* Context)
 	{
 		const RayCastCache& Cache = Option->Cache;
@@ -381,6 +427,102 @@ namespace Riemann
 		return false;
 	}
 
+	bool  AABBTree::RayCast(const Ray3& Ray, const AABBTreePayloadId* PayloadIds, const RayCastOption* Option, RayCastResult* Result, AABBRayCastPayloadCallback Callback, void* Context) const
+	{
+		Result->hit = false;
+		Result->hitTestCount = 0;
+		Result->hitTimeMin = FLT_MAX;
+		Result->hitGeom = nullptr;
+		if (m_Dirty)
+		{
+			return false;
+		}
+
+		float t1, t2;
+		CacheFriendlyAABBTree* p = m_AABBTreeInference;
+		if (p == nullptr || !Ray.IntersectAABB(p->aabb.Min, p->aabb.Max, &t1) || t1 >= Option->MaxDist)
+		{
+			return false;
+		}
+
+		StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
+		stack.push(0);
+
+		while (!stack.empty())
+		{
+			p = m_AABBTreeInference + stack.pop();
+			while (p)
+			{
+				if (p->IsLeaf())
+				{
+					int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
+					const int	 nPrimitives = p->GetNumGeometries();
+					const Box3& Box = p->GetBoundingVolume();
+					const int HitId = RayIntersectPayloads(Ray, PrimitiveIndices, nPrimitives, PayloadIds, Box, Option, Result, Callback, Context);
+					if (HitId >= 0)
+					{
+						if (Option->Type == RayCastOption::RAYCAST_ANY)
+						{
+							Result->hitPoint = Ray.PointAt(Result->hitTimeMin);
+							return true;
+						}
+					}
+					break;
+				}
+
+				CacheFriendlyAABBTree* Left = LEFT_NODE(p);
+				CacheFriendlyAABBTree* Right = RIGHT_NODE(p);
+
+				Result->AddTestCount(2);
+
+				bool hit1 = Left && Ray.IntersectAABB(Left->aabb.Min, Left->aabb.Max, &t1);
+				bool hit2 = Right && Ray.IntersectAABB(Right->aabb.Min, Right->aabb.Max, &t2);
+
+				if (Option->Type != RayCastOption::RAYCAST_PENETRATE)
+				{
+					hit1 = hit1 && t1 < Result->hitTimeMin&& t1 < Option->MaxDist;
+					hit2 = hit2 && t2 < Result->hitTimeMin&& t2 < Option->MaxDist;
+				}
+
+				assert(!stack.full());
+				if (hit1 && hit2)
+				{
+					if (t1 < t2)
+					{
+						p = Left;
+						stack.push((uint32_t)(Right - m_AABBTreeInference));
+					}
+					else
+					{
+						p = Right;
+						stack.push((uint32_t)(Left - m_AABBTreeInference));
+					}
+					continue;
+				}
+				else if (hit1)
+				{
+					p = Left;
+					continue;
+				}
+				else if (hit2)
+				{
+					p = Right;
+					continue;
+				}
+
+				break;
+			}
+
+		}
+
+		if (Result->hit || Result->hitGeometries.size() > 0)
+		{
+			Result->hitPoint = Ray.PointAt(Result->hitTimeMin);
+			return true;
+		}
+		return false;
+	}
+
 	void AABBTree::CollectAABBs(std::vector<Box3>* aabbs) const
 	{
 		if (aabbs == nullptr || m_Dirty || m_AABBTreeInference == nullptr)
@@ -454,6 +596,29 @@ namespace Riemann
 		return Result->overlaps;
 	}
 
+	static bool OverlapPayloads(const Geometry* geometry, int* Indices, int NumIndices, const AABBTreePayloadId* PayloadIds, const IntersectOption* Option, IntersectResult* Result, AABBIntersectPayloadCallback Callback, void* Context)
+	{
+		assert(NumIndices > 0);
+		if (PayloadIds == nullptr || Callback == nullptr)
+		{
+			return true;
+		}
+
+		for (int i = 0; i < NumIndices; ++i)
+		{
+			const int index = Indices[i];
+			const AABBTreePayloadId payloadId = PayloadIds[index];
+			if (Callback(geometry, payloadId, Option, Result, Context))
+			{
+				if (Result->overlapGeoms.size() >= Option->maxOverlaps)
+				{
+					return true;
+				}
+			}
+		}
+		return Result->overlaps;
+	}
+
 	bool AABBTree::Intersect(const Geometry* intersect_geometry, Geometry** ObjectCollection, const IntersectOption* Option, IntersectResult* Result) const
 	{
 		return Intersect(intersect_geometry, ObjectCollection, Option, Result, nullptr, nullptr);
@@ -489,6 +654,80 @@ namespace Riemann
 					int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
 					int	 nPrimitives = p->GetNumGeometries();
 					bool overlap = OverlapGeometries(intersect_geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Option, Result, Callback, Context);
+					if (overlap)
+					{
+						if (Result->overlapGeoms.size() >= Option->maxOverlaps)
+						{
+							return true;
+						}
+					}
+					break;
+				}
+
+				Result->AddTestCount(2);
+
+				CacheFriendlyAABBTree* Left = LEFT_NODE(p);
+				CacheFriendlyAABBTree* Right = RIGHT_NODE(p);
+
+				bool intersect1 = aabb.Intersect(Left->aabb.Min, Left->aabb.Max);
+				bool intersect2 = aabb.Intersect(Right->aabb.Min, Right->aabb.Max);
+
+				assert(!stack.full());
+				if (intersect1 && intersect2)
+				{
+					p = Left;
+					stack.push((uint32_t)(Right - m_AABBTreeInference));
+					continue;
+				}
+				else if (intersect1)
+				{
+					p = Left;
+					continue;
+				}
+				else if (intersect2)
+				{
+					p = Right;
+					continue;
+				}
+
+				break;
+			}
+
+		}
+
+		return Result->overlaps;
+	}
+
+	bool AABBTree::Intersect(const Geometry* intersect_geometry, const AABBTreePayloadId* PayloadIds, const IntersectOption* Option, IntersectResult* Result, AABBIntersectPayloadCallback Callback, void* Context) const
+	{
+		Result->overlaps = false;
+		Result->overlapGeoms.clear();
+		if (m_Dirty)
+		{
+			return false;
+		}
+
+		const Box3& aabb = intersect_geometry->GetBounds();
+
+		CacheFriendlyAABBTree* p = m_AABBTreeInference;
+		if (p == nullptr || !aabb.Intersect(p->aabb.Min, p->aabb.Max))
+		{
+			return false;
+		}
+
+		StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
+		stack.push(0);
+
+		while (!stack.empty())
+		{
+			p = m_AABBTreeInference + stack.pop();
+			while (p)
+			{
+				if (p->IsLeaf())
+				{
+					int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
+					int	 nPrimitives = p->GetNumGeometries();
+					bool overlap = OverlapPayloads(intersect_geometry, PrimitiveIndices, nPrimitives, PayloadIds, Option, Result, Callback, Context);
 					if (overlap)
 					{
 						if (Result->overlapGeoms.size() >= Option->maxOverlaps)
@@ -602,6 +841,39 @@ namespace Riemann
 		return min_idx;
 	}
 
+	static int SweepPayloads(const Geometry* sweep_geometry, int* Indices, const int NumIndices, const AABBTreePayloadId* PayloadIds, const Vector3& Direction, const SweepOption* Option, SweepResult* Result, AABBSweepPayloadCallback Callback, void* Context)
+	{
+		assert(NumIndices > 0);
+		if (PayloadIds == nullptr || Callback == nullptr)
+		{
+			return -1;
+		}
+
+		int min_idx = -1;
+		float min_t = FLT_MAX;
+		for (int i = 0; i < NumIndices; ++i)
+		{
+			const int index = Indices[i];
+			const AABBTreePayloadId payloadId = PayloadIds[index];
+			if (Callback(sweep_geometry, Direction, payloadId, Option, Result, Context))
+			{
+				if (Option->Type == SweepOption::SWEEP_ANY)
+				{
+					min_idx = index;
+					break;
+				}
+
+				if (Result->hitTime < min_t)
+				{
+					min_idx = index;
+					min_t = Result->hitTime;
+				}
+			}
+		}
+
+		return min_idx;
+	}
+
 	bool AABBTree::Sweep(const Geometry* sweep_geometry, Geometry** ObjectCollection, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const
 	{
 		return Sweep(sweep_geometry, ObjectCollection, Direction, Option, Result, nullptr, nullptr);
@@ -637,6 +909,96 @@ namespace Riemann
 					int	 nPrimitives = p->GetNumGeometries();
 					const Box3& Box = p->GetBoundingVolume();
 					int HitId = SweepGeometries(sweep_geometry, PrimitiveIndices, nPrimitives, ObjectCollection, Direction, Box, Option, Result, Callback, Context);
+					if (HitId >= 0)
+					{
+						if (Option->Type == SweepOption::SWEEP_ANY)
+						{
+							return true;
+						}
+					}
+					break;
+				}
+
+				CacheFriendlyAABBTree* Left = LEFT_NODE(p);
+				CacheFriendlyAABBTree* Right = RIGHT_NODE(p);
+
+				Result->AddTestCount(2);
+
+				bool hit1 = sweep_geometry->SweepTestFast(Direction, Left->aabb.Min, Left->aabb.Max, &t1);
+				bool hit2 = sweep_geometry->SweepTestFast(Direction, Right->aabb.Min, Right->aabb.Max, &t2);
+
+				if (Option->Type != SweepOption::SWEEP_PENETRATE)
+				{
+					hit1 = hit1 && t1 < Result->hitTimeMin && t1 < Option->MaxDist;
+					hit2 = hit2 && t2 < Result->hitTimeMin && t2 < Option->MaxDist;
+				}
+
+				assert(!stack.full());
+				if (hit1 && hit2)
+				{
+					if (t1 < t2)
+					{
+						p = Left;
+						stack.push((uint32_t)(Right - m_AABBTreeInference));
+					}
+					else
+					{
+						p = Right;
+						stack.push((uint32_t)(Left - m_AABBTreeInference));
+					}
+					continue;
+				}
+				else if (hit1)
+				{
+					p = Left;
+					continue;
+				}
+				else if (hit2)
+				{
+					p = Right;
+					continue;
+				}
+
+				break;
+			}
+
+		}
+
+		if (Result->hit || Result->hitGeometries.size() > 0)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	bool AABBTree::Sweep(const Geometry* sweep_geometry, const AABBTreePayloadId* PayloadIds, const Vector3& Direction, const SweepOption* Option, SweepResult* Result, AABBSweepPayloadCallback Callback, void* Context) const
+	{
+		Result->Reset();
+		if (m_Dirty)
+		{
+			return false;
+		}
+
+		float t1, t2;
+		CacheFriendlyAABBTree* p = m_AABBTreeInference;
+		if (p == nullptr || !sweep_geometry->SweepTestFast(Direction, p->aabb.Min, p->aabb.Max, &t1))
+		{
+			return false;
+		}
+
+		StaticStack<uint32_t, TREE_MAX_DEPTH> stack;
+		stack.push(0);
+
+		while (!stack.empty())
+		{
+			p = m_AABBTreeInference + stack.pop();
+			while (p)
+			{
+				if (p->IsLeaf())
+				{
+					int* PrimitiveIndices = p->GetGeometryIndices(m_GeometryIndicesBase);
+					int	 nPrimitives = p->GetNumGeometries();
+					int HitId = SweepPayloads(sweep_geometry, PrimitiveIndices, nPrimitives, PayloadIds, Direction, Option, Result, Callback, Context);
 					if (HitId >= 0)
 					{
 						if (Option->Type == SweepOption::SWEEP_ANY)

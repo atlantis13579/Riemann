@@ -10,18 +10,43 @@
 
 namespace Riemann
 {
-	static bool RayCastProxyGeometry(const Ray3& ray, Geometry* geometry, const RayCastOption* option, RayCastResult* result, void* context)
+	static void* EncodeProxyIdAsUserData(uint32_t index)
 	{
-		GeometryQuery* query = static_cast<GeometryQuery*>(context);
-		const GeometryQueryProxy* proxy = query ? query->GetProxy(geometry) : nullptr;
-		const Transform transform = proxy ? proxy->ShapeToWorld : *geometry->GetTransform();
-		return geometry->RayCast(transform, ray.Origin, ray.Dir, option, result);
+		return reinterpret_cast<void*>((uintptr_t)index + 1);
 	}
 
-	static bool RayCastProxyGeometryDynamic(const Ray3& ray, void* userData, const RayCastOption* option, RayCastResult* result, void* context)
+	static uint32_t DecodeProxyIdFromUserData(void* userData)
 	{
-		Geometry* geometry = static_cast<Geometry*>(userData);
-		if (geometry == nullptr || !RayCastProxyGeometry(ray, geometry, option, result, context))
+		const uintptr_t encoded = reinterpret_cast<uintptr_t>(userData);
+		return encoded == 0 ? kInvalidGeometryHandleIndex : (uint32_t)(encoded - 1);
+	}
+
+	static GeometryQueryProxy* GetQueryProxy(AABBTreePayloadId payloadId, void* context)
+	{
+		GeometryQuery* query = static_cast<GeometryQuery*>(context);
+		if (query == nullptr)
+		{
+			return nullptr;
+		}
+		return query->GetProxyByIndex(payloadId);
+	}
+
+	static GeometryQueryProxy* GetQueryProxy(void* userData, void* context)
+	{
+		return GetQueryProxy(DecodeProxyIdFromUserData(userData), context);
+	}
+
+	static bool RayCastProxyGeometry(const Ray3& ray, AABBTreePayloadId payloadId, const RayCastOption* option, RayCastResult* result, void* context)
+	{
+		GeometryQueryProxy* proxy = GetQueryProxy(payloadId, context);
+		Geometry* geometry = proxy ? proxy->Geom : nullptr;
+		if (geometry == nullptr)
+		{
+			return false;
+		}
+
+		const Transform& transform = proxy && proxy->ShapeToWorld ? *proxy->ShapeToWorld : *geometry->GetTransform();
+		if (!geometry->RayCast(transform, ray.Origin, ray.Dir, option, result))
 		{
 			return false;
 		}
@@ -40,20 +65,15 @@ namespace Riemann
 		return true;
 	}
 
-	static bool IntersectProxyGeometry(const Geometry* queryGeometry, Geometry* geometry, const IntersectOption* option, IntersectResult* result, void* context)
+	static bool RayCastProxyGeometry(const Ray3& ray, void* userData, const RayCastOption* option, RayCastResult* result, void* context)
 	{
-		(void)option;
-		(void)result;
-		GeometryQuery* query = static_cast<GeometryQuery*>(context);
-		const GeometryQueryProxy* proxy = query ? query->GetProxy(geometry) : nullptr;
-		const Transform queryTransform = *queryGeometry->GetTransform();
-		const Transform geometryTransform = proxy ? proxy->ShapeToWorld : *geometry->GetTransform();
-		return queryGeometry->Intersect(queryTransform, geometry, geometryTransform);
+		return RayCastProxyGeometry(ray, DecodeProxyIdFromUserData(userData), option, result, context);
 	}
 
-	static bool IntersectProxyGeometryDynamic(const Geometry* queryGeometry, void* userData, const IntersectOption* option, IntersectResult* result, void* context)
+	static bool IntersectProxyGeometry(const Geometry* queryGeometry, AABBTreePayloadId payloadId, const IntersectOption* option, IntersectResult* result, void* context)
 	{
-		Geometry* geometry = static_cast<Geometry*>(userData);
+		GeometryQueryProxy* proxy = GetQueryProxy(payloadId, context);
+		Geometry* geometry = proxy ? proxy->Geom : nullptr;
 		if (geometry == nullptr)
 		{
 			return false;
@@ -64,7 +84,9 @@ namespace Riemann
 		}
 
 		result->AddTestCount(1);
-		const bool overlap = IntersectProxyGeometry(queryGeometry, geometry, option, result, context);
+		const Transform queryTransform = *queryGeometry->GetTransform();
+		const Transform& geometryTransform = proxy && proxy->ShapeToWorld ? *proxy->ShapeToWorld : *geometry->GetTransform();
+		const bool overlap = queryGeometry->Intersect(queryTransform, geometry, geometryTransform);
 		if (overlap)
 		{
 			result->overlaps = true;
@@ -76,13 +98,26 @@ namespace Riemann
 		return overlap;
 	}
 
-	static bool SweepProxyGeometry(const Geometry* queryGeometry, Geometry* geometry, const Vector3& direction, const SweepOption* option, SweepResult* result, void* context)
+	static bool IntersectProxyGeometry(const Geometry* queryGeometry, void* userData, const IntersectOption* option, IntersectResult* result, void* context)
 	{
-		(void)option;
-		GeometryQuery* query = static_cast<GeometryQuery*>(context);
-		const GeometryQueryProxy* proxy = query ? query->GetProxy(geometry) : nullptr;
+		return IntersectProxyGeometry(queryGeometry, DecodeProxyIdFromUserData(userData), option, result, context);
+	}
+
+	static bool SweepProxyGeometry(const Geometry* queryGeometry, const Vector3& direction, AABBTreePayloadId payloadId, const SweepOption* option, SweepResult* result, void* context)
+	{
+		GeometryQueryProxy* proxy = GetQueryProxy(payloadId, context);
+		Geometry* geometry = proxy ? proxy->Geom : nullptr;
+		if (geometry == nullptr)
+		{
+			return false;
+		}
+		if (option->Filter && !option->Filter->IsCollidable(option->FilterData, geometry->GetFilterData()))
+		{
+			return false;
+		}
+
 		const Transform queryTransform = *queryGeometry->GetTransform();
-		const Transform geometryTransform = proxy ? proxy->ShapeToWorld : *geometry->GetTransform();
+		const Transform& geometryTransform = proxy && proxy->ShapeToWorld ? *proxy->ShapeToWorld : *geometry->GetTransform();
 
 		float t;
 		Vector3 position;
@@ -96,36 +131,23 @@ namespace Riemann
 		result->hitTime = t;
 		result->hitPosition = position;
 		result->hitNormal = normal;
-		return true;
-	}
-
-	static bool SweepProxyGeometryDynamic(const Geometry* queryGeometry, const Vector3& direction, void* userData, const SweepOption* option, SweepResult* result, void* context)
-	{
-		Geometry* geometry = static_cast<Geometry*>(userData);
-		if (geometry == nullptr)
-		{
-			return false;
-		}
-		SweepResult candidate;
-		if (!SweepProxyGeometry(queryGeometry, geometry, direction, option, &candidate, context))
-		{
-			return false;
-		}
-
-		result->hit = true;
-		result->hitTime = candidate.hitTime;
 		if (option->Type == SweepOption::SWEEP_PENETRATE)
 		{
 			result->hitGeometries.push_back(geometry);
 		}
-		if (candidate.hitTime < result->hitTimeMin)
+		if (t < result->hitTimeMin)
 		{
-			result->hitTimeMin = candidate.hitTime;
-			result->hitNormal = candidate.hitNormal;
-			result->hitPosition = candidate.hitPosition;
+			result->hitTimeMin = t;
+			result->hitNormal = normal;
+			result->hitPosition = position;
 			result->hitGeom = geometry;
 		}
 		return true;
+	}
+
+	static bool SweepProxyGeometry(const Geometry* queryGeometry, const Vector3& direction, void* userData, const SweepOption* option, SweepResult* result, void* context)
+	{
+		return SweepProxyGeometry(queryGeometry, direction, DecodeProxyIdFromUserData(userData), option, result, context);
 	}
 
 	GeometryQuery::GeometryQuery()
@@ -134,7 +156,7 @@ namespace Riemann
 		m_staticBucket = nullptr;
 		m_staticPrimitivesPerNode = 1;
 		m_dynamicGeometry = nullptr;
-		m_FrameId = 0;
+		m_NextLocalHandle = 0;
 	}
 
 	GeometryQuery::~GeometryQuery()
@@ -145,6 +167,7 @@ namespace Riemann
 		m_Objects.clear();
 		m_staticObjects.clear();
 		m_Proxies.clear();
+		m_LocalStates.clear();
 	}
 
 	void GeometryQuery::BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode)
@@ -180,7 +203,9 @@ namespace Riemann
 			const Box3 bounds = i < Bounds.size() ? Bounds[i] : (Object ? Object->GetBounds() : Box3::Empty());
 			const Transform transform = i < ShapeToWorld.size() ? ShapeToWorld[i] : (Object ? *Object->GetTransform() : Transform::Identity());
 			RigidBody* body = i < Bodies.size() ? Bodies[i] : nullptr;
-			AddToStatic(Object, bounds, transform, body);
+			GeometryQueryProxy* existing = FindProxy(Object);
+			const GeometryHandle handle = existing ? existing->Handle : AllocateLocalHandle();
+			AddToStatic(handle, Object, bounds, transform, body);
 		}
 
 		CommitStaticGeometry();
@@ -188,13 +213,6 @@ namespace Riemann
 
 	void GeometryQuery::ClearStaticGeometry()
 	{
-		for (Geometry* Object : m_Objects)
-		{
-			if (Object)
-			{
-				Object->SetNodeId(-1);
-			}
-		}
 		if (m_staticGeometry)
 		{
 			m_staticGeometry->Release();
@@ -205,20 +223,35 @@ namespace Riemann
 			m_staticBucket->Clear();
 		}
 		m_staticObjects.clear();
+		m_staticProxyIds.clear();
 		m_Objects.clear();
 		m_Proxies.clear();
+		m_LocalStates.clear();
+		m_NextLocalHandle = 0;
 	}
 
 	GeometryQueryProxy* GeometryQuery::FindProxy(Geometry* Object)
 	{
-		auto iter = m_Proxies.find(Object);
-		return iter == m_Proxies.end() ? nullptr : &iter->second;
+		for (GeometryQueryProxy& proxy : m_Proxies)
+		{
+			if (proxy.IsActive() && proxy.Geom == Object)
+			{
+				return &proxy;
+			}
+		}
+		return nullptr;
 	}
 
 	const GeometryQueryProxy* GeometryQuery::FindProxy(const Geometry* Object) const
 	{
-		auto iter = m_Proxies.find(const_cast<Geometry*>(Object));
-		return iter == m_Proxies.end() ? nullptr : &iter->second;
+		for (const GeometryQueryProxy& proxy : m_Proxies)
+		{
+			if (proxy.IsActive() && proxy.Geom == Object)
+			{
+				return &proxy;
+			}
+		}
+		return nullptr;
 	}
 
 	const GeometryQueryProxy* GeometryQuery::GetProxy(const Geometry* Object) const
@@ -226,47 +259,109 @@ namespace Riemann
 		return FindProxy(Object);
 	}
 
-	GeometryQueryProxy& GeometryQuery::UpdateProxy(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement, bool Dynamic)
+	const GeometryQueryProxy* GeometryQuery::GetProxy(GeometryHandle Handle) const
 	{
-		GeometryQueryProxy& proxy = m_Proxies[Object];
-		const bool isNew = proxy.Geom == nullptr;
-		const bool changed = isNew
-			|| proxy.Body != Body
-			|| proxy.ShapeToWorld != ShapeToWorld
-			|| !(proxy.WorldBounds == Bounds)
-			|| proxy.Dynamic != Dynamic;
+		const GeometryQueryProxy* proxy = GetProxyByIndex(Handle.Index);
+		return proxy && proxy->Active && proxy->Handle == Handle ? proxy : nullptr;
+	}
+
+	GeometryQueryProxy* GeometryQuery::GetProxyByIndex(uint32_t Index)
+	{
+		if (Index >= m_Proxies.size())
+		{
+			return nullptr;
+		}
+		return m_Proxies[Index].IsActive() ? &m_Proxies[Index] : nullptr;
+	}
+
+	const GeometryQueryProxy* GeometryQuery::GetProxyByIndex(uint32_t Index) const
+	{
+		if (Index >= m_Proxies.size())
+		{
+			return nullptr;
+		}
+		return m_Proxies[Index].IsActive() ? &m_Proxies[Index] : nullptr;
+	}
+
+	GeometryHandle GeometryQuery::AllocateLocalHandle()
+	{
+		while (m_NextLocalHandle < m_Proxies.size() && m_Proxies[m_NextLocalHandle].IsActive())
+		{
+			++m_NextLocalHandle;
+		}
+		return GeometryHandle(m_NextLocalHandle++, 1);
+	}
+
+	GeometryQueryLocalState* GeometryQuery::EnsureLocalState(GeometryHandle Handle)
+	{
+		if (!Handle.IsValid())
+		{
+			return nullptr;
+		}
+		if (Handle.Index >= m_LocalStates.size())
+		{
+			m_LocalStates.resize((size_t)Handle.Index + 1);
+		}
+		return &m_LocalStates[Handle.Index];
+	}
+
+	GeometryQueryProxy* GeometryQuery::EnsureProxy(GeometryHandle Handle)
+	{
+		if (!Handle.IsValid())
+		{
+			return nullptr;
+		}
+		if (Handle.Index >= m_Proxies.size())
+		{
+			m_Proxies.resize((size_t)Handle.Index + 1);
+		}
+
+		GeometryQueryProxy& proxy = m_Proxies[Handle.Index];
+		if (proxy.IsActive() && proxy.Handle.Generation != Handle.Generation)
+		{
+			proxy = GeometryQueryProxy();
+		}
+		proxy.Handle = Handle;
+		proxy.SetActive(true);
+		return &proxy;
+	}
+
+	GeometryQueryProxy& GeometryQuery::UpdateProxy(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld, bool Dynamic)
+	{
+		GeometryQueryProxy* proxyPtr = EnsureProxy(Handle);
+		assert(proxyPtr != nullptr);
+		GeometryQueryProxy& proxy = *proxyPtr;
 
 		proxy.Geom = Object;
-		proxy.Body = Body;
-		proxy.Displacement = displacement;
 		proxy.ShapeToWorld = ShapeToWorld;
 		proxy.WorldBounds = Bounds;
-		proxy.Dynamic = Dynamic;
-		proxy.FrameId = ++m_FrameId;
-		proxy.Moved = changed || displacement != Vector3::Zero();
-		proxy.Dirty = proxy.Moved;
-		if (changed)
-		{
-			proxy.Version = proxy.Version == 0 ? 1 : proxy.Version + 1;
-		}
+		proxy.SetDynamic(Dynamic);
+		proxy.SetDirty(true);
 		return proxy;
+	}
+
+	void GeometryQuery::RemoveProxy(GeometryHandle Handle)
+	{
+		if (!Handle.IsValid() || Handle.Index >= m_Proxies.size())
+		{
+			return;
+		}
+
+		GeometryQueryProxy& proxy = m_Proxies[Handle.Index];
+		if (!proxy.IsActive() || proxy.Handle != Handle)
+		{
+			return;
+		}
+		proxy = GeometryQueryProxy();
 	}
 
 	void GeometryQuery::RemoveProxy(Geometry* Object)
 	{
-		m_Proxies.erase(Object);
-	}
-
-	Transform GeometryQuery::GetProxyTransform(const Geometry* Object) const
-	{
-		const GeometryQueryProxy* proxy = FindProxy(Object);
-		return proxy ? proxy->ShapeToWorld : *Object->GetTransform();
-	}
-
-	Box3 GeometryQuery::GetProxyBounds(const Geometry* Object) const
-	{
-		const GeometryQueryProxy* proxy = FindProxy(Object);
-		return proxy ? proxy->WorldBounds : Object->GetBounds();
+		GeometryQueryProxy* proxy = FindProxy(Object);
+		if (proxy)
+		{
+			RemoveProxy(proxy->Handle);
+		}
 	}
 
 	bool GeometryQuery::AddGeometry(Geometry* Object)
@@ -281,11 +376,32 @@ namespace Riemann
 
 	bool GeometryQuery::AddGeometry(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body)
 	{
+		(void)Body;
+		GeometryQueryProxy* existing = FindProxy(Object);
+		const GeometryHandle handle = existing ? existing->Handle : AllocateLocalHandle();
+		return AddGeometry(handle, Object, Bounds, ShapeToWorld, nullptr);
+	}
+
+	bool GeometryQuery::AddGeometry(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld)
+	{
 		if (m_dynamicGeometry)
 		{
-			return AddToDynamic(Object, Bounds, ShapeToWorld, Body) >= 0;
+			return AddToDynamic(Handle, Object, Bounds, ShapeToWorld) >= 0;
 		}
-		return AddToStatic(Object, Bounds, ShapeToWorld, Body);
+		return AddToStatic(Handle, Object, Bounds, ShapeToWorld);
+	}
+
+	bool GeometryQuery::AddGeometry(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body)
+	{
+		(void)Body;
+		GeometryQueryLocalState* localState = EnsureLocalState(Handle);
+		if (localState == nullptr)
+		{
+			return false;
+		}
+		localState->WorldBounds = Bounds;
+		localState->ShapeToWorld = ShapeToWorld;
+		return AddGeometry(Handle, Object, &localState->WorldBounds, &localState->ShapeToWorld);
 	}
 
 	bool GeometryQuery::RemoveGeometry(Geometry* Object)
@@ -296,15 +412,37 @@ namespace Riemann
 		}
 
 		bool removed = false;
-		const GeometryQueryProxy* proxy = FindProxy(Object);
-		if (proxy && proxy->Dynamic)
+		GeometryQueryProxy* proxy = FindProxy(Object);
+		if (proxy && proxy->IsDynamic())
 		{
-			RemoveFromDynamic(Object);
+			RemoveFromDynamic(proxy->Handle);
 			removed = true;
 		}
 		if (ContainsStaticGeometry(Object))
 		{
-			removed = RemoveFromStatic(Object) || removed;
+			proxy = FindProxy(Object);
+			removed = (proxy ? RemoveFromStatic(proxy->Handle) : RemoveFromStatic(Object)) || removed;
+		}
+		return removed;
+	}
+
+	bool GeometryQuery::RemoveGeometry(GeometryHandle Handle)
+	{
+		GeometryQueryProxy* proxy = GetProxyByIndex(Handle.Index);
+		if (proxy == nullptr || proxy->Handle != Handle)
+		{
+			return false;
+		}
+
+		bool removed = false;
+		if (proxy->IsDynamic())
+		{
+			RemoveFromDynamic(Handle);
+			removed = true;
+		}
+		else
+		{
+			removed = RemoveFromStatic(Handle);
 		}
 		return removed;
 	}
@@ -331,32 +469,64 @@ namespace Riemann
 
 	bool GeometryQuery::UpdateGeometry(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement)
 	{
+		(void)Body;
 		if (Object == nullptr)
 		{
 			return false;
 		}
 
 		const GeometryQueryProxy* proxy = FindProxy(Object);
-		if (m_dynamicGeometry && (!proxy || proxy->Dynamic))
+		const GeometryHandle handle = proxy ? proxy->Handle : AllocateLocalHandle();
+		return UpdateGeometry(handle, Object, Bounds, ShapeToWorld, nullptr, displacement);
+	}
+
+	bool GeometryQuery::UpdateGeometry(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld, const Vector3& displacement)
+	{
+		if (Object == nullptr || Bounds == nullptr || ShapeToWorld == nullptr)
 		{
-			return UpdateDynamicObject(Object, Bounds, ShapeToWorld, Body, displacement);
+			return false;
 		}
-		return UpdateStaticObject(Object, Bounds, ShapeToWorld, Body, displacement);
+
+		const GeometryQueryProxy* proxy = GetProxy(Handle);
+		if (m_dynamicGeometry && (!proxy || proxy->IsDynamic()))
+		{
+			return UpdateDynamicObject(Handle, Object, Bounds, ShapeToWorld, displacement);
+		}
+		return UpdateStaticObject(Handle, Object, Bounds, ShapeToWorld, displacement);
+	}
+
+	bool GeometryQuery::UpdateGeometry(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement)
+	{
+		(void)Body;
+		if (Object == nullptr)
+		{
+			return false;
+		}
+
+		GeometryQueryLocalState* localState = EnsureLocalState(Handle);
+		if (localState == nullptr)
+		{
+			return false;
+		}
+		localState->WorldBounds = Bounds;
+		localState->ShapeToWorld = ShapeToWorld;
+		return UpdateGeometry(Handle, Object, &localState->WorldBounds, &localState->ShapeToWorld, displacement);
 	}
 
 	bool GeometryQuery::AddToStatic(Geometry* Object)
 	{
-		return AddToStatic(Object, Object ? Object->GetBounds() : Box3::Empty(), Object ? *Object->GetTransform() : Transform::Identity(), nullptr);
+		GeometryQueryProxy* existing = FindProxy(Object);
+		const GeometryHandle handle = existing ? existing->Handle : AllocateLocalHandle();
+		return AddToStatic(handle, Object, Object ? Object->GetBounds() : Box3::Empty(), Object ? *Object->GetTransform() : Transform::Identity(), nullptr);
 	}
 
-	bool GeometryQuery::AddToStatic(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body)
+	bool GeometryQuery::AddToStatic(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld)
 	{
-		if (Object == nullptr || !Object->IsQueryEnabled())
+		if (Object == nullptr || Bounds == nullptr || ShapeToWorld == nullptr || !Object->IsQueryEnabled())
 		{
 			if (Object)
 			{
-				Object->SetNodeId(-1);
-				RemoveProxy(Object);
+				RemoveProxy(Handle);
 			}
 			return false;
 		}
@@ -370,17 +540,31 @@ namespace Riemann
 		{
 			m_Objects.push_back(Object);
 		}
-		if (!ContainsStaticGeometry(Object))
+
+		const bool isNewStatic = !ContainsStaticGeometry(Object);
+		GeometryQueryProxy& proxy = UpdateProxy(Handle, Object, Bounds, ShapeToWorld, false);
+		proxy.PrunerHandle = -1;
+		proxy.SetDirty(false);
+		if (isNewStatic)
 		{
 			m_staticObjects.push_back(Object);
+			m_staticProxyIds.push_back(proxy.Handle.Index);
 		}
-
-		GeometryQueryProxy& proxy = UpdateProxy(Object, Bounds, ShapeToWorld, Body, Vector3::Zero(), false);
-		proxy.PrunerHandle = -1;
-		proxy.Dirty = false;
-		Object->SetNodeId(-1);
 		MarkStaticGeometryDirty();
 		return true;
+	}
+
+	bool GeometryQuery::AddToStatic(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body)
+	{
+		(void)Body;
+		GeometryQueryLocalState* localState = EnsureLocalState(Handle);
+		if (localState == nullptr)
+		{
+			return false;
+		}
+		localState->WorldBounds = Bounds;
+		localState->ShapeToWorld = ShapeToWorld;
+		return AddToStatic(Handle, Object, &localState->WorldBounds, &localState->ShapeToWorld);
 	}
 
 	bool GeometryQuery::RemoveFromStatic(Geometry* Object)
@@ -390,19 +574,62 @@ namespace Riemann
 			return false;
 		}
 
-		const size_t oldStaticSize = m_staticObjects.size();
-		m_staticObjects.erase(std::remove(m_staticObjects.begin(), m_staticObjects.end(), Object), m_staticObjects.end());
+		bool removed = false;
+		for (size_t i = 0; i < m_staticObjects.size();)
+		{
+			if (m_staticObjects[i] == Object)
+			{
+				m_staticObjects.erase(m_staticObjects.begin() + i);
+				m_staticProxyIds.erase(m_staticProxyIds.begin() + i);
+				removed = true;
+				continue;
+			}
+			++i;
+		}
 		m_Objects.erase(std::remove(m_Objects.begin(), m_Objects.end(), Object), m_Objects.end());
 		if (m_staticBucket)
 		{
 			m_staticBucket->Remove(Object);
 		}
 
-		const bool removed = m_staticObjects.size() != oldStaticSize;
 		if (removed)
 		{
-			Object->SetNodeId(-1);
 			RemoveProxy(Object);
+			MarkStaticGeometryDirty();
+		}
+		return removed;
+	}
+
+	bool GeometryQuery::RemoveFromStatic(GeometryHandle Handle)
+	{
+		GeometryQueryProxy* proxy = GetProxyByIndex(Handle.Index);
+		if (proxy == nullptr || proxy->Handle != Handle)
+		{
+			return false;
+		}
+
+		Geometry* Object = proxy->Geom;
+		bool removed = false;
+		for (size_t i = 0; i < m_staticObjects.size();)
+		{
+			if (m_staticObjects[i] == Object)
+			{
+				m_staticObjects.erase(m_staticObjects.begin() + i);
+				m_staticProxyIds.erase(m_staticProxyIds.begin() + i);
+				removed = true;
+				continue;
+			}
+			++i;
+		}
+		m_Objects.erase(std::remove(m_Objects.begin(), m_Objects.end(), Object), m_Objects.end());
+		if (m_staticBucket)
+		{
+			m_staticBucket->Remove(Object);
+		}
+
+		if (removed)
+		{
+			RemoveProxy(Handle);
 			MarkStaticGeometryDirty();
 		}
 		return removed;
@@ -410,12 +637,15 @@ namespace Riemann
 
 	bool GeometryQuery::UpdateStaticObject(Geometry* Object)
 	{
-		return UpdateStaticObject(Object, Object ? Object->GetBounds() : Box3::Empty(), Object ? *Object->GetTransform() : Transform::Identity(), nullptr, Vector3::Zero());
+		GeometryQueryProxy* existing = FindProxy(Object);
+		const GeometryHandle handle = existing ? existing->Handle : AllocateLocalHandle();
+		return UpdateStaticObject(handle, Object, Object ? Object->GetBounds() : Box3::Empty(), Object ? *Object->GetTransform() : Transform::Identity(), nullptr, Vector3::Zero());
 	}
 
-	bool GeometryQuery::UpdateStaticObject(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement)
+	bool GeometryQuery::UpdateStaticObject(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld, const Vector3& displacement)
 	{
-		if (Object == nullptr)
+		(void)displacement;
+		if (Object == nullptr || Bounds == nullptr || ShapeToWorld == nullptr)
 		{
 			return false;
 		}
@@ -427,17 +657,30 @@ namespace Riemann
 
 		if (!ContainsStaticGeometry(Object))
 		{
-			return AddToStatic(Object, Bounds, ShapeToWorld, Body);
+			return AddToStatic(Handle, Object, Bounds, ShapeToWorld);
 		}
 
-		GeometryQueryProxy& proxy = UpdateProxy(Object, Bounds, ShapeToWorld, Body, displacement, false);
+		GeometryQueryProxy& proxy = UpdateProxy(Handle, Object, Bounds, ShapeToWorld, false);
 		proxy.PrunerHandle = -1;
-		if (proxy.Dirty)
+		if (proxy.IsDirty())
 		{
 			MarkStaticGeometryDirty();
-			proxy.Dirty = false;
+			proxy.SetDirty(false);
 		}
 		return true;
+	}
+
+	bool GeometryQuery::UpdateStaticObject(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement)
+	{
+		(void)Body;
+		GeometryQueryLocalState* localState = EnsureLocalState(Handle);
+		if (localState == nullptr)
+		{
+			return false;
+		}
+		localState->WorldBounds = Bounds;
+		localState->ShapeToWorld = ShapeToWorld;
+		return UpdateStaticObject(Handle, Object, &localState->WorldBounds, &localState->ShapeToWorld, displacement);
 	}
 
 	void GeometryQuery::CreateDynamicGeometry()
@@ -453,19 +696,14 @@ namespace Riemann
 
 	void GeometryQuery::ClearDynamicGeometry()
 	{
-		for (Geometry* Object : m_Objects)
-		{
-			if (Object)
-			{
-				Object->SetNodeId(-1);
-			}
-		}
 		if (m_dynamicGeometry)
 		{
 			m_dynamicGeometry->Clear();
 		}
 		m_Objects.clear();
 		m_Proxies.clear();
+		m_LocalStates.clear();
+		m_NextLocalHandle = 0;
 	}
 
 	void GeometryQuery::BuildDynamicGeometry(const std::vector<Geometry*>& Objects)
@@ -519,49 +757,70 @@ namespace Riemann
 			const Box3 bounds = i < Bounds.size() ? Bounds[i] : (Object ? Object->GetBounds() : Box3::Empty());
 			const Transform transform = i < ShapeToWorld.size() ? ShapeToWorld[i] : (Object ? *Object->GetTransform() : Transform::Identity());
 			RigidBody* body = i < Bodies.size() ? Bodies[i] : nullptr;
-			AddToDynamic(Object, bounds, transform, body);
+			GeometryQueryProxy* existing = FindProxy(Object);
+			const GeometryHandle handle = existing ? existing->Handle : AllocateLocalHandle();
+			AddToDynamic(handle, Object, bounds, transform, body);
 		}
 	}
 
 	int GeometryQuery::AddToDynamic(Geometry* Object)
 	{
-		return AddToDynamic(Object, Object ? Object->GetBounds() : Box3::Empty(), Object ? *Object->GetTransform() : Transform::Identity(), nullptr);
+		GeometryQueryProxy* existing = FindProxy(Object);
+		const GeometryHandle handle = existing ? existing->Handle : AllocateLocalHandle();
+		return AddToDynamic(handle, Object, Object ? Object->GetBounds() : Box3::Empty(), Object ? *Object->GetTransform() : Transform::Identity(), nullptr);
 	}
 
 	int GeometryQuery::AddToDynamic(Geometry* Object, const Box3& Bounds)
 	{
-		return AddToDynamic(Object, Bounds, Object ? *Object->GetTransform() : Transform::Identity(), nullptr);
+		GeometryQueryProxy* existing = FindProxy(Object);
+		const GeometryHandle handle = existing ? existing->Handle : AllocateLocalHandle();
+		return AddToDynamic(handle, Object, Bounds, Object ? *Object->GetTransform() : Transform::Identity(), nullptr);
 	}
 
-	int GeometryQuery::AddToDynamic(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body)
+	int GeometryQuery::AddToDynamic(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld)
 	{
-		if (m_dynamicGeometry == nullptr || Object == nullptr || !Object->IsQueryEnabled())
+		if (m_dynamicGeometry == nullptr || Object == nullptr || Bounds == nullptr || ShapeToWorld == nullptr || !Object->IsQueryEnabled())
 		{
 			if (Object)
 			{
-				Object->SetNodeId(-1);
-				RemoveProxy(Object);
+				RemoveProxy(Handle);
 			}
 			return -1;
 		}
 
-		GeometryQueryProxy* existing = FindProxy(Object);
-		if (existing && existing->Dynamic && existing->PrunerHandle >= 0)
+		GeometryQueryProxy* existing = GetProxyByIndex(Handle.Index);
+		if (existing && existing->Handle != Handle)
 		{
-			UpdateDynamicObject(Object, Bounds, ShapeToWorld, Body, Vector3::Zero());
+			existing = nullptr;
+		}
+		if (existing && existing->IsDynamic() && existing->PrunerHandle >= 0)
+		{
+			UpdateDynamicObject(Handle, Object, Bounds, ShapeToWorld, Vector3::Zero());
 			return existing->PrunerHandle;
 		}
 
-		const int nodeId = m_dynamicGeometry->Add(Bounds, Object);
-		GeometryQueryProxy& proxy = UpdateProxy(Object, Bounds, ShapeToWorld, Body, Vector3::Zero(), true);
+		GeometryQueryProxy& proxy = UpdateProxy(Handle, Object, Bounds, ShapeToWorld, true);
+		const int nodeId = m_dynamicGeometry->Add(*Bounds, EncodeProxyIdAsUserData(proxy.Handle.Index));
 		proxy.PrunerHandle = nodeId;
-		proxy.Dirty = false;
-		Object->SetNodeId(nodeId);
+		proxy.SetDirty(false);
 		if (std::find(m_Objects.begin(), m_Objects.end(), Object) == m_Objects.end())
 		{
 			m_Objects.push_back(Object);
 		}
 		return nodeId;
+	}
+
+	int GeometryQuery::AddToDynamic(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body)
+	{
+		(void)Body;
+		GeometryQueryLocalState* localState = EnsureLocalState(Handle);
+		if (localState == nullptr)
+		{
+			return -1;
+		}
+		localState->WorldBounds = Bounds;
+		localState->ShapeToWorld = ShapeToWorld;
+		return AddToDynamic(Handle, Object, &localState->WorldBounds, &localState->ShapeToWorld);
 	}
 
 	void GeometryQuery::RemoveFromDynamic(Geometry* Object)
@@ -572,45 +831,70 @@ namespace Riemann
 		}
 
 		GeometryQueryProxy* proxy = FindProxy(Object);
-		const int nodeId = proxy ? proxy->PrunerHandle : Object->GetNodeId();
+		if (proxy)
+		{
+			RemoveFromDynamic(proxy->Handle);
+			return;
+		}
+	}
+
+	void GeometryQuery::RemoveFromDynamic(GeometryHandle Handle)
+	{
+		if (m_dynamicGeometry == nullptr)
+		{
+			return;
+		}
+
+		GeometryQueryProxy* proxy = GetProxyByIndex(Handle.Index);
+		if (proxy && proxy->Handle != Handle)
+		{
+			proxy = nullptr;
+		}
+		const int nodeId = proxy ? proxy->PrunerHandle : -1;
 		if (nodeId < 0)
 		{
-			Object->SetNodeId(-1);
-			RemoveProxy(Object);
+			RemoveProxy(Handle);
 			return;
 		}
 
 		m_dynamicGeometry->Remove(nodeId);
-		Object->SetNodeId(-1);
-		m_Objects.erase(std::remove(m_Objects.begin(), m_Objects.end(), Object), m_Objects.end());
-		RemoveProxy(Object);
+		m_Objects.erase(std::remove(m_Objects.begin(), m_Objects.end(), proxy->Geom), m_Objects.end());
+		RemoveProxy(Handle);
 	}
 
 	bool GeometryQuery::UpdateDynamicObject(Geometry* Object, const Vector3& displacement)
 	{
-		return UpdateDynamicObject(Object, Object ? Object->GetBounds() : Box3::Empty(), Object ? *Object->GetTransform() : Transform::Identity(), nullptr, displacement);
+		GeometryQueryProxy* existing = FindProxy(Object);
+		const GeometryHandle handle = existing ? existing->Handle : AllocateLocalHandle();
+		return UpdateDynamicObject(handle, Object, Object ? Object->GetBounds() : Box3::Empty(), Object ? *Object->GetTransform() : Transform::Identity(), nullptr, displacement);
 	}
 
 	bool GeometryQuery::UpdateDynamicObject(Geometry* Object, const Box3& Bounds, const Vector3& displacement)
 	{
-		return UpdateDynamicObject(Object, Bounds, Object ? *Object->GetTransform() : Transform::Identity(), nullptr, displacement);
+		GeometryQueryProxy* existing = FindProxy(Object);
+		const GeometryHandle handle = existing ? existing->Handle : AllocateLocalHandle();
+		return UpdateDynamicObject(handle, Object, Bounds, Object ? *Object->GetTransform() : Transform::Identity(), nullptr, displacement);
 	}
 
-	bool GeometryQuery::UpdateDynamicObject(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement)
+	bool GeometryQuery::UpdateDynamicObject(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld, const Vector3& displacement)
 	{
-		if (m_dynamicGeometry == nullptr || Object == nullptr || !Object->IsQueryEnabled())
+		if (m_dynamicGeometry == nullptr || Object == nullptr || Bounds == nullptr || ShapeToWorld == nullptr || !Object->IsQueryEnabled())
 		{
 			if (Object && !Object->IsQueryEnabled())
 			{
-				RemoveFromDynamic(Object);
+				RemoveFromDynamic(Handle);
 			}
 			return false;
 		}
 
-		GeometryQueryProxy* proxy = FindProxy(Object);
-		if (proxy == nullptr || !proxy->Dynamic || proxy->PrunerHandle < 0)
+		GeometryQueryProxy* proxy = GetProxyByIndex(Handle.Index);
+		if (proxy && proxy->Handle != Handle)
 		{
-			return AddToDynamic(Object, Bounds, ShapeToWorld, Body) >= 0;
+			proxy = nullptr;
+		}
+		if (proxy == nullptr || !proxy->IsDynamic() || proxy->PrunerHandle < 0)
+		{
+			return AddToDynamic(Handle, Object, Bounds, ShapeToWorld) >= 0;
 		}
 
 		const int nodeId = proxy->PrunerHandle;
@@ -619,17 +903,29 @@ namespace Riemann
 			return false;
 		}
 
-		GeometryQueryProxy& updatedProxy = UpdateProxy(Object, Bounds, ShapeToWorld, Body, displacement, true);
+		GeometryQueryProxy& updatedProxy = UpdateProxy(Handle, Object, Bounds, ShapeToWorld, true);
 		updatedProxy.PrunerHandle = nodeId;
-		Object->SetNodeId(nodeId);
-		if (!updatedProxy.Dirty)
+		if (!updatedProxy.IsDirty())
 		{
 			return true;
 		}
 
-		m_dynamicGeometry->Update(nodeId, Bounds, displacement);
-		updatedProxy.Dirty = false;
+		m_dynamicGeometry->Update(nodeId, *Bounds, displacement);
+		updatedProxy.SetDirty(false);
 		return true;
+	}
+
+	bool GeometryQuery::UpdateDynamicObject(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement)
+	{
+		(void)Body;
+		GeometryQueryLocalState* localState = EnsureLocalState(Handle);
+		if (localState == nullptr)
+		{
+			return false;
+		}
+		localState->WorldBounds = Bounds;
+		localState->ShapeToWorld = ShapeToWorld;
+		return UpdateDynamicObject(Handle, Object, &localState->WorldBounds, &localState->ShapeToWorld, displacement);
 	}
 
 	AABBTree* GeometryQuery::GetStaticTree()
@@ -664,10 +960,11 @@ namespace Riemann
 		}
 
 		std::vector<Box3> boxes;
-		boxes.resize(m_staticObjects.size());
-		for (size_t i = 0; i < m_staticObjects.size(); ++i)
+		boxes.resize(m_staticProxyIds.size());
+		for (size_t i = 0; i < m_staticProxyIds.size(); ++i)
 		{
-			boxes[i] = GetProxyBounds(m_staticObjects[i]);
+			GeometryQueryProxy* proxy = GetProxyByIndex(m_staticProxyIds[i]);
+			boxes[i] = proxy && proxy->WorldBounds ? *proxy->WorldBounds : Box3::Empty();
 		}
 
 		AABBTreeBuildData param(boxes.data(), (int)boxes.size(), m_staticPrimitivesPerNode);
@@ -699,10 +996,10 @@ namespace Riemann
 		if (m_staticGeometry)
 		{
 			CommitStaticGeometry();
-			if (!m_staticObjects.empty())
+			if (!m_staticProxyIds.empty())
 			{
 				RayCastResult staticResult;
-				const bool hit_static = m_staticGeometry->RayCast(ray, m_staticObjects.data(), &Option, &staticResult, RayCastProxyGeometry, this);
+				const bool hit_static = m_staticGeometry->RayCast(ray, m_staticProxyIds.data(), &Option, &staticResult, RayCastProxyGeometry, this);
 				if (hit_static)
 				{
 					Result->Merge(staticResult);
@@ -719,7 +1016,7 @@ namespace Riemann
 		if (m_dynamicGeometry)
 		{
 			RayCastResult Result2;
-			bool hit_dynamic = m_dynamicGeometry->RayCast(ray, &Option, &Result2, RayCastProxyGeometryDynamic, this);
+			bool hit_dynamic = m_dynamicGeometry->RayCast(ray, &Option, &Result2, RayCastProxyGeometry, this);
 			if (hit_dynamic)
 			{
 				Result->Merge(Result2);
@@ -799,10 +1096,10 @@ namespace Riemann
 		if (m_staticGeometry)
 		{
 			CommitStaticGeometry();
-			if (!m_staticObjects.empty())
+			if (!m_staticProxyIds.empty())
 			{
 				IntersectResult staticResult;
-				const bool hit_static = m_staticGeometry->Intersect(geom, m_staticObjects.data(), &Option, &staticResult, IntersectProxyGeometry, this);
+				const bool hit_static = m_staticGeometry->Intersect(geom, m_staticProxyIds.data(), &Option, &staticResult, IntersectProxyGeometry, this);
 				if (hit_static)
 				{
 					Result->Merge(staticResult);
@@ -818,7 +1115,7 @@ namespace Riemann
 		if (m_dynamicGeometry)
 		{
 			IntersectResult Result2;
-			bool hit_dynamic = m_dynamicGeometry->Intersect(geom, &Option, &Result2, IntersectProxyGeometryDynamic, this);
+			bool hit_dynamic = m_dynamicGeometry->Intersect(geom, &Option, &Result2, IntersectProxyGeometry, this);
 			if (hit_dynamic)
 			{
 				Result->Merge(Result2);
@@ -838,10 +1135,10 @@ namespace Riemann
 		if (m_staticGeometry)
 		{
 			CommitStaticGeometry();
-			if (!m_staticObjects.empty())
+			if (!m_staticProxyIds.empty())
 			{
 				SweepResult staticResult;
-				const bool hit_static = m_staticGeometry->Sweep(geom, m_staticObjects.data(), Direction, &Option, &staticResult, SweepProxyGeometry, this);
+				const bool hit_static = m_staticGeometry->Sweep(geom, m_staticProxyIds.data(), Direction, &Option, &staticResult, SweepProxyGeometry, this);
 				if (hit_static)
 				{
 					Result->Merge(staticResult);
@@ -857,7 +1154,7 @@ namespace Riemann
 		if (m_dynamicGeometry)
 		{
 			SweepResult Result2;
-			bool hit_dynamic = m_dynamicGeometry->Sweep(geom, Direction, &Option, &Result2, SweepProxyGeometryDynamic, this);
+			bool hit_dynamic = m_dynamicGeometry->Sweep(geom, Direction, &Option, &Result2, SweepProxyGeometry, this);
 			if (hit_dynamic)
 			{
 				Result->Merge(Result2);

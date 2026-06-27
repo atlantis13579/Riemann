@@ -23,6 +23,7 @@ namespace Riemann
 		if (Geom)
 		{
 			mGeometries.push_back(Geom);
+			mGeometryHandles.push_back(GeometryHandle());
 			Geom->SetParent(this);
 
 			UpdateMassParameters();
@@ -42,6 +43,38 @@ namespace Riemann
 		return mGeometries.size();
 	}
 
+	GeometryHandle RigidBody::GetGeometryHandle(size_t Index) const
+	{
+		return Index < mGeometryHandles.size() ? mGeometryHandles[Index] : GeometryHandle();
+	}
+
+	void RigidBody::SetGeometryHandle(size_t Index, GeometryHandle Handle)
+	{
+		if (Index >= mGeometryHandles.size())
+		{
+			return;
+		}
+		mGeometryHandles[Index] = Handle;
+	}
+
+	GeometryHandle RigidBody::FindGeometryHandle(const Geometry* Geom) const
+	{
+		const size_t index = FindGeometryIndex(Geom);
+		return index < mGeometryHandles.size() ? mGeometryHandles[index] : GeometryHandle();
+	}
+
+	size_t RigidBody::FindGeometryIndex(const Geometry* Geom) const
+	{
+		for (size_t i = 0; i < mGeometries.size(); ++i)
+		{
+			if (mGeometries[i] == Geom)
+			{
+				return i;
+			}
+		}
+		return mGeometries.size();
+	}
+
 	void RigidBody::ReleaseGeometries()
 	{
 		for (Geometry* g : mGeometries)
@@ -49,6 +82,7 @@ namespace Riemann
 			delete g;
 		}
 		mGeometries.clear();
+		mGeometryHandles.clear();
 	}
 
 	Matrix3		RigidBody::GetInverseInertia_WorldSpace() const

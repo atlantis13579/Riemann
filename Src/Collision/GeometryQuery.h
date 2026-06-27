@@ -2,11 +2,11 @@
 
 #include <limits.h>
 #include <stdint.h>
-#include <unordered_map>
 #include <vector>
 #include "../Core/StaticStack.h"
 #include "../Maths/Transform.h"
 #include "../Maths/Vector3.h"
+#include "GeometryHandle.h"
 #include "GeometryObject.h"
 
 namespace Riemann
@@ -238,30 +238,41 @@ namespace Riemann
 	struct GeometryQueryProxy
 	{
 		GeometryQueryProxy()
-			: Geom(nullptr)
-			, Body(nullptr)
-			, WorldBounds(Box3::Empty())
-			, Displacement(Vector3::Zero())
-			, Version(0)
-			, FrameId(0)
+			: Handle()
+			, Geom(nullptr)
+			, ShapeToWorld(nullptr)
+			, WorldBounds(nullptr)
 			, PrunerHandle(-1)
-			, Dirty(false)
-			, Moved(false)
-			, Dynamic(false)
+			, Flags(0)
 		{
 		}
 
+		enum Flag : uint8_t
+		{
+			Active = 1 << 0,
+			Dynamic = 1 << 1,
+			Dirty = 1 << 2,
+		};
+
+		bool IsActive() const { return (Flags & Active) != 0; }
+		bool IsDynamic() const { return (Flags & Dynamic) != 0; }
+		bool IsDirty() const { return (Flags & Dirty) != 0; }
+		void SetActive(bool active) { active ? Flags |= Active : Flags &= ~Active; }
+		void SetDynamic(bool dynamic) { dynamic ? Flags |= Dynamic : Flags &= ~Dynamic; }
+		void SetDirty(bool dirty) { dirty ? Flags |= Dirty : Flags &= ~Dirty; }
+
+		GeometryHandle Handle;
 		Geometry*	Geom;
-		RigidBody*	Body;
+		const Transform* ShapeToWorld;
+		const Box3* WorldBounds;
+		int			PrunerHandle;
+		uint8_t		Flags;
+	};
+
+	struct GeometryQueryLocalState
+	{
 		Transform	ShapeToWorld;
 		Box3		WorldBounds;
-		Vector3		Displacement;
-		uint64_t	Version;
-		uint64_t	FrameId;
-		int			PrunerHandle;
-		bool		Dirty;
-		bool		Moved;
-		bool		Dynamic;
 	};
 
 	class GeometryQuery
@@ -282,10 +293,15 @@ namespace Riemann
 		bool		AddGeometry(Geometry* Object);
 		bool		AddGeometry(Geometry* Object, const Box3& Bounds);
 		bool		AddGeometry(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body = nullptr);
+		bool		AddGeometry(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld);
+		bool		AddGeometry(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body = nullptr);
 		bool		RemoveGeometry(Geometry* Object);
+		bool		RemoveGeometry(GeometryHandle Handle);
 		bool		UpdateGeometry(Geometry* Object, const Vector3& displacement = Vector3::Zero());
 		bool		UpdateGeometry(Geometry* Object, const Box3& Bounds, const Vector3& displacement = Vector3::Zero());
 		bool		UpdateGeometry(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body = nullptr, const Vector3& displacement = Vector3::Zero());
+		bool		UpdateGeometry(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld, const Vector3& displacement = Vector3::Zero());
+		bool		UpdateGeometry(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body = nullptr, const Vector3& displacement = Vector3::Zero());
 
 		bool		RayCastQuery(const Vector3& Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult* Result);
 		bool		IntersectQueryBox(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result);
@@ -296,6 +312,9 @@ namespace Riemann
 		bool		CapsuleCastQuery(const Vector3& Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 		void		CollectAABBs(std::vector<Box3>* aabbs) const;
 		const GeometryQueryProxy* GetProxy(const Geometry* Object) const;
+		const GeometryQueryProxy* GetProxy(GeometryHandle Handle) const;
+		GeometryQueryProxy* GetProxyByIndex(uint32_t Index);
+		const GeometryQueryProxy* GetProxyByIndex(uint32_t Index) const;
 
 		AABBTree* GetStaticTree();
 		const AABBTree* GetStaticTree() const;
@@ -312,17 +331,23 @@ namespace Riemann
 
 	private:
 		bool		AddToStatic(Geometry* Object);
-		bool		AddToStatic(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body);
+		bool		AddToStatic(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld);
+		bool		AddToStatic(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body);
 		bool		RemoveFromStatic(Geometry* Object);
+		bool		RemoveFromStatic(GeometryHandle Handle);
 		bool		UpdateStaticObject(Geometry* Object);
-		bool		UpdateStaticObject(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement);
+		bool		UpdateStaticObject(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld, const Vector3& displacement);
+		bool		UpdateStaticObject(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement);
 		int			AddToDynamic(Geometry* Object);
 		int			AddToDynamic(Geometry* Object, const Box3& Bounds);
-		int			AddToDynamic(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body);
+		int			AddToDynamic(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld);
+		int			AddToDynamic(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body);
 		void		RemoveFromDynamic(Geometry* Object);
+		void		RemoveFromDynamic(GeometryHandle Handle);
 		bool		UpdateDynamicObject(Geometry* Object, const Vector3& displacement);
 		bool		UpdateDynamicObject(Geometry* Object, const Box3& Bounds, const Vector3& displacement);
-		bool		UpdateDynamicObject(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement);
+		bool		UpdateDynamicObject(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld, const Vector3& displacement);
+		bool		UpdateDynamicObject(GeometryHandle Handle, Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement);
 		bool		CommitStaticGeometry();
 		void		MarkStaticGeometryDirty();
 		bool		ContainsStaticGeometry(const Geometry* Object) const;
@@ -330,16 +355,20 @@ namespace Riemann
 		bool		SweepTest_Impl(const Geometry* geom, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 		GeometryQueryProxy* FindProxy(Geometry* Object);
 		const GeometryQueryProxy* FindProxy(const Geometry* Object) const;
-		GeometryQueryProxy& UpdateProxy(Geometry* Object, const Box3& Bounds, const Transform& ShapeToWorld, RigidBody* Body, const Vector3& displacement, bool Dynamic);
+		GeometryHandle AllocateLocalHandle();
+		GeometryQueryLocalState* EnsureLocalState(GeometryHandle Handle);
+		GeometryQueryProxy* EnsureProxy(GeometryHandle Handle);
+		GeometryQueryProxy& UpdateProxy(GeometryHandle Handle, Geometry* Object, const Box3* Bounds, const Transform* ShapeToWorld, bool Dynamic);
+		void		RemoveProxy(GeometryHandle Handle);
 		void		RemoveProxy(Geometry* Object);
-		Transform	GetProxyTransform(const Geometry* Object) const;
-		Box3		GetProxyBounds(const Geometry* Object) const;
 
 	private:
 		std::vector<Geometry*>	m_Objects;
 		std::vector<Geometry*>	m_staticObjects;
-		std::unordered_map<Geometry*, GeometryQueryProxy> m_Proxies;
-		uint64_t			m_FrameId;
+		std::vector<uint32_t>	m_staticProxyIds;
+		std::vector<GeometryQueryProxy> m_Proxies;
+		std::vector<GeometryQueryLocalState> m_LocalStates;
+		uint32_t			m_NextLocalHandle;
 
 		AABBTree*			m_staticGeometry;
 		AABBPruner*			m_staticBucket;

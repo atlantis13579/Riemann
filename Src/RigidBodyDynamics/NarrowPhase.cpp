@@ -157,7 +157,7 @@ namespace Riemann
 
 		}
 
-		virtual void CollisionDetection(const std::vector<GeometryWorldState>& states,
+		virtual void CollisionDetection(GeometryWorldStateSpan states,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{
@@ -201,7 +201,7 @@ namespace Riemann
 
 		}
 
-		virtual void CollisionDetection(const std::vector<GeometryWorldState>& states,
+		virtual void CollisionDetection(GeometryWorldStateSpan states,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{
@@ -222,7 +222,7 @@ namespace Riemann
 		{
 		}
 
-		virtual void CollisionDetection(const std::vector<GeometryWorldState>& states,
+		virtual void CollisionDetection(GeometryWorldStateSpan states,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{
@@ -240,7 +240,7 @@ namespace Riemann
 		{
 		}
 
-		virtual void CollisionDetection(const std::vector<GeometryWorldState>& states,
+		virtual void CollisionDetection(GeometryWorldStateSpan states,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* manifolds) override final
 		{

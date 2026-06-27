@@ -1228,7 +1228,9 @@ static std::vector<GeometryWorldState> MakeGeometryWorldStates(const std::vector
 	states.reserve(geoms.size());
 	for (Geometry* geom : geoms)
 	{
-		states.push_back(MakeGeometryWorldState(geom));
+		GeometryWorldState state = MakeGeometryWorldState(geom);
+		state.Handle = GeometryHandle((uint32_t)states.size(), 1);
+		states.push_back(state);
 	}
 	return states;
 }
@@ -1263,18 +1265,11 @@ void TestPhysXBroadPhasePorts()
 
 	std::vector<GeometryWorldState> states = MakeGeometryWorldStates(geoms);
 
-	DynamicAABBTree dynamicTree;
-	for (size_t i = 0; i < geoms.size(); ++i)
-	{
-		const int nodeId = dynamicTree.Add(states[i].WorldBounds, geoms[i]);
-		geoms[i]->SetNodeId(nodeId);
-	}
-
 	BroadPhase* bruteforce = BroadPhase::Create_Bruteforce();
 	BroadPhase* sap = BroadPhase::Create_SAP();
 	BroadPhase* abp = BroadPhase::Create_ABP();
 	BroadPhase* mbp = BroadPhase::Create_MBP();
-	BroadPhase* dynamicAABB = BroadPhase::Create_DynamicAABB(&dynamicTree);
+	BroadPhase* dynamicAABB = BroadPhase::Create_DynamicAABB();
 
 	std::vector<OverlapPair> brutePairs;
 	std::vector<OverlapPair> sapPairs;
@@ -1322,7 +1317,9 @@ void TestPhysicsWorldSceneQueryTrees()
 		Geometry* geom = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
 		RigidBody* body = world.CreateRigidBody(geom, bodyParam);
 		EXPECT(body != nullptr);
-		EXPECT(geom->GetNodeId() == -1);
+		const GeometryQueryProxy* proxy = world.GetGeometryQuery()->GetProxy(geom);
+		EXPECT(proxy != nullptr);
+		EXPECT(proxy->PrunerHandle == -1);
 		world.Simulate();
 		EXPECT(world.GetGeometryQuery()->GetDynamicTree() == nullptr);
 
@@ -1343,12 +1340,16 @@ void TestPhysicsWorldSceneQueryTrees()
 		Geometry* geom = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
 		RigidBody* body = world.CreateRigidBody(geom, bodyParam);
 		EXPECT(body != nullptr);
-		EXPECT(geom->GetNodeId() >= 0);
+		const GeometryQueryProxy* proxy = world.GetGeometryQuery()->GetProxy(geom);
+		EXPECT(proxy != nullptr);
+		EXPECT(proxy->PrunerHandle >= 0);
 		world.Simulate();
-		EXPECT(geom->GetNodeId() >= 0);
+		proxy = world.GetGeometryQuery()->GetProxy(geom);
+		EXPECT(proxy != nullptr);
+		EXPECT(proxy->PrunerHandle >= 0);
 
 		EXPECT(world.RemoveRigidBody(body));
-		EXPECT(geom->GetNodeId() == -1);
+		EXPECT(world.GetGeometryQuery()->GetProxy(geom) == nullptr);
 		body->ReleaseGeometries();
 		delete body;
 	}
@@ -1363,7 +1364,9 @@ void TestPhysicsWorldSceneQueryTrees()
 		Geometry* geom = GeometryFactory::CreateSphere(Vector3::Zero(), 1.0f);
 		RigidBody* body = world.CreateRigidBody(geom, bodyParam);
 		EXPECT(body != nullptr);
-		EXPECT(geom->GetNodeId() >= 0);
+		const GeometryQueryProxy* proxy = world.GetGeometryQuery()->GetProxy(geom);
+		EXPECT(proxy != nullptr);
+		EXPECT(proxy->PrunerHandle >= 0);
 
 		RayCastOption option;
 		option.Type = RayCastOption::RAYCAST_NEAREST;
@@ -1389,7 +1392,7 @@ void TestPhysicsWorldSceneQueryTrees()
 		geom->SetQueryEnabled(false);
 		RigidBody* body = world.CreateRigidBody(geom, bodyParam);
 		EXPECT(body != nullptr);
-		EXPECT(geom->GetNodeId() == -1);
+		EXPECT(world.GetGeometryQuery()->GetProxy(geom) == nullptr);
 
 		std::vector<Box3> queryAABBs;
 		world.GetGeometryQuery()->CollectAABBs(&queryAABBs);

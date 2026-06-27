@@ -7,7 +7,6 @@
 #include "../Core/File.h"
 #include "../Core/LogSystem.h"
 #include "../Core/JobSystem.h"
-#include "../Collision/DynamicAABBTree.h"
 #include "../Collision/GeometryQuery.h"
 #include "../Collision/GeometryObject.h"
 #include "../Destruction/DestructionSet.h"
@@ -68,8 +67,7 @@ namespace Riemann
 		}
 		else if (param.broadphase == BroadPhaseSolver::DynamicAABB)
 		{
-			DynamicAABBTree* tree = m_GeometryQuery->GetDynamicTree();
-			m_BPhase = tree ? BroadPhase::Create_DynamicAABB(tree) : BroadPhase::Create_SAP();
+			m_BPhase = BroadPhase::Create_DynamicAABB();
 		}
 		if (m_BPhase == nullptr)
 		{
@@ -245,12 +243,115 @@ namespace Riemann
 		}
 
 		m_GeometryWorldStates.clear();
-		m_GeometryWorldStateCache.clear();
+		m_GeometryWorldRecords.clear();
+		m_FreeGeometryWorldRecords.clear();
 	}
 
-	GeometryWorldState PhysicsWorld::UpdateGeometryWorldState(Geometry* Object, uint64_t FrameId)
+	GeometryHandle PhysicsWorld::EnsureGeometryHandle(Geometry* Object)
 	{
+		if (Object == nullptr)
+		{
+			return GeometryHandle();
+		}
+
+		RigidBody* body = Object->GetParent<RigidBody>();
+		if (body)
+		{
+			const GeometryHandle existing = body->FindGeometryHandle(Object);
+			if (IsValidGeometryHandle(existing))
+			{
+				return existing;
+			}
+		}
+		else
+		{
+			for (size_t i = 0; i < m_GeometryWorldRecords.size(); ++i)
+			{
+				const GeometryWorldRecord& record = m_GeometryWorldRecords[i];
+				if (record.Active && record.State.Geom == Object)
+				{
+					return GeometryHandle((uint32_t)i, record.Generation);
+				}
+			}
+		}
+
+		uint32_t index = 0;
+		if (!m_FreeGeometryWorldRecords.empty())
+		{
+			index = m_FreeGeometryWorldRecords.back();
+			m_FreeGeometryWorldRecords.pop_back();
+		}
+		else
+		{
+			index = (uint32_t)m_GeometryWorldRecords.size();
+			m_GeometryWorldRecords.push_back(GeometryWorldRecord());
+		}
+
+		GeometryWorldRecord& record = m_GeometryWorldRecords[index];
+		record.Active = true;
+		record.HasState = false;
+		record.State = GeometryWorldState();
+		record.State.Geom = Object;
+		record.State.Body = body;
+		record.State.Handle = GeometryHandle(index, record.Generation);
+
+		if (body)
+		{
+			body->SetGeometryHandle(body->FindGeometryIndex(Object), record.State.Handle);
+		}
+
+		return record.State.Handle;
+	}
+
+	bool PhysicsWorld::IsValidGeometryHandle(GeometryHandle Handle) const
+	{
+		return GetGeometryWorldRecord(Handle) != nullptr;
+	}
+
+	GeometryWorldRecord* PhysicsWorld::GetGeometryWorldRecord(GeometryHandle Handle)
+	{
+		if (!Handle.IsValid() || Handle.Index >= m_GeometryWorldRecords.size())
+		{
+			return nullptr;
+		}
+
+		GeometryWorldRecord& record = m_GeometryWorldRecords[Handle.Index];
+		if (!record.Active || record.Generation != Handle.Generation)
+		{
+			return nullptr;
+		}
+		return &record;
+	}
+
+	const GeometryWorldRecord* PhysicsWorld::GetGeometryWorldRecord(GeometryHandle Handle) const
+	{
+		if (!Handle.IsValid() || Handle.Index >= m_GeometryWorldRecords.size())
+		{
+			return nullptr;
+		}
+
+		const GeometryWorldRecord& record = m_GeometryWorldRecords[Handle.Index];
+		if (!record.Active || record.Generation != Handle.Generation)
+		{
+			return nullptr;
+		}
+		return &record;
+	}
+
+	GeometryWorldState PhysicsWorld::UpdateGeometryWorldState(GeometryHandle Handle, uint64_t FrameId)
+	{
+		GeometryWorldRecord* record = GetGeometryWorldRecord(Handle);
+		if (record == nullptr)
+		{
+			GeometryWorldState State;
+			State.Handle = Handle;
+			State.FrameId = FrameId;
+			return State;
+		}
+
+		Geometry* Object = record->State.Geom;
 		GeometryWorldState State;
+		State.Handle = Handle;
 		State.Geom = Object;
 		State.FrameId = FrameId;
 		State.WorldBounds = Box3::Empty();
@@ -276,8 +377,7 @@ namespace Riemann
 			State.MovingRigid = false;
 		}
 
-		auto It = m_GeometryWorldStateCache.find(Object);
-		if (It == m_GeometryWorldStateCache.end())
+		if (!record->HasState)
 		{
 			State.Version = 1;
 			State.Moved = true;
@@ -285,7 +385,7 @@ namespace Riemann
 		}
 		else
 		{
-			const GeometryWorldState& Prev = It->second;
+			const GeometryWorldState& Prev = record->State;
 			State.Displacement = State.ShapeToWorld.pos - Prev.ShapeToWorld.pos;
 			State.Moved = State.Body != Prev.Body
 				|| State.BodyToWorld != Prev.BodyToWorld
@@ -295,8 +395,14 @@ namespace Riemann
 			State.Version = State.Moved ? Prev.Version + 1 : Prev.Version;
 		}
 
-		m_GeometryWorldStateCache[Object] = State;
+		record->State = State;
+		record->HasState = true;
 		return State;
+	}
+
+	GeometryWorldState PhysicsWorld::UpdateGeometryWorldState(Geometry* Object, uint64_t FrameId)
+	{
+		return UpdateGeometryWorldState(EnsureGeometryHandle(Object), FrameId);
 	}
 
 	void PhysicsWorld::UpdateGeometryWorldStates(const std::vector<Geometry*>& Objects)
@@ -305,8 +411,42 @@ namespace Riemann
 		m_GeometryWorldStates.reserve(Objects.size());
 		for (Geometry* Object : Objects)
 		{
-			m_GeometryWorldStates.push_back(UpdateGeometryWorldState(Object, m_Clock.tick));
+			const GeometryWorldState State = UpdateGeometryWorldState(Object, m_Clock.tick);
+			const GeometryWorldRecord* record = GetGeometryWorldRecord(State.Handle);
+			if (record)
+			{
+				m_GeometryWorldStates.push_back(&record->State);
+			}
 		}
+	}
+
+	void PhysicsWorld::RemoveGeometryWorldState(GeometryHandle Handle)
+	{
+		if (!Handle.IsValid() || Handle.Index >= m_GeometryWorldRecords.size())
+		{
+			return;
+		}
+
+		GeometryWorldRecord& record = m_GeometryWorldRecords[Handle.Index];
+		if (!record.Active || record.Generation != Handle.Generation)
+		{
+			return;
+		}
+
+		if (record.State.Body)
+		{
+			record.State.Body->SetGeometryHandle(record.State.Body->FindGeometryIndex(record.State.Geom), GeometryHandle());
+		}
+
+		record.State = GeometryWorldState();
+		record.Active = false;
+		record.HasState = false;
+		++record.Generation;
+		if (record.Generation == 0)
+		{
+			record.Generation = 1;
+		}
+		m_FreeGeometryWorldRecords.push_back(Handle.Index);
 	}
 
 	void PhysicsWorld::RemoveGeometryWorldState(Geometry* Object)
@@ -316,7 +456,22 @@ namespace Riemann
 			return;
 		}
 
-		m_GeometryWorldStateCache.erase(Object);
+		RigidBody* body = Object->GetParent<RigidBody>();
+		if (body)
+		{
+			RemoveGeometryWorldState(body->FindGeometryHandle(Object));
+			return;
+		}
+
+		for (size_t i = 0; i < m_GeometryWorldRecords.size(); ++i)
+		{
+			const GeometryWorldRecord& record = m_GeometryWorldRecords[i];
+			if (record.Active && record.State.Geom == Object)
+			{
+				RemoveGeometryWorldState(GeometryHandle((uint32_t)i, record.Generation));
+				return;
+			}
+		}
 	}
 
 	void		PhysicsWorld::SimulateST(float dt)
@@ -351,16 +506,17 @@ namespace Riemann
 
 		UpdateGeometryWorldStates(geoms);
 
+		GeometryWorldStateSpan stateSpan(m_GeometryWorldStates.data(), m_GeometryWorldStates.size());
 		std::vector<OverlapPair> overlaps;
 		if (m_BPhase)
 		{
-			m_BPhase->ProduceOverlaps(m_GeometryWorldStates, &overlaps);
+			m_BPhase->ProduceOverlaps(stateSpan, &overlaps);
 		}
 
 		std::vector<ContactManifold*> manifolds;
 		if (m_NPhase && !overlaps.empty())
 		{
-			m_NPhase->CollisionDetection(m_GeometryWorldStates, overlaps, &manifolds);
+			m_NPhase->CollisionDetection(stateSpan, overlaps, &manifolds);
 		}
 
 		if (!manifolds.empty())
@@ -457,51 +613,105 @@ namespace Riemann
 
 	void PhysicsWorld::BuildSceneQuery(const std::vector<Geometry*>& Objects)
 	{
+		UpdateGeometryWorldStates(Objects);
+		BuildSceneQuery(GeometryWorldStateSpan(m_GeometryWorldStates.data(), m_GeometryWorldStates.size()));
+	}
+
+	void PhysicsWorld::BuildSceneQuery(GeometryWorldStateSpan States)
+	{
 		if (m_SceneQuery == SceneQueryType::DynamicAABB)
 		{
-			std::vector<Box3> Bounds;
-			std::vector<Transform> ShapeToWorld;
-			std::vector<RigidBody*> Bodies;
-			Bounds.reserve(Objects.size());
-			ShapeToWorld.reserve(Objects.size());
-			Bodies.reserve(Objects.size());
-			for (Geometry* Object : Objects)
+			if (m_GeometryQuery->GetDynamicTree() == nullptr)
 			{
-				const GeometryWorldState State = UpdateGeometryWorldState(Object, m_Clock.tick);
-				Bounds.push_back(State.WorldBounds);
-				ShapeToWorld.push_back(State.ShapeToWorld);
-				Bodies.push_back(State.Body);
+				m_GeometryQuery->CreateDynamicGeometry();
 			}
-			m_GeometryQuery->BuildDynamicGeometry(Objects, Bounds, ShapeToWorld, Bodies);
+			else
+			{
+				m_GeometryQuery->ClearDynamicGeometry();
+			}
+
+			for (size_t i = 0; i < States.size(); ++i)
+			{
+				const GeometryWorldState& State = States[i];
+				if (State.Geom == nullptr)
+				{
+					continue;
+				}
+				const GeometryWorldRecord* record = GetGeometryWorldRecord(State.Handle);
+				if (record)
+				{
+					const GeometryWorldState& queryState = record->State;
+					m_GeometryQuery->AddGeometry(queryState.Handle, queryState.Geom, &queryState.WorldBounds, &queryState.ShapeToWorld);
+				}
+				else
+				{
+					m_GeometryQuery->AddGeometry(State.Handle, State.Geom, State.WorldBounds, State.ShapeToWorld, State.Body);
+				}
+			}
 			return;
 		}
 
-		std::vector<Box3> Bounds;
-		std::vector<Transform> ShapeToWorld;
-		std::vector<RigidBody*> Bodies;
-		Bounds.reserve(Objects.size());
-		ShapeToWorld.reserve(Objects.size());
-		Bodies.reserve(Objects.size());
-		for (Geometry* Object : Objects)
+		m_GeometryQuery->ClearStaticGeometry();
+		for (size_t i = 0; i < States.size(); ++i)
 		{
-			const GeometryWorldState State = UpdateGeometryWorldState(Object, m_Clock.tick);
-			Bounds.push_back(State.WorldBounds);
-			ShapeToWorld.push_back(State.ShapeToWorld);
-			Bodies.push_back(State.Body);
+			const GeometryWorldState& State = States[i];
+			if (State.Geom == nullptr)
+			{
+				continue;
+			}
+			const GeometryWorldRecord* record = GetGeometryWorldRecord(State.Handle);
+			if (record)
+			{
+				const GeometryWorldState& queryState = record->State;
+				m_GeometryQuery->AddGeometry(queryState.Handle, queryState.Geom, &queryState.WorldBounds, &queryState.ShapeToWorld);
+			}
+			else
+			{
+				m_GeometryQuery->AddGeometry(State.Handle, State.Geom, State.WorldBounds, State.ShapeToWorld, State.Body);
+			}
 		}
-		m_GeometryQuery->BuildStaticGeometry(Objects, Bounds, ShapeToWorld, Bodies, 5);
+		m_GeometryQuery->GetStaticTree();
 	}
 
 	void PhysicsWorld::AddGeometryToSceneQuery(Geometry* Object)
 	{
 		const GeometryWorldState State = UpdateGeometryWorldState(Object, m_Clock.tick);
-		m_GeometryQuery->AddGeometry(Object, State.WorldBounds, State.ShapeToWorld, State.Body);
+		const GeometryWorldRecord* record = GetGeometryWorldRecord(State.Handle);
+		if (record)
+		{
+			const GeometryWorldState& queryState = record->State;
+			m_GeometryQuery->AddGeometry(queryState.Handle, queryState.Geom, &queryState.WorldBounds, &queryState.ShapeToWorld);
+		}
+		else
+		{
+			m_GeometryQuery->AddGeometry(State.Handle, State.Geom, State.WorldBounds, State.ShapeToWorld, State.Body);
+		}
 	}
 
 	void PhysicsWorld::RemoveGeometryFromSceneQuery(Geometry* Object)
 	{
-		m_GeometryQuery->RemoveGeometry(Object);
-		RemoveGeometryWorldState(Object);
+		const GeometryHandle handle = EnsureGeometryHandle(Object);
+		m_GeometryQuery->RemoveGeometry(handle);
+		RemoveGeometryWorldState(handle);
+	}
+
+	void PhysicsWorld::UpdateSceneQuery(const GeometryWorldState& State)
+	{
+		if (State.Geom == nullptr || !State.Moved)
+		{
+			return;
+		}
+
+		const GeometryWorldRecord* record = GetGeometryWorldRecord(State.Handle);
+		if (record)
+		{
+			const GeometryWorldState& queryState = record->State;
+			m_GeometryQuery->UpdateGeometry(queryState.Handle, queryState.Geom, &queryState.WorldBounds, &queryState.ShapeToWorld, queryState.Displacement);
+		}
+		else
+		{
+			m_GeometryQuery->UpdateGeometry(State.Handle, State.Geom, State.WorldBounds, State.ShapeToWorld, State.Body, State.Displacement);
+		}
 	}
 
 	void PhysicsWorld::UpdateSceneQuery(RigidBodyDynamic* Body)
@@ -514,10 +724,7 @@ namespace Riemann
 		for (Geometry* g : Body->Geometries())
 		{
 			const GeometryWorldState State = UpdateGeometryWorldState(g, m_Clock.tick);
-			if (State.Moved)
-			{
-				m_GeometryQuery->UpdateGeometry(g, State.WorldBounds, State.ShapeToWorld, State.Body, State.Displacement);
-			}
+			UpdateSceneQuery(State);
 		}
 	}
 

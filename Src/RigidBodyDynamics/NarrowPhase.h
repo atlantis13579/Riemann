@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "BroadPhase.h"
-#include "GeometryWorldState.h"
 
 namespace Riemann
 {
@@ -13,7 +12,7 @@ namespace Riemann
 	{
 	public:
 		virtual ~NarrowPhase() {}
-		virtual void CollisionDetection(const std::vector<GeometryWorldState>& states,
+		virtual void CollisionDetection(GeometryWorldStateSpan states,
 			const std::vector<OverlapPair>& overlaps,
 			std::vector<ContactManifold*>* contact) = 0;
 

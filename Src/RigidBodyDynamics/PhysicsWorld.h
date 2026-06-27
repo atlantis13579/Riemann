@@ -3,10 +3,8 @@
 #include <stdint.h>
 #include <functional>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
-#include "GeometryWorldState.h"
 #include "RigidBody.h"
 
 namespace Riemann
@@ -138,6 +136,21 @@ namespace Riemann
 		OnContactCallback		onContact;
 	};
 
+	struct GeometryWorldRecord
+	{
+		GeometryWorldRecord()
+			: Generation(1)
+			, Active(false)
+			, HasState(false)
+		{
+		}
+
+		GeometryWorldState	State;
+		uint32_t			Generation;
+		bool				Active;
+		bool				HasState;
+	};
+
 	class PhysicsWorld
 	{
 	public:
@@ -173,16 +186,24 @@ namespace Riemann
 	private:
 		void				SimulateST(float dt);
 
+		GeometryHandle		EnsureGeometryHandle(Geometry* Object);
+		bool				IsValidGeometryHandle(GeometryHandle Handle) const;
+		GeometryWorldRecord* GetGeometryWorldRecord(GeometryHandle Handle);
+		const GeometryWorldRecord* GetGeometryWorldRecord(GeometryHandle Handle) const;
+		GeometryWorldState	UpdateGeometryWorldState(GeometryHandle Handle, uint64_t FrameId);
 		GeometryWorldState	UpdateGeometryWorldState(Geometry* Object, uint64_t FrameId);
 		void				UpdateGeometryWorldStates(const std::vector<Geometry*>& Objects);
+		void				RemoveGeometryWorldState(GeometryHandle Handle);
 		void				RemoveGeometryWorldState(Geometry* Object);
 		void				PreIntegrate(float dt);
 		void				PostIntegrate(float dt);
 		void				DispatchContactCallbacks(const std::vector<Geometry*>& geoms, const std::vector<ContactManifold*>& manifolds);
 		void				UpdateDestructionSets(float dt);
 		void				BuildSceneQuery(const std::vector<Geometry*>& Objects);
+		void				BuildSceneQuery(GeometryWorldStateSpan States);
 		void				AddGeometryToSceneQuery(Geometry* Object);
 		void				RemoveGeometryFromSceneQuery(Geometry* Object);
+		void				UpdateSceneQuery(const GeometryWorldState& State);
 		void				UpdateSceneQuery(RigidBodyDynamic* Body);
 
 	private:
@@ -200,8 +221,9 @@ namespace Riemann
 		OnContactCallback				m_OnContact;
 		std::vector<DestructionSet*>	m_DestructionSets;
 		std::vector<ForceField*>		m_Fields;
-		std::vector<GeometryWorldState> m_GeometryWorldStates;
-		std::unordered_map<Geometry*, GeometryWorldState> m_GeometryWorldStateCache;
+		std::vector<const GeometryWorldState*> m_GeometryWorldStates;
+		std::vector<GeometryWorldRecord> m_GeometryWorldRecords;
+		std::vector<uint32_t>		m_FreeGeometryWorldRecords;
 		WorldClock						m_Clock;
 		IBinaryData*							m_SceneResource;
 	};

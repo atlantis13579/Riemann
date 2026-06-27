@@ -576,6 +576,42 @@ bool DynamicAABBTree::Update(int nodeId, const Box3& aabb, const Vector3& displa
 	return true;
 }
 
+bool DynamicAABBTree::Widen(int nodeId, const Box3& aabb)
+{
+	assert(0 <= nodeId && nodeId < m_nodeCapacity);
+	assert(m_nodes[nodeId].IsLeaf());
+
+	const Box3& treeAABB = m_nodes[nodeId].aabb;
+	if (treeAABB.IsInside(aabb))
+	{
+		return false;
+	}
+
+	Vector3 thickness(kAABBThickness, kAABBThickness, kAABBThickness);
+	Box3 newAABB(aabb.Min - thickness, aabb.Max + thickness);
+	newAABB = Box3(treeAABB, newAABB);
+
+	m_nodes[nodeId].aabb = newAABB;
+	m_nodes[nodeId].moved = true;
+
+	int parent = m_nodes[nodeId].parent;
+	while (parent != -1)
+	{
+		const int child1 = m_nodes[parent].child1;
+		const int child2 = m_nodes[parent].child2;
+		const Box3 merged(m_nodes[child1].aabb, m_nodes[child2].aabb);
+		if (m_nodes[parent].aabb == merged)
+		{
+			break;
+		}
+
+		m_nodes[parent].aabb = merged;
+		parent = m_nodes[parent].parent;
+	}
+
+	return true;
+}
+
 void DynamicAABBTree::Rebuild()
 {
 	int* nodes = new int[m_nodeCount];

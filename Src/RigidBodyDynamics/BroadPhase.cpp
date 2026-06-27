@@ -9,11 +9,32 @@
 #include <cmath>
 #include <limits>
 #include <set>
-#include <unordered_map>
 #include <vector>
 
 namespace Riemann
 {
+	void BroadPhase::ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps)
+	{
+		std::vector<const GeometryWorldState*> statePtrs;
+		statePtrs.reserve(states.size());
+		for (const GeometryWorldState& state : states)
+		{
+			statePtrs.push_back(&state);
+		}
+		ProduceOverlaps(GeometryWorldStateSpan(statePtrs.data(), statePtrs.size()), overlaps);
+	}
+
+	static void* EncodeBroadPhaseProxyId(uint32_t index)
+	{
+		return reinterpret_cast<void*>((uintptr_t)index + 1);
+	}
+
+	static uint32_t DecodeBroadPhaseProxyId(void* userData)
+	{
+		const uintptr_t encoded = reinterpret_cast<uintptr_t>(userData);
+		return encoded == 0 ? kInvalidGeometryHandleIndex : (uint32_t)(encoded - 1);
+	}
+
 	static bool IsMovingRigid(const GeometryWorldState& state)
 	{
 		return state.MovingRigid;
@@ -39,7 +60,7 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseAllPairsImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 
@@ -58,7 +79,7 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseBruteforceImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 
@@ -108,7 +129,7 @@ namespace Riemann
 
 	public:
 
-		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 			if (states.empty())
@@ -159,7 +180,11 @@ namespace Riemann
 			uint64_t hash = 0;
 			for (size_t i = 0; i < m_pStates->size(); ++i)
 			{
-				hash ^= reinterpret_cast<uint64_t>(m_pStates->at(i).Geom);
+				const GeometryWorldState& state = m_pStates->at(i);
+				const uint64_t id = state.Handle.IsValid()
+					? (((uint64_t)state.Handle.Generation << 32) | state.Handle.Index)
+					: reinterpret_cast<uint64_t>(state.Geom);
+				hash ^= id;
 				hash *= static_cast<uint64_t>(1099511628211ULL);
 			}
 			return hash;
@@ -168,7 +193,7 @@ namespace Riemann
 	private:
 		IncrementalSAP* m_SAP;
 		std::set<OverlapKey>			m_Overlaps;
-		const std::vector<GeometryWorldState>* m_pStates;
+		const GeometryWorldStateSpan* m_pStates;
 	};
 
 	class BroadPhaseABPImplementation : public BroadPhase
@@ -176,7 +201,7 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseABPImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 			m_States = &states;
@@ -450,7 +475,7 @@ namespace Riemann
 		}
 
 	private:
-		const std::vector<GeometryWorldState>* m_States = nullptr;
+		const GeometryWorldStateSpan* m_States = nullptr;
 		std::vector<OverlapPair>* m_Overlaps = nullptr;
 		std::set<OverlapKey> m_UniquePairs;
 	};
@@ -460,7 +485,7 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseMBPImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 			m_States = &states;
@@ -655,7 +680,7 @@ namespace Riemann
 		}
 
 	private:
-		const std::vector<GeometryWorldState>* m_States = nullptr;
+		const GeometryWorldStateSpan* m_States = nullptr;
 		std::vector<OverlapPair>* m_Overlaps = nullptr;
 		std::set<OverlapKey> m_UniquePairs;
 	};
@@ -663,31 +688,19 @@ namespace Riemann
 	class BroadPhaseDynamicAABBImplementation : public BroadPhase
 	{
 	public:
-		BroadPhaseDynamicAABBImplementation(DynamicAABBTree* tree)
-		{
-			m_tree = tree;
-		}
+		BroadPhaseDynamicAABBImplementation() {}
 		virtual ~BroadPhaseDynamicAABBImplementation() {}
 
-		virtual void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
-			if (m_tree == nullptr || states.empty())
+			if (states.empty())
 			{
+				ClearProxies();
 				return;
 			}
 
-			SyncMovedProxies(states);
-
-			std::unordered_map<Geometry*, int> geomToIndex;
-			geomToIndex.reserve(states.size());
-			for (int i = 0; i < (int)states.size(); ++i)
-			{
-				if (states[i].Geom)
-				{
-					geomToIndex[states[i].Geom] = i;
-				}
-			}
+			SyncProxies(states);
 
 			std::vector<void*> result;
 			int n = (int)states.size();
@@ -698,17 +711,20 @@ namespace Riemann
 				if (!IsMovingRigid(state1))
 					continue;
 
-				m_tree->Query(state1.WorldBounds, &result);
+				m_tree.Query(state1.WorldBounds, &result);
 				for (int j = 0; j < (int)result.size(); ++j)
 				{
-					Geometry* gj = static_cast<Geometry*>(result[j]);
-					auto it = geomToIndex.find(gj);
-					if (it == geomToIndex.end())
+					BroadPhaseProxy* proxy = GetProxyByIndex(DecodeBroadPhaseProxyId(result[j]));
+					if (proxy == nullptr)
 					{
 						continue;
 					}
 
-					const int index2 = it->second;
+					const int index2 = proxy->StateIndex;
+					if (index2 < 0 || index2 >= n)
+					{
+						continue;
+					}
 					const GeometryWorldState& state2 = states[index2];
 					if (index2 == i)
 					{
@@ -736,26 +752,97 @@ namespace Riemann
 		}
 
 	private:
-		void SyncMovedProxies(const std::vector<GeometryWorldState>& states)
+		void ClearProxies()
 		{
-			for (const GeometryWorldState& state : states)
+			m_tree.Clear();
+			m_Proxies.clear();
+		}
+
+		BroadPhaseProxy* GetProxyByIndex(uint32_t Index)
+		{
+			if (Index >= m_Proxies.size() || !m_Proxies[Index].Active)
 			{
-				if (!state.Moved || state.Geom == nullptr)
+				return nullptr;
+			}
+			return &m_Proxies[Index];
+		}
+
+		void SyncProxies(GeometryWorldStateSpan states)
+		{
+			++m_SyncId;
+
+			for (int i = 0; i < (int)states.size(); ++i)
+			{
+				const GeometryWorldState& state = states[i];
+				if (state.Geom == nullptr || !state.Geom->IsSimulationEnabled())
 				{
 					continue;
 				}
 
-				const int nodeId = state.Geom->GetNodeId();
-				if (nodeId < 0)
+				const GeometryHandle handle = state.Handle.IsValid() ? state.Handle : GeometryHandle((uint32_t)i, 1);
+				if (handle.Index >= m_Proxies.size())
+				{
+					m_Proxies.resize((size_t)handle.Index + 1);
+				}
+
+				BroadPhaseProxy& proxy = m_Proxies[handle.Index];
+				if (proxy.Active && proxy.Handle.Generation != handle.Generation)
+				{
+					if (proxy.PrunerHandle >= 0)
+					{
+						m_tree.Remove(proxy.PrunerHandle);
+					}
+					proxy = BroadPhaseProxy();
+				}
+
+				const bool isNew = !proxy.Active || proxy.PrunerHandle < 0;
+				const bool moved = isNew
+					|| state.Moved
+					|| !(proxy.WorldBounds == state.WorldBounds)
+					|| proxy.MovingRigid != state.MovingRigid
+					|| proxy.Version != state.Version;
+
+				proxy.Handle = handle;
+				proxy.WorldBounds = state.WorldBounds;
+				proxy.Displacement = state.Displacement;
+				proxy.Version = state.Version;
+				proxy.FrameId = state.FrameId;
+				proxy.SyncId = m_SyncId;
+				proxy.StateIndex = i;
+				proxy.Moved = moved;
+				proxy.MovingRigid = state.MovingRigid;
+				proxy.Active = true;
+
+				if (isNew)
+				{
+					proxy.PrunerHandle = m_tree.Add(proxy.WorldBounds, EncodeBroadPhaseProxyId(handle.Index));
+					continue;
+				}
+
+				if (moved)
+				{
+					m_tree.Widen(proxy.PrunerHandle, proxy.WorldBounds);
+				}
+			}
+
+			for (BroadPhaseProxy& proxy : m_Proxies)
+			{
+				if (!proxy.Active || proxy.SyncId == m_SyncId)
 				{
 					continue;
 				}
 
-				m_tree->Update(nodeId, state.WorldBounds, state.Displacement);
+				if (proxy.PrunerHandle >= 0)
+				{
+					m_tree.Remove(proxy.PrunerHandle);
+				}
+				proxy = BroadPhaseProxy();
 			}
 		}
 
-		DynamicAABBTree* m_tree;
+		DynamicAABBTree m_tree;
+		std::vector<BroadPhaseProxy> m_Proxies;
+		uint64_t m_SyncId = 0;
 	};
 
 	BroadPhase* BroadPhase::Create_SAP()
@@ -773,9 +860,9 @@ namespace Riemann
 		return new BroadPhaseMBPImplementation();
 	}
 
-	BroadPhase* BroadPhase::Create_DynamicAABB(DynamicAABBTree* tree)
+	BroadPhase* BroadPhase::Create_DynamicAABB()
 	{
-		return new BroadPhaseDynamicAABBImplementation(tree);
+		return new BroadPhaseDynamicAABBImplementation();
 	}
 
 	BroadPhase* BroadPhase::Create_Bruteforce()

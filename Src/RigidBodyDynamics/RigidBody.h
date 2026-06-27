@@ -3,12 +3,14 @@
 #include <stdint.h>
 #include <vector>
 #include "../Collision/GeometryAggregate.h"
+#include "../Collision/GeometryHandle.h"
 #include "../Maths/Transform.h"
 #include "../Maths/Box3.h"
 
 namespace Riemann
 {
 	class Geometry;
+	class RigidBody;
 	class RigidBodyStatic;
 	class RigidBodyDynamic;
 	struct PhysicsMaterial;
@@ -60,10 +62,61 @@ namespace Riemann
 		MorionType	motionType;
 	};
 
+	struct GeometryWorldState
+	{
+		GeometryWorldState()
+			: Handle()
+			, Geom(nullptr)
+			, Body(nullptr)
+			, Displacement(Vector3::Zero())
+			, Version(0)
+			, FrameId(0)
+			, Moved(false)
+			, MovingRigid(false)
+		{
+		}
+
+		GeometryHandle	Handle;
+		Geometry*		Geom;
+		RigidBody*		Body;
+		Transform		BodyToWorld;
+		Transform		ShapeToWorld;
+		Box3			WorldBounds;
+		Vector3			Displacement;
+		uint64_t		Version;
+		uint64_t		FrameId;
+		bool			Moved;
+		bool			MovingRigid;
+	};
+
+	struct GeometryWorldStateSpan
+	{
+		GeometryWorldStateSpan()
+			: States(nullptr)
+			, Count(0)
+		{
+		}
+
+		GeometryWorldStateSpan(const GeometryWorldState* const* InStates, size_t InCount)
+			: States(InStates)
+			, Count(InCount)
+		{
+		}
+
+		size_t size() const { return Count; }
+		bool empty() const { return Count == 0; }
+		const GeometryWorldState& operator[](size_t Index) const { return *States[Index]; }
+		const GeometryWorldState& at(size_t Index) const { return *States[Index]; }
+
+		const GeometryWorldState* const* States;
+		size_t Count;
+	};
+
 	class RigidBody
 	{
 	public:
 		std::vector<Geometry*>	mGeometries;
+		std::vector<GeometryHandle>	mGeometryHandles;
 		RigidType				mRigidType;
 		uint64_t				mGuid;
 
@@ -91,6 +144,10 @@ namespace Riemann
 		inline std::vector<Geometry*>& Geometries() { return mGeometries; }
 		inline const std::vector<Geometry*>& Geometries() const { return mGeometries; }
 		size_t			GetNumGeometries() const;
+		GeometryHandle	GetGeometryHandle(size_t Index) const;
+		void			SetGeometryHandle(size_t Index, GeometryHandle Handle);
+		GeometryHandle	FindGeometryHandle(const Geometry* Geom) const;
+		size_t			FindGeometryIndex(const Geometry* Geom) const;
 		void			ReleaseGeometries();
 
 		uint64_t		GetGuid() const { return mGuid; }

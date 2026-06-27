@@ -156,8 +156,6 @@ namespace Riemann
 			return nullptr;
 		}
 
-		inline void				SetNodeId(int NodeId) { m_NodeId = NodeId; }
-		inline int				GetNodeId() const { return m_NodeId; }
 		inline uint32_t			GetFlags() const { return m_Flags; }
 		inline void				SetFlags(uint32_t Flags) { m_Flags = Flags; }
 		inline bool				HasFlag(uint32_t Flag) const { return (m_Flags & Flag) != 0; }
@@ -222,7 +220,6 @@ namespace Riemann
 		MassParameters		m_VolumeProperties;
 		float				m_Density;
 		void*				m_Parent;
-		int					m_NodeId;		// nodeId from DynamicAABB Tree
 		uint32_t			m_Flags;
 	};
 

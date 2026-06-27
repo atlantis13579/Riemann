@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #include <vector>
 
 #include "../CollisionPrimitive/Ray3.h"
@@ -15,10 +16,15 @@ namespace Riemann
 	struct SweepResult;
 	struct CacheFriendlyAABBTree;
 	class Geometry;
+	class GeometryQuery;
 
 	typedef bool (*AABBRayCastCallback)(const Ray3& Ray, Geometry* GeometryObject, const RayCastOption* Option, RayCastResult* Result, void* Context);
 	typedef bool (*AABBIntersectCallback)(const Geometry* QueryGeometry, Geometry* GeometryObject, const IntersectOption* Option, IntersectResult* Result, void* Context);
 	typedef bool (*AABBSweepCallback)(const Geometry* QueryGeometry, Geometry* GeometryObject, const Vector3& Direction, const SweepOption* Option, SweepResult* Result, void* Context);
+	typedef uint32_t AABBTreePayloadId;
+	typedef bool (*AABBRayCastPayloadCallback)(const Ray3& Ray, AABBTreePayloadId PayloadId, const RayCastOption* Option, RayCastResult* Result, void* Context);
+	typedef bool (*AABBIntersectPayloadCallback)(const Geometry* QueryGeometry, AABBTreePayloadId PayloadId, const IntersectOption* Option, IntersectResult* Result, void* Context);
+	typedef bool (*AABBSweepPayloadCallback)(const Geometry* QueryGeometry, const Vector3& Direction, AABBTreePayloadId PayloadId, const SweepOption* Option, SweepResult* Result, void* Context);
 
 	struct TreeStatistics
 	{
@@ -55,6 +61,11 @@ namespace Riemann
 		bool	RayCastBoundingBox(const Ray3& ray, const RayCastOption& Option, RayCastResult* Result) const;
 
 	private:
+		friend class GeometryQuery;
+
+		bool	RayCast(const Ray3& Ray, const AABBTreePayloadId* PayloadIds, const RayCastOption* Option, RayCastResult* Result, AABBRayCastPayloadCallback Callback, void* Context) const;
+		bool	Intersect(const Geometry* intersect_geometry, const AABBTreePayloadId* PayloadIds, const IntersectOption* Option, IntersectResult* Result, AABBIntersectPayloadCallback Callback, void* Context) const;
+		bool	Sweep(const Geometry* sweep_geometry, const AABBTreePayloadId* PayloadIds, const Vector3& Direction, const SweepOption* Option, SweepResult* Result, AABBSweepPayloadCallback Callback, void* Context) const;
 		void	InitAABBTreeBuild(AABBTreeBuildData& params);
 
 	private:

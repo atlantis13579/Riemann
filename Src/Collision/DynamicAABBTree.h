@@ -51,6 +51,7 @@ namespace Riemann
 		int 	Add(const Box3& aabb, void* userData);
 		void 	Remove(int nodeId);
 		bool 	Update(int nodeId, const Box3& aabb, const Vector3& displacement);
+		bool	Widen(int nodeId, const Box3& aabb);
 
 		bool	RayCast(const Ray3& Ray, const RayCastOption* Option, RayCastResult* Result) const;
 		bool	RayCast(const Ray3& Ray, const RayCastOption* Option, RayCastResult* Result, DynamicRayCastCallback Callback, void* Context) const;
