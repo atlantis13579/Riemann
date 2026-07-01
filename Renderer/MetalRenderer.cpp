@@ -884,13 +884,26 @@ namespace Riemann
 
 		MTLTriangleFillMode ResolveTriangleFillMode(RenderFillMode fillMode) const
 		{
-			const bool wireframe =
-				fillMode == RenderFillMode::Wireframe ||
-				(fillMode == RenderFillMode::RendererDefault && Wireframe);
-			return wireframe ? MTLTriangleFillModeLines : MTLTriangleFillModeFill;
+			return IsWireframeFillMode(fillMode) ? MTLTriangleFillModeLines : MTLTriangleFillModeFill;
 		}
 
-		void UpdateUniforms(MetalMesh& mesh, bool outlinePass)
+		bool IsWireframeFillMode(RenderFillMode fillMode) const
+		{
+			return fillMode == RenderFillMode::Wireframe ||
+				(fillMode == RenderFillMode::RendererDefault && Wireframe);
+		}
+
+		bool ShouldRenderUnlit(const MetalMesh& mesh, bool shadowPass, bool outlinePass) const
+		{
+			if (shadowPass || outlinePass)
+			{
+				return false;
+			}
+			return mesh.PrimitiveType == MTLPrimitiveTypeLine ||
+				(mesh.PrimitiveType == MTLPrimitiveTypeTriangle && IsWireframeFillMode(mesh.FillMode));
+		}
+
+		void UpdateUniforms(MetalMesh& mesh, bool shadowPass, bool outlinePass)
 		{
 			MetalUniforms* uniforms = static_cast<MetalUniforms*>([mesh.UniformBuffer contents]);
 			uniforms->World = GetTransformMatrix(mesh.WorldTransform);
@@ -903,7 +916,7 @@ namespace Riemann
 			uniforms->LightColor = Vector4(Light.Color.x, Light.Color.y, Light.Color.z, 1.0f);
 			uniforms->MaterialColor = mesh.Color;
 			uniforms->OutlineColor = mesh.OutlineColor;
-			uniforms->RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f, 0.0f, 0.0f, 0.0f);
+			uniforms->RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f, ShouldRenderUnlit(mesh, shadowPass, outlinePass) ? 1.0f : 0.0f, 0.0f, 0.0f);
 		}
 
 		void DrawMesh(id<MTLRenderCommandEncoder> encoder, MetalMesh& mesh, bool shadowPass, bool outlinePass)
@@ -913,7 +926,7 @@ namespace Riemann
 				return;
 			}
 
-			UpdateUniforms(mesh, outlinePass);
+			UpdateUniforms(mesh, shadowPass, outlinePass);
 			[encoder setVertexBuffer:mesh.VertexBuffer offset:0 atIndex:0];
 			[encoder setVertexBuffer:mesh.UniformBuffer offset:0 atIndex:1];
 			if (!shadowPass)

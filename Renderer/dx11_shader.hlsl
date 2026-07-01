@@ -87,6 +87,11 @@ float SampleShadow(float4 lightPos)
 
 float4 MainPS(VS_OUTPUT input) : SV_Target
 {
+	if (RenderParams.y > 0.5f)
+	{
+		return MaterialColor;
+	}
+
 	float3 normal = normalize(input.Normal);
 	float3 lightToScene = normalize(LightDir.xyz);
 	float3 toLight = -lightToScene;

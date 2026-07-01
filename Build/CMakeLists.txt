@@ -128,6 +128,7 @@ endif()
 set(RIEMANN_VIEWER_CORE_SOURCES
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshCuttingPanel.cpp"
+    "${CMAKE_SOURCE_DIR}/../Viewer/MeshSimplificationPanel.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/RenderThread.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/SceneWorld.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/Viewer.cpp"
@@ -136,6 +137,7 @@ set(RIEMANN_VIEWER_CORE_SOURCES
 set(RIEMANN_VIEWER_CORE_HEADERS
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.h"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshCuttingPanel.h"
+    "${CMAKE_SOURCE_DIR}/../Viewer/MeshSimplificationPanel.h"
     "${CMAKE_SOURCE_DIR}/../Viewer/RenderThread.h"
     "${CMAKE_SOURCE_DIR}/../Viewer/SceneWorld.h"
     "${CMAKE_SOURCE_DIR}/../Viewer/Viewer.h"

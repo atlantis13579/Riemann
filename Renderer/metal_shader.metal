@@ -120,6 +120,11 @@ fragment float4 RiemannMainFS(
 	depth2d<float> shadowMap [[texture(0)]],
 	sampler shadowSampler [[sampler(0)]])
 {
+	if (uniforms.renderParams.y > 0.5)
+	{
+		return uniforms.materialColor;
+	}
+
 	float3 normal = normalize(in.normal);
 	float3 lightToScene = normalize(uniforms.lightDir.xyz);
 	float3 toLight = -lightToScene;

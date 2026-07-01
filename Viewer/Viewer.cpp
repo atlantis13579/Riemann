@@ -24,6 +24,7 @@
 #endif
 
 #include "MeshCuttingPanel.h"
+#include "MeshSimplificationPanel.h"
 #include "MeshRenderer.h"
 #include "RenderThread.h"
 #include "SceneWorld.h"
@@ -132,18 +133,40 @@ namespace Riemann
 				tolower(static_cast<unsigned char>(fileName[offset + 4])) == 'n';
 		}
 
-		bool HasObjExtension(const std::string& fileName)
+		bool HasPathExtension(const std::string& fileName, const char* extension)
 		{
-			if (fileName.size() < 4)
+			if (extension == nullptr)
 			{
 				return false;
 			}
 
-			const size_t offset = fileName.size() - 4;
-			return fileName[offset] == '.' &&
-				tolower(static_cast<unsigned char>(fileName[offset + 1])) == 'o' &&
-				tolower(static_cast<unsigned char>(fileName[offset + 2])) == 'b' &&
-				tolower(static_cast<unsigned char>(fileName[offset + 3])) == 'j';
+			std::string ext(extension);
+			if (fileName.size() <= ext.size() || fileName[fileName.size() - ext.size() - 1] != '.')
+			{
+				return false;
+			}
+
+			const size_t offset = fileName.size() - ext.size();
+			for (size_t i = 0; i < ext.size(); ++i)
+			{
+				const char a = static_cast<char>(tolower(static_cast<unsigned char>(fileName[offset + i])));
+				const char b = static_cast<char>(tolower(static_cast<unsigned char>(ext[i])));
+				if (a != b)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		bool HasObjExtension(const std::string& fileName)
+		{
+			return HasPathExtension(fileName, "obj");
+		}
+
+		bool HasFlatExtension(const std::string& fileName)
+		{
+			return HasPathExtension(fileName, "flat");
 		}
 
 		std::vector<std::string> ListJsonFiles(const std::string& directory)
@@ -217,6 +240,53 @@ namespace Riemann
 			}
 #endif
 			std::sort(files.begin(), files.end());
+			return files;
+		}
+
+		std::vector<std::string> ListFlatFiles(const std::string& directory)
+		{
+			std::vector<std::string> files;
+#if defined(_WIN32)
+			const std::string searchPath = JoinPath(directory, "*.flat");
+			WIN32_FIND_DATAA findData;
+			HANDLE findHandle = FindFirstFileA(searchPath.c_str(), &findData);
+			if (findHandle != INVALID_HANDLE_VALUE)
+			{
+				do
+				{
+					if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+					{
+						files.push_back(JoinPath(directory, findData.cFileName));
+					}
+				} while (FindNextFileA(findHandle, &findData));
+				FindClose(findHandle);
+			}
+#else
+			DIR* dir = opendir(directory.c_str());
+			if (dir != nullptr)
+			{
+				struct dirent* entry = nullptr;
+				while ((entry = readdir(dir)) != nullptr)
+				{
+					if (HasFlatExtension(entry->d_name))
+					{
+						files.push_back(JoinPath(directory, entry->d_name));
+					}
+				}
+				closedir(dir);
+			}
+#endif
+			std::sort(files.begin(), files.end());
+			return files;
+		}
+
+		std::vector<std::string> ListMeshFiles(const std::string& directory)
+		{
+			std::vector<std::string> files = ListObjFiles(directory);
+			const std::vector<std::string> flatFiles = ListFlatFiles(directory);
+			files.insert(files.end(), flatFiles.begin(), flatFiles.end());
+			std::sort(files.begin(), files.end());
+			files.erase(std::unique(files.begin(), files.end()), files.end());
 			return files;
 		}
 
@@ -317,6 +387,7 @@ namespace Riemann
 		, m_CamCenter(Vector3::Zero())
 		, m_CamParam(Vector3(1.0f, 0.6f, 15.0f))
 		, m_CuttingPanelActive(false)
+		, m_MeshSimplificationPanelActive(false)
 		, m_CuttingObjIndex(0)
 		, m_CuttingMode(MeshCuttingMode_VoronoiFracture3D)
 		, m_CuttingPieceCount(16)
@@ -324,14 +395,19 @@ namespace Riemann
 		, m_CuttingPiecesY(3)
 		, m_CuttingPiecesZ(2)
 		, m_CuttingSeed(7)
+		, m_MeshSimplificationFileIndex(0)
+		, m_MeshSimplificationRatioLevel(20)
 		, m_CuttingSeparation(0.0f)
 		, m_CuttingMaxSeparation(1.0f)
+		, m_MeshSimplificationMaxSeparation(1.0f)
 		, m_ShowGeometryQueryBounds(false)
+		, m_RenderWireframe(false)
 		, m_RenderRevision(0)
 		, m_ImguiDemoIndex(0)
 		, m_ImguiObjectCount(0)
 		, m_ImguiCameraDistance(15.0f)
 		, m_ImguiCuttingPanelActive(false)
+		, m_ImguiMeshSimplificationPanelActive(false)
 		, m_ImguiCuttingObjIndex(0)
 		, m_ImguiCuttingMode(MeshCuttingMode_VoronoiFracture3D)
 		, m_ImguiCuttingPieceCount(16)
@@ -339,8 +415,11 @@ namespace Riemann
 		, m_ImguiCuttingPiecesY(3)
 		, m_ImguiCuttingPiecesZ(2)
 		, m_ImguiCuttingSeed(7)
+		, m_ImguiMeshSimplificationFileIndex(0)
+		, m_ImguiMeshSimplificationRatioLevel(20)
 		, m_ImguiCuttingSeparation(0.0f)
 		, m_ImguiShowGeometryQueryBounds(false)
+		, m_ImguiRenderWireframe(false)
 		, m_ImguiGeometryQueryBoundsCount(0)
 		, m_ImguiPhysicsFps(0.0)
 		, m_ImguiScroll(0)
@@ -364,8 +443,15 @@ namespace Riemann
 		, m_ImguiPendingCuttingPiecesZValue(2)
 		, m_ImguiPendingCuttingSeed(false)
 		, m_ImguiPendingCuttingSeedValue(7)
+		, m_ImguiPendingMeshSimplificationFileIndex(-1)
+		, m_ImguiPendingBrowseMeshSimplificationFile(false)
+		, m_ImguiPendingApplyMeshSimplification(false)
+		, m_ImguiPendingMeshSimplificationRatioLevel(false)
+		, m_ImguiPendingMeshSimplificationRatioLevelValue(20)
 		, m_ImguiPendingShowGeometryQueryBounds(false)
 		, m_ImguiPendingShowGeometryQueryBoundsValue(false)
+		, m_ImguiPendingRenderWireframe(false)
+		, m_ImguiPendingRenderWireframeValue(false)
 		, m_PhysicsFpsTime(std::chrono::steady_clock::now())
 		, m_PhysicsFrameCount(0)
 		, m_PhysicsFps(0.0)
@@ -377,6 +463,7 @@ namespace Riemann
 
 		RefreshSceneList();
 		RefreshObjList();
+		RefreshMeshFileList();
 		std::string initialScene = sceneFile;
 		if (initialScene.empty() && !m_SceneFiles.empty())
 		{
@@ -394,7 +481,7 @@ namespace Riemann
 			{
 				return;
 			}
-			if (m_CuttingPanelActive)
+			if (m_CuttingPanelActive || m_MeshSimplificationPanelActive)
 			{
 				return;
 			}
@@ -451,10 +538,12 @@ namespace Riemann
 		m_SceneDirectory = DirectoryOf(resolved);
 		m_CurrentSceneName = FileNameOf(resolved);
 		m_CuttingPanelActive = false;
+		m_MeshSimplificationPanelActive = false;
 		m_CuttingPieces.clear();
 		m_CuttingSeparation = 0.0f;
 		RefreshSceneList();
 		RefreshObjList();
+		RefreshMeshFileList();
 		ApplySceneCamera();
 		m_HighlightedGeometry = nullptr;
 		RebuildRenderScene();
@@ -467,6 +556,7 @@ namespace Riemann
 		m_World->Reset();
 		m_RenderBindings.clear();
 		m_CuttingPanelActive = false;
+		m_MeshSimplificationPanelActive = false;
 		m_CuttingPieces.clear();
 		m_HighlightedGeometry = nullptr;
 		RebuildRenderScene();
@@ -733,16 +823,23 @@ namespace Riemann
 		size_t objectCount = 0;
 		float cameraDistance = 0.0f;
 		bool cuttingPanelActive = false;
+		bool meshSimplificationPanelActive = false;
 		std::string cuttingObjPath;
 		std::string cuttingStatus;
+		std::vector<std::string> meshSimplificationFiles;
+		std::string meshSimplificationPath;
+		std::string meshSimplificationStatus;
 		int cuttingMode = 0;
 		int cuttingPieceCount = 0;
 		int cuttingPiecesX = 0;
 		int cuttingPiecesY = 0;
 		int cuttingPiecesZ = 0;
 		int cuttingSeed = 0;
+		int meshSimplificationFileIndex = 0;
+		int meshSimplificationRatioLevel = 20;
 		float cuttingSeparation = 0.0f;
 		bool showGeometryQueryBounds = false;
+		bool renderWireframe = false;
 		size_t geometryQueryBoundsCount = 0;
 		double physicsFps = 0.0;
 		{
@@ -753,16 +850,23 @@ namespace Riemann
 			objectCount = m_ImguiObjectCount;
 			cameraDistance = m_ImguiCameraDistance;
 			cuttingPanelActive = m_ImguiCuttingPanelActive;
+			meshSimplificationPanelActive = m_ImguiMeshSimplificationPanelActive;
 			cuttingObjPath = m_ImguiCuttingObjPath;
 			cuttingStatus = m_ImguiCuttingStatus;
+			meshSimplificationFiles = m_ImguiMeshSimplificationFiles;
+			meshSimplificationPath = m_ImguiMeshSimplificationPath;
+			meshSimplificationStatus = m_ImguiMeshSimplificationStatus;
 			cuttingMode = m_ImguiCuttingMode;
 			cuttingPieceCount = m_ImguiCuttingPieceCount;
 			cuttingPiecesX = m_ImguiCuttingPiecesX;
 			cuttingPiecesY = m_ImguiCuttingPiecesY;
 			cuttingPiecesZ = m_ImguiCuttingPiecesZ;
 			cuttingSeed = m_ImguiCuttingSeed;
+			meshSimplificationFileIndex = m_ImguiMeshSimplificationFileIndex;
+			meshSimplificationRatioLevel = m_ImguiMeshSimplificationRatioLevel;
 			cuttingSeparation = m_ImguiCuttingSeparation;
 			showGeometryQueryBounds = m_ImguiShowGeometryQueryBounds;
+			renderWireframe = m_ImguiRenderWireframe;
 			geometryQueryBoundsCount = m_ImguiGeometryQueryBoundsCount;
 			physicsFps = m_ImguiPhysicsFps;
 		}
@@ -791,6 +895,12 @@ namespace Riemann
 			m_ImguiPendingShowGeometryQueryBounds = true;
 			m_ImguiPendingShowGeometryQueryBoundsValue = !showGeometryQueryBounds;
 		}
+		if (imguiCheck("Wireframe", renderWireframe, true))
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			m_ImguiPendingRenderWireframe = true;
+			m_ImguiPendingRenderWireframeValue = !renderWireframe;
+		}
 		if (showGeometryQueryBounds)
 		{
 			snprintf(text, sizeof(text), "Query AABBs: %u", static_cast<unsigned int>(geometryQueryBoundsCount));
@@ -802,6 +912,7 @@ namespace Riemann
 		std::vector<std::string> demoNames = sceneFiles;
 		demoNames.push_back("Mesh Cutting");
 		demoNames.push_back("Convex Decomposition");
+		demoNames.push_back("Mesh Simplification");
 		if (demoNames.empty())
 		{
 			imguiValue("No demos found");
@@ -960,6 +1071,68 @@ namespace Riemann
 					imguiValue(cuttingStatus.c_str());
 				}
 			}
+
+			if (meshSimplificationPanelActive)
+			{
+				imguiSeparatorLine();
+				imguiLabel("Mesh Simplification");
+
+				const std::string meshValue = meshSimplificationPath.empty()
+					? std::string("Mesh: bunny.obj")
+					: std::string("Mesh: ") + FileNameOf(meshSimplificationPath);
+				imguiValue(meshValue.c_str());
+
+				if (!meshSimplificationFiles.empty())
+				{
+					std::vector<std::string> meshLabelsText;
+					meshLabelsText.reserve(meshSimplificationFiles.size());
+					for (const std::string& meshFile : meshSimplificationFiles)
+					{
+						meshLabelsText.push_back(FileNameOf(meshFile));
+					}
+
+					std::vector<const char*> meshLabels;
+					meshLabels.reserve(meshLabelsText.size());
+					for (const std::string& label : meshLabelsText)
+					{
+						meshLabels.push_back(label.c_str());
+					}
+
+					int selectedMesh = std::max(0, std::min(meshSimplificationFileIndex, (int)meshLabels.size() - 1));
+					if (imguiCombo("File", &selectedMesh, meshLabels.data(), (int)meshLabels.size()))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_ImguiPendingMeshSimplificationFileIndex = selectedMesh;
+					}
+				}
+
+				if (imguiButton("Browse Mesh..."))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingBrowseMeshSimplificationFile = true;
+				}
+
+				meshSimplificationRatioLevel = std::max(1, std::min(meshSimplificationRatioLevel, 20));
+				float ratio = static_cast<float>(meshSimplificationRatioLevel) * 0.05f;
+				if (imguiSlider("", &ratio, 0.05f, 1.0f, 0.05f))
+				{
+					const int ratioLevel = std::max(1, std::min(static_cast<int>(ratio * 20.0f + 0.5f), 20));
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingMeshSimplificationRatioLevel = true;
+					m_ImguiPendingMeshSimplificationRatioLevelValue = ratioLevel;
+				}
+
+				if (imguiButton("Simplify"))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingApplyMeshSimplification = true;
+				}
+
+				if (!meshSimplificationStatus.empty())
+				{
+					imguiValue(meshSimplificationStatus.c_str());
+				}
+			}
 		}
 
 		imguiEndScrollArea();
@@ -993,10 +1166,14 @@ namespace Riemann
 		if (m_RenderThread)
 		{
 			CameraDesc camera = m_World->GetCamera();
+			camera.At = m_CamCenter;
+			camera.Eye = GetCameraPosition();
 			DirectionalLightDesc light = m_World->GetLight();
+			const bool renderWireframe = m_RenderWireframe;
 			std::shared_ptr<std::vector<RenderMeshDesc> > renderMeshes(new std::vector<RenderMeshDesc>(std::move(meshes)));
-			m_RenderThread->Submit([renderMeshes, camera, light](Renderer& renderer) {
+			m_RenderThread->Submit([renderMeshes, camera, light, renderWireframe](Renderer& renderer) {
 				renderer.Reset();
+				renderer.SetFillMode(renderWireframe);
 				renderer.SetCamera(camera);
 				renderer.SetLight(light);
 				for (const RenderMeshDesc& mesh : *renderMeshes)
@@ -1052,6 +1229,7 @@ namespace Riemann
 			m_HighlightedGeometry = nullptr;
 			m_CuttingPieces.clear();
 			m_CuttingPanelActive = true;
+			m_MeshSimplificationPanelActive = false;
 			m_CurrentSceneName = CuttingPanelName(m_CuttingMode);
 			m_CuttingStatus = "Missing OBJ: bunny.obj";
 			RebuildRenderScene();
@@ -1067,6 +1245,7 @@ namespace Riemann
 			m_HighlightedGeometry = nullptr;
 			m_CuttingPieces.clear();
 			m_CuttingPanelActive = true;
+			m_MeshSimplificationPanelActive = false;
 			m_CurrentSceneName = CuttingPanelName(m_CuttingMode);
 			m_CuttingStatus = source.Status.empty() ? "Failed to read OBJ" : source.Status;
 			RebuildRenderScene();
@@ -1090,6 +1269,7 @@ namespace Riemann
 		m_HighlightedGeometry = nullptr;
 		m_CuttingPieces.clear();
 		m_CuttingPanelActive = true;
+		m_MeshSimplificationPanelActive = false;
 		m_CurrentSceneName = CuttingPanelName(m_CuttingMode);
 
 		Geometry* geometry = m_World->AddTriangleMeshObject("mesh_source", source.Mesh, Transform(Vector3::Zero()), RigidType::Static, Vector4(0.72f, 0.76f, 0.82f, 1.0f), false);
@@ -1164,6 +1344,7 @@ namespace Riemann
 		if (!BuildMeshCuttingPanel(params, &cuttingResult))
 		{
 			m_CuttingPanelActive = true;
+			m_MeshSimplificationPanelActive = false;
 			m_CuttingStatus = cuttingResult.Status.empty() ? "Cut failed" : cuttingResult.Status;
 			UpdateImguiState();
 			return false;
@@ -1186,6 +1367,7 @@ namespace Riemann
 		m_HighlightedGeometry = nullptr;
 		m_CuttingPieces.clear();
 		m_CuttingPanelActive = true;
+		m_MeshSimplificationPanelActive = false;
 		m_CurrentSceneName = CuttingPanelName(m_CuttingMode);
 
 		for (size_t pieceIndex = 0; pieceIndex < cuttingResult.Pieces.size(); ++pieceIndex)
@@ -1212,6 +1394,7 @@ namespace Riemann
 		if (m_CuttingPieces.empty())
 		{
 			m_CuttingPanelActive = true;
+			m_MeshSimplificationPanelActive = false;
 			m_CuttingStatus = "No renderable pieces";
 			RebuildRenderScene();
 			UpdateImguiState();
@@ -1235,6 +1418,205 @@ namespace Riemann
 			light.ShadowCenter = center;
 			light.ShadowDistance = m_CuttingMaxSeparation * 6.0f;
 			light.ShadowSize = m_CuttingMaxSeparation * 4.0f;
+
+			m_RenderThread->Submit([camera, light](Renderer& renderer) {
+				renderer.SetCamera(camera);
+				renderer.SetLight(light);
+			});
+		}
+
+		UpdateImguiState();
+		return true;
+	}
+
+	bool WorldViewer::LoadMeshSimplificationPanel()
+	{
+		RefreshMeshFileList();
+		if (m_MeshSimplificationPath.empty())
+		{
+			m_MeshSimplificationPath = ResolveTestDataFile("bunny.obj");
+		}
+		if (m_MeshSimplificationPath.empty() && !m_MeshSimplificationFiles.empty())
+		{
+			m_MeshSimplificationPath = m_MeshSimplificationFiles.front();
+		}
+		if (m_MeshSimplificationPath.empty())
+		{
+			m_World->Reset(Vector3::Zero());
+			m_RenderBindings.clear();
+			m_HighlightedGeometry = nullptr;
+			m_CuttingPieces.clear();
+			m_CuttingPanelActive = false;
+			m_MeshSimplificationPanelActive = true;
+			m_CurrentSceneName = "Mesh Simplification";
+			m_MeshSimplificationStatus = "Missing mesh: bunny.obj";
+			RebuildRenderScene();
+			UpdateImguiState();
+			return false;
+		}
+
+		MeshSimplificationSource source;
+		if (!LoadMeshSimplificationSource(m_MeshSimplificationPath, &source))
+		{
+			m_World->Reset(Vector3::Zero());
+			m_RenderBindings.clear();
+			m_HighlightedGeometry = nullptr;
+			m_CuttingPieces.clear();
+			m_CuttingPanelActive = false;
+			m_MeshSimplificationPanelActive = true;
+			m_CurrentSceneName = "Mesh Simplification";
+			m_MeshSimplificationStatus = source.Status.empty() ? "Failed to read mesh" : source.Status;
+			RebuildRenderScene();
+			UpdateImguiState();
+			return false;
+		}
+
+		const Box3 bounds = source.Bounds;
+		const Vector3 center = bounds.GetCenter();
+		m_MeshSimplificationRatioLevel = std::max(1, std::min(m_MeshSimplificationRatioLevel, 20));
+		m_MeshSimplificationMaxSeparation = source.MaxSeparation;
+
+		m_World->Reset(Vector3::Zero());
+		m_RenderBindings.clear();
+		m_HighlightedGeometry = nullptr;
+		m_CuttingPieces.clear();
+		m_CuttingPanelActive = false;
+		m_MeshSimplificationPanelActive = true;
+		m_CurrentSceneName = "Mesh Simplification";
+
+		Geometry* geometry = m_World->AddTriangleMeshObject("mesh_simplification_source", source.Mesh, Transform(Vector3::Zero()), RigidType::Static, Vector4(0.72f, 0.76f, 0.82f, 1.0f), false);
+		if (geometry == nullptr)
+		{
+			m_MeshSimplificationStatus = "No renderable mesh";
+			RebuildRenderScene();
+			UpdateImguiState();
+			return false;
+		}
+
+		m_CamCenter = center;
+		m_CamParam = Vector3(1.05f, 0.45f, std::max(1.0f, m_MeshSimplificationMaxSeparation * 3.5f));
+		m_MeshSimplificationStatus = source.Status + ". Click Simplify";
+
+		RebuildRenderScene();
+
+		if (m_RenderThread)
+		{
+			CameraDesc camera = m_World->GetCamera();
+			camera.At = m_CamCenter;
+			camera.Eye = GetCameraPosition();
+			camera.NearPlane = std::max(0.01f, m_MeshSimplificationMaxSeparation * 0.01f);
+			camera.FarPlane = std::max(1000.0f, m_MeshSimplificationMaxSeparation * 20.0f);
+
+			DirectionalLightDesc light = m_World->GetLight();
+			light.ShadowCenter = center;
+			light.ShadowDistance = m_MeshSimplificationMaxSeparation * 6.0f;
+			light.ShadowSize = m_MeshSimplificationMaxSeparation * 4.0f;
+
+			m_RenderThread->Submit([camera, light](Renderer& renderer) {
+				renderer.SetCamera(camera);
+				renderer.SetLight(light);
+			});
+		}
+
+		UpdateImguiState();
+		return true;
+	}
+
+	bool WorldViewer::ApplyMeshSimplificationPanel()
+	{
+		const Vector3 cameraCenter = m_CamCenter;
+		Vector3 cameraParam = m_CamParam;
+
+		RefreshMeshFileList();
+		if (m_MeshSimplificationPath.empty())
+		{
+			m_MeshSimplificationPath = ResolveTestDataFile("bunny.obj");
+		}
+		if (m_MeshSimplificationPath.empty() && !m_MeshSimplificationFiles.empty())
+		{
+			m_MeshSimplificationPath = m_MeshSimplificationFiles.front();
+		}
+		if (m_MeshSimplificationPath.empty())
+		{
+			m_MeshSimplificationStatus = "Missing mesh: bunny.obj";
+			UpdateImguiState();
+			return false;
+		}
+
+		m_MeshSimplificationRatioLevel = std::max(1, std::min(m_MeshSimplificationRatioLevel, 20));
+
+		MeshSimplificationParams params;
+		params.MeshPath = m_MeshSimplificationPath;
+		params.Ratio = static_cast<float>(m_MeshSimplificationRatioLevel) * 0.05f;
+
+		MeshSimplificationResult result;
+		if (!BuildMeshSimplificationPanel(params, &result))
+		{
+			m_CuttingPanelActive = false;
+			m_MeshSimplificationPanelActive = true;
+			m_MeshSimplificationStatus = result.Status.empty() ? "Simplification failed" : result.Status;
+			UpdateImguiState();
+			return false;
+		}
+
+		const Box3 bounds = result.SourceBounds;
+		const Vector3 center = bounds.GetCenter();
+		const Box3 simplifiedBounds = result.SimplifiedMesh.BoundingVolume;
+		m_MeshSimplificationMaxSeparation = result.MaxSeparation;
+
+		m_World->Reset(Vector3::Zero());
+		m_RenderBindings.clear();
+		m_HighlightedGeometry = nullptr;
+		m_CuttingPieces.clear();
+		m_CuttingPanelActive = false;
+		m_MeshSimplificationPanelActive = true;
+		m_CurrentSceneName = "Mesh Simplification";
+
+		const float maxDim = std::max(std::max(bounds.MaxDim(), simplifiedBounds.MaxDim()), 1e-3f);
+		const float gap = std::max(maxDim * 0.08f, 1e-3f);
+		const float requiredDistanceX = std::max(0.0f, bounds.Max.x - simplifiedBounds.Min.x) + gap;
+		const float offset = std::max(requiredDistanceX * 0.5f, gap);
+		Geometry* sourceGeometry = m_World->AddTriangleMeshObject(
+			"mesh_simplification_original",
+			result.SourceMesh,
+			Transform(Vector3(-offset, 0.0f, 0.0f)),
+			RigidType::Static,
+			Vector4(0.72f, 0.76f, 0.82f, 1.0f),
+			false);
+		Geometry* simplifiedGeometry = m_World->AddTriangleMeshObject(
+			"mesh_simplification_result",
+			result.SimplifiedMesh,
+			Transform(Vector3(offset, 0.0f, 0.0f)),
+			RigidType::Static,
+			Vector4(0.42f, 0.78f, 0.58f, 1.0f),
+			false);
+
+		if (sourceGeometry == nullptr || simplifiedGeometry == nullptr)
+		{
+			m_MeshSimplificationStatus = "No renderable simplification result";
+			RebuildRenderScene();
+			UpdateImguiState();
+			return false;
+		}
+
+		m_CamCenter = cameraCenter;
+		m_CamParam = cameraParam;
+		m_MeshSimplificationStatus = result.Status;
+
+		RebuildRenderScene();
+
+		if (m_RenderThread)
+		{
+			CameraDesc camera = m_World->GetCamera();
+			camera.At = m_CamCenter;
+			camera.Eye = GetCameraPosition();
+			camera.NearPlane = std::max(0.01f, m_MeshSimplificationMaxSeparation * 0.01f);
+			camera.FarPlane = std::max(1000.0f, m_MeshSimplificationMaxSeparation * 20.0f);
+
+			DirectionalLightDesc light = m_World->GetLight();
+			light.ShadowCenter = center;
+			light.ShadowDistance = m_MeshSimplificationMaxSeparation * 6.0f;
+			light.ShadowSize = m_MeshSimplificationMaxSeparation * 5.0f;
 
 			m_RenderThread->Submit([camera, light](Renderer& renderer) {
 				renderer.SetCamera(camera);
@@ -1291,6 +1673,54 @@ namespace Riemann
 		{
 			m_CuttingObjPath = m_CuttingObjFiles.front();
 			m_CuttingObjIndex = 0;
+		}
+	}
+
+	void WorldViewer::RefreshMeshFileList()
+	{
+		std::vector<std::string> meshFiles;
+		const std::string defaultBunny = ResolveTestDataFile("bunny.obj");
+		AddUniqueFile(&meshFiles, defaultBunny);
+
+		const std::vector<std::string> dataDirectories = TestDataDirectoryCandidates(m_SceneDirectory);
+		for (const std::string& directory : dataDirectories)
+		{
+			if (!DirectoryExists(directory))
+			{
+				continue;
+			}
+			std::vector<std::string> files = ListMeshFiles(directory);
+			for (const std::string& file : files)
+			{
+				AddUniqueFile(&meshFiles, file);
+			}
+		}
+
+		if (!m_SceneDirectory.empty() && DirectoryExists(m_SceneDirectory))
+		{
+			std::vector<std::string> files = ListMeshFiles(m_SceneDirectory);
+			for (const std::string& file : files)
+			{
+				AddUniqueFile(&meshFiles, file);
+			}
+		}
+
+		AddUniqueFile(&meshFiles, m_MeshSimplificationPath);
+		m_MeshSimplificationFiles.swap(meshFiles);
+
+		m_MeshSimplificationFileIndex = 0;
+		for (size_t i = 0; i < m_MeshSimplificationFiles.size(); ++i)
+		{
+			if (m_MeshSimplificationFiles[i] == m_MeshSimplificationPath)
+			{
+				m_MeshSimplificationFileIndex = (int)i;
+				break;
+			}
+		}
+		if (m_MeshSimplificationPath.empty() && !m_MeshSimplificationFiles.empty())
+		{
+			m_MeshSimplificationPath = m_MeshSimplificationFiles.front();
+			m_MeshSimplificationFileIndex = 0;
 		}
 	}
 
@@ -1456,6 +1886,23 @@ namespace Riemann
 		UpdateImguiState();
 	}
 
+	void WorldViewer::SetRenderWireframe(bool show)
+	{
+		if (m_RenderWireframe == show)
+		{
+			return;
+		}
+
+		m_RenderWireframe = show;
+		if (m_RenderThread)
+		{
+			m_RenderThread->Submit([show](Renderer& renderer) {
+				renderer.SetFillMode(show);
+			});
+		}
+		UpdateImguiState();
+	}
+
 	void WorldViewer::ApplyImguiCommands()
 	{
 		std::string pendingSceneFile;
@@ -1479,8 +1926,15 @@ namespace Riemann
 		int pendingCuttingPiecesZValue = 0;
 		bool pendingCuttingSeed = false;
 		int pendingCuttingSeedValue = 0;
+		int pendingMeshSimplificationFileIndex = -1;
+		bool pendingBrowseMeshSimplificationFile = false;
+		bool pendingApplyMeshSimplification = false;
+		bool pendingMeshSimplificationRatioLevel = false;
+		int pendingMeshSimplificationRatioLevelValue = 20;
 		bool pendingGeometryQueryBounds = false;
 		bool pendingGeometryQueryBoundsValue = false;
+		bool pendingRenderWireframe = false;
+		bool pendingRenderWireframeValue = false;
 		{
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			pendingDemoIndex = m_ImguiPendingDemoIndex;
@@ -1516,15 +1970,28 @@ namespace Riemann
 			pendingCuttingSeed = m_ImguiPendingCuttingSeed;
 			pendingCuttingSeedValue = m_ImguiPendingCuttingSeedValue;
 			m_ImguiPendingCuttingSeed = false;
+			pendingMeshSimplificationFileIndex = m_ImguiPendingMeshSimplificationFileIndex;
+			m_ImguiPendingMeshSimplificationFileIndex = -1;
+			pendingBrowseMeshSimplificationFile = m_ImguiPendingBrowseMeshSimplificationFile;
+			m_ImguiPendingBrowseMeshSimplificationFile = false;
+			pendingApplyMeshSimplification = m_ImguiPendingApplyMeshSimplification;
+			m_ImguiPendingApplyMeshSimplification = false;
+			pendingMeshSimplificationRatioLevel = m_ImguiPendingMeshSimplificationRatioLevel;
+			pendingMeshSimplificationRatioLevelValue = m_ImguiPendingMeshSimplificationRatioLevelValue;
+			m_ImguiPendingMeshSimplificationRatioLevel = false;
 			pendingGeometryQueryBounds = m_ImguiPendingShowGeometryQueryBounds;
 			pendingGeometryQueryBoundsValue = m_ImguiPendingShowGeometryQueryBoundsValue;
 			m_ImguiPendingShowGeometryQueryBounds = false;
+			pendingRenderWireframe = m_ImguiPendingRenderWireframe;
+			pendingRenderWireframeValue = m_ImguiPendingRenderWireframeValue;
+			m_ImguiPendingRenderWireframe = false;
 		}
 
 		if (pendingDemoIndex >= 0)
 		{
 			const int meshCuttingDemoIndex = (int)m_SceneFiles.size();
 			const int convexDecompositionDemoIndex = meshCuttingDemoIndex + 1;
+			const int meshSimplificationDemoIndex = meshCuttingDemoIndex + 2;
 			if (pendingDemoIndex < meshCuttingDemoIndex)
 			{
 				LoadScene(m_SceneFiles[(size_t)pendingDemoIndex]);
@@ -1544,6 +2011,10 @@ namespace Riemann
 					m_CuttingMode = MeshCuttingMode_VHACD;
 				}
 				LoadCuttingPanel();
+			}
+			else if (pendingDemoIndex == meshSimplificationDemoIndex)
+			{
+				LoadMeshSimplificationPanel();
 			}
 		}
 
@@ -1574,6 +2045,25 @@ namespace Riemann
 				m_CuttingObjPath = selectedObj;
 				RefreshObjList();
 				pendingLoadCuttingSource = true;
+			}
+		}
+
+		bool pendingLoadMeshSimplificationSource = false;
+		if (pendingMeshSimplificationFileIndex >= 0 && pendingMeshSimplificationFileIndex < (int)m_MeshSimplificationFiles.size())
+		{
+			m_MeshSimplificationFileIndex = pendingMeshSimplificationFileIndex;
+			m_MeshSimplificationPath = m_MeshSimplificationFiles[(size_t)pendingMeshSimplificationFileIndex];
+			pendingLoadMeshSimplificationSource = true;
+		}
+
+		if (pendingBrowseMeshSimplificationFile)
+		{
+			const std::string selectedMesh = OpenMeshFileDialog();
+			if (!selectedMesh.empty())
+			{
+				m_MeshSimplificationPath = selectedMesh;
+				RefreshMeshFileList();
+				pendingLoadMeshSimplificationSource = true;
 			}
 		}
 
@@ -1612,6 +2102,10 @@ namespace Riemann
 			m_CuttingSeed = std::max(0, std::min(pendingCuttingSeedValue, 999));
 			pendingCuttingParams = true;
 		}
+		if (pendingMeshSimplificationRatioLevel)
+		{
+			m_MeshSimplificationRatioLevel = std::max(1, std::min(pendingMeshSimplificationRatioLevelValue, 20));
+		}
 		if (pendingCuttingSeparation)
 		{
 			m_CuttingSeparation = std::max(0.0f, std::min(pendingCuttingSeparationValue, 1.0f));
@@ -1636,9 +2130,27 @@ namespace Riemann
 			UpdateImguiState();
 		}
 
+		if (pendingApplyMeshSimplification && m_MeshSimplificationPanelActive)
+		{
+			ApplyMeshSimplificationPanel();
+		}
+		else if (pendingLoadMeshSimplificationSource && m_MeshSimplificationPanelActive)
+		{
+			LoadMeshSimplificationPanel();
+		}
+		else if (pendingMeshSimplificationRatioLevel && m_MeshSimplificationPanelActive)
+		{
+			m_MeshSimplificationStatus = "Ready. Click Simplify";
+			UpdateImguiState();
+		}
+
 		if (pendingGeometryQueryBounds)
 		{
 			SetShowGeometryQueryBounds(pendingGeometryQueryBoundsValue);
+		}
+		if (pendingRenderWireframe)
+		{
+			SetRenderWireframe(pendingRenderWireframeValue);
 		}
 	}
 
@@ -1650,12 +2162,25 @@ namespace Riemann
 		m_ImguiCuttingObjFiles = m_CuttingObjFiles;
 		m_ImguiCuttingObjPath = m_CuttingObjPath;
 		m_ImguiCuttingStatus = m_CuttingStatus;
-		m_ImguiDemoIndex = m_CuttingPanelActive
-			? ((int)m_SceneFiles.size() + (IsConvexDecompositionMode(m_CuttingMode) ? 1 : 0))
-			: GetCurrentSceneDemoIndex();
+		m_ImguiMeshSimplificationFiles = m_MeshSimplificationFiles;
+		m_ImguiMeshSimplificationPath = m_MeshSimplificationPath;
+		m_ImguiMeshSimplificationStatus = m_MeshSimplificationStatus;
+		if (m_CuttingPanelActive)
+		{
+			m_ImguiDemoIndex = (int)m_SceneFiles.size() + (IsConvexDecompositionMode(m_CuttingMode) ? 1 : 0);
+		}
+		else if (m_MeshSimplificationPanelActive)
+		{
+			m_ImguiDemoIndex = (int)m_SceneFiles.size() + 2;
+		}
+		else
+		{
+			m_ImguiDemoIndex = GetCurrentSceneDemoIndex();
+		}
 		m_ImguiObjectCount = m_World ? m_World->GetObjects().size() : 0;
 		m_ImguiCameraDistance = m_CamParam.z;
 		m_ImguiCuttingPanelActive = m_CuttingPanelActive;
+		m_ImguiMeshSimplificationPanelActive = m_MeshSimplificationPanelActive;
 		m_ImguiCuttingObjIndex = m_CuttingObjIndex;
 		m_ImguiCuttingMode = m_CuttingMode;
 		m_ImguiCuttingPieceCount = m_CuttingPieceCount;
@@ -1663,8 +2188,11 @@ namespace Riemann
 		m_ImguiCuttingPiecesY = m_CuttingPiecesY;
 		m_ImguiCuttingPiecesZ = m_CuttingPiecesZ;
 		m_ImguiCuttingSeed = m_CuttingSeed;
+		m_ImguiMeshSimplificationFileIndex = m_MeshSimplificationFileIndex;
+		m_ImguiMeshSimplificationRatioLevel = m_MeshSimplificationRatioLevel;
 		m_ImguiCuttingSeparation = m_CuttingSeparation;
 		m_ImguiShowGeometryQueryBounds = m_ShowGeometryQueryBounds;
+		m_ImguiRenderWireframe = m_RenderWireframe;
 		m_ImguiGeometryQueryBoundsCount = m_GeometryQueryBoundsMeshIds.size();
 		m_ImguiPhysicsFps = m_PhysicsFps;
 	}
@@ -1827,6 +2355,27 @@ namespace Riemann
 		ofn.lpstrFile = fileName;
 		ofn.nMaxFile = sizeof(fileName);
 		ofn.lpstrFilter = "OBJ Files\0*.obj\0All Files\0*.*\0";
+		ofn.lpstrDefExt = "obj";
+		ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+		return GetOpenFileNameA(&ofn) ? std::string(fileName) : std::string();
+#else
+		return std::string();
+#endif
+	}
+
+	std::string WorldViewer::OpenMeshFileDialog() const
+	{
+#if defined(_WIN32)
+		char fileName[MAX_PATH] = {};
+		if (!m_MeshSimplificationPath.empty())
+		{
+			snprintf(fileName, sizeof(fileName), "%s", m_MeshSimplificationPath.c_str());
+		}
+		OPENFILENAMEA ofn = {};
+		ofn.lStructSize = sizeof(ofn);
+		ofn.lpstrFile = fileName;
+		ofn.nMaxFile = sizeof(fileName);
+		ofn.lpstrFilter = "Mesh Files\0*.obj;*.flat\0OBJ Files\0*.obj\0Flat Files\0*.flat\0All Files\0*.*\0";
 		ofn.lpstrDefExt = "obj";
 		ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
 		return GetOpenFileNameA(&ofn) ? std::string(fileName) : std::string();

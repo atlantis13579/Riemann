@@ -679,10 +679,15 @@ bool imguiSlider(const char* text, float* val, float vmin, float vmax, float vin
 	else
 		addGfxCmdRoundedRect((float)(x+m), (float)y, (float)SLIDER_MARKER_WIDTH, (float)SLIDER_HEIGHT, 4.0f, isHot(id) ? imguiRGBA(255,196,0,128) : imguiRGBA(255,255,255,64));
 
-	// TODO: fix this, take a look at 'nicenum'.
-	int digits = (int)(ceilf(log10f(vinc)));
+	int digits = 0;
+	float scaledVinc = fabsf(vinc);
+	while (digits < 6 && fabsf(scaledVinc - floorf(scaledVinc + 0.5f)) > 0.0001f)
+	{
+		scaledVinc *= 10.0f;
+		++digits;
+	}
 	char fmt[16];
-	snprintf(fmt, 16, "%%.%df", digits >= 0 ? 0 : -digits);
+	snprintf(fmt, 16, "%%.%df", digits);
 	char msg[128];
 	snprintf(msg, 128, fmt, *val);
 	

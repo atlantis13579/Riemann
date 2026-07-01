@@ -747,10 +747,23 @@ private:
 
 	ID3D11RasterizerState* GetRasterizerState(Riemann::RenderFillMode fillMode) const
 	{
-		const bool wireframe =
-			fillMode == Riemann::RenderFillMode::Wireframe ||
+		return IsWireframeFillMode(fillMode) ? m_pWireframeRasterizerState : m_pSolidRasterizerState;
+	}
+
+	bool IsWireframeFillMode(Riemann::RenderFillMode fillMode) const
+	{
+		return fillMode == Riemann::RenderFillMode::Wireframe ||
 			(fillMode == Riemann::RenderFillMode::RendererDefault && m_DefaultWireframe);
-		return wireframe ? m_pWireframeRasterizerState : m_pSolidRasterizerState;
+	}
+
+	bool ShouldRenderUnlit(const DX11StaticMesh& mesh, bool shadowPass, bool outlinePass) const
+	{
+		if (shadowPass || outlinePass)
+		{
+			return false;
+		}
+		return mesh.Topology == D3D11_PRIMITIVE_TOPOLOGY_LINELIST ||
+			(mesh.Topology == D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST && IsWireframeFillMode(mesh.FillMode));
 	}
 
 	HRESULT CreateOutlineStates()
@@ -1128,7 +1141,7 @@ private:
 		cb.LightColor = Vector4(m_Light.Color.x, m_Light.Color.y, m_Light.Color.z, 1.0f);
 		cb.MaterialColor = mesh.Color;
 		cb.OutlineColor = mesh.OutlineColor;
-		cb.RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f, 0.0f, 0.0f, 0.0f);
+		cb.RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f, ShouldRenderUnlit(mesh, shadowPass, outlinePass) ? 1.0f : 0.0f, 0.0f, 0.0f);
 
 		m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
 		m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);

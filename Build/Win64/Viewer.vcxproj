@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\Viewer\MeshRenderer.cpp" />
     <ClCompile Include="..\..\Viewer\MeshCuttingPanel.cpp" />
+    <ClCompile Include="..\..\Viewer\MeshSimplificationPanel.cpp" />
     <ClCompile Include="..\..\Viewer\RenderThread.cpp" />
     <ClCompile Include="..\..\Viewer\SceneWorld.cpp" />
     <ClCompile Include="..\..\Viewer\Viewer.cpp" />
@@ -29,6 +30,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\Viewer\MeshRenderer.h" />
     <ClInclude Include="..\..\Viewer\MeshCuttingPanel.h" />
+    <ClInclude Include="..\..\Viewer\MeshSimplificationPanel.h" />
     <ClInclude Include="..\..\Viewer\RenderThread.h" />
     <ClInclude Include="..\..\Viewer\SceneWorld.h" />
     <ClInclude Include="..\..\Viewer\Viewer.h" />
