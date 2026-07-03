@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <deque>
 #include <functional>
 #include <string>
 #include <vector>
@@ -192,9 +193,12 @@ namespace Riemann
 		const GeometryWorldRecord* GetGeometryWorldRecord(GeometryHandle Handle) const;
 		GeometryWorldState	UpdateGeometryWorldState(GeometryHandle Handle, uint64_t FrameId);
 		GeometryWorldState	UpdateGeometryWorldState(Geometry* Object, uint64_t FrameId);
+		void				AddGeometryWorldState(Geometry* Object);
 		void				UpdateGeometryWorldStates(const std::vector<Geometry*>& Objects);
+		void				UpdateGeometryWorldStates();
 		void				RemoveGeometryWorldState(GeometryHandle Handle);
 		void				RemoveGeometryWorldState(Geometry* Object);
+		void				GetActiveGeometryWorldStates(std::vector<Geometry*>* Objects) const;
 		void				PreIntegrate(float dt);
 		void				PostIntegrate(float dt);
 		void				DispatchContactCallbacks(const std::vector<Geometry*>& geoms, const std::vector<ContactManifold*>& manifolds);
@@ -222,8 +226,8 @@ namespace Riemann
 		std::vector<DestructionSet*>	m_DestructionSets;
 		std::vector<ForceField*>		m_Fields;
 		std::vector<const GeometryWorldState*> m_GeometryWorldStates;
-		std::vector<GeometryWorldRecord> m_GeometryWorldRecords;
-		std::vector<uint32_t>		m_FreeGeometryWorldRecords;
+		std::deque<GeometryWorldRecord> m_GeometryWorldRecords;
+		std::vector<uint32_t>			m_FreeGeometryWorldRecords;
 		WorldClock						m_Clock;
 		IBinaryData*							m_SceneResource;
 	};

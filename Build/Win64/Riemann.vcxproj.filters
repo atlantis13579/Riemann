@@ -564,9 +564,6 @@
     <ClInclude Include="..\..\Src\Destruction\DestructionCluster.h">
       <Filter>Destruction</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Maths\SobolSequences.h">
-      <Filter>Maths</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3.cpp">

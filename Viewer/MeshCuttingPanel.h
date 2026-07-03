@@ -20,7 +20,6 @@ namespace Riemann
 		MeshCuttingMode_Voxel2D,
 		MeshCuttingMode_Voxel3D,
 		MeshCuttingMode_VHACD,
-		MeshCuttingMode_COACD,
 		MeshCuttingMode_Count
 	};
 

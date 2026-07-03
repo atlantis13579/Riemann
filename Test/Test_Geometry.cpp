@@ -855,12 +855,6 @@ void TestConvexDecompositionAlgorithms()
 	vhacdParameters.MaxPieceCount = 4;
 	EXPECT(ConvexDecomposition::DecomposeVHACD(box, vhacdParameters, convexMeshes));
 	EXPECT(HasValidConvexMeshes(convexMeshes));
-
-	convexMeshes.clear();
-	ConvexDecomposition::COACDParameters coacdParameters;
-	coacdParameters.MaxPieceCount = 4;
-	EXPECT(ConvexDecomposition::DecomposeCOACD(box, coacdParameters, convexMeshes));
-	EXPECT(HasValidConvexMeshes(convexMeshes));
 }
 
 void TestHashGrid()

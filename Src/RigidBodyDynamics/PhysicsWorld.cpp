@@ -405,17 +405,37 @@ namespace Riemann
 		return UpdateGeometryWorldState(EnsureGeometryHandle(Object), FrameId);
 	}
 
+	void PhysicsWorld::AddGeometryWorldState(Geometry* Object)
+	{
+		const GeometryWorldState State = UpdateGeometryWorldState(Object, m_Clock.tick);
+		GeometryWorldRecord* record = GetGeometryWorldRecord(State.Handle);
+		if (record == nullptr || record->State.Geom == nullptr)
+		{
+			return;
+		}
+
+		const GeometryWorldState* state = &record->State;
+		if (std::find(m_GeometryWorldStates.begin(), m_GeometryWorldStates.end(), state) == m_GeometryWorldStates.end())
+		{
+			m_GeometryWorldStates.push_back(state);
+		}
+	}
+
 	void PhysicsWorld::UpdateGeometryWorldStates(const std::vector<Geometry*>& Objects)
 	{
-		m_GeometryWorldStates.clear();
-		m_GeometryWorldStates.reserve(Objects.size());
 		for (Geometry* Object : Objects)
 		{
-			const GeometryWorldState State = UpdateGeometryWorldState(Object, m_Clock.tick);
-			const GeometryWorldRecord* record = GetGeometryWorldRecord(State.Handle);
-			if (record)
+			AddGeometryWorldState(Object);
+		}
+	}
+
+	void PhysicsWorld::UpdateGeometryWorldStates()
+	{
+		for (const GeometryWorldState* state : m_GeometryWorldStates)
+		{
+			if (state != nullptr)
 			{
-				m_GeometryWorldStates.push_back(&record->State);
+				UpdateGeometryWorldState(state->Handle, m_Clock.tick);
 			}
 		}
 	}
@@ -432,6 +452,11 @@ namespace Riemann
 		{
 			return;
 		}
+
+		const GeometryWorldState* state = &record.State;
+		m_GeometryWorldStates.erase(
+			std::remove(m_GeometryWorldStates.begin(), m_GeometryWorldStates.end(), state),
+			m_GeometryWorldStates.end());
 
 		if (record.State.Body)
 		{
@@ -474,6 +499,24 @@ namespace Riemann
 		}
 	}
 
+	void PhysicsWorld::GetActiveGeometryWorldStates(std::vector<Geometry*>* Objects) const
+	{
+		if (Objects == nullptr)
+		{
+			return;
+		}
+
+		Objects->clear();
+		Objects->reserve(m_GeometryWorldStates.size());
+		for (const GeometryWorldState* state : m_GeometryWorldStates)
+		{
+			if (state != nullptr && state->Geom != nullptr && state->Geom->IsSimulationEnabled())
+			{
+				Objects->push_back(state->Geom);
+			}
+		}
+	}
+
 	void		PhysicsWorld::SimulateST(float dt)
 	{
 		for (size_t i = 0; i < m_Kinematics.size(); ++i)
@@ -482,29 +525,8 @@ namespace Riemann
 		}
 
 		std::vector<Geometry*> geoms;
-		geoms.reserve(m_StaticBodies.size() + m_DynamicBodies.size());
-		for (size_t i = 0; i < m_StaticBodies.size(); ++i)
-		{
-			for (Geometry* geom : m_StaticBodies[i]->Geometries())
-			{
-				if (geom && geom->IsSimulationEnabled())
-				{
-					geoms.push_back(geom);
-				}
-			}
-		}
-		for (size_t i = 0; i < m_DynamicBodies.size(); ++i)
-		{
-			for (Geometry* geom : m_DynamicBodies[i]->Geometries())
-			{
-				if (geom && geom->IsSimulationEnabled())
-				{
-					geoms.push_back(geom);
-				}
-			}
-		}
-
-		UpdateGeometryWorldStates(geoms);
+		UpdateGeometryWorldStates();
+		GetActiveGeometryWorldStates(&geoms);
 
 		GeometryWorldStateSpan stateSpan(m_GeometryWorldStates.data(), m_GeometryWorldStates.size());
 		std::vector<OverlapPair> overlaps;
@@ -675,16 +697,12 @@ namespace Riemann
 
 	void PhysicsWorld::AddGeometryToSceneQuery(Geometry* Object)
 	{
-		const GeometryWorldState State = UpdateGeometryWorldState(Object, m_Clock.tick);
-		const GeometryWorldRecord* record = GetGeometryWorldRecord(State.Handle);
+		AddGeometryWorldState(Object);
+		const GeometryWorldRecord* record = GetGeometryWorldRecord(EnsureGeometryHandle(Object));
 		if (record)
 		{
 			const GeometryWorldState& queryState = record->State;
 			m_GeometryQuery->AddGeometry(queryState.Handle, queryState.Geom, &queryState.WorldBounds, &queryState.ShapeToWorld);
-		}
-		else
-		{
-			m_GeometryQuery->AddGeometry(State.Handle, State.Geom, State.WorldBounds, State.ShapeToWorld, State.Body);
 		}
 	}
 

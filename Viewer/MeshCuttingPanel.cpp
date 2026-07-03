@@ -62,25 +62,6 @@ namespace Riemann
 			return parameters;
 		}
 
-		ConvexDecomposition::COACDParameters BuildCOACDParametersForDemo(const StaticMesh& sourceMesh, int pieceCount)
-		{
-			ConvexDecomposition::COACDParameters parameters;
-			parameters.MaxPieceCount = pieceCount;
-			parameters.Threshold = sourceMesh.GetTriangleCount() > 10000 ? 0.10 : 0.08;
-			parameters.PreprocessResolution = 30;
-			parameters.SampleResolution = ClampPanelInt(450 + pieceCount * 35 + (int)sourceMesh.GetTriangleCount() / 25, 500, 1400);
-			parameters.MctsNodes = ClampPanelInt(8 + pieceCount / 8, 8, 18);
-			parameters.MctsIterations = ClampPanelInt(45 + pieceCount * 3, 50, 120);
-			parameters.MctsMaxDepth = 2;
-			parameters.Merge = true;
-			parameters.Decimate = false;
-			parameters.MaxVerticesPerHull = 48;
-			parameters.Extrude = false;
-			parameters.ExtrudeMargin = 0.01;
-			parameters.Seed = 0;
-			return parameters;
-		}
-
 		void RefreshStaticMeshPointers(StaticMesh* mesh)
 		{
 			if (mesh == nullptr)
@@ -307,22 +288,12 @@ namespace Riemann
 		const Box3 staticBounds = sourceStaticMesh.BoundingVolume;
 		const float staticMaxSize = std::max(BoundsMaxDim(staticBounds), 1e-3f);
 
-		if (mode == MeshCuttingMode_VHACD || mode == MeshCuttingMode_COACD)
+		if (mode == MeshCuttingMode_VHACD)
 		{
 			std::vector<ConvexMesh> convexMeshes;
 			ConvexDecomposition::VHACDParameters vhacdParameters;
-			ConvexDecomposition::COACDParameters coacdParameters;
-			bool built = false;
-			if (mode == MeshCuttingMode_VHACD)
-			{
-				vhacdParameters = BuildVHACDParametersForDemo(sourceStaticMesh, staticBounds, pieceCount);
-				built = ConvexDecomposition::DecomposeVHACD(sourceStaticMesh, vhacdParameters, convexMeshes);
-			}
-			else
-			{
-				coacdParameters = BuildCOACDParametersForDemo(sourceStaticMesh, pieceCount);
-				built = ConvexDecomposition::DecomposeCOACD(sourceStaticMesh, coacdParameters, convexMeshes);
-			}
+			vhacdParameters = BuildVHACDParametersForDemo(sourceStaticMesh, staticBounds, pieceCount);
+			const bool built = ConvexDecomposition::DecomposeVHACD(sourceStaticMesh, vhacdParameters, convexMeshes);
 			if (!built || convexMeshes.empty())
 			{
 				result->Status = "Convex decomposition failed";
@@ -353,18 +324,9 @@ namespace Riemann
 			}
 
 			std::ostringstream status;
-			if (mode == MeshCuttingMode_VHACD)
-			{
-				status << "VHACD pieces: " << result->Pieces.size()
-					<< " voxels: " << vhacdParameters.VoxelResolution
-					<< " depth: " << vhacdParameters.MaxRecursionDepth;
-			}
-			else
-			{
-				status << "COACD pieces: " << result->Pieces.size()
-					<< " samples: " << coacdParameters.SampleResolution
-					<< " iter: " << coacdParameters.MctsIterations;
-			}
+			status << "VHACD pieces: " << result->Pieces.size()
+				<< " voxels: " << vhacdParameters.VoxelResolution
+				<< " depth: " << vhacdParameters.MaxRecursionDepth;
 			result->Status = status.str();
 			return true;
 		}

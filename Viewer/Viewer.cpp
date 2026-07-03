@@ -371,7 +371,7 @@ namespace Riemann
 
 		bool IsConvexDecompositionMode(int mode)
 		{
-			return mode == MeshCuttingMode_VHACD || mode == MeshCuttingMode_COACD;
+			return mode == MeshCuttingMode_VHACD;
 		}
 
 		const char* CuttingPanelName(int mode)
@@ -965,16 +965,15 @@ namespace Riemann
 					const char* modes[] =
 					{
 						"VHACD",
-						"COACD",
 					};
-					int selectedAlgorithm = selectedMode == MeshCuttingMode_COACD ? 1 : 0;
-					if (imguiCombo("Algorithm", &selectedAlgorithm, modes, 2))
+					int selectedAlgorithm = 0;
+					if (imguiCombo("Algorithm", &selectedAlgorithm, modes, 1))
 					{
 						std::lock_guard<std::mutex> lock(m_ImguiMutex);
 						m_ImguiPendingCuttingMode = true;
-						m_ImguiPendingCuttingModeValue = selectedAlgorithm == 0 ? MeshCuttingMode_VHACD : MeshCuttingMode_COACD;
+						m_ImguiPendingCuttingModeValue = MeshCuttingMode_VHACD;
 					}
-					selectedMode = selectedAlgorithm == 0 ? MeshCuttingMode_VHACD : MeshCuttingMode_COACD;
+					selectedMode = MeshCuttingMode_VHACD;
 				}
 				else
 				{
