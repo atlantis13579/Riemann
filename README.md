@@ -7,7 +7,7 @@ This project is named after the 19th-century German mathematician Bernhard Riema
 
 ## Features
 
-Rigid Body Dynamics Simulation
+* Rigid Body Dynamics Simulation
 
 * Simulation and Collision Detection for various shapes
     * Sphere
@@ -32,15 +32,7 @@ Rigid Body Dynamics Simulation
     * Jacobian Matrix
     * Sequential Impulse Solver
     * Global LCP Solver using Projected Gauss-Seidel
-
-Position Based Dynamics
-
-* Fluid Dynamics Simulation
-    * Eulerian Approach
-    * Lagrangian Approach
-    * Smoothed Particle Hydrodynamics
-
-Aero Dynamics Simulation
+    * Position Based Dynamics
 
 * Destruction Simulation
     * Graph Based Hierarchy Destruction
@@ -48,11 +40,18 @@ Aero Dynamics Simulation
     * Mesh Cut Algorithm
     * Voronoi Tessellation
 
-Deformation Body Simulation
+* Deformation Body Simulation
     * Rope Simulation
     * Cloth Simulation
     * Elastic Simulation
     * Mesh Morphing
+
+* Fluid Dynamics Simulation
+    * Eulerian Approach
+    * Lagrangian Approach
+    * Smoothed Particle Hydrodynamics
+
+* Aero Dynamics Simulation    
 
 ## Examples
 
