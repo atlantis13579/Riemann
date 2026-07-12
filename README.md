@@ -35,8 +35,24 @@ Rigid Body Dynamics Simulation
 
 Position Based Dynamics
 
-Fluid Dynamics Solver
+* Fluid Dynamics Simulation
+    * Eulerian Approach
+    * Lagrangian Approach
+    * Smoothed Particle Hydrodynamics
 
+Aero Dynamics Simulation
+
+* Destruction Simulation
+    * Graph Based Hierarchy Destruction
+    * Graph Partition Algorithm
+    * Mesh Cut Algorithm
+    * Voronoi Tessellation
+
+Deformation Body Simulation
+    * Rope Simulation
+    * Cloth Simulation
+    * Elastic Simulation
+    * Mesh Morphing
 
 ## Examples
 
