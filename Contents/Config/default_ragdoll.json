@@ -1,0 +1,27 @@
+{
+  "bones": [
+    { "name": "pelvis", "shape": "box", "center": [0.0, 0.0, 0.0], "halfExtent": [0.34, 0.22, 0.22] },
+    { "name": "torso", "shape": "capsule", "start": [0.0, 0.28, 0.0], "end": [0.0, 1.05, 0.0], "radius": 0.25 },
+    { "name": "head", "shape": "sphere", "center": [0.0, 1.50, 0.0], "radius": 0.29 },
+    { "name": "left_upper_arm", "shape": "capsule", "start": [-0.30, 0.92, 0.0], "end": [-0.90, 0.82, 0.0], "radius": 0.13 },
+    { "name": "left_lower_arm", "shape": "capsule", "start": [-1.02, 0.78, 0.0], "end": [-1.54, 0.60, 0.0], "radius": 0.11, "jointVelocityAxis": [0.0, 0.0, -1.0] },
+    { "name": "right_upper_arm", "shape": "capsule", "start": [0.30, 0.92, 0.0], "end": [0.90, 0.82, 0.0], "radius": 0.13 },
+    { "name": "right_lower_arm", "shape": "capsule", "start": [1.02, 0.78, 0.0], "end": [1.54, 0.60, 0.0], "radius": 0.11, "jointVelocityAxis": [0.0, 0.0, 1.0] },
+    { "name": "left_upper_leg", "shape": "capsule", "start": [-0.20, -0.22, 0.0], "end": [-0.22, -0.95, 0.0], "radius": 0.17 },
+    { "name": "left_lower_leg", "shape": "capsule", "start": [-0.22, -1.10, 0.0], "end": [-0.22, -1.82, 0.0], "radius": 0.14, "jointVelocityAxis": [1.0, 0.0, 0.0] },
+    { "name": "right_upper_leg", "shape": "capsule", "start": [0.20, -0.22, 0.0], "end": [0.22, -0.95, 0.0], "radius": 0.17 },
+    { "name": "right_lower_leg", "shape": "capsule", "start": [0.22, -1.10, 0.0], "end": [0.22, -1.82, 0.0], "radius": 0.14, "jointVelocityAxis": [1.0, 0.0, 0.0] }
+  ],
+  "joints": [
+    { "type": "cone", "bodyA": "pelvis", "bodyB": "torso", "anchor": [0.0, 0.22, 0.0], "axisA": [0.0, 1.0, 0.0], "axisB": [0.0, 1.0, 0.0], "limitDegrees": 35.0 },
+    { "type": "cone", "bodyA": "torso", "bodyB": "head", "anchor": [0.0, 1.22, 0.0], "axisA": [0.0, 1.0, 0.0], "axisB": [0.0, 1.0, 0.0], "limitDegrees": 25.0 },
+    { "type": "cone", "bodyA": "torso", "bodyB": "left_upper_arm", "anchor": [-0.30, 0.92, 0.0], "axisA": [-1.0, 0.0, 0.0], "axisB": [-1.0, 0.0, 0.0], "limitDegrees": 70.0 },
+    { "type": "hinge", "bodyA": "left_upper_arm", "bodyB": "left_lower_arm", "anchor": [-0.96, 0.80, 0.0], "axis": [0.0, 0.0, 1.0], "minDegrees": -135.0, "maxDegrees": 8.5943669 },
+    { "type": "cone", "bodyA": "torso", "bodyB": "right_upper_arm", "anchor": [0.30, 0.92, 0.0], "axisA": [1.0, 0.0, 0.0], "axisB": [1.0, 0.0, 0.0], "limitDegrees": 70.0 },
+    { "type": "hinge", "bodyA": "right_upper_arm", "bodyB": "right_lower_arm", "anchor": [0.96, 0.80, 0.0], "axis": [0.0, 0.0, 1.0], "minDegrees": -8.5943669, "maxDegrees": 135.0 },
+    { "type": "cone", "bodyA": "pelvis", "bodyB": "left_upper_leg", "anchor": [-0.20, -0.20, 0.0], "axisA": [0.0, -1.0, 0.0], "axisB": [0.0, -1.0, 0.0], "limitDegrees": 50.0 },
+    { "type": "hinge", "bodyA": "left_upper_leg", "bodyB": "left_lower_leg", "anchor": [-0.22, -1.02, 0.0], "axis": [1.0, 0.0, 0.0], "minDegrees": -5.7295780, "maxDegrees": 135.0 },
+    { "type": "cone", "bodyA": "pelvis", "bodyB": "right_upper_leg", "anchor": [0.20, -0.20, 0.0], "axisA": [0.0, -1.0, 0.0], "axisB": [0.0, -1.0, 0.0], "limitDegrees": 50.0 },
+    { "type": "hinge", "bodyA": "right_upper_leg", "bodyB": "right_lower_leg", "anchor": [0.22, -1.02, 0.0], "axis": [1.0, 0.0, 0.0], "minDegrees": -5.7295780, "maxDegrees": 135.0 }
+  ]
+}

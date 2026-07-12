@@ -1,0 +1,100 @@
+{
+  "name": "Compound Ring Chain",
+  "physics": {
+    "gravity": [0.0, -9.8, 0.0]
+  },
+  "camera": {
+    "center": [0.0, 3.7, 0.0],
+    "orbit": [0.45, 0.12, 15.0],
+    "near": 0.05,
+    "far": 1000.0
+  },
+  "light": {
+    "direction": [-0.755368, -0.600078, -0.263297],
+    "color": [1.0, 0.95, 0.86],
+    "ambient": 0.30,
+    "shadowCenter": [0.0, 3.0, 0.0],
+    "shadowDistance": 60.0,
+    "shadowSize": 50.0
+  },
+  "objects": [
+    {
+      "id": "ground",
+      "type": "plane",
+      "body": "static",
+      "position": [0.0, -1.0, 0.0],
+      "normal": [0.0, 1.0, 0.0],
+      "color": [0.40, 0.44, 0.50, 1.0]
+    },
+    {
+      "id": "control_rod",
+      "type": "cylinder",
+      "body": "static",
+      "position": [0.0, 6.2, 0.0],
+      "x0": [0.0, 6.2, -2.6],
+      "x1": [0.0, 6.2, 2.6],
+      "radius": 0.28,
+      "mouseControl": true,
+      "color": [0.88, 0.72, 0.22, 1.0]
+    },
+    {
+      "id": "ring_a",
+      "type": "sphereRing",
+      "body": "dynamic",
+      "position": [0.0, 5.75, 0.0],
+      "rotationAxis": [1.0, 0.0, 0.0],
+      "rotationDegrees": 90.0,
+      "ringRadius": 1.05,
+      "radius": 0.22,
+      "sphereCount": 24,
+      "color": [0.94, 0.26, 0.20, 1.0]
+    },
+    {
+      "id": "ring_b",
+      "type": "sphereRing",
+      "body": "dynamic",
+      "position": [0.0, 3.95, 0.0],
+      "rotationAxis": [0.0, 0.0, 1.0],
+      "rotationDegrees": 90.0,
+      "ringRadius": 1.05,
+      "radius": 0.22,
+      "sphereCount": 24,
+      "color": [0.20, 0.78, 0.36, 1.0]
+    },
+    {
+      "id": "ring_c",
+      "type": "sphereRing",
+      "body": "dynamic",
+      "position": [0.0, 2.15, 0.0],
+      "rotationAxis": [1.0, 0.0, 0.0],
+      "rotationDegrees": 90.0,
+      "ringRadius": 1.05,
+      "radius": 0.22,
+      "sphereCount": 24,
+      "color": [0.18, 0.48, 0.96, 1.0]
+    }
+  ],
+  "constraints": [
+    {
+      "type": "point",
+      "bodyA": "control_rod",
+      "bodyB": "ring_a",
+      "anchor": [0.0, 6.2, 0.0],
+      "disableCollision": true
+    },
+    {
+      "type": "point",
+      "bodyA": "ring_a",
+      "bodyB": "ring_b",
+      "anchor": [0.0, 4.85, 0.0],
+      "disableCollision": true
+    },
+    {
+      "type": "point",
+      "bodyA": "ring_b",
+      "bodyB": "ring_c",
+      "anchor": [0.0, 3.05, 0.0],
+      "disableCollision": true
+    }
+  ]
+}

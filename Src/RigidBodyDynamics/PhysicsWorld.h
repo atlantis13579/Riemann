@@ -7,6 +7,8 @@
 #include <vector>
 
 #include "RigidBody.h"
+#include "Constraints.h"
+#include "ConstraintSolver.h"
 
 namespace Riemann
 {
@@ -24,6 +26,12 @@ namespace Riemann
 	class KinematicsDriver;
 	class JobSystem;
 	class IBinaryData;
+	class RopeSystem;
+	struct RopeSettings;
+	class ClothSystem;
+	struct ClothSettings;
+	class Ragdoll;
+	struct RagdollSettings;
 
 	enum class ThreadMode : uint8_t
 	{
@@ -108,9 +116,23 @@ namespace Riemann
 		int							NumContactPoints;
 	};
 
+	struct PhysicsTriggerInfo
+	{
+		RigidBody*	BodyA;
+		RigidBody*	BodyB;
+		Geometry*	GeomA;
+		Geometry*	GeomB;
+		Vector3		Position;
+		Vector3		Normal;
+		float		Fraction;
+		bool		IsCCD;
+	};
+
 	using OnContactCallback = std::function<void(const PhysicsContactInfo&)>;
+	using OnTriggerCallback = std::function<void(const PhysicsTriggerInfo&)>;
 
 	void DefaultOnContact(const PhysicsContactInfo& ContactInfo);
+	void DefaultOnTrigger(const PhysicsTriggerInfo& TriggerInfo);
 
 	struct PhysicsWorldParam
 	{
@@ -124,7 +146,13 @@ namespace Riemann
 			resolutionSolver = ResolutionPhaseSolver::SequentialImpulse;
 			integrateMethod = IntegrateMethod::ExplicitEuler;
 			workerThreads = 0;
+			constraintIterations = 12;
+			contactSolverIterations = 32;
+			contactSolverTolerance = 1.0e-5f;
+			contactSolverRelaxation = 1.0f;
+			solverBackend = SolverBackend::CPU;
 			onContact = DefaultOnContact;
+			onTrigger = DefaultOnTrigger;
 		}
 		Vector3 				gravityAcc;		// gravity acc
 		ThreadMode				threadMode;
@@ -134,7 +162,13 @@ namespace Riemann
 		ResolutionPhaseSolver	resolutionSolver;
 		IntegrateMethod 		integrateMethod;
 		int						workerThreads;
+		int						constraintIterations;
+		int							contactSolverIterations;
+		float						contactSolverTolerance;
+		float						contactSolverRelaxation;
+		SolverBackend				solverBackend;
 		OnContactCallback		onContact;
+		OnTriggerCallback		onTrigger;
 	};
 
 	struct GeometryWorldRecord
@@ -166,8 +200,35 @@ namespace Riemann
 
 		RigidBody*			CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose);
 		RigidBody*			CreateRigidBody(Geometry* Geom, const RigidBodyParam& param);
-		RigidBody*			CreateRigidBody(const std::vector<Geometry*>& Geoms, const RigidBodyParam& param, const Transform& init_transform);
+		RigidBody*			CreateRigidBody(const std::vector<Geometry*>& Geoms, const RigidBodyParam& param, const Transform& init_transform, bool RegisterDisabledGeometries = true);
 		bool				RemoveRigidBody(RigidBody* Body);
+		// The world owns registered fields and deletes them on removal, reset, or destruction.
+		ForceField*		AddForceField(ForceField* Field);
+		bool				RemoveForceField(ForceField* Field);
+		size_t				GetForceFieldCount() const { return m_Fields.size(); }
+		PositionConstraint* AddConstraint(PositionConstraint* Constraint);
+		bool				RemoveConstraint(PositionConstraint* Constraint);
+		FixedConstraint*	CreateFixedConstraint(RigidBody* BodyA, RigidBody* BodyB);
+		PointConstraint*	CreatePointConstraint(RigidBody* BodyA, RigidBody* BodyB, const Vector3& WorldAnchor);
+		DistanceConstraint* CreateDistanceConstraint(RigidBody* BodyA, RigidBody* BodyB, const Vector3& WorldAnchorA, const Vector3& WorldAnchorB, float MinDistance, float MaxDistance);
+		HingeConstraint*	CreateHingeConstraint(RigidBody* BodyA, RigidBody* BodyB, const Vector3& WorldAnchor, const Vector3& WorldAxis, float MinAngle, float MaxAngle);
+		SliderConstraint*	CreateSliderConstraint(RigidBody* BodyA, RigidBody* BodyB, const Vector3& WorldAnchor, const Vector3& WorldAxis, float MinDistance, float MaxDistance);
+		ConeConstraint*		CreateConeConstraint(RigidBody* BodyA, RigidBody* BodyB, const Vector3& WorldAnchor, const Vector3& WorldAxisA, const Vector3& WorldAxisB, float MaxAngle);
+		SixDOFConstraint*	CreateSixDOFConstraint(RigidBody* BodyA, RigidBody* BodyB, const Vector3& WorldAnchor, const SixDOFConstraintSettings& Settings);
+		size_t				GetConstraintCount() const { return m_Constraints.size(); }
+		RopeSystem*			CreateRope(const RopeSettings& Settings, const Vector3& Start, const Vector3& End);
+		bool				RemoveRope(RopeSystem* Rope);
+		size_t				GetRopeCount() const { return m_Ropes.size(); }
+		ClothSystem*		CreateCloth(const ClothSettings& Settings, const Vector3& Center, const Vector3& HorizontalAxis, const Vector3& VerticalAxis);
+		bool				RemoveCloth(ClothSystem* Cloth);
+		size_t				GetClothCount() const { return m_Cloths.size(); }
+		Ragdoll*			CreateRagdoll(const RagdollSettings& Settings, const Transform& RootTransform);
+		bool				RemoveRagdoll(Ragdoll* RagdollInstance);
+		size_t				GetRagdollCount() const { return m_Ragdolls.size(); }
+		bool				SetHeightFieldHeight(Geometry* HeightFieldGeometry, int X, int Z, float Height);
+		int					ModifyHeightField(Geometry* HeightFieldGeometry, const Vector3& WorldCenter, float Radius, float HeightDelta, bool LinearFalloff = true);
+		int					DigHeightFieldHole(Geometry* HeightFieldGeometry, const Vector3& WorldCenter, float Radius, float Depth, bool LinearFalloff = true);
+		bool				SetHeightFieldTriangleHole(Geometry* HeightFieldGeometry, int CellX, int CellZ, int TriangleIndex, bool Hole);
 		void				AddDestructionSet(DestructionSet* DestructSet);
 		void				RemoveDestructionSet(DestructionSet* DestructSet);
 
@@ -183,6 +244,9 @@ namespace Riemann
 		float				GetSystemTotalAngularKinematicsEnergy() const;
 		Vector3				GetSystemTotalLinearMomentum() const;
 		Vector3				GetSystemTotalAngularMomentum() const;
+		int					GetLastCCDHitCount() const { return m_LastCCDHitCount; }
+		ResolutionPhaseSolver GetResolutionSolver() const { return m_ResolutionSolver; }
+		SolverBackend GetSolverBackend() const;
 
 	private:
 		void				SimulateST(float dt);
@@ -198,11 +262,23 @@ namespace Riemann
 		void				UpdateGeometryWorldStates();
 		void				RemoveGeometryWorldState(GeometryHandle Handle);
 		void				RemoveGeometryWorldState(Geometry* Object);
-		void				GetActiveGeometryWorldStates(std::vector<Geometry*>* Objects) const;
+		void				GetActiveGeometryWorldStates(std::vector<const GeometryWorldState*>* States, std::vector<Geometry*>* Objects) const;
+		void				GetCurrentGeometryWorldStates(std::vector<GeometryWorldState>* StateStorage,
+			std::vector<const GeometryWorldState*>* States, std::vector<Geometry*>* Objects) const;
 		void				PreIntegrate(float dt);
 		void				PostIntegrate(float dt);
 		void				DispatchContactCallbacks(const std::vector<Geometry*>& geoms, const std::vector<ContactManifold*>& manifolds);
+		void				DispatchTriggerCallbacks(const std::vector<Geometry*>& geoms, const std::vector<ContactManifold*>& manifolds);
+		void				DispatchTriggerCCDCallbacks(const std::vector<struct ContinuousCollisionHit>& hits);
 		void				UpdateDestructionSets(float dt);
+		void				SolveConstraintPositions(float dt);
+		void				SolveConstraintVelocities(float dt);
+		void				SolvePostIntegrationPositions(float dt);
+		void				BuildConstrainedContactBodies(const std::vector<Geometry*>& Geometries,
+			const std::vector<ContactManifold*>& Manifolds, std::vector<RigidBody*>* Bodies) const;
+		void				SimulateRopes(float dt);
+		void				SimulateCloths(float dt);
+		void				RefreshHeightFieldGeometry(Geometry* HeightFieldGeometry);
 		void				BuildSceneQuery(const std::vector<Geometry*>& Objects);
 		void				BuildSceneQuery(GeometryWorldStateSpan States);
 		void				AddGeometryToSceneQuery(Geometry* Object);
@@ -222,13 +298,21 @@ namespace Riemann
 		ConstraintSolver*				m_Solver;
 		SceneQueryType					m_SceneQuery;
 		IntegrateMethod					m_IntegrateMethod;
+		ResolutionPhaseSolver			m_ResolutionSolver;
 		OnContactCallback				m_OnContact;
+		OnTriggerCallback				m_OnTrigger;
 		std::vector<DestructionSet*>	m_DestructionSets;
 		std::vector<ForceField*>		m_Fields;
+		std::vector<PositionConstraint*> m_Constraints;
+		std::vector<RopeSystem*>		m_Ropes;
+		std::vector<ClothSystem*>		m_Cloths;
+		std::vector<Ragdoll*>			m_Ragdolls;
+		int									m_ConstraintIterations;
 		std::vector<const GeometryWorldState*> m_GeometryWorldStates;
 		std::deque<GeometryWorldRecord> m_GeometryWorldRecords;
 		std::vector<uint32_t>			m_FreeGeometryWorldRecords;
 		WorldClock						m_Clock;
 		IBinaryData*							m_SceneResource;
+		int									m_LastCCDHitCount;
 	};
 }

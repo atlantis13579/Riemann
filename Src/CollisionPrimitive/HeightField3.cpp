@@ -1,5 +1,7 @@
 
 #include "HeightField3.h"
+#include <algorithm>
+#include <cmath>
 #include "Capsule3.h"
 #include "OrientedBox3.h"
 #include "Triangle3.h"
@@ -13,6 +15,124 @@ namespace Riemann
 	#define Z_INDEX(_z)		((int)((_z - BV.Min.z) * InvDZ))
 
 	static const float HfCellThickness = 0.0001f;
+
+	bool HeightField3::SetHeight(int x, int z, float height)
+	{
+		if (Cells == nullptr || x < 0 || z < 0 || x >= (int)nX || z >= (int)nZ || std::abs(HeightScale) <= 1e-12f)
+		{
+			return false;
+		}
+		const float sample = height / HeightScale;
+		const int quantized = std::max(-32768, std::min(32767, (int)std::round(sample)));
+		return SetHeightRaw(x, z, (int16_t)quantized);
+	}
+
+	bool HeightField3::SetHeightRaw(int x, int z, int16_t heightSample)
+	{
+		if (Cells == nullptr || x < 0 || z < 0 || x >= (int)nX || z >= (int)nZ)
+		{
+			return false;
+		}
+		CellInfo& cell = Cells[z * nX + x];
+		if (cell.HeightSample == heightSample)
+		{
+			return true;
+		}
+		cell.HeightSample = heightSample;
+		++Revision;
+		RecalculateBounds();
+		return true;
+	}
+
+	int HeightField3::ModifyHeightCircle(float centerX, float centerZ, float radius, float heightDelta, bool linearFalloff)
+	{
+		if (Cells == nullptr || radius <= 0.0f || std::abs(HeightScale) <= 1e-12f || std::abs(heightDelta) <= 1e-12f)
+		{
+			return 0;
+		}
+		const float radiusSquared = radius * radius;
+		int modifiedCount = 0;
+		for (uint32_t z = 0; z < nZ; ++z)
+		{
+			for (uint32_t x = 0; x < nX; ++x)
+			{
+				const float sampleX = BV.Min.x + DX * x;
+				const float sampleZ = BV.Min.z + DZ * z;
+				const float dx = sampleX - centerX;
+				const float dz = sampleZ - centerZ;
+				const float distanceSquared = dx * dx + dz * dz;
+				if (distanceSquared > radiusSquared)
+				{
+					continue;
+				}
+				const float weight = linearFalloff ? 1.0f - std::sqrt(distanceSquared) / radius : 1.0f;
+				const int index = (int)(z * nX + x);
+				const float newHeight = GetHeight(index) + heightDelta * weight;
+				const int quantized = std::max(-32768, std::min(32767, (int)std::round(newHeight / HeightScale)));
+				if (Cells[index].HeightSample != (int16_t)quantized)
+				{
+					Cells[index].HeightSample = (int16_t)quantized;
+					++modifiedCount;
+				}
+			}
+		}
+		if (modifiedCount > 0)
+		{
+			++Revision;
+			RecalculateBounds();
+		}
+		return modifiedCount;
+	}
+
+	int HeightField3::DigCrater(float centerX, float centerZ, float radius, float depth, bool linearFalloff)
+	{
+		return ModifyHeightCircle(centerX, centerZ, radius, -std::abs(depth), linearFalloff);
+	}
+
+	bool HeightField3::SetTriangleHole(int cellX, int cellZ, int triangleIndex, bool hole)
+	{
+		if (Cells == nullptr || cellX < 0 || cellZ < 0 || cellX >= (int)nX - 1 || cellZ >= (int)nZ - 1 || triangleIndex < 0 || triangleIndex > 1)
+		{
+			return false;
+		}
+		CellInfo& cell = Cells[cellZ * nX + cellX];
+		uint8_t& flag = triangleIndex == 0 ? cell.Tessellation0 : cell.Tessellation1;
+		const uint8_t newFlag = hole ? 0x7F : 0x00;
+		if (flag != newFlag)
+		{
+			flag = newFlag;
+			++Revision;
+		}
+		return true;
+	}
+
+	bool HeightField3::IsTriangleHole(int cellX, int cellZ, int triangleIndex) const
+	{
+		if (Cells == nullptr || cellX < 0 || cellZ < 0 || cellX >= (int)nX - 1 || cellZ >= (int)nZ - 1 || triangleIndex < 0 || triangleIndex > 1)
+		{
+			return false;
+		}
+		const CellInfo& cell = Cells[cellZ * nX + cellX];
+		return (triangleIndex == 0 ? cell.Tessellation0 : cell.Tessellation1) == 0x7F;
+	}
+
+	void HeightField3::RecalculateBounds()
+	{
+		if (Cells == nullptr || nX == 0 || nZ == 0)
+		{
+			return;
+		}
+		float minHeight = FLT_MAX;
+		float maxHeight = -FLT_MAX;
+		for (uint32_t i = 0; i < nX * nZ; ++i)
+		{
+			const float height = GetHeight((int)i);
+			minHeight = std::min(minHeight, height);
+			maxHeight = std::max(maxHeight, height);
+		}
+		BV.Min.y = minHeight;
+		BV.Max.y = maxHeight;
+	}
 
 	bool HeightField3::IntersectRayCell(const Vector3& Origin, const Vector3& Direction, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
 	{

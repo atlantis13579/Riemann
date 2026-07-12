@@ -1,4 +1,5 @@
 #include "MeshCuttingPanel.h"
+#include "MeshSimplificationPanel.h"
 
 #include <algorithm>
 #include <cmath>
@@ -219,6 +220,20 @@ namespace Riemann
 			return options;
 		}
 
+		bool LoadCuttingStaticMesh(const std::string& meshPath, StaticMesh* mesh,
+			std::string* status)
+		{
+			MeshSimplificationSource source;
+			if (!LoadMeshSimplificationSource(meshPath, &source))
+			{
+				if (status) *status = source.Status;
+				return false;
+			}
+			*mesh = std::move(source.Mesh);
+			RefreshStaticMeshPointers(mesh);
+			return true;
+		}
+
 	}
 
 	bool LoadMeshCuttingSource(const std::string& objPath, MeshCuttingSource* source)
@@ -234,11 +249,10 @@ namespace Riemann
 		source->Status.clear();
 
 		StaticMesh sourceMesh;
-		sourceMesh.Flags = 0;
-		if (objPath.empty() || !sourceMesh.LoadObj(objPath.c_str()) ||
-			sourceMesh.GetVertexCount() == 0 || sourceMesh.GetTriangleCount() == 0)
+		std::string loadStatus;
+		if (!LoadCuttingStaticMesh(objPath, &sourceMesh, &loadStatus))
 		{
-			source->Status = "Failed to read OBJ";
+			source->Status = loadStatus.empty() ? "Failed to read mesh" : loadStatus;
 			return false;
 		}
 
@@ -269,11 +283,10 @@ namespace Riemann
 		result->SourceBounds = Box3::Empty();
 
 		StaticMesh sourceStaticMesh;
-		sourceStaticMesh.Flags = 0;
-		if (params.ObjPath.empty() || !sourceStaticMesh.LoadObj(params.ObjPath.c_str()) ||
-			sourceStaticMesh.GetVertexCount() == 0 || sourceStaticMesh.GetTriangleCount() == 0)
+		std::string loadStatus;
+		if (!LoadCuttingStaticMesh(params.ObjPath, &sourceStaticMesh, &loadStatus))
 		{
-			result->Status = "Failed to read OBJ";
+			result->Status = loadStatus.empty() ? "Failed to read mesh" : loadStatus;
 			return false;
 		}
 

@@ -1,19 +1,24 @@
 {
-  "name": "stack_boxes",
+  "name": "Box Stack",
   "physics": {
-    "gravity": [0.0, -9.8, 0.0]
+    "gravity": [0.0, -9.8, 0.0],
+    "resolutionSolver": "globalLCP",
+    "solverBackend": "simd",
+    "contactSolverIterations": 32,
+    "contactSolverTolerance": 0.00001,
+    "contactSolverRelaxation": 1.0
   },
   "camera": {
-    "center": [0.0, 4.0, 0.0],
-    "orbit": [1.0, 0.45, 32.0],
+    "center": [0.0, 0.0, 0.0],
+    "orbit": [1.0, 0.45, 24.0],
     "near": 0.05,
     "far": 1000.0
   },
   "light": {
-    "direction": [-0.35, -1.0, 0.25],
+    "direction": [-0.549428, -0.826915, 0.119752],
     "color": [1.0, 0.95, 0.86],
     "ambient": 0.22,
-    "shadowCenter": [0.0, 4.0, 0.0],
+    "shadowCenter": [0.0, 0.0, 0.0],
     "shadowDistance": 90.0,
     "shadowSize": 90.0
   },
@@ -30,12 +35,12 @@
       "id": "stack_box",
       "type": "box",
       "body": "dynamic",
-      "position": [-3.15, -3.9, -3.15],
+      "position": [-4.2, -4.052, -4.2],
       "halfExtent": [0.95, 0.95, 0.95],
       "color": [0.35, 0.62, 0.86, 1.0],
       "repeat": {
-        "count": [4, 6, 4],
-        "spacing": [2.1, 2.05, 2.1]
+        "count": [5, 5, 5],
+        "spacing": [2.1, 1.898, 2.1]
       }
     }
   ]

@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <queue>
+#include <unordered_map>
 #include "CollidingContact.h"
 #include "RigidBody.h"
 #include "../Core/Graph.h"
@@ -217,18 +218,47 @@ namespace Riemann
 
 	void ContactManifoldIslands::BuildIslands(const std::vector<Geometry*>& geoms, const std::vector<ContactManifold*>& manifolds)
 	{
-		GraphNE<Geometry*, ContactManifold*> graph;
-		graph.nodes = geoms;
+		GraphNE<RigidBody*, ContactManifold*> graph;
+		std::vector<int> GeometryBodyNodes(geoms.size(), -1);
+		std::unordered_map<RigidBody*, int> BodyNodes;
+		BodyNodes.reserve(geoms.size());
+		for (size_t GeometryIndex = 0; GeometryIndex < geoms.size(); ++GeometryIndex)
+		{
+			RigidBody* Body = geoms[GeometryIndex] ? geoms[GeometryIndex]->GetParent<RigidBody>() : nullptr;
+			if (!Body)
+			{
+				continue;
+			}
+
+			auto It = BodyNodes.find(Body);
+			if (It == BodyNodes.end())
+			{
+				const int BodyNode = (int)graph.nodes.size();
+				BodyNodes.emplace(Body, BodyNode);
+				graph.nodes.push_back(Body);
+				GeometryBodyNodes[GeometryIndex] = BodyNode;
+			}
+			else
+			{
+				GeometryBodyNodes[GeometryIndex] = It->second;
+			}
+		}
 		for (size_t i = 0; i < manifolds.size(); ++i)
 		{
-			graph.AddEdge(manifolds[i]->indexA, manifolds[i]->indexB, manifolds[i]);
+			ContactManifold* Manifold = manifolds[i];
+			assert(Manifold != nullptr);
+			assert(Manifold->indexA >= 0 && (size_t)Manifold->indexA < GeometryBodyNodes.size());
+			assert(Manifold->indexB >= 0 && (size_t)Manifold->indexB < GeometryBodyNodes.size());
+			const int NodeA = GeometryBodyNodes[(size_t)Manifold->indexA];
+			const int NodeB = GeometryBodyNodes[(size_t)Manifold->indexB];
+			assert(NodeA >= 0 && NodeB >= 0);
+			graph.AddEdge(NodeA, NodeB, Manifold);
 		}
 		std::vector<bool> separate;
-		separate.resize(geoms.size());
+		separate.resize(graph.nodes.size());
 		for (size_t i = 0; i < separate.size(); ++i)
 		{
-			RigidBody* body = geoms[i]->GetParent<RigidBody>();
-			separate[i] = body->mRigidType == RigidType::Static;
+			separate[i] = graph.nodes[i]->mRigidType == RigidType::Static;
 		}
 
 		graph.BuildEdgeIslands(separate, &islands);

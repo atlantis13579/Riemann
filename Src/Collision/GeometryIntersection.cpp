@@ -264,23 +264,99 @@ namespace Riemann
         return obj->SweepConvex(Dir, convex, p, n, t);
     }
 
-    template <class T>
-    bool    SweepTHeightfield(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
-    {
-        const Transform2 trans(t2, t1);		// TODO
-        const HeightField3* hf = static_cast<const HeightField3*>(Obj2);
-        const T* obj = static_cast<const T*>(Obj1);
-        return obj->SweepHeightField(Dir, hf, p, n, t);
-    }
+	static Sphere3 MakeConcaveSweepShape(const Sphere3* Shape, const Transform* ShapeTransform, const Transform* ConcaveTransform)
+	{
+		return Sphere3(ConcaveTransform->WorldToLocal(ShapeTransform->LocalToWorld(Shape->Center)), Shape->Radius);
+	}
 
-    template <class T>
-    bool    SweepTTriangleMesh(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
-    {
-        const Transform2 trans(t2, t1);		// TODO
-        const TriangleMesh* trimesh = static_cast<const TriangleMesh*>(Obj2);
-        const T* obj = static_cast<const T*>(Obj1);
-        return obj->SweepTriangleMesh(Dir, trimesh, p, n, t);
-    }
+	static Capsule3 MakeConcaveSweepShape(const Capsule3* Shape, const Transform* ShapeTransform, const Transform* ConcaveTransform)
+	{
+		return Capsule3(
+			ConcaveTransform->WorldToLocal(ShapeTransform->LocalToWorld(Shape->X0)),
+			ConcaveTransform->WorldToLocal(ShapeTransform->LocalToWorld(Shape->X1)),
+			Shape->Radius);
+	}
+
+	static Cylinder3 MakeConcaveSweepShape(const Cylinder3* Shape, const Transform* ShapeTransform, const Transform* ConcaveTransform)
+	{
+		return Cylinder3(
+			ConcaveTransform->WorldToLocal(ShapeTransform->LocalToWorld(Shape->X0)),
+			ConcaveTransform->WorldToLocal(ShapeTransform->LocalToWorld(Shape->X1)),
+			Shape->Radius);
+	}
+
+	static OrientedBox3 MakeConcaveSweepShape(const AxisAlignedBox3* Shape, const Transform* ShapeTransform, const Transform* ConcaveTransform)
+	{
+		const Quaternion RelativeRotation = ConcaveTransform->quat.Conjugate() * ShapeTransform->quat;
+		return OrientedBox3(
+			ConcaveTransform->WorldToLocal(ShapeTransform->LocalToWorld(Shape->GetCenter())),
+			Shape->GetExtent(), RelativeRotation.ToRotationMatrix3());
+	}
+
+	template <class ConcaveType>
+	struct ConcaveSweep;
+
+	template <>
+	struct ConcaveSweep<HeightField3>
+	{
+		template <class ShapeType>
+		static bool Sweep(const ShapeType& Shape, const Vector3& Direction, const HeightField3* Concave,
+			Vector3* Position, Vector3* Normal, float* Time)
+		{
+			return Shape.SweepHeightField(Direction, Concave, Position, Normal, Time);
+		}
+	};
+
+	template <>
+	struct ConcaveSweep<TriangleMesh>
+	{
+		template <class ShapeType>
+		static bool Sweep(const ShapeType& Shape, const Vector3& Direction, const TriangleMesh* Concave,
+			Vector3* Position, Vector3* Normal, float* Time)
+		{
+			return Shape.SweepTriangleMesh(Direction, Concave, Position, Normal, Time);
+		}
+	};
+
+	template <class ShapeType, class ConcaveType>
+	static bool SweepTConcave(const void* Obj1, const void* Obj2, const Transform* ShapeTransform, const Transform* ConcaveTransform,
+		const Vector3& Direction, Vector3* Position, Vector3* Normal, float* Time)
+	{
+		const ShapeType* Shape = static_cast<const ShapeType*>(Obj1);
+		const ConcaveType* Concave = static_cast<const ConcaveType*>(Obj2);
+		const auto TransformedShape = MakeConcaveSweepShape(Shape, ShapeTransform, ConcaveTransform);
+		const Vector3 ConcaveDirection = ConcaveTransform->WorldToLocalDirection(ShapeTransform->LocalToWorldDirection(Direction));
+		Vector3 ConcavePosition;
+		Vector3 ConcaveNormal;
+		if (!ConcaveSweep<ConcaveType>::Sweep(TransformedShape, ConcaveDirection, Concave, &ConcavePosition, &ConcaveNormal, Time))
+		{
+			return false;
+		}
+
+		if (Position)
+		{
+			*Position = ShapeTransform->WorldToLocal(ConcaveTransform->LocalToWorld(ConcavePosition));
+		}
+		if (Normal)
+		{
+			*Normal = ShapeTransform->WorldToLocalDirection(ConcaveTransform->LocalToWorldDirection(ConcaveNormal));
+		}
+		return true;
+	}
+
+	template <class T>
+	bool SweepTHeightfield(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2,
+		const Vector3& Dir, Vector3* p, Vector3* n, float* t)
+	{
+		return SweepTConcave<T, HeightField3>(Obj1, Obj2, t1, t2, Dir, p, n, t);
+	}
+
+	template <class T>
+	bool SweepTTriangleMesh(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2,
+		const Vector3& Dir, Vector3* p, Vector3* n, float* t)
+	{
+		return SweepTConcave<T, TriangleMesh>(Obj1, Obj2, t1, t2, Dir, p, n, t);
+	}
 
     bool SweepNotSuppoer(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
     {

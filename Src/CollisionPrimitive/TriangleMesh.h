@@ -50,6 +50,8 @@ namespace Riemann
 	class TriangleMesh : public StaticMesh
 	{
 	public:
+		using SweepTriangleCallback = void (*)(void* Context, const Vector3& A, const Vector3& B, const Vector3& C, float& BestDistance);
+
 		TriangleMesh()
 		{
 			m_BVH = nullptr;
@@ -83,6 +85,8 @@ namespace Riemann
 		bool			IntersectOBB(const Vector3& Center, const Vector3& Extent, const Matrix3& rot) const;
 		bool			IntersectSphere(const Vector3& Center, float Radius) const;
 		bool			IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const;
+		void			SweepBVH(const Box3& MovingBounds, const Vector3& Direction, float& BestDistance,
+			SweepTriangleCallback Callback, void* Context) const;
 
 		bool CalculateVolumeProperties(MassParameters* p, float Density) const
 		{

@@ -1,9 +1,11 @@
 #pragma once
 
 #include <cstdint>
+#include <deque>
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "ConnectionGraph.h"
@@ -54,6 +56,10 @@ namespace Riemann
 		float ImpulseBreakStrength = 0.5f;
 		float ImpulseRadius = 10.0f;
 		int ImpulseProcessPerTick = 1;
+		int PartitionProcessPerTick = 4;                // Maximum queued cluster partitions processed in one tick.
+		int PartitionProcessIntervalTicks = 1;          // Tick interval between partition batches.
+		float PartitionSeparationAttenuation = 0.5f;    // Separation velocity multiplier applied at each deeper level.
+		bool EnableClusterCollisionProxy = true;         // Use one aggregate collision shape until a cluster becomes a leaf.
 		DestructionPartitionAlgorithm PartitionAlgorithm = DestructionPartitionAlgorithm::Metis;
 		DestructionClusterLevelConstants Levels[8];
 		float IdleTime = 30.0f;
@@ -95,6 +101,42 @@ namespace Riemann
 		std::shared_ptr<ConvexMesh> CollisionConvex;
 	};
 
+	struct DestructionFractureLevel
+	{
+		int MinPieceCount = 2;
+		int MaxPieceCount = 2;
+		int PreserveLargestPieces = 0;          // Largest generated children kept as permanent leaves.
+		float ChildFractureProbability = 1.0f;  // Chance that each remaining child is cut at the next level.
+		float BreakThreshold = 1.0f;
+		float StrengthVariation = 0.0f;
+		bool UseClusteredVoronoi = true;
+	};
+
+	struct DestructionFractureSettings
+	{
+		int RandomSeed = 17;
+		int MaxChunkCount = 256;
+		int CutRetryCount = 3;
+		float MinChunkVolume = 0.01f;
+		float BondStrength = 1.0f;
+		float DamageAttenuation = 0.6f;
+		float NeighborDamageFraction = 0.15f;
+		float Grout = 0.0f;
+		std::vector<DestructionFractureLevel> Levels;
+	};
+
+	struct DestructionHierarchyNode
+	{
+		int Parent = -1;
+		int Level = 0;
+		std::vector<int> Children;
+		std::vector<int> ChunkIndices;
+		Box3 Bounds = Box3::Empty();
+		float BreakThreshold = 1.0f;
+		bool IsBreakable = false;
+		bool IsBroken = false;
+	};
+
 	struct DestructionMomentum
 	{
 		int Index = -1;
@@ -114,6 +156,10 @@ namespace Riemann
 		DestructionSet() = default;
 		explicit DestructionSet(PhysicsWorld* Simulation);
 		explicit DestructionSet(PhysicsWorld& Simulation);
+		DestructionSet(const DestructionSet&) = delete;
+		DestructionSet& operator=(const DestructionSet&) = delete;
+		DestructionSet(DestructionSet&&) = delete;
+		DestructionSet& operator=(DestructionSet&&) = delete;
 		virtual ~DestructionSet();
 
 		struct Stats
@@ -126,6 +172,8 @@ namespace Riemann
 
 		int AddChunk(const Box3& Bounds, float Mass = 1.0f, bool bStatic = false, const std::string& Name = std::string());
 		int AddChunk(const DynamicMesh& Mesh, float Mass = 1.0f, bool bStatic = false, const std::string& Name = std::string());
+		bool BuildHierarchicalFracture(const DynamicMesh& SourceMesh, const DestructionFractureSettings& Settings,
+			float TotalMass = 1.0f, bool bStatic = false, const std::string& Name = std::string());
 		void SetChunks(const std::vector<DestructionChunk>& Chunks);
 		void Clear();
 
@@ -163,7 +211,6 @@ namespace Riemann
 		void RecalculateBounds();
 		Stats GetStats() const;
 		uint32_t AllocClusterID() { return mNextClusterID++; }
-		void SetPhysicsWorld(PhysicsWorld* Simulation) { mPhysicsWorld = Simulation; }
 		PhysicsWorld* GetPhysicsWorld() const { return mPhysicsWorld; }
 
 		std::vector<float> GetMasses() const;
@@ -173,6 +220,8 @@ namespace Riemann
 		const ConnectionGraph& GetGraph() const { return mGraph; }
 		const std::vector<DestructionChunk>& GetChunks() const { return mChunks; }
 		std::vector<DestructionChunk>& GetChunks() { return mChunks; }
+		const std::vector<DestructionHierarchyNode>& GetHierarchy() const { return mHierarchyNodes; }
+		int GetHierarchyRoot() const { return mHierarchyRoot; }
 		const Box3& GetBounds() const { return mBounds; }
 		DestructionConstants& GetDestructionConstants() { return mConstants; }
 		const DestructionConstants& GetDestructionConstants() const { return mConstants; }
@@ -182,9 +231,27 @@ namespace Riemann
 		Box3 mBounds = Box3::Empty();
 
 	private:
+		friend class PhysicsWorld;
+		void SetPhysicsWorld(PhysicsWorld* Simulation) { mPhysicsWorld = Simulation; }
 		void BuildClusterRigidBody(DestructionCluster& Cluster);
 		void ReleaseClusterRigidBody(DestructionCluster& Cluster, bool bReleaseGeometries);
 		void ReleaseClusterRigidBodies(bool bReleaseGeometries);
+		bool PartitionClusterOnce(const std::vector<int>& Indices, int Level, float Strength, std::vector<std::vector<int>>& Components);
+		void QueuePartitionChildren(const std::vector<std::vector<int>>& Components, int Level, float Strength, const Vector3& Momentum, const Vector3& Position, const Vector3& Normal);
+		bool MergePendingPartition(const DestructionCluster& Cluster, float Strength, const Vector3& Momentum, const Vector3& Position, const Vector3& Normal);
+		bool MergePendingHierarchyPartition(int HierarchyNode, int ImpactChunkIndex, float Strength,
+			const Vector3& Momentum, const Vector3& Position, const Vector3& Normal);
+		void ProcessPartitionQueue();
+		void ReconcileHierarchyWithGraph();
+		void BreakHierarchyCrossChildBonds(int HierarchyNode);
+		int FindActiveHierarchyNode(int ChunkIndex) const;
+		bool BreakHierarchyNode(int HierarchyNode, float Strength);
+		void QueueHierarchyChildren(int HierarchyNode, int ImpactChunkIndex, float Strength,
+			const Vector3& Momentum, const Vector3& Position, const Vector3& Normal);
+		bool ApplyHierarchyMomentum(int Index, const Vector3& Momentum, const Vector3& Position, const Vector3& Normal);
+		std::vector<std::vector<int>> FindConnectedComponents(const std::vector<int>& Indices) const;
+		void ApplyFractureSeparation(const std::vector<int>& Indices, const Vector3& Momentum, const Vector3& Position, const Vector3& Normal, float SeparationScale);
+		Box3 GetChunkWorldBounds(int Index) const;
 		void MarkFree(int Index);
 		bool BreakBondByIndex(int BondIndex);
 		bool HasClusterRigidBodies() const;
@@ -192,9 +259,29 @@ namespace Riemann
 		void QueueContactMomentum(RigidBody* Body, Geometry* Geom, const PhysicsContactPoint& Point, const Vector3& Momentum, const Vector3& Normal);
 
 	private:
+		struct PendingPartition
+		{
+			std::vector<int> Indices;
+			int HierarchyNode = -1;
+			int ImpactChunkIndex = -1;
+			int Level = 0;
+			float Strength = 0.0f;
+			Vector3 Momentum = Vector3::Zero();
+			Vector3 Position = Vector3::Zero();
+			Vector3 Normal = Vector3::UnitY();
+		};
+
 		std::vector<DestructionChunk> mChunks;
+		std::vector<DestructionHierarchyNode> mHierarchyNodes;
+		std::vector<std::vector<std::pair<int, int>>> mHierarchyBoundaryBonds;
+		std::vector<int> mChunkHierarchyLeaves;
+		int mHierarchyRoot = -1;
+		float mHierarchyDamageAttenuation = 0.6f;
+		float mHierarchyNeighborDamageFraction = 0.15f;
 		std::map<uint32_t, DestructionCluster> mClusters;
 		std::vector<DestructionMomentum> mMomentumQueue;
+		std::deque<PendingPartition> mPartitionQueue;
+		int mPartitionTicksUntilProcess = 0;
 		std::vector<int> mBrokenIndices;
 		BitSet mDestructionInfo[(int)DestructionEventType::Count];
 		bool bHasDestructionInfo = false;

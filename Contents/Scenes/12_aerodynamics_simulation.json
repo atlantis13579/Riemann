@@ -1,0 +1,66 @@
+{
+  "name": "aerodynamics_simulation",
+  "physics": {
+    "gravity": [0.0, 0.0, 0.0],
+    "contactSolverIterations": 48
+  },
+  "fieldSimulation": {
+    "type": "aerodynamics_simulation",
+    "method": "eulerian",
+    "backend": "cpu",
+    "allowBackendFallback": true,
+    "rigidCoupling": true,
+    "boundsMin": [-4.0, -2.5, -2.5],
+    "boundsMax": [4.0, 2.5, 2.5],
+    "resolution": [32, 20, 20],
+    "gravity": [0.0, 0.0, 0.0],
+    "ambientDensity": 1.225,
+    "ambientPressure": 101325.0,
+    "speedOfSound": 8.0,
+    "adiabaticExponent": 1.4,
+    "dynamicViscosity": 0.005,
+    "artificialViscosity": 0.05,
+    "particleSpacing": 0.25,
+    "smoothingRadius": 0.50,
+    "boundaryRestitution": 0.10,
+    "maxTimeStep": 0.0055555556,
+    "acousticCFL": 0.35,
+    "maxSubsteps": 32,
+    "surfaceSamplesPerAxis": 4,
+    "dragCoefficient": 1.0,
+    "maxLinearAcceleration": 20.0,
+    "maxAngularAcceleration": 30.0,
+    "visualizationThreshold": 0.08,
+    "interactionRadius": 0.70,
+    "interactionStrength": 14.0,
+    "regions": [
+      { "min": [-1.75, -2.0, -2.0], "max": [-0.75, 2.0, 2.0], "density": 1.53125 },
+      { "min": [0.75, -2.0, -2.0], "max": [1.75, 2.0, 2.0], "density": 1.53125 },
+      { "min": [-0.50, -2.0, -2.0], "max": [0.50, 2.0, 2.0], "density": 0.6125 }
+    ]
+  },
+  "camera": {
+    "center": [0.0, 0.0, 0.0],
+    "orbit": [0.85, 0.28, 12.5],
+    "near": 0.05,
+    "far": 60.0
+  },
+  "light": {
+    "direction": [-0.42, -0.82, 0.28],
+    "color": [1.0, 0.96, 0.88],
+    "ambient": 0.28,
+    "shadowCenter": [0.0, 0.0, 0.0],
+    "shadowDistance": 28.0,
+    "shadowSize": 16.0
+  },
+  "objects": [
+    { "id": "chamber_left", "type": "box", "body": "static", "position": [-4.15, 0.0, 0.0], "halfExtent": [0.15, 2.65, 2.65], "render": false, "query": false },
+    { "id": "chamber_right", "type": "box", "body": "static", "position": [4.15, 0.0, 0.0], "halfExtent": [0.15, 2.65, 2.65], "render": false, "query": false },
+    { "id": "chamber_floor", "type": "box", "body": "static", "position": [0.0, -2.65, 0.0], "halfExtent": [4.15, 0.15, 2.65], "render": false, "query": false },
+    { "id": "chamber_ceiling", "type": "box", "body": "static", "position": [0.0, 2.65, 0.0], "halfExtent": [4.15, 0.15, 2.65], "render": false, "query": false },
+    { "id": "chamber_back", "type": "box", "body": "static", "position": [0.0, 0.0, -2.65], "halfExtent": [4.15, 2.65, 0.15], "render": false, "query": false },
+    { "id": "chamber_front", "type": "box", "body": "static", "position": [0.0, 0.0, 2.65], "halfExtent": [4.15, 2.65, 0.15], "render": false, "query": false },
+    { "id": "gas_box", "type": "box", "body": "dynamic", "mouseControl": true, "position": [-0.46, 0.0, -0.12], "halfExtent": [0.45, 0.55, 0.55], "density": 5.51, "color": [0.95, 0.78, 0.22, 1.0], "restitution": 0.30 },
+    { "id": "gas_sphere", "type": "sphere", "body": "dynamic", "mouseControl": true, "position": [0.44, 0.0, 0.12], "radius": 0.43, "density": 12.0, "color": [0.36, 0.94, 0.52, 1.0], "restitution": 0.42 }
+  ]
+}

@@ -5,6 +5,8 @@
 #include <sstream>
 #include <utility>
 
+#include "../Src/Modules/Tools/UE5StaticMeshParser.h"
+
 namespace Riemann
 {
 	namespace
@@ -87,6 +89,27 @@ namespace Riemann
 			else if (HasPathExtension(meshPath, "flat"))
 			{
 				loaded = mesh->LoadFlat(meshPath.c_str());
+			}
+			else if (HasPathExtension(meshPath, "uasset"))
+			{
+				const UE5StaticMeshData asset = LoadUE5StaticMesh(meshPath.c_str());
+				if (!asset.Success || asset.LODs.empty())
+				{
+					if (status) *status = asset.Error.empty()
+						? "Failed to read UE5 StaticMesh" : asset.Error;
+					return false;
+				}
+				const UE5TriangleMeshData& lod = asset.LODs.front();
+				for (const Vector3& vertex : lod.Vertices) mesh->AddVertex(vertex);
+				for (size_t index = 0; index + 2 < lod.Indices.size(); index += 3)
+				{
+					const uint32_t a = lod.Indices[index];
+					const uint32_t b = lod.Indices[index + 1];
+					const uint32_t c = lod.Indices[index + 2];
+					if (a < lod.Vertices.size() && b < lod.Vertices.size()
+						&& c < lod.Vertices.size()) mesh->AddTriangle(a, b, c);
+				}
+				loaded = mesh->GetVertexCount() > 0 && mesh->GetTriangleCount() > 0;
 			}
 			else
 			{

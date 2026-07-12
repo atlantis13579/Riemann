@@ -3,9 +3,19 @@
 #include <string>
 #include <chrono>
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <vector>
 #include "Test.h"
+
+#include "../Src/Fluid/FluidSimulation.h"
+#include "../Src/Fluid/FluidBackend.h"
+#include "../Src/Fluid/AerodynamicsSimulation.h"
+#include "../Src/Fluid/AerodynamicsRigidCoupling.h"
+#include "../Src/Fluid/FluidRigidCoupling.h"
+#include "../Src/Fluid/MarchingCubes.h"
+#include "../Viewer/MeshRenderer.h"
+#include "../Src/Collision/GeometryObject.h"
 #include "../Src/Core/Base.h"
 #include "../Src/Core/Ref.h"
 #include "../Src/Core/Graph.h"
@@ -28,6 +38,8 @@
 #include "../Src/Core/LinearSet.h"
 #include "../Src/Maths/Maths.h"
 #include "../Src/Maths/Vector3.h"
+#include "../Src/RigidBodyDynamics/PhysicsWorld.h"
+#include "../Src/RigidBodyDynamics/RigidBody.h"
 
 using namespace Riemann;
 
@@ -867,8 +879,876 @@ void TestLinearMap()
 	EXPECT(sum == 4);
 }
 
+void TestFluidSimulation()
+{
+	printf("Running TestFluidSimulation\n");
+	{
+		std::vector<Vector3> velocity(1025);
+		std::vector<Vector3> delta(1025);
+		for (size_t index = 0; index < velocity.size(); ++index)
+		{
+			const float value = (float)index * 0.013f;
+			velocity[index] = Vector3(value, -0.5f * value, 0.25f * value);
+			delta[index] = Vector3(0.1f - value * 0.01f, 0.2f, -0.3f);
+		}
+		std::vector<Vector3> reference(velocity.size());
+		Riemann::FluidBackendResult backendResult;
+		EXPECT(Riemann::ApplyFluidVelocityDelta(velocity.data(), delta.data(), velocity.size(),
+			reference.data(), Riemann::FluidBackend::CPU, false, &backendResult));
+		const Riemann::FluidBackend backends[] = { Riemann::FluidBackend::CPU,
+			Riemann::FluidBackend::SIMD, Riemann::FluidBackend::CUDA,
+			Riemann::FluidBackend::ComputeShader };
+		for (Riemann::FluidBackend backend : backends)
+		{
+			std::vector<Vector3> output(velocity.size());
+			const bool available = Riemann::IsFluidBackendAvailable(backend);
+			EXPECT(Riemann::ApplyFluidVelocityDelta(velocity.data(), delta.data(), velocity.size(),
+				output.data(), backend, true, &backendResult));
+			EXPECT(backendResult.RequestedBackend == backend);
+			EXPECT(backendResult.Backend == (available ? backend : Riemann::FluidBackend::CPU));
+			EXPECT(backendResult.UsedFallback == !available);
+			for (size_t index = 0; index < output.size(); ++index)
+				EXPECT((output[index] - reference[index]).SquareLength() < 1.0e-10f);
+			if (!available)
+				EXPECT_FALSE(Riemann::ApplyFluidVelocityDelta(velocity.data(), delta.data(),
+					velocity.size(), output.data(), backend, false, nullptr));
+		}
+	}
+
+	Riemann::FluidSimulationSettings settings;
+	settings.BoundsMin = Vector3(0.0f, 0.0f, 0.0f);
+	settings.BoundsMax = Vector3(1.0f, 1.0f, 1.0f);
+	settings.Resolution = Vector3i(10, 10, 10);
+	settings.Gravity = Vector3::Zero();
+	settings.ParticleSpacing = 0.1f;
+	settings.SmoothingRadius = 0.2f;
+	settings.MaxTimeStep = 1.0f / 240.0f;
+	settings.MaxSubsteps = 64;
+
+	{
+		Riemann::FluidSimulationSettings invalid = settings;
+		Riemann::FluidSimulation simulation;
+		invalid.RestDensity = std::numeric_limits<float>::quiet_NaN();
+		EXPECT_FALSE(simulation.Initialize(invalid));
+		invalid = settings;
+		invalid.Method = (Riemann::FluidSimulationMethod)255;
+		EXPECT_FALSE(simulation.Initialize(invalid));
+		invalid = settings;
+		invalid.Resolution = Vector3i(2048, 2048, 2048);
+		EXPECT_FALSE(simulation.Initialize(invalid));
+		invalid = settings;
+		invalid.MaxTimeStep = std::numeric_limits<float>::denorm_min();
+		EXPECT_FALSE(simulation.Initialize(invalid));
+		invalid = settings;
+		invalid.ParticleSpacing = 2.0f;
+		invalid.SmoothingRadius = 2.0f;
+		EXPECT_FALSE(simulation.Initialize(invalid));
+		invalid = settings;
+		invalid.ParticleSpacing = 1.0e-6f;
+		invalid.SmoothingRadius = 2.0e-6f;
+		EXPECT_FALSE(simulation.Initialize(invalid));
+	}
+
+	settings.Method = Riemann::FluidSimulationMethod::Eulerian;
+	Riemann::FluidSimulation eulerian;
+	EXPECT(eulerian.Initialize(settings));
+	EXPECT(eulerian.GetMethod() == Riemann::FluidSimulationMethod::Eulerian);
+	eulerian.AddFluidBox(Vector3(0.2f, 0.2f, 0.2f), Vector3(0.8f, 0.8f, 0.8f),
+		Vector3(0.1f, 0.0f, 0.0f));
+	const float initialEulerianMass = eulerian.GetTotalMass();
+	EXPECT(initialEulerianMass > 0.0f);
+	EXPECT(eulerian.SampleDensity(Vector3(0.5f, 0.5f, 0.5f)) > 0.5f * settings.RestDensity);
+	const float nan = std::numeric_limits<float>::quiet_NaN();
+	EXPECT(eulerian.SampleDensity(Vector3(nan, 0.5f, 0.5f)) == 0.0f);
+	EXPECT(eulerian.SampleVelocity(Vector3(0.5f, nan, 0.5f)) == Vector3::Zero());
+	eulerian.Step(1.0f / 60.0f);
+	EXPECT(std::isfinite(eulerian.GetTotalMass()));
+	EXPECT_NEAR(eulerian.GetTotalMass(), initialEulerianMass, 0.001f * initialEulerianMass);
+	for (const Vector3& velocity : eulerian.GetGridVelocity())
+	{
+		EXPECT(std::isfinite(velocity.x) && std::isfinite(velocity.y) && std::isfinite(velocity.z));
+	}
+	for (int frame = 0; frame < 120; ++frame)
+	{
+		eulerian.Step(1.0f / 120.0f);
+	}
+	EXPECT_NEAR(eulerian.GetTotalMass(), initialEulerianMass, 0.005f * initialEulerianMass);
+	for (float density : eulerian.GetGridDensity())
+	{
+		EXPECT(density >= 0.0f && density <= settings.RestDensity + 1.0e-3f);
+	}
+
+	Riemann::FluidSimulation projection(settings);
+	projection.AddFluidBox(Vector3(0.1f, 0.1f, 0.1f), Vector3(0.5f, 0.9f, 0.9f),
+		Vector3(1.0f, 0.0f, 0.0f));
+	projection.AddFluidBox(Vector3(0.5f, 0.1f, 0.1f), Vector3(0.9f, 0.9f, 0.9f),
+		Vector3(-1.0f, 0.0f, 0.0f));
+	const float divergenceBeforeProjection = projection.GetMaxDivergence();
+	EXPECT(divergenceBeforeProjection > 1.0f);
+	projection.Step(settings.MaxTimeStep);
+	EXPECT(projection.GetMaxDivergence() < 0.35f * divergenceBeforeProjection);
+
+	const float massBeforeConversion = eulerian.GetTotalMass();
+	EXPECT(eulerian.SetMethod(Riemann::FluidSimulationMethod::Lagrangian, true));
+	EXPECT(eulerian.GetMethod() == Riemann::FluidSimulationMethod::Lagrangian);
+	EXPECT(!eulerian.GetParticles().empty());
+	const float convertedMass = eulerian.GetTotalMass();
+	EXPECT_NEAR(convertedMass, massBeforeConversion, 1.0e-4f * massBeforeConversion);
+	eulerian.Step(1.0f / 120.0f);
+	EXPECT_NEAR(eulerian.GetTotalMass(), convertedMass, 1.0e-3f);
+	EXPECT(eulerian.SetMethod(Riemann::FluidSimulationMethod::Eulerian, true));
+	EXPECT_NEAR(eulerian.GetTotalMass(), convertedMass, 1.0e-4f * convertedMass);
+
+	settings.Method = Riemann::FluidSimulationMethod::Lagrangian;
+	settings.Gravity = Vector3(0.0f, -9.81f, 0.0f);
+	Riemann::FluidSimulation lagrangian(settings);
+	lagrangian.AddFluidSphere(Vector3(0.5f, 0.65f, 0.5f), 0.25f);
+	EXPECT(lagrangian.GetParticles().size() > 8);
+	const float initialParticleMass = lagrangian.GetTotalMass();
+	lagrangian.Step(1.0f / 30.0f);
+	EXPECT_NEAR(lagrangian.GetTotalMass(), initialParticleMass, 1.0e-3f);
+	std::vector<float> particleDensityField;
+	EXPECT(lagrangian.BuildDensityField(&particleDensityField));
+	EXPECT(particleDensityField.size() == 1000);
+	EXPECT(*std::max_element(particleDensityField.begin(), particleDensityField.end()) > 0.0f);
+	for (const Riemann::FluidParticle& particle : lagrangian.GetParticles())
+	{
+		EXPECT(particle.Position.x >= settings.BoundsMin.x && particle.Position.x <= settings.BoundsMax.x);
+		EXPECT(particle.Position.y >= settings.BoundsMin.y && particle.Position.y <= settings.BoundsMax.y);
+		EXPECT(particle.Position.z >= settings.BoundsMin.z && particle.Position.z <= settings.BoundsMax.z);
+		EXPECT(std::isfinite(particle.Density) && particle.Density > 0.0f);
+		EXPECT(std::isfinite(particle.Velocity.x) && std::isfinite(particle.Velocity.y)
+			&& std::isfinite(particle.Velocity.z));
+	}
+
+	Riemann::FluidSimulation boundarySimulation(settings);
+	boundarySimulation.AddFluidBox(Vector3(0.45f, 0.45f, 0.45f), Vector3(0.55f, 0.55f, 0.55f),
+		Vector3(30.0f, -25.0f, 20.0f));
+	boundarySimulation.Step(0.25f);
+	const float particleRadius = 0.5f * settings.ParticleSpacing;
+	for (const Riemann::FluidParticle& particle : boundarySimulation.GetParticles())
+	{
+		EXPECT(particle.Position.x >= settings.BoundsMin.x + particleRadius);
+		EXPECT(particle.Position.y >= settings.BoundsMin.y + particleRadius);
+		EXPECT(particle.Position.z >= settings.BoundsMin.z + particleRadius);
+		EXPECT(particle.Position.x <= settings.BoundsMax.x - particleRadius);
+		EXPECT(particle.Position.y <= settings.BoundsMax.y - particleRadius);
+		EXPECT(particle.Position.z <= settings.BoundsMax.z - particleRadius);
+	}
+
+	auto GridMomentum = [](const Riemann::FluidSimulation& simulation) -> Vector3
+	{
+		const Vector3 cellSize = simulation.GetCellSize();
+		const double cellVolume = (double)cellSize.x * (double)cellSize.y * (double)cellSize.z;
+		const std::vector<float>& density = simulation.GetGridDensity();
+		const std::vector<Vector3>& velocity = simulation.GetGridVelocity();
+		double x = 0.0, y = 0.0, z = 0.0;
+		for (size_t index = 0; index < density.size(); ++index)
+		{
+			const double mass = (double)density[index] * cellVolume;
+			x += mass * (double)velocity[index].x;
+			y += mass * (double)velocity[index].y;
+			z += mass * (double)velocity[index].z;
+		}
+		return Vector3((float)x, (float)y, (float)z);
+	};
+	auto ParticleMomentum = [](const Riemann::FluidSimulation& simulation) -> Vector3
+	{
+		double x = 0.0, y = 0.0, z = 0.0;
+		for (const Riemann::FluidParticle& particle : simulation.GetParticles())
+		{
+			x += (double)particle.Mass * (double)particle.Velocity.x;
+			y += (double)particle.Mass * (double)particle.Velocity.y;
+			z += (double)particle.Mass * (double)particle.Velocity.z;
+		}
+		return Vector3((float)x, (float)y, (float)z);
+	};
+
+	Riemann::FluidSimulationSettings impulseSettings;
+	impulseSettings.BoundsMin = Vector3::Zero();
+	impulseSettings.BoundsMax = Vector3::One();
+	impulseSettings.Resolution = Vector3i(10, 10, 10);
+	impulseSettings.Gravity = Vector3::Zero();
+	impulseSettings.ParticleSpacing = 0.1f;
+	impulseSettings.SmoothingRadius = 0.2f;
+	const Vector3 requestedImpulse(2.0f, -1.25f, 0.75f);
+
+	impulseSettings.Method = Riemann::FluidSimulationMethod::Eulerian;
+	Riemann::FluidSimulation impulseGrid(impulseSettings);
+	impulseGrid.AddFluidBox(Vector3(0.2f), Vector3(0.8f));
+	const Vector3 gridMomentumBefore = GridMomentum(impulseGrid);
+	EXPECT(impulseGrid.ApplyImpulse(Vector3(0.5f), 0.42f, requestedImpulse));
+	const Vector3 gridMomentumDelta = GridMomentum(impulseGrid) - gridMomentumBefore;
+	EXPECT_NEAR(gridMomentumDelta.x, requestedImpulse.x, 2.0e-4f);
+	EXPECT_NEAR(gridMomentumDelta.y, requestedImpulse.y, 2.0e-4f);
+	EXPECT_NEAR(gridMomentumDelta.z, requestedImpulse.z, 2.0e-4f);
+	EXPECT_FALSE(impulseGrid.ApplyImpulse(Vector3(2.0f), 0.05f, requestedImpulse));
+	EXPECT_FALSE(impulseGrid.ApplyImpulse(Vector3(0.5f), 0.0f, requestedImpulse));
+	EXPECT_FALSE(impulseGrid.ApplyImpulse(Vector3(nan, 0.5f, 0.5f), 0.2f, requestedImpulse));
+	EXPECT_FALSE(impulseGrid.ApplyImpulse(Vector3(0.5f), 0.2f, Vector3(nan, 0.0f, 0.0f)));
+	Riemann::FluidSimulation uninitializedImpulse;
+	EXPECT_FALSE(uninitializedImpulse.ApplyImpulse(Vector3(0.5f), 0.2f, requestedImpulse));
+
+	impulseSettings.Method = Riemann::FluidSimulationMethod::Lagrangian;
+	Riemann::FluidSimulation impulseParticles(impulseSettings);
+	impulseParticles.AddFluidBox(Vector3(0.2f), Vector3(0.8f));
+	const Vector3 particleMomentumBefore = ParticleMomentum(impulseParticles);
+	EXPECT(impulseParticles.ApplyImpulse(Vector3(0.5f), 0.42f, requestedImpulse));
+	const Vector3 particleMomentumDelta = ParticleMomentum(impulseParticles) - particleMomentumBefore;
+	EXPECT_NEAR(particleMomentumDelta.x, requestedImpulse.x, 2.0e-4f);
+	EXPECT_NEAR(particleMomentumDelta.y, requestedImpulse.y, 2.0e-4f);
+	EXPECT_NEAR(particleMomentumDelta.z, requestedImpulse.z, 2.0e-4f);
+	EXPECT_FALSE(impulseParticles.ApplyImpulse(Vector3(-1.0f), 0.05f, requestedImpulse));
+}
+
+void TestFluidRigidCoupling()
+{
+	printf("Running TestFluidRigidCoupling\n");
+
+	Riemann::FluidSimulationSettings fluidSettings;
+	fluidSettings.Method = Riemann::FluidSimulationMethod::Eulerian;
+	fluidSettings.BoundsMin = Vector3::Zero();
+	fluidSettings.BoundsMax = Vector3::One();
+	fluidSettings.Resolution = Vector3i(20, 20, 20);
+	fluidSettings.Gravity = Vector3(0.0f, -9.81f, 0.0f);
+	fluidSettings.ParticleSpacing = 0.05f;
+	fluidSettings.SmoothingRadius = 0.1f;
+	Riemann::FluidSimulation fluid(fluidSettings);
+	fluid.AddFluidBox(fluidSettings.BoundsMin, fluidSettings.BoundsMax);
+
+	Riemann::PhysicsWorldParam worldSettings;
+	worldSettings.gravityAcc = fluidSettings.Gravity;
+	Riemann::PhysicsWorld world(worldSettings);
+	Riemann::RigidBodyParam bodySettings;
+	bodySettings.rigidType = Riemann::RigidType::Dynamic;
+	bodySettings.linearDamping = 1.0f;
+	bodySettings.angularDamping = 1.0f;
+	Riemann::RigidBody* rigid = world.CreateRigidBody(Riemann::GeometryFactory::CreateOBB(
+		Vector3(0.5f), Vector3(0.1f)), bodySettings);
+	EXPECT(rigid != nullptr);
+	if (rigid == nullptr) return;
+	Riemann::RigidBodyDynamic* box = rigid->CastDynamic();
+	EXPECT(box != nullptr);
+	if (box == nullptr) return;
+	box->InvMass = 0.2f;
+
+	Riemann::FluidRigidCouplingSettings couplingSettings;
+	couplingSettings.SamplesPerAxis = 4;
+	couplingSettings.QuadraticDragCoefficient = 0.0f;
+	couplingSettings.ViscousDragCoefficient = 0.0f;
+	couplingSettings.MaxLinearAcceleration = 1000.0f;
+	couplingSettings.MaxAngularAcceleration = 1000.0f;
+	Riemann::FluidRigidCoupling* coupling = new Riemann::FluidRigidCoupling(&fluid, couplingSettings);
+	EXPECT(coupling->IsValid());
+	Riemann::FluidRigidCouplingResult result;
+	EXPECT(coupling->Evaluate(box, &result));
+	const float boxVolume = 0.2f * 0.2f * 0.2f;
+	const float expectedDisplacedMass = fluidSettings.RestDensity * boxVolume;
+	const Vector3 expectedBuoyancy = -fluidSettings.Gravity * expectedDisplacedMass;
+	EXPECT(result.SampleCount == couplingSettings.SamplesPerAxis * couplingSettings.SamplesPerAxis
+		* couplingSettings.SamplesPerAxis);
+	EXPECT(result.ActiveSampleCount == result.SampleCount);
+	EXPECT_FALSE(result.Clamped);
+	EXPECT_NEAR(result.SubmergedVolume, boxVolume, 1.0e-5f);
+	EXPECT_NEAR(result.DisplacedMass, expectedDisplacedMass, 1.0e-3f);
+	EXPECT_NEAR(result.BuoyancyForce.x, expectedBuoyancy.x, 1.0e-4f);
+	EXPECT_NEAR(result.BuoyancyForce.y, expectedBuoyancy.y, 1.0e-3f);
+	EXPECT_NEAR(result.BuoyancyForce.z, expectedBuoyancy.z, 1.0e-4f);
+	EXPECT(result.BuoyancyForce.Dot(-fluidSettings.Gravity) > 0.0f);
+	EXPECT(result.Force.y > 0.0f);
+
+	EXPECT(world.AddForceField(coupling) == coupling);
+	world.Simulate();
+	EXPECT(box->V.y > 0.0f);
+	EXPECT(coupling->GetPendingFeedbackCount() == (size_t)result.ActiveSampleCount);
+	world.Simulate();
+	EXPECT(box->V.y > 0.0f);
+	EXPECT(coupling->GetPendingFeedbackCount() == (size_t)result.ActiveSampleCount);
+	EXPECT(coupling->GetLastFeedbackFailureCount() == 0);
+	world.Reset();
+	EXPECT(world.GetForceFieldCount() == 1);
+}
+
+void TestAerodynamicsRigidCoupling()
+{
+	printf("Running TestAerodynamicsRigidCoupling\n");
+
+	Riemann::AerodynamicsSimulationSettings gasSettings;
+	gasSettings.Method = Riemann::FluidSimulationMethod::Eulerian;
+	gasSettings.BoundsMin = Vector3::Zero();
+	gasSettings.BoundsMax = Vector3::One();
+	gasSettings.Resolution = Vector3i(12, 12, 12);
+	gasSettings.Gravity = Vector3::Zero();
+	gasSettings.SpeedOfSound = 20.0f;
+	gasSettings.ParticleSpacing = 1.0f / 12.0f;
+	gasSettings.SmoothingRadius = 0.15f;
+	Riemann::AerodynamicsSimulation ambientGas(gasSettings);
+	EXPECT(ambientGas.IsInitialized());
+
+	Riemann::PhysicsWorldParam worldSettings;
+	worldSettings.gravityAcc = Vector3::Zero();
+	Riemann::PhysicsWorld evaluationWorld(worldSettings);
+	Riemann::RigidBodyParam bodySettings;
+	bodySettings.rigidType = Riemann::RigidType::Dynamic;
+	bodySettings.linearDamping = 1.0f;
+	bodySettings.angularDamping = 1.0f;
+	bodySettings.sleepThreshold = 0.0f;
+	Riemann::RigidBodyDynamic* box = evaluationWorld.CreateRigidBody(
+		Riemann::GeometryFactory::CreateOBB(Vector3(0.5f), Vector3(0.1f)), bodySettings)->CastDynamic();
+	Riemann::RigidBodyDynamic* sphere = evaluationWorld.CreateRigidBody(
+		Riemann::GeometryFactory::CreateSphere(Vector3(0.5f), 0.1f), bodySettings)->CastDynamic();
+	EXPECT(box != nullptr && sphere != nullptr);
+	if (box == nullptr || sphere == nullptr)
+	{
+		evaluationWorld.Reset();
+		return;
+	}
+	box->InvMass = 1.0f;
+	sphere->InvMass = 1.0f;
+
+	Riemann::AerodynamicsRigidCouplingSettings couplingSettings;
+	couplingSettings.SurfaceSamplesPerAxis = 4;
+	couplingSettings.MaxLinearAcceleration = 100000.0f;
+	couplingSettings.MaxAngularAcceleration = 100000.0f;
+	Riemann::AerodynamicsRigidCoupling ambientCoupling(&ambientGas, couplingSettings);
+	EXPECT(ambientCoupling.IsValid());
+	Riemann::AerodynamicsRigidCouplingResult boxResult;
+	Riemann::AerodynamicsRigidCouplingResult sphereResult;
+	EXPECT(ambientCoupling.Evaluate(box, &boxResult));
+	EXPECT(ambientCoupling.Evaluate(sphere, &sphereResult));
+	EXPECT(boxResult.SampleCount == 6 * couplingSettings.SurfaceSamplesPerAxis
+		* couplingSettings.SurfaceSamplesPerAxis);
+	EXPECT(sphereResult.SampleCount == 2 * couplingSettings.SurfaceSamplesPerAxis
+		* couplingSettings.SurfaceSamplesPerAxis);
+	EXPECT(boxResult.Force.SquareLength() < 1.0e-8f);
+	EXPECT(boxResult.Torque.SquareLength() < 1.0e-8f);
+	EXPECT(sphereResult.Force.SquareLength() < 1.0e-8f);
+	EXPECT(sphereResult.Torque.SquareLength() < 1.0e-8f);
+
+	Riemann::AerodynamicsSimulation pressureGradient(gasSettings);
+	pressureGradient.SetDensityBox(Vector3::Zero(), Vector3(0.5f, 1.0f, 1.0f),
+		1.35f * gasSettings.AmbientDensity);
+	pressureGradient.SetDensityBox(Vector3(0.5f, 0.0f, 0.0f), Vector3::One(),
+		0.75f * gasSettings.AmbientDensity);
+	Riemann::AerodynamicsRigidCoupling gradientCoupling(&pressureGradient, couplingSettings);
+	box->SetLinearVelocity(Vector3::Zero());
+	box->SetAngularVelocity(Vector3::Zero());
+	EXPECT(gradientCoupling.Evaluate(box, &boxResult));
+	EXPECT(boxResult.Force.x > 0.0f);
+	EXPECT(std::fabs(boxResult.Force.y) < 1.0e-3f * std::fabs(boxResult.Force.x));
+	EXPECT(std::fabs(boxResult.Force.z) < 1.0e-3f * std::fabs(boxResult.Force.x));
+
+	box->SetLinearVelocity(Vector3(5.0f, 0.0f, 0.0f));
+	box->SetAngularVelocity(Vector3::Zero());
+	EXPECT(ambientCoupling.Evaluate(box, &boxResult));
+	EXPECT(boxResult.Force.x < 0.0f);
+	EXPECT(boxResult.Force.Dot(box->GetLinearVelocity()) < 0.0f);
+	box->SetLinearVelocity(Vector3::Zero());
+	box->SetAngularVelocity(Vector3(0.0f, 0.0f, 5.0f));
+	EXPECT(ambientCoupling.Evaluate(box, &boxResult));
+	EXPECT(boxResult.Torque.Dot(box->GetAngularVelocity()) < 0.0f);
+
+	Riemann::AerodynamicsRigidCouplingSettings clampSettings = couplingSettings;
+	clampSettings.MaxLinearAcceleration = 0.05f;
+	clampSettings.MaxAngularAcceleration = 0.05f;
+	Riemann::AerodynamicsRigidCoupling clampedCoupling(&ambientGas, clampSettings);
+	box->SetLinearVelocity(Vector3(50.0f, 0.0f, 0.0f));
+	box->SetAngularVelocity(Vector3::Zero());
+	EXPECT(clampedCoupling.Evaluate(box, &boxResult));
+	EXPECT(boxResult.Clamped);
+	EXPECT(boxResult.Force.Length() * box->GetInverseMass()
+		<= clampSettings.MaxLinearAcceleration * 1.001f);
+	evaluationWorld.Reset();
+
+	Riemann::PhysicsWorld integrationWorld(worldSettings);
+	Riemann::RigidBody* integrationRigid = integrationWorld.CreateRigidBody(
+		Riemann::GeometryFactory::CreateOBB(Vector3(0.5f), Vector3(0.08f)), bodySettings);
+	EXPECT(integrationRigid != nullptr);
+	if (integrationRigid != nullptr)
+	{
+		Riemann::RigidBodyDynamic* integrationBox = integrationRigid->CastDynamic();
+		EXPECT(integrationBox != nullptr);
+		if (integrationBox != nullptr)
+		{
+			integrationBox->InvMass = 1.0f;
+			Riemann::AerodynamicsRigidCoupling* worldCoupling =
+				new Riemann::AerodynamicsRigidCoupling(&pressureGradient, couplingSettings);
+			EXPECT(integrationWorld.AddForceField(worldCoupling) == worldCoupling);
+			integrationWorld.Simulate();
+			EXPECT(integrationBox->V.x > 0.0f);
+			EXPECT(std::fabs(integrationBox->V.y) < 1.0e-4f);
+			EXPECT(std::fabs(integrationBox->V.z) < 1.0e-4f);
+		}
+	}
+	integrationWorld.Reset();
+
+	Riemann::AerodynamicsSimulation collisionGas(gasSettings);
+	collisionGas.SetDensityBox(Vector3::Zero(), Vector3(0.40f, 1.0f, 1.0f),
+		1.30f * gasSettings.AmbientDensity);
+	collisionGas.SetDensityBox(Vector3(0.60f, 0.0f, 0.0f), Vector3::One(),
+		1.30f * gasSettings.AmbientDensity);
+	collisionGas.SetDensityBox(Vector3(0.42f, 0.0f, 0.0f), Vector3(0.58f, 1.0f, 1.0f),
+		0.60f * gasSettings.AmbientDensity);
+	Riemann::RigidBodyDynamic* collisionBox = nullptr;
+	Riemann::RigidBodyDynamic* collisionSphere = nullptr;
+	int drivenContactCount = 0;
+	Riemann::PhysicsWorldParam collisionWorldSettings = worldSettings;
+	collisionWorldSettings.onContact = [&](const Riemann::PhysicsContactInfo& contact)
+	{
+		if ((contact.BodyA == collisionBox && contact.BodyB == collisionSphere)
+			|| (contact.BodyA == collisionSphere && contact.BodyB == collisionBox))
+		{
+			++drivenContactCount;
+		}
+	};
+	Riemann::PhysicsWorld collisionWorld(collisionWorldSettings);
+	collisionBox = collisionWorld.CreateRigidBody(Riemann::GeometryFactory::CreateOBB(
+		Vector3(0.46f, 0.5f, 0.47f), Vector3(0.08f, 0.09f, 0.09f)), bodySettings)->CastDynamic();
+	collisionSphere = collisionWorld.CreateRigidBody(Riemann::GeometryFactory::CreateSphere(
+		Vector3(0.62f, 0.5f, 0.53f), 0.075f), bodySettings)->CastDynamic();
+	EXPECT(collisionBox != nullptr && collisionSphere != nullptr);
+	if (collisionBox != nullptr && collisionSphere != nullptr)
+	{
+		collisionBox->InvMass = 1.0f;
+		collisionSphere->InvMass = 1.0f;
+		Riemann::AerodynamicsRigidCouplingSettings drivenSettings = couplingSettings;
+		drivenSettings.MaxLinearAcceleration = 10.0f;
+		drivenSettings.MaxAngularAcceleration = 20.0f;
+		Riemann::AerodynamicsRigidCoupling* drivenCoupling =
+			new Riemann::AerodynamicsRigidCoupling(&collisionGas, drivenSettings);
+		EXPECT(collisionWorld.AddForceField(drivenCoupling) == drivenCoupling);
+		const float initialBoxX = collisionBox->X.x;
+		const float initialSphereX = collisionSphere->X.x;
+		for (int frame = 0; frame < 90 && drivenContactCount == 0; ++frame)
+		{
+			collisionWorld.Simulate();
+			collisionGas.Step(1.0f / 60.0f);
+		}
+		EXPECT(collisionBox->X.x > initialBoxX);
+		EXPECT(collisionSphere->X.x < initialSphereX);
+		EXPECT(drivenContactCount > 0);
+	}
+	collisionWorld.Reset();
+}
+
+void TestAerodynamicsSimulation()
+{
+	printf("Running TestAerodynamicsSimulation\n");
+
+	Riemann::AerodynamicsSimulationSettings settings;
+	settings.BoundsMin = Vector3(0.0f, 0.0f, 0.0f);
+	settings.BoundsMax = Vector3(1.0f, 1.0f, 1.0f);
+	settings.Resolution = Vector3i(8, 8, 8);
+	settings.SpeedOfSound = 5.0f;
+	settings.ParticleSpacing = 0.125f;
+	settings.SmoothingRadius = 0.25f;
+	settings.MaxTimeStep = 1.0f / 240.0f;
+	settings.MaxSubsteps = 128;
+
+	{
+		Riemann::AerodynamicsSimulationSettings invalid = settings;
+		invalid.AmbientDensity = std::numeric_limits<float>::quiet_NaN();
+		Riemann::AerodynamicsSimulation simulation;
+		EXPECT_FALSE(simulation.Initialize(invalid));
+		invalid = settings;
+		invalid.Method = (Riemann::FluidSimulationMethod)255;
+		EXPECT_FALSE(simulation.Initialize(invalid));
+		invalid = settings;
+		invalid.AcousticCFL = 1.5f;
+		EXPECT_FALSE(simulation.Initialize(invalid));
+		invalid = settings;
+		invalid.ParticleSpacing = 0.2f;
+		EXPECT_FALSE(simulation.Initialize(invalid));
+		invalid = settings;
+		invalid.SmoothingRadius = 0.125f;
+		EXPECT_FALSE(simulation.Initialize(invalid));
+		std::vector<float> densityField;
+		EXPECT_FALSE(simulation.BuildDensityField(&densityField));
+		EXPECT_FALSE(simulation.BuildDensityField(nullptr));
+	}
+	{
+		Riemann::AerodynamicsSimulationSettings lattice = settings;
+		lattice.Method = Riemann::FluidSimulationMethod::Lagrangian;
+		lattice.Resolution = Vector3i(3, 3, 3);
+		lattice.ParticleSpacing = 0.26f;
+		lattice.SmoothingRadius = 0.55f;
+		Riemann::AerodynamicsSimulation simulation(lattice);
+		EXPECT(simulation.IsInitialized());
+		EXPECT(simulation.GetParticles().size() == 27);
+		EXPECT_NEAR(simulation.GetTotalMass(), lattice.AmbientDensity, 1.0e-4f);
+		for (const Riemann::AirParticle& particle : simulation.GetParticles())
+		{
+			EXPECT(particle.Position.x <= lattice.BoundsMax.x - 0.5f * lattice.ParticleSpacing);
+			EXPECT(particle.Position.y <= lattice.BoundsMax.y - 0.5f * lattice.ParticleSpacing);
+			EXPECT(particle.Position.z <= lattice.BoundsMax.z - 0.5f * lattice.ParticleSpacing);
+		}
+	}
+	{
+		Riemann::AerodynamicsSimulationSettings stiff = settings;
+		stiff.SpeedOfSound = 1000000.0f;
+		stiff.MaxSubsteps = 4;
+		Riemann::AerodynamicsSimulation simulation(stiff);
+		EXPECT(simulation.IsInitialized());
+		simulation.Step(1.0e-4f);
+		EXPECT(simulation.GetPendingTime() > 0.0);
+		for (float density : simulation.GetGridDensity()) EXPECT(std::isfinite(density));
+	}
+	{
+		Riemann::AerodynamicsSimulationSettings thin = settings;
+		thin.Method = Riemann::FluidSimulationMethod::Lagrangian;
+		thin.AmbientDensity = 1.0e-6f;
+		Riemann::AerodynamicsSimulation simulation(thin);
+		EXPECT(simulation.IsInitialized());
+		simulation.SetVelocityBox(thin.BoundsMin, thin.BoundsMax, Vector3(0.5f, 0.0f, 0.0f));
+		EXPECT(simulation.SetMethod(Riemann::FluidSimulationMethod::Eulerian, true));
+		EXPECT(simulation.Sample(Vector3(0.5f, 0.5f, 0.5f)).Velocity.x > 0.25f);
+	}
+
+	settings.Method = Riemann::FluidSimulationMethod::Eulerian;
+	Riemann::AerodynamicsSimulation eulerian(settings);
+	EXPECT(eulerian.IsInitialized());
+	EXPECT(eulerian.GetMethod() == Riemann::FluidSimulationMethod::Eulerian);
+	const Riemann::AerodynamicSample ambient = eulerian.Sample(Vector3(0.5f, 0.5f, 0.5f));
+	EXPECT_NEAR(ambient.Density, settings.AmbientDensity, 1.0e-4f);
+	EXPECT_NEAR(ambient.Pressure, settings.AmbientPressure, 1.0e-2f);
+	EXPECT(ambient.PressureGradient.SquareLength() < 1.0e-4f);
+	std::vector<Riemann::RenderMeshDesc> gasMeshes;
+	EXPECT(Riemann::BuildGasDensityMeshes(eulerian, "gas_test", &gasMeshes));
+	EXPECT(gasMeshes.size() == 2);
+	EXPECT(gasMeshes[0].Id == "gas_test.compressed");
+	EXPECT(gasMeshes[1].Id == "gas_test.rarefied");
+	for (const Riemann::RenderMeshDesc& mesh : gasMeshes)
+	{
+		EXPECT(mesh.Vertices.empty() && mesh.Indices.empty());
+		EXPECT(mesh.BlendMode == Riemann::RenderBlendMode::Additive);
+		EXPECT(mesh.Unlit && !mesh.CastShadow);
+	}
+	Riemann::Renderer* nullRenderer = Riemann::Renderer::CreateNullRenderer();
+	EXPECT(nullRenderer != nullptr);
+	if (nullRenderer != nullptr)
+	{
+		EXPECT(nullRenderer->AddMesh(gasMeshes[0]));
+		const Vertex1 dynamicVertices[3] =
+		{
+			Vertex1(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitY()),
+			Vertex1(Vector3(1.0f, 0.0f, 0.0f), Vector3::UnitY()),
+			Vertex1(Vector3(0.0f, 1.0f, 0.0f), Vector3::UnitY()),
+		};
+		const uint32_t dynamicIndices[3] = { 0, 1, 2 };
+		EXPECT(nullRenderer->UpdateMeshGeometry(gasMeshes[0].Id.c_str(),
+			dynamicVertices, 3, dynamicIndices, 3));
+		EXPECT(nullRenderer->UpdateVertices(gasMeshes[0].Id.c_str(), dynamicVertices, 3));
+		EXPECT_FALSE(nullRenderer->UpdateMeshGeometry(gasMeshes[0].Id.c_str(),
+			dynamicVertices, 3, dynamicIndices, 2));
+		EXPECT(nullRenderer->UpdateMeshGeometry(gasMeshes[0].Id.c_str(), nullptr, 0, nullptr, 0));
+		delete nullRenderer;
+	}
+
+	eulerian.SetDensityBox(Vector3(0.2f, 0.2f, 0.2f), Vector3(0.5f, 0.8f, 0.8f),
+		2.0f * settings.AmbientDensity);
+	std::vector<float> eulerianDensityField;
+	EXPECT(eulerian.BuildDensityField(&eulerianDensityField));
+	EXPECT(eulerianDensityField == eulerian.GetGridDensity());
+	EXPECT(Riemann::BuildGasDensityMeshes(eulerian, "gas_test", &gasMeshes));
+	EXPECT(!gasMeshes[0].Indices.empty());
+	EXPECT(gasMeshes[1].Vertices.empty() && gasMeshes[1].Indices.empty());
+	for (uint32_t index : gasMeshes[0].Indices) EXPECT(index < gasMeshes[0].Vertices.size());
+	for (const Vertex1& vertex : gasMeshes[0].Vertices)
+	{
+		const Vector3 worldPosition = gasMeshes[0].WorldTransform * vertex.Pos;
+		EXPECT(worldPosition.x >= settings.BoundsMin.x - 1.0e-4f
+			&& worldPosition.x <= settings.BoundsMax.x + 1.0e-4f);
+		EXPECT(worldPosition.y >= settings.BoundsMin.y - 1.0e-4f
+			&& worldPosition.y <= settings.BoundsMax.y + 1.0e-4f);
+		EXPECT(worldPosition.z >= settings.BoundsMin.z - 1.0e-4f
+			&& worldPosition.z <= settings.BoundsMax.z + 1.0e-4f);
+	}
+	Riemann::AerodynamicsSimulation boundaryCompressedGas(settings);
+	boundaryCompressedGas.SetDensityBox(settings.BoundsMin, Vector3(0.3f, 0.3f, 0.3f),
+		2.0f * settings.AmbientDensity);
+	EXPECT(Riemann::BuildGasDensityMeshes(boundaryCompressedGas, "gas_boundary", &gasMeshes));
+	EXPECT(!gasMeshes[0].Indices.empty());
+	for (const Vertex1& vertex : gasMeshes[0].Vertices)
+	{
+		const Vector3 worldPosition = gasMeshes[0].WorldTransform * vertex.Pos;
+		EXPECT(worldPosition.x >= settings.BoundsMin.x - 1.0e-4f
+			&& worldPosition.x <= settings.BoundsMax.x + 1.0e-4f);
+		EXPECT(worldPosition.y >= settings.BoundsMin.y - 1.0e-4f
+			&& worldPosition.y <= settings.BoundsMax.y + 1.0e-4f);
+		EXPECT(worldPosition.z >= settings.BoundsMin.z - 1.0e-4f
+			&& worldPosition.z <= settings.BoundsMax.z + 1.0e-4f);
+	}
+	Riemann::AerodynamicsSimulation rarefiedGas(settings);
+	rarefiedGas.SetDensitySphere(settings.BoundsMin, 0.3f,
+		0.5f * settings.AmbientDensity);
+	EXPECT(Riemann::BuildGasDensityMeshes(rarefiedGas, "gas_test", &gasMeshes));
+	EXPECT(gasMeshes[0].Vertices.empty() && gasMeshes[0].Indices.empty());
+	EXPECT(!gasMeshes[1].Indices.empty());
+	for (const Vertex1& vertex : gasMeshes[1].Vertices)
+	{
+		const Vector3 worldPosition = gasMeshes[1].WorldTransform * vertex.Pos;
+		EXPECT(worldPosition.x >= settings.BoundsMin.x - 1.0e-4f
+			&& worldPosition.x <= settings.BoundsMax.x + 1.0e-4f);
+		EXPECT(worldPosition.y >= settings.BoundsMin.y - 1.0e-4f
+			&& worldPosition.y <= settings.BoundsMax.y + 1.0e-4f);
+		EXPECT(worldPosition.z >= settings.BoundsMin.z - 1.0e-4f
+			&& worldPosition.z <= settings.BoundsMax.z + 1.0e-4f);
+	}
+	Riemann::GasDensityVisualizationSettings invalidVisualization;
+	invalidVisualization.RelativeThreshold = 0.0f;
+	EXPECT_FALSE(Riemann::BuildGasDensityMeshes(rarefiedGas, "gas_test", &gasMeshes,
+		invalidVisualization));
+	EXPECT(eulerian.Sample(Vector3(0.35f, 0.5f, 0.5f)).Pressure > settings.AmbientPressure);
+	const Riemann::AerodynamicSample edge = eulerian.Sample(Vector3(0.52f, 0.5f, 0.5f));
+	EXPECT(edge.PressureGradient.x < 0.0f);
+	const Riemann::AerodynamicForceResult pressureForce = eulerian.ComputeSphereForce(
+		Vector3(0.52f, 0.5f, 0.5f), 0.08f, Vector3::Zero());
+	EXPECT(pressureForce.Force.x > 0.0f);
+
+	const float initialMass = eulerian.GetTotalMass();
+	eulerian.Step(settings.MaxTimeStep);
+	EXPECT(eulerian.Sample(Vector3(0.52f, 0.5f, 0.5f)).Velocity.x > 0.0f);
+	EXPECT(eulerian.GetTotalMomentum().SquareLength() < 1.0e-4f);
+	for (int frame = 1; frame < 20; ++frame) eulerian.Step(1.0f / 120.0f);
+	EXPECT_NEAR(eulerian.GetTotalMass(), initialMass, 0.002f * initialMass);
+	for (size_t index = 0; index < eulerian.GetGridDensity().size(); ++index)
+	{
+		EXPECT(std::isfinite(eulerian.GetGridDensity()[index]) && eulerian.GetGridDensity()[index] >= 0.0f);
+		EXPECT(std::isfinite(eulerian.GetGridPressure()[index]) && eulerian.GetGridPressure()[index] >= 0.0f);
+	}
+
+	Riemann::AerodynamicsSimulation wind(settings);
+	wind.SetVelocityBox(settings.BoundsMin, settings.BoundsMax, Vector3(2.0f, 0.0f, 0.0f));
+	const Riemann::AerodynamicForceResult drag = wind.ComputeSphereForce(
+		Vector3(0.5f, 0.5f, 0.5f), 0.1f, Vector3::Zero());
+	EXPECT(drag.Force.x > 0.0f);
+	EXPECT(std::fabs(drag.Force.y) < 1.0e-5f && std::fabs(drag.Force.z) < 1.0e-5f);
+
+	std::vector<Riemann::AerodynamicSurfaceSample> closedSurface(6);
+	const Vector3 normals[6] = { Vector3::UnitX(), -Vector3::UnitX(), Vector3::UnitY(),
+		-Vector3::UnitY(), Vector3::UnitZ(), -Vector3::UnitZ() };
+	for (int index = 0; index < 6; ++index)
+	{
+		closedSurface[(size_t)index].Normal = normals[index];
+		closedSurface[(size_t)index].Position = Vector3(0.5f, 0.5f, 0.5f) + normals[index] * 0.1f;
+		closedSurface[(size_t)index].Area = 0.04f;
+	}
+	const Riemann::AerodynamicForceResult symmetric = Riemann::AerodynamicsSimulation(settings)
+		.ComputeSurfaceForce(Vector3(0.5f, 0.5f, 0.5f), closedSurface);
+	EXPECT(symmetric.Force.SquareLength() < 1.0e-6f);
+	EXPECT(symmetric.Torque.SquareLength() < 1.0e-6f);
+
+	const float massBeforeConversion = eulerian.GetTotalMass();
+	const float densityBeforeConversion = eulerian.Sample(Vector3(0.35f, 0.5f, 0.5f)).Density;
+	EXPECT(eulerian.SetMethod(Riemann::FluidSimulationMethod::Lagrangian, true));
+	EXPECT(!eulerian.GetParticles().empty());
+	EXPECT_NEAR(eulerian.GetTotalMass(), massBeforeConversion, 0.002f * massBeforeConversion);
+	EXPECT_NEAR(eulerian.Sample(Vector3(0.35f, 0.5f, 0.5f)).Density,
+		densityBeforeConversion, 0.25f * settings.AmbientDensity);
+	eulerian.Step(1.0f / 240.0f);
+	for (const Riemann::AirParticle& particle : eulerian.GetParticles())
+	{
+		EXPECT(std::isfinite(particle.Density) && particle.Density > 0.0f);
+		EXPECT(std::isfinite(particle.Velocity.x) && std::isfinite(particle.Velocity.y)
+			&& std::isfinite(particle.Velocity.z));
+	}
+	const float particleMass = eulerian.GetTotalMass();
+	const Riemann::AerodynamicSample beforeGridConversion = eulerian.Sample(Vector3(0.35f, 0.5f, 0.5f));
+	EXPECT(eulerian.SetMethod(Riemann::FluidSimulationMethod::Eulerian, true));
+	EXPECT_NEAR(eulerian.GetTotalMass(), particleMass, 0.002f * particleMass);
+	const Riemann::AerodynamicSample afterGridConversion = eulerian.Sample(Vector3(0.35f, 0.5f, 0.5f));
+	EXPECT_NEAR(afterGridConversion.Density, beforeGridConversion.Density,
+		0.25f * settings.AmbientDensity);
+	EXPECT((afterGridConversion.Velocity - beforeGridConversion.Velocity).Length() < 0.5f);
+	EXPECT_NEAR(afterGridConversion.Pressure, beforeGridConversion.Pressure,
+		settings.AmbientDensity * settings.SpeedOfSound * settings.SpeedOfSound);
+
+	settings.Method = Riemann::FluidSimulationMethod::Lagrangian;
+	Riemann::AerodynamicsSimulation lagrangian(settings);
+	EXPECT(lagrangian.GetParticles().size() == 512);
+	std::vector<float> lagrangianDensityField;
+	EXPECT(lagrangian.BuildDensityField(&lagrangianDensityField));
+	EXPECT(lagrangianDensityField.size() == 512);
+	for (float density : lagrangianDensityField)
+		EXPECT(std::isfinite(density) && density > 0.0f);
+	for (int frame = 0; frame < 5; ++frame) lagrangian.Step(1.0f / 240.0f);
+	float maxAmbientSpeed = 0.0f;
+	for (const Riemann::AirParticle& particle : lagrangian.GetParticles())
+		maxAmbientSpeed = std::max(maxAmbientSpeed, particle.Velocity.Length());
+	EXPECT(maxAmbientSpeed < 1.0e-3f);
+	EXPECT(lagrangian.GetTotalMomentum().SquareLength() < 1.0e-6f);
+
+	Riemann::AerodynamicsSimulation particlePulse(settings);
+	particlePulse.SetDensitySphere(Vector3(0.5f, 0.5f, 0.5f), 0.22f,
+		2.0f * settings.AmbientDensity);
+	EXPECT(particlePulse.BuildDensityField(&lagrangianDensityField));
+	EXPECT(*std::max_element(lagrangianDensityField.begin(), lagrangianDensityField.end())
+		> 1.08f * settings.AmbientDensity);
+	EXPECT(Riemann::BuildGasDensityMeshes(particlePulse, "gas_sph", &gasMeshes));
+	EXPECT(!gasMeshes[0].Indices.empty());
+	particlePulse.Step(settings.MaxTimeStep);
+	float radialMomentum = 0.0f;
+	for (const Riemann::AirParticle& particle : particlePulse.GetParticles())
+		radialMomentum += (particle.Position - Vector3(0.5f, 0.5f, 0.5f)).Dot(particle.Velocity)
+			* particle.Mass;
+	EXPECT(radialMomentum > 0.0f);
+	EXPECT(particlePulse.GetTotalMomentum().SquareLength() < 1.0e-5f);
+
+	Riemann::AerodynamicsSimulationSettings viscousSettings = settings;
+	viscousSettings.DynamicViscosity = 100.0f;
+	viscousSettings.ArtificialViscosity = 0.0f;
+	Riemann::AerodynamicsSimulation viscous(viscousSettings);
+	viscous.SetVelocityBox(Vector3(0.0f, 0.0f, 0.0f), Vector3(0.5f, 1.0f, 1.0f),
+		Vector3(1.0f, 0.0f, 0.0f));
+	viscous.SetVelocityBox(Vector3(0.5f, 0.0f, 0.0f), Vector3(1.0f, 1.0f, 1.0f),
+		Vector3(-1.0f, 0.0f, 0.0f));
+	float initialKineticEnergy = 0.0f;
+	for (const Riemann::AirParticle& particle : viscous.GetParticles())
+		initialKineticEnergy += 0.5f * particle.Mass * particle.Velocity.SquareLength();
+	viscous.Step(0.001f);
+	float finalKineticEnergy = 0.0f;
+	for (const Riemann::AirParticle& particle : viscous.GetParticles())
+	{
+		EXPECT(std::isfinite(particle.Velocity.x) && std::isfinite(particle.Velocity.y)
+			&& std::isfinite(particle.Velocity.z));
+		finalKineticEnergy += 0.5f * particle.Mass * particle.Velocity.SquareLength();
+	}
+	EXPECT(finalKineticEnergy <= 1.01f * initialKineticEnergy);
+
+	Riemann::AerodynamicsSimulationSettings disturbanceSettings = settings;
+	disturbanceSettings.Method = Riemann::FluidSimulationMethod::Eulerian;
+	Riemann::AerodynamicsSimulation disturbanceGas(disturbanceSettings);
+	EXPECT(disturbanceGas.ApplyImpulse(Vector3(0.25f, 0.5f, 0.5f), 0.18f,
+		Vector3(0.1f, 0.0f, 0.0f)));
+}
+
+void TestMarchingCubes()
+{
+	printf("Running TestMarchingCubes\n");
+
+	Riemann::MarchingCubesInput input;
+	input.Origin = Vector3::Zero();
+	input.Spacing = Vector3::One();
+	input.Resolution = Vector3i(4, 4, 4);
+	input.IsoValue = 1.5f;
+	input.HighValuesInside = true;
+	std::vector<float> planeValues(64, 0.0f);
+	for (int z = 0; z < 4; ++z)
+	for (int y = 0; y < 4; ++y)
+	for (int x = 0; x < 4; ++x)
+		planeValues[(size_t)x + 4 * ((size_t)y + 4 * (size_t)z)] = (float)x;
+	input.Values = planeValues.data();
+	input.ValueCount = planeValues.size();
+	Riemann::FluidSurfaceMesh plane;
+	EXPECT(Riemann::MarchingCubes::Extract(input, &plane));
+	EXPECT(plane.Positions.size() == 16);
+	EXPECT(plane.Normals.size() == plane.Positions.size());
+	EXPECT(plane.Indices.size() == 54);
+	for (size_t index = 0; index < plane.Positions.size(); ++index)
+	{
+		EXPECT_NEAR(plane.Positions[index].x, 1.5f, 1.0e-5f);
+		EXPECT(plane.Normals[index].Dot(-Vector3::UnitX()) > 0.99f);
+	}
+
+	const int corners[8][3] =
+	{
+		{ 0, 0, 0 }, { 1, 0, 0 }, { 1, 0, 1 }, { 0, 0, 1 },
+		{ 0, 1, 0 }, { 1, 1, 0 }, { 1, 1, 1 }, { 0, 1, 1 },
+	};
+	for (int cubeCase = 0; cubeCase < 256; ++cubeCase)
+	{
+		float values[8] = {};
+		for (int corner = 0; corner < 8; ++corner)
+		{
+			const int x = corners[corner][0], y = corners[corner][1], z = corners[corner][2];
+			values[x + 2 * (y + 2 * z)] = (cubeCase & (1 << corner)) ? 1.0f : -1.0f;
+		}
+		input.Resolution = Vector3i(2, 2, 2);
+		input.Values = values;
+		input.ValueCount = 8;
+		input.IsoValue = 0.0f;
+		Riemann::FluidSurfaceMesh mesh;
+		EXPECT(Riemann::MarchingCubes::Extract(input, &mesh));
+		EXPECT(mesh.Indices.size() % 3 == 0);
+		for (uint32_t index : mesh.Indices) EXPECT(index < mesh.Positions.size());
+		for (size_t triangle = 0; triangle < mesh.Indices.size(); triangle += 3)
+		{
+			const Vector3& a = mesh.Positions[mesh.Indices[triangle]];
+			const Vector3& b = mesh.Positions[mesh.Indices[triangle + 1]];
+			const Vector3& c = mesh.Positions[mesh.Indices[triangle + 2]];
+			EXPECT((b - a).Cross(c - a).SquareLength() > 1.0e-12f);
+		}
+	}
+
+	input.Origin = Vector3(-1.4f, -1.4f, -1.4f);
+	input.Spacing = Vector3(0.2f, 0.2f, 0.2f);
+	input.Resolution = Vector3i(15, 15, 15);
+	input.IsoValue = 0.0f;
+	std::vector<float> sphereValues((size_t)15 * 15 * 15);
+	for (int z = 0; z < 15; ++z)
+	for (int y = 0; y < 15; ++y)
+	for (int x = 0; x < 15; ++x)
+	{
+		const Vector3 position = input.Origin + Vector3((float)x, (float)y, (float)z) * input.Spacing;
+		sphereValues[(size_t)x + 15 * ((size_t)y + 15 * (size_t)z)] = 1.0f - position.Length();
+	}
+	input.Values = sphereValues.data();
+	input.ValueCount = sphereValues.size();
+	Riemann::FluidSurfaceMesh sphere;
+	EXPECT(Riemann::MarchingCubes::Extract(input, &sphere));
+	EXPECT(!sphere.Indices.empty());
+	for (size_t index = 0; index < sphere.Positions.size(); ++index)
+	{
+		EXPECT(std::fabs(sphere.Positions[index].Length() - 1.0f) < 0.18f);
+		EXPECT(sphere.Normals[index].Dot(sphere.Positions[index].SafeUnit()) > 0.9f);
+	}
+	std::map<std::pair<uint32_t, uint32_t>, int> edgeUse;
+	for (size_t triangle = 0; triangle < sphere.Indices.size(); triangle += 3)
+	{
+		for (int edge = 0; edge < 3; ++edge)
+		{
+			uint32_t a = sphere.Indices[triangle + (size_t)edge];
+			uint32_t b = sphere.Indices[triangle + (size_t)((edge + 1) % 3)];
+			if (b < a) std::swap(a, b);
+			++edgeUse[std::make_pair(a, b)];
+		}
+	}
+	for (const auto& edge : edgeUse) EXPECT(edge.second == 2);
+
+	Riemann::FluidSurfaceMesh sphereAgain;
+	EXPECT(Riemann::MarchingCubes::Extract(input, &sphereAgain));
+	EXPECT(sphereAgain.Indices == sphere.Indices);
+	EXPECT(sphereAgain.Positions == sphere.Positions);
+
+	for (int z = 0; z < 15; ++z)
+	for (int y = 0; y < 15; ++y)
+	for (int x = 0; x < 15; ++x)
+	{
+		const Vector3 position = input.Origin + Vector3((float)x, (float)y, (float)z) * input.Spacing;
+		sphereValues[(size_t)x + 15 * ((size_t)y + 15 * (size_t)z)] = 1.0e-5f * position.Length();
+	}
+	input.IsoValue = 1.0e-5f;
+	input.HighValuesInside = false;
+	Riemann::FluidSurfaceMesh rarefiedSphere;
+	EXPECT(Riemann::MarchingCubes::Extract(input, &rarefiedSphere));
+	EXPECT(!rarefiedSphere.Indices.empty());
+	for (size_t index = 0; index < rarefiedSphere.Positions.size(); ++index)
+	{
+		EXPECT(rarefiedSphere.Normals[index].Dot(
+			rarefiedSphere.Positions[index].SafeUnit()) > 0.9f);
+	}
+
+	sphereValues[0] = std::numeric_limits<float>::quiet_NaN();
+	EXPECT_FALSE(Riemann::MarchingCubes::Extract(input, &sphereAgain));
+}
+
 void TestCores()
 {
+	TestFluidSimulation();
+	TestFluidRigidCoupling();
+	TestAerodynamicsRigidCoupling();
+	TestAerodynamicsSimulation();
+	TestMarchingCubes();
 	TestFileAndBaseUtilities();
 	TestDynamicArray();
 	TestStaticContainers();

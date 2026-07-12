@@ -10,6 +10,9 @@
 #include "../Src/CollisionPrimitive/OrientedBox3.h"
 #include "../Src/CollisionPrimitive/Sphere3.h"
 #include "../Src/CollisionPrimitive/TriangleMesh.h"
+#include "../Src/Collision/GeometryObject.h"
+#include "../Src/Collision/GeometryQuery.h"
+#include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 
 using namespace Riemann;
 
@@ -87,6 +90,94 @@ static Matrix3 RotationZ(float angle)
 static float SupportOffsetAlong(const OrientedBox3& box, const Vector3& direction)
 {
 	return (box.GetSupport(direction) - box.Center).Dot(direction);
+}
+
+static void TestGeometryFactoryAxialShapes()
+{
+	printf("Running TestGeometryFactoryAxialShapes\n");
+
+	const Vector3 x0(-2.0f, 1.0f, 3.0f);
+	const Vector3 x1(2.0f, 4.0f, -1.0f);
+	const float expectedHeight = (x1 - x0).Length();
+
+	Geometry* capsuleGeometry = GeometryFactory::CreateCapsule(x0, x1, 0.25f);
+	const Capsule3* capsule = capsuleGeometry->GetShapeObj<Capsule3>();
+	EXPECT(capsule != nullptr);
+	EXPECT_NEAR(capsule->GetHeight(), expectedHeight, 1.0e-5f);
+	EXPECT((capsuleGeometry->GetTransform()->LocalToWorld(capsule->X0) - x0).SquareLength() < 1.0e-5f);
+	EXPECT((capsuleGeometry->GetTransform()->LocalToWorld(capsule->X1) - x1).SquareLength() < 1.0e-5f);
+	GeometryFactory::DeleteGeometry(capsuleGeometry);
+
+	Geometry* cylinderGeometry = GeometryFactory::CreateCylinder(x0, x1, 0.25f);
+	const Cylinder3* cylinder = cylinderGeometry->GetShapeObj<Cylinder3>();
+	EXPECT(cylinder != nullptr);
+	EXPECT_NEAR(cylinder->GetHeight(), expectedHeight, 1.0e-5f);
+	EXPECT((cylinderGeometry->GetTransform()->LocalToWorld(cylinder->X0) - x0).SquareLength() < 1.0e-5f);
+	EXPECT((cylinderGeometry->GetTransform()->LocalToWorld(cylinder->X1) - x1).SquareLength() < 1.0e-5f);
+	GeometryFactory::DeleteGeometry(cylinderGeometry);
+}
+
+static void TestOrientedBoxTransforms()
+{
+	printf("Running TestOrientedBoxTransforms\n");
+
+	const float halfPi = 1.5707963267948966f;
+	const Matrix3 rotation = RotationZ(halfPi);
+	const Vector3 center(3.0f, -2.0f, 1.0f);
+	const Vector3 extent(2.0f, 0.5f, 1.0f);
+	const OrientedBox3 box(center, extent, rotation);
+
+	const Box3 bounds = box.CalculateBoundingVolume();
+	EXPECT((bounds.Min - Vector3(2.5f, -4.0f, 0.0f)).SquareLength() < 1.0e-5f);
+	EXPECT((bounds.Max - Vector3(3.5f, 0.0f, 2.0f)).SquareLength() < 1.0e-5f);
+
+	const Vector3 outsideLocal(3.0f, 0.25f, 0.0f);
+	const Vector3 outsideWorld = center + rotation * outsideLocal;
+	const Vector3 expectedClosest = center + rotation * Vector3(2.0f, 0.25f, 0.0f);
+	EXPECT((box.ClosestPointToPoint(outsideWorld) - expectedClosest).SquareLength() < 1.0e-5f);
+	EXPECT_NEAR(box.SqrDistanceToPoint(outsideWorld), 1.0f, 1.0e-5f);
+	float lineTime = 0.0f;
+	EXPECT_NEAR(box.SqrDistanceToLine(
+		center + rotation * Vector3(3.0f, 0.0f, 0.0f), rotation * Vector3::UnitY(), &lineTime), 1.0f, 1.0e-5f);
+	EXPECT_NEAR(box.SqrDistanceToSegment(
+		center + rotation * Vector3(3.0f, -0.25f, 0.0f),
+		center + rotation * Vector3(3.0f, 0.25f, 0.0f)), 1.0f, 1.0e-5f);
+
+	const Vector3 rayOrigin = center + rotation * Vector3(4.0f, 0.0f, 0.0f);
+	const Vector3 rayDirection = rotation * -Vector3::UnitX();
+	float rayTime = -1.0f;
+	EXPECT(box.IntersectRay(rayOrigin, rayDirection, &rayTime));
+	EXPECT_NEAR(rayTime, 2.0f, 1.0e-5f);
+
+	EXPECT(box.IntersectSphere(center + rotation * Vector3(2.4f, 0.0f, 0.0f), 0.5f));
+	EXPECT_FALSE(box.IntersectSphere(center + rotation * Vector3(2.6f, 0.0f, 0.0f), 0.5f));
+
+	EXPECT(box.IntersectCapsule(
+		center + rotation * Vector3(2.4f, -0.2f, 0.0f),
+		center + rotation * Vector3(2.4f, 0.2f, 0.0f), 0.5f));
+	EXPECT_FALSE(box.IntersectCapsule(
+		center + rotation * Vector3(2.6f, -0.2f, 0.0f),
+		center + rotation * Vector3(2.6f, 0.2f, 0.0f), 0.5f));
+
+	const Vector3 triangleA = center + rotation * Vector3(1.5f, -0.25f, -0.25f);
+	const Vector3 triangleB = center + rotation * Vector3(1.5f, 0.25f, -0.25f);
+	const Vector3 triangleC = center + rotation * Vector3(1.5f, 0.0f, 0.25f);
+	EXPECT(box.IntersectTriangle(triangleA, triangleB, triangleC));
+	EXPECT_FALSE(box.IntersectTriangle(
+		center + rotation * Vector3(3.0f, -0.25f, -0.25f),
+		center + rotation * Vector3(3.0f, 0.25f, -0.25f),
+		center + rotation * Vector3(3.0f, 0.0f, 0.25f)));
+
+	TriangleMesh mesh;
+	mesh.Flags = 0;
+	AddTriangleToMesh(mesh, triangleA, triangleB, triangleC);
+	mesh.BuildBVH();
+	EXPECT(mesh.IntersectOBB(box.Center, box.Extent, box.Rotation));
+
+	const OrientedBox3 planeCrossingBox(Vector3(0.0f, 0.1f, 0.0f),
+		Vector3(0.3f, 0.2f, 0.2f), Matrix3::Identity());
+	EXPECT(planeCrossingBox.IntersectTriangle(
+		Vector3(-5.0f, 0.0f, -5.0f), Vector3(5.0f, 0.0f, -5.0f), Vector3(-5.0f, 0.0f, 5.0f)));
 }
 
 void TestAABBSweepTriangle()
@@ -699,8 +790,88 @@ void TestOBBSweepHeightField()
 	EXPECT(!hit);
 }
 
+void TestMutableTerrain()
+{
+	printf("Running TestMutableTerrain\n");
+
+	{
+		HeightField3 heightField;
+		heightField.Init(Box3(Vector3(-4.0f, -1.0f, -4.0f), Vector3(4.0f, 1.0f, 4.0f)), 9, 9);
+		heightField.AllocMemory();
+		heightField.HeightScale = 0.01f;
+		heightField.RecalculateBounds();
+		const uint64_t initialRevision = heightField.GetRevision();
+		EXPECT(heightField.SetHeight(0, 0, 1.25f));
+		EXPECT_NEAR(heightField.GetHeight(0), 1.25f, 0.001f);
+		EXPECT_FALSE(heightField.SetHeight(-1, 0, 0.0f));
+		EXPECT(heightField.GetRevision() > initialRevision);
+
+		const int modified = heightField.DigCrater(0.0f, 0.0f, 1.5f, 3.0f, false);
+		EXPECT(modified == 9);
+		EXPECT_NEAR(heightField.GetHeight(4 + 4 * 9), -3.0f, 0.001f);
+		EXPECT_NEAR(heightField.GetHeight(0 + 4 * 9), 0.0f, 0.001f);
+		EXPECT_NEAR(heightField.BV.Min.y, -3.0f, 0.001f);
+		EXPECT_NEAR(heightField.BV.Max.y, 1.25f, 0.001f);
+
+		HeightFieldHitOption option;
+		option.hitBothSides = true;
+		option.maxDist = 20.0f;
+		HeightFieldHitResult result = { 0 };
+		EXPECT(heightField.IntersectRay(Vector3(0.25f, 5.0f, 0.25f), -Vector3::UnitY(), option, &result));
+		EXPECT_NEAR(result.hitTime, 8.0f, 0.01f);
+
+		EXPECT(heightField.SetTriangleHole(4, 4, 0, true));
+		EXPECT(heightField.SetTriangleHole(4, 4, 1, true));
+		EXPECT(heightField.IsTriangleHole(4, 4, 0));
+		EXPECT(heightField.IsTriangleHole(4, 4, 1));
+		result = HeightFieldHitResult{ 0 };
+		EXPECT_FALSE(heightField.IntersectRay(Vector3(0.5f, 5.0f, 0.5f), -Vector3::UnitY(), option, &result));
+		std::vector<Vector3> vertices;
+		std::vector<uint16_t> indices;
+		std::vector<Vector3> normals;
+		heightField.GetMesh(vertices, indices, normals);
+		EXPECT(vertices.size() == 81);
+		EXPECT(indices.size() == 126 * 3);
+	}
+
+	{
+		PhysicsWorldParam param;
+		param.sceneQueryType = SceneQueryType::DynamicAABB;
+		PhysicsWorld world(param);
+		Geometry* terrain = GeometryFactory::CreateHeightField(
+			Box3(Vector3(-4.0f, -1.0f, -4.0f), Vector3(4.0f, 1.0f, 4.0f)), 9, 9);
+		HeightField3* heightField = terrain->GetShapeObj<HeightField3>();
+		heightField->AllocMemory();
+		heightField->HeightScale = 0.01f;
+		heightField->RecalculateBounds();
+		terrain->SetShapeBounds(heightField->BV);
+		RigidBodyParam terrainParam;
+		terrainParam.rigidType = RigidType::Static;
+		EXPECT(world.CreateRigidBody(terrain, terrainParam) != nullptr);
+
+		RayCastOption rayOption;
+		rayOption.MaxDist = 20.0f;
+		RayCastResult rayResult;
+		EXPECT(world.GetGeometryQuery()->RayCastQuery(Vector3(0.25f, 5.0f, 0.25f), -Vector3::UnitY(), rayOption, &rayResult));
+		EXPECT_NEAR(rayResult.hitTimeMin, 5.0f, 0.01f);
+
+		EXPECT(world.DigHeightFieldHole(terrain, Vector3(0.0f, 0.0f, 0.0f), 1.5f, 2.0f, false) == 9);
+		rayResult.Reset();
+		EXPECT(world.GetGeometryQuery()->RayCastQuery(Vector3(0.25f, 5.0f, 0.25f), -Vector3::UnitY(), rayOption, &rayResult));
+		EXPECT_NEAR(rayResult.hitTimeMin, 7.0f, 0.01f);
+		EXPECT(terrain->GetShapeBounds().Min.y <= -2.0f);
+
+		EXPECT(world.SetHeightFieldTriangleHole(terrain, 4, 4, 0, true));
+		EXPECT(world.SetHeightFieldTriangleHole(terrain, 4, 4, 1, true));
+		rayResult.Reset();
+		EXPECT_FALSE(world.GetGeometryQuery()->RayCastQuery(Vector3(0.5f, 5.0f, 0.5f), -Vector3::UnitY(), rayOption, &rayResult));
+	}
+}
+
 void TestCollisionPrimitive()
 {
+	TestGeometryFactoryAxialShapes();
+	TestOrientedBoxTransforms();
 	TestAABBSweepPrimitives();
 	TestAABBSweepTriangle();
 	TestAABBSweepTriangleMesh();

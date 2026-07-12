@@ -3,52 +3,69 @@
 
 namespace Riemann
 {
+	namespace
+	{
+		void ComputeCompositeMassParametersInternal(const std::vector<const Transform*>& poses, const std::vector<const MassParameters*>& properties, MassParameters& result)
+		{
+			assert(poses.size() == properties.size());
+
+			result.Mass = 0.0f;
+			result.Volume = 0.0f;
+			result.CenterOfMass = Vector3::Zero();
+			result.InertiaMat = Matrix3::Zero();
+			result.BoundingVolume.SetEmpty();
+			if (poses.empty())
+			{
+				return;
+			}
+
+			for (size_t i = 0; i < properties.size(); ++i)
+			{
+				const Transform& pose = *poses[i];
+				const MassParameters& shape = *properties[i];
+				const Vector3 shapeCenter = pose.pos + pose.quat * shape.CenterOfMass;
+				result.Mass += shape.Mass;
+				result.Volume += shape.Volume;
+				result.CenterOfMass += shapeCenter * shape.Mass;
+				result.BoundingVolume.Encapsulate(Box3::Transform(shape.BoundingVolume, pose.pos, pose.quat));
+			}
+
+			if (result.Mass <= 1e-6f)
+			{
+				result.Mass = 1e-3f;
+				return;
+			}
+			result.CenterOfMass /= result.Mass;
+			result.Volume = std::max(1e-3f, result.Volume);
+
+			for (size_t i = 0; i < properties.size(); ++i)
+			{
+				const Transform& pose = *poses[i];
+				const MassParameters& shape = *properties[i];
+				const Matrix3 rotation = pose.quat.ToRotationMatrix3();
+				const Vector3 offset = pose.pos + pose.quat * shape.CenterOfMass - result.CenterOfMass;
+				const float offsetLengthSq = offset.SquareLength();
+				const Matrix3 parallelAxis = (Matrix3::Identity() * offsetLengthSq - Matrix3::OuterProduct(offset, offset)) * shape.Mass;
+				result.InertiaMat += rotation * shape.InertiaMat * rotation.Transpose() + parallelAxis;
+			}
+		}
+	}
+
 	// Calculating inertia for a multi shape rigid body
 	// https://en.wikipedia.org/wiki/Parallel_axis_theorem
 	// https://stackoverflow.com/questions/13602661/calculating-inertia-for-a-multi-shape-rigid-body
 	void ComputeCompositeMassParameters(const std::vector<Transform>& vPose, const std::vector<MassParameters>& vProperties, MassParameters& P)
 	{
-		assert(vPose.size() == vProperties.size());
-
-		if (vPose.size() == 1)
+		std::vector<const Transform*> poses;
+		std::vector<const MassParameters*> properties;
+		poses.reserve(vPose.size());
+		properties.reserve(vProperties.size());
+		for (size_t i = 0; i < vPose.size(); ++i)
 		{
-			P.Volume = vProperties[0].Volume;
-			P.Mass = vProperties[0].Mass;
-			P.CenterOfMass = vPose[0].pos + vPose[0].quat * vProperties[0].CenterOfMass;
-			P.InertiaMat = vProperties[0].InertiaMat;
-			P.BoundingVolume = vProperties[0].BoundingVolume;
-			return;
+			poses.push_back(&vPose[i]);
+			properties.push_back(&vProperties[i]);
 		}
-
-		P.Mass = 0.0f;
-		P.Volume = 0.0f;
-		P.CenterOfMass = Vector3::Zero();
-		P.InertiaMat = Matrix3::Zero();
-		P.BoundingVolume.SetEmpty();
-
-		if (vPose.empty())
-		{
-			return;
-		}
-
-		for (size_t i = 0; i < vProperties.size(); ++i)
-		{
-			P.Mass += vProperties[i].Mass;
-			P.Volume += vProperties[i].Volume;
-			P.CenterOfMass += (vPose[i].pos + vPose[i].quat * vProperties[i].CenterOfMass) * vProperties[i].Mass;
-			P.BoundingVolume.Encapsulate(vPose[i].pos);
-		}
-		P.Mass = std::max(1e-3f, P.Mass);
-		P.Volume = std::max(1e-3f, P.Volume);
-		P.CenterOfMass = P.CenterOfMass / P.Mass;
-
-		for (size_t i = 0; i < vProperties.size(); ++i)
-		{
-			const Vector3 d = vProperties[i].Mass * (vPose[i].pos + vPose[i].quat * vProperties[i].CenterOfMass - P.CenterOfMass);
-			const Matrix3 D(Vector3(0.0f, -d.z, d.y), Vector3(d.z, 0.0f, -d.x), Vector3(-d.y, d.x, 0.0f), false);
-			const Matrix3 m = vPose[i].quat.ToRotationMatrix3();
-			P.InertiaMat += m * vProperties[i].InertiaMat * m.Transpose() + D * (vProperties[i].Mass) * D.Transpose();
-		}
+		ComputeCompositeMassParametersInternal(poses, properties, P);
 	}
 
 	// Calculating inertia for a multi shape rigid body
@@ -56,47 +73,7 @@ namespace Riemann
 	// https://stackoverflow.com/questions/13602661/calculating-inertia-for-a-multi-shape-rigid-body
 	void ComputeCompositeMassParameters(const std::vector<const Transform*>& vPose, const std::vector<const MassParameters*>& vProperties, MassParameters& P)
 	{
-		assert(vPose.size() == vProperties.size());
-
-		if (vPose.size() == 1)
-		{
-			P.Volume = vProperties[0]->Volume;
-			P.Mass = vProperties[0]->Mass;
-			P.CenterOfMass = vPose[0]->pos + vPose[0]->quat * vProperties[0]->CenterOfMass;
-			P.InertiaMat = vProperties[0]->InertiaMat;
-			P.BoundingVolume = vProperties[0]->BoundingVolume;
-			return;
-		}
-
-		P.Mass = 0.0f;
-		P.Volume = 0.0f;
-		P.CenterOfMass = Vector3::Zero();
-		P.InertiaMat = Matrix3::Zero();
-		P.BoundingVolume.SetEmpty();
-
-		if (vPose.empty())
-		{
-			return;
-		}
-
-		for (size_t i = 0; i < vProperties.size(); ++i)
-		{
-			P.Mass += vProperties[i]->Mass;
-			P.Volume += vProperties[i]->Volume;
-			P.CenterOfMass += (vPose[i]->pos + vPose[i]->quat * vProperties[i]->CenterOfMass) * vProperties[i]->Mass;
-			P.BoundingVolume.Encapsulate(vPose[i]->pos);
-		}
-		P.Mass = std::max(1e-3f, P.Mass);
-		P.Volume = std::max(1e-3f, P.Volume);
-		P.CenterOfMass = P.CenterOfMass / P.Mass;
-
-		for (size_t i = 0; i < vProperties.size(); ++i)
-		{
-			const Vector3 d = vProperties[i]->Mass * (vPose[i]->pos + vPose[i]->quat * vProperties[i]->CenterOfMass - P.CenterOfMass);
-			const Matrix3 D(Vector3(0.0f, -d.z, d.y), Vector3(d.z, 0.0f, -d.x), Vector3(-d.y, d.x, 0.0f), false);
-			const Matrix3 m = vPose[i]->quat.ToRotationMatrix3();
-			P.InertiaMat += m * vProperties[i]->InertiaMat * m.Transpose() + D * (vProperties[i]->Mass) * D.Transpose();
-		}
+		ComputeCompositeMassParametersInternal(vPose, vProperties, P);
 	}
 
 	Vector3 DiagonalizeInertiaMat(const Matrix3& InertiaMat, float Mass, Matrix3& Rotation)

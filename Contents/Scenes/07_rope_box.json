@@ -1,0 +1,30 @@
+{
+  "name": "Rope",
+  "physics": { "gravity": [0.0, -9.8, 0.0] },
+  "camera": { "center": [0.0, 3.0, 0.0], "orbit": [0.15, 0.25, 20.0], "near": 0.05, "far": 1000.0 },
+  "light": { "direction": [-0.575780, -0.698714, -0.424589], "ambient": 0.24, "shadowCenter": [0.0, 3.0, 0.0], "shadowDistance": 60.0, "shadowSize": 60.0 },
+  "objects": [
+    { "id": "ground", "type": "plane", "body": "static", "position": [0.0, -2.0, 0.0], "normal": [0.0, 1.0, 0.0], "color": [0.44, 0.48, 0.53, 1.0] },
+    { "id": "anchor", "type": "sphere", "body": "static", "position": [-5.0, 7.0, 0.0], "radius": 0.35, "simulation": false, "color": [0.9, 0.9, 0.9, 1.0] },
+    { "id": "pulled_box", "type": "box", "body": "dynamic", "position": [5.0, 1.5, 0.0], "halfExtent": [1.0, 1.0, 1.0], "restitution": 0.55, "color": [0.22, 0.52, 0.95, 1.0] }
+  ],
+  "ropes": [
+    {
+      "id": "tow_rope",
+      "start": [-5.0, 7.0, 0.0],
+      "end": [5.0, 1.5, 0.0],
+      "segments": 24,
+      "iterations": 24,
+      "radius": 0.11,
+      "restLength": 0.36,
+      "damping": 0.995,
+      "gravity": [0.0, -9.8, 0.0],
+      "pinStart": true,
+      "mouseBody": "anchor",
+      "mouseParticle": 0,
+      "body": "pulled_box",
+      "bodyAnchor": [5.0, 1.5, 0.0],
+      "color": [0.72, 0.43, 0.16, 1.0]
+    }
+  ]
+}

@@ -63,6 +63,11 @@ namespace Riemann
 	// occur, so that the bouncing ball would eventually settle on the floor, completely at rest.
 	static const float kRestitutionSlop = 1.0f;
 
+	static float CombineRestitution(const RigidBody* bodyA, const RigidBody* bodyB)
+	{
+		return std::max(bodyA->GetRestitution(), bodyB->GetRestitution());
+	}
+
 	// Beta is typically a value between 0 and 1 (usually close to 0)
 	// Unfortunately, there is no one correct value for beta; 
 	// you will have to tweak this value based on the specific scenarios.
@@ -86,9 +91,7 @@ namespace Riemann
 	{
 		m_contact = contact;
 
-		float restitutionA = bodyA->GetRestitution();
-		float restitutionB = bodyB->GetRestitution();
-		float restitution = restitutionA * restitutionB;
+		const float restitution = CombineRestitution(bodyA, bodyB);
 		Vector3 va = phase[indexA].v;
 		Vector3 wa = phase[indexA].w;
 		Vector3 vb = phase[indexB].v;
@@ -105,9 +108,7 @@ namespace Riemann
 
 	void ContactJacobianSolver::SetupVelocityPass(Contact* contact, float dt, int n)
 	{
-		float restitutionA = bodyA->GetRestitution();
-		float restitutionB = bodyB->GetRestitution();
-		float restitution = restitutionA * restitutionB;
+		const float restitution = CombineRestitution(bodyA, bodyB);
 		Vector3 va = phase[n + indexA].v;
 		Vector3 wa = phase[n + indexA].w;
 		Vector3 vb = phase[n + indexB].v;
@@ -137,10 +138,19 @@ namespace Riemann
 		return m_jN.m_error * m_jN.m_error + m_jT.m_error * m_jT.m_error + m_jB.m_error * m_jB.m_error;
 	}
 
-	void ContactJacobianSolver::Finalize()
+	void ContactJacobianSolver::Finalize(bool Accumulate)
 	{
-		m_contact->totalImpulseNormal = m_jN.m_totalLambda;
-		m_contact->totalImpulseTangent = m_jT.m_totalLambda;
-		m_contact->totalImpulseBinormal = m_jB.m_totalLambda;
+		if (Accumulate)
+		{
+			m_contact->totalImpulseNormal += m_jN.m_totalLambda;
+			m_contact->totalImpulseTangent += m_jT.m_totalLambda;
+			m_contact->totalImpulseBinormal += m_jB.m_totalLambda;
+		}
+		else
+		{
+			m_contact->totalImpulseNormal = m_jN.m_totalLambda;
+			m_contact->totalImpulseTangent = m_jT.m_totalLambda;
+			m_contact->totalImpulseBinormal = m_jB.m_totalLambda;
+		}
 	}
 }

@@ -896,7 +896,11 @@ namespace Riemann
 			return false;
 		}
 
-		Box3 DomainBounds = SourceMesh.GetBounds();
+		// Boolean winding classification requires both closed inputs to use the same orientation.
+		DynamicMesh OrientedSourceMesh = SourceMesh;
+		OrientedSourceMesh.FixTriangleOrientation(true);
+
+		Box3 DomainBounds = OrientedSourceMesh.GetBounds();
 		const float MaxDim = std::max(BoundsMaxDim(DomainBounds), 1.0f);
 		DomainBounds.Thicken(std::max(MaxDim * Options.BoundsPaddingScale, Options.SnapTolerance * 16.0f));
 
@@ -914,7 +918,10 @@ namespace Riemann
 				continue;
 			}
 
-			GeometryBoolean Boolean(&SourceMesh, &CellMesh, GeometryBoolean::BooleanOp::Intersect);
+			DynamicMesh OrientedCellMesh = CellMesh;
+			OrientedCellMesh.FixTriangleOrientation(true);
+
+			GeometryBoolean Boolean(&OrientedSourceMesh, &OrientedCellMesh, GeometryBoolean::BooleanOp::Intersect);
 			Boolean.SnapTolerance = Options.SnapTolerance;
 			Boolean.WeldSharedEdges = Options.WeldSharedEdges;
 			Boolean.SimplifyAlongNewEdges = Options.SimplifyAlongCut;

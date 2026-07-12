@@ -46,6 +46,12 @@ namespace Riemann
 		Wireframe,
 	};
 
+	enum class RenderBlendMode : uint8_t
+	{
+		Alpha,
+		Additive,
+	};
+
 	struct RenderMeshDesc
 	{
 		std::string Id;
@@ -55,7 +61,9 @@ namespace Riemann
 		Vector4 Color = Vector4(0.72f, 0.76f, 0.82f, 1.0f);
 		RenderPrimitiveTopology Topology = RenderPrimitiveTopology::Triangles;
 		RenderFillMode FillMode = RenderFillMode::RendererDefault;
+		RenderBlendMode BlendMode = RenderBlendMode::Alpha;
 		bool CastShadow = true;
+		bool Unlit = false;
 	};
 
 	struct RenderTransformUpdate
@@ -69,6 +77,7 @@ namespace Riemann
 		Vector3 Eye = Vector3(0.0f, 0.0f, 5.0f);
 		Vector3 At = Vector3::Zero();
 		Vector3 Up = Vector3::UnitY();
+		Vector4 BackgroundColor = Vector4(0.015f, 0.018f, 0.024f, 1.0f);
 		float FovY = 1.57079632679f;
 		float NearPlane = 0.05f;
 		float FarPlane = 1000.0f;
@@ -82,6 +91,7 @@ namespace Riemann
 		float Ambient = 0.22f;
 		float ShadowDistance = 60.0f;
 		float ShadowSize = 80.0f;
+		bool ShadowsEnabled = true;
 	};
 
 	struct RendererCreateInfo
@@ -112,9 +122,14 @@ namespace Riemann
 		virtual void Render() = 0;
 		virtual void SetCamera(const CameraDesc& camera) = 0;
 		virtual void SetLight(const DirectionalLightDesc& light) = 0;
+		// Empty vertex and index arrays create a hidden dynamic mesh slot.
 		virtual bool AddMesh(const RenderMeshDesc& mesh) = 0;
 		virtual bool UpdateTransform(const RenderTransformUpdate& transform) = 0;
+		// UpdateVertices preserves the existing vertex count and index topology.
 		virtual bool UpdateVertices(const char* id, const Vertex1* vertices, int vertexCount) = 0;
+		// Both counts may be zero to hide a dynamic mesh while retaining its slot.
+		virtual bool UpdateMeshGeometry(const char* id, const Vertex1* vertices, int vertexCount,
+			const uint32_t* indices, int indexCount) = 0;
 		virtual bool SetMeshOutline(const char* id, bool enabled, const Vector4& color, float thickness) { (void)id; (void)enabled; (void)color; (void)thickness; return false; }
 		virtual bool DeleteMesh(const char* id) = 0;
 		virtual bool Reset() = 0;

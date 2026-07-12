@@ -36,6 +36,65 @@ namespace
 		return !!file;
 	}
 
+	std::string EnsureTrailingSlash(const std::string& path)
+	{
+		if (path.empty() || path.back() == '/' || path.back() == '\\')
+		{
+			return path;
+		}
+		return path + "/";
+	}
+
+	std::string GetAbsoluteDirectory(const std::string& path)
+	{
+		char absolutePath[MAX_PATH] = {};
+		const DWORD length = GetFullPathNameA(path.c_str(), MAX_PATH, absolutePath, nullptr);
+		return length > 0 && length < MAX_PATH ? EnsureTrailingSlash(absolutePath) : std::string();
+	}
+
+	std::string GetExecutableDirectory()
+	{
+		char executablePath[MAX_PATH] = {};
+		const DWORD length = GetModuleFileNameA(nullptr, executablePath, MAX_PATH);
+		if (length == 0 || length >= MAX_PATH)
+		{
+			return std::string();
+		}
+		const std::string path(executablePath, length);
+		const size_t separator = path.find_last_of("/\\");
+		return separator == std::string::npos ? std::string() : path.substr(0, separator + 1);
+	}
+
+	std::string ResolveRepositoryRoot()
+	{
+		std::vector<std::string> candidates;
+		candidates.push_back(std::string());
+		candidates.push_back("../");
+		candidates.push_back("../../");
+		candidates.push_back("../../../");
+		candidates.push_back("../../../../");
+
+		const std::string executableDirectory = GetExecutableDirectory();
+		if (!executableDirectory.empty())
+		{
+			candidates.push_back(executableDirectory);
+			candidates.push_back(executableDirectory + "../");
+			candidates.push_back(executableDirectory + "../../");
+			candidates.push_back(executableDirectory + "../../../");
+			candidates.push_back(executableDirectory + "../../../../");
+		}
+
+		for (const std::string& candidate : candidates)
+		{
+			const std::string root = GetAbsoluteDirectory(candidate.empty() ? "." : candidate);
+			if (FileExists(root + "Renderer/dx11_shader.hlsl") && FileExists(root + "Contents/Scenes/01_demo.json"))
+			{
+				return root;
+			}
+		}
+		return std::string();
+	}
+
 	std::string WideToUtf8(const wchar_t* text)
 	{
 		if (text == nullptr || text[0] == L'\0')
@@ -50,8 +109,9 @@ namespace
 		}
 
 		std::string result;
-		result.resize(needed - 1);
+		result.resize(needed);
 		WideCharToMultiByte(CP_UTF8, 0, text, -1, &result[0], needed, nullptr, nullptr);
+		result.resize(needed - 1);
 		return result;
 	}
 
@@ -73,8 +133,13 @@ namespace
 		return scene;
 	}
 
-	std::string ResolveShaderPath()
+	std::string ResolveShaderPath(const std::string& repositoryRoot)
 	{
+		if (!repositoryRoot.empty())
+		{
+			return repositoryRoot + "Renderer/";
+		}
+
 		const char* candidates[] =
 		{
 			"Renderer/",
@@ -175,7 +240,8 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 		return 0;
 	}
 
-	const std::string shaderPath = ResolveShaderPath();
+	const std::string repositoryRoot = ResolveRepositoryRoot();
+	const std::string shaderPath = ResolveShaderPath(repositoryRoot);
 	g_Renderer = Riemann::Renderer::CreateDX11Renderer(g_hWnd, shaderPath.c_str());
 	if (g_Renderer == nullptr)
 	{
@@ -186,8 +252,16 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	g_RenderThread = new Riemann::RenderThread(g_Renderer);
 	g_RenderThread->Start();
 
-	const std::string scene = GetCommandLineScene();
-	g_Viewer = new Riemann::WorldViewer(g_RenderThread, scene.empty() ? "demo.json" : scene);
+	std::string scene = GetCommandLineScene();
+	if (!repositoryRoot.empty())
+	{
+		const std::string repositoryScene = repositoryRoot + "Contents/Scenes/" + (scene.empty() ? "01_demo.json" : scene);
+		if (scene.empty() || (!FileExists(scene) && FileExists(repositoryScene)))
+		{
+			scene = repositoryScene;
+		}
+	}
+	g_Viewer = new Riemann::WorldViewer(g_RenderThread, scene.empty() ? "01_demo.json" : scene);
 
 	auto last = std::chrono::steady_clock::now();
 
@@ -288,6 +362,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_Viewer->SetMovementKey('a', false);
 			g_Viewer->SetMovementKey('s', false);
 			g_Viewer->SetMovementKey('d', false);
+			g_Viewer->SceneDragEndMsg();
 		}
 		break;
 
@@ -309,6 +384,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			const bool imguiActive = g_ImguiMouseCapture || IsMouseOverImgui(g_MouseX, g_MouseY);
 			g_Viewer->MouseMsg(g_MouseX, g_MouseY, !imguiActive && (MK_RBUTTON & wParam) != 0);
+			if (!imguiActive && (MK_LBUTTON & wParam) != 0)
+			{
+				RECT rc = {};
+				GetClientRect(hWnd, &rc);
+				g_Viewer->SceneDragMsg(g_MouseX, g_MouseY, rc.right - rc.left, rc.bottom - rc.top);
+			}
 		}
 		break;
 
@@ -339,6 +420,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (g_Viewer)
 		{
 			g_Viewer->MouseMsg(g_MouseX, g_MouseY, false);
+			g_Viewer->SceneDragEndMsg();
 		}
 		g_ImguiMouseCapture = false;
 		if (g_ImguiMouseButtons == 0)

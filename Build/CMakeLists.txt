@@ -1,6 +1,30 @@
 cmake_minimum_required(VERSION 3.15)
 project(Riemann)
 
+option(RIEMANN_ENABLE_CUDA "Build the optional CUDA solver backends" ON)
+option(RIEMANN_ENABLE_COMPUTE_SHADER "Build the DirectCompute solver backends" ON)
+
+set(RIEMANN_CUDA_AVAILABLE OFF)
+if(RIEMANN_ENABLE_CUDA)
+    include(CheckLanguage)
+    check_language(CUDA)
+    if(CMAKE_CUDA_COMPILER)
+        enable_language(CUDA)
+        set(RIEMANN_CUDA_AVAILABLE ON)
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.18 AND NOT CMAKE_CUDA_ARCHITECTURES)
+            # CUDA 13 no longer emits device code for older GPUs by default.
+            # Include native binaries for the supported Turing-through-Ada
+            # generations so execution does not depend on driver-side PTX JIT.
+            if(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 13.0)
+                set(CMAKE_CUDA_ARCHITECTURES "75;80;86;89")
+            endif()
+        endif()
+        message(STATUS "CUDA solver backends enabled")
+    else()
+        message(STATUS "CUDA compiler not found; building without CUDA solver backends")
+    endif()
+endif()
+
 if(NOT MSVC)
     set(CMAKE_CXX_STANDARD 14)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -36,9 +60,13 @@ foreach(OUTPUT_CONFIG Debug Release RelWithDebInfo MinSizeRel)
 endforeach()
 
 if(MSVC)
-    add_compile_options(/W3)
+    add_compile_options("$<$<NOT:$<COMPILE_LANGUAGE:CUDA>>:/W3>")
 else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(
+        "$<$<NOT:$<COMPILE_LANGUAGE:CUDA>>:-Wall>"
+        "$<$<NOT:$<COMPILE_LANGUAGE:CUDA>>:-Wextra>"
+        "$<$<NOT:$<COMPILE_LANGUAGE:CUDA>>:-Wpedantic>"
+    )
 endif()
 
 file(GLOB_RECURSE RIEMANN_SOURCES CONFIGURE_DEPENDS
@@ -46,6 +74,13 @@ file(GLOB_RECURSE RIEMANN_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/../Src/*.cc"
     "${CMAKE_SOURCE_DIR}/../Src/*.c"
 )
+
+if(RIEMANN_CUDA_AVAILABLE)
+    list(APPEND RIEMANN_SOURCES
+        "${CMAKE_SOURCE_DIR}/../Src/RigidBodyDynamics/LCPSolverCUDA.cu"
+        "${CMAKE_SOURCE_DIR}/../Src/Fluid/FluidBackendCUDA.cu"
+    )
+endif()
 
 file(GLOB_RECURSE RIEMANN_HEADERS CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/../Src/*.h"
@@ -59,6 +94,20 @@ file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS
 )
 
 add_library(Riemann STATIC ${RIEMANN_SOURCES} ${RIEMANN_HEADERS})
+if(WIN32 AND RIEMANN_ENABLE_COMPUTE_SHADER)
+    target_compile_definitions(Riemann PUBLIC RIEMANN_ENABLE_COMPUTE_SHADER=1)
+    target_link_libraries(Riemann PRIVATE d3d11 d3dcompiler dxguid)
+endif()
+if(RIEMANN_CUDA_AVAILABLE)
+    # CUDA is part of the public solver API when the backend is compiled in.
+    # Propagate the feature macro so callers and tests cannot reference CUDA
+    # declarations in a non-CUDA build.
+    target_compile_definitions(Riemann PUBLIC RIEMANN_ENABLE_CUDA=1)
+    set_target_properties(Riemann PROPERTIES
+        CUDA_STANDARD 14
+        CUDA_STANDARD_REQUIRED ON
+    )
+endif()
 if(MSVC)
     target_compile_definitions(Riemann PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
@@ -143,13 +192,16 @@ set(RIEMANN_VIEWER_CORE_HEADERS
     "${CMAKE_SOURCE_DIR}/../Viewer/Viewer.h"
 )
 
-add_executable(Test ${TEST_SOURCES})
+add_executable(Test ${TEST_SOURCES}
+    "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.cpp"
+    "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.h"
+)
 if(MSVC)
     target_compile_definitions(Test PRIVATE _CRT_SECURE_NO_WARNINGS)
     target_compile_options(Test PRIVATE $<$<CONFIG:Release>:/openmp>)
 endif()
 
-target_link_libraries(Test PRIVATE Riemann)
+target_link_libraries(Test PRIVATE Riemann Renderer)
 
 target_include_directories(Test PRIVATE 
     ${CMAKE_SOURCE_DIR}/../Src

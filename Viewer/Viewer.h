@@ -10,12 +10,16 @@
 #include "../Src/Maths/Vector3.h"
 #include "../Src/Maths/Vector4.h"
 #include "../Src/CollisionPrimitive/Ray3.h"
+#include "SceneWorld.h"
 
 namespace Riemann
 {
 	class Geometry;
 	class RenderThread;
-	class SceneWorld;
+	class FluidSimulation;
+	class FluidRigidCoupling;
+	class AerodynamicsSimulation;
+	class AerodynamicsRigidCoupling;
 
 	class WorldViewer
 	{
@@ -37,6 +41,8 @@ namespace Riemann
 		void UpdateCameraMovement(float dt);
 		void MouseMsg(int x, int y, bool rotateButtonDown);
 		void SceneRayMsg(int x, int y, int width, int height);
+		void SceneDragMsg(int x, int y, int width, int height);
+		void SceneDragEndMsg();
 		void MouseWheel(int zDelta, bool ctrlButtonDown);
 		bool IsImguiPanelHovered(int x, int y, int width, int height) const;
 		void DrawImgui(int width, int height);
@@ -60,6 +66,13 @@ private:
 
 		void RebuildRenderScene();
 		void AddGeometryToRender(const std::string& id, Geometry* geometry, const Vector4& color, bool renderBounds);
+		bool ActivateConfiguredFieldSimulation();
+		void DeactivateFluidDemo();
+		void UpdateFluidDemo();
+		void SubmitFluidSurface();
+		void DeactivateGasDemo();
+		void UpdateGasDemo();
+		void SubmitGasDensity();
 		bool LoadCuttingPanel();
 		bool ApplyCuttingPanel();
 		bool LoadMeshSimplificationPanel();
@@ -86,18 +99,31 @@ private:
 		void HandleSceneRay(const Ray3& ray);
 		bool IsCurrentCuttingGeometry(const Geometry* geometry) const;
 		void SetHighlightedGeometry(Geometry* geometry);
+		void ShootProjectile();
 		static void DrawImguiCallback(int width, int height, void* userData);
 
 	private:
 		std::unique_ptr<SceneWorld> m_World;
+		std::unique_ptr<FluidSimulation> m_FluidSimulation;
+		std::unique_ptr<AerodynamicsSimulation> m_AerodynamicsSimulation;
+		FluidRigidCoupling* m_FluidCoupling;
+		AerodynamicsRigidCoupling* m_AerodynamicsCoupling;
 		RenderThread* m_RenderThread;
 		std::vector<RenderBinding> m_RenderBindings;
 		std::function<void(char)> m_KeyboardEvent;
 		Geometry* m_HighlightedGeometry;
+		bool m_SceneDragActive;
+		bool m_FieldDragActive;
+		Vector3 m_SceneDragPlanePoint;
+		Vector3 m_SceneDragPlaneNormal;
+		Vector3 m_SceneDragOffset;
+		std::chrono::steady_clock::time_point m_SceneDragLastTime;
+		Vector3 m_FieldDragPoint;
 
 		std::string m_SceneDirectory;
 		std::vector<std::string> m_SceneFiles;
 		std::string m_CurrentSceneName;
+		std::string m_CurrentSceneDisplayName;
 		Vector3 m_CamCenter;
 		Vector3 m_CamParam;
 		bool m_MovementKeys[4];
@@ -126,6 +152,10 @@ private:
 		bool m_ShowGeometryQueryBounds;
 		bool m_RenderWireframe;
 		uint32_t m_RenderRevision;
+		bool m_FluidDemoActive;
+		int m_FluidRenderFrame;
+		bool m_GasDemoActive;
+		int m_GasRenderFrame;
 
 		mutable std::mutex m_ImguiMutex;
 		std::string m_ImguiSceneName;
@@ -134,6 +164,7 @@ private:
 		std::string m_ImguiCuttingObjPath;
 		std::string m_ImguiCuttingStatus;
 		std::vector<std::string> m_ImguiMeshSimplificationFiles;
+		std::vector<ConstraintControlState> m_ImguiConstraintControls;
 		std::string m_ImguiMeshSimplificationPath;
 		std::string m_ImguiMeshSimplificationStatus;
 		int m_ImguiDemoIndex;
@@ -186,6 +217,8 @@ private:
 		bool m_ImguiPendingShowGeometryQueryBoundsValue;
 		bool m_ImguiPendingRenderWireframe;
 		bool m_ImguiPendingRenderWireframeValue;
+		bool m_ImguiPendingShootProjectile;
+		std::vector<ConstraintControlState> m_ImguiPendingConstraintControls;
 
 		std::chrono::steady_clock::time_point m_PhysicsFpsTime;
 		int m_PhysicsFrameCount;

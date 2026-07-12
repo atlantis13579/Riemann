@@ -48,15 +48,20 @@ namespace Riemann
 		float 					HeightScale;
 		std::vector<CellInfo>	mCells;
 		CellInfo*				Cells;
+		uint64_t				Revision;
 
 		HeightField3()
 		{
 			HeightScale = 1.0f;
 			Cells = nullptr;
+			Revision = 0;
 		}
 
 		HeightField3(const Box3& iBv, int inX, int inZ)
 		{
+			HeightScale = 1.0f;
+			Cells = nullptr;
+			Revision = 0;
 			Init(iBv, inX, inZ);
 		}
 
@@ -74,19 +79,30 @@ namespace Riemann
 			DZ = BV.GetLengthZ() / (nZ - 1);
 			InvDX = 1.0f / DX;
 			InvDZ = 1.0f / DZ;
+			Revision = 0;
 		}
 
 		void	AllocMemory()
 		{
-			mCells.resize(nX * nZ * sizeof(CellInfo));
+			mCells.resize(nX * nZ);
 			Cells = &mCells[0];
 			memset(Cells, 0, mCells.size() * sizeof(mCells[0]));
+			++Revision;
 		}
 
 		float 			GetHeight(const int idx) const
 		{
 			return (float)Cells[idx].HeightSample * HeightScale;
 		}
+
+		bool	SetHeight(int x, int z, float height);
+		bool	SetHeightRaw(int x, int z, int16_t heightSample);
+		int		ModifyHeightCircle(float centerX, float centerZ, float radius, float heightDelta, bool linearFalloff = true);
+		int		DigCrater(float centerX, float centerZ, float radius, float depth, bool linearFalloff = true);
+		bool	SetTriangleHole(int cellX, int cellZ, int triangleIndex, bool hole);
+		bool	IsTriangleHole(int cellX, int cellZ, int triangleIndex) const;
+		void	RecalculateBounds();
+		uint64_t GetRevision() const { return Revision; }
 
 		Vector3			GetCenter() const
 		{

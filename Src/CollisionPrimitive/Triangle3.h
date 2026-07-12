@@ -137,9 +137,6 @@ namespace Riemann
             if (AlignmentValue == bestAlignmentValue && Distance < bestDistance)
                 return true;
 
-            if (Distance == 0.0f)
-                return true;
-
             return false;
         }
 

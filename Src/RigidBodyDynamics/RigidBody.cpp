@@ -1,5 +1,6 @@
 
 #include <assert.h>
+#include <algorithm>
 #include "RigidBody.h"
 #include "PhysicsMaterial.h"
 #include "MassParameters.h"
@@ -10,12 +11,59 @@ namespace Riemann
 	RigidBody::RigidBody()
 	{
 		mMaterialId = 0;
+		mRestitutionOverride = -1.0f;
 		Parent = nullptr;
+		CollisionGroup = nullptr;
+		EnableCollisionWithinGroup = true;
 		CM = Vector3::Zero();
 	}
 
 	RigidBody::~RigidBody()
 	{
+		// Collision ignores are reciprocal, so every remaining pointer is still alive.
+		for (RigidBody* other : mIgnoredCollisionBodies)
+		{
+			other->mIgnoredCollisionBodies.erase(this);
+		}
+		mIgnoredCollisionBodies.clear();
+	}
+
+	void RigidBody::IgnoreCollisionWith(RigidBody* Other, bool Ignore)
+	{
+		if (Other == nullptr || Other == this)
+		{
+			return;
+		}
+
+		if (Ignore)
+		{
+			mIgnoredCollisionBodies.insert(Other);
+			Other->mIgnoredCollisionBodies.insert(this);
+		}
+		else
+		{
+			mIgnoredCollisionBodies.erase(Other);
+			Other->mIgnoredCollisionBodies.erase(this);
+		}
+	}
+
+	bool RigidBody::IsCollisionIgnoredWith(const RigidBody* Other) const
+	{
+		return Other != nullptr && mIgnoredCollisionBodies.find(const_cast<RigidBody*>(Other)) != mIgnoredCollisionBodies.end();
+	}
+
+	bool RigidBody::CanCollideWith(const RigidBody* Other) const
+	{
+		if (Other == nullptr || Other == this || IsCollisionIgnoredWith(Other))
+		{
+			return false;
+		}
+		if (CollisionGroup != nullptr && CollisionGroup == Other->CollisionGroup
+			&& (!EnableCollisionWithinGroup || !Other->EnableCollisionWithinGroup))
+		{
+			return false;
+		}
+		return true;
 	}
 
 	void RigidBody::AddGeometry(Geometry* Geom)
@@ -182,11 +230,19 @@ namespace Riemann
 	void		RigidBody::SetDefaultPhysicsMaterial(uint16_t idx)
 	{
 		mMaterialId = idx;
+		mRestitutionOverride = -1.0f;
+	}
+
+	void		RigidBody::SetRestitution(float restitution)
+	{
+		mRestitutionOverride = std::max(0.0f, std::min(restitution, 1.0f));
 	}
 
 	float		RigidBody::GetRestitution() const
 	{
-		return PhysicsMaterial::getMaterial(mMaterialId)->Restitution;
+		return mRestitutionOverride >= 0.0f
+			? mRestitutionOverride
+			: PhysicsMaterial::getMaterial(mMaterialId)->Restitution;
 	}
 
 	float		RigidBody::GetFrictionDynamic() const
@@ -253,21 +309,38 @@ namespace Riemann
 		this->Freezing = false;
 		this->SolverV = Vector3(INFINITY, INFINITY, INFINITY);
 		this->SolverW = Vector3(INFINITY, INFINITY, INFINITY);
+		this->CCDMotionFraction = 1.0f;
+		this->HadCCDContact = false;
+		this->CCDPreSolveVelocity = Vector3::Zero();
+		this->CCDPreSolveAngularVelocity = Vector3::Zero();
 	}
 
 	void		RigidBodyDynamic::ApplyForce(const Vector3& Force)
 	{
+		if (Force != Vector3::Zero())
+		{
+			Wakeup();
+		}
 		this->ExtForce += Force;
 	}
 
 	void		RigidBodyDynamic::ApplyTorgue(const Vector3& Torque)
 	{
+		if (Torque != Vector3::Zero())
+		{
+			Wakeup();
+		}
 		this->ExtTorque += Torque;
 	}
 
 	void 		RigidBodyDynamic::ApplyTorgue(const Vector3& RelativePosToCenterOfMass, const Vector3& Force)
 	{
-		this->ExtTorque += RelativePosToCenterOfMass.Cross(Force);
+		const Vector3 Torque = RelativePosToCenterOfMass.Cross(Force);
+		if (Torque != Vector3::Zero())
+		{
+			Wakeup();
+		}
+		this->ExtTorque += Torque;
 	}
 
 

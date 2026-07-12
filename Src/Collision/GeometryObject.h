@@ -39,6 +39,8 @@ namespace Riemann
 	{
 		GeometryFlag_Query = 1u << 0,
 		GeometryFlag_Simulation = 1u << 1,
+		GeometryFlag_Trigger = 1u << 2,
+		GeometryFlag_TriggerCCD = 1u << 3,
 	};
 
 	class Geometry
@@ -174,6 +176,10 @@ namespace Riemann
 		inline void				SetQueryEnabled(bool Enabled) { SetFlag(GeometryFlag_Query, Enabled); }
 		inline bool				IsSimulationEnabled() const { return HasFlag(GeometryFlag_Simulation); }
 		inline void				SetSimulationEnabled(bool Enabled) { SetFlag(GeometryFlag_Simulation, Enabled); }
+		inline bool				IsTriggerEnabled() const { return HasFlag(GeometryFlag_Trigger); }
+		inline void				SetTriggerEnabled(bool Enabled) { SetFlag(GeometryFlag_Trigger, Enabled); }
+		inline bool				IsTriggerCCDEnabled() const { return HasFlag(GeometryFlag_TriggerCCD); }
+		inline void				SetTriggerCCDEnabled(bool Enabled) { SetFlag(GeometryFlag_TriggerCCD, Enabled); }
 
 		static Transform		CalculateCenterOfMassPoseMultibody(const std::vector<Geometry*>& geoms);
 

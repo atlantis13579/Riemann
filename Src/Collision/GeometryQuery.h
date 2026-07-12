@@ -2,6 +2,7 @@
 
 #include <limits.h>
 #include <stdint.h>
+#include <deque>
 #include <vector>
 #include "../Core/StaticStack.h"
 #include "../Maths/Transform.h"
@@ -367,7 +368,7 @@ namespace Riemann
 		std::vector<Geometry*>	m_staticObjects;
 		std::vector<uint32_t>	m_staticProxyIds;
 		std::vector<GeometryQueryProxy> m_Proxies;
-		std::vector<GeometryQueryLocalState> m_LocalStates;
+		std::deque<GeometryQueryLocalState> m_LocalStates;
 		uint32_t			m_NextLocalHandle;
 
 		AABBTree*			m_staticGeometry;

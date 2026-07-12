@@ -1,0 +1,163 @@
+{
+  "name": "Hierarchical Destruction",
+  "physics": {
+    "gravity": [0.0, -9.8, 0.0]
+  },
+  "camera": {
+    "center": [0.0, 6.0, 0.0],
+    "orbit": [0.78, 0.28, 32.0],
+    "near": 0.05,
+    "far": 1000.0
+  },
+  "light": {
+    "direction": [-0.694110, -0.719859, -0.003747],
+    "color": [1.0, 0.96, 0.86],
+    "ambient": 0.24,
+    "shadowCenter": [0.0, 3.0, 0.0],
+    "shadowDistance": 70.0,
+    "shadowSize": 80.0
+  },
+  "objects": [
+    {
+      "id": "ground",
+      "type": "box",
+      "body": "static",
+      "position": [0.0, -0.55, 0.0],
+      "halfExtent": [40.0, 0.5, 40.0],
+      "color": [0.48, 0.52, 0.57, 1.0]
+    },
+    {
+      "id": "impact_ramp",
+      "type": "destructionBox",
+      "body": "dynamic",
+      "position": [1.4, 0.7, 0.2],
+      "halfExtent": [4.8, 0.42, 4.2],
+      "rotationAxis": [0.0, 0.0, 1.0],
+      "rotationDegrees": 8.0,
+      "invMass": 0.03,
+      "initiallyFixed": true,
+      "breakThreshold": 0.9,
+      "partitionSize": 3,
+      "partitionProcessPerTick": 10,
+      "partitionProcessIntervalTicks": 1,
+      "clusterCollisionProxy": true,
+      "partitionSeparationAttenuation": 0.4,
+      "minClusterVolume": 0.0,
+      "impulseRadius": 3.0,
+      "impulseBreakStrength": 0.16,
+      "hierarchicalFracture": {
+        "seed": 4187,
+        "maxChunkCount": 40,
+        "cutRetryCount": 10,
+        "minChunkVolume": 0.0005,
+        "bondStrength": 0.55,
+        "damageAttenuation": 0.68,
+        "neighborDamageFraction": 0.32,
+        "grout": 0.006,
+        "levels": [
+          {
+            "pieceCount": 7,
+            "preserveLargestPieces": 0,
+            "childFractureProbability": 1.0,
+            "breakThreshold": 0.9,
+            "strengthVariation": 0.2,
+            "clusteredVoronoi": true
+          },
+          {
+            "pieceCount": 3,
+            "preserveLargestPieces": 0,
+            "childFractureProbability": 0.45,
+            "breakThreshold": 1.8,
+            "strengthVariation": 0.35,
+            "clusteredVoronoi": false
+          }
+        ]
+      },
+      "color": [0.32, 0.35, 0.40, 1.0]
+    },
+    {
+      "id": "fixed_pillar_left",
+      "type": "obb",
+      "body": "static",
+      "position": [-9.0, 2.2, -5.0],
+      "halfExtent": [1.4, 2.2, 1.4],
+      "rotationAxis": [0.0, 1.0, 0.0],
+      "rotationDegrees": 17.0,
+      "color": [0.37, 0.41, 0.46, 1.0]
+    },
+    {
+      "id": "dynamic_crate_left",
+      "type": "obb",
+      "body": "dynamic",
+      "position": [-7.0, 4.0, 2.5],
+      "halfExtent": [1.0, 1.0, 1.0],
+      "rotationAxis": [0.4, 1.0, 0.2],
+      "rotationDegrees": 25.0,
+      "angularVelocity": [0.3, -0.45, 0.2],
+      "color": [0.86, 0.52, 0.24, 1.0]
+    },
+    {
+      "id": "dynamic_ball_right",
+      "type": "sphere",
+      "body": "dynamic",
+      "position": [7.0, 5.5, -3.0],
+      "radius": 1.25,
+      "linearVelocity": [-1.2, 0.0, 0.5],
+      "restitution": 0.22,
+      "color": [0.92, 0.72, 0.24, 1.0]
+    },
+    {
+      "id": "destruction_box",
+      "type": "destructionBox",
+      "body": "dynamic",
+      "position": [-0.5, 20.0, -0.3],
+      "halfExtent": [4.0, 3.0, 3.4],
+      "rotationAxis": [0.35, 1.0, 0.2],
+      "rotationDegrees": 23.0,
+      "invMass": 0.02,
+      "partitionProcessPerTick": 4,
+      "partitionProcessIntervalTicks": 2,
+      "clusterCollisionProxy": true,
+      "partitionSeparationAttenuation": 0.45,
+      "impulseRadius": 3.5,
+      "impulseBreakStrength": 0.18,
+      "hierarchicalFracture": {
+        "seed": 7321,
+        "maxChunkCount": 64,
+        "cutRetryCount": 8,
+        "minChunkVolume": 0.001,
+        "bondStrength": 0.55,
+        "damageAttenuation": 0.72,
+        "neighborDamageFraction": 0.4,
+        "grout": 0.012,
+        "levels": [
+          {
+            "pieceCount": 5,
+            "preserveLargestPieces": 2,
+            "childFractureProbability": 1.0,
+            "breakThreshold": 1.2,
+            "strengthVariation": 0.20,
+            "clusteredVoronoi": true
+          },
+          {
+            "pieceCount": 3,
+            "preserveLargestPieces": 0,
+            "childFractureProbability": 1.0,
+            "breakThreshold": 2.2,
+            "strengthVariation": 0.30,
+            "clusteredVoronoi": false
+          },
+          {
+            "pieceCount": 2,
+            "preserveLargestPieces": 0,
+            "childFractureProbability": 1.0,
+            "breakThreshold": 3.8,
+            "strengthVariation": 0.40,
+            "clusteredVoronoi": false
+          }
+        ]
+      },
+      "color": [0.24, 0.48, 0.92, 1.0]
+    }
+  ]
+}

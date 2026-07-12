@@ -209,6 +209,117 @@ namespace Riemann
 		return IntersectBVH(this, m_BVH, shape);
 	}
 
+	static bool SweepBoundsAgainstBounds(const Box3& MovingBounds, const Vector3& Direction,
+		const Vector3& StaticMin, const Vector3& StaticMax, float MaxDistance)
+	{
+		if (MovingBounds.Intersect(StaticMin, StaticMax))
+		{
+			return true;
+		}
+
+		const Vector3 Center = MovingBounds.GetCenter();
+		const Vector3 Extent = MovingBounds.GetExtent();
+		const Vector3 ExpandedMin = StaticMin - Extent;
+		const Vector3 ExpandedMax = StaticMax + Extent;
+		float Enter = 0.0f;
+		float Exit = MaxDistance;
+		for (int Axis = 0; Axis < 3; ++Axis)
+		{
+			if (fabsf(Direction[Axis]) < 1.0e-8f)
+			{
+				if (Center[Axis] < ExpandedMin[Axis] || Center[Axis] > ExpandedMax[Axis])
+				{
+					return false;
+				}
+				continue;
+			}
+
+			const float InverseDirection = 1.0f / Direction[Axis];
+			float T0 = (ExpandedMin[Axis] - Center[Axis]) * InverseDirection;
+			float T1 = (ExpandedMax[Axis] - Center[Axis]) * InverseDirection;
+			if (T0 > T1)
+			{
+				std::swap(T0, T1);
+			}
+			Enter = std::max(Enter, T0);
+			Exit = std::min(Exit, T1);
+			if (Enter > Exit)
+			{
+				return false;
+			}
+		}
+		return Exit >= 0.0f && Enter <= MaxDistance;
+	}
+
+	void TriangleMesh::SweepBVH(const Box3& MovingBounds, const Vector3& Direction, float& BestDistance,
+		SweepTriangleCallback Callback, void* Context) const
+	{
+		if (Callback == nullptr)
+		{
+			return;
+		}
+		if (m_BVH == nullptr || m_BVH->BatchPtr == nullptr || m_BVH->NumRoots == 0)
+		{
+			for (uint32_t TriangleIndex = 0; TriangleIndex < NumTriangles; ++TriangleIndex)
+			{
+				Callback(Context, GetVertex(TriangleIndex, 0), GetVertex(TriangleIndex, 1), GetVertex(TriangleIndex, 2), BestDistance);
+			}
+			return;
+		}
+
+		const uint32_t MaxStack = 128;
+		uint32_t Stack[MaxStack];
+		uint32_t StackSize = 0;
+		std::vector<uint32_t> Candidates;
+		for (int Root = int(m_BVH->NumRoots) - 1; Root >= 0; --Root)
+		{
+			Stack[StackSize++] = uint32_t(Root) * sizeof(BVHNodeBatch);
+		}
+
+		const uint8_t* BatchMemory = reinterpret_cast<const uint8_t*>(m_BVH->BatchPtr);
+		while (StackSize > 0)
+		{
+			const uint32_t NodeData = Stack[--StackSize];
+			if (NodeData & 1)
+			{
+				const LeafNode Leaf(NodeData & ~1u);
+				for (uint32_t TriangleOffset = 0; TriangleOffset < Leaf.GetNumTriangles(); ++TriangleOffset)
+				{
+					const uint32_t TriangleIndex = Leaf.GetTriangleIndex() + TriangleOffset;
+					Candidates.push_back(TriangleIndex);
+				}
+				continue;
+			}
+
+			const BVHNodeBatch* Node = reinterpret_cast<const BVHNodeBatch*>(BatchMemory + NodeData);
+			for (uint32_t Child = 0; Child < SIMD_WIDTH; ++Child)
+			{
+				if (Node->IsEmpty(Child) || !SweepBoundsAgainstBounds(MovingBounds, Direction,
+					Vector3(Node->minx[Child], Node->miny[Child], Node->minz[Child]),
+					Vector3(Node->maxx[Child], Node->maxy[Child], Node->maxz[Child]), BestDistance))
+				{
+					continue;
+				}
+				if (StackSize >= MaxStack)
+				{
+					for (uint32_t TriangleIndex = 0; TriangleIndex < NumTriangles; ++TriangleIndex)
+					{
+						Callback(Context, GetVertex(TriangleIndex, 0), GetVertex(TriangleIndex, 1), GetVertex(TriangleIndex, 2), BestDistance);
+					}
+					return;
+				}
+				Stack[StackSize++] = Node->Data[Child];
+			}
+		}
+
+		std::sort(Candidates.begin(), Candidates.end());
+		Candidates.erase(std::unique(Candidates.begin(), Candidates.end()), Candidates.end());
+		for (uint32_t TriangleIndex : Candidates)
+		{
+			Callback(Context, GetVertex(TriangleIndex, 0), GetVertex(TriangleIndex, 1), GetVertex(TriangleIndex, 2), BestDistance);
+		}
+	}
+
 	bool	TriangleMesh::RayIntersectTri(uint32_t HitNode, const Vector3& Origin, const Vector3& Direction, const TriMeshHitOption& Option, TriMeshHitResult* Result) const
 	{
 		LeafNode currLeaf(HitNode);

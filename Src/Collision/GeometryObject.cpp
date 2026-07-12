@@ -314,7 +314,7 @@ namespace Riemann
 			quat.FromTwoAxis(Vector3::UnitY(), x1 - x0);
 		}
 		Vector3 Center = (x0 + x1) * 0.5f;
-		const float HalfHeight = (x1 - x0).Length();
+		const float HalfHeight = (x1 - x0).Length() * 0.5f;
 		TGeometry<Capsule3>* p = pBuf ? new (pBuf)TGeometry<Capsule3>() : new TGeometry<Capsule3>();
 		p->Init(Vector3(0.0f, -HalfHeight, 0.0f), Vector3(0.0f, HalfHeight, 0.0f), Radius);
 		p->UpdateVolumeProperties();
@@ -354,7 +354,7 @@ namespace Riemann
 			quat.FromTwoAxis(Vector3::UnitY(), x1 - x0);
 		}
 		Vector3 Center = (x0 + x1) * 0.5f;
-		const float HalfHeight = (x1 - x0).Length();
+		const float HalfHeight = (x1 - x0).Length() * 0.5f;
 		TGeometry<Cylinder3>* p = new TGeometry<Cylinder3>();
 		p->Init(Vector3(0.0f, -HalfHeight, 0.0f), Vector3(0.0f, HalfHeight, 0.0f), Radius);
 		p->UpdateVolumeProperties();

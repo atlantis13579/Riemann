@@ -28,6 +28,9 @@
     <Filter Include="RigidBodyDynamics">
       <UniqueIdentifier>{b3ddd45e-c60e-36c4-6ec8-7b5efe5b8288}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Deformation">
+      <UniqueIdentifier>{7162f797-5b4e-4f5f-91f8-9312696e3f29}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Modules">
       <UniqueIdentifier>{12894346-8340-51a5-02d5-34c89b1aa6fe}</UniqueIdentifier>
     </Filter>
@@ -39,6 +42,9 @@
     </Filter>
     <Filter Include="Modules\Tools">
       <UniqueIdentifier>{2ae44128-d813-2320-2db7-fb2039823b34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fluid">
+      <UniqueIdentifier>{6fe0b40f-3f6e-4a4b-92d9-12abb410526a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -441,6 +447,12 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\CollidingContact.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\Deformation\Cloth.h">
+      <Filter>Deformation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\ContinuousCollisionDetection.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\FeatherstoneSolver.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
@@ -459,8 +471,8 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MassParameters.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\MassSpring.h">
-      <Filter>RigidBodyDynamics</Filter>
+    <ClInclude Include="..\..\Src\Deformation\MassSpring.h">
+      <Filter>Deformation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\NarrowPhase.h">
       <Filter>RigidBodyDynamics</Filter>
@@ -468,16 +480,16 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\KeyFrameAnimation.h">
-      <Filter>RigidBodyDynamics</Filter>
+    <ClInclude Include="..\..\Src\Deformation\PBDSolver.h">
+      <Filter>Deformation</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\PositionBasedDynamicsSolver.h">
-      <Filter>RigidBodyDynamics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\PositionConstraint.h">
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\Constraints.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Ragdoll.h">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\RagdollDefinition.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\WarmStart.h">
@@ -525,8 +537,11 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\XPBDRigidDynamicsSolver.h">
-      <Filter>RigidBodyDynamics</Filter>
+    <ClInclude Include="..\..\Src\Deformation\Rope.h">
+      <Filter>Deformation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Deformation\XPBDSolver.h">
+      <Filter>Deformation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Solver\NewtonRaphsonIteration.h">
       <Filter>Solver</Filter>
@@ -563,6 +578,27 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\Destruction\DestructionCluster.h">
       <Filter>Destruction</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Modules\Tools\UE5StaticMeshParser.h">
+      <Filter>Modules\Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsRigidCoupling.h">
+      <Filter>Fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsSimulation.h">
+      <Filter>Fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\FluidRigidCoupling.h">
+      <Filter>Fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\FluidSimulation.h">
+      <Filter>Fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\FluidBackend.h">
+      <Filter>Fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\MarchingCubes.h">
+      <Filter>Fluid</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -716,10 +752,13 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\CollidingContact.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\Jacobian.cpp">
+    <ClCompile Include="..\..\Src\Deformation\Cloth.cpp">
+      <Filter>Deformation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\ContinuousCollisionDetection.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\KeyFrameAnimation.cpp">
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\Jacobian.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\KinematicsTree.cpp">
@@ -734,8 +773,8 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MassParameters.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\MassSpring.cpp">
-      <Filter>RigidBodyDynamics</Filter>
+    <ClCompile Include="..\..\Src\Deformation\MassSpring.cpp">
+      <Filter>Deformation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\NarrowPhase.cpp">
       <Filter>RigidBodyDynamics</Filter>
@@ -743,13 +782,16 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\PositionBasedDynamicsSolver.cpp">
-      <Filter>RigidBodyDynamics</Filter>
+    <ClCompile Include="..\..\Src\Deformation\PBDSolver.cpp">
+      <Filter>Deformation</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\PositionConstraint.cpp">
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\Constraints.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Ragdoll.cpp">
+      <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\RagdollDefinition.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\WarmStart.cpp">
@@ -767,8 +809,11 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBody.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\XPBDRigidDynamicsSolver.cpp">
-      <Filter>RigidBodyDynamics</Filter>
+    <ClCompile Include="..\..\Src\Deformation\Rope.cpp">
+      <Filter>Deformation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Deformation\XPBDSolver.cpp">
+      <Filter>Deformation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Solver\NewtonRaphsonIteration.cpp">
       <Filter>Solver</Filter>
@@ -790,6 +835,33 @@
     </ClCompile>
     <ClCompile Include="..\..\Src\Destruction\DestructionCluster.cpp">
       <Filter>Destruction</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Modules\Tools\UE5StaticMeshParser.cpp">
+      <Filter>Modules\Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Fluid\AerodynamicsRigidCoupling.cpp">
+      <Filter>Fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Fluid\AerodynamicsSimulation.cpp">
+      <Filter>Fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Fluid\FluidRigidCoupling.cpp">
+      <Filter>Fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Fluid\FluidSimulation.cpp">
+      <Filter>Fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Fluid\FluidBackend.cpp">
+      <Filter>Fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Fluid\FluidBackendComputeShader.cpp">
+      <Filter>Fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Fluid\MarchingCubes.cpp">
+      <Filter>Fluid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\LCPSolverComputeShader.cpp">
+      <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

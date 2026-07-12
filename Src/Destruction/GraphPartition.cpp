@@ -8729,7 +8729,7 @@ namespace Riemann
 		{
 			return 1;
 		}
-		return std::max(min_s, std::min((metis::idx_t)(strength * 100.0f), max_s));
+		return std::max(min_s, std::min((metis::idx_t)(strength * scaler), max_s));
 	}
 
 	// https://www.lrz.de/services/software/mathematik/metis/metis_5_0.pdf, Page.22
@@ -8765,6 +8765,12 @@ namespace Riemann
 
 	bool PartitionCsrGraph(const std::vector<int>& nodes, std::vector<int>& xadj, std::vector<int>& adjncy, std::vector<int>* adjwgt, int num_part, std::vector<std::vector<int>>& parts)
 	{
+		parts.clear();
+		if (num_part <= 0 || nodes.size() < (size_t)num_part)
+		{
+			return false;
+		}
+
         bool success = false;
 
         metis::idx_t nCon = 1;
@@ -8777,14 +8783,14 @@ namespace Riemann
             int ret = metis::METIS_PartGraphKway(&nVertices, &nCon, xadj.data(), adjncy.data(),
                 NULL, NULL, (adjwgt ? adjwgt->data() : NULL), &num_part, NULL,
                 NULL, NULL, &objval, result.data(), default_error_handler);
-            success = ret != 0;
+            success = ret == metis::METIS_OK;
         }
         else
         {
             int ret = metis::METIS_PartGraphRecursive(&nVertices, &nCon, xadj.data(), adjncy.data(),
                 NULL, NULL, (adjwgt ? adjwgt->data() : NULL), &num_part, NULL,
                 NULL, NULL, &objval, result.data(), default_error_handler);
-            success = ret != 0;
+            success = ret == metis::METIS_OK;
         }
 
         if (!success)
@@ -8798,9 +8804,18 @@ namespace Riemann
             metis::idx_t part_idx = result[i];
             if (part_idx < 0 || part_idx >= (int)parts.size())
             {
+                parts.clear();
                 return false;
             }
             parts[part_idx].push_back(nodes[i]);
+        }
+        for (const std::vector<int>& part : parts)
+        {
+            if (part.empty())
+            {
+                parts.clear();
+                return false;
+            }
         }
 
         return true;

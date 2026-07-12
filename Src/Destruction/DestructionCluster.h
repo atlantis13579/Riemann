@@ -34,6 +34,7 @@ namespace Riemann
 		const Box3& GetLocalBounds() const { return mLocalBounds; }
 		const Vector3& GetCenterOfMass() const { return mCenterOfMass; }
 		RigidBodyDynamic* GetRigidBody() const { return mRigidBody; }
+		Geometry* GetCollisionProxy() const { return mCollisionProxy; }
 		const std::vector<Geometry*>& GetGeometries() const;
 
 		bool Contains(int ChunkIndex) const;
@@ -68,6 +69,7 @@ namespace Riemann
 		int mSourceIndexMin = -1;
 		std::vector<Maths::Transform> mLocalTransforms;
 		RigidBodyDynamic* mRigidBody = nullptr;
+		Geometry* mCollisionProxy = nullptr;
 	};
 
 }	// namespace Riemann

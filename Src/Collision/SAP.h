@@ -1,7 +1,6 @@
 #pragma once
 
-#include <assert.h>
-#include <stdlib.h>
+#include <algorithm>
 #include <map>
 #include <set>
 #include <vector>
@@ -47,7 +46,7 @@ namespace Riemann
 			for (auto k = 0; k < m_AxisList.size(); ++k)
 			{
 				InitAxis(k, m_AxisList[k]);
-				QSort(m_Axis[k], 0, (int)m_Axis[k].size() - 1);
+				std::sort(m_Axis[k].begin(), m_Axis[k].end(), Less);
 				PruneAxis(m_Axis[k], overlaps_count, 1 << m_AxisList[k]);
 				axis_filter |= (1 << m_AxisList[k]);
 			}
@@ -109,6 +108,19 @@ namespace Riemann
 			float* pvalue;
 		};
 
+		static bool Less(const SweepPoint& A, const SweepPoint& B)
+		{
+			if (A.value() != B.value())
+			{
+				return A.value() < B.value();
+			}
+			if (A.left() != B.left())
+			{
+				return A.left();
+			}
+			return A.id() < B.id();
+		}
+
 		void InitAxis(int i, int axis)
 		{
 			std::vector<SweepPoint>& Axis = m_Axis[i];
@@ -125,61 +137,25 @@ namespace Riemann
 			}
 		}
 
-		static void Swap(SweepPoint* a, SweepPoint* b)
-		{
-			SweepPoint t = *a;
-			*a = *b;
-			*b = t;
-		}
-
-		static void QSort(std::vector<SweepPoint>& axis, int low, int high)
-		{
-			if (low < high)
-			{
-				int k = low + (int)((high - low - 1) * 1.0f * rand() / RAND_MAX);
-				Swap(&axis[k], &axis[high]);
-
-				SweepPoint pivot = axis[high];
-				int i = low - 1;
-
-				for (int j = low; j <= high - 1; ++j)
-				{
-					if (axis[j].value() <= pivot.value())
-					{
-						i++;
-						Swap(&axis[i], &axis[j]);
-					}
-				}
-				Swap(&axis[i + 1], &axis[high]);
-
-				QSort(axis, low, i);
-				QSort(axis, i + 2, high);
-			}
-		}
-
 		static void PruneAxis(const std::vector<SweepPoint>& axis, std::map<OverlapKey, int>& overlaps_count, int filter)
 		{
 			std::set<int> active;
 
-			for (size_t i = 0; i < axis.size(); ++i)
+			for (const SweepPoint& curr : axis)
 			{
-				const SweepPoint* curr = &axis[i];
-				int curr_id = curr->id();
-				if (curr->left())
+				const int curr_id = curr.id();
+				if (curr.left())
 				{
 					for (int active_id : active)
 					{
-						if (curr_id != active_id)
+						OverlapKey key = PackOverlapKey(curr_id, active_id);
+						if (overlaps_count.find(key) == overlaps_count.end())
 						{
-							OverlapKey key = PackOverlapKey(curr_id, active_id);
-							if (overlaps_count.find(key) == overlaps_count.end())
-							{
-								overlaps_count.emplace(key, filter);
-							}
-							else
-							{
-								overlaps_count[key] |= filter;
-							}
+							overlaps_count.emplace(key, filter);
+						}
+						else
+						{
+							overlaps_count[key] |= filter;
 						}
 					}
 
@@ -187,30 +163,6 @@ namespace Riemann
 				}
 				else
 				{
-					for (size_t j = i + 1; j < axis.size(); ++j)
-					{
-						const SweepPoint* next = &axis[j];
-						if (curr->value() < next->value())
-						{
-							continue;
-						}
-
-						if (next->left())
-						{
-							int next_id = next->id();
-							assert(curr_id != next_id);
-							OverlapKey key = PackOverlapKey(curr_id, next_id);
-							if (overlaps_count.find(key) == overlaps_count.end())
-							{
-								overlaps_count.emplace(key, filter);
-							}
-							else
-							{
-								overlaps_count[key] |= filter;
-							}
-						}
-					}
-
 					active.erase(curr_id);
 				}
 			}

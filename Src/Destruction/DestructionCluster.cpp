@@ -102,6 +102,52 @@ namespace Riemann
 
 			return GeometryFactory::CreateOBB(Chunk.Bounds.GetCenter(), Chunk.Bounds.GetExtent());
 		}
+
+		Geometry* CreateClusterCollisionProxy(const std::vector<Geometry*>& Geometries, const Vector3& LocalOrigin, const Box3& Bounds)
+		{
+			std::vector<Vector3> Points;
+			for (Geometry* Geom : Geometries)
+			{
+				if (!Geom)
+				{
+					continue;
+				}
+
+				const Maths::Transform& WorldTransform = *Geom->GetTransform();
+				const ConvexMesh* Convex = Geom->GetShapeType() == PrimitiveType::CONVEX_MESH
+					? Geom->GetShapeObj<ConvexMesh>()
+					: nullptr;
+				if (Convex && Convex->Vertices && Convex->NumVertices >= 4)
+				{
+					for (uint16_t VertexIndex = 0; VertexIndex < Convex->NumVertices; ++VertexIndex)
+					{
+						Points.push_back(WorldTransform.LocalToWorld(Convex->Vertices[VertexIndex]));
+					}
+					continue;
+				}
+
+				Vector3 Corners[8];
+				const Box3 WorldBounds = Geom->GetBounds();
+				Box3::GetVertices(WorldBounds.Min, WorldBounds.Max, Corners);
+				Points.insert(Points.end(), Corners, Corners + 8);
+			}
+
+			if (Points.size() >= 4)
+			{
+				Geometry* Proxy = GeometryFactory::CreateConvexMesh();
+				ConvexMesh* ProxyConvex = Proxy ? Proxy->GetShapeObj<ConvexMesh>() : nullptr;
+				const float Tolerance = std::max(Bounds.MaxDim() * 1e-5f, 1e-6f);
+				if (ProxyConvex && ProxyConvex->BuildFromPoints(Points.data(), (int)Points.size(), LocalOrigin, Tolerance))
+				{
+					Proxy->UpdateVolumeProperties();
+					Proxy->SetTransform(LocalOrigin, Quaternion::One());
+					return Proxy;
+				}
+				GeometryFactory::DeleteGeometry(Proxy);
+			}
+
+			return GeometryFactory::CreateOBB(Bounds.GetCenter(), Bounds.GetExtent());
+		}
 	}
 
 	DestructionCluster::DestructionCluster(DestructionSet* InDestructSet, int InLevel, const std::vector<int>& InSourceIndices)
@@ -284,10 +330,39 @@ namespace Riemann
 		}
 		mLocalBounds = Bounds;
 
+		const bool bUseCollisionProxy = Geometries.size() > 1 && mDestructSet
+			&& mDestructSet->GetDestructionConstants().EnableClusterCollisionProxy;
+		for (Geometry* Geom : Geometries)
+		{
+			Geom->SetQueryEnabled(!bUseCollisionProxy);
+			Geom->SetSimulationEnabled(!bUseCollisionProxy);
+		}
+
+		std::vector<Geometry*> BodyGeometries = Geometries;
+		Geometry* CollisionProxy = nullptr;
+		if (bUseCollisionProxy)
+		{
+			CollisionProxy = CreateClusterCollisionProxy(Geometries, ClusterWorldTransform.pos, Bounds);
+			if (CollisionProxy)
+			{
+				MassParameters* ProxyMass = CollisionProxy->GetMassParameters();
+				ProxyMass->Mass = 0.0f;
+				ProxyMass->Volume = 0.0f;
+				ProxyMass->CenterOfMass = Vector3::Zero();
+				ProxyMass->InertiaMat = Matrix3::Zero();
+				BodyGeometries.push_back(CollisionProxy);
+			}
+		}
+
 		RigidBodyParam ClusterParam = Param;
 		ClusterParam.rigidType = RigidType::Dynamic;
-		RigidBody* Body = Simulation.CreateRigidBody(Geometries, ClusterParam, ClusterWorldTransform);
+		RigidBody* Body = Simulation.CreateRigidBody(BodyGeometries, ClusterParam, ClusterWorldTransform, false);
 		mRigidBody = Body ? Body->CastDynamic() : nullptr;
+		mCollisionProxy = mRigidBody ? CollisionProxy : nullptr;
+		if (!mRigidBody && CollisionProxy)
+		{
+			GeometryFactory::DeleteGeometry(CollisionProxy);
+		}
 		if (mRigidBody)
 		{
 			mRigidBody->Parent = mDestructSet;
@@ -346,6 +421,7 @@ namespace Riemann
 			mRigidBody->Parent = nullptr;
 		}
 		mRigidBody = nullptr;
+		mCollisionProxy = nullptr;
 	}
 
 	void DestructionCluster::SetSourceIndices(const std::vector<int>& Indices)

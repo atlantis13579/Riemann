@@ -1,6 +1,12 @@
 
 #include "Test.h"
 
+#include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <float.h>
+#include <vector>
+
 #include "../Src/Maths/Matrix3.h"
 #include "../Src/Maths/MatrixMxN.h"
 #include "../Src/LinearSystem/DenseMatrix.h"
@@ -14,6 +20,7 @@
 #include "../Src/LinearSystem/SparseMatrix.h"
 #include "../Src/LinearSystem/SparseVector.h"
 #include "../Src/LinearSystem/ConjugateGradientSolver.h"
+#include "../Src/RigidBodyDynamics/LCPSolver.h"
 
 // using namespace Riemann;
 
@@ -22,13 +29,11 @@ void TestMatrix1()
 	printf("Running TestMatrix\n");
 
 	Maths::LinearAlgebra::TDenseMatrix<float> M(10);
-	M[0][0] = 2.0f;
-	M[0][1] = 3.0f;
-	M(1, 0) = -1.5f;
-	M(1, 1) = 9.0f;
 	for (int i = 0; i < M.GetRows(); ++i)
 	for (int j = 0; j < M.GetRows(); ++j)
-		M(i, j) = 1.0f * rand() / RAND_MAX;
+		M(i, j) = 0.1f * rand() / RAND_MAX;
+	for (int i = 0; i < M.GetRows(); ++i)
+		M(i, i) += 2.0f;
 
 	Maths::LinearAlgebra::TDenseMatrix<float> invM = (M+M).Inverse();
 	Maths::LinearAlgebra::TDenseMatrix<float> Id = (M+M) * invM;
@@ -54,13 +59,11 @@ void TestMatrix2()
 	printf("Running TestMatrix2\n");
 
 	Maths::MatrixN<10> M;
-	M[0][0] = 2.0f;
-	M[0][1] = 3.0f;
-	M(1, 0) = -1.5f;
-	M(1, 1) = 9.0f;
 	for (int i = 0; i < 10; ++i)
 	for (int j = 0; j < 10; ++j)
-		M(i, j) = 1.0f * rand() / RAND_MAX;
+		M(i, j) = 0.1f * rand() / RAND_MAX;
+	for (int i = 0; i < 10; ++i)
+		M(i, i) += 2.0f;
 
 	Maths::MatrixN<10> invM = (M + M).Inverse();
 	Maths::MatrixN<10> Id = (M + M) * invM;
@@ -159,6 +162,7 @@ void TestDenseMatrixUtilities()
 	EXPECT_NEAR(M.L1Norm(), 5.0f, 1e-6f);
 	EXPECT_NEAR(M.L2Norm(), sqrtf(13.0f), 1e-6f);
 	EXPECT_NEAR(M.LpNorm(2), sqrtf(13.0f), 1e-6f);
+	EXPECT_NEAR(M.LpNorm(3), std::pow(35.0f, 1.0f / 3.0f), 1e-6f);
 
 	float upper_data[] = { 1.0f, 2.0f, 0.0f, 3.0f };
 	Maths::LinearAlgebra::TDenseMatrix<float> upper(upper_data, 2, 2);
@@ -224,6 +228,467 @@ void TestPGS()
 	}
 
 	return;
+}
+
+void TestBoundedLCP()
+{
+	printf("Running TestBoundedLCP\n");
+
+	const float matrix[] =
+	{
+		2.0f, -1.0f, 0.0f,
+		-1.0f, 2.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+	};
+	const float bias[] = { -1.0f, -1.0f, -4.0f };
+	const float lower[] = { 0.0f, 0.0f, -2.0f };
+	const float upper[] = { FLT_MAX, FLT_MAX, 2.0f };
+	float lambda[] = { 0.0f, 0.0f, 0.0f };
+
+	Riemann::LCPProblem problem;
+	problem.Matrix = matrix;
+	problem.Bias = bias;
+	problem.LowerBounds = lower;
+	problem.UpperBounds = upper;
+	problem.Dimension = 3;
+	Riemann::LCPSolverSettings settings;
+	settings.MaxIterations = 64;
+	settings.Tolerance = 1.0e-6f;
+	Riemann::LCPSolverResult result;
+	EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(problem, lambda, settings, &result));
+	EXPECT(result.Converged);
+	EXPECT(result.Backend == Riemann::SolverBackend::CPU);
+	EXPECT_NEAR(lambda[0], 1.0f, 1.0e-4f);
+	EXPECT_NEAR(lambda[1], 1.0f, 1.0e-4f);
+	EXPECT_NEAR(lambda[2], 2.0f, 1.0e-4f);
+	const float cpuLambda[] = { lambda[0], lambda[1], lambda[2] };
+	settings.Backend = Riemann::SolverBackend::SIMD;
+	lambda[0] = lambda[1] = lambda[2] = 0.0f;
+	EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(problem, lambda, settings, &result));
+	EXPECT(result.Converged);
+	EXPECT(result.Backend == Riemann::SolverBackend::SIMD);
+	EXPECT_FALSE(result.UsedFallback);
+	for (int Index = 0; Index < 3; ++Index)
+	{
+		EXPECT_NEAR(lambda[Index], cpuLambda[Index], 1.0e-5f);
+	}
+	const bool computeAvailable = Riemann::LCPSolver::IsBackendAvailable(
+		Riemann::SolverBackend::ComputeShader);
+	if (computeAvailable)
+	{
+		Riemann::LCPSolverSettings computeSettings = settings;
+		computeSettings.Backend = Riemann::SolverBackend::ComputeShader;
+		computeSettings.AllowBackendFallback = false;
+		lambda[0] = lambda[1] = lambda[2] = 0.0f;
+		EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(
+			problem, lambda, computeSettings, &result));
+		EXPECT(result.Converged);
+		EXPECT(result.RequestedBackend == Riemann::SolverBackend::ComputeShader);
+		EXPECT(result.Backend == Riemann::SolverBackend::ComputeShader);
+		EXPECT_FALSE(result.UsedFallback);
+		for (int Index = 0; Index < 3; ++Index)
+		{
+			EXPECT_NEAR(lambda[Index], cpuLambda[Index], 1.0e-4f);
+		}
+	}
+	else
+	{
+		printf("  ComputeShader bounded LCP skipped: backend unavailable\n");
+	}
+#if defined(RIEMANN_ENABLE_CUDA)
+	settings.Backend = Riemann::SolverBackend::CUDA;
+	settings.AllowBackendFallback = true;
+	lambda[0] = lambda[1] = lambda[2] = 0.0f;
+	EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(problem, lambda, settings, &result));
+	EXPECT(result.Converged);
+	EXPECT(result.RequestedBackend == Riemann::SolverBackend::CUDA);
+	if (result.Backend == Riemann::SolverBackend::CUDA)
+	{
+		EXPECT_FALSE(result.UsedFallback);
+	}
+	else
+	{
+		EXPECT(result.Backend == Riemann::SolverBackend::CPU);
+		EXPECT(result.UsedFallback);
+	}
+	for (int Index = 0; Index < 3; ++Index)
+	{
+		EXPECT_NEAR(lambda[Index], cpuLambda[Index], 1.0e-4f);
+	}
+	const bool cudaAvailable = Riemann::LCPSolver::IsBackendAvailable(Riemann::SolverBackend::CUDA);
+	settings.AllowBackendFallback = false;
+	lambda[0] = lambda[1] = lambda[2] = 0.0f;
+	const bool strictCudaSolved = Riemann::LCPSolver::SolveProjectedGaussSeidel(
+		problem, lambda, settings, &result);
+	if (cudaAvailable)
+	{
+		EXPECT(strictCudaSolved);
+		EXPECT(result.Backend == Riemann::SolverBackend::CUDA);
+	}
+	else
+	{
+		EXPECT_FALSE(strictCudaSolved);
+	}
+#endif
+	settings.Backend = Riemann::SolverBackend::SIMD;
+	settings.AllowBackendFallback = true;
+
+	const float frictionMatrix[] =
+	{
+		1.0f, 0.0f,
+		0.0f, 1.0f,
+	};
+	const float frictionBias[] = { -2.0f, -4.0f };
+	const float frictionLower[] = { 0.0f, -FLT_MAX };
+	const float frictionUpper[] = { FLT_MAX, FLT_MAX };
+	const int normalRows[] = { -1, 0 };
+	const float friction[] = { 0.0f, 0.5f };
+	float frictionLambda[] = { 0.0f, 0.0f };
+	problem.Matrix = frictionMatrix;
+	problem.Bias = frictionBias;
+	problem.LowerBounds = frictionLower;
+	problem.UpperBounds = frictionUpper;
+	problem.FrictionNormalIndices = normalRows;
+	problem.FrictionCoefficients = friction;
+	problem.Dimension = 2;
+	EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(problem, frictionLambda, settings, &result));
+	EXPECT(result.Converged);
+	EXPECT_NEAR(frictionLambda[0], 2.0f, 1.0e-5f);
+	EXPECT_NEAR(frictionLambda[1], 1.0f, 1.0e-5f);
+	if (computeAvailable)
+	{
+		Riemann::LCPSolverSettings computeSettings = settings;
+		computeSettings.Backend = Riemann::SolverBackend::ComputeShader;
+		computeSettings.AllowBackendFallback = false;
+		frictionLambda[0] = frictionLambda[1] = 0.0f;
+		EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(
+			problem, frictionLambda, computeSettings, &result));
+		EXPECT(result.Converged);
+		EXPECT(result.RequestedBackend == Riemann::SolverBackend::ComputeShader);
+		EXPECT(result.Backend == Riemann::SolverBackend::ComputeShader);
+		EXPECT_FALSE(result.UsedFallback);
+		EXPECT_NEAR(frictionLambda[0], 2.0f, 1.0e-4f);
+		EXPECT_NEAR(frictionLambda[1], 1.0f, 1.0e-4f);
+	}
+
+	const float invalidMatrix[] = { 0.0f };
+	const float invalidBias[] = { -1.0f };
+	float invalidLambda[] = { 0.0f };
+	problem = Riemann::LCPProblem();
+	problem.Matrix = invalidMatrix;
+	problem.Bias = invalidBias;
+	problem.Dimension = 1;
+	EXPECT_FALSE(Riemann::LCPSolver::SolveProjectedGaussSeidel(problem, invalidLambda, settings, &result));
+
+	const float invalidFrictionMatrix[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+	const float invalidFrictionBias[] = { -1.0f, -1.0f };
+	const float invalidFrictionLower[] = { 0.0f, 0.25f };
+	const float invalidFrictionUpper[] = { FLT_MAX, FLT_MAX };
+	const int invalidFrictionNormals[] = { -1, 0 };
+	const float invalidFrictionCoefficients[] = { 0.0f, 0.5f };
+	float invalidFrictionLambda[] = { 0.0f, 0.0f };
+	problem.Matrix = invalidFrictionMatrix;
+	problem.Bias = invalidFrictionBias;
+	problem.LowerBounds = invalidFrictionLower;
+	problem.UpperBounds = invalidFrictionUpper;
+	problem.FrictionNormalIndices = invalidFrictionNormals;
+	problem.FrictionCoefficients = invalidFrictionCoefficients;
+	problem.Dimension = 2;
+	settings.Backend = Riemann::SolverBackend::CPU;
+	EXPECT_FALSE(Riemann::LCPSolver::SolveProjectedGaussSeidel(
+		problem, invalidFrictionLambda, settings, &result));
+}
+
+void TestLCPBackendParity()
+{
+	printf("Running TestLCPBackendParity\n");
+
+	const int dimension = 8;
+	float matrix[dimension * dimension] = {};
+	float bias[dimension];
+	float cpuLambda[dimension] = {};
+	float simdLambda[dimension] = {};
+	float computeLambda[dimension] = {};
+#if defined(RIEMANN_ENABLE_CUDA)
+	float cudaLambda[dimension] = {};
+#endif
+	for (int row = 0; row < dimension; ++row)
+	{
+		matrix[row * dimension + row] = 4.0f;
+		if (row > 0)
+		{
+			matrix[row * dimension + row - 1] = -1.0f;
+		}
+		if (row + 1 < dimension)
+		{
+			matrix[row * dimension + row + 1] = -1.0f;
+		}
+		bias[row] = -1.0f - 0.125f * row;
+	}
+
+	Riemann::LCPProblem problem;
+	problem.Matrix = matrix;
+	problem.Bias = bias;
+	problem.Dimension = dimension;
+	Riemann::LCPSolverSettings settings;
+	settings.MaxIterations = 128;
+	settings.Tolerance = 1.0e-6f;
+	Riemann::LCPSolverResult cpuResult;
+	EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(
+		problem, cpuLambda, settings, &cpuResult));
+	EXPECT(cpuResult.Converged);
+
+	settings.Backend = Riemann::SolverBackend::SIMD;
+	Riemann::LCPSolverResult simdResult;
+	EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(
+		problem, simdLambda, settings, &simdResult));
+	EXPECT(simdResult.Converged);
+	for (int row = 0; row < dimension; ++row)
+	{
+		EXPECT_NEAR(simdLambda[row], cpuLambda[row], 2.0e-5f);
+		float residual = bias[row];
+		for (int column = 0; column < dimension; ++column)
+		{
+			residual += matrix[row * dimension + column] * simdLambda[column];
+		}
+		EXPECT(simdLambda[row] >= 0.0f);
+		EXPECT(std::fabs(residual) <= 1.0e-4f);
+	}
+
+	const bool computeAvailable = Riemann::LCPSolver::IsBackendAvailable(
+		Riemann::SolverBackend::ComputeShader);
+	if (computeAvailable)
+	{
+		Riemann::LCPSolverSettings computeSettings = settings;
+		computeSettings.Backend = Riemann::SolverBackend::ComputeShader;
+		computeSettings.AllowBackendFallback = false;
+		Riemann::LCPSolverResult computeResult;
+		EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(
+			problem, computeLambda, computeSettings, &computeResult));
+		EXPECT(computeResult.Converged);
+		EXPECT(computeResult.RequestedBackend == Riemann::SolverBackend::ComputeShader);
+		EXPECT(computeResult.Backend == Riemann::SolverBackend::ComputeShader);
+		EXPECT_FALSE(computeResult.UsedFallback);
+		for (int row = 0; row < dimension; ++row)
+		{
+			EXPECT_NEAR(computeLambda[row], cpuLambda[row], 1.0e-4f);
+			float residual = bias[row];
+			for (int column = 0; column < dimension; ++column)
+			{
+				residual += matrix[row * dimension + column] * computeLambda[column];
+			}
+			EXPECT(computeLambda[row] >= 0.0f);
+			EXPECT(std::fabs(residual) <= 1.0e-4f);
+		}
+	}
+	else
+	{
+		printf("  ComputeShader backend parity skipped: backend unavailable\n");
+	}
+
+#if defined(RIEMANN_ENABLE_CUDA)
+	settings.Backend = Riemann::SolverBackend::CUDA;
+	Riemann::LCPSolverResult cudaResult;
+	EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(
+		problem, cudaLambda, settings, &cudaResult));
+	EXPECT(cudaResult.Converged);
+	for (int row = 0; row < dimension; ++row)
+	{
+		EXPECT_NEAR(cudaLambda[row], cpuLambda[row], 1.0e-4f);
+	}
+#endif
+}
+
+void TestLCPSolverPerformance()
+{
+	printf("Running TestLCPSolverPerformance\n");
+	printf("  Public LCPProblem storage is dense row-major; sparse rows retain explicit zeroes.\n");
+	printf("  Times are end-to-end public solver calls, including GPU upload and readback.\n");
+	printf("  pattern  size    nnz%%      CPU ms     SIMD ms  Compute ms     CUDA ms   CPU/SIMD  CPU/Compute   CPU/CUDA\n");
+
+	struct BackendTiming
+	{
+		double MillisecondsPerSolve = 0.0;
+		int Iterations = 0;
+		bool Available = false;
+		std::vector<float> Lambda;
+	};
+
+	const int dimensions[] = { 16, 64, 256, 512 };
+	const bool sparsePatterns[] = { true, false };
+	const Riemann::SolverBackend backends[] = {
+		Riemann::SolverBackend::CPU,
+		Riemann::SolverBackend::SIMD,
+		Riemann::SolverBackend::ComputeShader,
+#if defined(RIEMANN_ENABLE_CUDA)
+		Riemann::SolverBackend::CUDA,
+#endif
+	};
+	const int backendCount = (int)(sizeof(backends) / sizeof(backends[0]));
+
+	auto PairHash = [](int row, int column) -> uint32_t
+	{
+		uint32_t value = (uint32_t)(row + 1) * 0x9e3779b9u
+			^ (uint32_t)(column + 1) * 0x85ebca6bu;
+		value ^= value >> 16;
+		value *= 0x7feb352du;
+		value ^= value >> 15;
+		return value;
+	};
+
+	for (bool sparsePattern : sparsePatterns)
+	{
+		for (int dimension : dimensions)
+		{
+			std::vector<float> matrix((size_t)dimension * dimension, 0.0f);
+			std::vector<float> bias((size_t)dimension, 0.0f);
+			std::vector<float> rowAbsoluteSum((size_t)dimension, 0.0f);
+			size_t nonZeroCount = 0;
+			for (int row = 0; row < dimension; ++row)
+			{
+				for (int column = row + 1; column < dimension; ++column)
+				{
+					const uint32_t hash = PairHash(row, column);
+					const bool include = !sparsePattern || column == row + 1
+						|| hash % 1000u < 40u;
+					if (!include)
+					{
+						continue;
+					}
+					const float coupling = -0.01f * (float)(1u + hash % 7u);
+					matrix[(size_t)row * dimension + column] = coupling;
+					matrix[(size_t)column * dimension + row] = coupling;
+					rowAbsoluteSum[(size_t)row] += std::fabs(coupling);
+					rowAbsoluteSum[(size_t)column] += std::fabs(coupling);
+					nonZeroCount += 2;
+				}
+			}
+			for (int row = 0; row < dimension; ++row)
+			{
+				matrix[(size_t)row * dimension + row] = rowAbsoluteSum[(size_t)row] + 1.0f;
+				bias[(size_t)row] = -0.75f - 0.015625f * (float)(row & 15);
+				++nonZeroCount;
+			}
+
+			Riemann::LCPProblem problem;
+			problem.Matrix = matrix.data();
+			problem.Bias = bias.data();
+			problem.Dimension = dimension;
+			Riemann::LCPSolverSettings settings;
+			settings.MaxIterations = 128;
+			settings.Tolerance = 1.0e-5f;
+			settings.AllowBackendFallback = false;
+
+			std::vector<BackendTiming> timings((size_t)backendCount);
+			for (int backendIndex = 0; backendIndex < backendCount; ++backendIndex)
+			{
+				const Riemann::SolverBackend backend = backends[backendIndex];
+				BackendTiming& timing = timings[(size_t)backendIndex];
+				timing.Available = Riemann::LCPSolver::IsBackendAvailable(backend);
+				if (!timing.Available)
+				{
+					continue;
+				}
+
+				settings.Backend = backend;
+				timing.Lambda.assign((size_t)dimension, 0.0f);
+				Riemann::LCPSolverResult result;
+				bool solved = Riemann::LCPSolver::SolveProjectedGaussSeidel(
+					problem, timing.Lambda.data(), settings, &result);
+				EXPECT(solved);
+				EXPECT(result.Converged);
+				EXPECT(result.Backend == backend);
+				EXPECT_FALSE(result.UsedFallback);
+
+				int repeatCount = 1;
+				double elapsedMilliseconds = 0.0;
+				do
+				{
+					const auto begin = std::chrono::steady_clock::now();
+					for (int repeat = 0; repeat < repeatCount; ++repeat)
+					{
+						std::fill(timing.Lambda.begin(), timing.Lambda.end(), 0.0f);
+						solved = Riemann::LCPSolver::SolveProjectedGaussSeidel(
+							problem, timing.Lambda.data(), settings, &result) && solved;
+					}
+					elapsedMilliseconds = std::chrono::duration<double, std::milli>(
+						std::chrono::steady_clock::now() - begin).count();
+					if (elapsedMilliseconds < 8.0 && repeatCount < 256)
+					{
+						repeatCount *= 2;
+					}
+					else
+					{
+						break;
+					}
+				} while (true);
+
+				EXPECT(solved);
+				EXPECT(result.Converged);
+				EXPECT(result.RequestedBackend == backend);
+				EXPECT(result.Backend == backend);
+				EXPECT_FALSE(result.UsedFallback);
+				timing.MillisecondsPerSolve = elapsedMilliseconds / repeatCount;
+				timing.Iterations = result.Iterations;
+			}
+
+			EXPECT(timings[0].Available && timings[1].Available);
+			for (int backendIndex = 1; backendIndex < backendCount; ++backendIndex)
+			{
+				if (!timings[(size_t)backendIndex].Available)
+				{
+					continue;
+				}
+				for (int row = 0; row < dimension; ++row)
+				{
+					EXPECT_NEAR(timings[(size_t)backendIndex].Lambda[(size_t)row],
+						timings[0].Lambda[(size_t)row], 2.0e-4f);
+				}
+			}
+
+			const double nonZeroPercent = 100.0 * (double)nonZeroCount
+				/ ((double)dimension * dimension);
+			const double cpuMilliseconds = timings[0].MillisecondsPerSolve;
+			const double simdMilliseconds = timings[1].MillisecondsPerSolve;
+			const bool computeAvailable = timings[2].Available;
+			char computeMillisecondsText[32] = "n/a";
+			char computeRatioText[32] = "n/a";
+			char computeIterationsText[16] = "n/a";
+			if (computeAvailable)
+			{
+				snprintf(computeMillisecondsText, sizeof(computeMillisecondsText), "%.5f",
+					timings[2].MillisecondsPerSolve);
+				snprintf(computeRatioText, sizeof(computeRatioText), "%.2fx",
+					cpuMilliseconds / timings[2].MillisecondsPerSolve);
+				snprintf(computeIterationsText, sizeof(computeIterationsText), "%d",
+					timings[2].Iterations);
+			}
+			char cudaMillisecondsText[32] = "n/a";
+			char cudaRatioText[32] = "n/a";
+			char cudaIterationsText[16] = "n/a";
+#if defined(RIEMANN_ENABLE_CUDA)
+			const int cudaBackendIndex = 3;
+			const bool cudaAvailable = backendCount > cudaBackendIndex
+				&& timings[(size_t)cudaBackendIndex].Available;
+			if (cudaAvailable)
+			{
+				snprintf(cudaMillisecondsText, sizeof(cudaMillisecondsText), "%.5f",
+					timings[(size_t)cudaBackendIndex].MillisecondsPerSolve);
+				snprintf(cudaRatioText, sizeof(cudaRatioText), "%.2fx",
+					cpuMilliseconds
+					/ timings[(size_t)cudaBackendIndex].MillisecondsPerSolve);
+				snprintf(cudaIterationsText, sizeof(cudaIterationsText), "%d",
+					timings[(size_t)cudaBackendIndex].Iterations);
+			}
+#endif
+			printf("  %-7s %4d %7.2f %11.5f %11.5f %11s %11s %10.2fx %11s %10s  iter=%d/%d/%s/%s\n",
+				sparsePattern ? "sparse" : "dense", dimension, nonZeroPercent,
+				cpuMilliseconds, simdMilliseconds, computeMillisecondsText,
+				cudaMillisecondsText, cpuMilliseconds / simdMilliseconds,
+				computeRatioText, cudaRatioText, timings[0].Iterations,
+				timings[1].Iterations, computeIterationsText, cudaIterationsText);
+		}
+	}
 }
 
 void TestSVD()
@@ -435,6 +900,9 @@ void TestMatrix()
 	TestSparse();
 	TestSolve();
 	TestPGS();
+	TestBoundedLCP();
+	TestLCPBackendParity();
+	TestLCPSolverPerformance();
 	TestSVD();
 	TestPseudoInverse();
 	TestPolarDecomp();

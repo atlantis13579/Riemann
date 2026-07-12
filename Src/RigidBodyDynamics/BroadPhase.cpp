@@ -44,11 +44,23 @@ namespace Riemann
 	{
 		Geometry* geom1 = state1.Geom;
 		Geometry* geom2 = state2.Geom;
-		if (geom1 == nullptr || geom2 == nullptr || !geom1->IsSimulationEnabled() || !geom2->IsSimulationEnabled())
+		if (geom1 == nullptr || geom2 == nullptr)
+		{
+			return false;
+		}
+		const bool simulationPair = geom1->IsSimulationEnabled() && geom2->IsSimulationEnabled();
+		const bool triggerPair = geom1->IsTriggerEnabled() || geom2->IsTriggerEnabled();
+		if (!simulationPair && !triggerPair)
 		{
 			return false;
 		}
 		if (geom1->GetParent<void*>() == geom2->GetParent<void*>())
+		{
+			return false;
+		}
+		RigidBody* body1 = state1.Body;
+		RigidBody* body2 = state2.Body;
+		if (body1 && body2 && !body1->CanCollideWith(body2))
 		{
 			return false;
 		}
@@ -66,9 +78,12 @@ namespace Riemann
 
 			int n = (int)states.size();
 			for (int i = 0; i < n; ++i)
-			for (int j = 0; j < n; ++j)
+			for (int j = i + 1; j < n; ++j)
 			{
-				if (i == j) continue;
+				if (!IsValidPair(states[i], states[j]))
+				{
+					continue;
+				}
 				overlaps->emplace_back(i, j);
 			}
 		}
@@ -774,7 +789,8 @@ namespace Riemann
 			for (int i = 0; i < (int)states.size(); ++i)
 			{
 				const GeometryWorldState& state = states[i];
-				if (state.Geom == nullptr || !state.Geom->IsSimulationEnabled())
+				if (state.Geom == nullptr
+					|| (!state.Geom->IsSimulationEnabled() && !state.Geom->IsTriggerEnabled()))
 				{
 					continue;
 				}

@@ -1,0 +1,37 @@
+{
+  "name": "Ragdoll",
+  "physics": { "gravity": [0.0, -9.8, 0.0] },
+  "camera": { "center": [0.0, 3.5, 0.0], "orbit": [-1.5708, 0.22, 27.0], "near": 0.05, "far": 1000.0 },
+  "light": { "direction": [0.520459, -0.676941, -0.520455], "color": [1.0, 0.96, 0.90], "ambient": 0.40, "shadowCenter": [0.0, 3.5, 0.0], "shadowDistance": 50.0, "shadowSize": 38.0 },
+  "objects": [
+    {
+      "id": "trimesh_stairs",
+      "type": "stairMesh",
+      "body": "static",
+      "position": [0.0, -1.5, 0.0],
+      "stepCount": 14,
+      "stepWidth": 0.9,
+      "stepHeight": 0.80,
+      "stepDepth": 7.0,
+      "color": [0.52, 0.57, 0.64, 1.0]
+    },
+    {
+      "id": "landing",
+      "type": "box",
+      "body": "static",
+      "position": [-11.0, -1.75, 0.0],
+      "halfExtent": [4.0, 0.25, 3.5],
+      "color": [0.46, 0.51, 0.58, 1.0]
+    }
+  ],
+  "ragdolls": [
+    {
+      "id": "falling_ragdoll",
+      "position": [5.0, 11.6, 0.0],
+      "rotation": [-0.4545195, -0.5416752, 0.4545195, 0.5416752],
+      "scale": 1.15,
+      "disableSelfCollision": false,
+      "color": [0.92, 0.48, 0.20, 1.0]
+    }
+  ]
+}

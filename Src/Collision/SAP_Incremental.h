@@ -54,11 +54,10 @@ namespace Riemann
 			for (int j = 1; j < nsize; j++)
 			{
 				SAP::SweepPoint pivot = axis[j];
-				float pivot_value = pivot.value();
 
 				int i = j - 1;
 
-				while (i >= 0 && axis[i].value() > pivot_value)
+				while (i >= 0 && SAP::Less(pivot, axis[i]))
 				{
 					SAP::SweepPoint curr = axis[i];
 

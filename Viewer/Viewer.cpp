@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <sstream>
 
@@ -33,6 +34,10 @@
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/CollisionPrimitive/PrimitiveType.h"
+#include "../Src/Fluid/AerodynamicsRigidCoupling.h"
+#include "../Src/Fluid/AerodynamicsSimulation.h"
+#include "../Src/Fluid/FluidRigidCoupling.h"
+#include "../Src/Fluid/FluidSimulation.h"
 #include "../Src/Modules/Tools/PhysxBinaryParser.h"
 #include "../Src/RigidBodyDynamics/KinematicsTree.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
@@ -169,6 +174,11 @@ namespace Riemann
 			return HasPathExtension(fileName, "flat");
 		}
 
+		bool HasUassetExtension(const std::string& fileName)
+		{
+			return HasPathExtension(fileName, "uasset");
+		}
+
 		std::vector<std::string> ListJsonFiles(const std::string& directory)
 		{
 			std::vector<std::string> files;
@@ -280,11 +290,44 @@ namespace Riemann
 			return files;
 		}
 
+		std::vector<std::string> ListUassetFiles(const std::string& directory)
+		{
+			std::vector<std::string> files;
+#if defined(_WIN32)
+			const std::string searchPath = JoinPath(directory, "*.uasset");
+			WIN32_FIND_DATAA findData;
+			HANDLE findHandle = FindFirstFileA(searchPath.c_str(), &findData);
+			if (findHandle != INVALID_HANDLE_VALUE)
+			{
+				do
+				{
+					if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+						files.push_back(JoinPath(directory, findData.cFileName));
+				} while (FindNextFileA(findHandle, &findData));
+				FindClose(findHandle);
+			}
+#else
+			DIR* dir = opendir(directory.c_str());
+			if (dir != nullptr)
+			{
+				struct dirent* entry = nullptr;
+				while ((entry = readdir(dir)) != nullptr)
+					if (HasUassetExtension(entry->d_name))
+						files.push_back(JoinPath(directory, entry->d_name));
+				closedir(dir);
+			}
+#endif
+			std::sort(files.begin(), files.end());
+			return files;
+		}
+
 		std::vector<std::string> ListMeshFiles(const std::string& directory)
 		{
 			std::vector<std::string> files = ListObjFiles(directory);
 			const std::vector<std::string> flatFiles = ListFlatFiles(directory);
 			files.insert(files.end(), flatFiles.begin(), flatFiles.end());
+			const std::vector<std::string> uassetFiles = ListUassetFiles(directory);
+			files.insert(files.end(), uassetFiles.begin(), uassetFiles.end());
 			std::sort(files.begin(), files.end());
 			files.erase(std::unique(files.begin(), files.end()), files.end());
 			return files;
@@ -378,12 +421,54 @@ namespace Riemann
 		{
 			return IsConvexDecompositionMode(mode) ? "Convex Decomposition" : "Mesh Cutting";
 		}
+
+		bool IntersectRayBounds(const Ray3& Ray, const Vector3& BoundsMin,
+			const Vector3& BoundsMax, float* HitTime)
+		{
+			float NearTime = 0.0f;
+			float FarTime = 1000.0f;
+			for (int Axis = 0; Axis < 3; ++Axis)
+			{
+				if (std::fabs(Ray.Dir[Axis]) <= 1.0e-7f)
+				{
+					if (Ray.Origin[Axis] < BoundsMin[Axis]
+						|| Ray.Origin[Axis] > BoundsMax[Axis]) return false;
+					continue;
+				}
+				float T0 = (BoundsMin[Axis] - Ray.Origin[Axis]) / Ray.Dir[Axis];
+				float T1 = (BoundsMax[Axis] - Ray.Origin[Axis]) / Ray.Dir[Axis];
+				if (T1 < T0) std::swap(T0, T1);
+				NearTime = std::max(NearTime, T0);
+				FarTime = std::min(FarTime, T1);
+				if (FarTime < NearTime) return false;
+			}
+			if (HitTime) *HitTime = NearTime;
+			return FarTime >= 0.0f;
+		}
+
+		FluidBackend ParseFluidBackend(const std::string& Name)
+		{
+			if (Name == "simd") return FluidBackend::SIMD;
+			if (Name == "cuda") return FluidBackend::CUDA;
+			if (Name == "compute" || Name == "compute_shader")
+				return FluidBackend::ComputeShader;
+			return FluidBackend::CPU;
+		}
 	}
 
 	WorldViewer::WorldViewer(RenderThread* renderThread, const std::string& sceneFile)
 		: m_World(new SceneWorld())
+		, m_FluidCoupling(nullptr)
+		, m_AerodynamicsCoupling(nullptr)
 		, m_RenderThread(renderThread)
 		, m_HighlightedGeometry(nullptr)
+		, m_SceneDragActive(false)
+		, m_FieldDragActive(false)
+		, m_SceneDragPlanePoint(Vector3::Zero())
+		, m_SceneDragPlaneNormal(Vector3::UnitZ())
+		, m_SceneDragOffset(Vector3::Zero())
+		, m_SceneDragLastTime(std::chrono::steady_clock::now())
+		, m_FieldDragPoint(Vector3::Zero())
 		, m_CamCenter(Vector3::Zero())
 		, m_CamParam(Vector3(1.0f, 0.6f, 15.0f))
 		, m_CuttingPanelActive(false)
@@ -403,6 +488,10 @@ namespace Riemann
 		, m_ShowGeometryQueryBounds(false)
 		, m_RenderWireframe(false)
 		, m_RenderRevision(0)
+		, m_FluidDemoActive(false)
+		, m_FluidRenderFrame(0)
+		, m_GasDemoActive(false)
+		, m_GasRenderFrame(0)
 		, m_ImguiDemoIndex(0)
 		, m_ImguiObjectCount(0)
 		, m_ImguiCameraDistance(15.0f)
@@ -452,6 +541,7 @@ namespace Riemann
 		, m_ImguiPendingShowGeometryQueryBoundsValue(false)
 		, m_ImguiPendingRenderWireframe(false)
 		, m_ImguiPendingRenderWireframeValue(false)
+		, m_ImguiPendingShootProjectile(false)
 		, m_PhysicsFpsTime(std::chrono::steady_clock::now())
 		, m_PhysicsFrameCount(0)
 		, m_PhysicsFps(0.0)
@@ -472,7 +562,7 @@ namespace Riemann
 
 		if (!LoadScene(initialScene))
 		{
-			LoadScene(m_SceneFiles.empty() ? ResolveSceneFile("demo.json") : m_SceneFiles.front());
+			LoadScene(m_SceneFiles.empty() ? ResolveSceneFile("01_demo.json") : m_SceneFiles.front());
 		}
 
 		m_KeyboardEvent = [this](char c)
@@ -486,19 +576,7 @@ namespace Riemann
 				return;
 			}
 
-			static int projectileId = 0;
-			const Vector3 p0 = GetCameraPosition();
-			const Vector3 direction = SafeUnitVector(m_CamCenter - p0, Vector3::UnitZ());
-
-			std::ostringstream ss;
-			ss << "projectile_" << projectileId++;
-			Geometry* geometry = m_World->AddProjectileSphere(ss.str(), p0, 1.0f, direction * 100.0f, Vector4(0.95f, 0.58f, 0.20f, 1.0f));
-			if (geometry)
-			{
-				const SceneObjectInstance& instance = m_World->GetObjects().back();
-				AddGeometryToRender(instance.Id, geometry, instance.Color, instance.RenderBounds);
-				UpdateImguiState();
-			}
+			ShootProjectile();
 		};
 
 		if (m_RenderThread)
@@ -511,12 +589,257 @@ namespace Riemann
 
 	WorldViewer::~WorldViewer()
 	{
+		DeactivateGasDemo();
+		DeactivateFluidDemo();
 		if (m_RenderThread)
 		{
 			m_RenderThread->Submit([](Renderer& renderer) {
 				renderer.SetImguiDrawCallback(nullptr, nullptr);
 				renderer.Reset();
 			});
+		}
+	}
+
+	bool WorldViewer::ActivateConfiguredFieldSimulation()
+	{
+		const SceneFieldSimulationDesc& desc = m_World->GetFieldSimulation();
+		if (!desc.IsConfigured())
+		{
+			return true;
+		}
+
+		const FluidSimulationMethod method = desc.Method == "lagrangian"
+			? FluidSimulationMethod::Lagrangian : FluidSimulationMethod::Eulerian;
+		if (desc.Type == "fluid3d" || desc.Type == "fluid_simulation_3d")
+		{
+			FluidSimulationSettings settings;
+			settings.Method = method;
+			settings.Backend = ParseFluidBackend(desc.Backend);
+			settings.AllowBackendFallback = desc.AllowBackendFallback;
+			settings.BoundsMin = desc.BoundsMin;
+			settings.BoundsMax = desc.BoundsMax;
+			settings.Resolution = desc.Resolution;
+			settings.Gravity = desc.Gravity;
+			settings.RestDensity = desc.RestDensity;
+			settings.DynamicViscosity = desc.DynamicViscosity;
+			settings.PressureStiffness = desc.PressureStiffness;
+			settings.ParticleSpacing = desc.ParticleSpacing;
+			settings.SmoothingRadius = desc.SmoothingRadius;
+			settings.BoundaryRestitution = desc.BoundaryRestitution;
+			settings.BoundaryFriction = desc.BoundaryFriction;
+			settings.MaxTimeStep = desc.MaxTimeStep;
+			settings.MaxSubsteps = desc.MaxSubsteps;
+			settings.PressureIterations = desc.PressureIterations;
+			m_FluidSimulation.reset(new FluidSimulation(settings));
+			if (!m_FluidSimulation->IsInitialized())
+			{
+				m_FluidSimulation.reset();
+				return false;
+			}
+			for (const SceneFieldRegion& region : desc.Regions)
+			{
+				m_FluidSimulation->AddFluidBox(region.Min, region.Max,
+					region.SetVelocity ? region.Velocity : Vector3::Zero());
+			}
+			if (desc.RigidCoupling)
+			{
+				m_FluidCoupling = new FluidRigidCoupling(m_FluidSimulation.get());
+				if (!m_FluidCoupling->IsValid()
+					|| !m_World->GetSimulation()->AddForceField(m_FluidCoupling))
+				{
+					delete m_FluidCoupling;
+					m_FluidCoupling = nullptr;
+					m_FluidSimulation.reset();
+					return false;
+				}
+			}
+			m_FluidDemoActive = true;
+			m_FluidRenderFrame = 0;
+			return true;
+		}
+
+		if (desc.Type == "aerodynamics3d" || desc.Type == "aerodynamics_simulation")
+		{
+			AerodynamicsSimulationSettings settings;
+			settings.Method = method;
+			settings.Backend = ParseFluidBackend(desc.Backend);
+			settings.AllowBackendFallback = desc.AllowBackendFallback;
+			settings.BoundsMin = desc.BoundsMin;
+			settings.BoundsMax = desc.BoundsMax;
+			settings.Resolution = desc.Resolution;
+			settings.Gravity = desc.Gravity;
+			settings.AmbientDensity = desc.AmbientDensity;
+			settings.AmbientPressure = desc.AmbientPressure;
+			settings.SpeedOfSound = desc.SpeedOfSound;
+			settings.AdiabaticExponent = desc.AdiabaticExponent;
+			settings.DynamicViscosity = desc.DynamicViscosity;
+			settings.ArtificialViscosity = desc.ArtificialViscosity;
+			settings.ParticleSpacing = desc.ParticleSpacing;
+			settings.SmoothingRadius = desc.SmoothingRadius;
+			settings.BoundaryRestitution = desc.BoundaryRestitution;
+			settings.MaxTimeStep = desc.MaxTimeStep;
+			settings.AcousticCFL = desc.AcousticCFL;
+			settings.MaxSubsteps = desc.MaxSubsteps;
+			m_AerodynamicsSimulation.reset(new AerodynamicsSimulation(settings));
+			if (!m_AerodynamicsSimulation->IsInitialized())
+			{
+				m_AerodynamicsSimulation.reset();
+				return false;
+			}
+			for (const SceneFieldRegion& region : desc.Regions)
+			{
+				if (region.SetDensity)
+				{
+					m_AerodynamicsSimulation->SetDensityBox(region.Min, region.Max, region.Density);
+				}
+				if (region.SetVelocity)
+				{
+					m_AerodynamicsSimulation->SetVelocityBox(region.Min, region.Max, region.Velocity);
+				}
+			}
+			if (desc.RigidCoupling)
+			{
+				AerodynamicsRigidCouplingSettings coupling;
+				coupling.SurfaceSamplesPerAxis = desc.SurfaceSamplesPerAxis;
+				coupling.DragCoefficient = desc.DragCoefficient;
+				coupling.MaxLinearAcceleration = desc.MaxLinearAcceleration;
+				coupling.MaxAngularAcceleration = desc.MaxAngularAcceleration;
+				m_AerodynamicsCoupling = new AerodynamicsRigidCoupling(
+					m_AerodynamicsSimulation.get(), coupling);
+				if (!m_AerodynamicsCoupling->IsValid()
+					|| !m_World->GetSimulation()->AddForceField(m_AerodynamicsCoupling))
+				{
+					delete m_AerodynamicsCoupling;
+					m_AerodynamicsCoupling = nullptr;
+					m_AerodynamicsSimulation.reset();
+					return false;
+				}
+			}
+			m_GasDemoActive = true;
+			m_GasRenderFrame = 0;
+			return true;
+		}
+
+		return false;
+	}
+
+	void WorldViewer::DeactivateFluidDemo()
+	{
+		const bool wasActive = m_FluidDemoActive;
+		if (m_FluidCoupling != nullptr && m_World != nullptr && m_World->GetSimulation() != nullptr)
+		{
+			m_World->GetSimulation()->RemoveForceField(m_FluidCoupling);
+		}
+		m_FluidCoupling = nullptr;
+		m_FluidSimulation.reset();
+		m_FluidDemoActive = false;
+		m_FluidRenderFrame = 0;
+		if (wasActive && m_RenderThread != nullptr)
+		{
+			m_RenderThread->Submit([](Renderer& renderer) {
+				renderer.DeleteMesh("fluid_demo.water");
+			});
+		}
+	}
+
+
+	void WorldViewer::UpdateFluidDemo()
+	{
+		if (!m_FluidDemoActive || m_FluidSimulation == nullptr) return;
+		m_FluidSimulation->Step(1.0f / 60.0f);
+		if ((++m_FluidRenderFrame & 1) == 0) SubmitFluidSurface();
+	}
+
+	void WorldViewer::SubmitFluidSurface()
+	{
+		if (!m_FluidDemoActive || m_FluidSimulation == nullptr || m_RenderThread == nullptr) return;
+		std::shared_ptr<RenderMeshDesc> surface(new RenderMeshDesc());
+		if (!BuildWaterSurfaceMesh(*m_FluidSimulation, "fluid_demo.water", surface.get())) return;
+		if (surface->Vertices.size() > (size_t)std::numeric_limits<int>::max()
+			|| surface->Indices.size() > (size_t)std::numeric_limits<int>::max()) return;
+		m_RenderThread->Submit([surface](Renderer& renderer) {
+			RenderTransformUpdate transform;
+			transform.Id = surface->Id;
+			transform.WorldTransform = surface->WorldTransform;
+			renderer.UpdateTransform(transform);
+			renderer.UpdateMeshGeometry(surface->Id.c_str(),
+				surface->Vertices.empty() ? nullptr : surface->Vertices.data(),
+				(int)surface->Vertices.size(),
+				surface->Indices.empty() ? nullptr : surface->Indices.data(),
+				(int)surface->Indices.size());
+		});
+	}
+
+	void WorldViewer::DeactivateGasDemo()
+	{
+		const bool wasActive = m_GasDemoActive;
+		if (m_AerodynamicsCoupling != nullptr && m_World != nullptr
+			&& m_World->GetSimulation() != nullptr)
+		{
+			m_World->GetSimulation()->RemoveForceField(m_AerodynamicsCoupling);
+		}
+		m_AerodynamicsCoupling = nullptr;
+		m_AerodynamicsSimulation.reset();
+		m_GasDemoActive = false;
+		m_GasRenderFrame = 0;
+		if (wasActive && m_RenderThread != nullptr)
+		{
+			m_RenderThread->Submit([](Renderer& renderer) {
+				renderer.DeleteMesh("gas_demo.density.compressed");
+				renderer.DeleteMesh("gas_demo.density.rarefied");
+			});
+		}
+	}
+
+
+	void WorldViewer::UpdateGasDemo()
+	{
+		if (!m_GasDemoActive || m_AerodynamicsSimulation == nullptr) return;
+		m_AerodynamicsSimulation->Step(1.0f / 60.0f);
+		if ((++m_GasRenderFrame & 1) == 0) SubmitGasDensity();
+	}
+
+	void WorldViewer::SubmitGasDensity()
+	{
+		if (!m_GasDemoActive || m_AerodynamicsSimulation == nullptr || m_RenderThread == nullptr) return;
+		std::shared_ptr<std::vector<RenderMeshDesc>> meshes(new std::vector<RenderMeshDesc>());
+		GasDensityVisualizationSettings visualization;
+		visualization.RelativeThreshold = 0.08f;
+		if (!BuildGasDensityMeshes(*m_AerodynamicsSimulation,
+			"gas_demo.density", meshes.get(), visualization)) return;
+		m_RenderThread->Submit([meshes](Renderer& renderer) {
+			for (const RenderMeshDesc& mesh : *meshes)
+			{
+				if (mesh.Vertices.size() > (size_t)std::numeric_limits<int>::max()
+					|| mesh.Indices.size() > (size_t)std::numeric_limits<int>::max()) continue;
+				RenderTransformUpdate transform;
+				transform.Id = mesh.Id;
+				transform.WorldTransform = mesh.WorldTransform;
+				renderer.UpdateTransform(transform);
+				renderer.UpdateMeshGeometry(mesh.Id.c_str(),
+					mesh.Vertices.empty() ? nullptr : mesh.Vertices.data(),
+					(int)mesh.Vertices.size(),
+					mesh.Indices.empty() ? nullptr : mesh.Indices.data(),
+					(int)mesh.Indices.size());
+			}
+		});
+	}
+
+	void WorldViewer::ShootProjectile()
+	{
+		if (m_FluidDemoActive || m_GasDemoActive) return;
+		static int projectileId = 0;
+		const Vector3 p0 = GetCameraPosition();
+		const Vector3 direction = SafeUnitVector(m_CamCenter - p0, Vector3::UnitZ());
+
+		std::ostringstream ss;
+		ss << "projectile_" << projectileId++;
+		Geometry* geometry = m_World->AddProjectileSphere(ss.str(), p0, 0.5f, direction * 18.0f, Vector4(0.95f, 0.58f, 0.20f, 1.0f));
+		if (geometry)
+		{
+			const SceneObjectInstance& instance = m_World->GetObjects().back();
+			AddGeometryToRender(instance.Id, geometry, instance.Color, instance.RenderBounds);
+			UpdateImguiState();
 		}
 	}
 
@@ -527,6 +850,8 @@ namespace Riemann
 		{
 			return false;
 		}
+		DeactivateGasDemo();
+		DeactivateFluidDemo();
 
 		std::string error;
 		if (!m_World->LoadFromFile(resolved, &error))
@@ -534,9 +859,17 @@ namespace Riemann
 			fprintf(stderr, "%s\n", error.c_str());
 			return false;
 		}
+		if (!ActivateConfiguredFieldSimulation())
+		{
+			fprintf(stderr, "failed to initialize field simulation from %s\n", resolved.c_str());
+			return false;
+		}
 
 		m_SceneDirectory = DirectoryOf(resolved);
 		m_CurrentSceneName = FileNameOf(resolved);
+		m_CurrentSceneDisplayName = m_World->GetName().empty() ? m_CurrentSceneName : m_World->GetName();
+		m_SceneDragActive = false;
+		m_FieldDragActive = false;
 		m_CuttingPanelActive = false;
 		m_MeshSimplificationPanelActive = false;
 		m_CuttingPieces.clear();
@@ -553,6 +886,8 @@ namespace Riemann
 
 	void WorldViewer::CreateSimulator()
 	{
+		DeactivateGasDemo();
+		DeactivateFluidDemo();
 		m_World->Reset();
 		m_RenderBindings.clear();
 		m_CuttingPanelActive = false;
@@ -565,7 +900,9 @@ namespace Riemann
 	void WorldViewer::UpdateSimulator(float dt)
 	{
 		ApplyImguiCommands();
+		UpdateFluidDemo();
 		m_World->Step(dt);
+		UpdateGasDemo();
 		if (m_RenderRevision != m_World->GetRenderRevision())
 		{
 			RebuildRenderScene();
@@ -784,7 +1121,81 @@ namespace Riemann
 		}
 
 		const Ray3 ray = BuildSceneRay(x, y, width, height);
+		m_SceneDragActive = false;
+		m_FieldDragActive = false;
+		Geometry* hitGeometry = nullptr;
+		Vector3 hitPoint = Vector3::Zero();
+		if (m_World && m_World->RayCastMouseControlGeometry(ray.Origin, ray.Dir, 1000.0f, &hitGeometry, &hitPoint)
+			&& m_World->SelectMouseControlGeometry(hitGeometry))
+		{
+			m_SceneDragActive = true;
+			m_SceneDragPlanePoint = hitPoint;
+			m_SceneDragPlaneNormal = ray.Dir;
+			m_SceneDragOffset = m_World->GetMouseControlPosition() - hitPoint;
+			m_SceneDragLastTime = std::chrono::steady_clock::now();
+			SetHighlightedGeometry(hitGeometry);
+			return;
+		}
+		const SceneFieldSimulationDesc& Field = m_World->GetFieldSimulation();
+		float FieldHitTime = 0.0f;
+		if (Field.IsConfigured() && IntersectRayBounds(ray, Field.BoundsMin,
+			Field.BoundsMax, &FieldHitTime))
+		{
+			m_FieldDragActive = true;
+			m_SceneDragPlanePoint = ray.Origin + ray.Dir * FieldHitTime;
+			m_SceneDragPlaneNormal = ray.Dir;
+			m_FieldDragPoint = m_SceneDragPlanePoint;
+			SetHighlightedGeometry(nullptr);
+			return;
+		}
 		HandleSceneRay(ray);
+	}
+
+	void WorldViewer::SceneDragMsg(int x, int y, int width, int height)
+	{
+		if ((!m_SceneDragActive && !m_FieldDragActive)
+			|| m_World == nullptr || width <= 0 || height <= 0)
+		{
+			return;
+		}
+		const Ray3 ray = BuildSceneRay(x, y, width, height);
+		const float denominator = ray.Dir.Dot(m_SceneDragPlaneNormal);
+		if (std::abs(denominator) <= 1.0e-5f)
+		{
+			return;
+		}
+		const float hitTime = (m_SceneDragPlanePoint - ray.Origin).Dot(m_SceneDragPlaneNormal) / denominator;
+		if (hitTime >= 0.0f)
+		{
+			const Vector3 HitPoint = ray.Origin + ray.Dir * hitTime;
+			if (m_FieldDragActive)
+			{
+				const SceneFieldSimulationDesc& Field = m_World->GetFieldSimulation();
+				const Vector3 Delta = HitPoint - m_FieldDragPoint;
+				const Vector3 Impulse = Delta * Field.InteractionStrength;
+				if (!Impulse.IsZero())
+				{
+					if (m_FluidSimulation) m_FluidSimulation->ApplyImpulse(
+						HitPoint, Field.InteractionRadius, Impulse);
+					if (m_AerodynamicsSimulation) m_AerodynamicsSimulation->ApplyImpulse(
+						HitPoint, Field.InteractionRadius, Impulse);
+				}
+				m_FieldDragPoint = HitPoint;
+				return;
+			}
+			const std::chrono::steady_clock::time_point Now = std::chrono::steady_clock::now();
+			const float DeltaTime = std::chrono::duration<float>(Now - m_SceneDragLastTime).count();
+			m_SceneDragLastTime = Now;
+			m_World->SetMouseControlPosition(HitPoint + m_SceneDragOffset,
+				DeltaTime);
+		}
+	}
+
+	void WorldViewer::SceneDragEndMsg()
+	{
+		if (m_SceneDragActive && m_World != nullptr) m_World->ReleaseMouseControl();
+		m_SceneDragActive = false;
+		m_FieldDragActive = false;
 	}
 
 	void WorldViewer::MouseWheel(int zDelta, bool ctrlButtonDown)
@@ -827,6 +1238,7 @@ namespace Riemann
 		std::string cuttingObjPath;
 		std::string cuttingStatus;
 		std::vector<std::string> meshSimplificationFiles;
+		std::vector<ConstraintControlState> constraintControls;
 		std::string meshSimplificationPath;
 		std::string meshSimplificationStatus;
 		int cuttingMode = 0;
@@ -856,6 +1268,7 @@ namespace Riemann
 			meshSimplificationFiles = m_ImguiMeshSimplificationFiles;
 			meshSimplificationPath = m_ImguiMeshSimplificationPath;
 			meshSimplificationStatus = m_ImguiMeshSimplificationStatus;
+			constraintControls = m_ImguiConstraintControls;
 			cuttingMode = m_ImguiCuttingMode;
 			cuttingPieceCount = m_ImguiCuttingPieceCount;
 			cuttingPiecesX = m_ImguiCuttingPiecesX;
@@ -880,8 +1293,6 @@ namespace Riemann
 
 		const int panelHeight = std::max(120, height - 20);
 		imguiBeginScrollArea("", 10, 10, 220, panelHeight, &m_ImguiScroll);
-
-		imguiValue(sceneName.empty() ? "unknown" : sceneName.c_str());
 
 		char text[128];
 		snprintf(text, sizeof(text), "Objects: %u", static_cast<unsigned int>(objectCount));
@@ -936,12 +1347,95 @@ namespace Riemann
 			}
 
 			int selectedDemo = demoIndex;
-			if (imguiCombo("Select", &selectedDemo, demoLabels.data(), (int)demoLabels.size()))
+			if (imguiCombo("", &selectedDemo, demoLabels.data(), (int)demoLabels.size()))
 			{
 				std::lock_guard<std::mutex> lock(m_ImguiMutex);
 				m_ImguiPendingDemoIndex = selectedDemo;
 			}
+			if (demoIndex < (int)sceneFiles.size())
+			{
+				imguiValue(sceneName.empty() ? "Unnamed scene" : sceneName.c_str());
+				if (sceneName.find("Glass Fracture") == 0 && imguiButton("Shoot Glass (I)"))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingShootProjectile = true;
+				}
+				if (sceneName == "Constraints")
+				{
+					imguiSeparatorLine();
+					imguiLabel("Constraint Controls");
+					imguiValue("Drag white pins in the scene");
+					for (ConstraintControlState state : constraintControls)
+					{
+						imguiSeparator();
+						imguiLabel(state.Name.c_str());
+						bool changed = false;
+						if (imguiCheck("Enabled", state.Enabled, true))
+						{
+							state.Enabled = !state.Enabled;
+							changed = true;
+						}
 
+						if (state.Type == ConstraintControlType::Distance)
+						{
+							snprintf(text, sizeof(text), "Current: %.2f", state.CurrentValue);
+							imguiValue(text);
+							changed = imguiSlider("Min Distance", &state.MinValue, 0.0f, 10.0f, 0.1f) || changed;
+							changed = imguiSlider("Max Distance", &state.MaxValue, 0.0f, 10.0f, 0.1f) || changed;
+							state.MaxValue = std::max(state.MinValue, state.MaxValue);
+						}
+						else if (state.Type == ConstraintControlType::Hinge)
+						{
+							snprintf(text, sizeof(text), "Current: %.1f deg", state.CurrentValue);
+							imguiValue(text);
+							changed = imguiSlider("Min Angle", &state.MinValue, -180.0f, 180.0f, 1.0f) || changed;
+							changed = imguiSlider("Max Angle", &state.MaxValue, -180.0f, 180.0f, 1.0f) || changed;
+							state.MaxValue = std::max(state.MinValue, state.MaxValue);
+						}
+						else if (state.Type == ConstraintControlType::Slider)
+						{
+							snprintf(text, sizeof(text), "Current: %.2f", state.CurrentValue);
+							imguiValue(text);
+							changed = imguiSlider("Min Position", &state.MinValue, -5.0f, 5.0f, 0.1f) || changed;
+							changed = imguiSlider("Max Position", &state.MaxValue, -5.0f, 5.0f, 0.1f) || changed;
+							state.MaxValue = std::max(state.MinValue, state.MaxValue);
+						}
+						else if (state.Type == ConstraintControlType::Cone)
+						{
+							snprintf(text, sizeof(text), "Current: %.1f deg", state.CurrentValue);
+							imguiValue(text);
+							changed = imguiSlider("Max Angle", &state.MaxValue, 0.0f, 180.0f, 1.0f) || changed;
+						}
+						else if (state.Type == ConstraintControlType::SixDOF)
+						{
+							const char* axes[] = { "X", "Y", "Z" };
+							for (int axis = 0; axis < 3; ++axis)
+							{
+								char label[32];
+								snprintf(label, sizeof(label), "Linear Min %s", axes[axis]);
+								changed = imguiSlider(label, &state.LinearMin[axis], -5.0f, 5.0f, 0.1f) || changed;
+								snprintf(label, sizeof(label), "Linear Max %s", axes[axis]);
+								changed = imguiSlider(label, &state.LinearMax[axis], -5.0f, 5.0f, 0.1f) || changed;
+								state.LinearMax[axis] = std::max(state.LinearMin[axis], state.LinearMax[axis]);
+							}
+							for (int axis = 0; axis < 3; ++axis)
+							{
+								char label[32];
+								snprintf(label, sizeof(label), "Angular Min %s", axes[axis]);
+								changed = imguiSlider(label, &state.AngularMinDegrees[axis], -180.0f, 180.0f, 1.0f) || changed;
+								snprintf(label, sizeof(label), "Angular Max %s", axes[axis]);
+								changed = imguiSlider(label, &state.AngularMaxDegrees[axis], -180.0f, 180.0f, 1.0f) || changed;
+								state.AngularMaxDegrees[axis] = std::max(state.AngularMinDegrees[axis], state.AngularMaxDegrees[axis]);
+							}
+						}
+						if (changed)
+						{
+							std::lock_guard<std::mutex> lock(m_ImguiMutex);
+							m_ImguiPendingConstraintControls.push_back(state);
+						}
+					}
+				}
+			}
 			if (cuttingPanelActive)
 			{
 				imguiSeparatorLine();
@@ -1150,6 +1644,10 @@ namespace Riemann
 		std::vector<RenderMeshDesc> meshes;
 		for (const SceneObjectInstance& object : m_World->GetObjects())
 		{
+			if (!object.RenderEnabled)
+			{
+				continue;
+			}
 			const size_t begin = meshes.size();
 			BuildGeometryMeshes(object.GeometryPtr, object.Id, object.Color, object.RenderBounds, &meshes);
 
@@ -1160,6 +1658,25 @@ namespace Riemann
 				binding.MeshIds.push_back(meshes[i].Id);
 			}
 			m_RenderBindings.push_back(binding);
+		}
+		if (m_FluidDemoActive && m_FluidSimulation != nullptr)
+		{
+			RenderMeshDesc waterSurface;
+			if (BuildWaterSurfaceMesh(*m_FluidSimulation, "fluid_demo.water", &waterSurface))
+			{
+				meshes.push_back(std::move(waterSurface));
+			}
+		}
+		if (m_GasDemoActive && m_AerodynamicsSimulation != nullptr)
+		{
+			std::vector<RenderMeshDesc> gasMeshes;
+			GasDensityVisualizationSettings visualization;
+			visualization.RelativeThreshold = 0.08f;
+			if (BuildGasDensityMeshes(*m_AerodynamicsSimulation,
+				"gas_demo.density", &gasMeshes, visualization))
+			{
+				for (RenderMeshDesc& gasMesh : gasMeshes) meshes.push_back(std::move(gasMesh));
+			}
 		}
 
 		if (m_RenderThread)
@@ -1212,6 +1729,8 @@ namespace Riemann
 
 	bool WorldViewer::LoadCuttingPanel()
 	{
+		DeactivateGasDemo();
+		DeactivateFluidDemo();
 		RefreshObjList();
 		if (m_CuttingObjPath.empty())
 		{
@@ -1430,6 +1949,8 @@ namespace Riemann
 
 	bool WorldViewer::LoadMeshSimplificationPanel()
 	{
+		DeactivateGasDemo();
+		DeactivateFluidDemo();
 		RefreshMeshFileList();
 		if (m_MeshSimplificationPath.empty())
 		{
@@ -1640,7 +2161,7 @@ namespace Riemann
 			{
 				continue;
 			}
-			std::vector<std::string> files = ListObjFiles(directory);
+			std::vector<std::string> files = ListMeshFiles(directory);
 			for (const std::string& file : files)
 			{
 				AddUniqueFile(&objFiles, file);
@@ -1649,7 +2170,7 @@ namespace Riemann
 
 		if (!m_SceneDirectory.empty() && DirectoryExists(m_SceneDirectory))
 		{
-			std::vector<std::string> files = ListObjFiles(m_SceneDirectory);
+			std::vector<std::string> files = ListMeshFiles(m_SceneDirectory);
 			for (const std::string& file : files)
 			{
 				AddUniqueFile(&objFiles, file);
@@ -1934,6 +2455,8 @@ namespace Riemann
 		bool pendingGeometryQueryBoundsValue = false;
 		bool pendingRenderWireframe = false;
 		bool pendingRenderWireframeValue = false;
+		bool pendingShootProjectile = false;
+		std::vector<ConstraintControlState> pendingConstraintControls;
 		{
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			pendingDemoIndex = m_ImguiPendingDemoIndex;
@@ -1984,6 +2507,9 @@ namespace Riemann
 			pendingRenderWireframe = m_ImguiPendingRenderWireframe;
 			pendingRenderWireframeValue = m_ImguiPendingRenderWireframeValue;
 			m_ImguiPendingRenderWireframe = false;
+			pendingShootProjectile = m_ImguiPendingShootProjectile;
+			m_ImguiPendingShootProjectile = false;
+			pendingConstraintControls.swap(m_ImguiPendingConstraintControls);
 		}
 
 		if (pendingDemoIndex >= 0)
@@ -2020,6 +2546,14 @@ namespace Riemann
 		if (!pendingSceneFile.empty())
 		{
 			LoadScene(pendingSceneFile);
+		}
+		if (pendingShootProjectile)
+		{
+			ShootProjectile();
+		}
+		for (const ConstraintControlState& state : pendingConstraintControls)
+		{
+			m_World->ApplyConstraintControl(state);
 		}
 
 		if (pendingDistance)
@@ -2155,8 +2689,10 @@ namespace Riemann
 
 	void WorldViewer::UpdateImguiState()
 	{
+		std::vector<ConstraintControlState> constraintControls = m_World
+			? m_World->GetConstraintControls() : std::vector<ConstraintControlState>();
 		std::lock_guard<std::mutex> lock(m_ImguiMutex);
-		m_ImguiSceneName = m_CurrentSceneName;
+		m_ImguiSceneName = m_CurrentSceneDisplayName;
 		m_ImguiSceneFiles = m_SceneFiles;
 		m_ImguiCuttingObjFiles = m_CuttingObjFiles;
 		m_ImguiCuttingObjPath = m_CuttingObjPath;
@@ -2164,6 +2700,7 @@ namespace Riemann
 		m_ImguiMeshSimplificationFiles = m_MeshSimplificationFiles;
 		m_ImguiMeshSimplificationPath = m_MeshSimplificationPath;
 		m_ImguiMeshSimplificationStatus = m_MeshSimplificationStatus;
+		m_ImguiConstraintControls = std::move(constraintControls);
 		if (m_CuttingPanelActive)
 		{
 			m_ImguiDemoIndex = (int)m_SceneFiles.size() + (IsConvexDecompositionMode(m_CuttingMode) ? 1 : 0);
@@ -2353,7 +2890,7 @@ namespace Riemann
 		ofn.lStructSize = sizeof(ofn);
 		ofn.lpstrFile = fileName;
 		ofn.nMaxFile = sizeof(fileName);
-		ofn.lpstrFilter = "OBJ Files\0*.obj\0All Files\0*.*\0";
+			ofn.lpstrFilter = "Mesh Files\0*.obj;*.uasset\0OBJ Files\0*.obj\0UE5 StaticMesh Assets\0*.uasset\0All Files\0*.*\0";
 		ofn.lpstrDefExt = "obj";
 		ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
 		return GetOpenFileNameA(&ofn) ? std::string(fileName) : std::string();
@@ -2374,7 +2911,7 @@ namespace Riemann
 		ofn.lStructSize = sizeof(ofn);
 		ofn.lpstrFile = fileName;
 		ofn.nMaxFile = sizeof(fileName);
-		ofn.lpstrFilter = "Mesh Files\0*.obj;*.flat\0OBJ Files\0*.obj\0Flat Files\0*.flat\0All Files\0*.*\0";
+			ofn.lpstrFilter = "Mesh Files\0*.obj;*.flat;*.uasset\0OBJ Files\0*.obj\0Flat Files\0*.flat\0UE5 StaticMesh Assets\0*.uasset\0All Files\0*.*\0";
 		ofn.lpstrDefExt = "obj";
 		ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
 		return GetOpenFileNameA(&ofn) ? std::string(fileName) : std::string();
@@ -2387,7 +2924,7 @@ namespace Riemann
 	{
 		if (fileName == nullptr || fileName[0] == '\0')
 		{
-			fileName = "demo.json";
+			fileName = "01_demo.json";
 		}
 
 		const std::string requested(fileName);

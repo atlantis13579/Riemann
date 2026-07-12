@@ -1,0 +1,39 @@
+{
+  "name": "Constraints",
+  "physics": { "gravity": [0.0, -9.8, 0.0] },
+  "camera": { "center": [0.0, 5.0, 0.0], "orbit": [0.0, 0.2, 30.0], "near": 0.05, "far": 1000.0 },
+  "light": { "direction": [-0.529926, -0.662086, -0.529926], "ambient": 0.25, "shadowCenter": [0.0, 5.0, 0.0], "shadowDistance": 80.0, "shadowSize": 80.0 },
+  "objects": [
+    { "id": "ground", "type": "plane", "body": "static", "position": [0.0, -2.0, 0.0], "normal": [0.0, 1.0, 0.0], "color": [0.45, 0.48, 0.52, 1.0] },
+
+    { "id": "fixed_anchor", "type": "sphere", "body": "static", "position": [-12.0, 8.0, 0.0], "radius": 0.3, "simulation": false, "mouseControl": true, "color": [0.9, 0.9, 0.9, 1.0] },
+    { "id": "fixed_body", "type": "box", "body": "dynamic", "position": [-12.0, 6.0, 0.0], "halfExtent": [0.7, 0.7, 0.7], "angularVelocity": [0.0, 1.0, 0.0], "color": [0.92, 0.28, 0.22, 1.0] },
+
+    { "id": "point_anchor", "type": "sphere", "body": "static", "position": [-8.0, 8.0, 0.0], "radius": 0.3, "simulation": false, "mouseControl": true, "color": [0.9, 0.9, 0.9, 1.0] },
+    { "id": "point_body", "type": "box", "body": "dynamic", "position": [-8.0, 6.0, 0.0], "halfExtent": [0.45, 1.8, 0.45], "angularVelocity": [0.0, 0.0, 1.2], "color": [0.95, 0.58, 0.18, 1.0] },
+
+    { "id": "distance_anchor", "type": "sphere", "body": "static", "position": [-4.0, 8.0, 0.0], "radius": 0.3, "simulation": false, "mouseControl": true, "color": [0.9, 0.9, 0.9, 1.0] },
+    { "id": "distance_body", "type": "sphere", "body": "dynamic", "position": [-4.0, 3.0, 0.0], "radius": 0.8, "linearVelocity": [2.0, 0.0, 0.0], "color": [0.85, 0.82, 0.16, 1.0] },
+
+    { "id": "hinge_anchor", "type": "sphere", "body": "static", "position": [0.0, 8.0, 0.0], "radius": 0.3, "simulation": false, "mouseControl": true, "color": [0.9, 0.9, 0.9, 1.0] },
+    { "id": "hinge_body", "type": "box", "body": "dynamic", "position": [0.0, 6.0, 0.0], "halfExtent": [0.5, 2.0, 0.4], "angularVelocity": [0.0, 0.0, 1.5], "color": [0.25, 0.78, 0.30, 1.0] },
+
+    { "id": "slider_anchor", "type": "sphere", "body": "static", "position": [4.0, 6.0, 0.0], "radius": 0.3, "simulation": false, "mouseControl": true, "color": [0.9, 0.9, 0.9, 1.0] },
+    { "id": "slider_body", "type": "box", "body": "dynamic", "position": [4.0, 6.0, 0.0], "halfExtent": [0.8, 0.5, 0.5], "linearVelocity": [0.0, 5.0, 0.0], "color": [0.18, 0.72, 0.82, 1.0] },
+
+    { "id": "cone_anchor", "type": "sphere", "body": "static", "position": [8.0, 8.0, 0.0], "radius": 0.3, "simulation": false, "mouseControl": true, "color": [0.9, 0.9, 0.9, 1.0] },
+    { "id": "cone_body", "type": "capsule", "body": "dynamic", "position": [8.0, 6.0, 0.0], "height": 3.5, "radius": 0.45, "angularVelocity": [0.0, 0.0, 1.2], "color": [0.25, 0.42, 0.95, 1.0] },
+
+    { "id": "d6_anchor", "type": "sphere", "body": "static", "position": [12.0, 6.0, 0.0], "radius": 0.3, "simulation": false, "mouseControl": true, "color": [0.9, 0.9, 0.9, 1.0] },
+    { "id": "d6_body", "type": "box", "body": "dynamic", "position": [12.0, 6.0, 0.0], "halfExtent": [0.7, 0.7, 0.7], "linearVelocity": [4.0, 2.0, 0.0], "angularVelocity": [0.0, 1.0, 0.0], "color": [0.72, 0.25, 0.92, 1.0] }
+  ],
+  "constraints": [
+    { "type": "fixed", "bodyA": "fixed_anchor", "bodyB": "fixed_body" },
+    { "type": "point", "bodyA": "point_anchor", "bodyB": "point_body", "anchor": [-8.0, 8.0, 0.0] },
+    { "type": "distance", "bodyA": "distance_anchor", "bodyB": "distance_body", "anchorA": [-4.0, 8.0, 0.0], "anchorB": [-4.0, 3.0, 0.0], "minDistance": 2.5, "maxDistance": 4.0 },
+    { "type": "hinge", "bodyA": "hinge_anchor", "bodyB": "hinge_body", "anchor": [0.0, 8.0, 0.0], "axis": [0.0, 0.0, 1.0], "minAngleDegrees": -70.0, "maxAngleDegrees": 70.0 },
+    { "type": "slider", "bodyA": "slider_anchor", "bodyB": "slider_body", "anchor": [4.0, 6.0, 0.0], "axis": [0.0, 1.0, 0.0], "minDistance": -2.0, "maxDistance": 2.0 },
+    { "type": "cone", "bodyA": "cone_anchor", "bodyB": "cone_body", "anchor": [8.0, 8.0, 0.0], "axisA": [0.0, -1.0, 0.0], "axisB": [0.0, -1.0, 0.0], "maxAngleDegrees": 35.0 },
+    { "type": "sixDOF", "bodyA": "d6_anchor", "bodyB": "d6_body", "anchor": [12.0, 6.0, 0.0], "linearMin": [-1.5, -0.2, 0.0], "linearMax": [1.5, 0.2, 0.0], "angularMinDegrees": [0.0, -30.0, 0.0], "angularMaxDegrees": [0.0, 30.0, 0.0] }
+  ]
+}

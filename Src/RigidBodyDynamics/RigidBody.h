@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <unordered_set>
 #include <vector>
 #include "../Collision/GeometryAggregate.h"
 #include "../Collision/GeometryHandle.h"
@@ -131,9 +132,13 @@ namespace Riemann
 		float		InvMass;		// Inverse of Total Mass
 		Matrix3		InvInertia;		// Inverse of Inertia Tensor
 		GeometryAggregate* Parent;	// Parent aggregate, e.g. destruction, cloth, deformable body
+		void*		CollisionGroup;
+		bool		EnableCollisionWithinGroup;
 
 	private:
 		short		mMaterialId;
+		float		mRestitutionOverride;
+		std::unordered_set<RigidBody*> mIgnoredCollisionBodies;
 
 	public:
 		RigidBody();
@@ -152,6 +157,10 @@ namespace Riemann
 
 		uint64_t		GetGuid() const { return mGuid; }
 		void			SetGuid(uint64_t guid) { mGuid = guid; }
+
+		void			IgnoreCollisionWith(RigidBody* Other, bool Ignore = true);
+		bool			IsCollisionIgnoredWith(const RigidBody* Other) const;
+		bool			CanCollideWith(const RigidBody* Other) const;
 
 		const Matrix3& GetInverseInertia() const { return InvInertia; }
 		Matrix3			GetInverseInertia_WorldSpace() const;
@@ -186,6 +195,7 @@ namespace Riemann
 		float			GetLinearKinematicsEnergy() const;
 		float			GetAngularKinematicsEnergy() const;
 		void			SetDefaultPhysicsMaterial(uint16_t idx);
+		void			SetRestitution(float restitution);
 
 		float			GetRestitution() const;
 		float			GetFrictionDynamic() const;
@@ -224,6 +234,10 @@ namespace Riemann
 		bool		Freezing;
 		Vector3		SolverV;
 		Vector3		SolverW;
+		float		CCDMotionFraction;
+		bool		HadCCDContact;
+		Vector3		CCDPreSolveVelocity;
+		Vector3		CCDPreSolveAngularVelocity;
 
 		void		ApplyForce(const Vector3& Force);
 		void		ApplyTorgue(const Vector3& Torque);

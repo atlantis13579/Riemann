@@ -26,12 +26,14 @@ namespace Riemann
 	public:
 		Simplex			result;
 		float			distance;
+		Vector3			closest;
 
 		GJK_status Solve(const GjkShape* shape)
 		{
 			Vector3 InitGuess = shape->Center();
 
 			distance = -1.0f;
+			closest = Vector3::Zero();
 			result.Init(shape);
 			result.AddPoint(InitGuess.SquareLength() > 0 ? InitGuess : -Vector3::UnitX());
 			Vector3 v = result.v[0].pos;
@@ -45,6 +47,7 @@ namespace Riemann
 			while (iter++ < maxIterations)
 			{
 				distance = v.Length();
+				closest = v;
 				if (distance < GJK_MIN_DISTANCE)
 				{
 					return GJK_status::Intersect;
@@ -153,6 +156,9 @@ namespace Riemann
 
 		GJK_status Solve(const Vector3& Origin, const Vector3& Direction, const GjkShape* shape)
 		{
+			time = FLT_MAX;
+			normal = Vector3::Zero();
+			position = Vector3::Zero();
 			Vector3		mY[4];
 			Vector3		mP[4];
 			int			dimension = 0;
@@ -237,6 +243,8 @@ namespace Riemann
 					// inside the tetrahedron
 					assert(sq_length < GJK_MIN_DISTANCE);
 					time = ht;
+					position = x;
+					normal = v.SafeUnit();
 					return GJK_status::Intersect;
 				}
 
@@ -245,6 +253,8 @@ namespace Riemann
 				if (sq_length <= GJK_MIN_DISTANCE * GJK_MIN_DISTANCE)
 				{
 					time = ht;
+					position = x;
+					normal = v.SafeUnit();
 					return GJK_status::Intersect;
 				}
 			}

@@ -420,6 +420,23 @@ static void TestCylinderTriangleForBestSweep(const Cylinder3& cylinder, const Ve
 	}
 }
 
+struct CylinderMeshSweepContext
+{
+	const Cylinder3* Shape;
+	const Vector3* Direction;
+	Vector3 UnitDirection;
+	float BestAlignment;
+	Vector3 BestTriangle[3];
+	bool Hit;
+};
+
+static void TestCylinderMeshSweepTriangle(void* Context, const Vector3& A, const Vector3& B, const Vector3& C, float& BestDistance)
+{
+	CylinderMeshSweepContext* Sweep = static_cast<CylinderMeshSweepContext*>(Context);
+	TestCylinderTriangleForBestSweep(*Sweep->Shape, *Sweep->Direction, Sweep->UnitDirection,
+		A, B, C, BestDistance, Sweep->BestAlignment, Sweep->BestTriangle, Sweep->Hit);
+}
+
 bool Cylinder3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* p, Vector3* n, float* t) const
 {
 	if (Direction.SquareLength() <= 1.0e-12f)
@@ -543,34 +560,17 @@ bool Cylinder3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* 
 		return false;
 	}
 
-	bool hit = false;
 	float bestDistance = FLT_MAX;
-	float bestAlignment = 2.0f;
-	Vector3 bestTri[3];
-	const Vector3 unitDir = Direction.SafeUnit();
+	CylinderMeshSweepContext Context = { this, &Direction, Direction.SafeUnit(), 2.0f, {}, false };
+	trimesh->SweepBVH(movingBounds, Direction, bestDistance, TestCylinderMeshSweepTriangle, &Context);
 
-	for (uint32_t i = 0; i < trimesh->NumTriangles; ++i)
-	{
-		const Vector3 A = trimesh->GetVertex(i, 0);
-		const Vector3 B = trimesh->GetVertex(i, 1);
-		const Vector3 C = trimesh->GetVertex(i, 2);
-		const Box3 triBounds(A, B, C);
-
-		float triToi;
-		if (!CylinderSweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, triBounds.Min, triBounds.Max, bestDistance, triToi))
-		{
-			continue;
-		}
-
-		TestCylinderTriangleForBestSweep(*this, Direction, unitDir, A, B, C, bestDistance, bestAlignment, bestTri, hit);
-	}
-
-	if (!hit)
+	if (!Context.Hit)
 	{
 		return false;
 	}
 
-	ComputeCylinderTriangleSweepResult(*this, Direction, bestDistance, bestTri[0], bestTri[1], bestTri[2], p, n, t);
+	ComputeCylinderTriangleSweepResult(*this, Direction, bestDistance,
+		Context.BestTriangle[0], Context.BestTriangle[1], Context.BestTriangle[2], p, n, t);
 	return true;
 }
 

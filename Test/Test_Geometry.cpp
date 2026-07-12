@@ -25,8 +25,84 @@
 #include "../Src/Geometry/DenseTensorField3.h"
 #include "../Src/Geometry/SparseSpatialHash.h"
 #include "../Src/Geometry/SparseOctree.h"
+#include "../Src/Modules/Tools/UE5StaticMeshParser.h"
 
 using namespace Riemann;
+
+void TestUE5StaticMeshParser()
+{
+	const Vector3 convertedVector = UE5ToRiemannVector(Vector3(1.0f, 2.0f, 3.0f));
+	EXPECT(convertedVector == Vector3(1.0f, 3.0f, 2.0f));
+	Quaternion ueRotation;
+	ueRotation.FromRotationAxis(Vector3(1.0f, 2.0f, 3.0f), 0.73f);
+	const Vector3 ueDirection(0.4f, -1.2f, 2.1f);
+	const Vector3 convertedRotationResult = UE5ToRiemannQuaternion(ueRotation)
+		* UE5ToRiemannVector(ueDirection);
+	EXPECT((convertedRotationResult - UE5ToRiemannVector(ueRotation * ueDirection)).Length()
+		< 1.0e-5f);
+
+	UE5TriangleMeshData convertedTriangle;
+	convertedTriangle.Vertices = { Vector3::Zero(), Vector3::UnitX(), Vector3::UnitY() };
+	convertedTriangle.Indices = { 0, 1, 2 };
+	ConvertUE5TriangleMeshToRiemann(&convertedTriangle);
+	EXPECT(convertedTriangle.Vertices[2] == Vector3::UnitZ());
+	EXPECT(convertedTriangle.Indices[0] == 0 && convertedTriangle.Indices[1] == 2
+		&& convertedTriangle.Indices[2] == 1);
+	const Vector3 convertedNormal = (convertedTriangle.Vertices[convertedTriangle.Indices[1]]
+		- convertedTriangle.Vertices[convertedTriangle.Indices[0]]).Cross(
+			convertedTriangle.Vertices[convertedTriangle.Indices[2]]
+			- convertedTriangle.Vertices[convertedTriangle.Indices[0]]).SafeUnit();
+	EXPECT(convertedNormal.Dot(Vector3::UnitY()) > 0.999f);
+
+	const char* Filename = std::getenv("RIEMANN_UE5_STATIC_MESH_TEST");
+	if (Filename == nullptr || Filename[0] == '\0')
+	{
+		printf("Skipping TestUE5StaticMeshParser (RIEMANN_UE5_STATIC_MESH_TEST is not set)\n");
+		return;
+	}
+
+	printf("Running TestUE5StaticMeshParser\n");
+	const UE5StaticMeshData Mesh = LoadUE5StaticMesh(Filename);
+	if (!Mesh.Success)
+	{
+		printf("UE5 StaticMesh parser error: %s\n", Mesh.Error.c_str());
+	}
+	EXPECT(Mesh.Success);
+	if (!Mesh.Success)
+	{
+		return;
+	}
+	EXPECT(!Mesh.LODs.empty());
+	for (const UE5TriangleMeshData& LOD : Mesh.LODs)
+	{
+		EXPECT(!LOD.Vertices.empty());
+		EXPECT(!LOD.Indices.empty());
+		EXPECT((LOD.Indices.size() % 3) == 0);
+	}
+	for (const UE5SimpleCollisionData& Shape : Mesh.SimpleCollision)
+	{
+		switch (Shape.Type)
+		{
+		case UE5SimpleCollisionType::Sphere:
+			EXPECT(Shape.Radius > 0.0f);
+			break;
+		case UE5SimpleCollisionType::Box:
+			EXPECT(Shape.HalfExtent.x > 0.0f && Shape.HalfExtent.y > 0.0f && Shape.HalfExtent.z > 0.0f);
+			break;
+		case UE5SimpleCollisionType::Capsule:
+			EXPECT(Shape.Radius > 0.0f && Shape.HalfHeight >= 0.0f);
+			break;
+		case UE5SimpleCollisionType::Convex:
+			EXPECT(!Shape.Convex.Vertices.empty());
+			EXPECT(!Shape.Convex.Indices.empty());
+			break;
+		}
+	}
+	EXPECT(Mesh.ComplexCollision.Vertices.size() == Mesh.LODs.front().Vertices.size());
+	EXPECT(Mesh.ComplexCollision.Indices.size() == Mesh.LODs.front().Indices.size());
+	printf("Parsed %zu LODs, %zu simple collision shapes, LOD0=%zu vertices/%zu triangles\n",
+		Mesh.LODs.size(), Mesh.SimpleCollision.size(), Mesh.LODs.front().Vertices.size(), Mesh.LODs.front().Indices.size() / 3);
+}
 
 void TestParseObj()
 {

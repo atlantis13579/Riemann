@@ -1,5 +1,5 @@
 {
-  "name": "demo",
+  "name": "Basic Rigid Bodies",
   "physics": {
     "gravity": [0.0, -9.8, 0.0]
   },
@@ -10,7 +10,7 @@
     "far": 1000.0
   },
   "light": {
-    "direction": [-0.45, -1.0, 0.35],
+    "direction": [-0.422521, -0.901663, 0.092092],
     "color": [1.0, 0.96, 0.86],
     "ambient": 0.24,
     "shadowCenter": [0.0, 2.0, 0.0],

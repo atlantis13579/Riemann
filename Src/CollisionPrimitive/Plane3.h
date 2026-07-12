@@ -30,8 +30,17 @@ namespace Riemann
 
 		Plane3(const Vector3& InNormal, float InD)
 		{
-			Normal = InNormal.Unit();
-			D = InD;
+			const float normalLength = InNormal.Length();
+			if (normalLength > 1.0e-8f)
+			{
+				Normal = InNormal / normalLength;
+				D = InD / normalLength;
+			}
+			else
+			{
+				Normal = Vector3::UnitY();
+				D = 0.0f;
+			}
 		}
 
 		Plane3(const Vector3& A, const Vector3& B, const Vector3& C)

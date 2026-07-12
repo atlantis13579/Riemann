@@ -70,8 +70,8 @@ bool OrientedBox3::IntersectPlane(const Vector3& normal, const float D) const
 
 bool OrientedBox3::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 {
-	AxisAlignedBox3 aabb(Center - Extent, Center + Extent);
-	return aabb.IntersectRay(Origin * Rotation, Direction * Rotation, t);
+	AxisAlignedBox3 aabb(-Extent, Extent);
+	return aabb.IntersectRay((Origin - Center) * Rotation, Direction * Rotation, t);
 }
 
 bool OrientedBox3::IntersectAABB(const Vector3& Bmin, const Vector3& Bmax) const
@@ -179,20 +179,20 @@ bool OrientedBox3::IntersectOBB(const Vector3& iCenter, const Vector3& iExtent, 
 
 bool OrientedBox3::IntersectSphere(const Vector3& iCenter, float iRadius) const
 {
-	AxisAlignedBox3 aabb(Center - Extent, Center + Extent);
-	return aabb.IntersectSphere(iCenter * Rotation, iRadius);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
+	AxisAlignedBox3 aabb(-Extent, Extent);
+	return aabb.IntersectSphere((iCenter - Center) * Rotation, iRadius);
 }
 
 bool OrientedBox3::IntersectCapsule(const Vector3& X0, const Vector3& X1, float Radius) const
 {
-	AxisAlignedBox3 aabb(Center - Extent, Center + Extent);
-	return aabb.IntersectCapsule(X0 * Rotation, X1 * Rotation, Radius);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
+	AxisAlignedBox3 aabb(-Extent, Extent);
+	return aabb.IntersectCapsule((X0 - Center) * Rotation, (X1 - Center) * Rotation, Radius);
 }
 
 bool OrientedBox3::IntersectTriangle(const Vector3& A, const Vector3& B, const Vector3& C) const
 {
-	AxisAlignedBox3 aabb(Center - Extent, Center + Extent);
-	return aabb.IntersectTriangle(A * Rotation, B * Rotation, C * Rotation);	// inv(Rot) * v = transpose(Rot) * v = v^T * (Rot)
+	AxisAlignedBox3 aabb(-Extent, Extent);
+	return aabb.IntersectTriangle((A - Center) * Rotation, (B - Center) * Rotation, (C - Center) * Rotation);
 }
 
 static bool testBoxBoxAxis(const OrientedBox3& obb0, const OrientedBox3& obb1, const Vector3& axis, Vector3* normal, float* depth)
@@ -230,7 +230,7 @@ bool OrientedBox3::PenetrateOBB(const OrientedBox3& obb, Vector3* Normal, float*
 	for (int j = 0; j < 3; ++j)
 		for (int i = 0; i < 3; ++i)
 		{
-			Vector3 cross = Rotation.Row(i).Cross(obb.Rotation.Row(j));
+			Vector3 cross = Rotation.Column(i).Cross(obb.Rotation.Column(j));
 			if (cross.SquareLength() > 1e-6f)
 			{
 				cross.Normalize();
@@ -658,6 +658,48 @@ bool OrientedBox3::SweepHeightField(const Vector3& Direction, const HeightField3
 	return true;
 }
 
+struct OBBMeshSweepContext
+{
+	const OrientedBox3* Shape;
+	AxisAlignedBox3 LocalBox;
+	Vector3 LocalDirection;
+	Vector3 LocalUnitDirection;
+	float BestAlignment;
+	Vector3 BestPosition;
+	Vector3 BestNormal;
+	bool Hit;
+};
+
+static void TestOBBMeshSweepTriangle(void* Context, const Vector3& A, const Vector3& B, const Vector3& C, float& BestDistance)
+{
+	OBBMeshSweepContext* Sweep = static_cast<OBBMeshSweepContext*>(Context);
+	const Vector3 LocalA = OBBWorldToLocalPoint(*Sweep->Shape, A);
+	const Vector3 LocalB = OBBWorldToLocalPoint(*Sweep->Shape, B);
+	const Vector3 LocalC = OBBWorldToLocalPoint(*Sweep->Shape, C);
+	Vector3 LocalPosition;
+	Vector3 LocalNormal;
+	float HitTime;
+	if (!Sweep->LocalBox.SweepTriangle(Sweep->LocalDirection, LocalA, LocalB, LocalC, &LocalPosition, &LocalNormal, &HitTime))
+	{
+		return;
+	}
+
+	Vector3 TriangleNormal = (LocalB - LocalA).Cross(LocalC - LocalA);
+	if (TriangleNormal.SafeNormalize() <= 1.0e-6f)
+	{
+		TriangleNormal = -Sweep->LocalUnitDirection;
+	}
+	const float Alignment = Triangle3::ComputeAlignmentValue(TriangleNormal, Sweep->LocalUnitDirection);
+	if (!Sweep->Hit || Triangle3::IsBetterTriangle(HitTime, Alignment, BestDistance, Sweep->BestAlignment))
+	{
+		Sweep->Hit = true;
+		BestDistance = HitTime;
+		Sweep->BestAlignment = Alignment;
+		Sweep->BestPosition = LocalPosition;
+		Sweep->BestNormal = LocalNormal;
+	}
+}
+
 bool OrientedBox3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* trimesh, Vector3* p, Vector3* n, float* t) const
 {
 	if (trimesh == nullptr || trimesh->NumTriangles == 0 || Direction.SquareLength() <= 1.0e-12f)
@@ -676,53 +718,12 @@ bool OrientedBox3::SweepTriangleMesh(const Vector3& Direction, const TriangleMes
 		return false;
 	}
 
-	bool hit = false;
 	float bestDistance = FLT_MAX;
-	float bestAlignment = 2.0f;
-	Vector3 bestPosition = Vector3::Zero();
-	Vector3 bestNormal = Vector3::Zero();
+	OBBMeshSweepContext Context = { this, localBox, localDir, localUnitDir, 2.0f,
+		Vector3::Zero(), Vector3::Zero(), false };
+	trimesh->SweepBVH(movingBounds, Direction, bestDistance, TestOBBMeshSweepTriangle, &Context);
 
-	for (uint32_t i = 0; i < trimesh->NumTriangles; ++i)
-	{
-		const Vector3 worldA = trimesh->GetVertex(i, 0);
-		const Vector3 worldB = trimesh->GetVertex(i, 1);
-		const Vector3 worldC = trimesh->GetVertex(i, 2);
-		const Box3 triBounds(worldA, worldB, worldC);
-
-		float triToi;
-		if (!SweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, triBounds.Min, triBounds.Max, bestDistance, triToi))
-		{
-			continue;
-		}
-
-		const Vector3 localA = OBBWorldToLocalPoint(*this, worldA);
-		const Vector3 localB = OBBWorldToLocalPoint(*this, worldB);
-		const Vector3 localC = OBBWorldToLocalPoint(*this, worldC);
-
-		Vector3 localPosition, localNormal;
-		float localT;
-		if (!localBox.SweepTriangle(localDir, localA, localB, localC, &localPosition, &localNormal, &localT))
-		{
-			continue;
-		}
-
-		Vector3 triNormal = (localB - localA).Cross(localC - localA);
-		if (triNormal.SafeNormalize() <= 1.0e-6f)
-		{
-			triNormal = -localUnitDir;
-		}
-		const float alignment = Triangle3::ComputeAlignmentValue(triNormal, localUnitDir);
-		if (!hit || Triangle3::IsBetterTriangle(localT, alignment, bestDistance, bestAlignment))
-		{
-			hit = true;
-			bestDistance = localT;
-			bestAlignment = alignment;
-			bestPosition = localPosition;
-			bestNormal = localNormal;
-		}
-	}
-
-	if (!hit)
+	if (!Context.Hit)
 	{
 		return false;
 	}
@@ -733,11 +734,11 @@ bool OrientedBox3::SweepTriangleMesh(const Vector3& Direction, const TriangleMes
 	}
 	if (p)
 	{
-		*p = bestPosition;
+		*p = Context.BestPosition;
 	}
 	if (n)
 	{
-		*n = bestNormal;
+		*n = Context.BestNormal;
 	}
 	TransformOBBSweepResultToWorld(*this, true, p, n);
 	return true;
@@ -750,8 +751,8 @@ Vector3 OrientedBox3::ClosestPointToPoint(const Vector3& Point) const
 	for (int i = 0; i < 3; i++)
 	{
 		float dist = d.Dot(Rotation.Column(i));
-		if (dist > -Extent[i])
-			dist = -Extent[i];
+		if (dist > Extent[i])
+			dist = Extent[i];
 		if (dist < -Extent[i])
 			dist = -Extent[i];
 		closestPt += dist * Rotation.Column(i);
@@ -761,22 +762,22 @@ Vector3 OrientedBox3::ClosestPointToPoint(const Vector3& Point) const
 
 float OrientedBox3::SqrDistanceToLine(const Vector3& P0, const Vector3& Direction, float* t) const
 {
-	AxisAlignedBox3 aabb(Center - Extent, Center + Extent);
-	float SqrDist = aabb.SqrDistanceToLine(P0 * Rotation, Direction * Rotation, t);
+	AxisAlignedBox3 aabb(-Extent, Extent);
+	float SqrDist = aabb.SqrDistanceToLine((P0 - Center) * Rotation, Direction * Rotation, t);
 	return SqrDist;
 }
 
 float OrientedBox3::SqrDistanceToSegment(const Vector3& P0, const Vector3& P1) const
 {
-	AxisAlignedBox3 aabb(Center - Extent, Center + Extent);
-	float SqrDist = aabb.SqrDistanceToSegment(P0 * Rotation, P1 * Rotation);
+	AxisAlignedBox3 aabb(-Extent, Extent);
+	float SqrDist = aabb.SqrDistanceToSegment((P0 - Center) * Rotation, (P1 - Center) * Rotation);
 	return SqrDist;
 }
 
 float OrientedBox3::SqrDistanceToPoint(const Vector3& Point) const
 {
 	Vector3 closestPt = ClosestPointToPoint(Point);
-	float SqrDist = closestPt.SquareLength();
+	float SqrDist = (Point - closestPt).SquareLength();
 	return SqrDist;
 }
 

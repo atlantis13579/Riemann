@@ -928,6 +928,23 @@ static void TestSphereTriangleForBestSweep(const Sphere3& sphere, const Vector3&
 	}
 }
 
+struct SphereMeshSweepContext
+{
+	const Sphere3* Shape;
+	const Vector3* Direction;
+	Vector3 UnitDirection;
+	float BestAlignment;
+	Vector3 BestTriangle[3];
+	bool Hit;
+};
+
+static void TestSphereMeshSweepTriangle(void* Context, const Vector3& A, const Vector3& B, const Vector3& C, float& BestDistance)
+{
+	SphereMeshSweepContext* Sweep = static_cast<SphereMeshSweepContext*>(Context);
+	TestSphereTriangleForBestSweep(*Sweep->Shape, *Sweep->Direction, Sweep->UnitDirection,
+		A, B, C, BestDistance, Sweep->BestAlignment, Sweep->BestTriangle, Sweep->Hit);
+}
+
 bool Sphere3::SweepHeightField(const Vector3& Direction, const HeightField3* hf, Vector3* p, Vector3* n, float* t) const
 {
 	if (hf == nullptr || hf->Cells == nullptr || hf->nX < 2 || hf->nZ < 2 || Direction.SquareLength() <= 1.0e-12f)
@@ -1021,34 +1038,17 @@ bool Sphere3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* tr
 		return false;
 	}
 
-	bool hit = false;
 	float bestDistance = FLT_MAX;
-	float bestAlignment = 2.0f;
-	Vector3 bestTri[3];
-	const Vector3 unitDir = Direction.SafeUnit();
+	SphereMeshSweepContext Context = { this, &Direction, Direction.SafeUnit(), 2.0f, {}, false };
+	trimesh->SweepBVH(Box3(movingMin, movingMax), Direction, bestDistance, TestSphereMeshSweepTriangle, &Context);
 
-	for (uint32_t i = 0; i < trimesh->NumTriangles; ++i)
-	{
-		const Vector3 A = trimesh->GetVertex(i, 0);
-		const Vector3 B = trimesh->GetVertex(i, 1);
-		const Vector3 C = trimesh->GetVertex(i, 2);
-		const Box3 triBounds(A, B, C);
-
-		float triToi;
-		if (!SphereSweepMovingAABBAABB(movingMin, movingMax, Direction, triBounds.Min, triBounds.Max, bestDistance, triToi))
-		{
-			continue;
-		}
-
-		TestSphereTriangleForBestSweep(*this, Direction, unitDir, A, B, C, bestDistance, bestAlignment, bestTri, hit);
-	}
-
-	if (!hit)
+	if (!Context.Hit)
 	{
 		return false;
 	}
 
-	ComputeSphereTriangleSweepResult(Center, Direction, bestDistance, bestTri[0], bestTri[1], bestTri[2], p, n, t);
+	ComputeSphereTriangleSweepResult(Center, Direction, bestDistance,
+		Context.BestTriangle[0], Context.BestTriangle[1], Context.BestTriangle[2], p, n, t);
 	return true;
 }
 

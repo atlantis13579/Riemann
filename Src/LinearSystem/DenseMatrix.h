@@ -584,9 +584,9 @@ public:
 		T sum = (T)0;
 		for (int i = 0; i < mRows * mCols; ++i)
 		{
-			sum += std::pow(pData[i], p);
+			sum += (T)std::pow(std::abs(pData[i]), (T)p);
 		}
-		return std::pow(sum, (T)1 / p);
+		return (T)std::pow(sum, (T)1 / (T)p);
 	}
 
 	T			LInfinityNorm() const

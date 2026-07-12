@@ -54,14 +54,14 @@ namespace Riemann
 		{
 			Box3 box;
 			box.SetEmpty();
-			box.Encapsulate(Rot * (Center + Vector3(Extent.x, Extent.y, Extent.z)));
-			box.Encapsulate(Rot * (Center + Vector3(Extent.x, Extent.y, -Extent.z)));
-			box.Encapsulate(Rot * (Center + Vector3(Extent.x, -Extent.y, Extent.z)));
-			box.Encapsulate(Rot * (Center + Vector3(Extent.x, -Extent.y, -Extent.z)));
-			box.Encapsulate(Rot * (Center + Vector3(-Extent.x, Extent.y, Extent.z)));
-			box.Encapsulate(Rot * (Center + Vector3(-Extent.x, Extent.y, -Extent.z)));
-			box.Encapsulate(Rot * (Center + Vector3(-Extent.x, -Extent.y, Extent.z)));
-			box.Encapsulate(Rot * (Center + Vector3(-Extent.x, -Extent.y, -Extent.z)));
+			box.Encapsulate(Center + Rot * Vector3(Extent.x, Extent.y, Extent.z));
+			box.Encapsulate(Center + Rot * Vector3(Extent.x, Extent.y, -Extent.z));
+			box.Encapsulate(Center + Rot * Vector3(Extent.x, -Extent.y, Extent.z));
+			box.Encapsulate(Center + Rot * Vector3(Extent.x, -Extent.y, -Extent.z));
+			box.Encapsulate(Center + Rot * Vector3(-Extent.x, Extent.y, Extent.z));
+			box.Encapsulate(Center + Rot * Vector3(-Extent.x, Extent.y, -Extent.z));
+			box.Encapsulate(Center + Rot * Vector3(-Extent.x, -Extent.y, Extent.z));
+			box.Encapsulate(Center + Rot * Vector3(-Extent.x, -Extent.y, -Extent.z));
 			return box;
 		}
 

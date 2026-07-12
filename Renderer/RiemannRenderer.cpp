@@ -24,6 +24,16 @@ namespace Riemann
 
 			bool AddMesh(const RenderMeshDesc& mesh) override
 			{
+				if (mesh.Id.empty() || mesh.Vertices.empty() != mesh.Indices.empty()) return false;
+				if ((mesh.Topology == RenderPrimitiveTopology::Triangles && mesh.Indices.size() % 3 != 0)
+					|| (mesh.Topology == RenderPrimitiveTopology::Lines && mesh.Indices.size() % 2 != 0))
+				{
+					return false;
+				}
+				for (uint32_t index : mesh.Indices)
+				{
+					if (index >= mesh.Vertices.size()) return false;
+				}
 				m_Meshes[mesh.Id] = mesh;
 				return true;
 			}
@@ -42,7 +52,7 @@ namespace Riemann
 
 			bool UpdateVertices(const char* id, const Vertex1* vertices, int vertexCount) override
 			{
-				if (id == nullptr || vertices == nullptr || vertexCount < 0)
+				if (id == nullptr || vertices == nullptr || vertexCount <= 0)
 				{
 					return false;
 				}
@@ -53,7 +63,41 @@ namespace Riemann
 					return false;
 				}
 
+				if ((size_t)vertexCount != it->second.Vertices.size()) return false;
 				it->second.Vertices.assign(vertices, vertices + vertexCount);
+				return true;
+			}
+
+			bool UpdateMeshGeometry(const char* id, const Vertex1* vertices, int vertexCount,
+				const uint32_t* indices, int indexCount) override
+			{
+				if (id == nullptr || vertexCount < 0 || indexCount < 0
+					|| ((vertexCount == 0 || indexCount == 0) && (vertexCount != 0 || indexCount != 0))
+					|| (vertexCount > 0 && (vertices == nullptr || indices == nullptr)))
+				{
+					return false;
+				}
+				auto it = m_Meshes.find(id);
+				if (it == m_Meshes.end()) return false;
+				if ((it->second.Topology == RenderPrimitiveTopology::Triangles && indexCount % 3 != 0)
+					|| (it->second.Topology == RenderPrimitiveTopology::Lines && indexCount % 2 != 0))
+				{
+					return false;
+				}
+				for (int index = 0; index < indexCount; ++index)
+				{
+					if (indices[index] >= (uint32_t)vertexCount) return false;
+				}
+				if (vertexCount == 0)
+				{
+					it->second.Vertices.clear();
+					it->second.Indices.clear();
+				}
+				else
+				{
+					it->second.Vertices.assign(vertices, vertices + vertexCount);
+					it->second.Indices.assign(indices, indices + indexCount);
+				}
 				return true;
 			}
 

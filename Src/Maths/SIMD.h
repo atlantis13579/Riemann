@@ -1,73 +1,98 @@
 
 #pragma once
 
-// #define SIMD_INSTRUCTION_EMU
-
 #include <float.h>
+#include <cstdint>
+#include <cstring>
 #include "Maths.h"
 #include "Vector3.h"
 #include "Vector4.h"
 
-#if defined(SIMD_INSTRUCTION_EMU)
-	typedef float				Scaler;
-	typedef TVector4<float>		F128;
-	typedef TVector4<bool>		B128;
-	typedef TVector4<uint32_t>	U128;
-	typedef TVector4<int32_t>	I128;
-#elif defined(__arm__) || defined(__aarch64__)
-	#include <arm_neon.h>
-	typedef float32x2_t Scaler;
-	typedef float32x4_t F128;
-	typedef uint32x4_t  B128;
-	typedef uint32x4_t  U128;
-	typedef int32x4_t   I128;
-	#define SIMD_INSTRUCTION_NEON
-#else
-	#ifdef _WIN32
-	#include <intrin.h>
+#if !defined(SIMD_INSTRUCTION_EMU) && !defined(SIMD_INSTRUCTION_NEON) && !defined(SIMD_INSTRUCTION_SSE)
+	#if defined(_M_ARM64) || defined(_M_ARM64EC) || defined(_M_HYBRID_X86_ARM64) || defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM) || defined(__ARM_NEON) || defined(__ARM_NEON__)
+		#define SIMD_INSTRUCTION_NEON
+	#elif defined(_M_IX86) || defined(_M_X64) || defined(__i386__) || defined(__x86_64__)
+		#define SIMD_INSTRUCTION_SSE
 	#else
-	#include <x86intrin.h>
+		#define SIMD_INSTRUCTION_EMU
 	#endif
-	typedef __m128 Scaler;
-	typedef __m128 F128;
-	typedef __m128 B128;
-	typedef __m128 U128;
-	typedef __m128 I128;
-	#define SIMD_INSTRUCTION_SSE
+#endif
+
+#if (defined(SIMD_INSTRUCTION_EMU) + defined(SIMD_INSTRUCTION_NEON) + defined(SIMD_INSTRUCTION_SSE)) != 1
+	#error Exactly one SIMD instruction backend must be selected
+#endif
+
+#if defined(SIMD_INSTRUCTION_EMU)
+	using Scaler = float;
+	using F128 = Maths::TVector4<float>;
+	using B128 = Maths::TVector4<uint32_t>;
+	using U128 = Maths::TVector4<uint32_t>;
+	using I128 = Maths::TVector4<int32_t>;
+#elif defined(SIMD_INSTRUCTION_NEON)
+	#include <arm_neon.h>
+	using Scaler = float32x2_t;
+	using F128 = float32x4_t;
+	using B128 = uint32x4_t;
+	using U128 = uint32x4_t;
+	using I128 = int32x4_t;
+#elif defined(SIMD_INSTRUCTION_SSE)
+	#ifdef _WIN32
+		#include <intrin.h>
+	#else
+		#include <x86intrin.h>
+	#endif
+	using Scaler = __m128;
+	using F128 = __m128;
+	using B128 = __m128;
+	using U128 = __m128;
+	using I128 = __m128;
 #endif
 
 static_assert(sizeof(F128) == 16, "simd size vector not correct!");
+static_assert(sizeof(B128) == 16, "simd mask vector size not correct!");
 static_assert(sizeof(U128) == 16, "simd size vector not correct!");
 static_assert(sizeof(I128) == 16, "simd size vector not correct!");
 
 inline float F128_ReadX(const F128& v)
 {
-	return reinterpret_cast<const Vector4&>(v).x;
+	float result;
+	std::memcpy(&result, &v, sizeof(result));
+	return result;
 }
 
 inline float F128_ReadY(const F128& v)
 {
-	return reinterpret_cast<const Vector4&>(v).y;
+	alignas(16) float values[4];
+	std::memcpy(values, &v, sizeof(values));
+	return values[1];
 }
 
 inline float F128_ReadZ(const F128& v)
 {
-	return reinterpret_cast<const Vector4&>(v).z;
+	alignas(16) float values[4];
+	std::memcpy(values, &v, sizeof(values));
+	return values[2];
 }
 
 inline float F128_ReadW(const F128& v)
 {
-	return reinterpret_cast<const Vector4&>(v).w;
+	alignas(16) float values[4];
+	std::memcpy(values, &v, sizeof(values));
+	return values[3];
 }
 
-inline const Vector3& F128_ReadXYZ(const F128& v)
+inline Vector3 F128_ReadXYZ(const F128& v)
 {
-	return reinterpret_cast<const Vector3&>(v);
+	alignas(16) float values[4];
+	std::memcpy(values, &v, sizeof(values));
+	return Vector3(values[0], values[1], values[2]);
 }
 
-inline const Vector4& F128_ReadXYZW(const F128& v)
+inline Vector4 F128_ReadXYZW(const F128& v)
 {
-	return reinterpret_cast<const Vector4&>(v);
+	alignas(16) float values[4];
+	std::memcpy(values, &v, sizeof(values));
+	return Vector4(values[0], values[1], values[2], values[3]);
 }
 
 #if _DEBUG
@@ -90,13 +115,18 @@ inline const Vector4& F128_ReadXYZW(const F128& v)
 
 inline Scaler Scaler_Load(const float f)
 {
-	return vdup_n_f32(reinterpret_cast<const float32_t&>(f));
+	return vdup_n_f32(f);
 }
 
 inline Scaler Scaler_LoadA(const float* const f)
 {
 	ASSERT_ISALIGNED16(f);
-	return vld1_f32(reinterpret_cast<const float32_t*>(f));
+	return vdup_n_f32(*f);
+}
+
+inline void Scaler_Store(const Scaler a, float* f)
+{
+	vst1_lane_f32(f, a, 0);
 }
 
 inline Scaler Scaler_Zero()
@@ -202,7 +232,9 @@ inline Scaler Scaler_RSqrt(const Scaler a)
 
 inline Scaler Scaler_Sqrt(const Scaler a)
 {
-	return Scaler_Sel(Scaler_Equal(a, Scaler_Zero()), a, vmul_f32(a, VRECIPSQRT(a)));
+	const Scaler root = vmul_f32(a, VRECIPSQRT(a));
+	const Scaler finiteRoot = Scaler_Sel(Scaler_Equal(a, Scaler_Zero()), a, root);
+	return vbsl_f32(vcgt_f32(a, vdup_n_f32(FLT_MAX)), a, finiteRoot);
 }
 
 inline Scaler Scaler_RSqrtFast(const Scaler a)
@@ -252,13 +284,15 @@ inline Scaler Scaler_Clamp(const Scaler a, const Scaler minV, const Scaler maxV)
 
 inline Scaler Scaler_Round(const Scaler a)
 {
-	// truncate(a + (0.5f - sign(a)))
 	const float32x2_t half = vdup_n_f32(0.5f);
 	const float32x2_t sign = vcvt_f32_u32((vshr_n_u32(vreinterpret_u32_f32(a), 31)));
 	const float32x2_t aPlusHalf = vadd_f32(a, half);
 	const float32x2_t aRound = vsub_f32(aPlusHalf, sign);
-	int32x2_t tmp = vcvt_s32_f32(aRound);
-	return vcvt_f32_s32(tmp);
+	const float32x2_t rounded = vcvt_f32_s32(vcvt_s32_f32(aRound));
+	const uint32x2_t preserve = vorr_u32(
+		vorr_u32(vcge_f32(vabs_f32(a), vdup_n_f32(8388608.0f)), vmvn_u32(vceq_f32(a, a))),
+		vceq_f32(a, vdup_n_f32(0.0f)));
+	return vbsl_f32(preserve, a, rounded);
 }
 
 inline B128 BFFFF()
@@ -407,46 +441,47 @@ inline B128 B128_Or(const B128 a, const B128 b)
 
 inline B128 B128_All(const B128 a)
 {
-	const uint32x2_t allTrue = vmov_n_u32(0xffffFFFF);
-	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
-	const uint16x4_t dLow = vmovn_u32(a);
-	uint16x8_t combined = vcombine_u16(dLow, dHigh);
-	const uint32x2_t finalReduce = vreinterpret_u32_u8(vmovn_u16(combined));
-	const uint32x2_t result = vceq_u32(finalReduce, allTrue);
-	return vdupq_lane_u32(result, 0);
+	const bool all = vgetq_lane_u32(a, 0) != 0 &&
+		vgetq_lane_u32(a, 1) != 0 &&
+		vgetq_lane_u32(a, 2) != 0 &&
+		vgetq_lane_u32(a, 3) != 0;
+	return vmovq_n_u32(all ? UINT32_MAX : 0u);
 }
 
 inline B128 B128_Any(const B128 a)
 {
-	const uint32x2_t allTrue = vmov_n_u32(0xffffFFFF);
-	const uint16x4_t dHigh = vget_high_u16(vreinterpretq_u16_u32(a));
-	const uint16x4_t dLow = vmovn_u32(a);
-	uint16x8_t combined = vcombine_u16(dLow, dHigh);
-	const uint32x2_t finalReduce = vreinterpret_u32_u8(vmovn_u16(combined));
-	const uint32x2_t result = vtst_u32(finalReduce, allTrue);
-	return vdupq_lane_u32(result, 0);
+	const bool any = vgetq_lane_u32(a, 0) != 0 ||
+		vgetq_lane_u32(a, 1) != 0 ||
+		vgetq_lane_u32(a, 2) != 0 ||
+		vgetq_lane_u32(a, 3) != 0;
+	return vmovq_n_u32(any ? UINT32_MAX : 0u);
 }
 
 inline F128 F128_Load(const float f)
 {
-	return vdupq_n_f32(reinterpret_cast<const float32_t&>(f));
+	return vdupq_n_f32(f);
 }
 
 inline F128 F128_LoadA(const float* f)
 {
 	ASSERT_ISALIGNED16(f);
-	return vld1q_f32(reinterpret_cast<const float32_t*>(f));
+	return vld1q_f32(f);
 }
 
-inline F128 F128_Load(F128* addr)
+inline F128 F128_Load(const F128* addr)
 {
-	return vld1q_f32(reinterpret_cast<float32_t*>(addr));
+	return *addr;
 }
 
 inline void F128_StoreA(F128 a, float* f)
 {
 	ASSERT_ISALIGNED16(f);
-	vst1q_f32(reinterpret_cast<float32_t*>(f), a);
+	vst1q_f32(f, a);
+}
+
+inline void F128_StoreU(const F128 a, float* f)
+{
+	vst1q_f32(f, a);
 }
 
 inline F128 F128_Load_Vector3d(const Vector3& f)
@@ -508,13 +543,15 @@ inline B128 F128_Equal(const F128 a, const F128 b)
 
 inline F128 F128_LoadU(const float* f)
 {
-	return vld1q_f32(reinterpret_cast<const float32_t*>(f));
+	return vld1q_f32(f);
 }
 
 inline F128 F128_LoadXYZW(const float x, const float y, const float z, const float w)
 {
-	const float32x4_t ret = { x, y, z, w };
-	return ret;
+	float32x4_t result = vdupq_n_f32(x);
+	result = vsetq_lane_f32(y, result, 1);
+	result = vsetq_lane_f32(z, result, 2);
+	return vsetq_lane_f32(w, result, 3);
 }
 
 inline F128 F128_Zero()
@@ -598,7 +635,9 @@ inline F128 F128_RSqrtFast(const F128 a)
 
 inline F128 F128_Sqrt(const F128 a)
 {
-	return F128_Sel(F128_Equal(a, F128_Zero()), a, F128_Mul(a, VRECIPSQRTQ(a)));
+	const F128 root = F128_Mul(a, VRECIPSQRTQ(a));
+	const F128 finiteRoot = F128_Sel(F128_Equal(a, F128_Zero()), a, root);
+	return F128_Sel(vcgtq_f32(a, vdupq_n_f32(FLT_MAX)), a, finiteRoot);
 }
 
 inline F128 F128_ScaleAdd(const F128 a, const Scaler b, const F128 c)
@@ -658,18 +697,8 @@ inline F128 F128_Abs(const F128 a)
 template <int index>
 inline F128 F128_SplatElement(F128 a)
 {
-	if (index < 2)
-	{
-		return vdupq_lane_f32(vget_low_f32(a), index & 0x01);
-	}
-	else if (index == 2)
-	{
-		return vdupq_lane_f32(vget_high_f32(a), 0);
-	}
-	else if (index == 3)
-	{
-		return vdupq_lane_f32(vget_high_f32(a), 1);
-	}
+	static_assert(index >= 0 && index < 4, "SIMD lane index is out of range");
+	return vdupq_n_f32(vgetq_lane_f32(a, index));
 }
 
 inline Scaler F128_Dot(const F128 a, const F128 b)
@@ -701,7 +730,7 @@ inline Scaler F128_Dot3(const F128 aa, const F128 bb)
 
 inline F128 F128_Cross(const F128 a, const F128 b)
 {
-	const uint32x2_t TF = { 0xffffFFFF, 0x0 };
+	const uint32x2_t TF = vset_lane_u32(UINT32_MAX, vdup_n_u32(0u), 0);
 	const float32x2_t ay_ax = vget_low_f32(a);  // d2
 	const float32x2_t aw_az = vget_high_f32(a); // d3
 	const float32x2_t by_bx = vget_low_f32(b);  // d4
@@ -772,12 +801,15 @@ inline F128 F128_Min(const F128 a, const F128 b)
 
 inline F128 F128_Round(const F128 a)
 {
-	// truncate(a + (0.5f - sign(a)))
 	const F128 half = F128_Load(0.5f);
 	const float32x4_t sign = vcvtq_f32_u32((vshrq_n_u32(vreinterpretq_u32_f32(a), 31)));
 	const F128 aPlusHalf = F128_Add(a, half);
 	const F128 aRound = F128_Sub(aPlusHalf, sign);
-	return vcvtq_f32_s32(vcvtq_s32_f32(aRound));
+	const F128 rounded = vcvtq_f32_s32(vcvtq_s32_f32(aRound));
+	const uint32x4_t preserve = vorrq_u32(
+		vorrq_u32(vcgeq_f32(vabsq_f32(a), vdupq_n_f32(8388608.0f)), vmvnq_u32(vceqq_f32(a, a))),
+		vceqq_f32(a, vdupq_n_f32(0.0f)));
+	return vbslq_f32(preserve, a, rounded);
 }
 
 inline void F128_Transpose(F128& col0, F128& col1, F128& col2, F128& col3)
@@ -794,8 +826,10 @@ inline void F128_Transpose(F128& col0, F128& col1, F128& col2, F128& col3)
 
 inline U128 U128_LoadXYZW(unsigned int x, unsigned int y, unsigned int z, unsigned int w)
 {
-	const uint32x4_t ret = { x, y, z, w };
-	return ret;
+	uint32x4_t result = vdupq_n_u32(x);
+	result = vsetq_lane_u32(y, result, 1);
+	result = vsetq_lane_u32(z, result, 2);
+	return vsetq_lane_u32(w, result, 3);
 }
 
 inline U128 U128_Load(const unsigned int i)
@@ -810,6 +844,7 @@ inline U128 U128_LoadU(const unsigned int* i)
 
 inline U128 U128_LoadA(const unsigned int* i)
 {
+	ASSERT_ISALIGNED16(i);
 	return vld1q_u32(i);
 }
 
@@ -837,7 +872,7 @@ inline U128 U128_ANDNOT(U128 a, U128 b)
 inline void U128_StoreA(const U128 uv, unsigned int* u)
 {
 	ASSERT_ISALIGNED16(u);
-	vst1q_u32(reinterpret_cast<uint32_t*>(u), uv);
+	vst1q_u32(u, uv);
 }
 
 inline U128 U128_Load_B128(const B128& a)
@@ -847,12 +882,17 @@ inline U128 U128_Load_B128(const B128& a)
 
 inline void U128_StoreAA(U128 val, U128* address)
 {
-	vst1q_u32(reinterpret_cast<uint32_t*>(address), val);
+	*address = val;
 }
 
 inline F128 F128_From_U128(U128 a)
 {
 	return vcvtq_f32_u32(a);
+}
+
+inline U128 U128_From_F128(F128 a)
+{
+	return vcvtq_u32_f32(a);
 }
 
 inline F128 F128_ReinterpretFrom_U128(U128 a)
@@ -863,6 +903,11 @@ inline F128 F128_ReinterpretFrom_U128(U128 a)
 inline U128 U128_ReinterpretFrom_F128(F128 a)
 {
 	return vreinterpretq_u32_f32(a);
+}
+
+inline U128 U128_Zero()
+{
+	return vmovq_n_u32(0u);
 }
 
 #elif defined(SIMD_INSTRUCTION_SSE)
@@ -878,13 +923,17 @@ namespace internalWindowsSimd
 	{
 		return _mm_castps_si128(n);
 	}
-
-	alignas(16) const uint32_t gMaskXYZ[4] = { 0xffffffff, 0xffffffff, 0xffffffff, 0 };
 }
 
 inline Scaler Scaler_Load(const float f)
 {
 	return _mm_load1_ps(&f);
+}
+
+inline Scaler Scaler_LoadA(const float* f)
+{
+	ASSERT_ISALIGNED16(f);
+	return _mm_load1_ps(f);
 }
 
 inline void Scaler_Store(const Scaler a, float* f)
@@ -904,7 +953,7 @@ inline Scaler Scaler_One()
 
 inline Scaler Scaler_Neg(const Scaler f)
 {
-	return _mm_sub_ps(_mm_setzero_ps(), f);
+	return _mm_xor_ps(f, _mm_set1_ps(-0.0f));
 }
 
 inline Scaler Scaler_Add(const Scaler a, const Scaler b)
@@ -969,8 +1018,8 @@ inline Scaler Scaler_NegMSub(const Scaler a, const Scaler b, const Scaler c)
 
 inline Scaler Scaler_Abs(const Scaler a)
 {
-	alignas(16) const static uint32_t absMask[4] = { 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF, 0x7fFFffFF };
-	return _mm_and_ps(a, _mm_load_ps((float*)absMask));
+	const __m128 absMask = _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff));
+	return _mm_and_ps(a, absMask);
 }
 
 inline Scaler Scaler_Sel(const B128 c, const Scaler a, const Scaler b)
@@ -1010,12 +1059,16 @@ inline Scaler Scaler_Clamp(const Scaler a, const Scaler minV, const Scaler maxV)
 
 inline Scaler Scaler_Round(const Scaler a)
 {
-	// return _mm_round_ps(a, 0x0);
 	const Scaler half = Scaler_Load(0.5f);
-	const __m128 signBit = _mm_cvtepi32_ps(_mm_srli_epi32(_mm_cvtps_epi32(a), 31));
-	const Scaler aRound = Scaler_Sub(Scaler_Add(a, half), signBit);
-	__m128i tmp = _mm_cvttps_epi32(aRound);
-	return _mm_cvtepi32_ps(tmp);
+	const __m128 sign = _mm_cvtepi32_ps(_mm_srli_epi32(_mm_castps_si128(a), 31));
+	const Scaler aRound = Scaler_Sub(Scaler_Add(a, half), sign);
+	const __m128i tmp = _mm_cvttps_epi32(aRound);
+	const Scaler rounded = _mm_cvtepi32_ps(tmp);
+	const __m128 absMask = _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff));
+	const __m128 preserve = _mm_or_ps(
+		_mm_or_ps(_mm_cmpge_ps(_mm_and_ps(a, absMask), _mm_set1_ps(8388608.0f)), _mm_cmpunord_ps(a, a)),
+		_mm_cmpeq_ps(a, _mm_setzero_ps()));
+	return Scaler_Sel(preserve, a, rounded);
 }
 
 inline B128 BFFFF()
@@ -1196,6 +1249,11 @@ inline F128 F128_LoadU(const float* f)
 	return _mm_loadu_ps(f);
 }
 
+inline F128 F128_Load(const F128* addr)
+{
+	return *addr;
+}
+
 inline void F128_StoreA(const F128 a, float* f)
 {
 	ASSERT_ISALIGNED16(f);
@@ -1229,7 +1287,14 @@ inline Scaler F128_GetW(const F128 f)
 
 inline F128 F128_ClearW(const F128 v)
 {
-	return _mm_and_ps(v, (I128&)internalWindowsSimd::gMaskXYZ);
+	const __m128 xyzMask = _mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1));
+	return _mm_and_ps(v, xyzMask);
+}
+
+inline F128 F128_SetW(const F128 v, const Scaler f)
+{
+	const __m128 xyzMask = _mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1));
+	return _mm_or_ps(_mm_and_ps(v, xyzMask), _mm_andnot_ps(xyzMask, f));
 }
 
 inline F128 F128_PermYXWZ(const F128 a)
@@ -1274,7 +1339,7 @@ inline F128 F128_One()
 
 inline F128 F128_Neg(const F128 f)
 {
-	return _mm_sub_ps(_mm_setzero_ps(), f);
+	return _mm_xor_ps(f, _mm_set1_ps(-0.0f));
 }
 
 inline F128 F128_Add(const F128 a, const F128 b)
@@ -1369,7 +1434,7 @@ inline F128 F128_Min(const F128 a, const F128 b)
 
 inline F128 F128_Abs(const F128 a)
 {
-	return F128_Max(a, F128_Neg(a));
+	return _mm_and_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff)));
 }
 
 inline Scaler F128_Dot(const F128 a, const F128 b)
@@ -1441,12 +1506,16 @@ inline B128 F128_Equal(const F128 a, const F128 b)
 
 inline F128 F128_Round(const F128 a)
 {
-	// return _mm_round_ps(a, 0x0);
 	const F128 half = F128_Load(0.5f);
-	const __m128 signBit = _mm_cvtepi32_ps(_mm_srli_epi32(_mm_cvtps_epi32(a), 31));
-	const F128 aRound = F128_Sub(F128_Add(a, half), signBit);
+	const __m128 sign = _mm_cvtepi32_ps(_mm_srli_epi32(_mm_castps_si128(a), 31));
+	const F128 aRound = F128_Sub(F128_Add(a, half), sign);
 	const __m128i tmp = _mm_cvttps_epi32(aRound);
-	return _mm_cvtepi32_ps(tmp);
+	const F128 rounded = _mm_cvtepi32_ps(tmp);
+	const __m128 absMask = _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff));
+	const __m128 preserve = _mm_or_ps(
+		_mm_or_ps(_mm_cmpge_ps(_mm_and_ps(a, absMask), _mm_set1_ps(8388608.0f)), _mm_cmpunord_ps(a, a)),
+		_mm_cmpeq_ps(a, _mm_setzero_ps()));
+	return F128_Sel(preserve, a, rounded);
 }
 
 inline void F128_Transpose(F128& col0, F128& col1, F128& col2, F128& col3)
@@ -1469,6 +1538,7 @@ inline void U128_StoreAA(U128 val, U128* address)
 template <int index>
 inline F128 F128_SplatElement(F128 a)
 {
+	static_assert(index >= 0 && index < 4, "SIMD lane index is out of range");
 	return internalWindowsSimd::m128_I2F(
 		_mm_shuffle_epi32(internalWindowsSimd::m128_F2I(a), _MM_SHUFFLE(index, index, index, index)));
 }
@@ -1480,7 +1550,7 @@ inline F128 F128_Load_Vector3d(const Vector3& f)
 
 inline U128 U128_Load(const uint32_t i)
 {
-	return _mm_load1_ps((float*)&i);
+	return _mm_castsi128_ps(_mm_set1_epi32(static_cast<int32_t>(i)));
 }
 
 inline U128 U128_Load_B128(const B128 a)
@@ -1490,45 +1560,68 @@ inline U128 U128_Load_B128(const B128 a)
 
 inline U128 U128_LoadU(const uint32_t* i)
 {
-	return _mm_loadu_ps((float*)i);
+	__m128i value;
+	std::memcpy(&value, i, sizeof(value));
+	return _mm_castsi128_ps(value);
 }
 
 inline U128 U128_LoadA(const uint32_t* i)
 {
 	ASSERT_ISALIGNED16(i);
-	return _mm_load_ps((float*)i);
+	__m128i value;
+	std::memcpy(&value, i, sizeof(value));
+	return _mm_castsi128_ps(value);
 }
 
 inline void U128_StoreA(const U128 uv, uint32_t* u)
 {
 	ASSERT_ISALIGNED16(u);
-	_mm_store_ps((float*)u, uv);
+	const __m128i value = _mm_castps_si128(uv);
+	std::memcpy(u, &value, sizeof(value));
 }
 
 inline F128 F128_ReinterpretFrom_U128(U128 a)
 {
-	return F128(a);
+	return a;
 }
 
 inline U128 U128_ReinterpretFrom_F128(F128 a)
 {
-	return U128(a);
+	return a;
 }
-
-typedef union
-{
-	__m128 v;
-	uint32_t m128_u32[4];
-} _VecU32V;
 
 inline U128 U128_LoadXYZW(uint32_t x, uint32_t y, uint32_t z, uint32_t w)
 {
-	_VecU32V t;
-	t.m128_u32[0] = x;
-	t.m128_u32[1] = y;
-	t.m128_u32[2] = z;
-	t.m128_u32[3] = w;
-	return t.v;
+	return _mm_castsi128_ps(_mm_set_epi32(
+		static_cast<int32_t>(w),
+		static_cast<int32_t>(z),
+		static_cast<int32_t>(y),
+		static_cast<int32_t>(x)));
+}
+
+inline F128 F128_From_U128(const U128 a)
+{
+	const __m128i value = _mm_castps_si128(a);
+	const __m128i low31 = _mm_and_si128(value, _mm_set1_epi32(0x7fffffff));
+	const __m128i highBit = _mm_srli_epi32(value, 31);
+	return _mm_add_ps(
+		_mm_cvtepi32_ps(low31),
+		_mm_mul_ps(_mm_cvtepi32_ps(highBit), _mm_set1_ps(2147483648.0f)));
+}
+
+inline U128 U128_From_F128(const F128 a)
+{
+	const __m128 twoTo31 = _mm_set1_ps(2147483648.0f);
+	const __m128 highMask = _mm_cmpge_ps(a, twoTo31);
+	const __m128 adjusted = _mm_sub_ps(a, _mm_and_ps(highMask, twoTo31));
+	const __m128i low = _mm_cvttps_epi32(adjusted);
+	const __m128i high = _mm_and_si128(_mm_castps_si128(highMask), _mm_set1_epi32(static_cast<int32_t>(0x80000000u)));
+	return _mm_castsi128_ps(_mm_or_si128(low, high));
+}
+
+inline U128 U128_Zero()
+{
+	return _mm_setzero_ps();
 }
 
 inline U128 U128_OR(U128 a, U128 b)
@@ -1571,6 +1664,7 @@ namespace SIMD_EMU
 	template <int index>
 	inline F128 F128_SplatElement(F128 a)
 	{
+		static_assert(index >= 0 && index < 4, "SIMD lane index is out of range");
 		return F128(a[index], a[index], a[index], a[index]);
 	}
 
@@ -1619,7 +1713,7 @@ namespace SIMD_EMU
 
 	inline F128 F128_Div(const F128 a, const F128 b)
 	{
-		return TVector4<float>(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
+		return F128(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w);
 	}
 
 	inline F128 F128_ScaleAdd(const F128 a, const Scaler b, const F128 c)
@@ -1655,10 +1749,7 @@ namespace SIMD_EMU
 
 	inline F128 F128_Abs(const F128 a)
 	{
-		return F128(a.x >= 0 ? a.x : -a.x,
-					a.y >= 0 ? a.y : -a.y,
-					a.z >= 0 ? a.z : -a.z,
-					a.w >= 0 ? a.w : -a.w);
+		return F128(std::fabs(a.x), std::fabs(a.y), std::fabs(a.z), std::fabs(a.w));
 	}
 
 	inline F128 F128_Zero()
@@ -1678,42 +1769,54 @@ namespace SIMD_EMU
 
 	inline F128 F128_RecipFast(const F128 a)
 	{
-		return F128(1.0f / a.x, 1.0f / a.y, 1.0f / a.z, 1.0f);
+		return F128(1.0f / a.x, 1.0f / a.y, 1.0f / a.z, 1.0f / a.w);
 	}
 
 	inline B128 F128_Greater(const F128 a, const F128 b)
 	{
-		return B128(a.x > b.x, a.y > b.y, a.z > b.z, a.w > b.w);
+		return B128(
+			a.x > b.x ? UINT32_MAX : 0u,
+			a.y > b.y ? UINT32_MAX : 0u,
+			a.z > b.z ? UINT32_MAX : 0u,
+			a.w > b.w ? UINT32_MAX : 0u);
 	}
 
-	inline B128 F128_GreaterOrEqual(const F128 a, const F128 b)
+	inline B128 F128_GreaterEqual(const F128 a, const F128 b)
 	{
-		return B128(a.x >= b.x, a.y >= b.y, a.z >= b.z, a.w >= b.w);
+		return B128(
+			a.x >= b.x ? UINT32_MAX : 0u,
+			a.y >= b.y ? UINT32_MAX : 0u,
+			a.z >= b.z ? UINT32_MAX : 0u,
+			a.w >= b.w ? UINT32_MAX : 0u);
 	}
 
 	inline B128 F128_Equal(const F128 a, const F128 b)
 	{
-		return B128(a.x == b.x, a.y == b.y, a.z == b.z, a.w == b.w);
+		return B128(
+			a.x == b.x ? UINT32_MAX : 0u,
+			a.y == b.y ? UINT32_MAX : 0u,
+			a.z == b.z ? UINT32_MAX : 0u,
+			a.w == b.w ? UINT32_MAX : 0u);
 	}
 
 	inline B128 B128_And(const B128 a, const B128 b)
 	{
-		return B128(a.x && b.x, a.y && b.y, a.z && b.z, a.w && b.w);
+		return B128(a.x & b.x, a.y & b.y, a.z & b.z, a.w & b.w);
 	}
 
 	inline B128 B128_Not(const B128 a)
 	{
-		return B128(!a.x, !a.y, !a.z, !a.w);
+		return B128(~a.x, ~a.y, ~a.z, ~a.w);
 	}
 
 	inline B128 B128_AndNot(const B128 a, const B128 b)
 	{
-		return B128(a.x && !b.x, a.y && !b.y, a.z && !b.z, a.w && !b.w);
+		return B128(a.x & ~b.x, a.y & ~b.y, a.z & ~b.z, a.w & ~b.w);
 	}
 
 	inline B128 B128_Or(const B128 a, const B128 b)
 	{
-		return B128(a.x || b.x, a.y || b.y, a.z || b.z, a.w || b.w);
+		return B128(a.x | b.x, a.y | b.y, a.z | b.z, a.w | b.w);
 	}
 
 	inline U128 U128_Load_B128(const B128 a)
@@ -1728,22 +1831,34 @@ namespace SIMD_EMU
 
 	inline F128 F128_From_U128(const U128 a)
 	{
-		return F128(*(float*)&a.x, *(float*)&a.y, *(float*)&a.z, *(float*)&a.w);
+		return F128(
+			static_cast<float>(a.x),
+			static_cast<float>(a.y),
+			static_cast<float>(a.z),
+			static_cast<float>(a.w));
 	}
 
 	inline U128 U128_From_F128(const F128 a)
 	{
-		return U128(*(uint32_t*)&a.x, *(uint32_t*)&a.y, *(uint32_t*)&a.z, *(uint32_t*)&a.w);
+		return U128(
+			static_cast<uint32_t>(a.x),
+			static_cast<uint32_t>(a.y),
+			static_cast<uint32_t>(a.z),
+			static_cast<uint32_t>(a.w));
 	}
 
 	inline F128 F128_ReinterpretFrom_U128(const U128 a)
 	{
-		return F128((float)a.x, (float)a.y, (float)a.z, (float)a.w);
+		F128 result;
+		std::memcpy(&result, &a, sizeof(result));
+		return result;
 	}
 
 	inline U128 U128_ReinterpretFrom_F128(const F128 a)
 	{
-		return U128((uint32_t)a.x, (uint32_t)a.y, (uint32_t)a.z, (uint32_t)a.w);
+		U128 result;
+		std::memcpy(&result, &a, sizeof(result));
+		return result;
 	}
 
 	inline void U128_StoreA(const U128 a, uint32_t* u)
@@ -1772,6 +1887,430 @@ namespace SIMD_EMU
 	inline U128 U128_OR(const U128 a, const U128 b)
 	{
 		return U128(a.x | b.x, a.y | b.y, a.z | b.z, a.w | b.w);
+	}
+
+	inline Scaler Scaler_LoadA(const float* f)
+	{
+		ASSERT_ISALIGNED16(f);
+		return *f;
+	}
+
+	inline void Scaler_Store(const Scaler a, float* f)
+	{
+		*f = a;
+	}
+
+	inline Scaler Scaler_Zero()
+	{
+		return 0.0f;
+	}
+
+	inline Scaler Scaler_One()
+	{
+		return 1.0f;
+	}
+
+	inline Scaler Scaler_Neg(const Scaler a)
+	{
+		return -a;
+	}
+
+	inline Scaler Scaler_Add(const Scaler a, const Scaler b)
+	{
+		return a + b;
+	}
+
+	inline Scaler Scaler_Sub(const Scaler a, const Scaler b)
+	{
+		return a - b;
+	}
+
+	inline Scaler Scaler_Mul(const Scaler a, const Scaler b)
+	{
+		return a * b;
+	}
+
+	inline Scaler Scaler_Div(const Scaler a, const Scaler b)
+	{
+		return a / b;
+	}
+
+	inline Scaler Scaler_DivFast(const Scaler a, const Scaler b)
+	{
+		return a / b;
+	}
+
+	inline Scaler Scaler_Recip(const Scaler a)
+	{
+		return 1.0f / a;
+	}
+
+	inline Scaler Scaler_RecipFast(const Scaler a)
+	{
+		return 1.0f / a;
+	}
+
+	inline Scaler Scaler_RSqrt(const Scaler a)
+	{
+		return 1.0f / std::sqrt(a);
+	}
+
+	inline Scaler Scaler_Sqrt(const Scaler a)
+	{
+		return std::sqrt(a);
+	}
+
+	inline Scaler Scaler_RSqrtFast(const Scaler a)
+	{
+		return 1.0f / std::sqrt(a);
+	}
+
+	inline Scaler Scaler_MAdd(const Scaler a, const Scaler b, const Scaler c)
+	{
+		return a * b + c;
+	}
+
+	inline Scaler Scaler_NegMSub(const Scaler a, const Scaler b, const Scaler c)
+	{
+		return c - a * b;
+	}
+
+	inline Scaler Scaler_Abs(const Scaler a)
+	{
+		return std::fabs(a);
+	}
+
+	inline Scaler Scaler_Sel(const B128 c, const Scaler a, const Scaler b)
+	{
+		return c.x != 0 ? a : b;
+	}
+
+	inline B128 Scaler_Greater(const Scaler a, const Scaler b)
+	{
+		const uint32_t value = a > b ? UINT32_MAX : 0u;
+		return B128(value, value, value, value);
+	}
+
+	inline B128 Scaler_GreaterEqual(const Scaler a, const Scaler b)
+	{
+		const uint32_t value = a >= b ? UINT32_MAX : 0u;
+		return B128(value, value, value, value);
+	}
+
+	inline B128 Scaler_Equal(const Scaler a, const Scaler b)
+	{
+		const uint32_t value = a == b ? UINT32_MAX : 0u;
+		return B128(value, value, value, value);
+	}
+
+	inline Scaler Scaler_Max(const Scaler a, const Scaler b)
+	{
+		return a > b ? a : b;
+	}
+
+	inline Scaler Scaler_Min(const Scaler a, const Scaler b)
+	{
+		return a < b ? a : b;
+	}
+
+	inline Scaler Scaler_Clamp(const Scaler a, const Scaler minValue, const Scaler maxValue)
+	{
+		return Scaler_Max(minValue, Scaler_Min(a, maxValue));
+	}
+
+	inline Scaler Scaler_Round(const Scaler a)
+	{
+		return std::round(a);
+	}
+
+	inline B128 BFFFF()
+	{
+		return B128(0u, 0u, 0u, 0u);
+	}
+
+	inline B128 BFFFT()
+	{
+		return B128(0u, 0u, 0u, UINT32_MAX);
+	}
+
+	inline B128 BFFTF()
+	{
+		return B128(0u, 0u, UINT32_MAX, 0u);
+	}
+
+	inline B128 BFFTT()
+	{
+		return B128(0u, 0u, UINT32_MAX, UINT32_MAX);
+	}
+
+	inline B128 BFTFF()
+	{
+		return B128(0u, UINT32_MAX, 0u, 0u);
+	}
+
+	inline B128 BFTFT()
+	{
+		return B128(0u, UINT32_MAX, 0u, UINT32_MAX);
+	}
+
+	inline B128 BFTTF()
+	{
+		return B128(0u, UINT32_MAX, UINT32_MAX, 0u);
+	}
+
+	inline B128 BFTTT()
+	{
+		return B128(0u, UINT32_MAX, UINT32_MAX, UINT32_MAX);
+	}
+
+	inline B128 BTFFF()
+	{
+		return B128(UINT32_MAX, 0u, 0u, 0u);
+	}
+
+	inline B128 BTFFT()
+	{
+		return B128(UINT32_MAX, 0u, 0u, UINT32_MAX);
+	}
+
+	inline B128 BTFTF()
+	{
+		return B128(UINT32_MAX, 0u, UINT32_MAX, 0u);
+	}
+
+	inline B128 BTFTT()
+	{
+		return B128(UINT32_MAX, 0u, UINT32_MAX, UINT32_MAX);
+	}
+
+	inline B128 BTTFF()
+	{
+		return B128(UINT32_MAX, UINT32_MAX, 0u, 0u);
+	}
+
+	inline B128 BTTFT()
+	{
+		return B128(UINT32_MAX, UINT32_MAX, 0u, UINT32_MAX);
+	}
+
+	inline B128 BTTTF()
+	{
+		return B128(UINT32_MAX, UINT32_MAX, UINT32_MAX, 0u);
+	}
+
+	inline B128 BTTTT()
+	{
+		return B128(UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX);
+	}
+
+	inline B128 B128_All(const B128 a)
+	{
+		return a.x != 0 && a.y != 0 && a.z != 0 && a.w != 0 ? BTTTT() : BFFFF();
+	}
+
+	inline B128 B128_Any(const B128 a)
+	{
+		return a.x != 0 || a.y != 0 || a.z != 0 || a.w != 0 ? BTTTT() : BFFFF();
+	}
+
+	inline F128 F128_Load(const F128* address)
+	{
+		return *address;
+	}
+
+	inline F128 F128_LoadXYZW(const float x, const float y, const float z, const float w)
+	{
+		return F128(x, y, z, w);
+	}
+
+	inline F128 F128_PermYXWZ(const F128 a)
+	{
+		return F128(a.y, a.x, a.w, a.z);
+	}
+
+	inline F128 F128_PermXZXZ(const F128 a)
+	{
+		return F128(a.x, a.z, a.x, a.z);
+	}
+
+	inline F128 F128_PermYWYW(const F128 a)
+	{
+		return F128(a.y, a.w, a.y, a.w);
+	}
+
+	inline F128 F128_PermYZXW(const F128 a)
+	{
+		return F128(a.y, a.z, a.x, a.w);
+	}
+
+	inline F128 F128_PermZWXY(const F128 a)
+	{
+		return F128(a.z, a.w, a.x, a.y);
+	}
+
+	inline F128 F128_Sel(const B128 c, const F128 a, const F128 b)
+	{
+		return F128(
+			c.x != 0 ? a.x : b.x,
+			c.y != 0 ? a.y : b.y,
+			c.z != 0 ? a.z : b.z,
+			c.w != 0 ? a.w : b.w);
+	}
+
+	inline F128 F128_Neg(const F128 a)
+	{
+		return F128(-a.x, -a.y, -a.z, -a.w);
+	}
+
+	inline F128 F128_Scale(const F128 a, const Scaler b)
+	{
+		return F128(a.x * b, a.y * b, a.z * b, a.w * b);
+	}
+
+	inline F128 F128_ScaleInv(const F128 a, const Scaler b)
+	{
+		return F128(a.x / b, a.y / b, a.z / b, a.w / b);
+	}
+
+	inline F128 F128_DivFast(const F128 a, const F128 b)
+	{
+		return F128_Div(a, b);
+	}
+
+	inline F128 F128_ScaleInvFast(const F128 a, const Scaler b)
+	{
+		return F128_ScaleInv(a, b);
+	}
+
+	inline F128 F128_Recip(const F128 a)
+	{
+		return F128(1.0f / a.x, 1.0f / a.y, 1.0f / a.z, 1.0f / a.w);
+	}
+
+	inline F128 F128_RSqrt(const F128 a)
+	{
+		return F128(
+			1.0f / std::sqrt(a.x),
+			1.0f / std::sqrt(a.y),
+			1.0f / std::sqrt(a.z),
+			1.0f / std::sqrt(a.w));
+	}
+
+	inline F128 F128_RSqrtFast(const F128 a)
+	{
+		return F128_RSqrt(a);
+	}
+
+	inline F128 F128_Sqrt(const F128 a)
+	{
+		return F128(std::sqrt(a.x), std::sqrt(a.y), std::sqrt(a.z), std::sqrt(a.w));
+	}
+
+	inline Scaler F128_GetX(const F128 a)
+	{
+		return a.x;
+	}
+
+	inline Scaler F128_GetY(const F128 a)
+	{
+		return a.y;
+	}
+
+	inline Scaler F128_GetZ(const F128 a)
+	{
+		return a.z;
+	}
+
+	inline Scaler F128_GetW(const F128 a)
+	{
+		return a.w;
+	}
+
+	inline F128 F128_SetW(const F128 a, const Scaler w)
+	{
+		return F128(a.x, a.y, a.z, w);
+	}
+
+	inline F128 F128_ClearW(const F128 a)
+	{
+		return F128(a.x, a.y, a.z, 0.0f);
+	}
+
+	inline Scaler F128_Dot(const F128 a, const F128 b)
+	{
+		return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+	}
+
+	inline Scaler F128_Dot3(const F128 a, const F128 b)
+	{
+		return a.x * b.x + a.y * b.y + a.z * b.z;
+	}
+
+	inline F128 F128_Cross(const F128 a, const F128 b)
+	{
+		return F128(
+			a.y * b.z - a.z * b.y,
+			a.z * b.x - a.x * b.z,
+			a.x * b.y - a.y * b.x,
+			0.0f);
+	}
+
+	inline Scaler F128_Length(const F128 a)
+	{
+		return std::sqrt(F128_Dot(a, a));
+	}
+
+	inline Scaler F128_SquareLength(const F128 a)
+	{
+		return F128_Dot(a, a);
+	}
+
+	inline F128 F128_Normalize(const F128 a)
+	{
+		return F128_ScaleInv(a, F128_Length(a));
+	}
+
+	inline F128 F128_NormalizeFast(const F128 a)
+	{
+		return F128_Normalize(a);
+	}
+
+	inline void F128_Transpose(F128& col0, F128& col1, F128& col2, F128& col3)
+	{
+		const F128 row0(col0.x, col1.x, col2.x, col3.x);
+		const F128 row1(col0.y, col1.y, col2.y, col3.y);
+		const F128 row2(col0.z, col1.z, col2.z, col3.z);
+		const F128 row3(col0.w, col1.w, col2.w, col3.w);
+		col0 = row0;
+		col1 = row1;
+		col2 = row2;
+		col3 = row3;
+	}
+
+	inline U128 U128_Load(const uint32_t value)
+	{
+		return U128(value, value, value, value);
+	}
+
+	inline U128 U128_LoadU(const uint32_t* values)
+	{
+		return U128(values[0], values[1], values[2], values[3]);
+	}
+
+	inline U128 U128_LoadA(const uint32_t* values)
+	{
+		ASSERT_ISALIGNED16(values);
+		return U128_LoadU(values);
+	}
+
+	inline U128 U128_XOR(const U128 a, const U128 b)
+	{
+		return U128(a.x ^ b.x, a.y ^ b.y, a.z ^ b.z, a.w ^ b.w);
+	}
+
+	inline U128 U128_ANDNOT(const U128 a, const U128 b)
+	{
+		return U128(a.x & ~b.x, a.y & ~b.y, a.z & ~b.z, a.w & ~b.w);
 	}
 }
 

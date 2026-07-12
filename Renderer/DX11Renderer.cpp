@@ -3,11 +3,15 @@
 #if defined(_WIN32)
 
 #include <assert.h>
+#include <algorithm>
+#include <limits>
 #include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
 #include <windows.h>
+#undef min
+#undef max
 
 #include <d3d11_1.h>
 #include <d3dcompiler.h>
@@ -121,11 +125,16 @@ namespace
 			pConstantBuffer = rhs.pConstantBuffer;
 			WorldTransform = rhs.WorldTransform;
 			Color = rhs.Color;
+			VertexCount = rhs.VertexCount;
 			IndexCount = rhs.IndexCount;
+			VertexCapacity = rhs.VertexCapacity;
+			IndexCapacity = rhs.IndexCapacity;
 			IndexFormat = rhs.IndexFormat;
 			Topology = rhs.Topology;
 			FillMode = rhs.FillMode;
+			BlendMode = rhs.BlendMode;
 			CastShadow = rhs.CastShadow;
+			Unlit = rhs.Unlit;
 			OutlineEnabled = rhs.OutlineEnabled;
 			OutlineColor = rhs.OutlineColor;
 			OutlineThickness = rhs.OutlineThickness;
@@ -133,7 +142,10 @@ namespace
 			rhs.pVertexBuffer = nullptr;
 			rhs.pIndexBuffer = nullptr;
 			rhs.pConstantBuffer = nullptr;
+			rhs.VertexCount = 0;
 			rhs.IndexCount = 0;
+			rhs.VertexCapacity = 0;
+			rhs.IndexCapacity = 0;
 		}
 
 		std::string Id;
@@ -142,11 +154,16 @@ namespace
 		ID3D11Buffer* pConstantBuffer = nullptr;
 		Transform WorldTransform;
 		Vector4 Color = Vector4(0.72f, 0.76f, 0.82f, 1.0f);
+		int VertexCount = 0;
 		int IndexCount = 0;
+		int VertexCapacity = 0;
+		int IndexCapacity = 0;
 		DXGI_FORMAT IndexFormat = DXGI_FORMAT_R32_UINT;
 		D3D11_PRIMITIVE_TOPOLOGY Topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		Riemann::RenderFillMode FillMode = Riemann::RenderFillMode::RendererDefault;
+		Riemann::RenderBlendMode BlendMode = Riemann::RenderBlendMode::Alpha;
 		bool CastShadow = true;
+		bool Unlit = false;
 		bool OutlineEnabled = false;
 		Vector4 OutlineColor = Vector4(1.0f, 0.82f, 0.18f, 1.0f);
 		float OutlineThickness = 0.06f;
@@ -172,6 +189,9 @@ public:
 		SafeRelease(m_pShadowSRV);
 		SafeRelease(m_pShadowDepthView);
 		SafeRelease(m_pShadowTexture);
+		SafeRelease(m_pAdditiveBlendState);
+		SafeRelease(m_pTransparentBlendState);
+		SafeRelease(m_pTransparentDepthStencilState);
 		SafeRelease(m_pColorWriteOffBlendState);
 		SafeRelease(m_pOutlineMaskDepthStencilState);
 		SafeRelease(m_pOutlineDepthStencilState);
@@ -417,50 +437,68 @@ public:
 
 	bool AddMesh(const Riemann::RenderMeshDesc& meshDesc) override
 	{
-		if (meshDesc.Id.empty() || meshDesc.Vertices.empty() || meshDesc.Indices.empty())
+		if (meshDesc.Id.empty() || meshDesc.Vertices.empty() != meshDesc.Indices.empty())
 		{
 			return false;
 		}
 
-		DeleteMesh(meshDesc.Id.c_str());
+		if (meshDesc.Vertices.size() > (size_t)std::numeric_limits<int>::max()
+			|| meshDesc.Indices.size() > (size_t)std::numeric_limits<int>::max()
+			|| meshDesc.Vertices.size() > (size_t)std::numeric_limits<UINT>::max() / sizeof(Vertex1)
+			|| meshDesc.Indices.size() > (size_t)std::numeric_limits<UINT>::max() / sizeof(uint32_t))
+		{
+			return false;
+		}
+		for (uint32_t index : meshDesc.Indices)
+		{
+			if (index >= meshDesc.Vertices.size()) return false;
+		}
+		if ((meshDesc.Topology == Riemann::RenderPrimitiveTopology::Triangles
+				&& meshDesc.Indices.size() % 3 != 0)
+			|| (meshDesc.Topology == Riemann::RenderPrimitiveTopology::Lines
+				&& meshDesc.Indices.size() % 2 != 0))
+		{
+			return false;
+		}
 
 		DX11StaticMesh mesh;
 		mesh.Id = meshDesc.Id;
 		mesh.WorldTransform = meshDesc.WorldTransform;
 		mesh.Color = meshDesc.Color;
+		mesh.VertexCount = static_cast<int>(meshDesc.Vertices.size());
 		mesh.IndexCount = static_cast<int>(meshDesc.Indices.size());
+		mesh.VertexCapacity = mesh.VertexCount;
+		mesh.IndexCapacity = mesh.IndexCount;
 		mesh.IndexFormat = DXGI_FORMAT_R32_UINT;
 		mesh.Topology = meshDesc.Topology == Riemann::RenderPrimitiveTopology::Lines
 			? D3D11_PRIMITIVE_TOPOLOGY_LINELIST
 			: D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		mesh.FillMode = meshDesc.FillMode;
+		mesh.BlendMode = meshDesc.BlendMode;
 		mesh.CastShadow = meshDesc.CastShadow && meshDesc.Topology == Riemann::RenderPrimitiveTopology::Triangles;
+		mesh.Unlit = meshDesc.Unlit;
 
 		HRESULT hr = S_OK;
 
 		D3D11_BUFFER_DESC bd = {};
-		bd.Usage = D3D11_USAGE_DEFAULT;
-		bd.ByteWidth = static_cast<UINT>(sizeof(Vertex1) * meshDesc.Vertices.size());
-		bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-
 		D3D11_SUBRESOURCE_DATA initData = {};
-		initData.pSysMem = meshDesc.Vertices.data();
-		hr = m_pd3dDevice->CreateBuffer(&bd, &initData, &mesh.pVertexBuffer);
-		if (FAILED(hr))
+		if (!meshDesc.Vertices.empty())
 		{
-			return false;
-		}
+			bd.Usage = D3D11_USAGE_DEFAULT;
+			bd.ByteWidth = static_cast<UINT>(sizeof(Vertex1) * meshDesc.Vertices.size());
+			bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+			initData.pSysMem = meshDesc.Vertices.data();
+			hr = m_pd3dDevice->CreateBuffer(&bd, &initData, &mesh.pVertexBuffer);
+			if (FAILED(hr)) return false;
 
-		bd = {};
-		bd.Usage = D3D11_USAGE_DEFAULT;
-		bd.ByteWidth = static_cast<UINT>(sizeof(uint32_t) * meshDesc.Indices.size());
-		bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-		initData = {};
-		initData.pSysMem = meshDesc.Indices.data();
-		hr = m_pd3dDevice->CreateBuffer(&bd, &initData, &mesh.pIndexBuffer);
-		if (FAILED(hr))
-		{
-			return false;
+			bd = {};
+			bd.Usage = D3D11_USAGE_DEFAULT;
+			bd.ByteWidth = static_cast<UINT>(sizeof(uint32_t) * meshDesc.Indices.size());
+			bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+			initData = {};
+			initData.pSysMem = meshDesc.Indices.data();
+			hr = m_pd3dDevice->CreateBuffer(&bd, &initData, &mesh.pIndexBuffer);
+			if (FAILED(hr)) return false;
 		}
 
 		bd = {};
@@ -473,6 +511,14 @@ public:
 			return false;
 		}
 
+		for (DX11StaticMesh& existing : m_AllMesh)
+		{
+			if (existing.Id == mesh.Id)
+			{
+				existing = std::move(mesh);
+				return true;
+			}
+		}
 		m_AllMesh.push_back(std::move(mesh));
 		return true;
 	}
@@ -492,7 +538,8 @@ public:
 
 	bool UpdateVertices(const char* id, const Vertex1* vertices, int vertexCount) override
 	{
-		if (id == nullptr || vertices == nullptr || vertexCount <= 0)
+		if (id == nullptr || vertices == nullptr || vertexCount <= 0
+			|| (size_t)vertexCount > (size_t)std::numeric_limits<UINT>::max() / sizeof(Vertex1))
 		{
 			return false;
 		}
@@ -501,11 +548,121 @@ public:
 		{
 			if (mesh.Id == id)
 			{
-				m_pImmediateContext->UpdateSubresource(mesh.pVertexBuffer, 0, nullptr, vertices, 0, 0);
+				if (vertexCount != mesh.VertexCount || mesh.pVertexBuffer == nullptr) return false;
+				D3D11_BOX range = {};
+				range.right = (UINT)(sizeof(Vertex1) * (size_t)vertexCount);
+				range.bottom = 1;
+				range.back = 1;
+				m_pImmediateContext->UpdateSubresource(mesh.pVertexBuffer, 0, &range, vertices, 0, 0);
 				return true;
 			}
 		}
 		return false;
+	}
+
+	bool UpdateMeshGeometry(const char* id, const Vertex1* vertices, int vertexCount,
+		const uint32_t* indices, int indexCount) override
+	{
+		if (id == nullptr || vertexCount < 0 || indexCount < 0
+			|| ((vertexCount == 0 || indexCount == 0) && (vertexCount != 0 || indexCount != 0))
+			|| (vertexCount > 0 && (vertices == nullptr || indices == nullptr))
+			|| (size_t)vertexCount > (size_t)std::numeric_limits<UINT>::max() / sizeof(Vertex1)
+			|| (size_t)indexCount > (size_t)std::numeric_limits<UINT>::max() / sizeof(uint32_t)
+			|| m_pd3dDevice == nullptr || m_pImmediateContext == nullptr)
+		{
+			return false;
+		}
+
+		DX11StaticMesh* target = nullptr;
+		for (DX11StaticMesh& mesh : m_AllMesh)
+		{
+			if (mesh.Id == id) { target = &mesh; break; }
+		}
+		if (target == nullptr) return false;
+		if (vertexCount == 0)
+		{
+			target->VertexCount = 0;
+			target->IndexCount = 0;
+			return true;
+		}
+		if ((target->Topology == D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST && indexCount % 3 != 0)
+			|| (target->Topology == D3D11_PRIMITIVE_TOPOLOGY_LINELIST && indexCount % 2 != 0))
+		{
+			return false;
+		}
+		for (int index = 0; index < indexCount; ++index)
+		{
+			if (indices[index] >= (uint32_t)vertexCount) return false;
+		}
+
+		auto GrownCapacity = [](int Current, int Required) -> int
+		{
+			if (Current <= 0) return Required;
+			const int64_t Grown = (int64_t)Current + std::max<int64_t>(1, (int64_t)Current / 2);
+			return (int)std::min<int64_t>(std::numeric_limits<int>::max(),
+				std::max<int64_t>(Grown, Required));
+		};
+		const int vertexCapacity = vertexCount > target->VertexCapacity
+			? GrownCapacity(target->VertexCapacity, vertexCount) : target->VertexCapacity;
+		const int indexCapacity = indexCount > target->IndexCapacity
+			? GrownCapacity(target->IndexCapacity, indexCount) : target->IndexCapacity;
+		if ((size_t)vertexCapacity > (size_t)std::numeric_limits<UINT>::max() / sizeof(Vertex1)
+			|| (size_t)indexCapacity > (size_t)std::numeric_limits<UINT>::max() / sizeof(uint32_t))
+		{
+			return false;
+		}
+
+		ID3D11Buffer* newVertexBuffer = nullptr;
+		ID3D11Buffer* newIndexBuffer = nullptr;
+		if (vertexCapacity != target->VertexCapacity)
+		{
+			D3D11_BUFFER_DESC desc = {};
+			desc.Usage = D3D11_USAGE_DEFAULT;
+			desc.ByteWidth = (UINT)(sizeof(Vertex1) * (size_t)vertexCapacity);
+			desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+			if (FAILED(m_pd3dDevice->CreateBuffer(&desc, nullptr, &newVertexBuffer))) return false;
+		}
+		if (indexCapacity != target->IndexCapacity)
+		{
+			D3D11_BUFFER_DESC desc = {};
+			desc.Usage = D3D11_USAGE_DEFAULT;
+			desc.ByteWidth = (UINT)(sizeof(uint32_t) * (size_t)indexCapacity);
+			desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+			if (FAILED(m_pd3dDevice->CreateBuffer(&desc, nullptr, &newIndexBuffer)))
+			{
+				SafeRelease(newVertexBuffer);
+				return false;
+			}
+		}
+
+		ID3D11Buffer* vertexBuffer = newVertexBuffer ? newVertexBuffer : target->pVertexBuffer;
+		ID3D11Buffer* indexBuffer = newIndexBuffer ? newIndexBuffer : target->pIndexBuffer;
+		if (vertexBuffer == nullptr || indexBuffer == nullptr)
+		{
+			SafeRelease(newVertexBuffer); SafeRelease(newIndexBuffer); return false;
+		}
+		D3D11_BOX vertexRange = {};
+		vertexRange.right = (UINT)(sizeof(Vertex1) * (size_t)vertexCount);
+		vertexRange.bottom = 1; vertexRange.back = 1;
+		m_pImmediateContext->UpdateSubresource(vertexBuffer, 0, &vertexRange, vertices, 0, 0);
+		D3D11_BOX indexRange = {};
+		indexRange.right = (UINT)(sizeof(uint32_t) * (size_t)indexCount);
+		indexRange.bottom = 1; indexRange.back = 1;
+		m_pImmediateContext->UpdateSubresource(indexBuffer, 0, &indexRange, indices, 0, 0);
+
+		if (newVertexBuffer)
+		{
+			SafeRelease(target->pVertexBuffer); target->pVertexBuffer = newVertexBuffer;
+			target->VertexCapacity = vertexCapacity;
+		}
+		if (newIndexBuffer)
+		{
+			SafeRelease(target->pIndexBuffer); target->pIndexBuffer = newIndexBuffer;
+			target->IndexCapacity = indexCapacity;
+		}
+		target->VertexCount = vertexCount;
+		target->IndexCount = indexCount;
+		return true;
 	}
 
 	bool DeleteMesh(const char* id) override
@@ -566,6 +723,9 @@ public:
 		SafeRelease(m_pDepthStencilState);
 		SafeRelease(m_pOutlineMaskDepthStencilState);
 		SafeRelease(m_pOutlineDepthStencilState);
+		SafeRelease(m_pTransparentDepthStencilState);
+		SafeRelease(m_pAdditiveBlendState);
+		SafeRelease(m_pTransparentBlendState);
 		SafeRelease(m_pColorWriteOffBlendState);
 
 		D3D11_DEPTH_STENCIL_DESC desc = {};
@@ -578,6 +738,26 @@ public:
 		{
 			m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
 		}
+
+		D3D11_DEPTH_STENCIL_DESC transparentDepthDesc = desc;
+		transparentDepthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		(void)m_pd3dDevice->CreateDepthStencilState(&transparentDepthDesc, &m_pTransparentDepthStencilState);
+
+		D3D11_BLEND_DESC transparentBlendDesc = {};
+		transparentBlendDesc.RenderTarget[0].BlendEnable = TRUE;
+		transparentBlendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		transparentBlendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		transparentBlendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		transparentBlendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		transparentBlendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+		transparentBlendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		transparentBlendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		(void)m_pd3dDevice->CreateBlendState(&transparentBlendDesc, &m_pTransparentBlendState);
+
+		D3D11_BLEND_DESC additiveBlendDesc = transparentBlendDesc;
+		additiveBlendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+		additiveBlendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+		(void)m_pd3dDevice->CreateBlendState(&additiveBlendDesc, &m_pAdditiveBlendState);
 
 		D3D11_DEPTH_STENCIL_DESC maskDesc = {};
 		maskDesc.DepthEnable = FALSE;
@@ -762,7 +942,7 @@ private:
 		{
 			return false;
 		}
-		return mesh.Topology == D3D11_PRIMITIVE_TOPOLOGY_LINELIST ||
+		return mesh.Unlit || mesh.Topology == D3D11_PRIMITIVE_TOPOLOGY_LINELIST ||
 			(mesh.Topology == D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST && IsWireframeFillMode(mesh.FillMode));
 	}
 
@@ -987,6 +1167,10 @@ private:
 		m_pImmediateContext->RSSetViewports(1, &m_ShadowViewport);
 		m_pImmediateContext->OMSetRenderTargets(0, nullptr, m_pShadowDepthView);
 		m_pImmediateContext->ClearDepthStencilView(m_pShadowDepthView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+		if (!m_Light.ShadowsEnabled)
+		{
+			return;
+		}
 
 		m_pImmediateContext->IASetInputLayout(m_pVertexLayout);
 		m_pImmediateContext->VSSetShader(m_pShadowVertexShader, nullptr, 0);
@@ -997,7 +1181,12 @@ private:
 
 	void RenderMainPass()
 	{
-		const float clearColor[4] = { 0.015f, 0.018f, 0.024f, 1.0f };
+		const float clearColor[4] = {
+			m_Camera.BackgroundColor.x,
+			m_Camera.BackgroundColor.y,
+			m_Camera.BackgroundColor.z,
+			m_Camera.BackgroundColor.w
+		};
 		const float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
 		m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
@@ -1117,6 +1306,50 @@ private:
 
 	void DrawScene(bool shadowPass)
 	{
+		if (!shadowPass)
+		{
+			for (DX11StaticMesh& mesh : m_AllMesh)
+			{
+				if (mesh.BlendMode == Riemann::RenderBlendMode::Alpha && mesh.Color.w >= 0.999f)
+				{
+					DrawMesh(mesh, false, false);
+				}
+			}
+
+			std::vector<DX11StaticMesh*> transparentMeshes;
+			for (DX11StaticMesh& mesh : m_AllMesh)
+			{
+				if (mesh.BlendMode == Riemann::RenderBlendMode::Alpha && mesh.Color.w < 0.999f)
+				{
+					transparentMeshes.push_back(&mesh);
+				}
+			}
+			std::sort(transparentMeshes.begin(), transparentMeshes.end(), [this](const DX11StaticMesh* lhs, const DX11StaticMesh* rhs)
+			{
+				return (lhs->WorldTransform.pos - m_Eye).SquareLength() > (rhs->WorldTransform.pos - m_Eye).SquareLength();
+			});
+
+			const float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+			m_pImmediateContext->OMSetBlendState(m_pTransparentBlendState, blendFactor, 0xffffffffu);
+			m_pImmediateContext->OMSetDepthStencilState(m_pTransparentDepthStencilState, 0);
+			for (DX11StaticMesh* mesh : transparentMeshes)
+			{
+				DrawMesh(*mesh, false, false);
+			}
+
+			m_pImmediateContext->OMSetBlendState(m_pAdditiveBlendState, blendFactor, 0xffffffffu);
+			for (DX11StaticMesh& mesh : m_AllMesh)
+			{
+				if (mesh.BlendMode == Riemann::RenderBlendMode::Additive)
+				{
+					DrawMesh(mesh, false, false);
+				}
+			}
+			m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
+			m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
+			return;
+		}
+
 		for (DX11StaticMesh& mesh : m_AllMesh)
 		{
 			if (shadowPass && !mesh.CastShadow)
@@ -1130,6 +1363,10 @@ private:
 
 	void DrawMesh(DX11StaticMesh& mesh, bool shadowPass, bool outlinePass)
 	{
+		if (mesh.IndexCount == 0 || mesh.pVertexBuffer == nullptr || mesh.pIndexBuffer == nullptr)
+		{
+			return;
+		}
 		ConstantBuffer cb = {};
 		cb.World = GetTransformMatrix(mesh.WorldTransform);
 		cb.View = m_View;
@@ -1184,9 +1421,12 @@ private:
 	ID3D11RasterizerState* m_pWireframeRasterizerState = nullptr;
 	ID3D11RasterizerState* m_pOutlineRasterizerState = nullptr;
 	ID3D11DepthStencilState* m_pDepthStencilState = nullptr;
+	ID3D11DepthStencilState* m_pTransparentDepthStencilState = nullptr;
 	ID3D11DepthStencilState* m_pOutlineMaskDepthStencilState = nullptr;
 	ID3D11DepthStencilState* m_pOutlineDepthStencilState = nullptr;
 	ID3D11BlendState* m_pColorWriteOffBlendState = nullptr;
+	ID3D11BlendState* m_pAdditiveBlendState = nullptr;
+	ID3D11BlendState* m_pTransparentBlendState = nullptr;
 	ID3D11Texture2D* m_pShadowTexture = nullptr;
 	ID3D11DepthStencilView* m_pShadowDepthView = nullptr;
 	ID3D11ShaderResourceView* m_pShadowSRV = nullptr;

@@ -854,6 +854,23 @@ static void TestCapsuleTriangleForBestSweep(const Capsule3& capsule, const Vecto
 	}
 }
 
+struct CapsuleMeshSweepContext
+{
+	const Capsule3* Shape;
+	const Vector3* Direction;
+	Vector3 UnitDirection;
+	float BestAlignment;
+	Vector3 BestTriangle[3];
+	bool Hit;
+};
+
+static void TestCapsuleMeshSweepTriangle(void* Context, const Vector3& A, const Vector3& B, const Vector3& C, float& BestDistance)
+{
+	CapsuleMeshSweepContext* Sweep = static_cast<CapsuleMeshSweepContext*>(Context);
+	TestCapsuleTriangleForBestSweep(*Sweep->Shape, *Sweep->Direction, Sweep->UnitDirection,
+		A, B, C, BestDistance, Sweep->BestAlignment, Sweep->BestTriangle, Sweep->Hit);
+}
+
 bool Capsule3::SweepTriangle(const Vector3& Direction, const Vector3 &A, const Vector3 &B, const Vector3 &C, Vector3* p, Vector3* n, float* t) const
 {
 	float hitTime;
@@ -957,34 +974,17 @@ bool Capsule3::SweepTriangleMesh(const Vector3& Direction, const TriangleMesh* t
 		return false;
 	}
 
-	bool hit = false;
 	float bestDistance = FLT_MAX;
-	float bestAlignment = 2.0f;
-	Vector3 bestTri[3];
-	const Vector3 unitDir = Direction.SafeUnit();
+	CapsuleMeshSweepContext Context = { this, &Direction, Direction.SafeUnit(), 2.0f, {}, false };
+	trimesh->SweepBVH(movingBounds, Direction, bestDistance, TestCapsuleMeshSweepTriangle, &Context);
 
-	for (uint32_t i = 0; i < trimesh->NumTriangles; ++i)
-	{
-		const Vector3 A = trimesh->GetVertex(i, 0);
-		const Vector3 B = trimesh->GetVertex(i, 1);
-		const Vector3 C = trimesh->GetVertex(i, 2);
-		const Box3 triBounds(A, B, C);
-
-		float triToi;
-		if (!CapsuleSweepMovingAABBAABB(movingBounds.Min, movingBounds.Max, Direction, triBounds.Min, triBounds.Max, bestDistance, triToi))
-		{
-			continue;
-		}
-
-		TestCapsuleTriangleForBestSweep(*this, Direction, unitDir, A, B, C, bestDistance, bestAlignment, bestTri, hit);
-	}
-
-	if (!hit)
+	if (!Context.Hit)
 	{
 		return false;
 	}
 
-	ComputeCapsuleTriangleSweepResult(*this, Direction, bestDistance, bestTri[0], bestTri[1], bestTri[2], p, n, t);
+	ComputeCapsuleTriangleSweepResult(*this, Direction, bestDistance,
+		Context.BestTriangle[0], Context.BestTriangle[1], Context.BestTriangle[2], p, n, t);
 	return true;
 }
 

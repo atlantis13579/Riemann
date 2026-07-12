@@ -66,7 +66,7 @@ namespace Riemann
 		void	SetupVelocityPass(Contact* contact, float dt, int n);
 		void	Solve();
 		float	GetSquaredError() const;
-		void	Finalize();
+		void	Finalize(bool Accumulate = false);
 
 		Contact* m_contact;
 		Jacobian	m_jN;

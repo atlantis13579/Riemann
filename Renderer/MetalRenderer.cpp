@@ -11,6 +11,7 @@
 #include <cmath>
 #include <cstring>
 #include <fstream>
+#include <limits>
 #include <math.h>
 #include <mutex>
 #include <stdint.h>
@@ -195,11 +196,15 @@ namespace
 			UniformBuffer = rhs.UniformBuffer;
 			VertexCount = rhs.VertexCount;
 			IndexCount = rhs.IndexCount;
+			VertexCapacity = rhs.VertexCapacity;
+			IndexCapacity = rhs.IndexCapacity;
 			PrimitiveType = rhs.PrimitiveType;
 			FillMode = rhs.FillMode;
+			BlendMode = rhs.BlendMode;
 			WorldTransform = rhs.WorldTransform;
 			Color = rhs.Color;
 			CastShadow = rhs.CastShadow;
+			Unlit = rhs.Unlit;
 			OutlineEnabled = rhs.OutlineEnabled;
 			OutlineColor = rhs.OutlineColor;
 			OutlineThickness = rhs.OutlineThickness;
@@ -209,6 +214,8 @@ namespace
 			rhs.UniformBuffer = nil;
 			rhs.VertexCount = 0;
 			rhs.IndexCount = 0;
+			rhs.VertexCapacity = 0;
+			rhs.IndexCapacity = 0;
 		}
 
 		std::string Id;
@@ -217,11 +224,15 @@ namespace
 		id<MTLBuffer> UniformBuffer = nil;
 		NSUInteger VertexCount = 0;
 		NSUInteger IndexCount = 0;
+		NSUInteger VertexCapacity = 0;
+		NSUInteger IndexCapacity = 0;
 		MTLPrimitiveType PrimitiveType = MTLPrimitiveTypeTriangle;
 		Riemann::RenderFillMode FillMode = Riemann::RenderFillMode::RendererDefault;
+		Riemann::RenderBlendMode BlendMode = Riemann::RenderBlendMode::Alpha;
 		Transform WorldTransform;
 		Vector4 Color = Vector4(0.72f, 0.76f, 0.82f, 1.0f);
 		bool CastShadow = true;
+		bool Unlit = false;
 		bool OutlineEnabled = false;
 		Vector4 OutlineColor = Vector4(1.0f, 0.82f, 0.18f, 1.0f);
 		float OutlineThickness = 0.06f;
@@ -243,10 +254,13 @@ namespace Riemann
 			ReleaseObject(ShadowSampler);
 			ReleaseObject(OutlineMaskDepthState);
 			ReleaseObject(OutlineDepthState);
+			ReleaseObject(TransparentDepthState);
 			ReleaseObject(DepthState);
 			ReleaseObject(OutlineMaskPipeline);
 			ReleaseObject(OutlinePipeline);
 			ReleaseObject(MainPipeline);
+			ReleaseObject(AdditivePipeline);
+			ReleaseObject(TransparentPipeline);
 			ReleaseObject(ShadowPipeline);
 			ReleaseObject(DepthTexture);
 			ReleaseObject(ShadowTexture);
@@ -395,6 +409,28 @@ namespace Riemann
 			[mainDesc setStencilAttachmentPixelFormat:MainDepthStencilPixelFormat];
 			MainPipeline = [Device newRenderPipelineStateWithDescriptor:mainDesc error:&error];
 
+			MTLRenderPipelineDescriptor* transparentDesc = [mainDesc copy];
+			MTLRenderPipelineColorAttachmentDescriptor* transparentColor = [[transparentDesc colorAttachments] objectAtIndexedSubscript:0];
+			[transparentColor setBlendingEnabled:YES];
+			[transparentColor setSourceRGBBlendFactor:MTLBlendFactorSourceAlpha];
+			[transparentColor setDestinationRGBBlendFactor:MTLBlendFactorOneMinusSourceAlpha];
+			[transparentColor setRgbBlendOperation:MTLBlendOperationAdd];
+			[transparentColor setSourceAlphaBlendFactor:MTLBlendFactorOne];
+			[transparentColor setDestinationAlphaBlendFactor:MTLBlendFactorOneMinusSourceAlpha];
+			[transparentColor setAlphaBlendOperation:MTLBlendOperationAdd];
+			TransparentPipeline = [Device newRenderPipelineStateWithDescriptor:transparentDesc error:&error];
+
+			MTLRenderPipelineDescriptor* additiveDesc = [mainDesc copy];
+			MTLRenderPipelineColorAttachmentDescriptor* additiveColor = [[additiveDesc colorAttachments] objectAtIndexedSubscript:0];
+			[additiveColor setBlendingEnabled:YES];
+			[additiveColor setSourceRGBBlendFactor:MTLBlendFactorSourceAlpha];
+			[additiveColor setDestinationRGBBlendFactor:MTLBlendFactorOne];
+			[additiveColor setRgbBlendOperation:MTLBlendOperationAdd];
+			[additiveColor setSourceAlphaBlendFactor:MTLBlendFactorOne];
+			[additiveColor setDestinationAlphaBlendFactor:MTLBlendFactorOne];
+			[additiveColor setAlphaBlendOperation:MTLBlendOperationAdd];
+			AdditivePipeline = [Device newRenderPipelineStateWithDescriptor:additiveDesc error:&error];
+
 			MTLRenderPipelineDescriptor* shadowDesc = [[MTLRenderPipelineDescriptor alloc] init];
 			[shadowDesc setVertexFunction:shadowVS];
 			[shadowDesc setDepthAttachmentPixelFormat:ShadowDepthPixelFormat];
@@ -433,6 +469,8 @@ namespace Riemann
 			ImguiPipeline = [Device newRenderPipelineStateWithDescriptor:imguiDesc error:&error];
 
 			ReleaseObject(mainDesc);
+			ReleaseObject(transparentDesc);
+			ReleaseObject(additiveDesc);
 			ReleaseObject(shadowDesc);
 			ReleaseObject(outlineMaskDesc);
 			ReleaseObject(outlineDesc);
@@ -446,15 +484,18 @@ namespace Riemann
 			ReleaseObject(imguiFS);
 			ReleaseObject(library);
 
-			return MainPipeline != nil && ShadowPipeline != nil && OutlineMaskPipeline != nil && OutlinePipeline != nil && ImguiPipeline != nil;
+			return MainPipeline != nil && TransparentPipeline != nil && AdditivePipeline != nil
+				&& ShadowPipeline != nil && OutlineMaskPipeline != nil && OutlinePipeline != nil && ImguiPipeline != nil;
 		}
 
 		bool CreateDepthState()
 		{
 			ReleaseObject(DepthState);
+			ReleaseObject(TransparentDepthState);
 			ReleaseObject(OutlineMaskDepthState);
 			ReleaseObject(OutlineDepthState);
 			DepthState = nil;
+			TransparentDepthState = nil;
 			OutlineMaskDepthState = nil;
 			OutlineDepthState = nil;
 
@@ -464,6 +505,16 @@ namespace Riemann
 			DepthState = [Device newDepthStencilStateWithDescriptor:desc];
 			ReleaseObject(desc);
 			if (DepthState == nil)
+			{
+				return false;
+			}
+
+			MTLDepthStencilDescriptor* transparentDesc = [[MTLDepthStencilDescriptor alloc] init];
+			[transparentDesc setDepthCompareFunction:MTLCompareFunctionLess];
+			[transparentDesc setDepthWriteEnabled:NO];
+			TransparentDepthState = [Device newDepthStencilStateWithDescriptor:transparentDesc];
+			ReleaseObject(transparentDesc);
+			if (TransparentDepthState == nil)
 			{
 				return false;
 			}
@@ -777,31 +828,60 @@ namespace Riemann
 
 		bool AddMesh(const RenderMeshDesc& meshDesc)
 		{
-			if (meshDesc.Id.empty() || meshDesc.Vertices.empty() || meshDesc.Indices.empty())
+			if (meshDesc.Id.empty() || meshDesc.Vertices.empty() != meshDesc.Indices.empty())
 			{
 				return false;
 			}
 
-			DeleteMesh(meshDesc.Id.c_str());
+			if (meshDesc.Vertices.size() > (size_t)std::numeric_limits<NSUInteger>::max() / sizeof(Vertex1)
+				|| meshDesc.Indices.size() > (size_t)std::numeric_limits<NSUInteger>::max() / sizeof(uint32_t))
+			{
+				return false;
+			}
+			for (uint32_t index : meshDesc.Indices)
+			{
+				if (index >= meshDesc.Vertices.size()) return false;
+			}
+			if ((meshDesc.Topology == RenderPrimitiveTopology::Triangles && meshDesc.Indices.size() % 3 != 0)
+				|| (meshDesc.Topology == RenderPrimitiveTopology::Lines && meshDesc.Indices.size() % 2 != 0))
+			{
+				return false;
+			}
 
 			MetalMesh mesh;
 			mesh.Id = meshDesc.Id;
 			mesh.VertexCount = static_cast<NSUInteger>(meshDesc.Vertices.size());
 			mesh.IndexCount = static_cast<NSUInteger>(meshDesc.Indices.size());
+			mesh.VertexCapacity = mesh.VertexCount;
+			mesh.IndexCapacity = mesh.IndexCount;
 			mesh.PrimitiveType = meshDesc.Topology == RenderPrimitiveTopology::Lines ? MTLPrimitiveTypeLine : MTLPrimitiveTypeTriangle;
 			mesh.FillMode = meshDesc.FillMode;
+			mesh.BlendMode = meshDesc.BlendMode;
 			mesh.WorldTransform = meshDesc.WorldTransform;
 			mesh.Color = meshDesc.Color;
 			mesh.CastShadow = meshDesc.CastShadow && meshDesc.Topology == RenderPrimitiveTopology::Triangles;
+			mesh.Unlit = meshDesc.Unlit;
 
-			mesh.VertexBuffer = [Device newBufferWithBytes:meshDesc.Vertices.data() length:sizeof(Vertex1) * meshDesc.Vertices.size() options:MTLResourceStorageModeShared];
-			mesh.IndexBuffer = [Device newBufferWithBytes:meshDesc.Indices.data() length:sizeof(uint32_t) * meshDesc.Indices.size() options:MTLResourceStorageModeShared];
+			if (!meshDesc.Vertices.empty())
+			{
+				mesh.VertexBuffer = [Device newBufferWithBytes:meshDesc.Vertices.data() length:sizeof(Vertex1) * meshDesc.Vertices.size() options:MTLResourceStorageModeShared];
+				mesh.IndexBuffer = [Device newBufferWithBytes:meshDesc.Indices.data() length:sizeof(uint32_t) * meshDesc.Indices.size() options:MTLResourceStorageModeShared];
+			}
 			mesh.UniformBuffer = [Device newBufferWithLength:sizeof(MetalUniforms) options:MTLResourceStorageModeShared];
-			if (mesh.VertexBuffer == nil || mesh.IndexBuffer == nil || mesh.UniformBuffer == nil)
+			if ((!meshDesc.Vertices.empty() && (mesh.VertexBuffer == nil || mesh.IndexBuffer == nil))
+				|| mesh.UniformBuffer == nil)
 			{
 				return false;
 			}
 
+			for (MetalMesh& existing : Meshes)
+			{
+				if (existing.Id == mesh.Id)
+				{
+					existing = std::move(mesh);
+					return true;
+				}
+			}
 			Meshes.push_back(std::move(mesh));
 			return true;
 		}
@@ -830,6 +910,7 @@ namespace Riemann
 			{
 				if (mesh.Id == id)
 				{
+					if ((NSUInteger)vertexCount != mesh.VertexCount) return false;
 					id<MTLBuffer> replacement = [Device newBufferWithBytes:vertices length:sizeof(Vertex1) * static_cast<size_t>(vertexCount) options:MTLResourceStorageModeShared];
 					if (replacement == nil)
 					{
@@ -842,6 +923,58 @@ namespace Riemann
 				}
 			}
 			return false;
+		}
+
+		bool UpdateMeshGeometry(const char* id, const Vertex1* vertices, int vertexCount,
+			const uint32_t* indices, int indexCount)
+		{
+			if (id == nullptr || vertexCount < 0 || indexCount < 0
+				|| ((vertexCount == 0 || indexCount == 0) && (vertexCount != 0 || indexCount != 0))
+				|| (vertexCount > 0 && (vertices == nullptr || indices == nullptr))
+				|| (size_t)vertexCount > (size_t)std::numeric_limits<NSUInteger>::max() / sizeof(Vertex1)
+				|| (size_t)indexCount > (size_t)std::numeric_limits<NSUInteger>::max() / sizeof(uint32_t))
+			{
+				return false;
+			}
+			MetalMesh* target = nullptr;
+			for (MetalMesh& mesh : Meshes)
+			{
+				if (mesh.Id == id) { target = &mesh; break; }
+			}
+			if (target == nullptr) return false;
+			if (vertexCount == 0)
+			{
+				target->VertexCount = 0;
+				target->IndexCount = 0;
+				return true;
+			}
+			if ((target->PrimitiveType == MTLPrimitiveTypeTriangle && indexCount % 3 != 0)
+				|| (target->PrimitiveType == MTLPrimitiveTypeLine && indexCount % 2 != 0))
+			{
+				return false;
+			}
+			for (int index = 0; index < indexCount; ++index)
+			{
+				if (indices[index] >= (uint32_t)vertexCount) return false;
+			}
+
+			id<MTLBuffer> vertexBuffer = [Device newBufferWithBytes:vertices
+				length:sizeof(Vertex1) * (size_t)vertexCount options:MTLResourceStorageModeShared];
+			if (vertexBuffer == nil) return false;
+			id<MTLBuffer> indexBuffer = [Device newBufferWithBytes:indices
+				length:sizeof(uint32_t) * (size_t)indexCount options:MTLResourceStorageModeShared];
+			if (indexBuffer == nil)
+			{
+				ReleaseObject(vertexBuffer);
+				return false;
+			}
+			ReleaseObject(target->VertexBuffer);
+			ReleaseObject(target->IndexBuffer);
+			target->VertexBuffer = vertexBuffer;
+			target->IndexBuffer = indexBuffer;
+			target->VertexCount = target->VertexCapacity = (NSUInteger)vertexCount;
+			target->IndexCount = target->IndexCapacity = (NSUInteger)indexCount;
+			return true;
 		}
 
 		bool DeleteMesh(const char* id)
@@ -899,7 +1032,7 @@ namespace Riemann
 			{
 				return false;
 			}
-			return mesh.PrimitiveType == MTLPrimitiveTypeLine ||
+			return mesh.Unlit || mesh.PrimitiveType == MTLPrimitiveTypeLine ||
 				(mesh.PrimitiveType == MTLPrimitiveTypeTriangle && IsWireframeFillMode(mesh.FillMode));
 		}
 
@@ -921,7 +1054,8 @@ namespace Riemann
 
 		void DrawMesh(id<MTLRenderCommandEncoder> encoder, MetalMesh& mesh, bool shadowPass, bool outlinePass)
 		{
-			if (shadowPass && !mesh.CastShadow)
+			if (mesh.IndexCount == 0 || mesh.VertexBuffer == nil || mesh.IndexBuffer == nil
+				|| (shadowPass && !mesh.CastShadow))
 			{
 				return;
 			}
@@ -1382,7 +1516,9 @@ namespace Riemann
 
 		void Render()
 		{
-			if (Layer == nil || CommandQueue == nil || MainPipeline == nil || ShadowPipeline == nil || OutlineMaskPipeline == nil || OutlinePipeline == nil || ShadowTexture == nil)
+			if (Layer == nil || CommandQueue == nil || MainPipeline == nil || TransparentPipeline == nil
+				|| AdditivePipeline == nil || ShadowPipeline == nil || OutlineMaskPipeline == nil
+				|| OutlinePipeline == nil || ShadowTexture == nil)
 			{
 				return;
 			}
@@ -1413,13 +1549,16 @@ namespace Riemann
 				[[shadowPass depthAttachment] setClearDepth:1.0];
 
 				id<MTLRenderCommandEncoder> shadowEncoder = [commandBuffer renderCommandEncoderWithDescriptor:shadowPass];
-				[shadowEncoder setRenderPipelineState:ShadowPipeline];
-				[shadowEncoder setDepthStencilState:DepthState];
-				[shadowEncoder setCullMode:MTLCullModeNone];
-				[shadowEncoder setTriangleFillMode:ResolveTriangleFillMode(RenderFillMode::RendererDefault)];
-				for (MetalMesh& mesh : Meshes)
+				if (Light.ShadowsEnabled)
 				{
-					DrawMesh(shadowEncoder, mesh, true, false);
+					[shadowEncoder setRenderPipelineState:ShadowPipeline];
+					[shadowEncoder setDepthStencilState:DepthState];
+					[shadowEncoder setCullMode:MTLCullModeNone];
+					[shadowEncoder setTriangleFillMode:ResolveTriangleFillMode(RenderFillMode::RendererDefault)];
+					for (MetalMesh& mesh : Meshes)
+					{
+						DrawMesh(shadowEncoder, mesh, true, false);
+					}
 				}
 				[shadowEncoder endEncoding];
 
@@ -1428,7 +1567,9 @@ namespace Riemann
 				[mainColorAttachment setTexture:[drawable texture]];
 				[mainColorAttachment setLoadAction:MTLLoadActionClear];
 				[mainColorAttachment setStoreAction:MTLStoreActionStore];
-				[mainColorAttachment setClearColor:MTLClearColorMake(0.015, 0.018, 0.024, 1.0)];
+				[mainColorAttachment setClearColor:MTLClearColorMake(
+					Camera.BackgroundColor.x, Camera.BackgroundColor.y,
+					Camera.BackgroundColor.z, Camera.BackgroundColor.w)];
 				[[mainPass depthAttachment] setTexture:DepthTexture];
 				[[mainPass depthAttachment] setLoadAction:MTLLoadActionClear];
 				[[mainPass depthAttachment] setStoreAction:MTLStoreActionDontCare];
@@ -1447,8 +1588,39 @@ namespace Riemann
 				[mainEncoder setFragmentSamplerState:ShadowSampler atIndex:0];
 				for (MetalMesh& mesh : Meshes)
 				{
-					DrawMesh(mainEncoder, mesh, false, false);
+					if (mesh.BlendMode == RenderBlendMode::Alpha && mesh.Color.w >= 0.999f)
+					{
+						DrawMesh(mainEncoder, mesh, false, false);
+					}
 				}
+				std::vector<MetalMesh*> transparentMeshes;
+				for (MetalMesh& mesh : Meshes)
+				{
+					if (mesh.BlendMode == RenderBlendMode::Alpha && mesh.Color.w < 0.999f)
+					{
+						transparentMeshes.push_back(&mesh);
+					}
+				}
+				std::sort(transparentMeshes.begin(), transparentMeshes.end(), [this](const MetalMesh* lhs, const MetalMesh* rhs)
+				{
+					return (lhs->WorldTransform.pos - Eye).SquareLength() > (rhs->WorldTransform.pos - Eye).SquareLength();
+				});
+				[mainEncoder setRenderPipelineState:TransparentPipeline];
+				[mainEncoder setDepthStencilState:TransparentDepthState];
+				for (MetalMesh* mesh : transparentMeshes)
+				{
+					DrawMesh(mainEncoder, *mesh, false, false);
+				}
+				[mainEncoder setRenderPipelineState:AdditivePipeline];
+				for (MetalMesh& mesh : Meshes)
+				{
+					if (mesh.BlendMode == RenderBlendMode::Additive)
+					{
+						DrawMesh(mainEncoder, mesh, false, false);
+					}
+				}
+				[mainEncoder setRenderPipelineState:MainPipeline];
+				[mainEncoder setDepthStencilState:DepthState];
 				RenderOutline(mainEncoder);
 				RenderImgui(mainEncoder);
 				[mainEncoder endEncoding];
@@ -1467,11 +1639,14 @@ namespace Riemann
 		id<MTLCommandQueue> CommandQueue = nil;
 		CAMetalLayer* Layer = nil;
 		id<MTLRenderPipelineState> MainPipeline = nil;
+		id<MTLRenderPipelineState> AdditivePipeline = nil;
+		id<MTLRenderPipelineState> TransparentPipeline = nil;
 		id<MTLRenderPipelineState> ShadowPipeline = nil;
 		id<MTLRenderPipelineState> OutlineMaskPipeline = nil;
 		id<MTLRenderPipelineState> OutlinePipeline = nil;
 		id<MTLRenderPipelineState> ImguiPipeline = nil;
 		id<MTLDepthStencilState> DepthState = nil;
+		id<MTLDepthStencilState> TransparentDepthState = nil;
 		id<MTLDepthStencilState> OutlineMaskDepthState = nil;
 		id<MTLDepthStencilState> OutlineDepthState = nil;
 		id<MTLDepthStencilState> ImguiDepthState = nil;
@@ -1550,6 +1725,12 @@ namespace Riemann
 	bool MetalRenderer::UpdateVertices(const char* id, const Vertex1* vertices, int vertexCount)
 	{
 		return m_Impl->UpdateVertices(id, vertices, vertexCount);
+	}
+
+	bool MetalRenderer::UpdateMeshGeometry(const char* id, const Vertex1* vertices, int vertexCount,
+		const uint32_t* indices, int indexCount)
+	{
+		return m_Impl->UpdateMeshGeometry(id, vertices, vertexCount, indices, indexCount);
 	}
 
 	bool MetalRenderer::SetMeshOutline(const char* id, bool enabled, const Vector4& color, float thickness)
