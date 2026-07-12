@@ -40,10 +40,6 @@ Fluid Dynamics Solver
 
 ## Examples
 
-#### Rigid Body Dynamics Simulation for multiple boxes column corpsing
-
-![boxes](https://user-images.githubusercontent.com/29682318/180112516-54e574d6-8462-43bb-a6a7-230b2a58c7f6.gif)
-
 #### Dominoes
 
 ![domino](https://user-images.githubusercontent.com/29682318/180676459-119abeea-6d8a-4b9e-8fc4-ad87207eb6ed.gif)
@@ -51,6 +47,18 @@ Fluid Dynamics Solver
 #### Stable boxes stacking
 
 ![stack](https://user-images.githubusercontent.com/29682318/180676472-73c80918-6daa-44b0-a34f-e3fcffebdd1e.gif)
+
+#### Ragdoll Simulation
+
+![stack](https://github.com/user-attachments/assets/e8d3a438-5ed9-438d-ad14-cdd8941a8b34)
+
+#### Glass Break Simulation
+
+![stack](https://github.com/user-attachments/assets/3a5ff5ff-1315-43bf-b96f-f2a04574140e)
+
+#### Cloth Simulation
+
+![stack](https://github.com/user-attachments/assets/2b02a8ab-46af-479f-93c5-830e9926144f)
 
 #### Mesh QEM Optimizer
 
