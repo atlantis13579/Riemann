@@ -65,15 +65,15 @@ This project is named after the 19th-century German mathematician Bernhard Riema
 
 #### Ragdoll Simulation
 
-![stack](https://github.com/user-attachments/assets/e8d3a438-5ed9-438d-ad14-cdd8941a8b34)
+![stack](https://github.com/user-attachments/assets/5c5deab7-02ea-4746-8d69-457fdd187ad4)
 
 #### Glass Break Simulation
 
-![stack](https://github.com/user-attachments/assets/3a5ff5ff-1315-43bf-b96f-f2a04574140e)
+![stack](https://github.com/user-attachments/assets/e29cf382-e0e5-46ae-a8d1-17a31ffdd001)
 
 #### Cloth Simulation
 
-![stack](https://github.com/user-attachments/assets/2b02a8ab-46af-479f-93c5-830e9926144f)
+![stack](https://github.com/user-attachments/assets/8feae332-3bf1-4a33-be8a-d5933b5540db)
 
 #### Mesh QEM Optimizer
 
