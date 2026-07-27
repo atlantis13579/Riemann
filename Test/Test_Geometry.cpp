@@ -17,6 +17,7 @@
 #include "../Src/Geometry/DynamicMesh.h"
 #include "../Src/Geometry/GeometryBoolean.h"
 #include "../Src/Geometry/MeshCut.h"
+#include "../Src/Geometry/MeshValidator.h"
 #include "../Src/Geometry/Polygon3.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Geometry/Delaunay.h"
@@ -152,9 +153,76 @@ void TestMeshSimplify1()
 	cfg.rate = 0.1f;
 
 	StaticMesh mesh;
-	mesh.LoadObj(TestDataPath("bunny.obj").c_str());
-	mesh.Simplify(cfg);
+	EXPECT(mesh.LoadObj(TestDataPath("bunny.obj").c_str()));
+	const int sourceTriangleCount = mesh.GetTriangleCount();
+	EXPECT(mesh.Simplify(cfg));
+	EXPECT(mesh.GetTriangleCount() > 0 && (int)mesh.GetTriangleCount() <= sourceTriangleCount / 10 + 1);
 	mesh.ExportObj(TestOutputPath("bunny2.obj").c_str());
+
+	StaticMesh qemMesh;
+	EXPECT(qemMesh.LoadObj(TestDataPath("bunny.obj").c_str()));
+	std::vector<Vector3> qemVertices;
+	std::vector<int> qemIndices;
+	EXPECT(SimplifyMeshGarlandQEM(
+		qemMesh.GetVertexBuffer(),
+		qemMesh.GetIndexBuffer(),
+		qemMesh.GetVertexCount(),
+		qemMesh.GetTriangleCount(),
+		qemMesh.Is16bitIndices(),
+		cfg,
+		qemVertices,
+		qemIndices));
+	EXPECT(!qemVertices.empty() && !qemIndices.empty());
+	EXPECT((int)(qemIndices.size() / 3) <= sourceTriangleCount / 10 + 1);
+	const MeshValidationReport sourceReport = MeshValidator::Validate(qemMesh);
+	MeshValidationOptions qemValidationOptions;
+	qemValidationOptions.CheckSelfIntersections = true;
+	const MeshValidationReport qemReport = MeshValidator::Validate(
+		qemVertices.data(), (uint32_t)qemVertices.size(),
+		reinterpret_cast<const uint32_t*>(qemIndices.data()), (uint32_t)(qemIndices.size() / 3), qemValidationOptions);
+	EXPECT(qemReport.ConnectedComponentCount == sourceReport.ConnectedComponentCount);
+	EXPECT(qemReport.BoundaryEdgeCount == sourceReport.BoundaryEdgeCount);
+	EXPECT(qemReport.NonManifoldEdgeCount == 0);
+	EXPECT(qemReport.NonManifoldVertexCount == 0);
+	EXPECT(qemReport.DegenerateTriangleCount == 0);
+	EXPECT(qemReport.DuplicateTriangleCount == 0);
+	EXPECT(qemReport.SameDirectionEdgeCount == 0);
+	EXPECT(qemReport.SelfIntersectionCount == 0);
+	EXPECT_FALSE(qemReport.SelfIntersectionTestLimitReached);
+	EXPECT(qemReport.AbsoluteVolume > sourceReport.AbsoluteVolume * 0.5);
+	EXPECT(qemReport.AbsoluteVolume < sourceReport.AbsoluteVolume * 1.5);
+
+	// An open grid exercises boundary-edge collapses and exact face budgeting.
+	const Vector3 openVertices[] = {
+		Vector3(0.0f, 0.0f, 0.0f), Vector3(1.0f, 0.0f, 0.0f), Vector3(2.0f, 0.0f, 0.0f),
+		Vector3(0.0f, 1.0f, 0.0f), Vector3(1.0f, 1.0f, 0.0f), Vector3(2.0f, 1.0f, 0.0f),
+		Vector3(0.0f, 2.0f, 0.0f), Vector3(1.0f, 2.0f, 0.0f), Vector3(2.0f, 2.0f, 0.0f)
+	};
+	const uint32_t openIndices[] = {
+		0, 1, 4, 0, 4, 3,
+		1, 2, 5, 1, 5, 4,
+		3, 4, 7, 3, 7, 6,
+		4, 5, 8, 4, 8, 7
+	};
+	SimplificationConfig openCfg;
+	openCfg.rate = 1.0f;
+	openCfg.faces = 2;
+	std::vector<Vector3> openResultVertices;
+	std::vector<int> openResultIndices;
+	EXPECT(SimplifyMeshGarlandQEM(openVertices, openIndices, 9, 8, false, openCfg, openResultVertices, openResultIndices));
+	EXPECT(openResultIndices.size() == 6);
+	for (int index : openResultIndices)
+	{
+		EXPECT(index >= 0 && index < (int)openResultVertices.size());
+	}
+	const MeshValidationReport openReport = MeshValidator::Validate(
+		openResultVertices.data(), (uint32_t)openResultVertices.size(),
+		reinterpret_cast<const uint32_t*>(openResultIndices.data()), (uint32_t)(openResultIndices.size() / 3));
+	EXPECT(openReport.NonManifoldEdgeCount == 0);
+	EXPECT(openReport.NonManifoldVertexCount == 0);
+	EXPECT(openReport.DegenerateTriangleCount == 0);
+	EXPECT(openReport.DuplicateTriangleCount == 0);
+	EXPECT(openReport.SameDirectionEdgeCount == 0);
 }
 
 void TestClip()

@@ -34,6 +34,11 @@ namespace Riemann
 				{
 					if (index >= mesh.Vertices.size()) return false;
 				}
+				if (mesh.WireframeIndices.size() % 2 != 0) return false;
+				for (uint32_t index : mesh.WireframeIndices)
+				{
+					if (index >= mesh.Vertices.size()) return false;
+				}
 				m_Meshes[mesh.Id] = mesh;
 				return true;
 			}
@@ -88,6 +93,7 @@ namespace Riemann
 				{
 					if (indices[index] >= (uint32_t)vertexCount) return false;
 				}
+				it->second.WireframeIndices.clear();
 				if (vertexCount == 0)
 				{
 					it->second.Vertices.clear();
@@ -112,9 +118,9 @@ namespace Riemann
 				return true;
 			}
 
-			void SetFillMode(bool wireframe) override
+			void SetRenderMode(RenderMode mode) override
 			{
-				m_Wireframe = wireframe;
+				m_RenderMode = mode;
 			}
 
 			void SetDepthMode() override {}
@@ -123,7 +129,7 @@ namespace Riemann
 			CameraDesc m_Camera;
 			DirectionalLightDesc m_Light;
 			std::map<std::string, RenderMeshDesc> m_Meshes;
-			bool m_Wireframe = false;
+			RenderMode m_RenderMode = RenderMode::Solid;
 		};
 	}
 

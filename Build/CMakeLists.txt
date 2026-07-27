@@ -192,16 +192,13 @@ set(RIEMANN_VIEWER_CORE_HEADERS
     "${CMAKE_SOURCE_DIR}/../Viewer/Viewer.h"
 )
 
-add_executable(Test ${TEST_SOURCES}
-    "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.cpp"
-    "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.h"
-)
+add_executable(Test ${TEST_SOURCES})
 if(MSVC)
     target_compile_definitions(Test PRIVATE _CRT_SECURE_NO_WARNINGS)
     target_compile_options(Test PRIVATE $<$<CONFIG:Release>:/openmp>)
 endif()
 
-target_link_libraries(Test PRIVATE Riemann Renderer)
+target_link_libraries(Test PRIVATE Riemann)
 
 target_include_directories(Test PRIVATE 
     ${CMAKE_SOURCE_DIR}/../Src

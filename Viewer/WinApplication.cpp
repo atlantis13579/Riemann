@@ -263,6 +263,9 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	}
 	g_Viewer = new Riemann::WorldViewer(g_RenderThread, scene.empty() ? "01_demo.json" : scene);
 
+	const float fixedDt = 1.0f / 60.0f;
+	const std::chrono::steady_clock::duration fixedStep = std::chrono::duration_cast<
+		std::chrono::steady_clock::duration>(std::chrono::duration<double>(fixedDt));
 	auto last = std::chrono::steady_clock::now();
 
 	MSG msg = { 0 };
@@ -276,20 +279,31 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 		else
 		{
 			const auto curr = std::chrono::steady_clock::now();
-			const std::chrono::duration<double> elapsedSeconds = curr - last;
-			if (elapsedSeconds < std::chrono::milliseconds(16))
+			const auto nextStep = last + fixedStep;
+			if (curr < nextStep)
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				const auto remaining = nextStep - curr;
+				if (remaining > std::chrono::milliseconds(1))
+				{
+					std::this_thread::sleep_for(remaining - std::chrono::milliseconds(1));
+				}
+				else
+				{
+					std::this_thread::yield();
+				}
 			}
 			else
 			{
-				const float fixedDt = 0.016f;
 				if (g_Viewer)
 				{
 					g_Viewer->UpdateCameraMovement(fixedDt);
 					g_Viewer->UpdateSimulator(fixedDt);
 				}
-				last = curr;
+				last = nextStep;
+				if (curr - last > fixedStep)
+				{
+					last = curr;
+				}
 			}
 		}
 	}

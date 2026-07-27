@@ -164,7 +164,7 @@ namespace Riemann
 		RefreshStaticMeshPointers(&source->Mesh);
 
 		std::ostringstream status;
-		status << "Ready: " << source->Mesh.GetTriangleCount() << " triangles";
+		status << "Faces: " << source->Mesh.GetTriangleCount();
 		source->Status = status.str();
 		return true;
 	}
@@ -197,11 +197,49 @@ namespace Riemann
 		{
 			SimplificationConfig config;
 			config.rate = ratio;
-			if (!result->SimplifiedMesh.Simplify(config))
+			std::vector<Vector3> simplifiedVertices;
+			std::vector<int> simplifiedIndices;
+			bool simplified = false;
+			if (params.Algorithm == MeshSimplificationAlgorithm_HoppeQEM)
+			{
+				simplified = SimplifyMeshHoppeQEM(
+					result->SimplifiedMesh.GetVertexBuffer(),
+					result->SimplifiedMesh.GetIndexBuffer(),
+					result->SimplifiedMesh.GetVertexCount(),
+					result->SimplifiedMesh.GetTriangleCount(),
+					result->SimplifiedMesh.Is16bitIndices(),
+					config,
+					simplifiedVertices,
+					simplifiedIndices);
+			}
+			else if (params.Algorithm == MeshSimplificationAlgorithm_GarlandQEM)
+			{
+				simplified = SimplifyMeshGarlandQEM(
+					result->SimplifiedMesh.GetVertexBuffer(),
+					result->SimplifiedMesh.GetIndexBuffer(),
+					result->SimplifiedMesh.GetVertexCount(),
+					result->SimplifiedMesh.GetTriangleCount(),
+					result->SimplifiedMesh.Is16bitIndices(),
+					config,
+					simplifiedVertices,
+					simplifiedIndices);
+			}
+
+			if (!simplified || simplifiedVertices.empty() || simplifiedIndices.empty())
 			{
 				result->Status = "Simplification failed";
 				return false;
 			}
+			result->SimplifiedMesh.Clear();
+			result->SimplifiedMesh.SetData(
+				simplifiedVertices.data(),
+				simplifiedIndices.data(),
+				(int)simplifiedVertices.size(),
+				(int)simplifiedIndices.size() / 3,
+				false,
+				true);
+			result->SimplifiedMesh.CalculateBoundingBox();
+			result->SimplifiedMesh.Compact();
 			result->SimplifiedMesh.CalculateWeightAverageNormals();
 			RefreshStaticMeshPointers(&result->SimplifiedMesh);
 		}
@@ -210,9 +248,8 @@ namespace Riemann
 		result->MaxSeparation = source.MaxSeparation;
 
 		std::ostringstream status;
-		status << "Simplified: " << result->SourceMesh.GetTriangleCount()
-			<< " -> " << result->SimplifiedMesh.GetTriangleCount()
-			<< " triangles, ratio " << ratio;
+		status << "Faces: " << result->SourceMesh.GetTriangleCount()
+			<< " -> " << result->SimplifiedMesh.GetTriangleCount();
 		result->Status = status.str();
 		return true;
 	}

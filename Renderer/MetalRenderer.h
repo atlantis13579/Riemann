@@ -24,7 +24,7 @@ namespace Riemann
 		bool DeleteMesh(const char* id) override;
 		bool Reset() override;
 
-		void SetFillMode(bool wireframe) override;
+		void SetRenderMode(RenderMode mode) override;
 		void SetDepthMode() override;
 		void SetImguiDrawCallback(ImguiDrawCallback callback, void* userData) override;
 		void UpdateImguiInput(const ImguiInputState& input) override;

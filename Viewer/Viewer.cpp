@@ -422,8 +422,40 @@ namespace Riemann
 			return IsConvexDecompositionMode(mode) ? "Convex Decomposition" : "Mesh Cutting";
 		}
 
+		void SetToolBackgroundColor(CameraDesc* camera)
+		{
+			if (camera != nullptr)
+			{
+				camera->BackgroundColor = Vector4(0.82f, 0.82f, 0.82f, 1.0f);
+			}
+		}
+
+		void ConfigureToolCamera(CameraDesc* camera, float sceneScale, float cameraDistance)
+		{
+			if (camera == nullptr)
+			{
+				return;
+			}
+
+			const float scale = std::max(sceneScale, 1.0e-4f);
+			const float distance = std::max(cameraDistance, scale * 1.0e-4f);
+			camera->NearPlane = std::max(1.0e-4f, std::min(scale * 0.01f, distance * 0.1f));
+			camera->FarPlane = std::max(distance + scale * 4.0f, camera->NearPlane * 2.0f);
+		}
+
+		void ConfigureToolLight(const CameraDesc& camera, DirectionalLightDesc* light)
+		{
+			if (light == nullptr)
+			{
+				return;
+			}
+
+			light->Direction = SafeUnitVector(camera.At - camera.Eye, Vector3::UnitZ());
+			light->ShadowsEnabled = false;
+		}
+
 		bool IntersectRayBounds(const Ray3& Ray, const Vector3& BoundsMin,
-			const Vector3& BoundsMax, float* HitTime)
+			const Vector3& BoundsMax, float* NearHitTime, float* FarHitTime)
 		{
 			float NearTime = 0.0f;
 			float FarTime = 1000.0f;
@@ -442,8 +474,90 @@ namespace Riemann
 				FarTime = std::min(FarTime, T1);
 				if (FarTime < NearTime) return false;
 			}
-			if (HitTime) *HitTime = NearTime;
+			if (NearHitTime) *NearHitTime = NearTime;
+			if (FarHitTime) *FarHitTime = FarTime;
 			return FarTime >= 0.0f;
+		}
+
+		bool FindFluidSurfaceHit(const Ray3& Ray, const FluidSimulation& Simulation,
+			float NearTime, float FarTime, Vector3* HitPoint)
+		{
+			if (HitPoint == nullptr || FarTime < NearTime)
+			{
+				return false;
+			}
+			const FluidSimulationSettings& Settings = Simulation.GetSettings();
+			const Vector3& CellSize = Simulation.GetCellSize();
+			const float StepSize = 0.5f * std::min(CellSize.x, std::min(CellSize.y, CellSize.z));
+			const float DensityThreshold = 0.5f * Settings.RestDensity;
+			float PreviousTime = NearTime;
+			if (Simulation.SampleDensity(Ray.Origin + Ray.Dir * PreviousTime) >= DensityThreshold)
+			{
+				*HitPoint = Ray.Origin + Ray.Dir * PreviousTime;
+				return true;
+			}
+			for (float Time = NearTime + StepSize; Time <= FarTime + StepSize; Time += StepSize)
+			{
+				const float SampleTime = std::min(Time, FarTime);
+				if (Simulation.SampleDensity(Ray.Origin + Ray.Dir * SampleTime) >= DensityThreshold)
+				{
+					float LowTime = PreviousTime;
+					float HighTime = SampleTime;
+					for (int Iteration = 0; Iteration < 8; ++Iteration)
+					{
+						const float MiddleTime = 0.5f * (LowTime + HighTime);
+						if (Simulation.SampleDensity(Ray.Origin + Ray.Dir * MiddleTime)
+							>= DensityThreshold)
+						{
+							HighTime = MiddleTime;
+						}
+						else
+						{
+							LowTime = MiddleTime;
+						}
+					}
+					*HitPoint = Ray.Origin + Ray.Dir * HighTime;
+					return true;
+				}
+				if (SampleTime >= FarTime) break;
+				PreviousTime = SampleTime;
+			}
+			return false;
+		}
+
+		bool ApplyFluidSplash(FluidSimulation& Simulation, const Vector3& SurfacePoint,
+			float InteractionRadius, float InteractionStrength)
+		{
+			const FluidSimulationSettings& Settings = Simulation.GetSettings();
+			const Vector3 Extent = Settings.BoundsMax - Settings.BoundsMin;
+			const Vector3& CellSize = Simulation.GetCellSize();
+			const float MinimumCellSize = std::min(CellSize.x, std::min(CellSize.y, CellSize.z));
+			const float MinimumExtent = std::min(Extent.x, std::min(Extent.y, Extent.z));
+			if (!std::isfinite(InteractionRadius) || !std::isfinite(InteractionStrength)
+				|| !(InteractionRadius > 0.0f) || !(InteractionStrength > 0.0f)
+				|| !(MinimumCellSize > 0.0f) || !(MinimumExtent > 0.0f))
+			{
+				return false;
+			}
+
+			const float SplashRadius = std::min(
+				std::max(2.0f * InteractionRadius, 4.0f * MinimumCellSize),
+				0.3f * MinimumExtent);
+			const Vector3 SplashDirection = SafeUnitVector(Settings.Gravity * -1.0f,
+				Vector3::UnitY());
+			const Vector3 SplashCenter = SurfacePoint - SplashDirection * (0.25f * SplashRadius);
+			const float SplashSpeed = std::max(3.0f, std::min(8.0f,
+				4.0f * InteractionStrength / Settings.RestDensity));
+			const float HemisphereVolume = 2.0943951f * SplashRadius * SplashRadius * SplashRadius;
+			const float SplashMass = Settings.RestDensity * HemisphereVolume;
+			const bool BroadSplash = Simulation.ApplyImpulse(SplashCenter, SplashRadius,
+				SplashDirection * (SplashMass * SplashSpeed));
+
+			const float CoreRadius = 0.55f * SplashRadius;
+			const float CoreVolume = 2.0943951f * CoreRadius * CoreRadius * CoreRadius;
+			const bool CoreSplash = Simulation.ApplyImpulse(SplashCenter, CoreRadius,
+				SplashDirection * (Settings.RestDensity * CoreVolume * SplashSpeed * 0.75f));
+			return BroadSplash || CoreSplash;
 		}
 
 		FluidBackend ParseFluidBackend(const std::string& Name)
@@ -464,11 +578,18 @@ namespace Riemann
 		, m_HighlightedGeometry(nullptr)
 		, m_SceneDragActive(false)
 		, m_FieldDragActive(false)
+		, m_TankDragActive(false)
 		, m_SceneDragPlanePoint(Vector3::Zero())
 		, m_SceneDragPlaneNormal(Vector3::UnitZ())
 		, m_SceneDragOffset(Vector3::Zero())
 		, m_SceneDragLastTime(std::chrono::steady_clock::now())
 		, m_FieldDragPoint(Vector3::Zero())
+		, m_TankDragX(0)
+		, m_TankDragY(0)
+		, m_TankTiltX(0.0f)
+		, m_TankTiltZ(0.0f)
+		, m_TankRotation(Quaternion::One())
+		, m_TankCenter(Vector3::Zero())
 		, m_CamCenter(Vector3::Zero())
 		, m_CamParam(Vector3(1.0f, 0.6f, 15.0f))
 		, m_CuttingPanelActive(false)
@@ -481,12 +602,13 @@ namespace Riemann
 		, m_CuttingPiecesZ(2)
 		, m_CuttingSeed(7)
 		, m_MeshSimplificationFileIndex(0)
-		, m_MeshSimplificationRatioLevel(20)
+		, m_MeshSimplificationAlgorithm(MeshSimplificationAlgorithm_HoppeQEM)
+		, m_MeshSimplificationRatioLevel(1)
 		, m_CuttingSeparation(0.0f)
 		, m_CuttingMaxSeparation(1.0f)
 		, m_MeshSimplificationMaxSeparation(1.0f)
 		, m_ShowGeometryQueryBounds(false)
-		, m_RenderWireframe(false)
+		, m_RenderMode(RenderMode::Solid)
 		, m_RenderRevision(0)
 		, m_FluidDemoActive(false)
 		, m_FluidRenderFrame(0)
@@ -505,10 +627,11 @@ namespace Riemann
 		, m_ImguiCuttingPiecesZ(2)
 		, m_ImguiCuttingSeed(7)
 		, m_ImguiMeshSimplificationFileIndex(0)
-		, m_ImguiMeshSimplificationRatioLevel(20)
+		, m_ImguiMeshSimplificationAlgorithm(MeshSimplificationAlgorithm_HoppeQEM)
+		, m_ImguiMeshSimplificationRatioLevel(1)
 		, m_ImguiCuttingSeparation(0.0f)
 		, m_ImguiShowGeometryQueryBounds(false)
-		, m_ImguiRenderWireframe(false)
+		, m_ImguiRenderMode(RenderMode::Solid)
 		, m_ImguiGeometryQueryBoundsCount(0)
 		, m_ImguiPhysicsFps(0.0)
 		, m_ImguiScroll(0)
@@ -535,12 +658,14 @@ namespace Riemann
 		, m_ImguiPendingMeshSimplificationFileIndex(-1)
 		, m_ImguiPendingBrowseMeshSimplificationFile(false)
 		, m_ImguiPendingApplyMeshSimplification(false)
+		, m_ImguiPendingMeshSimplificationAlgorithm(false)
+		, m_ImguiPendingMeshSimplificationAlgorithmValue(MeshSimplificationAlgorithm_HoppeQEM)
 		, m_ImguiPendingMeshSimplificationRatioLevel(false)
-		, m_ImguiPendingMeshSimplificationRatioLevelValue(20)
+		, m_ImguiPendingMeshSimplificationRatioLevelValue(1)
 		, m_ImguiPendingShowGeometryQueryBounds(false)
 		, m_ImguiPendingShowGeometryQueryBoundsValue(false)
-		, m_ImguiPendingRenderWireframe(false)
-		, m_ImguiPendingRenderWireframeValue(false)
+		, m_ImguiPendingRenderMode(false)
+		, m_ImguiPendingRenderModeValue(RenderMode::Solid)
 		, m_ImguiPendingShootProjectile(false)
 		, m_PhysicsFpsTime(std::chrono::steady_clock::now())
 		, m_PhysicsFrameCount(0)
@@ -627,6 +752,7 @@ namespace Riemann
 			settings.SmoothingRadius = desc.SmoothingRadius;
 			settings.BoundaryRestitution = desc.BoundaryRestitution;
 			settings.BoundaryFriction = desc.BoundaryFriction;
+			settings.OpenTopBoundary = desc.OpenTopBoundary;
 			settings.MaxTimeStep = desc.MaxTimeStep;
 			settings.MaxSubsteps = desc.MaxSubsteps;
 			settings.PressureIterations = desc.PressureIterations;
@@ -738,6 +864,7 @@ namespace Riemann
 		{
 			m_RenderThread->Submit([](Renderer& renderer) {
 				renderer.DeleteMesh("fluid_demo.water");
+				renderer.DeleteMesh("fluid_demo.tank");
 			});
 		}
 	}
@@ -755,6 +882,8 @@ namespace Riemann
 		if (!m_FluidDemoActive || m_FluidSimulation == nullptr || m_RenderThread == nullptr) return;
 		std::shared_ptr<RenderMeshDesc> surface(new RenderMeshDesc());
 		if (!BuildWaterSurfaceMesh(*m_FluidSimulation, "fluid_demo.water", surface.get())) return;
+		surface->WorldTransform = m_FluidSimulation->GetContainerTransform()
+			* surface->WorldTransform;
 		if (surface->Vertices.size() > (size_t)std::numeric_limits<int>::max()
 			|| surface->Indices.size() > (size_t)std::numeric_limits<int>::max()) return;
 		m_RenderThread->Submit([surface](Renderer& renderer) {
@@ -870,6 +999,13 @@ namespace Riemann
 		m_CurrentSceneDisplayName = m_World->GetName().empty() ? m_CurrentSceneName : m_World->GetName();
 		m_SceneDragActive = false;
 		m_FieldDragActive = false;
+		m_TankDragActive = false;
+		m_TankTiltX = 0.0f;
+		m_TankTiltZ = 0.0f;
+		m_TankRotation = Quaternion::One();
+		const SceneFieldSimulationDesc& Field = m_World->GetFieldSimulation();
+		m_TankCenter = Field.IsConfigured()
+			? 0.5f * (Field.BoundsMin + Field.BoundsMax) : Vector3::Zero();
 		m_CuttingPanelActive = false;
 		m_MeshSimplificationPanelActive = false;
 		m_CuttingPieces.clear();
@@ -990,6 +1126,18 @@ namespace Riemann
 		CameraDesc camera = m_World->GetCamera();
 		camera.Eye = GetCameraPosition();
 		camera.At = m_CamCenter;
+		if (m_CuttingPanelActive || m_MeshSimplificationPanelActive)
+		{
+			SetToolBackgroundColor(&camera);
+			ConfigureToolCamera(&camera, GetCameraSceneScale(), m_CamParam.z);
+			DirectionalLightDesc light = m_World->GetLight();
+			ConfigureToolLight(camera, &light);
+			m_RenderThread->Submit([camera, light](Renderer& renderer) {
+				renderer.SetCamera(camera);
+				renderer.SetLight(light);
+			});
+			return;
+		}
 		m_RenderThread->Submit([camera](Renderer& renderer) {
 			renderer.SetCamera(camera);
 		});
@@ -1003,7 +1151,7 @@ namespace Riemann
 			return;
 		}
 
-		const float scale = 5.0f;
+		const float scale = GetCameraControlScale() * 0.1f;
 		Vector3 dir = m_CamCenter - GetCameraPosition();
 		dir.y = 0.0f;
 		dir = SafeUnitVector(dir, Vector3::UnitZ()) * scale;
@@ -1076,7 +1224,7 @@ namespace Riemann
 			return;
 		}
 
-		const float cameraSpeed = 25.0f;
+		const float cameraSpeed = GetCameraControlScale() * 1.5f;
 		movement = SafeUnitVector(movement, Vector3::Zero()) * (cameraSpeed * dt);
 		m_CamCenter += movement;
 		UpdateCamera();
@@ -1123,6 +1271,7 @@ namespace Riemann
 		const Ray3 ray = BuildSceneRay(x, y, width, height);
 		m_SceneDragActive = false;
 		m_FieldDragActive = false;
+		m_TankDragActive = false;
 		Geometry* hitGeometry = nullptr;
 		Vector3 hitPoint = Vector3::Zero();
 		if (m_World && m_World->RayCastMouseControlGeometry(ray.Origin, ray.Dir, 1000.0f, &hitGeometry, &hitPoint)
@@ -1137,25 +1286,99 @@ namespace Riemann
 			return;
 		}
 		const SceneFieldSimulationDesc& Field = m_World->GetFieldSimulation();
-		float FieldHitTime = 0.0f;
-		if (Field.IsConfigured() && IntersectRayBounds(ray, Field.BoundsMin,
-			Field.BoundsMax, &FieldHitTime))
+		float FieldNearTime = 0.0f;
+		float FieldFarTime = 0.0f;
+		Ray3 FieldRay = ray;
+		if (m_FluidSimulation)
 		{
-			m_FieldDragActive = true;
-			m_SceneDragPlanePoint = ray.Origin + ray.Dir * FieldHitTime;
-			m_SceneDragPlaneNormal = ray.Dir;
-			m_FieldDragPoint = m_SceneDragPlanePoint;
+			const Transform& ContainerTransform = m_FluidSimulation->GetContainerTransform();
+			FieldRay = Ray3(ContainerTransform.WorldToLocal(ray.Origin),
+				ContainerTransform.WorldToLocalDirection(ray.Dir));
+		}
+		if (Field.IsConfigured() && IntersectRayBounds(FieldRay, Field.BoundsMin,
+			Field.BoundsMax, &FieldNearTime, &FieldFarTime))
+		{
+			Vector3 FieldHitPoint = ray.Origin + ray.Dir * FieldNearTime;
+			if (m_FluidSimulation)
+			{
+				if (FindFluidSurfaceHit(ray, *m_FluidSimulation,
+					FieldNearTime, FieldFarTime, &FieldHitPoint))
+				{
+					if (ApplyFluidSplash(*m_FluidSimulation, FieldHitPoint,
+						Field.InteractionRadius, Field.InteractionStrength))
+					{
+						m_FluidRenderFrame = 1;
+					}
+				}
+				m_TankDragActive = true;
+				m_TankDragX = x;
+				m_TankDragY = y;
+			}
+			else
+			{
+				m_FieldDragActive = true;
+				m_SceneDragPlanePoint = FieldHitPoint;
+				m_SceneDragPlaneNormal = ray.Dir;
+				m_FieldDragPoint = m_SceneDragPlanePoint;
+			}
 			SetHighlightedGeometry(nullptr);
 			return;
 		}
 		HandleSceneRay(ray);
+		if (m_FluidSimulation)
+		{
+			m_TankDragActive = true;
+			m_TankDragX = x;
+			m_TankDragY = y;
+		}
 	}
 
 	void WorldViewer::SceneDragMsg(int x, int y, int width, int height)
 	{
-		if ((!m_SceneDragActive && !m_FieldDragActive)
+		if ((!m_SceneDragActive && !m_FieldDragActive && !m_TankDragActive)
 			|| m_World == nullptr || width <= 0 || height <= 0)
 		{
+			return;
+		}
+		if (m_TankDragActive && m_FluidSimulation)
+		{
+			const int DeltaX = x - m_TankDragX;
+			const int DeltaY = y - m_TankDragY;
+			m_TankDragX = x;
+			m_TankDragY = y;
+			if (DeltaX == 0 && DeltaY == 0) return;
+			m_TankTiltX = std::max(-1.35f, std::min(1.35f,
+				m_TankTiltX + (float)DeltaY * 0.005f));
+			m_TankTiltZ = std::max(-1.35f, std::min(1.35f,
+				m_TankTiltZ - (float)DeltaX * 0.005f));
+			Quaternion RotationX;
+			RotationX.FromRotateX(m_TankTiltX);
+			Quaternion RotationZ;
+			RotationZ.FromRotateZ(m_TankTiltZ);
+			const Quaternion NewRotation = (RotationZ * RotationX).Unit();
+			const Quaternion DeltaRotation = (NewRotation * m_TankRotation.Conjugate()).Unit();
+			if (m_World->RotateTank(m_TankCenter, DeltaRotation))
+			{
+				m_TankRotation = NewRotation;
+				const Transform ContainerTransform(
+					m_TankCenter - NewRotation * m_TankCenter, NewRotation);
+				m_FluidSimulation->SetContainerTransform(ContainerTransform);
+				m_FluidRenderFrame = 1;
+				if (m_RenderThread)
+				{
+					const Transform WaterTransform = ContainerTransform * Transform(m_TankCenter);
+					m_RenderThread->Submit([ContainerTransform, WaterTransform](Renderer& renderer) {
+						RenderTransformUpdate tankUpdate;
+						tankUpdate.Id = "fluid_demo.tank";
+						tankUpdate.WorldTransform = ContainerTransform;
+						renderer.UpdateTransform(tankUpdate);
+						RenderTransformUpdate waterUpdate;
+						waterUpdate.Id = "fluid_demo.water";
+						waterUpdate.WorldTransform = WaterTransform;
+						renderer.UpdateTransform(waterUpdate);
+					});
+				}
+			}
 			return;
 		}
 		const Ray3 ray = BuildSceneRay(x, y, width, height);
@@ -1172,13 +1395,25 @@ namespace Riemann
 			{
 				const SceneFieldSimulationDesc& Field = m_World->GetFieldSimulation();
 				const Vector3 Delta = HitPoint - m_FieldDragPoint;
-				const Vector3 Impulse = Delta * Field.InteractionStrength;
+				Vector3 Impulse = Delta * Field.InteractionStrength;
+				if (m_FluidSimulation)
+				{
+					Impulse.y += 0.5f * Delta.Length() * Field.InteractionStrength;
+				}
 				if (!Impulse.IsZero())
 				{
-					if (m_FluidSimulation) m_FluidSimulation->ApplyImpulse(
-						HitPoint, Field.InteractionRadius, Impulse);
+					const Vector3 InteractionPoint(
+						std::max(Field.BoundsMin.x, std::min(HitPoint.x, Field.BoundsMax.x)),
+						m_FluidSimulation ? m_SceneDragPlanePoint.y
+							: std::max(Field.BoundsMin.y, std::min(HitPoint.y, Field.BoundsMax.y)),
+						std::max(Field.BoundsMin.z, std::min(HitPoint.z, Field.BoundsMax.z)));
+					if (m_FluidSimulation && m_FluidSimulation->ApplyImpulse(
+						InteractionPoint, Field.InteractionRadius, Impulse))
+					{
+						m_FluidRenderFrame = 1;
+					}
 					if (m_AerodynamicsSimulation) m_AerodynamicsSimulation->ApplyImpulse(
-						HitPoint, Field.InteractionRadius, Impulse);
+						InteractionPoint, Field.InteractionRadius, Impulse);
 				}
 				m_FieldDragPoint = HitPoint;
 				return;
@@ -1186,8 +1421,26 @@ namespace Riemann
 			const std::chrono::steady_clock::time_point Now = std::chrono::steady_clock::now();
 			const float DeltaTime = std::chrono::duration<float>(Now - m_SceneDragLastTime).count();
 			m_SceneDragLastTime = Now;
-			m_World->SetMouseControlPosition(HitPoint + m_SceneDragOffset,
-				DeltaTime);
+			const Vector3 TargetPosition = HitPoint + m_SceneDragOffset;
+			const SceneFieldSimulationDesc& Field = m_World->GetFieldSimulation();
+			if (Field.IsConfigured())
+			{
+				if (m_FluidSimulation)
+				{
+					m_World->SetMouseControlPosition(TargetPosition, DeltaTime,
+						Field.BoundsMin, Field.BoundsMax,
+						m_FluidSimulation->GetContainerTransform());
+				}
+				else
+				{
+					m_World->SetMouseControlPosition(TargetPosition, DeltaTime,
+						Field.BoundsMin, Field.BoundsMax);
+				}
+			}
+			else
+			{
+				m_World->SetMouseControlPosition(TargetPosition, DeltaTime);
+			}
 		}
 	}
 
@@ -1196,17 +1449,23 @@ namespace Riemann
 		if (m_SceneDragActive && m_World != nullptr) m_World->ReleaseMouseControl();
 		m_SceneDragActive = false;
 		m_FieldDragActive = false;
+		m_TankDragActive = false;
 	}
 
 	void WorldViewer::MouseWheel(int zDelta, bool ctrlButtonDown)
 	{
-		float scale = ctrlButtonDown ? 10.0f : 1.0f;
-		scale *= 1.5f;
-		if (zDelta > 0)
+		if (zDelta == 0)
 		{
-			scale = 1.0f / scale;
+			return;
 		}
-		m_CamParam.z *= scale;
+
+		const float sceneScale = GetCameraSceneScale();
+		const float wheelSteps = static_cast<float>(zDelta) / 120.0f;
+		const float speedMultiplier = ctrlButtonDown ? 4.0f : 1.0f;
+		const float zoomFactor = powf(1.25f, -wheelSteps * speedMultiplier);
+		const float minDistance = sceneScale * 1.0e-4f;
+		const float maxDistance = sceneScale * 1.0e6f;
+		m_CamParam.z = std::max(minDistance, std::min(m_CamParam.z * zoomFactor, maxDistance));
 		UpdateCamera();
 	}
 
@@ -1237,7 +1496,6 @@ namespace Riemann
 		bool meshSimplificationPanelActive = false;
 		std::string cuttingObjPath;
 		std::string cuttingStatus;
-		std::vector<std::string> meshSimplificationFiles;
 		std::vector<ConstraintControlState> constraintControls;
 		std::string meshSimplificationPath;
 		std::string meshSimplificationStatus;
@@ -1247,11 +1505,11 @@ namespace Riemann
 		int cuttingPiecesY = 0;
 		int cuttingPiecesZ = 0;
 		int cuttingSeed = 0;
-		int meshSimplificationFileIndex = 0;
-		int meshSimplificationRatioLevel = 20;
+		int meshSimplificationAlgorithm = MeshSimplificationAlgorithm_HoppeQEM;
+		int meshSimplificationRatioLevel = 1;
 		float cuttingSeparation = 0.0f;
 		bool showGeometryQueryBounds = false;
-		bool renderWireframe = false;
+		RenderMode renderMode = RenderMode::Solid;
 		size_t geometryQueryBoundsCount = 0;
 		double physicsFps = 0.0;
 		{
@@ -1265,7 +1523,6 @@ namespace Riemann
 			meshSimplificationPanelActive = m_ImguiMeshSimplificationPanelActive;
 			cuttingObjPath = m_ImguiCuttingObjPath;
 			cuttingStatus = m_ImguiCuttingStatus;
-			meshSimplificationFiles = m_ImguiMeshSimplificationFiles;
 			meshSimplificationPath = m_ImguiMeshSimplificationPath;
 			meshSimplificationStatus = m_ImguiMeshSimplificationStatus;
 			constraintControls = m_ImguiConstraintControls;
@@ -1275,11 +1532,11 @@ namespace Riemann
 			cuttingPiecesY = m_ImguiCuttingPiecesY;
 			cuttingPiecesZ = m_ImguiCuttingPiecesZ;
 			cuttingSeed = m_ImguiCuttingSeed;
-			meshSimplificationFileIndex = m_ImguiMeshSimplificationFileIndex;
+			meshSimplificationAlgorithm = m_ImguiMeshSimplificationAlgorithm;
 			meshSimplificationRatioLevel = m_ImguiMeshSimplificationRatioLevel;
 			cuttingSeparation = m_ImguiCuttingSeparation;
 			showGeometryQueryBounds = m_ImguiShowGeometryQueryBounds;
-			renderWireframe = m_ImguiRenderWireframe;
+			renderMode = m_ImguiRenderMode;
 			geometryQueryBoundsCount = m_ImguiGeometryQueryBoundsCount;
 			physicsFps = m_ImguiPhysicsFps;
 		}
@@ -1290,27 +1547,37 @@ namespace Riemann
 		imguiDrawText(width - 10, 12, IMGUI_ALIGN_RIGHT, fpsText, imguiRGBA(230, 235, 240, 255));
 		snprintf(fpsText, sizeof(fpsText), "Render: %.1f FPS", renderFps);
 		imguiDrawText(width - 10, 30, IMGUI_ALIGN_RIGHT, fpsText, imguiRGBA(230, 235, 240, 255));
+		if (m_FluidDemoActive)
+		{
+			imguiDrawText(width - 10, 48, IMGUI_ALIGN_RIGHT,
+				"LMB click water: large splash; LMB drag empty: tilt tank",
+				imguiRGBA(150, 210, 255, 255));
+		}
 
 		const int panelHeight = std::max(120, height - 20);
 		imguiBeginScrollArea("", 10, 10, 220, panelHeight, &m_ImguiScroll);
 
 		char text[128];
-		snprintf(text, sizeof(text), "Objects: %u", static_cast<unsigned int>(objectCount));
-		imguiValue(text);
-
 		imguiSeparatorLine();
+		const char* renderModeLabels[] = { "Solid", "Wireframe", "Solid + Wireframe" };
+		imguiLabel("Render Mode");
+		for (int modeIndex = 0; modeIndex < 3; ++modeIndex)
+		{
+			const RenderMode mode = static_cast<RenderMode>(modeIndex);
+			if (imguiCheck(renderModeLabels[modeIndex], renderMode == mode, true)
+				&& renderMode != mode)
+			{
+				std::lock_guard<std::mutex> lock(m_ImguiMutex);
+				m_ImguiPendingRenderMode = true;
+				m_ImguiPendingRenderModeValue = mode;
+			}
+		}
 		imguiLabel("Debug");
 		if (imguiCheck("Geometry Query AABB", showGeometryQueryBounds, true))
 		{
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			m_ImguiPendingShowGeometryQueryBounds = true;
 			m_ImguiPendingShowGeometryQueryBoundsValue = !showGeometryQueryBounds;
-		}
-		if (imguiCheck("Wireframe", renderWireframe, true))
-		{
-			std::lock_guard<std::mutex> lock(m_ImguiMutex);
-			m_ImguiPendingRenderWireframe = true;
-			m_ImguiPendingRenderWireframeValue = !renderWireframe;
 		}
 		if (showGeometryQueryBounds)
 		{
@@ -1354,7 +1621,6 @@ namespace Riemann
 			}
 			if (demoIndex < (int)sceneFiles.size())
 			{
-				imguiValue(sceneName.empty() ? "Unnamed scene" : sceneName.c_str());
 				if (sceneName.find("Glass Fracture") == 0 && imguiButton("Shoot Glass (I)"))
 				{
 					std::lock_guard<std::mutex> lock(m_ImguiMutex);
@@ -1440,7 +1706,6 @@ namespace Riemann
 			{
 				imguiSeparatorLine();
 				const bool convexDecompositionDemo = IsConvexDecompositionMode(cuttingMode) || demoIndex == (int)sceneFiles.size() + 1;
-				imguiLabel(convexDecompositionDemo ? "Convex Decomposition" : "Mesh Cutting");
 
 				const std::string objValue = cuttingObjPath.empty()
 					? std::string("OBJ: bunny.obj")
@@ -1568,41 +1833,33 @@ namespace Riemann
 			if (meshSimplificationPanelActive)
 			{
 				imguiSeparatorLine();
-				imguiLabel("Mesh Simplification");
 
 				const std::string meshValue = meshSimplificationPath.empty()
 					? std::string("Mesh: bunny.obj")
 					: std::string("Mesh: ") + FileNameOf(meshSimplificationPath);
 				imguiValue(meshValue.c_str());
 
-				if (!meshSimplificationFiles.empty())
-				{
-					std::vector<std::string> meshLabelsText;
-					meshLabelsText.reserve(meshSimplificationFiles.size());
-					for (const std::string& meshFile : meshSimplificationFiles)
-					{
-						meshLabelsText.push_back(FileNameOf(meshFile));
-					}
-
-					std::vector<const char*> meshLabels;
-					meshLabels.reserve(meshLabelsText.size());
-					for (const std::string& label : meshLabelsText)
-					{
-						meshLabels.push_back(label.c_str());
-					}
-
-					int selectedMesh = std::max(0, std::min(meshSimplificationFileIndex, (int)meshLabels.size() - 1));
-					if (imguiCombo("File", &selectedMesh, meshLabels.data(), (int)meshLabels.size()))
-					{
-						std::lock_guard<std::mutex> lock(m_ImguiMutex);
-						m_ImguiPendingMeshSimplificationFileIndex = selectedMesh;
-					}
-				}
-
 				if (imguiButton("Browse Mesh..."))
 				{
 					std::lock_guard<std::mutex> lock(m_ImguiMutex);
 					m_ImguiPendingBrowseMeshSimplificationFile = true;
+				}
+
+				const char* algorithmLabels[] = { "Hoppe QEM", "Garland QEM" };
+				meshSimplificationAlgorithm = std::max(0, std::min(
+					meshSimplificationAlgorithm, MeshSimplificationAlgorithm_Count - 1));
+				imguiLabel("Algorithm");
+				for (int algorithmIndex = 0;
+					algorithmIndex < MeshSimplificationAlgorithm_Count; ++algorithmIndex)
+				{
+					if (imguiCheck(algorithmLabels[algorithmIndex],
+						meshSimplificationAlgorithm == algorithmIndex, true)
+						&& meshSimplificationAlgorithm != algorithmIndex)
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_ImguiPendingMeshSimplificationAlgorithm = true;
+						m_ImguiPendingMeshSimplificationAlgorithmValue = algorithmIndex;
+					}
 				}
 
 				meshSimplificationRatioLevel = std::max(1, std::min(meshSimplificationRatioLevel, 20));
@@ -1661,9 +1918,20 @@ namespace Riemann
 		}
 		if (m_FluidDemoActive && m_FluidSimulation != nullptr)
 		{
+			const SceneFieldSimulationDesc& Field = m_World->GetFieldSimulation();
+			const size_t tankMeshBegin = meshes.size();
+			BuildAabbWireMesh(Box3(Field.BoundsMin, Field.BoundsMax), "fluid_demo.tank",
+				Vector4(0.35f, 0.72f, 0.95f, 1.0f), &meshes);
+			for (size_t index = tankMeshBegin; index < meshes.size(); ++index)
+			{
+				meshes[index].WorldTransform = m_FluidSimulation->GetContainerTransform()
+					* meshes[index].WorldTransform;
+			}
 			RenderMeshDesc waterSurface;
 			if (BuildWaterSurfaceMesh(*m_FluidSimulation, "fluid_demo.water", &waterSurface))
 			{
+				waterSurface.WorldTransform = m_FluidSimulation->GetContainerTransform()
+					* waterSurface.WorldTransform;
 				meshes.push_back(std::move(waterSurface));
 			}
 		}
@@ -1678,18 +1946,34 @@ namespace Riemann
 				for (RenderMeshDesc& gasMesh : gasMeshes) meshes.push_back(std::move(gasMesh));
 			}
 		}
+		if (m_CuttingPanelActive || m_MeshSimplificationPanelActive)
+		{
+			for (RenderMeshDesc& mesh : meshes)
+			{
+				mesh.CastShadow = false;
+			}
+		}
 
 		if (m_RenderThread)
 		{
 			CameraDesc camera = m_World->GetCamera();
 			camera.At = m_CamCenter;
 			camera.Eye = GetCameraPosition();
+			if (m_CuttingPanelActive || m_MeshSimplificationPanelActive)
+			{
+				SetToolBackgroundColor(&camera);
+				ConfigureToolCamera(&camera, GetCameraSceneScale(), m_CamParam.z);
+			}
 			DirectionalLightDesc light = m_World->GetLight();
-			const bool renderWireframe = m_RenderWireframe;
+			if (m_CuttingPanelActive || m_MeshSimplificationPanelActive)
+			{
+				ConfigureToolLight(camera, &light);
+			}
+			const RenderMode renderMode = m_RenderMode;
 			std::shared_ptr<std::vector<RenderMeshDesc> > renderMeshes(new std::vector<RenderMeshDesc>(std::move(meshes)));
-			m_RenderThread->Submit([renderMeshes, camera, light, renderWireframe](Renderer& renderer) {
+			m_RenderThread->Submit([renderMeshes, camera, light, renderMode](Renderer& renderer) {
 				renderer.Reset();
-				renderer.SetFillMode(renderWireframe);
+				renderer.SetRenderMode(renderMode);
 				renderer.SetCamera(camera);
 				renderer.SetLight(light);
 				for (const RenderMeshDesc& mesh : *renderMeshes)
@@ -1800,7 +2084,7 @@ namespace Riemann
 		}
 
 		m_CamCenter = center;
-		m_CamParam = Vector3(1.05f, 0.45f, std::max(1.0f, m_CuttingMaxSeparation * 3.5f));
+		m_CamParam = Vector3(1.05f, 0.45f, m_CuttingMaxSeparation * 3.5f);
 		m_CuttingStatus = source.Status + (IsConvexDecompositionMode(m_CuttingMode) ? ". Click Apply" : ". Click Apply Cut");
 
 		RebuildRenderScene();
@@ -1810,13 +2094,11 @@ namespace Riemann
 			CameraDesc camera = m_World->GetCamera();
 			camera.At = m_CamCenter;
 			camera.Eye = GetCameraPosition();
-			camera.NearPlane = std::max(0.01f, m_CuttingMaxSeparation * 0.01f);
-			camera.FarPlane = std::max(1000.0f, m_CuttingMaxSeparation * 20.0f);
+			SetToolBackgroundColor(&camera);
+			ConfigureToolCamera(&camera, m_CuttingMaxSeparation, m_CamParam.z);
 
 			DirectionalLightDesc light = m_World->GetLight();
-			light.ShadowCenter = center;
-			light.ShadowDistance = m_CuttingMaxSeparation * 6.0f;
-			light.ShadowSize = m_CuttingMaxSeparation * 4.0f;
+			ConfigureToolLight(camera, &light);
 
 			m_RenderThread->Submit([camera, light](Renderer& renderer) {
 				renderer.SetCamera(camera);
@@ -1868,8 +2150,6 @@ namespace Riemann
 			return false;
 		}
 
-		const Box3 bounds = cuttingResult.SourceBounds;
-		const Vector3 center = bounds.GetCenter();
 		m_CuttingMode = std::max(0, std::min(m_CuttingMode, (int)MeshCuttingMode_Count - 1));
 		m_CuttingPieceCount = std::max(2, std::min(m_CuttingPieceCount, 64));
 		m_CuttingPiecesX = std::max(1, std::min(m_CuttingPiecesX, 64));
@@ -1929,13 +2209,11 @@ namespace Riemann
 			CameraDesc camera = m_World->GetCamera();
 			camera.At = m_CamCenter;
 			camera.Eye = GetCameraPosition();
-			camera.NearPlane = std::max(0.01f, m_CuttingMaxSeparation * 0.01f);
-			camera.FarPlane = std::max(1000.0f, m_CuttingMaxSeparation * 20.0f);
+			SetToolBackgroundColor(&camera);
+			ConfigureToolCamera(&camera, m_CuttingMaxSeparation, m_CamParam.z);
 
 			DirectionalLightDesc light = m_World->GetLight();
-			light.ShadowCenter = center;
-			light.ShadowDistance = m_CuttingMaxSeparation * 6.0f;
-			light.ShadowSize = m_CuttingMaxSeparation * 4.0f;
+			ConfigureToolLight(camera, &light);
 
 			m_RenderThread->Submit([camera, light](Renderer& renderer) {
 				renderer.SetCamera(camera);
@@ -2014,7 +2292,7 @@ namespace Riemann
 		}
 
 		m_CamCenter = center;
-		m_CamParam = Vector3(1.05f, 0.45f, std::max(1.0f, m_MeshSimplificationMaxSeparation * 3.5f));
+		m_CamParam = Vector3(1.05f, 0.45f, m_MeshSimplificationMaxSeparation * 3.5f);
 		m_MeshSimplificationStatus = source.Status + ". Click Simplify";
 
 		RebuildRenderScene();
@@ -2024,13 +2302,11 @@ namespace Riemann
 			CameraDesc camera = m_World->GetCamera();
 			camera.At = m_CamCenter;
 			camera.Eye = GetCameraPosition();
-			camera.NearPlane = std::max(0.01f, m_MeshSimplificationMaxSeparation * 0.01f);
-			camera.FarPlane = std::max(1000.0f, m_MeshSimplificationMaxSeparation * 20.0f);
+			SetToolBackgroundColor(&camera);
+			ConfigureToolCamera(&camera, m_MeshSimplificationMaxSeparation, m_CamParam.z);
 
 			DirectionalLightDesc light = m_World->GetLight();
-			light.ShadowCenter = center;
-			light.ShadowDistance = m_MeshSimplificationMaxSeparation * 6.0f;
-			light.ShadowSize = m_MeshSimplificationMaxSeparation * 4.0f;
+			ConfigureToolLight(camera, &light);
 
 			m_RenderThread->Submit([camera, light](Renderer& renderer) {
 				renderer.SetCamera(camera);
@@ -2068,6 +2344,7 @@ namespace Riemann
 		MeshSimplificationParams params;
 		params.MeshPath = m_MeshSimplificationPath;
 		params.Ratio = static_cast<float>(m_MeshSimplificationRatioLevel) * 0.05f;
+		params.Algorithm = m_MeshSimplificationAlgorithm;
 
 		MeshSimplificationResult result;
 		if (!BuildMeshSimplificationPanel(params, &result))
@@ -2080,7 +2357,6 @@ namespace Riemann
 		}
 
 		const Box3 bounds = result.SourceBounds;
-		const Vector3 center = bounds.GetCenter();
 		const Box3 simplifiedBounds = result.SimplifiedMesh.BoundingVolume;
 		m_MeshSimplificationMaxSeparation = result.MaxSeparation;
 
@@ -2130,13 +2406,11 @@ namespace Riemann
 			CameraDesc camera = m_World->GetCamera();
 			camera.At = m_CamCenter;
 			camera.Eye = GetCameraPosition();
-			camera.NearPlane = std::max(0.01f, m_MeshSimplificationMaxSeparation * 0.01f);
-			camera.FarPlane = std::max(1000.0f, m_MeshSimplificationMaxSeparation * 20.0f);
+			SetToolBackgroundColor(&camera);
+			ConfigureToolCamera(&camera, m_MeshSimplificationMaxSeparation, m_CamParam.z);
 
 			DirectionalLightDesc light = m_World->GetLight();
-			light.ShadowCenter = center;
-			light.ShadowDistance = m_MeshSimplificationMaxSeparation * 6.0f;
-			light.ShadowSize = m_MeshSimplificationMaxSeparation * 5.0f;
+			ConfigureToolLight(camera, &light);
 
 			m_RenderThread->Submit([camera, light](Renderer& renderer) {
 				renderer.SetCamera(camera);
@@ -2406,18 +2680,18 @@ namespace Riemann
 		UpdateImguiState();
 	}
 
-	void WorldViewer::SetRenderWireframe(bool show)
+	void WorldViewer::SetRenderMode(RenderMode mode)
 	{
-		if (m_RenderWireframe == show)
+		if (m_RenderMode == mode)
 		{
 			return;
 		}
 
-		m_RenderWireframe = show;
+		m_RenderMode = mode;
 		if (m_RenderThread)
 		{
-			m_RenderThread->Submit([show](Renderer& renderer) {
-				renderer.SetFillMode(show);
+			m_RenderThread->Submit([mode](Renderer& renderer) {
+				renderer.SetRenderMode(mode);
 			});
 		}
 		UpdateImguiState();
@@ -2449,12 +2723,14 @@ namespace Riemann
 		int pendingMeshSimplificationFileIndex = -1;
 		bool pendingBrowseMeshSimplificationFile = false;
 		bool pendingApplyMeshSimplification = false;
+		bool pendingMeshSimplificationAlgorithm = false;
+		int pendingMeshSimplificationAlgorithmValue = MeshSimplificationAlgorithm_HoppeQEM;
 		bool pendingMeshSimplificationRatioLevel = false;
-		int pendingMeshSimplificationRatioLevelValue = 20;
+		int pendingMeshSimplificationRatioLevelValue = 1;
 		bool pendingGeometryQueryBounds = false;
 		bool pendingGeometryQueryBoundsValue = false;
-		bool pendingRenderWireframe = false;
-		bool pendingRenderWireframeValue = false;
+		bool pendingRenderMode = false;
+		RenderMode pendingRenderModeValue = RenderMode::Solid;
 		bool pendingShootProjectile = false;
 		std::vector<ConstraintControlState> pendingConstraintControls;
 		{
@@ -2498,15 +2774,18 @@ namespace Riemann
 			m_ImguiPendingBrowseMeshSimplificationFile = false;
 			pendingApplyMeshSimplification = m_ImguiPendingApplyMeshSimplification;
 			m_ImguiPendingApplyMeshSimplification = false;
+			pendingMeshSimplificationAlgorithm = m_ImguiPendingMeshSimplificationAlgorithm;
+			pendingMeshSimplificationAlgorithmValue = m_ImguiPendingMeshSimplificationAlgorithmValue;
+			m_ImguiPendingMeshSimplificationAlgorithm = false;
 			pendingMeshSimplificationRatioLevel = m_ImguiPendingMeshSimplificationRatioLevel;
 			pendingMeshSimplificationRatioLevelValue = m_ImguiPendingMeshSimplificationRatioLevelValue;
 			m_ImguiPendingMeshSimplificationRatioLevel = false;
 			pendingGeometryQueryBounds = m_ImguiPendingShowGeometryQueryBounds;
 			pendingGeometryQueryBoundsValue = m_ImguiPendingShowGeometryQueryBoundsValue;
 			m_ImguiPendingShowGeometryQueryBounds = false;
-			pendingRenderWireframe = m_ImguiPendingRenderWireframe;
-			pendingRenderWireframeValue = m_ImguiPendingRenderWireframeValue;
-			m_ImguiPendingRenderWireframe = false;
+			pendingRenderMode = m_ImguiPendingRenderMode;
+			pendingRenderModeValue = m_ImguiPendingRenderModeValue;
+			m_ImguiPendingRenderMode = false;
 			pendingShootProjectile = m_ImguiPendingShootProjectile;
 			m_ImguiPendingShootProjectile = false;
 			pendingConstraintControls.swap(m_ImguiPendingConstraintControls);
@@ -2558,7 +2837,7 @@ namespace Riemann
 
 		if (pendingDistance)
 		{
-			m_CamParam.z = std::max(1.0f, pendingDistanceValue);
+			m_CamParam.z = std::max(GetCameraSceneScale() * 1.0e-4f, pendingDistanceValue);
 			UpdateCamera();
 		}
 
@@ -2639,6 +2918,11 @@ namespace Riemann
 		{
 			m_MeshSimplificationRatioLevel = std::max(1, std::min(pendingMeshSimplificationRatioLevelValue, 20));
 		}
+		if (pendingMeshSimplificationAlgorithm)
+		{
+			m_MeshSimplificationAlgorithm = std::max(0, std::min(
+				pendingMeshSimplificationAlgorithmValue, MeshSimplificationAlgorithm_Count - 1));
+		}
 		if (pendingCuttingSeparation)
 		{
 			m_CuttingSeparation = std::max(0.0f, std::min(pendingCuttingSeparationValue, 1.0f));
@@ -2671,7 +2955,7 @@ namespace Riemann
 		{
 			LoadMeshSimplificationPanel();
 		}
-		else if (pendingMeshSimplificationRatioLevel && m_MeshSimplificationPanelActive)
+		else if ((pendingMeshSimplificationRatioLevel || pendingMeshSimplificationAlgorithm) && m_MeshSimplificationPanelActive)
 		{
 			m_MeshSimplificationStatus = "Ready. Click Simplify";
 			UpdateImguiState();
@@ -2681,9 +2965,9 @@ namespace Riemann
 		{
 			SetShowGeometryQueryBounds(pendingGeometryQueryBoundsValue);
 		}
-		if (pendingRenderWireframe)
+		if (pendingRenderMode)
 		{
-			SetRenderWireframe(pendingRenderWireframeValue);
+			SetRenderMode(pendingRenderModeValue);
 		}
 	}
 
@@ -2725,10 +3009,11 @@ namespace Riemann
 		m_ImguiCuttingPiecesZ = m_CuttingPiecesZ;
 		m_ImguiCuttingSeed = m_CuttingSeed;
 		m_ImguiMeshSimplificationFileIndex = m_MeshSimplificationFileIndex;
+		m_ImguiMeshSimplificationAlgorithm = m_MeshSimplificationAlgorithm;
 		m_ImguiMeshSimplificationRatioLevel = m_MeshSimplificationRatioLevel;
 		m_ImguiCuttingSeparation = m_CuttingSeparation;
 		m_ImguiShowGeometryQueryBounds = m_ShowGeometryQueryBounds;
-		m_ImguiRenderWireframe = m_RenderWireframe;
+		m_ImguiRenderMode = m_RenderMode;
 		m_ImguiGeometryQueryBoundsCount = m_GeometryQueryBoundsMeshIds.size();
 		m_ImguiPhysicsFps = m_PhysicsFps;
 	}
@@ -2758,6 +3043,24 @@ namespace Riemann
 		m_PhysicsFps = m_PhysicsFrameCount / elapsed.count();
 		m_PhysicsFrameCount = 0;
 		m_PhysicsFpsTime = curr;
+	}
+
+	float WorldViewer::GetCameraSceneScale() const
+	{
+		if (m_MeshSimplificationPanelActive)
+		{
+			return std::max(m_MeshSimplificationMaxSeparation, 1.0e-4f);
+		}
+		if (m_CuttingPanelActive)
+		{
+			return std::max(m_CuttingMaxSeparation, 1.0e-4f);
+		}
+		return std::max(m_CamParam.z, 1.0e-4f);
+	}
+
+	float WorldViewer::GetCameraControlScale() const
+	{
+		return std::max(GetCameraSceneScale(), m_CamParam.z);
 	}
 
 	Ray3 WorldViewer::BuildSceneRay(int x, int y, int width, int height) const

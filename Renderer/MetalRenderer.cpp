@@ -182,10 +182,14 @@ namespace
 		{
 			ReleaseObject(VertexBuffer);
 			ReleaseObject(IndexBuffer);
+			ReleaseObject(WireframeIndexBuffer);
 			ReleaseObject(UniformBuffer);
+			ReleaseObject(WireframeUniformBuffer);
 			VertexBuffer = nil;
 			IndexBuffer = nil;
+			WireframeIndexBuffer = nil;
 			UniformBuffer = nil;
+			WireframeUniformBuffer = nil;
 		}
 
 		void MoveFrom(MetalMesh& rhs)
@@ -193,9 +197,12 @@ namespace
 			Id = std::move(rhs.Id);
 			VertexBuffer = rhs.VertexBuffer;
 			IndexBuffer = rhs.IndexBuffer;
+			WireframeIndexBuffer = rhs.WireframeIndexBuffer;
 			UniformBuffer = rhs.UniformBuffer;
+			WireframeUniformBuffer = rhs.WireframeUniformBuffer;
 			VertexCount = rhs.VertexCount;
 			IndexCount = rhs.IndexCount;
+			WireframeIndexCount = rhs.WireframeIndexCount;
 			VertexCapacity = rhs.VertexCapacity;
 			IndexCapacity = rhs.IndexCapacity;
 			PrimitiveType = rhs.PrimitiveType;
@@ -211,9 +218,12 @@ namespace
 
 			rhs.VertexBuffer = nil;
 			rhs.IndexBuffer = nil;
+			rhs.WireframeIndexBuffer = nil;
 			rhs.UniformBuffer = nil;
+			rhs.WireframeUniformBuffer = nil;
 			rhs.VertexCount = 0;
 			rhs.IndexCount = 0;
+			rhs.WireframeIndexCount = 0;
 			rhs.VertexCapacity = 0;
 			rhs.IndexCapacity = 0;
 		}
@@ -221,9 +231,12 @@ namespace
 		std::string Id;
 		id<MTLBuffer> VertexBuffer = nil;
 		id<MTLBuffer> IndexBuffer = nil;
+		id<MTLBuffer> WireframeIndexBuffer = nil;
 		id<MTLBuffer> UniformBuffer = nil;
+		id<MTLBuffer> WireframeUniformBuffer = nil;
 		NSUInteger VertexCount = 0;
 		NSUInteger IndexCount = 0;
+		NSUInteger WireframeIndexCount = 0;
 		NSUInteger VertexCapacity = 0;
 		NSUInteger IndexCapacity = 0;
 		MTLPrimitiveType PrimitiveType = MTLPrimitiveTypeTriangle;
@@ -255,6 +268,7 @@ namespace Riemann
 			ReleaseObject(OutlineMaskDepthState);
 			ReleaseObject(OutlineDepthState);
 			ReleaseObject(TransparentDepthState);
+			ReleaseObject(WireframeOverlayDepthState);
 			ReleaseObject(DepthState);
 			ReleaseObject(OutlineMaskPipeline);
 			ReleaseObject(OutlinePipeline);
@@ -492,10 +506,12 @@ namespace Riemann
 		{
 			ReleaseObject(DepthState);
 			ReleaseObject(TransparentDepthState);
+			ReleaseObject(WireframeOverlayDepthState);
 			ReleaseObject(OutlineMaskDepthState);
 			ReleaseObject(OutlineDepthState);
 			DepthState = nil;
 			TransparentDepthState = nil;
+			WireframeOverlayDepthState = nil;
 			OutlineMaskDepthState = nil;
 			OutlineDepthState = nil;
 
@@ -515,6 +531,16 @@ namespace Riemann
 			TransparentDepthState = [Device newDepthStencilStateWithDescriptor:transparentDesc];
 			ReleaseObject(transparentDesc);
 			if (TransparentDepthState == nil)
+			{
+				return false;
+			}
+
+			MTLDepthStencilDescriptor* wireframeOverlayDesc = [[MTLDepthStencilDescriptor alloc] init];
+			[wireframeOverlayDesc setDepthCompareFunction:MTLCompareFunctionLessEqual];
+			[wireframeOverlayDesc setDepthWriteEnabled:NO];
+			WireframeOverlayDepthState = [Device newDepthStencilStateWithDescriptor:wireframeOverlayDesc];
+			ReleaseObject(wireframeOverlayDesc);
+			if (WireframeOverlayDepthState == nil)
 			{
 				return false;
 			}
@@ -780,8 +806,10 @@ namespace Riemann
 		void SetCamera(const CameraDesc& camera)
 		{
 			Camera = camera;
-			const float nearPlane = camera.NearPlane > 0.05f ? camera.NearPlane : 0.05f;
-			const float farPlane = camera.FarPlane > nearPlane + 1.0f ? camera.FarPlane : nearPlane + 1.0f;
+			const float nearPlane = camera.NearPlane > 1.0e-4f ? camera.NearPlane : 1.0e-4f;
+			const float minimumDepthRange = std::max(nearPlane * 0.01f, 1.0e-4f);
+			const float farPlane = camera.FarPlane > nearPlane + minimumDepthRange
+				? camera.FarPlane : nearPlane + minimumDepthRange;
 			Camera.NearPlane = nearPlane;
 			Camera.FarPlane = farPlane;
 			Eye = camera.Eye;
@@ -834,11 +862,16 @@ namespace Riemann
 			}
 
 			if (meshDesc.Vertices.size() > (size_t)std::numeric_limits<NSUInteger>::max() / sizeof(Vertex1)
-				|| meshDesc.Indices.size() > (size_t)std::numeric_limits<NSUInteger>::max() / sizeof(uint32_t))
+				|| meshDesc.Indices.size() > (size_t)std::numeric_limits<NSUInteger>::max() / sizeof(uint32_t)
+				|| meshDesc.WireframeIndices.size() > (size_t)std::numeric_limits<NSUInteger>::max() / sizeof(uint32_t))
 			{
 				return false;
 			}
 			for (uint32_t index : meshDesc.Indices)
+			{
+				if (index >= meshDesc.Vertices.size()) return false;
+			}
+			for (uint32_t index : meshDesc.WireframeIndices)
 			{
 				if (index >= meshDesc.Vertices.size()) return false;
 			}
@@ -847,11 +880,16 @@ namespace Riemann
 			{
 				return false;
 			}
+			if (meshDesc.WireframeIndices.size() % 2 != 0)
+			{
+				return false;
+			}
 
 			MetalMesh mesh;
 			mesh.Id = meshDesc.Id;
 			mesh.VertexCount = static_cast<NSUInteger>(meshDesc.Vertices.size());
 			mesh.IndexCount = static_cast<NSUInteger>(meshDesc.Indices.size());
+			mesh.WireframeIndexCount = static_cast<NSUInteger>(meshDesc.WireframeIndices.size());
 			mesh.VertexCapacity = mesh.VertexCount;
 			mesh.IndexCapacity = mesh.IndexCount;
 			mesh.PrimitiveType = meshDesc.Topology == RenderPrimitiveTopology::Lines ? MTLPrimitiveTypeLine : MTLPrimitiveTypeTriangle;
@@ -866,10 +904,18 @@ namespace Riemann
 			{
 				mesh.VertexBuffer = [Device newBufferWithBytes:meshDesc.Vertices.data() length:sizeof(Vertex1) * meshDesc.Vertices.size() options:MTLResourceStorageModeShared];
 				mesh.IndexBuffer = [Device newBufferWithBytes:meshDesc.Indices.data() length:sizeof(uint32_t) * meshDesc.Indices.size() options:MTLResourceStorageModeShared];
+				if (!meshDesc.WireframeIndices.empty())
+				{
+					mesh.WireframeIndexBuffer = [Device newBufferWithBytes:meshDesc.WireframeIndices.data()
+						length:sizeof(uint32_t) * meshDesc.WireframeIndices.size()
+						options:MTLResourceStorageModeShared];
+				}
 			}
 			mesh.UniformBuffer = [Device newBufferWithLength:sizeof(MetalUniforms) options:MTLResourceStorageModeShared];
+			mesh.WireframeUniformBuffer = [Device newBufferWithLength:sizeof(MetalUniforms) options:MTLResourceStorageModeShared];
 			if ((!meshDesc.Vertices.empty() && (mesh.VertexBuffer == nil || mesh.IndexBuffer == nil))
-				|| mesh.UniformBuffer == nil)
+				|| (!meshDesc.WireframeIndices.empty() && mesh.WireframeIndexBuffer == nil)
+				|| mesh.UniformBuffer == nil || mesh.WireframeUniformBuffer == nil)
 			{
 				return false;
 			}
@@ -944,6 +990,9 @@ namespace Riemann
 			if (target == nullptr) return false;
 			if (vertexCount == 0)
 			{
+				ReleaseObject(target->WireframeIndexBuffer);
+				target->WireframeIndexBuffer = nil;
+				target->WireframeIndexCount = 0;
 				target->VertexCount = 0;
 				target->IndexCount = 0;
 				return true;
@@ -957,7 +1006,6 @@ namespace Riemann
 			{
 				if (indices[index] >= (uint32_t)vertexCount) return false;
 			}
-
 			id<MTLBuffer> vertexBuffer = [Device newBufferWithBytes:vertices
 				length:sizeof(Vertex1) * (size_t)vertexCount options:MTLResourceStorageModeShared];
 			if (vertexBuffer == nil) return false;
@@ -972,6 +1020,9 @@ namespace Riemann
 			ReleaseObject(target->IndexBuffer);
 			target->VertexBuffer = vertexBuffer;
 			target->IndexBuffer = indexBuffer;
+			ReleaseObject(target->WireframeIndexBuffer);
+			target->WireframeIndexBuffer = nil;
+			target->WireframeIndexCount = 0;
 			target->VertexCount = target->VertexCapacity = (NSUInteger)vertexCount;
 			target->IndexCount = target->IndexCapacity = (NSUInteger)indexCount;
 			return true;
@@ -1022,23 +1073,35 @@ namespace Riemann
 
 		bool IsWireframeFillMode(RenderFillMode fillMode) const
 		{
-			return fillMode == RenderFillMode::Wireframe ||
-				(fillMode == RenderFillMode::RendererDefault && Wireframe);
+			return ResolveRenderMode(fillMode) == RenderMode::Wireframe;
 		}
 
-		bool ShouldRenderUnlit(const MetalMesh& mesh, bool shadowPass, bool outlinePass) const
+		RenderMode ResolveRenderMode(RenderFillMode fillMode) const
+		{
+			if (fillMode == RenderFillMode::Solid) return RenderMode::Solid;
+			if (fillMode == RenderFillMode::Wireframe) return RenderMode::Wireframe;
+			return Mode;
+		}
+
+		bool ShouldRenderUnlit(const MetalMesh& mesh, bool shadowPass, bool outlinePass,
+			bool wireframePass) const
 		{
 			if (shadowPass || outlinePass)
 			{
 				return false;
 			}
-			return mesh.Unlit || mesh.PrimitiveType == MTLPrimitiveTypeLine ||
-				(mesh.PrimitiveType == MTLPrimitiveTypeTriangle && IsWireframeFillMode(mesh.FillMode));
+			return mesh.Unlit || wireframePass || mesh.PrimitiveType == MTLPrimitiveTypeLine;
 		}
 
-		void UpdateUniforms(MetalMesh& mesh, bool shadowPass, bool outlinePass)
+		Vector4 GetWireframeOverlayColor(const Vector4& color) const
 		{
-			MetalUniforms* uniforms = static_cast<MetalUniforms*>([mesh.UniformBuffer contents]);
+			return Vector4(0.12f, 0.12f, 0.12f, color.w);
+		}
+
+		void UpdateUniforms(MetalMesh& mesh, id<MTLBuffer> uniformBuffer,
+			bool shadowPass, bool outlinePass, bool wireframePass, bool solidWireframeOverlay)
+		{
+			MetalUniforms* uniforms = static_cast<MetalUniforms*>([uniformBuffer contents]);
 			uniforms->World = GetTransformMatrix(mesh.WorldTransform);
 			uniforms->View = View;
 			uniforms->Projection = Projection;
@@ -1047,12 +1110,50 @@ namespace Riemann
 			uniforms->EyePos = Vector4(Eye.x, Eye.y, Eye.z, 1.0f);
 			uniforms->LightDir = Vector4(Light.Direction.x, Light.Direction.y, Light.Direction.z, Light.Ambient);
 			uniforms->LightColor = Vector4(Light.Color.x, Light.Color.y, Light.Color.z, 1.0f);
-			uniforms->MaterialColor = mesh.Color;
+			uniforms->MaterialColor = solidWireframeOverlay
+				? GetWireframeOverlayColor(mesh.Color) : mesh.Color;
 			uniforms->OutlineColor = mesh.OutlineColor;
-			uniforms->RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f, ShouldRenderUnlit(mesh, shadowPass, outlinePass) ? 1.0f : 0.0f, 0.0f, 0.0f);
+			uniforms->RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f,
+				ShouldRenderUnlit(mesh, shadowPass, outlinePass, wireframePass) ? 1.0f : 0.0f,
+				0.0f, 0.0f);
 		}
 
-		void DrawMesh(id<MTLRenderCommandEncoder> encoder, MetalMesh& mesh, bool shadowPass, bool outlinePass)
+		void DrawMeshPass(id<MTLRenderCommandEncoder> encoder, MetalMesh& mesh,
+			bool shadowPass, bool outlinePass, bool wireframePass, bool solidWireframeOverlay)
+		{
+			id<MTLBuffer> uniformBuffer = wireframePass
+				? mesh.WireframeUniformBuffer : mesh.UniformBuffer;
+			UpdateUniforms(mesh, uniformBuffer, shadowPass, outlinePass, wireframePass,
+				solidWireframeOverlay);
+			[encoder setVertexBuffer:mesh.VertexBuffer offset:0 atIndex:0];
+			[encoder setVertexBuffer:uniformBuffer offset:0 atIndex:1];
+			if (!shadowPass)
+			{
+				[encoder setFragmentBuffer:uniformBuffer offset:0 atIndex:1];
+			}
+			if (!outlinePass)
+			{
+				const MTLTriangleFillMode fillMode = wireframePass && mesh.WireframeIndexBuffer == nil
+					? MTLTriangleFillModeLines : MTLTriangleFillModeFill;
+				[encoder setTriangleFillMode:fillMode];
+			}
+
+			const bool useLineIndices = wireframePass && mesh.WireframeIndexBuffer != nil;
+			const MTLPrimitiveType primitiveType = useLineIndices
+				? MTLPrimitiveTypeLine : mesh.PrimitiveType;
+			const NSUInteger indexCount = useLineIndices
+				? mesh.WireframeIndexCount : mesh.IndexCount;
+			id<MTLBuffer> indexBuffer = useLineIndices
+				? mesh.WireframeIndexBuffer : mesh.IndexBuffer;
+			[encoder drawIndexedPrimitives:primitiveType
+				indexCount:indexCount
+				indexType:MTLIndexTypeUInt32
+				indexBuffer:indexBuffer
+				indexBufferOffset:0];
+		}
+
+		void DrawMesh(id<MTLRenderCommandEncoder> encoder, MetalMesh& mesh,
+			bool shadowPass, bool outlinePass, id<MTLDepthStencilState> depthState)
 		{
 			if (mesh.IndexCount == 0 || mesh.VertexBuffer == nil || mesh.IndexBuffer == nil
 				|| (shadowPass && !mesh.CastShadow))
@@ -1060,23 +1161,28 @@ namespace Riemann
 				return;
 			}
 
-			UpdateUniforms(mesh, shadowPass, outlinePass);
-			[encoder setVertexBuffer:mesh.VertexBuffer offset:0 atIndex:0];
-			[encoder setVertexBuffer:mesh.UniformBuffer offset:0 atIndex:1];
-			if (!shadowPass)
+			const RenderMode renderMode = shadowPass || outlinePass ||
+				mesh.PrimitiveType != MTLPrimitiveTypeTriangle
+				? RenderMode::Solid : ResolveRenderMode(mesh.FillMode);
+			if (renderMode != RenderMode::Wireframe)
 			{
-				[encoder setFragmentBuffer:mesh.UniformBuffer offset:0 atIndex:1];
+				DrawMeshPass(encoder, mesh, shadowPass, outlinePass, false, false);
 			}
-			if (!outlinePass)
+			if (renderMode != RenderMode::Solid)
 			{
-				[encoder setTriangleFillMode:ResolveTriangleFillMode(mesh.FillMode)];
+				if (renderMode == RenderMode::SolidWireframe && WireframeOverlayDepthState != nil)
+				{
+					[encoder setDepthStencilState:WireframeOverlayDepthState];
+					[encoder setDepthBias:-1.0f slopeScale:0.0f clamp:0.0f];
+				}
+				DrawMeshPass(encoder, mesh, shadowPass, outlinePass, true,
+					renderMode == RenderMode::SolidWireframe);
+				if (renderMode == RenderMode::SolidWireframe)
+				{
+					[encoder setDepthBias:0.0f slopeScale:0.0f clamp:0.0f];
+					[encoder setDepthStencilState:depthState];
+				}
 			}
-
-			[encoder drawIndexedPrimitives:mesh.PrimitiveType
-				indexCount:mesh.IndexCount
-				indexType:MTLIndexTypeUInt32
-				indexBuffer:mesh.IndexBuffer
-				indexBufferOffset:0];
 		}
 
 		float ImguiToScreenY(float y) const
@@ -1495,7 +1601,7 @@ namespace Riemann
 					continue;
 				}
 
-				DrawMesh(encoder, mesh, false, true);
+				DrawMesh(encoder, mesh, false, true, OutlineMaskDepthState);
 			}
 
 			[encoder setRenderPipelineState:OutlinePipeline];
@@ -1510,7 +1616,7 @@ namespace Riemann
 					continue;
 				}
 
-				DrawMesh(encoder, mesh, false, true);
+				DrawMesh(encoder, mesh, false, true, OutlineDepthState);
 			}
 		}
 
@@ -1557,7 +1663,7 @@ namespace Riemann
 					[shadowEncoder setTriangleFillMode:ResolveTriangleFillMode(RenderFillMode::RendererDefault)];
 					for (MetalMesh& mesh : Meshes)
 					{
-						DrawMesh(shadowEncoder, mesh, true, false);
+						DrawMesh(shadowEncoder, mesh, true, false, DepthState);
 					}
 				}
 				[shadowEncoder endEncoding];
@@ -1590,7 +1696,7 @@ namespace Riemann
 				{
 					if (mesh.BlendMode == RenderBlendMode::Alpha && mesh.Color.w >= 0.999f)
 					{
-						DrawMesh(mainEncoder, mesh, false, false);
+						DrawMesh(mainEncoder, mesh, false, false, DepthState);
 					}
 				}
 				std::vector<MetalMesh*> transparentMeshes;
@@ -1609,14 +1715,14 @@ namespace Riemann
 				[mainEncoder setDepthStencilState:TransparentDepthState];
 				for (MetalMesh* mesh : transparentMeshes)
 				{
-					DrawMesh(mainEncoder, *mesh, false, false);
+					DrawMesh(mainEncoder, *mesh, false, false, TransparentDepthState);
 				}
 				[mainEncoder setRenderPipelineState:AdditivePipeline];
 				for (MetalMesh& mesh : Meshes)
 				{
 					if (mesh.BlendMode == RenderBlendMode::Additive)
 					{
-						DrawMesh(mainEncoder, mesh, false, false);
+						DrawMesh(mainEncoder, mesh, false, false, TransparentDepthState);
 					}
 				}
 				[mainEncoder setRenderPipelineState:MainPipeline];
@@ -1647,6 +1753,7 @@ namespace Riemann
 		id<MTLRenderPipelineState> ImguiPipeline = nil;
 		id<MTLDepthStencilState> DepthState = nil;
 		id<MTLDepthStencilState> TransparentDepthState = nil;
+		id<MTLDepthStencilState> WireframeOverlayDepthState = nil;
 		id<MTLDepthStencilState> OutlineMaskDepthState = nil;
 		id<MTLDepthStencilState> OutlineDepthState = nil;
 		id<MTLDepthStencilState> ImguiDepthState = nil;
@@ -1662,7 +1769,7 @@ namespace Riemann
 		int Height = 768;
 		int DepthWidth = 0;
 		int DepthHeight = 0;
-		bool Wireframe = false;
+		RenderMode Mode = RenderMode::Solid;
 
 		CameraDesc Camera;
 		DirectionalLightDesc Light;
@@ -1749,9 +1856,9 @@ namespace Riemann
 		return true;
 	}
 
-	void MetalRenderer::SetFillMode(bool wireframe)
+	void MetalRenderer::SetRenderMode(RenderMode mode)
 	{
-		m_Impl->Wireframe = wireframe;
+		m_Impl->Mode = mode;
 	}
 
 	void MetalRenderer::SetDepthMode()

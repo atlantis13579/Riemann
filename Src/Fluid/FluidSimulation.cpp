@@ -111,6 +111,7 @@ namespace Riemann
 		, SmoothingRadius(0.16f)
 		, BoundaryRestitution(0.05f)
 		, BoundaryFriction(0.02f)
+		, OpenTopBoundary(false)
 		, MaxTimeStep(1.0f / 120.0f)
 		, MaxSubsteps(256)
 		, PressureIterations(32)
@@ -139,6 +140,7 @@ namespace Riemann
 
 	FluidSimulation::FluidSimulation()
 		: m_CellSize(Vector3::Zero())
+		, m_ContainerTransform(Transform::Identity())
 		, m_Initialized(false)
 		, m_TimeRemainder(0.0f)
 	{
@@ -146,6 +148,7 @@ namespace Riemann
 
 	FluidSimulation::FluidSimulation(const FluidSimulationSettings& Settings)
 		: m_CellSize(Vector3::Zero())
+		, m_ContainerTransform(Transform::Identity())
 		, m_Initialized(false)
 		, m_TimeRemainder(0.0f)
 	{
@@ -214,6 +217,7 @@ namespace Riemann
 		}
 		m_CellSize = Vector3(Extent.x / (float)Settings.Resolution.x,
 			Extent.y / (float)Settings.Resolution.y, Extent.z / (float)Settings.Resolution.z);
+		m_ContainerTransform = Transform::Identity();
 		m_GridDensity.assign(CellCount, 0.0f);
 		m_GridVelocity.assign(CellCount, Vector3::Zero());
 		m_Pressure.assign(CellCount, 0.0f);
@@ -466,7 +470,29 @@ namespace Riemann
 		ComputeParticleDensities();
 	}
 
+	bool FluidSimulation::SetContainerTransform(const Transform& ContainerTransform)
+	{
+		if (!IsFiniteVector(ContainerTransform.pos)
+			|| !std::isfinite(ContainerTransform.quat.x)
+			|| !std::isfinite(ContainerTransform.quat.y)
+			|| !std::isfinite(ContainerTransform.quat.z)
+			|| !std::isfinite(ContainerTransform.quat.w)
+			|| ContainerTransform.quat.SquareLength() <= 1.0e-12f)
+		{
+			return false;
+		}
+		m_ContainerTransform = Transform(ContainerTransform.pos, ContainerTransform.quat.Unit());
+		return true;
+	}
+
 	bool FluidSimulation::ApplyImpulse(const Vector3& Position, float Radius, const Vector3& Impulse)
+	{
+		return ApplyLocalImpulse(m_ContainerTransform.WorldToLocal(Position), Radius,
+			m_ContainerTransform.WorldToLocalDirection(Impulse));
+	}
+
+	bool FluidSimulation::ApplyLocalImpulse(const Vector3& Position, float Radius,
+		const Vector3& Impulse)
 	{
 		if (!m_Initialized || !IsFiniteVector(Position) || !IsFiniteFloat(Radius)
 			|| !IsFiniteVector(Impulse) || !(Radius > 0.0f))
@@ -708,9 +734,9 @@ namespace Riemann
 		m_TimeRemainder = std::max(0.0f, m_TimeRemainder - SimulatedDuration);
 	}
 
-	float FluidSimulation::SampleGridScalar(const std::vector<float>& Field, const Vector3& Position) const
+	float FluidSimulation::SampleGridScalar(const float* Field, const Vector3& Position) const
 	{
-		if (Field.empty())
+		if (Field == nullptr)
 		{
 			return 0.0f;
 		}
@@ -729,22 +755,25 @@ namespace Riemann
 		const float TY = ClampFloat(GridPosition.y - (float)Y0, 0.0f, 1.0f);
 		const float TZ = ClampFloat(GridPosition.z - (float)Z0, 0.0f, 1.0f);
 
-		const float C00 = Field[(size_t)GridIndex(X0, Y0, Z0)] * (1.0f - TX)
-			+ Field[(size_t)GridIndex(X1, Y0, Z0)] * TX;
-		const float C10 = Field[(size_t)GridIndex(X0, Y1, Z0)] * (1.0f - TX)
-			+ Field[(size_t)GridIndex(X1, Y1, Z0)] * TX;
-		const float C01 = Field[(size_t)GridIndex(X0, Y0, Z1)] * (1.0f - TX)
-			+ Field[(size_t)GridIndex(X1, Y0, Z1)] * TX;
-		const float C11 = Field[(size_t)GridIndex(X0, Y1, Z1)] * (1.0f - TX)
-			+ Field[(size_t)GridIndex(X1, Y1, Z1)] * TX;
+		const int RowStride = m_Settings.Resolution.x;
+		const int SliceStride = RowStride * m_Settings.Resolution.y;
+		const int Index000 = X0 + RowStride * Y0 + SliceStride * Z0;
+		const int Index010 = X0 + RowStride * Y1 + SliceStride * Z0;
+		const int Index001 = X0 + RowStride * Y0 + SliceStride * Z1;
+		const int Index011 = X0 + RowStride * Y1 + SliceStride * Z1;
+		const int DeltaX = X1 - X0;
+		const float C00 = Field[Index000] * (1.0f - TX) + Field[Index000 + DeltaX] * TX;
+		const float C10 = Field[Index010] * (1.0f - TX) + Field[Index010 + DeltaX] * TX;
+		const float C01 = Field[Index001] * (1.0f - TX) + Field[Index001 + DeltaX] * TX;
+		const float C11 = Field[Index011] * (1.0f - TX) + Field[Index011 + DeltaX] * TX;
 		const float C0 = C00 * (1.0f - TY) + C10 * TY;
 		const float C1 = C01 * (1.0f - TY) + C11 * TY;
 		return C0 * (1.0f - TZ) + C1 * TZ;
 	}
 
-	Vector3 FluidSimulation::SampleGridVector(const std::vector<Vector3>& Field, const Vector3& Position) const
+	Vector3 FluidSimulation::SampleGridVector(const Vector3* Field, const Vector3& Position) const
 	{
-		if (Field.empty())
+		if (Field == nullptr)
 		{
 			return Vector3::Zero();
 		}
@@ -753,7 +782,7 @@ namespace Riemann
 			SampleGridVelocityComponent(Field, Position, 2));
 	}
 
-	float FluidSimulation::SampleGridVelocityComponent(const std::vector<Vector3>& Field,
+	float FluidSimulation::SampleGridVelocityComponent(const Vector3* Field,
 		const Vector3& Position, int Component) const
 	{
 		Vector3 GridPosition(
@@ -769,6 +798,8 @@ namespace Riemann
 		const float TX = ClampFloat(GridPosition.x - (float)X0, 0.0f, 1.0f);
 		const float TY = ClampFloat(GridPosition.y - (float)Y0, 0.0f, 1.0f);
 		const float TZ = ClampFloat(GridPosition.z - (float)Z0, 0.0f, 1.0f);
+		const int RowStride = m_Settings.Resolution.x;
+		const int SliceStride = RowStride * m_Settings.Resolution.y;
 		float Values[2][2][2];
 		for (int DZ = 0; DZ <= 1; ++DZ)
 		{
@@ -790,7 +821,7 @@ namespace Riemann
 					X = ClampInt(X, 0, m_Settings.Resolution.x - 1);
 					Y = ClampInt(Y, 0, m_Settings.Resolution.y - 1);
 					Z = ClampInt(Z, 0, m_Settings.Resolution.z - 1);
-					const Vector3& Value = Field[(size_t)GridIndex(X, Y, Z)];
+					const Vector3& Value = Field[X + RowStride * Y + SliceStride * Z];
 					Values[DZ][DY][DX] = Component == 0 ? Value.x : (Component == 1 ? Value.y : Value.z);
 				}
 			}
@@ -812,14 +843,20 @@ namespace Riemann
 		if (Component == 0) ++NeighborX;
 		if (Component == 1) ++NeighborY;
 		if (Component == 2) ++NeighborZ;
+		const float* Density = m_GridDensity.data();
 		const bool LeftActive = IsGridCoordinateValid(X, Y, Z)
-			&& m_GridDensity[(size_t)GridIndex(X, Y, Z)] > ActiveThreshold;
+			&& Density[GridIndex(X, Y, Z)] > ActiveThreshold;
 		const bool RightActive = IsGridCoordinateValid(NeighborX, NeighborY, NeighborZ)
-			&& m_GridDensity[(size_t)GridIndex(NeighborX, NeighborY, NeighborZ)] > ActiveThreshold;
+			&& Density[GridIndex(NeighborX, NeighborY, NeighborZ)] > ActiveThreshold;
 		return LeftActive || RightActive;
 	}
 
 	float FluidSimulation::SampleDensity(const Vector3& Position) const
+	{
+		return SampleLocalDensity(m_ContainerTransform.WorldToLocal(Position));
+	}
+
+	float FluidSimulation::SampleLocalDensity(const Vector3& Position) const
 	{
 		if (!m_Initialized || !IsFiniteVector(Position)
 			|| Position.x < m_Settings.BoundsMin.x || Position.x > m_Settings.BoundsMax.x
@@ -831,7 +868,7 @@ namespace Riemann
 
 		if (m_Settings.Method == FluidSimulationMethod::Eulerian)
 		{
-			return SampleGridScalar(m_GridDensity, Position);
+			return SampleGridScalar(m_GridDensity.data(), Position);
 		}
 
 		const float H = m_Settings.SmoothingRadius;
@@ -852,6 +889,12 @@ namespace Riemann
 
 	Vector3 FluidSimulation::SampleVelocity(const Vector3& Position) const
 	{
+		return m_ContainerTransform.LocalToWorldDirection(SampleLocalVelocity(
+			m_ContainerTransform.WorldToLocal(Position)));
+	}
+
+	Vector3 FluidSimulation::SampleLocalVelocity(const Vector3& Position) const
+	{
 		if (!m_Initialized || !IsFiniteVector(Position)
 			|| Position.x < m_Settings.BoundsMin.x || Position.x > m_Settings.BoundsMax.x
 			|| Position.y < m_Settings.BoundsMin.y || Position.y > m_Settings.BoundsMax.y
@@ -862,7 +905,7 @@ namespace Riemann
 
 		if (m_Settings.Method == FluidSimulationMethod::Eulerian)
 		{
-			return SampleGridVector(m_GridVelocity, Position);
+			return SampleGridVector(m_GridVelocity.data(), Position);
 		}
 
 		const float H = m_Settings.SmoothingRadius;
@@ -989,6 +1032,7 @@ namespace Riemann
 		if (!m_Initialized) return;
 		ProjectEulerian(DeltaTime);
 		EnforceEulerianBoundaries();
+		DrainEulerianOverflow(DeltaTime);
 	}
 
 	void FluidSimulation::AdvectEulerian(float DeltaTime)
@@ -998,24 +1042,31 @@ namespace Riemann
 		AdvectEulerianDensityConservative(DeltaTime, OldDensity, OldVelocity);
 
 		std::vector<Vector3> AdvectedVelocity(m_GridVelocity.size(), Vector3::Zero());
+		const Vector3* OldVelocityData = OldVelocity.data();
+		Vector3* AdvectedVelocityData = AdvectedVelocity.data();
+		const int ResolutionX = m_Settings.Resolution.x;
+		const int ResolutionY = m_Settings.Resolution.y;
+		const int SliceStride = ResolutionX * ResolutionY;
 		for (int Z = 0; Z < m_Settings.Resolution.z; ++Z)
 		{
 			for (int Y = 0; Y < m_Settings.Resolution.y; ++Y)
 			{
+				const int RowOffset = ResolutionX * Y + SliceStride * Z;
 				for (int X = 0; X < m_Settings.Resolution.x; ++X)
 				{
-					Vector3& Value = AdvectedVelocity[(size_t)GridIndex(X, Y, Z)];
+					Vector3& Value = AdvectedVelocityData[RowOffset + X];
 					for (int Component = 0; Component < 3; ++Component)
 					{
 						const Vector3 FaceCenter = GridFaceCenter(X, Y, Z, Component);
-						const Vector3 FaceVelocity = SampleGridVector(OldVelocity, FaceCenter);
-						const Vector3 MidpointVelocity = SampleGridVector(OldVelocity,
+						const Vector3 FaceVelocity = SampleGridVector(OldVelocityData, FaceCenter);
+						const Vector3 MidpointVelocity = SampleGridVector(OldVelocityData,
 							FaceCenter - FaceVelocity * (0.5f * DeltaTime));
 						Vector3 Source = FaceCenter - MidpointVelocity * DeltaTime;
 						Source.x = ClampFloat(Source.x, m_Settings.BoundsMin.x, m_Settings.BoundsMax.x);
 						Source.y = ClampFloat(Source.y, m_Settings.BoundsMin.y, m_Settings.BoundsMax.y);
 						Source.z = ClampFloat(Source.z, m_Settings.BoundsMin.z, m_Settings.BoundsMax.z);
-						const float ComponentValue = SampleGridVelocityComponent(OldVelocity, Source, Component);
+						const float ComponentValue = SampleGridVelocityComponent(
+							OldVelocityData, Source, Component);
 						if (Component == 0) Value.x = ComponentValue;
 						if (Component == 1) Value.y = ComponentValue;
 						if (Component == 2) Value.z = ComponentValue;
@@ -1030,19 +1081,25 @@ namespace Riemann
 		const std::vector<float>& OldDensity, const std::vector<Vector3>& OldVelocity)
 	{
 		m_GridDensity = OldDensity;
+		const float* OldDensityData = OldDensity.data();
+		const Vector3* OldVelocityData = OldVelocity.data();
+		float* DensityData = m_GridDensity.data();
+		const int ResolutionX = m_Settings.Resolution.x;
+		const int ResolutionY = m_Settings.Resolution.y;
+		const int SliceStride = ResolutionX * ResolutionY;
 		auto TransferAcrossFace = [&](int LeftIndex, int RightIndex, float Velocity, float Spacing)
 		{
 			if (Velocity == 0.0f) return;
 			const int SourceIndex = Velocity > 0.0f ? LeftIndex : RightIndex;
 			const int DestinationIndex = Velocity > 0.0f ? RightIndex : LeftIndex;
 			const double Desired = std::fabs((double)Velocity) * (double)DeltaTime
-				* (double)OldDensity[(size_t)SourceIndex] / (double)Spacing;
-			const float Available = std::max(0.0f, m_GridDensity[(size_t)SourceIndex]);
+				* (double)OldDensityData[SourceIndex] / (double)Spacing;
+			const float Available = std::max(0.0f, DensityData[SourceIndex]);
 			const float Capacity = std::max(0.0f,
-				m_Settings.RestDensity - m_GridDensity[(size_t)DestinationIndex]);
+				m_Settings.RestDensity - DensityData[DestinationIndex]);
 			const float Amount = (float)std::min(Desired, (double)std::min(Available, Capacity));
-			m_GridDensity[(size_t)SourceIndex] -= Amount;
-			m_GridDensity[(size_t)DestinationIndex] += Amount;
+			DensityData[SourceIndex] -= Amount;
+			DensityData[DestinationIndex] += Amount;
 		};
 
 		// Downstream cells release capacity before receiving from their upstream neighbor.
@@ -1050,17 +1107,18 @@ namespace Riemann
 		{
 			for (int Y = 0; Y < m_Settings.Resolution.y; ++Y)
 			{
+				const int RowOffset = ResolutionX * Y + SliceStride * Z;
 				for (int X = m_Settings.Resolution.x - 2; X >= 0; --X)
 				{
-					const int Index = GridIndex(X, Y, Z);
-					const float Velocity = OldVelocity[(size_t)Index].x;
-					if (Velocity > 0.0f) TransferAcrossFace(Index, GridIndex(X + 1, Y, Z), Velocity, m_CellSize.x);
+					const int Index = RowOffset + X;
+					const float Velocity = OldVelocityData[Index].x;
+					if (Velocity > 0.0f) TransferAcrossFace(Index, Index + 1, Velocity, m_CellSize.x);
 				}
 				for (int X = 0; X + 1 < m_Settings.Resolution.x; ++X)
 				{
-					const int Index = GridIndex(X, Y, Z);
-					const float Velocity = OldVelocity[(size_t)Index].x;
-					if (Velocity < 0.0f) TransferAcrossFace(Index, GridIndex(X + 1, Y, Z), Velocity, m_CellSize.x);
+					const int Index = RowOffset + X;
+					const float Velocity = OldVelocityData[Index].x;
+					if (Velocity < 0.0f) TransferAcrossFace(Index, Index + 1, Velocity, m_CellSize.x);
 				}
 			}
 		}
@@ -1070,15 +1128,32 @@ namespace Riemann
 			{
 				for (int Y = m_Settings.Resolution.y - 2; Y >= 0; --Y)
 				{
-					const int Index = GridIndex(X, Y, Z);
-					const float Velocity = OldVelocity[(size_t)Index].y;
-					if (Velocity > 0.0f) TransferAcrossFace(Index, GridIndex(X, Y + 1, Z), Velocity, m_CellSize.y);
+					const int Index = X + ResolutionX * Y + SliceStride * Z;
+					const float Velocity = OldVelocityData[Index].y;
+					if (Velocity > 0.0f) TransferAcrossFace(Index, Index + ResolutionX, Velocity, m_CellSize.y);
 				}
 				for (int Y = 0; Y + 1 < m_Settings.Resolution.y; ++Y)
 				{
-					const int Index = GridIndex(X, Y, Z);
-					const float Velocity = OldVelocity[(size_t)Index].y;
-					if (Velocity < 0.0f) TransferAcrossFace(Index, GridIndex(X, Y + 1, Z), Velocity, m_CellSize.y);
+					const int Index = X + ResolutionX * Y + SliceStride * Z;
+					const float Velocity = OldVelocityData[Index].y;
+					if (Velocity < 0.0f) TransferAcrossFace(Index, Index + ResolutionX, Velocity, m_CellSize.y);
+				}
+			}
+		}
+		if (m_Settings.OpenTopBoundary)
+		{
+			const int TopY = ResolutionY - 1;
+			for (int Z = 0; Z < m_Settings.Resolution.z; ++Z)
+			{
+				for (int X = 0; X < ResolutionX; ++X)
+				{
+					const int Index = X + ResolutionX * TopY + SliceStride * Z;
+					const float Velocity = OldVelocityData[Index].y;
+					if (Velocity <= 0.0f) continue;
+					const double Desired = (double)Velocity * (double)DeltaTime
+						* (double)OldDensityData[Index] / (double)m_CellSize.y;
+					const float Available = std::max(0.0f, DensityData[Index]);
+					DensityData[Index] -= (float)std::min(Desired, (double)Available);
 				}
 			}
 		}
@@ -1088,15 +1163,15 @@ namespace Riemann
 			{
 				for (int Z = m_Settings.Resolution.z - 2; Z >= 0; --Z)
 				{
-					const int Index = GridIndex(X, Y, Z);
-					const float Velocity = OldVelocity[(size_t)Index].z;
-					if (Velocity > 0.0f) TransferAcrossFace(Index, GridIndex(X, Y, Z + 1), Velocity, m_CellSize.z);
+					const int Index = X + ResolutionX * Y + SliceStride * Z;
+					const float Velocity = OldVelocityData[Index].z;
+					if (Velocity > 0.0f) TransferAcrossFace(Index, Index + SliceStride, Velocity, m_CellSize.z);
 				}
 				for (int Z = 0; Z + 1 < m_Settings.Resolution.z; ++Z)
 				{
-					const int Index = GridIndex(X, Y, Z);
-					const float Velocity = OldVelocity[(size_t)Index].z;
-					if (Velocity < 0.0f) TransferAcrossFace(Index, GridIndex(X, Y, Z + 1), Velocity, m_CellSize.z);
+					const int Index = X + ResolutionX * Y + SliceStride * Z;
+					const float Velocity = OldVelocityData[Index].z;
+					if (Velocity < 0.0f) TransferAcrossFace(Index, Index + SliceStride, Velocity, m_CellSize.z);
 				}
 			}
 		}
@@ -1105,33 +1180,47 @@ namespace Riemann
 	void FluidSimulation::ApplyEulerianForces(float DeltaTime)
 	{
 		const float ActiveThreshold = m_Settings.RestDensity * 0.001f;
+		const Vector3 LocalGravity = m_ContainerTransform.WorldToLocalDirection(m_Settings.Gravity);
 		const float KinematicViscosity = m_Settings.DynamicViscosity / m_Settings.RestDensity;
 		const std::vector<Vector3> OldVelocity = m_GridVelocity;
 		std::vector<Vector3> NewVelocity = OldVelocity;
+		const Vector3* OldVelocityData = OldVelocity.data();
+		Vector3* NewVelocityData = NewVelocity.data();
+		const float* DensityData = m_GridDensity.data();
+		const int ResolutionX = m_Settings.Resolution.x;
+		const int ResolutionY = m_Settings.Resolution.y;
+		const int SliceStride = ResolutionX * ResolutionY;
 		for (int Z = 0; Z < m_Settings.Resolution.z; ++Z)
 		{
 			for (int Y = 0; Y < m_Settings.Resolution.y; ++Y)
 			{
+				const int RowOffset = ResolutionX * Y + SliceStride * Z;
 				for (int X = 0; X < m_Settings.Resolution.x; ++X)
 				{
-					const int Index = GridIndex(X, Y, Z);
+					const int Index = RowOffset + X;
 					for (int Component = 0; Component < 3; ++Component)
 					{
 						const bool PositiveBoundary = (Component == 0 && X + 1 == m_Settings.Resolution.x)
 							|| (Component == 1 && Y + 1 == m_Settings.Resolution.y)
 							|| (Component == 2 && Z + 1 == m_Settings.Resolution.z);
-						float* NewComponent = Component == 0 ? &NewVelocity[(size_t)Index].x
-							: (Component == 1 ? &NewVelocity[(size_t)Index].y : &NewVelocity[(size_t)Index].z);
-						if (PositiveBoundary || !IsFaceFluid(X, Y, Z, Component, ActiveThreshold))
+						const bool OpenTopFace = m_Settings.OpenTopBoundary && Component == 1
+							&& Y + 1 == m_Settings.Resolution.y;
+						const int NeighborIndex = Index + (Component == 0 ? 1
+							: (Component == 1 ? ResolutionX : SliceStride));
+						float* NewComponent = Component == 0 ? &NewVelocityData[Index].x
+							: (Component == 1 ? &NewVelocityData[Index].y : &NewVelocityData[Index].z);
+						const bool FaceActive = DensityData[Index] > ActiveThreshold
+							|| (!PositiveBoundary && DensityData[NeighborIndex] > ActiveThreshold);
+						if ((PositiveBoundary && !OpenTopFace) || !FaceActive)
 						{
 							*NewComponent = 0.0f;
 							continue;
 						}
 
-						const Vector3& OldValue = OldVelocity[(size_t)Index];
+						const Vector3& OldValue = OldVelocityData[Index];
 						float Velocity = (Component == 0 ? OldValue.x : (Component == 1 ? OldValue.y : OldValue.z))
-							+ (Component == 0 ? m_Settings.Gravity.x
-								: (Component == 1 ? m_Settings.Gravity.y : m_Settings.Gravity.z)) * DeltaTime;
+							+ (Component == 0 ? LocalGravity.x
+								: (Component == 1 ? LocalGravity.y : LocalGravity.z)) * DeltaTime;
 						if (KinematicViscosity > 0.0f)
 						{
 							float Laplacian = 0.0f;
@@ -1147,7 +1236,8 @@ namespace Riemann
 							{
 								const float H = N < 2 ? m_CellSize.x : (N < 4 ? m_CellSize.y : m_CellSize.z);
 								const float InvH2 = 1.0f / (H * H);
-								const Vector3& Neighbor = OldVelocity[(size_t)GridIndex(NX, NY, NZ)];
+								const int NeighborGridIndex = NX + ResolutionX * NY + SliceStride * NZ;
+								const Vector3& Neighbor = OldVelocityData[NeighborGridIndex];
 								const float NeighborValue = Component == 0 ? Neighbor.x
 									: (Component == 1 ? Neighbor.y : Neighbor.z);
 								const float CenterValue = Component == 0 ? OldValue.x
@@ -1158,7 +1248,7 @@ namespace Riemann
 						}
 						const float ViscosityScale = Weight > 0.0f
 							? std::min(DeltaTime * KinematicViscosity, 0.24f / Weight) : 0.0f;
-							Velocity += Laplacian * ViscosityScale;
+						Velocity += Laplacian * ViscosityScale;
 						}
 						*NewComponent = Velocity;
 					}
@@ -1166,9 +1256,10 @@ namespace Riemann
 			}
 		}
 		std::vector<Vector3> Delta(NewVelocity.size());
+		Vector3* DeltaData = Delta.data();
 		for (size_t Index = 0; Index < Delta.size(); ++Index)
-			Delta[Index] = NewVelocity[Index] - OldVelocity[Index];
-		if (!ApplyFluidVelocityDelta(OldVelocity.data(), Delta.data(), Delta.size(),
+			DeltaData[Index] = NewVelocityData[Index] - OldVelocityData[Index];
+		if (!ApplyFluidVelocityDelta(OldVelocityData, DeltaData, Delta.size(),
 			m_GridVelocity.data(), m_Settings.Backend, m_Settings.AllowBackendFallback,
 			&m_BackendResult))
 		{
@@ -1182,70 +1273,111 @@ namespace Riemann
 		const float ActiveThreshold = m_Settings.RestDensity * 0.001f;
 		EnforceEulerianBoundaries();
 		std::fill(m_Pressure.begin(), m_Pressure.end(), 0.0f);
+		const int ResolutionX = m_Settings.Resolution.x;
+		const int ResolutionY = m_Settings.Resolution.y;
+		const int ResolutionZ = m_Settings.Resolution.z;
+		const int SliceStride = ResolutionX * ResolutionY;
+		const float* DensityData = m_GridDensity.data();
+		Vector3* VelocityData = m_GridVelocity.data();
+		float* DivergenceData = m_Divergence.data();
 		for (int Z = 0; Z < m_Settings.Resolution.z; ++Z)
 		{
 			for (int Y = 0; Y < m_Settings.Resolution.y; ++Y)
 			{
+				const int RowOffset = ResolutionX * Y + SliceStride * Z;
 				for (int X = 0; X < m_Settings.Resolution.x; ++X)
 				{
-					const int Index = GridIndex(X, Y, Z);
-					if (m_GridDensity[(size_t)Index] <= ActiveThreshold)
+					const int Index = RowOffset + X;
+					if (DensityData[Index] <= ActiveThreshold)
 					{
-						m_Divergence[(size_t)Index] = 0.0f;
+						DivergenceData[Index] = 0.0f;
 						continue;
 					}
-					const float RightU = m_GridVelocity[(size_t)Index].x;
-					const float LeftU = X > 0 ? m_GridVelocity[(size_t)GridIndex(X - 1, Y, Z)].x : 0.0f;
-					const float TopV = m_GridVelocity[(size_t)Index].y;
-					const float BottomV = Y > 0 ? m_GridVelocity[(size_t)GridIndex(X, Y - 1, Z)].y : 0.0f;
-					const float FrontW = m_GridVelocity[(size_t)Index].z;
-					const float BackW = Z > 0 ? m_GridVelocity[(size_t)GridIndex(X, Y, Z - 1)].z : 0.0f;
-					m_Divergence[(size_t)Index] = (RightU - LeftU) / m_CellSize.x
+					const float RightU = VelocityData[Index].x;
+					const float LeftU = X > 0 ? VelocityData[Index - 1].x : 0.0f;
+					const float TopV = VelocityData[Index].y;
+					const float BottomV = Y > 0 ? VelocityData[Index - ResolutionX].y : 0.0f;
+					const float FrontW = VelocityData[Index].z;
+					const float BackW = Z > 0 ? VelocityData[Index - SliceStride].z : 0.0f;
+					DivergenceData[Index] = (RightU - LeftU) / m_CellSize.x
 						+ (TopV - BottomV) / m_CellSize.y + (FrontW - BackW) / m_CellSize.z;
 				}
 			}
 		}
 
 		std::vector<float> NextPressure(m_Pressure.size(), 0.0f);
+		const float InvCellSizeSquaredX = 1.0f / (m_CellSize.x * m_CellSize.x);
+		const float InvCellSizeSquaredY = 1.0f / (m_CellSize.y * m_CellSize.y);
+		const float InvCellSizeSquaredZ = 1.0f / (m_CellSize.z * m_CellSize.z);
+		const float RightHandSideScale = m_Settings.RestDensity / DeltaTime;
 		for (int Iteration = 0; Iteration < m_Settings.PressureIterations; ++Iteration)
 		{
-			for (int Z = 0; Z < m_Settings.Resolution.z; ++Z)
+			const float* PressureData = m_Pressure.data();
+			float* NextPressureData = NextPressure.data();
+			for (int Z = 0; Z < ResolutionZ; ++Z)
 			{
-				for (int Y = 0; Y < m_Settings.Resolution.y; ++Y)
+				for (int Y = 0; Y < ResolutionY; ++Y)
 				{
-					for (int X = 0; X < m_Settings.Resolution.x; ++X)
+					const int RowOffset = ResolutionX * Y + SliceStride * Z;
+					for (int X = 0; X < ResolutionX; ++X)
 					{
-						const int Index = GridIndex(X, Y, Z);
-						if (m_GridDensity[(size_t)Index] <= ActiveThreshold)
+						const int Index = RowOffset + X;
+						if (DensityData[Index] <= ActiveThreshold)
 						{
-							NextPressure[(size_t)Index] = 0.0f;
+							NextPressureData[Index] = 0.0f;
 							continue;
 						}
 
 						float NeighborSum = 0.0f;
 						float CoefficientSum = 0.0f;
-						const int Offset[6][3] = { { -1, 0, 0 }, { 1, 0, 0 }, { 0, -1, 0 },
-							{ 0, 1, 0 }, { 0, 0, -1 }, { 0, 0, 1 } };
-						for (int N = 0; N < 6; ++N)
+						if (X > 0)
 						{
-							const int NX = X + Offset[N][0];
-							const int NY = Y + Offset[N][1];
-							const int NZ = Z + Offset[N][2];
-							if (!IsGridCoordinateValid(NX, NY, NZ))
-							{
-								continue;
-							}
-							const float H = N < 2 ? m_CellSize.x : (N < 4 ? m_CellSize.y : m_CellSize.z);
-							const float Coefficient = 1.0f / (H * H);
-							const int NeighborIndex = GridIndex(NX, NY, NZ);
-							if (m_GridDensity[(size_t)NeighborIndex] > ActiveThreshold)
-							{
-								NeighborSum += Coefficient * m_Pressure[(size_t)NeighborIndex];
-							}
-							CoefficientSum += Coefficient;
+							const int NeighborIndex = Index - 1;
+							if (DensityData[NeighborIndex] > ActiveThreshold)
+								NeighborSum += InvCellSizeSquaredX * PressureData[NeighborIndex];
+							CoefficientSum += InvCellSizeSquaredX;
 						}
-						const float RightHandSide = m_Settings.RestDensity * m_Divergence[(size_t)Index] / DeltaTime;
-						NextPressure[(size_t)Index] = CoefficientSum > 0.0f
+						if (X + 1 < ResolutionX)
+						{
+							const int NeighborIndex = Index + 1;
+							if (DensityData[NeighborIndex] > ActiveThreshold)
+								NeighborSum += InvCellSizeSquaredX * PressureData[NeighborIndex];
+							CoefficientSum += InvCellSizeSquaredX;
+						}
+						if (Y > 0)
+						{
+							const int NeighborIndex = Index - ResolutionX;
+							if (DensityData[NeighborIndex] > ActiveThreshold)
+								NeighborSum += InvCellSizeSquaredY * PressureData[NeighborIndex];
+							CoefficientSum += InvCellSizeSquaredY;
+						}
+						if (Y + 1 < ResolutionY)
+						{
+							const int NeighborIndex = Index + ResolutionX;
+							if (DensityData[NeighborIndex] > ActiveThreshold)
+								NeighborSum += InvCellSizeSquaredY * PressureData[NeighborIndex];
+							CoefficientSum += InvCellSizeSquaredY;
+						}
+						else if (m_Settings.OpenTopBoundary)
+						{
+							CoefficientSum += InvCellSizeSquaredY;
+						}
+						if (Z > 0)
+						{
+							const int NeighborIndex = Index - SliceStride;
+							if (DensityData[NeighborIndex] > ActiveThreshold)
+								NeighborSum += InvCellSizeSquaredZ * PressureData[NeighborIndex];
+							CoefficientSum += InvCellSizeSquaredZ;
+						}
+						if (Z + 1 < ResolutionZ)
+						{
+							const int NeighborIndex = Index + SliceStride;
+							if (DensityData[NeighborIndex] > ActiveThreshold)
+								NeighborSum += InvCellSizeSquaredZ * PressureData[NeighborIndex];
+							CoefficientSum += InvCellSizeSquaredZ;
+						}
+						const float RightHandSide = RightHandSideScale * DivergenceData[Index];
+						NextPressureData[Index] = CoefficientSum > 0.0f
 							? (NeighborSum - RightHandSide) / CoefficientSum : 0.0f;
 					}
 				}
@@ -1253,49 +1385,57 @@ namespace Riemann
 			m_Pressure.swap(NextPressure);
 		}
 
-		for (int Z = 0; Z < m_Settings.Resolution.z; ++Z)
+		const float* PressureData = m_Pressure.data();
+		const float InverseRestDensity = 1.0f / m_Settings.RestDensity;
+		for (int Z = 0; Z < ResolutionZ; ++Z)
 		{
-			for (int Y = 0; Y < m_Settings.Resolution.y; ++Y)
+			for (int Y = 0; Y < ResolutionY; ++Y)
 			{
-				for (int X = 0; X < m_Settings.Resolution.x; ++X)
+				const int RowOffset = ResolutionX * Y + SliceStride * Z;
+				for (int X = 0; X < ResolutionX; ++X)
 				{
-					const int Index = GridIndex(X, Y, Z);
-					const bool LeftActive = m_GridDensity[(size_t)Index] > ActiveThreshold;
-					Vector3& FaceVelocity = m_GridVelocity[(size_t)Index];
-					if (X + 1 < m_Settings.Resolution.x)
+					const int Index = RowOffset + X;
+					const bool LeftActive = DensityData[Index] > ActiveThreshold;
+					Vector3& FaceVelocity = VelocityData[Index];
+					if (X + 1 < ResolutionX)
 					{
-						const int RightIndex = GridIndex(X + 1, Y, Z);
-						const bool RightActive = m_GridDensity[(size_t)RightIndex] > ActiveThreshold;
+						const int RightIndex = Index + 1;
+						const bool RightActive = DensityData[RightIndex] > ActiveThreshold;
 						if (LeftActive || RightActive)
 						{
-							const float LeftPressure = LeftActive ? m_Pressure[(size_t)Index] : 0.0f;
-							const float RightPressure = RightActive ? m_Pressure[(size_t)RightIndex] : 0.0f;
+							const float LeftPressure = LeftActive ? PressureData[Index] : 0.0f;
+							const float RightPressure = RightActive ? PressureData[RightIndex] : 0.0f;
 							FaceVelocity.x -= DeltaTime * (RightPressure - LeftPressure)
-								/ (m_Settings.RestDensity * m_CellSize.x);
+								* InverseRestDensity / m_CellSize.x;
 						}
 					}
-					if (Y + 1 < m_Settings.Resolution.y)
+					if (Y + 1 < ResolutionY)
 					{
-						const int TopIndex = GridIndex(X, Y + 1, Z);
-						const bool TopActive = m_GridDensity[(size_t)TopIndex] > ActiveThreshold;
+						const int TopIndex = Index + ResolutionX;
+						const bool TopActive = DensityData[TopIndex] > ActiveThreshold;
 						if (LeftActive || TopActive)
 						{
-							const float BottomPressure = LeftActive ? m_Pressure[(size_t)Index] : 0.0f;
-							const float TopPressure = TopActive ? m_Pressure[(size_t)TopIndex] : 0.0f;
+							const float BottomPressure = LeftActive ? PressureData[Index] : 0.0f;
+							const float TopPressure = TopActive ? PressureData[TopIndex] : 0.0f;
 							FaceVelocity.y -= DeltaTime * (TopPressure - BottomPressure)
-								/ (m_Settings.RestDensity * m_CellSize.y);
+								* InverseRestDensity / m_CellSize.y;
 						}
 					}
-					if (Z + 1 < m_Settings.Resolution.z)
+					else if (m_Settings.OpenTopBoundary && LeftActive)
 					{
-						const int FrontIndex = GridIndex(X, Y, Z + 1);
-						const bool FrontActive = m_GridDensity[(size_t)FrontIndex] > ActiveThreshold;
+						FaceVelocity.y += DeltaTime * PressureData[Index]
+							* InverseRestDensity / m_CellSize.y;
+					}
+					if (Z + 1 < ResolutionZ)
+					{
+						const int FrontIndex = Index + SliceStride;
+						const bool FrontActive = DensityData[FrontIndex] > ActiveThreshold;
 						if (LeftActive || FrontActive)
 						{
-							const float BackPressure = LeftActive ? m_Pressure[(size_t)Index] : 0.0f;
-							const float FrontPressure = FrontActive ? m_Pressure[(size_t)FrontIndex] : 0.0f;
+							const float BackPressure = LeftActive ? PressureData[Index] : 0.0f;
+							const float FrontPressure = FrontActive ? PressureData[FrontIndex] : 0.0f;
 							FaceVelocity.z -= DeltaTime * (FrontPressure - BackPressure)
-								/ (m_Settings.RestDensity * m_CellSize.z);
+								* InverseRestDensity / m_CellSize.z;
 						}
 					}
 				}
@@ -1306,16 +1446,101 @@ namespace Riemann
 	void FluidSimulation::EnforceEulerianBoundaries()
 	{
 		const float ActiveThreshold = m_Settings.RestDensity * 0.001f;
+		const int ResolutionX = m_Settings.Resolution.x;
+		const int ResolutionY = m_Settings.Resolution.y;
+		const int ResolutionZ = m_Settings.Resolution.z;
+		const int SliceStride = ResolutionX * ResolutionY;
+		const float* DensityData = m_GridDensity.data();
+		Vector3* VelocityData = m_GridVelocity.data();
+		for (int Z = 0; Z < m_Settings.Resolution.z; ++Z)
+		{
+			for (int Y = 0; Y < m_Settings.Resolution.y; ++Y)
+			{
+				const int RowOffset = ResolutionX * Y + SliceStride * Z;
+				for (int X = 0; X < m_Settings.Resolution.x; ++X)
+				{
+					const int Index = RowOffset + X;
+					const bool LeftActive = DensityData[Index] > ActiveThreshold;
+					Vector3& Velocity = VelocityData[Index];
+					if (X + 1 == ResolutionX || (!LeftActive
+						&& DensityData[Index + 1] <= ActiveThreshold)) Velocity.x = 0.0f;
+					if (Y + 1 == ResolutionY)
+					{
+						if (!m_Settings.OpenTopBoundary || !LeftActive) Velocity.y = 0.0f;
+					}
+					else if (!LeftActive && DensityData[Index + ResolutionX] <= ActiveThreshold)
+					{
+						Velocity.y = 0.0f;
+					}
+					if (Z + 1 == ResolutionZ || (!LeftActive
+						&& DensityData[Index + SliceStride] <= ActiveThreshold)) Velocity.z = 0.0f;
+				}
+			}
+		}
+	}
+
+	bool FluidSimulation::IsAboveOpenTop(const Vector3& LocalPosition) const
+	{
+		if (!m_Settings.OpenTopBoundary || m_Settings.Gravity.SquareLength() <= 1.0e-12f)
+		{
+			return false;
+		}
+		const Vector3 Up = (-m_Settings.Gravity).Unit();
+		float LipHeight = std::numeric_limits<float>::max();
+		for (int Z = 0; Z < 2; ++Z)
+		{
+			for (int X = 0; X < 2; ++X)
+			{
+				const Vector3 RimPoint(X == 0 ? m_Settings.BoundsMin.x : m_Settings.BoundsMax.x,
+					m_Settings.BoundsMax.y,
+					Z == 0 ? m_Settings.BoundsMin.z : m_Settings.BoundsMax.z);
+				LipHeight = std::min(LipHeight,
+					Up.Dot(m_ContainerTransform.LocalToWorld(RimPoint)));
+			}
+		}
+		return Up.Dot(m_ContainerTransform.LocalToWorld(LocalPosition)) > LipHeight;
+	}
+
+	void FluidSimulation::DrainEulerianOverflow(float DeltaTime)
+	{
+		if (!m_Settings.OpenTopBoundary || !(DeltaTime > 0.0f)
+			|| m_Settings.Gravity.SquareLength() <= 1.0e-12f)
+		{
+			return;
+		}
+		const Vector3 Up = (-m_Settings.Gravity).Unit();
+		const float GravityMagnitude = m_Settings.Gravity.Length();
+		float LipHeight = std::numeric_limits<float>::max();
+		for (int Z = 0; Z < 2; ++Z)
+		{
+			for (int X = 0; X < 2; ++X)
+			{
+				const Vector3 RimPoint(X == 0 ? m_Settings.BoundsMin.x : m_Settings.BoundsMax.x,
+					m_Settings.BoundsMax.y,
+					Z == 0 ? m_Settings.BoundsMin.z : m_Settings.BoundsMax.z);
+				LipHeight = std::min(LipHeight,
+					Up.Dot(m_ContainerTransform.LocalToWorld(RimPoint)));
+			}
+		}
+		const float DrainLength = std::max(1.0e-6f,
+			std::min(m_CellSize.x, std::min(m_CellSize.y, m_CellSize.z)));
 		for (int Z = 0; Z < m_Settings.Resolution.z; ++Z)
 		{
 			for (int Y = 0; Y < m_Settings.Resolution.y; ++Y)
 			{
 				for (int X = 0; X < m_Settings.Resolution.x; ++X)
 				{
-					Vector3& Velocity = m_GridVelocity[(size_t)GridIndex(X, Y, Z)];
-					if (X + 1 == m_Settings.Resolution.x || !IsFaceFluid(X, Y, Z, 0, ActiveThreshold)) Velocity.x = 0.0f;
-					if (Y + 1 == m_Settings.Resolution.y || !IsFaceFluid(X, Y, Z, 1, ActiveThreshold)) Velocity.y = 0.0f;
-					if (Z + 1 == m_Settings.Resolution.z || !IsFaceFluid(X, Y, Z, 2, ActiveThreshold)) Velocity.z = 0.0f;
+					const int Index = GridIndex(X, Y, Z);
+					float& Density = m_GridDensity[(size_t)Index];
+					if (Density <= 0.0f) continue;
+					const float Height = Up.Dot(m_ContainerTransform.LocalToWorld(
+						GridCellCenter(X, Y, Z)));
+					const float Head = Height - LipHeight;
+					if (Head <= 0.0f) continue;
+					const float DrainSpeed = std::sqrt(2.0f * GravityMagnitude * Head);
+					const float DrainFraction = ClampFloat(
+						DrainSpeed * DeltaTime / DrainLength, 0.0f, 1.0f);
+					Density *= 1.0f - DrainFraction;
 				}
 			}
 		}
@@ -1405,12 +1630,13 @@ namespace Riemann
 	void FluidSimulation::ComputeParticleAccelerations()
 	{
 		const float H = m_Settings.SmoothingRadius;
+		const Vector3 LocalGravity = m_ContainerTransform.WorldToLocalDirection(m_Settings.Gravity);
 		const float SpikyGradient = -45.0f / (Pi * std::pow(H, 6.0f));
 		const float ViscosityLaplacian = 45.0f / (Pi * std::pow(H, 6.0f));
 		for (size_t ParticleIndex = 0; ParticleIndex < m_Particles.size(); ++ParticleIndex)
 		{
 			FluidParticle& Particle = m_Particles[ParticleIndex];
-			Vector3 Acceleration = m_Settings.Gravity;
+			Vector3 Acceleration = LocalGravity;
 			const int BaseX = (int)std::floor((Particle.Position.x - m_Settings.BoundsMin.x) / H);
 			const int BaseY = (int)std::floor((Particle.Position.y - m_Settings.BoundsMin.y) / H);
 			const int BaseZ = (int)std::floor((Particle.Position.z - m_Settings.BoundsMin.z) / H);
@@ -1445,7 +1671,7 @@ namespace Riemann
 					}
 				}
 			}
-			Particle.Acceleration = IsFiniteVector(Acceleration) ? Acceleration : m_Settings.Gravity;
+			Particle.Acceleration = IsFiniteVector(Acceleration) ? Acceleration : LocalGravity;
 		}
 	}
 
@@ -1473,7 +1699,7 @@ namespace Riemann
 			if (Particle.Velocity.y < 0.0f) Particle.Velocity.y *= -m_Settings.BoundaryRestitution;
 			Particle.Velocity.x *= TangentialScale; Particle.Velocity.z *= TangentialScale;
 		}
-		else if (Particle.Position.y > Max.y)
+		else if (!m_Settings.OpenTopBoundary && Particle.Position.y > Max.y)
 		{
 			Particle.Position.y = Max.y;
 			if (Particle.Velocity.y > 0.0f) Particle.Velocity.y *= -m_Settings.BoundaryRestitution;
@@ -1524,6 +1750,20 @@ namespace Riemann
 			Particle.Position += Particle.Velocity * DeltaTime;
 			EnforceParticleBoundary(Particle);
 		}
+		if (m_Settings.OpenTopBoundary)
+		{
+			m_Particles.erase(std::remove_if(m_Particles.begin(), m_Particles.end(),
+				[this](const FluidParticle& Particle)
+				{
+					return Particle.Position.y > m_Settings.BoundsMax.y
+						|| IsAboveOpenTop(Particle.Position);
+				}), m_Particles.end());
+			if (m_Particles.empty())
+			{
+				m_ParticleBuckets.clear();
+				return;
+			}
+		}
 		ComputeParticleDensities();
 	}
 
@@ -1543,7 +1783,8 @@ namespace Riemann
 					if (Density > Threshold)
 					{
 						m_Particles.push_back(FluidParticle(GridCellCenter(X, Y, Z),
-							SampleGridVector(m_GridVelocity, GridCellCenter(X, Y, Z)), Density * CellVolume));
+							SampleGridVector(m_GridVelocity.data(), GridCellCenter(X, Y, Z)),
+							Density * CellVolume));
 					}
 				}
 			}

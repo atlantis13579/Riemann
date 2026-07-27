@@ -4,6 +4,8 @@
 
 namespace Riemann
 {
+	class ConstraintSolver;
+
 	// A mixed LCP extends the non-negative LCP with per-row lower and upper
 	// bounds. Friction rows may additionally reference a normal row so their
 	// bounds become [-coefficient * normalLambda, coefficient * normalLambda].

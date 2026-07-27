@@ -87,6 +87,7 @@ namespace Riemann
 		float SmoothingRadius = 0.55f;
 		float BoundaryRestitution = 0.1f;
 		float BoundaryFriction = 0.05f;
+		bool OpenTopBoundary = false;
 		float MaxTimeStep = 1.0f / 120.0f;
 		float AcousticCFL = 0.35f;
 		int MaxSubsteps = 32;
@@ -123,7 +124,12 @@ namespace Riemann
 		bool SelectMouseControlGeometry(Geometry* geometry);
 		Vector3 GetMouseControlPosition() const { return m_MouseControlBody ? m_MouseControlBody->X : Vector3::Zero(); }
 		bool SetMouseControlPosition(const Vector3& worldPosition, float deltaTime);
+		bool SetMouseControlPosition(const Vector3& worldPosition, float deltaTime,
+			const Vector3& boundsMin, const Vector3& boundsMax);
+		bool SetMouseControlPosition(const Vector3& worldPosition, float deltaTime,
+			const Vector3& boundsMin, const Vector3& boundsMax, const Transform& boundsTransform);
 		void ReleaseMouseControl();
+		bool RotateTank(const Vector3& center, const Quaternion& deltaRotation);
 		std::vector<ConstraintControlState> GetConstraintControls() const;
 		bool ApplyConstraintControl(const ConstraintControlState& state);
 
@@ -155,6 +161,7 @@ namespace Riemann
 			Vector4 Color = Vector4(0.72f, 0.76f, 0.82f, 1.0f);
 			bool RenderBounds = false;
 			std::unique_ptr<Geometry> IntactGeometry;
+			Transform IntactLocalTransform = Transform::Identity();
 			bool RenderIntactUntilFractured = false;
 			bool LastRenderedIntact = false;
 			uint32_t LastRevision = 0xffffffffu;

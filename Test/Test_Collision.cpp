@@ -3417,7 +3417,6 @@ void TestRagdollSystem()
 	}
 }
 
-
 void TestCollision()
 {
 	TestTriangle();

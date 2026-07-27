@@ -651,7 +651,7 @@ namespace Riemann
 		std::vector<Vector3> new_v;
 		std::vector<int> new_i;
 
-		if (!SimplifyMesh(GetVertexBuffer(), (const void*)GetIndexBuffer(), GetVertexCount(), true, GetTriangleCount(), *cfg, new_v, new_i))
+		if (!SimplifyMesh(GetVertexBuffer(), (const void*)GetIndexBuffer(), GetVertexCount(), GetTriangleCount(), false, *cfg, new_v, new_i))
 		{
 			return false;
 		}

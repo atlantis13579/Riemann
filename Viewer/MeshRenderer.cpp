@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "../Src/Collision/GeometryObject.h"
@@ -31,6 +32,50 @@ namespace Riemann
 			for (uint16_t index : src)
 			{
 				dst->push_back(static_cast<uint32_t>(index));
+			}
+		}
+
+		void BuildTriangleWireframeIndices(const std::vector<uint32_t>& triangleIndices,
+			std::vector<uint32_t>* wireframeIndices)
+		{
+			if (wireframeIndices == nullptr)
+			{
+				return;
+			}
+
+			wireframeIndices->clear();
+			if (triangleIndices.size() % 3 != 0)
+			{
+				return;
+			}
+
+			std::unordered_set<uint64_t> uniqueEdges;
+			uniqueEdges.reserve(triangleIndices.size());
+			auto appendEdge = [&uniqueEdges, wireframeIndices](uint32_t first, uint32_t second)
+			{
+				if (first == second)
+				{
+					return;
+				}
+
+				const uint32_t minimum = std::min(first, second);
+				const uint32_t maximum = std::max(first, second);
+				const uint64_t edgeKey = (static_cast<uint64_t>(minimum) << 32) | maximum;
+				if (uniqueEdges.insert(edgeKey).second)
+				{
+					wireframeIndices->push_back(first);
+					wireframeIndices->push_back(second);
+				}
+			};
+
+			for (size_t index = 0; index < triangleIndices.size(); index += 3)
+			{
+				const uint32_t first = triangleIndices[index];
+				const uint32_t second = triangleIndices[index + 1];
+				const uint32_t third = triangleIndices[index + 2];
+				appendEdge(first, second);
+				appendEdge(second, third);
+				appendEdge(third, first);
 			}
 		}
 
@@ -88,7 +133,10 @@ namespace Riemann
 
 			std::vector<uint32_t> indices;
 			AppendIndices(indices16, &indices);
-			meshes->push_back(MakeMeshDesc(id, GetGeometryWorldTransform(geometry), vertices, indices, color, RenderPrimitiveTopology::Triangles, true));
+			RenderMeshDesc mesh = MakeMeshDesc(id, GetGeometryWorldTransform(geometry), vertices, indices,
+				color, RenderPrimitiveTopology::Triangles, true);
+			BuildTriangleWireframeIndices(indices, &mesh.WireframeIndices);
+			meshes->push_back(std::move(mesh));
 		}
 
 		template <class TShape>
@@ -115,7 +163,47 @@ namespace Riemann
 
 			std::vector<uint32_t> indices;
 			AppendIndices(indices16, &indices);
-			meshes->push_back(MakeMeshDesc(id, GetGeometryWorldTransform(geometry), vertices, indices, color, RenderPrimitiveTopology::Triangles, true));
+			RenderMeshDesc mesh = MakeMeshDesc(id, GetGeometryWorldTransform(geometry), vertices, indices,
+				color, RenderPrimitiveTopology::Triangles, true);
+			BuildTriangleWireframeIndices(indices, &mesh.WireframeIndices);
+			meshes->push_back(std::move(mesh));
+		}
+
+		void BuildBoxMesh(Geometry* geometry, const std::string& id, const Vector4& color,
+			std::vector<RenderMeshDesc>* meshes)
+		{
+			AxisAlignedBox3* shape = geometry->GetShapeObj<AxisAlignedBox3>();
+			if (shape == nullptr)
+			{
+				return;
+			}
+
+			BuildGeometryMeshImpl<AxisAlignedBox3>(geometry, id, color, meshes);
+			RenderMeshDesc& mesh = meshes->back();
+			std::vector<Vector3> wirePositions;
+			std::vector<uint16_t> wireIndices;
+			shape->GetWireframe(wirePositions, wireIndices);
+			mesh.WireframeIndices.clear();
+			mesh.WireframeIndices.reserve(wireIndices.size());
+			for (uint16_t wireIndex : wireIndices)
+			{
+				const Vector3& wirePosition = wirePositions[wireIndex];
+				uint32_t meshIndex = static_cast<uint32_t>(mesh.Vertices.size());
+				for (uint32_t index = 0; index < mesh.Vertices.size(); ++index)
+				{
+					if ((mesh.Vertices[index].Pos - wirePosition).SquareLength() <= 1.0e-12f)
+					{
+						meshIndex = index;
+						break;
+					}
+				}
+				if (meshIndex == mesh.Vertices.size())
+				{
+					mesh.WireframeIndices.clear();
+					return;
+				}
+				mesh.WireframeIndices.push_back(meshIndex);
+			}
 		}
 
 		void AppendAabbWireMesh(const AxisAlignedBox3& aabb, const Transform& transform, const std::string& id, const Vector4& color, std::vector<RenderMeshDesc>* meshes)
@@ -264,7 +352,10 @@ namespace Riemann
 
 		std::vector<uint32_t> indices;
 		AppendStaticMeshIndices(mesh, &indices);
-		meshes->push_back(MakeMeshDesc(id, transform, vertices, indices, color, RenderPrimitiveTopology::Triangles, true));
+		RenderMeshDesc renderMesh = MakeMeshDesc(id, transform, vertices, indices, color,
+			RenderPrimitiveTopology::Triangles, true);
+		BuildTriangleWireframeIndices(indices, &renderMesh.WireframeIndices);
+		meshes->push_back(std::move(renderMesh));
 
 		if (renderBounds)
 		{
@@ -457,7 +548,7 @@ namespace Riemann
 		}
 		else if (geometry->GetShapeType() == PrimitiveType::BOX)
 		{
-			BuildGeometryMeshImpl<AxisAlignedBox3>(geometry, id, color, meshes);
+			BuildBoxMesh(geometry, id, color, meshes);
 		}
 		else if (geometry->GetShapeType() == PrimitiveType::PLANE)
 		{

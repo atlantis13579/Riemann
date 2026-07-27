@@ -113,8 +113,10 @@ namespace
 		void Release()
 		{
 			SafeRelease(pConstantBuffer);
+			SafeRelease(pWireframeConstantBuffer);
 			SafeRelease(pVertexBuffer);
 			SafeRelease(pIndexBuffer);
+			SafeRelease(pWireframeIndexBuffer);
 		}
 
 		void MoveFrom(DX11StaticMesh& rhs)
@@ -122,11 +124,14 @@ namespace
 			Id = std::move(rhs.Id);
 			pVertexBuffer = rhs.pVertexBuffer;
 			pIndexBuffer = rhs.pIndexBuffer;
+			pWireframeIndexBuffer = rhs.pWireframeIndexBuffer;
 			pConstantBuffer = rhs.pConstantBuffer;
+			pWireframeConstantBuffer = rhs.pWireframeConstantBuffer;
 			WorldTransform = rhs.WorldTransform;
 			Color = rhs.Color;
 			VertexCount = rhs.VertexCount;
 			IndexCount = rhs.IndexCount;
+			WireframeIndexCount = rhs.WireframeIndexCount;
 			VertexCapacity = rhs.VertexCapacity;
 			IndexCapacity = rhs.IndexCapacity;
 			IndexFormat = rhs.IndexFormat;
@@ -141,9 +146,12 @@ namespace
 
 			rhs.pVertexBuffer = nullptr;
 			rhs.pIndexBuffer = nullptr;
+			rhs.pWireframeIndexBuffer = nullptr;
 			rhs.pConstantBuffer = nullptr;
+			rhs.pWireframeConstantBuffer = nullptr;
 			rhs.VertexCount = 0;
 			rhs.IndexCount = 0;
+			rhs.WireframeIndexCount = 0;
 			rhs.VertexCapacity = 0;
 			rhs.IndexCapacity = 0;
 		}
@@ -151,11 +159,14 @@ namespace
 		std::string Id;
 		ID3D11Buffer* pVertexBuffer = nullptr;
 		ID3D11Buffer* pIndexBuffer = nullptr;
+		ID3D11Buffer* pWireframeIndexBuffer = nullptr;
 		ID3D11Buffer* pConstantBuffer = nullptr;
+		ID3D11Buffer* pWireframeConstantBuffer = nullptr;
 		Transform WorldTransform;
 		Vector4 Color = Vector4(0.72f, 0.76f, 0.82f, 1.0f);
 		int VertexCount = 0;
 		int IndexCount = 0;
+		int WireframeIndexCount = 0;
 		int VertexCapacity = 0;
 		int IndexCapacity = 0;
 		DXGI_FORMAT IndexFormat = DXGI_FORMAT_R32_UINT;
@@ -192,6 +203,7 @@ public:
 		SafeRelease(m_pAdditiveBlendState);
 		SafeRelease(m_pTransparentBlendState);
 		SafeRelease(m_pTransparentDepthStencilState);
+		SafeRelease(m_pWireframeOverlayDepthStencilState);
 		SafeRelease(m_pColorWriteOffBlendState);
 		SafeRelease(m_pOutlineMaskDepthStencilState);
 		SafeRelease(m_pOutlineDepthStencilState);
@@ -364,7 +376,7 @@ public:
 		{
 			return hr;
 		}
-		SetFillMode(false);
+		SetRenderMode(Riemann::RenderMode::Solid);
 		SetDepthMode();
 		hr = CreateOutlineStates();
 		if (FAILED(hr))
@@ -405,8 +417,10 @@ public:
 	void SetCamera(const Riemann::CameraDesc& camera) override
 	{
 		m_Camera = camera;
-		const float nearPlane = camera.NearPlane > 0.05f ? camera.NearPlane : 0.05f;
-		const float farPlane = camera.FarPlane > nearPlane + 1.0f ? camera.FarPlane : nearPlane + 1.0f;
+		const float nearPlane = camera.NearPlane > 1.0e-4f ? camera.NearPlane : 1.0e-4f;
+		const float minimumDepthRange = std::max(nearPlane * 0.01f, 1.0e-4f);
+		const float farPlane = camera.FarPlane > nearPlane + minimumDepthRange
+			? camera.FarPlane : nearPlane + minimumDepthRange;
 		m_Camera.NearPlane = nearPlane;
 		m_Camera.FarPlane = farPlane;
 		m_Eye = camera.Eye;
@@ -444,12 +458,18 @@ public:
 
 		if (meshDesc.Vertices.size() > (size_t)std::numeric_limits<int>::max()
 			|| meshDesc.Indices.size() > (size_t)std::numeric_limits<int>::max()
+			|| meshDesc.WireframeIndices.size() > (size_t)std::numeric_limits<int>::max()
 			|| meshDesc.Vertices.size() > (size_t)std::numeric_limits<UINT>::max() / sizeof(Vertex1)
-			|| meshDesc.Indices.size() > (size_t)std::numeric_limits<UINT>::max() / sizeof(uint32_t))
+			|| meshDesc.Indices.size() > (size_t)std::numeric_limits<UINT>::max() / sizeof(uint32_t)
+			|| meshDesc.WireframeIndices.size() > (size_t)std::numeric_limits<UINT>::max() / sizeof(uint32_t))
 		{
 			return false;
 		}
 		for (uint32_t index : meshDesc.Indices)
+		{
+			if (index >= meshDesc.Vertices.size()) return false;
+		}
+		for (uint32_t index : meshDesc.WireframeIndices)
 		{
 			if (index >= meshDesc.Vertices.size()) return false;
 		}
@@ -460,6 +480,10 @@ public:
 		{
 			return false;
 		}
+		if (meshDesc.WireframeIndices.size() % 2 != 0)
+		{
+			return false;
+		}
 
 		DX11StaticMesh mesh;
 		mesh.Id = meshDesc.Id;
@@ -467,6 +491,7 @@ public:
 		mesh.Color = meshDesc.Color;
 		mesh.VertexCount = static_cast<int>(meshDesc.Vertices.size());
 		mesh.IndexCount = static_cast<int>(meshDesc.Indices.size());
+		mesh.WireframeIndexCount = static_cast<int>(meshDesc.WireframeIndices.size());
 		mesh.VertexCapacity = mesh.VertexCount;
 		mesh.IndexCapacity = mesh.IndexCount;
 		mesh.IndexFormat = DXGI_FORMAT_R32_UINT;
@@ -499,6 +524,18 @@ public:
 			initData.pSysMem = meshDesc.Indices.data();
 			hr = m_pd3dDevice->CreateBuffer(&bd, &initData, &mesh.pIndexBuffer);
 			if (FAILED(hr)) return false;
+
+			if (!meshDesc.WireframeIndices.empty())
+			{
+				bd = {};
+				bd.Usage = D3D11_USAGE_DEFAULT;
+				bd.ByteWidth = static_cast<UINT>(sizeof(uint32_t) * meshDesc.WireframeIndices.size());
+				bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+				initData = {};
+				initData.pSysMem = meshDesc.WireframeIndices.data();
+				hr = m_pd3dDevice->CreateBuffer(&bd, &initData, &mesh.pWireframeIndexBuffer);
+				if (FAILED(hr)) return false;
+			}
 		}
 
 		bd = {};
@@ -506,6 +543,11 @@ public:
 		bd.ByteWidth = sizeof(ConstantBuffer);
 		bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &mesh.pConstantBuffer);
+		if (FAILED(hr))
+		{
+			return false;
+		}
+		hr = m_pd3dDevice->CreateBuffer(&bd, nullptr, &mesh.pWireframeConstantBuffer);
 		if (FAILED(hr))
 		{
 			return false;
@@ -581,6 +623,8 @@ public:
 		if (target == nullptr) return false;
 		if (vertexCount == 0)
 		{
+			SafeRelease(target->pWireframeIndexBuffer);
+			target->WireframeIndexCount = 0;
 			target->VertexCount = 0;
 			target->IndexCount = 0;
 			return true;
@@ -594,7 +638,6 @@ public:
 		{
 			if (indices[index] >= (uint32_t)vertexCount) return false;
 		}
-
 		auto GrownCapacity = [](int Current, int Required) -> int
 		{
 			if (Current <= 0) return Required;
@@ -660,6 +703,8 @@ public:
 			SafeRelease(target->pIndexBuffer); target->pIndexBuffer = newIndexBuffer;
 			target->IndexCapacity = indexCapacity;
 		}
+		SafeRelease(target->pWireframeIndexBuffer);
+		target->WireframeIndexCount = 0;
 		target->VertexCount = vertexCount;
 		target->IndexCount = indexCount;
 		return true;
@@ -709,9 +754,9 @@ public:
 		return true;
 	}
 
-	void SetFillMode(bool wireframe) override
+	void SetRenderMode(Riemann::RenderMode mode) override
 	{
-		m_DefaultWireframe = wireframe;
+		m_RenderMode = mode;
 		if (m_pImmediateContext)
 		{
 			m_pImmediateContext->RSSetState(GetRasterizerState(Riemann::RenderFillMode::RendererDefault));
@@ -724,6 +769,7 @@ public:
 		SafeRelease(m_pOutlineMaskDepthStencilState);
 		SafeRelease(m_pOutlineDepthStencilState);
 		SafeRelease(m_pTransparentDepthStencilState);
+		SafeRelease(m_pWireframeOverlayDepthStencilState);
 		SafeRelease(m_pAdditiveBlendState);
 		SafeRelease(m_pTransparentBlendState);
 		SafeRelease(m_pColorWriteOffBlendState);
@@ -742,6 +788,10 @@ public:
 		D3D11_DEPTH_STENCIL_DESC transparentDepthDesc = desc;
 		transparentDepthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 		(void)m_pd3dDevice->CreateDepthStencilState(&transparentDepthDesc, &m_pTransparentDepthStencilState);
+
+		D3D11_DEPTH_STENCIL_DESC wireframeOverlayDepthDesc = transparentDepthDesc;
+		wireframeOverlayDepthDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+		(void)m_pd3dDevice->CreateDepthStencilState(&wireframeOverlayDepthDesc, &m_pWireframeOverlayDepthStencilState);
 
 		D3D11_BLEND_DESC transparentBlendDesc = {};
 		transparentBlendDesc.RenderTarget[0].BlendEnable = TRUE;
@@ -912,7 +962,6 @@ private:
 		desc.CullMode = D3D11_CULL_NONE;
 		desc.DepthClipEnable = TRUE;
 		desc.MultisampleEnable = FALSE;
-		desc.AntialiasedLineEnable = FALSE;
 
 		desc.FillMode = D3D11_FILL_SOLID;
 		HRESULT hr = m_pd3dDevice->CreateRasterizerState(&desc, &m_pSolidRasterizerState);
@@ -922,6 +971,8 @@ private:
 		}
 
 		desc.FillMode = D3D11_FILL_WIREFRAME;
+		desc.DepthBias = -1;
+		desc.AntialiasedLineEnable = TRUE;
 		return m_pd3dDevice->CreateRasterizerState(&desc, &m_pWireframeRasterizerState);
 	}
 
@@ -932,18 +983,29 @@ private:
 
 	bool IsWireframeFillMode(Riemann::RenderFillMode fillMode) const
 	{
-		return fillMode == Riemann::RenderFillMode::Wireframe ||
-			(fillMode == Riemann::RenderFillMode::RendererDefault && m_DefaultWireframe);
+		return ResolveRenderMode(fillMode) == Riemann::RenderMode::Wireframe;
 	}
 
-	bool ShouldRenderUnlit(const DX11StaticMesh& mesh, bool shadowPass, bool outlinePass) const
+	Riemann::RenderMode ResolveRenderMode(Riemann::RenderFillMode fillMode) const
+	{
+		if (fillMode == Riemann::RenderFillMode::Solid) return Riemann::RenderMode::Solid;
+		if (fillMode == Riemann::RenderFillMode::Wireframe) return Riemann::RenderMode::Wireframe;
+		return m_RenderMode;
+	}
+
+	bool ShouldRenderUnlit(const DX11StaticMesh& mesh, bool shadowPass, bool outlinePass,
+		bool wireframePass) const
 	{
 		if (shadowPass || outlinePass)
 		{
 			return false;
 		}
-		return mesh.Unlit || mesh.Topology == D3D11_PRIMITIVE_TOPOLOGY_LINELIST ||
-			(mesh.Topology == D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST && IsWireframeFillMode(mesh.FillMode));
+		return mesh.Unlit || wireframePass || mesh.Topology == D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+	}
+
+	Vector4 GetWireframeOverlayColor(const Vector4& color) const
+	{
+		return Vector4(0.12f, 0.12f, 0.12f, color.w);
 	}
 
 	HRESULT CreateOutlineStates()
@@ -1247,7 +1309,7 @@ private:
 				continue;
 			}
 
-			DrawMesh(mesh, false, true);
+			DrawMesh(mesh, false, true, m_pOutlineMaskDepthStencilState);
 		}
 
 		m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
@@ -1263,7 +1325,7 @@ private:
 				continue;
 			}
 
-			DrawMesh(mesh, false, true);
+			DrawMesh(mesh, false, true, m_pOutlineDepthStencilState);
 		}
 
 		m_pImmediateContext->OMSetDepthStencilState(m_pDepthStencilState, 0);
@@ -1312,7 +1374,7 @@ private:
 			{
 				if (mesh.BlendMode == Riemann::RenderBlendMode::Alpha && mesh.Color.w >= 0.999f)
 				{
-					DrawMesh(mesh, false, false);
+					DrawMesh(mesh, false, false, m_pDepthStencilState);
 				}
 			}
 
@@ -1334,7 +1396,7 @@ private:
 			m_pImmediateContext->OMSetDepthStencilState(m_pTransparentDepthStencilState, 0);
 			for (DX11StaticMesh* mesh : transparentMeshes)
 			{
-				DrawMesh(*mesh, false, false);
+				DrawMesh(*mesh, false, false, m_pTransparentDepthStencilState);
 			}
 
 			m_pImmediateContext->OMSetBlendState(m_pAdditiveBlendState, blendFactor, 0xffffffffu);
@@ -1342,7 +1404,7 @@ private:
 			{
 				if (mesh.BlendMode == Riemann::RenderBlendMode::Additive)
 				{
-					DrawMesh(mesh, false, false);
+					DrawMesh(mesh, false, false, m_pTransparentDepthStencilState);
 				}
 			}
 			m_pImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffffu);
@@ -1357,16 +1419,13 @@ private:
 				continue;
 			}
 
-			DrawMesh(mesh, shadowPass, false);
+			DrawMesh(mesh, shadowPass, false, m_pDepthStencilState);
 		}
 	}
 
-	void DrawMesh(DX11StaticMesh& mesh, bool shadowPass, bool outlinePass)
+	void DrawMeshPass(DX11StaticMesh& mesh, bool shadowPass, bool outlinePass,
+		bool wireframePass, bool solidWireframeOverlay)
 	{
-		if (mesh.IndexCount == 0 || mesh.pVertexBuffer == nullptr || mesh.pIndexBuffer == nullptr)
-		{
-			return;
-		}
 		ConstantBuffer cb = {};
 		cb.World = GetTransformMatrix(mesh.WorldTransform);
 		cb.View = m_View;
@@ -1376,27 +1435,66 @@ private:
 		cb.EyePos = Vector4(m_Eye.x, m_Eye.y, m_Eye.z, 1.0f);
 		cb.LightDir = Vector4(m_Light.Direction.x, m_Light.Direction.y, m_Light.Direction.z, m_Light.Ambient);
 		cb.LightColor = Vector4(m_Light.Color.x, m_Light.Color.y, m_Light.Color.z, 1.0f);
-		cb.MaterialColor = mesh.Color;
+		cb.MaterialColor = solidWireframeOverlay ? GetWireframeOverlayColor(mesh.Color) : mesh.Color;
 		cb.OutlineColor = mesh.OutlineColor;
-		cb.RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f, ShouldRenderUnlit(mesh, shadowPass, outlinePass) ? 1.0f : 0.0f, 0.0f, 0.0f);
+		cb.RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f,
+			ShouldRenderUnlit(mesh, shadowPass, outlinePass, wireframePass) ? 1.0f : 0.0f,
+			0.0f, 0.0f);
 
-		m_pImmediateContext->UpdateSubresource(mesh.pConstantBuffer, 0, nullptr, &cb, 0, 0);
-		m_pImmediateContext->VSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
+		ID3D11Buffer* constantBuffer = wireframePass
+			? mesh.pWireframeConstantBuffer : mesh.pConstantBuffer;
+		m_pImmediateContext->UpdateSubresource(constantBuffer, 0, nullptr, &cb, 0, 0);
+		m_pImmediateContext->VSSetConstantBuffers(0, 1, &constantBuffer);
 		if (!shadowPass)
 		{
-			m_pImmediateContext->PSSetConstantBuffers(0, 1, &mesh.pConstantBuffer);
+			m_pImmediateContext->PSSetConstantBuffers(0, 1, &constantBuffer);
 		}
 		if (!outlinePass)
 		{
-			m_pImmediateContext->RSSetState(GetRasterizerState(mesh.FillMode));
+			m_pImmediateContext->RSSetState(GetRasterizerState(wireframePass
+				? Riemann::RenderFillMode::Wireframe : Riemann::RenderFillMode::Solid));
 		}
 
 		UINT stride = sizeof(Vertex1);
 		UINT offset = 0;
 		m_pImmediateContext->IASetVertexBuffers(0, 1, &mesh.pVertexBuffer, &stride, &offset);
-		m_pImmediateContext->IASetIndexBuffer(mesh.pIndexBuffer, mesh.IndexFormat, 0);
-		m_pImmediateContext->IASetPrimitiveTopology(mesh.Topology);
-		m_pImmediateContext->DrawIndexed(mesh.IndexCount, 0, 0);
+		const bool useLineIndices = wireframePass && mesh.pWireframeIndexBuffer != nullptr;
+		m_pImmediateContext->IASetIndexBuffer(useLineIndices ? mesh.pWireframeIndexBuffer : mesh.pIndexBuffer,
+			mesh.IndexFormat, 0);
+		m_pImmediateContext->IASetPrimitiveTopology(useLineIndices
+			? D3D11_PRIMITIVE_TOPOLOGY_LINELIST : mesh.Topology);
+		m_pImmediateContext->DrawIndexed(useLineIndices ? mesh.WireframeIndexCount : mesh.IndexCount, 0, 0);
+	}
+
+	void DrawMesh(DX11StaticMesh& mesh, bool shadowPass, bool outlinePass,
+		ID3D11DepthStencilState* depthStencilState)
+	{
+		if (mesh.IndexCount == 0 || mesh.pVertexBuffer == nullptr || mesh.pIndexBuffer == nullptr)
+		{
+			return;
+		}
+
+		const Riemann::RenderMode renderMode = shadowPass || outlinePass ||
+			mesh.Topology != D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST
+			? Riemann::RenderMode::Solid : ResolveRenderMode(mesh.FillMode);
+		if (renderMode != Riemann::RenderMode::Wireframe)
+		{
+			DrawMeshPass(mesh, shadowPass, outlinePass, false, false);
+		}
+		if (renderMode != Riemann::RenderMode::Solid)
+		{
+			if (renderMode == Riemann::RenderMode::SolidWireframe &&
+				m_pWireframeOverlayDepthStencilState != nullptr)
+			{
+				m_pImmediateContext->OMSetDepthStencilState(m_pWireframeOverlayDepthStencilState, 0);
+			}
+			DrawMeshPass(mesh, shadowPass, outlinePass, true,
+				renderMode == Riemann::RenderMode::SolidWireframe);
+			if (renderMode == Riemann::RenderMode::SolidWireframe)
+			{
+				m_pImmediateContext->OMSetDepthStencilState(depthStencilState, 0);
+			}
+		}
 	}
 
 private:
@@ -1422,6 +1520,7 @@ private:
 	ID3D11RasterizerState* m_pOutlineRasterizerState = nullptr;
 	ID3D11DepthStencilState* m_pDepthStencilState = nullptr;
 	ID3D11DepthStencilState* m_pTransparentDepthStencilState = nullptr;
+	ID3D11DepthStencilState* m_pWireframeOverlayDepthStencilState = nullptr;
 	ID3D11DepthStencilState* m_pOutlineMaskDepthStencilState = nullptr;
 	ID3D11DepthStencilState* m_pOutlineDepthStencilState = nullptr;
 	ID3D11BlendState* m_pColorWriteOffBlendState = nullptr;
@@ -1454,7 +1553,7 @@ private:
 	void* m_ImguiUserData = nullptr;
 	int m_ImguiScroll = 0;
 	bool m_ImguiReady = false;
-	bool m_DefaultWireframe = false;
+	Riemann::RenderMode m_RenderMode = Riemann::RenderMode::Solid;
 };
 
 namespace Riemann

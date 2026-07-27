@@ -557,6 +557,451 @@ namespace Riemann
 				&& ExpectedVectorOffset == VectorElementCount;
 		}
 
+		__device__ __forceinline__ float WarpReduceSum(float Value)
+		{
+			const unsigned int Mask = 0xffffffffu;
+			for (int Offset = 16; Offset > 0; Offset >>= 1)
+			{
+				Value += __shfl_down_sync(Mask, Value, Offset);
+			}
+			return Value;
+		}
+
+		__device__ float CalculateBatchedProjectedResidualCUDA(
+			const float* Matrix, const float* Bias, const float* Lower,
+			const float* Upper, const int* FrictionNormal,
+			const float* FrictionCoefficient, int Dimension,
+			const float* Lambda, int Lane)
+		{
+			const unsigned int Mask = 0xffffffffu;
+			float Residual = 0.0f;
+			for (int Row = 0; Row < Dimension; ++Row)
+			{
+				const float* MatrixRow = Matrix + static_cast<size_t>(Row) * Dimension;
+				float Dot = 0.0f;
+				for (int Column = Lane; Column < Dimension; Column += 32)
+				{
+					Dot += MatrixRow[Column] * Lambda[Column];
+				}
+				Dot = WarpReduceSum(Dot);
+				if (Lane == 0)
+				{
+					const float W = Bias[Row] + Dot;
+					const float LowerBound = GetLowerBoundCUDA(Lower, FrictionNormal,
+						FrictionCoefficient, Lambda, Row);
+					const float UpperBound = GetUpperBoundCUDA(Upper, FrictionNormal,
+						FrictionCoefficient, Lambda, Row);
+					const float Projected = fmaxf(LowerBound, fminf(UpperBound,
+						Lambda[Row] - W / MatrixRow[Row]));
+					Residual = fmaxf(Residual, fabsf(Projected - Lambda[Row]));
+				}
+				__syncwarp(Mask);
+			}
+			return __shfl_sync(Mask, Residual, 0);
+		}
+
+		// Islands are independent blocks in the global LCP. Each warp owns one
+		// island, keeps the PGS row order strictly serial, and only parallelizes
+		// the dense dot product inside the current row.
+		__global__ void SolveProjectedGaussSeidelBatchedKernel(
+			const float* Matrices, const float* Bias, const float* Lower,
+			const float* Upper, const float* FrictionCoefficient,
+			const float* InitialLambda, const int* FrictionNormal,
+			const int* MatrixOffsets, const int* VectorOffsets,
+			const int* Dimensions, int IslandCount, float* Lambda,
+			int MaxIterations, float Tolerance, float Relaxation,
+			CUDASolverResult* Results)
+		{
+			const int Lane = static_cast<int>(threadIdx.x) & 31;
+			const int WarpInBlock = static_cast<int>(threadIdx.x) >> 5;
+			const int WarpsPerBlock = static_cast<int>(blockDim.x) >> 5;
+			const int Island = static_cast<int>(blockIdx.x) * WarpsPerBlock + WarpInBlock;
+			if (Island >= IslandCount)
+			{
+				return;
+			}
+
+			const unsigned int Mask = 0xffffffffu;
+			const int Dimension = Dimensions[Island];
+			const int MatrixOffset = MatrixOffsets[Island];
+			const int VectorOffset = VectorOffsets[Island];
+			const float* Matrix = Matrices + MatrixOffset;
+			const float* IslandBias = Bias + VectorOffset;
+			const float* IslandLower = Lower + VectorOffset;
+			const float* IslandUpper = Upper + VectorOffset;
+			const float* IslandFrictionCoefficient = FrictionCoefficient + VectorOffset;
+			const int* IslandFrictionNormal = FrictionNormal + VectorOffset;
+			float* IslandLambda = Lambda + VectorOffset;
+
+			for (int Row = Lane; Row < Dimension; Row += 32)
+			{
+				IslandLambda[Row] = InitialLambda[VectorOffset + Row];
+			}
+			__syncwarp(Mask);
+
+			if (Lane == 0)
+			{
+				Results[Island].Iterations = 0;
+				Results[Island].Residual = 0.0f;
+				Results[Island].Converged = 0;
+			}
+
+			if (Lane == 0)
+			{
+				for (int Row = 0; Row < Dimension; ++Row)
+				{
+					const float LowerBound = GetLowerBoundCUDA(IslandLower,
+						IslandFrictionNormal, IslandFrictionCoefficient, IslandLambda, Row);
+					const float UpperBound = GetUpperBoundCUDA(IslandUpper,
+						IslandFrictionNormal, IslandFrictionCoefficient, IslandLambda, Row);
+					IslandLambda[Row] = fmaxf(LowerBound,
+						fminf(UpperBound, IslandLambda[Row]));
+				}
+			}
+			__syncwarp(Mask);
+
+			for (int Iteration = 0; Iteration < MaxIterations; ++Iteration)
+			{
+				float MaximumDelta = 0.0f;
+				for (int Row = 0; Row < Dimension; ++Row)
+				{
+					const float* MatrixRow = Matrix + static_cast<size_t>(Row) * Dimension;
+					float Dot = 0.0f;
+					for (int Column = Lane; Column < Dimension; Column += 32)
+					{
+						Dot += MatrixRow[Column] * IslandLambda[Column];
+					}
+					Dot = WarpReduceSum(Dot);
+					if (Lane == 0)
+					{
+						const float W = IslandBias[Row] + Dot;
+						const float LowerBound = GetLowerBoundCUDA(IslandLower,
+							IslandFrictionNormal, IslandFrictionCoefficient,
+							IslandLambda, Row);
+						const float UpperBound = GetUpperBoundCUDA(IslandUpper,
+							IslandFrictionNormal, IslandFrictionCoefficient,
+							IslandLambda, Row);
+						const float OldLambda = IslandLambda[Row];
+						const float Unprojected = OldLambda
+							- Relaxation * W / MatrixRow[Row];
+						IslandLambda[Row] = fmaxf(LowerBound,
+							fminf(UpperBound, Unprojected));
+						MaximumDelta = fmaxf(MaximumDelta,
+							fabsf(IslandLambda[Row] - OldLambda));
+					}
+					__syncwarp(Mask);
+				}
+
+				int CheckResidual = 0;
+				if (Lane == 0)
+				{
+					Results[Island].Iterations = Iteration + 1;
+					CheckResidual = MaximumDelta <= Tolerance ? 1 : 0;
+				}
+				CheckResidual = __shfl_sync(Mask, CheckResidual, 0);
+				if (CheckResidual)
+				{
+					const float Residual = CalculateBatchedProjectedResidualCUDA(
+						Matrix, IslandBias, IslandLower, IslandUpper,
+						IslandFrictionNormal, IslandFrictionCoefficient,
+						Dimension, IslandLambda, Lane);
+					int Done = 0;
+					if (Lane == 0)
+					{
+						Results[Island].Residual = Residual;
+						Results[Island].Converged = Residual <= Tolerance ? 1 : 0;
+						Done = Results[Island].Converged;
+					}
+					Done = __shfl_sync(Mask, Done, 0);
+					if (Done)
+					{
+						return;
+					}
+				}
+			}
+
+			const float Residual = CalculateBatchedProjectedResidualCUDA(
+				Matrix, IslandBias, IslandLower, IslandUpper,
+				IslandFrictionNormal, IslandFrictionCoefficient,
+				Dimension, IslandLambda, Lane);
+			if (Lane == 0)
+			{
+				Results[Island].Residual = Residual;
+				Results[Island].Converged = Residual <= Tolerance ? 1 : 0;
+			}
+		}
+
+		struct CUDABatchInputLayout
+		{
+			size_t Matrix;
+			size_t Bias;
+			size_t Lower;
+			size_t Upper;
+			size_t FrictionCoefficient;
+			size_t InitialLambda;
+			size_t FrictionNormal;
+			size_t MatrixOffsets;
+			size_t VectorOffsets;
+			size_t Dimensions;
+			size_t TotalBytes;
+		};
+
+		struct CUDABatchOutputLayout
+		{
+			size_t Lambda;
+			size_t Results;
+			size_t TotalBytes;
+		};
+
+		bool AppendArrayBytes(size_t Count, size_t ElementSize, size_t* Cursor,
+			size_t* Offset)
+		{
+			if (!Cursor || !Offset || (Count > 0
+				&& ElementSize > std::numeric_limits<size_t>::max() / Count))
+			{
+				return false;
+			}
+			const size_t Bytes = Count * ElementSize;
+			if (*Cursor > std::numeric_limits<size_t>::max() - Bytes)
+			{
+				return false;
+			}
+			*Offset = *Cursor;
+			*Cursor += Bytes;
+			return true;
+		}
+
+		bool BuildCUDABatchLayouts(size_t MatrixElementCount, size_t VectorElementCount,
+			size_t IslandCount, CUDABatchInputLayout* Input,
+			CUDABatchOutputLayout* Output)
+		{
+			if (!Input || !Output)
+			{
+				return false;
+			}
+
+			size_t Cursor = 0;
+			if (!AppendArrayBytes(MatrixElementCount, sizeof(float), &Cursor, &Input->Matrix)
+				|| !AppendArrayBytes(VectorElementCount, sizeof(float), &Cursor, &Input->Bias)
+				|| !AppendArrayBytes(VectorElementCount, sizeof(float), &Cursor, &Input->Lower)
+				|| !AppendArrayBytes(VectorElementCount, sizeof(float), &Cursor, &Input->Upper)
+				|| !AppendArrayBytes(VectorElementCount, sizeof(float), &Cursor,
+					&Input->FrictionCoefficient)
+				|| !AppendArrayBytes(VectorElementCount, sizeof(float), &Cursor,
+					&Input->InitialLambda)
+				|| !AppendArrayBytes(VectorElementCount, sizeof(int), &Cursor,
+					&Input->FrictionNormal)
+				|| !AppendArrayBytes(IslandCount, sizeof(int), &Cursor, &Input->MatrixOffsets)
+				|| !AppendArrayBytes(IslandCount, sizeof(int), &Cursor, &Input->VectorOffsets)
+				|| !AppendArrayBytes(IslandCount, sizeof(int), &Cursor, &Input->Dimensions))
+			{
+				return false;
+			}
+			Input->TotalBytes = Cursor;
+
+			Cursor = 0;
+			if (!AppendArrayBytes(VectorElementCount, sizeof(float), &Cursor, &Output->Lambda)
+				|| !AppendArrayBytes(IslandCount, sizeof(CUDASolverResult), &Cursor,
+					&Output->Results))
+			{
+				return false;
+			}
+			Output->TotalBytes = Cursor;
+			return true;
+		}
+
+		size_t CalculateGrowthCapacity(size_t Required)
+		{
+			size_t Capacity = 256;
+			while (Capacity < Required)
+			{
+				if (Capacity > std::numeric_limits<size_t>::max() / 2)
+				{
+					return Required;
+				}
+				Capacity *= 2;
+			}
+			return Capacity;
+		}
+
+		bool GrowHostBuffer(std::unique_ptr<unsigned char[]>* Buffer,
+			size_t* Capacity, size_t Required)
+		{
+			if (!Buffer || !Capacity)
+			{
+				return false;
+			}
+			if (Required <= *Capacity)
+			{
+				return true;
+			}
+			const size_t NewCapacity = CalculateGrowthCapacity(Required);
+			std::unique_ptr<unsigned char[]> NewBuffer(
+				new (std::nothrow) unsigned char[NewCapacity]);
+			if (!NewBuffer)
+			{
+				return false;
+			}
+			Buffer->swap(NewBuffer);
+			*Capacity = NewCapacity;
+			return true;
+		}
+
+		bool GrowDeviceBuffer(unsigned char** Buffer, size_t* Capacity, size_t Required)
+		{
+			if (!Buffer || !Capacity)
+			{
+				return false;
+			}
+			if (Required <= *Capacity)
+			{
+				return true;
+			}
+
+			const size_t NewCapacity = CalculateGrowthCapacity(Required);
+			void* RawPointer = nullptr;
+			if (cudaMalloc(&RawPointer, NewCapacity) != cudaSuccess)
+			{
+				return false;
+			}
+			unsigned char* NewBuffer = static_cast<unsigned char*>(RawPointer);
+			if (*Buffer && cudaFree(*Buffer) != cudaSuccess)
+			{
+				(void)cudaFree(NewBuffer);
+				return false;
+			}
+			*Buffer = NewBuffer;
+			*Capacity = NewCapacity;
+			return true;
+		}
+
+		bool EnsureCUDABatchCapacity(LCPCUDABatchContext* Context,
+			size_t InputBytes, size_t OutputBytes)
+		{
+#if defined(RIEMANN_CUDA_PROFILE)
+			if (Context && (InputBytes > Context->DeviceInputCapacity
+				|| OutputBytes > Context->DeviceOutputCapacity))
+			{
+				++Context->ProfileGrowths;
+			}
+#endif
+			return Context
+				&& GrowHostBuffer(&Context->HostInput, &Context->HostInputCapacity, InputBytes)
+				&& GrowHostBuffer(&Context->HostOutput, &Context->HostOutputCapacity, OutputBytes)
+				&& GrowDeviceBuffer(&Context->DeviceInput,
+					&Context->DeviceInputCapacity, InputBytes)
+				&& GrowDeviceBuffer(&Context->DeviceOutput,
+					&Context->DeviceOutputCapacity, OutputBytes);
+		}
+
+		bool ValidateBatchedCUDAInputs(const float* Matrices,
+			const int* MatrixOffsets, const int* VectorOffsets, const int* Dimensions,
+			int IslandCount, size_t MatrixElementCount, int VectorElementCount,
+			const float* Bias, const float* Lower, const float* Upper,
+			const int* FrictionNormal, const float* FrictionCoefficient,
+			const float* Lambda, int MaxIterations, float Tolerance, float Relaxation,
+			bool InputsPrevalidated)
+		{
+			if (IslandCount < 0 || VectorElementCount < 0
+				|| MatrixElementCount > static_cast<size_t>(std::numeric_limits<int>::max())
+				|| MaxIterations <= 0
+				|| !std::isfinite(Tolerance) || Tolerance < 0.0f
+				|| !std::isfinite(Relaxation) || Relaxation <= 0.0f || Relaxation >= 2.0f
+				|| ((FrictionNormal == nullptr) != (FrictionCoefficient == nullptr)))
+			{
+				return false;
+			}
+			if (IslandCount == 0)
+			{
+				return MatrixElementCount == 0 && VectorElementCount == 0;
+			}
+			if (!Matrices || !MatrixOffsets || !VectorOffsets || !Dimensions
+				|| !Bias || !Lambda)
+			{
+				return false;
+			}
+
+			size_t ExpectedMatrixOffset = 0;
+			int ExpectedVectorOffset = 0;
+			const float MinimumDiagonal = 1.0e-12f;
+			for (int Island = 0; Island < IslandCount; ++Island)
+			{
+				const int Dimension = Dimensions[Island];
+				if (Dimension <= 0 || MatrixOffsets[Island] < 0
+					|| static_cast<size_t>(MatrixOffsets[Island]) != ExpectedMatrixOffset
+					|| VectorOffsets[Island] != ExpectedVectorOffset
+					|| Dimension > std::numeric_limits<int>::max() - ExpectedVectorOffset)
+				{
+					return false;
+				}
+				const size_t Size = static_cast<size_t>(Dimension);
+				if (ExpectedMatrixOffset > MatrixElementCount
+					|| Size > std::numeric_limits<size_t>::max() / Size
+					|| Size * Size > MatrixElementCount - ExpectedMatrixOffset)
+				{
+					return false;
+				}
+
+				if (!InputsPrevalidated)
+				{
+					const float* Matrix = Matrices + ExpectedMatrixOffset;
+					for (int LocalRow = 0; LocalRow < Dimension; ++LocalRow)
+					{
+						const int Row = ExpectedVectorOffset + LocalRow;
+						const float* MatrixRow = Matrix
+							+ static_cast<size_t>(LocalRow) * Dimension;
+						if (!std::isfinite(MatrixRow[LocalRow])
+							|| MatrixRow[LocalRow] <= MinimumDiagonal
+							|| !std::isfinite(Bias[Row]) || !std::isfinite(Lambda[Row]))
+						{
+							return false;
+						}
+						for (int Column = 0; Column < Dimension; ++Column)
+						{
+							if (!std::isfinite(MatrixRow[Column]))
+							{
+								return false;
+							}
+						}
+
+						const float LowerBound = Lower ? Lower[Row] : 0.0f;
+						const float UpperBound = Upper ? Upper[Row] : FLT_MAX;
+						if (std::isnan(LowerBound) || std::isnan(UpperBound)
+							|| LowerBound > UpperBound)
+						{
+							return false;
+						}
+						if (FrictionNormal)
+						{
+							const int NormalRow = FrictionNormal[Row];
+							if (NormalRow < -1 || NormalRow >= Dimension
+								|| NormalRow == LocalRow
+								|| !std::isfinite(FrictionCoefficient[Row])
+								|| FrictionCoefficient[Row] < 0.0f)
+							{
+								return false;
+							}
+							if (NormalRow >= 0)
+							{
+								const int NormalIndex = ExpectedVectorOffset + NormalRow;
+								const float NormalLower = Lower ? Lower[NormalIndex] : 0.0f;
+								if (FrictionNormal[NormalIndex] >= 0 || NormalLower < 0.0f
+									|| LowerBound > 0.0f || UpperBound < 0.0f)
+								{
+									return false;
+								}
+							}
+						}
+					}
+				}
+
+				ExpectedMatrixOffset += Size * Size;
+				ExpectedVectorOffset += Dimension;
+			}
+			return ExpectedMatrixOffset == MatrixElementCount
+				&& ExpectedVectorOffset == VectorElementCount;
+		}
+
 		bool ValidateCUDAInputs(const float* Matrix, const float* Bias,
 			const float* Lower, const float* Upper, const int* FrictionNormal,
 			const float* FrictionCoefficient, int Dimension, const float* Lambda,

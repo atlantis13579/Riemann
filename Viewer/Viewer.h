@@ -84,7 +84,9 @@ private:
 		void SubmitGeometryQueryBounds();
 		void ClearGeometryQueryBounds();
 		void SetShowGeometryQueryBounds(bool show);
-		void SetRenderWireframe(bool show);
+		void SetRenderMode(RenderMode mode);
+		float GetCameraSceneScale() const;
+		float GetCameraControlScale() const;
 		std::string OpenObjFileDialog() const;
 		std::string OpenMeshFileDialog() const;
 		std::string ResolveSceneFile(const char* fileName) const;
@@ -114,11 +116,18 @@ private:
 		Geometry* m_HighlightedGeometry;
 		bool m_SceneDragActive;
 		bool m_FieldDragActive;
+		bool m_TankDragActive;
 		Vector3 m_SceneDragPlanePoint;
 		Vector3 m_SceneDragPlaneNormal;
 		Vector3 m_SceneDragOffset;
 		std::chrono::steady_clock::time_point m_SceneDragLastTime;
 		Vector3 m_FieldDragPoint;
+		int m_TankDragX;
+		int m_TankDragY;
+		float m_TankTiltX;
+		float m_TankTiltZ;
+		Quaternion m_TankRotation;
+		Vector3 m_TankCenter;
 
 		std::string m_SceneDirectory;
 		std::vector<std::string> m_SceneFiles;
@@ -145,12 +154,13 @@ private:
 		int m_CuttingPiecesZ;
 		int m_CuttingSeed;
 		int m_MeshSimplificationFileIndex;
+		int m_MeshSimplificationAlgorithm;
 		int m_MeshSimplificationRatioLevel;
 		float m_CuttingSeparation;
 		float m_CuttingMaxSeparation;
 		float m_MeshSimplificationMaxSeparation;
 		bool m_ShowGeometryQueryBounds;
-		bool m_RenderWireframe;
+		RenderMode m_RenderMode;
 		uint32_t m_RenderRevision;
 		bool m_FluidDemoActive;
 		int m_FluidRenderFrame;
@@ -180,10 +190,11 @@ private:
 		int m_ImguiCuttingPiecesZ;
 		int m_ImguiCuttingSeed;
 		int m_ImguiMeshSimplificationFileIndex;
+		int m_ImguiMeshSimplificationAlgorithm;
 		int m_ImguiMeshSimplificationRatioLevel;
 		float m_ImguiCuttingSeparation;
 		bool m_ImguiShowGeometryQueryBounds;
-		bool m_ImguiRenderWireframe;
+		RenderMode m_ImguiRenderMode;
 		size_t m_ImguiGeometryQueryBoundsCount;
 		double m_ImguiPhysicsFps;
 		int m_ImguiScroll;
@@ -211,12 +222,14 @@ private:
 		int m_ImguiPendingMeshSimplificationFileIndex;
 		bool m_ImguiPendingBrowseMeshSimplificationFile;
 		bool m_ImguiPendingApplyMeshSimplification;
+		bool m_ImguiPendingMeshSimplificationAlgorithm;
+		int m_ImguiPendingMeshSimplificationAlgorithmValue;
 		bool m_ImguiPendingMeshSimplificationRatioLevel;
 		int m_ImguiPendingMeshSimplificationRatioLevelValue;
 		bool m_ImguiPendingShowGeometryQueryBounds;
 		bool m_ImguiPendingShowGeometryQueryBoundsValue;
-		bool m_ImguiPendingRenderWireframe;
-		bool m_ImguiPendingRenderWireframeValue;
+		bool m_ImguiPendingRenderMode;
+		RenderMode m_ImguiPendingRenderModeValue;
 		bool m_ImguiPendingShootProjectile;
 		std::vector<ConstraintControlState> m_ImguiPendingConstraintControls;
 

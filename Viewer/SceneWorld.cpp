@@ -754,6 +754,7 @@ namespace Riemann
 			desc.SmoothingRadius = ReadFloat(value->Find("smoothingRadius"), desc.SmoothingRadius);
 			desc.BoundaryRestitution = ReadFloat(value->Find("boundaryRestitution"), desc.BoundaryRestitution);
 			desc.BoundaryFriction = ReadFloat(value->Find("boundaryFriction"), desc.BoundaryFriction);
+			desc.OpenTopBoundary = ReadBool(value->Find("openTopBoundary"), desc.OpenTopBoundary);
 			desc.MaxTimeStep = ReadFloat(value->Find("maxTimeStep"), desc.MaxTimeStep);
 			desc.AcousticCFL = ReadFloat(value->Find("acousticCFL"), desc.AcousticCFL);
 			desc.MaxSubsteps = ReadInt(value->Find("maxSubsteps"), desc.MaxSubsteps);
@@ -1127,6 +1128,91 @@ namespace Riemann
 			m_MouseControlRope->PinParticle(m_MouseControlRopeParticle, worldPosition);
 		}
 		return true;
+	}
+
+	bool SceneWorld::SetMouseControlPosition(const Vector3& worldPosition, float deltaTime,
+		const Vector3& boundsMin, const Vector3& boundsMax)
+	{
+		return SetMouseControlPosition(worldPosition, deltaTime, boundsMin, boundsMax,
+			Transform::Identity());
+	}
+
+	bool SceneWorld::SetMouseControlPosition(const Vector3& worldPosition, float deltaTime,
+		const Vector3& boundsMin, const Vector3& boundsMax, const Transform& boundsTransform)
+	{
+		if (m_MouseControlBody == nullptr)
+		{
+			return false;
+		}
+
+		Box3 bodyBounds;
+		bool hasBodyBounds = false;
+		for (Geometry* geometry : m_MouseControlBody->Geometries())
+		{
+			if (geometry == nullptr)
+			{
+				continue;
+			}
+			const Transform geometryTransform = boundsTransform.TransformInv(
+				m_MouseControlBody->GetGeometryTransform(geometry));
+			const Box3 geometryBounds = Box3::Transform(geometry->GetShapeBounds(),
+				geometryTransform.pos, geometryTransform.quat);
+			if (hasBodyBounds)
+			{
+				bodyBounds.Encapsulate(geometryBounds);
+			}
+			else
+			{
+				bodyBounds = geometryBounds;
+				hasBodyBounds = true;
+			}
+		}
+
+		const Vector3 bodyPosition = boundsTransform.WorldToLocal(m_MouseControlBody->X);
+		const Vector3 targetPosition = boundsTransform.WorldToLocal(worldPosition);
+		Vector3 clampedPosition = targetPosition;
+		if (hasBodyBounds)
+		{
+			for (int axis = 0; axis < 3; ++axis)
+			{
+				const float minimumPosition = boundsMin[axis]
+					- (bodyBounds.Min[axis] - bodyPosition[axis]);
+				const float maximumPosition = boundsMax[axis]
+					- (bodyBounds.Max[axis] - bodyPosition[axis]);
+				clampedPosition[axis] = minimumPosition <= maximumPosition
+					? std::max(minimumPosition, std::min(targetPosition[axis], maximumPosition))
+					: 0.5f * (boundsMin[axis] + boundsMax[axis]);
+			}
+		}
+		return SetMouseControlPosition(boundsTransform.LocalToWorld(clampedPosition), deltaTime);
+	}
+
+	bool SceneWorld::RotateTank(const Vector3& center, const Quaternion& deltaRotation)
+	{
+		if (!std::isfinite(deltaRotation.x) || !std::isfinite(deltaRotation.y)
+			|| !std::isfinite(deltaRotation.z) || !std::isfinite(deltaRotation.w)
+			|| deltaRotation.SquareLength() <= 1.0e-12f)
+		{
+			return false;
+		}
+		const Quaternion rotation = deltaRotation.Unit();
+		bool rotated = false;
+		for (const SceneObjectInstance& object : m_Objects)
+		{
+			if (object.Id.compare(0, 5, "tank_") != 0 || object.GeometryPtr == nullptr)
+			{
+				continue;
+			}
+			RigidBody* body = object.GeometryPtr->GetParent<RigidBody>();
+			if (body == nullptr || body->mRigidType != RigidType::Static)
+			{
+				continue;
+			}
+			body->X = center + rotation * (body->X - center);
+			body->Q = (rotation * body->Q).Unit();
+			rotated = true;
+		}
+		return rotated;
 	}
 
 	void SceneWorld::ReleaseMouseControl()
@@ -2026,6 +2112,18 @@ namespace Riemann
 		renderState.Id = desc.Id;
 		renderState.Color = desc.Color;
 		renderState.RenderBounds = desc.RenderBounds;
+		renderState.IntactGeometry.reset(GeometryFactory::CreateOBB(
+			desc.Position, desc.HalfExtent, desc.Rotation));
+		renderState.RenderIntactUntilFractured = renderState.IntactGeometry != nullptr;
+		if (renderState.RenderIntactUntilFractured)
+		{
+			const std::vector<DestructionCluster*> clusters = rawSet->GetClusters();
+			if (clusters.size() == 1 && clusters[0] != nullptr)
+			{
+				renderState.IntactLocalTransform = clusters[0]->GetClusterWorldTransform()
+					.TransformInv(*renderState.IntactGeometry->GetTransform());
+			}
+		}
 		m_DestructionRenderStates.push_back(std::move(renderState));
 		SyncDestructionObjects(true);
 		return true;
@@ -2146,6 +2244,15 @@ namespace Riemann
 		renderState.IntactGeometry.reset(GeometryFactory::CreateOBB(
 			desc.Position, desc.HalfExtent, desc.Rotation));
 		renderState.RenderIntactUntilFractured = renderState.IntactGeometry != nullptr;
+		if (renderState.RenderIntactUntilFractured)
+		{
+			const std::vector<DestructionCluster*> clusters = rawSet->GetClusters();
+			if (clusters.size() == 1 && clusters[0] != nullptr)
+			{
+				renderState.IntactLocalTransform = clusters[0]->GetClusterWorldTransform()
+					.TransformInv(*renderState.IntactGeometry->GetTransform());
+			}
+		}
 		m_DestructionRenderStates.push_back(std::move(renderState));
 		SyncDestructionObjects(true);
 		return true;
@@ -2223,6 +2330,16 @@ namespace Riemann
 			const bool renderIntact = state.RenderIntactUntilFractured
 				&& state.IntactGeometry
 				&& state.Set->GetGraph().GetBrokenBonds().empty();
+			if (renderIntact)
+			{
+				const std::vector<DestructionCluster*> clusters = state.Set->GetClusters();
+				if (clusters.size() == 1 && clusters[0] != nullptr)
+				{
+					const Transform worldTransform = clusters[0]->GetClusterWorldTransform()
+						* state.IntactLocalTransform;
+					state.IntactGeometry->SetTransform(worldTransform.pos, worldTransform.quat);
+				}
+			}
 			if (!force && state.LastRevision == revision
 				&& state.LastRenderedIntact == renderIntact)
 			{

@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "../Maths/Vector3.h"
+#include "../Maths/Transform.h"
 #include "FluidBackend.h"
 
 namespace Riemann
@@ -32,6 +32,7 @@ namespace Riemann
 		float SmoothingRadius;
 		float BoundaryRestitution;
 		float BoundaryFriction;
+		bool OpenTopBoundary;
 		float MaxTimeStep;
 		int MaxSubsteps;
 		int PressureIterations;
@@ -68,6 +69,7 @@ namespace Riemann
 		void AddFluidSphere(const Vector3& Center, float Radius,
 			const Vector3& InitialVelocity = Vector3::Zero());
 		bool ApplyImpulse(const Vector3& Position, float Radius, const Vector3& Impulse);
+		bool SetContainerTransform(const Transform& ContainerTransform);
 
 		float SampleDensity(const Vector3& Position) const;
 		Vector3 SampleVelocity(const Vector3& Position) const;
@@ -82,6 +84,7 @@ namespace Riemann
 		bool UsedBackendFallback() const { return m_BackendResult.UsedFallback; }
 		const FluidSimulationSettings& GetSettings() const { return m_Settings; }
 		const Vector3& GetCellSize() const { return m_CellSize; }
+		const Transform& GetContainerTransform() const { return m_ContainerTransform; }
 		const std::vector<float>& GetGridDensity() const { return m_GridDensity; }
 		const std::vector<Vector3>& GetGridVelocity() const { return m_GridVelocity; }
 		const std::vector<FluidParticle>& GetParticles() const { return m_Particles; }
@@ -91,17 +94,22 @@ namespace Riemann
 		bool IsGridCoordinateValid(int X, int Y, int Z) const;
 		Vector3 GridCellCenter(int X, int Y, int Z) const;
 		Vector3 GridFaceCenter(int X, int Y, int Z, int Component) const;
-		float SampleGridScalar(const std::vector<float>& Field, const Vector3& Position) const;
-		Vector3 SampleGridVector(const std::vector<Vector3>& Field, const Vector3& Position) const;
-		float SampleGridVelocityComponent(const std::vector<Vector3>& Field,
+		float SampleGridScalar(const float* Field, const Vector3& Position) const;
+		Vector3 SampleGridVector(const Vector3* Field, const Vector3& Position) const;
+		float SampleGridVelocityComponent(const Vector3* Field,
 			const Vector3& Position, int Component) const;
 		bool IsFaceFluid(int X, int Y, int Z, int Component, float ActiveThreshold) const;
+		bool ApplyLocalImpulse(const Vector3& Position, float Radius, const Vector3& Impulse);
+		float SampleLocalDensity(const Vector3& Position) const;
+		Vector3 SampleLocalVelocity(const Vector3& Position) const;
 
 		void StepEulerian(float DeltaTime);
 		void AdvectEulerian(float DeltaTime);
 		void ApplyEulerianForces(float DeltaTime);
 		void ProjectEulerian(float DeltaTime);
 		void EnforceEulerianBoundaries();
+		void DrainEulerianOverflow(float DeltaTime);
+		bool IsAboveOpenTop(const Vector3& LocalPosition) const;
 		void AdvectEulerianDensityConservative(float DeltaTime,
 			const std::vector<float>& OldDensity, const std::vector<Vector3>& OldVelocity);
 
@@ -117,6 +125,7 @@ namespace Riemann
 
 		FluidSimulationSettings m_Settings;
 		Vector3 m_CellSize;
+		Transform m_ContainerTransform;
 		bool m_Initialized;
 		float m_TimeRemainder;
 		FluidBackendResult m_BackendResult;

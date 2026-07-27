@@ -14,7 +14,6 @@
 #include "../Src/Fluid/AerodynamicsRigidCoupling.h"
 #include "../Src/Fluid/FluidRigidCoupling.h"
 #include "../Src/Fluid/MarchingCubes.h"
-#include "../Viewer/MeshRenderer.h"
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/Core/Base.h"
 #include "../Src/Core/Ref.h"
@@ -978,6 +977,44 @@ void TestFluidSimulation()
 		EXPECT(density >= 0.0f && density <= settings.RestDensity + 1.0e-3f);
 	}
 
+	Riemann::FluidSimulation transformed(settings);
+	transformed.AddFluidBox(Vector3(0.2f), Vector3(0.8f), Vector3(1.0f, 0.0f, 0.0f));
+	Quaternion containerRotation;
+	containerRotation.FromRotateZ(0.5f * 3.14159265358979323846f);
+	const Vector3 containerCenter(0.5f);
+	const Transform containerTransform(containerCenter - containerRotation * containerCenter,
+		containerRotation);
+	EXPECT(transformed.SetContainerTransform(containerTransform));
+	const Vector3 transformedCenter = containerTransform * containerCenter;
+	EXPECT(transformed.SampleDensity(transformedCenter) > 0.5f * settings.RestDensity);
+	const Vector3 transformedVelocity = transformed.SampleVelocity(transformedCenter);
+	EXPECT_NEAR(transformedVelocity.x, 0.0f, 1.0e-4f);
+	EXPECT_NEAR(transformedVelocity.y, 1.0f, 1.0e-4f);
+	Transform invalidContainerTransform = Transform::Identity();
+	invalidContainerTransform.quat.x = nan;
+	EXPECT_FALSE(transformed.SetContainerTransform(invalidContainerTransform));
+
+	Riemann::FluidSimulationSettings openTopSettings = settings;
+	openTopSettings.OpenTopBoundary = true;
+	Riemann::FluidSimulation openTop(openTopSettings);
+	openTop.AddFluidBox(Vector3(0.1f, 0.75f, 0.1f), Vector3(0.9f, 1.0f, 0.9f),
+		Vector3(0.0f, 5.0f, 0.0f));
+	const float openTopMass = openTop.GetTotalMass();
+	for (int frame = 0; frame < 4; ++frame) openTop.Step(openTopSettings.MaxTimeStep);
+	EXPECT(openTop.GetTotalMass() < 0.99f * openTopMass);
+
+	Riemann::FluidSimulationSettings tiltedTankSettings = openTopSettings;
+	tiltedTankSettings.Gravity = Vector3(0.0f, -9.81f, 0.0f);
+	Riemann::FluidSimulation tiltedTank(tiltedTankSettings);
+	tiltedTank.AddFluidBox(Vector3(0.05f), Vector3(0.95f, 0.70f, 0.95f));
+	Quaternion tankRotation;
+	tankRotation.FromRotateZ(1.25f);
+	const Transform tiltedTransform(containerCenter - tankRotation * containerCenter, tankRotation);
+	EXPECT(tiltedTank.SetContainerTransform(tiltedTransform));
+	const float tiltedTankMass = tiltedTank.GetTotalMass();
+	for (int frame = 0; frame < 120; ++frame) tiltedTank.Step(tiltedTankSettings.MaxTimeStep);
+	EXPECT(tiltedTank.GetTotalMass() < 0.99f * tiltedTankMass);
+
 	Riemann::FluidSimulation projection(settings);
 	projection.AddFluidBox(Vector3(0.1f, 0.1f, 0.1f), Vector3(0.5f, 0.9f, 0.9f),
 		Vector3(1.0f, 0.0f, 0.0f));
@@ -1412,92 +1449,12 @@ void TestAerodynamicsSimulation()
 	EXPECT_NEAR(ambient.Density, settings.AmbientDensity, 1.0e-4f);
 	EXPECT_NEAR(ambient.Pressure, settings.AmbientPressure, 1.0e-2f);
 	EXPECT(ambient.PressureGradient.SquareLength() < 1.0e-4f);
-	std::vector<Riemann::RenderMeshDesc> gasMeshes;
-	EXPECT(Riemann::BuildGasDensityMeshes(eulerian, "gas_test", &gasMeshes));
-	EXPECT(gasMeshes.size() == 2);
-	EXPECT(gasMeshes[0].Id == "gas_test.compressed");
-	EXPECT(gasMeshes[1].Id == "gas_test.rarefied");
-	for (const Riemann::RenderMeshDesc& mesh : gasMeshes)
-	{
-		EXPECT(mesh.Vertices.empty() && mesh.Indices.empty());
-		EXPECT(mesh.BlendMode == Riemann::RenderBlendMode::Additive);
-		EXPECT(mesh.Unlit && !mesh.CastShadow);
-	}
-	Riemann::Renderer* nullRenderer = Riemann::Renderer::CreateNullRenderer();
-	EXPECT(nullRenderer != nullptr);
-	if (nullRenderer != nullptr)
-	{
-		EXPECT(nullRenderer->AddMesh(gasMeshes[0]));
-		const Vertex1 dynamicVertices[3] =
-		{
-			Vertex1(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitY()),
-			Vertex1(Vector3(1.0f, 0.0f, 0.0f), Vector3::UnitY()),
-			Vertex1(Vector3(0.0f, 1.0f, 0.0f), Vector3::UnitY()),
-		};
-		const uint32_t dynamicIndices[3] = { 0, 1, 2 };
-		EXPECT(nullRenderer->UpdateMeshGeometry(gasMeshes[0].Id.c_str(),
-			dynamicVertices, 3, dynamicIndices, 3));
-		EXPECT(nullRenderer->UpdateVertices(gasMeshes[0].Id.c_str(), dynamicVertices, 3));
-		EXPECT_FALSE(nullRenderer->UpdateMeshGeometry(gasMeshes[0].Id.c_str(),
-			dynamicVertices, 3, dynamicIndices, 2));
-		EXPECT(nullRenderer->UpdateMeshGeometry(gasMeshes[0].Id.c_str(), nullptr, 0, nullptr, 0));
-		delete nullRenderer;
-	}
 
 	eulerian.SetDensityBox(Vector3(0.2f, 0.2f, 0.2f), Vector3(0.5f, 0.8f, 0.8f),
 		2.0f * settings.AmbientDensity);
 	std::vector<float> eulerianDensityField;
 	EXPECT(eulerian.BuildDensityField(&eulerianDensityField));
 	EXPECT(eulerianDensityField == eulerian.GetGridDensity());
-	EXPECT(Riemann::BuildGasDensityMeshes(eulerian, "gas_test", &gasMeshes));
-	EXPECT(!gasMeshes[0].Indices.empty());
-	EXPECT(gasMeshes[1].Vertices.empty() && gasMeshes[1].Indices.empty());
-	for (uint32_t index : gasMeshes[0].Indices) EXPECT(index < gasMeshes[0].Vertices.size());
-	for (const Vertex1& vertex : gasMeshes[0].Vertices)
-	{
-		const Vector3 worldPosition = gasMeshes[0].WorldTransform * vertex.Pos;
-		EXPECT(worldPosition.x >= settings.BoundsMin.x - 1.0e-4f
-			&& worldPosition.x <= settings.BoundsMax.x + 1.0e-4f);
-		EXPECT(worldPosition.y >= settings.BoundsMin.y - 1.0e-4f
-			&& worldPosition.y <= settings.BoundsMax.y + 1.0e-4f);
-		EXPECT(worldPosition.z >= settings.BoundsMin.z - 1.0e-4f
-			&& worldPosition.z <= settings.BoundsMax.z + 1.0e-4f);
-	}
-	Riemann::AerodynamicsSimulation boundaryCompressedGas(settings);
-	boundaryCompressedGas.SetDensityBox(settings.BoundsMin, Vector3(0.3f, 0.3f, 0.3f),
-		2.0f * settings.AmbientDensity);
-	EXPECT(Riemann::BuildGasDensityMeshes(boundaryCompressedGas, "gas_boundary", &gasMeshes));
-	EXPECT(!gasMeshes[0].Indices.empty());
-	for (const Vertex1& vertex : gasMeshes[0].Vertices)
-	{
-		const Vector3 worldPosition = gasMeshes[0].WorldTransform * vertex.Pos;
-		EXPECT(worldPosition.x >= settings.BoundsMin.x - 1.0e-4f
-			&& worldPosition.x <= settings.BoundsMax.x + 1.0e-4f);
-		EXPECT(worldPosition.y >= settings.BoundsMin.y - 1.0e-4f
-			&& worldPosition.y <= settings.BoundsMax.y + 1.0e-4f);
-		EXPECT(worldPosition.z >= settings.BoundsMin.z - 1.0e-4f
-			&& worldPosition.z <= settings.BoundsMax.z + 1.0e-4f);
-	}
-	Riemann::AerodynamicsSimulation rarefiedGas(settings);
-	rarefiedGas.SetDensitySphere(settings.BoundsMin, 0.3f,
-		0.5f * settings.AmbientDensity);
-	EXPECT(Riemann::BuildGasDensityMeshes(rarefiedGas, "gas_test", &gasMeshes));
-	EXPECT(gasMeshes[0].Vertices.empty() && gasMeshes[0].Indices.empty());
-	EXPECT(!gasMeshes[1].Indices.empty());
-	for (const Vertex1& vertex : gasMeshes[1].Vertices)
-	{
-		const Vector3 worldPosition = gasMeshes[1].WorldTransform * vertex.Pos;
-		EXPECT(worldPosition.x >= settings.BoundsMin.x - 1.0e-4f
-			&& worldPosition.x <= settings.BoundsMax.x + 1.0e-4f);
-		EXPECT(worldPosition.y >= settings.BoundsMin.y - 1.0e-4f
-			&& worldPosition.y <= settings.BoundsMax.y + 1.0e-4f);
-		EXPECT(worldPosition.z >= settings.BoundsMin.z - 1.0e-4f
-			&& worldPosition.z <= settings.BoundsMax.z + 1.0e-4f);
-	}
-	Riemann::GasDensityVisualizationSettings invalidVisualization;
-	invalidVisualization.RelativeThreshold = 0.0f;
-	EXPECT_FALSE(Riemann::BuildGasDensityMeshes(rarefiedGas, "gas_test", &gasMeshes,
-		invalidVisualization));
 	EXPECT(eulerian.Sample(Vector3(0.35f, 0.5f, 0.5f)).Pressure > settings.AmbientPressure);
 	const Riemann::AerodynamicSample edge = eulerian.Sample(Vector3(0.52f, 0.5f, 0.5f));
 	EXPECT(edge.PressureGradient.x < 0.0f);
@@ -1584,8 +1541,6 @@ void TestAerodynamicsSimulation()
 	EXPECT(particlePulse.BuildDensityField(&lagrangianDensityField));
 	EXPECT(*std::max_element(lagrangianDensityField.begin(), lagrangianDensityField.end())
 		> 1.08f * settings.AmbientDensity);
-	EXPECT(Riemann::BuildGasDensityMeshes(particlePulse, "gas_sph", &gasMeshes));
-	EXPECT(!gasMeshes[0].Indices.empty());
 	particlePulse.Step(settings.MaxTimeStep);
 	float radialMomentum = 0.0f;
 	for (const Riemann::AirParticle& particle : particlePulse.GetParticles())

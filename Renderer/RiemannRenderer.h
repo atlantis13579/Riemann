@@ -46,6 +46,13 @@ namespace Riemann
 		Wireframe,
 	};
 
+	enum class RenderMode : uint8_t
+	{
+		Solid,
+		Wireframe,
+		SolidWireframe,
+	};
+
 	enum class RenderBlendMode : uint8_t
 	{
 		Alpha,
@@ -57,6 +64,8 @@ namespace Riemann
 		std::string Id;
 		std::vector<Vertex1> Vertices;
 		std::vector<uint32_t> Indices;
+		// Optional line-list indices used instead of triangle edges in wireframe passes.
+		std::vector<uint32_t> WireframeIndices;
 		Transform WorldTransform;
 		Vector4 Color = Vector4(0.72f, 0.76f, 0.82f, 1.0f);
 		RenderPrimitiveTopology Topology = RenderPrimitiveTopology::Triangles;
@@ -134,7 +143,8 @@ namespace Riemann
 		virtual bool DeleteMesh(const char* id) = 0;
 		virtual bool Reset() = 0;
 
-		virtual void SetFillMode(bool wireframe) = 0;
+		virtual void SetRenderMode(RenderMode mode) = 0;
+		void SetFillMode(bool wireframe) { SetRenderMode(wireframe ? RenderMode::Wireframe : RenderMode::Solid); }
 		virtual void SetDepthMode() = 0;
 
 		virtual void SetImguiDrawCallback(ImguiDrawCallback callback, void* userData) { (void)callback; (void)userData; }
