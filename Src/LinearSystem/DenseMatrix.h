@@ -33,26 +33,26 @@ public:
 
 	explicit TDenseMatrix(int nRows, int nCols) : mRows(nRows), mCols(nCols), mData(nCols* nRows)
 	{
-		pData = &mData[0];
+		pData = mData.empty() ? nullptr : mData.data();
 	}
 	
 	explicit TDenseMatrix(const TDenseVector<T>& diag) : mRows(diag.GetSize()), mCols(diag.GetSize()), mData(diag.GetSize() * diag.GetSize())
 	{
-		pData = &mData[0];
+		pData = mData.empty() ? nullptr : mData.data();
 		LoadDiagonal(diag);
 	}
 
 	explicit TDenseMatrix(const TDenseMatrix& m) : mRows(m.mRows), mCols(m.mCols), mData(mCols* mRows)
 	{
-		pData = &mData[0];
-		memcpy(pData, m.pData, sizeof(T) * mRows * mCols);
+		pData = mData.empty() ? nullptr : mData.data();
+		if (!mData.empty()) memcpy(pData, m.pData, sizeof(T) * mRows * mCols);
 	}
 
 	TDenseMatrix(TDenseMatrix&& m) : mRows(m.mRows), mCols(m.mCols)
 	{
 		if (!m.mData.empty())
 			mData = std::move(m.mData);
-		pData = mData.size() > 0 ? &mData[0] : m.pData;
+		pData = mData.size() > 0 ? mData.data() : m.pData;
 	}
 
 	explicit TDenseMatrix(T* p, int nRows, int nCols) : mRows(nRows), mCols(nCols)
@@ -65,7 +65,7 @@ public:
 		mRows = nRows;
 		mCols = nCols;
 		mData.resize(nCols * nRows);
-		pData = &mData[0];
+		pData = mData.empty() ? nullptr : mData.data();
 	}
 
 	inline int	GetSize() const
@@ -111,7 +111,7 @@ public:
 	
 	void		SetRowZero(int i)
 	{
-		memset(pData + i * mCols, 0, sizeof(T)*mCols);
+		if (mCols > 0) memset(pData + i * mCols, 0, sizeof(T)*mCols);
 	}
 	
 	void		SetColZero(int i)
@@ -131,12 +131,12 @@ public:
 	{
 		if (!HoldsMemory())
 		{
-			memcpy(pData, rhs.GetData(), mRows * mCols * sizeof(T));
+			if (mRows > 0 && mCols > 0) memcpy(pData, rhs.GetData(), mRows * mCols * sizeof(T));
 		}
 		else
 		{
 			SetSize(rhs.GetRows(), rhs.GetCols());
-			memcpy(pData, rhs.GetData(), mRows * mCols * sizeof(T));
+			if (mRows > 0 && mCols > 0) memcpy(pData, rhs.GetData(), mRows * mCols * sizeof(T));
 		}
 	}
 
@@ -180,7 +180,7 @@ public:
 		mRows = m.mRows;
 		mCols = m.mCols;
 		mData = m.mData;
-		pData = mData.size() > 0 ? &mData[0] : m.pData;
+		pData = mData.size() > 0 ? mData.data() : m.pData;
 		return *this;
 	}
 
@@ -189,7 +189,7 @@ public:
 		mRows = m.mRows;
 		mCols = m.mCols;
 		mData = std::move(m.mData);
-		pData = mData.size() > 0 ? &mData[0] : m.pData;
+		pData = mData.size() > 0 ? mData.data() : m.pData;
 		return *this;
 	}
 
@@ -448,7 +448,7 @@ public:
 
 	void		LoadZero()
 	{
-		memset(pData, 0, sizeof(T) * mRows * mCols);
+		if (mRows > 0 && mCols > 0) memset(pData, 0, sizeof(T) * mRows * mCols);
 	}
 
 	void		LoadIdentity()

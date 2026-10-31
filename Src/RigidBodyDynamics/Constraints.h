@@ -28,7 +28,13 @@ namespace Riemann
 		RigidBody* GetBodyA() const { return m_BodyA; }
 		RigidBody* GetBodyB() const { return m_BodyB; }
 		bool IsEnabled() const { return m_Enabled; }
-		void SetEnabled(bool enabled) { m_Enabled = enabled; }
+		void SetEnabled(bool enabled) { m_Enabled = enabled; ResetMultipliers(); }
+
+		void SetCompliance(float linear, float angular);
+		float GetLinearCompliance() const { return m_LinearCompliance; }
+		float GetAngularCompliance() const { return m_AngularCompliance; }
+		// Reset multipliers once per simulation substep, before any joint solve.
+		void BeginStep(float dt, bool enableXPBD);
 
 		virtual void Setup() {}
 		virtual void SolvePosition(float dt) = 0;
@@ -36,6 +42,20 @@ namespace Riemann
 		void Solve() { SolvePosition(1.0f / 60.0f); }
 
 	protected:
+		void ResetMultipliers();
+		bool HasSoftLinearRows() const { return m_LinearAlpha > 0.0f; }
+		bool HasSoftAngularRows() const { return m_AngularAlpha > 0.0f; }
+
+		float m_LinearCompliance = 0.0f;
+		float m_AngularCompliance = 0.0f;
+		float m_LinearAlpha = 0.0f;
+		float m_AngularAlpha = 0.0f;
+		Vector3 m_LinearLambda = Vector3::Zero();
+		Vector3 m_AngularLambda = Vector3::Zero();
+		Vector3 m_LinearLowerLambda = Vector3::Zero();
+		Vector3 m_LinearUpperLambda = Vector3::Zero();
+		Vector3 m_AngularLowerLambda = Vector3::Zero();
+		Vector3 m_AngularUpperLambda = Vector3::Zero();
 		PositionConstraintType m_Type;
 		RigidBody* m_BodyA;
 		RigidBody* m_BodyB;

@@ -14,6 +14,7 @@
 #include "../Geometry/DynamicMesh.h"
 #include "../RigidBodyDynamics/PhysicsWorld.h"
 #include "Fracture.h"
+#include "StrainSolver.h"
 
 namespace Riemann
 {
@@ -783,6 +784,8 @@ namespace Riemann
 		Levels[7] = { 1000.0f, 2 };
 	}
 
+	DestructionSet::DestructionSet() = default;
+
 	DestructionSet::DestructionSet(PhysicsWorld* Simulation)
 	{
 		if (Simulation)
@@ -971,6 +974,7 @@ namespace Riemann
 
 	void DestructionSet::Clear()
 	{
+		DisableStressSolver();
 		ClearClusters();
 		mGraph.Clear();
 		mBounds = Box3::Empty();
@@ -1012,6 +1016,8 @@ namespace Riemann
 		mHierarchyRoot = -1;
 		mGraph.Clear();
 		mGraph.Resize(mChunks.size());
+		mStressImpulses.clear();
+		if (mStressSolver) mStressSolver->ResetGraph(mGraph);
 	}
 
 	void DestructionSet::BuildClusterRigidBody(DestructionCluster& Cluster)
@@ -2182,10 +2188,109 @@ namespace Riemann
 
 	void DestructionSet::Update(float DeltaTime)
 	{
-		(void)DeltaTime;
 		ProcessPartitionQueue();
 		ProcessMomentumQueue();
 		ProcessDestructionInfo();
+		if (mStressSolver && std::isfinite(DeltaTime) && DeltaTime > 0.0f)
+		{
+			EnsureStressBondIndices();
+			mStressSolver->SyncGraph(BuildStressGraph());
+			mStressSolver->SetAllNodesInfo(*this);
+			for (const DestructionMomentum& load : mStressImpulses)
+			{
+				if (load.Index >= 0 && (size_t)load.Index < mChunks.size()
+					&& !mChunks[load.Index].IsFree && !mChunks[load.Index].IsSmashed)
+					mStressSolver->AddForceAtPosition(load.Index, load.Position, load.Momentum);
+			}
+			mStressImpulses.clear();
+			for (size_t i = 0; i < mChunks.size(); ++i)
+			{
+				if (mChunks[i].IsFree || mChunks[i].IsSmashed) continue;
+				const DestructionCluster* cluster = FindClusterContaining((int)i);
+				Transform chunkTransform;
+				const Vector3 gravity = cluster && cluster->GetWorldTransform((int)i, chunkTransform)
+					? chunkTransform.WorldToLocalDirection(mStressGravity) : mStressGravity;
+				mStressSolver->AddForce((int)i, gravity, StrainForceMode::Acceleration);
+			}
+			mStressSolver->Update(DeltaTime);
+			DestructionFractureBuffer commands;
+			if (mStressSolver->HasConverged()) mStressSolver->GenerateFractureCommands(commands);
+			if (!commands.BondFractures.empty())
+			{
+				DoFractures(commands);
+				mStressSolver->SyncGraph(BuildStressGraph());
+			}
+		}
+	}
+
+	ConnectionGraph DestructionSet::BuildStressGraph() const
+	{
+		ConnectionGraph graph = mGraph;
+		for (size_t i = 0; i < mChunks.size(); ++i)
+		{
+			if (mChunks[i].IsFree || mChunks[i].IsSmashed) graph.BreakBonds((int)i);
+		}
+		return graph;
+	}
+
+	void DestructionSet::EnableStressSolver(const StrainSolverSettings& Settings, const Vector3& WorldGravity)
+	{
+		EnsureStressBondIndices();
+		mStressSolver.reset(new StrainSolver(BuildStressGraph(), Settings));
+		mStressSolver->SetAllNodesInfo(*this);
+		mStressGravity = IsFiniteVector(WorldGravity) ? WorldGravity : Vector3::Zero();
+		mStressImpulses.clear();
+	}
+
+	void DestructionSet::DisableStressSolver()
+	{
+		mStressSolver.reset();
+		mStressImpulses.clear();
+	}
+
+	bool DestructionSet::AddStressImpulse(int Index, const Vector3& WorldPosition, const Vector3& WorldImpulse)
+	{
+		if (!mStressSolver || Index < 0 || (size_t)Index >= mChunks.size()
+			|| !IsFiniteVector(WorldPosition) || !IsFiniteVector(WorldImpulse)
+			|| mChunks[Index].IsFree || mChunks[Index].IsSmashed) return false;
+		DestructionMomentum load;
+		load.Index = Index;
+		const DestructionCluster* cluster = FindClusterContaining(Index);
+		Transform transform;
+		if (cluster && cluster->GetWorldTransform(Index, transform))
+		{
+			load.Position = transform.WorldToLocal(WorldPosition) + mChunks[Index].Centroid;
+			load.Momentum = transform.WorldToLocalDirection(WorldImpulse);
+		}
+		else
+		{
+			load.Position = WorldPosition;
+			load.Momentum = WorldImpulse;
+		}
+		mStressImpulses.push_back(load);
+		return true;
+	}
+
+	void DestructionSet::EnsureStressBondIndices()
+	{
+		std::set<int> used;
+		for (size_t i = 0; i < mGraph.Size(); ++i)
+			for (const Bond& bond : mGraph[i].Bonds)
+				if (bond.bond_index >= 0) used.insert(bond.bond_index);
+		int next = 0;
+		for (size_t i = 0; i < mGraph.Size(); ++i)
+		{
+			for (Bond& bond : mGraph[i].Bonds)
+			{
+				const int other = bond.GetOther((int)i);
+				if (bond.bond_index >= 0 || other < 0 || (size_t)other >= mGraph.Size() || (int)i >= other) continue;
+				while (used.count(next)) ++next;
+				bond.bond_index = next;
+				used.insert(next);
+				for (Bond& reverse : mGraph[other].Bonds)
+					if (reverse.GetOther(other) == (int)i) reverse.bond_index = next;
+			}
+		}
 	}
 
 	bool DestructionSet::HasClusterRigidBodies() const
@@ -2249,7 +2354,8 @@ namespace Riemann
 			return;
 		}
 
-		AddMomentumQueue(ChunkIndex, Momentum, Point.Position, Normal);
+		if (mStressSolver) AddStressImpulse(ChunkIndex, Point.Position, Momentum);
+		else AddMomentumQueue(ChunkIndex, Momentum, Point.Position, Normal);
 	}
 
 	std::vector<int> DestructionSet::QueryChunksRadius(const Vector3& Center, float Radius) const

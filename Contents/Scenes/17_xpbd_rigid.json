@@ -1,0 +1,22 @@
+{
+  "name": "XPBD Compliant Rigid Bodies",
+  "physics": {
+    "gravity": [0, -9.8, 0],
+    "resolutionSolver": "xpbd",
+    "xpbd": { "positionIterations": 16, "velocityIterations": 8, "contactCompliance": 0.003, "penetrationSlop": 0.001 }
+  },
+  "camera": { "center": [0, 2.5, 0], "orbit": [0.25, 0.3, 17] },
+  "light": { "direction": [-0.5, -0.8, -0.3], "ambient": 0.3, "shadowCenter": [0, 2, 0], "shadowSize": 30 },
+  "objects": [
+    { "id": "ground", "type": "box", "body": "static", "position": [0, -0.5, 0], "halfExtent": [8, 0.5, 4], "color": [0.3, 0.34, 0.39, 1] },
+    { "id": "soft_anchor", "type": "sphere", "body": "static", "position": [-3, 4.5, 0], "radius": 0.18, "simulation": false, "mouseControl": true, "color": [0.95, 0.7, 0.35, 1] },
+    { "id": "soft_bob", "type": "box", "body": "dynamic", "position": [-3, 3, 0], "halfExtent": [0.45, 0.45, 0.45], "invMass": 1, "color": [0.95, 0.56, 0.16, 1] },
+    { "id": "hard_anchor", "type": "sphere", "body": "static", "position": [3, 4.5, 0], "radius": 0.18, "simulation": false, "color": [0.55, 0.74, 0.95, 1] },
+    { "id": "hard_bob", "type": "box", "body": "dynamic", "position": [3, 3, 0], "halfExtent": [0.45, 0.45, 0.45], "invMass": 1, "color": [0.22, 0.5, 0.87, 1] },
+    { "id": "contact_sphere", "type": "sphere", "body": "dynamic", "position": [0, 1.5, 0], "radius": 0.55, "invMass": 1, "color": [0.35, 0.8, 0.43, 1] }
+  ],
+  "constraints": [
+    { "type": "distance", "bodyA": "soft_anchor", "bodyB": "soft_bob", "minDistance": 1.5, "maxDistance": 1.5, "linearCompliance": 0.03 },
+    { "type": "distance", "bodyA": "hard_anchor", "bodyB": "hard_bob", "minDistance": 1.5, "maxDistance": 1.5, "linearCompliance": 0 }
+  ]
+}

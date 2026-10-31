@@ -6,6 +6,32 @@
 #include "Test.h"
 
 extern void TestCores();
+extern void TestFluidOptimization();
+extern void TestSmoke();
+extern void TestSmokeBackends();
+extern void TestSmokeMovingObstacles();
+extern void TestSmokeRigidCoupling();
+extern void TestSolverPanel();
+extern void TestSolverSwitch();
+extern void TestPBDBackendScenes();
+extern void TestPBDBackends();
+extern void TestVehicleScene();
+extern void TestVehicleDeformation();
+extern void TestRopeTowingDemo();
+extern void TestXPBDScene();
+extern void TestXPBDRigidSolver();
+extern void TestPBDScene();
+extern void TestPBDRigidSolver();
+extern void TestVoxelScene();
+extern void TestVoxelMesh();
+extern void TestTerrainScene();
+extern void TestTerrainEditing();
+extern void TestPackedGEMM();
+extern void TestStressIntegration();
+extern void TestStressSolver();
+extern void TestDeformableSystem();
+extern void TestSceneLoading();
+extern void TestRopeRegression();
 extern void TestMaths();
 extern void TestCollision();
 extern void TestFiveByFiveBoxStackGridStability();
@@ -21,6 +47,7 @@ extern void TestCUDA();
 extern void TestCompoundNonConvexRigidBody();
 extern void TestContinuousCollisionDetection();
 extern void TestPositionConstraints();
+extern void TestConstraintSolverRegression();
 extern void TestRopeSystem();
 extern void TestClothSystem();
 extern void TestRagdollSystem();
@@ -69,6 +96,32 @@ static bool HasExplicitFilter(const char* name, const std::vector<std::string>& 
 void TestAll(const std::vector<std::string>& filters)
 {
 	RunTestGroup("Core", TestCores, filters);
+	RunTestGroup("FluidOptimization", TestFluidOptimization, filters);
+	RunTestGroup("Smoke", TestSmoke, filters);
+	RunTestGroup("SmokeBackends", TestSmokeBackends, filters);
+	RunTestGroup("SmokeMovingObstacles", TestSmokeMovingObstacles, filters);
+	RunTestGroup("SmokeRigidCoupling", TestSmokeRigidCoupling, filters);
+	RunTestGroup("SolverPanel", TestSolverPanel, filters);
+	RunTestGroup("SolverSwitch", TestSolverSwitch, filters);
+	RunTestGroup("PBDBackendScenes", TestPBDBackendScenes, filters);
+	RunTestGroup("PBDBackends", TestPBDBackends, filters);
+	RunTestGroup("VehicleScene", TestVehicleScene, filters);
+	RunTestGroup("VehicleDeformation", TestVehicleDeformation, filters);
+	RunTestGroup("RopeTowing", TestRopeTowingDemo, filters);
+	RunTestGroup("XPBDScene", TestXPBDScene, filters);
+	RunTestGroup("XPBD", TestXPBDRigidSolver, filters);
+	RunTestGroup("PBDScene", TestPBDScene, filters);
+	RunTestGroup("PBD", TestPBDRigidSolver, filters);
+	RunTestGroup("VoxelScene", TestVoxelScene, filters);
+	RunTestGroup("VoxelMesh", TestVoxelMesh, filters);
+	RunTestGroup("TerrainScene", TestTerrainScene, filters);
+	RunTestGroup("TerrainEditing", TestTerrainEditing, filters);
+	RunTestGroup("GEMM", TestPackedGEMM, filters);
+	RunTestGroup("StressIntegration", TestStressIntegration, filters);
+	RunTestGroup("Stress", TestStressSolver, filters);
+	RunTestGroup("Deformation", TestDeformableSystem, filters);
+	RunTestGroup("Scenes", TestSceneLoading, filters);
+	RunTestGroup("RopeRegression", TestRopeRegression, filters);
 	RunTestGroup("Maths", TestMaths, filters);
 	RunTestGroup("Collision", TestCollision, filters);
 	if (HasExplicitFilter("LCPStack", filters))
@@ -78,6 +131,7 @@ void TestAll(const std::vector<std::string>& filters)
 	RunTestGroup("CompoundRigidBody", TestCompoundNonConvexRigidBody, filters);
 	RunTestGroup("CCD", TestContinuousCollisionDetection, filters);
 	RunTestGroup("Constraints", TestPositionConstraints, filters);
+	RunTestGroup("ConstraintRegression", TestConstraintSolverRegression, filters);
 	RunTestGroup("Rope", TestRopeSystem, filters);
 	RunTestGroup("Cloth", TestClothSystem, filters);
 	RunTestGroup("Ragdoll", TestRagdollSystem, filters);

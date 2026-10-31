@@ -9,6 +9,8 @@ namespace Riemann
 {
 	enum class FluidBackend : uint8_t
 	{
+		// CUDA and ComputeShader currently accelerate velocity addition only.
+		// Grid advection, pressure projection, and SPH remain CPU-side.
 		CPU,
 		SIMD,
 		CUDA,

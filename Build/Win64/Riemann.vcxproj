@@ -19,6 +19,17 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Src\LinearSystem\GemmKernel.h" />
+    <ClInclude Include="..\..\Src\LinearSystem\GemmCache.h" />
+    <ClCompile Include="..\..\Src\Deformation\PBDBackendComputeShader.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\PBDBackend.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\PBDBackendMath.h" />
+    <ClInclude Include="..\..\Src\Deformation\PBDBackend.h" />
+    <ClCompile Include="..\..\Src\Deformation\VehicleDeformation.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\VehicleDeformation.h" />
+    <ClCompile Include="..\..\Src\Deformation\DeformableBodyRender.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\DeformableBody.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\DeformableBody.h" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Capsule3.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\Cylinder3.cpp" />
     <ClCompile Include="..\..\Src\CollisionPrimitive\OrientedBox3.cpp" />
@@ -36,6 +47,14 @@
     <ClCompile Include="..\..\Src\Fluid\FluidBackendComputeShader.cpp" />
     <ClCompile Include="..\..\Src\Fluid\FluidRigidCoupling.cpp" />
     <ClCompile Include="..\..\Src\Fluid\FluidSimulation.cpp" />
+    <ClCompile Include="..\..\Src\Fluid\SmokeSimulation.cpp" />
+    <ClCompile Include="..\..\Src\Fluid\SmokeRigidCoupling.cpp" />
+    <ClInclude Include="..\..\Src\Fluid\SmokeRigidCoupling.h" />
+    <ClCompile Include="..\..\Src\Fluid\SmokeComputeShader.cpp" />
+    <ClInclude Include="..\..\Src\Fluid\SmokeSimulation.h" />
+    <ClInclude Include="..\..\Src\Fluid\SmokeGPUBackend.h" />
+    <ClInclude Include="..\..\Src\Fluid\SmokeComputeKernels.h" />
+    <None Include="..\..\Src\Fluid\SmokeBackendCUDA.cu" />
     <ClCompile Include="..\..\Src\Fluid\MarchingCubes.cpp" />
     <ClCompile Include="..\..\Src\Geometry\ConvexDecomposition.cpp" />
     <ClCompile Include="..\..\Src\Geometry\ConvexHull2.cpp" />
@@ -144,6 +163,10 @@
     <ClInclude Include="..\..\Src\Fluid\AerodynamicsSimulation.h" />
     <ClInclude Include="..\..\Src\Fluid\FluidBackend.h" />
     <ClInclude Include="..\..\Src\Fluid\FluidRigidCoupling.h" />
+    <ClInclude Include="..\..\Src\Fluid\FluidParallelFor.h" />
+    <ClInclude Include="..\..\Src\Fluid\GridPressureSolver.h" />
+    <ClInclude Include="..\..\Src\Fluid\MACGridSampling.h" />
+    <ClInclude Include="..\..\Src\Fluid\ParticleBucketGrid.h" />
     <ClInclude Include="..\..\Src\Fluid\FluidSimulation.h" />
     <ClInclude Include="..\..\Src\Fluid\MarchingCubes.h" />
     <ClInclude Include="..\..\Src\Geometry\MeshCut.h" />

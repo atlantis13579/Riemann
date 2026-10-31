@@ -25,6 +25,8 @@
     <ClCompile Include="..\..\Renderer\RiemannRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Renderer\DensityVolume.h" />
+    <ClInclude Include="..\..\Renderer\DX11VolumeRenderer.h" />
     <ClInclude Include="..\..\Renderer\DX11Renderer.h" />
     <ClInclude Include="..\..\Renderer\imgui.h" />
     <ClInclude Include="..\..\Renderer\ImguiRenderDX11.h" />

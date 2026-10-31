@@ -13,9 +13,7 @@ namespace Riemann
 		CPU,
 		SIMD,
 		ComputeShader,
-#if defined(RIEMANN_ENABLE_CUDA)
 		CUDA,
-#endif
 	};
 
 	class ConstraintSolver

@@ -1,4 +1,6 @@
 #include "FluidSimulation.h"
+#include "MACGridSampling.h"
+#include "FluidParallelFor.h"
 
 #include <algorithm>
 #include <cmath>
@@ -640,9 +642,8 @@ namespace Riemann
 			for (int X = MinimumBucket[0]; X <= MaximumBucket[0]; ++X)
 			{
 				const uint64_t Key = ParticleBucketKey(X, Y, Z);
-				auto It = std::lower_bound(m_ParticleBuckets.begin(), m_ParticleBuckets.end(), Key,
-					[](const ParticleBucket& Bucket, uint64_t Value) { return Bucket.Key < Value; });
-				if (It != m_ParticleBuckets.end() && It->Key == Key)
+				auto It = m_ParticleBuckets.Find(Key);
+				if (It != nullptr)
 					CandidateIndices.insert(CandidateIndices.end(), It->Indices.begin(), It->Indices.end());
 			}
 			std::sort(CandidateIndices.begin(), CandidateIndices.end());
@@ -773,65 +774,22 @@ namespace Riemann
 
 	Vector3 FluidSimulation::SampleGridVector(const Vector3* Field, const Vector3& Position) const
 	{
-		if (Field == nullptr)
-		{
-			return Vector3::Zero();
-		}
-		return Vector3(SampleGridVelocityComponent(Field, Position, 0),
-			SampleGridVelocityComponent(Field, Position, 1),
-			SampleGridVelocityComponent(Field, Position, 2));
+		if (Field == nullptr || !IsFiniteVector(Position)) return Vector3::Zero();
+		const Vector3 GridPosition((Position.x - m_Settings.BoundsMin.x) / m_CellSize.x - 0.5f,
+			(Position.y - m_Settings.BoundsMin.y) / m_CellSize.y - 0.5f,
+			(Position.z - m_Settings.BoundsMin.z) / m_CellSize.z - 0.5f);
+		return SampleMACVelocity(Field, m_Settings.Resolution, GridPosition);
 	}
 
 	float FluidSimulation::SampleGridVelocityComponent(const Vector3* Field,
 		const Vector3& Position, int Component) const
 	{
-		Vector3 GridPosition(
-			(Position.x - m_Settings.BoundsMin.x) / m_CellSize.x - 0.5f,
+		const Vector3 GridPosition((Position.x - m_Settings.BoundsMin.x) / m_CellSize.x - 0.5f,
 			(Position.y - m_Settings.BoundsMin.y) / m_CellSize.y - 0.5f,
 			(Position.z - m_Settings.BoundsMin.z) / m_CellSize.z - 0.5f);
-		if (Component == 0) GridPosition.x -= 0.5f;
-		if (Component == 1) GridPosition.y -= 0.5f;
-		if (Component == 2) GridPosition.z -= 0.5f;
-		const int X0 = (int)std::floor(GridPosition.x);
-		const int Y0 = (int)std::floor(GridPosition.y);
-		const int Z0 = (int)std::floor(GridPosition.z);
-		const float TX = ClampFloat(GridPosition.x - (float)X0, 0.0f, 1.0f);
-		const float TY = ClampFloat(GridPosition.y - (float)Y0, 0.0f, 1.0f);
-		const float TZ = ClampFloat(GridPosition.z - (float)Z0, 0.0f, 1.0f);
-		const int RowStride = m_Settings.Resolution.x;
-		const int SliceStride = RowStride * m_Settings.Resolution.y;
-		float Values[2][2][2];
-		for (int DZ = 0; DZ <= 1; ++DZ)
-		{
-			for (int DY = 0; DY <= 1; ++DY)
-			{
-				for (int DX = 0; DX <= 1; ++DX)
-				{
-					int X = X0 + DX;
-					int Y = Y0 + DY;
-					int Z = Z0 + DZ;
-					const int NormalCoordinate = Component == 0 ? X : (Component == 1 ? Y : Z);
-					const int NormalResolution = Component == 0 ? m_Settings.Resolution.x
-						: (Component == 1 ? m_Settings.Resolution.y : m_Settings.Resolution.z);
-					if (NormalCoordinate < 0 || NormalCoordinate >= NormalResolution)
-					{
-						Values[DZ][DY][DX] = 0.0f;
-						continue;
-					}
-					X = ClampInt(X, 0, m_Settings.Resolution.x - 1);
-					Y = ClampInt(Y, 0, m_Settings.Resolution.y - 1);
-					Z = ClampInt(Z, 0, m_Settings.Resolution.z - 1);
-					const Vector3& Value = Field[X + RowStride * Y + SliceStride * Z];
-					Values[DZ][DY][DX] = Component == 0 ? Value.x : (Component == 1 ? Value.y : Value.z);
-				}
-			}
-		}
-		const float C00 = Values[0][0][0] * (1.0f - TX) + Values[0][0][1] * TX;
-		const float C10 = Values[0][1][0] * (1.0f - TX) + Values[0][1][1] * TX;
-		const float C01 = Values[1][0][0] * (1.0f - TX) + Values[1][0][1] * TX;
-		const float C11 = Values[1][1][0] * (1.0f - TX) + Values[1][1][1] * TX;
-		return (C00 * (1.0f - TY) + C10 * TY) * (1.0f - TZ)
-			+ (C01 * (1.0f - TY) + C11 * TY) * TZ;
+		if (Component == 0) return SampleMACComponent<0>(Field, m_Settings.Resolution, GridPosition);
+		if (Component == 1) return SampleMACComponent<1>(Field, m_Settings.Resolution, GridPosition);
+		return SampleMACComponent<2>(Field, m_Settings.Resolution, GridPosition);
 	}
 
 	bool FluidSimulation::IsFaceFluid(int X, int Y, int Z, int Component,
@@ -875,13 +833,24 @@ namespace Riemann
 		const float H2 = H * H;
 		const float Poly6 = 315.0f / (64.0f * Pi * std::pow(H, 9.0f));
 		float Density = 0.0f;
-		for (const FluidParticle& Particle : m_Particles)
+		const int BaseX = (int)std::floor((Position.x - m_Settings.BoundsMin.x) / H);
+		const int BaseY = (int)std::floor((Position.y - m_Settings.BoundsMin.y) / H);
+		const int BaseZ = (int)std::floor((Position.z - m_Settings.BoundsMin.z) / H);
+		for (int DZ = -1; DZ <= 1; ++DZ)
+		for (int DY = -1; DY <= 1; ++DY)
+		for (int DX = -1; DX <= 1; ++DX)
 		{
-			const float R2 = (Position - Particle.Position).SquareLength();
-			if (R2 < H2)
+			const auto* Bucket = m_ParticleBuckets.Find(ParticleBucketKey(BaseX + DX, BaseY + DY, BaseZ + DZ));
+			if (Bucket == nullptr) continue;
+			for (int Index : Bucket->Indices)
 			{
-				const float Term = H2 - R2;
-				Density += Particle.Mass * Poly6 * Term * Term * Term;
+				const FluidParticle& Particle = m_Particles[Index];
+				const float R2 = (Position - Particle.Position).SquareLength();
+				if (R2 < H2)
+				{
+					const float Term = H2 - R2;
+					Density += Particle.Mass * Poly6 * Term * Term * Term;
+				}
 			}
 		}
 		return Density;
@@ -913,15 +882,26 @@ namespace Riemann
 		const float Poly6 = 315.0f / (64.0f * Pi * std::pow(H, 9.0f));
 		Vector3 WeightedVelocity = Vector3::Zero();
 		float Weight = 0.0f;
-		for (const FluidParticle& Particle : m_Particles)
+		const int BaseX = (int)std::floor((Position.x - m_Settings.BoundsMin.x) / H);
+		const int BaseY = (int)std::floor((Position.y - m_Settings.BoundsMin.y) / H);
+		const int BaseZ = (int)std::floor((Position.z - m_Settings.BoundsMin.z) / H);
+		for (int DZ = -1; DZ <= 1; ++DZ)
+		for (int DY = -1; DY <= 1; ++DY)
+		for (int DX = -1; DX <= 1; ++DX)
 		{
-			const float R2 = (Position - Particle.Position).SquareLength();
-			if (R2 < H2)
+			const auto* Bucket = m_ParticleBuckets.Find(ParticleBucketKey(BaseX + DX, BaseY + DY, BaseZ + DZ));
+			if (Bucket == nullptr) continue;
+			for (int Index : Bucket->Indices)
 			{
-				const float Term = H2 - R2;
-				const float W = Particle.Mass * Poly6 * Term * Term * Term;
-				WeightedVelocity += Particle.Velocity * W;
-				Weight += W;
+				const FluidParticle& Particle = m_Particles[Index];
+				const float R2 = (Position - Particle.Position).SquareLength();
+				if (R2 < H2)
+				{
+					const float Term = H2 - R2;
+					const float W = Particle.Mass * Poly6 * Term * Term * Term;
+					WeightedVelocity += Particle.Velocity * W;
+					Weight += W;
+				}
 			}
 		}
 		return Weight > DensityEpsilon ? WeightedVelocity / Weight : Vector3::Zero();
@@ -961,11 +941,11 @@ namespace Riemann
 		const float H = m_Settings.SmoothingRadius;
 		const float H2 = H * H;
 		const float Poly6 = 315.0f / (64.0f * Pi * std::pow(H, 9.0f));
-		for (int Z = 0; Z < m_Settings.Resolution.z; ++Z)
-		for (int Y = 0; Y < m_Settings.Resolution.y; ++Y)
-		for (int X = 0; X < m_Settings.Resolution.x; ++X)
+		FluidParallelFor((int)m_GridDensity.size(), [&](int Index)
 		{
-			const Vector3 Position = GridCellCenter(X, Y, Z);
+			const int X = Index % m_Settings.Resolution.x;
+			const int Y = (Index / m_Settings.Resolution.x) % m_Settings.Resolution.y;
+			const int Z = Index / (m_Settings.Resolution.x * m_Settings.Resolution.y);			const Vector3 Position = GridCellCenter(X, Y, Z);
 			const int BaseX = (int)std::floor((Position.x - m_Settings.BoundsMin.x) / H);
 			const int BaseY = (int)std::floor((Position.y - m_Settings.BoundsMin.y) / H);
 			const int BaseZ = (int)std::floor((Position.z - m_Settings.BoundsMin.z) / H);
@@ -975,9 +955,8 @@ namespace Riemann
 			for (int DX = -1; DX <= 1; ++DX)
 			{
 				const uint64_t Key = ParticleBucketKey(BaseX + DX, BaseY + DY, BaseZ + DZ);
-				auto It = std::lower_bound(m_ParticleBuckets.begin(), m_ParticleBuckets.end(), Key,
-					[](const ParticleBucket& Bucket, uint64_t Value) { return Bucket.Key < Value; });
-				if (It == m_ParticleBuckets.end() || It->Key != Key) continue;
+				auto It = m_ParticleBuckets.Find(Key);
+				if (It == nullptr) continue;
 				for (int ParticleIndex : It->Indices)
 				{
 					const FluidParticle& Particle = m_Particles[(size_t)ParticleIndex];
@@ -990,7 +969,7 @@ namespace Riemann
 				}
 			}
 			(*DensityField)[(size_t)GridIndex(X, Y, Z)] = Density;
-		}
+		});
 		return true;
 	}
 
@@ -1037,43 +1016,41 @@ namespace Riemann
 
 	void FluidSimulation::AdvectEulerian(float DeltaTime)
 	{
-		const std::vector<float> OldDensity = m_GridDensity;
-		const std::vector<Vector3> OldVelocity = m_GridVelocity;
+		m_DensityScratch = m_GridDensity;
+		const std::vector<float>& OldDensity = m_DensityScratch;
+		const std::vector<Vector3>& OldVelocity = m_GridVelocity;
 		AdvectEulerianDensityConservative(DeltaTime, OldDensity, OldVelocity);
 
-		std::vector<Vector3> AdvectedVelocity(m_GridVelocity.size(), Vector3::Zero());
+		m_VelocityOutput.resize(m_GridVelocity.size());
+		std::vector<Vector3>& AdvectedVelocity = m_VelocityOutput;
 		const Vector3* OldVelocityData = OldVelocity.data();
 		Vector3* AdvectedVelocityData = AdvectedVelocity.data();
 		const int ResolutionX = m_Settings.Resolution.x;
 		const int ResolutionY = m_Settings.Resolution.y;
 		const int SliceStride = ResolutionX * ResolutionY;
-		for (int Z = 0; Z < m_Settings.Resolution.z; ++Z)
+		FluidParallelFor((int)OldVelocity.size(), [&](int Index)
 		{
-			for (int Y = 0; Y < m_Settings.Resolution.y; ++Y)
+			const int X = Index % ResolutionX;
+			const int Y = (Index / ResolutionX) % ResolutionY;
+			const int Z = Index / SliceStride;
+			Vector3& Value = AdvectedVelocityData[Index];
+			for (int Component = 0; Component < 3; ++Component)
 			{
-				const int RowOffset = ResolutionX * Y + SliceStride * Z;
-				for (int X = 0; X < m_Settings.Resolution.x; ++X)
-				{
-					Vector3& Value = AdvectedVelocityData[RowOffset + X];
-					for (int Component = 0; Component < 3; ++Component)
-					{
-						const Vector3 FaceCenter = GridFaceCenter(X, Y, Z, Component);
-						const Vector3 FaceVelocity = SampleGridVector(OldVelocityData, FaceCenter);
-						const Vector3 MidpointVelocity = SampleGridVector(OldVelocityData,
-							FaceCenter - FaceVelocity * (0.5f * DeltaTime));
-						Vector3 Source = FaceCenter - MidpointVelocity * DeltaTime;
-						Source.x = ClampFloat(Source.x, m_Settings.BoundsMin.x, m_Settings.BoundsMax.x);
-						Source.y = ClampFloat(Source.y, m_Settings.BoundsMin.y, m_Settings.BoundsMax.y);
-						Source.z = ClampFloat(Source.z, m_Settings.BoundsMin.z, m_Settings.BoundsMax.z);
-						const float ComponentValue = SampleGridVelocityComponent(
-							OldVelocityData, Source, Component);
-						if (Component == 0) Value.x = ComponentValue;
-						if (Component == 1) Value.y = ComponentValue;
-						if (Component == 2) Value.z = ComponentValue;
-					}
-				}
+				const Vector3 FaceCenter = GridFaceCenter(X, Y, Z, Component);
+				const Vector3 FaceVelocity = SampleGridVector(OldVelocityData, FaceCenter);
+				const Vector3 MidpointVelocity = SampleGridVector(OldVelocityData,
+					FaceCenter - FaceVelocity * (0.5f * DeltaTime));
+				Vector3 Source = FaceCenter - MidpointVelocity * DeltaTime;
+				Source.x = ClampFloat(Source.x, m_Settings.BoundsMin.x, m_Settings.BoundsMax.x);
+				Source.y = ClampFloat(Source.y, m_Settings.BoundsMin.y, m_Settings.BoundsMax.y);
+				Source.z = ClampFloat(Source.z, m_Settings.BoundsMin.z, m_Settings.BoundsMax.z);
+				const float ComponentValue = SampleGridVelocityComponent(
+					OldVelocityData, Source, Component);
+				if (Component == 0) Value.x = ComponentValue;
+				if (Component == 1) Value.y = ComponentValue;
+				if (Component == 2) Value.z = ComponentValue;
 			}
-		}
+		});
 		m_GridVelocity.swap(AdvectedVelocity);
 	}
 
@@ -1182,8 +1159,9 @@ namespace Riemann
 		const float ActiveThreshold = m_Settings.RestDensity * 0.001f;
 		const Vector3 LocalGravity = m_ContainerTransform.WorldToLocalDirection(m_Settings.Gravity);
 		const float KinematicViscosity = m_Settings.DynamicViscosity / m_Settings.RestDensity;
-		const std::vector<Vector3> OldVelocity = m_GridVelocity;
-		std::vector<Vector3> NewVelocity = OldVelocity;
+		const std::vector<Vector3>& OldVelocity = m_GridVelocity;
+		m_VelocityOutput = OldVelocity;
+		std::vector<Vector3>& NewVelocity = m_VelocityOutput;
 		const Vector3* OldVelocityData = OldVelocity.data();
 		Vector3* NewVelocityData = NewVelocity.data();
 		const float* DensityData = m_GridDensity.data();
@@ -1255,7 +1233,13 @@ namespace Riemann
 				}
 			}
 		}
-		std::vector<Vector3> Delta(NewVelocity.size());
+		if (m_Settings.Backend == FluidBackend::CPU)
+		{
+			m_GridVelocity.swap(NewVelocity);
+			return;
+		}
+		m_VelocityDelta.resize(NewVelocity.size());
+		std::vector<Vector3>& Delta = m_VelocityDelta;
 		Vector3* DeltaData = Delta.data();
 		for (size_t Index = 0; Index < Delta.size(); ++Index)
 			DeltaData[Index] = NewVelocityData[Index] - OldVelocityData[Index];
@@ -1305,85 +1289,9 @@ namespace Riemann
 			}
 		}
 
-		std::vector<float> NextPressure(m_Pressure.size(), 0.0f);
-		const float InvCellSizeSquaredX = 1.0f / (m_CellSize.x * m_CellSize.x);
-		const float InvCellSizeSquaredY = 1.0f / (m_CellSize.y * m_CellSize.y);
-		const float InvCellSizeSquaredZ = 1.0f / (m_CellSize.z * m_CellSize.z);
-		const float RightHandSideScale = m_Settings.RestDensity / DeltaTime;
-		for (int Iteration = 0; Iteration < m_Settings.PressureIterations; ++Iteration)
-		{
-			const float* PressureData = m_Pressure.data();
-			float* NextPressureData = NextPressure.data();
-			for (int Z = 0; Z < ResolutionZ; ++Z)
-			{
-				for (int Y = 0; Y < ResolutionY; ++Y)
-				{
-					const int RowOffset = ResolutionX * Y + SliceStride * Z;
-					for (int X = 0; X < ResolutionX; ++X)
-					{
-						const int Index = RowOffset + X;
-						if (DensityData[Index] <= ActiveThreshold)
-						{
-							NextPressureData[Index] = 0.0f;
-							continue;
-						}
-
-						float NeighborSum = 0.0f;
-						float CoefficientSum = 0.0f;
-						if (X > 0)
-						{
-							const int NeighborIndex = Index - 1;
-							if (DensityData[NeighborIndex] > ActiveThreshold)
-								NeighborSum += InvCellSizeSquaredX * PressureData[NeighborIndex];
-							CoefficientSum += InvCellSizeSquaredX;
-						}
-						if (X + 1 < ResolutionX)
-						{
-							const int NeighborIndex = Index + 1;
-							if (DensityData[NeighborIndex] > ActiveThreshold)
-								NeighborSum += InvCellSizeSquaredX * PressureData[NeighborIndex];
-							CoefficientSum += InvCellSizeSquaredX;
-						}
-						if (Y > 0)
-						{
-							const int NeighborIndex = Index - ResolutionX;
-							if (DensityData[NeighborIndex] > ActiveThreshold)
-								NeighborSum += InvCellSizeSquaredY * PressureData[NeighborIndex];
-							CoefficientSum += InvCellSizeSquaredY;
-						}
-						if (Y + 1 < ResolutionY)
-						{
-							const int NeighborIndex = Index + ResolutionX;
-							if (DensityData[NeighborIndex] > ActiveThreshold)
-								NeighborSum += InvCellSizeSquaredY * PressureData[NeighborIndex];
-							CoefficientSum += InvCellSizeSquaredY;
-						}
-						else if (m_Settings.OpenTopBoundary)
-						{
-							CoefficientSum += InvCellSizeSquaredY;
-						}
-						if (Z > 0)
-						{
-							const int NeighborIndex = Index - SliceStride;
-							if (DensityData[NeighborIndex] > ActiveThreshold)
-								NeighborSum += InvCellSizeSquaredZ * PressureData[NeighborIndex];
-							CoefficientSum += InvCellSizeSquaredZ;
-						}
-						if (Z + 1 < ResolutionZ)
-						{
-							const int NeighborIndex = Index + SliceStride;
-							if (DensityData[NeighborIndex] > ActiveThreshold)
-								NeighborSum += InvCellSizeSquaredZ * PressureData[NeighborIndex];
-							CoefficientSum += InvCellSizeSquaredZ;
-						}
-						const float RightHandSide = RightHandSideScale * DivergenceData[Index];
-						NextPressureData[Index] = CoefficientSum > 0.0f
-							? (NeighborSum - RightHandSide) / CoefficientSum : 0.0f;
-					}
-				}
-			}
-			m_Pressure.swap(NextPressure);
-		}
+		m_PressureSolver.Solve(m_GridDensity, ActiveThreshold, m_Divergence,
+			m_Settings.Resolution, m_CellSize, m_Settings.OpenTopBoundary,
+			m_Settings.RestDensity / DeltaTime, m_Settings.PressureIterations, m_Pressure);
 
 		const float* PressureData = m_Pressure.data();
 		const float InverseRestDensity = 1.0f / m_Settings.RestDensity;
@@ -1556,33 +1464,14 @@ namespace Riemann
 
 	void FluidSimulation::RebuildParticleBuckets()
 	{
-		m_ParticleBuckets.clear();
-		std::vector<std::pair<uint64_t, int>> Entries;
-		Entries.reserve(m_Particles.size());
-		for (size_t ParticleIndex = 0; ParticleIndex < m_Particles.size(); ++ParticleIndex)
+		m_ParticleBuckets.Prepare(m_Particles.size());
+		for (size_t Index = 0; Index < m_Particles.size(); ++Index)
 		{
-			const Vector3 Position = m_Particles[ParticleIndex].Position;
+			const Vector3& Position = m_Particles[Index].Position;
 			const int X = (int)std::floor((Position.x - m_Settings.BoundsMin.x) / m_Settings.SmoothingRadius);
 			const int Y = (int)std::floor((Position.y - m_Settings.BoundsMin.y) / m_Settings.SmoothingRadius);
 			const int Z = (int)std::floor((Position.z - m_Settings.BoundsMin.z) / m_Settings.SmoothingRadius);
-			Entries.push_back(std::make_pair(ParticleBucketKey(X, Y, Z), (int)ParticleIndex));
-		}
-
-		std::sort(Entries.begin(), Entries.end(),
-			[](const std::pair<uint64_t, int>& Left, const std::pair<uint64_t, int>& Right)
-			{
-				return Left.first < Right.first
-					|| (Left.first == Right.first && Left.second < Right.second);
-			});
-		for (const std::pair<uint64_t, int>& Entry : Entries)
-		{
-			if (m_ParticleBuckets.empty() || m_ParticleBuckets.back().Key != Entry.first)
-			{
-				ParticleBucket Bucket;
-				Bucket.Key = Entry.first;
-				m_ParticleBuckets.push_back(Bucket);
-			}
-			m_ParticleBuckets.back().Indices.push_back(Entry.second);
+			m_ParticleBuckets.Insert(ParticleBucketKey(X, Y, Z), (int)Index);
 		}
 	}
 
@@ -1592,8 +1481,9 @@ namespace Riemann
 		const float H = m_Settings.SmoothingRadius;
 		const float H2 = H * H;
 		const float Poly6 = 315.0f / (64.0f * Pi * std::pow(H, 9.0f));
-		for (FluidParticle& Particle : m_Particles)
+		FluidParallelFor((int)m_Particles.size(), [&](int ParticleIndex)
 		{
+			FluidParticle& Particle = m_Particles[ParticleIndex];
 			float Density = 0.0f;
 			const int BaseX = (int)std::floor((Particle.Position.x - m_Settings.BoundsMin.x) / H);
 			const int BaseY = (int)std::floor((Particle.Position.y - m_Settings.BoundsMin.y) / H);
@@ -1605,9 +1495,8 @@ namespace Riemann
 					for (int DX = -1; DX <= 1; ++DX)
 					{
 						const uint64_t Key = ParticleBucketKey(BaseX + DX, BaseY + DY, BaseZ + DZ);
-						auto It = std::lower_bound(m_ParticleBuckets.begin(), m_ParticleBuckets.end(), Key,
-							[](const ParticleBucket& Bucket, uint64_t Value) { return Bucket.Key < Value; });
-						if (It == m_ParticleBuckets.end() || It->Key != Key) continue;
+						auto It = m_ParticleBuckets.Find(Key);
+						if (It == nullptr) continue;
 						for (int NeighborIndex : It->Indices)
 						{
 							const FluidParticle& Neighbor = m_Particles[(size_t)NeighborIndex];
@@ -1624,7 +1513,7 @@ namespace Riemann
 			Particle.Density = std::max(Density, 0.05f * m_Settings.RestDensity);
 			Particle.Pressure = m_Settings.PressureStiffness
 				* std::max(Particle.Density / m_Settings.RestDensity - 1.0f, 0.0f);
-		}
+		});
 	}
 
 	void FluidSimulation::ComputeParticleAccelerations()
@@ -1633,7 +1522,7 @@ namespace Riemann
 		const Vector3 LocalGravity = m_ContainerTransform.WorldToLocalDirection(m_Settings.Gravity);
 		const float SpikyGradient = -45.0f / (Pi * std::pow(H, 6.0f));
 		const float ViscosityLaplacian = 45.0f / (Pi * std::pow(H, 6.0f));
-		for (size_t ParticleIndex = 0; ParticleIndex < m_Particles.size(); ++ParticleIndex)
+		FluidParallelFor((int)m_Particles.size(), [&](int ParticleIndex)
 		{
 			FluidParticle& Particle = m_Particles[ParticleIndex];
 			Vector3 Acceleration = LocalGravity;
@@ -1647,15 +1536,16 @@ namespace Riemann
 					for (int DX = -1; DX <= 1; ++DX)
 					{
 						const uint64_t Key = ParticleBucketKey(BaseX + DX, BaseY + DY, BaseZ + DZ);
-						auto It = std::lower_bound(m_ParticleBuckets.begin(), m_ParticleBuckets.end(), Key,
-							[](const ParticleBucket& Bucket, uint64_t Value) { return Bucket.Key < Value; });
-						if (It == m_ParticleBuckets.end() || It->Key != Key) continue;
+						auto It = m_ParticleBuckets.Find(Key);
+						if (It == nullptr) continue;
 						for (int NeighborIndex : It->Indices)
 						{
 							if (NeighborIndex == (int)ParticleIndex) continue;
 							const FluidParticle& Neighbor = m_Particles[(size_t)NeighborIndex];
 							const Vector3 Difference = Particle.Position - Neighbor.Position;
-							const float Distance = Difference.Length();
+							const float DistanceSquared = Difference.SquareLength();
+							if (DistanceSquared >= H * H) continue;
+							const float Distance = std::sqrt(DistanceSquared);
 							if (!(Distance > 1.0e-6f && Distance < H)) continue;
 							const float KernelDistance = H - Distance;
 							const Vector3 Gradient = Difference * (SpikyGradient
@@ -1672,7 +1562,7 @@ namespace Riemann
 				}
 			}
 			Particle.Acceleration = IsFiniteVector(Acceleration) ? Acceleration : LocalGravity;
-		}
+		});
 	}
 
 	void FluidSimulation::EnforceParticleBoundary(FluidParticle& Particle) const
@@ -1725,11 +1615,14 @@ namespace Riemann
 		{
 			return;
 		}
-		ComputeParticleDensities();
+		// Positions and densities are synchronized at the end of the previous step.
 		ComputeParticleAccelerations();
-		std::vector<Vector3> Velocity(m_Particles.size());
-		std::vector<Vector3> Delta(m_Particles.size());
-		std::vector<Vector3> Integrated(m_Particles.size());
+		m_VelocityScratch.resize(m_Particles.size());
+		m_VelocityDelta.resize(m_Particles.size());
+		m_VelocityOutput.resize(m_Particles.size());
+		std::vector<Vector3>& Velocity = m_VelocityScratch;
+		std::vector<Vector3>& Delta = m_VelocityDelta;
+		std::vector<Vector3>& Integrated = m_VelocityOutput;
 		for (size_t Index = 0; Index < m_Particles.size(); ++Index)
 		{
 			Velocity[Index] = m_Particles[Index].Velocity;

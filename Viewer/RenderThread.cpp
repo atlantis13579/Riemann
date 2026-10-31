@@ -7,6 +7,11 @@
 
 namespace Riemann
 {
+	bool RenderThread::SupportsDensityVolume() const
+	{
+		return m_Renderer != nullptr && m_Renderer->SupportsDensityVolume();
+	}
+
 	RenderThread::RenderThread(Renderer* renderer)
 		: m_Renderer(renderer)
 		, m_RenderFps(0.0)

@@ -1,0 +1,50 @@
+{
+  "name": "Rope Towing Around a Post",
+  "physics": {
+    "gravity": [0, -9.8, 0],
+    "resolutionSolver": "pbd",
+    "pbd": {
+      "positionIterations": 16,
+      "velocityIterations": 8,
+      "penetrationSlop": 0.001,
+      "maxPositionCorrection": 0.2,
+      "maxAngularCorrection": 0.2,
+      "restitutionThreshold": 1
+    }
+  },
+  "camera": { "center": [-0.5, 1, 0], "orbit": [0.65, 0.55, 21] },
+  "light": { "direction": [-0.5, -0.8, -0.3], "ambient": 0.3, "shadowCenter": [-0.5, 1, 0], "shadowSize": 35 },
+  "objects": [
+    { "id": "ground", "type": "box", "body": "static", "position": [0, -0.5, 0], "halfExtent": [12, 0.5, 8], "color": [0.24, 0.29, 0.34, 1] },
+    { "id": "post", "type": "box", "body": "static", "position": [0, 2, 0], "halfExtent": [0.55, 2, 0.55], "color": [0.59, 0.34, 0.2, 1] },
+    { "id": "handle", "type": "sphere", "body": "static", "position": [-3.5, 1, 2], "radius": 0.22, "simulation": false, "mouseControl": true, "color": [0.19, 0.77, 0.91, 1] },
+    { "id": "crate", "type": "box", "body": "dynamic", "position": [4, 0.65, 1.6], "halfExtent": [0.7, 0.65, 0.55], "invMass": 0.5, "restitution": 0, "enableCCD": false, "color": [0.79, 0.57, 0.28, 1] }
+  ],
+  "ropes": [
+    {
+      "id": "tow_rope",
+      "start": [-3.5, 1, 2],
+      "end": [3.35, 1.05, 1.95],
+      "segments": 30,
+      "iterations": 40,
+      "radius": 0.06,
+      "restLength": 0.25,
+      "inverseMass": 20,
+      "damping": 0.98,
+      "compliance": 0.000001,
+      "tensionOnly": true,
+      "continuousCollision": true,
+      "collisionFriction": 0.12,
+      "gravity": [0, -9.8, 0],
+      "pinStart": true,
+      "mouseBody": "handle",
+      "mouseParticle": 0,
+      "body": "crate",
+      "bodyAnchor": [3.35, 1.05, 1.95],
+      "colliders": ["ground", "post"],
+      "renderStyle": "tube",
+      "tubeSides": 8,
+      "color": [0.94, 0.73, 0.28, 1]
+    }
+  ]
+}

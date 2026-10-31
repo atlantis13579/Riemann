@@ -92,7 +92,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>IMGUI_STATIC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -106,7 +106,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>IMGUI_STATIC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -120,7 +120,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>IMGUI_STATIC;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
@@ -136,7 +136,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>IMGUI_STATIC;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <OpenMPSupport>true</OpenMPSupport>
@@ -150,10 +150,40 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Renderer\imgui.cpp" />
+    <ClInclude Include="..\..\Viewer\SolverPanel.h" />
+    <ClCompile Include="..\..\Viewer\SolverPanel.cpp" />
+    <ClCompile Include="..\..\Test\Test_SolverPanel.cpp" />
+    <ClCompile Include="..\..\Test\Test_SolverSwitch.cpp" />
+    <ClCompile Include="..\..\Test\Test_PBDBackendScenes.cpp" />
+    <ClCompile Include="..\..\Test\Test_PBDBackends.cpp" />
+    <ClCompile Include="..\..\Test\Test_VehicleScene.cpp" />
+    <ClCompile Include="..\..\Test\Test_VehicleDeformation.cpp" />
+    <ClCompile Include="..\..\Test\Test_RopeTowing.cpp" />
+    <ClCompile Include="..\..\Test\Test_XPBDScene.cpp" />
+    <ClCompile Include="..\..\Test\Test_XPBD.cpp" />
+    <ClCompile Include="..\..\Test\Test_PBDScene.cpp" />
+    <ClCompile Include="..\..\Test\Test_PBD.cpp" />
+    <ClCompile Include="..\..\Test\Test_VoxelScene.cpp" />
+    <ClCompile Include="..\..\Test\Test_VoxelMesh.cpp" />
+    <ClCompile Include="..\..\Test\Test_TerrainScene.cpp" />
+    <ClCompile Include="..\..\Test\Test_Terrain.cpp" />
+    <ClCompile Include="..\..\Test\Benchmarks_Fluid.cpp" />
+    <ClCompile Include="..\..\Test\Benchmarks_GEMM.cpp" />
+    <ClCompile Include="..\..\Test\Test_GEMM.cpp" />
+    <ClCompile Include="..\..\Test\Test_StressIntegration.cpp" />
+    <ClCompile Include="..\..\Test\Test_Stress.cpp" />
+    <ClCompile Include="..\..\Test\Test_Deformation.cpp" />
+    <ClCompile Include="..\..\Viewer\SceneWorld.cpp" />
+    <ClCompile Include="..\..\Test\Test_Scenes.cpp" />
+    <ClCompile Include="..\..\Test\Test_Rope.cpp" />
+    <ClCompile Include="..\..\Test\Test_Constraints.cpp" />
     <ClCompile Include="..\..\Test\main.cpp" />
     <ClCompile Include="..\..\Test\Test_Collision.cpp" />
     <ClCompile Include="..\..\Test\Test_CollisionPrimitive.cpp" />
     <ClCompile Include="..\..\Test\Test_Core.cpp" />
+    <ClCompile Include="..\..\Test\Test_FluidOptimization.cpp" />
+    <ClCompile Include="..\..\Test\Test_Smoke.cpp" />
     <ClCompile Include="..\..\Test\Test_Destruction.cpp" />
     <ClCompile Include="..\..\Test\Test_Geometry.cpp" />
     <ClCompile Include="..\..\Test\Test_Image.cpp" />

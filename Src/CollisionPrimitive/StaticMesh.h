@@ -46,6 +46,10 @@ namespace Riemann
 			mVertices.clear();
 			mIndices.clear();
 			mNormals.clear();
+			mUV3s.clear();
+			Flags = 0;
+			BoundingVolume = Box3(Vector3::Zero(), Vector3::Zero());
+			ResourceId.clear();
 			NumVertices = 0;
 			NumTriangles = 0;
 			Vertices = nullptr;
@@ -54,19 +58,39 @@ namespace Riemann
 
 		void Compact()
 		{
+			// Materialize externally owned buffers before resizing their storage.
+			if (NumVertices && Vertices != mVertices.data())
+			{
+				mVertices.assign(Vertices, Vertices + NumVertices);
+			}
+			if (NumTriangles && Indices != mIndices.data())
+			{
+				mIndices.assign(Indices, Indices + size_t(3) * NumTriangles * GetIndicesWidth());
+			}
 			mVertices.resize(NumVertices);
-			if (0 < NumTriangles && NumTriangles <= 65535 && !Is16bitIndices())
+			Vertices = mVertices.empty() ? nullptr : mVertices.data();
+			Indices = mIndices.empty() ? nullptr : mIndices.data();
+			bool fits16 = NumTriangles > 0 && !Is16bitIndices();
+			if (fits16)
+			{
+				const uint32_t* source = GetIndices32();
+				for (size_t i = 0; i < size_t(3) * NumTriangles; ++i)
+				{
+					if (source[i] > 65535) { fits16 = false; break; }
+				}
+			}
+			if (fits16)
 			{
 				uint16_t* pDst = GetIndices16();
 				uint32_t* pSrc = GetIndices32();
-				for (uint32_t i = 0; i < 3 * NumTriangles; ++i)
+				for (size_t i = 0; i < size_t(3) * NumTriangles; ++i)
 				{
 					*pDst++ = (uint16_t)(*pSrc++);
 				}
 				Flags |= INDICES_16_BIT;
 			}
-			mIndices.resize(3 * NumTriangles * GetIndicesWidth());
-			Indices = &mIndices[0];
+			mIndices.resize(size_t(3) * NumTriangles * GetIndicesWidth());
+			Indices = mIndices.empty() ? nullptr : mIndices.data();
 		}
 
 		Vector3* GetVertexBuffer()
@@ -234,9 +258,21 @@ namespace Riemann
 
 		void AddTriangle(uint32_t a, uint32_t b, uint32_t c)
 		{
-			if ((NumTriangles * 3 + 2) * GetIndicesWidth() >= mIndices.size())
+			assert(a < NumVertices && b < NumVertices && c < NumVertices);
+			if (Is16bitIndices() && (a > 65535 || b > 65535 || c > 65535))
 			{
-				mIndices.resize((mIndices.size() + TRIANGLE_BATCH * 3) * GetIndicesWidth());
+				// Expand backwards so existing compacted indices remain intact.
+				mIndices.resize(size_t(3) * NumTriangles * 2);
+				Indices = mIndices.data();
+				for (size_t i = size_t(3) * NumTriangles; i > 0; --i)
+				{
+					GetIndices32()[i - 1] = Indices[i - 1];
+				}
+				Flags &= ~INDICES_16_BIT;
+			}
+			if ((size_t(NumTriangles) * 3 + 2) * GetIndicesWidth() >= mIndices.size())
+			{
+				mIndices.resize((size_t(NumTriangles) + TRIANGLE_BATCH) * 3 * GetIndicesWidth());
 				Indices = &mIndices[0];
 			}
 

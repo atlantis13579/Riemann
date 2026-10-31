@@ -1,18 +1,44 @@
 
 #include <assert.h>
+#include <cmath>
+#include <limits>
 #include <queue>
 
 #include "VoxelField.h"
+#include "../CollisionPrimitive/StaticMesh.h"
 #include "../Core/File.h"
 #include "../Maths/Maths.h"
 
 namespace Riemann
 {
+	static bool VoxelFinite(const Vector3& V)
+	{
+		return std::isfinite(V.x) && std::isfinite(V.y) && std::isfinite(V.z);
+	}
+
+	static bool VoxelDimensionsValid(const Box3& Bv, int SizeX, int SizeY, int SizeZ, float Size, float Height)
+	{
+		if (SizeX <= 0 || SizeZ <= 0 || SizeY <= 0 || SizeY > 65536 ||
+			int64_t(SizeX) * SizeZ > std::numeric_limits<int>::max() ||
+			!std::isfinite(Size) || !std::isfinite(Height) || Size <= 0.0f || Height <= 0.0f ||
+			!std::isfinite(1.0f / Size) || !std::isfinite(1.0f / Height) ||
+			!VoxelFinite(Bv.Min) || !VoxelFinite(Bv.Max) ||
+			Bv.Min.x > Bv.Max.x || Bv.Min.y > Bv.Max.y || Bv.Min.z > Bv.Max.z)
+		{
+			return false;
+		}
+		return VoxelFinite(Bv.Min + Vector3(SizeX * Size, SizeY * Height, SizeZ * Size));
+	}
+
 	VoxelField::VoxelField()
 	{
 		m_SizeX = 0;
 		m_SizeY = 0;
 		m_SizeZ = 0;
+		m_VoxelSize = m_VoxelHeight = 0.0f;
+		m_InvVoxelSize = m_InvVoxelHeight = 0.0f;
+		m_BV = Box3(Vector3::Zero(), Vector3::Zero());
+		m_VoxelBatchs.init(0, 1024);
 	}
 
 	VoxelField::~VoxelField()
@@ -28,6 +54,12 @@ namespace Riemann
 
 	void VoxelField::MakeEmpty(const Box3 &Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight)
 	{
+		if (!VoxelDimensionsValid(Bv, SizeX, SizeY, SizeZ, VoxelSize, VoxelHeight))
+		{
+			VoxelField Empty;
+			Swap(Empty);
+			return;
+		}
 		m_BV = Bv;
 
 		m_SizeX = SizeX;
@@ -38,11 +70,24 @@ namespace Riemann
 		m_InvVoxelSize = 1.0f / VoxelSize;
 		m_InvVoxelHeight = 1.0f / VoxelHeight;
 
-		m_Fields.resize(m_SizeX * m_SizeZ);
-		memset(&m_Fields[0], 0, sizeof(m_Fields[0]) * m_SizeX * m_SizeZ);
+		m_Fields.assign(size_t(m_SizeX) * m_SizeZ, nullptr);
 
 		int kVoxelBatchSize = vx_clamp(m_SizeX * m_SizeZ / 2, 1024, 1024 * 1024);
-		m_VoxelBatchs.init(1, kVoxelBatchSize);
+		m_VoxelBatchs.init(0, kVoxelBatchSize);
+	}
+
+	void VoxelField::Swap(VoxelField& Other)
+	{
+		std::swap(m_SizeX, Other.m_SizeX);
+		std::swap(m_SizeY, Other.m_SizeY);
+		std::swap(m_SizeZ, Other.m_SizeZ);
+		std::swap(m_VoxelSize, Other.m_VoxelSize);
+		std::swap(m_VoxelHeight, Other.m_VoxelHeight);
+		std::swap(m_InvVoxelSize, Other.m_InvVoxelSize);
+		std::swap(m_InvVoxelHeight, Other.m_InvVoxelHeight);
+		std::swap(m_BV, Other.m_BV);
+		m_Fields.swap(Other.m_Fields);
+		std::swap(m_VoxelBatchs, Other.m_VoxelBatchs);
 	}
 
 	bool VoxelField::IntersectYPlane(float y_value, std::vector<int>& output, float Thr)
@@ -123,15 +168,20 @@ namespace Riemann
 
 	int		VoxelField::WorldSpaceToVoxelIndex(const Vector3& pos) const
 	{
-		const int x = vx_clamp((int)((pos.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
-		const int z = vx_clamp((int)((pos.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
+		if (m_SizeX == 0 || !VoxelFinite(pos)) return -1;
+		const double fx = (double(pos.x) - m_BV.Min.x) / m_VoxelSize;
+		const double fz = (double(pos.z) - m_BV.Min.z) / m_VoxelSize;
+		if (fx < 0.0 || fx >= m_SizeX || fz < 0.0 || fz >= m_SizeZ) return -1;
+		const int x = (int)fx;
+		const int z = (int)fz;
 		return z * m_SizeX + x;
 	}
 
 	int		VoxelField::WorldSpaceToVoxelSpaceY(float pos_y) const
 	{
-		const int y = vx_clamp((int)((pos_y - m_BV.Min.y) * m_InvVoxelHeight), 0, m_SizeY - 1);
-		return y;
+		if (m_SizeY == 0 || !std::isfinite(pos_y)) return -1;
+		const double y = (double(pos_y) - m_BV.Min.y) / m_VoxelHeight;
+		return y >= 0.0 && y < m_SizeY ? (int)y : -1;
 	}
 
 	float	VoxelField::VoxelSpaceToWorldSpaceY(uint16_t y) const
@@ -142,6 +192,7 @@ namespace Riemann
 	Box3	VoxelField::GetVoxelBox(const Vector3& pos) const
 	{
 		int idx = WorldSpaceToVoxelIndex(pos);
+		if (idx < 0) return Box3::Unit();
 		int z = idx / m_SizeX;
 		int x = idx - z * m_SizeX;
 		int y = WorldSpaceToVoxelSpaceY(pos.y);
@@ -176,6 +227,10 @@ namespace Riemann
 
 	bool VoxelField::AddVoxel(int idx, uint16_t ymin, uint16_t ymax, float MergeThr)
 	{
+		if (idx < 0 || size_t(idx) >= m_Fields.size() || ymin > ymax || ymax >= m_SizeY ||
+			!std::isfinite(MergeThr) || MergeThr < 0.0f) return false;
+		// MergeThr is the maximum empty gap in world-space Y; touching cells always merge.
+		const int Gap = (int)std::min(65536.0, std::floor(double(MergeThr) / m_VoxelHeight));
 		Voxel* s = AllocVoxel();
 		if (s == nullptr)
 		{
@@ -197,11 +252,11 @@ namespace Riemann
 
 		while (p)
 		{
-			if (p->ymin > s->ymax)
+			if (int(p->ymin) > int(s->ymax) + 1 + Gap)
 			{
 				break;
 			}
-			else if (p->ymax + 1 < s->ymin)
+			else if (int(p->ymax) + 1 + Gap < int(s->ymin))
 			{
 				prev = p;
 				p = p->next;
@@ -325,6 +380,8 @@ namespace Riemann
 
 	bool VoxelField::VoxelizationTri(const Vector3& v0, const Vector3& v1, const Vector3& v2, const VoxelizationInfo& info)
 	{
+		if (m_SizeX == 0 || !VoxelFinite(v0) || !VoxelFinite(v1) || !VoxelFinite(v2) ||
+			!std::isfinite(info.YMergeThr) || info.YMergeThr < 0.0f) return false;
 		// const float dy = m_BV.Max.y - m_BV.Min.y;
 		const float ics = 1.0f / m_VoxelSize;
 		const float ich = 1.0f / m_VoxelHeight;
@@ -335,8 +392,8 @@ namespace Riemann
 		if (!tbox.Intersect(m_BV))
 			return true;
 
-		const int z0 = vx_clamp((int)((tbox.Min.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
-		const int z1 = vx_clamp((int)((tbox.Max.z - m_BV.Min.z) * ics), 0, m_SizeZ - 1);
+		const int z0 = (int)vx_clamp((double(tbox.Min.z) - m_BV.Min.z) * ics, 0.0, double(m_SizeZ - 1));
+		const int z1 = (int)vx_clamp((double(tbox.Max.z) - m_BV.Min.z) * ics, 0.0, double(m_SizeZ - 1));
 
 		Vector3 buf[7 * 4];
 		Vector3 *In = buf, *inrow = buf + 7, *p1 = buf + 7 * 2, *p2 = buf + 7 * 3;
@@ -361,8 +418,8 @@ namespace Riemann
 				minX = std::min(minX, inrow[i].x);
 				maxX = std::max(maxX, inrow[i].x);
 			}
-			const int x0 = vx_clamp((int)((minX - m_BV.Min.x) * ics), 0, m_SizeX - 1);
-			const int x1 = vx_clamp((int)((maxX - m_BV.Min.x) * ics), 0, m_SizeX - 1);
+			const int x0 = (int)vx_clamp((double(minX) - m_BV.Min.x) * ics, 0.0, double(m_SizeX - 1));
+			const int x1 = (int)vx_clamp((double(maxX) - m_BV.Min.x) * ics, 0.0, double(m_SizeX - 1));
 
 			int nv, nv2 = nvrow;
 
@@ -391,8 +448,8 @@ namespace Riemann
 				ymin -= m_BV.Min.y;
 				ymax -= m_BV.Min.y;
 
-				const uint16_t y0 = (uint16_t)vx_clamp((int)(ymin * ich), 0, m_SizeY - 1);
-				const uint16_t y1 = (uint16_t)vx_clamp((int)(ymax * ich), 0, m_SizeY - 1);
+				const uint16_t y0 = (uint16_t)vx_clamp(double(ymin) * ich, 0.0, double(m_SizeY - 1));
+				const uint16_t y1 = (uint16_t)vx_clamp(double(ymax) * ich, 0.0, double(m_SizeY - 1));
 
 				if (!AddVoxel(z * m_SizeX + x, y0, y1, info.YMergeThr))
 					return false;
@@ -407,29 +464,41 @@ namespace Riemann
 		return VoxelizationYPlane(world_y, world_y);
 	}
 
+	static bool VoxelInterval(float Min, float Max, float Origin, float Spacing, int Count, int& First, int& Last)
+	{
+		const double A = (double(Min) - Origin) / Spacing;
+		const double B = (double(Max) - Origin) / Spacing;
+		if (A >= Count || B < 0.0 || (A != B && B <= 0.0)) return false;
+		First = (int)std::max(0.0, std::floor(A));
+		// A nonzero interval is half-open, so an exact upper cell boundary adds no extra cell.
+		Last = A == B ? First : (int)std::min(double(Count - 1), std::ceil(B) - 1.0);
+		return First <= Last;
+	}
+
 	bool VoxelField::VoxelizationYPlane(float world_y_min, float world_y_max)
 	{
-		uint16_t ymin = (uint16_t)WorldSpaceToVoxelSpaceY(world_y_min);
-		uint16_t ymax = (uint16_t)WorldSpaceToVoxelSpaceY(world_y_max);
+		if (m_SizeY == 0 || !std::isfinite(world_y_min) || !std::isfinite(world_y_max) || world_y_min > world_y_max) return false;
+		int ymin, ymax;
+		if (!VoxelInterval(world_y_min, world_y_max, m_BV.Min.y, m_VoxelHeight, m_SizeY, ymin, ymax)) return true;
 		for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 		{
-			AddVoxel(i, ymin, ymax, 0.0f);
+			if (!AddVoxel(i, (uint16_t)ymin, (uint16_t)ymax, 0.0f)) return false;
 		}
 		return true;
 	}
 
 	bool VoxelField::VoxelizationCube(const Box3& cube)
 	{
-		const int x0 = vx_clamp((int)((cube.Min.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
-		const int x1 = vx_clamp((int)((cube.Max.x - m_BV.Min.x) * m_InvVoxelSize), 0, m_SizeX - 1);
-		const int z0 = vx_clamp((int)((cube.Min.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
-		const int z1 = vx_clamp((int)((cube.Max.z - m_BV.Min.z) * m_InvVoxelSize), 0, m_SizeZ - 1);
-		const uint16_t y0 = (uint16_t)WorldSpaceToVoxelSpaceY(cube.Min.y);
-		const uint16_t y1 = (uint16_t)WorldSpaceToVoxelSpaceY(cube.Max.y);
+		if (m_SizeX == 0 || !VoxelFinite(cube.Min) || !VoxelFinite(cube.Max) ||
+			cube.Min.x > cube.Max.x || cube.Min.y > cube.Max.y || cube.Min.z > cube.Max.z) return false;
+		int x0, x1, y0, y1, z0, z1;
+		if (!VoxelInterval(cube.Min.x, cube.Max.x, m_BV.Min.x, m_VoxelSize, m_SizeX, x0, x1) ||
+			!VoxelInterval(cube.Min.y, cube.Max.y, m_BV.Min.y, m_VoxelHeight, m_SizeY, y0, y1) ||
+			!VoxelInterval(cube.Min.z, cube.Max.z, m_BV.Min.z, m_VoxelSize, m_SizeZ, z0, z1)) return true;
 		for (int z = z0; z <= z1; ++z)
 		for (int x = x0; x <= x1; ++x)
 		{
-			AddVoxel(z * m_SizeX + x, y0, y1, 0.0f);
+			if (!AddVoxel(z * m_SizeX + x, (uint16_t)y0, (uint16_t)y1, 0.0f)) return false;
 		}
 		return true;
 	}
@@ -444,7 +513,7 @@ namespace Riemann
 
 			Voxel* p = old;
 
-			uint16_t first_y = p ? p->ymin : m_SizeY;
+			int first_y = p ? p->ymin : m_SizeY;
 			if (first_y > 0)
 			{
 				AddVoxel(i, 0, first_y - 1, 0.0f);
@@ -452,11 +521,11 @@ namespace Riemann
 
 			while (p)
 			{
-				if (p->next)
+				if (p->next && int(p->ymax) + 1 < p->next->ymin)
 				{
 					AddVoxel(i, p->ymax + 1, p->next->ymin - 1, 0.0f);
 				}
-				else if (p->ymax < m_SizeY - 1)
+				else if (!p->next && p->ymax < m_SizeY - 1)
 				{
 					AddVoxel(i, p->ymax + 1, m_SizeY - 1, 0.0f);
 				}
@@ -480,36 +549,29 @@ namespace Riemann
 		int Count = 0;
 		for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 		{
-			Voxel* p = m_Fields[i], * prev = nullptr;
-			while (p)
+			Voxel** Link = &m_Fields[i];
+			while (*Link)
 			{
-				while (func(p))
+				Voxel* p = *Link;
+				if (func(p))
 				{
 					++Count;
-					if (prev)
-						prev->next = p->next;
-					else
-						m_Fields[i] = p->next;
-					if (p->next == nullptr)
-						goto end_while;
-					Voxel* next = p->next;
+					*Link = p->next;
 					FreeVoxel(p);
-					p = next;
 				}
-
-				prev = p;
-				p = p->next;
+				else
+				{
+					Link = &p->next;
+				}
 			}
-
-	end_while:
-			;
 		}
 		return Count;
 	}
 
 	int			VoxelField::FilterByY(float world_y)
 	{
-		const uint16_t ny = (uint16_t)WorldSpaceToVoxelSpaceY(world_y);
+		if (m_SizeY == 0 || !std::isfinite(world_y) || world_y < m_BV.Min.y) return 0;
+		const int ny = (int)std::min(double(m_SizeY - 1), (double(world_y) - m_BV.Min.y) / m_VoxelHeight);
 		return Filter([=](Voxel* v) -> bool
 			{
 				return v->ymin <= ny;
@@ -709,20 +771,19 @@ namespace Riemann
 
 	void	VoxelField::GenerateBitmapByLevel(std::vector<int>& levels, int * level_max) const
 	{
-		levels.resize(m_SizeX * m_SizeZ);
-		memset(&levels[0], 0, sizeof(levels[0]) * m_SizeX * m_SizeZ);
+		levels.assign(m_Fields.size(), 0);
+		if (level_max) *level_max = 0;
 
 		for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 		{
 			levels[i] = CountVoxel(m_Fields[i]);
-			*level_max = std::max(*level_max, levels[i]);
+			if (level_max) *level_max = std::max(*level_max, levels[i]);
 		}
 	}
 
 	void	VoxelField::GenerateBitmapByData(std::vector<int>& output, uint32_t data) const
 	{
-		output.resize(m_SizeX * m_SizeZ);
-		memset(&output[0], 0, sizeof(output[0]) * m_SizeX * m_SizeZ);
+		output.assign(m_Fields.size(), 0);
 
 		for (int i = 0; i < m_SizeX * m_SizeZ; ++i)
 		{
@@ -732,191 +793,232 @@ namespace Riemann
 		}
 	}
 
-	bool	VoxelField::Verify()
+	bool VoxelField::Verify() const
 	{
-		TraversalVoxel([](Voxel* v) -> bool
+		if (m_SizeX == 0 && m_SizeY == 0 && m_SizeZ == 0)
+		{
+			return m_Fields.empty() && m_VoxelBatchs.empty() && m_VoxelSize == 0.0f && m_VoxelHeight == 0.0f;
+		}
+		if (!VoxelDimensionsValid(m_BV, m_SizeX, m_SizeY, m_SizeZ, m_VoxelSize, m_VoxelHeight) ||
+			m_Fields.size() != size_t(m_SizeX) * m_SizeZ) return false;
+		size_t Count = 0;
+		for (const Voxel* Head : m_Fields)
+		{
+			int PreviousMax = -1;
+			for (const Voxel* V = Head; V; V = V->next)
 			{
-				if (v->ymin > v->ymax)
-				{
-					return false;
-				}
+				if (V->ymin > V->ymax || V->ymax >= m_SizeY || V->ymin <= PreviousMax ||
+					++Count > size_t(m_VoxelBatchs.size())) return false;
+				PreviousMax = V->ymax;
+			}
+		}
+		return Count == size_t(m_VoxelBatchs.size());
+	}
 
-				if (v->next && v->ymax >= v->next->ymin)
-				{
-					return false;
-				}
+	bool VoxelField::GenerateMesh(StaticMesh& Mesh) const
+	{
+		if (m_SizeX == 0)
+		{
+			Mesh.Clear();
+			return Verify();
+		}
+		return GenerateMesh(Mesh, 0, m_SizeX - 1, 0, m_SizeZ - 1);
+	}
 
-				return true;
-			});
+	bool VoxelField::GenerateMesh(StaticMesh& Mesh, int x1, int x2, int z1, int z2) const
+	{
+		Mesh.Clear();
+		if (x1 > x2 || z1 > z2 || !Verify()) return false;
+		x1 = std::max(0, x1);
+		x2 = std::min(m_SizeX - 1, x2);
+		z1 = std::max(0, z1);
+		z2 = std::min(m_SizeZ - 1, z2);
+		if (x1 > x2 || z1 > z2) return true;
+
+		// Each face owns four vertices so hard voxel edges retain their flat normals.
+		static const int Corners[6][4][3] = {
+			{{0,0,0}, {0,0,1}, {0,1,1}, {0,1,0}},
+			{{1,0,0}, {1,1,0}, {1,1,1}, {1,0,1}},
+			{{0,0,0}, {1,0,0}, {1,0,1}, {0,0,1}},
+			{{0,1,0}, {0,1,1}, {1,1,1}, {1,1,0}},
+			{{0,0,0}, {0,1,0}, {1,1,0}, {1,0,0}},
+			{{0,0,1}, {1,0,1}, {1,1,1}, {0,1,1}}
+		};
+		static const Vector3 Normals[6] = {
+			Vector3(-1,0,0), Vector3(1,0,0), Vector3(0,-1,0),
+			Vector3(0,1,0), Vector3(0,0,-1), Vector3(0,0,1)
+		};
+		std::vector<Vector3> Vertices, VertexNormals;
+		std::vector<uint32_t> Indices;
+		auto AddFace = [&](int x, int y, int z, int Face) -> bool
+		{
+			if (Vertices.size() > std::numeric_limits<uint32_t>::max() - 4) return false;
+			const uint32_t Base = (uint32_t)Vertices.size();
+			for (int i = 0; i < 4; ++i)
+			{
+				const int* C = Corners[Face][i];
+				Vertices.emplace_back(
+					m_BV.Min.x + (x + C[0]) * m_VoxelSize,
+					m_BV.Min.y + (y + C[1]) * m_VoxelHeight,
+					m_BV.Min.z + (z + C[2]) * m_VoxelSize);
+				VertexNormals.push_back(Normals[Face]);
+			}
+			Indices.insert(Indices.end(), {Base, Base + 1, Base + 2, Base, Base + 2, Base + 3});
+			return true;
+		};
+
+		for (int z = z1; z <= z2; ++z)
+		for (int x = x1; x <= x2; ++x)
+		{
+			const int Index = z * m_SizeX + x;
+			// Neighbor cursors only advance in Y, avoiding a dense 3D occupancy allocation.
+			const Voxel* Neighbors[4] = {
+				x > x1 ? m_Fields[Index - 1] : nullptr,
+				x < x2 ? m_Fields[Index + 1] : nullptr,
+				z > z1 ? m_Fields[Index - m_SizeX] : nullptr,
+				z < z2 ? m_Fields[Index + m_SizeX] : nullptr
+			};
+			const int SideFaces[4] = {0, 1, 4, 5};
+			int PreviousMax = -2;
+			for (const Voxel* V = m_Fields[Index]; V; V = V->next)
+			{
+				if (int(V->ymin) > PreviousMax + 1 && !AddFace(x, V->ymin, z, 2)) return false;
+				if ((!V->next || int(V->next->ymin) > int(V->ymax) + 1) && !AddFace(x, V->ymax, z, 3)) return false;
+				for (int y = V->ymin; y <= V->ymax; ++y)
+				{
+					for (int Side = 0; Side < 4; ++Side)
+					{
+						const Voxel*& N = Neighbors[Side];
+						while (N && N->ymax < y) N = N->next;
+						if ((!N || N->ymin > y) && !AddFace(x, y, z, SideFaces[Side])) return false;
+					}
+				}
+				PreviousMax = V->ymax;
+			}
+		}
+
+		if (!Vertices.empty())
+		{
+			Mesh.SetData(Vertices.data(), Indices.data(), (uint32_t)Vertices.size(), (uint32_t)(Indices.size() / 3), false, true);
+			Mesh.mNormals = std::move(VertexNormals);
+			Mesh.BoundingVolume = Box3(Vertices.data(), Vertices.size());
+		}
 		return true;
 	}
 
-	bool	VoxelField::SerializeTo(const char* filename)
+	StaticMesh* VoxelField::CreateDebugMesh(int x1, int x2, int z1, int z2) const
 	{
-		VoxelFileHeader	header;
-		header.nFields = CalculateNumFields();
-		header.nVoxels = m_VoxelBatchs.size();
-		header.SizeX = m_SizeX;
-		header.SizeY = m_SizeY;
-		header.SizeZ = m_SizeZ;
-		header.VoxelSize = m_VoxelSize;
-		header.VoxelHeight = m_VoxelHeight;
-		header.BV = m_BV;
-
-		std::vector<VoxelFileField> buffer_field;
-		buffer_field.resize(header.nFields);
-
-		std::vector<VoxelFast> buffer_vx;
-		buffer_vx.resize(header.nVoxels);
-
-		VoxelFileField* pf = &buffer_field[0];
-		VoxelFast* pvx = &buffer_vx[0];
-
-		int nFields = 0;
-		int nVoxels = 0;
-		for (int i = 0; i < m_SizeZ * m_SizeX; ++i)
+		StaticMesh* Mesh = new StaticMesh();
+		if (!GenerateMesh(*Mesh, x1, x2, z1, z2))
 		{
-			Voxel* v = m_Fields[i];
-			if (v == nullptr)
-			{
-				continue;
-			}
-
-			if (nFields == header.nFields)
-			{
-				assert(false);
-				return false;
-			}
-
-			pf->idx = i;
-			while (v)
-			{
-				if (nVoxels == m_VoxelBatchs.size())
-				{
-					assert(false);
-					return false;
-				}
-
-				pvx->data = v->data;
-				pvx->ymin = v->ymin;
-				pvx->ymax = v->ymax;
-				++pvx;
-				++nVoxels;
-
-				v = v->next;
-			}
-
-			++pf;
-			++nFields;
+			delete Mesh;
+			return nullptr;
 		}
-
-		if (nFields != header.nFields)
-		{
-			assert(false);
-			return false;
-		}
-
-		if (nVoxels != header.nVoxels)
-		{
-			assert(false);
-			return false;
-		}
-
-		FileWriter file(filename);
-		if (!file.IsLoaded())
-		{
-			return false;
-		}
-
-		uint32_t Magic = VOXEL_FILE_MAGIC;
-		file.Write(&Magic, sizeof(Magic));
-		file.Write(&header, sizeof(header));
-		file.Write(&buffer_vx[0], sizeof(VoxelFast) * buffer_vx.size());
-		file.Write(&buffer_field[0], sizeof(VoxelFileField) * buffer_field.size());
-		file.Close();
-
-		return true;
+		return Mesh;
 	}
 
-	bool	VoxelField::SerializeFrom(const char* filename)
+	bool VoxelField::SerializeTo(const char* filename)
 	{
-		FileReader file(filename);
-		if (!file.IsLoaded())
+		if (!filename || !Verify()) return false;
+		VoxelFileHeader Header = {};
+		Header.Version = VOXEL_FILE_VERSION;
+		Header.SizeX = m_SizeX;
+		Header.SizeY = m_SizeY;
+		Header.SizeZ = m_SizeZ;
+		Header.VoxelSize = m_VoxelSize;
+		Header.VoxelHeight = m_VoxelHeight;
+		Header.BV = m_BV;
+		std::vector<VoxelFast> Voxels;
+		std::vector<VoxelFileField> Fields;
+		for (size_t i = 0; i < m_Fields.size(); ++i)
 		{
-			return false;
-		}
-
-		if (file.GetFileSize() < 4 + sizeof(VoxelFileHeader))
-		{
-			return false;
-		}
-
-		uint32_t Magic;
-		file.Read(&Magic, sizeof(Magic));
-		if (Magic != VOXEL_FILE_MAGIC)
-		{
-			return false;
-		}
-
-		VoxelFileHeader	header;
-		file.Read(&header, sizeof(header));
-		uint64_t nExpectedSize = 4 + sizeof(VoxelFileHeader);
-		nExpectedSize += sizeof(VoxelFileField) * header.nFields;
-		nExpectedSize += sizeof(VoxelFast) * header.nVoxels;
-		if (file.GetFileSize() != nExpectedSize)
-		{
-			return false;
-		}
-
-		MakeEmpty(header.BV, header.SizeX, header.SizeY, header.SizeZ, header.VoxelSize, header.VoxelHeight);
-	
-		uint32_t NumVoxels = header.nVoxels;
-
-		m_VoxelBatchs.init(0, NumVoxels);
-		Voxel* Voxels = m_VoxelBatchs.allocate_batch();
-
-		{
-			std::vector<VoxelFast> buffer_vx;
-			buffer_vx.resize(header.nVoxels);
-			file.Read(&buffer_vx[0], sizeof(VoxelFast) * buffer_vx.size());
-			for (uint32_t i = 0; i < header.nVoxels; ++i)
+			if (!m_Fields[i]) continue;
+			VoxelFileField Field = {(uint32_t)i, (uint32_t)Voxels.size(), 0};
+			for (const Voxel* V = m_Fields[i]; V; V = V->next)
 			{
-				Voxel* vx = &Voxels[i];
-				const VoxelFast* vf = &buffer_vx[i];
-				vx->data = vf->data;
-				vx->ymax = vf->ymax;
-				vx->ymin = vf->ymin;
-				// WARNING: vx->next is junk
+				Voxels.push_back({V->data, V->ymin, V->ymax});
+				++Field.numVoxels;
 			}
-			buffer_vx.clear();
+			Fields.push_back(Field);
 		}
+		Header.nVoxels = (uint32_t)Voxels.size();
+		Header.nFields = (uint32_t)Fields.size();
+		FileWriter File(filename);
+		if (!File.IsLoaded()) return false;
+		const uint32_t Magic = VOXEL_FILE_MAGIC;
+		return File.Write(&Magic, sizeof(Magic)) == sizeof(Magic) &&
+			File.Write(&Header, sizeof(Header)) == sizeof(Header) &&
+			(Voxels.empty() || File.Write(Voxels.data(), Voxels.size() * sizeof(VoxelFast)) == Voxels.size() * sizeof(VoxelFast)) &&
+			(Fields.empty() || File.Write(Fields.data(), Fields.size() * sizeof(VoxelFileField)) == Fields.size() * sizeof(VoxelFileField));
+	}
 
+	bool VoxelField::SerializeFrom(const char* filename)
+	{
+		if (!filename) return false;
+		FileReader File(filename);
+		uint32_t Magic = 0;
+		VoxelFileHeader Header = {};
+		if (!File.IsLoaded() || File.Read(&Magic, sizeof(Magic)) != sizeof(Magic) || Magic != VOXEL_FILE_MAGIC ||
+			File.Read(&Header, sizeof(Header)) != sizeof(Header) || Header.Version != VOXEL_FILE_VERSION) return false;
+		const uint64_t ExpectedSize = sizeof(Magic) + sizeof(Header) +
+			uint64_t(Header.nVoxels) * sizeof(VoxelFast) + uint64_t(Header.nFields) * sizeof(VoxelFileField);
+		if (File.GetFileSize() != ExpectedSize || Header.nVoxels > uint32_t(std::numeric_limits<int>::max())) return false;
+
+		const bool Empty = Header.SizeX == 0 && Header.SizeY == 0 && Header.SizeZ == 0;
+		if (Empty)
 		{
-			std::vector<VoxelFileField> buffer_field;
-			buffer_field.resize(header.nFields);
-			file.Read(&buffer_field[0], sizeof(VoxelFileField) * buffer_field.size());
-
-			uint32_t curr = 0;
-			for (uint32_t i = 0; i < header.nFields; ++i)
-			{
-				if (curr >= NumVoxels)
-				{
-					assert(false);
-					return false;
-				}
-
-				int idx = buffer_field[i].idx;
-				m_Fields[idx] = &Voxels[curr];
-				int Count = (i < header.nFields - 1) ? (buffer_field[i + 1].idx - buffer_field[i].idx) : (NumVoxels - buffer_field[i + 1].idx);
-				for (int j = 0; j < Count - 1; ++j)
-				{
-					Voxels[curr + j].next = &Voxels[curr + j + 1];
-				}
-				Voxels[curr + Count - 1].next = nullptr;
-			}
-			buffer_field.clear();
+			if (Header.nFields || Header.nVoxels || Header.VoxelSize != 0.0f || Header.VoxelHeight != 0.0f ||
+				Header.BV.Min != Vector3::Zero() || Header.BV.Max != Vector3::Zero()) return false;
+			VoxelField Field;
+			Swap(Field);
+			return true;
 		}
+		if (!VoxelDimensionsValid(Header.BV, Header.SizeX, Header.SizeY, Header.SizeZ, Header.VoxelSize, Header.VoxelHeight) ||
+			Header.nFields > uint64_t(Header.SizeX) * Header.SizeZ || Header.nFields > Header.nVoxels) return false;
 
+		std::vector<VoxelFast> Voxels(Header.nVoxels);
+		std::vector<VoxelFileField> Fields(Header.nFields);
+		if ((!Voxels.empty() && File.Read(Voxels.data(), Voxels.size() * sizeof(VoxelFast)) != Voxels.size() * sizeof(VoxelFast)) ||
+			(!Fields.empty() && File.Read(Fields.data(), Fields.size() * sizeof(VoxelFileField)) != Fields.size() * sizeof(VoxelFileField))) return false;
+
+		uint32_t NextVoxel = 0;
+		uint32_t PreviousIndex = 0;
+		for (size_t i = 0; i < Fields.size(); ++i)
+		{
+			const VoxelFileField& Field = Fields[i];
+			if (Field.idx >= uint64_t(Header.SizeX) * Header.SizeZ || (i && Field.idx <= PreviousIndex) ||
+				Field.firstVoxel != NextVoxel || Field.numVoxels == 0 || Field.numVoxels > Header.nVoxels - NextVoxel) return false;
+			int PreviousMax = -1;
+			for (uint32_t j = 0; j < Field.numVoxels; ++j)
+			{
+				const VoxelFast& V = Voxels[NextVoxel + j];
+				if (V.ymin > V.ymax || V.ymax >= Header.SizeY || V.ymin <= PreviousMax) return false;
+				PreviousMax = V.ymax;
+			}
+			PreviousIndex = Field.idx;
+			NextVoxel += Field.numVoxels;
+		}
+		if (NextVoxel != Header.nVoxels) return false;
+
+		// Allocate into a temporary field only after the entire file has been validated.
+		VoxelField Result;
+		Result.MakeEmpty(Header.BV, Header.SizeX, Header.SizeY, Header.SizeZ, Header.VoxelSize, Header.VoxelHeight);
+		for (const VoxelFileField& Field : Fields)
+		{
+			Voxel** Link = &Result.m_Fields[Field.idx];
+			for (uint32_t j = 0; j < Field.numVoxels; ++j)
+			{
+				const VoxelFast& Source = Voxels[Field.firstVoxel + j];
+				Voxel* V = Result.AllocVoxel();
+				V->data = Source.data;
+				V->ymin = Source.ymin;
+				V->ymax = Source.ymax;
+				V->next = nullptr;
+				*Link = V;
+				Link = &V->next;
+			}
+		}
+		Swap(Result);
 		return true;
 	}
 }

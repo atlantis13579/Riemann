@@ -2,11 +2,13 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "../Renderer/RiemannRenderer.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/RigidBodyDynamics/RigidBody.h"
+#include "../Src/Fluid/SmokeSimulation.h"
 
 namespace Riemann
 {
@@ -17,6 +19,7 @@ namespace Riemann
 	class RopeSystem;
 	class StaticMesh;
 	class PositionConstraint;
+	class VehicleDeformation;
 
 	enum class ConstraintControlType
 	{
@@ -100,6 +103,9 @@ namespace Riemann
 		float InteractionRadius = 0.65f;
 		float InteractionStrength = 18.0f;
 		std::vector<SceneFieldRegion> Regions;
+		SmokeSimulationSettings Smoke;
+		float SmokeExtinction = 5.5f;
+		Vector3 SmokeColor = Vector3(0.85f, 0.89f, 0.96f);
 
 		bool IsConfigured() const { return !Type.empty(); }
 	};
@@ -118,6 +124,9 @@ namespace Riemann
 		void Step(float dt);
 
 		Geometry* AddProjectileSphere(const std::string& id, const Vector3& position, float radius, const Vector3& velocity, const Vector4& color);
+		static constexpr int MaxSmokeRigidBodies = 3;
+		int GetSmokeRigidBodyCount() const;
+		bool AddSmokeRigidBody();
 		bool IsMouseControlGeometry(const Geometry* geometry) const;
 		bool RayCastMouseControlGeometry(const Vector3& origin, const Vector3& direction, float maxDistance,
 			Geometry** hitGeometry, Vector3* hitPoint) const;
@@ -132,6 +141,11 @@ namespace Riemann
 		bool RotateTank(const Vector3& center, const Quaternion& deltaRotation);
 		std::vector<ConstraintControlState> GetConstraintControls() const;
 		bool ApplyConstraintControl(const ConstraintControlState& state);
+		std::vector<std::string> GetTerrainObjectIds() const;
+		int EditTerrain(const std::string& id, const Vector3& worldCenter, float radius, float value, int mode, float strength = 1.0f);
+		size_t GetVehicleCount() const { return m_Vehicles.size(); }
+		VehicleDeformation* GetVehicle(int index);
+		const VehicleDeformation* GetVehicle(int index) const;
 
 		const std::vector<SceneObjectInstance>& GetObjects() const { return m_Objects; }
 		uint32_t GetRenderRevision() const { return m_RenderRevision; }
@@ -146,10 +160,12 @@ namespace Riemann
 		bool LoadParsedScene(const class JsonValue& root, const std::string& sourceName, std::string* errorMessage);
 		void ResetWorld(const PhysicsWorldParam& param);
 		bool CreateObject(const SceneObjectDesc& desc, std::string* errorMessage);
+		bool CreateVehicles(const class JsonValue& root, const std::string& sourceName, std::string* errorMessage);
 		bool CreateDestructionBox(const SceneObjectDesc& desc, std::string* errorMessage);
 		bool CreateDestructionGlass(const SceneObjectDesc& desc, std::string* errorMessage);
 		Geometry* CreateGeometry(const SceneObjectDesc& desc, std::string* errorMessage) const;
 		bool SyncDestructionObjects(bool force);
+		bool SyncTerrainRevisions();
 		void RegisterMouseControlGeometry(Geometry* geometry);
 		void TouchRenderRevision() { ++m_RenderRevision; }
 
@@ -172,6 +188,30 @@ namespace Riemann
 		std::vector<std::unique_ptr<DestructionSet> > m_DestructionSets;
 		std::vector<DestructionRenderState> m_DestructionRenderStates;
 		std::vector<SceneObjectInstance> m_Objects;
+		std::vector<std::pair<Geometry*, uint64_t>> m_TerrainRevisions;
+		struct RopeSurfaceState
+		{
+			RopeSystem* Rope = nullptr;
+			std::unique_ptr<Geometry> Surface;
+			std::vector<Vector3> LastPositions;
+			Vector3 FirstNormal = Vector3::UnitX();
+			float Radius = 0.05f;
+			int Sides = 8;
+		};
+		void SyncRopeSurfaces();
+		std::vector<RopeSurfaceState> m_RopeSurfaces;
+		struct VehicleRenderState
+		{
+			std::unique_ptr<VehicleDeformation> Vehicle;
+			std::vector<std::unique_ptr<Geometry>> Wheels;
+			std::vector<Transform> WheelLocalTransforms;
+			Vector3 PreviousPosition = Vector3::Zero();
+			float WheelRadius = 0.4f;
+			float WheelAngle = 0.0f;
+			uint64_t LastRevision = ~uint64_t(0);
+		};
+		void SyncVehicles(float dt);
+		std::vector<VehicleRenderState> m_Vehicles;
 		CameraDesc m_Camera;
 		DirectionalLightDesc m_Light;
 		SceneFieldSimulationDesc m_FieldSimulation;

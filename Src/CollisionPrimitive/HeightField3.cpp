@@ -2,6 +2,7 @@
 #include "HeightField3.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include "Capsule3.h"
 #include "OrientedBox3.h"
 #include "Triangle3.h"
@@ -16,20 +17,123 @@ namespace Riemann
 
 	static const float HfCellThickness = 0.0001f;
 
+	namespace
+	{
+		bool FiniteHeightFieldVector(const Vector3& Value)
+		{
+			return std::isfinite(Value.x) && std::isfinite(Value.y) && std::isfinite(Value.z);
+		}
+
+		double BrushWeight(double DistanceSquared, double Radius, bool LinearFalloff)
+		{
+			return LinearFalloff ? std::max(0.0, 1.0 - std::sqrt(DistanceSquared) / Radius) : 1.0;
+		}
+	}
+
+	HeightField3::HeightField3()
+		: nX(0), nZ(0), BV(Vector3::Zero(), Vector3::Zero()), DX(0.0f), DZ(0.0f), InvDX(0.0f), InvDZ(0.0f)
+		, HeightScale(1.0f), Cells(nullptr), Revision(0), mLastEditBounds(Box3::Empty())
+	{
+	}
+
+	void HeightField3::Init(const Box3& Bounds, int CountX, int CountZ)
+	{
+		const Box3 NewBounds = Bounds;
+		nX = nZ = 0;
+		DX = DZ = InvDX = InvDZ = 0.0f;
+		BV = Box3(Vector3::Zero(), Vector3::Zero());
+		Cells = nullptr;
+		mCells.clear();
+		Revision = 0;
+		mLastEditBounds = Box3::Empty();
+		if (CountX < 2 || CountZ < 2 || (uint64_t)CountX * (uint64_t)CountZ > (uint64_t)std::numeric_limits<int>::max()
+			|| !FiniteHeightFieldVector(NewBounds.Min) || !FiniteHeightFieldVector(NewBounds.Max)
+			|| NewBounds.Max.x <= NewBounds.Min.x || NewBounds.Max.z <= NewBounds.Min.z || NewBounds.Max.y < NewBounds.Min.y) return;
+		const double SpacingX = ((double)NewBounds.Max.x - NewBounds.Min.x) / (CountX - 1);
+		const double SpacingZ = ((double)NewBounds.Max.z - NewBounds.Min.z) / (CountZ - 1);
+		const double Limit = std::numeric_limits<float>::max();
+		if (SpacingX > Limit || SpacingZ > Limit || 1.0 / SpacingX > Limit || 1.0 / SpacingZ > Limit) return;
+		nX = (uint32_t)CountX;
+		nZ = (uint32_t)CountZ;
+		BV = NewBounds;
+		DX = (float)SpacingX;
+		DZ = (float)SpacingZ;
+		InvDX = 1.0f / DX;
+		InvDZ = 1.0f / DZ;
+	}
+
+	void HeightField3::AllocMemory()
+	{
+		if (nX < 2 || nZ < 2) return;
+		mCells.assign((size_t)nX * nZ, CellInfo{});
+		Cells = mCells.data();
+		++Revision;
+		mLastEditBounds = BV;
+	}
+
+	bool HeightField3::IsValid() const
+	{
+		return Cells != nullptr && nX >= 2 && nZ >= 2 && DX > 0.0f && DZ > 0.0f
+			&& (uint64_t)nX * nZ <= (uint64_t)std::numeric_limits<int>::max()
+			&& std::isfinite(DX) && std::isfinite(DZ) && std::isfinite(InvDX) && std::isfinite(InvDZ) && std::isfinite(HeightScale)
+			&& FiniteHeightFieldVector(BV.Min) && FiniteHeightFieldVector(BV.Max)
+			&& std::fabs(HeightScale) > 1.0e-12f && std::fabs(HeightScale) <= std::numeric_limits<float>::max() / 32768.0f;
+	}
+
+	bool HeightField3::QuantizeHeight(double Height, int16_t& Sample) const
+	{
+		if (!IsValid() || !std::isfinite(Height)) return false;
+		// Clamp in floating point before conversion, including extremely large inputs.
+		const double Value = std::max(-32768.0, std::min(32767.0, Height / HeightScale));
+		Sample = (int16_t)std::round(Value);
+		return true;
+	}
+
+	bool HeightField3::GetBrushRange(float CenterX, float CenterZ, float Radius, int& MinX, int& MinZ, int& MaxX, int& MaxZ) const
+	{
+		if (!IsValid() || !std::isfinite(CenterX) || !std::isfinite(CenterZ) || !std::isfinite(Radius) || Radius <= 0.0f) return false;
+		const double Left = (double)CenterX - Radius, Right = (double)CenterX + Radius;
+		const double Bottom = (double)CenterZ - Radius, Top = (double)CenterZ + Radius;
+		if (Right < BV.Min.x || Left > BV.Max.x || Top < BV.Min.z || Bottom > BV.Max.z) return false;
+		MinX = (int)std::max(0.0, std::min((double)nX - 1, std::ceil((Left - BV.Min.x) / DX)));
+		MinZ = (int)std::max(0.0, std::min((double)nZ - 1, std::ceil((Bottom - BV.Min.z) / DZ)));
+		MaxX = (int)std::max(0.0, std::min((double)nX - 1, std::floor((Right - BV.Min.x) / DX)));
+		MaxZ = (int)std::max(0.0, std::min((double)nZ - 1, std::floor((Top - BV.Min.z) / DZ)));
+		return MinX <= MaxX && MinZ <= MaxZ;
+	}
+
+	void HeightField3::CompleteEdit(int MinX, int MinZ, int MaxX, int MaxZ, const Box3& PreviousBounds, bool RebuildBounds)
+	{
+		if (RebuildBounds) RecalculateBounds();
+		++Revision;
+		// A vertex changes the triangles on either side, including the old support
+		// surface when terrain is lowered. Keep a one-cell horizontal halo.
+		MinX = std::max(0, MinX - 1);
+		MinZ = std::max(0, MinZ - 1);
+		MaxX = std::min((int)nX - 1, MaxX + 1);
+		MaxZ = std::min((int)nZ - 1, MaxZ + 1);
+		float MinHeight = RebuildBounds ? PreviousBounds.Min.y : FLT_MAX;
+		float MaxHeight = RebuildBounds ? PreviousBounds.Max.y : -FLT_MAX;
+		for (int z = MinZ; z <= MaxZ; ++z)
+		for (int x = MinX; x <= MaxX; ++x)
+		{
+			const float Height = GetHeight(z * nX + x);
+			MinHeight = std::min(MinHeight, Height);
+			MaxHeight = std::max(MaxHeight, Height);
+		}
+		mLastEditBounds = Box3(Vector3(BV.Min.x + DX * MinX, MinHeight, BV.Min.z + DZ * MinZ),
+			Vector3(BV.Min.x + DX * MaxX, MaxHeight, BV.Min.z + DZ * MaxZ));
+	}
+
 	bool HeightField3::SetHeight(int x, int z, float height)
 	{
-		if (Cells == nullptr || x < 0 || z < 0 || x >= (int)nX || z >= (int)nZ || std::abs(HeightScale) <= 1e-12f)
-		{
-			return false;
-		}
-		const float sample = height / HeightScale;
-		const int quantized = std::max(-32768, std::min(32767, (int)std::round(sample)));
-		return SetHeightRaw(x, z, (int16_t)quantized);
+		int16_t Sample;
+		return QuantizeHeight(height, Sample) && SetHeightRaw(x, z, Sample);
 	}
 
 	bool HeightField3::SetHeightRaw(int x, int z, int16_t heightSample)
 	{
-		if (Cells == nullptr || x < 0 || z < 0 || x >= (int)nX || z >= (int)nZ)
+		if (!IsValid() || x < 0 || z < 0 || x >= (int)nX || z >= (int)nZ)
 		{
 			return false;
 		}
@@ -38,50 +142,165 @@ namespace Riemann
 		{
 			return true;
 		}
+		const Vector3 PreviousSample(0.0f, GetHeight(z * nX + x), 0.0f);
+		const Box3 PreviousBounds(PreviousSample, PreviousSample);
 		cell.HeightSample = heightSample;
-		++Revision;
-		RecalculateBounds();
+		CompleteEdit(x, z, x, z, PreviousBounds);
 		return true;
+	}
+
+	int HeightField3::SetHeightsRect(int X, int Z, int Width, int Height, const std::vector<float>& Heights)
+	{
+		if (!IsValid() || Width <= 0 || Height <= 0 || (uint64_t)Width * (uint64_t)Height != Heights.size()) return 0;
+		for (float Value : Heights) if (!std::isfinite(Value)) return 0;
+		const int MinX = (int)std::max<int64_t>(0, X), MinZ = (int)std::max<int64_t>(0, Z);
+		const int MaxX = (int)std::min<int64_t>((int64_t)nX - 1, (int64_t)X + Width - 1);
+		const int MaxZ = (int)std::min<int64_t>((int64_t)nZ - 1, (int64_t)Z + Height - 1);
+		if (MinX > MaxX || MinZ > MaxZ) return 0;
+		Box3 PreviousBounds = Box3::Empty();
+		int Changed = 0, ChangedMinX = MaxX, ChangedMinZ = MaxZ, ChangedMaxX = MinX, ChangedMaxZ = MinZ;
+		for (int z = MinZ; z <= MaxZ; ++z)
+		for (int x = MinX; x <= MaxX; ++x)
+		{
+			int16_t Sample;
+			QuantizeHeight(Heights[(size_t)((int64_t)z - Z) * Width + (size_t)((int64_t)x - X)], Sample);
+			CellInfo& Cell = Cells[(size_t)z * nX + x];
+			if (Cell.HeightSample == Sample) continue;
+			PreviousBounds.Encapsulate(Vector3(0.0f, (float)Cell.HeightSample * HeightScale, 0.0f));
+			Cell.HeightSample = Sample;
+			++Changed;
+			ChangedMinX = std::min(ChangedMinX, x); ChangedMinZ = std::min(ChangedMinZ, z);
+			ChangedMaxX = std::max(ChangedMaxX, x); ChangedMaxZ = std::max(ChangedMaxZ, z);
+		}
+		if (Changed) CompleteEdit(ChangedMinX, ChangedMinZ, ChangedMaxX, ChangedMaxZ, PreviousBounds);
+		return Changed;
 	}
 
 	int HeightField3::ModifyHeightCircle(float centerX, float centerZ, float radius, float heightDelta, bool linearFalloff)
 	{
-		if (Cells == nullptr || radius <= 0.0f || std::abs(HeightScale) <= 1e-12f || std::abs(heightDelta) <= 1e-12f)
-		{
-			return 0;
-		}
-		const float radiusSquared = radius * radius;
+		int MinX, MinZ, MaxX, MaxZ;
+		if (!std::isfinite(heightDelta) || heightDelta == 0.0f || !GetBrushRange(centerX, centerZ, radius, MinX, MinZ, MaxX, MaxZ)) return 0;
+		Box3 PreviousBounds = Box3::Empty();
+		const double radiusSquared = (double)radius * radius;
 		int modifiedCount = 0;
-		for (uint32_t z = 0; z < nZ; ++z)
+		int ChangedMinX = MaxX, ChangedMinZ = MaxZ, ChangedMaxX = MinX, ChangedMaxZ = MinZ;
+		for (int z = MinZ; z <= MaxZ; ++z)
 		{
-			for (uint32_t x = 0; x < nX; ++x)
+			for (int x = MinX; x <= MaxX; ++x)
 			{
-				const float sampleX = BV.Min.x + DX * x;
-				const float sampleZ = BV.Min.z + DZ * z;
-				const float dx = sampleX - centerX;
-				const float dz = sampleZ - centerZ;
-				const float distanceSquared = dx * dx + dz * dz;
+				const double dx = (double)BV.Min.x + (double)DX * x - centerX;
+				const double dz = (double)BV.Min.z + (double)DZ * z - centerZ;
+				const double distanceSquared = dx * dx + dz * dz;
 				if (distanceSquared > radiusSquared)
 				{
 					continue;
 				}
-				const float weight = linearFalloff ? 1.0f - std::sqrt(distanceSquared) / radius : 1.0f;
+				const double weight = BrushWeight(distanceSquared, radius, linearFalloff);
 				const int index = (int)(z * nX + x);
-				const float newHeight = GetHeight(index) + heightDelta * weight;
-				const int quantized = std::max(-32768, std::min(32767, (int)std::round(newHeight / HeightScale)));
-				if (Cells[index].HeightSample != (int16_t)quantized)
+				int16_t quantized;
+				QuantizeHeight((double)GetHeight(index) + heightDelta * weight, quantized);
+				if (Cells[index].HeightSample != quantized)
 				{
-					Cells[index].HeightSample = (int16_t)quantized;
+					PreviousBounds.Encapsulate(Vector3(0.0f, GetHeight(index), 0.0f));
+					Cells[index].HeightSample = quantized;
 					++modifiedCount;
+					ChangedMinX = std::min(ChangedMinX, x); ChangedMinZ = std::min(ChangedMinZ, z);
+					ChangedMaxX = std::max(ChangedMaxX, x); ChangedMaxZ = std::max(ChangedMaxZ, z);
 				}
 			}
 		}
 		if (modifiedCount > 0)
 		{
-			++Revision;
-			RecalculateBounds();
+			CompleteEdit(ChangedMinX, ChangedMinZ, ChangedMaxX, ChangedMaxZ, PreviousBounds);
 		}
 		return modifiedCount;
+	}
+
+	int HeightField3::FillHeightCircle(float CenterX, float CenterZ, float Radius, float TargetHeight, float Strength, bool LinearFalloff)
+	{
+		int MinX, MinZ, MaxX, MaxZ;
+		if (!std::isfinite(TargetHeight) || !std::isfinite(Strength) || Strength <= 0.0f || Strength > 1.0f
+			|| !GetBrushRange(CenterX, CenterZ, Radius, MinX, MinZ, MaxX, MaxZ)) return 0;
+		Box3 PreviousBounds = Box3::Empty();
+		int Changed = 0, ChangedMinX = MaxX, ChangedMinZ = MaxZ, ChangedMaxX = MinX, ChangedMaxZ = MinZ;
+		for (int z = MinZ; z <= MaxZ; ++z)
+		for (int x = MinX; x <= MaxX; ++x)
+		{
+			const double DeltaX = (double)BV.Min.x + (double)DX * x - CenterX;
+			const double DeltaZ = (double)BV.Min.z + (double)DZ * z - CenterZ;
+			const double DistanceSquared = DeltaX * DeltaX + DeltaZ * DeltaZ;
+			if (DistanceSquared > (double)Radius * Radius) continue;
+			const double Weight = Strength * BrushWeight(DistanceSquared, Radius, LinearFalloff);
+			CellInfo& Cell = Cells[(size_t)z * nX + x];
+			const double Height = (double)Cell.HeightSample * HeightScale;
+			int16_t Sample;
+			QuantizeHeight(Height + ((double)TargetHeight - Height) * Weight, Sample);
+			if (Cell.HeightSample == Sample) continue;
+			PreviousBounds.Encapsulate(Vector3(0.0f, (float)Height, 0.0f));
+			Cell.HeightSample = Sample;
+			++Changed;
+			ChangedMinX = std::min(ChangedMinX, x); ChangedMinZ = std::min(ChangedMinZ, z);
+			ChangedMaxX = std::max(ChangedMaxX, x); ChangedMaxZ = std::max(ChangedMaxZ, z);
+		}
+		if (Changed) CompleteEdit(ChangedMinX, ChangedMinZ, ChangedMaxX, ChangedMaxZ, PreviousBounds);
+		return Changed;
+	}
+
+	int HeightField3::SmoothHeightCircle(float CenterX, float CenterZ, float Radius, float Strength, int Iterations, bool LinearFalloff)
+	{
+		int MinX, MinZ, MaxX, MaxZ;
+		if (!std::isfinite(Strength) || Strength <= 0.0f || Strength > 1.0f || Iterations <= 0
+			|| !GetBrushRange(CenterX, CenterZ, Radius, MinX, MinZ, MaxX, MaxZ)) return 0;
+		const int ReadMinX = std::max(0, MinX - 1), ReadMinZ = std::max(0, MinZ - 1);
+		const int ReadMaxX = std::min((int)nX - 1, MaxX + 1), ReadMaxZ = std::min((int)nZ - 1, MaxZ + 1);
+		const size_t Width = (size_t)(ReadMaxX - ReadMinX + 1);
+		std::vector<double> Previous(Width * (ReadMaxZ - ReadMinZ + 1));
+		for (int z = ReadMinZ; z <= ReadMaxZ; ++z)
+		for (int x = ReadMinX; x <= ReadMaxX; ++x)
+			Previous[(size_t)(z - ReadMinZ) * Width + x - ReadMinX] = (double)Cells[(size_t)z * nX + x].HeightSample * HeightScale;
+		std::vector<double> Current = Previous;
+		// Jacobi updates read a snapshot, so the result is independent of traversal.
+		// Only the brush and its one-sample read halo need scratch storage.
+		for (int Iteration = 0; Iteration < Iterations; ++Iteration)
+		{
+			for (int z = MinZ; z <= MaxZ; ++z)
+			for (int x = MinX; x <= MaxX; ++x)
+			{
+				const double DeltaX = (double)BV.Min.x + (double)DX * x - CenterX;
+				const double DeltaZ = (double)BV.Min.z + (double)DZ * z - CenterZ;
+				const double DistanceSquared = DeltaX * DeltaX + DeltaZ * DeltaZ;
+				if (DistanceSquared > (double)Radius * Radius) continue;
+				double Sum = 0.0;
+				int Count = 0;
+				for (int zz = std::max(ReadMinZ, z - 1); zz <= std::min(ReadMaxZ, z + 1); ++zz)
+				for (int xx = std::max(ReadMinX, x - 1); xx <= std::min(ReadMaxX, x + 1); ++xx)
+				{
+					Sum += Previous[(size_t)(zz - ReadMinZ) * Width + xx - ReadMinX];
+					++Count;
+				}
+				const size_t Index = (size_t)(z - ReadMinZ) * Width + x - ReadMinX;
+				const double Weight = Strength * BrushWeight(DistanceSquared, Radius, LinearFalloff);
+				Current[Index] = Previous[Index] + (Sum / Count - Previous[Index]) * Weight;
+			}
+			Previous.swap(Current);
+		}
+		Box3 PreviousBounds = Box3::Empty();
+		int Changed = 0, ChangedMinX = MaxX, ChangedMinZ = MaxZ, ChangedMaxX = MinX, ChangedMaxZ = MinZ;
+		for (int z = MinZ; z <= MaxZ; ++z)
+		for (int x = MinX; x <= MaxX; ++x)
+		{
+			int16_t Sample;
+			QuantizeHeight(Previous[(size_t)(z - ReadMinZ) * Width + x - ReadMinX], Sample);
+			CellInfo& Cell = Cells[(size_t)z * nX + x];
+			if (Cell.HeightSample == Sample) continue;
+			PreviousBounds.Encapsulate(Vector3(0.0f, (float)Cell.HeightSample * HeightScale, 0.0f));
+			Cell.HeightSample = Sample;
+			++Changed;
+			ChangedMinX = std::min(ChangedMinX, x); ChangedMinZ = std::min(ChangedMinZ, z);
+			ChangedMaxX = std::max(ChangedMaxX, x); ChangedMaxZ = std::max(ChangedMaxZ, z);
+		}
+		if (Changed) CompleteEdit(ChangedMinX, ChangedMinZ, ChangedMaxX, ChangedMaxZ, PreviousBounds);
+		return Changed;
 	}
 
 	int HeightField3::DigCrater(float centerX, float centerZ, float radius, float depth, bool linearFalloff)
@@ -91,17 +310,17 @@ namespace Riemann
 
 	bool HeightField3::SetTriangleHole(int cellX, int cellZ, int triangleIndex, bool hole)
 	{
-		if (Cells == nullptr || cellX < 0 || cellZ < 0 || cellX >= (int)nX - 1 || cellZ >= (int)nZ - 1 || triangleIndex < 0 || triangleIndex > 1)
+		if (!IsValid() || cellX < 0 || cellZ < 0 || cellX >= (int)nX - 1 || cellZ >= (int)nZ - 1 || triangleIndex < 0 || triangleIndex > 1)
 		{
 			return false;
 		}
 		CellInfo& cell = Cells[cellZ * nX + cellX];
 		uint8_t& flag = triangleIndex == 0 ? cell.Tessellation0 : cell.Tessellation1;
-		const uint8_t newFlag = hole ? 0x7F : 0x00;
+		const uint8_t newFlag = (flag & 0x80) | (hole ? 0x7F : 0x00);
 		if (flag != newFlag)
 		{
 			flag = newFlag;
-			++Revision;
+			CompleteEdit(cellX, cellZ, cellX + 1, cellZ + 1, BV, false);
 		}
 		return true;
 	}
@@ -113,12 +332,12 @@ namespace Riemann
 			return false;
 		}
 		const CellInfo& cell = Cells[cellZ * nX + cellX];
-		return (triangleIndex == 0 ? cell.Tessellation0 : cell.Tessellation1) == 0x7F;
+		return ((triangleIndex == 0 ? cell.Tessellation0 : cell.Tessellation1) & 0x7F) == 0x7F;
 	}
 
 	void HeightField3::RecalculateBounds()
 	{
-		if (Cells == nullptr || nX == 0 || nZ == 0)
+		if (!IsValid())
 		{
 			return;
 		}
@@ -137,7 +356,7 @@ namespace Riemann
 	bool HeightField3::IntersectRayCell(const Vector3& Origin, const Vector3& Direction, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
 	{
 		float minH, maxH;
-		GetHeightRange(i, j, minH, maxH);
+		if (!GetHeightRange(i, j, minH, maxH)) return false;
 
 		Result->AddTestCount(1);
 
@@ -238,6 +457,7 @@ namespace Riemann
 
 	bool HeightField3::IntersectRay(const Vector3& Origin, const Vector3& Direction, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const
 	{
+		if (!IsValid() || Result == nullptr || !FiniteHeightFieldVector(Origin) || !FiniteHeightFieldVector(Direction)) return false;
 		if (Origin.y > BV.Max.y && Direction.y >= 0)
 		{
 			return false;
@@ -473,20 +693,19 @@ namespace Riemann
 
 	bool HeightField3::GetHeightRange(int i, int j, float& minH, float& maxH) const
 	{
-		assert(0 <= i && i < (int)nX - 1);
-		assert(0 <= j && j < (int)nZ - 1);
+		if (!IsValid() || i < 0 || j < 0 || i >= (int)nX - 1 || j >= (int)nZ - 1) return false;
 
 		bool tessFlag = Cells[i + j * nX].Tessellation0 & 0x80;
-		uint16_t i0 = j * nX + i;
-		uint16_t i1 = j * nX + i + 1;
-		uint16_t i2 = (j + 1) * nX + i;
-		uint16_t i3 = (j + 1) * nX + i + 1;
+		uint32_t i0 = j * nX + i;
+		uint32_t i1 = j * nX + i + 1;
+		uint32_t i2 = (j + 1) * nX + i;
+		uint32_t i3 = (j + 1) * nX + i + 1;
 		// i2---i3
 		// |    |
 		// |    |
 		// i0---i1
-		uint8_t Hole0 = Cells[i + j * nX].Tessellation0;
-		uint8_t Hole1 = Cells[i + j * nX].Tessellation1;
+		uint8_t Hole0 = Cells[i + j * nX].Tessellation0 & 0x7F;
+		uint8_t Hole1 = Cells[i + j * nX].Tessellation1 & 0x7F;
 
 		minH = FLT_MAX;
 		maxH = -FLT_MAX;
@@ -506,11 +725,13 @@ namespace Riemann
 		{
 			minH = Maths::Min(Maths::Min(Height0, Height2), (tessFlag ? Height3 : Height1));
 			maxH = Maths::Max(Maths::Max(Height0, Height2), (tessFlag ? Height3 : Height1));
+			return true;
 		}
 		else if (Hole1 != 0x7F)
 		{
 			minH = Maths::Min(Maths::Min(Height1, Height3), (tessFlag ? Height0 : Height2));
 			maxH = Maths::Max(Maths::Max(Height1, Height3), (tessFlag ? Height0 : Height2));
+			return true;
 		}
 
 		return false;
@@ -518,20 +739,19 @@ namespace Riemann
 
 	int HeightField3::GetCellTriangle(int i, int j, Vector3 Tris[6]) const
 	{
-		assert(i >= 0 && i < (int)nX - 1);
-		assert(j >= 0 && j < (int)nZ - 1);
+		if (!IsValid() || i < 0 || j < 0 || i >= (int)nX - 1 || j >= (int)nZ - 1) return 0;
 
 		bool tessFlag = Cells[i + j * nX].Tessellation0 & 0x80;
-		uint16_t i0 = j * nX + i;
-		uint16_t i1 = j * nX + i + 1;
-		uint16_t i2 = (j + 1) * nX + i;
-		uint16_t i3 = (j + 1) * nX + i + 1;
+		uint32_t i0 = j * nX + i;
+		uint32_t i1 = j * nX + i + 1;
+		uint32_t i2 = (j + 1) * nX + i;
+		uint32_t i3 = (j + 1) * nX + i + 1;
 		// i2---i3
 		// |    |
 		// |    |
 		// i0---i1
-		uint8_t Hole0 = Cells[i + j * nX].Tessellation0;
-		uint8_t Hole1 = Cells[i + j * nX].Tessellation1;
+		uint8_t Hole0 = Cells[i + j * nX].Tessellation0 & 0x7F;
+		uint8_t Hole1 = Cells[i + j * nX].Tessellation1 & 0x7F;
 
 		Vector3 Base = Vector3(BV.Min.x + DX * i, 0.0f, BV.Min.z + DZ * j);
 
@@ -561,20 +781,19 @@ namespace Riemann
 
 	int HeightField3::GetCellTriangle(int i, int j, uint32_t Tris[6]) const
 	{
-		assert(0 <= i && i < (int)nX - 1);
-		assert(0 <= j && j < (int)nZ - 1);
+		if (!IsValid() || i < 0 || j < 0 || i >= (int)nX - 1 || j >= (int)nZ - 1) return 0;
 
 		bool tessFlag = Cells[i + j * nX].Tessellation0 & 0x80;
-		uint16_t i0 = j * nX + i;
-		uint16_t i1 = j * nX + i + 1;
-		uint16_t i2 = (j + 1) * nX + i;
-		uint16_t i3 = (j + 1) * nX + i + 1;
+		uint32_t i0 = j * nX + i;
+		uint32_t i1 = j * nX + i + 1;
+		uint32_t i2 = (j + 1) * nX + i;
+		uint32_t i3 = (j + 1) * nX + i + 1;
 		// i2---i3
 		// |    |
 		// |    |
 		// i0---i1
-		uint8_t Hole0 = Cells[i + j * nX].Tessellation0;
-		uint8_t Hole1 = Cells[i + j * nX].Tessellation1;
+		uint8_t Hole0 = Cells[i + j * nX].Tessellation0 & 0x7F;
+		uint8_t Hole1 = Cells[i + j * nX].Tessellation1 & 0x7F;
 
 		int nt = 0;
 		if (Hole0 != 0x7F)

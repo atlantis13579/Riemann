@@ -25,6 +25,8 @@ namespace Riemann
 	struct PhysicsContactPoint;
 	class RigidBody;
 	class RigidBodyDynamic;
+	class StrainSolver;
+	struct StrainSolverSettings;
 
 	enum class DestructionEventType : int
 	{
@@ -153,7 +155,7 @@ namespace Riemann
 	class DestructionSet : public GeometryAggregate
 	{
 	public:
-		DestructionSet() = default;
+		DestructionSet();
 		explicit DestructionSet(PhysicsWorld* Simulation);
 		explicit DestructionSet(PhysicsWorld& Simulation);
 		DestructionSet(const DestructionSet&) = delete;
@@ -203,6 +205,10 @@ namespace Riemann
 		void DoFractures(const DestructionFractureBuffer& Commands);
 		virtual void OnContact(const PhysicsContactInfo& ContactInfo) override;
 		void Update(float DeltaTime);
+		void EnableStressSolver(const StrainSolverSettings& Settings, const Vector3& WorldGravity = Vector3::Zero());
+		void DisableStressSolver();
+		StrainSolver* GetStressSolver() { return mStressSolver.get(); }
+		bool AddStressImpulse(int Index, const Vector3& WorldPosition, const Vector3& WorldImpulse);
 
 		BitSet FindUnsupported() const;
 		std::vector<int> PruneUnsupported();
@@ -288,6 +294,11 @@ namespace Riemann
 		uint32_t mNextClusterID = 1;
 		PhysicsWorld* mPhysicsWorld = nullptr;
 		DestructionConstants mConstants;
+		ConnectionGraph BuildStressGraph() const;
+		void EnsureStressBondIndices();
+		std::unique_ptr<StrainSolver> mStressSolver;
+		std::vector<DestructionMomentum> mStressImpulses;
+		Vector3 mStressGravity = Vector3::Zero();
 	};
 
 }	// namespace Riemann

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <vector>
+#include "ParticleBucketGrid.h"
 
 #include "FluidSimulation.h"
 
@@ -162,14 +163,14 @@ namespace Riemann
 		std::vector<float> m_GridDensity;
 		std::vector<float> m_GridPressure;
 		std::vector<Vector3> m_GridVelocity;
+		std::vector<float> m_DensityScratch;
+		std::vector<Vector3> m_VelocityScratch;
+		std::vector<Vector3> m_VelocityOutput;
+		std::vector<Vector3> m_VelocityDelta;
 		std::vector<AirParticle> m_Particles;
 
-		struct ParticleBucket
-		{
-			uint64_t Key;
-			std::vector<int> Indices;
-		};
-		std::vector<ParticleBucket> m_ParticleBuckets;
-		std::vector<ParticleBucket> m_ReferenceParticleBuckets;
+		ParticleBucketGrid m_ParticleBuckets;
+		ParticleBucketGrid m_ReferenceParticleBuckets;
+
 	};
 }

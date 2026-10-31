@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClInclude Include="..\..\Src\LinearSystem\GemmKernel.h" />
+    <ClInclude Include="..\..\Src\LinearSystem\GemmCache.h" />
+    <ClCompile Include="..\..\Src\Deformation\PBDBackendComputeShader.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\PBDBackend.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\PBDBackendMath.h" />
+    <ClInclude Include="..\..\Src\Deformation\PBDBackend.h" />
+    <ClCompile Include="..\..\Src\Deformation\VehicleDeformation.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\VehicleDeformation.h" />
+    <ClCompile Include="..\..\Src\Deformation\DeformableBodyRender.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\DeformableBody.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\DeformableBody.h" />
     <Filter Include="CollisionPrimitive">
       <UniqueIdentifier>{143171cb-2938-0055-d8bf-04f28c09f06e}</UniqueIdentifier>
     </Filter>
@@ -589,6 +600,18 @@
       <Filter>Fluid</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Fluid\FluidRigidCoupling.h">
+      <Filter>Fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\FluidParallelFor.h">
+      <Filter>Fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\GridPressureSolver.h">
+      <Filter>Fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\MACGridSampling.h">
+      <Filter>Fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\ParticleBucketGrid.h">
       <Filter>Fluid</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Fluid\FluidSimulation.h">

@@ -40,6 +40,8 @@ namespace Riemann
 	public:
 		VoxelField();
 		~VoxelField();
+		VoxelField(const VoxelField&) = delete;
+		VoxelField& operator=(const VoxelField&) = delete;
 
 	public:
 		void			MakeEmpty(const Box3& Bv, int SizeX, int SizeY, int SizeZ, float VoxelSize, float VoxelHeight);
@@ -77,6 +79,10 @@ namespace Riemann
 			return m_SizeX;
 		}
 
+		int				GetSizeY() const { return m_SizeY; }
+		float			GetVoxelSize() const { return m_VoxelSize; }
+		float			GetVoxelHeight() const { return m_VoxelHeight; }
+
 		int				GetSizeZ() const
 		{
 			return m_SizeZ;
@@ -95,8 +101,13 @@ namespace Riemann
 		uint64_t		EstimateMemoryUseage() const;
 		uint64_t		EstimateMemoryUseageEx() const;
 
+		// Extract the occupied-cell boundary with outward winding, flat normals and 32-bit indices.
+		bool			GenerateMesh(StaticMesh& Mesh) const;
+		// X/Z ranges are inclusive and clipped to the field; cropped boundaries are closed.
+		bool			GenerateMesh(StaticMesh& Mesh, int x1, int x2, int z1, int z2) const;
+		// The caller owns the returned mesh. Invalid ranges or fields return nullptr.
 		StaticMesh* CreateDebugMesh(int x1, int x2, int z1, int z2) const;
-		bool			Verify();
+		bool			Verify() const;
 		void			GenerateHeightMap(std::vector<float>& heightmap) const;
 		void			GenerateBitmapByLevel(std::vector<int>& levels, int* level_max) const;
 		void			GenerateBitmapByData(std::vector<int>& output, uint32_t data) const;
@@ -106,6 +117,7 @@ namespace Riemann
 		Voxel* AllocVoxel();
 		void			FreeVoxel(Voxel* p);
 		int				CalculateNumFields() const;
+		void			Swap(VoxelField& Other);
 
 		uint64_t		SeparateImpl(int idx, Voxel* base, uint32_t data, uint16_t Thr);
 
@@ -119,10 +131,13 @@ namespace Riemann
 		BatchList<Voxel>		m_VoxelBatchs;
 	};
 
-	#define VOXEL_FILE_MAGIC	(0x32F0587A)
+	// Version 1 did not store span counts and cannot represent arbitrary columns reliably.
+	#define VOXEL_FILE_MAGIC	(0x32F0587B)
+	#define VOXEL_FILE_VERSION (2)
 
 	struct VoxelFileHeader
 	{
+		uint32_t		Version;
 		uint32_t		nVoxels;
 		uint32_t		nFields;
 		int				SizeX;
@@ -136,10 +151,12 @@ namespace Riemann
 	struct VoxelFileField
 	{
 		uint32_t		idx;
+		uint32_t		firstVoxel;
+		uint32_t		numVoxels;
 	};
 
-	static_assert(sizeof(VoxelFileHeader) == 52, "sizeof VoxelFileHeader is not valid");
-	static_assert(sizeof(VoxelFileField) == 4, "sizeof VoxelFileField is not valid");
+	static_assert(sizeof(VoxelFileHeader) == 56, "sizeof VoxelFileHeader is not valid");
+	static_assert(sizeof(VoxelFileField) == 12, "sizeof VoxelFileField is not valid");
 
 	struct VoxelFast
 	{

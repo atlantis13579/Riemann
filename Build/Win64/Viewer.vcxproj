@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Viewer\SolverPanel.h" />
+    <ClCompile Include="..\..\Viewer\SolverPanel.cpp" />
     <ClCompile Include="..\..\Viewer\MeshRenderer.cpp" />
     <ClCompile Include="..\..\Viewer\MeshCuttingPanel.cpp" />
     <ClCompile Include="..\..\Viewer\MeshSimplificationPanel.cpp" />

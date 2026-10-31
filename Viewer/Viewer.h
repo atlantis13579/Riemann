@@ -11,6 +11,7 @@
 #include "../Src/Maths/Vector4.h"
 #include "../Src/CollisionPrimitive/Ray3.h"
 #include "SceneWorld.h"
+#include "SolverPanel.h"
 
 namespace Riemann
 {
@@ -19,10 +20,13 @@ namespace Riemann
 	class FluidSimulation;
 	class FluidRigidCoupling;
 	class AerodynamicsSimulation;
+	class SmokeSimulation;
+	class SmokeRigidCoupling;
 	class AerodynamicsRigidCoupling;
 
 	class WorldViewer
 	{
+		friend struct SmokeViewerValidationAccess;
 	public:
 		WorldViewer(RenderThread* renderThread, const std::string& sceneFile);
 		~WorldViewer();
@@ -64,6 +68,19 @@ private:
 			Vector3 Direction = Vector3::Zero();
 		};
 
+		struct TerrainBrushState
+		{
+			std::string ObjectId;
+			Vector3 Center = Vector3::Zero();
+			Vector3 ControlCenter = Vector3::Zero();
+			float ControlRange = 20.0f;
+			float Radius = 2.0f;
+			float Value = 0.5f;
+			float Strength = 0.5f;
+			int Mode = 0;
+			unsigned int SceneGeneration = 0;
+		};
+
 		void RebuildRenderScene();
 		void AddGeometryToRender(const std::string& id, Geometry* geometry, const Vector4& color, bool renderBounds);
 		bool ActivateConfiguredFieldSimulation();
@@ -71,7 +88,8 @@ private:
 		void UpdateFluidDemo();
 		void SubmitFluidSurface();
 		void DeactivateGasDemo();
-		void UpdateGasDemo();
+		void UpdateGasDemo(float deltaTime);
+		bool SynchronizeSmokeObstacles();
 		void SubmitGasDensity();
 		bool LoadCuttingPanel();
 		bool ApplyCuttingPanel();
@@ -108,6 +126,8 @@ private:
 		std::unique_ptr<SceneWorld> m_World;
 		std::unique_ptr<FluidSimulation> m_FluidSimulation;
 		std::unique_ptr<AerodynamicsSimulation> m_AerodynamicsSimulation;
+		std::unique_ptr<SmokeSimulation> m_SmokeSimulation;
+		SmokeRigidCoupling* m_SmokeCoupling = nullptr;
 		FluidRigidCoupling* m_FluidCoupling;
 		AerodynamicsRigidCoupling* m_AerodynamicsCoupling;
 		RenderThread* m_RenderThread;
@@ -162,12 +182,35 @@ private:
 		bool m_ShowGeometryQueryBounds;
 		RenderMode m_RenderMode;
 		uint32_t m_RenderRevision;
+		unsigned int m_SceneGeneration = 0;
 		bool m_FluidDemoActive;
 		int m_FluidRenderFrame;
 		bool m_GasDemoActive;
 		int m_GasRenderFrame;
 
 		mutable std::mutex m_ImguiMutex;
+		struct SmokePanelState
+		{
+			bool Active = false;
+			bool Paused = false;
+			bool RigidCoupling = false;
+			int RigidBodyCount = 0;
+			int Backend = 2;
+			int Quality = 1;
+			int ActualBackend = 2;
+			Vector3i Resolution = Vector3i(0, 0, 0);
+			unsigned int SceneGeneration = 0;
+			std::string Status;
+		};
+		SmokePanelState m_ImguiSmokePanel, m_ImguiPendingSmokePanel;
+		bool m_ImguiPendingSmokeRestart = false;
+		bool m_ImguiPendingSmokePause = false;
+		int m_ImguiPendingSmokeAddBodies = 0;
+		unsigned int m_ImguiPendingSmokeAddGeneration = 0;
+		bool m_SmokePaused = false;
+		SolverPanelState m_ImguiSolverPanel;
+		SolverPanelState m_ImguiPendingSolverPanel;
+		bool m_ImguiPendingSolverSwitch = false;
 		std::string m_ImguiSceneName;
 		std::vector<std::string> m_ImguiSceneFiles;
 		std::vector<std::string> m_ImguiCuttingObjFiles;
@@ -175,6 +218,9 @@ private:
 		std::string m_ImguiCuttingStatus;
 		std::vector<std::string> m_ImguiMeshSimplificationFiles;
 		std::vector<ConstraintControlState> m_ImguiConstraintControls;
+		std::vector<std::string> m_ImguiTerrainObjectIds;
+		TerrainBrushState m_ImguiTerrainBrush;
+		std::string m_ImguiTerrainStatus;
 		std::string m_ImguiMeshSimplificationPath;
 		std::string m_ImguiMeshSimplificationStatus;
 		int m_ImguiDemoIndex;
@@ -198,6 +244,7 @@ private:
 		size_t m_ImguiGeometryQueryBoundsCount;
 		double m_ImguiPhysicsFps;
 		int m_ImguiScroll;
+		unsigned int m_ImguiRenderedSceneGeneration = 0;
 		int m_ImguiPendingDemoIndex;
 		std::string m_ImguiPendingSceneFile;
 		bool m_ImguiPendingCameraDistance;
@@ -232,6 +279,7 @@ private:
 		RenderMode m_ImguiPendingRenderModeValue;
 		bool m_ImguiPendingShootProjectile;
 		std::vector<ConstraintControlState> m_ImguiPendingConstraintControls;
+		std::vector<TerrainBrushState> m_ImguiPendingTerrainEdits;
 
 		std::chrono::steady_clock::time_point m_PhysicsFpsTime;
 		int m_PhysicsFrameCount;

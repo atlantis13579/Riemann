@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <vector>
+#include "ParticleBucketGrid.h"
+#include "GridPressureSolver.h"
 
 #include "../Maths/Transform.h"
 #include "FluidBackend.h"
@@ -131,15 +133,16 @@ namespace Riemann
 		FluidBackendResult m_BackendResult;
 		std::vector<float> m_GridDensity;
 		std::vector<Vector3> m_GridVelocity;
+		std::vector<float> m_DensityScratch;
+		std::vector<Vector3> m_VelocityScratch;
+		std::vector<Vector3> m_VelocityOutput;
+		std::vector<Vector3> m_VelocityDelta;
+		GridPressureSolver m_PressureSolver;
 		std::vector<float> m_Pressure;
 		std::vector<float> m_Divergence;
 		std::vector<FluidParticle> m_Particles;
 
-		struct ParticleBucket
-		{
-			uint64_t Key;
-			std::vector<int> Indices;
-		};
-		std::vector<ParticleBucket> m_ParticleBuckets;
+		ParticleBucketGrid m_ParticleBuckets;
+
 	};
 }

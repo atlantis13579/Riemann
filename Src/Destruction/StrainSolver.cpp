@@ -1,212 +1,655 @@
-
 #include "StrainSolver.h"
 
 #include <algorithm>
-#include <cfloat>
 #include <cmath>
+#include <limits>
 #include <map>
+#include <set>
 
 namespace Riemann
 {
 	namespace
 	{
-		float SafeInv(float Value)
+		bool IsFinite(const Vector3& Value)
 		{
-			return std::fabs(Value) > 1e-6f ? 1.0f / Value : 0.0f;
+			return std::isfinite(Value.x) && std::isfinite(Value.y) && std::isfinite(Value.z);
 		}
 
-		float EstimateInvInertia(float InvMass, float Volume)
+		float PositiveSetting(float Value, float Fallback)
 		{
-			if (InvMass <= 0.0f)
-			{
-				return 0.0f;
-			}
-			const float Radius = std::pow(std::max(Volume, 1e-6f) * 3.0f / (4.0f * 3.14159265358979323846f), 1.0f / 3.0f);
-			return Radius > 1e-6f ? InvMass / (Radius * Radius * 0.4f) : 0.0f;
+			return std::isfinite(Value) && Value > 0.0f ? Value : Fallback;
+		}
+
+		float NonNegativeSetting(float Value, float Fallback)
+		{
+			return std::isfinite(Value) && Value >= 0.0f ? Value : Fallback;
+		}
+
+		double Dot(const std::vector<double>& A, const std::vector<double>& B)
+		{
+			double Value = 0.0;
+			for (size_t i = 0; i < A.size(); ++i) Value += A[i] * B[i];
+			return Value;
+		}
+
+		void ClearBondResults(StrainBondInfo& Info)
+		{
+			Info.ImpulseLinear = Info.ImpulseAngular = Vector3::Zero();
+			Info.ForceLinear = Info.Torque = Vector3::Zero();
+			Info.Stress = Info.Tension = Info.Compression = Info.Shear = Info.Bending = Info.Torsion = 0.0f;
 		}
 	}
 
 	StrainSolver::StrainSolver(const ConnectionGraph& Graph, const StrainSolverSettings& Settings)
-		: mSettings(Settings)
 	{
+		SetSettings(Settings);
 		ResetGraph(Graph);
 	}
 
 	StrainSolver::StrainSolver(const DestructionSet& DestructSet, const StrainSolverSettings& Settings)
-		: mSettings(Settings)
 	{
+		SetSettings(Settings);
 		ResetGraph(DestructSet.GetGraph());
 		SetAllNodesInfo(DestructSet);
 	}
 
+	void StrainSolver::SetSettings(const StrainSolverSettings& Settings)
+	{
+		mSettings = Settings;
+		mSettings.Hardness = PositiveSetting(Settings.Hardness, 1000.0f);
+		mSettings.StressLinearFactor = NonNegativeSetting(Settings.StressLinearFactor, 0.25f);
+		mSettings.StressAngularFactor = NonNegativeSetting(Settings.StressAngularFactor, 0.75f);
+		mSettings.RelativeTolerance = PositiveSetting(Settings.RelativeTolerance, 1.0e-6f);
+		mSettings.AbsoluteTolerance = PositiveSetting(Settings.AbsoluteTolerance, 1.0e-7f);
+	}
+
 	void StrainSolver::ResetGraph(const ConnectionGraph& Graph)
 	{
+		mNodes.assign(Graph.Size(), RuntimeNode());
 		mRuntimeBonds.clear();
-		mBonds.clear();
-		mOverstressedBondIndices.clear();
-		EnsureNodeCount(Graph.Size());
+		SyncGraph(Graph);
+		Reset();
+	}
 
-		int GeneratedBondIndex = 0;
+	uint32_t StrainSolver::SyncGraph(const ConnectionGraph& Graph)
+	{
+		bool Changed = mNodes.size() != Graph.Size();
+		mNodes.resize(Graph.Size());
+		std::map<std::pair<int, int>, RuntimeBond> Previous;
+		for (const RuntimeBond& Existing : mRuntimeBonds)
+		{
+			Previous[std::make_pair(Existing.Info.Node0, Existing.Info.Node1)] = Existing;
+		}
+		std::set<int> ReservedIndices;
 		for (size_t Node = 0; Node < Graph.Size(); ++Node)
 		{
-			for (const Bond& ExistingBond : Graph[Node].Bonds)
+			for (const Bond& Existing : Graph[Node].Bonds)
 			{
-				const int Other = ExistingBond.GetOther((int)Node);
-				if (Other < 0 || (int)Node >= Other)
-				{
-					continue;
-				}
-
-				RuntimeBond Runtime;
-				Runtime.Info.Node0 = (int)Node;
-				Runtime.Info.Node1 = Other;
-				Runtime.Info.BondIndex = ExistingBond.bond_index >= 0 ? ExistingBond.bond_index : GeneratedBondIndex;
-				Runtime.Info.Health = std::max(ExistingBond.strength, 1e-3f);
-				Runtime.Info.Stress = 0.0f;
-				mRuntimeBonds.push_back(Runtime);
-				mBonds.push_back(Runtime.Info);
-				++GeneratedBondIndex;
+				if (Existing.bond_index >= 0) ReservedIndices.insert(Existing.bond_index);
 			}
 		}
+		std::set<int> AssignedIndices;
+		std::set<std::pair<int, int>> Pairs;
+		std::vector<RuntimeBond> Rebuilt;
+		int GeneratedIndex = 0;
+		for (size_t Node = 0; Node < Graph.Size(); ++Node)
+		{
+			for (const Bond& Existing : Graph[Node].Bonds)
+			{
+				const int Other = Existing.GetOther((int)Node);
+				if (Other <= (int)Node || (size_t)Other >= Graph.Size() || !mNodes[Node].Enabled
+					|| !mNodes[(size_t)Other].Enabled || !std::isfinite(Existing.strength) || Existing.strength <= 0.0f) continue;
+				const std::pair<int, int> Pair((int)Node, Other);
+				if (!Pairs.insert(Pair).second) continue;
+				const auto Old = Previous.find(Pair);
+				int BondIndex = Existing.bond_index;
+				if (BondIndex < 0 && Old != Previous.end() && !ReservedIndices.count(Old->second.Info.BondIndex)
+					&& !AssignedIndices.count(Old->second.Info.BondIndex)) BondIndex = Old->second.Info.BondIndex;
+				if (BondIndex < 0 || AssignedIndices.count(BondIndex))
+				{
+					while (ReservedIndices.count(GeneratedIndex) || AssignedIndices.count(GeneratedIndex)) ++GeneratedIndex;
+					BondIndex = GeneratedIndex++;
+				}
+				AssignedIndices.insert(BondIndex);
+				RuntimeBond Current;
+				if (Old != Previous.end())
+				{
+					Current = Old->second;
+					Changed = Changed || Current.Info.BondIndex != BondIndex;
+					Previous.erase(Old);
+				}
+				else Changed = true;
+				Current.Info.Node0 = (int)Node;
+				Current.Info.Node1 = Other;
+				Current.Info.BondIndex = BondIndex;
+				if (Current.GraphHealth != Existing.strength) Current.Info.Health = Existing.strength;
+				Current.GraphHealth = Existing.strength;
+				Rebuilt.push_back(Current);
+			}
+		}
+		const uint32_t Removed = (uint32_t)Previous.size();
+		Changed = Changed || Removed > 0;
+		mRuntimeBonds.swap(Rebuilt);
+		UpdateBondGeometry();
+		if (Changed) ClearSolution();
+		else PublishBonds();
+		return Removed;
+	}
 
-		Reset();
+	void StrainSolver::EnsureNodeCount(size_t Count)
+	{
+		if (mNodes.size() < Count) mNodes.resize(Count);
+	}
+
+	bool StrainSolver::IsActiveNode(int Index) const
+	{
+		return Index >= 0 && (size_t)Index < mNodes.size() && mNodes[(size_t)Index].Enabled;
+	}
+
+	void StrainSolver::SetNodeInfo(int Index, float Mass, float Volume, const Vector3& Position, bool Static)
+	{
+		if (Index < 0 || !std::isfinite(Mass) || Mass <= 0.0f || !std::isfinite(Volume) || Volume <= 0.0f || !IsFinite(Position)) return;
+		EnsureNodeCount((size_t)Index + 1);
+		RuntimeNode& Node = mNodes[(size_t)Index];
+		const bool Changed = !Node.InfoInitialized || Node.Info.Mass != Mass || Node.Info.Volume != Volume || Node.Info.IsStatic != Static
+			|| Node.Info.LocalPosition != Position || !Node.Enabled;
+		if (!Changed) return;
+		Node.Info.Mass = Mass;
+		Node.Info.Volume = Volume;
+		Node.Info.LocalPosition = Position;
+		Node.Info.IsStatic = Static;
+		Node.Enabled = true;
+		Node.InfoInitialized = true;
+		if (!Node.CustomInertia)
+		{
+			const float Radius = std::cbrt(Volume * 3.0f / (4.0f * 3.14159265358979323846f));
+			const float Inertia = std::max(0.4f * Mass * Radius * Radius, 1.0e-12f);
+			Node.Info.Inertia = Matrix3(Inertia, Inertia, Inertia);
+			Node.InverseInertia = Matrix3(1.0f / Inertia, 1.0f / Inertia, 1.0f / Inertia);
+		}
+		UpdateBondGeometry();
+		ClearSolution();
+	}
+
+	bool StrainSolver::SetNodeInertia(int Index, const Matrix3& Inertia)
+	{
+		if (!IsActiveNode(Index)) return false;
+		float Scale = 0.0f;
+		for (int Row = 0; Row < 3; ++Row)
+		{
+			for (int Column = 0; Column < 3; ++Column)
+			{
+				if (!std::isfinite(Inertia[Row][Column])) return false;
+				Scale = std::max(Scale, std::fabs(Inertia[Row][Column]));
+			}
+		}
+		if (Scale <= 0.0f) return false;
+		for (int Row = 0; Row < 3; ++Row)
+		{
+			for (int Column = 0; Column < Row; ++Column)
+			{
+				if (std::fabs(Inertia[Row][Column] - Inertia[Column][Row]) > Scale * 1.0e-6f) return false;
+			}
+		}
+		Matrix3 Normalized = Inertia;
+		Normalized /= Scale;
+		if (Normalized[0][0] <= 0.0f
+			|| Normalized[0][0] * Normalized[1][1] - Normalized[0][1] * Normalized[1][0] <= 0.0f
+			|| Normalized.Determinant() <= 1.0e-12f) return false;
+		Matrix3 Inverse = Normalized.Inverse();
+		for (int Row = 0; Row < 3; ++Row)
+		{
+			for (int Column = 0; Column < 3; ++Column)
+			{
+				const double Value = (double)Inverse[Row][Column] / Scale;
+				if (!std::isfinite(Value) || std::fabs(Value) > std::numeric_limits<float>::max()) return false;
+				Inverse[Row][Column] = (float)Value;
+			}
+		}
+		RuntimeNode& Node = mNodes[(size_t)Index];
+		Node.CustomInertia = true;
+		bool Changed = false;
+		for (int Row = 0; Row < 3; ++Row)
+		{
+			for (int Column = 0; Column < 3; ++Column) Changed = Changed || Node.Info.Inertia[Row][Column] != Inertia[Row][Column];
+		}
+		if (Changed)
+		{
+			Node.Info.Inertia = Inertia;
+			Node.InverseInertia = Inverse;
+			ClearSolution();
+		}
+		return true;
 	}
 
 	void StrainSolver::SetAllNodesInfo(const DestructionSet& DestructSet, float Density)
 	{
+		Density = PositiveSetting(Density, 1.0f);
 		const std::vector<DestructionChunk>& Chunks = DestructSet.GetChunks();
 		EnsureNodeCount(Chunks.size());
-		for (size_t Index = 0; Index < Chunks.size(); ++Index)
+		bool Disabled = false;
+		for (size_t Index = 0; Index < mNodes.size(); ++Index)
 		{
-			const DestructionChunk& Chunk = Chunks[Index];
-			const float Volume = std::max(Chunk.Volume, 1e-3f);
-			const float Mass = Chunk.Mass > 0.0f ? Chunk.Mass : Volume * Density;
-			SetNodeInfo((int)Index, Mass, Volume, Chunk.Centroid, Chunk.IsStatic);
-		}
-	}
-
-	void StrainSolver::SetNodeInfo(int GraphNodeIndex, float Mass, float Volume, const Vector3& LocalPosition, bool bStatic)
-	{
-		if (GraphNodeIndex < 0)
-		{
-			return;
-		}
-
-		EnsureNodeCount((size_t)GraphNodeIndex + 1);
-		RuntimeNode& Node = mNodes[(size_t)GraphNodeIndex];
-		Node.Info.Mass = std::max(Mass, 1e-6f);
-		Node.Info.Volume = std::max(Volume, 1e-6f);
-		Node.Info.LocalPosition = LocalPosition;
-		Node.Info.IsStatic = bStatic;
-
-		for (RuntimeBond& RuntimeBondInfo : mRuntimeBonds)
-		{
-			if (RuntimeBondInfo.Info.Node0 == GraphNodeIndex || RuntimeBondInfo.Info.Node1 == GraphNodeIndex)
+			if (Index >= Chunks.size() || Chunks[Index].IsFree || Chunks[Index].IsSmashed)
 			{
-				const Vector3 P0 = mNodes[(size_t)RuntimeBondInfo.Info.Node0].Info.LocalPosition;
-				const Vector3 P1 = mNodes[(size_t)RuntimeBondInfo.Info.Node1].Info.LocalPosition;
-				RuntimeBondInfo.Offset = (P1 - P0) * 0.5f;
-				RuntimeBondInfo.InvOffsetSqrLength = SafeInv(std::max(RuntimeBondInfo.Offset.SquareLength(), 1e-6f));
+				Disabled = Disabled || mNodes[Index].Enabled;
+				mNodes[Index].Enabled = false;
+				mNodes[Index].Impulse = mNodes[Index].AngularImpulse = mNodes[Index].Force = mNodes[Index].Torque = Vector3::Zero();
+				continue;
+			}
+			const DestructionChunk& Chunk = Chunks[Index];
+			const float Volume = PositiveSetting(Chunk.Volume, 1.0e-3f);
+			const float Mass = PositiveSetting(Chunk.Mass, Volume * Density);
+			SetNodeInfo((int)Index, Mass, Volume, Chunk.Centroid, Chunk.IsStatic);
+			const Vector3 Size = Chunk.Bounds.GetSize();
+			if (!mNodes[Index].CustomInertia && IsFinite(Size) && Size.x > 0.0f && Size.y > 0.0f && Size.z > 0.0f)
+			{
+				const Vector3 Squared(Size.x * Size.x, Size.y * Size.y, Size.z * Size.z);
+				SetNodeInertia((int)Index, Matrix3(Mass * (Squared.y + Squared.z) / 12.0f,
+					Mass * (Squared.x + Squared.z) / 12.0f, Mass * (Squared.x + Squared.y) / 12.0f));
+				mNodes[Index].CustomInertia = false;
 			}
 		}
+		if (Disabled)
+		{
+			mRuntimeBonds.erase(std::remove_if(mRuntimeBonds.begin(), mRuntimeBonds.end(), [this](const RuntimeBond& Bond)
+			{
+				return !IsActiveNode(Bond.Info.Node0) || !IsActiveNode(Bond.Info.Node1);
+			}), mRuntimeBonds.end());
+			ClearSolution();
+		}
 	}
 
-	void StrainSolver::AddForce(int GraphNodeIndex, const Vector3& LocalForce, StrainForceMode Mode)
+	void StrainSolver::UpdateBondGeometry()
 	{
-		if (GraphNodeIndex < 0 || (size_t)GraphNodeIndex >= mNodes.size())
+		for (RuntimeBond& Bond : mRuntimeBonds)
 		{
-			return;
+			const Vector3 A = mNodes[(size_t)Bond.Info.Node0].Info.LocalPosition;
+			const Vector3 B = mNodes[(size_t)Bond.Info.Node1].Info.LocalPosition;
+			if (!Bond.CustomGeometry)
+			{
+				Bond.Info.Centroid = (A + B) * 0.5f;
+				Bond.Info.Normal = (B - A).SquareLength() > 1.0e-12f ? (B - A).SafeUnit() : Vector3::UnitX();
+			}
+			Bond.Offset0 = Bond.Info.Centroid - A;
+			Bond.Offset1 = Bond.Info.Centroid - B;
 		}
-
-		RuntimeNode& Node = mNodes[(size_t)GraphNodeIndex];
-		if (Node.Info.IsStatic)
-		{
-			return;
-		}
-
-		const Vector3 Impulse = (Mode == StrainForceMode::Impulse) ? LocalForce : LocalForce * Node.Info.Mass;
-		Node.Impulse += Impulse;
 	}
 
-	bool StrainSolver::AddForce(const DestructionCluster& Cluster, const Vector3& LocalPosition, const Vector3& LocalForce, StrainForceMode Mode)
+	bool StrainSolver::SetBondGeometry(int Index, const Vector3& Centroid, const Vector3& Normal, float Area)
 	{
-		const int Node = FindNearestClusterNode(Cluster, LocalPosition);
-		if (Node < 0)
+		if (!IsFinite(Centroid) || !IsFinite(Normal) || Normal.SquareLength() < 1.0e-12f || !std::isfinite(Area) || Area <= 0.0f) return false;
+		for (RuntimeBond& Bond : mRuntimeBonds)
 		{
-			return false;
+			if (Bond.Info.BondIndex != Index) continue;
+			Bond.Info.Centroid = Centroid;
+			Bond.Info.Normal = Normal.SafeUnit();
+			Bond.Info.Area = Area;
+			Bond.CustomGeometry = true;
+			UpdateBondGeometry();
+			ClearSolution();
+			return true;
 		}
+		return false;
+	}
 
-		AddForce(Node, LocalForce, Mode);
+	bool StrainSolver::SetBondHealth(int Index, float Health)
+	{
+		if (!std::isfinite(Health) || Health < 0.0f) return false;
+		if (Health == 0.0f) return RemoveBond(Index);
+		for (RuntimeBond& Bond : mRuntimeBonds)
+		{
+			if (Bond.Info.BondIndex != Index) continue;
+			Bond.Info.Health = Health;
+			PublishBonds();
+			return true;
+		}
+		return false;
+	}
+
+	bool StrainSolver::RemoveBond(int Index)
+	{
+		const auto Found = std::find_if(mRuntimeBonds.begin(), mRuntimeBonds.end(), [Index](const RuntimeBond& Bond) { return Bond.Info.BondIndex == Index; });
+		if (Found == mRuntimeBonds.end()) return false;
+		mRuntimeBonds.erase(Found);
+		ClearSolution();
 		return true;
 	}
 
-	bool StrainSolver::AddGravityForce(const DestructionCluster& Cluster, const Vector3& LocalGravity)
+	void StrainSolver::AddForce(int Index, const Vector3& Force, StrainForceMode Mode)
 	{
-		bool bApplied = false;
-		for (int Node : Cluster.GetSourceIndices())
+		if (!IsActiveNode(Index) || mNodes[(size_t)Index].Info.IsStatic || !IsFinite(Force)) return;
+		RuntimeNode& Node = mNodes[(size_t)Index];
+		switch (Mode)
 		{
-			if (Node >= 0 && (size_t)Node < mNodes.size() && !mNodes[(size_t)Node].Info.IsStatic)
-			{
-				AddForce(Node, LocalGravity, StrainForceMode::VelocityChange);
-				bApplied = true;
-			}
+		case StrainForceMode::Impulse: Node.Impulse += Force; break;
+		case StrainForceMode::VelocityChange: Node.Impulse += Force * Node.Info.Mass; break;
+		case StrainForceMode::Force: Node.Force += Force; break;
+		case StrainForceMode::Acceleration: Node.Force += Force * Node.Info.Mass; break;
 		}
-		return bApplied;
 	}
 
-	bool StrainSolver::AddAngularVelocity(const DestructionCluster& Cluster, const Vector3& LocalCenterMass, const Vector3& LocalAngularVelocity)
+	bool StrainSolver::AddTorque(int Index, const Vector3& Torque, StrainForceMode Mode)
 	{
-		bool bApplied = false;
-		for (int Node : Cluster.GetSourceIndices())
+		if (!IsActiveNode(Index) || mNodes[(size_t)Index].Info.IsStatic || !IsFinite(Torque)) return false;
+		RuntimeNode& Node = mNodes[(size_t)Index];
+		switch (Mode)
 		{
-			if (Node < 0 || (size_t)Node >= mNodes.size() || mNodes[(size_t)Node].Info.IsStatic)
+		case StrainForceMode::Impulse: Node.AngularImpulse += Torque; break;
+		case StrainForceMode::VelocityChange: Node.AngularImpulse += Node.Info.Inertia * Torque; break;
+		case StrainForceMode::Force: Node.Torque += Torque; break;
+		case StrainForceMode::Acceleration: Node.Torque += Node.Info.Inertia * Torque; break;
+		default: return false;
+		}
+		return true;
+	}
+
+	bool StrainSolver::AddForceAtPosition(int Index, const Vector3& Position, const Vector3& Force, StrainForceMode Mode)
+	{
+		if (!IsActiveNode(Index) || mNodes[(size_t)Index].Info.IsStatic || !IsFinite(Position) || !IsFinite(Force)) return false;
+		const bool MassScaled = Mode == StrainForceMode::VelocityChange || Mode == StrainForceMode::Acceleration;
+		const bool Continuous = Mode == StrainForceMode::Force || Mode == StrainForceMode::Acceleration;
+		if (Mode != StrainForceMode::Impulse && Mode != StrainForceMode::VelocityChange && !Continuous) return false;
+		const RuntimeNode& Node = mNodes[(size_t)Index];
+		const Vector3 PhysicalForce = MassScaled ? Force * Node.Info.Mass : Force;
+		const Vector3 Torque = (Position - Node.Info.LocalPosition).Cross(PhysicalForce);
+		AddForce(Index, PhysicalForce, Continuous ? StrainForceMode::Force : StrainForceMode::Impulse);
+		return AddTorque(Index, Torque, Continuous ? StrainForceMode::Force : StrainForceMode::Impulse);
+	}
+
+	int StrainSolver::FindNearestClusterNode(const DestructionCluster& Cluster, const Vector3& Position) const
+	{
+		int Best = -1;
+		float Distance = std::numeric_limits<float>::max();
+		for (int Index : Cluster.GetSourceIndices())
+		{
+			if (!IsActiveNode(Index) || mNodes[(size_t)Index].Info.IsStatic) continue;
+			const float Current = (mNodes[(size_t)Index].Info.LocalPosition - Position).SquareLength();
+			if (Current < Distance) { Best = Index; Distance = Current; }
+		}
+		return Best;
+	}
+
+	bool StrainSolver::AddForce(const DestructionCluster& Cluster, const Vector3& Position, const Vector3& Force, StrainForceMode Mode)
+	{
+		return AddForceAtPosition(FindNearestClusterNode(Cluster, Position), Position, Force, Mode);
+	}
+
+	bool StrainSolver::AddGravityForce(const DestructionCluster& Cluster, const Vector3& Gravity)
+	{
+		if (!IsFinite(Gravity)) return false;
+		bool Applied = false;
+		for (int Index : Cluster.GetSourceIndices())
+		{
+			if (!IsActiveNode(Index) || mNodes[(size_t)Index].Info.IsStatic) continue;
+			AddForce(Index, Gravity, StrainForceMode::Acceleration);
+			Applied = true;
+		}
+		return Applied;
+	}
+
+	bool StrainSolver::AddAngularVelocity(const DestructionCluster& Cluster, const Vector3& Center, const Vector3& AngularVelocity)
+	{
+		if (!IsFinite(Center) || !IsFinite(AngularVelocity)) return false;
+		bool Applied = false;
+		for (int Index : Cluster.GetSourceIndices())
+		{
+			if (!IsActiveNode(Index) || mNodes[(size_t)Index].Info.IsStatic) continue;
+			const Vector3 R = mNodes[(size_t)Index].Info.LocalPosition - Center;
+			// Outward centrifugal loading must be balanced by internal tension.
+			AddForce(Index, -AngularVelocity.Cross(AngularVelocity.Cross(R)), StrainForceMode::Acceleration);
+			Applied = true;
+		}
+		return Applied;
+	}
+
+	void StrainSolver::ApplyImpulseResponse(const std::vector<double>& Bonds, std::vector<double>& Nodes) const
+	{
+		Nodes.assign(mNodes.size() * 6, 0.0);
+		for (size_t i = 0; i < mRuntimeBonds.size(); ++i)
+		{
+			const RuntimeBond& Bond = mRuntimeBonds[i];
+			const double* Impulse = &Bonds[i * 6];
+			for (int End = 0; End < 2; ++End)
 			{
+				const size_t Index = (size_t)(End == 0 ? Bond.Info.Node0 : Bond.Info.Node1);
+				const Vector3 R = End == 0 ? Bond.Offset0 : Bond.Offset1;
+				const double Sign = End == 0 ? 1.0 : -1.0;
+				double* Node = &Nodes[Index * 6];
+				for (int Axis = 0; Axis < 3; ++Axis) Node[Axis] += Sign * Impulse[Axis];
+				Node[3] += Sign * (Impulse[3] + R.y * Impulse[2] - R.z * Impulse[1]);
+				Node[4] += Sign * (Impulse[4] + R.z * Impulse[0] - R.x * Impulse[2]);
+				Node[5] += Sign * (Impulse[5] + R.x * Impulse[1] - R.y * Impulse[0]);
+			}
+		}
+		for (size_t i = 0; i < mNodes.size(); ++i)
+		{
+			const RuntimeNode& Node = mNodes[i];
+			double* Value = &Nodes[i * 6];
+			if (Node.Info.IsStatic || !Node.Enabled)
+			{
+				std::fill(Value, Value + 6, 0.0);
 				continue;
 			}
-
-			const Vector3 R = mNodes[(size_t)Node].Info.LocalPosition - LocalCenterMass;
-			const Vector3 Tangential = LocalAngularVelocity.Cross(R);
-			const Vector3 Centrifugal = LocalAngularVelocity.Cross(Tangential);
-			AddForce(Node, Centrifugal, StrainForceMode::VelocityChange);
-			bApplied = true;
+			for (int Axis = 0; Axis < 3; ++Axis) Value[Axis] /= Node.Info.Mass;
+			double Angular[3] = {};
+			for (int Row = 0; Row < 3; ++Row)
+			{
+				for (int Column = 0; Column < 3; ++Column) Angular[Row] += Node.InverseInertia[Row][Column] * Value[Column + 3];
+			}
+			std::copy(Angular, Angular + 3, Value + 3);
 		}
-		return bApplied;
 	}
 
-	void StrainSolver::Update()
+	void StrainSolver::ApplyJacobian(const std::vector<double>& Nodes, std::vector<double>& Bonds) const
+	{
+		Bonds.resize(mRuntimeBonds.size() * 6);
+		for (size_t i = 0; i < mRuntimeBonds.size(); ++i)
+		{
+			const RuntimeBond& Bond = mRuntimeBonds[i];
+			const double* A = &Nodes[(size_t)Bond.Info.Node0 * 6];
+			const double* B = &Nodes[(size_t)Bond.Info.Node1 * 6];
+			double* Value = &Bonds[i * 6];
+			Value[0] = A[0] - B[0] + A[4] * Bond.Offset0.z - A[5] * Bond.Offset0.y - B[4] * Bond.Offset1.z + B[5] * Bond.Offset1.y;
+			Value[1] = A[1] - B[1] + A[5] * Bond.Offset0.x - A[3] * Bond.Offset0.z - B[5] * Bond.Offset1.x + B[3] * Bond.Offset1.z;
+			Value[2] = A[2] - B[2] + A[3] * Bond.Offset0.y - A[4] * Bond.Offset0.x - B[3] * Bond.Offset1.y + B[4] * Bond.Offset1.x;
+			for (int Axis = 3; Axis < 6; ++Axis) Value[Axis] = A[Axis] - B[Axis];
+		}
+	}
+
+	void StrainSolver::ApplyMatrix(const std::vector<double>& Input, std::vector<double>& Output, std::vector<double>& NodeScratch) const
+	{
+		ApplyImpulseResponse(Input, NodeScratch);
+		ApplyJacobian(NodeScratch, Output);
+	}
+
+	void StrainSolver::Solve(uint32_t IterationCount, bool WarmStart)
+	{
+		// Independently implemented from the equilibrium formulation documented by
+		// NVIDIA Blast's stress_solver/stress.cpp: (J M^-1 J^T) lambda = -J v.
+		// Each multiply visits nodes and bonds; no dense global matrix is stored.
+		const size_t Dimension = mRuntimeBonds.size() * 6;
+		std::vector<double> NodeVelocity(mNodes.size() * 6, 0.0);
+		for (size_t i = 0; i < mNodes.size(); ++i)
+		{
+			for (int Axis = 0; Axis < 3; ++Axis)
+			{
+				NodeVelocity[i * 6 + Axis] = mNodes[i].VelocityLinear[Axis];
+				NodeVelocity[i * 6 + Axis + 3] = mNodes[i].VelocityAngular[Axis];
+			}
+		}
+		std::vector<double> RHS;
+		ApplyJacobian(NodeVelocity, RHS);
+		for (double& Value : RHS) Value = -Value;
+		const double RHSNorm = std::sqrt(Dot(RHS, RHS));
+		const double Threshold = mSettings.AbsoluteTolerance + mSettings.RelativeTolerance * RHSNorm;
+		std::vector<double> Solution(Dimension, 0.0), InverseDiagonal(Dimension, 1.0);
+		std::vector<double> Residual(Dimension), Direction(Dimension), Preconditioned(Dimension), Product, Scratch;
+		for (size_t i = 0; i < mRuntimeBonds.size(); ++i)
+		{
+			const RuntimeBond& Bond = mRuntimeBonds[i];
+			for (int Axis = 0; Axis < 3; ++Axis)
+			{
+				if (WarmStart && RHSNorm > mSettings.AbsoluteTolerance)
+				{
+					Solution[i * 6 + Axis] = Bond.Info.ImpulseLinear[Axis];
+					Solution[i * 6 + Axis + 3] = Bond.Info.ImpulseAngular[Axis];
+				}
+				Vector3 Unit = Vector3::Zero();
+				Unit[Axis] = 1.0f;
+				double Linear = 0.0, Angular = 0.0;
+				for (int End = 0; End < 2; ++End)
+				{
+					const RuntimeNode& Node = mNodes[(size_t)(End == 0 ? Bond.Info.Node0 : Bond.Info.Node1)];
+					if (Node.Info.IsStatic || !Node.Enabled) continue;
+					const Vector3 Cross = (End == 0 ? Bond.Offset0 : Bond.Offset1).Cross(Unit);
+					Linear += 1.0 / Node.Info.Mass + Cross.Dot(Node.InverseInertia * Cross);
+					Angular += Node.InverseInertia[Axis][Axis];
+				}
+				InverseDiagonal[i * 6 + Axis] = Linear > 0.0 ? 1.0 / Linear : 1.0;
+				InverseDiagonal[i * 6 + Axis + 3] = Angular > 0.0 ? 1.0 / Angular : 1.0;
+			}
+		}
+		ApplyMatrix(Solution, Product, Scratch);
+		for (size_t i = 0; i < Dimension; ++i)
+		{
+			Residual[i] = RHS[i] - Product[i];
+			Direction[i] = Preconditioned[i] = Residual[i] * InverseDiagonal[i];
+		}
+		double ResidualSquared = Dot(Residual, Residual);
+		double RZ = Dot(Residual, Preconditioned);
+		mLastIterations = 0;
+		while (mLastIterations < IterationCount && ResidualSquared > Threshold * Threshold)
+		{
+			ApplyMatrix(Direction, Product, Scratch);
+			const double Denominator = Dot(Direction, Product);
+			if (!std::isfinite(Denominator) || Denominator <= 0.0 || RZ <= 0.0) break;
+			const double Alpha = RZ / Denominator;
+			for (size_t i = 0; i < Dimension; ++i)
+			{
+				Solution[i] += Alpha * Direction[i];
+				Residual[i] -= Alpha * Product[i];
+			}
+			++mLastIterations;
+			ResidualSquared = Dot(Residual, Residual);
+			for (size_t i = 0; i < Dimension; ++i) Preconditioned[i] = Residual[i] * InverseDiagonal[i];
+			const double NextRZ = Dot(Residual, Preconditioned);
+			const double Beta = NextRZ / RZ;
+			for (size_t i = 0; i < Dimension; ++i) Direction[i] = Preconditioned[i] + Beta * Direction[i];
+			RZ = NextRZ;
+		}
+		ApplyMatrix(Solution, Product, Scratch);
+		for (size_t i = 0; i < Dimension; ++i) Residual[i] = RHS[i] - Product[i];
+		const double ResidualNorm = std::sqrt(Dot(Residual, Residual));
+		mConverged = std::isfinite(ResidualNorm) && ResidualNorm <= Threshold;
+		mRelativeResidual = (float)(ResidualNorm / std::max(RHSNorm, (double)mSettings.AbsoluteTolerance));
+		for (size_t i = 0; i < mRuntimeBonds.size(); ++i)
+		{
+			for (int Axis = 0; Axis < 3; ++Axis)
+			{
+				mRuntimeBonds[i].Info.ImpulseLinear[Axis] = (float)Solution[i * 6 + Axis];
+				mRuntimeBonds[i].Info.ImpulseAngular[Axis] = (float)Solution[i * 6 + Axis + 3];
+			}
+		}
+		// Scratch holds M^-1 J^T lambda from the final matrix multiply.
+		for (size_t i = 0; i < mNodes.size(); ++i)
+		{
+			for (int Axis = 0; Axis < 3; ++Axis)
+			{
+				mNodes[i].VelocityLinear[Axis] = (float)(NodeVelocity[i * 6 + Axis] + Scratch[i * 6 + Axis]);
+				mNodes[i].VelocityAngular[Axis] = (float)(NodeVelocity[i * 6 + Axis + 3] + Scratch[i * 6 + Axis + 3]);
+			}
+		}
+	}
+
+	void StrainSolver::Update(float Dt)
+	{
+		if (!std::isfinite(Dt) || Dt <= 0.0f) return;
+		for (RuntimeNode& Node : mNodes)
+		{
+			if (Node.Info.IsStatic || !Node.Enabled)
+			{
+				Node.VelocityLinear = Node.VelocityAngular = Vector3::Zero();
+			}
+			else
+			{
+				Node.VelocityLinear = (Node.Impulse + Node.Force * Dt) / Node.Info.Mass;
+				Node.VelocityAngular = Node.InverseInertia * (Node.AngularImpulse + Node.Torque * Dt);
+			}
+		}
+		Solve(StrainSolverSettings::GetIterationsPerFrame(mSettings, (uint32_t)mRuntimeBonds.size()), mSettings.WarmStart && !bResetRequested);
+		bResetRequested = false;
+		for (RuntimeNode& Node : mNodes) Node.Impulse = Node.AngularImpulse = Node.Force = Node.Torque = Vector3::Zero();
+		for (RuntimeBond& Bond : mRuntimeBonds)
+		{
+			StrainBondInfo& Info = Bond.Info;
+			Info.ForceLinear = Info.ImpulseLinear / Dt;
+			Info.Torque = Info.ImpulseAngular / Dt;
+			const float NormalLoad = Info.ForceLinear.Dot(Info.Normal);
+			const float Twist = Info.Torque.Dot(Info.Normal);
+			const Vector3 TangentialLoad = Info.ForceLinear - Info.Normal * NormalLoad;
+			const Vector3 Bend = Info.Torque - Info.Normal * Twist;
+			// Equivalent circular sections: I = A*r^2/4 and polar I = A*r^2/2.
+			const float Radius = std::sqrt(Info.Area / 3.14159265358979323846f);
+			Info.Bending = 4.0f * Bend.Length() / (Info.Area * Radius);
+			Info.Torsion = 2.0f * std::fabs(Twist) / (Info.Area * Radius);
+			Info.Tension = std::max(NormalLoad, 0.0f) / Info.Area + Info.Bending;
+			Info.Compression = std::max(-NormalLoad, 0.0f) / Info.Area + Info.Bending;
+			Info.Shear = TangentialLoad.Length() / Info.Area + Info.Torsion;
+			Info.Stress = (mSettings.StressLinearFactor * Info.ForceLinear.Length() / Info.Area
+				+ mSettings.StressAngularFactor * std::sqrt(Info.Bending * Info.Bending + Info.Torsion * Info.Torsion)) / mSettings.Hardness;
+		}
+		PublishBonds();
+		CalculateError();
+		++mFrameCount;
+	}
+
+	void StrainSolver::PublishBonds()
+	{
+		mBonds.clear();
+		mOverstressedBondIndices.clear();
+		for (const RuntimeBond& Bond : mRuntimeBonds)
+		{
+			mBonds.push_back(Bond.Info);
+			if (Bond.Info.Stress > Bond.Info.Health) mOverstressedBondIndices.push_back(Bond.Info.BondIndex);
+		}
+	}
+
+	void StrainSolver::ClearSolution()
+	{
+		for (RuntimeBond& Bond : mRuntimeBonds) ClearBondResults(Bond.Info);
+		mErrorLinear = mErrorAngular = mRelativeResidual = 0.0f;
+		mLastIterations = 0;
+		mConverged = true;
+		bResetRequested = true;
+		PublishBonds();
+	}
+
+	void StrainSolver::Reset()
 	{
 		for (RuntimeNode& Node : mNodes)
 		{
-			const float InvMass = Node.Info.IsStatic ? 0.0f : SafeInv(Node.Info.Mass);
-			Node.VelocityLinear = Node.Impulse * InvMass;
-			Node.VelocityAngular = Vector3::Zero();
+			Node.Impulse = Node.AngularImpulse = Node.Force = Node.Torque = Vector3::Zero();
+			Node.VelocityLinear = Node.VelocityAngular = Vector3::Zero();
 		}
+		ClearSolution();
+		mFrameCount = 0;
+	}
 
-		const uint32_t IterationCount = StrainSolverSettings::GetIterationsPerFrame(mSettings, (uint32_t)mRuntimeBonds.size());
-		Solve(IterationCount, !bResetRequested);
-		bResetRequested = false;
-
-		for (RuntimeNode& Node : mNodes)
+	void StrainSolver::CalculateError()
+	{
+		mErrorLinear = mErrorAngular = 0.0f;
+		for (const RuntimeBond& Bond : mRuntimeBonds)
 		{
-			Node.Impulse = Vector3::Zero();
+			const RuntimeNode& A = mNodes[(size_t)Bond.Info.Node0];
+			const RuntimeNode& B = mNodes[(size_t)Bond.Info.Node1];
+			const Vector3 Error = A.VelocityLinear + A.VelocityAngular.Cross(Bond.Offset0)
+				- B.VelocityLinear - B.VelocityAngular.Cross(Bond.Offset1);
+			mErrorLinear += Error.SquareLength();
+			mErrorAngular += (A.VelocityAngular - B.VelocityAngular).SquareLength();
 		}
-
-		mOverstressedBondIndices.clear();
-		for (size_t BondIndex = 0; BondIndex < mRuntimeBonds.size(); ++BondIndex)
-		{
-			RuntimeBond& RuntimeBondInfo = mRuntimeBonds[BondIndex];
-			const float RawStress = RuntimeBondInfo.ImpulseLinear.Length() * mSettings.StressLinearFactor +
-				RuntimeBondInfo.ImpulseAngular.Length() * mSettings.StressAngularFactor;
-			RuntimeBondInfo.Info.Stress = RawStress / std::max(mSettings.Hardness, 1e-6f);
-			mBonds[BondIndex] = RuntimeBondInfo.Info;
-			if (RuntimeBondInfo.Info.Stress > RuntimeBondInfo.Info.Health)
-			{
-				mOverstressedBondIndices.push_back(RuntimeBondInfo.Info.BondIndex);
-			}
-		}
-
-		CalculateError();
-		++mFrameCount;
+		mErrorLinear = std::sqrt(mErrorLinear);
+		mErrorAngular = std::sqrt(mErrorAngular);
 	}
 
 	void StrainSolver::GenerateFractureCommands(DestructionFractureBuffer& Commands) const
@@ -214,154 +657,25 @@ namespace Riemann
 		Commands.BondFractures = mOverstressedBondIndices;
 	}
 
-	void StrainSolver::Reset()
+	const StrainBondInfo* StrainSolver::GetBondInfo(int Index) const
 	{
-		for (RuntimeNode& Node : mNodes)
-		{
-			Node.Impulse = Vector3::Zero();
-			Node.VelocityLinear = Vector3::Zero();
-			Node.VelocityAngular = Vector3::Zero();
-		}
-		for (RuntimeBond& RuntimeBondInfo : mRuntimeBonds)
-		{
-			RuntimeBondInfo.ImpulseLinear = Vector3::Zero();
-			RuntimeBondInfo.ImpulseAngular = Vector3::Zero();
-			RuntimeBondInfo.Info.Stress = 0.0f;
-		}
-		mOverstressedBondIndices.clear();
-		mFrameCount = 0;
-		mErrorLinear = 0.0f;
-		mErrorAngular = 0.0f;
-		bResetRequested = true;
+		for (const StrainBondInfo& Bond : mBonds) if (Bond.BondIndex == Index) return &Bond;
+		return nullptr;
 	}
 
-	float StrainSolver::GetBondStress(int BondIndex) const
+	float StrainSolver::GetBondStress(int Index) const
 	{
-		for (const StrainBondInfo& BondInfo : mBonds)
-		{
-			if (BondInfo.BondIndex == BondIndex)
-			{
-				return BondInfo.Stress;
-			}
-		}
-		return 0.0f;
+		const StrainBondInfo* Bond = GetBondInfo(Index);
+		return Bond ? Bond->Stress : 0.0f;
 	}
 
-	void StrainSolver::EnsureNodeCount(size_t NodeCount)
+	Vector3 StrainSolver::GetNodeLinearVelocity(int Index) const
 	{
-		if (mNodes.size() < NodeCount)
-		{
-			mNodes.resize(NodeCount);
-		}
+		return IsActiveNode(Index) ? mNodes[(size_t)Index].VelocityLinear : Vector3::Zero();
 	}
 
-	int StrainSolver::FindNearestClusterNode(const DestructionCluster& Cluster, const Vector3& LocalPosition) const
+	Vector3 StrainSolver::GetNodeAngularVelocity(int Index) const
 	{
-		int BestNode = -1;
-		float BestDistanceSqr = FLT_MAX;
-		for (int Node : Cluster.GetSourceIndices())
-		{
-			if (Node < 0 || (size_t)Node >= mNodes.size())
-			{
-				continue;
-			}
-			const float DistanceSqr = (mNodes[(size_t)Node].Info.LocalPosition - LocalPosition).SquareLength();
-			if (DistanceSqr < BestDistanceSqr)
-			{
-				BestDistanceSqr = DistanceSqr;
-				BestNode = Node;
-			}
-		}
-		return BestNode;
+		return IsActiveNode(Index) ? mNodes[(size_t)Index].VelocityAngular : Vector3::Zero();
 	}
-
-	void StrainSolver::Solve(uint32_t IterationCount, bool bWarmStart)
-	{
-		if (!bWarmStart)
-		{
-			for (RuntimeBond& RuntimeBondInfo : mRuntimeBonds)
-			{
-				RuntimeBondInfo.ImpulseLinear = Vector3::Zero();
-				RuntimeBondInfo.ImpulseAngular = Vector3::Zero();
-			}
-		}
-		else
-		{
-			for (RuntimeBond& RuntimeBondInfo : mRuntimeBonds)
-			{
-				RuntimeNode& Node0 = mNodes[(size_t)RuntimeBondInfo.Info.Node0];
-				RuntimeNode& Node1 = mNodes[(size_t)RuntimeBondInfo.Info.Node1];
-				const float InvMass0 = Node0.Info.IsStatic ? 0.0f : SafeInv(Node0.Info.Mass);
-				const float InvMass1 = Node1.Info.IsStatic ? 0.0f : SafeInv(Node1.Info.Mass);
-				const float InvI0 = EstimateInvInertia(InvMass0, Node0.Info.Volume);
-				const float InvI1 = EstimateInvInertia(InvMass1, Node1.Info.Volume);
-
-				const Vector3 VelocityLinearCorr0 = RuntimeBondInfo.ImpulseLinear * InvMass0;
-				const Vector3 VelocityLinearCorr1 = RuntimeBondInfo.ImpulseLinear * InvMass1;
-				const Vector3 VelocityAngularCorr0 = RuntimeBondInfo.ImpulseAngular * InvI0 - RuntimeBondInfo.Offset.Cross(VelocityLinearCorr0) * RuntimeBondInfo.InvOffsetSqrLength;
-				const Vector3 VelocityAngularCorr1 = RuntimeBondInfo.ImpulseAngular * InvI1 + RuntimeBondInfo.Offset.Cross(VelocityLinearCorr1) * RuntimeBondInfo.InvOffsetSqrLength;
-
-				Node0.VelocityLinear += VelocityLinearCorr0;
-				Node1.VelocityLinear -= VelocityLinearCorr1;
-				Node0.VelocityAngular += VelocityAngularCorr0;
-				Node1.VelocityAngular -= VelocityAngularCorr1;
-			}
-		}
-
-		for (uint32_t Iteration = 0; Iteration < IterationCount; ++Iteration)
-		{
-			for (RuntimeBond& RuntimeBondInfo : mRuntimeBonds)
-			{
-				RuntimeNode& Node0 = mNodes[(size_t)RuntimeBondInfo.Info.Node0];
-				RuntimeNode& Node1 = mNodes[(size_t)RuntimeBondInfo.Info.Node1];
-				const float InvMass0 = Node0.Info.IsStatic ? 0.0f : SafeInv(Node0.Info.Mass);
-				const float InvMass1 = Node1.Info.IsStatic ? 0.0f : SafeInv(Node1.Info.Mass);
-				const float InvI0 = EstimateInvInertia(InvMass0, Node0.Info.Volume);
-				const float InvI1 = EstimateInvInertia(InvMass1, Node1.Info.Volume);
-
-				const Vector3 VA = Node0.VelocityLinear - Node0.VelocityAngular.Cross(RuntimeBondInfo.Offset);
-				const Vector3 VB = Node1.VelocityLinear + Node1.VelocityAngular.Cross(RuntimeBondInfo.Offset);
-				const Vector3 ErrorLinear = VA - VB;
-				const Vector3 ErrorAngular = Node0.VelocityAngular - Node1.VelocityAngular;
-
-				const float WeightedMass = SafeInv(InvMass0 + InvMass1);
-				const float WeightedInertia = SafeInv(InvI0 + InvI1);
-				if (WeightedMass <= 0.0f && WeightedInertia <= 0.0f)
-				{
-					continue;
-				}
-
-				const Vector3 OutImpulseLinear = -ErrorLinear * WeightedMass * 0.5f;
-				const Vector3 OutImpulseAngular = -ErrorAngular * WeightedInertia * 0.5f;
-				RuntimeBondInfo.ImpulseLinear += OutImpulseLinear;
-				RuntimeBondInfo.ImpulseAngular += OutImpulseAngular;
-
-				const Vector3 VelocityLinearCorr0 = OutImpulseLinear * InvMass0;
-				const Vector3 VelocityLinearCorr1 = OutImpulseLinear * InvMass1;
-				const Vector3 VelocityAngularCorr0 = OutImpulseAngular * InvI0 - RuntimeBondInfo.Offset.Cross(VelocityLinearCorr0) * RuntimeBondInfo.InvOffsetSqrLength;
-				const Vector3 VelocityAngularCorr1 = OutImpulseAngular * InvI1 + RuntimeBondInfo.Offset.Cross(VelocityLinearCorr1) * RuntimeBondInfo.InvOffsetSqrLength;
-
-				Node0.VelocityLinear += VelocityLinearCorr0;
-				Node1.VelocityLinear -= VelocityLinearCorr1;
-				Node0.VelocityAngular += VelocityAngularCorr0;
-				Node1.VelocityAngular -= VelocityAngularCorr1;
-			}
-		}
-	}
-
-	void StrainSolver::CalculateError()
-	{
-		mErrorLinear = 0.0f;
-		mErrorAngular = 0.0f;
-		for (const RuntimeBond& RuntimeBondInfo : mRuntimeBonds)
-		{
-			const RuntimeNode& Node0 = mNodes[(size_t)RuntimeBondInfo.Info.Node0];
-			const RuntimeNode& Node1 = mNodes[(size_t)RuntimeBondInfo.Info.Node1];
-			const Vector3 VA = Node0.VelocityLinear - Node0.VelocityAngular.Cross(RuntimeBondInfo.Offset);
-			const Vector3 VB = Node1.VelocityLinear + Node1.VelocityAngular.Cross(RuntimeBondInfo.Offset);
-			mErrorLinear += (VA - VB).Length();
-			mErrorAngular += (Node0.VelocityAngular - Node1.VelocityAngular).Length();
-		}
-	}
-
-}	// namespace Riemann
+}

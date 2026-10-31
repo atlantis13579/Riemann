@@ -23,6 +23,7 @@ namespace Riemann
 		void Stop();
 		void Submit(Command command);
 		double GetRenderFps() const;
+		bool SupportsDensityVolume() const;
 
 	private:
 		void ThreadMain();

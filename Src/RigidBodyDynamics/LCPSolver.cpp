@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <float.h>
 #include <limits>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -825,17 +826,20 @@ namespace Riemann
 				, m_CUDABatchContext(nullptr)
 #endif
 			{
-				if (!LCPSolver::IsBackendAvailable(m_Settings.Backend)
-					&& m_Settings.AllowBackendFallback)
+				if (!LCPSolver::IsBackendAvailable(m_Settings.Backend))
 				{
+					if (!m_Settings.AllowBackendFallback)
+						throw std::runtime_error("Requested LCP solver backend is unavailable");
 					m_Settings.Backend = SolverBackend::CPU;
 				}
 #if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 				if (m_Settings.Backend == SolverBackend::ComputeShader)
 				{
 					m_ComputeShaderBatchContext = CreateLCPComputeShaderBatchContext();
-					if (!m_ComputeShaderBatchContext && m_Settings.AllowBackendFallback)
+					if (!m_ComputeShaderBatchContext)
 					{
+						if (!m_Settings.AllowBackendFallback)
+							throw std::runtime_error("Failed to initialize the LCP ComputeShader backend");
 						m_Settings.Backend = SolverBackend::CPU;
 					}
 				}
@@ -844,8 +848,10 @@ namespace Riemann
 				if (m_Settings.Backend == SolverBackend::CUDA)
 				{
 					m_CUDABatchContext = CreateLCPCUDABatchContext();
-					if (!m_CUDABatchContext && m_Settings.AllowBackendFallback)
+					if (!m_CUDABatchContext)
 					{
+						if (!m_Settings.AllowBackendFallback)
+							throw std::runtime_error("Failed to initialize the LCP CUDA backend");
 						m_Settings.Backend = SolverBackend::CPU;
 					}
 				}

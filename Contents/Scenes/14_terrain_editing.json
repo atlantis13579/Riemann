@@ -1,0 +1,48 @@
+{
+  "name": "Terrain Editing",
+  "physics": {
+    "gravity": [0.0, -9.8, 0.0],
+    "resolutionSolver": "globalLCP",
+    "solverBackend": "simd",
+    "contactSolverIterations": 32
+  },
+  "camera": {
+    "center": [0.0, 1.0, 0.0],
+    "orbit": [0.7, 0.65, 31.0],
+    "near": 0.05,
+    "far": 1000.0
+  },
+  "light": {
+    "direction": [-0.45, -0.8, -0.35],
+    "ambient": 0.3,
+    "shadowCenter": [0.0, 0.0, 0.0],
+    "shadowDistance": 70.0,
+    "shadowSize": 45.0
+  },
+  "objects": [
+    {
+      "id": "editable_terrain",
+      "type": "heightfield",
+      "body": "static",
+      "position": [0.0, 0.0, 0.0],
+      "halfExtent": [16.0, 1.0, 16.0],
+      "rows": 65,
+      "columns": 65,
+      "heightScale": 0.001,
+      "baseHeight": 0.0,
+      "color": [0.38, 0.48, 0.27, 1.0]
+    },
+    {
+      "id": "falling_box",
+      "type": "box",
+      "body": "dynamic",
+      "position": [-6.0, 2.0, -4.0],
+      "halfExtent": [0.65, 0.65, 0.65],
+      "color": [0.92, 0.58, 0.22, 1.0],
+      "repeat": {
+        "count": [4, 2, 3],
+        "spacing": [4.0, 2.0, 4.0]
+      }
+    }
+  ]
+}

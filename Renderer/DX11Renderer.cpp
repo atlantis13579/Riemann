@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <algorithm>
+#include <cstring>
 #include <limits>
 #include <mutex>
 #include <string>
@@ -23,6 +24,7 @@
 #include "../Src/Maths/Vector4.h"
 #include "imgui.h"
 #include "ImguiRenderDX11.h"
+#include "DX11VolumeRenderer.h"
 
 using namespace DirectX;
 
@@ -217,6 +219,7 @@ public:
 		SafeRelease(m_pOutlineVertexShader);
 		SafeRelease(m_pVertexShader);
 		SafeRelease(m_pPixelShader);
+		SafeRelease(m_pDepthSRV);
 		SafeRelease(m_pDepthBuffer);
 		SafeRelease(m_pRenderTargetView);
 		SafeRelease(m_pSwapChain1);
@@ -414,6 +417,30 @@ public:
 		m_pSwapChain->Present(0, 0);
 	}
 
+	bool CaptureFrame(std::vector<uint32_t>* pixels, uint32_t* width, uint32_t* height) override
+	{
+		if (!pixels || !width || !height || !m_pImmediateContext || !EnsureBackBufferSize()) return false;
+		RenderShadowPass(); RenderMainPass(); RenderImgui();
+		Microsoft::WRL::ComPtr<ID3D11Resource> resource;
+		Microsoft::WRL::ComPtr<ID3D11Texture2D> texture, staging;
+		m_pRenderTargetView->GetResource(&resource);
+		if (FAILED(resource.As(&texture))) return false;
+		D3D11_TEXTURE2D_DESC desc;
+		texture->GetDesc(&desc);
+		if (desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM || desc.SampleDesc.Count != 1) return false;
+		desc.Usage = D3D11_USAGE_STAGING; desc.BindFlags = 0; desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ; desc.MiscFlags = 0;
+		if (FAILED(m_pd3dDevice->CreateTexture2D(&desc, nullptr, &staging))) return false;
+		m_pImmediateContext->CopyResource(staging.Get(), texture.Get());
+		D3D11_MAPPED_SUBRESOURCE map;
+		if (FAILED(m_pImmediateContext->Map(staging.Get(), 0, D3D11_MAP_READ, 0, &map))) return false;
+		pixels->resize((size_t)desc.Width * desc.Height);
+		for (unsigned y = 0; y < desc.Height; ++y)
+			std::memcpy(pixels->data() + (size_t)y * desc.Width, (const char*)map.pData + y * map.RowPitch, desc.Width * sizeof(uint32_t));
+		m_pImmediateContext->Unmap(staging.Get(), 0);
+		*width = desc.Width; *height = desc.Height;
+		return true;
+	}
+
 	void SetCamera(const Riemann::CameraDesc& camera) override
 	{
 		m_Camera = camera;
@@ -448,6 +475,13 @@ public:
 			0.1f,
 			m_Light.ShadowDistance * 2.0f);
 	}
+
+	bool SupportsDensityVolume() const override { return true; }
+	bool UpdateDensityVolume(const Riemann::DensityVolumeDesc& Volume) override
+	{
+		return m_Volume.Update(m_pd3dDevice, m_pImmediateContext, Volume);
+	}
+	void ClearDensityVolume() override { m_Volume.Clear(); }
 
 	bool AddMesh(const Riemann::RenderMeshDesc& meshDesc) override
 	{
@@ -751,6 +785,7 @@ public:
 	bool Reset() override
 	{
 		m_AllMesh.clear();
+		m_Volume.Clear();
 		return true;
 	}
 
@@ -882,8 +917,8 @@ private:
 		depthTextureDesc.MipLevels = 1;
 		depthTextureDesc.ArraySize = 1;
 		depthTextureDesc.SampleDesc.Count = 1;
-		depthTextureDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-		depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+		depthTextureDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+		depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 
 		ID3D11Texture2D* depthStencilTexture = nullptr;
 		hr = m_pd3dDevice->CreateTexture2D(&depthTextureDesc, nullptr, &depthStencilTexture);
@@ -893,10 +928,18 @@ private:
 		}
 
 		D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-		dsvDesc.Format = depthTextureDesc.Format;
+		dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 		dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 
 		hr = m_pd3dDevice->CreateDepthStencilView(depthStencilTexture, &dsvDesc, &m_pDepthBuffer);
+		if (SUCCEEDED(hr))
+		{
+			D3D11_SHADER_RESOURCE_VIEW_DESC View = {};
+			View.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+			View.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+			View.Texture2D.MipLevels = 1;
+			hr = m_pd3dDevice->CreateShaderResourceView(depthStencilTexture, &View, &m_pDepthSRV);
+		}
 		depthStencilTexture->Release();
 		return hr;
 	}
@@ -1053,6 +1096,7 @@ private:
 			}
 		}
 		shaderFile += L"dx11_shader.hlsl";
+		if (!m_Volume.Initialize(m_pd3dDevice, shaderFile.c_str())) return E_FAIL;
 
 		ID3DBlob* pVSBlob = nullptr;
 		HRESULT hr = CompileShaderFromFile(shaderFile.c_str(), "MainVS", "vs_4_0", &pVSBlob);
@@ -1196,6 +1240,7 @@ private:
 		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
 		m_pImmediateContext->PSSetShaderResources(0, 1, nullSRV);
 		SafeRelease(m_pRenderTargetView);
+		SafeRelease(m_pDepthSRV);
 		SafeRelease(m_pDepthBuffer);
 
 		HRESULT hr = m_pSwapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
@@ -1265,6 +1310,9 @@ private:
 		m_pImmediateContext->PSSetSamplers(0, 1, &m_pShadowSampler);
 
 		DrawScene(false);
+		m_Volume.Render(m_pImmediateContext, m_pRenderTargetView, m_pDepthSRV, m_Camera, m_Light, m_Width, m_Height);
+		m_pImmediateContext->OMSetRenderTargets(1, &m_pRenderTargetView, m_pDepthBuffer);
+		m_pImmediateContext->IASetInputLayout(m_pVertexLayout);
 		RenderOutlinePass();
 
 		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
@@ -1509,6 +1557,8 @@ private:
 	HWND m_hWnd = nullptr;
 	ID3D11RenderTargetView* m_pRenderTargetView = nullptr;
 	ID3D11DepthStencilView* m_pDepthBuffer = nullptr;
+	ID3D11ShaderResourceView* m_pDepthSRV = nullptr;
+	Riemann::DX11VolumeRenderer m_Volume;
 	ID3D11VertexShader* m_pVertexShader = nullptr;
 	ID3D11VertexShader* m_pShadowVertexShader = nullptr;
 	ID3D11PixelShader* m_pPixelShader = nullptr;

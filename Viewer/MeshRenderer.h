@@ -31,4 +31,6 @@ namespace Riemann
 	bool BuildGasDensityMeshes(const AerodynamicsSimulation& simulation, const std::string& idPrefix,
 		std::vector<RenderMeshDesc>* meshes,
 		const GasDensityVisualizationSettings& settings = GasDensityVisualizationSettings());
+	bool BuildGasDensityVolume(const AerodynamicsSimulation& simulation, DensityVolumeDesc* volume,
+		float relativeThreshold = 0.08f);
 }

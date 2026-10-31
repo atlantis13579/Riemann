@@ -7,6 +7,7 @@
 #include "../Src/Maths/Transform.h"
 #include "../Src/Maths/Vector3.h"
 #include "../Src/Maths/Vector4.h"
+#include "DensityVolume.h"
 
 #if defined(_WIN32) && !defined(RIEMANN_RENDERER_STATIC)
 #  ifdef RIEMANN_RENDERER_EXPORT
@@ -129,8 +130,14 @@ namespace Riemann
 		virtual ~Renderer() {}
 
 		virtual void Render() = 0;
+		// Render and read back RGBA8 pixels for deterministic offline visual checks.
+		virtual bool CaptureFrame(std::vector<uint32_t>* pixels, uint32_t* width, uint32_t* height)
+		{ (void)pixels; (void)width; (void)height; return false; }
 		virtual void SetCamera(const CameraDesc& camera) = 0;
 		virtual void SetLight(const DirectionalLightDesc& light) = 0;
+		virtual bool SupportsDensityVolume() const { return false; }
+		virtual bool UpdateDensityVolume(const DensityVolumeDesc& volume) { (void)volume; return false; }
+		virtual void ClearDensityVolume() {}
 		// Empty vertex and index arrays create a hidden dynamic mesh slot.
 		virtual bool AddMesh(const RenderMeshDesc& mesh) = 0;
 		virtual bool UpdateTransform(const RenderTransformUpdate& transform) = 0;

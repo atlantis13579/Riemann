@@ -61,6 +61,7 @@ endforeach()
 
 if(MSVC)
     add_compile_options("$<$<NOT:$<COMPILE_LANGUAGE:CUDA>>:/W3>")
+    add_compile_options("$<$<NOT:$<COMPILE_LANGUAGE:CUDA>>:/MP>")
 else()
     add_compile_options(
         "$<$<NOT:$<COMPILE_LANGUAGE:CUDA>>:-Wall>"
@@ -79,7 +80,12 @@ if(RIEMANN_CUDA_AVAILABLE)
     list(APPEND RIEMANN_SOURCES
         "${CMAKE_SOURCE_DIR}/../Src/RigidBodyDynamics/LCPSolverCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Fluid/FluidBackendCUDA.cu"
+        "${CMAKE_SOURCE_DIR}/../Src/Fluid/SmokeBackendCUDA.cu"
+        "${CMAKE_SOURCE_DIR}/../Src/Deformation/PBDBackendCUDA.cu"
     )
+    # Keep contact projection arithmetic consistent with the scalar/SIMD paths.
+    set_source_files_properties("${CMAKE_SOURCE_DIR}/../Src/Deformation/PBDBackendCUDA.cu"
+        PROPERTIES COMPILE_OPTIONS "--fmad=false")
 endif()
 
 file(GLOB_RECURSE RIEMANN_HEADERS CONFIGURE_DEPENDS
@@ -124,6 +130,8 @@ set(RIEMANN_RENDERER_SOURCES
 
 set(RIEMANN_RENDERER_HEADERS
     "${CMAKE_SOURCE_DIR}/../Renderer/RiemannRenderer.h"
+    "${CMAKE_SOURCE_DIR}/../Renderer/DensityVolume.h"
+    "${CMAKE_SOURCE_DIR}/../Renderer/DX11VolumeRenderer.h"
     "${CMAKE_SOURCE_DIR}/../Renderer/DX11Renderer.h"
     "${CMAKE_SOURCE_DIR}/../Renderer/MetalRenderer.h"
     "${CMAKE_SOURCE_DIR}/../Renderer/imgui.h"
@@ -175,6 +183,7 @@ elseif(APPLE)
 endif()
 
 set(RIEMANN_VIEWER_CORE_SOURCES
+    "${CMAKE_SOURCE_DIR}/../Viewer/SolverPanel.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshCuttingPanel.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshSimplificationPanel.cpp"
@@ -184,6 +193,7 @@ set(RIEMANN_VIEWER_CORE_SOURCES
 )
 
 set(RIEMANN_VIEWER_CORE_HEADERS
+    "${CMAKE_SOURCE_DIR}/../Viewer/SolverPanel.h"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.h"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshCuttingPanel.h"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshSimplificationPanel.h"
@@ -193,12 +203,34 @@ set(RIEMANN_VIEWER_CORE_HEADERS
 )
 
 add_executable(Test ${TEST_SOURCES})
+target_sources(Test PRIVATE
+    "${CMAKE_SOURCE_DIR}/../Viewer/SceneWorld.cpp"
+    "${CMAKE_SOURCE_DIR}/../Viewer/SolverPanel.cpp"
+    "${CMAKE_SOURCE_DIR}/../Renderer/imgui.cpp"
+)
+target_compile_definitions(Test PRIVATE IMGUI_STATIC)
 if(MSVC)
     target_compile_definitions(Test PRIVATE _CRT_SECURE_NO_WARNINGS)
     target_compile_options(Test PRIVATE $<$<CONFIG:Release>:/openmp>)
 endif()
 
 target_link_libraries(Test PRIVATE Riemann)
+
+enable_testing()
+add_test(NAME FluidOptimization COMMAND Test FluidOptimization)
+set_tests_properties(FluidOptimization PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
+add_test(NAME Smoke COMMAND Test Smoke)
+set_tests_properties(Smoke PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
+add_test(NAME SmokeBackends COMMAND Test SmokeBackends)
+set_tests_properties(SmokeBackends PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
+add_test(NAME SmokeMovingObstacles COMMAND Test SmokeMovingObstacles)
+set_tests_properties(SmokeMovingObstacles PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
+add_test(NAME SmokeRigidCoupling COMMAND Test SmokeRigidCoupling)
+set_tests_properties(SmokeRigidCoupling PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
+foreach(TEST_GROUP SolverPanel SolverSwitch PBDBackendScenes PBDBackends VehicleScene VehicleDeformation RopeTowing XPBDScene XPBD PBDScene PBD VoxelScene VoxelMesh TerrainScene TerrainEditing GEMM StressIntegration Stress Deformation Scenes RopeRegression Constraints ConstraintRegression Rope Cloth Ragdoll Terrain Matrix Destruction CCD)
+    add_test(NAME ${TEST_GROUP} COMMAND Test ${TEST_GROUP})
+    set_tests_properties(${TEST_GROUP} PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
+endforeach()
 
 target_include_directories(Test PRIVATE 
     ${CMAKE_SOURCE_DIR}/../Src
@@ -230,6 +262,23 @@ if(WIN32)
         Riemann
     )
     
+    add_executable(RendererLifecycleValidation "${CMAKE_SOURCE_DIR}/../Test/Benchmarks_Fluid.cpp")
+
+    add_executable(SmokeRenderValidation "${CMAKE_SOURCE_DIR}/../Test/Benchmarks_Fluid.cpp"
+        "${CMAKE_SOURCE_DIR}/../Viewer/SceneWorld.cpp")
+    target_compile_definitions(SmokeRenderValidation PRIVATE NOMINMAX RIEMANN_RENDERER_STATIC
+        RIEMANN_BENCHMARK_VOLUME_VALIDATION RIEMANN_SMOKE_PREVIEW _CRT_SECURE_NO_WARNINGS)
+    target_link_libraries(SmokeRenderValidation PRIVATE Riemann d3d11 d3dcompiler dxgi)
+
+    add_executable(SmokeViewerValidation ${RIEMANN_VIEWER_CORE_SOURCES}
+        "${CMAKE_SOURCE_DIR}/../Test/SmokeViewerValidation.cpp")
+    target_compile_definitions(SmokeViewerValidation PRIVATE RIEMANN_SMOKE_VIEWER_VALIDATION _CRT_SECURE_NO_WARNINGS)
+    target_link_libraries(SmokeViewerValidation PRIVATE Riemann Renderer shell32 comctl32)
+    target_compile_definitions(RendererLifecycleValidation PRIVATE RIEMANN_BENCHMARK_RENDERER_LIFECYCLE)
+    target_link_libraries(RendererLifecycleValidation PRIVATE Renderer)
+    add_test(NAME RendererLifecycleValidation COMMAND RendererLifecycleValidation)
+    set_tests_properties(RendererLifecycleValidation PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
+
     # Visual Studio
     set_property(TARGET Test PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:Test>")
     

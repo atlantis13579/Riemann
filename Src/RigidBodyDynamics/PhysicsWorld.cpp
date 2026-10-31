@@ -1,5 +1,8 @@
 #include <assert.h>
 #include <algorithm>
+#include <cmath>
+#include <memory>
+#include <stdexcept>
 
 #include "PhysicsWorld.h"
 
@@ -22,11 +25,58 @@
 #include "KinematicsTree.h"
 #include "ContinuousCollisionDetection.h"
 #include "../Deformation/Rope.h"
+#include "../Deformation/DeformableBody.h"
 #include "../Deformation/Cloth.h"
 #include "Ragdoll.h"
 
 namespace Riemann
 {
+	namespace
+	{
+		void CreateResolutionSolvers(ResolutionPhaseSolver Solver, SolverBackend Backend, bool AllowFallback,
+			const PBDSolverSettings& PBDSettings, const XPBDSolverSettings& XPBDSettings,
+			const LCPSolverSettings& LCPSettings, std::unique_ptr<ConstraintSolver>& ContactSolver,
+			std::unique_ptr<PBDSolver>& PositionSolver)
+		{
+			if (static_cast<uint8_t>(Backend) > static_cast<uint8_t>(SolverBackend::CUDA))
+				throw std::runtime_error("Invalid solver backend");
+			switch (Solver)
+			{
+			case ResolutionPhaseSolver::SequentialImpulse:
+				if (Backend != SolverBackend::CPU)
+					throw std::runtime_error("Sequential impulse supports the CPU backend only");
+				ContactSolver.reset(ConstraintSolver::CreateSequentialImpulseSolver());
+				break;
+			case ResolutionPhaseSolver::LCPGlobal:
+			{
+				LCPSolverSettings Settings = LCPSettings;
+				Settings.Backend = Backend;
+				Settings.AllowBackendFallback = AllowFallback;
+				ContactSolver.reset(CreateGlobalLCPSolver(Settings));
+				break;
+			}
+			case ResolutionPhaseSolver::PBD:
+			{
+				PBDSolverSettings Settings = PBDSettings;
+				Settings.Backend = Backend;
+				Settings.AllowBackendFallback = AllowFallback;
+				PositionSolver.reset(new PBDSolver(Settings));
+				break;
+			}
+			case ResolutionPhaseSolver::XPBD:
+			{
+				XPBDSolverSettings Settings = XPBDSettings;
+				Settings.Backend = Backend;
+				Settings.AllowBackendFallback = AllowFallback;
+				PositionSolver.reset(new XPBDSolver(Settings));
+				break;
+			}
+			default:
+				throw std::runtime_error("Invalid resolution solver");
+			}
+		}
+	}
+
 	void DefaultOnContact(const PhysicsContactInfo& ContactInfo)
 	{
 		GeometryAggregate* ParentA = ContactInfo.BodyA ? ContactInfo.BodyA->Parent : nullptr;
@@ -57,6 +107,16 @@ namespace Riemann
 
 	PhysicsWorld::PhysicsWorld(const PhysicsWorldParam& param)
 	{
+		m_PBDSettings = param.pbdSettings;
+		m_XPBDSettings = param.xpbdSettings;
+		m_LCPSettings.MaxIterations = std::max(1, param.contactSolverIterations);
+		m_LCPSettings.Tolerance = std::max(0.0f, param.contactSolverTolerance);
+		m_LCPSettings.Relaxation = std::max(0.01f, std::min(1.99f, param.contactSolverRelaxation));
+		// Resolve strict backend requests before allocating world-owned raw resources.
+		std::unique_ptr<ConstraintSolver> ContactSolver;
+		std::unique_ptr<PBDSolver> PositionSolver;
+		CreateResolutionSolvers(param.resolutionSolver, param.solverBackend, param.allowBackendFallback,
+			m_PBDSettings, m_XPBDSettings, m_LCPSettings, ContactSolver, PositionSolver);
 		m_GeometryQuery = new GeometryQuery;
 		m_BPhase = nullptr;
 		m_SceneQuery = param.sceneQueryType;
@@ -94,22 +154,11 @@ namespace Riemann
 			m_BPhase = BroadPhase::Create_SAP();
 		}
 		m_NPhase = NarrowPhase::Create_GJKEPA();
-		m_Solver = nullptr;
+		m_Solver = ContactSolver.get();
+		m_PositionSolver = PositionSolver.get();
 		m_ResolutionSolver = param.resolutionSolver;
-		if (param.resolutionSolver == ResolutionPhaseSolver::LCPGlobal)
-		{
-			LCPSolverSettings SolverSettings;
-			SolverSettings.MaxIterations = std::max(1, param.contactSolverIterations);
-			SolverSettings.Tolerance = std::max(0.0f, param.contactSolverTolerance);
-			SolverSettings.Relaxation = std::max(0.01f, std::min(1.99f, param.contactSolverRelaxation));
-			SolverSettings.Backend = param.solverBackend;
-			m_Solver = CreateGlobalLCPSolver(SolverSettings);
-		}
-		if (m_Solver == nullptr)
-		{
-			m_Solver = ConstraintSolver::CreateSequentialImpulseSolver();
-			m_ResolutionSolver = ResolutionPhaseSolver::SequentialImpulse;
-		}
+		m_RequestedSolverBackend = param.solverBackend;
+		m_AllowBackendFallback = param.allowBackendFallback;
 		m_IntegrateMethod = param.integrateMethod;
 		m_OnContact = param.onContact ? param.onContact : OnContactCallback(DefaultOnContact);
 		m_OnTrigger = param.onTrigger ? param.onTrigger : OnTriggerCallback(DefaultOnTrigger);
@@ -122,6 +171,8 @@ namespace Riemann
 		m_SceneResource = nullptr;
 		m_LastCCDHitCount = 0;
 		m_ConstraintIterations = std::max(1, param.constraintIterations);
+		ContactSolver.release();
+		PositionSolver.release();
 	}
 
 	PhysicsWorld::~PhysicsWorld()
@@ -137,6 +188,9 @@ namespace Riemann
 			delete Cloth;
 		}
 		m_Cloths.clear();
+
+		for (DeformableBody* body : m_DeformableBodies) delete body;
+		m_DeformableBodies.clear();
 
 		for (RopeSystem* Rope : m_Ropes)
 		{
@@ -164,6 +218,7 @@ namespace Riemann
 		SAFE_DELETE(m_GeometryQuery);
 		SAFE_DELETE(m_NPhase);
 		SAFE_DELETE(m_Solver);
+		SAFE_DELETE(m_PositionSolver);
 
 		for (size_t i = 0; i < m_Fields.size(); ++i)
 		{
@@ -204,14 +259,70 @@ namespace Riemann
 
 	void		PhysicsWorld::Simulate()
 	{
-		m_Clock.tick++;
+		Simulate(m_Clock.deltatime);
+	}
 
-		SimulateST(m_Clock.deltatime);
+	void PhysicsWorld::Simulate(float Dt)
+	{
+		if (!std::isfinite(Dt) || Dt <= 0.0f) return;
+		++m_Clock.tick;
+		SimulateST(Dt);
 	}
 
 	SolverBackend PhysicsWorld::GetSolverBackend() const
 	{
-		return m_Solver ? m_Solver->GetBackend() : SolverBackend::CPU;
+		return m_PositionSolver ? m_PositionSolver->GetBackend()
+			: (m_Solver ? m_Solver->GetBackend() : SolverBackend::CPU);
+	}
+
+	bool PhysicsWorld::IsSolverBackendAvailable(ResolutionPhaseSolver Solver, SolverBackend Backend)
+	{
+		switch (Solver)
+		{
+		case ResolutionPhaseSolver::SequentialImpulse: return Backend == SolverBackend::CPU;
+		case ResolutionPhaseSolver::LCPGlobal: return LCPSolver::IsBackendAvailable(Backend);
+		case ResolutionPhaseSolver::PBD:
+		case ResolutionPhaseSolver::XPBD: return IsPBDBackendAvailable(Backend);
+		default: return false;
+		}
+	}
+
+	bool PhysicsWorld::SetSolverConfiguration(ResolutionPhaseSolver Solver, SolverBackend Backend,
+		bool AllowFallback, std::string* ErrorMessage)
+	{
+		if (ErrorMessage) ErrorMessage->clear();
+		if (Solver == m_ResolutionSolver && Backend == m_RequestedSolverBackend
+			&& AllowFallback == m_AllowBackendFallback && Backend == GetSolverBackend()
+			&& (!m_PositionSolver || m_PositionSolver->GetBackendStatistics().Message.empty())) return true;
+
+		std::unique_ptr<ConstraintSolver> ContactSolver;
+		std::unique_ptr<PBDSolver> PositionSolver;
+		try
+		{
+			CreateResolutionSolvers(Solver, Backend, AllowFallback, m_PBDSettings, m_XPBDSettings,
+				m_LCPSettings, ContactSolver, PositionSolver);
+		}
+		catch (const std::exception& Error)
+		{
+			if (ErrorMessage) *ErrorMessage = Error.what();
+			return false;
+		}
+
+		// New solvers own fresh contact caches. Commit only after all device setup succeeds.
+		delete m_Solver;
+		delete m_PositionSolver;
+		m_Solver = ContactSolver.release();
+		m_PositionSolver = PositionSolver.release();
+		m_ResolutionSolver = Solver;
+		m_RequestedSolverBackend = Backend;
+		m_AllowBackendFallback = AllowFallback;
+		for (PositionConstraint* Constraint : m_Constraints)
+		{
+			if (Constraint) Constraint->BeginStep(m_Clock.deltatime, Solver == ResolutionPhaseSolver::XPBD);
+		}
+		// A sleeping body must be allowed to settle under the newly selected formulation.
+		for (RigidBodyDynamic* Body : m_DynamicBodies) Body->Wakeup();
+		return true;
 	}
 
 	void PhysicsWorld::DispatchContactCallbacks(const std::vector<Geometry*>& geoms, const std::vector<ContactManifold*>& manifolds)
@@ -324,6 +435,7 @@ namespace Riemann
 		{
 			m_Solver->ResetState();
 		}
+		if (m_PositionSolver) m_PositionSolver->ResetState();
 
 		// The gravity field is permanent; additional fields belong to the cleared scene.
 		for (size_t FieldIndex = 1; FieldIndex < m_Fields.size(); ++FieldIndex)
@@ -343,6 +455,9 @@ namespace Riemann
 			delete Cloth;
 		}
 		m_Cloths.clear();
+
+		for (DeformableBody* body : m_DeformableBodies) delete body;
+		m_DeformableBodies.clear();
 
 		for (RopeSystem* Rope : m_Ropes)
 		{
@@ -727,11 +842,24 @@ namespace Riemann
 		{
 			m_Kinematics[i]->Simulate(dt);
 		}
+		for (PositionConstraint* Constraint : m_Constraints)
+		{
+			if (Constraint) Constraint->BeginStep(dt, m_ResolutionSolver == ResolutionPhaseSolver::XPBD);
+		}
 		// Project joint drift before collision generation so joint correction cannot
 		// move a body back into an already solved contact later in the frame.
-		SolveConstraintPositions(dt);
+		if (!m_PositionSolver) SolveConstraintPositions(dt);
 		PreIntegrate(dt);
 		MotionIntegration::IntegrateVelocities(m_DynamicBodies, dt);
+		if (m_PositionSolver)
+		{
+			SimulatePositionBasedRigidBodies(dt);
+			SimulateCloths(dt);
+			for (DeformableBody* Body : m_DeformableBodies) Body->Simulate(dt);
+			PostIntegrate(dt);
+			UpdateDestructionSets(dt);
+			return;
+		}
 
 		std::vector<const GeometryWorldState*> simulationStates;
 		std::vector<Geometry*> geoms;
@@ -862,11 +990,79 @@ namespace Riemann
 		MotionIntegration::IntegratePoses(m_DynamicBodies, dt, (uint8_t)m_IntegrateMethod);
 		SolvePostIntegrationPositions(dt);
 		SimulateCloths(dt);
+		for (DeformableBody* body : m_DeformableBodies) body->Simulate(dt);
 
 		PostIntegrate(dt);
 		UpdateDestructionSets(dt);
 
 		return;
+	}
+
+	void PhysicsWorld::SimulatePositionBasedRigidBodies(float Dt)
+	{
+		m_PositionSolver->BeginStep(m_DynamicBodies, Dt);
+		// Rope attachments and joint velocity limits must act before CCD, while
+		// poses still describe the start of the interval being swept.
+		SolveConstraintVelocities(Dt);
+		SimulateRopes(Dt);
+		std::vector<RigidBody*> AllBodies;
+		AllBodies.reserve(m_StaticBodies.size() + m_DynamicBodies.size());
+		AllBodies.insert(AllBodies.end(), m_StaticBodies.begin(), m_StaticBodies.end());
+		AllBodies.insert(AllBodies.end(), m_DynamicBodies.begin(), m_DynamicBodies.end());
+		std::vector<ContinuousCollisionHit> TriggerHits;
+		ContinuousCollisionDetection::FindTriggerHits(AllBodies, Dt, &TriggerHits);
+		DispatchTriggerCCDCallbacks(TriggerHits);
+		m_LastCCDHitCount = ContinuousCollisionDetection::Resolve(m_DynamicBodies, AllBodies, Dt);
+		m_PositionSolver->PredictPoses(Dt);
+
+		const PBDSolverSettings& Settings = m_PositionSolver->GetSettings();
+		for (int Iteration = 0; Iteration < Settings.PositionIterations; ++Iteration)
+		{
+			for (PositionConstraint* Constraint : m_Constraints)
+			{
+				if (Constraint && Constraint->IsEnabled()) Constraint->SolvePosition(Dt);
+			}
+			// Refresh candidates after joint projection. Keep owned contact rows in
+			// the solver because NarrowPhase reuses its manifold pool on each call.
+			UpdateGeometryWorldStates();
+			std::vector<const GeometryWorldState*> States;
+			std::vector<Geometry*> Geometries;
+			GetActiveGeometryWorldStates(&States, &Geometries);
+			const GeometryWorldStateSpan Span(States.data(), States.size());
+			std::vector<OverlapPair> Overlaps, ContactOverlaps, TriggerOverlaps;
+			if (m_BPhase) m_BPhase->ProduceOverlaps(Span, &Overlaps);
+			for (const OverlapPair& Pair : Overlaps)
+			{
+				Geometry* A = Geometries[(size_t)Pair.index1];
+				Geometry* B = Geometries[(size_t)Pair.index2];
+				if (A->IsTriggerEnabled() || B->IsTriggerEnabled()) TriggerOverlaps.push_back(Pair);
+				else if (A->IsSimulationEnabled() && B->IsSimulationEnabled()) ContactOverlaps.push_back(Pair);
+			}
+			if (Iteration == 0 && m_NPhase && !TriggerOverlaps.empty())
+			{
+				std::vector<ContactManifold*> TriggerManifolds;
+				m_NPhase->CollisionDetection(Span, TriggerOverlaps, &TriggerManifolds);
+				DispatchTriggerCallbacks(Geometries, TriggerManifolds);
+			}
+			if (m_NPhase && !ContactOverlaps.empty())
+			{
+				std::vector<ContactManifold*> Manifolds;
+				m_NPhase->CollisionDetection(Span, ContactOverlaps, &Manifolds);
+				m_PositionSolver->AddContacts(Geometries, Manifolds);
+			}
+			m_PositionSolver->SolvePositions(Dt);
+		}
+		m_PositionSolver->ReconstructVelocities(Dt);
+		for (int Iteration = 0; Iteration < Settings.VelocityIterations; ++Iteration)
+		{
+			for (PositionConstraint* Constraint : m_Constraints)
+			{
+				if (Constraint && Constraint->IsEnabled()) Constraint->SolveVelocity(Dt);
+			}
+			m_PositionSolver->SolveVelocities(Dt);
+		}
+		m_PositionSolver->EndStep(Dt);
+		DispatchContactCallbacks(m_PositionSolver->GetContactGeometries(), m_PositionSolver->GetContactManifolds());
 	}
 
 	void PhysicsWorld::UpdateDestructionSets(float dt)
@@ -915,7 +1111,21 @@ namespace Riemann
 			// next frame. Keep the body awake so that integration can consume them.
 			const bool HasPendingLoad = Body->ExtForce != Vector3::Zero()
 				|| Body->ExtTorque != Vector3::Zero();
-			if (!HasPendingLoad)
+			bool HasCompliantJoint = false;
+			if (m_ResolutionSolver == ResolutionPhaseSolver::XPBD)
+			{
+				for (const PositionConstraint* Constraint : m_Constraints)
+				{
+					if (Constraint && Constraint->IsEnabled()
+						&& (Constraint->GetBodyA() == Body || Constraint->GetBodyB() == Body)
+						&& (Constraint->GetLinearCompliance() > 0.0f || Constraint->GetAngularCompliance() > 0.0f))
+					{
+						HasCompliantJoint = true;
+						break;
+					}
+				}
+			}
+			if (!HasPendingLoad && !HasCompliantJoint && (!m_PositionSolver || m_PositionSolver->CanSleep(Body)))
 			{
 				Body->AutoSleep();
 			}
@@ -1189,7 +1399,11 @@ namespace Riemann
 		}
 		for (RopeSystem* Rope : m_Ropes)
 		{
-			if (Rope) Rope->DetachRigidBody(Body);
+			if (Rope)
+			{
+				Rope->DetachRigidBody(Body);
+				Rope->RemoveColliders(Body);
+			}
 		}
 		for (size_t i = m_Constraints.size(); i > 0; --i)
 		{
@@ -1210,6 +1424,7 @@ namespace Riemann
 					{
 						m_Solver->ResetState();
 					}
+					if (m_PositionSolver) m_PositionSolver->ResetState();
 					m_StaticBodies.erase(m_StaticBodies.begin() + i);
 					for (Geometry* g : Body->Geometries())
 					{
@@ -1229,6 +1444,7 @@ namespace Riemann
 					{
 						m_Solver->ResetState();
 					}
+					if (m_PositionSolver) m_PositionSolver->ResetState();
 					m_DynamicBodies.erase(m_DynamicBodies.begin() + i);
 					for (Geometry* g : Body->Geometries())
 					{
@@ -1528,6 +1744,22 @@ namespace Riemann
 		SolveConstraintVelocities(dt);
 	}
 
+	DeformableBody* PhysicsWorld::CreateDeformableBody(const DeformableBodySettings& Settings)
+	{
+		DeformableBody* body = new DeformableBody(Settings);
+		m_DeformableBodies.push_back(body);
+		return body;
+	}
+
+	bool PhysicsWorld::RemoveDeformableBody(DeformableBody* Body)
+	{
+		const auto it = std::find(m_DeformableBodies.begin(), m_DeformableBodies.end(), Body);
+		if (it == m_DeformableBodies.end()) return false;
+		delete *it;
+		m_DeformableBodies.erase(it);
+		return true;
+	}
+
 	RopeSystem* PhysicsWorld::CreateRope(const RopeSettings& Settings, const Vector3& Start, const Vector3& End)
 	{
 		RopeSystem* Rope = new RopeSystem(Settings, Start, End);
@@ -1617,26 +1849,92 @@ namespace Riemann
 		HeightField3* HeightField = HeightFieldGeometry->GetShapeObj<HeightField3>();
 		if (HeightField == nullptr) return;
 		HeightFieldGeometry->SetShapeBounds(HeightField->BV);
-		const GeometryWorldState State = UpdateGeometryWorldState(HeightFieldGeometry, m_Clock.tick);
+		GeometryWorldState State = UpdateGeometryWorldState(HeightFieldGeometry, m_Clock.tick);
+		// A hole or interior edit can leave the overall bounds unchanged. Still
+		// invalidate proxies and cached impulses associated with the old surface.
+		GeometryWorldRecord* Record = GetGeometryWorldRecord(State.Handle);
+		if (Record)
+		{
+			if (!State.Moved) ++Record->State.Version;
+			Record->State.Moved = true;
+			State = Record->State;
+		}
 		UpdateSceneQuery(State);
+		if (m_Solver) m_Solver->ResetState();
+		if (m_PositionSolver) m_PositionSolver->ResetState();
+		Box3 WorldDirtyBounds = Box3::Transform(HeightField->GetLastEditBounds(), State.ShapeToWorld.pos, State.ShapeToWorld.quat);
+		WorldDirtyBounds.Thicken(0.05f);
+		for (RigidBodyDynamic* Body : m_DynamicBodies)
+		{
+			for (const Geometry* Geom : Body->Geometries())
+			{
+				if (Geom != HeightFieldGeometry && WorldDirtyBounds.Intersect(Body->GetGeometryBounds(Geom)))
+				{
+					Body->Wakeup();
+					break;
+				}
+			}
+		}
 	}
 
 	bool PhysicsWorld::SetHeightFieldHeight(Geometry* HeightFieldGeometry, int X, int Z, float Height)
 	{
 		HeightField3* HeightField = HeightFieldGeometry ? HeightFieldGeometry->GetShapeObj<HeightField3>() : nullptr;
-		if (HeightField == nullptr || !HeightField->SetHeight(X, Z, Height)) return false;
-		RefreshHeightFieldGeometry(HeightFieldGeometry);
+		if (HeightField == nullptr) return false;
+		const uint64_t Revision = HeightField->GetRevision();
+		if (!HeightField->SetHeight(X, Z, Height)) return false;
+		if (HeightField->GetRevision() != Revision) RefreshHeightFieldGeometry(HeightFieldGeometry);
 		return true;
+	}
+
+	int PhysicsWorld::SetHeightFieldHeights(Geometry* HeightFieldGeometry, int X, int Z, int Width, int Height, const std::vector<float>& Heights)
+	{
+		HeightField3* HeightField = HeightFieldGeometry ? HeightFieldGeometry->GetShapeObj<HeightField3>() : nullptr;
+		if (HeightField == nullptr) return 0;
+		const int ModifiedCount = HeightField->SetHeightsRect(X, Z, Width, Height, Heights);
+		if (ModifiedCount > 0) RefreshHeightFieldGeometry(HeightFieldGeometry);
+		return ModifiedCount;
+	}
+
+	namespace
+	{
+		bool HeightFieldBrushCenter(Geometry* GeometryObject, const Vector3& WorldCenter, Vector3& LocalCenter)
+		{
+			if (!std::isfinite(WorldCenter.x) || !std::isfinite(WorldCenter.y) || !std::isfinite(WorldCenter.z)) return false;
+			RigidBody* Body = GeometryObject->GetParent<RigidBody>();
+			const Transform ShapeTransform = Body ? Body->GetGeometryTransform(GeometryObject) : *GeometryObject->GetTransform();
+			LocalCenter = ShapeTransform.WorldToLocal(WorldCenter);
+			return std::isfinite(LocalCenter.x) && std::isfinite(LocalCenter.y) && std::isfinite(LocalCenter.z);
+		}
 	}
 
 	int PhysicsWorld::ModifyHeightField(Geometry* HeightFieldGeometry, const Vector3& WorldCenter, float Radius, float HeightDelta, bool LinearFalloff)
 	{
 		HeightField3* HeightField = HeightFieldGeometry ? HeightFieldGeometry->GetShapeObj<HeightField3>() : nullptr;
 		if (HeightField == nullptr) return 0;
-		RigidBody* Body = HeightFieldGeometry->GetParent<RigidBody>();
-		const Transform ShapeTransform = Body ? Body->GetGeometryTransform(HeightFieldGeometry) : *HeightFieldGeometry->GetTransform();
-		const Vector3 LocalCenter = ShapeTransform.WorldToLocal(WorldCenter);
+		Vector3 LocalCenter;
+		if (!HeightFieldBrushCenter(HeightFieldGeometry, WorldCenter, LocalCenter)) return 0;
 		const int ModifiedCount = HeightField->ModifyHeightCircle(LocalCenter.x, LocalCenter.z, Radius, HeightDelta, LinearFalloff);
+		if (ModifiedCount > 0) RefreshHeightFieldGeometry(HeightFieldGeometry);
+		return ModifiedCount;
+	}
+
+	int PhysicsWorld::FillHeightField(Geometry* HeightFieldGeometry, const Vector3& WorldCenter, float Radius, float TargetHeight, float Strength, bool LinearFalloff)
+	{
+		HeightField3* HeightField = HeightFieldGeometry ? HeightFieldGeometry->GetShapeObj<HeightField3>() : nullptr;
+		Vector3 LocalCenter;
+		if (HeightField == nullptr || !HeightFieldBrushCenter(HeightFieldGeometry, WorldCenter, LocalCenter)) return 0;
+		const int ModifiedCount = HeightField->FillHeightCircle(LocalCenter.x, LocalCenter.z, Radius, TargetHeight, Strength, LinearFalloff);
+		if (ModifiedCount > 0) RefreshHeightFieldGeometry(HeightFieldGeometry);
+		return ModifiedCount;
+	}
+
+	int PhysicsWorld::SmoothHeightField(Geometry* HeightFieldGeometry, const Vector3& WorldCenter, float Radius, float Strength, int Iterations, bool LinearFalloff)
+	{
+		HeightField3* HeightField = HeightFieldGeometry ? HeightFieldGeometry->GetShapeObj<HeightField3>() : nullptr;
+		Vector3 LocalCenter;
+		if (HeightField == nullptr || !HeightFieldBrushCenter(HeightFieldGeometry, WorldCenter, LocalCenter)) return 0;
+		const int ModifiedCount = HeightField->SmoothHeightCircle(LocalCenter.x, LocalCenter.z, Radius, Strength, Iterations, LinearFalloff);
 		if (ModifiedCount > 0) RefreshHeightFieldGeometry(HeightFieldGeometry);
 		return ModifiedCount;
 	}
@@ -1649,8 +1947,10 @@ namespace Riemann
 	bool PhysicsWorld::SetHeightFieldTriangleHole(Geometry* HeightFieldGeometry, int CellX, int CellZ, int TriangleIndex, bool Hole)
 	{
 		HeightField3* HeightField = HeightFieldGeometry ? HeightFieldGeometry->GetShapeObj<HeightField3>() : nullptr;
-		if (HeightField == nullptr || !HeightField->SetTriangleHole(CellX, CellZ, TriangleIndex, Hole)) return false;
-		RefreshHeightFieldGeometry(HeightFieldGeometry);
+		if (HeightField == nullptr) return false;
+		const uint64_t Revision = HeightField->GetRevision();
+		if (!HeightField->SetTriangleHole(CellX, CellZ, TriangleIndex, Hole)) return false;
+		if (HeightField->GetRevision() != Revision) RefreshHeightFieldGeometry(HeightFieldGeometry);
 		return true;
 	}
 

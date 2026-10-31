@@ -7,9 +7,11 @@
 #include <string.h>
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <map>
 #include <sstream>
+#include <stdexcept>
 
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/Collision/GeometryQuery.h"
@@ -21,6 +23,11 @@
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 #include "../Src/Deformation/Rope.h"
 #include "../Src/Deformation/Cloth.h"
+#include "../Src/Deformation/DeformableBody.h"
+#include "../Src/Deformation/VehicleDeformation.h"
+#include "../Src/CollisionPrimitive/HeightField3.h"
+#include "../Src/Geometry/VoxelField.h"
+#include "../Src/Destruction/StrainSolver.h"
 #include "../Src/RigidBodyDynamics/Ragdoll.h"
 
 namespace Riemann
@@ -533,6 +540,18 @@ namespace Riemann
 		float Radius = 1.0f;
 		float RingRadius = 3.0f;
 		float Height = 2.0f;
+		int TerrainRows = 65;
+		int TerrainColumns = 65;
+		float HeightScale = 0.01f;
+		float BaseHeight = 0.0f;
+		std::vector<float> Heights;
+		bool TerrainValid = true;
+		Vector3i VoxelGrid = Vector3i(0, 0, 0);
+		Vector3 VoxelOrigin = Vector3::Zero();
+		float VoxelSize = 0.5f;
+		float VoxelHeight = 0.5f;
+		std::vector<int> VoxelSpans;
+		bool VoxelsValid = true;
 		int SphereCount = 24;
 		int StepCount = 10;
 		float StepWidth = 1.2f;
@@ -586,6 +605,20 @@ namespace Riemann
 		int ReadInt(const JsonValue* value, int fallback)
 		{
 			return value && value->IsNumber() ? static_cast<int>(value->numberValue) : fallback;
+		}
+
+		bool ReadParticleIndices(const JsonValue& value, int indexCount, int particleCount, int* indices)
+		{
+			if (!value.IsArray() || value.arrayValue.size() != (size_t)indexCount) return false;
+			for (int i = 0; i < indexCount; ++i)
+			{
+				const JsonValue& index = value.arrayValue[(size_t)i];
+				if (!index.IsNumber() || !std::isfinite(index.numberValue)
+					|| index.numberValue < 0.0 || index.numberValue >= particleCount
+					|| std::floor(index.numberValue) != index.numberValue) return false;
+				indices[i] = static_cast<int>(index.numberValue);
+			}
+			return true;
 		}
 
 		bool ReadBool(const JsonValue* value, bool fallback)
@@ -698,6 +731,8 @@ namespace Riemann
 			{
 				return ResolutionPhaseSolver::SequentialImpulse;
 			}
+			if (solver == "pbd") return ResolutionPhaseSolver::PBD;
+			if (solver == "xpbd") return ResolutionPhaseSolver::XPBD;
 			return fallback;
 		}
 
@@ -717,12 +752,10 @@ namespace Riemann
 			{
 				return SolverBackend::ComputeShader;
 			}
-#if defined(RIEMANN_ENABLE_CUDA)
 			if (backend == "cuda")
 			{
 				return SolverBackend::CUDA;
 			}
-#endif
 			return fallback;
 		}
 
@@ -766,6 +799,47 @@ namespace Riemann
 			desc.VisualizationThreshold = ReadFloat(value->Find("visualizationThreshold"), desc.VisualizationThreshold);
 			desc.InteractionRadius = ReadFloat(value->Find("interactionRadius"), desc.InteractionRadius);
 			desc.InteractionStrength = ReadFloat(value->Find("interactionStrength"), desc.InteractionStrength);
+			desc.Smoke.BoundsMin = desc.BoundsMin;
+			desc.Smoke.Backend = desc.Backend == "cuda" ? SmokeBackend::CUDA
+				: (desc.Backend == "compute" || desc.Backend == "computeshader") ? SmokeBackend::ComputeShader : SmokeBackend::CPU;
+			desc.Smoke.AllowBackendFallback = desc.AllowBackendFallback;
+			desc.Smoke.BoundsMax = desc.BoundsMax;
+			desc.Smoke.Resolution = desc.Resolution;
+			desc.Smoke.PressureIterations = desc.PressureIterations;
+			desc.Smoke.MaxTimeStep = desc.MaxTimeStep;
+			desc.Smoke.MaxSubsteps = desc.MaxSubsteps;
+			desc.Smoke.Buoyancy = ReadFloat(value->Find("buoyancy"), desc.Smoke.Buoyancy);
+			desc.Smoke.SmokeWeight = ReadFloat(value->Find("smokeWeight"), desc.Smoke.SmokeWeight);
+			desc.Smoke.Vorticity = ReadFloat(value->Find("vorticity"), desc.Smoke.Vorticity);
+			desc.Smoke.DensityDissipation = ReadFloat(value->Find("densityDissipation"), desc.Smoke.DensityDissipation);
+			desc.Smoke.Cooling = ReadFloat(value->Find("cooling"), desc.Smoke.Cooling);
+			desc.SmokeExtinction = ReadFloat(value->Find("smokeExtinction"), desc.SmokeExtinction);
+			desc.SmokeColor = ReadVector3(value->Find("smokeColor"), desc.SmokeColor);
+			const JsonValue* emitters = value->Find("emitters");
+			if (emitters && emitters->IsArray())
+			{
+				for (const JsonValue& emitter : emitters->arrayValue)
+				{
+					SmokeEmitter source;
+					source.Position = ReadVector3(emitter.Find("position"), source.Position);
+					source.Velocity = ReadVector3(emitter.Find("velocity"), source.Velocity);
+					source.Radius = ReadFloat(emitter.Find("radius"), source.Radius);
+					source.Density = ReadFloat(emitter.Find("density"), source.Density);
+					source.Temperature = ReadFloat(emitter.Find("temperature"), source.Temperature);
+					desc.Smoke.Emitters.push_back(source);
+				}
+			}
+			const JsonValue* obstacles = value->Find("smokeObstacles");
+			if (obstacles && obstacles->IsArray())
+			{
+				for (const JsonValue& obstacle : obstacles->arrayValue)
+				{
+					SmokeObstacle solid;
+					solid.Center = ReadVector3(obstacle.Find("center"), solid.Center);
+					solid.Radius = ReadFloat(obstacle.Find("radius"), solid.Radius);
+					desc.Smoke.Obstacles.push_back(solid);
+				}
+			}
 
 			const JsonValue* regions = value->Find("regions");
 			if (regions != nullptr && regions->IsArray())
@@ -838,6 +912,67 @@ namespace Riemann
 			desc.StepHeight = ReadFloat(object.Find("stepHeight"), desc.StepHeight);
 			desc.StepDepth = ReadFloat(object.Find("stepDepth"), desc.StepDepth);
 			desc.Height = ReadFloat(object.Find("height"), desc.Height);
+			if (desc.Type == "heightfield")
+			{
+				auto ReadDimension = [](const JsonValue* value, int fallback) -> int
+				{
+					if (!value) return fallback;
+					return value->IsNumber() && value->numberValue >= 2 && value->numberValue <= 255
+						&& std::floor(value->numberValue) == value->numberValue ? (int)value->numberValue : -1;
+				};
+				desc.TerrainRows = ReadDimension(object.Find("rows"), desc.TerrainRows);
+				desc.TerrainColumns = ReadDimension(object.Find("columns"), desc.TerrainColumns);
+				desc.HeightScale = ReadFloat(object.Find("heightScale"), desc.HeightScale);
+				desc.BaseHeight = ReadFloat(object.Find("baseHeight"), desc.BaseHeight);
+				const JsonValue* heights = object.Find("heights");
+				if (heights)
+				{
+					desc.TerrainValid = heights->IsArray() && heights->arrayValue.size() == (size_t)(desc.TerrainRows * desc.TerrainColumns);
+					if (desc.TerrainValid)
+						for (const JsonValue& height : heights->arrayValue)
+						{
+							desc.TerrainValid = desc.TerrainValid && height.IsNumber() && std::isfinite(height.numberValue) && std::abs(height.numberValue) <= FLT_MAX;
+							desc.Heights.push_back(ReadFloat(&height, 0.0f));
+						}
+				}
+			}
+			if (desc.Type == "voxelMesh")
+			{
+				auto ReadCell = [](const JsonValue& value, int maximum) -> int
+				{
+					return value.IsNumber() && std::isfinite(value.numberValue) && value.numberValue >= 0
+						&& value.numberValue <= maximum && std::floor(value.numberValue) == value.numberValue
+						? (int)value.numberValue : -1;
+				};
+				const JsonValue* grid = object.Find("grid");
+				desc.VoxelsValid = grid && grid->IsArray() && grid->arrayValue.size() == 3;
+				if (desc.VoxelsValid)
+				{
+					for (int axis = 0; axis < 3; ++axis)
+					{
+						desc.VoxelGrid[axis] = ReadCell(grid->arrayValue[axis], 256);
+						desc.VoxelsValid = desc.VoxelsValid && desc.VoxelGrid[axis] > 0;
+					}
+				}
+				desc.VoxelOrigin = ReadVector3(object.Find("voxelOrigin"), desc.VoxelOrigin);
+				desc.VoxelSize = ReadFloat(object.Find("voxelSize"), desc.VoxelSize);
+				desc.VoxelHeight = ReadFloat(object.Find("voxelHeight"), desc.VoxelHeight);
+				const JsonValue* spans = object.Find("spans");
+				desc.VoxelsValid = desc.VoxelsValid && spans && spans->IsArray() && spans->arrayValue.size() <= 1048576;
+				if (desc.VoxelsValid)
+				{
+					for (const JsonValue& span : spans->arrayValue)
+					{
+						if (!span.IsArray() || span.arrayValue.size() != 4) { desc.VoxelsValid = false; break; }
+						const int x = ReadCell(span.arrayValue[0], desc.VoxelGrid.x - 1);
+						const int z = ReadCell(span.arrayValue[1], desc.VoxelGrid.z - 1);
+						const int low = ReadCell(span.arrayValue[2], desc.VoxelGrid.y - 1);
+						const int high = ReadCell(span.arrayValue[3], desc.VoxelGrid.y - 1);
+						if (x < 0 || z < 0 || low < 0 || high < low) { desc.VoxelsValid = false; break; }
+						desc.VoxelSpans.insert(desc.VoxelSpans.end(), { x, z, low, high });
+					}
+				}
+			}
 			desc.LinearVelocity = ReadVector3(object.Find("linearVelocity"), desc.LinearVelocity);
 			desc.AngularVelocity = ReadVector3(object.Find("angularVelocity"), desc.AngularVelocity);
 			desc.DisableGravity = ReadBool(object.Find("disableGravity"), desc.DisableGravity);
@@ -1006,9 +1141,16 @@ namespace Riemann
 
 	void SceneWorld::ResetWorld(const PhysicsWorldParam& param)
 	{
+		PhysicsWorldParam worldParam = param;
+		worldParam.sceneQueryType = SceneQueryType::DynamicAABB;
+		worldParam.broadphase = BroadPhaseSolver::SAP;
+		std::unique_ptr<PhysicsWorld> replacement(new PhysicsWorld(worldParam));
 		m_DestructionRenderStates.clear();
 		m_DestructionSets.clear();
 		m_Objects.clear();
+		m_Vehicles.clear();
+		m_RopeSurfaces.clear();
+		m_TerrainRevisions.clear();
 		m_ConstraintInstances.clear();
 		m_MouseControlGeometries.clear();
 		m_MouseControlGeometry = nullptr;
@@ -1017,10 +1159,7 @@ namespace Riemann
 		m_MouseControlRopeParticle = -1;
 		TouchRenderRevision();
 
-		PhysicsWorldParam worldParam = param;
-		worldParam.sceneQueryType = SceneQueryType::DynamicAABB;
-		worldParam.broadphase = BroadPhaseSolver::SAP;
-		m_World.reset(new PhysicsWorld(worldParam));
+		m_World = std::move(replacement);
 
 		m_Camera = CameraDesc();
 		m_Light = DirectionalLightDesc();
@@ -1397,14 +1536,59 @@ namespace Riemann
 				physics->Find("resolutionSolver"), worldParam.resolutionSolver);
 			worldParam.solverBackend = ReadSolverBackend(
 				physics->Find("solverBackend"), worldParam.solverBackend);
+			const JsonValue* fallback = physics->Find("allowBackendFallback");
+			if (fallback && !fallback->IsBool())
+			{
+				if (errorMessage) *errorMessage = sourceName + ": allowBackendFallback must be a boolean";
+				return false;
+			}
+			worldParam.allowBackendFallback = ReadBool(fallback, worldParam.allowBackendFallback);
+			if (worldParam.resolutionSolver == ResolutionPhaseSolver::PBD || worldParam.resolutionSolver == ResolutionPhaseSolver::XPBD)
+			{
+				const JsonValue* requested = physics->Find("solverBackend");
+				if (requested && ReadSolverBackend(requested, static_cast<SolverBackend>(255)) == static_cast<SolverBackend>(255))
+				{
+					if (errorMessage) *errorMessage = sourceName + ": unknown PBD/XPBD solverBackend";
+					return false;
+				}
+			}
 			worldParam.contactSolverIterations = std::max(1, ReadInt(
 				physics->Find("contactSolverIterations"), worldParam.contactSolverIterations));
 			worldParam.contactSolverTolerance = std::max(0.0f, ReadFloat(
 				physics->Find("contactSolverTolerance"), worldParam.contactSolverTolerance));
 			worldParam.contactSolverRelaxation = std::max(0.01f, std::min(1.99f, ReadFloat(
 				physics->Find("contactSolverRelaxation"), worldParam.contactSolverRelaxation)));
+			// Keep both formulations configured for in-place solver changes in the Viewer.
+			for (int formulation = 0; formulation < 2; ++formulation)
+			{
+				const bool useXPBD = formulation == 1;
+				const JsonValue* pbd = physics->Find(useXPBD ? "xpbd" : "pbd");
+				if (pbd && pbd->IsObject())
+				{
+					PBDSolverSettings& settings = useXPBD
+						? static_cast<PBDSolverSettings&>(worldParam.xpbdSettings) : worldParam.pbdSettings;
+					auto ReadIterations = [](const JsonValue* value, int fallback) -> int
+					{
+						return value && value->IsNumber() && std::isfinite(value->numberValue)
+							? (int)std::max(1.0, std::min(256.0, value->numberValue)) : fallback;
+					};
+					settings.PositionIterations = ReadIterations(pbd->Find("positionIterations"), settings.PositionIterations);
+					settings.VelocityIterations = ReadIterations(pbd->Find("velocityIterations"), settings.VelocityIterations);
+					settings.PenetrationSlop = ReadFloat(pbd->Find("penetrationSlop"), settings.PenetrationSlop);
+					settings.MaxPositionCorrection = ReadFloat(pbd->Find("maxPositionCorrection"), settings.MaxPositionCorrection);
+					settings.MaxAngularCorrection = ReadFloat(pbd->Find("maxAngularCorrection"), settings.MaxAngularCorrection);
+					settings.RestitutionThreshold = ReadFloat(pbd->Find("restitutionThreshold"), settings.RestitutionThreshold);
+					if (useXPBD)
+						worldParam.xpbdSettings.ContactCompliance = ReadFloat(pbd->Find("contactCompliance"), worldParam.xpbdSettings.ContactCompliance);
+				}
+			}
 		}
-		ResetWorld(worldParam);
+		try { ResetWorld(worldParam); }
+		catch (const std::runtime_error& error)
+		{
+			if (errorMessage) *errorMessage = sourceName + ": " + error.what();
+			return false;
+		}
 		m_Name = ReadString(root.Find("name"), sourceName);
 		m_FieldSimulation = ReadFieldSimulation(root.Find("fieldSimulation"));
 
@@ -1507,6 +1691,16 @@ namespace Riemann
 		}
 
 		const JsonValue* constraints = root.Find("constraints");
+		const JsonValue* stress = root.Find("stress");
+		if (stress && stress->IsObject() && ReadBool(stress->Find("enabled"), true))
+		{
+			StrainSolverSettings settings;
+			settings.Hardness = ReadFloat(stress->Find("hardness"), settings.Hardness);
+			settings.MaxIterations = (uint32_t)std::max(1, ReadInt(stress->Find("iterations"), 128));
+			settings.RelativeTolerance = ReadFloat(stress->Find("tolerance"), settings.RelativeTolerance);
+			const Vector3 gravity = ReadVector3(stress->Find("gravity"), Vector3::Zero());
+			for (const auto& set : m_DestructionSets) set->EnableStressSolver(settings, gravity);
+		}
 		if (constraints && constraints->IsArray())
 		{
 			auto findBody = [this](const std::string& id) -> RigidBody*
@@ -1592,6 +1786,8 @@ namespace Riemann
 					if (errorMessage) *errorMessage = sourceName + ": unsupported or invalid constraint type '" + type + "'";
 					return false;
 				}
+				created->SetCompliance(ReadFloat(constraint.Find("linearCompliance"), 0.0f),
+					ReadFloat(constraint.Find("angularCompliance"), 0.0f));
 				ConstraintInstance constraintInstance;
 				constraintInstance.Name = type + " - " + bodyBName;
 				constraintInstance.Constraint = created;
@@ -1621,9 +1817,36 @@ namespace Riemann
 				settings.SolverIterations = std::max(1, ReadInt(ropeValue.Find("iterations"), settings.SolverIterations));
 				settings.ParticleRadius = ReadFloat(ropeValue.Find("radius"), settings.ParticleRadius);
 				settings.RestLength = ReadFloat(ropeValue.Find("restLength"), settings.RestLength);
+				settings.StretchCompliance = ReadFloat(ropeValue.Find("compliance"), settings.StretchCompliance);
+				settings.TensionOnly = ReadBool(ropeValue.Find("tensionOnly"), settings.TensionOnly);
+				settings.ContinuousCollision = ReadBool(ropeValue.Find("continuousCollision"), settings.ContinuousCollision);
+				settings.CollisionFriction = ReadFloat(ropeValue.Find("collisionFriction"), settings.CollisionFriction);
+				settings.ParticleInverseMass = ReadFloat(ropeValue.Find("inverseMass"), settings.ParticleInverseMass);
 				settings.Damping = ReadFloat(ropeValue.Find("damping"), settings.Damping);
 				settings.Gravity = ReadVector3(ropeValue.Find("gravity"), settings.Gravity);
 				RopeSystem* rope = m_World->CreateRope(settings, start, end);
+				const JsonValue* colliders = ropeValue.Find("colliders");
+				if (colliders && colliders->IsArray())
+				{
+					for (const JsonValue& collider : colliders->arrayValue)
+					{
+						const std::string colliderName = ReadString(&collider, std::string());
+						bool added = false;
+						for (const SceneObjectInstance& instance : m_Objects)
+						{
+							if (instance.Id == colliderName && instance.GeometryPtr)
+							{
+								added = rope->AddCollider(instance.GeometryPtr);
+								break;
+							}
+						}
+						if (!added)
+						{
+							if (errorMessage) *errorMessage = sourceName + ": invalid rope sphere or box collider '" + colliderName + "'";
+							return false;
+						}
+					}
+				}
 				if (ReadBool(ropeValue.Find("pinStart"), true))
 				{
 					rope->PinParticle(0, start);
@@ -1678,6 +1901,25 @@ namespace Riemann
 				}
 
 				const Vector4 color = ReadColor(ropeValue.Find("color"), Vector4(0.72f, 0.52f, 0.22f, 1.0f));
+				if (ReadString(ropeValue.Find("renderStyle"), "particles") == "tube")
+				{
+					RopeSurfaceState surface;
+					surface.Rope = rope;
+					surface.Radius = std::isfinite(settings.ParticleRadius) ? std::max(0.001f, settings.ParticleRadius) : 0.08f;
+					const JsonValue* sides = ropeValue.Find("tubeSides");
+					if (sides && sides->IsNumber() && std::isfinite(sides->numberValue))
+						surface.Sides = (int)std::max(4.0, std::min(32.0, sides->numberValue));
+					surface.Surface.reset(GeometryFactory::CreateTriangleMesh());
+					surface.Surface->SetSimulationEnabled(false);
+					surface.Surface->SetQueryEnabled(false);
+					SceneObjectInstance instance;
+					instance.Id = id + "_surface";
+					instance.GeometryPtr = surface.Surface.get();
+					instance.Color = color;
+					m_Objects.push_back(instance);
+					m_RopeSurfaces.push_back(std::move(surface));
+					continue;
+				}
 				const std::vector<Geometry*>& renderGeometries = rope->GetRenderGeometries();
 				for (size_t i = 0; i < renderGeometries.size(); ++i)
 				{
@@ -1690,6 +1932,7 @@ namespace Riemann
 					m_Objects.push_back(instance);
 				}
 			}
+			SyncRopeSurfaces();
 			TouchRenderRevision();
 		}
 
@@ -1771,6 +2014,149 @@ namespace Riemann
 			TouchRenderRevision();
 		}
 
+		const JsonValue* deformables = root.Find("deformables");
+		if (deformables && !deformables->IsArray())
+		{
+			if (errorMessage) *errorMessage = sourceName + ": deformables must be an array";
+			return false;
+		}
+		if (deformables)
+		{
+			for (const JsonValue& value : deformables->arrayValue)
+			{
+				if (!value.IsObject())
+				{
+					if (errorMessage) *errorMessage = sourceName + ": every deformable entry must be a JSON object";
+					return false;
+				}
+				const std::string id = ReadString(value.Find("id"), "deformable");
+				DeformableBodySettings settings;
+				settings.Substeps = ReadInt(value.Find("substeps"), settings.Substeps);
+				settings.SolverIterations = ReadInt(value.Find("iterations"), settings.SolverIterations);
+				settings.EdgeCompliance = ReadFloat(value.Find("compliance"), settings.EdgeCompliance);
+				settings.VolumeCompliance = ReadFloat(value.Find("volumeCompliance"), settings.VolumeCompliance);
+				settings.YieldStrain = ReadFloat(value.Find("yieldStrain"), settings.YieldStrain);
+				settings.PlasticCreep = ReadFloat(value.Find("plasticCreep"), settings.PlasticCreep);
+				settings.MaxPlasticStrain = ReadFloat(value.Find("maxPlasticStrain"), settings.MaxPlasticStrain);
+				settings.Damping = ReadFloat(value.Find("damping"), settings.Damping);
+				settings.Gravity = ReadVector3(value.Find("gravity"), settings.Gravity);
+				settings.ParticleRadius = ReadFloat(value.Find("radius"), settings.ParticleRadius);
+				settings.Restitution = ReadFloat(value.Find("restitution"), settings.Restitution);
+				settings.Friction = ReadFloat(value.Find("friction"), settings.Friction);
+				const JsonValue* floor = value.Find("floor");
+				settings.GroundEnabled = ReadBool(value.Find("floorEnabled"),
+					ReadBool(floor, floor && floor->IsNumber() ? true : settings.GroundEnabled));
+				settings.GroundHeight = ReadFloat(floor, settings.GroundHeight);
+				const float inverseMass = ReadFloat(value.Find("inverseMass"), 1.0f);
+				DeformableBody* body = m_World->CreateDeformableBody(settings);
+				auto FailDeformable = [&](const char* message) -> bool
+				{
+					if (errorMessage) *errorMessage = sourceName + ": deformable '" + id + "': " + message;
+					if (body) m_World->RemoveDeformableBody(body);
+					return false;
+				};
+				if (!body) return FailDeformable("failed to create body");
+				const JsonValue* particles = value.Find("particles");
+				if (!particles || !particles->IsArray() || particles->arrayValue.empty())
+				{
+					return FailDeformable("requires a nonempty particles array");
+				}
+				for (const JsonValue& particle : particles->arrayValue)
+				{
+					if (!particle.IsArray() || particle.arrayValue.size() != 3)
+					{
+						return FailDeformable("particle positions must contain three numbers");
+					}
+					for (const JsonValue& coordinate : particle.arrayValue)
+					{
+						if (!coordinate.IsNumber() || !std::isfinite(coordinate.numberValue)
+							|| std::abs(coordinate.numberValue) > FLT_MAX)
+						{
+							return FailDeformable("particle positions must be finite");
+						}
+					}
+					if (body->AddParticle(ReadVector3(&particle, Vector3::Zero()), inverseMass) < 0)
+					{
+						return FailDeformable("invalid particle position or inverse mass");
+					}
+				}
+				const int particleCount = body->GetParticleCount();
+				const JsonValue* edges = value.Find("edges");
+				if (edges && !edges->IsArray()) return FailDeformable("edges must be an array");
+				if (edges)
+				{
+					for (const JsonValue& edge : edges->arrayValue)
+					{
+						int indices[2];
+						if (!ReadParticleIndices(edge, 2, particleCount, indices)
+							|| body->AddEdge(indices[0], indices[1]) < 0)
+						{
+							return FailDeformable("invalid edge indices or zero rest length");
+						}
+					}
+				}
+				const JsonValue* tetrahedra = value.Find("tetrahedra");
+				if (tetrahedra && !tetrahedra->IsArray()) return FailDeformable("tetrahedra must be an array");
+				if (tetrahedra)
+				{
+					for (const JsonValue& tetrahedron : tetrahedra->arrayValue)
+					{
+						int indices[4];
+						if (!ReadParticleIndices(tetrahedron, 4, particleCount, indices)
+							|| body->AddTetrahedron(indices[0], indices[1], indices[2], indices[3]) < 0)
+						{
+							return FailDeformable("invalid tetrahedron indices or degenerate volume");
+						}
+					}
+				}
+				const JsonValue* pins = value.Find("pins");
+				if (pins && !pins->IsArray()) return FailDeformable("pins must be an array");
+				if (pins)
+				{
+					for (const JsonValue& pin : pins->arrayValue)
+					{
+						if (!pin.IsNumber() || !std::isfinite(pin.numberValue) || pin.numberValue < 0.0
+							|| pin.numberValue >= particleCount || std::floor(pin.numberValue) != pin.numberValue)
+						{
+							return FailDeformable("invalid pin index");
+						}
+						const int index = static_cast<int>(pin.numberValue);
+						body->PinParticle(index, body->GetParticle(index).Position);
+					}
+				}
+				const JsonValue* triangles = value.Find("triangles");
+				if (triangles && !triangles->IsArray()) return FailDeformable("triangles must be an array");
+				if (triangles)
+				{
+					std::vector<Index3> surface;
+					surface.reserve(triangles->arrayValue.size());
+					for (const JsonValue& triangle : triangles->arrayValue)
+					{
+						int indices[3];
+						if (!ReadParticleIndices(triangle, 3, particleCount, indices))
+						{
+							return FailDeformable("invalid surface triangle indices");
+						}
+						surface.push_back(Index3(indices[0], indices[1], indices[2]));
+					}
+					if (!body->SetSurfaceTriangles(surface)) return FailDeformable("invalid surface triangles");
+				}
+				if (body->GetRenderGeometry())
+				{
+					SceneObjectInstance instance;
+					instance.Id = id;
+					instance.GeometryPtr = body->GetRenderGeometry();
+					instance.Color = ReadColor(value.Find("color"), Vector4(0.9f, 0.42f, 0.18f, 1.0f));
+					instance.RenderBounds = ReadBool(value.Find("renderBounds"), false);
+					instance.RenderEnabled = ReadBool(value.Find("render"), true);
+					m_Objects.push_back(instance);
+				}
+			}
+			TouchRenderRevision();
+		}
+
+		if (!CreateVehicles(root, sourceName, errorMessage)) return false;
+
 		const JsonValue* ragdolls = root.Find("ragdolls");
 		if (ragdolls && ragdolls->IsArray())
 		{
@@ -1820,6 +2206,206 @@ namespace Riemann
 		}
 
 		return true;
+	}
+
+	bool SceneWorld::CreateVehicles(const JsonValue& root, const std::string& sourceName, std::string* errorMessage)
+	{
+		const JsonValue* vehicles = root.Find("vehicles");
+		if (!vehicles) return true;
+		auto Fail = [&](const std::string& message) -> bool
+		{
+			if (errorMessage) *errorMessage = sourceName + ": vehicles: " + message;
+			return false;
+		};
+		if (!vehicles->IsArray()) return Fail("expected an array");
+		for (const JsonValue& value : vehicles->arrayValue)
+		{
+			if (!value.IsObject()) return Fail("each entry must be an object");
+			const std::string id = ReadString(value.Find("id"), "vehicle");
+			const std::string chassisId = ReadString(value.Find("chassis"), "");
+			RigidBody* chassis = nullptr;
+			for (const SceneObjectInstance& object : m_Objects)
+			{
+				if (object.Id == id + "_body") return Fail("duplicate vehicle id '" + id + "'");
+				for (int wheel = 0; wheel < 4; ++wheel)
+					if (object.Id == id + "_wheel_" + std::to_string(wheel))
+						return Fail("duplicate wheel id for '" + id + "'");
+				if (object.Id == chassisId && object.GeometryPtr)
+					chassis = object.GeometryPtr->GetParent<RigidBody>();
+			}
+			if (id.empty() || chassisId.empty() || !chassis || !chassis->CastDynamic())
+				return Fail("a vehicle requires an id and an existing dynamic chassis");
+			bool valid = true;
+			auto Scalar = [&](const JsonValue& object, const char* key, float& result)
+			{
+				const JsonValue* number = object.Find(key);
+				if (!number) return;
+				if (!number->IsNumber() || !std::isfinite(number->numberValue)
+					|| number->numberValue < 0.0 || number->numberValue > FLT_MAX) valid = false;
+				else result = (float)number->numberValue;
+			};
+			auto Vector = [&](const char* key, Vector3& result)
+			{
+				const JsonValue* array = value.Find(key);
+				if (!array) return;
+				if (!array->IsArray() || array->arrayValue.size() != 3) { valid = false; return; }
+				for (int axis = 0; axis < 3; ++axis)
+				{
+					const JsonValue& number = array->arrayValue[axis];
+					if (!number.IsNumber() || !std::isfinite(number.numberValue) || std::abs(number.numberValue) > FLT_MAX)
+						valid = false;
+					else result[axis] = (float)number.numberValue;
+				}
+			};
+			VehicleDeformationSettings settings;
+			Vector("halfExtent", settings.HalfExtent);
+			const JsonValue* cells = value.Find("cells");
+			if (cells)
+			{
+				if (!cells->IsArray() || cells->arrayValue.size() != 3) valid = false;
+				else for (int axis = 0; axis < 3; ++axis)
+				{
+					const JsonValue& number = cells->arrayValue[axis];
+					if (!number.IsNumber() || !std::isfinite(number.numberValue) || number.numberValue < 2
+						|| number.numberValue > 16 || std::floor(number.numberValue) != number.numberValue) valid = false;
+					else settings.Cells[axis] = (int)number.numberValue;
+				}
+			}
+			Scalar(value, "cabinHeight", settings.CabinHeight);
+			Scalar(value, "shellMass", settings.ShellMass);
+			Scalar(value, "impactRadius", settings.ImpactRadius);
+			Scalar(value, "impulseScale", settings.ImpulseScale);
+			Scalar(value, "minImpactImpulse", settings.MinImpactImpulse);
+			Scalar(value, "maxDeformationImpulse", settings.MaxDeformationImpulse);
+			const JsonValue* material = value.Find("material");
+			if (material && !material->IsObject()) return Fail("material must be an object");
+			if (material)
+			{
+				auto Iterations = [&](const char* key, int& result)
+				{
+					const JsonValue* number = material->Find(key);
+					if (!number) return;
+					if (!number->IsNumber() || !std::isfinite(number->numberValue) || number->numberValue < 1
+						|| number->numberValue > 128 || std::floor(number->numberValue) != number->numberValue) valid = false;
+					else result = (int)number->numberValue;
+				};
+				Iterations("substeps", settings.Material.Substeps);
+				Iterations("iterations", settings.Material.SolverIterations);
+				Scalar(*material, "compliance", settings.Material.EdgeCompliance);
+				Scalar(*material, "volumeCompliance", settings.Material.VolumeCompliance);
+				Scalar(*material, "damping", settings.Material.Damping);
+				Scalar(*material, "yieldStrain", settings.Material.YieldStrain);
+				Scalar(*material, "plasticCreep", settings.Material.PlasticCreep);
+				Scalar(*material, "maxPlasticStrain", settings.Material.MaxPlasticStrain);
+			}
+			Vector3 position = Vector3::Zero();
+			Vector("position", position);
+			auto FiniteNumber = [](const JsonValue* number)
+			{
+				return number && number->IsNumber() && std::isfinite(number->numberValue)
+					&& std::abs(number->numberValue) <= FLT_MAX;
+			};
+			const JsonValue* quaternion = value.Find("rotation");
+			if (quaternion)
+			{
+				if (!quaternion->IsArray() || quaternion->arrayValue.size() != 4) valid = false;
+				else for (const JsonValue& number : quaternion->arrayValue) valid = valid && FiniteNumber(&number);
+			}
+			else if (value.Find("rotationAxis") || value.Find("rotationDegrees"))
+			{
+				Vector3 axis = Vector3::Zero();
+				Vector("rotationAxis", axis);
+				valid = valid && std::isfinite(axis.SquareLength()) && axis.SquareLength() > 1.0e-12f
+					&& FiniteNumber(value.Find("rotationDegrees"));
+			}
+			Quaternion rotation = ReadQuaternion(&value, Quaternion::One());
+			const float rotationLength = rotation.SquareLength();
+			float radius = 0.4f, width = 0.25f;
+			float track = 2.0f * settings.HalfExtent.x + 0.1f, wheelbase = 1.3f * settings.HalfExtent.z;
+			float wheelHeight = -settings.HalfExtent.y;
+			Scalar(value, "wheelRadius", radius);
+			Scalar(value, "wheelWidth", width);
+			Scalar(value, "wheelTrack", track);
+			Scalar(value, "wheelbase", wheelbase);
+			const JsonValue* height = value.Find("wheelHeight");
+			if (height)
+			{
+				if (!height->IsNumber() || !std::isfinite(height->numberValue) || std::abs(height->numberValue) > FLT_MAX) valid = false;
+				else wheelHeight = (float)height->numberValue;
+			}
+			if (!valid || settings.HalfExtent.x <= 0.0f || settings.HalfExtent.y <= 0.0f || settings.HalfExtent.z <= 0.0f
+				|| settings.ShellMass <= 0.0f
+				|| settings.ImpactRadius <= 0.0f || radius <= 0.0f || width <= 0.0f || track <= 0.0f || wheelbase <= 0.0f
+				|| !std::isfinite(rotationLength) || rotationLength <= 1.0e-12f)
+				return Fail("invalid dimensions, material, or transform for '" + id + "'");
+			rotation = rotation.Unit();
+			VehicleRenderState state;
+			state.Vehicle.reset(new VehicleDeformation(settings));
+			if (!state.Vehicle->Attach(chassis, Transform(position, rotation)))
+				return Fail("chassis is already owned by another aggregate");
+			state.WheelRadius = radius;
+			state.PreviousPosition = state.Vehicle->GetWorldTransform().pos;
+			SceneObjectInstance shell;
+			shell.Id = id + "_body";
+			shell.GeometryPtr = state.Vehicle->GetRenderGeometry();
+			shell.Color = ReadColor(value.Find("color"), Vector4(0.85f, 0.23f, 0.08f, 1.0f));
+			m_Objects.push_back(shell);
+			for (int side = -1; side <= 1; side += 2)
+			for (int end = -1; end <= 1; end += 2)
+			{
+				const Vector3 center(side * track * 0.5f, wheelHeight, end * wheelbase * 0.5f);
+				std::unique_ptr<Geometry> wheel(GeometryFactory::CreateCylinder(
+					center - Vector3(width * 0.5f, 0, 0), center + Vector3(width * 0.5f, 0, 0), radius));
+				wheel->SetSimulationEnabled(false);
+				wheel->SetQueryEnabled(false);
+				state.WheelLocalTransforms.push_back(*wheel->GetTransform());
+				SceneObjectInstance instance;
+				instance.Id = id + "_wheel_" + std::to_string(state.Wheels.size());
+				instance.GeometryPtr = wheel.get();
+				instance.Color = Vector4(0.075f, 0.085f, 0.1f, 1.0f);
+				m_Objects.push_back(instance);
+				state.Wheels.push_back(std::move(wheel));
+			}
+			m_Vehicles.push_back(std::move(state));
+		}
+		SyncVehicles(0.0f);
+		return true;
+	}
+
+	VehicleDeformation* SceneWorld::GetVehicle(int index)
+	{
+		return index >= 0 && (size_t)index < m_Vehicles.size() ? m_Vehicles[(size_t)index].Vehicle.get() : nullptr;
+	}
+
+	const VehicleDeformation* SceneWorld::GetVehicle(int index) const
+	{
+		return index >= 0 && (size_t)index < m_Vehicles.size() ? m_Vehicles[(size_t)index].Vehicle.get() : nullptr;
+	}
+
+	void SceneWorld::SyncVehicles(float dt)
+	{
+		bool changed = false;
+		for (VehicleRenderState& state : m_Vehicles)
+		{
+			if (dt > 0.0f) state.Vehicle->Simulate(dt);
+			const Transform frame = state.Vehicle->GetWorldTransform();
+			const float travel = (frame.pos - state.PreviousPosition).Dot(frame.quat * Vector3::UnitZ());
+			state.WheelAngle = std::fmod(state.WheelAngle + travel / state.WheelRadius, 2.0f * kPi);
+			state.PreviousPosition = frame.pos;
+			Quaternion roll;
+			roll.FromRotationAxis(Vector3::UnitX(), state.WheelAngle);
+			for (size_t i = 0; i < state.Wheels.size(); ++i)
+			{
+				const Transform& local = state.WheelLocalTransforms[i];
+				state.Wheels[i]->SetTransform(frame.LocalToWorld(local.pos), frame.quat * roll * local.quat);
+			}
+			if (state.LastRevision != state.Vehicle->GetRevision())
+			{
+				state.LastRevision = state.Vehicle->GetRevision();
+				changed = true;
+			}
+		}
+		if (changed) TouchRenderRevision();
 	}
 
 	bool SceneWorld::CreateObject(const SceneObjectDesc& desc, std::string* errorMessage)
@@ -1956,6 +2542,8 @@ namespace Riemann
 		instance.RenderBounds = desc.RenderBounds;
 		instance.RenderEnabled = desc.RenderEnabled;
 		m_Objects.push_back(instance);
+		if (HeightField3* field = geometry->GetShapeObj<HeightField3>())
+			m_TerrainRevisions.push_back(std::make_pair(geometry, field->GetRevision()));
 		TouchRenderRevision();
 		return true;
 	}
@@ -2260,6 +2848,67 @@ namespace Riemann
 
 	Geometry* SceneWorld::CreateGeometry(const SceneObjectDesc& desc, std::string* errorMessage) const
 	{
+		if (desc.Type == "voxelMesh")
+		{
+			if (!desc.VoxelsValid || desc.BodyType != RigidType::Static || desc.VoxelSpans.empty()
+				|| !std::isfinite(desc.VoxelSize) || desc.VoxelSize <= 0.0f
+				|| !std::isfinite(desc.VoxelHeight) || desc.VoxelHeight <= 0.0f)
+			{
+				if (errorMessage) *errorMessage = "invalid static voxel mesh: " + desc.Id;
+				return nullptr;
+			}
+			VoxelField field;
+			const Vector3 dimensions(desc.VoxelGrid.x * desc.VoxelSize,
+				desc.VoxelGrid.y * desc.VoxelHeight, desc.VoxelGrid.z * desc.VoxelSize);
+			field.MakeEmpty(Box3(desc.VoxelOrigin, desc.VoxelOrigin + dimensions),
+				desc.VoxelGrid.x, desc.VoxelGrid.y, desc.VoxelGrid.z, desc.VoxelSize, desc.VoxelHeight);
+			for (size_t i = 0; i < desc.VoxelSpans.size(); i += 4)
+			{
+				if (!field.AddVoxel(desc.VoxelSpans[i + 1] * desc.VoxelGrid.x + desc.VoxelSpans[i],
+					(uint16_t)desc.VoxelSpans[i + 2], (uint16_t)desc.VoxelSpans[i + 3], 0.0f))
+				{
+					if (errorMessage) *errorMessage = "invalid voxel span: " + desc.Id;
+					return nullptr;
+				}
+			}
+			Geometry* geometry = GeometryFactory::CreateTriangleMesh();
+			TriangleMesh* mesh = geometry->GetShapeObj<TriangleMesh>();
+			if (!field.GenerateMesh(*mesh) || mesh->GetTriangleCount() == 0)
+			{
+				delete geometry;
+				if (errorMessage) *errorMessage = "voxel mesh generation failed: " + desc.Id;
+				return nullptr;
+			}
+			mesh->BuildBVH();
+			geometry->SetShapeBounds(mesh->BoundingVolume);
+			geometry->SetTransform(desc.Position, desc.Rotation);
+			return geometry;
+		}
+		if (desc.Type == "heightfield")
+		{
+			if (!desc.TerrainValid || desc.BodyType != RigidType::Static || desc.TerrainRows < 2 || desc.TerrainColumns < 2
+				|| !std::isfinite(desc.HeightScale) || desc.HeightScale <= 0.0f || !std::isfinite(desc.BaseHeight)
+				|| !std::isfinite(desc.HalfExtent.x) || !std::isfinite(desc.HalfExtent.z)
+				|| desc.HalfExtent.x <= 0.0f || desc.HalfExtent.z <= 0.0f)
+			{
+				if (errorMessage) *errorMessage = "invalid static heightfield dimensions or samples: " + desc.Id;
+				return nullptr;
+			}
+			Geometry* geometry = GeometryFactory::CreateHeightField(
+				Box3(Vector3(-desc.HalfExtent.x, 0.0f, -desc.HalfExtent.z), Vector3(desc.HalfExtent.x, 0.0f, desc.HalfExtent.z)),
+				desc.TerrainColumns, desc.TerrainRows);
+			HeightField3* field = geometry->GetShapeObj<HeightField3>();
+			field->HeightScale = desc.HeightScale;
+			field->AllocMemory();
+			const std::vector<float> heights = desc.Heights.empty()
+				? std::vector<float>((size_t)desc.TerrainRows * desc.TerrainColumns, desc.BaseHeight) : desc.Heights;
+			field->SetHeightsRect(0, 0, desc.TerrainColumns, desc.TerrainRows, heights);
+			field->RecalculateBounds();
+			geometry->SetShapeBounds(field->BV);
+			geometry->SetTransform(desc.Position, desc.Rotation);
+			return geometry;
+		}
+
 		if (desc.Type == "box" || desc.Type == "obb")
 		{
 			return GeometryFactory::CreateOBB(desc.Position, desc.HalfExtent, desc.Rotation);
@@ -2441,18 +3090,178 @@ namespace Riemann
 		return changed;
 	}
 
+	std::vector<std::string> SceneWorld::GetTerrainObjectIds() const
+	{
+		std::vector<std::string> ids;
+		for (const SceneObjectInstance& object : m_Objects)
+			if (object.GeometryPtr && object.GeometryPtr->GetShapeType() == PrimitiveType::HEIGHTFIELD) ids.push_back(object.Id);
+		return ids;
+	}
+
+	bool SceneWorld::SyncTerrainRevisions()
+	{
+		bool changed = false;
+		for (auto& entry : m_TerrainRevisions)
+		{
+			const uint64_t revision = entry.first->GetShapeObj<HeightField3>()->GetRevision();
+			changed = changed || revision != entry.second;
+			entry.second = revision;
+		}
+		if (changed) TouchRenderRevision();
+		return changed;
+	}
+
+	int SceneWorld::EditTerrain(const std::string& id, const Vector3& worldCenter, float radius, float value, int mode, float strength)
+	{
+		if (!m_World) return 0;
+		for (const SceneObjectInstance& object : m_Objects)
+		{
+			if (object.Id != id || !object.GeometryPtr || object.GeometryPtr->GetShapeType() != PrimitiveType::HEIGHTFIELD) continue;
+			int count = 0;
+			if (mode == 0) count = m_World->ModifyHeightField(object.GeometryPtr, worldCenter, radius, value);
+			else if (mode == 1) count = m_World->FillHeightField(object.GeometryPtr, worldCenter, radius, value, strength);
+			else if (mode == 2) count = m_World->SmoothHeightField(object.GeometryPtr, worldCenter, radius, strength);
+			SyncTerrainRevisions();
+			return count;
+		}
+		return 0;
+	}
+
+	void SceneWorld::SyncRopeSurfaces()
+	{
+		bool changed = false;
+		for (RopeSurfaceState& surface : m_RopeSurfaces)
+		{
+			const int count = surface.Rope->GetParticleCount(), sides = surface.Sides;
+			if (count < 2) continue;
+			bool moved = surface.LastPositions.size() != (size_t)count;
+			if (!moved)
+				for (int i = 0; i < count; ++i)
+					if (surface.LastPositions[i] != surface.Rope->GetParticle(i).Position) { moved = true; break; }
+			if (!moved) continue;
+			surface.LastPositions.resize(count);
+			for (int i = 0; i < count; ++i) surface.LastPositions[i] = surface.Rope->GetParticle(i).Position;
+			TriangleMesh* mesh = surface.Surface->GetShapeObj<TriangleMesh>();
+			const uint32_t vertexCount = (uint32_t)(count * sides + 2 * (sides + 1));
+			const uint32_t triangleCount = (uint32_t)(2 * count * sides);
+			if (mesh->NumVertices != vertexCount)
+			{
+				mesh->Clear();
+				mesh->NumVertices = vertexCount;
+				mesh->NumTriangles = triangleCount;
+				mesh->mVertices.resize(vertexCount);
+				mesh->mNormals.resize(vertexCount);
+				mesh->mIndices.resize(size_t(triangleCount) * 6);
+				mesh->Vertices = mesh->mVertices.data();
+				mesh->Indices = mesh->mIndices.data();
+				uint32_t* indices = mesh->GetIndices32();
+				for (int i = 0; i < count - 1; ++i)
+				for (int side = 0; side < sides; ++side)
+				{
+					const uint32_t a = i * sides + side, b = i * sides + (side + 1) % sides;
+					*indices++ = a; *indices++ = b; *indices++ = a + sides;
+					*indices++ = b; *indices++ = b + sides; *indices++ = a + sides;
+				}
+				for (int end = 0; end < 2; ++end)
+				for (int side = 0; side < sides; ++side)
+				{
+					const uint32_t center = count * sides + end * (sides + 1);
+					const uint32_t a = center + 1 + side, b = center + 1 + (side + 1) % sides;
+					*indices++ = center; *indices++ = end ? a : b; *indices++ = end ? b : a;
+				}
+			}
+			Vector3 tangent = Vector3::UnitY(), normal = surface.FirstNormal;
+			for (int i = 0; i < count; ++i)
+			{
+				const Vector3 delta = surface.LastPositions[std::min(i + 1, count - 1)]
+					- surface.LastPositions[std::max(i - 1, 0)];
+				if (delta.SquareLength() > 1.0e-12f) tangent = delta.SafeUnit();
+				// Parallel transport avoids arbitrary ring flips as the rope bends.
+				normal -= tangent * normal.Dot(tangent);
+				Vector3 binormal;
+				if (normal.SquareLength() < 1.0e-8f) tangent.GetPerpVectors(normal, binormal);
+				normal = normal.SafeUnit();
+				binormal = tangent.Cross(normal).SafeUnit();
+				if (i == 0) surface.FirstNormal = normal;
+				for (int side = 0; side < sides; ++side)
+				{
+					const float angle = 2.0f * 3.14159265358979323846f * side / sides;
+					const Vector3 radial = normal * std::cos(angle) + binormal * std::sin(angle);
+					const int index = i * sides + side;
+					mesh->mVertices[index] = surface.LastPositions[i] + radial * surface.Radius;
+					mesh->mNormals[index] = radial;
+					if (i == 0 || i == count - 1)
+					{
+						const int cap = count * sides + (i == 0 ? 0 : sides + 1);
+						mesh->mVertices[cap + 1 + side] = mesh->mVertices[index];
+						mesh->mNormals[cap + 1 + side] = i == 0 ? -tangent : tangent;
+					}
+				}
+				if (i == 0 || i == count - 1)
+				{
+					const int cap = count * sides + (i == 0 ? 0 : sides + 1);
+					mesh->mVertices[cap] = surface.LastPositions[i];
+					mesh->mNormals[cap] = i == 0 ? -tangent : tangent;
+				}
+			}
+			mesh->BoundingVolume = Box3(mesh->mVertices.data(), mesh->mVertices.size());
+			surface.Surface->SetShapeBounds(mesh->BoundingVolume);
+			changed = true;
+		}
+		if (changed) TouchRenderRevision();
+	}
+
 	void SceneWorld::Step(float dt)
 	{
-		(void)dt;
+		if (!std::isfinite(dt) || dt <= 0.0f) return;
 		if (m_World)
 		{
-			m_World->Simulate();
-			if (m_World->GetClothCount() > 0)
+			m_World->Simulate(dt);
+			if (m_World->GetClothCount() > 0 || m_World->GetDeformableBodyCount() > 0)
 			{
 				TouchRenderRevision();
 			}
 		}
 		SyncDestructionObjects(false);
+		SyncTerrainRevisions();
+		SyncRopeSurfaces();
+		SyncVehicles(dt);
+	}
+
+	constexpr int SceneWorld::MaxSmokeRigidBodies;
+
+	int SceneWorld::GetSmokeRigidBodyCount() const
+	{
+		if (m_FieldSimulation.Type != "smoke3d") return 0;
+		std::vector<const RigidBody*> bodies;
+		for (const SceneObjectInstance& object : m_Objects)
+		{
+			const RigidBody* body = object.GeometryPtr ? object.GeometryPtr->GetParent<RigidBody>() : nullptr;
+			if (body && body->mRigidType == RigidType::Dynamic
+				&& std::find(bodies.begin(), bodies.end(), body) == bodies.end()) bodies.push_back(body);
+		}
+		return (int)bodies.size();
+	}
+
+	bool SceneWorld::AddSmokeRigidBody()
+	{
+		if (m_FieldSimulation.Type != "smoke3d" || !m_FieldSimulation.RigidCoupling) return false;
+		const int index = GetSmokeRigidBodyCount();
+		if (index >= MaxSmokeRigidBodies) return false;
+		SceneObjectDesc desc;
+		desc.Id = "smoke_body_" + std::to_string(index);
+		desc.Type = index == 1 ? "box" : "sphere";
+		desc.BodyType = RigidType::Dynamic;
+		desc.MouseControl = true;
+		desc.HasDensity = true;
+		desc.Density = index == 1 ? 10.0f : 6.0f;
+		desc.Position = Vector3(index == 1 ? -0.28f : 0.16f, 2.65f + 1.45f * index, 0);
+		desc.Radius = 0.5f;
+		desc.HalfExtent = Vector3(0.72f, 0.14f, 0.44f);
+		if (index == 1) desc.Rotation.FromRotateZ(18.0f * PI / 180.0f);
+		desc.Color = index == 1 ? Vector4(0.67f, 0.38f, 0.18f, 1)
+			: index == 0 ? Vector4(0.22f, 0.4f, 0.58f, 1) : Vector4(0.3f, 0.55f, 0.38f, 1);
+		return CreateObject(desc, nullptr);
 	}
 
 	Geometry* SceneWorld::AddProjectileSphere(const std::string& id, const Vector3& position, float radius, const Vector3& velocity, const Vector4& color)

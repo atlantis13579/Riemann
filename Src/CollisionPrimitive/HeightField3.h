@@ -50,18 +50,10 @@ namespace Riemann
 		CellInfo*				Cells;
 		uint64_t				Revision;
 
-		HeightField3()
-		{
-			HeightScale = 1.0f;
-			Cells = nullptr;
-			Revision = 0;
-		}
+		HeightField3();
 
-		HeightField3(const Box3& iBv, int inX, int inZ)
+		HeightField3(const Box3& iBv, int inX, int inZ) : HeightField3()
 		{
-			HeightScale = 1.0f;
-			Cells = nullptr;
-			Revision = 0;
 			Init(iBv, inX, inZ);
 		}
 
@@ -70,25 +62,8 @@ namespace Riemann
 			return PrimitiveType::HEIGHTFIELD;
 		}
 
-		void    	Init(const Box3& iBv, int inX, int inZ)
-		{
-			BV = iBv;
-			nX = inX;
-			nZ = inZ;
-			DX = BV.GetLengthX() / (nX - 1);
-			DZ = BV.GetLengthZ() / (nZ - 1);
-			InvDX = 1.0f / DX;
-			InvDZ = 1.0f / DZ;
-			Revision = 0;
-		}
-
-		void	AllocMemory()
-		{
-			mCells.resize(nX * nZ);
-			Cells = &mCells[0];
-			memset(Cells, 0, mCells.size() * sizeof(mCells[0]));
-			++Revision;
-		}
+		void	Init(const Box3& iBv, int inX, int inZ);
+		void	AllocMemory();
 
 		float 			GetHeight(const int idx) const
 		{
@@ -97,12 +72,19 @@ namespace Riemann
 
 		bool	SetHeight(int x, int z, float height);
 		bool	SetHeightRaw(int x, int z, int16_t heightSample);
+		// Samples are row-major (z * width + x). Destination bounds are clipped;
+		// all supplied heights are validated before any sample is changed.
+		int		SetHeightsRect(int x, int z, int width, int height, const std::vector<float>& heights);
 		int		ModifyHeightCircle(float centerX, float centerZ, float radius, float heightDelta, bool linearFalloff = true);
+		int		FillHeightCircle(float centerX, float centerZ, float radius, float targetHeight, float strength = 1.0f, bool linearFalloff = true);
+		int		SmoothHeightCircle(float centerX, float centerZ, float radius, float strength = 1.0f, int iterations = 1, bool linearFalloff = true);
 		int		DigCrater(float centerX, float centerZ, float radius, float depth, bool linearFalloff = true);
 		bool	SetTriangleHole(int cellX, int cellZ, int triangleIndex, bool hole);
 		bool	IsTriangleHole(int cellX, int cellZ, int triangleIndex) const;
 		void	RecalculateBounds();
 		uint64_t GetRevision() const { return Revision; }
+		// Includes adjacent triangles and both the old and new vertical extent.
+		const Box3& GetLastEditBounds() const { return mLastEditBounds; }
 
 		Vector3			GetCenter() const
 		{
@@ -155,6 +137,12 @@ namespace Riemann
 		void	GetWireframe(std::vector<Vector3>& Vertices, std::vector<uint16_t>& Indices);
 
 	private:
+		bool IsValid() const;
+		bool QuantizeHeight(double height, int16_t& sample) const;
+		bool GetBrushRange(float centerX, float centerZ, float radius, int& minX, int& minZ, int& maxX, int& maxZ) const;
+		void CompleteEdit(int minX, int minZ, int maxX, int maxZ, const Box3& previousBounds, bool rebuildBounds = true);
+		Box3 mLastEditBounds;
+
 		bool IntersectRayBruteForce(const Vector3& Origin, const Vector3& Direction, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
 		bool IntersectRayCell(const Vector3& Origin, const Vector3& Direction, int i, int j, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;
 		bool IntersectRayY(const Vector3& Origin, const Vector3& Direction, const HeightFieldHitOption& Option, HeightFieldHitResult* Result) const;

@@ -45,6 +45,7 @@ case "${BUILD_TYPE}" in
 esac
 
 mapfile -d '' TEST_SOURCES < <(find "${TEST_DIR}" -type f -name '*.cpp' -print0 | sort -z)
+TEST_SOURCES+=("${ROOT_DIR}/Viewer/SceneWorld.cpp")
 
 if ((${#TEST_SOURCES[@]} == 0)); then
 	echo "No test source files found under ${TEST_DIR}" >&2

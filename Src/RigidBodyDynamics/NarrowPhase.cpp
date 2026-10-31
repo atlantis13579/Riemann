@@ -13,6 +13,8 @@
 #include "../CollisionPrimitive/GJK.h"
 #include "../CollisionPrimitive/MinkowskiSum.h"
 #include "../CollisionPrimitive/OrientedBox3.h"
+#include "../CollisionPrimitive/Plane3.h"
+#include "../CollisionPrimitive/Sphere3.h"
 
 namespace Riemann
 {
@@ -140,6 +142,35 @@ namespace Riemann
 		}
 		contact->Tangent.SafeNormalize();
 		contact->Binormal = CrossProduct(contact->Normal, contact->Tangent);
+	}
+
+	static bool ConstructSpherePlaneManifold(int IndexA, int IndexB, const GeometryWorldState& StateA,
+		const GeometryWorldState& StateB, ContactManifold* Manifold)
+	{
+		// An infinite half-space has no finite support point for GJK/EPA.
+		const bool SphereIsA = StateA.Geom->GetShapeType() == PrimitiveType::SPHERE;
+		const GeometryWorldState& SphereState = SphereIsA ? StateA : StateB;
+		const GeometryWorldState& PlaneState = SphereIsA ? StateB : StateA;
+		const Sphere3* Sphere = SphereState.Geom->GetShapeObj<Sphere3>();
+		const Plane3* Plane = PlaneState.Geom->GetShapeObj<Plane3>();
+		const Vector3 Normal = PlaneState.ShapeToWorld.LocalToWorldDirection(Plane->Normal).SafeUnit();
+		const Vector3 Origin = PlaneState.ShapeToWorld.LocalToWorld(Plane->GetOrigin());
+		const Vector3 Center = SphereState.ShapeToWorld.LocalToWorld(Sphere->Center);
+		const float Depth = Sphere->Radius - (Center - Origin).Dot(Normal);
+		if (!std::isfinite(Depth) || Depth < 0.0f || Normal.SquareLength() < 0.5f) return false;
+		const Vector3 SpherePoint = Center - Normal * Sphere->Radius;
+		const Vector3 PlanePoint = SpherePoint + Normal * Depth;
+		Contact Point;
+		Point.PositionWorldA = SphereIsA ? SpherePoint : PlanePoint;
+		Point.PositionWorldB = SphereIsA ? PlanePoint : SpherePoint;
+		Point.PositionLocalA = GetContactRelativePosition(StateA, Point.PositionWorldA);
+		Point.PositionLocalB = GetContactRelativePosition(StateB, Point.PositionWorldB);
+		Point.Normal = SphereIsA ? -Normal : Normal;
+		Point.PenetrationDepth = Depth;
+		BuildContactBasis(&Point);
+		Manifold->Reset();
+		Manifold->AddNewContact(IndexA, IndexB, Point);
+		return true;
 	}
 
 	static bool ConstructConcaveManifold(int indexA, int indexB, const GeometryWorldState& StateA, const GeometryWorldState& StateB, ContactManifold* manifold)
@@ -370,7 +401,17 @@ namespace Riemann
 				}
 
 				EPAPenetration epa;
-				if (IsConcaveGeometry(state1.Geom) || IsConcaveGeometry(state2.Geom))
+				const PrimitiveType type1 = state1.Geom->GetShapeType(), type2 = state2.Geom->GetShapeType();
+				if ((type1 == PrimitiveType::SPHERE && type2 == PrimitiveType::PLANE)
+					|| (type2 == PrimitiveType::SPHERE && type1 == PrimitiveType::PLANE))
+				{
+					ContactManifold* manifold = m_ManifoldPool.allocate();
+					if (ConstructSpherePlaneManifold(overlaps[i].index1, overlaps[i].index2, state1, state2, manifold))
+					{
+						manifolds->push_back(manifold);
+					}
+				}
+				else if (IsConcaveGeometry(state1.Geom) || IsConcaveGeometry(state2.Geom))
 				{
 					ContactManifold* manifold = m_ManifoldPool.allocate();
 					if (ConstructConcaveManifold(overlaps[i].index1, overlaps[i].index2, state1, state2, manifold))

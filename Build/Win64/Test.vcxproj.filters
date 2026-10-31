@@ -1,6 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="..\..\Renderer\imgui.cpp" />
+    <ClInclude Include="..\..\Viewer\SolverPanel.h" />
+    <ClCompile Include="..\..\Viewer\SolverPanel.cpp" />
+    <ClCompile Include="..\..\Test\Test_SolverPanel.cpp" />
+    <ClCompile Include="..\..\Test\Test_SolverSwitch.cpp" />
+    <ClCompile Include="..\..\Test\Test_PBDBackendScenes.cpp" />
+    <ClCompile Include="..\..\Test\Test_PBDBackends.cpp" />
+    <ClCompile Include="..\..\Test\Test_VehicleScene.cpp" />
+    <ClCompile Include="..\..\Test\Test_VehicleDeformation.cpp" />
+    <ClCompile Include="..\..\Test\Test_RopeTowing.cpp" />
+    <ClCompile Include="..\..\Test\Test_XPBDScene.cpp" />
+    <ClCompile Include="..\..\Test\Test_XPBD.cpp" />
+    <ClCompile Include="..\..\Test\Test_PBDScene.cpp" />
+    <ClCompile Include="..\..\Test\Test_PBD.cpp" />
+    <ClCompile Include="..\..\Test\Test_VoxelScene.cpp" />
+    <ClCompile Include="..\..\Test\Test_VoxelMesh.cpp" />
+    <ClCompile Include="..\..\Test\Test_TerrainScene.cpp" />
+    <ClCompile Include="..\..\Test\Test_Terrain.cpp" />
+    <ClCompile Include="..\..\Test\Benchmarks_Fluid.cpp" />
+    <ClCompile Include="..\..\Test\Benchmarks_GEMM.cpp" />
+    <ClCompile Include="..\..\Test\Test_GEMM.cpp" />
+    <ClCompile Include="..\..\Test\Test_StressIntegration.cpp" />
+    <ClCompile Include="..\..\Test\Test_Stress.cpp" />
+    <ClCompile Include="..\..\Test\Test_Deformation.cpp" />
+    <ClCompile Include="..\..\Viewer\SceneWorld.cpp" />
+    <ClCompile Include="..\..\Test\Test_Scenes.cpp" />
+    <ClCompile Include="..\..\Test\Test_Rope.cpp" />
+    <ClCompile Include="..\..\Test\Test_Constraints.cpp" />
     <ClCompile Include="..\..\Test\main.cpp" />
     <ClCompile Include="..\..\Test\Test_Collision.cpp" />
     <ClCompile Include="..\..\Test\Test_CollisionPrimitive.cpp" />
@@ -11,6 +39,7 @@
     <ClCompile Include="..\..\Test\Test_SIMD.cpp" />
     <ClCompile Include="..\..\Test\Test_Optimization.cpp" />
     <ClCompile Include="..\..\Test\Test_Core.cpp" />
+    <ClCompile Include="..\..\Test\Test_FluidOptimization.cpp" />
     <ClCompile Include="..\..\Test\Test_Destruction.cpp" />
   </ItemGroup>
   <ItemGroup>
