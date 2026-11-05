@@ -1,10 +1,11 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.20)
 project(Riemann)
 
 option(RIEMANN_ENABLE_CUDA "Build the optional CUDA solver backends" ON)
 option(RIEMANN_ENABLE_COMPUTE_SHADER "Build the DirectCompute solver backends" ON)
 
 set(RIEMANN_CUDA_AVAILABLE OFF)
+set(RIEMANN_CUDA_TOOLKIT_ONLY OFF)
 if(RIEMANN_ENABLE_CUDA)
     include(CheckLanguage)
     check_language(CUDA)
@@ -21,7 +22,14 @@ if(RIEMANN_ENABLE_CUDA)
         endif()
         message(STATUS "CUDA solver backends enabled")
     else()
-        message(STATUS "CUDA compiler not found; building without CUDA solver backends")
+        find_package(CUDAToolkit QUIET)
+        if(CUDAToolkit_FOUND AND CUDAToolkit_NVCC_EXECUTABLE)
+            set(RIEMANN_CUDA_AVAILABLE ON)
+            set(RIEMANN_CUDA_TOOLKIT_ONLY ON)
+            message(STATUS "CUDA standalone toolkit backends enabled")
+        else()
+            message(STATUS "CUDA compiler not found; building without CUDA solver backends")
+        endif()
     endif()
 endif()
 
@@ -46,7 +54,8 @@ else()
     set(RIEMANN_PLATFORM_NAME "${CMAKE_SYSTEM_NAME}")
 endif()
 
-set(RIEMANN_OUTPUT_DIRECTORY "${RIEMANN_ROOT_DIR}/Binaries/${RIEMANN_PLATFORM_NAME}")
+set(RIEMANN_OUTPUT_DIRECTORY "${RIEMANN_ROOT_DIR}/Binaries/${RIEMANN_PLATFORM_NAME}"
+    CACHE PATH "Build output directory")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${RIEMANN_OUTPUT_DIRECTORY}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${RIEMANN_OUTPUT_DIRECTORY}")
@@ -76,15 +85,19 @@ file(GLOB_RECURSE RIEMANN_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/../Src/*.c"
 )
 
-if(RIEMANN_CUDA_AVAILABLE)
+if(RIEMANN_CUDA_AVAILABLE AND NOT RIEMANN_CUDA_TOOLKIT_ONLY)
     list(APPEND RIEMANN_SOURCES
         "${CMAKE_SOURCE_DIR}/../Src/RigidBodyDynamics/LCPSolverCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Fluid/FluidBackendCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Fluid/SmokeBackendCUDA.cu"
-        "${CMAKE_SOURCE_DIR}/../Src/Deformation/PBDBackendCUDA.cu"
+        "${CMAKE_SOURCE_DIR}/../Src/Cloth/PBDBackendCUDA.cu"
+        "${CMAKE_SOURCE_DIR}/../Src/Continuum/SnowBackendCUDA.cu"
+        "${CMAKE_SOURCE_DIR}/../Src/Continuum/SandBackendCUDA.cu"
     )
     # Keep contact projection arithmetic consistent with the scalar/SIMD paths.
-    set_source_files_properties("${CMAKE_SOURCE_DIR}/../Src/Deformation/PBDBackendCUDA.cu"
+    set_source_files_properties("${CMAKE_SOURCE_DIR}/../Src/Cloth/PBDBackendCUDA.cu"
+        "${CMAKE_SOURCE_DIR}/../Src/Continuum/SnowBackendCUDA.cu"
+        "${CMAKE_SOURCE_DIR}/../Src/Continuum/SandBackendCUDA.cu"
         PROPERTIES COMPILE_OPTIONS "--fmad=false")
 endif()
 
@@ -102,17 +115,57 @@ file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS
 add_library(Riemann STATIC ${RIEMANN_SOURCES} ${RIEMANN_HEADERS})
 if(WIN32 AND RIEMANN_ENABLE_COMPUTE_SHADER)
     target_compile_definitions(Riemann PUBLIC RIEMANN_ENABLE_COMPUTE_SHADER=1)
+    target_compile_definitions(Riemann PRIVATE RIEMANN_SNOW_COMPUTE=1)
     target_link_libraries(Riemann PRIVATE d3d11 d3dcompiler dxguid)
+elseif(APPLE AND RIEMANN_ENABLE_COMPUTE_SHADER)
+    enable_language(OBJCXX)
+    target_sources(Riemann PRIVATE "${RIEMANN_ROOT_DIR}/Src/Continuum/MetalComputeDevice.mm")
+    set_source_files_properties("${RIEMANN_ROOT_DIR}/Src/Continuum/MetalComputeDevice.mm"
+        PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+    set_property(TARGET Riemann PROPERTY OBJCXX_STANDARD 14)
+    target_compile_definitions(Riemann PRIVATE RIEMANN_SNOW_COMPUTE=1)
+    find_library(SNOW_METAL_FRAMEWORK Metal REQUIRED)
+    find_library(SNOW_FOUNDATION_FRAMEWORK Foundation REQUIRED)
+    target_link_libraries(Riemann PRIVATE ${SNOW_METAL_FRAMEWORK} ${SNOW_FOUNDATION_FRAMEWORK})
 endif()
 if(RIEMANN_CUDA_AVAILABLE)
     # CUDA is part of the public solver API when the backend is compiled in.
     # Propagate the feature macro so callers and tests cannot reference CUDA
     # declarations in a non-CUDA build.
     target_compile_definitions(Riemann PUBLIC RIEMANN_ENABLE_CUDA=1)
+    target_compile_definitions(Riemann PRIVATE RIEMANN_SNOW_CUDA=1)
     set_target_properties(Riemann PROPERTIES
         CUDA_STANDARD 14
         CUDA_STANDARD_REQUIRED ON
     )
+    if(RIEMANN_CUDA_TOOLKIT_ONLY)
+        set(RIEMANN_CUDA_ARCHITECTURES "75;86" CACHE STRING "CUDA real and virtual architectures")
+        set(cuda_architecture_flags)
+        foreach(architecture IN LISTS RIEMANN_CUDA_ARCHITECTURES)
+            list(APPEND cuda_architecture_flags "--generate-code=arch=compute_${architecture},code=[sm_${architecture},compute_${architecture}]")
+        endforeach()
+        set(cuda_host_flags)
+        if(MSVC)
+            list(APPEND cuda_host_flags "-Xcompiler=$<IF:$<CONFIG:Debug>,/MDd,/MD>" "-Xcompiler=/EHsc")
+        else()
+            list(APPEND cuda_host_flags "-Xcompiler=-fPIC")
+        endif()
+        foreach(cuda_path RigidBodyDynamics/LCPSolverCUDA Fluid/FluidBackendCUDA Fluid/SmokeBackendCUDA Cloth/PBDBackendCUDA Continuum/SnowBackendCUDA Continuum/SandBackendCUDA)
+            get_filename_component(cuda_name "${cuda_path}" NAME)
+            set(cuda_object "${CMAKE_CURRENT_BINARY_DIR}/Cuda/$<CONFIG>/${cuda_name}${CMAKE_CXX_OUTPUT_EXTENSION}")
+            add_custom_command(OUTPUT "${cuda_object}"
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/Cuda/$<CONFIG>"
+                COMMAND "${CUDAToolkit_NVCC_EXECUTABLE}" --std=c++14 -O3 --fmad=false
+                    ${cuda_architecture_flags} ${cuda_host_flags} -ccbin "${CMAKE_CXX_COMPILER}"
+                    -DRIEMANN_ENABLE_CUDA=1 -DRIEMANN_SNOW_CUDA=1
+                    "-I${RIEMANN_ROOT_DIR}/Src" -c "${RIEMANN_ROOT_DIR}/Src/${cuda_path}.cu" -o "${cuda_object}"
+                DEPENDS "${RIEMANN_ROOT_DIR}/Src/${cuda_path}.cu" ${RIEMANN_HEADERS}
+                VERBATIM)
+            set_source_files_properties("${cuda_object}" PROPERTIES GENERATED TRUE EXTERNAL_OBJECT TRUE)
+            target_sources(Riemann PRIVATE "${cuda_object}")
+        endforeach()
+        target_link_libraries(Riemann PRIVATE CUDA::cudart_static)
+    endif()
 endif()
 if(MSVC)
     target_compile_definitions(Riemann PRIVATE _CRT_SECURE_NO_WARNINGS)
@@ -129,6 +182,7 @@ set(RIEMANN_RENDERER_SOURCES
 )
 
 set(RIEMANN_RENDERER_HEADERS
+    "${CMAKE_SOURCE_DIR}/../Renderer/ImguiInputQueue.h"
     "${CMAKE_SOURCE_DIR}/../Renderer/RiemannRenderer.h"
     "${CMAKE_SOURCE_DIR}/../Renderer/DensityVolume.h"
     "${CMAKE_SOURCE_DIR}/../Renderer/DX11VolumeRenderer.h"
@@ -183,6 +237,8 @@ elseif(APPLE)
 endif()
 
 set(RIEMANN_VIEWER_CORE_SOURCES
+    "${CMAKE_SOURCE_DIR}/../Viewer/SnowDemo.cpp"
+    "${CMAKE_SOURCE_DIR}/../Viewer/SnowSurfaceBuilder.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/SolverPanel.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshCuttingPanel.cpp"
@@ -193,6 +249,7 @@ set(RIEMANN_VIEWER_CORE_SOURCES
 )
 
 set(RIEMANN_VIEWER_CORE_HEADERS
+    "${CMAKE_SOURCE_DIR}/../Viewer/SnowSurfaceBuilder.h"
     "${CMAKE_SOURCE_DIR}/../Viewer/SolverPanel.h"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshRenderer.h"
     "${CMAKE_SOURCE_DIR}/../Viewer/MeshCuttingPanel.h"
@@ -262,19 +319,8 @@ if(WIN32)
         Riemann
     )
     
-    add_executable(RendererLifecycleValidation "${CMAKE_SOURCE_DIR}/../Test/Benchmarks_Fluid.cpp")
-
-    add_executable(SmokeRenderValidation "${CMAKE_SOURCE_DIR}/../Test/Benchmarks_Fluid.cpp"
-        "${CMAKE_SOURCE_DIR}/../Viewer/SceneWorld.cpp")
-    target_compile_definitions(SmokeRenderValidation PRIVATE NOMINMAX RIEMANN_RENDERER_STATIC
-        RIEMANN_BENCHMARK_VOLUME_VALIDATION RIEMANN_SMOKE_PREVIEW _CRT_SECURE_NO_WARNINGS)
-    target_link_libraries(SmokeRenderValidation PRIVATE Riemann d3d11 d3dcompiler dxgi)
-
-    add_executable(SmokeViewerValidation ${RIEMANN_VIEWER_CORE_SOURCES}
-        "${CMAKE_SOURCE_DIR}/../Test/SmokeViewerValidation.cpp")
-    target_compile_definitions(SmokeViewerValidation PRIVATE RIEMANN_SMOKE_VIEWER_VALIDATION _CRT_SECURE_NO_WARNINGS)
-    target_link_libraries(SmokeViewerValidation PRIVATE Riemann Renderer shell32 comctl32)
-    target_compile_definitions(RendererLifecycleValidation PRIVATE RIEMANN_BENCHMARK_RENDERER_LIFECYCLE)
+    add_executable(RendererLifecycleValidation "${CMAKE_SOURCE_DIR}/../Test/RendererLifecycleValidation.cpp")
+    target_compile_definitions(RendererLifecycleValidation PRIVATE RIEMANN_RENDERER_LIFECYCLE_VALIDATION)
     target_link_libraries(RendererLifecycleValidation PRIVATE Renderer)
     add_test(NAME RendererLifecycleValidation COMMAND RendererLifecycleValidation)
     set_tests_properties(RendererLifecycleValidation PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")

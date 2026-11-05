@@ -19,12 +19,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Src\Continuum\SandBackendCompute.cpp" />
+    <ClInclude Include="..\..\Src\Continuum\SandGPUBackend.h" />
+    <ClInclude Include="..\..\Src\Continuum\SandKernels.h" />
+    <ClCompile Include="..\..\Src\Continuum\SandSimulation.cpp" />
+    <ClInclude Include="..\..\Src\Continuum\SandSimulation.h" />
+    <ClInclude Include="..\..\Src\Continuum\MPMContact.h" />
+    <ClInclude Include="..\..\Src\Continuum\MPMMath.h" />
+    <ClCompile Include="..\..\Src\Continuum\SnowGPUBackend.cpp" />
+    <ClInclude Include="..\..\Src\Continuum\SnowGPUBackend.h" />
+    <ClCompile Include="..\..\Src\Continuum\SnowSimulation.cpp" />
+    <ClInclude Include="..\..\Src\Continuum\SnowSimulation.h" />
     <ClInclude Include="..\..\Src\LinearSystem\GemmKernel.h" />
     <ClInclude Include="..\..\Src\LinearSystem\GemmCache.h" />
-    <ClCompile Include="..\..\Src\Deformation\PBDBackendComputeShader.cpp" />
-    <ClCompile Include="..\..\Src\Deformation\PBDBackend.cpp" />
-    <ClInclude Include="..\..\Src\Deformation\PBDBackendMath.h" />
-    <ClInclude Include="..\..\Src\Deformation\PBDBackend.h" />
+    <ClCompile Include="..\..\Src\Cloth\PBDBackendComputeShader.cpp" />
+    <ClCompile Include="..\..\Src\Cloth\PBDBackend.cpp" />
+    <ClInclude Include="..\..\Src\Cloth\PBDBackendMath.h" />
+    <ClInclude Include="..\..\Src\Cloth\PBDBackend.h" />
     <ClCompile Include="..\..\Src\Deformation\VehicleDeformation.cpp" />
     <ClInclude Include="..\..\Src\Deformation\VehicleDeformation.h" />
     <ClCompile Include="..\..\Src\Deformation\DeformableBodyRender.cpp" />
@@ -97,7 +108,7 @@
     <ClCompile Include="..\..\Src\Modules\Tools\UE5StaticMeshParser.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\BroadPhase.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\CollidingContact.cpp" />
-    <ClCompile Include="..\..\Src\Deformation\Cloth.cpp" />
+    <ClCompile Include="..\..\Src\Cloth\Cloth.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\ContinuousCollisionDetection.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Jacobian.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\KinematicsTree.cpp" />
@@ -105,10 +116,10 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\LCPSolver.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\LCPSolverComputeShader.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MassParameters.cpp" />
-    <ClCompile Include="..\..\Src\Deformation\MassSpring.cpp" />
+    <ClCompile Include="..\..\Src\Cloth\MassSpring.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\NarrowPhase.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.cpp" />
-    <ClCompile Include="..\..\Src\Deformation\PBDSolver.cpp" />
+    <ClCompile Include="..\..\Src\Cloth\PBDSolver.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Constraints.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Ragdoll.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\RagdollDefinition.cpp" />
@@ -117,8 +128,8 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsWorld.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MotionIntegration.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBody.cpp" />
-    <ClCompile Include="..\..\Src\Deformation\Rope.cpp" />
-    <ClCompile Include="..\..\Src\Deformation\XPBDSolver.cpp" />
+    <ClCompile Include="..\..\Src\Cloth\Rope.cpp" />
+    <ClCompile Include="..\..\Src\Cloth\XPBDSolver.cpp" />
     <ClCompile Include="..\..\Src\Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="..\..\Src\Solver\NumericalODESolver.cpp" />
     <ClCompile Include="..\..\Src\Solver\ProjectiveDynamicsSolver.cpp" />
@@ -276,7 +287,7 @@
     <ClInclude Include="..\..\Src\Optimization\StochasticGradientDescent.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\BroadPhase.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\CollidingContact.h" />
-    <ClInclude Include="..\..\Src\Deformation\Cloth.h" />
+    <ClInclude Include="..\..\Src\Cloth\Cloth.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\ContinuousCollisionDetection.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\FeatherstoneSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Jacobian.h" />
@@ -284,10 +295,10 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\ForceField.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\LCPSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MassParameters.h" />
-    <ClInclude Include="..\..\Src\Deformation\MassSpring.h" />
+    <ClInclude Include="..\..\Src\Cloth\MassSpring.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\NarrowPhase.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.h" />
-    <ClInclude Include="..\..\Src\Deformation\PBDSolver.h" />
+    <ClInclude Include="..\..\Src\Cloth\PBDSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Constraints.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Ragdoll.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RagdollDefinition.h" />
@@ -306,8 +317,8 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MotionIntegration.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsWorld.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h" />
-    <ClInclude Include="..\..\Src\Deformation\Rope.h" />
-    <ClInclude Include="..\..\Src\Deformation\XPBDSolver.h" />
+    <ClInclude Include="..\..\Src\Cloth\Rope.h" />
+    <ClInclude Include="..\..\Src\Cloth\XPBDSolver.h" />
     <ClInclude Include="..\..\Src\Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="..\..\Src\Solver\NumericalODESolver.h" />
     <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h" />

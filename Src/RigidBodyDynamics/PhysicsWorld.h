@@ -10,8 +10,8 @@
 #include "Constraints.h"
 #include "ConstraintSolver.h"
 #include "LCPSolver.h"
-#include "../Deformation/PBDSolver.h"
-#include "../Deformation/XPBDSolver.h"
+#include "../Cloth/PBDSolver.h"
+#include "../Cloth/XPBDSolver.h"
 
 namespace Riemann
 {

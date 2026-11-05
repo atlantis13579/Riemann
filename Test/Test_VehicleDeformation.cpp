@@ -101,7 +101,7 @@ namespace
 			EXPECT(cage.GetSurfaceTriangles().size() == 224);
 			int pinned = 0;
 			for (const DeformableParticle& particle : cage.GetParticles()) pinned += particle.Pinned ? 1 : 0;
-			EXPECT(pinned == 21);
+			EXPECT(pinned == 9);
 			double volume = 0.0, surfaceVolume = 0.0;
 			for (int i = 0; i < (int)cage.GetTetrahedra().size(); ++i)
 			{

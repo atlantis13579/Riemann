@@ -24,9 +24,9 @@
 #include "ForceField.h"
 #include "KinematicsTree.h"
 #include "ContinuousCollisionDetection.h"
-#include "../Deformation/Rope.h"
+#include "../Cloth/Rope.h"
 #include "../Deformation/DeformableBody.h"
-#include "../Deformation/Cloth.h"
+#include "../Cloth/Cloth.h"
 #include "Ragdoll.h"
 
 namespace Riemann

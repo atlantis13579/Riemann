@@ -74,6 +74,8 @@ namespace Riemann
 		RenderBlendMode BlendMode = RenderBlendMode::Alpha;
 		bool CastShadow = true;
 		bool Unlit = false;
+		// Negative selects the standard material; [0,1] blends sand and snow.
+		float SnowFraction = -1.0f;
 	};
 
 	struct RenderTransformUpdate

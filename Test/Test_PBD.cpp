@@ -1,7 +1,7 @@
 #include "Test.h"
 
 #include "../Src/Collision/GeometryObject.h"
-#include "../Src/Deformation/Rope.h"
+#include "../Src/Cloth/Rope.h"
 #include "../Src/RigidBodyDynamics/PhysicsMaterial.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 

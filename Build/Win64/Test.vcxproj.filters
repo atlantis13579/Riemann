@@ -19,8 +19,6 @@
     <ClCompile Include="..\..\Test\Test_VoxelMesh.cpp" />
     <ClCompile Include="..\..\Test\Test_TerrainScene.cpp" />
     <ClCompile Include="..\..\Test\Test_Terrain.cpp" />
-    <ClCompile Include="..\..\Test\Benchmarks_Fluid.cpp" />
-    <ClCompile Include="..\..\Test\Benchmarks_GEMM.cpp" />
     <ClCompile Include="..\..\Test\Test_GEMM.cpp" />
     <ClCompile Include="..\..\Test\Test_StressIntegration.cpp" />
     <ClCompile Include="..\..\Test\Test_Stress.cpp" />

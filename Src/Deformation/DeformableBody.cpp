@@ -280,6 +280,25 @@ namespace Riemann
 			const float maximum = edge.InitialRestLength * (1.0f + m_Settings.MaxPlasticStrain);
 			edge.RestLength = std::max(minimum, std::min(edge.RestLength + excess * fraction, maximum));
 		}
+		// Edge plasticity alone competes with an undeformed volume constraint and
+		// springs a crushed solid back to its original shape. Evolve both rest
+		// measures, retaining the orientation and a finite minimum volume.
+		for (DeformableTetrahedron& tetrahedron : m_Tetrahedra)
+		{
+			if (tetrahedron.Compliance <= 0.0f) continue;
+			const float volume = GetTetrahedronVolume((int)(&tetrahedron - m_Tetrahedra.data()));
+			const float ratio = volume / tetrahedron.RestVolume;
+			if (ratio <= 0.0f || !std::isfinite(ratio)) continue;
+			const float strain = std::cbrt(ratio) - 1.0f;
+			if (std::fabs(strain) <= m_Settings.YieldStrain) continue;
+			const float elastic = 1.0f + std::copysign(m_Settings.YieldStrain, strain);
+			const float target = volume / (elastic * elastic * elastic);
+			const float next = tetrahedron.RestVolume + (target - tetrahedron.RestVolume) * fraction;
+			const float lower = std::pow(std::max(0.1f, 1.0f - m_Settings.MaxPlasticStrain), 3.0f);
+			const float upper = std::pow(1.0f + m_Settings.MaxPlasticStrain, 3.0f);
+			tetrahedron.RestVolume = tetrahedron.InitialRestVolume * std::max(lower,
+				std::min(next / tetrahedron.InitialRestVolume, upper));
+		}
 	}
 
 	void DeformableBody::SolveEdges(float dt)
@@ -321,10 +340,13 @@ namespace Riemann
 			float weight = 0.0f;
 			for (int i = 0; i < 4; ++i) weight += inverseMass[i] * gradients[i].SquareLength();
 			if (weight <= 1.0e-20f) continue;
-			const float alpha = tetrahedron.Compliance / (dt * dt);
-			const float error = SignedVolume(positions[0], positions[1], positions[2], positions[3]) - tetrahedron.RestVolume;
-			const float deltaLambda = (-error - alpha * tetrahedron.Lambda) / (weight + alpha);
-			tetrahedron.Lambda += deltaLambda;
+			const float volume = SignedVolume(positions[0], positions[1], positions[2], positions[3]);
+			// Compression may yield, but tetrahedra must retain their orientation.
+			const bool barrier = volume / tetrahedron.InitialRestVolume < 0.08f;
+			const float alpha = barrier ? 0.0f : tetrahedron.Compliance / (dt * dt);
+			const float target = barrier ? tetrahedron.InitialRestVolume * 0.08f : tetrahedron.RestVolume;
+			const float deltaLambda = (-(volume - target) - alpha * tetrahedron.Lambda) / (weight + alpha);
+			if (!barrier) tetrahedron.Lambda += deltaLambda;
 			for (int i = 0; i < 4; ++i)
 			{
 				m_Particles[(size_t)tetrahedron.Particles[i]].Position += gradients[i] * (inverseMass[i] * deltaLambda);

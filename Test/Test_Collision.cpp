@@ -31,8 +31,8 @@
 #include "../Src/RigidBodyDynamics/LCPSolver.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 #include "../Src/RigidBodyDynamics/RigidBody.h"
-#include "../Src/Deformation/Rope.h"
-#include "../Src/Deformation/Cloth.h"
+#include "../Src/Cloth/Rope.h"
+#include "../Src/Cloth/Cloth.h"
 #include "../Src/RigidBodyDynamics/Ragdoll.h"
 #include "../Src/Maths/Maths.h"
 

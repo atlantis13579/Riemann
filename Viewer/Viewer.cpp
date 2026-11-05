@@ -29,6 +29,7 @@
 #include "MeshRenderer.h"
 #include "RenderThread.h"
 #include "SceneWorld.h"
+#include "../Src/Deformation/VehicleDeformation.h"
 #include "../Renderer/imgui.h"
 #include "../Renderer/RiemannRenderer.h"
 #include "../Src/Collision/GeometryObject.h"
@@ -758,6 +759,8 @@ namespace Riemann
 	bool WorldViewer::ActivateConfiguredFieldSimulation()
 	{
 		const SceneFieldSimulationDesc& desc = m_World->GetFieldSimulation();
+		if (desc.Type == "snow_simulation_3d") return ActivateSnowDemo();
+		if (desc.Type == "sand_simulation_3d") return ActivateSnowDemo(true);
 		if (!desc.IsConfigured())
 		{
 			return true;
@@ -956,6 +959,7 @@ namespace Riemann
 
 	void WorldViewer::DeactivateGasDemo()
 	{
+		DeactivateSnowDemo();
 		const bool wasActive = m_GasDemoActive;
 		if (m_AerodynamicsCoupling != nullptr && m_World != nullptr
 			&& m_World->GetSimulation() != nullptr)
@@ -1103,6 +1107,9 @@ namespace Riemann
 
 		m_SceneDirectory = DirectoryOf(resolved);
 		m_CurrentSceneName = FileNameOf(resolved);
+		m_VehiclePaused = true;
+		m_VehicleSlowMotion = false;
+		m_VehiclePendingTime = 0;
 		m_CurrentSceneDisplayName = m_World->GetName().empty() ? m_CurrentSceneName : m_World->GetName();
 		m_SceneDragActive = false;
 		m_FieldDragActive = false;
@@ -1144,9 +1151,25 @@ namespace Riemann
 	void WorldViewer::UpdateSimulator(float dt)
 	{
 		ApplyImguiCommands();
+		ApplyVehicleCommands();
+		ApplySnowCommands();
 		UpdateFluidDemo();
-		if (!m_SmokeSimulation || !m_SmokePaused) m_World->Step(dt);
+		if (m_World->GetVehicleCount() > 0)
+		{
+			if (!m_VehiclePaused)
+			{
+				// Slow playback changes elapsed time, not the crash solver's timestep.
+				m_VehiclePendingTime = std::min(0.1f, m_VehiclePendingTime + dt * (m_VehicleSlowMotion ? 0.25f : 1.0f));
+				while (m_VehiclePendingTime >= 1.0f / 120.0f)
+				{
+					m_World->Step(1.0f / 120.0f);
+					m_VehiclePendingTime -= 1.0f / 120.0f;
+				}
+			}
+		}
+		else if (!m_SmokeSimulation || !m_SmokePaused) m_World->Step(dt);
 		UpdateGasDemo(dt);
+		UpdateSnowDemo(dt);
 		if (m_RenderRevision != m_World->GetRenderRevision())
 		{
 			RebuildRenderScene();
@@ -1371,6 +1394,7 @@ namespace Riemann
 
 	void WorldViewer::SceneRayMsg(int x, int y, int width, int height)
 	{
+		if (m_SnowSimulation || m_SandSimulation) { MoveSnowCapsule(x,y,width,height); return; }
 		if (width <= 0 || height <= 0)
 		{
 			return;
@@ -1445,6 +1469,7 @@ namespace Riemann
 
 	void WorldViewer::SceneDragMsg(int x, int y, int width, int height)
 	{
+		if (m_SnowSimulation || m_SandSimulation) { MoveSnowCapsule(x,y,width,height); return; }
 		if ((!m_SceneDragActive && !m_FieldDragActive && !m_TankDragActive)
 			|| m_World == nullptr || width <= 0 || height <= 0)
 		{
@@ -1590,7 +1615,7 @@ namespace Riemann
 
 		const int panelLeft = 10;
 		const int panelTop = 10;
-		const int panelRight = std::min(width - 10, panelLeft + 250);
+		const int panelRight = std::min(width - 10, panelLeft + 280);
 		const int panelBottom = height - 10;
 		return x >= panelLeft && x <= panelRight && y >= panelTop && y <= panelBottom;
 	}
@@ -1614,6 +1639,8 @@ namespace Riemann
 		std::string terrainStatus;
 		SolverPanelState solverPanel;
 		SmokePanelState smokePanel;
+		SnowPanelState snowPanel;
+		VehiclePanelState vehiclePanel;
 		std::string meshSimplificationPath;
 		std::string meshSimplificationStatus;
 		int cuttingMode = 0;
@@ -1648,6 +1675,8 @@ namespace Riemann
 			terrainStatus = m_ImguiTerrainStatus;
 			solverPanel = m_ImguiSolverPanel;
 			smokePanel = m_ImguiSmokePanel;
+			snowPanel = m_ImguiSnowPanel;
+			vehiclePanel = m_ImguiVehiclePanel;
 			cuttingMode = m_ImguiCuttingMode;
 			cuttingPieceCount = m_ImguiCuttingPieceCount;
 			cuttingPiecesX = m_ImguiCuttingPiecesX;
@@ -1682,7 +1711,7 @@ namespace Riemann
 			m_ImguiScroll = 0;
 			m_ImguiRenderedSceneGeneration = solverPanel.SceneGeneration;
 		}
-		imguiBeginScrollArea("", 10, 10, 220, panelHeight, &m_ImguiScroll);
+		imguiBeginScrollArea("", 10, 10, std::min(280, width - 20), panelHeight, &m_ImguiScroll);
 
 		char text[128];
 		imguiLabel("Demo");
@@ -1754,7 +1783,28 @@ namespace Riemann
 				}
 			}
 		}
-		const bool applySolver = !smokePanel.Active && DrawSolverPanel(solverPanel);
+		if (snowPanel.Active) DrawSnowPanel(snowPanel);
+		if (vehiclePanel.Active)
+		{
+			imguiLabel("Vehicle Crash Test");
+			int command = 0;
+			if (imguiButton(vehiclePanel.Paused ? "Start / Resume Crash" : "Pause Crash")) command = 1;
+			if (imguiButton("Replay Crash")) command = 2;
+			if (imguiButton("Inspect Damage")) command = 4;
+			if (imguiCheck("Slow motion (0.25x)", vehiclePanel.SlowMotion)) command = 3;
+			snprintf(text, sizeof(text), "Maximum dent: %.0f cm", vehiclePanel.Displacement * 100);
+			imguiValue(text);
+			snprintf(text, sizeof(text), "Plastic strain: %.0f%%", vehiclePanel.PlasticStrain * 100);
+			imguiValue(text);
+			imguiValue("RMB: orbit around the damage");
+			if (command)
+			{
+				std::lock_guard<std::mutex> lock(m_ImguiMutex);
+				m_PendingVehicleCommand = command;
+				m_PendingVehicleGeneration = vehiclePanel.SceneGeneration;
+			}
+		}
+		const bool applySolver = !smokePanel.Active && !snowPanel.Active && DrawSolverPanel(solverPanel);
 		{
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			if (solverPanel.SceneGeneration == m_ImguiSolverPanel.SceneGeneration && !m_ImguiSolverPanel.Pending)
@@ -2230,6 +2280,8 @@ namespace Riemann
 		}
 
 		SubmitGeometryQueryBounds();
+		m_SnowMeshReady = false;
+		SubmitSnowSurface();
 	}
 
 	void WorldViewer::AddGeometryToRender(const std::string& id, Geometry* geometry, const Vector4& color, bool renderBounds)
@@ -3302,6 +3354,36 @@ namespace Riemann
 		}
 	}
 
+	void WorldViewer::ApplyVehicleCommands()
+	{
+		int command;
+		unsigned int generation;
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			command = m_PendingVehicleCommand;
+			generation = m_PendingVehicleGeneration;
+			m_PendingVehicleCommand = 0;
+		}
+		if (generation != m_SceneGeneration || m_World->GetVehicleCount() == 0) return;
+		if (command == 1) m_VehiclePaused = !m_VehiclePaused;
+		else if (command == 2)
+		{
+			const bool slowMotion = m_VehicleSlowMotion;
+			if (LoadScene(m_SceneDirectory + "/" + m_CurrentSceneName))
+			{
+				m_VehiclePaused = false;
+				m_VehicleSlowMotion = slowMotion;
+			}
+		}
+		else if (command == 3) m_VehicleSlowMotion = !m_VehicleSlowMotion;
+		else if (command == 4)
+		{
+			m_CamCenter = m_World->GetVehicle(0)->GetWorldTransform().pos;
+			m_CamParam = Vector3(1.75f, 0.42f, 7.5f);
+			UpdateCamera();
+		}
+	}
+
 	void WorldViewer::UpdateImguiState()
 	{
 		PhysicsWorld* simulation = m_World ? m_World->GetSimulation() : nullptr;
@@ -3311,6 +3393,16 @@ namespace Riemann
 			? m_World->GetTerrainObjectIds() : std::vector<std::string>();
 		std::lock_guard<std::mutex> lock(m_ImguiMutex);
 		m_ImguiSmokePanel.Active = m_SmokeSimulation != nullptr;
+		UpdateSnowPanelState();
+		m_ImguiVehiclePanel.Active = m_World && m_World->GetVehicleCount() > 0;
+		m_ImguiVehiclePanel.SceneGeneration = m_SceneGeneration;
+		m_ImguiVehiclePanel.Paused = m_VehiclePaused;
+		m_ImguiVehiclePanel.SlowMotion = m_VehicleSlowMotion;
+		if (m_ImguiVehiclePanel.Active)
+		{
+			m_ImguiVehiclePanel.Displacement = m_World->GetVehicle(0)->GetMaxDisplacement();
+			m_ImguiVehiclePanel.PlasticStrain = m_World->GetVehicle(0)->GetMaxPlasticStrain();
+		}
 		if (m_SmokeSimulation)
 		{
 			if (m_ImguiSmokePanel.SceneGeneration != m_SceneGeneration)

@@ -85,6 +85,51 @@ float SampleShadow(float4 lightPos)
 	return ShadowMap.SampleCmpLevelZero(ShadowSampler, uv, projected.z - bias);
 }
 
+#define SNOW_DDX ddx
+#define SNOW_DDY ddy
+#define SNOW_FWIDTH fwidth
+float SnowHash(float3 P)
+{
+	P=P*0.1031-floor(P*0.1031);P+=dot(P,P.yzx+33.33);
+	float V=(P.x+P.y)*P.z;return V-floor(V);
+}
+float SnowNoise(float3 P)
+{
+	float3 I=floor(P),F=P-I;F=F*F*(3-2*F);
+	float A=SnowHash(I),B=SnowHash(I+float3(1,0,0)),C=SnowHash(I+float3(0,1,0)),D=SnowHash(I+float3(1,1,0));
+	float E=SnowHash(I+float3(0,0,1)),G=SnowHash(I+float3(1,0,1)),H=SnowHash(I+float3(0,1,1)),J=SnowHash(I+float3(1,1,1));
+	return ((A+(B-A)*F.x)*(1-F.y)+(C+(D-C)*F.x)*F.y)*(1-F.z)
+		+((E+(G-E)*F.x)*(1-F.y)+(H+(J-H)*F.x)*F.y)*F.z;
+}
+float3 ShadeSnowSand(float3 P,float3 N,float3 L,float3 V,float3 Light,float Shadow,float Ambient,float Snow)
+{
+	float Macro=SnowNoise(P*3.3),Grain=SnowNoise(P*72);
+	float Filter=1/(1+dot(SNOW_FWIDTH(P)*72,SNOW_FWIDTH(P)*72));
+	float Height=(Macro-0.5)*(0.006+0.016*Snow)+(Grain-0.5)*Filter*(0.002+0.001*Snow);
+	float3 DX=SNOW_DDX(P),DY=SNOW_DDY(P),R1=cross(DY,N),R2=cross(N,DX);
+	float Det=dot(DX,R1);
+	float3 Gradient=(SNOW_DDX(Height)*R1+SNOW_DDY(Height)*R2)*(Det<0 ? -1.0 : 1.0)/max(abs(Det),1.e-8);
+	N=normalize(N-Gradient);
+	float3 H=normalize(L+V);
+	float NL=max(dot(N,L),0.0),NV=max(dot(N,V),0.001),NH=max(dot(N,H),0.0),VH=max(dot(V,H),0.0);
+	float Roughness=0.86-0.32*Snow,Alpha=Roughness*Roughness,A2=Alpha*Alpha;
+	float Den=NH*NH*(A2-1)+1,D=A2/(3.14159265*Den*Den);
+	float K=(Roughness+1)*(Roughness+1)/8,G1=NV/(NV*(1-K)+K),G2=NL/(NL*(1-K)+K);
+	float Fresnel=0.04+0.96*pow(1-VH,5.0),Spec=D*G1*G2*Fresnel/(4*NV*max(NL,0.001));
+	float Texture=0.80+0.30*Macro+0.35*(Grain-0.5)*Filter;
+	float3 Sand=float3(0.64,0.46,0.25)*Texture,SnowColor=float3(0.78,0.85,0.94)*(0.86+0.18*Macro);
+	float3 Base=Sand*(1-Snow)+SnowColor*Snow;
+	float Sky=0.5+0.5*N.y;
+	float3 AmbientLight=(float3(0.25,0.23,0.20)*(1-Snow)+float3(0.15,0.22,0.32)*Snow)*(0.6+0.4*Sky)*(0.8+Ambient);
+	float3 Color=Base*(AmbientLight+Light*NL*Shadow*0.78)+Light*Spec*NL*Shadow;
+	// Broad forward scattering and filtered crystal glints give snow a porous surface.
+	float Wrap=clamp((dot(N,L)+0.35)/1.35,0.0,1.0);
+	Color+=Snow*float3(0.07,0.11,0.16)*Wrap*(0.3+0.7*Shadow);
+	float Glint=pow(clamp((Grain-0.7)*3.34,0.0,1.0),12.0)*pow(NH,90.0)*Filter;
+	Color+=Light*Glint*(0.12+0.65*Snow)*Shadow;
+	return pow(clamp(Color,float3(0,0,0),float3(1,1,1)),float3(0.4545,0.4545,0.4545));
+}
+
 float4 MainPS(VS_OUTPUT input) : SV_Target
 {
 	if (RenderParams.y > 0.5f)
@@ -105,6 +150,8 @@ float4 MainPS(VS_OUTPUT input) : SV_Target
 	float ndotl = saturate(dot(normal, toLight));
 	float specular = pow(saturate(dot(normal, halfVector)), 64.0f);
 	float shadow = SampleShadow(input.PosLight);
+
+	if (RenderParams.z > 0.5) return float4(ShadeSnowSand(input.PosWorld,normal,toLight,toEye,LightColor.rgb,shadow,LightDir.w,RenderParams.w),1);
 
 	float3 baseColor = MaterialColor.rgb;
 	float ambient = LightDir.w;

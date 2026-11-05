@@ -19,6 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Viewer\SnowDemo.cpp" />
+    <ClCompile Include="..\..\Viewer\SnowSurfaceBuilder.cpp" />
+    <ClInclude Include="..\..\Viewer\SnowSurfaceBuilder.h" />
     <ClInclude Include="..\..\Viewer\SolverPanel.h" />
     <ClCompile Include="..\..\Viewer\SolverPanel.cpp" />
     <ClCompile Include="..\..\Viewer\MeshRenderer.cpp" />

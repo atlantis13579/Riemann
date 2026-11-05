@@ -1,7 +1,7 @@
 #include "Test.h"
 #include "../Viewer/SceneWorld.h"
 #include "../Src/Collision/GeometryObject.h"
-#include "../Src/Deformation/XPBDSolver.h"
+#include "../Src/Cloth/XPBDSolver.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 
 using namespace Riemann;

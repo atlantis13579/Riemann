@@ -32,6 +32,7 @@
     <ClInclude Include="..\..\Renderer\ImguiRenderDX11.h" />
     <ClInclude Include="..\..\Renderer\MetalRenderer.h" />
     <ClInclude Include="..\..\Renderer\RiemannRenderer.h" />
+    <ClInclude Include="..\..\Renderer\ImguiInputQueue.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Renderer\MetalRenderer.cpp" />

@@ -221,16 +221,6 @@ namespace
 		return loaded;
 	}
 
-	void ExportVehicleCage(VehicleDeformation& vehicle, const char* name)
-	{
-		// Both snapshots use cage-local coordinates so rigid travel does not hide the dent.
-		Geometry* geometry = vehicle.GetRenderGeometry();
-		TriangleMesh* mesh = geometry ? geometry->GetShapeObj<TriangleMesh>() : nullptr;
-		const std::string path = TestOutputPath(name);
-		if (!mesh || !mesh->ExportObj(path.c_str()))
-			printf("Vehicle QA snapshot could not be written: %s\n", path.c_str());
-	}
-
 	float FrontDent(const VehicleDeformation& vehicle)
 	{
 		float dent = 0.0f;
@@ -264,15 +254,19 @@ void TestVehicleScene()
 	const float initialForwardSpeed = body->V.z;
 	const size_t objectCount = scene.GetObjects().size();
 	const uint32_t initialRevision = scene.GetRenderRevision();
-	EXPECT(initialForwardSpeed > 5.0f);
+	EXPECT(initialForwardSpeed >= 20.0f);
+	EXPECT(initialPosition.z <= -12.0f);
 	EXPECT_NEAR(1.0f / body->InvMass, 80.0f, 0.01f);
 	CheckVehicleRendering(scene, "crash_car", vehicle, 0.4f, 0.25f, 2.1f, 2.8f, -0.25f);
-	ExportVehicleCage(*vehicle, "vehicle_before.obj");
+	// The crash and approach remain visible from the camera side of the barrier.
+	EXPECT(scene.GetCamera().Eye.z < 1.4f);
 	int firstImpactFrame = -1, firstDamageFrame = -1;
 	float peakWallImpulse = 0.0f, peakDent = 0.0f, peakDisplacement = 0.0f;
 	for (int frame = 0; frame < 300; ++frame)
 	{
 		scene.Step(VehicleStep);
+		for (int i = 0; i < (int)vehicle->GetCage().GetTetrahedra().size(); ++i)
+			EXPECT(vehicle->GetCage().GetTetrahedronVolume(i) > 0.0f);
 		EXPECT(VehicleFinite(body->X) && VehicleFinite(body->V) && VehicleFinite(body->W));
 		EXPECT_NEAR(body->Q.SquareLength(), 1.0f, 1.0e-3f);
 		const PBDSolver* solver = scene.GetSimulation()->GetPositionSolver();
@@ -307,8 +301,8 @@ void TestVehicleScene()
 	EXPECT(firstImpactFrame >= 0 && firstImpactFrame < 120);
 	EXPECT(firstDamageFrame >= firstImpactFrame && firstDamageFrame < 180);
 	EXPECT(peakWallImpulse > 10.0f);
-	EXPECT(peakDent > 0.02f);
-	EXPECT(FrontDent(*vehicle) > 0.01f);
+	EXPECT(peakDent > 1.0f);
+	EXPECT(FrontDent(*vehicle) > 1.0f);
 	EXPECT(vehicle->GetMaxPlasticStrain() > 1.0e-4f);
 	EXPECT(std::abs(body->V.z) < initialForwardSpeed * 0.5f);
 	EXPECT(body->X.z > initialPosition.z + 1.0f);
@@ -316,7 +310,6 @@ void TestVehicleScene()
 	EXPECT(scene.GetRenderRevision() > initialRevision);
 	CheckVehicleRendering(scene, "crash_car", vehicle, 0.4f, 0.25f, 2.1f, 2.8f, -0.25f);
 
-	ExportVehicleCage(*vehicle, "vehicle_after.obj");
 	const Transform poseBeforeReset(body->X, body->Q);
 	const uint64_t beforeReset = vehicle->GetRevision();
 	const uint32_t sceneBeforeReset = scene.GetRenderRevision();

@@ -104,7 +104,9 @@ namespace Riemann
 	{
 		const int nx = m_Settings.Cells.x, ny = m_Settings.Cells.y, nz = m_Settings.Cells.z;
 		const int count = (nx + 1) * (ny + 1) * (nz + 1);
-		const int pinned = (nx - 1) * (ny - 1) * (nz - 1);
+		int pinned = 0;
+		for (int z = 1; z < nz; ++z)
+			if (std::fabs(2.0f * z / nz - 1.0f) <= 0.3f) pinned += (nx - 1) * (ny - 1);
 		const float inverseMass = (count - pinned) / m_Settings.ShellMass;
 		auto Index = [nx, ny](int x, int y, int z) { return x + (nx + 1) * (y + (ny + 1) * z); };
 		for (int z = 0; z <= nz; ++z)
@@ -119,7 +121,7 @@ namespace Riemann
 			// This vertical warp keeps the bottom fixed and preserves positive cell volume.
 			position.y += m_Settings.CabinHeight * profile * (float(y) / ny);
 			const int index = m_Cage.AddParticle(position, inverseMass);
-			if (x > 0 && x < nx && y > 0 && y < ny && z > 0 && z < nz)
+			if (x > 0 && x < nx && y > 0 && y < ny && std::fabs(2.0f * z / nz - 1.0f) <= 0.3f)
 				m_Cage.PinParticle(index, position);
 		}
 		for (int z = 0; z < nz; ++z)

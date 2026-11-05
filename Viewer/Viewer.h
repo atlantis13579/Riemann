@@ -12,6 +12,8 @@
 #include "../Src/CollisionPrimitive/Ray3.h"
 #include "SceneWorld.h"
 #include "SolverPanel.h"
+#include "../Src/Continuum/SnowSimulation.h"
+#include "../Src/Continuum/SandSimulation.h"
 
 namespace Riemann
 {
@@ -26,7 +28,6 @@ namespace Riemann
 
 	class WorldViewer
 	{
-		friend struct SmokeViewerValidationAccess;
 	public:
 		WorldViewer(RenderThread* renderThread, const std::string& sceneFile);
 		~WorldViewer();
@@ -47,6 +48,7 @@ namespace Riemann
 		void SceneRayMsg(int x, int y, int width, int height);
 		void SceneDragMsg(int x, int y, int width, int height);
 		void SceneDragEndMsg();
+		void MoveSnowCapsule(int x, int y, int width, int height);
 		void MouseWheel(int zDelta, bool ctrlButtonDown);
 		bool IsImguiPanelHovered(int x, int y, int width, int height) const;
 		void DrawImgui(int width, int height);
@@ -91,6 +93,12 @@ private:
 		void UpdateGasDemo(float deltaTime);
 		bool SynchronizeSmokeObstacles();
 		void SubmitGasDensity();
+		bool ActivateSnowDemo(bool Sand = false);
+		void DeactivateSnowDemo();
+		void UpdateSnowDemo(float dt);
+		void SubmitSnowSurface();
+		void ApplySnowCommands();
+		void UpdateSnowPanelState();
 		bool LoadCuttingPanel();
 		bool ApplyCuttingPanel();
 		bool LoadMeshSimplificationPanel();
@@ -189,6 +197,37 @@ private:
 		int m_GasRenderFrame;
 
 		mutable std::mutex m_ImguiMutex;
+		struct VehiclePanelState
+		{
+			bool Active = false, Paused = true, SlowMotion = true;
+			float Displacement = 0, PlasticStrain = 0;
+			unsigned int SceneGeneration = 0;
+		};
+		VehiclePanelState m_ImguiVehiclePanel;
+		bool m_VehiclePaused = true, m_VehicleSlowMotion = true;
+		float m_VehiclePendingTime = 0;
+		int m_PendingVehicleCommand = 0;
+		unsigned int m_PendingVehicleGeneration = 0;
+		void ApplyVehicleCommands();
+		struct SnowPanelState
+		{
+			bool Active = false, Paused = false, TimeLimited = false;
+			bool Available[5]{};
+			int Quality = 0, Backend = 0, Transfer = 2;
+			float Fraction = 1, Viscosity = 2, SolveMilliseconds = 0, SurfaceMilliseconds = 0;
+			size_t ParticleCount = 0;
+			unsigned int SceneGeneration = 0;
+			std::string Status;
+		};
+		void DrawSnowPanel(SnowPanelState State);
+		std::unique_ptr<SnowSimulation> m_SnowSimulation;
+		std::unique_ptr<SandSimulation> m_SandSimulation;
+		SnowQuality m_SnowQuality = SnowQuality::Realtime;
+		bool m_SnowPaused = false, m_SnowMeshReady = false;
+		float m_SnowRenderedFraction = -2, m_SnowSolveMilliseconds = 0, m_SnowSurfaceMilliseconds = 0;
+		std::string m_SnowStatus;
+		SnowPanelState m_ImguiSnowPanel, m_ImguiPendingSnowPanel;
+		bool m_ImguiPendingSnowChange = false, m_ImguiPendingSnowReset = false;
 		struct SmokePanelState
 		{
 			bool Active = false;

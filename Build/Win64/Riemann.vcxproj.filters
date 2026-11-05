@@ -1,12 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="..\..\Src\Continuum\SandBackendCompute.cpp" />
+    <ClInclude Include="..\..\Src\Continuum\SandGPUBackend.h" />
+    <ClInclude Include="..\..\Src\Continuum\SandKernels.h" />
+    <ClCompile Include="..\..\Src\Continuum\SandSimulation.cpp" />
+    <ClInclude Include="..\..\Src\Continuum\SandSimulation.h" />
+    <ClInclude Include="..\..\Src\Continuum\MPMContact.h" />
+    <ClInclude Include="..\..\Src\Continuum\MPMMath.h" />
+    <ClCompile Include="..\..\Src\Continuum\SnowGPUBackend.cpp" />
+    <ClInclude Include="..\..\Src\Continuum\SnowGPUBackend.h" />
+    <ClCompile Include="..\..\Src\Continuum\SnowSimulation.cpp" />
+    <ClInclude Include="..\..\Src\Continuum\SnowSimulation.h" />
     <ClInclude Include="..\..\Src\LinearSystem\GemmKernel.h" />
     <ClInclude Include="..\..\Src\LinearSystem\GemmCache.h" />
-    <ClCompile Include="..\..\Src\Deformation\PBDBackendComputeShader.cpp" />
-    <ClCompile Include="..\..\Src\Deformation\PBDBackend.cpp" />
-    <ClInclude Include="..\..\Src\Deformation\PBDBackendMath.h" />
-    <ClInclude Include="..\..\Src\Deformation\PBDBackend.h" />
+    <ClCompile Include="..\..\Src\Cloth\PBDBackendComputeShader.cpp" />
+    <ClCompile Include="..\..\Src\Cloth\PBDBackend.cpp" />
+    <ClInclude Include="..\..\Src\Cloth\PBDBackendMath.h" />
+    <ClInclude Include="..\..\Src\Cloth\PBDBackend.h" />
     <ClCompile Include="..\..\Src\Deformation\VehicleDeformation.cpp" />
     <ClInclude Include="..\..\Src\Deformation\VehicleDeformation.h" />
     <ClCompile Include="..\..\Src\Deformation\DeformableBodyRender.cpp" />
@@ -39,7 +50,7 @@
     <Filter Include="RigidBodyDynamics">
       <UniqueIdentifier>{b3ddd45e-c60e-36c4-6ec8-7b5efe5b8288}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Deformation">
+    <Filter Include="Cloth">
       <UniqueIdentifier>{7162f797-5b4e-4f5f-91f8-9312696e3f29}</UniqueIdentifier>
     </Filter>
     <Filter Include="Modules">
@@ -458,8 +469,8 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\CollidingContact.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Deformation\Cloth.h">
-      <Filter>Deformation</Filter>
+    <ClInclude Include="..\..\Src\Cloth\Cloth.h">
+      <Filter>Cloth</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\ContinuousCollisionDetection.h">
       <Filter>RigidBodyDynamics</Filter>
@@ -482,8 +493,8 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MassParameters.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Deformation\MassSpring.h">
-      <Filter>Deformation</Filter>
+    <ClInclude Include="..\..\Src\Cloth\MassSpring.h">
+      <Filter>Cloth</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\NarrowPhase.h">
       <Filter>RigidBodyDynamics</Filter>
@@ -491,8 +502,8 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Deformation\PBDSolver.h">
-      <Filter>Deformation</Filter>
+    <ClInclude Include="..\..\Src\Cloth\PBDSolver.h">
+      <Filter>Cloth</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Constraints.h">
       <Filter>RigidBodyDynamics</Filter>
@@ -548,11 +559,11 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Deformation\Rope.h">
-      <Filter>Deformation</Filter>
+    <ClInclude Include="..\..\Src\Cloth\Rope.h">
+      <Filter>Cloth</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Deformation\XPBDSolver.h">
-      <Filter>Deformation</Filter>
+    <ClInclude Include="..\..\Src\Cloth\XPBDSolver.h">
+      <Filter>Cloth</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Solver\NewtonRaphsonIteration.h">
       <Filter>Solver</Filter>
@@ -775,8 +786,8 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\CollidingContact.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Deformation\Cloth.cpp">
-      <Filter>Deformation</Filter>
+    <ClCompile Include="..\..\Src\Cloth\Cloth.cpp">
+      <Filter>Cloth</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\ContinuousCollisionDetection.cpp">
       <Filter>RigidBodyDynamics</Filter>
@@ -796,8 +807,8 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MassParameters.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Deformation\MassSpring.cpp">
-      <Filter>Deformation</Filter>
+    <ClCompile Include="..\..\Src\Cloth\MassSpring.cpp">
+      <Filter>Cloth</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\NarrowPhase.cpp">
       <Filter>RigidBodyDynamics</Filter>
@@ -805,8 +816,8 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Deformation\PBDSolver.cpp">
-      <Filter>Deformation</Filter>
+    <ClCompile Include="..\..\Src\Cloth\PBDSolver.cpp">
+      <Filter>Cloth</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Constraints.cpp">
       <Filter>RigidBodyDynamics</Filter>
@@ -832,11 +843,11 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBody.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Deformation\Rope.cpp">
-      <Filter>Deformation</Filter>
+    <ClCompile Include="..\..\Src\Cloth\Rope.cpp">
+      <Filter>Cloth</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Deformation\XPBDSolver.cpp">
-      <Filter>Deformation</Filter>
+    <ClCompile Include="..\..\Src\Cloth\XPBDSolver.cpp">
+      <Filter>Cloth</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Solver\NewtonRaphsonIteration.cpp">
       <Filter>Solver</Filter>

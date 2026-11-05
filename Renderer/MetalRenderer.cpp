@@ -1,4 +1,5 @@
 #include "MetalRenderer.h"
+#include "ImguiInputQueue.h"
 
 #if defined(__APPLE__)
 
@@ -212,6 +213,7 @@ namespace
 			Color = rhs.Color;
 			CastShadow = rhs.CastShadow;
 			Unlit = rhs.Unlit;
+			SnowFraction = rhs.SnowFraction;
 			OutlineEnabled = rhs.OutlineEnabled;
 			OutlineColor = rhs.OutlineColor;
 			OutlineThickness = rhs.OutlineThickness;
@@ -246,6 +248,7 @@ namespace
 		Vector4 Color = Vector4(0.72f, 0.76f, 0.82f, 1.0f);
 		bool CastShadow = true;
 		bool Unlit = false;
+		float SnowFraction = -1.0f;
 		bool OutlineEnabled = false;
 		Vector4 OutlineColor = Vector4(1.0f, 0.82f, 0.18f, 1.0f);
 		float OutlineThickness = 0.06f;
@@ -848,10 +851,7 @@ namespace Riemann
 		void UpdateImguiInput(const ImguiInputState& input)
 		{
 			std::lock_guard<std::mutex> lock(ImguiMutex);
-			ImguiInput.MouseX = input.MouseX;
-			ImguiInput.MouseY = input.MouseY;
-			ImguiInput.MouseButtons = input.MouseButtons;
-			ImguiScroll += input.MouseWheel;
+			ImguiInput.Push(input);
 		}
 
 		bool AddMesh(const RenderMeshDesc& meshDesc)
@@ -899,6 +899,7 @@ namespace Riemann
 			mesh.Color = meshDesc.Color;
 			mesh.CastShadow = meshDesc.CastShadow && meshDesc.Topology == RenderPrimitiveTopology::Triangles;
 			mesh.Unlit = meshDesc.Unlit;
+			mesh.SnowFraction = meshDesc.SnowFraction;
 
 			if (!meshDesc.Vertices.empty())
 			{
@@ -1115,7 +1116,7 @@ namespace Riemann
 			uniforms->OutlineColor = mesh.OutlineColor;
 			uniforms->RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f,
 				ShouldRenderUnlit(mesh, shadowPass, outlinePass, wireframePass) ? 1.0f : 0.0f,
-				0.0f, 0.0f);
+				mesh.SnowFraction >= 0 ? 1.0f : 0.0f, mesh.SnowFraction);
 		}
 
 		void DrawMeshPass(id<MTLRenderCommandEncoder> encoder, MetalMesh& mesh,
@@ -1536,9 +1537,7 @@ namespace Riemann
 				std::lock_guard<std::mutex> lock(ImguiMutex);
 				callback = ImguiCallback;
 				userData = ImguiUserData;
-				input = ImguiInput;
-				input.MouseWheel = ImguiScroll;
-				ImguiScroll = 0;
+				input = ImguiInput.Consume();
 			}
 
 			if (callback == nullptr)
@@ -1781,10 +1780,9 @@ namespace Riemann
 		std::vector<MetalMesh> Meshes;
 
 		std::mutex ImguiMutex;
-		ImguiInputState ImguiInput;
+		ImguiInputQueue ImguiInput;
 		ImguiDrawCallback ImguiCallback = nullptr;
 		void* ImguiUserData = nullptr;
-		int ImguiScroll = 0;
 		MetalImguiGlyph ImguiGlyphs[96];
 		int ImguiFontHeight = 16;
 	};

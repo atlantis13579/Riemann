@@ -398,6 +398,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			const bool imguiActive = g_ImguiMouseCapture || IsMouseOverImgui(g_MouseX, g_MouseY);
 			g_Viewer->MouseMsg(g_MouseX, g_MouseY, !imguiActive && (MK_RBUTTON & wParam) != 0);
+			if (!imguiActive && (MK_RBUTTON & wParam) == 0)
+			{
+				RECT rc = {};
+				GetClientRect(hWnd, &rc);
+				g_Viewer->MoveSnowCapsule(g_MouseX, g_MouseY, rc.right - rc.left, rc.bottom - rc.top);
+			}
 			if (!imguiActive && (MK_LBUTTON & wParam) != 0)
 			{
 				RECT rc = {};
@@ -492,7 +498,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 
 	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
+		return DefWindowProcW(hWnd, message, wParam, lParam);
 	}
 
 	return 0;

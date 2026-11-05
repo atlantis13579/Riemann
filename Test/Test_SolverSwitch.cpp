@@ -7,7 +7,7 @@
 
 #include "../Viewer/SceneWorld.h"
 #include "../Src/Collision/GeometryObject.h"
-#include "../Src/Deformation/Rope.h"
+#include "../Src/Cloth/Rope.h"
 #include "../Src/Deformation/VehicleDeformation.h"
 #include "../Src/RigidBodyDynamics/ForceField.h"
 #include "../Src/RigidBodyDynamics/LCPSolver.h"
@@ -337,8 +337,10 @@ namespace
 		EXPECT(scene.LoadFromFile(TestContentsPath() + "Scenes/19_vehicle_deformation.json", &error));
 		EXPECT(scene.GetVehicleCount() == 1);
 		if (scene.GetVehicleCount() != 1) return;
-		for (int frame = 0; frame < 35; ++frame) scene.Step(1.0f / 60.0f);
 		VehicleDeformation* vehicle = scene.GetVehicle(0);
+		// Wait for the longer approach to produce damage before exercising solver changes.
+		for (int frame = 0; frame < 120 && vehicle->GetMaxPlasticStrain() == 0.0f; ++frame)
+			scene.Step(1.0f / 60.0f);
 		PhysicsWorld* world = scene.GetSimulation();
 		RigidBody* chassis = vehicle->GetBody();
 		EXPECT(vehicle->GetMaxPlasticStrain() > 0.0f);

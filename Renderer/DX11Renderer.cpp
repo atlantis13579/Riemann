@@ -1,4 +1,5 @@
 #include "DX11Renderer.h"
+#include "ImguiInputQueue.h"
 
 #if defined(_WIN32)
 
@@ -142,6 +143,7 @@ namespace
 			BlendMode = rhs.BlendMode;
 			CastShadow = rhs.CastShadow;
 			Unlit = rhs.Unlit;
+			SnowFraction = rhs.SnowFraction;
 			OutlineEnabled = rhs.OutlineEnabled;
 			OutlineColor = rhs.OutlineColor;
 			OutlineThickness = rhs.OutlineThickness;
@@ -177,6 +179,7 @@ namespace
 		Riemann::RenderBlendMode BlendMode = Riemann::RenderBlendMode::Alpha;
 		bool CastShadow = true;
 		bool Unlit = false;
+		float SnowFraction = -1.0f;
 		bool OutlineEnabled = false;
 		Vector4 OutlineColor = Vector4(1.0f, 0.82f, 0.18f, 1.0f);
 		float OutlineThickness = 0.06f;
@@ -536,6 +539,7 @@ public:
 		mesh.BlendMode = meshDesc.BlendMode;
 		mesh.CastShadow = meshDesc.CastShadow && meshDesc.Topology == Riemann::RenderPrimitiveTopology::Triangles;
 		mesh.Unlit = meshDesc.Unlit;
+		mesh.SnowFraction = meshDesc.SnowFraction;
 
 		HRESULT hr = S_OK;
 
@@ -888,10 +892,7 @@ public:
 	void UpdateImguiInput(const Riemann::ImguiInputState& input) override
 	{
 		std::lock_guard<std::mutex> lock(m_ImguiMutex);
-		m_ImguiInput.MouseX = input.MouseX;
-		m_ImguiInput.MouseY = input.MouseY;
-		m_ImguiInput.MouseButtons = input.MouseButtons;
-		m_ImguiScroll += input.MouseWheel;
+		m_ImguiInput.Push(input);
 	}
 
 private:
@@ -1397,9 +1398,7 @@ private:
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			callback = m_ImguiCallback;
 			userData = m_ImguiUserData;
-			input = m_ImguiInput;
-			input.MouseWheel = m_ImguiScroll;
-			m_ImguiScroll = 0;
+			input = m_ImguiInput.Consume();
 		}
 
 		if (callback == nullptr)
@@ -1487,7 +1486,7 @@ private:
 		cb.OutlineColor = mesh.OutlineColor;
 		cb.RenderParams = Vector4(outlinePass ? mesh.OutlineThickness : 0.0f,
 			ShouldRenderUnlit(mesh, shadowPass, outlinePass, wireframePass) ? 1.0f : 0.0f,
-			0.0f, 0.0f);
+			mesh.SnowFraction >= 0 ? 1.0f : 0.0f, mesh.SnowFraction);
 
 		ID3D11Buffer* constantBuffer = wireframePass
 			? mesh.pWireframeConstantBuffer : mesh.pConstantBuffer;
@@ -1598,10 +1597,9 @@ private:
 
 	std::vector<DX11StaticMesh> m_AllMesh;
 	std::mutex m_ImguiMutex;
-	Riemann::ImguiInputState m_ImguiInput;
+	Riemann::ImguiInputQueue m_ImguiInput;
 	Riemann::ImguiDrawCallback m_ImguiCallback = nullptr;
 	void* m_ImguiUserData = nullptr;
-	int m_ImguiScroll = 0;
 	bool m_ImguiReady = false;
 	Riemann::RenderMode m_RenderMode = Riemann::RenderMode::Solid;
 };

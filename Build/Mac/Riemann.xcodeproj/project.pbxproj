@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1690FEEABCFFE57A2A85B6EF /* SandBackendCompute.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E0A1FCE03E93FB087D14A242 /* SandBackendCompute.cpp */; };
+		EAF8DA90E6153F27C6B3843F /* SandSimulation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ACD1A51959588F8188C76EA6 /* SandSimulation.cpp */; };
+		C164AD788867949CA2F6362F /* SnowGPUBackend.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 57A2318900E88CCE662B62F1 /* SnowGPUBackend.cpp */; };
+		342431A39133022B7AF82A8C /* SnowSimulation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D3FE18EF80175F321B986F0 /* SnowSimulation.cpp */; };
 		6A6AEEAD2D7C302A00692025 /* LinearMap.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A6AEEAB2D7C302A00692025 /* LinearMap.h */; };
 		6A6AEEB02D7C303300692025 /* Ref.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A6AEEAF2D7C303300692025 /* Ref.h */; };
 		6A6AEED22D7C305D00692025 /* AxisAlignedBox3.h in Headers */ = {isa = PBXBuildFile; fileRef = 6A6AEEB12D7C305D00692025 /* AxisAlignedBox3.h */; };
@@ -254,6 +258,17 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		E0A1FCE03E93FB087D14A242 /* SandBackendCompute.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SandBackendCompute.cpp; path = "../../Src/Continuum/SandBackendCompute.cpp"; sourceTree = SOURCE_ROOT; };
+		F5FCB36D3F481DD15F26005C /* SandGPUBackend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SandGPUBackend.h; path = "../../Src/Continuum/SandGPUBackend.h"; sourceTree = SOURCE_ROOT; };
+		DFDC864F661DA5073AB2CC27 /* SandKernels.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SandKernels.h; path = "../../Src/Continuum/SandKernels.h"; sourceTree = SOURCE_ROOT; };
+		ACD1A51959588F8188C76EA6 /* SandSimulation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SandSimulation.cpp; path = "../../Src/Continuum/SandSimulation.cpp"; sourceTree = SOURCE_ROOT; };
+		81137595E2B8C432D18D846E /* SandSimulation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SandSimulation.h; path = "../../Src/Continuum/SandSimulation.h"; sourceTree = SOURCE_ROOT; };
+		AE757760EADDA75646431B22 /* MPMContact.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MPMContact.h; path = "../../Src/Continuum/MPMContact.h"; sourceTree = SOURCE_ROOT; };
+		47A332A18CE00655C55661E8 /* MPMMath.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MPMMath.h; path = "../../Src/Continuum/MPMMath.h"; sourceTree = SOURCE_ROOT; };
+		57A2318900E88CCE662B62F1 /* SnowGPUBackend.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SnowGPUBackend.cpp; path = "../../Src/Continuum/SnowGPUBackend.cpp"; sourceTree = SOURCE_ROOT; };
+		81B14020603EB20D773A87FB /* SnowGPUBackend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SnowGPUBackend.h; path = "../../Src/Continuum/SnowGPUBackend.h"; sourceTree = SOURCE_ROOT; };
+		3D3FE18EF80175F321B986F0 /* SnowSimulation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = SnowSimulation.cpp; path = "../../Src/Continuum/SnowSimulation.cpp"; sourceTree = SOURCE_ROOT; };
+		A7CD92D1C9201D9ACDF3DCD2 /* SnowSimulation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SnowSimulation.h; path = "../../Src/Continuum/SnowSimulation.h"; sourceTree = SOURCE_ROOT; };
 		6A6AEEAB2D7C302A00692025 /* LinearMap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LinearMap.h; path = /Volumes/ext/src/Riemann/Src/Core/LinearMap.h; sourceTree = "<absolute>"; };
 		6A6AEEAF2D7C303300692025 /* Ref.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Ref.h; path = /Volumes/ext/src/Riemann/Src/Core/Ref.h; sourceTree = "<absolute>"; };
 		6A6AEEB12D7C305D00692025 /* AxisAlignedBox3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AxisAlignedBox3.h; path = /Volumes/ext/src/Riemann/Src/CollisionPrimitive/AxisAlignedBox3.h; sourceTree = "<absolute>"; };
@@ -494,12 +509,12 @@
 		54A6D6B51B2F751283D61D7E /* Frame3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Frame3.h; path = /Volumes/ext/src/Riemann/Src/Maths/Frame3.h; sourceTree = "<absolute>"; };
 		9B0B8826158508317D570B41 /* Index2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Index2.h; path = /Volumes/ext/src/Riemann/Src/Maths/Index2.h; sourceTree = "<absolute>"; };
 		914118228AEFC91B7345D04B /* Index3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Index3.h; path = /Volumes/ext/src/Riemann/Src/Maths/Index3.h; sourceTree = "<absolute>"; };
-		279D791074ECCE26B2DBBAB1 /* MassSpring.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MassSpring.cpp; path = /Volumes/ext/src/Riemann/Src/Deformation/MassSpring.cpp; sourceTree = "<absolute>"; };
-		F4E68592ED3A278A72934CBD /* MassSpring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MassSpring.h; path = /Volumes/ext/src/Riemann/Src/Deformation/MassSpring.h; sourceTree = "<absolute>"; };
-		A5AED4A2F4B5F1B9BD48525E /* PBDSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PBDSolver.cpp; path = /Volumes/ext/src/Riemann/Src/Deformation/PBDSolver.cpp; sourceTree = "<absolute>"; };
-		EB7093FFA1118085CB145FD9 /* PBDSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PBDSolver.h; path = /Volumes/ext/src/Riemann/Src/Deformation/PBDSolver.h; sourceTree = "<absolute>"; };
-		DF7143CAF0EA21E0A06BDDDD /* XPBDSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = XPBDSolver.cpp; path = /Volumes/ext/src/Riemann/Src/Deformation/XPBDSolver.cpp; sourceTree = "<absolute>"; };
-		B396F9D37D89544E366DF967 /* XPBDSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XPBDSolver.h; path = /Volumes/ext/src/Riemann/Src/Deformation/XPBDSolver.h; sourceTree = "<absolute>"; };
+		279D791074ECCE26B2DBBAB1 /* MassSpring.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MassSpring.cpp; path = /Volumes/ext/src/Riemann/Src/Cloth/MassSpring.cpp; sourceTree = "<absolute>"; };
+		F4E68592ED3A278A72934CBD /* MassSpring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MassSpring.h; path = /Volumes/ext/src/Riemann/Src/Cloth/MassSpring.h; sourceTree = "<absolute>"; };
+		A5AED4A2F4B5F1B9BD48525E /* PBDSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PBDSolver.cpp; path = /Volumes/ext/src/Riemann/Src/Cloth/PBDSolver.cpp; sourceTree = "<absolute>"; };
+		EB7093FFA1118085CB145FD9 /* PBDSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PBDSolver.h; path = /Volumes/ext/src/Riemann/Src/Cloth/PBDSolver.h; sourceTree = "<absolute>"; };
+		DF7143CAF0EA21E0A06BDDDD /* XPBDSolver.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = XPBDSolver.cpp; path = /Volumes/ext/src/Riemann/Src/Cloth/XPBDSolver.cpp; sourceTree = "<absolute>"; };
+		B396F9D37D89544E366DF967 /* XPBDSolver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = XPBDSolver.h; path = /Volumes/ext/src/Riemann/Src/Cloth/XPBDSolver.h; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -854,6 +869,17 @@
 		ADE742D82820A994007DEEB3 = {
 			isa = PBXGroup;
 			children = (
+				E0A1FCE03E93FB087D14A242 /* SandBackendCompute.cpp */,
+				F5FCB36D3F481DD15F26005C /* SandGPUBackend.h */,
+				DFDC864F661DA5073AB2CC27 /* SandKernels.h */,
+				ACD1A51959588F8188C76EA6 /* SandSimulation.cpp */,
+				81137595E2B8C432D18D846E /* SandSimulation.h */,
+				AE757760EADDA75646431B22 /* MPMContact.h */,
+				47A332A18CE00655C55661E8 /* MPMMath.h */,
+				57A2318900E88CCE662B62F1 /* SnowGPUBackend.cpp */,
+				81B14020603EB20D773A87FB /* SnowGPUBackend.h */,
+				3D3FE18EF80175F321B986F0 /* SnowSimulation.cpp */,
+				A7CD92D1C9201D9ACDF3DCD2 /* SnowSimulation.h */,
 				ADD23B882887606900A849BE /* Collision */,
 				ADD23B982887611200A849BE /* CollisionPrimitive */,
 				ADD23B962887610100A849BE /* Core */,
@@ -1115,6 +1141,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1690FEEABCFFE57A2A85B6EF /* SandBackendCompute.cpp in Sources */,
+				EAF8DA90E6153F27C6B3843F /* SandSimulation.cpp in Sources */,
+				C164AD788867949CA2F6362F /* SnowGPUBackend.cpp in Sources */,
+				342431A39133022B7AF82A8C /* SnowSimulation.cpp in Sources */,
 				6A51AA112E00000100AABBCC /* AABBPruner.cpp in Sources */,
 				ADD23BC42887614E00A849BE /* GeometryQuery.cpp in Sources */,
 				ADD23D1E288762F900A849BE /* DenseMatrix.cpp in Sources */,
