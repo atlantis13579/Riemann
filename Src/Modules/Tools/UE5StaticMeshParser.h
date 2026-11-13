@@ -42,14 +42,14 @@ namespace Riemann
 		UE5TriangleMeshData ComplexCollision;
 	};
 
-	// UE uses Z-up coordinates while Riemann uses Y-up coordinates. Swapping
+	// Input coordinates are Z-up while Riemann uses Y-up. Swapping
 	// Y/Z also changes handedness, so rotations and triangle winding require
 	// matching conversions rather than a position-only component swap.
 	Vector3 UE5ToRiemannVector(const Vector3& Value);
 	Quaternion UE5ToRiemannQuaternion(const Quaternion& Value);
 	void ConvertUE5TriangleMeshToRiemann(UE5TriangleMeshData* Mesh);
 
-	// Loads an uncooked UE5.4 StaticMesh package in Riemann Y-up coordinates.
-	// Distance units remain UE centimeters.
+	// Loads an uncooked StaticMesh package in Riemann Y-up coordinates.
+	// Distance units remain centimeters.
 	UE5StaticMeshData LoadUE5StaticMesh(const char* Filename);
 }

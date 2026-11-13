@@ -4,10 +4,12 @@
 #include <vector>
 
 #include "RigidBody.h"
+#include "ContactGeneration.h"
 
 namespace Riemann
 {
 	class Geometry;
+	class CollisionFilter;
 
 	struct BroadPhaseProxy
 	{
@@ -53,8 +55,10 @@ namespace Riemann
 	{
 	public:
 		virtual ~BroadPhase() {}
+		void SetCollisionFilter(CollisionFilter* Filter) { m_Filter = Filter; }
+		void SetContactGeneration(const ContactGenerationSettings& Settings, float Dt) { m_ContactSettings = Settings; m_Dt = Dt; }
 		void ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps);
-		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) = 0;
+		void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps);
 
 		static BroadPhase* Create_AllPairs();		// Slow, debug purpose
 		static BroadPhase* Create_Bruteforce();		// Slow, debug purpose
@@ -62,5 +66,13 @@ namespace Riemann
 		static BroadPhase* Create_ABP();
 		static BroadPhase* Create_MBP();
 		static BroadPhase* Create_DynamicAABB();
+	protected:
+		virtual void ProduceOverlapsImpl(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) = 0;
+		CollisionFilter* m_Filter = nullptr;
+	private:
+		ContactGenerationSettings m_ContactSettings;
+		float m_Dt = 0.0f;
+		std::vector<GeometryWorldState> m_ExpandedStates;
+		std::vector<const GeometryWorldState*> m_ExpandedPointers;
 	};
 }

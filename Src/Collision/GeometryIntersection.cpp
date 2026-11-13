@@ -2,7 +2,9 @@
 #include "GeometryObject.h"
 #include "GeometryIntersection.h"
 #include "GeometryDifference.h"
+#include "../CollisionPrimitive/DistanceFieldShape.h"
 #include "EPAPenetration.h"
+#include <limits>
 
 #include "../Maths/Transform.h"
 #include "../CollisionPrimitive/AxisAlignedBox3.h"
@@ -204,8 +206,44 @@ namespace Riemann
 	template <class T>
 	bool	SweepTBox(const void* Obj1, const void* Obj2, const Transform* t1, const Transform* t2, const Vector3& Dir, Vector3* p, Vector3* n, float* t)
 	{
-        // TODO
-        return false;
+		// Conservative advancement: the closest Minkowski point defines a separating
+		// plane. Advance by distance / closing speed, then recompute the plane. Pure
+		// translation keeps each advance conservative, including rotated box targets.
+		const T* Moving = static_cast<const T*>(Obj1);
+		const AxisAlignedBox3* Target = static_cast<const AxisAlignedBox3*>(Obj2);
+		const Vector3 Direction = t1->LocalToWorldDirection(Dir);
+		const float ClosingTolerance = std::numeric_limits<float>::epsilon() * Direction.Length();
+		float Time = 0.0f;
+		Vector3 Normal = -Direction.SafeUnit();
+		for (int Iteration = 0; Iteration < GJK_MAX_ITERATIONS; ++Iteration)
+		{
+			Transform Pose = *t1;
+			Pose.pos += Direction * Time;
+			TransformedMinkowskiSum<AxisAlignedBox3, T> Difference(Target, *t2, Moving, Pose);
+			GJKIntersection Distance;
+			const GJK_status Status = Distance.Solve(&Difference);
+			if (Status == GJK_status::Intersect || (Status == GJK_status::NotIntersect && Distance.distance <= GJK_MIN_DISTANCE))
+			{
+				if (Normal.IsZero()) Normal = Vector3::UnitY();
+				const Vector3 Support = Pose.LocalToWorld(Moving->GetSupport(Pose.WorldToLocalDirection(-Normal)));
+				Vector3 Point = t2->WorldToLocal(Support);
+				for (int Axis = 0; Axis < 3; ++Axis)
+					Point[Axis] = std::max(Target->Min[Axis], std::min(Point[Axis], Target->Max[Axis]));
+				if (p) *p = t1->WorldToLocal(t2->LocalToWorld(Point));
+				if (n) *n = t1->WorldToLocalDirection(Normal);
+				if (t) *t = Time;
+				return true;
+			}
+			if (Status != GJK_status::NotIntersect || !std::isfinite(Distance.distance)) return false;
+			const Vector3 Separation = Distance.closest.SafeUnit();
+			const float ClosingSpeed = Direction.Dot(Separation);
+			if (ClosingSpeed <= ClosingTolerance) return false;
+			Normal = -Separation;
+			const float NextTime = Time + Distance.distance / ClosingSpeed;
+			if (!std::isfinite(NextTime) || NextTime <= Time) return false;
+			Time = NextTime;
+		}
+		return false;
 	}
 
 	template <class T>
@@ -216,8 +254,20 @@ namespace Riemann
 		Vector3 OriginNew = trans.Local1ToLocal2(plane->GetOrigin());
 		Vector3 NormalNew = trans.Local1ToLocal2Direction(plane->Normal);
 		const T* obj = static_cast<const T*>(Obj1);
-		Plane3 NewPlane(NormalNew, OriginNew);
-		return obj->SweepPlane(Dir, NewPlane.Normal, NewPlane.D, p, n, t);
+		// A plane is the boundary of a solid half-space. The first support point
+		// is chosen along its normal, independently of the sweep direction.
+		// Choosing support(Dir) underestimates an oblique capsule's radius.
+		const float ParallelTolerance = 1.0e-7f;
+		NormalNew.SafeNormalize();
+		const Vector3 Support = obj->GetSupport(-NormalNew);
+		const float Separation = (Support - OriginNew).Dot(NormalNew);
+		const float ClosingSpeed = -Dir.Dot(NormalNew);
+		if (Separation > 0.0f && ClosingSpeed <= ParallelTolerance) return false;
+		const float Distance = Separation <= 0.0f ? 0.0f : Separation / ClosingSpeed;
+		if (t) *t = Distance;
+		if (n) *n = NormalNew;
+		if (p) *p = Support + Dir * Distance - NormalNew * std::min(Separation, 0.0f);
+		return true;
 	}
 
 	template <class T>
@@ -385,6 +435,7 @@ namespace Riemann
 		REG_RAYCAST_FUNC(PrimitiveType::HEIGHTFIELD, HeightField3)
 		REG_RAYCAST_FUNC(PrimitiveType::CONVEX_MESH, ConvexMesh)
 		REG_RAYCAST_FUNC(PrimitiveType::TRIANGLE_MESH, TriangleMesh)
+		REG_RAYCAST_FUNC(PrimitiveType::DISTANCE_FIELD, DistanceFieldShape)
 
 		REG_INTERSECT_FUNC(PrimitiveType::BOX, PrimitiveType::BOX, IntersectBoxBox);
 		REG_INTERSECT_FUNC(PrimitiveType::BOX, PrimitiveType::PLANE, IntersectBoxPlane);

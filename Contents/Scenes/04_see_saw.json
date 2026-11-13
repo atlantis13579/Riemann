@@ -1,7 +1,8 @@
 {
   "name": "See Saw",
   "physics": {
-    "gravity": [0.0, -9.8, 0.0]
+    "gravity": [0.0, -9.8, 0.0],
+    "ccdContinuation": { "enabled": false, "maxPasses": 8, "impactIterations": 12 }
   },
   "camera": {
     "center": [2.5, 2.0, 0.0],
@@ -46,6 +47,8 @@
     },
     {
       "id": "ball",
+      "enableCCD": true,
+      "restitution": 0.7,
       "type": "sphere",
       "body": "dynamic",
       "position": [-1.0, 4.0, 0.0],

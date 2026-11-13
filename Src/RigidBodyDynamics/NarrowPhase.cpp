@@ -1,12 +1,15 @@
 
 #include "NarrowPhase.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include "CollidingContact.h"
 #include "RigidBody.h"
 #include "../Core/BatchList.h"
 #include "../Geometry/Polygon3.h"
 #include "../Collision/GeometryObject.h"
+#include "../Collision/DistanceFieldCollision.h"
+#include "../CollisionPrimitive/DistanceFieldShape.h"
 #include "../Collision/GeometryDifference.h"
 #include "../Collision/EPAPenetration.h"
 #include "../CollisionPrimitive/AxisAlignedBox3.h"
@@ -75,19 +78,18 @@ namespace Riemann
 		return State.Geom ? Position - State.Geom->GetPosition() : Position;
 	}
 
-	static bool ConstructSupportFace(const GeometryWorldState& StateA, const GeometryWorldState& StateB, const Vector3& penetration_normal, SupportFace& Face)
+	static bool ConstructSupportFace(const GeometryWorldState& StateA, const GeometryWorldState& StateB, const Vector3& penetration_normal, Vector3* Face, int& FaceCount, float ClipTolerance)
 	{
 		SupportFace FaceA, FaceB;
 		GetGeometrySupportFace(StateA, -penetration_normal, FaceA);
 		GetGeometrySupportFace(StateB, penetration_normal, FaceB);
 
-		const float mSpeculativeContactDistance = 0.02f;
-		bool succ = ClipPolygonAgainPolygon3D(FaceA.data(), FaceA.size(), FaceB.data(), FaceB.size(), penetration_normal, mSpeculativeContactDistance, Face.data(), Face.GetSizeData(), nullptr, nullptr);
+		bool succ = ClipPolygonAgainPolygon3D(FaceA.data(), FaceA.size(), FaceB.data(), FaceB.size(), penetration_normal, ClipTolerance, Face, &FaceCount, nullptr, nullptr);
 		return succ;
 	}
 
 
-	static bool PenetrationTest(const GeometryWorldState& State1, const GeometryWorldState& State2, EPAPenetration& epa)
+	static bool PenetrationTest(const GeometryWorldState& State1, const GeometryWorldState& State2, EPAPenetration& epa, float Scale, bool NormalizeSupport)
 	{
 		if (IsConcaveGeometry(State1.Geom) || IsConcaveGeometry(State2.Geom))
 		{
@@ -114,8 +116,22 @@ namespace Riemann
 		TransformedMinkowskiSum<Geometry, Geometry> shape(
 			State1.Geom, State1.BodyToWorld,
 			State2.Geom, State2.BodyToWorld);
+		// Normalize the Minkowski difference so the legacy GJK/EPA convergence
+		// constants represent relative error for explicitly scaled contacts.
+		class NormalizedShape : public GjkShape
+		{
+		public:
+			NormalizedShape(const GjkShape& Shape, float Scale, bool NormalizeSupport)
+				: m_Shape(Shape), m_Scale(Scale), m_NormalizeSupport(NormalizeSupport) {}
+			Vector3 Center() const override { return m_Shape.Center() / m_Scale; }
+			Vector3 Support(const Vector3& Direction) const override { return m_Shape.Support(m_NormalizeSupport ? Direction.SafeUnit() : Direction) / m_Scale; }
+		private:
+			const GjkShape& m_Shape;
+			float m_Scale;
+			bool m_NormalizeSupport;
+		} Normalized(shape, Scale, NormalizeSupport);
 		GJKIntersection gjk;
-		GJK_status gjk_status = gjk.Solve(&shape);
+		GJK_status gjk_status = gjk.Solve(&Normalized);
 		if (gjk_status != GJK_status::Intersect)
 		{
 			return false;
@@ -127,6 +143,7 @@ namespace Riemann
 			return false;
 		}
 
+		epa.penetration_depth *= Scale;
 		return true;
 	}
 
@@ -321,7 +338,7 @@ namespace Riemann
 		return true;
 	}
 
-	static void ConstructManifols(int indexA, int indexB, const GeometryWorldState& StateA, const GeometryWorldState& StateB, EPAPenetration& epa, ContactManifold* manifold)
+	static void ConstructManifols(int indexA, int indexB, const GeometryWorldState& StateA, const GeometryWorldState& StateB, EPAPenetration& epa, ContactManifold* manifold, float ClipTolerance, bool NormalizeSupport)
 	{
 		manifold->Reset();
 
@@ -335,26 +352,27 @@ namespace Riemann
 		{
 			for (int i = 0; i < epa.result.dimension; ++i)
 			{
-				Vector3 pi = GetGeometrySupport(StateA, epa.result.v[i].dir) * epa.result.w[i];
+				Vector3 pi = GetGeometrySupport(StateA, NormalizeSupport ? epa.result.v[i].dir.SafeUnit() : epa.result.v[i].dir) * epa.result.w[i];
 				w0 = w0 + pi;
 			}
 		}
 
 		const bool UseContactFace = true;
-		SupportFace ContactFace;
+		std::array<Vector3, 2 * MAX_FACE_POINTS> ContactFace;
+		int ContactFaceCount = 0;
 		bool bHasContactFace = false;
 		if (UseContactFace)
 		{
-			bool succ = ConstructSupportFace(StateA, StateB, epa.penetration_normal, ContactFace);
+			bool succ = ConstructSupportFace(StateA, StateB, epa.penetration_normal, ContactFace.data(), ContactFaceCount, ClipTolerance);
 			if (!succ)
 			{
-				succ = ConstructSupportFace(StateB, StateA, -epa.penetration_normal, ContactFace);
+				succ = ConstructSupportFace(StateB, StateA, -epa.penetration_normal, ContactFace.data(), ContactFaceCount, ClipTolerance);
 			}
-			bHasContactFace = succ && ContactFace.size() > 0;
+			bHasContactFace = succ && ContactFaceCount > 0;
 		}
 
 		const int FirstContactIndex = bHasContactFace ? 0 : -1;
-		for (int i = FirstContactIndex; i < ContactFace.size(); ++i)
+		for (int i = FirstContactIndex; i < ContactFaceCount; ++i)
 		{
 			Vector3 pa = i == -1 ? w0 : ContactFace[i];
 			Contact contact;
@@ -372,66 +390,146 @@ namespace Riemann
 	}
 
 
-	class NarrowPhase_GJKEPA : public NarrowPhase
+	static bool GenerateContactManifold(int IndexA, int IndexB, const GeometryWorldState& A,
+		const GeometryWorldState& B, ContactManifold* Manifold, const ContactGenerationSettings& Settings)
+	{
+		Manifold->Reset();
+		Manifold->indexA = IndexA;
+		Manifold->indexB = IndexB;
+		EPAPenetration EPA;
+		const bool Extended = ContactGeneration::UsesOffsets(A, B, Settings);
+		const float Scale = Extended ? ContactGeneration::PairScale(A, B, Settings) : 1.0f;
+		const PrimitiveType TypeA = A.Geom->GetShapeType(), TypeB = B.Geom->GetShapeType();
+		if ((TypeA == PrimitiveType::SPHERE && TypeB == PrimitiveType::PLANE)
+			|| (TypeB == PrimitiveType::SPHERE && TypeA == PrimitiveType::PLANE))
+			ConstructSpherePlaneManifold(IndexA, IndexB, A, B, Manifold);
+		else if (IsConcaveGeometry(A.Geom) || IsConcaveGeometry(B.Geom))
+			ConstructConcaveManifold(IndexA, IndexB, A, B, Manifold);
+		else if (PenetrationTest(A, B, EPA, Scale, Extended))
+			ConstructManifols(IndexA, IndexB, A, B, EPA, Manifold, Settings.FaceClipSquaredDistance * Settings.LengthScale * Settings.LengthScale, Extended);
+		for (int Index = 0; Index < Manifold->NumContactPointCount; ++Index)
+		{
+			Contact& Point = Manifold->ContactPoints[Index];
+			Point.FeatureA = ContactGeneration::Feature(A, Point.PositionWorldA, Settings);
+			Point.FeatureB = ContactGeneration::Feature(B, Point.PositionWorldB, Settings);
+		}
+		return Manifold->NumContactPointCount > 0;
+	}
+
+	class NarrowPhase_Contacts : public NarrowPhase
 	{
 	public:
-		NarrowPhase_GJKEPA()
+		NarrowPhase_Contacts(bool Persistent, const ContactPersistenceSettings& Settings, const MeshContactSettings& MeshSettings)
+			: m_Persistent(Persistent), m_Cache(Settings), m_Mesh(MeshSettings)
 		{
-			m_ManifoldPool.init(1, 256);
+			const int InitialBatches = 1, ManifoldsPerBatch = 256;
+			m_ManifoldPool.init(InitialBatches, ManifoldsPerBatch);
 		}
-		virtual ~NarrowPhase_GJKEPA()
+		void CollisionDetection(GeometryWorldStateSpan States, const std::vector<OverlapPair>& Overlaps,
+			std::vector<ContactManifold*>* Manifolds) override
 		{
-
-		}
-
-		virtual void CollisionDetection(GeometryWorldStateSpan states,
-			const std::vector<OverlapPair>& overlaps,
-			std::vector<ContactManifold*>* manifolds) override final
-		{
-			m_ManifoldPool.clear();
-
-			manifolds->clear();
-			for (size_t i = 0; i < overlaps.size(); ++i)
+			m_ManifoldPool.clear(); Manifolds->clear();
+			for (const OverlapPair& Pair : Overlaps)
 			{
-				const GeometryWorldState& state1 = states[overlaps[i].index1];
-				const GeometryWorldState& state2 = states[overlaps[i].index2];
-				if (state1.Geom == nullptr || state2.Geom == nullptr)
+				const GeometryWorldState& A = States[Pair.index1];
+				const GeometryWorldState& B = States[Pair.index2];
+				if (!A.Geom || !B.Geom) continue;
+				std::vector<ContactManifold> Patches;
+				const std::vector<uint32_t> CachedIds = m_Persistent ? m_Cache.GetPatchIds(A, B) : std::vector<uint32_t>();
+				// Field patches regenerate their geometry while retaining feature/impulse matching.
+				bool Refreshed = !CachedIds.empty() && !m_ContactSettings.SpeculativeContacts && !DistanceFieldCollision::HasField(A.Geom, B.Geom);
+				for (uint32_t Id : CachedIds)
 				{
-					continue;
+					if (!Refreshed) break;
+					Patches.emplace_back();
+					ContactManifold& Patch = Patches.back();
+					Patch.indexA = Pair.index1; Patch.indexB = Pair.index2; Patch.PatchId = Id;
+					if (!m_Cache.Refresh(A, B, &Patch)) { Refreshed = false; break; }
 				}
-
-				EPAPenetration epa;
-				const PrimitiveType type1 = state1.Geom->GetShapeType(), type2 = state2.Geom->GetShapeType();
-				if ((type1 == PrimitiveType::SPHERE && type2 == PrimitiveType::PLANE)
-					|| (type2 == PrimitiveType::SPHERE && type1 == PrimitiveType::PLANE))
+				if (!Refreshed)
 				{
-					ContactManifold* manifold = m_ManifoldPool.allocate();
-					if (ConstructSpherePlaneManifold(overlaps[i].index1, overlaps[i].index2, state1, state2, manifold))
+					Patches.clear();
+					// Offsets and speculative gaps require per-triangle distances even when
+					// the legacy discrete mesh route is selected for ordinary contacts.
+					const bool Extended = ContactGeneration::UsesOffsets(A, B, m_ContactSettings);
+					if (DistanceFieldCollision::HasField(A.Geom, B.Geom) && (IsConcaveGeometry(A.Geom) || IsConcaveGeometry(B.Geom)))
+						m_Mesh.Generate(Pair.index1, Pair.index2, A, B, Patches,
+							ContactGeneration::GenerationDistance(A, B, m_ContactSettings, m_Dt),
+							ContactGeneration::Tolerance(A, B, m_ContactSettings));
+					else if (DistanceFieldCollision::HasField(A.Geom, B.Geom))
 					{
-						manifolds->push_back(manifold);
+						std::vector<DistanceFieldContact> Candidates;
+						DistanceFieldCollision::Generate(A.Geom, A.ShapeToWorld, B.Geom, B.ShapeToWorld,
+							ContactGeneration::GenerationDistance(A, B, m_ContactSettings, m_Dt), Candidates);
+						const auto* Field = A.Geom->GetShapeObj<DistanceFieldShape>();
+						if (!Field) Field = B.Geom->GetShapeObj<DistanceFieldShape>();
+						const float PatchNormalCosine = Field->GetSettings().PatchNormalCosine;
+						const float DepthTolerance = Field->GetField().GetCellSize() * Field->GetSettings().ManifoldDepthToleranceCells;
+						std::vector<std::pair<Vector3, float>> Depths;
+						for (const auto& Candidate : Candidates)
+						{
+							auto Existing = std::find_if(Depths.begin(), Depths.end(), [&](const auto& Entry) { return Entry.first.Dot(Candidate.Normal) >= PatchNormalCosine; });
+							if (Existing == Depths.end()) Depths.push_back({ Candidate.Normal, Candidate.Separation });
+							else Existing->second = std::min(Existing->second, Candidate.Separation);
+						}
+						for (const auto& Candidate : Candidates)
+						{
+							// Preserve the deepest supporting footprint. Distant positive-gap
+							// samples must not displace active rows merely to widen the patch.
+							bool Shallow = false;
+							for (const auto& Entry : Depths) if (Entry.first.Dot(Candidate.Normal) >= PatchNormalCosine && Candidate.Separation > Entry.second + DepthTolerance) { Shallow = true; break; }
+							if (Shallow) continue;
+							Contact Point; Point.PositionWorldA = Candidate.PointA; Point.PositionWorldB = Candidate.PointB;
+							Point.Normal = Candidate.Normal; Point.PenetrationDepth = -Candidate.Separation;
+							Point.PositionLocalA = GetContactRelativePosition(A, Point.PositionWorldA);
+							Point.PositionLocalB = GetContactRelativePosition(B, Point.PositionWorldB);
+							Point.FeatureA = Candidate.FeatureA; Point.FeatureB = Candidate.FeatureB; BuildContactBasis(&Point);
+							ContactManifold* Patch = nullptr;
+							for (auto& Existing : Patches) if (Existing.ContactPoints[0].Normal.Dot(Point.Normal) >= PatchNormalCosine) { Patch = &Existing; break; }
+							if (!Patch) { Patches.emplace_back(); Patch = &Patches.back(); Patch->PatchId = (uint32_t)Patches.size(); }
+							Patch->AddNewContact(Pair.index1, Pair.index2, Point);
+						}
 					}
-				}
-				else if (IsConcaveGeometry(state1.Geom) || IsConcaveGeometry(state2.Geom))
-				{
-					ContactManifold* manifold = m_ManifoldPool.allocate();
-					if (ConstructConcaveManifold(overlaps[i].index1, overlaps[i].index2, state1, state2, manifold))
+					else if ((m_Mesh.IsEnabled() || Extended) && (IsConcaveGeometry(A.Geom) || IsConcaveGeometry(B.Geom)))
+						m_Mesh.Generate(Pair.index1, Pair.index2, A, B, Patches,
+							ContactGeneration::GenerationDistance(A, B, m_ContactSettings, m_Dt),
+							Extended ? ContactGeneration::Tolerance(A, B, m_ContactSettings) : 0.0f);
+					else
 					{
-						manifolds->push_back(manifold);
+						ContactManifold Patch;
+						bool SeparationKnown;
+						if (ContactGeneration::GenerateSeparated(Pair.index1, Pair.index2, A, B, m_ContactSettings, m_Dt, Patch, SeparationKnown)
+							|| (!SeparationKnown && GenerateContactManifold(Pair.index1, Pair.index2, A, B, &Patch, m_ContactSettings))) Patches.push_back(Patch);
 					}
+					for (ContactManifold& Patch : Patches) ContactGeneration::ApplyOffsets(A, B, m_ContactSettings, Patch);
+					if (m_Persistent)
+						for (ContactManifold& Patch : Patches) m_Cache.Match(A, B, &Patch, false);
 				}
-				else if (PenetrationTest(state1, state2, epa))
+				std::vector<uint32_t> PatchIds;
+				for (ContactManifold& Patch : Patches)
 				{
-					ContactManifold* manifold = m_ManifoldPool.allocate();
-					ConstructManifols(overlaps[i].index1, overlaps[i].index2, state1, state2, epa, manifold);
-					manifolds->push_back(manifold);
+					if (!Patch.NumContactPointCount) continue;
+					PatchIds.push_back(Patch.PatchId);
+					if (m_Persistent) m_Cache.Store(A, B, Patch, 0.0f, !Refreshed);
+					ContactManifold* Output = m_ManifoldPool.allocate(); *Output = Patch;
+					Manifolds->push_back(Output);
 				}
+				if (m_Persistent) m_Cache.RetainPatches(A, B, PatchIds);
 			}
-
-			return;
 		}
-
+		void BeginFrame(uint64_t Frame) override { m_Cache.BeginFrame(Frame); }
+		void ResetState() override { m_Cache.Reset(); m_Mesh.Reset(); }
+		void Invalidate(const Geometry* Shape) override { m_Cache.Invalidate(Shape); m_Mesh.Invalidate(Shape); }
+		size_t GetCachedPairCount() const override { return m_Cache.GetPairCount(); }
+		void SetTriangleContactsEnabled(bool Enabled) override { m_Mesh.SetEnabled(Enabled); m_Cache.Reset(); }
+		void SetContactGeneration(const ContactGenerationSettings& Settings, float Dt) override { m_ContactSettings = Settings; m_Dt = Dt; }
 	private:
-		BatchList<ContactManifold>	m_ManifoldPool;
+		ContactGenerationSettings m_ContactSettings;
+		float m_Dt = 0.0f;
+		bool m_Persistent;
+		BatchList<ContactManifold> m_ManifoldPool;
+		ContactManifoldManager m_Cache;
+		MeshContactGenerator m_Mesh;
 	};
 
 	class NarrowPhase_PenetrateTable : public NarrowPhase
@@ -475,30 +573,9 @@ namespace Riemann
 		}
 	};
 
-	class NarrowPhase_PersistentContactManifold : public NarrowPhase
+	NarrowPhase* NarrowPhase::Create_GJKEPA(const MeshContactSettings& MeshSettings)
 	{
-	public:
-		NarrowPhase_PersistentContactManifold()
-		{
-		}
-		virtual ~NarrowPhase_PersistentContactManifold()
-		{
-		}
-
-		virtual void CollisionDetection(GeometryWorldStateSpan states,
-			const std::vector<OverlapPair>& overlaps,
-			std::vector<ContactManifold*>* manifolds) override final
-		{
-			return;
-		}
-
-	private:
-		BatchList<ContactManifold>	m_ManifoldPool;
-	};
-
-	NarrowPhase* NarrowPhase::Create_GJKEPA()
-	{
-		return new NarrowPhase_GJKEPA();
+		return new NarrowPhase_Contacts(false, ContactPersistenceSettings(), MeshSettings);
 	}
 
 	NarrowPhase* NarrowPhase::Create_SAT()
@@ -506,8 +583,8 @@ namespace Riemann
 		return new NarrowPhase_SAT();
 	}
 
-	NarrowPhase* NarrowPhase::Create_PCM()
+	NarrowPhase* NarrowPhase::Create_PCM(const ContactPersistenceSettings& Settings, const MeshContactSettings& MeshSettings)
 	{
-		return new NarrowPhase_PersistentContactManifold();
+		return new NarrowPhase_Contacts(true, Settings, MeshSettings);
 	}
 }

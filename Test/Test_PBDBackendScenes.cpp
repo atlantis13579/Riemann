@@ -6,9 +6,9 @@
 
 #include "../Viewer/SceneWorld.h"
 #include "../Src/Collision/GeometryObject.h"
-#include "../Src/Cloth/PBDBackend.h"
-#include "../Src/Deformation/VehicleDeformation.h"
-#include "../Src/Cloth/XPBDSolver.h"
+#include "../Src/Solver/PBDBackend.h"
+#include "../Src/Modules/Vehicle/VehicleDeformation.h"
+#include "../Src/Solver/XPBDSolver.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 
 using namespace Riemann;

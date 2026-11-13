@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <map>
@@ -11,9 +12,299 @@
 #include "ConnectionGraph.h"
 #include "DestructionCluster.h"
 #include "../Core/BitSet.h"
+#include "../Collision/GeometryAggregate.h"
+#include "../Collision/GeometryObject.h"
 #include "../Maths/Box3.h"
+#include "../Maths/Transform.h"
 #include "../Maths/Vector3.h"
 #include "../RigidBodyDynamics/RigidBody.h"
+
+namespace Riemann
+{
+	class DestructionSet;
+	struct DestructionAssetSettings
+	{
+		float RelativeGeometryTolerance = 1e-5f;
+		float MinimumLength = 1e-6f;
+		float QuaternionTolerance = 1e-4f;
+		bool IsValid() const;
+	};
+	struct DestructionAssetChunk
+	{
+		std::string Name;
+		Box3 Bounds = Box3::Empty();
+		Vector3 Centroid = Vector3::Zero();
+		float Volume = 0, Mass = 0, Density = 0, CollapseStrength = 0;
+		bool IsStatic = false;
+	};
+	struct DestructionAssetStats
+	{
+		size_t BondCount = 0, HierarchyNodes = 0, ReorientedFaces = 0;
+		double TotalMass = 0, TotalVolume = 0;
+		Box3 Bounds = Box3::Empty();
+		uint64_t Fingerprint = 0;
+	};
+	class DestructionAsset
+	{
+	public:
+		static DestructionAsset Capture(const DestructionSet& Source, const DestructionAssetSettings& Settings = {});
+		bool IsValid() const { return m_Data != nullptr; }
+		const std::vector<DestructionAssetChunk>& GetChunks() const;
+		const DestructionAssetStats& GetStats() const;
+	private:
+		friend class DestructionSet;
+		struct Storage;
+		std::shared_ptr<const Storage> m_Data;
+		const Storage& Data() const;
+	};
+}
+
+
+namespace Riemann
+{
+	class DestructionSet;
+	class DestructionCluster;
+	struct PhysicsContactPoint;
+	enum class DestructionEventKind : uint8_t
+	{
+		Contact, BondBroken, HierarchyBroken, ChunkReleased, ChunkSmashed, ClusterChanged, Count
+	};
+	enum class DestructionEventCause : uint8_t
+	{
+		GraphEdit, Command, Momentum, Partition, Stress, LegacyCommand, Unsupported, Contact, Field
+	};
+	struct DestructionEventSettings
+	{
+		static constexpr uint32_t AllKinds = (1u << (uint32_t)DestructionEventKind::Count) - 1;
+		bool Enabled = false;
+		uint32_t KindMask = AllKinds;
+		size_t MaximumQueuedEvents = 2048;
+		float MinimumContactImpulse = 0.1f;
+		bool IsValid() const;
+	};
+	struct DestructionEventChunk
+	{
+		int ChunkIndex = -1;
+		uint32_t ClusterId = 0;
+		Transform Pose = Transform::Identity();
+		Vector3 LinearVelocity = Vector3::Zero(), AngularVelocity = Vector3::Zero();
+		float Mass = 0;
+		bool IsStatic = false, IsFree = false, IsSmashed = false, HasRigidBody = false;
+	};
+	struct DestructionEventFragment
+	{
+		uint32_t ClusterId = 0;
+		std::vector<int> ChunkIndices;
+	};
+	struct DestructionEvent
+	{
+		DestructionEventKind Kind = DestructionEventKind::Contact;
+		DestructionEventCause Cause = DestructionEventCause::GraphEdit;
+		uint64_t InstanceId = 0, Generation = 0, Sequence = 0, AssetFingerprint = 0;
+		uint64_t WorldTick = 0, UpdateIndex = 0;
+		int SubstepIndex = 0, SubstepCount = 1;
+		float DeltaTime = 0;
+		int BondIndex = -1, NodeA = -1, NodeB = -1, HierarchyNode = -1;
+		DestructionBondType BondType = DestructionBondType::Invalid;
+		float BondStrength = 0;
+		uint32_t PreviousClusterId = 0;
+		Vector3 Position = Vector3::Zero(), Normal = Vector3::Zero(), Impulse = Vector3::Zero();
+		bool ImpulseEstimated = false;
+		std::vector<DestructionEventChunk> Chunks;
+		std::vector<DestructionEventFragment> Fragments;
+	};
+	struct DestructionEventStats
+	{
+		uint64_t Generated = 0, Filtered = 0, Dropped = 0, Invalid = 0;
+		size_t Pending = 0;
+	};
+	class DestructionEvents
+	{
+	public:
+		DestructionEvents(const DestructionSet& Set, const DestructionEventSettings& Settings);
+		~DestructionEvents();
+		DestructionEvents(const DestructionEvents&) = delete;
+		DestructionEvents& operator=(const DestructionEvents&) = delete;
+	private:
+		friend class DestructionSet;
+		void Reset(const DestructionSet& Set);
+		void RefreshKinematics(const DestructionSet& Set);
+		void Collect(DestructionSet& Set);
+		void Contact(DestructionSet& Set, const DestructionCluster& Cluster, int Chunk, const PhysicsContactPoint& Point, const Vector3& Impulse, const Vector3& Normal, bool ImpulseEstimated);
+		std::vector<DestructionEvent> Take();
+		DestructionEventStats Stats() const;
+		struct Storage;
+		std::unique_ptr<Storage> m_Data;
+	};
+}
+
+
+namespace Riemann
+{
+	class DestructionSet;
+	struct DestructionConstants;
+	struct DestructionCacheSettings
+	{
+		bool RecordEvents = true;
+		size_t MaximumFrames = 18000;
+		size_t MaximumPayloadBytes = 256u * 1024u * 1024u;
+		float QuaternionTolerance = 1e-4f;
+		float RelativeGeometryTolerance = 1e-5f, MinimumGeometryTolerance = 1e-6f;
+		bool IsValid() const;
+	};
+	struct DestructionCacheCluster
+	{
+		uint32_t SourceId = 0;
+		int Level = 0;
+		bool IsStatic = false;
+		std::vector<int> ChunkIndices;
+		std::vector<Transform> LocalPoses;
+	};
+	struct DestructionCacheTopology
+	{
+		ConnectionGraph Graph;
+		std::vector<DestructionCacheCluster> Clusters;
+		std::vector<bool> BrokenHierarchy;
+	};
+	struct DestructionCacheClusterState
+	{
+		Transform Pose = Transform::Identity();
+		Vector3 LinearVelocity = Vector3::Zero(), AngularVelocity = Vector3::Zero();
+		float FrictionStatic = 0, FrictionDynamic = 0, Restitution = 0;
+		bool Sleeping = false, Frozen = false;
+	};
+	struct DestructionCacheFrame
+	{
+		double Time = 0;
+		uint64_t SourceWorldTick = 0;
+		std::shared_ptr<const DestructionCacheTopology> Topology;
+		std::vector<DestructionEventChunk> Chunks;
+		std::vector<DestructionCacheClusterState> Clusters;
+		std::vector<DestructionEvent> Events;
+	};
+	struct DestructionCacheSample
+	{
+		double Time = 0;
+		size_t LowerFrame = 0, UpperFrame = 0;
+		float Interpolation = 0;
+		std::shared_ptr<const DestructionCacheTopology> Topology;
+		std::vector<DestructionEventChunk> Chunks;
+		std::vector<DestructionCacheClusterState> Clusters;
+	};
+	struct DestructionCacheStats
+	{
+		size_t FrameCount = 0, TopologyCount = 0, EventCount = 0, PayloadBytes = 0;
+		double Duration = 0;
+	};
+	struct DestructionCacheEvent
+	{
+		double Time = 0;
+		DestructionEvent Event;
+	};
+	class DestructionCache
+	{
+	public:
+		bool IsValid() const { return m_Data != nullptr; }
+		const DestructionAsset& GetAsset() const;
+		const DestructionConstants& GetConstants() const;
+		const DestructionCacheSettings& GetSettings() const;
+		const DestructionEventSettings& GetEventSettings() const;
+		const DestructionCacheStats& GetStats() const;
+		const DestructionCacheFrame& GetFrame(size_t Index) const;
+		uint64_t GetSourceInstanceId() const;
+		uint64_t GetSourceGeneration() const;
+		DestructionCacheSample Sample(double Time, const Transform& Placement = Transform::Identity()) const;
+		std::vector<DestructionCacheEvent> GetEvents(double After, double Through, const Transform& Placement = Transform::Identity()) const;
+	private:
+		friend class DestructionCacheRecorder;
+		struct Storage;
+		std::shared_ptr<const Storage> m_Data;
+		const Storage& Data() const;
+	};
+	class DestructionCacheRecorder
+	{
+	public:
+		explicit DestructionCacheRecorder(const DestructionSet& Source, const DestructionCacheSettings& Settings = {});
+		~DestructionCacheRecorder();
+		DestructionCacheRecorder(const DestructionCacheRecorder&) = delete;
+		DestructionCacheRecorder& operator=(const DestructionCacheRecorder&) = delete;
+		void Record(double Time, const DestructionSet& Source, const std::vector<DestructionEvent>& Events = {});
+		DestructionCacheStats GetStats() const;
+		DestructionCache Finish();
+	private:
+		struct Storage;
+		std::unique_ptr<Storage> m_Data;
+	};
+}
+
+
+namespace Riemann
+{
+	class PhysicsWorld;
+	class RigidBody;
+	class Geometry;
+	class DestructionSet;
+	enum class DestructionPlaybackCommand { None, Replay, TogglePause, Seek };
+	struct DestructionPlaybackSettings
+	{
+		bool CollisionEnabled = true, QueryEnabled = true;
+		double Rate = 1;
+		size_t MaximumQueuedEvents = 2048;
+		bool IsValid() const;
+	};
+	struct DestructionPlaybackEvent
+	{
+		uint64_t PlaybackId = 0, Epoch = 0;
+		DestructionCacheEvent Source;
+	};
+	class DestructionPlayback final : public GeometryAggregate
+	{
+	public:
+		DestructionPlayback(PhysicsWorld& World, const DestructionCache& Cache,
+			const Transform& Placement = Transform::Identity(), const DestructionPlaybackSettings& Settings = {});
+		~DestructionPlayback();
+		DestructionPlayback(const DestructionPlayback&) = delete;
+		DestructionPlayback& operator=(const DestructionPlayback&) = delete;
+		void SetPlaying(bool Playing);
+		void Seek(double Time);
+		void Detach();
+		bool IsAttached() const { return m_World != nullptr; }
+		bool IsPlaying() const { return m_Playing; }
+		double GetTime() const { return m_Sample.Time; }
+		uint64_t GetInstanceId() const { return m_InstanceId; }
+		uint64_t GetEpoch() const { return m_Epoch; }
+		uint64_t GetRevision() const { return m_Revision; }
+		uint64_t GetDroppedEventCount() const { return m_DroppedEvents; }
+		const DestructionCache& GetCache() const { return m_Cache; }
+		const DestructionCacheSample& GetSample() const { return m_Sample; }
+		Geometry* GetChunkGeometry(int Chunk) const;
+		size_t GetBodyCount() const { return m_Bodies.size(); }
+		RigidBody* GetBody(size_t Index) const;
+		std::vector<DestructionPlaybackEvent> TakeEvents();
+	private:
+		friend class PhysicsWorld;
+		struct Binding { RigidBody* Body = nullptr; std::vector<int> Chunks; };
+		void RequireIdle() const;
+		void Step(float Dt);
+		void Apply(DestructionCacheSample Sample, bool Moving);
+		void Rebuild(const DestructionCacheSample& Sample);
+		void ClearBodies(std::vector<Binding>& Bodies);
+		void StopVelocities();
+		void OnBodyRemoved(RigidBody* Body);
+		PhysicsWorld* m_World = nullptr;
+		DestructionCache m_Cache;
+		Transform m_Placement;
+		DestructionPlaybackSettings m_Settings;
+		std::unique_ptr<DestructionSet> m_Rest;
+		DestructionCacheSample m_Sample;
+		std::vector<Binding> m_Bodies;
+		std::vector<Geometry*> m_Geometries;
+		std::shared_ptr<const DestructionCacheTopology> m_Topology;
+		std::vector<DestructionPlaybackEvent> m_Events;
+		uint64_t m_InstanceId = 0, m_Epoch = 1, m_Revision = 0, m_DroppedEvents = 0;
+		bool m_Playing = false;
+	};
+}
 
 namespace Riemann
 {
@@ -26,6 +317,7 @@ namespace Riemann
 	class RigidBody;
 	class RigidBodyDynamic;
 	class StrainSolver;
+	struct DestructionBondStrain { int NodeA, NodeB; float Value; };
 	struct StrainSolverSettings;
 
 	enum class DestructionEventType : int
@@ -54,6 +346,8 @@ namespace Riemann
 
 	struct DestructionConstants
 	{
+		CollisionData FilterData;                       // Inherited by chunk shapes and aggregate proxies on rebuild.
+		float ContactOffset = 0.0f, RestOffset = 0.0f;
 		float ImpulseCollapseStrength = 10.0f;
 		float ImpulseBreakStrength = 0.5f;
 		float ImpulseRadius = 10.0f;
@@ -73,6 +367,7 @@ namespace Riemann
 		bool DebugLog = false;
 
 		DestructionConstants();
+		bool IsValid() const;
 	};
 
 	struct DestructionMaterial
@@ -163,6 +458,16 @@ namespace Riemann
 		DestructionSet(DestructionSet&&) = delete;
 		DestructionSet& operator=(DestructionSet&&) = delete;
 		virtual ~DestructionSet();
+		void InitializeAsset(const DestructionAsset& Asset, const Transform& Placement = Transform::Identity());
+		const DestructionAsset* GetAuthoredAsset() const { return mAsset.IsValid() ? &mAsset : nullptr; }
+		const Transform& GetAssetPlacement() const { return mAssetPlacement; }
+		uint64_t GetInstanceId() const { return mInstanceId; }
+		uint64_t GetGeneration() const { return mGeneration; }
+		uint64_t GetEventRevision() const { return mEventRevision; }
+		void ConfigureEvents(const DestructionEventSettings& Settings);
+		const DestructionEventSettings& GetEventSettings() const { return mEventSettings; }
+		DestructionEventStats GetEventStats() const;
+		std::vector<DestructionEvent> TakeEvents();
 
 		struct Stats
 		{
@@ -203,6 +508,7 @@ namespace Riemann
 		void AddDestructionInfo(DestructionEventType Type, const std::vector<int>& Indices);
 		uint32_t ProcessDestructionInfo();
 		void DoFractures(const DestructionFractureBuffer& Commands);
+		uint32_t ApplyBondStrain(const std::vector<DestructionBondStrain>& Strains);
 		virtual void OnContact(const PhysicsContactInfo& ContactInfo) override;
 		void Update(float DeltaTime);
 		void EnableStressSolver(const StrainSolverSettings& Settings, const Vector3& WorldGravity = Vector3::Zero());
@@ -238,6 +544,22 @@ namespace Riemann
 
 	private:
 		friend class PhysicsWorld;
+		friend class DestructionAsset;
+		friend class DestructionEvents;
+		friend class DestructionCacheRecorder;
+		static uint64_t AllocateInstanceId();
+		void RefreshEventKinematics();
+		void CollectEvents();
+		void ResetEventState();
+		class EventCauseScope
+		{
+		public:
+			EventCauseScope(DestructionSet& Set, DestructionEventCause Cause);
+			~EventCauseScope();
+		private:
+			DestructionSet& mSet;
+			DestructionEventCause mPrevious;
+		};
 		void SetPhysicsWorld(PhysicsWorld* Simulation) { mPhysicsWorld = Simulation; }
 		void BuildClusterRigidBody(DestructionCluster& Cluster);
 		void ReleaseClusterRigidBody(DestructionCluster& Cluster, bool bReleaseGeometries);
@@ -262,7 +584,7 @@ namespace Riemann
 		bool BreakBondByIndex(int BondIndex);
 		bool HasClusterRigidBodies() const;
 		DestructionCluster* FindClusterByRigidBody(const RigidBody* Body);
-		void QueueContactMomentum(RigidBody* Body, Geometry* Geom, const PhysicsContactPoint& Point, const Vector3& Momentum, const Vector3& Normal);
+		void QueueContactMomentum(RigidBody* Body, Geometry* Geom, const PhysicsContactPoint& Point, const Vector3& Momentum, const Vector3& Normal, bool ImpulseEstimated);
 
 	private:
 		struct PendingPartition
@@ -294,6 +616,15 @@ namespace Riemann
 		uint32_t mNextClusterID = 1;
 		PhysicsWorld* mPhysicsWorld = nullptr;
 		DestructionConstants mConstants;
+		DestructionAsset mAsset;
+		Transform mAssetPlacement = Transform::Identity();
+		const uint64_t mInstanceId = AllocateInstanceId();
+		uint64_t mGeneration = 1, mNextEventSequence = 1, mEventUpdateIndex = 0;
+		uint64_t mEventRevision = 1;
+		float mEventDeltaTime = 0;
+		DestructionEventCause mEventCause = DestructionEventCause::GraphEdit;
+		DestructionEventSettings mEventSettings;
+		std::unique_ptr<DestructionEvents> mEvents;
 		ConnectionGraph BuildStressGraph() const;
 		void EnsureStressBondIndices();
 		std::unique_ptr<StrainSolver> mStressSolver;

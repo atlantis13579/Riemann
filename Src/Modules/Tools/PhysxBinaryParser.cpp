@@ -578,7 +578,6 @@ namespace Riemann
 			}
 			else if (Type == physx::eCAPSULE)
 			{
-				// https://docs.nvidia.com/gameworks/content/gameworkslibrary/physx/guide/Manual/Geometry.html
 				// A PxCapsuleGeometry is centered at the origin.
 				// It is specified by a radius and a half-height value by which its axis extends along the positive and negative X-axis.
 

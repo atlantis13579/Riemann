@@ -152,6 +152,7 @@ namespace Riemann
 		const std::vector<int>& GetBrokenNodes() const { return mBrokenNodes; }
 		const std::vector<std::pair<int, int>>& GetBrokenBonds() const { return mBrokenBonds; }
 		void ClearBreakHistory();
+		void RefreshBondCache();
 
 		static Bond::BondType ToLegacyType(DestructionBondType Type);
 		static DestructionBondType FromLegacyType(Bond::BondType Type);

@@ -1,6 +1,7 @@
 {
+  "characterDemo": { "origin": [-8.0, -2.0, 6.0] },
   "name": "Constraints",
-  "physics": { "gravity": [0.0, -9.8, 0.0] },
+  "physics": { "islandSleeping": { "enabled": false }, "supportStabilization": { "enabled": false }, "temporalSubsteps": { "enabled": false, "substeps": 4 }, "gravity": [0.0, -9.8, 0.0], "jointDrives": true, "jointBreaking": false },
   "camera": { "center": [0.0, 5.0, 0.0], "orbit": [0.0, 0.2, 30.0], "near": 0.05, "far": 1000.0 },
   "light": { "direction": [-0.529926, -0.662086, -0.529926], "ambient": 0.25, "shadowCenter": [0.0, 5.0, 0.0], "shadowDistance": 80.0, "shadowSize": 80.0 },
   "objects": [
@@ -28,12 +29,12 @@
     { "id": "d6_body", "type": "box", "body": "dynamic", "position": [12.0, 6.0, 0.0], "halfExtent": [0.7, 0.7, 0.7], "linearVelocity": [4.0, 2.0, 0.0], "angularVelocity": [0.0, 1.0, 0.0], "color": [0.72, 0.25, 0.92, 1.0] }
   ],
   "constraints": [
-    { "type": "fixed", "bodyA": "fixed_anchor", "bodyB": "fixed_body" },
+    { "type": "fixed", "bodyA": "fixed_anchor", "bodyB": "fixed_body", "breaking": { "enabled": true, "force": 5.0 } },
     { "type": "point", "bodyA": "point_anchor", "bodyB": "point_body", "anchor": [-8.0, 8.0, 0.0] },
     { "type": "distance", "bodyA": "distance_anchor", "bodyB": "distance_body", "anchorA": [-4.0, 8.0, 0.0], "anchorB": [-4.0, 3.0, 0.0], "minDistance": 2.5, "maxDistance": 4.0 },
-    { "type": "hinge", "bodyA": "hinge_anchor", "bodyB": "hinge_body", "anchor": [0.0, 8.0, 0.0], "axis": [0.0, 0.0, 1.0], "minAngleDegrees": -70.0, "maxAngleDegrees": 70.0 },
-    { "type": "slider", "bodyA": "slider_anchor", "bodyB": "slider_body", "anchor": [4.0, 6.0, 0.0], "axis": [0.0, 1.0, 0.0], "minDistance": -2.0, "maxDistance": 2.0 },
+    { "type": "hinge", "bodyA": "hinge_anchor", "bodyB": "hinge_body", "anchor": [0.0, 8.0, 0.0], "axis": [0.0, 0.0, 1.0], "minAngleDegrees": -70.0, "maxAngleDegrees": 70.0, "drive": { "positionEnabled": true, "stiffness": 100.0, "damping": 20.0, "maxForce": 200.0, "targetPosition": 0.5, "acceleration": true } },
+    { "type": "slider", "bodyA": "slider_anchor", "bodyB": "slider_body", "anchor": [4.0, 6.0, 0.0], "axis": [0.0, 1.0, 0.0], "minDistance": -2.0, "maxDistance": 2.0, "drive": { "positionEnabled": true, "stiffness": 100.0, "damping": 20.0, "maxForce": 200.0, "targetPosition": 1.0, "acceleration": true } },
     { "type": "cone", "bodyA": "cone_anchor", "bodyB": "cone_body", "anchor": [8.0, 8.0, 0.0], "axisA": [0.0, -1.0, 0.0], "axisB": [0.0, -1.0, 0.0], "maxAngleDegrees": 35.0 },
-    { "type": "sixDOF", "bodyA": "d6_anchor", "bodyB": "d6_body", "anchor": [12.0, 6.0, 0.0], "linearMin": [-1.5, -0.2, 0.0], "linearMax": [1.5, 0.2, 0.0], "angularMinDegrees": [0.0, -30.0, 0.0], "angularMaxDegrees": [0.0, 30.0, 0.0] }
+    { "type": "sixDOF", "bodyA": "d6_anchor", "bodyB": "d6_body", "anchor": [12.0, 6.0, 0.0], "linearMin": [-1.5, -0.2, 0.0], "linearMax": [1.5, 0.2, 0.0], "angularMinDegrees": [0.0, -30.0, 0.0], "angularMaxDegrees": [0.0, 30.0, 0.0], "drives": { "linear": [{ "positionEnabled": true, "stiffness": 60.0, "damping": 16.0, "maxForce": 100.0, "targetPosition": 1.0, "acceleration": true }, {}, {}], "angularMode": "slerp", "slerp": { "positionEnabled": true, "stiffness": 60.0, "damping": 16.0, "maxForce": 100.0, "acceleration": true }, "orientationTarget": [0.0, 0.12467473, 0.0, 0.99219767] } }
   ]
 }

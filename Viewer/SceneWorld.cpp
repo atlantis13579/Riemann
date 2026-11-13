@@ -1,4 +1,11 @@
+#include "../Src/Modules/CharacterController/CharacterController.h"
 #include "SceneWorld.h"
+#include "../Src/Modules/Vehicle/VehicleDynamics.h"
+#include "../Src/RigidBodyDynamics/Ragdoll.h"
+#include "../Src/RigidBodyDynamics/PhysicalAnimation.h"
+#include "../Src/CollisionPrimitive/AxisAlignedBox3.h"
+#include "../Src/CollisionPrimitive/Capsule3.h"
+#include "../Src/CollisionPrimitive/Sphere3.h"
 
 #include <ctype.h>
 #include <float.h>
@@ -7,8 +14,10 @@
 #include <string.h>
 
 #include <algorithm>
+#include <map>
 #include <cmath>
 #include <fstream>
+#include <limits>
 #include <map>
 #include <sstream>
 #include <stdexcept>
@@ -17,24 +26,41 @@
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/CollisionPrimitive/StaticMesh.h"
 #include "../Src/CollisionPrimitive/TriangleMesh.h"
+#include "../Src/CollisionPrimitive/DistanceFieldShape.h"
 #include "../Src/Destruction/DestructionSet.h"
 #include "../Src/Destruction/Fracture.h"
 #include "../Src/Geometry/DynamicMesh.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
-#include "../Src/Cloth/Rope.h"
-#include "../Src/Cloth/Cloth.h"
+#include "../Src/RigidBodyDynamics/ForceField.h"
+#include "../Src/Deformation/Rope.h"
+#include "../Src/Deformation/StrandSystem.h"
+#include "../Src/Deformation/Cloth.h"
 #include "../Src/Deformation/DeformableBody.h"
-#include "../Src/Deformation/VehicleDeformation.h"
+#include "../Src/Modules/Vehicle/VehicleDeformation.h"
 #include "../Src/CollisionPrimitive/HeightField3.h"
 #include "../Src/Geometry/VoxelField.h"
 #include "../Src/Destruction/StrainSolver.h"
-#include "../Src/RigidBodyDynamics/Ragdoll.h"
 
 namespace Riemann
 {
 	namespace
 	{
 		const float kPi = 3.14159265358979323846f;
+
+		class AttachmentPayloadGravity final : public ForceField
+		{
+		public:
+			AttachmentPayloadGravity(GeometryHandle Target, const Vector3& Acceleration) : m_Target(Target), m_Acceleration(Acceleration) {}
+			bool ApplyForce(RigidBodyDynamic* Body) override
+			{
+				if (Body->GetNumGeometries() && Body->GetGeometryHandle(0) == m_Target && !Body->Sleeping)
+					Body->ApplyLinearAcceleration(m_Acceleration);
+				return true;
+			}
+		private:
+			GeometryHandle m_Target;
+			Vector3 m_Acceleration;
+		};
 
 		std::string DirectoryOf(const std::string& fileName)
 		{
@@ -44,6 +70,16 @@ namespace Riemann
 				return std::string();
 			}
 			return fileName.substr(0, pos + 1);
+		}
+
+		std::string DefaultRagdollDefinition(const std::string& SceneDirectory, const std::string& Fallback)
+		{
+			// Resolve the built-in definition from the loaded scene so launching the
+			// Viewer from another working directory does not remove its ragdolls.
+			if (SceneDirectory.empty()) return Fallback;
+			const std::string Candidate = SceneDirectory + "../Config/default_ragdoll.json";
+			std::ifstream File(Candidate.c_str(), std::ios::in | std::ios::binary);
+			return File ? Candidate : Fallback;
 		}
 
 		float ToRadians(float degrees)
@@ -561,6 +597,8 @@ namespace Riemann
 		float Restitution = 0.0f;
 		bool HasInvMass = false;
 		bool HasRestitution = false;
+		float FrictionDynamic = 1.0f, FrictionStatic = 1.0f;
+		bool HasFriction = false, FrictionValid = true;
 		bool HasX0 = false;
 		bool HasX1 = false;
 		bool DisableGravity = false;
@@ -570,6 +608,12 @@ namespace Riemann
 		bool RenderEnabled = true;
 		bool QueryEnabled = true;
 		bool SimulationEnabled = true;
+		CollisionData FilterData;
+		bool FilterDataValid = true;
+		float ContactOffset = 0.0f, RestOffset = 0.0f;
+		bool ContactOffsetsValid = true;
+		bool HasSDFOption = false, SDFCollision = false, SDFValid = true;
+		int SDFResolution = 24;
 		float Density = 0.0f;
 		bool HasDensity = false;
 		int RepeatCount[3] = { 1, 1, 1 };
@@ -624,6 +668,107 @@ namespace Riemann
 		bool ReadBool(const JsonValue* value, bool fallback)
 		{
 			return value && value->IsBool() ? value->boolValue : fallback;
+		}
+
+		bool ReadFiniteNumber(const JsonValue& Object, const char* Name, float& Result)
+		{
+			const JsonValue* Value = Object.Find(Name);
+			if (!Value) return true;
+			if (!Value->IsNumber() || !std::isfinite(Value->numberValue)
+				|| std::abs(Value->numberValue) > std::numeric_limits<float>::max()) return false;
+			Result = (float)Value->numberValue;
+			return true;
+		}
+
+		bool ReadTypedBool(const JsonValue& Object, const char* Name, bool& Result)
+		{
+			const JsonValue* Value = Object.Find(Name);
+			if (!Value) return true;
+			if (!Value->IsBool()) return false;
+			Result = Value->boolValue;
+			return true;
+		}
+
+		bool ReadDriveSettings(const JsonValue& Object, JointDriveSettings& Settings)
+		{
+			return Object.IsObject()
+				&& ReadTypedBool(Object, "positionEnabled", Settings.PositionEnabled)
+				&& ReadTypedBool(Object, "velocityEnabled", Settings.VelocityEnabled)
+				&& ReadTypedBool(Object, "acceleration", Settings.Acceleration)
+				&& ReadFiniteNumber(Object, "stiffness", Settings.Stiffness)
+				&& ReadFiniteNumber(Object, "damping", Settings.Damping)
+				&& ReadFiniteNumber(Object, "maxForce", Settings.MaxForce) && Settings.IsValid();
+		}
+
+		bool ReadScalarDrive(const JsonValue& Object, ScalarJointDrive& Drive)
+		{
+			return ReadDriveSettings(Object, Drive.Settings)
+				&& ReadFiniteNumber(Object, "targetPosition", Drive.TargetPosition)
+				&& ReadFiniteNumber(Object, "targetVelocity", Drive.TargetVelocity) && Drive.IsValid();
+		}
+
+		bool ReadDriveArray(const JsonValue* Array, ScalarJointDrive (&Drives)[3])
+		{
+			if (!Array) return true;
+			if (!Array->IsArray() || Array->arrayValue.size() != 3) return false;
+			for (int Axis = 0; Axis < 3; ++Axis)
+				if (!ReadScalarDrive(Array->arrayValue[Axis], Drives[Axis])) return false;
+			return true;
+		}
+
+		bool ReadDriveVector(const JsonValue* Array, float* Values, size_t Count)
+		{
+			if (!Array) return true;
+			if (!Array->IsArray() || Array->arrayValue.size() != Count) return false;
+			for (size_t Index = 0; Index < Count; ++Index)
+			{
+				const JsonValue& Value = Array->arrayValue[Index];
+				if (!Value.IsNumber() || !std::isfinite(Value.numberValue)
+					|| std::abs(Value.numberValue) > std::numeric_limits<float>::max()) return false;
+				Values[Index] = (float)Value.numberValue;
+			}
+			return true;
+		}
+
+		// Hinge/slider use "drive". Six-DOF uses "drives" with optional three-entry
+		// linear/angular arrays and angularMode "axes" or "slerp". Drive targets use
+		// meters and radians, unlike the legacy degree-valued angular limit fields.
+		// SLERP targets are unit quaternions [x,y,z,w] relative to the initial frame.
+		bool ConfigureJointDrives(const JsonValue& Object, PositionConstraint* Joint)
+		{
+			const JsonValue* Scalar = Object.Find("drive");
+			const JsonValue* Block = Object.Find("drives");
+			if (!Scalar && !Block) return true;
+			if (Scalar && Block) return false;
+			if (Scalar)
+			{
+				ScalarJointDrive Drive;
+				if (!ReadScalarDrive(*Scalar, Drive)) return false;
+				if (Joint->GetType() == PositionConstraintType::Hinge) static_cast<HingeConstraint*>(Joint)->SetDrive(Drive);
+				else if (Joint->GetType() == PositionConstraintType::Slider) static_cast<SliderConstraint*>(Joint)->SetDrive(Drive);
+				else return false;
+				return true;
+			}
+			if (Joint->GetType() != PositionConstraintType::SixDOF || !Block->IsObject()) return false;
+			SixDOFDriveSettings Drives;
+			if (!ReadDriveArray(Block->Find("linear"), Drives.Linear)
+				|| !ReadDriveArray(Block->Find("angular"), Drives.Angular)) return false;
+			if (const JsonValue* Mode = Block->Find("angularMode"))
+			{
+				if (!Mode->IsString()) return false;
+				if (Mode->stringValue == "slerp") Drives.AngularMode = AngularDriveMode::Slerp;
+				else if (Mode->stringValue != "axes") return false;
+			}
+			if (const JsonValue* Slerp = Block->Find("slerp"))
+				if (!ReadDriveSettings(*Slerp, Drives.Slerp)) return false;
+			float Orientation[4] = { 0, 0, 0, 1 }, Velocity[3] = {};
+			if (!ReadDriveVector(Block->Find("orientationTarget"), Orientation, 4)
+				|| !ReadDriveVector(Block->Find("angularVelocityTarget"), Velocity, 3)) return false;
+			Drives.OrientationTarget = Quaternion(Orientation[0], Orientation[1], Orientation[2], Orientation[3]);
+			Drives.AngularVelocityTarget = Vector3(Velocity[0], Velocity[1], Velocity[2]);
+			if (!Drives.IsValid()) return false;
+			static_cast<SixDOFConstraint*>(Joint)->SetDrives(Drives);
+			return true;
 		}
 
 		std::string ReadString(const JsonValue* value, const std::string& fallback)
@@ -978,6 +1123,36 @@ namespace Riemann
 			desc.DisableGravity = ReadBool(object.Find("disableGravity"), desc.DisableGravity);
 			desc.EnableCCD = ReadBool(object.Find("enableCCD"), desc.EnableCCD);
 			desc.MouseControl = ReadBool(object.Find("mouseControl"), desc.MouseControl);
+			auto ReadFilterValue = [&](const char* Name, uint32_t Maximum, unsigned int& Value)
+			{
+				const JsonValue* Field = object.Find(Name);
+				if (!Field) return;
+				if (!Field->IsNumber() || !std::isfinite(Field->numberValue) || Field->numberValue < 0
+					|| Field->numberValue > Maximum || std::floor(Field->numberValue) != Field->numberValue)
+					desc.FilterDataValid = false;
+				else Value = (uint32_t)Field->numberValue;
+			};
+			for (const char* Name : { "contactOffset", "restOffset" })
+			{
+				const JsonValue* Field = object.Find(Name);
+				if (Field && (!Field->IsNumber() || !std::isfinite(Field->numberValue) || std::abs(Field->numberValue) > FLT_MAX))
+					desc.ContactOffsetsValid = false;
+			}
+			desc.HasSDFOption = object.Find("sdfCollision") != nullptr;
+			desc.SDFValid = !desc.HasSDFOption || object.Find("sdfCollision")->IsBool();
+			desc.SDFCollision = ReadBool(object.Find("sdfCollision"), false);
+			if (const JsonValue* Value = object.Find("sdfResolution"))
+			{
+				const int MaximumResolution = SignedDistanceFieldBuildOptions().MaxResolution;
+				desc.SDFValid = desc.SDFValid && Value->IsNumber() && std::isfinite(Value->numberValue) && Value->numberValue >= 2
+					&& Value->numberValue <= MaximumResolution && std::floor(Value->numberValue) == Value->numberValue;
+				if (desc.SDFValid) desc.SDFResolution = (int)Value->numberValue;
+			}
+			desc.ContactOffset = ReadFloat(object.Find("contactOffset"), desc.ContactOffset);
+			desc.RestOffset = ReadFloat(object.Find("restOffset"), desc.RestOffset);
+			desc.ContactOffsetsValid = desc.ContactOffsetsValid && desc.ContactOffset >= 0.0f && desc.RestOffset <= desc.ContactOffset;
+			ReadFilterValue("collisionLayer", CollisionData::LayerCount - 1, desc.FilterData.v0);
+			ReadFilterValue("collisionMask", UINT32_MAX, desc.FilterData.v1);
 			desc.QueryEnabled = ReadBool(object.Find("query"), desc.QueryEnabled);
 			desc.SimulationEnabled = ReadBool(object.Find("simulation"), desc.SimulationEnabled);
 			if (object.Find("query") == nullptr && desc.Id == "ground" && desc.Type == "plane")
@@ -1070,6 +1245,22 @@ namespace Riemann
 				desc.HasRestitution = true;
 			}
 			const JsonValue* density = object.Find("density");
+			const JsonValue* DynamicFriction = object.Find("frictionDynamic");
+			const JsonValue* StaticFriction = object.Find("frictionStatic");
+			desc.HasFriction = DynamicFriction || StaticFriction;
+			if (desc.HasFriction)
+			{
+				auto ReadFriction = [&](const JsonValue* Value, float& Coefficient)
+				{
+					if (!Value) return;
+					desc.FrictionValid = desc.FrictionValid && Value->IsNumber() && std::isfinite(Value->numberValue)
+						&& Value->numberValue >= 0.0 && Value->numberValue <= FLT_MAX;
+					Coefficient = ReadFloat(Value, Coefficient);
+				};
+				ReadFriction(DynamicFriction, desc.FrictionDynamic);
+				ReadFriction(StaticFriction, desc.FrictionStatic);
+				desc.FrictionValid = desc.FrictionValid && desc.FrictionStatic >= desc.FrictionDynamic;
+			}
 			if (density != nullptr && density->IsNumber())
 			{
 				desc.Density = ReadFloat(density, 0.0f);
@@ -1123,7 +1314,7 @@ namespace Riemann
 		}
 	}
 
-	SceneWorld::SceneWorld()
+	SceneWorld::SceneWorld() : m_RagdollAlgorithmOverride(RagdollAlgorithm::JointConstraints)
 	{
 		Reset();
 	}
@@ -1144,14 +1335,32 @@ namespace Riemann
 		PhysicsWorldParam worldParam = param;
 		worldParam.sceneQueryType = SceneQueryType::DynamicAABB;
 		worldParam.broadphase = BroadPhaseSolver::SAP;
+		if (!worldParam.collisionFilter) worldParam.collisionFilter.reset(CollisionFilter::CreateLayerMask());
 		std::unique_ptr<PhysicsWorld> replacement(new PhysicsWorld(worldParam));
+		m_DemoFieldIds.clear(); m_DemoFreezeField = 0; m_PhysicsFieldFreeze = false;
+		m_DestructionPlaybacks.clear(); m_DestructionRecorders.clear(); m_DestructionCaches.clear();
+		m_DestructionPlaybackEvents.clear(); m_DestructionRecordingTime = 0;
 		m_DestructionRenderStates.clear();
 		m_DestructionSets.clear();
+		m_DestructionEvents.clear(); m_DestructionEventCount = m_DestructionDroppedEvents = 0;
 		m_Objects.clear();
 		m_Vehicles.clear();
 		m_RopeSurfaces.clear();
+		m_DemoStrands=nullptr; m_DemoStrandInstanceId=0; m_StrandDemoTwist=0; m_StrandRootLocal.clear();
+		m_AnimationSurfaces.clear(); m_AnimationRestLocal.clear(); m_AnimationAnchors.clear(); m_AnimationAxes.clear();
+		m_DemoAnimation = nullptr; m_PhysicalAnimationTime = 0;
+		m_DemoCloth = nullptr; m_DemoClothGeometry = nullptr; m_ClothRestPose.clear(); m_ClothAnimationTime = 0;
+		m_DemoClothPartner = nullptr; m_DemoClothPartnerGeometry = nullptr; m_ClothPartnerRestPose.clear(); m_ClothDemoMesh.reset();
+		m_ClothSoftMaterial = false;
+		m_DemoSoftBodies.clear(); m_CompliantAttachmentDemo = false;
+		m_DemoContactBodies.clear();
+		m_SoftRigidContactDemo = false; m_DemoContactHandle = GeometryHandle(); m_DemoContactGeometry = nullptr; m_DemoContactGravity = nullptr;
+		m_RigidAttachmentDemo = false; m_DemoAttachmentHandle = GeometryHandle(); m_DemoAttachmentGeometry = nullptr;
+		m_DemoAttachmentGravity = nullptr;
+		m_MechanismDemoDrivers.clear(); m_MechanismDemoTime = 0;
 		m_TerrainRevisions.clear();
 		m_ConstraintInstances.clear();
+		m_Character = nullptr; m_CharacterPlatform = nullptr; m_CharacterDemoTime = 0;
 		m_MouseControlGeometries.clear();
 		m_MouseControlGeometry = nullptr;
 		m_MouseControlBody = nullptr;
@@ -1375,6 +1584,9 @@ namespace Riemann
 			state.Index = index;
 			state.Name = m_ConstraintInstances[index].Name;
 			state.Enabled = constraint->IsEnabled();
+			state.Broken = constraint->IsBroken();
+			state.ReactionForce = constraint->GetReaction().Force.Length();
+			state.ReactionTorque = constraint->GetReaction().Torque.Length();
 			switch (constraint->GetType())
 			{
 			case PositionConstraintType::Point:
@@ -1447,6 +1659,7 @@ namespace Riemann
 			return false;
 		}
 		constraint->SetEnabled(state.Enabled);
+		if (state.RepairRequested) constraint->Repair();
 		switch (constraint->GetType())
 		{
 		case PositionConstraintType::Distance:
@@ -1528,10 +1741,205 @@ namespace Riemann
 
 		const JsonValue* physics = root.Find("physics");
 		PhysicsWorldParam worldParam;
+		worldParam.collisionFilteringEnabled = false;
 		worldParam.gravityAcc = Vector3(0.0f, -9.8f, 0.0f);
 		if (physics && physics->IsObject())
 		{
 			worldParam.gravityAcc = ReadVector3(physics->Find("gravity"), worldParam.gravityAcc);
+			const JsonValue* Filtering = physics->Find("collisionFiltering");
+			if (Filtering && !Filtering->IsBool())
+			{
+				if (errorMessage) *errorMessage = sourceName + ": collisionFiltering must be a boolean";
+				return false;
+			}
+			worldParam.collisionFilteringEnabled = ReadBool(Filtering, worldParam.collisionFilteringEnabled);
+			const JsonValue* Unified = physics->Find("unifiedConstraints");
+			if (Unified && !Unified->IsBool())
+			{
+				if (errorMessage) *errorMessage = sourceName + ": unifiedConstraints must be a boolean";
+				return false;
+			}
+			worldParam.unifiedConstraints = ReadBool(Unified, worldParam.unifiedConstraints);
+			const JsonValue* Friction = physics->Find("frictionPatches");
+			if (Friction && !Friction->IsBool())
+			{
+				if (errorMessage) *errorMessage = sourceName + ": frictionPatches must be a boolean";
+				return false;
+			}
+			worldParam.frictionPatches.Enabled = ReadBool(Friction, worldParam.frictionPatches.Enabled);
+			const JsonValue* Drives = physics->Find("jointDrives");
+			if (Drives && !Drives->IsBool())
+			{
+				if (errorMessage) *errorMessage = sourceName + ": jointDrives must be a boolean";
+				return false;
+			}
+			worldParam.jointDrives = ReadBool(Drives, worldParam.jointDrives);
+			const JsonValue* Breaking = physics->Find("jointBreaking");
+			if (Breaking && !Breaking->IsBool())
+			{
+				if (errorMessage) *errorMessage = sourceName + ": jointBreaking must be a boolean";
+				return false;
+			}
+			worldParam.jointBreaking = ReadBool(Breaking, worldParam.jointBreaking);
+			const JsonValue* Sleeping = physics->Find("islandSleeping");
+			if (Sleeping)
+			{
+				bool Valid = Sleeping->IsObject(); auto& Settings = worldParam.islandSleeping;
+				const JsonValue* Enabled = Sleeping->Find("enabled");
+				if (Enabled) { Valid = Valid && Enabled->IsBool(); Settings.Enabled = ReadBool(Enabled, false); }
+				auto Scalar = [&](const char* Name, float& Value)
+				{
+					const JsonValue* Field = Sleeping->Find(Name); if (!Field) return;
+					Valid = Valid && Field->IsNumber(); if (Field->IsNumber()) Value = (float)Field->numberValue;
+				};
+				Scalar("quietTime", Settings.QuietTime); Scalar("linearThreshold", Settings.LinearThreshold);
+				Scalar("angularThreshold", Settings.AngularThreshold); Scalar("hysteresisRatio", Settings.HysteresisRatio);
+				Scalar("contactTolerance", Settings.ContactTolerance);
+				if (!Valid || !Settings.IsValid())
+				{
+					if (errorMessage) *errorMessage = sourceName + ": invalid islandSleeping settings";
+					return false;
+				}
+			}
+			const JsonValue* Support = physics->Find("supportStabilization");
+			if (Support)
+			{
+				bool Valid = Support->IsObject();
+				auto& Settings = worldParam.supportStabilization;
+				const JsonValue* Enabled = Support->Find("enabled");
+				if (Enabled) { Valid = Valid && Enabled->IsBool(); Settings.Enabled = ReadBool(Enabled, false); }
+				auto Count = [&](const char* Name, int& Value)
+				{
+					const JsonValue* Field = Support->Find(Name); if (!Field) return;
+					const bool Integer = Field->IsNumber() && std::isfinite(Field->numberValue) && Field->numberValue >= 1
+						&& Field->numberValue <= INT_MAX && std::floor(Field->numberValue) == Field->numberValue;
+					Valid = Valid && Integer; if (Integer) Value = (int)Field->numberValue;
+				};
+				auto Scalar = [&](const char* Name, float& Value)
+				{
+					const JsonValue* Field = Support->Find(Name); if (!Field) return;
+					Valid = Valid && Field->IsNumber(); if (Field->IsNumber()) Value = (float)Field->numberValue;
+				};
+				Count("positionIterations", Settings.PositionIterations); Count("velocityIterations", Settings.VelocityIterations);
+				Scalar("parentInverseMassScale", Settings.ParentInverseMassScale); Scalar("contactTolerance", Settings.ContactTolerance);
+				Scalar("maximumPositionCorrection", Settings.MaximumPositionCorrection); Scalar("maximumAngularCorrection", Settings.MaximumAngularCorrection);
+				if (!Valid || !Settings.IsValid())
+				{
+					if (errorMessage) *errorMessage = sourceName + ": invalid supportStabilization settings";
+					return false;
+				}
+			}
+			const JsonValue* Temporal = physics->Find("temporalSubsteps");
+			if (Temporal)
+			{
+				bool Valid = Temporal->IsObject();
+				const JsonValue* Enabled = Temporal->Find("enabled");
+				if (Enabled) { Valid = Valid && Enabled->IsBool(); worldParam.temporalSubsteps.Enabled = ReadBool(Enabled, false); }
+				const JsonValue* Count = Temporal->Find("substeps");
+				if (Count)
+				{
+					const bool Integer = Count->IsNumber() && std::isfinite(Count->numberValue)
+						&& Count->numberValue >= 1 && Count->numberValue <= TemporalSubstepSettings::MaximumSubsteps
+						&& std::floor(Count->numberValue) == Count->numberValue;
+					Valid = Valid && Integer; if (Integer) worldParam.temporalSubsteps.Substeps = (int)Count->numberValue;
+				}
+				if (!Valid)
+				{
+					if (errorMessage) *errorMessage = sourceName + ": invalid temporalSubsteps settings";
+					return false;
+				}
+			}
+			const JsonValue* Sequential = physics->Find("sequentialImpulse");
+			if (Sequential)
+			{
+				bool Valid = Sequential->IsObject();
+				auto ReadCount = [&](const char* Name, int& Value)
+				{
+					const JsonValue* Field = Sequential->Find(Name); if (!Field) return;
+					const bool Integer = Field->IsNumber() && std::isfinite(Field->numberValue)
+						&& Field->numberValue >= 1 && Field->numberValue <= INT_MAX && std::floor(Field->numberValue) == Field->numberValue;
+					Valid = Valid && Integer; if (Integer) Value = (int)Field->numberValue;
+				};
+				ReadCount("positionIterations", worldParam.sequentialImpulseSettings.PositionIterations);
+				ReadCount("velocityIterations", worldParam.sequentialImpulseSettings.VelocityIterations);
+				if (!Valid)
+				{
+					if (errorMessage) *errorMessage = sourceName + ": invalid sequentialImpulse settings";
+					return false;
+				}
+			}
+			const JsonValue* CCD = physics->Find("ccdContinuation");
+			if (CCD)
+			{
+				bool Valid = CCD->IsObject();
+				auto& Settings = worldParam.ccdContinuation;
+				const JsonValue* Enabled = CCD->Find("enabled");
+				if (Enabled) { Valid = Valid && Enabled->IsBool(); Settings.Enabled = ReadBool(Enabled, false); }
+				auto ReadCount = [&](const char* Name, int& Value)
+				{
+					const JsonValue* Field = CCD->Find(Name); if (!Field) return;
+					const bool Integer = Field->IsNumber() && std::isfinite(Field->numberValue)
+						&& Field->numberValue >= 1 && Field->numberValue <= INT_MAX
+						&& std::floor(Field->numberValue) == Field->numberValue;
+					Valid = Valid && Integer; if (Integer) Value = (int)Field->numberValue;
+				};
+				auto ReadTolerance = [&](const char* Name, float& Value)
+				{
+					const JsonValue* Field = CCD->Find(Name); if (!Field) return;
+					Valid = Valid && Field->IsNumber() && std::isfinite(Field->numberValue) && std::abs(Field->numberValue) <= FLT_MAX;
+					Value = ReadFloat(Field, Value);
+				};
+				ReadCount("maxPasses", Settings.MaxPasses); ReadCount("impactIterations", Settings.ImpactIterations);
+				ReadTolerance("simultaneousTolerance", Settings.SimultaneousTolerance);
+				ReadTolerance("velocityTolerance", Settings.VelocityTolerance);
+				ReadTolerance("contactTolerance", Settings.ContactTolerance);
+				ReadTolerance("restitutionThreshold", Settings.RestitutionThreshold);
+				if (!Valid || !Settings.IsValid())
+				{
+					if (errorMessage) *errorMessage = sourceName + ": invalid ccdContinuation settings";
+					return false;
+				}
+			}
+			const JsonValue* Contacts = physics->Find("contactGeneration");
+			if (Contacts)
+			{
+				bool Valid = Contacts->IsObject();
+				auto ReadFlag = [&](const char* Name, bool& Value)
+				{
+					const JsonValue* Field = Contacts->Find(Name);
+					if (!Field) return;
+					Valid = Valid && Field->IsBool(); Value = ReadBool(Field, Value);
+				};
+				auto ReadLength = [&](const char* Name, float& Value)
+				{
+					const JsonValue* Field = Contacts->Find(Name);
+					if (!Field) return;
+					Valid = Valid && Field->IsNumber() && std::isfinite(Field->numberValue) && std::abs(Field->numberValue) <= FLT_MAX;
+					Value = ReadFloat(Field, Value);
+				};
+				ReadFlag("useShapeOffsets", worldParam.contactGeneration.UseShapeOffsets);
+				ReadFlag("speculativeContacts", worldParam.contactGeneration.SpeculativeContacts);
+				ReadLength("lengthScale", worldParam.contactGeneration.LengthScale);
+				ReadLength("relativeTolerance", worldParam.contactGeneration.RelativeTolerance);
+				ReadLength("minimumTolerance", worldParam.contactGeneration.MinimumTolerance);
+				ReadLength("relativePenetrationSlop", worldParam.contactGeneration.RelativePenetrationSlop);
+				ReadLength("maximumSpeculativeDistance", worldParam.contactGeneration.MaximumSpeculativeDistance);
+				ReadLength("faceClipSquaredDistance", worldParam.contactGeneration.FaceClipSquaredDistance);
+				const JsonValue* Iterations = Contacts->Find("distanceIterations");
+				if (Iterations)
+				{
+					const bool Integer = Iterations->IsNumber() && std::isfinite(Iterations->numberValue)
+						&& Iterations->numberValue >= 1 && Iterations->numberValue <= INT_MAX
+						&& std::floor(Iterations->numberValue) == Iterations->numberValue;
+					Valid = Valid && Integer;
+					if (Integer) worldParam.contactGeneration.DistanceIterations = (int)Iterations->numberValue;
+				}
+				if (!Valid || !worldParam.contactGeneration.IsValid())
+				{
+					if (errorMessage) *errorMessage = sourceName + ": invalid contactGeneration settings";
+					return false;
+				}
+			}
 			worldParam.resolutionSolver = ReadResolutionSolver(
 				physics->Find("resolutionSolver"), worldParam.resolutionSolver);
 			worldParam.solverBackend = ReadSolverBackend(
@@ -1701,6 +2109,11 @@ namespace Riemann
 			const Vector3 gravity = ReadVector3(stress->Find("gravity"), Vector3::Zero());
 			for (const auto& set : m_DestructionSets) set->EnableStressSolver(settings, gravity);
 		}
+		if (m_DestructionEventsDemo || m_DestructionCacheDemo)
+		{
+			DestructionEventSettings Settings; Settings.Enabled = true;
+			for (const auto& Set : m_DestructionSets) Set->ConfigureEvents(Settings);
+		}
 		if (constraints && constraints->IsArray())
 		{
 			auto findBody = [this](const std::string& id) -> RigidBody*
@@ -1788,6 +2201,23 @@ namespace Riemann
 				}
 				created->SetCompliance(ReadFloat(constraint.Find("linearCompliance"), 0.0f),
 					ReadFloat(constraint.Find("angularCompliance"), 0.0f));
+				if (!ConfigureJointDrives(constraint, created))
+				{
+					if (errorMessage) *errorMessage = sourceName + ": invalid drive configuration for '" + type + "'";
+					return false;
+				}
+				if (const JsonValue* Breaking = constraint.Find("breaking"))
+				{
+					JointBreakSettings Settings;
+					if (!Breaking->IsObject() || !ReadTypedBool(*Breaking, "enabled", Settings.Enabled)
+						|| !ReadFiniteNumber(*Breaking, "force", Settings.Force)
+						|| !ReadFiniteNumber(*Breaking, "torque", Settings.Torque) || !Settings.IsValid())
+					{
+						if (errorMessage) *errorMessage = sourceName + ": invalid joint breaking settings";
+						return false;
+					}
+					created->SetBreakSettings(Settings);
+				}
 				ConstraintInstance constraintInstance;
 				constraintInstance.Name = type + " - " + bodyBName;
 				constraintInstance.Constraint = created;
@@ -1958,8 +2388,11 @@ namespace Riemann
 				const Vector3 center = ReadVector3(clothValue.Find("center"), Vector3::Zero());
 				const Vector3 horizontalAxis = ReadVector3(clothValue.Find("horizontalAxis"), Vector3::UnitX());
 				const Vector3 verticalAxis = ReadVector3(clothValue.Find("verticalAxis"), Vector3::UnitY());
-				ClothSystem* cloth = m_World->CreateCloth(settings, center, horizontalAxis, verticalAxis);
-				if (ReadBool(clothValue.Find("pinTop"), true))
+				const bool ModernDemo = m_ClothModelDemo && m_Name == "Cloth" && !m_DemoCloth;
+				const bool PinTop = ReadBool(clothValue.Find("pinTop"), true);
+				ClothSystem* cloth = ModernDemo ? CreateClothDemo(settings, center, horizontalAxis, verticalAxis, PinTop)
+					: m_World->CreateCloth(settings, center, horizontalAxis, verticalAxis);
+				if (!ModernDemo && PinTop)
 				{
 					for (int column = 0; column < cloth->GetColumns(); ++column)
 					{
@@ -2155,6 +2588,8 @@ namespace Riemann
 			TouchRenderRevision();
 		}
 
+		if (!CreateCharacterDemo(root, errorMessage)) return false;
+		if (!CreateReducedRagdollDemo(root, errorMessage)) return false;
 		if (!CreateVehicles(root, sourceName, errorMessage)) return false;
 
 		const JsonValue* ragdolls = root.Find("ragdolls");
@@ -2168,9 +2603,19 @@ namespace Riemann
 					return false;
 				}
 				RagdollSettings settings;
+				const std::string algorithm = ReadString(ragdollValue.Find("algorithm"), "jointConstraints");
+				if (algorithm == "reducedCoordinates") settings.Algorithm = RagdollAlgorithm::ReducedCoordinates;
+				else if (algorithm != "jointConstraints")
+				{
+					if (errorMessage) *errorMessage = sourceName + ": unsupported ragdoll algorithm";
+					return false;
+				}
+				if (m_HasRagdollAlgorithmOverride) settings.Algorithm = m_RagdollAlgorithmOverride;
 				const std::string definitionFile = ReadString(
 					ragdollValue.Find("definition"), std::string());
-				if (!definitionFile.empty()) settings.DefinitionFile = m_BaseDirectory + definitionFile;
+				settings.DefinitionFile = definitionFile.empty()
+					? DefaultRagdollDefinition(m_BaseDirectory, settings.DefinitionFile)
+					: m_BaseDirectory + definitionFile;
 				settings.Scale = ReadFloat(ragdollValue.Find("scale"), settings.Scale);
 				settings.LinearVelocity = ReadVector3(ragdollValue.Find("linearVelocity"), settings.LinearVelocity);
 				settings.AngularVelocity = ReadVector3(ragdollValue.Find("angularVelocity"), settings.AngularVelocity);
@@ -2205,7 +2650,755 @@ namespace Riemann
 			TouchRenderRevision();
 		}
 
+		if (!CreatePhysicalAnimationDemo(root,errorMessage)) return false;
+		if (!CreateStrandDemo()) { if (errorMessage) *errorMessage="Failed to create strand preview"; return false; }
+		if (m_DestructionCacheDemo) for (const auto& Set : m_DestructionSets)
+			m_DestructionRecorders.emplace_back(new DestructionCacheRecorder(*Set));
+		if (m_PhysicsFieldsDemo) ApplyPhysicsFieldsDemo(true);
 		return true;
+	}
+
+	ClothSystem* SceneWorld::CreateClothDemo(ClothSettings Settings, const Vector3& Center, const Vector3& Horizontal, const Vector3& Vertical, bool PinTop)
+	{
+		/* The existing cloth-and-sphere scene supplies dimensions and interaction.
+		   Remove cells for a hole and an asymmetric hem, then compact only referenced
+		   vertices. This exercises arbitrary topology without a new garment asset.
+		   Material UVs orient warp horizontally and weft vertically. Top vertices
+		   remain fixed unless the sampled animation explicitly moves those pins. */
+		const Vector3 U = Horizontal.Unit(), V = (Vertical - U * Vertical.Dot(U)).Unit();
+		constexpr float HoleU = -0.28f, HoleV = 0.03f, HoleRadius = 0.10f, NotchU = 0.2f, NotchV = -0.35f;
+		constexpr float SurfaceDensity = 0.25f; constexpr int Substeps = 4;
+		ClothMesh Mesh; std::vector<int> Remap((size_t)Settings.Rows * Settings.Columns, -1); std::vector<int> Pins;
+		std::vector<float> Weights;
+		auto AddVertex = [&](int Row, int Column)
+		{
+			int& Index = Remap[(size_t)Row * Settings.Columns + Column]; if (Index >= 0) return Index;
+			const float X = (float)Column / (Settings.Columns - 1) - 0.5f, Y = 0.5f - (float)Row / (Settings.Rows - 1);
+			Index = (int)Mesh.Positions.size(); Mesh.Positions.push_back(Center + U * (X * Settings.Width) + V * (Y * Settings.Height));
+			Mesh.MaterialCoordinates.emplace_back(X, Y); Weights.push_back(Y + 0.5f); if (Row == 0) Pins.push_back(Index); return Index;
+		};
+		for (int Row = 0; Row + 1 < Settings.Rows; ++Row) for (int Column = 0; Column + 1 < Settings.Columns; ++Column)
+		{
+			const float X = (Column + 0.5f) / (Settings.Columns - 1) - 0.5f, Y = 0.5f - (Row + 0.5f) / (Settings.Rows - 1);
+			if ((X - HoleU) * (X - HoleU) + (Y - HoleV) * (Y - HoleV) < HoleRadius * HoleRadius || (X > NotchU && Y < NotchV)) continue;
+			const int A = AddVertex(Row, Column), B = AddVertex(Row, Column + 1), C = AddVertex(Row + 1, Column), D = AddVertex(Row + 1, Column + 1);
+			Mesh.Triangles.emplace_back(A, C, B); Mesh.Triangles.emplace_back(B, C, D);
+		}
+		Settings.Model = ClothModel::TriangleStrain; Settings.SurfaceDensity = SurfaceDensity; Settings.Substeps = Substeps;
+		m_DemoCloth = m_World->CreateCloth(Settings, Mesh); m_ClothRestPose = Mesh.Positions;
+		m_ClothDemoMesh.reset(new ClothMesh(Mesh));
+		m_DemoClothGeometry = m_DemoCloth->GetRenderGeometry(); m_DemoCloth->SetAnimationWeights(Weights);
+		if (PinTop) for (int Index : Pins) m_DemoCloth->PinParticle(Index, Mesh.Positions[Index]);
+		ApplyClothDemo(true, false, true, false); return m_DemoCloth;
+	}
+	ClothSystem* SceneWorld::GetDemoCloth() const
+	{
+		if (m_World && m_DemoCloth) for (size_t I = 0; I < m_World->GetClothCount(); ++I)
+			if (m_World->GetCloth(I) == m_DemoCloth) return m_DemoCloth;
+		return nullptr;
+	}
+	bool SceneWorld::ApplyClothParameters(ClothModel Model, int Iterations, int Substeps, float Damping,
+		float StretchUCompliance, float StretchVCompliance, float ShearCompliance, float BendingCompliance)
+	{
+		if (!m_World || m_Name != "Cloth" || m_World->GetClothCount() == 0 || Iterations < 1 || Substeps < 1
+			|| (Model != ClothModel::DistanceLinks && Model != ClothModel::TriangleStrain)
+			|| !std::isfinite(Damping) || Damping < 0 || Damping > 1
+			|| !std::isfinite(StretchUCompliance) || StretchUCompliance < 0
+			|| !std::isfinite(StretchVCompliance) || StretchVCompliance < 0
+			|| !std::isfinite(ShearCompliance) || ShearCompliance < 0
+			|| !std::isfinite(BendingCompliance) || BendingCompliance < 0) return false;
+		for (size_t Index = 0; Index < m_World->GetClothCount(); ++Index)
+		{
+			auto* Cloth = m_World->GetCloth(Index);
+			Cloth->SetModel(Model);
+			Cloth->SetSolverParameters(Iterations, Substeps, Damping);
+			auto Material = Cloth->GetSettings().Material;
+			Material.StretchUCompliance = StretchUCompliance;
+			Material.StretchVCompliance = StretchVCompliance;
+			Material.ShearCompliance = ShearCompliance;
+			Material.BendingCompliance = BendingCompliance;
+			Cloth->SetMaterial(Material);
+		}
+		return true;
+	}
+	ClothSystem* SceneWorld::GetDemoClothPartner() const
+	{
+		if (m_World && m_DemoClothPartner) for (size_t I = 0; I < m_World->GetClothCount(); ++I)
+			if (m_World->GetCloth(I) == m_DemoClothPartner) return m_DemoClothPartner;
+		return nullptr;
+	}
+	void SceneWorld::PruneClothDemo()
+	{
+		if (!GetDemoCloth() && GetDemoClothPartner()) m_World->RemoveCloth(m_DemoClothPartner);
+		auto Prune = [&](ClothSystem*& Cloth, Geometry*& Geometry, std::vector<Vector3>& Rest, bool Present)
+		{
+			if (!Cloth || Present) return;
+			m_Objects.erase(std::remove_if(m_Objects.begin(), m_Objects.end(), [&](const SceneObjectInstance& Object)
+				{ return Object.GeometryPtr == Geometry; }), m_Objects.end());
+			Cloth = nullptr; Geometry = nullptr; Rest.clear(); TouchRenderRevision();
+		};
+		Prune(m_DemoCloth, m_DemoClothGeometry, m_ClothRestPose, GetDemoCloth() != nullptr);
+		Prune(m_DemoClothPartner, m_DemoClothPartnerGeometry, m_ClothPartnerRestPose, GetDemoClothPartner() != nullptr);
+		if (!m_DemoCloth) m_ClothDemoMesh.reset();
+	}
+	bool SceneWorld::ApplyClothDemo(bool Wind, bool Animation, bool Tethers, bool SoftMaterial, bool SurfaceContacts, bool Friction,
+		bool SelfCollision, bool InterCollision, bool Continuous, bool SoftBodyAttachments, bool CompliantAttachments, bool RigidAttachments, bool SoftBodyContacts, bool SoftRigidContacts,
+		bool CalibratedSoftMaterial, bool StVKSoftMaterial, bool PreparedSoftAsset, bool EmbeddedSoftRender, bool CorotatedSoftMaterial, bool ProjectiveSoftMaterial)
+	{
+		PruneClothDemo();
+		auto* Cloth = GetDemoCloth(); if (!Cloth) return false;
+		m_ClothSoftMaterial = SoftMaterial;
+		constexpr float StretchU = 1e-4f, StretchV = 2e-4f, Shear = 0.01f, Bend = 25, Softness = 20;
+		constexpr float NormalDrag = 1, TangentialDrag = 0.02f, WindSpeed = 3, AnimationCompliance = 0.04f, AnimationDamping = 2;
+		auto Material = Cloth->GetSettings().Material; const float Scale = SoftMaterial ? Softness : 1;
+		Material.StretchUCompliance = StretchU * Scale; Material.StretchVCompliance = StretchV * Scale;
+		Material.ShearCompliance = Shear * Scale; Material.BendingCompliance = Bend; Material.TethersEnabled = Tethers; Cloth->SetMaterial(Material);
+		auto Flow = Cloth->GetSettings().Wind; Flow.Velocity = Vector3(0, 0, WindSpeed); Flow.NormalDrag = Wind ? NormalDrag : 0;
+		Flow.TangentialDrag = Wind ? TangentialDrag : 0; Cloth->SetWind(Flow);
+		auto Drive = Cloth->GetSettings().AnimationDrive; Drive.Enabled = Animation; Drive.Compliance = AnimationCompliance; Drive.Damping = AnimationDamping;
+		Cloth->SetAnimationDrive(Drive);
+		auto Collision = Cloth->GetSettings().Collision; Collision.SurfaceContacts = SurfaceContacts;
+		Collision.SelfCollision = SelfCollision; Collision.InterCollision = InterCollision;
+		Collision.Continuous = Continuous;
+		Collision.Material = SurfaceContactMaterial();
+		if (!Friction) Collision.Material.StaticFriction = Collision.Material.DynamicFriction = 0;
+		Cloth->SetCollisionSettings(Collision);
+		if (InterCollision && !GetDemoClothPartner())
+		{
+			// A second layer reuses the procedural garment and existing sphere. Keep
+			// it when collision is disabled so the switch compares the same geometry.
+			// Opposing winds bring the layers together without any imported assets.
+			constexpr float LayerClearance = 0.1f;
+			auto Mesh = *m_ClothDemoMesh; const Vector3 Offset(0, 0, 2 * Cloth->GetSettings().Thickness + LayerClearance);
+			for (auto& Position : Mesh.Positions) Position += Offset;
+			m_DemoClothPartner = m_World->CreateCloth(Cloth->GetSettings(), Mesh); m_ClothPartnerRestPose = Mesh.Positions;
+			m_DemoClothPartnerGeometry = m_DemoClothPartner->GetRenderGeometry();
+			std::vector<float> Weights;
+			for (int I = 0; I < Cloth->GetParticleCount(); ++I)
+			{
+				Weights.push_back(Mesh.MaterialCoordinates[I].y + 0.5f);
+				if (Cloth->GetParticle(I).Pinned) m_DemoClothPartner->PinParticle(I, Mesh.Positions[I]);
+			}
+			m_DemoClothPartner->SetAnimationWeights(Weights);
+			for (const auto& Object : m_Objects) if (Object.GeometryPtr)
+			{
+				const auto* Sphere = Object.GeometryPtr->GetShapeObj<Sphere3>(); auto* Body = Object.GeometryPtr->GetParent<RigidBody>();
+				if (Sphere && Body) m_DemoClothPartner->AddSphereCollider(Body, Sphere->Radius, Body->GetGeometryTransform(Object.GeometryPtr).LocalToWorld(Sphere->Center));
+			}
+			SceneObjectInstance Object; Object.Id = "cloth_partner"; Object.GeometryPtr = m_DemoClothPartnerGeometry;
+			Object.Color = Vector4(0.3f, 0.85f, 0.5f, 1); m_Objects.push_back(Object); TouchRenderRevision();
+		}
+		if (auto* Partner = GetDemoClothPartner())
+		{
+			Flow.Velocity = -Flow.Velocity;
+			Partner->SetMaterial(Material); Partner->SetWind(Flow); Partner->SetAnimationDrive(Drive); Partner->SetCollisionSettings(Collision);
+		}
+		return ApplyDeformableAttachmentDemo(SoftBodyAttachments, CompliantAttachments, RigidAttachments) && ApplyDeformableContactDemo(SoftBodyContacts, SoftRigidContacts, PreparedSoftAsset, EmbeddedSoftRender)
+			&& (!SoftBodyContacts || ApplyDeformableMaterialDemo(CalibratedSoftMaterial, StVKSoftMaterial, CorotatedSoftMaterial, ProjectiveSoftMaterial));
+	}
+	bool SceneWorld::GetCalibratedSoftMaterialDemo() const
+	{
+		auto* Body = GetDemoContactBody(0); return Body && !Body->GetTetrahedra().empty() && Body->GetTetrahedra()[0].Material >= 0;
+	}
+	bool SceneWorld::GetStVKSoftMaterialDemo() const
+	{
+		if (!GetCalibratedSoftMaterialDemo()) return false; auto* Body = GetDemoContactBody(0);
+		return Body->GetMaterials()[Body->GetTetrahedra()[0].Material].Model == TetrahedralMaterialModel::SaintVenantKirchhoff;
+	}
+	bool SceneWorld::GetCorotatedSoftMaterialDemo() const
+	{
+		if (!GetCalibratedSoftMaterialDemo()) return false; auto* Body = GetDemoContactBody(0);
+		return Body->GetMaterials()[Body->GetTetrahedra()[0].Material].Model == TetrahedralMaterialModel::Corotated;
+	}
+	bool SceneWorld::GetProjectiveSoftMaterialDemo() const
+	{
+		auto* Body = GetDemoContactBody(0); return Body && Body->GetSettings().ProjectiveMaterials;
+	}
+	bool SceneWorld::ApplyDeformableMaterialDemo(bool Enabled, bool StVK, bool Corotated, bool Projective)
+	{
+		if (!m_World || m_Name != "Cloth" || !GetDemoContactBody(0) || !GetDemoContactBody(1)) return false;
+		if (Enabled && ((Projective && !Corotated) || (StVK && Corotated))) return false;
+		// These existing procedural bodies have one element each. Preserve their
+		// original four-kilogram mass while comparing calibrated elastic laws.
+		constexpr double LowerYoungModulus = 20000, UpperYoungModulus = 2000, PoissonRatio = 0.3;
+		for (size_t I = 0; I < 2; ++I)
+		{
+			auto* Body = GetDemoContactBody(I);
+			Body->SetProjectiveMaterialSolver(Enabled && Projective);
+			if (!Enabled) { Body->SetTetrahedronMaterial(0, -1); continue; }
+			TetrahedralMaterial Material; Material.Model = Corotated ? TetrahedralMaterialModel::Corotated : StVK ? TetrahedralMaterialModel::SaintVenantKirchhoff : TetrahedralMaterialModel::StableNeoHookean;
+			Material.YoungModulus = I ? UpperYoungModulus : LowerYoungModulus; Material.PoissonRatio = PoissonRatio;
+			const int Id = Body->GetMaterials().empty() ? Body->AddMaterial(Material) : 0;
+			Body->SetMaterial(Id, Material); Body->SetTetrahedronMaterial(0, Id);
+			Material.Density = Body->GetParticleCount() / Body->GetTetrahedronRestShape(0).Volume;
+			Body->SetMaterial(Id, Material); Body->ApplyMaterialDensities();
+		}
+		return true;
+	}
+	DeformableBody* SceneWorld::GetDemoContactBody(size_t Index) const
+	{
+		if (!m_World || Index >= m_DemoContactBodies.size()) return nullptr;
+		auto* Body = m_DemoContactBodies[Index].first; const auto& Bodies = m_World->GetDeformableBodies();
+		return std::find(Bodies.begin(), Bodies.end(), Body) != Bodies.end() && Body->GetRenderGeometry() == m_DemoContactBodies[Index].second ? Body : nullptr;
+	}
+	RigidBodyDynamic* SceneWorld::GetDemoContactRigid() const
+	{
+		if (!m_World || !m_DemoContactGeometry) return nullptr;
+		const auto* Proxy = m_World->GetGeometryQuery()->GetProxy(m_DemoContactHandle);
+		if (!Proxy || !Proxy->IsActive() || Proxy->Geom != m_DemoContactGeometry) return nullptr;
+		auto* Body = Proxy->Geom->GetParent<RigidBody>(); return Body ? Body->CastDynamic() : nullptr;
+	}
+	bool SceneWorld::GetPreparedSoftAssetDemo() const
+	{
+		auto* Body = GetDemoContactBody(0); return Body && Body->GetPreparedAsset();
+	}
+	bool SceneWorld::GetEmbeddedSoftRenderDemo() const
+	{
+		auto* Body = GetDemoContactBody(0); return Body && Body->IsEmbeddedRenderMeshEnabled();
+	}
+	bool SceneWorld::ApplyDeformableContactDemo(bool Enabled, bool Rigid, bool Prepared, bool Embedded)
+	{
+		if (!m_World || m_Name != "Cloth") return false;
+		if (Enabled && Rigid && ((m_World->GetResolutionSolver() != ResolutionPhaseSolver::PBD
+			&& m_World->GetResolutionSolver() != ResolutionPhaseSolver::XPBD) || m_World->GetSupportStabilizationSettings().Enabled)) return false;
+		if (Enabled && GetDemoContactBody(0) && GetDemoContactBody(1) && m_SoftRigidContactDemo == Rigid && GetPreparedSoftAssetDemo() == Prepared && (!Rigid || GetDemoContactRigid()))
+		{
+			if (Prepared && GetEmbeddedSoftRenderDemo() != Embedded)
+			{
+				for (size_t I = 0; I < 2; ++I) GetDemoContactBody(I)->UseEmbeddedRenderMesh(Embedded);
+				TouchRenderRevision();
+			}
+			return true;
+		}
+		if (!Enabled && m_DemoContactBodies.empty() && !m_DemoContactGeometry && !m_DemoContactGravity) return true;
+		if (m_DemoContactGravity) m_World->RemoveForceField(m_DemoContactGravity);
+		m_DemoContactGravity = nullptr;
+		m_Objects.erase(std::remove_if(m_Objects.begin(), m_Objects.end(), [&](const SceneObjectInstance& Object)
+			{ return m_DemoContactGeometry && Object.GeometryPtr == m_DemoContactGeometry; }), m_Objects.end());
+		if (auto* Body = GetDemoContactRigid()) { m_World->RemoveRigidBody(Body); Body->ReleaseGeometries(); delete Body; }
+		m_DemoContactGeometry = nullptr; m_DemoContactHandle = GeometryHandle(); m_SoftRigidContactDemo = Enabled && Rigid;
+		for (const auto& Entry : m_DemoContactBodies)
+		{
+			m_Objects.erase(std::remove_if(m_Objects.begin(), m_Objects.end(), [&](const SceneObjectInstance& Object)
+				{ return Object.GeometryPtr == Entry.second; }), m_Objects.end());
+			const auto& Bodies = m_World->GetDeformableBodies();
+			if (std::find(Bodies.begin(), Bodies.end(), Entry.first) != Bodies.end() && Entry.first->GetRenderGeometry() == Entry.second)
+				m_World->RemoveDeformableBody(Entry.first);
+		}
+		m_DemoContactBodies.clear(); TouchRenderRevision();
+		if (!Enabled) return true;
+		// Separate procedural tetrahedra exercise surface contact without fighting
+		// the original attachment demo's zero-gap face anchor. The lower volume is
+		// held at its center; the upper volume falls onto its deformable top face.
+		constexpr float SidePosition = -5.8f, ContactHeight = 2, HalfWidth = 0.5f, Height = 1, InitialGap = 0.15f;
+		constexpr float BallRadius = 0.35f, BallMass = 1.5f;
+		DeformableBodySettings Settings; Settings.Substeps = 8; Settings.SolverIterations = 32;
+		Settings.EdgeCompliance = 1e-5f; Settings.VolumeCompliance = 1e-7f; Settings.Damping = 0.8f;
+		Settings.GroundEnabled = false; Settings.ParticleRadius = 0.035f;
+		Settings.Collision.InterCollision = Settings.Collision.SelfCollision = true;
+		Settings.Collision.RigidCollision = Rigid;
+		try
+		{
+			m_DemoContactBodies.reserve(2);
+			for (int I = 0; I < 2; ++I)
+			{
+				DeformableBody* Body = nullptr;
+				const Vector3 Origin(SidePosition, ContactHeight + (I ? InitialGap + (Rigid ? BallRadius * 2 : 0) : 0), 0);
+				const std::vector<Vector3> Positions = { Vector3(-HalfWidth, 0, -HalfWidth), Vector3(HalfWidth, 0, -HalfWidth),
+					Vector3(0, 0, 2 * HalfWidth), Vector3(0, I ? Height : -Height, 0) };
+				if (!Prepared)
+				{
+					Body = m_World->CreateDeformableBody(Settings); m_DemoContactBodies.push_back({ Body, nullptr });
+					for (const auto& P : Positions) Body->AddParticle(Origin + P);
+					Body->AddTetrahedron(0, 1, 2, 3);
+					Body->SetSurfaceTriangles({ Index3(0, 2, 1), Index3(0, 1, 3), Index3(1, 2, 3), Index3(2, 0, 3) });
+				}
+				else
+				{
+					// Refine only the visible surface. The same four simulation nodes and
+					// four collision faces exercise embedding without new resource files.
+					constexpr int RenderRefinements = 2; constexpr double BodyMass = 4;
+					TetrahedralAssetInput Input; Input.Positions = Positions; Input.Elements.push_back({ {0,1,2,3}, 0 });
+					const auto Base = TetrahedralAsset::Prepare(Input);
+					Input.Materials[0].Density = BodyMass / Base.GetStats().TotalVolume;
+					Input.RenderPositions = Positions; Input.RenderTriangles = Base.GetBoundary();
+					for (int Level = 0; Level < RenderRefinements; ++Level)
+					{
+						std::map<std::pair<int,int>,int> Midpoints; std::vector<Index3> Refined;
+						auto Midpoint = [&](int A, int B)
+						{
+							const auto Key = std::minmax(A, B); auto Found = Midpoints.find(Key); if (Found != Midpoints.end()) return Found->second;
+							const int Id = (int)Input.RenderPositions.size(); Input.RenderPositions.push_back((Input.RenderPositions[A] + Input.RenderPositions[B]) / 2);
+							Midpoints.emplace(Key, Id); return Id;
+						};
+						for (const auto& F : Input.RenderTriangles)
+						{
+							const int AB = Midpoint(F.a,F.b), BC = Midpoint(F.b,F.c), CA = Midpoint(F.c,F.a);
+							Refined.insert(Refined.end(), { Index3(F.a,AB,CA), Index3(AB,F.b,BC), Index3(CA,BC,F.c), Index3(AB,BC,CA) });
+						}
+						Input.RenderTriangles.swap(Refined);
+					}
+					Body = m_World->CreateDeformableBody(TetrahedralAsset::Prepare(Input), Settings, Transform(Origin));
+					m_DemoContactBodies.push_back({ Body, Body->GetRenderGeometry() }); Body->UseEmbeddedRenderMesh(Embedded);
+				}
+				m_DemoContactBodies.back().second = Body->GetRenderGeometry();
+				SceneObjectInstance Object; Object.Id = I ? "soft_contact_upper" : "soft_contact_lower";
+				Object.GeometryPtr = Body->GetRenderGeometry(); Object.Color = I ? Vector4(0.2f, 0.8f, 0.95f, 1) : Vector4(0.4f, 0.85f, 0.3f, 1);
+				m_Objects.push_back(Object);
+			}
+			auto* Lower = GetDemoContactBody(0);
+			const auto Center = BarycentricPoint::Tetrahedron({ 0, 1, 2, 3 }, { 0.25, 0.25, 0.25, 0.25 });
+			Lower->AttachToWorld(Center, Lower->GetPointPosition(Center));
+			if (Rigid)
+			{
+				// A free rigid ball between the two soft volumes makes their contact
+				// reactions visible without introducing any imported geometry.
+				Geometry* Shape = GeometryFactory::CreateSphere(Vector3(SidePosition, ContactHeight + BallRadius + InitialGap / 2, 0), BallRadius);
+				auto* Mass = Shape->GetMassParameters(); Mass->InertiaMat *= BallMass / Mass->Mass; Mass->Mass = BallMass;
+				RigidBodyParam Param; Param.rigidType = RigidType::Dynamic; Param.disableGravity = true;
+				auto* Body = m_World->CreateRigidBody(Shape, Param)->CastDynamic();
+				m_DemoContactGeometry = Shape; m_DemoContactHandle = Body->GetGeometryHandle(0);
+				m_DemoContactGravity = m_World->AddForceField(new AttachmentPayloadGravity(m_DemoContactHandle, Settings.Gravity));
+				SceneObjectInstance Object; Object.Id = "soft_contact_ball"; Object.GeometryPtr = Shape; Object.Color = Vector4(1, 0.65f, 0.15f, 1); m_Objects.push_back(Object);
+			}
+		}
+		catch (...) { ApplyDeformableContactDemo(false); throw; }
+		TouchRenderRevision(); return true;
+	}
+	DeformableBody* SceneWorld::GetDemoDeformableBody(size_t Index) const
+	{
+		if (!m_World || Index >= m_DemoSoftBodies.size()) return nullptr;
+		auto* Body = m_DemoSoftBodies[Index].first; const auto& Bodies = m_World->GetDeformableBodies();
+		return std::find(Bodies.begin(), Bodies.end(), Body) != Bodies.end() && Body->GetRenderGeometry() == m_DemoSoftBodies[Index].second ? Body : nullptr;
+	}
+	RigidBodyDynamic* SceneWorld::GetDemoAttachmentRigid() const
+	{
+		if (!m_World || !m_DemoAttachmentGeometry) return nullptr;
+		const auto* Proxy = m_World->GetGeometryQuery()->GetProxy(m_DemoAttachmentHandle);
+		if (!Proxy || !Proxy->IsActive() || Proxy->Geom != m_DemoAttachmentGeometry) return nullptr;
+		auto* Body = Proxy->Geom->GetParent<RigidBody>(); return Body ? Body->CastDynamic() : nullptr;
+	}
+	bool SceneWorld::ApplyDeformableAttachmentDemo(bool Enabled, bool Compliant, bool Rigid)
+	{
+		if (!m_World || m_Name != "Cloth") return false;
+		if (Enabled && Rigid && ((m_World->GetResolutionSolver() != ResolutionPhaseSolver::PBD
+			&& m_World->GetResolutionSolver() != ResolutionPhaseSolver::XPBD) || m_World->GetSupportStabilizationSettings().Enabled)) return false;
+		if (Enabled && GetDemoDeformableBody(0) && GetDemoDeformableBody(1) && m_CompliantAttachmentDemo == Compliant
+			&& m_RigidAttachmentDemo == Rigid && (!Rigid || GetDemoAttachmentRigid())) return true;
+		if (!Enabled && m_DemoSoftBodies.empty() && !m_DemoAttachmentGeometry && !m_DemoAttachmentGravity) return true;
+		if (m_DemoAttachmentGravity) m_World->RemoveForceField(m_DemoAttachmentGravity);
+		m_DemoAttachmentGravity = nullptr;
+		m_Objects.erase(std::remove_if(m_Objects.begin(), m_Objects.end(), [&](const SceneObjectInstance& Object)
+			{ return m_DemoAttachmentGeometry && Object.GeometryPtr == m_DemoAttachmentGeometry; }), m_Objects.end());
+		if (auto* Body = GetDemoAttachmentRigid())
+		{
+			m_World->RemoveRigidBody(Body); Body->ReleaseGeometries(); delete Body;
+		}
+		m_DemoAttachmentHandle = GeometryHandle(); m_DemoAttachmentGeometry = nullptr; m_RigidAttachmentDemo = Enabled && Rigid;
+		for (const auto& Entry : m_DemoSoftBodies)
+		{
+			m_Objects.erase(std::remove_if(m_Objects.begin(), m_Objects.end(), [&](const SceneObjectInstance& Object)
+				{ return Object.GeometryPtr == Entry.second; }), m_Objects.end());
+			const auto& Bodies = m_World->GetDeformableBodies();
+			if (std::find(Bodies.begin(), Bodies.end(), Entry.first) != Bodies.end() && Entry.first->GetRenderGeometry() == Entry.second)
+				m_World->RemoveDeformableBody(Entry.first);
+		}
+		m_DemoSoftBodies.clear(); m_CompliantAttachmentDemo = Compliant; TouchRenderRevision();
+		if (!Enabled) return true;
+		// Reuse scene 08 with two procedural tetrahedra beside the garment. Their
+		// interior/face anchors exercise barycentric response without imported assets.
+		// The existing cloth remains selectable, as do hard and compliant attachments.
+		constexpr float SidePosition = 5.8f, TopHeight = 5, HalfWidth = 0.5f, Height = 1;
+		constexpr double AttachmentCompliance = 0.002;
+		DeformableBodySettings Settings; Settings.Substeps = 4; Settings.SolverIterations = 24;
+		Settings.EdgeCompliance = 1e-5f; Settings.VolumeCompliance = 1e-6f; Settings.Damping = 0.8f;
+		try
+		{
+			m_DemoSoftBodies.reserve(2);
+			for (int I = 0; I < 2; ++I)
+			{
+				auto* Body = m_World->CreateDeformableBody(Settings); m_DemoSoftBodies.push_back({ Body, nullptr });
+				const Vector3 Origin(SidePosition, TopHeight - I * Height, 0);
+				Body->AddParticle(Origin + Vector3(-HalfWidth, 0, -HalfWidth));
+				Body->AddParticle(Origin + Vector3(HalfWidth, 0, -HalfWidth));
+				Body->AddParticle(Origin + Vector3(0, 0, 2 * HalfWidth));
+				Body->AddParticle(Origin + Vector3(0, -Height, 0));
+				Body->AddTetrahedron(0, 1, 2, 3);
+				Body->SetSurfaceTriangles({ Index3(0, 2, 1), Index3(0, 1, 3), Index3(1, 2, 3), Index3(2, 0, 3) });
+				if (I) for (int J = 0; J < Body->GetParticleCount(); ++J) Body->SetParticleVelocity(J, Vector3(0, 0, 1));
+				m_DemoSoftBodies.back().second = Body->GetRenderGeometry();
+				SceneObjectInstance Object; Object.Id = I ? "soft_attachment_lower" : "soft_attachment_upper";
+				Object.GeometryPtr = Body->GetRenderGeometry(); Object.Color = I ? Vector4(0.95f, 0.35f, 0.6f, 1) : Vector4(0.95f, 0.75f, 0.2f, 1);
+				m_Objects.push_back(Object);
+			}
+			auto* Upper = GetDemoDeformableBody(0); auto* Lower = GetDemoDeformableBody(1);
+			const auto Center = BarycentricPoint::Tetrahedron({ 0, 1, 2, 3 }, { 0.25, 0.25, 0.25, 0.25 });
+			const auto Face = BarycentricPoint::Triangle(Index3(0, 1, 2), Vector3(1.0f / 3));
+			const double Compliance = Compliant ? AttachmentCompliance : 0;
+			Upper->AttachToWorld(Center, Upper->GetPointPosition(Center), Compliance);
+			Lower->AttachToBody(Face, Upper, BarycentricPoint::Vertex(3), Compliance);
+			if (Rigid)
+			{
+				// An off-center procedural payload makes the angular and two-way
+				// response visible while preserving the original soft-only option.
+				const Vector3 Anchor = Lower->GetParticle(3).Position;
+				const Vector3 Offset(0.35f, -0.4f, 0), Extent(0.4f, 0.3f, 0.35f);
+				constexpr float PayloadMass = 2;
+				RigidBodyParam Param; Param.rigidType = RigidType::Dynamic; Param.disableGravity = true;
+				Geometry* Shape = GeometryFactory::CreateOBB(Anchor + Offset, Extent, Quaternion::One());
+				auto* Mass = Shape->GetMassParameters(); Mass->InertiaMat *= PayloadMass / Mass->Mass; Mass->Mass = PayloadMass;
+				auto* Payload = m_World->CreateRigidBody(Shape, Param)->CastDynamic();
+				m_DemoAttachmentGeometry = Shape; m_DemoAttachmentHandle = Payload->GetGeometryHandle(0);
+				// Scene 08 has zero rigid-world gravity. Give this payload the same
+				// acceleration as the soft bodies, evaluated once per physical substep.
+				m_DemoAttachmentGravity = m_World->AddForceField(new AttachmentPayloadGravity(m_DemoAttachmentHandle, Settings.Gravity));
+				m_World->AttachDeformableToRigid(Lower, BarycentricPoint::Vertex(3), Payload, Anchor, Compliance);
+				SceneObjectInstance Object; Object.Id = "soft_attachment_payload"; Object.GeometryPtr = Shape;
+				Object.Color = Vector4(0.2f, 0.65f, 0.95f, 1); m_Objects.push_back(Object);
+			}
+		}
+		catch (...) { ApplyDeformableAttachmentDemo(false, Compliant); throw; }
+		TouchRenderRevision(); return true;
+	}
+	void SceneWorld::SampleClothDemo(float Dt)
+	{
+		if (!m_DemoContactBodies.empty() && (!GetDemoContactBody(0) || !GetDemoContactBody(1) || (m_SoftRigidContactDemo && !GetDemoContactRigid()))) ApplyDeformableContactDemo(false);
+		if (!m_DemoSoftBodies.empty() && (!GetDemoDeformableBody(0) || !GetDemoDeformableBody(1) || (m_RigidAttachmentDemo && !GetDemoAttachmentRigid()))) ApplyDeformableAttachmentDemo(false, false);
+		PruneClothDemo(); auto* Cloth = GetDemoCloth(); if (!Cloth) return;
+		if (Cloth->GetSettings().AnimationDrive.Enabled) m_ClothAnimationTime += Dt;
+		constexpr double Frequency = 1.1; constexpr float SwayAmplitude = 0.6f;
+		const Vector3 Offset(0, 0, SwayAmplitude * (float)std::sin(Frequency * m_ClothAnimationTime));
+		auto Pose = m_ClothRestPose; for (auto& Position : Pose) Position += Offset;
+		Cloth->SetAnimationPose(Pose, Dt);
+		if (auto* Partner = GetDemoClothPartner())
+		{
+			Pose = m_ClothPartnerRestPose; for (auto& Position : Pose) Position += Offset; Partner->SetAnimationPose(Pose, Dt);
+		}
+	}
+
+	bool SceneWorld::CreatePhysicalAnimationDemo(const JsonValue& Root, std::string* Error)
+	{
+		if (!m_PhysicalAnimationDemo || ReadString(Root.Find("name"), "") != "Ragdoll") return true;
+		/* The existing stair scene keeps its passive falling character. On the
+		   landing, gold is a driven physical ragdoll and cyan is its presentation
+		   pose, translated sideways for comparison. Cyan geometry belongs only to
+		   the Viewer: it never enters collision queries or the constraint graph.
+		   This adapter samples a procedural shoulder/elbow animation around the
+		   authored joint anchors, then submits WORLD COM transforms. Rotating a
+		   bone around its COM instead would separate the animation's joint anchors.
+		   A world-space pelvis servo supplies external support; this demonstrates
+		   physical animation, not autonomous balance or an authored get-up motion. */
+		const Vector3 Origin(-12.8f, 0.5f, 0);
+		constexpr float MuscleStiffness = 200, MuscleDamping = 20, MuscleTorque = 100;
+		constexpr float RootStiffness = 400, RootDamping = 40, RootForce = 500, InitialPhysicsBlend = 0.5f;
+		constexpr int DemoSubsteps = 4;
+		RagdollSettings Settings; Settings.DisableSelfCollision = true;
+		Settings.DefinitionFile = DefaultRagdollDefinition(m_BaseDirectory, Settings.DefinitionFile);
+		auto* Character = m_World->CreateRagdoll(Settings, Transform(Origin));
+		if (!Character) { if (Error) *Error = "Failed to create physical animation ragdoll."; return false; }
+		m_DemoAnimation = m_World->CreatePhysicalAnimation(Character);
+		auto* Animation = m_DemoAnimation;
+		auto Muscles = Animation->GetControl(0); Muscles.Angular.Acceleration = false;
+		Muscles.Angular.Stiffness = MuscleStiffness; Muscles.Angular.Damping = MuscleDamping; Muscles.Angular.MaxForce = MuscleTorque;
+		Muscles.PhysicsBlend = InitialPhysicsBlend; Animation->SetControlBelow(0, Muscles);
+		auto Pelvis = Muscles; Pelvis.Space = PhysicalAnimationSpace::World;
+		Pelvis.Linear.PositionEnabled = Pelvis.Linear.VelocityEnabled = true; Pelvis.Linear.Acceleration = false;
+		Pelvis.Linear.Stiffness = RootStiffness; Pelvis.Linear.Damping = RootDamping; Pelvis.Linear.MaxForce = RootForce;
+		Pelvis.Angular.Damping = RootDamping; Pelvis.Angular.MaxForce = RootForce; Animation->SetControl(0, Pelvis);
+		auto Temporal = m_World->GetTemporalSubstepSettings(); Temporal.Enabled = true; Temporal.Substeps = DemoSubsteps;
+		m_World->SetTemporalSubstepSettings(Temporal);
+		const auto Rest = Animation->GetPhysicsPose(); const auto& Bones = Animation->GetBones();
+		m_AnimationRestLocal.resize(Bones.size()); m_AnimationAnchors.resize(Bones.size()); m_AnimationAxes.resize(Bones.size());
+		for (size_t I = 0; I < Bones.size(); ++I)
+		{
+			const int Parent = Bones[I].Parent;
+			m_AnimationRestLocal[I] = Parent < 0 ? Rest[I] : Rest[Parent].TransformInv(Rest[I]);
+			if (Parent >= 0)
+			{
+				m_AnimationAxes[I] = Rest[Parent].WorldToLocalDirection(Vector3::UnitZ());
+				for (auto* Joint : Character->GetConstraints()) if (Joint->GetBodyB() == Bones[I].Body)
+					m_AnimationAnchors[I] = Rest[Parent].WorldToLocal(static_cast<PointConstraint*>(Joint)->GetWorldAnchorA());
+			}
+			for (size_t J = 0; J < Bones[I].Body->Geometries().size(); ++J)
+			{
+				auto* Shape = Bones[I].Body->Geometries()[J]; Geometry* Copy = nullptr;
+				// Only the three primitive types used by the existing ragdoll asset are
+				// copied. Preserve local shape data as well as the COM-to-shape offset.
+				if (const auto* Box = Shape->GetShapeObj<AxisAlignedBox3>())
+				{
+					Copy = GeometryFactory::CreateOBB(Vector3::Zero(), Vector3(1)); *Copy->GetShapeObj<AxisAlignedBox3>() = *Box;
+				}
+				else if (const auto* Sphere = Shape->GetShapeObj<Sphere3>())
+				{
+					Copy = GeometryFactory::CreateSphere(Vector3::Zero(), Sphere->Radius); *Copy->GetShapeObj<Sphere3>() = *Sphere;
+				}
+				else if (const auto* Capsule = Shape->GetShapeObj<Capsule3>())
+				{
+					Copy = GeometryFactory::CreateCapsule(Capsule->X0, Capsule->X1, Capsule->Radius); *Copy->GetShapeObj<Capsule3>() = *Capsule;
+				}
+				if (!Copy) { if (Error) *Error = "Unsupported physical animation demo shape."; return false; }
+				PhysicalAnimationRenderState Surface; Surface.Bone = I; Surface.Surface.reset(Copy);
+				Surface.LocalTransform = Rest[I].TransformInv(Bones[I].Body->GetGeometryTransform(Shape));
+				Copy->UpdateVolumeProperties(); Copy->SetSimulationEnabled(false); Copy->SetQueryEnabled(false);
+				m_AnimationSurfaces.push_back(std::move(Surface));
+				SceneObjectInstance Object; const std::string Suffix = std::to_string(I) + "_" + std::to_string(J);
+				Object.Id = "physical_animation_body_" + Suffix; Object.GeometryPtr = Shape; Object.Color = Vector4(0.98f, 0.75f, 0.16f, 1);
+				m_Objects.push_back(Object);
+				Object.Id = "physical_animation_blend_" + Suffix; Object.GeometryPtr = Copy; Object.Color = Vector4(0.15f, 0.78f, 0.91f, 1);
+				m_Objects.push_back(Object);
+			}
+		}
+		SyncPhysicalAnimationDemo(); TouchRenderRevision(); return true;
+	}
+	PhysicalAnimation* SceneWorld::GetDemoPhysicalAnimation() const
+	{
+		if (m_World && m_DemoAnimation) for (size_t I = 0; I < m_World->GetPhysicalAnimationCount(); ++I)
+			if (m_World->GetPhysicalAnimation(I) == m_DemoAnimation) return m_DemoAnimation;
+		return nullptr;
+	}
+	bool SceneWorld::ApplyPhysicalAnimationDemo(bool Passive, float LeftArmStrength, float PhysicsBlend)
+	{
+		auto* Animation = GetDemoPhysicalAnimation();
+		if (!Animation || !std::isfinite(LeftArmStrength) || !std::isfinite(PhysicsBlend)
+			|| LeftArmStrength < 0 || LeftArmStrength > 1 || PhysicsBlend < 0 || PhysicsBlend > 1) return false;
+		for (size_t I = 0; I < Animation->GetBones().size(); ++I)
+		{
+			auto Control = Animation->GetControl(I); Control.PhysicsBlend = PhysicsBlend; Animation->SetControl(I, Control);
+		}
+		const size_t Arm = (size_t)RagdollBone::LeftUpperArm;
+		auto Control = Animation->GetControl(Arm); Control.Strength = LeftArmStrength; Animation->SetControlBelow(Arm, Control);
+		constexpr float RecoveryDuration = 1.5f, KnockdownAngularSpeed = 1.5f;
+		if (Passive && Animation->GetState() != PhysicalAnimationState::Passive)
+		{
+			Animation->SetActive(false);
+			Animation->GetBones()[(size_t)RagdollBone::Torso].Body->W += Vector3::UnitZ() * KnockdownAngularSpeed;
+		}
+		else if (!Passive && Animation->GetState() == PhysicalAnimationState::Passive) Animation->BeginRecovery(RecoveryDuration);
+		SyncPhysicalAnimationDemo(); return true;
+	}
+	void SceneWorld::SamplePhysicalAnimationDemo(float Dt)
+	{
+		auto* Animation = GetDemoPhysicalAnimation(); if (!Animation) return;
+		m_PhysicalAnimationTime += Dt;
+		constexpr double Frequency = 1.2;
+		constexpr float ShoulderAmplitude = 20 * PI / 180, ElbowAmplitude = 35 * PI / 180;
+		const float Wave = (float)((1 - std::cos(m_PhysicalAnimationTime * Frequency)) / 2);
+		std::vector<Transform> Pose(m_AnimationRestLocal.size());
+		for (size_t I = 0; I < Pose.size(); ++I)
+		{
+			float Angle = 0; const auto Bone = (RagdollBone)I;
+			if (Bone == RagdollBone::LeftUpperArm) Angle = -ShoulderAmplitude * Wave;
+			if (Bone == RagdollBone::RightUpperArm) Angle = ShoulderAmplitude * Wave;
+			if (Bone == RagdollBone::LeftLowerArm) Angle = -ElbowAmplitude * Wave;
+			if (Bone == RagdollBone::RightLowerArm) Angle = ElbowAmplitude * Wave;
+			Transform Local = m_AnimationRestLocal[I];
+			if (Angle != 0)
+			{
+				Quaternion Rotation; Rotation.FromRotationAxis(m_AnimationAxes[I], Angle);
+				Local.pos = m_AnimationAnchors[I] + Rotation * (Local.pos - m_AnimationAnchors[I]);
+				Local.quat = (Rotation * Local.quat).Unit();
+			}
+			const int Parent = Animation->GetBones()[I].Parent; Pose[I] = Parent < 0 ? Local : Pose[Parent] * Local;
+		}
+		Animation->SetAnimationPose(Pose, Dt);
+	}
+	void SceneWorld::SyncPhysicalAnimationDemo()
+	{
+		auto* Animation = GetDemoPhysicalAnimation();
+		if (!Animation)
+		{
+			if (!m_DemoAnimation) return;
+			// Removing the controller or a bound body invalidates this demo adapter.
+			// Remove its render bindings before any borrowed geometry can be read.
+			m_Objects.erase(std::remove_if(m_Objects.begin(), m_Objects.end(), [](const SceneObjectInstance& Object)
+				{ return Object.Id.find("physical_animation_") == 0; }), m_Objects.end());
+			m_AnimationSurfaces.clear(); m_DemoAnimation = nullptr; TouchRenderRevision(); return;
+		}
+		const auto Pose = Animation->GetBlendedPose(); const Vector3 ComparisonOffset(3.6f, 0, 0);
+		for (auto& Surface : m_AnimationSurfaces)
+		{
+			const Transform World = Pose[Surface.Bone] * Surface.LocalTransform;
+			Surface.Surface->SetTransform(World.pos + ComparisonOffset, World.quat);
+		}
+	}
+
+	bool SceneWorld::CreateReducedRagdollDemo(const JsonValue& Root, std::string* Error)
+	{
+		if (!m_ReducedRagdollDemo || ReadString(Root.Find("name"), "") != "Constraints") return true;
+		if (m_World->GetResolutionSolver() != ResolutionPhaseSolver::SequentialImpulse || m_World->GetSolverBackend() != SolverBackend::CPU
+			|| m_World->GetSupportStabilizationSettings().Enabled)
+		{
+			if (Error) *Error = "The reduced-coordinate ragdoll demo requires CPU sequential impulses with support stabilization disabled.";
+			return false;
+		}
+		/* These procedural mechanisms extend the existing constraint scene. The
+		   anchored chain demonstrates exact joint kinematics, the arm combines two
+		   hinges with a telescoping slider, and the floating chain tests contact
+		   response throughout a tree. Shapes are centered on the model's COM; joint
+		   frames live at the ends of the bars. No render or collision asset is needed.
+		   The Joint drives switch powers the arm, transmission and cable winches
+		   without changing their topology or limits. Substeps improve long chains;
+		   they do not replace contact/joint iterations or increase drive force caps. */
+		constexpr int ChainLinks = 16, ArmLinks = 3, FloatingLinks = 5, DemoSubsteps = 4;
+		constexpr float ChainLength = 0.45f, ArmLength = 1.5f, FloatingLength = 1.0f, JointDamping = 0.05f;
+		const Vector3 ChainExtent(0.12f, ChainLength / 2, 0.12f), ArmExtent(0.2f, ArmLength / 2, 0.2f);
+		const Vector3 FloatingExtent(FloatingLength / 2, 0.18f, 0.18f), BaseExtent(0.25f);
+		auto AddTree = [&](const std::string& Name, RagdollSettings& Settings, const std::vector<Vector3>& Extents, const Vector4& Color)
+		{
+			std::vector<RigidBodyDynamic*> Bodies;
+			for (size_t I = 0; I < Settings.Links.size(); ++I)
+			{
+				auto& Link = Settings.Links[I]; const Vector3& H = Extents[I];
+				Link.Inertia = Matrix3(H.y * H.y + H.z * H.z, H.x * H.x + H.z * H.z, H.x * H.x + H.y * H.y) * (Link.Mass / 3);
+				Link.Damping = JointDamping;
+				auto* Shape = GeometryFactory::CreateOBB(Vector3::Zero(), H);
+				RigidBodyParam Parameters; Parameters.rigidType = RigidType::Dynamic; Parameters.maxContactImpulse = FLT_MAX;
+				auto* Body = m_World->CreateRigidBody(Shape, Parameters)->CastDynamic();
+				Body->SetRestitution(0); Body->SetFriction(0.7f, 0.8f); Bodies.push_back(Body);
+				SceneObjectInstance Object; Object.Id = Name + "_" + std::to_string(I); Object.GeometryPtr = Shape;
+				Object.Color = Link.Joint == RagdollReducedJointType::Fixed ? Vector4(0.9f, 0.9f, 0.9f, 1) : Color;
+				m_Objects.push_back(Object);
+			}
+			return m_World->CreateRagdoll(Settings, Bodies);
+		};
+		RagdollSettings Chain = RagdollSettings::Reduced(); Chain.Links.resize(ChainLinks + 1);
+		std::vector<Vector3> ChainExtents(Chain.Links.size(), ChainExtent); ChainExtents[0] = BaseExtent;
+		Chain.Links[0].ParentToJoint.pos = Vector3(-8, 7, -6);
+		for (int I = 1; I <= ChainLinks; ++I)
+		{
+			auto& Link = Chain.Links[I]; Link.Parent = I - 1; Link.Joint = RagdollReducedJointType::Revolute;
+			Link.ParentToJoint.pos = Vector3(0, I == 1 ? 0 : -ChainLength, 0); Link.CenterOfMass = Vector3(0, -ChainLength / 2, 0);
+		}
+		auto* Hanging = AddTree("ragdoll_chain", Chain, ChainExtents, Vector4(0.95f, 0.56f, 0.18f, 1));
+		auto Configuration = Hanging->GetDynamics().GetConfiguration(); Configuration[1].Position = 0.5;
+		Hanging->SetConfiguration(Configuration);
+
+		RagdollSettings Arm = RagdollSettings::Reduced(); Arm.Links.resize(ArmLinks);
+		for (int I = 0; I < ArmLinks; ++I)
+		{
+			auto& Link = Arm.Links[I]; Link.Parent = I - 1;
+			Link.Joint = I + 1 == ArmLinks ? RagdollReducedJointType::Prismatic : RagdollReducedJointType::Revolute;
+			Link.Axis = Link.Joint == RagdollReducedJointType::Prismatic ? -Vector3::UnitY() : Vector3::UnitZ();
+			Link.ParentToJoint.pos = I == 0 ? Vector3(0, 5, -6) : Vector3(0, -ArmLength, 0);
+			Link.CenterOfMass = Vector3(0, -ArmLength / 2, 0);
+		}
+		auto* Driven = AddTree("ragdoll_arm", Arm, std::vector<Vector3>(ArmLinks, ArmExtent), Vector4(0.2f, 0.8f, 0.7f, 1));
+		const float Targets[] = { 0.6f, -0.8f, 0.4f };
+		constexpr float AngularLimit = 1.2f, SliderTravel = 0.6f, DriveStiffness = 40, DriveDamping = 12, DriveForce = 200;
+		for (int I = 0; I < ArmLinks; ++I)
+		{
+			const bool Slider = I + 1 == ArmLinks; RagdollControl Control;
+			Control.LimitEnabled = true; Control.Lower = Slider ? 0 : -AngularLimit; Control.Upper = Slider ? SliderTravel : AngularLimit;
+			Control.Drive.Settings.PositionEnabled = true; Control.Drive.Settings.Acceleration = true;
+			Control.Drive.Settings.Stiffness = DriveStiffness; Control.Drive.Settings.Damping = DriveDamping; Control.Drive.Settings.MaxForce = DriveForce;
+			Control.Drive.TargetPosition = Targets[I]; Driven->SetControl(I, Control);
+		}
+
+		RagdollSettings Floating = RagdollSettings::Reduced(); Floating.Links.resize(FloatingLinks);
+		for (int I = 0; I < FloatingLinks; ++I)
+		{
+			auto& Link = Floating.Links[I]; Link.Parent = I - 1;
+			Link.Joint = I == 0 ? RagdollReducedJointType::Floating : RagdollReducedJointType::Spherical;
+			Link.ParentToJoint.pos = I == 0 ? Vector3(4, 4, -6) : Vector3(FloatingLength, 0, 0);
+			Link.CenterOfMass = Vector3(FloatingLength / 2, 0, 0);
+		}
+		auto* Falling = AddTree("ragdoll_floating", Floating, std::vector<Vector3>(FloatingLinks, FloatingExtent), Vector4(0.6f, 0.4f, 0.9f, 1));
+		auto Velocity = Falling->GetDynamics().GetVelocity(); Velocity[2] = 0.2; Velocity[5] = 0.5; Falling->SetVelocity(Velocity);
+
+		// Independent shafts share a fixed root so gear, rack and mimic rows close
+		// loops inside one reduced ragdoll. Bars visualize rotation; teeth are not
+		// collision geometry. The periodic input keeps the rack within the scene.
+		RagdollSettings Transmission = RagdollSettings::Reduced(); Transmission.Links.resize(5);
+		Transmission.Links[0].ParentToJoint.pos = Vector3(-5, 5, -10);
+		const Vector3 ShaftPositions[] = { Vector3(-1.3f, 0, 0), Vector3(1.3f, 0, 0), Vector3(1.3f, -1.4f, 0), Vector3(4.2f, 0, 0) };
+		for (size_t I = 1; I < Transmission.Links.size(); ++I)
+		{
+			auto& Link = Transmission.Links[I]; Link.Parent = 0; Link.ParentToJoint.pos = ShaftPositions[I - 1];
+			Link.Joint = I == 3 ? RagdollReducedJointType::Prismatic : RagdollReducedJointType::Revolute;
+			Link.Axis = I == 3 ? Vector3::UnitX() : Vector3::UnitZ();
+		}
+		const Vector3 InputExtent(1, 0.12f, 0.18f), OutputExtent(0.65f, 0.12f, 0.18f), RackExtent(1, 0.16f, 0.25f);
+		auto* Gears = AddTree("mechanism_transmission", Transmission, { BaseExtent, InputExtent, OutputExtent, RackExtent, OutputExtent }, Vector4(0.9f, 0.3f, 0.2f, 1));
+		constexpr double GearRatio = 1.5, PinionRadius = 0.65, MimicRatio = -1;
+		Gears->CreateMechanism(RagdollMechanismSettings::Gear(1, 2, GearRatio));
+		Gears->CreateMechanism(RagdollMechanismSettings::Rack(2, 3, PinionRadius));
+		Gears->CreateMechanism(RagdollMechanismSettings::Mimic(1, 4, MimicRatio));
+		RagdollControl Motor; Motor.Drive.Settings.PositionEnabled = true; Motor.Drive.Settings.Stiffness = DriveStiffness;
+		Motor.Drive.Settings.Damping = DriveDamping; Motor.Drive.Settings.MaxForce = DriveForce;
+		Gears->SetControl(0, Motor); m_MechanismDemoDrivers.push_back(Gears);
+
+		// Two winches compare an inextensible cable with a compliant one. Moving one
+		// weight pays cable through two authored guides and raises the other weight.
+		// Both use the same rendered tube, sampled directly from tendon attachments;
+		// no extra rope simulation or contact constraint changes their dynamics.
+		constexpr float GuideOffset = 1.25f, HangingLength = 2.5f, CableRadius = 0.04f;
+		constexpr double CableStiffness = 400, CableDamping = 30;
+		for (int Mode = 0; Mode < 2; ++Mode)
+		{
+			const std::string Name = "mechanism_cable_" + std::to_string(Mode);
+			const Vector4 Color = Mode == 0 ? Vector4(0.95f, 0.75f, 0.15f, 1) : Vector4(0.85f, 0.35f, 0.75f, 1);
+			RagdollSettings Cable = RagdollSettings::Reduced(); Cable.Links.resize(3); Cable.Links[0].ParentToJoint.pos = Vector3(5 + Mode * 6.0f, 6, -10);
+			for (int I = 1; I < 3; ++I)
+			{
+				auto& Link = Cable.Links[I]; Link.Parent = 0; Link.Joint = RagdollReducedJointType::Prismatic; Link.Axis = Vector3::UnitY();
+				Link.ParentToJoint.pos = Vector3(I == 1 ? -GuideOffset : GuideOffset, -HangingLength, 0);
+			}
+			auto* Winch = AddTree(Name, Cable, { Vector3(GuideOffset + BaseExtent.x, 0.12f, 0.12f), Vector3(0.35f), Vector3(0.35f) }, Color);
+			RagdollMechanismSettings Tendon; Tendon.Type = RagdollMechanismType::SpatialTendon;
+			Tendon.Path = { { 1, Vector3::Zero() }, { 0, Vector3(-GuideOffset, 0, 0) }, { 0, Vector3(GuideOffset, 0, 0) }, { 2, Vector3::Zero() } };
+			Tendon.Target = 2 * (HangingLength + GuideOffset); Tendon.TensionOnly = true; Tendon.Compliant = Mode != 0;
+			Tendon.Stiffness = CableStiffness; Tendon.Damping = CableDamping; Winch->CreateMechanism(Tendon);
+			Winch->SetControl(0, Motor); m_MechanismDemoDrivers.push_back(Winch);
+			RopeSurfaceState Surface; Surface.TendonOwner = Winch; Surface.Radius = CableRadius;
+			Surface.Surface.reset(GeometryFactory::CreateTriangleMesh()); Surface.Surface->SetSimulationEnabled(false); Surface.Surface->SetQueryEnabled(false);
+			SceneObjectInstance Object; Object.Id = Name + "_surface"; Object.GeometryPtr = Surface.Surface.get(); Object.Color = Color;
+			m_Objects.push_back(Object); m_RopeSurfaces.push_back(std::move(Surface));
+		}
+		SyncRopeSurfaces();
+		auto Substeps = m_World->GetTemporalSubstepSettings(); Substeps.Enabled = true; Substeps.Substeps = DemoSubsteps;
+		m_World->SetTemporalSubstepSettings(Substeps);
+		TouchRenderRevision(); return true;
+	}
+
+	bool SceneWorld::CreateCharacterDemo(const JsonValue& Root, std::string* Error)
+	{
+		const JsonValue* Demo = Root.Find("characterDemo");
+		if (!Demo || !m_CharacterDemo) return true;
+		if (!Demo->IsObject()) { if (Error) *Error = "characterDemo must be an object"; return false; }
+		const Vector3 Origin = ReadVector3(Demo->Find("origin"), Vector3::Zero());
+		if (!std::isfinite(Origin.x) || !std::isfinite(Origin.y) || !std::isfinite(Origin.z))
+		{ if (Error) *Error = "Invalid character demo origin"; return false; }
+		// This optional course is procedural and belongs to the existing constraint
+		// demo. It exercises stairs, a walkable ramp, a steep ramp and a lift.
+		auto AddBox = [&](const std::string& Id, const Vector3& Position, const Vector3& Extent, const Quaternion& Rotation, const Vector4& Color)
+		{
+			Geometry* Shape = GeometryFactory::CreateOBB(Origin + Position, Extent, Rotation);
+			RigidBody* Body = m_World->CreateRigidBody(Shape, RigidBodyParam());
+			SceneObjectInstance Object; Object.Id = Id; Object.GeometryPtr = Shape; Object.Color = Color;
+			m_Objects.push_back(Object); return Body;
+		};
+		const Quaternion Identity = Quaternion::One();
+		AddBox("character_course_floor", Vector3(7, -0.25f, 0), Vector3(10, 0.25f, 4), Identity, Vector4(0.24f, 0.3f, 0.35f, 1));
+		const int StairCount = 3;
+		const float StairRise = 0.2f, StairRun = 1.0f;
+		for (int I = 0; I < StairCount; ++I)
+		{
+			const float Height = (I + 1) * StairRise;
+			AddBox("character_step_" + std::to_string(I), Vector3(2 + I * StairRun, Height / 2, 0),
+				Vector3(StairRun / 2, Height / 2, 1.2f), Identity, Vector4(0.3f, 0.65f, 0.4f, 1));
+		}
+		Quaternion Ramp; Ramp.FromRotateZ(0.3f);
+		AddBox("character_walkable_ramp", Vector3(7, 0.5f, 0), Vector3(1.8f, 0.15f, 1.2f), Ramp, Vector4(0.3f, 0.55f, 0.8f, 1));
+		Ramp.FromRotateZ(1.0f);
+		AddBox("character_steep_ramp", Vector3(10, 0.8f, -2), Vector3(1, 0.15f, 0.7f), Ramp, Vector4(0.8f, 0.35f, 0.3f, 1));
+		m_CharacterPlatform = AddBox("character_lift", Vector3(12, 0.1f, 0), Vector3(1.2f, 0.1f, 1.2f), Identity, Vector4(0.7f, 0.5f, 0.9f, 1));
+		m_CharacterPlatformOrigin = m_CharacterPlatform->X;
+		CharacterControllerSettings Settings;
+		Settings.Shape = m_CharacterBox ? CharacterShape::Box : CharacterShape::Capsule;
+		m_Character = m_World->CreateCharacterController(Settings, Origin + Vector3(0, 1.1f, 0));
+		SceneObjectInstance Object; Object.Id = "character"; Object.GeometryPtr = m_Character->GetGeometry();
+		Object.Color = Vector4(1, 0.8f, 0.2f, 1); m_Objects.push_back(Object);
+		TouchRenderRevision(); return true;
 	}
 
 	bool SceneWorld::CreateVehicles(const JsonValue& root, const std::string& sourceName, std::string* errorMessage)
@@ -2344,6 +3537,37 @@ namespace Riemann
 			if (!state.Vehicle->Attach(chassis, Transform(position, rotation)))
 				return Fail("chassis is already owned by another aggregate");
 			state.WheelRadius = radius;
+			if (m_VehicleDynamicsDemo)
+			{
+				// The existing crash chassis is lightweight. Scale drivetrain and spring
+				// parameters by mass so the same dimensionless response remains useful.
+				// The deformation cage continues to consume ordinary chassis impacts.
+				constexpr float ReferenceMass = 1200.0f;
+				const float MassScale = 1 / (chassis->InvMass * ReferenceMass);
+				VehicleDynamicsSettings Dynamics; Dynamics.Wheelbase = wheelbase;
+				Dynamics.Forward = rotation * Vector3::UnitZ(); Dynamics.Up = rotation * Vector3::UnitY();
+				Dynamics.EngineInertia *= MassScale; Dynamics.PeakEngineTorque *= MassScale;
+				Dynamics.EngineDamping *= MassScale; Dynamics.IdleGovernor *= MassScale;
+				Dynamics.ClutchStrength *= MassScale; Dynamics.MaximumClutchTorque *= MassScale;
+				Dynamics.DifferentialStrength *= MassScale; Dynamics.MaximumDifferentialTorque *= MassScale;
+				for (int Side : { -1, 1 }) for (int End : { -1, 1 })
+				{
+					VehicleWheelSettings Wheel; Wheel.Radius = radius;
+					Wheel.Attachment = position + rotation * Vector3(Side * track / 2, wheelHeight, End * wheelbase / 2);
+					Wheel.SuspensionDirection = -Dynamics.Up;
+					Wheel.Inertia *= MassScale; Wheel.AngularDamping *= MassScale;
+					Wheel.SpringStiffness *= MassScale; Wheel.Damping *= MassScale; Wheel.MaximumSuspensionForce *= MassScale;
+					Wheel.BrakeTorque *= MassScale; Wheel.HandbrakeTorque = End < 0 ? Wheel.BrakeTorque : 0;
+					Wheel.SteeringFactor = End > 0 ? 1.0f : 0.0f; Wheel.Axle = End > 0 ? 1 : 0;
+					Dynamics.Wheels.push_back(Wheel);
+					chassis->X.y = std::max(chassis->X.y, radius + Wheel.Travel - (chassis->Q * Wheel.Attachment).y);
+				}
+				chassis->V = chassis->W = Vector3::Zero();
+				chassis->CastDynamic()->MaxContactImpulse = FLT_MAX;
+				state.Dynamics = m_World->CreateVehicle(chassis->CastDynamic(), Dynamics);
+				VehicleControls Controls; Controls.Gear = 0; Controls.Brake = 1;
+				state.Dynamics->SetControls(Controls);
+			}
 			state.PreviousPosition = state.Vehicle->GetWorldTransform().pos;
 			SceneObjectInstance shell;
 			shell.Id = id + "_body";
@@ -2382,6 +3606,11 @@ namespace Riemann
 		return index >= 0 && (size_t)index < m_Vehicles.size() ? m_Vehicles[(size_t)index].Vehicle.get() : nullptr;
 	}
 
+	VehicleDynamics* SceneWorld::GetVehicleDynamics(int Index) const
+	{
+		return Index >= 0 && (size_t)Index < m_Vehicles.size() ? m_Vehicles[(size_t)Index].Dynamics : nullptr;
+	}
+
 	void SceneWorld::SyncVehicles(float dt)
 	{
 		bool changed = false;
@@ -2397,7 +3626,12 @@ namespace Riemann
 			for (size_t i = 0; i < state.Wheels.size(); ++i)
 			{
 				const Transform& local = state.WheelLocalTransforms[i];
-				state.Wheels[i]->SetTransform(frame.LocalToWorld(local.pos), frame.quat * roll * local.quat);
+				if (state.Dynamics)
+				{
+					const Transform Wheel = state.Dynamics->GetWheelTransform(i);
+					state.Wheels[i]->SetTransform(Wheel.pos, Wheel.quat * local.quat);
+				}
+				else state.Wheels[i]->SetTransform(frame.LocalToWorld(local.pos), frame.quat * roll * local.quat);
 			}
 			if (state.LastRevision != state.Vehicle->GetRevision())
 			{
@@ -2410,6 +3644,26 @@ namespace Riemann
 
 	bool SceneWorld::CreateObject(const SceneObjectDesc& desc, std::string* errorMessage)
 	{
+		if (!desc.FrictionValid)
+		{
+			if (errorMessage) *errorMessage = "invalid frictionDynamic or frictionStatic for object " + desc.Id;
+			return false;
+		}
+		if (!desc.SDFValid)
+		{
+			if (errorMessage) *errorMessage = "invalid sdfCollision or sdfResolution for object " + desc.Id;
+			return false;
+		}
+		if (!desc.ContactOffsetsValid)
+		{
+			if (errorMessage) *errorMessage = "invalid contactOffset or restOffset for object " + desc.Id;
+			return false;
+		}
+		if (!desc.FilterDataValid)
+		{
+			if (errorMessage) *errorMessage = "invalid collisionLayer or collisionMask for object " + desc.Id;
+			return false;
+		}
 		if (desc.Type == "destructionBox")
 		{
 			return CreateDestructionBox(desc, errorMessage);
@@ -2429,6 +3683,8 @@ namespace Riemann
 				Geometry* geometry = GeometryFactory::CreateSphere(desc.Position + desc.Rotation * localPosition, desc.Radius);
 				geometry->SetQueryEnabled(desc.QueryEnabled);
 				geometry->SetSimulationEnabled(desc.SimulationEnabled);
+				geometry->SetFilterData(desc.FilterData);
+				geometry->SetContactOffsets(desc.ContactOffset, desc.RestOffset);
 				geometries.push_back(geometry);
 			}
 
@@ -2459,6 +3715,7 @@ namespace Riemann
 			{
 				body->SetRestitution(desc.Restitution);
 			}
+			if (desc.HasFriction) body->SetFriction(desc.FrictionDynamic, desc.FrictionStatic);
 			if (desc.HasDensity && !ApplyBodyDensity(body, desc.Density))
 			{
 				if (errorMessage)
@@ -2495,6 +3752,8 @@ namespace Riemann
 		}
 		geometry->SetQueryEnabled(desc.QueryEnabled);
 		geometry->SetSimulationEnabled(desc.SimulationEnabled);
+		geometry->SetFilterData(desc.FilterData);
+		geometry->SetContactOffsets(desc.ContactOffset, desc.RestOffset);
 
 		RigidBodyParam bodyParam;
 		bodyParam.rigidType = desc.BodyType;
@@ -2522,6 +3781,7 @@ namespace Riemann
 		{
 			body->SetRestitution(desc.Restitution);
 		}
+		if (desc.HasFriction) body->SetFriction(desc.FrictionDynamic, desc.FrictionStatic);
 		if (desc.HasDensity && !ApplyBodyDensity(body, desc.Density))
 		{
 			if (errorMessage)
@@ -2555,7 +3815,12 @@ namespace Riemann
 			return false;
 		}
 
-		std::unique_ptr<DestructionSet> destructSet(new DestructionSet(m_World.get()));
+		const Vector3 AuthoringPosition = (m_AuthoredDestructionDemo || m_DestructionCacheDemo) ? Vector3::Zero() : desc.Position;
+		const Quaternion AuthoringRotation = (m_AuthoredDestructionDemo || m_DestructionCacheDemo) ? Quaternion::One() : desc.Rotation;
+		std::unique_ptr<DestructionSet> destructSet(new DestructionSet((m_AuthoredDestructionDemo || m_DestructionCacheDemo) ? nullptr : m_World.get()));
+		destructSet->GetDestructionConstants().FilterData = desc.FilterData;
+		destructSet->GetDestructionConstants().ContactOffset = desc.ContactOffset;
+		destructSet->GetDestructionConstants().RestOffset = desc.RestOffset;
 		const Vector3 fullSize = desc.HalfExtent * 2.0f;
 		const float sourceVolume = std::max(fullSize.x * fullSize.y * fullSize.z, 1e-3f);
 		const float totalMass = desc.HasInvMass && desc.InvMass > 1e-6f ? 1.0f / desc.InvMass : sourceVolume;
@@ -2571,7 +3836,7 @@ namespace Riemann
 			}
 
 			DynamicMesh sourceMesh;
-			if (!BuildBoxDynamicMesh(desc.Position, desc.HalfExtent, desc.Rotation, &sourceMesh)
+			if (!BuildBoxDynamicMesh(AuthoringPosition, desc.HalfExtent, AuthoringRotation, &sourceMesh)
 				|| !destructSet->BuildHierarchicalFracture(sourceMesh, desc.DestructionFracture, totalMass,
 					desc.BodyType == RigidType::Static, desc.Id))
 			{
@@ -2605,9 +3870,9 @@ namespace Riemann
 							-desc.HalfExtent.x + cellSize.x * (x + 0.5f),
 							-desc.HalfExtent.y + cellSize.y * (y + 0.5f),
 							-desc.HalfExtent.z + cellSize.z * (z + 0.5f));
-						const Vector3 worldCenter = desc.Position + desc.Rotation * localCenter;
+						const Vector3 worldCenter = AuthoringPosition + AuthoringRotation * localCenter;
 						DynamicMesh cellMesh;
-						if (!BuildBoxDynamicMesh(worldCenter, cellHalfExtent, desc.Rotation, &cellMesh))
+						if (!BuildBoxDynamicMesh(worldCenter, cellHalfExtent, AuthoringRotation, &cellMesh))
 						{
 							if (errorMessage)
 							{
@@ -2669,7 +3934,16 @@ namespace Riemann
 			constants.Levels[level].PartitionSize = std::max(desc.DestructionPartitionSize, 2);
 		}
 
-		destructSet->RebuildClustersFromGraph();
+		if (m_AuthoredDestructionDemo || m_DestructionCacheDemo)
+		{
+			try
+			{
+				const auto Asset = DestructionAsset::Capture(*destructSet);
+				destructSet.reset(new DestructionSet(m_World.get())); destructSet->InitializeAsset(Asset,Transform(desc.Position,desc.Rotation));
+			}
+			catch (const std::exception& Error) { if (errorMessage) *errorMessage = "destruction asset " + desc.Id + ": " + Error.what(); return false; }
+		}
+		else destructSet->RebuildClustersFromGraph();
 		for (DestructionCluster* cluster : destructSet->GetClusters())
 		{
 			RigidBodyDynamic* body = cluster ? cluster->GetRigidBody() : nullptr;
@@ -2685,6 +3959,7 @@ namespace Riemann
 			{
 				body->SetRestitution(desc.Restitution);
 			}
+			if (desc.HasFriction) body->SetFriction(desc.FrictionDynamic, desc.FrictionStatic);
 			if (desc.DestructionInitiallyFixed)
 			{
 				body->Freeze();
@@ -2724,8 +3999,10 @@ namespace Riemann
 			return false;
 		}
 
+		const Vector3 AuthoringPosition = (m_AuthoredDestructionDemo || m_DestructionCacheDemo) ? Vector3::Zero() : desc.Position;
+		const Quaternion AuthoringRotation = (m_AuthoredDestructionDemo || m_DestructionCacheDemo) ? Quaternion::One() : desc.Rotation;
 		DynamicMesh sourceMesh;
-		if (!BuildBoxDynamicMesh(desc.Position, desc.HalfExtent, desc.Rotation, &sourceMesh))
+		if (!BuildBoxDynamicMesh(AuthoringPosition, desc.HalfExtent, AuthoringRotation, &sourceMesh))
 		{
 			if (errorMessage)
 			{
@@ -2742,7 +4019,7 @@ namespace Riemann
 		cutOptions.MinTriangleCount = 4;
 
 		std::vector<FracturePiece> pieces;
-		const Vector3 glassNormal = desc.Rotation * Vector3::UnitZ();
+		const Vector3 glassNormal = AuthoringRotation * Vector3::UnitZ();
 		if (!Fracture::VoronoiFracture2D(sourceMesh, glassNormal, pieces,
 			desc.DestructionPieceCount, desc.DestructionSeed, cutOptions) || pieces.size() < 2)
 		{
@@ -2753,7 +4030,10 @@ namespace Riemann
 			return false;
 		}
 
-		std::unique_ptr<DestructionSet> destructSet(new DestructionSet(m_World.get()));
+		std::unique_ptr<DestructionSet> destructSet(new DestructionSet((m_AuthoredDestructionDemo || m_DestructionCacheDemo) ? nullptr : m_World.get()));
+		destructSet->GetDestructionConstants().FilterData = desc.FilterData;
+		destructSet->GetDestructionConstants().ContactOffset = desc.ContactOffset;
+		destructSet->GetDestructionConstants().RestOffset = desc.RestOffset;
 		const Vector3 fullSize = desc.HalfExtent * 2.0f;
 		const float sourceVolume = std::max(fullSize.x * fullSize.y * fullSize.z, 1e-3f);
 		const float totalMass = desc.HasInvMass && desc.InvMass > 1e-6f ? 1.0f / desc.InvMass : sourceVolume;
@@ -2806,7 +4086,16 @@ namespace Riemann
 			constants.Levels[level].PartitionSize = std::max(desc.DestructionPartitionSize, 2);
 		}
 
-		destructSet->RebuildClustersFromGraph();
+		if (m_AuthoredDestructionDemo || m_DestructionCacheDemo)
+		{
+			try
+			{
+				const auto Asset = DestructionAsset::Capture(*destructSet);
+				destructSet.reset(new DestructionSet(m_World.get())); destructSet->InitializeAsset(Asset,Transform(desc.Position,desc.Rotation));
+			}
+			catch (const std::exception& Error) { if (errorMessage) *errorMessage = "glass asset " + desc.Id + ": " + Error.what(); return false; }
+		}
+		else destructSet->RebuildClustersFromGraph();
 		for (DestructionCluster* cluster : destructSet->GetClusters())
 		{
 			RigidBodyDynamic* body = cluster ? cluster->GetRigidBody() : nullptr;
@@ -2848,6 +4137,34 @@ namespace Riemann
 
 	Geometry* SceneWorld::CreateGeometry(const SceneObjectDesc& desc, std::string* errorMessage) const
 	{
+		if (desc.SDFCollision || (desc.HasSDFOption && m_DistanceFieldDemo))
+		{
+			if (!desc.SDFValid || (desc.Type != "box" && desc.Type != "obb" && desc.Type != "sphere"))
+			{
+				if (errorMessage) *errorMessage = "SDF demo cooking requires a box/sphere and a valid sdfResolution: " + desc.Id;
+				return nullptr;
+			}
+			const Vector3 Extent = desc.Type == "sphere" ? Vector3(desc.Radius) : desc.HalfExtent;
+			const float PaddingRatio = 0.25f;
+			const float Radius = std::max(Extent.x, std::max(Extent.y, Extent.z)) * (1 + PaddingRatio);
+			const int Cells = desc.SDFResolution;
+			SignedDistanceField3 Grid;
+			if (!Grid.Reset(Box3(Vector3(-Radius), Vector3(Radius)), Cells, Cells, Cells, 2 * Radius / Cells))
+			{
+				if (errorMessage) *errorMessage = "Invalid SDF source dimensions: " + desc.Id;
+				return nullptr;
+			}
+			for (int Z = 0; Z <= Cells; ++Z) for (int Y = 0; Y <= Cells; ++Y) for (int X = 0; X <= Cells; ++X)
+			{
+				const Vector3 P = Grid.GridPointToWorld(X, Y, Z);
+				const Vector3 D = P.Abs() - Extent;
+				Grid.At(X, Y, Z) = desc.Type == "sphere" ? P.Length() - desc.Radius
+					: D.Max(Vector3::Zero()).Length() + std::min(0.0f, std::max(D.x, std::max(D.y, D.z)));
+			}
+			RuntimeDistanceField Runtime; DistanceFieldShape Field;
+			if (!Runtime.Build(Grid, RuntimeDistanceFieldSettings(), errorMessage) || !Field.Build(Runtime, DistanceFieldShapeSettings(), errorMessage)) return nullptr;
+			return GeometryFactory::CreateDistanceField(Field, desc.Position, desc.Rotation);
+		}
 		if (desc.Type == "voxelMesh")
 		{
 			if (!desc.VoxelsValid || desc.BodyType != RigidType::Static || desc.VoxelSpans.empty()
@@ -2968,8 +4285,22 @@ namespace Riemann
 	bool SceneWorld::SyncDestructionObjects(bool force)
 	{
 		bool changed = false;
-		for (DestructionRenderState& state : m_DestructionRenderStates)
+		for (size_t StateIndex = 0; StateIndex < m_DestructionRenderStates.size(); ++StateIndex)
 		{
+			auto& state = m_DestructionRenderStates[StateIndex];
+			if (auto* Playback = GetDestructionPlayback(StateIndex))
+			{
+				if (!force && state.LastPlaybackRevision == Playback->GetRevision()) continue;
+				m_Objects.erase(std::remove_if(m_Objects.begin(),m_Objects.end(),[&](const SceneObjectInstance& O)
+					{ return O.DestructSet == state.Set; }),m_Objects.end());
+				for (const auto& Chunk : Playback->GetSample().Chunks) if (auto* Shape = Playback->GetChunkGeometry(Chunk.ChunkIndex))
+				{
+					SceneObjectInstance Object; Object.Id = state.Id+"_cache_"+std::to_string(Chunk.ChunkIndex);
+					Object.GeometryPtr = Shape; Object.DestructSet = state.Set; Object.Color = state.Color; Object.RenderBounds = state.RenderBounds;
+					m_Objects.push_back(Object);
+				}
+				state.LastPlaybackRevision = Playback->GetRevision(); changed = true; continue;
+			}
 			if (state.Set == nullptr)
 			{
 				continue;
@@ -3127,20 +4458,146 @@ namespace Riemann
 		return 0;
 	}
 
+	StrandSystem* SceneWorld::GetDemoStrands() const
+	{
+		if (m_World) for (size_t I=0; I<m_World->GetStrandSystemCount(); ++I)
+			if (m_World->GetStrandSystem(I)==m_DemoStrands && m_DemoStrands->GetInstanceId()==m_DemoStrandInstanceId) return m_DemoStrands;
+		return nullptr;
+	}
+	bool SceneWorld::CreateStrandDemo()
+	{
+		if (!m_StrandDemo || m_Name!="Rope Towing Around a Post") return true;
+		RigidBody* Handle=nullptr;
+		for (const auto& O : m_Objects) if (O.Id=="handle" && O.GeometryPtr) Handle=O.GeometryPtr->GetParent<RigidBody>();
+		if (!Handle) return false;
+		// Reuse scene 18's moving handle and tube renderer. Elliptical sections make
+		// material-frame twist visible. Dimensions are demonstration parameters;
+		// external groom/scalp authoring remains an asset-dependent extension.
+		const int GuideCount=8, Segments=12; const float Length=1.8f, Spacing=0.14f, RootHeight=1;
+		const double YoungModulus=2e7, Density=10, RadiusX=0.035, RadiusY=0.012;
+		std::vector<StrandGuide> Guides;
+		for (int G=0; G<GuideCount; ++G)
+		{
+			StrandGuide Guide; Guide.ReferenceNormal=Vector3::UnitZ(); Guide.Material.YoungModulus=YoungModulus;
+			Guide.Material.Density=Density; Guide.Material.RadiusX=RadiusX; Guide.Material.RadiusY=RadiusY;
+			const Vector3 Root=Handle->X+Vector3(0,RootHeight,(G-(GuideCount-1)*0.5f)*Spacing);
+			for (int P=0; P<=Segments; ++P) Guide.Positions.push_back(Root+Vector3(Length*P/Segments,0,0));
+			Guides.push_back(std::move(Guide));
+		}
+		StrandSettings Settings; Settings.LinearDamping=Settings.AngularDamping=2;
+		m_DemoStrands=m_World->CreateStrands(Guides,Settings);
+		m_DemoStrandInstanceId=m_DemoStrands->GetInstanceId();
+		for (const auto& O : m_Objects) if ((O.Id=="ground" || O.Id=="post") && O.GeometryPtr) if (!m_DemoStrands->AddCollider(O.GeometryPtr)) return false;
+		StrandGroomDefinition Groom; const int RenderCurves=32; const float RenderRadius=0.008f, RenderRootOffset=0.04f, CurlHeight=0.015f;
+		for (int C=0; C<RenderCurves; ++C)
+		{
+			GroomStrand Curve; Curve.ReferenceNormal=Vector3::UnitZ(); Curve.RadiusX=RenderRadius; Curve.RadiusY=RenderRadius*0.5f;
+			const Vector3 Root=Handle->X+Vector3(0,RootHeight+RenderRootOffset,(float)C*(GuideCount-1)*Spacing/(RenderCurves-1)-(GuideCount-1)*Spacing*0.5f);
+			for (int P=0; P<=Segments; ++P) { const float S=(float)P/Segments; Curve.Positions.push_back(Root+Vector3(Length*S,CurlHeight*std::sin(kPi*S),0)); }
+			Groom.Strands.push_back(std::move(Curve));
+		}
+		GroomLod Full; for (int I=0; I<GuideCount; ++I) Full.Guides.push_back(I); Groom.Lods.push_back(Full);
+		GroomLod Medium; Medium.Guides={0,2,4,6}; Medium.Distance=10; Groom.Lods.push_back(Medium);
+		GroomLod Low; Low.Guides={0,4}; Low.Distance=25; Groom.Lods.push_back(Low); m_DemoStrands->ConfigureGroom(Groom);
+		for (int G=0; G<GuideCount; ++G)
+		{
+			const auto Root=m_DemoStrands->GetRootPose(G); m_DemoStrands->AttachRoot(G,Handle,Root);
+			m_StrandRootLocal.emplace_back(Handle->WorldToBodyLocal(Root.pos),(Handle->Q.Conjugate()*Root.quat).Unit());
+			RopeSurfaceState Surface; Surface.Strands=m_DemoStrands; Surface.GuideIndex=G; Surface.Radius=(float)RadiusX; Surface.RadiusY=(float)RadiusY;
+			Surface.StrandInstanceId=m_DemoStrandInstanceId;
+			Surface.Surface.reset(GeometryFactory::CreateTriangleMesh()); Surface.Surface->SetSimulationEnabled(false); Surface.Surface->SetQueryEnabled(false);
+			SceneObjectInstance O; O.Id="cosserat_guide_"+std::to_string(G); O.GeometryPtr=Surface.Surface.get(); O.Color=Vector4(0.4f,0.75f,0.9f,1);
+			m_Objects.push_back(O); m_RopeSurfaces.push_back(std::move(Surface));
+		}
+		for (int C=0; C<RenderCurves; ++C)
+		{
+			m_DemoStrands->AttachGroomRoot(C,Handle,Groom.Strands[C].Positions[0]);
+			RopeSurfaceState Surface; Surface.Strands=m_DemoStrands; Surface.StrandInstanceId=m_DemoStrandInstanceId; Surface.GroomRender=true; Surface.GroomIndex=C;
+			Surface.Radius=Groom.Strands[C].RadiusX; Surface.RadiusY=Groom.Strands[C].RadiusY;
+			Surface.Surface.reset(GeometryFactory::CreateTriangleMesh()); Surface.Surface->SetSimulationEnabled(false); Surface.Surface->SetQueryEnabled(false);
+			SceneObjectInstance O; O.Id="groom_strand_"+std::to_string(C); O.GeometryPtr=Surface.Surface.get(); O.Color=Vector4(0.85f,0.65f,0.3f,1);
+			m_Objects.push_back(O); m_RopeSurfaces.push_back(std::move(Surface));
+		}
+		m_DemoStrands->RefreshGroom();
+		SyncRopeSurfaces(); return true;
+	}
+	bool SceneWorld::ApplyStrandCollisionDemo(bool Enabled,bool Self,bool Continuous,bool Friction)
+	{
+		auto* S=GetDemoStrands(); if (!S) return false; auto Collision=S->GetSettings().Collision;
+		Collision.Enabled=Enabled; Collision.SelfCollision=Collision.InterGuideCollision=Self; Collision.Continuous=Continuous;
+		const double StaticFriction=0.5, DynamicFriction=0.3; Collision.Material.StaticFriction=Friction ? StaticFriction : 0; Collision.Material.DynamicFriction=Friction ? DynamicFriction : 0;
+		S->SetCollisionSettings(Collision); return true;
+	}
+	size_t SceneWorld::GetStrandDemoLod() const { const auto* S=GetDemoStrands(); return S ? S->GetGroomLod() : 0; }
+	bool SceneWorld::ApplyStrandDemo(float RootTwist, bool Coupled, size_t Lod)
+	{
+		auto* Strands=GetDemoStrands(); if (!Strands || !std::isfinite(RootTwist)) return false;
+		if (!Strands->GetGroom() || Lod>=Strands->GetGroom()->GetLodCount()) return false;
+		RigidBody* Handle=nullptr;
+		for (const auto& O : m_Objects) if (O.Id=="handle" && O.GeometryPtr) Handle=O.GeometryPtr->GetParent<RigidBody>();
+		if (!Handle) return false;
+		Strands->SetGroomLod(Lod);
+		Strands->SetSolver(Coupled ? StrandSolver::CoupledBanded : StrandSolver::SequentialBlocks);
+		const auto Twist=StrandElasticity::Increment(StrandVector(0,0,RootTwist));
+		for (size_t G=0; G<Strands->GetGuideCount(); ++G)
+		{
+			const auto& Local=m_StrandRootLocal[G]; Strands->AttachRoot(G,Handle,Transform(Handle->BodyLocalToWorld(Local.pos),(Handle->Q*Local.quat*Twist).Unit()));
+		}
+		m_StrandDemoTwist=RootTwist; return true;
+	}
 	void SceneWorld::SyncRopeSurfaces()
 	{
 		bool changed = false;
 		for (RopeSurfaceState& surface : m_RopeSurfaces)
 		{
-			const int count = surface.Rope->GetParticleCount(), sides = surface.Sides;
+			std::vector<Vector3> Positions;
+			std::vector<Quaternion> Directors;
+			if (surface.Rope)
+				for (int I = 0; I < surface.Rope->GetParticleCount(); ++I) Positions.push_back(surface.Rope->GetParticle(I).Position);
+			else if (surface.Strands)
+			{
+				bool Exists=false;
+				for (size_t I=0; I<m_World->GetStrandSystemCount(); ++I)
+					if (m_World->GetStrandSystem(I)==surface.Strands) Exists=surface.Strands->GetInstanceId()==surface.StrandInstanceId;
+				const bool Valid=Exists && (!surface.GroomRender || (surface.Strands->GetGroom() && surface.GroomIndex<surface.Strands->GetGroom()->GetStrandCount()));
+				if (Valid && surface.GroomRender)
+				{
+					const auto& Curve=surface.Strands->GetGroomStrand(surface.GroomIndex); Positions=Curve.Positions; Directors=Curve.Directors;
+				}
+				else if (Valid)
+				{
+					for (size_t I=0; I<surface.Strands->GetParticleCount(surface.GuideIndex); ++I) Positions.push_back(surface.Strands->GetParticle(surface.GuideIndex,I).Position);
+					for (size_t I=0; I<surface.Strands->GetDirectorCount(surface.GuideIndex); ++I) Directors.push_back(surface.Strands->GetDirector(surface.GuideIndex,I).Orientation);
+				}
+				else
+				{
+					if (!Exists) surface.Strands=nullptr;
+					surface.LastPositions.clear(); surface.LastDirectors.clear(); auto* Mesh=surface.Surface->GetShapeObj<TriangleMesh>();
+					if (Mesh->NumVertices) { Mesh->Clear(); changed=true; }
+				}
+			}
+			else if (surface.TendonOwner)
+			{
+				bool Exists = false;
+				for (size_t I = 0; I < m_World->GetReducedRagdollCount(); ++I) Exists |= m_World->GetReducedRagdoll(I) == surface.TendonOwner;
+				if (Exists && surface.TendonIndex < surface.TendonOwner->GetMechanismCount())
+				{
+					const auto& Model = surface.TendonOwner->GetDynamics();
+					for (const auto& P : surface.TendonOwner->GetMechanism(surface.TendonIndex)->GetSettings().Path)
+						Positions.push_back(P.Link < 0 ? P.Point : Model.GetLinkTransform(P.Link).LocalToWorld(P.Point));
+				}
+				if (Positions.empty())
+				{
+					surface.TendonOwner = nullptr; surface.LastPositions.clear();
+					surface.Surface->GetShapeObj<TriangleMesh>()->Clear(); changed = true;
+				}
+			}
+			const int count = (int)Positions.size(), sides = surface.Sides;
 			if (count < 2) continue;
-			bool moved = surface.LastPositions.size() != (size_t)count;
-			if (!moved)
-				for (int i = 0; i < count; ++i)
-					if (surface.LastPositions[i] != surface.Rope->GetParticle(i).Position) { moved = true; break; }
+			const bool moved = surface.LastPositions != Positions || surface.LastDirectors != Directors;
 			if (!moved) continue;
-			surface.LastPositions.resize(count);
-			for (int i = 0; i < count; ++i) surface.LastPositions[i] = surface.Rope->GetParticle(i).Position;
+			surface.LastPositions = std::move(Positions);
+			surface.LastDirectors = std::move(Directors);
 			TriangleMesh* mesh = surface.Surface->GetShapeObj<TriangleMesh>();
 			const uint32_t vertexCount = (uint32_t)(count * sides + 2 * (sides + 1));
 			const uint32_t triangleCount = (uint32_t)(2 * count * sides);
@@ -3176,7 +4633,8 @@ namespace Riemann
 				const Vector3 delta = surface.LastPositions[std::min(i + 1, count - 1)]
 					- surface.LastPositions[std::max(i - 1, 0)];
 				if (delta.SquareLength() > 1.0e-12f) tangent = delta.SafeUnit();
-				// Parallel transport avoids arbitrary ring flips as the rope bends.
+				// Material frames retain torsion; ropes use parallel transport instead.
+				if (!surface.LastDirectors.empty()) normal=surface.LastDirectors[std::min((size_t)i,surface.LastDirectors.size()-1)]*Vector3::UnitX();
 				normal -= tangent * normal.Dot(tangent);
 				Vector3 binormal;
 				if (normal.SquareLength() < 1.0e-8f) tangent.GetPerpVectors(normal, binormal);
@@ -3186,10 +4644,11 @@ namespace Riemann
 				for (int side = 0; side < sides; ++side)
 				{
 					const float angle = 2.0f * 3.14159265358979323846f * side / sides;
-					const Vector3 radial = normal * std::cos(angle) + binormal * std::sin(angle);
+
+					const float RadiusY=surface.RadiusY>0 ? surface.RadiusY : surface.Radius;
 					const int index = i * sides + side;
-					mesh->mVertices[index] = surface.LastPositions[i] + radial * surface.Radius;
-					mesh->mNormals[index] = radial;
+					mesh->mVertices[index] = surface.LastPositions[i] + normal*(std::cos(angle)*surface.Radius)+binormal*(std::sin(angle)*RadiusY);
+					mesh->mNormals[index] = (normal*(std::cos(angle)/surface.Radius)+binormal*(std::sin(angle)/RadiusY)).SafeUnit();
 					if (i == 0 || i == count - 1)
 					{
 						const int cap = count * sides + (i == 0 ? 0 : sides + 1);
@@ -3211,12 +4670,164 @@ namespace Riemann
 		if (changed) TouchRenderRevision();
 	}
 
+	bool SceneWorld::ApplyPhysicsFieldsDemo(bool Enabled, bool Frozen, bool StrainPulse, bool VelocityPulse)
+	{
+		if (!m_World || (VelocityPulse && m_World->GetReducedRagdollCount() > 0)) return false;
+		if (Enabled && m_DemoFieldIds.empty())
+		{
+			// Derive the field region from existing actors; no resource or scene file.
+			Box3 Bounds = Box3::Empty();
+			for (const auto& Set : m_DestructionSets) Bounds.Encapsulate(Set->GetBounds());
+			for (const auto& O : m_Objects) if (O.GeometryPtr)
+				if (auto* B = O.GeometryPtr->GetParent<RigidBody>()) if (B->CastDynamic()) Bounds.Encapsulate(B->X);
+			const float MinimumRadius = 1, RadiusScale = 1.2f, InnerFraction = 0.1f, BoxInnerFraction = 0.3f;
+			const bool HasBounds = Bounds.Min.x <= Bounds.Max.x;
+			const float Radius = !HasBounds ? MinimumRadius : std::max(MinimumRadius,Bounds.GetExtent().Length()*RadiusScale);
+			m_DemoFieldCenter = !HasBounds ? Vector3::Zero() : Bounds.GetCenter();
+			m_DemoFieldMask = ScalarField::Multiply(ScalarField::Radial(m_DemoFieldCenter,Radius*InnerFraction,Radius),
+				ScalarField::Box(Transform(m_DemoFieldCenter),Vector3(Radius*BoxInnerFraction),Vector3(Radius)));
+			const double Lift = 0.8, Swirl = 2, Modulation = 0.4, FrequencyHz = 0.35;
+			PhysicsFieldCommand C; C.Persistent = true; C.Target = PhysicsFieldTarget::Acceleration; C.Mask = m_DemoFieldMask;
+			const auto Direction = VectorField::Add(VectorField::Constant(Vector3(0,(float)Lift,0)),
+				VectorField::Scale(VectorField::Cross(VectorField::Constant(Vector3::UnitY()),VectorField::Radial(m_DemoFieldCenter)),ScalarField::Constant(Swirl)));
+			C.Vector = VectorField::Scale(Direction,ScalarField::Wave(1,Modulation,FrequencyHz)); m_DemoFieldIds.push_back(m_World->AddPhysicsField(C));
+			const double MinimumFriction = 0.2, FrictionVariation = 0.6, DynamicRatio = 0.5, MaximumRestitution = 0.25;
+			C.Target = PhysicsFieldTarget::Material;
+			C.StaticFriction = ScalarField::Add(ScalarField::Constant(MinimumFriction),ScalarField::Multiply(m_DemoFieldMask,ScalarField::Constant(FrictionVariation)));
+			C.DynamicFriction = ScalarField::Multiply(C.StaticFriction,ScalarField::Constant(DynamicRatio));
+			C.Restitution = ScalarField::Multiply(m_DemoFieldMask,ScalarField::Constant(MaximumRestitution)); m_DemoFieldIds.push_back(m_World->AddPhysicsField(C));
+		}
+		if (m_PhysicsFieldFreeze != (Enabled && Frozen))
+		{
+			PhysicsFieldCommand C; C.Target = PhysicsFieldTarget::Activation; C.Mask = m_DemoFieldMask;
+			if (Enabled && Frozen)
+			{
+				C.Activation = PhysicsFieldActivation::Freeze; C.Persistent = true; m_DemoFreezeField = m_World->AddPhysicsField(C);
+			}
+			else
+			{
+				m_World->RemovePhysicsField(m_DemoFreezeField); m_DemoFreezeField = 0;
+				C.Activation = PhysicsFieldActivation::Unfreeze; m_World->AddPhysicsField(C);
+			}
+		}
+		if (!Enabled) { for (auto Id : m_DemoFieldIds) m_World->RemovePhysicsField(Id); m_DemoFieldIds.clear(); }
+		if (Enabled && StrainPulse)
+		{
+			double Capacity = 0;
+			for (const auto& Set : m_DestructionSets) for (const auto& Row : Set->GetGraph().GetBondLists())
+				for (const auto& Bond : Row.Bonds) Capacity = std::max(Capacity,(double)Bond.strength);
+			constexpr double StrainCapacityFactor = 2;
+			PhysicsFieldCommand C; C.Target = PhysicsFieldTarget::Strain; C.Mask = m_DemoFieldMask; C.Scalar = ScalarField::Constant(Capacity*StrainCapacityFactor); m_World->AddPhysicsField(C);
+		}
+		if (Enabled && VelocityPulse)
+		{
+			constexpr double PulseSpeed = 3;
+			PhysicsFieldCommand C; C.Target = PhysicsFieldTarget::LinearVelocity; C.Mask = m_DemoFieldMask;
+			C.Vector = VectorField::Scale(VectorField::Radial(m_DemoFieldCenter),ScalarField::Constant(PulseSpeed)); m_World->AddPhysicsField(C);
+		}
+		m_PhysicsFieldsDemo = Enabled; m_PhysicsFieldFreeze = Enabled && Frozen; return true;
+	}
+
+	// Cache demo reuses the authored scene: record live interaction, then replace
+	// only destruction actors with evaluated kinematic compounds. No new assets.
+	DestructionPlayback* SceneWorld::GetDestructionPlayback(size_t Index) const
+	{ return Index < m_DestructionPlaybacks.size() ? m_DestructionPlaybacks[Index].get() : nullptr; }
+	bool SceneWorld::IsDestructionCachePlaying() const
+	{ return !m_DestructionPlaybacks.empty() && m_DestructionPlaybacks.front()->IsPlaying(); }
+	double SceneWorld::GetDestructionCacheTime() const
+	{ return m_DestructionPlaybacks.empty() ? m_DestructionRecordingTime : m_DestructionPlaybacks.front()->GetTime(); }
+	double SceneWorld::GetDestructionCacheDuration() const
+	{ return m_DestructionCaches.empty() ? m_DestructionRecordingTime : m_DestructionCaches.front().GetStats().Duration; }
+	bool SceneWorld::ApplyDestructionCacheDemo(DestructionPlaybackCommand Command, float SeekFraction)
+	{
+		if (Command == DestructionPlaybackCommand::None) return true;
+		if (!m_World || !m_DestructionCacheDemo || !std::isfinite(SeekFraction) || SeekFraction < 0 || SeekFraction > 1) return false;
+		if (Command == DestructionPlaybackCommand::Replay)
+		{
+			if (!m_DestructionRecorders.empty())
+			{
+				if (!(m_DestructionRecordingTime > 0)) return false;
+				for (const auto& Recorder : m_DestructionRecorders) m_DestructionCaches.push_back(Recorder->Finish());
+				m_DestructionRecorders.clear();
+			}
+			if (m_DestructionCaches.empty()) return false;
+			std::vector<std::unique_ptr<DestructionPlayback>> Players;
+			if (m_DestructionPlaybacks.empty())
+			{
+				for (size_t I = 0; I < m_DestructionCaches.size(); ++I)
+					Players.emplace_back(new DestructionPlayback(*m_World,m_DestructionCaches[I],m_DestructionSets[I]->GetAssetPlacement()));
+				m_Objects.erase(std::remove_if(m_Objects.begin(),m_Objects.end(),[](const SceneObjectInstance& O)
+					{ return O.DestructSet != nullptr; }),m_Objects.end());
+				for (const auto& Set : m_DestructionSets) Set->Clear();
+				m_DestructionPlaybacks.swap(Players);
+			}
+			for (const auto& Player : m_DestructionPlaybacks) { Player->Seek(0); Player->SetPlaying(true); }
+			m_DestructionPlaybackEvents.clear(); SyncDestructionObjects(true); return true;
+		}
+		if (m_DestructionPlaybacks.empty()) return false;
+		if (Command == DestructionPlaybackCommand::TogglePause)
+		{
+			const bool Play = !IsDestructionCachePlaying();
+			for (const auto& Player : m_DestructionPlaybacks) Player->SetPlaying(Play);
+			return true;
+		}
+		if (Command == DestructionPlaybackCommand::Seek)
+		{
+			for (const auto& Player : m_DestructionPlaybacks) Player->Seek(SeekFraction*Player->GetCache().GetStats().Duration);
+			m_DestructionPlaybackEvents.clear(); SyncDestructionObjects(false); return true;
+		}
+		return false;
+	}
+
 	void SceneWorld::Step(float dt)
 	{
 		if (!std::isfinite(dt) || dt <= 0.0f) return;
+		m_DestructionEvents.clear(); m_DestructionPlaybackEvents.clear();
 		if (m_World)
 		{
+			SamplePhysicalAnimationDemo(dt);
+			SampleClothDemo(dt);
+			if (m_World->GetJointDrivesEnabled())
+			{
+				m_MechanismDemoTime += dt;
+				constexpr double InputAmplitude = 1.5, WinchAmplitude = 0.7, Frequency = 1.2;
+				for (size_t I = 0; I < m_MechanismDemoDrivers.size(); ++I)
+				{
+					auto* Owner = m_MechanismDemoDrivers[I]; bool Exists = false;
+					for (size_t J = 0; J < m_World->GetReducedRagdollCount(); ++J) Exists |= m_World->GetReducedRagdoll(J) == Owner;
+					if (!Exists) { m_MechanismDemoDrivers[I] = nullptr; continue; }
+					auto Control = Owner->GetControl(0);
+					Control.Drive.TargetPosition = (float)((I == 0 ? InputAmplitude : WinchAmplitude) * std::sin(Frequency * m_MechanismDemoTime));
+					Owner->SetControl(0, Control);
+				}
+			}
+			if (m_CharacterPlatform)
+			{
+				m_CharacterDemoTime += dt;
+				const float LiftAmplitude = 0.5f, LiftFrequency = 0.8f;
+				m_CharacterPlatform->X = m_CharacterPlatformOrigin + Vector3(0, LiftAmplitude * (1 - std::cos(LiftFrequency * m_CharacterDemoTime)), 0);
+				m_CharacterPlatform->Q.FromRotateY(m_CharacterDemoTime * 0.2f);
+			}
 			m_World->Simulate(dt);
+			m_DestructionDroppedEvents = 0;
+			for (const auto& Set : m_DestructionSets) if (Set->GetEventSettings().Enabled)
+			{
+				auto Events = Set->TakeEvents(); m_DestructionEventCount += Events.size();
+				m_DestructionDroppedEvents += Set->GetEventStats().Dropped;
+				for (auto& Event : Events) m_DestructionEvents.push_back(std::move(Event));
+			}
+			if (!m_DestructionRecorders.empty())
+			{
+				m_DestructionRecordingTime += dt;
+				for (size_t I = 0; I < m_DestructionRecorders.size(); ++I)
+				{
+					std::vector<DestructionEvent> Batch;
+					for (const auto& E : m_DestructionEvents) if (E.InstanceId == m_DestructionSets[I]->GetInstanceId()) Batch.push_back(E);
+					m_DestructionRecorders[I]->Record(m_DestructionRecordingTime,*m_DestructionSets[I],Batch);
+				}
+			}
+			for (const auto& Playback : m_DestructionPlaybacks)
+				for (auto& Event : Playback->TakeEvents()) m_DestructionPlaybackEvents.push_back(std::move(Event));
 			if (m_World->GetClothCount() > 0 || m_World->GetDeformableBodyCount() > 0)
 			{
 				TouchRenderRevision();
@@ -3226,6 +4837,7 @@ namespace Riemann
 		SyncTerrainRevisions();
 		SyncRopeSurfaces();
 		SyncVehicles(dt);
+		SyncPhysicalAnimationDemo();
 	}
 
 	constexpr int SceneWorld::MaxSmokeRigidBodies;

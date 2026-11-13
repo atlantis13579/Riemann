@@ -56,7 +56,6 @@ namespace VHACDConvexDecomposition
      //
      // * The code has been significantly refactored to be cleaner and easier to maintain
      //      * All OpenCL related code removed
-     //      * All Bullet code removed
      //      * All SIMD code removed
      //      * Old plane splitting code removed
      // 
@@ -66,9 +65,7 @@ namespace VHACDConvexDecomposition
      // * The old DebugView and test code has all been removed and replaced with a much smaller and
      // * simpler test console application with some test meshes to work with.
      //
-     // * The convex hull generation code has changed. The previous version came from Bullet. 
-     // * However, the new version is courtesy of Julio Jerez, the author of the Newton
-     // * physics engine. His new version is faster and more numerically stable.
+     // * The convex hull generation code has changed for speed and numerical stability.
      //
      // * The code can now detect if the input mesh is, itself, already a convex object and
      // * can early out.
@@ -90,13 +87,12 @@ namespace VHACDConvexDecomposition
      // *
      // * A new optional virtual interface called 'IUserProfiler' was provided.
      // * This allows the user to provide an optional profiling callback interface to assist in
-     // * diagnosing performance issues. This change was made by Danny Couture at Epic for the UE4 integration.
+     // * diagnosing performance issues.
      // * Some profiling macros were also declared in support of this feature.
      // *
      // * Another new optional virtual interface called 'IUserTaskRunner' was provided.
      // * This interface is used to run logical 'tasks' in a background thread. If none is provided
      // * then a default implementation using std::thread will be executed.
-     // * This change was made by Danny Couture at Epic to speed up the voxelization step.
      // *
 
 
@@ -116,7 +112,6 @@ namespace VHACDConvexDecomposition
      // The next version was called 'V-HACD' because Khaled made the observation
      // that plane splitting would be far easier to implement working in voxel space.
      // 
-     // V-HACD has been integrated into UE4, Blender, and a number of other projects.
      // This new release, version4, is a significant refactor of the code to fix
      // some bugs, improve performance, and to make the codebase easier to maintain
      // going forward.
@@ -347,8 +342,7 @@ public:
 
     /**
     * An optional user provided pure virtual interface to perform a background task.
-    * This was added by Danny Couture at Epic as they wanted to use their own
-    * threading system instead of the standard library version which is the default.
+    * This allows a custom threading system instead of the default task runner.
     */
     class IUserTaskRunner
     {
@@ -3328,7 +3322,7 @@ void ConvexHull::CalculateConvexHull3D(ConvexHullAABBTreeNode* vertexTree,
         // is the convex hull formed by a subset of the input vertex that minimizes the volume difference
         // between the perfect hull formed from all input vertex and the hull of the sub set of vertex.
         // When using a priority heap this algorithms will generate the an optimal of a fix vertex count.
-        // Since all Newton's tools do not have a limit on the point count of a convex hull, I can use either a stack or a queue.
+        // The hull builder has no fixed point-count limit, so it can use either a stack or a queue.
         // a stack maximize construction speed, a Queue tend to maximize the volume of the generated Hull approaching a perfect Hull.
         // For now we use a queue.
         // For general hulls it does not make a difference if we use a stack, queue, or a priority heap.
@@ -5031,7 +5025,6 @@ bool TriBoxOverlap(const Vect3& boxCenter,
     /* This is the fastest branch on Sun */
     /* move everything so that the boxcenter is in (0,0,0) */
 
-    /* Bullet 3:  */
     /*  test the 9 tests first (this was faster) */
     double fex = fabs(e0[0]);
     double fey = fabs(e0[1]);
@@ -5060,7 +5053,6 @@ bool TriBoxOverlap(const Vect3& boxCenter,
     if (!AxisTest(-e2[2],  e2[0], fez, fex, v0[0], v0[2], v1[0], v1[2], boxHalfSize[0], boxHalfSize[2])) return 0; // Y1
     if (!AxisTest( e2[1], -e2[0], fey, fex, v1[0], v1[1], v2[0], v2[1], boxHalfSize[0], boxHalfSize[1])) return 0; // Z12
 
-    /* Bullet 1: */
     /*  first test overlap in the {x,y,z}-directions */
     /*  find min, max of the triangle each direction, and test for overlap in */
     /*  that direction -- this is equivalent to testing a minimal AABB around */
@@ -5084,7 +5076,6 @@ bool TriBoxOverlap(const Vect3& boxCenter,
     if (min > boxHalfSize[2] || max < -boxHalfSize[2])
         return false;
 
-    /* Bullet 2: */
     /*  test if the box intersects the plane of the triangle */
     /*  compute plane equation of triangle: normal*x+d=0 */
     Vect3 normal = e0.Cross(e1);

@@ -97,6 +97,10 @@ namespace Riemann
 		mBondLists.resize(Size);
 		RebuildLegacyBonds();
 	}
+	void ConnectionGraph::RefreshBondCache()
+	{
+		RebuildLegacyBonds();
+	}
 
 	bool ConnectionGraph::IsBroken(int Node) const noexcept
 	{

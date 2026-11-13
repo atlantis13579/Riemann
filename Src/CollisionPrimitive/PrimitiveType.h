@@ -16,6 +16,7 @@ namespace Riemann
 		HEIGHTFIELD = 5,
 		CONVEX_MESH = 6,
 		TRIANGLE_MESH = 7,
+		DISTANCE_FIELD = 8,
 		TYPE_COUNT,
 	};
 

@@ -7,10 +7,10 @@
 
 #include "../Viewer/SceneWorld.h"
 #include "../Src/Collision/GeometryObject.h"
-#include "../Src/Cloth/Rope.h"
-#include "../Src/Deformation/VehicleDeformation.h"
+#include "../Src/Deformation/Rope.h"
+#include "../Src/Modules/Vehicle/VehicleDeformation.h"
 #include "../Src/RigidBodyDynamics/ForceField.h"
-#include "../Src/RigidBodyDynamics/LCPSolver.h"
+#include "../Src/Solver/LCPSolver.h"
 #include "../Src/RigidBodyDynamics/PhysicsMaterial.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 

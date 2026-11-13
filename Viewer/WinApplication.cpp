@@ -376,6 +376,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_Viewer->SetMovementKey('a', false);
 			g_Viewer->SetMovementKey('s', false);
 			g_Viewer->SetMovementKey('d', false);
+			g_Viewer->SetMovementKey('i', false);
+			g_Viewer->SetMovementKey('j', false);
+			g_Viewer->SetMovementKey('k', false);
+			g_Viewer->SetMovementKey('l', false);
+			g_Viewer->SetMovementKey(' ', false);
 			g_Viewer->SceneDragEndMsg();
 		}
 		break;

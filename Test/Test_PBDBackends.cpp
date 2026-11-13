@@ -10,9 +10,8 @@
 
 #include "../Viewer/SceneWorld.h"
 #include "../Src/Collision/GeometryObject.h"
-#include "../Src/Cloth/PBDBackend.h"
-#include "../Src/Cloth/PBDSolver.h"
-#include "../Src/Cloth/XPBDSolver.h"
+#include "../Src/Solver/PBDBackend.h"
+#include "../Src/Solver/XPBDSolver.h"
 #include "../Src/RigidBodyDynamics/PhysicsMaterial.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 

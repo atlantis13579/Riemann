@@ -71,6 +71,7 @@ namespace Riemann
 
 	class StrainSolver
 	{
+		friend class DestructionAsset;
 	public:
 		StrainSolver() = default;
 		explicit StrainSolver(const ConnectionGraph& Graph, const StrainSolverSettings& Settings = StrainSolverSettings());

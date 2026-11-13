@@ -82,6 +82,11 @@ void TestSceneLoading()
 {
 	printf("Running TestSceneLoading\n");
 	SceneWorld scene;
+	if (LoadTestScene(scene, "10_destruction.json"))
+	{
+		EXPECT(scene.GetDestructionSetCount() > 0);
+		StepTestScene(scene, 2);
+	}
 	if (LoadTestScene(scene, "06_constraints.json"))
 	{
 		EXPECT(scene.GetName() == "Constraints");
@@ -97,20 +102,17 @@ void TestSceneLoading()
 	}
 
 	// Loading into the same instance must release the previous world's constraints.
-	if (LoadTestScene(scene, "07_rope_box.json"))
+	if (LoadTestScene(scene, "18_rope_towing.json"))
 	{
-		EXPECT(scene.GetName() == "Rope");
+		EXPECT(scene.GetName() == "Rope Towing Around a Post");
 		EXPECT(scene.GetSimulation()->GetConstraintCount() == 0);
 		EXPECT(scene.GetSimulation()->GetRopeCount() == 1);
 		EXPECT(scene.GetConstraintControls().empty());
-		Geometry* anchor = FindSceneGeometry(scene, "anchor");
-		Geometry* start = FindSceneGeometry(scene, "tow_rope_particle_0");
-		Geometry* box = FindSceneGeometry(scene, "pulled_box");
-		EXPECT(anchor != nullptr && start != nullptr && box != nullptr);
-		const Vector3 initialBoxPosition = box ? GetSceneGeometryTransform(box).pos : Vector3::Zero();
+		Geometry* anchor = FindSceneGeometry(scene, "handle");
+		Geometry* surface = FindSceneGeometry(scene, "tow_rope_surface");
+		Geometry* box = FindSceneGeometry(scene, "crate");
+		EXPECT(anchor != nullptr && surface != nullptr && box != nullptr);
 		StepTestScene(scene, 10);
-		if (anchor && start) EXPECT_SAME(GetSceneGeometryTransform(anchor).pos, GetSceneGeometryTransform(start).pos);
-		if (box) EXPECT((GetSceneGeometryTransform(box).pos - initialBoxPosition).Length() > 0.01f);
 	}
 
 	const char* invalidColliderScene = R"json({

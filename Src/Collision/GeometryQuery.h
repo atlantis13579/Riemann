@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <deque>
 #include <vector>
+#include <functional>
 #include "../Core/StaticStack.h"
 #include "../Maths/Transform.h"
 #include "../Maths/Vector3.h"
@@ -20,7 +21,6 @@ namespace Riemann
 	class RigidBody;
 
 #define TREE_MAX_DEPTH			(32)
-#define MAX_GEOMETRY_STACK_SIZE	(128)
 
 	struct RayCastCache
 	{
@@ -41,6 +41,12 @@ namespace Riemann
 		virtual bool IsCollidable(const CollisionData& data0, const CollisionData& data1) = 0;
 		static CollisionFilter* CreateDefault();
 		static CollisionFilter* CreateCollisionTable(unsigned int nLayers, unsigned char* LayerData);
+		static CollisionFilter* CreateLayerMask();
+		static CollisionFilter* CreateCallback(std::function<bool(const CollisionData&, const CollisionData&)> Callback);
+		static bool Allows(CollisionFilter* Filter, const CollisionData& A, const CollisionData& B)
+		{
+			return !Filter || Filter->IsCollidable(A, B);
+		}
 	};
 
 	struct RayCastOption
@@ -68,6 +74,7 @@ namespace Riemann
 		int             MaxObjects;
 		CollisionData 	FilterData;
 		CollisionFilter* Filter;
+		RigidBody* SourceBody = nullptr;
 	};
 
 	struct RayCastResult
@@ -130,9 +137,12 @@ namespace Riemann
 			Filter = nullptr;
 		}
 
+		bool BoundsOnly = false;
+		std::function<bool(const Geometry*)> PreFilter;
 		unsigned int	maxOverlaps;
 		CollisionData 	FilterData;
 		CollisionFilter* Filter;
+		RigidBody* SourceBody = nullptr;
 	};
 
 	struct IntersectResult
@@ -149,7 +159,7 @@ namespace Riemann
 
 		void Reset()
 		{
-			overlaps = true;
+			overlaps = false;
 			overlapGeoms.clear();
 			intersectTestCount = 0;
 		}
@@ -180,11 +190,15 @@ namespace Riemann
 			SWEEP_ANY = 1,
 			SWEEP_PENETRATE = 2,
 		};
+		SweepOption() : Type(SWEEP_NEAREST), HitBothSides(false), MaxDist(FLT_MAX), Filter(nullptr) {}
+		std::function<bool(const Geometry*)> PreFilter;
+		std::function<bool(const Geometry*, const Vector3&, const Vector3&, float)> PostFilter;
 		SweepType		Type;
 		bool			HitBothSides;
 		float			MaxDist;
 		CollisionData 	FilterData;
 		CollisionFilter* Filter;
+		RigidBody* SourceBody = nullptr;
 	};
 
 	struct SweepResult
@@ -200,6 +214,7 @@ namespace Riemann
 			hitTime = FLT_MAX;
 			hitTimeMin = FLT_MAX;
 			hitNormal = Vector3::Zero();
+			hitPosition = Vector3::Zero();
 			hitGeom = nullptr;
 			hitGeometries.clear();
 			hitTestCount = 0;
@@ -213,6 +228,7 @@ namespace Riemann
 				return;
 			}
 			hit = hit || rhs.hit;
+			hitPosition = hitTimeMin < rhs.hitTimeMin ? hitPosition : rhs.hitPosition;
 			hitNormal = hitTimeMin < rhs.hitTimeMin ? hitNormal : rhs.hitNormal;
 			hitGeom = hitTimeMin < rhs.hitTimeMin ? hitGeom : rhs.hitGeom;
 			hitGeometries.insert(hitGeometries.end(), rhs.hitGeometries.begin(), rhs.hitGeometries.end());
@@ -281,6 +297,8 @@ namespace Riemann
 	public:
 		GeometryQuery();
 		~GeometryQuery();
+		void SetDefaultCollisionFilter(CollisionFilter* Filter) { m_DefaultFilter = Filter; }
+		CollisionFilter* GetDefaultCollisionFilter() const { return m_DefaultFilter; }
 
 	public:
 		void		BuildStaticGeometry(const std::vector<Geometry*>& Objects, int nPrimitivePerNode);
@@ -311,6 +329,7 @@ namespace Riemann
 		bool		BoxCastQuery(const Vector3& Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 		bool		SphereCastQuery(const Vector3& Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 		bool		CapsuleCastQuery(const Vector3& Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
+		bool SweepGeometry(const Geometry* Shape, const Vector3& Direction, const SweepOption& Option, SweepResult* Result);
 		void		CollectAABBs(std::vector<Box3>* aabbs) const;
 		const GeometryQueryProxy* GetProxy(const Geometry* Object) const;
 		const GeometryQueryProxy* GetProxy(GeometryHandle Handle) const;
@@ -365,6 +384,7 @@ namespace Riemann
 
 	private:
 		std::vector<Geometry*>	m_Objects;
+		CollisionFilter* m_DefaultFilter = nullptr;
 		std::vector<Geometry*>	m_staticObjects;
 		std::vector<uint32_t>	m_staticProxyIds;
 		std::vector<GeometryQueryProxy> m_Proxies;

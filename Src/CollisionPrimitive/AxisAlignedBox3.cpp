@@ -856,7 +856,7 @@ bool AxisAlignedBox3::IntersectTriangle(const Vector3& A, const Vector3& B, cons
 
 	float minimum, maximum, rad, p0, p1, p2;
 
-	// Bullet 3: test the 9 tests first (this was faster)
+	// Test the nine edge cross-product axes first.
 	float fex = fabsf(e0.x);
 	float fey = fabsf(e0.y);
 	float fez = fabsf(e0.z);
@@ -878,7 +878,7 @@ bool AxisAlignedBox3::IntersectTriangle(const Vector3& A, const Vector3& B, cons
 	AXISTEST_Y1(e2.z, e2.x, fez, fex);
 	AXISTEST_Z12(e2.y, e2.x, fey, fex);
 
-	// Bullet 1:
+	// Test overlap along the box axes.
 	//  first test overlap in the {x,y,z}-directions
 	//  find minimum, maximum of the triangle each direction, and test for overlap in
 	//  that direction -- this is equivalent to testing a minimal AABB around
@@ -899,7 +899,7 @@ bool AxisAlignedBox3::IntersectTriangle(const Vector3& A, const Vector3& B, cons
 	if (minimum > extents.z || maximum < -extents.z)
 		return false;
 
-	// Bullet 2:
+	// Test overlap with the triangle plane.
 	//  test if the box intersects the plane of the triangle
 	//  compute plane equation of triangle: normal*x+d=0
 	Vector3 normal = e0.Cross(e1);

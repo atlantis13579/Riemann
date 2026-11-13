@@ -2,7 +2,7 @@
 
 #if defined(RIEMANN_ENABLE_CUDA)
 
-#include "RigidBodyDynamics/LCPSolver.h"
+#include "Solver/LCPSolver.h"
 
 #include <cfloat>
 #include <cmath>

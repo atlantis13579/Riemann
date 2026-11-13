@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
 
 namespace Riemann
 {
@@ -44,6 +45,9 @@ namespace Riemann
 	DeformableBody::DeformableBody(const DeformableBodySettings& settings)
 		: m_Settings(settings)
 	{
+		if (!settings.Collision.IsValid()) throw std::invalid_argument("Invalid deformable collision settings");
+		if (!settings.MaterialSolver.IsValid()) throw std::invalid_argument("Invalid tetrahedral material solver settings");
+		if (!settings.ProjectiveSolver.IsValid()) throw std::invalid_argument("Invalid projective material solver settings");
 		m_Settings.Substeps = std::max(1, std::min(settings.Substeps, 128));
 		m_Settings.SolverIterations = std::max(1, std::min(settings.SolverIterations, 128));
 		m_Settings.EdgeCompliance = NonNegative(settings.EdgeCompliance, 1.0e-6f);
@@ -63,6 +67,12 @@ namespace Riemann
 	{
 		return index >= 0 && (size_t)index < m_Particles.size();
 	}
+	void DeformableBody::SetCollisionSettings(const DeformableCollisionSettings& Settings)
+	{
+		RequireIdle();
+		if (!Settings.IsValid()) throw std::invalid_argument("Invalid deformable collision settings");
+		m_Settings.Collision = Settings; m_CollisionStats = DeformableCollisionStats();
+	}
 
 	float DeformableBody::GetInverseMass(int index) const
 	{
@@ -72,6 +82,8 @@ namespace Riemann
 
 	int DeformableBody::AddParticle(const Vector3& position, float inverseMass)
 	{
+		RequireIdle();
+		if (m_Asset.IsValid()) throw std::logic_error("Rebuild the prepared asset to change its simulation topology");
 		if (!IsFiniteVector(position) || !std::isfinite(inverseMass) || inverseMass < 0.0f)
 		{
 			return -1;
@@ -94,6 +106,11 @@ namespace Riemann
 
 	int DeformableBody::AddEdge(int particleA, int particleB, float compliance)
 	{
+		return AddEdgeInternal(particleA, particleB, compliance, true);
+	}
+	int DeformableBody::AddEdgeInternal(int particleA, int particleB, float compliance, bool Explicit)
+	{
+		RequireIdle();
 		if (!IsValidParticle(particleA) || !IsValidParticle(particleB) || particleA == particleB
 			|| !std::isfinite(compliance))
 		{
@@ -105,6 +122,7 @@ namespace Riemann
 			if ((edge.ParticleA == particleA && edge.ParticleB == particleB)
 				|| (edge.ParticleA == particleB && edge.ParticleB == particleA))
 			{
+				if (Explicit) { m_Edges[i].Explicit = m_Edges[i].Enabled = true; }
 				return (int)i;
 			}
 		}
@@ -119,12 +137,15 @@ namespace Riemann
 		edge.RestLength = edge.InitialRestLength = length;
 		edge.Compliance = compliance < 0.0f ? m_Settings.EdgeCompliance : compliance;
 		edge.Lambda = 0.0f;
+		edge.Explicit = Explicit;
 		m_Edges.push_back(edge);
 		return (int)m_Edges.size() - 1;
 	}
 
 	int DeformableBody::AddTetrahedron(int a, int b, int c, int d, float compliance)
 	{
+		RequireIdle();
+		if (m_Asset.IsValid()) throw std::logic_error("Rebuild the prepared asset to change its simulation topology");
 		int indices[4] = { a, b, c, d };
 		for (int i = 0; i < 4; ++i)
 		{
@@ -166,15 +187,20 @@ namespace Riemann
 		tetrahedron.Compliance = compliance < 0.0f ? m_Settings.VolumeCompliance : compliance;
 		tetrahedron.Lambda = 0.0f;
 		m_Tetrahedra.push_back(tetrahedron);
+		m_MaterialElements.emplace_back(nullptr);
+		int EdgeIndex = 0;
 		for (int i = 0; i < 4; ++i)
 		{
-			for (int j = i + 1; j < 4; ++j) AddEdge(indices[i], indices[j]);
+			for (int j = i + 1; j < 4; ++j) m_Tetrahedra.back().Edges[EdgeIndex++] = AddEdgeInternal(indices[i], indices[j], -1, false);
 		}
+		RefreshElasticEdges();
 		return (int)m_Tetrahedra.size() - 1;
 	}
 
 	bool DeformableBody::SetSurfaceTriangles(const std::vector<Index3>& triangles)
 	{
+		RequireIdle();
+		if (m_Asset.IsValid()) throw std::logic_error("Prepared collision boundaries are owned by the asset");
 		for (const Index3& triangle : triangles)
 		{
 			if (!IsValidParticle(triangle.a) || !IsValidParticle(triangle.b) || !IsValidParticle(triangle.c)
@@ -191,6 +217,7 @@ namespace Riemann
 
 	bool DeformableBody::PinParticle(int index, const Vector3& position)
 	{
+		RequireIdle();
 		if (!IsValidParticle(index) || !IsFiniteVector(position)) return false;
 		DeformableParticle& particle = m_Particles[(size_t)index];
 		particle.Pinned = true;
@@ -202,6 +229,7 @@ namespace Riemann
 
 	bool DeformableBody::UnpinParticle(int index)
 	{
+		RequireIdle();
 		if (!IsValidParticle(index)) return false;
 		m_Particles[(size_t)index].Pinned = false;
 		return true;
@@ -209,6 +237,7 @@ namespace Riemann
 
 	bool DeformableBody::SetParticlePosition(int index, const Vector3& position, bool resetVelocity)
 	{
+		RequireIdle();
 		if (!IsValidParticle(index) || !IsFiniteVector(position)) return false;
 		DeformableParticle& particle = m_Particles[(size_t)index];
 		particle.Position = particle.PreviousPosition = position;
@@ -220,6 +249,7 @@ namespace Riemann
 
 	bool DeformableBody::SetParticleVelocity(int index, const Vector3& velocity)
 	{
+		RequireIdle();
 		if (!IsValidParticle(index) || !IsFiniteVector(velocity) || GetInverseMass(index) <= 0.0f) return false;
 		m_Particles[(size_t)index].Velocity = velocity;
 		return true;
@@ -227,6 +257,7 @@ namespace Riemann
 
 	bool DeformableBody::AddForce(int index, const Vector3& force)
 	{
+		RequireIdle();
 		if (!IsValidParticle(index) || !IsFiniteVector(force) || GetInverseMass(index) <= 0.0f) return false;
 		DeformableParticle& particle = m_Particles[(size_t)index];
 		if (!IsFiniteVector(particle.Force + force)) return false;
@@ -236,6 +267,7 @@ namespace Riemann
 
 	bool DeformableBody::AddImpulse(int index, const Vector3& impulse)
 	{
+		RequireIdle();
 		if (!IsValidParticle(index) || !IsFiniteVector(impulse) || GetInverseMass(index) <= 0.0f) return false;
 		DeformableParticle& particle = m_Particles[(size_t)index];
 		const Vector3 velocity = particle.Velocity + impulse * particle.InverseMass;
@@ -246,6 +278,7 @@ namespace Riemann
 
 	int DeformableBody::AddRadialImpulse(const Vector3& center, float radius, const Vector3& impulse)
 	{
+		RequireIdle();
 		if (!IsFiniteVector(center) || !IsFiniteVector(impulse) || !std::isfinite(radius) || radius <= 0.0f) return 0;
 		std::vector<float> weights(m_Particles.size(), 0.0f);
 		float weightSum = 0.0f;
@@ -270,7 +303,7 @@ namespace Riemann
 		const float fraction = 1.0f - std::exp(-m_Settings.PlasticCreep * dt);
 		for (DeformableEdge& edge : m_Edges)
 		{
-			if (edge.Compliance <= 0.0f) continue;
+			if (!edge.Enabled || edge.Compliance <= 0.0f) continue;
 			const float length = (m_Particles[(size_t)edge.ParticleB].Position - m_Particles[(size_t)edge.ParticleA].Position).Length();
 			const float difference = length - edge.RestLength;
 			const float yieldLength = m_Settings.YieldStrain * edge.RestLength;
@@ -285,7 +318,7 @@ namespace Riemann
 		// measures, retaining the orientation and a finite minimum volume.
 		for (DeformableTetrahedron& tetrahedron : m_Tetrahedra)
 		{
-			if (tetrahedron.Compliance <= 0.0f) continue;
+			if (tetrahedron.Material >= 0 || tetrahedron.Compliance <= 0.0f) continue;
 			const float volume = GetTetrahedronVolume((int)(&tetrahedron - m_Tetrahedra.data()));
 			const float ratio = volume / tetrahedron.RestVolume;
 			if (ratio <= 0.0f || !std::isfinite(ratio)) continue;
@@ -305,6 +338,7 @@ namespace Riemann
 	{
 		for (DeformableEdge& edge : m_Edges)
 		{
+			if (!edge.Enabled) continue;
 			const float inverseMassA = GetInverseMass(edge.ParticleA);
 			const float inverseMassB = GetInverseMass(edge.ParticleB);
 			if (inverseMassA + inverseMassB <= 0.0f) continue;
@@ -325,6 +359,7 @@ namespace Riemann
 	{
 		for (DeformableTetrahedron& tetrahedron : m_Tetrahedra)
 		{
+			if (tetrahedron.Material >= 0) continue;
 			Vector3 positions[4];
 			float inverseMass[4];
 			for (int i = 0; i < 4; ++i)
@@ -370,67 +405,65 @@ namespace Riemann
 		}
 	}
 
-	void DeformableBody::Simulate(float dt)
+	void DeformableBody::PrepareStep(float step)
 	{
-		if (!std::isfinite(dt) || dt <= 0.0f || m_Particles.empty()) return;
-		const float step = dt / m_Settings.Substeps;
-		if (step < 1.0e-8f) return;
 		const float damping = std::exp(-m_Settings.Damping * step);
-		for (int substep = 0; substep < m_Settings.Substeps; ++substep)
+		std::fill(m_GroundContacts.begin(), m_GroundContacts.end(), 0);
+		std::fill(m_GroundCorrections.begin(), m_GroundCorrections.end(), 0.0f);
+		for (size_t i = 0; i < m_Particles.size(); ++i)
 		{
-			std::fill(m_GroundContacts.begin(), m_GroundContacts.end(), 0);
-			std::fill(m_GroundCorrections.begin(), m_GroundCorrections.end(), 0.0f);
-			for (size_t i = 0; i < m_Particles.size(); ++i)
+			DeformableParticle& particle = m_Particles[i];
+			particle.PreviousPosition = particle.Position;
+			if (GetInverseMass((int)i) <= 0.0f)
 			{
-				DeformableParticle& particle = m_Particles[i];
-				particle.PreviousPosition = particle.Position;
-				if (GetInverseMass((int)i) <= 0.0f)
-				{
-					if (particle.Pinned) particle.Position = particle.PinPosition;
-					particle.Velocity = Vector3::Zero();
-					continue;
-				}
-				particle.Velocity += (m_Settings.Gravity + particle.Force * particle.InverseMass) * step;
-				particle.Velocity *= damping;
-				particle.Position += particle.Velocity * step;
+				if (particle.Pinned) particle.Position = particle.PinPosition;
+				particle.Velocity = Vector3::Zero();
+				continue;
 			}
-			for (DeformableEdge& edge : m_Edges) edge.Lambda = 0.0f;
-			for (DeformableTetrahedron& tetrahedron : m_Tetrahedra) tetrahedron.Lambda = 0.0f;
-			for (int iteration = 0; iteration < m_Settings.SolverIterations; ++iteration)
+			particle.Velocity *= damping;
+			// Decay existing motion before applying this substep's load. Damping the
+			// load itself changes static material calibration with the step size.
+			particle.Velocity += (m_Settings.Gravity + particle.Force * particle.InverseMass) * step;
+			particle.Position += particle.Velocity * step;
+		}
+		for (DeformableEdge& edge : m_Edges) edge.Lambda = 0.0f;
+		for (DeformableTetrahedron& tetrahedron : m_Tetrahedra) tetrahedron.Lambda = 0.0f;
+		for (int I : m_ActiveMaterialTetrahedra) m_MaterialElements[I]->State = TetrahedralMaterialState();
+		BeginMaterialStep(step);
+	}
+	void DeformableBody::FinishStep(float step)
+	{
+		if (m_ProjectiveMaterials) m_ProjectiveMaterials->Solver.End();
+		// Plastic flow uses elastic strain after projection, not timestep-dependent
+		// unconstrained motion. The updated rest lengths apply to the next substep.
+		UpdatePlasticity(step);
+		for (size_t i = 0; i < m_Particles.size(); ++i)
+		{
+			DeformableParticle& particle = m_Particles[i];
+			if (GetInverseMass((int)i) <= 0.0f) continue;
+			const Vector3 predictedVelocity = particle.Velocity;
+			particle.Velocity = (particle.Position - particle.PreviousPosition) / step;
+			if (m_GroundContacts[i])
 			{
-				SolveEdges(step);
-				SolveVolumes(step);
-				SolveGround();
-			}
-			// Plastic flow uses elastic strain after projection, not timestep-dependent
-			// unconstrained motion. The updated rest lengths apply to the next substep.
-			UpdatePlasticity(step);
-			for (size_t i = 0; i < m_Particles.size(); ++i)
-			{
-				DeformableParticle& particle = m_Particles[i];
-				if (GetInverseMass((int)i) <= 0.0f) continue;
-				const Vector3 predictedVelocity = particle.Velocity;
-				particle.Velocity = (particle.Position - particle.PreviousPosition) / step;
-				if (m_GroundContacts[i])
-				{
-					// Depenetration is a positional correction, not an outgoing impulse.
-					particle.Velocity.y -= m_GroundCorrections[i] / step;
-					const float bounce = predictedVelocity.y < -0.2f ? -predictedVelocity.y * m_Settings.Restitution : 0.0f;
-					particle.Velocity.y = std::max(particle.Velocity.y, bounce);
-					const float normalChange = std::max(0.0f, particle.Velocity.y - predictedVelocity.y);
-					const float speed = std::sqrt(particle.Velocity.x * particle.Velocity.x + particle.Velocity.z * particle.Velocity.z);
-					const float friction = speed > 1.0e-8f ? std::max(0.0f, 1.0f - m_Settings.Friction * normalChange / speed) : 0.0f;
-					particle.Velocity.x *= friction;
-					particle.Velocity.z *= friction;
-				}
+				// Depenetration is a positional correction, not an outgoing impulse.
+				particle.Velocity.y -= m_GroundCorrections[i] / step;
+				const float bounce = predictedVelocity.y < -0.2f ? -predictedVelocity.y * m_Settings.Restitution : 0.0f;
+				particle.Velocity.y = std::max(particle.Velocity.y, bounce);
+				const float normalChange = std::max(0.0f, particle.Velocity.y - predictedVelocity.y);
+				const float speed = std::sqrt(particle.Velocity.x * particle.Velocity.x + particle.Velocity.z * particle.Velocity.z);
+				const float friction = speed > 1.0e-8f ? std::max(0.0f, 1.0f - m_Settings.Friction * normalChange / speed) : 0.0f;
+				particle.Velocity.x *= friction;
+				particle.Velocity.z *= friction;
 			}
 		}
-		for (DeformableParticle& particle : m_Particles) particle.Force = Vector3::Zero();
-		UpdateRenderGeometry();
 	}
 
 	void DeformableBody::Reset()
 	{
+		RequireIdle();
+		if (m_ProjectiveMaterials) m_ProjectiveMaterials->Solver.End();
+		m_CollisionStats = DeformableCollisionStats();
+		for (auto& Attachment : m_Attachments) Attachment.Force = Maths::TVector3<double>(0);
 		for (DeformableParticle& particle : m_Particles)
 		{
 			particle.Position = particle.PreviousPosition = particle.PinPosition = particle.InitialPosition;
@@ -446,6 +479,7 @@ namespace Riemann
 			tetrahedron.RestVolume = tetrahedron.InitialRestVolume;
 			tetrahedron.Lambda = 0.0f;
 		}
+		for (int I : m_ActiveMaterialTetrahedra) m_MaterialElements[I]->State = TetrahedralMaterialState();
 		std::fill(m_GroundContacts.begin(), m_GroundContacts.end(), 0);
 		std::fill(m_GroundCorrections.begin(), m_GroundCorrections.end(), 0.0f);
 		UpdateRenderGeometry();

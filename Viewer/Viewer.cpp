@@ -1,3 +1,4 @@
+#include "../Src/Modules/CharacterController/CharacterController.h"
 #include "Viewer.h"
 
 #if defined(_WIN32) && !defined(NOMINMAX)
@@ -29,7 +30,9 @@
 #include "MeshRenderer.h"
 #include "RenderThread.h"
 #include "SceneWorld.h"
-#include "../Src/Deformation/VehicleDeformation.h"
+#include "../Src/Deformation/StrandSystem.h"
+#include "../Src/Modules/Vehicle/VehicleDeformation.h"
+#include "../Src/Modules/Vehicle/VehicleDynamics.h"
 #include "../Renderer/imgui.h"
 #include "../Renderer/RiemannRenderer.h"
 #include "../Src/Collision/GeometryObject.h"
@@ -45,6 +48,9 @@
 #include "../Src/Modules/Tools/PhysxBinaryParser.h"
 #include "../Src/RigidBodyDynamics/KinematicsTree.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
+#include "../Src/RigidBodyDynamics/PhysicalAnimation.h"
+#include "../Src/RigidBodyDynamics/Ragdoll.h"
+#include "../Src/Deformation/Cloth.h"
 
 namespace Riemann
 {
@@ -727,6 +733,10 @@ namespace Riemann
 			{
 				return;
 			}
+			{
+				std::lock_guard<std::mutex> Lock(m_ImguiMutex);
+				if (m_CharacterInputActive) return;
+			}
 			if (m_CuttingPanelActive || m_MeshSimplificationPanelActive)
 			{
 				return;
@@ -1094,6 +1104,10 @@ namespace Riemann
 
 		++m_SceneGeneration;
 		std::string error;
+		if (FileNameOf(resolved) == "09_ragdoll_stairs.json")
+			m_World->SetRagdollAlgorithmOverride(m_RagdollDemoReduced
+				? RagdollAlgorithm::ReducedCoordinates : RagdollAlgorithm::JointConstraints);
+		else m_World->ClearRagdollAlgorithmOverride();
 		if (!m_World->LoadFromFile(resolved, &error))
 		{
 			fprintf(stderr, "%s\n", error.c_str());
@@ -1151,6 +1165,19 @@ namespace Riemann
 	void WorldViewer::UpdateSimulator(float dt)
 	{
 		ApplyImguiCommands();
+		Vector3 CharacterInput = Vector3::Zero(); bool JumpRequested;
+		{
+			std::lock_guard<std::mutex> Lock(m_ImguiMutex);
+			CharacterInput.x = float(m_CharacterKeys[3]) - float(m_CharacterKeys[1]);
+			CharacterInput.z = float(m_CharacterKeys[2]) - float(m_CharacterKeys[0]);
+			JumpRequested = m_CharacterJumpRequested; m_CharacterJumpRequested = false;
+		}
+		if (m_World && m_World->GetDemoCharacter())
+		{
+			const float MoveSpeed = 3.0f, JumpSpeed = 5.0f;
+			m_World->GetDemoCharacter()->SetMoveVelocity(CharacterInput.SafeUnit() * MoveSpeed);
+			if (JumpRequested) m_World->GetDemoCharacter()->Jump(JumpSpeed);
+		}
 		ApplyVehicleCommands();
 		ApplySnowCommands();
 		UpdateFluidDemo();
@@ -1305,6 +1332,15 @@ namespace Riemann
 
 	void WorldViewer::SetMovementKey(char c, bool down)
 	{
+		{
+			std::lock_guard<std::mutex> Lock(m_ImguiMutex);
+			const char Key = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+			if (Key == 'i') m_CharacterKeys[0] = down;
+			if (Key == 'j') m_CharacterKeys[1] = down;
+			if (Key == 'k') m_CharacterKeys[2] = down;
+			if (Key == 'l') m_CharacterKeys[3] = down;
+			if (Key == ' ') { if (down && !m_CharacterJumpHeld) m_CharacterJumpRequested = true; m_CharacterJumpHeld = down; }
+		}
 		c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
 		if (c == 'w')
 		{
@@ -1625,6 +1661,7 @@ namespace Riemann
 		(void)width;
 
 		std::string sceneName;
+		bool ragdollDemoReduced = false;
 		std::vector<std::string> sceneFiles;
 		int demoIndex = 0;
 		size_t objectCount = 0;
@@ -1659,6 +1696,7 @@ namespace Riemann
 		{
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			sceneName = m_ImguiSceneName;
+			ragdollDemoReduced = m_ImguiRagdollDemoReduced;
 			sceneFiles = m_ImguiSceneFiles;
 			demoIndex = m_ImguiDemoIndex;
 			objectCount = m_ImguiObjectCount;
@@ -1749,6 +1787,20 @@ namespace Riemann
 			}
 		}
 		imguiSeparatorLine();
+		const char* renderModeLabels[] = { "Solid", "Wireframe", "Solid + Wireframe" };
+		imguiLabel("Render Mode");
+		for (int modeIndex = 0; modeIndex < 3; ++modeIndex)
+		{
+			const RenderMode mode = static_cast<RenderMode>(modeIndex);
+			if (imguiCheck(renderModeLabels[modeIndex], renderMode == mode, true)
+				&& renderMode != mode)
+			{
+				std::lock_guard<std::mutex> lock(m_ImguiMutex);
+				m_ImguiPendingRenderMode = true;
+				m_ImguiPendingRenderModeValue = mode;
+			}
+		}
+		if (smokePanel.Active || snowPanel.Active || vehiclePanel.Active) imguiSeparatorLine();
 
 		if (smokePanel.Active)
 		{
@@ -1786,25 +1838,43 @@ namespace Riemann
 		if (snowPanel.Active) DrawSnowPanel(snowPanel);
 		if (vehiclePanel.Active)
 		{
-			imguiLabel("Vehicle Crash Test");
+			imguiLabel(vehiclePanel.Dynamics ? "Vehicle Dynamics" : "Vehicle Crash Test");
 			int command = 0;
-			if (imguiButton(vehiclePanel.Paused ? "Start / Resume Crash" : "Pause Crash")) command = 1;
-			if (imguiButton("Replay Crash")) command = 2;
-			if (imguiButton("Inspect Damage")) command = 4;
+			if (imguiButton(vehiclePanel.Paused ? "Start / Resume" : "Pause Vehicle")) command = 1;
+			if (imguiButton("Reset Vehicle")) command = 2;
+			if (imguiButton("Focus Vehicle")) command = 4;
 			if (imguiCheck("Slow motion (0.25x)", vehiclePanel.SlowMotion)) command = 3;
+			bool changed = false;
+			if (vehiclePanel.Dynamics)
+			{
+				changed = imguiSlider("Throttle", &vehiclePanel.Throttle, 0, 1, 0.05f) || changed;
+				changed = imguiSlider("Steering", &vehiclePanel.Steering, -1, 1, 0.05f) || changed;
+				changed = imguiSlider("Brake", &vehiclePanel.Brake, 0, 1, 0.05f) || changed;
+				changed = imguiSlider("Handbrake", &vehiclePanel.Handbrake, 0, 1, 0.05f) || changed;
+				changed = imguiSlider("Clutch engagement", &vehiclePanel.Clutch, 0, 1, 0.05f) || changed;
+				const char* Gears[] = { "Reverse", "Neutral", "1st", "2nd", "3rd", "4th" };
+				const char* Differentials[] = { "Open", "Limited slip", "Locked" };
+				changed = imguiCombo("Gear", &vehiclePanel.GearIndex, Gears, 6) || changed;
+				changed = imguiCombo("Differential", &vehiclePanel.Differential, Differentials, 3) || changed;
+				if (imguiButton("Drive forward")) { vehiclePanel.GearIndex = 2; vehiclePanel.Throttle = 0.5f; vehiclePanel.Brake = vehiclePanel.Handbrake = 0; changed = true; }
+				if (imguiButton("Park")) { vehiclePanel.GearIndex = 1; vehiclePanel.Throttle = 0; vehiclePanel.Brake = 1; changed = true; }
+				snprintf(text, sizeof(text), "Speed: %.1f m/s, engine: %.0f rpm", vehiclePanel.Speed, vehiclePanel.EngineRPM); imguiValue(text);
+				snprintf(text, sizeof(text), "Grounded: %d/4, load: %.0f N", vehiclePanel.GroundedWheels, vehiclePanel.Load); imguiValue(text);
+			}
 			snprintf(text, sizeof(text), "Maximum dent: %.0f cm", vehiclePanel.Displacement * 100);
 			imguiValue(text);
 			snprintf(text, sizeof(text), "Plastic strain: %.0f%%", vehiclePanel.PlasticStrain * 100);
 			imguiValue(text);
 			imguiValue("RMB: orbit around the damage");
-			if (command)
+			if (command || changed)
 			{
 				std::lock_guard<std::mutex> lock(m_ImguiMutex);
-				m_PendingVehicleCommand = command;
-				m_PendingVehicleGeneration = vehiclePanel.SceneGeneration;
+				if (command) { m_PendingVehicleCommand = command; m_PendingVehicleGeneration = vehiclePanel.SceneGeneration; }
+				if (changed) { m_PendingVehiclePanel = vehiclePanel; m_PendingVehicleControls = true; }
 			}
 		}
-		const bool applySolver = !smokePanel.Active && !snowPanel.Active && DrawSolverPanel(solverPanel);
+		if (smokePanel.Active || snowPanel.Active) solverPanel.SolverSwitchable = false;
+		const bool applySolver = DrawSolverPanel(solverPanel);
 		{
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			if (solverPanel.SceneGeneration == m_ImguiSolverPanel.SceneGeneration && !m_ImguiSolverPanel.Pending)
@@ -1812,6 +1882,67 @@ namespace Riemann
 				m_ImguiSolverPanel.ResolutionIndex = solverPanel.ResolutionIndex;
 				m_ImguiSolverPanel.BackendIndex = solverPanel.BackendIndex;
 				m_ImguiSolverPanel.AllowFallback = solverPanel.AllowFallback;
+				m_ImguiSolverPanel.PersistentContacts = solverPanel.PersistentContacts;
+				m_ImguiSolverPanel.TriangleContacts = solverPanel.TriangleContacts;
+				m_ImguiSolverPanel.CollisionFiltering = solverPanel.CollisionFiltering;
+				m_ImguiSolverPanel.ShapeOffsets = solverPanel.ShapeOffsets;
+				m_ImguiSolverPanel.SpeculativeContacts = solverPanel.SpeculativeContacts;
+				m_ImguiSolverPanel.DistanceFieldDemo = solverPanel.DistanceFieldDemo;
+				m_ImguiSolverPanel.StrandDemo=solverPanel.StrandDemo; m_ImguiSolverPanel.StrandRootTwist=solverPanel.StrandRootTwist; m_ImguiSolverPanel.StrandCoupled=solverPanel.StrandCoupled; m_ImguiSolverPanel.StrandLod=solverPanel.StrandLod;
+				m_ImguiSolverPanel.StrandContacts=solverPanel.StrandContacts; m_ImguiSolverPanel.StrandSelfContacts=solverPanel.StrandSelfContacts;
+				m_ImguiSolverPanel.StrandContinuous=solverPanel.StrandContinuous; m_ImguiSolverPanel.StrandFriction=solverPanel.StrandFriction;
+				m_ImguiSolverPanel.PhysicsFieldsDemo = solverPanel.PhysicsFieldsDemo;
+				m_ImguiSolverPanel.PhysicsFieldFreeze = solverPanel.PhysicsFieldFreeze;
+				m_ImguiSolverPanel.AuthoredDestructionDemo = solverPanel.AuthoredDestructionDemo;
+				m_ImguiSolverPanel.DestructionEventsDemo = solverPanel.DestructionEventsDemo;
+				m_ImguiSolverPanel.DestructionCacheDemo = solverPanel.DestructionCacheDemo;
+				m_ImguiSolverPanel.DestructionSeekFraction = solverPanel.DestructionSeekFraction;
+				m_ImguiSolverPanel.CharacterDemo = solverPanel.CharacterDemo;
+				m_ImguiSolverPanel.CharacterBox = solverPanel.CharacterBox;
+				m_ImguiSolverPanel.VehicleDynamicsDemo = solverPanel.VehicleDynamicsDemo;
+				m_ImguiSolverPanel.ReducedRagdollDemo = solverPanel.ReducedRagdollDemo;
+				m_ImguiSolverPanel.PhysicalAnimationDemo = solverPanel.PhysicalAnimationDemo;
+				m_ImguiSolverPanel.AnimationPassive = solverPanel.AnimationPassive;
+				m_ImguiSolverPanel.AnimationArmStrength = solverPanel.AnimationArmStrength;
+				m_ImguiSolverPanel.AnimationPhysicsBlend = solverPanel.AnimationPhysicsBlend;
+				m_ImguiSolverPanel.ClothModelDemo = solverPanel.ClothModelDemo;
+				m_ImguiSolverPanel.ClothAlgorithm = solverPanel.ClothAlgorithm;
+				m_ImguiSolverPanel.ClothIterations = solverPanel.ClothIterations;
+				m_ImguiSolverPanel.ClothSubsteps = solverPanel.ClothSubsteps;
+				m_ImguiSolverPanel.ClothDamping = solverPanel.ClothDamping;
+				m_ImguiSolverPanel.ClothStretchUCompliance = solverPanel.ClothStretchUCompliance;
+				m_ImguiSolverPanel.ClothStretchVCompliance = solverPanel.ClothStretchVCompliance;
+				m_ImguiSolverPanel.ClothShearCompliance = solverPanel.ClothShearCompliance;
+				m_ImguiSolverPanel.ClothBendingCompliance = solverPanel.ClothBendingCompliance;
+				m_ImguiSolverPanel.ClothWind = solverPanel.ClothWind;
+				m_ImguiSolverPanel.ClothAnimation = solverPanel.ClothAnimation;
+				m_ImguiSolverPanel.ClothTethers = solverPanel.ClothTethers;
+				m_ImguiSolverPanel.ClothSoftMaterial = solverPanel.ClothSoftMaterial;
+				m_ImguiSolverPanel.ClothSurfaceContacts = solverPanel.ClothSurfaceContacts;
+				m_ImguiSolverPanel.ClothFriction = solverPanel.ClothFriction;
+				m_ImguiSolverPanel.ClothSelfCollision = solverPanel.ClothSelfCollision;
+				m_ImguiSolverPanel.ClothInterCollision = solverPanel.ClothInterCollision;
+				m_ImguiSolverPanel.ClothContinuous = solverPanel.ClothContinuous;
+				m_ImguiSolverPanel.SoftBodyAttachments = solverPanel.SoftBodyAttachments;
+				m_ImguiSolverPanel.CompliantAttachments = solverPanel.CompliantAttachments;
+				m_ImguiSolverPanel.RigidAttachments = solverPanel.RigidAttachments;
+				m_ImguiSolverPanel.SoftBodyContacts = solverPanel.SoftBodyContacts;
+				m_ImguiSolverPanel.SoftRigidContacts = solverPanel.SoftRigidContacts;
+				m_ImguiSolverPanel.CalibratedSoftMaterial = solverPanel.CalibratedSoftMaterial;
+				m_ImguiSolverPanel.StVKSoftMaterial = solverPanel.StVKSoftMaterial;
+				m_ImguiSolverPanel.CorotatedSoftMaterial = solverPanel.CorotatedSoftMaterial;
+				m_ImguiSolverPanel.ProjectiveSoftMaterial = solverPanel.ProjectiveSoftMaterial;
+				m_ImguiSolverPanel.PreparedSoftAsset = solverPanel.PreparedSoftAsset;
+				m_ImguiSolverPanel.EmbeddedSoftRender = solverPanel.EmbeddedSoftRender;
+				m_ImguiSolverPanel.SequentialWarmStart = solverPanel.SequentialWarmStart;
+				m_ImguiSolverPanel.UnifiedConstraints = solverPanel.UnifiedConstraints;
+				m_ImguiSolverPanel.FrictionPatches = solverPanel.FrictionPatches;
+				m_ImguiSolverPanel.JointDrives = solverPanel.JointDrives;
+				m_ImguiSolverPanel.JointBreaking = solverPanel.JointBreaking;
+				m_ImguiSolverPanel.CCDContinuation = solverPanel.CCDContinuation;
+				m_ImguiSolverPanel.TemporalSubsteps = solverPanel.TemporalSubsteps;
+				m_ImguiSolverPanel.SupportStabilization = solverPanel.SupportStabilization;
+				m_ImguiSolverPanel.IslandSleeping = solverPanel.IslandSleeping;
 				if (applySolver)
 				{
 					m_ImguiPendingSolverPanel = solverPanel;
@@ -1821,37 +1952,22 @@ namespace Riemann
 				}
 			}
 		}
-		imguiSeparatorLine();
-		const char* renderModeLabels[] = { "Solid", "Wireframe", "Solid + Wireframe" };
-		imguiLabel("Render Mode");
-		for (int modeIndex = 0; modeIndex < 3; ++modeIndex)
-		{
-			const RenderMode mode = static_cast<RenderMode>(modeIndex);
-			if (imguiCheck(renderModeLabels[modeIndex], renderMode == mode, true)
-				&& renderMode != mode)
-			{
-				std::lock_guard<std::mutex> lock(m_ImguiMutex);
-				m_ImguiPendingRenderMode = true;
-				m_ImguiPendingRenderModeValue = mode;
-			}
-		}
-		imguiLabel("Debug");
-		if (imguiCheck("Geometry Query AABB", showGeometryQueryBounds, true))
-		{
-			std::lock_guard<std::mutex> lock(m_ImguiMutex);
-			m_ImguiPendingShowGeometryQueryBounds = true;
-			m_ImguiPendingShowGeometryQueryBoundsValue = !showGeometryQueryBounds;
-		}
-		if (showGeometryQueryBounds)
-		{
-			snprintf(text, sizeof(text), "Query AABBs: %u", static_cast<unsigned int>(geometryQueryBoundsCount));
-			imguiValue(text);
-		}
-
 		if (!demoNames.empty())
 		{
 			if (demoIndex < (int)sceneFiles.size())
 			{
+				if (sceneName == "Ragdoll")
+				{
+					imguiSeparatorLine();
+					imguiLabel("Ragdoll Algorithm");
+					const char* algorithms[] = { "Joint Constraints", "Featherstone" };
+					int selected = ragdollDemoReduced ? 1 : 0;
+					if (imguiCombo("Algorithm", &selected, algorithms, 2))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_ImguiPendingRagdollAlgorithm = selected;
+					}
+				}
 				if (sceneName.find("Glass Fracture") == 0 && imguiButton("Shoot Glass (I)"))
 				{
 					std::lock_guard<std::mutex> lock(m_ImguiMutex);
@@ -1867,7 +1983,19 @@ namespace Riemann
 						imguiSeparator();
 						imguiLabel(state.Name.c_str());
 						bool changed = false;
-						if (imguiCheck("Enabled", state.Enabled, true))
+						snprintf(text, sizeof(text), "Force: %.2f N", state.ReactionForce);
+						imguiValue(text);
+						snprintf(text, sizeof(text), "Torque: %.2f Nm", state.ReactionTorque);
+						imguiValue(text);
+						if (state.Broken)
+						{
+							imguiValue("Broken");
+							if (imguiButton("Repair joint", true))
+							{
+								state.RepairRequested = true; state.Enabled = true; changed = true;
+							}
+						}
+						if (imguiCheck("Enabled", state.Enabled, !state.Broken))
 						{
 							state.Enabled = !state.Enabled;
 							changed = true;
@@ -2165,6 +2293,19 @@ namespace Riemann
 					imguiValue(meshSimplificationStatus.c_str());
 				}
 			}
+		}
+		imguiSeparatorLine();
+		imguiLabel("Debug");
+		if (imguiCheck("Geometry Query AABB", showGeometryQueryBounds, true))
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			m_ImguiPendingShowGeometryQueryBounds = true;
+			m_ImguiPendingShowGeometryQueryBoundsValue = !showGeometryQueryBounds;
+		}
+		if (showGeometryQueryBounds)
+		{
+			snprintf(text, sizeof(text), "Query AABBs: %u", static_cast<unsigned int>(geometryQueryBoundsCount));
+			imguiValue(text);
 		}
 
 		imguiEndScrollArea();
@@ -3013,6 +3154,7 @@ namespace Riemann
 		SolverPanelState pendingSolverPanel;
 		std::string pendingSceneFile;
 		int pendingDemoIndex = -1;
+		int pendingRagdollAlgorithm = -1;
 		bool pendingDistance = false;
 		float pendingDistanceValue = 0.0f;
 		bool pendingCuttingSeparation = false;
@@ -3060,6 +3202,8 @@ namespace Riemann
 			m_ImguiPendingSolverSwitch = false;
 			pendingDemoIndex = m_ImguiPendingDemoIndex;
 			m_ImguiPendingDemoIndex = -1;
+			pendingRagdollAlgorithm = m_ImguiPendingRagdollAlgorithm;
+			m_ImguiPendingRagdollAlgorithm = -1;
 			pendingSceneFile.swap(m_ImguiPendingSceneFile);
 			pendingDistance = m_ImguiPendingCameraDistance;
 			pendingDistanceValue = m_ImguiPendingCameraDistanceValue;
@@ -3178,23 +3322,229 @@ namespace Riemann
 		{
 			LoadScene(pendingSceneFile);
 		}
+		if (pendingRagdollAlgorithm >= 0 && m_CurrentSceneName == "09_ragdoll_stairs.json")
+		{
+			const bool previous = m_RagdollDemoReduced;
+			m_RagdollDemoReduced = pendingRagdollAlgorithm == 1;
+			if (!LoadScene(m_CurrentSceneName))
+			{
+				m_RagdollDemoReduced = previous;
+				LoadScene(m_CurrentSceneName);
+			}
+		}
 		if (pendingSolverSwitch && pendingSolverPanel.SceneGeneration == m_SceneGeneration)
 		{
+			if (pendingSolverPanel.SolverChanged)
+			{
+				PhysicsWorld* simulation = m_World ? m_World->GetSimulation() : nullptr;
+				const bool allowed = simulation && !m_CuttingPanelActive && !m_MeshSimplificationPanelActive
+					&& !m_FluidDemoActive && !m_GasDemoActive && !m_SmokeSimulation && !m_SnowSimulation && !m_SandSimulation
+					&& simulation->GetReducedRagdollCount() == 0;
+				std::string error;
+				bool applied = allowed && pendingSolverPanel.ResolutionIndex >= 0 && pendingSolverPanel.ResolutionIndex < 4
+					&& pendingSolverPanel.BackendIndex >= 0 && pendingSolverPanel.BackendIndex < 4
+					&& simulation->SetSolverConfiguration(SolverPanelAlgorithms[pendingSolverPanel.ResolutionIndex],
+						SolverPanelBackends[pendingSolverPanel.BackendIndex], pendingSolverPanel.AllowFallback, &error);
+				if (!allowed) error = "Solver switching is unavailable in this demo.";
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiSolverPanel.Pending = false;
+					m_ImguiSolverPanel.Status = applied ? std::string() : (error.empty() ? "Solver change is unavailable." : error);
+					if (simulation)
+					{
+						m_ImguiSolverPanel.ResolutionIndex = GetSolverPanelIndex(simulation->GetResolutionSolver());
+						m_ImguiSolverPanel.BackendIndex = GetBackendPanelIndex(simulation->GetSolverBackend());
+					}
+				}
+				UpdateImguiState();
+			}
+			else if (pendingSolverPanel.HasClothDemo)
+			{
+				const bool applied = m_World && m_World->ApplyClothParameters(
+					pendingSolverPanel.ClothAlgorithm == 0 ? ClothModel::DistanceLinks : ClothModel::TriangleStrain,
+					(int)pendingSolverPanel.ClothIterations, (int)pendingSolverPanel.ClothSubsteps, pendingSolverPanel.ClothDamping,
+					pendingSolverPanel.ClothStretchUCompliance, pendingSolverPanel.ClothStretchVCompliance,
+					pendingSolverPanel.ClothShearCompliance, pendingSolverPanel.ClothBendingCompliance);
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiSolverPanel.Pending = false;
+					m_ImguiSolverPanel.Status = applied ? std::string() : "Cloth settings are unavailable in this demo.";
+				}
+				UpdateImguiState();
+			}
+			else
+			{
 			std::string error;
+			bool reloaded = true;
+			if (m_World && !m_CuttingPanelActive && !m_MeshSimplificationPanelActive
+				&& (pendingSolverPanel.DistanceFieldDemo != m_World->GetDistanceFieldDemo()
+					|| pendingSolverPanel.StrandDemo != m_World->GetStrandDemo()
+					|| pendingSolverPanel.CharacterDemo != m_World->GetCharacterDemo() || pendingSolverPanel.CharacterBox != m_World->GetCharacterBox()
+					|| pendingSolverPanel.VehicleDynamicsDemo != m_World->GetVehicleDynamicsDemo()
+					|| pendingSolverPanel.ReducedRagdollDemo != m_World->GetReducedRagdollDemo()
+					|| pendingSolverPanel.PhysicalAnimationDemo != m_World->GetPhysicalAnimationDemo()
+					|| pendingSolverPanel.ClothModelDemo != m_World->GetClothModelDemo() || pendingSolverPanel.AuthoredDestructionDemo != m_World->GetAuthoredDestructionDemo()
+					|| pendingSolverPanel.DestructionEventsDemo != m_World->GetDestructionEventsDemo()
+					|| pendingSolverPanel.DestructionCacheDemo != m_World->GetDestructionCacheDemo()))
+			{
+				const bool Previous = m_World->GetDistanceFieldDemo();
+				const bool PreviousStrands=m_World->GetStrandDemo();
+				const bool PreviousCharacter = m_World->GetCharacterDemo(), PreviousBox = m_World->GetCharacterBox();
+				const bool PreviousVehicle = m_World->GetVehicleDynamicsDemo();
+				const bool PreviousReducedRagdoll = m_World->GetReducedRagdollDemo();
+				const bool PreviousAnimation = m_World->GetPhysicalAnimationDemo();
+				const bool PreviousCloth = m_World->GetClothModelDemo();
+				const bool PreviousDestruction = m_World->GetAuthoredDestructionDemo();
+				const bool PreviousEvents = m_World->GetDestructionEventsDemo();
+				const bool PreviousCache = m_World->GetDestructionCacheDemo();
+				const std::string SceneFile = m_SceneDirectory + "/" + m_CurrentSceneName;
+				m_World->SetDistanceFieldDemo(pendingSolverPanel.DistanceFieldDemo);
+				m_World->SetStrandDemo(pendingSolverPanel.StrandDemo);
+				m_World->SetCharacterDemo(pendingSolverPanel.CharacterDemo, pendingSolverPanel.CharacterBox);
+				m_World->SetVehicleDynamicsDemo(pendingSolverPanel.VehicleDynamicsDemo);
+				m_World->SetReducedRagdollDemo(pendingSolverPanel.ReducedRagdollDemo);
+				m_World->SetPhysicalAnimationDemo(pendingSolverPanel.PhysicalAnimationDemo);
+				m_World->SetClothModelDemo(pendingSolverPanel.ClothModelDemo);
+				m_World->SetAuthoredDestructionDemo(pendingSolverPanel.AuthoredDestructionDemo);
+				m_World->SetDestructionEventsDemo(pendingSolverPanel.DestructionEventsDemo);
+				m_World->SetDestructionCacheDemo(pendingSolverPanel.DestructionCacheDemo);
+				reloaded = LoadScene(SceneFile);
+				if (!reloaded)
+				{
+					m_World->SetDistanceFieldDemo(Previous);
+					m_World->SetStrandDemo(PreviousStrands);
+					m_World->SetCharacterDemo(PreviousCharacter, PreviousBox);
+					m_World->SetVehicleDynamicsDemo(PreviousVehicle);
+					m_World->SetReducedRagdollDemo(PreviousReducedRagdoll);
+					m_World->SetPhysicalAnimationDemo(PreviousAnimation);
+					m_World->SetClothModelDemo(PreviousCloth);
+					m_World->SetAuthoredDestructionDemo(PreviousDestruction);
+					m_World->SetDestructionEventsDemo(PreviousEvents);
+					m_World->SetDestructionCacheDemo(PreviousCache);
+					const bool Restored = LoadScene(SceneFile);
+					error = Restored ? "Demo scene reload failed; restored the previous mode."
+						: "Demo scene reload failed; restoring the previous scene also failed.";
+				}
+			}
 			PhysicsWorld* simulation = m_World ? m_World->GetSimulation() : nullptr;
-			const bool valid = simulation && !m_CuttingPanelActive && !m_MeshSimplificationPanelActive
+			const bool valid = reloaded && simulation && !m_CuttingPanelActive && !m_MeshSimplificationPanelActive
 				&& pendingSolverPanel.ResolutionIndex >= 0 && pendingSolverPanel.ResolutionIndex < 4
 				&& pendingSolverPanel.BackendIndex >= 0 && pendingSolverPanel.BackendIndex < 4;
-			const bool applied = valid && simulation->SetSolverConfiguration(
+			const bool SupportedProjection = !simulation || simulation->GetReducedRagdollCount() == 0 || !pendingSolverPanel.SupportStabilization;
+			if (!SupportedProjection) error = "ReducedRagdolls require support stabilization to be disabled.";
+			const bool CouplingRequested = (pendingSolverPanel.SoftBodyAttachments && pendingSolverPanel.RigidAttachments)
+				|| (pendingSolverPanel.SoftBodyContacts && pendingSolverPanel.SoftRigidContacts);
+			const bool SupportedCoupling = !CouplingRequested || (pendingSolverPanel.ResolutionIndex >= 2 && !pendingSolverPanel.SupportStabilization);
+			if (!SupportedCoupling) error = "Soft-body rigid coupling requires PBD/XPBD and support stabilization disabled.";
+			if (valid && SupportedProjection && SupportedCoupling && m_World->GetRigidAttachmentDemo()
+				&& (!pendingSolverPanel.SoftBodyAttachments || !pendingSolverPanel.RigidAttachments))
+				m_World->ApplyDeformableAttachmentDemo(pendingSolverPanel.SoftBodyAttachments, pendingSolverPanel.CompliantAttachments, false);
+			if (valid && SupportedProjection && SupportedCoupling && m_World->GetSoftRigidContactDemo()
+				&& (!pendingSolverPanel.SoftBodyContacts || !pendingSolverPanel.SoftRigidContacts))
+				m_World->ApplyDeformableContactDemo(pendingSolverPanel.SoftBodyContacts, false, pendingSolverPanel.PreparedSoftAsset, pendingSolverPanel.EmbeddedSoftRender);
+			bool applied = valid && SupportedProjection && SupportedCoupling && simulation->SetSolverConfiguration(
 				SolverPanelAlgorithms[pendingSolverPanel.ResolutionIndex],
 				SolverPanelBackends[pendingSolverPanel.BackendIndex], pendingSolverPanel.AllowFallback, &error);
+			if (applied)
+			{
+				simulation->SetNarrowPhaseSolver(pendingSolverPanel.PersistentContacts ? NarrowPhaseSolver::PCM : NarrowPhaseSolver::GJKEPA);
+				simulation->SetSequentialImpulseWarmStarting(pendingSolverPanel.SequentialWarmStart);
+				simulation->SetUnifiedConstraintSolving(pendingSolverPanel.UnifiedConstraints);
+				simulation->SetJointDrivesEnabled(pendingSolverPanel.JointDrives);
+				simulation->SetJointBreakingEnabled(pendingSolverPanel.JointBreaking);
+				auto TemporalSettings = simulation->GetTemporalSubstepSettings();
+				TemporalSettings.Enabled = pendingSolverPanel.TemporalSubsteps;
+				simulation->SetTemporalSubstepSettings(TemporalSettings);
+				auto SleepSettings = simulation->GetIslandSleepingSettings();
+				SleepSettings.Enabled = pendingSolverPanel.IslandSleeping;
+				simulation->SetIslandSleepingSettings(SleepSettings);
+				auto SupportSettings = simulation->GetSupportStabilizationSettings();
+				SupportSettings.Enabled = pendingSolverPanel.SupportStabilization;
+				simulation->SetSupportStabilizationSettings(SupportSettings);
+				auto CCDSettings = simulation->GetCCDContinuationSettings();
+				CCDSettings.Enabled = pendingSolverPanel.CCDContinuation;
+				simulation->SetCCDContinuationSettings(CCDSettings);
+				FrictionPatchSettings Friction = simulation->GetFrictionPatchSettings();
+				Friction.Enabled = pendingSolverPanel.FrictionPatches;
+				simulation->SetFrictionPatchSettings(Friction);
+				simulation->SetTriangleContactsEnabled(pendingSolverPanel.TriangleContacts);
+				simulation->SetCollisionFilteringEnabled(pendingSolverPanel.CollisionFiltering);
+				ContactGenerationSettings Contacts = simulation->GetContactGenerationSettings();
+				Contacts.UseShapeOffsets = pendingSolverPanel.ShapeOffsets;
+				Contacts.SpeculativeContacts = pendingSolverPanel.SpeculativeContacts;
+				simulation->SetContactGenerationSettings(Contacts);
+				if (m_World->GetDemoStrands())
+				{
+					try
+					{
+						applied=m_World->ApplyStrandDemo(pendingSolverPanel.StrandRootTwist,pendingSolverPanel.StrandCoupled,(size_t)pendingSolverPanel.StrandLod);
+						if (applied) applied=m_World->ApplyStrandCollisionDemo(pendingSolverPanel.StrandContacts,pendingSolverPanel.StrandSelfContacts,pendingSolverPanel.StrandContinuous,pendingSolverPanel.StrandFriction);
+					}
+					catch (const std::exception& E) { applied=false; error=E.what(); }
+				}
+				if (m_World->GetDemoPhysicalAnimation()) m_World->ApplyPhysicalAnimationDemo(pendingSolverPanel.AnimationPassive,
+					pendingSolverPanel.AnimationArmStrength, pendingSolverPanel.AnimationPhysicsBlend);
+				if (m_World->GetDemoCloth()) m_World->ApplyClothDemo(pendingSolverPanel.ClothWind, pendingSolverPanel.ClothAnimation,
+					pendingSolverPanel.ClothTethers, pendingSolverPanel.ClothSoftMaterial, pendingSolverPanel.ClothSurfaceContacts, pendingSolverPanel.ClothFriction,
+					pendingSolverPanel.ClothSelfCollision, pendingSolverPanel.ClothInterCollision, pendingSolverPanel.ClothContinuous,
+					pendingSolverPanel.SoftBodyAttachments, pendingSolverPanel.CompliantAttachments, pendingSolverPanel.RigidAttachments, pendingSolverPanel.SoftBodyContacts, pendingSolverPanel.SoftRigidContacts,
+					pendingSolverPanel.CalibratedSoftMaterial, pendingSolverPanel.StVKSoftMaterial, pendingSolverPanel.PreparedSoftAsset, pendingSolverPanel.EmbeddedSoftRender,
+					pendingSolverPanel.CorotatedSoftMaterial, pendingSolverPanel.ProjectiveSoftMaterial);
+				if (pendingSolverPanel.HasClothDemo) applied = m_World->ApplyClothParameters(
+					pendingSolverPanel.ClothAlgorithm == 0 ? ClothModel::DistanceLinks : ClothModel::TriangleStrain,
+					(int)pendingSolverPanel.ClothIterations, (int)pendingSolverPanel.ClothSubsteps, pendingSolverPanel.ClothDamping,
+					pendingSolverPanel.ClothStretchUCompliance, pendingSolverPanel.ClothStretchVCompliance,
+					pendingSolverPanel.ClothShearCompliance, pendingSolverPanel.ClothBendingCompliance) && applied;
+			}
+			if (applied)
+			{
+				try { applied = m_World->ApplyPhysicsFieldsDemo(pendingSolverPanel.PhysicsFieldsDemo,pendingSolverPanel.PhysicsFieldFreeze,
+					pendingSolverPanel.FieldStrainPulse,pendingSolverPanel.FieldVelocityPulse); }
+				catch (const std::exception& E) { applied = false; error = E.what(); }
+				if (!applied && error.empty()) error = "Field velocity assignment requires independent rigid bodies.";
+			}
+			if (applied && pendingSolverPanel.DestructionCacheCommand != DestructionPlaybackCommand::None)
+			{
+				try { applied = m_World->ApplyDestructionCacheDemo(pendingSolverPanel.DestructionCacheCommand,pendingSolverPanel.DestructionSeekFraction); }
+				catch (const std::exception& E) { applied = false; error = E.what(); }
+				if (!applied && error.empty()) error = "Record destruction before replaying or seeking.";
+			}
 			{
 				std::lock_guard<std::mutex> lock(m_ImguiMutex);
 				m_ImguiSolverPanel.Pending = false;
+				m_ImguiSolverPanel.DestructionCacheCommand = DestructionPlaybackCommand::None;
+				m_ImguiSolverPanel.FieldStrainPulse = m_ImguiSolverPanel.FieldVelocityPulse = false;
 				m_ImguiSolverPanel.Status = applied ? "Applied to current scene."
 					: (error.empty() ? "Solver change is unavailable." : error);
+				if (applied)
+				{
+					m_ImguiSolverPanel.AnimationPassive = pendingSolverPanel.AnimationPassive;
+					m_ImguiSolverPanel.AnimationArmStrength = pendingSolverPanel.AnimationArmStrength;
+					m_ImguiSolverPanel.AnimationPhysicsBlend = pendingSolverPanel.AnimationPhysicsBlend;
+					m_ImguiSolverPanel.ClothWind = pendingSolverPanel.ClothWind;
+					m_ImguiSolverPanel.ClothAnimation = pendingSolverPanel.ClothAnimation;
+					m_ImguiSolverPanel.ClothTethers = pendingSolverPanel.ClothTethers;
+					m_ImguiSolverPanel.ClothSoftMaterial = pendingSolverPanel.ClothSoftMaterial;
+					m_ImguiSolverPanel.ClothSurfaceContacts = pendingSolverPanel.ClothSurfaceContacts;
+					m_ImguiSolverPanel.ClothFriction = pendingSolverPanel.ClothFriction;
+					m_ImguiSolverPanel.ClothSelfCollision = pendingSolverPanel.ClothSelfCollision;
+					m_ImguiSolverPanel.ClothInterCollision = pendingSolverPanel.ClothInterCollision;
+					m_ImguiSolverPanel.ClothContinuous = pendingSolverPanel.ClothContinuous;
+					m_ImguiSolverPanel.SoftBodyAttachments = pendingSolverPanel.SoftBodyAttachments;
+					m_ImguiSolverPanel.CompliantAttachments = pendingSolverPanel.CompliantAttachments;
+					m_ImguiSolverPanel.RigidAttachments = pendingSolverPanel.RigidAttachments;
+					m_ImguiSolverPanel.SoftBodyContacts = pendingSolverPanel.SoftBodyContacts;
+					m_ImguiSolverPanel.SoftRigidContacts = pendingSolverPanel.SoftRigidContacts;
+					m_ImguiSolverPanel.CalibratedSoftMaterial = pendingSolverPanel.CalibratedSoftMaterial;
+					m_ImguiSolverPanel.StVKSoftMaterial = pendingSolverPanel.StVKSoftMaterial;
+					m_ImguiSolverPanel.CorotatedSoftMaterial = pendingSolverPanel.CorotatedSoftMaterial;
+					m_ImguiSolverPanel.ProjectiveSoftMaterial = pendingSolverPanel.ProjectiveSoftMaterial;
+					m_ImguiSolverPanel.PreparedSoftAsset = pendingSolverPanel.PreparedSoftAsset;
+					m_ImguiSolverPanel.EmbeddedSoftRender = pendingSolverPanel.EmbeddedSoftRender;
+				}
 			}
 			UpdateImguiState();
+			}
 		}
 		if (pendingShootProjectile)
 		{
@@ -3358,12 +3708,22 @@ namespace Riemann
 	{
 		int command;
 		unsigned int generation;
+		VehiclePanelState controls;
+		bool applyControls;
 		{
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			command = m_PendingVehicleCommand;
 			generation = m_PendingVehicleGeneration;
 			m_PendingVehicleCommand = 0;
+			controls = m_PendingVehiclePanel; applyControls = m_PendingVehicleControls; m_PendingVehicleControls = false;
 		}
+		if (applyControls && controls.SceneGeneration == m_SceneGeneration)
+			if (auto* Vehicle = m_World->GetVehicleDynamics(0))
+			{
+				VehicleControls C; C.Throttle = controls.Throttle; C.Steering = controls.Steering; C.Brake = controls.Brake;
+				C.Handbrake = controls.Handbrake; C.Clutch = controls.Clutch; C.Gear = controls.GearIndex - 1;
+				Vehicle->SetControls(C); Vehicle->SetDifferential((VehicleDifferential)controls.Differential);
+			}
 		if (generation != m_SceneGeneration || m_World->GetVehicleCount() == 0) return;
 		if (command == 1) m_VehiclePaused = !m_VehiclePaused;
 		else if (command == 2)
@@ -3392,12 +3752,27 @@ namespace Riemann
 		std::vector<std::string> terrainObjectIds = m_World
 			? m_World->GetTerrainObjectIds() : std::vector<std::string>();
 		std::lock_guard<std::mutex> lock(m_ImguiMutex);
+		m_CharacterInputActive = m_World && m_World->GetDemoCharacter();
 		m_ImguiSmokePanel.Active = m_SmokeSimulation != nullptr;
 		UpdateSnowPanelState();
 		m_ImguiVehiclePanel.Active = m_World && m_World->GetVehicleCount() > 0;
 		m_ImguiVehiclePanel.SceneGeneration = m_SceneGeneration;
 		m_ImguiVehiclePanel.Paused = m_VehiclePaused;
 		m_ImguiVehiclePanel.SlowMotion = m_VehicleSlowMotion;
+		m_ImguiVehiclePanel.Dynamics = m_World && m_World->GetVehicleDynamics(0);
+		if (m_ImguiVehiclePanel.Dynamics)
+		{
+			const auto* Vehicle = m_World->GetVehicleDynamics(0); const auto& C = Vehicle->GetControls();
+			m_ImguiVehiclePanel.Throttle = C.Throttle; m_ImguiVehiclePanel.Steering = C.Steering; m_ImguiVehiclePanel.Brake = C.Brake;
+			m_ImguiVehiclePanel.Handbrake = C.Handbrake; m_ImguiVehiclePanel.Clutch = C.Clutch; m_ImguiVehiclePanel.GearIndex = C.Gear + 1;
+			m_ImguiVehiclePanel.Differential = (int)Vehicle->GetSettings().Differential;
+			m_ImguiVehiclePanel.Speed = Vehicle->GetChassis()->V.Length();
+			constexpr float RadiansPerSecondToRPM = 60.0f / (2 * 3.14159265358979323846f);
+			m_ImguiVehiclePanel.EngineRPM = Vehicle->GetEngineSpeed() * RadiansPerSecondToRPM;
+			m_ImguiVehiclePanel.Load = 0; m_ImguiVehiclePanel.GroundedWheels = 0;
+			for (const auto& W : Vehicle->GetWheels())
+			{ m_ImguiVehiclePanel.Load += W.SuspensionForce; m_ImguiVehiclePanel.GroundedWheels += W.Grounded ? 1 : 0; }
+		}
 		if (m_ImguiVehiclePanel.Active)
 		{
 			m_ImguiVehiclePanel.Displacement = m_World->GetVehicle(0)->GetMaxDisplacement();
@@ -3422,6 +3797,14 @@ namespace Riemann
 		}
 		if (simulation)
 		{
+			RefreshSolverPanelTelemetry(m_ImguiSolverPanel,*m_World);
+			m_ImguiSolverPanel.HasReducedRagdolls = simulation->GetReducedRagdollCount() != 0;
+			auto* Animation = m_World->GetDemoPhysicalAnimation();
+			m_ImguiSolverPanel.HasPhysicalAnimation = Animation != nullptr;
+			auto* DemoCloth = m_World->GetDemoCloth();
+			if (!DemoCloth && m_World->GetName() == "Cloth" && simulation->GetClothCount() > 0) DemoCloth = simulation->GetCloth(0);
+			m_ImguiSolverPanel.HasClothDemo = DemoCloth != nullptr;
+			m_ImguiSolverPanel.AnimationState = Animation ? (int)Animation->GetState() : 0;
 			m_ImguiSolverPanel.ActiveResolutionIndex = GetSolverPanelIndex(simulation->GetResolutionSolver());
 			m_ImguiSolverPanel.ActiveBackendIndex = GetBackendPanelIndex(simulation->GetSolverBackend());
 			m_ImguiSolverPanel.ActiveRequestedBackendIndex = GetBackendPanelIndex(simulation->GetRequestedSolverBackend());
@@ -3430,6 +3813,71 @@ namespace Riemann
 				m_ImguiSolverPanel.ResolutionIndex = m_ImguiSolverPanel.ActiveResolutionIndex;
 				m_ImguiSolverPanel.BackendIndex = m_ImguiSolverPanel.ActiveRequestedBackendIndex;
 				m_ImguiSolverPanel.AllowFallback = simulation->GetAllowBackendFallback();
+				m_ImguiSolverPanel.PersistentContacts = simulation->GetNarrowPhaseSolver() == NarrowPhaseSolver::PCM;
+				m_ImguiSolverPanel.TriangleContacts = simulation->GetTriangleContactsEnabled();
+				m_ImguiSolverPanel.CollisionFiltering = simulation->GetCollisionFilteringEnabled();
+				m_ImguiSolverPanel.ShapeOffsets = simulation->GetContactGenerationSettings().UseShapeOffsets;
+				m_ImguiSolverPanel.SpeculativeContacts = simulation->GetContactGenerationSettings().SpeculativeContacts;
+				m_ImguiSolverPanel.DistanceFieldDemo = m_World->GetDistanceFieldDemo();
+				m_ImguiSolverPanel.StrandDemo=m_World->GetStrandDemo(); m_ImguiSolverPanel.StrandRootTwist=m_World->GetStrandDemoTwist(); m_ImguiSolverPanel.StrandCoupled=true; m_ImguiSolverPanel.StrandLod=(int)m_World->GetStrandDemoLod();
+				const auto* DemoStrands=m_World->GetDemoStrands(); const auto StrandContacts=DemoStrands ? DemoStrands->GetSettings().Collision : StrandCollisionSettings();
+				m_ImguiSolverPanel.StrandContacts=StrandContacts.Enabled; m_ImguiSolverPanel.StrandSelfContacts=StrandContacts.SelfCollision;
+				m_ImguiSolverPanel.StrandContinuous=StrandContacts.Continuous; m_ImguiSolverPanel.StrandFriction=StrandContacts.Material.StaticFriction>0;
+				m_ImguiSolverPanel.PhysicsFieldsDemo = m_World->GetPhysicsFieldsDemo();
+				m_ImguiSolverPanel.PhysicsFieldFreeze = m_World->GetPhysicsFieldFreeze();
+				m_ImguiSolverPanel.AuthoredDestructionDemo = m_World->GetAuthoredDestructionDemo();
+				m_ImguiSolverPanel.DestructionEventsDemo = m_World->GetDestructionEventsDemo();
+				m_ImguiSolverPanel.DestructionCacheDemo = m_World->GetDestructionCacheDemo();
+				m_ImguiSolverPanel.CharacterDemo = m_World->GetCharacterDemo();
+				m_ImguiSolverPanel.VehicleDynamicsDemo = m_World->GetVehicleDynamicsDemo();
+				m_ImguiSolverPanel.ReducedRagdollDemo = m_World->GetReducedRagdollDemo();
+				m_ImguiSolverPanel.PhysicalAnimationDemo = m_World->GetPhysicalAnimationDemo();
+				m_ImguiSolverPanel.ClothModelDemo = m_World->GetClothModelDemo();
+				if (DemoCloth)
+				{
+					const auto& Settings = DemoCloth->GetSettings();
+					m_ImguiSolverPanel.ClothAlgorithm = Settings.Model == ClothModel::DistanceLinks ? 0 : 1;
+					m_ImguiSolverPanel.ClothIterations = (float)Settings.SolverIterations;
+					m_ImguiSolverPanel.ClothSubsteps = (float)Settings.Substeps;
+					m_ImguiSolverPanel.ClothDamping = Settings.Damping;
+					m_ImguiSolverPanel.ClothStretchUCompliance = Settings.Material.StretchUCompliance;
+					m_ImguiSolverPanel.ClothStretchVCompliance = Settings.Material.StretchVCompliance;
+					m_ImguiSolverPanel.ClothShearCompliance = Settings.Material.ShearCompliance;
+					m_ImguiSolverPanel.ClothBendingCompliance = Settings.Material.BendingCompliance;
+				}
+				m_ImguiSolverPanel.ClothWind = !DemoCloth || DemoCloth->GetSettings().Wind.NormalDrag > 0;
+				m_ImguiSolverPanel.ClothAnimation = DemoCloth && DemoCloth->GetSettings().AnimationDrive.Enabled;
+				m_ImguiSolverPanel.ClothTethers = !DemoCloth || DemoCloth->GetSettings().Material.TethersEnabled;
+				m_ImguiSolverPanel.ClothSoftMaterial = m_World->GetClothDemoSoftMaterial();
+				m_ImguiSolverPanel.ClothSurfaceContacts = DemoCloth && DemoCloth->GetSettings().Collision.SurfaceContacts;
+				m_ImguiSolverPanel.ClothFriction = !DemoCloth || DemoCloth->GetSettings().Collision.Material.StaticFriction > 0;
+				m_ImguiSolverPanel.ClothSelfCollision = DemoCloth && DemoCloth->GetSettings().Collision.SelfCollision;
+				m_ImguiSolverPanel.ClothInterCollision = DemoCloth && DemoCloth->GetSettings().Collision.InterCollision;
+				m_ImguiSolverPanel.ClothContinuous = DemoCloth && DemoCloth->GetSettings().Collision.Continuous;
+				m_ImguiSolverPanel.SoftBodyAttachments = m_World->GetDemoDeformableBody(0) && m_World->GetDemoDeformableBody(1);
+				m_ImguiSolverPanel.CompliantAttachments = m_World->GetCompliantAttachmentDemo();
+				m_ImguiSolverPanel.RigidAttachments = m_World->GetRigidAttachmentDemo();
+				m_ImguiSolverPanel.SoftBodyContacts = m_World->GetDemoContactBody(0) && m_World->GetDemoContactBody(1);
+				m_ImguiSolverPanel.SoftRigidContacts = m_World->GetSoftRigidContactDemo();
+				m_ImguiSolverPanel.CalibratedSoftMaterial = m_World->GetCalibratedSoftMaterialDemo();
+				m_ImguiSolverPanel.StVKSoftMaterial = m_World->GetStVKSoftMaterialDemo();
+				m_ImguiSolverPanel.CorotatedSoftMaterial = m_World->GetCorotatedSoftMaterialDemo();
+				m_ImguiSolverPanel.ProjectiveSoftMaterial = m_World->GetProjectiveSoftMaterialDemo();
+				m_ImguiSolverPanel.PreparedSoftAsset = m_World->GetPreparedSoftAssetDemo();
+				if (m_ImguiSolverPanel.PreparedSoftAsset) m_ImguiSolverPanel.EmbeddedSoftRender = m_World->GetEmbeddedSoftRenderDemo();
+				m_ImguiSolverPanel.AnimationPassive = Animation && Animation->GetState() == PhysicalAnimationState::Passive;
+				m_ImguiSolverPanel.AnimationArmStrength = Animation ? Animation->GetControl((size_t)RagdollBone::LeftUpperArm).Strength : 1;
+				m_ImguiSolverPanel.AnimationPhysicsBlend = Animation ? Animation->GetControl(0).PhysicsBlend : 0.5f;
+				m_ImguiSolverPanel.CharacterBox = m_World->GetCharacterBox();
+				m_ImguiSolverPanel.SequentialWarmStart = simulation->GetSequentialImpulseWarmStarting();
+				m_ImguiSolverPanel.UnifiedConstraints = simulation->GetUnifiedConstraintSolving();
+				m_ImguiSolverPanel.FrictionPatches = simulation->GetFrictionPatchSettings().Enabled;
+				m_ImguiSolverPanel.JointDrives = simulation->GetJointDrivesEnabled();
+				m_ImguiSolverPanel.JointBreaking = simulation->GetJointBreakingEnabled();
+				m_ImguiSolverPanel.CCDContinuation = simulation->GetCCDContinuationSettings().Enabled;
+				m_ImguiSolverPanel.TemporalSubsteps = simulation->GetTemporalSubstepSettings().Enabled;
+				m_ImguiSolverPanel.SupportStabilization = simulation->GetSupportStabilizationSettings().Enabled;
+				m_ImguiSolverPanel.IslandSleeping = simulation->GetIslandSleepingSettings().Enabled;
 				m_ImguiSolverPanel.SceneGeneration = m_SceneGeneration;
 				m_ImguiSolverPanel.Pending = false;
 				m_ImguiSolverPanel.Status.clear();
@@ -3437,6 +3885,9 @@ namespace Riemann
 			}
 		}
 		m_ImguiSolverPanel.Enabled = simulation && !m_CuttingPanelActive && !m_MeshSimplificationPanelActive;
+		m_ImguiSolverPanel.SolverSwitchable = m_ImguiSolverPanel.Enabled && !m_FluidDemoActive && !m_GasDemoActive
+			&& !m_SmokeSimulation && !m_SnowSimulation && !m_SandSimulation
+			&& simulation->GetReducedRagdollCount() == 0;
 		if (m_ImguiTerrainBrush.SceneGeneration != m_SceneGeneration)
 		{
 			m_ImguiTerrainBrush = TerrainBrushState();
@@ -3455,6 +3906,7 @@ namespace Riemann
 			m_ImguiTerrainStatus.clear();
 		}
 		m_ImguiSceneName = m_CurrentSceneDisplayName;
+		m_ImguiRagdollDemoReduced = m_RagdollDemoReduced;
 		m_ImguiSceneFiles = m_SceneFiles;
 		m_ImguiCuttingObjFiles = m_CuttingObjFiles;
 		m_ImguiCuttingObjPath = m_CuttingObjPath;

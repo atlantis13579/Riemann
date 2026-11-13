@@ -10,7 +10,7 @@ namespace Riemann
 {
 	// http://allenchou.net/2013/12/game-physics-constraints-sequential-impulse/
 	// http://allenchou.net/2013/12/game-physics-resolution-contact-constraints/
-	void Jacobian::Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, GeneralizedVelocity* ga, GeneralizedVelocity* gb, const Vector3& dir, float bias)
+	void Jacobian::Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, GeneralizedVelocity* ga, GeneralizedVelocity* gb, const Vector3& dir, float bias, RagdollVelocityContext* Context)
 	{
 		m_jva = -dir;
 		m_jwa = -contact->PositionLocalA.Cross(dir);
@@ -28,7 +28,10 @@ namespace Riemann
 		// k = J * inv(Mass Matrix) * J^T
 		float k = DotProduct(m_jva, m_invmjva) + DotProduct(m_jwa, m_invmjwa) + DotProduct(m_jvb, m_invmjvb) + DotProduct(m_jwb, m_invmjwb);
 
-		m_effectiveMass = 1.0f / k;
+		m_ReducedRagdoll = Context && (bodyA->ReducedRagdoll || bodyB->ReducedRagdoll);
+		m_Response.Changes.clear();
+		if (m_ReducedRagdoll) k = (float)Context->Response(bodyA, m_jva, m_jwa, bodyB, m_jvb, m_jwb, m_Response);
+		m_effectiveMass = k > 0 ? 1.0f / k : 0.0f;
 		m_totalLambda = 0.0f;
 
 		m_ga = ga;
@@ -52,11 +55,22 @@ namespace Riemann
 		m_totalLambda = Maths::Clamp(m_totalLambda + lambda, lambdamin, lambdamax);
 		lambda = m_totalLambda - oldTotalLambda;
 
+		if (m_ReducedRagdoll) { m_Response.Apply(lambda); return; }
 		m_ga->v += m_invmjva * lambda;
 		m_ga->w += m_invmjwa * lambda;
 		m_gb->v += m_invmjvb * lambda;
 		m_gb->w += m_invmjwb * lambda;
 		return;
+	}
+
+	void Jacobian::ApplyImpulse(float Impulse)
+	{
+		m_totalLambda += Impulse;
+		if (m_ReducedRagdoll) { m_Response.Apply(Impulse); return; }
+		m_ga->v += m_invmjva * Impulse;
+		m_ga->w += m_invmjwa * Impulse;
+		m_gb->v += m_invmjvb * Impulse;
+		m_gb->w += m_invmjwb * Impulse;
 	}
 
 	// With restitution slop, we take away just a little bit of energy every time a collision
@@ -81,10 +95,10 @@ namespace Riemann
 	static const float kPenetrationSlop = 0.05f;
 
 	// Baumgarte Stabilization
-	static float BaumgarteStabilizationTerm(float dt, float PenetrationDepth)
+	static float BaumgarteStabilizationTerm(float dt, float PenetrationDepth, float Slop)
 	{
 		const float beta = kBaumgarteContactBeta;
-		return -(beta / dt) * std::max(PenetrationDepth - kPenetrationSlop, 0.0f);
+		return -(beta / dt) * std::max(PenetrationDepth - Slop, 0.0f);
 	}
 
 	void ContactJacobianSolver::SetupPositionPass(Contact* contact, float dt)
@@ -100,10 +114,11 @@ namespace Riemann
 		float closingSpeed = relativeVelocity.Dot(m_contact->Normal);
 		closingSpeed = std::min(closingSpeed + kRestitutionSlop, 0.0f);
 		closingSpeed = closingSpeed < -kRestitutionSlop ? closingSpeed : 0.0f;
-		float bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth) + restitution * closingSpeed;
-		m_jN.Setup(contact, bodyA, bodyB, phase + indexA, phase + indexB, m_contact->Normal, bias);
-		m_jT.Setup(contact, bodyA, bodyB, phase + indexA, phase + indexB, m_contact->Tangent, 0.0f);
-		m_jB.Setup(contact, bodyA, bodyB, phase + indexA, phase + indexB, m_contact->Binormal, 0.0f);
+		float bias = BaumgarteStabilizationTerm(dt, contact->PenetrationDepth, contact->SolverSlop >= 0.0f ? contact->SolverSlop : kPenetrationSlop) + restitution * closingSpeed;
+		if (contact->SolverSlop >= 0.0f && contact->PenetrationDepth < 0.0f) bias = -contact->PenetrationDepth / dt;
+		m_jN.Setup(contact, bodyA, bodyB, phase + indexA, phase + indexB, m_contact->Normal, bias, ReducedRagdolls);
+		m_jT.Setup(contact, bodyA, bodyB, phase + indexA, phase + indexB, m_contact->Tangent, 0.0f, ReducedRagdolls);
+		m_jB.Setup(contact, bodyA, bodyB, phase + indexA, phase + indexB, m_contact->Binormal, 0.0f, ReducedRagdolls);
 	}
 
 	void ContactJacobianSolver::SetupVelocityPass(Contact* contact, float dt, int n)
@@ -117,18 +132,20 @@ namespace Riemann
 		float closingSpeed = relativeVelocity.Dot(m_contact->Normal);
 		closingSpeed = std::min(closingSpeed + kRestitutionSlop, 0.0f);
 		closingSpeed = closingSpeed < -kRestitutionSlop ? closingSpeed : 0.0f;
-		float bias = restitution * closingSpeed;
-		m_jN.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Normal, bias);
-		m_jT.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Tangent, 0.0f);
-		m_jB.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Binormal, 0.0f);
+		float bias = contact->SolverSlop >= 0.0f && contact->PenetrationDepth < 0.0f
+			? -contact->PenetrationDepth / dt : restitution * closingSpeed;
+		m_jN.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Normal, bias, ReducedRagdolls);
+		m_jT.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Tangent, 0.0f, ReducedRagdolls);
+		m_jB.Setup(contact, bodyA, bodyB, phase + n + indexA, phase + n + indexB, m_contact->Binormal, 0.0f, ReducedRagdolls);
 	}
 
 	void ContactJacobianSolver::Solve()
 	{
 		m_jN.Solve(0.0f, FLT_MAX);
+		if (UsePatchFriction) return;
 
 		float friction = bodyA->GetFrictionDynamic() * bodyB->GetFrictionDynamic();
-		float maxFriction = friction * m_jN.m_totalLambda;
+		float maxFriction = m_contact->SolverSlop >= 0.0f && m_contact->PenetrationDepth < 0.0f ? 0.0f : friction * m_jN.m_totalLambda;
 		m_jT.Solve(-maxFriction, maxFriction);
 		m_jB.Solve(-maxFriction, maxFriction);
 	}

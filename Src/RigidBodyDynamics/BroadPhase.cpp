@@ -2,6 +2,7 @@
 #include "BroadPhase.h"
 #include "../Collision/DynamicAABBTree.h"
 #include "../Collision/GeometryObject.h"
+#include "../Collision/GeometryQuery.h"
 #include "../Collision/SAP_Incremental.h"
 
 #include <algorithm>
@@ -13,6 +14,23 @@
 
 namespace Riemann
 {
+	void BroadPhase::ProduceOverlaps(GeometryWorldStateSpan States, std::vector<OverlapPair>* Overlaps)
+	{
+		bool Expand = m_ContactSettings.SpeculativeContacts;
+		for (size_t Index = 0; Index < States.size() && !Expand; ++Index)
+			Expand = m_ContactSettings.UseShapeOffsets && States[Index].Geom && States[Index].Geom->GetContactOffset() > 0.0f;
+		if (!Expand) { ProduceOverlapsImpl(States, Overlaps); return; }
+		m_ExpandedStates.resize(States.size());
+		m_ExpandedPointers.resize(States.size());
+		for (size_t Index = 0; Index < States.size(); ++Index)
+		{
+			m_ExpandedStates[Index] = States[Index];
+			m_ExpandedStates[Index].WorldBounds = ContactGeneration::Bounds(States[Index], m_ContactSettings, m_Dt);
+			m_ExpandedPointers[Index] = &m_ExpandedStates[Index];
+		}
+		ProduceOverlapsImpl(GeometryWorldStateSpan(m_ExpandedPointers.data(), m_ExpandedPointers.size()), Overlaps);
+	}
+
 	void BroadPhase::ProduceOverlaps(const std::vector<GeometryWorldState>& states, std::vector<OverlapPair>* overlaps)
 	{
 		std::vector<const GeometryWorldState*> statePtrs;
@@ -40,11 +58,11 @@ namespace Riemann
 		return state.MovingRigid;
 	}
 
-	static bool IsValidPair(const GeometryWorldState& state1, const GeometryWorldState& state2)
+	static bool IsValidPair(const GeometryWorldState& state1, const GeometryWorldState& state2, CollisionFilter* Filter)
 	{
 		Geometry* geom1 = state1.Geom;
 		Geometry* geom2 = state2.Geom;
-		if (geom1 == nullptr || geom2 == nullptr)
+		if (geom1 == nullptr || geom2 == nullptr || !CollisionFilter::Allows(Filter, geom1->GetFilterData(), geom2->GetFilterData()))
 		{
 			return false;
 		}
@@ -72,7 +90,7 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseAllPairsImplementation() {}
 
-		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlapsImpl(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 
@@ -80,7 +98,7 @@ namespace Riemann
 			for (int i = 0; i < n; ++i)
 			for (int j = i + 1; j < n; ++j)
 			{
-				if (!IsValidPair(states[i], states[j]))
+				if (!IsValidPair(states[i], states[j], m_Filter))
 				{
 					continue;
 				}
@@ -94,7 +112,7 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseBruteforceImplementation() {}
 
-		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlapsImpl(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 
@@ -104,7 +122,7 @@ namespace Riemann
 			{
 				const GeometryWorldState& state1 = states[i];
 				const GeometryWorldState& state2 = states[j];
-				if (!IsValidPair(state1, state2))
+				if (!IsValidPair(state1, state2, m_Filter))
 					continue;
 
 				if (state1.WorldBounds.Intersect(state2.WorldBounds))
@@ -144,7 +162,7 @@ namespace Riemann
 
 	public:
 
-		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlapsImpl(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 			if (states.empty())
@@ -159,7 +177,7 @@ namespace Riemann
 			{
 				int i, j;
 				SAP::UnpackOverlapKey(it, &i, &j);
-				if (!IsValidPair(states[i], states[j]))
+				if (!IsValidPair(states[i], states[j], m_Filter))
 					continue;
 				overlaps->emplace_back(i, j);
 			}
@@ -216,7 +234,7 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseABPImplementation() {}
 
-		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlapsImpl(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 			m_States = &states;
@@ -289,7 +307,7 @@ namespace Riemann
 
 			const GeometryWorldState& state1 = m_States->at(id1);
 			const GeometryWorldState& state2 = m_States->at(id2);
-			if (!IsValidPair(state1, state2))
+			if (!IsValidPair(state1, state2, m_Filter))
 			{
 				return;
 			}
@@ -500,7 +518,7 @@ namespace Riemann
 	public:
 		virtual ~BroadPhaseMBPImplementation() {}
 
-		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlapsImpl(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 			m_States = &states;
@@ -606,7 +624,7 @@ namespace Riemann
 
 			const GeometryWorldState& state1 = m_States->at(id1);
 			const GeometryWorldState& state2 = m_States->at(id2);
-			if (!IsValidPair(state1, state2))
+			if (!IsValidPair(state1, state2, m_Filter))
 			{
 				return;
 			}
@@ -706,7 +724,7 @@ namespace Riemann
 		BroadPhaseDynamicAABBImplementation() {}
 		virtual ~BroadPhaseDynamicAABBImplementation() {}
 
-		virtual void ProduceOverlaps(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
+		virtual void ProduceOverlapsImpl(GeometryWorldStateSpan states, std::vector<OverlapPair>* overlaps) override final
 		{
 			overlaps->clear();
 			if (states.empty())
@@ -746,7 +764,7 @@ namespace Riemann
 						continue;
 					}
 
-					if (!IsValidPair(state1, state2))
+					if (!IsValidPair(state1, state2, m_Filter))
 					{
 						continue;
 					}

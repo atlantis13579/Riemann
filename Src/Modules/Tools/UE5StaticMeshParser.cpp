@@ -1247,7 +1247,7 @@ namespace
 	bool GetMeshDescriptionPayloadId(const Package& PackageData, const PackageExport& Export,
 		std::array<uint8_t, 20>& Identifier, std::string& Error)
 	{
-		// UE5.4 FMeshDescriptionBulkData ends with FEditorBulkData metadata followed by its GUID fields.
+		// The mesh description bulk data ends with editor bulk metadata and GUID fields.
 		constexpr size_t SerializedTailSize = 4 + 16 + 20 + 8 + 16 + 4;
 		if (Export.SerialSize < static_cast<int64_t>(SerializedTailSize))
 		{
@@ -1385,7 +1385,7 @@ UE5StaticMeshData LoadUE5StaticMesh(const char* Filename)
 		ConvertUE5TriangleMeshToRiemann(&Collision.Convex);
 	}
 
-	// UE uses the render triangle mesh as complex collision when no custom complex mesh is assigned.
+	// The render triangle mesh supplies complex collision when no custom mesh is assigned.
 	Result.ComplexCollision = Result.LODs.front();
 	Result.Success = true;
 	return Result;

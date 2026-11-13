@@ -20,6 +20,15 @@ namespace Riemann
 		int a;
 		int b;
 	};
+	using HullVector = Maths::TVector3<double>;
+	static HullVector HullPoint(const Vector3& P) { return HullVector(P.x,P.y,P.z); }
+	static double SignedHullDistance(const std::vector<Vector3>& Points, const HullTriangle& Triangle, const Vector3& Point)
+	{
+		const auto A = HullPoint(Points[Triangle.v[0]]);
+		const auto Normal = (HullPoint(Points[Triangle.v[1]]) - A).Cross(HullPoint(Points[Triangle.v[2]]) - A);
+		const double Length = std::hypot(std::hypot(Normal.x,Normal.y),Normal.z);
+		return Normal.Dot(HullPoint(Point) - A) / Length;
+	}
 
 	static float ResolveHullTolerance(const std::vector<Vector3>& points, float requestedTolerance)
 	{
@@ -181,7 +190,6 @@ namespace Riemann
 		int b,
 		int c,
 		const Vector3& interiorPoint,
-		float tolerance,
 		HullTriangle& outTriangle)
 	{
 		if (a == b || a == c || b == c)
@@ -189,25 +197,25 @@ namespace Riemann
 			return false;
 		}
 
-		Vector3 normal = (points[b] - points[a]).Cross(points[c] - points[a]);
-		if (normal.SafeNormalize() <= tolerance)
+		const auto origin = HullPoint(points[a]);
+		auto normal = (HullPoint(points[b]) - origin).Cross(HullPoint(points[c]) - origin);
+		const double length = std::hypot(std::hypot(normal.x,normal.y),normal.z);
+		if (!(length > 0) || !std::isfinite(length))
 		{
 			return false;
 		}
 
-		float d = -normal.Dot(points[a]);
-		if (normal.Dot(interiorPoint) + d > 0.0f)
+		if (normal.Dot(HullPoint(interiorPoint) - origin) > 0)
 		{
 			std::swap(b, c);
 			normal = -normal;
-			d = -normal.Dot(points[a]);
 		}
 
 		outTriangle.v[0] = a;
 		outTriangle.v[1] = b;
 		outTriangle.v[2] = c;
-		outTriangle.normal = normal;
-		outTriangle.d = d;
+		outTriangle.normal = Vector3((float)(normal.x / length),(float)(normal.y / length),(float)(normal.z / length));
+		outTriangle.d = -outTriangle.normal.Dot(points[a]);
 		outTriangle.deleted = false;
 		return true;
 	}
@@ -234,16 +242,27 @@ namespace Riemann
 	{
 		std::vector<int> visibleTriangles;
 		visibleTriangles.reserve(triangles.size());
+		bool outsideTolerance = false;
 		for (int triangleIndex = 0; triangleIndex < (int)triangles.size(); ++triangleIndex)
 		{
 			const HullTriangle& triangle = triangles[triangleIndex];
-			if (!triangle.deleted && triangle.normal.Dot(points[pointIndex]) + triangle.d > tolerance)
+			if (triangle.deleted) continue;
+			const double distance = SignedHullDistance(points,triangle,points[pointIndex]);
+			outsideTolerance = outsideTolerance || distance > tolerance;
+			if (distance > 0)
 			{
 				visibleTriangles.push_back(triangleIndex);
 			}
 		}
 
-		if (visibleTriangles.empty())
+		// Tolerance decides whether a point extends the hull. Once accepted, ALL
+		// geometrically visible faces form its horizon. Applying the distance band
+		// to each face separately leaves shallow visible faces behind, producing
+		// overlapping faces or reversed horizon edges near coplanar cuts. Relative
+		// double predicates also avoid cancellation in rounded float plane offsets.
+		// A distance tolerance is not an area cutoff: every nondegenerate horizon
+		// triangle is needed for a closed surface, including small sliver triangles.
+		if (!outsideTolerance)
 		{
 			return true;
 		}
@@ -271,10 +290,11 @@ namespace Riemann
 		for (const DirectedHullEdge& edge : horizon)
 		{
 			HullTriangle newTriangle;
-			if (MakeHullTriangle(points, edge.a, edge.b, pointIndex, interiorPoint, tolerance, newTriangle))
+			if (MakeHullTriangle(points, edge.a, edge.b, pointIndex, interiorPoint, newTriangle))
 			{
 				triangles.push_back(newTriangle);
 			}
+			else return false;
 		}
 
 		return true;
@@ -372,19 +392,19 @@ namespace Riemann
 		triangles.reserve(points.size() * 2);
 
 		HullTriangle triangle;
-		if (MakeHullTriangle(points, tetra[0], tetra[1], tetra[2], interiorPoint, tolerance, triangle))
+		if (MakeHullTriangle(points, tetra[0], tetra[1], tetra[2], interiorPoint, triangle))
 		{
 			triangles.push_back(triangle);
 		}
-		if (MakeHullTriangle(points, tetra[0], tetra[3], tetra[1], interiorPoint, tolerance, triangle))
+		if (MakeHullTriangle(points, tetra[0], tetra[3], tetra[1], interiorPoint, triangle))
 		{
 			triangles.push_back(triangle);
 		}
-		if (MakeHullTriangle(points, tetra[0], tetra[2], tetra[3], interiorPoint, tolerance, triangle))
+		if (MakeHullTriangle(points, tetra[0], tetra[2], tetra[3], interiorPoint, triangle))
 		{
 			triangles.push_back(triangle);
 		}
-		if (MakeHullTriangle(points, tetra[1], tetra[3], tetra[2], interiorPoint, tolerance, triangle))
+		if (MakeHullTriangle(points, tetra[1], tetra[3], tetra[2], interiorPoint, triangle))
 		{
 			triangles.push_back(triangle);
 		}

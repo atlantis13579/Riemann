@@ -196,48 +196,26 @@ Box3 ConvexMesh::ComputeBoundingVolume() const
 
 bool ConvexMesh::IntersectRay(const Vector3& Origin, const Vector3& Direction, float* t) const
 {
-	int plane_test = 0;
-	bool all_inside = true;
-	float min_t = 0.0f, max_t = 1.0f;
-	for (uint16_t i = 0; i < NumFaces; ++i)
+	// Clip an unbounded forward ray against outward half spaces. The scene-query
+	// caller applies MaxDist; limiting this interval to [0,1] would test a segment
+	// and make distant convex objects disappear from picking and ray queries.
+	if (!t || NumFaces == 0 || (Direction.x == 0 && Direction.y == 0 && Direction.z == 0)) return false;
+	double Enter = 0, Exit = std::numeric_limits<double>::infinity();
+	for (uint16_t I = 0; I < NumFaces; ++I)
 	{
-		const Plane3& p = Faces[i].plane;
-
-		const float dist = Origin.Dot(p.Normal) + p.D;
-		const bool is_outside = dist > 0.0f;
-		if (is_outside)
-		{
-			all_inside = false;
-		}
-
-		float proj_dist = Direction.Dot(p.Normal);
-		if (abs(proj_dist) >= 1e-6f)
-		{
-			float t_proj = -dist / proj_dist;
-			if (proj_dist < 0.0f)
-			{
-				min_t = std::max(t_proj, min_t);
-				plane_test |= 1;
-			}
-			else
-			{
-				max_t = std::min(t_proj, max_t);
-				plane_test |= 2;
-			}
-		}
-		else if (is_outside)
-		{
-			return false;
-		}
+		const auto& P = Faces[I].plane;
+		const double Distance = (double)Origin.x*P.Normal.x + (double)Origin.y*P.Normal.y + (double)Origin.z*P.Normal.z + P.D;
+		const double Slope = (double)Direction.x*P.Normal.x + (double)Direction.y*P.Normal.y + (double)Direction.z*P.Normal.z;
+		if (!std::isfinite(Distance) || !std::isfinite(Slope)) return false;
+		if (Slope == 0) { if (Distance > 0) return false; continue; }
+		const double Boundary = -Distance/Slope;
+		if (Slope < 0) Enter = std::max(Enter,Boundary);
+		else Exit = std::min(Exit,Boundary);
+		if (Enter > Exit) return false;
 	}
-
-	if (plane_test == 3)
-	{
-		*t = min_t;
-		return min_t <= max_t && max_t >= 0.0f;
-	}
-
-	return false;
+	if (Enter > std::numeric_limits<float>::max()) return false;
+	*t = (float)Enter;
+	return true;
 }
 
 

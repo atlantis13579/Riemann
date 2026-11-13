@@ -10,6 +10,7 @@
 namespace Riemann
 {
 	class GeometryFactory;
+	class DistanceFieldShape;
 	class GeometryRegistration;
 	struct RayCastOption;
 	struct RayCastResult;
@@ -23,7 +24,7 @@ namespace Riemann
 		CollisionData()
 		{
 			v0 = 0;
-			v1 = 0;
+			v1 = UINT32_MAX;
 			v2 = 0;
 			v3 = 0;
 		}
@@ -31,6 +32,11 @@ namespace Riemann
 		unsigned int v1;
 		unsigned int v2;
 		unsigned int v3;
+		static constexpr uint32_t LayerCount = 32;
+		static CollisionData ForLayer(uint32_t Layer, uint32_t Mask = UINT32_MAX)
+		{
+			CollisionData Data; Data.v0 = Layer; Data.v1 = Mask; return Data;
+		}
 	};
 
 	typedef	StaticArray<Vector3, MAX_FACE_POINTS> SupportFace;
@@ -125,8 +131,12 @@ namespace Riemann
 		inline void				SetShapeBounds(const Box3& box)
 		{
 			m_VolumeProperties.BoundingVolume = box;
+			MarkCollisionDirty();
 			UpdateBounds();
 		}
+
+		uint64_t GetCollisionRevision() const { return m_CollisionRevision; }
+		void MarkCollisionDirty() { ++m_CollisionRevision; }
 
 		inline PrimitiveType		GetShapeType() const
 		{
@@ -137,6 +147,18 @@ namespace Riemann
 		{
 			return m_FilterData;
 		}
+		void SetFilterData(const CollisionData& Data)
+		{
+			if (Data.v0 == m_FilterData.v0 && Data.v1 == m_FilterData.v1 && Data.v2 == m_FilterData.v2 && Data.v3 == m_FilterData.v3) return;
+			m_FilterData = Data;
+			++m_FilterRevision;
+			MarkCollisionDirty();
+		}
+		uint64_t GetFilterRevision() const { return m_FilterRevision; }
+		void SetContactOffsets(float ContactOffset, float RestOffset);
+		float GetContactOffset() const { return m_ContactOffset; }
+		float GetRestOffset() const { return m_RestOffset; }
+		uint64_t GetContactOffsetRevision() const { return m_ContactOffsetRevision; }
 
 		template<class GEOM_TYPE>
 		inline GEOM_TYPE* GetShapeObj()
@@ -159,10 +181,11 @@ namespace Riemann
 		}
 
 		inline uint32_t			GetFlags() const { return m_Flags; }
-		inline void				SetFlags(uint32_t Flags) { m_Flags = Flags; }
+		inline void				SetFlags(uint32_t Flags) { if (m_Flags != Flags) MarkCollisionDirty(); m_Flags = Flags; }
 		inline bool				HasFlag(uint32_t Flag) const { return (m_Flags & Flag) != 0; }
 		inline void				SetFlag(uint32_t Flag, bool Enabled)
 		{
+			if (HasFlag(Flag) != Enabled) MarkCollisionDirty();
 			if (Enabled)
 			{
 				m_Flags |= Flag;
@@ -227,6 +250,23 @@ namespace Riemann
 		float				m_Density;
 		void*				m_Parent;
 		uint32_t			m_Flags;
+		uint64_t			m_CollisionRevision = 1;
+		uint64_t m_FilterRevision = 1;
+		float m_ContactOffset = 0.0f;
+		float m_RestOffset = 0.0f;
+		uint64_t m_ContactOffsetRevision = 1;
+	};
+
+	// Placement storage follows the actual base and primitive sizes as their layouts grow.
+	template<class Shape>
+	struct GeometryPlacementStorage
+	{
+		alignas(Geometry) alignas(Shape) unsigned char Data[sizeof(Geometry) + sizeof(Shape)];
+		Geometry* Object = nullptr;
+		GeometryPlacementStorage() = default;
+		GeometryPlacementStorage(const GeometryPlacementStorage&) = delete;
+		GeometryPlacementStorage& operator=(const GeometryPlacementStorage&) = delete;
+		~GeometryPlacementStorage() { if (Object) Object->~Geometry(); }
 	};
 
 	class GeometryFactory
@@ -242,6 +282,7 @@ namespace Riemann
 		static Geometry* CreateHeightField(const Box3& Bv, int nRows, int nCols);
 		static Geometry* CreateConvexMesh();
 		static Geometry* CreateTriangleMesh();
+		static Geometry* CreateDistanceField(const DistanceFieldShape& Field, const Vector3& Center = Vector3::Zero(), const Quaternion& Rotation = Quaternion::One());
 
 		static Geometry* CreateOBB_placement(void* pBuf, const Vector3& Center, const Vector3& HalfExtent, const Quaternion& Rot = Quaternion::One());
 		static Geometry* CreateSphere_placement(void* pBuf, const Vector3& Center, float Radius);

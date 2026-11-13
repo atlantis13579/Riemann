@@ -120,14 +120,14 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>IMGUI_STATIC;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>IMGUI_STATIC;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;RIEMANN_ENABLE_COMPUTE_SHADER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>..\..\Binaries\Win64\Debug\Riemann.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;..\..\Binaries\Win64\Debug\Riemann.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -136,7 +136,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>IMGUI_STATIC;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>IMGUI_STATIC;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;RIEMANN_ENABLE_COMPUTE_SHADER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <OpenMPSupport>true</OpenMPSupport>
@@ -146,10 +146,50 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>..\..\Binaries\Win64\Release\Riemann.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;..\..\Binaries\Win64\Release\Riemann.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Test\Test_ConstraintGraph.cpp" />
+    <ClCompile Include="..\..\Test\Test_FrictionPatch.cpp" />
+    <ClCompile Include="..\..\Test\Test_JointDrives.cpp" />
+    <ClCompile Include="..\..\Test\Test_JointReactions.cpp" />
+    <ClCompile Include="..\..\Test\Test_CCDContinuation.cpp" />
+    <ClCompile Include="..\..\Test\Test_TemporalSubsteps.cpp" />
+    <ClCompile Include="..\..\Test\Test_IslandSleeping.cpp" />
+    <ClCompile Include="..\..\Test\Test_CharacterController.cpp" />
+    <ClCompile Include="..\..\Test\Test_VehicleDynamics.cpp" />
+    <ClCompile Include="..\..\Test\Test_Featherstone.cpp" />
+    <ClCompile Include="..\..\Test\Test_RagdollReduced.cpp" />
+    <ClCompile Include="..\..\Test\Test_RagdollMechanism.cpp" />
+    <ClCompile Include="..\..\Test\Test_PhysicalAnimation.cpp" />
+    <ClCompile Include="..\..\Test\Test_ClothModel.cpp" />
+    <ClCompile Include="..\..\Test\Test_SurfaceCollision.cpp" />
+    <ClCompile Include="..\..\Test\Test_ClothCollision.cpp" />
+    <ClCompile Include="..\..\Test\Test_ClothContinuous.cpp" />
+    <ClCompile Include="..\..\Test\Test_ClothInteraction.cpp" />
+    <ClCompile Include="..\..\Test\Test_SurfaceContact.cpp" />
+    <ClCompile Include="..\..\Test\Test_DeformableAttachment.cpp" />
+    <ClCompile Include="..\..\Test\Test_DeformableCollision.cpp" />
+    <ClCompile Include="..\..\Test\Test_DeformableRigidContact.cpp" />
+    <ClCompile Include="..\..\Test\Test_TetrahedralMaterial.cpp" />
+    <ClCompile Include="..\..\Test\Test_TetrahedralAsset.cpp" />
+    <ClCompile Include="..\..\Test\Test_ProjectiveDynamics.cpp" />
+    <ClCompile Include="..\..\Test\Test_DestructionAsset.cpp" />
+    <ClCompile Include="..\..\Test\Test_DestructionEvents.cpp" />
+    <ClCompile Include="..\..\Test\Test_DestructionCache.cpp" />
+    <ClCompile Include="..\..\Test\Test_DestructionPlayback.cpp" />
+    <ClCompile Include="..\..\Test\Test_PhysicsField.cpp" />
+    <ClCompile Include="..\..\Test\Test_Strands.cpp" />
+    <ClCompile Include="..\..\Test\Test_StrandGroom.cpp" />
+    <ClCompile Include="..\..\Test\Test_StrandCollision.cpp" />
+    <ClCompile Include="..\..\Test\Test_RigidAttachment.cpp" />
+    <ClCompile Include="..\..\Test\Test_DistanceFieldCollision.cpp" />
+    <ClCompile Include="..\..\Test\Test_RuntimeDistanceField.cpp" />
+    <ClCompile Include="..\..\Test\Test_ContactOffsets.cpp" />
+    <ClCompile Include="..\..\Test\Test_CollisionFiltering.cpp" />
+    <ClCompile Include="..\..\Test\Test_MeshContacts.cpp" />
+    <ClCompile Include="..\..\Test\Test_ContactPersistence.cpp" />
     <ClCompile Include="..\..\Renderer\imgui.cpp" />
     <ClInclude Include="..\..\Viewer\SolverPanel.h" />
     <ClCompile Include="..\..\Viewer\SolverPanel.cpp" />

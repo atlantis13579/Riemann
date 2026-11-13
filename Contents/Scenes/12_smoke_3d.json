@@ -30,7 +30,6 @@
   "light": {"direction": [-0.65, -0.7, 0.3], "color": [1.0, 0.96, 0.9], "ambient": 0.22, "shadowCenter": [0.0, 2.0, 0.0], "shadowDistance": 22.0, "shadowSize": 12.0},
   "objects": [
     {"id": "smoke_stage", "type": "box", "body": "static", "position": [0.0, -0.14, 0.0], "halfExtent": [2.25, 0.12, 2.25], "color": [0.1, 0.13, 0.18, 1.0]},
-    {"id": "smoke_nozzle", "type": "sphere", "body": "static", "position": [0.0, 0.08, 0.0], "radius": 0.31, "color": [0.24, 0.29, 0.36, 1.0]},
     {"id": "smoke_wall_0", "type": "box", "body": "static", "position": [2.5, 4, 0], "halfExtent": [0.1, 4, 2.6], "render": false, "query": false},
     {"id": "smoke_wall_1", "type": "box", "body": "static", "position": [-2.5, 4, 0], "halfExtent": [0.1, 4, 2.6], "render": false, "query": false},
     {"id": "smoke_wall_2", "type": "box", "body": "static", "position": [0, 4, 2.5], "halfExtent": [2.6, 4, 0.1], "render": false, "query": false},

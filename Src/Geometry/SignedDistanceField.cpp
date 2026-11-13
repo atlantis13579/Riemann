@@ -478,7 +478,9 @@ namespace Riemann
 	bool SignedDistanceField3::Reset(const Box3& InBounds, int InCellsX, int InCellsY, int InCellsZ, float InCellSize)
 	{
 		Clear();
-		if (InCellsX <= 0 || InCellsY <= 0 || InCellsZ <= 0 || InCellSize <= 0.0f)
+		if (InCellsX <= 0 || InCellsY <= 0 || InCellsZ <= 0 || !std::isfinite(InCellSize) || InCellSize <= 0.0f
+			|| !IsFinite(InBounds.Min) || !IsFinite(InBounds.Max)
+			|| InBounds.Min.x >= InBounds.Max.x || InBounds.Min.y >= InBounds.Max.y || InBounds.Min.z >= InBounds.Max.z)
 		{
 			return false;
 		}
@@ -487,13 +489,14 @@ namespace Riemann
 		CellsY = InCellsY;
 		CellsZ = InCellsZ;
 		CellSize = InCellSize;
-		const uint64_t Count = (uint64_t)(CellsX + 1) * (uint64_t)(CellsY + 1) * (uint64_t)(CellsZ + 1);
-		if (Count > (uint64_t)std::numeric_limits<int>::max())
+		const uint64_t X = (uint64_t)CellsX + 1, Y = (uint64_t)CellsY + 1, Z = (uint64_t)CellsZ + 1;
+		const uint64_t MaximumSamples = (uint64_t)std::numeric_limits<int>::max();
+		if (X > MaximumSamples || Y > MaximumSamples / X || Z > MaximumSamples / (X * Y))
 		{
 			Clear();
 			return false;
 		}
-		Values.assign((size_t)Count, 0.0f);
+		Values.assign((size_t)(X * Y * Z), 0.0f);
 		return true;
 	}
 

@@ -220,7 +220,7 @@ namespace Riemann
 			float la = A.Length(), lb = B.Length(), lc = C.Length();
 			float top = (la * lb * lc) + A.Dot(B) * lc + B.Dot(C) * la + C.Dot(A) * lb;
 			float bottom = A.x * (B.y * C.z - C.y * B.z) - A.y * (B.x * C.z - C.x * B.z) + A.z * (B.x * C.y - C.x * B.y);
-			// -2 instead of 2 to account for UE winding
+			// -2 instead of 2 to account for the input winding
 			return -2.0f * atan2f(bottom, top);
 		}
 

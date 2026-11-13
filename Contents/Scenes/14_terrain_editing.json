@@ -34,6 +34,8 @@
     },
     {
       "id": "falling_box",
+      "sdfCollision": false,
+      "sdfResolution": 16,
       "type": "box",
       "body": "dynamic",
       "position": [-6.0, 2.0, -4.0],

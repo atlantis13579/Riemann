@@ -44,7 +44,7 @@ namespace Riemann
 			bool moved;
 		};
 
-		DynamicAABBTree();
+		explicit DynamicAABBTree(float Padding = kAABBThickness);
 		~DynamicAABBTree();
 
 		void	Clear();
@@ -83,6 +83,7 @@ namespace Riemann
 
 	private:
 		int m_root;
+		float m_Padding;
 		std::vector<Node> m_nodes;
 		int m_nodeCount;
 		int m_nodeCapacity;

@@ -1,12 +1,31 @@
 #pragma once
 
 #include <vector>
+#include <memory>
+#include <stdint.h>
 #include "../Maths/Vector3.h"
 #include "../Core/BatchList.h"
 
 namespace Riemann
 {
 	class Geometry;
+	struct GeometryWorldState;
+
+	struct ContactPersistenceSettings
+	{
+		ContactPersistenceSettings();
+		bool IsValid() const;
+		float MatchDistance;
+		float BreakDistance;
+		float NormalCosine;
+		float RelativeTranslationThreshold;
+		float RelativeRotationCosine;
+		uint64_t RefreshInterval;
+		uint64_t RetentionFrames;
+		float WarmStartFactor;
+		float MinTimeStepRatio;
+		float MaxTimeStepRatio;
+	};
 
 	struct Contact
 	{
@@ -17,6 +36,8 @@ namespace Riemann
 			totalImpulseTangent = 0.0f;
 			totalImpulseBinormal = 0.0f;
 			PositionLocalA = PositionLocalB = PositionWorldA = PositionWorldB = Vector3::Zero();
+			Normal = Tangent = Binormal = Vector3::Zero();
+			PenetrationDepth = 0.0f;
 		}
 
 		Vector3	PositionWorldA;
@@ -27,11 +48,17 @@ namespace Riemann
 		Vector3	Tangent;
 		Vector3	Binormal;
 		float	PenetrationDepth;
+		float RestOffset = 0.0f;
+		float SolverSlop = -1.0f; // Negative selects the legacy solver's tolerance.
 
 		//	For warm start
 		float	totalImpulseNormal;
 		float	totalImpulseTangent;
 		float	totalImpulseBinormal;
+		uint32_t FeatureA = UINT32_MAX;
+		uint32_t FeatureB = UINT32_MAX;
+		uint64_t PersistentId = 0;
+		float CachedDt = 0.0f;
 	};
 
 #define MAX_CONTACT_POINTS 4
@@ -41,6 +68,7 @@ namespace Riemann
 	public:
 		int indexA = 0;
 		int indexB = 0;
+		uint32_t PatchId = 0;
 		Contact ContactPoints[MAX_CONTACT_POINTS + 1];
 		int	NumContactPointCount = 0;
 
@@ -61,11 +89,22 @@ namespace Riemann
 	class ContactManifoldManager
 	{
 	public:
-		ContactManifoldManager();
+		explicit ContactManifoldManager(const ContactPersistenceSettings& Settings = ContactPersistenceSettings());
 		~ContactManifoldManager();
+		void BeginFrame(uint64_t Frame);
+		void Reset();
+		void Invalidate(const Geometry* Shape);
+		std::vector<uint32_t> GetPatchIds(const GeometryWorldState& A, const GeometryWorldState& B) const;
+		void RetainPatches(const GeometryWorldState& A, const GeometryWorldState& B, const std::vector<uint32_t>& PatchIds);
+		bool Refresh(const GeometryWorldState& A, const GeometryWorldState& B, ContactManifold* Manifold);
+		int Match(const GeometryWorldState& A, const GeometryWorldState& B, ContactManifold* Manifold, bool Impulses);
+		void Store(const GeometryWorldState& A, const GeometryWorldState& B, ContactManifold& Manifold,
+			float Dt, bool Regenerated = true, bool Accumulate = false);
+		size_t GetPairCount() const;
 
 	private:
-		BatchList<ContactManifold>	mManifolds;
+		struct Storage;
+		std::unique_ptr<Storage> m_Storage;
 	};
 
 	class ContactReport
@@ -74,11 +113,4 @@ namespace Riemann
 		virtual ~ContactReport() {}
 	};
 
-	class ContactManifoldIslands
-	{
-	public:
-		void BuildIslands(const std::vector<Geometry*>& geoms, const std::vector<ContactManifold*>& manifolds);
-
-		std::vector<std::vector<ContactManifold*>> islands;
-	};
 }

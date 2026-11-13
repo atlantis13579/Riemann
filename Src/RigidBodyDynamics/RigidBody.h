@@ -14,6 +14,8 @@ namespace Riemann
 	class RigidBody;
 	class RigidBodyStatic;
 	class RigidBodyDynamic;
+	class RigidBodyKinematics;
+	class Ragdoll;
 	struct PhysicsMaterial;
 
 	static const float kMinimumInvMass = 1e-6f;
@@ -134,10 +136,14 @@ namespace Riemann
 		GeometryAggregate* Parent;	// Parent aggregate, e.g. destruction, cloth, deformable body
 		void*		CollisionGroup;
 		bool		EnableCollisionWithinGroup;
+		Ragdoll* ReducedRagdoll = nullptr;
+		size_t RagdollLink = 0;
 
 	private:
 		short		mMaterialId;
 		float		mRestitutionOverride;
+		float mFrictionDynamicOverride = -1.0f;
+		float mFrictionStaticOverride = -1.0f;
 		std::unordered_set<RigidBody*> mIgnoredCollisionBodies;
 
 	public:
@@ -164,7 +170,7 @@ namespace Riemann
 
 		const Matrix3& GetInverseInertia() const { return InvInertia; }
 		Matrix3			GetInverseInertia_WorldSpace() const;
-		const float& GetInverseMass() const { return InvMass; }
+		float GetInverseMass() const;
 		const Vector3& GetLinearVelocity() const { return V; }
 		Vector3			GetLinearMomentum() const { return InvMass > kMinimumInvMass ? Vector3::Zero() : V / InvMass; }
 		const Vector3& GetAngularVelocity() const { return W; }
@@ -190,12 +196,14 @@ namespace Riemann
 
 		RigidBodyStatic* CastStatic() { return mRigidType == RigidType::Static ? (RigidBodyStatic*)this : nullptr; }
 		RigidBodyDynamic* CastDynamic() { return mRigidType == RigidType::Dynamic ? (RigidBodyDynamic*)this : nullptr; }
+		RigidBodyKinematics* CastKinematic() { return mRigidType == RigidType::Kinematic ? (RigidBodyKinematics*)this : nullptr; }
 
 		float			GetKinematicsEnergy() const;
 		float			GetLinearKinematicsEnergy() const;
 		float			GetAngularKinematicsEnergy() const;
 		void			SetDefaultPhysicsMaterial(uint16_t idx);
 		void			SetRestitution(float restitution);
+		void SetFriction(float Dynamic, float Static);
 
 		float			GetRestitution() const;
 		float			GetFrictionDynamic() const;
@@ -230,10 +238,15 @@ namespace Riemann
 		float		SleepThreshold;
 		float		FreezeThreshold;
 		bool		DisableGravity;
+		bool IslandSleepManaged = false;
+		uint64_t GetWakeRevision() const { return m_WakeRevision; }
 		bool		Sleeping;
 		bool		Freezing;
 		Vector3		SolverV;
 		Vector3		SolverW;
+		bool CCDPoseResolved = false;
+		Vector3 CCDTargetPosition;
+		Quaternion CCDTargetRotation;
 		float		CCDMotionFraction;
 		bool		HadCCDContact;
 		Vector3		CCDPreSolveVelocity;
@@ -254,6 +267,10 @@ namespace Riemann
 		static RigidBodyDynamic* CreateRigidBody(const RigidBodyParam& param, const Transform& init_pose);
 
 	private:
+		friend class PhysicsWorld;
+		friend class Ragdoll;
+		uint64_t m_WakeRevision = 0;
+		Vector3 m_DeferredForce = Vector3::Zero(), m_DeferredTorque = Vector3::Zero();
 		RigidBodyDynamic(const RigidBodyParam& param, const Transform& init_pose);
 	};
 

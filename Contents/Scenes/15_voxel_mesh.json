@@ -78,6 +78,9 @@
     },
     {
       "id": "falling_sphere",
+      "enableCCD": true,
+      "sdfCollision": false,
+      "sdfResolution": 24,
       "type": "sphere",
       "body": "dynamic",
       "position": [-3.5, 4, -2.5],
@@ -88,6 +91,8 @@
     },
     {
       "id": "box",
+      "sdfCollision": false,
+      "sdfResolution": 16,
       "type": "box",
       "body": "dynamic",
       "position": [-2.5, 5, -1.5],

@@ -20,7 +20,7 @@
 #include "../Src/LinearSystem/SparseMatrix.h"
 #include "../Src/LinearSystem/SparseVector.h"
 #include "../Src/LinearSystem/ConjugateGradientSolver.h"
-#include "../Src/RigidBodyDynamics/LCPSolver.h"
+#include "../Src/Solver/LCPSolver.h"
 
 // using namespace Riemann;
 

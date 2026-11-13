@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Maths/Vector3.h"
+#include "Ragdoll.h"
 
 // http://allenchou.net/2013/12/game-physics-resolution-contact-constraints/
 
@@ -26,8 +27,9 @@ namespace Riemann
 		{
 		}
 
-		void	Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, GeneralizedVelocity* ga, GeneralizedVelocity* gb, const Vector3& dir, float bias);
+		void	Setup(Contact* contact, RigidBody* bodyA, RigidBody* bodyB, GeneralizedVelocity* ga, GeneralizedVelocity* gb, const Vector3& dir, float bias, RagdollVelocityContext* Context = nullptr);
 		void	Solve(float lambdamin, float lambdamax);
+		void	ApplyImpulse(float Impulse);
 
 		Vector3 m_jva;			// J
 		Vector3 m_jwa;
@@ -44,6 +46,8 @@ namespace Riemann
 
 		GeneralizedVelocity* m_ga;
 		GeneralizedVelocity* m_gb;
+		RagdollImpulseResponse m_Response;
+		bool m_ReducedRagdoll = false;
 	};
 
 	// Velocity Constraint consists of three Jacobian constraint
@@ -53,13 +57,14 @@ namespace Riemann
 	// to model the equation : (vb + CrossProduct(wb, rb) - va - CrossProduct(wa, ra)) * n == 0
 	struct ContactJacobianSolver
 	{
-		ContactJacobianSolver(GeneralizedVelocity* _phase, int _ia, int _ib, RigidBody* _bodyA, RigidBody* _bodyB)
+		ContactJacobianSolver(GeneralizedVelocity* _phase, int _ia, int _ib, RigidBody* _bodyA, RigidBody* _bodyB, RagdollVelocityContext* Context = nullptr)
 		{
 			phase = _phase;
 			bodyA = _bodyA;
 			bodyB = _bodyB;
 			indexA = _ia;
 			indexB = _ib;
+			ReducedRagdolls = Context;
 		}
 
 		void	SetupPositionPass(Contact* contact, float dt);
@@ -76,5 +81,7 @@ namespace Riemann
 		GeneralizedVelocity* phase;
 		RigidBody* bodyA, * bodyB;
 		int indexA, indexB;
+		bool UsePatchFriction = false;
+		RagdollVelocityContext* ReducedRagdolls = nullptr;
 	};
 }

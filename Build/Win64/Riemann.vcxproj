@@ -19,7 +19,49 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Src\Collision\DistanceFieldCollision.cpp" />
+    <ClCompile Include="..\..\Src\Collision\SurfaceCollision.cpp" />
+
+    <ClCompile Include="..\..\Src\Deformation\SurfaceContactConstraint.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\BarycentricAttachment.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\RigidPointResponse.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\DeformableStep.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\TetrahedralMaterial.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\TetrahedralAsset.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\ProjectiveDynamicsProjection.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsField.cpp" />
+
+    <ClCompile Include="..\..\Src\Deformation\StrandSystem.cpp" />
+
+
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsField.h" />
+
+    <ClInclude Include="..\..\Src\Deformation\StrandSystem.h" />
+
+
+    <ClInclude Include="..\..\Src\Deformation\ProjectiveDynamicsProjection.h" />
+    <ClInclude Include="..\..\Src\Deformation\TetrahedralAsset.h" />
+    <ClCompile Include="..\..\Src\Deformation\DeformableAsset.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\TetrahedralMaterial.h" />
+    <ClCompile Include="..\..\Src\Deformation\DeformableMaterial.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\RigidSurfaceContact.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\RigidSurfaceContact.h" />
+    <ClCompile Include="..\..\Src\Deformation\DeformableRigidCollision.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\DeformableRigidCollision.h" />
+    <ClCompile Include="..\..\Src\Deformation\DeformableCollision.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\DeformableCollision.h" />
+    <ClInclude Include="..\..\Src\Deformation\DeformableStep.h" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\DeformableCoupling.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\RigidPointResponse.h" />
+    <ClCompile Include="..\..\Src\Deformation\DeformableAttachment.cpp" />
+    <ClInclude Include="..\..\Src\Deformation\BarycentricAttachment.h" />
+    <ClCompile Include="..\..\Src\CollisionPrimitive\DistanceFieldShape.cpp" />
     <ClCompile Include="..\..\Src\Continuum\SandBackendCompute.cpp" />
+    <ClInclude Include="..\..\Src\Collision\DistanceFieldCollision.h" />
+    <ClInclude Include="..\..\Src\Collision\SurfaceCollision.h" />
+
+    <ClInclude Include="..\..\Src\Deformation\SurfaceContactConstraint.h" />
+    <ClInclude Include="..\..\Src\CollisionPrimitive\DistanceFieldShape.h" />
     <ClInclude Include="..\..\Src\Continuum\SandGPUBackend.h" />
     <ClInclude Include="..\..\Src\Continuum\SandKernels.h" />
     <ClCompile Include="..\..\Src\Continuum\SandSimulation.cpp" />
@@ -32,12 +74,12 @@
     <ClInclude Include="..\..\Src\Continuum\SnowSimulation.h" />
     <ClInclude Include="..\..\Src\LinearSystem\GemmKernel.h" />
     <ClInclude Include="..\..\Src\LinearSystem\GemmCache.h" />
-    <ClCompile Include="..\..\Src\Cloth\PBDBackendComputeShader.cpp" />
-    <ClCompile Include="..\..\Src\Cloth\PBDBackend.cpp" />
-    <ClInclude Include="..\..\Src\Cloth\PBDBackendMath.h" />
-    <ClInclude Include="..\..\Src\Cloth\PBDBackend.h" />
-    <ClCompile Include="..\..\Src\Deformation\VehicleDeformation.cpp" />
-    <ClInclude Include="..\..\Src\Deformation\VehicleDeformation.h" />
+    <ClCompile Include="..\..\Src\Solver\PBDBackendComputeShader.cpp" />
+    <ClCompile Include="..\..\Src\Solver\PBDBackend.cpp" />
+    <ClInclude Include="..\..\Src\Solver\PBDBackendMath.h" />
+    <ClInclude Include="..\..\Src\Solver\PBDBackend.h" />
+    <ClCompile Include="..\..\Src\Modules\Vehicle\VehicleDeformation.cpp" />
+    <ClInclude Include="..\..\Src\Modules\Vehicle\VehicleDeformation.h" />
     <ClCompile Include="..\..\Src\Deformation\DeformableBodyRender.cpp" />
     <ClCompile Include="..\..\Src\Deformation\DeformableBody.cpp" />
     <ClInclude Include="..\..\Src\Deformation\DeformableBody.h" />
@@ -81,6 +123,7 @@
     <ClCompile Include="..\..\Src\Geometry\MeshValidator.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Polygon2.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Polygon3.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\RuntimeDistanceField.cpp" />
     <ClCompile Include="..\..\Src\Geometry\SignedDistanceField.cpp" />
     <ClCompile Include="..\..\Src\Geometry\SparseOctree.cpp" />
     <ClCompile Include="..\..\Src\Geometry\Voronoi3.cpp" />
@@ -107,33 +150,42 @@
     <ClCompile Include="..\..\Src\LinearSystem\DenseVector.cpp" />
     <ClCompile Include="..\..\Src\Modules\Tools\UE5StaticMeshParser.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\BroadPhase.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\Island.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\SupportStabilization.cpp" />
+    <ClCompile Include="..\..\Src\Modules\CharacterController\CharacterController.cpp" />
+    <ClCompile Include="..\..\Src\Modules\Vehicle\VehicleDynamics.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\FeatherstoneSolver.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicalAnimation.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\FrictionPatch.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\CollidingContact.cpp" />
-    <ClCompile Include="..\..\Src\Cloth\Cloth.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\Cloth.cpp" />
+
     <ClCompile Include="..\..\Src\RigidBodyDynamics\ContinuousCollisionDetection.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Jacobian.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\KinematicsTree.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\ForceField.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\LCPSolver.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\LCPSolverComputeShader.cpp" />
+    <ClCompile Include="..\..\Src\Solver\PBDSolver.cpp" />
+    <ClCompile Include="..\..\Src\Solver\XPBDSolver.cpp" />
+    <ClCompile Include="..\..\Src\Solver\LCPSolver.cpp" />
+    <ClCompile Include="..\..\Src\Solver\LCPSolverComputeShader.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MassParameters.cpp" />
-    <ClCompile Include="..\..\Src\Cloth\MassSpring.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\ContactGeneration.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\MeshContactGenerator.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\NarrowPhase.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.cpp" />
-    <ClCompile Include="..\..\Src\Cloth\PBDSolver.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Constraints.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Ragdoll.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\RagdollDefinition.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\WarmStart.cpp" />
     <ClCompile Include="..\..\Src\Modules\ImageSpace\ImageProcessing.cpp" />
+    <ClCompile Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicsWorld.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\MotionIntegration.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\RigidBody.cpp" />
-    <ClCompile Include="..\..\Src\Cloth\Rope.cpp" />
-    <ClCompile Include="..\..\Src\Cloth\XPBDSolver.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\Rope.cpp" />
     <ClCompile Include="..\..\Src\Solver\NewtonRaphsonIteration.cpp" />
     <ClCompile Include="..\..\Src\Solver\NumericalODESolver.cpp" />
-    <ClCompile Include="..\..\Src\Solver\ProjectiveDynamicsSolver.cpp" />
-    <ClCompile Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.cpp" />
+    <ClCompile Include="..\..\Src\Deformation\ProjectiveDynamicsSolver.cpp" />
     <ClCompile Include="..\..\Src\Modules\Tools\PhysxBinaryParser.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Default</BasicRuntimeChecks>
@@ -200,6 +252,7 @@
     <ClInclude Include="..\..\Src\Geometry\Polygon2.h" />
     <ClInclude Include="..\..\Src\Geometry\Polygon3.h" />
     <ClInclude Include="..\..\Src\Geometry\QuadTree.h" />
+    <ClInclude Include="..\..\Src\Geometry\RuntimeDistanceField.h" />
     <ClInclude Include="..\..\Src\Geometry\SignedDistanceField.h" />
     <ClInclude Include="..\..\Src\Geometry\SparseOctree.h" />
     <ClInclude Include="..\..\Src\Geometry\SparseSpatialHash.h" />
@@ -286,19 +339,29 @@
     <ClInclude Include="..\..\Src\Optimization\SpecialFunctions.h" />
     <ClInclude Include="..\..\Src\Optimization\StochasticGradientDescent.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\BroadPhase.h" />
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\Island.h" />
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\SupportStabilization.h" />
+    <ClInclude Include="..\..\Src\Modules\CharacterController\CharacterController.h" />
+    <ClInclude Include="..\..\Src\Modules\Vehicle\VehicleDynamics.h" />
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\FrictionPatch.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\CollidingContact.h" />
-    <ClInclude Include="..\..\Src\Cloth\Cloth.h" />
+    <ClInclude Include="..\..\Src\Deformation\Cloth.h" />
+
     <ClInclude Include="..\..\Src\RigidBodyDynamics\ContinuousCollisionDetection.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\FeatherstoneSolver.h" />
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicalAnimation.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Jacobian.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\KinematicsTree.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\ForceField.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\LCPSolver.h" />
+    <ClInclude Include="..\..\Src\Solver\LCPSolver.h" />
+    <ClInclude Include="..\..\Src\Solver\PBDSolver.h" />
+    <ClInclude Include="..\..\Src\Solver\XPBDSolver.h" />
+    <ClInclude Include="..\..\Src\Solver\SolverBackend.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MassParameters.h" />
-    <ClInclude Include="..\..\Src\Cloth\MassSpring.h" />
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\ContactGeneration.h" />
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\MeshContactGenerator.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\NarrowPhase.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsMaterial.h" />
-    <ClInclude Include="..\..\Src\Cloth\PBDSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Constraints.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Ragdoll.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RagdollDefinition.h" />
@@ -315,14 +378,13 @@
     <ClInclude Include="..\..\Src\Maths\Vector3.h" />
     <ClInclude Include="..\..\Src\Maths\Vector4.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\MotionIntegration.h" />
+    <ClInclude Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicsWorld.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\RigidBody.h" />
-    <ClInclude Include="..\..\Src\Cloth\Rope.h" />
-    <ClInclude Include="..\..\Src\Cloth\XPBDSolver.h" />
+    <ClInclude Include="..\..\Src\Deformation\Rope.h" />
     <ClInclude Include="..\..\Src\Solver\NewtonRaphsonIteration.h" />
     <ClInclude Include="..\..\Src\Solver\NumericalODESolver.h" />
-    <ClInclude Include="..\..\Src\Solver\ProjectiveDynamicsSolver.h" />
-    <ClInclude Include="..\..\Src\RigidBodyDynamics\SequentialImpulseSolver.h" />
+    <ClInclude Include="..\..\Src\Deformation\ProjectiveDynamicsSolver.h" />
     <ClInclude Include="..\..\Src\Solver\SparseConjugateGradientSolver.h" />
     <ClInclude Include="..\..\Src\Modules\Tools\libPng.h" />
     <ClInclude Include="..\..\Src\Modules\Tools\PhysxBinaryParser.h" />
@@ -441,7 +503,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;RIEMANN_ENABLE_COMPUTE_SHADER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>
@@ -461,7 +523,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;RIEMANN_ENABLE_COMPUTE_SHADER=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>false</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>

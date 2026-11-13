@@ -17,6 +17,7 @@
 #include "../Src/CollisionPrimitive/Plane3.h"
 #include "../Src/CollisionPrimitive/Sphere3.h"
 #include "../Src/CollisionPrimitive/StaticMesh.h"
+#include "../Src/CollisionPrimitive/DistanceFieldShape.h"
 #include "../Src/Fluid/AerodynamicsSimulation.h"
 #include "../Src/Fluid/FluidSimulation.h"
 #include "../Src/Fluid/MarchingCubes.h"
@@ -551,7 +552,28 @@ namespace Riemann
 			return;
 		}
 
-		if (geometry->GetShapeType() == PrimitiveType::TRIANGLE_MESH)
+		if (geometry->GetShapeType() == PrimitiveType::DISTANCE_FIELD)
+		{
+			const auto* field = geometry->GetShapeObj<DistanceFieldShape>();
+			const auto& mesh = field->GetDisplayMesh();
+			std::vector<Vertex1> vertices;
+			std::vector<uint32_t> indices;
+			for (uint32_t i = 0; i < mesh.NumVertices; ++i)
+			{
+				DistanceFieldSample sample;
+				field->GetField().Sample(mesh.Vertices[i], sample);
+				vertices.push_back(Vertex1(mesh.Vertices[i], sample.Gradient.SafeUnit()));
+			}
+			for (uint32_t i = 0; i < mesh.NumTriangles; ++i)
+			{
+				uint32_t a, b, c; mesh.GetVertIndices(i, a, b, c); indices.insert(indices.end(), { a, b, c });
+			}
+			RenderMeshDesc result = MakeMeshDesc(id, GetGeometryWorldTransform(geometry), vertices, indices, color, RenderPrimitiveTopology::Triangles, true);
+			BuildTriangleWireframeIndices(indices, &result.WireframeIndices); meshes->push_back(std::move(result));
+			if (renderBounds) AppendAabbWireMesh(AxisAlignedBox3(geometry->GetShapeBounds().Min, geometry->GetShapeBounds().Max),
+				GetGeometryWorldTransform(geometry), id + ".bounds", Vector4(1), meshes);
+		}
+		else if (geometry->GetShapeType() == PrimitiveType::TRIANGLE_MESH)
 		{
 			BuildTriMeshMeshes(geometry->GetShapeObj<StaticMesh>(), GetGeometryWorldTransform(geometry), id, color, renderBounds, meshes);
 		}

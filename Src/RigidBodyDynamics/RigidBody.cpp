@@ -1,7 +1,9 @@
 
 #include <assert.h>
 #include <algorithm>
+#include <stdexcept>
 #include "RigidBody.h"
+#include "Ragdoll.h"
 #include "PhysicsMaterial.h"
 #include "MassParameters.h"
 #include "../Collision/GeometryObject.h"
@@ -35,6 +37,7 @@ namespace Riemann
 			return;
 		}
 
+		const bool Changed = IsCollisionIgnoredWith(Other) != Ignore;
 		if (Ignore)
 		{
 			mIgnoredCollisionBodies.insert(Other);
@@ -44,6 +47,11 @@ namespace Riemann
 		{
 			mIgnoredCollisionBodies.erase(Other);
 			Other->mIgnoredCollisionBodies.erase(this);
+		}
+		if (Changed) for (RigidBody* Body : { this, Other })
+		{
+			auto* Dynamic = Body->CastDynamic();
+			if (Dynamic && Dynamic->IslandSleepManaged) Dynamic->Wakeup();
 		}
 	}
 
@@ -135,6 +143,7 @@ namespace Riemann
 
 	Matrix3		RigidBody::GetInverseInertia_WorldSpace() const
 	{
+		if (mRigidType == RigidType::Dynamic && static_cast<const RigidBodyDynamic*>(this)->Freezing) return Matrix3::Zero();
 		Matrix3 R = Q.ToRotationMatrix3();
 		Matrix3 invInertiaWorld = R * InvInertia * R.Transpose();
 		return invInertiaWorld;
@@ -143,6 +152,11 @@ namespace Riemann
 	Vector3		RigidBody::BodyLocalToWorld(const Vector3& Position) const
 	{
 		return X + Q * (Position - CM);
+	}
+
+	float RigidBody::GetInverseMass() const
+	{
+		return mRigidType == RigidType::Dynamic && static_cast<const RigidBodyDynamic*>(this)->Freezing ? 0 : InvMass;
 	}
 
 	Vector3		RigidBody::BodyLocalToWorldDirection(const Vector3& Direction) const
@@ -188,7 +202,7 @@ namespace Riemann
 
 	void RigidBody::UpdateMassParameters()
 	{
-		if (mRigidType == RigidType::Static)
+		if (mRigidType != RigidType::Dynamic)
 		{
 			return;
 		}
@@ -231,6 +245,7 @@ namespace Riemann
 	{
 		mMaterialId = idx;
 		mRestitutionOverride = -1.0f;
+		mFrictionDynamicOverride = mFrictionStaticOverride = -1.0f;
 	}
 
 	void		RigidBody::SetRestitution(float restitution)
@@ -247,12 +262,21 @@ namespace Riemann
 
 	float		RigidBody::GetFrictionDynamic() const
 	{
-		return PhysicsMaterial::getMaterial(mMaterialId)->FrictionDynamic;
+		return mFrictionDynamicOverride >= 0.0f ? mFrictionDynamicOverride : PhysicsMaterial::getMaterial(mMaterialId)->FrictionDynamic;
 	}
 
 	float		RigidBody::GetFrictionStatic() const
 	{
-		return PhysicsMaterial::getMaterial(mMaterialId)->FrictionStatic;
+		return mFrictionStaticOverride >= 0.0f ? mFrictionStaticOverride : PhysicsMaterial::getMaterial(mMaterialId)->FrictionStatic;
+	}
+
+	void RigidBody::SetFriction(float Dynamic, float Static)
+	{
+		if (!std::isfinite(Dynamic) || !std::isfinite(Static) || Dynamic < 0.0f || Static < Dynamic)
+			throw std::invalid_argument("Friction requires finite coefficients with static >= dynamic >= 0");
+		mFrictionDynamicOverride = Dynamic;
+		mFrictionStaticOverride = Static;
+		if (CastDynamic()) CastDynamic()->Wakeup();
 	}
 
 	// static
@@ -266,6 +290,14 @@ namespace Riemann
 		else if (param.rigidType == RigidType::Dynamic)
 		{
 			RigidBodyDynamic* Rigid = RigidBodyDynamic::CreateRigidBody(param, init_pose);
+			return Rigid;
+		}
+		else if (param.rigidType == RigidType::Kinematic)
+		{
+			auto* Rigid = new RigidBodyKinematics;
+			Rigid->SetTransform(init_pose.pos, init_pose.quat);
+			Rigid->V = param.linearVelocity;
+			Rigid->W = param.angularVelocity;
 			return Rigid;
 		}
 		return nullptr;
@@ -372,6 +404,7 @@ namespace Riemann
 
 	void		RigidBodyDynamic::Sleep()
 	{
+		if (ReducedRagdoll) { ReducedRagdoll->Sleep(); return; }
 		if (!Sleeping)
 		{
 			Sleeping = true;
@@ -382,17 +415,21 @@ namespace Riemann
 
 	void RigidBodyDynamic::Freeze()
 	{
+		if (ReducedRagdoll) { ReducedRagdoll->SetFrozen(true); return; }
 		Freezing = true;
 		Sleeping = true;
 	}
 
 	void RigidBodyDynamic::Defreeze()
 	{
+		if (ReducedRagdoll) { ReducedRagdoll->SetFrozen(false); return; }
 		Freezing = false;
 	}
 
 	void		RigidBodyDynamic::Wakeup()
 	{
+		if (ReducedRagdoll) { ReducedRagdoll->Wakeup(); return; }
+		++m_WakeRevision;
 		if (!Freezing)
 		{
 			Sleeping = false;

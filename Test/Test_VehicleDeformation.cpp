@@ -7,7 +7,7 @@
 
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/CollisionPrimitive/TriangleMesh.h"
-#include "../Src/Deformation/VehicleDeformation.h"
+#include "../Src/Modules/Vehicle/VehicleDeformation.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 
 using namespace Riemann;

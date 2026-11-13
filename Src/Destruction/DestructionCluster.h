@@ -30,6 +30,7 @@ namespace Riemann
 		float Volume() const { return std::max(mLocalBounds.GetVolume(), 0.0f); }
 
 		const std::vector<int>& GetSourceIndices() const { return mSourceIndices; }
+		const std::vector<Maths::Transform>& GetLocalTransforms() const { return mLocalTransforms; }
 		int GetSourceIndexMin() const { return mSourceIndexMin; }
 		const Box3& GetLocalBounds() const { return mLocalBounds; }
 		const Vector3& GetCenterOfMass() const { return mCenterOfMass; }

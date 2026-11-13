@@ -465,8 +465,7 @@ namespace Riemann
 
 	void StrainSolver::Solve(uint32_t IterationCount, bool WarmStart)
 	{
-		// Independently implemented from the equilibrium formulation documented by
-		// NVIDIA Blast's stress_solver/stress.cpp: (J M^-1 J^T) lambda = -J v.
+		// The equilibrium system is (J M^-1 J^T) lambda = -J v.
 		// Each multiply visits nodes and bonds; no dense global matrix is stored.
 		const size_t Dimension = mRuntimeBonds.size() * 6;
 		std::vector<double> NodeVelocity(mNodes.size() * 6, 0.0);

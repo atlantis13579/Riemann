@@ -57,6 +57,44 @@ namespace Riemann
 #endif
 	}
 
+	void TriangleMesh::QueryTriangles(const Box3& Bounds, std::vector<uint32_t>& Triangles) const
+	{
+		Triangles.clear();
+		auto AddTriangle = [&](uint32_t Index)
+		{
+			const Box3 TriangleBounds(GetVertex(Index, 0), GetVertex(Index, 1), GetVertex(Index, 2));
+			if (Bounds.Intersect(TriangleBounds)) Triangles.push_back(Index);
+		};
+		if (!m_BVH || !m_BVH->BatchPtr || !m_BVH->NumRoots)
+		{
+			for (uint32_t Index = 0; Index < NumTriangles; ++Index) AddTriangle(Index);
+			return;
+		}
+		std::vector<uint32_t> Stack;
+		for (uint32_t Root = 0; Root < m_BVH->NumRoots; ++Root) Stack.push_back(Root * sizeof(BVHNodeBatch));
+		const uint8_t* Memory = reinterpret_cast<const uint8_t*>(m_BVH->BatchPtr);
+		while (!Stack.empty())
+		{
+			const uint32_t Data = Stack.back(); Stack.pop_back();
+			if (Data & 1u)
+			{
+				const LeafNode Leaf(Data);
+				for (uint32_t Offset = 0; Offset < Leaf.GetNumTriangles(); ++Offset) AddTriangle(Leaf.GetTriangleIndex() + Offset);
+				continue;
+			}
+			const BVHNodeBatch* Node = reinterpret_cast<const BVHNodeBatch*>(Memory + Data);
+			for (uint32_t Child = 0; Child < SIMD_WIDTH; ++Child)
+			{
+				if (Node->IsEmpty(Child)) continue;
+				const Box3 ChildBounds(Vector3(Node->minx[Child], Node->miny[Child], Node->minz[Child]),
+					Vector3(Node->maxx[Child], Node->maxy[Child], Node->maxz[Child]));
+				if (Bounds.Intersect(ChildBounds)) Stack.push_back(Node->Data[Child]);
+			}
+		}
+		std::sort(Triangles.begin(), Triangles.end());
+		Triangles.erase(std::unique(Triangles.begin(), Triangles.end()), Triangles.end());
+	}
+
 	class IntersectTest
 	{
 	public:

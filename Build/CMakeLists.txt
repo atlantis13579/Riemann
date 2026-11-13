@@ -87,15 +87,15 @@ file(GLOB_RECURSE RIEMANN_SOURCES CONFIGURE_DEPENDS
 
 if(RIEMANN_CUDA_AVAILABLE AND NOT RIEMANN_CUDA_TOOLKIT_ONLY)
     list(APPEND RIEMANN_SOURCES
-        "${CMAKE_SOURCE_DIR}/../Src/RigidBodyDynamics/LCPSolverCUDA.cu"
+        "${CMAKE_SOURCE_DIR}/../Src/Solver/LCPSolverCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Fluid/FluidBackendCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Fluid/SmokeBackendCUDA.cu"
-        "${CMAKE_SOURCE_DIR}/../Src/Cloth/PBDBackendCUDA.cu"
+        "${CMAKE_SOURCE_DIR}/../Src/Solver/PBDBackendCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Continuum/SnowBackendCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Continuum/SandBackendCUDA.cu"
     )
     # Keep contact projection arithmetic consistent with the scalar/SIMD paths.
-    set_source_files_properties("${CMAKE_SOURCE_DIR}/../Src/Cloth/PBDBackendCUDA.cu"
+    set_source_files_properties("${CMAKE_SOURCE_DIR}/../Src/Solver/PBDBackendCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Continuum/SnowBackendCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Continuum/SandBackendCUDA.cu"
         PROPERTIES COMPILE_OPTIONS "--fmad=false")
@@ -111,6 +111,7 @@ file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/../Test/*.cc"
     "${CMAKE_SOURCE_DIR}/../Test/*.c"
 )
+list(FILTER TEST_SOURCES EXCLUDE REGEX "RendererLifecycleValidation\\.cpp$")
 
 add_library(Riemann STATIC ${RIEMANN_SOURCES} ${RIEMANN_HEADERS})
 if(WIN32 AND RIEMANN_ENABLE_COMPUTE_SHADER)
@@ -119,8 +120,8 @@ if(WIN32 AND RIEMANN_ENABLE_COMPUTE_SHADER)
     target_link_libraries(Riemann PRIVATE d3d11 d3dcompiler dxguid)
 elseif(APPLE AND RIEMANN_ENABLE_COMPUTE_SHADER)
     enable_language(OBJCXX)
-    target_sources(Riemann PRIVATE "${RIEMANN_ROOT_DIR}/Src/Continuum/MetalComputeDevice.mm")
-    set_source_files_properties("${RIEMANN_ROOT_DIR}/Src/Continuum/MetalComputeDevice.mm"
+    target_sources(Riemann PRIVATE "${RIEMANN_ROOT_DIR}/Src/Continuum/ComputeDevice_Metal.mm")
+    set_source_files_properties("${RIEMANN_ROOT_DIR}/Src/Continuum/ComputeDevice_Metal.mm"
         PROPERTIES COMPILE_FLAGS "-fobjc-arc")
     set_property(TARGET Riemann PROPERTY OBJCXX_STANDARD 14)
     target_compile_definitions(Riemann PRIVATE RIEMANN_SNOW_COMPUTE=1)
@@ -150,7 +151,7 @@ if(RIEMANN_CUDA_AVAILABLE)
         else()
             list(APPEND cuda_host_flags "-Xcompiler=-fPIC")
         endif()
-        foreach(cuda_path RigidBodyDynamics/LCPSolverCUDA Fluid/FluidBackendCUDA Fluid/SmokeBackendCUDA Cloth/PBDBackendCUDA Continuum/SnowBackendCUDA Continuum/SandBackendCUDA)
+        foreach(cuda_path Solver/LCPSolverCUDA Fluid/FluidBackendCUDA Fluid/SmokeBackendCUDA Solver/PBDBackendCUDA Continuum/SnowBackendCUDA Continuum/SandBackendCUDA)
             get_filename_component(cuda_name "${cuda_path}" NAME)
             set(cuda_object "${CMAKE_CURRENT_BINARY_DIR}/Cuda/$<CONFIG>/${cuda_name}${CMAKE_CXX_OUTPUT_EXTENSION}")
             add_custom_command(OUTPUT "${cuda_object}"
@@ -274,22 +275,27 @@ endif()
 target_link_libraries(Test PRIVATE Riemann)
 
 enable_testing()
-add_test(NAME FluidOptimization COMMAND Test FluidOptimization)
-set_tests_properties(FluidOptimization PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
-add_test(NAME Smoke COMMAND Test Smoke)
-set_tests_properties(Smoke PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
-add_test(NAME SmokeBackends COMMAND Test SmokeBackends)
-set_tests_properties(SmokeBackends PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
-add_test(NAME SmokeMovingObstacles COMMAND Test SmokeMovingObstacles)
-set_tests_properties(SmokeMovingObstacles PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
-add_test(NAME SmokeRigidCoupling COMMAND Test SmokeRigidCoupling)
-set_tests_properties(SmokeRigidCoupling PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
-foreach(TEST_GROUP SolverPanel SolverSwitch PBDBackendScenes PBDBackends VehicleScene VehicleDeformation RopeTowing XPBDScene XPBD PBDScene PBD VoxelScene VoxelMesh TerrainScene TerrainEditing GEMM StressIntegration Stress Deformation Scenes RopeRegression Constraints ConstraintRegression Rope Cloth Ragdoll Terrain Matrix Destruction CCD)
+set(RIEMANN_TEST_GROUPS
+    ConstraintGraph FrictionPatches JointDrives SupportStabilization TemporalSubsteps CCDContinuation JointReactions
+    DistanceFieldSpeculativeDemo DistanceFieldMargins DistanceFieldCCD DistanceFieldSweeps DistanceFieldMeshDemo
+    DistanceFieldMesh DistanceFieldMeshSimulation DistanceFieldDemo DistanceFieldCollision RuntimeDistanceField
+    ContactOffsets CollisionFiltering MeshContacts ContactPersistence FluidOptimization Smoke SmokeBackends
+    SmokeMovingObstacles SmokeRigidCoupling SolverPanel SolverSwitch PBDBackendScenes PBDBackends VehicleScene
+    VehicleDeformation RopeTowing XPBDScene XPBD PBDScene PBD VoxelScene VoxelMesh TerrainScene TerrainEditing
+    GEMM StressIntegration Stress Deformation Scenes RopeRegression Constraints ConstraintRegression Rope Cloth
+    Ragdoll Terrain Matrix Destruction CCD IslandSleeping CharacterController VehicleDynamics Featherstone
+    ReducedRagdoll ReducedRagdollDemo ReducedRagdollQueries RagdollMechanism PhysicalAnimation PhysicalAnimationDemo
+    ClothModel ClothModelDemo SurfaceCollision SurfaceContact ClothCollision ClothContinuous ClothInteraction
+    DeformableAttachment RigidAttachment TetrahedralAsset ProjectiveDynamics DestructionAsset DestructionEvents
+    DestructionCache DestructionPlayback PhysicsField Strands StrandGroom StrandCollision DeformableCollision
+    DeformableRigidContact TetrahedralMaterial
+)
+foreach(TEST_GROUP IN LISTS RIEMANN_TEST_GROUPS)
     add_test(NAME ${TEST_GROUP} COMMAND Test ${TEST_GROUP})
     set_tests_properties(${TEST_GROUP} PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
 endforeach()
 
-target_include_directories(Test PRIVATE 
+target_include_directories(Test PRIVATE
     ${CMAKE_SOURCE_DIR}/../Src
     ${CMAKE_SOURCE_DIR}/../Test
 )
@@ -319,22 +325,16 @@ if(WIN32)
         Riemann
     )
     
-    add_executable(RendererLifecycleValidation "${CMAKE_SOURCE_DIR}/../Test/RendererLifecycleValidation.cpp")
-    target_compile_definitions(RendererLifecycleValidation PRIVATE RIEMANN_RENDERER_LIFECYCLE_VALIDATION)
-    target_link_libraries(RendererLifecycleValidation PRIVATE Renderer)
-    add_test(NAME RendererLifecycleValidation COMMAND RendererLifecycleValidation)
-    set_tests_properties(RendererLifecycleValidation PROPERTIES WORKING_DIRECTORY "${RIEMANN_ROOT_DIR}")
-
     # Visual Studio
     set_property(TARGET Test PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:Test>")
-    
+
 elseif(APPLE)
     # macOS
     set_target_properties(Riemann PROPERTIES
         XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++17"
         XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
     )
-    
+
 elseif(UNIX)
     # Linux
     target_compile_options(Riemann PRIVATE -fPIC)

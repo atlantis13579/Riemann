@@ -1,3 +1,4 @@
+#include "../Src/RigidBodyDynamics/Island.h"
 
 #include "Test.h"
 #include <algorithm>

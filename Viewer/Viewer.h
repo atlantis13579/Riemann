@@ -164,6 +164,9 @@ private:
 		Vector3 m_CamCenter;
 		Vector3 m_CamParam;
 		bool m_MovementKeys[4];
+		bool m_CharacterKeys[4]{};
+		bool m_CharacterInputActive = false;
+		bool m_CharacterJumpHeld = false, m_CharacterJumpRequested = false;
 		bool m_CuttingPanelActive;
 		bool m_MeshSimplificationPanelActive;
 		std::vector<CuttingRenderPiece> m_CuttingPieces;
@@ -200,10 +203,16 @@ private:
 		struct VehiclePanelState
 		{
 			bool Active = false, Paused = true, SlowMotion = true;
+			bool Dynamics = false;
+			float Throttle = 0, Steering = 0, Brake = 1, Handbrake = 0, Clutch = 1;
+			float Speed = 0, EngineRPM = 0, Load = 0;
+			int GearIndex = 1, Differential = 0, GroundedWheels = 0;
 			float Displacement = 0, PlasticStrain = 0;
 			unsigned int SceneGeneration = 0;
 		};
 		VehiclePanelState m_ImguiVehiclePanel;
+		VehiclePanelState m_PendingVehiclePanel;
+		bool m_PendingVehicleControls = false;
 		bool m_VehiclePaused = true, m_VehicleSlowMotion = true;
 		float m_VehiclePendingTime = 0;
 		int m_PendingVehicleCommand = 0;
@@ -251,6 +260,8 @@ private:
 		SolverPanelState m_ImguiPendingSolverPanel;
 		bool m_ImguiPendingSolverSwitch = false;
 		std::string m_ImguiSceneName;
+		bool m_RagdollDemoReduced = false;
+		bool m_ImguiRagdollDemoReduced = false;
 		std::vector<std::string> m_ImguiSceneFiles;
 		std::vector<std::string> m_ImguiCuttingObjFiles;
 		std::string m_ImguiCuttingObjPath;
@@ -285,6 +296,7 @@ private:
 		int m_ImguiScroll;
 		unsigned int m_ImguiRenderedSceneGeneration = 0;
 		int m_ImguiPendingDemoIndex;
+		int m_ImguiPendingRagdollAlgorithm = -1;
 		std::string m_ImguiPendingSceneFile;
 		bool m_ImguiPendingCameraDistance;
 		float m_ImguiPendingCameraDistanceValue;

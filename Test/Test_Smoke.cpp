@@ -73,7 +73,7 @@ void TestSmoke()
 
 	SceneWorld World;
 	std::string Error;
-	EXPECT(World.LoadFromFile(TestContentsPath() + "Scenes/12_3d_smoke.json", &Error));
+	EXPECT(World.LoadFromFile(TestContentsPath() + "Scenes/12_smoke_3d.json", &Error));
 	const SceneFieldSimulationDesc& Scene = World.GetFieldSimulation();
 	EXPECT(Scene.Type == "smoke3d" && Scene.Smoke.Emitters.size() == 1 && Scene.RigidCoupling);
 	EXPECT(Scene.Smoke.Obstacles.empty() && World.GetSmokeRigidBodyCount() == 0);
@@ -82,6 +82,15 @@ void TestSmoke()
 	EXPECT(Smoke.Initialize(SceneSettings));
 	BuildSmokeDensityVolume(Smoke, &Volume, Scene.SmokeExtinction, Scene.SmokeColor);
 	EXPECT(Volume.IsValid());
+#if defined(_WIN32) && defined(RIEMANN_ENABLE_COMPUTE_SHADER)
+	EXPECT(Scene.Smoke.Backend == SmokeBackend::ComputeShader);
+	EXPECT(Smoke.Initialize(Scene.Smoke));
+	Smoke.Step(1.0f / 60);
+	EXPECT(Smoke.IsInitialized() && Smoke.GetBackend() == SmokeBackend::ComputeShader);
+	BuildSmokeDensityVolume(Smoke, &Volume, Scene.SmokeExtinction, Scene.SmokeColor);
+	EXPECT(Volume.IsValid());
+	EXPECT(std::accumulate(Volume.Density.begin(), Volume.Density.end(), 0.0f) > 0);
+#endif
 }
 
 void TestSmokeBackends()

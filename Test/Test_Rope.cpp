@@ -2,7 +2,7 @@
 
 #include <limits>
 
-#include "../Src/Cloth/Rope.h"
+#include "../Src/Deformation/Rope.h"
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/CollisionPrimitive/Segment3.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"

@@ -1,13 +1,16 @@
 
 #include <assert.h>
+#include <cmath>
+#include <stdexcept>
 #include "DynamicAABBTree.h"
 #include "GeometryQuery.h"
 #include "GeometryObject.h"
 
 namespace Riemann
 {
-DynamicAABBTree::DynamicAABBTree()
+DynamicAABBTree::DynamicAABBTree(float Padding) : m_Padding(Padding)
 {
+	if (!std::isfinite(Padding) || Padding < 0) throw std::invalid_argument("Invalid dynamic tree padding");
 	Clear();
 }
 
@@ -495,7 +498,7 @@ int DynamicAABBTree::Add(const Box3& aabb, void* userData)
 {
 	int nodeId = AllocNode();
 
-	Vector3 thickness(kAABBThickness, kAABBThickness, kAABBThickness);
+	Vector3 thickness(m_Padding);
 	m_nodes[nodeId].aabb.Min = aabb.Min - thickness;
 	m_nodes[nodeId].aabb.Max = aabb.Max + thickness;
 	m_nodes[nodeId].userData = userData;
@@ -521,7 +524,7 @@ bool DynamicAABBTree::Update(int nodeId, const Box3& aabb, const Vector3& displa
 	assert(0 <= nodeId && nodeId < m_nodeCapacity);
 	assert(m_nodes[nodeId].IsLeaf());
 
-	Vector3 thickness(kAABBThickness, kAABBThickness, kAABBThickness);
+	Vector3 thickness(m_Padding);
 	Box3 newAABB(aabb.Min - thickness, aabb.Max + thickness);
 
 	// Predict AABB movement
@@ -587,7 +590,7 @@ bool DynamicAABBTree::Widen(int nodeId, const Box3& aabb)
 		return false;
 	}
 
-	Vector3 thickness(kAABBThickness, kAABBThickness, kAABBThickness);
+	Vector3 thickness(m_Padding);
 	Box3 newAABB(aabb.Min - thickness, aabb.Max + thickness);
 	newAABB = Box3(treeAABB, newAABB);
 

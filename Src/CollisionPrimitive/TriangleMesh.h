@@ -74,6 +74,7 @@ namespace Riemann
 
 		MeshBVH4*		CreateEmptyBVH();
 		void			BuildBVH();
+		void QueryTriangles(const Box3& Bounds, std::vector<uint32_t>& Triangles) const;
 		const MeshBVH4*	GetBVH() const
 		{
 			return m_BVH;

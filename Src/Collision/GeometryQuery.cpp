@@ -3,13 +3,51 @@
 
 #include <assert.h>
 #include <algorithm>
+#include <stdexcept>
+#include "../RigidBodyDynamics/RigidBody.h"
 #include "../Core/Base.h"
 #include "AABBPruner.h"
 #include "AABBTree.h"
 #include "DynamicAABBTree.h"
+#include "../CollisionPrimitive/AxisAlignedBox3.h"
+#include "../CollisionPrimitive/Sphere3.h"
+#include "../CollisionPrimitive/Capsule3.h"
 
 namespace Riemann
 {
+	/* One filter contract is shared by scene queries, discrete contacts, triggers
+	   and both linear/angular CCD. Layer masks use v0 as an index and v1 as the
+	   accepted layer bits; v2/v3 remain user data. Both masks must accept a pair.
+	   Default data means layer zero accepting all layers. A null policy accepts all.
+
+	   Query FilterData describes the querying shape/channel. An optional query
+	   filter is an additional restriction, never an override of the world policy.
+	   SourceBody applies the same self/group/explicit-body exclusions as simulation
+	   when querying a physics world. Query/simulation/trigger flags keep their
+	   distinct purposes. Custom simulation predicates must be symmetric, pure and
+	   stable for a step; refresh the world after mutating their captured policy.
+	*/
+	namespace
+	{
+		class CombinedCollisionFilter : public CollisionFilter
+		{
+		public:
+			CombinedCollisionFilter(CollisionFilter* World, CollisionFilter* Query) : m_World(World), m_Query(Query) {}
+			bool IsCollidable(const CollisionData& A, const CollisionData& B) override
+			{
+				return Allows(m_World, A, B) && (m_Query == m_World || Allows(m_Query, A, B));
+			}
+		private:
+			CollisionFilter* m_World;
+			CollisionFilter* m_Query;
+		};
+		bool QueryBodyAllowed(const Geometry* Shape, const RigidBody* Source)
+		{
+			const RigidBody* Target = Shape ? Shape->GetParent<RigidBody>() : nullptr;
+			return !Source || !Target || Source->CanCollideWith(Target);
+		}
+	}
+
 	static void* EncodeProxyIdAsUserData(uint32_t index)
 	{
 		return reinterpret_cast<void*>((uintptr_t)index + 1);
@@ -40,7 +78,7 @@ namespace Riemann
 	{
 		GeometryQueryProxy* proxy = GetQueryProxy(payloadId, context);
 		Geometry* geometry = proxy ? proxy->Geom : nullptr;
-		if (geometry == nullptr)
+		if (geometry == nullptr || !geometry->IsQueryEnabled() || !QueryBodyAllowed(geometry, option->SourceBody))
 		{
 			return false;
 		}
@@ -74,7 +112,8 @@ namespace Riemann
 	{
 		GeometryQueryProxy* proxy = GetQueryProxy(payloadId, context);
 		Geometry* geometry = proxy ? proxy->Geom : nullptr;
-		if (geometry == nullptr)
+		if (geometry == nullptr || !geometry->IsQueryEnabled() || !QueryBodyAllowed(geometry, option->SourceBody)
+			|| (option->PreFilter && !option->PreFilter(geometry)))
 		{
 			return false;
 		}
@@ -86,7 +125,9 @@ namespace Riemann
 		result->AddTestCount(1);
 		const Transform queryTransform = *queryGeometry->GetTransform();
 		const Transform& geometryTransform = proxy && proxy->ShapeToWorld ? *proxy->ShapeToWorld : *geometry->GetTransform();
-		const bool overlap = queryGeometry->Intersect(queryTransform, geometry, geometryTransform);
+		const bool overlap = option->BoundsOnly
+			? queryGeometry->GetBounds().Intersect(*proxy->WorldBounds)
+			: queryGeometry->Intersect(queryTransform, geometry, geometryTransform);
 		if (overlap)
 		{
 			result->overlaps = true;
@@ -107,7 +148,8 @@ namespace Riemann
 	{
 		GeometryQueryProxy* proxy = GetQueryProxy(payloadId, context);
 		Geometry* geometry = proxy ? proxy->Geom : nullptr;
-		if (geometry == nullptr)
+		if (geometry == nullptr || !geometry->IsQueryEnabled() || !QueryBodyAllowed(geometry, option->SourceBody)
+			|| (option->PreFilter && !option->PreFilter(geometry)))
 		{
 			return false;
 		}
@@ -119,18 +161,20 @@ namespace Riemann
 		const Transform queryTransform = *queryGeometry->GetTransform();
 		const Transform& geometryTransform = proxy && proxy->ShapeToWorld ? *proxy->ShapeToWorld : *geometry->GetTransform();
 
-		float t;
-		Vector3 position;
-		Vector3 normal;
-		if (!queryGeometry->Sweep(queryTransform, direction, geometry, geometryTransform, &position, &normal, &t))
+		float t = 0;
+		Vector3 position = Vector3::Zero();
+		Vector3 normal = Vector3::Zero();
+		if (!queryGeometry->Sweep(queryTransform, queryTransform.WorldToLocalDirection(direction), geometry, geometryTransform, &position, &normal, &t)
+			|| t > option->MaxDist)
 		{
 			return false;
 		}
 
+		position = queryTransform.LocalToWorld(position);
+		normal = queryTransform.LocalToWorldDirection(normal);
+		if (option->PostFilter && !option->PostFilter(geometry, position, normal, t)) return false;
 		result->hit = true;
 		result->hitTime = t;
-		result->hitPosition = position;
-		result->hitNormal = normal;
 		if (option->Type == SweepOption::SWEEP_PENETRATE)
 		{
 			result->hitGeometries.push_back(geometry);
@@ -986,8 +1030,11 @@ namespace Riemann
 		return std::find(m_staticObjects.begin(), m_staticObjects.end(), Object) != m_staticObjects.end();
 	}
 
-	bool GeometryQuery::RayCastQuery(const Vector3& Origin, const Vector3& Direction, const RayCastOption& Option, RayCastResult* Result)
+	bool GeometryQuery::RayCastQuery(const Vector3& Origin, const Vector3& Direction, const RayCastOption& InputOption, RayCastResult* Result)
 	{
+		CombinedCollisionFilter Combined(m_DefaultFilter, InputOption.Filter);
+		RayCastOption Option = InputOption;
+		if (m_DefaultFilter) Option.Filter = &Combined;
 		Result->Reset();
 
 		Ray3 ray(Origin, Direction);
@@ -1029,23 +1076,29 @@ namespace Riemann
 
 	bool GeometryQuery::BoxCastQuery(const Vector3& Center, const Vector3& Extent, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 	{
-		char stack[MAX_GEOMETRY_STACK_SIZE];
-		Geometry* Box = GeometryFactory::CreateOBB_placement(stack, Center, Extent);
+		GeometryPlacementStorage<AxisAlignedBox3> Storage;
+		Geometry* Box = Storage.Object = GeometryFactory::CreateOBB_placement(Storage.Data, Center, Extent);
 		return SweepTest_Impl(Box, Direction, Option, Result);
 	}
 
 	bool GeometryQuery::SphereCastQuery(const Vector3& Center, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 	{
-		char stack[MAX_GEOMETRY_STACK_SIZE];
-		Geometry* Sphere = GeometryFactory::CreateSphere_placement(stack, Center, Radius);
+		GeometryPlacementStorage<Sphere3> Storage;
+		Geometry* Sphere = Storage.Object = GeometryFactory::CreateSphere_placement(Storage.Data, Center, Radius);
 		return SweepTest_Impl(Sphere, Direction, Option, Result);
 	}
 
 	bool GeometryQuery::CapsuleCastQuery(const Vector3& Center, float HalfH, float Radius, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
 	{
-		char stack[MAX_GEOMETRY_STACK_SIZE];
-		Geometry* Capsule = GeometryFactory::CreateCapsule_placement(stack, Center - Vector3(0, HalfH, 0), Center + Vector3(0, HalfH, 0), Radius);
+		GeometryPlacementStorage<Capsule3> Storage;
+		Geometry* Capsule = Storage.Object = GeometryFactory::CreateCapsule_placement(Storage.Data, Center - Vector3(0, HalfH, 0), Center + Vector3(0, HalfH, 0), Radius);
 		return SweepTest_Impl(Capsule, Direction, Option, Result);
+	}
+
+	bool GeometryQuery::SweepGeometry(const Geometry* Shape, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
+	{
+		if (!Shape || !Result) return false;
+		return SweepTest_Impl(Shape, Direction, Option, Result);
 	}
 
 	void GeometryQuery::CollectAABBs(std::vector<Box3>* aabbs) const
@@ -1068,27 +1121,30 @@ namespace Riemann
 
 	bool GeometryQuery::IntersectQueryBox(const Vector3& Center, const Vector3& Extent, const IntersectOption& Option, IntersectResult* Result)
 	{
-		char stack[MAX_GEOMETRY_STACK_SIZE];
-		Geometry* Box = GeometryFactory::CreateOBB_placement(stack, Center, Extent);
+		GeometryPlacementStorage<AxisAlignedBox3> Storage;
+		Geometry* Box = Storage.Object = GeometryFactory::CreateOBB_placement(Storage.Data, Center, Extent);
 		return IntersectTest_Impl(Box, Option, Result);
 	}
 
 	bool GeometryQuery::IntersectQuerySphere(const Vector3& Center, float Radius, const IntersectOption& Option, IntersectResult* Result)
 	{
-		char stack[MAX_GEOMETRY_STACK_SIZE];
-		Geometry* Sphere = GeometryFactory::CreateSphere_placement(stack, Center, Radius);
+		GeometryPlacementStorage<Sphere3> Storage;
+		Geometry* Sphere = Storage.Object = GeometryFactory::CreateSphere_placement(Storage.Data, Center, Radius);
 		return IntersectTest_Impl(Sphere, Option, Result);
 	}
 
 	bool GeometryQuery::IntersectQueryCapsule(const Vector3& x0, const Vector3& x1, float Radius, const IntersectOption& Option, IntersectResult* Result)
 	{
-		char stack[MAX_GEOMETRY_STACK_SIZE];
-		Geometry* Capsule = GeometryFactory::CreateCapsule_placement(stack, x0, x1, Radius);
+		GeometryPlacementStorage<Capsule3> Storage;
+		Geometry* Capsule = Storage.Object = GeometryFactory::CreateCapsule_placement(Storage.Data, x0, x1, Radius);
 		return IntersectTest_Impl(Capsule, Option, Result);
 	}
 
-	bool GeometryQuery::IntersectTest_Impl(const Geometry* geom, const IntersectOption& Option, IntersectResult* Result)
+	bool GeometryQuery::IntersectTest_Impl(const Geometry* geom, const IntersectOption& InputOption, IntersectResult* Result)
 	{
+		CombinedCollisionFilter Combined(m_DefaultFilter, InputOption.Filter);
+		IntersectOption Option = InputOption;
+		if (m_DefaultFilter) Option.Filter = &Combined;
 		Result->Reset();
 
 		bool hit = false;
@@ -1126,8 +1182,11 @@ namespace Riemann
 		return hit;
 	}
 
-	bool GeometryQuery::SweepTest_Impl(const Geometry* geom, const Vector3& Direction, const SweepOption& Option, SweepResult* Result)
+	bool GeometryQuery::SweepTest_Impl(const Geometry* geom, const Vector3& Direction, const SweepOption& InputOption, SweepResult* Result)
 	{
+		CombinedCollisionFilter Combined(m_DefaultFilter, InputOption.Filter);
+		SweepOption Option = InputOption;
+		if (m_DefaultFilter) Option.Filter = &Combined;
 		Result->Reset();
 
 		bool hit = false;
@@ -1145,7 +1204,7 @@ namespace Riemann
 					hit = true;
 				}
 			}
-			if (hit)
+			if (hit && Option.Type == SweepOption::SWEEP_ANY)
 			{
 				return true;
 			}
@@ -1182,12 +1241,12 @@ namespace Riemann
 	public:
 		CollisionTableFilter(unsigned int n, unsigned char* pLayerData)
 		{
+			if (n == 0 || (size_t)n > SIZE_MAX / n) throw std::invalid_argument("Invalid collision layer table size");
 			nLayers = n;
-			collisionTable.resize(n * n);
-			memset(&collisionTable[0], 0, sizeof(collisionTable[0]) * n * n);
+			collisionTable.resize((size_t)n * n, 0);
 			if (pLayerData)
 			{
-				memcpy(&collisionTable[0], pLayerData, sizeof(collisionTable[0]) * n * n);
+				memcpy(collisionTable.data(), pLayerData, collisionTable.size());
 			}
 		}
 
@@ -1195,15 +1254,40 @@ namespace Riemann
 
 		virtual bool IsCollidable(const CollisionData& data0, const CollisionData& data1) override
 		{
-			assert(0 <= data0.v0 && data0.v0 < nLayers);
-			assert(0 <= data1.v0 && data1.v0 < nLayers);
-			return collisionTable[data0.v0 * nLayers + data1.v0] == 0;
+			return data0.v0 < nLayers && data1.v0 < nLayers
+				&& collisionTable[(size_t)data0.v0 * nLayers + data1.v0] == 0;
 		}
 
 	private:
 		unsigned int				nLayers;
 		std::vector<unsigned char> 	collisionTable;
 	};
+
+	class LayerMaskCollisionFilter : public CollisionFilter
+	{
+	public:
+		bool IsCollidable(const CollisionData& A, const CollisionData& B) override
+		{
+			return A.v0 < CollisionData::LayerCount && B.v0 < CollisionData::LayerCount
+				&& (A.v1 & (1u << B.v0)) != 0 && (B.v1 & (1u << A.v0)) != 0;
+		}
+	};
+
+	class CallbackCollisionFilter : public CollisionFilter
+	{
+	public:
+		explicit CallbackCollisionFilter(std::function<bool(const CollisionData&, const CollisionData&)> Callback) : m_Callback(std::move(Callback)) {}
+		bool IsCollidable(const CollisionData& A, const CollisionData& B) override { return m_Callback(A, B); }
+	private:
+		std::function<bool(const CollisionData&, const CollisionData&)> m_Callback;
+	};
+
+	CollisionFilter* CollisionFilter::CreateLayerMask() { return new LayerMaskCollisionFilter(); }
+	CollisionFilter* CollisionFilter::CreateCallback(std::function<bool(const CollisionData&, const CollisionData&)> Callback)
+	{
+		if (!Callback) throw std::invalid_argument("Collision filter callback must not be empty");
+		return new CallbackCollisionFilter(std::move(Callback));
+	}
 
 	CollisionFilter* CollisionFilter::CreateDefault()
 	{

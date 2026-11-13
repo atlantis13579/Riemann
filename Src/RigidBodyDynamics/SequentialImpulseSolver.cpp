@@ -1,6 +1,9 @@
 
 #include "CollidingContact.h"
+#include "Ragdoll.h"
 #include "Constraints.h"
+#include "Island.h"
+#include "FrictionPatch.h"
 #include "Jacobian.h"
 #include "RigidBody.h"
 #include "SequentialImpulseSolver.h"
@@ -9,23 +12,43 @@
 
 #include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
+#include <stdexcept>
 
 namespace Riemann
 {
 	class SequentialImpulseSolver : public ConstraintSolver
 	{
 	public:
-		SequentialImpulseSolver()
+		explicit SequentialImpulseSolver(const ContactPersistenceSettings& Settings, const SequentialImpulseSettings& Iterations)
+			: m_PersistenceSettings(Settings), m_ImpulseCache(Settings)
 		{
-			m_nMaxPositionIterations = 8;
-			m_nMaxVelocityIterations = 1;
+			if (!Iterations.IsValid()) throw std::invalid_argument("Invalid sequential impulse iteration settings");
+			m_nMaxPositionIterations = Iterations.PositionIterations;
+			m_nMaxVelocityIterations = Iterations.VelocityIterations;
 		}
 
 		virtual ~SequentialImpulseSolver()
 		{
 		}
 
-		virtual void	PreResolve(const std::vector<Geometry*>& geoms) override final
+		void BeginFrame(uint64_t Frame) override
+		{
+			m_ImpulseCache.BeginFrame(Frame);
+			m_Friction.BeginFrame(Frame);
+			m_WarmStartContactCount = 0;
+		}
+		void ResetState() override { m_ImpulseCache.Reset(); m_Friction.Reset(); m_WarmStartContactCount = 0; }
+		void SetFrictionPatchSettings(const FrictionPatchSettings& Settings) override { m_Friction.SetSettings(Settings); }
+		void SetWarmStartingEnabled(bool Enabled) override
+		{
+			if (m_WarmStartingEnabled != Enabled) ResetState();
+			m_WarmStartingEnabled = Enabled;
+			m_Friction.SetWarmStartingEnabled(Enabled);
+		}
+		int GetWarmStartContactCount() const override { return m_WarmStartContactCount; }
+
+		virtual void	PreResolve(const std::vector<Geometry*>& geoms, const std::vector<PositionConstraint*>& Joints) override final
 		{
 			m_GeometryToBodySlot.assign(geoms.size(), -1);
 			m_Bodies.clear();
@@ -55,6 +78,14 @@ namespace Riemann
 				}
 			}
 
+			for (auto* Joint : Joints) if (Joint && Joint->IsEnabled())
+				for (auto* Body : { Joint->GetBodyA(), Joint->GetBodyB() }) if (Body && BodySlots.emplace(Body, (int)m_Bodies.size()).second) m_Bodies.push_back(Body);
+
+			std::unordered_set<Ragdoll*> Owners;
+			for (size_t I = 0; I < m_Bodies.size(); ++I) if (m_Bodies[I]->ReducedRagdoll && Owners.insert(m_Bodies[I]->ReducedRagdoll).second)
+				for (auto* Link : m_Bodies[I]->ReducedRagdoll->GetBodies())
+					if (BodySlots.emplace(Link, (int)m_Bodies.size()).second) m_Bodies.push_back(Link);
+
 			const int BodyCount = (int)m_Bodies.size();
 			m_Buffer.resize(2 * BodyCount);
 			for (int BodySlot = 0; BodySlot < BodyCount; ++BodySlot)
@@ -64,16 +95,30 @@ namespace Riemann
 				m_Buffer[(size_t)BodySlot].w = Body->GetAngularVelocity();
 				m_Buffer[(size_t)BodyCount + BodySlot] = m_Buffer[(size_t)BodySlot];
 			}
+			if (Owners.empty()) m_ReducedRagdolls.Begin({}, nullptr);
+			else m_ReducedRagdolls.Begin(m_Bodies, m_Buffer.data());
+			m_Friction.BeginSolve(m_Bodies, m_Buffer.data(), true, &m_ReducedRagdolls);
 		}
 
-		virtual void	ResolveContact(const std::vector<Geometry*>& geoms,
-			std::vector<ContactManifold*>& manifolds,
-			float dt) override final
+		void ResolveContact(const std::vector<Geometry*>& Geometries, std::vector<ContactManifold*>& Manifolds, float Dt) override
 		{
-			if (manifolds.empty() || m_Bodies.empty())
+			ResolveIsland(Geometries, Manifolds, {}, Dt, 0);
+		}
+		void ResolveConstraints(const std::vector<Geometry*>& Geometries, std::vector<ContactManifold*>& Manifolds,
+			const std::vector<PositionConstraint*>& Joints, float Dt, int Iterations) override
+		{
+			ResolveIsland(Geometries, Manifolds, Joints, Dt, Iterations);
+		}
+		void ResolveIsland(const std::vector<Geometry*>& geoms, std::vector<ContactManifold*>& manifolds,
+			const std::vector<PositionConstraint*>& Joints, float dt, int JointIterations)
+		{
+			if ((manifolds.empty() && Joints.empty()) || m_Bodies.empty() || dt <= 0.0f)
 				return;
 
-			const int BodyCount = (int)m_Bodies.size();
+			JointVelocityPass JointPass(m_Bodies, m_Buffer.data(), Joints);
+			const bool PatchFriction = m_Friction.GetSettings().Enabled;
+			if (PatchFriction) m_Friction.Prepare(geoms, manifolds, dt);
+			const int CoupledIterations = Joints.empty() ? 0 : std::max(1, JointIterations);
 			auto GetBodySlot = [this, &geoms](int GeometryIndex, RigidBody*& Body) -> int
 			{
 				Body = nullptr;
@@ -108,7 +153,6 @@ namespace Riemann
 			};
 
 			std::vector<ManifoldContext> ValidManifolds;
-			std::vector<ContactManifold*> WarmStartManifolds;
 			for (size_t i = 0; i < manifolds.size(); ++i)
 			{
 				ContactManifold* manifold = manifolds[i];
@@ -126,11 +170,19 @@ namespace Riemann
 					continue;
 				}
 				ValidManifolds.push_back({ manifold, bodyA, bodyB, BodySlotA, BodySlotB });
-				WarmStartManifolds.push_back(manifold);
+				// A second solve in the same frame must not replay a historical load.
+				for (int Point = 0; Point < manifold->NumContactPointCount; ++Point)
+				{
+					Contact& C = manifold->ContactPoints[Point];
+					C.totalImpulseNormal = C.totalImpulseTangent = C.totalImpulseBinormal = C.CachedDt = 0.0f;
+				}
+				if (m_WarmStartingEnabled)
+					m_WarmStartContactCount += m_ImpulseCache.Match(MakeState(geoms[(size_t)manifold->indexA]),
+						MakeState(geoms[(size_t)manifold->indexB]), manifold, true);
 			}
 
-			WarmStart::ApplyVelocityConstraint(geoms, WarmStartManifolds, dt);
-
+			std::vector<RigidBody*> IslandBodies;
+			for (const auto& Context : ValidManifolds) { IslandBodies.push_back(Context.BodyA); IslandBodies.push_back(Context.BodyB); }
 			std::vector<ContactJacobianSolver> velocityConstraints;
 			for (const ManifoldContext& Context : ValidManifolds)
 			{
@@ -138,25 +190,31 @@ namespace Riemann
 				for (int j = 0; j < ContactCount; ++j)
 				{
 					velocityConstraints.push_back(ContactJacobianSolver(
-						m_Buffer.data(), Context.BodySlotA, Context.BodySlotB, Context.BodyA, Context.BodyB));
+						m_Buffer.data(), Context.BodySlotA, Context.BodySlotB, Context.BodyA, Context.BodyB, &m_ReducedRagdolls));
 					velocityConstraints.back().SetupPositionPass(&Context.Manifold->ContactPoints[j], dt);
+					velocityConstraints.back().UsePatchFriction = PatchFriction;
 				}
 			}
 
 			if (!velocityConstraints.empty())
 			{
+				if (m_WarmStartingEnabled)
+					for (ContactJacobianSolver& Constraint : velocityConstraints) WarmStart::Apply(Constraint, dt, m_PersistenceSettings);
 				int it = 0;
 				const float kStopPositionIterationThreshold = 1e-6f;
-				while (it++ < m_nMaxPositionIterations)
+				while (it++ < std::max(m_nMaxPositionIterations, CoupledIterations))
 				{
-					float sumSqrError = 0.0;
+					m_ReducedRagdolls.SolveControls(dt, IslandBodies);
+					float sumSqrError = JointPass.Solve(dt);
 					for (size_t k = 0; k < velocityConstraints.size(); ++k)
 					{
 						velocityConstraints[k].Solve();
+						if (PatchFriction) velocityConstraints[k].m_contact->totalImpulseNormal = velocityConstraints[k].m_jN.m_totalLambda;
 
 						sumSqrError += velocityConstraints[k].GetSquaredError();
 					}
 
+					if (PatchFriction) sumSqrError += m_Friction.Solve(dt);
 					sumSqrError /= velocityConstraints.size();
 					if (sumSqrError < kStopPositionIterationThreshold)
 					{
@@ -164,9 +222,12 @@ namespace Riemann
 					}
 				}
 
+				std::vector<float> PositionImpulses;
+				if (PatchFriction) PositionImpulses.resize(velocityConstraints.size());
 				for (size_t k = 0; k < velocityConstraints.size(); ++k)
 				{
-					velocityConstraints[k].Finalize();
+					if (PatchFriction) PositionImpulses[k] = velocityConstraints[k].m_jN.m_totalLambda;
+					if (!PatchFriction) velocityConstraints[k].Finalize();
 				}
 
 				for (ContactJacobianSolver& Constraint : velocityConstraints)
@@ -175,21 +236,32 @@ namespace Riemann
 				}
 
 				it = 0;
-				while (it++ < m_nMaxVelocityIterations)
+				while (it++ < std::max(m_nMaxVelocityIterations, CoupledIterations))
 				{
+					m_ReducedRagdolls.SolveControls(dt, IslandBodies);
+					JointPass.Solve(dt);
 					for (size_t i = 0; i < velocityConstraints.size(); ++i)
 					{
 						velocityConstraints[i].Solve();
+						if (PatchFriction) velocityConstraints[i].m_contact->totalImpulseNormal = PositionImpulses[i] + velocityConstraints[i].m_jN.m_totalLambda;
 					}
+					if (PatchFriction) m_Friction.Solve(dt);
 				}
 
 				for (size_t k = 0; k < velocityConstraints.size(); ++k)
 				{
-					velocityConstraints[k].Finalize(true);
+					if (!PatchFriction) velocityConstraints[k].Finalize(true);
+				}
+				if (m_WarmStartingEnabled)
+				{
+					for (const ManifoldContext& Context : ValidManifolds)
+						m_ImpulseCache.Store(MakeState(geoms[(size_t)Context.Manifold->indexA]),
+							MakeState(geoms[(size_t)Context.Manifold->indexB]), *Context.Manifold, dt, true, true);
 				}
 
 				return;
 			}
+			for (int Iteration = 0; Iteration < CoupledIterations; ++Iteration) JointPass.Solve(dt);
 		}
 
 		virtual void	PostResolve(const std::vector<Geometry*>& geoms) override final
@@ -213,9 +285,25 @@ namespace Riemann
 					body->SolverW = m_Buffer[(size_t)BodySlot].w;
 				}
 			}
+			m_ReducedRagdolls.Commit();
 		}
 
 	private:
+		RagdollVelocityContext m_ReducedRagdolls;
+		static GeometryWorldState MakeState(Geometry* Shape)
+		{
+			GeometryWorldState State;
+			State.Geom = Shape;
+			State.Body = Shape->GetParent<RigidBody>();
+			State.ShapeToWorld = State.Body ? State.Body->GetGeometryTransform(Shape) : *Shape->GetTransform();
+			if (State.Body) State.Handle = State.Body->FindGeometryHandle(Shape);
+			return State;
+		}
+		ContactPersistenceSettings m_PersistenceSettings;
+		ContactManifoldManager m_ImpulseCache;
+		FrictionPatchSolver m_Friction;
+		bool m_WarmStartingEnabled = true;
+		int m_WarmStartContactCount = 0;
 		int 	m_nMaxPositionIterations;
 		int 	m_nMaxVelocityIterations;
 
@@ -225,8 +313,9 @@ namespace Riemann
 		std::vector<GeneralizedVelocity>	m_Buffer;
 	};
 
-	ConstraintSolver* ConstraintSolver::CreateSequentialImpulseSolver()
+	ConstraintSolver* ConstraintSolver::CreateSequentialImpulseSolver(const ContactPersistenceSettings* Settings, const SequentialImpulseSettings* Iterations)
 	{
-		return new SequentialImpulseSolver();
+		return new SequentialImpulseSolver(Settings ? *Settings : ContactPersistenceSettings(),
+			Iterations ? *Iterations : SequentialImpulseSettings());
 	}
 }

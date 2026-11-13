@@ -336,6 +336,12 @@ namespace Riemann
 		{
 			Geom->SetQueryEnabled(!bUseCollisionProxy);
 			Geom->SetSimulationEnabled(!bUseCollisionProxy);
+			if (mDestructSet)
+			{
+				const DestructionConstants& Constants = mDestructSet->GetDestructionConstants();
+				Geom->SetFilterData(Constants.FilterData);
+				Geom->SetContactOffsets(Constants.ContactOffset, Constants.RestOffset);
+			}
 		}
 
 		std::vector<Geometry*> BodyGeometries = Geometries;
@@ -345,6 +351,9 @@ namespace Riemann
 			CollisionProxy = CreateClusterCollisionProxy(Geometries, ClusterWorldTransform.pos, Bounds);
 			if (CollisionProxy)
 			{
+				const DestructionConstants& Constants = mDestructSet->GetDestructionConstants();
+				CollisionProxy->SetFilterData(Constants.FilterData);
+				CollisionProxy->SetContactOffsets(Constants.ContactOffset, Constants.RestOffset);
 				MassParameters* ProxyMass = CollisionProxy->GetMassParameters();
 				ProxyMass->Mass = 0.0f;
 				ProxyMass->Volume = 0.0f;

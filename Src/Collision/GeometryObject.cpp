@@ -2,6 +2,9 @@
 #include "GeometryObject.h"
 #include "GeometryQuery.h"
 #include "GeometryIntersection.h"
+#include "DistanceFieldCollision.h"
+#include "../CollisionPrimitive/DistanceFieldShape.h"
+#include <stdexcept>
 
 #include "../CollisionPrimitive/AxisAlignedBox3.h"
 #include "../CollisionPrimitive/Plane3.h"
@@ -79,6 +82,19 @@ namespace Riemann
 		return Ret;
 	}
 
+	static bool RayCastShape(const Geometry* GeometryObject, const DistanceFieldShape* Shape, const Transform& ShapeTransform,
+		const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result)
+	{
+		if (Option->Filter && !Option->Filter->IsCollidable(Option->FilterData, GeometryObject->GetFilterData())) return false;
+		DistanceFieldRayHit Hit; DistanceFieldQueryStats Stats;
+		const bool Found = Shape->GetField().RayCast(ShapeTransform.WorldToLocal(Origin), ShapeTransform.WorldToLocalDirection(Direction), Option->MaxDist, Hit, true, &Stats);
+		Result->AddTestCount((int)std::min<uint64_t>(Stats.CellTests, INT_MAX));
+		if (!Found || Hit.Time >= Option->MaxDist) return false;
+		Result->hitTime = Hit.Time;
+		if (Hit.Time < Result->hitTimeMin) Result->hitNormal = ShapeTransform.LocalToWorldDirection(Hit.Normal);
+		return true;
+	}
+
 	template<class GEOM_TYPE>
 	class TGeometry : public Geometry, public GEOM_TYPE
 	{
@@ -96,6 +112,8 @@ namespace Riemann
 		virtual void			UpdateVolumeProperties() override final
 		{
 			GEOM_TYPE::CalculateVolumeProperties(&m_VolumeProperties, m_Density);
+			// Shape edits invalidate cached contact anchors even when the bounds stay equal.
+			MarkCollisionDirty();
 			UpdateBounds();
 		}
 
@@ -124,6 +142,14 @@ namespace Riemann
 			return RayCast(m_Transform, Origin, Direction, Option, Result);
 		}
 	};
+
+	// The query buffers must remain large and aligned enough for every placed primitive.
+	static_assert(sizeof(TGeometry<AxisAlignedBox3>) <= sizeof(GeometryPlacementStorage<AxisAlignedBox3>::Data), "Query geometry storage is too small");
+	static_assert(alignof(TGeometry<AxisAlignedBox3>) <= alignof(GeometryPlacementStorage<AxisAlignedBox3>), "Query geometry storage is misaligned");
+	static_assert(sizeof(TGeometry<Sphere3>) <= sizeof(GeometryPlacementStorage<Sphere3>::Data), "Query geometry storage is too small");
+	static_assert(alignof(TGeometry<Sphere3>) <= alignof(GeometryPlacementStorage<Sphere3>), "Query geometry storage is misaligned");
+	static_assert(sizeof(TGeometry<Capsule3>) <= sizeof(GeometryPlacementStorage<Capsule3>::Data), "Query geometry storage is too small");
+	static_assert(alignof(TGeometry<Capsule3>) <= alignof(GeometryPlacementStorage<Capsule3>), "Query geometry storage is misaligned");
 
 	template<>
 	bool				TGeometry<TriangleMesh>::RayCast(const Vector3& Origin, const Vector3& Direction, const RayCastOption* Option, RayCastResult* Result) const
@@ -179,6 +205,7 @@ namespace Riemann
 
 	bool		Geometry::Intersect(const Transform& ShapeTransform, const Geometry* Geom, const Transform& GeomTransform) const
 	{
+		if (DistanceFieldCollision::HasField(this, Geom)) return DistanceFieldCollision::Intersect(this, ShapeTransform, Geom, GeomTransform);
 		IntersectFunc func = GeometryIntersection::GetIntersectFunc(m_Type, Geom->GetShapeType());
 		if (func)
 		{
@@ -197,6 +224,17 @@ namespace Riemann
 
 	bool		Geometry::Penetration(const Geometry* Geom, Vector3* Normal, float* Depth) const
 	{
+		if (DistanceFieldCollision::HasField(this, Geom))
+		{
+			std::vector<DistanceFieldContact> Contacts;
+			DistanceFieldCollision::Generate(this, m_Transform, Geom, *Geom->GetTransform(), 0.0f, Contacts);
+			const DistanceFieldContact* Deepest = nullptr;
+			for (const auto& C : Contacts) if (C.Separation <= 0.0f && (!Deepest || C.Separation < Deepest->Separation)) Deepest = &C;
+			if (!Deepest) return false;
+			if (Normal) *Normal = -Deepest->Normal;
+			if (Depth) *Depth = -Deepest->Separation;
+			return true;
+		}
 		PenetrationFunc func = GeometryIntersection::GetPenetrationFunc(m_Type, Geom->GetShapeType());
 		if (func)
 		{
@@ -227,10 +265,21 @@ namespace Riemann
 	bool		Geometry::SweepTestFast(const Transform& ShapeTransform, const Vector3& Direction, const Vector3& Bmin, const Vector3& Bmax, float* t) const
 	{
 		Box3 box = Box3::Transform(m_VolumeProperties.BoundingVolume, ShapeTransform.pos, ShapeTransform.quat);
-		Vector3 size = box.GetSize();
-		Vector3 BminExtend = Bmin - size;
-		Vector3 BmaxExtend = Bmax + size;
-		return Ray3::RayIntersectAABB(box.GetCenter(), Direction, BminExtend, BmaxExtend, t);
+		const Vector3 Extent = box.GetExtent();
+		const Vector3 BminExtend = Bmin - Extent;
+		const Vector3 BmaxExtend = Bmax + Extent;
+		const Vector3 Center = box.GetCenter();
+		// A broad-phase sweep needs the entry time, including zero when already
+		// inside an expanded node. A surface ray returns the exit in that case,
+		// which incorrectly prunes short casts inside large scene-tree bounds.
+		if (Center.x >= BminExtend.x && Center.x <= BmaxExtend.x
+			&& Center.y >= BminExtend.y && Center.y <= BmaxExtend.y
+			&& Center.z >= BminExtend.z && Center.z <= BmaxExtend.z)
+		{
+			if (t) *t = 0.0f;
+			return true;
+		}
+		return Ray3::RayIntersectAABB(Center, Direction, BminExtend, BmaxExtend, t);
 	}
 
 	bool		Geometry::Sweep(const Vector3& Direction, const Geometry* Geom, Vector3* position, Vector3* normal, float* t) const
@@ -240,6 +289,7 @@ namespace Riemann
 
 	bool		Geometry::Sweep(const Transform& ShapeTransform, const Vector3& Direction, const Geometry* Geom, const Transform& GeomTransform, Vector3* position, Vector3* normal, float* t) const
 	{
+		if (DistanceFieldCollision::HasField(this, Geom)) return DistanceFieldCollision::Sweep(this, ShapeTransform, Geom, GeomTransform, Direction, position, normal, t);
 		SweepFunc func = GeometryIntersection::GetSweepFunc(m_Type, Geom->GetShapeType());
 		assert(func);
 		return func(GetShapeObjPtr(), Geom->GetShapeObjPtr(), &ShapeTransform, &GeomTransform, Direction, position, normal, t);
@@ -278,6 +328,17 @@ namespace Riemann
 	Matrix3		Geometry::GetInertiaTensor_LocalSpace() const
 	{
 		return m_VolumeProperties.InertiaMat;
+	}
+
+	void Geometry::SetContactOffsets(float ContactOffset, float RestOffset)
+	{
+		if (!std::isfinite(ContactOffset) || !std::isfinite(RestOffset) || ContactOffset < 0.0f || RestOffset > ContactOffset)
+			throw std::invalid_argument("Contact offsets require finite contactOffset >= max(restOffset, 0)");
+		if (m_ContactOffset == ContactOffset && m_RestOffset == RestOffset) return;
+		m_ContactOffset = ContactOffset;
+		m_RestOffset = RestOffset;
+		++m_ContactOffsetRevision;
+		MarkCollisionDirty();
 	}
 
 	void 		GeometryFactory::DeleteGeometry(Geometry* Geom)
@@ -383,6 +444,15 @@ namespace Riemann
 		p->UpdateVolumeProperties();
 		p->SetTransform(Vector3::Zero(), Quaternion::One());
 		return (Geometry*)p;
+	}
+
+	Geometry* GeometryFactory::CreateDistanceField(const DistanceFieldShape& Field, const Vector3& Center, const Quaternion& Rotation)
+	{
+		if (!Field.IsValid()) throw std::invalid_argument("Cannot create geometry from an uncooked SDF");
+		auto* Shape = new TGeometry<DistanceFieldShape>();
+		static_cast<DistanceFieldShape&>(*Shape) = Field;
+		Shape->UpdateVolumeProperties(); Shape->SetTransform(Center, Rotation);
+		return Shape;
 	}
 
 	Geometry* GeometryFactory::CreateTriangleMesh()

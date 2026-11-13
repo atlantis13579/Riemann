@@ -38,7 +38,8 @@ namespace Riemann
 		{
 			RigidBodyDynamic* Body = Bodies[i];
 			assert(Body);
-			if (!Body->Sleeping)
+			if (Body->ReducedRagdoll) continue;
+			if (!Body->Sleeping && !Body->Freezing)
 			{
 				Matrix3 R = Body->Q.ToRotationMatrix3();
 				Matrix3 invInertiaWorld = R * Body->InvInertia * R.Transpose();
@@ -64,11 +65,18 @@ namespace Riemann
 		{
 			RigidBodyDynamic* Body = Bodies[i];
 			assert(Body);
-			if (Body->Sleeping)
+			if (Body->ReducedRagdoll) continue;
+			if (Body->Sleeping || Body->Freezing)
 			{
 				continue;
 			}
 
+			if (Body->CCDPoseResolved)
+			{
+				Body->X = Body->CCDTargetPosition; Body->Q = Body->CCDTargetRotation;
+				Body->CCDPoseResolved = false; Body->UpdateGeometries(); ++count;
+				continue;
+			}
 			const Vector3 motionVelocity = Body->HadCCDContact ? Body->CCDPreSolveVelocity : Body->V;
 			const Vector3 motionAngularVelocity = Body->HadCCDContact ? Body->CCDPreSolveAngularVelocity : Body->W;
 			Body->X = Body->X + motionVelocity * (Dt * Body->CCDMotionFraction);
