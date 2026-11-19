@@ -100,16 +100,31 @@ namespace
 			Geometry* wheel = VehicleSceneGeometry(scene, std::string(id) + "_wheel_" + std::to_string(wheelIndex++));
 			EXPECT(wheel != nullptr);
 			if (!wheel) continue;
-			EXPECT(wheel->GetParent<RigidBody>() == nullptr);
-			EXPECT_FALSE(wheel->IsSimulationEnabled());
-			EXPECT_FALSE(wheel->IsQueryEnabled());
+			const RigidBody* loose = wheel->GetParent<RigidBody>();
+			EXPECT(wheel->IsSimulationEnabled() == (loose != nullptr));
+			EXPECT(wheel->IsQueryEnabled() == (loose != nullptr));
 			const Cylinder3* cylinder = wheel->GetShapeObj<Cylinder3>();
 			EXPECT(cylinder != nullptr);
 			if (!cylinder) continue;
 			EXPECT_NEAR(cylinder->Radius, wheelRadius, 1.0e-6f);
 			EXPECT_NEAR(cylinder->GetHeight(), wheelWidth, 1.0e-6f);
 			const Transform wheelPose = VehicleGeometryTransform(wheel);
-			const Vector3 expectedCenter = frame.LocalToWorld(Vector3(side * wheelTrack * 0.5f, wheelHeight, end * wheelbase * 0.5f));
+			if (loose)
+			{
+				EXPECT(loose != vehicle->GetBody() && loose->mRigidType == RigidType::Dynamic);
+				EXPECT(VehicleFinite(wheelPose.pos) && VehicleFinite(loose->V) && VehicleFinite(loose->W));
+				continue;
+			}
+			Vector3 localCenter(side * wheelTrack * 0.5f, wheelHeight, end * wheelbase * 0.5f);
+			if (vehicle->GetFrontBumper(0))
+			{
+				const auto& nodes = cage.GetParticles();
+				const auto nearest = std::min_element(nodes.begin(), nodes.end(), [&](const DeformableParticle& a, const DeformableParticle& b) {
+					return (a.InitialPosition - localCenter).SquareLength() < (b.InitialPosition - localCenter).SquareLength();
+				});
+				localCenter += nearest->Position - nearest->InitialPosition;
+			}
+			const Vector3 expectedCenter = frame.LocalToWorld(localCenter);
 			EXPECT_SAME(wheelPose.LocalToWorld(cylinder->GetCenter()), expectedCenter);
 			const Vector3 axle = wheelPose.LocalToWorldDirection(cylinder->GetUnitAxis());
 			EXPECT_NEAR(std::abs(axle.Dot(frame.LocalToWorldDirection(Vector3::UnitX()))), 1.0f, 1.0e-5f);
@@ -142,6 +157,8 @@ namespace
 		EXPECT(loaded);
 		if (!loaded) return;
 		EXPECT(scene.GetVehicleCount() == 1);
+		EXPECT(scene.GetVehicleDynamics(0) == nullptr);
+		EXPECT(scene.GetSimulation()->GetVehicleCount() == 0);
 		EXPECT(scene.GetVehicle(-1) == nullptr);
 		EXPECT(scene.GetVehicle(1) == nullptr);
 		VehicleDeformation* vehicle = scene.GetVehicle(0);
@@ -156,6 +173,24 @@ namespace
 		const Vector3 localOffset(0.3f, 0.6f, -0.2f);
 		CheckVehicleTransform(vehicle->GetWorldTransform(), Transform(body->BodyLocalToWorld(localOffset), body->Q * localRotation));
 		CheckVehicleRendering(scene, "framed", vehicle, 0.3f, 0.2f, 1.8f, 2.4f, -0.2f);
+		const Geometry* wheel = VehicleSceneGeometry(scene, "framed_wheel_0");
+		EXPECT(wheel != nullptr);
+		if (!wheel) return;
+		const Quaternion initialWheel = wheel->GetRotation();
+		const Transform frameAtRest = vehicle->GetWorldTransform();
+		const Vector3 axle = frameAtRest.LocalToWorldDirection(Vector3::UnitX());
+		const Vector3 forward = frameAtRest.LocalToWorldDirection(Vector3::UnitZ());
+		auto CheckRoll = [&](const Vector3& motion, float expectedAngle)
+		{
+			body->X += motion;
+			scene.Step(VehicleStep);
+			Quaternion roll;
+			roll.FromRotationAxis(axle, expectedAngle);
+			EXPECT_NEAR(std::abs(wheel->GetRotation().Dot(roll * initialWheel)), 1.0f, 1.0e-5f);
+		};
+		CheckRoll(forward * 0.15f, 0.5f);
+		CheckRoll(axle * 0.45f, 0.5f);
+		CheckRoll(forward * -0.3f, -0.5f);
 		const uint32_t revision = scene.GetRenderRevision();
 		for (int frame = 0; frame < 20; ++frame)
 		{
@@ -221,15 +256,27 @@ namespace
 		return loaded;
 	}
 
-	float FrontDent(const VehicleDeformation& vehicle)
+	float FrontDent(const VehicleDeformation& vehicle, int side = 0)
 	{
 		float dent = 0.0f;
 		for (const DeformableParticle& particle : vehicle.GetCage().GetParticles())
 		{
-			if (particle.InitialPosition.z > vehicle.GetSettings().HalfExtent.z * 0.75f)
+			if (particle.InitialPosition.z > vehicle.GetSettings().HalfExtent.z * 0.75f &&
+				(side == 0 || particle.InitialPosition.x * side > 0))
 				dent = std::max(dent, particle.InitialPosition.z - particle.Position.z);
 		}
 		return dent;
+	}
+
+	unsigned DetachedWheels(const SceneWorld& scene)
+	{
+		unsigned mask = 0;
+		for (int i = 0; i < 4; ++i)
+		{
+			auto* wheel = VehicleSceneGeometry(scene, "crash_car_wheel_" + std::to_string(i));
+			if (wheel && wheel->GetParent<RigidBody>()) mask |= 1u << i;
+		}
+		return mask;
 	}
 }
 
@@ -257,6 +304,8 @@ void TestVehicleScene()
 	EXPECT(initialForwardSpeed >= 20.0f);
 	EXPECT(initialPosition.z <= -12.0f);
 	EXPECT_NEAR(1.0f / body->InvMass, 80.0f, 0.01f);
+	const Box3 wallBounds = wall->GetParent<RigidBody>()->GetGeometryBounds(wall);
+	EXPECT(wallBounds.Min.x < -3.0f && wallBounds.Max.x > 3.0f && wallBounds.Max.y > 2.0f);
 	CheckVehicleRendering(scene, "crash_car", vehicle, 0.4f, 0.25f, 2.1f, 2.8f, -0.25f);
 	// The crash and approach remain visible from the camera side of the barrier.
 	EXPECT(scene.GetCamera().Eye.z < 1.4f);
@@ -281,12 +330,17 @@ void TestVehicleScene()
 					|| (size_t)manifold->indexA >= geometries.size() || (size_t)manifold->indexB >= geometries.size()) continue;
 				Geometry* a = geometries[(size_t)manifold->indexA];
 				Geometry* b = geometries[(size_t)manifold->indexB];
-				if (!((a == chassis && b == wall) || (a == wall && b == chassis))) continue;
+				const RigidBody* other = a == wall ? b->GetParent<RigidBody>() : b == wall ? a->GetParent<RigidBody>() : nullptr;
+				if (!other || (other != body && other != vehicle->GetFrontBumper(0) && other != vehicle->GetFrontBumper(1))) continue;
 				for (int contact = 0; contact < manifold->NumContactPointCount; ++contact)
 					wallImpulse += manifold->ContactPoints[contact].totalImpulseNormal;
 			}
 		}
 		if (wallImpulse > 0.1f && firstImpactFrame < 0) firstImpactFrame = frame;
+		if (firstImpactFrame < 0) EXPECT(DetachedWheels(scene) == 0);
+		for (const auto& node : vehicle->GetCage().GetParticles())
+			if (std::abs(node.InitialPosition.z) < 0.75f)
+				EXPECT((node.Position - node.InitialPosition).Length() < 0.06f);
 		peakWallImpulse = std::max(peakWallImpulse, wallImpulse);
 		peakDent = std::max(peakDent, FrontDent(*vehicle));
 		peakDisplacement = std::max(peakDisplacement, vehicle->GetMaxDisplacement());
@@ -295,14 +349,28 @@ void TestVehicleScene()
 		if (frame % 30 == 0) CheckVehicleRendering(scene, "crash_car", vehicle, 0.4f, 0.25f, 2.1f, 2.8f, -0.25f);
 		EXPECT(vehicle->GetPendingImpactCount() == 0);
 	}
-	printf("Vehicle crash: impact frame=%d damage frame=%d, peak impulse=%.4f, displacement=%.4f front dent=%.4f remaining=%.4f plastic=%.5f, final speed=%.4f z=%.4f\n",
+	printf("Vehicle crash: impact frame=%d damage frame=%d, peak impulse=%.4f, displacement=%.4f front dent=%.4f remaining=%.4f plastic=%.5f, final speed=%.4f z=%.4f detachedMask=%u\n",
 		firstImpactFrame, firstDamageFrame, peakWallImpulse, peakDisplacement, peakDent, FrontDent(*vehicle),
-		vehicle->GetMaxPlasticStrain(), body->V.Length(), body->X.z);
+		vehicle->GetMaxPlasticStrain(), body->V.Length(), body->X.z, DetachedWheels(scene));
 	EXPECT(firstImpactFrame >= 0 && firstImpactFrame < 120);
 	EXPECT(firstDamageFrame >= firstImpactFrame && firstDamageFrame < 180);
 	EXPECT(peakWallImpulse > 10.0f);
-	EXPECT(peakDent > 1.0f);
-	EXPECT(FrontDent(*vehicle) > 1.0f);
+	EXPECT(peakDent > 0.7f);
+	EXPECT(FrontDent(*vehicle, -1) > 0.6f && FrontDent(*vehicle, 1) > 0.6f);
+	EXPECT(DetachedWheels(scene) == ((1u << 1) | (1u << 3)));
+	float farthestWheel = 0;
+	for (int side : {-1, 1})
+	{
+		const char* id = side < 0 ? "crash_car_wheel_1" : "crash_car_wheel_3";
+		const auto* looseWheel = VehicleSceneGeometry(scene, id)->GetParent<RigidBody>();
+		if (!looseWheel) continue;
+		const Vector3 mount = vehicle->GetWorldTransform().LocalToWorld(Vector3(side * 1.05f, -0.25f, 1.4f));
+		const float travel = (mount - looseWheel->X).Length();
+		EXPECT(travel > 0.4f);
+		farthestWheel = std::max(farthestWheel, travel);
+		EXPECT(looseWheel->X.y > 0.09f);
+	}
+	EXPECT(farthestWheel > 1.0f);
 	EXPECT(vehicle->GetMaxPlasticStrain() > 1.0e-4f);
 	EXPECT(std::abs(body->V.z) < initialForwardSpeed * 0.5f);
 	EXPECT(body->X.z > initialPosition.z + 1.0f);
@@ -326,7 +394,6 @@ void TestVehicleScene()
 		EXPECT_SAME(particle.Velocity, Vector3::Zero());
 		EXPECT_SAME(particle.Force, Vector3::Zero());
 	}
-	CheckVehicleRendering(scene, "crash_car", vehicle, 0.4f, 0.25f, 2.1f, 2.8f, -0.25f);
 	scene.Step(VehicleStep);
 	EXPECT(scene.GetRenderRevision() > sceneBeforeReset);
 	EXPECT(vehicle->GetPendingImpactCount() == 0);
@@ -336,6 +403,7 @@ void TestVehicleScene()
 		if (!LoadVehicleDemo(scene)) return;
 		EXPECT(scene.GetVehicleCount() == 1);
 		EXPECT(scene.GetObjects().size() == objectCount);
+		EXPECT(DetachedWheels(scene) == 0);
 		vehicle = scene.GetVehicle(0);
 		chassis = VehicleSceneGeometry(scene, "car");
 		EXPECT(vehicle != nullptr && chassis != nullptr);
@@ -352,7 +420,12 @@ void TestVehicleScene()
 	EXPECT(scene.GetObjects().empty());
 	if (LoadVehicleDemo(scene))
 	{
-		scene.Step(VehicleStep);
+		// Move the wall's right edge to the centerline to load only the left rail.
+		auto* barrier = VehicleSceneGeometry(scene, "wall")->GetParent<RigidBody>();
+		barrier->X.x -= wallBounds.Max.x + 0.07f;
+		for (int frame = 0; frame < 240; ++frame) scene.Step(1.0f / 120.0f);
+		EXPECT(DetachedWheels(scene) == (1u << 1));
+		EXPECT(FrontDent(*scene.GetVehicle(0)) > 0.7f);
 		CheckVehicleRendering(scene, "crash_car", scene.GetVehicle(0), 0.4f, 0.25f, 2.1f, 2.8f, -0.25f);
 	}
 }

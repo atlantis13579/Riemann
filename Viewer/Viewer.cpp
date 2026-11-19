@@ -38,6 +38,7 @@
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/CollisionPrimitive/PrimitiveType.h"
+#include "../Src/CollisionPrimitive/TriangleMesh.h"
 #include "../Src/Fluid/AerodynamicsRigidCoupling.h"
 #include "../Src/Fluid/AerodynamicsSimulation.h"
 #include "../Src/Fluid/SmokeSimulation.h"
@@ -454,6 +455,11 @@ namespace Riemann
 			return IsConvexDecompositionMode(mode) ? "Convex Decomposition" : "Mesh Cutting";
 		}
 
+		int CuttingPanelRight(int width)
+		{
+			return std::min(290, width / 2);
+		}
+
 		void SetToolBackgroundColor(CameraDesc* camera)
 		{
 			if (camera != nullptr)
@@ -637,7 +643,7 @@ namespace Riemann
 		, m_MeshSimplificationAlgorithm(MeshSimplificationAlgorithm_HoppeQEM)
 		, m_MeshSimplificationRatioLevel(1)
 		, m_CuttingSeparation(0.0f)
-		, m_CuttingMaxSeparation(1.0f)
+		, m_CuttingSceneScale(1.0f)
 		, m_MeshSimplificationMaxSeparation(1.0f)
 		, m_ShowGeometryQueryBounds(false)
 		, m_RenderMode(RenderMode::Solid)
@@ -1185,12 +1191,20 @@ namespace Riemann
 		{
 			if (!m_VehiclePaused)
 			{
+				const auto* vehicle = m_World->GetVehicle(0);
+				const Vector3 previous = vehicle->GetWorldTransform().pos;
 				// Slow playback changes elapsed time, not the crash solver's timestep.
 				m_VehiclePendingTime = std::min(0.1f, m_VehiclePendingTime + dt * (m_VehicleSlowMotion ? 0.25f : 1.0f));
 				while (m_VehiclePendingTime >= 1.0f / 120.0f)
 				{
 					m_World->Step(1.0f / 120.0f);
 					m_VehiclePendingTime -= 1.0f / 120.0f;
+				}
+				if (vehicle->GetFrontBumper(0) && !m_World->GetVehicleDynamics(0))
+				{
+					const Vector3 travel = vehicle->GetWorldTransform().pos - previous;
+					m_CamCenter += travel;
+					if (!travel.IsZero()) UpdateCamera();
 				}
 			}
 		}
@@ -1274,6 +1288,67 @@ namespace Riemann
 		return m_CamCenter + Vector3(sinf(m_CamParam.x) * cosf(m_CamParam.y), sinf(m_CamParam.y), cosf(m_CamParam.x) * cosf(m_CamParam.y)) * m_CamParam.z;
 	}
 
+	void WorldViewer::SetViewportSize(int width, int height)
+	{
+		if (width <= 0 || height <= 0) return;
+		m_ViewportWidth = width;
+		m_ViewportHeight = height;
+		if (m_CuttingPanelActive)
+		{
+			FrameCuttingBounds();
+			UpdateCamera();
+		}
+	}
+
+	CameraDesc WorldViewer::GetViewCamera() const
+	{
+		CameraDesc camera = m_World ? m_World->GetCamera() : CameraDesc();
+		camera.Eye = GetCameraPosition();
+		camera.At = m_CamCenter;
+		if (m_CuttingPanelActive)
+		{
+			camera.FovY = 0.55f;
+			const Vector3 forward = SafeUnitVector(camera.At - camera.Eye, Vector3::UnitZ());
+			const Vector3 right = SafeUnitVector(camera.Up.Cross(forward), Vector3::UnitX());
+			const float panel = (float)CuttingPanelRight(m_ViewportWidth);
+			const Vector3 shift = right * (panel / m_ViewportHeight * m_CamParam.z * tanf(camera.FovY * 0.5f));
+			camera.Eye -= shift;
+			camera.At -= shift;
+		}
+		return camera;
+	}
+
+	void WorldViewer::FrameCuttingBounds()
+	{
+		const CameraDesc camera = GetViewCamera();
+		const Vector3 forward = SafeUnitVector(camera.At - camera.Eye, Vector3::UnitZ());
+		const Vector3 right = SafeUnitVector(camera.Up.Cross(forward), Vector3::UnitX());
+		const Vector3 up = forward.Cross(right);
+
+		// Measure the visible surfaces in orbit coordinates, including their current offsets.
+		Box3 bounds = Box3::Empty();
+		for (const auto& object : m_World->GetObjects())
+		{
+			const TriangleMesh* mesh = object.GeometryPtr->GetShapeObj<TriangleMesh>();
+			if (!mesh || !object.RenderEnabled) continue;
+			const Transform pose = GetGeometryWorldTransform(object.GeometryPtr);
+			for (uint32_t i = 0; i < mesh->GetVertexCount(); ++i)
+			{
+				const Vector3 v = pose.LocalToWorld(mesh->Vertices[i]);
+				bounds.Encapsulate(Vector3(v.Dot(right), v.Dot(up), v.Dot(forward)));
+			}
+		}
+		if (bounds.Min.x > bounds.Max.x) return;
+		const Vector3 center = bounds.GetCenter(), extent = bounds.GetExtent();
+		m_CamCenter = right * center.x + up * center.y + forward * center.z;
+		m_CuttingSceneScale = std::max(extent.Length() * 2.0f, 1.0e-4f);
+		const float panel = (float)CuttingPanelRight(m_ViewportWidth);
+		const float tanY = tanf(camera.FovY * 0.5f);
+		const float tanX = tanY * (m_ViewportWidth - panel) / m_ViewportHeight;
+		const float parallax = tanY * panel / m_ViewportHeight * extent.z;
+		m_CamParam.z = extent.z + 1.13f * std::max((extent.x + parallax) / tanX, extent.y / tanY);
+	}
+
 	void WorldViewer::UpdateCamera()
 	{
 		if (m_RenderThread == nullptr)
@@ -1281,9 +1356,7 @@ namespace Riemann
 			return;
 		}
 
-		CameraDesc camera = m_World->GetCamera();
-		camera.Eye = GetCameraPosition();
-		camera.At = m_CamCenter;
+		CameraDesc camera = GetViewCamera();
 		if (m_CuttingPanelActive || m_MeshSimplificationPanelActive)
 		{
 			SetToolBackgroundColor(&camera);
@@ -1651,15 +1724,13 @@ namespace Riemann
 
 		const int panelLeft = 10;
 		const int panelTop = 10;
-		const int panelRight = std::min(width - 10, panelLeft + 280);
+		const int panelRight = m_CuttingPanelActive ? CuttingPanelRight(width) : std::min(width - 10, panelLeft + 280);
 		const int panelBottom = height - 10;
 		return x >= panelLeft && x <= panelRight && y >= panelTop && y <= panelBottom;
 	}
 
 	void WorldViewer::DrawImgui(int width, int height)
 	{
-		(void)width;
-
 		std::string sceneName;
 		bool ragdollDemoReduced = false;
 		std::vector<std::string> sceneFiles;
@@ -1686,6 +1757,7 @@ namespace Riemann
 		int cuttingPiecesY = 0;
 		int cuttingPiecesZ = 0;
 		int cuttingSeed = 0;
+		bool capCutFaces = true;
 		int meshSimplificationAlgorithm = MeshSimplificationAlgorithm_HoppeQEM;
 		int meshSimplificationRatioLevel = 1;
 		float cuttingSeparation = 0.0f;
@@ -1721,6 +1793,7 @@ namespace Riemann
 			cuttingPiecesY = m_ImguiCuttingPiecesY;
 			cuttingPiecesZ = m_ImguiCuttingPiecesZ;
 			cuttingSeed = m_ImguiCuttingSeed;
+			capCutFaces = m_ImguiCapCutFaces;
 			meshSimplificationAlgorithm = m_ImguiMeshSimplificationAlgorithm;
 			meshSimplificationRatioLevel = m_ImguiMeshSimplificationRatioLevel;
 			cuttingSeparation = m_ImguiCuttingSeparation;
@@ -1732,10 +1805,14 @@ namespace Riemann
 
 		char fpsText[128];
 		const double renderFps = m_RenderThread ? m_RenderThread->GetRenderFps() : 0.0;
-		snprintf(fpsText, sizeof(fpsText), "Physics: %.1f FPS", physicsFps);
-		imguiDrawText(width - 10, 12, IMGUI_ALIGN_RIGHT, fpsText, imguiRGBA(230, 235, 240, 255));
+		const bool meshTool = cuttingPanelActive || meshSimplificationPanelActive;
+		if (!meshTool)
+		{
+			snprintf(fpsText, sizeof(fpsText), "Physics: %.1f FPS", physicsFps);
+			imguiDrawText(width - 10, 12, IMGUI_ALIGN_RIGHT, fpsText, imguiRGBA(230, 235, 240, 255));
+		}
 		snprintf(fpsText, sizeof(fpsText), "Render: %.1f FPS", renderFps);
-		imguiDrawText(width - 10, 30, IMGUI_ALIGN_RIGHT, fpsText, imguiRGBA(230, 235, 240, 255));
+		imguiDrawText(width - 10, meshTool ? 12 : 30, IMGUI_ALIGN_RIGHT, fpsText, imguiRGBA(230, 235, 240, 255));
 		if (m_FluidDemoActive)
 		{
 			imguiDrawText(width - 10, 48, IMGUI_ALIGN_RIGHT,
@@ -1749,7 +1826,8 @@ namespace Riemann
 			m_ImguiScroll = 0;
 			m_ImguiRenderedSceneGeneration = solverPanel.SceneGeneration;
 		}
-		imguiBeginScrollArea("", 10, 10, std::min(280, width - 20), panelHeight, &m_ImguiScroll);
+		const int panelWidth = cuttingPanelActive ? std::max(0, CuttingPanelRight(width) - 10) : std::min(280, width - 20);
+		imguiBeginScrollArea("", 10, 10, panelWidth, panelHeight, &m_ImguiScroll);
 
 		char text[128];
 		imguiLabel("Demo");
@@ -1852,9 +1930,9 @@ namespace Riemann
 				changed = imguiSlider("Brake", &vehiclePanel.Brake, 0, 1, 0.05f) || changed;
 				changed = imguiSlider("Handbrake", &vehiclePanel.Handbrake, 0, 1, 0.05f) || changed;
 				changed = imguiSlider("Clutch engagement", &vehiclePanel.Clutch, 0, 1, 0.05f) || changed;
-				const char* Gears[] = { "Reverse", "Neutral", "1st", "2nd", "3rd", "4th" };
+				const char* Gears[] = { "Reverse", "Neutral", "1st", "2nd", "3rd", "4th", "5th", "6th" };
 				const char* Differentials[] = { "Open", "Limited slip", "Locked" };
-				changed = imguiCombo("Gear", &vehiclePanel.GearIndex, Gears, 6) || changed;
+				changed = imguiCombo("Gear", &vehiclePanel.GearIndex, Gears, int(sizeof(Gears) / sizeof(Gears[0]))) || changed;
 				changed = imguiCombo("Differential", &vehiclePanel.Differential, Differentials, 3) || changed;
 				if (imguiButton("Drive forward")) { vehiclePanel.GearIndex = 2; vehiclePanel.Throttle = 0.5f; vehiclePanel.Brake = vehiclePanel.Handbrake = 0; changed = true; }
 				if (imguiButton("Park")) { vehiclePanel.GearIndex = 1; vehiclePanel.Throttle = 0; vehiclePanel.Brake = 1; changed = true; }
@@ -1874,8 +1952,9 @@ namespace Riemann
 			}
 		}
 		if (smokePanel.Active || snowPanel.Active) solverPanel.SolverSwitchable = false;
-		const bool applySolver = DrawSolverPanel(solverPanel);
+		if (!meshTool)
 		{
+			const bool applySolver = DrawSolverPanel(solverPanel);
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			if (solverPanel.SceneGeneration == m_ImguiSolverPanel.SceneGeneration && !m_ImguiSolverPanel.Pending)
 			{
@@ -2220,6 +2299,11 @@ namespace Riemann
 					}
 				}
 
+				if (!convexDecompositionDemo && imguiCheck("Cap cut faces", capCutFaces, true))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingCapCutFaces = capCutFaces ? 0 : 1;
+				}
 				float separation = cuttingSeparation;
 				if (imguiSlider("Separation", &separation, 0.0f, 1.0f, 0.01f))
 				{
@@ -2294,18 +2378,21 @@ namespace Riemann
 				}
 			}
 		}
-		imguiSeparatorLine();
-		imguiLabel("Debug");
-		if (imguiCheck("Geometry Query AABB", showGeometryQueryBounds, true))
+		if (!meshTool)
 		{
-			std::lock_guard<std::mutex> lock(m_ImguiMutex);
-			m_ImguiPendingShowGeometryQueryBounds = true;
-			m_ImguiPendingShowGeometryQueryBoundsValue = !showGeometryQueryBounds;
-		}
-		if (showGeometryQueryBounds)
-		{
-			snprintf(text, sizeof(text), "Query AABBs: %u", static_cast<unsigned int>(geometryQueryBoundsCount));
-			imguiValue(text);
+			imguiSeparatorLine();
+			imguiLabel("Debug");
+			if (imguiCheck("Geometry Query AABB", showGeometryQueryBounds, true))
+			{
+				std::lock_guard<std::mutex> lock(m_ImguiMutex);
+				m_ImguiPendingShowGeometryQueryBounds = true;
+				m_ImguiPendingShowGeometryQueryBoundsValue = !showGeometryQueryBounds;
+			}
+			if (showGeometryQueryBounds)
+			{
+				snprintf(text, sizeof(text), "Query AABBs: %u", static_cast<unsigned int>(geometryQueryBoundsCount));
+				imguiValue(text);
+			}
 		}
 
 		imguiEndScrollArea();
@@ -2330,6 +2417,8 @@ namespace Riemann
 			}
 			const size_t begin = meshes.size();
 			BuildGeometryMeshes(object.GeometryPtr, object.Id, object.Color, object.RenderBounds, &meshes);
+			if (object.Vehicle && object.Vehicle->GetSettings().CrushZoneLength > 0)
+				BuildVehicleDetails(*object.Vehicle, object.GeometryPtr, object.Id, &meshes);
 
 			RenderBinding binding;
 			binding.GeometryPtr = object.GeometryPtr;
@@ -2392,9 +2481,7 @@ namespace Riemann
 
 		if (m_RenderThread)
 		{
-			CameraDesc camera = m_World->GetCamera();
-			camera.At = m_CamCenter;
-			camera.Eye = GetCameraPosition();
+			CameraDesc camera = GetViewCamera();
 			if (m_CuttingPanelActive || m_MeshSimplificationPanelActive)
 			{
 				SetToolBackgroundColor(&camera);
@@ -2496,16 +2583,13 @@ namespace Riemann
 			return false;
 		}
 
-		const Box3 bounds = source.Bounds;
-		const Vector3 center = bounds.GetCenter();
 		m_CuttingMode = std::max(0, std::min(m_CuttingMode, (int)MeshCuttingMode_Count - 1));
 		m_CuttingPieceCount = std::max(2, std::min(m_CuttingPieceCount, 64));
 		m_CuttingPiecesX = std::max(1, std::min(m_CuttingPiecesX, 64));
 		m_CuttingPiecesY = std::max(1, std::min(m_CuttingPiecesY, 64));
 		m_CuttingPiecesZ = std::max(1, std::min(m_CuttingPiecesZ, 64));
 		m_CuttingSeed = std::max(0, std::min(m_CuttingSeed, 999));
-		m_CuttingSeparation = 0.0f;
-		m_CuttingMaxSeparation = source.MaxSeparation;
+		m_CuttingSeparation = IsConvexDecompositionMode(m_CuttingMode) ? 1.0f : 0.0f;
 
 		++m_SceneGeneration;
 		m_World->Reset(Vector3::Zero());
@@ -2525,28 +2609,11 @@ namespace Riemann
 			return false;
 		}
 
-		m_CamCenter = center;
-		m_CamParam = Vector3(1.05f, 0.45f, m_CuttingMaxSeparation * 3.5f);
+		m_CamParam = Vector3(1.05f, 0.45f, 1.0f);
+		FrameCuttingBounds();
 		m_CuttingStatus = source.Status + (IsConvexDecompositionMode(m_CuttingMode) ? ". Click Apply" : ". Click Apply Cut");
 
 		RebuildRenderScene();
-
-		if (m_RenderThread)
-		{
-			CameraDesc camera = m_World->GetCamera();
-			camera.At = m_CamCenter;
-			camera.Eye = GetCameraPosition();
-			SetToolBackgroundColor(&camera);
-			ConfigureToolCamera(&camera, m_CuttingMaxSeparation, m_CamParam.z);
-
-			DirectionalLightDesc light = m_World->GetLight();
-			ConfigureToolLight(camera, &light);
-
-			m_RenderThread->Submit([camera, light](Renderer& renderer) {
-				renderer.SetCamera(camera);
-				renderer.SetLight(light);
-			});
-		}
 
 		UpdateImguiState();
 		return true;
@@ -2554,9 +2621,6 @@ namespace Riemann
 
 	bool WorldViewer::ApplyCuttingPanel()
 	{
-		const Vector3 cameraCenter = m_CamCenter;
-		const Vector3 cameraParam = m_CamParam;
-
 		RefreshObjList();
 		if (m_CuttingObjPath.empty())
 		{
@@ -2581,6 +2645,12 @@ namespace Riemann
 		params.PiecesY = m_CuttingPiecesY;
 		params.PiecesZ = m_CuttingPiecesZ;
 		params.Seed = m_CuttingSeed;
+		params.CapCutFaces = m_CapCutFaces;
+		const CameraDesc view = GetViewCamera();
+		const Vector3 forward = SafeUnitVector(view.At - view.Eye, Vector3::UnitZ());
+		params.ViewRight = SafeUnitVector(view.Up.Cross(forward), Vector3::UnitX());
+		params.ViewUp = forward.Cross(params.ViewRight);
+		params.ViewAspect = (float)(m_ViewportWidth - CuttingPanelRight(m_ViewportWidth)) / m_ViewportHeight;
 
 		MeshCuttingResult cuttingResult;
 		if (!BuildMeshCuttingPanel(params, &cuttingResult))
@@ -2592,15 +2662,13 @@ namespace Riemann
 			return false;
 		}
 
+		if (!IsConvexDecompositionMode(params.Mode)) m_CuttingSeparation = 0.0f;
 		m_CuttingMode = std::max(0, std::min(m_CuttingMode, (int)MeshCuttingMode_Count - 1));
 		m_CuttingPieceCount = std::max(2, std::min(m_CuttingPieceCount, 64));
 		m_CuttingPiecesX = std::max(1, std::min(m_CuttingPiecesX, 64));
 		m_CuttingPiecesY = std::max(1, std::min(m_CuttingPiecesY, 64));
 		m_CuttingPiecesZ = std::max(1, std::min(m_CuttingPiecesZ, 64));
 		m_CuttingSeed = std::max(0, std::min(m_CuttingSeed, 999));
-		m_CuttingMaxSeparation = cuttingResult.MaxSeparation;
-		m_CamCenter = cameraCenter;
-		m_CamParam = cameraParam;
 
 		++m_SceneGeneration;
 		m_World->Reset(Vector3::Zero());
@@ -2617,7 +2685,7 @@ namespace Riemann
 
 			std::ostringstream id;
 			id << "mesh_cut_" << pieceIndex;
-			const Transform transform(piece.Center + piece.Direction * (m_CuttingSeparation * m_CuttingMaxSeparation));
+			const Transform transform(piece.Center + piece.SeparationOffset * m_CuttingSeparation);
 			Geometry* geometry = m_World->AddTriangleMeshObject(id.str(), piece.Mesh, transform, RigidType::Static, PieceColor(pieceIndex), false);
 			if (geometry == nullptr)
 			{
@@ -2626,9 +2694,8 @@ namespace Riemann
 
 			CuttingRenderPiece renderPiece;
 			renderPiece.GeometryPtr = geometry;
-			renderPiece.MeshId = id.str();
 			renderPiece.Center = piece.Center;
-			renderPiece.Direction = piece.Direction;
+			renderPiece.SeparationOffset = piece.SeparationOffset;
 			m_CuttingPieces.push_back(renderPiece);
 		}
 
@@ -2644,25 +2711,8 @@ namespace Riemann
 
 		m_CuttingStatus = cuttingResult.Status;
 
-		RebuildRenderScene();
 		SubmitCuttingTransforms();
-
-		if (m_RenderThread)
-		{
-			CameraDesc camera = m_World->GetCamera();
-			camera.At = m_CamCenter;
-			camera.Eye = GetCameraPosition();
-			SetToolBackgroundColor(&camera);
-			ConfigureToolCamera(&camera, m_CuttingMaxSeparation, m_CamParam.z);
-
-			DirectionalLightDesc light = m_World->GetLight();
-			ConfigureToolLight(camera, &light);
-
-			m_RenderThread->Submit([camera, light](Renderer& renderer) {
-				renderer.SetCamera(camera);
-				renderer.SetLight(light);
-			});
-		}
+		RebuildRenderScene();
 
 		UpdateImguiState();
 		return true;
@@ -2967,35 +3017,16 @@ namespace Riemann
 
 	void WorldViewer::SubmitCuttingTransforms()
 	{
-		if (!m_CuttingPanelActive)
-		{
-			return;
-		}
-
-		GeometryQuery* geometryQuery = nullptr;
-		PhysicsWorld* simulation = m_World ? m_World->GetSimulation() : nullptr;
-		if (simulation)
-		{
-			geometryQuery = simulation->GetGeometryQuery();
-		}
-
+		if (!m_CuttingPanelActive || m_CuttingPieces.empty()) return;
 		for (const CuttingRenderPiece& piece : m_CuttingPieces)
 		{
-			if (piece.GeometryPtr == nullptr)
-			{
-				continue;
-			}
-			const Vector3 oldPosition = piece.GeometryPtr->GetPosition();
-			const Vector3 newPosition = piece.Center + piece.Direction * (m_CuttingSeparation * m_CuttingMaxSeparation);
-			piece.GeometryPtr->SetPosition(newPosition);
-			if (geometryQuery)
-			{
-				geometryQuery->UpdateGeometry(piece.GeometryPtr, newPosition - oldPosition);
-			}
+			RigidBody* body = piece.GeometryPtr->GetParent<RigidBody>();
+			body->X = piece.Center + piece.SeparationOffset * m_CuttingSeparation;
 		}
-
+		m_World->GetSimulation()->SynchronizeSceneQueries();
+		FrameCuttingBounds();
+		UpdateCamera();
 		SubmitTransforms();
-		SubmitGeometryQueryBounds();
 	}
 
 	void WorldViewer::SubmitTransforms()
@@ -3033,7 +3064,7 @@ namespace Riemann
 
 	void WorldViewer::SubmitGeometryQueryBounds()
 	{
-		if (!m_ShowGeometryQueryBounds)
+		if (!m_ShowGeometryQueryBounds || m_CuttingPanelActive || m_MeshSimplificationPanelActive)
 		{
 			return;
 		}
@@ -3172,6 +3203,7 @@ namespace Riemann
 		int pendingCuttingPiecesYValue = 0;
 		bool pendingCuttingPiecesZ = false;
 		int pendingCuttingPiecesZValue = 0;
+		int pendingCapCutFaces = -1;
 		bool pendingCuttingSeed = false;
 		int pendingCuttingSeedValue = 0;
 		int pendingMeshSimplificationFileIndex = -1;
@@ -3232,6 +3264,8 @@ namespace Riemann
 			pendingCuttingPiecesZ = m_ImguiPendingCuttingPiecesZ;
 			pendingCuttingPiecesZValue = m_ImguiPendingCuttingPiecesZValue;
 			m_ImguiPendingCuttingPiecesZ = false;
+			pendingCapCutFaces = m_ImguiPendingCapCutFaces;
+			m_ImguiPendingCapCutFaces = -1;
 			pendingCuttingSeed = m_ImguiPendingCuttingSeed;
 			pendingCuttingSeedValue = m_ImguiPendingCuttingSeedValue;
 			m_ImguiPendingCuttingSeed = false;
@@ -3642,6 +3676,11 @@ namespace Riemann
 			m_CuttingPiecesZ = std::max(1, std::min(pendingCuttingPiecesZValue, 64));
 			pendingCuttingParams = true;
 		}
+		if (pendingCapCutFaces >= 0)
+		{
+			m_CapCutFaces = pendingCapCutFaces != 0;
+			pendingCuttingParams = true;
+		}
 		if (pendingCuttingSeed)
 		{
 			m_CuttingSeed = std::max(0, std::min(pendingCuttingSeedValue, 999));
@@ -3938,6 +3977,7 @@ namespace Riemann
 		m_ImguiCuttingPiecesY = m_CuttingPiecesY;
 		m_ImguiCuttingPiecesZ = m_CuttingPiecesZ;
 		m_ImguiCuttingSeed = m_CuttingSeed;
+		m_ImguiCapCutFaces = m_CapCutFaces;
 		m_ImguiMeshSimplificationFileIndex = m_MeshSimplificationFileIndex;
 		m_ImguiMeshSimplificationAlgorithm = m_MeshSimplificationAlgorithm;
 		m_ImguiMeshSimplificationRatioLevel = m_MeshSimplificationRatioLevel;
@@ -3983,7 +4023,7 @@ namespace Riemann
 		}
 		if (m_CuttingPanelActive)
 		{
-			return std::max(m_CuttingMaxSeparation, 1.0e-4f);
+			return std::max(m_CuttingSceneScale, 1.0e-4f);
 		}
 		return std::max(m_CamParam.z, 1.0e-4f);
 	}
@@ -3995,9 +4035,7 @@ namespace Riemann
 
 	Ray3 WorldViewer::BuildSceneRay(int x, int y, int width, int height) const
 	{
-		CameraDesc camera = m_World ? m_World->GetCamera() : CameraDesc();
-		camera.Eye = GetCameraPosition();
-		camera.At = m_CamCenter;
+		const CameraDesc camera = GetViewCamera();
 
 		const float aspect = static_cast<float>(width) / static_cast<float>(height);
 		const float ndcX = (2.0f * (static_cast<float>(x) + 0.5f) / static_cast<float>(width)) - 1.0f;

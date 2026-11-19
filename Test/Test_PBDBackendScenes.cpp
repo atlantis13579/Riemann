@@ -141,7 +141,10 @@ namespace
 			}
 			if (vehicle)
 			{
-				const float impulse = BackendVehicleWallImpulse(*solver, car, wall);
+				float impulse = BackendVehicleWallImpulse(*solver, car, wall);
+				for (int side = 0; side < 2; ++side)
+					if (const auto* bumper = vehicle->GetFrontBumper(side))
+						impulse += BackendVehicleWallImpulse(*solver, bumper->Geometries().front(), wall);
 				if (impulse > 0.1f && firstImpact < 0) firstImpact = frame;
 				if (vehicle->GetMaxDisplacement() > 0.01f && firstDamage < 0) firstDamage = frame;
 				peakImpulse = std::max(peakImpulse, impulse);
@@ -164,12 +167,17 @@ namespace
 		}
 		if (vehicle)
 		{
-			// Damage must arrive through a real wall contact and the world's vehicle callback.
+			// Damage must follow contact between the barrier and the physical front end.
 			EXPECT(firstImpact >= 0 && firstDamage >= firstImpact && firstDamage < 60);
 			EXPECT(peakImpulse > 10.0f && peakDamage > 0.02f);
 			EXPECT(vehicle->GetMaxPlasticStrain() > 1.0e-4f);
 			EXPECT(std::abs(vehicle->GetBody()->V.z) < 4.0f);
 			EXPECT(scene.GetRenderRevision() > originalRevision);
+			for (int i = 0; i < 4; ++i)
+			{
+				auto* wheel = BackendSceneGeometry(scene, ("crash_car_wheel_" + std::to_string(i)).c_str());
+				EXPECT(wheel && (wheel->GetParent<RigidBody>() != nullptr) == (i == 1 || i == 3));
+			}
 			printf("  %s vehicle: impact=%d damage=%d impulse=%.4f deformation=%.4f plastic=%.5f speed=%.4f\n",
 				backendName, firstImpact, firstDamage, peakImpulse, peakDamage, vehicle->GetMaxPlasticStrain(), vehicle->GetBody()->V.Length());
 		}

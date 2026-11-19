@@ -47,6 +47,45 @@ namespace
 		EXPECT_NEAR(C->GetPosition().x, 0, 0.001f);
 	}
 
+	void TestBallisticJump(CharacterShape Shape)
+	{
+		for (int Substeps : { 1, 4 })
+		{
+			PhysicsWorldParam P; P.temporalSubsteps.Enabled = true; P.temporalSubsteps.Substeps = Substeps;
+			PhysicsWorld World(P);
+			CharacterControllerSettings S; S.Shape = Shape; S.Gravity = 10;
+			S.Up = Vector3::UnitZ();
+			World.CreateRigidBody(GeometryFactory::CreatePlane(Vector3::Zero(), S.Up), RigidBodyParam());
+			auto* C = World.CreateCharacterController(S, S.Up * (Height(S) + S.SkinWidth));
+			Step(World, 2);
+			const float Start = C->GetPosition().z;
+			EXPECT(C->Jump(5));
+			C->SetMoveVelocity(Vector3(2, 0, 0));
+			for (int Frame = 1; Frame < 10; ++Frame)
+			{
+				const float T = Frame * 0.1f;
+				World.Simulate(0.1f);
+				EXPECT_NEAR(C->GetPosition().z, Start + 5 * T - 5 * T * T, 0.001f);
+				EXPECT_NEAR(C->GetPosition().x, 2 * T, 0.001f);
+				EXPECT(!C->IsGrounded() && !C->Jump(5));
+			}
+			World.Simulate(0.1f); EXPECT(C->IsGrounded());
+			EXPECT_NEAR(C->GetPosition().z, Start, 0.001f);
+			EXPECT(C->Jump(5));
+		}
+
+		// The endpoint is below the ceiling, but the apex crosses it within the step.
+		PhysicsWorldParam P; P.temporalSubsteps.Enabled = false;
+		PhysicsWorld World(P); Floor(World);
+		CharacterControllerSettings S; S.Shape = Shape; S.Gravity = 10;
+		auto* C = World.CreateCharacterController(S, Vector3(0, Height(S) + S.SkinWidth, 0));
+		Step(World, 2);
+		Box(World, Vector3(0, C->GetPosition().y + Height(S) + S.SkinWidth + 0.2f, 0), Vector3(2, 0.1f, 2));
+		EXPECT(C->Jump(2));
+		World.Simulate(0.35f);
+		EXPECT(C->GetLastMove().HitAbove && C->IsGrounded());
+	}
+
 	void TestSteps(CharacterShape Shape)
 	{
 		for (float HeightOfStep : { 0.2f, 0.6f })
@@ -310,7 +349,7 @@ void TestCharacterController()
 {
 	for (auto Shape : { Riemann::CharacterShape::Capsule, Riemann::CharacterShape::Box })
 	{
-		TestGroundAndSlide(Shape); TestSteps(Shape); TestSlopes(Shape);
+		TestGroundAndSlide(Shape); TestBallisticJump(Shape); TestSteps(Shape); TestSlopes(Shape);
 		for (auto Type : { Riemann::SceneQueryType::StaticAABB, Riemann::SceneQueryType::DynamicAABB }) TestPlatforms(Shape, Type);
 		TestPlatformObstructionAndDrop(Shape);
 		TestShortSweeps(Shape); TestSurfaces(Shape); TestFilters(Shape);

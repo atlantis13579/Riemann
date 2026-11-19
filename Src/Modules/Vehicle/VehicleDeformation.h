@@ -10,6 +10,8 @@
 namespace Riemann
 {
 	class RigidBody;
+	class PhysicsWorld;
+	class SliderConstraint;
 
 	struct VehicleDeformationSettings
 	{
@@ -19,6 +21,8 @@ namespace Riemann
 		Vector3i Cells;
 		float CabinHeight;
 		float ShellMass;
+		// Length of each longitudinal crush zone. Zero uses a uniform cage.
+		float CrushZoneLength = 0.0f;
 		DeformableBodySettings Material;
 		float ImpactRadius;
 		float ImpulseScale;
@@ -39,6 +43,10 @@ namespace Riemann
 
 		// cageToBody uses the body's local origin, including its center-of-mass offset.
 		bool Attach(RigidBody* body, const Transform& cageToBody = Transform::Identity());
+		// The chassis collider must leave the front crush stroke clear. The world
+		// and chassis must outlive the attachment.
+		bool CreateFrontRails(PhysicsWorld& world, float yieldForce);
+		const RigidBody* GetFrontBumper(int side) const;
 		void Detach();
 		// Supply the physical impulse applied to this body, in world coordinates.
 		bool QueueImpact(const Vector3& worldPoint, const Vector3& worldImpulse);
@@ -65,11 +73,21 @@ namespace Riemann
 			Vector3 Impulse;
 		};
 		void BuildCage();
+		void UpdateFrontRails();
 		void SyncRenderGeometry();
 
 		VehicleDeformationSettings m_Settings;
 		DeformableBody m_Cage;
 		RigidBody* m_Body = nullptr;
+		struct CrushRail
+		{
+			RigidBody* Bumper = nullptr;
+			SliderConstraint* Slider = nullptr;
+			Vector3 LocalCenter = Vector3::Zero();
+		};
+		PhysicsWorld* m_RailWorld = nullptr;
+		CrushRail m_Rails[2];
+		std::vector<int> m_BumperNodes;
 		Transform m_CageToBody;
 		Transform m_LastWorldTransform;
 		std::vector<Impact> m_Impacts;

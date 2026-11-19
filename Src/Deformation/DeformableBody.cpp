@@ -135,11 +135,22 @@ namespace Riemann
 		edge.ParticleA = particleA;
 		edge.ParticleB = particleB;
 		edge.RestLength = edge.InitialRestLength = length;
-		edge.Compliance = compliance < 0.0f ? m_Settings.EdgeCompliance : compliance;
+		edge.TensionCompliance = edge.Compliance = compliance < 0.0f ? m_Settings.EdgeCompliance : compliance;
 		edge.Lambda = 0.0f;
 		edge.Explicit = Explicit;
 		m_Edges.push_back(edge);
 		return (int)m_Edges.size() - 1;
+	}
+
+	void DeformableBody::SetEdgeCompliance(int index, float compression, float tension)
+	{
+		RequireIdle();
+		if (!std::isfinite(compression) || !std::isfinite(tension) || compression < 0 || tension < 0)
+			throw std::invalid_argument("Invalid edge compliance");
+		auto& edge = m_Edges.at(index);
+		edge.Compliance = compression;
+		edge.TensionCompliance = tension;
+		edge.Lambda = 0;
 	}
 
 	int DeformableBody::AddTetrahedron(int a, int b, int c, int d, float compliance)
@@ -235,6 +246,14 @@ namespace Riemann
 		return true;
 	}
 
+	bool DeformableBody::SetPinTarget(int index, const Vector3& position)
+	{
+		RequireIdle();
+		if (!IsValidParticle(index) || !m_Particles[index].Pinned || !IsFiniteVector(position)) return false;
+		m_Particles[index].PinPosition = position;
+		return true;
+	}
+
 	bool DeformableBody::SetParticlePosition(int index, const Vector3& position, bool resetVelocity)
 	{
 		RequireIdle();
@@ -303,9 +322,10 @@ namespace Riemann
 		const float fraction = 1.0f - std::exp(-m_Settings.PlasticCreep * dt);
 		for (DeformableEdge& edge : m_Edges)
 		{
-			if (!edge.Enabled || edge.Compliance <= 0.0f) continue;
+			if (!edge.Enabled) continue;
 			const float length = (m_Particles[(size_t)edge.ParticleB].Position - m_Particles[(size_t)edge.ParticleA].Position).Length();
 			const float difference = length - edge.RestLength;
+			if ((difference > 0 ? edge.TensionCompliance : edge.Compliance) <= 0) continue;
 			const float yieldLength = m_Settings.YieldStrain * edge.RestLength;
 			if (std::fabs(difference) <= yieldLength) continue;
 			const float excess = difference - std::copysign(yieldLength, difference);
@@ -347,7 +367,8 @@ namespace Riemann
 			const Vector3 delta = b.Position - a.Position;
 			const float length = delta.Length();
 			const Vector3 direction = length > 1.0e-8f ? delta / length : (b.InitialPosition - a.InitialPosition).SafeUnit();
-			const float alpha = edge.Compliance / (dt * dt);
+			const float compliance = length > edge.RestLength ? edge.TensionCompliance : edge.Compliance;
+			const float alpha = compliance / (dt * dt);
 			const float deltaLambda = (-(length - edge.RestLength) - alpha * edge.Lambda) / (inverseMassA + inverseMassB + alpha);
 			edge.Lambda += deltaLambda;
 			a.Position -= direction * (inverseMassA * deltaLambda);

@@ -1311,24 +1311,25 @@ namespace Riemann
         return (float(1) - t) * a + t * b;
     }
 
-    static float orient2d(float ax, float ay, float bx, float by, float cx, float cy)
+    // Evaluate orientation before rounding so narrow triangles retain their side of a constraint.
+    static double orient2d(double ax, double ay, double bx, double by, double cx, double cy)
     {
-        const float acx = ax - cx;
-        const float bcx = bx - cx;
-        const float acy = ay - cy;
-        const float bcy = by - cy;
-        const float detleft = acx * bcy;
-        const float detright = acy * bcx;
-        float det = detleft - detright;
+        const double acx = ax - cx;
+        const double bcx = bx - cx;
+        const double acy = ay - cy;
+        const double bcy = by - cy;
+        const double detleft = acx * bcy;
+        const double detright = acy * bcx;
+        double det = detleft - detright;
         return det;
     }
 
-    static float orient2d(const Vector2& p, const Vector2& v1, const Vector2& v2)
+    static double orient2d(const Vector2& p, const Vector2& v1, const Vector2& v2)
     {
         return orient2d(v1.x, v1.y, v2.x, v2.y, p.x, p.y);
     }
 
-	static PtLineLocation classifyOrientation(const float orientation, const float orientationTolerance = 1e-6f)
+	static PtLineLocation classifyOrientation(const double orientation, const float orientationTolerance = 0.0f)
     {
         if (orientation < -orientationTolerance)
             return PtLineLocation::Right;
@@ -1337,7 +1338,7 @@ namespace Riemann
         return PtLineLocation::OnLine;
     }
 
-	static PtLineLocation locatePointLine(const Vector2& p, const Vector2& v1, const Vector2& v2, const float orientationTolerance = 1e-6f)
+	static PtLineLocation locatePointLine(const Vector2& p, const Vector2& v1, const Vector2& v2, const float orientationTolerance = 0.0f)
     {
         return classifyOrientation(orient2d(p, v1, v2), orientationTolerance);
     }
@@ -1429,16 +1430,16 @@ namespace Riemann
 		const Vector2& b,
 		const Vector2& c)
 	{
-		const float dx = a.x - p.x;
-		const float dy = a.y - p.y;
-		const float ex = b.x - p.x;
-		const float ey = b.y - p.y;
-		const float fx = c.x - p.x;
-		const float fy = c.y - p.y;
+		const double dx = double(a.x) - p.x;
+		const double dy = double(a.y) - p.y;
+		const double ex = double(b.x) - p.x;
+		const double ey = double(b.y) - p.y;
+		const double fx = double(c.x) - p.x;
+		const double fy = double(c.y) - p.y;
 
-		const float ap = dx * dx + dy * dy;
-		const float bp = ex * ex + ey * ey;
-		const float cp = fx * fx + fy * fy;
+		const double ap = dx * dx + dy * dy;
+		const double bp = ex * ex + ey * ey;
+		const double cp = fx * fx + fy * fy;
 
 		return (dx * (ey * cp - bp * fy) -
 			dy * (ex * cp - bp * fx) +
@@ -1545,13 +1546,13 @@ namespace Riemann
 	{
 		// note: for better accuracy we interpolate x and y separately
 		// on a segment with the shortest x/y-projection correspondingly
-		const float a_cd = orient2d(c.x, c.y, d.x, d.y, a.x, a.y);
-		const float b_cd = orient2d(c.x, c.y, d.x, d.y, b.x, b.y);
-		const float t_ab = a_cd / (a_cd - b_cd);
+		const double a_cd = orient2d(c.x, c.y, d.x, d.y, a.x, a.y);
+		const double b_cd = orient2d(c.x, c.y, d.x, d.y, b.x, b.y);
+		const float t_ab = (float)(a_cd / (a_cd - b_cd));
 
-		const float c_ab = orient2d(a.x, a.y, b.x, b.y, c.x, c.y);
-		const float d_ab = orient2d(a.x, a.y, b.x, b.y, d.x, d.y);
-		const float t_cd = c_ab / (c_ab - d_ab);
+		const double c_ab = orient2d(a.x, a.y, b.x, b.y, c.x, c.y);
+		const double d_ab = orient2d(a.x, a.y, b.x, b.y, d.x, d.y);
+		const float t_cd = (float)(c_ab / (c_ab - d_ab));
 
 		return Vector2(
 			std::fabs(a.x - b.x) < std::fabs(c.x - d.x) ? lerp(a.x, b.x, t_ab)
@@ -2545,12 +2546,12 @@ namespace Riemann
 				const Triangle t = triangles[iT];
 				const int i = vertexInd(t.vertices, iA);
 				const int iP2 = t.vertices[ccw(i)];
-				const float orientP2 = orient2d(vertices[iP2], a, b);
+				const double orientP2 = orient2d(vertices[iP2], a, b);
 				const PtLineLocation locP2 = classifyOrientation(orientP2);
 				if (locP2 == PtLineLocation::Right)
 				{
 					const int iP1 = t.vertices[cw(i)];
-					const float orientP1 = orient2d(vertices[iP1], a, b);
+					const double orientP1 = orient2d(vertices[iP1], a, b);
 					const PtLineLocation locP1 = classifyOrientation(orientP1);
 					if (locP1 == PtLineLocation::OnLine)
 					{
@@ -2560,7 +2561,7 @@ namespace Riemann
 					{
 						if (orientationTolerance)
 						{
-							float closestOrient;
+							double closestOrient;
 							int iClosestP;
 							if (std::abs(orientP1) <= std::abs(orientP2))
 							{

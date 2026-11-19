@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 #include <sstream>
 #include <utility>
 
@@ -117,45 +118,30 @@ namespace Riemann
 			return CountValidTriangles(*mesh) > 0;
 		}
 
-		bool BuildLocalStaticMesh(const DynamicMesh& sourceMesh, const Vector3& center, StaticMesh* mesh)
+		bool BuildIslandMesh(const DynamicMesh& source, const std::vector<int>& triangles, MeshCuttingPiece& piece)
 		{
-			if (mesh == nullptr || CountValidTriangles(sourceMesh) == 0)
+			auto& mesh = piece.Mesh;
+			std::vector<int> remap(source.GetVertexCount(), -1);
+			bool closed = true;
+			for (int id : triangles)
 			{
-				return false;
-			}
-
-			mesh->Clear();
-			mesh->Flags = 0;
-			for (int vertexIndex = 0; vertexIndex < sourceMesh.GetVertexCount(); ++vertexIndex)
-			{
-				mesh->AddVertex(sourceMesh.GetVertex(vertexIndex) - center);
-			}
-
-			for (int triangleIndex = 0; triangleIndex < sourceMesh.GetTriangleCount(); ++triangleIndex)
-			{
-				if (!sourceMesh.IsTriangleFast(triangleIndex))
+				const Index3 tri = source.GetTriangle(id);
+				for (int corner = 0; corner < 3; ++corner)
 				{
-					continue;
+					if (source.IsBoundaryEdge(source.GetTriEdges(id, corner))) closed = false;
+					const int vertex = tri[corner];
+					if (remap[vertex] >= 0) continue;
+					remap[vertex] = (int)mesh.GetVertexCount();
+					mesh.AddVertex(source.GetVertex(vertex));
 				}
-
-				const Index3 tri = sourceMesh.GetTriangle(triangleIndex);
-				if (tri.a < 0 || tri.b < 0 || tri.c < 0 ||
-					tri.a >= sourceMesh.GetVertexCount() || tri.b >= sourceMesh.GetVertexCount() || tri.c >= sourceMesh.GetVertexCount())
-				{
-					continue;
-				}
-				mesh->AddTriangle((uint32_t)tri.a, (uint32_t)tri.b, (uint32_t)tri.c);
+				mesh.AddTriangle(remap[tri.a], remap[tri.b], remap[tri.c]);
 			}
-
-			if (mesh->GetTriangleCount() == 0)
-			{
-				mesh->Clear();
-				return false;
-			}
-
-			mesh->CalculateBoundingBox();
-			mesh->CalculateWeightAverageNormals();
-			return true;
+			mesh.CalculateBoundingBox();
+			piece.Center = mesh.BoundingVolume.GetCenter();
+			for (uint32_t v = 0; v < mesh.NumVertices; ++v) mesh.Vertices[v] -= piece.Center;
+			mesh.CalculateBoundingBox();
+			mesh.CalculateWeightAverageNormals();
+			return closed;
 		}
 
 		bool BuildLocalStaticMesh(const ConvexMesh& convexMesh, const Vector3& center, StaticMesh* mesh)
@@ -197,16 +183,54 @@ namespace Riemann
 			return true;
 		}
 
-		Vector3 BuildConvexPieceDirection(const Vector3& pieceCenter, const Box3& sourceBounds, int pieceIndex)
+		void BuildSeparatedLayout(MeshCuttingResult& result, const MeshCuttingParams& params)
 		{
-			Vector3 direction = pieceCenter - sourceBounds.GetCenter();
-			if (direction.SquareLength() <= 1e-8f)
+			auto& pieces = result.Pieces;
+			const int count = (int)pieces.size();
+			const Vector3 right = params.ViewRight, up = params.ViewUp;
+			std::vector<float> widths(count), heights(count);
+			float totalWidth = 0, totalHeight = 0;
+			for (int i = 0; i < count; ++i)
 			{
-				const float angle = (float)pieceIndex * 2.39996323f;
-				direction = Vector3(cosf(angle), 0.35f, sinf(angle));
+				const Vector3 size = pieces[i].Mesh.BoundingVolume.GetSize();
+				widths[i] = right.Abs().Dot(size);
+				heights[i] = up.Abs().Dot(size);
+				totalWidth += widths[i];
+				totalHeight += heights[i];
 			}
-			direction.SafeNormalize();
-			return direction;
+			const float gap = std::max(BoundsMaxDim(result.SourceBounds) * 0.04f, 0.28f * std::max(totalWidth, totalHeight) / count);
+			const float aspect = std::max(params.ViewAspect, 0.1f);
+			const int columns = ClampPanelInt((int)std::round(std::sqrt(count * aspect * (totalHeight + count * gap) / (totalWidth + count * gap))), 1, count);
+			const int rows = (count + columns - 1) / columns;
+			std::vector<int> order(count);
+			std::iota(order.begin(), order.end(), 0);
+			// Keep nearby pieces near each other in the inspection view.
+			std::stable_sort(order.begin(), order.end(), [&](int a, int b) { return pieces[a].Center.Dot(up) > pieces[b].Center.Dot(up); });
+			for (int start = 0; start < count; start += columns)
+				std::stable_sort(order.begin() + start, order.begin() + std::min(start + columns, count),
+					[&](int a, int b) { return pieces[a].Center.Dot(right) < pieces[b].Center.Dot(right); });
+			std::vector<float> columnWidths(columns, 0), rowHeights(rows, 0);
+			for (int i = 0; i < count; ++i)
+			{
+				columnWidths[i % columns] = std::max(columnWidths[i % columns], widths[order[i]]);
+				rowHeights[i / columns] = std::max(rowHeights[i / columns], heights[order[i]]);
+			}
+			const float width = std::accumulate(columnWidths.begin(), columnWidths.end(), gap * (columns - 1));
+			const float height = std::accumulate(rowHeights.begin(), rowHeights.end(), gap * (rows - 1));
+			const Vector3 center = result.SourceBounds.GetCenter();
+			float y = height * 0.5f;
+			for (int row = 0; row < rows; ++row)
+			{
+				float x = -width * 0.5f;
+				for (int col = 0; col < columns && row * columns + col < count; ++col)
+				{
+					MeshCuttingPiece& piece = pieces[order[row * columns + col]];
+					const Vector3 target = center + right * (x + columnWidths[col] * 0.5f) + up * (y - rowHeights[row] * 0.5f);
+					piece.SeparationOffset = target - piece.Center;
+					x += columnWidths[col] + gap;
+				}
+				y -= rowHeights[row] + gap;
+			}
 		}
 
 		PlanarCutOptions BuildMeshCuttingOptions(int seed)
@@ -216,7 +240,8 @@ namespace Riemann
 			options.BoundsPaddingScale = 0.10f;
 			options.RandomSeed = seed;
 			options.WeldSharedEdges = true;
-			options.MinTriangleCount = 4;
+			options.ClipConvexCells = true;
+			options.MinTriangleCount = 1;
 			return options;
 		}
 
@@ -245,7 +270,6 @@ namespace Riemann
 
 		source->Mesh.Clear();
 		source->Bounds = Box3::Empty();
-		source->MaxSeparation = 1.0f;
 		source->Status.clear();
 
 		StaticMesh sourceMesh;
@@ -260,7 +284,6 @@ namespace Riemann
 		sourceMesh.CalculateWeightAverageNormals();
 
 		source->Bounds = sourceMesh.BoundingVolume;
-		source->MaxSeparation = std::max(BoundsMaxDim(source->Bounds), 1e-3f) * 1.15f;
 		source->Mesh = std::move(sourceMesh);
 		RefreshStaticMeshPointers(&source->Mesh);
 
@@ -279,7 +302,6 @@ namespace Riemann
 
 		result->Pieces.clear();
 		result->Status.clear();
-		result->MaxSeparation = 1.0f;
 		result->SourceBounds = Box3::Empty();
 
 		StaticMesh sourceStaticMesh;
@@ -299,7 +321,6 @@ namespace Riemann
 
 		sourceStaticMesh.CalculateBoundingBox();
 		const Box3 staticBounds = sourceStaticMesh.BoundingVolume;
-		const float staticMaxSize = std::max(BoundsMaxDim(staticBounds), 1e-3f);
 
 		if (mode == MeshCuttingMode_VHACD)
 		{
@@ -314,14 +335,12 @@ namespace Riemann
 			}
 
 			result->SourceBounds = staticBounds;
-			result->MaxSeparation = staticMaxSize * 1.15f;
 			result->Pieces.reserve(convexMeshes.size());
 			for (size_t pieceIndex = 0; pieceIndex < convexMeshes.size(); ++pieceIndex)
 			{
 				const ConvexMesh& convexMesh = convexMeshes[pieceIndex];
 				MeshCuttingPiece piece;
 				piece.Center = convexMesh.Bounds.GetCenter();
-				piece.Direction = BuildConvexPieceDirection(piece.Center, staticBounds, (int)pieceIndex);
 				if (!BuildLocalStaticMesh(convexMesh, piece.Center, &piece.Mesh))
 				{
 					continue;
@@ -336,6 +355,7 @@ namespace Riemann
 				return false;
 			}
 
+			BuildSeparatedLayout(*result, params);
 			std::ostringstream status;
 			status << "VHACD pieces: " << result->Pieces.size()
 				<< " voxels: " << vhacdParameters.VoxelResolution
@@ -352,11 +372,11 @@ namespace Riemann
 		}
 
 		const Box3 bounds = sourceMesh.GetBounds();
-		const float maxSize = std::max(BoundsMaxDim(bounds), 1e-3f);
 
 		std::vector<FracturePiece> dynamicPieces;
 		bool built = false;
-		const PlanarCutOptions cutOptions = BuildMeshCuttingOptions(seed);
+		PlanarCutOptions cutOptions = BuildMeshCuttingOptions(seed);
+		cutOptions.CapCutFaces = params.CapCutFaces;
 		switch (mode)
 		{
 		case MeshCuttingMode_ParallelX:
@@ -394,19 +414,27 @@ namespace Riemann
 		}
 
 		result->SourceBounds = bounds;
-		result->MaxSeparation = maxSize * 1.15f;
 		result->Pieces.reserve(dynamicPieces.size());
-		for (const FracturePiece& dynamicPiece : dynamicPieces)
+		const bool parallelCut = mode >= MeshCuttingMode_ParallelX && mode <= MeshCuttingMode_ParallelZ;
+		const float sliceGap = 10.0f * (BoundsMaxDim(bounds) / pieceCount);
+		int openPieces = 0;
+		for (FracturePiece& dynamicPiece : dynamicPieces)
 		{
-			MeshCuttingPiece piece;
-			piece.Center = dynamicPiece.Center;
-			piece.Direction = dynamicPiece.Direction;
-			if (!BuildLocalStaticMesh(dynamicPiece.Mesh, piece.Center, &piece.Mesh))
+			std::vector<std::vector<int>> islands;
+			dynamicPiece.Mesh.BuildIslands(islands);
+			for (const auto& triangles : islands)
 			{
-				continue;
+				MeshCuttingPiece piece;
+				if (!BuildIslandMesh(dynamicPiece.Mesh, triangles, piece)) ++openPieces;
+				if (parallelCut)
+				{
+					// Islands in the same slab travel together along its normal.
+					const int axis = mode - MeshCuttingMode_ParallelX;
+					piece.SeparationOffset[axis] = (dynamicPiece.CellIndex - 0.5f * (pieceCount - 1)) * sliceGap;
+				}
+				result->Pieces.push_back(std::move(piece));
+				RefreshStaticMeshPointers(&result->Pieces.back().Mesh);
 			}
-			result->Pieces.push_back(std::move(piece));
-			RefreshStaticMeshPointers(&result->Pieces.back().Mesh);
 		}
 
 		if (result->Pieces.empty())
@@ -415,8 +443,10 @@ namespace Riemann
 			return false;
 		}
 
+		if (!parallelCut) BuildSeparatedLayout(*result, params);
 		std::ostringstream status;
 		status << "Pieces: " << result->Pieces.size();
+		if (params.CapCutFaces && openPieces) status << " (" << openPieces << " open)";
 		result->Status = status.str();
 		return true;
 	}

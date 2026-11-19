@@ -39,14 +39,9 @@ namespace
 	}
 	VehicleDynamicsSettings Settings()
 	{
-		VehicleDynamicsSettings S; S.IdleGovernor = 0; S.SolverIterations = 32;
-		for (int Side : { -1, 1 }) for (int End : { -1, 1 })
-		{
-			VehicleWheelSettings W; W.Attachment = Vector3((float)Side, 0, End * S.Wheelbase / 2);
-			W.SteeringFactor = End > 0 ? 1.0f : 0.0f; W.Axle = End > 0 ? 1 : 0;
-			W.HandbrakeTorque = End < 0 ? W.BrakeTorque : 0;
-			S.Wheels.push_back(W);
-		}
+		auto S = VehicleDynamicsSettings::Roadster();
+		S.IdleGovernor = 0;
+		S.SolverIterations = 32;
 		return S;
 	}
 	void Step(PhysicsWorld& World, int Count, float StepDt = Dt) { for (int I = 0; I < Count; ++I) World.Simulate(StepDt); }
@@ -97,7 +92,7 @@ namespace
 			auto* B = Chassis(World); auto* V = World.CreateVehicle(B, Settings()); V->SetControls(Park()); Step(World, 240);
 			VehicleControls C; C.Throttle = 0.7f; C.Steering = 0.5f; V->SetControls(C); Step(World, 240);
 			printf("Vehicle friction=%.2f speed=%.4f yaw=%.4f x=%.4f\n", Mu, B->V.Length(), B->W.y, B->X.x);
-			EXPECT(V->GetWheels()[3].SteeringAngle > V->GetWheels()[1].SteeringAngle);
+			EXPECT(V->GetWheels()[1].SteeringAngle > V->GetWheels()[0].SteeringAngle);
 			if (Mu == 0) { EXPECT(B->V.Length() < 0.05f); EXPECT(B->X.Length() < 1); }
 			else { EXPECT(B->X.x > 0.5f); EXPECT(B->W.y > 0.05f); }
 			for (size_t I = 0; I < 4; ++I)
@@ -117,10 +112,10 @@ namespace
 			auto S = Settings(); S.Differential = (VehicleDifferential)Mode;
 			S.DifferentialStrength = 100; S.MaximumDifferentialTorque = 1500;
 			// Unequal rotor inertias expose torque splitting without road/contact noise.
-			S.Wheels[0].Inertia *= 4; S.Wheels[1].Inertia *= 4;
+			S.Wheels[2].Inertia *= 4;
 			auto* V = World.CreateVehicle(Chassis(World, Vector3(0, 20, 0)), S);
 			VehicleControls C; C.Throttle = 1; V->SetControls(C); Step(World, 120);
-			Differences[Mode] = std::abs(V->GetWheels()[0].AngularSpeed - V->GetWheels()[2].AngularSpeed);
+			Differences[Mode] = std::abs(V->GetWheels()[2].AngularSpeed - V->GetWheels()[3].AngularSpeed);
 			printf("Vehicle differential=%d rotor difference=%.6f\n", Mode, Differences[Mode]);
 			CheckFinite(V); EXPECT(!V->GetWheels()[0].Grounded);
 			C.Gear = 2; V->SetControls(C); World.Simulate(Dt); EXPECT_NEAR(V->GetClutchTorque(), 0, 1e-5f);
@@ -175,6 +170,75 @@ namespace
 		const auto Frame = V->GetWheelTransform(0); EXPECT_SAME(Frame.quat * Vector3::UnitX(), Vector3::UnitY());
 		EXPECT_SAME(Frame.quat * Vector3::UnitZ(), Vector3::UnitX());
 	}
+	void RoadsterLoadTransfer()
+	{
+		auto Car = VehicleDynamicsSettings::Roadster();
+		EXPECT(Car.IsValid());
+		PhysicsWorld World(Parameters());
+		const Vector3 Normal = Vector3(0.06f, 1.0f, -0.08f).Unit();
+		auto* Pavement = World.CreateRigidBody(GeometryFactory::CreatePlane(Vector3::Zero(), Normal), RigidBodyParam());
+		Pavement->SetFriction(1, 1);
+		auto* B = Chassis(World);
+		auto* V = World.CreateVehicle(B, Car);
+		V->SetControls(Park());
+		Step(World, 180);
+		VehicleControls C;
+		C.Throttle = 0.85f;
+		V->SetControls(C);
+		Step(World, 240);
+		EXPECT(B->V.z > 3 && B->V.y > 0);
+		const auto& Wheels = V->GetWheels();
+		auto FrontLoad = [&]() { return Wheels[0].SuspensionForce + Wheels[1].SuspensionForce; };
+		const float AcceleratingLoad = FrontLoad();
+		const float InitialCrossLoad = Wheels[0].SuspensionForce - Wheels[1].SuspensionForce;
+		C.Throttle = 0; C.Gear = 0; C.Brake = 0.8f; C.Steering = 0.3f;
+		V->SetControls(C);
+		Step(World, 30);
+		EXPECT(FrontLoad() > AcceleratingLoad + 200);
+		const float CorneringCrossLoad = Wheels[0].SuspensionForce - Wheels[1].SuspensionForce;
+		printf("Roadster front load %.1f -> %.1f N, cross load %.1f -> %.1f N\n",
+			AcceleratingLoad, FrontLoad(), InitialCrossLoad, CorneringCrossLoad);
+		EXPECT(CorneringCrossLoad > InitialCrossLoad + 50);
+		for (const auto& Wheel : Wheels)
+		{
+			EXPECT(Wheel.Grounded && Wheel.ContactNormal.Dot(Normal) > 0.99f);
+			EXPECT(std::hypot(Wheel.LongitudinalForce, Wheel.LateralForce) <= Wheel.SuspensionForce + 1);
+		}
+		CheckFinite(V);
+	}
+
+	void RoadsterAeroAndAntiRoll()
+	{
+		auto Params = Parameters(); Params.gravityAcc = Vector3::Zero();
+		auto Car = VehicleDynamicsSettings::Roadster();
+		PhysicsWorld Air(Params);
+		auto* B = Chassis(Air, Vector3(0, 10, 0));
+		auto* V = Air.CreateVehicle(B, Car);
+		B->V = Vector3(0, 0, 40);
+		Air.Simulate(Dt);
+		const float Pressure = 0.5f * Car.AirDensity * 40 * 40;
+		EXPECT_NEAR(B->V.z, 40 - Pressure * Car.DragArea * Dt / Mass, 1e-5f);
+		EXPECT_NEAR(B->V.y, -Pressure * Car.DownforceArea * Dt / Mass, 1e-5f);
+		for (const auto& Wheel : V->GetWheels()) EXPECT(!Wheel.Grounded && Wheel.SuspensionForce == 0);
+
+		// Raise the road under the left wheels with the same initial chassis pose.
+		float LoadDifference[2];
+		for (int WithBar = 0; WithBar <= 1; ++WithBar)
+		{
+			PhysicsWorld World(Params);
+			Road(World);
+			World.CreateRigidBody(GeometryFactory::CreateOBB(Vector3(-1, -0.45f, 0), Vector3(0.6f, 0.5f, 4)), RigidBodyParam());
+			Car.AntiRollStiffness = WithBar * 9000.0f;
+			auto* OnRoad = World.CreateVehicle(Chassis(World), Car);
+			OnRoad->SetControls(Park());
+			World.Simulate(Dt);
+			const auto& Wheels = OnRoad->GetWheels();
+			EXPECT(Wheels[0].SuspensionLength < Wheels[1].SuspensionLength);
+			LoadDifference[WithBar] = Wheels[0].SuspensionForce - Wheels[1].SuspensionForce;
+		}
+		EXPECT(LoadDifference[1] > LoadDifference[0] + 100);
+	}
+
 	void SplitTraction()
 	{
 		float Speeds[3]{};
@@ -191,8 +255,8 @@ namespace
 			auto* V = World.CreateVehicle(B, S); V->SetControls(Park()); Step(World, 240);
 			VehicleControls C; C.Throttle = 1; V->SetControls(C); Step(World, 240);
 			Speeds[Mode] = B->V.z;
-			printf("Vehicle split traction mode=%d speed=%.4f rotor delta=%.4f\n", Mode, B->V.z, V->GetWheels()[0].AngularSpeed - V->GetWheels()[2].AngularSpeed);
-			if (Mode == 2) EXPECT_NEAR(V->GetWheels()[0].AngularSpeed, V->GetWheels()[2].AngularSpeed, 1e-4f);
+			printf("Vehicle split traction mode=%d speed=%.4f rotor delta=%.4f\n", Mode, B->V.z, V->GetWheels()[2].AngularSpeed - V->GetWheels()[3].AngularSpeed);
+			if (Mode == 2) EXPECT_NEAR(V->GetWheels()[2].AngularSpeed, V->GetWheels()[3].AngularSpeed, 1e-4f);
 			CheckFinite(V);
 		}
 		EXPECT(Speeds[1] > Speeds[0] * 2); EXPECT(Speeds[2] > Speeds[0] * 2);
@@ -251,6 +315,17 @@ namespace
 			EXPECT(Scene.LoadFromFile(File, &Error)); auto* V = Scene.GetVehicleDynamics(0);
 			EXPECT(V != nullptr); if (!V) return;
 			EXPECT(Scene.GetSimulation()->GetVehicleCount() == 1);
+			const auto& Settings = V->GetSettings();
+			EXPECT(Settings.ForwardGears.size() == 6 && Settings.AntiRollStiffness > 0);
+			EXPECT(Settings.DragArea > 0 && Settings.DownforceArea > 0);
+			EXPECT(Settings.Wheels.size() == 4);
+			if (Settings.Wheels.size() != 4) return;
+			for (size_t I = 0; I < Settings.Wheels.size(); ++I)
+			{
+				const bool Front = Settings.Wheels[I].Attachment.z > 0;
+				EXPECT(Front == (Settings.Wheels[I].SteeringFactor > 0));
+				EXPECT(!Front == (Settings.Wheels[I].DriveWeight > 0));
+			}
 			for (int I = 0; I < 180; ++I) Scene.Step(Dt);
 			for (const auto& W : V->GetWheels()) EXPECT(W.Grounded);
 			const float Start = V->GetChassis()->X.z;
@@ -258,9 +333,24 @@ namespace
 			for (int I = 0; I < 120; ++I) Scene.Step(Dt);
 			printf("Vehicle demo distance=%.3f speed=%.3f height=%.3f\n", V->GetChassis()->X.z - Start, V->GetChassis()->V.z, V->GetChassis()->X.y);
 			EXPECT(V->GetChassis()->X.z > Start + 0.3f); CheckFinite(V);
+			const char* Meshes[] = { "crash_car_wheel_1", "crash_car_wheel_3", "crash_car_wheel_0", "crash_car_wheel_2" };
+			int Matched = 0;
 			for (size_t I = 0; I < 4; ++I)
-				for (const auto& Object : Scene.GetObjects()) if (Object.Id == "crash_car_wheel_" + std::to_string(I))
+				for (const auto& Object : Scene.GetObjects()) if (Object.Id == Meshes[I])
+				{
 					EXPECT_SAME(Object.GeometryPtr->GetTransform()->pos, V->GetWheelTransform(I).pos);
+					++Matched;
+				}
+			EXPECT(Matched == 4);
+			// A separated driven wheel must stop supporting and driving the chassis,
+			// including across a drivetrain reset.
+			V->DetachWheel(2);
+			V->Reset();
+			for (int frame = 0; frame < 12; ++frame) Scene.Step(Dt);
+			const auto& detached = V->GetWheels()[2];
+			EXPECT(!detached.Attached && !detached.Grounded);
+			EXPECT(detached.DriveTorque == 0 && detached.SuspensionForce == 0);
+			EXPECT(V->GetWheels()[3].Attached);
 		}
 		Scene.SetVehicleDynamicsDemo(false); EXPECT(Scene.LoadFromFile(File, &Error)); EXPECT(Scene.GetVehicleDynamics(0) == nullptr);
 		EXPECT(Scene.GetSimulation()->GetVehicleCount() == 0);
@@ -300,5 +390,6 @@ void TestVehicleDynamics()
 	printf("Running TestVehicleDynamics\n");
 	OwnershipAndValidation(); SuspensionAndDriving(); SteeringAndFriction(); DrivetrainAndDifferentials(); DynamicRoadAndSleep();
 	SplitTraction(); SurfacesAndFilters(); DemoIntegration();
+	RoadsterLoadTransfer(); RoadsterAeroAndAntiRoll();
 	SubstepsAndPassiveRotors();
 }

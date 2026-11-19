@@ -41,6 +41,7 @@ namespace Riemann
 
 		Vector3 GetCameraPosition() const;
 		void UpdateCamera();
+		void SetViewportSize(int width, int height);
 		void KeyboardMsg(char c);
 		void SetMovementKey(char c, bool down);
 		void UpdateCameraMovement(float dt);
@@ -65,9 +66,8 @@ private:
 		struct CuttingRenderPiece
 		{
 			Geometry* GeometryPtr = nullptr;
-			std::string MeshId;
 			Vector3 Center = Vector3::Zero();
-			Vector3 Direction = Vector3::Zero();
+			Vector3 SeparationOffset = Vector3::Zero();
 		};
 
 		struct TerrainBrushState
@@ -106,6 +106,8 @@ private:
 		void RefreshObjList();
 		void RefreshMeshFileList();
 		void SubmitCuttingTransforms();
+		void FrameCuttingBounds();
+		CameraDesc GetViewCamera() const;
 		void SubmitTransforms();
 		void SubmitGeometryQueryBounds();
 		void ClearGeometryQueryBounds();
@@ -163,6 +165,8 @@ private:
 		std::string m_CurrentSceneDisplayName;
 		Vector3 m_CamCenter;
 		Vector3 m_CamParam;
+		int m_ViewportWidth = 1280;
+		int m_ViewportHeight = 720;
 		bool m_MovementKeys[4];
 		bool m_CharacterKeys[4]{};
 		bool m_CharacterInputActive = false;
@@ -184,11 +188,12 @@ private:
 		int m_CuttingPiecesY;
 		int m_CuttingPiecesZ;
 		int m_CuttingSeed;
+		bool m_CapCutFaces = true;
 		int m_MeshSimplificationFileIndex;
 		int m_MeshSimplificationAlgorithm;
 		int m_MeshSimplificationRatioLevel;
 		float m_CuttingSeparation;
-		float m_CuttingMaxSeparation;
+		float m_CuttingSceneScale;
 		float m_MeshSimplificationMaxSeparation;
 		bool m_ShowGeometryQueryBounds;
 		RenderMode m_RenderMode;
@@ -285,6 +290,8 @@ private:
 		int m_ImguiCuttingPiecesY;
 		int m_ImguiCuttingPiecesZ;
 		int m_ImguiCuttingSeed;
+		bool m_ImguiCapCutFaces = true;
+		int m_ImguiPendingCapCutFaces = -1;
 		int m_ImguiMeshSimplificationFileIndex;
 		int m_ImguiMeshSimplificationAlgorithm;
 		int m_ImguiMeshSimplificationRatioLevel;

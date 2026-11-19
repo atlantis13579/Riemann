@@ -22,6 +22,7 @@ namespace Riemann
 		float RestLength = 0.3f;
 		float SpringStiffness = 30000.0f;
 		float Damping = 4500.0f;
+		float ReboundDampingRatio = 1.0f;
 		float MaximumSuspensionForce = 60000.0f;
 		float LongitudinalStiffness = 10.0f;
 		float LateralStiffness = 8.0f;
@@ -42,7 +43,7 @@ namespace Riemann
 		Vector3 Forward = Vector3::UnitZ();
 		Vector3 Up = Vector3::UnitY();
 		float MaximumSteerAngle = 0.55f;
-		float Wheelbase = 2.8f;
+		float Wheelbase;
 		bool AckermannSteering = true;
 		float EngineInertia = 0.3f;
 		float PeakEngineTorque = 400.0f;
@@ -51,7 +52,7 @@ namespace Riemann
 		float EngineDamping = 0.15f;
 		float IdleGovernor = 5.0f;
 		std::vector<VehicleTorquePoint> TorqueCurve = { { 0, 0.65f }, { 0.5f, 1 }, { 1, 0.75f } };
-		std::vector<float> ForwardGears = { 3.2f, 2.1f, 1.4f, 1.0f };
+		std::vector<float> ForwardGears = { 3.1f, 2.15f, 1.65f, 1.32f, 1.08f, 0.89f };
 		float ReverseRatio = -3.2f;
 		float FinalDrive = 3.6f;
 		float ClutchStrength = 20.0f;
@@ -66,7 +67,18 @@ namespace Riemann
 		float SleepWheelSpeed = 0.1f;
 		int SolverIterations = 12;
 		CollisionData FilterData;
+		// Axles with exactly two wheels can carry an anti-roll bar (N/m).
+		float AntiRollStiffness = 9000.0f;
+		// Coefficient times reference area (m^2). Pressure center is chassis-local.
+		float DragArea = 0.64f, DownforceArea = 0.35f;
+		float AirDensity = 1.225f;
+		Vector3 CenterOfPressure = Vector3::Zero();
+		// Wheels are ordered front left, front right, rear left, rear right.
+		static VehicleDynamicsSettings Roadster(float ChassisMass = 1200.0f, float Wheelbase = 2.5f, float Track = 1.56f);
 		bool IsValid() const;
+
+	private:
+		explicit VehicleDynamicsSettings(float Wheelbase) : Wheelbase(Wheelbase) {}
 	};
 
 	struct VehicleControls
@@ -77,6 +89,7 @@ namespace Riemann
 
 	struct VehicleWheelState
 	{
+		bool Attached = true;
 		bool Grounded = false;
 		GeometryHandle Ground;
 		Vector3 ContactPoint = Vector3::Zero(), ContactNormal = Vector3::Zero();
@@ -105,6 +118,7 @@ namespace Riemann
 		void SetControls(const VehicleControls& Controls);
 		void SetDifferential(VehicleDifferential Mode);
 		void Reset();
+		void DetachWheel(size_t Index);
 		bool RequiresAwake() const;
 
 	private:
@@ -114,6 +128,8 @@ namespace Riemann
 		void Simulate(float Dt);
 		void UpdateDrivetrain(float Dt);
 		void SolveDrivetrain(float Dt);
+		void SolveWheel(size_t Index, float Dt);
+		void ApplyAerodynamics(float Dt);
 		RigidBody* GroundBody(size_t Index) const;
 		Vector3 GroundVelocity(size_t Index) const;
 		void ApplyContactImpulse(size_t Index, const Vector3& Impulse);
@@ -128,6 +144,8 @@ namespace Riemann
 			Vector3 Forward = Vector3::UnitZ(), Side = Vector3::UnitX();
 			float NormalImpulse = 0, ForwardImpulse = 0, SideImpulse = 0, BrakeImpulse = 0;
 			float Compression = 0, DriveWeight = 0;
+			float BarForce = 0, NormalMassInv = 0, ForwardMassInv = 0, SideMassInv = 0;
+			float Friction = 0;
 		};
 		PhysicsWorld& m_World;
 		RigidBodyDynamic* m_Chassis;
@@ -137,6 +155,8 @@ namespace Riemann
 		std::vector<WheelRuntime> m_Runtime;
 		struct DifferentialRow { size_t A, B; float Impulse = 0; };
 		std::vector<DifferentialRow> m_DifferentialRows;
+		struct AxlePair { size_t Left, Right; };
+		std::vector<AxlePair> m_AntiRollBars;
 		float m_ClutchImpulse = 0;
 		float m_EngineSpeed = 0, m_ClutchTorque = 0, m_ShiftRemaining = 0;
 		int m_Gear = 1;

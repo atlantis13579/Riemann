@@ -367,6 +367,7 @@ namespace Riemann
 
 		void				GetAllGeometries(std::vector<Geometry*>* AllObjects);
 		GeometryQuery*		GetGeometryQuery() { return m_GeometryQuery; }
+		void SynchronizeSceneQueries();
 		const GeometryQuery* GetGeometryQuery() const { return m_GeometryQuery; }
 
 		float				GetSystemTotalEnergy() const;
@@ -430,7 +431,6 @@ namespace Riemann
 		std::vector<VehicleDynamics*> m_Vehicles;
 		std::vector<Ragdoll*> m_ReducedRagdolls;
 		std::vector<PhysicalAnimation*> m_PhysicalAnimations;
-		void SynchronizeSceneQueries();
 		std::vector<CharacterController*> m_Characters;
 		void				SimulateST(float dt);
 		void SolveUnifiedVelocities(const std::vector<Geometry*>& Geometries, const std::vector<ContactManifold*>& Contacts, float Dt, bool JointIslandsOnly = false);

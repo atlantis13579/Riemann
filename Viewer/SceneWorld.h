@@ -69,6 +69,7 @@ namespace Riemann
 		std::string Id;
 		Geometry* GeometryPtr = nullptr;
 		DestructionSet* DestructSet = nullptr;
+		VehicleDeformation* Vehicle = nullptr;
 		Vector4 Color = Vector4(0.72f, 0.76f, 0.82f, 1.0f);
 		bool RenderBounds = false;
 		bool RenderEnabled = true;
@@ -311,10 +312,19 @@ namespace Riemann
 		std::vector<RopeSurfaceState> m_RopeSurfaces;
 		struct VehicleRenderState
 		{
+			struct Wheel
+			{
+				// Ownership passes to the physics world when the mount breaks.
+				std::unique_ptr<Geometry> AttachedShape;
+				Transform LocalPose;
+				int MountNode = -1;
+				std::vector<int> MountEdges;
+			};
 			std::unique_ptr<VehicleDeformation> Vehicle;
 			VehicleDynamics* Dynamics = nullptr;
-			std::vector<std::unique_ptr<Geometry>> Wheels;
-			std::vector<Transform> WheelLocalTransforms;
+			std::vector<Wheel> Wheels;
+			float WheelBreakStrain = 0;
+			float WheelMass = 0;
 			Vector3 PreviousPosition = Vector3::Zero();
 			float WheelRadius = 0.4f;
 			float WheelAngle = 0.0f;

@@ -3466,6 +3466,9 @@ namespace Riemann
 			}
 			Scalar(value, "cabinHeight", settings.CabinHeight);
 			Scalar(value, "shellMass", settings.ShellMass);
+			Scalar(value, "crushZoneLength", settings.CrushZoneLength);
+			float railYieldForce = 0;
+			Scalar(value, "railYieldForce", railYieldForce);
 			Scalar(value, "impactRadius", settings.ImpactRadius);
 			Scalar(value, "impulseScale", settings.ImpulseScale);
 			Scalar(value, "minImpactImpulse", settings.MinImpactImpulse);
@@ -3516,6 +3519,9 @@ namespace Riemann
 			float radius = 0.4f, width = 0.25f;
 			float track = 2.0f * settings.HalfExtent.x + 0.1f, wheelbase = 1.3f * settings.HalfExtent.z;
 			float wheelHeight = -settings.HalfExtent.y;
+			float wheelBreakStrain = 0, wheelMass = settings.ShellMass * 0.20f;
+			Scalar(value, "wheelBreakStrain", wheelBreakStrain);
+			Scalar(value, "wheelMass", wheelMass);
 			Scalar(value, "wheelRadius", radius);
 			Scalar(value, "wheelWidth", width);
 			Scalar(value, "wheelTrack", track);
@@ -3527,7 +3533,9 @@ namespace Riemann
 				else wheelHeight = (float)height->numberValue;
 			}
 			if (!valid || settings.HalfExtent.x <= 0.0f || settings.HalfExtent.y <= 0.0f || settings.HalfExtent.z <= 0.0f
-				|| settings.ShellMass <= 0.0f
+				|| settings.ShellMass <= 0.0f || wheelMass <= 0.0f
+				|| settings.CrushZoneLength > 0.75f * settings.HalfExtent.z
+				|| (railYieldForce > 0 && settings.CrushZoneLength <= 0)
 				|| settings.ImpactRadius <= 0.0f || radius <= 0.0f || width <= 0.0f || track <= 0.0f || wheelbase <= 0.0f
 				|| !std::isfinite(rotationLength) || rotationLength <= 1.0e-12f)
 				return Fail("invalid dimensions, material, or transform for '" + id + "'");
@@ -3537,58 +3545,76 @@ namespace Riemann
 			if (!state.Vehicle->Attach(chassis, Transform(position, rotation)))
 				return Fail("chassis is already owned by another aggregate");
 			state.WheelRadius = radius;
+			state.WheelBreakStrain = wheelBreakStrain;
+			state.WheelMass = wheelMass;
 			if (m_VehicleDynamicsDemo)
 			{
-				// The existing crash chassis is lightweight. Scale drivetrain and spring
-				// parameters by mass so the same dimensionless response remains useful.
-				// The deformation cage continues to consume ordinary chassis impacts.
-				constexpr float ReferenceMass = 1200.0f;
-				const float MassScale = 1 / (chassis->InvMass * ReferenceMass);
-				VehicleDynamicsSettings Dynamics; Dynamics.Wheelbase = wheelbase;
-				Dynamics.Forward = rotation * Vector3::UnitZ(); Dynamics.Up = rotation * Vector3::UnitY();
-				Dynamics.EngineInertia *= MassScale; Dynamics.PeakEngineTorque *= MassScale;
-				Dynamics.EngineDamping *= MassScale; Dynamics.IdleGovernor *= MassScale;
-				Dynamics.ClutchStrength *= MassScale; Dynamics.MaximumClutchTorque *= MassScale;
-				Dynamics.DifferentialStrength *= MassScale; Dynamics.MaximumDifferentialTorque *= MassScale;
-				for (int Side : { -1, 1 }) for (int End : { -1, 1 })
+				const float mass = 1.0f / chassis->InvMass;
+				if (!(mass > 0) || !std::isfinite(mass)) return Fail("vehicle dynamics requires a finite positive chassis mass");
+				auto Dynamics = VehicleDynamicsSettings::Roadster(mass, wheelbase, track);
+				Dynamics.Forward = rotation * Vector3::UnitZ();
+				Dynamics.Up = rotation * Vector3::UnitY();
+				Dynamics.CenterOfPressure = position;
+				for (auto& Wheel : Dynamics.Wheels)
 				{
-					VehicleWheelSettings Wheel; Wheel.Radius = radius;
-					Wheel.Attachment = position + rotation * Vector3(Side * track / 2, wheelHeight, End * wheelbase / 2);
+					Wheel.Radius = radius;
+					Wheel.Attachment.y = wheelHeight;
+					Wheel.Attachment = position + rotation * Wheel.Attachment;
 					Wheel.SuspensionDirection = -Dynamics.Up;
-					Wheel.Inertia *= MassScale; Wheel.AngularDamping *= MassScale;
-					Wheel.SpringStiffness *= MassScale; Wheel.Damping *= MassScale; Wheel.MaximumSuspensionForce *= MassScale;
-					Wheel.BrakeTorque *= MassScale; Wheel.HandbrakeTorque = End < 0 ? Wheel.BrakeTorque : 0;
-					Wheel.SteeringFactor = End > 0 ? 1.0f : 0.0f; Wheel.Axle = End > 0 ? 1 : 0;
-					Dynamics.Wheels.push_back(Wheel);
-					chassis->X.y = std::max(chassis->X.y, radius + Wheel.Travel - (chassis->Q * Wheel.Attachment).y);
 				}
+				if (!Dynamics.IsValid()) return Fail("invalid roadster settings for '" + id + "'");
+				for (const auto& Wheel : Dynamics.Wheels)
+					chassis->X.y = std::max(chassis->X.y, radius + Wheel.Travel - (chassis->Q * Wheel.Attachment).y);
 				chassis->V = chassis->W = Vector3::Zero();
 				chassis->CastDynamic()->MaxContactImpulse = FLT_MAX;
 				state.Dynamics = m_World->CreateVehicle(chassis->CastDynamic(), Dynamics);
 				VehicleControls Controls; Controls.Gear = 0; Controls.Brake = 1;
 				state.Dynamics->SetControls(Controls);
 			}
+			if (railYieldForce > 0 && !state.Vehicle->CreateFrontRails(*m_World, railYieldForce))
+				return Fail("invalid front crush rails for '" + id + "'");
 			state.PreviousPosition = state.Vehicle->GetWorldTransform().pos;
 			SceneObjectInstance shell;
 			shell.Id = id + "_body";
 			shell.GeometryPtr = state.Vehicle->GetRenderGeometry();
+			shell.Vehicle = state.Vehicle.get();
 			shell.Color = ReadColor(value.Find("color"), Vector4(0.85f, 0.23f, 0.08f, 1.0f));
 			m_Objects.push_back(shell);
-			for (int side = -1; side <= 1; side += 2)
-			for (int end = -1; end <= 1; end += 2)
+			// Store meshes in axle order for the solver. Scene IDs run rear to front on each side.
+			for (int end : { 1, -1 })
+			for (int side : { -1, 1 })
 			{
 				const Vector3 center(side * track * 0.5f, wheelHeight, end * wheelbase * 0.5f);
 				std::unique_ptr<Geometry> wheel(GeometryFactory::CreateCylinder(
 					center - Vector3(width * 0.5f, 0, 0), center + Vector3(width * 0.5f, 0, 0), radius));
+				wheel->SetFilterData(chassis->Geometries().front()->GetFilterData());
 				wheel->SetSimulationEnabled(false);
 				wheel->SetQueryEnabled(false);
-				state.WheelLocalTransforms.push_back(*wheel->GetTransform());
+				VehicleRenderState::Wheel mount;
+				mount.LocalPose = *wheel->GetTransform();
+				if (wheelBreakStrain > 0)
+				{
+					const auto& cage = state.Vehicle->GetCage();
+					float nearest = FLT_MAX;
+					for (int i = 0; i < cage.GetParticleCount(); ++i)
+					{
+						const float distance = (cage.GetParticle(i).InitialPosition - center).SquareLength();
+						if (distance < nearest) { nearest = distance; mount.MountNode = i; }
+					}
+					const auto& edges = cage.GetEdges();
+					for (int i = 0; i < (int)edges.size(); ++i)
+						if (edges[i].ParticleA == mount.MountNode || edges[i].ParticleB == mount.MountNode)
+							mount.MountEdges.push_back(i);
+				}
 				SceneObjectInstance instance;
-				instance.Id = id + "_wheel_" + std::to_string(state.Wheels.size());
+				const int sceneWheel = (side > 0 ? 2 : 0) + (end > 0 ? 1 : 0);
+				instance.Id = id + "_wheel_" + std::to_string(sceneWheel);
 				instance.GeometryPtr = wheel.get();
+				instance.Vehicle = state.Vehicle.get();
 				instance.Color = Vector4(0.075f, 0.085f, 0.1f, 1.0f);
 				m_Objects.push_back(instance);
-				state.Wheels.push_back(std::move(wheel));
+				mount.AttachedShape = std::move(wheel);
+				state.Wheels.push_back(std::move(mount));
 			}
 			m_Vehicles.push_back(std::move(state));
 		}
@@ -3625,13 +3651,46 @@ namespace Riemann
 			roll.FromRotationAxis(Vector3::UnitX(), state.WheelAngle);
 			for (size_t i = 0; i < state.Wheels.size(); ++i)
 			{
-				const Transform& local = state.WheelLocalTransforms[i];
-				if (state.Dynamics)
+				auto& mount = state.Wheels[i];
+				if (!mount.AttachedShape) continue;
+				Transform pose = state.Dynamics ? state.Dynamics->GetWheelTransform(i) :
+					Transform(frame.LocalToWorld(mount.LocalPose.pos), frame.quat * roll);
+				pose.quat *= mount.LocalPose.quat;
+				float strain = 0;
+				Vector3 localVelocity = Vector3::Zero();
+				if (mount.MountNode >= 0)
 				{
-					const Transform Wheel = state.Dynamics->GetWheelTransform(i);
-					state.Wheels[i]->SetTransform(Wheel.pos, Wheel.quat * local.quat);
+					const auto& cage = state.Vehicle->GetCage();
+					const auto& node = cage.GetParticle(mount.MountNode);
+					pose.pos += frame.quat * (node.Position - node.InitialPosition);
+					localVelocity = node.Velocity;
+					for (int j : mount.MountEdges)
+					{
+						const auto& edge = cage.GetEdges()[j];
+						strain = std::max(strain, std::abs(edge.RestLength / edge.InitialRestLength - 1.0f));
+					}
 				}
-				else state.Wheels[i]->SetTransform(frame.LocalToWorld(local.pos), frame.quat * roll * local.quat);
+				mount.AttachedShape->SetTransform(pose.pos, pose.quat);
+				if (mount.MountNode < 0 || strain < state.WheelBreakStrain) continue;
+
+				const RigidBody* chassis = state.Vehicle->GetBody();
+				const Vector3 axle = pose.quat * Vector3::UnitY();
+				const float spin = state.Dynamics ? state.Dynamics->GetWheels()[i].AngularSpeed :
+					(dt > 0 ? travel / (dt * state.WheelRadius) : 0);
+				RigidBodyParam param;
+				param.rigidType = RigidType::Dynamic;
+				param.linearVelocity = chassis->V + chassis->W.Cross(pose.pos - chassis->X) + frame.quat * localVelocity;
+				param.angularVelocity = chassis->W + axle * spin;
+				param.maxContactImpulse = FLT_MAX;
+				mount.AttachedShape->SetSimulationEnabled(true);
+				mount.AttachedShape->SetQueryEnabled(true);
+				auto* loose = m_World->CreateRigidBody(mount.AttachedShape.release(), param);
+				const float invMass = 1.0f / state.WheelMass;
+				loose->InvInertia *= invMass / loose->InvMass;
+				loose->InvMass = invMass;
+				loose->SetRestitution(0.12f);
+				if (state.Dynamics) state.Dynamics->DetachWheel(i);
+				changed = true;
 			}
 			if (state.LastRevision != state.Vehicle->GetRevision())
 			{

@@ -262,6 +262,9 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 		}
 	}
 	g_Viewer = new Riemann::WorldViewer(g_RenderThread, scene.empty() ? "01_demo.json" : scene);
+	RECT client;
+	GetClientRect(g_hWnd, &client);
+	g_Viewer->SetViewportSize(client.right, client.bottom);
 
 	const float fixedDt = 1.0f / 60.0f;
 	const std::chrono::steady_clock::duration fixedStep = std::chrono::duration_cast<
@@ -325,6 +328,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	switch (message)
 	{
+	case WM_SIZE:
+		if (g_Viewer) g_Viewer->SetViewportSize(LOWORD(lParam), HIWORD(lParam));
+		break;
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
 		EndPaint(hWnd, &ps);

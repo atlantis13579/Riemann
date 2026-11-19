@@ -71,6 +71,7 @@ namespace Riemann
 		bool IsGrounded() const { return m_Ground.Walkable; }
 		void SetPosition(const Vector3& Position);
 		void SetMoveVelocity(const Vector3& Velocity);
+		// Launch along Up at Speed units per second. Only a supported character can jump.
 		bool Jump(float Speed);
 		CharacterMoveResult Move(const Vector3& Displacement, float Dt);
 		void SetFilterData(const CollisionData& Data);
@@ -79,6 +80,8 @@ namespace Riemann
 		friend class PhysicsWorld;
 		CharacterController(PhysicsWorld& World, const CharacterControllerSettings& Settings, const Vector3& Position);
 		void Simulate(float Dt);
+		CharacterMoveResult MoveInternal(const Vector3& Displacement, float Dt, bool IntegrateGravity);
+		float AdvanceVertical(float Dt);
 		void SetPositionInternal(const Vector3& Position);
 		bool Blocks(const Geometry* Shape) const;
 		bool Cast(const Vector3& Displacement, SweepResult& Hit) const;

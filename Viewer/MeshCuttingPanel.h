@@ -32,27 +32,29 @@ namespace Riemann
 		int PiecesY = 3;
 		int PiecesZ = 2;
 		int Seed = 7;
+		bool CapCutFaces = true;
+		Vector3 ViewRight = Vector3::UnitX();
+		Vector3 ViewUp = Vector3::UnitY();
+		float ViewAspect = 1.0f;
 	};
 
 	struct MeshCuttingPiece
 	{
 		StaticMesh Mesh;
 		Vector3 Center = Vector3::Zero();
-		Vector3 Direction = Vector3::Zero();
+		Vector3 SeparationOffset = Vector3::Zero();
 	};
 
 	struct MeshCuttingSource
 	{
 		StaticMesh Mesh;
 		Box3 Bounds = Box3::Empty();
-		float MaxSeparation = 1.0f;
 		std::string Status;
 	};
 
 	struct MeshCuttingResult
 	{
 		Box3 SourceBounds = Box3::Empty();
-		float MaxSeparation = 1.0f;
 		std::vector<MeshCuttingPiece> Pieces;
 		std::string Status;
 	};

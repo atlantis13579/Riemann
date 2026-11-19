@@ -310,18 +310,57 @@ namespace Riemann
 	CharacterMoveResult CharacterController::Move(const Vector3& Displacement, float Dt)
 	{
 		if (!Finite(Displacement) || !Nonnegative(Displacement.SquareLength()) || !Positive(Dt)) throw std::invalid_argument("Invalid character displacement or time step");
+		return MoveInternal(Displacement, Dt, false);
+	}
+
+	// Sweep the rising part even if this step ends below its starting height.
+	// Return the descending displacement so lateral motion can precede landing.
+	float CharacterController::AdvanceVertical(float Dt)
+	{
+		const float Gravity = m_Settings.Gravity;
+		float Remaining = Dt;
+		if (m_VerticalVelocity > 0)
+		{
+			const float Speed = m_VerticalVelocity;
+			float Time = Gravity > 0 ? std::min(Dt, Speed / Gravity) : Dt;
+			const float Rise = Time * (Speed - 0.5f * Gravity * Time);
+			const Vector3 Start = GetPosition();
+			Slide(m_Settings.Up * Rise, false, false);
+			if (m_LastMove.HitAbove)
+			{
+				const float Travel = std::max(0.0f, (GetPosition() - Start).Dot(m_Settings.Up));
+				const float ImpactSpeed = std::sqrt(std::max(0.0f, Speed * Speed - 2 * Gravity * Travel));
+				Time = std::min(Time, 2 * Travel / (Speed + ImpactSpeed));
+				m_VerticalVelocity = 0;
+			}
+			else m_VerticalVelocity = std::max(0.0f, Speed - Gravity * Time);
+			Remaining -= Time;
+		}
+		const float Fall = Remaining * (m_VerticalVelocity - 0.5f * Gravity * Remaining);
+		m_VerticalVelocity -= Gravity * Remaining;
+		return std::min(0.0f, Fall);
+	}
+
+	CharacterMoveResult CharacterController::MoveInternal(const Vector3& Displacement, float Dt, bool IntegrateGravity)
+	{
 		m_World.SynchronizeSceneQueries();
 		const Vector3 Start = GetPosition(); m_LastMove = CharacterMoveResult();
+		const bool InFlight = IntegrateGravity && !IsGrounded();
 		FollowPlatform(); RecoverOverlaps();
 		if (!m_LastMove.RecoveryIncomplete)
 		{
-			const float Vertical = Displacement.Dot(m_Settings.Up);
-			FindGround(m_Settings.RecoveryTolerance, false);
+			const float Vertical = IntegrateGravity ? 0.0f : Displacement.Dot(m_Settings.Up);
+			if (!InFlight) FindGround(m_Settings.RecoveryTolerance, false);
 			const bool WasGrounded = IsGrounded();
-			if (Vertical > 0) Slide(m_Settings.Up * Vertical, false, false);
+			float Fall = std::min(0.0f, Vertical);
+			if (IntegrateGravity) Fall = AdvanceVertical(Dt);
+			else if (Vertical > 0) Slide(m_Settings.Up * Vertical, false, false);
 			Slide(Displacement - m_Settings.Up * Vertical, true, WasGrounded && Vertical <= 0);
-			if (Vertical < 0) Slide(m_Settings.Up * Vertical, false, false);
-			FindGround(WasGrounded && Vertical <= 0 ? m_Settings.GroundSnapDistance : m_Settings.RecoveryTolerance, Vertical <= 0);
+			if (Fall < 0) Slide(m_Settings.Up * Fall, false, false);
+			if (InFlight && m_VerticalVelocity > 0) m_Ground = CharacterGround();
+			else FindGround(WasGrounded && Vertical <= 0 ? m_Settings.GroundSnapDistance : m_Settings.RecoveryTolerance,
+				Vertical <= 0 && !InFlight);
+			if (IntegrateGravity && IsGrounded()) m_VerticalVelocity = 0;
 			RememberPlatform();
 		}
 		else m_Ground = CharacterGround();
@@ -333,9 +372,6 @@ namespace Riemann
 	void CharacterController::Simulate(float Dt)
 	{
 		if (!m_Settings.AutomaticUpdate) return;
-		if (IsGrounded() && m_VerticalVelocity < 0) m_VerticalVelocity = 0;
-		m_VerticalVelocity -= m_Settings.Gravity * Dt;
-		Move((m_MoveVelocity + m_Settings.Up * m_VerticalVelocity) * Dt, Dt);
-		if ((m_LastMove.HitAbove && m_VerticalVelocity > 0) || (IsGrounded() && m_VerticalVelocity < 0)) m_VerticalVelocity = 0;
+		MoveInternal(m_MoveVelocity * Dt, Dt, true);
 	}
 }

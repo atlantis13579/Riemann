@@ -52,6 +52,7 @@ namespace Riemann
 			result.Cells.z = std::max(4, std::min(16, settings.Cells.z));
 			result.CabinHeight = std::min(4.0f * result.HalfExtent.y, NonNegative(settings.CabinHeight, 0.0f));
 			result.ShellMass = std::max(0.01f, std::min(1.0e6f, Positive(settings.ShellMass, defaults.ShellMass)));
+			result.CrushZoneLength = std::min(0.75f * result.HalfExtent.z, NonNegative(settings.CrushZoneLength, 0));
 			result.ImpactRadius = Positive(settings.ImpactRadius, defaults.ImpactRadius);
 			result.ImpulseScale = NonNegative(settings.ImpulseScale, defaults.ImpulseScale);
 			result.MinImpactImpulse = NonNegative(settings.MinImpactImpulse, defaults.MinImpactImpulse);
@@ -104,6 +105,7 @@ namespace Riemann
 	{
 		const int nx = m_Settings.Cells.x, ny = m_Settings.Cells.y, nz = m_Settings.Cells.z;
 		const int count = (nx + 1) * (ny + 1) * (nz + 1);
+		const float cabinEnd = m_Settings.HalfExtent.z - m_Settings.CrushZoneLength;
 		int pinned = 0;
 		for (int z = 1; z < nz; ++z)
 			if (std::fabs(2.0f * z / nz - 1.0f) <= 0.3f) pinned += (nx - 1) * (ny - 1);
@@ -120,6 +122,13 @@ namespace Riemann
 				(0.75f - std::fabs(position.z / m_Settings.HalfExtent.z)) / 0.35f));
 			// This vertical warp keeps the bottom fixed and preserves positive cell volume.
 			position.y += m_Settings.CabinHeight * profile * (float(y) / ny);
+			if (m_Settings.CrushZoneLength > 0)
+			{
+				const float end = std::max(0.0f, (std::abs(position.z) - cabinEnd) / m_Settings.CrushZoneLength);
+				const float height = float(y) / ny;
+				position.x *= 1.0f - 0.09f * end * end - 0.18f * profile * height * height;
+				position.y -= m_Settings.HalfExtent.y * end * end * height * 0.35f;
+			}
 			const int index = m_Cage.AddParticle(position, inverseMass);
 			if (x > 0 && x < nx && y > 0 && y < ny && std::fabs(2.0f * z / nz - 1.0f) <= 0.3f)
 				m_Cage.PinParticle(index, position);
@@ -132,12 +141,29 @@ namespace Riemann
 			const int c = Index(x, y + 1, z), d = Index(x + 1, y + 1, z);
 			const int e = Index(x, y, z + 1), f = Index(x + 1, y, z + 1);
 			const int g = Index(x, y + 1, z + 1), h = Index(x + 1, y + 1, z + 1);
-			m_Cage.AddTetrahedron(a, b, d, h);
-			m_Cage.AddTetrahedron(a, d, c, h);
-			m_Cage.AddTetrahedron(a, c, g, h);
-			m_Cage.AddTetrahedron(a, g, e, h);
-			m_Cage.AddTetrahedron(a, e, f, h);
-			m_Cage.AddTetrahedron(a, f, b, h);
+			const float midZ = 0.5f * (m_Cage.GetParticle(a).Position.z + m_Cage.GetParticle(h).Position.z);
+			const bool safetyCell = m_Settings.CrushZoneLength > 0 && std::abs(midZ) <= cabinEnd;
+			const float compliance = safetyCell ? 0.0f : m_Settings.Material.VolumeCompliance;
+			m_Cage.AddTetrahedron(a, b, d, h, compliance);
+			m_Cage.AddTetrahedron(a, d, c, h, compliance);
+			m_Cage.AddTetrahedron(a, c, g, h, compliance);
+			m_Cage.AddTetrahedron(a, g, e, h, compliance);
+			m_Cage.AddTetrahedron(a, e, f, h, compliance);
+			m_Cage.AddTetrahedron(a, f, b, h, compliance);
+		}
+		if (m_Settings.CrushZoneLength > 0)
+		{
+			// Braced cabin members retain their rest lengths. Toward each bumper
+			// the beams buckle more readily in compression than in tension.
+			const auto& edges = m_Cage.GetEdges();
+			for (int i = 0; i < (int)edges.size(); ++i)
+			{
+				const float z = 0.5f * (m_Cage.GetParticle(edges[i].ParticleA).Position.z
+					+ m_Cage.GetParticle(edges[i].ParticleB).Position.z);
+				const float depth = std::max(0.0f, (std::abs(z) - cabinEnd) / m_Settings.CrushZoneLength);
+				const float compression = m_Settings.Material.EdgeCompliance * depth;
+				m_Cage.SetEdgeCompliance(i, compression, compression * 0.12f);
+			}
 		}
 		std::vector<Index3> triangles;
 		auto Quad = [&](int a, int b, int c, int d, const Vector3& outward)
@@ -178,8 +204,108 @@ namespace Riemann
 		return true;
 	}
 
+	bool VehicleDeformation::CreateFrontRails(PhysicsWorld& world, float yieldForce)
+	{
+		if (!m_Body || m_Body->ReducedRagdoll || world.IsSimulating() || m_RailWorld || m_Settings.CrushZoneLength <= 0)
+			return false;
+		std::vector<Geometry*> shapes;
+		world.GetAllGeometries(&shapes);
+		if (std::none_of(shapes.begin(), shapes.end(), [&](const Geometry* g) { return g->GetParent<RigidBody>() == m_Body; }))
+			return false;
+		const Transform frame = GetWorldTransform();
+		const Vector3 extent = m_Settings.HalfExtent;
+		const float stroke = m_Settings.CrushZoneLength * 0.8f;
+		const float invMass = 1.0f / (m_Settings.ShellMass * 0.20f);
+		ScalarJointDrive drive;
+		drive.Settings.PositionEnabled = true;
+		drive.Settings.MaxForce = yieldForce;
+		drive.Settings.Stiffness = yieldForce / (stroke * 0.04f);
+		drive.Settings.Damping = 2.0f * std::sqrt(drive.Settings.Stiffness / invMass);
+		if (stroke < 1.0e-4f || !(yieldForce > 0) || !drive.IsValid()) return false;
+		m_RailWorld = &world;
+		for (int i = 0; i < 2; ++i)
+		{
+			auto& rail = m_Rails[i];
+			const Vector3 halfSize(0.45f * extent.x, 0.32f * extent.y, 0.05f * stroke);
+			rail.LocalCenter = Vector3((i ? 1 : -1) * halfSize.x, -0.25f * extent.y, extent.z - halfSize.z);
+			const Vector3 center = frame.LocalToWorld(rail.LocalCenter);
+			RigidBodyParam param;
+			param.rigidType = RigidType::Dynamic;
+			param.linearVelocity = m_Body->V + m_Body->W.Cross(center - m_Body->X);
+			param.angularVelocity = m_Body->W;
+			param.maxContactImpulse = m_Body->CastDynamic()->MaxContactImpulse;
+			param.disableGravity = m_Body->CastDynamic()->DisableGravity;
+			auto* bumperShape = GeometryFactory::CreateOBB(center, halfSize, frame.quat);
+			bumperShape->SetFilterData(m_Body->Geometries().front()->GetFilterData());
+			rail.Bumper = world.CreateRigidBody(bumperShape, param);
+			rail.Bumper->InvInertia *= invMass / rail.Bumper->InvMass;
+			rail.Bumper->InvMass = invMass;
+			rail.Bumper->SetRestitution(0);
+			rail.Bumper->IgnoreCollisionWith(m_Body);
+			rail.Slider = world.CreateSliderConstraint(m_Body, rail.Bumper, center,
+				frame.LocalToWorldDirection(Vector3::UnitZ()), -stroke, 0.0f);
+			rail.Slider->SetDrive(drive);
+		}
+		m_Rails[0].Bumper->IgnoreCollisionWith(m_Rails[1].Bumper);
+		for (int i = 0; i < m_Cage.GetParticleCount(); ++i)
+		{
+			const Vector3 p = m_Cage.GetParticle(i).InitialPosition;
+			if (p.z == extent.z && p.y <= 0)
+			{
+				m_BumperNodes.push_back(i);
+				m_Cage.PinParticle(i, p);
+			}
+		}
+		return true;
+	}
+
+	const RigidBody* VehicleDeformation::GetFrontBumper(int side) const
+	{
+		return side >= 0 && side < 2 ? m_Rails[side].Bumper : nullptr;
+	}
+
+	void VehicleDeformation::UpdateFrontRails()
+	{
+		float travel[2];
+		for (int i = 0; i < 2; ++i)
+		{
+			auto* slider = m_Rails[i].Slider;
+			travel[i] = std::max(slider->GetMinDistance(), std::min(0.0f, slider->GetCurrentPosition()));
+			// Elastic-perfectly plastic return mapping: unload elastically from
+			// the new rest position after exceeding the yield displacement F/k.
+			auto drive = slider->GetDrive();
+			const float rest = travel[i] + drive.Settings.MaxForce / drive.Settings.Stiffness;
+			if (rest < drive.TargetPosition)
+			{
+				drive.TargetPosition = rest;
+				slider->SetDrive(drive);
+			}
+		}
+		for (int i : m_BumperNodes)
+		{
+			const Vector3 p = m_Cage.GetParticle(i).InitialPosition;
+			const float t = std::max(0.0f, std::min(1.0f, 0.5f + p.x / (2.0f * m_Rails[1].LocalCenter.x)));
+			m_Cage.SetPinTarget(i, p + Vector3(0, 0, (1.0f - t) * travel[0] + t * travel[1]));
+		}
+	}
+
 	void VehicleDeformation::Detach()
 	{
+		if (m_RailWorld)
+		{
+			for (auto& rail : m_Rails)
+			{
+				if (m_RailWorld->RemoveRigidBody(rail.Bumper))
+				{
+					rail.Bumper->ReleaseGeometries();
+					delete rail.Bumper;
+				}
+				rail = CrushRail();
+			}
+			for (int i : m_BumperNodes) m_Cage.UnpinParticle(i);
+			m_BumperNodes.clear();
+			m_RailWorld = nullptr;
+		}
 		if (m_Body)
 		{
 			SyncRenderGeometry();
@@ -248,12 +374,25 @@ namespace Riemann
 			m_Cage.AddRadialImpulse(impact.Point, m_Settings.ImpactRadius, impulse);
 		}
 		m_Impacts.clear();
+		if (m_RailWorld) UpdateFrontRails();
 		m_Cage.Simulate(dt);
 		SyncRenderGeometry();
 	}
 
 	void VehicleDeformation::Reset()
 	{
+		const Transform frame = GetWorldTransform();
+		for (const auto& rail : m_Rails)
+		{
+			if (!rail.Bumper) continue;
+			rail.Bumper->X = frame.LocalToWorld(rail.LocalCenter);
+			rail.Bumper->Q = frame.quat;
+			rail.Bumper->W = m_Body->W;
+			rail.Bumper->V = m_Body->V + m_Body->W.Cross(rail.Bumper->X - m_Body->X);
+			auto drive = rail.Slider->GetDrive();
+			drive.TargetPosition = 0;
+			rail.Slider->SetDrive(drive);
+		}
 		m_Impacts.clear();
 		m_Cage.Reset();
 		++m_Revision;

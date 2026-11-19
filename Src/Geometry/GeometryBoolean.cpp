@@ -2134,7 +2134,7 @@ namespace Riemann
 		DynamicMeshAABBTree Spatial[2]{ CutMesh[0], CutMesh[1] };
 		IntersectionsQueryResult Intersections = Spatial[0].FindAllIntersections(Spatial[1], nullptr);
 
-		const bool OpOnSingleMesh = false;
+		const bool OpOnSingleMesh = Operation == BooleanOp::TrimToInterior;
 
 		GeometryCut Cut(CutMesh[0], CutMesh[1]);
 		Cut.SnapTolerance = SnapTolerance;
@@ -2240,7 +2240,7 @@ namespace Riemann
 				KeepTri[MeshIdx].resize(MaxTriID);
 				bool CoplanarKeepSameDir = (Operation != BooleanOp::Difference);
 				bool RemoveInside = true;
-				if (Operation == BooleanOp::Intersect || (Operation == BooleanOp::Difference && MeshIdx == 1))
+				if (Operation == BooleanOp::Intersect || Operation == BooleanOp::TrimToInterior || (Operation == BooleanOp::Difference && MeshIdx == 1))
 				{
 					RemoveInside = false;
 				}

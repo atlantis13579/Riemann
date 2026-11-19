@@ -37,7 +37,7 @@ namespace Riemann
 			DeformableEdge Edge; Edge.ParticleA = E[0]; Edge.ParticleB = E[1]; Edge.Explicit = Edge.Enabled = false;
 			Edge.RestLength = Edge.InitialRestLength = (Particles[E[1]].Position - Particles[E[0]].Position).Length();
 			if (!std::isfinite(Edge.RestLength) || Edge.RestLength <= 0) throw std::invalid_argument("Asset placement collapses an edge");
-			Edge.Compliance = m_Settings.EdgeCompliance; Edge.Lambda = 0;
+			Edge.TensionCompliance = Edge.Compliance = m_Settings.EdgeCompliance; Edge.Lambda = 0;
 			EdgeIndices.emplace(E, (int)Edges.size()); Edges.push_back(Edge);
 		}
 		std::vector<DeformableTetrahedron> Tets; std::vector<std::unique_ptr<MaterialElement>> MaterialElements;

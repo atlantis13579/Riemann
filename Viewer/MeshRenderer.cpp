@@ -22,6 +22,7 @@
 #include "../Src/Fluid/FluidSimulation.h"
 #include "../Src/Fluid/MarchingCubes.h"
 #include "../Src/RigidBodyDynamics/RigidBody.h"
+#include "../Src/Modules/Vehicle/VehicleDeformation.h"
 
 namespace Riemann
 {
@@ -543,6 +544,86 @@ namespace Riemann
 
 		*meshes = std::move(result);
 		return true;
+	}
+
+	void BuildVehicleDetails(const VehicleDeformation& vehicle, Geometry* geometry, const std::string& id, std::vector<RenderMeshDesc>* meshes)
+	{
+		RenderMeshDesc detail;
+		detail.WorldTransform = GetGeometryWorldTransform(geometry);
+		auto Triangle = [&](Vector3 a, Vector3 b, Vector3 c, const Vector3& outward)
+		{
+			Vector3 normal = (b - a).Cross(c - a).SafeUnit();
+			if (normal.Dot(outward) < 0) { std::swap(b, c); normal = -normal; }
+			for (const Vector3& p : { a, b, c })
+			{
+				detail.Indices.push_back((uint32_t)detail.Vertices.size());
+				detail.Vertices.emplace_back(p, normal);
+			}
+		};
+		if (const auto* tire = geometry->GetShapeObj<Cylinder3>())
+		{
+			detail.Id = id + ".rim";
+			detail.Color = Vector4(0.55f, 0.59f, 0.62f, 1);
+			const int spokes = 5;
+			for (float side : { -1.0f, 1.0f })
+			{
+				const Vector3 normal(0, side, 0), center = normal * (1.02f * tire->GetHalfHeight());
+				auto RimPoint = [&](float angle, float radius) {
+					return center + Vector3(std::cos(angle), 0, std::sin(angle)) * (radius * tire->Radius);
+				};
+				for (int spoke = 0; spoke < spokes; ++spoke)
+				{
+					const float angle = 6.2831853f * spoke / spokes;
+					const Vector3 a = RimPoint(angle - 0.38f, 0.23f), b = RimPoint(angle + 0.38f, 0.23f);
+					const Vector3 c = RimPoint(angle + 0.12f, 0.66f), d = RimPoint(angle - 0.12f, 0.66f);
+					Triangle(a, b, c, normal); Triangle(a, c, d, normal);
+					Triangle(center, a, b, normal);
+					Triangle(center, b, RimPoint(angle + 6.2831853f / spokes - 0.38f, 0.23f), normal);
+				}
+			}
+		}
+		else if (geometry == vehicle.GetRenderGeometry() && vehicle.GetSettings().CabinHeight > 0)
+		{
+			detail.Id = id + ".glass";
+			detail.Color = Vector4(0.10f, 0.22f, 0.29f, 1);
+			const Vector3i cells = vehicle.GetSettings().Cells;
+			auto Node = [&](int x, int y, int z) {
+				return vehicle.GetCage().GetParticle(x + (cells.x + 1) * (y + (cells.y + 1) * z)).Position;
+			};
+			// Inset each pane on its supporting cage quad so pillars and seals
+			// follow the same deformation as the surrounding sheet metal.
+			auto Pane = [&](Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 outward,
+				float u0, float u1, float v0, float v1)
+			{
+				const Vector3 lift = outward * (vehicle.GetSettings().HalfExtent.y * 0.015f);
+				auto Point = [&](float u, float v) {
+					return Vector3::Lerp(Vector3::Lerp(a, b, u), Vector3::Lerp(d, c, u), v) + lift;
+				};
+				const Vector3 p = Point(u0, v0), q = Point(u1, v0), r = Point(u1, v1), s = Point(u0, v1);
+				Triangle(p, q, r, outward); Triangle(p, r, s, outward);
+			};
+			auto Station = [&](int z) { return std::abs((2.0f * z + 1.0f) / cells.z - 1.0f); };
+			auto Windscreen = [&](int z) { return Station(z) > 0.38f && Station(z) < 0.70f; };
+			for (int z = 0; z < cells.z; ++z)
+			{
+				if (Station(z) < 0.57f)
+					for (int x : { 0, cells.x })
+						Pane(Node(x, cells.y - 1, z), Node(x, cells.y, z), Node(x, cells.y, z + 1),
+							Node(x, cells.y - 1, z + 1), Vector3(x ? 1.0f : -1.0f, 0, 0), 0.1f, 0.94f,
+							Station(z - 1) >= 0.57f || z == cells.z / 2 ? 0.13f : 0,
+							Station(z + 1) >= 0.57f || z + 1 == cells.z / 2 ? 0.87f : 1);
+				if (Windscreen(z))
+					for (int x = 0; x < cells.x; ++x)
+						Pane(Node(x, cells.y, z), Node(x, cells.y, z + 1), Node(x + 1, cells.y, z + 1),
+							Node(x + 1, cells.y, z), Vector3::UnitY(), Windscreen(z - 1) ? 0 : 0.1f,
+							Windscreen(z + 1) ? 1 : 0.9f, x == 0 ? 0.12f : 0, x + 1 == cells.x ? 0.88f : 1);
+			}
+		}
+		if (!detail.Indices.empty())
+		{
+			BuildTriangleWireframeIndices(detail.Indices, &detail.WireframeIndices);
+			meshes->push_back(std::move(detail));
+		}
 	}
 
 	void BuildGeometryMeshes(Geometry* geometry, const std::string& id, const Vector4& color, bool renderBounds, std::vector<RenderMeshDesc>* meshes)

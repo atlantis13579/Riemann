@@ -900,11 +900,26 @@ void TestMeshCutAlgorithms()
 	PlanarCutOptions cutOptions;
 	cutOptions.BoundsPaddingScale = 0.10f;
 	cutOptions.RandomSeed = seed;
+	cutOptions.ClipConvexCells = true;
 
 	std::vector<FracturePiece> pieces;
 	EXPECT(Fracture::ParallelCutX(wall, pieces, pieceCount, cutOptions));
 	EXPECT(HasRenderablePieces(pieces));
 	EXPECT(HasValidPieceConnectivity(pieces));
+	double volume = 0.0;
+	for (const FracturePiece& piece : pieces)
+	{
+		const auto report = MeshValidator::Validate(piece.Mesh);
+		EXPECT(report.BoundaryEdgeCount == 0 && report.NonManifoldEdgeCount == 0);
+		volume += report.AbsoluteVolume;
+	}
+	EXPECT_NEAR(volume, MeshValidator::Validate(wall).AbsoluteVolume, 1.0e-4);
+	cutOptions.CapCutFaces = false;
+	EXPECT(Fracture::ParallelCutX(wall, pieces, pieceCount, cutOptions));
+	EXPECT((int)pieces.size() == pieceCount);
+	for (const FracturePiece& piece : pieces)
+		EXPECT(MeshValidator::Validate(piece.Mesh).BoundaryEdgeCount > 0);
+	cutOptions.CapCutFaces = true;
 
 	pieces.clear();
 	EXPECT(Fracture::ParallelCutY(wall, pieces, pieceCount, cutOptions));
@@ -983,6 +998,21 @@ void TestMeshCutAlgorithms()
 	EXPECT(Fracture::Voxel3D(wall, pieces, piecesX, piecesY, piecesZ, pieceCount, cutOptions));
 	EXPECT(HasRenderablePieces(pieces));
 	EXPECT(HasValidPieceConnectivity(pieces));
+
+	DynamicMesh bunny;
+	EXPECT(bunny.LoadObj(TestDataPath("bunny.obj").c_str()));
+	EXPECT(Fracture::VoronoiFracture3D(bunny, pieces, 16, 7, cutOptions));
+	volume = 0.0;
+	MeshValidationOptions validation;
+	validation.AreaEpsilon = 0;
+	for (const auto& piece : pieces)
+	{
+		const auto report = MeshValidator::Validate(piece.Mesh, validation);
+		EXPECT(report.BoundaryEdgeCount == 0 && report.NonManifoldEdgeCount == 0);
+		volume += report.AbsoluteVolume;
+	}
+	const double bunnyVolume = MeshValidator::Validate(bunny, validation).AbsoluteVolume;
+	EXPECT_NEAR(volume, bunnyVolume, bunnyVolume * 0.002);
 }
 
 void TestConvexDecompositionAlgorithms()

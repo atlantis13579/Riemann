@@ -10,6 +10,7 @@ namespace Riemann
 {
 	class Geometry;
 	class StaticMesh;
+	class VehicleDeformation;
 	class FluidSimulation;
 	class AerodynamicsSimulation;
 
@@ -23,6 +24,7 @@ namespace Riemann
 	};
 
 	void BuildGeometryMeshes(Geometry* geometry, const std::string& id, const Vector4& color, bool renderBounds, std::vector<RenderMeshDesc>* meshes);
+	void BuildVehicleDetails(const VehicleDeformation& vehicle, Geometry* geometry, const std::string& id, std::vector<RenderMeshDesc>* meshes);
 	void BuildTriMeshMeshes(StaticMesh* mesh, const Transform& transform, const std::string& id, const Vector4& color, bool renderBounds, std::vector<RenderMeshDesc>* meshes);
 	void BuildAabbWireMesh(const Box3& aabb, const std::string& id, const Vector4& color, std::vector<RenderMeshDesc>* meshes);
 	bool BuildWaterSurfaceMesh(const FluidSimulation& simulation, const std::string& id,

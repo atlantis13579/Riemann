@@ -58,6 +58,7 @@ namespace Riemann
 		float RestLength;
 		float InitialRestLength;
 		float Compliance;
+		float TensionCompliance;
 		float Lambda;
 		bool Explicit = true, Enabled = true;
 	};
@@ -91,6 +92,7 @@ namespace Riemann
 
 		int AddParticle(const Vector3& position, float inverseMass = 1.0f);
 		int AddEdge(int particleA, int particleB, float compliance = -1.0f);
+		void SetEdgeCompliance(int edge, float compression, float tension);
 		// Tetrahedra also create their six elastic edges, sharing existing edges.
 		int AddTetrahedron(int a, int b, int c, int d, float compliance = -1.0f);
 		int AddMaterial(const TetrahedralMaterial& Material);
@@ -105,6 +107,7 @@ namespace Riemann
 		double GetMaterialEnergy() const;
 		bool SetSurfaceTriangles(const std::vector<Index3>& triangles);
 		bool PinParticle(int index, const Vector3& position);
+		bool SetPinTarget(int index, const Vector3& position);
 		bool UnpinParticle(int index);
 		bool SetParticlePosition(int index, const Vector3& position, bool resetVelocity = true);
 		bool SetParticleVelocity(int index, const Vector3& velocity);

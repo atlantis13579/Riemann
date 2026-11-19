@@ -16,6 +16,7 @@ namespace Riemann
 			Union,
 			Difference,
 			Intersect,
+			TrimToInterior,
 		};
 		BooleanOp Operation = BooleanOp::Union;
 

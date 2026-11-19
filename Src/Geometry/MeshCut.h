@@ -103,6 +103,10 @@ namespace Riemann
 		bool SimplifyAlongCut = false;
 		bool IncludeOutsideCell = false;
 		int MinTriangleCount = 1;
+		bool CapCutFaces = true;
+		// Plane clipping shares intersection vertices across each cross-section.
+		// Mesh intersection remains the default for existing authored fracture assets.
+		bool ClipConvexCells = false;
 	};
 
 	class MeshCut
