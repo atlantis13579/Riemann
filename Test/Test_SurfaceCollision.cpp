@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <stdexcept>
+#include <chrono>
 
 namespace
 {
@@ -144,11 +145,11 @@ namespace
 		}
 		return Faces;
 	}
-	void SurfaceIndexAgainstBruteForce()
+	void SurfaceIndexAgainstBruteForce(SurfaceAcceleration Acceleration)
 	{
 		const int Width = 5, Height = 4, Count = Width * Height;
 		const auto FacesA = GridFaces(Width, Height), FacesB = GridFaces(Height, Width);
-		SurfaceCollisionMesh A(Count, FacesA), B(Count, FacesB);
+		SurfaceCollisionMesh A(Count, FacesA, {}, Acceleration), B(Count, FacesB, {}, Acceleration);
 		std::vector<Vector3> StartA(Count), EndA(Count), StartB(Count), EndB(Count);
 		uint32_t State = 91723;
 		auto Random = [&]() { State = 1664525 * State + 1013904223; return (float)(State >> 8) / (float)(1 << 24); };
@@ -180,16 +181,23 @@ namespace
 			std::vector<SurfaceCandidate> Actual; A.FindCandidates(B, Actual); const auto Sorted = Keys(Actual, true);
 			EXPECT(Sorted == Expected); EXPECT(std::adjacent_find(Sorted.begin(), Sorted.end()) == Sorted.end());
 			// A fresh tree and a repeatedly refitted tree must produce the same order.
-			SurfaceCollisionMesh FreshA(Count, FacesA), FreshB(Count, FacesB);
+			SurfaceCollisionMesh FreshA(Count, FacesA, {}, Acceleration), FreshB(Count, FacesB, {}, Acceleration);
 			FreshA.Update(StartA, EndA, MarginA); FreshB.Update(StartB, EndB, MarginB);
 			std::vector<SurfaceCandidate> Fresh; FreshA.FindCandidates(FreshB, Fresh); EXPECT(Keys(Fresh) == Keys(Actual));
+			SurfaceCollisionMesh Reference(Count, FacesA); Reference.Update(StartA, EndA, MarginA);
+			for (bool ExcludeNeighbors : { false, true })
+			{
+				A.FindSelfCandidates(Actual, ExcludeNeighbors); Reference.FindSelfCandidates(Fresh, ExcludeNeighbors);
+				EXPECT(Keys(Actual) == Keys(Fresh));
+			}
+			Reference.FindCandidates(B, Actual); EXPECT(Keys(Actual, true) == Expected);
 		}
 	}
-	void SurfaceIndexTopologyAndValidation()
+	void SurfaceIndexTopologyAndValidation(SurfaceAcceleration Acceleration)
 	{
 		std::vector<SurfaceCandidate> Candidates; std::vector<int> Hits;
 		const std::vector<Index3> Quad = { Index3(0, 1, 2), Index3(1, 3, 2) };
-		SurfaceCollisionMesh Connected(4, Quad); const std::vector<Vector3> Collapsed(4, Vector3::Zero());
+		SurfaceCollisionMesh Connected(4, Quad, {}, Acceleration); const std::vector<Vector3> Collapsed(4, Vector3::Zero());
 		auto Reject = [](auto Function) { bool Failed = false; try { Function(); } catch (const std::exception&) { Failed = true; } EXPECT(Failed); };
 		EXPECT(!Connected.IsReady()); Reject([&] { Connected.GetVertexBounds(0); });
 		Reject([&] { Connected.FindSelfCandidates(Candidates); });
@@ -211,10 +219,10 @@ namespace
 		Reject([&] { DynamicAABBTree Invalid(-1); });
 		Reject([&] { DynamicAABBTree Invalid(std::numeric_limits<float>::infinity()); });
 		// Disconnected panels may have identical positions without sharing topology.
-		SurfaceCollisionMesh Disconnected(6, { Index3(0, 1, 2), Index3(3, 4, 5) });
+		SurfaceCollisionMesh Disconnected(6, { Index3(0, 1, 2), Index3(3, 4, 5) }, {}, Acceleration);
 		const std::vector<Vector3> Six(6, Vector3::Zero()); Disconnected.Update(Six, Six, 0);
 		Disconnected.FindSelfCandidates(Candidates); EXPECT(Candidates.size() == 15);
-		SurfaceCollisionMesh First(3, { Index3(0, 1, 2) }), Second(3, { Index3(0, 1, 2) });
+		SurfaceCollisionMesh First(3, { Index3(0, 1, 2) }, {}, Acceleration), Second(3, { Index3(0, 1, 2) }, {}, Acceleration);
 		const std::vector<Vector3> Three(3, Vector3::Zero()); First.Update(Three, Three, 0); Second.Update(Three, Three, 0);
 		First.FindCandidates(Second, Candidates); EXPECT(Candidates.size() == 15);
 		// No inherited rigid-body padding may bridge this gap between tiny surfaces.
@@ -223,7 +231,7 @@ namespace
 		First.Update(Raised, std::vector<Vector3>(3, Vector3(0, 0, -0.001f)), 0);
 		First.FindCandidates(Second, Candidates); EXPECT(Candidates.size() == 15);
 	}
-	void SurfaceIndexSeparatedPanels()
+	void SurfaceIndexSeparatedPanels(SurfaceAcceleration Acceleration)
 	{
 		const int PanelCount = 1024; std::vector<Vector3> Positions; std::vector<Index3> Faces;
 		for (int I = 0; I < PanelCount; ++I)
@@ -232,13 +240,68 @@ namespace
 			Positions.emplace_back(X, 0, 0); Positions.emplace_back(X + 1, 0, 0); Positions.emplace_back(X, 1, 0);
 			Faces.emplace_back(Base, Base + 1, Base + 2);
 		}
-		SurfaceCollisionMesh Mesh((int)Positions.size(), Faces); Mesh.Update(Positions, Positions, 0.01f);
+		SurfaceCollisionMesh Mesh((int)Positions.size(), Faces, {}, Acceleration); Mesh.Update(Positions, Positions, 0.01f);
 		std::vector<SurfaceCandidate> Candidates; Mesh.FindSelfCandidates(Candidates); EXPECT(Candidates.empty());
 		// Move one isolated panel onto another, retaining all other leaves.
 		for (int I = 0; I < 3; ++I) Positions[I] = Positions[I + 3];
 		Mesh.Update(Positions, Positions, 0.01f); Mesh.FindSelfCandidates(Candidates);
 		EXPECT(Candidates.size() >= 6 && Candidates.size() <= 15);
 		for (const auto& C : Candidates) EXPECT(C.A < 6 && C.B < 6);
+	}
+	void HierarchicalHashQueries()
+	{
+		SpatialHashHierarchical Hash; std::vector<Box3> Boxes; std::vector<int> Hits;
+		uint32_t State = 13839; auto Random = [&]() { State = 1664525 * State + 1013904223; return (float)(State >> 8) / (float)(1 << 24); };
+		for (int I = 0; I < 256; ++I)
+		{
+			const float Size = std::ldexp(1.0f, I % 18 - 10);
+			const Vector3 P(8 * Random() - 4, 8 * Random() - 4, 8 * Random() - 4);
+			Boxes.emplace_back(P, P + Vector3(Size, Size * Random(), Size * Random()));
+		}
+		// Exact cell boundaries, collapsed features, negative coordinates and
+		// mixed scales must all retain inclusive AABB overlap semantics.
+		Boxes.emplace_back(Vector3(-2), Vector3(-1)); Boxes.emplace_back(Vector3(-1), Vector3::Zero());
+		Boxes.emplace_back(Vector3::Zero(), Vector3::Zero());
+		for (int Pass = 0; Pass < 3; ++Pass)
+		{
+			Hash.Build(Boxes);
+			auto Check = [&](const Box3& Q)
+			{
+				Hash.Query(Q, Hits); std::vector<int> Expected;
+				for (size_t I = 0; I < Boxes.size(); ++I) if (Boxes[I].Intersect(Q)) Expected.push_back((int)I);
+				EXPECT(Hits == Expected);
+			};
+			for (const auto& Box : Boxes) { Check(Box); Check(Box3(Box.Min, Box.Min)); Check(Box3(Box.Max, Box.Max)); }
+			Check(Box3(Vector3(-1e30f), Vector3(1e30f)));
+			Check(Box3(Vector3(1e35f), Vector3(2e35f)));
+			for (auto& Box : Boxes) { Box.Min = Box.Min * 8 + Vector3(-100); Box.Max = Box.Max * 8 + Vector3(-100); }
+		}
+		Hash.Build({ Box3(Vector3(-1e30f), Vector3(-1e30f)), Box3(Vector3(1e30f), Vector3(1e30f)) });
+		Hash.Query(Box3(Vector3(-1e30f), Vector3(1e30f)), Hits); EXPECT(Hits == std::vector<int>({ 0, 1 }));
+		Hash.Build({}); Hash.Query(Box3(Vector3(-1), Vector3(1)), Hits); EXPECT(Hits.empty());
+	}
+	void SurfaceIndexBenchmark()
+	{
+		const int Width = 25, Height = 21; const auto Faces = GridFaces(Width, Height);
+		SurfaceCollisionMesh Tree(Width * Height, Faces), Hash(Width * Height, Faces, {}, SurfaceAcceleration::HierarchicalHash);
+		std::vector<Vector3> P(Width * Height), Previous; std::vector<SurfaceCandidate> A, B;
+		double TreeTime = 0, HashTime = 0;
+		for (int Frame = 0; Frame < 60; ++Frame)
+		{
+			for (int I = 0; I < Width * Height; ++I)
+			{
+				const float X = (I % Width) * 0.4f, Y = (I / Width) * 0.4f;
+				P[I] = Vector3(X, Y, 0.3f * std::sin(X + Frame * 0.1f) * std::cos(Y));
+			}
+			if (Previous.empty()) Previous = P;
+			const auto Start = std::chrono::steady_clock::now(); Tree.Update(Previous, P, 0.1f); Tree.FindSelfCandidates(A);
+			const auto Middle = std::chrono::steady_clock::now(); Hash.Update(Previous, P, 0.1f); Hash.FindSelfCandidates(B);
+			const auto End = std::chrono::steady_clock::now();
+			TreeTime += std::chrono::duration<double, std::milli>(Middle - Start).count();
+			HashTime += std::chrono::duration<double, std::milli>(End - Middle).count();
+			EXPECT(Keys(A) == Keys(B)); Previous = P;
+		}
+		printf("Surface index update + self query: tree %.3f ms, hash %.3f ms\n", TreeTime / 60, HashTime / 60);
 	}
 	void RefinedSweeps()
 	{
@@ -295,5 +358,9 @@ void TestSurfaceCollision()
 {
 	DistanceFeatures(); ContinuousFeatures(); GrazingBudgetAndCovariance(); SampledNoMissAndValidation();
 	RefinedSweeps();
-	SurfaceIndexAgainstBruteForce(); SurfaceIndexTopologyAndValidation(); SurfaceIndexSeparatedPanels();
+	for (auto Acceleration : { SurfaceAcceleration::DynamicTree, SurfaceAcceleration::HierarchicalHash })
+	{
+		SurfaceIndexAgainstBruteForce(Acceleration); SurfaceIndexTopologyAndValidation(Acceleration); SurfaceIndexSeparatedPanels(Acceleration);
+	}
+	HierarchicalHashQueries(); SurfaceIndexBenchmark();
 }

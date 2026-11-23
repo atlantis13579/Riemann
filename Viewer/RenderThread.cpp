@@ -101,7 +101,7 @@ namespace Riemann
 			}
 
 			DrainCommands();
-			if (m_Renderer)
+			if (m_Renderer && m_Active.load())
 			{
 				m_Renderer->Render();
 				++frameCount;

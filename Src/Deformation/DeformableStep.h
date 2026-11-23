@@ -26,6 +26,9 @@ namespace Riemann
 		DeformableStep(const DeformableStep&) = delete;
 		DeformableStep& operator=(const DeformableStep&) = delete;
 		void Solve();
+		void SolveConstraints();
+		void CollectCollisionGeometries(std::vector<Geometry*>& Geometries);
+		void SolveContacts(const BroadPhaseResult& Pairs);
 		void Finish();
 		const std::vector<RigidBody*>& GetContactBodies() const { return m_RigidCollision->GetTouchedBodies(); }
 	private:
@@ -36,6 +39,7 @@ namespace Riemann
 		std::vector<RigidRow> m_RigidRows;
 		std::unique_ptr<DeformableCollision> m_Collision;
 		std::unique_ptr<DeformableRigidCollision> m_RigidCollision;
+		BroadPhaseResult m_LocalPairs;
 		float m_Dt, m_FrameDt;
 		bool m_Last;
 	};

@@ -1,4 +1,4 @@
-#include "../Src/Modules/CharacterController/CharacterController.h"
+#include "../Src/Modules/Robotics/RobotController.h"
 #include "SceneWorld.h"
 #include "../Src/Modules/Vehicle/VehicleDynamics.h"
 #include "../Src/RigidBodyDynamics/Ragdoll.h"
@@ -46,6 +46,32 @@ namespace Riemann
 	namespace
 	{
 		const float kPi = 3.14159265358979323846f;
+
+		bool AttachClothPatchToSphere(ClothSystem& Cloth, Geometry* Shape, int Count, float Compliance)
+		{
+			auto* Body = Shape ? Shape->GetParent<RigidBody>() : nullptr;
+			const auto* Sphere = Shape ? Shape->GetShapeObj<Sphere3>() : nullptr;
+			if (!Body || !Sphere || Count < 1 || Count > 16 || !std::isfinite(Compliance) || Compliance < 0) return false;
+			const Vector3 Center = Body->GetGeometryTransform(Shape).LocalToWorld(Sphere->Center);
+			std::vector<std::pair<float, int>> Vertices;
+			for (int I = 0; I < Cloth.GetParticleCount(); ++I)
+			{
+				const auto& P = Cloth.GetParticle(I);
+				if (!P.Pinned && P.InverseMass > 0) Vertices.emplace_back((P.Position - Center).SquareLength(), I);
+			}
+			if ((int)Vertices.size() < Count) return false;
+			std::sort(Vertices.begin(), Vertices.end());
+			for (int I = 0; I < Count; ++I)
+			{
+				const int Vertex = Vertices[I].second;
+				Vector3 Normal = (Cloth.GetParticle(Vertex).Position - Center).SafeUnit();
+				if (Normal.IsZero()) Normal = Vector3::UnitZ();
+				const Vector3 Anchor = Center + Normal * (Sphere->Radius + Cloth.GetSettings().Thickness);
+				Cloth.SetParticlePosition(Vertex, Anchor);
+				Cloth.AttachToRigid(BarycentricPoint::Vertex(Vertex), Body, Anchor, Compliance);
+			}
+			return true;
+		}
 
 		class AttachmentPayloadGravity final : public ForceField
 		{
@@ -912,6 +938,11 @@ namespace Riemann
 				return desc;
 			}
 			desc.Type = Lowercase(ReadString(value->Find("type"), std::string()));
+			const bool LegacyTracer = desc.Type == "smoke3d";
+			const std::string Algorithm = Lowercase(ReadString(value->Find("algorithm"), LegacyTracer ? "incompressible" : "barotropic"));
+			desc.Aerodynamics = AerodynamicsSimulationSettings(Algorithm == "incompressible" ? AerodynamicsAlgorithm::Incompressible
+				: Algorithm == "barotropic" ? AerodynamicsAlgorithm::Barotropic : (AerodynamicsAlgorithm)255);
+			if (LegacyTracer || desc.Type == "aerodynamics_simulation") desc.Type = "aerodynamics3d";
 			desc.Method = Lowercase(ReadString(value->Find("method"), desc.Method));
 			desc.Backend = Lowercase(ReadString(value->Find("backend"), desc.Backend));
 			desc.AllowBackendFallback = ReadBool(value->Find("allowBackendFallback"), desc.AllowBackendFallback);
@@ -944,45 +975,59 @@ namespace Riemann
 			desc.VisualizationThreshold = ReadFloat(value->Find("visualizationThreshold"), desc.VisualizationThreshold);
 			desc.InteractionRadius = ReadFloat(value->Find("interactionRadius"), desc.InteractionRadius);
 			desc.InteractionStrength = ReadFloat(value->Find("interactionStrength"), desc.InteractionStrength);
-			desc.Smoke.BoundsMin = desc.BoundsMin;
-			desc.Smoke.Backend = desc.Backend == "cuda" ? SmokeBackend::CUDA
-				: (desc.Backend == "compute" || desc.Backend == "computeshader") ? SmokeBackend::ComputeShader : SmokeBackend::CPU;
-			desc.Smoke.AllowBackendFallback = desc.AllowBackendFallback;
-			desc.Smoke.BoundsMax = desc.BoundsMax;
-			desc.Smoke.Resolution = desc.Resolution;
-			desc.Smoke.PressureIterations = desc.PressureIterations;
-			desc.Smoke.MaxTimeStep = desc.MaxTimeStep;
-			desc.Smoke.MaxSubsteps = desc.MaxSubsteps;
-			desc.Smoke.Buoyancy = ReadFloat(value->Find("buoyancy"), desc.Smoke.Buoyancy);
-			desc.Smoke.SmokeWeight = ReadFloat(value->Find("smokeWeight"), desc.Smoke.SmokeWeight);
-			desc.Smoke.Vorticity = ReadFloat(value->Find("vorticity"), desc.Smoke.Vorticity);
-			desc.Smoke.DensityDissipation = ReadFloat(value->Find("densityDissipation"), desc.Smoke.DensityDissipation);
-			desc.Smoke.Cooling = ReadFloat(value->Find("cooling"), desc.Smoke.Cooling);
-			desc.SmokeExtinction = ReadFloat(value->Find("smokeExtinction"), desc.SmokeExtinction);
-			desc.SmokeColor = ReadVector3(value->Find("smokeColor"), desc.SmokeColor);
+			desc.Aerodynamics.Gravity = desc.Gravity;
+			desc.Aerodynamics.AmbientDensity = desc.AmbientDensity;
+			desc.Aerodynamics.AmbientPressure = desc.AmbientPressure;
+			desc.Aerodynamics.SpeedOfSound = desc.SpeedOfSound;
+			desc.Aerodynamics.AdiabaticExponent = desc.AdiabaticExponent;
+			desc.Aerodynamics.DynamicViscosity = desc.DynamicViscosity;
+			desc.Aerodynamics.ArtificialViscosity = desc.ArtificialViscosity;
+			desc.Aerodynamics.ParticleSpacing = desc.ParticleSpacing;
+			desc.Aerodynamics.SmoothingRadius = desc.SmoothingRadius;
+			desc.Aerodynamics.BoundaryRestitution = desc.BoundaryRestitution;
+			desc.Aerodynamics.AcousticCFL = desc.AcousticCFL;
+			desc.Aerodynamics.Method = desc.Method == "eulerian" ? FluidSimulationMethod::Eulerian
+				: desc.Method == "lagrangian" ? FluidSimulationMethod::Lagrangian : (FluidSimulationMethod)255;
+			desc.Aerodynamics.BoundsMin = desc.BoundsMin;
+			desc.Aerodynamics.Backend = desc.Backend == "cuda" ? FluidBackend::CUDA
+				: (desc.Backend == "compute" || desc.Backend == "computeshader" || desc.Backend == "compute_shader") ? FluidBackend::ComputeShader
+				: desc.Backend == "simd" ? FluidBackend::SIMD : desc.Backend == "cpu" ? FluidBackend::CPU : (FluidBackend)255;
+			desc.Aerodynamics.AllowBackendFallback = desc.AllowBackendFallback;
+			desc.Aerodynamics.BoundsMax = desc.BoundsMax;
+			desc.Aerodynamics.Resolution = desc.Resolution;
+			desc.Aerodynamics.PressureIterations = desc.PressureIterations;
+			desc.Aerodynamics.MaxTimeStep = desc.MaxTimeStep;
+			desc.Aerodynamics.MaxSubsteps = desc.MaxSubsteps;
+			desc.Aerodynamics.Buoyancy = ReadFloat(value->Find("buoyancy"), desc.Aerodynamics.Buoyancy);
+			desc.Aerodynamics.TracerWeight = ReadFloat((value->Find("tracerWeight") ? value->Find("tracerWeight") : value->Find("smokeWeight")), desc.Aerodynamics.TracerWeight);
+			desc.Aerodynamics.Vorticity = ReadFloat(value->Find("vorticity"), desc.Aerodynamics.Vorticity);
+			desc.Aerodynamics.DensityDissipation = ReadFloat(value->Find("densityDissipation"), desc.Aerodynamics.DensityDissipation);
+			desc.Aerodynamics.Cooling = ReadFloat(value->Find("cooling"), desc.Aerodynamics.Cooling);
+			desc.TracerExtinction = ReadFloat((value->Find("tracerExtinction") ? value->Find("tracerExtinction") : value->Find("smokeExtinction")), desc.TracerExtinction);
+			desc.TracerColor = ReadVector3((value->Find("tracerColor") ? value->Find("tracerColor") : value->Find("smokeColor")), desc.TracerColor);
 			const JsonValue* emitters = value->Find("emitters");
 			if (emitters && emitters->IsArray())
 			{
 				for (const JsonValue& emitter : emitters->arrayValue)
 				{
-					SmokeEmitter source;
+					AerodynamicsEmitter source;
 					source.Position = ReadVector3(emitter.Find("position"), source.Position);
 					source.Velocity = ReadVector3(emitter.Find("velocity"), source.Velocity);
 					source.Radius = ReadFloat(emitter.Find("radius"), source.Radius);
 					source.Density = ReadFloat(emitter.Find("density"), source.Density);
 					source.Temperature = ReadFloat(emitter.Find("temperature"), source.Temperature);
-					desc.Smoke.Emitters.push_back(source);
+					desc.Aerodynamics.Emitters.push_back(source);
 				}
 			}
-			const JsonValue* obstacles = value->Find("smokeObstacles");
+			const JsonValue* obstacles = (value->Find("obstacles") ? value->Find("obstacles") : value->Find("smokeObstacles"));
 			if (obstacles && obstacles->IsArray())
 			{
 				for (const JsonValue& obstacle : obstacles->arrayValue)
 				{
-					SmokeObstacle solid;
+					AerodynamicsObstacle solid;
 					solid.Center = ReadVector3(obstacle.Find("center"), solid.Center);
 					solid.Radius = ReadFloat(obstacle.Find("radius"), solid.Radius);
-					desc.Smoke.Obstacles.push_back(solid);
+					desc.Aerodynamics.Obstacles.push_back(solid);
 				}
 			}
 
@@ -1344,6 +1389,11 @@ namespace Riemann
 		m_DestructionSets.clear();
 		m_DestructionEvents.clear(); m_DestructionEventCount = m_DestructionDroppedEvents = 0;
 		m_Objects.clear();
+		m_WalkingRobot = nullptr; m_RobotSurfaces.clear(); m_TrainingDisplay = false; m_TrainingBuildIndex = 0;
+		m_SweepWalkingRobot = nullptr; m_SweepRobotPose.reset();
+		m_SpiderWalkingDemo = false; m_RobotAutoWalk = false;
+		m_RobotDriveInput = m_RobotDriveCommand = m_SweepRobotPrevious = Vector3::Zero();
+		m_RobotDriveHeading = m_SweepRobotPhase = 0;
 		m_Vehicles.clear();
 		m_RopeSurfaces.clear();
 		m_DemoStrands=nullptr; m_DemoStrandInstanceId=0; m_StrandDemoTwist=0; m_StrandRootLocal.clear();
@@ -1708,7 +1758,6 @@ namespace Riemann
 
 		std::ostringstream ss;
 		ss << file.rdbuf();
-		m_BaseDirectory = DirectoryOf(fileName);
 		return LoadFromText(ss.str(), fileName, errorMessage);
 	}
 
@@ -1725,6 +1774,7 @@ namespace Riemann
 			return false;
 		}
 
+		m_BaseDirectory = DirectoryOf(sourceName);
 		return LoadParsedScene(root, sourceName, errorMessage);
 	}
 
@@ -2385,6 +2435,16 @@ namespace Riemann
 				settings.Thickness = ReadFloat(clothValue.Find("thickness"), settings.Thickness);
 				settings.Damping = ReadFloat(clothValue.Find("damping"), settings.Damping);
 				settings.Gravity = ReadVector3(clothValue.Find("gravity"), settings.Gravity);
+				settings.Model = ReadString(clothValue.Find("model"), "distanceLinks") == "triangleStrain" ? ClothModel::TriangleStrain : ClothModel::DistanceLinks;
+				settings.Substeps = std::max(1, ReadInt(clothValue.Find("substeps"), settings.Substeps));
+				settings.UseSurfaceDensity = clothValue.Find("surfaceDensity") != nullptr;
+				settings.SurfaceDensity = ReadFloat(clothValue.Find("surfaceDensity"), settings.SurfaceDensity);
+				settings.Collision.RigidCoupling = ReadBool(clothValue.Find("rigidCoupling"), false);
+				settings.AerodynamicsEnabled = ReadBool(clothValue.Find("aerodynamics"), true);
+				settings.Material.StretchUCompliance = ReadFloat(clothValue.Find("stretchUCompliance"), settings.Material.StretchUCompliance);
+				settings.Material.StretchVCompliance = ReadFloat(clothValue.Find("stretchVCompliance"), settings.Material.StretchVCompliance);
+				settings.Material.ShearCompliance = ReadFloat(clothValue.Find("shearCompliance"), settings.Material.ShearCompliance);
+				settings.Material.BendingCompliance = ReadFloat(clothValue.Find("bendingCompliance"), settings.Material.BendingCompliance);
 				const Vector3 center = ReadVector3(clothValue.Find("center"), Vector3::Zero());
 				const Vector3 horizontalAxis = ReadVector3(clothValue.Find("horizontalAxis"), Vector3::UnitX());
 				const Vector3 verticalAxis = ReadVector3(clothValue.Find("verticalAxis"), Vector3::UnitY());
@@ -2394,9 +2454,15 @@ namespace Riemann
 					: m_World->CreateCloth(settings, center, horizontalAxis, verticalAxis);
 				if (!ModernDemo && PinTop)
 				{
+					const bool Corners = ReadBool(clothValue.Find("pinTopCorners"), false);
+					const float PinWidthScale = ReadFloat(clothValue.Find("pinWidthScale"), 1);
+					if (!std::isfinite(PinWidthScale) || PinWidthScale <= 0 || PinWidthScale > 1) throw std::invalid_argument("Cloth pinWidthScale must be in (0, 1]");
 					for (int column = 0; column < cloth->GetColumns(); ++column)
 					{
-						cloth->PinParticle(0, column, cloth->GetParticle(0, column).Position);
+						if (Corners && column != 0 && column + 1 != cloth->GetColumns()) continue;
+						const Vector3 Position = cloth->GetParticle(0, column).Position;
+						const Vector3 Axis = horizontalAxis.SafeUnit();
+						cloth->PinParticle(0, column, Position + Axis * ((Position - center).Dot(Axis) * (PinWidthScale - 1)));
 					}
 				}
 
@@ -2416,6 +2482,18 @@ namespace Riemann
 						ReadFloat(clothValue.Find("sphereRadius"), 1.0f), ReadVector3(clothValue.Find("sphereCenter"), colliderBody ? colliderBody->X : Vector3::Zero())))
 					{
 						if (errorMessage) *errorMessage = sourceName + ": cloth references an invalid sphere body";
+						return false;
+					}
+				}
+
+				const std::string attachmentName = ReadString(clothValue.Find("attachBody"), std::string());
+				if (!attachmentName.empty())
+				{
+					Geometry* Shape = nullptr;
+					for (const auto& Object : m_Objects) if (Object.Id == attachmentName) Shape = Object.GeometryPtr;
+					if (!AttachClothPatchToSphere(*cloth, Shape, ReadInt(clothValue.Find("attachmentCount"), 3), ReadFloat(clothValue.Find("attachmentCompliance"), 1e-5f)))
+					{
+						if (errorMessage) *errorMessage = sourceName + ": cloth attachment requires a valid sphere and movable cloth vertices";
 						return false;
 					}
 				}
@@ -2588,6 +2666,9 @@ namespace Riemann
 			TouchRenderRevision();
 		}
 
+		if (ReadBool(root.Find("walkingRobot"), false) && !CreateWalkingRobot(ReadBool(root.Find("robotCourse"), false),
+			ReadString(root.Find("robotModel"), "SpiderPolicy"), ReadBool(root.Find("robotLandmarks"), false), errorMessage))
+			return false;
 		if (!CreateCharacterDemo(root, errorMessage)) return false;
 		if (!CreateReducedRagdollDemo(root, errorMessage)) return false;
 		if (!CreateVehicles(root, sourceName, errorMessage)) return false;
@@ -2617,6 +2698,16 @@ namespace Riemann
 					? DefaultRagdollDefinition(m_BaseDirectory, settings.DefinitionFile)
 					: m_BaseDirectory + definitionFile;
 				settings.Scale = ReadFloat(ragdollValue.Find("scale"), settings.Scale);
+				settings.LinearDamping = ReadFloat(ragdollValue.Find("linearDamping"), settings.LinearDamping);
+				settings.AngularDamping = ReadFloat(ragdollValue.Find("angularDamping"), settings.AngularDamping);
+				const SceneObjectDesc bodyOverrides = ReadObjectDesc(ragdollValue);
+				if (!bodyOverrides.FrictionValid || !std::isfinite(settings.LinearDamping)
+					|| !std::isfinite(settings.AngularDamping) || settings.LinearDamping < 0.0f
+					|| settings.LinearDamping > 1.0f || settings.AngularDamping < 0.0f || settings.AngularDamping > 1.0f)
+				{
+					if (errorMessage) *errorMessage = sourceName + ": invalid ragdoll friction or damping";
+					return false;
+				}
 				settings.LinearVelocity = ReadVector3(ragdollValue.Find("linearVelocity"), settings.LinearVelocity);
 				settings.AngularVelocity = ReadVector3(ragdollValue.Find("angularVelocity"), settings.AngularVelocity);
 				settings.JointVelocity = ReadFloat(ragdollValue.Find("jointVelocity"), settings.JointVelocity);
@@ -2635,6 +2726,8 @@ namespace Riemann
 				for (size_t i = 0; i < ragdoll->GetBodies().size(); ++i)
 				{
 					RigidBodyDynamic* body = ragdoll->GetBodies()[i];
+					if (bodyOverrides.HasFriction) body->SetFriction(bodyOverrides.FrictionDynamic, bodyOverrides.FrictionStatic);
+					if (bodyOverrides.HasRestitution) body->SetRestitution(bodyOverrides.Restitution);
 					for (size_t shapeIndex = 0; shapeIndex < body->Geometries().size(); ++shapeIndex)
 					{
 						SceneObjectInstance instance;
@@ -2667,7 +2760,7 @@ namespace Riemann
 		   remain fixed unless the sampled animation explicitly moves those pins. */
 		const Vector3 U = Horizontal.Unit(), V = (Vertical - U * Vertical.Dot(U)).Unit();
 		constexpr float HoleU = -0.28f, HoleV = 0.03f, HoleRadius = 0.10f, NotchU = 0.2f, NotchV = -0.35f;
-		constexpr float SurfaceDensity = 0.25f; constexpr int Substeps = 4;
+		constexpr float SurfaceDensity = 0.25f;
 		ClothMesh Mesh; std::vector<int> Remap((size_t)Settings.Rows * Settings.Columns, -1); std::vector<int> Pins;
 		std::vector<float> Weights;
 		auto AddVertex = [&](int Row, int Column)
@@ -2684,7 +2777,7 @@ namespace Riemann
 			const int A = AddVertex(Row, Column), B = AddVertex(Row, Column + 1), C = AddVertex(Row + 1, Column), D = AddVertex(Row + 1, Column + 1);
 			Mesh.Triangles.emplace_back(A, C, B); Mesh.Triangles.emplace_back(B, C, D);
 		}
-		Settings.Model = ClothModel::TriangleStrain; Settings.SurfaceDensity = SurfaceDensity; Settings.Substeps = Substeps;
+		Settings.Model = ClothModel::TriangleStrain; Settings.SurfaceDensity = SurfaceDensity;
 		m_DemoCloth = m_World->CreateCloth(Settings, Mesh); m_ClothRestPose = Mesh.Positions;
 		m_ClothDemoMesh.reset(new ClothMesh(Mesh));
 		m_DemoClothGeometry = m_DemoCloth->GetRenderGeometry(); m_DemoCloth->SetAnimationWeights(Weights);
@@ -2696,6 +2789,37 @@ namespace Riemann
 		if (m_World && m_DemoCloth) for (size_t I = 0; I < m_World->GetClothCount(); ++I)
 			if (m_World->GetCloth(I) == m_DemoCloth) return m_DemoCloth;
 		return nullptr;
+	}
+	bool SceneWorld::SetClothRigidInteraction(bool Enabled)
+	{
+		auto* Cloth = GetDemoCloth();
+		if (!Cloth && m_World && m_Name == "Cloth" && m_World->GetClothCount()) Cloth = m_World->GetCloth(0);
+		if (!Cloth) return false;
+		if (Enabled && (m_World->GetResolutionSolver() != ResolutionPhaseSolver::PBD && m_World->GetResolutionSolver() != ResolutionPhaseSolver::XPBD)) return false;
+		Geometry* Sphere = nullptr;
+		for (const auto& Object : m_Objects) if (Object.Id == "cloth_ball") Sphere = Object.GeometryPtr;
+		if (!Sphere || !Sphere->GetParent<RigidBody>()) return false;
+		for (auto* C : { Cloth, GetDemoClothPartner() }) if (C)
+		{
+			auto Settings = C->GetSettings().Collision; Settings.RigidCoupling = Enabled;
+			if (Enabled) Settings.Continuous = false;
+			C->SetCollisionSettings(Settings);
+			if (!Enabled) C->DetachRigidBody(Sphere->GetParent<RigidBody>());
+		}
+		return true;
+	}
+	bool SceneWorld::SetClothSelfCollision(bool Enabled)
+	{
+		auto* Cloth = GetDemoCloth();
+		if (!Cloth && m_World && m_Name == "Cloth" && m_World->GetClothCount()) Cloth = m_World->GetCloth(0);
+		if (!Cloth) return false;
+		for (auto* C : { Cloth, GetDemoClothPartner() }) if (C)
+		{
+			auto Settings = C->GetSettings().Collision;
+			Settings.SelfCollision = Enabled;
+			C->SetCollisionSettings(Settings);
+		}
+		return true;
 	}
 	bool SceneWorld::ApplyClothParameters(ClothModel Model, int Iterations, int Substeps, float Damping,
 		float StretchUCompliance, float StretchVCompliance, float ShearCompliance, float BendingCompliance)
@@ -2747,6 +2871,7 @@ namespace Riemann
 	{
 		PruneClothDemo();
 		auto* Cloth = GetDemoCloth(); if (!Cloth) return false;
+		if (Continuous && Cloth->HasRigidCoupling()) return false;
 		m_ClothSoftMaterial = SoftMaterial;
 		constexpr float StretchU = 1e-4f, StretchV = 2e-4f, Shear = 0.01f, Bend = 25, Softness = 20;
 		constexpr float NormalDrag = 1, TangentialDrag = 0.02f, WindSpeed = 3, AnimationCompliance = 0.04f, AnimationDamping = 2;
@@ -3393,9 +3518,9 @@ namespace Riemann
 		AddBox("character_steep_ramp", Vector3(10, 0.8f, -2), Vector3(1, 0.15f, 0.7f), Ramp, Vector4(0.8f, 0.35f, 0.3f, 1));
 		m_CharacterPlatform = AddBox("character_lift", Vector3(12, 0.1f, 0), Vector3(1.2f, 0.1f, 1.2f), Identity, Vector4(0.7f, 0.5f, 0.9f, 1));
 		m_CharacterPlatformOrigin = m_CharacterPlatform->X;
-		CharacterControllerSettings Settings;
-		Settings.Shape = m_CharacterBox ? CharacterShape::Box : CharacterShape::Capsule;
-		m_Character = m_World->CreateCharacterController(Settings, Origin + Vector3(0, 1.1f, 0));
+		RobotControllerSettings Settings;
+		Settings.Shape = m_CharacterBox ? RobotShape::Box : RobotShape::Capsule;
+		m_Character = m_World->CreateRobotController(Settings, Origin + Vector3(0, 1.1f, 0));
 		SceneObjectInstance Object; Object.Id = "character"; Object.GeometryPtr = m_Character->GetGeometry();
 		Object.Color = Vector4(1, 0.8f, 0.2f, 1); m_Objects.push_back(Object);
 		TouchRenderRevision(); return true;
@@ -4314,6 +4439,25 @@ namespace Riemann
 			return GeometryFactory::CreateCylinder(x0, x1, desc.Radius);
 		}
 
+		if (desc.Type == "ellipsoid")
+		{
+			if (desc.BodyType != RigidType::Static || !(desc.HalfExtent.x > 0 && desc.HalfExtent.y > 0 && desc.HalfExtent.z > 0))
+			{
+				if (errorMessage)
+					*errorMessage = "Invalid static ellipsoid: " + desc.Id;
+				return nullptr;
+			}
+			std::vector<Vector3> Vertices, Normals;
+			std::vector<uint16_t> Indices;
+			Sphere3(Vector3::Zero(), 1).GetMesh(Vertices, Indices, Normals);
+			for (Vector3& V : Vertices) V = V * desc.HalfExtent;
+			Geometry* G = GeometryFactory::CreateTriangleMesh();
+			TriangleMesh* Mesh = G->GetShapeObj<TriangleMesh>();
+			Mesh->SetData(Vertices.data(), Indices.data(), (uint32_t)Vertices.size(), (uint32_t)Indices.size() / 3, true, true);
+			Mesh->CalculateBoundingBox(); Mesh->CalculateWeightAverageNormals(); Mesh->BuildBVH();
+			G->UpdateVolumeProperties(); G->SetTransform(desc.Position, desc.Rotation);
+			return G;
+		}
 		if (desc.Type == "stairMesh")
 		{
 			Geometry* geometry = GeometryFactory::CreateTriangleMesh();
@@ -4486,6 +4630,29 @@ namespace Riemann
 		for (const SceneObjectInstance& object : m_Objects)
 			if (object.GeometryPtr && object.GeometryPtr->GetShapeType() == PrimitiveType::HEIGHTFIELD) ids.push_back(object.Id);
 		return ids;
+	}
+
+	bool SceneWorld::RayCastTerrain(const std::string& id, const Vector3& origin, const Vector3& direction,
+		float maxDistance, Vector3* hitPoint, float* localHeight) const
+	{
+		for (const SceneObjectInstance& object : m_Objects)
+		{
+			Geometry* geometry = object.GeometryPtr;
+			if (object.Id != id || !geometry || geometry->GetShapeType() != PrimitiveType::HEIGHTFIELD) continue;
+			RigidBody* body = geometry->GetParent<RigidBody>();
+			const Transform transform = body ? body->GetGeometryTransform(geometry) : *geometry->GetTransform();
+			RayCastOption option;
+			option.Type = RayCastOption::RAYCAST_NEAREST;
+			option.HitBothSides = true;
+			option.MaxDist = maxDistance;
+			RayCastResult result;
+			if (!geometry->RayCast(transform, origin, direction, &option, &result)) return false;
+			const Vector3 point = origin + direction * result.hitTime;
+			if (hitPoint) *hitPoint = point;
+			if (localHeight) *localHeight = transform.WorldToLocal(point).y;
+			return true;
+		}
+		return false;
 	}
 
 	bool SceneWorld::SyncTerrainRevisions()
@@ -4867,6 +5034,7 @@ namespace Riemann
 				m_CharacterPlatform->X = m_CharacterPlatformOrigin + Vector3(0, LiftAmplitude * (1 - std::cos(LiftFrequency * m_CharacterDemoTime)), 0);
 				m_CharacterPlatform->Q.FromRotateY(m_CharacterDemoTime * 0.2f);
 			}
+			UpdateRobotDrive(dt);
 			m_World->Simulate(dt);
 			m_DestructionDroppedEvents = 0;
 			for (const auto& Set : m_DestructionSets) if (Set->GetEventSettings().Enabled)
@@ -4887,23 +5055,18 @@ namespace Riemann
 			}
 			for (const auto& Playback : m_DestructionPlaybacks)
 				for (auto& Event : Playback->TakeEvents()) m_DestructionPlaybackEvents.push_back(std::move(Event));
-			if (m_World->GetClothCount() > 0 || m_World->GetDeformableBodyCount() > 0)
-			{
-				TouchRenderRevision();
-			}
 		}
 		SyncDestructionObjects(false);
 		SyncTerrainRevisions();
 		SyncRopeSurfaces();
 		SyncVehicles(dt);
+		SyncWalkingRobot(dt);
 		SyncPhysicalAnimationDemo();
 	}
 
-	constexpr int SceneWorld::MaxSmokeRigidBodies;
-
-	int SceneWorld::GetSmokeRigidBodyCount() const
+	int SceneWorld::GetAerodynamicsRigidBodyCount() const
 	{
-		if (m_FieldSimulation.Type != "smoke3d") return 0;
+		if ((m_FieldSimulation.Type != "aerodynamics3d" || m_FieldSimulation.Aerodynamics.Algorithm != AerodynamicsAlgorithm::Incompressible)) return 0;
 		std::vector<const RigidBody*> bodies;
 		for (const SceneObjectInstance& object : m_Objects)
 		{
@@ -4912,27 +5075,6 @@ namespace Riemann
 				&& std::find(bodies.begin(), bodies.end(), body) == bodies.end()) bodies.push_back(body);
 		}
 		return (int)bodies.size();
-	}
-
-	bool SceneWorld::AddSmokeRigidBody()
-	{
-		if (m_FieldSimulation.Type != "smoke3d" || !m_FieldSimulation.RigidCoupling) return false;
-		const int index = GetSmokeRigidBodyCount();
-		if (index >= MaxSmokeRigidBodies) return false;
-		SceneObjectDesc desc;
-		desc.Id = "smoke_body_" + std::to_string(index);
-		desc.Type = index == 1 ? "box" : "sphere";
-		desc.BodyType = RigidType::Dynamic;
-		desc.MouseControl = true;
-		desc.HasDensity = true;
-		desc.Density = index == 1 ? 10.0f : 6.0f;
-		desc.Position = Vector3(index == 1 ? -0.28f : 0.16f, 2.65f + 1.45f * index, 0);
-		desc.Radius = 0.5f;
-		desc.HalfExtent = Vector3(0.72f, 0.14f, 0.44f);
-		if (index == 1) desc.Rotation.FromRotateZ(18.0f * PI / 180.0f);
-		desc.Color = index == 1 ? Vector4(0.67f, 0.38f, 0.18f, 1)
-			: index == 0 ? Vector4(0.22f, 0.4f, 0.58f, 1) : Vector4(0.3f, 0.55f, 0.38f, 1);
-		return CreateObject(desc, nullptr);
 	}
 
 	Geometry* SceneWorld::AddProjectileSphere(const std::string& id, const Vector3& position, float radius, const Vector3& velocity, const Vector4& color)

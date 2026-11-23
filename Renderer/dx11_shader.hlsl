@@ -179,7 +179,7 @@ cbuffer VolumeParameters : register(b1)
 	float4 VolumeRarefied;
 	float4 VolumeLight;
 	float4 VolumeControl;
-	float4 VolumeSmoke;
+	float4 VolumeTracer;
 };
 
 Texture3D<float> DensityVolume : register(t1);
@@ -204,14 +204,14 @@ float VolumeDeviation(float3 Position)
 {
 	float3 UV = (Position - VolumeMinDensity.xyz) / (VolumeMaxThreshold.xyz - VolumeMinDensity.xyz);
 	float Density = DensityVolume.SampleLevel(VolumeSampler, UV, 0);
-	return VolumeSmoke.x > 0 ? Density : Density * VolumeMinDensity.w - 1;
+	return VolumeTracer.x > 0 ? Density : Density * VolumeMinDensity.w - 1;
 }
 
 float VolumeOpacityDensity(float Deviation)
 {
 	// A smooth dead band keeps ambient air invisible without an isosurface pop.
 	float Magnitude = abs(Deviation);
-	if (VolumeSmoke.x > 0) return max(0, Deviation);
+	if (VolumeTracer.x > 0) return max(0, Deviation);
 	return Magnitude * smoothstep(VolumeMaxThreshold.w * 0.25, VolumeMaxThreshold.w, Magnitude);
 }
 
@@ -258,11 +258,11 @@ float4 VolumePS(VOLUME_OUTPUT Input) : SV_Target
 		// shadow through the plume without procedural density in the renderer.
 		float OpticalDepth = 0;
 		float LightDistance = 0;
-		int LightSteps = VolumeSmoke.x > 0 ? 8 : 3;
+		int LightSteps = VolumeTracer.x > 0 ? 8 : 3;
 		[loop]
 		for (int LightStep = 0; LightStep < LightSteps; ++LightStep)
 		{
-			float LightInterval = VolumeSmoke.x > 0 ? VolumeSmoke.y * pow(1.45, LightStep) : VolumeControl.x * 2;
+			float LightInterval = VolumeTracer.x > 0 ? VolumeTracer.y * pow(1.45, LightStep) : VolumeControl.x * 2;
 			LightDistance += LightInterval;
 			float3 Probe = Position - VolumeLight.xyz * LightDistance;
 			float3 UV = (Probe - VolumeMinDensity.xyz) / Extent;

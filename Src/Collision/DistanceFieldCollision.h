@@ -4,6 +4,7 @@
 #include "../Geometry/RuntimeDistanceField.h"
 #include <vector>
 #include <cstdint>
+#include <limits>
 
 namespace Riemann
 {

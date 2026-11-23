@@ -34,6 +34,7 @@
 #include "../Src/Deformation/Rope.h"
 #include "../Src/Deformation/Cloth.h"
 #include "../Src/RigidBodyDynamics/Ragdoll.h"
+#include "../Viewer/SceneWorld.h"
 #include "../Src/Maths/Maths.h"
 
 using namespace Riemann;
@@ -3183,6 +3184,34 @@ void TestClothSystem()
 void TestRagdollSystem()
 {
 	printf("Running TestRagdollSystem\n");
+	{
+		SceneWorld scene;
+		std::string error;
+		EXPECT(scene.LoadFromFile(TestContentsPath() + "Scenes/09_ragdoll_stairs.json", &error));
+		int dynamicBodies = 0;
+		for (const SceneObjectInstance& object : scene.GetObjects())
+		{
+			RigidBody* body = object.GeometryPtr->GetParent<RigidBody>();
+			EXPECT(std::abs(body->GetRestitution() - 0.08f) < 1.0e-6f);
+			EXPECT(std::abs(body->GetFrictionDynamic() - (object.Id == "landing" ? 1.0f : 0.12f)) < 1.0e-6f);
+			EXPECT(std::abs(body->GetFrictionStatic() - (object.Id == "landing" ? 1.0f : 0.15f)) < 1.0e-6f);
+			if (RigidBodyDynamic* dynamic = body->CastDynamic())
+			{
+				++dynamicBodies;
+				EXPECT(std::abs(dynamic->LinearDamping - 0.9995f) < 1.0e-6f);
+				EXPECT(std::abs(dynamic->AngularDamping - 0.9995f) < 1.0e-6f);
+				EXPECT(!dynamic->EnableCollisionWithinGroup);
+			}
+		}
+		EXPECT(dynamicBodies == (int)RagdollBone::Count);
+		for (const char* invalid : { "\"linearDamping\":-0.1", "\"angularDamping\":1.1",
+			"\"frictionDynamic\":0.8,\"frictionStatic\":0.2" })
+		{
+			SceneWorld invalidScene;
+			EXPECT(!invalidScene.LoadFromText(std::string("{\"objects\":[],\"ragdolls\":[{") + invalid + "}]}", "invalid ragdoll", &error));
+			EXPECT(error.find("friction or damping") != std::string::npos);
+		}
+	}
 
 	int selfContactCount = 0;
 	int environmentContactCount = 0;

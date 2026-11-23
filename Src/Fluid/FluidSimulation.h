@@ -10,11 +10,6 @@
 
 namespace Riemann
 {
-	enum class FluidSimulationMethod : uint8_t
-	{
-		Eulerian = 0,
-		Lagrangian = 1,
-	};
 
 	struct FluidSimulationSettings
 	{

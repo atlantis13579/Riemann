@@ -829,14 +829,8 @@ bool Sphere3::SweepQuad(const Vector3& Direction, const Vector3 &A, const Vector
 
 static bool SphereSweepMovingAABBAABBInterval(const Vector3& movingMin, const Vector3& movingMax, const Vector3& direction, const Vector3& staticMin, const Vector3& staticMax, float maxDist, float& enter, float& exit)
 {
-	Box3 movingBox(movingMin, movingMax);
-	if (movingBox.Intersect(staticMin, staticMax))
-	{
-		enter = 0.0f;
-		exit = maxDist;
-		return true;
-	}
-
+	// Even an initially overlapping sweep has a finite slab exit. Height fields
+	// use it to restrict triangle tests to the cells swept by the sphere.
 	const Vector3 center = (movingMin + movingMax) * 0.5f;
 	const Vector3 extents = (movingMax - movingMin) * 0.5f;
 	const Vector3 expandedMin = staticMin - extents;

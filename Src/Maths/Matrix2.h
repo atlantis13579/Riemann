@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include "Vector2.h"
 
 namespace Maths
@@ -15,7 +16,7 @@ namespace Maths
 
 		explicit Matrix2(float mm[2][2])
 		{
-			memcpy(mat, mm, sizeof(mat));
+			std::memcpy(mat, mm, sizeof(mat));
 		}
 
 		explicit Matrix2(float a00, float a01,
@@ -39,12 +40,12 @@ namespace Maths
 
 		inline Matrix2(const Matrix2& mm)
 		{
-			memcpy(mat, mm.mat, sizeof(mat));
+			std::memcpy(mat, mm.mat, sizeof(mat));
 		}
 
 		inline void		LoadZero()
 		{
-			memset(mat, 0, sizeof(mat));
+			std::memset(mat, 0, sizeof(mat));
 		}
 
 		inline void		LoadIdentiry()
@@ -79,7 +80,7 @@ namespace Maths
 
 		inline Matrix2& operator=(const Matrix2& rhs)
 		{
-			memcpy(mat, rhs.mat, sizeof(mat));
+			std::memcpy(mat, rhs.mat, sizeof(mat));
 			return *this;
 		}
 
@@ -128,7 +129,7 @@ namespace Maths
 			for (int i = 0; i < 2; i++)
 				for (int j = 0; j < 2; j++)
 					m[i][j] = mat[i][0] * mm.mat[0][j] + mat[i][1] * mm.mat[1][j];
-			memcpy(mat, m, sizeof(mat));
+			std::memcpy(mat, m, sizeof(mat));
             return *this;
 		}
 

@@ -1,3 +1,4 @@
+#include "../Renderer/AerodynamicsVolume.h"
 #include "MeshRenderer.h"
 
 #include <stdint.h>
@@ -424,17 +425,9 @@ namespace Riemann
 			RenderBlendMode::Alpha, mesh);
 	}
 
-	bool BuildGasDensityVolume(const AerodynamicsSimulation& simulation, DensityVolumeDesc* volume,
-		float relativeThreshold)
+	bool BuildGasDensityVolume(const AerodynamicsSimulation& simulation, DensityVolumeDesc* volume, float relativeThreshold)
 	{
-		if (volume == nullptr || !simulation.IsInitialized()) return false;
-		const AerodynamicsSimulationSettings& settings = simulation.GetSettings();
-		volume->BoundsMin = settings.BoundsMin;
-		volume->BoundsMax = settings.BoundsMax;
-		volume->Resolution = settings.Resolution;
-		volume->AmbientDensity = settings.AmbientDensity;
-		volume->RelativeThreshold = relativeThreshold;
-		return simulation.BuildDensityField(&volume->Density) && volume->IsValid();
+		return BuildAerodynamicsDensityVolume(simulation, volume, relativeThreshold);
 	}
 
 	bool BuildGasDensityMeshes(const AerodynamicsSimulation& simulation, const std::string& idPrefix,

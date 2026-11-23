@@ -30,6 +30,8 @@ namespace Riemann
 	class RigidBodyStatic;
 	class RigidBodyDynamic;
 	class BroadPhase;
+	struct OverlapPair;
+	struct BroadPhaseResult;
 	class NarrowPhase;
 	class ContactManifold;
 	class ConstraintSolver;
@@ -45,6 +47,10 @@ namespace Riemann
 	class RopeSystem;
 	struct RopeSettings;
 	class ClothSystem;
+	class AerodynamicsSimulation;
+	class AerodynamicsRigidCoupling;
+	struct AerodynamicsSimulationSettings;
+	struct AerodynamicsRigidCouplingSettings;
 	struct ClothSettings;
 	struct ClothMesh;
 	class DeformableBody;
@@ -56,14 +62,17 @@ namespace Riemann
 	struct RigidDeformableAttachment;
 	struct DeformableBodySettings;
 	class Ragdoll;
-	class CharacterController;
+	class RobotController;
+	class SweepRobotController;
+	class ArticulatedRobotController;
+	struct ArticulatedRobotSettings;
 	class VehicleDynamics;
 	class PhysicalAnimation;
 	struct PhysicalAnimationBone;
 	class PoseDriveConstraint;
 	struct RagdollSettings;
 	struct VehicleDynamicsSettings;
-	struct CharacterControllerSettings;
+	struct RobotControllerSettings;
 
 	enum class ThreadMode : uint8_t
 	{
@@ -281,6 +290,12 @@ namespace Riemann
 		// A one-step override; the no-argument step retains the configured clock interval.
 		void				Simulate(float Dt);
 		bool IsSimulating() const { return m_SimulationInProgress; }
+		AerodynamicsSimulation* CreateAerodynamics(const AerodynamicsSimulationSettings& Settings);
+		AerodynamicsSimulation* CreateAerodynamics(const AerodynamicsSimulationSettings& Settings,
+			const AerodynamicsRigidCouplingSettings& Coupling, bool CoupleRigids = true, bool CoupleCloths = true);
+		bool RemoveAerodynamics();
+		AerodynamicsSimulation* GetAerodynamics() const { return m_Aerodynamics.get(); }
+		AerodynamicsRigidCoupling* GetAerodynamicsCoupling() const { return m_AerodynamicsCoupling; }
 		void				Reset();
 
 		bool				LoadScene(const char* name, bool shared_mem);
@@ -328,9 +343,11 @@ namespace Riemann
 		VehicleDynamics* CreateVehicle(RigidBodyDynamic* Chassis, const VehicleDynamicsSettings& Settings);
 		bool RemoveVehicle(VehicleDynamics* Vehicle);
 		size_t GetVehicleCount() const { return m_Vehicles.size(); }
-		CharacterController* CreateCharacterController(const CharacterControllerSettings& Settings, const Vector3& Position);
-		bool RemoveCharacterController(CharacterController* Controller);
-		size_t GetCharacterControllerCount() const { return m_Characters.size(); }
+		ArticulatedRobotController* CreateRobotController(const ArticulatedRobotSettings& Settings);
+		SweepRobotController* CreateRobotController(const RobotControllerSettings& Settings, const Vector3& Position);
+		bool RemoveRobotController(RobotController* Controller);
+		RobotController* GetRobotController(size_t Index) const { return m_RobotControllers.at(Index); }
+		size_t GetRobotControllerCount() const { return m_RobotControllers.size(); }
 		ClothSystem*		CreateCloth(const ClothSettings& Settings, const Vector3& Center, const Vector3& HorizontalAxis, const Vector3& VerticalAxis);
 		ClothSystem* CreateCloth(const ClothSettings& Settings, const ClothMesh& Mesh);
 		bool				RemoveCloth(ClothSystem* Cloth);
@@ -404,6 +421,7 @@ namespace Riemann
 		void SetTemporalSubstepSettings(const TemporalSubstepSettings& Settings);
 		const TemporalSubstepSettings& GetTemporalSubstepSettings() const { return m_TemporalSubsteps; }
 		const PhysicsStepInfo& GetStepInfo() const { return m_StepInfo; }
+		uint64_t GetBroadPhasePassCount() const { return m_BroadPhasePassCount; }
 		uint64_t GetTick() const { return m_Clock.tick; }
 		void SetIslandSleepingSettings(const IslandSleepingSettings& Settings);
 		const IslandSleepingSettings& GetIslandSleepingSettings() const { return m_IslandSleeping.GetSettings(); }
@@ -425,14 +443,22 @@ namespace Riemann
 		size_t GetCachedContactPairCount() const;
 
 	private:
-		friend class CharacterController;
+		friend class SweepRobotController;
 		friend class VehicleDynamics;
 		friend class Ragdoll;
 		std::vector<VehicleDynamics*> m_Vehicles;
 		std::vector<Ragdoll*> m_ReducedRagdolls;
 		std::vector<PhysicalAnimation*> m_PhysicalAnimations;
-		std::vector<CharacterController*> m_Characters;
+		std::vector<RobotController*> m_RobotControllers;
 		void				SimulateST(float dt);
+		struct FrameCollisionData;
+		std::unique_ptr<FrameCollisionData> m_FrameCollisions;
+		Vector3 m_GravityAcceleration = Vector3::Zero();
+		void PrepareFrameCollisionPairs();
+		const std::vector<OverlapPair>& GetRigidCollisionPairs(GeometryWorldStateSpan States);
+		const std::vector<OverlapPair>& GetTriggerCollisionPairs() const;
+		const BroadPhaseResult& GetCollisionCandidates();
+		uint64_t m_BroadPhasePassCount = 0;
 		void SolveUnifiedVelocities(const std::vector<Geometry*>& Geometries, const std::vector<ContactManifold*>& Contacts, float Dt, bool JointIslandsOnly = false);
 		void				SimulatePositionBasedRigidBodies(float dt, const std::vector<DeformableRigidCollider>& Colliders);
 
@@ -511,12 +537,19 @@ namespace Riemann
 		uint64_t m_NextConstraintId = 1;
 		std::vector<RopeSystem*>		m_Ropes;
 		std::vector<ClothSystem*>		m_Cloths;
+		std::unique_ptr<AerodynamicsSimulation> m_Aerodynamics;
+		std::unique_ptr<Geometry> m_AerodynamicsDomain;
+		AerodynamicsRigidCoupling* m_AerodynamicsCoupling = nullptr;
+		bool m_AerodynamicsClothCoupling = true;
+		int AerodynamicsSubsteps(float Dt) const;
+		void SimulateAerodynamics(float Dt);
 		std::vector<StrandSystem*> m_Strands;
 		std::vector<DeformableBody*>	m_DeformableBodies;
 		std::vector<RigidDeformableAttachment> m_DeformableRigidAttachments;
 		uint64_t m_NextDeformableRigidAttachmentId = 1;
 		int DeformableCouplingSubsteps() const;
 		bool HasDeformableRigidContacts() const;
+		bool HasClothRigidCoupling() const;
 		bool m_DeformableCouplingActive = false;
 		std::vector<RigidBody*> m_DeformableContactBodies;
 		std::vector<Ragdoll*>			m_Ragdolls;

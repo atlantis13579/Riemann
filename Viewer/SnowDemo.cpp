@@ -84,28 +84,26 @@ namespace Riemann
 		else { imguiValue("Granular height field");imguiValue("Repose angle: 32 degrees"); }
 		imguiLabel("Backend");Change=imguiCombo("",&State.Backend,Backends,5)||Change;
 		Change=imguiSlider("Viscosity",&State.Viscosity,0,15,0.1f)||Change;
-		const bool Reset=imguiButton("Reset material bed");
-		if(imguiButton(State.Paused ? "Resume" : "Pause")) { State.Paused=!State.Paused;Change=true; }
 		char Text[96];snprintf(Text,sizeof(Text),State.Fraction<0.5f ? "Surface cells: %zu" : "Particles: %zu",State.ParticleCount);imguiValue(Text);
 		snprintf(Text,sizeof(Text),"Solve: %.1f ms",State.SolveMilliseconds);imguiValue(Text);
 		snprintf(Text,sizeof(Text),"Surface: %.1f ms",State.SurfaceMilliseconds);imguiValue(Text);
 		if(State.TimeLimited) imguiValue("Simulation time budget active");
 		if(!State.Status.empty()) imguiValue(State.Status.c_str());
-		if(Change || Reset)
+		if(Change)
 		{
 			std::lock_guard<std::mutex> Lock(m_ImguiMutex);
 			if(State.SceneGeneration==m_ImguiSnowPanel.SceneGeneration)
-			{ m_ImguiPendingSnowPanel=State;m_ImguiPendingSnowChange=true;m_ImguiPendingSnowReset=m_ImguiPendingSnowReset||Reset; }
+			{ m_ImguiPendingSnowPanel=State;m_ImguiPendingSnowChange=true; }
 		}
 		imguiSeparatorLine();
 	}
 	void WorldViewer::ApplySnowCommands()
 	{
-		SnowPanelState State;bool Change,Reset;
+		SnowPanelState State;bool Change;
 		{
 			std::lock_guard<std::mutex> Lock(m_ImguiMutex);
-			State=m_ImguiPendingSnowPanel;Change=m_ImguiPendingSnowChange;Reset=m_ImguiPendingSnowReset;
-			m_ImguiPendingSnowChange=m_ImguiPendingSnowReset=false;
+			State=m_ImguiPendingSnowPanel;Change=m_ImguiPendingSnowChange;
+			m_ImguiPendingSnowChange=false;
 		}
 		if(!Change || (!m_SnowSimulation && !m_SandSimulation) || State.SceneGeneration!=m_SceneGeneration) return;
 		const SnowQuality Quality=(SnowQuality)State.Quality;
@@ -113,16 +111,15 @@ namespace Riemann
 		{
 			m_SandSimulation->GetSettings().Viscosity=State.Viscosity;
 			if((SnowBackend)State.Backend!=m_SandSimulation->GetBackend()) m_SandSimulation->SetBackend((SnowBackend)State.Backend);
-			if(Reset || Quality!=m_SnowQuality) m_SandSimulation->Reset(Quality);
+			if(Quality!=m_SnowQuality) m_SandSimulation->Reset(Quality);
 		}
 		else
 		{
 			auto& S=m_SnowSimulation->GetSettings();S.Material.Viscosity=State.Viscosity;S.Transfer=(MPMTransfer)State.Transfer;
 			if((SnowBackend)State.Backend!=m_SnowSimulation->GetBackend()) m_SnowSimulation->SetBackend((SnowBackend)State.Backend);
-			if(Reset || Quality!=m_SnowQuality) m_SnowSimulation->Reset(Quality);
+			if(Quality!=m_SnowQuality) m_SnowSimulation->Reset(Quality);
 		}
-		m_SnowPaused=State.Paused;
-		if(Reset || Quality!=m_SnowQuality) { m_SnowQuality=Quality;m_SnowStatus.clear();m_SnowMeshReady=false; }
+		if(Quality!=m_SnowQuality) { m_SnowQuality=Quality;m_SnowStatus.clear();m_SnowMeshReady=false; }
 		SubmitSnowSurface();
 	}
 	void WorldViewer::UpdateSnowPanelState()
@@ -130,7 +127,7 @@ namespace Riemann
 		m_ImguiSnowPanel.Active=m_SnowSimulation!=nullptr || m_SandSimulation!=nullptr;
 		if(m_SandSimulation)
 		{
-			auto& P=m_ImguiSnowPanel;P.SceneGeneration=m_SceneGeneration;P.Paused=m_SnowPaused;P.Quality=(int)m_SnowQuality;
+			auto& P=m_ImguiSnowPanel;P.SceneGeneration=m_SceneGeneration;P.Quality=(int)m_SnowQuality;
 			P.Backend=(int)m_SandSimulation->GetBackend();P.Fraction=0;P.Viscosity=m_SandSimulation->GetSettings().Viscosity;
 			P.ParticleCount=m_SandSimulation->GetHeights().size();P.SolveMilliseconds=m_SnowSolveMilliseconds;P.SurfaceMilliseconds=m_SnowSurfaceMilliseconds;
 			P.TimeLimited=false;P.Status=m_SnowStatus;
@@ -140,7 +137,7 @@ namespace Riemann
 		}
 		if(!m_SnowSimulation) return;
 		auto& P=m_ImguiSnowPanel;const auto& S=m_SnowSimulation->GetSettings();
-		P.SceneGeneration=m_SceneGeneration;P.Paused=m_SnowPaused;P.Quality=(int)m_SnowQuality;
+		P.SceneGeneration=m_SceneGeneration;P.Quality=(int)m_SnowQuality;
 		P.Backend=(int)m_SnowSimulation->GetBackend();P.Transfer=(int)S.Transfer;P.Fraction=S.Material.SnowFraction;P.Viscosity=S.Material.Viscosity;
 		P.ParticleCount=m_SnowSimulation->GetParticles().size();P.SolveMilliseconds=m_SnowSolveMilliseconds;P.SurfaceMilliseconds=m_SnowSurfaceMilliseconds;
 		P.TimeLimited=m_SnowSimulation->GetStatistics().TimeLimited;P.Status=m_SnowStatus;

@@ -60,6 +60,7 @@ namespace Riemann
         bool	Sweep(const Geometry* geometry, const Vector3& Direction, const SweepOption* Option, SweepResult* Result) const;
 		bool	Sweep(const Geometry* geometry, const Vector3& Direction, const SweepOption* Option, SweepResult* Result, DynamicSweepCallback Callback, void* Context) const;
 		bool	Query(const Box3& aabb, std::vector<void*>* Result) const;
+		Box3 GetBounds() const { return m_root < 0 ? Box3::Empty() : m_nodes[m_root].aabb; }
 		void	CollectAABBs(std::vector<Box3>* aabbs) const;
 
 		void 	Rebuild();

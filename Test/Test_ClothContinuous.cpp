@@ -274,6 +274,16 @@ namespace
 	void ExistingDemo()
 	{
 		SceneWorld Scene; Scene.SetClothModelDemo(true); std::string Error; EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/08_cloth_sphere.json", &Error));
+		// Exercise the independent continuous solver; the demo defaults to world coupling.
+		EXPECT(Scene.SetClothRigidInteraction(false));
+		for (const auto& Object : Scene.GetObjects()) if (Object.Id == "cloth_ball" && Object.GeometryPtr)
+		{
+			Object.GeometryPtr->SetSimulationEnabled(false);
+			auto* Body = Object.GeometryPtr->GetParent<RigidBody>(); Body->X = Vector3(0, 3, -0.75f); Body->UpdateGeometries();
+		}
+		auto* Independent = Scene.GetDemoCloth(); const auto Rest = Independent->GetAnimationPose();
+		for (int I = 0; I < Independent->GetParticleCount(); ++I) Independent->SetParticlePosition(I, Rest[I]);
+		EXPECT(Scene.GetSimulation()->SetSolverConfiguration(ResolutionPhaseSolver::SequentialImpulse, SolverBackend::CPU, false, &Error));
 		EXPECT(Scene.ApplyClothDemo(true, false, true, false, true, true, true, true, true));
 		auto* C = Scene.GetDemoCloth(); auto* Partner = Scene.GetDemoClothPartner(); EXPECT(C && Partner); if (!C || !Partner) return;
 		int Frame = 0;

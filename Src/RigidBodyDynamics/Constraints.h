@@ -184,6 +184,7 @@ namespace Riemann
 	{
 	public:
 		FixedConstraint(RigidBody* bodyA, RigidBody* bodyB);
+		const Vector3& GetRelativePosition() const { return m_RelativePosition; }
 		virtual void SolvePosition(float dt) override;
 		virtual void SolveVelocity(float dt) override;
 

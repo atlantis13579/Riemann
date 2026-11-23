@@ -3,6 +3,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\DistanceFieldCollision.cpp" />
     <ClCompile Include="..\..\Src\Collision\SurfaceCollision.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\SpatialHashHierarchical.cpp">
+      <Filter>Geometry</Filter>
+    </ClCompile>
 
     <ClCompile Include="..\..\Src\Deformation\SurfaceContactConstraint.cpp">
       <Filter>Deformation</Filter>
@@ -85,6 +88,9 @@
     <ClCompile Include="..\..\Src\Continuum\SandBackendCompute.cpp" />
     <ClInclude Include="..\..\Src\Collision\DistanceFieldCollision.h" />
     <ClInclude Include="..\..\Src\Collision\SurfaceCollision.h" />
+    <ClInclude Include="..\..\Src\Geometry\SpatialHashHierarchical.h">
+      <Filter>Geometry</Filter>
+    </ClInclude>
 
     <ClInclude Include="..\..\Src\Deformation\SurfaceContactConstraint.h">
       <Filter>Deformation</Filter>
@@ -159,7 +165,7 @@
     <Filter Include="Modules\Vehicle">
       <UniqueIdentifier>{74a0d760-7207-48b8-869e-f78bc8ec6b4e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Modules\CharacterController">
+    <Filter Include="Modules\Robotics">
       <UniqueIdentifier>{1be6e47f-2cfa-4e0e-9815-bd173e8c8b32}</UniqueIdentifier>
     </Filter>
     <Filter Include="Deformation">
@@ -330,7 +336,7 @@
     <ClInclude Include="..\..\Src\Geometry\SparseOctree.h">
       <Filter>Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Geometry\SparseSpatialHash.h">
+    <ClInclude Include="..\..\Src\Geometry\SpatialHashSparse.h">
       <Filter>Geometry</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Geometry\Voronoi3.h">
@@ -468,6 +474,9 @@
     <ClInclude Include="..\..\Src\LinearSystem\DenseMatrix.h">
       <Filter>LinearSystem</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Src\LinearSystem\NeuralNetwork.h">
+      <Filter>LinearSystem</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Src\LinearSystem\DenseVector.h">
       <Filter>LinearSystem</Filter>
     </ClInclude>
@@ -585,8 +594,14 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\SupportStabilization.h">
       <Filter>RigidBodyDynamics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\CharacterController\CharacterController.h">
-      <Filter>Modules\CharacterController</Filter>
+    <ClInclude Include="..\..\Src\Modules\Robotics\RobotController.h">
+      <Filter>Modules\Robotics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Modules\Robotics\ArticulatedRobotController.h">
+      <Filter>Modules\Robotics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Modules\Robotics\SpiderRobot.h">
+      <Filter>Modules\Robotics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Modules\Vehicle\VehicleDynamics.h">
       <Filter>Modules\Vehicle</Filter>
@@ -606,6 +621,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\FeatherstoneSolver.h">
       <Filter>RigidBodyDynamics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Modules\Robotics\SparseJointSpaceDynamics.h">
+      <Filter>Modules\Robotics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicalAnimation.h">
       <Filter>RigidBodyDynamics</Filter>
@@ -739,6 +757,12 @@
       <Filter>Modules\Tools</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Fluid\AerodynamicsRigidCoupling.h">
+      <Filter>Fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsPressureKernels.h">
+      <Filter>Fluid</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsPressureCUDA.cuh">
       <Filter>Fluid</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Fluid\AerodynamicsSimulation.h">
@@ -912,6 +936,9 @@
     <ClCompile Include="..\..\Src\LinearSystem\DenseMatrix.cpp">
       <Filter>LinearSystem</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Src\LinearSystem\NeuralNetwork.cpp">
+      <Filter>LinearSystem</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Src\LinearSystem\DenseVector.cpp">
       <Filter>LinearSystem</Filter>
     </ClCompile>
@@ -924,14 +951,23 @@
     <ClCompile Include="..\..\Src\RigidBodyDynamics\SupportStabilization.cpp">
       <Filter>RigidBodyDynamics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Modules\CharacterController\CharacterController.cpp">
-      <Filter>Modules\CharacterController</Filter>
+    <ClCompile Include="..\..\Src\Modules\Robotics\RobotController.cpp">
+      <Filter>Modules\Robotics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Modules\Robotics\ArticulatedRobotController.cpp">
+      <Filter>Modules\Robotics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Modules\Robotics\SpiderRobot.cpp">
+      <Filter>Modules\Robotics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Modules\Vehicle\VehicleDynamics.cpp">
       <Filter>Modules\Vehicle</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\FeatherstoneSolver.cpp">
       <Filter>RigidBodyDynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Src\Modules\Robotics\SparseJointSpaceDynamics.cpp">
+      <Filter>Modules\Robotics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicalAnimation.cpp">
       <Filter>RigidBodyDynamics</Filter>

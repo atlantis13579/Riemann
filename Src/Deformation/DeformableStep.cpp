@@ -102,11 +102,36 @@ namespace Riemann
 	}
 	void DeformableStep::Solve()
 	{
+		SolveConstraints();
+		if (!m_Bodies.empty() && m_Bodies[0]->m_CollisionQuery)
+		{
+			SolveContacts(m_Bodies[0]->m_CollisionQuery());
+			return;
+		}
+		std::vector<Geometry*> Geometries; CollectCollisionGeometries(Geometries);
+		BroadPhase::BuildStandalone(Geometries, m_LocalPairs);
+		SolveContacts(m_LocalPairs);
+	}
+	void DeformableStep::SolveConstraints()
+	{
 		for (auto* Body : m_Bodies) { Body->SolveMaterials(m_Dt); Body->SolveEdges(m_Dt); Body->SolveVolumes(m_Dt); Body->SolveGround(); }
 		for (auto& Row : m_SoftRows) Row.Constraint.Solve(m_Dt);
 		for (auto& Row : m_RigidRows) { Row.Constraint.Solve(m_Dt); Row.Link->Rigid->UpdateGeometries(); }
-		m_Collision->Solve(m_Dt);
-		m_RigidCollision->Solve(m_Dt);
+	}
+	void DeformableStep::CollectCollisionGeometries(std::vector<Geometry*>& Geometries)
+	{
+		for (auto* B : m_Bodies)
+		{
+			const auto& C = B->GetSettings().Collision;
+			if (!C.RigidCollision && !C.InterCollision) continue;
+			B->UpdateRenderGeometry(); auto* G = B->GetRenderGeometry(); if (!G) continue;
+			G->SetFilterData(C.FilterData); G->SetContactOffsets(B->GetSettings().ParticleRadius + C.ContactTolerance, 0);
+			Geometries.push_back(G);
+		}
+	}
+	void DeformableStep::SolveContacts(const BroadPhaseResult& Pairs)
+	{
+		m_Collision->Solve(m_Dt, Pairs); m_RigidCollision->Solve(m_Dt, Pairs);
 	}
 	void DeformableStep::Finish()
 	{

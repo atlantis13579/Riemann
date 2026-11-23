@@ -8,11 +8,11 @@ namespace Riemann
 	class PhysicsWorld;
 	class NarrowPhase;
 
-	enum class CharacterShape { Capsule, Box };
+	enum class RobotShape { Capsule, Box };
 
-	struct CharacterControllerSettings
+	struct RobotControllerSettings
 	{
-		CharacterShape Shape = CharacterShape::Capsule;
+		RobotShape Shape = RobotShape::Capsule;
 		float Radius = 0.35f;
 		float HalfHeight = 0.55f;
 		Vector3 HalfExtent = Vector3(0.35f, 0.9f, 0.35f);
@@ -35,7 +35,7 @@ namespace Riemann
 		bool IsValid() const;
 	};
 
-	struct CharacterGround
+	struct RobotGround
 	{
 		GeometryHandle Handle;
 		Vector3 Normal = Vector3::Zero();
@@ -44,7 +44,7 @@ namespace Riemann
 		bool Walkable = false;
 	};
 
-	struct CharacterMoveResult
+	struct RobotMoveResult
 	{
 		Vector3 Displacement = Vector3::Zero();
 		Vector3 PlatformDisplacement = Vector3::Zero();
@@ -57,30 +57,43 @@ namespace Riemann
 		bool IterationLimitReached = false;
 	};
 
-	class CharacterController
+	class RobotController
 	{
 	public:
-		~CharacterController();
-		CharacterController(const CharacterController&) = delete;
-		CharacterController& operator=(const CharacterController&) = delete;
-		const CharacterControllerSettings& GetSettings() const { return m_Settings; }
-		const Vector3& GetPosition() const;
-		Geometry* GetGeometry() const { return m_Geometry.get(); }
-		const CharacterGround& GetGround() const { return m_Ground; }
-		const CharacterMoveResult& GetLastMove() const { return m_LastMove; }
-		bool IsGrounded() const { return m_Ground.Walkable; }
+		virtual ~RobotController() = default;
+		virtual Vector3 GetPosition() const = 0;
+		virtual void SetMoveVelocity(const Vector3& WorldVelocity) = 0;
+		virtual bool IsGrounded() const = 0;
+		virtual Geometry* GetGeometry() const { return nullptr; }
+	protected:
+		friend class PhysicsWorld;
+		virtual void Simulate(float Dt) = 0;
+	};
+
+	class SweepRobotController final : public RobotController
+	{
+	public:
+		~SweepRobotController() override;
+		SweepRobotController(const SweepRobotController&) = delete;
+		SweepRobotController& operator=(const SweepRobotController&) = delete;
+		const RobotControllerSettings& GetSettings() const { return m_Settings; }
+		Vector3 GetPosition() const override;
+		Geometry* GetGeometry() const override { return m_Geometry.get(); }
+		const RobotGround& GetGround() const { return m_Ground; }
+		const RobotMoveResult& GetLastMove() const { return m_LastMove; }
+		bool IsGrounded() const override { return m_Ground.Walkable; }
 		void SetPosition(const Vector3& Position);
-		void SetMoveVelocity(const Vector3& Velocity);
+		void SetMoveVelocity(const Vector3& Velocity) override;
 		// Launch along Up at Speed units per second. Only a supported character can jump.
 		bool Jump(float Speed);
-		CharacterMoveResult Move(const Vector3& Displacement, float Dt);
+		RobotMoveResult Move(const Vector3& Displacement, float Dt);
 		void SetFilterData(const CollisionData& Data);
 
 	private:
 		friend class PhysicsWorld;
-		CharacterController(PhysicsWorld& World, const CharacterControllerSettings& Settings, const Vector3& Position);
-		void Simulate(float Dt);
-		CharacterMoveResult MoveInternal(const Vector3& Displacement, float Dt, bool IntegrateGravity);
+		SweepRobotController(PhysicsWorld& World, const RobotControllerSettings& Settings, const Vector3& Position);
+		void Simulate(float Dt) override;
+		RobotMoveResult MoveInternal(const Vector3& Displacement, float Dt, bool IntegrateGravity);
 		float AdvanceVertical(float Dt);
 		void SetPositionInternal(const Vector3& Position);
 		bool Blocks(const Geometry* Shape) const;
@@ -95,12 +108,12 @@ namespace Riemann
 		void RememberPlatform();
 
 		PhysicsWorld& m_World;
-		CharacterControllerSettings m_Settings;
+		RobotControllerSettings m_Settings;
 		std::unique_ptr<Geometry> m_Geometry;
 		std::unique_ptr<Geometry> m_SweepGeometry;
 		std::unique_ptr<NarrowPhase> m_NarrowPhase;
-		CharacterGround m_Ground;
-		CharacterMoveResult m_LastMove;
+		RobotGround m_Ground;
+		RobotMoveResult m_LastMove;
 		Vector3 m_MoveVelocity = Vector3::Zero();
 		Vector3 m_PlatformLocalPosition = Vector3::Zero();
 		Transform m_PlatformTransform;

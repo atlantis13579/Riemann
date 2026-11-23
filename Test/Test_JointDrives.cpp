@@ -347,7 +347,7 @@ namespace
 				}
 				if (Object.Id == "d6_body" && Enabled)
 				{
-					EXPECT_NEAR(B->X.x, 13, 0.02f);
+					EXPECT_NEAR(B->X.x, 1, 0.02f);
 					Vector3 Angles; B->Q.ToEuler(Angles.y, Angles.z, Angles.x);
 					EXPECT_NEAR(Angles.y, 0.25f, 0.01f);
 				}

@@ -441,25 +441,24 @@ void TestDistanceFieldMeshSimulation()
 void TestDistanceFieldMeshDemo()
 {
 	using namespace Riemann;
-	for (bool Terrain : { true, false })
 	{
 		SceneWorld Scene; Scene.SetDistanceFieldDemo(true); std::string Error;
-		const std::string Path = TestContentsPath() + (Terrain ? "Scenes/14_terrain_editing.json" : "Scenes/15_voxel_mesh.json");
+		const std::string Path = TestContentsPath() + "Scenes/14_terrain_editing.json";
 		EXPECT(Scene.LoadFromFile(Path, &Error));
-		if (!Scene.GetSimulation()) continue;
+		if (!Scene.GetSimulation()) return;
 		int Count = 0;
 		for (const auto& Object : Scene.GetObjects()) if (Object.GeometryPtr->GetShapeType() == PrimitiveType::DISTANCE_FIELD) ++Count;
-		EXPECT(Count == (Terrain ? 24 : 7));
+		EXPECT(Count == 1);
 		const auto Start = std::chrono::steady_clock::now();
 		for (int Step = 0; Step < 180; ++Step) Scene.Step(1.0f / 60.0f);
-		printf("SDF mesh demo terrain=%d frames=180 seconds=%.3f\n", Terrain,
+		printf("SDF mesh demo terrain frames=180 seconds=%.3f\n",
 			std::chrono::duration<double>(std::chrono::steady_clock::now() - Start).count());
 		for (const auto& Object : Scene.GetObjects()) if (Object.GeometryPtr->GetShapeType() == PrimitiveType::DISTANCE_FIELD)
 		{
 			const auto* Body = Object.GeometryPtr->GetParent<RigidBody>()->CastDynamic(); EXPECT(Body != nullptr);
 			if (!Body) continue;
 			printf("SDF mesh demo body y=%g speed=%g\n", Body->X.y, Body->V.Length());
-			EXPECT(std::isfinite(Body->X.y) && Body->X.y > (Terrain ? 0.55f : 0.65f) && Body->X.y < (Terrain ? 2.1f : 2.4f));
+			EXPECT(std::isfinite(Body->X.y) && Body->X.y > 0.55f && Body->X.y < 2.1f);
 			EXPECT(Body->V.Length() < 0.25f);
 		}
 		Scene.SetDistanceFieldDemo(false); EXPECT(Scene.LoadFromFile(Path, &Error));

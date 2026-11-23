@@ -7,8 +7,10 @@
 
 #include "../Renderer/RiemannRenderer.h"
 #include "../Src/Maths/Transform.h"
+#include "../Src/Modules/Robotics/ArticulatedRobotController.h"
+#include "../Src/Modules/Robotics/SpiderTraining.h"
 #include "../Src/RigidBodyDynamics/RigidBody.h"
-#include "../Src/Fluid/SmokeSimulation.h"
+#include "../Src/Fluid/AerodynamicsSimulation.h"
 #include "../Src/Destruction/DestructionSet.h"
 #include "../Src/RigidBodyDynamics/PhysicsField.h"
 
@@ -25,11 +27,12 @@ namespace Riemann
 	class VehicleDeformation;
 	class DeformableBody;
 	class VehicleDynamics;
-	class CharacterController;
+	class SweepRobotController;
 	class Ragdoll;
 	enum class RagdollAlgorithm;
 	class PhysicalAnimation;
 	class ClothSystem;
+	enum class RobotWalkMode { Policy, Sweep };
 	enum class ClothModel;
 	class StrandSystem;
 	struct ClothSettings;
@@ -121,9 +124,9 @@ namespace Riemann
 		float InteractionRadius = 0.65f;
 		float InteractionStrength = 18.0f;
 		std::vector<SceneFieldRegion> Regions;
-		SmokeSimulationSettings Smoke;
-		float SmokeExtinction = 5.5f;
-		Vector3 SmokeColor = Vector3(0.85f, 0.89f, 0.96f);
+		AerodynamicsSimulationSettings Aerodynamics;
+		float TracerExtinction = 5.5f;
+		Vector3 TracerColor = Vector3(0.85f, 0.89f, 0.96f);
 
 		bool IsConfigured() const { return !Type.empty(); }
 	};
@@ -175,7 +178,21 @@ namespace Riemann
 		void SetCharacterDemo(bool Enabled, bool BoxShape) { m_CharacterDemo = Enabled; m_CharacterBox = BoxShape; }
 		bool GetCharacterDemo() const { return m_CharacterDemo; }
 		bool GetCharacterBox() const { return m_CharacterBox; }
-		CharacterController* GetDemoCharacter() const { return m_Character; }
+		ArticulatedRobotController* GetWalkingRobot() const;
+		RobotController* GetRobotDemoController() const;
+		bool IsSpiderWalkingDemo() const { return m_SpiderWalkingDemo; }
+		void SetRobotWalkMode(RobotWalkMode Mode) { m_RobotWalkMode = Mode; }
+		RobotWalkMode GetRobotWalkMode() const { return m_RobotWalkMode; }
+		void SetRobotDriveInput(float Forward, float Turn, float Strafe);
+		void SetRobotAutoWalk(bool AutoWalk) { m_RobotAutoWalk = AutoWalk; }
+		void BeginSpiderTrainingDisplay(size_t EnvironmentCount);
+		void ShowSpiderTrainingSnapshot(const SpiderTrainingSnapshot& Snapshot, bool ShowAll, size_t Selected);
+		Vector3 GetRobotDriveCommand() const { return m_RobotDriveCommand; }
+		float GetRobotDriveHeading() const { return m_RobotDriveHeading; }
+		// The next scene load starts a fresh policy and simulation with this selection.
+		void SetWalkingRobotBackend(RobotDynamicsBackend Backend) { m_RobotBackend = Backend; }
+		RobotDynamicsBackend GetWalkingRobotBackend() const { return m_RobotBackend; }
+		SweepRobotController* GetDemoCharacter() const { return m_Character; }
 		void SetVehicleDynamicsDemo(bool Enabled) { m_VehicleDynamicsDemo = Enabled; }
 		bool GetVehicleDynamicsDemo() const { return m_VehicleDynamicsDemo; }
 		void SetReducedRagdollDemo(bool Enabled) { m_ReducedRagdollDemo = Enabled; }
@@ -187,6 +204,8 @@ namespace Riemann
 		void SetClothModelDemo(bool Enabled) { m_ClothModelDemo = Enabled; }
 		bool GetClothModelDemo() const { return m_ClothModelDemo; }
 		ClothSystem* GetDemoCloth() const;
+		bool SetClothRigidInteraction(bool Enabled);
+		bool SetClothSelfCollision(bool Enabled);
 		bool ApplyClothParameters(ClothModel Model, int Iterations, int Substeps, float Damping,
 			float StretchUCompliance, float StretchVCompliance, float ShearCompliance, float BendingCompliance);
 		bool ApplyClothDemo(bool Wind, bool Animation, bool Tethers, bool SoftMaterial, bool SurfaceContacts = false, bool Friction = true,
@@ -215,9 +234,7 @@ namespace Riemann
 		VehicleDynamics* GetVehicleDynamics(int Index) const;
 
 		Geometry* AddProjectileSphere(const std::string& id, const Vector3& position, float radius, const Vector3& velocity, const Vector4& color);
-		static constexpr int MaxSmokeRigidBodies = 3;
-		int GetSmokeRigidBodyCount() const;
-		bool AddSmokeRigidBody();
+		int GetAerodynamicsRigidBodyCount() const;
 		bool IsMouseControlGeometry(const Geometry* geometry) const;
 		bool RayCastMouseControlGeometry(const Vector3& origin, const Vector3& direction, float maxDistance,
 			Geometry** hitGeometry, Vector3* hitPoint) const;
@@ -233,6 +250,8 @@ namespace Riemann
 		std::vector<ConstraintControlState> GetConstraintControls() const;
 		bool ApplyConstraintControl(const ConstraintControlState& state);
 		std::vector<std::string> GetTerrainObjectIds() const;
+		bool RayCastTerrain(const std::string& id, const Vector3& origin, const Vector3& direction,
+			float maxDistance, Vector3* hitPoint, float* localHeight = nullptr) const;
 		int EditTerrain(const std::string& id, const Vector3& worldCenter, float radius, float value, int mode, float strength = 1.0f);
 		size_t GetVehicleCount() const { return m_Vehicles.size(); }
 		VehicleDeformation* GetVehicle(int index);
@@ -252,6 +271,13 @@ namespace Riemann
 		bool LoadParsedScene(const class JsonValue& root, const std::string& sourceName, std::string* errorMessage);
 		void ResetWorld(const PhysicsWorldParam& param);
 		bool CreateObject(const SceneObjectDesc& desc, std::string* errorMessage);
+		void LoadRobotCourse(const std::string& Path);
+		void CreateRobotLandmarks(bool Course);
+		bool CreateWalkingRobot(bool Course, const std::string& Model, bool Landmarks, std::string* Error);
+		void AddRobotPrimitive(size_t Link, std::unique_ptr<Geometry> Shape, const Vector4& Color);
+		void CreateRobotPrimitives(const ArticulatedRobotSettings& Settings);
+		void UpdateRobotDrive(float Dt);
+		void SyncWalkingRobot(float Dt = 0);
 		bool CreateCharacterDemo(const class JsonValue& Root, std::string* Error);
 		bool CreateReducedRagdollDemo(const class JsonValue& Root, std::string* Error);
 		bool CreatePhysicalAnimationDemo(const class JsonValue& Root, std::string* Error);
@@ -411,7 +437,27 @@ namespace Riemann
 		double m_ClothAnimationTime = 0;
 		std::vector<Ragdoll*> m_MechanismDemoDrivers;
 		double m_MechanismDemoTime = 0;
-		CharacterController* m_Character = nullptr;
+		ArticulatedRobotController* m_WalkingRobot = nullptr;
+		SweepRobotController* m_SweepWalkingRobot = nullptr;
+		std::unique_ptr<FeatherstoneSolver> m_SweepRobotPose;
+		RobotWalkMode m_RobotWalkMode = RobotWalkMode::Policy;
+		bool m_SpiderWalkingDemo = false, m_RobotAutoWalk = false;
+		Vector3 m_RobotDriveInput = Vector3::Zero(), m_RobotDriveCommand = Vector3::Zero();
+		Vector3 m_SweepRobotPrevious = Vector3::Zero();
+		float m_RobotDriveHeading = 0, m_SweepRobotPhase = 0;
+		struct RobotSurface
+		{
+			size_t Link;
+			Transform Local;
+			std::unique_ptr<Geometry> Shape;
+			size_t Environment = 0;
+			size_t ObjectIndex = 0;
+		};
+		size_t m_TrainingBuildIndex = 0;
+		bool m_TrainingDisplay = false;
+		RobotDynamicsBackend m_RobotBackend = RobotDynamicsBackend::SparseJointSpaceDynamics;
+		std::vector<RobotSurface> m_RobotSurfaces;
+		SweepRobotController* m_Character = nullptr;
 		RigidBody* m_CharacterPlatform = nullptr;
 		Vector3 m_CharacterPlatformOrigin = Vector3::Zero();
 		float m_CharacterDemoTime = 0.0f;

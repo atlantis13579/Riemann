@@ -90,9 +90,9 @@ void TestSceneLoading()
 	if (LoadTestScene(scene, "06_constraints.json"))
 	{
 		EXPECT(scene.GetName() == "Constraints");
-		EXPECT(scene.GetSimulation()->GetConstraintCount() == 7);
+		EXPECT(scene.GetSimulation()->GetConstraintCount() == 10);
 		EXPECT(scene.GetSimulation()->GetRopeCount() == 0);
-		EXPECT(scene.GetConstraintControls().size() == 7);
+		EXPECT(scene.GetConstraintControls().size() == 10);
 		StepTestScene(scene, 10);
 		for (const ConstraintControlState& state : scene.GetConstraintControls())
 		{
@@ -165,7 +165,8 @@ void TestSceneLoading()
 				const Vector3 freePosition = mesh->Vertices[1];
 				const uint32_t revision = scene.GetRenderRevision();
 				StepTestScene(scene, 10);
-				EXPECT(scene.GetRenderRevision() > revision);
+				// Deformed vertices stream into existing meshes without rebuilding the scene.
+				EXPECT(scene.GetRenderRevision() == revision);
 				EXPECT_SAME(mesh->Vertices[0], pinnedPosition);
 				EXPECT((mesh->Vertices[1] - freePosition).Length() > 0.001f);
 			}
@@ -193,7 +194,7 @@ void TestSceneLoading()
 	// A rejected scene must not prevent a subsequent valid load or teardown.
 	if (LoadTestScene(scene, "06_constraints.json"))
 	{
-		EXPECT(scene.GetSimulation()->GetConstraintCount() == 7);
+		EXPECT(scene.GetSimulation()->GetConstraintCount() == 10);
 		EXPECT(scene.GetSimulation()->GetRopeCount() == 0);
 		EXPECT(scene.GetSimulation()->GetDeformableBodyCount() == 0);
 		StepTestScene(scene, 10);

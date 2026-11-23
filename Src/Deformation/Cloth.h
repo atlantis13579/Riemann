@@ -9,6 +9,9 @@
 #include "../Maths/Index3.h"
 #include "../Maths/Vector2.h"
 #include "SurfaceContactConstraint.h"
+#include "BarycentricAttachment.h"
+#include "../Collision/GeometryObject.h"
+#include "../RigidBodyDynamics/BroadPhase.h"
 
 namespace Riemann
 {
@@ -86,6 +89,9 @@ namespace Riemann
 	class RigidBody;
 	struct ClothCollisionSettings
 	{
+		// World PBD/XPBD contacts with finite-mass rigid response.
+		bool RigidCoupling = false;
+		CollisionData FilterData = CollisionData::ForLayer(0);
 		bool SurfaceContacts = false;
 		bool SelfCollision = false, InterCollision = false;
 		bool ExcludeSelfNeighbors = true;
@@ -101,7 +107,7 @@ namespace Riemann
 	};
 	struct ClothCollisionStats
 	{
-		size_t Candidates = 0, Contacts = 0;
+		size_t Candidates = 0, Contacts = 0, RigidContacts = 0;
 		size_t SelfContacts = 0, InterContacts = 0;
 		size_t ContinuousContacts = 0, UnresolvedSweeps = 0;
 		int ContinuousPasses = 0;
@@ -130,12 +136,14 @@ namespace Riemann
 		void EndFrame(bool Commit = true);
 	private:
 		friend class ClothSystem;
+		friend class ClothStep;
+		ClothCollisionStats& MutableStats();
 		class SweepFailure final : public std::runtime_error
 		{
 		public:
 			SweepFailure() : std::runtime_error("Cloth continuous collision exhausted its sweep refinement budget") {}
 		};
-		static void SolveInteractions(const std::vector<ClothCollision*>& Collisions, float Dt, bool Project = true, bool SeparationOnly = false);
+		static void SolveInteractions(const std::vector<ClothCollision*>& Collisions, float Dt, bool Project = true, bool SeparationOnly = false, const BroadPhaseResult* Pairs = nullptr);
 		static bool FinishContinuous(const std::vector<ClothCollision*>& Collisions, float Dt);
 		static void RecordRefinement(const std::vector<ClothCollision*>& Collisions);
 		int RequiredSubsteps() const;
@@ -166,6 +174,9 @@ namespace Riemann
 		ClothModel Model = ClothModel::DistanceLinks;
 		int Substeps = 1;
 		float SurfaceDensity = 1;
+		// Procedural grids retain explicit particle masses unless area masses are requested.
+		bool UseSurfaceDensity = false;
+		bool AerodynamicsEnabled = true;
 		ClothMaterial Material;
 		ClothWind Wind;
 		ClothAnimationDrive AnimationDrive;
@@ -183,6 +194,7 @@ namespace Riemann
 
 	class ClothSystem
 	{
+		friend class ClothCollision;
 	public:
 		ClothSystem(const ClothSettings& settings, const Vector3& center, const Vector3& horizontalAxis, const Vector3& verticalAxis);
 		ClothSystem(const ClothSettings& Settings, const ClothMesh& Mesh);
@@ -199,6 +211,13 @@ namespace Riemann
 		bool SetParticlePosition(int Index, const Vector3& Position, bool ResetVelocity = true);
 		bool SetParticleVelocity(int Index, const Vector3& Velocity);
 		Vector3 GetParticleVelocity(int Index) const;
+		bool ApplyParticleImpulse(int Index, const Vector3& Impulse);
+		// Attachments borrow the rigid body; PhysicsWorld removes them with that body.
+		uint64_t AttachToRigid(const BarycentricPoint& Point, RigidBody* Body, const Vector3& WorldAnchor, double Compliance = 0);
+		bool RemoveRigidAttachment(uint64_t Id);
+		void DetachRigidBody(RigidBody* Body);
+		size_t GetRigidAttachmentCount() const { return m_RigidAttachments.size(); }
+		bool HasRigidCoupling() const { return m_Settings.Collision.RigidCoupling || !m_RigidAttachments.empty(); }
 		void SetMaterial(const ClothMaterial& Material);
 		void SetModel(ClothModel Model);
 		void SetSolverParameters(int Iterations, int Substeps, float Damping);
@@ -233,6 +252,19 @@ namespace Riemann
 		Geometry* GetRenderGeometry() const { return m_RenderGeometry; }
 
 	private:
+		friend class ClothStep;
+		friend class PhysicsWorld;
+		struct RigidAttachment
+		{
+			uint64_t Id;
+			BarycentricPoint Point;
+			RigidBody* Body;
+			Vector3 LocalAnchor;
+			double Compliance;
+		};
+		std::vector<RigidAttachment> m_RigidAttachments;
+		uint64_t m_NextAttachmentId = 1;
+		bool m_CoupledStepActive = false;
 		struct DistanceLink
 		{
 			int ParticleA;
@@ -284,5 +316,22 @@ namespace Riemann
 		std::vector<Vector3> m_Animation, m_AnimationStart, m_AnimationEnd, m_AnimationVelocity;
 		float m_AnimationTime = 0, m_AnimationDuration = 0, m_PreviousDt = 0;
 		bool m_ResetAnimationVelocity = false;
+		BroadPhaseQuery m_CollisionQuery;
+	};
+
+	struct DeformableRigidCollider;
+	class CollisionFilter;
+	class ClothStep
+	{
+	public:
+		ClothStep(const std::vector<ClothSystem*>& Cloths, const std::vector<DeformableRigidCollider>& Colliders, CollisionFilter* Filter, float Dt);
+		~ClothStep();
+		void Solve(int Iteration);
+		void SolveContacts(const BroadPhaseResult& Pairs);
+		void Finish();
+		const std::vector<RigidBody*>& GetContactBodies() const;
+	private:
+		struct Implementation;
+		std::unique_ptr<Implementation> m_Data;
 	};
 }

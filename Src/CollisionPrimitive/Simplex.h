@@ -1,6 +1,7 @@
 #pragma once
 
 #include <assert.h>
+#include <cstring>
 #include <float.h>
 #include "../Maths/Vector3.h"
 #include "MinkowskiSum.h"

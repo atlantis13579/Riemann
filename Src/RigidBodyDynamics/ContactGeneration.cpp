@@ -112,8 +112,9 @@ namespace Riemann
 	Box3 ContactGeneration::Bounds(const GeometryWorldState& State, const ContactGenerationSettings& Settings, float Dt)
 	{
 		Box3 Result = State.WorldBounds;
+		if (State.FrameMotion > 0.0f) Result.Thicken(State.FrameMotion);
 		if (State.Geom && !State.Geom->IsTriggerEnabled())
-			Result.Thicken((Settings.UseShapeOffsets ? State.Geom->GetContactOffset() : 0.0f) + MotionDistance(State, Settings, Dt));
+			Result.Thicken((Settings.UseShapeOffsets || State.NonRigid ? State.Geom->GetContactOffset() : 0.0f) + MotionDistance(State, Settings, Dt));
 		return Result;
 	}
 

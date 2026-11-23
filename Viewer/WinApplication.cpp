@@ -328,6 +328,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	switch (message)
 	{
+	case WM_ACTIVATEAPP:
+		if (g_RenderThread) g_RenderThread->SetActive(wParam != 0);
+		if (wParam != 0 && g_Viewer) g_Viewer->UpdateCamera();
+		break;
 	case WM_SIZE:
 		if (g_Viewer) g_Viewer->SetViewportSize(LOWORD(lParam), HIWORD(lParam));
 		break;
@@ -382,6 +386,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_Viewer->SetMovementKey('a', false);
 			g_Viewer->SetMovementKey('s', false);
 			g_Viewer->SetMovementKey('d', false);
+			g_Viewer->SetMovementKey('q', false);
+			g_Viewer->SetMovementKey('e', false);
 			g_Viewer->SetMovementKey('i', false);
 			g_Viewer->SetMovementKey('j', false);
 			g_Viewer->SetMovementKey('k', false);

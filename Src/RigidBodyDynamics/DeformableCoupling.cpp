@@ -1,5 +1,6 @@
 #include "PhysicsWorld.h"
 #include "../Deformation/DeformableStep.h"
+#include "../Deformation/Cloth.h"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -14,7 +15,7 @@ namespace Riemann
 	   explicitly instead of silently adding a second pose integration. */
 	int PhysicsWorld::DeformableCouplingSubsteps() const
 	{
-		if (m_DeformableRigidAttachments.empty() && !HasDeformableRigidContacts()) return 1;
+		if (m_DeformableRigidAttachments.empty() && !HasDeformableRigidContacts() && !HasClothRigidCoupling()) return 1;
 		if (!m_PositionSolver || m_SupportStabilization.Enabled) throw std::invalid_argument("Rigid deformable coupling requires PBD/XPBD without support projection");
 		DeformableStep::Validate(m_DeformableBodies);
 		for (const auto& Link : m_DeformableRigidAttachments)
@@ -22,7 +23,26 @@ namespace Riemann
 				throw std::invalid_argument("Rigid deformable attachments currently require independent discrete bodies");
 		int Count = 1;
 		for (auto* Body : m_DeformableBodies) Count = std::max(Count, Body->GetSettings().Substeps);
+		for (auto* Cloth : m_Cloths) if (Cloth->HasRigidCoupling() || (HasClothRigidCoupling() && Cloth->GetSettings().Collision.InterCollision))
+		{
+			if (Cloth->GetSettings().Collision.Continuous) throw std::invalid_argument("Coupled cloth requires discrete world contacts");
+			Count = std::max(Count, Cloth->GetSettings().Substeps);
+			for (const auto& A : Cloth->m_RigidAttachments)
+			{
+				if (std::find(m_DynamicBodies.begin(), m_DynamicBodies.end(), A.Body) == m_DynamicBodies.end()
+					&& std::find(m_StaticBodies.begin(), m_StaticBodies.end(), A.Body) == m_StaticBodies.end()
+					&& std::find(m_KinematicBodies.begin(), m_KinematicBodies.end(), A.Body) == m_KinematicBodies.end())
+					throw std::invalid_argument("Cloth attachment must refer to a body in the same world");
+				if (A.Body->ReducedRagdoll || (A.Body->CastDynamic() && A.Body->CastDynamic()->mMotionType == MorionType::Continuous))
+					throw std::invalid_argument("Cloth attachments require independent discrete bodies");
+			}
+		}
 		return Count;
+	}
+	bool PhysicsWorld::HasClothRigidCoupling() const
+	{
+		for (auto* C : m_Cloths) if (C->HasRigidCoupling()) return true;
+		return false;
 	}
 	bool PhysicsWorld::HasDeformableRigidContacts() const
 	{

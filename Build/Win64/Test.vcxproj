@@ -81,12 +81,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>..\..\Binaries\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>..\..\Binaries\Win64\$(Configuration)\</OutDir>
+    <OutDir>..\..\Binaries\Win64-LegacyNoCUDA\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>..\..\Binaries\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>..\..\Binaries\Win64\$(Configuration)\</OutDir>
+    <OutDir>..\..\Binaries\Win64-LegacyNoCUDA\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -127,7 +127,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;..\..\Binaries\Win64\Debug\Riemann.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;..\..\Binaries\Win64-LegacyNoCUDA\Debug\Riemann.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -146,7 +146,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;..\..\Binaries\Win64\Release\Riemann.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;..\..\Binaries\Win64-LegacyNoCUDA\Release\Riemann.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -157,7 +157,7 @@
     <ClCompile Include="..\..\Test\Test_CCDContinuation.cpp" />
     <ClCompile Include="..\..\Test\Test_TemporalSubsteps.cpp" />
     <ClCompile Include="..\..\Test\Test_IslandSleeping.cpp" />
-    <ClCompile Include="..\..\Test\Test_CharacterController.cpp" />
+    <ClCompile Include="..\..\Test\Test_RobotController.cpp" />
     <ClCompile Include="..\..\Test\Test_VehicleDynamics.cpp" />
     <ClCompile Include="..\..\Test\Test_Featherstone.cpp" />
     <ClCompile Include="..\..\Test\Test_RagdollReduced.cpp" />
@@ -184,6 +184,8 @@
     <ClCompile Include="..\..\Test\Test_StrandGroom.cpp" />
     <ClCompile Include="..\..\Test\Test_StrandCollision.cpp" />
     <ClCompile Include="..\..\Test\Test_RigidAttachment.cpp" />
+    <ClCompile Include="..\..\Test\Test_ClothRigidCoupling.cpp" />
+    <ClCompile Include="..\..\Test\Test_WorldAerodynamics.cpp" />
     <ClCompile Include="..\..\Test\Test_DistanceFieldCollision.cpp" />
     <ClCompile Include="..\..\Test\Test_RuntimeDistanceField.cpp" />
     <ClCompile Include="..\..\Test\Test_ContactOffsets.cpp" />
@@ -213,6 +215,7 @@
     <ClCompile Include="..\..\Test\Test_Stress.cpp" />
     <ClCompile Include="..\..\Test\Test_Deformation.cpp" />
     <ClCompile Include="..\..\Viewer\SceneWorld.cpp" />
+    <ClCompile Include="..\..\Src\Modules\Robotics\RobotDemo.cpp" />
     <ClCompile Include="..\..\Test\Test_Scenes.cpp" />
     <ClCompile Include="..\..\Test\Test_Rope.cpp" />
     <ClCompile Include="..\..\Test\Test_Constraints.cpp" />
@@ -221,7 +224,8 @@
     <ClCompile Include="..\..\Test\Test_CollisionPrimitive.cpp" />
     <ClCompile Include="..\..\Test\Test_Core.cpp" />
     <ClCompile Include="..\..\Test\Test_FluidOptimization.cpp" />
-    <ClCompile Include="..\..\Test\Test_Smoke.cpp" />
+    <ClCompile Include="..\..\Test\Test_AerodynamicsIncompressible.cpp" />
+    <ClCompile Include="..\..\Test\Test_AerodynamicsInterface.cpp" />
     <ClCompile Include="..\..\Test\Test_Destruction.cpp" />
     <ClCompile Include="..\..\Test\Test_Geometry.cpp" />
     <ClCompile Include="..\..\Test\Test_Image.cpp" />

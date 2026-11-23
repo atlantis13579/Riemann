@@ -1,4 +1,5 @@
 #include "DeformableRigidCollision.h"
+#include <unordered_map>
 #include "DeformableBody.h"
 #include "RigidSurfaceContact.h"
 #include "../Collision/SurfaceCollision.h"
@@ -9,6 +10,7 @@
 #include "../CollisionPrimitive/Sphere3.h"
 #include "../CollisionPrimitive/TriangleMesh.h"
 #include "../RigidBodyDynamics/RigidBody.h"
+#include "../RigidBodyDynamics/BroadPhase.h"
 #include <algorithm>
 #include <cmath>
 #include <map>
@@ -55,19 +57,29 @@ namespace Riemann
 	{
 		struct Surface
 		{
-			DeformableBody* Body;
+			RigidContactSurface Data;
 			std::vector<Vector3> Positions;
 			std::vector<bool> Boundary;
 			SurfaceCollisionMesh Index;
-			explicit Surface(DeformableBody* B) : Body(B), Boundary(B->GetParticleCount(), false), Index(B->GetParticleCount(), B->GetSurfaceTriangles())
+			bool IndexDirty = true;
+			explicit Surface(const RigidContactSurface& S) : Data(S), Boundary(S.Particles.size(), false), Index((int)S.Particles.size(), S.Triangles)
 			{
-				if (B->GetSurfaceTriangles().empty()) throw std::invalid_argument("Rigid deformable collision requires boundary triangles");
-				for (const auto& T : B->GetSurfaceTriangles()) for (int I = 0; I < 3; ++I) Boundary[T[I]] = true;
+				if (S.Triangles.empty() || S.PreviousPositions.size() != S.Particles.size()) throw std::invalid_argument("Rigid contact requires a valid surface");
+				if (!std::isfinite(S.Thickness) || S.Thickness < 0 || !std::isfinite(S.Tolerance) || S.Tolerance <= 0 || !S.Material.IsValid()) throw std::invalid_argument("Invalid rigid contact surface settings");
+				for (size_t I = 0; I < S.Particles.size(); ++I)
+					if (!S.Particles[I].Position || !S.PreviousPositions[I] || !std::isfinite(S.Particles[I].InverseMass) || S.Particles[I].InverseMass < 0)
+						throw std::invalid_argument("Invalid rigid contact surface particle");
+				for (const auto& T : S.Triangles) for (int I = 0; I < 3; ++I) Boundary.at(T[I]) = true;
 			}
 			void Update()
 			{
-				Positions.clear(); for (const auto& P : Body->GetParticles()) Positions.push_back(P.Position);
-				const auto& S = Body->GetSettings(); Index.Update(Positions, Positions, S.ParticleRadius + S.Collision.ContactTolerance);
+				Positions.clear(); for (const auto& P : Data.Particles) Positions.push_back(*P.Position);
+				IndexDirty = true;
+			}
+			void PrepareIndex()
+			{
+				if (!IndexDirty) return;
+				Index.Update(Positions, Positions, Data.Thickness + Data.Tolerance); IndexDirty = false;
 			}
 		};
 		struct Collider
@@ -136,21 +148,34 @@ namespace Riemann
 		struct Row { bool Seen = false; RigidBody* Body = nullptr; std::unique_ptr<RigidSurfaceContact> Constraint; };
 		std::vector<std::unique_ptr<Surface>> Surfaces;
 		std::vector<std::unique_ptr<Collider>> Colliders;
+		std::vector<DeformableRigidCollider> ColliderSources;
+		std::unordered_map<Geometry*, size_t> SurfaceIndices, ColliderIndices;
+		struct ObjectRow { int Surface = -1, Collider = -1; };
+		BroadPhaseObjectMap<ObjectRow> ObjectIndices;
+		BroadPhasePairType PairType;
+		std::vector<std::pair<size_t, size_t>> Candidates;
+		std::vector<bool> SurfaceUpdated, ColliderUpdated;
 		std::map<Key, Row> Rows;
 		std::vector<RigidBody*> Touched;
 		CollisionFilter* Filter;
-		Implementation(const std::vector<DeformableBody*>& Bodies, const std::vector<DeformableRigidCollider>& Shapes, CollisionFilter* Policy) : Filter(Policy)
+		Implementation(const std::vector<RigidContactSurface>& Bodies, const std::vector<DeformableRigidCollider>& Shapes,
+			CollisionFilter* Policy, BroadPhasePairType Type) : PairType(Type), Filter(Policy)
 		{
-			for (auto* B : Bodies) if (B->GetSettings().Collision.RigidCollision) Surfaces.emplace_back(new Surface(B));
+			for (const auto& B : Bodies)
+			{
+				SurfaceIndices.emplace(B.BroadPhaseGeometry, Surfaces.size());
+				Surfaces.emplace_back(new Surface(B));
+			}
 			if (Surfaces.empty()) return;
 			for (const auto& C : Shapes) if (C.Shape && C.Body && C.Shape->IsSimulationEnabled() && !C.Shape->IsTriggerEnabled())
 			{
 				bool Allowed = false;
-				for (const auto& S : Surfaces) if (CollisionFilter::Allows(Filter, S->Body->GetSettings().Collision.FilterData, C.Shape->GetFilterData())) Allowed = true;
+				for (const auto& S : Surfaces) if (CollisionFilter::Allows(Filter, S->Data.FilterData, C.Shape->GetFilterData())) Allowed = true;
 				if (!Allowed) continue;
 				if (C.Body->ReducedRagdoll || (C.Body->CastDynamic() && C.Body->CastDynamic()->mMotionType == MorionType::Continuous))
 					throw std::invalid_argument("Deformable rigid contacts require independent discrete colliders");
-				Colliders.emplace_back(new Collider(C));
+				ColliderIndices.emplace(C.Shape, ColliderSources.size());
+				ColliderSources.push_back(C); Colliders.emplace_back();
 			}
 		}
 		void Bind(const Key& K, Surface& S, Collider& C, const Feature& A, SurfaceContact Contact, const Vector3& WorldPoint)
@@ -158,40 +183,40 @@ namespace Riemann
 			SurfaceContactParticle Particles[3]; Contact.PointA = Vector3::Zero();
 			for (int I = 0; I < A.Count; ++I)
 			{
-				const int J = A.Indices[I]; Particles[I] = { &S.Body->m_Particles[J].Position, S.Body->GetInverseMass(J) };
-				Contact.PointA += S.Body->GetParticle(J).PreviousPosition * Contact.WeightsA[I];
+				const int J = A.Indices[I]; Particles[I] = S.Data.Particles[J];
+				Contact.PointA += *S.Data.PreviousPositions[J] * Contact.WeightsA[I];
 			}
 			auto* Body = C.Source.Body; auto* Dynamic = Body->CastDynamic(); const bool Movable = Dynamic && !Dynamic->Freezing;
 			const Vector3 Anchor = Body->WorldToBodyLocal(WorldPoint); Contact.PointB = C.Source.StartPose.LocalToWorld(Anchor);
 			RigidConstraintBody Rigid{ &Body->X, &Body->Q, Movable ? Body->InvMass : 0, Movable ? Body->InvInertia : Matrix3::Zero() };
 			auto& R = Rows[K]; R.Seen = true; R.Body = Body;
-			const auto& Settings = S.Body->GetSettings(); auto& Stats = S.Body->m_CollisionStats;
-			Stats.MaximumPenetration = std::max(Stats.MaximumPenetration, std::max(0.0, Settings.ParticleRadius - Contact.Distance));
-			if (R.Constraint) R.Constraint->Refresh(Particles, A.Count, Rigid, Anchor - Body->CM, Contact, Settings.ParticleRadius);
+			const auto& Settings = S.Data;
+			if (Settings.MaximumPenetration) *Settings.MaximumPenetration = std::max(*Settings.MaximumPenetration, std::max(0.0, Settings.Thickness - Contact.Distance));
+			if (R.Constraint) R.Constraint->Refresh(Particles, A.Count, Rigid, Anchor - Body->CM, Contact, Settings.Thickness);
 			else
 			{
-				auto Material = Settings.Collision.Material;
+				auto Material = Settings.Material;
 				Material.StaticFriction = std::sqrt(Material.StaticFriction) * std::sqrt((double)Body->GetFrictionStatic());
 				Material.DynamicFriction = std::sqrt(Material.DynamicFriction) * std::sqrt((double)Body->GetFrictionDynamic());
-				R.Constraint.reset(new RigidSurfaceContact(Particles, A.Count, Rigid, Anchor - Body->CM, Contact, Settings.ParticleRadius, Material));
-				++Stats.Contacts; ++Stats.RigidContacts;
+				R.Constraint.reset(new RigidSurfaceContact(Particles, A.Count, Rigid, Anchor - Body->CM, Contact, Settings.Thickness, Material));
+				if (Settings.Contacts) ++*Settings.Contacts; if (Settings.RigidContacts) ++*Settings.RigidContacts;
 			}
 			if (std::find(Touched.begin(), Touched.end(), Body) == Touched.end()) Touched.push_back(Body);
 			if (Dynamic) Dynamic->Wakeup();
 		}
 		void Contact(size_t IS, size_t IC, int Kind, int IA, int IB, const Feature& A, const Feature& B)
 		{
-			auto& S = *Surfaces[IS]; auto& C = *Colliders[IC]; ++S.Body->m_CollisionStats.Candidates;
+			auto& S = *Surfaces[IS]; auto& C = *Colliders[IC]; if (S.Data.Candidates) ++*S.Data.Candidates;
 			Vector3 PA[3], PB[3]; for (int I = 0; I < A.Count; ++I) PA[I] = S.Positions[A.Indices[I]];
 			for (int I = 0; I < B.Count; ++I) PB[I] = C.End[B.Indices[I]];
-			auto Hit = SurfaceCollision::Closest(PA, A.Count, PB, B.Count); const auto& Settings = S.Body->GetSettings();
-			if (Hit.Distance > Settings.ParticleRadius + C.Radius + Settings.Collision.ContactTolerance) return;
+			auto Hit = SurfaceCollision::Closest(PA, A.Count, PB, B.Count); const auto& Settings = S.Data;
+			if (Hit.Distance > Settings.Thickness + C.Radius + Settings.Tolerance) return;
 			if (Hit.Normal.IsZero())
 			{
 				SurfaceMotion MA, MB; MA.Count = A.Count; MB.Count = B.Count;
 				for (int I = 0; I < A.Count; ++I) MA.Start[I] = MA.End[I] = PA[I];
 				for (int I = 0; I < B.Count; ++I) MB.Start[I] = MB.End[I] = PB[I];
-				SurfaceCollisionSettings Query; Query.Thickness = Settings.ParticleRadius + C.Radius;
+				SurfaceCollisionSettings Query; Query.Thickness = Settings.Thickness + C.Radius;
 				if (!SurfaceCollision::Sweep(MA, MB, Query, Hit) || Hit.Conservative) return;
 			}
 			const Vector3 Point = Hit.PointB + Hit.Normal * C.Radius; Hit.Distance -= C.Radius;
@@ -199,9 +224,34 @@ namespace Riemann
 		}
 		void Detect(size_t IS, size_t IC)
 		{
-			auto& S = *Surfaces[IS]; auto& C = *Colliders[IC]; const auto& Settings = S.Body->GetSettings();
-			if (!CollisionFilter::Allows(Filter, Settings.Collision.FilterData, C.Source.Shape->GetFilterData())) return;
+			auto& S = *Surfaces[IS]; auto& C = *Colliders[IC]; const auto& Settings = S.Data;
+			if (!CollisionFilter::Allows(Filter, Settings.FilterData, C.Source.Shape->GetFilterData())) return;
 			const Box3 Bounds = C.Source.Body->GetGeometryBounds(C.Source.Shape);
+			if (C.Radius > 0)
+			{
+				// A linear scan is cheaper than refitting the whole triangle tree for each rounded contact iteration.
+				const float Margin = Settings.Thickness + Settings.Tolerance;
+				const Feature B = C.End.size() == 1 ? Feature(0) : Feature(SurfaceEdge{ 0, 1 });
+				for (size_t I = 0; I < S.Data.Triangles.size(); ++I)
+				{
+					const auto& T = S.Data.Triangles[I];
+					Box3 TriangleBounds(S.Positions[T.a], S.Positions[T.b], S.Positions[T.c]);
+					TriangleBounds.Thicken(Margin);
+					if (!TriangleBounds.Intersect(Bounds)) continue;
+					if (C.End.size() == 1)
+					{
+						const Vector3& Center = C.End[0];
+						const Vector3 Closest(
+							std::max(TriangleBounds.Min.x, std::min(Center.x, TriangleBounds.Max.x)),
+							std::max(TriangleBounds.Min.y, std::min(Center.y, TriangleBounds.Max.y)),
+							std::max(TriangleBounds.Min.z, std::min(Center.z, TriangleBounds.Max.z)));
+						if ((Center - Closest).SquareLength() > C.Radius * C.Radius) continue;
+					}
+					Contact(IS, IC, Rounded, (int)I, 0, Feature(T), B);
+				}
+				return;
+			}
+			S.PrepareIndex();
 			if (!C.Infinite)
 			{
 				bool Near = false; for (size_t I = 0; I < S.Boundary.size(); ++I)
@@ -221,17 +271,11 @@ namespace Riemann
 				{
 					const double D = C.Planes[J].Normal.Dot(Local - C.Planes[J].Point); if (D > Gap) { Gap = D; PlaneIndex = (int)J; }
 				}
-				if (PlaneIndex < 0 || Gap > (C.Infinite ? Settings.ParticleRadius + Settings.Collision.ContactTolerance : 0)) continue;
+				if (PlaneIndex < 0 || Gap > (C.Infinite ? Settings.Thickness + Settings.Tolerance : 0)) continue;
 				Inside[I] = true; SurfaceContact Hit; Hit.Normal = Current.quat * C.Planes[PlaneIndex].Normal; Hit.WeightsA = Vector3::UnitX(); Hit.Distance = Gap;
 				Bind(Key(IS, IC, Interior, (int)I, 0), S, C, Feature((int)I), Hit, Current.LocalToWorld(Local - C.Planes[PlaneIndex].Normal * (float)Gap));
 			}
-			std::vector<int> Hits;
-			if (C.Radius > 0)
-			{
-				S.Index.QueryTriangles(Bounds, Hits); const Feature B = C.End.size() == 1 ? Feature(0) : Feature(SurfaceEdge{ 0, 1 });
-				for (int I : Hits) Contact(IS, IC, Rounded, I, 0, Feature(S.Index.GetTriangles()[I]), B);
-			}
-			else if (C.Index)
+			if (C.Index)
 			{
 				std::vector<SurfaceCandidate> Candidates; S.Index.FindCandidates(*C.Index, Candidates);
 				for (const auto& P : Candidates)
@@ -247,11 +291,47 @@ namespace Riemann
 				}
 			}
 		}
-		void Solve(float Dt)
+		void Solve(float Dt, const BroadPhaseResult& Pairs)
 		{
+			if (Surfaces.empty() || ColliderSources.empty()) return;
 			for (auto& R : Rows) R.second.Seen = false;
-			for (auto& S : Surfaces) S->Update(); for (auto& C : Colliders) C->Update();
-			for (size_t I = 0; I < Surfaces.size(); ++I) for (size_t J = 0; J < Colliders.size(); ++J) Detect(I, J);
+			const auto RigidPairs = Pairs.GetPairs(PairType);
+			if (!RigidPairs.empty()) ObjectIndices.Update(Pairs, [&](int Index)
+			{
+				ObjectRow Row; auto* G = Pairs.GetGeometry(Index);
+				if (Pairs.GetObjectType(Index) == BroadPhaseObjectType::Rigid)
+				{
+					const auto It = ColliderIndices.find(G); if (It != ColliderIndices.end()) Row.Collider = (int)It->second;
+				}
+				else
+				{
+					const auto It = SurfaceIndices.find(G); if (It != SurfaceIndices.end()) Row.Surface = (int)It->second;
+				}
+				return Row;
+			});
+			Candidates.clear();
+			auto Dispatch = [&](const ObjectRow& A, const ObjectRow& B)
+			{
+				if (A.Surface >= 0 && B.Collider >= 0) Candidates.emplace_back((size_t)A.Surface, (size_t)B.Collider);
+			};
+			for (const auto& P : RigidPairs)
+			{
+				auto* A = Pairs.GetGeometry(P.index1); auto* B = Pairs.GetGeometry(P.index2);
+				if (A && B) { Dispatch(ObjectIndices[P.index1], ObjectIndices[P.index2]); Dispatch(ObjectIndices[P.index2], ObjectIndices[P.index1]); }
+			}
+			std::sort(Candidates.begin(), Candidates.end());
+			SurfaceUpdated.assign(Surfaces.size(), false); ColliderUpdated.assign(Colliders.size(), false);
+			for (const auto& P : Candidates)
+			{
+				const size_t I = P.first, J = P.second;
+				if (!SurfaceUpdated[I]) { Surfaces[I]->Update(); SurfaceUpdated[I] = true; }
+				if (!ColliderUpdated[J])
+				{
+					if (!Colliders[J]) Colliders[J].reset(new Collider(ColliderSources[J]));
+					Colliders[J]->Update(); ColliderUpdated[J] = true;
+				}
+				Detect(I, J);
+			}
 			for (auto It = Rows.begin(); It != Rows.end();)
 			{
 				if (!It->second.Seen) It = Rows.erase(It);
@@ -260,8 +340,27 @@ namespace Riemann
 		}
 	};
 	DeformableRigidCollision::DeformableRigidCollision(const std::vector<DeformableBody*>& Bodies, const std::vector<DeformableRigidCollider>& Colliders, CollisionFilter* Filter)
-		: m_Data(new Implementation(Bodies, Colliders, Filter)) {}
+		: m_Data(nullptr)
+	{
+		std::vector<RigidContactSurface> Surfaces;
+		for (auto* B : Bodies) if (B->GetSettings().Collision.RigidCollision)
+		{
+			RigidContactSurface S; S.BroadPhaseGeometry = B->GetRenderGeometry(); const auto& Settings = B->GetSettings(); auto& Stats = B->m_CollisionStats;
+			S.Triangles = B->GetSurfaceTriangles(); S.Thickness = Settings.ParticleRadius;
+			S.Tolerance = Settings.Collision.ContactTolerance; S.Material = Settings.Collision.Material; S.FilterData = Settings.Collision.FilterData;
+			S.Candidates = &Stats.Candidates; S.Contacts = &Stats.Contacts; S.RigidContacts = &Stats.RigidContacts; S.MaximumPenetration = &Stats.MaximumPenetration;
+			for (int I = 0; I < B->GetParticleCount(); ++I)
+			{
+				S.Particles.push_back({ &B->m_Particles[I].Position, B->GetInverseMass(I) });
+				S.PreviousPositions.push_back(&B->m_Particles[I].PreviousPosition);
+			}
+			Surfaces.push_back(std::move(S));
+		}
+		m_Data.reset(new Implementation(Surfaces, Colliders, Filter, BroadPhasePairType::DeformableRigid));
+	}
+	DeformableRigidCollision::DeformableRigidCollision(const std::vector<RigidContactSurface>& Surfaces, const std::vector<DeformableRigidCollider>& Colliders, CollisionFilter* Filter)
+		: m_Data(new Implementation(Surfaces, Colliders, Filter, BroadPhasePairType::ClothRigid)) {}
 	DeformableRigidCollision::~DeformableRigidCollision() = default;
-	void DeformableRigidCollision::Solve(float Dt) { m_Data->Solve(Dt); }
+	void DeformableRigidCollision::Solve(float Dt, const BroadPhaseResult& Pairs) { m_Data->Solve(Dt, Pairs); }
 	const std::vector<RigidBody*>& DeformableRigidCollision::GetTouchedBodies() const { return m_Data->Touched; }
 }

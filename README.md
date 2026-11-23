@@ -8,6 +8,12 @@ This project is named after the 19th-century German mathematician Bernhard Riema
 ## Features
 
 * Rigid Body Dynamics Simulation
+    * Continuous collision detection, temporal substeps, island sleeping, and persistent friction patches
+    * Reduced-coordinate articulation with Featherstone dynamics, transmissions, and tendon constraints
+    * Physical animation, pose drives, and ragdoll recovery
+    * Capsule and box character controllers with swept walking and ballistic jumping
+    * Query-wheel vehicles with suspension, combined tire slip, drivetrain, and chassis aerodynamics
+    * Articulated robot walking with joint motors and terrain contacts
 
 * Simulation and Collision Detection for various shapes
     * Sphere
@@ -39,6 +45,7 @@ This project is named after the 19th-century German mathematician Bernhard Riema
     * Graph Partition Algorithm
     * Mesh Cut Algorithm
     * Voronoi Tessellation
+    * Authored fracture assets, rigid-cluster replay, and bounded destruction events
 
 * Deformation Body Simulation
     * Rope Simulation
@@ -46,6 +53,9 @@ This project is named after the 19th-century German mathematician Bernhard Riema
     * Elastic Simulation
     * Elastoplastic tetrahedral vehicle cages with crumple zones, edge and volume plasticity, and inversion barriers
     * Mesh Morphing
+    * Triangle cloth with bending, wind, tethers, and continuous surface contacts
+    * Projective dynamics and tetrahedral materials with rigid-body coupling
+    * Cosserat hair guides, strand collision, and groom interpolation
 
 * Fluid Dynamics Simulation
     * Eulerian Approach

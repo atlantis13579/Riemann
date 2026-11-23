@@ -7,6 +7,7 @@
 #include "TetrahedralMaterial.h"
 #include "TetrahedralAsset.h"
 #include "ProjectiveDynamicsProjection.h"
+#include "../RigidBodyDynamics/BroadPhase.h"
 
 #include "../Maths/Index3.h"
 #include "../Maths/Vector3.h"
@@ -145,6 +146,7 @@ namespace Riemann
 		static void SimulateGroup(const std::vector<DeformableBody*>& Bodies, float Dt, float FrameDt, bool First, bool Last);
 		void RequireIdle() const;
 		bool m_CoupledStepActive = false;
+		BroadPhaseQuery m_CollisionQuery;
 		size_t m_RigidAttachmentCount = 0;
 		bool IsValidParticle(int index) const;
 		float GetInverseMass(int index) const;

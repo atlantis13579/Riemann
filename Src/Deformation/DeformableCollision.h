@@ -8,6 +8,7 @@
 namespace Riemann
 {
 	class DeformableBody;
+	struct BroadPhaseResult;
 	struct DeformableCollisionSettings
 	{
 		bool SelfCollision = false, InterCollision = false;
@@ -31,7 +32,7 @@ namespace Riemann
 		DeformableCollision(const DeformableCollision&) = delete;
 		DeformableCollision& operator=(const DeformableCollision&) = delete;
 		static bool CanInteract(const DeformableBody& A, const DeformableBody& B);
-		void Solve(float Dt);
+		void Solve(float Dt, const BroadPhaseResult& Pairs);
 	private:
 		struct Implementation;
 		std::unique_ptr<Implementation> m_Data;

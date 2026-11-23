@@ -1,6 +1,8 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 #include <functional>
 #include <vector>
 #include <queue>
@@ -244,7 +246,7 @@ void ExtractObjects(T* cell, int nx, int ny, std::vector<std::vector<Vector2i>>*
 		if (polygon.size() > MinPolygonPoints) {
 			polygons->push_back(polygon);
 		}
-		FillObject4x<uint8_t>(cell, nx, ny, k, 0);
+		FillObject4x<std::uint8_t>(cell, nx, ny, k, 0);
 	}
 }
 

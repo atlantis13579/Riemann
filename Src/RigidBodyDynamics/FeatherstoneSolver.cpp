@@ -209,7 +209,7 @@ namespace Riemann
 	{ for (size_t I = 0; I < Value.size(); ++I) Value[I] += Other.Value[I]; return *this; }
 
 	FeatherstoneSolver::FeatherstoneSolver(const std::vector<RagdollLinkSettings>& Links, const FeatherstoneSettings& Settings)
-		: m_Links(Links), m_Settings(Settings)
+		: m_Settings(Settings), m_Links(Links)
 	{
 		if (Links.empty() || !std::isfinite(Settings.RelativePivotTolerance) || Settings.RelativePivotTolerance <= 0 || Settings.RelativePivotTolerance >= 1
 			|| !std::isfinite(Settings.SymmetryTolerance) || Settings.SymmetryTolerance <= 0 || Settings.SymmetryTolerance >= 1)
@@ -279,6 +279,7 @@ namespace Riemann
 		try { UpdateKinematics(); }
 		catch (...) { m_Configuration.swap(Next); UpdateKinematics(); throw; }
 		m_FactorizationValid = false;
+		++m_ConfigurationRevision;
 	}
 	void FeatherstoneSolver::SetVelocity(const std::vector<double>& Velocity)
 	{
@@ -395,32 +396,37 @@ namespace Riemann
 	}
 	RagdollMatrix FeatherstoneSolver::ComputeMassMatrix() const
 	{
-		auto Matrix = QueryMatrix(m_Velocity.size(), m_Velocity.size());
+		RagdollMatrix Matrix = QueryMatrix(m_Velocity.size(), m_Velocity.size());
+		VisitMassTriangle([&](int Row, int Column, double Value) { Matrix[Row][Column] = Matrix[Column][Row] = Value; });
+		return Matrix;
+	}
+	void FeatherstoneSolver::VisitMassTriangle(const std::function<void(int, int, double)>& Entry) const
+	{
 		std::vector<SpatialMatrix> Composite; Composite.reserve(m_Links.size());
-		for (const auto& Cache : m_Cache) Composite.push_back(Cache.Inertia);
+		for (const LinkCache& Cache : m_Cache) Composite.push_back(Cache.Inertia);
 		for (size_t Reverse = m_Links.size(); Reverse > 0; --Reverse)
 		{
 			const size_t I = Reverse - 1; const int Parent = m_Links[I].Parent;
-			if (Parent >= 0) Composite[Parent] += m_Cache[I].MotionTransform.Transpose() * Composite[I] * m_Cache[I].MotionTransform;
+			if (Parent >= 0)
+				Composite[Parent] += m_Cache[I].MotionTransform.Transpose() * Composite[I] * m_Cache[I].MotionTransform;
 		}
 		for (size_t I = 0; I < m_Links.size(); ++I)
 		{
 			for (int Column = 0; Column < Dofs(m_Links[I].Joint); ++Column)
 			{
-				const int C = m_Offsets[I] + Column; auto Force = Composite[I] * m_Cache[I].Subspace[Column];
+				const int C = m_Offsets[I] + Column;
+				SpatialVector Force = Composite[I] * m_Cache[I].Subspace[Column];
 				for (int Ancestor = (int)I; Ancestor >= 0;)
 				{
-					for (int Row = 0; Row < Dofs(m_Links[Ancestor].Joint); ++Row)
+					for (int Row = Ancestor == (int)I ? Column : Dofs(m_Links[Ancestor].Joint) - 1; Row >= 0; --Row)
 					{
 						const int R = m_Offsets[Ancestor] + Row;
-						Matrix[R][C] = Matrix[C][R] = m_Cache[Ancestor].Subspace[Row].Dot(Force);
+						Entry(C, R, m_Cache[Ancestor].Subspace[Row].Dot(Force) + (R == C ? m_Links[I].Armature : 0));
 					}
 					Force = m_Cache[Ancestor].MotionTransform.Transpose() * Force; Ancestor = m_Links[Ancestor].Parent;
 				}
-				Matrix[C][C] += m_Links[I].Armature;
 			}
 		}
-		return Matrix;
 	}
 	std::vector<double> FeatherstoneSolver::ComputeGeneralizedForce(const std::vector<SpatialVector>& WorldWrenches) const
 	{

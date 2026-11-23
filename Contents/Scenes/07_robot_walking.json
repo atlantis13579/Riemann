@@ -1,0 +1,44 @@
+{
+  "name": "Spider Robot",
+  "walkingRobot": true,
+  "robotModel": "SpiderPolicy",
+  "robotCourse": true,
+  "robotLandmarks": true,
+  "camera": {
+    "center": [
+      0,
+      0.45,
+      0
+    ],
+    "orbit": [
+      -1.25,
+      0.7,
+      8.5
+    ],
+    "fovY": 0.8,
+    "near": 0.02,
+    "far": 100,
+    "backgroundColor": [
+      0.47,
+      0.6,
+      0.7,
+      1
+    ]
+  },
+  "light": {
+    "direction": [
+      0.35,
+      -0.78,
+      -0.52
+    ],
+    "ambient": 0.54,
+    "shadowCenter": [
+      12,
+      0,
+      0
+    ],
+    "shadowDistance": 40,
+    "shadowSize": 42
+  },
+  "objects": []
+}

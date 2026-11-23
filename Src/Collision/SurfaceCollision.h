@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include "DynamicAABBTree.h"
+#include "../Geometry/SpatialHashHierarchical.h"
 #include "../Maths/Index3.h"
 #include "../Maths/Transform.h"
 
@@ -44,6 +45,7 @@ namespace Riemann
 	};
 
 	struct SurfaceEdge { int A, B; };
+	enum class SurfaceAcceleration { DynamicTree, HierarchicalHash };
 	enum class SurfacePairType { VertexTriangle, TriangleVertex, EdgeEdge };
 	struct SurfaceCandidate
 	{
@@ -53,7 +55,8 @@ namespace Riemann
 	class SurfaceCollisionMesh
 	{
 	public:
-		SurfaceCollisionMesh(int VertexCount, const std::vector<Index3>& Triangles, const std::vector<SurfaceEdge>& Edges = {});
+		SurfaceCollisionMesh(int VertexCount, const std::vector<Index3>& Triangles, const std::vector<SurfaceEdge>& Edges = {},
+			SurfaceAcceleration Acceleration = SurfaceAcceleration::DynamicTree);
 		SurfaceCollisionMesh(const SurfaceCollisionMesh&) = delete;
 		SurfaceCollisionMesh& operator=(const SurfaceCollisionMesh&) = delete;
 		void Update(const std::vector<Vector3>& Start, const std::vector<Vector3>& End, float Margin);
@@ -65,6 +68,7 @@ namespace Riemann
 		const std::vector<SurfaceEdge>& GetEdges() const { return m_Edges; }
 		const Box3& GetVertexBounds(int Vertex) const { RequireReady(); return m_VertexBounds.at(Vertex); }
 		bool IsReady() const { return m_Ready; }
+		Box3 GetBounds() const { RequireReady(); return m_Acceleration == SurfaceAcceleration::HierarchicalHash ? m_TriangleHash.GetBounds() : m_TriangleTree.GetBounds(); }
 	private:
 		struct Entry { int Index = 0, Node = -1; Box3 Bounds; };
 		bool Related(int A, int B, bool IncludeNeighbors) const;
@@ -78,6 +82,9 @@ namespace Riemann
 		std::vector<Box3> m_VertexBounds;
 		std::vector<Entry> m_TriangleEntries, m_EdgeEntries;
 		DynamicAABBTree m_TriangleTree, m_EdgeTree;
+		SurfaceAcceleration m_Acceleration;
+		SpatialHashHierarchical m_TriangleHash, m_EdgeHash;
+		std::vector<Box3> m_FeatureBounds;
 	};
 
 	class Geometry;

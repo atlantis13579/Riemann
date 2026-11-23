@@ -114,7 +114,9 @@ namespace
 		for (bool Rigid : {false,true}) for (bool Material : {false,true})
 		{
 			EXPECT(Scene.ApplyDeformableContactDemo(false)); auto* World = Scene.GetSimulation();
+			EXPECT(Scene.SetClothRigidInteraction(false));
 			EXPECT(World->SetSolverConfiguration(Rigid ? ResolutionPhaseSolver::XPBD : ResolutionPhaseSolver::SequentialImpulse, SolverBackend::CPU, false));
+			EXPECT(Scene.SetClothRigidInteraction(Rigid));
 			EXPECT(Scene.ApplyDeformableContactDemo(true, Rigid, true)); EXPECT(Scene.GetPreparedSoftAssetDemo() && Scene.GetEmbeddedSoftRenderDemo());
 			EXPECT(Scene.ApplyDeformableMaterialDemo(Material));
 			auto* Body = Scene.GetDemoContactBody(0); auto* Geometry = Body->GetRenderGeometry(); const auto Revision = Scene.GetRenderRevision();

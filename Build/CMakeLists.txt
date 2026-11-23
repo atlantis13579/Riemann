@@ -12,7 +12,7 @@ if(RIEMANN_ENABLE_CUDA)
     if(CMAKE_CUDA_COMPILER)
         enable_language(CUDA)
         set(RIEMANN_CUDA_AVAILABLE ON)
-        if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.18 AND NOT CMAKE_CUDA_ARCHITECTURES)
+        if(NOT CMAKE_CUDA_ARCHITECTURES)
             # CUDA 13 no longer emits device code for older GPUs by default.
             # Include native binaries for the supported Turing-through-Ada
             # generations so execution does not depend on driver-side PTX JIT.
@@ -28,6 +28,9 @@ if(RIEMANN_ENABLE_CUDA)
             set(RIEMANN_CUDA_TOOLKIT_ONLY ON)
             message(STATUS "CUDA standalone toolkit backends enabled")
         else()
+            if(WIN32)
+                message(FATAL_ERROR "RIEMANN_ENABLE_CUDA is ON, but no CUDA compiler or toolkit was found. Install CUDA or explicitly configure with -DRIEMANN_ENABLE_CUDA=OFF.")
+            endif()
             message(STATUS "CUDA compiler not found; building without CUDA solver backends")
         endif()
     endif()
@@ -54,8 +57,17 @@ else()
     set(RIEMANN_PLATFORM_NAME "${CMAKE_SYSTEM_NAME}")
 endif()
 
-set(RIEMANN_OUTPUT_DIRECTORY "${RIEMANN_ROOT_DIR}/Binaries/${RIEMANN_PLATFORM_NAME}"
+if(RIEMANN_CUDA_AVAILABLE)
+    set(RIEMANN_DEFAULT_OUTPUT_DIRECTORY "${RIEMANN_ROOT_DIR}/Binaries/${RIEMANN_PLATFORM_NAME}")
+else()
+    set(RIEMANN_DEFAULT_OUTPUT_DIRECTORY "${RIEMANN_ROOT_DIR}/Binaries/${RIEMANN_PLATFORM_NAME}-NoCUDA")
+endif()
+set(RIEMANN_OUTPUT_DIRECTORY "${RIEMANN_DEFAULT_OUTPUT_DIRECTORY}"
     CACHE PATH "Build output directory")
+if(WIN32 AND NOT RIEMANN_CUDA_AVAILABLE
+    AND RIEMANN_OUTPUT_DIRECTORY STREQUAL "${RIEMANN_ROOT_DIR}/Binaries/Win64")
+    message(FATAL_ERROR "A no-CUDA build cannot use the default CUDA output directory. Set RIEMANN_OUTPUT_DIRECTORY to a separate path.")
+endif()
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${RIEMANN_OUTPUT_DIRECTORY}")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${RIEMANN_OUTPUT_DIRECTORY}")
@@ -84,12 +96,17 @@ file(GLOB_RECURSE RIEMANN_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/../Src/*.cc"
     "${CMAKE_SOURCE_DIR}/../Src/*.c"
 )
+set(RIEMANN_ROBOTICS_DIR "${CMAKE_SOURCE_DIR}/../Src/Modules/Robotics")
+list(REMOVE_ITEM RIEMANN_SOURCES
+    "${RIEMANN_ROBOTICS_DIR}/RobotDemo.cpp"
+    "${RIEMANN_ROBOTICS_DIR}/SpiderTraining.cpp"
+    "${RIEMANN_ROBOTICS_DIR}/SpiderTrainingController.cpp")
 
 if(RIEMANN_CUDA_AVAILABLE AND NOT RIEMANN_CUDA_TOOLKIT_ONLY)
     list(APPEND RIEMANN_SOURCES
         "${CMAKE_SOURCE_DIR}/../Src/Solver/LCPSolverCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Fluid/FluidBackendCUDA.cu"
-        "${CMAKE_SOURCE_DIR}/../Src/Fluid/SmokeBackendCUDA.cu"
+        "${CMAKE_SOURCE_DIR}/../Src/Fluid/AerodynamicsBackendCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Solver/PBDBackendCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Continuum/SnowBackendCUDA.cu"
         "${CMAKE_SOURCE_DIR}/../Src/Continuum/SandBackendCUDA.cu"
@@ -104,15 +121,17 @@ endif()
 file(GLOB_RECURSE RIEMANN_HEADERS CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/../Src/*.h"
     "${CMAKE_SOURCE_DIR}/../Src/*.hpp"
+    "${CMAKE_SOURCE_DIR}/../Src/*.cuh"
 )
+list(REMOVE_ITEM RIEMANN_HEADERS
+    "${RIEMANN_ROBOTICS_DIR}/SpiderTraining.h"
+    "${RIEMANN_ROBOTICS_DIR}/SpiderTrainingController.h")
 
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/../Test/*.cpp"
     "${CMAKE_SOURCE_DIR}/../Test/*.cc"
     "${CMAKE_SOURCE_DIR}/../Test/*.c"
 )
-list(FILTER TEST_SOURCES EXCLUDE REGEX "RendererLifecycleValidation\\.cpp$")
-
 add_library(Riemann STATIC ${RIEMANN_SOURCES} ${RIEMANN_HEADERS})
 if(WIN32 AND RIEMANN_ENABLE_COMPUTE_SHADER)
     target_compile_definitions(Riemann PUBLIC RIEMANN_ENABLE_COMPUTE_SHADER=1)
@@ -151,7 +170,7 @@ if(RIEMANN_CUDA_AVAILABLE)
         else()
             list(APPEND cuda_host_flags "-Xcompiler=-fPIC")
         endif()
-        foreach(cuda_path Solver/LCPSolverCUDA Fluid/FluidBackendCUDA Fluid/SmokeBackendCUDA Solver/PBDBackendCUDA Continuum/SnowBackendCUDA Continuum/SandBackendCUDA)
+        foreach(cuda_path Solver/LCPSolverCUDA Fluid/FluidBackendCUDA Fluid/AerodynamicsBackendCUDA Solver/PBDBackendCUDA Continuum/SnowBackendCUDA Continuum/SandBackendCUDA)
             get_filename_component(cuda_name "${cuda_path}" NAME)
             set(cuda_object "${CMAKE_CURRENT_BINARY_DIR}/Cuda/$<CONFIG>/${cuda_name}${CMAKE_CXX_OUTPUT_EXTENSION}")
             add_custom_command(OUTPUT "${cuda_object}"
@@ -238,6 +257,7 @@ elseif(APPLE)
 endif()
 
 set(RIEMANN_VIEWER_CORE_SOURCES
+    "${RIEMANN_ROBOTICS_DIR}/RobotDemo.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/SnowDemo.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/SnowSurfaceBuilder.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/SolverPanel.cpp"
@@ -262,6 +282,7 @@ set(RIEMANN_VIEWER_CORE_HEADERS
 
 add_executable(Test ${TEST_SOURCES})
 target_sources(Test PRIVATE
+    "${RIEMANN_ROBOTICS_DIR}/RobotDemo.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/SceneWorld.cpp"
     "${CMAKE_SOURCE_DIR}/../Viewer/SolverPanel.cpp"
     "${CMAKE_SOURCE_DIR}/../Renderer/imgui.cpp"
@@ -274,16 +295,31 @@ endif()
 
 target_link_libraries(Test PRIVATE Riemann)
 
+set(RIEMANN_ELMAN_ROOT_DEFAULT "")
+set(RIEMANN_ELMAN_LIBRARY_DEFAULT "")
+if(WIN32 AND EXISTS "${RIEMANN_ROOT_DIR}/../ElmanLLM/Src/Reinforcement/PpoRunner.h")
+    set(RIEMANN_ELMAN_CUDA_LIBRARY
+        "${RIEMANN_ROOT_DIR}/../ElmanLLM/Build/vs2022-cuda/Lib/Release/elman_core.lib")
+    if(EXISTS "${RIEMANN_ELMAN_CUDA_LIBRARY}")
+        set(RIEMANN_ELMAN_ROOT_DEFAULT "${RIEMANN_ROOT_DIR}/../ElmanLLM")
+        set(RIEMANN_ELMAN_LIBRARY_DEFAULT "${RIEMANN_ELMAN_CUDA_LIBRARY}")
+    endif()
+endif()
+set(RIEMANN_ELMAN_ROOT "${RIEMANN_ELMAN_ROOT_DEFAULT}" CACHE PATH "ElmanLLM source root for viewer spider PPO training")
+set(RIEMANN_ELMAN_LIBRARY "${RIEMANN_ELMAN_LIBRARY_DEFAULT}" CACHE FILEPATH "ElmanLLM static library for viewer spider PPO training")
+
 enable_testing()
 set(RIEMANN_TEST_GROUPS
+    AerodynamicsInterface AerodynamicsBarotropic AerodynamicsSurfaceCoupling
     ConstraintGraph FrictionPatches JointDrives SupportStabilization TemporalSubsteps CCDContinuation JointReactions
     DistanceFieldSpeculativeDemo DistanceFieldMargins DistanceFieldCCD DistanceFieldSweeps DistanceFieldMeshDemo
     DistanceFieldMesh DistanceFieldMeshSimulation DistanceFieldDemo DistanceFieldCollision RuntimeDistanceField
-    ContactOffsets CollisionFiltering MeshContacts ContactPersistence FluidOptimization Smoke SmokeBackends
-    SmokeMovingObstacles SmokeRigidCoupling SolverPanel SolverSwitch PBDBackendScenes PBDBackends VehicleScene
+    ContactOffsets CollisionFiltering MeshContacts ContactPersistence FluidOptimization AerodynamicsIncompressible AerodynamicsBackends
+    AerodynamicsMovingObstacles AerodynamicsBoundaryCoupling SolverPanel SolverSwitch PBDBackendScenes PBDBackends VehicleScene
     VehicleDeformation RopeTowing XPBDScene XPBD PBDScene PBD VoxelScene VoxelMesh TerrainScene TerrainEditing
     GEMM StressIntegration Stress Deformation Scenes RopeRegression Constraints ConstraintRegression Rope Cloth
-    Ragdoll Terrain Matrix Destruction CCD IslandSleeping CharacterController VehicleDynamics Featherstone
+    ClothRigidCoupling UnifiedBroadPhase WorldAerodynamics CoupledDemos AerodynamicsPressureAccuracy
+    Ragdoll Terrain Matrix Destruction CCD IslandSleeping RobotController RobotSpider RobotSpiderPolicy RobotSpiderControls RobotNetworks SparseJointSpaceDynamics VehicleDynamics Featherstone
     ReducedRagdoll ReducedRagdollDemo ReducedRagdollQueries RagdollMechanism PhysicalAnimation PhysicalAnimationDemo
     ClothModel ClothModelDemo SurfaceCollision SurfaceContact ClothCollision ClothContinuous ClothInteraction
     DeformableAttachment RigidAttachment TetrahedralAsset ProjectiveDynamics DestructionAsset DestructionEvents
@@ -309,6 +345,7 @@ if(WIN32)
         ${RIEMANN_VIEWER_CORE_HEADERS}
         "${CMAKE_SOURCE_DIR}/../Viewer/WinApplication.cpp"
     )
+    set_target_properties(Viewer PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
     target_compile_definitions(Viewer PRIVATE _CRT_SECURE_NO_WARNINGS)
     target_include_directories(Viewer PRIVATE
         ${CMAKE_SOURCE_DIR}/..
@@ -324,6 +361,16 @@ if(WIN32)
         Renderer
         Riemann
     )
+    if(RIEMANN_ELMAN_ROOT AND RIEMANN_ELMAN_LIBRARY)
+        find_package(CUDAToolkit REQUIRED)
+        target_sources(Viewer PRIVATE
+            "${RIEMANN_ROBOTICS_DIR}/SpiderTraining.cpp"
+            "${RIEMANN_ROBOTICS_DIR}/SpiderTrainingController.cpp")
+        target_include_directories(Viewer PRIVATE "${RIEMANN_ELMAN_ROOT}/Src")
+        target_link_libraries(Viewer PRIVATE "${RIEMANN_ELMAN_LIBRARY}"
+            CUDA::cudart CUDA::cublas CUDA::cublasLt icu ws2_32)
+        target_compile_definitions(Viewer PRIVATE RIEMANN_SPIDER_TRAINING=1)
+    endif()
     
     # Visual Studio
     set_property(TARGET Test PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:Test>")
@@ -343,9 +390,4 @@ endif()
 source_group(TREE "${CMAKE_SOURCE_DIR}/../Src" PREFIX "Source Files" FILES ${RIEMANN_SOURCES} ${RIEMANN_HEADERS})
 source_group(TREE "${CMAKE_SOURCE_DIR}/../Test" PREFIX "Test Files" FILES ${TEST_SOURCES})
 source_group(TREE "${CMAKE_SOURCE_DIR}/../Renderer" PREFIX "Renderer" FILES ${RIEMANN_RENDERER_SOURCES} ${RIEMANN_RENDERER_HEADERS} ${RIEMANN_RENDERER_SHADERS})
-source_group(TREE "${CMAKE_SOURCE_DIR}/../Viewer" PREFIX "Viewer" FILES ${RIEMANN_VIEWER_CORE_SOURCES} ${RIEMANN_VIEWER_CORE_HEADERS})
-
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
-message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
-message(STATUS "Library sources: ${RIEMANN_SOURCES}")
-message(STATUS "Test sources: ${TEST_SOURCES}")
+source_group(TREE "${CMAKE_SOURCE_DIR}/.." PREFIX "Viewer" FILES ${RIEMANN_VIEWER_CORE_SOURCES} ${RIEMANN_VIEWER_CORE_HEADERS})

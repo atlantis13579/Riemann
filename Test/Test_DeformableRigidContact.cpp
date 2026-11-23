@@ -234,8 +234,12 @@ namespace
 		const std::string Path = TestContentsPath() + "Scenes/08_cloth_sphere.json";
 		EXPECT(Scene.LoadFromFile(Path, &Error)); auto* W = Scene.GetSimulation();
 		const auto Fields = W->GetForceFieldCount(), Bodies = W->GetDeformableBodies().size();
+		// The cloth demo now starts in XPBD; select SI explicitly for the rejection check.
+		EXPECT(Scene.SetClothRigidInteraction(false));
+		EXPECT(W->SetSolverConfiguration(ResolutionPhaseSolver::SequentialImpulse, SolverBackend::CPU, false));
 		EXPECT(!Scene.ApplyDeformableContactDemo(true, true));
 		EXPECT(W->SetSolverConfiguration(ResolutionPhaseSolver::XPBD, SolverBackend::CPU, false));
+		EXPECT(Scene.SetClothRigidInteraction(true));
 		EXPECT(Scene.ApplyDeformableContactDemo(true, true)); auto* Ball = Scene.GetDemoContactRigid(); EXPECT(Ball); if (!Ball) return;
 		size_t Contacts = 0; const float InitialY = Ball->X.y;
 		for (int I = 0; I < 120; ++I)

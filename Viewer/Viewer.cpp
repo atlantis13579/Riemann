@@ -1,5 +1,8 @@
-#include "../Src/Modules/CharacterController/CharacterController.h"
+#include "../Src/Modules/Robotics/ArticulatedRobotController.h"
 #include "Viewer.h"
+#ifdef RIEMANN_SPIDER_TRAINING
+#include "../Src/Modules/Robotics/SpiderTrainingController.h"
+#endif
 
 #if defined(_WIN32) && !defined(NOMINMAX)
 #define NOMINMAX
@@ -41,9 +44,7 @@
 #include "../Src/CollisionPrimitive/TriangleMesh.h"
 #include "../Src/Fluid/AerodynamicsRigidCoupling.h"
 #include "../Src/Fluid/AerodynamicsSimulation.h"
-#include "../Src/Fluid/SmokeSimulation.h"
-#include "../Src/Fluid/SmokeRigidCoupling.h"
-#include "../Renderer/SmokeVolume.h"
+#include "../Renderer/AerodynamicsVolume.h"
 #include "../Src/Fluid/FluidRigidCoupling.h"
 #include "../Src/Fluid/FluidSimulation.h"
 #include "../Src/Modules/Tools/PhysxBinaryParser.h"
@@ -52,6 +53,7 @@
 #include "../Src/RigidBodyDynamics/PhysicalAnimation.h"
 #include "../Src/RigidBodyDynamics/Ragdoll.h"
 #include "../Src/Deformation/Cloth.h"
+#include "../Src/Deformation/DeformableBody.h"
 
 namespace Riemann
 {
@@ -606,6 +608,33 @@ namespace Riemann
 				return FluidBackend::ComputeShader;
 			return FluidBackend::CPU;
 		}
+
+		AerodynamicsSimulation* CreateSmokeWithFallback(PhysicsWorld* world,
+			const AerodynamicsSimulationSettings& requested,
+			const AerodynamicsRigidCouplingSettings& coupling, bool coupleRigids)
+		{
+			auto attempt = [&](FluidBackend backend, bool interactiveCPU) -> AerodynamicsSimulation*
+			{
+				AerodynamicsSimulationSettings settings = requested;
+				settings.Backend = backend;
+				settings.AllowBackendFallback = false;
+				if (interactiveCPU)
+				{
+					settings.Resolution = Vector3i(std::min(settings.Resolution.x, 48),
+						std::min(settings.Resolution.y, 80), std::min(settings.Resolution.z, 48));
+					settings.PressureIterations = std::min(settings.PressureIterations, 24);
+				}
+				return world->CreateAerodynamics(settings, coupling, coupleRigids, true);
+			};
+			if (AerodynamicsSimulation* simulation = attempt(requested.Backend, false)) return simulation;
+			if (!requested.AllowBackendFallback) return nullptr;
+			if (requested.Backend != FluidBackend::ComputeShader)
+				if (AerodynamicsSimulation* simulation = attempt(FluidBackend::ComputeShader, false)) return simulation;
+			if (requested.Backend != FluidBackend::CUDA)
+				if (AerodynamicsSimulation* simulation = attempt(FluidBackend::CUDA, false)) return simulation;
+			if (requested.Backend != FluidBackend::CPU) return attempt(FluidBackend::CPU, true);
+			return nullptr;
+		}
 	}
 
 	WorldViewer::WorldViewer(RenderThread* renderThread, const std::string& sceneFile)
@@ -709,6 +738,9 @@ namespace Riemann
 		, m_PhysicsFrameCount(0)
 		, m_PhysicsFps(0.0)
 	{
+#ifdef RIEMANN_SPIDER_TRAINING
+		m_SpiderTraining = std::make_unique<SpiderTrainingController>();
+#endif
 		for (bool& key : m_MovementKeys)
 		{
 			key = false;
@@ -723,6 +755,8 @@ namespace Riemann
 		RefreshObjList();
 		RefreshMeshFileList();
 		std::string initialScene = sceneFile;
+		m_World->SetRobotWalkMode(RobotWalkMode::Policy);
+		m_World->SetClothModelDemo(true);
 		if (initialScene.empty() && !m_SceneFiles.empty())
 		{
 			initialScene = m_SceneFiles.front();
@@ -732,6 +766,9 @@ namespace Riemann
 		{
 			LoadScene(m_SceneFiles.empty() ? ResolveSceneFile("01_demo.json") : m_SceneFiles.front());
 		}
+#ifdef RIEMANN_SPIDER_TRAINING
+		LoadElmanExecutablePath();
+#endif
 
 		m_KeyboardEvent = [this](char c)
 		{
@@ -761,6 +798,9 @@ namespace Riemann
 
 	WorldViewer::~WorldViewer()
 	{
+#ifdef RIEMANN_SPIDER_TRAINING
+		if (m_SpiderTraining) m_SpiderTraining->stop();
+#endif
 		DeactivateGasDemo();
 		DeactivateFluidDemo();
 		if (m_RenderThread)
@@ -833,90 +873,25 @@ namespace Riemann
 			return true;
 		}
 
-		if (desc.Type == "smoke3d")
+		if (desc.Type == "aerodynamics3d")
 		{
-			if (!m_RenderThread || !m_RenderThread->SupportsDensityVolume()) return false;
-			m_SmokeSimulation.reset(new SmokeSimulation());
-			if (!m_SmokeSimulation->Initialize(desc.Smoke))
+			const auto& Settings = desc.Aerodynamics;
+			if (Settings.Algorithm == AerodynamicsAlgorithm::Incompressible
+				&& (!m_RenderThread || !m_RenderThread->SupportsDensityVolume() || !desc.Regions.empty())) return false;
+			AerodynamicsRigidCouplingSettings Coupling;
+			Coupling.SurfaceSamplesPerAxis = desc.SurfaceSamplesPerAxis; Coupling.DragCoefficient = desc.DragCoefficient;
+			Coupling.MaxLinearAcceleration = desc.MaxLinearAcceleration; Coupling.MaxAngularAcceleration = desc.MaxAngularAcceleration;
+			m_AerodynamicsSimulation = Settings.Algorithm == AerodynamicsAlgorithm::Incompressible
+				? CreateSmokeWithFallback(m_World->GetSimulation(), Settings, Coupling, desc.RigidCoupling)
+				: m_World->GetSimulation()->CreateAerodynamics(Settings, Coupling, desc.RigidCoupling, true);
+			if (!m_AerodynamicsSimulation) return false;
+			m_AerodynamicsCoupling = m_World->GetSimulation()->GetAerodynamicsCoupling();
+			for (const auto& Region : desc.Regions)
 			{
-				m_SmokeSimulation.reset();
-				return false;
+				if (Region.SetDensity) m_AerodynamicsSimulation->SetDensityBox(Region.Min, Region.Max, Region.Density);
+				if (Region.SetVelocity) m_AerodynamicsSimulation->SetVelocityBox(Region.Min, Region.Max, Region.Velocity);
 			}
-			m_GasDemoActive = true;
-			m_GasRenderFrame = 0;
-			m_SmokePaused = false;
-			if (desc.RigidCoupling)
-			{
-				SmokeRigidCouplingSettings coupling;
-				coupling.AirDensity = desc.AmbientDensity;
-				coupling.MaxLinearAcceleration = desc.MaxLinearAcceleration;
-				coupling.MaxAngularAcceleration = desc.MaxAngularAcceleration;
-				m_SmokeCoupling = new SmokeRigidCoupling(m_SmokeSimulation.get(), coupling);
-				m_World->GetSimulation()->AddForceField(m_SmokeCoupling);
-				if (!SynchronizeSmokeObstacles()) { DeactivateGasDemo(); return false; }
-			}
-			return true;
-		}
-
-		if (desc.Type == "aerodynamics3d" || desc.Type == "aerodynamics_simulation")
-		{
-			AerodynamicsSimulationSettings settings;
-			settings.Method = method;
-			settings.Backend = ParseFluidBackend(desc.Backend);
-			settings.AllowBackendFallback = desc.AllowBackendFallback;
-			settings.BoundsMin = desc.BoundsMin;
-			settings.BoundsMax = desc.BoundsMax;
-			settings.Resolution = desc.Resolution;
-			settings.Gravity = desc.Gravity;
-			settings.AmbientDensity = desc.AmbientDensity;
-			settings.AmbientPressure = desc.AmbientPressure;
-			settings.SpeedOfSound = desc.SpeedOfSound;
-			settings.AdiabaticExponent = desc.AdiabaticExponent;
-			settings.DynamicViscosity = desc.DynamicViscosity;
-			settings.ArtificialViscosity = desc.ArtificialViscosity;
-			settings.ParticleSpacing = desc.ParticleSpacing;
-			settings.SmoothingRadius = desc.SmoothingRadius;
-			settings.BoundaryRestitution = desc.BoundaryRestitution;
-			settings.MaxTimeStep = desc.MaxTimeStep;
-			settings.AcousticCFL = desc.AcousticCFL;
-			settings.MaxSubsteps = desc.MaxSubsteps;
-			m_AerodynamicsSimulation.reset(new AerodynamicsSimulation(settings));
-			if (!m_AerodynamicsSimulation->IsInitialized())
-			{
-				m_AerodynamicsSimulation.reset();
-				return false;
-			}
-			for (const SceneFieldRegion& region : desc.Regions)
-			{
-				if (region.SetDensity)
-				{
-					m_AerodynamicsSimulation->SetDensityBox(region.Min, region.Max, region.Density);
-				}
-				if (region.SetVelocity)
-				{
-					m_AerodynamicsSimulation->SetVelocityBox(region.Min, region.Max, region.Velocity);
-				}
-			}
-			if (desc.RigidCoupling)
-			{
-				AerodynamicsRigidCouplingSettings coupling;
-				coupling.SurfaceSamplesPerAxis = desc.SurfaceSamplesPerAxis;
-				coupling.DragCoefficient = desc.DragCoefficient;
-				coupling.MaxLinearAcceleration = desc.MaxLinearAcceleration;
-				coupling.MaxAngularAcceleration = desc.MaxAngularAcceleration;
-				m_AerodynamicsCoupling = new AerodynamicsRigidCoupling(
-					m_AerodynamicsSimulation.get(), coupling);
-				if (!m_AerodynamicsCoupling->IsValid()
-					|| !m_World->GetSimulation()->AddForceField(m_AerodynamicsCoupling))
-				{
-					delete m_AerodynamicsCoupling;
-					m_AerodynamicsCoupling = nullptr;
-					m_AerodynamicsSimulation.reset();
-					return false;
-				}
-			}
-			m_GasDemoActive = true;
-			m_GasRenderFrame = 0;
+			m_GasDemoActive = true; m_GasRenderFrame = 0; m_AerodynamicsPaused = false;
 			return true;
 		}
 
@@ -977,17 +952,8 @@ namespace Riemann
 	{
 		DeactivateSnowDemo();
 		const bool wasActive = m_GasDemoActive;
-		if (m_AerodynamicsCoupling != nullptr && m_World != nullptr
-			&& m_World->GetSimulation() != nullptr)
-		{
-			m_World->GetSimulation()->RemoveForceField(m_AerodynamicsCoupling);
-		}
-		m_AerodynamicsCoupling = nullptr;
-		m_AerodynamicsSimulation.reset();
-		if (m_SmokeCoupling && m_World && m_World->GetSimulation())
-			m_World->GetSimulation()->RemoveForceField(m_SmokeCoupling);
-		m_SmokeCoupling = nullptr;
-		m_SmokeSimulation.reset();
+		if (m_World && m_World->GetSimulation()) m_World->GetSimulation()->RemoveAerodynamics();
+		m_AerodynamicsCoupling = nullptr; m_AerodynamicsSimulation = nullptr;
 		m_GasDemoActive = false;
 		m_GasRenderFrame = 0;
 		if (wasActive && m_RenderThread != nullptr)
@@ -1001,58 +967,26 @@ namespace Riemann
 	}
 
 
-	bool WorldViewer::SynchronizeSmokeObstacles()
+	void WorldViewer::UpdateGasDemo(float DeltaTime)
 	{
-		if (!m_SmokeCoupling) return true;
-		std::vector<Geometry*> geometries;
-		for (const SceneObjectInstance& object : m_World->GetObjects())
+		if (!m_GasDemoActive || !m_AerodynamicsSimulation || m_AerodynamicsPaused) return;
+		(void)DeltaTime; // PhysicsWorld has already advanced the coupled simulation.
+		if (!m_AerodynamicsSimulation->IsInitialized())
 		{
-			const RigidBody* body = object.GeometryPtr ? object.GeometryPtr->GetParent<RigidBody>() : nullptr;
-			// Stage decoration and collision walls must not alter the empty smoke plume.
-			if (body && body->mRigidType != RigidType::Static) geometries.push_back(object.GeometryPtr);
+			m_AerodynamicsPaused = true;
+			std::lock_guard<std::mutex> Lock(m_ImguiMutex); m_ImguiAerodynamicsPanel.Status = "Aerodynamics device error"; return;
 		}
-		return m_SmokeCoupling->Synchronize(geometries);
-	}
-
-	void WorldViewer::UpdateGasDemo(float deltaTime)
-	{
-		if (m_GasDemoActive && m_SmokeSimulation)
-		{
-			if (m_SmokePaused) return;
-			if (!SynchronizeSmokeObstacles()) { m_SmokePaused = true; return; }
-			m_SmokeSimulation->Step(deltaTime);
-			if (!m_SmokeSimulation->IsInitialized())
-			{
-				m_SmokePaused = true;
-				std::lock_guard<std::mutex> lock(m_ImguiMutex);
-				m_ImguiSmokePanel.Status = "Smoke device error";
-				return;
-			}
-			SubmitGasDensity();
-			return;
-		}
-		if (!m_GasDemoActive || m_AerodynamicsSimulation == nullptr) return;
-		m_AerodynamicsSimulation->Step(deltaTime);
-		++m_GasRenderFrame;
-		SubmitGasDensity();
+		++m_GasRenderFrame; SubmitGasDensity();
 	}
 
 	void WorldViewer::SubmitGasDensity()
 	{
-		if (m_GasDemoActive && m_SmokeSimulation && m_RenderThread)
-		{
-			std::shared_ptr<DensityVolumeDesc> volume(new DensityVolumeDesc());
-			const SceneFieldSimulationDesc& field = m_World->GetFieldSimulation();
-			BuildSmokeDensityVolume(*m_SmokeSimulation, volume.get(), field.SmokeExtinction, field.SmokeColor);
-			m_RenderThread->Submit([volume](Renderer& renderer) { renderer.UpdateDensityVolume(*volume); });
-			return;
-		}
 		if (!m_GasDemoActive || m_AerodynamicsSimulation == nullptr || m_RenderThread == nullptr) return;
 		if (m_RenderThread->SupportsDensityVolume())
 		{
 			std::shared_ptr<DensityVolumeDesc> volume(new DensityVolumeDesc());
-			if (!BuildGasDensityVolume(*m_AerodynamicsSimulation, volume.get(),
-				m_World->GetFieldSimulation().VisualizationThreshold)) return;
+			if (!BuildAerodynamicsDensityVolume(*m_AerodynamicsSimulation, volume.get(),
+				m_World->GetFieldSimulation().VisualizationThreshold, m_World->GetFieldSimulation().TracerExtinction, m_World->GetFieldSimulation().TracerColor)) return;
 			m_RenderThread->Submit([volume](Renderer& renderer) { renderer.UpdateDensityVolume(*volume); });
 			return;
 		}
@@ -1100,6 +1034,13 @@ namespace Riemann
 
 	bool WorldViewer::LoadScene(const std::string& sceneFile)
 	{
+#ifdef RIEMANN_SPIDER_TRAINING
+		if (m_SpiderTrainingMode && m_SpiderTraining)
+		{
+			m_SpiderTraining->stop();
+			m_SpiderTrainingMode = false;
+		}
+#endif
 		const std::string resolved = ResolveSceneFile(sceneFile.c_str());
 		if (resolved.empty())
 		{
@@ -1127,13 +1068,20 @@ namespace Riemann
 
 		m_SceneDirectory = DirectoryOf(resolved);
 		m_CurrentSceneName = FileNameOf(resolved);
-		m_VehiclePaused = true;
+		m_ViewerPaused = m_World->GetVehicleCount() > 0;
 		m_VehicleSlowMotion = false;
 		m_VehiclePendingTime = 0;
 		m_CurrentSceneDisplayName = m_World->GetName().empty() ? m_CurrentSceneName : m_World->GetName();
+		{
+			std::lock_guard<std::mutex> Lock(m_ImguiMutex);
+			std::fill(std::begin(m_MovementKeys), std::end(m_MovementKeys), false);
+			std::fill(std::begin(m_RobotKeys), std::end(m_RobotKeys), false);
+		}
+		if (m_World->IsSpiderWalkingDemo()) m_World->SetRobotAutoWalk(m_RobotAutoWalk);
 		m_SceneDragActive = false;
 		m_FieldDragActive = false;
 		m_TankDragActive = false;
+		m_TerrainDragActive = false;
 		m_TankTiltX = 0.0f;
 		m_TankTiltZ = 0.0f;
 		m_TankRotation = Quaternion::One();
@@ -1156,6 +1104,7 @@ namespace Riemann
 
 	void WorldViewer::CreateSimulator()
 	{
+		m_ViewerPaused = false;
 		DeactivateGasDemo();
 		DeactivateFluidDemo();
 		++m_SceneGeneration;
@@ -1171,12 +1120,29 @@ namespace Riemann
 	void WorldViewer::UpdateSimulator(float dt)
 	{
 		ApplyImguiCommands();
-		Vector3 CharacterInput = Vector3::Zero(); bool JumpRequested;
+		if (m_ViewerPaused)
+		{
+			m_PhysicsFps = 0.0;
+			UpdateImguiState();
+			return;
+		}
+#ifdef RIEMANN_SPIDER_TRAINING
+		if (m_SpiderTraining && m_RenderThread)
+			m_SpiderTraining->set_display_active(m_RenderThread->IsActive());
+#endif
+		Vector3 CharacterInput = Vector3::Zero(), RobotInput = Vector3::Zero(); bool JumpRequested;
 		{
 			std::lock_guard<std::mutex> Lock(m_ImguiMutex);
 			CharacterInput.x = float(m_CharacterKeys[3]) - float(m_CharacterKeys[1]);
 			CharacterInput.z = float(m_CharacterKeys[2]) - float(m_CharacterKeys[0]);
 			JumpRequested = m_CharacterJumpRequested; m_CharacterJumpRequested = false;
+			RobotInput = Vector3(float(m_RobotKeys[0]) - float(m_RobotKeys[2]),
+				float(m_RobotKeys[1]) - float(m_RobotKeys[3]), float(m_RobotKeys[5]) - float(m_RobotKeys[4]));
+		}
+		if (m_World && m_World->IsSpiderWalkingDemo())
+		{
+			m_World->SetRobotAutoWalk(m_RobotAutoWalk);
+			m_World->SetRobotDriveInput(RobotInput.x, RobotInput.y, RobotInput.z);
 		}
 		if (m_World && m_World->GetDemoCharacter())
 		{
@@ -1189,36 +1155,58 @@ namespace Riemann
 		UpdateFluidDemo();
 		if (m_World->GetVehicleCount() > 0)
 		{
-			if (!m_VehiclePaused)
+			const auto* vehicle = m_World->GetVehicle(0);
+			const Vector3 previous = vehicle->GetWorldTransform().pos;
+			// Slow playback changes elapsed time, not the crash solver's timestep.
+			m_VehiclePendingTime = std::min(0.1f, m_VehiclePendingTime + dt * (m_VehicleSlowMotion ? 0.25f : 1.0f));
+			while (m_VehiclePendingTime >= 1.0f / 120.0f)
 			{
-				const auto* vehicle = m_World->GetVehicle(0);
-				const Vector3 previous = vehicle->GetWorldTransform().pos;
-				// Slow playback changes elapsed time, not the crash solver's timestep.
-				m_VehiclePendingTime = std::min(0.1f, m_VehiclePendingTime + dt * (m_VehicleSlowMotion ? 0.25f : 1.0f));
-				while (m_VehiclePendingTime >= 1.0f / 120.0f)
-				{
-					m_World->Step(1.0f / 120.0f);
-					m_VehiclePendingTime -= 1.0f / 120.0f;
-				}
-				if (vehicle->GetFrontBumper(0) && !m_World->GetVehicleDynamics(0))
-				{
-					const Vector3 travel = vehicle->GetWorldTransform().pos - previous;
-					m_CamCenter += travel;
-					if (!travel.IsZero()) UpdateCamera();
-				}
+				m_World->Step(1.0f / 120.0f);
+				m_VehiclePendingTime -= 1.0f / 120.0f;
+			}
+			if (vehicle->GetFrontBumper(0) && !m_World->GetVehicleDynamics(0))
+			{
+				const Vector3 travel = vehicle->GetWorldTransform().pos - previous;
+				m_CamCenter += travel;
+				if (!travel.IsZero()) UpdateCamera();
 			}
 		}
-		else if (!m_SmokeSimulation || !m_SmokePaused) m_World->Step(dt);
+		else if (const RobotController* Robot = m_World->GetRobotDemoController())
+		{
+#ifdef RIEMANN_SPIDER_TRAINING
+			if (m_SpiderTrainingMode && m_SpiderTraining && m_RenderThread->IsActive())
+			{
+				m_World->ShowSpiderTrainingSnapshot(m_SpiderTraining->snapshot(),
+					m_SpiderTrainingShowAll, size_t(m_SpiderTrainingSelected));
+			}
+			else
+#endif
+			m_World->Step(dt);
+			if (!m_RobotAutoWalk
+#ifdef RIEMANN_SPIDER_TRAINING
+				&& !m_SpiderTrainingMode
+#endif
+			)
+			{
+				m_CamCenter = Robot->GetPosition();
+				UpdateCamera();
+			}
+		}
+		else if (!m_AerodynamicsSimulation || !m_AerodynamicsPaused) m_World->Step(dt);
 		UpdateGasDemo(dt);
 		UpdateSnowDemo(dt);
-		if (m_RenderRevision != m_World->GetRenderRevision())
+		if (!m_RenderThread || m_RenderThread->IsActive())
 		{
-			RebuildRenderScene();
-		}
-		else
-		{
-			SubmitTransforms();
-			SubmitGeometryQueryBounds();
+			if (m_RenderRevision != m_World->GetRenderRevision())
+			{
+				RebuildRenderScene();
+			}
+			else
+			{
+				SubmitTransforms();
+				SubmitDeformableMeshes();
+				SubmitGeometryQueryBounds();
+			}
 		}
 		UpdatePhysicsFps();
 		UpdateImguiState();
@@ -1377,6 +1365,10 @@ namespace Riemann
 	void WorldViewer::KeyboardMsg(char c)
 	{
 		c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+		{
+			std::lock_guard<std::mutex> Lock(m_ImguiMutex);
+			if (m_RobotInputActive && (c == 'w' || c == 'a' || c == 's' || c == 'd' || c == 'q' || c == 'e')) return;
+		}
 		if (c == 'a' || c == 'd' || c == 'w' || c == 's')
 		{
 			return;
@@ -1408,6 +1400,9 @@ namespace Riemann
 		{
 			std::lock_guard<std::mutex> Lock(m_ImguiMutex);
 			const char Key = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+			const char RobotKeys[] = {'w', 'a', 's', 'd', 'q', 'e'};
+			for (int I = 0; I < 6; ++I) if (Key == RobotKeys[I]) m_RobotKeys[I] = down;
+			if (m_RobotInputActive) return;
 			if (Key == 'i') m_CharacterKeys[0] = down;
 			if (Key == 'j') m_CharacterKeys[1] = down;
 			if (Key == 'k') m_CharacterKeys[2] = down;
@@ -1435,6 +1430,10 @@ namespace Riemann
 
 	void WorldViewer::UpdateCameraMovement(float dt)
 	{
+		{
+			std::lock_guard<std::mutex> Lock(m_ImguiMutex);
+			if (m_RobotInputActive) return;
+		}
 		Vector3 dir = m_CamCenter - GetCameraPosition();
 		dir.y = 0.0f;
 		dir = SafeUnitVector(dir, Vector3::UnitZ());
@@ -1501,6 +1500,45 @@ namespace Riemann
 		}
 	}
 
+	bool WorldViewer::PaintTerrainAtRay(const Ray3& ray, bool firstStroke)
+	{
+		if (!m_World || m_CuttingPanelActive || m_MeshSimplificationPanelActive) return false;
+		TerrainBrushState brush;
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			brush = m_ImguiTerrainBrush;
+		}
+		if (brush.SceneGeneration != m_SceneGeneration || brush.ObjectId.empty()) return false;
+		Vector3 point;
+		float localHeight = 0.0f;
+		if (!m_World->RayCastTerrain(brush.ObjectId, ray.Origin, ray.Dir, 1000.0f, &point, &localHeight)) return false;
+		RayCastOption option;
+		option.Type = RayCastOption::RAYCAST_NEAREST;
+		option.HitBothSides = true;
+		option.MaxDist = 1000.0f;
+		RayCastResult nearest;
+		GeometryQuery* query = m_World->GetSimulation()->GetGeometryQuery();
+		if (query && query->RayCastQuery(ray.Origin, ray.Dir, option, &nearest)
+			&& nearest.hitTime + 0.01f < (point - ray.Origin).Length()) return false;
+		if (!firstStroke && (point - m_TerrainDragLastPoint).Length() < brush.Radius * 0.15f) return true;
+		if (firstStroke) m_TerrainDragTargetHeight = localHeight;
+		m_TerrainDragActive = true;
+		m_TerrainDragLastPoint = point;
+		const int mode = brush.Mode < 2 ? 0 : brush.Mode == 2 ? 1 : 2;
+		const float value = brush.Mode == 2 ? m_TerrainDragTargetHeight
+			: (brush.Mode == 1 ? -brush.Value : brush.Value) * brush.Strength;
+		const int changedSamples = m_World->EditTerrain(brush.ObjectId, point,
+			brush.Radius, value, mode, brush.Strength);
+		char status[96];
+		snprintf(status, sizeof(status), "Changed samples: %d", changedSamples);
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			m_ImguiTerrainStatus = status;
+		}
+		SetHighlightedGeometry(nullptr);
+		return true;
+	}
+
 	void WorldViewer::SceneRayMsg(int x, int y, int width, int height)
 	{
 		if (m_SnowSimulation || m_SandSimulation) { MoveSnowCapsule(x,y,width,height); return; }
@@ -1513,6 +1551,8 @@ namespace Riemann
 		m_SceneDragActive = false;
 		m_FieldDragActive = false;
 		m_TankDragActive = false;
+		m_TerrainDragActive = false;
+		if (PaintTerrainAtRay(ray, true)) return;
 		Geometry* hitGeometry = nullptr;
 		Vector3 hitPoint = Vector3::Zero();
 		if (m_World && m_World->RayCastMouseControlGeometry(ray.Origin, ray.Dir, 1000.0f, &hitGeometry, &hitPoint)
@@ -1558,7 +1598,7 @@ namespace Riemann
 			else
 			{
 				m_FieldDragActive = true;
-				if (m_SmokeSimulation)
+				if (m_AerodynamicsSimulation && m_AerodynamicsSimulation->HasTracerField())
 					FieldHitPoint = ray.Origin + ray.Dir * (0.5f * (FieldNearTime + FieldFarTime));
 				m_SceneDragPlanePoint = FieldHitPoint;
 				m_SceneDragPlaneNormal = ray.Dir;
@@ -1579,6 +1619,11 @@ namespace Riemann
 	void WorldViewer::SceneDragMsg(int x, int y, int width, int height)
 	{
 		if (m_SnowSimulation || m_SandSimulation) { MoveSnowCapsule(x,y,width,height); return; }
+		if (m_TerrainDragActive)
+		{
+			if (width > 0 && height > 0) PaintTerrainAtRay(BuildSceneRay(x, y, width, height), false);
+			return;
+		}
 		if ((!m_SceneDragActive && !m_FieldDragActive && !m_TankDragActive)
 			|| m_World == nullptr || width <= 0 || height <= 0)
 		{
@@ -1656,10 +1701,11 @@ namespace Riemann
 					{
 						m_FluidRenderFrame = 1;
 					}
-					if (m_AerodynamicsSimulation) m_AerodynamicsSimulation->ApplyImpulse(
-						InteractionPoint, Field.InteractionRadius, Impulse);
-					if (m_SmokeSimulation) m_SmokeSimulation->ApplyImpulse(
-						InteractionPoint, Field.InteractionRadius, Impulse);
+					if (m_AerodynamicsSimulation)
+					{
+						if (m_AerodynamicsSimulation->HasTracerField()) m_AerodynamicsSimulation->ApplyVelocityImpulse(InteractionPoint, Field.InteractionRadius, Impulse);
+						else m_AerodynamicsSimulation->ApplyImpulse(InteractionPoint, Field.InteractionRadius, Impulse);
+					}
 				}
 				m_FieldDragPoint = HitPoint;
 				return;
@@ -1696,6 +1742,7 @@ namespace Riemann
 		m_SceneDragActive = false;
 		m_FieldDragActive = false;
 		m_TankDragActive = false;
+		m_TerrainDragActive = false;
 	}
 
 	void WorldViewer::MouseWheel(int zDelta, bool ctrlButtonDown)
@@ -1733,6 +1780,7 @@ namespace Riemann
 	{
 		std::string sceneName;
 		bool ragdollDemoReduced = false;
+		RobotPanelState robotPanel;
 		std::vector<std::string> sceneFiles;
 		int demoIndex = 0;
 		size_t objectCount = 0;
@@ -1746,11 +1794,16 @@ namespace Riemann
 		TerrainBrushState terrainBrush;
 		std::string terrainStatus;
 		SolverPanelState solverPanel;
-		SmokePanelState smokePanel;
+		AerodynamicsPanelState aerodynamicsPanel;
 		SnowPanelState snowPanel;
 		VehiclePanelState vehiclePanel;
+		bool viewerPaused = false;
 		std::string meshSimplificationPath;
 		std::string meshSimplificationStatus;
+#ifdef RIEMANN_SPIDER_TRAINING
+		std::string elmanExecutablePath;
+		std::string elmanExecutableStatus;
+#endif
 		int cuttingMode = 0;
 		int cuttingPieceCount = 0;
 		int cuttingPiecesX = 0;
@@ -1769,6 +1822,7 @@ namespace Riemann
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			sceneName = m_ImguiSceneName;
 			ragdollDemoReduced = m_ImguiRagdollDemoReduced;
+			robotPanel = m_ImguiRobotPanel;
 			sceneFiles = m_ImguiSceneFiles;
 			demoIndex = m_ImguiDemoIndex;
 			objectCount = m_ImguiObjectCount;
@@ -1779,14 +1833,19 @@ namespace Riemann
 			cuttingStatus = m_ImguiCuttingStatus;
 			meshSimplificationPath = m_ImguiMeshSimplificationPath;
 			meshSimplificationStatus = m_ImguiMeshSimplificationStatus;
+#ifdef RIEMANN_SPIDER_TRAINING
+			elmanExecutablePath = m_ElmanExecutablePath;
+			elmanExecutableStatus = m_ElmanExecutableStatus;
+#endif
 			constraintControls = m_ImguiConstraintControls;
 			terrainObjectIds = m_ImguiTerrainObjectIds;
 			terrainBrush = m_ImguiTerrainBrush;
 			terrainStatus = m_ImguiTerrainStatus;
 			solverPanel = m_ImguiSolverPanel;
-			smokePanel = m_ImguiSmokePanel;
+			aerodynamicsPanel = m_ImguiAerodynamicsPanel;
 			snowPanel = m_ImguiSnowPanel;
 			vehiclePanel = m_ImguiVehiclePanel;
+			viewerPaused = m_ImguiViewerPaused;
 			cuttingMode = m_ImguiCuttingMode;
 			cuttingPieceCount = m_ImguiCuttingPieceCount;
 			cuttingPiecesX = m_ImguiCuttingPiecesX;
@@ -1864,7 +1923,113 @@ namespace Riemann
 				m_ImguiPendingDemoIndex = selectedDemo;
 			}
 		}
+		if (imguiButton("Restart"))
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			m_ImguiPendingRestartScene = true;
+			m_ImguiPendingRestartGeneration = solverPanel.SceneGeneration;
+		}
+		if (imguiButton(viewerPaused ? "Resume" : "Pause"))
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			m_ImguiPendingPauseToggle = true;
+			m_ImguiPendingPauseGeneration = solverPanel.SceneGeneration;
+		}
 		imguiSeparatorLine();
+		if (robotPanel.Active)
+		{
+			bool changed = false;
+			if (robotPanel.Interactive)
+			{
+#ifdef RIEMANN_SPIDER_TRAINING
+				if (robotPanel.WalkMode == RobotWalkMode::Policy)
+				{
+					imguiLabel("ELMAN EXECUTABLE");
+					if (elmanExecutablePath.empty()) imguiValue("No Elman executable selected");
+					else for (size_t offset = 0; offset < elmanExecutablePath.size(); offset += 34)
+						imguiValue(elmanExecutablePath.substr(offset, 34).c_str());
+					if (imguiButton("Select Elman EXE..."))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_PendingBrowseElmanExecutable = true;
+					}
+					if (!elmanExecutableStatus.empty()) imguiValue(elmanExecutableStatus.c_str());
+					if (!m_SpiderTrainingMode)
+					{
+						const char* counts[] = {"1", "2", "3", "4", "5", "6", "7", "8"};
+						int count = m_SpiderTrainingWorldCount - 1;
+						if (imguiCombo("Training worlds", &count, counts, 8))
+							m_SpiderTrainingWorldCount = count + 1;
+					}
+					else
+					{
+						const std::string count = "Training worlds: " + std::to_string(int(m_SpiderTrainingWorldCount));
+						imguiValue(count.c_str());
+					}
+					if (imguiCheck("Training", m_SpiderTrainingMode))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_PendingSpiderTrainToggle = true;
+					}
+					if (m_SpiderTrainingMode)
+					{
+						if (m_SpiderTrainingWorldCount > 1 && imguiButton(m_SpiderTrainingShowAll ? "Show One" : "Show All"))
+						{
+							std::lock_guard<std::mutex> lock(m_ImguiMutex);
+							m_PendingSpiderShowAllToggle = true;
+						}
+						const char* labels[] = {"Spider 1", "Spider 2", "Spider 3", "Spider 4", "Spider 5", "Spider 6", "Spider 7", "Spider 8"};
+						int selected = m_SpiderTrainingSelected;
+						if (m_SpiderTrainingWorldCount > 1 && imguiCombo("Observed spider", &selected, labels, m_SpiderTrainingWorldCount))
+						{
+							std::lock_guard<std::mutex> lock(m_ImguiMutex);
+							m_PendingSpiderSelection = selected;
+						}
+						imguiValue(m_SpiderTraining->status().c_str());
+					}
+				}
+#endif
+				const char* modes[] = {"Learning policy", "Sweep controller"};
+				int mode = static_cast<int>(robotPanel.WalkMode);
+				if (imguiCombo("Walking", &mode, modes, 2))
+				{
+					robotPanel.WalkMode = static_cast<RobotWalkMode>(mode);
+					changed = true;
+				}
+				if (imguiCheck("Auto walk", robotPanel.AutoWalk))
+				{
+					robotPanel.AutoWalk = !robotPanel.AutoWalk;
+					changed = true;
+				}
+				imguiValue(robotPanel.AutoWalk ? "W/A/S/D: move camera" : "W/S: forward / back");
+				if (!robotPanel.AutoWalk)
+					imguiValue(robotPanel.WalkMode == RobotWalkMode::Sweep ? "A/D: turn, Q/E: strafe" : "A/D: steer, Q/E: strafe");
+				imguiValue("Mouse: orbit / zoom");
+				imguiValue("Mode change restarts scene");
+				if (robotPanel.WalkMode == RobotWalkMode::Policy)
+					imguiValue("Policy: steer while moving");
+				snprintf(text, sizeof(text), "Command X %.2f Z %.2f m/s", robotPanel.Command.x, robotPanel.Command.z);
+				imguiValue(text);
+				snprintf(text, sizeof(text), "Target heading %.0f deg", robotPanel.Heading * 180.0f / 3.14159265f);
+				imguiValue(text);
+			}
+			if (!robotPanel.Interactive || robotPanel.WalkMode == RobotWalkMode::Policy)
+			{
+				const char* backends[] = {"Featherstone ABA", "CRBA + Sparse LDLT"};
+				int backend = static_cast<int>(robotPanel.Backend);
+				if (imguiCombo("Backend", &backend, backends, 2))
+				{
+					robotPanel.Backend = static_cast<RobotDynamicsBackend>(backend);
+					changed = true;
+				}
+			}
+			if (changed)
+			{
+				std::lock_guard<std::mutex> lock(m_ImguiMutex);
+				m_PendingRobotPanel = robotPanel;
+			}
+			imguiSeparatorLine();
+		}
 		const char* renderModeLabels[] = { "Solid", "Wireframe", "Solid + Wireframe" };
 		imguiLabel("Render Mode");
 		for (int modeIndex = 0; modeIndex < 3; ++modeIndex)
@@ -1878,39 +2043,33 @@ namespace Riemann
 				m_ImguiPendingRenderModeValue = mode;
 			}
 		}
-		if (smokePanel.Active || snowPanel.Active || vehiclePanel.Active) imguiSeparatorLine();
+		if (aerodynamicsPanel.Active || snowPanel.Active || vehiclePanel.Active) imguiSeparatorLine();
 
-		if (smokePanel.Active)
+		if (aerodynamicsPanel.Active)
 		{
 			imguiLabel("3D Smoke");
-			snprintf(text, sizeof(text), "Add Rigid Body (%d / %d)", smokePanel.RigidBodyCount, SceneWorld::MaxSmokeRigidBodies);
-			const bool addBody = imguiButton(text, smokePanel.RigidCoupling && smokePanel.RigidBodyCount < SceneWorld::MaxSmokeRigidBodies);
 			const char* backends[] = { "CPU", "CUDA", "Compute Shader" };
-			const char* qualities[] = { "Interactive", "Balanced", "Detailed" };
 			imguiLabel("Smoke backend");
-			imguiCombo("", &smokePanel.Backend, backends, 3, true);
-			imguiLabel("Grid quality");
-			imguiCombo("", &smokePanel.Quality, qualities, 3, true);
-			const bool restart = imguiButton("Apply / Restart Smoke");
-			const bool pause = imguiButton(smokePanel.Paused ? "Resume Smoke" : "Pause Smoke");
-			snprintf(text, sizeof(text), "Running: %s", backends[smokePanel.ActualBackend]);
+			imguiCombo("", &aerodynamicsPanel.Backend, backends, 3, true);
+			imguiSlider("Grid scale", &aerodynamicsPanel.GridScale, 0.5f, 1.5f, 0.05f);
+			snprintf(text, sizeof(text), "Selected grid: %d x %d x %d",
+				(int)std::lround(80.0f * aerodynamicsPanel.GridScale),
+				(int)std::lround(128.0f * aerodynamicsPanel.GridScale),
+				(int)std::lround(80.0f * aerodynamicsPanel.GridScale));
 			imguiValue(text);
-			snprintf(text, sizeof(text), "Grid: %d x %d x %d", smokePanel.Resolution.x, smokePanel.Resolution.y, smokePanel.Resolution.z);
+			const bool apply = imguiButton("Apply Smoke Settings");
+			snprintf(text, sizeof(text), "Running: %s", backends[aerodynamicsPanel.ActualBackend]);
+			imguiValue(text);
+			snprintf(text, sizeof(text), "Running grid: %d x %d x %d", aerodynamicsPanel.Resolution.x, aerodynamicsPanel.Resolution.y, aerodynamicsPanel.Resolution.z);
 			imguiValue(text);
 			imguiValue("Drag bodies or stir smoke");
-			if (!smokePanel.Status.empty()) imguiValue(smokePanel.Status.c_str());
+			if (!aerodynamicsPanel.Status.empty()) imguiValue(aerodynamicsPanel.Status.c_str());
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
-			if (smokePanel.SceneGeneration == m_ImguiSmokePanel.SceneGeneration)
+			if (aerodynamicsPanel.SceneGeneration == m_ImguiAerodynamicsPanel.SceneGeneration)
 			{
-				m_ImguiSmokePanel.Backend = smokePanel.Backend;
-				m_ImguiSmokePanel.Quality = smokePanel.Quality;
-				if (restart) { m_ImguiPendingSmokePanel = smokePanel; m_ImguiPendingSmokeRestart = true; }
-				if (pause) m_ImguiPendingSmokePause = true;
-				if (addBody)
-				{
-					m_ImguiPendingSmokeAddBodies = std::min(m_ImguiPendingSmokeAddBodies + 1, SceneWorld::MaxSmokeRigidBodies);
-					m_ImguiPendingSmokeAddGeneration = smokePanel.SceneGeneration;
-				}
+				m_ImguiAerodynamicsPanel.Backend = aerodynamicsPanel.Backend;
+				m_ImguiAerodynamicsPanel.GridScale = aerodynamicsPanel.GridScale;
+				if (apply) { m_ImguiPendingAerodynamicsPanel = aerodynamicsPanel; m_ImguiPendingAerodynamicsApply = true; }
 			}
 		}
 		if (snowPanel.Active) DrawSnowPanel(snowPanel);
@@ -1918,10 +2077,8 @@ namespace Riemann
 		{
 			imguiLabel(vehiclePanel.Dynamics ? "Vehicle Dynamics" : "Vehicle Crash Test");
 			int command = 0;
-			if (imguiButton(vehiclePanel.Paused ? "Start / Resume" : "Pause Vehicle")) command = 1;
-			if (imguiButton("Reset Vehicle")) command = 2;
-			if (imguiButton("Focus Vehicle")) command = 4;
-			if (imguiCheck("Slow motion (0.25x)", vehiclePanel.SlowMotion)) command = 3;
+			if (imguiButton("Focus Vehicle")) command = 2;
+			if (imguiCheck("Slow motion (0.25x)", vehiclePanel.SlowMotion)) command = 1;
 			bool changed = false;
 			if (vehiclePanel.Dynamics)
 			{
@@ -1951,7 +2108,7 @@ namespace Riemann
 				if (changed) { m_PendingVehiclePanel = vehiclePanel; m_PendingVehicleControls = true; }
 			}
 		}
-		if (smokePanel.Active || snowPanel.Active) solverPanel.SolverSwitchable = false;
+		if (aerodynamicsPanel.Active || snowPanel.Active) solverPanel.SolverSwitchable = false;
 		if (!meshTool)
 		{
 			const bool applySolver = DrawSolverPanel(solverPanel);
@@ -2002,6 +2159,7 @@ namespace Riemann
 				m_ImguiSolverPanel.ClothSelfCollision = solverPanel.ClothSelfCollision;
 				m_ImguiSolverPanel.ClothInterCollision = solverPanel.ClothInterCollision;
 				m_ImguiSolverPanel.ClothContinuous = solverPanel.ClothContinuous;
+				m_ImguiSolverPanel.ClothRigidCoupling = solverPanel.ClothRigidCoupling;
 				m_ImguiSolverPanel.SoftBodyAttachments = solverPanel.SoftBodyAttachments;
 				m_ImguiSolverPanel.CompliantAttachments = solverPanel.CompliantAttachments;
 				m_ImguiSolverPanel.RigidAttachments = solverPanel.RigidAttachments;
@@ -2156,34 +2314,23 @@ namespace Riemann
 				}
 				bool changed = imguiCombo("Terrain", &selectedTerrain, terrainLabels.data(), (int)terrainLabels.size());
 				terrainBrush.ObjectId = terrainObjectIds[(size_t)selectedTerrain];
-				const char* modes[] = { "Raise / Lower", "Flatten", "Smooth" };
-				changed = imguiCombo("Brush", &terrainBrush.Mode, modes, 3) || changed;
+				const char* modes[] = { "Raise", "Lower", "Flatten", "Smooth" };
+				changed = imguiCombo("Brush", &terrainBrush.Mode, modes, 4) || changed;
 				const float brushRange = terrainBrush.ControlRange;
-				const char* axes[] = { "World Center X", "World Center Y", "World Center Z" };
-				for (int axis = 0; axis < 3; ++axis)
-				{
-					changed = imguiSlider(axes[axis], &terrainBrush.Center[axis],
-						terrainBrush.ControlCenter[axis] - brushRange, terrainBrush.ControlCenter[axis] + brushRange, 0.1f) || changed;
-				}
 				changed = imguiSlider("World Radius", &terrainBrush.Radius, 0.1f,
 					std::max(brushRange, terrainBrush.Radius), 0.1f) || changed;
-				if (terrainBrush.Mode != 2)
+				if (terrainBrush.Mode < 2)
 				{
-					const char* valueLabel = terrainBrush.Mode == 0 ? "Height Delta (local)" : "Target Height (local)";
-					changed = imguiSlider(valueLabel, &terrainBrush.Value, -brushRange, brushRange, 0.1f) || changed;
+					changed = imguiSlider("Height per stroke", &terrainBrush.Value, 0.01f, 1.0f, 0.01f) || changed;
 				}
-				changed = imguiSlider("Strength", &terrainBrush.Strength, 0.0f, 1.0f, 0.01f, terrainBrush.Mode != 0) || changed;
-				const bool apply = imguiButton("Apply Terrain Brush");
-				if (changed || apply)
+				changed = imguiSlider("Strength", &terrainBrush.Strength, 0.01f, 1.0f, 0.01f) || changed;
+				imguiValue("Left-click and drag terrain");
+				if (changed)
 				{
 					std::lock_guard<std::mutex> lock(m_ImguiMutex);
 					if (terrainBrush.SceneGeneration == m_ImguiTerrainBrush.SceneGeneration)
 					{
 						m_ImguiTerrainBrush = terrainBrush;
-						if (apply)
-						{
-							m_ImguiPendingTerrainEdits.push_back(terrainBrush);
-						}
 					}
 				}
 				if (!terrainStatus.empty())
@@ -2448,12 +2595,6 @@ namespace Riemann
 			}
 		}
 		std::shared_ptr<DensityVolumeDesc> gasVolume;
-		if (m_GasDemoActive && m_SmokeSimulation)
-		{
-			gasVolume.reset(new DensityVolumeDesc());
-			const SceneFieldSimulationDesc& field = m_World->GetFieldSimulation();
-			BuildSmokeDensityVolume(*m_SmokeSimulation, gasVolume.get(), field.SmokeExtinction, field.SmokeColor);
-		}
 		if (m_GasDemoActive && m_AerodynamicsSimulation != nullptr)
 		{
 			std::vector<RenderMeshDesc> gasMeshes;
@@ -2462,8 +2603,8 @@ namespace Riemann
 			if (m_RenderThread && m_RenderThread->SupportsDensityVolume())
 			{
 				gasVolume.reset(new DensityVolumeDesc());
-				if (!BuildGasDensityVolume(*m_AerodynamicsSimulation, gasVolume.get(),
-					m_World->GetFieldSimulation().VisualizationThreshold)) gasVolume.reset();
+				if (!BuildAerodynamicsDensityVolume(*m_AerodynamicsSimulation, gasVolume.get(),
+					m_World->GetFieldSimulation().VisualizationThreshold, m_World->GetFieldSimulation().TracerExtinction, m_World->GetFieldSimulation().TracerColor)) gasVolume.reset();
 			}
 			else if (BuildGasDensityMeshes(*m_AerodynamicsSimulation,
 				"gas_demo.density", &gasMeshes, visualization))
@@ -3062,6 +3203,27 @@ namespace Riemann
 		});
 	}
 
+	void WorldViewer::SubmitDeformableMeshes()
+	{
+		if (!m_World || !m_RenderThread) return;
+		auto* World = m_World->GetSimulation(); if (!World) return;
+		std::vector<Geometry*> Geometries;
+		for (size_t I = 0; I < World->GetClothCount(); ++I) Geometries.push_back(World->GetCloth(I)->GetRenderGeometry());
+		for (auto* Body : World->GetDeformableBodies()) Geometries.push_back(Body->GetRenderGeometry());
+		if (Geometries.empty()) return;
+		auto Meshes = std::make_shared<std::vector<RenderMeshDesc>>();
+		for (const auto& Object : m_World->GetObjects())
+			if (Object.RenderEnabled && std::find(Geometries.begin(), Geometries.end(), Object.GeometryPtr) != Geometries.end())
+				BuildGeometryMeshes(Object.GeometryPtr, Object.Id, Object.Color, Object.RenderBounds, Meshes.get());
+		m_RenderThread->Submit([Meshes](Renderer& Renderer) {
+			for (const auto& Mesh : *Meshes)
+			{
+				RenderTransformUpdate Transform; Transform.Id = Mesh.Id; Transform.WorldTransform = Mesh.WorldTransform; Renderer.UpdateTransform(Transform);
+				Renderer.UpdateMeshGeometry(Mesh.Id.c_str(), Mesh.Vertices.data(), (int)Mesh.Vertices.size(), Mesh.Indices.data(), (int)Mesh.Indices.size());
+			}
+		});
+	}
+
 	void WorldViewer::SubmitGeometryQueryBounds()
 	{
 		if (!m_ShowGeometryQueryBounds || m_CuttingPanelActive || m_MeshSimplificationPanelActive)
@@ -3177,15 +3339,18 @@ namespace Riemann
 
 	void WorldViewer::ApplyImguiCommands()
 	{
-		SmokePanelState pendingSmoke;
-		bool pendingSmokeRestart = false, pendingSmokePause = false;
-		int pendingSmokeAddBodies = 0;
-		unsigned int pendingSmokeAddGeneration = 0;
+		AerodynamicsPanelState pendingAerodynamics;
+		bool pendingAerodynamicsApply = false;
+		bool pendingRestartScene = false;
+		unsigned int pendingRestartGeneration = 0;
+		bool pendingPauseToggle = false;
+		unsigned int pendingPauseGeneration = 0;
 		bool pendingSolverSwitch = false;
 		SolverPanelState pendingSolverPanel;
 		std::string pendingSceneFile;
 		int pendingDemoIndex = -1;
 		int pendingRagdollAlgorithm = -1;
+		RobotPanelState pendingRobot;
 		bool pendingDistance = false;
 		float pendingDistanceValue = 0.0f;
 		bool pendingCuttingSeparation = false;
@@ -3218,22 +3383,39 @@ namespace Riemann
 		bool pendingRenderMode = false;
 		RenderMode pendingRenderModeValue = RenderMode::Solid;
 		bool pendingShootProjectile = false;
+#ifdef RIEMANN_SPIDER_TRAINING
+		bool trainingToggle = false, showAllToggle = false;
+		bool browseElmanExecutable = false;
+		int selectedSpider = -1;
+#endif
 		std::vector<ConstraintControlState> pendingConstraintControls;
-		std::vector<TerrainBrushState> pendingTerrainEdits;
 		{
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
 			pendingSolverSwitch = m_ImguiPendingSolverSwitch;
-			pendingSmoke = m_ImguiPendingSmokePanel;
-			pendingSmokeRestart = m_ImguiPendingSmokeRestart;
-			pendingSmokePause = m_ImguiPendingSmokePause;
-			m_ImguiPendingSmokeRestart = m_ImguiPendingSmokePause = false;
-			pendingSmokeAddBodies = m_ImguiPendingSmokeAddBodies;
-			pendingSmokeAddGeneration = m_ImguiPendingSmokeAddGeneration;
-			m_ImguiPendingSmokeAddBodies = 0;
+			pendingAerodynamics = m_ImguiPendingAerodynamicsPanel;
+			pendingAerodynamicsApply = m_ImguiPendingAerodynamicsApply;
+			m_ImguiPendingAerodynamicsApply = false;
+			pendingRestartScene = m_ImguiPendingRestartScene;
+			pendingRestartGeneration = m_ImguiPendingRestartGeneration;
+			m_ImguiPendingRestartScene = false;
+			pendingPauseToggle = m_ImguiPendingPauseToggle;
+			pendingPauseGeneration = m_ImguiPendingPauseGeneration;
+			m_ImguiPendingPauseToggle = false;
 			pendingSolverPanel = m_ImguiPendingSolverPanel;
 			m_ImguiPendingSolverSwitch = false;
 			pendingDemoIndex = m_ImguiPendingDemoIndex;
 			m_ImguiPendingDemoIndex = -1;
+			pendingRobot = m_PendingRobotPanel;
+			m_PendingRobotPanel.Active = false;
+#ifdef RIEMANN_SPIDER_TRAINING
+			trainingToggle = m_PendingSpiderTrainToggle;
+			showAllToggle = m_PendingSpiderShowAllToggle;
+			selectedSpider = m_PendingSpiderSelection;
+			browseElmanExecutable = m_PendingBrowseElmanExecutable;
+			m_PendingSpiderTrainToggle = m_PendingSpiderShowAllToggle = false;
+			m_PendingBrowseElmanExecutable = false;
+			m_PendingSpiderSelection = -1;
+#endif
 			pendingRagdollAlgorithm = m_ImguiPendingRagdollAlgorithm;
 			m_ImguiPendingRagdollAlgorithm = -1;
 			pendingSceneFile.swap(m_ImguiPendingSceneFile);
@@ -3290,35 +3472,40 @@ namespace Riemann
 			pendingShootProjectile = m_ImguiPendingShootProjectile;
 			m_ImguiPendingShootProjectile = false;
 			pendingConstraintControls.swap(m_ImguiPendingConstraintControls);
-			pendingTerrainEdits.swap(m_ImguiPendingTerrainEdits);
+		}
+		if (pendingPauseToggle && pendingPauseGeneration == m_SceneGeneration)
+			m_ViewerPaused = !m_ViewerPaused;
+		if (pendingRestartScene && pendingRestartGeneration == m_SceneGeneration)
+		{
+			m_ViewerPaused = false;
+			if (m_CuttingPanelActive) LoadCuttingPanel();
+			else if (m_MeshSimplificationPanelActive) LoadMeshSimplificationPanel();
+			else LoadScene(m_SceneDirectory + "/" + m_CurrentSceneName);
+			return;
 		}
 
-		if (pendingSmokeRestart && m_SmokeSimulation && pendingSmoke.SceneGeneration == m_SceneGeneration)
+		if (pendingAerodynamicsApply && m_AerodynamicsSimulation && pendingAerodynamics.SceneGeneration == m_SceneGeneration)
 		{
-			SmokeSimulationSettings settings = m_World->GetFieldSimulation().Smoke;
-			settings.Backend = static_cast<SmokeBackend>(std::max(0, std::min(pendingSmoke.Backend, 2)));
-			settings.AllowBackendFallback = false;
-			const Vector3i sizes[] = { Vector3i(48, 80, 48), Vector3i(80, 128, 80), Vector3i(112, 184, 112) };
-			settings.Resolution = sizes[std::max(0, std::min(pendingSmoke.Quality, 2))];
-			std::unique_ptr<SmokeSimulation> next(new SmokeSimulation());
-			const bool ready = next->Initialize(settings);
+			AerodynamicsSimulationSettings settings = m_World->GetFieldSimulation().Aerodynamics;
+			const FluidBackend Backends[] = { FluidBackend::CPU, FluidBackend::CUDA, FluidBackend::ComputeShader };
+			settings.Backend = Backends[std::max(0, std::min(pendingAerodynamics.Backend, 2))];
+			settings.AllowBackendFallback = m_World->GetFieldSimulation().AllowBackendFallback;
+			const float scale = std::max(0.5f, std::min(pendingAerodynamics.GridScale, 1.5f));
+			settings.Resolution = Vector3i((int)std::lround(80.0f * scale),
+				(int)std::lround(128.0f * scale), (int)std::lround(80.0f * scale));
+			const auto Coupling = m_AerodynamicsCoupling ? m_AerodynamicsCoupling->GetSettings() : AerodynamicsRigidCouplingSettings();
+			auto* Next = CreateSmokeWithFallback(m_World->GetSimulation(), settings, Coupling,
+				m_World->GetFieldSimulation().RigidCoupling);
+			const bool ready = Next != nullptr;
 			if (ready)
 			{
-				if (m_SmokeCoupling) m_SmokeCoupling->SetSimulation(next.get());
-				m_SmokeSimulation = std::move(next);
-				m_SmokePaused = !SynchronizeSmokeObstacles();
-				SubmitGasDensity();
+				m_AerodynamicsSimulation = Next; m_AerodynamicsCoupling = m_World->GetSimulation()->GetAerodynamicsCoupling();
+				m_AerodynamicsPaused = false; SubmitGasDensity();
 			}
 			std::lock_guard<std::mutex> lock(m_ImguiMutex);
-			m_ImguiSmokePanel.Status = ready ? "Smoke restarted" : "Backend unavailable";
-		}
-		if (pendingSmokePause && m_SmokeSimulation) m_SmokePaused = !m_SmokePaused;
-		if (pendingSmokeAddBodies > 0 && m_SmokeCoupling && pendingSmokeAddGeneration == m_SceneGeneration)
-		{
-			for (int I = 0; I < pendingSmokeAddBodies; ++I)
-				if (!m_World->AddSmokeRigidBody()) break;
-			if (!SynchronizeSmokeObstacles()) m_SmokePaused = true;
-			SubmitGasDensity();
+			m_ImguiAerodynamicsPanel.Status = ready
+				? (Next->GetBackend() == settings.Backend ? "Smoke settings applied" : "Smoke settings applied on another backend")
+				: "Backend unavailable";
 		}
 
 		if (pendingDemoIndex >= 0)
@@ -3326,6 +3513,7 @@ namespace Riemann
 			const int meshCuttingDemoIndex = (int)m_SceneFiles.size();
 			const int convexDecompositionDemoIndex = meshCuttingDemoIndex + 1;
 			const int meshSimplificationDemoIndex = meshCuttingDemoIndex + 2;
+			if (pendingDemoIndex >= meshCuttingDemoIndex) m_ViewerPaused = false;
 			if (pendingDemoIndex < meshCuttingDemoIndex)
 			{
 				LoadScene(m_SceneFiles[(size_t)pendingDemoIndex]);
@@ -3356,6 +3544,58 @@ namespace Riemann
 		{
 			LoadScene(pendingSceneFile);
 		}
+		if (pendingRobot.Active && pendingRobot.SceneGeneration == m_SceneGeneration && m_World->GetRobotDemoController())
+		{
+			const RobotDynamicsBackend previous = m_World->GetWalkingRobotBackend();
+			const RobotWalkMode previousMode = m_World->GetRobotWalkMode();
+			m_RobotAutoWalk = pendingRobot.AutoWalk;
+			m_World->SetWalkingRobotBackend(pendingRobot.Backend);
+			m_World->SetRobotWalkMode(pendingRobot.WalkMode);
+			if ((previous != pendingRobot.Backend || previousMode != pendingRobot.WalkMode)
+				&& !LoadScene(m_CurrentSceneName))
+			{
+				m_World->SetWalkingRobotBackend(previous);
+				m_World->SetRobotWalkMode(previousMode);
+				LoadScene(m_CurrentSceneName);
+			}
+		}
+#ifdef RIEMANN_SPIDER_TRAINING
+		if (browseElmanExecutable)
+		{
+			const std::string selectedExecutable = OpenElmanExecutableDialog();
+			if (!selectedExecutable.empty()) SaveElmanExecutablePath(selectedExecutable);
+		}
+		if (trainingToggle && m_World->IsSpiderWalkingDemo())
+		{
+			if (m_SpiderTrainingMode)
+			{
+				m_SpiderTraining->stop();
+				m_SpiderTrainingMode = false;
+				LoadScene(m_CurrentSceneName);
+			}
+			else
+			{
+				const int worldCount = m_SpiderTrainingWorldCount;
+				m_World->BeginSpiderTrainingDisplay(size_t(worldCount));
+				m_SpiderTrainingMode = true;
+				m_SpiderTrainingShowAll = false;
+				m_SpiderTrainingSelected = 0;
+				m_RobotAutoWalk = true;
+				SpiderTrainingOptions options;
+				options.policy_path = m_SceneDirectory + "../Robots/Spider/actor.bin";
+				options.environment_count = worldCount;
+				m_SpiderTraining->start(std::move(options));
+			}
+		}
+		if (showAllToggle)
+		{
+			m_SpiderTrainingShowAll = !m_SpiderTrainingShowAll;
+			m_CamCenter = m_SpiderTrainingShowAll ? Vector3(6.75f, 0.45f, 1.5f) : Vector3(0, 0.45f, 0);
+			m_CamParam.z = m_SpiderTrainingShowAll ? 24.0f : 8.5f;
+			UpdateCamera();
+		}
+		if (selectedSpider >= 0 && selectedSpider < m_SpiderTrainingWorldCount) m_SpiderTrainingSelected = selectedSpider;
+#endif
 		if (pendingRagdollAlgorithm >= 0 && m_CurrentSceneName == "09_ragdoll_stairs.json")
 		{
 			const bool previous = m_RagdollDemoReduced;
@@ -3372,7 +3612,7 @@ namespace Riemann
 			{
 				PhysicsWorld* simulation = m_World ? m_World->GetSimulation() : nullptr;
 				const bool allowed = simulation && !m_CuttingPanelActive && !m_MeshSimplificationPanelActive
-					&& !m_FluidDemoActive && !m_GasDemoActive && !m_SmokeSimulation && !m_SnowSimulation && !m_SandSimulation
+					&& !m_FluidDemoActive && !m_GasDemoActive && !m_AerodynamicsSimulation && !m_SnowSimulation && !m_SandSimulation
 					&& simulation->GetReducedRagdollCount() == 0;
 				std::string error;
 				bool applied = allowed && pendingSolverPanel.ResolutionIndex >= 0 && pendingSolverPanel.ResolutionIndex < 4
@@ -3398,7 +3638,9 @@ namespace Riemann
 					pendingSolverPanel.ClothAlgorithm == 0 ? ClothModel::DistanceLinks : ClothModel::TriangleStrain,
 					(int)pendingSolverPanel.ClothIterations, (int)pendingSolverPanel.ClothSubsteps, pendingSolverPanel.ClothDamping,
 					pendingSolverPanel.ClothStretchUCompliance, pendingSolverPanel.ClothStretchVCompliance,
-					pendingSolverPanel.ClothShearCompliance, pendingSolverPanel.ClothBendingCompliance);
+					pendingSolverPanel.ClothShearCompliance, pendingSolverPanel.ClothBendingCompliance)
+					&& m_World->SetClothRigidInteraction(pendingSolverPanel.ClothRigidCoupling)
+					&& m_World->SetClothSelfCollision(pendingSolverPanel.ClothSelfCollision);
 				{
 					std::lock_guard<std::mutex> lock(m_ImguiMutex);
 					m_ImguiSolverPanel.Pending = false;
@@ -3564,6 +3806,7 @@ namespace Riemann
 					m_ImguiSolverPanel.ClothSelfCollision = pendingSolverPanel.ClothSelfCollision;
 					m_ImguiSolverPanel.ClothInterCollision = pendingSolverPanel.ClothInterCollision;
 					m_ImguiSolverPanel.ClothContinuous = pendingSolverPanel.ClothContinuous;
+					m_ImguiSolverPanel.ClothRigidCoupling = pendingSolverPanel.ClothRigidCoupling;
 					m_ImguiSolverPanel.SoftBodyAttachments = pendingSolverPanel.SoftBodyAttachments;
 					m_ImguiSolverPanel.CompliantAttachments = pendingSolverPanel.CompliantAttachments;
 					m_ImguiSolverPanel.RigidAttachments = pendingSolverPanel.RigidAttachments;
@@ -3588,20 +3831,6 @@ namespace Riemann
 		{
 			m_World->ApplyConstraintControl(state);
 		}
-		for (const TerrainBrushState& brush : pendingTerrainEdits)
-		{
-			if (brush.SceneGeneration != m_SceneGeneration || m_CuttingPanelActive || m_MeshSimplificationPanelActive)
-			{
-				continue;
-			}
-			const int changedSamples = m_World->EditTerrain(brush.ObjectId, brush.Center,
-				brush.Radius, brush.Value, brush.Mode, brush.Strength);
-			char status[96];
-			snprintf(status, sizeof(status), "Changed samples: %d", changedSamples);
-			std::lock_guard<std::mutex> lock(m_ImguiMutex);
-			m_ImguiTerrainStatus = status;
-		}
-
 		if (pendingDistance)
 		{
 			m_CamParam.z = std::max(GetCameraSceneScale() * 1.0e-4f, pendingDistanceValue);
@@ -3764,18 +3993,8 @@ namespace Riemann
 				Vehicle->SetControls(C); Vehicle->SetDifferential((VehicleDifferential)controls.Differential);
 			}
 		if (generation != m_SceneGeneration || m_World->GetVehicleCount() == 0) return;
-		if (command == 1) m_VehiclePaused = !m_VehiclePaused;
+		if (command == 1) m_VehicleSlowMotion = !m_VehicleSlowMotion;
 		else if (command == 2)
-		{
-			const bool slowMotion = m_VehicleSlowMotion;
-			if (LoadScene(m_SceneDirectory + "/" + m_CurrentSceneName))
-			{
-				m_VehiclePaused = false;
-				m_VehicleSlowMotion = slowMotion;
-			}
-		}
-		else if (command == 3) m_VehicleSlowMotion = !m_VehicleSlowMotion;
-		else if (command == 4)
 		{
 			m_CamCenter = m_World->GetVehicle(0)->GetWorldTransform().pos;
 			m_CamParam = Vector3(1.75f, 0.42f, 7.5f);
@@ -3791,12 +4010,28 @@ namespace Riemann
 		std::vector<std::string> terrainObjectIds = m_World
 			? m_World->GetTerrainObjectIds() : std::vector<std::string>();
 		std::lock_guard<std::mutex> lock(m_ImguiMutex);
+		m_ImguiRobotPanel.Active = m_World && m_World->GetRobotDemoController();
+		m_ImguiRobotPanel.SceneGeneration = m_SceneGeneration;
+		if (m_ImguiRobotPanel.Active)
+		{
+			m_ImguiRobotPanel.Backend = m_World->GetWalkingRobotBackend();
+			m_ImguiRobotPanel.Interactive = m_World->IsSpiderWalkingDemo();
+			m_ImguiRobotPanel.WalkMode = m_World->GetRobotWalkMode();
+			m_ImguiRobotPanel.AutoWalk = m_RobotAutoWalk;
+			m_ImguiRobotPanel.Command = m_World->GetRobotDriveCommand();
+			m_ImguiRobotPanel.Heading = m_World->GetRobotDriveHeading();
+		}
+		m_RobotInputActive = m_World && m_World->IsSpiderWalkingDemo() && !m_RobotAutoWalk
+#ifdef RIEMANN_SPIDER_TRAINING
+			&& !m_SpiderTrainingMode
+#endif
+			;
 		m_CharacterInputActive = m_World && m_World->GetDemoCharacter();
-		m_ImguiSmokePanel.Active = m_SmokeSimulation != nullptr;
+		m_ImguiAerodynamicsPanel.Active = m_AerodynamicsSimulation && m_AerodynamicsSimulation->HasTracerField();
 		UpdateSnowPanelState();
 		m_ImguiVehiclePanel.Active = m_World && m_World->GetVehicleCount() > 0;
 		m_ImguiVehiclePanel.SceneGeneration = m_SceneGeneration;
-		m_ImguiVehiclePanel.Paused = m_VehiclePaused;
+		m_ImguiViewerPaused = m_ViewerPaused;
 		m_ImguiVehiclePanel.SlowMotion = m_VehicleSlowMotion;
 		m_ImguiVehiclePanel.Dynamics = m_World && m_World->GetVehicleDynamics(0);
 		if (m_ImguiVehiclePanel.Dynamics)
@@ -3817,22 +4052,23 @@ namespace Riemann
 			m_ImguiVehiclePanel.Displacement = m_World->GetVehicle(0)->GetMaxDisplacement();
 			m_ImguiVehiclePanel.PlasticStrain = m_World->GetVehicle(0)->GetMaxPlasticStrain();
 		}
-		if (m_SmokeSimulation)
+		if (m_AerodynamicsSimulation && m_AerodynamicsSimulation->HasTracerField())
 		{
-			if (m_ImguiSmokePanel.SceneGeneration != m_SceneGeneration)
+			if (m_ImguiAerodynamicsPanel.SceneGeneration != m_SceneGeneration)
 			{
-				m_ImguiSmokePanel.SceneGeneration = m_SceneGeneration;
-				m_ImguiSmokePanel.Backend = (int)m_SmokeSimulation->GetBackend();
-				m_ImguiSmokePanel.Quality = 1;
-				m_ImguiSmokePanel.Status.clear();
-				m_ImguiPendingSmokeRestart = m_ImguiPendingSmokePause = false;
-				m_ImguiPendingSmokeAddBodies = 0;
+				m_ImguiAerodynamicsPanel.SceneGeneration = m_SceneGeneration;
+				m_ImguiAerodynamicsPanel.Backend = (m_AerodynamicsSimulation->GetBackend() == FluidBackend::CPU ? 0 : m_AerodynamicsSimulation->GetBackend() == FluidBackend::CUDA ? 1 : 2);
+				const Vector3i requestedResolution = m_World->GetFieldSimulation().Aerodynamics.Resolution;
+				m_ImguiAerodynamicsPanel.GridScale = std::max(0.5f, std::min(requestedResolution.x / 80.0f, 1.5f));
+				m_ImguiAerodynamicsPanel.Status = m_AerodynamicsSimulation->GetBackend() == m_World->GetFieldSimulation().Aerodynamics.Backend
+					? std::string() : (m_AerodynamicsSimulation->GetBackend() == FluidBackend::CPU
+						? "CUDA unavailable; interactive CPU grid" : "CUDA unavailable; using Compute Shader");
+				m_ImguiPendingAerodynamicsApply = false;
 			}
-			m_ImguiSmokePanel.Paused = m_SmokePaused;
-			m_ImguiSmokePanel.RigidCoupling = m_SmokeCoupling != nullptr;
-			m_ImguiSmokePanel.RigidBodyCount = m_World->GetSmokeRigidBodyCount();
-			m_ImguiSmokePanel.ActualBackend = (int)m_SmokeSimulation->GetBackend();
-			m_ImguiSmokePanel.Resolution = m_SmokeSimulation->GetSettings().Resolution;
+			m_ImguiAerodynamicsPanel.RigidCoupling = m_AerodynamicsCoupling != nullptr;
+			m_ImguiAerodynamicsPanel.RigidBodyCount = m_World->GetAerodynamicsRigidBodyCount();
+			m_ImguiAerodynamicsPanel.ActualBackend = (m_AerodynamicsSimulation->GetBackend() == FluidBackend::CPU ? 0 : m_AerodynamicsSimulation->GetBackend() == FluidBackend::CUDA ? 1 : 2);
+			m_ImguiAerodynamicsPanel.Resolution = m_AerodynamicsSimulation->GetSettings().Resolution;
 		}
 		if (simulation)
 		{
@@ -3893,6 +4129,7 @@ namespace Riemann
 				m_ImguiSolverPanel.ClothSelfCollision = DemoCloth && DemoCloth->GetSettings().Collision.SelfCollision;
 				m_ImguiSolverPanel.ClothInterCollision = DemoCloth && DemoCloth->GetSettings().Collision.InterCollision;
 				m_ImguiSolverPanel.ClothContinuous = DemoCloth && DemoCloth->GetSettings().Collision.Continuous;
+				m_ImguiSolverPanel.ClothRigidCoupling = DemoCloth && DemoCloth->HasRigidCoupling();
 				m_ImguiSolverPanel.SoftBodyAttachments = m_World->GetDemoDeformableBody(0) && m_World->GetDemoDeformableBody(1);
 				m_ImguiSolverPanel.CompliantAttachments = m_World->GetCompliantAttachmentDemo();
 				m_ImguiSolverPanel.RigidAttachments = m_World->GetRigidAttachmentDemo();
@@ -3925,17 +4162,14 @@ namespace Riemann
 		}
 		m_ImguiSolverPanel.Enabled = simulation && !m_CuttingPanelActive && !m_MeshSimplificationPanelActive;
 		m_ImguiSolverPanel.SolverSwitchable = m_ImguiSolverPanel.Enabled && !m_FluidDemoActive && !m_GasDemoActive
-			&& !m_SmokeSimulation && !m_SnowSimulation && !m_SandSimulation
+			&& !m_AerodynamicsSimulation && !m_SnowSimulation && !m_SandSimulation
 			&& simulation->GetReducedRagdollCount() == 0;
 		if (m_ImguiTerrainBrush.SceneGeneration != m_SceneGeneration)
 		{
 			m_ImguiTerrainBrush = TerrainBrushState();
-			m_ImguiTerrainBrush.Center = m_CamCenter;
-			m_ImguiTerrainBrush.ControlCenter = m_CamCenter;
 			m_ImguiTerrainBrush.ControlRange = std::max(20.0f, m_CamParam.z * 2.0f);
 			m_ImguiTerrainBrush.SceneGeneration = m_SceneGeneration;
 			m_ImguiTerrainStatus.clear();
-			m_ImguiPendingTerrainEdits.clear();
 		}
 		m_ImguiTerrainObjectIds = std::move(terrainObjectIds);
 		if (std::find(m_ImguiTerrainObjectIds.begin(), m_ImguiTerrainObjectIds.end(), m_ImguiTerrainBrush.ObjectId)
@@ -4190,6 +4424,83 @@ namespace Riemann
 		return std::string();
 #endif
 	}
+
+#ifdef RIEMANN_SPIDER_TRAINING
+	std::string WorldViewer::ElmanExecutableSettingsPath() const
+	{
+		const std::string root = m_SceneDirectory.empty() ? std::string() : m_SceneDirectory + "../../";
+		return root + "DerivedData/Settings/ElmanExecutable.txt";
+	}
+
+	void WorldViewer::LoadElmanExecutablePath()
+	{
+		std::string path;
+		std::ifstream settings(ElmanExecutableSettingsPath(), std::ios::binary);
+		if (settings) std::getline(settings, path);
+		if (!path.empty() && path.back() == '\r') path.pop_back();
+		const bool saved = !path.empty();
+		if (!saved)
+		{
+			const std::string root = m_SceneDirectory.empty() ? std::string() : m_SceneDirectory + "../../";
+			path = root + "../ElmanLLM/Binaries/Windows/elman.exe";
+		}
+		char absolute[MAX_PATH] = {};
+		const DWORD length = GetFullPathNameA(path.c_str(), MAX_PATH, absolute, nullptr);
+		if (length > 0 && length < MAX_PATH) path = absolute;
+		const DWORD attributes = GetFileAttributesA(path.c_str());
+		const bool valid = attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY);
+		std::lock_guard<std::mutex> lock(m_ImguiMutex);
+		m_ElmanExecutablePath = saved || valid ? path : std::string();
+		m_ElmanExecutableStatus = saved && !valid ? "Saved Elman EXE is missing" : std::string();
+	}
+
+	bool WorldViewer::SaveElmanExecutablePath(const std::string& path)
+	{
+		char absolute[MAX_PATH] = {};
+		const DWORD length = GetFullPathNameA(path.c_str(), MAX_PATH, absolute, nullptr);
+		const DWORD attributes = length > 0 && length < MAX_PATH ? GetFileAttributesA(absolute) : INVALID_FILE_ATTRIBUTES;
+		if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY))
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			m_ElmanExecutableStatus = "Elman executable file is missing";
+			return false;
+		}
+		const std::string root = m_SceneDirectory.empty() ? std::string() : m_SceneDirectory + "../../";
+		CreateDirectoryA((root + "DerivedData").c_str(), nullptr);
+		CreateDirectoryA((root + "DerivedData/Settings").c_str(), nullptr);
+		std::ofstream settings(ElmanExecutableSettingsPath(), std::ios::binary | std::ios::trunc);
+		if (settings) settings << absolute << '\n';
+		settings.close();
+		if (!settings)
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			m_ElmanExecutableStatus = "Could not save Elman executable path";
+			return false;
+		}
+		std::lock_guard<std::mutex> lock(m_ImguiMutex);
+		m_ElmanExecutablePath = absolute;
+		m_ElmanExecutableStatus = "Elman executable path saved";
+		return true;
+	}
+
+	std::string WorldViewer::OpenElmanExecutableDialog() const
+	{
+		char fileName[MAX_PATH] = {};
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			if (m_ElmanExecutablePath.size() < sizeof(fileName))
+				snprintf(fileName, sizeof(fileName), "%s", m_ElmanExecutablePath.c_str());
+		}
+		OPENFILENAMEA ofn = {};
+		ofn.lStructSize = sizeof(ofn);
+		ofn.lpstrFile = fileName;
+		ofn.nMaxFile = sizeof(fileName);
+		ofn.lpstrFilter = "Elman Executable\0elman.exe\0Executable Files\0*.exe\0All Files\0*.*\0";
+		ofn.lpstrDefExt = "exe";
+		ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+		return GetOpenFileNameA(&ofn) ? std::string(fileName) : std::string();
+	}
+#endif
 
 	std::string WorldViewer::ResolveSceneFile(const char* fileName) const
 	{

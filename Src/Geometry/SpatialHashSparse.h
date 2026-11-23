@@ -19,7 +19,7 @@ namespace Riemann
 	}
 
 	template<class T>
-	class SparseSpatialHash2
+	class SpatialHashSparse2
 	{
 	public:
 		struct Element
@@ -33,7 +33,7 @@ namespace Riemann
 			T		value;
 		};
 
-		SparseSpatialHash2(float cellsize, int bucket_size)
+		SpatialHashSparse2(float cellsize, int bucket_size)
 		{
 			m_Origin = Vector2::Zero();
 			m_CellSize = Vector2(cellsize, cellsize);
@@ -41,7 +41,7 @@ namespace Riemann
 			m_Buckets.resize(bucket_size);
 		}
 
-		~SparseSpatialHash2()
+		~SpatialHashSparse2()
 		{
 			m_Buckets.clear();
 		}
@@ -163,7 +163,7 @@ namespace Riemann
 	}
 
 	template<typename T>
-	class SparseSpatialHash3
+	class SpatialHashSparse3
 	{
 	public:
 		struct Element
@@ -177,7 +177,7 @@ namespace Riemann
 			T		value;
 		};
 
-		SparseSpatialHash3(float cellsize, int bucket_size)
+		SpatialHashSparse3(float cellsize, int bucket_size)
 		{
 			m_Origin = Vector3::Zero();
 			m_CellSize = Vector3(cellsize, cellsize, cellsize);
@@ -185,7 +185,7 @@ namespace Riemann
 			m_Buckets.resize(bucket_size);
 		}
 
-		~SparseSpatialHash3()
+		~SpatialHashSparse3()
 		{
 			m_Buckets.clear();
 		}

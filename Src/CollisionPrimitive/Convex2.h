@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include "../Maths/Vector2.h"
 
 #define MAX_CONVEX_VERTICES		(8)

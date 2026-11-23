@@ -102,7 +102,7 @@ namespace Riemann
 		bool BuildSurfaceSamples(const AerodynamicsSimulation* Simulation,
 			const AerodynamicsRigidCouplingSettings& CouplingSettings,
 			const RigidBodyDynamic* Rigid, std::vector<AerodynamicSurfaceSample>* Samples,
-			float* SampledArea)
+			float* SampledArea, const std::unordered_set<const Geometry*>* Candidates)
 		{
 			if (Simulation == nullptr || !Simulation->IsInitialized() || Rigid == nullptr
 				|| Samples == nullptr || SampledArea == nullptr)
@@ -115,7 +115,7 @@ namespace Riemann
 			const int SamplesPerAxis = CouplingSettings.SurfaceSamplesPerAxis;
 			for (const Geometry* GeometryObject : Rigid->Geometries())
 			{
-				if (GeometryObject == nullptr)
+				if (GeometryObject == nullptr || (Candidates && !Candidates->count(GeometryObject)))
 				{
 					continue;
 				}
@@ -217,23 +217,37 @@ namespace Riemann
 			return false;
 		}
 
-		std::vector<AerodynamicSurfaceSample> Samples;
-		float SampledArea = 0.0f;
-		if (!BuildSurfaceSamples(m_Simulation, m_Settings, Rigid, &Samples, &SampledArea))
+		if (m_Simulation->SupportsMovingObstacles())
 		{
-			return false;
+			if (m_Loads.size() != m_Handles.size()) return false;
+			for (size_t I = 0; I < m_Loads.size(); ++I)
+			{
+				if (!m_Handles[I].IsValid() || std::find(Rigid->mGeometryHandles.begin(), Rigid->mGeometryHandles.end(), m_Handles[I]) == Rigid->mGeometryHandles.end()) continue;
+				Result->Force += m_Loads[I].Force;
+				Result->Torque += m_Loads[I].Torque + (m_Centers[I] - Rigid->X).Cross(m_Loads[I].Force);
+			}
+			if (!IsFiniteVector(Result->Force) || !IsFiniteVector(Result->Torque)) return false;
 		}
-		const AerodynamicForceResult ForceResult = m_Simulation->ComputeSurfaceForce(
-			Rigid->X, Samples, m_Settings.DragCoefficient);
-		if (!IsFiniteVector(ForceResult.Force) || !IsFiniteVector(ForceResult.Torque))
+		else
 		{
-			return false;
-		}
+			std::vector<AerodynamicSurfaceSample> Samples;
+			float SampledArea = 0.0f;
+			if (!BuildSurfaceSamples(m_Simulation, m_Settings, Rigid, &Samples, &SampledArea, m_FilterSamples ? &m_SampleShapes : nullptr))
+			{
+				return false;
+			}
+			const AerodynamicForceResult ForceResult = m_Simulation->ComputeSurfaceForce(
+				Rigid->X, Samples, m_Settings.DragCoefficient);
+			if (!IsFiniteVector(ForceResult.Force) || !IsFiniteVector(ForceResult.Torque))
+			{
+				return false;
+			}
 
-		Result->Force = ForceResult.Force;
-		Result->Torque = ForceResult.Torque;
-		Result->SampledSurfaceArea = SampledArea;
-		Result->SampleCount = (int)Samples.size();
+			Result->Force = ForceResult.Force;
+			Result->Torque = ForceResult.Torque;
+			Result->SampledSurfaceArea = SampledArea;
+			Result->SampleCount = (int)Samples.size();
+		}
 
 		const float InverseMass = Rigid->GetInverseMass();
 		if (!std::isfinite(InverseMass) || InverseMass < 0.0f)
@@ -281,5 +295,70 @@ namespace Riemann
 	bool AerodynamicsRigidCoupling::IsValid() const
 	{
 		return m_SettingsValid && m_Simulation != nullptr && m_Simulation->IsInitialized();
+	}
+
+	void AerodynamicsRigidCoupling::SetSimulation(AerodynamicsSimulation* Simulation)
+	{
+		m_Simulation = Simulation;
+		m_Loads.clear(); m_Handles.clear(); m_Centers.clear();
+		m_FilterSamples = false; m_SampleShapes.clear();
+	}
+
+	bool AerodynamicsRigidCoupling::BuildObstacle(const Geometry* GeometryObject, AerodynamicsObstacle& Obstacle)
+	{
+		if (!GeometryObject) return false;
+		const RigidBody* Body = GeometryObject->GetParent<RigidBody>();
+		const Transform T = Body ? Body->GetGeometryTransform(GeometryObject) : *GeometryObject->GetTransform();
+		Obstacle = AerodynamicsObstacle();
+		Obstacle.Rotation = T.quat;
+		if (const Sphere3* Sphere = GeometryObject->GetShapeObj<Sphere3>())
+		{
+			Obstacle.Center = T * Sphere->Center;
+			Obstacle.Radius = Sphere->Radius;
+		}
+		else if (const AxisAlignedBox3* Box = GeometryObject->GetShapeObj<AxisAlignedBox3>())
+		{
+			Obstacle.Type = AerodynamicsObstacle::Shape::Box;
+			Obstacle.Center = T * ((Box->Min + Box->Max) * 0.5f);
+			Obstacle.HalfExtent = (Box->Max - Box->Min) * 0.5f;
+		}
+		else return false;
+		if (Body && Body->mRigidType != RigidType::Static)
+		{
+			Obstacle.LinearVelocity = Body->V + Body->W.Cross(Obstacle.Center - Body->X);
+			Obstacle.AngularVelocity = Body->W;
+		}
+		return true;
+	}
+
+	bool AerodynamicsRigidCoupling::Synchronize(const std::vector<Geometry*>& Geometries, const std::vector<AerodynamicsSurfaceMesh>& Surfaces)
+	{
+		if (!IsValid()) return false;
+		if (!m_Simulation->SupportsMovingObstacles())
+		{
+			m_Loads.clear(); m_Handles.clear(); m_Centers.clear();
+			m_FilterSamples = true; m_SampleShapes.clear();
+			m_SampleShapes.insert(Geometries.begin(), Geometries.end()); return true;
+		}
+		std::vector<AerodynamicsObstacle> Obstacles;
+		std::vector<GeometryHandle> Ids;
+		std::vector<Vector3> Centers;
+		for (const Geometry* G : Geometries)
+		{
+			AerodynamicsObstacle O;
+			if (!BuildObstacle(G, O)) continue;
+			Obstacles.push_back(O);
+			const RigidBody* Body = G->GetParent<RigidBody>();
+			Ids.push_back(Body ? Body->FindGeometryHandle(G) : GeometryHandle());
+			Centers.push_back(O.Center);
+		}
+		if (!m_Simulation->SetMovingBoundaries(Obstacles, Surfaces)) return false;
+		m_Handles.swap(Ids); m_Centers.swap(Centers); m_Loads.clear();
+		return true;
+	}
+
+	void AerodynamicsRigidCoupling::Update(float)
+	{
+		if (!IsValid() || !m_Simulation->ComputeRigidLoads(m_Simulation->GetSettings().AmbientDensity, m_Loads)) m_Loads.clear();
 	}
 }

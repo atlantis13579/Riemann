@@ -17,7 +17,7 @@ namespace Riemann
 		float RelativeThreshold = 0.08f;
 		float Extinction = 2.0f;
 		float StepScale = 0.75f;
-		bool Smoke = false;
+		bool Tracer = false;
 		float ShadowStep = 0.18f;
 		Vector4 CompressedColor = Vector4(1.0f, 0.27f, 0.07f, 1.0f);
 		Vector4 RarefiedColor = Vector4(0.10f, 0.48f, 1.0f, 1.0f);

@@ -7,10 +7,16 @@
 
 namespace Riemann
 {
+	enum class FluidSimulationMethod : uint8_t
+	{
+		Eulerian = 0,
+		Lagrangian = 1,
+	};
+
 	enum class FluidBackend : uint8_t
 	{
-		// CUDA and ComputeShader currently accelerate velocity addition only.
-		// Grid advection, pressure projection, and SPH remain CPU-side.
+		// ApplyFluidVelocityDelta accelerates velocity addition only. Individual
+		// solvers may provide dedicated CUDA/ComputeShader pipelines.
 		CPU,
 		SIMD,
 		CUDA,

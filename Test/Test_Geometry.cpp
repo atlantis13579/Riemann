@@ -24,7 +24,7 @@
 #include "../Src/Geometry/Voronoi2.h"
 #include "../Src/Geometry/Voronoi3.h"
 #include "../Src/Geometry/DenseTensorField3.h"
-#include "../Src/Geometry/SparseSpatialHash.h"
+#include "../Src/Geometry/SpatialHashSparse.h"
 #include "../Src/Geometry/SparseOctree.h"
 #include "../Src/Modules/Tools/UE5StaticMeshParser.h"
 
@@ -1035,7 +1035,7 @@ void TestHashGrid()
 {
 	printf("Running TestHashGrid\n");
 
-	SparseSpatialHash2<int> s(1.0f, 1024);
+	SpatialHashSparse2<int> s(1.0f, 1024);
 	s.Insert(Vector2(0.0f, 0.0f), 1);
 	s.Insert(Vector2(0.0f, 1.0f), 2);
 	s.Insert(Vector2(1.0f, 1.0f), 3);

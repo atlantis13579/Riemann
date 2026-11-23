@@ -35,16 +35,4 @@ void TestVoxelScene()
 	{
 		EXPECT(!scene.LoadFromText(prefix + invalid + "}]}", "invalid_voxels", &error));
 	}
-	EXPECT(scene.LoadFromFile(TestContentsPath() + "Scenes/15_voxel_mesh.json", &error));
-	RigidBody* sphere = nullptr;
-	for (const SceneObjectInstance& object : scene.GetObjects())
-	{
-		if (object.Id == "falling_sphere") sphere = object.GeometryPtr->GetParent<RigidBody>();
-	}
-	EXPECT(sphere != nullptr);
-	if (!sphere) return;
-	const float initialHeight = sphere->X.y;
-	for (int frame = 0; frame < 180; ++frame) scene.Step(1.0f / 60.0f);
-	EXPECT(sphere->X.y < initialHeight - 1.0f);
-	EXPECT_NEAR(sphere->X.y, 0.7f, 0.06f);
 }

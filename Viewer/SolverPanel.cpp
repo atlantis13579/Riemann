@@ -121,6 +121,7 @@ namespace Riemann
 		DrawStatus(State.Status);
 		bool ApplyCloth = false;
 		bool ClothAlgorithmChanged = false;
+		bool ClothSelfCollisionChanged = false;
 		if (State.HasClothDemo)
 		{
 			imguiSeparatorLine();
@@ -128,6 +129,12 @@ namespace Riemann
 			const char* Algorithms[] = { "Distance Links", "Triangle Strain" };
 			imguiLabel("Algorithm");
 			ClothAlgorithmChanged = imguiCombo("", &State.ClothAlgorithm, Algorithms, 2, Editable);
+			if (imguiCheck("Two-way rigid", State.ClothRigidCoupling, Editable)) State.ClothRigidCoupling = !State.ClothRigidCoupling;
+			if (imguiCheck("Self collision", State.ClothSelfCollision, Editable))
+			{
+				State.ClothSelfCollision = !State.ClothSelfCollision;
+				ClothSelfCollisionChanged = true;
+			}
 			imguiSlider("Iterations", &State.ClothIterations, 1, 32, 1, Editable);
 			imguiSlider("Substeps", &State.ClothSubsteps, 1, 8, 1, Editable);
 			imguiSlider("Damping", &State.ClothDamping, 0.9f, 1.0f, 0.005f, Editable);
@@ -137,6 +144,6 @@ namespace Riemann
 			imguiSlider("Bending Compliance", &State.ClothBendingCompliance, 0, 50, 0.01f, Editable);
 			ApplyCloth = imguiButton("Apply Cloth", Editable);
 		}
-		return State.SolverChanged || ClothAlgorithmChanged || ApplyCloth;
+		return State.SolverChanged || ClothAlgorithmChanged || ClothSelfCollisionChanged || ApplyCloth;
 	}
 }

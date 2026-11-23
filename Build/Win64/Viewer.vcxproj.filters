@@ -9,6 +9,7 @@
     <ClCompile Include="..\..\Viewer\WinApplication.cpp" />
     <ClCompile Include="..\..\Viewer\Viewer.cpp" />
     <ClCompile Include="..\..\Viewer\SceneWorld.cpp" />
+    <ClCompile Include="..\..\Src\Modules\Robotics\RobotDemo.cpp" />
     <ClCompile Include="..\..\Viewer\RenderThread.cpp" />
     <ClCompile Include="..\..\Viewer\MeshSimplificationPanel.cpp" />
     <ClCompile Include="..\..\Viewer\MeshCuttingPanel.cpp" />

@@ -208,6 +208,8 @@ void TestClothModelDemo()
 	EXPECT(Scene.ApplyClothParameters(ClothModel::DistanceLinks, 12, 1, 0.995f, 0.0001f, 0.0002f, 0.01f, 25));
 	Scene.Step(1.0f / 60);
 	Scene.SetClothModelDemo(true); EXPECT(Scene.LoadFromFile(Path, &Error)); auto* Cloth = Scene.GetDemoCloth(); EXPECT(Cloth); if (!Cloth) return;
+	RigidBody* Ball = nullptr; for (const auto& Object : Scene.GetObjects()) if (Object.Id == "cloth_ball") Ball = Object.GeometryPtr->GetParent<RigidBody>();
+	EXPECT(Ball); if (!Ball) return;
 	EXPECT(Cloth->GetTopology().GetDistanceLinks().size() >= Cloth->GetTopology().GetEdges().size());
 	EXPECT(Scene.GetObjects().size() == ObjectCount); EXPECT(Cloth->GetParticleCount() < OriginalVertices);
 	const auto& Topology = Cloth->GetTopology();
@@ -222,7 +224,7 @@ void TestClothModelDemo()
 		{
 			const auto& Particle = Cloth->GetParticle(I); EXPECT(std::isfinite(Particle.Position.Length()) && Particle.Position.Length() < 100);
 			if (Particle.Pinned) EXPECT(Particle.Position == Rest[I]);
-			else EXPECT((Particle.Position - Vector3(0, 3, -0.75f)).Length() >= 1.3f - 1e-4f);
+			else EXPECT((Particle.Position - Ball->X).Length() >= 1.3f - 1e-4f);
 		}
 	}
 	float WindDeflection = 0;

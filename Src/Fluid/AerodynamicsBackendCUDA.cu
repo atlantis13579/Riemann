@@ -1,5 +1,5 @@
-#include "SmokeGPUBackend.h"
-#include "SmokeSimulation.h"
+#include "AerodynamicsGPUBackend.h"
+#include "AerodynamicsTypes.h"
 #include <cuda_runtime.h>
 #include <algorithm>
 #include <cmath>
@@ -408,7 +408,9 @@ namespace Riemann
 				atomicMax(Result, __float_as_uint(Rates[0]));
 		}
 
-		class CUDASmoke final : public SmokeGPUBackend
+#include "AerodynamicsPressureCUDA.cuh"
+
+		class CUDAAerodynamics final : public AerodynamicsGPUBackend
 		{
 			Grid m_Grid = {};
 			unsigned* m_Rate = nullptr;
@@ -418,9 +420,46 @@ namespace Riemann
 			dim3 m_Blocks, m_Threads = dim3(4, 4, 4);
 			std::vector<float2> m_HostScalar;
 			mutable std::vector<float4> m_HostVelocity;
+			PressureBuffer<int> m_Rows, m_Cells, m_Lookup;
+			PressureBuffer<AerodynamicsPressureEntry> m_RowEntries, m_CellEntries;
+			PressureBuffer<AerodynamicsPressureFace> m_Faces;
+			PressureBuffer<float> m_Response, m_Product;
+			PressureBuffer<float4> m_State, m_Next, m_Partials, m_Control;
 
 		  public:
-			~CUDASmoke()
+			bool ProjectSurfaceMass(const AerodynamicsPressureSystem& S, std::vector<float>& Response) override
+			{
+				const int Rows = (int)S.RowOffsets.size() - 1, Count = (int)m_Count, Groups = (Count + 255) / 256;
+				std::vector<int> CellOffsets(Count + 1, 0);
+				for (size_t I = 0; I < S.CellIndices.size(); ++I) CellOffsets[S.CellIndices[I] + 1] = S.CellOffsets[I + 1] - S.CellOffsets[I];
+				for (int I = 1; I <= Count; ++I) CellOffsets[I] += CellOffsets[I - 1];
+				if (!m_Rows.Upload(S.RowOffsets.size(), S.RowOffsets.data()) || !m_Cells.Upload(CellOffsets.size(), CellOffsets.data())
+					|| !m_RowEntries.Upload(S.RowEntries.size(), S.RowEntries.data()) || !m_CellEntries.Upload(S.CellEntries.size(), S.CellEntries.data())
+					|| !m_Faces.Upload(S.Faces.size(), S.Faces.data()) || !m_Lookup.Upload(Count * 3) || !m_Response.Upload(Rows) || !m_Product.Upload(Count)
+					|| !m_State.Upload(Count) || !m_Next.Upload(Count) || !m_Partials.Upload(Groups) || !m_Control.Upload(1)) return false;
+				PressureData D{ Count, Rows, (int)S.Faces.size(), Groups, m_Rows.Data, m_Cells.Data, m_Lookup.Data,
+					m_RowEntries.Data, m_CellEntries.Data, m_Faces.Data, m_Response.Data, m_Product.Data, m_State.Data, m_Next.Data, m_Partials.Data, m_Control.Data };
+				if (cudaMemset(D.Lookup, 0xff, Count * 3 * sizeof(int)) != cudaSuccess) return false;
+				PressureLookup<<<std::max(1, (D.FaceCount + 255) / 256), 256>>>(D);
+				PressureResponse<<<(Rows + 255) / 256, 256>>>(m_Grid, D, 0); PressureInitialize<<<Groups, 256>>>(m_Grid, D);
+				for (int I = 0; I < std::max(80, m_Iterations * 2); ++I)
+				{
+					PressureResponse<<<(Rows + 255) / 256, 256>>>(m_Grid, D, 1); PressureProduct<<<Groups, 256>>>(m_Grid, D);
+					PressureDirectionReduction<<<Groups, 256>>>(D); PressureStepLength<<<1, 256>>>(D, I == 0);
+					PressureResidual<<<Groups, 256>>>(D); PressureRatio<<<1, 256>>>(D); PressureDirection<<<Groups, 256>>>(D);
+					if ((I + 1) % 16 == 0)
+					{
+						float4 C; if (cudaMemcpy(&C, D.Control, sizeof(C), cudaMemcpyDeviceToHost) != cudaSuccess || !std::isfinite(C.w)) return false;
+						if (C.w <= C.z) break;
+					}
+				}
+				PressureResponse<<<(Rows + 255) / 256, 256>>>(m_Grid, D, 2); PressureApply<<<Groups, 256>>>(m_Grid, D);
+				std::swap(m_Grid.V, m_Grid.VOut); Response.resize(Rows);
+				if (cudaGetLastError() != cudaSuccess || cudaMemcpy(Response.data(), D.Response, Rows * sizeof(float), cudaMemcpyDeviceToHost) != cudaSuccess) return false;
+				for (float R : Response) if (!std::isfinite(R)) return false;
+				return true;
+			}
+			~CUDAAerodynamics()
 			{
 				cudaFree(m_Grid.V);
 				cudaFree(m_Grid.VOut);
@@ -435,7 +474,7 @@ namespace Riemann
 				cudaFree(m_Grid.Emitters);
 				cudaFree(m_Rate);
 			}
-			bool Initialize(const SmokeSimulationSettings& S, const std::vector<unsigned char>& Solid)
+			bool Initialize(const AerodynamicsSimulationSettings& S, const std::vector<unsigned char>& Solid)
 			{
 				int Devices = 0;
 				if (cudaGetDeviceCount(&Devices) != cudaSuccess || Devices == 0)
@@ -450,7 +489,7 @@ namespace Riemann
 				m_Grid.Buoyancy = S.Buoyancy;
 				const int ShortAxis = std::min(S.Resolution.x, std::min(S.Resolution.y, S.Resolution.z));
 				m_Grid.Relaxation = std::max(1.75f, std::min(1.93f, 2.0f / (1.0f + std::sin(3.14159265f / ShortAxis))));
-				m_Grid.Weight = S.SmokeWeight;
+				m_Grid.Weight = S.TracerWeight;
 				m_Grid.Vorticity = S.Vorticity;
 				m_Grid.Dissipation = S.DensityDissipation;
 				m_Grid.Cooling = S.Cooling;
@@ -473,7 +512,7 @@ namespace Riemann
 				if (!S.Emitters.empty())
 				{
 					std::vector<Emitter> Sources;
-					for (const SmokeEmitter& E : S.Emitters)
+					for (const AerodynamicsEmitter& E : S.Emitters)
 						Sources.push_back({make_float4(E.Position.x, E.Position.y, E.Position.z, E.Radius),
 						                   make_float4(E.Velocity.x, E.Velocity.y, E.Velocity.z, 0),
 						                   make_float4(E.Density, E.Temperature, 0, 0)});
@@ -488,7 +527,7 @@ namespace Riemann
 				Reset();
 				return cudaGetLastError() == cudaSuccess;
 			}
-			bool UpdateObstacles(const std::vector<unsigned char>& Solid, const std::vector<Vector3>& Velocity) override
+			bool UpdateObstacles(const std::vector<unsigned char>& Solid, const std::vector<Vector3>& Velocity, const AerodynamicsGridRegion*) override
 			{
 				for (size_t I = 0; I < m_Count; ++I)
 				{
@@ -513,7 +552,7 @@ namespace Riemann
 				cudaMemset(m_Grid.Forward, 0, m_Count * sizeof(float2));
 				m_MaxRate = 0;
 			}
-			void Step(float Dt, float Time) override
+			void Step(float Dt, float Time, bool Transport, bool ProjectPressure) override
 			{
 				m_Grid.Dt = Dt;
 				m_Grid.Time = Time;
@@ -527,11 +566,18 @@ namespace Riemann
 				std::swap(m_Grid.V, m_Grid.VOut);
 				Divergence<<<m_Blocks, m_Threads>>>(m_Grid);
 				cudaMemset(m_Grid.Pressure, 0, m_Count * sizeof(float));
-				for (int I = 0; I < m_Iterations; ++I)
-					for (int Parity = 0; Parity < 2; ++Parity)
-						Pressure<<<m_Blocks, m_Threads>>>(m_Grid, Parity);
-				Project<<<m_Blocks, m_Threads>>>(m_Grid);
-				std::swap(m_Grid.V, m_Grid.VOut);
+				if (ProjectPressure)
+				{
+					for (int I = 0; I < m_Iterations; ++I)
+						for (int Parity = 0; Parity < 2; ++Parity)
+							Pressure<<<m_Blocks, m_Threads>>>(m_Grid, Parity);
+					Project<<<m_Blocks, m_Threads>>>(m_Grid);
+					std::swap(m_Grid.V, m_Grid.VOut);
+				}
+				if (Transport) TransportScalars();
+			}
+			void TransportScalars() override
+			{
 				AdvectScalar<<<m_Blocks, m_Threads>>>(m_Grid);
 				CorrectScalar<<<m_Blocks, m_Threads>>>(m_Grid);
 				std::swap(m_Grid.S, m_Grid.SOut);
@@ -577,10 +623,10 @@ namespace Riemann
 		};
 	} // namespace
 
-	std::unique_ptr<SmokeGPUBackend> SmokeGPUBackend::CreateCUDA(const SmokeSimulationSettings& Settings,
+	std::unique_ptr<AerodynamicsGPUBackend> AerodynamicsGPUBackend::CreateCUDA(const AerodynamicsSimulationSettings& Settings,
 	                                                             const std::vector<unsigned char>& Solid)
 	{
-		std::unique_ptr<CUDASmoke> Backend(new CUDASmoke());
+		std::unique_ptr<CUDAAerodynamics> Backend(new CUDAAerodynamics());
 		if (!Backend->Initialize(Settings, Solid))
 			return nullptr;
 		return std::move(Backend);

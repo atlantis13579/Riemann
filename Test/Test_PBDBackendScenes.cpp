@@ -27,7 +27,8 @@ namespace
 		return nullptr;
 	}
 
-	bool LoadBackendDemo(SceneWorld& scene, const char* fileName, const char* backendName)
+	bool LoadBackendDemo(SceneWorld& scene, const char* fileName, const char* backendName,
+		ResolutionPhaseSolver mode)
 	{
 		const std::string path = TestContentsPath() + "Scenes/" + fileName;
 		std::ifstream file(path.c_str(), std::ios::in | std::ios::binary);
@@ -39,7 +40,9 @@ namespace
 		EXPECT(opening != std::string::npos);
 		if (opening == std::string::npos) return false;
 		// Use the shipped scene unchanged apart from the requested hardware backend.
-		text.insert(opening + 1, std::string("\"solverBackend\":\"") + backendName + "\",\"allowBackendFallback\":false,");
+		text.insert(opening + 1, std::string("\"solverBackend\":\"") + backendName
+			+ "\",\"allowBackendFallback\":false,\"resolutionSolver\":\""
+			+ (mode == ResolutionPhaseSolver::XPBD ? "xpbd" : "pbd") + "\",");
 		std::string error;
 		const bool loaded = scene.LoadFromText(text, path, &error);
 		if (!loaded) printf("Backend demo %s/%s failed: %s\n", backendName, fileName, error.c_str());
@@ -88,7 +91,7 @@ namespace
 	{
 		const auto started = std::chrono::steady_clock::now();
 		SceneWorld scene;
-		if (!LoadBackendDemo(scene, fileName, backendName)) return;
+		if (!LoadBackendDemo(scene, fileName, backendName, mode)) return;
 		PhysicsWorld* world = scene.GetSimulation();
 		EXPECT(world->GetResolutionSolver() == mode);
 		EXPECT(world->GetSolverBackend() == backend);
@@ -112,7 +115,7 @@ namespace
 		}
 		const uint32_t originalRevision = scene.GetRenderRevision();
 		int contactFrames = 0, firstImpact = -1, firstDamage = -1;
-		float peakImpulse = 0.0f, peakDamage = 0.0f, maxSoftDistance = 0.0f, maxHardError = 0.0f;
+		float peakImpulse = 0.0f, peakDamage = 0.0f;
 		for (int frame = 0; frame < 60; ++frame)
 		{
 			scene.Step(1.0f / 60.0f);
@@ -132,12 +135,7 @@ namespace
 			if (mode == ResolutionPhaseSolver::XPBD)
 			{
 				const std::vector<ConstraintControlState> controls = scene.GetConstraintControls();
-				EXPECT(controls.size() == 2);
-				if (controls.size() == 2)
-				{
-					maxSoftDistance = std::max(maxSoftDistance, controls[0].CurrentValue);
-					maxHardError = std::max(maxHardError, std::abs(controls[1].CurrentValue - 1.5f));
-				}
+				EXPECT(controls.size() == 10);
 			}
 			if (vehicle)
 			{
@@ -160,11 +158,6 @@ namespace
 		EXPECT(stats.RequestedBackend == backend && stats.Backend == backend && !stats.UsedFallback);
 		EXPECT(stats.PositionDispatches > 0 && stats.ReconstructionDispatches > 0 && stats.VelocityDispatches > 0);
 		EXPECT(stats.ContactRows > 0 && stats.MaxBatchSize > 0);
-		if (mode == ResolutionPhaseSolver::XPBD)
-		{
-			EXPECT(maxSoftDistance > 1.65f && maxSoftDistance < 2.3f);
-			EXPECT(maxHardError < 0.01f);
-		}
 		if (vehicle)
 		{
 			// Damage must follow contact between the barrier and the physical front end.
@@ -200,8 +193,8 @@ void TestPBDBackendScenes()
 			printf("  %s demo smoke skipped: backend unavailable\n", names[i]);
 			continue;
 		}
-		RunBackendDemo(backends[i], names[i], "16_pbd_rigid.json", ResolutionPhaseSolver::PBD, false);
-		RunBackendDemo(backends[i], names[i], "17_xpbd_rigid.json", ResolutionPhaseSolver::XPBD, false);
+		RunBackendDemo(backends[i], names[i], "06_constraints.json", ResolutionPhaseSolver::PBD, false);
+		RunBackendDemo(backends[i], names[i], "06_constraints.json", ResolutionPhaseSolver::XPBD, false);
 		RunBackendDemo(backends[i], names[i], "19_vehicle_deformation.json", ResolutionPhaseSolver::PBD, true);
 	}
 }

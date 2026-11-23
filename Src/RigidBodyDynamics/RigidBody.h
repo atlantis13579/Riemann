@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <cstring>
 #include <unordered_set>
 #include <vector>
 #include "../Collision/GeometryAggregate.h"
@@ -90,6 +91,10 @@ namespace Riemann
 		uint64_t		FrameId;
 		bool			Moved;
 		bool			MovingRigid;
+		// Bodyless surface and field proxies participate in the shared broad-phase filter.
+		bool			NonRigid = false;
+		// Extra travel reserved by the world for reuse of one frame's candidates.
+		float FrameMotion = 0.0f;
 	};
 
 	struct GeometryWorldStateSpan

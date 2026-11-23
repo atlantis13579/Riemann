@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <functional>
 #include <vector>
 #include "../Maths/Transform.h"
 #include "../LinearSystem/DenseMatrix.h"
@@ -65,6 +66,7 @@ namespace Riemann
 	{
 	public:
 		FeatherstoneSolver(const std::vector<RagdollLinkSettings>& Links, const FeatherstoneSettings& Settings = FeatherstoneSettings());
+		virtual ~FeatherstoneSolver() = default;
 		size_t GetLinkCount() const { return m_Links.size(); }
 		int GetDofCount() const { return (int)m_Velocity.size(); }
 		int GetLinkDofCount(size_t Index) const;
@@ -83,9 +85,9 @@ namespace Riemann
 		RagdollMatrix ComputeMassMatrix() const;
 		std::vector<double> ComputeGeneralizedForce(const std::vector<SpatialVector>& WorldWrenches) const;
 		std::vector<double> ComputeBiasForce(const Vector3& Gravity = Vector3::Zero()) const;
-		std::vector<double> ComputeAcceleration(const std::vector<double>& Torque, const Vector3& Gravity,
+		virtual std::vector<double> ComputeAcceleration(const std::vector<double>& Torque, const Vector3& Gravity,
 			const std::vector<SpatialVector>& ExternalWrenches = {});
-		std::vector<double> ComputeImpulseResponse(const std::vector<SpatialVector>& LinkImpulses,
+		virtual std::vector<double> ComputeImpulseResponse(const std::vector<SpatialVector>& LinkImpulses,
 			const std::vector<double>& JointImpulses = {});
 		std::vector<double> InverseDynamics(const std::vector<double>& Acceleration, const Vector3& Gravity,
 			const std::vector<SpatialVector>& ExternalWrenches = {}) const;
@@ -95,7 +97,14 @@ namespace Riemann
 		double GetPotentialEnergy(const Vector3& Gravity) const;
 		SpatialVector GetMomentum() const;
 		size_t GetFactorizationCount() const { return m_FactorizationCount; }
+	protected:
+		void VisitMassTriangle(const std::function<void(int, int, double)>& Entry) const;
+		void ValidateVector(const std::vector<double>& Value) const;
+		FeatherstoneSettings m_Settings;
+		size_t m_ConfigurationRevision = 0;
+		size_t m_FactorizationCount = 0;
 	private:
+		bool m_FactorizationValid = false;
 		struct LinkCache
 		{
 			Transform World;
@@ -109,16 +118,12 @@ namespace Riemann
 		void Factorize();
 		std::vector<double> Solve(const std::vector<double>& GeneralizedForce, const Vector3& Gravity,
 			const std::vector<SpatialVector>& ExternalWrenches, bool IncludeBias);
-		void ValidateVector(const std::vector<double>& Value) const;
 		void ValidateWrenches(const std::vector<SpatialVector>& Value) const;
 		std::vector<RagdollLinkSettings> m_Links;
-		FeatherstoneSettings m_Settings;
 		std::vector<RagdollConfiguration> m_Configuration;
 		std::vector<double> m_Velocity;
 		std::vector<int> m_Offsets;
 		std::vector<LinkCache> m_Cache;
 		std::vector<SpatialVector> m_WorkForce, m_WorkAcceleration, m_WorkJoint;
-		bool m_FactorizationValid = false;
-		size_t m_FactorizationCount = 0;
 	};
 }

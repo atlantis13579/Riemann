@@ -14,7 +14,7 @@
 #include "../Maths/Maths.h"
 #include "DynamicMesh.h"
 #include "SparseOctree.h"
-#include "SparseSpatialHash.h"
+#include "SpatialHashSparse.h"
 #include "WindingNumber.h"
 
 namespace Riemann
@@ -2383,7 +2383,7 @@ namespace Riemann
 				int OtherMeshIdx = 1 - MeshIdx;
 				DynamicMesh& OtherMesh = *CutMesh[OtherMeshIdx];
 
-				SparseSpatialHash3<int> OtherMeshPointHash(OtherMesh.GetBounds().MaxDim() / 64, 1024);
+				SpatialHashSparse3<int> OtherMeshPointHash(OtherMesh.GetBounds().MaxDim() / 64, 1024);
 				for (int BoundaryVID : PossUnmatchedBdryVerts[OtherMeshIdx])
 				{
 					OtherMeshPointHash.Insert(OtherMesh.GetVertex(BoundaryVID), BoundaryVID);

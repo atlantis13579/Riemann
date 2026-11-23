@@ -1,48 +1,5 @@
 #include "../Modules/Vehicle/VehicleDynamics.h"
-#include "../Modules/CharacterController/CharacterController.h"
-/*
-Physics architecture and implementation sequence
-----------------------------------------------
-The world owns lifetime, stepping and the shared collision policy; geometry owns
-shape/filter data; narrow phase owns contacts; solvers own impulses and material
-response. Persistent contacts use shape-local anchors and generation-checked
-identities. A pose change refreshes anchors, whereas a topology/policy change
-invalidates them. Simulation callbacks must not become a second collision path.
-
-The following milestones cover the complete physics extension objective. Each
-milestone is validated on existing scenes and committed locally before continuing.
-Numbers refer to the objective, not to a claim that a feature is implemented.
-
-M1 (1, 2): persistent manifolds and SI warm starting; retain GJK/EPA as a selectable
-    reference. Share anchor matching/reduction code, but keep geometric caches
-    and solver impulse caches independently owned so solver switching is safe.
-M2 (3, 5, 10, 13): triangle/terrain patches, internal edges, shared query/simulation/
-    CCD filtering, scale-aware contact/rest offsets and runtime SDF collision.
-M3 (4, 6, 7, 8, 11, 12): one contact/joint graph, coordinated iterations, friction
-    anchors, drives, reaction/break events, temporal/shock stabilization and island
-    sleep/wake. SI/LCP and PBD/XPBD remain alternative numerical routes.
-M4 (9, 14, 15): CCD time-of-impact continuation, character sweep/slide/steps, and
-    wheel/suspension/tire/drivetrain vehicles. These consume M2 queries and M3
-    reactions; visual vehicle deformation remains a separate attachment.
-M5 (16, 17, 18): reduced-coordinate articulated dynamics, mechanism/tendon/mimic
-    coupling and dynamics queries, then driven/blended/recovering ragdolls.
-M6 (19, 20, 21, 22, 25): arbitrary cloth meshes and constitutive constraints,
-    continuous/self/inter-object particle collision, two-way deformable contacts
-    and barycentric attachments, tetrahedral materials/embedding, then strands.
-    Cloth, soft bodies and strands share collision/attachment services, while
-    their stretch, bending, twist and volume models remain independently usable.
-M7 (23, 24): authored destruction/caching/events and composable masked fields.
-    Fields evaluate spatial data and issue commands; they do not own body state.
-
-M4, M5 and M6 are independent consumers after the common collision/constraint
-contracts stabilize. M7 fields can develop independently, but fracture commands
-and playback must respect the same world ownership and cache invalidation rules.
-Demo switches compare old/new routes without new asset files. Asset-dependent
-groom/character authoring gets a specific TODO; procedural existing-scene coverage
-must still exercise the runtime algorithm. Algorithm explanations and references
-belong beside implementations. All numerical policy lives in named settings.
-*/
-
+#include "../Modules/Robotics/ArticulatedRobotController.h"
 #include <assert.h>
 #include <algorithm>
 #include <cmath>
@@ -81,9 +38,22 @@ belong beside implementations. All numerical policy lives in named settings.
 #include "../Deformation/DeformableBody.h"
 #include "../Deformation/StrandSystem.h"
 #include "../Deformation/Cloth.h"
+#include "../Fluid/AerodynamicsSimulation.h"
+#include "../Fluid/AerodynamicsRigidCoupling.h"
 
 namespace Riemann
 {
+	struct PhysicsWorld::FrameCollisionData : BroadPhaseResult
+	{
+		bool Built = false, ForcesReady = false;
+		std::vector<const GeometryWorldState*> Pointers;
+		std::vector<OverlapPair> Contacts, Triggers;
+		std::vector<int> Indices;
+		std::vector<GeometryHandle> Registered;
+		std::vector<float> ProjectionTravel;
+		std::vector<Box3> ContactBounds;
+		float Dt = 0;
+	};
 	namespace
 	{
 		void CreateResolutionSolvers(ResolutionPhaseSolver Solver, SolverBackend Backend, bool AllowFallback,
@@ -250,6 +220,7 @@ namespace Riemann
 		m_OnJointBreak = param.onJointBreak;
 		m_OnTrigger = param.onTrigger ? param.onTrigger : OnTriggerCallback(DefaultOnTrigger);
 		m_Fields.push_back(ForceField::CreateGrivityField(param.gravityAcc));
+		m_GravityAcceleration = param.gravityAcc;
 		m_PhysicsFields.reset(new PhysicsFieldSystem(*this));
 		m_Jobsystem = new JobSystem;
 		if (param.workerThreads != 0)
@@ -266,13 +237,14 @@ namespace Riemann
 
 	PhysicsWorld::~PhysicsWorld()
 	{
+		RemoveAerodynamics();
 		for (auto* Strands : m_Strands) delete Strands;
 		m_Strands.clear();
 		while (!m_DestructionPlaybacks.empty()) m_DestructionPlaybacks.back()->Detach();
 		while (!m_PhysicalAnimations.empty()) RemovePhysicalAnimation(m_PhysicalAnimations.back());
 		while (!m_ReducedRagdolls.empty()) RemoveRagdoll(m_ReducedRagdolls.back());
 		while (!m_Vehicles.empty()) RemoveVehicle(m_Vehicles.back());
-		while (!m_Characters.empty()) RemoveCharacterController(m_Characters.back());
+		while (!m_RobotControllers.empty()) RemoveRobotController(m_RobotControllers.back());
 		for (Ragdoll* RagdollInstance : m_Ragdolls)
 		{
 			delete RagdollInstance;
@@ -365,6 +337,10 @@ namespace Riemann
 	{
 		if (m_SimulationInProgress) throw std::logic_error("Physics world stepping is not reentrant");
 		if (!std::isfinite(Dt) || Dt <= 0.0f) return;
+		if (!m_FrameCollisions) m_FrameCollisions.reset(new FrameCollisionData());
+		m_FrameCollisions->Built = false;
+		m_FrameCollisions->ForcesReady = false;
+		m_FrameCollisions->Dt = Dt;
 		bool CollisionPolicyChanged = false;
 		for (GeometryWorldRecord& Record : m_GeometryWorldRecords)
 		{
@@ -378,7 +354,7 @@ namespace Riemann
 			}
 		}
 		if (CollisionPolicyChanged) RefreshCollisionFiltering();
-		const int Count = std::max(m_TemporalSubsteps.Enabled ? m_TemporalSubsteps.Substeps : 1, DeformableCouplingSubsteps());
+		const int Count = std::max(AerodynamicsSubsteps(Dt), std::max(m_TemporalSubsteps.Enabled ? m_TemporalSubsteps.Substeps : 1, DeformableCouplingSubsteps()));
 		const float StepDt = Dt / Count;
 		if (!(StepDt > 0)) return;
 		++m_Clock.tick;
@@ -388,7 +364,7 @@ namespace Riemann
 		m_PhysicsFields->BeginFrame();
 		for (auto* Strands : m_Strands) Strands->BeginWorldFrame(Dt);
 		m_SimulationInProgress = true;
-		m_DeformableCouplingActive = !m_DeformableRigidAttachments.empty() || HasDeformableRigidContacts();
+		m_DeformableCouplingActive = !m_DeformableRigidAttachments.empty() || HasDeformableRigidContacts() || HasClothRigidCoupling();
 		if (Count > 1) for (auto* Joint : m_Constraints) if (Joint) Joint->BeginFrame(Dt);
 		auto RestoreDeferredLoads = [&]()
 		{
@@ -417,7 +393,7 @@ namespace Riemann
 				m_NPhase->SetContactGeneration(m_ContactGeneration, StepDt);
 				m_NPhase->BeginFrame(m_SolverFrame);
 				SimulateST(StepDt);
-				for (auto* Character : m_Characters) Character->Simulate(StepDt);
+				for (RobotController* Character : m_RobotControllers) Character->Simulate(StepDt);
 				FinishIslandSleeping(StepDt);
 				m_PhysicsFields->FinishSubstep(StepDt);
 				for (auto* Strands : m_Strands) Strands->SimulateWorldStep(StepDt);
@@ -463,8 +439,8 @@ namespace Riemann
 	   Smaller physical steps update contacts, inertia, forces and joint geometry
 	   more frequently; more iterations reduce the residual of a fixed step. See
 	   Macklin et al., "Small Steps in Physics Simulation" (SCA 2019).
-	   This route performs full collision detection on each substep. It is not a
-	   cached-anchor TGS implementation, and its cost must be measured accordingly.
+	   Broad phase runs once per public frame. Substeps and position iterations
+	   refresh narrow-phase contacts using that shared candidate set.
 
 	   Simulate(Dt) advances one public clock tick. Solver caches use a separate,
 	   monotonically increasing substep id so warm starting never replays a load
@@ -513,7 +489,7 @@ namespace Riemann
 	{
 		if (m_SimulationInProgress && m_DeformableCouplingActive) throw std::logic_error("Edit coupled world support settings between steps");
 		if (!Settings.IsValid()) throw std::invalid_argument("Invalid support stabilization settings");
-		if ((!m_DeformableRigidAttachments.empty() || HasDeformableRigidContacts()) && Settings.Enabled) throw std::invalid_argument("Support projection is incompatible with coupled deformables");
+		if ((!m_DeformableRigidAttachments.empty() || HasDeformableRigidContacts() || HasClothRigidCoupling()) && Settings.Enabled) throw std::invalid_argument("Support projection is incompatible with coupled deformables");
 		if (!m_ReducedRagdolls.empty() && Settings.Enabled) throw std::invalid_argument("Support projection is not available for reduced-coordinate ragdolls");
 		m_SupportStabilization = Settings;
 		if (m_Solver) m_Solver->ResetState();
@@ -528,13 +504,7 @@ namespace Riemann
 		std::vector<Geometry*> Geometries;
 		GetActiveGeometryWorldStates(&States, &Geometries);
 		const GeometryWorldStateSpan Span(States.data(), States.size());
-		std::vector<OverlapPair> Overlaps;
-		m_BPhase->ProduceOverlaps(Span, &Overlaps);
-		Overlaps.erase(std::remove_if(Overlaps.begin(), Overlaps.end(), [&](const OverlapPair& Pair)
-		{
-			auto* A = Geometries[Pair.index1]; auto* B = Geometries[Pair.index2];
-			return A->IsTriggerEnabled() || B->IsTriggerEnabled() || !A->IsSimulationEnabled() || !B->IsSimulationEnabled();
-		}), Overlaps.end());
+		const auto& Overlaps = GetRigidCollisionPairs(Span);
 		std::vector<ContactManifold*> Contacts;
 		if (!Overlaps.empty()) m_NPhase->CollisionDetection(Span, Overlaps, &Contacts);
 		TrackSleepContacts(Geometries, Contacts);
@@ -641,7 +611,7 @@ namespace Riemann
 			if (ErrorMessage) *ErrorMessage = "Change coupled world solvers between steps";
 			return false;
 		}
-		if ((!m_DeformableRigidAttachments.empty() || HasDeformableRigidContacts()) && Solver != ResolutionPhaseSolver::PBD && Solver != ResolutionPhaseSolver::XPBD)
+		if ((!m_DeformableRigidAttachments.empty() || HasDeformableRigidContacts() || HasClothRigidCoupling()) && Solver != ResolutionPhaseSolver::PBD && Solver != ResolutionPhaseSolver::XPBD)
 		{
 			if (ErrorMessage) *ErrorMessage = "Rigid deformable coupling currently requires PBD/XPBD";
 			return false;
@@ -809,7 +779,7 @@ namespace Riemann
 		while (!m_PhysicalAnimations.empty()) RemovePhysicalAnimation(m_PhysicalAnimations.back());
 		while (!m_ReducedRagdolls.empty()) RemoveRagdoll(m_ReducedRagdolls.back());
 		while (!m_Vehicles.empty()) RemoveVehicle(m_Vehicles.back());
-		while (!m_Characters.empty()) RemoveCharacterController(m_Characters.back());
+		while (!m_RobotControllers.empty()) RemoveRobotController(m_RobotControllers.back());
 		m_IslandSleeping.Reset();
 		m_NPhase->ResetState();
 		if (m_Solver)
@@ -818,6 +788,7 @@ namespace Riemann
 		}
 		if (m_PositionSolver) m_PositionSolver->ResetState();
 
+		RemoveAerodynamics();
 		// The gravity field is permanent; additional fields belong to the cleared scene.
 		for (size_t FieldIndex = 1; FieldIndex < m_Fields.size(); ++FieldIndex)
 		{
@@ -1010,6 +981,7 @@ namespace Riemann
 		GeometryWorldState State;
 		State.Handle = Handle;
 		State.Geom = Object;
+		State.NonRigid = record->State.NonRigid;
 		State.FrameId = FrameId;
 		State.WorldBounds = Box3::Empty();
 
@@ -1032,7 +1004,7 @@ namespace Riemann
 			State.BodyToWorld = Transform::Identity();
 			State.ShapeToWorld = *Object->GetTransform();
 			State.WorldBounds = Object->GetBounds();
-			State.MovingRigid = false;
+			State.MovingRigid = State.NonRigid;
 		}
 
 		if (m_IslandSleeping.GetSettings().Enabled && m_IslandSleeping.IsActive(State.Body)) State.MovingRigid = true;
@@ -1078,6 +1050,26 @@ namespace Riemann
 		{
 			m_GeometryWorldStates.push_back(state);
 		}
+		if (m_SimulationInProgress && m_FrameCollisions && m_FrameCollisions->Built)
+		{
+			auto& Frame = *m_FrameCollisions;
+			Frame.Registered.resize(m_GeometryWorldRecords.size());
+			if (Frame.Registered[State.Handle.Index] != State.Handle)
+			{
+				// Playback/fracture can register geometry after the spatial pass. A new
+				// registration conservatively joins the existing frame candidate set;
+				// generation checks discard removed shapes without another spatial search.
+				const int Next = (int)Frame.States.size();
+				const size_t Begin = Frame.Pairs.size();
+				for (int I = 0; I < Next; ++I)
+				{
+					const auto* Other = GetGeometryWorldRecord(Frame.States[I].Handle);
+					if (Other && BroadPhase::AllowsPair(State, Other->State, GetCollisionFilter())) Frame.Pairs.emplace_back(I, Next);
+				}
+				Frame.States.push_back(State); Frame.Registered[State.Handle.Index] = State.Handle;
+				Frame.DispatchPairs(Begin);
+			}
+		}
 	}
 
 	void PhysicsWorld::UpdateGeometryWorldStates(const std::vector<Geometry*>& Objects)
@@ -1122,6 +1114,8 @@ namespace Riemann
 			record.State.Body->SetGeometryHandle(record.State.Body->FindGeometryIndex(record.State.Geom), GeometryHandle());
 		}
 
+		if (m_FrameCollisions) for (auto& Cached : m_FrameCollisions->States)
+			if (Cached.Handle == Handle) { Cached.Geom = nullptr; Cached.Body = nullptr; break; }
 		record.State = GeometryWorldState();
 		record.Active = false;
 		record.HasState = false;
@@ -1156,6 +1150,212 @@ namespace Riemann
 				return;
 			}
 		}
+	}
+
+	void PhysicsWorld::PrepareFrameCollisionPairs()
+	{
+		auto& Frame = *m_FrameCollisions;
+		if (Frame.Built) return;
+		Frame.Clear(); Frame.Pointers.clear();
+		Frame.Contacts.clear(); Frame.Triggers.clear();
+		UpdateGeometryWorldStates();
+		const float Dt = Frame.Dt;
+		// Temporal substeps can transfer momentum to an initially stationary body.
+		// Reserve travel from the frame's kinetic energy as well as its own motion.
+		double TwiceEnergy = 0;
+		if (m_StepInfo.SubstepCount > 1) for (const auto* B : m_DynamicBodies) if (B->InvMass > 0)
+		{
+			const float Acceleration = Frame.ForcesReady ? B->ExtForce.Length() * B->InvMass : (B->DisableGravity ? 0 : m_GravityAcceleration.Length());
+			const float Speed = B->V.Length() + Acceleration * Dt;
+			TwiceEnergy += Speed * Speed / B->InvMass;
+			const Matrix3 InverseInertia = B->GetInverseInertia_WorldSpace();
+			if (InverseInertia.Invertible()) TwiceEnergy += std::max(0.0f, B->W.Dot(InverseInertia.Inverse() * B->W));
+		}
+		Frame.ProjectionTravel.assign(m_GeometryWorldRecords.size(), 0);
+		for (const auto* J : m_Constraints) if (J && J->IsEnabled())
+		{
+			auto* A = J->GetBodyA(); auto* B = J->GetBodyB();
+			if (!A || !B) continue;
+			float Travel = (A->X - B->X).Length();
+			switch (J->GetType())
+			{
+			case PositionConstraintType::Fixed:
+				Travel += (A->Q * static_cast<const FixedConstraint*>(J)->GetRelativePosition() - (B->X - A->X)).Length(); break;
+			case PositionConstraintType::Point: case PositionConstraintType::Hinge: case PositionConstraintType::Cone:
+			{
+				const auto* P = static_cast<const PointConstraint*>(J);
+				Travel += (P->GetWorldAnchorA() - P->GetWorldAnchorB()).Length(); break;
+			}
+			case PositionConstraintType::Distance:
+			{
+				const auto* D = static_cast<const DistanceConstraint*>(J); const float Current = D->GetCurrentDistance();
+				Travel += std::max(0.0f, std::max(D->GetMinDistance() - Current, Current - D->GetMaxDistance())); break;
+			}
+			case PositionConstraintType::Slider:
+			{
+				const auto* S = static_cast<const SliderConstraint*>(J); const float Current = S->GetCurrentPosition();
+				Travel += std::max(0.0f, std::max(S->GetMinDistance() - Current, Current - S->GetMaxDistance()));
+				if (S->HasActiveDrive()) Travel += std::abs(S->GetDrive().TargetPosition - Current) + std::abs(S->GetDrive().TargetVelocity) * Dt;
+				break;
+			}
+			case PositionConstraintType::SixDOF:
+				if (J->HasActiveDrive()) for (const auto& D : static_cast<const SixDOFConstraint*>(J)->GetDrives().Linear)
+					Travel += std::abs(D.TargetPosition) + std::abs(D.TargetVelocity) * Dt;
+				break;
+			case PositionConstraintType::PoseDrive:
+				if (J->HasActiveDrive())
+				{
+					const auto& D = static_cast<const PoseDriveConstraint*>(J)->GetDrive();
+					Travel += (A->X + A->Q * D.Target.pos - B->X).Length() + D.LinearVelocityTarget.Length() * Dt;
+				}
+				break;
+			}
+			for (auto* Body : { A, B }) for (size_t I = 0; I < Body->mGeometryHandles.size(); ++I)
+			{
+				const auto H = Body->mGeometryHandles[I]; if (!IsValidGeometryHandle(H)) continue;
+				const auto& S = GetGeometryWorldRecord(H)->State;
+				const float Radius = (S.ShapeToWorld.pos - Body->X).Length() + ContactGeneration::ShapeScale(S.Geom, m_ContactGeneration);
+				Frame.ProjectionTravel[H.Index] = std::max(Frame.ProjectionTravel[H.Index], Travel + 2 * Radius);
+			}
+		}
+		const bool CanWakeRigid = m_DeformableCouplingActive || !m_KinematicBodies.empty()
+			|| std::any_of(m_DynamicBodies.begin(), m_DynamicBodies.end(), [](const RigidBodyDynamic* B) { return !B->Sleeping; });
+		for (const auto* S : m_GeometryWorldStates)
+		{
+			if (!S->Body || (!S->Geom->IsSimulationEnabled() && !S->Geom->IsTriggerEnabled())) continue;
+			Frame.States.push_back(*S);
+			auto& State = Frame.States.back();
+			auto* B = State.Body;
+			// Sleeping shapes may be woken by another solver later in this frame.
+			State.MovingRigid = State.MovingRigid || (CanWakeRigid && B->mRigidType == RigidType::Dynamic);
+			if (!State.MovingRigid) continue;
+			const float Radius = (State.ShapeToWorld.pos - B->X).Length() + ContactGeneration::ShapeScale(State.Geom, m_ContactGeneration);
+			State.FrameMotion = B->V.Length() * Dt + std::min(2.0f, B->W.Length() * Dt) * Radius;
+			if (TwiceEnergy > 0 && B->InvMass > 0) State.FrameMotion = std::max(State.FrameMotion, (float)std::sqrt(TwiceEnergy * B->InvMass) * Dt);
+			if (m_PositionSolver) State.FrameMotion += m_PositionSolver->GetSettings().MaxPositionCorrection;
+			if (const auto* D = B->CastDynamic())
+			{
+				State.FrameMotion += D->ExtForce.Length() * D->InvMass * (Frame.ForcesReady ? Dt * Dt : Dt * 0.5f);
+				if (Frame.ForcesReady) State.FrameMotion += (B->GetInverseInertia_WorldSpace() * D->ExtTorque).Length() * Dt * Dt * Radius;
+				else if (!D->DisableGravity) State.FrameMotion += m_GravityAcceleration.Length() * Dt * Dt;
+				if (m_AerodynamicsCoupling)
+				{
+					const auto& S = m_AerodynamicsCoupling->GetSettings();
+					State.FrameMotion += (S.MaxLinearAcceleration + S.MaxAngularAcceleration * Radius) * Dt * Dt;
+				}
+			}
+			State.FrameMotion += Frame.ProjectionTravel[State.Handle.Index];
+		}
+		auto AddProxy = [&](Geometry* G, float Motion, BroadPhaseObjectType Type, void* Owner)
+		{
+			if (!G) return;
+			const auto Handle = EnsureGeometryHandle(G);
+			GetGeometryWorldRecord(Handle)->State.NonRigid = true;
+			UpdateGeometryWorldState(Handle, m_Clock.tick);
+			Frame.States.push_back(GetGeometryWorldRecord(Handle)->State);
+			Frame.States.back().FrameMotion = Motion;
+			Frame.SetObject((int)Frame.States.size() - 1, Type, Owner);
+		};
+		// Each world-owned surface has exactly one registration. No geometry hash
+		// table, per-solver proxy population, or per-iteration candidate copy is needed.
+		for (auto* C : m_Cloths)
+		{
+			const auto& S = C->GetSettings();
+			if (!S.Collision.RigidCoupling && !S.Collision.InterCollision
+				&& !(m_Aerodynamics && m_AerodynamicsClothCoupling && S.AerodynamicsEnabled)) continue;
+			C->UpdateRenderMesh();
+			auto* G = C->GetRenderGeometry();
+			G->SetFilterData(S.Collision.FilterData);
+			G->SetContactOffsets(S.Thickness + S.Collision.ContactTolerance, 0);
+			float Motion = 0;
+			for (int I = 0; I < C->GetParticleCount(); ++I)
+			{
+				const auto& P = C->GetParticle(I);
+				Motion = std::max(Motion, P.Pinned ? (P.PinPosition - P.Position).Length() : C->GetParticleVelocity(I).Length() * Dt + S.Gravity.Length() * Dt * Dt);
+			}
+			for (const auto& A : C->m_RigidAttachments)
+			{
+				Vector3 Point = Vector3::Zero();
+				for (int I = 0; I < A.Point.Count; ++I) Point += C->GetParticle(A.Point.Indices[I]).Position * (float)A.Point.Weights[I];
+				Motion = std::max(Motion, (A.Body->BodyLocalToWorld(A.LocalAnchor) - Point).Length() + A.Body->V.Length() * Dt);
+			}
+			if (S.Wind.NormalDrag > 0 || S.Wind.TangentialDrag > 0) Motion += S.Wind.Velocity.Length() * Dt;
+			if (S.AnimationDrive.Enabled) for (size_t I = 0; I < C->m_AnimationEnd.size(); ++I)
+				Motion = std::max(Motion, (C->m_AnimationEnd[I] - C->m_Particles[I].Position).Length());
+			AddProxy(G, Motion, BroadPhaseObjectType::Cloth, C);
+		}
+		for (auto* B : m_DeformableBodies)
+		{
+			const auto& S = B->GetSettings(); B->UpdateRenderGeometry(); auto* G = B->GetRenderGeometry();
+			if (!G || (!S.Collision.RigidCollision && !S.Collision.InterCollision)) continue;
+			G->SetFilterData(S.Collision.FilterData);
+			G->SetContactOffsets(S.ParticleRadius + S.Collision.ContactTolerance, 0);
+			float Motion = 0;
+			for (const auto& P : B->GetParticles())
+				Motion = std::max(Motion, P.Pinned ? (P.PinPosition - P.Position).Length()
+					: P.Velocity.Length() * Dt + (S.Gravity + P.Force * P.InverseMass).Length() * Dt * Dt);
+			AddProxy(G, Motion, BroadPhaseObjectType::Deformable, B);
+		}
+		AddProxy(m_AerodynamicsDomain.get(), 0, BroadPhaseObjectType::Aerodynamics, m_Aerodynamics.get());
+		Frame.Registered.assign(m_GeometryWorldRecords.size(), GeometryHandle());
+		for (size_t I = 0; I < Frame.States.size(); ++I)
+		{
+			Frame.Pointers.push_back(&Frame.States[I]);
+			Frame.Registered[Frame.States[I].Handle.Index] = Frame.States[I].Handle;
+		}
+		if (m_BPhase)
+		{
+			m_BPhase->SetContactGeneration(m_ContactGeneration, Dt);
+			++m_BroadPhasePassCount;
+			m_BPhase->ProduceOverlaps(GeometryWorldStateSpan(Frame.Pointers.data(), Frame.Pointers.size()), &Frame.Pairs);
+		}
+		Frame.DispatchPairs();
+		Frame.Built = true;
+	}
+	const std::vector<OverlapPair>& PhysicsWorld::GetRigidCollisionPairs(GeometryWorldStateSpan States)
+	{
+		PrepareFrameCollisionPairs();
+		auto& Frame = *m_FrameCollisions;
+		Frame.Indices.assign(m_GeometryWorldRecords.size(), -1);
+		Frame.ContactBounds.resize(States.size());
+		for (size_t I = 0; I < States.size(); ++I)
+		{
+			Frame.Indices[States[I].Handle.Index] = (int)I;
+			Frame.ContactBounds[I] = ContactGeneration::Bounds(States[I], m_ContactGeneration, m_StepInfo.DeltaTime);
+		}
+		Frame.Contacts.clear(); Frame.Triggers.clear();
+		auto Collect = [&](const auto& Candidates)
+		{
+			for (const auto& P : Candidates)
+			{
+				const auto HA = Frame.States[P.index1].Handle, HB = Frame.States[P.index2].Handle;
+				if (!IsValidGeometryHandle(HA) || !IsValidGeometryHandle(HB)) continue;
+				const int A = Frame.Indices[HA.Index], B = Frame.Indices[HB.Index];
+				if (A < 0 || B < 0 || !BroadPhase::AllowsPair(States[A], States[B], GetCollisionFilter())) continue;
+				// Refresh contact eligibility without another spatial search.
+				if (!Frame.ContactBounds[A].Intersect(Frame.ContactBounds[B])) continue;
+				auto& Result = States[A].Geom->IsTriggerEnabled() || States[B].Geom->IsTriggerEnabled() ? Frame.Triggers : Frame.Contacts;
+				Result.emplace_back(A, B);
+			}
+		};
+		const auto Candidates = Frame.GetPairs(BroadPhasePairType::Rigid);
+		if (Candidates.Indices) Collect(Candidates);
+		else Collect(Frame.Pairs);
+		return Frame.Contacts;
+	}
+	const std::vector<OverlapPair>& PhysicsWorld::GetTriggerCollisionPairs() const
+	{
+		// GetRigidCollisionPairs refreshes both views at the same poses.
+		return m_FrameCollisions->Triggers;
+	}
+	const BroadPhaseResult& PhysicsWorld::GetCollisionCandidates()
+	{
+		// A world-owned material can also be advanced through its standalone API.
+		// Only an active PhysicsWorld frame owns a reusable candidate snapshot.
+		if (!m_FrameCollisions) m_FrameCollisions.reset(new FrameCollisionData());
+		if (!m_SimulationInProgress) { m_FrameCollisions->Built = false; m_FrameCollisions->ForcesReady = false; m_FrameCollisions->Dt = 0; }
+		PrepareFrameCollisionPairs();
+		return *m_FrameCollisions;
 	}
 
 	void PhysicsWorld::GetActiveGeometryWorldStates(std::vector<const GeometryWorldState*>* States, std::vector<Geometry*>* Objects) const
@@ -1310,7 +1510,7 @@ namespace Riemann
 	{
 		m_DeformableContactBodies.clear();
 		std::vector<DeformableRigidCollider> SoftColliders;
-		if (HasDeformableRigidContacts())
+		if (HasDeformableRigidContacts() || HasClothRigidCoupling())
 		{
 			UpdateGeometryWorldStates();
 			for (const auto& Record : m_GeometryWorldRecords) if (Record.Active && Record.State.Body && Record.State.Geom->IsSimulationEnabled() && !Record.State.Geom->IsTriggerEnabled())
@@ -1320,6 +1520,7 @@ namespace Riemann
 			}
 		}
 		for (const auto& Link : m_DeformableRigidAttachments) if (auto* Body = Link.Rigid->CastDynamic()) Body->Wakeup();
+		for (auto* C : m_Cloths) for (const auto& A : C->m_RigidAttachments) if (auto* B = A.Body->CastDynamic()) B->Wakeup();
 		if (!m_ReducedRagdolls.empty()) for (auto* Body : m_DynamicBodies)
 			if (Body->mMotionType == MorionType::Continuous) throw std::invalid_argument("Ragdoll worlds currently require discrete motion");
 		for (auto* Owner : m_ReducedRagdolls) if (m_JointDrives && Owner->HasActiveDrive()) Owner->Wakeup();
@@ -1351,7 +1552,10 @@ namespace Riemann
 			SynchronizeSceneQueries();
 			for (auto* Vehicle : m_Vehicles) Vehicle->Prepare(dt);
 		}
+		SimulateAerodynamics(dt);
 		PreIntegrate(dt);
+		m_FrameCollisions->ForcesReady = true;
+		PrepareFrameCollisionPairs();
 		for (auto* Owner : m_ReducedRagdolls) Owner->BeginStep(dt, m_JointDrives);
 		MotionIntegration::IntegrateVelocities(m_DynamicBodies, dt);
 		for (auto* Vehicle : m_Vehicles) Vehicle->Simulate(dt);
@@ -1374,27 +1578,8 @@ namespace Riemann
 		GetActiveGeometryWorldStates(&simulationStates, &geoms);
 
 		GeometryWorldStateSpan stateSpan(simulationStates.data(), simulationStates.size());
-		std::vector<OverlapPair> overlaps;
-		if (m_BPhase)
-		{
-			m_BPhase->ProduceOverlaps(stateSpan, &overlaps);
-		}
-
-		std::vector<OverlapPair> contactOverlaps;
-		std::vector<OverlapPair> triggerOverlaps;
-		for (const OverlapPair& overlap : overlaps)
-		{
-			Geometry* geomA = geoms[(size_t)overlap.index1];
-			Geometry* geomB = geoms[(size_t)overlap.index2];
-			if (geomA->IsTriggerEnabled() || geomB->IsTriggerEnabled())
-			{
-				triggerOverlaps.push_back(overlap);
-			}
-			else if (geomA->IsSimulationEnabled() && geomB->IsSimulationEnabled())
-			{
-				contactOverlaps.push_back(overlap);
-			}
-		}
+		const auto& contactOverlaps = GetRigidCollisionPairs(stateSpan);
+		const auto& triggerOverlaps = GetTriggerCollisionPairs();
 
 		std::vector<ContactManifold*> manifolds;
 		if (m_NPhase && !triggerOverlaps.empty())
@@ -1533,12 +1718,7 @@ namespace Riemann
 			std::vector<Geometry*> Geometries;
 			GetActiveGeometryWorldStates(&States, &Geometries);
 			const GeometryWorldStateSpan Span(States.data(), States.size());
-			std::vector<OverlapPair> Overlaps;
-			m_BPhase->ProduceOverlaps(Span, &Overlaps);
-			Overlaps.erase(std::remove_if(Overlaps.begin(), Overlaps.end(), [&](const OverlapPair& Pair)
-			{
-				return Geometries[Pair.index1]->IsTriggerEnabled() || Geometries[Pair.index2]->IsTriggerEnabled();
-			}), Overlaps.end());
+			const auto& Overlaps = GetRigidCollisionPairs(Span);
 			std::vector<ContactManifold*> Manifolds;
 			m_NPhase->CollisionDetection(Span, Overlaps, &Manifolds);
 			TrackSleepContacts(Geometries, Manifolds);
@@ -1568,37 +1748,34 @@ namespace Riemann
 		ResolveContinuousMotion(AllBodies, Dt);
 		m_PositionSolver->PredictPoses(Dt);
 
+		std::unique_ptr<ClothStep> ClothStage;
+		if (HasClothRigidCoupling()) ClothStage.reset(new ClothStep(m_Cloths, Colliders, GetCollisionFilter(), Dt));
 		std::unique_ptr<DeformableStep> SoftStep;
-		if (m_DeformableCouplingActive) SoftStep.reset(new DeformableStep(m_DeformableBodies, m_DeformableRigidAttachments,
+		if (m_DeformableCouplingActive && !m_DeformableBodies.empty()) SoftStep.reset(new DeformableStep(m_DeformableBodies, m_DeformableRigidAttachments,
 			Dt, m_StepInfo.FrameDeltaTime, m_StepInfo.SubstepIndex == 0, m_StepInfo.SubstepIndex + 1 == m_StepInfo.SubstepCount, Colliders, GetCollisionFilter()));
 		const PBDSolverSettings& Settings = m_PositionSolver->GetSettings();
 		const int JointIterations = m_UnifiedConstraints && !m_Constraints.empty() ? m_ConstraintIterations : 0;
 		int PositionIterations = Settings.PositionIterations;
 		if (SoftStep) for (auto* Body : m_DeformableBodies) PositionIterations = std::max(PositionIterations, Body->GetSettings().SolverIterations);
+		if (ClothStage) for (auto* C : m_Cloths) if (C->HasRigidCoupling() || C->GetSettings().Collision.InterCollision) PositionIterations = std::max(PositionIterations, C->GetSettings().SolverIterations);
 		for (int Iteration = 0; Iteration < PositionIterations; ++Iteration)
 		{
-			if (SoftStep) SoftStep->Solve();
+			if (SoftStep) SoftStep->SolveConstraints();
+			if (ClothStage) ClothStage->Solve(Iteration);
 			if (m_UnifiedConstraints) m_PositionSolver->SolveJointPositions(m_Constraints, Dt);
 			else for (PositionConstraint* Constraint : m_Constraints)
 			{
 				if (Constraint && Constraint->IsEnabled()) Constraint->SolvePosition(Dt);
 			}
-			// Refresh candidates after joint projection. Keep owned contact rows in
+			// Refresh narrow-phase contacts after joint projection. Keep owned rows in
 			// the solver because NarrowPhase reuses its manifold pool on each call.
 			UpdateGeometryWorldStates();
 			std::vector<const GeometryWorldState*> States;
 			std::vector<Geometry*> Geometries;
 			GetActiveGeometryWorldStates(&States, &Geometries);
 			const GeometryWorldStateSpan Span(States.data(), States.size());
-			std::vector<OverlapPair> Overlaps, ContactOverlaps, TriggerOverlaps;
-			if (m_BPhase) m_BPhase->ProduceOverlaps(Span, &Overlaps);
-			for (const OverlapPair& Pair : Overlaps)
-			{
-				Geometry* A = Geometries[(size_t)Pair.index1];
-				Geometry* B = Geometries[(size_t)Pair.index2];
-				if (A->IsTriggerEnabled() || B->IsTriggerEnabled()) TriggerOverlaps.push_back(Pair);
-				else if (A->IsSimulationEnabled() && B->IsSimulationEnabled()) ContactOverlaps.push_back(Pair);
-			}
+			const auto& ContactOverlaps = GetRigidCollisionPairs(Span);
+			const auto& TriggerOverlaps = GetTriggerCollisionPairs();
 			if (Iteration == 0 && m_NPhase && !TriggerOverlaps.empty())
 			{
 				std::vector<ContactManifold*> TriggerManifolds;
@@ -1612,9 +1789,17 @@ namespace Riemann
 				TrackSleepContacts(Geometries, Manifolds);
 				m_PositionSolver->AddContacts(Geometries, Manifolds);
 			}
+			if (SoftStep) SoftStep->SolveContacts(GetCollisionCandidates());
+			if (ClothStage) ClothStage->SolveContacts(GetCollisionCandidates());
 			m_PositionSolver->SolvePositions(Dt);
 		}
 		if (SoftStep) { SoftStep->Finish(); m_DeformableContactBodies = SoftStep->GetContactBodies(); SoftStep.reset(); }
+		if (ClothStage)
+		{
+			ClothStage->Finish();
+			for (auto* B : ClothStage->GetContactBodies()) m_DeformableContactBodies.push_back(B);
+			ClothStage.reset();
+		}
 		m_PositionSolver->ReconstructVelocities(Dt);
 		for (int Iteration = 0; Iteration < std::max(Settings.VelocityIterations, JointIterations); ++Iteration)
 		{
@@ -2008,7 +2193,7 @@ namespace Riemann
 		if (auto* Dynamic = Body->CastDynamic()) Dynamic->IslandSleepManaged = false;
 		for (ClothSystem* Cloth : m_Cloths)
 		{
-			if (Cloth) Cloth->RemoveColliders(Body);
+			if (Cloth) { Cloth->RemoveColliders(Body); Cloth->DetachRigidBody(Body); }
 		}
 		for (RopeSystem* Rope : m_Ropes)
 		{
@@ -2119,11 +2304,13 @@ namespace Riemann
 
 	bool PhysicsWorld::RemoveForceField(ForceField* Field)
 	{
+		if (Field == m_AerodynamicsCoupling && m_SimulationInProgress) throw std::logic_error("Edit aerodynamics between world steps");
 		const auto It = std::find(m_Fields.begin(), m_Fields.end(), Field);
 		if (It == m_Fields.end())
 		{
 			return false;
 		}
+		if (Field == m_AerodynamicsCoupling) m_AerodynamicsCoupling = nullptr;
 		delete *It;
 		m_Fields.erase(It);
 		return true;
@@ -2322,24 +2509,7 @@ namespace Riemann
 				continue;
 			}
 
-			std::vector<OverlapPair> overlaps;
-			m_BPhase->ProduceOverlaps(GeometryWorldStateSpan(states.data(), states.size()), &overlaps);
-			if (overlaps.empty())
-			{
-				continue;
-			}
-
-			std::vector<OverlapPair> contactOverlaps;
-			for (const OverlapPair& overlap : overlaps)
-			{
-				Geometry* geomA = geoms[(size_t)overlap.index1];
-				Geometry* geomB = geoms[(size_t)overlap.index2];
-				if (!geomA->IsTriggerEnabled() && !geomB->IsTriggerEnabled()
-					&& geomA->IsSimulationEnabled() && geomB->IsSimulationEnabled())
-				{
-					contactOverlaps.push_back(overlap);
-				}
-			}
+			const auto& contactOverlaps = GetRigidCollisionPairs(GeometryWorldStateSpan(states.data(), states.size()));
 			if (contactOverlaps.empty())
 			{
 				continue;
@@ -2420,15 +2590,101 @@ namespace Riemann
 			std::vector<Geometry*> Geometries;
 			GetCurrentGeometryWorldStates(&Storage, &States, &Geometries);
 			const GeometryWorldStateSpan Span(States.data(), States.size());
-			std::vector<OverlapPair> Overlaps;
-			if (m_BPhase) m_BPhase->ProduceOverlaps(Span, &Overlaps);
-			Overlaps.erase(std::remove_if(Overlaps.begin(), Overlaps.end(), [&](const OverlapPair& Pair)
-				{ return Geometries[Pair.index1]->IsTriggerEnabled() || Geometries[Pair.index2]->IsTriggerEnabled(); }), Overlaps.end());
+			const auto& Overlaps = GetRigidCollisionPairs(Span);
 			std::vector<ContactManifold*> Contacts;
 			if (m_NPhase && !Overlaps.empty()) m_NPhase->CollisionDetection(Span, Overlaps, &Contacts);
 			TrackSleepContacts(Geometries, Contacts);
 			SolveUnifiedVelocities(Geometries, Contacts, dt, true);
 		}
+	}
+
+	AerodynamicsSimulation* PhysicsWorld::CreateAerodynamics(const AerodynamicsSimulationSettings& Settings)
+	{
+		return CreateAerodynamics(Settings, AerodynamicsRigidCouplingSettings());
+	}
+	AerodynamicsSimulation* PhysicsWorld::CreateAerodynamics(const AerodynamicsSimulationSettings& Settings,
+		const AerodynamicsRigidCouplingSettings& Coupling, bool CoupleRigids, bool CoupleCloths)
+	{
+		if (m_SimulationInProgress) throw std::logic_error("Edit aerodynamics between world steps");
+		std::unique_ptr<AerodynamicsSimulation> Next(new AerodynamicsSimulation(Settings));
+		if (!Next->IsInitialized()) return nullptr;
+		std::unique_ptr<AerodynamicsRigidCoupling> Field;
+		if (CoupleRigids)
+		{
+			Field.reset(new AerodynamicsRigidCoupling(Next.get(), Coupling));
+			if (!Field->IsValid()) return nullptr;
+		}
+		RemoveAerodynamics();
+		m_Aerodynamics = std::move(Next); m_AerodynamicsClothCoupling = CoupleCloths;
+		m_AerodynamicsDomain.reset(GeometryFactory::CreateOBB((Settings.BoundsMin + Settings.BoundsMax) * 0.5f, (Settings.BoundsMax - Settings.BoundsMin) * 0.5f));
+		m_AerodynamicsDomain->SetSimulationEnabled(false); m_AerodynamicsDomain->SetQueryEnabled(false);
+		if (Field) { AddForceField(Field.get()); m_AerodynamicsCoupling = Field.release(); }
+		return m_Aerodynamics.get();
+	}
+	bool PhysicsWorld::RemoveAerodynamics()
+	{
+		if (m_SimulationInProgress) throw std::logic_error("Edit aerodynamics between world steps");
+		if (!m_Aerodynamics) return false;
+		if (m_AerodynamicsCoupling) RemoveForceField(m_AerodynamicsCoupling);
+		m_AerodynamicsCoupling = nullptr;
+		RemoveGeometryWorldState(m_AerodynamicsDomain.get()); m_AerodynamicsDomain.reset();
+		m_Aerodynamics.reset(); return true;
+	}
+	int PhysicsWorld::AerodynamicsSubsteps(float Dt) const
+	{
+		if (!m_Aerodynamics || !m_Aerodynamics->SupportsMovingObstacles()) return 1;
+		if (!m_Aerodynamics->IsInitialized()) throw std::runtime_error("Aerodynamics backend is unavailable");
+		float Step = m_Aerodynamics->GetStableTimeStep();
+		const auto H = m_Aerodynamics->GetCellSize(); float Rate = 0;
+		for (auto* B : m_DynamicBodies) for (int A = 0; A < 3; ++A) Rate = std::max(Rate, std::fabs(B->V[A]) / H[A]);
+		for (auto* C : m_Cloths) if (m_AerodynamicsClothCoupling && C->GetSettings().AerodynamicsEnabled)
+			for (int I = 0; I < C->GetParticleCount(); ++I) for (int A = 0; A < 3; ++A) Rate = std::max(Rate, std::fabs(C->GetParticleVelocity(I)[A]) / H[A]);
+		Step = std::min(Step, 0.9f / std::max(Rate, 1e-5f));
+		const double Count = std::ceil((double)Dt / Step);
+		if (!std::isfinite(Count) || Count > 4096) throw std::runtime_error("Aerodynamics world substep budget exceeded");
+		return std::max(1, (int)Count);
+	}
+	void PhysicsWorld::SimulateAerodynamics(float Dt)
+	{
+		if (!m_Aerodynamics) return;
+		const bool MovingBoundaries = m_Aerodynamics->SupportsMovingObstacles();
+		const BroadPhaseResult& Pairs = GetCollisionCandidates();
+		std::vector<Geometry*> Shapes;
+		std::vector<ClothSystem*> Cloths;
+		for (const auto& P : Pairs.GetPairs(BroadPhasePairType::Aerodynamics))
+		{
+			auto* A = Pairs.GetGeometry(P.index1); auto* B = Pairs.GetGeometry(P.index2);
+			if (!A || !B) continue;
+			auto* G = A == m_AerodynamicsDomain.get() ? B : B == m_AerodynamicsDomain.get() ? A : nullptr;
+			if (!G) continue;
+			if (m_AerodynamicsCoupling && G->GetParent<RigidBody>() && G->IsSimulationEnabled() && !G->IsTriggerEnabled()) Shapes.push_back(G);
+			const int Object = A == m_AerodynamicsDomain.get() ? P.index2 : P.index1;
+			if (MovingBoundaries && m_AerodynamicsClothCoupling && Pairs.GetObjectType(Object) == BroadPhaseObjectType::Cloth)
+			{
+				auto* C = static_cast<ClothSystem*>(Pairs.GetObjectOwner(Object));
+				if (C && C->GetSettings().AerodynamicsEnabled) Cloths.push_back(C);
+			}
+		}
+		if (!MovingBoundaries)
+		{
+			if (m_AerodynamicsCoupling && !m_AerodynamicsCoupling->Synchronize(Shapes))
+				throw std::runtime_error("Aerodynamics boundary synchronization failed");
+			m_Aerodynamics->Step(Dt); return;
+		}
+		std::vector<AerodynamicsSurfaceMesh> Surfaces;
+		for (auto* C : Cloths)
+		{
+			AerodynamicsSurfaceMesh S; S.Thickness = C->GetSettings().Thickness;
+			for (int I = 0; I < C->GetParticleCount(); ++I) { S.Positions.push_back(C->GetParticle(I).Position); S.Velocities.push_back(C->GetParticleVelocity(I)); S.InverseMasses.push_back(C->GetParticle(I).Pinned ? 0 : C->GetParticle(I).InverseMass); }
+			for (const auto& T : C->GetTopology().GetTriangles()) S.Triangles.push_back(T.Particles);
+			Surfaces.push_back(std::move(S));
+		}
+		const bool Ready = m_AerodynamicsCoupling ? m_AerodynamicsCoupling->Synchronize(Shapes, Surfaces) : m_Aerodynamics->SetMovingBoundaries({}, Surfaces);
+		if (!Ready || !m_Aerodynamics->StepSynchronized(Dt)) throw std::runtime_error("Aerodynamics failed to consume the world substep");
+		std::vector<std::vector<Vector3>> Forces;
+		if (!m_Aerodynamics->ComputeSurfaceLoads(Forces) || Forces.size() != Cloths.size()) throw std::runtime_error("Aerodynamics surface loads are unavailable");
+		for (size_t I = 0; I < Cloths.size(); ++I) for (size_t J = 0; J < Forces[I].size(); ++J)
+			Cloths[I]->ApplyParticleImpulse((int)J, Forces[I][J] * Dt);
 	}
 
 	DeformableBody* PhysicsWorld::CreateDeformableBody(const DeformableBodySettings& Settings)
@@ -2437,6 +2693,7 @@ namespace Riemann
 		if (Settings.Collision.RigidCollision && (!m_PositionSolver || m_SupportStabilization.Enabled)) throw std::invalid_argument("Rigid deformable collision requires PBD/XPBD without support projection");
 		DeformableBody* body = new DeformableBody(Settings);
 		m_DeformableBodies.push_back(body);
+		body->m_CollisionQuery = [this]() -> const BroadPhaseResult& { return GetCollisionCandidates(); };
 		return body;
 	}
 	DeformableBody* PhysicsWorld::CreateDeformableBody(const TetrahedralAsset& Asset, const DeformableBodySettings& Settings, const Transform& Pose)
@@ -2444,7 +2701,8 @@ namespace Riemann
 		if (m_SimulationInProgress && m_DeformableCouplingActive) throw std::logic_error("Create coupled deformables between steps");
 		if (Settings.Collision.RigidCollision && (!m_PositionSolver || m_SupportStabilization.Enabled)) throw std::invalid_argument("Rigid deformable collision requires PBD/XPBD without support projection");
 		std::unique_ptr<DeformableBody> Body(new DeformableBody(Settings)); Body->InitializeAsset(Asset, Pose);
-		m_DeformableBodies.push_back(Body.get()); return Body.release();
+		m_DeformableBodies.push_back(Body.get());
+		Body->m_CollisionQuery = [this]() -> const BroadPhaseResult& { return GetCollisionCandidates(); }; return Body.release();
 	}
 
 	bool PhysicsWorld::RemoveDeformableBody(DeformableBody* Body)
@@ -2454,6 +2712,7 @@ namespace Riemann
 		if (it == m_DeformableBodies.end()) return false;
 		m_DeformableRigidAttachments.erase(std::remove_if(m_DeformableRigidAttachments.begin(), m_DeformableRigidAttachments.end(),
 			[Body](const RigidDeformableAttachment& Link) { if (Link.Soft != Body) return false; --Link.Soft->m_RigidAttachmentCount; return true; }), m_DeformableRigidAttachments.end());
+		RemoveGeometryWorldState(Body->GetRenderGeometry());
 		delete *it;
 		m_DeformableBodies.erase(it);
 		return true;
@@ -2548,20 +2807,29 @@ namespace Riemann
 		m_Vehicles.erase(Found); delete Vehicle; return true;
 	}
 
-	CharacterController* PhysicsWorld::CreateCharacterController(const CharacterControllerSettings& Settings, const Vector3& Position)
+	ArticulatedRobotController* PhysicsWorld::CreateRobotController(const ArticulatedRobotSettings& Settings)
 	{
-		std::unique_ptr<CharacterController> Character(new CharacterController(*this, Settings, Position));
+		std::unique_ptr<ArticulatedRobotController> Robot(new ArticulatedRobotController(*this, Settings));
+		m_RobotControllers.push_back(Robot.get());
+		return Robot.release();
+	}
+
+	SweepRobotController* PhysicsWorld::CreateRobotController(const RobotControllerSettings& Settings, const Vector3& Position)
+	{
+		std::unique_ptr<SweepRobotController> Character(new SweepRobotController(*this, Settings, Position));
 		AddGeometryToSceneQuery(Character->GetGeometry());
-		m_Characters.push_back(Character.get());
+		m_RobotControllers.push_back(Character.get());
 		return Character.release();
 	}
 
-	bool PhysicsWorld::RemoveCharacterController(CharacterController* Character)
+	bool PhysicsWorld::RemoveRobotController(RobotController* Character)
 	{
-		const auto Found = std::find(m_Characters.begin(), m_Characters.end(), Character);
-		if (Found == m_Characters.end()) return false;
-		RemoveGeometryFromSceneQuery(Character->GetGeometry());
-		m_Characters.erase(Found); delete Character; return true;
+		const auto Found = std::find(m_RobotControllers.begin(), m_RobotControllers.end(), Character);
+		if (Found == m_RobotControllers.end())
+			return false;
+		if (Character->GetGeometry())
+			RemoveGeometryFromSceneQuery(Character->GetGeometry());
+		m_RobotControllers.erase(Found); delete Character; return true;
 	}
 
 	void PhysicsWorld::SynchronizeSceneQueries()
@@ -2575,18 +2843,22 @@ namespace Riemann
 
 	ClothSystem* PhysicsWorld::CreateCloth(const ClothSettings& Settings, const Vector3& Center, const Vector3& HorizontalAxis, const Vector3& VerticalAxis)
 	{
+		if (m_SimulationInProgress) throw std::logic_error("Create cloth between world steps");
 		ClothSystem* Cloth = new ClothSystem(Settings, Center, HorizontalAxis, VerticalAxis);
 		m_Cloths.push_back(Cloth);
+		Cloth->m_CollisionQuery = [this]() -> const BroadPhaseResult& { return GetCollisionCandidates(); };
 		return Cloth;
 	}
 
 	bool PhysicsWorld::RemoveCloth(ClothSystem* Cloth)
 	{
+		if (m_SimulationInProgress) throw std::logic_error("Remove cloth between world steps");
 		const auto it = std::find(m_Cloths.begin(), m_Cloths.end(), Cloth);
 		if (it == m_Cloths.end())
 		{
 			return false;
 		}
+		RemoveGeometryWorldState(Cloth->GetRenderGeometry());
 		delete *it;
 		m_Cloths.erase(it);
 		return true;
@@ -2594,12 +2866,17 @@ namespace Riemann
 
 	ClothSystem* PhysicsWorld::CreateCloth(const ClothSettings& Settings, const ClothMesh& Mesh)
 	{
-		std::unique_ptr<ClothSystem> Cloth(new ClothSystem(Settings, Mesh)); m_Cloths.push_back(Cloth.get()); return Cloth.release();
+		if (m_SimulationInProgress) throw std::logic_error("Create cloth between world steps");
+		std::unique_ptr<ClothSystem> Cloth(new ClothSystem(Settings, Mesh)); m_Cloths.push_back(Cloth.get());
+		Cloth->m_CollisionQuery = [this]() -> const BroadPhaseResult& { return GetCollisionCandidates(); }; return Cloth.release();
 	}
 
 	void PhysicsWorld::SimulateCloths(float dt)
 	{
-		ClothSystem::SimulateGroup(m_Cloths, dt);
+		std::vector<ClothSystem*> Independent;
+		const bool Coupled = HasClothRigidCoupling();
+		for (auto* C : m_Cloths) if (!C->HasRigidCoupling() && !(Coupled && C->GetSettings().Collision.InterCollision)) Independent.push_back(C);
+		ClothSystem::SimulateGroup(Independent, dt);
 	}
 
 	Ragdoll* PhysicsWorld::CreateRagdoll(const RagdollSettings& Settings, const Transform& RootTransform)
@@ -2885,7 +3162,9 @@ namespace Riemann
 	void PhysicsWorld::GetAllGeometries(std::vector<Geometry*>* geoms)
 	{
 		for (auto* Body : m_KinematicBodies) Body->GetGeometries(geoms);
-		for (auto* Character : m_Characters) geoms->push_back(Character->GetGeometry());
+		for (RobotController* Robot : m_RobotControllers)
+			if (Robot->GetGeometry())
+				geoms->push_back(Robot->GetGeometry());
 		for (size_t i = 0; i < m_StaticBodies.size(); ++i)
 		{
 			m_StaticBodies[i]->GetGeometries(geoms);

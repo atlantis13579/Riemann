@@ -146,7 +146,9 @@ namespace
 		for(bool Rigid : {false,true}) for(bool Projective : {false,true})
 		{
 			EXPECT(Scene.ApplyDeformableContactDemo(false)); auto* World=Scene.GetSimulation();
+			EXPECT(Scene.SetClothRigidInteraction(false));
 			EXPECT(World->SetSolverConfiguration(Rigid?ResolutionPhaseSolver::XPBD:ResolutionPhaseSolver::SequentialImpulse,SolverBackend::CPU,false));
+			EXPECT(Scene.SetClothRigidInteraction(Rigid));
 			EXPECT(Scene.ApplyDeformableContactDemo(true,Rigid,true)); EXPECT(Scene.ApplyDeformableMaterialDemo(true,false,true,Projective));
 			EXPECT(Scene.GetCorotatedSoftMaterialDemo() && Scene.GetProjectiveSoftMaterialDemo()==Projective);
 			size_t Contacts=0;

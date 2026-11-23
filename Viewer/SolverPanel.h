@@ -59,6 +59,7 @@ namespace Riemann
 		bool ClothSurfaceContacts = false, ClothFriction = true;
 		bool ClothSelfCollision = false, ClothInterCollision = false;
 		bool ClothContinuous = false;
+		bool ClothRigidCoupling = false;
 		bool SoftBodyAttachments = false, CompliantAttachments = false;
 		bool RigidAttachments = false;
 		bool SoftBodyContacts = false;

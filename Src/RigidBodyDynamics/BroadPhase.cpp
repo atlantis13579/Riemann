@@ -9,16 +9,64 @@
 #include <array>
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <set>
 #include <vector>
 
 namespace Riemann
 {
+	void BroadPhaseResult::Clear()
+	{
+		States.clear(); Pairs.clear(); m_Objects.clear();
+		for (auto& Indices : m_PairIndices) Indices.clear();
+		++m_Revision;
+	}
+	void BroadPhaseResult::SetObject(int Index, BroadPhaseObjectType Type, void* Owner)
+	{
+		m_Objects.resize(States.size()); m_Objects[Index] = { Type, Owner };
+	}
+	void BroadPhaseResult::DispatchPairs(size_t Begin)
+	{
+		if (Begin == 0) for (auto& Indices : m_PairIndices) Indices.clear();
+		if (m_Objects.empty()) return;
+		for (size_t I = Begin; I < Pairs.size(); ++I)
+		{
+			const auto& P = Pairs[I];
+			auto A = GetObjectType(P.index1), B = GetObjectType(P.index2);
+			if (B < A) std::swap(A, B);
+			BroadPhasePairType Type = BroadPhasePairType::Count;
+			if (B == BroadPhaseObjectType::Aerodynamics) Type = BroadPhasePairType::Aerodynamics;
+			else if (A == BroadPhaseObjectType::Rigid)
+				Type = B == BroadPhaseObjectType::Rigid ? BroadPhasePairType::Rigid
+					: B == BroadPhaseObjectType::Cloth ? BroadPhasePairType::ClothRigid : BroadPhasePairType::DeformableRigid;
+			else if (A == B) Type = A == BroadPhaseObjectType::Cloth ? BroadPhasePairType::Cloth : BroadPhasePairType::Deformable;
+			if (Type != BroadPhasePairType::Count) m_PairIndices[(size_t)Type].push_back((uint32_t)I);
+		}
+	}
+	BroadPhasePairView BroadPhaseResult::GetPairs(BroadPhasePairType Type) const
+	{
+		if (m_Objects.empty()) return { Pairs, nullptr, Type == BroadPhasePairType::Rigid ? Pairs.size() : 0 };
+		const auto& Indices = m_PairIndices[(size_t)Type];
+		return { Pairs, &Indices, Indices.size() };
+	}
+	void BroadPhase::BuildStandalone(const std::vector<Geometry*>& Geometries, BroadPhaseResult& Result, BroadPhaseObjectType Type)
+	{
+		Result.Clear();
+		for (auto* G : Geometries) if (G)
+		{
+			GeometryWorldState S; S.Geom = G; S.WorldBounds = G->GetBounds(); S.ShapeToWorld = *G->GetTransform();
+			S.NonRigid = true; S.MovingRigid = true; Result.States.push_back(S);
+			Result.SetObject((int)Result.States.size() - 1, Type);
+		}
+		std::unique_ptr<BroadPhase> Pipeline(BroadPhase::Create_Bruteforce());
+		Pipeline->ProduceOverlaps(Result.States, &Result.Pairs);
+		Result.DispatchPairs();
+	}
 	void BroadPhase::ProduceOverlaps(GeometryWorldStateSpan States, std::vector<OverlapPair>* Overlaps)
 	{
 		bool Expand = m_ContactSettings.SpeculativeContacts;
 		for (size_t Index = 0; Index < States.size() && !Expand; ++Index)
-			Expand = m_ContactSettings.UseShapeOffsets && States[Index].Geom && States[Index].Geom->GetContactOffset() > 0.0f;
+			Expand = States[Index].FrameMotion > 0.0f || ((m_ContactSettings.UseShapeOffsets || States[Index].NonRigid) && States[Index].Geom && States[Index].Geom->GetContactOffset() > 0.0f);
 		if (!Expand) { ProduceOverlapsImpl(States, Overlaps); return; }
 		m_ExpandedStates.resize(States.size());
 		m_ExpandedPointers.resize(States.size());
@@ -66,13 +114,14 @@ namespace Riemann
 		{
 			return false;
 		}
-		const bool simulationPair = geom1->IsSimulationEnabled() && geom2->IsSimulationEnabled();
+		const bool simulationPair = (geom1->IsSimulationEnabled() || state1.NonRigid)
+			&& (geom2->IsSimulationEnabled() || state2.NonRigid);
 		const bool triggerPair = geom1->IsTriggerEnabled() || geom2->IsTriggerEnabled();
 		if (!simulationPair && !triggerPair)
 		{
 			return false;
 		}
-		if (geom1->GetParent<void*>() == geom2->GetParent<void*>())
+		if (geom1 == geom2 || (geom1->GetParent<void*>() == geom2->GetParent<void*>() && !(state1.NonRigid && state2.NonRigid)))
 		{
 			return false;
 		}
@@ -83,6 +132,10 @@ namespace Riemann
 			return false;
 		}
 		return IsMovingRigid(state1) || IsMovingRigid(state2);
+	}
+	bool BroadPhase::AllowsPair(const GeometryWorldState& A, const GeometryWorldState& B, CollisionFilter* Filter)
+	{
+		return IsValidPair(A, B, Filter);
 	}
 
 	class BroadPhaseAllPairsImplementation : public BroadPhase
@@ -808,7 +861,7 @@ namespace Riemann
 			{
 				const GeometryWorldState& state = states[i];
 				if (state.Geom == nullptr
-					|| (!state.Geom->IsSimulationEnabled() && !state.Geom->IsTriggerEnabled()))
+					|| (!state.Geom->IsSimulationEnabled() && !state.Geom->IsTriggerEnabled() && !state.NonRigid))
 				{
 					continue;
 				}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -17,13 +18,12 @@
 
 namespace Riemann
 {
+	class SpiderTrainingController;
 	class Geometry;
 	class RenderThread;
 	class FluidSimulation;
 	class FluidRigidCoupling;
 	class AerodynamicsSimulation;
-	class SmokeSimulation;
-	class SmokeRigidCoupling;
 	class AerodynamicsRigidCoupling;
 
 	class WorldViewer
@@ -73,8 +73,6 @@ private:
 		struct TerrainBrushState
 		{
 			std::string ObjectId;
-			Vector3 Center = Vector3::Zero();
-			Vector3 ControlCenter = Vector3::Zero();
 			float ControlRange = 20.0f;
 			float Radius = 2.0f;
 			float Value = 0.5f;
@@ -91,7 +89,6 @@ private:
 		void SubmitFluidSurface();
 		void DeactivateGasDemo();
 		void UpdateGasDemo(float deltaTime);
-		bool SynchronizeSmokeObstacles();
 		void SubmitGasDensity();
 		bool ActivateSnowDemo(bool Sand = false);
 		void DeactivateSnowDemo();
@@ -109,6 +106,7 @@ private:
 		void FrameCuttingBounds();
 		CameraDesc GetViewCamera() const;
 		void SubmitTransforms();
+		void SubmitDeformableMeshes();
 		void SubmitGeometryQueryBounds();
 		void ClearGeometryQueryBounds();
 		void SetShowGeometryQueryBounds(bool show);
@@ -117,6 +115,12 @@ private:
 		float GetCameraControlScale() const;
 		std::string OpenObjFileDialog() const;
 		std::string OpenMeshFileDialog() const;
+#ifdef RIEMANN_SPIDER_TRAINING
+		std::string OpenElmanExecutableDialog() const;
+		std::string ElmanExecutableSettingsPath() const;
+		void LoadElmanExecutablePath();
+		bool SaveElmanExecutablePath(const std::string& path);
+#endif
 		std::string ResolveSceneFile(const char* fileName) const;
 		std::string ResolveTestDataFile(const char* fileName) const;
 		void RefreshSceneList();
@@ -127,6 +131,7 @@ private:
 		void UpdatePhysicsFps();
 		Ray3 BuildSceneRay(int x, int y, int width, int height) const;
 		void HandleSceneRay(const Ray3& ray);
+		bool PaintTerrainAtRay(const Ray3& ray, bool firstStroke);
 		bool IsCurrentCuttingGeometry(const Geometry* geometry) const;
 		void SetHighlightedGeometry(Geometry* geometry);
 		void ShootProjectile();
@@ -135,9 +140,7 @@ private:
 	private:
 		std::unique_ptr<SceneWorld> m_World;
 		std::unique_ptr<FluidSimulation> m_FluidSimulation;
-		std::unique_ptr<AerodynamicsSimulation> m_AerodynamicsSimulation;
-		std::unique_ptr<SmokeSimulation> m_SmokeSimulation;
-		SmokeRigidCoupling* m_SmokeCoupling = nullptr;
+		AerodynamicsSimulation* m_AerodynamicsSimulation = nullptr;
 		FluidRigidCoupling* m_FluidCoupling;
 		AerodynamicsRigidCoupling* m_AerodynamicsCoupling;
 		RenderThread* m_RenderThread;
@@ -168,6 +171,18 @@ private:
 		int m_ViewportWidth = 1280;
 		int m_ViewportHeight = 720;
 		bool m_MovementKeys[4];
+		bool m_RobotKeys[6]{};
+		bool m_RobotInputActive = false, m_RobotAutoWalk = false;
+#ifdef RIEMANN_SPIDER_TRAINING
+		std::unique_ptr<SpiderTrainingController> m_SpiderTraining;
+		std::atomic<bool> m_SpiderTrainingMode{false}, m_SpiderTrainingShowAll{false};
+		std::atomic<int> m_SpiderTrainingSelected{0};
+		std::atomic<int> m_SpiderTrainingWorldCount{1};
+		bool m_PendingSpiderTrainToggle = false, m_PendingSpiderShowAllToggle = false;
+		int m_PendingSpiderSelection = -1;
+		bool m_PendingBrowseElmanExecutable = false;
+		std::string m_ElmanExecutablePath, m_ElmanExecutableStatus;
+#endif
 		bool m_CharacterKeys[4]{};
 		bool m_CharacterInputActive = false;
 		bool m_CharacterJumpHeld = false, m_CharacterJumpRequested = false;
@@ -207,7 +222,7 @@ private:
 		mutable std::mutex m_ImguiMutex;
 		struct VehiclePanelState
 		{
-			bool Active = false, Paused = true, SlowMotion = true;
+			bool Active = false, SlowMotion = true;
 			bool Dynamics = false;
 			float Throttle = 0, Steering = 0, Brake = 1, Handbrake = 0, Clutch = 1;
 			float Speed = 0, EngineRPM = 0, Load = 0;
@@ -215,17 +230,28 @@ private:
 			float Displacement = 0, PlasticStrain = 0;
 			unsigned int SceneGeneration = 0;
 		};
+		struct RobotPanelState
+		{
+			RobotDynamicsBackend Backend = RobotDynamicsBackend::SparseJointSpaceDynamics;
+			RobotWalkMode WalkMode = RobotWalkMode::Policy;
+			bool Interactive = false, AutoWalk = false;
+			Vector3 Command = Vector3::Zero();
+			float Heading = 0;
+			unsigned int SceneGeneration = 0;
+			bool Active = false;
+		};
+		RobotPanelState m_ImguiRobotPanel, m_PendingRobotPanel;
 		VehiclePanelState m_ImguiVehiclePanel;
 		VehiclePanelState m_PendingVehiclePanel;
 		bool m_PendingVehicleControls = false;
-		bool m_VehiclePaused = true, m_VehicleSlowMotion = true;
+		bool m_VehicleSlowMotion = true;
 		float m_VehiclePendingTime = 0;
 		int m_PendingVehicleCommand = 0;
 		unsigned int m_PendingVehicleGeneration = 0;
 		void ApplyVehicleCommands();
 		struct SnowPanelState
 		{
-			bool Active = false, Paused = false, TimeLimited = false;
+			bool Active = false, TimeLimited = false;
 			bool Available[5]{};
 			int Quality = 0, Backend = 0, Transfer = 2;
 			float Fraction = 1, Viscosity = 2, SolveMilliseconds = 0, SurfaceMilliseconds = 0;
@@ -241,26 +267,26 @@ private:
 		float m_SnowRenderedFraction = -2, m_SnowSolveMilliseconds = 0, m_SnowSurfaceMilliseconds = 0;
 		std::string m_SnowStatus;
 		SnowPanelState m_ImguiSnowPanel, m_ImguiPendingSnowPanel;
-		bool m_ImguiPendingSnowChange = false, m_ImguiPendingSnowReset = false;
-		struct SmokePanelState
+		bool m_ImguiPendingSnowChange = false;
+		struct AerodynamicsPanelState
 		{
 			bool Active = false;
-			bool Paused = false;
 			bool RigidCoupling = false;
 			int RigidBodyCount = 0;
 			int Backend = 2;
-			int Quality = 1;
+			float GridScale = 1.0f;
 			int ActualBackend = 2;
 			Vector3i Resolution = Vector3i(0, 0, 0);
 			unsigned int SceneGeneration = 0;
 			std::string Status;
 		};
-		SmokePanelState m_ImguiSmokePanel, m_ImguiPendingSmokePanel;
-		bool m_ImguiPendingSmokeRestart = false;
-		bool m_ImguiPendingSmokePause = false;
-		int m_ImguiPendingSmokeAddBodies = 0;
-		unsigned int m_ImguiPendingSmokeAddGeneration = 0;
-		bool m_SmokePaused = false;
+		AerodynamicsPanelState m_ImguiAerodynamicsPanel, m_ImguiPendingAerodynamicsPanel;
+		bool m_ImguiPendingAerodynamicsApply = false;
+		bool m_AerodynamicsPaused = false;
+		bool m_ViewerPaused = false;
+		bool m_ImguiViewerPaused = false;
+		bool m_ImguiPendingPauseToggle = false;
+		unsigned int m_ImguiPendingPauseGeneration = 0;
 		SolverPanelState m_ImguiSolverPanel;
 		SolverPanelState m_ImguiPendingSolverPanel;
 		bool m_ImguiPendingSolverSwitch = false;
@@ -303,6 +329,8 @@ private:
 		int m_ImguiScroll;
 		unsigned int m_ImguiRenderedSceneGeneration = 0;
 		int m_ImguiPendingDemoIndex;
+		bool m_ImguiPendingRestartScene = false;
+		unsigned int m_ImguiPendingRestartGeneration = 0;
 		int m_ImguiPendingRagdollAlgorithm = -1;
 		std::string m_ImguiPendingSceneFile;
 		bool m_ImguiPendingCameraDistance;
@@ -337,7 +365,9 @@ private:
 		RenderMode m_ImguiPendingRenderModeValue;
 		bool m_ImguiPendingShootProjectile;
 		std::vector<ConstraintControlState> m_ImguiPendingConstraintControls;
-		std::vector<TerrainBrushState> m_ImguiPendingTerrainEdits;
+		bool m_TerrainDragActive = false;
+		Vector3 m_TerrainDragLastPoint = Vector3::Zero();
+		float m_TerrainDragTargetHeight = 0.0f;
 
 		std::chrono::steady_clock::time_point m_PhysicsFpsTime;
 		int m_PhysicsFrameCount;

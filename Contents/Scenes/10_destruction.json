@@ -4,15 +4,16 @@
     "gravity": [0.0, -9.8, 0.0]
   },
   "camera": {
-    "center": [0.0, 6.0, 0.0],
-    "orbit": [0.78, 0.28, 32.0],
+    "center": [0.0, 9.5, 0.0],
+    "orbit": [-0.8, 0.43, 38.0],
+    "fovY": 0.78,
     "near": 0.05,
     "far": 1000.0
   },
   "light": {
-    "direction": [-0.694110, -0.719859, -0.003747],
-    "color": [1.0, 0.96, 0.86],
-    "ambient": 0.24,
+    "direction": [0.45, -0.74, -0.50],
+    "color": [1.0, 0.98, 0.94],
+    "ambient": 0.42,
     "shadowCenter": [0.0, 3.0, 0.0],
     "shadowDistance": 70.0,
     "shadowSize": 80.0

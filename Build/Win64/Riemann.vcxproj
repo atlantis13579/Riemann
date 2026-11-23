@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\Src\Collision\DistanceFieldCollision.cpp" />
     <ClCompile Include="..\..\Src\Collision\SurfaceCollision.cpp" />
+    <ClCompile Include="..\..\Src\Geometry\SpatialHashHierarchical.cpp" />
 
     <ClCompile Include="..\..\Src\Deformation\SurfaceContactConstraint.cpp" />
     <ClCompile Include="..\..\Src\Deformation\BarycentricAttachment.cpp" />
@@ -59,6 +60,7 @@
     <ClCompile Include="..\..\Src\Continuum\SandBackendCompute.cpp" />
     <ClInclude Include="..\..\Src\Collision\DistanceFieldCollision.h" />
     <ClInclude Include="..\..\Src\Collision\SurfaceCollision.h" />
+    <ClInclude Include="..\..\Src\Geometry\SpatialHashHierarchical.h" />
 
     <ClInclude Include="..\..\Src\Deformation\SurfaceContactConstraint.h" />
     <ClInclude Include="..\..\Src\CollisionPrimitive\DistanceFieldShape.h" />
@@ -96,18 +98,21 @@
     <ClCompile Include="..\..\Src\Destruction\VoronoiTessellation.cpp" />
     <ClCompile Include="..\..\Src\Fluid\AerodynamicsRigidCoupling.cpp" />
     <ClCompile Include="..\..\Src\Fluid\AerodynamicsSimulation.cpp" />
+    <ClCompile Include="..\..\Src\Fluid\AerodynamicsBarotropicSolver.cpp" />
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsBarotropicSolver.h" />
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsTypes.h" />
     <ClCompile Include="..\..\Src\Fluid\FluidBackend.cpp" />
     <ClCompile Include="..\..\Src\Fluid\FluidBackendComputeShader.cpp" />
     <ClCompile Include="..\..\Src\Fluid\FluidRigidCoupling.cpp" />
     <ClCompile Include="..\..\Src\Fluid\FluidSimulation.cpp" />
-    <ClCompile Include="..\..\Src\Fluid\SmokeSimulation.cpp" />
-    <ClCompile Include="..\..\Src\Fluid\SmokeRigidCoupling.cpp" />
-    <ClInclude Include="..\..\Src\Fluid\SmokeRigidCoupling.h" />
-    <ClCompile Include="..\..\Src\Fluid\SmokeComputeShader.cpp" />
-    <ClInclude Include="..\..\Src\Fluid\SmokeSimulation.h" />
-    <ClInclude Include="..\..\Src\Fluid\SmokeGPUBackend.h" />
-    <ClInclude Include="..\..\Src\Fluid\SmokeComputeKernels.h" />
-    <None Include="..\..\Src\Fluid\SmokeBackendCUDA.cu" />
+    <ClCompile Include="..\..\Src\Fluid\AerodynamicsIncompressibleSolver.cpp" />
+    <ClCompile Include="..\..\Src\Fluid\AerodynamicsComputeShader.cpp" />
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsIncompressibleSolver.h" />
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsGPUBackend.h" />
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsComputeKernels.h" />
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsPressureKernels.h" />
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsPressureCUDA.cuh" />
+    <None Include="..\..\Src\Fluid\AerodynamicsBackendCUDA.cu" />
     <ClCompile Include="..\..\Src\Fluid\MarchingCubes.cpp" />
     <ClCompile Include="..\..\Src\Geometry\ConvexDecomposition.cpp" />
     <ClCompile Include="..\..\Src\Geometry\ConvexHull2.cpp" />
@@ -147,14 +152,18 @@
     <ClCompile Include="..\..\Src\Geometry\VoxelField.cpp" />
     <ClCompile Include="..\..\Src\Geometry\WindingNumber.cpp" />
     <ClCompile Include="..\..\Src\LinearSystem\DenseMatrix.cpp" />
+    <ClCompile Include="..\..\Src\LinearSystem\NeuralNetwork.cpp" />
     <ClCompile Include="..\..\Src\LinearSystem\DenseVector.cpp" />
     <ClCompile Include="..\..\Src\Modules\Tools\UE5StaticMeshParser.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\BroadPhase.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\Island.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\SupportStabilization.cpp" />
-    <ClCompile Include="..\..\Src\Modules\CharacterController\CharacterController.cpp" />
+    <ClCompile Include="..\..\Src\Modules\Robotics\RobotController.cpp" />
+    <ClCompile Include="..\..\Src\Modules\Robotics\ArticulatedRobotController.cpp" />
+    <ClCompile Include="..\..\Src\Modules\Robotics\SpiderRobot.cpp" />
     <ClCompile Include="..\..\Src\Modules\Vehicle\VehicleDynamics.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\FeatherstoneSolver.cpp" />
+    <ClCompile Include="..\..\Src\Modules\Robotics\SparseJointSpaceDynamics.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\PhysicalAnimation.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\FrictionPatch.cpp" />
     <ClCompile Include="..\..\Src\RigidBodyDynamics\CollidingContact.cpp" />
@@ -255,7 +264,7 @@
     <ClInclude Include="..\..\Src\Geometry\RuntimeDistanceField.h" />
     <ClInclude Include="..\..\Src\Geometry\SignedDistanceField.h" />
     <ClInclude Include="..\..\Src\Geometry\SparseOctree.h" />
-    <ClInclude Include="..\..\Src\Geometry\SparseSpatialHash.h" />
+    <ClInclude Include="..\..\Src\Geometry\SpatialHashSparse.h" />
     <ClInclude Include="..\..\Src\Geometry\Voronoi3.h" />
     <ClInclude Include="..\..\Src\Geometry\WindingNumber.h" />
     <ClInclude Include="..\..\Src\LinearSystem\ConjugateGradientSolver.h" />
@@ -301,6 +310,7 @@
     <ClInclude Include="..\..\Src\Geometry\VoxelField.h" />
     <ClInclude Include="..\..\Src\LinearSystem\CholeskyDecomposition.h" />
     <ClInclude Include="..\..\Src\LinearSystem\DenseMatrix.h" />
+    <ClInclude Include="..\..\Src\LinearSystem\NeuralNetwork.h" />
     <ClInclude Include="..\..\Src\LinearSystem\DenseVector.h" />
     <ClInclude Include="..\..\Src\LinearSystem\EigenValueDecomposition.h" />
     <ClInclude Include="..\..\Src\LinearSystem\GaussianElimination.h" />
@@ -341,7 +351,9 @@
     <ClInclude Include="..\..\Src\RigidBodyDynamics\BroadPhase.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Island.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\SupportStabilization.h" />
-    <ClInclude Include="..\..\Src\Modules\CharacterController\CharacterController.h" />
+    <ClInclude Include="..\..\Src\Modules\Robotics\RobotController.h" />
+    <ClInclude Include="..\..\Src\Modules\Robotics\ArticulatedRobotController.h" />
+    <ClInclude Include="..\..\Src\Modules\Robotics\SpiderRobot.h" />
     <ClInclude Include="..\..\Src\Modules\Vehicle\VehicleDynamics.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\FrictionPatch.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\CollidingContact.h" />
@@ -349,6 +361,7 @@
 
     <ClInclude Include="..\..\Src\RigidBodyDynamics\ContinuousCollisionDetection.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\FeatherstoneSolver.h" />
+    <ClInclude Include="..\..\Src\Modules\Robotics\SparseJointSpaceDynamics.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\PhysicalAnimation.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\Jacobian.h" />
     <ClInclude Include="..\..\Src\RigidBodyDynamics\KinematicsTree.h" />
@@ -456,12 +469,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>..\..\Binaries\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>..\..\Binaries\Win64\$(Configuration)\</OutDir>
+    <OutDir>..\..\Binaries\Win64-LegacyNoCUDA\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>..\..\Binaries\Intermediate\$(Configuration)\$(ProjectName)\</IntDir>
-    <OutDir>..\..\Binaries\Win64\$(Configuration)\</OutDir>
+    <OutDir>..\..\Binaries\Win64-LegacyNoCUDA\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include "DenseVector.h"
 #include "DenseMatrix.h"
 #include "SingularValueDecomposition.h"

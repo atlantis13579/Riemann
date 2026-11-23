@@ -52,7 +52,6 @@ namespace Riemann
 			std::vector<int> Vertices;
 			std::vector<Vector3> Start, End;
 			std::unique_ptr<SurfaceCollisionMesh> Index;
-			Box3 Bounds;
 			explicit Surface(DeformableBody* Owner) : Body(Owner)
 			{
 				std::vector<int> Mapping(Owner->GetParticleCount(), -1);
@@ -79,8 +78,7 @@ namespace Riemann
 					const auto& P = Body->GetParticle(Vertices[I]); Start[I] = P.PreviousPosition; End[I] = P.Position;
 				}
 				const auto& S = Body->GetSettings(); const float Margin = S.ParticleRadius + S.Collision.ContactTolerance;
-				Index->Update(End, End, Margin); Bounds = Box3(End.data(), End.size());
-				Bounds.Min -= Vector3(Margin); Bounds.Max += Vector3(Margin);
+				Index->Update(End, End, Margin);
 			}
 		};
 		struct Feature
@@ -93,13 +91,19 @@ namespace Riemann
 		using Key = std::tuple<size_t, size_t, SurfacePairType, int, int>;
 		struct Row { bool Seen = false; std::unique_ptr<SurfaceContactConstraint> Constraint; };
 		std::vector<std::unique_ptr<Surface>> Surfaces;
+		std::map<Geometry*, size_t> SurfaceIndices;
+		BroadPhaseObjectMap<int> ObjectIndices;
 		std::map<Key, Row> Rows;
 		explicit Implementation(const std::vector<DeformableBody*>& Bodies)
 		{
 			for (auto* Body : Bodies)
 			{
 				const auto& S = Body->GetSettings().Collision;
-				if (S.SelfCollision || S.InterCollision) Surfaces.emplace_back(new Surface(Body));
+				if (S.SelfCollision || S.InterCollision)
+				{
+					SurfaceIndices.emplace(Body->GetRenderGeometry(), Surfaces.size());
+					Surfaces.emplace_back(new Surface(Body));
+				}
 			}
 		}
 		void Add(size_t IA, size_t IB, const SurfaceCandidate& Pair)
@@ -156,8 +160,9 @@ namespace Riemann
 				else { ++StatsB.Contacts; ++StatsA.InterContacts; ++StatsB.InterContacts; }
 			}
 		}
-		void Solve(float Dt)
+		void Solve(float Dt, const BroadPhaseResult& Pairs)
 		{
+			if (Surfaces.empty()) return;
 			for (auto& R : Rows) R.second.Seen = false;
 			for (auto& S : Surfaces) S->Update();
 			std::vector<SurfaceCandidate> Candidates;
@@ -169,13 +174,25 @@ namespace Riemann
 					A.Index->FindSelfCandidates(Candidates, S.ExcludeSelfNeighbors);
 					for (const auto& Pair : Candidates) Add(I, I, Pair);
 				}
-				for (size_t J = I + 1; J < Surfaces.size(); ++J)
-				{
-					auto& B = *Surfaces[J];
-					if (!CanInteract(*A.Body, *B.Body) || !A.Bounds.Intersect(B.Bounds)) continue;
-					A.Index->FindCandidates(*B.Index, Candidates);
-					for (const auto& Pair : Candidates) Add(I, J, Pair);
-				}
+			}
+			const auto InterPairs = Pairs.GetPairs(BroadPhasePairType::Deformable);
+			if (Surfaces.size() > 1 && !InterPairs.empty()) ObjectIndices.Update(Pairs, [&](int Index)
+			{
+				if (Pairs.GetObjectType(Index) != BroadPhaseObjectType::Deformable) return -1;
+				const auto It = SurfaceIndices.find(Pairs.GetGeometry(Index));
+				return It != SurfaceIndices.end() ? (int)It->second : -1;
+			});
+			if (Surfaces.size() > 1) for (const auto& P : InterPairs)
+			{
+				auto* GA = Pairs.GetGeometry(P.index1); auto* GB = Pairs.GetGeometry(P.index2);
+				if (!GA || !GB) continue;
+				const int IA = ObjectIndices[P.index1], IB = ObjectIndices[P.index2];
+				if (IA < 0 || IB < 0 || IA == IB) continue;
+				const size_t I = (size_t)std::min(IA, IB), J = (size_t)std::max(IA, IB);
+				auto& A = *Surfaces[I]; auto& B = *Surfaces[J];
+				if (!CanInteract(*A.Body, *B.Body)) continue;
+				A.Index->FindCandidates(*B.Index, Candidates);
+				for (const auto& Pair : Candidates) Add(I, J, Pair);
 			}
 			for (auto It = Rows.begin(); It != Rows.end();)
 			{
@@ -186,5 +203,5 @@ namespace Riemann
 	};
 	DeformableCollision::DeformableCollision(const std::vector<DeformableBody*>& Bodies) : m_Data(new Implementation(Bodies)) {}
 	DeformableCollision::~DeformableCollision() = default;
-	void DeformableCollision::Solve(float Dt) { m_Data->Solve(Dt); }
+	void DeformableCollision::Solve(float Dt, const BroadPhaseResult& Pairs) { m_Data->Solve(Dt, Pairs); }
 }

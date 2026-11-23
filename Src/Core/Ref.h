@@ -63,7 +63,7 @@ namespace Riemann
 
 	protected:
 		unsigned char				mFlags = HOLDS_MEMORY;
-		mutable std::atomic<int>	mRefCount = 0;
+		mutable std::atomic<int>	mRefCount{0};
 	};
 
 	template <class T>

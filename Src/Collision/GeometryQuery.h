@@ -16,7 +16,6 @@ namespace Riemann
 	class AABBTree;
 	class AABBPruner;
 	class DynamicAABBTree;
-	class SparseSpatialHash;
 	class Geometry;
 	class RigidBody;
 

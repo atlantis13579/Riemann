@@ -5,6 +5,8 @@
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 #include "../Viewer/SceneWorld.h"
 #include <stdexcept>
+#include <algorithm>
+#include <chrono>
 
 namespace
 {
@@ -157,8 +159,15 @@ namespace
 	{
 		SceneWorld Scene; Scene.SetClothModelDemo(true); std::string Error; const auto Path = TestContentsPath() + "Scenes/08_cloth_sphere.json";
 		EXPECT(Scene.LoadFromFile(Path, &Error)); const size_t Count = Scene.GetObjects().size();
+		auto* Primary = Scene.GetDemoCloth(); EXPECT(Primary); if (!Primary) return;
+		EXPECT(Scene.SetClothSelfCollision(true)); EXPECT(Primary->GetSettings().Collision.SelfCollision);
+		EXPECT(Scene.SetClothSelfCollision(false)); EXPECT(!Primary->GetSettings().Collision.SelfCollision);
 		EXPECT(Scene.ApplyClothDemo(true, false, true, false, true, true, true, true));
 		auto* A = Scene.GetDemoCloth(); auto* B = Scene.GetDemoClothPartner(); EXPECT(A && B); if (!A || !B) return;
+		EXPECT(Scene.SetClothSelfCollision(false));
+		EXPECT(!A->GetSettings().Collision.SelfCollision && !B->GetSettings().Collision.SelfCollision);
+		EXPECT(Scene.SetClothSelfCollision(true));
+		EXPECT(A->GetSettings().Collision.SelfCollision && B->GetSettings().Collision.SelfCollision);
 		EXPECT(Scene.GetSimulation()->GetClothCount() == 2 && Scene.GetObjects().size() == Count + 1);
 		size_t Contacts = 0;
 		for (int Frame = 0; Frame < 24; ++Frame)
@@ -187,4 +196,30 @@ namespace
 void TestClothInteraction()
 {
 	SelfCollision(); InterCollision(); FrictionAndTimeSteps(); EdgeContactsAndCompliance(); ExistingDemo();
+}
+
+void TestClothSelfCollisionBenchmark()
+{
+	SceneWorld Scene; Scene.SetClothModelDemo(true); std::string Error;
+	EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/08_cloth_sphere.json", &Error));
+	auto* Cloth = Scene.GetDemoCloth(); EXPECT(Cloth); if (!Cloth) return;
+	EXPECT(Scene.SetClothSelfCollision(true));
+	RigidBody* Ball = nullptr;
+	for (const auto& Object : Scene.GetObjects()) if (Object.Id == "cloth_ball") Ball = Object.GeometryPtr->GetParent<RigidBody>();
+	EXPECT(Ball); if (!Ball) return;
+	Ball->V = Vector3(0, 0, -6);
+	std::vector<double> Times; size_t Candidates = 0, SelfContacts = 0, RigidContacts = 0;
+	for (int Frame = 0; Frame < 120; ++Frame)
+	{
+		if (Frame == 30) Ball->V = Vector3(0, 0, 8);
+		const auto Start = std::chrono::steady_clock::now(); Scene.Step(1.0f / 60);
+		Times.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - Start).count());
+		const auto& Stats = Cloth->GetCollisionStats(); Candidates += Stats.Candidates;
+		SelfContacts += Stats.SelfContacts; RigidContacts += Stats.RigidContacts;
+		for (int I = 0; I < Cloth->GetParticleCount(); ++I) EXPECT(std::isfinite(Cloth->GetParticle(I).Position.Length()));
+	}
+	double Total = 0; for (double Time : Times) Total += Time; std::sort(Times.begin(), Times.end());
+	printf("Cloth self collision: mean %.3f ms, p95 %.3f ms, candidates %zu, self %zu, rigid %zu\n",
+		Total / Times.size(), Times[Times.size() * 95 / 100], Candidates, SelfContacts, RigidContacts);
+	EXPECT(RigidContacts > 0);
 }

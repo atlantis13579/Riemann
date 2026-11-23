@@ -45,6 +45,8 @@ namespace Riemann
 			m_RenderTopologyDirty = false;
 		}
 		mesh->BoundingVolume.SetEmpty();
+		// Embedded render vertices may lie inside the simulated tetrahedral surface.
+		if (Embedded) for (const auto& P : m_Particles) mesh->BoundingVolume.Encapsulate(P.Position);
 		mesh->mNormals.assign(count, Vector3::Zero());
 		for (uint32_t i = 0; i < count; ++i)
 		{

@@ -312,8 +312,9 @@ namespace Riemann
 	{
 		bool ValidBounds(const Box3& B) { return Finite(B.Min) && Finite(B.Max) && B.Min.x <= B.Max.x && B.Min.y <= B.Max.y && B.Min.z <= B.Max.z; }
 	}
-	SurfaceCollisionMesh::SurfaceCollisionMesh(int VertexCount, const std::vector<Index3>& Triangles, const std::vector<SurfaceEdge>& AdditionalEdges)
-		: m_VertexCount(VertexCount), m_Triangles(Triangles), m_TriangleTree(0), m_EdgeTree(0)
+	SurfaceCollisionMesh::SurfaceCollisionMesh(int VertexCount, const std::vector<Index3>& Triangles, const std::vector<SurfaceEdge>& AdditionalEdges,
+		SurfaceAcceleration Acceleration)
+		: m_VertexCount(VertexCount), m_Triangles(Triangles), m_TriangleTree(0), m_EdgeTree(0), m_Acceleration(Acceleration)
 	{
 		if (VertexCount < 1) throw std::invalid_argument("Surface index requires vertices");
 		std::set<std::array<int, 3>> Faces; std::set<std::pair<int, int>> Edges;
@@ -353,16 +354,22 @@ namespace Riemann
 			if (!ValidBounds(Bounds[I])) throw std::invalid_argument("Unrepresentable surface index bounds");
 		}
 		m_VertexBounds.swap(Bounds);
+		const bool Hashed = m_Acceleration == SurfaceAcceleration::HierarchicalHash;
+		if (Hashed) m_FeatureBounds.resize(m_Triangles.size());
 		for (size_t I = 0; I < m_Triangles.size(); ++I)
 		{
 			const auto& T = m_Triangles[I]; auto& E = m_TriangleEntries[I]; E.Bounds = Box3(Box3(m_VertexBounds[T.a], m_VertexBounds[T.b]), m_VertexBounds[T.c]);
-			if (E.Node < 0) E.Node = m_TriangleTree.Add(E.Bounds, &E); else m_TriangleTree.Update(E.Node, E.Bounds, Vector3::Zero());
+			if (Hashed) m_FeatureBounds[I] = E.Bounds;
+			else if (E.Node < 0) E.Node = m_TriangleTree.Add(E.Bounds, &E); else m_TriangleTree.Update(E.Node, E.Bounds, Vector3::Zero());
 		}
+		if (Hashed) { m_TriangleHash.Build(m_FeatureBounds, Margin); m_FeatureBounds.resize(m_Edges.size()); }
 		for (size_t I = 0; I < m_Edges.size(); ++I)
 		{
 			const auto& Edge = m_Edges[I]; auto& E = m_EdgeEntries[I]; E.Bounds = Box3(m_VertexBounds[Edge.A], m_VertexBounds[Edge.B]);
-			if (E.Node < 0) E.Node = m_EdgeTree.Add(E.Bounds, &E); else m_EdgeTree.Update(E.Node, E.Bounds, Vector3::Zero());
+			if (Hashed) m_FeatureBounds[I] = E.Bounds;
+			else if (E.Node < 0) E.Node = m_EdgeTree.Add(E.Bounds, &E); else m_EdgeTree.Update(E.Node, E.Bounds, Vector3::Zero());
 		}
+		if (Hashed) m_EdgeHash.Build(m_FeatureBounds, Margin);
 		m_Ready = true;
 	}
 	void SurfaceCollisionMesh::RequireReady() const { if (!m_Ready) throw std::logic_error("Surface index needs a position update before querying"); }
@@ -373,8 +380,16 @@ namespace Riemann
 		for (const auto* Item : Entries) Indices.push_back(static_cast<const Entry*>(Item)->Index);
 		std::sort(Indices.begin(), Indices.end());
 	}
-	void SurfaceCollisionMesh::QueryTriangles(const Box3& Bounds, std::vector<int>& Triangles) const { RequireReady(); Query(m_TriangleTree, Bounds, Triangles); }
-	void SurfaceCollisionMesh::QueryEdges(const Box3& Bounds, std::vector<int>& Edges) const { RequireReady(); Query(m_EdgeTree, Bounds, Edges); }
+	void SurfaceCollisionMesh::QueryTriangles(const Box3& Bounds, std::vector<int>& Triangles) const
+	{
+		RequireReady();
+		if (m_Acceleration == SurfaceAcceleration::HierarchicalHash) m_TriangleHash.Query(Bounds, Triangles); else Query(m_TriangleTree, Bounds, Triangles);
+	}
+	void SurfaceCollisionMesh::QueryEdges(const Box3& Bounds, std::vector<int>& Edges) const
+	{
+		RequireReady();
+		if (m_Acceleration == SurfaceAcceleration::HierarchicalHash) m_EdgeHash.Query(Bounds, Edges); else Query(m_EdgeTree, Bounds, Edges);
+	}
 	bool SurfaceCollisionMesh::Related(int A, int B, bool IncludeNeighbors) const
 	{
 		return A == B || (IncludeNeighbors && std::binary_search(m_Neighbors[A].begin(), m_Neighbors[A].end(), B));

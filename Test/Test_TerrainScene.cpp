@@ -199,7 +199,7 @@ namespace
 		if (!Loaded) return;
 		EXPECT(Scene.GetName() == "Terrain Editing");
 		EXPECT(Scene.GetTerrainObjectIds() == std::vector<std::string>({ "editable_terrain" }));
-		EXPECT(Scene.GetObjects().size() == 25);
+		EXPECT(Scene.GetObjects().size() == 3);
 		RigidBody* Falling = nullptr;
 		for (const SceneObjectInstance& Object : Scene.GetObjects())
 		{
@@ -214,7 +214,16 @@ namespace
 		EXPECT(Falling->X.y < InitialHeight - 0.05f);
 		Geometry* Terrain = FindTerrainSceneObject(Scene, "editable_terrain");
 		EXPECT(Terrain != nullptr);
-		if (Terrain) ExpectTerrainRayHeight(Scene, Terrain, 12.0f, 12.0f, 0.0f);
+		if (Terrain)
+		{
+			ExpectTerrainRayHeight(Scene, Terrain, 12.0f, 12.0f, 0.0f);
+			Vector3 Picked;
+			float LocalHeight = 1.0f;
+			EXPECT(Scene.RayCastTerrain("editable_terrain", Vector3(12, 10, 12), -Vector3::UnitY(),
+				20.0f, &Picked, &LocalHeight));
+			EXPECT_NEAR(Picked.y, 0.0f, 0.001f);
+			EXPECT_NEAR(LocalHeight, 0.0f, 0.001f);
+		}
 	}
 }
 

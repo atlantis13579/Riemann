@@ -1,4 +1,5 @@
 #include "Cloth.h"
+#include "DeformableRigidCollision.h"
 
 #include <algorithm>
 #include <cmath>
@@ -60,6 +61,7 @@ namespace Riemann
 		const size_t Count = (size_t)m_Settings.Rows * (size_t)m_Settings.Columns;
 		if (Count > (size_t)std::numeric_limits<int>::max()) throw std::invalid_argument("Cloth grid has too many vertices");
 		ClothMesh Mesh; Mesh.Positions.resize(Count); Mesh.MaterialCoordinates.resize(Count); Mesh.InverseMasses.resize(Count, m_Settings.ParticleInverseMass);
+		if (m_Settings.UseSurfaceDensity) Mesh.InverseMasses.clear();
 		for (int row = 0; row < m_Settings.Rows; ++row)
 		{
 			for (int column = 0; column < m_Settings.Columns; ++column)
@@ -187,6 +189,34 @@ namespace Riemann
 	{
 		return ValidIndex(Index) && m_PreviousDt > 0 ? (m_Particles[Index].Position - m_Particles[Index].PreviousPosition) / m_PreviousDt : Vector3::Zero();
 	}
+	bool ClothSystem::ApplyParticleImpulse(int Index, const Vector3& Impulse)
+	{
+		if (m_CoupledStepActive || !ValidIndex(Index) || !Finite(Impulse)) return false;
+		return SetParticleVelocity(Index, GetParticleVelocity(Index) + Impulse * InverseMass(Index));
+	}
+	uint64_t ClothSystem::AttachToRigid(const BarycentricPoint& Point, RigidBody* Body, const Vector3& WorldAnchor, double Compliance)
+	{
+		if (m_CoupledStepActive || !Body || !Point.IsValid(m_Particles.size()) || !Finite(WorldAnchor) || !std::isfinite(Compliance) || Compliance < 0)
+			throw std::invalid_argument("Invalid cloth rigid attachment");
+		if (!m_NextAttachmentId) throw std::overflow_error("Cloth attachment identity exhausted");
+		const uint64_t Id = m_NextAttachmentId++;
+		m_RigidAttachments.push_back({ Id, Point, Body, Body->WorldToBodyLocal(WorldAnchor), Compliance });
+		if (auto* Dynamic = Body->CastDynamic()) Dynamic->Wakeup();
+		return Id;
+	}
+	bool ClothSystem::RemoveRigidAttachment(uint64_t Id)
+	{
+		if (m_CoupledStepActive) throw std::logic_error("Edit cloth attachments between world steps");
+		const auto It = std::find_if(m_RigidAttachments.begin(), m_RigidAttachments.end(), [Id](const RigidAttachment& A) { return A.Id == Id; });
+		if (It == m_RigidAttachments.end()) return false;
+		m_RigidAttachments.erase(It); return true;
+	}
+	void ClothSystem::DetachRigidBody(RigidBody* Body)
+	{
+		if (m_CoupledStepActive) throw std::logic_error("Edit cloth attachments between world steps");
+		m_RigidAttachments.erase(std::remove_if(m_RigidAttachments.begin(), m_RigidAttachments.end(),
+			[Body](const RigidAttachment& A) { return A.Body == Body; }), m_RigidAttachments.end());
+	}
 	void ClothSystem::SetMaterial(const ClothMaterial& Material)
 	{
 		if (!Material.IsValid()) throw std::invalid_argument("Invalid cloth material"); m_Settings.Material = Material;
@@ -271,6 +301,7 @@ namespace Riemann
 
 	void ClothSystem::Simulate(float dt)
 	{
+		if (HasRigidCoupling()) throw std::logic_error("Coupled cloth must be stepped by PhysicsWorld");
 		SimulateBatch({ this }, dt);
 	}
 	void ClothSystem::SimulateGroup(const std::vector<ClothSystem*>& Cloths, float Dt)
@@ -287,6 +318,7 @@ namespace Riemann
 	}
 	void ClothSystem::SimulateBatch(const std::vector<ClothSystem*>& Cloths, float Dt)
 	{
+		for (auto* C : Cloths) if (C->HasRigidCoupling()) throw std::logic_error("Coupled cloth must be stepped by PhysicsWorld");
 		/* Pair contacts couple two evolving surfaces, so fully stepping one cloth
 		   before the other would mix time levels. Predict every cloth, alternate
 		   its material/rigid rows with shared contact rows, then commit velocities.
@@ -439,7 +471,10 @@ namespace Riemann
 			SolveTethers(Dt); SolveAnimation(Dt);
 		}
 		SolvePins();
-		if (m_Settings.Collision.SurfaceContacts) m_Collision->Solve(Dt); else SolveSphereCollisions();
+		if (!m_CoupledStepActive || !m_Settings.Collision.RigidCoupling)
+		{
+			if (m_Settings.Collision.SurfaceContacts) m_Collision->Solve(Dt); else SolveSphereCollisions();
+		}
 	}
 	void ClothSystem::SolveMaterial(float Dt)
 	{
@@ -931,9 +966,10 @@ namespace Riemann
 		std::map<ContactKey, std::unique_ptr<ContactRow>> Rows;
 		using InteractionKey = std::tuple<size_t, SurfacePairType, int, int>;
 		std::map<InteractionKey, std::unique_ptr<ContactRow>> InteractionRows;
-		Box3 Bounds;
+		std::vector<std::pair<Geometry*, size_t>> InteractionObjects;
+		BroadPhaseObjectMap<size_t> InteractionIndices;
 		ClothCollisionStats Stats;
-		explicit Implementation(ClothSystem& Owner) : Cloth(Owner), Index(Owner.GetParticleCount(), Triangles(Owner)) {}
+		explicit Implementation(ClothSystem& Owner) : Cloth(Owner), Index(Owner.GetParticleCount(), Triangles(Owner), {}, SurfaceAcceleration::HierarchicalHash) {}
 		float InverseMass(int I) const { const auto& P = Cloth.GetParticle(I); return P.Pinned ? 0 : P.InverseMass; }
 		void UpdateSurface(bool Swept = false)
 		{
@@ -944,9 +980,6 @@ namespace Riemann
 			}
 			const float Margin = Cloth.GetSettings().Thickness + Cloth.GetSettings().Collision.ContactTolerance;
 			Index.Update(Swept ? PreviousPositions : Positions, Positions, Margin);
-			Bounds = Box3(Positions.data(), Positions.size());
-			if (Swept) for (const auto& P : PreviousPositions) Bounds.Encapsulate(P);
-			Bounds.Min -= Vector3(Margin); Bounds.Max += Vector3(Margin);
 		}
 		bool FindContact(const SurfaceMotion& A, const SurfaceMotion& B, double Thickness,
 			const ClothCollisionSettings& Settings, SurfaceContact& Contact)
@@ -1216,6 +1249,7 @@ namespace Riemann
 	}
 	size_t ClothCollision::GetColliderCount() const { return m_Impl->Colliders.size(); }
 	const ClothCollisionStats& ClothCollision::GetStats() const { return m_Impl->Stats; }
+	ClothCollisionStats& ClothCollision::MutableStats() { return m_Impl->Stats; }
 	void ClothCollision::BeginFrame()
 	{
 		m_Impl->InteractionRows.clear();
@@ -1235,8 +1269,9 @@ namespace Riemann
 		S.DiscoverContacts();
 		for (auto& Pair : S.Rows) Pair.second->Solve(Dt, SeparationOnly);
 	}
-	void ClothCollision::SolveInteractions(const std::vector<ClothCollision*>& Collisions, float Dt, bool Project, bool SeparationOnly)
+	void ClothCollision::SolveInteractions(const std::vector<ClothCollision*>& Collisions, float Dt, bool Project, bool SeparationOnly, const BroadPhaseResult* Pairs)
 	{
+		if (Collisions.empty()) return;
 		/* All surfaces are refitted after material and rigid-contact projection.
 		   Discover every row before writing any particle, so broad/narrow phases
 		   see one coherent iterate. A canonical owner solves each inter-object row
@@ -1254,6 +1289,46 @@ namespace Riemann
 			const auto& Settings = Collision->m_Impl->Cloth.GetSettings().Collision;
 			if (Settings.SelfCollision || Settings.InterCollision) Collision->m_Impl->UpdateSurface(Swept);
 		}
+		BroadPhaseResult LocalPairs;
+		if (!Pairs && !Collisions.empty() && Collisions[0]->m_Impl->Cloth.m_CollisionQuery)
+			Pairs = &Collisions[0]->m_Impl->Cloth.m_CollisionQuery();
+		if (!Pairs)
+		{
+			std::vector<Geometry*> Geometries;
+			for (auto* C : Collisions) if (C->m_Impl->Cloth.GetSettings().Collision.InterCollision)
+			{
+				auto& S = *C->m_Impl; auto* G = S.Cloth.GetRenderGeometry();
+				G->SetShapeBounds(S.Index.GetBounds()); G->SetFilterData(S.Cloth.GetSettings().Collision.FilterData);
+				Geometries.push_back(G);
+			}
+			if (Geometries.size() > 1)
+			{
+				BroadPhase::BuildStandalone(Geometries, LocalPairs, BroadPhaseObjectType::Cloth);
+			}
+			Pairs = &LocalPairs;
+		}
+		// Cache only the solver's object-to-row mapping, never broadphase pairs.
+		auto& Objects = Collisions[0]->m_Impl->InteractionObjects;
+		bool Changed = Objects.size() != Collisions.size();
+		if (!Changed) for (const auto& O : Objects)
+			if (O.first != Collisions[O.second]->m_Impl->Cloth.GetRenderGeometry()) { Changed = true; break; }
+		if (Changed)
+		{
+			Objects.clear();
+			for (size_t I = 0; I < Collisions.size(); ++I) Objects.emplace_back(Collisions[I]->m_Impl->Cloth.GetRenderGeometry(), I);
+			std::sort(Objects.begin(), Objects.end(), [](const auto& A, const auto& B) { return std::less<Geometry*>()(A.first, B.first); });
+		}
+		const auto InterPairs = Pairs->GetPairs(BroadPhasePairType::Cloth);
+		auto& Indices = Collisions[0]->m_Impl->InteractionIndices;
+		if (Changed) Indices.Invalidate();
+		if (Collisions.size() > 1 && !InterPairs.empty()) Indices.Update(*Pairs, [&](int Index)
+		{
+			if (Pairs->GetObjectType(Index) != BroadPhaseObjectType::Cloth) return Collisions.size();
+			auto* G = Pairs->GetGeometry(Index);
+			const auto It = std::lower_bound(Objects.begin(), Objects.end(), G,
+				[](const auto& A, Geometry* B) { return std::less<Geometry*>()(A.first, B); });
+			return It != Objects.end() && It->first == G ? It->second : Collisions.size();
+		}, Pairs == &LocalPairs);
 		std::vector<SurfaceCandidate> Candidates;
 		for (size_t I = 0; I < Collisions.size(); ++I)
 		{
@@ -1263,14 +1338,18 @@ namespace Riemann
 				A.Index.FindSelfCandidates(Candidates, Settings.ExcludeSelfNeighbors);
 				for (const auto& Pair : Candidates) A.AddInteraction(A, I, Pair);
 			}
-			if (!Settings.InterCollision) continue;
-			for (size_t J = I + 1; J < Collisions.size(); ++J)
-			{
-				auto& B = *Collisions[J]->m_Impl;
-				if (!B.Cloth.GetSettings().Collision.InterCollision || !A.Bounds.Intersect(B.Bounds)) continue;
-				A.Index.FindCandidates(B.Index, Candidates);
-				for (const auto& Pair : Candidates) A.AddInteraction(B, J, Pair);
-			}
+		}
+		if (Collisions.size() > 1) for (const auto& P : InterPairs)
+		{
+			auto* GA = Pairs->GetGeometry(P.index1); auto* GB = Pairs->GetGeometry(P.index2);
+			if (!GA || !GB) continue;
+			size_t I = Indices[P.index1], J = Indices[P.index2];
+			if (I == Collisions.size() || J == Collisions.size() || I == J) continue;
+			if (J < I) std::swap(I, J);
+			auto& A = *Collisions[I]->m_Impl; auto& B = *Collisions[J]->m_Impl;
+			if (!A.Cloth.GetSettings().Collision.InterCollision || !B.Cloth.GetSettings().Collision.InterCollision) continue;
+			A.Index.FindCandidates(B.Index, Candidates);
+			for (const auto& Pair : Candidates) A.AddInteraction(B, J, Pair);
 		}
 		for (auto* Collision : Collisions)
 		{
@@ -1363,4 +1442,87 @@ namespace Riemann
 		m_Impl->Rows.clear(); m_Impl->InteractionRows.clear();
 		if (Commit) for (auto& C : m_Impl->Colliders) C->CommitFrame();
 	}
+
+	// Cloth and rigid endpoints predict and reconstruct once on the same world clock.
+	// Contact rows reuse the tetrahedral surface adapter and its rigid point Jacobian.
+	struct ClothStep::Implementation
+	{
+		std::vector<ClothSystem*> Cloths;
+		std::vector<ClothCollision*> Collisions;
+		std::vector<BarycentricAttachmentConstraint> Attachments;
+		std::unique_ptr<DeformableRigidCollision> Contacts;
+		std::vector<RigidBody*> Bodies;
+		float Dt;
+		bool Finished = false;
+		Implementation(const std::vector<ClothSystem*>& Input, const std::vector<DeformableRigidCollider>& Shapes, CollisionFilter* Filter, float StepTime) : Dt(StepTime)
+		{
+			for (auto* C : Input) if (C->HasRigidCoupling() || C->GetSettings().Collision.InterCollision)
+			{
+				if (C->m_CoupledStepActive || C->m_Settings.Collision.Continuous)
+					throw std::invalid_argument("Coupled cloth currently requires discrete world contacts");
+				Cloths.push_back(C); Collisions.push_back(C->m_Collision.get());
+			}
+			std::vector<RigidContactSurface> Surfaces;
+			for (auto* C : Cloths)
+			{
+				C->m_Collision->BeginFrame(); C->m_Collision->BeginSubstep(0, 1); C->PrepareStep(Dt);
+				if (C->m_Settings.Collision.RigidCoupling)
+				{
+					RigidContactSurface S; const auto& Settings = C->m_Settings; auto& Stats = C->m_Collision->MutableStats();
+					S.BroadPhaseGeometry = C->GetRenderGeometry();
+					S.BroadPhaseGeometry->SetFilterData(Settings.Collision.FilterData);
+					S.BroadPhaseGeometry->SetContactOffsets(Settings.Thickness + Settings.Collision.ContactTolerance, 0);
+					for (const auto& T : C->GetTopology().GetTriangles()) S.Triangles.push_back(T.Particles);
+					S.Thickness = Settings.Thickness; S.Tolerance = Settings.Collision.ContactTolerance;
+					S.Material = Settings.Collision.Material; S.FilterData = Settings.Collision.FilterData;
+					S.Candidates = &Stats.Candidates; S.Contacts = &Stats.Contacts; S.RigidContacts = &Stats.RigidContacts; S.MaximumPenetration = &Stats.MaximumSurfacePenetration;
+					for (int I = 0; I < C->GetParticleCount(); ++I)
+					{
+						S.Particles.push_back({ &C->m_Particles[I].Position, C->InverseMass(I) });
+						S.PreviousPositions.push_back(&C->m_Particles[I].PreviousPosition);
+					}
+					Surfaces.push_back(std::move(S));
+				}
+				for (auto& Link : C->m_RigidAttachments)
+				{
+					SurfaceContactParticle P[BarycentricPoint::MaximumVertices];
+					for (int I = 0; I < Link.Point.Count; ++I) P[I] = { &C->m_Particles[Link.Point.Indices[I]].Position, C->InverseMass(Link.Point.Indices[I]) };
+					auto* B = Link.Body; auto* Dynamic = B->CastDynamic(); const bool Movable = Dynamic && !Dynamic->Freezing;
+					RigidConstraintBody Rigid{ &B->X, &B->Q, Movable ? B->InvMass : 0, Movable ? B->InvInertia : Matrix3::Zero() };
+					Attachments.emplace_back(P, Link.Point.Weights.data(), Link.Point.Count, Rigid, Link.LocalAnchor - B->CM, Link.Compliance);
+					Bodies.push_back(B); if (Dynamic) Dynamic->Wakeup();
+				}
+			}
+			Contacts.reset(new DeformableRigidCollision(Surfaces, Shapes, Filter));
+			for (auto* C : Cloths) C->m_CoupledStepActive = true;
+		}
+		~Implementation()
+		{
+			for (auto* C : Cloths) { C->m_CoupledStepActive = false; if (!Finished) C->m_Collision->EndFrame(false); }
+		}
+	};
+	ClothStep::ClothStep(const std::vector<ClothSystem*>& Cloths, const std::vector<DeformableRigidCollider>& Colliders, CollisionFilter* Filter, float Dt)
+		: m_Data(new Implementation(Cloths, Colliders, Filter, Dt)) {}
+	ClothStep::~ClothStep() = default;
+	void ClothStep::Solve(int Iteration)
+	{
+		auto& S = *m_Data;
+		for (auto* C : S.Cloths) C->SolveIteration(S.Dt, Iteration);
+		for (auto& A : S.Attachments) A.Solve(S.Dt);
+		for (auto* B : S.Bodies) B->UpdateGeometries();
+	}
+	void ClothStep::SolveContacts(const BroadPhaseResult& Pairs)
+	{
+		auto& S = *m_Data;
+		ClothCollision::SolveInteractions(S.Collisions, S.Dt, true, false, &Pairs);
+		S.Contacts->Solve(S.Dt, Pairs);
+	}
+	void ClothStep::Finish()
+	{
+		auto& S = *m_Data;
+		for (auto* C : S.Cloths) { C->m_PreviousDt = S.Dt; C->UpdateRenderMesh(); C->m_Collision->EndFrame(); }
+		for (auto* B : S.Contacts->GetTouchedBodies()) if (std::find(S.Bodies.begin(), S.Bodies.end(), B) == S.Bodies.end()) S.Bodies.push_back(B);
+		S.Finished = true;
+	}
+	const std::vector<RigidBody*>& ClothStep::GetContactBodies() const { return m_Data->Bodies; }
 }

@@ -130,6 +130,10 @@ void TestSolverPanel()
 	EXPECT(!State.SolverChanged);
 	State.HasClothDemo = true;
 	EXPECT(SelectItem(State, "Algorithm", "Triangle Strain"));
+	EXPECT(ClickText(State, "Self collision"));
+	EXPECT(State.ClothSelfCollision);
+	EXPECT(ClickText(State, "Self collision"));
+	EXPECT(!State.ClothSelfCollision);
 	EXPECT(ClickText(State, "Apply Cloth"));
 
 	State.Status = "Requested backend initialization failed; previous solver is still active.";

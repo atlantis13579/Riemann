@@ -183,6 +183,9 @@ namespace
 	{
 		SceneWorld Scene; Scene.SetClothModelDemo(true); std::string Error;
 		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/08_cloth_sphere.json", &Error));
+		EXPECT(Scene.SetClothRigidInteraction(false));
+		RigidBody* Ball = nullptr; for (const auto& Object : Scene.GetObjects()) if (Object.Id == "cloth_ball") Ball = Object.GeometryPtr->GetParent<RigidBody>();
+		EXPECT(Ball); if (!Ball) return;
 		auto* C = Scene.GetDemoCloth(); EXPECT(C); if (!C) return;
 		EXPECT(Scene.ApplyClothDemo(true, false, true, false, true, true)); EXPECT(C->GetSettings().Collision.SurfaceContacts);
 		size_t Contacts = 0; float MinimumRadius = std::numeric_limits<float>::infinity();
@@ -193,7 +196,7 @@ namespace
 			{
 				const auto& P = C->GetParticle(I); EXPECT(std::isfinite(P.Position.Length()) && P.Position.Length() < 100);
 				if (P.Pinned) EXPECT(P.Position == P.PinPosition);
-				if (Frame > 30) MinimumRadius = std::min(MinimumRadius, (P.Position - Vector3(0, 3, -0.75f)).Length());
+				if (Frame > 30) MinimumRadius = std::min(MinimumRadius, (P.Position - Ball->X).Length());
 			}
 		}
 		printf("Surface cloth demo contacts=%zu minimum vertex radius=%g\n", Contacts, MinimumRadius);

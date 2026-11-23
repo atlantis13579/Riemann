@@ -1,5 +1,5 @@
 #include "Test.h"
-#include "../Src/RigidBodyDynamics/FeatherstoneSolver.h"
+#include "../Src/Modules/Robotics/SparseJointSpaceDynamics.h"
 #include <algorithm>
 #include <chrono>
 #include <limits>
@@ -386,6 +386,26 @@ namespace
 			}
 			EXPECT(Dense.GetRows() == Count * 6 && Dense.GetCols() == Solver.GetDofCount());
 		}
+	}
+}
+
+void TestSparseJointSpaceDynamics()
+{
+	for (bool Floating : {false, true})
+	{
+		const std::vector<RagdollLinkSettings> Links = Tree(25, Floating);
+		FeatherstoneSolver Aba(Links);
+		SparseJointSpaceDynamics Sparse(Links);
+		SetVariedState(Aba); SetVariedState(Sparse);
+		std::vector<SpatialVector> External(Links.size());
+		External.back() = SpatialVector(Vector3(0.5f, 2, -3), Vector3(1, -2, 0.7f));
+		const std::vector<double> Input = Sparse.GetVelocity();
+		VectorNear(Sparse.ComputeAcceleration(Input, Gravity, External), Aba.ComputeAcceleration(Input, Gravity, External), 1e-5);
+		VectorNear(Sparse.ComputeImpulseResponse(External, Input), Aba.ComputeImpulseResponse(External, Input), 1e-5);
+		EXPECT(Sparse.GetFactorizationCount() == 1);
+		Sparse.IntegrateConfiguration(0.01); Aba.IntegrateConfiguration(0.01);
+		VectorNear(Sparse.ComputeImpulseResponse(External), Aba.ComputeImpulseResponse(External), 1e-5);
+		EXPECT(Sparse.GetFactorizationCount() == 2);
 	}
 }
 

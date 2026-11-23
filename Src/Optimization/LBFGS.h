@@ -15,6 +15,8 @@
 // http://www.ece.northwestern.edu/~nocedal/lbfgs.html
 
 #include <math.h>
+#include <cstring>
+#include <limits>
 
 namespace Maths
 {

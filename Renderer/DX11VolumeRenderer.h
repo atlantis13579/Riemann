@@ -102,7 +102,7 @@ namespace Riemann
 			P.Compressed = m_Description.CompressedColor; P.Rarefied = m_Description.RarefiedColor;
 			P.Light = V4(Unit(Light.Direction, Vector3(0, -1, 0)), std::max(0.2f, Light.Ambient));
 			P.Control = Vector4(Cell * m_Description.StepScale, m_Description.Extinction, (float)Width, (float)Height);
-			P.Smoke = Vector4(m_Description.Smoke ? 1.0f : 0.0f, m_Description.ShadowStep, 0, 0);
+			P.Tracer = Vector4(m_Description.Tracer ? 1.0f : 0.0f, m_Description.ShadowStep, 0, 0);
 			Context->UpdateSubresource(m_Constants.Get(), 0, nullptr, &P, 0, 0);
 			ID3D11Buffer* Constants = m_Constants.Get();
 			Context->PSSetConstantBuffers(1, 1, &Constants);
@@ -131,7 +131,7 @@ namespace Riemann
 		struct Parameters
 		{
 			Vector4 EyeNear, ForwardFar, Right, Up, MinDensity, MaxThreshold;
-			Vector4 Compressed, Rarefied, Light, Control, Smoke;
+			Vector4 Compressed, Rarefied, Light, Control, Tracer;
 		};
 		DensityVolumeDesc m_Description;
 		Microsoft::WRL::ComPtr<ID3D11VertexShader> m_VS;
