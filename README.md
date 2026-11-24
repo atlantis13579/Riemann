@@ -7,14 +7,6 @@ This project is named after the 19th-century German mathematician Bernhard Riema
 
 ## Features
 
-* Rigid Body Dynamics Simulation
-    * Continuous collision detection, temporal substeps, island sleeping, and persistent friction patches
-    * Reduced-coordinate articulation with Featherstone dynamics, transmissions, and tendon constraints
-    * Physical animation, pose drives, and ragdoll recovery
-    * Capsule and box character controllers with swept walking and ballistic jumping
-    * Query-wheel vehicles with suspension, combined tire slip, drivetrain, and chassis aerodynamics
-    * Articulated robot walking with joint motors and terrain contacts
-
 * Simulation and Collision Detection for various shapes
     * Sphere
     * Oriented Box
@@ -39,6 +31,13 @@ This project is named after the 19th-century German mathematician Bernhard Riema
     * Sequential Impulse Solver
     * Global LCP Solver using Projected Gauss-Seidel
     * Position Based Dynamics
+
+* Rigid Body Dynamics Simulation
+    * Continuous collision detection
+    * Island sleeping
+    * Reduced-coordinate articulation with Featherstone Solver, transmissions, and tendon constraints
+    * Query-wheel vehicles with suspension
+    * Multi joint Robotics
 
 * Destruction Simulation
     * Graph Based Hierarchy Destruction
@@ -69,16 +68,17 @@ This project is named after the 19th-century German mathematician Bernhard Riema
     * Three-dimensional quadratic B-spline MPM with PIC/FLIP, APIC, and MLS-MPM transfers
     * Fixed-corotated snow elasticity, compression hardening, and Drucker-Prager sand plasticity
     * CFL-controlled integration and spatially binned GPU grid gathering without floating-point atomics
+ 
+* 2D Physics Simulation
+    * The 2D Physics Simulation implemented in a separate project [Riemann2d](https://github.com/atlantis13579/Riemann2d)
 
 ## Examples
 
-#### Dominoes
+#### Stable Box Stackes
 
-https://github.com/user-attachments/assets/fade84c5-58d8-46ec-8d3e-f972f670b7fb
+#### Dominoes Simulation
 
-#### Seesaw
-
-https://github.com/user-attachments/assets/0463e259-d197-4550-8242-817025141715
+https://github.com/user-attachments/assets/00452f08-55f5-4078-b492-08461270b7c8
 
 #### Ragdoll Simulation
 
@@ -91,6 +91,10 @@ https://github.com/user-attachments/assets/3b1fc795-60ff-47c3-871d-e2d8c96425d1
 #### Robotics Simulation (The Policy Weights are trained using [ElmanLLM](https://github.com/atlantis13579/Elman))
 
 https://github.com/user-attachments/assets/51c44659-9074-41c7-b416-be62b5a04130
+
+#### Machices Simulation
+
+https://github.com/user-attachments/assets/574b2c11-2859-455a-9c97-42bc8fe91dd5
 
 #### Glass Break Simulation
 
