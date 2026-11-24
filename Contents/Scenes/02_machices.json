@@ -1,0 +1,529 @@
+{
+  "name": "Simple Machines",
+  "physics": {
+    "gravity": [0, -9.8, 0],
+    "resolutionSolver": "sequential",
+    "solverBackend": "cpu",
+    "temporalSubsteps": {
+      "enabled": true,
+      "substeps": 4
+    },
+    "jointDrives": true,
+    "islandSleeping": {
+      "enabled": true,
+      "quietTime": 1,
+      "linearThreshold": 0.005,
+      "angularThreshold": 0.005
+    },
+    "ccdContinuation": {
+      "enabled": false,
+      "maxPasses": 8,
+      "impactIterations": 12
+    }
+  },
+  "camera": {
+    "center": [0, 2.6, 0],
+    "orbit": [0.1, 0.38, 23.5],
+    "fovY": 0.64,
+    "sidebarPadding": 300,
+    "near": 0.05,
+    "far": 1000
+  },
+  "light": {
+    "direction": [-0.35, -0.8, -0.65],
+    "color": [1, 0.97, 0.91],
+    "ambient": 0.35,
+    "shadowCenter": [0, 2, 0],
+    "shadowDistance": 45,
+    "shadowSize": 32
+  },
+  "objects": [
+    {
+      "id": "ground",
+      "type": "box",
+      "body": "static",
+      "position": [0, -0.15, 0],
+      "halfExtent": [500, 0.15, 500],
+      "color": [0.49, 0.54, 0.58, 1]
+    },
+    {
+      "id": "lever_base",
+      "type": "box",
+      "body": "static",
+      "position": [-9, 0.2, 0],
+      "halfExtent": [2.85, 0.2, 1.4],
+      "color": [0.23, 0.29, 0.35, 1]
+    },
+    {
+      "id": "lever_trim",
+      "type": "box",
+      "body": "static",
+      "position": [-9, 0.42, 1.25],
+      "halfExtent": [2.65, 0.035, 0.075],
+      "color": [0.2, 0.7, 0.4, 1],
+      "simulation": false
+    },
+    {
+      "id": "pendulum_base",
+      "type": "box",
+      "body": "static",
+      "position": [-3, 0.2, 0],
+      "halfExtent": [2.85, 0.2, 1.4],
+      "color": [0.23, 0.29, 0.35, 1]
+    },
+    {
+      "id": "pendulum_trim",
+      "type": "box",
+      "body": "static",
+      "position": [-3, 0.42, 1.25],
+      "halfExtent": [2.65, 0.035, 0.075],
+      "color": [0.14, 0.65, 0.73, 1],
+      "simulation": false
+    },
+    {
+      "id": "crank_base",
+      "type": "box",
+      "body": "static",
+      "position": [3, 0.2, 0],
+      "halfExtent": [2.85, 0.2, 1.4],
+      "color": [0.23, 0.29, 0.35, 1]
+    },
+    {
+      "id": "crank_trim",
+      "type": "box",
+      "body": "static",
+      "position": [3, 0.42, 1.25],
+      "halfExtent": [2.65, 0.035, 0.075],
+      "color": [0.2, 0.43, 0.88, 1],
+      "simulation": false
+    },
+    {
+      "id": "spring_base",
+      "type": "box",
+      "body": "static",
+      "position": [9, 0.2, 0],
+      "halfExtent": [2.85, 0.2, 1.4],
+      "color": [0.23, 0.29, 0.35, 1]
+    },
+    {
+      "id": "spring_trim",
+      "type": "box",
+      "body": "static",
+      "position": [9, 0.42, 1.25],
+      "halfExtent": [2.65, 0.035, 0.075],
+      "color": [0.58, 0.36, 0.82, 1],
+      "simulation": false
+    },
+    {
+      "id": "fulcrum",
+      "type": "box",
+      "body": "static",
+      "position": [-9, 1.35, -0.2],
+      "halfExtent": [0.34, 0.95, 0.5],
+      "color": [0.2, 0.7, 0.4, 1]
+    },
+    {
+      "id": "lever_axle",
+      "type": "cylinder",
+      "body": "static",
+      "x0": [-9, 2.3, -0.8],
+      "x1": [-9, 2.3, 0.85],
+      "radius": 0.19,
+      "color": [0.2, 0.7, 0.4, 1]
+    },
+    {
+      "id": "plank",
+      "type": "box",
+      "body": "dynamic",
+      "position": [-9, 2.3, 0],
+      "halfExtent": [2.5, 0.16, 0.7],
+      "color": [0.2, 0.7, 0.4, 1],
+      "rotationAxis": [0, 0, 1],
+      "rotationDegrees": 22,
+      "simulation": false
+    },
+    {
+      "id": "ball",
+      "type": "sphere",
+      "body": "dynamic",
+      "position": [-11.079132, 2.107097, 0],
+      "radius": 0.43,
+      "color": [0.2, 0.7, 0.4, 1],
+      "enableCCD": true,
+      "simulation": false,
+      "density": 1.91
+    },
+    {
+      "id": "weight",
+      "type": "box",
+      "body": "dynamic",
+      "position": [-7.370396, 3.605523, 0],
+      "halfExtent": [0.43, 0.43, 0.43],
+      "color": [0.2, 0.7, 0.4, 1],
+      "rotationAxis": [0, 0, 1],
+      "rotationDegrees": 22,
+      "simulation": false
+    },
+    {
+      "id": "pendulum_post",
+      "type": "box",
+      "body": "static",
+      "position": [-3, 2.95, -0.65],
+      "halfExtent": [0.16, 2.55, 0.17],
+      "color": [0.14, 0.65, 0.73, 1],
+      "simulation": false
+    },
+    {
+      "id": "pendulum_top",
+      "type": "box",
+      "body": "static",
+      "position": [-3, 5.5, -0.1],
+      "halfExtent": [0.55, 0.16, 0.7],
+      "color": [0.14, 0.65, 0.73, 1],
+      "simulation": false
+    },
+    {
+      "id": "pendulum_upper",
+      "type": "box",
+      "body": "dynamic",
+      "position": [-2.201364, 4.698185, 0.3],
+      "halfExtent": [0.13, 1.0, 0.13],
+      "color": [0.14, 0.65, 0.73, 1],
+      "rotationAxis": [0, 0, 1],
+      "rotationDegrees": -127.0,
+      "simulation": false
+    },
+    {
+      "id": "pendulum_lower",
+      "type": "box",
+      "body": "dynamic",
+      "position": [-1.81132, 3.294464, 0.3],
+      "halfExtent": [0.13, 0.9, 0.13],
+      "color": [0.14, 0.65, 0.73, 1],
+      "rotationAxis": [0, 0, 1],
+      "rotationDegrees": 153.0,
+      "simulation": false
+    },
+    {
+      "id": "pendulum_bob_1",
+      "type": "sphere",
+      "body": "dynamic",
+      "position": [-1.402729, 4.09637, 0.3],
+      "radius": 0.32,
+      "color": [0.14, 0.65, 0.73, 1],
+      "simulation": false
+    },
+    {
+      "id": "pendulum_bob_2",
+      "type": "sphere",
+      "body": "dynamic",
+      "position": [-2.219912, 2.492558, 0.3],
+      "radius": 0.47,
+      "color": [0.14, 0.65, 0.73, 1],
+      "simulation": false
+    },
+    {
+      "id": "pendulum_cap",
+      "type": "cylinder",
+      "body": "static",
+      "x0": [-3, 5.3, 0.2],
+      "x1": [-3, 5.3, 0.65],
+      "radius": 0.22,
+      "color": [0.14, 0.65, 0.73, 1],
+      "simulation": false
+    },
+    {
+      "id": "crank_pedestal",
+      "type": "box",
+      "body": "static",
+      "position": [1.6, 1.3, -0.55],
+      "halfExtent": [0.42, 0.9, 0.4],
+      "color": [0.2, 0.43, 0.88, 1],
+      "simulation": false
+    },
+    {
+      "id": "crank_axle",
+      "type": "cylinder",
+      "body": "static",
+      "x0": [1.6, 2.3, -0.8],
+      "x1": [1.6, 2.3, 0.25],
+      "radius": 0.2,
+      "color": [0.2, 0.43, 0.88, 1],
+      "simulation": false
+    },
+    {
+      "id": "crank_wheel",
+      "type": "cylinder",
+      "body": "dynamic",
+      "x0": [1.6, 2.3, -0.2],
+      "x1": [1.6, 2.3, 0.2],
+      "radius": 1.0,
+      "color": [0.2, 0.43, 0.88, 1],
+      "disableGravity": true,
+      "simulation": false
+    },
+    {
+      "id": "crank_rod",
+      "type": "box",
+      "body": "dynamic",
+      "position": [2.88938, 2.7, 0.45],
+      "halfExtent": [0.13, 1.35, 0.13],
+      "color": [0.2, 0.43, 0.88, 1],
+      "rotationAxis": [0, 0, 1],
+      "rotationDegrees": -107.235285,
+      "simulation": false,
+      "disableGravity": true
+    },
+    {
+      "id": "crank_slider",
+      "type": "box",
+      "body": "dynamic",
+      "position": [4.178759, 2.3, 0.45],
+      "halfExtent": [0.42, 0.42, 0.5],
+      "color": [0.2, 0.43, 0.88, 1],
+      "disableGravity": true,
+      "simulation": false
+    },
+    {
+      "id": "crank_rail_-0.25",
+      "type": "box",
+      "body": "static",
+      "position": [4.05, 1.82, -0.25],
+      "halfExtent": [1.6, 0.12, 0.12],
+      "color": [0.2, 0.43, 0.88, 1],
+      "simulation": false
+    },
+    {
+      "id": "crank_foot_-0.25_2.6",
+      "type": "box",
+      "body": "static",
+      "position": [2.6, 1.08, -0.25],
+      "halfExtent": [0.16, 0.68, 0.18],
+      "color": [0.2, 0.43, 0.88, 1],
+      "simulation": false
+    },
+    {
+      "id": "crank_foot_-0.25_5.5",
+      "type": "box",
+      "body": "static",
+      "position": [5.5, 1.08, -0.25],
+      "halfExtent": [0.16, 0.68, 0.18],
+      "color": [0.2, 0.43, 0.88, 1],
+      "simulation": false
+    },
+    {
+      "id": "crank_rail_1.05",
+      "type": "box",
+      "body": "static",
+      "position": [4.05, 1.82, 1.05],
+      "halfExtent": [1.6, 0.12, 0.12],
+      "color": [0.2, 0.43, 0.88, 1],
+      "simulation": false
+    },
+    {
+      "id": "crank_foot_1.05_2.6",
+      "type": "box",
+      "body": "static",
+      "position": [2.6, 1.08, 1.05],
+      "halfExtent": [0.16, 0.68, 0.18],
+      "color": [0.2, 0.43, 0.88, 1],
+      "simulation": false
+    },
+    {
+      "id": "crank_foot_1.05_5.5",
+      "type": "box",
+      "body": "static",
+      "position": [5.5, 1.08, 1.05],
+      "halfExtent": [0.16, 0.68, 0.18],
+      "color": [0.2, 0.43, 0.88, 1],
+      "simulation": false
+    },
+    {
+      "id": "crank_pin",
+      "type": "sphere",
+      "body": "dynamic",
+      "position": [1.6, 3.1, 0.45],
+      "radius": 0.19,
+      "color": [0.2, 0.43, 0.88, 1],
+      "simulation": false,
+      "disableGravity": true
+    },
+    {
+      "id": "spring_rail_7.8",
+      "type": "cylinder",
+      "body": "static",
+      "x0": [7.8, 0.4, 0],
+      "x1": [7.8, 5.5, 0],
+      "radius": 0.1,
+      "color": [0.58, 0.36, 0.82, 1],
+      "simulation": false
+    },
+    {
+      "id": "spring_rail_10.2",
+      "type": "cylinder",
+      "body": "static",
+      "x0": [10.2, 0.4, 0],
+      "x1": [10.2, 5.5, 0],
+      "radius": 0.1,
+      "color": [0.58, 0.36, 0.82, 1],
+      "simulation": false
+    },
+    {
+      "id": "spring_top",
+      "type": "box",
+      "body": "static",
+      "position": [9, 5.5, 0],
+      "halfExtent": [1.45, 0.18, 0.45],
+      "color": [0.58, 0.36, 0.82, 1],
+      "simulation": false
+    },
+    {
+      "id": "spring_mass",
+      "type": "box",
+      "body": "dynamic",
+      "position": [9, 2.4, 0],
+      "halfExtent": [1.4, 0.38, 0.55],
+      "color": [0.58, 0.36, 0.82, 1],
+      "simulation": false,
+      "linearVelocity": [0, 4.3, 0],
+      "density": 0.4272
+    }
+  ],
+  "constraints": [
+    {
+      "type": "hinge",
+      "bodyA": "fulcrum",
+      "bodyB": "plank",
+      "disableCollision": true,
+      "anchor": [-9, 2.3, 0],
+      "axis": [0, 0, 1],
+      "minAngleDegrees": -48,
+      "maxAngleDegrees": 5,
+      "drive": {
+        "positionEnabled": true,
+        "velocityEnabled": true,
+        "stiffness": 70,
+        "damping": 0.45,
+        "maxForce": 100,
+        "targetPosition": -0.383972,
+        "targetVelocity": 0
+      }
+    },
+    {
+      "type": "fixed",
+      "bodyA": "plank",
+      "bodyB": "ball",
+      "disableCollision": true
+    },
+    {
+      "type": "fixed",
+      "bodyA": "plank",
+      "bodyB": "weight",
+      "disableCollision": true
+    },
+    {
+      "type": "hinge",
+      "bodyA": "pendulum_top",
+      "bodyB": "pendulum_upper",
+      "disableCollision": true,
+      "anchor": [-3, 5.3, 0.3],
+      "axis": [0, 0, 1]
+    },
+    {
+      "type": "hinge",
+      "bodyA": "pendulum_upper",
+      "bodyB": "pendulum_lower",
+      "disableCollision": true,
+      "anchor": [-1.402729, 4.09637, 0.3],
+      "axis": [0, 0, 1]
+    },
+    {
+      "type": "fixed",
+      "bodyA": "pendulum_upper",
+      "bodyB": "pendulum_bob_1",
+      "disableCollision": true
+    },
+    {
+      "type": "fixed",
+      "bodyA": "pendulum_lower",
+      "bodyB": "pendulum_bob_2",
+      "disableCollision": true
+    },
+    {
+      "type": "hinge",
+      "bodyA": "crank_pedestal",
+      "bodyB": "crank_wheel",
+      "disableCollision": true,
+      "anchor": [1.6, 2.3, 0],
+      "axis": [0, 0, 1],
+      "drive": {
+        "positionEnabled": false,
+        "velocityEnabled": true,
+        "stiffness": 0,
+        "damping": 18,
+        "maxForce": 120,
+        "targetPosition": 0,
+        "targetVelocity": 2.5
+      }
+    },
+    {
+      "type": "hinge",
+      "bodyA": "crank_wheel",
+      "bodyB": "crank_rod",
+      "disableCollision": true,
+      "anchor": [1.6, 3.1, 0.45],
+      "axis": [0, 0, 1]
+    },
+    {
+      "type": "hinge",
+      "bodyA": "crank_rod",
+      "bodyB": "crank_slider",
+      "disableCollision": true,
+      "anchor": [4.178759, 2.3, 0.45],
+      "axis": [0, 0, 1]
+    },
+    {
+      "type": "slider",
+      "bodyA": "crank_base",
+      "bodyB": "crank_slider",
+      "disableCollision": true,
+      "anchor": [4.178759, 2.3, 0.45],
+      "axis": [1, 0, 0],
+      "minDistance": -1.1,
+      "maxDistance": 1.1
+    },
+    {
+      "type": "fixed",
+      "bodyA": "crank_wheel",
+      "bodyB": "crank_pin",
+      "disableCollision": true
+    },
+    {
+      "type": "slider",
+      "bodyA": "spring_top",
+      "bodyB": "spring_mass",
+      "disableCollision": true,
+      "anchor": [9, 2.4, 0],
+      "axis": [0, 1, 0],
+      "minDistance": -1.5,
+      "maxDistance": 1.6,
+      "drive": {
+        "positionEnabled": true,
+        "velocityEnabled": true,
+        "stiffness": 18,
+        "damping": 0.08,
+        "maxForce": 100,
+        "targetPosition": 0.5444,
+        "targetVelocity": 0
+      },
+      "springVisual": {
+        "anchorA": [9, 5.3, 0],
+        "anchorB": [9, 2.78, 0],
+        "radius": 0.38,
+        "wireRadius": 0.07,
+        "turns": 8,
+        "color": [0.58, 0.36, 0.82, 1]
+      }
+    }
+  ]
+}

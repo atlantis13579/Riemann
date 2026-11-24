@@ -295,7 +295,7 @@ namespace
 		for (ResolutionPhaseSolver Solver : Solvers)
 		{
 			SceneWorld Scene;
-			EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/01_demo.json", &Error));
+			EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/01_stack_boxes.json", &Error));
 			PhysicsWorld* Simulation = Scene.GetSimulation();
 			if (!Simulation) { EXPECT(false); continue; }
 			EXPECT(Simulation->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));

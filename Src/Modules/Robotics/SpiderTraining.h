@@ -18,6 +18,7 @@ struct SpiderTrainingSnapshot {
 };
 
 struct SpiderTrainingOptions {
+    std::string executable_path;
     std::string policy_path;
     std::string course_path;
     int environment_count = 1;

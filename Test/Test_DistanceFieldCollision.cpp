@@ -268,7 +268,7 @@ void TestDistanceFieldDemo()
 	for (auto Solver : { ResolutionPhaseSolver::SequentialImpulse, ResolutionPhaseSolver::LCPGlobal, ResolutionPhaseSolver::PBD, ResolutionPhaseSolver::XPBD })
 	{
 		SceneWorld Scene; Scene.SetDistanceFieldDemo(true);
-		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/01_demo.json", &Error));
+		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/01_stack_boxes.json", &Error));
 		if (!Scene.GetSimulation()) continue;
 		EXPECT(Scene.GetSimulation()->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
 		int Count = 0;
@@ -288,7 +288,7 @@ void TestDistanceFieldDemo()
 			EXPECT(std::isfinite(Body->X.y) && Body->X.y > -4.05f && Body->X.y < 4.05f);
 			EXPECT(std::abs(Body->X.x) < 0.15f && std::abs(Body->X.z) < 0.15f);
 		}
-		Scene.SetDistanceFieldDemo(false); EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/01_demo.json", &Error));
+		Scene.SetDistanceFieldDemo(false); EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/01_stack_boxes.json", &Error));
 		for (const auto& Object : Scene.GetObjects()) EXPECT(Object.GeometryPtr->GetShapeType() != PrimitiveType::DISTANCE_FIELD);
 	}
 	SceneWorld Invalid;
@@ -779,7 +779,7 @@ void TestDistanceFieldSpeculativeDemo()
 	for (auto Solver : { ResolutionPhaseSolver::SequentialImpulse, ResolutionPhaseSolver::LCPGlobal, ResolutionPhaseSolver::PBD, ResolutionPhaseSolver::XPBD })
 	{
 		SceneWorld Scene; Scene.SetDistanceFieldDemo(true); std::string Error;
-		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/01_demo.json", &Error));
+		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/01_stack_boxes.json", &Error));
 		if (!Scene.GetSimulation()) continue;
 		EXPECT(Scene.GetSimulation()->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
 		auto Settings = Scene.GetSimulation()->GetContactGenerationSettings(); Settings.SpeculativeContacts = true;

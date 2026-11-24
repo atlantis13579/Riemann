@@ -1,73 +1,571 @@
 {
   "name": "Domino",
-  "physics": {
-    "gravity": [0.0, -9.8, 0.0]
-  },
-  "camera": {
-    "center": [0.0, 3.0, 0.0],
-    "orbit": [1.55, 0.55, 28.0],
-    "near": 0.05,
-    "far": 1000.0
-  },
-  "light": {
-    "direction": [-0.344205, -0.878923, 0.330178],
-    "color": [1.0, 0.96, 0.84],
-    "ambient": 0.20,
-    "shadowCenter": [0.0, 4.0, 0.0],
-    "shadowDistance": 95.0,
-    "shadowSize": 100.0
-  },
-  "objects": [
+  "defaultConfiguration": "classic",
+  "configurations": [
     {
-      "id": "ground",
-      "type": "plane",
-      "body": "static",
-      "position": [0.0, 0.0, 0.0],
-      "normal": [0.0, 1.0, 0.0],
-      "color": [0.48, 0.53, 0.56, 1.0]
-    },
-    {
-      "id": "ramp",
-      "type": "box",
-      "body": "static",
-      "position": [0.0, 2.5, -18.0],
-      "halfExtent": [2.0, 2.0, 6.0],
-      "rotationAxis": [1.0, 0.0, 0.0],
-      "rotationDegrees": 23.0,
-      "color": [0.56, 0.60, 0.65, 1.0]
-    },
-    {
-      "id": "starter_sphere",
-      "type": "sphere",
-      "body": "dynamic",
-      "position": [0.0, 20.0, -20.0],
-      "radius": 1.0,
-      "color": [0.94, 0.58, 0.22, 1.0]
-    },
-    {
-      "id": "domino_line",
-      "type": "box",
-      "body": "dynamic",
-      "position": [0.0, 3.0, -10.0],
-      "halfExtent": [2.0, 3.0, 0.25],
-      "color": [0.30, 0.55, 0.92, 1.0],
-      "repeat": {
-        "count": [1, 1, 14],
-        "spacing": [0.0, 0.0, 1.65]
+      "id": "classic",
+      "name": "Classic Domino",
+      "scene": {
+        "name": "Domino",
+        "physics": {
+          "gravity": [0.0, -9.8, 0.0]
+        },
+        "camera": {
+          "center": [0.0, 3.0, 0.0],
+          "orbit": [1.55, 0.55, 28.0],
+          "near": 0.05,
+          "far": 1000.0
+        },
+        "light": {
+          "direction": [-0.344205, -0.878923, 0.330178],
+          "color": [1.0, 0.96, 0.84],
+          "ambient": 0.2,
+          "shadowCenter": [0.0, 4.0, 0.0],
+          "shadowDistance": 95.0,
+          "shadowSize": 100.0
+        },
+        "objects": [
+          {
+            "id": "ground",
+            "type": "plane",
+            "body": "static",
+            "position": [0.0, 0.0, 0.0],
+            "normal": [0.0, 1.0, 0.0],
+            "color": [0.48, 0.53, 0.56, 1.0]
+          },
+          {
+            "id": "ramp",
+            "type": "box",
+            "body": "static",
+            "position": [0.0, 2.5, -18.0],
+            "halfExtent": [2.0, 2.0, 6.0],
+            "rotationAxis": [1.0, 0.0, 0.0],
+            "rotationDegrees": 23.0,
+            "color": [0.56, 0.60, 0.65, 1.0]
+          },
+          {
+            "id": "starter_sphere",
+            "type": "sphere",
+            "body": "dynamic",
+            "position": [0.0, 20.0, -20.0],
+            "radius": 1.0,
+            "color": [0.94, 0.58, 0.22, 1.0]
+          },
+          {
+            "id": "domino_line",
+            "type": "box",
+            "body": "dynamic",
+            "position": [0.0, 3.0, -10.0],
+            "halfExtent": [2.0, 3.0, 0.25],
+            "color": [0.30, 0.55, 0.92, 1.0],
+            "repeat": {
+              "count": [1, 1, 14],
+              "spacing": [0.0, 0.0, 1.65]
+            }
+          },
+          {
+            "id": "domino_cross",
+            "type": "box",
+            "body": "dynamic",
+            "position": [6.0, 3.0, 10.0],
+            "halfExtent": [2.0, 3.0, 0.25],
+            "rotationAxis": [0.0, 1.0, 0.0],
+            "rotationDegrees": 90.0,
+            "color": [0.40, 0.70, 0.62, 1.0],
+            "repeat": {
+              "count": [6, 1, 1],
+              "spacing": [1.65, 0.0, 0.0]
+            }
+          }
+        ]
       }
     },
     {
-      "id": "domino_cross",
-      "type": "box",
-      "body": "dynamic",
-      "position": [6.0, 3.0, 10.0],
-      "halfExtent": [2.0, 3.0, 0.25],
-      "rotationAxis": [0.0, 1.0, 0.0],
-      "rotationDegrees": 90.0,
-      "color": [0.40, 0.70, 0.62, 1.0],
-      "repeat": {
-        "count": [6, 1, 1],
-        "spacing": [1.65, 0.0, 0.0]
+      "id": "chain",
+      "name": "Chain Reaction",
+      "scene": {
+        "name": "See Saw Chain Reaction",
+        "physics": {
+          "gravity": [0.0, -9.8, 0.0],
+          "ccdContinuation": {
+            "enabled": false,
+            "maxPasses": 8,
+            "impactIterations": 12
+          }
+        },
+        "camera": {
+          "center": [10.3, 6.0, 0],
+          "orbit": [0.1, 0.4, 26],
+          "fovY": 0.67,
+          "sidebarPadding": 300,
+          "near": 0.05,
+          "far": 1000
+        },
+        "light": {
+          "direction": [-0.35, -0.8, -0.65],
+          "color": [1, 0.97, 0.91],
+          "ambient": 0.35,
+          "shadowCenter": [7, 5, 0],
+          "shadowDistance": 50,
+          "shadowSize": 34
+        },
+        "objects": [
+          {
+            "id": "ground",
+            "type": "box",
+            "body": "static",
+            "position": [0, -0.15, 0],
+            "normal": [0.0, 1.0, 0.0],
+            "color": [0.52, 0.51, 0.49, 1],
+            "halfExtent": [500, 0.15, 500]
+          },
+          {
+            "id": "fulcrum",
+            "type": "box",
+            "body": "static",
+            "position": [3.0, 0.0, 0.0],
+            "halfExtent": [1.0, 1.0, 1.0],
+            "rotationAxis": [0.0, 0.0, 1.0],
+            "rotationDegrees": 40.0,
+            "color": [0.86, 0.22, 0.16, 1]
+          },
+          {
+            "id": "plank",
+            "type": "box",
+            "body": "dynamic",
+            "position": [2.0, 1.7, 0.0],
+            "halfExtent": [5.0, 0.25, 1.0],
+            "color": [0.86, 0.22, 0.16, 1]
+          },
+          {
+            "id": "ball",
+            "enableCCD": true,
+            "restitution": 0.7,
+            "type": "sphere",
+            "body": "dynamic",
+            "position": [-1.0, 4.0, 0.0],
+            "radius": 0.5,
+            "color": [0.86, 0.22, 0.16, 1]
+          },
+          {
+            "id": "weight",
+            "type": "box",
+            "body": "dynamic",
+            "position": [-2.0, 4.0, 0.0],
+            "halfExtent": [0.5, 0.5, 0.5],
+            "invMass": 0.5,
+            "color": [0.86, 0.22, 0.16, 1]
+          },
+          {
+            "id": "roller",
+            "type": "cylinder",
+            "body": "dynamic",
+            "x0": [6.0, 10.0, -2.0],
+            "x1": [6.0, 10.0, 2.0],
+            "radius": 0.5,
+            "invMass": 0.01,
+            "color": [0.86, 0.22, 0.16, 1]
+          },
+          {
+            "id": "upper_catcher",
+            "type": "box",
+            "body": "static",
+            "position": [1, 11.6, 0],
+            "halfExtent": [4.2, 0.18, 1.5],
+            "color": [0.86, 0.22, 0.16, 1],
+            "restitution": 0
+          },
+          {
+            "id": "upper_deck",
+            "type": "box",
+            "body": "static",
+            "position": [14, 8.7, 0],
+            "halfExtent": [6.5, 0.2, 1.2],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.35,
+            "frictionStatic": 0.4
+          },
+          {
+            "id": "upper_domino_0",
+            "type": "box",
+            "body": "dynamic",
+            "position": [8.7, 9.8, 0],
+            "halfExtent": [0.16, 0.9, 0.75],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "upper_domino_1",
+            "type": "box",
+            "body": "dynamic",
+            "position": [9.7, 9.8, 0],
+            "halfExtent": [0.16, 0.9, 0.75],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "upper_domino_2",
+            "type": "box",
+            "body": "dynamic",
+            "position": [10.7, 9.8, 0],
+            "halfExtent": [0.16, 0.9, 0.75],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "upper_domino_3",
+            "type": "box",
+            "body": "dynamic",
+            "position": [11.7, 9.8, 0],
+            "halfExtent": [0.16, 0.9, 0.75],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "upper_domino_4",
+            "type": "box",
+            "body": "dynamic",
+            "position": [12.7, 9.8, 0],
+            "halfExtent": [0.16, 0.9, 0.75],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "upper_domino_5",
+            "type": "box",
+            "body": "dynamic",
+            "position": [13.7, 9.8, 0],
+            "halfExtent": [0.16, 0.9, 0.75],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "upper_domino_6",
+            "type": "box",
+            "body": "dynamic",
+            "position": [14.7, 9.8, 0],
+            "halfExtent": [0.16, 0.9, 0.75],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "upper_domino_7",
+            "type": "box",
+            "body": "dynamic",
+            "position": [15.7, 9.8, 0],
+            "halfExtent": [0.16, 0.9, 0.75],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "upper_domino_8",
+            "type": "box",
+            "body": "dynamic",
+            "position": [16.7, 9.8, 0],
+            "halfExtent": [0.16, 0.9, 0.75],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "upper_domino_9",
+            "type": "box",
+            "body": "dynamic",
+            "position": [17.7, 9.8, 0],
+            "halfExtent": [0.16, 0.9, 0.75],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "upper_domino_10",
+            "type": "box",
+            "body": "dynamic",
+            "position": [18.7, 9.8, 0],
+            "halfExtent": [0.16, 0.9, 0.75],
+            "color": [0.95, 0.74, 0.16, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "transfer_weight",
+            "type": "box",
+            "body": "dynamic",
+            "position": [20.1, 9.45, 0],
+            "halfExtent": [0.5, 0.55, 0.7],
+            "color": [0.95, 0.36, 0.12, 1],
+            "density": 0.65,
+            "frictionDynamic": 0.12,
+            "frictionStatic": 0.15,
+            "restitution": 0
+          },
+          {
+            "id": "transfer_chute",
+            "type": "box",
+            "body": "static",
+            "position": [21.0, 6.55, 0.0],
+            "halfExtent": [3.367863, 0.15, 1.2],
+            "color": [0.95, 0.36, 0.12, 1],
+            "rotationAxis": [0, 0, 1],
+            "rotationDegrees": 49.214179,
+            "frictionDynamic": 0.1,
+            "frictionStatic": 0.1,
+            "restitution": 0
+          },
+          {
+            "id": "lower_deck",
+            "type": "box",
+            "body": "static",
+            "position": [14.2, 3.1, 0],
+            "halfExtent": [4.9, 0.2, 1.2],
+            "color": [0.96, 0.57, 0.12, 1],
+            "frictionDynamic": 0.35,
+            "frictionStatic": 0.4
+          },
+          {
+            "id": "lower_domino_0",
+            "type": "box",
+            "body": "dynamic",
+            "position": [18.2, 4.1, 0],
+            "halfExtent": [0.15, 0.8, 0.75],
+            "color": [0.96, 0.57, 0.12, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "lower_domino_1",
+            "type": "box",
+            "body": "dynamic",
+            "position": [17.35, 4.1, 0],
+            "halfExtent": [0.15, 0.8, 0.75],
+            "color": [0.96, 0.57, 0.12, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "lower_domino_2",
+            "type": "box",
+            "body": "dynamic",
+            "position": [16.5, 4.1, 0],
+            "halfExtent": [0.15, 0.8, 0.75],
+            "color": [0.96, 0.57, 0.12, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "lower_domino_3",
+            "type": "box",
+            "body": "dynamic",
+            "position": [15.65, 4.1, 0],
+            "halfExtent": [0.15, 0.8, 0.75],
+            "color": [0.96, 0.57, 0.12, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "lower_domino_4",
+            "type": "box",
+            "body": "dynamic",
+            "position": [14.8, 4.1, 0],
+            "halfExtent": [0.15, 0.8, 0.75],
+            "color": [0.96, 0.57, 0.12, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "lower_domino_5",
+            "type": "box",
+            "body": "dynamic",
+            "position": [13.95, 4.1, 0],
+            "halfExtent": [0.15, 0.8, 0.75],
+            "color": [0.96, 0.57, 0.12, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "lower_domino_6",
+            "type": "box",
+            "body": "dynamic",
+            "position": [13.1, 4.1, 0],
+            "halfExtent": [0.15, 0.8, 0.75],
+            "color": [0.96, 0.57, 0.12, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "lower_domino_7",
+            "type": "box",
+            "body": "dynamic",
+            "position": [12.25, 4.1, 0],
+            "halfExtent": [0.15, 0.8, 0.75],
+            "color": [0.96, 0.57, 0.12, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "lower_domino_8",
+            "type": "box",
+            "body": "dynamic",
+            "position": [11.4, 4.1, 0],
+            "halfExtent": [0.15, 0.8, 0.75],
+            "color": [0.96, 0.57, 0.12, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "lower_domino_9",
+            "type": "box",
+            "body": "dynamic",
+            "position": [10.55, 4.1, 0],
+            "halfExtent": [0.15, 0.8, 0.75],
+            "color": [0.96, 0.57, 0.12, 1],
+            "frictionDynamic": 0.45,
+            "frictionStatic": 0.5,
+            "restitution": 0
+          },
+          {
+            "id": "finish_ball",
+            "type": "sphere",
+            "body": "dynamic",
+            "position": [9.6, 3.85, 0],
+            "radius": 0.55,
+            "color": [0.65, 0.16, 0.1, 1],
+            "restitution": 0.1,
+            "frictionDynamic": 0.2,
+            "frictionStatic": 0.25
+          },
+          {
+            "id": "finish_tray",
+            "type": "box",
+            "body": "static",
+            "position": [8.5, 0.2, 0],
+            "halfExtent": [1.2, 0.2, 1.3],
+            "color": [0.65, 0.16, 0.1, 1]
+          },
+          {
+            "id": "finish_side_5.25",
+            "type": "box",
+            "body": "static",
+            "position": [7.25, 0.75, 0],
+            "halfExtent": [0.12, 0.75, 1.3],
+            "color": [0.65, 0.16, 0.1, 1]
+          },
+          {
+            "id": "finish_side_7.75",
+            "type": "box",
+            "body": "static",
+            "position": [9.75, 0.75, 0],
+            "halfExtent": [0.12, 0.75, 1.3],
+            "color": [0.65, 0.16, 0.1, 1]
+          },
+          {
+            "id": "transfer_stop",
+            "type": "box",
+            "body": "static",
+            "position": [23.8, 6.4, 0],
+            "halfExtent": [0.18, 2.7, 1.4],
+            "color": [0.95, 0.36, 0.12, 1],
+            "restitution": 0
+          },
+          {
+            "id": "finish_guard_-1.32",
+            "type": "box",
+            "body": "static",
+            "position": [8.5, 0.75, -1.32],
+            "halfExtent": [1.2, 0.75, 0.1],
+            "color": [0.65, 0.16, 0.1, 1]
+          },
+          {
+            "id": "finish_guard_1.32",
+            "type": "box",
+            "body": "static",
+            "position": [8.5, 0.75, 1.32],
+            "halfExtent": [1.2, 0.75, 0.1],
+            "color": [0.65, 0.16, 0.1, 1]
+          },
+          {
+            "id": "upper_post_5.7",
+            "type": "box",
+            "body": "static",
+            "position": [7.7, 4.25, -1.45],
+            "halfExtent": [0.16, 4.25, 0.16],
+            "color": [0.95, 0.74, 0.16, 1],
+            "simulation": false
+          },
+          {
+            "id": "upper_post_18.3",
+            "type": "box",
+            "body": "static",
+            "position": [20.3, 4.25, -1.45],
+            "halfExtent": [0.16, 4.25, 0.16],
+            "color": [0.95, 0.74, 0.16, 1],
+            "simulation": false
+          },
+          {
+            "id": "lower_post_7.5",
+            "type": "box",
+            "body": "static",
+            "position": [9.5, 1.5, -1.45],
+            "halfExtent": [0.16, 1.5, 0.16],
+            "color": [0.96, 0.57, 0.12, 1],
+            "simulation": false
+          },
+          {
+            "id": "lower_post_16.8",
+            "type": "box",
+            "body": "static",
+            "position": [18.8, 1.5, -1.45],
+            "halfExtent": [0.16, 1.5, 0.16],
+            "color": [0.96, 0.57, 0.12, 1],
+            "simulation": false
+          },
+          {
+            "id": "catcher_post_-3.1",
+            "type": "box",
+            "body": "static",
+            "position": [-3.1, 5.7, -1.65],
+            "halfExtent": [0.12, 5.7, 0.12],
+            "color": [0.86, 0.22, 0.16, 1],
+            "simulation": false
+          },
+          {
+            "id": "catcher_post_5.1",
+            "type": "box",
+            "body": "static",
+            "position": [5.1, 5.7, -1.65],
+            "halfExtent": [0.12, 5.7, 0.12],
+            "color": [0.86, 0.22, 0.16, 1],
+            "simulation": false
+          }
+        ]
       }
     }
   ]

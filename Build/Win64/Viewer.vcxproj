@@ -30,6 +30,8 @@
     <ClCompile Include="..\..\Viewer\RenderThread.cpp" />
     <ClCompile Include="..\..\Viewer\SceneWorld.cpp" />
     <ClCompile Include="..\..\Src\Modules\Robotics\RobotDemo.cpp" />
+    <ClCompile Include="..\..\Src\Modules\Robotics\SpiderTraining.cpp" />
+    <ClCompile Include="..\..\Src\Modules\Robotics\SpiderTrainingController.cpp" />
     <ClCompile Include="..\..\Viewer\Viewer.cpp" />
     <ClCompile Include="..\..\Viewer\WinApplication.cpp" />
   </ItemGroup>
@@ -40,6 +42,8 @@
     <ClInclude Include="..\..\Viewer\RenderThread.h" />
     <ClInclude Include="..\..\Viewer\SceneWorld.h" />
     <ClInclude Include="..\..\Viewer\Viewer.h" />
+    <ClInclude Include="..\..\Src\Modules\Robotics\SpiderTraining.h" />
+    <ClInclude Include="..\..\Src\Modules\Robotics\SpiderTrainingController.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -145,13 +149,13 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;RIEMANN_SPIDER_TRAINING=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;..\..\Binaries\Win64-LegacyNoCUDA\Debug\Riemann.lib;..\..\Binaries\Win64-LegacyNoCUDA\Debug\Renderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;ws2_32.lib;..\..\Binaries\Win64-LegacyNoCUDA\Debug\Riemann.lib;..\..\Binaries\Win64-LegacyNoCUDA\Debug\Renderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -160,7 +164,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;RIEMANN_SPIDER_TRAINING=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -168,7 +172,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;..\..\Binaries\Win64-LegacyNoCUDA\Release\Riemann.lib;..\..\Binaries\Win64-LegacyNoCUDA\Release\Renderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxguid.lib;winmm.lib;comctl32.lib;shell32.lib;ws2_32.lib;..\..\Binaries\Win64-LegacyNoCUDA\Release\Riemann.lib;..\..\Binaries\Win64-LegacyNoCUDA\Release\Renderer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

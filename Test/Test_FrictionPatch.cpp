@@ -280,10 +280,10 @@ namespace
 			EXPECT(!Scene.LoadFromText(std::string(R"({"objects":[{"type":"box",)") + Fields + "}]}", "invalid friction material", &Error));
 			EXPECT(Error.find("friction") != std::string::npos);
 		}
-		for (const char* File : { "Scenes/02_stack_boxes.json", "Scenes/06_constraints.json" })
+		for (const char* File : { "Scenes/01_stack_boxes.json", "Scenes/06_constraints.json" })
 		for (auto Type : Solvers)
 		{
-			EXPECT(Scene.LoadFromFile(TestContentsPath() + File, &Error));
+			EXPECT(Scene.LoadFromFile(TestContentsPath() + File, &Error, std::string(File).find("01_stack_boxes.json") != std::string::npos ? "grid" : ""));
 			PhysicsWorld* World = Scene.GetSimulation();
 			EXPECT(World->SetSolverConfiguration(Type, SolverBackend::CPU, false, &Error));
 			FrictionPatchSettings Settings = World->GetFrictionPatchSettings(); Settings.Enabled = true;

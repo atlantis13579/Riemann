@@ -1,7 +1,4 @@
 #include "SolverPanel.h"
-#include "SceneWorld.h"
-#include "../Src/RigidBodyDynamics/PhysicsWorld.h"
-#include "../Src/Deformation/StrandSystem.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -37,34 +34,6 @@ namespace Riemann
 		}
 	}
 
-	void RefreshSolverPanelTelemetry(SolverPanelState& State, const SceneWorld& Scene)
-	{
-		// These values change while a scene runs. Editable options are initialized
-		// separately on reload, so telemetry must not overwrite an unapplied edit.
-		const auto* World = Scene.GetSimulation();
-		State.FieldSamples = World ? World->GetPhysicsFieldStats().Samples : 0;
-		State.FieldBodyApplications = World ? World->GetPhysicsFieldStats().BodyApplications : 0;
-		State.FieldBrokenBonds = World ? World->GetPhysicsFieldStats().BrokenBonds : 0;
-		State.DestructionRecording = Scene.IsDestructionCacheRecording();
-		State.DestructionPlaying = Scene.IsDestructionCachePlaying();
-		State.DestructionCacheTime = Scene.GetDestructionCacheTime();
-		State.DestructionCacheDuration = Scene.GetDestructionCacheDuration();
-		State.DestructionEvents = Scene.GetDestructionEventCount();
-		State.DestructionDroppedEvents = Scene.GetDestructionDroppedEventCount();
-		const auto* Strands=Scene.GetDemoStrands(); State.HasStrands=Strands!=nullptr;
-		State.StrandGuides=Strands ? Strands->GetGuideCount() : 0;
-		State.StrandActiveGuides=Strands ? Strands->GetStats().SimulatedGuides : 0;
-		State.StrandRenderCurves=Strands && Strands->GetGroom() ? Strands->GetGroom()->GetStrandCount() : 0;
-		State.StrandContactRows=Strands ? Strands->GetCollisionStats().Contacts : 0;
-		State.StrandContactCandidates=Strands ? Strands->GetCollisionStats().Candidates : 0;
-		State.StrandContactRefinements=Strands ? Strands->GetCollisionStats().Refinements : 0;
-		State.StrandContactPenetration=Strands ? Strands->GetCollisionStats().MaximumPenetration : 0;
-		State.StrandConstraintSolves=Strands ? Strands->GetStats().ConstraintSolves : 0;
-		State.StrandEnergy=Strands ? Strands->GetStats().ElasticEnergy : 0;
-		State.StrandStretchShear=Strands ? Strands->GetStats().MaximumStretchShear : 0;
-		State.StrandBendTwist=Strands ? Strands->GetStats().MaximumBendTwist : 0;
-	}
-
 	bool DrawSolverPanel(SolverPanelState& State)
 	{
 		const char* ResolutionLabels[] = { "Sequential Impulse", "LCP", "PBD", "XPBD" };
@@ -77,9 +46,7 @@ namespace Riemann
 		const int PreviousBackend = State.BackendIndex;
 		State.SolverChanged = false;
 
-		imguiSeparatorLine();
 		imguiLabel("Rigid Solver");
-		imguiLabel("resolutionSolver");
 		imguiCombo("", &State.ResolutionIndex, ResolutionLabels, 4, SolverEditable);
 		const bool SequentialImpulse = State.ResolutionIndex == 0;
 		if (SequentialImpulse) State.BackendIndex = 0;
@@ -119,12 +86,17 @@ namespace Riemann
 			DrawStatus(Message);
 		}
 		DrawStatus(State.Status);
+		return State.SolverChanged;
+	}
+
+	bool DrawClothPanel(SolverPanelState& State)
+	{
+		const bool Editable = State.Enabled && !State.Pending;
 		bool ApplyCloth = false;
 		bool ClothAlgorithmChanged = false;
 		bool ClothSelfCollisionChanged = false;
 		if (State.HasClothDemo)
 		{
-			imguiSeparatorLine();
 			imguiLabel("Cloth");
 			const char* Algorithms[] = { "Distance Links", "Triangle Strain" };
 			imguiLabel("Algorithm");
@@ -144,6 +116,6 @@ namespace Riemann
 			imguiSlider("Bending Compliance", &State.ClothBendingCompliance, 0, 50, 0.01f, Editable);
 			ApplyCloth = imguiButton("Apply Cloth", Editable);
 		}
-		return State.SolverChanged || ClothAlgorithmChanged || ClothSelfCollisionChanged || ApplyCloth;
+		return ClothAlgorithmChanged || ClothSelfCollisionChanged || ApplyCloth;
 	}
 }

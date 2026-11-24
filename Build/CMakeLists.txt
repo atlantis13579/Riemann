@@ -295,19 +295,6 @@ endif()
 
 target_link_libraries(Test PRIVATE Riemann)
 
-set(RIEMANN_ELMAN_ROOT_DEFAULT "")
-set(RIEMANN_ELMAN_LIBRARY_DEFAULT "")
-if(WIN32 AND EXISTS "${RIEMANN_ROOT_DIR}/../ElmanLLM/Src/Reinforcement/PpoRunner.h")
-    set(RIEMANN_ELMAN_CUDA_LIBRARY
-        "${RIEMANN_ROOT_DIR}/../ElmanLLM/Build/vs2022-cuda/Lib/Release/elman_core.lib")
-    if(EXISTS "${RIEMANN_ELMAN_CUDA_LIBRARY}")
-        set(RIEMANN_ELMAN_ROOT_DEFAULT "${RIEMANN_ROOT_DIR}/../ElmanLLM")
-        set(RIEMANN_ELMAN_LIBRARY_DEFAULT "${RIEMANN_ELMAN_CUDA_LIBRARY}")
-    endif()
-endif()
-set(RIEMANN_ELMAN_ROOT "${RIEMANN_ELMAN_ROOT_DEFAULT}" CACHE PATH "ElmanLLM source root for viewer spider PPO training")
-set(RIEMANN_ELMAN_LIBRARY "${RIEMANN_ELMAN_LIBRARY_DEFAULT}" CACHE FILEPATH "ElmanLLM static library for viewer spider PPO training")
-
 enable_testing()
 set(RIEMANN_TEST_GROUPS
     AerodynamicsInterface AerodynamicsBarotropic AerodynamicsSurfaceCoupling
@@ -358,19 +345,14 @@ if(WIN32)
         winmm
         comctl32
         shell32
+        ws2_32
         Renderer
         Riemann
     )
-    if(RIEMANN_ELMAN_ROOT AND RIEMANN_ELMAN_LIBRARY)
-        find_package(CUDAToolkit REQUIRED)
-        target_sources(Viewer PRIVATE
-            "${RIEMANN_ROBOTICS_DIR}/SpiderTraining.cpp"
-            "${RIEMANN_ROBOTICS_DIR}/SpiderTrainingController.cpp")
-        target_include_directories(Viewer PRIVATE "${RIEMANN_ELMAN_ROOT}/Src")
-        target_link_libraries(Viewer PRIVATE "${RIEMANN_ELMAN_LIBRARY}"
-            CUDA::cudart CUDA::cublas CUDA::cublasLt icu ws2_32)
-        target_compile_definitions(Viewer PRIVATE RIEMANN_SPIDER_TRAINING=1)
-    endif()
+    target_sources(Viewer PRIVATE
+        "${RIEMANN_ROBOTICS_DIR}/SpiderTraining.cpp"
+        "${RIEMANN_ROBOTICS_DIR}/SpiderTrainingController.cpp")
+    target_compile_definitions(Viewer PRIVATE RIEMANN_SPIDER_TRAINING=1)
     
     # Visual Studio
     set_property(TARGET Test PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:Test>")

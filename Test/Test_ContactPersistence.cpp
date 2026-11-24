@@ -246,9 +246,9 @@ namespace
 
 	void TestExistingContactScenes()
 	{
-		struct SceneCase { const char* Name; float MinimumHeight; };
+		struct SceneCase { const char* Name; float MinimumHeight; const char* Preset = ""; };
 		const SceneCase Scenes[] = {
-			{ "02_stack_boxes.json", -5.5f }, { "03_domino.json", -0.5f },
+			{ "01_stack_boxes.json", -5.5f, "grid" }, { "03_domino.json", -0.5f, "classic" },
 			{ "09_ragdoll_stairs.json", -3.0f }, { "14_terrain_editing.json", -0.5f }
 		};
 		for (const SceneCase& Example : Scenes)
@@ -261,7 +261,7 @@ namespace
 					printf("Contact scene %s, solver %d, narrow phase %d\n", Example.Name, (int)Solver, (int)Mode);
 					SceneWorld Scene;
 					std::string Error;
-					EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/" + Example.Name, &Error));
+					EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/" + Example.Name, &Error, Example.Preset));
 					PhysicsWorld* World = Scene.GetSimulation();
 					if (!World) continue;
 					EXPECT(World->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));

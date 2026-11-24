@@ -661,14 +661,12 @@ namespace Riemann
 		, m_CamParam(Vector3(1.0f, 0.6f, 15.0f))
 		, m_CuttingPanelActive(false)
 		, m_MeshSimplificationPanelActive(false)
-		, m_CuttingObjIndex(0)
 		, m_CuttingMode(MeshCuttingMode_VoronoiFracture3D)
 		, m_CuttingPieceCount(16)
 		, m_CuttingPiecesX(4)
 		, m_CuttingPiecesY(3)
 		, m_CuttingPiecesZ(2)
 		, m_CuttingSeed(7)
-		, m_MeshSimplificationFileIndex(0)
 		, m_MeshSimplificationAlgorithm(MeshSimplificationAlgorithm_HoppeQEM)
 		, m_MeshSimplificationRatioLevel(1)
 		, m_CuttingSeparation(0.0f)
@@ -682,18 +680,14 @@ namespace Riemann
 		, m_GasDemoActive(false)
 		, m_GasRenderFrame(0)
 		, m_ImguiDemoIndex(0)
-		, m_ImguiObjectCount(0)
-		, m_ImguiCameraDistance(15.0f)
 		, m_ImguiCuttingPanelActive(false)
 		, m_ImguiMeshSimplificationPanelActive(false)
-		, m_ImguiCuttingObjIndex(0)
 		, m_ImguiCuttingMode(MeshCuttingMode_VoronoiFracture3D)
 		, m_ImguiCuttingPieceCount(16)
 		, m_ImguiCuttingPiecesX(4)
 		, m_ImguiCuttingPiecesY(3)
 		, m_ImguiCuttingPiecesZ(2)
 		, m_ImguiCuttingSeed(7)
-		, m_ImguiMeshSimplificationFileIndex(0)
 		, m_ImguiMeshSimplificationAlgorithm(MeshSimplificationAlgorithm_HoppeQEM)
 		, m_ImguiMeshSimplificationRatioLevel(1)
 		, m_ImguiCuttingSeparation(0.0f)
@@ -703,11 +697,8 @@ namespace Riemann
 		, m_ImguiPhysicsFps(0.0)
 		, m_ImguiScroll(0)
 		, m_ImguiPendingDemoIndex(-1)
-		, m_ImguiPendingCameraDistance(false)
-		, m_ImguiPendingCameraDistanceValue(15.0f)
 		, m_ImguiPendingCuttingSeparation(false)
 		, m_ImguiPendingCuttingSeparationValue(0.0f)
-		, m_ImguiPendingCuttingObjIndex(-1)
 		, m_ImguiPendingBrowseCuttingObj(false)
 		, m_ImguiPendingApplyCutting(false)
 		, m_ImguiPendingCuttingMode(false)
@@ -722,7 +713,6 @@ namespace Riemann
 		, m_ImguiPendingCuttingPiecesZValue(2)
 		, m_ImguiPendingCuttingSeed(false)
 		, m_ImguiPendingCuttingSeedValue(7)
-		, m_ImguiPendingMeshSimplificationFileIndex(-1)
 		, m_ImguiPendingBrowseMeshSimplificationFile(false)
 		, m_ImguiPendingApplyMeshSimplification(false)
 		, m_ImguiPendingMeshSimplificationAlgorithm(false)
@@ -764,7 +754,7 @@ namespace Riemann
 
 		if (!LoadScene(initialScene))
 		{
-			LoadScene(m_SceneFiles.empty() ? ResolveSceneFile("01_demo.json") : m_SceneFiles.front());
+			LoadScene(m_SceneFiles.empty() ? ResolveSceneFile("01_stack_boxes.json") : m_SceneFiles.front());
 		}
 #ifdef RIEMANN_SPIDER_TRAINING
 		LoadElmanExecutablePath();
@@ -1032,7 +1022,7 @@ namespace Riemann
 		}
 	}
 
-	bool WorldViewer::LoadScene(const std::string& sceneFile)
+	bool WorldViewer::LoadScene(const std::string& sceneFile, const std::string& configurationId)
 	{
 #ifdef RIEMANN_SPIDER_TRAINING
 		if (m_SpiderTrainingMode && m_SpiderTraining)
@@ -1046,16 +1036,22 @@ namespace Riemann
 		{
 			return false;
 		}
+#ifdef RIEMANN_SPIDER_TRAINING
+		const bool newScene = FileNameOf(resolved) != m_CurrentSceneName || DirectoryOf(resolved) != m_SceneDirectory;
+#endif
 		DeactivateGasDemo();
 		DeactivateFluidDemo();
 
+		const std::string selectedConfiguration = !configurationId.empty() ? configurationId
+			: (FileNameOf(resolved) == m_CurrentSceneName && DirectoryOf(resolved) == m_SceneDirectory
+				? m_World->GetActiveConfigurationId() : std::string());
 		++m_SceneGeneration;
 		std::string error;
 		if (FileNameOf(resolved) == "09_ragdoll_stairs.json")
 			m_World->SetRagdollAlgorithmOverride(m_RagdollDemoReduced
 				? RagdollAlgorithm::ReducedCoordinates : RagdollAlgorithm::JointConstraints);
 		else m_World->ClearRagdollAlgorithmOverride();
-		if (!m_World->LoadFromFile(resolved, &error))
+		if (!m_World->LoadFromFile(resolved, &error, selectedConfiguration))
 		{
 			fprintf(stderr, "%s\n", error.c_str());
 			return false;
@@ -1068,6 +1064,9 @@ namespace Riemann
 
 		m_SceneDirectory = DirectoryOf(resolved);
 		m_CurrentSceneName = FileNameOf(resolved);
+#ifdef RIEMANN_SPIDER_TRAINING
+		if (newScene) m_SpiderPanelMode = SpiderPanelMode::Inference;
+#endif
 		m_ViewerPaused = m_World->GetVehicleCount() > 0;
 		m_VehicleSlowMotion = false;
 		m_VehiclePendingTime = 0;
@@ -1126,10 +1125,6 @@ namespace Riemann
 			UpdateImguiState();
 			return;
 		}
-#ifdef RIEMANN_SPIDER_TRAINING
-		if (m_SpiderTraining && m_RenderThread)
-			m_SpiderTraining->set_display_active(m_RenderThread->IsActive());
-#endif
 		Vector3 CharacterInput = Vector3::Zero(), RobotInput = Vector3::Zero(); bool JumpRequested;
 		{
 			std::lock_guard<std::mutex> Lock(m_ImguiMutex);
@@ -1152,6 +1147,10 @@ namespace Riemann
 		}
 		ApplyVehicleCommands();
 		ApplySnowCommands();
+#ifdef RIEMANN_SPIDER_TRAINING
+		if (m_SpiderTraining && m_RenderThread)
+			m_SpiderTraining->set_display_active(m_RenderThread->IsActive());
+#endif
 		UpdateFluidDemo();
 		if (m_World->GetVehicleCount() > 0)
 		{
@@ -1173,14 +1172,14 @@ namespace Riemann
 		}
 		else if (const RobotController* Robot = m_World->GetRobotDemoController())
 		{
-#ifdef RIEMANN_SPIDER_TRAINING
+			#ifdef RIEMANN_SPIDER_TRAINING
 			if (m_SpiderTrainingMode && m_SpiderTraining && m_RenderThread->IsActive())
 			{
 				m_World->ShowSpiderTrainingSnapshot(m_SpiderTraining->snapshot(),
 					m_SpiderTrainingShowAll, size_t(m_SpiderTrainingSelected));
 			}
 			else
-#endif
+			#endif
 			m_World->Step(dt);
 			if (!m_RobotAutoWalk
 #ifdef RIEMANN_SPIDER_TRAINING
@@ -1286,6 +1285,7 @@ namespace Riemann
 			FrameCuttingBounds();
 			UpdateCamera();
 		}
+		else if (m_World && m_World->GetCameraSidebarPadding() > 0) UpdateCamera();
 	}
 
 	CameraDesc WorldViewer::GetViewCamera() const
@@ -1293,6 +1293,18 @@ namespace Riemann
 		CameraDesc camera = m_World ? m_World->GetCamera() : CameraDesc();
 		camera.Eye = GetCameraPosition();
 		camera.At = m_CamCenter;
+		if (m_World && !m_CuttingPanelActive && !m_MeshSimplificationPanelActive && m_ViewportWidth > 0 && m_ViewportHeight > 0)
+		{
+			// Reserve UI space without changing the full-frame camera authored for capture.
+			const float padding = std::min(m_World->GetCameraSidebarPadding(), m_ViewportWidth * 0.45f);
+			if (padding > 0)
+			{
+				const Vector3 offset = (camera.Eye - camera.At) * (m_ViewportWidth / (m_ViewportWidth - padding));
+				const Vector3 right = SafeUnitVector(camera.Up.Cross(-offset), Vector3::UnitX());
+				camera.At -= right * (padding / m_ViewportHeight * offset.Length() * tanf(camera.FovY * 0.5f));
+				camera.Eye = camera.At + offset;
+			}
+		}
 		if (m_CuttingPanelActive)
 		{
 			camera.FovY = 0.55f;
@@ -1782,9 +1794,9 @@ namespace Riemann
 		bool ragdollDemoReduced = false;
 		RobotPanelState robotPanel;
 		std::vector<std::string> sceneFiles;
+		std::vector<SceneConfiguration> sceneConfigurations;
+		std::string activeSceneConfiguration;
 		int demoIndex = 0;
-		size_t objectCount = 0;
-		float cameraDistance = 0.0f;
 		bool cuttingPanelActive = false;
 		bool meshSimplificationPanelActive = false;
 		std::string cuttingObjPath;
@@ -1824,9 +1836,9 @@ namespace Riemann
 			ragdollDemoReduced = m_ImguiRagdollDemoReduced;
 			robotPanel = m_ImguiRobotPanel;
 			sceneFiles = m_ImguiSceneFiles;
+			sceneConfigurations = m_ImguiSceneConfigurations;
+			activeSceneConfiguration = m_ImguiActiveSceneConfiguration;
 			demoIndex = m_ImguiDemoIndex;
-			objectCount = m_ImguiObjectCount;
-			cameraDistance = m_ImguiCameraDistance;
 			cuttingPanelActive = m_ImguiCuttingPanelActive;
 			meshSimplificationPanelActive = m_ImguiMeshSimplificationPanelActive;
 			cuttingObjPath = m_ImguiCuttingObjPath;
@@ -1923,113 +1935,6 @@ namespace Riemann
 				m_ImguiPendingDemoIndex = selectedDemo;
 			}
 		}
-		if (imguiButton("Restart"))
-		{
-			std::lock_guard<std::mutex> lock(m_ImguiMutex);
-			m_ImguiPendingRestartScene = true;
-			m_ImguiPendingRestartGeneration = solverPanel.SceneGeneration;
-		}
-		if (imguiButton(viewerPaused ? "Resume" : "Pause"))
-		{
-			std::lock_guard<std::mutex> lock(m_ImguiMutex);
-			m_ImguiPendingPauseToggle = true;
-			m_ImguiPendingPauseGeneration = solverPanel.SceneGeneration;
-		}
-		imguiSeparatorLine();
-		if (robotPanel.Active)
-		{
-			bool changed = false;
-			if (robotPanel.Interactive)
-			{
-#ifdef RIEMANN_SPIDER_TRAINING
-				if (robotPanel.WalkMode == RobotWalkMode::Policy)
-				{
-					imguiLabel("ELMAN EXECUTABLE");
-					if (elmanExecutablePath.empty()) imguiValue("No Elman executable selected");
-					else for (size_t offset = 0; offset < elmanExecutablePath.size(); offset += 34)
-						imguiValue(elmanExecutablePath.substr(offset, 34).c_str());
-					if (imguiButton("Select Elman EXE..."))
-					{
-						std::lock_guard<std::mutex> lock(m_ImguiMutex);
-						m_PendingBrowseElmanExecutable = true;
-					}
-					if (!elmanExecutableStatus.empty()) imguiValue(elmanExecutableStatus.c_str());
-					if (!m_SpiderTrainingMode)
-					{
-						const char* counts[] = {"1", "2", "3", "4", "5", "6", "7", "8"};
-						int count = m_SpiderTrainingWorldCount - 1;
-						if (imguiCombo("Training worlds", &count, counts, 8))
-							m_SpiderTrainingWorldCount = count + 1;
-					}
-					else
-					{
-						const std::string count = "Training worlds: " + std::to_string(int(m_SpiderTrainingWorldCount));
-						imguiValue(count.c_str());
-					}
-					if (imguiCheck("Training", m_SpiderTrainingMode))
-					{
-						std::lock_guard<std::mutex> lock(m_ImguiMutex);
-						m_PendingSpiderTrainToggle = true;
-					}
-					if (m_SpiderTrainingMode)
-					{
-						if (m_SpiderTrainingWorldCount > 1 && imguiButton(m_SpiderTrainingShowAll ? "Show One" : "Show All"))
-						{
-							std::lock_guard<std::mutex> lock(m_ImguiMutex);
-							m_PendingSpiderShowAllToggle = true;
-						}
-						const char* labels[] = {"Spider 1", "Spider 2", "Spider 3", "Spider 4", "Spider 5", "Spider 6", "Spider 7", "Spider 8"};
-						int selected = m_SpiderTrainingSelected;
-						if (m_SpiderTrainingWorldCount > 1 && imguiCombo("Observed spider", &selected, labels, m_SpiderTrainingWorldCount))
-						{
-							std::lock_guard<std::mutex> lock(m_ImguiMutex);
-							m_PendingSpiderSelection = selected;
-						}
-						imguiValue(m_SpiderTraining->status().c_str());
-					}
-				}
-#endif
-				const char* modes[] = {"Learning policy", "Sweep controller"};
-				int mode = static_cast<int>(robotPanel.WalkMode);
-				if (imguiCombo("Walking", &mode, modes, 2))
-				{
-					robotPanel.WalkMode = static_cast<RobotWalkMode>(mode);
-					changed = true;
-				}
-				if (imguiCheck("Auto walk", robotPanel.AutoWalk))
-				{
-					robotPanel.AutoWalk = !robotPanel.AutoWalk;
-					changed = true;
-				}
-				imguiValue(robotPanel.AutoWalk ? "W/A/S/D: move camera" : "W/S: forward / back");
-				if (!robotPanel.AutoWalk)
-					imguiValue(robotPanel.WalkMode == RobotWalkMode::Sweep ? "A/D: turn, Q/E: strafe" : "A/D: steer, Q/E: strafe");
-				imguiValue("Mouse: orbit / zoom");
-				imguiValue("Mode change restarts scene");
-				if (robotPanel.WalkMode == RobotWalkMode::Policy)
-					imguiValue("Policy: steer while moving");
-				snprintf(text, sizeof(text), "Command X %.2f Z %.2f m/s", robotPanel.Command.x, robotPanel.Command.z);
-				imguiValue(text);
-				snprintf(text, sizeof(text), "Target heading %.0f deg", robotPanel.Heading * 180.0f / 3.14159265f);
-				imguiValue(text);
-			}
-			if (!robotPanel.Interactive || robotPanel.WalkMode == RobotWalkMode::Policy)
-			{
-				const char* backends[] = {"Featherstone ABA", "CRBA + Sparse LDLT"};
-				int backend = static_cast<int>(robotPanel.Backend);
-				if (imguiCombo("Backend", &backend, backends, 2))
-				{
-					robotPanel.Backend = static_cast<RobotDynamicsBackend>(backend);
-					changed = true;
-				}
-			}
-			if (changed)
-			{
-				std::lock_guard<std::mutex> lock(m_ImguiMutex);
-				m_PendingRobotPanel = robotPanel;
-			}
-			imguiSeparatorLine();
-		}
 		const char* renderModeLabels[] = { "Solid", "Wireframe", "Solid + Wireframe" };
 		imguiLabel("Render Mode");
 		for (int modeIndex = 0; modeIndex < 3; ++modeIndex)
@@ -2043,8 +1948,52 @@ namespace Riemann
 				m_ImguiPendingRenderModeValue = mode;
 			}
 		}
-		if (aerodynamicsPanel.Active || snowPanel.Active || vehiclePanel.Active) imguiSeparatorLine();
-
+		if (imguiButton("Start"))
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			m_ImguiPendingRestartScene = true;
+			m_ImguiPendingRestartGeneration = solverPanel.SceneGeneration;
+		}
+		if (imguiButton(viewerPaused ? "Resume" : "Pause"))
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			m_ImguiPendingPauseToggle = true;
+			m_ImguiPendingPauseGeneration = solverPanel.SceneGeneration;
+		}
+		const bool showSolverPanel = !meshTool;
+		bool applySolver = showSolverPanel && DrawSolverPanel(solverPanel);
+		imguiSeparatorLine();
+		bool hasDemoSolverSettings = false;
+		if (demoIndex < (int)sceneFiles.size() && sceneName == "Ragdoll")
+		{
+			imguiLabel("Ragdoll Algorithm");
+			const char* algorithms[] = { "Joint Constraints", "Featherstone" };
+			int selected = ragdollDemoReduced ? 1 : 0;
+			if (imguiCombo("Algorithm", &selected, algorithms, 2))
+			{
+				std::lock_guard<std::mutex> lock(m_ImguiMutex);
+				m_ImguiPendingRagdollAlgorithm = selected;
+			}
+			hasDemoSolverSettings = true;
+		}
+		bool robotInferencePanel = true;
+#ifdef RIEMANN_SPIDER_TRAINING
+		robotInferencePanel = m_SpiderPanelMode.load() == SpiderPanelMode::Inference;
+#endif
+		if (robotPanel.Active && (!robotPanel.Interactive ||
+			(robotInferencePanel && robotPanel.WalkMode == RobotWalkMode::Policy)))
+		{
+			imguiLabel("Robot Dynamics");
+			const char* backends[] = { "Featherstone ABA", "CRBA + Sparse LDLT" };
+			int backend = static_cast<int>(robotPanel.Backend);
+			if (imguiCombo("Backend", &backend, backends, 2))
+			{
+				robotPanel.Backend = static_cast<RobotDynamicsBackend>(backend);
+				std::lock_guard<std::mutex> lock(m_ImguiMutex);
+				m_PendingRobotPanel = robotPanel;
+			}
+			hasDemoSolverSettings = true;
+		}
 		if (aerodynamicsPanel.Active)
 		{
 			imguiLabel("3D Smoke");
@@ -2071,8 +2020,158 @@ namespace Riemann
 				m_ImguiAerodynamicsPanel.GridScale = aerodynamicsPanel.GridScale;
 				if (apply) { m_ImguiPendingAerodynamicsPanel = aerodynamicsPanel; m_ImguiPendingAerodynamicsApply = true; }
 			}
+			hasDemoSolverSettings = true;
 		}
-		if (snowPanel.Active) DrawSnowPanel(snowPanel);
+		if (snowPanel.Active)
+		{
+			DrawSnowPanel(snowPanel);
+			hasDemoSolverSettings = true;
+		}
+		if (showSolverPanel && solverPanel.HasClothDemo)
+		{
+			applySolver = DrawClothPanel(solverPanel) || applySolver;
+			hasDemoSolverSettings = true;
+		}
+		if (hasDemoSolverSettings) imguiSeparatorLine();
+		if (showSolverPanel)
+		{
+			std::lock_guard<std::mutex> lock(m_ImguiMutex);
+			if (solverPanel.SceneGeneration == m_ImguiSolverPanel.SceneGeneration && !m_ImguiSolverPanel.Pending)
+			{
+				m_ImguiSolverPanel.ResolutionIndex = solverPanel.ResolutionIndex;
+				m_ImguiSolverPanel.BackendIndex = solverPanel.BackendIndex;
+				m_ImguiSolverPanel.ClothAlgorithm = solverPanel.ClothAlgorithm;
+				m_ImguiSolverPanel.ClothIterations = solverPanel.ClothIterations;
+				m_ImguiSolverPanel.ClothSubsteps = solverPanel.ClothSubsteps;
+				m_ImguiSolverPanel.ClothDamping = solverPanel.ClothDamping;
+				m_ImguiSolverPanel.ClothStretchUCompliance = solverPanel.ClothStretchUCompliance;
+				m_ImguiSolverPanel.ClothStretchVCompliance = solverPanel.ClothStretchVCompliance;
+				m_ImguiSolverPanel.ClothShearCompliance = solverPanel.ClothShearCompliance;
+				m_ImguiSolverPanel.ClothBendingCompliance = solverPanel.ClothBendingCompliance;
+				m_ImguiSolverPanel.ClothRigidCoupling = solverPanel.ClothRigidCoupling;
+				m_ImguiSolverPanel.ClothSelfCollision = solverPanel.ClothSelfCollision;
+				if (applySolver)
+				{
+					m_ImguiPendingSolverPanel = solverPanel;
+					m_ImguiPendingSolverSwitch = true;
+					m_ImguiSolverPanel.Pending = true;
+					m_ImguiSolverPanel.Status.clear();
+				}
+			}
+		}
+		if (!sceneConfigurations.empty())
+		{
+			imguiLabel("Configuration");
+			for (const SceneConfiguration& configuration : sceneConfigurations)
+			{
+				if (imguiButton(configuration.Name.c_str(), configuration.Id != activeSceneConfiguration))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ImguiPendingSceneConfiguration = configuration.Id;
+					m_ImguiPendingSceneConfigurationGeneration = solverPanel.SceneGeneration;
+				}
+			}
+			imguiSeparatorLine();
+		}
+		if (robotPanel.Active)
+		{
+			bool changed = false;
+			bool inferencePanel = true;
+			if (robotPanel.Interactive)
+			{
+#ifdef RIEMANN_SPIDER_TRAINING
+				const char* panelModes[] = {"Inference", "Training"};
+				int panelMode = static_cast<int>(m_SpiderPanelMode.load());
+				if (imguiCombo("Spider mode", &panelMode, panelModes, 2))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_PendingSpiderPanelMode = panelMode;
+					m_PendingSpiderPanelModeGeneration = robotPanel.SceneGeneration;
+				}
+				inferencePanel = panelMode == static_cast<int>(SpiderPanelMode::Inference);
+				if (!inferencePanel)
+				{
+					imguiLabel("ELMAN EXECUTABLE");
+					if (elmanExecutablePath.empty()) imguiValue("No Elman executable selected");
+					else for (size_t offset = 0; offset < elmanExecutablePath.size(); offset += 34)
+						imguiValue(elmanExecutablePath.substr(offset, 34).c_str());
+					if (imguiButton("Select Elman EXE...", !m_SpiderTrainingMode))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_PendingBrowseElmanExecutable = true;
+					}
+					if (!elmanExecutableStatus.empty()) imguiValue(elmanExecutableStatus.c_str());
+					if (!m_SpiderTrainingMode)
+					{
+						const char* counts[] = {"1", "2", "3", "4", "5", "6", "7", "8"};
+						int count = m_SpiderTrainingWorldCount - 1;
+						if (imguiCombo("Training worlds", &count, counts, 8))
+							m_SpiderTrainingWorldCount = count + 1;
+					}
+					else
+					{
+						const std::string count = "Training worlds: " + std::to_string(int(m_SpiderTrainingWorldCount));
+						imguiValue(count.c_str());
+					}
+					if (imguiButton(m_SpiderTrainingMode ? "Stop" : "Train",
+						m_SpiderTrainingMode || !elmanExecutablePath.empty()))
+					{
+						std::lock_guard<std::mutex> lock(m_ImguiMutex);
+						m_PendingSpiderTrainAction = true;
+						m_PendingSpiderTrainGeneration = robotPanel.SceneGeneration;
+					}
+					if (m_SpiderTrainingMode)
+					{
+						if (m_SpiderTrainingWorldCount > 1 && imguiButton(m_SpiderTrainingShowAll ? "Show One" : "Show All"))
+						{
+							std::lock_guard<std::mutex> lock(m_ImguiMutex);
+							m_PendingSpiderShowAllToggle = true;
+						}
+						const char* labels[] = {"Spider 1", "Spider 2", "Spider 3", "Spider 4", "Spider 5", "Spider 6", "Spider 7", "Spider 8"};
+						int selected = m_SpiderTrainingSelected;
+						if (m_SpiderTrainingWorldCount > 1 && imguiCombo("Observed spider", &selected, labels, m_SpiderTrainingWorldCount))
+						{
+							std::lock_guard<std::mutex> lock(m_ImguiMutex);
+							m_PendingSpiderSelection = selected;
+						}
+					}
+					imguiValue(m_SpiderTraining->status().c_str());
+				}
+				else
+#endif
+				{
+					const char* modes[] = {"Learning policy", "Sweep controller"};
+					int mode = static_cast<int>(robotPanel.WalkMode);
+					if (imguiCombo("Walking", &mode, modes, 2))
+					{
+						robotPanel.WalkMode = static_cast<RobotWalkMode>(mode);
+						changed = true;
+					}
+					if (imguiCheck("Auto walk", robotPanel.AutoWalk))
+					{
+						robotPanel.AutoWalk = !robotPanel.AutoWalk;
+						changed = true;
+					}
+					imguiValue(robotPanel.AutoWalk ? "W/A/S/D: move camera" : "W/S: forward / back");
+					if (!robotPanel.AutoWalk)
+						imguiValue(robotPanel.WalkMode == RobotWalkMode::Sweep ? "A/D: turn, Q/E: strafe" : "A/D: steer, Q/E: strafe");
+					imguiValue("Mouse: orbit / zoom");
+					imguiValue("Mode change restarts scene");
+					if (robotPanel.WalkMode == RobotWalkMode::Policy)
+						imguiValue("Policy: steer while moving");
+					snprintf(text, sizeof(text), "Command X %.2f Z %.2f m/s", robotPanel.Command.x, robotPanel.Command.z);
+					imguiValue(text);
+					snprintf(text, sizeof(text), "Target heading %.0f deg", robotPanel.Heading * 180.0f / 3.14159265f);
+					imguiValue(text);
+				}
+			}
+			if (changed)
+			{
+				std::lock_guard<std::mutex> lock(m_ImguiMutex);
+				m_PendingRobotPanel = robotPanel;
+			}
+			imguiSeparatorLine();
+		}
 		if (vehiclePanel.Active)
 		{
 			imguiLabel(vehiclePanel.Dynamics ? "Vehicle Dynamics" : "Vehicle Crash Test");
@@ -2108,103 +2207,10 @@ namespace Riemann
 				if (changed) { m_PendingVehiclePanel = vehiclePanel; m_PendingVehicleControls = true; }
 			}
 		}
-		if (aerodynamicsPanel.Active || snowPanel.Active) solverPanel.SolverSwitchable = false;
-		if (!meshTool)
-		{
-			const bool applySolver = DrawSolverPanel(solverPanel);
-			std::lock_guard<std::mutex> lock(m_ImguiMutex);
-			if (solverPanel.SceneGeneration == m_ImguiSolverPanel.SceneGeneration && !m_ImguiSolverPanel.Pending)
-			{
-				m_ImguiSolverPanel.ResolutionIndex = solverPanel.ResolutionIndex;
-				m_ImguiSolverPanel.BackendIndex = solverPanel.BackendIndex;
-				m_ImguiSolverPanel.AllowFallback = solverPanel.AllowFallback;
-				m_ImguiSolverPanel.PersistentContacts = solverPanel.PersistentContacts;
-				m_ImguiSolverPanel.TriangleContacts = solverPanel.TriangleContacts;
-				m_ImguiSolverPanel.CollisionFiltering = solverPanel.CollisionFiltering;
-				m_ImguiSolverPanel.ShapeOffsets = solverPanel.ShapeOffsets;
-				m_ImguiSolverPanel.SpeculativeContacts = solverPanel.SpeculativeContacts;
-				m_ImguiSolverPanel.DistanceFieldDemo = solverPanel.DistanceFieldDemo;
-				m_ImguiSolverPanel.StrandDemo=solverPanel.StrandDemo; m_ImguiSolverPanel.StrandRootTwist=solverPanel.StrandRootTwist; m_ImguiSolverPanel.StrandCoupled=solverPanel.StrandCoupled; m_ImguiSolverPanel.StrandLod=solverPanel.StrandLod;
-				m_ImguiSolverPanel.StrandContacts=solverPanel.StrandContacts; m_ImguiSolverPanel.StrandSelfContacts=solverPanel.StrandSelfContacts;
-				m_ImguiSolverPanel.StrandContinuous=solverPanel.StrandContinuous; m_ImguiSolverPanel.StrandFriction=solverPanel.StrandFriction;
-				m_ImguiSolverPanel.PhysicsFieldsDemo = solverPanel.PhysicsFieldsDemo;
-				m_ImguiSolverPanel.PhysicsFieldFreeze = solverPanel.PhysicsFieldFreeze;
-				m_ImguiSolverPanel.AuthoredDestructionDemo = solverPanel.AuthoredDestructionDemo;
-				m_ImguiSolverPanel.DestructionEventsDemo = solverPanel.DestructionEventsDemo;
-				m_ImguiSolverPanel.DestructionCacheDemo = solverPanel.DestructionCacheDemo;
-				m_ImguiSolverPanel.DestructionSeekFraction = solverPanel.DestructionSeekFraction;
-				m_ImguiSolverPanel.CharacterDemo = solverPanel.CharacterDemo;
-				m_ImguiSolverPanel.CharacterBox = solverPanel.CharacterBox;
-				m_ImguiSolverPanel.VehicleDynamicsDemo = solverPanel.VehicleDynamicsDemo;
-				m_ImguiSolverPanel.ReducedRagdollDemo = solverPanel.ReducedRagdollDemo;
-				m_ImguiSolverPanel.PhysicalAnimationDemo = solverPanel.PhysicalAnimationDemo;
-				m_ImguiSolverPanel.AnimationPassive = solverPanel.AnimationPassive;
-				m_ImguiSolverPanel.AnimationArmStrength = solverPanel.AnimationArmStrength;
-				m_ImguiSolverPanel.AnimationPhysicsBlend = solverPanel.AnimationPhysicsBlend;
-				m_ImguiSolverPanel.ClothModelDemo = solverPanel.ClothModelDemo;
-				m_ImguiSolverPanel.ClothAlgorithm = solverPanel.ClothAlgorithm;
-				m_ImguiSolverPanel.ClothIterations = solverPanel.ClothIterations;
-				m_ImguiSolverPanel.ClothSubsteps = solverPanel.ClothSubsteps;
-				m_ImguiSolverPanel.ClothDamping = solverPanel.ClothDamping;
-				m_ImguiSolverPanel.ClothStretchUCompliance = solverPanel.ClothStretchUCompliance;
-				m_ImguiSolverPanel.ClothStretchVCompliance = solverPanel.ClothStretchVCompliance;
-				m_ImguiSolverPanel.ClothShearCompliance = solverPanel.ClothShearCompliance;
-				m_ImguiSolverPanel.ClothBendingCompliance = solverPanel.ClothBendingCompliance;
-				m_ImguiSolverPanel.ClothWind = solverPanel.ClothWind;
-				m_ImguiSolverPanel.ClothAnimation = solverPanel.ClothAnimation;
-				m_ImguiSolverPanel.ClothTethers = solverPanel.ClothTethers;
-				m_ImguiSolverPanel.ClothSoftMaterial = solverPanel.ClothSoftMaterial;
-				m_ImguiSolverPanel.ClothSurfaceContacts = solverPanel.ClothSurfaceContacts;
-				m_ImguiSolverPanel.ClothFriction = solverPanel.ClothFriction;
-				m_ImguiSolverPanel.ClothSelfCollision = solverPanel.ClothSelfCollision;
-				m_ImguiSolverPanel.ClothInterCollision = solverPanel.ClothInterCollision;
-				m_ImguiSolverPanel.ClothContinuous = solverPanel.ClothContinuous;
-				m_ImguiSolverPanel.ClothRigidCoupling = solverPanel.ClothRigidCoupling;
-				m_ImguiSolverPanel.SoftBodyAttachments = solverPanel.SoftBodyAttachments;
-				m_ImguiSolverPanel.CompliantAttachments = solverPanel.CompliantAttachments;
-				m_ImguiSolverPanel.RigidAttachments = solverPanel.RigidAttachments;
-				m_ImguiSolverPanel.SoftBodyContacts = solverPanel.SoftBodyContacts;
-				m_ImguiSolverPanel.SoftRigidContacts = solverPanel.SoftRigidContacts;
-				m_ImguiSolverPanel.CalibratedSoftMaterial = solverPanel.CalibratedSoftMaterial;
-				m_ImguiSolverPanel.StVKSoftMaterial = solverPanel.StVKSoftMaterial;
-				m_ImguiSolverPanel.CorotatedSoftMaterial = solverPanel.CorotatedSoftMaterial;
-				m_ImguiSolverPanel.ProjectiveSoftMaterial = solverPanel.ProjectiveSoftMaterial;
-				m_ImguiSolverPanel.PreparedSoftAsset = solverPanel.PreparedSoftAsset;
-				m_ImguiSolverPanel.EmbeddedSoftRender = solverPanel.EmbeddedSoftRender;
-				m_ImguiSolverPanel.SequentialWarmStart = solverPanel.SequentialWarmStart;
-				m_ImguiSolverPanel.UnifiedConstraints = solverPanel.UnifiedConstraints;
-				m_ImguiSolverPanel.FrictionPatches = solverPanel.FrictionPatches;
-				m_ImguiSolverPanel.JointDrives = solverPanel.JointDrives;
-				m_ImguiSolverPanel.JointBreaking = solverPanel.JointBreaking;
-				m_ImguiSolverPanel.CCDContinuation = solverPanel.CCDContinuation;
-				m_ImguiSolverPanel.TemporalSubsteps = solverPanel.TemporalSubsteps;
-				m_ImguiSolverPanel.SupportStabilization = solverPanel.SupportStabilization;
-				m_ImguiSolverPanel.IslandSleeping = solverPanel.IslandSleeping;
-				if (applySolver)
-				{
-					m_ImguiPendingSolverPanel = solverPanel;
-					m_ImguiPendingSolverSwitch = true;
-					m_ImguiSolverPanel.Pending = true;
-					m_ImguiSolverPanel.Status.clear();
-				}
-			}
-		}
 		if (!demoNames.empty())
 		{
 			if (demoIndex < (int)sceneFiles.size())
 			{
-				if (sceneName == "Ragdoll")
-				{
-					imguiSeparatorLine();
-					imguiLabel("Ragdoll Algorithm");
-					const char* algorithms[] = { "Joint Constraints", "Featherstone" };
-					int selected = ragdollDemoReduced ? 1 : 0;
-					if (imguiCombo("Algorithm", &selected, algorithms, 2))
-					{
-						std::lock_guard<std::mutex> lock(m_ImguiMutex);
-						m_ImguiPendingRagdollAlgorithm = selected;
-					}
-				}
 				if (sceneName.find("Glass Fracture") == 0 && imguiButton("Shoot Glass (I)"))
 				{
 					std::lock_guard<std::mutex> lock(m_ImguiMutex);
@@ -3092,19 +3098,9 @@ namespace Riemann
 		AddUniqueFile(&objFiles, m_CuttingObjPath);
 		m_CuttingObjFiles.swap(objFiles);
 
-		m_CuttingObjIndex = 0;
-		for (size_t i = 0; i < m_CuttingObjFiles.size(); ++i)
-		{
-			if (m_CuttingObjFiles[i] == m_CuttingObjPath)
-			{
-				m_CuttingObjIndex = (int)i;
-				break;
-			}
-		}
 		if (m_CuttingObjPath.empty() && !m_CuttingObjFiles.empty())
 		{
 			m_CuttingObjPath = m_CuttingObjFiles.front();
-			m_CuttingObjIndex = 0;
 		}
 	}
 
@@ -3140,19 +3136,9 @@ namespace Riemann
 		AddUniqueFile(&meshFiles, m_MeshSimplificationPath);
 		m_MeshSimplificationFiles.swap(meshFiles);
 
-		m_MeshSimplificationFileIndex = 0;
-		for (size_t i = 0; i < m_MeshSimplificationFiles.size(); ++i)
-		{
-			if (m_MeshSimplificationFiles[i] == m_MeshSimplificationPath)
-			{
-				m_MeshSimplificationFileIndex = (int)i;
-				break;
-			}
-		}
 		if (m_MeshSimplificationPath.empty() && !m_MeshSimplificationFiles.empty())
 		{
 			m_MeshSimplificationPath = m_MeshSimplificationFiles.front();
-			m_MeshSimplificationFileIndex = 0;
 		}
 	}
 
@@ -3347,15 +3333,13 @@ namespace Riemann
 		unsigned int pendingPauseGeneration = 0;
 		bool pendingSolverSwitch = false;
 		SolverPanelState pendingSolverPanel;
-		std::string pendingSceneFile;
+		std::string pendingSceneConfiguration;
+		unsigned int pendingSceneConfigurationGeneration = 0;
 		int pendingDemoIndex = -1;
 		int pendingRagdollAlgorithm = -1;
 		RobotPanelState pendingRobot;
-		bool pendingDistance = false;
-		float pendingDistanceValue = 0.0f;
 		bool pendingCuttingSeparation = false;
 		float pendingCuttingSeparationValue = 0.0f;
-		int pendingCuttingObjIndex = -1;
 		bool pendingBrowseCuttingObj = false;
 		bool pendingApplyCutting = false;
 		bool pendingCuttingMode = false;
@@ -3371,7 +3355,6 @@ namespace Riemann
 		int pendingCapCutFaces = -1;
 		bool pendingCuttingSeed = false;
 		int pendingCuttingSeedValue = 0;
-		int pendingMeshSimplificationFileIndex = -1;
 		bool pendingBrowseMeshSimplificationFile = false;
 		bool pendingApplyMeshSimplification = false;
 		bool pendingMeshSimplificationAlgorithm = false;
@@ -3384,9 +3367,10 @@ namespace Riemann
 		RenderMode pendingRenderModeValue = RenderMode::Solid;
 		bool pendingShootProjectile = false;
 #ifdef RIEMANN_SPIDER_TRAINING
-		bool trainingToggle = false, showAllToggle = false;
+		bool trainingAction = false, showAllToggle = false;
+		unsigned int trainingActionGeneration = 0, spiderPanelModeGeneration = 0;
 		bool browseElmanExecutable = false;
-		int selectedSpider = -1;
+		int selectedSpider = -1, spiderPanelMode = -1;
 #endif
 		std::vector<ConstraintControlState> pendingConstraintControls;
 		{
@@ -3408,25 +3392,25 @@ namespace Riemann
 			pendingRobot = m_PendingRobotPanel;
 			m_PendingRobotPanel.Active = false;
 #ifdef RIEMANN_SPIDER_TRAINING
-			trainingToggle = m_PendingSpiderTrainToggle;
+			trainingAction = m_PendingSpiderTrainAction;
+			trainingActionGeneration = m_PendingSpiderTrainGeneration;
+			spiderPanelMode = m_PendingSpiderPanelMode;
+			spiderPanelModeGeneration = m_PendingSpiderPanelModeGeneration;
 			showAllToggle = m_PendingSpiderShowAllToggle;
 			selectedSpider = m_PendingSpiderSelection;
 			browseElmanExecutable = m_PendingBrowseElmanExecutable;
-			m_PendingSpiderTrainToggle = m_PendingSpiderShowAllToggle = false;
+			m_PendingSpiderTrainAction = m_PendingSpiderShowAllToggle = false;
+			m_PendingSpiderPanelMode = -1;
 			m_PendingBrowseElmanExecutable = false;
 			m_PendingSpiderSelection = -1;
 #endif
 			pendingRagdollAlgorithm = m_ImguiPendingRagdollAlgorithm;
 			m_ImguiPendingRagdollAlgorithm = -1;
-			pendingSceneFile.swap(m_ImguiPendingSceneFile);
-			pendingDistance = m_ImguiPendingCameraDistance;
-			pendingDistanceValue = m_ImguiPendingCameraDistanceValue;
-			m_ImguiPendingCameraDistance = false;
+			pendingSceneConfiguration.swap(m_ImguiPendingSceneConfiguration);
+			pendingSceneConfigurationGeneration = m_ImguiPendingSceneConfigurationGeneration;
 			pendingCuttingSeparation = m_ImguiPendingCuttingSeparation;
 			pendingCuttingSeparationValue = m_ImguiPendingCuttingSeparationValue;
 			m_ImguiPendingCuttingSeparation = false;
-			pendingCuttingObjIndex = m_ImguiPendingCuttingObjIndex;
-			m_ImguiPendingCuttingObjIndex = -1;
 			pendingBrowseCuttingObj = m_ImguiPendingBrowseCuttingObj;
 			m_ImguiPendingBrowseCuttingObj = false;
 			pendingApplyCutting = m_ImguiPendingApplyCutting;
@@ -3451,8 +3435,6 @@ namespace Riemann
 			pendingCuttingSeed = m_ImguiPendingCuttingSeed;
 			pendingCuttingSeedValue = m_ImguiPendingCuttingSeedValue;
 			m_ImguiPendingCuttingSeed = false;
-			pendingMeshSimplificationFileIndex = m_ImguiPendingMeshSimplificationFileIndex;
-			m_ImguiPendingMeshSimplificationFileIndex = -1;
 			pendingBrowseMeshSimplificationFile = m_ImguiPendingBrowseMeshSimplificationFile;
 			m_ImguiPendingBrowseMeshSimplificationFile = false;
 			pendingApplyMeshSimplification = m_ImguiPendingApplyMeshSimplification;
@@ -3480,7 +3462,7 @@ namespace Riemann
 			m_ViewerPaused = false;
 			if (m_CuttingPanelActive) LoadCuttingPanel();
 			else if (m_MeshSimplificationPanelActive) LoadMeshSimplificationPanel();
-			else LoadScene(m_SceneDirectory + "/" + m_CurrentSceneName);
+			else LoadScene(JoinPath(m_SceneDirectory, m_CurrentSceneName));
 			return;
 		}
 
@@ -3540,9 +3522,11 @@ namespace Riemann
 			}
 		}
 
-		if (!pendingSceneFile.empty())
+		if (!pendingSceneConfiguration.empty() && pendingSceneConfigurationGeneration == m_SceneGeneration
+			&& !m_CuttingPanelActive && !m_MeshSimplificationPanelActive)
 		{
-			LoadScene(pendingSceneFile);
+			LoadScene(JoinPath(m_SceneDirectory, m_CurrentSceneName), pendingSceneConfiguration);
+			return;
 		}
 		if (pendingRobot.Active && pendingRobot.SceneGeneration == m_SceneGeneration && m_World->GetRobotDemoController())
 		{
@@ -3560,12 +3544,22 @@ namespace Riemann
 			}
 		}
 #ifdef RIEMANN_SPIDER_TRAINING
-		if (browseElmanExecutable)
+		if (spiderPanelMode >= 0 && spiderPanelMode <= 1 &&
+			spiderPanelModeGeneration == m_SceneGeneration && m_World->IsSpiderWalkingDemo())
+		{
+			m_SpiderPanelMode = static_cast<SpiderPanelMode>(spiderPanelMode);
+			if (m_SpiderPanelMode == SpiderPanelMode::Inference && m_SpiderTrainingMode)
+			{
+				trainingAction = true;
+				trainingActionGeneration = m_SceneGeneration;
+			}
+		}
+		if (browseElmanExecutable && m_SpiderPanelMode == SpiderPanelMode::Training && !m_SpiderTrainingMode)
 		{
 			const std::string selectedExecutable = OpenElmanExecutableDialog();
 			if (!selectedExecutable.empty()) SaveElmanExecutablePath(selectedExecutable);
 		}
-		if (trainingToggle && m_World->IsSpiderWalkingDemo())
+		if (trainingAction && trainingActionGeneration == m_SceneGeneration && m_World->IsSpiderWalkingDemo())
 		{
 			if (m_SpiderTrainingMode)
 			{
@@ -3573,28 +3567,44 @@ namespace Riemann
 				m_SpiderTrainingMode = false;
 				LoadScene(m_CurrentSceneName);
 			}
-			else
+			else if (m_SpiderPanelMode == SpiderPanelMode::Training)
 			{
-				const int worldCount = m_SpiderTrainingWorldCount;
-				m_World->BeginSpiderTrainingDisplay(size_t(worldCount));
-				m_SpiderTrainingMode = true;
-				m_SpiderTrainingShowAll = false;
-				m_SpiderTrainingSelected = 0;
-				m_RobotAutoWalk = true;
-				SpiderTrainingOptions options;
-				options.policy_path = m_SceneDirectory + "../Robots/Spider/actor.bin";
-				options.environment_count = worldCount;
-				m_SpiderTraining->start(std::move(options));
+				std::string executablePath;
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					executablePath = m_ElmanExecutablePath;
+				}
+				const DWORD attributes = executablePath.empty() ? INVALID_FILE_ATTRIBUTES : GetFileAttributesA(executablePath.c_str());
+				if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY))
+				{
+					std::lock_guard<std::mutex> lock(m_ImguiMutex);
+					m_ElmanExecutableStatus = "Select an existing Elman EXE";
+				}
+				else
+				{
+					const int worldCount = m_SpiderTrainingWorldCount;
+					m_World->BeginSpiderTrainingDisplay(size_t(worldCount));
+					m_SpiderTrainingMode = true;
+					m_SpiderTrainingShowAll = false;
+					m_SpiderTrainingSelected = 0;
+					m_ViewerPaused = false;
+					SpiderTrainingOptions options;
+					options.executable_path = std::move(executablePath);
+					options.policy_path = m_SceneDirectory + "../Robots/Spider/actor.bin";
+					options.environment_count = worldCount;
+					m_SpiderTraining->start(std::move(options));
+				}
 			}
 		}
-		if (showAllToggle)
+		if (showAllToggle && m_SpiderTrainingMode)
 		{
 			m_SpiderTrainingShowAll = !m_SpiderTrainingShowAll;
 			m_CamCenter = m_SpiderTrainingShowAll ? Vector3(6.75f, 0.45f, 1.5f) : Vector3(0, 0.45f, 0);
 			m_CamParam.z = m_SpiderTrainingShowAll ? 24.0f : 8.5f;
 			UpdateCamera();
 		}
-		if (selectedSpider >= 0 && selectedSpider < m_SpiderTrainingWorldCount) m_SpiderTrainingSelected = selectedSpider;
+		if (m_SpiderTrainingMode && selectedSpider >= 0 && selectedSpider < m_SpiderTrainingWorldCount)
+			m_SpiderTrainingSelected = selectedSpider;
 #endif
 		if (pendingRagdollAlgorithm >= 0 && m_CurrentSceneName == "09_ragdoll_stairs.json")
 		{
@@ -3648,180 +3658,6 @@ namespace Riemann
 				}
 				UpdateImguiState();
 			}
-			else
-			{
-			std::string error;
-			bool reloaded = true;
-			if (m_World && !m_CuttingPanelActive && !m_MeshSimplificationPanelActive
-				&& (pendingSolverPanel.DistanceFieldDemo != m_World->GetDistanceFieldDemo()
-					|| pendingSolverPanel.StrandDemo != m_World->GetStrandDemo()
-					|| pendingSolverPanel.CharacterDemo != m_World->GetCharacterDemo() || pendingSolverPanel.CharacterBox != m_World->GetCharacterBox()
-					|| pendingSolverPanel.VehicleDynamicsDemo != m_World->GetVehicleDynamicsDemo()
-					|| pendingSolverPanel.ReducedRagdollDemo != m_World->GetReducedRagdollDemo()
-					|| pendingSolverPanel.PhysicalAnimationDemo != m_World->GetPhysicalAnimationDemo()
-					|| pendingSolverPanel.ClothModelDemo != m_World->GetClothModelDemo() || pendingSolverPanel.AuthoredDestructionDemo != m_World->GetAuthoredDestructionDemo()
-					|| pendingSolverPanel.DestructionEventsDemo != m_World->GetDestructionEventsDemo()
-					|| pendingSolverPanel.DestructionCacheDemo != m_World->GetDestructionCacheDemo()))
-			{
-				const bool Previous = m_World->GetDistanceFieldDemo();
-				const bool PreviousStrands=m_World->GetStrandDemo();
-				const bool PreviousCharacter = m_World->GetCharacterDemo(), PreviousBox = m_World->GetCharacterBox();
-				const bool PreviousVehicle = m_World->GetVehicleDynamicsDemo();
-				const bool PreviousReducedRagdoll = m_World->GetReducedRagdollDemo();
-				const bool PreviousAnimation = m_World->GetPhysicalAnimationDemo();
-				const bool PreviousCloth = m_World->GetClothModelDemo();
-				const bool PreviousDestruction = m_World->GetAuthoredDestructionDemo();
-				const bool PreviousEvents = m_World->GetDestructionEventsDemo();
-				const bool PreviousCache = m_World->GetDestructionCacheDemo();
-				const std::string SceneFile = m_SceneDirectory + "/" + m_CurrentSceneName;
-				m_World->SetDistanceFieldDemo(pendingSolverPanel.DistanceFieldDemo);
-				m_World->SetStrandDemo(pendingSolverPanel.StrandDemo);
-				m_World->SetCharacterDemo(pendingSolverPanel.CharacterDemo, pendingSolverPanel.CharacterBox);
-				m_World->SetVehicleDynamicsDemo(pendingSolverPanel.VehicleDynamicsDemo);
-				m_World->SetReducedRagdollDemo(pendingSolverPanel.ReducedRagdollDemo);
-				m_World->SetPhysicalAnimationDemo(pendingSolverPanel.PhysicalAnimationDemo);
-				m_World->SetClothModelDemo(pendingSolverPanel.ClothModelDemo);
-				m_World->SetAuthoredDestructionDemo(pendingSolverPanel.AuthoredDestructionDemo);
-				m_World->SetDestructionEventsDemo(pendingSolverPanel.DestructionEventsDemo);
-				m_World->SetDestructionCacheDemo(pendingSolverPanel.DestructionCacheDemo);
-				reloaded = LoadScene(SceneFile);
-				if (!reloaded)
-				{
-					m_World->SetDistanceFieldDemo(Previous);
-					m_World->SetStrandDemo(PreviousStrands);
-					m_World->SetCharacterDemo(PreviousCharacter, PreviousBox);
-					m_World->SetVehicleDynamicsDemo(PreviousVehicle);
-					m_World->SetReducedRagdollDemo(PreviousReducedRagdoll);
-					m_World->SetPhysicalAnimationDemo(PreviousAnimation);
-					m_World->SetClothModelDemo(PreviousCloth);
-					m_World->SetAuthoredDestructionDemo(PreviousDestruction);
-					m_World->SetDestructionEventsDemo(PreviousEvents);
-					m_World->SetDestructionCacheDemo(PreviousCache);
-					const bool Restored = LoadScene(SceneFile);
-					error = Restored ? "Demo scene reload failed; restored the previous mode."
-						: "Demo scene reload failed; restoring the previous scene also failed.";
-				}
-			}
-			PhysicsWorld* simulation = m_World ? m_World->GetSimulation() : nullptr;
-			const bool valid = reloaded && simulation && !m_CuttingPanelActive && !m_MeshSimplificationPanelActive
-				&& pendingSolverPanel.ResolutionIndex >= 0 && pendingSolverPanel.ResolutionIndex < 4
-				&& pendingSolverPanel.BackendIndex >= 0 && pendingSolverPanel.BackendIndex < 4;
-			const bool SupportedProjection = !simulation || simulation->GetReducedRagdollCount() == 0 || !pendingSolverPanel.SupportStabilization;
-			if (!SupportedProjection) error = "ReducedRagdolls require support stabilization to be disabled.";
-			const bool CouplingRequested = (pendingSolverPanel.SoftBodyAttachments && pendingSolverPanel.RigidAttachments)
-				|| (pendingSolverPanel.SoftBodyContacts && pendingSolverPanel.SoftRigidContacts);
-			const bool SupportedCoupling = !CouplingRequested || (pendingSolverPanel.ResolutionIndex >= 2 && !pendingSolverPanel.SupportStabilization);
-			if (!SupportedCoupling) error = "Soft-body rigid coupling requires PBD/XPBD and support stabilization disabled.";
-			if (valid && SupportedProjection && SupportedCoupling && m_World->GetRigidAttachmentDemo()
-				&& (!pendingSolverPanel.SoftBodyAttachments || !pendingSolverPanel.RigidAttachments))
-				m_World->ApplyDeformableAttachmentDemo(pendingSolverPanel.SoftBodyAttachments, pendingSolverPanel.CompliantAttachments, false);
-			if (valid && SupportedProjection && SupportedCoupling && m_World->GetSoftRigidContactDemo()
-				&& (!pendingSolverPanel.SoftBodyContacts || !pendingSolverPanel.SoftRigidContacts))
-				m_World->ApplyDeformableContactDemo(pendingSolverPanel.SoftBodyContacts, false, pendingSolverPanel.PreparedSoftAsset, pendingSolverPanel.EmbeddedSoftRender);
-			bool applied = valid && SupportedProjection && SupportedCoupling && simulation->SetSolverConfiguration(
-				SolverPanelAlgorithms[pendingSolverPanel.ResolutionIndex],
-				SolverPanelBackends[pendingSolverPanel.BackendIndex], pendingSolverPanel.AllowFallback, &error);
-			if (applied)
-			{
-				simulation->SetNarrowPhaseSolver(pendingSolverPanel.PersistentContacts ? NarrowPhaseSolver::PCM : NarrowPhaseSolver::GJKEPA);
-				simulation->SetSequentialImpulseWarmStarting(pendingSolverPanel.SequentialWarmStart);
-				simulation->SetUnifiedConstraintSolving(pendingSolverPanel.UnifiedConstraints);
-				simulation->SetJointDrivesEnabled(pendingSolverPanel.JointDrives);
-				simulation->SetJointBreakingEnabled(pendingSolverPanel.JointBreaking);
-				auto TemporalSettings = simulation->GetTemporalSubstepSettings();
-				TemporalSettings.Enabled = pendingSolverPanel.TemporalSubsteps;
-				simulation->SetTemporalSubstepSettings(TemporalSettings);
-				auto SleepSettings = simulation->GetIslandSleepingSettings();
-				SleepSettings.Enabled = pendingSolverPanel.IslandSleeping;
-				simulation->SetIslandSleepingSettings(SleepSettings);
-				auto SupportSettings = simulation->GetSupportStabilizationSettings();
-				SupportSettings.Enabled = pendingSolverPanel.SupportStabilization;
-				simulation->SetSupportStabilizationSettings(SupportSettings);
-				auto CCDSettings = simulation->GetCCDContinuationSettings();
-				CCDSettings.Enabled = pendingSolverPanel.CCDContinuation;
-				simulation->SetCCDContinuationSettings(CCDSettings);
-				FrictionPatchSettings Friction = simulation->GetFrictionPatchSettings();
-				Friction.Enabled = pendingSolverPanel.FrictionPatches;
-				simulation->SetFrictionPatchSettings(Friction);
-				simulation->SetTriangleContactsEnabled(pendingSolverPanel.TriangleContacts);
-				simulation->SetCollisionFilteringEnabled(pendingSolverPanel.CollisionFiltering);
-				ContactGenerationSettings Contacts = simulation->GetContactGenerationSettings();
-				Contacts.UseShapeOffsets = pendingSolverPanel.ShapeOffsets;
-				Contacts.SpeculativeContacts = pendingSolverPanel.SpeculativeContacts;
-				simulation->SetContactGenerationSettings(Contacts);
-				if (m_World->GetDemoStrands())
-				{
-					try
-					{
-						applied=m_World->ApplyStrandDemo(pendingSolverPanel.StrandRootTwist,pendingSolverPanel.StrandCoupled,(size_t)pendingSolverPanel.StrandLod);
-						if (applied) applied=m_World->ApplyStrandCollisionDemo(pendingSolverPanel.StrandContacts,pendingSolverPanel.StrandSelfContacts,pendingSolverPanel.StrandContinuous,pendingSolverPanel.StrandFriction);
-					}
-					catch (const std::exception& E) { applied=false; error=E.what(); }
-				}
-				if (m_World->GetDemoPhysicalAnimation()) m_World->ApplyPhysicalAnimationDemo(pendingSolverPanel.AnimationPassive,
-					pendingSolverPanel.AnimationArmStrength, pendingSolverPanel.AnimationPhysicsBlend);
-				if (m_World->GetDemoCloth()) m_World->ApplyClothDemo(pendingSolverPanel.ClothWind, pendingSolverPanel.ClothAnimation,
-					pendingSolverPanel.ClothTethers, pendingSolverPanel.ClothSoftMaterial, pendingSolverPanel.ClothSurfaceContacts, pendingSolverPanel.ClothFriction,
-					pendingSolverPanel.ClothSelfCollision, pendingSolverPanel.ClothInterCollision, pendingSolverPanel.ClothContinuous,
-					pendingSolverPanel.SoftBodyAttachments, pendingSolverPanel.CompliantAttachments, pendingSolverPanel.RigidAttachments, pendingSolverPanel.SoftBodyContacts, pendingSolverPanel.SoftRigidContacts,
-					pendingSolverPanel.CalibratedSoftMaterial, pendingSolverPanel.StVKSoftMaterial, pendingSolverPanel.PreparedSoftAsset, pendingSolverPanel.EmbeddedSoftRender,
-					pendingSolverPanel.CorotatedSoftMaterial, pendingSolverPanel.ProjectiveSoftMaterial);
-				if (pendingSolverPanel.HasClothDemo) applied = m_World->ApplyClothParameters(
-					pendingSolverPanel.ClothAlgorithm == 0 ? ClothModel::DistanceLinks : ClothModel::TriangleStrain,
-					(int)pendingSolverPanel.ClothIterations, (int)pendingSolverPanel.ClothSubsteps, pendingSolverPanel.ClothDamping,
-					pendingSolverPanel.ClothStretchUCompliance, pendingSolverPanel.ClothStretchVCompliance,
-					pendingSolverPanel.ClothShearCompliance, pendingSolverPanel.ClothBendingCompliance) && applied;
-			}
-			if (applied)
-			{
-				try { applied = m_World->ApplyPhysicsFieldsDemo(pendingSolverPanel.PhysicsFieldsDemo,pendingSolverPanel.PhysicsFieldFreeze,
-					pendingSolverPanel.FieldStrainPulse,pendingSolverPanel.FieldVelocityPulse); }
-				catch (const std::exception& E) { applied = false; error = E.what(); }
-				if (!applied && error.empty()) error = "Field velocity assignment requires independent rigid bodies.";
-			}
-			if (applied && pendingSolverPanel.DestructionCacheCommand != DestructionPlaybackCommand::None)
-			{
-				try { applied = m_World->ApplyDestructionCacheDemo(pendingSolverPanel.DestructionCacheCommand,pendingSolverPanel.DestructionSeekFraction); }
-				catch (const std::exception& E) { applied = false; error = E.what(); }
-				if (!applied && error.empty()) error = "Record destruction before replaying or seeking.";
-			}
-			{
-				std::lock_guard<std::mutex> lock(m_ImguiMutex);
-				m_ImguiSolverPanel.Pending = false;
-				m_ImguiSolverPanel.DestructionCacheCommand = DestructionPlaybackCommand::None;
-				m_ImguiSolverPanel.FieldStrainPulse = m_ImguiSolverPanel.FieldVelocityPulse = false;
-				m_ImguiSolverPanel.Status = applied ? "Applied to current scene."
-					: (error.empty() ? "Solver change is unavailable." : error);
-				if (applied)
-				{
-					m_ImguiSolverPanel.AnimationPassive = pendingSolverPanel.AnimationPassive;
-					m_ImguiSolverPanel.AnimationArmStrength = pendingSolverPanel.AnimationArmStrength;
-					m_ImguiSolverPanel.AnimationPhysicsBlend = pendingSolverPanel.AnimationPhysicsBlend;
-					m_ImguiSolverPanel.ClothWind = pendingSolverPanel.ClothWind;
-					m_ImguiSolverPanel.ClothAnimation = pendingSolverPanel.ClothAnimation;
-					m_ImguiSolverPanel.ClothTethers = pendingSolverPanel.ClothTethers;
-					m_ImguiSolverPanel.ClothSoftMaterial = pendingSolverPanel.ClothSoftMaterial;
-					m_ImguiSolverPanel.ClothSurfaceContacts = pendingSolverPanel.ClothSurfaceContacts;
-					m_ImguiSolverPanel.ClothFriction = pendingSolverPanel.ClothFriction;
-					m_ImguiSolverPanel.ClothSelfCollision = pendingSolverPanel.ClothSelfCollision;
-					m_ImguiSolverPanel.ClothInterCollision = pendingSolverPanel.ClothInterCollision;
-					m_ImguiSolverPanel.ClothContinuous = pendingSolverPanel.ClothContinuous;
-					m_ImguiSolverPanel.ClothRigidCoupling = pendingSolverPanel.ClothRigidCoupling;
-					m_ImguiSolverPanel.SoftBodyAttachments = pendingSolverPanel.SoftBodyAttachments;
-					m_ImguiSolverPanel.CompliantAttachments = pendingSolverPanel.CompliantAttachments;
-					m_ImguiSolverPanel.RigidAttachments = pendingSolverPanel.RigidAttachments;
-					m_ImguiSolverPanel.SoftBodyContacts = pendingSolverPanel.SoftBodyContacts;
-					m_ImguiSolverPanel.SoftRigidContacts = pendingSolverPanel.SoftRigidContacts;
-					m_ImguiSolverPanel.CalibratedSoftMaterial = pendingSolverPanel.CalibratedSoftMaterial;
-					m_ImguiSolverPanel.StVKSoftMaterial = pendingSolverPanel.StVKSoftMaterial;
-					m_ImguiSolverPanel.CorotatedSoftMaterial = pendingSolverPanel.CorotatedSoftMaterial;
-					m_ImguiSolverPanel.ProjectiveSoftMaterial = pendingSolverPanel.ProjectiveSoftMaterial;
-					m_ImguiSolverPanel.PreparedSoftAsset = pendingSolverPanel.PreparedSoftAsset;
-					m_ImguiSolverPanel.EmbeddedSoftRender = pendingSolverPanel.EmbeddedSoftRender;
-				}
-			}
-			UpdateImguiState();
-			}
 		}
 		if (pendingShootProjectile)
 		{
@@ -3831,20 +3667,8 @@ namespace Riemann
 		{
 			m_World->ApplyConstraintControl(state);
 		}
-		if (pendingDistance)
-		{
-			m_CamParam.z = std::max(GetCameraSceneScale() * 1.0e-4f, pendingDistanceValue);
-			UpdateCamera();
-		}
 
 		bool pendingLoadCuttingSource = false;
-		if (pendingCuttingObjIndex >= 0 && pendingCuttingObjIndex < (int)m_CuttingObjFiles.size())
-		{
-			m_CuttingObjIndex = pendingCuttingObjIndex;
-			m_CuttingObjPath = m_CuttingObjFiles[(size_t)pendingCuttingObjIndex];
-			pendingLoadCuttingSource = true;
-		}
-
 		if (pendingBrowseCuttingObj)
 		{
 			const std::string selectedObj = OpenObjFileDialog();
@@ -3857,13 +3681,6 @@ namespace Riemann
 		}
 
 		bool pendingLoadMeshSimplificationSource = false;
-		if (pendingMeshSimplificationFileIndex >= 0 && pendingMeshSimplificationFileIndex < (int)m_MeshSimplificationFiles.size())
-		{
-			m_MeshSimplificationFileIndex = pendingMeshSimplificationFileIndex;
-			m_MeshSimplificationPath = m_MeshSimplificationFiles[(size_t)pendingMeshSimplificationFileIndex];
-			pendingLoadMeshSimplificationSource = true;
-		}
-
 		if (pendingBrowseMeshSimplificationFile)
 		{
 			const std::string selectedMesh = OpenMeshFileDialog();
@@ -4065,95 +3882,36 @@ namespace Riemann
 						? "CUDA unavailable; interactive CPU grid" : "CUDA unavailable; using Compute Shader");
 				m_ImguiPendingAerodynamicsApply = false;
 			}
-			m_ImguiAerodynamicsPanel.RigidCoupling = m_AerodynamicsCoupling != nullptr;
-			m_ImguiAerodynamicsPanel.RigidBodyCount = m_World->GetAerodynamicsRigidBodyCount();
 			m_ImguiAerodynamicsPanel.ActualBackend = (m_AerodynamicsSimulation->GetBackend() == FluidBackend::CPU ? 0 : m_AerodynamicsSimulation->GetBackend() == FluidBackend::CUDA ? 1 : 2);
 			m_ImguiAerodynamicsPanel.Resolution = m_AerodynamicsSimulation->GetSettings().Resolution;
 		}
 		if (simulation)
 		{
-			RefreshSolverPanelTelemetry(m_ImguiSolverPanel,*m_World);
-			m_ImguiSolverPanel.HasReducedRagdolls = simulation->GetReducedRagdollCount() != 0;
-			auto* Animation = m_World->GetDemoPhysicalAnimation();
-			m_ImguiSolverPanel.HasPhysicalAnimation = Animation != nullptr;
-			auto* DemoCloth = m_World->GetDemoCloth();
-			if (!DemoCloth && m_World->GetName() == "Cloth" && simulation->GetClothCount() > 0) DemoCloth = simulation->GetCloth(0);
-			m_ImguiSolverPanel.HasClothDemo = DemoCloth != nullptr;
-			m_ImguiSolverPanel.AnimationState = Animation ? (int)Animation->GetState() : 0;
-			m_ImguiSolverPanel.ActiveResolutionIndex = GetSolverPanelIndex(simulation->GetResolutionSolver());
+			auto* demoCloth = m_World->GetDemoCloth();
+			if (!demoCloth && m_World->GetName() == "Cloth" && simulation->GetClothCount() > 0)
+				demoCloth = simulation->GetCloth(0);
+			m_ImguiSolverPanel.HasClothDemo = demoCloth != nullptr;
 			m_ImguiSolverPanel.ActiveBackendIndex = GetBackendPanelIndex(simulation->GetSolverBackend());
 			m_ImguiSolverPanel.ActiveRequestedBackendIndex = GetBackendPanelIndex(simulation->GetRequestedSolverBackend());
 			if (m_ImguiSolverPanel.SceneGeneration != m_SceneGeneration)
 			{
-				m_ImguiSolverPanel.ResolutionIndex = m_ImguiSolverPanel.ActiveResolutionIndex;
+				m_ImguiSolverPanel.ResolutionIndex = GetSolverPanelIndex(simulation->GetResolutionSolver());
 				m_ImguiSolverPanel.BackendIndex = m_ImguiSolverPanel.ActiveRequestedBackendIndex;
 				m_ImguiSolverPanel.AllowFallback = simulation->GetAllowBackendFallback();
-				m_ImguiSolverPanel.PersistentContacts = simulation->GetNarrowPhaseSolver() == NarrowPhaseSolver::PCM;
-				m_ImguiSolverPanel.TriangleContacts = simulation->GetTriangleContactsEnabled();
-				m_ImguiSolverPanel.CollisionFiltering = simulation->GetCollisionFilteringEnabled();
-				m_ImguiSolverPanel.ShapeOffsets = simulation->GetContactGenerationSettings().UseShapeOffsets;
-				m_ImguiSolverPanel.SpeculativeContacts = simulation->GetContactGenerationSettings().SpeculativeContacts;
-				m_ImguiSolverPanel.DistanceFieldDemo = m_World->GetDistanceFieldDemo();
-				m_ImguiSolverPanel.StrandDemo=m_World->GetStrandDemo(); m_ImguiSolverPanel.StrandRootTwist=m_World->GetStrandDemoTwist(); m_ImguiSolverPanel.StrandCoupled=true; m_ImguiSolverPanel.StrandLod=(int)m_World->GetStrandDemoLod();
-				const auto* DemoStrands=m_World->GetDemoStrands(); const auto StrandContacts=DemoStrands ? DemoStrands->GetSettings().Collision : StrandCollisionSettings();
-				m_ImguiSolverPanel.StrandContacts=StrandContacts.Enabled; m_ImguiSolverPanel.StrandSelfContacts=StrandContacts.SelfCollision;
-				m_ImguiSolverPanel.StrandContinuous=StrandContacts.Continuous; m_ImguiSolverPanel.StrandFriction=StrandContacts.Material.StaticFriction>0;
-				m_ImguiSolverPanel.PhysicsFieldsDemo = m_World->GetPhysicsFieldsDemo();
-				m_ImguiSolverPanel.PhysicsFieldFreeze = m_World->GetPhysicsFieldFreeze();
-				m_ImguiSolverPanel.AuthoredDestructionDemo = m_World->GetAuthoredDestructionDemo();
-				m_ImguiSolverPanel.DestructionEventsDemo = m_World->GetDestructionEventsDemo();
-				m_ImguiSolverPanel.DestructionCacheDemo = m_World->GetDestructionCacheDemo();
-				m_ImguiSolverPanel.CharacterDemo = m_World->GetCharacterDemo();
-				m_ImguiSolverPanel.VehicleDynamicsDemo = m_World->GetVehicleDynamicsDemo();
-				m_ImguiSolverPanel.ReducedRagdollDemo = m_World->GetReducedRagdollDemo();
-				m_ImguiSolverPanel.PhysicalAnimationDemo = m_World->GetPhysicalAnimationDemo();
-				m_ImguiSolverPanel.ClothModelDemo = m_World->GetClothModelDemo();
-				if (DemoCloth)
+				if (demoCloth)
 				{
-					const auto& Settings = DemoCloth->GetSettings();
-					m_ImguiSolverPanel.ClothAlgorithm = Settings.Model == ClothModel::DistanceLinks ? 0 : 1;
-					m_ImguiSolverPanel.ClothIterations = (float)Settings.SolverIterations;
-					m_ImguiSolverPanel.ClothSubsteps = (float)Settings.Substeps;
-					m_ImguiSolverPanel.ClothDamping = Settings.Damping;
-					m_ImguiSolverPanel.ClothStretchUCompliance = Settings.Material.StretchUCompliance;
-					m_ImguiSolverPanel.ClothStretchVCompliance = Settings.Material.StretchVCompliance;
-					m_ImguiSolverPanel.ClothShearCompliance = Settings.Material.ShearCompliance;
-					m_ImguiSolverPanel.ClothBendingCompliance = Settings.Material.BendingCompliance;
+					const auto& settings = demoCloth->GetSettings();
+					m_ImguiSolverPanel.ClothAlgorithm = settings.Model == ClothModel::DistanceLinks ? 0 : 1;
+					m_ImguiSolverPanel.ClothIterations = (float)settings.SolverIterations;
+					m_ImguiSolverPanel.ClothSubsteps = (float)settings.Substeps;
+					m_ImguiSolverPanel.ClothDamping = settings.Damping;
+					m_ImguiSolverPanel.ClothStretchUCompliance = settings.Material.StretchUCompliance;
+					m_ImguiSolverPanel.ClothStretchVCompliance = settings.Material.StretchVCompliance;
+					m_ImguiSolverPanel.ClothShearCompliance = settings.Material.ShearCompliance;
+					m_ImguiSolverPanel.ClothBendingCompliance = settings.Material.BendingCompliance;
+					m_ImguiSolverPanel.ClothSelfCollision = settings.Collision.SelfCollision;
+					m_ImguiSolverPanel.ClothRigidCoupling = demoCloth->HasRigidCoupling();
 				}
-				m_ImguiSolverPanel.ClothWind = !DemoCloth || DemoCloth->GetSettings().Wind.NormalDrag > 0;
-				m_ImguiSolverPanel.ClothAnimation = DemoCloth && DemoCloth->GetSettings().AnimationDrive.Enabled;
-				m_ImguiSolverPanel.ClothTethers = !DemoCloth || DemoCloth->GetSettings().Material.TethersEnabled;
-				m_ImguiSolverPanel.ClothSoftMaterial = m_World->GetClothDemoSoftMaterial();
-				m_ImguiSolverPanel.ClothSurfaceContacts = DemoCloth && DemoCloth->GetSettings().Collision.SurfaceContacts;
-				m_ImguiSolverPanel.ClothFriction = !DemoCloth || DemoCloth->GetSettings().Collision.Material.StaticFriction > 0;
-				m_ImguiSolverPanel.ClothSelfCollision = DemoCloth && DemoCloth->GetSettings().Collision.SelfCollision;
-				m_ImguiSolverPanel.ClothInterCollision = DemoCloth && DemoCloth->GetSettings().Collision.InterCollision;
-				m_ImguiSolverPanel.ClothContinuous = DemoCloth && DemoCloth->GetSettings().Collision.Continuous;
-				m_ImguiSolverPanel.ClothRigidCoupling = DemoCloth && DemoCloth->HasRigidCoupling();
-				m_ImguiSolverPanel.SoftBodyAttachments = m_World->GetDemoDeformableBody(0) && m_World->GetDemoDeformableBody(1);
-				m_ImguiSolverPanel.CompliantAttachments = m_World->GetCompliantAttachmentDemo();
-				m_ImguiSolverPanel.RigidAttachments = m_World->GetRigidAttachmentDemo();
-				m_ImguiSolverPanel.SoftBodyContacts = m_World->GetDemoContactBody(0) && m_World->GetDemoContactBody(1);
-				m_ImguiSolverPanel.SoftRigidContacts = m_World->GetSoftRigidContactDemo();
-				m_ImguiSolverPanel.CalibratedSoftMaterial = m_World->GetCalibratedSoftMaterialDemo();
-				m_ImguiSolverPanel.StVKSoftMaterial = m_World->GetStVKSoftMaterialDemo();
-				m_ImguiSolverPanel.CorotatedSoftMaterial = m_World->GetCorotatedSoftMaterialDemo();
-				m_ImguiSolverPanel.ProjectiveSoftMaterial = m_World->GetProjectiveSoftMaterialDemo();
-				m_ImguiSolverPanel.PreparedSoftAsset = m_World->GetPreparedSoftAssetDemo();
-				if (m_ImguiSolverPanel.PreparedSoftAsset) m_ImguiSolverPanel.EmbeddedSoftRender = m_World->GetEmbeddedSoftRenderDemo();
-				m_ImguiSolverPanel.AnimationPassive = Animation && Animation->GetState() == PhysicalAnimationState::Passive;
-				m_ImguiSolverPanel.AnimationArmStrength = Animation ? Animation->GetControl((size_t)RagdollBone::LeftUpperArm).Strength : 1;
-				m_ImguiSolverPanel.AnimationPhysicsBlend = Animation ? Animation->GetControl(0).PhysicsBlend : 0.5f;
-				m_ImguiSolverPanel.CharacterBox = m_World->GetCharacterBox();
-				m_ImguiSolverPanel.SequentialWarmStart = simulation->GetSequentialImpulseWarmStarting();
-				m_ImguiSolverPanel.UnifiedConstraints = simulation->GetUnifiedConstraintSolving();
-				m_ImguiSolverPanel.FrictionPatches = simulation->GetFrictionPatchSettings().Enabled;
-				m_ImguiSolverPanel.JointDrives = simulation->GetJointDrivesEnabled();
-				m_ImguiSolverPanel.JointBreaking = simulation->GetJointBreakingEnabled();
-				m_ImguiSolverPanel.CCDContinuation = simulation->GetCCDContinuationSettings().Enabled;
-				m_ImguiSolverPanel.TemporalSubsteps = simulation->GetTemporalSubstepSettings().Enabled;
-				m_ImguiSolverPanel.SupportStabilization = simulation->GetSupportStabilizationSettings().Enabled;
-				m_ImguiSolverPanel.IslandSleeping = simulation->GetIslandSleepingSettings().Enabled;
 				m_ImguiSolverPanel.SceneGeneration = m_SceneGeneration;
 				m_ImguiSolverPanel.Pending = false;
 				m_ImguiSolverPanel.Status.clear();
@@ -4181,10 +3939,11 @@ namespace Riemann
 		m_ImguiSceneName = m_CurrentSceneDisplayName;
 		m_ImguiRagdollDemoReduced = m_RagdollDemoReduced;
 		m_ImguiSceneFiles = m_SceneFiles;
-		m_ImguiCuttingObjFiles = m_CuttingObjFiles;
+		m_ImguiSceneConfigurations = m_World && !m_CuttingPanelActive && !m_MeshSimplificationPanelActive
+			? m_World->GetConfigurations() : std::vector<SceneConfiguration>();
+		m_ImguiActiveSceneConfiguration = m_World ? m_World->GetActiveConfigurationId() : std::string();
 		m_ImguiCuttingObjPath = m_CuttingObjPath;
 		m_ImguiCuttingStatus = m_CuttingStatus;
-		m_ImguiMeshSimplificationFiles = m_MeshSimplificationFiles;
 		m_ImguiMeshSimplificationPath = m_MeshSimplificationPath;
 		m_ImguiMeshSimplificationStatus = m_MeshSimplificationStatus;
 		m_ImguiConstraintControls = std::move(constraintControls);
@@ -4200,11 +3959,8 @@ namespace Riemann
 		{
 			m_ImguiDemoIndex = GetCurrentSceneDemoIndex();
 		}
-		m_ImguiObjectCount = m_World ? m_World->GetObjects().size() : 0;
-		m_ImguiCameraDistance = m_CamParam.z;
 		m_ImguiCuttingPanelActive = m_CuttingPanelActive;
 		m_ImguiMeshSimplificationPanelActive = m_MeshSimplificationPanelActive;
-		m_ImguiCuttingObjIndex = m_CuttingObjIndex;
 		m_ImguiCuttingMode = m_CuttingMode;
 		m_ImguiCuttingPieceCount = m_CuttingPieceCount;
 		m_ImguiCuttingPiecesX = m_CuttingPiecesX;
@@ -4212,7 +3968,6 @@ namespace Riemann
 		m_ImguiCuttingPiecesZ = m_CuttingPiecesZ;
 		m_ImguiCuttingSeed = m_CuttingSeed;
 		m_ImguiCapCutFaces = m_CapCutFaces;
-		m_ImguiMeshSimplificationFileIndex = m_MeshSimplificationFileIndex;
 		m_ImguiMeshSimplificationAlgorithm = m_MeshSimplificationAlgorithm;
 		m_ImguiMeshSimplificationRatioLevel = m_MeshSimplificationRatioLevel;
 		m_ImguiCuttingSeparation = m_CuttingSeparation;
@@ -4438,20 +4193,11 @@ namespace Riemann
 		std::ifstream settings(ElmanExecutableSettingsPath(), std::ios::binary);
 		if (settings) std::getline(settings, path);
 		if (!path.empty() && path.back() == '\r') path.pop_back();
-		const bool saved = !path.empty();
-		if (!saved)
-		{
-			const std::string root = m_SceneDirectory.empty() ? std::string() : m_SceneDirectory + "../../";
-			path = root + "../ElmanLLM/Binaries/Windows/elman.exe";
-		}
-		char absolute[MAX_PATH] = {};
-		const DWORD length = GetFullPathNameA(path.c_str(), MAX_PATH, absolute, nullptr);
-		if (length > 0 && length < MAX_PATH) path = absolute;
-		const DWORD attributes = GetFileAttributesA(path.c_str());
+		const DWORD attributes = path.empty() ? INVALID_FILE_ATTRIBUTES : GetFileAttributesA(path.c_str());
 		const bool valid = attributes != INVALID_FILE_ATTRIBUTES && !(attributes & FILE_ATTRIBUTE_DIRECTORY);
 		std::lock_guard<std::mutex> lock(m_ImguiMutex);
-		m_ElmanExecutablePath = saved || valid ? path : std::string();
-		m_ElmanExecutableStatus = saved && !valid ? "Saved Elman EXE is missing" : std::string();
+		m_ElmanExecutablePath = path;
+		m_ElmanExecutableStatus = !path.empty() && !valid ? "Saved Elman EXE is missing" : std::string();
 	}
 
 	bool WorldViewer::SaveElmanExecutablePath(const std::string& path)
@@ -4500,13 +4246,14 @@ namespace Riemann
 		ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
 		return GetOpenFileNameA(&ofn) ? std::string(fileName) : std::string();
 	}
+
 #endif
 
 	std::string WorldViewer::ResolveSceneFile(const char* fileName) const
 	{
 		if (fileName == nullptr || fileName[0] == '\0')
 		{
-			fileName = "01_demo.json";
+			fileName = "01_stack_boxes.json";
 		}
 
 		const std::string requested(fileName);

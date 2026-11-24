@@ -208,12 +208,12 @@ namespace
 	}
 	void TestExistingDemos()
 	{
-		for (const char* File : { "02_stack_boxes.json", "06_constraints.json" })
+		for (const char* File : { "01_stack_boxes.json", "06_constraints.json" })
 		for (auto Solver : Solvers)
 		for (bool Enabled : { false, true })
 		{
 			SceneWorld Scene; std::string Error;
-			EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/" + File, &Error));
+			EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/" + File, &Error, std::string(File).find("01_stack_boxes.json") != std::string::npos ? "grid" : ""));
 			auto* World = Scene.GetSimulation(); EXPECT(World->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
 			auto Settings = World->GetTemporalSubstepSettings(); Settings.Enabled = Enabled; World->SetTemporalSubstepSettings(Settings);
 			for (int Frame = 0; Frame < 60; ++Frame) Scene.Step(1.0f / 60);
@@ -524,10 +524,10 @@ void TestSupportStabilization()
 	auto Bad = Scene.GetSimulation()->GetSupportStabilizationSettings(); Bad.ParentInverseMassScale = -1;
 	bool Rejected = false; try { Scene.GetSimulation()->SetSupportStabilizationSettings(Bad); } catch (const std::invalid_argument&) { Rejected = true; }
 	EXPECT(Rejected && Scene.GetSimulation()->GetSupportStabilizationSettings().ParentInverseMassScale > 0);
-	for (const char* File : { "02_stack_boxes.json", "06_constraints.json" })
+	for (const char* File : { "01_stack_boxes.json", "06_constraints.json" })
 	for (auto Solver : Solvers)
 	{
-		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/" + File, &Error));
+		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/" + File, &Error, std::string(File).find("01_stack_boxes.json") != std::string::npos ? "grid" : ""));
 		auto* W = Scene.GetSimulation(); EXPECT(W->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
 		auto Settings = W->GetSupportStabilizationSettings(); Settings.Enabled = true; W->SetSupportStabilizationSettings(Settings);
 		for (int Frame = 0; Frame < 120; ++Frame) Scene.Step(1.0f / 60);

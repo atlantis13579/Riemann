@@ -1,0 +1,323 @@
+{
+  "name": "Box Stacks",
+  "defaultConfiguration": "column",
+  "camera": {
+    "center": [0.0, 0.0, 0.0],
+    "orbit": [1.0, 0.6, 15.0],
+    "near": 0.05,
+    "far": 1000.0
+  },
+  "light": {
+    "direction": [-0.422521, -0.901663, 0.092092],
+    "color": [1.0, 0.96, 0.86],
+    "ambient": 0.24,
+    "shadowCenter": [0.0, 2.0, 0.0],
+    "shadowDistance": 70.0,
+    "shadowSize": 80.0
+  },
+  "configurations": [
+    {
+      "id": "column",
+      "name": "Single Column",
+      "scene": {
+        "physics": {
+          "gravity": [0.0, -9.8, 0.0],
+          "contactGeneration": {
+            "useShapeOffsets": false,
+            "speculativeContacts": false
+          }
+        },
+        "objects": [
+          {
+            "id": "ground",
+            "type": "plane",
+            "body": "static",
+            "position": [0.0, -5.0, 0.0],
+            "normal": [0.0, 1.0, 0.0],
+            "color": [0.52, 0.56, 0.6, 1.0]
+          },
+          {
+            "id": "box_stack",
+            "sdfCollision": false,
+            "sdfResolution": 24,
+            "contactOffset": 0.03,
+            "restOffset": 0.01,
+            "type": "box",
+            "body": "dynamic",
+            "position": [0.0, -4.0, 0.0],
+            "halfExtent": [1.0, 1.0, 1.0],
+            "color": [0.28, 0.52, 0.95, 1.0],
+            "repeat": {
+              "count": [1, 5, 1],
+              "spacing": [0.0, 2.01, 0.0]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "grid",
+      "name": "Box Grid",
+      "scene": {
+        "physics": {
+          "islandSleeping": {
+            "enabled": false
+          },
+          "supportStabilization": {
+            "enabled": false
+          },
+          "temporalSubsteps": {
+            "enabled": false,
+            "substeps": 4
+          },
+          "gravity": [0.0, -9.8, 0.0],
+          "resolutionSolver": "globalLCP",
+          "solverBackend": "simd",
+          "contactSolverIterations": 32,
+          "collisionFiltering": false,
+          "contactSolverTolerance": 1e-05,
+          "contactSolverRelaxation": 1.0
+        },
+        "camera": {
+          "center": [0.0, 0.0, 0.0],
+          "orbit": [1.0, 0.45, 24.0],
+          "near": 0.05,
+          "far": 1000.0
+        },
+        "light": {
+          "direction": [-0.549428, -0.826915, 0.119752],
+          "color": [1.0, 0.95, 0.86],
+          "ambient": 0.22,
+          "shadowCenter": [0.0, 0.0, 0.0],
+          "shadowDistance": 90.0,
+          "shadowSize": 90.0
+        },
+        "objects": [
+          {
+            "id": "ground",
+            "type": "plane",
+            "body": "static",
+            "position": [0.0, -5.0, 0.0],
+            "normal": [0.0, 1.0, 0.0],
+            "color": [0.5, 0.55, 0.58, 1.0]
+          },
+          {
+            "id": "stack_box",
+            "collisionLayer": 1,
+            "collisionMask": 4294967293,
+            "type": "box",
+            "body": "dynamic",
+            "position": [-4.2, -4.052, -4.2],
+            "halfExtent": [0.95, 0.95, 0.95],
+            "color": [0.35, 0.62, 0.86, 1.0],
+            "repeat": {
+              "count": [5, 5, 5],
+              "spacing": [2.1, 1.898, 2.1]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "pyramid",
+      "name": "Pyramid",
+      "scene": {
+        "physics": {
+          "gravity": [0, -9.8, 0],
+          "resolutionSolver": "globalLCP",
+          "solverBackend": "simd",
+          "contactSolverIterations": 80,
+          "islandSleeping": {
+            "enabled": true
+          },
+          "supportStabilization": {
+            "enabled": true,
+            "positionIterations": 4,
+            "velocityIterations": 4
+          },
+          "temporalSubsteps": {
+            "enabled": true,
+            "substeps": 4
+          }
+        },
+        "camera": {
+          "center": [0.0, 0.0, 0.0],
+          "orbit": [1.0, 0.45, 24.0],
+          "near": 0.05,
+          "far": 1000.0
+        },
+        "light": {
+          "direction": [0.5, -0.82, -0.6],
+          "color": [1.0, 0.96, 0.84],
+          "ambient": 0.3,
+          "shadowCenter": [0, 5, 0],
+          "shadowDistance": 40,
+          "shadowSize": 28
+        },
+        "objects": [
+          {
+            "id": "ground",
+            "type": "plane",
+            "body": "static",
+            "position": [0, 0, 0],
+            "normal": [0, 1, 0],
+            "color": [0.48, 0.53, 0.56, 1],
+            "restitution": 0,
+            "frictionDynamic": 0.8,
+            "frictionStatic": 0.9
+          },
+          {
+            "id": "pyramid_row_0",
+            "type": "box",
+            "body": "dynamic",
+            "position": [-4.6125, 1.5, 0],
+            "halfExtent": [0.5, 0.5, 0.5],
+            "color": [0.3, 0.55, 0.92, 1],
+            "restitution": 0,
+            "frictionDynamic": 0.8,
+            "frictionStatic": 0.9,
+            "repeat": {
+              "count": [10, 1, 1],
+              "spacing": [1.025, 0, 0]
+            }
+          },
+          {
+            "id": "pyramid_row_1",
+            "type": "box",
+            "body": "dynamic",
+            "position": [-4.1, 3.5, 0],
+            "halfExtent": [0.5, 0.5, 0.5],
+            "color": [0.3, 0.55, 0.92, 1],
+            "restitution": 0,
+            "frictionDynamic": 0.8,
+            "frictionStatic": 0.9,
+            "repeat": {
+              "count": [9, 1, 1],
+              "spacing": [1.025, 0, 0]
+            }
+          },
+          {
+            "id": "pyramid_row_2",
+            "type": "box",
+            "body": "dynamic",
+            "position": [-3.5875, 5.5, 0],
+            "halfExtent": [0.5, 0.5, 0.5],
+            "color": [0.3, 0.55, 0.92, 1],
+            "restitution": 0,
+            "frictionDynamic": 0.8,
+            "frictionStatic": 0.9,
+            "repeat": {
+              "count": [8, 1, 1],
+              "spacing": [1.025, 0, 0]
+            }
+          },
+          {
+            "id": "pyramid_row_3",
+            "type": "box",
+            "body": "dynamic",
+            "position": [-3.075, 7.5, 0],
+            "halfExtent": [0.5, 0.5, 0.5],
+            "color": [0.3, 0.55, 0.92, 1],
+            "restitution": 0,
+            "frictionDynamic": 0.8,
+            "frictionStatic": 0.9,
+            "repeat": {
+              "count": [7, 1, 1],
+              "spacing": [1.025, 0, 0]
+            }
+          },
+          {
+            "id": "pyramid_row_4",
+            "type": "box",
+            "body": "dynamic",
+            "position": [-2.5625, 9.5, 0],
+            "halfExtent": [0.5, 0.5, 0.5],
+            "color": [0.3, 0.55, 0.92, 1],
+            "restitution": 0,
+            "frictionDynamic": 0.8,
+            "frictionStatic": 0.9,
+            "repeat": {
+              "count": [6, 1, 1],
+              "spacing": [1.025, 0, 0]
+            }
+          },
+          {
+            "id": "pyramid_row_5",
+            "type": "box",
+            "body": "dynamic",
+            "position": [-2.05, 11.5, 0],
+            "halfExtent": [0.5, 0.5, 0.5],
+            "color": [0.3, 0.55, 0.92, 1],
+            "restitution": 0,
+            "frictionDynamic": 0.8,
+            "frictionStatic": 0.9,
+            "repeat": {
+              "count": [5, 1, 1],
+              "spacing": [1.025, 0, 0]
+            }
+          },
+          {
+            "id": "pyramid_row_6",
+            "type": "box",
+            "body": "dynamic",
+            "position": [-1.5375, 13.5, 0],
+            "halfExtent": [0.5, 0.5, 0.5],
+            "color": [0.3, 0.55, 0.92, 1],
+            "restitution": 0,
+            "frictionDynamic": 0.8,
+            "frictionStatic": 0.9,
+            "repeat": {
+              "count": [4, 1, 1],
+              "spacing": [1.025, 0, 0]
+            }
+          },
+          {
+            "id": "pyramid_row_7",
+            "type": "box",
+            "body": "dynamic",
+            "position": [-1.025, 15.5, 0],
+            "halfExtent": [0.5, 0.5, 0.5],
+            "color": [0.3, 0.55, 0.92, 1],
+            "restitution": 0,
+            "frictionDynamic": 0.8,
+            "frictionStatic": 0.9,
+            "repeat": {
+              "count": [3, 1, 1],
+              "spacing": [1.025, 0, 0]
+            }
+          },
+          {
+            "id": "pyramid_row_8",
+            "type": "box",
+            "body": "dynamic",
+            "position": [-0.5125, 17.5, 0],
+            "halfExtent": [0.5, 0.5, 0.5],
+            "color": [0.3, 0.55, 0.92, 1],
+            "restitution": 0,
+            "frictionDynamic": 0.8,
+            "frictionStatic": 0.9,
+            "repeat": {
+              "count": [2, 1, 1],
+              "spacing": [1.025, 0, 0]
+            }
+          },
+          {
+            "id": "pyramid_row_9",
+            "type": "box",
+            "body": "dynamic",
+            "position": [0.0, 19.5, 0],
+            "halfExtent": [0.5, 0.5, 0.5],
+            "color": [0.3, 0.55, 0.92, 1],
+            "restitution": 0,
+            "frictionDynamic": 0.8,
+            "frictionStatic": 0.9,
+            "repeat": {
+              "count": [1, 1, 1],
+              "spacing": [1.025, 0, 0]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

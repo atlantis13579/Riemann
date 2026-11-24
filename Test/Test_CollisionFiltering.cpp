@@ -344,7 +344,7 @@ namespace
 	{
 		SceneWorld Scene;
 		std::string Error;
-		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/02_stack_boxes.json", &Error));
+		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/01_stack_boxes.json", &Error, "grid"));
 		PhysicsWorld* World = Scene.GetSimulation();
 		EXPECT(World && !World->GetCollisionFilteringEnabled());
 		if (!World) return;

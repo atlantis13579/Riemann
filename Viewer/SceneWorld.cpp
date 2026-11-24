@@ -1421,9 +1421,12 @@ namespace Riemann
 		m_World = std::move(replacement);
 
 		m_Camera = CameraDesc();
+		m_CameraSidebarPadding = 0;
 		m_Light = DirectionalLightDesc();
 		m_FieldSimulation = SceneFieldSimulationDesc();
 		m_Name.clear();
+		m_Configurations.clear();
+		m_ActiveConfigurationId.clear();
 	}
 
 	void SceneWorld::RegisterMouseControlGeometry(Geometry* geometry)
@@ -1744,7 +1747,7 @@ namespace Riemann
 		return true;
 	}
 
-	bool SceneWorld::LoadFromFile(const std::string& fileName, std::string* errorMessage)
+	bool SceneWorld::LoadFromFile(const std::string& fileName, std::string* errorMessage, const std::string& configurationId)
 	{
 		std::ifstream file(fileName.c_str(), std::ios::in | std::ios::binary);
 		if (!file)
@@ -1758,10 +1761,11 @@ namespace Riemann
 
 		std::ostringstream ss;
 		ss << file.rdbuf();
-		return LoadFromText(ss.str(), fileName, errorMessage);
+		return LoadFromText(ss.str(), fileName, errorMessage, configurationId);
 	}
 
-	bool SceneWorld::LoadFromText(const std::string& text, const std::string& sourceName, std::string* errorMessage)
+	bool SceneWorld::LoadFromText(const std::string& text, const std::string& sourceName, std::string* errorMessage,
+		const std::string& configurationId)
 	{
 		JsonValue root;
 		JsonParser parser(text);
@@ -1774,8 +1778,61 @@ namespace Riemann
 			return false;
 		}
 
+		std::vector<SceneConfiguration> configurations;
+		std::string selectedId;
+		const JsonValue* selectedScene = nullptr;
+		const JsonValue* entries = root.Find("configurations");
+		const JsonValue* defaultConfiguration = root.Find("defaultConfiguration");
+		auto Fail = [&](const std::string& message)
+		{
+			if (errorMessage) *errorMessage = sourceName + ": " + message;
+			return false;
+		};
+		if (entries)
+		{
+			if (!entries->IsArray() || entries->arrayValue.empty())
+				return Fail("configurations must be a nonempty array");
+			if (defaultConfiguration && (!defaultConfiguration->IsString() || defaultConfiguration->stringValue.empty()))
+				return Fail("defaultConfiguration must be a nonempty configuration id");
+			for (const JsonValue& entry : entries->arrayValue)
+			{
+				const JsonValue* id = entry.Find("id");
+				const JsonValue* name = entry.Find("name");
+				const JsonValue* scene = entry.Find("scene");
+				if (!id || !id->IsString() || id->stringValue.empty()
+					|| !name || !name->IsString() || name->stringValue.empty() || !scene || !scene->IsObject())
+					return Fail("each configuration requires a nonempty id, name and scene object");
+				for (const SceneConfiguration& configuration : configurations)
+					if (configuration.Id == id->stringValue) return Fail("duplicate configuration id: " + configuration.Id);
+				configurations.push_back({ id->stringValue, name->stringValue });
+				if (selectedId.empty()) selectedId = configurationId.empty()
+					? (defaultConfiguration ? defaultConfiguration->stringValue : id->stringValue) : configurationId;
+				if (id->stringValue == selectedId) selectedScene = scene;
+			}
+			if (defaultConfiguration && std::none_of(configurations.begin(), configurations.end(), [&](const SceneConfiguration& configuration)
+				{ return configuration.Id == defaultConfiguration->stringValue; }))
+				return Fail("unknown defaultConfiguration: " + defaultConfiguration->stringValue);
+			if (!selectedScene) return Fail("unknown configuration id: " + selectedId);
+		}
+		else if (!configurationId.empty() || defaultConfiguration)
+		{
+			return Fail("configuration selection requires a configurations array");
+		}
+
+		JsonValue scene = root;
+		scene.objectValue.erase("configurations");
+		scene.objectValue.erase("defaultConfiguration");
+		if (selectedScene)
+		{
+			// Configuration sections replace shared sections; object arrays are never concatenated.
+			for (const auto& section : selectedScene->objectValue)
+				scene.objectValue[section.first] = section.second;
+		}
 		m_BaseDirectory = DirectoryOf(sourceName);
-		return LoadParsedScene(root, sourceName, errorMessage);
+		if (!LoadParsedScene(scene, sourceName, errorMessage)) return false;
+		m_Configurations = std::move(configurations);
+		m_ActiveConfigurationId = selectedId;
+		return true;
 	}
 
 	bool SceneWorld::LoadParsedScene(const JsonValue& root, const std::string& sourceName, std::string* errorMessage)
@@ -2057,6 +2114,11 @@ namespace Riemann
 			const Vector3 orbit = ReadVector3(camera->Find("orbit"), Vector3(1.0f, 0.6f, 15.0f));
 			m_Camera.Eye = m_Camera.At + Vector3(sinf(orbit.x) * cosf(orbit.y), sinf(orbit.y), cosf(orbit.x) * cosf(orbit.y)) * orbit.z;
 			m_Camera.FovY = ReadFloat(camera->Find("fovY"), m_Camera.FovY);
+			if (!ReadFiniteNumber(*camera, "sidebarPadding", m_CameraSidebarPadding) || m_CameraSidebarPadding < 0)
+			{
+				if (errorMessage) *errorMessage = sourceName + ": invalid camera sidebarPadding";
+				return false;
+			}
 			m_Camera.NearPlane = ReadFloat(camera->Find("near"), m_Camera.NearPlane);
 			m_Camera.FarPlane = ReadFloat(camera->Find("far"), m_Camera.FarPlane);
 			m_Camera.BackgroundColor = ReadColor(
@@ -2276,7 +2338,34 @@ namespace Riemann
 				{
 					bodyA->IgnoreCollisionWith(bodyB);
 				}
+				if (const JsonValue* Visual = constraint.Find("springVisual"))
+				{
+					float Radius = 0.3f, WireRadius = 0.05f, Turns = 8;
+					float AnchorA[3] = { bodyA->X.x, bodyA->X.y, bodyA->X.z };
+					float AnchorB[3] = { bodyB->X.x, bodyB->X.y, bodyB->X.z };
+					if (!Visual->IsObject() || !ReadFiniteNumber(*Visual, "radius", Radius)
+						|| !ReadFiniteNumber(*Visual, "wireRadius", WireRadius) || !ReadFiniteNumber(*Visual, "turns", Turns)
+						|| !ReadDriveVector(Visual->Find("anchorA"), AnchorA, 3) || !ReadDriveVector(Visual->Find("anchorB"), AnchorB, 3)
+						|| Radius <= 0 || WireRadius <= 0 || WireRadius >= Radius || Turns < 1 || Turns > 64 || std::floor(Turns) != Turns)
+					{
+						if (errorMessage) *errorMessage = sourceName + ": invalid springVisual settings";
+						return false;
+					}
+					RopeSurfaceState Surface;
+					Surface.SpringBodyA = bodyA; Surface.SpringBodyB = bodyB;
+					Surface.SpringAnchorA = bodyA->WorldToBodyLocal(Vector3(AnchorA[0], AnchorA[1], AnchorA[2]));
+					Surface.SpringAnchorB = bodyB->WorldToBodyLocal(Vector3(AnchorB[0], AnchorB[1], AnchorB[2]));
+					Surface.SpringRadius = Radius; Surface.SpringTurns = (int)Turns; Surface.Radius = WireRadius;
+					Surface.Surface.reset(GeometryFactory::CreateTriangleMesh());
+					Surface.Surface->SetSimulationEnabled(false); Surface.Surface->SetQueryEnabled(false);
+					SceneObjectInstance Object;
+					Object.Id = bodyBName + "_spring_" + std::to_string(m_ConstraintInstances.size());
+					Object.GeometryPtr = Surface.Surface.get();
+					Object.Color = ReadColor(Visual->Find("color"), Vector4(0.75f, 0.8f, 0.85f, 1));
+					m_Objects.push_back(Object); m_RopeSurfaces.push_back(std::move(Surface));
+				}
 			}
+			SyncRopeSurfaces();
 		}
 
 		const JsonValue* ropes = root.Find("ropes");
@@ -4778,7 +4867,24 @@ namespace Riemann
 		{
 			std::vector<Vector3> Positions;
 			std::vector<Quaternion> Directors;
-			if (surface.Rope)
+			if (surface.SpringBodyA && surface.SpringBodyB)
+			{
+				// The coil visualizes a joint spring; the joint alone supplies its forces.
+				const Vector3 Start = surface.SpringBodyA->BodyLocalToWorld(surface.SpringAnchorA);
+				const Vector3 End = surface.SpringBodyB->BodyLocalToWorld(surface.SpringAnchorB);
+				const Vector3 Delta = End - Start;
+				const Vector3 Axis = SafeUnitVector(Delta, Vector3::UnitY());
+				Vector3 Normal, Binormal; Axis.GetPerpVectors(Normal, Binormal);
+				const int Segments = surface.SpringTurns * 24;
+				for (int I = 0; I <= Segments; ++I)
+				{
+					const float T = (float)I / Segments;
+					const float Angle = T * surface.SpringTurns * 2 * PI;
+					const float Radius = surface.SpringRadius * std::min(1.0f, std::min(T, 1 - T) * Segments / 6);
+					Positions.push_back(Start + Delta * T + (Normal * std::cos(Angle) + Binormal * std::sin(Angle)) * Radius);
+				}
+			}
+			else if (surface.Rope)
 				for (int I = 0; I < surface.Rope->GetParticleCount(); ++I) Positions.push_back(surface.Rope->GetParticle(I).Position);
 			else if (surface.Strands)
 			{

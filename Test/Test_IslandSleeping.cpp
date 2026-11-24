@@ -162,9 +162,9 @@ namespace
 			EXPECT(Scene.GetSimulation()->GetIslandSleepingSettings().Enabled);
 			EXPECT_NEAR(Scene.GetSimulation()->GetIslandSleepingSettings().QuietTime, 0.3f, 1e-6f);
 		}
-		for (const char* File : { "02_stack_boxes.json", "06_constraints.json" })
+		for (const char* File : { "01_stack_boxes.json", "06_constraints.json" })
 		{
-			EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/" + File, &Error));
+			EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/" + File, &Error, std::string(File).find("01_stack_boxes.json") != std::string::npos ? "grid" : ""));
 			auto Settings = Scene.GetSimulation()->GetIslandSleepingSettings(); Settings.Enabled = true;
 			Scene.GetSimulation()->SetIslandSleepingSettings(Settings);
 			for (int Frame = 0; Frame < 120; ++Frame) Scene.Step(Dt);

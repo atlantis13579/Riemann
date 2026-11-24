@@ -87,7 +87,7 @@ namespace
 		for (const std::string& candidate : candidates)
 		{
 			const std::string root = GetAbsoluteDirectory(candidate.empty() ? "." : candidate);
-			if (FileExists(root + "Renderer/dx11_shader.hlsl") && FileExists(root + "Contents/Scenes/01_demo.json"))
+			if (FileExists(root + "Renderer/dx11_shader.hlsl") && FileExists(root + "Contents/Scenes/01_stack_boxes.json"))
 			{
 				return root;
 			}
@@ -255,13 +255,13 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	std::string scene = GetCommandLineScene();
 	if (!repositoryRoot.empty())
 	{
-		const std::string repositoryScene = repositoryRoot + "Contents/Scenes/" + (scene.empty() ? "01_demo.json" : scene);
+		const std::string repositoryScene = repositoryRoot + "Contents/Scenes/" + (scene.empty() ? "01_stack_boxes.json" : scene);
 		if (scene.empty() || (!FileExists(scene) && FileExists(repositoryScene)))
 		{
 			scene = repositoryScene;
 		}
 	}
-	g_Viewer = new Riemann::WorldViewer(g_RenderThread, scene.empty() ? "01_demo.json" : scene);
+	g_Viewer = new Riemann::WorldViewer(g_RenderThread, scene.empty() ? "01_stack_boxes.json" : scene);
 	RECT client;
 	GetClientRect(g_hWnd, &client);
 	g_Viewer->SetViewportSize(client.right, client.bottom);

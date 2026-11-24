@@ -3,14 +3,11 @@
 #include "../../RigidBodyDynamics/PhysicsWorld.h"
 #include "../../LinearSystem/NeuralNetwork.h"
 #include "../../CollisionPrimitive/HeightField3.h"
-#include "Models/Model.h"
-#include "Optimizer/Optimizer.h"
-#include "Reinforcement/PPO.h"
-#include "Reinforcement/PpoRunner.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <cstdio>
 #include <fstream>
 #include <future>
@@ -23,6 +20,8 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <Windows.h>
 #endif
 
@@ -30,31 +29,11 @@ namespace
 {
 	using namespace Riemann;
 	constexpr float ActionTime = 0.05f;
-	constexpr float PolicyDeviation = 0.15f;
-	constexpr float RewardScale = 0.02f;
-	constexpr elman::Backend TrainingBackend = elman::Backend::CUDA;
-	elman::Json SpiderModelDefinition()
-	{
-		return elman::Json::parse(R"({"format":"elman.model","version":1,
-			"architecture":"continuous_actor_critic","name":"spider","input_features":86,"actions":24,
-			"hidden_features":128,"hidden_layers":3})");
-	}
-	std::unique_ptr<elman::Model> CreateSpiderModel(const elman::Json& Definition)
-	{
-		std::unique_ptr<elman::Model> Model = elman::create_model(Definition, TrainingBackend, 42);
-		auto& Parameters = Model->parameters();
-		if (Parameters.size() != 8 || Parameters[6].name != "layers.3.weight" ||
-			Parameters[6].value.shape() != elman::Shape{128, 25})
-			throw std::runtime_error("Unexpected spider policy output layer");
-		// The zero output weights start the robot at its standing controller.
-		Parameters[6].value.assign(std::vector<float>(Parameters[6].value.numel(), 0));
-		return Model;
-	}
 	using Evaluation = Riemann::SpiderEvaluation;
 	struct CourseMap;
-	Evaluation Evaluate(elman::Model& Model, int Steps = 100, float TerrainScale = 0, const CourseMap* Course = nullptr);
-	void CheckInferenceParity(elman::Model& Model, const std::string& Path);
-	std::unique_ptr<Maths::LinearAlgebra::NeuralNetwork> BuildActor(const elman::Model& Model);
+	Evaluation Evaluate(const std::vector<float>& Weights, int Steps = 100, float TerrainScale = 0,
+		const CourseMap* Course = nullptr);
+	std::unique_ptr<Maths::LinearAlgebra::NeuralNetwork> BuildActor(const std::vector<float>& Weights);
 
 	struct CourseMap
 	{
@@ -110,7 +89,7 @@ namespace
 			}
 	}
 
-	struct Environment : elman::rl::PpoEnvironment
+	struct Environment
 	{
 		std::unique_ptr<PhysicsWorld> World;
 		std::shared_ptr<SpiderRobotControl> Control;
@@ -145,13 +124,6 @@ namespace
 			LastMinUp = 1;
 		}
 		std::vector<float> Observe() const { return ObserveSpiderRobot(Robot->GetDynamics(), Command, *Control); }
-		std::vector<float> observe() const override { return Observe(); }
-		elman::rl::PpoOutcome step(const std::vector<float>& Action) override
-		{
-			const auto Outcome = Step(Action);
-			return {Outcome.first, Outcome.second};
-		}
-		void reset() override { Reset(); }
 		std::pair<float, bool> Step(const std::vector<float>& Action)
 		{
 			const Transform BaseBefore = Robot->GetDynamics().GetLinkTransform(0);
@@ -232,44 +204,25 @@ namespace
 		}
 	};
 
-	std::vector<float> PackWeights(const elman::Model& Model)
-	{
-		const std::vector<elman::Parameter>& Parameters = Model.parameters();
-		const int Width[] = {86, 128, 128, 128, 25};
-		if (Parameters.size() != 8) throw std::runtime_error("Unexpected robot policy parameters");
-		std::vector<float> Packed;
-		size_t Count = 0;
-		for (int Layer = 0; Layer < 4; ++Layer) Count += size_t(Width[Layer] + 1) * Width[Layer + 1];
-		Packed.reserve(Count);
-		for (int Layer = 0; Layer < 4; ++Layer)
-		{
-			const std::vector<float> Weight = Parameters[2 * Layer].value.data();
-			const std::vector<float> Bias = Parameters[2 * Layer + 1].value.data();
-			for (int Out = 0; Out < Width[Layer + 1]; ++Out)
-				for (int In = 0; In < Width[Layer]; ++In)
-					Packed.push_back(Weight[In * Width[Layer + 1] + Out]);
-			Packed.insert(Packed.end(), Bias.begin(), Bias.end());
-		}
-		return Packed;
-	}
-
-	std::unique_ptr<Maths::LinearAlgebra::NeuralNetwork> BuildActor(const elman::Model& Model)
+	constexpr size_t WeightCount = 47385;
+	std::unique_ptr<Maths::LinearAlgebra::NeuralNetwork> BuildActor(const std::vector<float>& Weights)
 	{
 		using namespace Maths::LinearAlgebra;
+		if (Weights.size() != WeightCount) throw std::runtime_error("Invalid spider policy weights");
 		return std::unique_ptr<NeuralNetwork>(new NeuralNetwork(86,
 			{{NeuralLayerType::Linear, 128}, {NeuralLayerType::ELU},
 			{NeuralLayerType::Linear, 128}, {NeuralLayerType::ELU},
 			{NeuralLayerType::Linear, 128}, {NeuralLayerType::ELU},
-			{NeuralLayerType::Linear, 25}}, PackWeights(Model)));
+			{NeuralLayerType::Linear, 25}}, Weights));
 	}
 
-	void ExportPolicy(const elman::Model& Model, const std::string& Path)
+	void ExportPolicy(const std::vector<float>& Weights, const std::string& Path)
 	{
-		const std::vector<float> Packed = PackWeights(Model);
+		if (Weights.size() != WeightCount) throw std::runtime_error("Invalid spider policy weights");
 		const std::string Temporary = Path + ".tmp";
 		std::ofstream File(Temporary, std::ios::binary | std::ios::trunc);
 		if (!File) throw std::runtime_error("Cannot open spider policy output");
-		File.write(reinterpret_cast<const char*>(Packed.data()), Packed.size() * sizeof(float));
+		File.write(reinterpret_cast<const char*>(Weights.data()), Weights.size() * sizeof(float));
 		if (!File) throw std::runtime_error("Could not write spider policy");
 		File.close();
 		if (!File) throw std::runtime_error("Could not close spider policy");
@@ -282,36 +235,19 @@ namespace
 #endif
 	}
 
-	bool ImportPolicy(elman::Model& Model, const std::string& Path)
+	std::vector<float> ImportPolicy(const std::string& Path)
 	{
 		std::ifstream File(Path, std::ios::binary);
-		if (!File) return false;
-		std::vector<elman::Parameter>& Parameters = Model.parameters();
-		const int Width[] = {86, 128, 128, 128, 25};
-		for (int Layer = 0; Layer < 4; ++Layer)
-		{
-			std::vector<float> Weight(Width[Layer] * Width[Layer + 1]), Bias(Width[Layer + 1]);
-			for (int Out = 0; Out < Width[Layer + 1]; ++Out)
-				for (int In = 0; In < Width[Layer]; ++In)
-					File.read(reinterpret_cast<char*>(&Weight[In * Width[Layer + 1] + Out]), sizeof(float));
-			File.read(reinterpret_cast<char*>(Bias.data()), Bias.size() * sizeof(float));
-			if (!File) throw std::runtime_error("Incomplete spider policy input");
-			Parameters[2 * Layer].value.assign(Weight);
-			Parameters[2 * Layer + 1].value.assign(Bias);
-		}
-		if (File.peek() != std::char_traits<char>::eof())
-			throw std::runtime_error("Unexpected spider policy data");
-		return true;
+		if (!File) return {};
+		std::vector<float> Weights(WeightCount);
+		File.read(reinterpret_cast<char*>(Weights.data()), Weights.size() * sizeof(float));
+		if (!File || File.peek() != std::char_traits<char>::eof())
+			throw std::runtime_error("Invalid spider policy input");
+		return Weights;
 	}
-
-	std::vector<float> Predict(elman::Model& Model, const std::vector<float>& Observation)
+	Evaluation Evaluate(const std::vector<float>& Weights, int Steps, float TerrainScale, const CourseMap* Course)
 	{
-		return Model.forward(elman::Tensor::from_data({1, 86}, Observation, TrainingBackend), false).data();
-	}
-
-	Evaluation Evaluate(elman::Model& Model, int Steps, float TerrainScale, const CourseMap* Course)
-	{
-		std::unique_ptr<Maths::LinearAlgebra::NeuralNetwork> Actor = BuildActor(Model);
+		std::unique_ptr<Maths::LinearAlgebra::NeuralNetwork> Actor = BuildActor(Weights);
 		Environment Env;
 		Env.MaximumActions = Steps;
 		Env.TerrainScale = TerrainScale;
@@ -376,163 +312,340 @@ namespace
 			+ std::min(Flat.Distance, 34.0f) / 10.0f + std::min(Course.Distance, 33.0f) / 10.0f;
 	}
 
-	void CheckInferenceParity(elman::Model& Model, const std::string& Path)
+	struct SocketRuntime
 	{
-		const int Width[] = {86, 128, 128, 128, 25};
-		size_t Count = 0;
-		for (int I = 0; I < 4; ++I) Count += size_t(Width[I] + 1) * Width[I + 1];
-		std::vector<float> Weights(Count);
-		std::ifstream File(Path, std::ios::binary);
-		File.read(reinterpret_cast<char*>(Weights.data()), Weights.size() * sizeof(float));
-		if (!File || File.peek() != std::char_traits<char>::eof())
-			throw std::runtime_error("Invalid spider policy for inference parity");
-		using namespace Maths::LinearAlgebra;
-		NeuralNetwork Actor(86,
-			{{NeuralLayerType::Linear, 128}, {NeuralLayerType::ELU},
-			{NeuralLayerType::Linear, 128}, {NeuralLayerType::ELU},
-			{NeuralLayerType::Linear, 128}, {NeuralLayerType::ELU},
-			{NeuralLayerType::Linear, 25}}, std::move(Weights));
-		Environment Cuda, Cpu;
-		Cuda.Reset(); Cpu.Reset();
-		double ErrorSum = 0, ErrorMax = 0;
-		for (int Step = 0; Step < 600; ++Step)
+		SocketRuntime()
 		{
-			const std::vector<float> Observation = Cuda.Observe();
-			const std::vector<float> CudaOutput = Predict(Model, Observation);
-			const std::vector<float> CpuOnSameState = Actor.Evaluate(Observation);
-			for (size_t I = 0; I < CudaOutput.size(); ++I)
-			{
-				const double Error = std::abs(double(CudaOutput[I]) - CpuOnSameState[I]);
-				ErrorSum += Error;
-				ErrorMax = std::max(ErrorMax, Error);
-			}
-			const std::vector<float> CpuOutput = Actor.Evaluate(Cpu.Observe());
-			Cuda.Step(CudaOutput);
-			Cpu.Step(CpuOutput);
+			WSADATA Data{};
+			if (WSAStartup(MAKEWORD(2, 2), &Data)) throw std::runtime_error("Cannot start TCP");
 		}
-		std::cout << "parity_mean_error=" << ErrorSum / (600 * 25)
-			<< " parity_max_error=" << ErrorMax
-			<< " cuda_x=" << Cuda.Robot->GetPosition().x
-			<< " cuda_z=" << Cuda.Robot->GetPosition().z
-			<< " cpu_actor_x=" << Cpu.Robot->GetPosition().x
-			<< " cpu_actor_z=" << Cpu.Robot->GetPosition().z << std::endl;
+		~SocketRuntime() { WSACleanup(); }
+	};
+
+	struct Socket
+	{
+		SOCKET Value = INVALID_SOCKET;
+		Socket() = default;
+		explicit Socket(SOCKET Value) : Value(Value) {}
+		~Socket() { if (Value != INVALID_SOCKET) closesocket(Value); }
+		Socket(const Socket&) = delete;
+	};
+
+	struct ElmanProcess
+	{
+		PROCESS_INFORMATION Info{};
+		ElmanProcess(const std::string& Path, int Port)
+		{
+			if (Path.empty()) throw std::runtime_error("Select an Elman executable before training");
+			const DWORD Attributes = GetFileAttributesA(Path.c_str());
+			if (Attributes == INVALID_FILE_ATTRIBUTES || (Attributes & FILE_ATTRIBUTE_DIRECTORY))
+				throw std::runtime_error("Elman executable is missing");
+			std::string Command = "\"" + Path + "\" spider-ppo-client --port " + std::to_string(Port);
+			STARTUPINFOA Startup{};
+			Startup.cb = sizeof(Startup);
+			const size_t Separator = Path.find_last_of("/\\");
+			const std::string Directory = Separator == std::string::npos ? std::string() : Path.substr(0, Separator);
+			if (!CreateProcessA(Path.c_str(), &Command[0], nullptr, nullptr, FALSE, CREATE_NO_WINDOW,
+				nullptr, Directory.empty() ? nullptr : Directory.c_str(), &Startup, &Info))
+				throw std::runtime_error("Cannot start Elman executable");
+		}
+		~ElmanProcess()
+		{
+			if (Info.hProcess)
+			{
+				if (WaitForSingleObject(Info.hProcess, 100) != WAIT_OBJECT_0)
+					TerminateProcess(Info.hProcess, 1);
+				CloseHandle(Info.hProcess);
+			}
+			if (Info.hThread) CloseHandle(Info.hThread);
+		}
+		bool Running() const { return WaitForSingleObject(Info.hProcess, 0) == WAIT_TIMEOUT; }
+	};
+
+	struct Listener
+	{
+		Socket Handle;
+		int Port = 0;
+		Listener()
+		{
+			Handle.Value = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+			if (Handle.Value == INVALID_SOCKET) throw std::runtime_error("Cannot open training TCP listener");
+			sockaddr_in Address{};
+			Address.sin_family = AF_INET;
+			Address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+			if (bind(Handle.Value, reinterpret_cast<sockaddr*>(&Address), sizeof(Address)) != 0 ||
+				listen(Handle.Value, 1) != 0)
+				throw std::runtime_error("Cannot listen for Elman training TCP connection");
+			int Length = sizeof(Address);
+			if (getsockname(Handle.Value, reinterpret_cast<sockaddr*>(&Address), &Length) != 0)
+				throw std::runtime_error("Cannot determine training TCP port");
+			Port = ntohs(Address.sin_port);
+		}
+		Socket Accept(const std::atomic<bool>& Stop, const ElmanProcess& Process)
+		{
+			for (;;)
+			{
+				if (Stop.load()) throw std::runtime_error("Training cancelled");
+				if (!Process.Running()) throw std::runtime_error("Elman exited before connecting to training TCP");
+				fd_set Ready;
+				FD_ZERO(&Ready);
+				FD_SET(Handle.Value, &Ready);
+				timeval Timeout{0, 100000};
+				if (select(0, &Ready, nullptr, nullptr, &Timeout) > 0)
+				{
+					SOCKET Client = accept(Handle.Value, nullptr, nullptr);
+					if (Client == INVALID_SOCKET) throw std::runtime_error("Cannot accept Elman training TCP");
+					return Socket(Client);
+				}
+			}
+		}
+	};
+
+	struct Packet
+	{
+		char Type = 0;
+		std::vector<char> Bytes;
+	};
+
+	class Channel
+	{
+	public:
+		Channel(SOCKET Handle, const std::atomic<bool>& Stop) : Handle(Handle), Stop(Stop) {}
+		void Send(char Type, const void* Data = nullptr, uint32_t Size = 0)
+		{
+			if (Size > 1024 * 1024) throw std::runtime_error("Training TCP packet too large");
+			const unsigned char Header[5] = {static_cast<unsigned char>(Type),
+				static_cast<unsigned char>(Size), static_cast<unsigned char>(Size >> 8),
+				static_cast<unsigned char>(Size >> 16), static_cast<unsigned char>(Size >> 24)};
+			Write(Header, sizeof(Header));
+			if (Size) Write(Data, Size);
+		}
+		Packet Receive()
+		{
+			unsigned char Header[5]{};
+			Read(Header, sizeof(Header));
+			const uint32_t Size = uint32_t(Header[1]) | (uint32_t(Header[2]) << 8) |
+				(uint32_t(Header[3]) << 16) | (uint32_t(Header[4]) << 24);
+			if (Size > 1024 * 1024) throw std::runtime_error("Training TCP packet too large");
+			Packet Result;
+			Result.Type = static_cast<char>(Header[0]);
+			Result.Bytes.resize(Size);
+			if (Size) Read(Result.Bytes.data(), Size);
+			return Result;
+		}
+	private:
+		void Write(const void* Data, size_t Size)
+		{
+			const char* Bytes = static_cast<const char*>(Data);
+			while (Size)
+			{
+				if (Stop.load()) throw std::runtime_error("Training cancelled");
+				const int Count = send(Handle, Bytes, int(Size), 0);
+				if (Count <= 0) throw std::runtime_error("Elman training TCP connection closed");
+				Bytes += Count;
+				Size -= Count;
+			}
+		}
+		void Read(void* Data, size_t Size)
+		{
+			char* Bytes = static_cast<char*>(Data);
+			while (Size)
+			{
+				if (Stop.load()) throw std::runtime_error("Training cancelled");
+				fd_set Ready;
+				FD_ZERO(&Ready);
+				FD_SET(Handle, &Ready);
+				timeval Timeout{0, 100000};
+				const int State = select(0, &Ready, nullptr, nullptr, &Timeout);
+				if (State < 0) throw std::runtime_error("Training TCP read failed");
+				if (!State) continue;
+				const int Count = recv(Handle, Bytes, int(Size), 0);
+				if (Count <= 0) throw std::runtime_error("Elman training TCP connection closed");
+				Bytes += Count;
+				Size -= Count;
+			}
+		}
+		SOCKET Handle;
+		const std::atomic<bool>& Stop;
+	};
+
+	template<class T> T Decode(const Packet& Value, size_t Offset = 0)
+	{
+		if (Offset + sizeof(T) > Value.Bytes.size()) throw std::runtime_error("Incomplete training TCP packet");
+		T Result;
+		std::memcpy(&Result, Value.Bytes.data() + Offset, sizeof(T));
+		return Result;
 	}
+	std::vector<float> DecodeWeights(const Packet& Value, size_t Offset = 0)
+	{
+		if (Value.Bytes.size() != Offset + WeightCount * sizeof(float))
+			throw std::runtime_error("Invalid training policy packet");
+		std::vector<float> Weights(WeightCount);
+		std::memcpy(Weights.data(), Value.Bytes.data() + Offset, WeightCount * sizeof(float));
+		return Weights;
+	}
+
 }
 
 void Riemann::RunSpiderTraining(const SpiderTrainingOptions& Options, const std::atomic<bool>& Stop,
 	const SpiderSnapshotCallback& OnSnapshot, const SpiderProgressCallback& OnProgress)
 {
-		if (Options.policy_path.empty()) throw std::invalid_argument("Spider policy path is required");
-		if (Options.environment_count < 1 || Options.environment_count > int(SpiderTrainingEnvironmentCount))
-			throw std::invalid_argument("Invalid spider training world count");
-		if (Options.updates < 1 || Options.rollout_actions < 32)
-			throw std::invalid_argument("Invalid training duration or rollout action count");
-		if (Options.rollout_actions > std::numeric_limits<int>::max() - Options.environment_count)
-			throw std::invalid_argument("Rollout action count is too large");
-		if (Options.course_scale < 0 || Options.course_scale > 1)
-			throw std::invalid_argument("Invalid course scale");
-		const size_t Separator = Options.policy_path.find_last_of("/\\");
-		const std::string CoursePath = Options.course_path.empty()
-			? (Separator == std::string::npos ? std::string() : Options.policy_path.substr(0, Separator + 1)) + "course.height"
-			: Options.course_path;
-		const CourseMap Course = LoadCourseMap(CoursePath);
-		const elman::Json Definition = SpiderModelDefinition();
-		std::unique_ptr<elman::Model> Model = CreateSpiderModel(Definition);
-		if (Model->parameters().empty() || Model->parameters().front().value.backend() != elman::Backend::CUDA)
-			throw std::runtime_error("Spider PPO requires the Elman CUDA backend");
-		std::cout << "elman_backend=CUDA physics_backend=CPU" << std::endl;
-		const int Updates = Options.updates;
-		const int EnvironmentCount = Options.environment_count;
-		const int RolloutActions = ((Options.rollout_actions + EnvironmentCount - 1) / EnvironmentCount) * EnvironmentCount;
-		const float CourseScale = Options.course_scale;
-		const std::string LatestPath = Options.policy_path + ".latest";
-		const bool Resumed = ImportPolicy(*Model, LatestPath);
-		elman::Optimizer Optimizer(elman::Json::Object{{"optimizer", "adam"}, {"learning_rate", 0.00001}, {"clip_norm", 1.0}}, *Model, true);
-		std::unique_ptr<elman::Model> ZeroActor = CreateSpiderModel(Definition);
-		const Evaluation Baseline = Evaluate(*ZeroActor, 600);
-		const Evaluation Initial = Resumed ? Evaluate(*Model, 600) : Baseline;
-		const Evaluation InitialCourse = Resumed ? Evaluate(*Model, 600, 1.0f, &Course) : Evaluation();
-		const auto IsAligned = [](const Evaluation& Result)
+	if (Options.executable_path.empty()) throw std::invalid_argument("Select an Elman executable before training");
+	if (Options.policy_path.empty()) throw std::invalid_argument("Spider policy path is required");
+	if (Options.environment_count < 1 || Options.environment_count > int(SpiderTrainingEnvironmentCount))
+		throw std::invalid_argument("Invalid spider training world count");
+	if (Options.updates < 1 || Options.rollout_actions < 32 ||
+		Options.rollout_actions > std::numeric_limits<int>::max() - Options.environment_count)
+		throw std::invalid_argument("Invalid training duration or rollout action count");
+	if (Options.course_scale < 0 || Options.course_scale > 1)
+		throw std::invalid_argument("Invalid course scale");
+	const size_t Separator = Options.policy_path.find_last_of("/\\");
+	const std::string CoursePath = Options.course_path.empty()
+		? (Separator == std::string::npos ? std::string() : Options.policy_path.substr(0, Separator + 1)) + "course.height"
+		: Options.course_path;
+	const CourseMap Course = LoadCourseMap(CoursePath);
+	const int Updates = Options.updates;
+	const int EnvironmentCount = Options.environment_count;
+	const int RolloutActions = ((Options.rollout_actions + EnvironmentCount - 1) / EnvironmentCount) * EnvironmentCount;
+	const float CourseScale = Options.course_scale;
+	const std::string LatestPath = Options.policy_path + ".latest";
+	const std::vector<float> ResumeWeights = ImportPolicy(LatestPath);
+	const bool Resumed = !ResumeWeights.empty();
+	SocketRuntime Sockets;
+	Listener Server;
+	ElmanProcess Process(Options.executable_path, Server.Port);
+	Socket Client = Server.Accept(Stop, Process);
+	Channel Connection(Client.Value, Stop);
+	const uint32_t Config[3] = {uint32_t(Updates), uint32_t(EnvironmentCount), uint32_t(RolloutActions)};
+	Connection.Send('C', Config, sizeof(Config));
+	Connection.Send('I', ResumeWeights.empty() ? nullptr : ResumeWeights.data(),
+		uint32_t(ResumeWeights.size() * sizeof(float)));
+	const Packet BaselinePacket = Connection.Receive();
+	const Packet CurrentPacket = Connection.Receive();
+	if (BaselinePacket.Type != 'B' || CurrentPacket.Type != 'W')
+		throw std::runtime_error("Invalid Elman training handshake");
+	const std::vector<float> BaselineWeights = DecodeWeights(BaselinePacket);
+	std::vector<float> Weights = DecodeWeights(CurrentPacket);
+	const Evaluation Baseline = Evaluate(BaselineWeights, 600);
+	const Evaluation Initial = Resumed ? Evaluate(Weights, 600) : Baseline;
+	const Evaluation InitialCourse = Resumed ? Evaluate(Weights, 600, 1.0f, &Course) : Evaluation();
+	const auto IsAligned = [](const Evaluation& Result)
+	{
+		return Result.Steps == 600 && Result.Last5 >= 2.0f &&
+			Result.FinalFacing >= 0.75f && std::abs(Result.Lateral) <= 2.0f &&
+			Result.Grounded >= 1401;
+	};
+	float BestCandidateDistance = Initial.Steps == 600 && Initial.Last5 >= 2.0f
+		? Initial.Distance : Baseline.Distance;
+	float BestAlignedDistance = IsAligned(Initial) ? Initial.Distance : Baseline.Distance;
+	float BestCourseDistance = InitialCourse.Steps == 600 ? std::max(0.0f, InitialCourse.Distance) : 0;
+	float BestNearScore = AcceptanceScore(Initial, InitialCourse);
+	float BestDistance = IsAligned(Initial) && Initial.Distance >= 24.0f &&
+		Initial.MinHeight > 0.35f && Initial.MinUp > 0.9f &&
+		InitialCourse.Steps == 600 && InitialCourse.Distance >= 22.5f && InitialCourse.Last5 >= 2.0f &&
+		InitialCourse.FinalFacing >= 0.75f && std::abs(InitialCourse.Lateral) <= 2.0f &&
+		InitialCourse.Grounded >= 1401 && InitialCourse.MinHeight > 0.35f && InitialCourse.MinUp > 0.9f
+		? Initial.Distance : Baseline.Distance;
+	float BestIntermediateDistance = 0;
+	std::cout << "standing_baseline_distance_30s=" << Baseline.Distance
+		<< " initial_policy_distance_30s=" << Initial.Distance
+		<< " initial_policy_last_5s=" << Initial.Last5
+		<< " initial_course_distance_30s=" << InitialCourse.Distance
+		<< " training_course_scale=" << CourseScale << std::endl;
+	std::array<Environment, SpiderTrainingEnvironmentCount> Environments;
+	for (int E = 0; E < EnvironmentCount; ++E)
+	{
+		Environments[E].TrainingId = E;
+		Environments[E].TerrainScale = (EnvironmentCount == 1 ? 1.0f :
+			E % 4 == 0 ? 0.0f : E % 4 == 1 ? 0.25f : E % 4 == 2 ? 0.5f : 1.0f) * CourseScale;
+		Environments[E].Course = &Course;
+	}
+	Connection.Send('A');
+	struct IterationInfo
+	{
+		int update = 0, episodes = 0;
+		float mean_reward = 0;
+		double policy_loss = 0, value_loss = 0, gradient_norm = 0;
+	};
+	for (;;)
+	{
+		const Packet Message = Connection.Receive();
+		if (Message.Type == 'D') return;
+		if (Message.Type == 'E')
+			throw std::runtime_error(std::string(Message.Bytes.begin(), Message.Bytes.end()));
+		if (Message.Type == 'R' || Message.Type == 'O' || Message.Type == 'S')
 		{
-			return Result.Steps == 600 && Result.Last5 >= 2.0f &&
-				Result.FinalFacing >= 0.75f && std::abs(Result.Lateral) <= 2.0f &&
-				Result.Grounded >= 1401;
-		};
-		float BestCandidateDistance = Initial.Steps == 600 && Initial.Last5 >= 2.0f
-			? Initial.Distance : Baseline.Distance;
-		float BestAlignedDistance = IsAligned(Initial) ? Initial.Distance : Baseline.Distance;
-		float BestCourseDistance = InitialCourse.Steps == 600 ? std::max(0.0f, InitialCourse.Distance) : 0;
-		float BestNearScore = AcceptanceScore(Initial, InitialCourse);
-		float BestDistance = IsAligned(Initial) && Initial.Distance >= 24.0f &&
-			Initial.MinHeight > 0.35f && Initial.MinUp > 0.9f &&
-			InitialCourse.Steps == 600 && InitialCourse.Distance >= 22.5f && InitialCourse.Last5 >= 2.0f &&
-			InitialCourse.FinalFacing >= 0.75f && std::abs(InitialCourse.Lateral) <= 2.0f &&
-			InitialCourse.Grounded >= 1401 && InitialCourse.MinHeight > 0.35f && InitialCourse.MinUp > 0.9f
-			? Initial.Distance : Baseline.Distance;
-		float BestIntermediateDistance = 0;
-		std::cout << "standing_baseline_distance_30s=" << Baseline.Distance
-			<< " initial_policy_distance_30s=" << Initial.Distance
-			<< " initial_policy_last_5s=" << Initial.Last5
-			<< " initial_course_distance_30s=" << InitialCourse.Distance
-			<< " training_course_scale=" << CourseScale << std::endl;
-		std::array<Environment, SpiderTrainingEnvironmentCount> Environments;
-		std::vector<elman::rl::PpoEnvironment*> EnvironmentPointers;
-		EnvironmentPointers.reserve(EnvironmentCount);
-		for (int E = 0; E < EnvironmentCount; ++E)
-		{
-			Environments[E].TrainingId = E;
-			Environments[E].TerrainScale = (EnvironmentCount == 1 ? 1.0f :
-				E % 4 == 0 ? 0.0f : E % 4 == 1 ? 0.25f : E % 4 == 2 ? 0.5f : 1.0f) * CourseScale;
-			Environments[E].Course = &Course;
-			Environments[E].Reset();
-			EnvironmentPointers.push_back(&Environments[E]);
-		}
-		elman::rl::PpoRunnerSettings RunnerSettings;
-		RunnerSettings.rollout_actions = RolloutActions;
-		RunnerSettings.standard_deviation = PolicyDeviation;
-		RunnerSettings.reward_scale = RewardScale;
-		RunnerSettings.on_environment_step = [&](size_t Index, const elman::rl::PpoEnvironment& Base)
-		{
-			if (!OnSnapshot) return;
-			const auto& Env = static_cast<const Environment&>(Base);
-			std::array<Transform, SpiderTrainingLinkCount> Links;
-			for (size_t Link = 0; Link < Links.size(); ++Link)
-				Links[Link] = Env.Robot->GetDynamics().GetLinkTransform(Link);
-			OnSnapshot(Index, Links);
-		};
-		elman::rl::PpoRunner Runner(*Model, Optimizer, std::move(EnvironmentPointers),
-			[](const elman::Model& Source)
+			if (Message.Bytes.empty()) throw std::runtime_error("Missing PPO environment index");
+			const size_t Index = static_cast<uint8_t>(Message.Bytes[0]);
+			if (Index >= size_t(EnvironmentCount)) throw std::runtime_error("Invalid PPO environment index");
+			Environment& Env = Environments[Index];
+			if (Message.Type == 'R')
 			{
-				auto Actor = std::shared_ptr<Maths::LinearAlgebra::NeuralNetwork>(BuildActor(Source).release());
-				return elman::rl::PpoInference([Actor](const std::vector<float>& Observation)
+				if (Message.Bytes.size() != 1) throw std::runtime_error("Invalid PPO reset packet");
+				Env.Reset();
+				Connection.Send('r');
+			}
+			else if (Message.Type == 'O')
+			{
+				if (Message.Bytes.size() != 1 || !Env.Robot)
+					throw std::runtime_error("Invalid PPO observation request");
+				const std::vector<float> Observation = Env.Observe();
+				if (Observation.size() != 86) throw std::runtime_error("Invalid PPO observation width");
+				Connection.Send('o', Observation.data(), uint32_t(Observation.size() * sizeof(float)));
+			}
+			else
+			{
+				if (Message.Bytes.size() != 1 + 24 * sizeof(float) || !Env.Robot)
+					throw std::runtime_error("Invalid PPO step request");
+				std::vector<float> Action(24);
+				std::memcpy(Action.data(), Message.Bytes.data() + 1, 24 * sizeof(float));
+				const auto Outcome = Env.Step(Action);
+				if (OnSnapshot)
 				{
-					return Actor->Evaluate(Observation);
-				});
-			}, RunnerSettings);
-		Runner.run(Updates, [&](const elman::rl::PpoIteration& Iteration)
+					std::array<Transform, SpiderTrainingLinkCount> Links;
+					for (size_t Link = 0; Link < Links.size(); ++Link)
+						Links[Link] = Env.Robot->GetDynamics().GetLinkTransform(Link);
+					OnSnapshot(Index, Links);
+				}
+				char Result[sizeof(float) + 1];
+				std::memcpy(Result, &Outcome.first, sizeof(float));
+				Result[sizeof(float)] = Outcome.second ? 1 : 0;
+				Connection.Send('s', Result, sizeof(Result));
+			}
+			continue;
+		}
+		if (Message.Type == 'U')
 		{
+			Weights = DecodeWeights(Message, 36);
+			IterationInfo Iteration;
+			Iteration.update = int(Decode<uint32_t>(Message, 0));
+			Iteration.mean_reward = Decode<float>(Message, 4);
+			Iteration.policy_loss = Decode<double>(Message, 8);
+			Iteration.value_loss = Decode<double>(Message, 16);
+			Iteration.gradient_norm = Decode<double>(Message, 24);
+			Iteration.episodes = int(Decode<uint32_t>(Message, 32));
 			const int Update = int(Iteration.update) - 1;
 			if (OnProgress) OnProgress(Iteration.update, Iteration.mean_reward);
-			const Evaluation Result = Evaluate(*Model, 200);
+			const Evaluation Result = Evaluate(Weights, 200);
 			if (Result.Steps == 200 && Result.Last5 > BestIntermediateDistance && Result.Last5 > 0.2f)
 			{
 				BestIntermediateDistance = Result.Last5;
-				ExportPolicy(*Model, Options.policy_path + ".intermediate");
+				ExportPolicy(Weights, Options.policy_path + ".intermediate");
 			}
 			Evaluation LongRun;
 			Evaluation CourseRun;
 			if ((Result.Steps == 200 && Result.Last5 > 0.2f) || Update % 10 == 9)
 			{
-				LongRun = Evaluate(*Model, 600);
+				LongRun = Evaluate(Weights, 600);
 				if (LongRun.Steps == 600 && LongRun.Last5 >= 2.0f && LongRun.Distance > BestCandidateDistance)
 				{
 					BestCandidateDistance = LongRun.Distance;
-					ExportPolicy(*Model, Options.policy_path + ".candidate");
+					ExportPolicy(Weights, Options.policy_path + ".candidate");
 				}
 				if (IsAligned(LongRun) && LongRun.Distance > BestAlignedDistance)
 				{
 					BestAlignedDistance = LongRun.Distance;
-					ExportPolicy(*Model, Options.policy_path + ".aligned");
+					ExportPolicy(Weights, Options.policy_path + ".aligned");
 				}
 			}
 			const bool FlatReady = IsAligned(LongRun) && LongRun.Distance >= 24.0f &&
@@ -543,17 +656,17 @@ void Riemann::RunSpiderTraining(const SpiderTrainingOptions& Options, const std:
 				LongRun.MinHeight > 0.34f && LongRun.MinUp > 0.88f;
 			if (FlatNear || Update % 10 == 9)
 			{
-					CourseRun = Evaluate(*Model, 600, 1.0f, &Course);
+					CourseRun = Evaluate(Weights, 600, 1.0f, &Course);
 				const float NearScore = AcceptanceScore(LongRun, CourseRun);
 				if (NearScore > BestNearScore)
 				{
 					BestNearScore = NearScore;
-					ExportPolicy(*Model, Options.policy_path + ".near");
+					ExportPolicy(Weights, Options.policy_path + ".near");
 				}
 				if (CourseRun.Steps == 600 && CourseRun.Distance > BestCourseDistance)
 				{
 					BestCourseDistance = CourseRun.Distance;
-					ExportPolicy(*Model, Options.policy_path + ".course_candidate");
+					ExportPolicy(Weights, Options.policy_path + ".course_candidate");
 				}
 				if (FlatReady && CourseRun.Steps == 600 && CourseRun.Distance >= 22.5f &&
 					CourseRun.Last5 >= 2.0f && CourseRun.FinalFacing >= 0.75f &&
@@ -562,10 +675,10 @@ void Riemann::RunSpiderTraining(const SpiderTrainingOptions& Options, const std:
 					LongRun.Distance > BestDistance)
 				{
 					BestDistance = LongRun.Distance;
-					ExportPolicy(*Model, Options.policy_path);
+					ExportPolicy(Weights, Options.policy_path);
 				}
 			}
-			ExportPolicy(*Model, LatestPath);
+			ExportPolicy(Weights, LatestPath);
 			std::cout << "update=" << Iteration.update << " reward=" << Iteration.mean_reward
 				<< " policy_loss=" << Iteration.policy_loss
 				<< " value_loss=" << Iteration.value_loss
@@ -596,7 +709,11 @@ void Riemann::RunSpiderTraining(const SpiderTrainingOptions& Options, const std:
 				<< " course30_grounded=" << CourseRun.Grounded
 				<< " course30_minheight=" << CourseRun.MinHeight
 				<< " course30_minup=" << CourseRun.MinUp << std::endl;
-		}, [&] { return Stop.load(); });
+			Connection.Send('u');
+			continue;
+		}
+		throw std::runtime_error("Unknown Elman training TCP packet");
+	}
 }
 
 Riemann::SpiderEvaluation Riemann::EvaluateSpiderPolicy(const std::string& PolicyPath, int Steps, float CourseScale)
@@ -604,8 +721,7 @@ Riemann::SpiderEvaluation Riemann::EvaluateSpiderPolicy(const std::string& Polic
 	if (Steps < 1 || CourseScale < 0 || CourseScale > 1)
 		throw std::invalid_argument("Invalid spider policy evaluation settings");
 	const CourseMap Course = CourseScale > 0 ? LoadCourseMap("Contents/Robots/Spider/course.height") : CourseMap{};
-	const elman::Json Definition = SpiderModelDefinition();
-	std::unique_ptr<elman::Model> Model = CreateSpiderModel(Definition);
-	if (!ImportPolicy(*Model, PolicyPath)) throw std::runtime_error("Spider policy file is missing");
-	return Evaluate(*Model, Steps, CourseScale, CourseScale > 0 ? &Course : nullptr);
+	const std::vector<float> Weights = ImportPolicy(PolicyPath);
+	if (Weights.empty()) throw std::runtime_error("Spider policy file is missing");
+	return Evaluate(Weights, Steps, CourseScale, CourseScale > 0 ? &Course : nullptr);
 }

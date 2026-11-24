@@ -95,7 +95,6 @@ namespace Riemann
 			if(State.SceneGeneration==m_ImguiSnowPanel.SceneGeneration)
 			{ m_ImguiPendingSnowPanel=State;m_ImguiPendingSnowChange=true; }
 		}
-		imguiSeparatorLine();
 	}
 	void WorldViewer::ApplySnowCommands()
 	{

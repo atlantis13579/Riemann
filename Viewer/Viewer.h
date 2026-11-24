@@ -32,7 +32,7 @@ namespace Riemann
 		WorldViewer(RenderThread* renderThread, const std::string& sceneFile);
 		~WorldViewer();
 
-		bool LoadScene(const std::string& sceneFile);
+		bool LoadScene(const std::string& sceneFile, const std::string& configurationId = std::string());
 		void CreateSimulator();
 		void UpdateSimulator(float dt);
 		void LoadAnimation(const std::string& animName, const std::vector<std::string>& nodes);
@@ -174,11 +174,16 @@ private:
 		bool m_RobotKeys[6]{};
 		bool m_RobotInputActive = false, m_RobotAutoWalk = false;
 #ifdef RIEMANN_SPIDER_TRAINING
+		enum class SpiderPanelMode { Inference, Training };
 		std::unique_ptr<SpiderTrainingController> m_SpiderTraining;
+		std::atomic<SpiderPanelMode> m_SpiderPanelMode{SpiderPanelMode::Inference};
 		std::atomic<bool> m_SpiderTrainingMode{false}, m_SpiderTrainingShowAll{false};
 		std::atomic<int> m_SpiderTrainingSelected{0};
 		std::atomic<int> m_SpiderTrainingWorldCount{1};
-		bool m_PendingSpiderTrainToggle = false, m_PendingSpiderShowAllToggle = false;
+		bool m_PendingSpiderTrainAction = false, m_PendingSpiderShowAllToggle = false;
+		unsigned int m_PendingSpiderTrainGeneration = 0;
+		int m_PendingSpiderPanelMode = -1;
+		unsigned int m_PendingSpiderPanelModeGeneration = 0;
 		int m_PendingSpiderSelection = -1;
 		bool m_PendingBrowseElmanExecutable = false;
 		std::string m_ElmanExecutablePath, m_ElmanExecutableStatus;
@@ -196,7 +201,6 @@ private:
 		std::string m_MeshSimplificationPath;
 		std::string m_MeshSimplificationStatus;
 		std::vector<std::string> m_GeometryQueryBoundsMeshIds;
-		int m_CuttingObjIndex;
 		int m_CuttingMode;
 		int m_CuttingPieceCount;
 		int m_CuttingPiecesX;
@@ -204,7 +208,6 @@ private:
 		int m_CuttingPiecesZ;
 		int m_CuttingSeed;
 		bool m_CapCutFaces = true;
-		int m_MeshSimplificationFileIndex;
 		int m_MeshSimplificationAlgorithm;
 		int m_MeshSimplificationRatioLevel;
 		float m_CuttingSeparation;
@@ -271,8 +274,6 @@ private:
 		struct AerodynamicsPanelState
 		{
 			bool Active = false;
-			bool RigidCoupling = false;
-			int RigidBodyCount = 0;
 			int Backend = 2;
 			float GridScale = 1.0f;
 			int ActualBackend = 2;
@@ -294,10 +295,12 @@ private:
 		bool m_RagdollDemoReduced = false;
 		bool m_ImguiRagdollDemoReduced = false;
 		std::vector<std::string> m_ImguiSceneFiles;
-		std::vector<std::string> m_ImguiCuttingObjFiles;
+		std::vector<SceneConfiguration> m_ImguiSceneConfigurations;
+		std::string m_ImguiActiveSceneConfiguration;
+		std::string m_ImguiPendingSceneConfiguration;
+		unsigned int m_ImguiPendingSceneConfigurationGeneration = 0;
 		std::string m_ImguiCuttingObjPath;
 		std::string m_ImguiCuttingStatus;
-		std::vector<std::string> m_ImguiMeshSimplificationFiles;
 		std::vector<ConstraintControlState> m_ImguiConstraintControls;
 		std::vector<std::string> m_ImguiTerrainObjectIds;
 		TerrainBrushState m_ImguiTerrainBrush;
@@ -305,11 +308,8 @@ private:
 		std::string m_ImguiMeshSimplificationPath;
 		std::string m_ImguiMeshSimplificationStatus;
 		int m_ImguiDemoIndex;
-		size_t m_ImguiObjectCount;
-		float m_ImguiCameraDistance;
 		bool m_ImguiCuttingPanelActive;
 		bool m_ImguiMeshSimplificationPanelActive;
-		int m_ImguiCuttingObjIndex;
 		int m_ImguiCuttingMode;
 		int m_ImguiCuttingPieceCount;
 		int m_ImguiCuttingPiecesX;
@@ -318,7 +318,6 @@ private:
 		int m_ImguiCuttingSeed;
 		bool m_ImguiCapCutFaces = true;
 		int m_ImguiPendingCapCutFaces = -1;
-		int m_ImguiMeshSimplificationFileIndex;
 		int m_ImguiMeshSimplificationAlgorithm;
 		int m_ImguiMeshSimplificationRatioLevel;
 		float m_ImguiCuttingSeparation;
@@ -332,12 +331,8 @@ private:
 		bool m_ImguiPendingRestartScene = false;
 		unsigned int m_ImguiPendingRestartGeneration = 0;
 		int m_ImguiPendingRagdollAlgorithm = -1;
-		std::string m_ImguiPendingSceneFile;
-		bool m_ImguiPendingCameraDistance;
-		float m_ImguiPendingCameraDistanceValue;
 		bool m_ImguiPendingCuttingSeparation;
 		float m_ImguiPendingCuttingSeparationValue;
-		int m_ImguiPendingCuttingObjIndex;
 		bool m_ImguiPendingBrowseCuttingObj;
 		bool m_ImguiPendingApplyCutting;
 		bool m_ImguiPendingCuttingMode;
@@ -352,7 +347,6 @@ private:
 		int m_ImguiPendingCuttingPiecesZValue;
 		bool m_ImguiPendingCuttingSeed;
 		int m_ImguiPendingCuttingSeedValue;
-		int m_ImguiPendingMeshSimplificationFileIndex;
 		bool m_ImguiPendingBrowseMeshSimplificationFile;
 		bool m_ImguiPendingApplyMeshSimplification;
 		bool m_ImguiPendingMeshSimplificationAlgorithm;

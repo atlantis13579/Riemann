@@ -78,6 +78,12 @@ namespace Riemann
 		bool RenderEnabled = true;
 	};
 
+	struct SceneConfiguration
+	{
+		std::string Id;
+		std::string Name;
+	};
+
 	struct SceneFieldRegion
 	{
 		Vector3 Min = Vector3::Zero();
@@ -139,8 +145,9 @@ namespace Riemann
 		SceneWorld();
 		~SceneWorld();
 
-		bool LoadFromFile(const std::string& fileName, std::string* errorMessage);
-		bool LoadFromText(const std::string& text, const std::string& sourceName, std::string* errorMessage);
+		bool LoadFromFile(const std::string& fileName, std::string* errorMessage, const std::string& configurationId = std::string());
+		bool LoadFromText(const std::string& text, const std::string& sourceName, std::string* errorMessage,
+			const std::string& configurationId = std::string());
 		void SetRagdollAlgorithmOverride(RagdollAlgorithm Algorithm) { m_RagdollAlgorithmOverride = Algorithm; m_HasRagdollAlgorithmOverride = true; }
 		void ClearRagdollAlgorithmOverride() { m_HasRagdollAlgorithmOverride = false; }
 		void Reset(const Vector3& gravity = Vector3(0.0f, -9.8f, 0.0f));
@@ -260,8 +267,11 @@ namespace Riemann
 		const std::vector<SceneObjectInstance>& GetObjects() const { return m_Objects; }
 		uint32_t GetRenderRevision() const { return m_RenderRevision; }
 		const CameraDesc& GetCamera() const { return m_Camera; }
+		float GetCameraSidebarPadding() const { return m_CameraSidebarPadding; }
 		const DirectionalLightDesc& GetLight() const { return m_Light; }
 		const std::string& GetName() const { return m_Name; }
+		const std::vector<SceneConfiguration>& GetConfigurations() const { return m_Configurations; }
+		const std::string& GetActiveConfigurationId() const { return m_ActiveConfigurationId; }
 		const SceneFieldSimulationDesc& GetFieldSimulation() const { return m_FieldSimulation; }
 		PhysicsWorld* GetSimulation() { return m_World.get(); }
 		const PhysicsWorld* GetSimulation() const { return m_World.get(); }
@@ -319,6 +329,11 @@ namespace Riemann
 		struct RopeSurfaceState
 		{
 			RopeSystem* Rope = nullptr;
+			RigidBody* SpringBodyA = nullptr;
+			RigidBody* SpringBodyB = nullptr;
+			Vector3 SpringAnchorA = Vector3::Zero(), SpringAnchorB = Vector3::Zero();
+			float SpringRadius = 0;
+			int SpringTurns = 0;
 			StrandSystem* Strands = nullptr;
 			uint64_t StrandInstanceId = 0;
 			bool GroomRender = false;
@@ -359,12 +374,15 @@ namespace Riemann
 		void SyncVehicles(float dt);
 		std::vector<VehicleRenderState> m_Vehicles;
 		CameraDesc m_Camera;
+		float m_CameraSidebarPadding = 0;
 		DirectionalLightDesc m_Light;
 		SceneFieldSimulationDesc m_FieldSimulation;
 		std::string m_BaseDirectory;
 		RagdollAlgorithm m_RagdollAlgorithmOverride;
 		bool m_HasRagdollAlgorithmOverride = false;
 		std::string m_Name;
+		std::vector<SceneConfiguration> m_Configurations;
+		std::string m_ActiveConfigurationId;
 		struct ConstraintInstance
 		{
 			std::string Name;

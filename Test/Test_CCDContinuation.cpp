@@ -290,13 +290,14 @@ namespace
 		for (bool Enabled : { false, true })
 		{
 			SceneWorld Scene; std::string Error;
-			EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/04_see_saw.json", &Error));
+			EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/03_domino.json", &Error, "chain"));
 			auto* World = Scene.GetSimulation(); EXPECT(World->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
 			auto Settings = World->GetCCDContinuationSettings(); Settings.Enabled = Enabled; World->SetCCDContinuationSettings(Settings);
 			for (int Frame = 0; Frame < 120; ++Frame) Scene.Step(1.0f / 60);
 			for (const auto& Object : Scene.GetObjects())
 			{
 				auto* B = Object.GeometryPtr->GetParent<RigidBody>();
+				if (!B) continue;
 				EXPECT(std::isfinite(B->X.Length()) && std::isfinite(B->V.Length()) && std::isfinite(B->W.Length()));
 				if (Object.Id == "ball") EXPECT(B->CastDynamic()->mMotionType == MorionType::Continuous);
 			}
