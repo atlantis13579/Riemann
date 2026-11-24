@@ -64,43 +64,67 @@ This project is named after the 19th-century German mathematician Bernhard Riema
 
 * Aero Dynamics Simulation    
 
-* Snow and Sand Continuum Simulation
+* Continuum Media Simulation
+    * Snow and Sand Simulation
     * Three-dimensional quadratic B-spline MPM with PIC/FLIP, APIC, and MLS-MPM transfers
     * Fixed-corotated snow elasticity, compression hardening, and Drucker-Prager sand plasticity
-    * Continuous snow/sand material blending and rate-dependent viscous stress
-    * Scalar CPU, SSE2/NEON, CUDA, DX11 Compute Shader, and native Metal transfers
     * CFL-controlled integration and spatially binned GPU grid gathering without floating-point atomics
-    * Moving capsule contact with Coulomb friction
-    * Separate snow and sand scenes with ground-level snow ploughing and shallow sand sweeping
-    * Sand log-volume correction prevents artificial dilation from becoming elastic compression
-    * A separate depth-integrated sand model uses conservative eight-neighbor transport, a 32-degree repose threshold, and volume-preserving surface-tool displacement without elastic recoil
-    * Closed tray boundaries constrain particles, sand flux, and reconstructed surfaces; sand renders directly from the height field
-    * Height-field reduction follows the real-time terrain approach discussed in [Su et al., SIGGRAPH Asia 2023](https://kuiwuchn.github.io/RTWaterAndSand.pdf); the dry relaxation model omits airborne grains, overhangs, and water coupling
-    * Realtime and high-detail quality, continuous material and viscosity controls
-    * Reconstructed density surfaces, rough microgeometry, porous snow scattering, crystal highlights, and granular sand shading
 
 ## Examples
 
 #### Dominoes
 
-![domino](https://user-images.githubusercontent.com/29682318/180676459-119abeea-6d8a-4b9e-8fc4-ad87207eb6ed.gif)
+https://github.com/user-attachments/assets/fade84c5-58d8-46ec-8d3e-f972f670b7fb
 
-#### Stable boxes stacking
+#### Seesaw
 
-![stack](https://user-images.githubusercontent.com/29682318/180676472-73c80918-6daa-44b0-a34f-e3fcffebdd1e.gif)
+https://github.com/user-attachments/assets/0463e259-d197-4550-8242-817025141715
 
 #### Ragdoll Simulation
 
-![stack](https://github.com/user-attachments/assets/e8d3a438-5ed9-438d-ad14-cdd8941a8b34)
+https://github.com/user-attachments/assets/a835a93f-ac16-4bb1-9c1c-c3aa92feb4a5
+
+#### Rope Simulation
+
+https://github.com/user-attachments/assets/3b1fc795-60ff-47c3-871d-e2d8c96425d1
+
+#### Robotics Simulation (The Policy Weights are trained using [ElmanLLM](https://github.com/atlantis13579/Elman))
+
+https://github.com/user-attachments/assets/51c44659-9074-41c7-b416-be62b5a04130
 
 #### Glass Break Simulation
 
-![stack](https://github.com/user-attachments/assets/3a5ff5ff-1315-43bf-b96f-f2a04574140e)
+https://github.com/user-attachments/assets/399abd7d-f47e-440f-8e50-3c1b3fadf772
 
-#### Cloth Simulation
+#### Destruction Simulation
 
-![stack](https://github.com/user-attachments/assets/2b02a8ab-46af-479f-93c5-830e9926144f)
+https://github.com/user-attachments/assets/f259ba6b-b976-4cac-a987-e496b8c630e4
+
+#### Fluid Simulation
+
+https://github.com/user-attachments/assets/85664357-83f4-407d-aa57-2d0e3936d5f2
+
+#### AeroDynamics Simulation
+
+https://github.com/user-attachments/assets/9e89b90d-63aa-42cb-9b36-94b8f594c940
+
+#### Snow Simulation
+
+https://github.com/user-attachments/assets/54ed8ea1-1052-4af5-8e45-0bdca680a674
+
+## 3D Geometry Processing
 
 #### Mesh QEM Optimizer
 
-![qem](https://github.com/atlantis13579/Riemann/assets/29682318/ffdb88ea-a114-43a5-8864-8b5ab22fd282)
+<img width="1280" height="720" alt="Mesh_QEM_Optimizer" src="https://github.com/user-attachments/assets/f376327e-52ff-4794-b5ce-bd1ee9033d35" />
+
+#### Mesh Cutting
+
+<img width="1280" height="720" alt="Mesh_Cutting" src="https://github.com/user-attachments/assets/0af395c3-3b72-439c-82cc-3092dcfdcc08" />
+
+#### Voronoi Decomposition
+
+<img width="1280" height="720" alt="3D_Voronoi_Decomposition" src="https://github.com/user-attachments/assets/e2e03638-a537-479e-bba0-d0ace199acf8" />
+
+
+
