@@ -70,11 +70,9 @@ This project is named after the 19th-century German mathematician Bernhard Riema
     * CFL-controlled integration and spatially binned GPU grid gathering without floating-point atomics
  
 * 2D Physics Simulation
-    * The 2D Physics Simulation implemented in a separate project [Riemann2d](https://github.com/atlantis13579/Riemann2d)
+    * The 2D Physics Simulation is implemented in a separate project [Riemann2d](https://github.com/atlantis13579/Riemann2d)
 
 ## Examples
-
-#### Stable Box Stackes
 
 #### Dominoes Simulation
 
@@ -88,7 +86,9 @@ https://github.com/user-attachments/assets/a835a93f-ac16-4bb1-9c1c-c3aa92feb4a5
 
 https://github.com/user-attachments/assets/3b1fc795-60ff-47c3-871d-e2d8c96425d1
 
-#### Robotics Simulation (The Policy Weights are trained using [ElmanLLM](https://github.com/atlantis13579/Elman))
+#### Robotics Simulation
+
+The Action is trained using PPO (Proximal Policy Optimization) in [ElmanLLM](https://github.com/atlantis13579/Elman) Reinforcement Learning Framework.
 
 https://github.com/user-attachments/assets/51c44659-9074-41c7-b416-be62b5a04130
 
