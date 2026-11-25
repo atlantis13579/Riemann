@@ -113,6 +113,10 @@ namespace Riemann
 		std::string ShaderPath;
 		int Width = 1024;
 		int Height = 768;
+		// Device pixels per UI point. Retina hosts render the drawable at
+		// Width x Height device pixels while the Dear-ImGui layer keeps working
+		// in logical points, so the UI stays legible without being upscaled.
+		float UiScale = 1.0f;
 	};
 
 	struct ImguiInputState

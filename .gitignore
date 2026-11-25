@@ -366,3 +366,5 @@ Test/Test.xcodeproj/xcshareddata/xcschemes/Test.xcscheme
 *.modulevalidation
 *.so
 .DS_Store
+/Intermediate
+/Binaries

@@ -4,6 +4,9 @@
 #include <cstdio>
 
 #include "../Renderer/imgui.h"
+#include "../Src/Deformation/StrandSystem.h"
+#include "../Src/RigidBodyDynamics/PhysicsWorld.h"
+#include "SceneWorld.h"
 
 namespace Riemann
 {
@@ -46,7 +49,9 @@ namespace Riemann
 		const int PreviousBackend = State.BackendIndex;
 		State.SolverChanged = false;
 
-		imguiLabel("Rigid Solver");
+		// This imgui uses the text as the widget id, so the solver combo keeps the
+		// stable 'resolutionSolver' heading and the combo box follows it.
+		imguiLabel("resolutionSolver");
 		imguiCombo("", &State.ResolutionIndex, ResolutionLabels, 4, SolverEditable);
 		const bool SequentialImpulse = State.ResolutionIndex == 0;
 		if (SequentialImpulse) State.BackendIndex = 0;
@@ -78,6 +83,13 @@ namespace Riemann
 			imguiValue(State.AllowFallback ? "Will use CPU fallback" : "Choose another backend");
 		}
 
+		if (State.ActiveResolutionIndex != State.ResolutionIndex)
+		{
+			char Message[64];
+			std::snprintf(Message, sizeof(Message), "Active: %s",
+				ResolutionLabels[ValidIndex(State.ActiveResolutionIndex)]);
+			DrawStatus(Message);
+		}
 		if (State.ActiveRequestedBackendIndex != State.ActiveBackendIndex)
 		{
 			char Message[64];
@@ -117,5 +129,38 @@ namespace Riemann
 			ApplyCloth = imguiButton("Apply Cloth", Editable);
 		}
 		return ClothAlgorithmChanged || ClothSelfCollisionChanged || ApplyCloth;
+	}
+
+	void RefreshSolverPanelTelemetry(SolverPanelState& State, const SceneWorld& Scene)
+	{
+		State.DestructionRecording = Scene.IsDestructionCacheRecording();
+		State.DestructionPlaying = Scene.IsDestructionCachePlaying();
+		State.DestructionCacheTime = Scene.GetDestructionCacheTime();
+		State.DestructionCacheDuration = Scene.GetDestructionCacheDuration();
+		State.DestructionEvents = Scene.GetDestructionEventCount();
+		const PhysicsWorld* World = Scene.GetSimulation();
+		State.FieldBrokenBonds = World != nullptr ? World->GetPhysicsFieldStats().BrokenBonds : 0;
+
+		const StrandSystem* Strands = Scene.GetDemoStrands();
+		State.HasStrands = Strands != nullptr;
+		State.StrandGuides = Strands != nullptr ? Strands->GetGuideCount() : 0;
+		State.StrandConstraintSolves = Strands != nullptr ? Strands->GetStats().ConstraintSolves : 0;
+		State.StrandEnergy = Strands != nullptr ? Strands->GetStats().ElasticEnergy : 0;
+		State.StrandContactRows = Strands != nullptr ? Strands->GetCollisionStats().Contacts : 0;
+		State.StrandContactCandidates = Strands != nullptr ? Strands->GetCollisionStats().Candidates : 0;
+		State.StrandContactRefinements = Strands != nullptr ? Strands->GetCollisionStats().Refinements : 0;
+		State.StrandContactPenetration = Strands != nullptr ? Strands->GetCollisionStats().MaximumPenetration : 0;
+
+		// Render curves and the guides feeding them come from the groom, which
+		// scales with the active LOD.
+		const StrandGroom* Groom = Strands != nullptr ? Strands->GetGroom() : nullptr;
+		State.StrandRenderCurves = Groom != nullptr ? Groom->GetStrandCount() : 0;
+		State.StrandActiveGuides = 0;
+		if (Groom != nullptr)
+		{
+			const size_t Lod = Scene.GetStrandDemoLod();
+			if (Lod < Groom->GetLodCount())
+				State.StrandActiveGuides = Groom->GetLod(Lod).Guides.size();
+		}
 	}
 }

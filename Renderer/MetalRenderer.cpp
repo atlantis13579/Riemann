@@ -290,6 +290,7 @@ namespace Riemann
 		{
 			Width = std::max(1, createInfo.Width);
 			Height = std::max(1, createInfo.Height);
+			UiScale = createInfo.UiScale > 0.0f ? createInfo.UiScale : 1.0f;
 
 			Device = MTLCreateSystemDefaultDevice();
 			if (Device == nil)
@@ -709,30 +710,40 @@ namespace Riemann
 					return false;
 				}
 
-				NSGraphicsContext* graphicsContext = [NSGraphicsContext graphicsContextWithCGContext:context flipped:YES];
+				// Core Graphics bitmap rows run top-down while the context origin
+				// is bottom-left. Drawing through a flipped AppKit context mirrors
+				// every glyph in memory and parks it in the wrong rows, so the
+				// atlas is drawn unflipped and each cell is positioned with a
+				// bottom-up rectangle.
+				NSGraphicsContext* graphicsContext = [NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
 				[NSGraphicsContext saveGraphicsState];
 				[NSGraphicsContext setCurrentContext:graphicsContext];
 				[graphicsContext setShouldAntialias:YES];
 
-				NSFont* font = [NSFont systemFontOfSize:15.0];
+				// Rasterize at device resolution so glyphs land in the drawable
+				// 1:1 instead of being upscaled, then report the metrics back in
+				// logical points so the Dear-ImGui layout is unchanged.
+				NSFont* font = [NSFont systemFontOfSize:15.0 * UiScale];
 				NSDictionary* attributes = [NSDictionary dictionaryWithObjectsAndKeys:
 					font, NSFontAttributeName,
 					[NSColor whiteColor], NSForegroundColorAttributeName,
 					nil];
 
 				NSSize measure = [@"M" sizeWithAttributes:attributes];
-				ImguiFontHeight = std::max(8, static_cast<int>(std::ceil(measure.height)));
+				ImguiAtlasFontHeight = std::max(8, static_cast<int>(std::ceil(measure.height)));
+				ImguiFontHeight = std::max(8, static_cast<int>(std::lround(ImguiAtlasFontHeight / UiScale)));
 
+				const float logicalScale = 1.0f / UiScale;
 				int penX = 1;
 				int penY = 1;
-				const int rowHeight = ImguiFontHeight + 4;
+				const int rowHeight = ImguiAtlasFontHeight + 4;
 				for (int c = 32; c < 128; ++c)
 				{
 					char ch = static_cast<char>(c);
 					NSString* string = [[NSString alloc] initWithBytes:&ch length:1 encoding:NSASCIIStringEncoding];
 					NSSize size = [string sizeWithAttributes:attributes];
 					const int glyphWidth = std::max(1, static_cast<int>(std::ceil(size.width)));
-					const int glyphHeight = ImguiFontHeight;
+					const int glyphHeight = ImguiAtlasFontHeight;
 
 					if (penX + glyphWidth + 2 >= atlasWidth)
 					{
@@ -750,17 +761,30 @@ namespace Riemann
 					glyph.V0 = penY / static_cast<float>(atlasHeight);
 					glyph.U1 = (penX + glyphWidth) / static_cast<float>(atlasWidth);
 					glyph.V1 = (penY + glyphHeight) / static_cast<float>(atlasHeight);
-					glyph.Width = static_cast<float>(glyphWidth);
-					glyph.Height = static_cast<float>(glyphHeight);
-					glyph.Advance = static_cast<float>(glyphWidth);
+					glyph.Width = static_cast<float>(glyphWidth) * logicalScale;
+					glyph.Height = static_cast<float>(glyphHeight) * logicalScale;
+					glyph.Advance = static_cast<float>(glyphWidth) * logicalScale;
 
-					[string drawAtPoint:NSMakePoint(static_cast<CGFloat>(penX), static_cast<CGFloat>(penY)) withAttributes:attributes];
+					[string drawInRect:NSMakeRect(
+						static_cast<CGFloat>(penX),
+						static_cast<CGFloat>(atlasHeight - penY - glyphHeight),
+						static_cast<CGFloat>(glyphWidth),
+						static_cast<CGFloat>(glyphHeight)) withAttributes:attributes];
 					[string release];
 					penX += glyphWidth + 1;
 				}
 
 				[NSGraphicsContext restoreGraphicsState];
 				CGContextRelease(context);
+			}
+
+			// The blend state expects straight alpha. Core Graphics writes
+			// premultiplied white glyphs, so restore the white RGB coverage.
+			for (size_t pixel = 0; pixel < pixels.size(); pixel += 4)
+			{
+				pixels[pixel] = 255u;
+				pixels[pixel + 1] = 255u;
+				pixels[pixel + 2] = 255u;
 			}
 
 			ImguiFontTexture = CreateImguiTexture(atlasWidth, atlasHeight, pixels.data());
@@ -946,16 +970,16 @@ namespace Riemann
 			return false;
 		}
 
-		bool UpdateVertices(const char* id, const Vertex1* vertices, int vertexCount)
+		bool UpdateVertices(const char* meshId, const Vertex1* vertices, int vertexCount)
 		{
-			if (id == nullptr || vertices == nullptr || vertexCount <= 0)
+			if (meshId == nullptr || vertices == nullptr || vertexCount <= 0)
 			{
 				return false;
 			}
 
 			for (MetalMesh& mesh : Meshes)
 			{
-				if (mesh.Id == id)
+				if (mesh.Id == meshId)
 				{
 					if ((NSUInteger)vertexCount != mesh.VertexCount) return false;
 					id<MTLBuffer> replacement = [Device newBufferWithBytes:vertices length:sizeof(Vertex1) * static_cast<size_t>(vertexCount) options:MTLResourceStorageModeShared];
@@ -972,10 +996,10 @@ namespace Riemann
 			return false;
 		}
 
-		bool UpdateMeshGeometry(const char* id, const Vertex1* vertices, int vertexCount,
+		bool UpdateMeshGeometry(const char* meshId, const Vertex1* vertices, int vertexCount,
 			const uint32_t* indices, int indexCount)
 		{
-			if (id == nullptr || vertexCount < 0 || indexCount < 0
+			if (meshId == nullptr || vertexCount < 0 || indexCount < 0
 				|| ((vertexCount == 0 || indexCount == 0) && (vertexCount != 0 || indexCount != 0))
 				|| (vertexCount > 0 && (vertices == nullptr || indices == nullptr))
 				|| (size_t)vertexCount > (size_t)std::numeric_limits<NSUInteger>::max() / sizeof(Vertex1)
@@ -986,7 +1010,7 @@ namespace Riemann
 			MetalMesh* target = nullptr;
 			for (MetalMesh& mesh : Meshes)
 			{
-				if (mesh.Id == id) { target = &mesh; break; }
+				if (mesh.Id == meshId) { target = &mesh; break; }
 			}
 			if (target == nullptr) return false;
 			if (vertexCount == 0)
@@ -1029,16 +1053,16 @@ namespace Riemann
 			return true;
 		}
 
-		bool DeleteMesh(const char* id)
+		bool DeleteMesh(const char* meshId)
 		{
-			if (id == nullptr)
+			if (meshId == nullptr)
 			{
 				return false;
 			}
 
 			for (size_t i = 0; i < Meshes.size(); ++i)
 			{
-				if (Meshes[i].Id == id)
+				if (Meshes[i].Id == meshId)
 				{
 					Meshes.erase(Meshes.begin() + i);
 					return true;
@@ -1047,16 +1071,16 @@ namespace Riemann
 			return false;
 		}
 
-		bool SetMeshOutline(const char* id, bool enabled, const Vector4& color, float thickness)
+		bool SetMeshOutline(const char* meshId, bool enabled, const Vector4& color, float thickness)
 		{
-			if (id == nullptr)
+			if (meshId == nullptr)
 			{
 				return false;
 			}
 
 			for (MetalMesh& mesh : Meshes)
 			{
-				if (mesh.Id == id)
+				if (mesh.Id == meshId)
 				{
 					mesh.OutlineEnabled = enabled;
 					mesh.OutlineColor = color;
@@ -1418,7 +1442,7 @@ namespace Riemann
 			}
 
 			const float originX = x;
-			const float top = ImguiToScreenY(y + static_cast<float>(ImguiFontHeight));
+			const float top = ImguiToScreenY((y + static_cast<float>(ImguiFontHeight)) * UiScale);
 			std::vector<MetalImguiVertex> vertices;
 			vertices.reserve(std::strlen(text) * 6);
 
@@ -1439,9 +1463,9 @@ namespace Riemann
 				else if (c >= 32 && c < 128)
 				{
 					const MetalImguiGlyph& glyph = ImguiGlyphs[c - 32];
-					const float left = x;
-					const float right = x + glyph.Width;
-					const float bottom = top + glyph.Height;
+					const float left = x * UiScale;
+					const float right = (x + glyph.Width) * UiScale;
+					const float bottom = top + glyph.Height * UiScale;
 
 					vertices.push_back({ { left, top }, { glyph.U0, glyph.V0 }, color });
 					vertices.push_back({ { right, top }, { glyph.U1, glyph.V0 }, color });
@@ -1467,13 +1491,14 @@ namespace Riemann
 			for (int i = 0; i < commandCount; ++i)
 			{
 				const imguiGfxCmd& cmd = commands[i];
+				const float scale = kImguiScale * UiScale;
 				if (cmd.type == IMGUI_GFXCMD_RECT)
 				{
-					const float x = static_cast<float>(cmd.rect.x) * kImguiScale + 0.5f;
-					const float y = static_cast<float>(cmd.rect.y) * kImguiScale + 0.5f;
-					const float w = static_cast<float>(cmd.rect.w) * kImguiScale - 1.0f;
-					const float h = static_cast<float>(cmd.rect.h) * kImguiScale - 1.0f;
-					const float r = static_cast<float>(cmd.rect.r) * kImguiScale;
+					const float x = static_cast<float>(cmd.rect.x) * scale + 0.5f * UiScale;
+					const float y = static_cast<float>(cmd.rect.y) * scale + 0.5f * UiScale;
+					const float w = static_cast<float>(cmd.rect.w) * scale - 1.0f * UiScale;
+					const float h = static_cast<float>(cmd.rect.h) * scale - 1.0f * UiScale;
+					const float r = static_cast<float>(cmd.rect.r) * scale;
 					if (cmd.rect.r == 0)
 					{
 						AddImguiRect(encoder, x, y, w, h, cmd.col);
@@ -1487,21 +1512,21 @@ namespace Riemann
 				{
 					AddImguiLine(
 						encoder,
-						static_cast<float>(cmd.line.x0) * kImguiScale,
-						static_cast<float>(cmd.line.y0) * kImguiScale,
-						static_cast<float>(cmd.line.x1) * kImguiScale,
-						static_cast<float>(cmd.line.y1) * kImguiScale,
-						static_cast<float>(cmd.line.r) * kImguiScale,
+						static_cast<float>(cmd.line.x0) * scale,
+						static_cast<float>(cmd.line.y0) * scale,
+						static_cast<float>(cmd.line.x1) * scale,
+						static_cast<float>(cmd.line.y1) * scale,
+						static_cast<float>(cmd.line.r) * scale,
 						cmd.col);
 				}
 				else if (cmd.type == IMGUI_GFXCMD_TRIANGLE)
 				{
 					AddImguiTriangle(
 						encoder,
-						static_cast<float>(cmd.rect.x) * kImguiScale + 0.5f,
-						static_cast<float>(cmd.rect.y) * kImguiScale + 0.5f,
-						static_cast<float>(cmd.rect.w) * kImguiScale - 1.0f,
-						static_cast<float>(cmd.rect.h) * kImguiScale - 1.0f,
+						static_cast<float>(cmd.rect.x) * scale + 0.5f * UiScale,
+						static_cast<float>(cmd.rect.y) * scale + 0.5f * UiScale,
+						static_cast<float>(cmd.rect.w) * scale - 1.0f * UiScale,
+						static_cast<float>(cmd.rect.h) * scale - 1.0f * UiScale,
 						cmd.flags,
 						cmd.col);
 				}
@@ -1513,7 +1538,15 @@ namespace Riemann
 				{
 					if (cmd.flags)
 					{
-						SetImguiScissor(encoder, cmd.rect.x, cmd.rect.y, cmd.rect.w, cmd.rect.h);
+						// Scissor rectangles are stored in logical pixels, unlike
+						// the fixed-point geometry fields, so only the UI scale
+						// applies here.
+						SetImguiScissor(
+							encoder,
+							static_cast<int>(std::lround(cmd.rect.x * UiScale)),
+							static_cast<int>(std::lround(cmd.rect.y * UiScale)),
+							static_cast<int>(std::lround(cmd.rect.w * UiScale)),
+							static_cast<int>(std::lround(cmd.rect.h * UiScale)));
 					}
 					else
 					{
@@ -1545,9 +1578,14 @@ namespace Riemann
 				return;
 			}
 
-			input.MouseY = Height - 1 - input.MouseY;
+			// The Dear-ImGui layer works in logical points; the host feeds mouse
+			// positions in the same space and the queue is scaled to device
+			// pixels when it is drawn.
+			const int uiWidth = UiWidth();
+			const int uiHeight = UiHeight();
+			input.MouseY = uiHeight - 1 - input.MouseY;
 			imguiBeginFrame(input.MouseX, input.MouseY, input.MouseButtons, input.MouseWheel);
-			callback(Width, Height, userData);
+			callback(uiWidth, uiHeight, userData);
 			imguiEndFrame();
 
 			MetalImguiUniforms* uniforms = static_cast<MetalImguiUniforms*>([ImguiUniformBuffer contents]);
@@ -1630,6 +1668,10 @@ namespace Riemann
 
 			@autoreleasepool
 			{
+				// Pick up window resizes: the drawable size is owned by the host
+				// window and can change at any time between frames.
+				UpdateLayerDrawableSize();
+
 				if (!EnsureDepthTexture())
 				{
 					return;
@@ -1784,7 +1826,14 @@ namespace Riemann
 		ImguiDrawCallback ImguiCallback = nullptr;
 		void* ImguiUserData = nullptr;
 		MetalImguiGlyph ImguiGlyphs[96];
+		// ImguiFontHeight is the logical (point) line height. The atlas is
+		// rasterized at ImguiAtlasFontHeight device pixels per glyph cell.
 		int ImguiFontHeight = 16;
+		int ImguiAtlasFontHeight = 16;
+		float UiScale = 1.0f;
+
+		int UiWidth() const { return std::max(1, static_cast<int>(std::lround(Width / UiScale))); }
+		int UiHeight() const { return std::max(1, static_cast<int>(std::lround(Height / UiScale))); }
 	};
 
 	MetalRenderer::MetalRenderer()

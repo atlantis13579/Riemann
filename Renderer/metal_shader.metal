@@ -49,16 +49,16 @@ vertex VSOut RiemannMainVS(
 	const device MetalVertex* vertices [[buffer(0)]],
 	constant Uniforms& uniforms [[buffer(1)]])
 {
-	MetalVertex vertex = vertices[vertexId];
+	MetalVertex vertexData = vertices[vertexId];
 
-	float4 localPosition = float4(float3(vertex.position), 1.0);
+	float4 localPosition = float4(float3(vertexData.position), 1.0);
 	float4 worldPosition = MulRow(localPosition, uniforms.world);
 
 	VSOut out;
 	out.positionWorld = worldPosition.xyz;
 	out.position = MulRow(MulRow(worldPosition, uniforms.view), uniforms.projection);
 	out.positionLight = MulRow(MulRow(worldPosition, uniforms.lightView), uniforms.lightProjection);
-	out.normal = normalize(MulRow(float4(float3(vertex.normal), 0.0), uniforms.world).xyz);
+	out.normal = normalize(MulRow(float4(float3(vertexData.normal), 0.0), uniforms.world).xyz);
 	return out;
 }
 
@@ -67,8 +67,8 @@ vertex ShadowOut RiemannShadowVS(
 	const device MetalVertex* vertices [[buffer(0)]],
 	constant Uniforms& uniforms [[buffer(1)]])
 {
-	MetalVertex vertex = vertices[vertexId];
-	float4 localPosition = float4(float3(vertex.position), 1.0);
+	MetalVertex vertexData = vertices[vertexId];
+	float4 localPosition = float4(float3(vertexData.position), 1.0);
 	float4 worldPosition = MulRow(localPosition, uniforms.world);
 
 	ShadowOut out;
@@ -81,10 +81,10 @@ vertex VSOut RiemannOutlineVS(
 	const device MetalVertex* vertices [[buffer(0)]],
 	constant Uniforms& uniforms [[buffer(1)]])
 {
-	MetalVertex vertex = vertices[vertexId];
+	MetalVertex vertexData = vertices[vertexId];
 
-	float3 worldNormal = normalize(MulRow(float4(float3(vertex.normal), 0.0), uniforms.world).xyz);
-	float4 localPosition = float4(float3(vertex.position), 1.0);
+	float3 worldNormal = normalize(MulRow(float4(float3(vertexData.normal), 0.0), uniforms.world).xyz);
+	float4 localPosition = float4(float3(vertexData.position), 1.0);
 	float4 worldPosition = MulRow(localPosition, uniforms.world);
 	worldPosition.xyz += worldNormal * uniforms.renderParams.x;
 
@@ -225,17 +225,17 @@ vertex ImguiVSOut RiemannImguiVS(
 	const device ImguiVertex* vertices [[buffer(0)]],
 	constant ImguiUniforms& uniforms [[buffer(1)]])
 {
-	ImguiVertex vertex = vertices[vertexId];
-	float2 p = vertex.position / uniforms.screenSize;
+	ImguiVertex vertexData = vertices[vertexId];
+	float2 p = vertexData.position / uniforms.screenSize;
 
 	ImguiVSOut out;
 	out.position = float4(p.x * 2.0 - 1.0, 1.0 - p.y * 2.0, 0.0, 1.0);
-	out.texCoord = vertex.texCoord;
+	out.texCoord = vertexData.texCoord;
 	out.color = float4(
-		float(vertex.color & 255u) / 255.0,
-		float((vertex.color >> 8u) & 255u) / 255.0,
-		float((vertex.color >> 16u) & 255u) / 255.0,
-		float((vertex.color >> 24u) & 255u) / 255.0);
+		float(vertexData.color & 255u) / 255.0,
+		float((vertexData.color >> 8u) & 255u) / 255.0,
+		float((vertexData.color >> 16u) & 255u) / 255.0,
+		float((vertexData.color >> 24u) & 255u) / 255.0);
 	return out;
 }
 

@@ -55,6 +55,19 @@
 #include "../Src/Deformation/Cloth.h"
 #include "../Src/Deformation/DeformableBody.h"
 
+namespace
+{
+	Riemann::FileDialogHandler g_FileDialogHandler = nullptr;
+}
+
+namespace Riemann
+{
+	void SetFileDialogHandler(FileDialogHandler handler)
+	{
+		g_FileDialogHandler = handler;
+	}
+}
+
 namespace Riemann
 {
 	namespace
@@ -4155,7 +4168,9 @@ namespace Riemann
 		ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
 		return GetOpenFileNameA(&ofn) ? std::string(fileName) : std::string();
 #else
-		return std::string();
+		return g_FileDialogHandler != nullptr
+			? g_FileDialogHandler("*.obj;*.uasset", m_CuttingObjPath)
+			: std::string();
 #endif
 	}
 
@@ -4176,7 +4191,9 @@ namespace Riemann
 		ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
 		return GetOpenFileNameA(&ofn) ? std::string(fileName) : std::string();
 #else
-		return std::string();
+		return g_FileDialogHandler != nullptr
+			? g_FileDialogHandler("*.obj;*.flat;*.uasset", m_MeshSimplificationPath)
+			: std::string();
 #endif
 	}
 

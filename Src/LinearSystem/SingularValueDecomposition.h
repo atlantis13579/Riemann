@@ -117,7 +117,7 @@ private:
 						a[i*n+k] = (a[i*n+k]*scale);
 				}
 			}
-			anorm = MAX(anorm, (fabs(w[i]) + fabs(rv1[i])));
+			anorm = Maximum(anorm, (fabs(w[i]) + fabs(rv1[i])));
 		}
 	  
 		// accumulate the right-hand transformation
@@ -311,7 +311,7 @@ private:
 		return v >= 0 ? Abs(u) : -Abs(u);
 	}
 	
-	static inline T MAX(const T u, const T v)
+	static inline T Maximum(const T u, const T v)
 	{
 		return u >= v ? u : v;
 	}

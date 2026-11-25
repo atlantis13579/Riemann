@@ -5,6 +5,8 @@
 
 namespace Riemann
 {
+	class SceneWorld;
+
 	// UI order is SI, LCP, PBD, XPBD; backend order is CPU, SIMD, ComputeShader, CUDA.
 	// These indices are deliberately independent of the engine enum values.
 	struct SolverPanelState
@@ -32,7 +34,38 @@ namespace Riemann
 		bool Pending = false;
 		std::string Status;
 		uint32_t SceneGeneration = 0;
+
+		// Physics-field and destruction-cache demo in/out state. The flags on the
+		// left are owned by the UI; the readouts are filled by
+		// RefreshSolverPanelTelemetry so the panel never queries the scene itself.
+		bool PhysicsFieldsDemo = false;
+		float DestructionSeekFraction = 0.0f;
+		bool DestructionRecording = false;
+		bool DestructionPlaying = false;
+		double DestructionCacheTime = 0;
+		double DestructionCacheDuration = 0;
+		uint64_t DestructionEvents = 0;
+		uint64_t FieldBrokenBonds = 0;
+
+		// Solver actually running; differs from the requested indices when the
+		// backend fell back to CPU.
+		int ActiveResolutionIndex = 0;
+
+		// Strand preview readouts. Zero when the scene has no strand demo.
+		bool HasStrands = false;
+		uint64_t StrandGuides = 0;
+		uint64_t StrandActiveGuides = 0;
+		uint64_t StrandRenderCurves = 0;
+		uint64_t StrandConstraintSolves = 0;
+		double StrandEnergy = 0;
+		uint64_t StrandContactRows = 0;
+		uint64_t StrandContactCandidates = 0;
+		uint64_t StrandContactRefinements = 0;
+		double StrandContactPenetration = 0;
 	};
+
+	// Copies the demo/telemetry readouts from the scene into the panel state.
+	void RefreshSolverPanelTelemetry(SolverPanelState& State, const SceneWorld& Scene);
 
 	// Draw inside an existing imgui scroll area. Changes are applied on the simulation thread.
 	bool DrawSolverPanel(SolverPanelState& State);

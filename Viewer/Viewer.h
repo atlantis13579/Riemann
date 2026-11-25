@@ -26,6 +26,12 @@ namespace Riemann
 	class AerodynamicsSimulation;
 	class AerodynamicsRigidCoupling;
 
+	// Platform supplied file picker for the mesh panels. Windows keeps using
+	// GetOpenFileName; the macOS shell installs an NSOpenPanel implementation.
+	// "extensions" is a ';' separated list such as "*.obj;*.uasset".
+	typedef std::string (*FileDialogHandler)(const char* extensions, const std::string& initialPath);
+	void SetFileDialogHandler(FileDialogHandler handler);
+
 	class WorldViewer
 	{
 	public:

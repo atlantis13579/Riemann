@@ -364,6 +364,36 @@ elseif(APPLE)
         XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++"
     )
 
+    # Cocoa/CAMetalLayer shell around WorldViewer and the Metal renderer.
+    add_executable(Viewer MACOSX_BUNDLE
+        ${RIEMANN_VIEWER_CORE_SOURCES}
+        ${RIEMANN_VIEWER_CORE_HEADERS}
+        "${CMAKE_SOURCE_DIR}/../Viewer/MacApplication.mm"
+    )
+    set_target_properties(Viewer PROPERTIES
+        CXX_STANDARD 17
+        CXX_STANDARD_REQUIRED ON
+        OBJCXX_STANDARD 17
+        MACOSX_BUNDLE_BUNDLE_NAME "Riemann Viewer"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.riemann.viewer"
+        MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+        MACOSX_BUNDLE_INFO_STRING "Riemann physics viewer"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacBundleInfo.plist.in"
+    )
+    target_include_directories(Viewer PRIVATE
+        ${CMAKE_SOURCE_DIR}/..
+        ${CMAKE_SOURCE_DIR}/../Src
+    )
+    target_link_libraries(Viewer PRIVATE
+        Renderer
+        Riemann
+        ${METAL_FRAMEWORK}
+        ${QUARTZCORE_FRAMEWORK}
+        ${COCOA_FRAMEWORK}
+        ${COREGRAPHICS_FRAMEWORK}
+    )
+
 elseif(UNIX)
     # Linux
     target_compile_options(Riemann PRIVATE -fPIC)
