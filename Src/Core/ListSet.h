@@ -297,16 +297,34 @@ namespace Riemann
 				else
 				{
 					Block *block2 = block;
-					while (block2->next_block >= 0)
+					int idx2 = idx + move_num;
+					while (idx2 >= BlockSize)
 					{
+						idx2 -= BlockSize;
 						block2 = m_owner->get_block(block2->next_block);
 					}
 
-					int idx2 = (head->size - 1) % BlockSize;
 					block->data[idx] = block2->data[idx2];
 				}
 
 				head->size--;
+				if (head->size % BlockSize == 0)
+				{
+					// Removing the last item in a block must detach its empty tail.
+					Block* last_block = m_owner->get_block(head->first_block);
+					for (int i = BlockSize; i < head->size; i += BlockSize)
+					{
+						last_block = m_owner->get_block(last_block->next_block);
+					}
+					int tail_index = last_block->next_block;
+					last_block->next_block = -1;
+					while (tail_index >= 0)
+					{
+						const int next_index = m_owner->get_block(tail_index)->next_block;
+						m_owner->release(tail_index);
+						tail_index = next_index;
+					}
+				}
 
 				return true;
 			}

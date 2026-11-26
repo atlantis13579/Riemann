@@ -7,7 +7,7 @@ namespace Riemann
 {
 	class SceneWorld;
 
-	// UI order is SI, LCP, PBD, XPBD; backend order is CPU, SIMD, ComputeShader, CUDA.
+	// UI order is SI, LCP, PBD, XPBD; backend order is CPU, SIMD, ComputeShader, CUDA, Metal.
 	// These indices are deliberately independent of the engine enum values.
 	struct SolverPanelState
 	{
@@ -22,7 +22,7 @@ namespace Riemann
 		float ClothStretchUCompliance = 0.0001f, ClothStretchVCompliance = 0.0002f;
 		float ClothShearCompliance = 0.01f, ClothBendingCompliance = 25;
 		bool ClothSelfCollision = false, ClothRigidCoupling = false;
-		bool Available[4][4] = {
+		bool Available[4][5] = {
 			{ true, false, false, false },
 			{ true, false, false, false },
 			{ true, false, false, false },

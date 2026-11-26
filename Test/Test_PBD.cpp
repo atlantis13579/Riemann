@@ -1,9 +1,21 @@
 #include "Test.h"
-
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/Deformation/Rope.h"
 #include "../Src/RigidBodyDynamics/PhysicsMaterial.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
+#include "../Src/RigidBodyDynamics/NarrowPhase.h"
+#include <fstream>
+#include <iterator>
+#include <algorithm>
+#include <chrono>
+#include <cstdlib>
+#include <cstring>
+#include <memory>
+#include <stdexcept>
+#include <vector>
+#include "../Src/Solver/PBDBackend.h"
+#include "../Src/Solver/XPBDSolver.h"
+#include <limits>
 
 using namespace Riemann;
 
@@ -344,3 +356,898 @@ void TestPBDRigidSolver()
 	TestPBDTriggerEvents();
 	TestPBDCCDAndRope();
 }
+
+namespace Test_PBDScene_Cases
+{
+using namespace Riemann;
+
+static void TestSpherePlaneContactTransforms()
+{
+	PhysicsWorld world{PhysicsWorldParam()};
+	const Vector3 normal(0.6f, 0.8f, 0.0f), origin(3, 2, -1);
+	Geometry* plane = GeometryFactory::CreatePlane(origin, normal);
+	Geometry* sphere = GeometryFactory::CreateSphere(origin + normal * 0.4f, 0.5f);
+	RigidBodyParam staticBody;
+	staticBody.rigidType = RigidType::Static;
+	RigidBodyParam dynamicBody;
+	dynamicBody.rigidType = RigidType::Dynamic;
+	world.CreateRigidBody(plane, staticBody);
+	world.CreateRigidBody(sphere, dynamicBody);
+	std::unique_ptr<NarrowPhase> narrow(NarrowPhase::Create_GJKEPA());
+	for (int reverse = 0; reverse < 2; ++reverse)
+	{
+		Geometry* geometries[2] = { reverse ? sphere : plane, reverse ? plane : sphere };
+		GeometryWorldState states[2];
+		const GeometryWorldState* pointers[2] = { &states[0], &states[1] };
+		for (int i = 0; i < 2; ++i)
+		{
+			RigidBody* body = geometries[i]->GetParent<RigidBody>();
+			states[i].Geom = geometries[i];
+			states[i].Body = body;
+			states[i].BodyToWorld = Transform(body->BodyLocalToWorld(Vector3::Zero()), body->Q);
+			states[i].ShapeToWorld = body->GetGeometryTransform(geometries[i]);
+		}
+		std::vector<ContactManifold*> contacts;
+		narrow->CollisionDetection(GeometryWorldStateSpan(pointers, 2), { OverlapPair(0, 1) }, &contacts);
+		EXPECT(contacts.size() == 1);
+		if (contacts.empty()) continue;
+		EXPECT(contacts[0]->NumContactPointCount == 1);
+		const Contact& contact = contacts[0]->ContactPoints[0];
+		EXPECT_NEAR(contact.PenetrationDepth, 0.1f, 1.0e-5f);
+		EXPECT_SAME(contact.Normal, (reverse ? -normal : normal));
+		EXPECT_SAME((reverse ? contact.PositionWorldB : contact.PositionWorldA), origin);
+		EXPECT_SAME((reverse ? contact.PositionWorldA : contact.PositionWorldB), (origin - normal * 0.1f));
+		EXPECT_NEAR((contact.PositionWorldB - contact.PositionWorldA).Dot(contact.Normal), -0.1f, 1.0e-5f);
+	}
+}
+
+void TestPBDScene()
+{
+	printf("Running TestPBDScene\n");
+	TestSpherePlaneContactTransforms();
+}
+}
+
+void TestPBDScene() { Test_PBDScene_Cases::TestPBDScene(); }
+
+namespace Test_PBDBackends_Cases
+{
+using namespace Riemann;
+
+namespace
+{
+	const SolverBackend Backends[] = { SolverBackend::CPU, SolverBackend::SIMD, SolverBackend::ComputeShader, SolverBackend::CUDA, SolverBackend::Metal };
+	const char* BackendNames[] = { "CPU", "SIMD", "ComputeShader", "CUDA", "Metal" };
+
+	PBDBackendVector BackendVector(const Vector3& value, float w = 0.0f)
+	{
+		return { value.x, value.y, value.z, w };
+	}
+
+	Vector3 BackendVector(const PBDBackendVector& value)
+	{
+		return Vector3(value.x, value.y, value.z);
+	}
+
+	PBDBackendBody BackendBody(const Vector3& position, bool dynamic)
+	{
+		PBDBackendBody result = {};
+		result.Position = BackendVector(position, dynamic ? 1.0f : 0.0f);
+		result.Rotation.w = 1.0f;
+		result.LinearVelocity.w = 10000.0f;
+		result.InverseInertia0.x = dynamic ? 1.5f : 0.0f;
+		result.InverseInertia1.y = dynamic ? 2.0f : 0.0f;
+		result.InverseInertia2.z = dynamic ? 2.5f : 0.0f;
+		result.Flags.x = result.Flags.y = dynamic ? 1 : 0;
+		return result;
+	}
+
+	PBDBackendContact BackendContact(const std::vector<PBDBackendBody>& bodies, uint32_t a, uint32_t b,
+		const Vector3& point, const Vector3& normal, float depth)
+	{
+		PBDBackendContact contact = {};
+		contact.Bodies.x = a;
+		contact.Bodies.y = b;
+		const Quaternion qa(bodies[a].Rotation.x, bodies[a].Rotation.y, bodies[a].Rotation.z, bodies[a].Rotation.w);
+		const Quaternion qb(bodies[b].Rotation.x, bodies[b].Rotation.y, bodies[b].Rotation.z, bodies[b].Rotation.w);
+		contact.AnchorA = BackendVector(qa.Conjugate() * (point - BackendVector(bodies[a].Position)));
+		contact.AnchorB = BackendVector(qb.Conjugate() * (point - normal * depth - BackendVector(bodies[b].Position)));
+		contact.Normal = BackendVector(normal);
+		Vector3 tangent, binormal;
+		normal.GetPerpVectors(tangent, binormal);
+		contact.Tangent = BackendVector(tangent);
+		contact.Binormal = BackendVector(binormal);
+		contact.Material = { 0.5f, 0.3f, 0.6f, 0.0f };
+		return contact;
+	}
+
+	struct BackendRecords
+	{
+		std::vector<PBDBackendBody> Bodies;
+		std::vector<PBDBackendContact> Contacts;
+	};
+
+	BackendRecords IndependentRecords(int count = 17)
+	{
+		BackendRecords result;
+		result.Bodies.push_back(BackendBody(Vector3::Zero(), false));
+		for (int i = 0; i < count; ++i)
+		{
+			const int pattern = i % 17;
+			const float x = pattern * 2.0f, z = (i / 17) * 2.0f;
+			PBDBackendBody body = BackendBody(Vector3(x, 0.4f, z), true);
+			body.LinearVelocity = BackendVector(Vector3(1.0f + 0.1f * pattern, -2.0f - 0.03f * pattern, 0.3f), 10000.0f);
+			body.AngularVelocity = BackendVector(Vector3(0.1f, -0.2f, 0.3f));
+			Quaternion rotation;
+			rotation.FromRotationAxis(Vector3(1, 2, 3).Unit(), 0.025f * pattern);
+			body.Rotation = { rotation.x, rotation.y, rotation.z, rotation.w };
+			result.Bodies.push_back(body);
+			result.Contacts.push_back(BackendContact(result.Bodies, 0, (uint32_t)i + 1,
+				Vector3(x + 0.11f, 0.0f, z + 0.07f), Vector3::UnitY(), 0.1f + pattern * 0.001f));
+		}
+		return result;
+	}
+
+	BackendRecords DependentRecords()
+	{
+		BackendRecords result;
+		result.Bodies.push_back(BackendBody(Vector3::Zero(), false));
+		for (int i = 0; i < 4; ++i)
+		{
+			PBDBackendBody body = BackendBody(Vector3(i * 0.6f, 0.4f + i * 0.2f, i * 0.1f), true);
+			body.LinearVelocity = BackendVector(Vector3(0.8f - i * 0.4f, -2.0f - i * 0.3f, 0.2f), 10000.0f);
+			body.AngularVelocity = BackendVector(Vector3(0.2f, 0.1f * i, -0.1f));
+			result.Bodies.push_back(body);
+		}
+		PBDBackendBody kinematic = BackendBody(Vector3(0.1f, 0.0f, 0.1f), false);
+		kinematic.Flags.y = 1;
+		kinematic.LinearVelocity = BackendVector(Vector3(0.7f, 0.0f, 0.2f), 10000.0f);
+		kinematic.AngularVelocity = BackendVector(Vector3(0.0f, 0.3f, 0.0f));
+		result.Bodies.push_back(kinematic);
+		result.Bodies.push_back(BackendBody(Vector3(0.0f, -1.0f, 0.0f), false));
+		result.Contacts.push_back(BackendContact(result.Bodies, 0, 1, Vector3(0.1f, 0, 0.1f), Vector3::UnitY(), 0.12f));
+		result.Contacts.push_back(BackendContact(result.Bodies, 1, 2, Vector3(0.4f, 0.5f, 0.1f), Vector3::UnitX(), 0.08f));
+		result.Contacts.push_back(BackendContact(result.Bodies, 0, 3, Vector3(1.3f, 0, 0.2f), Vector3::UnitY(), 0.1f));
+		result.Contacts.push_back(BackendContact(result.Bodies, 2, 3, Vector3(1.0f, 0.6f, 0.2f), Vector3(1, 1, 0).Unit(), 0.09f));
+		result.Contacts.push_back(BackendContact(result.Bodies, 3, 4, Vector3(1.5f, 0.7f, 0.2f), Vector3::UnitX(), 0.07f));
+		result.Contacts.push_back(BackendContact(result.Bodies, 5, 1, Vector3(-0.1f, 0.1f, 0.0f), Vector3::UnitY(), 0.08f));
+		result.Contacts.push_back(BackendContact(result.Bodies, 2, 0, Vector3(0.5f, -0.08f, 0.0f), -Vector3::UnitY(), 0.08f));
+		result.Contacts.push_back(BackendContact(result.Bodies, 6, 4, Vector3(1.8f, 0, 0.3f), Vector3::UnitY(), 0.11f));
+		return result;
+	}
+
+	void CheckDispatch(const PBDBackendStatistics& stats, SolverBackend requested, bool fallback, bool allStages)
+	{
+		EXPECT(stats.RequestedBackend == requested);
+		EXPECT(stats.Backend == (fallback ? SolverBackend::CPU : requested));
+		EXPECT(stats.UsedFallback == fallback);
+		EXPECT(stats.PositionDispatches > 0);
+		if (allStages)
+		{
+			EXPECT(stats.ReconstructionDispatches > 0);
+			EXPECT(stats.VelocityDispatches > 0);
+		}
+		EXPECT(stats.ContactRows > 0);
+	}
+
+	void CompareRecords(const BackendRecords& actual, const BackendRecords& expected, float tolerance)
+	{
+		EXPECT(actual.Bodies.size() == expected.Bodies.size());
+		EXPECT(actual.Contacts.size() == expected.Contacts.size());
+		for (size_t i = 0; i < std::min(actual.Bodies.size(), expected.Bodies.size()); ++i)
+		{
+			const PBDBackendBody& a = actual.Bodies[i];
+			const PBDBackendBody& e = expected.Bodies[i];
+			EXPECT((BackendVector(a.Position) - BackendVector(e.Position)).Length() < tolerance);
+			EXPECT((BackendVector(a.LinearVelocity) - BackendVector(e.LinearVelocity)).Length() < tolerance);
+			EXPECT((BackendVector(a.AngularVelocity) - BackendVector(e.AngularVelocity)).Length() < tolerance);
+			const Quaternion qa(a.Rotation.x, a.Rotation.y, a.Rotation.z, a.Rotation.w);
+			const Quaternion qe(e.Rotation.x, e.Rotation.y, e.Rotation.z, e.Rotation.w);
+			EXPECT_NEAR(std::abs(qa.Dot(qe)), 1.0f, tolerance);
+			EXPECT_NEAR(a.Position.w, e.Position.w, 1.0e-7f);
+		}
+		for (size_t i = 0; i < std::min(actual.Contacts.size(), expected.Contacts.size()); ++i)
+		{
+			const PBDBackendVector& a = actual.Contacts[i].Lambda;
+			const PBDBackendVector& e = expected.Contacts[i].Lambda;
+			EXPECT_NEAR(a.x, e.x, tolerance);
+			EXPECT_NEAR(a.y, e.y, tolerance);
+			EXPECT_NEAR(a.z, e.z, tolerance);
+			EXPECT_NEAR(a.w, e.w, tolerance);
+		}
+	}
+
+	BackendRecords ExecuteRecords(const BackendRecords& input, SolverBackend backend, float alpha, bool independent)
+	{
+		BackendRecords result = input;
+		PBDBackend dispatcher;
+		EXPECT(dispatcher.Configure(backend, false));
+		PBDBackendParameters parameters;
+		parameters.Alpha = alpha;
+		parameters.PenetrationSlop = 0.0f;
+		// A single sweep exposes ordering errors that many iterations could conceal.
+		EXPECT(dispatcher.Execute(result.Bodies, result.Contacts, parameters, PBDBackendStage::Position));
+		EXPECT(dispatcher.Execute(result.Bodies, result.Contacts, parameters, PBDBackendStage::Reconstruct));
+		EXPECT(dispatcher.Execute(result.Bodies, result.Contacts, parameters, PBDBackendStage::Velocity));
+		CheckDispatch(dispatcher.GetStatistics(), backend, false, true);
+		if (independent) EXPECT(dispatcher.GetStatistics().MaxBatchSize >= 17);
+		for (size_t i = 0; i < input.Bodies.size(); ++i)
+			if (!input.Bodies[i].Flags.x)
+				EXPECT(std::memcmp(&result.Bodies[i], &input.Bodies[i], sizeof(PBDBackendBody)) == 0);
+		return result;
+	}
+
+	void TestBackendCapacityChanges(SolverBackend backend)
+	{
+		PBDBackend dispatcher, reference;
+		EXPECT(dispatcher.Configure(backend, false));
+		EXPECT(reference.Configure(SolverBackend::CPU, false));
+		PBDBackendParameters parameters;
+		parameters.PenetrationSlop = 0.0f;
+		// Reuse both contexts across growth, multiple thread groups, and shrinkage.
+		for (int count : { 17, 263, 9 })
+		for (float alpha : { 0.0f, 0.72f })
+		{
+			BackendRecords actual = IndependentRecords(count);
+			BackendRecords expected = actual;
+			const PBDBackendBody staticPlane = actual.Bodies[0];
+			parameters.Alpha = alpha;
+			for (PBDBackendStage stage : { PBDBackendStage::Position, PBDBackendStage::Reconstruct, PBDBackendStage::Velocity })
+			{
+				EXPECT(reference.Execute(expected.Bodies, expected.Contacts, parameters, stage));
+				EXPECT(dispatcher.Execute(actual.Bodies, actual.Contacts, parameters, stage));
+				CompareRecords(actual, expected, 3.0e-4f);
+				EXPECT(std::memcmp(&actual.Bodies[0], &staticPlane, sizeof(PBDBackendBody)) == 0);
+			}
+			EXPECT(dispatcher.GetStatistics().MaxBatchSize >= (uint32_t)count);
+		}
+		CheckDispatch(dispatcher.GetStatistics(), backend, false, true);
+		EXPECT(dispatcher.GetStatistics().MaxBatchSize >= 263);
+	}
+
+	void TestBackendContactOracles(SolverBackend backend)
+	{
+		for (float alpha : { 0.0f, 1.0f })
+		{
+			PBDBackend dispatcher;
+			EXPECT(dispatcher.Configure(backend, false));
+			BackendRecords records;
+			records.Bodies = { BackendBody(Vector3::Zero(), false), BackendBody(Vector3(0, 0.4f, 0), true) };
+			records.Bodies[1].InverseInertia0 = records.Bodies[1].InverseInertia1 = records.Bodies[1].InverseInertia2 = {};
+			records.Contacts = { BackendContact(records.Bodies, 0, 1, Vector3::Zero(), Vector3::UnitY(), 0.1f) };
+			records.Contacts[0].Material = {};
+			PBDBackendParameters parameters;
+			parameters.DeltaTime = 0.1f;
+			parameters.PenetrationSlop = 0.0f;
+			parameters.Alpha = alpha;
+			for (int i = 0; i < 30; ++i)
+				EXPECT(dispatcher.Execute(records.Bodies, records.Contacts, parameters, PBDBackendStage::Position));
+			const float correction = 0.1f / (1.0f + alpha);
+			EXPECT_NEAR(records.Bodies[1].Position.y, 0.4f + correction, 2.0e-6f);
+			EXPECT_NEAR(records.Contacts[0].Lambda.x, correction, 2.0e-6f);
+			EXPECT(dispatcher.Execute(records.Bodies, records.Contacts, parameters, PBDBackendStage::Reconstruct));
+			EXPECT(dispatcher.Execute(records.Bodies, records.Contacts, parameters, PBDBackendStage::Velocity));
+			EXPECT(BackendVector(records.Bodies[1].LinearVelocity).Length() < 2.0e-5f);
+			CheckDispatch(dispatcher.GetStatistics(), backend, false, true);
+		}
+		for (float alpha : { 0.0f, 1.0f })
+		{
+			PBDBackend dispatcher;
+			EXPECT(dispatcher.Configure(backend, false));
+			BackendRecords records;
+			records.Bodies = { BackendBody(Vector3::Zero(), false), BackendBody(Vector3(0.4f, 0, 0), true), BackendBody(Vector3(1.3f, 0, 0), true) };
+			for (PBDBackendBody& body : records.Bodies) body.InverseInertia0 = body.InverseInertia1 = body.InverseInertia2 = {};
+			records.Contacts = {
+				BackendContact(records.Bodies, 0, 1, Vector3::Zero(), Vector3::UnitX(), 0.1f),
+				BackendContact(records.Bodies, 1, 2, Vector3(0.9f, 0, 0), Vector3::UnitX(), 0.1f)
+			};
+			PBDBackendParameters parameters;
+			parameters.PenetrationSlop = 0.0f;
+			parameters.Alpha = alpha;
+			EXPECT(dispatcher.Execute(records.Bodies, records.Contacts, parameters, PBDBackendStage::Position));
+			// The second row must read the first row's updated shared body pose.
+			const float first = 0.1f / (1.0f + alpha);
+			const float second = (0.1f + first) / (2.0f + alpha);
+			EXPECT_NEAR(records.Bodies[1].Position.x, 0.4f + first - second, 2.0e-6f);
+			EXPECT_NEAR(records.Bodies[2].Position.x, 1.3f + second, 2.0e-6f);
+			EXPECT_NEAR(records.Contacts[1].Lambda.x, second, 2.0e-6f);
+		}
+		for (int bounce = 0; bounce < 2; ++bounce)
+		{
+			PBDBackend dispatcher;
+			EXPECT(dispatcher.Configure(backend, false));
+			BackendRecords records;
+			records.Bodies = { BackendBody(Vector3::Zero(), false), BackendBody(Vector3(0, 0.5f, 0), true) };
+			records.Bodies[1].InverseInertia0 = records.Bodies[1].InverseInertia1 = records.Bodies[1].InverseInertia2 = {};
+			records.Bodies[1].LinearVelocity = BackendVector(Vector3(2, -2, 0), 10000.0f);
+			records.Contacts = { BackendContact(records.Bodies, 0, 1, Vector3::Zero(), Vector3::UnitY(), 0.0f) };
+			records.Contacts[0].Material = { bounce ? 2.0f : 0.0f, bounce ? 0.0f : 0.5f, bounce ? 0.0f : 0.5f, 0.0f };
+			PBDBackendParameters parameters;
+			EXPECT(dispatcher.Execute(records.Bodies, records.Contacts, parameters, PBDBackendStage::Velocity));
+			EXPECT_NEAR(records.Bodies[1].LinearVelocity.y, bounce ? 2.0f : 0.0f, 1.0e-5f);
+			EXPECT_NEAR(records.Bodies[1].LinearVelocity.x, bounce ? 2.0f : 1.0f, 1.0e-5f);
+		}
+	}
+
+	struct SolverSnapshot
+	{
+		Vector3 Position, Velocity, AngularVelocity;
+		Quaternion Rotation;
+		float Lambda, NormalImpulse;
+		PBDBackendStatistics Statistics;
+	};
+
+	SolverSnapshot RunSolverFixture(SolverBackend backend, bool xpbd, bool kinematicContact, bool offsetCOM = true)
+	{
+		PhysicsWorld world{ PhysicsWorldParam() };
+		RigidBodyParam dynamic;
+		dynamic.rigidType = RigidType::Dynamic;
+		dynamic.disableGravity = true;
+		dynamic.maxContactImpulse = 10000.0f;
+		RigidBodyDynamic* body = world.CreateRigidBody(GeometryFactory::CreateOBB(Vector3(1, 0.4f, -0.3f), Vector3(0.5f)), dynamic)->CastDynamic();
+		body->CM = offsetCOM ? Vector3(0.3f, -0.1f, 0.2f) : Vector3::Zero();
+		body->Q.FromRotationAxis(Vector3(1, 2, 3).Unit(), 0.4f);
+		body->InvMass = 0.7f;
+		body->InvInertia = Matrix3(1.3f, 1.9f, 2.4f);
+		body->V = Vector3(1, -3, 0.3f);
+		body->W = Vector3(0.1f, -0.2f, 0.4f);
+		body->SetRestitution(0.6f);
+		RigidBodyParam fixed;
+		RigidBody* ground = world.CreateRigidBody(GeometryFactory::CreatePlane(Vector3::Zero(), Vector3::UnitY()), fixed);
+		ground->SetRestitution(0.0f);
+		RigidBodyKinematics kinematic;
+		std::unique_ptr<Geometry> kinematicShape(GeometryFactory::CreatePlane(Vector3::Zero(), Vector3::UnitY()));
+		kinematicShape->SetParent(&kinematic);
+		kinematic.SetPosition(Vector3(0.2f, 0, -0.1f));
+		kinematic.V = Vector3(0.8f, 0.1f, -0.3f);
+		kinematic.W = Vector3(0.1f, 0, -0.1f);
+		kinematic.SetRestitution(0.0f);
+		const Vector3 kinematicPosition = kinematic.X, kinematicVelocity = kinematic.V, kinematicAngular = kinematic.W;
+		XPBDSolverSettings settings;
+		settings.Backend = backend;
+		settings.AllowBackendFallback = false;
+		settings.ContactCompliance = xpbd ? 0.0002f : 0.0f;
+		std::unique_ptr<PBDSolver> solver(xpbd ? static_cast<PBDSolver*>(new XPBDSolver(settings)) : new PBDSolver(settings));
+		const float dt = 1.0f / 60.0f;
+		solver->BeginStep({ body }, dt);
+		solver->PredictPoses(dt);
+		std::vector<Geometry*> geometries = { kinematicContact ? kinematicShape.get() : ground->Geometries()[0], body->Geometries()[0] };
+		ContactManifold manifold;
+		manifold.indexA = 0;
+		manifold.indexB = 1;
+		manifold.NumContactPointCount = 2;
+		for (int i = 0; i < 2; ++i)
+		{
+			Contact& point = manifold.ContactPoints[i];
+			point.PositionWorldA = Vector3(0.75f + i * 0.5f, 0, -0.2f);
+			point.PositionWorldB = point.PositionWorldA - Vector3(0, 0.08f, 0);
+			point.Normal = Vector3::UnitY();
+			point.PenetrationDepth = 0.08f;
+		}
+		solver->AddContacts(geometries, { &manifold });
+		EXPECT(solver->GetContactCount() == 2);
+		for (int i = 0; i < 8; ++i) solver->SolvePositions(dt);
+		solver->ReconstructVelocities(dt);
+		for (int i = 0; i < 8; ++i) solver->SolveVelocities(dt);
+		solver->EndStep(dt);
+		EXPECT_SAME(kinematic.X, kinematicPosition);
+		EXPECT_SAME(kinematic.V, kinematicVelocity);
+		EXPECT_SAME(kinematic.W, kinematicAngular);
+		SolverSnapshot result;
+		result.Position = body->X;
+		result.Rotation = body->Q;
+		result.Velocity = body->V;
+		result.AngularVelocity = body->W;
+		result.Lambda = solver->GetContactPositionLambda(0);
+		result.NormalImpulse = 0.0f;
+		for (const ContactManifold* output : solver->GetContactManifolds())
+			for (int i = 0; i < output->NumContactPointCount; ++i) result.NormalImpulse += output->ContactPoints[i].totalImpulseNormal;
+		result.Statistics = solver->GetBackendStatistics();
+		CheckDispatch(result.Statistics, backend, false, true);
+		EXPECT(solver->GetBackend() == backend);
+		EXPECT(result.Lambda > 0.0f);
+		EXPECT(result.NormalImpulse > 0.0f);
+		EXPECT(result.AngularVelocity.Length() > 0.01f);
+		return result;
+	}
+
+	void CompareSnapshots(const SolverSnapshot& actual, const SolverSnapshot& expected)
+	{
+		EXPECT((actual.Position - expected.Position).Length() < 2.0e-4f);
+		EXPECT((actual.Velocity - expected.Velocity).Length() < 5.0e-4f);
+		EXPECT((actual.AngularVelocity - expected.AngularVelocity).Length() < 5.0e-4f);
+		EXPECT_NEAR(std::abs(actual.Rotation.Dot(expected.Rotation)), 1.0f, 1.0e-5f);
+		EXPECT_NEAR(actual.Lambda, expected.Lambda, 2.0e-5f);
+		EXPECT_NEAR(actual.NormalImpulse, expected.NormalImpulse, 5.0e-4f);
+	}
+
+	void TestBackendStack(SolverBackend backend, const char* name)
+	{
+		const auto started = std::chrono::steady_clock::now();
+		PhysicsWorldParam settings;
+		settings.resolutionSolver = ResolutionPhaseSolver::PBD;
+		settings.solverBackend = backend;
+		settings.allowBackendFallback = false;
+		settings.gravityAcc = Vector3(0, -10, 0);
+		settings.pbdSettings.PositionIterations = 20;
+		settings.pbdSettings.VelocityIterations = 8;
+		PhysicsWorld world(settings);
+		RigidBodyParam fixed;
+		fixed.rigidType = RigidType::Static;
+		world.CreateRigidBody(GeometryFactory::CreatePlane(Vector3::Zero(), Vector3::UnitY()), fixed)
+			->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Concrete);
+		std::vector<RigidBodyDynamic*> boxes;
+		for (int i = 0; i < 3; ++i)
+		{
+			RigidBodyParam dynamic;
+			dynamic.rigidType = RigidType::Dynamic;
+			dynamic.linearDamping = 1.0f;
+			dynamic.angularDamping = 1.0f;
+			dynamic.sleepThreshold = 0.0f;
+			dynamic.maxContactImpulse = 100.0f;
+			RigidBodyDynamic* body = world.CreateRigidBody(
+				GeometryFactory::CreateOBB(Vector3(0, 0.5f + i, 0), Vector3(0.5f)), dynamic)->CastDynamic();
+			body->InvMass = 1.0f;
+			body->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Concrete);
+			boxes.push_back(body);
+		}
+		float maxSpeed = 0.0f, maxAngular = 0.0f, maxDrift = 0.0f;
+		for (int frame = 0; frame < 240; ++frame)
+		{
+			world.Simulate();
+			for (const RigidBodyDynamic* body : boxes)
+			{
+				EXPECT(std::isfinite(body->X.x) && std::isfinite(body->X.y) && std::isfinite(body->X.z));
+				EXPECT(std::isfinite(body->V.SquareLength()) && std::isfinite(body->W.SquareLength()));
+				EXPECT_NEAR(body->Q.SquareLength(), 1.0f, 1.0e-3f);
+				maxSpeed = std::max(maxSpeed, body->V.Length());
+				maxAngular = std::max(maxAngular, body->W.Length());
+				maxDrift = std::max(maxDrift, std::sqrt(body->X.x * body->X.x + body->X.z * body->X.z));
+			}
+		}
+		for (size_t i = 0; i < boxes.size(); ++i)
+		{
+			const RigidBodyDynamic* body = boxes[i];
+			printf("  %s stack[%zu] X=(%.4f,%.4f,%.4f) speed=%.4f angular=%.4f up=%.4f\n",
+				name, i, body->X.x, body->X.y, body->X.z, body->V.Length(), body->W.Length(), (body->Q * Vector3::UnitY()).y);
+			// Use the original PBD stack's physical tolerances, not trajectory equality.
+			EXPECT_NEAR(body->X.y, 0.5f + i, 0.12f);
+			EXPECT(std::abs(body->X.x) < 0.15f && std::abs(body->X.z) < 0.15f);
+			EXPECT((body->Q * Vector3::UnitY()).y > 0.95f);
+			EXPECT(body->V.Length() < 0.3f);
+		}
+		EXPECT(world.GetSolverBackend() == backend);
+		CheckDispatch(world.GetPositionSolver()->GetBackendStatistics(), backend, false, true);
+		const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
+		printf("  %s stack 240 frames: max speed=%.4f angular=%.4f lateral drift=%.4f, %.3f s\n",
+			name, maxSpeed, maxAngular, maxDrift, seconds);
+	}
+
+	void TestBackendFailures()
+	{
+		for (SolverBackend backend : Backends)
+		{
+			PBDBackend dispatcher;
+			BackendRecords records = IndependentRecords();
+			const BackendRecords original = records;
+			if (!IsPBDBackendAvailable(backend))
+			{
+				EXPECT_FALSE(dispatcher.Configure(backend, false));
+				EXPECT_FALSE(dispatcher.Execute(records.Bodies, records.Contacts, PBDBackendParameters(), PBDBackendStage::Position));
+				EXPECT(std::memcmp(records.Bodies.data(), original.Bodies.data(), records.Bodies.size() * sizeof(PBDBackendBody)) == 0);
+				EXPECT(std::memcmp(records.Contacts.data(), original.Contacts.data(), records.Contacts.size() * sizeof(PBDBackendContact)) == 0);
+				PBDSolverSettings settings;
+				settings.Backend = backend;
+				settings.AllowBackendFallback = false;
+				bool threw = false;
+				try { PBDSolver solver(settings); }
+				catch (const std::runtime_error&) { threw = true; }
+				EXPECT(threw);
+				PBDSolver configured;
+				threw = false;
+				try { configured.SetSettings(settings); }
+				catch (const std::runtime_error&) { threw = true; }
+				EXPECT(threw);
+				EXPECT(dispatcher.Configure(backend, true));
+				EXPECT(dispatcher.Execute(records.Bodies, records.Contacts, PBDBackendParameters(), PBDBackendStage::Position));
+				CheckDispatch(dispatcher.GetStatistics(), backend, true, false);
+			}
+			else
+			{
+				EXPECT(dispatcher.Configure(backend, false));
+				records.Contacts[0].Bodies.y = (uint32_t)records.Bodies.size();
+				const BackendRecords invalid = records;
+				EXPECT_FALSE(dispatcher.Execute(records.Bodies, records.Contacts, PBDBackendParameters(), PBDBackendStage::Position));
+				EXPECT(std::memcmp(records.Bodies.data(), invalid.Bodies.data(), records.Bodies.size() * sizeof(PBDBackendBody)) == 0);
+				EXPECT(std::memcmp(records.Contacts.data(), invalid.Contacts.data(), records.Contacts.size() * sizeof(PBDBackendContact)) == 0);
+				EXPECT(dispatcher.GetStatistics().PositionDispatches == 0);
+				records = original;
+				PBDBackendParameters invalidTime;
+				invalidTime.DeltaTime = 0.0f;
+				EXPECT_FALSE(dispatcher.Execute(records.Bodies, records.Contacts, invalidTime, PBDBackendStage::Position));
+				EXPECT(std::memcmp(records.Bodies.data(), original.Bodies.data(), records.Bodies.size() * sizeof(PBDBackendBody)) == 0);
+				EXPECT(std::memcmp(records.Contacts.data(), original.Contacts.data(), records.Contacts.size() * sizeof(PBDBackendContact)) == 0);
+			}
+		}
+	}
+
+
+
+
+}
+
+void TestPBDBackends()
+{
+	printf("Running TestPBDBackends\n");
+	EXPECT(IsPBDBackendAvailable(SolverBackend::CPU));
+	const char* requireGPU = std::getenv("RIEMANN_REQUIRE_PBD_GPU");
+	if (requireGPU && std::strcmp(requireGPU, "1") == 0)
+	{
+		EXPECT(IsPBDBackendAvailable(SolverBackend::ComputeShader));
+		EXPECT(IsPBDBackendAvailable(SolverBackend::CUDA));
+	}
+	const BackendRecords independent = IndependentRecords();
+	const BackendRecords dependent = DependentRecords();
+	for (size_t index = 0; index < 5; ++index)
+	{
+		const SolverBackend backend = Backends[index];
+		printf("  PBD backend %s: %s\n", BackendNames[index], IsPBDBackendAvailable(backend) ? "available" : "unavailable (strict/fallback tested)");
+		if (!IsPBDBackendAvailable(backend)) continue;
+		TestBackendContactOracles(backend);
+		TestBackendCapacityChanges(backend);
+		TestBackendStack(backend, BackendNames[index]);
+		for (float alpha : { 0.0f, 0.72f })
+		{
+			CompareRecords(ExecuteRecords(independent, backend, alpha, true), ExecuteRecords(independent, SolverBackend::CPU, alpha, true), 3.0e-4f);
+			CompareRecords(ExecuteRecords(dependent, backend, alpha, false), ExecuteRecords(dependent, SolverBackend::CPU, alpha, false), 3.0e-4f);
+		}
+		for (bool xpbd : { false, true })
+		for (bool kinematic : { false, true })
+			CompareSnapshots(RunSolverFixture(backend, xpbd, kinematic), RunSolverFixture(SolverBackend::CPU, xpbd, kinematic));
+	}
+	// Moving the body-local origin cannot change the same world-space contact response.
+	for (bool xpbd : { false, true })
+	for (bool kinematic : { false, true })
+		CompareSnapshots(RunSolverFixture(SolverBackend::CPU, xpbd, kinematic), RunSolverFixture(SolverBackend::CPU, xpbd, kinematic, false));
+	TestBackendFailures();
+
+
+}
+}
+
+void TestPBDBackends() { Test_PBDBackends_Cases::TestPBDBackends(); }
+
+namespace Test_XPBD_Cases
+{
+using namespace Riemann;
+
+namespace
+{
+	RigidBody* XPBDBody(PhysicsWorld& world, const Vector3& position, RigidType type, bool collision = false)
+	{
+		Geometry* geometry = GeometryFactory::CreateSphere(position, 0.5f);
+		geometry->SetSimulationEnabled(collision);
+		RigidBodyParam settings;
+		settings.rigidType = type;
+		settings.linearDamping = settings.angularDamping = 1.0f;
+		settings.maxContactImpulse = 100000.0f;
+		RigidBody* body = world.CreateRigidBody(geometry, settings);
+		body->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
+		body->SetRestitution(0.0f);
+		if (type == RigidType::Dynamic)
+		{
+			body->InvMass = 1.0f;
+			body->InvInertia = Matrix3::Identity();
+		}
+		return body;
+	}
+
+	float ZAngle(const Quaternion& rotation)
+	{
+		const Vector3 axis = rotation * Vector3::UnitX();
+		return std::atan2(axis.y, axis.x);
+	}
+
+	struct XPBDContactFixture
+	{
+		PhysicsWorld World{ PhysicsWorldParam() };
+		RigidBody* Ground;
+		RigidBodyDynamic* Body;
+		std::vector<Geometry*> Geometries;
+		ContactManifold Manifold;
+
+		XPBDContactFixture(float depth)
+		{
+			RigidBodyParam fixed;
+			Ground = World.CreateRigidBody(GeometryFactory::CreatePlane(Vector3::Zero(), Vector3::UnitY()), fixed);
+			Ground->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
+			Ground->SetRestitution(0.0f);
+			Body = XPBDBody(World, Vector3(0, 0.5f - depth, 0), RigidType::Dynamic, true)->CastDynamic();
+			Body->InvInertia = Matrix3::Zero();
+			Geometries = { Ground->Geometries()[0], Body->Geometries()[0] };
+			Manifold.indexA = 0;
+			Manifold.indexB = 1;
+			Manifold.NumContactPointCount = 1;
+			Contact& point = Manifold.ContactPoints[0];
+			point.PositionWorldA = Vector3::Zero();
+			point.PositionWorldB = Vector3(0, -depth, 0);
+			point.Normal = Vector3::UnitY();
+			point.PenetrationDepth = depth;
+		}
+
+		void Begin(XPBDSolver& solver, float dt)
+		{
+			solver.BeginStep({ Body }, dt);
+			solver.PredictPoses(dt);
+			solver.AddContacts(Geometries, { &Manifold });
+		}
+	};
+
+	void TestXPBDContactCompliance()
+	{
+		for (float dt : { 0.1f, 0.05f })
+		for (float compliance : { 0.0f, 0.01f })
+		{
+			XPBDContactFixture fixture(0.1f);
+			XPBDSolverSettings settings;
+			settings.PenetrationSlop = 0.0f;
+			settings.ContactCompliance = compliance;
+			XPBDSolver solver(settings);
+			fixture.Begin(solver, dt);
+			EXPECT(solver.GetContactCount() == 1);
+			const float correction = 0.1f / (1.0f + compliance / (dt * dt));
+			solver.SolvePositions(dt);
+			EXPECT_NEAR(fixture.Body->X.y, 0.4f + correction, 1e-6f);
+			EXPECT_NEAR(solver.GetContactPositionLambda(0), correction, 1e-6f);
+			for (int iteration = 1; iteration < 30; ++iteration) solver.SolvePositions(dt);
+			// Iteration count changes convergence, not the material stiffness.
+			EXPECT_NEAR(fixture.Body->X.y, 0.4f + correction, 1e-6f);
+			EXPECT_NEAR(solver.GetContactPositionLambda(0), correction, 1e-6f);
+			solver.ReconstructVelocities(dt);
+			for (int iteration = 0; iteration < 8; ++iteration) solver.SolveVelocities(dt);
+			solver.EndStep(dt);
+			EXPECT(fixture.Body->V.Length() < 1e-5f);
+			EXPECT(fixture.Body->W.Length() < 1e-5f);
+			solver.ResetState();
+			EXPECT(solver.GetContactCount() == 0);
+			EXPECT(solver.GetContactManifolds().empty());
+		}
+
+		XPBDContactFixture fixture(0.1f);
+		XPBDSolverSettings settings;
+		settings.PenetrationSlop = 0.0f;
+		settings.ContactCompliance = 0.01f;
+		XPBDSolver solver(settings);
+		fixture.Begin(solver, 0.1f);
+		solver.SolvePositions(0.1f);
+		EXPECT(solver.GetContactPositionLambda(0) > 0.0f);
+		fixture.Body->X.y += 0.5f;
+		solver.SolvePositions(0.1f);
+		EXPECT_NEAR(solver.GetContactPositionLambda(0), 0.0f, 1e-6f);
+		EXPECT(fixture.Body->X.y > 0.5f);
+		const Vector3 separated = fixture.Body->X;
+		for (int iteration = 0; iteration < 10; ++iteration) solver.SolvePositions(0.1f);
+		EXPECT_SAME(fixture.Body->X, separated);
+		solver.BeginStep({ fixture.Body }, 0.1f);
+		EXPECT(solver.GetContactCount() == 0);
+		EXPECT_NEAR(solver.GetContactPositionLambda(0), 0.0f, 1e-6f);
+	}
+
+	void TestXPBDPointCompliance()
+	{
+		for (float dt : { 0.1f, 0.05f })
+		{
+			PhysicsWorld world{ PhysicsWorldParam() };
+			RigidBody* a = XPBDBody(world, Vector3::Zero(), RigidType::Static);
+			RigidBody* b = XPBDBody(world, Vector3::Zero(), RigidType::Dynamic);
+			PointConstraint point(a, b, Vector3::Zero());
+			point.SetCompliance(0.01f, 0.0f);
+			b->X.x = 0.2f;
+			point.BeginStep(dt, true);
+			point.SolvePosition(dt);
+			const float alpha = 0.01f / (dt * dt);
+			const float residual = 0.2f * alpha / (1.0f + alpha);
+			EXPECT_NEAR(b->X.x, residual, 1e-6f);
+			for (int iteration = 1; iteration < 30; ++iteration) point.SolvePosition(dt);
+			EXPECT_NEAR(b->X.x, residual, 1e-6f);
+			b->V = Vector3(1, 2, 3);
+			point.SolveVelocity(dt);
+			EXPECT_SAME(b->V, Vector3(1, 2, 3));
+			point.BeginStep(dt, true);
+			point.SolvePosition(dt);
+			EXPECT_NEAR(b->X.x, residual * alpha / (1.0f + alpha), 1e-6f);
+		}
+
+		PhysicsWorld world{ PhysicsWorldParam() };
+		RigidBody* a = XPBDBody(world, Vector3::Zero(), RigidType::Static);
+		RigidBody* b = XPBDBody(world, Vector3::Zero(), RigidType::Dynamic);
+		PointConstraint point(a, b, Vector3::Zero());
+		point.SetCompliance(0.01f, 0.0f);
+		point.BeginStep(0.1f, true);
+		b->X.x = 0.2f;
+		point.SolvePosition(0.1f);
+		b->X.x = 0.0f;
+		point.SolvePosition(0.1f);
+		// Zero geometric error still has to release the existing elastic multiplier.
+		EXPECT_NEAR(b->X.x, 0.05f, 1e-6f);
+		point.BeginStep(0.1f, false);
+		b->X.x = 0.2f;
+		point.SolvePosition(0.1f);
+		EXPECT_NEAR(b->X.x, 0.0f, 1e-6f);
+		point.SetCompliance(0.0f, 0.0f);
+		point.BeginStep(0.1f, true);
+		b->X.x = 0.2f;
+		point.SolvePosition(0.1f);
+		EXPECT_NEAR(b->X.x, 0.0f, 1e-6f);
+	}
+
+	void TestXPBDDistanceLimits()
+	{
+		PhysicsWorld world{ PhysicsWorldParam() };
+		RigidBody* a = XPBDBody(world, Vector3::Zero(), RigidType::Static);
+		RigidBody* b = XPBDBody(world, Vector3(2, 0, 0), RigidType::Dynamic);
+		DistanceConstraint joint(a, b, a->X, b->X, 1.0f, 2.0f);
+		joint.SetCompliance(0.01f, 0.0f);
+		joint.BeginStep(0.1f, true);
+		b->X.x = 2.4f;
+		for (int iteration = 0; iteration < 20; ++iteration) joint.SolvePosition(0.1f);
+		EXPECT_NEAR(joint.GetCurrentDistance(), 2.2f, 1e-5f);
+		b->X.x = 1.5f;
+		joint.SolvePosition(0.1f);
+		EXPECT(joint.GetCurrentDistance() > 1.0f && joint.GetCurrentDistance() < 2.0f);
+		b->X.x = 0.6f;
+		for (int iteration = 0; iteration < 20; ++iteration) joint.SolvePosition(0.1f);
+		EXPECT_NEAR(joint.GetCurrentDistance(), 0.8f, 1e-5f);
+		joint.BeginStep(0.1f, true);
+		joint.SolvePosition(0.1f);
+		EXPECT_NEAR(joint.GetCurrentDistance(), 0.9f, 1e-5f);
+	}
+
+	void TestXPBDAngularAndMixedJoints()
+	{
+		const float dt = 0.1f;
+		for (int type = 0; type < 5; ++type)
+		{
+			PhysicsWorld world{ PhysicsWorldParam() };
+			RigidBody* a = XPBDBody(world, Vector3::Zero(), RigidType::Static);
+			RigidBody* b = XPBDBody(world, Vector3::Zero(), RigidType::Dynamic);
+			std::unique_ptr<PositionConstraint> joint;
+			if (type == 0) joint.reset(new FixedConstraint(a, b));
+			if (type == 1) joint.reset(new HingeConstraint(a, b, Vector3::Zero(), Vector3::UnitZ(), 0.0f, 0.0f));
+			if (type == 2) joint.reset(new SliderConstraint(a, b, Vector3::Zero(), Vector3::UnitX(), -1.0f, 1.0f));
+			if (type == 3) joint.reset(new SixDOFConstraint(a, b, Vector3::Zero(), SixDOFConstraintSettings()));
+			if (type == 4) joint.reset(new ConeConstraint(a, b, Vector3::Zero(), Vector3::UnitY(), Vector3::UnitY(), 0.0f));
+			joint->SetCompliance(0.0f, 0.01f);
+			joint->BeginStep(dt, true);
+			b->X.y = 0.2f;
+			b->Q.FromRotationAxis(Vector3::UnitZ(), 0.2f);
+			for (int iteration = 0; iteration < 30; ++iteration) joint->SolvePosition(dt);
+			EXPECT_NEAR(b->X.y, 0.0f, 1e-5f);
+			EXPECT_NEAR(ZAngle(b->Q), 0.1f, 2e-4f);
+			joint->SetCompliance(0.0f, 0.0f);
+			joint->BeginStep(dt, true);
+			for (int iteration = 0; iteration < 30; ++iteration) joint->SolvePosition(dt);
+			EXPECT(std::abs(ZAngle(b->Q)) < 2e-4f);
+		}
+
+		for (int type = 0; type < 2; ++type)
+		{
+			PhysicsWorld world{ PhysicsWorldParam() };
+			RigidBody* a = XPBDBody(world, Vector3::Zero(), RigidType::Static);
+			RigidBody* b = XPBDBody(world, Vector3::Zero(), RigidType::Dynamic);
+			std::unique_ptr<PositionConstraint> joint(type == 0
+				? static_cast<PositionConstraint*>(new SliderConstraint(a, b, Vector3::Zero(), Vector3::UnitX(), -1.0f, 1.0f))
+				: static_cast<PositionConstraint*>(new SixDOFConstraint(a, b, Vector3::Zero(), SixDOFConstraintSettings())));
+			joint->SetCompliance(0.01f, 0.0f);
+			joint->BeginStep(dt, true);
+			b->X.y = 0.2f;
+			b->Q.FromRotationAxis(Vector3::UnitZ(), 0.2f);
+			for (int iteration = 0; iteration < 30; ++iteration) joint->SolvePosition(dt);
+			EXPECT_NEAR(b->X.y, 0.1f, 1e-5f);
+			EXPECT(std::abs(ZAngle(b->Q)) < 2e-4f);
+			b->V = Vector3::UnitY();
+			b->W = Vector3::UnitZ();
+			joint->SolveVelocity(dt);
+			EXPECT_NEAR(b->V.y, 1.0f, 1e-5f);
+			EXPECT(b->W.Length() < 1e-5f);
+		}
+	}
+
+	PhysicsWorldParam XPBDWorldSettings(float contactCompliance, int iterations = 20)
+	{
+		PhysicsWorldParam settings;
+		settings.resolutionSolver = ResolutionPhaseSolver::XPBD;
+		settings.gravityAcc = Vector3(0, -10, 0);
+		settings.xpbdSettings.ContactCompliance = contactCompliance;
+		settings.xpbdSettings.PositionIterations = iterations;
+		settings.xpbdSettings.VelocityIterations = 8;
+		settings.xpbdSettings.PenetrationSlop = 0.001f;
+		return settings;
+	}
+
+	void TestXPBDWorldContactEquilibrium()
+	{
+		for (float inverseMass : { 1.0f, 0.5f })
+		for (int iterations : { 1, 20 })
+		for (int frequency : { 60, 120 })
+		{
+			PhysicsWorld world(XPBDWorldSettings(0.001f, iterations));
+			EXPECT(world.GetResolutionSolver() == ResolutionPhaseSolver::XPBD);
+			EXPECT(world.GetPositionSolver() != nullptr);
+			RigidBodyParam fixed;
+			RigidBody* ground = world.CreateRigidBody(GeometryFactory::CreatePlane(Vector3::Zero(), Vector3::UnitY()), fixed);
+			ground->SetDefaultPhysicsMaterial(DefaultPhysicsMaterial::Ice);
+			ground->SetRestitution(0.0f);
+			RigidBodyDynamic* body = XPBDBody(world, Vector3(0, 0.5f, 0), RigidType::Dynamic, true)->CastDynamic();
+			body->InvMass = inverseMass;
+			body->InvInertia = Matrix3::Zero();
+			for (int frame = 0; frame < 4 * frequency; ++frame) world.Simulate(1.0f / frequency);
+			const float expectedHeight = 0.5f - 0.001f - 0.001f * 10.0f / inverseMass;
+			printf("  XPBD contact equilibrium: mass=%.1f iterations=%d hz=%d y=%.6f expected=%.6f\n",
+				1.0f / inverseMass, iterations, frequency, body->X.y, expectedHeight);
+			EXPECT_NEAR(body->X.y, expectedHeight, 0.001f);
+			EXPECT(std::abs(body->V.y) < 1e-4f);
+			EXPECT_FALSE(body->Sleeping);
+			EXPECT_SAME(ground->X, Vector3::Zero());
+		}
+	}
+
+	void TestXPBDWorldJointEquilibrium()
+	{
+		for (int type = 0; type < 2; ++type)
+		for (float inverseMass : { 1.0f, 0.5f })
+		for (int frequency : { 60, 120 })
+		{
+			PhysicsWorld world(XPBDWorldSettings(0.0f));
+			RigidBody* anchor = XPBDBody(world, Vector3(0, 3, 0), RigidType::Static);
+			const float restDistance = type == 0 ? 0.0f : 1.0f;
+			RigidBodyDynamic* body = XPBDBody(world, Vector3(0, 3.0f - restDistance, 0), RigidType::Dynamic)->CastDynamic();
+			body->InvMass = inverseMass;
+			body->InvInertia = Matrix3::Zero();
+			PositionConstraint* joint = type == 0
+				? static_cast<PositionConstraint*>(world.CreatePointConstraint(anchor, body, anchor->X))
+				: static_cast<PositionConstraint*>(world.CreateDistanceConstraint(anchor, body, anchor->X, body->X, 1.0f, 1.0f));
+			joint->SetCompliance(0.002f, 0.0f);
+			for (int frame = 0; frame < 8 * frequency; ++frame) world.Simulate(1.0f / frequency);
+			const float extension = 0.002f * 10.0f / inverseMass;
+			printf("  XPBD joint equilibrium: type=%d mass=%.1f hz=%d extension=%.6f expected=%.6f\n",
+				type, 1.0f / inverseMass, frequency, 3.0f - restDistance - body->X.y, extension);
+			EXPECT_NEAR(body->X.y, 3.0f - restDistance - extension, 0.002f);
+			EXPECT(body->V.Length() < 0.01f);
+			EXPECT_FALSE(body->Sleeping);
+			EXPECT_SAME(anchor->X, Vector3(0, 3, 0));
+		}
+	}
+
+	void TestXPBDWorldStepInterval()
+	{
+		PhysicsWorldParam settings = XPBDWorldSettings(0.0f);
+		settings.gravityAcc = Vector3::Zero();
+		PhysicsWorld world(settings);
+		RigidBody* body = XPBDBody(world, Vector3::Zero(), RigidType::Dynamic);
+		body->V = Vector3::UnitX();
+		world.Simulate(0.0f);
+		world.Simulate(-0.1f);
+		world.Simulate(std::numeric_limits<float>::quiet_NaN());
+		EXPECT_SAME(body->X, Vector3::Zero());
+		world.Simulate(0.02f);
+		world.Simulate();
+		EXPECT_NEAR(body->X.x, 0.02f + 1.0f / 60.0f, 1e-6f);
+		EXPECT_SAME(body->V, Vector3::UnitX());
+	}
+}
+
+void TestXPBDRigidSolver()
+{
+	printf("Running TestXPBDRigidSolver\n");
+	TestXPBDContactCompliance();
+	TestXPBDPointCompliance();
+	TestXPBDDistanceLimits();
+	TestXPBDAngularAndMixedJoints();
+	TestXPBDWorldContactEquilibrium();
+	TestXPBDWorldJointEquilibrium();
+	TestXPBDWorldStepInterval();
+}
+}
+
+void TestXPBDRigidSolver() { Test_XPBD_Cases::TestXPBDRigidSolver(); }

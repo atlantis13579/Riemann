@@ -1,7 +1,8 @@
 #include "../Src/Modules/Robotics/ArticulatedRobotController.h"
 #include "Viewer.h"
-#ifdef RIEMANN_SPIDER_TRAINING
-#include "../Src/Modules/Robotics/SpiderTrainingController.h"
+#include "../Src/Compute/BackendAvailability.h"
+#ifdef RIEMANN_ROBOTICS_TRAINING
+#include "../Src/Modules/Robotics/RoboticsTrainingController.h"
 #endif
 
 #if defined(_WIN32) && !defined(NOMINMAX)
@@ -77,7 +78,7 @@ namespace Riemann
 			ResolutionPhaseSolver::PBD, ResolutionPhaseSolver::XPBD
 		};
 		const SolverBackend SolverPanelBackends[] = {
-			SolverBackend::CPU, SolverBackend::SIMD, SolverBackend::ComputeShader, SolverBackend::CUDA
+			SolverBackend::CPU, SolverBackend::SIMD, SolverBackend::ComputeShader, SolverBackend::CUDA, SolverBackend::Metal
 		};
 
 		int GetSolverPanelIndex(ResolutionPhaseSolver Solver)
@@ -89,7 +90,7 @@ namespace Riemann
 
 		int GetBackendPanelIndex(SolverBackend Backend)
 		{
-			for (int Index = 0; Index < 4; ++Index)
+			for (int Index = 0; Index < 5; ++Index)
 				if (SolverPanelBackends[Index] == Backend) return Index;
 			return 0;
 		}
@@ -617,6 +618,7 @@ namespace Riemann
 		{
 			if (Name == "simd") return FluidBackend::SIMD;
 			if (Name == "cuda") return FluidBackend::CUDA;
+			if (Name == "metal") return FluidBackend::Metal;
 			if (Name == "compute" || Name == "compute_shader")
 				return FluidBackend::ComputeShader;
 			return FluidBackend::CPU;
@@ -641,6 +643,8 @@ namespace Riemann
 			};
 			if (AerodynamicsSimulation* simulation = attempt(requested.Backend, false)) return simulation;
 			if (!requested.AllowBackendFallback) return nullptr;
+			if (requested.Backend != FluidBackend::Metal)
+				if (AerodynamicsSimulation* simulation = attempt(FluidBackend::Metal, false)) return simulation;
 			if (requested.Backend != FluidBackend::ComputeShader)
 				if (AerodynamicsSimulation* simulation = attempt(FluidBackend::ComputeShader, false)) return simulation;
 			if (requested.Backend != FluidBackend::CUDA)
@@ -741,18 +745,14 @@ namespace Riemann
 		, m_PhysicsFrameCount(0)
 		, m_PhysicsFps(0.0)
 	{
-#ifdef RIEMANN_SPIDER_TRAINING
-		m_SpiderTraining = std::make_unique<SpiderTrainingController>();
+#ifdef RIEMANN_ROBOTICS_TRAINING
+		m_RoboticsTraining = std::make_unique<RoboticsTrainingController>();
 #endif
 		for (bool& key : m_MovementKeys)
 		{
 			key = false;
 		}
-		// Probe devices on the simulation thread once, never from the render callback.
-		for (int solver = 0; solver < 4; ++solver)
-			for (int backend = 0; backend < 4; ++backend)
-				m_ImguiSolverPanel.Available[solver][backend] = PhysicsWorld::IsSolverBackendAvailable(
-					SolverPanelAlgorithms[solver], SolverPanelBackends[backend]);
+		m_BackendCapabilities = GetBackendCapabilities();
 
 		RefreshSceneList();
 		RefreshObjList();
@@ -769,7 +769,7 @@ namespace Riemann
 		{
 			LoadScene(m_SceneFiles.empty() ? ResolveSceneFile("01_stack_boxes.json") : m_SceneFiles.front());
 		}
-#ifdef RIEMANN_SPIDER_TRAINING
+#ifdef RIEMANN_ROBOTICS_TRAINING
 		LoadElmanExecutablePath();
 #endif
 
@@ -801,8 +801,8 @@ namespace Riemann
 
 	WorldViewer::~WorldViewer()
 	{
-#ifdef RIEMANN_SPIDER_TRAINING
-		if (m_SpiderTraining) m_SpiderTraining->stop();
+#ifdef RIEMANN_ROBOTICS_TRAINING
+		if (m_RoboticsTraining) m_RoboticsTraining->stop();
 #endif
 		DeactivateGasDemo();
 		DeactivateFluidDemo();
@@ -1037,11 +1037,11 @@ namespace Riemann
 
 	bool WorldViewer::LoadScene(const std::string& sceneFile, const std::string& configurationId)
 	{
-#ifdef RIEMANN_SPIDER_TRAINING
-		if (m_SpiderTrainingMode && m_SpiderTraining)
+#ifdef RIEMANN_ROBOTICS_TRAINING
+		if (m_RoboticsTrainingMode && m_RoboticsTraining)
 		{
-			m_SpiderTraining->stop();
-			m_SpiderTrainingMode = false;
+			m_RoboticsTraining->stop();
+			m_RoboticsTrainingMode = false;
 		}
 #endif
 		const std::string resolved = ResolveSceneFile(sceneFile.c_str());
@@ -1049,7 +1049,7 @@ namespace Riemann
 		{
 			return false;
 		}
-#ifdef RIEMANN_SPIDER_TRAINING
+#ifdef RIEMANN_ROBOTICS_TRAINING
 		const bool newScene = FileNameOf(resolved) != m_CurrentSceneName || DirectoryOf(resolved) != m_SceneDirectory;
 #endif
 		DeactivateGasDemo();
@@ -1077,8 +1077,8 @@ namespace Riemann
 
 		m_SceneDirectory = DirectoryOf(resolved);
 		m_CurrentSceneName = FileNameOf(resolved);
-#ifdef RIEMANN_SPIDER_TRAINING
-		if (newScene) m_SpiderPanelMode = SpiderPanelMode::Inference;
+#ifdef RIEMANN_ROBOTICS_TRAINING
+		if (newScene) m_RoboticsPanelMode = RoboticsPanelMode::Inference;
 #endif
 		m_ViewerPaused = m_World->GetVehicleCount() > 0;
 		m_VehicleSlowMotion = false;
@@ -1089,7 +1089,7 @@ namespace Riemann
 			std::fill(std::begin(m_MovementKeys), std::end(m_MovementKeys), false);
 			std::fill(std::begin(m_RobotKeys), std::end(m_RobotKeys), false);
 		}
-		if (m_World->IsSpiderWalkingDemo()) m_World->SetRobotAutoWalk(m_RobotAutoWalk);
+		if (m_World->IsRoboticsWalkingDemo()) m_World->SetRobotAutoWalk(m_RobotAutoWalk);
 		m_SceneDragActive = false;
 		m_FieldDragActive = false;
 		m_TankDragActive = false;
@@ -1147,7 +1147,7 @@ namespace Riemann
 			RobotInput = Vector3(float(m_RobotKeys[0]) - float(m_RobotKeys[2]),
 				float(m_RobotKeys[1]) - float(m_RobotKeys[3]), float(m_RobotKeys[5]) - float(m_RobotKeys[4]));
 		}
-		if (m_World && m_World->IsSpiderWalkingDemo())
+		if (m_World && m_World->IsRoboticsWalkingDemo())
 		{
 			m_World->SetRobotAutoWalk(m_RobotAutoWalk);
 			m_World->SetRobotDriveInput(RobotInput.x, RobotInput.y, RobotInput.z);
@@ -1160,9 +1160,9 @@ namespace Riemann
 		}
 		ApplyVehicleCommands();
 		ApplySnowCommands();
-#ifdef RIEMANN_SPIDER_TRAINING
-		if (m_SpiderTraining && m_RenderThread)
-			m_SpiderTraining->set_display_active(m_RenderThread->IsActive());
+#ifdef RIEMANN_ROBOTICS_TRAINING
+		if (m_RoboticsTraining && m_RenderThread)
+			m_RoboticsTraining->set_display_active(m_RenderThread->IsActive());
 #endif
 		UpdateFluidDemo();
 		if (m_World->GetVehicleCount() > 0)
@@ -1185,18 +1185,18 @@ namespace Riemann
 		}
 		else if (const RobotController* Robot = m_World->GetRobotDemoController())
 		{
-			#ifdef RIEMANN_SPIDER_TRAINING
-			if (m_SpiderTrainingMode && m_SpiderTraining && m_RenderThread->IsActive())
+			#ifdef RIEMANN_ROBOTICS_TRAINING
+			if (m_RoboticsTrainingMode && m_RoboticsTraining && m_RenderThread->IsActive())
 			{
-				m_World->ShowSpiderTrainingSnapshot(m_SpiderTraining->snapshot(),
-					m_SpiderTrainingShowAll, size_t(m_SpiderTrainingSelected));
+				m_World->ShowRoboticsTrainingSnapshot(m_RoboticsTraining->snapshot(),
+					m_RoboticsTrainingShowAll, size_t(m_RoboticsTrainingSelected));
 			}
 			else
 			#endif
 			m_World->Step(dt);
 			if (!m_RobotAutoWalk
-#ifdef RIEMANN_SPIDER_TRAINING
-				&& !m_SpiderTrainingMode
+#ifdef RIEMANN_ROBOTICS_TRAINING
+				&& !m_RoboticsTrainingMode
 #endif
 			)
 			{
@@ -1825,7 +1825,7 @@ namespace Riemann
 		bool viewerPaused = false;
 		std::string meshSimplificationPath;
 		std::string meshSimplificationStatus;
-#ifdef RIEMANN_SPIDER_TRAINING
+#ifdef RIEMANN_ROBOTICS_TRAINING
 		std::string elmanExecutablePath;
 		std::string elmanExecutableStatus;
 #endif
@@ -1858,7 +1858,7 @@ namespace Riemann
 			cuttingStatus = m_ImguiCuttingStatus;
 			meshSimplificationPath = m_ImguiMeshSimplificationPath;
 			meshSimplificationStatus = m_ImguiMeshSimplificationStatus;
-#ifdef RIEMANN_SPIDER_TRAINING
+#ifdef RIEMANN_ROBOTICS_TRAINING
 			elmanExecutablePath = m_ElmanExecutablePath;
 			elmanExecutableStatus = m_ElmanExecutableStatus;
 #endif
@@ -1990,8 +1990,8 @@ namespace Riemann
 			hasDemoSolverSettings = true;
 		}
 		bool robotInferencePanel = true;
-#ifdef RIEMANN_SPIDER_TRAINING
-		robotInferencePanel = m_SpiderPanelMode.load() == SpiderPanelMode::Inference;
+#ifdef RIEMANN_ROBOTICS_TRAINING
+		robotInferencePanel = m_RoboticsPanelMode.load() == RoboticsPanelMode::Inference;
 #endif
 		if (robotPanel.Active && (!robotPanel.Interactive ||
 			(robotInferencePanel && robotPanel.WalkMode == RobotWalkMode::Policy)))
@@ -2010,16 +2010,16 @@ namespace Riemann
 		if (aerodynamicsPanel.Active)
 		{
 			imguiLabel("3D Smoke");
-			const char* backends[] = { "CPU", "CUDA", "Compute Shader" };
+			const char* backends[] = { "CPU", "CUDA", "DirectCompute", "Metal" };
 			imguiLabel("Smoke backend");
-			imguiCombo("", &aerodynamicsPanel.Backend, backends, 3, true);
+			imguiCombo("", &aerodynamicsPanel.Backend, backends, 4, true, aerodynamicsPanel.Available);
 			imguiSlider("Grid scale", &aerodynamicsPanel.GridScale, 0.5f, 1.5f, 0.05f);
 			snprintf(text, sizeof(text), "Selected grid: %d x %d x %d",
 				(int)std::lround(80.0f * aerodynamicsPanel.GridScale),
 				(int)std::lround(128.0f * aerodynamicsPanel.GridScale),
 				(int)std::lround(80.0f * aerodynamicsPanel.GridScale));
 			imguiValue(text);
-			const bool apply = imguiButton("Apply Smoke Settings");
+			const bool apply = imguiButton("Apply Smoke Settings", aerodynamicsPanel.Available[aerodynamicsPanel.Backend]);
 			snprintf(text, sizeof(text), "Running: %s", backends[aerodynamicsPanel.ActualBackend]);
 			imguiValue(text);
 			snprintf(text, sizeof(text), "Running grid: %d x %d x %d", aerodynamicsPanel.Resolution.x, aerodynamicsPanel.Resolution.y, aerodynamicsPanel.Resolution.z);
@@ -2092,63 +2092,63 @@ namespace Riemann
 			bool inferencePanel = true;
 			if (robotPanel.Interactive)
 			{
-#ifdef RIEMANN_SPIDER_TRAINING
+#ifdef RIEMANN_ROBOTICS_TRAINING
 				const char* panelModes[] = {"Inference", "Training"};
-				int panelMode = static_cast<int>(m_SpiderPanelMode.load());
+				int panelMode = static_cast<int>(m_RoboticsPanelMode.load());
 				if (imguiCombo("Spider mode", &panelMode, panelModes, 2))
 				{
 					std::lock_guard<std::mutex> lock(m_ImguiMutex);
-					m_PendingSpiderPanelMode = panelMode;
-					m_PendingSpiderPanelModeGeneration = robotPanel.SceneGeneration;
+					m_PendingRoboticsPanelMode = panelMode;
+					m_PendingRoboticsPanelModeGeneration = robotPanel.SceneGeneration;
 				}
-				inferencePanel = panelMode == static_cast<int>(SpiderPanelMode::Inference);
+				inferencePanel = panelMode == static_cast<int>(RoboticsPanelMode::Inference);
 				if (!inferencePanel)
 				{
 					imguiLabel("ELMAN EXECUTABLE");
 					if (elmanExecutablePath.empty()) imguiValue("No Elman executable selected");
 					else for (size_t offset = 0; offset < elmanExecutablePath.size(); offset += 34)
 						imguiValue(elmanExecutablePath.substr(offset, 34).c_str());
-					if (imguiButton("Select Elman EXE...", !m_SpiderTrainingMode))
+					if (imguiButton("Select Elman EXE...", !m_RoboticsTrainingMode))
 					{
 						std::lock_guard<std::mutex> lock(m_ImguiMutex);
 						m_PendingBrowseElmanExecutable = true;
 					}
 					if (!elmanExecutableStatus.empty()) imguiValue(elmanExecutableStatus.c_str());
-					if (!m_SpiderTrainingMode)
+					if (!m_RoboticsTrainingMode)
 					{
 						const char* counts[] = {"1", "2", "3", "4", "5", "6", "7", "8"};
-						int count = m_SpiderTrainingWorldCount - 1;
+						int count = m_RoboticsTrainingWorldCount - 1;
 						if (imguiCombo("Training worlds", &count, counts, 8))
-							m_SpiderTrainingWorldCount = count + 1;
+							m_RoboticsTrainingWorldCount = count + 1;
 					}
 					else
 					{
-						const std::string count = "Training worlds: " + std::to_string(int(m_SpiderTrainingWorldCount));
+						const std::string count = "Training worlds: " + std::to_string(int(m_RoboticsTrainingWorldCount));
 						imguiValue(count.c_str());
 					}
-					if (imguiButton(m_SpiderTrainingMode ? "Stop" : "Train",
-						m_SpiderTrainingMode || !elmanExecutablePath.empty()))
+					if (imguiButton(m_RoboticsTrainingMode ? "Stop" : "Train",
+						m_RoboticsTrainingMode || !elmanExecutablePath.empty()))
 					{
 						std::lock_guard<std::mutex> lock(m_ImguiMutex);
-						m_PendingSpiderTrainAction = true;
-						m_PendingSpiderTrainGeneration = robotPanel.SceneGeneration;
+						m_PendingRoboticsTrainAction = true;
+						m_PendingRoboticsTrainGeneration = robotPanel.SceneGeneration;
 					}
-					if (m_SpiderTrainingMode)
+					if (m_RoboticsTrainingMode)
 					{
-						if (m_SpiderTrainingWorldCount > 1 && imguiButton(m_SpiderTrainingShowAll ? "Show One" : "Show All"))
+						if (m_RoboticsTrainingWorldCount > 1 && imguiButton(m_RoboticsTrainingShowAll ? "Show One" : "Show All"))
 						{
 							std::lock_guard<std::mutex> lock(m_ImguiMutex);
-							m_PendingSpiderShowAllToggle = true;
+							m_PendingRoboticsShowAllToggle = true;
 						}
 						const char* labels[] = {"Spider 1", "Spider 2", "Spider 3", "Spider 4", "Spider 5", "Spider 6", "Spider 7", "Spider 8"};
-						int selected = m_SpiderTrainingSelected;
-						if (m_SpiderTrainingWorldCount > 1 && imguiCombo("Observed spider", &selected, labels, m_SpiderTrainingWorldCount))
+						int selected = m_RoboticsTrainingSelected;
+						if (m_RoboticsTrainingWorldCount > 1 && imguiCombo("Observed spider", &selected, labels, m_RoboticsTrainingWorldCount))
 						{
 							std::lock_guard<std::mutex> lock(m_ImguiMutex);
-							m_PendingSpiderSelection = selected;
+							m_PendingRoboticsSelection = selected;
 						}
 					}
-					imguiValue(m_SpiderTraining->status().c_str());
+					imguiValue(m_RoboticsTraining->status().c_str());
 				}
 				else
 #endif
@@ -3379,11 +3379,11 @@ namespace Riemann
 		bool pendingRenderMode = false;
 		RenderMode pendingRenderModeValue = RenderMode::Solid;
 		bool pendingShootProjectile = false;
-#ifdef RIEMANN_SPIDER_TRAINING
+#ifdef RIEMANN_ROBOTICS_TRAINING
 		bool trainingAction = false, showAllToggle = false;
-		unsigned int trainingActionGeneration = 0, spiderPanelModeGeneration = 0;
+		unsigned int trainingActionGeneration = 0, roboticsPanelModeGeneration = 0;
 		bool browseElmanExecutable = false;
-		int selectedSpider = -1, spiderPanelMode = -1;
+		int selectedRobotics = -1, roboticsPanelMode = -1;
 #endif
 		std::vector<ConstraintControlState> pendingConstraintControls;
 		{
@@ -3404,18 +3404,18 @@ namespace Riemann
 			m_ImguiPendingDemoIndex = -1;
 			pendingRobot = m_PendingRobotPanel;
 			m_PendingRobotPanel.Active = false;
-#ifdef RIEMANN_SPIDER_TRAINING
-			trainingAction = m_PendingSpiderTrainAction;
-			trainingActionGeneration = m_PendingSpiderTrainGeneration;
-			spiderPanelMode = m_PendingSpiderPanelMode;
-			spiderPanelModeGeneration = m_PendingSpiderPanelModeGeneration;
-			showAllToggle = m_PendingSpiderShowAllToggle;
-			selectedSpider = m_PendingSpiderSelection;
+#ifdef RIEMANN_ROBOTICS_TRAINING
+			trainingAction = m_PendingRoboticsTrainAction;
+			trainingActionGeneration = m_PendingRoboticsTrainGeneration;
+			roboticsPanelMode = m_PendingRoboticsPanelMode;
+			roboticsPanelModeGeneration = m_PendingRoboticsPanelModeGeneration;
+			showAllToggle = m_PendingRoboticsShowAllToggle;
+			selectedRobotics = m_PendingRoboticsSelection;
 			browseElmanExecutable = m_PendingBrowseElmanExecutable;
-			m_PendingSpiderTrainAction = m_PendingSpiderShowAllToggle = false;
-			m_PendingSpiderPanelMode = -1;
+			m_PendingRoboticsTrainAction = m_PendingRoboticsShowAllToggle = false;
+			m_PendingRoboticsPanelMode = -1;
 			m_PendingBrowseElmanExecutable = false;
-			m_PendingSpiderSelection = -1;
+			m_PendingRoboticsSelection = -1;
 #endif
 			pendingRagdollAlgorithm = m_ImguiPendingRagdollAlgorithm;
 			m_ImguiPendingRagdollAlgorithm = -1;
@@ -3482,8 +3482,8 @@ namespace Riemann
 		if (pendingAerodynamicsApply && m_AerodynamicsSimulation && pendingAerodynamics.SceneGeneration == m_SceneGeneration)
 		{
 			AerodynamicsSimulationSettings settings = m_World->GetFieldSimulation().Aerodynamics;
-			const FluidBackend Backends[] = { FluidBackend::CPU, FluidBackend::CUDA, FluidBackend::ComputeShader };
-			settings.Backend = Backends[std::max(0, std::min(pendingAerodynamics.Backend, 2))];
+			const FluidBackend Backends[] = { FluidBackend::CPU, FluidBackend::CUDA, FluidBackend::ComputeShader, FluidBackend::Metal };
+			settings.Backend = Backends[std::max(0, std::min(pendingAerodynamics.Backend, 3))];
 			settings.AllowBackendFallback = m_World->GetFieldSimulation().AllowBackendFallback;
 			const float scale = std::max(0.5f, std::min(pendingAerodynamics.GridScale, 1.5f));
 			settings.Resolution = Vector3i((int)std::lround(80.0f * scale),
@@ -3556,31 +3556,31 @@ namespace Riemann
 				LoadScene(m_CurrentSceneName);
 			}
 		}
-#ifdef RIEMANN_SPIDER_TRAINING
-		if (spiderPanelMode >= 0 && spiderPanelMode <= 1 &&
-			spiderPanelModeGeneration == m_SceneGeneration && m_World->IsSpiderWalkingDemo())
+#ifdef RIEMANN_ROBOTICS_TRAINING
+		if (roboticsPanelMode >= 0 && roboticsPanelMode <= 1 &&
+			roboticsPanelModeGeneration == m_SceneGeneration && m_World->IsRoboticsWalkingDemo())
 		{
-			m_SpiderPanelMode = static_cast<SpiderPanelMode>(spiderPanelMode);
-			if (m_SpiderPanelMode == SpiderPanelMode::Inference && m_SpiderTrainingMode)
+			m_RoboticsPanelMode = static_cast<RoboticsPanelMode>(roboticsPanelMode);
+			if (m_RoboticsPanelMode == RoboticsPanelMode::Inference && m_RoboticsTrainingMode)
 			{
 				trainingAction = true;
 				trainingActionGeneration = m_SceneGeneration;
 			}
 		}
-		if (browseElmanExecutable && m_SpiderPanelMode == SpiderPanelMode::Training && !m_SpiderTrainingMode)
+		if (browseElmanExecutable && m_RoboticsPanelMode == RoboticsPanelMode::Training && !m_RoboticsTrainingMode)
 		{
 			const std::string selectedExecutable = OpenElmanExecutableDialog();
 			if (!selectedExecutable.empty()) SaveElmanExecutablePath(selectedExecutable);
 		}
-		if (trainingAction && trainingActionGeneration == m_SceneGeneration && m_World->IsSpiderWalkingDemo())
+		if (trainingAction && trainingActionGeneration == m_SceneGeneration && m_World->IsRoboticsWalkingDemo())
 		{
-			if (m_SpiderTrainingMode)
+			if (m_RoboticsTrainingMode)
 			{
-				m_SpiderTraining->stop();
-				m_SpiderTrainingMode = false;
+				m_RoboticsTraining->stop();
+				m_RoboticsTrainingMode = false;
 				LoadScene(m_CurrentSceneName);
 			}
-			else if (m_SpiderPanelMode == SpiderPanelMode::Training)
+			else if (m_RoboticsPanelMode == RoboticsPanelMode::Training)
 			{
 				std::string executablePath;
 				{
@@ -3595,29 +3595,29 @@ namespace Riemann
 				}
 				else
 				{
-					const int worldCount = m_SpiderTrainingWorldCount;
-					m_World->BeginSpiderTrainingDisplay(size_t(worldCount));
-					m_SpiderTrainingMode = true;
-					m_SpiderTrainingShowAll = false;
-					m_SpiderTrainingSelected = 0;
+					const int worldCount = m_RoboticsTrainingWorldCount;
+					m_World->BeginRoboticsTrainingDisplay(size_t(worldCount));
+					m_RoboticsTrainingMode = true;
+					m_RoboticsTrainingShowAll = false;
+					m_RoboticsTrainingSelected = 0;
 					m_ViewerPaused = false;
-					SpiderTrainingOptions options;
+					RoboticsTrainingOptions options;
 					options.executable_path = std::move(executablePath);
 					options.policy_path = m_SceneDirectory + "../Robots/Spider/actor.bin";
 					options.environment_count = worldCount;
-					m_SpiderTraining->start(std::move(options));
+					m_RoboticsTraining->start(std::move(options));
 				}
 			}
 		}
-		if (showAllToggle && m_SpiderTrainingMode)
+		if (showAllToggle && m_RoboticsTrainingMode)
 		{
-			m_SpiderTrainingShowAll = !m_SpiderTrainingShowAll;
-			m_CamCenter = m_SpiderTrainingShowAll ? Vector3(6.75f, 0.45f, 1.5f) : Vector3(0, 0.45f, 0);
-			m_CamParam.z = m_SpiderTrainingShowAll ? 24.0f : 8.5f;
+			m_RoboticsTrainingShowAll = !m_RoboticsTrainingShowAll;
+			m_CamCenter = m_RoboticsTrainingShowAll ? Vector3(6.75f, 0.45f, 1.5f) : Vector3(0, 0.45f, 0);
+			m_CamParam.z = m_RoboticsTrainingShowAll ? 24.0f : 8.5f;
 			UpdateCamera();
 		}
-		if (m_SpiderTrainingMode && selectedSpider >= 0 && selectedSpider < m_SpiderTrainingWorldCount)
-			m_SpiderTrainingSelected = selectedSpider;
+		if (m_RoboticsTrainingMode && selectedRobotics >= 0 && selectedRobotics < m_RoboticsTrainingWorldCount)
+			m_RoboticsTrainingSelected = selectedRobotics;
 #endif
 		if (pendingRagdollAlgorithm >= 0 && m_CurrentSceneName == "09_ragdoll_stairs.json")
 		{
@@ -3639,7 +3639,7 @@ namespace Riemann
 					&& simulation->GetReducedRagdollCount() == 0;
 				std::string error;
 				bool applied = allowed && pendingSolverPanel.ResolutionIndex >= 0 && pendingSolverPanel.ResolutionIndex < 4
-					&& pendingSolverPanel.BackendIndex >= 0 && pendingSolverPanel.BackendIndex < 4
+					&& pendingSolverPanel.BackendIndex >= 0 && pendingSolverPanel.BackendIndex < 5
 					&& simulation->SetSolverConfiguration(SolverPanelAlgorithms[pendingSolverPanel.ResolutionIndex],
 						SolverPanelBackends[pendingSolverPanel.BackendIndex], pendingSolverPanel.AllowFallback, &error);
 				if (!allowed) error = "Solver switching is unavailable in this demo.";
@@ -3840,20 +3840,27 @@ namespace Riemann
 		std::vector<std::string> terrainObjectIds = m_World
 			? m_World->GetTerrainObjectIds() : std::vector<std::string>();
 		std::lock_guard<std::mutex> lock(m_ImguiMutex);
+		const auto& Capabilities = m_BackendCapabilities;
+		for (int Solver = 0; Solver < 4; ++Solver)
+			for (int Backend = 0; Backend < 5; ++Backend)
+				m_ImguiSolverPanel.Available[Solver][Backend] = Capabilities.Solvers[Solver][Backend];
+		const FluidBackend AirBackends[] = { FluidBackend::CPU, FluidBackend::CUDA, FluidBackend::ComputeShader, FluidBackend::Metal };
+		for (int I = 0; I < 4; ++I)
+			m_ImguiAerodynamicsPanel.Available[I] = Capabilities.Incompressible[static_cast<int>(AirBackends[I])];
 		m_ImguiRobotPanel.Active = m_World && m_World->GetRobotDemoController();
 		m_ImguiRobotPanel.SceneGeneration = m_SceneGeneration;
 		if (m_ImguiRobotPanel.Active)
 		{
 			m_ImguiRobotPanel.Backend = m_World->GetWalkingRobotBackend();
-			m_ImguiRobotPanel.Interactive = m_World->IsSpiderWalkingDemo();
+			m_ImguiRobotPanel.Interactive = m_World->IsRoboticsWalkingDemo();
 			m_ImguiRobotPanel.WalkMode = m_World->GetRobotWalkMode();
 			m_ImguiRobotPanel.AutoWalk = m_RobotAutoWalk;
 			m_ImguiRobotPanel.Command = m_World->GetRobotDriveCommand();
 			m_ImguiRobotPanel.Heading = m_World->GetRobotDriveHeading();
 		}
-		m_RobotInputActive = m_World && m_World->IsSpiderWalkingDemo() && !m_RobotAutoWalk
-#ifdef RIEMANN_SPIDER_TRAINING
-			&& !m_SpiderTrainingMode
+		m_RobotInputActive = m_World && m_World->IsRoboticsWalkingDemo() && !m_RobotAutoWalk
+#ifdef RIEMANN_ROBOTICS_TRAINING
+			&& !m_RoboticsTrainingMode
 #endif
 			;
 		m_CharacterInputActive = m_World && m_World->GetDemoCharacter();
@@ -3887,15 +3894,15 @@ namespace Riemann
 			if (m_ImguiAerodynamicsPanel.SceneGeneration != m_SceneGeneration)
 			{
 				m_ImguiAerodynamicsPanel.SceneGeneration = m_SceneGeneration;
-				m_ImguiAerodynamicsPanel.Backend = (m_AerodynamicsSimulation->GetBackend() == FluidBackend::CPU ? 0 : m_AerodynamicsSimulation->GetBackend() == FluidBackend::CUDA ? 1 : 2);
+				m_ImguiAerodynamicsPanel.Backend = (m_AerodynamicsSimulation->GetBackend() == FluidBackend::CPU ? 0 : m_AerodynamicsSimulation->GetBackend() == FluidBackend::CUDA ? 1 : m_AerodynamicsSimulation->GetBackend() == FluidBackend::Metal ? 3 : 2);
 				const Vector3i requestedResolution = m_World->GetFieldSimulation().Aerodynamics.Resolution;
 				m_ImguiAerodynamicsPanel.GridScale = std::max(0.5f, std::min(requestedResolution.x / 80.0f, 1.5f));
 				m_ImguiAerodynamicsPanel.Status = m_AerodynamicsSimulation->GetBackend() == m_World->GetFieldSimulation().Aerodynamics.Backend
 					? std::string() : (m_AerodynamicsSimulation->GetBackend() == FluidBackend::CPU
-						? "CUDA unavailable; interactive CPU grid" : "CUDA unavailable; using Compute Shader");
+						? "Requested backend unavailable; CPU grid" : "Requested backend unavailable; GPU fallback");
 				m_ImguiPendingAerodynamicsApply = false;
 			}
-			m_ImguiAerodynamicsPanel.ActualBackend = (m_AerodynamicsSimulation->GetBackend() == FluidBackend::CPU ? 0 : m_AerodynamicsSimulation->GetBackend() == FluidBackend::CUDA ? 1 : 2);
+			m_ImguiAerodynamicsPanel.ActualBackend = (m_AerodynamicsSimulation->GetBackend() == FluidBackend::CPU ? 0 : m_AerodynamicsSimulation->GetBackend() == FluidBackend::CUDA ? 1 : m_AerodynamicsSimulation->GetBackend() == FluidBackend::Metal ? 3 : 2);
 			m_ImguiAerodynamicsPanel.Resolution = m_AerodynamicsSimulation->GetSettings().Resolution;
 		}
 		if (simulation)
@@ -4197,7 +4204,7 @@ namespace Riemann
 #endif
 	}
 
-#ifdef RIEMANN_SPIDER_TRAINING
+#ifdef RIEMANN_ROBOTICS_TRAINING
 	std::string WorldViewer::ElmanExecutableSettingsPath() const
 	{
 		const std::string root = m_SceneDirectory.empty() ? std::string() : m_SceneDirectory + "../../";

@@ -22,6 +22,12 @@
 #include "../Src/LinearSystem/ConjugateGradientSolver.h"
 #include "../Src/Solver/LCPSolver.h"
 
+#if defined(__APPLE__)
+static constexpr Riemann::SolverBackend NativeComputeBackend = Riemann::SolverBackend::Metal;
+#else
+static constexpr Riemann::SolverBackend NativeComputeBackend = Riemann::SolverBackend::ComputeShader;
+#endif
+
 // using namespace Riemann;
 
 void TestMatrix1()
@@ -273,18 +279,18 @@ void TestBoundedLCP()
 		EXPECT_NEAR(lambda[Index], cpuLambda[Index], 1.0e-5f);
 	}
 	const bool computeAvailable = Riemann::LCPSolver::IsBackendAvailable(
-		Riemann::SolverBackend::ComputeShader);
+		NativeComputeBackend);
 	if (computeAvailable)
 	{
 		Riemann::LCPSolverSettings computeSettings = settings;
-		computeSettings.Backend = Riemann::SolverBackend::ComputeShader;
+		computeSettings.Backend = NativeComputeBackend;
 		computeSettings.AllowBackendFallback = false;
 		lambda[0] = lambda[1] = lambda[2] = 0.0f;
 		EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(
 			problem, lambda, computeSettings, &result));
 		EXPECT(result.Converged);
-		EXPECT(result.RequestedBackend == Riemann::SolverBackend::ComputeShader);
-		EXPECT(result.Backend == Riemann::SolverBackend::ComputeShader);
+		EXPECT(result.RequestedBackend == NativeComputeBackend);
+		EXPECT(result.Backend == NativeComputeBackend);
 		EXPECT_FALSE(result.UsedFallback);
 		for (int Index = 0; Index < 3; ++Index)
 		{
@@ -358,14 +364,14 @@ void TestBoundedLCP()
 	if (computeAvailable)
 	{
 		Riemann::LCPSolverSettings computeSettings = settings;
-		computeSettings.Backend = Riemann::SolverBackend::ComputeShader;
+		computeSettings.Backend = NativeComputeBackend;
 		computeSettings.AllowBackendFallback = false;
 		frictionLambda[0] = frictionLambda[1] = 0.0f;
 		EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(
 			problem, frictionLambda, computeSettings, &result));
 		EXPECT(result.Converged);
-		EXPECT(result.RequestedBackend == Riemann::SolverBackend::ComputeShader);
-		EXPECT(result.Backend == Riemann::SolverBackend::ComputeShader);
+		EXPECT(result.RequestedBackend == NativeComputeBackend);
+		EXPECT(result.Backend == NativeComputeBackend);
 		EXPECT_FALSE(result.UsedFallback);
 		EXPECT_NEAR(frictionLambda[0], 2.0f, 1.0e-4f);
 		EXPECT_NEAR(frictionLambda[1], 1.0f, 1.0e-4f);
@@ -456,18 +462,18 @@ void TestLCPBackendParity()
 	}
 
 	const bool computeAvailable = Riemann::LCPSolver::IsBackendAvailable(
-		Riemann::SolverBackend::ComputeShader);
+		NativeComputeBackend);
 	if (computeAvailable)
 	{
 		Riemann::LCPSolverSettings computeSettings = settings;
-		computeSettings.Backend = Riemann::SolverBackend::ComputeShader;
+		computeSettings.Backend = NativeComputeBackend;
 		computeSettings.AllowBackendFallback = false;
 		Riemann::LCPSolverResult computeResult;
 		EXPECT(Riemann::LCPSolver::SolveProjectedGaussSeidel(
 			problem, computeLambda, computeSettings, &computeResult));
 		EXPECT(computeResult.Converged);
-		EXPECT(computeResult.RequestedBackend == Riemann::SolverBackend::ComputeShader);
-		EXPECT(computeResult.Backend == Riemann::SolverBackend::ComputeShader);
+		EXPECT(computeResult.RequestedBackend == NativeComputeBackend);
+		EXPECT(computeResult.Backend == NativeComputeBackend);
 		EXPECT_FALSE(computeResult.UsedFallback);
 		for (int row = 0; row < dimension; ++row)
 		{
@@ -519,7 +525,7 @@ void TestLCPSolverPerformance()
 	const Riemann::SolverBackend backends[] = {
 		Riemann::SolverBackend::CPU,
 		Riemann::SolverBackend::SIMD,
-		Riemann::SolverBackend::ComputeShader,
+		NativeComputeBackend,
 #if defined(RIEMANN_ENABLE_CUDA)
 		Riemann::SolverBackend::CUDA,
 #endif

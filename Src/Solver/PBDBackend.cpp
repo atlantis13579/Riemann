@@ -104,6 +104,9 @@ namespace Riemann
 			return false;
 #endif
 		case SolverBackend::ComputeShader: return IsPBDComputeShaderBackendAvailable();
+#if defined(RIEMANN_ENABLE_METAL)
+		case SolverBackend::Metal: return IsPBDMetalBackendAvailable();
+#endif
 		case SolverBackend::CUDA:
 #if defined(RIEMANN_ENABLE_CUDA)
 			return IsPBDCUDAAvailable();
@@ -120,6 +123,9 @@ namespace Riemann
 	{
 		if (!m_Context) return;
 		if (m_Statistics.Backend == SolverBackend::ComputeShader) DestroyPBDComputeShaderContext(m_Context);
+#if defined(RIEMANN_ENABLE_METAL)
+		if (m_Statistics.Backend == SolverBackend::Metal) DestroyPBDMetalContext(m_Context);
+#endif
 #if defined(RIEMANN_ENABLE_CUDA)
 		else if (m_Statistics.Backend == SolverBackend::CUDA) DestroyPBDCUDAContext(m_Context);
 #endif
@@ -133,7 +139,7 @@ namespace Riemann
 		m_Statistics.RequestedBackend = m_Statistics.Backend = Backend;
 		m_AllowFallback = AllowFallback;
 		m_Ready = false;
-		if (static_cast<uint32_t>(Backend) > static_cast<uint32_t>(SolverBackend::CUDA))
+		if (static_cast<uint32_t>(Backend) > static_cast<uint32_t>(SolverBackend::Metal))
 		{
 			m_Statistics.Message = "Invalid PBD solver backend";
 			return false;
@@ -141,6 +147,10 @@ namespace Riemann
 		bool Available = IsPBDBackendAvailable(Backend);
 		if (Available && Backend == SolverBackend::ComputeShader)
 			Available = (m_Context = CreatePBDComputeShaderContext()) != nullptr;
+#if defined(RIEMANN_ENABLE_METAL)
+		if (Available && Backend == SolverBackend::Metal)
+			Available = (m_Context = CreatePBDMetalContext()) != nullptr;
+#endif
 #if defined(RIEMANN_ENABLE_CUDA)
 		if (Available && Backend == SolverBackend::CUDA)
 			Available = (m_Context = CreatePBDCUDAContext()) != nullptr;
@@ -198,6 +208,11 @@ namespace Riemann
 		if (m_Statistics.Backend == SolverBackend::ComputeShader)
 			Success = ExecutePBDComputeShader(m_Context, m_WorkBodies.data(), (uint32_t)m_WorkBodies.size(),
 				m_WorkContacts.data(), (uint32_t)m_WorkContacts.size(), m_RowIndices.data(), m_LayerOffsets.data(), LayerCount, Parameters, Stage);
+#if defined(RIEMANN_ENABLE_METAL)
+		if (m_Statistics.Backend == SolverBackend::Metal)
+			Success = ExecutePBDMetal(m_Context, m_WorkBodies.data(), (uint32_t)m_WorkBodies.size(),
+				m_WorkContacts.data(), (uint32_t)m_WorkContacts.size(), m_RowIndices.data(), m_LayerOffsets.data(), LayerCount, Parameters, Stage);
+#endif
 #if defined(RIEMANN_ENABLE_CUDA)
 		else if (m_Statistics.Backend == SolverBackend::CUDA)
 			Success = ExecutePBDCUDA(m_Context, m_WorkBodies.data(), (uint32_t)m_WorkBodies.size(),

@@ -1,6 +1,6 @@
 #include "../../../Viewer/SceneWorld.h"
 #include "ArticulatedRobotController.h"
-#include "SpiderRobot.h"
+#include "RoboticsRobot.h"
 #include "../../LinearSystem/NeuralNetwork.h"
 #include "../../Collision/GeometryQuery.h"
 #include "../../CollisionPrimitive/HeightField3.h"
@@ -15,25 +15,25 @@ namespace Riemann
 	namespace
 	{
 		using namespace Maths::LinearAlgebra;
-		constexpr size_t SpiderTicksPerAction = 50;
+		constexpr size_t RoboticsTicksPerAction = 50;
 		constexpr double Pi = 3.14159265358979323846;
 
-		void ApplySpiderPolicy(NeuralNetwork& Actor, const FeatherstoneSolver& Tree,
-			const Vector3& Command, SpiderRobotControl& Control, bool Directional, int& Shift, Vector3& PreviousCommand)
+		void ApplyRoboticsPolicy(NeuralNetwork& Actor, const FeatherstoneSolver& Tree,
+			const Vector3& Command, RoboticsRobotControl& Control, bool Directional, int& Shift, Vector3& PreviousCommand)
 		{
-			std::vector<float> Observation = ObserveSpiderRobot(Tree, Command, Control);
+			std::vector<float> Observation = ObserveRoboticsRobot(Tree, Command, Control);
 			if (!Directional) { Shift = 0; PreviousCommand = Vector3::Zero(); }
 			if (Directional)
 			{
 				// Rotate the policy's coordinate frame and relabel the eight identical
 				// legs together. All motor targets still come from the trained actor.
-				const float Sector = 2 * float(Pi) / SpiderLegCount;
+				const float Sector = 2 * float(Pi) / RoboticsLegCount;
 				// Hold the leg identity while a command is held; body yaw must not
 				// cause discontinuous relabeling in the middle of a learned stride.
 				if (PreviousCommand.SquareLength() < 1e-6f ||
 					Command.Dot(PreviousCommand) < std::cos(Sector * 0.5f) * Command.Length() * PreviousCommand.Length())
 				{
-					Shift = (int(std::round(std::atan2(Observation[10], Observation[9]) / Sector)) + int(SpiderLegCount)) % int(SpiderLegCount);
+					Shift = (int(std::round(std::atan2(Observation[10], Observation[9]) / Sector)) + int(RoboticsLegCount)) % int(RoboticsLegCount);
 					PreviousCommand = Command;
 				}
 				const float C = std::cos(Shift * Sector), S = std::sin(Shift * Sector);
@@ -44,17 +44,17 @@ namespace Riemann
 					Observation[I + 1] = -S * Original[I] + C * Original[I + 1];
 				}
 				for (int Block = 0; Block < 3; ++Block)
-					for (int Leg = 0; Leg < int(SpiderLegCount); ++Leg)
+					for (int Leg = 0; Leg < int(RoboticsLegCount); ++Leg)
 						for (int Joint = 0; Joint < 3; ++Joint)
-							Observation[12 + Block * SpiderMotorCount + Leg * 3 + Joint] =
-								Original[12 + Block * SpiderMotorCount + ((Leg + Shift) % SpiderLegCount) * 3 + Joint];
+							Observation[12 + Block * RoboticsMotorCount + Leg * 3 + Joint] =
+								Original[12 + Block * RoboticsMotorCount + ((Leg + Shift) % RoboticsLegCount) * 3 + Joint];
 			}
 			const std::vector<float>& Output = Actor.Evaluate(Observation);
-			std::vector<float> Action(SpiderMotorCount);
-			for (int Leg = 0; Leg < int(SpiderLegCount); ++Leg)
+			std::vector<float> Action(RoboticsMotorCount);
+			for (int Leg = 0; Leg < int(RoboticsLegCount); ++Leg)
 				for (int Joint = 0; Joint < 3; ++Joint)
-					Action[((Leg + Shift) % SpiderLegCount) * 3 + Joint] = Output[Leg * 3 + Joint];
-			ApplySpiderAction(Control, Action);
+					Action[((Leg + Shift) % RoboticsLegCount) * 3 + Joint] = Output[Leg * 3 + Joint];
+			ApplyRoboticsAction(Control, Action);
 		}
 
 		template<class T>
@@ -275,7 +275,7 @@ namespace Riemann
 		const Vector4 BodyColor(0.90f, 0.43f, 0.13f, 1);
 		const Vector4 LimbColor(0.31f, 0.39f, 0.46f, 1);
 		const Vector3 BodyCenter(0, 0, 0.04f);
-		const Vector3 BodyExtent = Settings.Feet.size() == SpiderLegCount
+		const Vector3 BodyExtent = Settings.Feet.size() == RoboticsLegCount
 			? Vector3(0.27f, 0.22f, 0.08f) : Vector3(0.32f, 0.14f, 0.10f);
 		AddRobotPrimitive(0, std::unique_ptr<Geometry>(GeometryFactory::CreateOBB(BodyCenter, BodyExtent)), BodyColor);
 
@@ -294,13 +294,13 @@ namespace Riemann
 				Vector3::Zero(), Foot.Center, Foot.Radius)), LimbColor);
 	}
 
-	void SceneWorld::BeginSpiderTrainingDisplay(size_t EnvironmentCount)
+	void SceneWorld::BeginRoboticsTrainingDisplay(size_t EnvironmentCount)
 	{
-		if (m_TrainingDisplay || !IsSpiderWalkingDemo() || !GetWalkingRobot()) return;
-		if (EnvironmentCount < 1 || EnvironmentCount > SpiderTrainingEnvironmentCount) return;
+		if (m_TrainingDisplay || !IsRoboticsWalkingDemo() || !GetWalkingRobot()) return;
+		if (EnvironmentCount < 1 || EnvironmentCount > RoboticsTrainingEnvironmentCount) return;
 		m_TrainingDisplay = true;
-		auto Control = std::make_shared<SpiderRobotControl>();
-		const ArticulatedRobotSettings Settings = CreateSpiderRobotSettings(Control);
+		auto Control = std::make_shared<RoboticsRobotControl>();
+		const ArticulatedRobotSettings Settings = CreateRoboticsRobotSettings(Control);
 		for (size_t E = 1; E < EnvironmentCount; ++E)
 		{
 			m_TrainingBuildIndex = E;
@@ -310,7 +310,7 @@ namespace Riemann
 		TouchRenderRevision();
 	}
 
-	void SceneWorld::ShowSpiderTrainingSnapshot(const SpiderTrainingSnapshot& Snapshot, bool ShowAll, size_t Selected)
+	void SceneWorld::ShowRoboticsTrainingSnapshot(const RoboticsTrainingSnapshot& Snapshot, bool ShowAll, size_t Selected)
 	{
 		if (!m_TrainingDisplay) return;
 		bool VisibilityChanged = false;
@@ -343,10 +343,10 @@ namespace Riemann
 			if (Model != "Spider" && Model != "SpiderPolicy")
 				throw std::runtime_error("Unknown walking robot model: " + Model);
 			const std::string Directory = m_BaseDirectory + "../Robots/";
-			m_SpiderWalkingDemo = Model == "SpiderPolicy";
-			const bool Sweep = m_SpiderWalkingDemo && m_RobotWalkMode == RobotWalkMode::Sweep;
-			auto Control = std::make_shared<SpiderRobotControl>();
-			ArticulatedRobotSettings Settings = CreateSpiderRobotSettings(Control);
+			m_RoboticsWalkingDemo = Model == "SpiderPolicy";
+			const bool Sweep = m_RoboticsWalkingDemo && m_RobotWalkMode == RobotWalkMode::Sweep;
+			auto Control = std::make_shared<RoboticsRobotControl>();
+			ArticulatedRobotSettings Settings = CreateRoboticsRobotSettings(Control);
 			if (Model == "SpiderPolicy" && !Sweep)
 			{
 				std::ifstream WeightsFile(Directory + "Spider/actor.bin", std::ios::binary);
@@ -361,7 +361,7 @@ namespace Riemann
 				Settings.Actuate = [this, Actor, Control, StandActuate, Shift = 0, PreviousCommand = Vector3::Zero()](const FeatherstoneSolver& Tree,
 					const Vector3& Command, size_t Tick, std::vector<double>& Torque) mutable
 				{
-					if (Tick % SpiderTicksPerAction == 0)
+					if (Tick % RoboticsTicksPerAction == 0)
 					{
 						if (Command.SquareLength() < 1e-6f)
 						{
@@ -369,7 +369,7 @@ namespace Riemann
 							PreviousCommand = Vector3::Zero();
 						}
 						else
-							ApplySpiderPolicy(*Actor, Tree, Command, *Control, !m_RobotAutoWalk, Shift, PreviousCommand);
+							ApplyRoboticsPolicy(*Actor, Tree, Command, *Control, !m_RobotAutoWalk, Shift, PreviousCommand);
 					}
 					StandActuate(Tree, Command, Tick, Torque);
 				};
@@ -445,7 +445,7 @@ namespace Riemann
 
 	void SceneWorld::UpdateRobotDrive(float Dt)
 	{
-		if (!m_SpiderWalkingDemo) return;
+		if (!m_RoboticsWalkingDemo) return;
 		if (m_RobotAutoWalk)
 		{
 			m_RobotDriveHeading = 0;
@@ -483,9 +483,9 @@ namespace Riemann
 			const Vector3 LocalTravel = Pose[0].Rotation.Conjugate() * (Dt > 0 ? Travel / Dt : Vector3::Zero());
 			// Sweep alone moves the body. This IK gait is only its visual animation;
 			// the policy mode never executes this path or receives these joint angles.
-			for (size_t Leg = 0; Leg < SpiderLegCount; ++Leg)
+			for (size_t Leg = 0; Leg < RoboticsLegCount; ++Leg)
 			{
-				const float Angle = float(Leg * 2 * Pi / SpiderLegCount);
+				const float Angle = float(Leg * 2 * Pi / RoboticsLegCount);
 				const Vector3 Radial(std::cos(Angle), std::sin(Angle), 0);
 				const float Phase = m_SweepRobotPhase + (Leg % 2 ? float(Pi) : 0);
 				Vector3 Foot = Radial * (0.28f + 0.18f + 0.38f * std::cos(-0.6f) + 0.75f * std::cos(1.15f));

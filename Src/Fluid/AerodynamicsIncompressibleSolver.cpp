@@ -15,6 +15,10 @@ namespace Riemann
 	std::unique_ptr<AerodynamicsGPUBackend> AerodynamicsGPUBackend::CreateCUDA(const AerodynamicsSimulationSettings&,
 		const std::vector<unsigned char>&) { return nullptr; }
 #endif
+#if !defined(RIEMANN_ENABLE_METAL)
+    std::unique_ptr<AerodynamicsGPUBackend> AerodynamicsGPUBackend::CreateMetal(const AerodynamicsSimulationSettings&,
+        const std::vector<unsigned char>&) { return nullptr; }
+#endif
 	namespace
 	{
 		float Clamp(float V, float A, float B) { return std::max(A, std::min(V, B)); }
@@ -65,6 +69,7 @@ namespace Riemann
 		m_SurfaceDistances.assign(Count, std::numeric_limits<float>::max()); m_BoundaryVelocity.assign(Count, Vector3::Zero());
 		RebuildObstacles(Settings.Obstacles);
 		if (Settings.Backend == FluidBackend::ComputeShader) m_GPU = AerodynamicsGPUBackend::CreateComputeShader(Settings, m_Solid);
+		if (Settings.Backend == FluidBackend::Metal) m_GPU = AerodynamicsGPUBackend::CreateMetal(Settings, m_Solid);
 		if (Settings.Backend == FluidBackend::CUDA) m_GPU = AerodynamicsGPUBackend::CreateCUDA(Settings, m_Solid);
 		if (Settings.Backend != FluidBackend::CPU && !m_GPU && !Settings.AllowBackendFallback) return false;
 		if (m_GPU) m_Backend = Settings.Backend;

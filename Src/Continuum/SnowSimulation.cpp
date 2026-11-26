@@ -106,8 +106,7 @@ namespace Riemann
 #if RIEMANN_MPM_SSE || RIEMANN_MPM_NEON
 		if (Backend == SnowBackend::SIMD) return true;
 #endif
-		if (Backend == SnowBackend::CUDA) return IsSnowCUDAAvailable();
-		if (Backend == SnowBackend::ComputeShader || Backend == SnowBackend::Metal) return IsSnowComputeAvailable(Backend == SnowBackend::Metal);
+		if (Backend > SnowBackend::SIMD && Backend <= SnowBackend::Metal) return IsSnowGPUBackendAvailable(Backend);
 		return false;
 	}
 	bool SnowSimulation::SetBackend(SnowBackend Backend)
@@ -115,7 +114,8 @@ namespace Riemann
 		if (!IsBackendAvailable(Backend)) { m_BackendError = "Requested snow backend is unavailable"; return false; }
 		std::unique_ptr<SnowGPUBackend> GPU;
 		if (Backend == SnowBackend::CUDA) GPU = CreateSnowCUDA();
-		if (Backend == SnowBackend::ComputeShader || Backend == SnowBackend::Metal) GPU = CreateSnowCompute();
+		if (Backend == SnowBackend::ComputeShader) GPU = CreateSnowDX11();
+		if (Backend == SnowBackend::Metal) GPU = CreateSnowMetal();
 		if (Backend > SnowBackend::SIMD && !GPU) { m_BackendError = "Snow GPU backend creation failed"; return false; }
 		m_GPU = std::move(GPU); m_Backend = Backend; m_BackendError.clear(); return true;
 	}
@@ -303,7 +303,7 @@ namespace Riemann
 			m_Capsule.Center+=m_Capsule.Velocity*Dt;
 			if (m_Backend>SnowBackend::SIMD)
 			{
-				if (!m_GPU) m_GPU=m_Backend==SnowBackend::CUDA ? CreateSnowCUDA() : CreateSnowCompute();
+				if (!m_GPU) m_GPU=m_Backend==SnowBackend::CUDA ? CreateSnowCUDA() : (m_Backend == SnowBackend::Metal ? CreateSnowMetal() : CreateSnowDX11());
 				if (!m_GPU || !m_GPU->Step(m_Settings,m_Capsule,Dt,m_Particles,m_BackendError))
 				{
 					if (m_BackendError.empty()) m_BackendError="Snow GPU backend failed";

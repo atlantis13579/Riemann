@@ -24,7 +24,7 @@ namespace Riemann
 		m_Barotropic.reset(); m_Incompressible.reset(); m_Settings = Requested; m_CellSize = Vector3::Zero();
 		if ((Settings.Algorithm != AerodynamicsAlgorithm::Barotropic && Settings.Algorithm != AerodynamicsAlgorithm::Incompressible)
 			|| (Settings.Backend != FluidBackend::CPU && Settings.Backend != FluidBackend::SIMD
-				&& Settings.Backend != FluidBackend::CUDA && Settings.Backend != FluidBackend::ComputeShader)) return false;
+				&& Settings.Backend != FluidBackend::CUDA && Settings.Backend != FluidBackend::ComputeShader && Settings.Backend != FluidBackend::Metal)) return false;
 		if (Settings.Algorithm == AerodynamicsAlgorithm::Incompressible)
 		{
 			if (Settings.Method != FluidSimulationMethod::Eulerian || !std::isfinite(Settings.AmbientDensity) || Settings.AmbientDensity <= 0

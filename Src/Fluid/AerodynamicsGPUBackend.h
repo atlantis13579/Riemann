@@ -30,6 +30,8 @@ namespace Riemann
 		virtual ~AerodynamicsGPUBackend() {}
 		static std::unique_ptr<AerodynamicsGPUBackend> CreateComputeShader(const AerodynamicsSimulationSettings& Settings,
 			const std::vector<unsigned char>& Solid);
+		static std::unique_ptr<AerodynamicsGPUBackend> CreateMetal(const AerodynamicsSimulationSettings& Settings,
+			const std::vector<unsigned char>& Solid);
 		static std::unique_ptr<AerodynamicsGPUBackend> CreateCUDA(const AerodynamicsSimulationSettings& Settings,
 			const std::vector<unsigned char>& Solid);
 		virtual void Reset() = 0;

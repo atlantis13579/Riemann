@@ -12,7 +12,8 @@ namespace Riemann
 			std::vector<SnowParticle>& Particles, std::string& Error) = 0;
 	};
 	bool IsSnowCUDAAvailable();
-	bool IsSnowComputeAvailable(bool MetalOnly);
 	std::unique_ptr<SnowGPUBackend> CreateSnowCUDA();
-	std::unique_ptr<SnowGPUBackend> CreateSnowCompute();
+	std::unique_ptr<SnowGPUBackend> CreateSnowDX11();
+	std::unique_ptr<SnowGPUBackend> CreateSnowMetal();
+	bool IsSnowGPUBackendAvailable(SnowBackend Backend);
 }

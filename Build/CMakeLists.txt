@@ -3,6 +3,7 @@ project(Riemann)
 
 option(RIEMANN_ENABLE_CUDA "Build the optional CUDA solver backends" ON)
 option(RIEMANN_ENABLE_COMPUTE_SHADER "Build the DirectCompute solver backends" ON)
+option(RIEMANN_ENABLE_METAL "Build the Metal solver backends" ON)
 
 set(RIEMANN_CUDA_AVAILABLE OFF)
 set(RIEMANN_CUDA_TOOLKIT_ONLY OFF)
@@ -28,9 +29,6 @@ if(RIEMANN_ENABLE_CUDA)
             set(RIEMANN_CUDA_TOOLKIT_ONLY ON)
             message(STATUS "CUDA standalone toolkit backends enabled")
         else()
-            if(WIN32)
-                message(FATAL_ERROR "RIEMANN_ENABLE_CUDA is ON, but no CUDA compiler or toolkit was found. Install CUDA or explicitly configure with -DRIEMANN_ENABLE_CUDA=OFF.")
-            endif()
             message(STATUS "CUDA compiler not found; building without CUDA solver backends")
         endif()
     endif()
@@ -96,11 +94,14 @@ file(GLOB_RECURSE RIEMANN_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/../Src/*.cc"
     "${CMAKE_SOURCE_DIR}/../Src/*.c"
 )
+# These methods are implemented in PhysicsWorld.cpp, as in the native projects.
+list(REMOVE_ITEM RIEMANN_SOURCES
+    "${CMAKE_SOURCE_DIR}/../Src/RigidBodyDynamics/AerodynamicsWorld.cpp")
 set(RIEMANN_ROBOTICS_DIR "${CMAKE_SOURCE_DIR}/../Src/Modules/Robotics")
 list(REMOVE_ITEM RIEMANN_SOURCES
     "${RIEMANN_ROBOTICS_DIR}/RobotDemo.cpp"
-    "${RIEMANN_ROBOTICS_DIR}/SpiderTraining.cpp"
-    "${RIEMANN_ROBOTICS_DIR}/SpiderTrainingController.cpp")
+    "${RIEMANN_ROBOTICS_DIR}/RoboticsTraining.cpp"
+    "${RIEMANN_ROBOTICS_DIR}/RoboticsTrainingController.cpp")
 
 if(RIEMANN_CUDA_AVAILABLE AND NOT RIEMANN_CUDA_TOOLKIT_ONLY)
     list(APPEND RIEMANN_SOURCES
@@ -124,8 +125,8 @@ file(GLOB_RECURSE RIEMANN_HEADERS CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/../Src/*.cuh"
 )
 list(REMOVE_ITEM RIEMANN_HEADERS
-    "${RIEMANN_ROBOTICS_DIR}/SpiderTraining.h"
-    "${RIEMANN_ROBOTICS_DIR}/SpiderTrainingController.h")
+    "${RIEMANN_ROBOTICS_DIR}/RoboticsTraining.h"
+    "${RIEMANN_ROBOTICS_DIR}/RoboticsTrainingController.h")
 
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/../Test/*.cpp"
@@ -135,18 +136,24 @@ file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS
 add_library(Riemann STATIC ${RIEMANN_SOURCES} ${RIEMANN_HEADERS})
 if(WIN32 AND RIEMANN_ENABLE_COMPUTE_SHADER)
     target_compile_definitions(Riemann PUBLIC RIEMANN_ENABLE_COMPUTE_SHADER=1)
-    target_compile_definitions(Riemann PRIVATE RIEMANN_SNOW_COMPUTE=1)
-    target_link_libraries(Riemann PRIVATE d3d11 d3dcompiler dxguid)
-elseif(APPLE AND RIEMANN_ENABLE_COMPUTE_SHADER)
+    target_link_libraries(Riemann PRIVATE d3d11 d3dcompiler dxgi dxguid)
+endif()
+if(APPLE AND RIEMANN_ENABLE_METAL)
     enable_language(OBJCXX)
-    target_sources(Riemann PRIVATE "${RIEMANN_ROOT_DIR}/Src/Continuum/ComputeDevice_Metal.mm")
-    set_source_files_properties("${RIEMANN_ROOT_DIR}/Src/Continuum/ComputeDevice_Metal.mm"
-        PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+    set(RIEMANN_METAL_SOURCES
+        "${RIEMANN_ROOT_DIR}/Src/Solver/LCPSolverMetal.mm"
+        "${RIEMANN_ROOT_DIR}/Src/Solver/PBDBackendMetal.mm"
+        "${RIEMANN_ROOT_DIR}/Src/Fluid/FluidBackendMetal.mm"
+        "${RIEMANN_ROOT_DIR}/Src/Fluid/AerodynamicsMetal.mm"
+        "${RIEMANN_ROOT_DIR}/Src/Continuum/SnowBackendMetal.mm"
+        "${RIEMANN_ROOT_DIR}/Src/Continuum/SandBackendMetal.mm")
+    target_sources(Riemann PRIVATE ${RIEMANN_METAL_SOURCES})
+    set_source_files_properties(${RIEMANN_METAL_SOURCES} PROPERTIES COMPILE_FLAGS "-fobjc-arc")
     set_property(TARGET Riemann PROPERTY OBJCXX_STANDARD 14)
-    target_compile_definitions(Riemann PRIVATE RIEMANN_SNOW_COMPUTE=1)
-    find_library(SNOW_METAL_FRAMEWORK Metal REQUIRED)
-    find_library(SNOW_FOUNDATION_FRAMEWORK Foundation REQUIRED)
-    target_link_libraries(Riemann PRIVATE ${SNOW_METAL_FRAMEWORK} ${SNOW_FOUNDATION_FRAMEWORK})
+    target_compile_definitions(Riemann PUBLIC RIEMANN_ENABLE_METAL=1)
+    find_library(RIEMANN_METAL_FRAMEWORK Metal REQUIRED)
+    find_library(RIEMANN_FOUNDATION_FRAMEWORK Foundation REQUIRED)
+    target_link_libraries(Riemann PRIVATE ${RIEMANN_METAL_FRAMEWORK} ${RIEMANN_FOUNDATION_FRAMEWORK})
 endif()
 if(RIEMANN_CUDA_AVAILABLE)
     # CUDA is part of the public solver API when the backend is compiled in.
@@ -281,13 +288,6 @@ set(RIEMANN_VIEWER_CORE_HEADERS
 )
 
 add_executable(Test ${TEST_SOURCES})
-target_sources(Test PRIVATE
-    "${RIEMANN_ROBOTICS_DIR}/RobotDemo.cpp"
-    "${CMAKE_SOURCE_DIR}/../Viewer/SceneWorld.cpp"
-    "${CMAKE_SOURCE_DIR}/../Viewer/SolverPanel.cpp"
-    "${CMAKE_SOURCE_DIR}/../Renderer/imgui.cpp"
-)
-target_compile_definitions(Test PRIVATE IMGUI_STATIC)
 if(MSVC)
     target_compile_definitions(Test PRIVATE _CRT_SECURE_NO_WARNINGS)
     target_compile_options(Test PRIVATE $<$<CONFIG:Release>:/openmp>)
@@ -297,21 +297,20 @@ target_link_libraries(Test PRIVATE Riemann)
 
 enable_testing()
 set(RIEMANN_TEST_GROUPS
-    AerodynamicsInterface AerodynamicsBarotropic AerodynamicsSurfaceCoupling
-    ConstraintGraph FrictionPatches JointDrives SupportStabilization TemporalSubsteps CCDContinuation JointReactions
-    DistanceFieldSpeculativeDemo DistanceFieldMargins DistanceFieldCCD DistanceFieldSweeps DistanceFieldMeshDemo
-    DistanceFieldMesh DistanceFieldMeshSimulation DistanceFieldDemo DistanceFieldCollision RuntimeDistanceField
-    ContactOffsets CollisionFiltering MeshContacts ContactPersistence FluidOptimization AerodynamicsIncompressible AerodynamicsBackends
-    AerodynamicsMovingObstacles AerodynamicsBoundaryCoupling SolverPanel SolverSwitch PBDBackendScenes PBDBackends VehicleScene
-    VehicleDeformation RopeTowing XPBDScene XPBD PBDScene PBD VoxelScene VoxelMesh TerrainScene TerrainEditing
-    GEMM StressIntegration Stress Deformation Scenes RopeRegression Constraints ConstraintRegression Rope Cloth
-    ClothRigidCoupling UnifiedBroadPhase WorldAerodynamics CoupledDemos AerodynamicsPressureAccuracy
-    Ragdoll Terrain Matrix Destruction CCD IslandSleeping RobotController RobotSpider RobotSpiderPolicy RobotSpiderControls RobotNetworks SparseJointSpaceDynamics VehicleDynamics Featherstone
-    ReducedRagdoll ReducedRagdollDemo ReducedRagdollQueries RagdollMechanism PhysicalAnimation PhysicalAnimationDemo
-    ClothModel ClothModelDemo SurfaceCollision SurfaceContact ClothCollision ClothContinuous ClothInteraction
+    AerodynamicsInterface AerodynamicsBarotropic AerodynamicsSurfaceCoupling ConstraintGraph FrictionPatches JointDrives
+    SupportStabilization TemporalSubsteps CCDContinuation JointReactions DistanceFieldMargins DistanceFieldCCD
+    DistanceFieldSweeps DistanceFieldMesh DistanceFieldMeshSimulation DistanceFieldCollision RuntimeDistanceField ContactOffsets
+    CollisionFiltering MeshContacts ContactPersistence FluidOptimization AerodynamicsIncompressible AerodynamicsBackends
+    AerodynamicsMovingObstacles AerodynamicsBoundaryCoupling BackendAvailability PBDBackends VehicleDeformation XPBD PBDScene
+    PBD VoxelMesh TerrainEditing GEMM StressIntegration Stress
+    Deformation RopeRegression Constraints ConstraintRegression Rope Cloth
+    ClothRigidCoupling UnifiedBroadPhase WorldAerodynamics AerodynamicsPressureAccuracy Ragdoll Terrain
+    Matrix GeometryBoolean Destruction CCD IslandSleeping SparseJointSpaceDynamics
+    VehicleDynamics Featherstone ReducedRagdoll ReducedRagdollQueries RagdollMechanism PhysicalAnimation
+    ClothModel SurfaceCollision SurfaceContact ClothCollision ClothContinuous ClothInteraction
     DeformableAttachment RigidAttachment TetrahedralAsset ProjectiveDynamics DestructionAsset DestructionEvents
-    DestructionCache DestructionPlayback PhysicsField Strands StrandGroom StrandCollision DeformableCollision
-    DeformableRigidContact TetrahedralMaterial
+    DestructionCache DestructionPlayback PhysicsField Strands StrandGroom StrandCollision
+    DeformableCollision DeformableRigidContact TetrahedralMaterial
 )
 foreach(TEST_GROUP IN LISTS RIEMANN_TEST_GROUPS)
     add_test(NAME ${TEST_GROUP} COMMAND Test ${TEST_GROUP})
@@ -350,9 +349,9 @@ if(WIN32)
         Riemann
     )
     target_sources(Viewer PRIVATE
-        "${RIEMANN_ROBOTICS_DIR}/SpiderTraining.cpp"
-        "${RIEMANN_ROBOTICS_DIR}/SpiderTrainingController.cpp")
-    target_compile_definitions(Viewer PRIVATE RIEMANN_SPIDER_TRAINING=1)
+        "${RIEMANN_ROBOTICS_DIR}/RoboticsTraining.cpp"
+        "${RIEMANN_ROBOTICS_DIR}/RoboticsTrainingController.cpp")
+    target_compile_definitions(Viewer PRIVATE RIEMANN_ROBOTICS_TRAINING=1)
     
     # Visual Studio
     set_property(TARGET Test PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:Test>")
@@ -379,7 +378,7 @@ elseif(APPLE)
         MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
         MACOSX_BUNDLE_INFO_STRING "Riemann physics viewer"
-        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/MacBundleInfo.plist.in"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Mac/MacBundleInfo.plist.in"
     )
     target_include_directories(Viewer PRIVATE
         ${CMAKE_SOURCE_DIR}/..

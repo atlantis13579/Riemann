@@ -85,7 +85,6 @@
       <Filter>Deformation</Filter>
     </ClInclude>
     <ClCompile Include="..\..\Src\CollisionPrimitive\DistanceFieldShape.cpp" />
-    <ClCompile Include="..\..\Src\Continuum\SandBackendCompute.cpp" />
     <ClInclude Include="..\..\Src\Collision\DistanceFieldCollision.h" />
     <ClInclude Include="..\..\Src\Collision\SurfaceCollision.h" />
     <ClInclude Include="..\..\Src\Geometry\SpatialHashHierarchical.h">
@@ -97,7 +96,6 @@
     </ClInclude>
     <ClInclude Include="..\..\Src\CollisionPrimitive\DistanceFieldShape.h" />
     <ClInclude Include="..\..\Src\Continuum\SandGPUBackend.h" />
-    <ClInclude Include="..\..\Src\Continuum\SandKernels.h" />
     <ClCompile Include="..\..\Src\Continuum\SandSimulation.cpp" />
     <ClInclude Include="..\..\Src\Continuum\SandSimulation.h" />
     <ClInclude Include="..\..\Src\Continuum\MPMContact.h" />
@@ -600,7 +598,7 @@
     <ClInclude Include="..\..\Src\Modules\Robotics\ArticulatedRobotController.h">
       <Filter>Modules\Robotics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Src\Modules\Robotics\SpiderRobot.h">
+    <ClInclude Include="..\..\Src\Modules\Robotics\RoboticsRobot.h">
       <Filter>Modules\Robotics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Src\Modules\Vehicle\VehicleDynamics.h">
@@ -957,7 +955,7 @@
     <ClCompile Include="..\..\Src\Modules\Robotics\ArticulatedRobotController.cpp">
       <Filter>Modules\Robotics</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Src\Modules\Robotics\SpiderRobot.cpp">
+    <ClCompile Include="..\..\Src\Modules\Robotics\RoboticsRobot.cpp">
       <Filter>Modules\Robotics</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Src\Modules\Vehicle\VehicleDynamics.cpp">
@@ -1089,5 +1087,27 @@
     <ClCompile Include="..\..\Src\Solver\LCPSolverComputeShader.cpp">
       <Filter>Solver</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Src\Compute\BackendAvailability.cpp" />
+    <ClCompile Include="..\..\Src\Continuum\SandBackendDX11.cpp" />
+    <ClCompile Include="..\..\Src\Continuum\SnowBackendDX11.cpp" />
+    <ClInclude Include="..\..\Src\Compute\BackendAvailability.h" />
+    <ClInclude Include="..\..\Src\Compute\DX11Compute.h" />
+    <ClInclude Include="..\..\Src\Compute\MetalCompute.h" />
+    <ClInclude Include="..\..\Src\Continuum\SandDX11Kernels.h" />
+    <ClInclude Include="..\..\Src\Continuum\SandMetalKernels.h" />
+    <ClInclude Include="..\..\Src\Continuum\SnowDX11Kernels.h" />
+    <ClInclude Include="..\..\Src\Continuum\SnowMetalKernels.h" />
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsMetalKernels.h" />
+    <ClInclude Include="..\..\Src\Fluid\AerodynamicsMetalPressure.h" />
+    <ClInclude Include="..\..\Src\Solver\LCPMetalKernels.h" />
+    <ClInclude Include="..\..\Src\Solver\PBDMetalKernels.h" />
+    <None Include="..\..\Src\Continuum\SandBackendMetal.mm" />
+    <None Include="..\..\Src\Continuum\SnowBackendMetal.mm" />
+    <None Include="..\..\Src\Fluid\AerodynamicsMetal.mm" />
+    <None Include="..\..\Src\Fluid\FluidBackendMetal.mm" />
+    <None Include="..\..\Src\Solver\LCPSolverMetal.mm" />
+    <None Include="..\..\Src\Solver\PBDBackendMetal.mm" />
   </ItemGroup>
 </Project>

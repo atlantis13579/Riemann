@@ -13,12 +13,13 @@
 #include "../Src/CollisionPrimitive/Ray3.h"
 #include "SceneWorld.h"
 #include "SolverPanel.h"
+#include "../Src/Compute/BackendAvailability.h"
 #include "../Src/Continuum/SnowSimulation.h"
 #include "../Src/Continuum/SandSimulation.h"
 
 namespace Riemann
 {
-	class SpiderTrainingController;
+	class RoboticsTrainingController;
 	class Geometry;
 	class RenderThread;
 	class FluidSimulation;
@@ -121,7 +122,7 @@ private:
 		float GetCameraControlScale() const;
 		std::string OpenObjFileDialog() const;
 		std::string OpenMeshFileDialog() const;
-#ifdef RIEMANN_SPIDER_TRAINING
+#ifdef RIEMANN_ROBOTICS_TRAINING
 		std::string OpenElmanExecutableDialog() const;
 		std::string ElmanExecutableSettingsPath() const;
 		void LoadElmanExecutablePath();
@@ -144,6 +145,7 @@ private:
 		static void DrawImguiCallback(int width, int height, void* userData);
 
 	private:
+		BackendCapabilities m_BackendCapabilities;
 		std::unique_ptr<SceneWorld> m_World;
 		std::unique_ptr<FluidSimulation> m_FluidSimulation;
 		AerodynamicsSimulation* m_AerodynamicsSimulation = nullptr;
@@ -179,18 +181,18 @@ private:
 		bool m_MovementKeys[4];
 		bool m_RobotKeys[6]{};
 		bool m_RobotInputActive = false, m_RobotAutoWalk = false;
-#ifdef RIEMANN_SPIDER_TRAINING
-		enum class SpiderPanelMode { Inference, Training };
-		std::unique_ptr<SpiderTrainingController> m_SpiderTraining;
-		std::atomic<SpiderPanelMode> m_SpiderPanelMode{SpiderPanelMode::Inference};
-		std::atomic<bool> m_SpiderTrainingMode{false}, m_SpiderTrainingShowAll{false};
-		std::atomic<int> m_SpiderTrainingSelected{0};
-		std::atomic<int> m_SpiderTrainingWorldCount{1};
-		bool m_PendingSpiderTrainAction = false, m_PendingSpiderShowAllToggle = false;
-		unsigned int m_PendingSpiderTrainGeneration = 0;
-		int m_PendingSpiderPanelMode = -1;
-		unsigned int m_PendingSpiderPanelModeGeneration = 0;
-		int m_PendingSpiderSelection = -1;
+#ifdef RIEMANN_ROBOTICS_TRAINING
+		enum class RoboticsPanelMode { Inference, Training };
+		std::unique_ptr<RoboticsTrainingController> m_RoboticsTraining;
+		std::atomic<RoboticsPanelMode> m_RoboticsPanelMode{RoboticsPanelMode::Inference};
+		std::atomic<bool> m_RoboticsTrainingMode{false}, m_RoboticsTrainingShowAll{false};
+		std::atomic<int> m_RoboticsTrainingSelected{0};
+		std::atomic<int> m_RoboticsTrainingWorldCount{1};
+		bool m_PendingRoboticsTrainAction = false, m_PendingRoboticsShowAllToggle = false;
+		unsigned int m_PendingRoboticsTrainGeneration = 0;
+		int m_PendingRoboticsPanelMode = -1;
+		unsigned int m_PendingRoboticsPanelModeGeneration = 0;
+		int m_PendingRoboticsSelection = -1;
 		bool m_PendingBrowseElmanExecutable = false;
 		std::string m_ElmanExecutablePath, m_ElmanExecutableStatus;
 #endif
@@ -279,6 +281,7 @@ private:
 		bool m_ImguiPendingSnowChange = false;
 		struct AerodynamicsPanelState
 		{
+            bool Available[4]{};
 			bool Active = false;
 			int Backend = 2;
 			float GridScale = 1.0f;

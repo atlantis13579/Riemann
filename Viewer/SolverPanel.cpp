@@ -40,9 +40,9 @@ namespace Riemann
 	bool DrawSolverPanel(SolverPanelState& State)
 	{
 		const char* ResolutionLabels[] = { "Sequential Impulse", "LCP", "PBD", "XPBD" };
-		const char* BackendNames[] = { "CPU", "SIMD", "ComputeShader", "CUDA" };
+		const char* BackendNames[] = { "CPU", "SIMD", "DirectCompute", "CUDA", "Metal" };
 		State.ResolutionIndex = ValidIndex(State.ResolutionIndex);
-		State.BackendIndex = ValidIndex(State.BackendIndex);
+		State.BackendIndex = State.BackendIndex >= 0 && State.BackendIndex < 5 ? State.BackendIndex : 0;
 		const bool Editable = State.Enabled && !State.Pending;
 		const bool SolverEditable = Editable && State.SolverSwitchable;
 		const int PreviousResolution = State.ResolutionIndex;
@@ -54,18 +54,19 @@ namespace Riemann
 		imguiLabel("resolutionSolver");
 		imguiCombo("", &State.ResolutionIndex, ResolutionLabels, 4, SolverEditable);
 		const bool SequentialImpulse = State.ResolutionIndex == 0;
-		if (SequentialImpulse) State.BackendIndex = 0;
+		if (SequentialImpulse || (State.ResolutionIndex != PreviousResolution
+            && !State.Available[State.ResolutionIndex][State.BackendIndex])) State.BackendIndex = 0;
 
-		std::string BackendLabels[4];
-		const char* BackendItems[4];
-		for (int Index = 0; Index < 4; ++Index)
+		std::string BackendLabels[5];
+		const char* BackendItems[5];
+		for (int Index = 0; Index < 5; ++Index)
 		{
 			BackendLabels[Index] = BackendNames[Index];
 			if (!State.Available[State.ResolutionIndex][Index]) BackendLabels[Index] += " (N/A)";
 			BackendItems[Index] = BackendLabels[Index].c_str();
 		}
 		imguiLabel("Backend");
-		imguiCombo("", &State.BackendIndex, BackendItems, 4, SolverEditable && !SequentialImpulse);
+		imguiCombo("", &State.BackendIndex, BackendItems, 5, SolverEditable && !SequentialImpulse, State.Available[State.ResolutionIndex]);
 		bool Available = State.Available[State.ResolutionIndex][State.BackendIndex];
 		State.SolverChanged = SolverEditable && (State.ResolutionIndex != PreviousResolution || State.BackendIndex != PreviousBackend);
 		if (State.SolverChanged && !Available && !State.AllowFallback)
@@ -94,7 +95,7 @@ namespace Riemann
 		{
 			char Message[64];
 			std::snprintf(Message, sizeof(Message), "Fallback: %s -> %s",
-				BackendNames[ValidIndex(State.ActiveRequestedBackendIndex)], BackendNames[ValidIndex(State.ActiveBackendIndex)]);
+				BackendNames[std::max(0, std::min(4, State.ActiveRequestedBackendIndex))], BackendNames[std::max(0, std::min(4, State.ActiveBackendIndex))]);
 			DrawStatus(Message);
 		}
 		DrawStatus(State.Status);

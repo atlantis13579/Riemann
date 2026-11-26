@@ -10,5 +10,6 @@ namespace Riemann
 		SIMD,
 		ComputeShader,
 		CUDA,
+		Metal,
 	};
 }

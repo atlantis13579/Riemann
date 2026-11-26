@@ -8,7 +8,7 @@
 #include "../Renderer/RiemannRenderer.h"
 #include "../Src/Maths/Transform.h"
 #include "../Src/Modules/Robotics/ArticulatedRobotController.h"
-#include "../Src/Modules/Robotics/SpiderTraining.h"
+#include "../Src/Modules/Robotics/RoboticsTraining.h"
 #include "../Src/RigidBodyDynamics/RigidBody.h"
 #include "../Src/Fluid/AerodynamicsSimulation.h"
 #include "../Src/Destruction/DestructionSet.h"
@@ -187,13 +187,13 @@ namespace Riemann
 		bool GetCharacterBox() const { return m_CharacterBox; }
 		ArticulatedRobotController* GetWalkingRobot() const;
 		RobotController* GetRobotDemoController() const;
-		bool IsSpiderWalkingDemo() const { return m_SpiderWalkingDemo; }
+		bool IsRoboticsWalkingDemo() const { return m_RoboticsWalkingDemo; }
 		void SetRobotWalkMode(RobotWalkMode Mode) { m_RobotWalkMode = Mode; }
 		RobotWalkMode GetRobotWalkMode() const { return m_RobotWalkMode; }
 		void SetRobotDriveInput(float Forward, float Turn, float Strafe);
 		void SetRobotAutoWalk(bool AutoWalk) { m_RobotAutoWalk = AutoWalk; }
-		void BeginSpiderTrainingDisplay(size_t EnvironmentCount);
-		void ShowSpiderTrainingSnapshot(const SpiderTrainingSnapshot& Snapshot, bool ShowAll, size_t Selected);
+		void BeginRoboticsTrainingDisplay(size_t EnvironmentCount);
+		void ShowRoboticsTrainingSnapshot(const RoboticsTrainingSnapshot& Snapshot, bool ShowAll, size_t Selected);
 		Vector3 GetRobotDriveCommand() const { return m_RobotDriveCommand; }
 		float GetRobotDriveHeading() const { return m_RobotDriveHeading; }
 		// The next scene load starts a fresh policy and simulation with this selection.
@@ -459,7 +459,7 @@ namespace Riemann
 		SweepRobotController* m_SweepWalkingRobot = nullptr;
 		std::unique_ptr<FeatherstoneSolver> m_SweepRobotPose;
 		RobotWalkMode m_RobotWalkMode = RobotWalkMode::Policy;
-		bool m_SpiderWalkingDemo = false, m_RobotAutoWalk = false;
+		bool m_RoboticsWalkingDemo = false, m_RobotAutoWalk = false;
 		Vector3 m_RobotDriveInput = Vector3::Zero(), m_RobotDriveCommand = Vector3::Zero();
 		Vector3 m_SweepRobotPrevious = Vector3::Zero();
 		float m_RobotDriveHeading = 0, m_SweepRobotPhase = 0;

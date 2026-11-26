@@ -63,7 +63,7 @@ namespace Riemann
 			const FrictionPatchSettings& Friction, const SequentialImpulseSettings& Sequential)
 		{
 			if (!Sequential.IsValid()) throw std::invalid_argument("Invalid sequential impulse iteration settings");
-			if (static_cast<uint8_t>(Backend) > static_cast<uint8_t>(SolverBackend::CUDA))
+			if (static_cast<uint8_t>(Backend) > static_cast<uint8_t>(SolverBackend::Metal))
 				throw std::runtime_error("Invalid solver backend");
 			switch (Solver)
 			{

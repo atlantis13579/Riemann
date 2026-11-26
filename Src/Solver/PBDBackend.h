@@ -106,6 +106,15 @@ namespace Riemann
 		PBDBackendContact* Contacts, uint32_t ContactCount, const uint32_t* RowIndices,
 		const uint32_t* LayerOffsets, uint32_t LayerCount,
 		const PBDBackendParameters& Parameters, PBDBackendStage Stage);
+#if defined(RIEMANN_ENABLE_METAL)
+	bool IsPBDMetalBackendAvailable();
+	void* CreatePBDMetalContext();
+	void DestroyPBDMetalContext(void* Context);
+	bool ExecutePBDMetal(void* Context, PBDBackendBody* Bodies, uint32_t BodyCount,
+		PBDBackendContact* Contacts, uint32_t ContactCount, const uint32_t* RowIndices,
+		const uint32_t* LayerOffsets, uint32_t LayerCount,
+		const PBDBackendParameters& Parameters, PBDBackendStage Stage);
+#endif
 #if defined(RIEMANN_ENABLE_CUDA)
 	bool IsPBDCUDAAvailable();
 	void* CreatePBDCUDAContext();

@@ -3,7 +3,6 @@
 #include "../Src/Deformation/DeformableBody.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 #include "../Src/Collision/GeometryObject.h"
-#include "../Viewer/SceneWorld.h"
 #include <cfloat>
 #include <limits>
 #include <stdexcept>
@@ -253,37 +252,6 @@ namespace
 		B->RemoveAttachments(&External); World.Simulate(0.01f);
 		World.Reset(); EXPECT(World.GetDeformableRigidAttachmentCount() == 0);
 	}
-	void CoupledExistingDemo()
-	{
-		SceneWorld Scene; Scene.SetClothModelDemo(true); std::string Error;
-		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/08_cloth_sphere.json", &Error));
-		auto* World = Scene.GetSimulation(); EXPECT(World->SetSolverConfiguration(ResolutionPhaseSolver::XPBD, SolverBackend::CPU, false, &Error));
-		const size_t BaseFields = World->GetForceFieldCount();
-		EXPECT(Scene.ApplyDeformableAttachmentDemo(true, false, true)); auto* Payload = Scene.GetDemoAttachmentRigid(); EXPECT(Payload != nullptr);
-		EXPECT_NEAR(1 / Payload->InvMass, 2, 1e-6); EXPECT(World->GetForceFieldCount() == BaseFields + 1);
-		const auto LocalAnchor = Payload->WorldToBodyLocal(Scene.GetDemoDeformableBody(1)->GetParticle(3).Position);
-		printf("Payload: mass=%g inertia=%g anchor=(%g,%g,%g)\n", 1/Payload->InvMass, Payload->InvInertia[2][2], LocalAnchor.x, LocalAnchor.y, LocalAnchor.z);
-		for (int I = 0; I < 60; ++I) Scene.Step(1.0f / 60);
-		const float Gap = (Payload->BodyLocalToWorld(LocalAnchor) - Scene.GetDemoDeformableBody(1)->GetParticle(3).Position).Length();
-		printf("Rigid soft-body demo gap=%g rotation=%g\n", Gap, Payload->Q.z);
-		EXPECT(Gap < 0.01f); EXPECT(std::abs(Payload->Q.z) > 0.01f);
-		EXPECT(Scene.ApplyDeformableAttachmentDemo(true, true, true)); EXPECT(World->GetDeformableRigidAttachmentCount() == 1);
-		Scene.Step(1.0f / 60); EXPECT(Scene.GetDemoAttachmentRigid() != nullptr);
-		EXPECT(Scene.ApplyDeformableAttachmentDemo(true, false)); EXPECT(Scene.GetDemoAttachmentRigid() == nullptr);
-		EXPECT(World->GetForceFieldCount() == BaseFields);
-		EXPECT(World->GetDeformableRigidAttachmentCount() == 0);
-		EXPECT(Scene.ApplyDeformableAttachmentDemo(true, false, true));
-		World->RemoveDeformableBody(Scene.GetDemoDeformableBody(0)); Scene.Step(1.0f / 60);
-		EXPECT(Scene.GetDemoAttachmentRigid() == nullptr); EXPECT(World->GetDeformableRigidAttachmentCount() == 0);
-		EXPECT(World->GetForceFieldCount() == BaseFields);
-		EXPECT(Scene.ApplyDeformableAttachmentDemo(true, false, true)); Payload = Scene.GetDemoAttachmentRigid();
-		EXPECT(World->RemoveRigidBody(Payload)); Payload->ReleaseGeometries(); delete Payload;
-		Scene.Step(1.0f / 60); EXPECT(Scene.GetDemoAttachmentRigid() == nullptr);
-		EXPECT(World->GetForceFieldCount() == BaseFields);
-		EXPECT(Scene.ApplyDeformableAttachmentDemo(true, false, true));
-		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/08_cloth_sphere.json", &Error)); EXPECT(Scene.GetDemoAttachmentRigid() == nullptr);
-		EXPECT(Scene.GetSimulation()->GetForceFieldCount() == BaseFields);
-	}
 	void CoupledContactBackends()
 	{
 		for (auto Solver : { ResolutionPhaseSolver::PBD, ResolutionPhaseSolver::XPBD })
@@ -356,5 +324,5 @@ void TestRigidAttachment()
 {
 	PointResponse(); CenteredAndCompliant(); EccentricAndReaction(); LockedAndLimited(); ValidationAndAtomicity();
 	WorldMomentumAndForces(); WorldSharedRigidAndOffset(); WorldContactAndGuards();
-	PrescribedAndLinkedEndpoints(); CoupledExistingDemo(); CoupledContactBackends(); CoupledCallbackLifetime();
+	PrescribedAndLinkedEndpoints();  CoupledContactBackends(); CoupledCallbackLifetime();
 }

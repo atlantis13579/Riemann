@@ -31,6 +31,12 @@ namespace Riemann
 
 			for (int i = 0; i < nt; ++i)
 			{
+				if (!Mesh.IsTriangle(i))
+				{
+					Centroids[i] = Normals[i] = Vector3::Zero();
+					Areas[i] = 0.0f;
+					continue;
+				}
 				Triangle3 Triangle;
 				Mesh.GetTriVertices(i, Triangle.v0, Triangle.v1, Triangle.v2);
 

@@ -525,6 +525,23 @@ void TestListSet()
 		EXPECT(iterated[i] == i);
 	}
 
+	ListSet<int> logical_tail;
+	logical_tail.resize(1);
+	for (int i = 0; i < 17; ++i)
+	{
+		logical_tail[0].push_back(i);
+	}
+	EXPECT(logical_tail[0].remove_at(0, false));
+	EXPECT(logical_tail[0].remove_at(0, false));
+	EXPECT(logical_tail[0].size() == 15);
+	EXPECT(logical_tail[0][0] == 15);
+	for (int i = 1; i < logical_tail[0].size(); ++i)
+	{
+		EXPECT(logical_tail[0][i] == i);
+	}
+	logical_tail[0].push_back(17);
+	EXPECT(logical_tail[0][15] == 17);
+
 
 	return;
 }

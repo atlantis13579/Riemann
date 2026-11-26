@@ -1,3 +1,4 @@
+#include "../Compute/BackendAvailability.h"
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
@@ -9,7 +10,7 @@
 #include <new>
 #include <vector>
 
-#if defined(_WIN32)
+#if defined(_WIN32) && defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -25,7 +26,7 @@
 
 namespace Riemann
 {
-#if defined(_WIN32)
+#if defined(_WIN32) && defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 	namespace
 	{
 		template <class T>
@@ -775,15 +776,7 @@ void SolveProjectedGaussSeidel(uint3 GroupId : SV_GroupID,
 
 	bool IsLCPComputeShaderBackendAvailable()
 	{
-		static std::once_flag ProbeFlag;
-		static bool Available = false;
-		std::call_once(ProbeFlag, []()
-		{
-			LCPComputeShaderBatchContext* Context = CreateLCPComputeShaderBatchContext();
-			Available = Context != nullptr;
-			DestroyLCPComputeShaderBatchContext(Context);
-		});
-		return Available;
+		return IsDirectComputeAvailable();
 	}
 
 	bool SolveProjectedGaussSeidelComputeShaderBatched(

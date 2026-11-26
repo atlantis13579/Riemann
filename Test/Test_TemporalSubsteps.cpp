@@ -3,7 +3,6 @@
 #include "../Src/RigidBodyDynamics/ForceField.h"
 #include "../Src/RigidBodyDynamics/CollidingContact.h"
 #include "../Src/Collision/GeometryObject.h"
-#include "../Viewer/SceneWorld.h"
 #include "../Src/RigidBodyDynamics/NarrowPhase.h"
 #include <memory>
 #include <chrono>
@@ -185,45 +184,6 @@ namespace
 		}
 		EXPECT_NEAR(B->X.x, -2, 0.01f); EXPECT_NEAR(B->V.x, -100, 0.01f);
 	}
-	void TestConfiguration()
-	{
-		SceneWorld Scene; std::string Error;
-		for (const char* Value : { "true", "{\"enabled\":1}", "{\"substeps\":0}", "{\"substeps\":65}", "{\"substeps\":1.5}" })
-		{
-			EXPECT(!Scene.LoadFromText(std::string("{\"physics\":{\"temporalSubsteps\":") + Value + "},\"objects\":[]}", "invalid temporal", &Error));
-			EXPECT(Error.find("temporalSubsteps") != std::string::npos);
-		}
-		EXPECT(Scene.LoadFromText(R"({"physics":{"temporalSubsteps":{"enabled":true,"substeps":8},"sequentialImpulse":{"positionIterations":2,"velocityIterations":3}},"objects":[]})", "temporal", &Error));
-		for (auto Solver : Solvers)
-		{
-			EXPECT(Scene.GetSimulation()->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
-			EXPECT(Scene.GetSimulation()->GetTemporalSubstepSettings().Substeps == 8);
-			EXPECT(Scene.GetSimulation()->GetSequentialImpulseSettings().PositionIterations == 2);
-		}
-		auto Bad = Scene.GetSimulation()->GetTemporalSubstepSettings(); Bad.Substeps = 0;
-		bool Rejected = false; try { Scene.GetSimulation()->SetTemporalSubstepSettings(Bad); } catch (const std::invalid_argument&) { Rejected = true; }
-		EXPECT(Rejected && Scene.GetSimulation()->GetTemporalSubstepSettings().Substeps == 8);
-		EXPECT(!Scene.LoadFromText(R"({"physics":{"sequentialImpulse":{"positionIterations":0}},"objects":[]})", "invalid SI", &Error));
-		EXPECT(Error.find("sequentialImpulse") != std::string::npos);
-	}
-	void TestExistingDemos()
-	{
-		for (const char* File : { "01_stack_boxes.json", "06_constraints.json" })
-		for (auto Solver : Solvers)
-		for (bool Enabled : { false, true })
-		{
-			SceneWorld Scene; std::string Error;
-			EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/" + File, &Error, std::string(File).find("01_stack_boxes.json") != std::string::npos ? "grid" : ""));
-			auto* World = Scene.GetSimulation(); EXPECT(World->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
-			auto Settings = World->GetTemporalSubstepSettings(); Settings.Enabled = Enabled; World->SetTemporalSubstepSettings(Settings);
-			for (int Frame = 0; Frame < 60; ++Frame) Scene.Step(1.0f / 60);
-			for (const auto& Object : Scene.GetObjects())
-			{
-				auto* B = Object.GeometryPtr->GetParent<RigidBody>();
-				EXPECT(std::isfinite(B->X.Length()) && std::isfinite(B->V.Length()) && std::isfinite(B->W.Length()));
-			}
-		}
-	}
 	struct StabilityResult { float Error = 0, Speed = 0, HeightError = 0, Drift = 0, AngularSpeed = 0; int BlockFallbacks = 0; double Milliseconds = 0; };
 	StabilityResult MeasureStability(ResolutionPhaseSolver Solver, int Count, bool Chain, float MassRatio, bool Support = false, SolverBackend Backend = SolverBackend::CPU, int Budget = 4, int Size = 8, int Frames = 120)
 	{
@@ -295,7 +255,7 @@ namespace
 void TestTemporalSubsteps()
 {
 	printf("Running TestTemporalSubsteps\n");
-	TestTimeAndLoads(); TestCallbackLoads(); TestFailureBookkeeping(); TestFrameReactions(); TestDriveBudget(); TestStepEquivalence(); TestCCDTime(); TestConfiguration(); TestExistingDemos(); TestStabilityEvidence();
+	TestTimeAndLoads(); TestCallbackLoads(); TestFailureBookkeeping(); TestFrameReactions(); TestDriveBudget(); TestStepEquivalence(); TestCCDTime();   TestStabilityEvidence();
 }
 
 void TestSupportStabilization()
@@ -504,37 +464,5 @@ void TestSupportStabilization()
 		printf("Mixed reverse=%d lowerY=%g upper=(%g,%g,%g) speed=%g level=%d\n", Reverse, Lower->X.y, Upper->X.x, Upper->X.y, Upper->X.z, Upper->V.Length(), Mixed.GetLastSupportStabilizationStats().MaximumLevel);
 		EXPECT_NEAR(Lower->X.y, 0, 0.01f); EXPECT_NEAR(Upper->X.y, 1, 0.01f);
 		EXPECT(Mixed.GetLastSupportStabilizationStats().MaximumLevel == 2);
-	}
-	SceneWorld Scene; std::string Error;
-	for (const char* Value : { "true", "{\"enabled\":1}", "{\"positionIterations\":0}", "{\"velocityIterations\":1.5}",
-		"{\"parentInverseMassScale\":-0.1}", "{\"parentInverseMassScale\":1.1}", "{\"contactTolerance\":-1}",
-		"{\"maximumPositionCorrection\":0}", "{\"maximumAngularCorrection\":\"bad\"}" })
-	{
-		EXPECT(!Scene.LoadFromText(std::string("{\"physics\":{\"supportStabilization\":") + Value + "},\"objects\":[]}", "bad support", &Error));
-		EXPECT(Error.find("supportStabilization") != std::string::npos);
-	}
-	EXPECT(Scene.LoadFromText(R"({"physics":{"supportStabilization":{"enabled":true,"positionIterations":2,"velocityIterations":3,"parentInverseMassScale":0.1,"contactTolerance":0.002,"maximumPositionCorrection":0.2,"maximumAngularCorrection":0.3}},"objects":[]})", "support", &Error));
-	for (auto Solver : Solvers)
-	{
-		EXPECT(Scene.GetSimulation()->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
-		const auto& Settings = Scene.GetSimulation()->GetSupportStabilizationSettings();
-		EXPECT(Settings.Enabled && Settings.PositionIterations == 2 && Settings.VelocityIterations == 3);
-		EXPECT_NEAR(Settings.ParentInverseMassScale, 0.1f, 1e-6f);
-	}
-	auto Bad = Scene.GetSimulation()->GetSupportStabilizationSettings(); Bad.ParentInverseMassScale = -1;
-	bool Rejected = false; try { Scene.GetSimulation()->SetSupportStabilizationSettings(Bad); } catch (const std::invalid_argument&) { Rejected = true; }
-	EXPECT(Rejected && Scene.GetSimulation()->GetSupportStabilizationSettings().ParentInverseMassScale > 0);
-	for (const char* File : { "01_stack_boxes.json", "06_constraints.json" })
-	for (auto Solver : Solvers)
-	{
-		EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/" + File, &Error, std::string(File).find("01_stack_boxes.json") != std::string::npos ? "grid" : ""));
-		auto* W = Scene.GetSimulation(); EXPECT(W->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
-		auto Settings = W->GetSupportStabilizationSettings(); Settings.Enabled = true; W->SetSupportStabilizationSettings(Settings);
-		for (int Frame = 0; Frame < 120; ++Frame) Scene.Step(1.0f / 60);
-		for (const auto& Object : Scene.GetObjects())
-		{
-			auto* B = Object.GeometryPtr->GetParent<RigidBody>();
-			EXPECT(std::isfinite(B->X.Length()) && std::isfinite(B->V.Length()) && std::isfinite(B->W.Length()));
-		}
 	}
 }

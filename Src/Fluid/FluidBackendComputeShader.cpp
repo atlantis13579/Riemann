@@ -1,3 +1,4 @@
+#include "../Compute/BackendAvailability.h"
 #if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 
 #include "FluidBackend.h"
@@ -84,9 +85,7 @@ void ApplyVelocityDelta(uint3 Id : SV_DispatchThreadID)
 
 	bool IsFluidComputeShaderBackendAvailable()
 	{
-		Context& Value = GetContext();
-		std::lock_guard<std::mutex> Lock(Value.Mutex);
-		return Value.Initialize();
+		return IsDirectComputeAvailable();
 	}
 
 	bool ApplyFluidVelocityDeltaComputeShader(const Vector3* Velocity,

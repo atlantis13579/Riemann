@@ -23,12 +23,12 @@ namespace Riemann
 	}
 	SandSimulation::SandSimulation() = default;
 	SandSimulation::~SandSimulation() = default;
-	bool SandSimulation::IsBackendAvailable(SnowBackend Backend) { return SnowSimulation::IsBackendAvailable(Backend); }
+	bool SandSimulation::IsBackendAvailable(SnowBackend Backend) { return Backend <= SnowBackend::SIMD ? SnowSimulation::IsBackendAvailable(Backend) : IsSandGPUBackendAvailable(Backend); }
 	bool SandSimulation::SetBackend(SnowBackend Backend)
 	{
 		if(!IsBackendAvailable(Backend)) { m_BackendError="Requested sand backend is unavailable";return false; }
 		auto GPU=Backend==SnowBackend::CUDA ? CreateSandCUDA() :
-			(Backend==SnowBackend::ComputeShader || Backend==SnowBackend::Metal ? CreateSandCompute() : nullptr);
+			(Backend==SnowBackend::ComputeShader ? CreateSandDX11() : Backend==SnowBackend::Metal ? CreateSandMetal() : nullptr);
 		if(Backend!=SnowBackend::CPU && Backend!=SnowBackend::SIMD && !GPU)
 		{ m_BackendError="Requested sand backend was not built";return false; }
 		m_GPU=std::move(GPU);m_Backend=Backend;m_BackendError.clear();return true;
@@ -173,8 +173,5 @@ namespace Riemann
 	}
 #if !defined(RIEMANN_SNOW_CUDA)
 	std::unique_ptr<SandGPUBackend> CreateSandCUDA() { return {}; }
-#endif
-#if !defined(RIEMANN_SNOW_COMPUTE)
-	std::unique_ptr<SandGPUBackend> CreateSandCompute() { return {}; }
 #endif
 }

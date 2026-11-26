@@ -1,3 +1,4 @@
+#include "../Compute/BackendAvailability.h"
 #include "PBDBackend.h"
 
 #include <algorithm>
@@ -417,15 +418,7 @@ void SolveContacts(uint3 Id : SV_DispatchThreadID)
 
 	bool IsPBDComputeShaderBackendAvailable()
 	{
-		static std::once_flag Probe;
-		static bool Available = false;
-		std::call_once(Probe, []()
-		{
-			void* Context = CreatePBDComputeShaderContext();
-			Available = Context != nullptr;
-			DestroyPBDComputeShaderContext(Context);
-		});
-		return Available;
+		return IsDirectComputeAvailable();
 	}
 
 	bool ExecutePBDComputeShader(void* Opaque, PBDBackendBody* Bodies, uint32_t BodyCount,

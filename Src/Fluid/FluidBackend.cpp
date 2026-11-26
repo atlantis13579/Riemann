@@ -17,6 +17,11 @@ namespace Riemann
 	bool ApplyFluidVelocityDeltaComputeShader(const Vector3* Velocity,
 		const Vector3* Delta, size_t Count, Vector3* Output);
 #endif
+#if defined(RIEMANN_ENABLE_METAL)
+	bool IsFluidMetalBackendAvailable();
+	bool ApplyFluidVelocityDeltaMetal(const Vector3* Velocity,
+		const Vector3* Delta, size_t Count, Vector3* Output);
+#endif
 
 	namespace
 	{
@@ -67,6 +72,12 @@ namespace Riemann
 #else
 				return false;
 #endif
+			case FluidBackend::Metal:
+#if defined(RIEMANN_ENABLE_METAL)
+				return ApplyFluidVelocityDeltaMetal(Velocity, Delta, Count, Output);
+#else
+				return false;
+#endif
 			}
 			return false;
 		}
@@ -88,6 +99,12 @@ namespace Riemann
 		case FluidBackend::ComputeShader:
 #if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 			return IsFluidComputeShaderBackendAvailable();
+#else
+			return false;
+#endif
+		case FluidBackend::Metal:
+#if defined(RIEMANN_ENABLE_METAL)
+			return IsFluidMetalBackendAvailable();
 #else
 			return false;
 #endif

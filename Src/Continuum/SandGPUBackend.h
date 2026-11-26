@@ -12,5 +12,7 @@ namespace Riemann
 			int Resolution, float Slope, float Rate, int Iterations, std::string& Error) = 0;
 	};
 	std::unique_ptr<SandGPUBackend> CreateSandCUDA();
-	std::unique_ptr<SandGPUBackend> CreateSandCompute();
+	std::unique_ptr<SandGPUBackend> CreateSandDX11();
+	std::unique_ptr<SandGPUBackend> CreateSandMetal();
+	bool IsSandGPUBackendAvailable(SnowBackend Backend);
 }

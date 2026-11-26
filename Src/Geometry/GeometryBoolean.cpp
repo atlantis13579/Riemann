@@ -339,8 +339,7 @@ namespace Riemann
 			}
 			if (StartVIDIndex == -1)
 			{
-				Triangle3::PointDistanceQueryResult info = CurrentTri.PointDistanceQuery(StartPt);
-                (void)info;
+				CurrentTriDist = CurrentTri.PointDistanceQuery(StartPt);
 				ComputedPointsAndSources.emplace_back(MeshSurfacePoint(StartTri, CurrentTriDist.BaryCoords), WalkIndices(StartPt, -1, StartTri));
 			}
 			else
@@ -711,6 +710,8 @@ namespace Riemann
 
 		void Init(DynamicMesh* WorkingMesh)
 		{
+			// Triangle IDs remain sparse after removals and explicit insertions.
+			BaseFaceNormals.assign(WorkingMesh->GetTriangleCount(), Vector3::Zero());
 			for (int i = 0; i < WorkingMesh->GetTriangleCount(); ++i)
 			{
 				if (!WorkingMesh->IsTriangleFast(i))
@@ -718,7 +719,7 @@ namespace Riemann
 					continue;
 				}
 
-				BaseFaceNormals.push_back(WorkingMesh->GetTriNormal(i));
+				BaseFaceNormals[i] = WorkingMesh->GetTriNormal(i);
 			}
 
 			FaceVertices.clear();
@@ -2191,7 +2192,7 @@ namespace Riemann
 
 					EdgeCollapseInfo CollapseInfo;
 					EMeshResult CollapseResult = CutMesh[MeshIdx]->CollapseEdge(EV.a, EV.b, .5, CollapseInfo);
-					if (CollapseResult != EMeshResult::Ok)
+					if (CollapseResult == EMeshResult::Ok)
 					{
 						for (int i = 0; i < 2; i++)
 						{
@@ -2245,10 +2246,13 @@ namespace Riemann
 					RemoveInside = false;
 				}
 
-				std::vector<Vector3> OtherNormals(OtherSpatial.Mesh->GetTriangleCount());
+				std::vector<Vector3> OtherNormals(OtherSpatial.Mesh->GetTriangleCount(), Vector3::Zero());
 				for (size_t ii = 0; ii < OtherNormals.size(); ++ii)
 				{
-					OtherNormals[ii] = OtherSpatial.Mesh->GetTriNormal((int)ii);
+					if (OtherSpatial.Mesh->IsTriangle((int)ii))
+					{
+						OtherNormals[ii] = OtherSpatial.Mesh->GetTriNormal((int)ii);
+					}
 				}
 
 				const float OnPlaneTolerance = SnapTolerance;

@@ -927,6 +927,7 @@ namespace Riemann
 			{
 				return SolverBackend::CUDA;
 			}
+            if (backend == "metal") return SolverBackend::Metal;
 			return fallback;
 		}
 
@@ -989,7 +990,7 @@ namespace Riemann
 			desc.Aerodynamics.Method = desc.Method == "eulerian" ? FluidSimulationMethod::Eulerian
 				: desc.Method == "lagrangian" ? FluidSimulationMethod::Lagrangian : (FluidSimulationMethod)255;
 			desc.Aerodynamics.BoundsMin = desc.BoundsMin;
-			desc.Aerodynamics.Backend = desc.Backend == "cuda" ? FluidBackend::CUDA
+			desc.Aerodynamics.Backend = desc.Backend == "metal" ? FluidBackend::Metal : desc.Backend == "cuda" ? FluidBackend::CUDA
 				: (desc.Backend == "compute" || desc.Backend == "computeshader" || desc.Backend == "compute_shader") ? FluidBackend::ComputeShader
 				: desc.Backend == "simd" ? FluidBackend::SIMD : desc.Backend == "cpu" ? FluidBackend::CPU : (FluidBackend)255;
 			desc.Aerodynamics.AllowBackendFallback = desc.AllowBackendFallback;
@@ -1391,7 +1392,7 @@ namespace Riemann
 		m_Objects.clear();
 		m_WalkingRobot = nullptr; m_RobotSurfaces.clear(); m_TrainingDisplay = false; m_TrainingBuildIndex = 0;
 		m_SweepWalkingRobot = nullptr; m_SweepRobotPose.reset();
-		m_SpiderWalkingDemo = false; m_RobotAutoWalk = false;
+		m_RoboticsWalkingDemo = false; m_RobotAutoWalk = false;
 		m_RobotDriveInput = m_RobotDriveCommand = m_SweepRobotPrevious = Vector3::Zero();
 		m_RobotDriveHeading = m_SweepRobotPhase = 0;
 		m_Vehicles.clear();

@@ -21,6 +21,7 @@ namespace Riemann
 		SIMD,
 		CUDA,
 		ComputeShader,
+		Metal,
 	};
 
 	struct FluidBackendResult

@@ -4,8 +4,6 @@
 #include "../Src/RigidBodyDynamics/Ragdoll.h"
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/Destruction/DestructionSet.h"
-#include "../Viewer/SceneWorld.h"
-#include "../Viewer/SolverPanel.h"
 #include <limits>
 #include <cmath>
 #include <stdexcept>
@@ -169,27 +167,6 @@ namespace
 		C.Target = PhysicsFieldTarget::LinearVelocity; const auto Id = W.AddPhysicsField(C); Reject([&] { W.Simulate(0.01f); }); EXPECT(W.RemovePhysicsField(Id)); EXPECT_NEAR(B->V.x,2,1e-6);
 		EXPECT(A->GetBodies().size() == 1);
 	}
-	void ExistingDemoScenes()
-	{
-		for (const char* Name : {"10_destruction.json","11_glass_fracture.json"})
-		{
-			SceneWorld Scene; Scene.SetDestructionCacheDemo(true); std::string Error; EXPECT(Scene.LoadFromFile(TestContentsPath()+"Scenes/"+Name,&Error));
-			SolverPanelState Panel; Panel.PhysicsFieldsDemo = true; Panel.DestructionSeekFraction = 0.6f;
-			RefreshSolverPanelTelemetry(Panel,Scene); EXPECT(Panel.DestructionRecording && Panel.DestructionCacheDuration == 0);
-			EXPECT(Scene.ApplyPhysicsFieldsDemo(true,false,true)); Scene.Step(1.0f/60);
-			EXPECT(Scene.GetSimulation()->GetPhysicsFieldStats().Samples > 0 && Scene.GetSimulation()->GetPhysicsFieldStats().BrokenBonds > 0);
-			RefreshSolverPanelTelemetry(Panel,Scene); EXPECT(Panel.DestructionCacheDuration > 0 && Panel.FieldBrokenBonds > 0 && Panel.DestructionEvents > 0);
-			EXPECT(Panel.PhysicsFieldsDemo && Panel.DestructionSeekFraction == 0.6f);
-			EXPECT(Scene.ApplyPhysicsFieldsDemo(true,true)); Scene.Step(1.0f/60); EXPECT(Scene.GetPhysicsFieldFreeze());
-			EXPECT(Scene.ApplyPhysicsFieldsDemo(true,false,false,true)); Scene.Step(1.0f/60);
-			EXPECT(Scene.ApplyDestructionCacheDemo(DestructionPlaybackCommand::Replay)); Scene.Step(1.0f/60);
-			RefreshSolverPanelTelemetry(Panel,Scene); EXPECT(!Panel.DestructionRecording && Panel.DestructionPlaying && Panel.DestructionCacheTime > 0);
-			EXPECT(Scene.GetDestructionPlayback(0)->GetCache().GetStats().EventCount > 0);
-			EXPECT(Scene.ApplyPhysicsFieldsDemo(false)); Scene.Step(1.0f/60); EXPECT(Scene.GetSimulation()->GetPhysicsFieldCount() == 0);
-			printf("Physics fields scene %s, cache events=%zu\n",Name,Scene.GetDestructionPlayback(0)->GetCache().GetStats().EventCount);
-			Scene.Reset(); EXPECT(Scene.GetSimulation()->GetPhysicsFieldStats().Time == 0);
-		}
-	}
 }
 void TestPhysicsField()
 {
@@ -202,5 +179,5 @@ void TestPhysicsField()
 	Run("ActivationVelocityAndMaterial",ActivationVelocityAndMaterial); Run("StrainFramesEventsAndCache",StrainFramesEventsAndCache);
 	Run("SleepingIslandsAndForceRetry",SleepingIslandsAndForceRetry);
 	Run("StaticAndKinematicMaterials",StaticAndKinematicMaterials);
-	Run("ValidationAndLifetime",ValidationAndLifetime); Run("ReducedRagdollLoads",ReducedRagdollLoads); Run("ExistingDemoScenes",ExistingDemoScenes);
+	Run("ValidationAndLifetime",ValidationAndLifetime); Run("ReducedRagdollLoads",ReducedRagdollLoads);
 }

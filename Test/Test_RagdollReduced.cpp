@@ -6,9 +6,14 @@
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/CollisionPrimitive/TriangleMesh.h"
 #include "../Src/Deformation/Rope.h"
-#include "../Viewer/SceneWorld.h"
 #include <cmath>
 #include <stdexcept>
+#include <limits>
+#include "../Src/RigidBodyDynamics/PhysicalAnimation.h"
+#include <algorithm>
+#if !defined(_WIN32)
+#include <unistd.h>
+#endif
 
 namespace
 {
@@ -121,16 +126,7 @@ namespace
 		EXPECT(World.RemoveRagdoll(Reduced));
 		EXPECT(World.GetRagdollCount() == 0 && World.GetReducedRagdollCount() == 0);
 
-		SceneWorld Scene; std::string Error;
-		EXPECT(Scene.LoadFromText(R"({"name":"Ragdoll algorithm switch","objects":[],"ragdolls":[{"algorithm":"reducedCoordinates","position":[0,4,0]}]})", "switch", &Error));
-		EXPECT(Scene.GetSimulation()->GetRagdollCount() == 1 && Scene.GetSimulation()->GetReducedRagdollCount() == 1);
-		Scene.Step(Dt);
-
-		SceneWorld Stairs; Stairs.SetRagdollAlgorithmOverride(RagdollAlgorithm::ReducedCoordinates);
-		EXPECT(Stairs.LoadFromFile(TestContentsPath() + "Scenes/09_ragdoll_stairs.json", &Error));
-		EXPECT(Stairs.GetSimulation()->GetRagdollCount() == 1 && Stairs.GetSimulation()->GetReducedRagdollCount() == 1);
-		Stairs.Step(Dt);
-	}
+}
 	void SphericalConeLimit()
 	{
 		PhysicsWorld World(Parameters()); RagdollSettings S=RagdollSettings::Reduced(); S.Links.resize(2);
@@ -305,105 +301,380 @@ void TestReducedRagdoll()
 	SelfCollisionAndContactDrive();
 }
 
-void TestReducedRagdollDemo()
+namespace Test_RagdollMechanism_Cases
+{
+namespace
 {
 	using namespace Riemann;
-	SceneWorld Scene; std::string Error; const std::string Path = TestContentsPath() + "Scenes/06_constraints.json";
-	EXPECT(Scene.LoadFromFile(Path, &Error)); const size_t OriginalObjects = Scene.GetObjects().size();
-	EXPECT(Scene.GetSimulation()->GetReducedRagdollCount() == 0);
-	auto Find = [&](const std::string& Id) -> RigidBody*
+	constexpr float Dt = 0.01f;
+	PhysicsWorldParam Parameters()
 	{
-		for (const auto& Object : Scene.GetObjects()) if (Object.Id == Id) return Object.GeometryPtr->GetParent<RigidBody>();
-		return nullptr;
-	};
-	for (bool Patches : { false, true })
-	{
-		Scene.SetReducedRagdollDemo(true); EXPECT(Scene.LoadFromFile(Path, &Error));
-		auto* World = Scene.GetSimulation(); EXPECT(World->GetReducedRagdollCount() == 6);
-		EXPECT(Scene.GetObjects().size() == OriginalObjects + 38);
-		EXPECT(World->GetTemporalSubstepSettings().Enabled);
-		World->SetUnifiedConstraintSolving(Patches);
-		auto Friction = World->GetFrictionPatchSettings(); Friction.Enabled = Patches; World->SetFrictionPatchSettings(Friction);
-		auto* ChainRoot = Find("ragdoll_chain_0"); auto* ArmRoot = Find("ragdoll_arm_0"); auto* FreeRoot = Find("ragdoll_floating_0");
-		EXPECT(ChainRoot && ArmRoot && FreeRoot); if (!ChainRoot || !ArmRoot || !FreeRoot) return;
-		auto* Arm = ArmRoot->ReducedRagdoll; auto* Chain = ChainRoot->ReducedRagdoll; auto* Free = FreeRoot->ReducedRagdoll;
-		auto* Gears = Find("mechanism_transmission_0")->ReducedRagdoll;
-		auto* Hard = Find("mechanism_cable_0_0")->ReducedRagdoll; auto* Elastic = Find("mechanism_cable_1_0")->ReducedRagdoll;
-		EXPECT(Gears->GetMechanismCount() == 3 && Hard->GetMechanismCount() == 1 && Elastic->GetMechanismCount() == 1);
-		double MaximumCouplingError = 0, MaximumCableError = 0, MaximumExtension = 0, MinimumInput = 0, MaximumInput = 0;
-		const Vector3 Anchor = ChainRoot->X; float MaximumJointError = 0;
-		constexpr float FrameTime = 1.0f / 60;
-		for (int Frame = 0; Frame < 240; ++Frame)
-		{
-			Scene.Step(FrameTime);
-			for (auto* Tree : { Chain, Arm, Free, Gears, Hard, Elastic }) for (size_t I = 0; I < Tree->GetBodies().size(); ++I)
-			{
-				auto* Link = Tree->GetBodies()[I]; const auto& S = Tree->GetDynamics().GetLinkSettings(I);
-				EXPECT(std::isfinite(Link->X.Length()) && std::isfinite(Link->V.Length()) && std::isfinite(Link->W.Length()));
-				EXPECT_NEAR(Link->Q.SquareLength(), 1, 1e-5f);
-				if (S.Parent < 0) continue;
-				Vector3 Translation = Vector3::Zero();
-				if (S.Joint == RagdollReducedJointType::Prismatic) Translation = S.Axis * (float)Tree->GetDynamics().GetConfiguration()[I].Position;
-				const Vector3 ParentPoint = Tree->GetBodies()[S.Parent]->BodyLocalToWorld(S.ParentToJoint.LocalToWorld(Translation));
-				MaximumJointError = std::max(MaximumJointError, (Link->BodyLocalToWorld(Vector3::Zero()) - ParentPoint).Length());
-			}
-			for (size_t I = 0; I < Gears->GetMechanismCount(); ++I) MaximumCouplingError = std::max(MaximumCouplingError, std::abs(Gears->GetMechanism(I)->GetCoordinate()));
-			MaximumCableError = std::max(MaximumCableError, std::abs(Hard->GetMechanism(0)->GetCoordinate() - Hard->GetMechanism(0)->GetSettings().Target));
-			MaximumExtension = std::max(MaximumExtension, Elastic->GetMechanism(0)->GetCoordinate() - Elastic->GetMechanism(0)->GetSettings().Target);
-			EXPECT(Hard->GetMechanism(0)->GetForce() <= 0 && Elastic->GetMechanism(0)->GetForce() <= 0);
-			const double Input = Gears->GetDynamics().GetConfiguration()[1].Position;
-			MinimumInput = std::min(MinimumInput, Input); MaximumInput = std::max(MaximumInput, Input);
-		}
-		printf("Mechanism demo gear error=%.8f cable error=%.8f elastic stretch=%.6f input=[%.4f, %.4f]\n",
-			MaximumCouplingError, MaximumCableError, MaximumExtension, MinimumInput, MaximumInput);
-		EXPECT(MaximumCouplingError < 1e-5); EXPECT(MaximumCableError < 1e-4); EXPECT(MaximumExtension > 0.01 && MaximumExtension < 0.1);
-		EXPECT(MinimumInput < -0.5 && MaximumInput > 0.5);
-		for (int Mode = 0; Mode < 2; ++Mode)
-			for (const auto& Object : Scene.GetObjects()) if (Object.Id == "mechanism_cable_" + std::to_string(Mode) + "_surface")
-			{
-				const auto* Mesh = Object.GeometryPtr->GetShapeObj<TriangleMesh>(); EXPECT(Mesh->NumVertices == 50 && Mesh->NumTriangles == 64);
-				EXPECT(!Object.GeometryPtr->IsSimulationEnabled() && !Object.GeometryPtr->IsQueryEnabled());
-				for (uint32_t I = 0; I < Mesh->NumVertices; ++I) { EXPECT(std::isfinite(Mesh->mVertices[I].Length())); EXPECT_NEAR(Mesh->mNormals[I].Length(), 1, 1e-5f); }
-				const auto* Owner = Mode == 0 ? Hard : Elastic;
-				EXPECT_NEAR((Mesh->mVertices[32] - Owner->GetBodies()[1]->X).Length(), 0, 1e-5f);
-				EXPECT_NEAR((Mesh->mVertices[41] - Owner->GetBodies()[2]->X).Length(), 0, 1e-5f);
-			}
-		printf("Ragdoll demo patches=%d joint error=%.7f arm=(%.4f, %.4f, %.4f) freeY=%.4f\n", Patches, MaximumJointError,
-			Arm->GetDynamics().GetConfiguration()[0].Position, Arm->GetDynamics().GetConfiguration()[1].Position,
-			Arm->GetDynamics().GetConfiguration()[2].Position, FreeRoot->X.y);
-		EXPECT_NEAR((ChainRoot->X - Anchor).Length(), 0, 1e-6f); EXPECT(MaximumJointError < 1e-4f);
-		EXPECT(Arm->GetDynamics().GetConfiguration()[0].Position > 0.2);
-		EXPECT(Arm->GetDynamics().GetConfiguration()[1].Position < -0.4);
-		EXPECT(Arm->GetDynamics().GetConfiguration()[2].Position >= 0 && Arm->GetDynamics().GetConfiguration()[2].Position <= 0.601);
-		for (auto* Link : Free->GetBodies()) EXPECT(Link->X.y > -2.1f && Link->X.y < -1.0f);
-		const double DrivenAngle = Arm->GetDynamics().GetConfiguration()[0].Position;
-		World->SetJointDrivesEnabled(false); for (int Frame = 0; Frame < 90; ++Frame) Scene.Step(FrameTime);
-		EXPECT(std::abs(Arm->GetDynamics().GetConfiguration()[0].Position - DrivenAngle) > 0.05);
-		World->SetJointDrivesEnabled(true);
-		// A projectile uses the ordinary scene interaction and transfers its impulse
-		// into the entire floating tree through the same discrete contact pipeline.
-		const Vector3 Position = FreeRoot->X; const float PreviousZ = Position.z;
-		constexpr float ProjectileRadius = 0.1f, ProjectileMass = 1;
-		auto* Projectile = Scene.AddProjectileSphere("ragdoll_projectile", Position - Vector3(0, 0, 2), ProjectileRadius, Vector3(0, 0, 8), Vector4(1))->GetParent<RigidBody>();
-		// Give the small projectile a specified mass while scaling its inertia by
-		// the same density ratio. Its footprint clears the floor before impact.
-		Projectile->InvInertia = Projectile->InvInertia * (1 / (ProjectileMass * Projectile->InvMass));
-		Projectile->InvMass = 1 / ProjectileMass;
-		for (int Frame = 0; Frame < 60; ++Frame) Scene.Step(FrameTime);
-		printf("Ragdoll projectile displacement=%.5f speed=%.5f\n", FreeRoot->X.z - PreviousZ, Projectile->V.z);
-		EXPECT(FreeRoot->X.z > PreviousZ + 0.05f);
+		PhysicsWorldParam P; P.gravityAcc = Vector3::Zero(); P.narrowphase = NarrowPhaseSolver::PCM;
+		P.sequentialImpulseSettings.PositionIterations = 32; P.sequentialImpulseSettings.VelocityIterations = 16; return P;
 	}
-	Scene.SetReducedRagdollDemo(false); EXPECT(Scene.LoadFromFile(Path, &Error));
-	EXPECT(Scene.GetSimulation()->GetReducedRagdollCount() == 0); EXPECT(Scene.GetObjects().size() == OriginalObjects);
-	Scene.SetReducedRagdollDemo(true);
-	EXPECT(Scene.LoadFromText("{\"name\":\"Other\",\"objects\":[]}", "other", &Error)); EXPECT(Scene.GetSimulation()->GetReducedRagdollCount() == 0);
-	EXPECT(!Scene.LoadFromText("{\"name\":\"Constraints\",\"physics\":{\"resolutionSolver\":\"xpbd\"},\"objects\":[]}", "unsupported", &Error));
-	EXPECT(!Error.empty());
-	EXPECT(Scene.LoadFromFile(Path, &Error)); EXPECT(Scene.GetSimulation()->GetReducedRagdollCount() == 6);
-	// Removing a tendon or its owner must not leave a dangling render/drive source.
-	auto* Cable = Find("mechanism_cable_1_0")->ReducedRagdoll; EXPECT(Cable->RemoveMechanism(Cable->GetMechanism(0)));
-	Scene.Step(1.0f / 60);
-	for (const auto& Object : Scene.GetObjects()) if (Object.Id == "mechanism_cable_1_surface") EXPECT(Object.GeometryPtr->GetShapeObj<TriangleMesh>()->NumVertices == 0);
-	EXPECT(Scene.GetSimulation()->RemoveRagdoll(Cable)); Scene.Step(1.0f / 60);
-	Scene.Reset(); EXPECT(Scene.GetSimulation()->GetReducedRagdollCount() == 0);
+	RigidBodyDynamic* Body(PhysicsWorld& World, bool Collider = false, const Vector3& Position = Vector3::Zero())
+	{
+		RigidBodyParam P; P.rigidType = RigidType::Dynamic; P.linearDamping = P.angularDamping = 1; P.sleepThreshold = 0;
+		auto* B = (Collider ? World.CreateRigidBody(GeometryFactory::CreateSphere(Position, 0.25f), P)
+			: World.CreateRigidBody(P, Transform(Position)))->CastDynamic();
+		B->SetRestitution(0); B->SetFriction(0.8f, 0.8f); return B;
+	}
+	Ragdoll* Tree(PhysicsWorld& World, const RagdollSettings& Settings)
+	{
+		std::vector<RigidBodyDynamic*> Bodies; for (const auto& L : Settings.Links) { (void)L; Bodies.push_back(Body(World)); }
+		return World.CreateRagdoll(Settings, Bodies);
+	}
+	void Step(PhysicsWorld& World, int Count) { for (int I = 0; I < Count; ++I) World.Simulate(Dt); }
+	RagdollSettings Branches()
+	{
+		RagdollSettings S = RagdollSettings::Reduced(); S.Links.resize(4);
+		for (size_t I = 1; I < S.Links.size(); ++I)
+		{
+			auto& L = S.Links[I]; L.Parent = 0; L.Joint = I == 3 ? RagdollReducedJointType::Prismatic : RagdollReducedJointType::Revolute;
+			L.Mass = (float)(I + 1); L.Inertia = Matrix3(Vector3(L.Mass)); L.Axis = I == 3 ? Vector3::UnitX() : Vector3::UnitZ();
+		}
+		return S;
+	}
+	void GearProjectionAndDrive()
+	{
+		PhysicsWorld World(Parameters()); auto* A = Tree(World, Branches());
+		auto* Gear = A->CreateMechanism(RagdollMechanismSettings::Gear(1, 2, 2));
+		A->SetVelocity({ 2, -0.5, 0 }); const double BeforeEnergy = A->GetDynamics().GetKineticEnergy();
+		Step(World, 1);
+		const double Weight = 1.0 / 2 + 4.0 / 3, Impulse = -1 / Weight;
+		EXPECT_NEAR(Gear->GetImpulse(), Impulse, 1e-7);
+		EXPECT_NEAR(A->GetDynamics().GetVelocity()[0], 2 + Impulse / 2, 1e-7);
+		EXPECT_NEAR(A->GetDynamics().GetVelocity()[1], -0.5 + 2 * Impulse / 3, 1e-7);
+		EXPECT_NEAR(Gear->GetRate(), 0, 1e-7); EXPECT_NEAR(Gear->GetCoordinate(), 0, 1e-7);
+		EXPECT(A->GetDynamics().GetKineticEnergy() < BeforeEnergy);
+		auto* Rack = A->CreateMechanism(RagdollMechanismSettings::Rack(2, 3, 0.4));
+		RagdollControl C; C.Drive.Settings.VelocityEnabled = true; C.Drive.Settings.Damping = 100;
+		C.Drive.Settings.MaxForce = 100; C.Drive.TargetVelocity = 1; A->SetControl(0, C);
+		Step(World, 1000);
+		printf("Mechanism gear=%.9f rack=%.9f speed=%.6f\n", Gear->GetCoordinate(), Rack->GetCoordinate(), A->GetDynamics().GetVelocity()[0]);
+		EXPECT_NEAR(Gear->GetCoordinate(), 0, 1e-6); EXPECT_NEAR(Rack->GetCoordinate(), 0, 1e-6);
+		EXPECT_NEAR(A->GetDynamics().GetVelocity()[0], 1, 1e-5);
+		EXPECT(A->GetDynamics().GetConfiguration()[1].Position > 6);
+		EXPECT(A->RemoveMechanism(Gear)); EXPECT(A->GetMechanismCount() == 1);
+		auto* Mimic = A->CreateMechanism(RagdollMechanismSettings::Mimic(1, 2, 1.5, 0.3));
+		Step(World, 500); EXPECT_NEAR(Mimic->GetCoordinate(), 0.3, 1e-6); EXPECT_NEAR(Rack->GetCoordinate(), 0, 1e-6);
+	}
+	void CoupledTreeResponse()
+	{
+		PhysicsWorld World(Parameters()); auto S = Branches(); S.Links[0].Joint = RagdollReducedJointType::Floating;
+		S.Links[1].CenterOfMass = Vector3(1, 0.3f, 0); S.Links[2].CenterOfMass = Vector3(-0.5f, 0.7f, 0);
+		auto* A = Tree(World, S); RagdollMechanismSettings C; C.Target = 0.2;
+		C.Joints = { { 1, 0.5 }, { 1, 0.5 }, { 2, 2 }, { 3, -0.3 } };
+		auto* Row = A->CreateMechanism(C); const auto Gradient = Row->GetGradient();
+		FeatherstoneSolver Model(S.Links); const auto Response = Model.ComputeImpulseResponse({}, Gradient);
+		double Weight = 0; for (size_t I = 0; I < Gradient.size(); ++I) Weight += Gradient[I] * Response[I];
+		const double Impulse = C.Target * C.ErrorReduction / Dt / Weight;
+		Step(World, 1); EXPECT_NEAR(Row->GetImpulse(), Impulse, 1e-6);
+		for (size_t I = 0; I < Gradient.size(); ++I) EXPECT_NEAR(A->GetDynamics().GetVelocity()[I], Response[I] * Impulse, 2e-6);
+		EXPECT(std::abs(A->GetDynamics().GetVelocity()[2]) > 0.01);
+	}
+	void ForceCapsAndContacts()
+	{
+		for (int Substeps : { 1, 4 }) for (bool Compliant : { false, true }) for (bool Patches : { false, true })
+		{
+			auto P = Parameters(); P.temporalSubsteps.Enabled = true; P.temporalSubsteps.Substeps = Substeps;
+			P.frictionPatches.Enabled = Patches; P.unifiedConstraints = Patches;
+			PhysicsWorld World(P); RagdollSettings S = RagdollSettings::Reduced(); S.Links.resize(1);
+			S.Links[0].Joint = RagdollReducedJointType::Prismatic; S.Links[0].Axis = Vector3::UnitX();
+			auto* A = Body(World, true); auto* B = Body(World, true, Vector3(0.5f, 0, 0)); B->InvMass = 1;
+			auto* Owner = World.CreateRagdoll(S, { A }); RagdollMechanismSettings C;
+			C.Joints = { { 0, 1 } }; C.Target = 10; C.MaxForce = 1; C.Compliant = Compliant;
+			auto* Row = Owner->CreateMechanism(C); Step(World, 20);
+			EXPECT_NEAR(A->V.x + B->V.x, 20 * Dt, 1e-5f); EXPECT(B->V.x > 0.05f);
+			EXPECT_NEAR(Row->GetForce(), 1, 1e-7);
+		}
+	}
+	void SpatialGradient()
+	{
+		PhysicsWorld World(Parameters()); auto S = Branches(); S.Links[0].Joint = RagdollReducedJointType::Floating;
+		S.Links[1].ParentToJoint.pos = Vector3(1, 0, 0); S.Links[2].Parent = 1; S.Links[2].ParentToJoint.pos = Vector3(0, 1, 0);
+		auto* A = Tree(World, S); RagdollMechanismSettings C; C.Type = RagdollMechanismType::SpatialTendon;
+		C.Path = { { -1, Vector3(2, 3, 1) }, { 0, Vector3(0.1f, -0.2f, 0.3f) }, { 1, Vector3(0.5f, 0.2f, 0.1f) },
+			{ 1, Vector3(0.5f, 0.2f, 0.1f) }, { 2, Vector3(0.4f, 0.8f, 0.2f) }, { 3, Vector3(-0.5f, 0, 0) } };
+		auto* Row = A->CreateMechanism(C); auto Q = A->GetDynamics().GetConfiguration();
+		Q[0].Rotation.FromRotationAxis(Vector3::UnitY(), 0.3f); Q[1].Position = 0.2; Q[2].Position = -0.3; Q[3].Position = 0.4;
+		A->SetConfiguration(Q); const auto Gradient = Row->GetGradient();
+		FeatherstoneSolver Model(S.Links); constexpr double Interval = 0.001;
+		for (size_t I = 0; I < Gradient.size(); ++I)
+		{
+			std::vector<double> Unit(Gradient.size()); Unit[I] = 1; Model.SetConfiguration(Q); Model.SetVelocity(Unit);
+			Model.IntegrateConfiguration(Interval); A->SetConfiguration(Model.GetConfiguration()); const double Plus = Row->GetCoordinate();
+			Unit[I] = -1; Model.SetConfiguration(Q); Model.SetVelocity(Unit); Model.IntegrateConfiguration(Interval);
+			A->SetConfiguration(Model.GetConfiguration()); const double Minus = Row->GetCoordinate();
+			EXPECT_NEAR(Gradient[I], (Plus - Minus) / (2 * Interval), 0.001);
+		}
+		A->SetConfiguration(Q); std::vector<double> Velocity(Gradient.size(), 0.2); A->SetVelocity(Velocity);
+		double Rate = 0; for (double G : Gradient) Rate += 0.2 * G; EXPECT_NEAR(Row->GetRate(), Rate, 1e-7);
+	}
+	void TendonSlackAndElasticity()
+	{
+		for (bool Compliant : { false, true })
+		{
+			auto P = Parameters(); P.gravityAcc = Vector3(0, -9.8f, 0); PhysicsWorld World(P);
+			RagdollSettings S = RagdollSettings::Reduced(); S.Links.resize(1); S.Links[0].Joint = RagdollReducedJointType::Floating;
+			S.Links[0].Mass = 2; S.Links[0].ParentToJoint.pos = Vector3(0, -1, 0);
+			auto* A = Tree(World, S); RagdollMechanismSettings C; C.Type = RagdollMechanismType::SpatialTendon;
+			C.Path = { { -1, Vector3::Zero() }, { 0, Vector3::Zero() } }; C.Target = 1; C.TensionOnly = true;
+			C.Compliant = Compliant; C.Stiffness = 200; C.Damping = 40; auto* Row = A->CreateMechanism(C);
+			Step(World, 600); const double ExpectedLength = 1 + (Compliant ? 19.6 / C.Stiffness : 0);
+			printf("Tendon compliant=%d length=%.6f force=%.6f\n", Compliant, Row->GetCoordinate(), Row->GetForce());
+			EXPECT_NEAR(Row->GetCoordinate(), ExpectedLength, 2e-5); EXPECT_NEAR(Row->GetForce(), -19.6, 1e-4);
+		}
+		PhysicsWorld World(Parameters()); RagdollSettings S = RagdollSettings::Reduced(); S.Links.resize(1); S.Links[0].Joint = RagdollReducedJointType::Floating;
+		S.Links[0].ParentToJoint.pos = Vector3(0, -0.5f, 0); auto* A = Tree(World, S);
+		RagdollMechanismSettings C; C.Type = RagdollMechanismType::SpatialTendon;
+		C.Path = { { -1, Vector3::Zero() }, { 0, Vector3::Zero() } }; C.Target = 1; C.TensionOnly = true;
+		auto* Row = A->CreateMechanism(C);
+		for (bool Compliant : { false, true })
+		{
+			C.Compliant = Compliant; Row->SetSettings(C); auto Q = A->GetDynamics().GetConfiguration(); Q[0].Translation = Vector3::Zero(); A->SetConfiguration(Q);
+			A->SetVelocity({ 0, 0, 0, 0, -2, 0 }); Step(World, 10);
+			EXPECT_NEAR(Row->GetCoordinate(), 0.7, 1e-6); EXPECT_NEAR(Row->GetForce(), 0, 1e-8);
+		}
+		C.Compliant = false; Row->SetSettings(C); Step(World, 30); EXPECT_NEAR(Row->GetCoordinate(), 1, 1e-6);
+		A->SetVelocity({ 0, 0, 0, 0, 1, 0 }); Step(World, 10); EXPECT_NEAR(Row->GetCoordinate(), 0.9, 1e-6); EXPECT_NEAR(Row->GetForce(), 0, 1e-8);
+		C.Path[0] = C.Path[1]; C.Target = 0; Row->SetSettings(C); Step(World, 10);
+		EXPECT_NEAR(Row->GetCoordinate(), 0, 1e-8); EXPECT_NEAR(Row->GetForce(), 0, 1e-8);
+	}
+	void InternalTendonMomentum()
+	{
+		PhysicsWorld World(Parameters()); RagdollSettings S = RagdollSettings::Reduced(); S.Links.resize(2);
+		S.Links[0].Joint = RagdollReducedJointType::Floating; S.Links[0].ParentToJoint.pos = Vector3(-1, 0, 0);
+		S.Links[1].Parent = 0; S.Links[1].Joint = RagdollReducedJointType::Prismatic; S.Links[1].Axis = Vector3::UnitX();
+		S.Links[1].ParentToJoint.pos = Vector3(2, 0, 0); auto* A = Tree(World, S);
+		RagdollMechanismSettings C; C.Type = RagdollMechanismType::SpatialTendon;
+		C.Path = { { 0, Vector3::Zero() }, { 1, Vector3::Zero() } }; C.Target = 2; C.TensionOnly = true;
+		auto* Row = A->CreateMechanism(C); A->SetVelocity({ 0, 0, 0, -1, 0, 0, 2 }); Step(World, 100);
+		EXPECT_NEAR(Row->GetCoordinate(), 2, 1e-5); EXPECT_NEAR(A->GetDynamics().GetMomentum().GetLinear().Length(), 0, 1e-5f);
+		EXPECT_NEAR((A->GetBodies()[0]->X + A->GetBodies()[1]->X).Length(), 0, 1e-5f);
+	}
+	void ValidationAndLifetime()
+	{
+		auto P = Parameters(); P.islandSleeping.Enabled = true; P.islandSleeping.QuietTime = 0.03f;
+		PhysicsWorld World(P); auto* A = Tree(World, Branches());
+		for (auto* B : A->GetBodies()) B->SleepThreshold = RigidBodyParam().sleepThreshold;
+		auto C = RagdollMechanismSettings::Gear(1, 2, 2); auto* Row = A->CreateMechanism(C);
+		auto Rejects = [](auto Function) { bool Rejected = false; try { Function(); } catch (const std::invalid_argument&) { Rejected = true; } EXPECT(Rejected); };
+		auto Bad = C; Bad.Joints[0].Link = 0; Rejects([&] { A->CreateMechanism(Bad); });
+		Bad = C; Bad.Joints[0].Coefficient = std::numeric_limits<double>::infinity(); Rejects([&] { Row->SetSettings(Bad); });
+		Bad = C; Bad.Joints = { { 1, 1 }, { 1, -1 } }; Rejects([&] { A->CreateMechanism(Bad); });
+		Bad = C; Bad.ErrorReduction = -1; Rejects([&] { Row->SetSettings(Bad); });
+		Bad = C; Bad.Type = RagdollMechanismType::SpatialTendon; Bad.Joints.clear();
+		Bad.Path = { { -1, Vector3::Zero() }, { 4, Vector3::Zero() } }; Rejects([&] { Row->SetSettings(Bad); });
+		EXPECT(Row->GetSettings().Joints.size() == 2); EXPECT(A->GetMechanismCount() == 1);
+		Step(World, 10); EXPECT(A->IsSleeping()); C.Target = 0.2; Row->SetSettings(C); EXPECT(!A->IsSleeping());
+		// Sleeping permits small residual drift under the configured kinetic-energy
+		// threshold. Verify wake propagation and motion, not a tighter position rule.
+		Step(World, 50); EXPECT(Row->GetCoordinate() > 0.1 && Row->GetCoordinate() <= 0.2);
+		A->SetFrozen(true); C.Target = 1; Row->SetSettings(C); const double Frozen = Row->GetCoordinate(); Step(World, 10);
+		EXPECT_NEAR(Row->GetCoordinate(), Frozen, 1e-8); EXPECT_NEAR(Row->GetForce(), 0, 1e-8);
+		A->SetFrozen(false); Step(World, 100); EXPECT(Row->GetCoordinate() > 0.9 && Row->GetCoordinate() <= 1);
+		C.Enabled = false; Row->SetSettings(C); A->SetVelocity({ 1, 0, 0 }); Step(World, 10); EXPECT_NEAR(Row->GetForce(), 0, 1e-8);
+		EXPECT(A->RemoveMechanism(Row)); EXPECT(!A->RemoveMechanism(nullptr)); EXPECT(A->GetMechanismCount() == 0);
+		A->CreateMechanism(C); EXPECT(World.RemoveRigidBody(A->GetBodies().back())); EXPECT(World.GetReducedRagdollCount() == 0);
+		World.Reset();
+	}
 }
+void TestRagdollMechanism()
+{
+	GearProjectionAndDrive(); CoupledTreeResponse(); ForceCapsAndContacts(); SpatialGradient();
+	TendonSlackAndElasticity(); InternalTendonMomentum(); ValidationAndLifetime();
+}
+}
+
+void TestRagdollMechanism() { Test_RagdollMechanism_Cases::TestRagdollMechanism(); }
+
+namespace Test_PhysicalAnimation_Cases
+{
+namespace
+{
+	using namespace Riemann;
+	constexpr float Dt = 0.01f, Pi = 3.14159265358979323846f;
+	PhysicsWorldParam Parameters()
+	{
+		PhysicsWorldParam P; P.gravityAcc = Vector3::Zero(); P.narrowphase = NarrowPhaseSolver::PCM;
+		P.constraintIterations = 24; P.sequentialImpulseSettings.PositionIterations = 32; P.sequentialImpulseSettings.VelocityIterations = 16; return P;
+	}
+	RigidBodyDynamic* Body(PhysicsWorld& World, const Vector3& Position = Vector3::Zero(), bool Collider = false)
+	{
+		RigidBodyParam P; P.rigidType = RigidType::Dynamic; P.linearDamping = P.angularDamping = 1; P.sleepThreshold = 0;
+		auto* B = (Collider ? World.CreateRigidBody(GeometryFactory::CreateSphere(Position, 0.25f), P)
+			: World.CreateRigidBody(P, Transform(Position)))->CastDynamic();
+		B->InvMass = 1; B->InvInertia = Matrix3(1, 1, 1); B->SetRestitution(0); return B;
+	}
+	void Step(PhysicsWorld& World, int Count) { for (int I = 0; I < Count; ++I) World.Simulate(Dt); }
+	float Angle(const Quaternion& A, const Quaternion& B)
+	{
+		Quaternion Q = (A * B.Conjugate()).Unit(); if (Q.w < 0) Q = -Q;
+		return 2 * std::atan2(Vector3(Q.x, Q.y, Q.z).Length(), Q.w);
+	}
+	void PoseDriveCaps()
+	{
+		for (auto Solver : { ResolutionPhaseSolver::SequentialImpulse, ResolutionPhaseSolver::LCPGlobal, ResolutionPhaseSolver::XPBD, ResolutionPhaseSolver::PBD })
+			for (int Substeps : { 1, 4 })
+		{
+			auto P = Parameters(); P.temporalSubsteps.Enabled = true; P.temporalSubsteps.Substeps = Substeps; PhysicsWorld World(P);
+			std::string Error; EXPECT(World.SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
+			auto* Reference = World.CreateRigidBody(RigidBodyParam(), Transform::Identity()); auto* B = Body(World);
+			auto* Drive = World.CreatePoseDriveConstraint(Reference, B); PoseDriveSettings S;
+			S.Linear.PositionEnabled = true; S.Linear.Stiffness = 100; S.Linear.Damping = 10; S.Linear.MaxForce = 2; S.Target.pos.x = 10;
+			S.Angular = S.Linear; S.Angular.MaxForce = 3; S.Target.quat.FromRotateY(Pi / 2); Drive->SetDrive(S);
+			Step(World, 20); EXPECT_NEAR(B->V.x, 0.4f, 1e-5f); EXPECT_NEAR(B->W.y, 0.6f, 1e-5f);
+			EXPECT_NEAR(Drive->GetReaction().Force.x, 2, 1e-4f); EXPECT_NEAR(Drive->GetReaction().Torque.Length(), 3, 1e-4f);
+			const auto Before = Transform(B->X, B->Q); Drive->SolvePosition(Dt); EXPECT(B->X == Before.pos && B->Q == Before.quat);
+		}
+	}
+	void ParentResponseAndProfiles()
+	{
+		PhysicsWorld World(Parameters()); auto* A = Body(World); auto* B = Body(World, Vector3(2, 0, 0)); auto* C = Body(World, Vector3(3, 0, 0));
+		auto* Animation = World.CreatePhysicalAnimation({ { A, -1 }, { B, 0 }, { C, 1 } });
+		auto Pose = Animation->GetPhysicsPose(); Pose[1].quat.FromRotateZ(1); Pose[2].quat = Pose[1].quat;
+		Animation->SetAnimationPose(Pose); Step(World, 300);
+		EXPECT(Angle(A->Q.Conjugate() * B->Q, Pose[1].quat) < 1e-4f);
+		EXPECT_NEAR((A->W + B->W + C->W).Length(), 0, 1e-5f);
+		EXPECT(Angle(A->Q, Quaternion::One()) > 0.1f); EXPECT(A->X == Vector3::Zero());
+		auto Control = Animation->GetControl(1); Control.Enabled = false; Control.PhysicsBlend = 0.25f;
+		Animation->SetControlBelow(1, Control, false); EXPECT(Animation->GetControl(1).Enabled); EXPECT(!Animation->GetControl(2).Enabled);
+		Animation->SetControlBelow(1, Control); EXPECT(!Animation->GetControl(1).Enabled); EXPECT(Animation->GetControl(0).Enabled);
+		Step(World, 1); EXPECT_NEAR(Animation->GetReaction(1).Torque.Length(), 0, 1e-8f);
+		Control = PhysicalAnimationControl(); Control.Space = PhysicalAnimationSpace::World; Animation->SetControl(1, Control);
+		Step(World, 300); EXPECT(Angle(B->Q, Pose[1].quat) < 1e-4f);
+		EXPECT(World.RemovePhysicalAnimation(Animation)); EXPECT(World.GetPhysicalAnimationCount() == 0); EXPECT(World.GetConstraintCount() == 0);
+	}
+	void HierarchicalSamplingAndBlending()
+	{
+		PhysicsWorld World(Parameters()); auto* A = Body(World); auto* B = Body(World, Vector3(2, 0, 0));
+		auto* Animation = World.CreatePhysicalAnimation({ { A, -1 }, { B, 0 } }); Animation->SetStrength(0);
+		auto Pose = Animation->GetPhysicsPose(); Pose[0].quat.FromRotateZ(Pi / 2); Pose[1] = Pose[0] * Transform(Vector3(2, 0, 0));
+		Animation->SetAnimationPose(Pose, 1); Step(World, 50);
+		EXPECT_NEAR(Angle(Animation->GetAnimationPose()[0].quat, Quaternion::One()), Pi / 4, 1e-5f);
+		EXPECT_NEAR((Animation->GetAnimationPose()[1].pos - Animation->GetAnimationPose()[0].pos).Length(), 2, 1e-5f);
+		EXPECT_NEAR(Animation->GetAnimationPose()[1].pos.x, std::sqrt(2.0f), 1e-5f);
+		Animation->SetAnimationPose(Pose);
+		auto Control = Animation->GetControl(0); Control.PhysicsBlend = 0.5f; Animation->SetControlBelow(0, Control);
+		const auto Blended = Animation->GetBlendedPose();
+		EXPECT_NEAR(Angle(Blended[0].quat, Quaternion::One()), Pi / 4, 1e-5f);
+		EXPECT_NEAR(Blended[1].pos.x, std::sqrt(2.0f), 1e-5f); EXPECT_NEAR((Blended[1].pos - Blended[0].pos).Length(), 2, 1e-5f);
+		EXPECT(A->X == Vector3::Zero() && A->Q == Quaternion::One()); EXPECT(B->X == Vector3(2, 0, 0) && B->V == Vector3::Zero());
+		Animation->SetActive(false); EXPECT(Animation->GetBlendedPose()[1].pos == B->X);
+		Control.PhysicsBlend = 0; Animation->SetControlBelow(0, Control); Animation->BeginRecovery(1);
+		const auto Initial = Animation->GetBlendedPose(); EXPECT(Initial[0].quat == A->Q && Initial[1].pos == B->X);
+		Step(World, 50); EXPECT_NEAR(Animation->GetRecoveryProgress(), 0.5f, 1e-5f);
+		EXPECT_NEAR(Angle(Animation->GetTargetPose()[0].quat, Quaternion::One()), Pi / 4, 1e-5f);
+		Animation->BeginRecovery(0.2f); EXPECT_NEAR(Animation->GetRecoveryProgress(), 0, 1e-8f);
+		EXPECT(Animation->GetTargetPose()[0].quat == A->Q); Step(World, 21); EXPECT(Animation->GetState() == PhysicalAnimationState::Active);
+		EXPECT(Angle(Animation->GetBlendedPose()[0].quat, Pose[0].quat) < 1e-5f);
+	}
+	void PassiveJointLimits()
+	{
+		PhysicsWorld World(Parameters()); auto* Reference = World.CreateRigidBody(RigidBodyParam(), Transform::Identity()); auto* B = Body(World);
+		auto* Hinge = World.CreateHingeConstraint(Reference, B, Vector3::Zero(), Vector3::UnitZ(), -0.2f, 0.2f);
+		auto* Animation = World.CreatePhysicalAnimation({ { B, -1 } }); auto Control = Animation->GetControl(0);
+		Control.Space = PhysicalAnimationSpace::World; Control.Angular.Acceleration = false; Control.Angular.Stiffness = 200;
+		Control.Angular.Damping = 20; Control.Angular.MaxForce = 1; Animation->SetControl(0, Control);
+		auto Pose = Animation->GetPhysicsPose(); Pose[0].quat.FromRotateZ(1); Animation->SetAnimationPose(Pose); Step(World, 200);
+		EXPECT_NEAR(Hinge->GetCurrentAngle(), Hinge->GetMaxAngle(), 1e-4f); EXPECT(B->W.Length() < 1e-4f);
+		EXPECT(Animation->GetReaction(0).Torque.Length() <= Control.Angular.MaxForce + 1e-4f);
+		Animation->SetActive(false); Step(World, 1); EXPECT_NEAR(Animation->GetReaction(0).Torque.Length(), 0, 1e-8f);
+		EXPECT(Hinge->IsEnabled());
+	}
+	void FeedForwardAndContacts()
+	{
+		PhysicsWorld World(Parameters()); auto* B = Body(World); auto* Animation = World.CreatePhysicalAnimation({ { B, -1 } });
+		auto Control = Animation->GetControl(0); Control.Space = PhysicalAnimationSpace::World;
+		Control.Angular.PositionEnabled = Control.Angular.VelocityEnabled = false;
+		Control.Linear.VelocityEnabled = true; Control.Linear.Damping = 100; Animation->SetControl(0, Control);
+		auto Pose = Animation->GetPhysicsPose(); Pose[0].pos.x = 1; Animation->SetAnimationPose(Pose, 1); Step(World, 50);
+		EXPECT_NEAR(B->V.x, 1, 1e-4f); Step(World, 100); EXPECT(std::abs(B->V.x) < 1e-5f);
+		Pose[0].pos.x = 100; Animation->SetAnimationPose(Pose); Step(World, 1); EXPECT(std::abs(B->V.x) < 1e-5f);
+		Animation->BeginRecovery(2); Step(World, 20); const float MovingSpeed = B->V.x; EXPECT(MovingSpeed > 0);
+		Pose[0].pos.x = 10000; Animation->SetAnimationPose(Pose); Step(World, 1); EXPECT(B->V.x <= MovingSpeed);
+		for (bool Unified : { false, true })
+		{
+			auto P = Parameters(); P.unifiedConstraints = Unified; P.frictionPatches.Enabled = Unified; PhysicsWorld ContactWorld(P);
+			ContactWorld.CreateRigidBody(GeometryFactory::CreateOBB(Vector3(0, -0.5f, 0), Vector3(5, 0.5f, 5)), RigidBodyParam());
+			auto* Ball = Body(ContactWorld, Vector3(0, 0.25f, 0), true); auto* Driver = ContactWorld.CreatePhysicalAnimation({ { Ball, -1 } });
+			auto Settings = Driver->GetControl(0); Settings.Space = PhysicalAnimationSpace::World;
+			Settings.Linear.PositionEnabled = true; Settings.Linear.MaxForce = 10; Driver->SetControl(0, Settings);
+			auto Target = Driver->GetPhysicsPose(); Target[0].pos.y = -1; Driver->SetAnimationPose(Target); Step(ContactWorld, 100);
+			EXPECT(Ball->X.y > 0.23f); EXPECT(std::abs(Ball->V.y) < 0.01f); EXPECT(std::abs(Driver->GetReaction(0).Force.y) <= 10.001f);
+			Driver->SetActive(false); Step(ContactWorld, 1); EXPECT_NEAR(Driver->GetReaction(0).Force.Length(), 0, 1e-8f);
+		}
+	}
+	void RagdollRecoveryAndLifetime()
+	{
+		auto P = Parameters(); P.gravityAcc = Vector3(0, -9.8f, 0); P.temporalSubsteps.Enabled = true; P.temporalSubsteps.Substeps = 4;
+		PhysicsWorld World(P); RagdollSettings S; S.DisableSelfCollision = true;
+		auto* Ragdoll = World.CreateRagdoll(S, Transform(Vector3(0, 4, 0))); EXPECT(Ragdoll); if (!Ragdoll) return;
+		auto* Animation = World.CreatePhysicalAnimation(Ragdoll); const auto Rest = Animation->GetPhysicsPose();
+		EXPECT(Animation->GetBones().size() == (size_t)RagdollBone::Count); EXPECT(World.GetConstraintCount() == 21);
+		// World-root support carries the complete character. Use physical gains;
+		// acceleration gains normalized by the pelvis alone would undersize it.
+		auto Muscles = Animation->GetControl(0); Muscles.Angular.Acceleration = false;
+		Muscles.Angular.Stiffness = 200; Muscles.Angular.Damping = 20;
+		Animation->SetControlBelow(0, Muscles);
+		auto Root = Animation->GetControl(0); Root.Space = PhysicalAnimationSpace::World;
+		Root.Linear.PositionEnabled = Root.Linear.VelocityEnabled = true; Root.Linear.Acceleration = false;
+		Root.Linear.Stiffness = 400; Root.Linear.Damping = 40; Root.Linear.MaxForce = 500;
+		Root.Angular.Stiffness = 200; Root.Angular.Damping = 40; Root.Angular.MaxForce = 500; Animation->SetControl(0, Root);
+		Step(World, 300); auto* Pelvis = Ragdoll->GetBone(RagdollBone::Pelvis);
+		printf("Physical animation held pelvis=%.5f\n", Pelvis->X.y); EXPECT(Pelvis->X.y > 3.8f);
+		Animation->SetActive(false); Step(World, 40); const float Fallen = Pelvis->X.y; EXPECT(Fallen < 3.5f);
+		const auto BeforeRecovery = Animation->GetPhysicsPose(); Animation->BeginRecovery(1.5f);
+		EXPECT(Pelvis->X == BeforeRecovery[0].pos); EXPECT(Animation->GetBlendedPose()[0].pos == Pelvis->X);
+		Step(World, 500); EXPECT(Animation->GetState() == PhysicalAnimationState::Active);
+		printf("Physical animation recovered pelvis=%.5f after fall=%.5f\n", Pelvis->X.y, Fallen); EXPECT(Pelvis->X.y > 3.8f);
+		for (size_t I = 0; I < Rest.size(); ++I)
+		{
+			auto* Bone = Ragdoll->GetBodies()[I]; const float Error = Angle(Bone->Q, Rest[I].quat);
+			printf("Physical animation bone=%zu orientation error=%.6f\n", I, Error);
+			EXPECT(std::isfinite(Bone->X.Length())); EXPECT(Error < 0.1f);
+		}
+		for (auto* Joint : Ragdoll->GetConstraints())
+		{
+			auto* Point = dynamic_cast<PointConstraint*>(Joint); if (Point) EXPECT((Point->GetWorldAnchorA() - Point->GetWorldAnchorB()).Length() < 0.03f);
+		}
+		auto* Removed = Ragdoll->GetBone(RagdollBone::LeftLowerArm); EXPECT(World.RemoveRigidBody(Removed));
+		EXPECT(World.GetPhysicalAnimationCount() == 0); EXPECT(!Ragdoll->IsValid()); EXPECT(Ragdoll->GetBone(RagdollBone::LeftLowerArm) == nullptr);
+		Removed->ReleaseGeometries(); delete Removed; EXPECT(World.RemoveRagdoll(Ragdoll)); EXPECT(World.GetConstraintCount() == 0);
+		auto* Other = World.CreateRagdoll(S, Transform::Identity()); World.CreatePhysicalAnimation(Other);
+		EXPECT(World.RemoveConstraint(Other->GetConstraints().back())); EXPECT(!Other->IsValid()); EXPECT(World.RemoveRagdoll(Other));
+		EXPECT(World.GetPhysicalAnimationCount() == 0 && World.GetConstraintCount() == 0);
+		Other = World.CreateRagdoll(S, Transform::Identity()); World.CreatePhysicalAnimation(Other); World.Reset();
+		EXPECT(World.GetPhysicalAnimationCount() == 0 && World.GetConstraintCount() == 0 && World.GetRagdollCount() == 0);
+	}
+	void ValidationAndSleeping()
+	{
+		auto P = Parameters(); P.islandSleeping.Enabled = true; P.islandSleeping.QuietTime = 0.03f; PhysicsWorld World(P);
+		auto* B = Body(World); B->SleepThreshold = RigidBodyParam().sleepThreshold;
+		auto Rejects = [](auto Function) { bool Rejected = false; try { Function(); } catch (const std::invalid_argument&) { Rejected = true; } EXPECT(Rejected); };
+		Rejects([&] { World.CreatePhysicalAnimation({ { B, 0 } }); }); Rejects([&] { World.CreatePhysicalAnimation({ { B, -1 }, { B, 0 } }); });
+		auto* Animation = World.CreatePhysicalAnimation({ { B, -1 } });
+		Rejects([&] { World.CreatePhysicalAnimation({ { B, -1 } }); }); Rejects([&] { Animation->SetAnimationPose({}); });
+		auto Pose = Animation->GetPhysicsPose(); Pose[0].pos.x = std::numeric_limits<float>::quiet_NaN();
+		Rejects([&] { Animation->SetAnimationPose(Pose); }); Rejects([&] { Animation->BeginRecovery(-1); });
+		auto Control = Animation->GetControl(0); Control.PhysicsBlend = 2; Rejects([&] { Animation->SetControl(0, Control); });
+		Animation->SetActive(false); Step(World, 10); EXPECT(B->Sleeping);
+		for (int I = 0; I < 10; ++I) { Animation->SetAnimationPose(Animation->GetPhysicsPose(), Dt); Step(World, 1); } EXPECT(B->Sleeping);
+		Control = PhysicalAnimationControl(); Control.Space = PhysicalAnimationSpace::World; Animation->SetControl(0, Control);
+		Animation->BeginRecovery(0.1f); EXPECT(!B->Sleeping); Step(World, 12); EXPECT(Animation->GetState() == PhysicalAnimationState::Active);
+		Animation->SetStrength(0); Step(World, 10); EXPECT(B->Sleeping);
+		for (int I = 0; I < 10; ++I) { Animation->SetAnimationPose(Animation->GetPhysicsPose(), Dt); Step(World, 1); } EXPECT(B->Sleeping);
+		World.SetJointDrivesEnabled(false); Animation->SetStrength(1); Step(World, 10); EXPECT(B->Sleeping);
+		for (int I = 0; I < 10; ++I) { Animation->SetAnimationPose(Animation->GetPhysicsPose(), Dt); Step(World, 1); } EXPECT(B->Sleeping);
+		EXPECT(World.RemovePhysicalAnimation(Animation)); EXPECT(!World.RemovePhysicalAnimation(nullptr));
+	}
+}
+void TestPhysicalAnimation()
+{
+	PoseDriveCaps(); ParentResponseAndProfiles(); HierarchicalSamplingAndBlending(); PassiveJointLimits(); FeedForwardAndContacts();
+	RagdollRecoveryAndLifetime(); ValidationAndSleeping();
+}
+}
+
+void TestPhysicalAnimation() { Test_PhysicalAnimation_Cases::TestPhysicalAnimation(); }

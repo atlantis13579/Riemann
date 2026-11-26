@@ -43,6 +43,25 @@ namespace Riemann
 		float Tolerance, float Relaxation, bool InputsPrevalidated,
 		int* Iterations, float* Residual, bool* Converged);
 #endif
+#if defined(RIEMANN_ENABLE_METAL)
+	struct LCPMetalBatchContext;
+	LCPMetalBatchContext* CreateLCPMetalBatchContext();
+	void DestroyLCPMetalBatchContext(LCPMetalBatchContext* Context);
+	bool IsLCPMetalBackendAvailable();
+	bool SolveProjectedGaussSeidelMetal(const float* Matrix, const float* Bias,
+		const float* Lower, const float* Upper, const int* FrictionNormal,
+		const float* FrictionCoefficient, int Dimension, float* Lambda,
+		int MaxIterations, float Tolerance, float Relaxation, int* Iterations,
+		float* Residual, bool* Converged);
+	bool SolveProjectedGaussSeidelMetalBatched(LCPMetalBatchContext* Context,
+		const float* Matrices, const int* MatrixOffsets, const int* VectorOffsets,
+		const int* Dimensions, int IslandCount, size_t MatrixElementCount,
+		int VectorElementCount, const float* Bias, const float* Lower,
+		const float* Upper, const int* FrictionNormal,
+		const float* FrictionCoefficient, float* Lambda, int MaxIterations,
+		float Tolerance, float Relaxation, bool InputsPrevalidated,
+		int* Iterations, float* Residual, bool* Converged);
+#endif
 
 #if defined(RIEMANN_ENABLE_CUDA)
 	struct LCPCUDABatchContext;
@@ -323,6 +342,29 @@ namespace Riemann
 			Output.Residual = 0.0f;
 		}
 #endif
+#if defined(RIEMANN_ENABLE_METAL)
+		if (Backend == SolverBackend::Metal)
+		{
+			if (SolveProjectedGaussSeidelMetal(Problem.Matrix, Problem.Bias,
+				Problem.LowerBounds, Problem.UpperBounds, Problem.FrictionNormalIndices,
+				Problem.FrictionCoefficients, Problem.Dimension, Lambda,
+				Settings.MaxIterations, Settings.Tolerance, Settings.Relaxation,
+				&Output.Iterations, &Output.Residual, &Output.Converged))
+			{
+				return true;
+			}
+			if (!Settings.AllowBackendFallback)
+			{
+				return false;
+			}
+			Backend = SolverBackend::CPU;
+			Output.Backend = Backend;
+			Output.UsedFallback = true;
+			Output.Converged = false;
+			Output.Iterations = 0;
+			Output.Residual = 0.0f;
+		}
+#endif
 
 #if defined(RIEMANN_ENABLE_CUDA)
 		if (Backend == SolverBackend::CUDA)
@@ -362,6 +404,12 @@ namespace Riemann
 		case SolverBackend::ComputeShader:
 #if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 			return IsLCPComputeShaderBackendAvailable();
+#else
+			return false;
+#endif
+		case SolverBackend::Metal:
+#if defined(RIEMANN_ENABLE_METAL)
+			return IsLCPMetalBackendAvailable();
 #else
 			return false;
 #endif
@@ -557,6 +605,9 @@ namespace Riemann
 		{
 #if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 			if (Backend == SolverBackend::ComputeShader) return true;
+#endif
+#if defined(RIEMANN_ENABLE_METAL)
+			if (Backend == SolverBackend::Metal) return true;
 #endif
 #if defined(RIEMANN_ENABLE_CUDA)
 			return Backend == SolverBackend::CUDA;
@@ -835,6 +886,9 @@ namespace Riemann
 #if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 				, m_ComputeShaderBatchContext(nullptr)
 #endif
+#if defined(RIEMANN_ENABLE_METAL)
+				, m_MetalBatchContext(nullptr)
+#endif
 #if defined(RIEMANN_ENABLE_CUDA)
 				, m_CUDABatchContext(nullptr)
 #endif
@@ -853,6 +907,18 @@ namespace Riemann
 					{
 						if (!m_Settings.AllowBackendFallback)
 							throw std::runtime_error("Failed to initialize the LCP ComputeShader backend");
+						m_Settings.Backend = SolverBackend::CPU;
+					}
+				}
+#endif
+#if defined(RIEMANN_ENABLE_METAL)
+				if (m_Settings.Backend == SolverBackend::Metal)
+				{
+					m_MetalBatchContext = CreateLCPMetalBatchContext();
+					if (!m_MetalBatchContext)
+					{
+						if (!m_Settings.AllowBackendFallback)
+							throw std::runtime_error("Failed to initialize the LCP Metal backend");
 						m_Settings.Backend = SolverBackend::CPU;
 					}
 				}
@@ -890,6 +956,9 @@ namespace Riemann
 #endif
 #if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 				DestroyLCPComputeShaderBatchContext(m_ComputeShaderBatchContext);
+#endif
+#if defined(RIEMANN_ENABLE_METAL)
+				DestroyLCPMetalBatchContext(m_MetalBatchContext);
 #endif
 			}
 
@@ -1448,12 +1517,21 @@ namespace Riemann
 						nullptr, nullptr, nullptr);
 				}
 #endif
-#if defined(RIEMANN_ENABLE_CUDA)
-#if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
-				else if (CanPack && m_Settings.Backend == SolverBackend::CUDA)
-#else
-				if (CanPack && m_Settings.Backend == SolverBackend::CUDA)
+#if defined(RIEMANN_ENABLE_METAL)
+				if (CanPack && m_Settings.Backend == SolverBackend::Metal)
+				{
+					Solved = SolveProjectedGaussSeidelMetalBatched(
+						m_MetalBatchContext, Matrices.data(), MatrixOffsets.data(),
+						VectorOffsets.data(), Dimensions.data(), IslandCount,
+						TotalMatrixElements, (int)TotalRows, Bias.data(), LowerBounds.data(),
+						UpperBounds.data(), FrictionNormalRows.data(),
+						FrictionCoefficients.data(), Lambda.data(), m_Settings.MaxIterations,
+						m_Settings.Tolerance, m_Settings.Relaxation, true,
+						nullptr, nullptr, nullptr);
+				}
 #endif
+#if defined(RIEMANN_ENABLE_CUDA)
+				if (CanPack && m_Settings.Backend == SolverBackend::CUDA)
 				{
 #if defined(RIEMANN_CUDA_PROFILE)
 					m_ProfileBatchPackMilliseconds += std::chrono::duration<double, std::milli>(
@@ -1607,6 +1685,9 @@ namespace Riemann
 			uint64_t m_FrameId = 0;
 #if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 			LCPComputeShaderBatchContext* m_ComputeShaderBatchContext;
+#endif
+#if defined(RIEMANN_ENABLE_METAL)
+			LCPMetalBatchContext* m_MetalBatchContext;
 #endif
 			std::vector<PendingDenseContactIsland> m_PendingDenseIslands;
 #if defined(RIEMANN_ENABLE_CUDA)

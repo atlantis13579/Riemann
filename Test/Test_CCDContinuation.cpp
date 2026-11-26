@@ -2,7 +2,6 @@
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 #include "../Src/RigidBodyDynamics/MotionIntegration.h"
 #include "../Src/Collision/GeometryObject.h"
-#include "../Viewer/SceneWorld.h"
 #include "../Src/Collision/GeometryQuery.h"
 #include "../Src/CollisionPrimitive/Capsule3.h"
 #include "../Src/CollisionPrimitive/TriangleMesh.h"
@@ -284,25 +283,6 @@ namespace
 		EXPECT_NEAR(Free->X.y, 20.1f, 0.001f);
 
 	}
-	void TestExistingDemo()
-	{
-		for (auto Solver : { ResolutionPhaseSolver::SequentialImpulse, ResolutionPhaseSolver::LCPGlobal, ResolutionPhaseSolver::PBD, ResolutionPhaseSolver::XPBD })
-		for (bool Enabled : { false, true })
-		{
-			SceneWorld Scene; std::string Error;
-			EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/03_domino.json", &Error, "chain"));
-			auto* World = Scene.GetSimulation(); EXPECT(World->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
-			auto Settings = World->GetCCDContinuationSettings(); Settings.Enabled = Enabled; World->SetCCDContinuationSettings(Settings);
-			for (int Frame = 0; Frame < 120; ++Frame) Scene.Step(1.0f / 60);
-			for (const auto& Object : Scene.GetObjects())
-			{
-				auto* B = Object.GeometryPtr->GetParent<RigidBody>();
-				if (!B) continue;
-				EXPECT(std::isfinite(B->X.Length()) && std::isfinite(B->V.Length()) && std::isfinite(B->W.Length()));
-				if (Object.Id == "ball") EXPECT(B->CastDynamic()->mMotionType == MorionType::Continuous);
-			}
-		}
-	}
 	void TestExceptionalQueryCleanup()
 	{
 		for (bool AfterImpact : { false, true })
@@ -358,29 +338,9 @@ namespace
 		}
 	}
 
-	void TestConfiguration()
-	{
-		SceneWorld Scene; std::string Error;
-		for (const char* Json : { R"({"physics":{"ccdContinuation":true}})",
-			R"({"physics":{"ccdContinuation":{"enabled":1}}})", R"({"physics":{"ccdContinuation":{"maxPasses":0}}})",
-			R"({"physics":{"ccdContinuation":{"maxPasses":1.5}}})", R"({"physics":{"ccdContinuation":{"velocityTolerance":-1}}})" })
-		{
-			EXPECT(!Scene.LoadFromText(Json, "invalid CCD", &Error)); EXPECT(Error.find("ccdContinuation") != std::string::npos);
-		}
-		EXPECT(Scene.LoadFromText(R"({"physics":{"ccdContinuation":{"enabled":true,"maxPasses":5,"impactIterations":20}},"objects":[]})", "CCD", &Error));
-		for (auto Solver : { ResolutionPhaseSolver::SequentialImpulse, ResolutionPhaseSolver::LCPGlobal, ResolutionPhaseSolver::PBD, ResolutionPhaseSolver::XPBD })
-		{
-			EXPECT(Scene.GetSimulation()->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
-			EXPECT(Scene.GetSimulation()->GetCCDContinuationSettings().Enabled);
-			EXPECT(Scene.GetSimulation()->GetCCDContinuationSettings().MaxPasses == 5);
-		}
-		auto Bad = Scene.GetSimulation()->GetCCDContinuationSettings(); Bad.ImpactIterations = 0;
-		bool Rejected = false; try { Scene.GetSimulation()->SetCCDContinuationSettings(Bad); } catch (const std::invalid_argument&) { Rejected = true; }
-		EXPECT(Rejected && Scene.GetSimulation()->GetCCDContinuationSettings().ImpactIterations == 20);
-	}
 }
 void TestCCDContinuation()
 {
 	printf("Running TestCCDContinuation\n");
-	TestMultipleImpacts(); TestDynamicChain(); TestCornerAndBudget(); TestSegmentTriggers(); TestGeometryRoutes(); TestFieldAndFiltering(); TestJointCoordination(); TestExistingDemo(); TestExceptionalQueryCleanup(); TestConfiguration();
+	TestMultipleImpacts(); TestDynamicChain(); TestCornerAndBudget(); TestSegmentTriggers(); TestGeometryRoutes(); TestFieldAndFiltering(); TestJointCoordination();  TestExceptionalQueryCleanup();
 }

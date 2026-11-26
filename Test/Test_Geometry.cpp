@@ -862,6 +862,48 @@ static void TestGeometryBooleanBunny(DynamicMesh& mergedResult)
 	bunnyAabbBoolean.Result = nullptr;
 }
 
+static void TestGeometryBooleanSparseTriangles()
+{
+	printf("Running TestGeometryBooleanSparseTriangles\n");
+	const DynamicMesh box = MakeAABBMesh(Vector3(0.0f), Vector3(2.0f));
+	DynamicMesh sparseBox;
+	for (int vid = 0; vid < box.GetVertexCount(); ++vid)
+	{
+		sparseBox.AppendVertex(box.GetVertex(vid));
+	}
+	// Leave unused IDs before and between faces, as after mesh edits.
+	for (int tid = 0; tid < box.GetTriangleCount(); ++tid)
+	{
+		EXPECT(sparseBox.InsertTriangle(64 + 2 * tid, box.GetTriangle(tid)) == EMeshResult::Ok);
+	}
+	sparseBox.BuildBounds();
+	const DynamicMesh clip = MakeOBBMesh(Vector3(1.45f, 1.2f, 1.15f),
+		Vector3(0.95f, 0.75f, 0.85f), TestRotationZ(0.43f) * TestRotationX(0.29f));
+	for (int side = 0; side < 2; ++side)
+	{
+		GeometryBoolean reference(side == 0 ? &box : &clip, side == 0 ? &clip : &box,
+			GeometryBoolean::BooleanOp::Intersect);
+		GeometryBoolean sparse(side == 0 ? &sparseBox : &clip, side == 0 ? &clip : &sparseBox,
+			GeometryBoolean::BooleanOp::Intersect);
+		reference.WeldSharedEdges = sparse.WeldSharedEdges = false;
+		EXPECT(reference.Compute());
+		EXPECT(sparse.Compute());
+		EXPECT(reference.Result != nullptr && sparse.Result != nullptr);
+		if (reference.Result && sparse.Result)
+		{
+			const MeshValidationReport expected = MeshValidator::Validate(*reference.Result);
+			const MeshValidationReport actual = MeshValidator::Validate(*sparse.Result);
+			EXPECT(actual.HasValidData());
+			EXPECT(actual.ValidTriangleCount == expected.ValidTriangleCount);
+			EXPECT(actual.ValidTriangleCount > 0);
+			EXPECT_NEAR(actual.SurfaceArea, expected.SurfaceArea, 1e-5);
+			EXPECT_NEAR(actual.AbsoluteVolume, expected.AbsoluteVolume, 1e-5);
+		}
+		delete reference.Result;
+		delete sparse.Result;
+	}
+}
+
 void TestGeometryBoolean()
 {
 	printf("Running TestGeometryBoolean\n");
@@ -873,6 +915,7 @@ void TestGeometryBoolean()
 	TestGeometryBooleanSphere(mergedResult);
 	TestGeometryBooleanCapsule(mergedResult);
 	TestGeometryBooleanBunny(mergedResult);
+	TestGeometryBooleanSparseTriangles();
 
 	mergedResult.BuildBounds();
 	EXPECT(mergedResult.ExportObj(TestOutputPath("boolean_intersect.obj").c_str()));

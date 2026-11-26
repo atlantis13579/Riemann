@@ -1,4 +1,5 @@
 #include "Viewer.h"
+#include "../Src/Compute/BackendAvailability.h"
 #include "RenderThread.h"
 #include "SnowSurfaceBuilder.h"
 #include "../Renderer/imgui.h"
@@ -20,7 +21,7 @@ namespace Riemann
 			m_SandSimulation.reset();m_SnowSimulation.reset(new SnowSimulation());
 			m_SnowSimulation->GetSettings().Material.Viscosity=2;m_SnowSimulation->Reset(m_SnowQuality);
 			for(auto Backend:{SnowBackend::CUDA,SnowBackend::Metal,SnowBackend::ComputeShader,SnowBackend::SIMD,SnowBackend::CPU})
-				if(SnowSimulation::IsBackendAvailable(Backend) && m_SnowSimulation->SetBackend(Backend)) break;
+				if(m_BackendCapabilities.Snow[static_cast<int>(Backend)] && m_SnowSimulation->SetBackend(Backend)) break;
 		}
 		return true;
 	}
@@ -82,7 +83,7 @@ namespace Riemann
 		imguiValue("Changing quality resets bed");
 		if(State.Fraction>=0.5f) { imguiLabel("Transfer");Change=imguiCombo("",&State.Transfer,Transfers,3)||Change; }
 		else { imguiValue("Granular height field");imguiValue("Repose angle: 32 degrees"); }
-		imguiLabel("Backend");Change=imguiCombo("",&State.Backend,Backends,5)||Change;
+		imguiLabel("Backend");Change=imguiCombo("",&State.Backend,Backends,5,true,State.Available)||Change;
 		Change=imguiSlider("Viscosity",&State.Viscosity,0,15,0.1f)||Change;
 		char Text[96];snprintf(Text,sizeof(Text),State.Fraction<0.5f ? "Surface cells: %zu" : "Particles: %zu",State.ParticleCount);imguiValue(Text);
 		snprintf(Text,sizeof(Text),"Solve: %.1f ms",State.SolveMilliseconds);imguiValue(Text);
@@ -131,7 +132,7 @@ namespace Riemann
 			P.ParticleCount=m_SandSimulation->GetHeights().size();P.SolveMilliseconds=m_SnowSolveMilliseconds;P.SurfaceMilliseconds=m_SnowSurfaceMilliseconds;
 			P.TimeLimited=false;P.Status=m_SnowStatus;
 			if(!m_SandSimulation->GetBackendError().empty()) P.Status=m_SandSimulation->GetBackendError();
-			for(int I=0;I<5;++I) P.Available[I]=SandSimulation::IsBackendAvailable((SnowBackend)I);
+			for(int I=0;I<5;++I) P.Available[I]=m_BackendCapabilities.Sand[I];
 			return;
 		}
 		if(!m_SnowSimulation) return;
@@ -141,6 +142,6 @@ namespace Riemann
 		P.ParticleCount=m_SnowSimulation->GetParticles().size();P.SolveMilliseconds=m_SnowSolveMilliseconds;P.SurfaceMilliseconds=m_SnowSurfaceMilliseconds;
 		P.TimeLimited=m_SnowSimulation->GetStatistics().TimeLimited;P.Status=m_SnowStatus;
 		if(!m_SnowSimulation->GetBackendError().empty()) P.Status=m_SnowSimulation->GetBackendError();
-		for(int I=0;I<5;++I) P.Available[I]=SnowSimulation::IsBackendAvailable((SnowBackend)I);
+		for(int I=0;I<5;++I) P.Available[I]=m_BackendCapabilities.Snow[I];
 	}
 }

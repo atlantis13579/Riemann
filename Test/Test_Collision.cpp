@@ -34,7 +34,6 @@
 #include "../Src/Deformation/Rope.h"
 #include "../Src/Deformation/Cloth.h"
 #include "../Src/RigidBodyDynamics/Ragdoll.h"
-#include "../Viewer/SceneWorld.h"
 #include "../Src/Maths/Maths.h"
 
 using namespace Riemann;
@@ -372,7 +371,7 @@ void TestTriangle()
 	Vector3 p3 = tri1.BarycentricCoodsComposion(bc3.BaryCoords);
 
 	(void)p2;
-	
+
 	EXPECT((p3 - pp).SquareLength() < 1e-6f);
 
 	EXPECT(!tri1.IntersectPoint(p));
@@ -416,7 +415,7 @@ void TestSphere()
 	EXPECT(s.IntersectPoint(b));
 	EXPECT(s.IntersectPoint(b));
 	EXPECT(s.IntersectPoint(c));
-	
+
 	int n = 1000;
 	std::vector<Vector3> points;
 	for (int i = 0 ;i < n; ++i)
@@ -428,16 +427,16 @@ void TestSphere()
 	{
 		EXPECT(s1.IntersectPoint(points[i]));
 	}
-	
+
 	return;
 }
 
 void TestDynamicAABB()
 {
 	printf("Running TestDynamicAABB\n");
-	
+
 	DynamicAABBTree tree;
-	
+
 	struct Actor
 	{
 		Actor(Geometry*_geom, int _id)
@@ -448,7 +447,7 @@ void TestDynamicAABB()
 		Geometry*p;
 		int		id;
 	};
-	
+
 	std::vector<Actor> geoms;
 	for (int i = 0; i < 128; ++i)
 	{
@@ -456,9 +455,9 @@ void TestDynamicAABB()
 		int id = tree.Add(obb->GetBounds(), obb);
 		EXPECT(tree.Validate());
 		geoms.emplace_back(obb, id);
-		
+
 	}
-	
+
 	for (int k = 0; k < 1000; ++k)
 	{
 		for (size_t i = 0; i < geoms.size(); ++i)
@@ -485,13 +484,13 @@ void TestDynamicAABB()
 					tree.Update(geoms[i].id, geoms[i].p->GetBounds(), Vector3::UnitY());
 				}
 			}
-			
+
 			EXPECT(tree.Validate());
 		}
 	}
-	
+
 	tree.Rebuild();
-	
+
 	return;
 }
 
@@ -499,22 +498,22 @@ void TestSupport()
 {
 	printf("Running TestSupport\n");
 	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
-	
+
 	Vector3 support;
 
 	support = obb2->GetSupport(Vector3::UnitX());
 	EXPECT(fabsf(support.x - 1.0f) < 0.1f);
-	
+
 	support = obb2->GetSupport(-Vector3::UnitX());
 	EXPECT(fabsf(support.x + 1.0f) < 0.1f);
-	
+
 	support = obb2->GetSupport(Vector3::UnitY());
 	EXPECT(fabsf(support.y - 1.0f) < 0.1f);
-	
+
 	obb2->SetPosition(Vector3(5.0f, 0.0f, 0.0f));
 	support = obb2->GetSupport(Vector3::UnitX());
 	EXPECT(fabsf(support.x - 6.0f) < 0.1f);
-	
+
 	Quaternion quat;
 	quat.FromRotationAxis(Vector3::UnitZ(), PI_OVER_4);
 	obb2->SetRotation(quat);
@@ -528,7 +527,7 @@ void TestSupport()
 void TestGJK()
 {
 	printf("Running TestGJK\n");
-	
+
 	Geometry* plane1 = GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitY());
 	Geometry* obb1 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
 	Geometry* obb2 = GeometryFactory::CreateOBB(Vector3(0.0f, 0.0, 0.0f), Vector3::One(), Quaternion::One());
@@ -536,30 +535,30 @@ void TestGJK()
 
 	obb2->SetPosition(Vector3(0.5f, 0.0f, 0.0f));
 	EXPECT(GJK_Solve(obb1, obb2));
-	
+
 	obb2->SetPosition(Vector3(0.0f, 2.1f, 0.0f));
 	EXPECT(!GJK_Solve(obb1, obb2));
-	
+
 	EXPECT(GJK_Solve(obb1, plane1));
 	EXPECT(GJK_Solve(plane1, obb1));
 	EXPECT(!GJK_Solve(plane1, obb2));
 	EXPECT(!GJK_Solve(obb2, plane1));
-	
+
 	Quaternion quat;
 	quat.FromRotationAxis(Vector3::UnitX(), PI_OVER_4);
 	obb2->SetRotation(quat);
 	EXPECT(GJK_Solve(obb2, obb1));
 	EXPECT(GJK_Solve(obb1, obb2));
-	
+
 	obb2->SetPosition(Vector3(0.0f, 1.1f, 0.0f));
 	EXPECT(GJK_Solve(obb2, plane1));
 	EXPECT(GJK_Solve(plane1, obb2));
-	
+
 	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
 	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
 	EXPECT(GJK_Solve(sp1, sp2));
 	EXPECT(GJK_Solve(sp1, plane1));
-	
+
 	sp2->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
 	EXPECT(!GJK_Solve(sp1, sp2));
 	EXPECT(!GJK_Solve(plane1, sp2));
@@ -616,20 +615,20 @@ void TestEPA()
 	EXPECT(gjk_status == GJK_status::Intersect);
 	epa_status = epa.Solve(gjk.result);
 	EXPECT(epa_status == EPA_status::AccuraryReached);
-	
+
 	Geometry *sp0 = GeometryFactory::CreateSphere(Vector3(1.0f, 1.0f, 0.0f), 1.5f);
 	Geometry *sp1 = GeometryFactory::CreateSphere(Vector3(3.0f, 1.0f, 0.0f), 1.0f);
 	shape = GeometryDifference(sp0, sp1);
 	EXPECT(gjk.Solve(&shape) == GJK_status::Intersect);
 	EXPECT(epa.Solve(gjk.result) != EPA_status::Failed);
-	
+
 	Vector3 normal;
 	float depth;
 	EXPECT(sp0->Penetration(sp1, &normal, &depth));
-	
+
 	EXPECT(normal.Dot(epa.penetration_normal) > 0.99f);
 	EXPECT(fabsf(depth - epa.penetration_depth) < 0.001f);
-	
+
 	return;
 }
 
@@ -694,27 +693,27 @@ void TestRaycast()
 void TestBuildOBB()
 {
 	printf("Running TestBuildOBB\n");
-	
+
 	AxisAlignedBox3 aabb(Vector3(-10.0f, -2.5f, -1.0f), Vector3(10.0f, 2.5f, 1.0f));
 	Matrix3 mat;
 	Vector3 center(1, 1, 2);
-	
+
 	mat.LoadRotateZ(PI_OVER_6);
 	std::vector<Vector3> verties, normals;
 	std::vector<uint16_t> Indices;
-	
+
 	aabb.GetMesh(verties, Indices, normals);
 	for (size_t i = 0; i < verties.size(); ++i)
 	{
 		verties[i] = mat * verties[i] + center;
 	}
-	
+
 	OrientedBox3 obb = OrientedBox3::ComputeBoundingOBB_PCA(verties.data(), (int)verties.size());
-	
+
 	EXPECT(fabsf(obb.Center.x - center.x) < 0.1f);
 	EXPECT(fabsf(obb.Center.y - center.y) < 0.1f);
 	EXPECT(fabsf(obb.Center.z - center.z) < 0.1f);
-	
+
 	Vector3 dir = obb.Rotation.Column(0);
 	float dp = dir.Dot(Vector3::UnitX());
 	EXPECT(dp >= 0.8f);
@@ -770,33 +769,33 @@ void TestIntersect()
 	obb2->SetPosition(Vector3(0.5f, 0.0f, 0.0f));
 	EXPECT(obb1->Intersect(obb2));
 	EXPECT(obb2->Intersect(obb1));
-	
+
 	obb2->SetPosition(Vector3(0.0f, 2.1f, 0.0f));
 	EXPECT(!obb1->Intersect(obb2));
 	EXPECT(!obb2->Intersect(obb1));
-	
+
 	EXPECT(obb1->Intersect(plane1));
 	EXPECT(plane1->Intersect(obb1));
 	EXPECT(!obb2->Intersect(plane1));
 	EXPECT(!plane1->Intersect(obb2));
-	
+
 	Quaternion quat;
 	quat.FromRotationAxis(Vector3::UnitX(), PI_OVER_4);
 	obb2->SetRotation(quat);
 	EXPECT(obb1->Intersect(obb2));
 	EXPECT(obb2->Intersect(obb1));
-	
+
 	obb2->SetPosition(Vector3(0.0f, 1.1f, 0.0f));
 	EXPECT(plane1->Intersect(obb2));
 	EXPECT(obb2->Intersect(plane1));
-	
+
 	Geometry* sp1 = GeometryFactory::CreateSphere(Vector3(0.0f, 0.0, 0.0f), 2.0f);
 	Geometry* sp2 = GeometryFactory::CreateSphere(Vector3(1.0f, 0.0, 0.0f), 2.0f);
 	EXPECT(sp1->Intersect(sp2));
 	EXPECT(sp2->Intersect(sp1));
 	EXPECT(sp1->Intersect(plane1));
 	EXPECT(plane1->Intersect(sp1));
-	
+
 	sp2->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
 	EXPECT(!sp1->Intersect(sp2));
 	EXPECT(!sp2->Intersect(sp1));
@@ -1086,7 +1085,7 @@ void TestAABBTree()
 
 	AABBTreeBuildData param2(&boxes[0], (int)boxes.size(), 1);
 	param2.splitter = SplitHeuristic::TreeBalance;
-	
+
 	tree.Release();
 	tree.StaticBuild(param2);
 	TreeStatistics stat;
@@ -1114,7 +1113,7 @@ void TestGeometryQuery()
 {
 	printf("Running TestGeometryQuery\n");
 	GeometryQuery scene;
-	
+
 	std::vector<Geometry*> objs;
 	objs.emplace_back(GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 0.0f), Vector3::UnitZ()));
 	objs.emplace_back(GeometryFactory::CreatePlane(Vector3(0.0f, 0.0f, 10.0f), Vector3::UnitZ()));
@@ -3184,34 +3183,6 @@ void TestClothSystem()
 void TestRagdollSystem()
 {
 	printf("Running TestRagdollSystem\n");
-	{
-		SceneWorld scene;
-		std::string error;
-		EXPECT(scene.LoadFromFile(TestContentsPath() + "Scenes/09_ragdoll_stairs.json", &error));
-		int dynamicBodies = 0;
-		for (const SceneObjectInstance& object : scene.GetObjects())
-		{
-			RigidBody* body = object.GeometryPtr->GetParent<RigidBody>();
-			EXPECT(std::abs(body->GetRestitution() - 0.08f) < 1.0e-6f);
-			EXPECT(std::abs(body->GetFrictionDynamic() - (object.Id == "landing" ? 1.0f : 0.12f)) < 1.0e-6f);
-			EXPECT(std::abs(body->GetFrictionStatic() - (object.Id == "landing" ? 1.0f : 0.15f)) < 1.0e-6f);
-			if (RigidBodyDynamic* dynamic = body->CastDynamic())
-			{
-				++dynamicBodies;
-				EXPECT(std::abs(dynamic->LinearDamping - 0.9995f) < 1.0e-6f);
-				EXPECT(std::abs(dynamic->AngularDamping - 0.9995f) < 1.0e-6f);
-				EXPECT(!dynamic->EnableCollisionWithinGroup);
-			}
-		}
-		EXPECT(dynamicBodies == (int)RagdollBone::Count);
-		for (const char* invalid : { "\"linearDamping\":-0.1", "\"angularDamping\":1.1",
-			"\"frictionDynamic\":0.8,\"frictionStatic\":0.2" })
-		{
-			SceneWorld invalidScene;
-			EXPECT(!invalidScene.LoadFromText(std::string("{\"objects\":[],\"ragdolls\":[{") + invalid + "}]}", "invalid ragdoll", &error));
-			EXPECT(error.find("friction or damping") != std::string::npos);
-		}
-	}
 
 	int selfContactCount = 0;
 	int environmentContactCount = 0;

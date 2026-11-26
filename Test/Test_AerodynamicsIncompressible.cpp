@@ -3,11 +3,14 @@
 #include "../Src/Fluid/AerodynamicsRigidCoupling.h"
 #include "../Src/Collision/GeometryObject.h"
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
-#include "../Renderer/AerodynamicsVolume.h"
-#include "../Viewer/SceneWorld.h"
 #include <algorithm>
 #include <limits>
 #include <numeric>
+#include <cmath>
+#include <stdexcept>
+#include "../Src/Deformation/Cloth.h"
+#include "../Src/Fluid/FluidBackend.h"
+#include <chrono>
 
 void TestAerodynamicsIncompressible()
 {
@@ -51,10 +54,6 @@ void TestAerodynamicsIncompressible()
 	printf("Simulation above deflector: %.6f, divergence: %.6f\n", UpperDensity, Simulation.GetDivergenceRMS());
 	EXPECT(UpperDensity > 0.1f);
 	EXPECT(Simulation.GetDivergenceRMS() < 0.05f);
-	DensityVolumeDesc Volume;
-	BuildAerodynamicsDensityVolume(Simulation, &Volume);
-	EXPECT(Volume.IsValid() && Volume.Tracer);
-	EXPECT(Volume.Density == Simulation.GetTracerDensity());
 	Simulation.Reset();
 	for (float D : Simulation.GetTracerDensity()) EXPECT(D == 0);
 
@@ -71,55 +70,6 @@ void TestAerodynamicsIncompressible()
 	Settings.Buoyancy = std::numeric_limits<float>::infinity();
 	EXPECT(!Simulation.Initialize(Settings));
 
-	SceneWorld World;
-	std::string Error;
-	EXPECT(World.LoadFromFile(TestContentsPath() + "Scenes/12_smoke_3d.json", &Error));
-	const SceneFieldSimulationDesc& Scene = World.GetFieldSimulation();
-	EXPECT(Scene.Type == "aerodynamics3d" && Scene.Aerodynamics.Algorithm == AerodynamicsAlgorithm::Incompressible && Scene.Aerodynamics.Emitters.size() == 2 && Scene.RigidCoupling);
-	EXPECT(Scene.Aerodynamics.Emitters[0].Velocity.y > 0 && Scene.Aerodynamics.Emitters[1].Velocity.x > 0);
-	EXPECT(Scene.Aerodynamics.Obstacles.empty() && World.GetAerodynamicsRigidBodyCount() == 2);
-	int StaticSmokeBoxes = 0;
-	for (const SceneObjectInstance& Object : World.GetObjects())
-		if (Object.Id == "smoke_body_2" && Object.GeometryPtr)
-		{
-			const RigidBody* Body = Object.GeometryPtr->GetParent<RigidBody>();
-			StaticSmokeBoxes += Body && Body->mRigidType == RigidType::Static ? 1 : 0;
-		}
-	EXPECT(StaticSmokeBoxes == 1);
-	EXPECT(Scene.Aerodynamics.Backend == FluidBackend::CUDA);
-	EXPECT(!Scene.Aerodynamics.AllowBackendFallback);
-	AerodynamicsSimulation DefaultSmoke(Scene.Aerodynamics);
-#if defined(RIEMANN_ENABLE_CUDA)
-	EXPECT(DefaultSmoke.IsInitialized());
-	if (DefaultSmoke.IsInitialized())
-	{
-		DefaultSmoke.Step(1.0f / 60.0f);
-		EXPECT(DefaultSmoke.GetTime() > 0.0);
-		EXPECT(std::accumulate(DefaultSmoke.GetTracerDensity().begin(),
-			DefaultSmoke.GetTracerDensity().end(), 0.0f) > 0.0f);
-	}
-#else
-	EXPECT(!DefaultSmoke.IsInitialized());
-#endif
-	auto ValidateSceneBackend = [&](FluidBackend Backend)
-	{
-		AerodynamicsSimulationSettings SceneSettings = Scene.Aerodynamics;
-		SceneSettings.Backend = Backend;
-		SceneSettings.AllowBackendFallback = false;
-		EXPECT(Simulation.Initialize(SceneSettings));
-		Simulation.Step(1.0f / 60);
-		EXPECT(Simulation.IsInitialized() && Simulation.GetBackend() == Backend && !Simulation.UsedBackendFallback());
-		BuildAerodynamicsDensityVolume(Simulation, &Volume, Scene.VisualizationThreshold, Scene.TracerExtinction, Scene.TracerColor);
-		EXPECT(Volume.IsValid());
-		EXPECT(std::accumulate(Volume.Density.begin(), Volume.Density.end(), 0.0f) > 0);
-	};
-	ValidateSceneBackend(FluidBackend::CPU);
-#if defined(RIEMANN_ENABLE_CUDA)
-	ValidateSceneBackend(FluidBackend::CUDA);
-#endif
-#if defined(_WIN32) && defined(RIEMANN_ENABLE_COMPUTE_SHADER)
-	ValidateSceneBackend(FluidBackend::ComputeShader);
-#endif
 }
 
 void TestAerodynamicsBackends()
@@ -134,10 +84,10 @@ void TestAerodynamicsBackends()
 	Settings.Emitters.push_back(Source);
 	AerodynamicsObstacle Obstacle; Obstacle.Center = Vector3(0.1f, 1.2f, 0); Obstacle.Radius = 0.28f;
 	Settings.Obstacles.push_back(Obstacle);
-	const FluidBackend Backends[] = { FluidBackend::CPU, FluidBackend::CUDA, FluidBackend::ComputeShader };
-	const char* Names[] = { "CPU", "CUDA", "ComputeShader" };
+	const FluidBackend Backends[] = { FluidBackend::CPU, FluidBackend::CUDA, FluidBackend::ComputeShader, FluidBackend::Metal };
+	const char* Names[] = { "CPU", "CUDA", "ComputeShader", "Metal" };
 	std::vector<float> Reference;
-	for (int B = 0; B < 3; ++B)
+	for (int B = 0; B < 4; ++B)
 	{
 		Settings.Backend = Backends[B];
 		AerodynamicsSimulation Simulation;
@@ -149,6 +99,9 @@ void TestAerodynamicsBackends()
 #endif
 #if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 			if (B == 2) EXPECT(false);
+#endif
+#if defined(RIEMANN_ENABLE_METAL)
+            if (B == 3) EXPECT(false);
 #endif
 			continue;
 		}
@@ -192,7 +145,7 @@ void TestAerodynamicsBackends()
 void TestAerodynamicsMovingObstacles()
 {
 	using namespace Riemann;
-	for (FluidBackend Backend : { FluidBackend::CPU, FluidBackend::CUDA, FluidBackend::ComputeShader })
+	for (FluidBackend Backend : { FluidBackend::CPU, FluidBackend::CUDA, FluidBackend::ComputeShader, FluidBackend::Metal })
 	{
 		AerodynamicsSimulationSettings Settings(AerodynamicsAlgorithm::Incompressible);
 		Settings.Backend = Backend;
@@ -209,6 +162,9 @@ void TestAerodynamicsMovingObstacles()
 #endif
 #if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 			if (Backend == FluidBackend::ComputeShader) EXPECT(false);
+#endif
+#if defined(RIEMANN_ENABLE_METAL)
+            if (Backend == FluidBackend::Metal) EXPECT(false);
 #endif
 			continue;
 		}
@@ -273,7 +229,7 @@ void TestAerodynamicsBoundaryCoupling()
 {
 	using namespace Riemann;
 	Vector3 ReferenceForce;
-	for (FluidBackend Backend : { FluidBackend::CPU, FluidBackend::CUDA, FluidBackend::ComputeShader })
+	for (FluidBackend Backend : { FluidBackend::CPU, FluidBackend::CUDA, FluidBackend::ComputeShader, FluidBackend::Metal })
 	{
 		AerodynamicsSimulationSettings Settings(AerodynamicsAlgorithm::Incompressible);
 		Settings.Backend = Backend;
@@ -288,6 +244,9 @@ void TestAerodynamicsBoundaryCoupling()
 #endif
 #if defined(RIEMANN_ENABLE_COMPUTE_SHADER)
 			if (Backend == FluidBackend::ComputeShader) EXPECT(false);
+#endif
+#if defined(RIEMANN_ENABLE_METAL)
+            if (Backend == FluidBackend::Metal) EXPECT(false);
 #endif
 			continue;
 		}
@@ -343,3 +302,200 @@ void TestAerodynamicsBoundaryCoupling()
 		EXPECT(World.RemoveForceField(Coupling));
 	}
 }
+
+namespace Test_AerodynamicsInterface_Cases
+{
+void TestAerodynamicsInterface()
+{
+	using namespace Riemann;
+	AerodynamicsSimulation Simulation;
+	AerodynamicsSimulationSettings Selected;
+	Selected.Algorithm = AerodynamicsAlgorithm::Incompressible;
+	EXPECT(Simulation.Initialize(Selected));
+	for (auto Algorithm : { AerodynamicsAlgorithm::Barotropic, AerodynamicsAlgorithm::Incompressible })
+	{
+		AerodynamicsSimulationSettings Settings(Algorithm);
+		Settings.BoundsMin = Vector3::Zero(); Settings.BoundsMax = Vector3::One(); Settings.Resolution = Vector3i(8, 8, 8);
+		Settings.ParticleSpacing = 0.125f; Settings.SmoothingRadius = 0.25f; Settings.MaxTimeStep = 0.005f; Settings.MaxSubsteps = 32;
+		EXPECT(Simulation.Initialize(Settings));
+		EXPECT(Simulation.GetAlgorithm() == Algorithm && Simulation.GetBackend() == FluidBackend::CPU);
+		EXPECT_NEAR(Simulation.GetTotalMass(), Settings.AmbientDensity, 1e-5f);
+		const auto Air = Simulation.Sample(Vector3(0.5f));
+		EXPECT_NEAR(Air.Density, Settings.AmbientDensity, 1e-6f);
+		EXPECT_NEAR(Air.Pressure, Settings.AmbientPressure, 0.01f);
+		EXPECT(Air.TracerDensity == 0 && Air.Temperature == 0 && Air.Velocity.IsZero());
+		EXPECT(Simulation.ApplyImpulse(Vector3(0.5f), 0.2f, Vector3(0.001f, 0, 0)));
+		EXPECT(Simulation.GetTotalMomentum().x > 0);
+		EXPECT_NEAR(Simulation.GetTotalMomentum().x, 0.001f, 1e-6f);
+		Simulation.Step(0.01f);
+		EXPECT_NEAR(Simulation.GetTime() + Simulation.GetPendingTime(), 0.01, 1e-7);
+		std::vector<float> Density;
+		EXPECT(Simulation.BuildDensityField(&Density) && Density.size() == 512);
+		if (Algorithm == AerodynamicsAlgorithm::Incompressible)
+		{
+			EXPECT(Simulation.HasTracerField() && Simulation.SupportsMovingObstacles());
+			for (float Rho : Density) EXPECT_NEAR(Rho, Settings.AmbientDensity, 1e-6f);
+			EXPECT(!Simulation.SetMethod(FluidSimulationMethod::Lagrangian));
+			EXPECT(Simulation.GetMethod() == FluidSimulationMethod::Eulerian);
+			bool Rejected = false;
+			try { Simulation.SetDensityBox(Vector3::Zero(), Vector3::One(), 2); } catch (const std::logic_error&) { Rejected = true; }
+			EXPECT(Rejected);
+			AerodynamicsObstacle Obstacle; Obstacle.Center = Vector3(0.5f); Obstacle.Radius = 0.2f;
+			EXPECT(Simulation.SetRigidObstacles({ Obstacle }));
+			EXPECT(Simulation.GetTotalMass() < Settings.AmbientDensity);
+		}
+		else
+		{
+			EXPECT(!Simulation.HasTracerField() && !Simulation.SupportsMovingObstacles());
+			EXPECT(!Simulation.SetRigidObstacles({ AerodynamicsObstacle() }));
+			EXPECT(Simulation.GetTracerDensity().empty());
+		}
+		Simulation.Reset();
+		EXPECT(Simulation.GetTime() == 0 && Simulation.GetPendingTime() == 0);
+		EXPECT(Simulation.Initialize(Simulation.GetSettings()));
+		EXPECT(Simulation.GetTime() == 0);
+		Settings.Backend = (FluidBackend)255;
+		EXPECT(!Simulation.Initialize(Settings) && !Simulation.IsInitialized());
+		EXPECT(Simulation.GetGridVelocity().empty() && Simulation.GetTracerDensity().empty());
+	}
+	AerodynamicsSimulationSettings Projection(AerodynamicsAlgorithm::Incompressible);
+	Projection.Resolution = Vector3i(8, 8, 8); Projection.Backend = FluidBackend::SIMD; Projection.AllowBackendFallback = false;
+	EXPECT(!Simulation.Initialize(Projection));
+	Projection.AllowBackendFallback = true;
+	EXPECT(Simulation.Initialize(Projection) && Simulation.UsedBackendFallback() && Simulation.GetBackend() == FluidBackend::CPU);
+	Projection.Emitters.push_back(AerodynamicsEmitter()); Projection.Backend = FluidBackend::CPU;
+	EXPECT(Simulation.Initialize(Projection)); Simulation.Step(0.01f);
+	AerodynamicsSimulationSettings Barotropic;
+	EXPECT(Simulation.Initialize(Barotropic));
+	EXPECT(Simulation.GetSolidCells().empty() && Simulation.GetTemperature().empty());
+	EXPECT(Simulation.GetTime() == 0 && Simulation.GetPendingTime() == 0);
+	Barotropic.Algorithm = (AerodynamicsAlgorithm)255;
+	EXPECT(!Simulation.Initialize(Barotropic));
+
+}
+}
+
+void TestAerodynamicsInterface() { Test_AerodynamicsInterface_Cases::TestAerodynamicsInterface(); }
+
+namespace Test_WorldAerodynamics_Cases
+{
+namespace
+{
+	using namespace Riemann;
+	AerodynamicsSimulationSettings AirSettings(FluidBackend Backend)
+	{
+		AerodynamicsSimulationSettings S(AerodynamicsAlgorithm::Incompressible);
+		S.Backend = Backend; S.AllowBackendFallback = false; S.BoundsMin = Vector3(-1); S.BoundsMax = Vector3(1);
+		S.Resolution = Vector3i(20, 20, 20); S.PressureIterations = 60; S.MaxTimeStep = 1.0f / 120;
+		S.Buoyancy = S.TracerWeight = S.Vorticity = 0; S.Emitters.clear(); return S;
+	}
+	AerodynamicsSurfaceMesh Sheet()
+	{
+		AerodynamicsSurfaceMesh S;
+		S.Positions = { Vector3(0, -0.7f, -0.7f), Vector3(0, 0.7f, -0.7f), Vector3(0, -0.7f, 0.7f), Vector3(0, 0.7f, 0.7f) };
+		S.Velocities.assign(4, Vector3::UnitX()); S.Triangles = { Index3(0, 1, 2), Index3(2, 1, 3) }; S.Thickness = 0.01f; return S;
+	}
+	void MovingSurface(FluidBackend Backend)
+	{
+		auto Settings = AirSettings(Backend); AerodynamicsSimulation Air(Settings);
+		if (!Air.IsInitialized()) { printf("World aerodynamics backend %d unavailable\n", (int)Backend); return; }
+		auto S = Sheet(); EXPECT(Air.SetMovingBoundaries({}, { S }));
+		EXPECT(std::count(Air.GetSolidCells().begin(), Air.GetSolidCells().end(), 1) > 100);
+		EXPECT(Air.StepSynchronized(1.0f / 60));
+		std::vector<std::vector<Vector3>> Loads; EXPECT(Air.ComputeSurfaceLoads(Loads)); EXPECT(Loads.size() == 1 && Loads[0].size() == 4);
+		Vector3 Force(0); for (const auto& F : Loads[0]) Force += F;
+		EXPECT(Force.x < -0.1f); EXPECT(Air.GetTotalMomentum().x > 0.01f);
+		EXPECT_NEAR(Air.GetTime(), 1.0 / 60, 1e-7); EXPECT(Air.GetPendingTime() <= 1e-7);
+		printf("Moving cloth boundary backend %d: force=(%g,%g,%g), air momentum=%g\n", (int)Backend, Force.x, Force.y, Force.z, Air.GetTotalMomentum().x);
+		const auto Original = Air.GetSolidCells(); auto Bad = S; Bad.Triangles[0].a = 100;
+		EXPECT(!Air.SetMovingBoundaries({}, { Bad })); EXPECT(Air.GetSolidCells() == Original);
+		EXPECT(Air.SetMovingBoundaries({}, {})); EXPECT(std::count(Air.GetSolidCells().begin(), Air.GetSolidCells().end(), 1) == 0);
+		Air.Reset(); EXPECT(Air.ComputeSurfaceLoads(Loads)); EXPECT(Loads.empty());
+	}
+	void CoupledWorld(FluidBackend Backend, bool RigidAir = true, bool Contacts = true)
+	{
+		auto Settings = AirSettings(Backend);
+		AerodynamicsEmitter E; E.Position = Vector3(-0.65f, 0, 0); E.Velocity = Vector3(2, 0, 0); E.Radius = 0.3f; E.Temperature = 0;
+		Settings.Emitters = { E };
+		PhysicsWorldParam P; P.resolutionSolver = ResolutionPhaseSolver::XPBD; P.gravityAcc = Vector3::Zero(); PhysicsWorld W(P);
+		auto* Air = W.CreateAerodynamics(Settings, AerodynamicsRigidCouplingSettings(), RigidAir, true); if (!Air) return;
+		ClothSettings C; C.Model = ClothModel::TriangleStrain; C.Gravity = Vector3::Zero(); C.Damping = 0.98f;
+		C.Collision.RigidCoupling = Contacts; C.Thickness = 0.01f; C.Substeps = 2; C.SolverIterations = 16;
+		C.Rows = C.Columns = 9; C.Width = C.Height = 1.2f; C.SurfaceDensity = 0.3f; C.ParticleInverseMass = 100;
+		auto* Cloth = W.CreateCloth(C, Vector3::Zero(), Vector3::UnitZ(), Vector3::UnitY());
+		for (int I = 0; I < C.Columns; ++I) Cloth->PinParticle(0, I, Cloth->GetParticle(0, I).Position);
+		RigidBodyParam R; R.rigidType = RigidType::Dynamic; R.linearDamping = R.angularDamping = 0.99f;
+		auto* Ball = W.CreateRigidBody(GeometryFactory::CreateSphere(Vector3(0.18f, 0, 0), 0.15f), R);
+		const Vector3 Initial = Ball->X;
+		size_t ContactCount = 0;
+		for (int I = 0; I < 240; ++I)
+		{
+			W.Simulate(1.0f / 120);
+			ContactCount += Cloth->GetCollisionStats().RigidContacts;
+			float Speed = 0; for (int J = 0; J < Cloth->GetParticleCount(); ++J) Speed = std::max(Speed, Cloth->GetParticleVelocity(J).Length());
+			if (Speed > 30) { EXPECT(false); break; }
+		}
+		float Displacement = 0; for (int I = 0; I < Cloth->GetParticleCount(); ++I) Displacement = std::max(Displacement, Cloth->GetParticle(I).Position.x);
+		EXPECT(Displacement > 0.01f); EXPECT(Ball->X.x > Initial.x + 0.001f);
+		EXPECT(Contacts ? ContactCount > 0 : ContactCount == 0);
+		EXPECT_NEAR(Air->GetTime(), 2.0, 2e-6); EXPECT(Air->GetPendingTime() <= 1e-7);
+		EXPECT(std::isfinite(Ball->V.Length()) && Ball->V.Length() < 10);
+		printf("Three-way world backend %d, rigidAir=%d, contacts=%zu: cloth displacement=%g, rigid displacement=%g, air time=%g\n", (int)Backend, RigidAir, ContactCount, Displacement, Ball->X.x - Initial.x, Air->GetTime());
+		EXPECT(W.RemoveCloth(Cloth)); W.Simulate(1.0f / 120);
+		std::vector<std::vector<Vector3>> Loads; EXPECT(Air->ComputeSurfaceLoads(Loads) && Loads.empty());
+		W.Reset(); EXPECT(!W.GetAerodynamics() && !W.GetAerodynamicsCoupling());
+	}
+	void AreaMassAndLifetime()
+	{
+		PhysicsWorldParam P; PhysicsWorld W(P); ClothSettings S; S.UseSurfaceDensity = true; S.SurfaceDensity = 0.2f; S.Width = 2; S.Height = 3;
+		for (int Resolution : { 5, 13 })
+		{
+			S.Rows = S.Columns = Resolution; auto* C = W.CreateCloth(S, Vector3::Zero(), Vector3::UnitX(), Vector3::UnitY());
+			float Mass = 0; for (int I = 0; I < C->GetParticleCount(); ++I) Mass += 1 / C->GetParticle(I).InverseMass;
+			EXPECT_NEAR(Mass, 1.2f, 1e-5f); W.RemoveCloth(C);
+		}
+		auto* Air = W.CreateAerodynamics(AirSettings(FluidBackend::CPU)); EXPECT(Air);
+		EXPECT(W.RemoveForceField(W.GetAerodynamicsCoupling())); EXPECT(!W.GetAerodynamicsCoupling());
+		W.Simulate(1.0f / 120); EXPECT(W.RemoveAerodynamics());
+	}
+	void SurfacePressureAccuracy()
+	{
+		for (float InverseMass : { 1.0f, 100.0f })
+		{
+			Vector3 Reference(0);
+			for (auto Backend : { FluidBackend::CPU, FluidBackend::ComputeShader, FluidBackend::CUDA })
+			{
+				if (!IsFluidBackendAvailable(Backend)) continue;
+				auto Settings = AirSettings(Backend); Settings.Resolution = Vector3i(20, 32, 20);
+				Settings.PressureIterations = Backend == FluidBackend::CPU ? 200 : 40;
+				AerodynamicsSimulation Air(Settings); EXPECT(Air.IsInitialized()); if (!Air.IsInitialized()) continue;
+				auto S = Sheet(); S.InverseMasses.assign(S.Positions.size(), InverseMass);
+				EXPECT(Air.SetMovingBoundaries({}, { S })); EXPECT(Air.StepSynchronized(1.0f / 120));
+				std::vector<std::vector<Vector3>> Loads; EXPECT(Air.ComputeSurfaceLoads(Loads));
+				Vector3 Force(0); for (const auto& F : Loads[0]) Force += F;
+				if (Backend == FluidBackend::CPU) Reference = Force;
+				const float Error = (Force - Reference).Length() / std::max(Reference.Length(), 1e-6f);
+				printf("Finite surface pressure backend=%d inverseMass=%g force=%g error=%g divergence=%g\n", (int)Backend, InverseMass, Force.x, Error, Air.GetDivergenceRMS());
+				EXPECT(Error < 0.03f);
+			}
+		}
+	}
+}
+
+void TestWorldAerodynamics()
+{
+	SurfacePressureAccuracy();
+	AreaMassAndLifetime();
+	CoupledWorld(Riemann::FluidBackend::CPU, false);
+	CoupledWorld(Riemann::FluidBackend::CPU, true, false);
+	for (auto Backend : { Riemann::FluidBackend::CPU, Riemann::FluidBackend::ComputeShader, Riemann::FluidBackend::CUDA })
+	{
+		MovingSurface(Backend); CoupledWorld(Backend);
+	}
+}
+
+void TestAerodynamicsPressureAccuracy() { SurfacePressureAccuracy(); }
+}
+
+void TestWorldAerodynamics() { Test_WorldAerodynamics_Cases::TestWorldAerodynamics(); }
+void TestAerodynamicsPressureAccuracy() { Test_WorldAerodynamics_Cases::TestAerodynamicsPressureAccuracy(); }

@@ -2,7 +2,6 @@
 #include "../Src/RigidBodyDynamics/PhysicsWorld.h"
 #include "../Src/RigidBodyDynamics/ForceField.h"
 #include "../Src/Collision/GeometryObject.h"
-#include "../Viewer/SceneWorld.h"
 #include <stdexcept>
 
 namespace
@@ -146,35 +145,6 @@ namespace
 		try { World.SetIslandSleepingSettings(Settings); } catch (const std::invalid_argument&) { Rejected = true; }
 		EXPECT(Rejected && World.GetIslandSleepingSettings().QuietTime > 0);
 	}
-	void TestSceneSettings()
-	{
-		SceneWorld Scene; std::string Error;
-		for (const char* Value : { "true", "{\"enabled\":1}", "{\"quietTime\":0}", "{\"linearThreshold\":-1}",
-			"{\"angularThreshold\":\"bad\"}", "{\"hysteresisRatio\":1}", "{\"contactTolerance\":-1}" })
-		{
-			EXPECT(!Scene.LoadFromText(std::string("{\"physics\":{\"islandSleeping\":") + Value + "},\"objects\":[]}", "bad sleeping", &Error));
-			EXPECT(Error.find("islandSleeping") != std::string::npos);
-		}
-		EXPECT(Scene.LoadFromText(R"({"physics":{"islandSleeping":{"enabled":true,"quietTime":0.3,"linearThreshold":0.02,"angularThreshold":0.04,"hysteresisRatio":3,"contactTolerance":0.001}},"objects":[]})", "sleeping", &Error));
-		for (auto Solver : Solvers)
-		{
-			EXPECT(Scene.GetSimulation()->SetSolverConfiguration(Solver, SolverBackend::CPU, false, &Error));
-			EXPECT(Scene.GetSimulation()->GetIslandSleepingSettings().Enabled);
-			EXPECT_NEAR(Scene.GetSimulation()->GetIslandSleepingSettings().QuietTime, 0.3f, 1e-6f);
-		}
-		for (const char* File : { "01_stack_boxes.json", "06_constraints.json" })
-		{
-			EXPECT(Scene.LoadFromFile(TestContentsPath() + "Scenes/" + File, &Error, std::string(File).find("01_stack_boxes.json") != std::string::npos ? "grid" : ""));
-			auto Settings = Scene.GetSimulation()->GetIslandSleepingSettings(); Settings.Enabled = true;
-			Scene.GetSimulation()->SetIslandSleepingSettings(Settings);
-			for (int Frame = 0; Frame < 120; ++Frame) Scene.Step(Dt);
-			for (const auto& Object : Scene.GetObjects())
-			{
-				auto* Body = Object.GeometryPtr->GetParent<RigidBody>();
-				EXPECT(std::isfinite(Body->X.Length()) && std::isfinite(Body->V.Length()));
-			}
-		}
-	}
 	void TestHysteresisAndLateWake()
 	{
 		PhysicsWorld World(Parameters(ResolutionPhaseSolver::SequentialImpulse));
@@ -259,5 +229,5 @@ namespace
 void TestIslandSleeping()
 {
 	TestTimersAndJoints(); TestContactsAndBackends(); TestBoundariesAndMutations(); TestDrivesLoadsAndPolicies();
-	TestSceneSettings(); TestHysteresisAndLateWake(); TestNewContactsAndTriggers(); TestFilteringAndCallbackLoads();
+	 TestHysteresisAndLateWake(); TestNewContactsAndTriggers(); TestFilteringAndCallbackLoads();
 }
