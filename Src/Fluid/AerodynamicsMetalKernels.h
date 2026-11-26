@@ -867,7 +867,7 @@ kernel void Impulse(device uint *b0 [[buffer(0)]], device uint *b1 [[buffer(1)]]
                (float3(Id) + 0.5) * float4(PF(constants, 4), PF(constants, 5), PF(constants, 6), PF(constants, 7)).xyz;
 
     float W =
-        max(0, 1 - dot(P - float4(PF(constants, 20), PF(constants, 21), PF(constants, 22), PF(constants, 23)).xyz,
+        max(0.0f, 1.0f - dot(P - float4(PF(constants, 20), PF(constants, 21), PF(constants, 22), PF(constants, 23)).xyz,
                        P - float4(PF(constants, 20), PF(constants, 21), PF(constants, 22), PF(constants, 23)).xyz) /
                        (float4(PF(constants, 20), PF(constants, 21), PF(constants, 22), PF(constants, 23)).w *
                         float4(PF(constants, 20), PF(constants, 21), PF(constants, 22), PF(constants, 23)).w));
