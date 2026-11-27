@@ -107,6 +107,8 @@ namespace Riemann
 		// Plane clipping shares intersection vertices across each cross-section.
 		// Mesh intersection remains the default for existing authored fracture assets.
 		bool ClipConvexCells = false;
+		// With ClipConvexCells, enables a predicate-free cap for a guaranteed convex source mesh.
+		bool AssumeConvexSource = false;
 	};
 
 	class MeshCut

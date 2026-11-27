@@ -492,6 +492,10 @@ namespace Riemann
 				CutOptions.Grout = std::max(mSettings.Grout, 0.0f);
 				CutOptions.WeldSharedEdges = true;
 				CutOptions.MinTriangleCount = 4;
+				// Recursive pieces are convex. Plane clipping avoids coplanar mesh-boolean
+				// degeneracies when a generated cap is cut again at the next level.
+				CutOptions.ClipConvexCells = true;
+				CutOptions.AssumeConvexSource = true;
 
 				const int RetryCount = std::max(mSettings.CutRetryCount, 1);
 				std::vector<int> PieceCountCandidates;

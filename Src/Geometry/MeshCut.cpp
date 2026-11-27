@@ -422,8 +422,118 @@ namespace Riemann
 			Editor.AppendMesh(&Source, Mappings);
 		}
 
-		// Triangulate all planar contours together so holes and disconnected sections survive.
-		static void CapPlaneBoundary(DynamicMesh& Mesh, const std::vector<bool>& OnPlane, const PlanarCutPlane& Plane)
+		// Cap a single convex contour without invoking the constrained triangulator. Recursive
+		// fracture pieces are convex, so this avoids platform-sensitive predicates for the hot path.
+		static bool CapConvexPlaneBoundary(
+			DynamicMesh& Mesh,
+			const std::vector<int>& Vertices,
+			const std::vector<std::vector<int>>& Adjacency,
+			const PlanarCutPlane& Plane)
+		{
+			if (Vertices.size() < 3 || Vertices.size() != Adjacency.size())
+			{
+				return false;
+			}
+
+			std::vector<int> Loop;
+			Loop.reserve(Vertices.size());
+			int Previous = -1;
+			int Current = 0;
+			do
+			{
+				if (Current < 0 || Current >= (int)Vertices.size() || Loop.size() >= Vertices.size())
+				{
+					return false;
+				}
+				Loop.push_back(Current);
+				const std::vector<int>& Neighbors = Adjacency[(size_t)Current];
+				if (Neighbors.size() != 2)
+				{
+					return false;
+				}
+				const int Next = Neighbors[0] == Previous ? Neighbors[1] : Neighbors[0];
+				Previous = Current;
+				Current = Next;
+			} while (Current != Loop[0]);
+
+			// Multiple contours use the constrained fallback below. This path is selected
+			// only for convex source/cell clipping, so its single contour is star-shaped.
+			if (Loop.size() != Vertices.size())
+			{
+				return false;
+			}
+
+			Vector3 Center = Vector3::Zero();
+			for (int LocalVertex : Loop)
+			{
+				Center += Mesh.GetVertex(Vertices[(size_t)LocalVertex]);
+			}
+			Center /= (float)Loop.size();
+			Center -= Plane.Normal * Plane.SignedDistance(Center);
+			if (!std::isfinite(Center.x) || !std::isfinite(Center.y) || !std::isfinite(Center.z))
+			{
+				return false;
+			}
+
+			bool Flip = false;
+			bool FoundRim = false;
+			for (size_t Index = 0; Index < Loop.size() && !FoundRim; ++Index)
+			{
+				const int A = Vertices[(size_t)Loop[Index]];
+				const int B = Vertices[(size_t)Loop[(Index + 1) % Loop.size()]];
+				const int Edge = Mesh.FindEdge(A, B);
+				if (Edge < 0 || !Mesh.IsBoundaryEdge(Edge))
+				{
+					continue;
+				}
+				const int TriangleID = Mesh.GetEdgeT(Edge).a;
+				if (!Mesh.IsTriangle(TriangleID))
+				{
+					return false;
+				}
+				const Index3 Triangle = Mesh.GetTriangle(TriangleID);
+				for (int Corner = 0; Corner < 3; ++Corner)
+				{
+					if (Triangle[Corner] == A && Triangle[(Corner + 1) % 3] == B)
+					{
+						Flip = true;
+					}
+				}
+				FoundRim = true;
+			}
+			if (!FoundRim)
+			{
+				return false;
+			}
+
+			const int CenterVertex = Mesh.AppendVertex(Center);
+			for (size_t Index = 0; Index < Loop.size(); ++Index)
+			{
+				int A = Vertices[(size_t)Loop[Index]];
+				int B = Vertices[(size_t)Loop[(Index + 1) % Loop.size()]];
+				if (Flip)
+				{
+					std::swap(A, B);
+				}
+				if (!Mesh.IsVertex(A) || !Mesh.IsVertex(B) || !Mesh.IsVertex(CenterVertex))
+				{
+					return false;
+				}
+				if (Mesh.AppendTriangle(A, B, CenterVertex) < 0)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		// Triangulate non-convex or multiple planar contours together so holes survive.
+		static bool CapPlaneBoundary(
+			DynamicMesh& Mesh,
+			const std::vector<bool>& OnPlane,
+			const PlanarCutPlane& Plane,
+			float Tolerance,
+			bool UseConvexCap)
 		{
 			std::vector<int> vertices;
 			std::vector<int> index(Mesh.GetVertexCount(), -1);
@@ -435,8 +545,13 @@ namespace Riemann
 				if (std::abs(normal[d]) > std::abs(normal[drop])) drop = d;
 			for (int e = 0; e < Mesh.GetEdgeCount(); ++e)
 			{
-				if (!Mesh.IsBoundaryEdge(e)) continue;
+				if (!Mesh.IsEdgeFast(e) || !Mesh.IsBoundaryEdge(e)) continue;
 				const Index2 v = Mesh.GetEdgeV(e);
+				if (!Mesh.IsVertex(v.a) || !Mesh.IsVertex(v.b) ||
+					(size_t)v.a >= OnPlane.size() || (size_t)v.b >= OnPlane.size())
+				{
+					return false;
+				}
 				if (!OnPlane[v.a] || !OnPlane[v.b]) continue;
 				for (int id : {v.a, v.b})
 				{
@@ -448,17 +563,76 @@ namespace Riemann
 				}
 				edges.emplace_back(index[v.a], index[v.b]);
 			}
-			if (edges.size() < 3) return;
-			std::vector<int> degree(vertices.size(), 0);
-			for (const auto& e : edges) { ++degree[e.v1]; ++degree[e.v2]; }
-			for (int d : degree) if (d % 2 != 0) return;
+			if (edges.empty()) return true;
+			if (edges.size() < 3) return false;
+			std::vector<std::vector<int>> adjacency(vertices.size());
+			for (const DelaunayEdge& edge : edges)
+			{
+				if (edge.v1 < 0 || edge.v2 < 0 || edge.v1 == edge.v2 ||
+					(size_t)edge.v1 >= vertices.size() || (size_t)edge.v2 >= vertices.size())
+				{
+					return false;
+				}
+				adjacency[(size_t)edge.v1].push_back(edge.v2);
+				adjacency[(size_t)edge.v2].push_back(edge.v1);
+			}
+			for (const std::vector<int>& neighbors : adjacency)
+			{
+				if (neighbors.size() != 2)
+				{
+					return false;
+				}
+			}
+
+			std::vector<bool> connected(vertices.size(), false);
+			std::vector<int> stack(1, 0);
+			connected[0] = true;
+			size_t connectedCount = 0;
+			while (!stack.empty())
+			{
+				const int current = stack.back();
+				stack.pop_back();
+				++connectedCount;
+				for (int neighbor : adjacency[(size_t)current])
+				{
+					if (!connected[(size_t)neighbor])
+					{
+						connected[(size_t)neighbor] = true;
+						stack.push_back(neighbor);
+					}
+				}
+			}
+			if (UseConvexCap && connectedCount == vertices.size())
+			{
+				DynamicMesh convexCapped = Mesh;
+				if (!CapConvexPlaneBoundary(convexCapped, vertices, adjacency, Plane))
+				{
+					return false;
+				}
+				Mesh = std::move(convexCapped);
+				return true;
+			}
 
 			// A planar constraint graph cannot contain distinct vertices at the same point.
 			std::set<std::pair<float, float>> unique;
 			for (const auto& p : points)
-				if (!unique.emplace(p.x, p.y).second) return;
+				if (!std::isfinite(p.x) || !std::isfinite(p.y) || !unique.emplace(p.x, p.y).second) return false;
 			ConstrainedDelaunay triangulation;
-			if (!triangulation.Triangulate(points, edges)) return;
+			if (!triangulation.Triangulate(points, edges)) return false;
+			for (const DelaunayTriangle& triangle : triangulation.Triangles)
+			{
+				for (int Corner = 0; Corner < 3; ++Corner)
+				{
+					if (triangle[Corner] < 0 || (size_t)triangle[Corner] >= vertices.size())
+					{
+						return false;
+					}
+				}
+				if (triangle.v1 == triangle.v2 || triangle.v2 == triangle.v3 || triangle.v3 == triangle.v1)
+				{
+					return false;
+				}
+			}
 			// Match the source winding along the rim. The triangulator gives every
 			// cap triangle the same planar winding, including contours around holes.
 			bool flip = false, foundRim = false;
@@ -481,23 +655,34 @@ namespace Riemann
 			{
 				int a = vertices[t.v1], b = vertices[t.v2], c = vertices[t.v3];
 				if (flip) std::swap(b, c);
-				Mesh.AppendTriangle(a, b, c);
+				if (!Mesh.IsVertex(a) || !Mesh.IsVertex(b) || !Mesh.IsVertex(c)) return false;
+				if (Mesh.AppendTriangle(a, b, c) < 0) return false;
 			}
+			return true;
 		}
 
-		static void ClipToPlane(DynamicMesh& Mesh, const PlanarCutPlane& Plane, float Tolerance, bool Cap)
+		static bool ClipToPlane(
+			DynamicMesh& Mesh,
+			const PlanarCutPlane& Plane,
+			float Tolerance,
+			bool Cap,
+			bool UseConvexCap)
 		{
-			std::vector<float> distances(Mesh.GetVertexCount());
+			std::vector<double> distances(Mesh.GetVertexCount());
 			bool inside = false, outside = false;
 			for (int v = 0; v < Mesh.GetVertexCount(); ++v)
 			{
-				const float d = Plane.SignedDistance(Mesh.GetVertex(v));
+				if (!Mesh.IsReferencedVertex(v)) continue;
+				const Vector3 p = Mesh.GetVertex(v);
+				const double d = (double)Plane.Normal.x * p.x + (double)Plane.Normal.y * p.y +
+					(double)Plane.Normal.z * p.z - Plane.W;
+				if (!std::isfinite(d)) return false;
 				distances[v] = std::abs(d) <= Tolerance ? 0.0f : d;
 				inside |= distances[v] < 0;
 				outside |= distances[v] > 0;
 			}
-			if (!outside) return;
-			if (!inside) { Mesh.Clear(); return; }
+			if (!outside) return true;
+			if (!inside) { Mesh.Clear(); return true; }
 			DynamicMesh clipped;
 			std::vector<int> kept(Mesh.GetVertexCount(), -1), split(Mesh.GetEdgeCount(), -1);
 			std::vector<bool> onPlane;
@@ -505,6 +690,10 @@ namespace Riemann
 			{
 				if (!Mesh.IsTriangleFast(tid)) continue;
 				const Index3 tri = Mesh.GetTriangle(tid);
+				for (int Corner = 0; Corner < 3; ++Corner)
+				{
+					if (!Mesh.IsVertex(tri[Corner])) return false;
+				}
 				int polygon[4], n = 0;
 				for (int i = 0; i < 3; ++i)
 				{
@@ -513,47 +702,126 @@ namespace Riemann
 					{
 						if (kept[a] < 0)
 						{
-							kept[a] = clipped.AppendVertex(Mesh.GetVertex(a));
+							Vector3 position = Mesh.GetVertex(a);
+							if (distances[a] == 0.0)
+							{
+								position -= Plane.Normal * Plane.SignedDistance(position);
+							}
+							kept[a] = clipped.AppendVertex(position);
 							onPlane.push_back(distances[a] == 0);
 						}
 						polygon[n++] = kept[a];
 					}
 					if (distances[a] == 0 || distances[b] == 0 || (distances[a] < 0) == (distances[b] < 0)) continue;
-					int& intersection = split[Mesh.GetTriEdges(tid, i)];
+					const int edge = Mesh.GetTriEdges(tid, i);
+					if (edge < 0 || (size_t)edge >= split.size()) return false;
+					int& intersection = split[(size_t)edge];
 					if (intersection < 0)
 					{
-						const float fraction = distances[a] / (distances[a] - distances[b]);
-						intersection = clipped.AppendVertex(Mesh.GetVertex(a) + (Mesh.GetVertex(b) - Mesh.GetVertex(a)) * fraction);
+						const double fraction = distances[a] / (distances[a] - distances[b]);
+						const Vector3 start = Mesh.GetVertex(a);
+						const Vector3 end = Mesh.GetVertex(b);
+						Vector3 point;
+						for (int Axis = 0; Axis < 3; ++Axis)
+						{
+							point[Axis] = (float)((double)start[Axis] + ((double)end[Axis] - start[Axis]) * fraction);
+						}
+						point -= Plane.Normal * Plane.SignedDistance(point);
+						intersection = clipped.AppendVertex(point);
 						onPlane.push_back(true);
 					}
 					polygon[n++] = intersection;
 				}
 				for (int i = 2; i < n; ++i)
-					clipped.AppendTriangle(polygon[0], polygon[i - 1], polygon[i]);
+				{
+					if (!clipped.IsVertex(polygon[0]) || !clipped.IsVertex(polygon[i - 1]) || !clipped.IsVertex(polygon[i])) return false;
+					if (clipped.AppendTriangle(polygon[0], polygon[i - 1], polygon[i]) < 0) return false;
+				}
 			}
-			if (Cap) CapPlaneBoundary(clipped, onPlane, Plane);
+			if (Cap && !CapPlaneBoundary(clipped, onPlane, Plane, Tolerance, UseConvexCap)) return false;
 			Mesh = std::move(clipped);
+			return true;
 		}
 
 		static bool CutConvexCells(const DynamicMesh& Source, const PlanarCells& Cells,
 			const PlanarCutOptions& Options, std::vector<PlanarCutPiece>& Pieces)
 		{
+			const bool useConvexCap = Options.AssumeConvexSource;
 			std::vector<std::vector<PlanarCutPlane>> boundaries(Cells.NumCells);
+			std::vector<std::set<int>> boundaryVertices(Cells.NumCells);
 			for (size_t i = 0; i < Cells.Planes.size(); ++i)
 			{
 				const Index2 pair = Cells.PlaneCells[i];
 				const PlanarCutPlane& p = Cells.Planes[i];
-				if (pair.a >= 0 && pair.a < Cells.NumCells) boundaries[pair.a].push_back(p);
-				if (pair.b >= 0 && pair.b < Cells.NumCells) boundaries[pair.b].emplace_back(-p.Normal, -p.W);
+				if (pair.a >= 0 && pair.a < Cells.NumCells) boundaries[(size_t)pair.a].push_back(p);
+				if (pair.b >= 0 && pair.b < Cells.NumCells) boundaries[(size_t)pair.b].emplace_back(-p.Normal, -p.W);
+				if (i < Cells.PlaneBoundaries.size())
+				{
+					for (int vertexID : Cells.PlaneBoundaries[i])
+					{
+						if (pair.a >= 0 && pair.a < Cells.NumCells) boundaryVertices[(size_t)pair.a].insert(vertexID);
+						if (pair.b >= 0 && pair.b < Cells.NumCells) boundaryVertices[(size_t)pair.b].insert(vertexID);
+					}
+				}
+			}
+
+			std::vector<bool> discardCell((size_t)Cells.NumCells, false);
+			if (Options.Grout > 0.0f && !Cells.IsInfinitePlane())
+			{
+				// PlanarCellMeshes applies grout by uniformly scaling each cell around its
+				// vertex centroid. Transforming the supporting planes is equivalent and
+				// keeps the convex clipping path independent of mesh booleans.
+				for (int cellIndex = 0; cellIndex < Cells.NumCells; ++cellIndex)
+				{
+					const std::set<int>& vertexIDs = boundaryVertices[(size_t)cellIndex];
+					if (boundaries[(size_t)cellIndex].empty()) continue;
+					if (vertexIDs.empty()) return false;
+
+					std::map<QuantizedPointKey, Vector3> uniquePositions;
+					const float vertexTolerance = std::max(Options.SnapTolerance, 1e-6f);
+					for (int vertexID : vertexIDs)
+					{
+						if (vertexID < 0 || vertexID >= (int)Cells.PlaneBoundaryVertices.size()) return false;
+						const Vector3& position = Cells.PlaneBoundaryVertices[(size_t)vertexID];
+						if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)) return false;
+						uniquePositions.emplace(MakePointKey(position, vertexTolerance), position);
+					}
+					if (uniquePositions.empty()) return false;
+
+					Box3 bounds = Box3::Empty();
+					Vector3 center = Vector3::Zero();
+					for (const auto& entry : uniquePositions)
+					{
+						const Vector3& position = entry.second;
+						bounds.Encapsulate(position);
+						center += position;
+					}
+					center /= (float)uniquePositions.size();
+					const float boundsSize = BoundsMaxDim(bounds);
+					const float scale = boundsSize > 0.0f ? (boundsSize - Options.Grout * 0.5f) / boundsSize : 0.0f;
+					if (scale <= 1e-4f)
+					{
+						discardCell[(size_t)cellIndex] = true;
+						continue;
+					}
+					for (PlanarCutPlane& plane : boundaries[(size_t)cellIndex])
+					{
+						plane.W = scale * plane.W + (1.0f - scale) * plane.Normal.Dot(center);
+					}
+				}
 			}
 			for (int i = 0; i < Cells.NumCells; ++i)
 			{
-				if (boundaries[i].empty()) continue;
+				if (boundaries[(size_t)i].empty() || discardCell[(size_t)i]) continue;
 				PlanarCutPiece piece;
 				piece.Mesh = Source;
-				for (const auto& plane : boundaries[i])
+				for (const PlanarCutPlane& plane : boundaries[(size_t)i])
 				{
-					ClipToPlane(piece.Mesh, plane, Options.SnapTolerance, Options.CapCutFaces);
+					if (!ClipToPlane(piece.Mesh, plane, Options.SnapTolerance, Options.CapCutFaces, useConvexCap))
+					{
+						Pieces.clear();
+						return false;
+					}
 					if (piece.Mesh.GetTriangleCount() == 0) break;
 				}
 				if (CountValidTriangles(piece.Mesh) < std::max(1, Options.MinTriangleCount)) continue;
@@ -1063,7 +1331,7 @@ namespace Riemann
 		OrientedSourceMesh.FixTriangleOrientation(true);
 
 		if (Options.ClipConvexCells && (Cells.AssumeConvexCells || Cells.IsInfinitePlane()) && !Cells.SurfaceSettings.EnableNoise &&
-			Options.Grout == 0 && !Options.IncludeOutsideCell && Options.WeldSharedEdges && !Options.SimplifyAlongCut &&
+			!Options.IncludeOutsideCell && Options.WeldSharedEdges && !Options.SimplifyAlongCut &&
 			!SourceMesh.HasVertexUVs() && !SourceMesh.HasVertexColors() && !SourceMesh.HasTriangleGroups())
 			return CutConvexCells(OrientedSourceMesh, Cells, Options, Pieces);
 

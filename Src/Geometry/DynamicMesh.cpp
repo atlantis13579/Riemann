@@ -2357,7 +2357,8 @@ namespace Riemann
 		{
 			int seed = tid;
 
-			if (processed.get(seed))
+			// Triangle IDs can remain sparse after cutting, removal, or explicit insertion.
+			if (!IsTriangleFast(seed) || processed.get(seed))
 			{
 				continue;
 			}
@@ -2384,7 +2385,7 @@ namespace Riemann
 					{
 						int t_next = e.Tri[j];
 
-						if (t_next == -1 || t_next == next || processed.get(t_next))
+						if (!IsTriangle(t_next) || t_next == next || processed.get(t_next))
 						{
 							continue;
 						}

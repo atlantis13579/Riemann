@@ -8,6 +8,7 @@
 #include "../Src/Destruction/GraphPartition.h"
 #include "../Src/Destruction/DestructionSet.h"
 #include "../Src/Geometry/MeshCut.h"
+#include "../Src/Geometry/MeshValidator.h"
 #include "../Src/Destruction/StrainSolver.h"
 #include "../Src/Destruction/VoronoiTessellation.h"
 #include "../Src/Collision/GeometryObject.h"
@@ -716,6 +717,124 @@ void TestHierarchyExternalFractureReconciliation()
 	}
 }
 
+static void TestRecursiveFractureGeometry()
+{
+	printf("Running TestRecursiveFractureGeometry\n");
+
+	for (float scale : { 1.0f, 0.1f })
+	{
+		for (float grout : { 0.0f, 0.012f * scale })
+		{
+			DestructionFractureSettings settings = MakeHierarchicalFractureSettings();
+			settings.MinChunkVolume *= scale * scale * scale;
+			settings.Grout = grout;
+			DynamicMesh source = MakeChunkMesh(Box3(
+				Vector3(-5.0f, -4.0f, -3.0f) * scale,
+				Vector3(5.0f, 4.0f, 3.0f) * scale));
+			if (grout > 0.0f)
+			{
+				Quaternion rotation;
+				rotation.FromRotationAxis(Vector3(0.35f, 1.0f, 0.2f).Unit(), 0.4f);
+				for (int vertexID = 0; vertexID < source.GetVertexCount(); ++vertexID)
+				{
+					if (source.IsVertexFast(vertexID)) source.SetVertex(vertexID, rotation * source.GetVertex(vertexID));
+				}
+				source.BuildBounds();
+			}
+
+			DestructionSet destructSet;
+			const bool built = destructSet.BuildHierarchicalFracture(source, settings, 1.0f);
+			EXPECT(built);
+			if (!built)
+			{
+				continue;
+			}
+			EXPECT(destructSet.GetChunks().size() == 20);
+			double mass = 0.0;
+			for (const DestructionChunk& chunk : destructSet.GetChunks())
+			{
+				mass += chunk.Mass;
+			}
+			EXPECT_NEAR(mass, 1.0, 1e-5);
+		}
+	}
+}
+
+static void TestPlanarCutDegeneracies()
+{
+	printf("Running TestPlanarCutDegeneracies\n");
+
+	for (float scale : { 1.0f, 0.01f })
+	{
+		const Vector3 center = Vector3(0.25f, -0.5f, 0.75f) * scale;
+		const DynamicMesh box = MakeChunkMesh(Box3(center - Vector3(scale), center + Vector3(scale)));
+		DynamicMesh source;
+		for (int vertexID = 0; vertexID < box.GetVertexCount(); ++vertexID)
+		{
+			source.AppendVertex(box.GetVertex(vertexID));
+		}
+		for (int triangleID = 0; triangleID < box.GetTriangleCount(); ++triangleID)
+		{
+			EXPECT(source.InsertTriangle(64 + triangleID * 2, box.GetTriangle(triangleID)) == EMeshResult::Ok);
+		}
+		source.BuildBounds();
+
+		std::vector<std::vector<int>> islands;
+		source.BuildIslands(islands);
+		EXPECT(islands.size() == 1 && islands[0].size() == 12);
+		source.FixTriangleOrientation(true);
+
+		PlanarCutOptions options;
+		options.ClipConvexCells = true;
+		options.AssumeConvexSource = true;
+		options.SnapTolerance = scale * 1e-6f;
+		MeshValidationOptions validation;
+		validation.AreaEpsilon *= scale * scale;
+		const double sourceVolume = MeshValidator::Validate(source, validation).AbsoluteVolume;
+
+		for (const Vector3& normal : { Vector3(1.0f, 0.0f, 0.0f), Vector3(1.0f, 1.0f, 0.0f), Vector3(1.0f, 1.0f, 1.0f) })
+		{
+			// Exercise tangencies and cuts through existing vertices as well as an ordinary interior cut.
+			for (int vertexID = -1; vertexID < 8; ++vertexID)
+			{
+				std::vector<DynamicMesh> pieces;
+				const Vector3 origin = vertexID < 0 ? center : source.GetVertex(vertexID);
+				EXPECT(MeshCut::Cut(source, origin, normal, pieces, options));
+				double volume = 0.0;
+				for (const DynamicMesh& piece : pieces)
+				{
+					const MeshValidationReport report = MeshValidator::Validate(piece, validation);
+					EXPECT(report.IsSolidCandidate());
+					volume += report.AbsoluteVolume;
+				}
+				EXPECT_NEAR(volume, sourceVolume, sourceVolume * 1e-4);
+			}
+		}
+
+		options.Grout = 0.012f * scale;
+		std::vector<FracturePiece> pieces;
+		EXPECT(Fracture::VoronoiFracture3D(source, pieces, 5, 7321, options));
+		EXPECT(pieces.size() == 5);
+		double groutedVolume = 0.0;
+		for (const FracturePiece& piece : pieces)
+		{
+			const MeshValidationReport report = MeshValidator::Validate(piece.Mesh, validation);
+			EXPECT(report.IsSolidCandidate());
+			groutedVolume += report.AbsoluteVolume;
+		}
+		EXPECT(groutedVolume < sourceVolume);
+		EXPECT(groutedVolume > sourceVolume * 0.90);
+
+		pieces.clear();
+		EXPECT(Fracture::ParallelCutX(source, pieces, 3, options));
+		EXPECT(pieces.size() == 3);
+		for (const FracturePiece& piece : pieces)
+		{
+			EXPECT(MeshValidator::Validate(piece.Mesh, validation).IsSolidCandidate());
+		}
+	}
+}
+
 void TestHierarchicalFractureRegression()
 {
 	printf("Running TestHierarchicalFractureRegression\n");
@@ -745,7 +864,7 @@ void TestHierarchicalFractureRegression()
 	EXPECT(root.Level == 0);
 	EXPECT(root.IsBreakable);
 	EXPECT(root.Children.size() >= 4 && root.Children.size() <= 5);
-	EXPECT(chunks.size() >= 12);
+	EXPECT(chunks.size() == 20);
 	EXPECT(chunks.size() <= (size_t)settings.MaxChunkCount);
 	EXPECT(root.ChunkIndices.size() == chunks.size());
 
@@ -1467,6 +1586,8 @@ void TestDestruction()
 	TestDetachedStaticClusterWakesDynamicBody();
 	TestDestructionSetReplacementAndWorldMigration();
 	TestHierarchyExternalFractureReconciliation();
+	TestPlanarCutDegeneracies();
+	TestRecursiveFractureGeometry();
 	TestHierarchicalFractureRegression();
 	TestRecursiveDestructionToLeafBodies();
 	TestIterativeDestructionThrottlesThousandChunks();
